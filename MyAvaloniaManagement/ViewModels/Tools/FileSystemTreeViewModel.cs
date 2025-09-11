@@ -1,4 +1,7 @@
 ﻿using System.Collections.ObjectModel;
+using System.IO;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
@@ -18,6 +21,14 @@ public partial class FileSystemTreeViewModel : Tool
 
     [ObservableProperty]
     private FileSystemNode? _selectedNode;
+    
+    // 添加选择的文件夹路径属性
+    [ObservableProperty]
+    private string _selectedFolderPath = string.Empty;
+
+    // 添加是否显示自定义文件夹的标志
+    [ObservableProperty]
+    private bool _showCustomFolder = false;
 
     public FileSystemTreeViewModel()
     {
@@ -85,6 +96,49 @@ public partial class FileSystemTreeViewModel : Tool
             {
                 AppServices.Instance.MessengerServiceDefault.Send(new OpenFileMessage(SelectedNode.Path));
             }
+        }
+    }
+    
+    // 添加选择文件夹命令
+    [RelayCommand]
+    public async void SelectFolder()
+    {
+        // 使用正确的方式获取主窗口
+        var mainWindow = (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)
+            ?.MainWindow;
+        if (mainWindow == null) return;
+
+        var options = new FolderPickerOpenOptions
+        {
+            Title = "选择文件夹",
+            AllowMultiple = false
+        };
+
+        var result = await mainWindow.StorageProvider.OpenFolderPickerAsync(options);
+        if (result != null && result.Count > 0)
+        {
+            var selectedFolder = result[0];
+            string folderPath = selectedFolder.TryGetLocalPath() ?? string.Empty;
+            if (FileHelper.IsDrivePath(folderPath))
+            {
+                RootNodes.Clear();
+                InitializeTree();
+            }
+            else
+            {
+                SelectedFolderPath = Path.GetFullPath(selectedFolder.Path.LocalPath);
+                ShowCustomFolder = true;
+            
+                // 刷新根节点，添加自定义选择的文件夹
+                RootNodes.Clear();
+            
+                // 添加选择的文件夹作为根节点
+                if (Directory.Exists(SelectedFolderPath))
+                {
+                    RootNodes.Add(new FileSystemNode(SelectedFolderPath));
+                }
+            }
+
         }
     }
 }

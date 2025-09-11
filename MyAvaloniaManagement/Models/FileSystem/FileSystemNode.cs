@@ -1,6 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
+using System.Runtime.InteropServices.JavaScript;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MyAvaloniaManagement.Business.Helpers;
 
 namespace MyAvaloniaManagement.Models.FileSystem;
 
@@ -10,7 +12,11 @@ public partial class FileSystemNode : ObservableObject
     {
         Path = path;
         // 对于驱动器路径，直接使用完整路径作为名称
-        Name = IsDrivePath(path) ? path : (System.IO.Path.GetFileName(path) ?? path);
+        Name = FileHelper.IsDrivePath(path) ? path : (System.IO.Path.GetFileName(path) ?? path);
+        if (string.IsNullOrEmpty(Name))
+        {
+            Name = path;
+        }
         IsDirectory = Directory.Exists(path);
         if (IsDirectory)
         {
@@ -93,10 +99,5 @@ public partial class FileSystemNode : ObservableObject
         OnPropertyChanged(nameof(Children));
     }
 
-    // 辅助方法：判断是否为驱动器路径
-    private bool IsDrivePath(string path)
-    {
-        // 驱动器路径格式通常为 "C:\" 这样的形式
-        return path.Length >= 3 && path[1] == ':' && path[2] == '\\' && (path.Length == 3 || path[3] == '\\');
-    }
+   
 }

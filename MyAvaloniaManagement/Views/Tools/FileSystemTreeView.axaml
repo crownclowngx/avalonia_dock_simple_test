@@ -14,7 +14,16 @@
         <vm:FileSystemTreeViewModel />
     </UserControl.DataContext>
     <Grid>
-        <TreeView ItemsSource="{Binding RootNodes}" 
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <!-- 文件夹选择器区域 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5" Spacing="5">
+            <Button Content="选择文件夹" Command="{Binding SelectFolderCommand}" />
+            <TextBlock Text="{Binding SelectedFolderPath}" VerticalAlignment="Center" Margin="5,0,0,0" />
+        </StackPanel>
+        <TreeView Grid.Row="1" ItemsSource="{Binding RootNodes}" 
                   SelectedItem="{Binding SelectedNode, Mode=TwoWay}" >
             <i:Interaction.Behaviors>
                 <EventTriggerBehavior EventName="DoubleTapped">
