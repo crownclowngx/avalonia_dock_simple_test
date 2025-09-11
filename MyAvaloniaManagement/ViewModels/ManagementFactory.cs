@@ -157,9 +157,9 @@ public class ManagementFactory : Factory
             CanClose = false,
         };
 
-        var tools = new ProportionalDock
+        var toolsRight = new ProportionalDock
         {
-            Proportion = 0.2,
+            Proportion = 0.15,
             Orientation = Orientation.Vertical,
             VisibleDockables = CreateList<IDockable>
             (
@@ -168,15 +168,32 @@ public class ManagementFactory : Factory
                     ActiveDockable = plugGroupMenuViewModel,
                     VisibleDockables = CreateList<IDockable>
                     (
-                        plugGroupMenuViewModel,
-                        fileSystemTreeViewModel
+                        plugGroupMenuViewModel
                     ),
                     Alignment = Alignment.Right,
                     GripMode = GripMode.Visible
                 }
             )
         };
-
+        
+        var toolsLeft = new ProportionalDock
+        {
+            Proportion = 0.15,
+            Orientation = Orientation.Vertical,
+            VisibleDockables = CreateList<IDockable>
+            (
+                new ToolDock
+                {
+                    ActiveDockable = fileSystemTreeViewModel,
+                    VisibleDockables = CreateList<IDockable>
+                    (
+                        fileSystemTreeViewModel
+                    ),
+                    Alignment = Alignment.Left,
+                    GripMode = GripMode.Visible
+                }
+            )
+        };
         var windowLayout = CreateRootDock();
         windowLayout.Title = "Default";
         var windowLayoutContent = new ProportionalDock
@@ -185,9 +202,11 @@ public class ManagementFactory : Factory
             IsCollapsable = false,
             VisibleDockables = CreateList<IDockable>
             (
+                toolsLeft,
+                new ProportionalDockSplitter(),
                 documentDock,
                 new ProportionalDockSplitter(),
-                tools
+                toolsRight
             )
         };
 

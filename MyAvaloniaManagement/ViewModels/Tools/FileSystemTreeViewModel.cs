@@ -38,13 +38,16 @@ public partial class FileSystemTreeViewModel : Tool
         InitializeTree();
     }
 
-    private void InitializeTree()
+    private void InitializeTree(string folderPath = "")
     {
         // 添加系统驱动器作为根节点
         var drives = System.IO.Directory.GetLogicalDrives();
         foreach (var drive in drives)
         {
-            RootNodes.Add(new FileSystemNode(drive));
+            if(string.IsNullOrEmpty(folderPath) || drive == folderPath)
+            {
+                RootNodes.Add(new FileSystemNode(drive));
+            }
         }
     }
 
@@ -122,7 +125,7 @@ public partial class FileSystemTreeViewModel : Tool
             if (FileHelper.IsDrivePath(folderPath))
             {
                 RootNodes.Clear();
-                InitializeTree();
+                InitializeTree(folderPath);
             }
             else
             {
