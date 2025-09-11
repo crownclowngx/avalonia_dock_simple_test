@@ -3,9 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:MyAvaloniaManagement.ViewModels.Tools"
-             xmlns:models="using:MyAvaloniaManagement.Models.FileSystem"
-             xmlns:myAvaloniaManagement="clr-namespace:MyAvaloniaManagement"
-             xmlns:tgrid="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.TreeDataGrid"
+             xmlns:ia="clr-namespace:Avalonia.Xaml.Interactions.Core;assembly=Avalonia.Xaml.Interactions.Core"
+             xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
              xmlns:convert="using:MyAvaloniaManagement.Business.Converter"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MyAvaloniaManagement.Views.Tools.FileSystemTreeView"
@@ -17,6 +16,11 @@
     <Grid>
         <TreeView ItemsSource="{Binding RootNodes}" 
                   SelectedItem="{Binding SelectedNode, Mode=TwoWay}" >
+            <i:Interaction.Behaviors>
+                <EventTriggerBehavior EventName="DoubleTapped">
+                    <InvokeCommandAction Command="{Binding OpenFileCommand}"/>
+                </EventTriggerBehavior>
+            </i:Interaction.Behaviors>
             <TreeView.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="刷新所选节点" Command="{Binding RefreshNodeCommand}"/>
