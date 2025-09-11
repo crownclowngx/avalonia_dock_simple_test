@@ -7,6 +7,7 @@ namespace MyAvaloniaManagementCommon.Message;
 /// </summary>
 public class MessengerService : IMessengerService
 {
+    
     private readonly IMessenger _messenger;
     
     /// <summary>

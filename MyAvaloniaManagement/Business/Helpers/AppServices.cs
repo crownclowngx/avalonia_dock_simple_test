@@ -1,4 +1,5 @@
 ﻿using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagementCommon.Message;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -36,6 +37,11 @@ public class AppServices
     public PluginMenuService? PluginMenuService { get; private set; }
     
     /// <summary>
+    /// MessengerService实例，用于消息传递
+    /// </summary>
+    public IMessengerService? MessengerServiceDefault { get; private set; }
+    
+    /// <summary>
     /// 初始化AppServices
     /// </summary>
     /// <param name="factory">ManagementFactory实例</param>
@@ -45,7 +51,8 @@ public class AppServices
         _instance = new AppServices
         {
             ManagementFactory = factory,
-            PluginMenuService = pluginMenuService
+            PluginMenuService = pluginMenuService,
+            MessengerServiceDefault = new MessengerService() // 创建MessengerService实例
         };
     }
 }

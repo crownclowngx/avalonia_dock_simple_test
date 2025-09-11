@@ -12,6 +12,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Message;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using Newtonsoft.Json;
 
@@ -40,9 +41,30 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         // 初始化AppServices，使其他组件可以访问这些实例
         AppServices.Initialize(_factory, _pluginMenuService);
         Layout = _factory?.CreateLayout();
+        
         if (Layout is { })
         {
             _factory?.InitLayout(Layout);
+        }
+        // 注册消息接收器，用于接收打开文件的请求
+        RegisterMessageHandlers();
+    }
+    
+    /// <summary>
+    /// 注册消息处理器
+    /// </summary>
+    private void RegisterMessageHandlers()
+    {
+        if (AppServices.Instance.MessengerServiceDefault != null)
+        {
+            AppServices.Instance.MessengerServiceDefault.Register<MainWindowViewModel, OpenFileMessage>(
+                this, 
+                (recipient, message) => 
+                {
+                    // 当接收到打开文件的消息时，调用OpenDocumentByPath方法
+                    recipient.OpenDocumentByPath(message.FilePath).ConfigureAwait(false);
+                }
+            );
         }
     }
 
@@ -80,6 +102,33 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         };
 
         var files = await mainWindow.StorageProvider.OpenFilePickerAsync(options);
+        
+        await OpenAllFiles(files);
+    }
+
+    /// <summary>
+    /// 通过文件路径字符串打开文档
+    /// </summary>
+    /// <param name="filePath">文件路径字符串</param>
+    public async Task OpenDocumentByPath(string filePath)
+    {
+        // 获取主窗口
+        var mainWindow = (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)
+            ?.MainWindow;
+        if (mainWindow == null) return;
+        // 检查文件是否存在
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"文件不存在: {filePath}");
+            return;
+        }
+        var file = await mainWindow.StorageProvider.TryGetFileFromPathAsync(filePath);
+        if (file == null) return;
+        IReadOnlyList<IStorageFile> fileList = new List<IStorageFile> { file };
+        await OpenAllFiles(fileList);
+    }
+    private async Task OpenAllFiles(IReadOnlyList<IStorageFile> files)
+    {
         if (files.Count > 0)
         {
             foreach (var storageFile in files)
@@ -126,7 +175,6 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
                 }
             }
         }
-
         return false;
     }
 

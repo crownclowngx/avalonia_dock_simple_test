@@ -9,6 +9,7 @@
         <entry key="MyAvaloniaManagement/Views/MainView.axaml" value="MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
         <entry key="MyAvaloniaManagement/Views/MainWindow.axaml" value="MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
         <entry key="MyAvaloniaManagement/Views/MenuView.axaml" value="MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
+        <entry key="MyAvaloniaManagement/Views/Tools/FileSystemTreeView.axaml" value="MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
         <entry key="MyAvaloniaManagement/Views/Tools/PlugGroupMenuView.axaml" value="MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
       </map>
     </option>

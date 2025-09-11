@@ -149,6 +149,13 @@ public class ManagementFactory : Factory
             Title = "插件工具",
             CanClose = false,
         };
+        
+        var fileSystemTreeViewModel = new FileSystemTreeViewModel()
+        {
+            Id = "fileSystemTree",
+            Title = "文件系统",
+            CanClose = false,
+        };
 
         var tools = new ProportionalDock
         {
@@ -161,7 +168,8 @@ public class ManagementFactory : Factory
                     ActiveDockable = plugGroupMenuViewModel,
                     VisibleDockables = CreateList<IDockable>
                     (
-                        plugGroupMenuViewModel
+                        plugGroupMenuViewModel,
+                        fileSystemTreeViewModel
                     ),
                     Alignment = Alignment.Right,
                     GripMode = GripMode.Visible
@@ -204,6 +212,7 @@ public class ManagementFactory : Factory
         ContextLocator = new Dictionary<string, Func<object?>>
         {
             ["plugGroupMenuViewModel"] = ()  => layout,
+            ["fileSystemTree"] = () => layout,
         };
 
         DockableLocator = new Dictionary<string, Func<IDockable?>>

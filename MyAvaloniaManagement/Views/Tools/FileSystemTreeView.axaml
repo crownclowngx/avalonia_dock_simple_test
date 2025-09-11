@@ -1,0 +1,39 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MyAvaloniaManagement.ViewModels.Tools"
+             xmlns:models="using:MyAvaloniaManagement.Models.FileSystem"
+             xmlns:myAvaloniaManagement="clr-namespace:MyAvaloniaManagement"
+             xmlns:tgrid="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.TreeDataGrid"
+             xmlns:convert="using:MyAvaloniaManagement.Business.Converter"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MyAvaloniaManagement.Views.Tools.FileSystemTreeView"
+             x:DataType="vm:FileSystemTreeViewModel"
+             x:Name="FileSystemTreeControl">
+    <UserControl.DataContext>
+        <vm:FileSystemTreeViewModel />
+    </UserControl.DataContext>
+    <Grid>
+        <TreeView ItemsSource="{Binding RootNodes}" 
+                  SelectedItem="{Binding SelectedNode, Mode=TwoWay}" >
+            <TreeView.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="刷新所选节点" Command="{Binding RefreshNodeCommand}"/>
+                    <MenuItem Header="刷新全部" Command="{Binding RefreshAllCommand}"/>
+                    <MenuItem Header="打开文件" Command="{Binding OpenFileCommand}"/>
+                </ContextMenu>
+            </TreeView.ContextMenu>
+            <TreeView.ItemTemplate>
+                <TreeDataTemplate ItemsSource="{Binding Children}">
+                    <WrapPanel HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <TextBlock Width="20" Height="20" Margin="0,0,4,0"
+                                   Text="{Binding IsDirectory, Converter={x:Static convert:FileSystemIconConverter.Instance}}" 
+                                   TextAlignment="Center" />
+                        <TextBlock Text="{Binding Name}"/>
+                    </WrapPanel>
+                </TreeDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+    </Grid>
+</UserControl>
