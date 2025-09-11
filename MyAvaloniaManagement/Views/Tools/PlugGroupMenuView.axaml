@@ -1,0 +1,54 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MyAvaloniaManagement.ViewModels.Tools"
+             xmlns:models="using:MyAvaloniaManagement.Models.Tools"
+             xmlns:documentCreation="clr-namespace:MyAvaloniaManagementCommon.DocumentCreation;assembly=MyAvaloniaManagementCommon"
+
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MyAvaloniaManagement.Views.Tools.PlugGroupMenuView"
+             x:DataType="vm:PlugGroupMenuViewModel"
+             x:Name="PlugGroupMenuControl">
+    <UserControl.Styles>
+        <Style Selector="Button.TreeItemButton">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+    </UserControl.Styles>
+    
+    <!-- 使用ItemsControl嵌套实现树状结构 -->
+    <ScrollViewer Margin="4" VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding CategoryNodes}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="models:CategoryNode">
+                    <StackPanel>
+                        <!-- 第一层：组名称 -->
+                        <Button Content="{Binding CategoryName}"
+                                Command="{Binding DataContext.ToggleCategoryExpand, ElementName=PlugGroupMenuControl}"
+                                CommandParameter="{Binding}"
+                                Classes="TreeItemButton"
+                                FontSize="14" 
+                                FontWeight="Bold" 
+                                Margin="4"/>
+                        
+                        <!-- 第二层：具体的插件 -->
+                        <ItemsControl ItemsSource="{Binding Documents}" Margin="16,0,0,0" IsVisible="{Binding IsExpanded}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="documentCreation:DocumentMetadata">
+                                    <Button Content="{Binding DisplayName}"
+                                            Command="{Binding DataContext.CreateDocument, ElementName=PlugGroupMenuControl}"
+                                            CommandParameter="{Binding DocumentTypeId}"
+                                            Classes="TreeItemButton"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl>

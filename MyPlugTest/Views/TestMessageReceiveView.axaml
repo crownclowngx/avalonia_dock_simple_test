@@ -1,0 +1,61 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:MyPlugTest.ViewModels"
+             xmlns:models="clr-namespace:MyPlugTest.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MyPlugTest.Views.TestMessageReceiveView"
+             x:DataType="vm:TestMessageReceiveViewModel">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <!-- 标题 -->
+        <TextBlock Grid.Row="0"
+                   Text="消息接收列表"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Margin="10"/>
+        
+        <!-- 列表组件 - 使用双向绑定 -->
+        <ListBox Grid.Row="1"
+                 ItemsSource="{Binding Messages}"
+                 SelectedIndex="-1"
+                 Margin="10">
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="models:MessageItem">
+                    <Border BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="10"
+                            Margin="0,0,0,5"
+                            Background="{Binding IsRead, Converter={x:Static models:BoolToBackgroundConverter.Instance}}"
+                            x:DataType="models:MessageItem">
+                        
+                        <!-- 消息内容和状态 -->
+                        <StackPanel>
+                            <TextBlock Text="{Binding Content}"
+                                       FontSize="14"
+                                       Margin="0,0,0,5"/>
+                            <DockPanel LastChildFill="False">
+                                <TextBlock Text="ID: "
+                                           FontSize="12"
+                                           Foreground="#666666"
+                                           DockPanel.Dock="Left"/>
+                                <TextBlock Text="{Binding Id}"
+                                           FontSize="12"
+                                           Foreground="#666666"
+                                           DockPanel.Dock="Left"/>
+                                <CheckBox Content="已读"
+                                          IsChecked="{Binding IsRead, Mode=TwoWay}"
+                                          DockPanel.Dock="Right"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</UserControl>

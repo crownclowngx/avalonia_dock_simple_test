@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MyAvaloniaManagement.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="using:MyAvaloniaManagement.Views"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="MyAvaloniaManagement.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        x:Name="MainWindowView"
+        WindowState="Normal" WindowStartupLocation="CenterScreen"
+        Foreground="{DynamicResource DockThemeForegroundBrush}"
+        BorderThickness="1" BorderBrush="{DynamicResource DockThemeBorderLowBrush}"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="MyAvaloniaManagement"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+    <!-- 添加快捷键绑定 -->
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Control+S" Command="{Binding SaveDocumentCommand}" />
+    </Window.KeyBindings>
+    <Panel Margin="{Binding #MainWindowView.OffScreenMargin}">
+        <Panel Height="30" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Label Content="管理系统"
+                   Margin="4,0,4,0"
+                   FontSize="14"
+                   FontWeight="Normal"
+                   VerticalAlignment="Center"
+                   VerticalContentAlignment="Center" />
+        </Panel>
+        <Panel Margin="{Binding #MainWindowView.WindowDecorationMargin}">
+            <views:MainView />
+        </Panel>
+    </Panel>
+</Window>

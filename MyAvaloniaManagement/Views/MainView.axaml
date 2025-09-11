@@ -1,0 +1,17 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="using:MyAvaloniaManagement.Views"
+             xmlns:vm="using:MyAvaloniaManagement.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MyAvaloniaManagement.Views.MainView"
+             x:DataType="vm:MainWindowViewModel">
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+    <Grid RowDefinitions="Auto,*" Background="Transparent" DragDrop.AllowDrop="True">
+        <views:MenuView Grid.Row="0" />
+        <DockControl Layout="{Binding Layout}" Margin="4" Grid.Row="1" />
+    </Grid>
+</UserControl>

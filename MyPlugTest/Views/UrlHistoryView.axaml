@@ -1,0 +1,25 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:vm="using:MyPlugTest.ViewModels"
+             x:Class="MyPlugTest.Views.UrlHistoryView"
+             x:DataType="vm:UrlHistoryViewModel">
+    <StackPanel Spacing="5">
+        <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right">
+            <Button Command="{Binding ClearHistoryCommand}" Content="清空历史" Width="80"/>
+        </StackPanel>
+        <Label Content="请求历史：" FontWeight="Bold"/>
+        <ListBox ItemsSource="{Binding HistoryItems}" Height="250">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel>
+                        <TextBlock Text="{Binding Url}" TextWrapping="Wrap" FontWeight="Medium"/>
+                        <TextBlock Text="{Binding DisplayTime}" FontSize="12" Foreground="Gray"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </StackPanel>
+</UserControl>

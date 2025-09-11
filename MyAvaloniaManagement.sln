@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement", "MyAvaloniaManagement\MyAvaloniaManagement.csproj", "{E7A5FA6B-1DB7-4790-87C1-F93F50490782}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagementCommon", "MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj", "{4ED24BAB-F3DD-43CE-BADE-B08DFAB79832}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyPlugTest", "MyPlugTest\MyPlugTest.csproj", "{D7C9F48D-FAC5-4562-A5E7-6ED0085E5450}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E7A5FA6B-1DB7-4790-87C1-F93F50490782}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7A5FA6B-1DB7-4790-87C1-F93F50490782}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7A5FA6B-1DB7-4790-87C1-F93F50490782}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7A5FA6B-1DB7-4790-87C1-F93F50490782}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4ED24BAB-F3DD-43CE-BADE-B08DFAB79832}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4ED24BAB-F3DD-43CE-BADE-B08DFAB79832}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4ED24BAB-F3DD-43CE-BADE-B08DFAB79832}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4ED24BAB-F3DD-43CE-BADE-B08DFAB79832}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7C9F48D-FAC5-4562-A5E7-6ED0085E5450}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7C9F48D-FAC5-4562-A5E7-6ED0085E5450}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7C9F48D-FAC5-4562-A5E7-6ED0085E5450}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7C9F48D-FAC5-4562-A5E7-6ED0085E5450}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

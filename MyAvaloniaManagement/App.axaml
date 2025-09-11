@@ -1,0 +1,26 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MyAvaloniaManagement.App"
+             xmlns:local="using:MyAvaloniaManagement"
+             RequestedThemeVariant="Default">
+             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+             <Application.DataTemplates>
+                 <local:ViewLocator />
+             </Application.DataTemplates>
+             <Application.Resources>
+                 <ControlRecycling x:Key="ControlRecyclingKey" />
+             </Application.Resources>
+             <Application.Styles>
+
+                 <FluentTheme />
+
+                 <!--<StyleInclude Source="avares://Dock.Avalonia/Themes/DockFluentTheme.axaml" />-->
+                 <DockFluentTheme />
+
+                 <Style Selector="DockControl">
+                     <Setter Property="(ControlRecyclingDataTemplate.ControlRecycling)" Value="{StaticResource ControlRecyclingKey}" />
+                 </Style>
+
+             </Application.Styles>
+</Application>
