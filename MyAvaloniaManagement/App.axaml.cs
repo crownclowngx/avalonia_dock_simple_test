@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core;
@@ -15,7 +16,6 @@ public partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
     }
-
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -28,7 +28,6 @@ public partial class App : Application
                 DataContext = new MainWindowViewModel(),
             };
         }
-
         base.OnFrameworkInitializationCompleted();
     }
 
@@ -44,4 +43,5 @@ public partial class App : Application
             BindingPlugins.DataValidators.Remove(plugin);
         }
     }
+    
 }

@@ -17,7 +17,7 @@
             <TextBox Text="{Binding Url}" Watermark="请输入网址，例如 https://example.com" Width="400"/>
             <Button Command="{Binding SendRequestCommand}" Content="发送请求" Width="100"/>
             <Label Content="请求结果："/>
-            <TextBox Text="{Binding ResponseContent}" IsReadOnly="True" Height="300" TextWrapping="Wrap" AcceptsReturn="True"/>
+            <TextBox Text="{Binding ResponseContent}" Height="300" TextWrapping="Wrap" AcceptsReturn="True"/>
         </StackPanel>
         <StackPanel Grid.Column="1" Spacing="10" Margin="10,0,0,0">
             <!-- 集成URL历史记录组件 -->

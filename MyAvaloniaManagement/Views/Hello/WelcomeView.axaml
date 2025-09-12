@@ -6,8 +6,7 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MyAvaloniaManagement.Views.Hello.WelcomeView"
              x:DataType="vm:WelcomeViewModel">
-    <StackPanel>
-        <Label> 欢迎</Label>
-        <Label Content="{Binding Text}"></Label>
-    </StackPanel>
+    <Grid RowDefinitions="*,Auto">
+        <Label Grid.Row="0"> 欢迎</Label>
+    </Grid>
 </UserControl>
