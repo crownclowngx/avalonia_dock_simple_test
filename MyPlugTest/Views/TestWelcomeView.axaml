@@ -7,6 +7,9 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MyPlugTest.Views.TestWelcomeView"
              x:DataType="vm:TestWelcomeViewModel">
+    <Design.DataContext>
+        <vm:TestWelcomeViewModel />
+    </Design.DataContext>
     <Grid ColumnDefinitions="*,*" Margin="10">
         <StackPanel Grid.Column="0" Spacing="10">
             <Label> 欢迎Test插件</Label>
