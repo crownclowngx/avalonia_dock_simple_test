@@ -13,6 +13,7 @@ using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Message;
+using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using Newtonsoft.Json;
 
@@ -48,6 +49,7 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         }
         // 注册消息接收器，用于接收打开文件的请求
         RegisterMessageHandlers();
+        _factory?.SyncToolsVisibility();
     }
     
     /// <summary>
@@ -63,6 +65,15 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
                 {
                     // 当接收到打开文件的消息时，调用OpenDocumentByPath方法
                     recipient.OpenDocumentByPath(message.FilePath).ConfigureAwait(false);
+                }
+            );
+            // 注册布局更新消息处理
+            AppServices.Instance.MessengerServiceDefault.Register<MainWindowViewModel, UpdateLayoutMessage>(
+                this, 
+                (recipient, _) => 
+                {
+                    // 通知UI更新布局
+                    recipient.OnPropertyChanged(nameof(Layout));
                 }
             );
         }

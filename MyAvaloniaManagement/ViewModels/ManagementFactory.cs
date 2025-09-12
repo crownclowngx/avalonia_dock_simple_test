@@ -44,6 +44,13 @@ public class ManagementFactory : Factory
         RegisterAllStrategiesAutomatically();
         RegisterAllToolStrategiesAutomatically();
     }
+    
+    public void SyncToolsVisibility()
+    {
+        var toolManagementViewModel = _createdTools["toolManagement"] as ToolManagementViewModel;
+        toolManagementViewModel?.SyncToolsVisibility();
+    }
+    
     /// <summary>
     /// 自动注册所有程序集中实现了 IToolCreationStrategy 接口的非抽象类
     /// 包括主程序集和特定子目录中的程序集
@@ -321,7 +328,7 @@ public class ManagementFactory : Factory
     /// </summary>
     private void CreateAllTools()
     {
-        foreach (var strategy in _toolStrategies.Values)
+        foreach (var strategy in _toolStrategies.Values.Where(k=>k.GetMetadata().ToolTypeId!="toolManagement"))
         {
             var tool = strategy.CreateTool();
             _createdTools[tool.Id] = tool;
@@ -331,7 +338,10 @@ public class ManagementFactory : Factory
                 _plugGroupMenuTool = tool;
             }
         }
-        
 
+        var manatementTool = _toolStrategies.Values.Where(k => k.GetMetadata().ToolTypeId == "toolManagement").First().CreateTool();
+        _createdTools[manatementTool.Id] = manatementTool;
     }
+
+
 }

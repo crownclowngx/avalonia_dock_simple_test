@@ -18,7 +18,7 @@ public class FileSystemTreeStrategy : IToolCreationStrategy
         return new FileSystemTreeViewModel
         {
             Id = "fileSystemTree",
-            Title = "文件系统",
+            Title = "文件",
             CanClose = false
         };
     }

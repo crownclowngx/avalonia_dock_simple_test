@@ -1,0 +1,38 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:MyAvaloniaManagement.ViewModels.Tools"
+             xmlns:tools="clr-namespace:MyAvaloniaManagement.Models.Tools"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MyAvaloniaManagement.Views.Tools.ToolManagementView"
+             x:DataType="vm:ToolManagementViewModel">
+    <UserControl.Styles>
+        <Style Selector="CheckBox:disabled">
+            <Setter Property="Opacity" Value="0.5"/>
+        </Style>
+        <Style Selector="TextBlock:disabled">
+            <Setter Property="Opacity" Value="0.5"/>
+        </Style>
+    </UserControl.Styles>
+    <Grid>
+        <ListBox ItemsSource="{Binding ToolItems}"
+                 HorizontalAlignment="Stretch"
+                 VerticalAlignment="Stretch">
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="tools:ToolManagementItem">
+                    <StackPanel Orientation="Horizontal" Margin="4">
+                        <CheckBox IsChecked="{Binding IsVisible, Mode=TwoWay}"
+                                  IsEnabled="{Binding CanClose}"
+                                  Command="{Binding $parent[ListBox].DataContext.ToggleToolVisibilityCommand}"
+                                  CommandParameter="{Binding}"
+                                  Margin="0,0,8,0"/>
+                        <TextBlock Text="{Binding DisplayName}"
+                                   IsEnabled="{Binding CanClose}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</UserControl>

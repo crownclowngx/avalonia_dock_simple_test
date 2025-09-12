@@ -12,7 +12,8 @@ public class MyCustomToolStrategy : IToolCreationStrategy
         {
             Id = "MyCustomTool",
             Title = "我的自定义工具",
-            CanClose = true
+            CanClose = true,
+            
         };
     }
     

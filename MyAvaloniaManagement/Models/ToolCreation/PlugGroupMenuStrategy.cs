@@ -18,8 +18,8 @@ public class PlugGroupMenuStrategy : IToolCreationStrategy
         return new PlugGroupMenuViewModel
         {
             Id = "plugGroupMenu",
-            Title = "插件工具",
-            CanClose = false
+            Title = "插件",
+            CanClose = true,
         };
     }
 
