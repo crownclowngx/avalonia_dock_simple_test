@@ -1,4 +1,5 @@
 ﻿using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.ToolCreation;
 
@@ -26,7 +27,7 @@ public class ToolManagementStrategy : IToolCreationStrategy
     {
         return new ToolMetadata
         {
-            ToolTypeId = "toolManagement",
+            ToolTypeId = DockNameConstant.ToolManagement,
             DisplayName = "工具管理",
             Description = "管理所有工具的显示和隐藏",
             IconPath = "",

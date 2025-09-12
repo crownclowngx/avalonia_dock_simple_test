@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.Tools;
@@ -25,7 +26,7 @@ public partial class ToolManagementViewModel : Tool
 
     public ToolManagementViewModel()
     {
-        Id = "toolManagement";
+        Id = DockNameConstant.ToolManagement;
         Title = "工具管理";
         _currentToolId = Id;
         CanClose = false;

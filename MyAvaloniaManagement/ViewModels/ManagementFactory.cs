@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -10,7 +9,6 @@ using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagement.Models.DocumentCreation;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -47,7 +45,7 @@ public class ManagementFactory : Factory
     
     public void SyncToolsVisibility()
     {
-        var toolManagementViewModel = _createdTools["toolManagement"] as ToolManagementViewModel;
+        var toolManagementViewModel = _createdTools[DockNameConstant.ToolManagement] as ToolManagementViewModel;
         toolManagementViewModel?.SyncToolsVisibility();
     }
     
@@ -328,7 +326,7 @@ public class ManagementFactory : Factory
     /// </summary>
     private void CreateAllTools()
     {
-        foreach (var strategy in _toolStrategies.Values.Where(k=>k.GetMetadata().ToolTypeId!="toolManagement"))
+        foreach (var strategy in _toolStrategies.Values.Where(k=>k.GetMetadata().ToolTypeId!=DockNameConstant.ToolManagement))
         {
             var tool = strategy.CreateTool();
             _createdTools[tool.Id] = tool;
@@ -338,9 +336,8 @@ public class ManagementFactory : Factory
                 _plugGroupMenuTool = tool;
             }
         }
-
-        var manatementTool = _toolStrategies.Values.Where(k => k.GetMetadata().ToolTypeId == "toolManagement").First().CreateTool();
-        _createdTools[manatementTool.Id] = manatementTool;
+        var managementTool = _toolStrategies.Values.First(k => k.GetMetadata().ToolTypeId == DockNameConstant.ToolManagement).CreateTool();
+        _createdTools[managementTool.Id] = managementTool;
     }
 
 
