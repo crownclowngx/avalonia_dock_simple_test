@@ -34,7 +34,7 @@ public partial class FileSystemTreeViewModel : Tool
     {
         Id = "fileSystemTree";
         Title = "文件系统";
-        CanClose = false;
+        CanClose = true;
         InitializeTree();
     }
 
