@@ -14,12 +14,14 @@ using MyAvaloniaManagement.Models.DocumentCreation;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.ViewModels;
 
 public class ManagementFactory : Factory
 {
     private readonly Dictionary<string, IDocumentCreationStrategy> _strategies;
+    private readonly Dictionary<string, IToolCreationStrategy> _toolStrategies;
     private IRootDock? _rootDock;
     private DocumentDock? _documentDock;
     private ITool?  _plugGroupMenuTool;
@@ -27,13 +29,79 @@ public class ManagementFactory : Factory
     // 存储文档类型元数据
     private readonly Dictionary<string, DocumentMetadata> _documentMetadata;
     
+    // 存储Tool类型元数据
+    private readonly Dictionary<string, ToolMetadata> _toolMetadata;
+    
+    // 存储已创建的Tool实例
+    private readonly Dictionary<string, Tool> _createdTools;
     public ManagementFactory()
     {
         _strategies = new Dictionary<string, IDocumentCreationStrategy>();
+        _toolStrategies = new Dictionary<string, IToolCreationStrategy>();
         _documentMetadata = new Dictionary<string, DocumentMetadata>();
+        _toolMetadata = new Dictionary<string, ToolMetadata>();
+        _createdTools = new Dictionary<string, Tool>();
         RegisterAllStrategiesAutomatically();
+        RegisterAllToolStrategiesAutomatically();
     }
-
+    /// <summary>
+    /// 自动注册所有程序集中实现了 IToolCreationStrategy 接口的非抽象类
+    /// 包括主程序集和特定子目录中的程序集
+    /// </summary>
+    private void RegisterAllToolStrategiesAutomatically()
+    {
+        // 获取当前程序集
+        var currentAssembly = Assembly.GetExecutingAssembly();
+        var assemblies = new List<Assembly> { currentAssembly };
+        
+        Console.WriteLine("开始加载和注册Tool创建策略...");
+            
+        // 从特定子目录加载其他程序集
+        var pluginAssemblies = AssemblyLoaderHelper.LoadPluginsFromDirectories(AssemblyLoadConstant.PLUGINS_SUBDIRECTORY);
+        assemblies.AddRange(pluginAssemblies);
+        
+        // 扫描所有程序集中的Tool策略类型
+        foreach (var assembly in assemblies)
+        {
+            try
+            {
+                var strategyTypes = assembly.GetTypes()
+                    .Where(t => typeof(IToolCreationStrategy).IsAssignableFrom(t) && 
+                                !t.IsAbstract && !t.IsInterface && 
+                                t.GetConstructor(Type.EmptyTypes) != null);
+                
+                // 为每个策略类型创建实例并注册
+                foreach (var strategyType in strategyTypes)
+                {
+                    var strategy = (IToolCreationStrategy)Activator.CreateInstance(strategyType);
+                    RegisterToolStrategy(strategy);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"扫描程序集 {assembly.FullName} 中的Tool策略时出错: {ex.Message}");
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 注册新的Tool策略
+    /// </summary>
+    /// <param name="strategy">Tool策略实例</param>
+    public void RegisterToolStrategy(IToolCreationStrategy strategy)
+    {
+        var metadata = strategy.GetMetadata();
+        if (!_toolStrategies.ContainsKey(metadata.ToolTypeId))
+        {
+            _toolStrategies.Add(metadata.ToolTypeId, strategy);
+            // 同时注册元数据
+            if (!_toolMetadata.ContainsKey(metadata.ToolTypeId))
+            {
+                _toolMetadata.Add(metadata.ToolTypeId, metadata);
+            }
+        }
+    }
+    
     /// <summary>
     /// 自动注册所有程序集中实现了 IDocumentCreationStrategy 接口的非抽象类
     /// 包括主程序集和特定子目录中的程序集
@@ -143,19 +211,19 @@ public class ManagementFactory : Factory
             )
           
         };
-        var plugGroupMenuViewModel = new PlugGroupMenuViewModel()
-        {
-            Id = "plugGroupMenuViewModel",
-            Title = "插件工具",
-            CanClose = false,
-        };
+        // 创建所有注册的Tool
+        CreateAllTools();
         
-        var fileSystemTreeViewModel = new FileSystemTreeViewModel()
-        {
-            Id = "fileSystemTree",
-            Title = "文件系统",
-            CanClose = false,
-        };
+        // 根据对齐方式对Tool进行分组
+        var leftTools = _createdTools.Values
+            .Where(t => _toolMetadata.TryGetValue(t.Id, out var metadata) && 
+                        metadata.Alignment.Equals("Left", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        
+        var rightTools = _createdTools.Values
+            .Where(t => _toolMetadata.TryGetValue(t.Id, out var metadata) && 
+                        metadata.Alignment.Equals("Right", StringComparison.OrdinalIgnoreCase))
+            .ToList();
 
         var toolsRight = new ProportionalDock
         {
@@ -165,10 +233,10 @@ public class ManagementFactory : Factory
             (
                 new ToolDock
                 {
-                    ActiveDockable = plugGroupMenuViewModel,
+                    ActiveDockable = rightTools.Find(k=>k.Id == "plugGroupMenuViewModel"),
                     VisibleDockables = CreateList<IDockable>
                     (
-                        plugGroupMenuViewModel
+                        rightTools.ToArray()
                     ),
                     Alignment = Alignment.Right,
                     GripMode = GripMode.Visible
@@ -184,10 +252,10 @@ public class ManagementFactory : Factory
             (
                 new ToolDock
                 {
-                    ActiveDockable = fileSystemTreeViewModel,
+                    ActiveDockable = leftTools.Find(k=>k.Id=="fileSystemTree"),
                     VisibleDockables = CreateList<IDockable>
                     (
-                        fileSystemTreeViewModel
+                        leftTools.ToArray()
                     ),
                     Alignment = Alignment.Left,
                     GripMode = GripMode.Visible
@@ -223,7 +291,6 @@ public class ManagementFactory : Factory
 
         _documentDock = documentDock;
         _rootDock = rootDock;
-        _plugGroupMenuTool = plugGroupMenuViewModel;
         return rootDock;
     }
     public override void InitLayout(IDockable layout)
@@ -247,5 +314,24 @@ public class ManagementFactory : Factory
         };
 
         base.InitLayout(layout);
+    }
+    
+    /// <summary>
+    /// 创建所有注册的Tool实例
+    /// </summary>
+    private void CreateAllTools()
+    {
+        foreach (var strategy in _toolStrategies.Values)
+        {
+            var tool = strategy.CreateTool();
+            _createdTools[tool.Id] = tool;
+            // 设置特定工具的引用
+            if (tool.Id == "plugGroupMenuViewModel")
+            {
+                _plugGroupMenuTool = tool;
+            }
+        }
+        
+
     }
 }
