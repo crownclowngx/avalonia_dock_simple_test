@@ -9,6 +9,7 @@ using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -43,11 +44,26 @@ public class ManagementFactory : Factory
         RegisterAllToolStrategiesAutomatically();
     }
     
+    /// <summary>
+    /// 获取工具管理所需的所有数据
+    /// </summary>
+    /// <returns>包含工具元数据、已创建工具和根停靠点的结构</returns>
+    public ToolManagementData GetToolManagementData()
+    {
+        return new ToolManagementData
+        {
+            ToolMetadata = _toolMetadata,  // 注意这里传递的是字典的副本或只读版本
+            CreatedTools = _createdTools,  // 以防止外部代码意外修改内部状态
+            RootDock = _rootDock
+        };
+    }
+    
     public void SyncToolsVisibility()
     {
         var toolManagementViewModel = _createdTools[DockNameConstant.ToolManagement] as ToolManagementViewModel;
         toolManagementViewModel?.SyncToolsVisibility();
     }
+    
     
     /// <summary>
     /// 自动注册所有程序集中实现了 IToolCreationStrategy 接口的非抽象类

@@ -37,62 +37,44 @@ public partial class ToolManagementViewModel : Tool
     /// </summary>
     private void LoadTools()
     {
-        var factory = AppServices.Instance.ManagementFactory;
-        if (factory != null)
+        var toolManagementData = AppServices.Instance.ManagementFactory?.GetToolManagementData();
+        if (toolManagementData == null)
         {
-            // 通过反射获取ManagementFactory中的_toolMetadata字段
-            var toolMetadataField = typeof(ManagementFactory).GetField("_toolMetadata",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var createdToolsField = typeof(ManagementFactory).GetField("_createdTools",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var rootDockField = typeof(ManagementFactory).GetField("_rootDock",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (toolMetadataField == null || createdToolsField == null)
+            return;
+        }
+
+        // 清除现有项
+        ToolItems.Clear();
+        // 添加所有工具（排除自身）
+        foreach (var metadata in toolManagementData.ToolMetadata.Values.Where(m => m.ToolTypeId != _currentToolId))
+        {
+            if (!toolManagementData.CreatedTools.TryGetValue(metadata.ToolTypeId, out var tool))
             {
-                return;
+                continue;
             }
 
-            var toolMetadata = toolMetadataField.GetValue(factory) as Dictionary<string, ToolMetadata>;
-            var createdTools = createdToolsField.GetValue(factory) as Dictionary<string, Tool>;
-            var rootDock = rootDockField?.GetValue(factory) as IRootDock;
-            if (toolMetadata == null || createdTools == null)
+            // 检查工具是否可见（在当前布局中）
+            bool isVisible = false;
+
+            // 如果rootDock存在，则使用IsToolVisible方法检查
+            if (toolManagementData.RootDock != null)
             {
-                return;
+                isVisible = IsToolVisible(tool);
+            }
+            // 如果rootDock不存在或者IsToolVisible返回false，但工具已创建，
+            // 则默认将其设置为可见，因为ManagementFactory已经将其添加到布局中
+            else if (toolManagementData.CreatedTools.ContainsKey(metadata.ToolTypeId))
+            {
+                isVisible = true;
             }
 
-            // 清除现有项
-            ToolItems.Clear();
-            // 添加所有工具（排除自身）
-            foreach (var metadata in toolMetadata.Values.Where(m => m.ToolTypeId != _currentToolId))
+            ToolItems.Add(new ToolManagementItem
             {
-                if (!createdTools.TryGetValue(metadata.ToolTypeId, out var tool))
-                {
-                    continue;
-                }
-
-                // 检查工具是否可见（在当前布局中）
-                bool isVisible = false;
-
-                // 如果rootDock存在，则使用IsToolVisible方法检查
-                if (rootDock != null)
-                {
-                    isVisible = IsToolVisible(tool);
-                }
-                // 如果rootDock不存在或者IsToolVisible返回false，但工具已创建，
-                // 则默认将其设置为可见，因为ManagementFactory已经将其添加到布局中
-                else if (createdTools.ContainsKey(metadata.ToolTypeId))
-                {
-                    isVisible = true;
-                }
-
-                ToolItems.Add(new ToolManagementItem
-                {
-                    ToolId = metadata.ToolTypeId,
-                    DisplayName = metadata.DisplayName,
-                    IsVisible = isVisible,
-                    CanClose = tool.CanClose
-                });
-            }
+                ToolId = metadata.ToolTypeId,
+                DisplayName = metadata.DisplayName,
+                IsVisible = isVisible,
+                CanClose = tool.CanClose
+            });
         }
     }
 
@@ -156,44 +138,24 @@ public partial class ToolManagementViewModel : Tool
         if (item == null || !item.CanClose)
             return;
 
-        var factory = AppServices.Instance.ManagementFactory;
-        if (factory == null)
+        var toolManagementData = AppServices.Instance.ManagementFactory?.GetToolManagementData();
+        if (toolManagementData == null)
         {
             return;
         }
 
-        // 通过反射获取ManagementFactory中的_createdTools和_rootDock字段
-        var createdToolsField = typeof(ManagementFactory).GetField("_createdTools",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var rootDockField = typeof(ManagementFactory).GetField("_rootDock",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var toolMetadataField = typeof(ManagementFactory).GetField("_toolMetadata",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (createdToolsField == null || rootDockField == null || toolMetadataField == null)
-        {
-            return;
-        }
-
-        var createdTools = createdToolsField.GetValue(factory) as Dictionary<string, Tool>;
-        var rootDock = rootDockField.GetValue(factory) as IRootDock;
-
-        if (createdTools == null || rootDock == null)
-        {
-            return;
-        }
-
-        if (!createdTools.TryGetValue(item.ToolId, out var tool))
+        if (!toolManagementData.CreatedTools.TryGetValue(item.ToolId, out var tool))
         {
             return;
         }
 
         // 查找包含此工具的ToolDock
-        var toolDock = FindToolDockContainingTool(rootDock, tool);
+        var toolDock = FindToolDockContainingTool(toolManagementData.RootDock, tool);
 
         // 如果没有找到包含该工具的ToolDock，尝试查找任何可用的ToolDock
         if (toolDock == null)
         {
-            toolDock = FindAnyToolDock(rootDock);
+            toolDock = FindAnyToolDock(toolManagementData.RootDock);
         }
 
         if (toolDock == null)
@@ -318,24 +280,26 @@ public partial class ToolManagementViewModel : Tool
         foreach (var item in ToolItems)
         {
             var factory = AppServices.Instance.ManagementFactory;
-            if (factory != null)
+            if (factory == null)
             {
-                var createdToolsField = typeof(ManagementFactory).GetField("_createdTools",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                if (createdToolsField != null)
-                {
-                    var createdTools = createdToolsField.GetValue(factory) as Dictionary<string, Tool>;
-                    if (createdTools != null && createdTools.TryGetValue(item.ToolId, out var tool))
-                    {
-                        // 更新项目的可见状态
-                        bool actualVisibility = IsToolVisible(tool);
-                        if (item.IsVisible != actualVisibility)
-                        {
-                            item.IsVisible = actualVisibility;
-                        }
-                    }
-                }
+                continue;
+            }
+            var createdToolsField = typeof(ManagementFactory).GetField("_createdTools",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if(createdToolsField == null)
+            {
+                continue;
+            }
+            var createdTools = createdToolsField.GetValue(factory) as Dictionary<string, Tool>;
+            if (createdTools == null || !createdTools.TryGetValue(item.ToolId, out var tool))
+            {
+                continue;
+            }
+            // 更新项目的可见状态
+            bool actualVisibility = IsToolVisible(tool);
+            if (item.IsVisible != actualVisibility)
+            {
+                item.IsVisible = actualVisibility;
             }
         }
     }
