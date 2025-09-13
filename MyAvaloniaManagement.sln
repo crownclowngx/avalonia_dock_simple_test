@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagementCommon"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyPlugTest", "MyPlugTest\MyPlugTest.csproj", "{D7C9F48D-FAC5-4562-A5E7-6ED0085E5450}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj", "{FAAE3A0A-71D9-43CA-8C86-8A244AB98BD1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{D7C9F48D-FAC5-4562-A5E7-6ED0085E5450}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7C9F48D-FAC5-4562-A5E7-6ED0085E5450}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7C9F48D-FAC5-4562-A5E7-6ED0085E5450}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FAAE3A0A-71D9-43CA-8C86-8A244AB98BD1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAAE3A0A-71D9-43CA-8C86-8A244AB98BD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAAE3A0A-71D9-43CA-8C86-8A244AB98BD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAAE3A0A-71D9-43CA-8C86-8A244AB98BD1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
