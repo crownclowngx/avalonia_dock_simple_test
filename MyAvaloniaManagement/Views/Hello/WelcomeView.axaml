@@ -6,7 +6,13 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MyAvaloniaManagement.Views.Hello.WelcomeView"
              x:DataType="vm:WelcomeViewModel">
-    <Grid RowDefinitions="*,Auto">
-        <Label Grid.Row="0"> 欢迎</Label>
-    </Grid>
+    <StackPanel>
+        <Label> 欢迎,这是一个通用的基于dock的界面系统，具体业务请已插件的形式开发并导入</Label>
+        <Label> 导入擦肩在 程序跟目录下的 Controls 文件夹下，在新增一个文件夹用于一个插件的包</Label>
+        <Label> 将插件中所有dll 包括以如的第三方dll 一并放进来 </Label>
+        <Label> 注意：不要放入MyAvaloniaManagementCommon.dll 这个文件</Label>
+        <Label> 这是一个通用的dll如果文件夹中包含了他那么就不能被插件发现器发现</Label>
+        <Label> 重启程序后，插件即可生效</Label>
+        <Label> 版本：1.0.0</Label>
+    </StackPanel>
 </UserControl>
