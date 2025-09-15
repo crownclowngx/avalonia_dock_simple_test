@@ -1,8 +1,10 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
+using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DaTangAccountingHelpPlug.Business;
 using DaTangAccountingHelpPlug.Models;
 using Dock.Model.Mvvm.Controls;
 using OfficeOpenXml;
@@ -23,14 +25,22 @@ public partial class InvoiceInfoImportViewModel : Document
     // 处理状态信息
     [ObservableProperty] private string _processText = string.Empty;
 
+    // 计算状态标志，用于控制按钮启用/禁用
+    [ObservableProperty] private bool _isCalculating = false;
+
     // 日志条目集合，用于在ListBox中显示
     public ObservableCollection<string> LogEntries { get; } = new ObservableCollection<string>();
 
     private const int MAX_LOG_LINES = 10000;
 
+    // 业务层实例
+    private readonly InvoiceInfoImportBusiness _invoiceInfoImportBusiness;
+
     public InvoiceInfoImportViewModel()
     {
         Title = "发票信息导入和计算";
+        // 初始化业务层，传入日志方法
+        _invoiceInfoImportBusiness = new InvoiceInfoImportBusiness(AddLogLine);
     }
 
     private void InitializeFileSystemTree(ObservableCollection<FileSystemNode> rootNodes)
@@ -104,6 +114,7 @@ public partial class InvoiceInfoImportViewModel : Document
     [RelayCommand]
     public async Task StartCalculation()
     {
+        IsCalculating = true;
         // 清空日志
         if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
         {
@@ -114,36 +125,169 @@ public partial class InvoiceInfoImportViewModel : Document
             Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => LogEntries.Clear());
         }
 
-        AddLogLine("开始处理Excel文件...");
-
         try
         {
-            // 读取发票总表
-            if (!string.IsNullOrEmpty(InvoiceSummaryFilePath))
-            {
-                AddLogLine($"\n--- 读取发票总表: {Path.GetFileName(InvoiceSummaryFilePath)} ---");
-                await ReadAndIndexInvoiceSummary(InvoiceSummaryFilePath);
-            }
-
-            // 读取当月付款表
-            if (!string.IsNullOrEmpty(CurrentMonthPaymentFilePath))
-            {
-                AddLogLine($"\n--- 读取当月付款表: {Path.GetFileName(CurrentMonthPaymentFilePath)} ---");
-                //await ReadExcelFile(CurrentMonthPaymentFilePath);
-            }
-
-            // 读取之前付款总和表
-            if (!string.IsNullOrEmpty(PreviousPaymentSummaryFilePath))
-            {
-                AddLogLine($"\n--- 读取之前付款总和表: {Path.GetFileName(PreviousPaymentSummaryFilePath)} ---");
-                //await ReadExcelFile(PreviousPaymentSummaryFilePath);
-            }
-
-            AddLogLine("Excel文件读取完成！");
+            await ReadAllExcelData();
+            AddLogLine("Excel文件读取完成！准备开始生成数据...");
+            await _invoiceInfoImportBusiness.CreateAllNeedShowInvoiceNumber();
+            AddLogLine("识别完成，开始计算新表...");
+            await _invoiceInfoImportBusiness.CalculateNewInvoiceSummary();
+            AddLogLine("计算完成！开始导出表");
+            // 添加文件保存功能
+            await SaveInvoicePaymentSummaryToExcel();
         }
         catch (Exception ex)
         {
             AddLogLine($"处理Excel文件时出错: {ex.Message}");
+        }
+        finally
+        {
+            IsCalculating = false;
+        }
+    }
+
+    private async Task SaveInvoicePaymentSummaryToExcel()
+    {
+        try
+        {
+            // 获取主窗口
+            if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+                desktop.MainWindow is not null)
+            {
+                var mainWindow = desktop.MainWindow;
+
+                // 创建文件保存选项
+                var options = new FilePickerSaveOptions
+                {
+                    Title = "保存发票汇总表",
+                    DefaultExtension = "xlsx",
+                    FileTypeChoices = new[]
+                    {
+                        new FilePickerFileType("Excel文件 (.xlsx)") { Patterns = new[] { "*.xlsx" } },
+                    },
+                    SuggestedFileName = "发票汇总表"
+                };
+
+                // 显示保存文件对话框
+                var file = await mainWindow.StorageProvider.SaveFilePickerAsync(options);
+
+                if (file != null)
+                {
+                    // 获取本地文件路径
+                    var filePath = file.Path.LocalPath;
+
+                    AddLogLine($"开始保存数据到文件: {Path.GetFileName(filePath)}");
+
+                    // 在后台线程中创建和保存Excel文件
+                    await Task.Run(() =>
+                    {
+                        // 设置EPPlus非商业使用许可
+                        ExcelPackage.License.SetNonCommercialPersonal("DaTangAccountingHelpPlug");
+
+                        using (var package = new ExcelPackage())
+                        {
+                            // 创建工作表
+                            var worksheet = package.Workbook.Worksheets.Add("发票汇总表");
+
+                            // 设置表头
+                            worksheet.Cells[1, 1].Value = "发票类型";
+                            worksheet.Cells[1, 2].Value = "供应商名称";
+                            worksheet.Cells[1, 3].Value = "供应商地点";
+                            worksheet.Cells[1, 4].Value = "发票日期";
+                            worksheet.Cells[1, 5].Value = "发票号码";
+                            worksheet.Cells[1, 6].Value = "部门";
+                            worksheet.Cells[1, 7].Value = "负债科目";
+                            worksheet.Cells[1, 8].Value = "发票金额";
+                            worksheet.Cells[1, 9].Value = "计算付款金额";
+                            worksheet.Cells[1, 10].Value = "计算余额";
+                            worksheet.Cells[1, 11].Value = "到期日期";
+                            worksheet.Cells[1, 12].Value = "备注";
+                            worksheet.Cells[1, 13].Value = "类别";
+                            worksheet.Cells[1, 14].Value = "付款金额";
+                            worksheet.Cells[1, 15].Value = "付款日期";
+                            worksheet.Cells[1, 16].Value = "结算金额";
+                            worksheet.Cells[1, 17].Value = "结算日期";
+                            worksheet.Cells[1, 18].Value = "发票信息付款金额";
+                            worksheet.Cells[1, 19].Value = "发票信息余额";
+
+                            // 设置表头样式
+                            using (var range = worksheet.Cells["A1:S1"])
+                            {
+                                range.Style.Font.Bold = true;
+                                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                            }
+
+                            // 填充数据
+                            int row = 2;
+                            foreach (var item in _invoiceInfoImportBusiness.InvoicePaymentSummaryItems)
+                            {
+                                worksheet.Cells[row, 1].Value = item.InvoiceType;
+                                worksheet.Cells[row, 2].Value = item.SupplierName;
+                                worksheet.Cells[row, 3].Value = item.SupplierLocation;
+                                worksheet.Cells[row, 4].Value = item.InvoiceDate?.ToString("yyyy-MM-dd");
+                                worksheet.Cells[row, 5].Value = item.InvoiceNumber;
+                                worksheet.Cells[row, 6].Value = item.Department;
+                                worksheet.Cells[row, 7].Value = item.LiabilityAccount;
+                                worksheet.Cells[row, 8].Value = item.InvoiceAmount;
+                                worksheet.Cells[row, 9].Value = item.CalculatedPaymentAmount;
+                                worksheet.Cells[row, 10].Value = item.CalculatedBalance;
+                                worksheet.Cells[row, 11].Value = item.DueDate?.ToString("yyyy-MM-dd");
+                                worksheet.Cells[row, 12].Value = item.Remarks;
+                                worksheet.Cells[row, 13].Value = item.Category;
+                                worksheet.Cells[row, 14].Value = item.PaymentAmount;
+                                worksheet.Cells[row, 15].Value = item.PaymentDate?.ToString("yyyy-MM-dd");
+                                worksheet.Cells[row, 16].Value = item.SettlementAmount;
+                                worksheet.Cells[row, 17].Value = item.SettlementDate?.ToString("yyyy-MM-dd");
+                                worksheet.Cells[row, 18].Value = item.InvoiceInfoPaymentAmount;
+                                worksheet.Cells[row, 19].Value = item.InvoiceInfoBalance;
+
+                                row++;
+                            }
+
+                            // 自动调整列宽
+                            worksheet.Cells.AutoFitColumns();
+
+                            // 保存文件
+                            package.SaveAs(new FileInfo(filePath));
+                        }
+                    });
+
+                    AddLogLine($"数据保存成功！文件路径：{filePath}");
+                }
+                else
+                {
+                    AddLogLine("用户取消了保存操作");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            AddLogLine($"保存Excel文件时出错: {ex.Message}");
+        }
+    }
+
+    private async Task ReadAllExcelData()
+    {
+        // 读取发票总表
+        if (!string.IsNullOrEmpty(InvoiceSummaryFilePath))
+        {
+            AddLogLine($"--- 读取发票总表: {Path.GetFileName(InvoiceSummaryFilePath)} ---");
+            await _invoiceInfoImportBusiness.ReadAndIndexInvoiceSummary(InvoiceSummaryFilePath);
+        }
+
+        // 读取当月付款表
+        if (!string.IsNullOrEmpty(CurrentMonthPaymentFilePath))
+        {
+            AddLogLine($"--- 读取当月付款表: {Path.GetFileName(CurrentMonthPaymentFilePath)} ---");
+            await _invoiceInfoImportBusiness.ReadInvoicePaymentDetailCurrentMonthTable(CurrentMonthPaymentFilePath);
+        }
+
+        // 读取之前付款总和表
+        if (!string.IsNullOrEmpty(PreviousPaymentSummaryFilePath))
+        {
+            AddLogLine($"--- 读取之前付款总和表: {Path.GetFileName(PreviousPaymentSummaryFilePath)} ---");
+            await _invoiceInfoImportBusiness.ReadInvoicePaymentDetailPreviousMonthTable(PreviousPaymentSummaryFilePath);
         }
     }
 
@@ -173,240 +317,5 @@ public partial class InvoiceInfoImportViewModel : Document
                 LogEntries.RemoveAt(0);
             }
         }
-    }
-
-    Dictionary<String, InvoiceSummaryItem> invoiceSummaryItems = new Dictionary<String, InvoiceSummaryItem>();
-
-    InvoiceSummaryItem createInvoiceSummaryItem(int row, ExcelWorksheet worksheet)
-    {
-        // 创建新的发票摘要项
-        InvoiceSummaryItem item = new InvoiceSummaryItem();
-
-        // 读取数据并设置属性
-        // 注意：AB列合并为发票类型（假设A列是第1列，B列是第2列）
-        item.InvoiceType = worksheet.Cells[row, 1].Text.Trim();
-
-        // 供应商名称 (第3列)
-        item.SupplierName = worksheet.Cells[row, 3].Text.Trim();
-
-        // 供应商类型 (第4列)
-        item.SupplierType = worksheet.Cells[row, 4].Text.Trim();
-
-        // 是否外部单位 (第5列)
-        string isExternalUnitStr = worksheet.Cells[row, 5].Text.Trim().ToLower();
-        if (isExternalUnitStr == "是" || isExternalUnitStr == "yes" || isExternalUnitStr == "true")
-        {
-            item.IsExternalUnit = true;
-        }
-        else if (isExternalUnitStr == "否" || isExternalUnitStr == "no" || isExternalUnitStr == "false")
-        {
-            item.IsExternalUnit = false;
-        }
-
-        // 供应商地点 (第6列)
-        item.SupplierLocation = worksheet.Cells[row, 6].Text.Trim();
-
-        // 发票日期 (第7列)
-        string invoiceDateStr = worksheet.Cells[row, 7].Text.Trim();
-        if (!string.IsNullOrEmpty(invoiceDateStr))
-        {
-            if (DateTime.TryParse(invoiceDateStr, out DateTime invoiceDate))
-            {
-                item.InvoiceDate = invoiceDate;
-            }
-        }
-
-        // 发票编号 (第8列) - 作为字典的key
-        string invoiceNumber = worksheet.Cells[row, 8].Text.Trim();
-        item.InvoiceNumber = invoiceNumber;
-
-        // 发票摘要 (第9列)
-        item.InvoiceSummary = worksheet.Cells[row, 9].Text.Trim();
-
-        // 部门 (第10列)
-        item.Department = worksheet.Cells[row, 10].Text.Trim();
-
-        // 合同编号 (第11列)
-        item.ContractNumber = worksheet.Cells[row, 11].Text.Trim();
-
-        // 合同名称 (第12列)
-        item.ContractName = worksheet.Cells[row, 12].Text.Trim();
-
-        // 负债账户 (第13列)
-        item.LiabilityAccount = worksheet.Cells[row, 13].Text.Trim();
-
-        // 发票金额 (第14列)
-        string invoiceAmountStr = worksheet.Cells[row, 14].Text.Trim();
-        if (!string.IsNullOrEmpty(invoiceAmountStr))
-        {
-            // 移除千位分隔符
-            invoiceAmountStr = invoiceAmountStr.Replace(",", "");
-            if (decimal.TryParse(invoiceAmountStr, out decimal invoiceAmount))
-            {
-                item.InvoiceAmount = invoiceAmount;
-            }
-        }
-
-        // 付款金额 (第15列)
-        string paymentAmountStr = worksheet.Cells[row, 15].Text.Trim();
-        if (!string.IsNullOrEmpty(paymentAmountStr))
-        {
-            paymentAmountStr = paymentAmountStr.Replace(",", "");
-            if (decimal.TryParse(paymentAmountStr, out decimal paymentAmount))
-            {
-                item.PaymentAmount = paymentAmount;
-            }
-        }
-
-        // 核销预付款金额 (第16列)
-        string writeOffPrepaymentAmountStr = worksheet.Cells[row, 16].Text.Trim();
-        if (!string.IsNullOrEmpty(writeOffPrepaymentAmountStr))
-        {
-            writeOffPrepaymentAmountStr = writeOffPrepaymentAmountStr.Replace(",", "");
-            if (decimal.TryParse(writeOffPrepaymentAmountStr, out decimal writeOffPrepaymentAmount))
-            {
-                item.WriteOffPrepaymentAmount = writeOffPrepaymentAmount;
-            }
-        }
-
-        // 余额 (第17列)
-        string balanceStr = worksheet.Cells[row, 17].Text.Trim();
-        if (!string.IsNullOrEmpty(balanceStr))
-        {
-            balanceStr = balanceStr.Replace(",", "");
-            if (decimal.TryParse(balanceStr, out decimal balance))
-            {
-                item.Balance = balance;
-            }
-        }
-
-        // 凭证编号 (第18列)
-        item.VoucherNumber = worksheet.Cells[row, 18].Text.Trim();
-
-        // 到期日 (第19列)
-        string dueDateStr = worksheet.Cells[row, 19].Text.Trim();
-        if (!string.IsNullOrEmpty(dueDateStr))
-        {
-            if (DateTime.TryParse(dueDateStr, out DateTime dueDate))
-            {
-                item.DueDate = dueDate;
-            }
-        }
-
-        // 共享单据编号 (第20列)
-        item.SharedDocumentNumber = worksheet.Cells[row, 20].Text.Trim();
-        return item;
-    }
-
-    private async Task ReadAndIndexInvoiceSummary(string filePath)
-    {
-        try
-        {
-            // 设置EPPlus非商业使用许可
-            ExcelPackage.License.SetNonCommercialPersonal("DaTangAccountingHelpPlug");
-
-            using (var package = new ExcelPackage(new FileInfo(filePath)))
-            {
-                // 获取第一个工作表
-                ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-
-                // 添加工作表信息到日志
-                string sheetInfo = $"工作表名称: {worksheet.Name}";
-                AddLogLine(sheetInfo);
-
-                // 获取工作表的维度（包含数据的范围）
-                int startRow = 4; // 从第四行开始是真正的数据
-                int endRow = worksheet.Dimension.End.Row;
-                int startCol = worksheet.Dimension.Start.Column;
-                int endCol = worksheet.Dimension.End.Column;
-
-                // 添加数据范围信息到日志
-                string rangeInfo = $"数据范围: 行 {startRow}-{endRow}, 列 {startCol}-{endCol}";
-                AddLogLine(rangeInfo);
-
-                // 清空现有数据
-                invoiceSummaryItems.Clear();
-
-                AddLogLine($"开始读取发票数据，共 {endRow - startRow + 1} 行");
-                for (int row = startRow; row <= endRow; row++)
-                {
-                    InvoiceSummaryItem item = createInvoiceSummaryItem(row,worksheet);
-                    // 将发票项添加到字典中，以发票编号为key
-                    if (!string.IsNullOrEmpty(item.InvoiceNumber) && !invoiceSummaryItems.ContainsKey(item.InvoiceNumber))
-                    {
-                        invoiceSummaryItems.Add(item.InvoiceNumber, item);
-                    }
-                    else if (string.IsNullOrEmpty(item.InvoiceNumber))
-                    {
-                        AddLogLine($"警告：行 {row} 缺少发票编号，已跳过");
-                    }
-                    else if (invoiceSummaryItems.ContainsKey(item.InvoiceNumber))
-                    {
-                        AddLogLine($"警告：行 {row} 的发票编号 '{item.InvoiceNumber}' 已存在，已跳过重复项");
-                    }
-                }
-
-                // 处理完成后，记录成功读取的发票数量
-                AddLogLine($"发票数据读取完成，成功加载 {invoiceSummaryItems.Count} 条记录");
-            }
-        }
-        catch (Exception ex)
-        {
-            AddLogLine($"读取发票总表时出错: {ex.Message}");
-        }
-    }
-
-    private async Task ReadExcelFile(string filePath)
-    {
-        // 异步读取Excel文件
-        await Task.Run(() =>
-        {
-            // 设置EPPlus非商业使用许可
-            ExcelPackage.License.SetNonCommercialPersonal("DaTangAccountingHelpPlug");
-
-            using (var package = new ExcelPackage(new FileInfo(filePath)))
-            {
-                // 获取第一个工作表
-                ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-
-                // 添加工作表信息到日志
-                string sheetInfo = $"工作表名称: {worksheet.Name}";
-                AddLogLine(sheetInfo);
-
-                // 获取工作表的维度（包含数据的范围）
-                int startRow = worksheet.Dimension.Start.Row;
-                int endRow = worksheet.Dimension.End.Row;
-                int startCol = worksheet.Dimension.Start.Column;
-                int endCol = worksheet.Dimension.End.Column;
-
-                // 添加数据范围信息到日志
-                string rangeInfo = $"数据范围: 行 {startRow}-{endRow}, 列 {startCol}-{endCol}";
-                AddLogLine(rangeInfo);
-
-                // 读取每一行数据并添加到日志
-                for (int row = startRow; row <= endRow; row++)
-                {
-                    // 构建当前行的数据字符串
-                    System.Text.StringBuilder rowData = new System.Text.StringBuilder();
-                    rowData.Append($"行 {row}: ");
-
-                    // 读取当前行的每一列数据
-                    for (int col = startCol; col <= endCol; col++)
-                    {
-                        var cellValue = worksheet.Cells[row, col].Text;
-                        rowData.Append($"{cellValue}");
-
-                        // 如果不是最后一列，添加分隔符
-                        if (col < endCol)
-                        {
-                            rowData.Append(" | ");
-                        }
-                    }
-
-                    // 将当前行数据添加到日志
-                    AddLogLine(rowData.ToString());
-                }
-            }
-        });
     }
 }

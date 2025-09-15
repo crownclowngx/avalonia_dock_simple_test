@@ -60,8 +60,8 @@ public class ManagementFactory : Factory
     
     public void SyncToolsVisibility()
     {
-        var toolManagementViewModel = _createdTools[DockNameConstant.ToolManagement] as ToolManagementViewModel;
-        toolManagementViewModel?.SyncToolsVisibility();
+        // var toolManagementViewModel = _createdTools[DockNameConstant.ToolManagement] as ToolManagementViewModel;
+        // toolManagementViewModel?.SyncToolsVisibility();
     }
     
     
@@ -352,8 +352,8 @@ public class ManagementFactory : Factory
                 _plugGroupMenuTool = tool;
             }
         }
-        var managementTool = _toolStrategies.Values.First(k => k.GetMetadata().ToolTypeId == DockNameConstant.ToolManagement).CreateTool();
-        _createdTools[managementTool.Id] = managementTool;
+        // var managementTool = _toolStrategies.Values.First(k => k.GetMetadata().ToolTypeId == DockNameConstant.ToolManagement).CreateTool();
+        // _createdTools[managementTool.Id] = managementTool;
     }
 
 

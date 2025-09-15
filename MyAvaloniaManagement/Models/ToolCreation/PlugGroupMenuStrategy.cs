@@ -19,7 +19,7 @@ public class PlugGroupMenuStrategy : IToolCreationStrategy
         {
             Id = "plugGroupMenu",
             Title = "插件",
-            CanClose = true,
+            CanClose = false,
         };
     }
 
