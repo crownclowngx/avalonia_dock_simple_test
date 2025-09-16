@@ -9,74 +9,77 @@
         <vm:InvoiceInfoImportViewModel></vm:InvoiceInfoImportViewModel>
     </UserControl.DataContext>
     <Grid>
-        <StackPanel Spacing="20">
-            <!-- 第一个模块：文件选择 -->
-            <StackPanel Spacing="10" Margin="0,20,0,0">
-                <TextBlock Text="文件导入" FontSize="16" FontWeight="Bold" />
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
 
-                <!-- 导入发票总表 -->
-                <StackPanel Spacing="5" Margin="10,0,0,0">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Text="导入发票总表" VerticalAlignment="Center" Width="120" />
-                        <TextBlock Text="{Binding InvoiceSummaryFilePath}" VerticalAlignment="Center" Margin="0,0,10,0" />
-                        <Button Command="{Binding SelectInvoiceSummaryFileCommand}" Content="选择" Width="60" />
+            <StackPanel Spacing="20">
+                <!-- 第一个模块：文件选择 -->
+                <StackPanel Spacing="10" Margin="0,20,0,0">
+                    <TextBlock Text="文件导入" FontSize="16" FontWeight="Bold" />
+
+                    <!-- 导入发票总表 -->
+                    <StackPanel Spacing="5" Margin="10,0,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="导入发票总表" VerticalAlignment="Center" Width="120" />
+                            <TextBlock Text="{Binding InvoiceSummaryFilePath}" VerticalAlignment="Center"
+                                       Margin="0,0,10,0" />
+                            <Button Command="{Binding SelectInvoiceSummaryFileCommand}" Content="选择" Width="60" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- 导入当月付款表 -->
+                    <StackPanel Spacing="5" Margin="10,0,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="导入当月付款表" VerticalAlignment="Center" Width="120" />
+                            <TextBlock Text="{Binding CurrentMonthPaymentFilePath}" VerticalAlignment="Center"
+                                       Margin="0,0,10,0" />
+                            <Button Command="{Binding SelectCurrentMonthPaymentFileCommand}" Content="选择" Width="60" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- 导入之前付款总和表 -->
+                    <StackPanel Spacing="5" Margin="10,0,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="导入之前付款总和表" VerticalAlignment="Center" Width="140" />
+                            <TextBlock Text="{Binding PreviousPaymentSummaryFilePath}" VerticalAlignment="Center"
+                                       Margin="0,0,10,0" />
+                            <Button Command="{Binding SelectPreviousPaymentSummaryFileCommand}" Content="选择" Width="60" />
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
-
-                <!-- 导入当月付款表 -->
-                <StackPanel Spacing="5" Margin="10,0,0,0">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Text="导入当月付款表" VerticalAlignment="Center" Width="120" />
-                        <TextBlock Text="{Binding CurrentMonthPaymentFilePath}" VerticalAlignment="Center"
-                                   Margin="0,0,10,0" />
-                        <Button Command="{Binding SelectCurrentMonthPaymentFileCommand}" Content="选择" Width="60" />
+                <!-- 日期筛选模块 -->
+                <StackPanel Spacing="10" Margin="0,10,0,0">
+                    <TextBlock Text="日期筛选" FontSize="16" FontWeight="Bold" Margin="10,0,0,0" />
+                    <StackPanel Orientation="Horizontal" Spacing="20" Margin="20,0,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="开始日期：" VerticalAlignment="Center" />
+                            <DatePicker SelectedDate="{Binding StartDate}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="结束日期：" VerticalAlignment="Center" />
+                            <DatePicker SelectedDate="{Binding EndDate}" />
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
-
-                <!-- 导入之前付款总和表 -->
-                <StackPanel Spacing="5" Margin="10,0,0,0">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Text="导入之前付款总和表" VerticalAlignment="Center" Width="140" />
-                        <TextBlock Text="{Binding PreviousPaymentSummaryFilePath}" VerticalAlignment="Center"
-                                   Margin="0,0,10,0" />
-                        <Button Command="{Binding SelectPreviousPaymentSummaryFileCommand}" Content="选择" Width="60" />
+                <!-- 第二个模块：操作按钮和状态显示 -->
+                <StackPanel Spacing="10" Margin="0,10,0,0">
+                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="10,0,0,0">
+                        <Button Command="{Binding StartCalculationCommand}" Content="开始计算"
+                                IsEnabled="{Binding !IsCalculating}"
+                                Width="100" Height="35" FontSize="14" FontWeight="Bold" />
+                        <Button Command="{Binding CopyAllLogsCommand}" Content="复制所有内容"
+                                Width="100" Height="35" FontSize="14" />
                     </StackPanel>
+                    <!-- 使用ListBox代替TextBox显示日志 -->
+                    <ListBox ItemsSource="{Binding LogEntries}"
+                             Margin="10,5,0,0" Height="300" FontSize="12">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </StackPanel>
             </StackPanel>
-            <!-- 日期筛选模块 -->
-            <StackPanel Spacing="10" Margin="0,10,0,0">
-                <TextBlock Text="日期筛选" FontSize="16" FontWeight="Bold" Margin="10,0,0,0" />
-                <StackPanel Orientation="Horizontal" Spacing="20" Margin="20,0,0,0">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Text="开始日期：" VerticalAlignment="Center" />
-                        <DatePicker SelectedDate="{Binding StartDate}"  />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Text="结束日期：" VerticalAlignment="Center" />
-                        <DatePicker SelectedDate="{Binding EndDate}" />
-                    </StackPanel>
-                </StackPanel>
-            </StackPanel>
-            <!-- 第二个模块：操作按钮和状态显示 -->
-            <StackPanel Spacing="10" Margin="0,10,0,0">
-                <StackPanel Orientation="Horizontal" Spacing="10" Margin="10,0,0,0">
-                    <Button Command="{Binding StartCalculationCommand}" Content="开始计算"
-                            IsEnabled="{Binding !IsCalculating}"
-                            Width="100" Height="35" FontSize="14" FontWeight="Bold" />
-                    <Button Command="{Binding CopyAllLogsCommand}" Content="复制所有内容"
-                            Width="100" Height="35" FontSize="14" />
-                </StackPanel>
-                <!-- 使用ListBox代替TextBox显示日志 -->
-                <ListBox ItemsSource="{Binding LogEntries}" 
-                         Margin="10,5,0,0" Height="300" FontSize="12" >
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" TextWrapping="Wrap" />
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </StackPanel>
-        </StackPanel>
-
+        </ScrollViewer>
     </Grid>
 </UserControl>

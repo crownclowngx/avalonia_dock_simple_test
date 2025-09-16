@@ -39,6 +39,16 @@ public class InvoiceInfoImportBusiness
     /// </summary>
     public HashSet<string> AllNeedShowInvoiceNumbers { get; } = new HashSet<string>();
 
+
+    public async Task ClearAllData()
+    {
+        InvoiceSummaryItems.Clear();
+        InvoicePaymentGroupDetails.Clear();
+        InvoicePaymentPreviousDetails.Clear();
+        SupplierTypeMapping.Clear();
+        InvoicePaymentSummaryItems.Clear();
+        AllNeedShowInvoiceNumbers.Clear();
+    }
     // 构造函数，接受日志方法委托
     public InvoiceInfoImportBusiness(LogDelegate logMethod)
     {
@@ -445,6 +455,10 @@ public class InvoiceInfoImportBusiness
                     {
                         InvoicePaymentDetailItem item =
                             CreateInvoicePaymentDetailItemByCurrentMonthDetailTable(row, worksheet);
+                        if (string.IsNullOrEmpty(item.InvoiceNumber))
+                        {
+                            continue;
+                        }
                         if (!InvoicePaymentGroupDetails.ContainsKey(item.InvoiceNumber))
                         {
                             InvoicePaymentGroupDetailItem detailGroupItem = new InvoicePaymentGroupDetailItem()

@@ -132,6 +132,7 @@ public partial class InvoiceInfoImportViewModel : Document
 
         try
         {
+            await _invoiceInfoImportBusiness.ClearAllData();
             await ReadAllExcelData();
             AddLogLine("Excel文件读取完成！准备开始生成数据...");
             await _invoiceInfoImportBusiness.CreateAllNeedShowInvoiceNumber(_startDate?.DateTime, _endDate?.DateTime);
