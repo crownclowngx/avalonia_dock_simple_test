@@ -26,6 +26,8 @@ public class InvoiceInfoImportBusiness
     public Dictionary<string, InvoicePaymentPreviousDetailItem> InvoicePaymentPreviousDetails { get; } =
         new Dictionary<string, InvoicePaymentPreviousDetailItem>();
 
+    
+    public Dictionary<string,string> SupplierTypeMapping { get; } = new Dictionary<string, string>();
     /**
      * 发票付款摘要
      */
@@ -55,6 +57,7 @@ public class InvoiceInfoImportBusiness
             }
 
             var response = GetOneInvoicePaymentSummaryCalc(item);
+            SupplierTypeMapping.TryGetValue(summaryItem.SupplierName ?? string.Empty, out var supplierType);
             InvoicePaymentSummaryItem summaryItemNew = new InvoicePaymentSummaryItem()
             {
                 InvoiceType = summaryItem.InvoiceType,
@@ -69,7 +72,7 @@ public class InvoiceInfoImportBusiness
                 CalculatedBalance = response.CalculatedBalance,
                 DueDate = summaryItem.DueDate,
                 Remarks = response.Remarks,
-                Category = summaryItem.SupplierType,
+                Category = supplierType??string.Empty,
                 PaymentAmount = response.PaymentAmount,
                 PaymentDate = response.PaymentDate,
                 SettlementAmount = response.SettlementAmount,
@@ -145,7 +148,7 @@ public class InvoiceInfoImportBusiness
         InvoicePaymentSummaryCalcItem calcItem = new InvoicePaymentSummaryCalcItem()
         {
             CalculatedPaymentAmount = paymentAmountFinal + settlementAmountFinal,
-            CalculatedBalance = summaryItem?.InvoiceAmount ?? 0 - paymentAmountFinal - settlementAmountFinal,
+            CalculatedBalance = summaryItem?.InvoiceAmount - paymentAmountFinal - settlementAmountFinal,
             Remarks = previousDetailItem?.ReMark ?? string.Empty,
             PaymentAmount = paymentAmountFinal,
             PaymentDate = paymentDate,
@@ -205,7 +208,10 @@ public class InvoiceInfoImportBusiness
                         {
                             continue;
                         }
-
+                        if (!string.IsNullOrEmpty(item.SupplierName) && !string.IsNullOrEmpty(item.SupplierType) && !SupplierTypeMapping.ContainsKey(item.SupplierName))
+                        {
+                            SupplierTypeMapping.TryAdd(item.SupplierName,item.SupplierType);
+                        }
                         if (InvoicePaymentPreviousDetails.ContainsKey(item.InvoiceNumber))
                         {
                             Log($"有重复的发票号跳过 {item.InvoiceNumber}");
@@ -229,6 +235,10 @@ public class InvoiceInfoImportBusiness
         InvoicePaymentPreviousDetailItem item = new InvoicePaymentPreviousDetailItem();
         try
         {
+            // 供应商名称 B列 第2列
+            string supplierName = worksheet.Cells[row, 2].Text.Trim();
+            item.SupplierName = supplierName;
+            
             // 发票编号 E列 第5列
             string invoiceNumber = worksheet.Cells[row, 5].Text.Trim();
             if (string.IsNullOrEmpty(invoiceNumber))
@@ -241,6 +251,9 @@ public class InvoiceInfoImportBusiness
             // 备注 L列 第12列
             string reMark = worksheet.Cells[row, 12].Text.Trim();
             item.ReMark = reMark;
+            // 供应商类型 M列 第13列
+            string supplierType = worksheet.Cells[row, 13].Text.Trim();
+            item.SupplierType = supplierType;
 
             // 付 付款日期 O列 第15列 可空
             string paymentDateStr = worksheet.Cells[row, 15].Text.Trim();

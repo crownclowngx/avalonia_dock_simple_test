@@ -30,4 +30,14 @@ public class InvoicePaymentPreviousDetailItem
     /// 结 结款日期
     /// </summary>
     public DateTime? SettlementDate { get; set; }
+    
+    /// <summary>
+    /// 供应商类型
+    /// </summary>
+    public string? SupplierType{get;set;}
+    
+    /// <summary>
+    /// 供应商名称
+    /// </summary>
+    public string? SupplierName{get;set;}
 }
