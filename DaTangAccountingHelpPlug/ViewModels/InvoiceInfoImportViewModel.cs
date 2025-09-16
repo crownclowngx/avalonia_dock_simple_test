@@ -28,6 +28,11 @@ public partial class InvoiceInfoImportViewModel : Document
     // 计算状态标志，用于控制按钮启用/禁用
     [ObservableProperty] private bool _isCalculating = false;
 
+    // 添加开始日期和结束日期属性，默认值设置为当月第一天和最后一天
+    [ObservableProperty] private DateTimeOffset? _startDate = new DateTimeOffset(new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1));
+
+    [ObservableProperty] private DateTimeOffset? _endDate = new DateTimeOffset(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month)));
+
     // 日志条目集合，用于在ListBox中显示
     public ObservableCollection<string> LogEntries { get; } = new ObservableCollection<string>();
 
@@ -129,7 +134,7 @@ public partial class InvoiceInfoImportViewModel : Document
         {
             await ReadAllExcelData();
             AddLogLine("Excel文件读取完成！准备开始生成数据...");
-            await _invoiceInfoImportBusiness.CreateAllNeedShowInvoiceNumber();
+            await _invoiceInfoImportBusiness.CreateAllNeedShowInvoiceNumber(_startDate?.DateTime, _endDate?.DateTime);
             AddLogLine("识别完成，开始计算新表...");
             await _invoiceInfoImportBusiness.CalculateNewInvoiceSummary();
             AddLogLine("计算完成！开始导出表");

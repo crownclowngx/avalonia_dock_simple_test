@@ -91,9 +91,9 @@ public class InvoiceInfoImportBusiness
 
     InvoicePaymentSummaryCalcItem GetOneInvoicePaymentSummaryCalc(String numbser)
     {
-        InvoicePaymentGroupDetails.TryGetValue(numbser, out InvoicePaymentGroupDetailItem groupDetailItem);
-        InvoicePaymentPreviousDetails.TryGetValue(numbser, out InvoicePaymentPreviousDetailItem previousDetailItem);
-        InvoiceSummaryItems.TryGetValue(numbser, out InvoiceSummaryItem summaryItem);
+        InvoicePaymentGroupDetails.TryGetValue(numbser, out InvoicePaymentGroupDetailItem? groupDetailItem);
+        InvoicePaymentPreviousDetails.TryGetValue(numbser, out InvoicePaymentPreviousDetailItem? previousDetailItem);
+        InvoiceSummaryItems.TryGetValue(numbser, out InvoiceSummaryItem? summaryItem);
         List<InvoicePaymentOneWayPaymentDetailItem> paymentList = new List<InvoicePaymentOneWayPaymentDetailItem>();
         List<InvoicePaymentOneWayPaymentDetailItem> settlementList = new List<InvoicePaymentOneWayPaymentDetailItem>();
         if (previousDetailItem != null)
@@ -145,8 +145,8 @@ public class InvoiceInfoImportBusiness
         InvoicePaymentSummaryCalcItem calcItem = new InvoicePaymentSummaryCalcItem()
         {
             CalculatedPaymentAmount = paymentAmountFinal + settlementAmountFinal,
-            CalculatedBalance = summaryItem.InvoiceAmount - paymentAmountFinal - settlementAmountFinal,
-            Remarks = previousDetailItem.ReMark,
+            CalculatedBalance = summaryItem?.InvoiceAmount ?? 0 - paymentAmountFinal - settlementAmountFinal,
+            Remarks = previousDetailItem?.ReMark ?? string.Empty,
             PaymentAmount = paymentAmountFinal,
             PaymentDate = paymentDate,
             SettlementAmount = settlementAmountFinal,
@@ -155,7 +155,7 @@ public class InvoiceInfoImportBusiness
         return calcItem;
     }
 
-    public async Task CreateAllNeedShowInvoiceNumber()
+    public async Task CreateAllNeedShowInvoiceNumber(DateTime? startDate, DateTime? endDate)
     {
         foreach (var invoicePaymentPreviousDetailItem in InvoicePaymentPreviousDetails)
         {
@@ -166,9 +166,13 @@ public class InvoiceInfoImportBusiness
         }
 
         int newCount = 0;
-        foreach (var item in InvoicePaymentGroupDetails)
+        foreach (var item in InvoiceSummaryItems)
         {
-            if (!AllNeedShowInvoiceNumbers.Contains(item.Value.InvoiceNumber))
+            if (string.IsNullOrEmpty(item.Value.InvoiceNumber))
+            {
+                continue;
+            }
+            if (!AllNeedShowInvoiceNumbers.Contains(item.Value.InvoiceNumber) && item.Value.InvoiceDate >= startDate && item.Value.InvoiceDate <= endDate)
             {
                 newCount++;
                 AllNeedShowInvoiceNumbers.Add(item.Value.InvoiceNumber);
@@ -190,7 +194,7 @@ public class InvoiceInfoImportBusiness
                     // 获取第一个工作表
                     ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
                     // 获取工作表的维度（包含数据的范围）
-                    int startRow = 4; // 从第四行开始是真正的数据
+                    int startRow = 2; // 从第2行开始是真正的数据
                     int endRow = worksheet.Dimension.End.Row;
                     Log($"开始读取之前月付款数据，共 {endRow - startRow + 1} 行");
                     for (int row = startRow; row <= endRow; row++)
