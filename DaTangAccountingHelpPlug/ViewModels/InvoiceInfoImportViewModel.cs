@@ -172,97 +172,12 @@ public partial class InvoiceInfoImportViewModel : Document
                     },
                     SuggestedFileName = "发票汇总表"
                 };
-
                 // 显示保存文件对话框
                 var file = await mainWindow.StorageProvider.SaveFilePickerAsync(options);
-
                 if (file != null)
                 {
-                    // 获取本地文件路径
                     var filePath = file.Path.LocalPath;
-
-                    AddLogLine($"开始保存数据到文件: {Path.GetFileName(filePath)}");
-
-                    // 在后台线程中创建和保存Excel文件
-                    await Task.Run(() =>
-                    {
-                        // 设置EPPlus非商业使用许可
-                        ExcelPackage.License.SetNonCommercialPersonal("DaTangAccountingHelpPlug");
-
-                        using (var package = new ExcelPackage())
-                        {
-                            // 创建工作表
-                            var worksheet = package.Workbook.Worksheets.Add("发票汇总表");
-
-                            // 设置表头
-                            worksheet.Cells[1, 1].Value = "发票类型";
-                            worksheet.Cells[1, 2].Value = "供应商名称";
-                            worksheet.Cells[1, 3].Value = "供应商地点";
-                            worksheet.Cells[1, 4].Value = "发票日期";
-                            worksheet.Cells[1, 5].Value = "发票号码";
-                            worksheet.Cells[1, 6].Value = "部门";
-                            worksheet.Cells[1, 7].Value = "负债科目";
-                            worksheet.Cells[1, 8].Value = "发票金额";
-                            worksheet.Cells[1, 9].Value = "计算付款金额";
-                            worksheet.Cells[1, 10].Value = "计算余额";
-                            worksheet.Cells[1, 11].Value = "到期日期";
-                            worksheet.Cells[1, 12].Value = "备注";
-                            worksheet.Cells[1, 13].Value = "类别";
-                            worksheet.Cells[1, 14].Value = "付款金额";
-                            worksheet.Cells[1, 15].Value = "付款日期";
-                            worksheet.Cells[1, 16].Value = "结算金额";
-                            worksheet.Cells[1, 17].Value = "结算日期";
-                            worksheet.Cells[1, 18].Value = "发票信息付款金额";
-                            worksheet.Cells[1, 19].Value = "发票信息余额";
-
-                            // 设置表头样式
-                            using (var range = worksheet.Cells["A1:S1"])
-                            {
-                                range.Style.Font.Bold = true;
-                                range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-                            }
-
-                            // 填充数据
-                            int row = 2;
-                            foreach (var item in _invoiceInfoImportBusiness.InvoicePaymentSummaryItems)
-                            {
-                                worksheet.Cells[row, 1].Value = item.InvoiceType;
-                                worksheet.Cells[row, 2].Value = item.SupplierName;
-                                worksheet.Cells[row, 3].Value = item.SupplierLocation;
-                                worksheet.Cells[row, 4].Value = item.InvoiceDate?.ToString("yyyy-MM-dd");
-                                worksheet.Cells[row, 5].Value = item.InvoiceNumber;
-                                worksheet.Cells[row, 6].Value = item.Department;
-                                worksheet.Cells[row, 7].Value = item.LiabilityAccount;
-                                worksheet.Cells[row, 8].Value = item.InvoiceAmount;
-                                worksheet.Cells[row, 9].Value = item.CalculatedPaymentAmount;
-                                worksheet.Cells[row, 10].Value = item.CalculatedBalance;
-                                worksheet.Cells[row, 11].Value = item.DueDate?.ToString("yyyy-MM-dd");
-                                worksheet.Cells[row, 12].Value = item.Remarks;
-                                worksheet.Cells[row, 13].Value = item.Category;
-                                worksheet.Cells[row, 14].Value = item.PaymentAmount;
-                                worksheet.Cells[row, 15].Value = item.PaymentDate?.ToString("yyyy-MM-dd");
-                                worksheet.Cells[row, 16].Value = item.SettlementAmount;
-                                worksheet.Cells[row, 17].Value = item.SettlementDate?.ToString("yyyy-MM-dd");
-                                worksheet.Cells[row, 18].Value = item.InvoiceInfoPaymentAmount;
-                                worksheet.Cells[row, 19].Value = item.InvoiceInfoBalance;
-
-                                row++;
-                            }
-
-                            // 自动调整列宽
-                            worksheet.Cells.AutoFitColumns();
-
-                            // 保存文件
-                            package.SaveAs(new FileInfo(filePath));
-                        }
-                    });
-
-                    AddLogLine($"数据保存成功！文件路径：{filePath}");
-                }
-                else
-                {
-                    AddLogLine("用户取消了保存操作");
+                    await _invoiceInfoImportBusiness.SaveInvoicePaymentSummaryToExcel(filePath);
                 }
             }
         }
@@ -321,6 +236,31 @@ public partial class InvoiceInfoImportViewModel : Document
             {
                 LogEntries.RemoveAt(0);
             }
+        }
+    }
+    
+    // 添加复制所有日志的命令
+    [RelayCommand]
+    public async Task CopyAllLogs()
+    {
+        try
+        {
+            // 获取主窗口
+            var mainWindow = (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+            if (mainWindow == null) return;
+
+            // 将所有日志条目合并为一个字符串，每行之间用换行符分隔
+            var allLogs = string.Join(Environment.NewLine, LogEntries);
+            
+            // 使用剪贴板设置文本
+            await mainWindow.Clipboard.SetTextAsync(allLogs);
+            
+            // 添加一条日志，表示复制成功
+            AddLogLine("所有日志已复制到剪贴板");
+        }
+        catch (Exception ex)
+        {
+            AddLogLine($"复制日志失败: {ex.Message}");
         }
     }
 }

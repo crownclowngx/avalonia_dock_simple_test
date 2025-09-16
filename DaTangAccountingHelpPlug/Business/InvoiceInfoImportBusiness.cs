@@ -26,8 +26,9 @@ public class InvoiceInfoImportBusiness
     public Dictionary<string, InvoicePaymentPreviousDetailItem> InvoicePaymentPreviousDetails { get; } =
         new Dictionary<string, InvoicePaymentPreviousDetailItem>();
 
-    
-    public Dictionary<string,string> SupplierTypeMapping { get; } = new Dictionary<string, string>();
+
+    public Dictionary<string, string> SupplierTypeMapping { get; } = new Dictionary<string, string>();
+
     /**
      * 发票付款摘要
      */
@@ -42,6 +43,88 @@ public class InvoiceInfoImportBusiness
     public InvoiceInfoImportBusiness(LogDelegate logMethod)
     {
         _logMethod = logMethod;
+    }
+
+    public async Task SaveInvoicePaymentSummaryToExcel(string filePath)
+    {
+        Log($"开始保存数据到文件: {Path.GetFileName(filePath)}");
+
+        // 在后台线程中创建和保存Excel文件
+        await Task.Run(() =>
+        {
+            // 设置EPPlus非商业使用许可
+            ExcelPackage.License.SetNonCommercialPersonal("DaTangAccountingHelpPlug");
+
+            using (var package = new ExcelPackage())
+            {
+                // 创建工作表
+                var worksheet = package.Workbook.Worksheets.Add("发票汇总表");
+
+                // 设置表头
+                worksheet.Cells[1, 1].Value = "发票类型";
+                worksheet.Cells[1, 2].Value = "供应商名称";
+                worksheet.Cells[1, 3].Value = "供应商地点";
+                worksheet.Cells[1, 4].Value = "发票日期";
+                worksheet.Cells[1, 5].Value = "发票号码";
+                worksheet.Cells[1, 6].Value = "部门";
+                worksheet.Cells[1, 7].Value = "负债科目";
+                worksheet.Cells[1, 8].Value = "发票金额";
+                worksheet.Cells[1, 9].Value = "计算付款金额";
+                worksheet.Cells[1, 10].Value = "计算余额";
+                worksheet.Cells[1, 11].Value = "到期日期";
+                worksheet.Cells[1, 12].Value = "备注";
+                worksheet.Cells[1, 13].Value = "类别";
+                worksheet.Cells[1, 14].Value = "付款金额";
+                worksheet.Cells[1, 15].Value = "付款日期";
+                worksheet.Cells[1, 16].Value = "结算金额";
+                worksheet.Cells[1, 17].Value = "结算日期";
+                worksheet.Cells[1, 18].Value = "发票信息付款金额";
+                worksheet.Cells[1, 19].Value = "发票信息余额";
+
+                // 设置表头样式
+                using (var range = worksheet.Cells["A1:S1"])
+                {
+                    range.Style.Font.Bold = true;
+                    range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                }
+
+                // 填充数据
+                int row = 2;
+                foreach (var item in InvoicePaymentSummaryItems)
+                {
+                    worksheet.Cells[row, 1].Value = item.InvoiceType;
+                    worksheet.Cells[row, 2].Value = item.SupplierName;
+                    worksheet.Cells[row, 3].Value = item.SupplierLocation;
+                    worksheet.Cells[row, 4].Value = item.InvoiceDate?.ToString("yyyy-MM-dd");
+                    worksheet.Cells[row, 5].Value = item.InvoiceNumber;
+                    worksheet.Cells[row, 6].Value = item.Department;
+                    worksheet.Cells[row, 7].Value = item.LiabilityAccount;
+                    worksheet.Cells[row, 8].Value = item.InvoiceAmount;
+                    worksheet.Cells[row, 9].Value = item.CalculatedPaymentAmount;
+                    worksheet.Cells[row, 10].Value = item.CalculatedBalance;
+                    worksheet.Cells[row, 11].Value = item.DueDate?.ToString("yyyy-MM-dd");
+                    worksheet.Cells[row, 12].Value = item.Remarks;
+                    worksheet.Cells[row, 13].Value = item.Category;
+                    worksheet.Cells[row, 14].Value = item.PaymentAmount;
+                    worksheet.Cells[row, 15].Value = item.PaymentDate?.ToString("yyyy-MM-dd");
+                    worksheet.Cells[row, 16].Value = item.SettlementAmount;
+                    worksheet.Cells[row, 17].Value = item.SettlementDate?.ToString("yyyy-MM-dd");
+                    worksheet.Cells[row, 18].Value = item.InvoiceInfoPaymentAmount;
+                    worksheet.Cells[row, 19].Value = item.InvoiceInfoBalance;
+
+                    row++;
+                }
+
+                // 自动调整列宽
+                worksheet.Cells.AutoFitColumns();
+
+                // 保存文件
+                package.SaveAs(new FileInfo(filePath));
+            }
+        });
+
+        Log($"数据保存成功！文件路径：{filePath}");
     }
 
     public async Task CalculateNewInvoiceSummary()
@@ -72,7 +155,7 @@ public class InvoiceInfoImportBusiness
                 CalculatedBalance = response.CalculatedBalance,
                 DueDate = summaryItem.DueDate,
                 Remarks = response.Remarks,
-                Category = supplierType??string.Empty,
+                Category = supplierType ?? string.Empty,
                 PaymentAmount = response.PaymentAmount,
                 PaymentDate = response.PaymentDate,
                 SettlementAmount = response.SettlementAmount,
@@ -82,6 +165,7 @@ public class InvoiceInfoImportBusiness
             };
             InvoicePaymentSummaryItems.Add(summaryItemNew);
         }
+
         // 按照发票时间倒序排序
         InvoicePaymentSummaryItems.Sort((x, y) =>
         {
@@ -140,7 +224,7 @@ public class InvoiceInfoImportBusiness
                 });
             }
         }
-        
+
         var paymentAmountFinal = paymentList.Sum(k => k.Amount);
         var settlementAmountFinal = settlementList.Sum(k => k.Amount);
         var paymentDate = paymentList.OrderByDescending(k => k.AmountDateTime).FirstOrDefault()?.AmountDateTime;
@@ -175,7 +259,9 @@ public class InvoiceInfoImportBusiness
             {
                 continue;
             }
-            if (!AllNeedShowInvoiceNumbers.Contains(item.Value.InvoiceNumber) && item.Value.InvoiceDate >= startDate && item.Value.InvoiceDate <= endDate)
+
+            if (!AllNeedShowInvoiceNumbers.Contains(item.Value.InvoiceNumber) && item.Value.InvoiceDate >= startDate &&
+                item.Value.InvoiceDate <= endDate)
             {
                 newCount++;
                 AllNeedShowInvoiceNumbers.Add(item.Value.InvoiceNumber);
@@ -208,10 +294,13 @@ public class InvoiceInfoImportBusiness
                         {
                             continue;
                         }
-                        if (!string.IsNullOrEmpty(item.SupplierName) && !string.IsNullOrEmpty(item.SupplierType) && !SupplierTypeMapping.ContainsKey(item.SupplierName))
+
+                        if (!string.IsNullOrEmpty(item.SupplierName) && !string.IsNullOrEmpty(item.SupplierType) &&
+                            !SupplierTypeMapping.ContainsKey(item.SupplierName))
                         {
-                            SupplierTypeMapping.TryAdd(item.SupplierName,item.SupplierType);
+                            SupplierTypeMapping.TryAdd(item.SupplierName, item.SupplierType);
                         }
+
                         if (InvoicePaymentPreviousDetails.ContainsKey(item.InvoiceNumber))
                         {
                             Log($"有重复的发票号跳过 {item.InvoiceNumber}");
@@ -238,7 +327,7 @@ public class InvoiceInfoImportBusiness
             // 供应商名称 B列 第2列
             string supplierName = worksheet.Cells[row, 2].Text.Trim();
             item.SupplierName = supplierName;
-            
+
             // 发票编号 E列 第5列
             string invoiceNumber = worksheet.Cells[row, 5].Text.Trim();
             if (string.IsNullOrEmpty(invoiceNumber))
