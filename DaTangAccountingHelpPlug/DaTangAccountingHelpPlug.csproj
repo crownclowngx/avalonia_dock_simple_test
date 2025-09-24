@@ -14,4 +14,10 @@
       <PackageReference Include="EPPlus" Version="8.1.1" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Styles\" />
+    </ItemGroup>
+    <ItemGroup>
+        <AvaloniaResource Include="Styles/**" />
+    </ItemGroup>
 </Project>
