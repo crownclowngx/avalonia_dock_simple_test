@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,15 +15,17 @@ using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagementCommon.Message;
 using Newtonsoft.Json;
 
 namespace MyAvaloniaManagement.ViewModels;
 
 public partial class MainWindowViewModel : ObservableObject, IDropTarget
 {
-    private readonly ManagementFactory? _factory;
+    private readonly ManagementFactory _factory;
+    private readonly PluginMenuService _pluginMenuService;
+    private readonly IMessengerService _messengerService;
     private IRootDock? _layout;
-    private readonly PluginMenuService? _pluginMenuService;
 
     public IRootDock? Layout
     {
@@ -35,21 +37,38 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     public Dictionary<string, List<DocumentMetadata>> DocumentMetadataByCategory =>
         _pluginMenuService?.GetDocumentMetadataByCategory() ?? new Dictionary<string, List<DocumentMetadata>>();
 
-    public MainWindowViewModel()
+    /// <summary>
+    /// 构造函数 - 使用依赖注入
+    /// </summary>
+    /// <param name="factory">管理工厂</param>
+    /// <param name="pluginMenuService">插件菜单服务</param>
+    /// <param name="messengerService">消息服务</param>
+    public MainWindowViewModel(ManagementFactory factory, PluginMenuService pluginMenuService, IMessengerService messengerService)
     {
-        _factory = new ManagementFactory();
-        _pluginMenuService = new PluginMenuService(_factory);
-        // 初始化AppServices，使其他组件可以访问这些实例
-        AppServices.Initialize(_factory, _pluginMenuService);
-        Layout = _factory?.CreateLayout();
+        _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+        _pluginMenuService = pluginMenuService ?? throw new ArgumentNullException(nameof(pluginMenuService));
+        _messengerService = messengerService ?? throw new ArgumentNullException(nameof(messengerService));
+        
+        Layout = _factory.CreateLayout();
         
         if (Layout is { })
         {
-            _factory?.InitLayout(Layout);
+            _factory.InitLayout(Layout);
         }
+        
         // 注册消息接收器，用于接收打开文件的请求
         RegisterMessageHandlers();
-        _factory?.SyncToolsVisibility();
+        _factory.SyncToolsVisibility();
+    }
+
+    /// <summary>
+    /// 无参构造函数 - 用于向后兼容和设计时支持
+    /// </summary>
+    public MainWindowViewModel() : this(
+        ServiceProvider.GetRequiredService<ManagementFactory>(),
+        ServiceProvider.GetRequiredService<PluginMenuService>(),
+        ServiceProvider.GetRequiredService<IMessengerService>())
+    {
     }
     
     /// <summary>
@@ -57,26 +76,24 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     /// </summary>
     private void RegisterMessageHandlers()
     {
-        if (AppServices.Instance.MessengerServiceDefault != null)
-        {
-            AppServices.Instance.MessengerServiceDefault.Register<MainWindowViewModel, OpenFileMessage>(
-                this, 
-                (recipient, message) => 
-                {
-                    // 当接收到打开文件的消息时，调用OpenDocumentByPath方法
-                    recipient.OpenDocumentByPath(message.FilePath).ConfigureAwait(false);
-                }
-            );
-            // 注册布局更新消息处理
-            AppServices.Instance.MessengerServiceDefault.Register<MainWindowViewModel, UpdateLayoutMessage>(
-                this, 
-                (recipient, _) => 
-                {
-                    // 通知UI更新布局
-                    recipient.OnPropertyChanged(nameof(Layout));
-                }
-            );
-        }
+        _messengerService.Register<MainWindowViewModel, OpenFileMessage>(
+            this, 
+            (recipient, message) => 
+            {
+                // 当接收到打开文件的消息时，调用OpenDocumentByPath方法
+                recipient.OpenDocumentByPath(message.FilePath).ConfigureAwait(false);
+            }
+        );
+        
+        // 注册布局更新消息处理
+        _messengerService.Register<MainWindowViewModel, UpdateLayoutMessage>(
+            this, 
+            (recipient, _) => 
+            {
+                // 通知UI更新布局
+                recipient.OnPropertyChanged(nameof(Layout));
+            }
+        );
     }
 
     /// <summary>
