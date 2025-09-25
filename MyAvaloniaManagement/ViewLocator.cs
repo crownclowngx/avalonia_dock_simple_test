@@ -14,7 +14,7 @@ namespace MyAvaloniaManagement;
 public partial class ViewLocator : IDataTemplate
 {
     // 用于存储动态发现的视图
-    private static readonly Dictionary<Type, Func<Control>> _dynamicViews = new Dictionary<Type, Func<Control>>();
+    private static readonly Dictionary<Type, Func<Control>> _dynamicViews = [];
 
     static ViewLocator()
     {
@@ -54,7 +54,7 @@ public partial class ViewLocator : IDataTemplate
                             type.Name.EndsWith("View"))
                         {
                             // 尝试查找对应的ViewModel类型
-                            string viewModelTypeName = type.FullName.Replace("View", "ViewModel");
+                            string viewModelTypeName = type.FullName?.Replace("View", "ViewModel") ?? string.Empty;
                             Type? viewModelType = assembly.GetType(viewModelTypeName);
 
                             if (viewModelType != null)
@@ -64,11 +64,12 @@ public partial class ViewLocator : IDataTemplate
                                 {
                                     try
                                     {
-                                        return (Control)Activator.CreateInstance(type);
+                                        return (Control)Activator.CreateInstance(type)!;
                                     }
                                     catch (Exception)
                                     {
-                                        return null;
+                                        // 创建视图实例失败时返回一个空的 TextBlock 控件作为默认视图
+                                        return new TextBlock { Text = "创建视图实例失败" };
                                     }
                                 };
                             }
@@ -112,14 +113,14 @@ public partial class ViewLocator : IDataTemplate
         }
 
         // 如果没有找到匹配的视图，尝试使用命名约定创建
-        var viewTypeName = type.FullName.Replace("ViewModel", "View");
+        var viewTypeName = type.FullName?.Replace("ViewModel", "View") ?? string.Empty;
         var viewType = Type.GetType(viewTypeName);
 
         if (viewType != null && typeof(Control).IsAssignableFrom(viewType))
         {
             try
             {
-                return (Control)Activator.CreateInstance(viewType);
+                return (Control)Activator.CreateInstance(viewType)!;
             }
             catch (Exception)
             {
