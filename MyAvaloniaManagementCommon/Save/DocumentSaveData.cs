@@ -8,12 +8,12 @@ public class DocumentSaveData
     /// <summary>
     /// 文档类型ID
     /// </summary>
-    public string DocumentTypeId { get; set; }
+    public required string DocumentTypeId { get; set; }
     
     /// <summary>
     /// 文档标题
     /// </summary>
-    public string Title { get; set; }
+    public required string Title { get; set; }
     
     /// <summary>
     /// 文档保存时间
@@ -23,10 +23,10 @@ public class DocumentSaveData
     /// <summary>
     /// 文档内容（以JSON格式存储）
     /// </summary>
-    public string Content { get; set; }
+    public required string Content { get; set; }
     
     /// <summary>
     /// 插件特定的元数据（以JSON格式存储）
     /// </summary>
-    public string PluginMetadata { get; set; }
+    public required string PluginMetadata { get; set; }
 }
