@@ -59,7 +59,6 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         
         // 注册消息接收器，用于接收打开文件的请求
         RegisterMessageHandlers();
-        _factory.SyncToolsVisibility();
     }
 
     /// <summary>

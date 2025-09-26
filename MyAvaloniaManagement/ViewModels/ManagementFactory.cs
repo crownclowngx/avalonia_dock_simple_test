@@ -58,11 +58,6 @@ public class ManagementFactory : Factory
         };
     }
     
-    public void SyncToolsVisibility()
-    {
-        // var toolManagementViewModel = _createdTools[DockNameConstant.ToolManagement] as ToolManagementViewModel;
-        // toolManagementViewModel?.SyncToolsVisibility();
-    }
     
     
     /// <summary>
@@ -177,15 +172,11 @@ public class ManagementFactory : Factory
     /// <param name="strategy">策略实例</param>
     public void RegisterStrategy(IDocumentCreationStrategy strategy)
     {
-        if (!_strategies.ContainsKey(strategy.GetMetadata().DocumentTypeId))
+        if (_strategies.TryAdd(strategy.GetMetadata().DocumentTypeId, strategy))
         {
-            _strategies.Add(strategy.GetMetadata().DocumentTypeId, strategy);
             // 同时注册元数据
             var metadata = strategy.GetMetadata();
-            if (!_documentMetadata.ContainsKey(metadata.DocumentTypeId))
-            {
-                _documentMetadata.Add(metadata.DocumentTypeId,metadata);
-            }
+            _documentMetadata.TryAdd(metadata.DocumentTypeId, metadata);
         }
     }
 
@@ -250,7 +241,7 @@ public class ManagementFactory : Factory
                     ActiveDockable = rightTools.Find(k=>k.Id == "plugGroupMenuViewModel"),
                     VisibleDockables = CreateList<IDockable>
                     (
-                        rightTools.ToArray()
+                        [.. rightTools]
                     ),
                     Alignment = Alignment.Right,
                     GripMode = GripMode.Visible
@@ -269,7 +260,7 @@ public class ManagementFactory : Factory
                     ActiveDockable = leftTools.Find(k=>k.Id=="fileSystemTree"),
                     VisibleDockables = CreateList<IDockable>
                     (
-                        leftTools.ToArray()
+                        [.. leftTools]
                     ),
                     Alignment = Alignment.Left,
                     GripMode = GripMode.Visible
