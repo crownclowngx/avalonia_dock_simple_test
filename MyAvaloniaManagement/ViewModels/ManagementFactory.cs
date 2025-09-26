@@ -35,11 +35,11 @@ public class ManagementFactory : Factory
     private readonly Dictionary<string, Tool> _createdTools;
     public ManagementFactory()
     {
-        _strategies = new Dictionary<string, IDocumentCreationStrategy>();
-        _toolStrategies = new Dictionary<string, IToolCreationStrategy>();
-        _documentMetadata = new Dictionary<string, DocumentMetadata>();
-        _toolMetadata = new Dictionary<string, ToolMetadata>();
-        _createdTools = new Dictionary<string, Tool>();
+        _strategies = [];
+        _toolStrategies = [];
+        _documentMetadata = [];
+        _toolMetadata = [];
+        _createdTools = [];
         RegisterAllStrategiesAutomatically();
         RegisterAllToolStrategiesAutomatically();
     }
@@ -112,14 +112,10 @@ public class ManagementFactory : Factory
     public void RegisterToolStrategy(IToolCreationStrategy strategy)
     {
         var metadata = strategy.GetMetadata();
-        if (!_toolStrategies.ContainsKey(metadata.ToolTypeId))
+        if (_toolStrategies.TryAdd(metadata.ToolTypeId, strategy))
         {
-            _toolStrategies.Add(metadata.ToolTypeId, strategy);
             // 同时注册元数据
-            if (!_toolMetadata.ContainsKey(metadata.ToolTypeId))
-            {
-                _toolMetadata.Add(metadata.ToolTypeId, metadata);
-            }
+            _toolMetadata.TryAdd(metadata.ToolTypeId, metadata);
         }
     }
     
@@ -200,10 +196,7 @@ public class ManagementFactory : Factory
     /// <returns>创建的Document实例</returns>
     public Document CreateManagementNewDocument(DocumentCreationParams @params)
     {
-        if (@params == null)
-        {
-            throw new System.ArgumentNullException(nameof(@params));
-        }
+        ArgumentNullException.ThrowIfNull(@params);
 
         if (_strategies.TryGetValue(@params.DocumentType, out var strategy))
         {
