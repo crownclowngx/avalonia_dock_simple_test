@@ -35,7 +35,7 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
 
     // 按分类分组的文档元数据，用于绑定菜单
     public Dictionary<string, List<DocumentMetadata>> DocumentMetadataByCategory =>
-        _pluginMenuService?.GetDocumentMetadataByCategory() ?? new Dictionary<string, List<DocumentMetadata>>();
+        _pluginMenuService?.GetDocumentMetadataByCategory() ?? [];
 
     /// <summary>
     /// 构造函数 - 使用依赖注入
@@ -126,7 +126,7 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         {
             Title = "打开文档",
             AllowMultiple = true,
-            FileTypeFilter = new[] { FilePickerFileTypes.TextPlain }
+            FileTypeFilter = [FilePickerFileTypes.TextPlain]
         };
 
         var files = await mainWindow.StorageProvider.OpenFilePickerAsync(options);
@@ -152,7 +152,7 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         }
         var file = await mainWindow.StorageProvider.TryGetFileFromPathAsync(filePath);
         if (file == null) return;
-        IReadOnlyList<IStorageFile> fileList = new List<IStorageFile> { file };
+        IReadOnlyList<IStorageFile> fileList = [file];
         await OpenAllFiles(fileList);
     }
     private async Task OpenAllFiles(IReadOnlyList<IStorageFile> files)
@@ -265,14 +265,14 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
 
                 var fileType = metadata != null
                     ? new FilePickerFileType(metadata.DisplayName)
-                        { Patterns = new[] { $"*.{metadata.DocumentTypeId.ToLower()}" } }
+                        { Patterns = [$"*.{metadata.DocumentTypeId.ToLower()}"] }
                     : FilePickerFileTypes.TextPlain;
 
                 var options = new FilePickerSaveOptions
                 {
                     Title = "保存文档",
                     DefaultExtension = "txt",
-                    FileTypeChoices = new[] { FilePickerFileTypes.TextPlain }
+                    FileTypeChoices = [FilePickerFileTypes.TextPlain]
                 };
 
                 file = await mainWindow.StorageProvider.SaveFilePickerAsync(options);
