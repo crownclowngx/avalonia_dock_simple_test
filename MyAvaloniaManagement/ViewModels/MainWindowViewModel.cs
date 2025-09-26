@@ -115,7 +115,7 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     /// 打开文档
     /// </summary>
     [RelayCommand]
-    public async void OpenDocument()
+    public async Task OpenDocument()
     {
         // 使用正确的方式获取主窗口
         var mainWindow = (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)
@@ -229,7 +229,10 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
                 {
                     var fileContent = File.ReadAllText(file.Path.LocalPath);
                     var saveData = JsonConvert.DeserializeObject<DocumentSaveData>(fileContent);
-                    savableDocument.LoadDocumentByMetaData(saveData);
+                    if (saveData != null)
+                    {
+                        savableDocument.LoadDocumentByMetaData(saveData);
+                    }
                 }
 
                 var filesDock = _factory?.GetDockable<IDocumentDock>("Files") as DocumentDock;
@@ -245,7 +248,7 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     /// 保存当前激活的文档
     /// </summary>
     [RelayCommand]
-    public async void SaveDocument()
+    public async Task SaveDocument()
     {
         var activeDocument = GetActiveDocument();
         if (activeDocument is ISavableDocument savableDocument)
@@ -313,7 +316,7 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     }
 
     // 辅助方法：查找所有文档
-    private IEnumerable<IDockable> FindAllDocuments(IDock dock)
+    private static List<IDockable> FindAllDocuments(IDock dock)
     {
         var results = new List<IDockable>();
 
@@ -336,7 +339,7 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     }
     
     // 辅助方法：查找包含特定文档的DocumentDock
-    private IDocumentDock? FindDocumentDock(IDock dock, IDockable document)
+    private static IDocumentDock? FindDocumentDock(IDock dock, IDockable document)
     {
         if (dock is IDocumentDock docDock && 
             docDock.VisibleDockables != null && 
