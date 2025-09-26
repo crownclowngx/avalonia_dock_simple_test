@@ -13,15 +13,15 @@ public class ToolManagementData
     /// <summary>
     /// 工具元数据字典（只读）
     /// </summary>
-    public IReadOnlyDictionary<string, ToolMetadata> ToolMetadata { get; init; }
+    public required IReadOnlyDictionary<string, ToolMetadata> ToolMetadata { get; init; }
 
     /// <summary>
     /// 已创建的工具字典（只读）
     /// </summary>
-    public IReadOnlyDictionary<string, Tool> CreatedTools { get; init; }
+    public required IReadOnlyDictionary<string, Tool> CreatedTools { get; init; }
 
     /// <summary>
     /// 根停靠点
     /// </summary>
-    public IRootDock RootDock { get; init; }
+    public required IRootDock RootDock { get; init; }
 }
