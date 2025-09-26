@@ -11,6 +11,7 @@ using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.Tools;
+using MyAvaloniaManagementCommon.Message;
 using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.ViewModels.Tools;
@@ -37,7 +38,7 @@ public partial class ToolManagementViewModel : Tool
     /// </summary>
     private void LoadTools()
     {
-        var toolManagementData = AppServices.Instance.ManagementFactory?.GetToolManagementData();
+        var toolManagementData = ServiceProvider.GetRequiredService<ManagementFactory>()?.GetToolManagementData();
         if (toolManagementData == null)
         {
             return;
@@ -83,10 +84,7 @@ public partial class ToolManagementViewModel : Tool
     /// </summary>
     private bool IsToolVisible(IDockable tool)
     {
-        var factory = AppServices.Instance.ManagementFactory;
-        if (factory == null)
-            return false;
-
+        var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
         var rootDockField = typeof(ManagementFactory).GetField("_rootDock",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (rootDockField == null)
@@ -138,7 +136,7 @@ public partial class ToolManagementViewModel : Tool
         if (item == null || !item.CanClose)
             return;
 
-        var toolManagementData = AppServices.Instance.ManagementFactory?.GetToolManagementData();
+        var toolManagementData = ServiceProvider.GetRequiredService<ManagementFactory>()?.GetToolManagementData();
         if (toolManagementData == null)
         {
             return;
@@ -205,10 +203,7 @@ public partial class ToolManagementViewModel : Tool
         // 更新ToolManagementItem的IsVisible属性，确保UI状态与实际状态一致
         item.IsVisible = targetVisibility;
 
-        if (AppServices.Instance.MessengerServiceDefault != null)
-        {
-            AppServices.Instance.MessengerServiceDefault.Send(new UpdateLayoutMessage("UpdateLayout"));
-        }
+        ServiceProvider.GetRequiredService<IMessengerService>()?.Send(new UpdateLayoutMessage("UpdateLayout"));
     }
 
     /// <summary>
@@ -279,11 +274,7 @@ public partial class ToolManagementViewModel : Tool
     {
         foreach (var item in ToolItems)
         {
-            var factory = AppServices.Instance.ManagementFactory;
-            if (factory == null)
-            {
-                continue;
-            }
+            var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
             var createdToolsField = typeof(ManagementFactory).GetField("_createdTools",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if(createdToolsField == null)

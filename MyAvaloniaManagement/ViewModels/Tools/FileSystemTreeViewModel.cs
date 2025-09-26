@@ -9,6 +9,7 @@ using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.FileSystem;
+using MyAvaloniaManagementCommon.Message;
 
 namespace MyAvaloniaManagement.ViewModels.Tools;
 
@@ -93,7 +94,7 @@ public partial class FileSystemTreeViewModel : Tool
         if (SelectedNode != null && System.IO.File.Exists(SelectedNode.Path))
         {
             // 通过消息总线发送打开文件的请求
-            AppServices.Instance.MessengerServiceDefault?.Send(new OpenFileMessage(SelectedNode.Path));
+            ServiceProvider.GetRequiredService<IMessengerService>()?.Send(new OpenFileMessage(SelectedNode.Path));
         }
     }
     

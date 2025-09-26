@@ -22,8 +22,8 @@ public partial class PlugGroupMenuViewModel:Tool
     public PlugGroupMenuViewModel()
     {
         Title = "插件分组菜单";
-        _factory = AppServices.Instance.ManagementFactory;
-        _pluginMenuService = AppServices.Instance.PluginMenuService;
+        _factory = ServiceProvider.GetRequiredService<ManagementFactory>();
+        _pluginMenuService = ServiceProvider.GetRequiredService<PluginMenuService>();
     }
 
     /// <summary>
