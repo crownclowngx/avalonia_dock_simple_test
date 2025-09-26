@@ -90,10 +90,10 @@ public partial class InvoiceInfoImportViewModel : Document
         {
             Title = "选择文件",
             AllowMultiple = false,
-            FileTypeFilter = new[]
-            {
-                new FilePickerFileType("excel新版文件") { Patterns = new[] { "*.xlsx" } },
-            },
+            FileTypeFilter =
+            [
+                new FilePickerFileType("excel新版文件") { Patterns = ["*.xlsx"] },
+            ],
         };
 
         var result = await mainWindow.StorageProvider.OpenFilePickerAsync(options);
@@ -167,10 +167,10 @@ public partial class InvoiceInfoImportViewModel : Document
                 {
                     Title = "保存发票汇总表",
                     DefaultExtension = "xlsx",
-                    FileTypeChoices = new[]
-                    {
-                        new FilePickerFileType("Excel文件 (.xlsx)") { Patterns = new[] { "*.xlsx" } },
-                    },
+                    FileTypeChoices =
+                    [
+                        new FilePickerFileType("Excel文件 (.xlsx)") { Patterns = ["*.xlsx"] },
+                    ],
                     SuggestedFileName = "发票汇总表"
                 };
                 // 显示保存文件对话框

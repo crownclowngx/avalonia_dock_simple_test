@@ -4,8 +4,8 @@ namespace MyPlugTest.Models;
 
 public class MessageItem : ObservableObject
 {
-    private string _id;
-    private string _content;
+    private string _id = string.Empty;
+    private string _content = string.Empty;
     private bool _isRead;
     
     public string Id
