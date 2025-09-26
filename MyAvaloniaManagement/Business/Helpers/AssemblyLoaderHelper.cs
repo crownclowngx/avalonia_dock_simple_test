@@ -9,11 +9,11 @@ namespace MyAvaloniaManagement.Business.Helpers;
 public static class AssemblyLoaderHelper
 {
     // 存储每个插件目录对应的AssemblyLoadContext
-    private static readonly ConcurrentDictionary<string, PluginLoadContext> _pluginContexts = new ConcurrentDictionary<string, PluginLoadContext>();
+    private static readonly ConcurrentDictionary<string, PluginLoadContext> _pluginContexts = new();
     // 存储已加载的程序集
-    private static readonly ConcurrentDictionary<string, Assembly> _loadedAssemblies = new ConcurrentDictionary<string, Assembly>();
+    private static readonly ConcurrentDictionary<string, Assembly> _loadedAssemblies = new();
     
-    private static readonly ConcurrentDictionary<string, List<Assembly>> _loadedPluginAssemblies = new ConcurrentDictionary<string, List<Assembly>>();
+    private static readonly ConcurrentDictionary<string, List<Assembly>> _loadedPluginAssemblies = new();
     // 记录程序集解析事件是否已注册
     private static bool _assemblyResolveHandlerRegistered = false;
 
@@ -25,18 +25,17 @@ public static class AssemblyLoaderHelper
     /// <returns>加载的程序集列表</returns>
     public static List<Assembly> LoadPluginsFromDirectories(string rootPluginsDirName)
     {
-        if (_loadedPluginAssemblies.ContainsKey(rootPluginsDirName))
+        if (_loadedPluginAssemblies.TryGetValue(rootPluginsDirName, out var loadedAssemblies))
         {
-            return _loadedPluginAssemblies[rootPluginsDirName];
+            return loadedAssemblies;
         }
         // 注册程序集解析事件处理程序
         if (!_assemblyResolveHandlerRegistered)
         {
-            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => CurrentDomain_AssemblyResolve(sender!, args);
             _assemblyResolveHandlerRegistered = true;
         }
-
-        var loadedAssemblies = new List<Assembly>();
+        loadedAssemblies ??= [];
         try
         {
             // 获取应用程序基目录
@@ -139,7 +138,10 @@ public static class AssemblyLoaderHelper
         try
         {
             // 检查是否已经加载了该程序集
-            string assemblyName = new AssemblyName(args.Name).Name;
+            string? assemblyName = new AssemblyName(args.Name).Name;
+            if (assemblyName == null) {
+                return null;
+            }
             if (_loadedAssemblies.TryGetValue(assemblyName, out var loadedAssembly))
             {
                 return loadedAssembly;
