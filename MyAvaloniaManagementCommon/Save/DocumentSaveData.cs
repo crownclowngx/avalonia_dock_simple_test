@@ -1,4 +1,4 @@
-﻿namespace MyAvaloniaManagementCommon.DocumentCreation;
+﻿namespace MyAvaloniaManagementCommon.Save;
 
 /// <summary>
 /// 文档保存数据类，用于统一的保存格式

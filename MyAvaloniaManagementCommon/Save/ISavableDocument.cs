@@ -1,4 +1,4 @@
-﻿namespace MyAvaloniaManagementCommon.DocumentCreation;
+﻿namespace MyAvaloniaManagementCommon.Save;
 
 /// <summary>
 /// 支持保存和打开功能的文档接口
