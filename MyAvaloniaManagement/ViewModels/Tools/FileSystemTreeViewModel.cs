@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading.Tasks;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,7 +15,7 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 public partial class FileSystemTreeViewModel : Tool
 {
     [ObservableProperty]
-    private ObservableCollection<FileSystemNode> _rootNodes = new();
+    private ObservableCollection<FileSystemNode> _rootNodes = [];
 
     [ObservableProperty]
     private string _selectedPath = string.Empty;
@@ -52,13 +53,13 @@ public partial class FileSystemTreeViewModel : Tool
     }
 
     [RelayCommand]
-    public void ExpandNode(FileSystemNode node)
+    public static void ExpandNode(FileSystemNode node)
     {
         node.IsExpanded = true;
     }
 
     [RelayCommand]
-    public void CollapseNode(FileSystemNode node)
+    public static void CollapseNode(FileSystemNode node)
     {
         node.IsExpanded = false;
     }
@@ -74,10 +75,7 @@ public partial class FileSystemTreeViewModel : Tool
     [RelayCommand]
     public void RefreshNode()
     {
-        if (SelectedNode != null)
-        {
-            SelectedNode.Refresh();
-        }
+        SelectedNode?.Refresh();
     }
 
     // 添加刷新全部命令
@@ -95,16 +93,13 @@ public partial class FileSystemTreeViewModel : Tool
         if (SelectedNode != null && System.IO.File.Exists(SelectedNode.Path))
         {
             // 通过消息总线发送打开文件的请求
-            if (AppServices.Instance.MessengerServiceDefault != null)
-            {
-                AppServices.Instance.MessengerServiceDefault.Send(new OpenFileMessage(SelectedNode.Path));
-            }
+            AppServices.Instance.MessengerServiceDefault?.Send(new OpenFileMessage(SelectedNode.Path));
         }
     }
     
     // 添加选择文件夹命令
     [RelayCommand]
-    public async void SelectFolder()
+    public async Task SelectFolder()
     {
         // 使用正确的方式获取主窗口
         var mainWindow = (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)

@@ -54,7 +54,7 @@ public class ManagementFactory : Factory
         {
             ToolMetadata = _toolMetadata,  // 注意这里传递的是字典的副本或只读版本
             CreatedTools = _createdTools,  // 以防止外部代码意外修改内部状态
-            RootDock = _rootDock
+            RootDock = _rootDock ?? throw new InvalidOperationException("RootDock 尚未初始化，无法获取工具管理数据。")
         };
     }
     
@@ -89,7 +89,7 @@ public class ManagementFactory : Factory
                 // 为每个策略类型创建实例并注册
                 foreach (var strategyType in strategyTypes)
                 {
-                    var strategy = (IToolCreationStrategy)Activator.CreateInstance(strategyType);
+                    var strategy = (IToolCreationStrategy)Activator.CreateInstance(strategyType)!;
                     RegisterToolStrategy(strategy);
                 }
             }
@@ -146,7 +146,7 @@ public class ManagementFactory : Factory
                 // 为每个策略类型创建实例并注册
                 foreach (var strategyType in strategyTypes)
                 {
-                    var strategy = (IDocumentCreationStrategy)Activator.CreateInstance(strategyType);
+                    var strategy = (IDocumentCreationStrategy)Activator.CreateInstance(strategyType)!;
                     RegisterStrategy(strategy);
                 }
             }

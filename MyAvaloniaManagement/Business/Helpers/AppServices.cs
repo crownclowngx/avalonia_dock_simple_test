@@ -8,7 +8,6 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// 应用程序服务访问器，提供对共享服务的访问
 /// 现在使用依赖注入容器而非静态服务定位器
 /// </summary>
-[Obsolete("请使用依赖注入容器ServiceProvider替代AppServices。此类保留用于向后兼容。")]
 public class AppServices
 {
     /// <summary>
