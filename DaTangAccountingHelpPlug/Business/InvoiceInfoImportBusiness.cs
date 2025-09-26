@@ -11,30 +11,33 @@ public class InvoiceInfoImportBusiness
     private readonly LogDelegate _logMethod;
 
     // 存储发票摘要项的字典，以发票编号为key
-    public Dictionary<string, InvoiceSummaryItem> InvoiceSummaryItems { get; } =[];
+    public Dictionary<string, InvoiceSummaryItem> InvoiceSummaryItems { get; } =
+        new Dictionary<string, InvoiceSummaryItem>();
 
     /// <summary>
     /// 发票付款分组详情 按照发票号进行分组 ，然后填写入详情
     /// </summary>
-    public Dictionary<string, InvoicePaymentGroupDetailItem> InvoicePaymentGroupDetails { get; } =[];
+    public Dictionary<string, InvoicePaymentGroupDetailItem> InvoicePaymentGroupDetails { get; } =
+        new Dictionary<string, InvoicePaymentGroupDetailItem>();
 
     /// <summary>
     /// 历史的发票收付款 信息
     /// </summary>
-    public Dictionary<string, InvoicePaymentPreviousDetailItem> InvoicePaymentPreviousDetails { get; } =[];
+    public Dictionary<string, InvoicePaymentPreviousDetailItem> InvoicePaymentPreviousDetails { get; } =
+        new Dictionary<string, InvoicePaymentPreviousDetailItem>();
 
 
-    public Dictionary<string, string> SupplierTypeMapping { get; } = [];
+    public Dictionary<string, string> SupplierTypeMapping { get; } = new Dictionary<string, string>();
 
     /**
      * 发票付款摘要
      */
-    public List<InvoicePaymentSummaryItem> InvoicePaymentSummaryItems { get; } = [];
+    public List<InvoicePaymentSummaryItem> InvoicePaymentSummaryItems { get; } = new List<InvoicePaymentSummaryItem>();
 
     /// <summary>
     /// 所有需要展示的发票号
     /// </summary>
-    public HashSet<string> AllNeedShowInvoiceNumbers { get; } = [];
+    public HashSet<string> AllNeedShowInvoiceNumbers { get; } = new HashSet<string>();
 
 
     public async Task ClearAllData()

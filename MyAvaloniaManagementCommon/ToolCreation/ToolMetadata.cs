@@ -8,22 +8,22 @@ public class ToolMetadata
     /// <summary>
     /// Tool类型ID
     /// </summary>
-    public required string ToolTypeId { get; set; }
+    public string ToolTypeId { get; set; }
     
     /// <summary>
     /// 显示名称
     /// </summary>
-    public required string DisplayName { get; set; }
+    public string DisplayName { get; set; }
     
     /// <summary>
     /// 描述信息
     /// </summary>
-    public required string Description { get; set; }
+    public string Description { get; set; }
     
     /// <summary>
     /// 图标路径
     /// </summary>
-    public required string IconPath { get; set; }
+    public string IconPath { get; set; }
     
     /// <summary>
     /// Tool的对齐方式（Left, Right, Top, Bottom）

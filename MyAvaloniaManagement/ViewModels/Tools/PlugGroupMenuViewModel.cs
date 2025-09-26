@@ -16,14 +16,14 @@ public partial class PlugGroupMenuViewModel:Tool
 
     // 按分类分组的文档元数据，用于绑定菜单（树结构）
     public Dictionary<string, List<DocumentMetadata>> DocumentMetadataByCategory =>
-        _pluginMenuService?.GetDocumentMetadataByCategory() ?? [];
+        _pluginMenuService?.GetDocumentMetadataByCategory() ?? new Dictionary<string, List<DocumentMetadata>>();
     public List<CategoryNode> CategoryNodes =>
-        [.. DocumentMetadataByCategory.Select(kv => new CategoryNode(kv.Key, kv.Value))];
+        DocumentMetadataByCategory.Select(kv => new CategoryNode(kv.Key, kv.Value)).ToList();
     public PlugGroupMenuViewModel()
     {
         Title = "插件分组菜单";
-        _factory = ServiceProvider.GetRequiredService<ManagementFactory>();
-        _pluginMenuService = ServiceProvider.GetRequiredService<PluginMenuService>();
+        _factory = AppServices.Instance.ManagementFactory;
+        _pluginMenuService = AppServices.Instance.PluginMenuService;
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ public partial class PlugGroupMenuViewModel:Tool
     /// 切换分类展开状态的命令
     /// </summary>
     [RelayCommand]
-    public static void ToggleCategoryExpand(CategoryNode node)
+    public void ToggleCategoryExpand(CategoryNode node)
     {
         if (node != null)
         {
