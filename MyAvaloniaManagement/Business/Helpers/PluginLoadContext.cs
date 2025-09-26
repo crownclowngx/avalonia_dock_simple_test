@@ -10,32 +10,29 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// 为每个插件创建的独立AssemblyLoadContext
 /// 用于隔离不同插件的依赖项，解决版本冲突问题
 /// </summary>
-public class PluginLoadContext : AssemblyLoadContext
+public class PluginLoadContext(string pluginPath) : AssemblyLoadContext
 {
-    private readonly string _pluginPath;
-    private readonly Dictionary<string, Assembly> _loadedAssemblies = new Dictionary<string, Assembly>();
-
-    public PluginLoadContext(string pluginPath)
-    {
-        _pluginPath = pluginPath;
-    }
+    private readonly Dictionary<string, Assembly> _loadedAssemblies = [];
 
     protected override Assembly? Load(AssemblyName assemblyName)
     {
         // 尝试从已加载的程序集中查找
-        if (_loadedAssemblies.TryGetValue(assemblyName.Name, out var assembly))
+        if (assemblyName.Name != null && _loadedAssemblies.TryGetValue(assemblyName.Name, out var assembly))
         {
             return assembly;
         }
 
         // 尝试从插件目录加载程序集
-        string assemblyPath = FindAssemblyInDirectory(_pluginPath, assemblyName.Name + ".dll");
+        string? assemblyPath = FindAssemblyInDirectory(pluginPath, assemblyName.Name + ".dll");
         if (assemblyPath != null)
         {
             try
             {
                 assembly = LoadFromAssemblyPath(assemblyPath);
-                _loadedAssemblies[assemblyName.Name] = assembly;
+                if (assemblyName.Name != null)
+                {
+                    _loadedAssemblies[assemblyName.Name] = assembly;
+                }
                 return assembly;
             }
             catch (Exception ex)
@@ -71,7 +68,7 @@ public class PluginLoadContext : AssemblyLoadContext
     /// <param name="directoryPath">要搜索的目录路径</param>
     /// <param name="assemblyFileName">要查找的程序集文件名</param>
     /// <returns>找到的程序集文件路径，如果未找到则返回null</returns>
-    private string? FindAssemblyInDirectory(string directoryPath, string assemblyFileName)
+    private static string? FindAssemblyInDirectory(string directoryPath, string assemblyFileName)
     {
         try
         {
