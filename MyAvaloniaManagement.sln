@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyPlugTest", "MyPlugTest\My
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj", "{FAAE3A0A-71D9-43CA-8C86-8A244AB98BD1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySmallTools", "MySmallTools\MySmallTools.csproj", "{5129F0AA-D194-453D-A51F-F2A8F9DBDE71}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{FAAE3A0A-71D9-43CA-8C86-8A244AB98BD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FAAE3A0A-71D9-43CA-8C86-8A244AB98BD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FAAE3A0A-71D9-43CA-8C86-8A244AB98BD1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5129F0AA-D194-453D-A51F-F2A8F9DBDE71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5129F0AA-D194-453D-A51F-F2A8F9DBDE71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5129F0AA-D194-453D-A51F-F2A8F9DBDE71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5129F0AA-D194-453D-A51F-F2A8F9DBDE71}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

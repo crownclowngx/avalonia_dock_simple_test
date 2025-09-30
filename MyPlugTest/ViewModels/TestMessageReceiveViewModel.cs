@@ -11,17 +11,13 @@ public partial class TestMessageReceiveViewModel : Document
 {
     // 列表数据源
     [ObservableProperty]
-    private ObservableCollection<MessageItem> _messages = new();
+    private ObservableCollection<MessageItem> _messages = [];
     private readonly IMessengerService _messengerService;
     private int _messageIdCounter = 1;
     public TestMessageReceiveViewModel(IMessengerService messengerService = null)
     {
         // 设置标题
         Title = "消息接收测试";
-            
-        // 初始化消息列表
-        _messages = new ObservableCollection<MessageItem>();
-        
         // 使用传入的messengerService或创建默认实例
         _messengerService = messengerService ?? new MessengerService();
         

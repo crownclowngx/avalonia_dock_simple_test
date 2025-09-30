@@ -6,3 +6,6 @@
 /MyPlugTest/bin
 /DaTangAccountingHelpPlug/bin
 /DaTangAccountingHelpPlug/obj
+MySmallTools/bin/Debug/net9.0/MySmallTools.deps.json
+/MySmallTools/bin
+/MySmallTools/obj
