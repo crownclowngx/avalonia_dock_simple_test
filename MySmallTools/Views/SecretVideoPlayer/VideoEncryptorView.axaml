@@ -1,0 +1,268 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="MySmallTools.Views.SecretVideoPlayer.VideoEncryptorView">
+  
+  <Grid Margin="20">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- 标题 -->
+    <TextBlock Grid.Row="0" 
+               Text="视频文件加密器" 
+               FontSize="24" 
+               FontWeight="Bold" 
+               HorizontalAlignment="Center" 
+               Margin="0,0,0,20"/>
+
+    <!-- 文件选择区域 -->
+    <Border Grid.Row="1" 
+            BorderBrush="LightGray" 
+            BorderThickness="1" 
+            CornerRadius="5" 
+            Padding="15" 
+            Margin="0,0,0,15">
+      <StackPanel>
+        <TextBlock Text="1. 选择要加密的视频文件" 
+                   FontWeight="SemiBold" 
+                   FontSize="16" 
+                   Margin="0,0,0,10"/>
+        
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          
+          <TextBox Grid.Column="0" 
+                   Text="{Binding SelectedFilePath}" 
+                   Watermark="请选择视频文件..." 
+                   IsReadOnly="True" 
+                   Margin="0,0,10,0"/>
+          
+          <Button Grid.Column="1" 
+                  Content="浏览..." 
+                  Command="{Binding SelectFileCommand}" 
+                  Width="80"/>
+        </Grid>
+        
+        <!-- 文件信息 -->
+        <StackPanel Orientation="Horizontal" 
+                    Margin="0,10,0,0">
+          <TextBlock Text="{Binding FileSizeText}" 
+                     Foreground="Gray" 
+                     Margin="0,0,20,0"/>
+          <TextBlock Text="{Binding FileFormatText}" 
+                     Foreground="Gray"/>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- 输出路径设置 -->
+    <Border Grid.Row="2" 
+            BorderBrush="LightGray" 
+            BorderThickness="1" 
+            CornerRadius="5" 
+            Padding="15" 
+            Margin="0,0,0,15">
+      <StackPanel>
+        <TextBlock Text="2. 设置输出文件路径" 
+                   FontWeight="SemiBold" 
+                   FontSize="16" 
+                   Margin="0,0,0,10"/>
+        
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          
+          <TextBox Grid.Column="0" 
+                   Text="{Binding OutputFilePath}" 
+                   Watermark="输出文件路径..." 
+                   Margin="0,0,10,0"/>
+          
+          <Button Grid.Column="1" 
+                  Content="自动生成" 
+                  Command="{Binding GenerateOutputPathCommand}" 
+                  Width="80"/>
+        </Grid>
+      </StackPanel>
+    </Border>
+
+    <!-- 密码设置区域 -->
+    <Border Grid.Row="3" 
+            BorderBrush="LightGray" 
+            BorderThickness="1" 
+            CornerRadius="5" 
+            Padding="15" 
+            Margin="0,0,0,15">
+      <StackPanel>
+        <TextBlock Text="3. 设置加密密码" 
+                   FontWeight="SemiBold" 
+                   FontSize="16" 
+                   Margin="0,0,0,10"/>
+        
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          
+          <!-- 密码输入 -->
+          <TextBlock Grid.Row="0" Grid.Column="0" 
+                     Text="密码:" 
+                     VerticalAlignment="Center" 
+                     Margin="0,0,10,0"/>
+          
+          <TextBox Grid.Row="0" Grid.Column="1" 
+                   Text="{Binding Password}" 
+                   Watermark="请输入加密密码（至少6位）..." 
+                   Margin="0,0,10,0"/>
+          
+          <Button Grid.Row="0" Grid.Column="2" 
+                  Content="显示/隐藏" 
+                  Command="{Binding TogglePasswordVisibilityCommand}" 
+                  Width="80"/>
+          
+          <!-- 确认密码 -->
+          <TextBlock Grid.Row="1" Grid.Column="0" 
+                     Text="确认密码:" 
+                     VerticalAlignment="Center" 
+                     Margin="0,10,10,0"/>
+          
+          <TextBox Grid.Row="1" Grid.Column="1" 
+                   Text="{Binding ConfirmPassword}" 
+                   Watermark="请再次输入密码..." 
+                   Margin="0,10,10,0"/>
+          
+          <!-- 密码强度提示 -->
+          <TextBlock Grid.Row="2" Grid.Column="1" 
+                     Text="密码长度至少6位，建议包含字母、数字和特殊字符" 
+                     Foreground="Gray" 
+                     FontSize="12" 
+                     Margin="0,5,0,0"/>
+        </Grid>
+      </StackPanel>
+    </Border>
+
+    <!-- 操作按钮 -->
+    <StackPanel Grid.Row="4" 
+                Orientation="Horizontal" 
+                HorizontalAlignment="Center" 
+                Margin="0,0,0,20">
+      <Button Content="开始加密" 
+              Command="{Binding StartEncryptionCommand}" 
+              Background="DodgerBlue" 
+              Foreground="White" 
+              Padding="20,10" 
+              Margin="0,0,10,0" 
+              FontWeight="SemiBold"/>
+      
+      <Button Content="清空重置" 
+              Command="{Binding ClearCommand}" 
+              Background="Gray" 
+              Foreground="White" 
+              Padding="20,10" 
+              FontWeight="SemiBold"/>
+    </StackPanel>
+
+    <!-- 进度显示区域 -->
+    <Border Grid.Row="5" 
+            BorderBrush="LightGray" 
+            BorderThickness="1" 
+            CornerRadius="5" 
+            Padding="15" 
+            Margin="0,0,0,15"
+            IsVisible="{Binding IsEncrypting}">
+      <StackPanel>
+        <TextBlock Text="加密进度" 
+                   FontWeight="SemiBold" 
+                   FontSize="16" 
+                   Margin="0,0,0,10"/>
+        
+        <!-- 进度条 -->
+        <ProgressBar Value="{Binding Progress}" 
+                     Maximum="100" 
+                     Height="20" 
+                     Margin="0,0,0,10"/>
+        
+        <!-- 进度信息 -->
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          
+          <StackPanel Grid.Column="0">
+            <TextBlock Text="{Binding ProgressText}" 
+                       FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding ProcessingSpeedText}" 
+                       Foreground="Gray" 
+                       FontSize="12"/>
+          </StackPanel>
+          
+          <StackPanel Grid.Column="1" 
+                      HorizontalAlignment="Right">
+            <TextBlock Text="{Binding EstimatedTimeText}" 
+                       Foreground="Gray" 
+                       FontSize="12"/>
+          </StackPanel>
+        </Grid>
+      </StackPanel>
+    </Border>
+
+    <!-- 状态信息 -->
+    <Border Grid.Row="6" 
+            BorderBrush="LightGray" 
+            BorderThickness="1" 
+            CornerRadius="5" 
+            Padding="15" 
+            VerticalAlignment="Top">
+      <StackPanel>
+        <TextBlock Text="状态信息" 
+                   FontWeight="SemiBold" 
+                   FontSize="16" 
+                   Margin="0,0,0,10"/>
+        
+        <ScrollViewer Height="100" 
+                      VerticalScrollBarVisibility="Auto">
+          <TextBlock Text="{Binding StatusMessage}" 
+                     TextWrapping="Wrap" 
+                     Foreground="DarkBlue"/>
+        </ScrollViewer>
+        
+        <!-- 使用说明 -->
+        <Expander Header="使用说明" 
+                  Margin="0,10,0,0">
+          <TextBlock TextWrapping="Wrap" 
+                     Foreground="Gray" 
+                     FontSize="12">
+            1. 选择要加密的视频文件（支持常见视频格式）
+            2. 设置输出文件路径（可自动生成）
+            3. 输入加密密码（建议使用强密码）
+            4. 点击"开始加密"进行文件加密
+            5. 加密完成后，原文件保持不变，生成新的加密文件
+            
+            注意：请妥善保管加密密码，丢失密码将无法解密文件！
+          </TextBlock>
+        </Expander>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>
