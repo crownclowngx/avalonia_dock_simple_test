@@ -220,10 +220,13 @@ public class SecureVideoPlayer : IDisposable
             
             ErrorOccurred?.Invoke(this, $"解密完成 - 流长度: {decryptedStream.Length} 字节");
             
+            ErrorOccurred?.Invoke(this, "创建可寻址媒体输入...");
+            // 使用自定义的SeekableMemoryMediaInput来支持seeking
+            var seekableInput = new SeekableMemoryMediaInput((MemoryStream)decryptedStream);
+            
             ErrorOccurred?.Invoke(this, "创建LibVLC媒体对象...");
-            // 创建媒体
-            var streamMediaInput = new StreamMediaInput(decryptedStream);
-            _currentMedia = new Media(_libVLC, streamMediaInput);
+            // 使用自定义MediaInput创建媒体（支持seeking）
+            _currentMedia = new Media(_libVLC, seekableInput);
             ErrorOccurred?.Invoke(this, $"媒体对象创建成功，状态: {_currentMedia.State}");
             
             // 添加媒体状态变化监听

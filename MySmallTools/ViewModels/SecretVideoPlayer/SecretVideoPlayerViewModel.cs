@@ -33,6 +33,7 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
     private bool _isSeekable = false;
     private string _bufferInfo = string.Empty;
     private bool _disposed = false;
+    private bool _isDragging = false;
     
     public SecretVideoPlayerViewModel()
     {
@@ -97,7 +98,7 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
         get => _position;
         set
         {
-            if (SetProperty(ref _position, value) && _isSeekable)
+            if (SetProperty(ref _position, value) && _isSeekable && !_isDragging)
             {
                 _player.SetPosition((float)(value / 100.0));
             }
@@ -258,6 +259,54 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
         if (_isSeekable)
         {
             _player.SetPosition((float)(positionPercent / 100.0));
+        }
+    }
+    
+    /// <summary>
+    /// 跳转到指定位置（用于拖拽跳转）
+    /// </summary>
+    public void SeekToPosition(double positionPercent)
+    {
+        if (_isSeekable)
+        {
+            _player.SetPosition((float)(positionPercent / 100.0));
+            // 立即更新位置显示
+            _position = positionPercent;
+            OnPropertyChanged(nameof(Position));
+        }
+    }
+    
+    /// <summary>
+    /// 暂停位置更新（拖拽时使用）
+    /// </summary>
+    public void PausePositionUpdates()
+    {
+        _isDragging = true;
+        _positionTimer.Stop();
+    }
+    
+    /// <summary>
+    /// 恢复位置更新（拖拽结束后使用）
+    /// </summary>
+    public void ResumePositionUpdates()
+    {
+        _isDragging = false;
+        if (_isPlaying)
+        {
+            _positionTimer.Start();
+        }
+    }
+    
+    /// <summary>
+    /// 更新当前时间显示（拖拽过程中使用）
+    /// </summary>
+    public void UpdateCurrentTimeDisplay(double positionPercent)
+    {
+        var info = _player.GetVideoInfo();
+        if (info != null && info.Duration > 0)
+        {
+            var timeMs = (long)(info.Duration * positionPercent / 100.0);
+            CurrentTime = FormatTime(timeMs);
         }
     }
     
