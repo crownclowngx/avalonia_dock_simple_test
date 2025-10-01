@@ -224,12 +224,17 @@ public class SecureVideoPlayer : IDisposable
             
             var decryptedStream = decryptor.DecryptedStream;
             
-            ErrorOccurred?.Invoke(this, "创建内存媒体输入...");
-            // 使用基本的SeekableMemoryMediaInput
-            var seekableInput = new SeekableMemoryMediaInput((MemoryStream)decryptedStream);
+            ErrorOccurred?.Invoke(this, "估算视频比特率...");
+            // 智能估算比特率以优化缓冲块大小
+            var estimatedBitrate = VideoBitrateEstimator.SmartEstimate(decryptedStream, filePath);
+            ErrorOccurred?.Invoke(this, $"估算比特率: {estimatedBitrate / 1000}Kbps");
+            
+            ErrorOccurred?.Invoke(this, "创建优化的分块缓冲媒体输入...");
+            // 使用优化的分块缓冲策略：专门针对LibVLC在可寻址模式下的随机访问优化
+            var chunkedInput = new OptimizedChunkedBufferMediaInput(decryptedStream, estimatedBitrate);
             
             ErrorOccurred?.Invoke(this, "创建LibVLC媒体对象...");
-            _currentMedia = new Media(_libVLC, seekableInput);
+            _currentMedia = new Media(_libVLC, chunkedInput);
             ErrorOccurred?.Invoke(this, $"媒体对象创建成功，状态: {_currentMedia.State}");
             
             // 添加媒体状态变化监听
