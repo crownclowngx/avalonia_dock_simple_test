@@ -99,7 +99,7 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
         {
             if (SetProperty(ref _position, value) && _isSeekable)
             {
-                _ = Task.Run(async () => await _player.SetPositionAsync((float)(value / 100.0)));
+                _player.SetPosition((float)(value / 100.0));
             }
         }
     }
@@ -189,6 +189,20 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
             {
                 StatusMessage = "视频文件加载成功";
                 UpdateVideoInfo();
+                // 关键修复：加载成功后立即更新命令状态
+                Dispatcher.UIThread.Post(() =>
+                {
+                    // 手动更新播放状态
+                    IsPlaying = false;
+                    IsPaused = false;
+                
+                    // 强制更新命令的 CanExecute 状态
+                    ((RelayCommand)PlayCommand).RaiseCanExecuteChanged();
+                    ((RelayCommand)PauseCommand).RaiseCanExecuteChanged();
+                    ((RelayCommand)StopCommand).RaiseCanExecuteChanged();
+                
+                    StatusMessage = "视频加载完成，可以开始播放";
+                });
             }
             else
             {
@@ -208,9 +222,9 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
     /// <summary>
     /// 播放视频
     /// </summary>
-    public void Play()
+    public async void Play()
     {
-        if (_player.Play())
+        if (await _player.Play())
         {
             _positionTimer.Start();
         }
@@ -239,11 +253,11 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
     /// <summary>
     /// 设置播放位置
     /// </summary>
-    public async Task SetPositionAsync(double positionPercent)
+    public void SetPosition(double positionPercent)
     {
         if (_isSeekable)
         {
-            await _player.SetPositionAsync((float)(positionPercent / 100.0));
+            _player.SetPosition((float)(positionPercent / 100.0));
         }
     }
     

@@ -108,52 +108,13 @@ public class VideoEncryptorService
         IProgress<EncryptionProgress>? progressCallback,
         CancellationToken cancellationToken)
     {
-        const int bufferSize = 64 * 1024; // 64KB 缓冲区
-        
-        using var inputStream = File.OpenRead(task.InputFilePath);
-        using var outputStream = File.Create(task.OutputFilePath);
-        
-        var buffer = new byte[bufferSize];
-        long totalProcessed = 0;
-        
-        // 这里简化实现，实际应该调用SmartVideoEncryptor的方法
-        // 但需要修改SmartVideoEncryptor以支持进度回调
-        
-        while (totalProcessed < task.TotalBytes)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            
-            var bytesToRead = (int)Math.Min(bufferSize, task.TotalBytes - totalProcessed);
-            var bytesRead = await inputStream.ReadAsync(buffer, 0, bytesToRead, cancellationToken);
-            
-            if (bytesRead == 0) break;
-            
-            // 这里应该是加密逻辑，现在简化为直接复制
-            await outputStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
-            
-            totalProcessed += bytesRead;
-            task.ProcessedBytes = totalProcessed;
-            
-            var percentage = (double)totalProcessed / task.TotalBytes * 100;
-            task.Progress = percentage;
-            
-            // 报告进度
-            progressCallback?.Report(new EncryptionProgress
-            {
-                ProcessedBytes = totalProcessed,
-                TotalBytes = task.TotalBytes,
-                Percentage = percentage,
-                Status = $"正在加密... {percentage:F1}%"
-            });
-            
-            // 模拟一些处理时间
-            await Task.Delay(10, cancellationToken);
-        }
-        
-        // 注意：这里应该调用真正的SmartVideoEncryptor.EncryptVideoAsync方法
-        // 但需要先修改该方法以支持进度回调和取消令牌
-        // 为了演示，这里使用简化版本
-        await _encryptor.EncryptVideoAsync(task.InputFilePath, task.OutputFilePath, task.Password);
+        // 直接调用SmartVideoEncryptor的带进度回调的方法
+        await _encryptor.EncryptVideoWithProgressAsync(
+            task.InputFilePath, 
+            task.OutputFilePath, 
+            task.Password, 
+            progressCallback, 
+            cancellationToken);
     }
 
     /// <summary>

@@ -1,5 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using LibVLCSharp.Shared;
 
 namespace MySmallTools.Business.SecretVideoPlayer;
 
@@ -8,21 +10,127 @@ namespace MySmallTools.Business.SecretVideoPlayer;
 /// </summary>
 public class SmartVideoEncryptor
 {
-    private const int ENCRYPTION_HEADER_SIZE = 64; // 加密信息头大小
-    private const string MAGIC_HEADER = "SECVID01"; // 魔数标识
+    private const int BASIC_HEADER_SIZE = 64; // 基础加密信息头大小
+    private const int MAX_METADATA_SIZE = 512; // 元数据最大大小
+    private const int ENCRYPTION_HEADER_SIZE = BASIC_HEADER_SIZE + MAX_METADATA_SIZE; // 总加密信息头大小
+    private const string MAGIC_HEADER = "SECVID02"; // 魔数标识（版本2支持元数据）
     
     /// <summary>
-    /// 加密视频文件
+    /// 提取视频文件元数据
+    /// </summary>
+    /// <param name="videoPath">视频文件路径</param>
+    /// <returns>视频元数据，如果提取失败返回null</returns>
+    private async Task<VideoMetadata?> ExtractVideoMetadataAsync(string videoPath)
+    {
+        try
+        {
+            // 确保LibVLC已初始化
+            Core.Initialize();
+            
+            using var libVLC = new LibVLC();
+            using var mediaPlayer = new MediaPlayer(libVLC);
+            using var media = new Media(libVLC, videoPath, FromType.FromPath);
+            
+            // 解析媒体信息
+            await media.Parse(MediaParseOptions.ParseNetwork);
+            
+            // 等待解析完成
+            var timeout = DateTime.Now.AddSeconds(10);
+            while (media.ParsedStatus != MediaParsedStatus.Done && DateTime.Now < timeout)
+            {
+                await Task.Delay(100);
+            }
+            
+            if (media.ParsedStatus != MediaParsedStatus.Done)
+            {
+                return null;
+            }
+            
+            var fileInfo = new FileInfo(videoPath);
+            var metadata = new VideoMetadata
+            {
+                Duration = media.Duration,
+                FileSize = fileInfo.Length,
+                OriginalFormat = Path.GetExtension(videoPath).ToLowerInvariant()
+            };
+            
+            // 获取轨道信息
+            var tracks = media.Tracks;
+            foreach (var track in tracks)
+            {
+                if (track.TrackType == TrackType.Video)
+                {
+                    metadata.VideoTrackCount++;
+                    if (track.Data.Video.Width > 0 && track.Data.Video.Height > 0)
+                    {
+                        metadata.Width = (int)track.Data.Video.Width;
+                        metadata.Height = (int)track.Data.Video.Height;
+                        if (track.Data.Video.FrameRateNum > 0 && track.Data.Video.FrameRateDen > 0)
+                        {
+                            metadata.FrameRate = (double)track.Data.Video.FrameRateNum / track.Data.Video.FrameRateDen;
+                        }
+                    }
+                }
+                else if (track.TrackType == TrackType.Audio)
+                {
+                    metadata.AudioTrackCount++;
+                }
+            }
+            
+            return metadata;
+        }
+        catch (Exception)
+        {
+            // 如果提取失败，返回基本信息
+            try
+            {
+                var fileInfo = new FileInfo(videoPath);
+                return new VideoMetadata
+                {
+                    FileSize = fileInfo.Length,
+                    OriginalFormat = Path.GetExtension(videoPath).ToLowerInvariant()
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+    
+
+    /// <summary>
+    /// 加密视频文件（带进度回调）
     /// </summary>
     /// <param name="inputPath">输入视频文件路径</param>
     /// <param name="outputPath">输出加密文件路径</param>
     /// <param name="password">加密密码</param>
+    /// <param name="progressCallback">进度回调</param>
+    /// <param name="cancellationToken">取消令牌</param>
     /// <param name="preserveHeaderSize">保留的原始文件头大小（默认自动检测）</param>
-    public async Task EncryptVideoAsync(string inputPath, string outputPath, string password, int? preserveHeaderSize = null)
+    public async Task EncryptVideoWithProgressAsync(string inputPath, string outputPath, string password, 
+        IProgress<EncryptionProgress>? progressCallback = null, 
+        CancellationToken cancellationToken = default,
+        int? preserveHeaderSize = null)
     {
+        // 报告元数据提取进度
+        progressCallback?.Report(new EncryptionProgress
+        {
+            ProcessedBytes = 0,
+            TotalBytes = 0,
+            Percentage = 0,
+            Status = "正在提取视频元数据..."
+        });
+        
+        // 提取视频元数据
+        var metadata = await ExtractVideoMetadataAsync(inputPath);
+        
         using var inputStream = File.OpenRead(inputPath);
         using var outputStream = File.Create(outputPath);
         
+        var totalBytes = inputStream.Length;
+        long processedBytes = 0;
+
         // 检测视频格式并确定需要保留的文件头大小
         var headerSize = preserveHeaderSize ?? DetectVideoHeaderSize(inputStream);
         
@@ -32,17 +140,28 @@ public class SmartVideoEncryptor
         // 读取并保留原始文件头
         inputStream.Position = 0;
         var originalHeader = new byte[headerSize];
-        await inputStream.ReadExactlyAsync(originalHeader);
+        await inputStream.ReadExactlyAsync(originalHeader, cancellationToken);
+        processedBytes += headerSize;
         
         // 写入原始文件头（不加密）
-        await outputStream.WriteAsync(originalHeader);
+        await outputStream.WriteAsync(originalHeader, cancellationToken);
         
-        // 写入加密信息头
-        var encryptionHeader = CreateEncryptionHeader(key, iv, headerSize);
-        await outputStream.WriteAsync(encryptionHeader);
+        // 写入加密信息头（包含元数据）
+        var encryptionHeader = CreateEncryptionHeader(key, iv, headerSize, metadata);
+        await outputStream.WriteAsync(encryptionHeader, cancellationToken);
         
-        // 加密剩余的视频数据
-        await EncryptVideoDataAsync(inputStream, outputStream, key, iv);
+        // 报告初始进度
+        progressCallback?.Report(new EncryptionProgress
+        {
+            ProcessedBytes = processedBytes,
+            TotalBytes = totalBytes,
+            Percentage = (double)processedBytes / totalBytes * 100,
+            Status = "正在准备加密..."
+        });
+        
+        // 加密剩余的视频数据（带进度回调）
+        await EncryptVideoDataWithProgressAsync(inputStream, outputStream, key, iv, 
+            totalBytes, processedBytes, progressCallback, cancellationToken);
     }
     
     /// <summary>
@@ -83,9 +202,9 @@ public class SmartVideoEncryptor
     }
     
     /// <summary>
-    /// 创建加密信息头
+    /// 创建加密信息头（包含元数据）
     /// </summary>
-    private byte[] CreateEncryptionHeader(byte[] key, byte[] iv, int originalHeaderSize)
+    private byte[] CreateEncryptionHeader(byte[] key, byte[] iv, int originalHeaderSize, VideoMetadata? metadata)
     {
         var header = new byte[ENCRYPTION_HEADER_SIZE];
         var offset = 0;
@@ -95,8 +214,8 @@ public class SmartVideoEncryptor
         Array.Copy(magicBytes, 0, header, offset, magicBytes.Length);
         offset += 8;
         
-        // 写入版本号
-        BitConverter.GetBytes((uint)1).CopyTo(header, offset);
+        // 写入版本号（版本2支持元数据）
+        BitConverter.GetBytes((uint)2).CopyTo(header, offset);
         offset += 4;
         
         // 写入原始文件头大小
@@ -111,14 +230,45 @@ public class SmartVideoEncryptor
         using var sha256 = SHA256.Create();
         var keyHash = sha256.ComputeHash(key);
         Array.Copy(keyHash, 0, header, offset, 32);
+        offset += 32;
+        
+        // 写入元数据（如果存在）
+        if (metadata != null)
+        {
+            try
+            {
+                var metadataJson = JsonSerializer.Serialize(metadata);
+                var metadataBytes = Encoding.UTF8.GetBytes(metadataJson);
+                
+                // 写入元数据长度（4字节）
+                BitConverter.GetBytes(metadataBytes.Length).CopyTo(header, offset);
+                offset += 4;
+                
+                // 写入元数据内容（最多MAX_METADATA_SIZE - 4字节）
+                var maxMetadataContentSize = MAX_METADATA_SIZE - 4;
+                var actualMetadataSize = Math.Min(metadataBytes.Length, maxMetadataContentSize);
+                Array.Copy(metadataBytes, 0, header, offset, actualMetadataSize);
+            }
+            catch
+            {
+                // 如果序列化失败，写入0长度
+                BitConverter.GetBytes(0).CopyTo(header, offset);
+            }
+        }
+        else
+        {
+            // 没有元数据，写入0长度
+            BitConverter.GetBytes(0).CopyTo(header, offset);
+        }
         
         return header;
     }
-    
+
     /// <summary>
-    /// 使用AES-CTR模式加密视频数据
+    /// 使用AES-CTR模式加密视频数据（带进度回调）
     /// </summary>
-    private async Task EncryptVideoDataAsync(Stream inputStream, Stream outputStream, byte[] key, byte[] iv)
+    private async Task EncryptVideoDataWithProgressAsync(Stream inputStream, Stream outputStream, byte[] key, byte[] iv,
+        long totalBytes, long initialProcessedBytes, IProgress<EncryptionProgress>? progressCallback, CancellationToken cancellationToken)
     {
         using var aes = Aes.Create();
         aes.Mode = CipherMode.ECB; // CTR模式需要手动实现
@@ -130,10 +280,13 @@ public class SmartVideoEncryptor
         Array.Copy(iv, counter, 16);
         
         long position = 0;
+        long processedBytes = initialProcessedBytes;
         int bytesRead;
         
-        while ((bytesRead = await inputStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        while ((bytesRead = await inputStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             // 生成CTR模式的密钥流
             var keyStream = GenerateCtrKeyStream(aes, counter, bytesRead);
             
@@ -143,11 +296,22 @@ public class SmartVideoEncryptor
                 buffer[i] ^= keyStream[i];
             }
             
-            await outputStream.WriteAsync(buffer, 0, bytesRead);
+            await outputStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
             
-            // 更新计数器
+            // 更新计数器和进度
             position += bytesRead;
+            processedBytes += bytesRead;
             UpdateCtrCounter(counter, iv, position);
+            
+            // 报告进度
+            var percentage = (double)processedBytes / totalBytes * 100;
+            progressCallback?.Report(new EncryptionProgress
+            {
+                ProcessedBytes = processedBytes,
+                TotalBytes = totalBytes,
+                Percentage = percentage,
+                Status = $"正在加密... {percentage:F1}%"
+            });
         }
     }
     
@@ -162,10 +326,14 @@ public class SmartVideoEncryptor
         
         using var encryptor = aes.CreateEncryptor();
         
+        // 创建计数器的副本，避免修改原始计数器
+        var workingCounter = new byte[16];
+        Array.Copy(counter, workingCounter, 16);
+        
         for (int i = 0; i < blocks; i++)
         {
             var currentCounter = new byte[16];
-            Array.Copy(counter, currentCounter, 16);
+            Array.Copy(workingCounter, currentCounter, 16);
             
             // 加密计数器
             var encryptedCounter = new byte[16];
@@ -175,8 +343,8 @@ public class SmartVideoEncryptor
             var copyLength = Math.Min(blockSize, length - i * blockSize);
             Array.Copy(encryptedCounter, 0, keyStream, i * blockSize, copyLength);
             
-            // 递增计数器
-            IncrementCounter(counter);
+            // 递增工作计数器（不修改原始计数器）
+            IncrementCounter(workingCounter);
         }
         
         return keyStream;
@@ -247,7 +415,7 @@ public class SmartVideoEncryptor
             stream.Read(buffer, 0, 8);
             
             var magic = Encoding.ASCII.GetString(buffer);
-            var isValid = magic == MAGIC_HEADER;
+            var isValid = magic == MAGIC_HEADER || magic == "SECVID01"; // 支持旧版本
             
             stream.Position = originalPosition;
             return isValid;
@@ -300,6 +468,31 @@ public class SmartVideoEncryptor
             Array.Copy(header, 16, info.IV, 0, 16);
             Array.Copy(header, 32, info.KeyHash, 0, 32);
             
+            // 如果是版本2，尝试读取元数据
+            if (info.Version >= 2)
+            {
+                try
+                {
+                    var metadataLengthOffset = 64; // 基础头部大小
+                    var metadataLength = BitConverter.ToInt32(header, metadataLengthOffset);
+                    
+                    if (metadataLength > 0 && metadataLength <= MAX_METADATA_SIZE - 4)
+                    {
+                        var metadataOffset = metadataLengthOffset + 4;
+                        var metadataBytes = new byte[metadataLength];
+                        Array.Copy(header, metadataOffset, metadataBytes, 0, metadataLength);
+                        
+                        var metadataJson = Encoding.UTF8.GetString(metadataBytes);
+                        info.Metadata = JsonSerializer.Deserialize<VideoMetadata>(metadataJson);
+                    }
+                }
+                catch
+                {
+                    // 如果读取元数据失败，继续处理但不设置元数据
+                    info.Metadata = null;
+                }
+            }
+            
             return info;
         }
         finally
@@ -350,6 +543,135 @@ public class SmartVideoEncryptor
         
         return -1;
     }
+
+    /// <summary>
+    /// 验证密码是否正确
+    /// </summary>
+    public bool ValidatePassword(string encryptedFilePath, string password)
+    {
+        try
+        {
+            var videoInfo = GetEncryptedVideoInfo(encryptedFilePath);
+            var (key, _) = GenerateKeyAndIv(password);
+            
+            // 验证密钥哈希
+            using var sha256 = SHA256.Create();
+            var keyHash = sha256.ComputeHash(key);
+            
+            return keyHash.SequenceEqual(videoInfo.KeyHash);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 解密视频到内存流
+    /// </summary>
+    public async Task<MemoryStream> DecryptToStreamAsync(string encryptedFilePath, string password, 
+        IProgress<(long processed, long total, string message)>? progress = null)
+    {
+        var videoInfo = GetEncryptedVideoInfo(encryptedFilePath);
+        var (key, _) = GenerateKeyAndIv(password);
+        
+        
+        // 验证密码
+        using var sha256 = SHA256.Create();
+        var keyHash = sha256.ComputeHash(key);
+        if (!keyHash.SequenceEqual(videoInfo.KeyHash))
+        {
+            throw new UnauthorizedAccessException("密码错误");
+        }
+
+        using var inputStream = File.OpenRead(encryptedFilePath);
+        
+        // 计算总的输出大小：原始头部 + 解密后的数据
+        var encryptedDataLength = inputStream.Length - videoInfo.EncryptedDataPosition;
+        var totalOutputSize = videoInfo.OriginalHeaderSize + encryptedDataLength;
+        var outputStream = new MemoryStream((int)totalOutputSize);
+
+        // 首先写入原始视频头部（未加密部分）
+        inputStream.Position = 0;
+        var originalHeader = new byte[videoInfo.OriginalHeaderSize];
+        await inputStream.ReadExactlyAsync(originalHeader);
+        await outputStream.WriteAsync(originalHeader);
+        
+        // 报告头部写入进度
+        progress?.Report((videoInfo.OriginalHeaderSize, totalOutputSize, "正在写入视频头部..."));
+
+        // 然后解密并写入视频数据
+        inputStream.Position = videoInfo.EncryptedDataPosition;
+
+        const int bufferSize = 64 * 1024; // 64KB 缓冲区
+        
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.Mode = CipherMode.ECB; // 使用ECB模式手动实现CTR
+        aes.Padding = PaddingMode.None;
+
+        var buffer = new byte[bufferSize];
+        var counter = new byte[16];
+        Array.Copy(videoInfo.IV, counter, 16); // 初始化计数器为IV
+        long totalProcessed = videoInfo.OriginalHeaderSize; // 已处理的字节数包括头部
+        long encryptedDataProcessed = 0; // 已处理的加密数据字节数
+
+        while (encryptedDataProcessed < encryptedDataLength)
+        {
+            var remainingEncryptedData = encryptedDataLength - encryptedDataProcessed;
+            var toRead = (int)Math.Min(bufferSize, remainingEncryptedData);
+            var bytesRead = await inputStream.ReadAsync(buffer, 0, toRead);
+
+            if (bytesRead == 0) break;
+
+            // 生成CTR模式的密钥流（使用当前计数器）
+            var keyStream = GenerateCtrKeyStream(aes, counter, bytesRead);
+            
+            // XOR解密（CTR模式加密和解密是相同的操作）
+            for (int i = 0; i < bytesRead; i++)
+            {
+                buffer[i] ^= keyStream[i];
+            }
+            
+            // 写入解密后的数据
+            await outputStream.WriteAsync(buffer, 0, bytesRead);
+
+            // 更新位置和计数器（在处理完数据后）
+            encryptedDataProcessed += bytesRead;
+            totalProcessed += bytesRead;
+            UpdateCtrCounter(counter, videoInfo.IV, encryptedDataProcessed);
+
+            // 报告进度
+            progress?.Report((totalProcessed, totalOutputSize, $"解密进度: {totalProcessed}/{totalOutputSize} 字节"));
+
+            // 让出CPU时间
+            if (totalProcessed % (bufferSize * 10) == 0)
+            {
+                await Task.Delay(1);
+            }
+        }
+
+        // 重置流位置到开始
+        outputStream.Position = 0;
+        return outputStream;
+    }
+}
+
+/// <summary>
+/// 视频元数据信息
+/// </summary>
+public class VideoMetadata
+{
+    public long Duration { get; set; } = 0;           // 视频时长（毫秒）
+    public int Width { get; set; } = 0;               // 视频宽度
+    public int Height { get; set; } = 0;              // 视频高度
+    public double FrameRate { get; set; } = 0;        // 帧率
+    public int VideoTrackCount { get; set; } = 0;     // 视频轨道数
+    public int AudioTrackCount { get; set; } = 0;     // 音频轨道数
+    public string VideoCodec { get; set; } = string.Empty;  // 视频编码
+    public string AudioCodec { get; set; } = string.Empty;  // 音频编码
+    public long FileSize { get; set; } = 0;           // 原始文件大小
+    public string OriginalFormat { get; set; } = string.Empty; // 原始格式
 }
 
 /// <summary>
@@ -364,4 +686,8 @@ public class EncryptedVideoInfo
     public byte[] KeyHash { get; set; } = Array.Empty<byte>();
     public long EncryptionHeaderPosition { get; set; }
     public long EncryptedDataPosition { get; set; }
+    
+    // 新增：视频元数据信息
+    public VideoMetadata? Metadata { get; set; }
+    public bool HasMetadata => Metadata != null;
 }
