@@ -5,6 +5,8 @@ using Avalonia.VisualTree;
 using Avalonia.Input;
 using Avalonia.Controls.Primitives;
 using MySmallTools.ViewModels.SecretVideoPlayer;
+using System;
+using Avalonia;
 
 namespace MySmallTools.Views.SecretVideoPlayer;
 
@@ -13,13 +15,23 @@ namespace MySmallTools.Views.SecretVideoPlayer;
 /// </summary>
 public partial class SecretVideoPlayerView : UserControl
 {
+    private Slider _sliderControl;
     private bool _isDragging = false;
     
     public SecretVideoPlayerView()
     {
         InitializeComponent();
         DataContext = new SecretVideoPlayerViewModel();
+        // 注册Loaded事件
+        this.Loaded += OnViewLoaded;
     }
+    
+    private void OnViewLoaded(object sender, RoutedEventArgs e)
+    {
+        ProgressSlider.AddHandler(PointerPressedEvent, OnSliderPointerPressed, handledEventsToo: true);
+        ProgressSlider.AddHandler(PointerReleasedEvent, OnSliderPointerReleased, handledEventsToo: true);
+    }
+    
     
     /// <summary>
     /// 浏览文件按钮点击事件
@@ -98,4 +110,15 @@ public partial class SecretVideoPlayerView : UserControl
     }
     
     // 资源清理将在ViewModel的Dispose方法中处理
+    private void OnProgressSliderPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == Slider.ValueProperty)
+        {
+            if (DataContext is SecretVideoPlayerViewModel viewModel)
+            {
+                // 拖拽过程中实时更新显示的当前时间
+                viewModel.UpdateCurrentTimeDisplay((double)e.NewValue);
+            }
+        }
+    }
 }

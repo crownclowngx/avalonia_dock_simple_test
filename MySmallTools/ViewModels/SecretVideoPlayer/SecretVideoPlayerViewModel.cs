@@ -267,13 +267,10 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
     /// </summary>
     public void SeekToPosition(double positionPercent)
     {
-        if (_isSeekable)
-        {
-            _player.SetPosition((float)(positionPercent / 100.0));
-            // 立即更新位置显示
-            _position = positionPercent;
-            OnPropertyChanged(nameof(Position));
-        }
+        _player.SetPosition((float)(positionPercent / 100.0));
+        // 立即更新位置显示
+        _position = positionPercent;
+        OnPropertyChanged(nameof(Position));
     }
     
     /// <summary>

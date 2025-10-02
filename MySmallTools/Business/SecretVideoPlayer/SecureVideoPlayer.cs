@@ -500,7 +500,7 @@ public class SecureVideoPlayer : IDisposable
                 videoInfo.HasAudio = _cachedMetadata.AudioTrackCount > 0;
                 videoInfo.VideoTrackCount = _cachedMetadata.VideoTrackCount;
                 videoInfo.AudioTrackCount = _cachedMetadata.AudioTrackCount;
-                videoInfo.IsSeekable = true; // 加密视频通常是可寻址的
+                videoInfo.IsSeekable = false; // 加密视频通常是可寻址的
             }
             
             // 从播放器获取实时信息（如果可用）
