@@ -319,12 +319,7 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     }
 
     #endregion
-
-    #region INotifyPropertyChanged
-
-    public event PropertyChangedEventHandler? PropertyChanged;
     
-    #endregion
 
     public void Dispose()
     {
