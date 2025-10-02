@@ -8,6 +8,7 @@ using System.Windows.Input;
 using LibVLCSharp.Shared;
 using MySmallTools.Business.SecretVideoPlayer;
 using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Dock.Model.Mvvm.Controls;
 // 添加 CommunityToolkit.Mvvm 命名空间
 using CommunityToolkit.Mvvm.Input;
@@ -17,30 +18,40 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer;
 /// <summary>
 /// 加密视频播放器视图模型
 /// </summary>
-public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDisposable
+public partial class SecretVideoPlayerViewModel : Document, IDisposable
 {
     private readonly SecureVideoPlayer _player;
     private readonly DispatcherTimer _positionTimer;
-    
-    private string _filePath = string.Empty;
-    private string _password = string.Empty;
-    private string _statusMessage = "请选择加密视频文件";
-    private string _currentTime = "00:00:00";
-    private string _totalTime = "00:00:00";
-    private double _position = 0;
-    private double _volume = 50;
-    private bool _isPlaying = false;
-    private bool _isPaused = false;
-    private bool _isLoading = false;
-    private bool _isSeekable = false;
-    private string _bufferInfo = string.Empty;
     private bool _disposed = false;
     private bool _isDragging = false;
-    
+    [ObservableProperty] private string _filePath = string.Empty;
+
+    [ObservableProperty] private string _password = string.Empty;
+
+    [ObservableProperty] private string _statusMessage = "请选择加密视频文件";
+
+    [ObservableProperty] private string _currentTime = "00:00:00";
+
+    [ObservableProperty] private string _totalTime = "00:00:00";
+
+    [ObservableProperty] private double _position = 0;
+
+    [ObservableProperty] private double _volume = 50;
+
+    [ObservableProperty] private bool _isPlaying = false;
+
+    [ObservableProperty] private bool _isPaused = false;
+
+    [ObservableProperty] private bool _isLoading = false;
+
+    [ObservableProperty] private bool _isSeekable = false;
+
+    [ObservableProperty] private string _bufferInfo = string.Empty;
+
     public SecretVideoPlayerViewModel()
     {
         _player = new SecureVideoPlayer();
-        
+
         // 订阅播放器事件
         _player.PlaybackStateChanged += OnPlaybackStateChanged;
         _player.TimeChanged += OnTimeChanged;
@@ -48,7 +59,7 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
         _player.LengthChanged += OnLengthChanged;
         _player.ErrorOccurred += OnErrorOccurred;
         _player.BufferStatisticsUpdated += OnBufferStatisticsUpdated;
-        
+
         // 位置更新定时器
         _positionTimer = new DispatcherTimer
         {
@@ -57,99 +68,15 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
         _positionTimer.Tick += (s, e) => UpdatePosition();
     }
     
-    #region Properties
-    
-    public string FilePath
+    partial void OnPositionChanged(double value)
     {
-        get => _filePath;
-        set => SetProperty(ref _filePath, value);
-    }
-    
-    public string Password
-    {
-        get => _password;
-        set => SetProperty(ref _password, value);
-    }
-    
-    public string StatusMessage
-    {
-        get => _statusMessage;
-        set => SetProperty(ref _statusMessage, value);
-    }
-    
-    public string CurrentTime
-    {
-        get => _currentTime;
-        set => SetProperty(ref _currentTime, value);
-    }
-    
-    public string TotalTime
-    {
-        get => _totalTime;
-        set => SetProperty(ref _totalTime, value);
-    }
-    
-    public double Position
-    {
-        get => _position;
-        set
+        if (_isSeekable && !_isDragging)
         {
-            if (SetProperty(ref _position, value) && _isSeekable && !_isDragging)
-            {
-                _player.SetPosition((float)(value / 100.0));
-            }
+            _player.SetPosition((float)(value / 100.0));
         }
     }
-    
-    public double Volume
-    {
-        get => _volume;
-        set
-        {
-            if (SetProperty(ref _volume, value))
-            {
-                _player.SetVolume((int)value);
-            }
-        }
-    }
-    
-    public bool IsPlaying
-    {
-        get => _isPlaying;
-        set => SetProperty(ref _isPlaying, value);
-    }
-    
-    public bool IsPaused
-    {
-        get => _isPaused;
-        set => SetProperty(ref _isPaused, value);
-    }
-    
-    public bool IsLoading
-    {
-        get => _isLoading;
-        set => SetProperty(ref _isLoading, value);
-    }
-    
-    public bool IsSeekable
-    {
-        get => _isSeekable;
-        set => SetProperty(ref _isSeekable, value);
-    }
-    
-    public string BufferInfo
-    {
-        get => _bufferInfo;
-        set => SetProperty(ref _bufferInfo, value);
-    }
-    
-    public MediaPlayer MediaPlayer => _player.GetMediaPlayer();
-    
-    #endregion
-    
     #region Commands
-    
-    // 使用 RelayCommand 属性替换手动初始化命令
+
     [RelayCommand(CanExecute = nameof(CanLoadVideo))]
     private async Task LoadVideoAsync()
     {
@@ -158,20 +85,20 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
             StatusMessage = "请输入文件路径和密码";
             return;
         }
-        
+
         if (!File.Exists(FilePath))
         {
             StatusMessage = "文件不存在";
             return;
         }
-        
+
         IsLoading = true;
         StatusMessage = "正在加载视频文件...";
-        
+
         try
         {
             var success = await _player.LoadEncryptedVideoAsync(FilePath, Password);
-            
+
             if (success)
             {
                 StatusMessage = "视频文件加载成功";
@@ -182,12 +109,12 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
                     // 手动更新播放状态
                     IsPlaying = false;
                     IsPaused = false;
-                
+
                     // 强制更新命令的 CanExecute 状态
                     PlayCommand.NotifyCanExecuteChanged();
                     PauseCommand.NotifyCanExecuteChanged();
                     StopCommand.NotifyCanExecuteChanged();
-                
+
                     StatusMessage = "视频加载完成，可以开始播放";
                 });
             }
@@ -207,7 +134,7 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
             LoadVideoCommand.NotifyCanExecuteChanged();
         }
     }
-    
+
     [RelayCommand(CanExecute = nameof(CanPlay))]
     private void Play()
     {
@@ -216,14 +143,14 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
             _positionTimer.Start();
         }
     }
-    
+
     [RelayCommand(CanExecute = nameof(CanPause))]
     private void Pause()
     {
         _player.Pause();
         _positionTimer.Stop();
     }
-    
+
     [RelayCommand(CanExecute = nameof(CanStop))]
     private void Stop()
     {
@@ -232,33 +159,21 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
         Position = 0;
         CurrentTime = "00:00:00";
     }
-    
+
     #endregion
-    
+
     #region Methods
-    
-    /// <summary>
-    /// 设置播放位置
-    /// </summary>
-    public void SetPosition(double positionPercent)
-    {
-        if (_isSeekable)
-        {
-            _player.SetPosition((float)(positionPercent / 100.0));
-        }
-    }
-    
+
     /// <summary>
     /// 跳转到指定位置（用于拖拽跳转）
     /// </summary>
     public void SeekToPosition(double positionPercent)
     {
         _player.SetPosition((float)(positionPercent / 100.0));
-        // 立即更新位置显示
         _position = positionPercent;
-        OnPropertyChanged(nameof(Position));
+        OnPositionChanged(positionPercent);
     }
-    
+
     /// <summary>
     /// 暂停位置更新（拖拽时使用）
     /// </summary>
@@ -267,7 +182,7 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
         _isDragging = true;
         _positionTimer.Stop();
     }
-    
+
     /// <summary>
     /// 恢复位置更新（拖拽结束后使用）
     /// </summary>
@@ -279,20 +194,7 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
             _positionTimer.Start();
         }
     }
-    
-    /// <summary>
-    /// 更新当前时间显示（拖拽过程中使用）
-    /// </summary>
-    public void UpdateCurrentTimeDisplay(double positionPercent)
-    {
-        var info = _player.GetVideoInfo();
-        if (info != null && info.Duration > 0)
-        {
-            var timeMs = (long)(info.Duration * positionPercent / 100.0);
-            CurrentTime = FormatTime(timeMs);
-        }
-    }
-    
+
     /// <summary>
     /// 更新视频信息
     /// </summary>
@@ -306,7 +208,7 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
             TotalTime = FormatTime(info.Duration);
         }
     }
-    
+
     /// <summary>
     /// 更新播放位置
     /// </summary>
@@ -319,7 +221,7 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
             CurrentTime = FormatTime(info.Position);
         }
     }
-    
+
     /// <summary>
     /// 格式化时间显示
     /// </summary>
@@ -328,7 +230,7 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
         var time = TimeSpan.FromMilliseconds(timeMs);
         return time.ToString(@"hh\:mm\:ss");
     }
-    
+
     /// <summary>
     /// 检查是否可以加载视频
     /// </summary>
@@ -336,7 +238,7 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
     {
         return !_isLoading;
     }
-    
+
     /// <summary>
     /// 检查是否可以播放
     /// </summary>
@@ -344,7 +246,7 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
     {
         return !_isLoading && !_isPlaying && _player.GetMediaPlayer().Media != null;
     }
-    
+
     /// <summary>
     /// 检查是否可以暂停
     /// </summary>
@@ -352,7 +254,7 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
     {
         return _isPlaying;
     }
-    
+
     /// <summary>
     /// 检查是否可以停止
     /// </summary>
@@ -360,18 +262,18 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
     {
         return _isPlaying || _isPaused;
     }
-    
+
     #endregion
-    
+
     #region Event Handlers
-    
+
     private void OnPlaybackStateChanged(object? sender, PlaybackStateChangedEventArgs e)
     {
         Dispatcher.UIThread.Post(() =>
         {
             IsPlaying = e.State == PlaybackState.Playing;
             IsPaused = e.State == PlaybackState.Paused;
-            
+
             StatusMessage = e.State switch
             {
                 PlaybackState.Playing => "正在播放",
@@ -381,77 +283,52 @@ public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChang
                 PlaybackState.Error => "播放错误",
                 _ => StatusMessage
             };
-            
+
             // 更新命令状态
             PlayCommand.NotifyCanExecuteChanged();
             PauseCommand.NotifyCanExecuteChanged();
             StopCommand.NotifyCanExecuteChanged();
         });
     }
-    
+
     private void OnTimeChanged(object? sender, TimeChangedEventArgs e)
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            CurrentTime = FormatTime(e.Time);
-        });
+        Dispatcher.UIThread.Post(() => { CurrentTime = FormatTime(e.Time); });
     }
-    
+
     private void OnPositionChanged(object? sender, PositionChangedEventArgs e)
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            Position = e.Position * 100;
-        });
+        Dispatcher.UIThread.Post(() => { Position = e.Position * 100; });
     }
-    
+
     private void OnLengthChanged(object? sender, LengthChangedEventArgs e)
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            TotalTime = FormatTime(e.Length);
-        });
+        Dispatcher.UIThread.Post(() => { TotalTime = FormatTime(e.Length); });
     }
-    
+
     private void OnErrorOccurred(object? sender, string e)
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            StatusMessage = e;
-        });
+        Dispatcher.UIThread.Post(() => { StatusMessage = e; });
     }
-    
+
     private void OnBufferStatisticsUpdated(object? sender, BufferStatistics e)
     {
         Dispatcher.UIThread.Post(() =>
         {
             BufferInfo = $"缓存: {e.CachedBlocks}/{e.MaxCacheBlocks} | " +
-                        $"命中率: {e.HitRate:P1} | " +
-                        $"内存: {e.TotalMemoryUsage / 1024 / 1024:F1}MB";
+                         $"命中率: {e.HitRate:P1} | " +
+                         $"内存: {e.TotalMemoryUsage / 1024 / 1024:F1}MB";
         });
     }
-    
+
     #endregion
-    
+
     #region INotifyPropertyChanged
-    
+
     public event PropertyChangedEventHandler? PropertyChanged;
     
-    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-    
-    protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-        field = value;
-        OnPropertyChanged(propertyName);
-        return true;
-    }
-    
     #endregion
-    
+
     public void Dispose()
     {
         if (!_disposed)
