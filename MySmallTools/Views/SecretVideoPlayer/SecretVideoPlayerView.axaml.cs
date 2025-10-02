@@ -96,29 +96,4 @@ public partial class SecretVideoPlayerView : UserControl
             viewModel.ResumePositionUpdates();
         }
     }
-    
-    /// <summary>
-    /// 进度条值变化事件 - 拖拽过程中实时更新显示时间
-    /// </summary>
-    private void OnSliderValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
-    {
-        if (_isDragging && DataContext is SecretVideoPlayerViewModel viewModel)
-        {
-            // 拖拽过程中实时更新显示的当前时间
-            viewModel.UpdateCurrentTimeDisplay(e.NewValue);
-        }
-    }
-    
-    // 资源清理将在ViewModel的Dispose方法中处理
-    private void OnProgressSliderPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-    {
-        if (e.Property == Slider.ValueProperty)
-        {
-            if (DataContext is SecretVideoPlayerViewModel viewModel)
-            {
-                // 拖拽过程中实时更新显示的当前时间
-                viewModel.UpdateCurrentTimeDisplay((double)e.NewValue);
-            }
-        }
-    }
 }

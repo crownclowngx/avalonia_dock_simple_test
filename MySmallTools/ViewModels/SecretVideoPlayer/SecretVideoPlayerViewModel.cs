@@ -9,13 +9,15 @@ using LibVLCSharp.Shared;
 using MySmallTools.Business.SecretVideoPlayer;
 using Avalonia.Threading;
 using Dock.Model.Mvvm.Controls;
+// 添加 CommunityToolkit.Mvvm 命名空间
+using CommunityToolkit.Mvvm.Input;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer;
 
 /// <summary>
 /// 加密视频播放器视图模型
 /// </summary>
-public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDisposable
+public partial class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDisposable
 {
     private readonly SecureVideoPlayer _player;
     private readonly DispatcherTimer _positionTimer;
@@ -46,12 +48,6 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
         _player.LengthChanged += OnLengthChanged;
         _player.ErrorOccurred += OnErrorOccurred;
         _player.BufferStatisticsUpdated += OnBufferStatisticsUpdated;
-        
-        // 初始化命令
-        LoadVideoCommand = new RelayCommand(async () => await LoadVideoAsync(), () => !_isLoading);
-        PlayCommand = new RelayCommand(() => Play(), () => CanPlay());
-        PauseCommand = new RelayCommand(() => Pause(), () => CanPause());
-        StopCommand = new RelayCommand(() => Stop(), () => CanStop());
         
         // 位置更新定时器
         _positionTimer = new DispatcherTimer
@@ -153,19 +149,9 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
     
     #region Commands
     
-    public ICommand LoadVideoCommand { get; }
-    public ICommand PlayCommand { get; }
-    public ICommand PauseCommand { get; }
-    public ICommand StopCommand { get; }
-    
-    #endregion
-    
-    #region Methods
-    
-    /// <summary>
-    /// 加载视频文件
-    /// </summary>
-    public async Task LoadVideoAsync()
+    // 使用 RelayCommand 属性替换手动初始化命令
+    [RelayCommand(CanExecute = nameof(CanLoadVideo))]
+    private async Task LoadVideoAsync()
     {
         if (string.IsNullOrEmpty(FilePath) || string.IsNullOrEmpty(Password))
         {
@@ -198,9 +184,9 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
                     IsPaused = false;
                 
                     // 强制更新命令的 CanExecute 状态
-                    ((RelayCommand)PlayCommand).RaiseCanExecuteChanged();
-                    ((RelayCommand)PauseCommand).RaiseCanExecuteChanged();
-                    ((RelayCommand)StopCommand).RaiseCanExecuteChanged();
+                    PlayCommand.NotifyCanExecuteChanged();
+                    PauseCommand.NotifyCanExecuteChanged();
+                    StopCommand.NotifyCanExecuteChanged();
                 
                     StatusMessage = "视频加载完成，可以开始播放";
                 });
@@ -217,39 +203,39 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
         finally
         {
             IsLoading = false;
+            // 更新加载命令状态
+            LoadVideoCommand.NotifyCanExecuteChanged();
         }
     }
     
-    /// <summary>
-    /// 播放视频
-    /// </summary>
-    public async void Play()
+    [RelayCommand(CanExecute = nameof(CanPlay))]
+    private void Play()
     {
-        if (await _player.Play())
+        if (_player.Play().Result)
         {
             _positionTimer.Start();
         }
     }
     
-    /// <summary>
-    /// 暂停播放
-    /// </summary>
-    public void Pause()
+    [RelayCommand(CanExecute = nameof(CanPause))]
+    private void Pause()
     {
         _player.Pause();
         _positionTimer.Stop();
     }
     
-    /// <summary>
-    /// 停止播放
-    /// </summary>
-    public void Stop()
+    [RelayCommand(CanExecute = nameof(CanStop))]
+    private void Stop()
     {
         _player.Stop();
         _positionTimer.Stop();
         Position = 0;
         CurrentTime = "00:00:00";
     }
+    
+    #endregion
+    
+    #region Methods
     
     /// <summary>
     /// 设置播放位置
@@ -344,6 +330,14 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
     }
     
     /// <summary>
+    /// 检查是否可以加载视频
+    /// </summary>
+    private bool CanLoadVideo()
+    {
+        return !_isLoading;
+    }
+    
+    /// <summary>
     /// 检查是否可以播放
     /// </summary>
     private bool CanPlay()
@@ -389,9 +383,9 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
             };
             
             // 更新命令状态
-            ((RelayCommand)PlayCommand).RaiseCanExecuteChanged();
-            ((RelayCommand)PauseCommand).RaiseCanExecuteChanged();
-            ((RelayCommand)StopCommand).RaiseCanExecuteChanged();
+            PlayCommand.NotifyCanExecuteChanged();
+            PauseCommand.NotifyCanExecuteChanged();
+            StopCommand.NotifyCanExecuteChanged();
         });
     }
     
@@ -466,37 +460,5 @@ public class SecretVideoPlayerViewModel : Document, INotifyPropertyChanged, IDis
             _player?.Dispose();
             _disposed = true;
         }
-    }
-}
-
-/// <summary>
-/// 简单的命令实现
-/// </summary>
-public class RelayCommand : ICommand
-{
-    private readonly Action _execute;
-    private readonly Func<bool>? _canExecute;
-    
-    public RelayCommand(Action execute, Func<bool>? canExecute = null)
-    {
-        _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-        _canExecute = canExecute;
-    }
-    
-    public event EventHandler? CanExecuteChanged;
-    
-    public bool CanExecute(object? parameter)
-    {
-        return _canExecute?.Invoke() ?? true;
-    }
-    
-    public void Execute(object? parameter)
-    {
-        _execute();
-    }
-    
-    public void RaiseCanExecuteChanged()
-    {
-        CanExecuteChanged?.Invoke(this, EventArgs.Empty);
     }
 }
