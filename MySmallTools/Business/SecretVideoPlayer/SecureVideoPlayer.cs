@@ -1,6 +1,5 @@
 using LibVLCSharp.Shared;
 using System.Security.Cryptography;
-using System.Linq;
 
 namespace MySmallTools.Business.SecretVideoPlayer;
 
@@ -13,11 +12,12 @@ public class SecureVideoPlayer : IDisposable
     private readonly MediaPlayer _player;
     private readonly SmartVideoEncryptor _encryptor;
     private static bool _isLibVlcInitialized = false;
+    
+    private FullVideoDecryptor? _decryptor;
     private Media? _currentMedia;
     private string? _currentPassword;
     private bool _disposed;
     private VideoMetadata? _cachedMetadata;
-    
     
     // 播放状态事件
     public event EventHandler<PlaybackStateChangedEventArgs>? PlaybackStateChanged;
@@ -176,59 +176,56 @@ public class SecureVideoPlayer : IDisposable
             CleanupCurrentMedia();
             
             ErrorOccurred?.Invoke(this, "验证文件是否为加密视频...");
-            // 验证文件是否为加密视频并获取视频信息
+            // 验证文件是否为加密视频
             if (!_encryptor.IsEncryptedVideo(filePath))
             {
                 ErrorOccurred?.Invoke(this, "文件不是有效的加密视频文件");
                 return false;
             }
             
-            ErrorOccurred?.Invoke(this, "读取加密视频信息...");
-            // 获取加密视频信息
-            var videoInfo = _encryptor.GetEncryptedVideoInfo(filePath);
-            if (videoInfo == null)
+            ErrorOccurred?.Invoke(this, "创建解密器...");
+            // 创建解密器
+            _decryptor = new FullVideoDecryptor(filePath, password);
+            
+            // 绑定解密进度事件
+            _decryptor.ProgressChanged += (sender, args) =>
             {
-                ErrorOccurred?.Invoke(this, "无法读取加密视频信息");
-                return false;
-            }
+                if (args.IsError)
+                {
+                    ErrorOccurred?.Invoke(this, args.Message);
+                }
+                else
+                {
+                    ErrorOccurred?.Invoke(this, args.Message);
+                }
+            };
             
-            // 验证密码
-            ErrorOccurred?.Invoke(this, "验证密码...");
-            var key = GenerateDecryptionKey(password, videoInfo);
-            using var sha256 = SHA256.Create();
-            var keyHash = sha256.ComputeHash(key);
+            // 执行解密
+            ErrorOccurred?.Invoke(this, "开始解密视频文件...");
+            var decryptSuccess = await _decryptor.DecryptVideoAsync();
             
-            if (!keyHash.SequenceEqual(videoInfo.KeyHash))
-            {
-                ErrorOccurred?.Invoke(this, "密码错误");
-                return false;
-            }
-            
-            // 设置缓存的元数据（从加密文件头中获取）
-            if (videoInfo.HasMetadata)
-            {
-                _cachedMetadata = videoInfo.Metadata;
-                ErrorOccurred?.Invoke(this, "已加载视频元数据");
-            }
-            
-            ErrorOccurred?.Invoke(this, "开始完整解密视频到内存...");
-            // 回到完整内存解密方案进行测试
-            var decryptor = new FullVideoDecryptor(filePath, password);
-            var success = await decryptor.DecryptVideoAsync();
-            
-            if (!success || decryptor.DecryptedStream == null)
+            if (!decryptSuccess)
             {
                 ErrorOccurred?.Invoke(this, "视频解密失败");
                 return false;
             }
             
-            var decryptedStream = decryptor.DecryptedStream;
+            // 获取解密后的流
+            var decryptedStream = _decryptor.DecryptedStream;
+            if (decryptedStream == null)
+            {
+                ErrorOccurred?.Invoke(this, "解密流为空");
+                return false;
+            }
             
-            ErrorOccurred?.Invoke(this, "创建内存媒体输入...");
-            // 使用基本的SeekableMemoryMediaInput
+            ErrorOccurred?.Invoke(this, $"解密完成 - 流长度: {decryptedStream.Length} 字节");
+            
+            ErrorOccurred?.Invoke(this, "创建可寻址媒体输入...");
+            // 使用自定义的SeekableMemoryMediaInput来支持seeking
             var seekableInput = new SeekableMemoryMediaInput((MemoryStream)decryptedStream);
             
             ErrorOccurred?.Invoke(this, "创建LibVLC媒体对象...");
+            // 使用自定义MediaInput创建媒体（支持seeking）
             _currentMedia = new Media(_libVLC, seekableInput);
             ErrorOccurred?.Invoke(this, $"媒体对象创建成功，状态: {_currentMedia.State}");
             
@@ -483,7 +480,7 @@ public class SecureVideoPlayer : IDisposable
             _ => PlaybackState.Stopped
         };
     }
-    public VideoInfo _videoInfo { get; private set; } 
+    
     /// <summary>
     /// 获取视频信息
     /// </summary>
@@ -516,14 +513,14 @@ public class SecureVideoPlayer : IDisposable
                 if (_cachedMetadata == null)
                 {
                     videoInfo.Duration = _player.Length;
-                    videoInfo.IsSeekable = true;
+                    videoInfo.IsSeekable = _player.IsSeekable;
                     videoInfo.HasVideo = _player.VideoTrackCount > 0;
                     videoInfo.HasAudio = _player.AudioTrackCount > 0;
                     videoInfo.VideoTrackCount = _player.VideoTrackCount;
                     videoInfo.AudioTrackCount = _player.AudioTrackCount;
                 }
             }
-            _videoInfo = videoInfo;
+            
             return videoInfo;
         }
         catch
@@ -548,62 +545,6 @@ public class SecureVideoPlayer : IDisposable
         return _player;
     }
     
-    /// <summary>
-    /// 测试原始文件播放性能（用于对比）
-    /// </summary>
-    public async Task<bool> LoadUnencryptedVideoForTestAsync(string filePath)
-    {
-        try
-        {
-            ErrorOccurred?.Invoke(this, "=== 开始测试原始文件播放性能 ===");
-            
-            if (!File.Exists(filePath))
-            {
-                ErrorOccurred?.Invoke(this, "测试文件不存在");
-                return false;
-            }
-            
-            ErrorOccurred?.Invoke(this, "清理当前媒体...");
-            CleanupCurrentMedia();
-            
-            ErrorOccurred?.Invoke(this, "创建原始文件媒体对象...");
-            _currentMedia = new Media(_libVLC, filePath);
-            
-            ErrorOccurred?.Invoke(this, "设置媒体到播放器...");
-            _player.Media = _currentMedia;
-            
-            ErrorOccurred?.Invoke(this, "开始解析媒体...");
-            _currentMedia.Parse(MediaParseOptions.ParseLocal);
-            
-            // 等待媒体解析完成
-            var parseTimeout = TimeSpan.FromSeconds(10);
-            var parseStart = DateTime.Now;
-            
-            while (!_currentMedia.IsParsed && DateTime.Now - parseStart < parseTimeout)
-            {
-                await Task.Delay(100);
-                ErrorOccurred?.Invoke(this, $"解析中... 状态: {_currentMedia.State}");
-            }
-            
-            if (_currentMedia.IsParsed)
-            {
-                ErrorOccurred?.Invoke(this, $"原始文件媒体解析成功，时长: {_currentMedia.Duration}ms");
-                ErrorOccurred?.Invoke(this, "=== 原始文件播放测试准备完成 ===");
-                return true;
-            }
-            else
-            {
-                ErrorOccurred?.Invoke(this, "原始文件媒体解析超时");
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            ErrorOccurred?.Invoke(this, $"测试原始文件播放失败: {ex.Message}");
-            return false;
-        }
-    }
-
     /// <summary>
     /// 诊断播放器状态 - 用于排查播放问题
     /// </summary>
@@ -647,8 +588,12 @@ public class SecureVideoPlayer : IDisposable
                 ErrorOccurred?.Invoke(this, $"媒体子项数量: {_currentMedia.SubItems.Count}");
             }
             
-            // 检查流式解密状态
-            ErrorOccurred?.Invoke(this, $"使用流式解密方案");
+            // 检查解密器状态
+            ErrorOccurred?.Invoke(this, $"解密器是否为null: {_decryptor == null}");
+            if (_decryptor != null)
+            {
+                ErrorOccurred?.Invoke(this, $"解密器状态: 已初始化");
+            }
             
             // 检查元数据
             ErrorOccurred?.Invoke(this, $"缓存元数据是否为null: {_cachedMetadata == null}");
@@ -677,7 +622,8 @@ public class SecureVideoPlayer : IDisposable
         _currentMedia?.Dispose();
         _currentMedia = null;
         
-
+        _decryptor?.Dispose();
+        _decryptor = null;
         
         _currentPassword = null;
         _cachedMetadata = null;
