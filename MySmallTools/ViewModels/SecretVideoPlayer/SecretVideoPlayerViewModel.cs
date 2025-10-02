@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using System.Windows.Input;
 using LibVLCSharp.Shared;
 using MySmallTools.Business.SecretVideoPlayer;
 using Avalonia.Threading;
@@ -47,6 +41,9 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     [ObservableProperty] private bool _isSeekable = false;
 
     [ObservableProperty] private string _bufferInfo = string.Empty;
+    
+    public MediaPlayer MediaPlayer => _player.GetMediaPlayer();
+
 
     public SecretVideoPlayerViewModel()
     {
