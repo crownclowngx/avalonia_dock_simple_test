@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Dock.Model.Mvvm.Controls;
 // 添加 CommunityToolkit.Mvvm 命名空间
 using CommunityToolkit.Mvvm.Input;
+using MySmallTools.Constants.SecretVideoPlayer;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer;
 
@@ -14,10 +15,14 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer;
 /// </summary>
 public partial class SecretVideoPlayerViewModel : Document, IDisposable
 {
+    private readonly object _syncLock = new object();
+    
     private readonly SecureVideoPlayer _player;
     private readonly DispatcherTimer _positionTimer;
     private bool _disposed = false;
-    private bool _isDragging = false;
+
+    public bool IsPlaying => CurrentState == PlayerStateEnum.Playing;
+    public bool IsPaused => CurrentState == PlayerStateEnum.Paused;
     [ObservableProperty] private string _filePath = string.Empty;
 
     [ObservableProperty] private string _password = string.Empty;
@@ -31,17 +36,14 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     [ObservableProperty] private double _position = 0;
 
     [ObservableProperty] private double _volume = 50;
-
-    [ObservableProperty] private bool _isPlaying = false;
-
-    [ObservableProperty] private bool _isPaused = false;
-
+    
     [ObservableProperty] private bool _isLoading = false;
 
     [ObservableProperty] private bool _isSeekable = false;
 
     [ObservableProperty] private string _bufferInfo = string.Empty;
-    
+    [ObservableProperty] private PlayerStateEnum _currentState = PlayerStateEnum.Stopped;
+
     public MediaPlayer MediaPlayer => _player.GetMediaPlayer();
 
 
@@ -64,13 +66,11 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
         };
         _positionTimer.Tick += (s, e) => UpdatePosition();
     }
-    
-    partial void OnPositionChanged(double value)
+    partial void OnCurrentStateChanged(PlayerStateEnum value)
     {
-        if (_isSeekable && !_isDragging)
-        {
-            _player.SetPosition((float)(value / 100.0));
-        }
+        // 通知UI IsPlaying和IsPaused属性发生了变化
+        OnPropertyChanged(nameof(IsPlaying));
+        OnPropertyChanged(nameof(IsPaused));
     }
     #region Commands
 
@@ -103,10 +103,6 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
                 // 关键修复：加载成功后立即更新命令状态
                 Dispatcher.UIThread.Post(() =>
                 {
-                    // 手动更新播放状态
-                    IsPlaying = false;
-                    IsPaused = false;
-
                     // 强制更新命令的 CanExecute 状态
                     PlayCommand.NotifyCanExecuteChanged();
                     PauseCommand.NotifyCanExecuteChanged();
@@ -133,28 +129,30 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     }
 
     [RelayCommand(CanExecute = nameof(CanPlay))]
-    private void Play()
+    private async Task Play()
     {
-        if (_player.Play().Result)
+        if (await _player.Play())
         {
             _positionTimer.Start();
         }
     }
 
     [RelayCommand(CanExecute = nameof(CanPause))]
-    private void Pause()
+    private Task Pause()
     {
         _player.Pause();
         _positionTimer.Stop();
+        return Task.CompletedTask;
     }
 
     [RelayCommand(CanExecute = nameof(CanStop))]
-    private void Stop()
+    private Task Stop()
     {
         _player.Stop();
         _positionTimer.Stop();
         Position = 0;
         CurrentTime = "00:00:00";
+        return Task.CompletedTask;
     }
 
     #endregion
@@ -168,7 +166,6 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     {
         _player.SetPosition((float)(positionPercent / 100.0));
         _position = positionPercent;
-        OnPositionChanged(positionPercent);
     }
 
     /// <summary>
@@ -176,7 +173,6 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     /// </summary>
     public void PausePositionUpdates()
     {
-        _isDragging = true;
         _positionTimer.Stop();
     }
 
@@ -185,10 +181,12 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     /// </summary>
     public void ResumePositionUpdates()
     {
-        _isDragging = false;
-        if (_isPlaying)
+        lock (_syncLock)
         {
-            _positionTimer.Start();
+            if (CurrentState == PlayerStateEnum.Playing && !_disposed)
+            {
+                _positionTimer.Start();
+            }
         }
     }
 
@@ -198,12 +196,13 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     private void UpdateVideoInfo()
     {
         var info = _player.GetVideoInfo();
-        if (info != null)
+        if (info == null)
         {
-            IsSeekable = info.IsSeekable;
-            Volume = info.Volume;
-            TotalTime = FormatTime(info.Duration);
+            return;
         }
+        IsSeekable = info.IsSeekable;
+        Volume = info.Volume;
+        TotalTime = FormatTime(info.Duration);
     }
 
     /// <summary>
@@ -212,11 +211,12 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     private void UpdatePosition()
     {
         var info = _player.GetVideoInfo();
-        if (info != null && info.Duration > 0)
+        if (info == null || info.Duration <= 0)
         {
-            Position = (double)info.Position / info.Duration * 100;
-            CurrentTime = FormatTime(info.Position);
+            return;
         }
+        Position = (double)info.Position / info.Duration * 100;
+        CurrentTime = FormatTime(info.Position);
     }
 
     /// <summary>
@@ -233,7 +233,7 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     /// </summary>
     private bool CanLoadVideo()
     {
-        return !_isLoading;
+        return !IsLoading;
     }
 
     /// <summary>
@@ -241,7 +241,7 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     /// </summary>
     private bool CanPlay()
     {
-        return !_isLoading && !_isPlaying && _player.GetMediaPlayer().Media != null;
+        return !IsLoading && CurrentState != PlayerStateEnum.Playing && _player?.GetMediaPlayer()?.Media != null;
     }
 
     /// <summary>
@@ -249,7 +249,7 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     /// </summary>
     private bool CanPause()
     {
-        return _isPlaying;
+        return CurrentState == PlayerStateEnum.Playing;
     }
 
     /// <summary>
@@ -257,7 +257,7 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     /// </summary>
     private bool CanStop()
     {
-        return _isPlaying || _isPaused;
+        return CurrentState == PlayerStateEnum.Playing || CurrentState == PlayerStateEnum.Paused;
     }
 
     #endregion
@@ -268,9 +268,15 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
-            IsPlaying = e.State == PlaybackState.Playing;
-            IsPaused = e.State == PlaybackState.Paused;
-
+            CurrentState = e.State switch
+            {
+                PlaybackState.Playing => PlayerStateEnum.Playing,
+                PlaybackState.Paused => PlayerStateEnum.Paused,
+                PlaybackState.Stopped => PlayerStateEnum.Stopped,
+                PlaybackState.Ended => PlayerStateEnum.Ended,
+                PlaybackState.Error => PlayerStateEnum.Error,
+                _ => CurrentState
+            };
             StatusMessage = e.State switch
             {
                 PlaybackState.Playing => "正在播放",
@@ -319,14 +325,39 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     }
 
     #endregion
-    
+
 
     public void Dispose()
     {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
         if (!_disposed)
         {
-            _positionTimer?.Stop();
-            _player?.Dispose();
+            if (disposing)
+            {
+                // 取消所有事件订阅
+                _player.PlaybackStateChanged -= OnPlaybackStateChanged;
+                _player.TimeChanged -= OnTimeChanged;
+                _player.PositionChanged -= OnPositionChanged;
+                _player.LengthChanged -= OnLengthChanged;
+                _player.ErrorOccurred -= OnErrorOccurred;
+                _player.BufferStatisticsUpdated -= OnBufferStatisticsUpdated;
+
+                // 释放定时器资源
+                _positionTimer?.Stop();
+                if (_positionTimer != null)
+                {
+                    _positionTimer.Tick -= (s, e) => UpdatePosition();
+                }
+
+                // 释放播放器资源
+                _player?.Dispose();
+            }
+
             _disposed = true;
         }
     }
