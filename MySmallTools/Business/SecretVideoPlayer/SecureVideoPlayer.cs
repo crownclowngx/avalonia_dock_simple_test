@@ -36,37 +36,17 @@ public class SecureVideoPlayer : IDisposable
             // 确保LibVLC只初始化一次
             if (!_isLibVlcInitialized)
             {
-                ErrorOccurred?.Invoke(this, "初始化LibVLC Core...");
                 Core.Initialize();
                 _isLibVlcInitialized = true;
-                ErrorOccurred?.Invoke(this, "LibVLC Core初始化完成");
             }
-            else
-            {
-                ErrorOccurred?.Invoke(this, "LibVLC Core已初始化，跳过");
-            }
-            
-            ErrorOccurred?.Invoke(this, "创建LibVLC实例...");
             _libVLC = new LibVLC();
-            ErrorOccurred?.Invoke(this, $"LibVLC版本: {_libVLC.Version}");
-            
-            ErrorOccurred?.Invoke(this, "创建MediaPlayer实例...");
             _player = new MediaPlayer(_libVLC);
-            ErrorOccurred?.Invoke(this, "MediaPlayer创建完成");
-            
-            ErrorOccurred?.Invoke(this, "初始化加密器...");
             _encryptor = new SmartVideoEncryptor();
-            
-            ErrorOccurred?.Invoke(this, "订阅播放器事件...");
             // 订阅播放器事件
             SubscribeToPlayerEvents();
-            
-            ErrorOccurred?.Invoke(this, "SecureVideoPlayer初始化完成");
         }
         catch (Exception ex)
         {
-            ErrorOccurred?.Invoke(this, $"SecureVideoPlayer初始化失败: {ex.Message}");
-            ErrorOccurred?.Invoke(this, $"异常堆栈: {ex.StackTrace}");
             throw;
         }
     }
@@ -78,25 +58,21 @@ public class SecureVideoPlayer : IDisposable
     {
         _player.Playing += (s, e) => 
         {
-            ErrorOccurred?.Invoke(this, "事件: 播放开始");
             PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Playing));
         };
         
         _player.Paused += (s, e) => 
         {
-            ErrorOccurred?.Invoke(this, "事件: 播放暂停");
             PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Paused));
         };
         
         _player.Stopped += (s, e) => 
         {
-            ErrorOccurred?.Invoke(this, "事件: 播放停止");
             PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Stopped));
         };
         
         _player.EndReached += (s, e) => 
         {
-            ErrorOccurred?.Invoke(this, "事件: 播放结束");
             PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Ended));
         };
         
@@ -115,42 +91,6 @@ public class SecureVideoPlayer : IDisposable
             ErrorOccurred?.Invoke(this, $"事件: 媒体长度变化 - {e.Length}ms");
             LengthChanged?.Invoke(this, new LengthChangedEventArgs(e.Length));
         };
-        
-        _player.EncounteredError += (s, e) => 
-        {
-            ErrorOccurred?.Invoke(this, "事件: 播放过程中发生错误");
-        };
-        
-        // 添加更多调试事件
-        _player.Opening += (s, e) => 
-        {
-            ErrorOccurred?.Invoke(this, "事件: 媒体正在打开");
-        };
-        
-        _player.Buffering += (s, e) => 
-        {
-            ErrorOccurred?.Invoke(this, $"事件: 缓冲中 - {e.Cache}%");
-        };
-        
-        _player.MediaChanged += (s, e) => 
-        {
-            ErrorOccurred?.Invoke(this, "事件: 媒体已更改");
-        };
-        
-        _player.NothingSpecial += (s, e) => 
-        {
-            ErrorOccurred?.Invoke(this, "事件: 无特殊状态");
-        };
-        
-        _player.ESAdded += (s, e) => 
-        {
-            ErrorOccurred?.Invoke(this, $"事件: 添加了基本流 - ID: {e.Id}, 类型: {e.Type}");
-        };
-        
-        _player.ESDeleted += (s, e) => 
-        {
-            ErrorOccurred?.Invoke(this, $"事件: 删除了基本流 - ID: {e.Id}, 类型: {e.Type}");
-        };
     }
     
     /// <summary>
@@ -160,30 +100,24 @@ public class SecureVideoPlayer : IDisposable
     {
         try
         {
-            ErrorOccurred?.Invoke(this, $"开始加载加密视频: {filePath}");
             
             if (_disposed) throw new ObjectDisposedException(nameof(SecureVideoPlayer));
             
             // 检查文件是否存在
             if (!File.Exists(filePath))
             {
-                ErrorOccurred?.Invoke(this, $"文件不存在: {filePath}");
                 return false;
             }
             
-            ErrorOccurred?.Invoke(this, "清理之前的资源...");
             // 清理之前的资源
             CleanupCurrentMedia();
             
-            ErrorOccurred?.Invoke(this, "验证文件是否为加密视频...");
             // 验证文件是否为加密视频
             if (!_encryptor.IsEncryptedVideo(filePath))
             {
-                ErrorOccurred?.Invoke(this, "文件不是有效的加密视频文件");
                 return false;
             }
             
-            ErrorOccurred?.Invoke(this, "创建解密器...");
             // 创建解密器
             _decryptor = new FullVideoDecryptor(filePath, password);
             
@@ -201,12 +135,10 @@ public class SecureVideoPlayer : IDisposable
             };
             
             // 执行解密
-            ErrorOccurred?.Invoke(this, "开始解密视频文件...");
             var decryptSuccess = await _decryptor.DecryptVideoAsync();
             
             if (!decryptSuccess)
             {
-                ErrorOccurred?.Invoke(this, "视频解密失败");
                 return false;
             }
             
@@ -214,80 +146,27 @@ public class SecureVideoPlayer : IDisposable
             var decryptedStream = _decryptor.DecryptedStream;
             if (decryptedStream == null)
             {
-                ErrorOccurred?.Invoke(this, "解密流为空");
                 return false;
             }
-            
-            ErrorOccurred?.Invoke(this, $"解密完成 - 流长度: {decryptedStream.Length} 字节");
-            
-            ErrorOccurred?.Invoke(this, "创建可寻址媒体输入...");
             // 使用自定义的SeekableMemoryMediaInput来支持seeking
             var seekableInput = new SeekableMemoryMediaInput((MemoryStream)decryptedStream);
-            
-            ErrorOccurred?.Invoke(this, "创建LibVLC媒体对象...");
             // 使用自定义MediaInput创建媒体（支持seeking）
             _currentMedia = new Media(_libVLC, seekableInput);
-            ErrorOccurred?.Invoke(this, $"媒体对象创建成功，状态: {_currentMedia.State}");
-            
-            // 添加媒体状态变化监听
-            _currentMedia.StateChanged += (sender, e) =>
-            {
-                ErrorOccurred?.Invoke(this, $"媒体状态变化: {e.State}");
-            };
-            
-            ErrorOccurred?.Invoke(this, "设置媒体到播放器...");
             // 设置媒体到播放器
             _player.Media = _currentMedia;
-            ErrorOccurred?.Invoke(this, "媒体设置完成");
-            
             // 尝试解析媒体
-            ErrorOccurred?.Invoke(this, "开始解析媒体...");
             _currentMedia.Parse(MediaParseOptions.ParseLocal);
-            
-            // 等待媒体解析完成
-            ErrorOccurred?.Invoke(this, "等待媒体解析...");
-            var parseTimeout = TimeSpan.FromSeconds(10);
-            var parseStart = DateTime.Now;
-            
-            while (!_currentMedia.IsParsed && DateTime.Now - parseStart < parseTimeout)
-            {
-                await Task.Delay(100);
-                ErrorOccurred?.Invoke(this, $"解析中... 状态: {_currentMedia.State}, 已解析: {_currentMedia.IsParsed}");
-            }
-            
-            ErrorOccurred?.Invoke(this, $"媒体解析完成: {_currentMedia.IsParsed}");
-            ErrorOccurred?.Invoke(this, $"解析状态: {_currentMedia.ParsedStatus}");
-            ErrorOccurred?.Invoke(this, $"媒体状态: {_currentMedia.State}");
-            ErrorOccurred?.Invoke(this, $"播放器状态: {_player.State}");
-            ErrorOccurred?.Invoke(this, $"媒体时长: {_currentMedia.Duration}ms");
-            
             _currentPassword = password;
-            
-            ErrorOccurred?.Invoke(this, "视频加载完成");
             return true;
         }
         catch (UnauthorizedAccessException ex)
         {
-            ErrorOccurred?.Invoke(this, $"密码错误，无法解密视频文件: {ex.Message}");
             return false;
         }
         catch (Exception ex)
         {
-            ErrorOccurred?.Invoke(this, $"加载视频文件失败: {ex.Message}");
-            ErrorOccurred?.Invoke(this, $"异常堆栈: {ex.StackTrace}");
             return false;
         }
-    }
-    
-    /// <summary>
-    /// 生成解密密钥
-    /// </summary>
-    private byte[] GenerateDecryptionKey(string password, EncryptedVideoInfo videoInfo)
-    {
-        using var pbkdf2 = new Rfc2898DeriveBytes(password, 
-            System.Text.Encoding.UTF8.GetBytes("SecretVideoSalt2024"), 10000, HashAlgorithmName.SHA256);
-        
-        return pbkdf2.GetBytes(32); // AES-256
     }
     
 
@@ -299,30 +178,24 @@ public class SecureVideoPlayer : IDisposable
     {
         if (_disposed)
         {
-            ErrorOccurred?.Invoke(this, "播放器已被释放，无法播放");
             return false;
         }
         
         if (_player == null)
         {
-            ErrorOccurred?.Invoke(this, "MediaPlayer未初始化");
             return false;
         }
         
         if (_player.Media == null)
         {
-            ErrorOccurred?.Invoke(this, "未加载媒体文件，请先调用LoadVideoAsync");
             return false;
         }
         
         try
         {
-            ErrorOccurred?.Invoke(this, $"当前播放器状态: {_player.State}");
-            
             // 检查媒体是否已解析
             if (_currentMedia != null && !_currentMedia.IsParsed)
             {
-                ErrorOccurred?.Invoke(this, "媒体尚未解析，尝试重新解析...");
                 _currentMedia.Parse(MediaParseOptions.ParseLocal);
                 
                 // 等待解析完成
@@ -331,41 +204,8 @@ public class SecureVideoPlayer : IDisposable
                 {
                     await Task.Delay(100);
                 }
-                
-                ErrorOccurred?.Invoke(this, $"重新解析结果: {_currentMedia.IsParsed}");
             }
-            
-            ErrorOccurred?.Invoke(this, "开始播放...");
             var result = _player.Play();
-            ErrorOccurred?.Invoke(this, $"播放命令返回结果: {result}");
-            
-            // 监控播放状态
-            Task.Run(async () =>
-            {
-                for (int i = 0; i < 10; i++)
-                {
-                    await Task.Delay(1000);
-                    var newState = _player.State;
-                    ErrorOccurred?.Invoke(this, $"播放{i+1}秒后状态: {newState}");
-                    
-                    if (newState == VLCState.Playing)
-                    {
-                        ErrorOccurred?.Invoke(this, "播放成功开始！");
-                        break;
-                    }
-                    else if (newState == VLCState.Error)
-                    {
-                        ErrorOccurred?.Invoke(this, "播放器进入错误状态");
-                        break;
-                    }
-                    else if (newState == VLCState.Ended)
-                    {
-                        ErrorOccurred?.Invoke(this, "播放已结束");
-                        break;
-                    }
-                }
-            });
-            
             return result;
         }
         catch (Exception ex)
@@ -464,24 +304,6 @@ public class SecureVideoPlayer : IDisposable
     }
     
     /// <summary>
-    /// 获取当前播放状态
-    /// </summary>
-    public PlaybackState GetPlaybackState()
-    {
-        if (_disposed || _player == null) return PlaybackState.Stopped;
-        
-        return _player.State switch
-        {
-            VLCState.Playing => PlaybackState.Playing,
-            VLCState.Paused => PlaybackState.Paused,
-            VLCState.Stopped => PlaybackState.Stopped,
-            VLCState.Ended => PlaybackState.Ended,
-            VLCState.Error => PlaybackState.Error,
-            _ => PlaybackState.Stopped
-        };
-    }
-    
-    /// <summary>
     /// 获取视频信息
     /// </summary>
     public VideoInfo? GetVideoInfo()
@@ -544,75 +366,6 @@ public class SecureVideoPlayer : IDisposable
     {
         return _player;
     }
-    
-    /// <summary>
-    /// 诊断播放器状态 - 用于排查播放问题
-    /// </summary>
-    public void DiagnosePlayerStatus()
-    {
-        try
-        {
-            ErrorOccurred?.Invoke(this, "=== 播放器状态诊断开始 ===");
-            
-            // 检查对象状态
-            ErrorOccurred?.Invoke(this, $"播放器是否已释放: {_disposed}");
-            ErrorOccurred?.Invoke(this, $"LibVLC是否为null: {_libVLC == null}");
-            ErrorOccurred?.Invoke(this, $"MediaPlayer是否为null: {_player == null}");
-            
-            if (_libVLC != null)
-            {
-                ErrorOccurred?.Invoke(this, $"LibVLC版本: {_libVLC.Version}");
-                ErrorOccurred?.Invoke(this, $"LibVLC变更集: {_libVLC.Changeset}");
-            }
-            
-            if (_player != null)
-            {
-                ErrorOccurred?.Invoke(this, $"MediaPlayer状态: {_player.State}");
-                ErrorOccurred?.Invoke(this, $"MediaPlayer是否可播放: {_player.IsPlaying}");
-                ErrorOccurred?.Invoke(this, $"MediaPlayer是否可寻址: {_player.IsSeekable}");
-                ErrorOccurred?.Invoke(this, $"MediaPlayer音量: {_player.Volume}");
-                ErrorOccurred?.Invoke(this, $"MediaPlayer时长: {_player.Length}ms");
-                ErrorOccurred?.Invoke(this, $"MediaPlayer当前时间: {_player.Time}ms");
-                ErrorOccurred?.Invoke(this, $"MediaPlayer位置: {_player.Position}");
-                ErrorOccurred?.Invoke(this, $"MediaPlayer视频轨道数: {_player.VideoTrackCount}");
-                ErrorOccurred?.Invoke(this, $"MediaPlayer音频轨道数: {_player.AudioTrackCount}");
-            }
-            
-            // 检查媒体状态
-            ErrorOccurred?.Invoke(this, $"当前媒体是否为null: {_currentMedia == null}");
-            if (_currentMedia != null)
-            {
-                ErrorOccurred?.Invoke(this, $"媒体状态: {_currentMedia.State}");
-                ErrorOccurred?.Invoke(this, $"媒体持续时间: {_currentMedia.Duration}ms");
-                ErrorOccurred?.Invoke(this, $"媒体是否已解析: {_currentMedia.IsParsed}");
-                ErrorOccurred?.Invoke(this, $"媒体子项数量: {_currentMedia.SubItems.Count}");
-            }
-            
-            // 检查解密器状态
-            ErrorOccurred?.Invoke(this, $"解密器是否为null: {_decryptor == null}");
-            if (_decryptor != null)
-            {
-                ErrorOccurred?.Invoke(this, $"解密器状态: 已初始化");
-            }
-            
-            // 检查元数据
-            ErrorOccurred?.Invoke(this, $"缓存元数据是否为null: {_cachedMetadata == null}");
-            if (_cachedMetadata != null)
-            {
-                ErrorOccurred?.Invoke(this, $"元数据视频轨道: {_cachedMetadata.VideoTrackCount}");
-                ErrorOccurred?.Invoke(this, $"元数据音频轨道: {_cachedMetadata.AudioTrackCount}");
-                ErrorOccurred?.Invoke(this, $"元数据时长: {_cachedMetadata.Duration}ms");
-            }
-            
-            ErrorOccurred?.Invoke(this, "=== 播放器状态诊断结束 ===");
-        }
-        catch (Exception ex)
-        {
-            ErrorOccurred?.Invoke(this, $"诊断过程中发生错误: {ex.Message}");
-        }
-    }
-    
-
     
     /// <summary>
     /// 清理当前媒体资源

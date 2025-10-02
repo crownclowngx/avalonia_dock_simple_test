@@ -9,6 +9,8 @@
 
     <ItemGroup>
       <Folder Include="Models\SecretVideoPlayer\" />
+      <Folder Include="ViewModels\SecretVideoPlayer\Controls\" />
+      <Folder Include="Views\SecretVideoPlayer\Controls\" />
     </ItemGroup>
 
     <ItemGroup>
