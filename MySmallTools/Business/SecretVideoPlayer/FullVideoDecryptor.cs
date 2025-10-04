@@ -144,7 +144,7 @@ namespace MySmallTools.Business.SecretVideoPlayer
 
                 // 使用SmartVideoEncryptor解密到内存流
                 _decryptedStream = await encryptor.DecryptToStreamAsync(_encryptedFilePath, _password, progress);
-
+                encryptor=null;
                 OnProgressChanged($"解密完成! 总大小: {_decryptedStream.Length} 字节", 100);
                 return true;
             }
@@ -184,6 +184,7 @@ namespace MySmallTools.Business.SecretVideoPlayer
             if (!_disposed)
             {
                 _decryptedStream?.Dispose();
+                _decryptedStream = null;
                 _disposed = true;
             }
         }

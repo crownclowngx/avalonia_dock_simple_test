@@ -15,6 +15,7 @@ public class SecureVideoPlayer : IDisposable
     
     private FullVideoDecryptor? _decryptor;
     private Media? _currentMedia;
+    private SeekableMemoryMediaInput? _seekableMemoryMediaInput;
     private string? _currentPassword;
     private bool _disposed;
     private VideoMetadata? _cachedMetadata;
@@ -149,9 +150,9 @@ public class SecureVideoPlayer : IDisposable
                 return false;
             }
             // 使用自定义的SeekableMemoryMediaInput来支持seeking
-            var seekableInput = new SeekableMemoryMediaInput((MemoryStream)decryptedStream);
+             _seekableMemoryMediaInput = new SeekableMemoryMediaInput((MemoryStream)decryptedStream);
             // 使用自定义MediaInput创建媒体（支持seeking）
-            _currentMedia = new Media(_libVLC, seekableInput);
+            _currentMedia = new Media(_libVLC, _seekableMemoryMediaInput);
             // 设置媒体到播放器
             _player.Media = _currentMedia;
             // 尝试解析媒体
@@ -372,12 +373,24 @@ public class SecureVideoPlayer : IDisposable
     /// </summary>
     private void CleanupCurrentMedia()
     {
-        _currentMedia?.Dispose();
-        _currentMedia = null;
-        
-        _decryptor?.Dispose();
-        _decryptor = null;
-        
+    
+        _player.Stop();
+        _player.Media?.Dispose();
+        // 释放媒体资源
+        if (_currentMedia != null)
+        {
+            _currentMedia.Dispose();
+            _currentMedia = null;
+        }
+    
+        // 释放解密器资源
+        if (_decryptor != null)
+        {
+            _decryptor.Dispose();
+            _decryptor = null;
+        }
+        _seekableMemoryMediaInput?.Dispose();
+        // 清空引用
         _currentPassword = null;
         _cachedMetadata = null;
     }
@@ -386,14 +399,42 @@ public class SecureVideoPlayer : IDisposable
     {
         if (!_disposed)
         {
+            // 取消所有事件订阅
+            UnsubscribeFromPlayerEvents();
+        
+            // 清理媒体资源
             CleanupCurrentMedia();
-            
-            _player?.Dispose();
-            _libVLC?.Dispose();
-            
+        
+            // 释放播放器和LibVLC实例
+            if (_player != null)
+            {
+                _player.Dispose();
+            }
+        
+            // 注意：不要释放LibVLC，因为它是静态初始化的
+        
             _disposed = true;
         }
     }
+    
+    private void UnsubscribeFromPlayerEvents()
+    {
+        if (_player != null)
+        {
+            _player.Playing -= (s, e) => PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Playing));
+            _player.Paused -= (s, e) => PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Paused));
+            _player.Stopped -= (s, e) => PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Stopped));
+            _player.EndReached -= (s, e) => PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Ended));
+            _player.TimeChanged -= (s, e) => TimeChanged?.Invoke(this, new TimeChangedEventArgs(e.Time));
+            _player.PositionChanged -= (s, e) => PositionChanged?.Invoke(this, new PositionChangedEventArgs(e.Position));
+            _player.LengthChanged -= (s, e) => 
+            {
+                ErrorOccurred?.Invoke(this, $"事件: 媒体长度变化 - {e.Length}ms");
+                LengthChanged?.Invoke(this, new LengthChangedEventArgs(e.Length));
+            };
+        }
+    }
+
 }
 
 /// <summary>

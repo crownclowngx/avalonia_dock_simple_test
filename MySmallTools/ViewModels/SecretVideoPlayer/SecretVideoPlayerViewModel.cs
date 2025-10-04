@@ -95,7 +95,8 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
         try
         {
             var success = await _player.LoadEncryptedVideoAsync(FilePath, Password);
-
+            GC.SuppressFinalize(this);
+            GC.Collect(GC.MaxGeneration);
             if (success)
             {
                 StatusMessage = "视频文件加载成功";
@@ -360,5 +361,15 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
 
             _disposed = true;
         }
+    }
+    
+    // 添加一个公共方法，允许外部触发资源清理
+    public void CleanupResources()
+    {
+        // 停止播放
+        Stop();
+        
+        // 释放播放器资源
+        _player?.Dispose();
     }
 }
