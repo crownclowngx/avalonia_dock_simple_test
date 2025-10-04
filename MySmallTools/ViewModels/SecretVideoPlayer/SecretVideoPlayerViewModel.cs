@@ -95,7 +95,6 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
         try
         {
             var success = await _player.LoadEncryptedVideoAsync(FilePath, Password);
-            GC.SuppressFinalize(this);
             GC.Collect(GC.MaxGeneration);
             if (success)
             {
@@ -331,7 +330,6 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     public void Dispose()
     {
         Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
     protected virtual void Dispose(bool disposing)
