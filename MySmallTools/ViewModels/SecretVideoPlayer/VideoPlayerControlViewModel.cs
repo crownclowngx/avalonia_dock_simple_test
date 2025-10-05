@@ -242,6 +242,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     /// </summary>
     public void CleanupMedia()
     {
+        _positionTimer.Stop();
         _player?.CleanupCurrentMedia();
         Position = 0;
         CurrentTime = "00:00:00";

@@ -1,9 +1,9 @@
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Dock.Model.Mvvm.Controls;
 using MySmallTools.Business.SecretVideoPlayer;
 using MySmallTools.Models.SecretVideoPlayer;
@@ -13,7 +13,7 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer;
 /// <summary>
 /// 视频文件加密器视图模型
 /// </summary>
-public class VideoEncryptorViewModel : Document, INotifyPropertyChanged
+public partial class VideoEncryptorViewModel : Document
 {
     #region Events
     
@@ -27,17 +27,6 @@ public class VideoEncryptorViewModel : Document, INotifyPropertyChanged
     #region Fields
     private readonly VideoEncryptorService _encryptorService;
     private EncryptionTask _currentTask;
-    private string _selectedFilePath = string.Empty;
-    private string _outputFilePath = string.Empty;
-    private string _password = string.Empty;
-    private string _confirmPassword = string.Empty;
-    private bool _isEncrypting = false;
-    private string _statusMessage = "请选择要加密的视频文件";
-    private double _progress = 0;
-    private string _progressText = "0%";
-    private bool _showPassword = false;
-    private string _estimatedTimeText = string.Empty;
-    private string _processingSpeedText = string.Empty;
 
     public VideoEncryptorViewModel()
     {
@@ -48,11 +37,11 @@ public class VideoEncryptorViewModel : Document, INotifyPropertyChanged
         _currentTask.PropertyChanged += OnTaskPropertyChanged;
         
         // 初始化命令
-        SelectFileCommand = new RelayCommand(async () => await SelectFileAsync(), () => !_isEncrypting);
+        SelectFileCommand = new RelayCommand(async () => await SelectFileAsync(), () => !IsEncrypting);
         StartEncryptionCommand = new RelayCommand(async () => await StartEncryptionAsync(), CanStartEncryption);
-        ClearCommand = new RelayCommand(ClearAll, () => !_isEncrypting);
+        ClearCommand = new RelayCommand(ClearAll, () => !IsEncrypting);
         TogglePasswordVisibilityCommand = new RelayCommand(TogglePasswordVisibility);
-        GenerateOutputPathCommand = new RelayCommand(GenerateOutputPath, () => !string.IsNullOrEmpty(_selectedFilePath));
+        GenerateOutputPathCommand = new RelayCommand(GenerateOutputPath, () => !string.IsNullOrEmpty(SelectedFilePath));
     }
 
     #endregion
@@ -62,138 +51,100 @@ public class VideoEncryptorViewModel : Document, INotifyPropertyChanged
     /// <summary>
     /// 选中的文件路径
     /// </summary>
-    public string SelectedFilePath
+    [ObservableProperty]
+    private string _selectedFilePath = string.Empty;
+
+    partial void OnSelectedFilePathChanged(string value)
     {
-        get => _selectedFilePath;
-        set
-        {
-            if (SetProperty(ref _selectedFilePath, value))
-            {
-                _currentTask.InputFilePath = value;
-                UpdateFileInfo();
-                ((RelayCommand)GenerateOutputPathCommand).RaiseCanExecuteChanged();
-                ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
-            }
-        }
+        _currentTask.InputFilePath = value;
+        UpdateFileInfo();
+        ((RelayCommand)GenerateOutputPathCommand).RaiseCanExecuteChanged();
+        ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
     }
 
     /// <summary>
     /// 输出文件路径
     /// </summary>
-    public string OutputFilePath
+    [ObservableProperty]
+    private string _outputFilePath = string.Empty;
+
+    partial void OnOutputFilePathChanged(string value)
     {
-        get => _outputFilePath;
-        set
-        {
-            if (SetProperty(ref _outputFilePath, value))
-            {
-                _currentTask.OutputFilePath = value;
-                ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
-            }
-        }
+        _currentTask.OutputFilePath = value;
+        ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
     }
 
     /// <summary>
     /// 加密密码
     /// </summary>
-    public string Password
+    [ObservableProperty]
+    private string _password = string.Empty;
+
+    partial void OnPasswordChanged(string value)
     {
-        get => _password;
-        set
-        {
-            if (SetProperty(ref _password, value))
-            {
-                _currentTask.Password = value;
-                ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
-            }
-        }
+        _currentTask.Password = value;
+        ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
     }
 
     /// <summary>
     /// 确认密码
     /// </summary>
-    public string ConfirmPassword
+    [ObservableProperty]
+    private string _confirmPassword = string.Empty;
+
+    partial void OnConfirmPasswordChanged(string value)
     {
-        get => _confirmPassword;
-        set
-        {
-            if (SetProperty(ref _confirmPassword, value))
-            {
-                ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
-            }
-        }
+        ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
     }
 
     /// <summary>
     /// 是否正在加密
     /// </summary>
-    public bool IsEncrypting
+    [ObservableProperty]
+    private bool _isEncrypting = false;
+
+    partial void OnIsEncryptingChanged(bool value)
     {
-        get => _isEncrypting;
-        set
-        {
-            if (SetProperty(ref _isEncrypting, value))
-            {
-                ((RelayCommand)SelectFileCommand).RaiseCanExecuteChanged();
-                ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
-                ((RelayCommand)ClearCommand).RaiseCanExecuteChanged();
-            }
-        }
+        ((RelayCommand)SelectFileCommand).RaiseCanExecuteChanged();
+        ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
+        ((RelayCommand)ClearCommand).RaiseCanExecuteChanged();
     }
 
     /// <summary>
     /// 状态消息
     /// </summary>
-    public string StatusMessage
-    {
-        get => _statusMessage;
-        set => SetProperty(ref _statusMessage, value);
-    }
+    [ObservableProperty]
+    private string _statusMessage = "请选择要加密的视频文件";
 
     /// <summary>
     /// 进度值 (0-100)
     /// </summary>
-    public double Progress
-    {
-        get => _progress;
-        set => SetProperty(ref _progress, value);
-    }
+    [ObservableProperty]
+    private double _progress = 0;
 
     /// <summary>
     /// 进度文本
     /// </summary>
-    public string ProgressText
-    {
-        get => _progressText;
-        set => SetProperty(ref _progressText, value);
-    }
+    [ObservableProperty]
+    private string _progressText = "0%";
 
     /// <summary>
     /// 是否显示密码
     /// </summary>
-    public bool ShowPassword
-    {
-        get => _showPassword;
-        set => SetProperty(ref _showPassword, value);
-    }
+    [ObservableProperty]
+    private bool _showPassword = false;
 
     /// <summary>
     /// 预估剩余时间文本
     /// </summary>
-    public string EstimatedTimeText
-    {
-        get => _estimatedTimeText;
-        set => SetProperty(ref _estimatedTimeText, value);
-    }
+    [ObservableProperty]
+    private string _estimatedTimeText = string.Empty;
 
     /// <summary>
     /// 处理速度文本
     /// </summary>
-    public string ProcessingSpeedText
-    {
-        get => _processingSpeedText;
-        set => SetProperty(ref _processingSpeedText, value);
-    }
+    [ObservableProperty]
+    private string _processingSpeedText = string.Empty;
 
     /// <summary>
     /// 文件大小文本
@@ -234,12 +185,12 @@ public class VideoEncryptorViewModel : Document, INotifyPropertyChanged
 
     private bool CanStartEncryption()
     {
-        return !_isEncrypting &&
-               !string.IsNullOrEmpty(_selectedFilePath) &&
-               !string.IsNullOrEmpty(_outputFilePath) &&
-               !string.IsNullOrEmpty(_password) &&
-               _password == _confirmPassword &&
-               _password.Length >= 6;
+        return !IsEncrypting &&
+               !string.IsNullOrEmpty(SelectedFilePath) &&
+               !string.IsNullOrEmpty(OutputFilePath) &&
+               !string.IsNullOrEmpty(Password) &&
+               Password == ConfirmPassword &&
+               Password.Length >= 6;
     }
 
     private async Task StartEncryptionAsync()
@@ -265,7 +216,7 @@ public class VideoEncryptorViewModel : Document, INotifyPropertyChanged
             _currentTask.Progress = 100;
             _currentTask.Status = "加密完成";
             
-            StatusMessage = $"加密完成！输出文件: {_outputFilePath}";
+            StatusMessage = $"加密完成！输出文件: {OutputFilePath}";
         }
         catch (Exception ex)
         {
@@ -305,18 +256,18 @@ public class VideoEncryptorViewModel : Document, INotifyPropertyChanged
 
     private void GenerateOutputPath()
     {
-        if (string.IsNullOrEmpty(_selectedFilePath)) return;
+        if (string.IsNullOrEmpty(SelectedFilePath)) return;
 
-        var directory = Path.GetDirectoryName(_selectedFilePath);
-        var fileNameWithoutExt = Path.GetFileNameWithoutExtension(_selectedFilePath);
-        var extension = Path.GetExtension(_selectedFilePath);
+        var directory = Path.GetDirectoryName(SelectedFilePath);
+        var fileNameWithoutExt = Path.GetFileNameWithoutExtension(SelectedFilePath);
+        var extension = Path.GetExtension(SelectedFilePath);
         
         OutputFilePath = Path.Combine(directory!, $"{fileNameWithoutExt}_encrypted{extension}");
     }
 
     private void UpdateFileInfo()
     {
-        if (string.IsNullOrEmpty(_selectedFilePath) || !File.Exists(_selectedFilePath))
+        if (string.IsNullOrEmpty(SelectedFilePath) || !File.Exists(SelectedFilePath))
         {
             FileSizeText = string.Empty;
             FileFormatText = string.Empty;
@@ -325,11 +276,11 @@ public class VideoEncryptorViewModel : Document, INotifyPropertyChanged
 
         try
         {
-            var fileInfo = new FileInfo(_selectedFilePath);
+            var fileInfo = new FileInfo(SelectedFilePath);
             var sizeInMB = fileInfo.Length / (1024.0 * 1024.0);
             FileSizeText = $"文件大小: {sizeInMB:F2} MB";
             
-            var extension = Path.GetExtension(_selectedFilePath).ToLowerInvariant();
+            var extension = Path.GetExtension(SelectedFilePath).ToLowerInvariant();
             FileFormatText = $"文件格式: {extension}";
             
             _currentTask.TotalBytes = fileInfo.Length;
@@ -388,25 +339,6 @@ public class VideoEncryptorViewModel : Document, INotifyPropertyChanged
         _currentTask.Progress = progress.Percentage;
         
         UpdateSpeedAndTimeInfo();
-    }
-
-    #endregion
-
-    #region INotifyPropertyChanged
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (Equals(field, value)) return false;
-        field = value;
-        OnPropertyChanged(propertyName);
-        return true;
     }
 
     #endregion
