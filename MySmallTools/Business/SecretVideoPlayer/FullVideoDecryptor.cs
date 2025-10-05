@@ -77,10 +77,12 @@ namespace MySmallTools.Business.SecretVideoPlayer
             try
             {
                 OnProgressChanged("正在读取视频信息...", 0);
-
-                var encryptor = new SmartVideoEncryptor();
-                _videoInfo = encryptor.GetEncryptedVideoInfo(_encryptedFilePath);
-
+                var videoInfo = await Task.Run(() =>
+                {
+                    var encryptor = new SmartVideoEncryptor();
+                    return encryptor.GetEncryptedVideoInfo(_encryptedFilePath);
+                });
+                _videoInfo = videoInfo;
                 OnProgressChanged("视频信息读取完成", 10);
                 return true;
             }

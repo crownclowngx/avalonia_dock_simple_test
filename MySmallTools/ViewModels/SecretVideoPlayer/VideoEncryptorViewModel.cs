@@ -155,11 +155,10 @@ public partial class VideoEncryptorViewModel : Document
     #region Commands
 
     [RelayCommand(CanExecute = nameof(CanSelectFile))]
-    private async Task SelectFileAsync()
+    private void SelectFile()
     {
         try
         {
-            // 触发文件选择请求事件，让View处理文件选择对话框
             FileSelectionRequested?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)
