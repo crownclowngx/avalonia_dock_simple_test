@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
 using MySmallTools.Business.SecretVideoPlayer;
 using MySmallTools.Models.SecretVideoPlayer;
@@ -35,13 +36,6 @@ public partial class VideoEncryptorViewModel : Document
         
         // 订阅任务属性变化
         _currentTask.PropertyChanged += OnTaskPropertyChanged;
-        
-        // 初始化命令
-        SelectFileCommand = new RelayCommand(async () => await SelectFileAsync(), () => !IsEncrypting);
-        StartEncryptionCommand = new RelayCommand(async () => await StartEncryptionAsync(), CanStartEncryption);
-        ClearCommand = new RelayCommand(ClearAll, () => !IsEncrypting);
-        TogglePasswordVisibilityCommand = new RelayCommand(TogglePasswordVisibility);
-        GenerateOutputPathCommand = new RelayCommand(GenerateOutputPath, () => !string.IsNullOrEmpty(SelectedFilePath));
     }
 
     #endregion
@@ -58,8 +52,8 @@ public partial class VideoEncryptorViewModel : Document
     {
         _currentTask.InputFilePath = value;
         UpdateFileInfo();
-        ((RelayCommand)GenerateOutputPathCommand).RaiseCanExecuteChanged();
-        ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
+        GenerateOutputPathCommand.NotifyCanExecuteChanged();
+        StartEncryptionCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>
@@ -71,7 +65,7 @@ public partial class VideoEncryptorViewModel : Document
     partial void OnOutputFilePathChanged(string value)
     {
         _currentTask.OutputFilePath = value;
-        ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
+        StartEncryptionCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>
@@ -83,7 +77,7 @@ public partial class VideoEncryptorViewModel : Document
     partial void OnPasswordChanged(string value)
     {
         _currentTask.Password = value;
-        ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
+        StartEncryptionCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>
@@ -91,10 +85,9 @@ public partial class VideoEncryptorViewModel : Document
     /// </summary>
     [ObservableProperty]
     private string _confirmPassword = string.Empty;
-
     partial void OnConfirmPasswordChanged(string value)
     {
-        ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
+        StartEncryptionCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>
@@ -102,14 +95,15 @@ public partial class VideoEncryptorViewModel : Document
     /// </summary>
     [ObservableProperty]
     private bool _isEncrypting = false;
-
+    
     partial void OnIsEncryptingChanged(bool value)
     {
-        ((RelayCommand)SelectFileCommand).RaiseCanExecuteChanged();
-        ((RelayCommand)StartEncryptionCommand).RaiseCanExecuteChanged();
-        ((RelayCommand)ClearCommand).RaiseCanExecuteChanged();
+        // 手动触发相关命令状态更新
+        SelectFileCommand.NotifyCanExecuteChanged();
+        StartEncryptionCommand.NotifyCanExecuteChanged();
+        ClearAllCommand.NotifyCanExecuteChanged();
     }
-
+    
     /// <summary>
     /// 状态消息
     /// </summary>
@@ -160,16 +154,7 @@ public partial class VideoEncryptorViewModel : Document
 
     #region Commands
 
-    public ICommand SelectFileCommand { get; }
-    public ICommand StartEncryptionCommand { get; }
-    public ICommand ClearCommand { get; }
-    public ICommand TogglePasswordVisibilityCommand { get; }
-    public ICommand GenerateOutputPathCommand { get; }
-
-    #endregion
-
-    #region Private Methods
-
+    [RelayCommand(CanExecute = nameof(CanSelectFile))]
     private async Task SelectFileAsync()
     {
         try
@@ -183,20 +168,11 @@ public partial class VideoEncryptorViewModel : Document
         }
     }
 
-    private bool CanStartEncryption()
-    {
-        return !IsEncrypting &&
-               !string.IsNullOrEmpty(SelectedFilePath) &&
-               !string.IsNullOrEmpty(OutputFilePath) &&
-               !string.IsNullOrEmpty(Password) &&
-               Password == ConfirmPassword &&
-               Password.Length >= 6;
-    }
+    private bool CanSelectFile() => !IsEncrypting;
 
+    [RelayCommand(CanExecute = nameof(CanStartEncryption))]
     private async Task StartEncryptionAsync()
     {
-        if (!CanStartEncryption()) return;
-
         try
         {
             IsEncrypting = true;
@@ -231,6 +207,18 @@ public partial class VideoEncryptorViewModel : Document
         }
     }
 
+    private bool CanStartEncryption()
+    {
+        return !IsEncrypting &&
+               !string.IsNullOrEmpty(SelectedFilePath) &&
+               !string.IsNullOrEmpty(OutputFilePath) &&
+               !string.IsNullOrEmpty(Password) &&
+               Password == ConfirmPassword &&
+               Password.Length >= 6;
+    }
+    
+
+    [RelayCommand(CanExecute = nameof(CanClear))]
     private void ClearAll()
     {
         SelectedFilePath = string.Empty;
@@ -249,11 +237,15 @@ public partial class VideoEncryptorViewModel : Document
         _currentTask.PropertyChanged += OnTaskPropertyChanged;
     }
 
+    private bool CanClear() => !IsEncrypting;
+
+    [RelayCommand]
     private void TogglePasswordVisibility()
     {
         ShowPassword = !ShowPassword;
     }
 
+    [RelayCommand(CanExecute = nameof(CanGenerateOutputPath))]
     private void GenerateOutputPath()
     {
         if (string.IsNullOrEmpty(SelectedFilePath)) return;
@@ -264,6 +256,12 @@ public partial class VideoEncryptorViewModel : Document
         
         OutputFilePath = Path.Combine(directory!, $"{fileNameWithoutExt}_encrypted{extension}");
     }
+
+    private bool CanGenerateOutputPath() => !string.IsNullOrEmpty(SelectedFilePath);
+
+    #endregion
+
+    #region Private Methods
 
     private void UpdateFileInfo()
     {
@@ -286,7 +284,7 @@ public partial class VideoEncryptorViewModel : Document
             _currentTask.TotalBytes = fileInfo.Length;
             
             // 自动生成输出路径
-            GenerateOutputPath();
+            GenerateOutputPathCommand.Execute(null);
             
             StatusMessage = "文件已选择，请输入加密密码";
         }
