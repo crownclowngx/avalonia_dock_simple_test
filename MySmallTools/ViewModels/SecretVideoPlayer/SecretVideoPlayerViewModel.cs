@@ -49,7 +49,6 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     [ObservableProperty] private string _bufferInfo = string.Empty;
     
     [ObservableProperty] private PlayerStateEnum _currentState = PlayerStateEnum.Stopped;
-    private PlayerStateEnum lastState = PlayerStateEnum.Stopped;
     public MediaPlayer MediaPlayer => _player.GetMediaPlayer();
 
     
@@ -64,7 +63,7 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
         _player.LengthChanged += OnLengthChanged;
         _player.ErrorOccurred += OnErrorOccurred;
         _player.BufferStatisticsUpdated += OnBufferStatisticsUpdated;
-
+        _player.SetVolume(50);
         // 位置更新定时器
         _positionTimer = new DispatcherTimer
         {
@@ -78,10 +77,10 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
         // 通知UI IsPlaying和IsPaused属性发生了变化
         OnPropertyChanged(nameof(IsPlaying));
         OnPropertyChanged(nameof(IsPaused));
-        lastState= value;
     }
 
     partial void OnVolumeChanged(double value){
+        _player.SetVolume((int)value);
     }
     #region Commands
 
