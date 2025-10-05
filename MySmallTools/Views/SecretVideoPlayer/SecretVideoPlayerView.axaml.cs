@@ -21,7 +21,6 @@ public partial class SecretVideoPlayerView : UserControl
     public SecretVideoPlayerView()
     {
         InitializeComponent();
-        DataContext = new SecretVideoPlayerViewModel();
         // 注册Loaded事件
         this.Loaded += OnViewLoaded;
     }

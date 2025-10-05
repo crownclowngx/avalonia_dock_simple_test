@@ -1,4 +1,7 @@
 using System.ComponentModel;
+using System.Runtime.Serialization;
+using Avalonia;
+using Avalonia.Controls;
 using LibVLCSharp.Shared;
 using MySmallTools.Business.SecretVideoPlayer;
 using Avalonia.Threading;
@@ -7,6 +10,8 @@ using Dock.Model.Mvvm.Controls;
 // 添加 CommunityToolkit.Mvvm 命名空间
 using CommunityToolkit.Mvvm.Input;
 using MySmallTools.Constants.SecretVideoPlayer;
+using Ursa.Controls;
+using TimeChangedEventArgs = MySmallTools.Business.SecretVideoPlayer.TimeChangedEventArgs;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer;
 
@@ -42,11 +47,12 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     [ObservableProperty] private bool _isSeekable = false;
 
     [ObservableProperty] private string _bufferInfo = string.Empty;
+    
     [ObservableProperty] private PlayerStateEnum _currentState = PlayerStateEnum.Stopped;
-
+    private PlayerStateEnum lastState = PlayerStateEnum.Stopped;
     public MediaPlayer MediaPlayer => _player.GetMediaPlayer();
 
-
+    
     public SecretVideoPlayerViewModel()
     {
         _player = new SecureVideoPlayer();
@@ -66,11 +72,16 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
         };
         _positionTimer.Tick += (s, e) => UpdatePosition();
     }
+    
     partial void OnCurrentStateChanged(PlayerStateEnum value)
     {
         // 通知UI IsPlaying和IsPaused属性发生了变化
         OnPropertyChanged(nameof(IsPlaying));
         OnPropertyChanged(nameof(IsPaused));
+        lastState= value;
+    }
+
+    partial void OnVolumeChanged(double value){
     }
     #region Commands
 
@@ -361,13 +372,11 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
         }
     }
     
-    // 添加一个公共方法，允许外部触发资源清理
-    public void CleanupResources()
+    public override bool OnClose()
     {
-        // 停止播放
-        Stop();
-        
-        // 释放播放器资源
-        _player?.Dispose();
+        var response = Stop();
+        response.Wait();
+        _player.CleanupCurrentMedia();
+        return base.OnClose();
     }
 }
