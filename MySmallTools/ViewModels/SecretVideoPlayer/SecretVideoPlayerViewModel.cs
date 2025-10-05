@@ -1,17 +1,6 @@
-using System.ComponentModel;
-using System.Runtime.Serialization;
-using Avalonia;
-using Avalonia.Controls;
-using LibVLCSharp.Shared;
-using MySmallTools.Business.SecretVideoPlayer;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Dock.Model.Mvvm.Controls;
-// 添加 CommunityToolkit.Mvvm 命名空间
 using CommunityToolkit.Mvvm.Input;
-using MySmallTools.Constants.SecretVideoPlayer;
-using Ursa.Controls;
-using TimeChangedEventArgs = MySmallTools.Business.SecretVideoPlayer.TimeChangedEventArgs;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer;
 
