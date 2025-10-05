@@ -105,7 +105,6 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         _player.PositionChanged += OnPositionChanged;
         _player.LengthChanged += OnLengthChanged;
         _player.ErrorOccurred += OnErrorOccurred;
-        _player.BufferStatisticsUpdated += OnBufferStatisticsUpdated;
         _player.SetVolume(50);
 
         // 位置更新定时器
@@ -406,16 +405,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     {
         Dispatcher.UIThread.Post(() => { StatusMessage = e; });
     }
-
-    private void OnBufferStatisticsUpdated(object? sender, BufferStatistics e)
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            BufferInfo = $"缓存: {e.CachedBlocks}/{e.MaxCacheBlocks} | " +
-                         $"命中率: {e.HitRate:P1} | " +
-                         $"内存: {e.TotalMemoryUsage / 1024 / 1024:F1}MB";
-        });
-    }
+    
 
     #endregion
 
@@ -441,7 +431,6 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
                     _player.PositionChanged -= OnPositionChanged;
                     _player.LengthChanged -= OnLengthChanged;
                     _player.ErrorOccurred -= OnErrorOccurred;
-                    _player.BufferStatisticsUpdated -= OnBufferStatisticsUpdated;
                 }
 
                 // 释放定时器资源

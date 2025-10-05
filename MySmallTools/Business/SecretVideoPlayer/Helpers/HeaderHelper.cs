@@ -127,11 +127,18 @@ public class HeaderHelper
     {
         stream.Position = 0;
         var buffer = new byte[32];
-        stream.Read(buffer, 0, buffer.Length);
-        
-        // 检测常见视频格式的文件头
-        var header = Encoding.ASCII.GetString(buffer, 0, Math.Min(12, buffer.Length));
-        
+        int bytesRead = stream.Read(buffer, 0, buffer.Length);
+    
+        // 确保至少读取了足够的字节用于格式检测
+        if (bytesRead < 8) // 如果读取的字节太少，无法确定格式，使用默认值
+        {
+            return 32; // 默认保留32字节
+        }
+    
+        // 检测常见视频格式的文件头，使用实际读取的字节数
+        int processBytes = Math.Min(bytesRead, 12); // 最多使用12字节进行检测
+        var header = Encoding.ASCII.GetString(buffer, 0, processBytes);
+    
         return header switch
         {
             var h when h.StartsWith("ftyp") => 32,  // MP4

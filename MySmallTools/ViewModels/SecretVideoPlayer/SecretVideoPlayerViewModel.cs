@@ -28,32 +28,27 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     /// <summary>
     /// 文件路径
     /// </summary>
-    [ObservableProperty] 
-    private string _filePath = string.Empty;
+    [ObservableProperty] private string _filePath = string.Empty;
 
     /// <summary>
     /// 解密密码
     /// </summary>
-    [ObservableProperty] 
-    private string _password = string.Empty;
+    [ObservableProperty] private string _password = string.Empty;
 
     /// <summary>
     /// 状态消息
     /// </summary>
-    [ObservableProperty] 
-    private string _statusMessage = "请选择加密视频文件";
-    
+    [ObservableProperty] private string _statusMessage = "请选择加密视频文件";
+
     /// <summary>
     /// 是否正在加载
     /// </summary>
-    [ObservableProperty] 
-    private bool _isLoading = false;
+    [ObservableProperty] private bool _isLoading = false;
 
     /// <summary>
     /// 播放器控件的 ViewModel
     /// </summary>
-    [ObservableProperty]
-    private VideoPlayerControlViewModel _playerViewModel;
+    [ObservableProperty] private VideoPlayerControlViewModel _playerViewModel;
 
     #endregion
 
@@ -65,7 +60,7 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     }
 
     #endregion
-    
+
     #region Commands
 
     /// <summary>
@@ -93,7 +88,7 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
         {
             var success = await PlayerViewModel.LoadMediaAsync(FilePath, Password);
             GC.Collect(GC.MaxGeneration);
-            
+
             if (success)
             {
                 StatusMessage = "视频文件加载成功，可以开始播放";
@@ -150,7 +145,7 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
             _disposed = true;
         }
     }
-    
+
     public override bool OnClose()
     {
         PlayerViewModel?.CleanupMedia();

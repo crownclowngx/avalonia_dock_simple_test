@@ -27,8 +27,6 @@ public class SecureVideoPlayer : IDisposable
     public event EventHandler<LengthChangedEventArgs>? LengthChanged;
     public event EventHandler<string>? ErrorOccurred;
     
-    // 播放统计事件
-    public event EventHandler<BufferStatistics>? BufferStatisticsUpdated;
     
     public SecureVideoPlayer()
     {
@@ -118,14 +116,7 @@ public class SecureVideoPlayer : IDisposable
             // 绑定解密进度事件
             _decryptor.ProgressChanged += (sender, args) =>
             {
-                if (args.IsError)
-                {
-                    ErrorOccurred?.Invoke(this, args.Message);
-                }
-                else
-                {
-                    ErrorOccurred?.Invoke(this, args.Message);
-                }
+                ErrorOccurred?.Invoke(this, args.Message);
             };
             
             // 执行解密
@@ -149,16 +140,13 @@ public class SecureVideoPlayer : IDisposable
             // 设置媒体到播放器
             _player.Media = _currentMedia;
             // 尝试解析媒体
-            _currentMedia.Parse(MediaParseOptions.ParseLocal);
+            await _currentMedia.Parse(MediaParseOptions.ParseLocal);
             _currentPassword = password;
             return true;
         }
-        catch (UnauthorizedAccessException ignore)
+        catch (Exception ex)
         {
-            return false;
-        }
-        catch (Exception ignore)
-        {
+            ErrorOccurred?.Invoke(this, $"加载失败: {ex.Message}");
             return false;
         }
     }
@@ -190,7 +178,7 @@ public class SecureVideoPlayer : IDisposable
             // 检查媒体是否已解析
             if (_currentMedia != null && !_currentMedia.IsParsed)
             {
-                _currentMedia.Parse(MediaParseOptions.ParseLocal);
+                await _currentMedia.Parse(MediaParseOptions.ParseLocal);
                 
                 // 等待解析完成
                 var parseStart = DateTime.Now;
