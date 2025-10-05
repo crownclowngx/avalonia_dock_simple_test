@@ -1,32 +1,22 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
-using Avalonia.VisualTree;
-using Avalonia.Input;
-using Avalonia.Controls.Primitives;
 using MySmallTools.ViewModels.SecretVideoPlayer;
-using System;
-using Avalonia;
 
 namespace MySmallTools.Views.SecretVideoPlayer;
 
-/// <summary>
-/// 加密视频播放器视图
-/// </summary>
 public partial class SecretVideoPlayerView : UserControl
 {
-
     public SecretVideoPlayerView()
     {
         InitializeComponent();
     }
 
-
-    /// <summary>
-    /// 浏览文件按钮点击事件
-    /// </summary>
     private async void OnBrowseFileClick(object? sender, RoutedEventArgs e)
     {
+        if (DataContext is not SecretVideoPlayerViewModel viewModel)
+            return;
+
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel == null) return;
 
@@ -36,9 +26,9 @@ public partial class SecretVideoPlayerView : UserControl
             AllowMultiple = false,
             FileTypeFilter = new[]
             {
-                new FilePickerFileType("视频文件")
+                new FilePickerFileType("加密视频文件")
                 {
-                    Patterns = new[] { "*.mp4", "*.avi", "*.mkv", "*.mov", "*.wmv", "*.flv", "*.webm" }
+                    Patterns = new[] { "*.enc", "*.encrypted" }
                 },
                 new FilePickerFileType("所有文件")
                 {
@@ -47,9 +37,11 @@ public partial class SecretVideoPlayerView : UserControl
             }
         });
 
-        if (files.Count > 0 && DataContext is SecretVideoPlayerViewModel viewModel)
+        if (files.Count > 0)
         {
             viewModel.FilePath = files[0].Path.LocalPath;
         }
     }
+
+
 }
