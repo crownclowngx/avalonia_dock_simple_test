@@ -35,56 +35,47 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     /// <summary>
     /// 当前播放时间显示
     /// </summary>
-    [ObservableProperty] 
-    private string _currentTime = "00:00:00";
+    [ObservableProperty] private string _currentTime = "00:00:00";
 
     /// <summary>
     /// 总时长显示
     /// </summary>
-    [ObservableProperty] 
-    private string _totalTime = "00:00:00";
+    [ObservableProperty] private string _totalTime = "00:00:00";
 
     /// <summary>
     /// 播放进度（0-100）
     /// </summary>
-    [ObservableProperty] 
-    private double _position = 0;
+    [ObservableProperty] private double _position = 0;
 
     /// <summary>
     /// 音量（0-100）
     /// </summary>
-    [ObservableProperty] 
-    private double _volume = 50;
+    [ObservableProperty] private double _volume = 50;
 
     /// <summary>
     /// 是否可以拖拽进度条
     /// </summary>
-    [ObservableProperty] 
-    private bool _isSeekable = false;
+    [ObservableProperty] private bool _isSeekable = false;
 
     /// <summary>
     /// 缓存信息显示
     /// </summary>
-    [ObservableProperty] 
-    private string _bufferInfo = string.Empty;
+    [ObservableProperty] private string _bufferInfo = string.Empty;
 
     /// <summary>
     /// 当前播放状态
     /// </summary>
-    [ObservableProperty] 
-    private PlayerStateEnum _currentState = PlayerStateEnum.Stopped;
+    [ObservableProperty] private PlayerStateEnum _currentState = PlayerStateEnum.Stopped;
 
     /// <summary>
     /// 是否正在拖拽进度条
     /// </summary>
-    [ObservableProperty] 
-    private bool _isSliderBeingDragged = false;
+    [ObservableProperty] private bool _isSliderBeingDragged = false;
 
     /// <summary>
     /// 播放状态消息
     /// </summary>
-    [ObservableProperty] 
-    private string _statusMessage = "播放器就绪";
+    [ObservableProperty] private string _statusMessage = "播放器就绪";
 
     /// <summary>
     /// MediaPlayer 实例，用于绑定到 VideoView
@@ -267,6 +258,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         {
             return;
         }
+
         Position = (double)info.Position / info.Duration * 100;
         CurrentTime = FormatTime(info.Position);
     }
@@ -278,7 +270,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     private void SeekToPosition(double positionPercent)
     {
         _player.SetPosition((float)(positionPercent / 100.0));
-        _position = positionPercent;
+        Position = positionPercent;
     }
 
     /// <summary>
@@ -313,6 +305,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         {
             return;
         }
+
         IsSeekable = info.IsSeekable;
         Volume = info.Volume;
         TotalTime = FormatTime(info.Duration);
@@ -405,7 +398,6 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     {
         Dispatcher.UIThread.Post(() => { StatusMessage = e; });
     }
-    
 
     #endregion
 
