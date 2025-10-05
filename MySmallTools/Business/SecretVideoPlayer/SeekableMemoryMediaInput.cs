@@ -14,13 +14,6 @@ namespace MySmallTools.Business.SecretVideoPlayer
         private long _position;
         private readonly object _lockObject = new object();
 
-        public SeekableMemoryMediaInput(byte[] data)
-        {
-            _data = data ?? throw new ArgumentNullException(nameof(data));
-            _position = 0;
-            CanSeek = true; // 设置为可寻址
-        }
-
         public SeekableMemoryMediaInput(MemoryStream memoryStream)
         {
             if (memoryStream == null)

@@ -49,6 +49,9 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     [ObservableProperty] private string _bufferInfo = string.Empty;
     
     [ObservableProperty] private PlayerStateEnum _currentState = PlayerStateEnum.Stopped;
+    
+    [ObservableProperty] private bool _isSliderBeingDragged = false;
+    
     public MediaPlayer MediaPlayer => _player.GetMediaPlayer();
 
     
@@ -164,11 +167,44 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
         CurrentTime = "00:00:00";
         return Task.CompletedTask;
     }
+    // 使用RelayCommand代替直接方法调用
+    [RelayCommand]
+    private void StartSliderDrag()
+    {
+        IsSliderBeingDragged = true;
+        PausePositionUpdates();
+    }
+
+    [RelayCommand]
+    private void EndSliderDrag()
+    {
+        if (IsSliderBeingDragged)
+        {
+            IsSliderBeingDragged = false;
+            // 由于Avalonia的绑定是双向的，Position属性已经更新
+            // 这里可以直接使用Position的值
+            SeekToPosition(Position);
+            ResumePositionUpdates();
+        }
+    }
 
     #endregion
 
     #region Methods
-
+    // 修改UpdatePosition方法，在拖拽时不更新位置
+    private void UpdatePosition()
+    {
+        if (IsSliderBeingDragged) // 如果正在拖拽，不更新位置
+            return;
+        
+        var info = _player.GetVideoInfo();
+        if (info == null || info.Duration <= 0)
+        {
+            return;
+        }
+        Position = (double)info.Position / info.Duration * 100;
+        CurrentTime = FormatTime(info.Position);
+    }
     /// <summary>
     /// 跳转到指定位置（用于拖拽跳转）
     /// </summary>
@@ -214,20 +250,7 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
         Volume = info.Volume;
         TotalTime = FormatTime(info.Duration);
     }
-
-    /// <summary>
-    /// 更新播放位置
-    /// </summary>
-    private void UpdatePosition()
-    {
-        var info = _player.GetVideoInfo();
-        if (info == null || info.Duration <= 0)
-        {
-            return;
-        }
-        Position = (double)info.Position / info.Duration * 100;
-        CurrentTime = FormatTime(info.Position);
-    }
+    
 
     /// <summary>
     /// 格式化时间显示
