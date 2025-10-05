@@ -123,40 +123,35 @@ public class HandledEventsAwareBehavior : Behavior<Control>
             {
                 // 获取事件信息 
                 _eventInfo = GetEventInfo(EventName);
+                _handler = CreateEventHandler(_eventInfo);
 
-                if (_eventInfo != null)
+                if (_handler != null)
                 {
-                    // 创建适当类型的事件处理器 
-                    _handler = CreateEventHandler(_eventInfo);
-
-                    if (_handler != null)
+                    // 对于支持handledEventsToo的事件，使用AddHandler方法 
+                    if (HandledEventsToo && typeof(Interactive).IsAssignableFrom(AssociatedObject.GetType()))
                     {
-                        // 对于支持handledEventsToo的事件，使用AddHandler方法 
-                        if (HandledEventsToo && typeof(Interactive).IsAssignableFrom(AssociatedObject.GetType()))
+                        if (HandledEventsToo && AssociatedObject is Interactive interactive)
                         {
-                            if (HandledEventsToo && AssociatedObject is Interactive interactive)
+                            // 直接处理常见的路由事件，避免反射查找AddHandler方法
+                            if (EventName == InputElement.PointerPressedEvent.Name)
                             {
-                                // 直接处理常见的路由事件，避免反射查找AddHandler方法
-                                if (EventName == InputElement.PointerPressedEvent.Name)
-                                {
-                                    interactive.AddHandler(InputElement.PointerPressedEvent,
-                                        new EventHandler<PointerPressedEventArgs>(ExecuteCommandWithEventArgs),
-                                        handledEventsToo: HandledEventsToo);
-                                    return;
-                                }
-                                else if (EventName == InputElement.PointerReleasedEvent.Name)
-                                {
-                                    interactive.AddHandler(InputElement.PointerReleasedEvent,
-                                        new EventHandler<PointerReleasedEventArgs>(ExecuteCommandWithEventArgs),
-                                        handledEventsToo: HandledEventsToo);
-                                    return;
-                                }
+                                interactive.AddHandler(InputElement.PointerPressedEvent,
+                                    new EventHandler<PointerPressedEventArgs>(ExecuteCommandWithEventArgs),
+                                    handledEventsToo: HandledEventsToo);
+                                return;
+                            }
+                            else if (EventName == InputElement.PointerReleasedEvent.Name)
+                            {
+                                interactive.AddHandler(InputElement.PointerReleasedEvent,
+                                    new EventHandler<PointerReleasedEventArgs>(ExecuteCommandWithEventArgs),
+                                    handledEventsToo: HandledEventsToo);
+                                return;
                             }
                         }
-
-                        // 对于不支持handledEventsToo的事件，直接使用事件添加器 
-                        _eventInfo.AddEventHandler(AssociatedObject, _handler);
                     }
+
+                    // 对于不支持handledEventsToo的事件，直接使用事件添加器 
+                    _eventInfo.AddEventHandler(AssociatedObject, _handler);
                 }
             }
             catch (Exception ex)
@@ -171,7 +166,7 @@ public class HandledEventsAwareBehavior : Behavior<Control>
     /// </summary>
     private void UnregisterEvent()
     {
-        if (AssociatedObject != null && _eventInfo != null && _handler != null)
+        if (AssociatedObject != null)
         {
             try
             {
@@ -284,9 +279,6 @@ public class HandledEventsAwareBehavior : Behavior<Control>
     /// <returns>事件处理器委托</returns>
     private Delegate CreateEventHandler(EventInfo eventInfo)
     {
-        if (eventInfo == null)
-            return null;
-
         try
         {
             // 获取事件处理程序的委托类型

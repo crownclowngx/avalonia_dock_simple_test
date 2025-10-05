@@ -15,9 +15,6 @@ namespace MySmallTools.Views.SecretVideoPlayer;
 /// </summary>
 public partial class SecretVideoPlayerView : UserControl
 {
-    private Slider _sliderControl;
-    private bool _isDragging = false;
-    private SecretVideoPlayerViewModel _viewModel;
 
     public SecretVideoPlayerView()
     {

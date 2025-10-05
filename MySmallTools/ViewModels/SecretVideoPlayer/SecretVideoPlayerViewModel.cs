@@ -52,7 +52,7 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     
     [ObservableProperty] private bool _isSliderBeingDragged = false;
     
-    public MediaPlayer MediaPlayer => _player.GetMediaPlayer();
+    public MediaPlayer MediaPlayer => _player?.GetMediaPlayer();
 
     
     public SecretVideoPlayerViewModel()

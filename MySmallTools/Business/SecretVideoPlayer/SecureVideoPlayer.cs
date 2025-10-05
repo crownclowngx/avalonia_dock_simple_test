@@ -32,24 +32,17 @@ public class SecureVideoPlayer : IDisposable
     
     public SecureVideoPlayer()
     {
-        try
+        // 确保LibVLC只初始化一次
+        if (!_isLibVlcInitialized)
         {
-            // 确保LibVLC只初始化一次
-            if (!_isLibVlcInitialized)
-            {
-                Core.Initialize();
-                _isLibVlcInitialized = true;
-            }
-            _libVLC = new LibVLC();
-            _player = new MediaPlayer(_libVLC);
-            _encryptor = new SmartVideoEncryptor();
-            // 订阅播放器事件
-            SubscribeToPlayerEvents();
+            Core.Initialize();
+            _isLibVlcInitialized = true;
         }
-        catch (Exception ex)
-        {
-            throw;
-        }
+        _libVLC = new LibVLC();
+        _player = new MediaPlayer(_libVLC);
+        _encryptor = new SmartVideoEncryptor();
+        // 订阅播放器事件
+        SubscribeToPlayerEvents();
     }
     
     /// <summary>
@@ -160,11 +153,11 @@ public class SecureVideoPlayer : IDisposable
             _currentPassword = password;
             return true;
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException ignore)
         {
             return false;
         }
-        catch (Exception ex)
+        catch (Exception ignore)
         {
             return false;
         }
