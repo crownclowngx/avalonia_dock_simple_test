@@ -107,7 +107,7 @@ namespace MySmallTools.Business.SecretVideoPlayer
 
                 // 使用SmartVideoEncryptor验证密码
                 var isValid = encryptor.ValidatePassword(_encryptedFilePath, _password);
-                
+
                 if (isValid)
                 {
                     OnProgressChanged("密码验证成功", 20);
@@ -136,7 +136,7 @@ namespace MySmallTools.Business.SecretVideoPlayer
                 OnProgressChanged("开始解密视频...", 25);
 
                 var encryptor = new SmartVideoEncryptor();
-                
+
                 // 创建进度回调
                 var progress = new Progress<(long processed, long total, string message)>(p =>
                 {
@@ -145,8 +145,8 @@ namespace MySmallTools.Business.SecretVideoPlayer
                 });
 
                 // 使用SmartVideoEncryptor解密到内存流
-                _decryptedStream = await encryptor.DecryptToStreamAsync(_encryptedFilePath, _password, progress);
-                encryptor=null;
+                _decryptedStream = await encryptor.DecryptToStreamAsync(_encryptedFilePath, _password);
+                encryptor = null;
                 OnProgressChanged($"解密完成! 总大小: {_decryptedStream.Length} 字节", 100);
                 return true;
             }
@@ -162,9 +162,9 @@ namespace MySmallTools.Business.SecretVideoPlayer
         /// </summary>
         private byte[] GenerateDecryptionKey()
         {
-            using var pbkdf2 = new Rfc2898DeriveBytes(_password, 
+            using var pbkdf2 = new Rfc2898DeriveBytes(_password,
                 System.Text.Encoding.UTF8.GetBytes("SecretVideoSalt2024"), 10000, HashAlgorithmName.SHA256);
-            
+
             return pbkdf2.GetBytes(32); // AES-256
         }
 

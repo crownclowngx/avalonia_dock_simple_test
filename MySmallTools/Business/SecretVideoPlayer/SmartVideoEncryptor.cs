@@ -108,49 +108,18 @@ public class SmartVideoEncryptor
         long totalBytes, long initialProcessedBytes, IProgress<EncryptionProgress>? progressCallback,
         CancellationToken cancellationToken)
     {
-        using var aes = Aes.Create();
-        aes.Mode = CipherMode.ECB; // CTR模式需要手动实现
-        aes.Padding = PaddingMode.None;
-        aes.Key = key;
-
-        var buffer = new byte[64 * 1024]; // 64KB缓冲区
-        var counter = new byte[16];
-        Array.Copy(iv, counter, 16);
-
-        long position = 0;
-        long processedBytes = initialProcessedBytes;
-        int bytesRead;
-
-        while ((bytesRead = await inputStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // 生成CTR模式的密钥流
-            var keyStream = _ctrHelper.GenerateCtrKeyStream(aes, counter, bytesRead);
-
-            // XOR加密
-            for (int i = 0; i < bytesRead; i++)
-            {
-                buffer[i] ^= keyStream[i];
-            }
-
-            await outputStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
-
-            // 更新计数器和进度
-            position += bytesRead;
-            processedBytes += bytesRead;
-            _ctrHelper.UpdateCtrCounter(counter, iv, position);
-
-            // 报告进度
-            var percentage = (double)processedBytes / totalBytes * 100;
-            progressCallback?.Report(new EncryptionProgress
-            {
-                ProcessedBytes = processedBytes,
-                TotalBytes = totalBytes,
-                Percentage = percentage,
-                Status = $"正在加密... {percentage:F1}%"
-            });
-        }
+        // 调用统一的CTR处理方法
+        await ProcessCtrDataWithProgressAsync(
+            inputStream,
+            outputStream,
+            key,
+            iv,
+            totalBytes - initialProcessedBytes, // 剩余需要加密的数据长度
+            initialProcessedBytes,
+            progressCallback,
+            "正在加密...",
+            cancellationToken
+        );
     }
 
     /// <summary>
@@ -291,12 +260,7 @@ public class SmartVideoEncryptor
         {
             var videoInfo = GetEncryptedVideoInfo(encryptedFilePath);
             var (key, _) = GenerateKeyAndIv(password);
-
-            // 验证密钥哈希
-            using var sha256 = SHA256.Create();
-            var keyHash = sha256.ComputeHash(key);
-
-            return keyHash.SequenceEqual(videoInfo.KeyHash);
+            return VerifyPassword(key, videoInfo.KeyHash);
         }
         catch
         {
@@ -305,19 +269,27 @@ public class SmartVideoEncryptor
     }
 
     /// <summary>
+    /// 验证密码是否正确
+    /// </summary>
+    private bool VerifyPassword(byte[] key, byte[] keyHash)
+    {
+        using var sha256 = SHA256.Create();
+        var computedHash = sha256.ComputeHash(key);
+        return computedHash.SequenceEqual(keyHash);
+    }
+
+    /// <summary>
     /// 解密视频到内存流
     /// </summary>
     public async Task<MemoryStream> DecryptToStreamAsync(string encryptedFilePath, string password,
-        IProgress<(long processed, long total, string message)>? progress = null)
+        IProgress<EncryptionProgress>? progress = null)
     {
+        // ... 现有代码，从获取视频信息开始 ...
         var videoInfo = GetEncryptedVideoInfo(encryptedFilePath);
         var (key, _) = GenerateKeyAndIv(password);
 
-
         // 验证密码
-        using var sha256 = SHA256.Create();
-        var keyHash = sha256.ComputeHash(key);
-        if (!keyHash.SequenceEqual(videoInfo.KeyHash))
+        if (!VerifyPassword(key, videoInfo.KeyHash))
         {
             throw new UnauthorizedAccessException("密码错误");
         }
@@ -335,63 +307,106 @@ public class SmartVideoEncryptor
         await inputStream.ReadExactlyAsync(originalHeader);
         await outputStream.WriteAsync(originalHeader);
 
-        // 报告头部写入进度
-        progress?.Report((videoInfo.OriginalHeaderSize, totalOutputSize, "正在写入视频头部..."));
+        // 报告头部写入进度 - 使用统一的 EncryptionProgress 类型
+        progress?.Report(new EncryptionProgress
+        {
+            ProcessedBytes = videoInfo.OriginalHeaderSize,
+            TotalBytes = totalOutputSize,
+            Percentage = (double)videoInfo.OriginalHeaderSize / totalOutputSize * 100,
+            Status = "正在写入视频头部..."
+        });
 
         // 然后解密并写入视频数据
         inputStream.Position = videoInfo.EncryptedDataPosition;
 
-        const int bufferSize = 64 * 1024; // 64KB 缓冲区
+        // 调用统一的 CTR 处理方法
+        await ProcessCtrDataWithProgressAsync(
+            inputStream,
+            outputStream,
+            key,
+            videoInfo.IV,
+            encryptedDataLength,
+            videoInfo.OriginalHeaderSize,
+            progress,
+            "解密中...",
+            CancellationToken.None // 可以根据需要传入实际的取消令牌
+        );
 
+        // 重置流位置到开始
+        outputStream.Position = 0;
+        return outputStream;
+    }
+
+    /// <summary>
+    /// 统一的 CTR 模式数据处理方法（同时适用于加密和解密）
+    /// </summary>
+    private async Task ProcessCtrDataWithProgressAsync(
+        Stream inputStream,
+        Stream outputStream,
+        byte[] key,
+        byte[] iv,
+        long totalDataLength,
+        long initialProcessedBytes,
+        IProgress<EncryptionProgress>? progressCallback,
+        string statusPrefix,
+        CancellationToken cancellationToken = default)
+    {
         using var aes = Aes.Create();
-        aes.Key = key;
-        aes.Mode = CipherMode.ECB; // 使用ECB模式手动实现CTR
+        aes.Mode = CipherMode.ECB; // CTR模式需要手动实现
         aes.Padding = PaddingMode.None;
+        aes.Key = key;
 
-        var buffer = new byte[bufferSize];
+        var buffer = new byte[64 * 1024]; // 64KB缓冲区
         var counter = new byte[16];
-        Array.Copy(videoInfo.IV, counter, 16); // 初始化计数器为IV
-        long totalProcessed = videoInfo.OriginalHeaderSize; // 已处理的字节数包括头部
-        long encryptedDataProcessed = 0; // 已处理的加密数据字节数
+        Array.Copy(iv, counter, 16);
 
-        while (encryptedDataProcessed < encryptedDataLength)
+        long position = 0;
+        long processedBytes = initialProcessedBytes;
+        int bytesRead;
+
+        while (position < totalDataLength)
         {
-            var remainingEncryptedData = encryptedDataLength - encryptedDataProcessed;
-            var toRead = (int)Math.Min(bufferSize, remainingEncryptedData);
-            var bytesRead = await inputStream.ReadAsync(buffer, 0, toRead);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var remaining = totalDataLength - position;
+            var toRead = (int)Math.Min(buffer.Length, remaining);
+            bytesRead = await inputStream.ReadAsync(buffer, 0, toRead, cancellationToken);
 
             if (bytesRead == 0) break;
 
-            // 生成CTR模式的密钥流（使用当前计数器）
+            // 生成CTR模式的密钥流
             var keyStream = _ctrHelper.GenerateCtrKeyStream(aes, counter, bytesRead);
 
-            // XOR解密（CTR模式加密和解密是相同的操作）
+            // XOR操作（CTR模式加密和解密相同）
             for (int i = 0; i < bytesRead; i++)
             {
                 buffer[i] ^= keyStream[i];
             }
 
-            // 写入解密后的数据
-            await outputStream.WriteAsync(buffer, 0, bytesRead);
+            await outputStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
 
-            // 更新位置和计数器（在处理完数据后）
-            encryptedDataProcessed += bytesRead;
-            totalProcessed += bytesRead;
-            _ctrHelper.UpdateCtrCounter(counter, videoInfo.IV, encryptedDataProcessed);
+            // 更新计数器和进度
+            position += bytesRead;
+            processedBytes += bytesRead;
+            _ctrHelper.UpdateCtrCounter(counter, iv, position);
 
             // 报告进度
-            progress?.Report((totalProcessed, totalOutputSize, $"解密进度: {totalProcessed}/{totalOutputSize} 字节"));
-
-            // 让出CPU时间
-            if (totalProcessed % (bufferSize * 10) == 0)
+            var totalBytes = initialProcessedBytes + totalDataLength;
+            var percentage = (double)processedBytes / totalBytes * 100;
+            progressCallback?.Report(new EncryptionProgress
             {
-                await Task.Delay(1);
+                ProcessedBytes = processedBytes,
+                TotalBytes = totalBytes,
+                Percentage = percentage,
+                Status = $"{statusPrefix} {percentage:F1}%"
+            });
+
+            // 让出CPU时间（每处理10个缓冲区）
+            if (processedBytes % (buffer.Length * 10) == 0)
+            {
+                await Task.Delay(1, cancellationToken);
             }
         }
-
-        // 重置流位置到开始
-        outputStream.Position = 0;
-        return outputStream;
     }
 }
 
