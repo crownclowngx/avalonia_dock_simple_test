@@ -134,7 +134,7 @@ public class SecureVideoPlayer : IDisposable
                 return false;
             }
             // 使用自定义的SeekableMemoryMediaInput来支持seeking
-             _seekableMemoryMediaInput = new SeekableMemoryMediaInput((MemoryStream)decryptedStream);
+             _seekableMemoryMediaInput = new SeekableMemoryMediaInput(_decryptor);
             // 使用自定义MediaInput创建媒体（支持seeking）
             _currentMedia = new Media(_libVLC, _seekableMemoryMediaInput);
             // 设置媒体到播放器

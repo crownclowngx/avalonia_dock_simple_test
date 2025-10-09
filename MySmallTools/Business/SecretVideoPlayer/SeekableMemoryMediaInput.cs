@@ -11,17 +11,20 @@ namespace MySmallTools.Business.SecretVideoPlayer
     public class SeekableMemoryMediaInput : MediaInput
     {
         private readonly byte[] _data;
-        private long _position;
+        private ulong _position;
         private readonly object _lockObject = new object();
 
-        public SeekableMemoryMediaInput(MemoryStream memoryStream)
+        private ulong allSize = 0;
+
+        private FullVideoDecryptor _decryptor;
+
+        public SeekableMemoryMediaInput(FullVideoDecryptor _decryptor)
         {
-            if (memoryStream == null)
-                throw new ArgumentNullException(nameof(memoryStream));
-            
-            _data = memoryStream.ToArray();
+            var memoryStream = (MemoryStream)_decryptor.DecryptedStream;
+            this._decryptor = _decryptor;
+            _data = memoryStream?.ToArray() ?? [];
             _position = 0;
-            CanSeek = true; // 设置为可寻址
+            CanSeek = true;
         }
 
         /// <summary>
@@ -31,7 +34,8 @@ namespace MySmallTools.Business.SecretVideoPlayer
         /// <returns>成功返回true，失败返回false</returns>
         public override bool Open(out ulong size)
         {
-            size = (ulong)_data.Length;
+            size = (ulong)(_decryptor?.VideoInfo?.Metadata?.FileSize ?? 0);
+            allSize = size;
             _position = 0;
             return true;
         }
@@ -40,10 +44,10 @@ namespace MySmallTools.Business.SecretVideoPlayer
         {
             lock (_lockObject)
             {
-                if (_position >= _data.Length)
+                if (_position >= allSize)
                     return 0; // EOF
 
-                var bytesToRead = (int)Math.Min(len, _data.Length - _position);
+                var bytesToRead = (uint)Math.Min(len, allSize - _position);
                 if (bytesToRead <= 0)
                     return 0;
 
@@ -54,7 +58,7 @@ namespace MySmallTools.Business.SecretVideoPlayer
                 }
 
                 _position += bytesToRead;
-                return bytesToRead;
+                return (int)bytesToRead;
             }
         }
 
@@ -62,10 +66,10 @@ namespace MySmallTools.Business.SecretVideoPlayer
         {
             lock (_lockObject)
             {
-                if (offset > (ulong)_data.Length)
+                if (offset > allSize)
                     return false;
 
-                _position = (long)offset;
+                _position = offset;
                 return true;
             }
         }
@@ -88,6 +92,7 @@ namespace MySmallTools.Business.SecretVideoPlayer
                 // 清理资源
                 _position = 0;
             }
+
             base.Dispose(disposing);
         }
     }
