@@ -89,7 +89,7 @@ public class SmartVideoEncryptor
     /// <summary>
     /// 生成加密密钥和初始向量
     /// </summary>
-    private (byte[] key, byte[] iv) GenerateKeyAndIv(string password)
+    private static (byte[] key, byte[] iv) GenerateKeyAndIv(string password)
     {
         // 使用PBKDF2从密码生成密钥
         using var pbkdf2 = new Rfc2898DeriveBytes(password,
@@ -284,7 +284,6 @@ public class SmartVideoEncryptor
     public async Task<MemoryStream> DecryptToStreamAsync(string encryptedFilePath, string password,
         IProgress<EncryptionProgress>? progress = null)
     {
-        // ... 现有代码，从获取视频信息开始 ...
         var videoInfo = GetEncryptedVideoInfo(encryptedFilePath);
         var (key, _) = GenerateKeyAndIv(password);
 
