@@ -63,10 +63,9 @@ public partial class ToolManagementViewModel : Tool
                 continue;
             }
 
-            // 检查工具是否可见（在当前布局中）
-            // 初始化阶段所有工具默认可见（它们刚被添加到布局中）
-            bool isVisible = toolManagementData?.RootDock != null 
-                ? IsToolVisible(tool) 
+            // 初始化工具可见状态：检查是否在 HiddenDockables 中
+            bool isVisible = toolManagementData?.RootDock != null
+                ? !IsToolHidden(toolManagementData.RootDock, tool)
                 : true;
 
             ToolItems.Add(new ToolManagementItem
@@ -91,51 +90,15 @@ public partial class ToolManagementViewModel : Tool
     }
 
     /// <summary>
-    /// 检查工具是否在布局中可见
+    /// 检查工具是否在 HiddenDockables 中，或不在任何 ToolDock 的 VisibleDockables 中
     /// </summary>
-    private bool IsToolVisible(IDockable tool)
+    private static bool IsToolHidden(IRootDock rootDock, IDockable tool)
     {
-        var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
-        var rootDockField = typeof(ManagementFactory).GetField("_rootDock",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (rootDockField == null)
-            return false;
-
-        var rootDock = rootDockField.GetValue(factory) as IRootDock;
-        if (rootDock == null)
-            return false;
-
-        // 递归检查整个布局树
-        return IsToolInLayout(rootDock, tool);
-    }
-
-    /// <summary>
-    /// 递归检查工具是否在布局中可见
-    /// </summary>
-    private bool IsToolInLayout(IDock dock, IDockable tool)
-    {
-        // 检查当前停靠点的VisibleDockables
-        if (dock.VisibleDockables != null && dock.VisibleDockables.Contains(tool))
-        {
+        // 如果在 HiddenDockables 中，则是被隐藏
+        if (rootDock.HiddenDockables != null && rootDock.HiddenDockables.Contains(tool))
             return true;
-        }
-
-        // 递归检查子停靠点
-        if (dock.VisibleDockables != null)
-        {
-            foreach (var dockable in dock.VisibleDockables)
-            {
-                if (dockable is IDock childDock)
-                {
-                    if (IsToolInLayout(childDock, tool))
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
+        // 如果不在任何 ToolDock 的 VisibleDockables 中，也是被隐藏
+        return FindToolDockContainingTool(rootDock, tool) == null;
     }
 
     /// <summary>
@@ -147,7 +110,8 @@ public partial class ToolManagementViewModel : Tool
         if (item == null || !item.CanClose)
             return;
 
-        var toolManagementData = ServiceProvider.GetRequiredService<ManagementFactory>()?.GetToolManagementData();
+        var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
+        var toolManagementData = factory?.GetToolManagementData();
         if (toolManagementData == null)
         {
             return;
@@ -158,84 +122,62 @@ public partial class ToolManagementViewModel : Tool
             return;
         }
 
-        // 查找包含此工具的ToolDock
-        var toolDock = FindToolDockContainingTool(toolManagementData.RootDock, tool);
+        // 检查工具当前是否在某个 ToolDock 的 VisibleDockables 中
+        var currentDock = FindToolDockContainingTool(toolManagementData.RootDock, tool);
 
-        // 如果没有找到包含该工具的ToolDock（工具已被关闭），尝试根据对齐方式查找匹配的ToolDock
-        if (toolDock == null)
+        if (currentDock != null)
         {
-            // 获取工具的元数据中的对齐方式
-            var alignment = toolManagementData.ToolMetadata.TryGetValue(item.ToolId, out var metadata)
-                ? metadata.Alignment
-                : "Left";
-            var targetAlignment = alignment.Equals("Right", StringComparison.OrdinalIgnoreCase)
-                ? Alignment.Right
-                : Alignment.Left;
-            toolDock = FindToolDockByAlignment(toolManagementData.RootDock, targetAlignment);
-        }
+            // 工具当前可见 → 隐藏它：从 VisibleDockables 中原地移除（不替换集合！）
+            currentDock.VisibleDockables!.Remove(tool);
 
-        // 最后的兜底：查找任何可用的ToolDock
-        if (toolDock == null)
-        {
-            toolDock = FindAnyToolDock(toolManagementData.RootDock);
-        }
-
-        if (toolDock == null)
-        {
-            return;
-        }
-
-        bool isCurrentlyVisible = toolDock.VisibleDockables != null &&
-                                  toolDock.VisibleDockables.Contains(tool);
-        bool targetVisibility = !isCurrentlyVisible; // 反转当前状态
-
-        if (targetVisibility)
-        {
-            // 显示工具：添加到ToolDock的VisibleDockables中
-            if (toolDock.VisibleDockables != null && !toolDock.VisibleDockables.Contains(tool))
+            // 处理 ActiveDockable 切换
+            if (currentDock.ActiveDockable == tool)
             {
-                var updatedList = new List<IDockable>(toolDock.VisibleDockables);
-                updatedList.Add(tool);
-                toolDock.VisibleDockables = updatedList;
-
-                // 设置为活动工具
-                toolDock.ActiveDockable = tool;
+                currentDock.ActiveDockable = currentDock.VisibleDockables.Count > 0
+                    ? currentDock.VisibleDockables[0]
+                    : null;
             }
+
+            item.IsVisible = false;
         }
         else
         {
-            // 隐藏工具：从ToolDock的VisibleDockables中移除
-            if (toolDock.VisibleDockables != null && toolDock.VisibleDockables.Contains(tool))
+            // 工具当前不可可见 → 显示它：找到正确的 ToolDock，原地 Add（不替换集合！）
+            var targetDock = FindTargetToolDock(toolManagementData.RootDock, item.ToolId, toolManagementData.ToolMetadata);
+            if (targetDock == null)
             {
-                var updatedList = new List<IDockable>(toolDock.VisibleDockables);
-                updatedList.Remove(tool);
-                toolDock.VisibleDockables = updatedList;
-
-                // 如果移除后没有工具，设置ActiveDockable为null
-                if (toolDock.VisibleDockables.Count == 0)
-                {
-                    toolDock.ActiveDockable = null;
-                }
-                else if (toolDock.ActiveDockable == tool)
-                {
-                    // 如果移除的是当前活动工具，设置新的活动工具
-                    toolDock.ActiveDockable = toolDock.VisibleDockables[0];
-                }
+                return;
             }
+
+            // 如果工具在 HiddenDockables 中，先从中移除
+            if (toolManagementData.RootDock.HiddenDockables != null &&
+                toolManagementData.RootDock.HiddenDockables.Contains(tool))
+            {
+                toolManagementData.RootDock.HiddenDockables.Remove(tool);
+            }
+
+            // 确保不重复添加
+            if (!targetDock.VisibleDockables!.Contains(tool))
+            {
+                targetDock.VisibleDockables.Add(tool);
+            }
+
+            // 设置 Owner 并激活
+            tool.Owner = targetDock;
+            targetDock.ActiveDockable = tool;
+
+            item.IsVisible = true;
         }
 
-        // 更新ToolManagementItem的IsVisible属性，确保UI状态与实际状态一致
-        item.IsVisible = targetVisibility;
-
+        // 通知布局刷新
         ServiceProvider.GetRequiredService<IMessengerService>()?.Send(new UpdateLayoutMessage("UpdateLayout"));
     }
 
     /// <summary>
-    /// 查找包含特定工具的ToolDock
+    /// 递归查找包含特定工具的 ToolDock
     /// </summary>
-    private ToolDock? FindToolDockContainingTool(IDock dock, IDockable tool)
+    private static ToolDock? FindToolDockContainingTool(IDock dock, IDockable tool)
     {
-        // 检查当前停靠点是否是ToolDock且包含目标工具
         if (dock is ToolDock toolDock &&
             toolDock.VisibleDockables != null &&
             toolDock.VisibleDockables.Contains(tool))
@@ -243,7 +185,6 @@ public partial class ToolManagementViewModel : Tool
             return toolDock;
         }
 
-        // 递归检查子停靠点
         if (dock.VisibleDockables != null)
         {
             foreach (var dockable in dock.VisibleDockables)
@@ -251,10 +192,7 @@ public partial class ToolManagementViewModel : Tool
                 if (dockable is IDock childDock)
                 {
                     var result = FindToolDockContainingTool(childDock, tool);
-                    if (result != null)
-                    {
-                        return result;
-                    }
+                    if (result != null) return result;
                 }
             }
         }
@@ -263,37 +201,21 @@ public partial class ToolManagementViewModel : Tool
     }
 
     /// <summary>
-    /// 查找任何可用的ToolDock
+    /// 根据工具的 Alignment 元数据查找目标 ToolDock
     /// </summary>
-    private ToolDock? FindAnyToolDock(IDock dock)
+    private static ToolDock? FindTargetToolDock(IDock dock, string toolId, IReadOnlyDictionary<string, ToolMetadata> metadata)
     {
-        if (dock is ToolDock toolDock)
-        {
-            return toolDock;
-        }
-
-        if (dock.VisibleDockables != null)
-        {
-            foreach (var dockable in dock.VisibleDockables)
-            {
-                if (dockable is IDock childDock)
-                {
-                    var result = FindAnyToolDock(childDock);
-                    if (result != null)
-                    {
-                        return result;
-                    }
-                }
-            }
-        }
-
-        return null;
+        var alignment = metadata.TryGetValue(toolId, out var meta) ? meta.Alignment : "Left";
+        var targetAlignment = alignment.Equals("Right", StringComparison.OrdinalIgnoreCase)
+            ? Alignment.Right
+            : Alignment.Left;
+        return FindToolDockByAlignment(dock, targetAlignment);
     }
 
     /// <summary>
-    /// 根据对齐方式查找匹配的ToolDock
+    /// 根据对齐方式查找匹配的 ToolDock
     /// </summary>
-    private ToolDock? FindToolDockByAlignment(IDock dock, Alignment targetAlignment)
+    private static ToolDock? FindToolDockByAlignment(IDock dock, Alignment targetAlignment)
     {
         if (dock is ToolDock toolDock && toolDock.Alignment == targetAlignment)
         {
@@ -307,10 +229,7 @@ public partial class ToolManagementViewModel : Tool
                 if (dockable is IDock childDock)
                 {
                     var result = FindToolDockByAlignment(childDock, targetAlignment);
-                    if (result != null)
-                    {
-                        return result;
-                    }
+                    if (result != null) return result;
                 }
             }
         }
@@ -324,22 +243,18 @@ public partial class ToolManagementViewModel : Tool
     /// </summary>
     public void SyncToolsVisibility()
     {
+        var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
+        var toolManagementData = factory?.GetToolManagementData();
+        if (toolManagementData == null) return;
+
         foreach (var item in ToolItems)
         {
-            var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
-            var createdToolsField = typeof(ManagementFactory).GetField("_createdTools",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if(createdToolsField == null)
+            if (!toolManagementData.CreatedTools.TryGetValue(item.ToolId, out var tool))
             {
                 continue;
             }
-            var createdTools = createdToolsField.GetValue(factory) as Dictionary<string, Tool>;
-            if (createdTools == null || !createdTools.TryGetValue(item.ToolId, out var tool))
-            {
-                continue;
-            }
-            // 更新项目的可见状态
-            bool actualVisibility = IsToolVisible(tool);
+
+            bool actualVisibility = !IsToolHidden(toolManagementData.RootDock, tool);
             if (item.IsVisible != actualVisibility)
             {
                 item.IsVisible = actualVisibility;

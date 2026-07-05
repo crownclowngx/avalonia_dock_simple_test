@@ -40,6 +40,9 @@ public class ManagementFactory : Factory
         _documentMetadata = [];
         _toolMetadata = [];
         _createdTools = [];
+        // 启用 HideToolsOnClose：关闭工具时移入 HiddenDockables 而非真正移除，
+        // 这样可以后续通过 RestoreDockable 恢复
+        HideToolsOnClose = true;
         RegisterAllStrategiesAutomatically();
         RegisterAllToolStrategiesAutomatically();
     }
@@ -311,6 +314,15 @@ public class ManagementFactory : Factory
             ["fileSystemTree"] = () => layout,
             ["toolManagement"] = () => layout,
         };
+        
+        // 动态注册所有已创建的工具到 ContextLocator（包括插件工具）
+        foreach (var tool in _createdTools.Values)
+        {
+            if (!ContextLocator.ContainsKey(tool.Id))
+            {
+                ContextLocator[tool.Id] = () => layout;
+            }
+        }
 
         DockableLocator = new Dictionary<string, Func<IDockable?>>
         {
