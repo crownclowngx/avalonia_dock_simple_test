@@ -9,10 +9,12 @@ using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagementCommon.Message;
 using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.ViewModels;
@@ -364,5 +366,28 @@ public class ManagementFactory : Factory
         }
     }
 
-
+    /// <summary>
+    /// 重写 OnDockableHidden：当工具被隐藏（如用户点击 X 关闭）时，
+    /// 通知 ToolManagementViewModel 同步其 CheckBox 状态
+    /// </summary>
+    public override void OnDockableHidden(IDockable? dockable)
+    {
+        base.OnDockableHidden(dockable);
+        
+        if (dockable == null) return;
+        
+        // 只对我们管理的工具发送通知（排除 Document 等其他 Dockable）
+        if (dockable is Tool && _createdTools.Values.Contains(dockable))
+        {
+            try
+            {
+                ServiceProvider.GetService<IMessengerService>()
+                    ?.Send(new ToolVisibilityChangedMessage("ToolHidden"));
+            }
+            catch
+            {
+                // 服务未初始化时忽略
+            }
+        }
+    }
 }

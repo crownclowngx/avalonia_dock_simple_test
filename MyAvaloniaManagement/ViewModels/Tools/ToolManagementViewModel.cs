@@ -31,6 +31,28 @@ public partial class ToolManagementViewModel : Tool
         _currentToolId = Id;
         CanClose = false;
         LoadTools();
+        RegisterMessages();
+    }
+
+    /// <summary>
+    /// 注册消息监听：当工具被外部隐藏/恢复时同步状态
+    /// </summary>
+    private void RegisterMessages()
+    {
+        try
+        {
+            var messenger = ServiceProvider.GetService<IMessengerService>();
+            messenger?.Register<ToolManagementViewModel, ToolVisibilityChangedMessage>(
+                this,
+                (recipient, _) =>
+                {
+                    recipient.SyncToolsVisibility();
+                });
+        }
+        catch
+        {
+            // 服务未初始化时忽略，稍后 InitLayout 完成后可手动同步
+        }
     }
 
     /// <summary>
