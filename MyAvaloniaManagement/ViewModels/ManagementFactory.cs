@@ -48,13 +48,18 @@ public class ManagementFactory : Factory
     /// 获取工具管理所需的所有数据
     /// </summary>
     /// <returns>包含工具元数据、已创建工具和根停靠点的结构</returns>
-    public ToolManagementData GetToolManagementData()
+    public ToolManagementData? GetToolManagementData()
     {
+        if (_rootDock == null)
+        {
+            return null;
+        }
+        
         return new ToolManagementData
         {
-            ToolMetadata = _toolMetadata,  // 注意这里传递的是字典的副本或只读版本
-            CreatedTools = _createdTools,  // 以防止外部代码意外修改内部状态
-            RootDock = _rootDock ?? throw new InvalidOperationException("RootDock 尚未初始化，无法获取工具管理数据。")
+            ToolMetadata = _toolMetadata,
+            CreatedTools = _createdTools,
+            RootDock = _rootDock
         };
     }
     
@@ -304,6 +309,7 @@ public class ManagementFactory : Factory
         {
             ["plugGroupMenuViewModel"] = ()  => layout,
             ["fileSystemTree"] = () => layout,
+            ["toolManagement"] = () => layout,
         };
 
         DockableLocator = new Dictionary<string, Func<IDockable?>>
@@ -326,7 +332,8 @@ public class ManagementFactory : Factory
     /// </summary>
     private void CreateAllTools()
     {
-        foreach (var strategy in _toolStrategies.Values.Where(k=>k.GetMetadata().ToolTypeId!=DockNameConstant.ToolManagement))
+        // 先创建所有非工具管理的Tool
+        foreach (var strategy in _toolStrategies.Values.Where(k => k.GetMetadata().ToolTypeId != DockNameConstant.ToolManagement))
         {
             var tool = strategy.CreateTool();
             _createdTools[tool.Id] = tool;
@@ -336,8 +343,13 @@ public class ManagementFactory : Factory
                 _plugGroupMenuTool = tool;
             }
         }
-        // var managementTool = _toolStrategies.Values.First(k => k.GetMetadata().ToolTypeId == DockNameConstant.ToolManagement).CreateTool();
-        // _createdTools[managementTool.Id] = managementTool;
+        
+        // 再创建工具管理Tool（需要在其他Tool之后创建，因为它需要读取其他Tool的信息）
+        if (_toolStrategies.TryGetValue(DockNameConstant.ToolManagement, out var managementStrategy))
+        {
+            var managementTool = managementStrategy.CreateTool();
+            _createdTools[managementTool.Id] = managementTool;
+        }
     }
 
 

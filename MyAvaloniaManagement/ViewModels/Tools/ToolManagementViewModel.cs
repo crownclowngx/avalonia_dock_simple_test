@@ -38,36 +38,36 @@ public partial class ToolManagementViewModel : Tool
     /// </summary>
     private void LoadTools()
     {
-        var toolManagementData = ServiceProvider.GetRequiredService<ManagementFactory>()?.GetToolManagementData();
-        if (toolManagementData == null)
+        var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
+        var toolManagementData = factory?.GetToolManagementData();
+
+        // 清除现有项
+        ToolItems.Clear();
+
+        // 即使 RootDock 尚未初始化，也可以通过反射获取元数据和已创建工具来填充列表
+        var toolMetadata = toolManagementData?.ToolMetadata 
+            ?? GetFieldViaReflection<Dictionary<string, ToolMetadata>>(factory, "_toolMetadata");
+        var createdTools = toolManagementData?.CreatedTools 
+            ?? GetFieldViaReflection<Dictionary<string, Tool>>(factory, "_createdTools");
+
+        if (toolMetadata == null || createdTools == null)
         {
             return;
         }
 
-        // 清除现有项
-        ToolItems.Clear();
         // 添加所有工具（排除自身）
-        foreach (var metadata in toolManagementData.ToolMetadata.Values.Where(m => m.ToolTypeId != _currentToolId))
+        foreach (var metadata in toolMetadata.Values.Where(m => m.ToolTypeId != _currentToolId))
         {
-            if (!toolManagementData.CreatedTools.TryGetValue(metadata.ToolTypeId, out var tool))
+            if (!createdTools.TryGetValue(metadata.ToolTypeId, out var tool))
             {
                 continue;
             }
 
             // 检查工具是否可见（在当前布局中）
-            bool isVisible = false;
-
-            // 如果rootDock存在，则使用IsToolVisible方法检查
-            if (toolManagementData.RootDock != null)
-            {
-                isVisible = IsToolVisible(tool);
-            }
-            // 如果rootDock不存在或者IsToolVisible返回false，但工具已创建，
-            // 则默认将其设置为可见，因为ManagementFactory已经将其添加到布局中
-            else if (toolManagementData.CreatedTools.ContainsKey(metadata.ToolTypeId))
-            {
-                isVisible = true;
-            }
+            // 初始化阶段所有工具默认可见（它们刚被添加到布局中）
+            bool isVisible = toolManagementData?.RootDock != null 
+                ? IsToolVisible(tool) 
+                : true;
 
             ToolItems.Add(new ToolManagementItem
             {
@@ -77,6 +77,17 @@ public partial class ToolManagementViewModel : Tool
                 CanClose = tool.CanClose
             });
         }
+    }
+
+    /// <summary>
+    /// 通过反射获取私有字段
+    /// </summary>
+    private static T? GetFieldViaReflection<T>(object? obj, string fieldName) where T : class
+    {
+        if (obj == null) return null;
+        var field = obj.GetType().GetField(fieldName, 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        return field?.GetValue(obj) as T;
     }
 
     /// <summary>
@@ -150,7 +161,20 @@ public partial class ToolManagementViewModel : Tool
         // 查找包含此工具的ToolDock
         var toolDock = FindToolDockContainingTool(toolManagementData.RootDock, tool);
 
-        // 如果没有找到包含该工具的ToolDock，尝试查找任何可用的ToolDock
+        // 如果没有找到包含该工具的ToolDock（工具已被关闭），尝试根据对齐方式查找匹配的ToolDock
+        if (toolDock == null)
+        {
+            // 获取工具的元数据中的对齐方式
+            var alignment = toolManagementData.ToolMetadata.TryGetValue(item.ToolId, out var metadata)
+                ? metadata.Alignment
+                : "Left";
+            var targetAlignment = alignment.Equals("Right", StringComparison.OrdinalIgnoreCase)
+                ? Alignment.Right
+                : Alignment.Left;
+            toolDock = FindToolDockByAlignment(toolManagementData.RootDock, targetAlignment);
+        }
+
+        // 最后的兜底：查找任何可用的ToolDock
         if (toolDock == null)
         {
             toolDock = FindAnyToolDock(toolManagementData.RootDock);
@@ -255,6 +279,34 @@ public partial class ToolManagementViewModel : Tool
                 if (dockable is IDock childDock)
                 {
                     var result = FindAnyToolDock(childDock);
+                    if (result != null)
+                    {
+                        return result;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 根据对齐方式查找匹配的ToolDock
+    /// </summary>
+    private ToolDock? FindToolDockByAlignment(IDock dock, Alignment targetAlignment)
+    {
+        if (dock is ToolDock toolDock && toolDock.Alignment == targetAlignment)
+        {
+            return toolDock;
+        }
+
+        if (dock.VisibleDockables != null)
+        {
+            foreach (var dockable in dock.VisibleDockables)
+            {
+                if (dockable is IDock childDock)
+                {
+                    var result = FindToolDockByAlignment(childDock, targetAlignment);
                     if (result != null)
                     {
                         return result;
