@@ -3,57 +3,156 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:BiliDownloader.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:models="using:BiliDownloader.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="BiliDownloader.Views.BiliDownloaderView"
              x:DataType="vm:BiliDownloaderViewModel">
     <Design.DataContext>
         <vm:BiliDownloaderViewModel />
     </Design.DataContext>
-    <StackPanel Spacing="10" Margin="15">
+    <ScrollViewer>
+        <StackPanel Spacing="8" Margin="15">
 
-        <!-- 登录状态区域 -->
-        <Border Background="#30FFFFFF" CornerRadius="6" Padding="12">
-            <Grid ColumnDefinitions="*,Auto">
-                <!-- 已登录时显示 -->
-                <StackPanel Orientation="Horizontal" Spacing="8"
-                            Grid.Column="0"
-                            IsVisible="{Binding IsLoggedIn}">
-                    <TextBlock Text="已登录：" VerticalAlignment="Center" FontWeight="Bold"/>
-                    <TextBlock Text="{Binding UserName}"
-                               VerticalAlignment="Center"
-                               Foreground="#00A1D6"/>
-                </StackPanel>
-                <Button Content="退出登录"
+            <!-- 登录状态区域 -->
+            <Border Background="#30FFFFFF" CornerRadius="6" Padding="12">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                Grid.Column="0"
+                                IsVisible="{Binding IsLoggedIn}">
+                        <TextBlock Text="已登录：" VerticalAlignment="Center" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding UserName}"
+                                   VerticalAlignment="Center"
+                                   Foreground="#00A1D6"/>
+                    </StackPanel>
+                    <Button Content="退出登录"
+                            Grid.Column="1"
+                            Command="{Binding LogoutCommand}"
+                            IsVisible="{Binding IsLoggedIn}"
+                            Padding="12,4"/>
+
+                    <Button Content="点击登录 Bilibili"
+                            Grid.Column="0" Grid.ColumnSpan="2"
+                            Command="{Binding LoginCommand}"
+                            IsVisible="{Binding !IsLoggedIn}"
+                            HorizontalAlignment="Left"
+                            Padding="16,6"/>
+                </Grid>
+            </Border>
+
+            <Label Content="Bilibili 视频下载器" FontSize="18" FontWeight="Bold"/>
+
+            <!-- URL 输入 + 解析 -->
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto">
+                <TextBox Text="{Binding Url}"
+                         Watermark="请输入链接，例如 https://www.bilibili.com/video/BV1xx411c7mD"
+                         Grid.Column="0"
+                         VerticalAlignment="Center"/>
+                <Button Command="{Binding ParseCommand}"
+                        Content="解析"
+                        Width="80"
                         Grid.Column="1"
-                        Command="{Binding LogoutCommand}"
-                        IsVisible="{Binding IsLoggedIn}"
-                        Padding="12,4"/>
-
-                <!-- 未登录时显示 -->
-                <Button Content="点击登录 Bilibili"
-                        Grid.Column="0" Grid.ColumnSpan="2"
-                        Command="{Binding LoginCommand}"
-                        IsVisible="{Binding !IsLoggedIn}"
-                        HorizontalAlignment="Left"
-                        Padding="16,6"/>
+                        Margin="8,0,0,0"
+                        IsEnabled="{Binding !IsLoading}"/>
             </Grid>
-        </Border>
 
-        <Label Content="Bilibili 视频下载器" FontSize="18" FontWeight="Bold"/>
-        <Label Content="请输入B站视频链接："/>
-        <TextBox Text="{Binding Url}"
-                 Watermark="请输入链接，例如 https://www.bilibili.com/video/BV1xx411c7mD"
-                 Width="500"
-                 HorizontalAlignment="Left"/>
-        <Button Command="{Binding DownloadCommand}"
-                Content="解析下载"
-                Width="120"
-                IsEnabled="{Binding !IsLoading}"/>
-        <Label Content="输出信息："/>
-        <TextBox Text="{Binding DownloadInfo}"
-                 Height="220"
-                 TextWrapping="Wrap"
-                 AcceptsReturn="True"
-                 IsReadOnly="True"/>
-    </StackPanel>
+            <!-- 解析结果区域 -->
+            <Border IsVisible="{Binding IsParsed}" Background="#20FFFFFF" CornerRadius="6" Padding="10">
+                <StackPanel Spacing="6">
+                    <!-- 系列标题 -->
+                    <TextBlock FontWeight="Bold" FontSize="14"
+                               Text="{Binding VideoCollection.SeriesTitle}"/>
+
+                    <!-- 清晰度选择 -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="清晰度：" VerticalAlignment="Center"/>
+                        <ComboBox ItemsSource="{Binding QualityOptions}"
+                                  SelectedItem="{Binding SelectedQuality}"
+                                  Width="200"/>
+                    </StackPanel>
+
+                    <!-- 输出目录 -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="输出目录：" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding OutputDirectory}"
+                                 Width="400"
+                                 IsReadOnly="True"/>
+                        <Button Content="选择文件夹"
+                                Command="{Binding SelectFolderCommand}"
+                                Padding="8,4"/>
+                    </StackPanel>
+
+                    <!-- 视频列表 -->
+                    <TextBlock Text="视频列表：" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                    <ItemsControl ItemsSource="{Binding VideoItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:BiliVideoItem">
+                                <Border BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="4,4">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="Auto,Auto">
+                                        <!-- 行1: 勾选 + 标题 + 时长 + 状态 -->
+                                        <CheckBox IsChecked="{Binding IsSelected}"
+                                                  Grid.Column="0"
+                                                  VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Title}"
+                                                   Grid.Column="1"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Margin="4,0"/>
+                                        <TextBlock Grid.Column="2"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="Gray"
+                                                   Margin="4,0">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0}">
+                                                    <Binding Path="Duration"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Status}"
+                                                   Grid.Column="3"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="#00A1D6"
+                                                   Margin="4,0"
+                                                   MinWidth="60"/>
+
+                                        <!-- 行2: 进度条 -->
+                                        <ProgressBar Grid.Column="0" Grid.ColumnSpan="4"
+                                                     Grid.Row="1"
+                                                     Value="{Binding Progress}"
+                                                     Minimum="0" Maximum="100"
+                                                     Height="4"
+                                                     Margin="0,2"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 提交下载 -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Command="{Binding SubmitDownloadCommand}"
+                                Content="提交下载"
+                                Width="120"
+                                Padding="8,6"/>
+                        <TextBlock Text="{Binding TotalProgress, StringFormat='总进度: {0:F1}%'}"
+                                   VerticalAlignment="Center"
+                                   Foreground="Gray"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 总进度条 -->
+            <ProgressBar Value="{Binding TotalProgress}"
+                         Minimum="0" Maximum="100"
+                         Height="8"
+                         IsVisible="{Binding IsParsed}"/>
+
+            <!-- 日志区域 -->
+            <TextBlock Text="输出信息：" FontWeight="SemiBold" Margin="0,4,0,0"/>
+            <TextBox Text="{Binding DownloadInfo}"
+                     Height="120"
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     IsReadOnly="True"/>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

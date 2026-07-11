@@ -1,0 +1,265 @@
+using System.Diagnostics;
+using System.Text;
+using BiliDownloader.Models;
+
+namespace BiliDownloader.Services;
+
+/// <summary>
+/// 下载与合并服务：HTTP 流式下载（支持断点续传）+ ffmpeg 音视频合并
+/// </summary>
+public class BiliDownloadService
+{
+    private const string UserAgent =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
+
+    private const string Referer = "https://www.bilibili.com/";
+
+    private readonly HttpClient _httpClient;
+
+    public BiliDownloadService()
+    {
+        _httpClient = new HttpClient();
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
+        _httpClient.DefaultRequestHeaders.Add("Referer", Referer);
+        _httpClient.DefaultRequestHeaders.Add("Origin", "https://www.bilibili.com");
+        _httpClient.Timeout = TimeSpan.FromMinutes(60);
+    }
+
+    /// <summary>
+    /// 下载单个视频项的完整流程：获取DASH流 -> 下载视频 -> 下载音频 -> ffmpeg合并 -> 清理
+    /// </summary>
+    /// <param name="task">任务记录（从 SQLite 加载，含所有参数）</param>
+    /// <param name="apiService">API 服务（获取 DASH 流）</param>
+    /// <param name="onProgress">进度回调 (进度百分比, 状态文本)</param>
+    /// <param name="onBytesUpdate">字节数更新回调（用于断点续传持久化）</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>最终输出文件路径</returns>
+    public async Task<string> DownloadItemAsync(
+        DownloadTaskRecord task,
+        BiliApiService apiService,
+        Action<double, string> onProgress,
+        Action<long, long>? onBytesUpdate,
+        CancellationToken ct)
+    {
+        // 确保临时目录和输出目录存在
+        if (string.IsNullOrWhiteSpace(task.TempDirectory))
+        {
+            var tempBase = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "BiliDownloader", "temp");
+            task.TempDirectory = Path.Combine(tempBase, task.TaskId);
+        }
+        Directory.CreateDirectory(task.TempDirectory);
+        Directory.CreateDirectory(task.OutputDirectory);
+
+        var videoTmp = Path.Combine(task.TempDirectory, "video.tmp");
+        var audioTmp = Path.Combine(task.TempDirectory, "audio.tmp");
+        var safeTitle = SanitizeFileName(task.ItemTitle);
+        var outputPath = GetUniqueFilePath(task.OutputDirectory, safeTitle, "mp4");
+
+        // 1. 获取 DASH 流
+        onProgress(0, "获取播放地址...");
+        var dashResult = await apiService.GetDashResultAsync(task.Aid, task.Cid, task.QualityId, task.Cookie);
+
+        // 选择视频流：优先 AVC/H.264 (codecid=7)，选用户指定清晰度
+        var videoStream = SelectVideoStream(dashResult.VideoStreams, task.QualityId);
+        if (videoStream == null)
+            throw new Exception("未找到匹配的视频流");
+
+        // 选择音频流：选 bandwidth 最高的
+        var audioStream = dashResult.AudioStreams
+            .OrderByDescending(a => a.Bandwidth)
+            .FirstOrDefault();
+        if (audioStream == null)
+            throw new Exception("未找到音频流");
+
+        // 2. 下载视频流
+        onProgress(5, "下载视频流...");
+        await DownloadStreamAsync(
+            videoStream.BaseUrl, videoTmp, task.Cookie,
+            task.VideoBytesDownloaded,
+            (total, downloaded) =>
+            {
+                task.VideoBytesDownloaded = downloaded;
+                var pct = total > 0 ? (double)downloaded / total * 45 : 0;
+                onProgress(5 + pct, $"下载视频 {FormatBytes(downloaded)}/{FormatBytes(total)}");
+                onBytesUpdate?.Invoke(task.VideoBytesDownloaded, task.AudioBytesDownloaded);
+            },
+            ct);
+
+        // 3. 下载音频流
+        onProgress(50, "下载音频流...");
+        await DownloadStreamAsync(
+            audioStream.BaseUrl, audioTmp, task.Cookie,
+            task.AudioBytesDownloaded,
+            (total, downloaded) =>
+            {
+                task.AudioBytesDownloaded = downloaded;
+                var pct = total > 0 ? (double)downloaded / total * 40 : 0;
+                onProgress(50 + pct, $"下载音频 {FormatBytes(downloaded)}/{FormatBytes(total)}");
+                onBytesUpdate?.Invoke(task.VideoBytesDownloaded, task.AudioBytesDownloaded);
+            },
+            ct);
+
+        // 4. ffmpeg 合并
+        onProgress(92, "合并音视频...");
+        await MergeAsync(videoTmp, audioTmp, outputPath);
+        onProgress(100, "完成");
+
+        // 5. 清理临时文件
+        try
+        {
+            if (File.Exists(videoTmp)) File.Delete(videoTmp);
+            if (File.Exists(audioTmp)) File.Delete(audioTmp);
+            if (Directory.Exists(task.TempDirectory) &&
+                Directory.GetFiles(task.TempDirectory).Length == 0)
+                Directory.Delete(task.TempDirectory);
+        }
+        catch { /* 忽略清理失败 */ }
+
+        return outputPath;
+    }
+
+    /// <summary>
+    /// HTTP 流式下载，支持断点续传（Range 请求）
+    /// </summary>
+    /// <param name="url">下载 URL</param>
+    /// <param name="outputPath">输出文件路径</param>
+    /// <param name="cookie">Cookie</param>
+    /// <param name="existingBytes">已下载字节数（用于续传，0=从头开始）</param>
+    /// <param name="onProgress">进度回调 (总字节, 已下载字节)</param>
+    /// <param name="ct">取消令牌</param>
+    public async Task DownloadStreamAsync(
+        string url,
+        string outputPath,
+        string cookie,
+        long existingBytes,
+        Action<long, long> onProgress,
+        CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("Cookie", cookie);
+
+        // 断点续传：设置 Range 头
+        if (existingBytes > 0 && File.Exists(outputPath))
+        {
+            request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(existingBytes, null);
+        }
+
+        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+        response.EnsureSuccessStatusCode();
+
+        var totalBytes = response.Content.Headers.ContentLength ?? -1;
+        // 如果是续传，totalBytes 是剩余字节数，需要加上已下载的
+        if (existingBytes > 0 && totalBytes > 0)
+            totalBytes += existingBytes;
+
+        using var stream = await response.Content.ReadAsStreamAsync(ct);
+
+        // 续传时 Append，否则 Create
+        var fileMode = existingBytes > 0 && File.Exists(outputPath)
+            ? FileMode.Append
+            : FileMode.Create;
+
+        using var fileStream = new FileStream(outputPath, fileMode, FileAccess.Write, FileShare.None, 8192);
+        var buffer = new byte[8192];
+        var downloaded = existingBytes;
+        int bytesRead;
+
+        while ((bytesRead = await stream.ReadAsync(buffer, ct)) > 0)
+        {
+            await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
+            downloaded += bytesRead;
+            onProgress(totalBytes, downloaded);
+        }
+    }
+
+    /// <summary>
+    /// ffmpeg 合并视频和音频
+    /// </summary>
+    public async Task MergeAsync(string videoPath, string audioPath, string outputPath)
+    {
+        var ffmpegPath = FfmpegService.ResolveFfmpegPath();
+        if (ffmpegPath == null)
+            throw new Exception("ffmpeg 未就绪，请在调度器工具中配置 ffmpeg 路径或等待自动下载完成");
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = ffmpegPath,
+            Arguments = $"-hide_banner -nostats -loglevel warning -i \"{videoPath}\" -i \"{audioPath}\" -c copy -shortest \"{outputPath}\"",
+            UseShellExecute = false,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+        };
+
+        using var process = Process.Start(psi)
+            ?? throw new Exception("无法启动 ffmpeg 进程");
+
+        await process.WaitForExitAsync();
+
+        if (process.ExitCode != 0)
+        {
+            var error = await process.StandardError.ReadToEndAsync();
+            throw new Exception($"ffmpeg 合并失败 (exit {process.ExitCode}): {error}");
+        }
+    }
+
+    /// <summary>
+    /// 从视频流列表中选择最佳流：优先 AVC (codecid=7)，匹配指定画质
+    /// </summary>
+    private static BiliDashStream? SelectVideoStream(List<BiliDashStream> streams, int qualityId)
+    {
+        if (streams.Count == 0) return null;
+
+        // 先找指定画质 + AVC
+        var match = streams.FirstOrDefault(s => s.Id == qualityId && s.Codecid == 7);
+        if (match != null) return match;
+
+        // 再找指定画质（任意编码）
+        match = streams.FirstOrDefault(s => s.Id == qualityId);
+        if (match != null) return match;
+
+        // 兜底：找最高画质的 AVC
+        match = streams.Where(s => s.Codecid == 7).OrderByDescending(s => s.Id).FirstOrDefault();
+        if (match != null) return match;
+
+        // 最终兜底：最高画质
+        return streams.OrderByDescending(s => s.Id).FirstOrDefault();
+    }
+
+    /// <summary>
+    /// 文件名非法字符替换
+    /// </summary>
+    internal static string SanitizeFileName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var sb = new StringBuilder(name.Length);
+        foreach (var c in name)
+            sb.Append(invalid.Contains(c) ? '_' : c);
+        return sb.ToString().TrimEnd('.');
+    }
+
+    /// <summary>
+    /// 获取唯一文件路径（重名时追加序号）
+    /// </summary>
+    private static string GetUniqueFilePath(string dir, string name, string ext)
+    {
+        var path = Path.Combine(dir, $"{name}.{ext}");
+        if (!File.Exists(path)) return path;
+
+        for (int i = 1; i < 10000; i++)
+        {
+            path = Path.Combine(dir, $"{name} ({i}).{ext}");
+            if (!File.Exists(path)) return path;
+        }
+        return path;
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
+        return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+    }
+}

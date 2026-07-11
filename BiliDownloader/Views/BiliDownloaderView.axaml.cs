@@ -9,6 +9,7 @@ namespace BiliDownloader.Views;
 public partial class BiliDownloaderView : UserControl
 {
     private bool _hasCheckedLogin;
+    private bool _hasRecoveredTasks;
 
     public BiliDownloaderView()
     {
@@ -24,11 +25,21 @@ public partial class BiliDownloaderView : UserControl
     {
         base.OnAttachedToVisualTree(e);
 
-        // 首次附加到视觉树时异步触发登录检查
-        if (!_hasCheckedLogin && DataContext is BiliDownloaderViewModel vm)
+        if (DataContext is BiliDownloaderViewModel vm)
         {
-            _hasCheckedLogin = true;
-            _ = vm.EnsureLoggedInAsync();
+            // 首次附加到视觉树时异步触发登录检查
+            if (!_hasCheckedLogin)
+            {
+                _hasCheckedLogin = true;
+                _ = vm.EnsureLoggedInAsync();
+            }
+
+            // 首次附加时从 SQLite 恢复未完成任务状态
+            if (!_hasRecoveredTasks)
+            {
+                _hasRecoveredTasks = true;
+                _ = vm.RecoverTasksFromStoreAsync();
+            }
         }
     }
 
