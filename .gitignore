@@ -9,3 +9,5 @@
 MySmallTools/bin/Debug/net9.0/MySmallTools.deps.json
 /MySmallTools/bin
 /MySmallTools/obj
+/BiliDownloader/bin
+/BiliDownloader/obj

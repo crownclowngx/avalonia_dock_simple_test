@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BiliDownloader.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="BiliDownloader.Views.BiliDownloaderView"
+             x:DataType="vm:BiliDownloaderViewModel">
+    <Design.DataContext>
+        <vm:BiliDownloaderViewModel />
+    </Design.DataContext>
+    <StackPanel Spacing="10" Margin="15">
+        <Label Content="Bilibili 视频下载器" FontSize="18" FontWeight="Bold"/>
+        <Label Content="请输入B站视频链接："/>
+        <TextBox Text="{Binding Url}" 
+                 Watermark="请输入链接，例如 https://www.bilibili.com/video/BV1xx411c7mD" 
+                 Width="500"
+                 HorizontalAlignment="Left"/>
+        <Button Command="{Binding DownloadCommand}" 
+                Content="解析下载" 
+                Width="120"
+                IsEnabled="{Binding !IsLoading}"/>
+        <Label Content="输出信息："/>
+        <TextBox Text="{Binding DownloadInfo}" 
+                 Height="250" 
+                 TextWrapping="Wrap" 
+                 AcceptsReturn="True"
+                 IsReadOnly="True"/>
+    </StackPanel>
+</UserControl>
