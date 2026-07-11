@@ -1,8 +1,14 @@
+using Avalonia.Controls;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagementCommon.Message;
 using MyAvaloniaManagementCommon.Save;
 using BiliDownloader.Constants;
+using BiliDownloader.Messages;
+using BiliDownloader.Services;
+using BiliDownloader.Views.Login;
+using BiliDownloader.ViewModels.Login;
 using Newtonsoft.Json;
 
 namespace BiliDownloader.ViewModels;
@@ -15,6 +21,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     private string _url = "";
     private string _downloadInfo = "";
     private bool _isLoading = false;
+    private bool _isLoggedIn = false;
+    private string? _userName;
+    private readonly IMessengerService? _messengerService;
 
     public string Url
     {
@@ -34,11 +43,105 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         set => SetProperty(ref _isLoading, value);
     }
 
+    /// <summary>
+    /// 当前是否已登录（不序列化到文件）
+    /// </summary>
+    public bool IsLoggedIn
+    {
+        get => _isLoggedIn;
+        set => SetProperty(ref _isLoggedIn, value);
+    }
+
+    /// <summary>
+    /// 当前登录用户名（不序列化到文件）
+    /// </summary>
+    public string? UserName
+    {
+        get => _userName;
+        set => SetProperty(ref _userName, value);
+    }
+
     public IRelayCommand DownloadCommand { get; }
+    public IAsyncRelayCommand LoginCommand { get; }
+    public IAsyncRelayCommand LogoutCommand { get; }
 
     public BiliDownloaderViewModel()
     {
         DownloadCommand = new AsyncRelayCommand(DownloadAsync);
+        LoginCommand = new AsyncRelayCommand(ShowLoginWindowAsync);
+        LogoutCommand = new AsyncRelayCommand(LogoutAsync);
+
+        // 拉取当前登录状态
+        var stateService = BiliLoginStateService.Instance;
+        IsLoggedIn = stateService.IsLoggedIn;
+        UserName = stateService.UserName;
+
+        // 注册消息总线接收器，响应登录状态变更广播
+        try
+        {
+            _messengerService = new MessengerService();
+            _messengerService?.Register<BiliDownloaderViewModel, LoginStateChangedMessage>(
+                this,
+                (vm, msg) =>
+                {
+                    vm.IsLoggedIn = msg.IsLoggedIn;
+                    vm.UserName = msg.UserName;
+                });
+        }
+        catch
+        {
+            // ServiceProvider 尚未初始化时忽略
+        }
+    }
+
+    /// <summary>
+    /// 弹出登录窗口（Document 被点击时由 View 调用，或手动触发）
+    /// </summary>
+    public async Task EnsureLoggedInAsync()
+    {
+        if (IsLoggedIn) return;
+        await ShowLoginWindowAsync();
+    }
+
+    private async Task ShowLoginWindowAsync()
+    {
+        var vm = new LoginWindowViewModel();
+        var window = new LoginWindow
+        {
+            DataContext = vm
+        };
+
+        // 获取父窗口
+        var parentWindow = GetParentWindow();
+        if (parentWindow != null)
+        {
+            await window.ShowDialog(parentWindow);
+        }
+        else
+        {
+            // 无父窗口时作为独立窗口显示
+            window.Show();
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        await BiliLoginStateService.Instance.LogoutAsync();
+    }
+
+    private Window? GetParentWindow()
+    {
+        try
+        {
+            var app = Avalonia.Application.Current;
+            return app?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private async Task DownloadAsync()
@@ -46,6 +149,14 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         if (string.IsNullOrWhiteSpace(Url))
         {
             DownloadInfo = "请输入有效的B站视频链接";
+            return;
+        }
+
+        // 下载前检查登录状态
+        if (!IsLoggedIn)
+        {
+            DownloadInfo = "请先登录后再下载";
+            await ShowLoginWindowAsync();
             return;
         }
 
@@ -72,6 +183,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
     public DocumentSaveData CreateSaveDocumentMetaData(string filePath)
     {
+        // 注意：登录状态（IsLoggedIn、UserName）不序列化到文件中
         var saveDataObject = new
         {
             Url = _url,

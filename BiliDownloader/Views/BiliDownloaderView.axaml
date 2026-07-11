@@ -10,20 +10,49 @@
         <vm:BiliDownloaderViewModel />
     </Design.DataContext>
     <StackPanel Spacing="10" Margin="15">
+
+        <!-- 登录状态区域 -->
+        <Border Background="#F5F5F5" CornerRadius="6" Padding="12">
+            <Grid ColumnDefinitions="*,Auto">
+                <!-- 已登录时显示 -->
+                <StackPanel Orientation="Horizontal" Spacing="8"
+                            Grid.Column="0"
+                            IsVisible="{Binding IsLoggedIn}">
+                    <TextBlock Text="已登录：" VerticalAlignment="Center" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding UserName}"
+                               VerticalAlignment="Center"
+                               Foreground="#00A1D6"/>
+                </StackPanel>
+                <Button Content="退出登录"
+                        Grid.Column="1"
+                        Command="{Binding LogoutCommand}"
+                        IsVisible="{Binding IsLoggedIn}"
+                        Padding="12,4"/>
+
+                <!-- 未登录时显示 -->
+                <Button Content="点击登录 Bilibili"
+                        Grid.Column="0" Grid.ColumnSpan="2"
+                        Command="{Binding LoginCommand}"
+                        IsVisible="{Binding !IsLoggedIn}"
+                        HorizontalAlignment="Left"
+                        Padding="16,6"/>
+            </Grid>
+        </Border>
+
         <Label Content="Bilibili 视频下载器" FontSize="18" FontWeight="Bold"/>
         <Label Content="请输入B站视频链接："/>
-        <TextBox Text="{Binding Url}" 
-                 Watermark="请输入链接，例如 https://www.bilibili.com/video/BV1xx411c7mD" 
+        <TextBox Text="{Binding Url}"
+                 Watermark="请输入链接，例如 https://www.bilibili.com/video/BV1xx411c7mD"
                  Width="500"
                  HorizontalAlignment="Left"/>
-        <Button Command="{Binding DownloadCommand}" 
-                Content="解析下载" 
+        <Button Command="{Binding DownloadCommand}"
+                Content="解析下载"
                 Width="120"
                 IsEnabled="{Binding !IsLoading}"/>
         <Label Content="输出信息："/>
-        <TextBox Text="{Binding DownloadInfo}" 
-                 Height="250" 
-                 TextWrapping="Wrap" 
+        <TextBox Text="{Binding DownloadInfo}"
+                 Height="220"
+                 TextWrapping="Wrap"
                  AcceptsReturn="True"
                  IsReadOnly="True"/>
     </StackPanel>

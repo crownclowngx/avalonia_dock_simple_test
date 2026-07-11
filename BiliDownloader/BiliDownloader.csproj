@@ -16,6 +16,8 @@
 
     <ItemGroup>
       <PackageReference Include="Flurl.Http" Version="4.0.2" />
+      <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+      <PackageReference Include="QRCoder" Version="1.6.0" />
     </ItemGroup>
 
     <!-- 构建后自动将插件及其第三方依赖部署到主项目的 Controls/BiliDownloader 目录 -->

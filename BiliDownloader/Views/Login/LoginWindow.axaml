@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:BiliDownloader.ViewModels.Login"
+        mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="400"
+        x:Class="BiliDownloader.Views.Login.LoginWindow"
+        x:DataType="vm:LoginWindowViewModel"
+        Title="Bilibili 登录"
+        Width="420" Height="400"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+    <Design.DataContext>
+        <vm:LoginWindowViewModel />
+    </Design.DataContext>
+    <Border Padding="24">
+        <StackPanel Spacing="16" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Label Content="Bilibili 扫码登录"
+                   FontSize="18" FontWeight="Bold"
+                   HorizontalAlignment="Center"/>
+
+            <!-- 二维码区域 -->
+            <Border Width="200" Height="200"
+                    Background="White"
+                    CornerRadius="8"
+                    HorizontalAlignment="Center">
+                <Panel>
+                    <Image Source="{Binding QrCodeImage}"
+                           Width="180" Height="180"
+                           Stretch="Uniform"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+                    <!-- 加载中遮罩 -->
+                    <Border Background="#80FFFFFF"
+                            IsVisible="{Binding !QrCodeImage, FallbackValue=True}"
+                            CornerRadius="8">
+                        <TextBlock Text="加载中..."
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Foreground="Gray"/>
+                    </Border>
+                </Panel>
+            </Border>
+
+            <!-- 状态文本 -->
+            <TextBlock Text="{Binding StatusText}"
+                       TextWrapping="Wrap"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       Foreground="Gray"
+                       FontSize="13"/>
+
+            <!-- 刷新按钮（二维码过期时显示） -->
+            <Button Content="刷新二维码"
+                    Command="{Binding LoadQrCodeCommand}"
+                    HorizontalAlignment="Center"
+                    IsVisible="{Binding !IsPolling}"/>
+        </StackPanel>
+    </Border>
+</Window>
