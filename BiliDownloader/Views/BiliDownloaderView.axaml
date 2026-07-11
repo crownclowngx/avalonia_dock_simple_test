@@ -12,7 +12,7 @@
     <StackPanel Spacing="10" Margin="15">
 
         <!-- 登录状态区域 -->
-        <Border Background="#F5F5F5" CornerRadius="6" Padding="12">
+        <Border Background="#30FFFFFF" CornerRadius="6" Padding="12">
             <Grid ColumnDefinitions="*,Auto">
                 <!-- 已登录时显示 -->
                 <StackPanel Orientation="Horizontal" Spacing="8"

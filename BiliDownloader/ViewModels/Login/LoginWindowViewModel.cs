@@ -16,6 +16,9 @@ public partial class LoginWindowViewModel : ObservableObject
     private Bitmap? _qrCodeImage;
 
     [ObservableProperty]
+    private bool _hasQrCode;
+
+    [ObservableProperty]
     private string _statusText = "正在生成二维码...";
 
     [ObservableProperty]
@@ -44,21 +47,28 @@ public partial class LoginWindowViewModel : ObservableObject
         try
         {
             StatusText = "正在生成二维码...";
+            HasQrCode = false;
+            QrCodeImage = null;
 
             // 通过 BiliLoginService 获取二维码 URL
             var service = new BiliLoginService();
             var (url, key) = await service.GetQrCodeAsync();
             _qrCodeKey = key;
 
-            // 用 QRCoder 生成 PNG 字节
+            // 用 QRCoder 生成 PNG 字节（明确黑色像素 + 白色背景，确保高对比度）
             using var qrGenerator = new QRCodeGenerator();
             using var qrCodeData = qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
             using var pngByteQRCode = new PngByteQRCode(qrCodeData);
-            var pngBytes = pngByteQRCode.GetGraphic(6);
+            var pngBytes = pngByteQRCode.GetGraphic(
+                pixelsPerModule: 8,
+                darkColorRgba: new byte[] { 0, 0, 0, 255 },
+                lightColorRgba: new byte[] { 255, 255, 255, 255 },
+                drawQuietZones: true);
 
             // 转为 Avalonia Bitmap
             await using var ms = new MemoryStream(pngBytes);
             QrCodeImage = new Bitmap(ms);
+            HasQrCode = true;
 
             StatusText = "请使用 B站 APP 扫描二维码登录";
             IsPolling = true;

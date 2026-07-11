@@ -99,6 +99,14 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     /// </summary>
     public async Task EnsureLoggedInAsync()
     {
+        // 等待初始化完成（幂等：已初始化则立即返回），确保登录状态已从 SQLite 加载
+        await BiliLoginStateService.Instance.InitAsync();
+
+        // 初始化完成后重新同步状态（首次可能因 fire-and-forget 未广播而错过）
+        var state = BiliLoginStateService.Instance;
+        IsLoggedIn = state.IsLoggedIn;
+        UserName = state.UserName;
+
         if (IsLoggedIn) return;
         await ShowLoginWindowAsync();
     }

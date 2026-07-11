@@ -16,6 +16,17 @@ public partial class LoginWindow : Window
         AvaloniaXamlLoader.Load(this);
     }
 
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+
+        // 窗口打开后自动生成二维码
+        if (DataContext is LoginWindowViewModel vm)
+        {
+            _ = vm.LoadQrCodeCommand.ExecuteAsync(null);
+        }
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         if (DataContext is LoginWindowViewModel vm)
