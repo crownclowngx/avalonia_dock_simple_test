@@ -262,6 +262,35 @@ public class DownloadTaskStore
         await cmd.ExecuteNonQueryAsync();
     }
 
+    /// <summary>
+    /// 按 task_id 删除单条记录
+    /// </summary>
+    public async Task DeleteByIdAsync(string taskId)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM download_tasks WHERE task_id = $task_id;";
+        cmd.Parameters.AddWithValue("$task_id", taskId);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    /// <summary>
+    /// 按 task_id 列表批量删除记录
+    /// </summary>
+    public async Task DeleteByIdsAsync(IEnumerable<string> taskIds)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        foreach (var taskId in taskIds)
+        {
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText = "DELETE FROM download_tasks WHERE task_id = $task_id;";
+            cmd.Parameters.AddWithValue("$task_id", taskId);
+            await cmd.ExecuteNonQueryAsync();
+        }
+    }
+
     private static DownloadTaskRecord ReadRecord(SqliteDataReader reader)
     {
         return new DownloadTaskRecord

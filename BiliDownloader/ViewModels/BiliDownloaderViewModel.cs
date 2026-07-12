@@ -157,6 +157,27 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                     if (msg.TargetDocumentId != vm.DocumentId) return;
                     vm.HandleProgressMessage(msg);
                 });
+
+            // 任务被删除通知（从 VideoItems 中移除）
+            _messengerService.Register<BiliDownloaderViewModel, DownloadTaskDeletedMessage>(
+                this, (vm, msg) =>
+                {
+                    if (msg.TargetDocumentId != vm.DocumentId) return;
+                    var item = vm.VideoItems.FirstOrDefault(v => v.ItemId == msg.TaskId);
+                    if (item != null)
+                        vm.VideoItems.Remove(item);
+                });
+
+            // 调度器自主状态变更通知（重试、自动恢复等）
+            _messengerService.Register<BiliDownloaderViewModel, DownloadTaskStatusChangedMessage>(
+                this, (vm, msg) =>
+                {
+                    if (msg.TargetDocumentId != vm.DocumentId) return;
+                    var item = vm.VideoItems.FirstOrDefault(v => v.ItemId == msg.TaskId);
+                    if (item == null) return;
+                    item.Status = MapStatusToDisplay(msg.NewStatus);
+                    item.Progress = msg.Progress;
+                });
         }
         catch
         {

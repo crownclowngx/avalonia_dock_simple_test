@@ -47,8 +47,9 @@ public partial class BiliSchedulerToolViewModel : Tool
     public ObservableCollection<DownloadTaskRecord> Tasks { get; } = new();
 
     public IRelayCommand ClearDoneCommand { get; }
-    public IAsyncRelayCommand DownloadFfmpegCommand { get; }
     public IAsyncRelayCommand BrowseFfmpegCommand { get; }
+    public IAsyncRelayCommand<DownloadTaskRecord> DeleteTaskCommand { get; }
+    public IAsyncRelayCommand<DownloadTaskRecord> RetryTaskCommand { get; }
 
     public BiliSchedulerToolViewModel()
     {
@@ -56,8 +57,9 @@ public partial class BiliSchedulerToolViewModel : Tool
         _taskStore = new DownloadTaskStore();
 
         ClearDoneCommand = new RelayCommand(ClearDoneTasks);
-        DownloadFfmpegCommand = new AsyncRelayCommand(DownloadFfmpegAsync);
         BrowseFfmpegCommand = new AsyncRelayCommand(BrowseFfmpegAsync);
+        DeleteTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(DeleteTaskAsync);
+        RetryTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(RetryTaskAsync);
 
         // 注册监听：接收 Document 发来的下载任务
         _messengerService.Register<BiliSchedulerToolViewModel, SubmitDownloadTaskMessage>(
@@ -103,11 +105,7 @@ public partial class BiliSchedulerToolViewModel : Tool
                 StartProcessing();
             }
 
-            // 若 ffmpeg 未就绪，自动尝试下载
-            if (!FfmpegReady)
-            {
-                _ = DownloadFfmpegAsync();
-            }
+
         }
         catch (Exception ex)
         {
@@ -210,6 +208,9 @@ public partial class BiliSchedulerToolViewModel : Tool
 
                 SchedulerStatus = $"正在下载: {nextTask.ItemTitle}";
 
+                // 广播状态变更：开始下载（自动恢复通知）
+                BroadcastStatusChanged(nextTask);
+
                 try
                 {
                     await _downloadService.DownloadItemAsync(
@@ -244,6 +245,7 @@ public partial class BiliSchedulerToolViewModel : Tool
                     nextTask.Progress = 100;
                     await _taskStore.UpdateProgressAsync(nextTask.TaskId, 100, "done");
                     BroadcastProgress(nextTask);
+                    BroadcastStatusChanged(nextTask);
                 }
                 catch (OperationCanceledException)
                 {
@@ -259,6 +261,7 @@ public partial class BiliSchedulerToolViewModel : Tool
                     nextTask.ErrorMessage = ex.Message;
                     await _taskStore.UpdateProgressAsync(nextTask.TaskId, nextTask.Progress, "failed", ex.Message);
                     BroadcastProgress(nextTask);
+                    BroadcastStatusChanged(nextTask);
                 }
 
                 UpdateCounts();
@@ -289,6 +292,22 @@ public partial class BiliSchedulerToolViewModel : Tool
     }
 
     /// <summary>
+    /// 广播状态变更事件给对应的 Document（用于调度器自主操作通知）
+    /// </summary>
+    private void BroadcastStatusChanged(DownloadTaskRecord task)
+    {
+        try
+        {
+            _messengerService.Send(new DownloadTaskStatusChangedMessage(
+                targetDocumentId: task.DocumentId,
+                taskId: task.TaskId,
+                newStatus: task.Status,
+                progress: task.Progress));
+        }
+        catch { /* 忽略广播失败 */ }
+    }
+
+    /// <summary>
     /// 清除已完成的任务
     /// </summary>
     private async void ClearDoneTasks()
@@ -302,6 +321,95 @@ public partial class BiliSchedulerToolViewModel : Tool
             UpdateCounts();
         }
         catch { /* 忽略 */ }
+    }
+
+    /// <summary>
+    /// 删除单个任务：下载中的先停止，然后删除记录、清理临时文件、通知 Document
+    /// </summary>
+    private async Task DeleteTaskAsync(DownloadTaskRecord? task)
+    {
+        if (task == null) return;
+
+        try
+        {
+            var isActive = task.Status is "downloading_video" or "downloading_audio" or "merging";
+
+            // 正在下载中：先停止处理队列
+            if (isActive)
+            {
+                StopProcessing();
+            }
+
+            // 从 SQLite 删除
+            await _taskStore.DeleteByIdAsync(task.TaskId);
+
+            // 从 UI 集合移除
+            Tasks.Remove(task);
+
+            // 通知对应 Document 移除对应项
+            try
+            {
+                _messengerService.Send(new DownloadTaskDeletedMessage(task.DocumentId, task.TaskId));
+            }
+            catch { /* 忽略广播失败 */ }
+
+            // 清理临时文件目录
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(task.TempDirectory) && Directory.Exists(task.TempDirectory))
+                {
+                    Directory.Delete(task.TempDirectory, true);
+                }
+            }
+            catch { /* 忽略清理失败 */ }
+
+            UpdateCounts();
+            SchedulerStatus = $"已删除任务: {task.ItemTitle}";
+
+            // 如果停止了处理队列，重新启动
+            if (isActive)
+            {
+                StartProcessing();
+            }
+        }
+        catch (Exception ex)
+        {
+            SchedulerStatus = $"删除任务失败: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// 重试失败的任务：重置为 pending 并重新启动处理队列
+    /// </summary>
+    private async Task RetryTaskAsync(DownloadTaskRecord? task)
+    {
+        if (task == null || task.Status != "failed") return;
+
+        try
+        {
+            // 重置状态
+            task.Status = "pending";
+            task.Progress = 0;
+            task.ErrorMessage = null;
+            task.VideoBytesDownloaded = 0;
+            task.AudioBytesDownloaded = 0;
+
+            // 更新 SQLite
+            await _taskStore.UpdateProgressAsync(task.TaskId, 0, "pending");
+            await _taskStore.UpdateBytesAsync(task.TaskId, 0, 0);
+
+            // 广播状态变更通知 Document
+            BroadcastStatusChanged(task);
+
+            SchedulerStatus = $"重试任务: {task.ItemTitle}";
+
+            // 重新启动处理队列
+            StartProcessing();
+        }
+        catch (Exception ex)
+        {
+            SchedulerStatus = $"重试任务失败: {ex.Message}";
+        }
     }
 
     /// <summary>
@@ -335,28 +443,8 @@ public partial class BiliSchedulerToolViewModel : Tool
             FfmpegPath = path ?? "";
             FfmpegStatus = FfmpegReady
                 ? $"ffmpeg 就绪: {path}"
-                : "ffmpeg 未找到，将自动下载...";
+                : "ffmpeg 未找到，请将 ffmpeg.exe 放入 D:\\soft\\FFMEPG 目录或手动浏览选择";
         });
-    }
-
-    /// <summary>
-    /// 手动触发 ffmpeg 下载
-    /// </summary>
-    private async Task DownloadFfmpegAsync()
-    {
-        try
-        {
-            FfmpegStatus = "准备下载 ffmpeg...";
-            await FfmpegService.EnsureDownloadedAsync(
-                status => FfmpegStatus = status);
-
-            await CheckFfmpegAsync();
-        }
-        catch (Exception ex)
-        {
-            FfmpegStatus = $"ffmpeg 下载失败: {ex.Message}";
-            FfmpegReady = false;
-        }
     }
 
     /// <summary>

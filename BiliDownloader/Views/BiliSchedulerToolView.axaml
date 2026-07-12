@@ -4,12 +4,16 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:BiliDownloader.ViewModels"
              xmlns:models="using:BiliDownloader.Models"
+             xmlns:conv="using:BiliDownloader.Converters"
              mc:Ignorable="d" d:DesignWidth="350" d:DesignHeight="500"
              x:Class="BiliDownloader.Views.BiliSchedulerToolView"
              x:DataType="vm:BiliSchedulerToolViewModel">
     <Design.DataContext>
         <vm:BiliSchedulerToolViewModel />
     </Design.DataContext>
+    <UserControl.Resources>
+        <conv:IsFailedStatusConverter x:Key="IsFailedStatusConverter"/>
+    </UserControl.Resources>
     <DockPanel Margin="10">
         <!-- 头部 -->
         <StackPanel DockPanel.Dock="Top" Spacing="4">
@@ -54,11 +58,6 @@
                                Foreground="Gray"/>
 
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Button Content="自动下载"
-                                Command="{Binding DownloadFfmpegCommand}"
-                                IsEnabled="{Binding !FfmpegReady}"
-                                Padding="8,3"
-                                FontSize="11"/>
                         <Button Content="浏览..."
                                 Command="{Binding BrowseFfmpegCommand}"
                                 Padding="8,3"
@@ -77,17 +76,36 @@
                     <DataTemplate x:DataType="models:DownloadTaskRecord">
                         <Border BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="4,6">
                             <StackPanel Spacing="2">
-                                <Grid ColumnDefinitions="*,Auto">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                                     <TextBlock Text="{Binding ItemTitle}"
                                                TextTrimming="CharacterEllipsis"
                                                FontWeight="SemiBold"
                                                FontSize="12"
-                                               Grid.Column="0"/>
+                                               Grid.Column="0"
+                                               VerticalAlignment="Center"/>
                                     <TextBlock Text="{Binding Status}"
                                                Grid.Column="1"
                                                FontSize="11"
                                                Foreground="#00A1D6"
-                                               Margin="4,0"/>
+                                               Margin="4,0"
+                                               VerticalAlignment="Center"/>
+                                    <Button Content="重试"
+                                            Grid.Column="2"
+                                            Command="{Binding $parent[UserControl].DataContext.RetryTaskCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsVisible="{Binding Status, Converter={StaticResource IsFailedStatusConverter}}"
+                                            Padding="4,1"
+                                            FontSize="10"
+                                            Margin="2,0"
+                                            VerticalAlignment="Center"/>
+                                    <Button Content="X"
+                                            Grid.Column="3"
+                                            Command="{Binding $parent[UserControl].DataContext.DeleteTaskCommand}"
+                                            CommandParameter="{Binding}"
+                                            Padding="4,1"
+                                            FontSize="10"
+                                            VerticalAlignment="Center"
+                                            ToolTip.Tip="删除任务"/>
                                 </Grid>
 
                                 <ProgressBar Value="{Binding Progress}"
