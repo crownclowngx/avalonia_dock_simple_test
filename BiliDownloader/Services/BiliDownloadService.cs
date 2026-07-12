@@ -15,14 +15,17 @@ public class BiliDownloadService
     private const string Referer = "https://www.bilibili.com/";
 
     private readonly HttpClient _httpClient;
+    private readonly MultiConnectionDownloader _multiDownloader;
 
-    public BiliDownloadService()
+    public BiliDownloadService(int chunkCount = 4)
     {
         _httpClient = new HttpClient();
         _httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
         _httpClient.DefaultRequestHeaders.Add("Referer", Referer);
         _httpClient.DefaultRequestHeaders.Add("Origin", "https://www.bilibili.com");
         _httpClient.Timeout = TimeSpan.FromMinutes(60);
+
+        _multiDownloader = new MultiConnectionDownloader(chunkCount);
     }
 
     /// <summary>
@@ -91,10 +94,10 @@ public class BiliDownloadService
         if (audioStream == null)
             throw new Exception("未找到音频流");
 
-        // 2. 下载视频流
-        await DownloadStreamAsync(
-            videoStream.BaseUrl, videoTmp, task.Cookie,
-            task.VideoBytesDownloaded,
+        // 2. 下载视频流（多连接加速）
+        var videoUrls = CdnUrlHelper.FilterAndSortUrls(videoStream.BaseUrl, videoStream.BackupUrls);
+        await _multiDownloader.DownloadAsync(
+            videoUrls, videoTmp, task.Cookie,
             (total, downloaded, speed) =>
             {
                 task.VideoBytesDownloaded = downloaded;
@@ -108,10 +111,10 @@ public class BiliDownloadService
         videoProgress = 100;
         ReportProgress("video");
 
-        // 3. 下载音频流
-        await DownloadStreamAsync(
-            audioStream.BaseUrl, audioTmp, task.Cookie,
-            task.AudioBytesDownloaded,
+        // 3. 下载音频流（多连接加速）
+        var audioUrls = CdnUrlHelper.FilterAndSortUrls(audioStream.BaseUrl, audioStream.BackupUrls);
+        await _multiDownloader.DownloadAsync(
+            audioUrls, audioTmp, task.Cookie,
             (total, downloaded, speed) =>
             {
                 task.AudioBytesDownloaded = downloaded;
