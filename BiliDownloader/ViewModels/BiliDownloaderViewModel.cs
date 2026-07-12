@@ -138,6 +138,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     public IAsyncRelayCommand ParseCommand { get; }
     public IRelayCommand SelectFolderCommand { get; }
     public IRelayCommand SubmitDownloadCommand { get; }
+    public IRelayCommand SelectAllCommand { get; }
+    public IRelayCommand DeselectAllCommand { get; }
     public IAsyncRelayCommand LoginCommand { get; }
     public IAsyncRelayCommand LogoutCommand { get; }
 
@@ -148,6 +150,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         ParseCommand = new AsyncRelayCommand(ParseAsync);
         SelectFolderCommand = new AsyncRelayCommand(SelectFolderAsync);
         SubmitDownloadCommand = new RelayCommand(SubmitDownload);
+        SelectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = true; });
+        DeselectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = false; });
         LoginCommand = new AsyncRelayCommand(ShowLoginWindowAsync);
         LogoutCommand = new AsyncRelayCommand(LogoutAsync);
 
@@ -346,6 +350,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             }
 
             IsMultiVideo = collection.Items.Count > 1;
+            UseGroupFolder = IsMultiVideo; // 多视频时默认勾选
 
             IsParsed = true;
             DownloadInfo = $"解析成功: {collection.SeriesTitle} ({collection.Items.Count} 个视频)";

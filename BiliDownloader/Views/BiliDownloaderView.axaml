@@ -95,7 +95,11 @@
                     </StackPanel>
 
                     <!-- 视频列表 -->
-                    <TextBlock Text="视频列表：" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,4,0,0">
+                        <TextBlock Text="视频列表：" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button Content="全选" Grid.Column="1" Command="{Binding SelectAllCommand}" Padding="8,2" Margin="4,0"/>
+                        <Button Content="全不选" Grid.Column="2" Command="{Binding DeselectAllCommand}" Padding="8,2"/>
+                    </Grid>
                     <ItemsControl ItemsSource="{Binding VideoItems}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:BiliVideoItem">
