@@ -75,7 +75,9 @@ public class DownloadTaskStore
                 bvid                TEXT NOT NULL DEFAULT '',
                 cid                 INTEGER NOT NULL DEFAULT 0,
                 quality_id          INTEGER NOT NULL DEFAULT 80,
+                audio_quality_id    INTEGER NOT NULL DEFAULT 0,
                 output_directory    TEXT NOT NULL DEFAULT '',
+                sub_folder          TEXT NOT NULL DEFAULT '',
                 cookie              TEXT NOT NULL DEFAULT '',
                 progress            REAL NOT NULL DEFAULT 0,
                 status              TEXT NOT NULL DEFAULT 'pending',
@@ -92,13 +94,15 @@ public class DownloadTaskStore
             """;
         await cmd.ExecuteNonQueryAsync();
 
-        // 升级旧表：添加分段进度列（如果不存在）
+        // 升级旧表：添加分段进度列和新字段（如果不存在）
         string[] alterSqls =
         {
             "ALTER TABLE download_tasks ADD COLUMN video_progress REAL NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN audio_progress REAL NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN merge_progress REAL NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN speed_text TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN audio_quality_id INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN sub_folder TEXT NOT NULL DEFAULT '';",
         };
         foreach (var sql in alterSqls)
         {
@@ -129,13 +133,15 @@ public class DownloadTaskStore
             cmd.CommandText = """
                 INSERT OR REPLACE INTO download_tasks
                     (task_id, document_id, series_title, item_title, aid, bvid, cid,
-                     quality_id, output_directory, cookie, progress, status, error_message,
+                     quality_id, audio_quality_id, output_directory, sub_folder, cookie,
+                     progress, status, error_message,
                      temp_directory, video_bytes, audio_bytes,
                      video_progress, audio_progress, merge_progress, speed_text,
                      created_at)
                 VALUES
                     ($task_id, $document_id, $series_title, $item_title, $aid, $bvid, $cid,
-                     $quality_id, $output_directory, $cookie, $progress, $status, $error_message,
+                     $quality_id, $audio_quality_id, $output_directory, $sub_folder, $cookie,
+                     $progress, $status, $error_message,
                      $temp_directory, $video_bytes, $audio_bytes,
                      $video_progress, $audio_progress, $merge_progress, $speed_text,
                      $created_at);
@@ -148,7 +154,9 @@ public class DownloadTaskStore
             cmd.Parameters.AddWithValue("$bvid", r.Bvid);
             cmd.Parameters.AddWithValue("$cid", r.Cid);
             cmd.Parameters.AddWithValue("$quality_id", r.QualityId);
+            cmd.Parameters.AddWithValue("$audio_quality_id", r.AudioQualityId);
             cmd.Parameters.AddWithValue("$output_directory", r.OutputDirectory);
+            cmd.Parameters.AddWithValue("$sub_folder", r.SubFolder);
             cmd.Parameters.AddWithValue("$cookie", r.Cookie);
             cmd.Parameters.AddWithValue("$progress", r.Progress);
             cmd.Parameters.AddWithValue("$status", r.Status);
@@ -369,7 +377,9 @@ public class DownloadTaskStore
             Bvid = reader.GetString(reader.GetOrdinal("bvid")),
             Cid = reader.GetInt64(reader.GetOrdinal("cid")),
             QualityId = reader.GetInt32(reader.GetOrdinal("quality_id")),
+            AudioQualityId = TryGetInt(reader, "audio_quality_id"),
             OutputDirectory = reader.GetString(reader.GetOrdinal("output_directory")),
+            SubFolder = TryGetString(reader, "sub_folder"),
             Cookie = reader.GetString(reader.GetOrdinal("cookie")),
             Progress = reader.GetDouble(reader.GetOrdinal("progress")),
             Status = reader.GetString(reader.GetOrdinal("status")),
@@ -392,6 +402,12 @@ public class DownloadTaskStore
     private static double TryGetDouble(SqliteDataReader reader, string column)
     {
         try { return reader.GetDouble(reader.GetOrdinal(column)); }
+        catch { return 0; }
+    }
+
+    private static int TryGetInt(SqliteDataReader reader, string column)
+    {
+        try { return reader.GetInt32(reader.GetOrdinal(column)); }
         catch { return 0; }
     }
 

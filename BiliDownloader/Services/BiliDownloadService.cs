@@ -53,12 +53,17 @@ public class BiliDownloadService
             task.TempDirectory = Path.Combine(tempBase, task.TaskId);
         }
         Directory.CreateDirectory(task.TempDirectory);
-        Directory.CreateDirectory(task.OutputDirectory);
+
+        // 分组文件夹逻辑：当 SubFolder 非空时，实际输出目录拼接子文件夹
+        var actualOutputDir = string.IsNullOrEmpty(task.SubFolder)
+            ? task.OutputDirectory
+            : Path.Combine(task.OutputDirectory, task.SubFolder);
+        Directory.CreateDirectory(actualOutputDir);
 
         var videoTmp = Path.Combine(task.TempDirectory, "video.tmp");
         var audioTmp = Path.Combine(task.TempDirectory, "audio.tmp");
         var safeTitle = SanitizeFileName(task.ItemTitle);
-        var outputPath = GetUniqueFilePath(task.OutputDirectory, safeTitle, "mp4");
+        var outputPath = GetUniqueFilePath(actualOutputDir, safeTitle, "mp4");
 
         // 进度状态容器（跨三个阶段累计）
         double videoProgress = 0, audioProgress = 0, mergeProgress = 0;
@@ -87,10 +92,11 @@ public class BiliDownloadService
         if (videoStream == null)
             throw new Exception("未找到匹配的视频流");
 
-        // 选择音频流：选 bandwidth 最高的
-        var audioStream = dashResult.AudioStreams
-            .OrderByDescending(a => a.Bandwidth)
-            .FirstOrDefault();
+        // 选择音频流：优先按用户指定的音频 ID 选择，没有则回退最高码率
+        var audioStream = (task.AudioQualityId > 0
+                ? dashResult.AudioStreams.FirstOrDefault(a => a.Id == task.AudioQualityId)
+                : null)
+            ?? dashResult.AudioStreams.OrderByDescending(a => a.Bandwidth).FirstOrDefault();
         if (audioStream == null)
             throw new Exception("未找到音频流");
 
@@ -276,7 +282,7 @@ public class BiliDownloadService
     /// <summary>
     /// 文件名非法字符替换
     /// </summary>
-    internal static string SanitizeFileName(string name)
+    public static string SanitizeFileName(string name)
     {
         var invalid = Path.GetInvalidFileNameChars();
         var sb = new StringBuilder(name.Length);

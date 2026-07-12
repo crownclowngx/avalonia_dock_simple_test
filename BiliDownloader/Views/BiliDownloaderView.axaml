@@ -70,6 +70,19 @@
                                   Width="200"/>
                     </StackPanel>
 
+                    <!-- 音频清晰度选择 -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="音频：" VerticalAlignment="Center"/>
+                        <ComboBox ItemsSource="{Binding AudioQualityOptions}"
+                                  SelectedItem="{Binding SelectedAudioQuality}"
+                                  Width="200"/>
+                    </StackPanel>
+
+                    <!-- 使用分组文件夹（仅多视频时可见） -->
+                    <CheckBox Content="使用分组文件夹（以视频组名称命名）"
+                              IsChecked="{Binding UseGroupFolder}"
+                              IsVisible="{Binding IsMultiVideo}"/>
+
                     <!-- 输出目录 -->
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="输出目录：" VerticalAlignment="Center"/>

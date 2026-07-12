@@ -1,9 +1,11 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace BiliDownloader.Models;
 
 /// <summary>
 /// 下载任务 SQLite 持久化记录
 /// </summary>
-public class DownloadTaskRecord
+public partial class DownloadTaskRecord : ObservableObject
 {
     /// <summary>
     /// 任务唯一标识（对应 BiliVideoItem.ItemId / DownloadItemInfo.ItemId）
@@ -35,9 +37,19 @@ public class DownloadTaskRecord
     public int QualityId { get; set; }
 
     /// <summary>
+    /// 用户选择的音频流 ID（0 表示使用最高码率）
+    /// </summary>
+    public int AudioQualityId { get; set; }
+
+    /// <summary>
     /// 输出目录
     /// </summary>
     public string OutputDirectory { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 分组子文件夹名称（UseGroupFolder 时为 SeriesTitle 的合法文件名，否则为空）
+    /// </summary>
+    public string SubFolder { get; set; } = string.Empty;
 
     /// <summary>
     /// 下载时的 Cookie
@@ -47,37 +59,44 @@ public class DownloadTaskRecord
     /// <summary>
     /// 最新进度 0~100
     /// </summary>
-    public double Progress { get; set; }
+    [ObservableProperty]
+    private double _progress;
 
     /// <summary>
     /// 视频下载进度 0~100
     /// </summary>
-    public double VideoProgress { get; set; }
+    [ObservableProperty]
+    private double _videoProgress;
 
     /// <summary>
     /// 音频下载进度 0~100
     /// </summary>
-    public double AudioProgress { get; set; }
+    [ObservableProperty]
+    private double _audioProgress;
 
     /// <summary>
     /// 合成进度 0~100
     /// </summary>
-    public double MergeProgress { get; set; }
+    [ObservableProperty]
+    private double _mergeProgress;
 
     /// <summary>
     /// 下载速度文本，如 "2.5 MB/s"
     /// </summary>
-    public string SpeedText { get; set; } = "";
+    [ObservableProperty]
+    private string _speedText = "";
 
     /// <summary>
     /// 当前状态：pending/downloading_video/downloading_audio/merging/done/failed
     /// </summary>
-    public string Status { get; set; } = "pending";
+    [ObservableProperty]
+    private string _status = "pending";
 
     /// <summary>
     /// 错误信息（仅 failed 时有值）
     /// </summary>
-    public string? ErrorMessage { get; set; }
+    [ObservableProperty]
+    private string? _errorMessage;
 
     /// <summary>
     /// 临时文件目录路径（用于断点续传和清理）

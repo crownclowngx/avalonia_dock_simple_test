@@ -125,6 +125,10 @@ public partial class BiliSchedulerToolViewModel : Tool
 
             // 将消息中的 Items 拆分为多条 DownloadTaskRecord 存入 SQLite
             var records = new List<DownloadTaskRecord>();
+            var subFolder = msg.UseGroupFolder
+                ? BiliDownloadService.SanitizeFileName(msg.SeriesTitle)
+                : string.Empty;
+
             foreach (var item in msg.Items)
             {
                 var record = new DownloadTaskRecord
@@ -137,7 +141,9 @@ public partial class BiliSchedulerToolViewModel : Tool
                     Bvid = item.Bvid,
                     Cid = item.Cid,
                     QualityId = msg.QualityId,
+                    AudioQualityId = msg.AudioQualityId,
                     OutputDirectory = msg.OutputDirectory,
+                    SubFolder = subFolder,
                     Cookie = msg.Cookie,
                     Status = "pending",
                     CreatedAt = DateTime.Now,

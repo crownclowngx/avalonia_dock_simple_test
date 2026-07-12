@@ -39,6 +39,11 @@ public class SubmitDownloadTaskMessage
     public int QualityId { get; }
 
     /// <summary>
+    /// 用户选择的音频流 ID（0 表示使用最高码率）
+    /// </summary>
+    public int AudioQualityId { get; }
+
+    /// <summary>
     /// 输出目录
     /// </summary>
     public string OutputDirectory { get; }
@@ -48,19 +53,28 @@ public class SubmitDownloadTaskMessage
     /// </summary>
     public string Cookie { get; }
 
+    /// <summary>
+    /// 是否使用分组文件夹（以视频组名称命名子文件夹）
+    /// </summary>
+    public bool UseGroupFolder { get; }
+
     public SubmitDownloadTaskMessage(
         string sourceDocumentId,
         string seriesTitle,
         List<DownloadItemInfo> items,
         int qualityId,
+        int audioQualityId,
         string outputDirectory,
-        string cookie)
+        string cookie,
+        bool useGroupFolder = false)
     {
         SourceDocumentId = sourceDocumentId;
         SeriesTitle = seriesTitle;
         Items = items;
         QualityId = qualityId;
+        AudioQualityId = audioQualityId;
         OutputDirectory = outputDirectory;
         Cookie = cookie;
+        UseGroupFolder = useGroupFolder;
     }
 }

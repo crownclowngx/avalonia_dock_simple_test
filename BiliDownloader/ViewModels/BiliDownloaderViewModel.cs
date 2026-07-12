@@ -12,6 +12,7 @@ using BiliDownloader.Services;
 using BiliDownloader.Views.Login;
 using BiliDownloader.ViewModels.Login;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.ViewModels;
 
@@ -91,6 +92,29 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     {
         get => _selectedQuality;
         set => SetProperty(ref _selectedQuality, value);
+    }
+
+    public ObservableCollection<BiliQualityOption> AudioQualityOptions { get; } = new();
+
+    private BiliQualityOption? _selectedAudioQuality;
+    public BiliQualityOption? SelectedAudioQuality
+    {
+        get => _selectedAudioQuality;
+        set => SetProperty(ref _selectedAudioQuality, value);
+    }
+
+    private bool _useGroupFolder;
+    public bool UseGroupFolder
+    {
+        get => _useGroupFolder;
+        set => SetProperty(ref _useGroupFolder, value);
+    }
+
+    private bool _isMultiVideo;
+    public bool IsMultiVideo
+    {
+        get => _isMultiVideo;
+        set => SetProperty(ref _isMultiVideo, value);
     }
 
     private string _outputDirectory = "";
@@ -289,19 +313,39 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             foreach (var item in collection.Items)
                 VideoItems.Add(item);
 
-            // 获取可用清晰度（用第一个视频试探）
+            // 获取可用清晰度和音频流（用第一个视频试探）
             QualityOptions.Clear();
+            AudioQualityOptions.Clear();
             if (collection.Items.Count > 0)
             {
                 var first = collection.Items[0];
-                var qualities = await _apiService.GetAvailableQualitiesAsync(
-                    first.Aid, first.Cid, cookie);
-                foreach (var q in qualities)
-                    QualityOptions.Add(q);
+                var dashResult = await _apiService.GetDashResultAsync(
+                    first.Aid, first.Cid, 80, cookie);
 
-                // 默认选最高画质
+                // 视频清晰度
+                foreach (var q in dashResult.AcceptQualities)
+                    QualityOptions.Add(q);
                 SelectedQuality = QualityOptions.FirstOrDefault();
+
+                // 音频清晰度：从 AudioStreams 中按 Id 去重，按 Bandwidth 升序排列
+                var audioGroups = dashResult.AudioStreams
+                    .GroupBy(a => a.Id)
+                    .Select(g => g.OrderByDescending(a => a.Bandwidth).First())
+                    .OrderBy(a => a.Bandwidth)
+                    .ToList();
+                foreach (var a in audioGroups)
+                {
+                    AudioQualityOptions.Add(new BiliQualityOption
+                    {
+                        QualityId = a.Id,
+                        DisplayName = FormatAudioQualityName(a.Id, a.Bandwidth)
+                    });
+                }
+                // 默认选最高码率
+                SelectedAudioQuality = AudioQualityOptions.LastOrDefault();
             }
+
+            IsMultiVideo = collection.Items.Count > 1;
 
             IsParsed = true;
             DownloadInfo = $"解析成功: {collection.SeriesTitle} ({collection.Items.Count} 个视频)";
@@ -366,8 +410,10 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             seriesTitle: VideoCollection?.SeriesTitle ?? "下载",
             items: downloadItems,
             qualityId: SelectedQuality.QualityId,
+            audioQualityId: SelectedAudioQuality?.QualityId ?? 0,
             outputDirectory: OutputDirectory,
-            cookie: BiliLoginStateService.Instance.CookieHeader);
+            cookie: BiliLoginStateService.Instance.CookieHeader,
+            useGroupFolder: UseGroupFolder);
 
         // 通过消息总线发送给调度器
         try
@@ -439,6 +485,22 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         "failed" => "失败",
         _ => status,
     };
+
+    /// <summary>
+    /// 格式化音频清晰度显示名称
+    /// </summary>
+    private static string FormatAudioQualityName(int audioId, long bandwidth)
+    {
+        var kbps = bandwidth / 1000;
+        return audioId switch
+        {
+            30216 => $"{kbps}kbps (标准)",
+            30232 => $"{kbps}kbps (高品质)",
+            30280 => $"{kbps}kbps (无损)",
+            _ when audioId >= 30250 => $"{kbps}kbps (Hi-Res)",
+            _ => $"{kbps}kbps (ID:{audioId})"
+        };
+    }
 
     #endregion
 
@@ -514,6 +576,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             Url = _url,
             DownloadInfo = _downloadInfo,
             OutputDirectory = _outputDirectory,
+            UseGroupFolder = _useGroupFolder,
         };
 
         var saveData = new DocumentSaveData
@@ -541,6 +604,11 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             _downloadInfo = data.DownloadInfo?.ToString() ?? "";
             _outputDirectory = data.OutputDirectory?.ToString() ?? _outputDirectory;
 
+            // 恢复 UseGroupFolder
+            var useGroupFolderVal = data.UseGroupFolder;
+            if (useGroupFolderVal != null && useGroupFolderVal.Type != JTokenType.Null)
+                _useGroupFolder = (bool)useGroupFolderVal;
+
             // 恢复 DocumentId
             var savedDocId = data.DocumentId?.ToString();
             if (!string.IsNullOrEmpty(savedDocId))
@@ -549,6 +617,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             OnPropertyChanged(nameof(Url));
             OnPropertyChanged(nameof(DownloadInfo));
             OnPropertyChanged(nameof(OutputDirectory));
+            OnPropertyChanged(nameof(UseGroupFolder));
             OnPropertyChanged(nameof(DocumentId));
         }
         catch (Exception ex)
