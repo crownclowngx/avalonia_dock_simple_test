@@ -15,7 +15,7 @@
         <conv:IsFailedStatusConverter x:Key="IsFailedStatusConverter"/>
     </UserControl.Resources>
     <DockPanel Margin="10">
-        <!-- 头部 -->
+        <!-- 顶部：状态区域 -->
         <StackPanel DockPanel.Dock="Top" Spacing="4">
             <Label Content="Bilibili 调度工具" FontSize="14" FontWeight="Bold"/>
             <Separator/>
@@ -46,30 +46,48 @@
                     FontSize="11"/>
 
             <Separator Margin="0,4"/>
-
-            <!-- ffmpeg 状态区 -->
-            <Border Background="#15FFFFFF" CornerRadius="4" Padding="8">
-                <StackPanel Spacing="4">
-                    <TextBlock FontWeight="SemiBold" FontSize="12" Text="ffmpeg 设置"/>
-
-                    <TextBlock Text="{Binding FfmpegStatus}"
-                               TextWrapping="Wrap"
-                               FontSize="11"
-                               Foreground="Gray"/>
-
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Button Content="浏览..."
-                                Command="{Binding BrowseFfmpegCommand}"
-                                Padding="8,3"
-                                FontSize="11"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <Separator Margin="0,4"/>
         </StackPanel>
 
-        <!-- 任务列表 -->
+        <!-- 底部：设置折叠面板 -->
+        <Expander DockPanel.Dock="Bottom" Header="设置" IsExpanded="False"
+                  Margin="0,4,0,0">
+            <StackPanel Spacing="8" Margin="0,4,0,0">
+                <!-- ffmpeg 设置 -->
+                <Border Background="#15FFFFFF" CornerRadius="4" Padding="8">
+                    <StackPanel Spacing="4">
+                        <TextBlock FontWeight="SemiBold" FontSize="12" Text="ffmpeg 设置"/>
+
+                        <TextBlock Text="{Binding FfmpegStatus}"
+                                   TextWrapping="Wrap"
+                                   FontSize="11"
+                                   Foreground="Gray"/>
+
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Button Content="浏览..."
+                                    Command="{Binding BrowseFfmpegCommand}"
+                                    Padding="8,3"
+                                    FontSize="11"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 默认输出目录 -->
+                <Border Background="#15FFFFFF" CornerRadius="4" Padding="8">
+                    <StackPanel Spacing="4">
+                        <TextBlock FontWeight="SemiBold" FontSize="12" Text="默认输出目录"/>
+                        <TextBox Text="{Binding DefaultOutputDirectory}"
+                                 IsReadOnly="True" FontSize="11"/>
+                        <Button Content="浏览..."
+                                Command="{Binding BrowseOutputDirCommand}"
+                                Padding="8,3"
+                                FontSize="11"
+                                HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Expander>
+
+        <!-- 中央：任务列表 -->
         <ScrollViewer>
             <ItemsControl ItemsSource="{Binding Tasks}">
                 <ItemsControl.ItemTemplate>

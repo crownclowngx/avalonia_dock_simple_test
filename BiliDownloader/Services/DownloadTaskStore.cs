@@ -94,6 +94,16 @@ public class DownloadTaskStore
             """;
         await cmd.ExecuteNonQueryAsync();
 
+        // 创建 settings 表
+        await using var settingsCmd = connection.CreateCommand();
+        settingsCmd.CommandText = """
+            CREATE TABLE IF NOT EXISTS settings (
+                key   TEXT NOT NULL PRIMARY KEY,
+                value TEXT NOT NULL DEFAULT ''
+            );
+            """;
+        await settingsCmd.ExecuteNonQueryAsync();
+
         // 升级旧表：添加分段进度列和新字段（如果不存在）
         string[] alterSqls =
         {
@@ -420,4 +430,36 @@ public class DownloadTaskStore
         }
         catch { return ""; }
     }
+
+    #region Settings
+
+    /// <summary>
+    /// 获取配置项
+    /// </summary>
+    public async Task<string?> GetSettingAsync(string key)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT value FROM settings WHERE key = $key;";
+        cmd.Parameters.AddWithValue("$key", key);
+        var result = await cmd.ExecuteScalarAsync();
+        return result as string;
+    }
+
+    /// <summary>
+    /// 设置配置项
+    /// </summary>
+    public async Task SetSettingAsync(string key, string value)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = "INSERT OR REPLACE INTO settings (key, value) VALUES ($key, $value);";
+        cmd.Parameters.AddWithValue("$key", key);
+        cmd.Parameters.AddWithValue("$value", value);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    #endregion
 }

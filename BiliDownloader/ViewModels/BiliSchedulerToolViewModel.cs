@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
@@ -41,6 +42,9 @@ public partial class BiliSchedulerToolViewModel : Tool
     [ObservableProperty]
     private string _ffmpegStatus = "检测中...";
 
+    [ObservableProperty]
+    private string _defaultOutputDirectory = "";
+
     /// <summary>
     /// 所有任务记录（UI 绑定）
     /// </summary>
@@ -48,6 +52,7 @@ public partial class BiliSchedulerToolViewModel : Tool
 
     public IRelayCommand ClearDoneCommand { get; }
     public IAsyncRelayCommand BrowseFfmpegCommand { get; }
+    public IAsyncRelayCommand BrowseOutputDirCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> DeleteTaskCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> RetryTaskCommand { get; }
 
@@ -58,8 +63,13 @@ public partial class BiliSchedulerToolViewModel : Tool
 
         ClearDoneCommand = new RelayCommand(ClearDoneTasks);
         BrowseFfmpegCommand = new AsyncRelayCommand(BrowseFfmpegAsync);
+        BrowseOutputDirCommand = new AsyncRelayCommand(BrowseOutputDirAsync);
         DeleteTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(DeleteTaskAsync);
         RetryTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(RetryTaskAsync);
+
+        // 默认输出目录：程序根目录/视频下载
+        var appDir = Path.GetDirectoryName(typeof(BiliSchedulerToolViewModel).Assembly.Location) ?? "";
+        DefaultOutputDirectory = Path.Combine(appDir, "视频下载");
 
         // 注册监听：接收 Document 发来的下载任务
         _messengerService.Register<BiliSchedulerToolViewModel, SubmitDownloadTaskMessage>(
@@ -80,6 +90,11 @@ public partial class BiliSchedulerToolViewModel : Tool
         try
         {
             await _taskStore.InitAsync();
+
+            // 加载全局默认输出目录
+            var savedDir = await _taskStore.GetSettingAsync("default_output_dir");
+            if (!string.IsNullOrEmpty(savedDir))
+                DefaultOutputDirectory = savedDir;
 
             // 检测 ffmpeg
             await CheckFfmpegAsync();
@@ -529,6 +544,45 @@ public partial class BiliSchedulerToolViewModel : Tool
         catch
         {
             return null;
+        }
+    }
+
+    #endregion
+
+    #region 输出目录管理
+
+    /// <summary>
+    /// DefaultOutputDirectory 变化时自动保存到 SQLite
+    /// </summary>
+    partial void OnDefaultOutputDirectoryChanged(string value)
+    {
+        if (!string.IsNullOrEmpty(value) && _initialized)
+            _ = _taskStore.SetSettingAsync("default_output_dir", value);
+    }
+
+    /// <summary>
+    /// 浏览选择默认输出目录
+    /// </summary>
+    private async Task BrowseOutputDirAsync()
+    {
+        try
+        {
+            var dialog = new OpenFolderDialog
+            {
+                Title = "选择默认下载输出目录"
+            };
+
+            var parentWindow = GetParentWindow();
+            if (parentWindow != null)
+            {
+                var result = await dialog.ShowAsync(parentWindow);
+                if (!string.IsNullOrEmpty(result))
+                    DefaultOutputDirectory = result;
+            }
+        }
+        catch (Exception ex)
+        {
+            SchedulerStatus = $"选择文件夹失败: {ex.Message}";
         }
     }
 

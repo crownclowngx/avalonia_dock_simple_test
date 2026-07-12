@@ -155,10 +155,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         LoginCommand = new AsyncRelayCommand(ShowLoginWindowAsync);
         LogoutCommand = new AsyncRelayCommand(LogoutAsync);
 
-        // 默认输出目录
-        OutputDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
-            "BiliDownloader");
+        // 默认输出目录：优先从 SQLite 读取全局配置，回退到程序根目录/视频下载
+        _ = InitDefaultOutputDirectoryAsync();
 
         // 拉取当前登录状态
         var stateService = BiliLoginStateService.Instance;
@@ -525,13 +523,35 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             {
                 var result = await dialog.ShowAsync(parentWindow);
                 if (!string.IsNullOrEmpty(result))
+                {
                     OutputDirectory = result;
+                }
             }
         }
         catch (Exception ex)
         {
             DownloadInfo = $"选择文件夹失败: {ex.Message}";
         }
+    }
+
+    private async Task InitDefaultOutputDirectoryAsync()
+    {
+        try
+        {
+            var store = new DownloadTaskStore();
+            await store.InitAsync();
+            var savedDir = await store.GetSettingAsync("default_output_dir");
+            if (!string.IsNullOrEmpty(savedDir))
+            {
+                OutputDirectory = savedDir;
+                return;
+            }
+        }
+        catch { /* 忽略 */ }
+
+        // 回退默认值：程序根目录/视频下载
+        var appDir = Path.GetDirectoryName(typeof(BiliDownloaderViewModel).Assembly.Location) ?? "";
+        OutputDirectory = Path.Combine(appDir, "视频下载");
     }
 
     #endregion
