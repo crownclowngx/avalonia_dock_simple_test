@@ -110,6 +110,13 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         set => SetProperty(ref _useGroupFolder, value);
     }
 
+    private bool _addIndexToTitle = true;
+    public bool AddIndexToTitle
+    {
+        get => _addIndexToTitle;
+        set => SetProperty(ref _addIndexToTitle, value);
+    }
+
     private bool _isMultiVideo;
     public bool IsMultiVideo
     {
@@ -266,6 +273,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             await store.InitAsync();
             var records = await store.GetByDocumentIdAsync(DocumentId);
 
+            int idx = VideoItems.Count + 1;
             foreach (var record in records)
             {
                 // 查找已有的 VideoItem（按 ItemId 匹配），没有则创建
@@ -274,6 +282,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 {
                     item = new BiliVideoItem
                     {
+                        Index = idx++,
                         ItemId = record.TaskId,
                         OriginalTitle = record.ItemTitle,
                         Title = record.ItemTitle,
@@ -338,8 +347,10 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
             // 填充视频列表
             VideoItems.Clear();
+            int idx = 1;
             foreach (var item in collection.Items)
             {
+                item.Index = idx++;
                 item.OriginalTitle = item.Title;
                 VideoItems.Add(item);
             }
@@ -435,7 +446,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         var downloadItems = selectedItems.Select(v => new DownloadItemInfo
         {
             ItemId = v.ItemId,
-            Title = v.Title,
+            Title = AddIndexToTitle ? $"{v.Index}.{v.Title}" : v.Title,
             Aid = v.Aid,
             Bvid = v.Bvid,
             Cid = v.Cid,
@@ -663,6 +674,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             DownloadInfo = _downloadInfo,
             OutputDirectory = _outputDirectory,
             UseGroupFolder = _useGroupFolder,
+            AddIndexToTitle = _addIndexToTitle,
         };
 
         var saveData = new DocumentSaveData
@@ -695,6 +707,11 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             if (useGroupFolderVal != null && useGroupFolderVal.Type != JTokenType.Null)
                 _useGroupFolder = (bool)useGroupFolderVal;
 
+            // 恢复 AddIndexToTitle
+            var addIndexVal = data.AddIndexToTitle;
+            if (addIndexVal != null && addIndexVal.Type != JTokenType.Null)
+                _addIndexToTitle = (bool)addIndexVal;
+
             // 恢复 DocumentId
             var savedDocId = data.DocumentId?.ToString();
             if (!string.IsNullOrEmpty(savedDocId))
@@ -704,6 +721,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             OnPropertyChanged(nameof(DownloadInfo));
             OnPropertyChanged(nameof(OutputDirectory));
             OnPropertyChanged(nameof(UseGroupFolder));
+            OnPropertyChanged(nameof(AddIndexToTitle));
             OnPropertyChanged(nameof(DocumentId));
         }
         catch (Exception ex)

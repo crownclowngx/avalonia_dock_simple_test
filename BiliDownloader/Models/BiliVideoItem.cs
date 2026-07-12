@@ -8,6 +8,11 @@ namespace BiliDownloader.Models;
 public partial class BiliVideoItem : ObservableObject
 {
     /// <summary>
+    /// 列表中的递增序号（从 1 开始，解析时赋值）
+    /// </summary>
+    public int Index { get; set; }
+
+    /// <summary>
     /// 唯一标识，对应 DownloadTaskRecord.TaskId
     /// </summary>
     public string ItemId { get; set; } = Guid.NewGuid().ToString("N");
