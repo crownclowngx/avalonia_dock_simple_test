@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="200"
+             x:Class="BiliDownloader.Views.BiliDownloader.DownloadConfigView"
+             x:DataType="vm:DownloadConfigViewModel">
+    <StackPanel Spacing="6">
+        <!-- 清晰度选择 -->
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="清晰度：" VerticalAlignment="Center"/>
+            <ComboBox ItemsSource="{Binding QualityOptions}"
+                      SelectedItem="{Binding SelectedQuality}"
+                      Width="200"/>
+        </StackPanel>
+
+        <!-- 音频清晰度选择 -->
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="音频：" VerticalAlignment="Center"/>
+            <ComboBox ItemsSource="{Binding AudioQualityOptions}"
+                      SelectedItem="{Binding SelectedAudioQuality}"
+                      Width="200"/>
+        </StackPanel>
+
+        <!-- 使用分组文件夹（仅多视频时可见） -->
+        <CheckBox Content="使用分组文件夹（以视频组名称命名）"
+                  IsChecked="{Binding UseGroupFolder}"
+                  IsVisible="{Binding IsMultiVideo}"/>
+
+        <!-- 写入序号到标题（仅多视频时可见） -->
+        <CheckBox Content="写入序号到标题（提交时在标题前添加 序号.）"
+                  IsChecked="{Binding AddIndexToTitle}"
+                  IsVisible="{Binding IsMultiVideo}"/>
+
+        <!-- 输出目录 -->
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="输出目录：" VerticalAlignment="Center"/>
+            <TextBox Text="{Binding OutputDirectory}"
+                     Width="400"
+                     IsReadOnly="True"/>
+            <Button Content="选择文件夹"
+                    Command="{Binding SelectFolderCommand}"
+                    Padding="8,4"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

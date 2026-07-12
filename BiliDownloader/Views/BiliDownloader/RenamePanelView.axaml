@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="250"
+             x:Class="BiliDownloader.Views.BiliDownloader.RenamePanelView"
+             x:DataType="vm:RenamePanelViewModel">
+    <Border IsVisible="{Binding ShowRenamePanel}" Background="#20FFFFFF" CornerRadius="4" Padding="8" Margin="0,2">
+        <StackPanel Spacing="4">
+            <TextBlock Text="批量重命名（每行对应一个视频，编辑右侧后点击应用）" FontWeight="SemiBold" FontSize="12"/>
+            <Grid ColumnDefinitions="*,20,*">
+                <!-- 左侧：原标题（只读） -->
+                <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="原标题" FontWeight="SemiBold" Foreground="Gray" FontSize="11"/>
+                    <TextBox x:Name="OriginalTitlesTextBox"
+                             Text="{Binding OriginalTitlesText}"
+                             Height="160" AcceptsReturn="True"
+                             IsReadOnly="True"
+                             TextWrapping="NoWrap"
+                             FontSize="12"/>
+                </StackPanel>
+                <!-- 中间箭头 -->
+                <TextBlock Text="→" Grid.Column="1"
+                           VerticalAlignment="Center" HorizontalAlignment="Center"
+                           FontSize="18" Foreground="Gray"/>
+                <!-- 右侧：新标题（可编辑） -->
+                <StackPanel Grid.Column="2" Spacing="2">
+                    <TextBlock Text="新标题" FontWeight="SemiBold" Foreground="Gray" FontSize="11"/>
+                    <TextBox x:Name="NewTitlesTextBox"
+                             Text="{Binding NewTitlesText}"
+                             Height="160" AcceptsReturn="True"
+                             TextWrapping="NoWrap"
+                             FontSize="12"/>
+                </StackPanel>
+            </Grid>
+            <Button Content="应用重命名" Command="{Binding ApplyRenameCommand}"
+                    Width="120" HorizontalAlignment="Right" Padding="8,4"/>
+        </StackPanel>
+    </Border>
+</UserControl>

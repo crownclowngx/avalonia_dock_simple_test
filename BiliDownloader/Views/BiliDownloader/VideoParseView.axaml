@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="80"
+             x:Class="BiliDownloader.Views.BiliDownloader.VideoParseView"
+             x:DataType="vm:VideoParseViewModel">
+    <StackPanel Spacing="8">
+        <Label Content="Bilibili 视频下载器" FontSize="18" FontWeight="Bold"/>
+
+        <!-- URL 输入 + 解析 -->
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto">
+            <TextBox Text="{Binding Url}"
+                     Watermark="请输入链接，例如 https://www.bilibili.com/video/BV1xx411c7mD"
+                     Grid.Column="0"
+                     VerticalAlignment="Center"/>
+            <Button Command="{Binding ParseCommand}"
+                    Content="解析"
+                    Width="80"
+                    Grid.Column="1"
+                    Margin="8,0,0,0"
+                    IsEnabled="{Binding !IsLoading}"/>
+        </Grid>
+    </StackPanel>
+</UserControl>

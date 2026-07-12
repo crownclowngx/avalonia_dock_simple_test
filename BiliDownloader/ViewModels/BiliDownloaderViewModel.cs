@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using Avalonia.Controls;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -9,15 +8,14 @@ using BiliDownloader.Constants;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services;
-using BiliDownloader.Views.Login;
-using BiliDownloader.ViewModels.Login;
+using BiliDownloader.ViewModels.BiliDownloader;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.ViewModels;
 
 /// <summary>
-/// BiliDownloader Document ViewModel：负责 URL 解析、参数收集、任务提交、进度接收
+/// BiliDownloader Document ViewModel：负责子 VM 组合、任务提交、进度接收、持久化
 /// </summary>
 public class BiliDownloaderViewModel : Document, ISavableDocument
 {
@@ -29,106 +27,28 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     /// </summary>
     public string DocumentId { get; private set; } = Guid.NewGuid().ToString("N");
 
-    private readonly BiliApiService _apiService = new();
     private readonly IMessengerService? _messengerService;
+
+    #region 子 ViewModel
+
+    public LoginBarViewModel LoginBar { get; }
+    public VideoParseViewModel VideoParse { get; }
+    public DownloadConfigViewModel DownloadConfig { get; }
+    public RenamePanelViewModel RenamePanel { get; }
+
+    #endregion
 
     #region 属性
 
-    private string _url = "";
-    public string Url
-    {
-        get => _url;
-        set => SetProperty(ref _url, value);
-    }
+    public ObservableCollection<BiliVideoItem> VideoItems { get; } = new();
 
-    private string _downloadInfo = "";
-    public string DownloadInfo
-    {
-        get => _downloadInfo;
-        set => SetProperty(ref _downloadInfo, value);
-    }
-
-    private bool _isLoading;
-    public bool IsLoading
-    {
-        get => _isLoading;
-        set => SetProperty(ref _isLoading, value);
-    }
-
-    private bool _isLoggedIn;
-    public bool IsLoggedIn
-    {
-        get => _isLoggedIn;
-        set => SetProperty(ref _isLoggedIn, value);
-    }
-
-    private string? _userName;
-    public string? UserName
-    {
-        get => _userName;
-        set => SetProperty(ref _userName, value);
-    }
+    private BiliVideoCollection? _videoCollection;
 
     private bool _isParsed;
     public bool IsParsed
     {
         get => _isParsed;
         set => SetProperty(ref _isParsed, value);
-    }
-
-    private BiliVideoCollection? _videoCollection;
-    public BiliVideoCollection? VideoCollection
-    {
-        get => _videoCollection;
-        set => SetProperty(ref _videoCollection, value);
-    }
-
-    public ObservableCollection<BiliVideoItem> VideoItems { get; } = new();
-
-    public ObservableCollection<BiliQualityOption> QualityOptions { get; } = new();
-
-    private BiliQualityOption? _selectedQuality;
-    public BiliQualityOption? SelectedQuality
-    {
-        get => _selectedQuality;
-        set => SetProperty(ref _selectedQuality, value);
-    }
-
-    public ObservableCollection<BiliQualityOption> AudioQualityOptions { get; } = new();
-
-    private BiliQualityOption? _selectedAudioQuality;
-    public BiliQualityOption? SelectedAudioQuality
-    {
-        get => _selectedAudioQuality;
-        set => SetProperty(ref _selectedAudioQuality, value);
-    }
-
-    private bool _useGroupFolder;
-    public bool UseGroupFolder
-    {
-        get => _useGroupFolder;
-        set => SetProperty(ref _useGroupFolder, value);
-    }
-
-    private bool _addIndexToTitle = true;
-    public bool AddIndexToTitle
-    {
-        get => _addIndexToTitle;
-        set => SetProperty(ref _addIndexToTitle, value);
-    }
-
-    private bool _isMultiVideo;
-    public bool IsMultiVideo
-    {
-        get => _isMultiVideo;
-        set => SetProperty(ref _isMultiVideo, value);
-    }
-
-    private string _outputDirectory = "";
-    public string OutputDirectory
-    {
-        get => _outputDirectory;
-        set => SetProperty(ref _outputDirectory, value);
     }
 
     private double _totalProgress;
@@ -138,74 +58,53 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         set => SetProperty(ref _totalProgress, value);
     }
 
-    private bool _showRenamePanel;
-    public bool ShowRenamePanel
+    private string _downloadInfo = "";
+    public string DownloadInfo
     {
-        get => _showRenamePanel;
-        set => SetProperty(ref _showRenamePanel, value);
-    }
-
-    private string _originalTitlesText = "";
-    public string OriginalTitlesText
-    {
-        get => _originalTitlesText;
-        set => SetProperty(ref _originalTitlesText, value);
-    }
-
-    private string _newTitlesText = "";
-    public string NewTitlesText
-    {
-        get => _newTitlesText;
-        set => SetProperty(ref _newTitlesText, value);
+        get => _downloadInfo;
+        set => SetProperty(ref _downloadInfo, value);
     }
 
     #endregion
 
     #region Commands
 
-    public IAsyncRelayCommand ParseCommand { get; }
-    public IRelayCommand SelectFolderCommand { get; }
     public IRelayCommand SubmitDownloadCommand { get; }
     public IRelayCommand SelectAllCommand { get; }
     public IRelayCommand DeselectAllCommand { get; }
-    public IRelayCommand ToggleRenamePanelCommand { get; }
-    public IRelayCommand ApplyRenameCommand { get; }
-    public IAsyncRelayCommand LoginCommand { get; }
-    public IAsyncRelayCommand LogoutCommand { get; }
 
     #endregion
 
     public BiliDownloaderViewModel()
     {
-        ParseCommand = new AsyncRelayCommand(ParseAsync);
-        SelectFolderCommand = new AsyncRelayCommand(SelectFolderAsync);
+        // 初始化子 ViewModel（通过回调通信）
+        LoginBar = new LoginBarViewModel();
+
+        VideoParse = new VideoParseViewModel(
+            onParsed: HandleParseResult,
+            isLoggedInCheck: () => LoginBar.IsLoggedIn);
+
+        DownloadConfig = new DownloadConfigViewModel();
+
+        RenamePanel = new RenamePanelViewModel(
+            onRenameApplied: ApplyRenameToVideoItems,
+            getVideoCount: () => VideoItems.Count);
+
         SubmitDownloadCommand = new RelayCommand(SubmitDownload);
         SelectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = true; });
         DeselectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = false; });
-        ToggleRenamePanelCommand = new RelayCommand(() => ShowRenamePanel = !ShowRenamePanel);
-        ApplyRenameCommand = new RelayCommand(ApplyRename);
-        LoginCommand = new AsyncRelayCommand(ShowLoginWindowAsync);
-        LogoutCommand = new AsyncRelayCommand(LogoutAsync);
-
-        // 默认输出目录：优先从 SQLite 读取全局配置，回退到程序根目录/视频下载
-        _ = InitDefaultOutputDirectoryAsync();
-
-        // 拉取当前登录状态
-        var stateService = BiliLoginStateService.Instance;
-        IsLoggedIn = stateService.IsLoggedIn;
-        UserName = stateService.UserName;
 
         // 注册消息总线
         try
         {
             _messengerService = new MessengerService();
 
-            // 登录状态变更
+            // 登录状态变更 -> 同步到 LoginBar 子 VM
             _messengerService.Register<BiliDownloaderViewModel, LoginStateChangedMessage>(
                 this, (vm, msg) =>
                 {
-                    vm.IsLoggedIn = msg.IsLoggedIn;
-                    vm.UserName = msg.UserName;
+                    vm.LoginBar.IsLoggedIn = msg.IsLoggedIn;
+                    vm.LoginBar.UserName = msg.UserName;
                 });
 
             // 下载进度回传（按 DocumentId 过滤）
@@ -248,18 +147,60 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         }
     }
 
+    #region 子 VM 回调处理
+
+    /// <summary>
+    /// 解析成功后的回调：填充 VideoItems、分发清晰度到 DownloadConfig、初始化重命名面板
+    /// </summary>
+    private void HandleParseResult(VideoParseResult result)
+    {
+        _videoCollection = result.Collection;
+
+        // 填充视频列表
+        VideoItems.Clear();
+        foreach (var item in result.VideoItems)
+            VideoItems.Add(item);
+
+        // 分发清晰度到 DownloadConfig
+        DownloadConfig.PopulateQualities(
+            result.QualityOptions,
+            result.SelectedQuality,
+            result.AudioQualityOptions,
+            result.SelectedAudioQuality,
+            result.IsMultiVideo);
+
+        // 初始化重命名面板
+        RenamePanel.InitTitles(result.VideoItems);
+
+        IsParsed = true;
+        IsModified = true;
+
+        // 同步解析状态到 VideoParse 子 VM
+        VideoParse.IsParsed = true;
+    }
+
+    /// <summary>
+    /// 重命名应用后的回调：将新标题写入 VideoItems
+    /// </summary>
+    private void ApplyRenameToVideoItems(List<string> newTitles)
+    {
+        for (int i = 0; i < VideoItems.Count && i < newTitles.Count; i++)
+        {
+            if (!string.IsNullOrEmpty(newTitles[i]))
+                VideoItems[i].Title = newTitles[i];
+        }
+
+        DownloadInfo = $"已应用批量重命名（{VideoItems.Count} 个视频）";
+    }
+
+    #endregion
+
     /// <summary>
     /// 确保登录状态已初始化（由 View 的 OnAttachedToVisualTree 调用）
     /// </summary>
     public async Task EnsureLoggedInAsync()
     {
-        await BiliLoginStateService.Instance.InitAsync();
-        var state = BiliLoginStateService.Instance;
-        IsLoggedIn = state.IsLoggedIn;
-        UserName = state.UserName;
-
-        if (IsLoggedIn) return;
-        await ShowLoginWindowAsync();
+        await LoginBar.EnsureLoggedInAsync();
     }
 
     /// <summary>
@@ -309,109 +250,6 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         }
     }
 
-    #region 解析逻辑
-
-    private async Task ParseAsync()
-    {
-        if (string.IsNullOrWhiteSpace(Url))
-        {
-            DownloadInfo = "请输入有效的B站视频链接";
-            return;
-        }
-
-        if (!IsLoggedIn)
-        {
-            DownloadInfo = "请先登录后再解析";
-            await ShowLoginWindowAsync();
-            return;
-        }
-
-        var parsed = BiliApiService.ParseVideoId(Url);
-        if (parsed == null)
-        {
-            DownloadInfo = "无法解析链接，请输入有效的B站视频链接（BV号或av号）";
-            return;
-        }
-
-        try
-        {
-            IsLoading = true;
-            DownloadInfo = "正在解析视频信息...";
-
-            var cookie = BiliLoginStateService.Instance.CookieHeader;
-
-            // 获取视频集合
-            var collection = await _apiService.GetVideoCollectionAsync(
-                parsed.Value.Id, parsed.Value.IsBvid, cookie);
-            VideoCollection = collection;
-
-            // 填充视频列表
-            VideoItems.Clear();
-            int idx = 1;
-            foreach (var item in collection.Items)
-            {
-                item.Index = idx++;
-                item.OriginalTitle = item.Title;
-                VideoItems.Add(item);
-            }
-
-            // 生成重命名面板初始文本（原标题和新标题初始一致）
-            var titlesLines = string.Join(Environment.NewLine, collection.Items.Select(i => i.Title));
-            OriginalTitlesText = titlesLines;
-            NewTitlesText = titlesLines;
-
-            // 获取可用清晰度和音频流（用第一个视频试探）
-            QualityOptions.Clear();
-            AudioQualityOptions.Clear();
-            if (collection.Items.Count > 0)
-            {
-                var first = collection.Items[0];
-                var dashResult = await _apiService.GetDashResultAsync(
-                    first.Aid, first.Cid, 80, cookie);
-
-                // 视频清晰度
-                foreach (var q in dashResult.AcceptQualities)
-                    QualityOptions.Add(q);
-                SelectedQuality = QualityOptions.FirstOrDefault();
-
-                // 音频清晰度：从 AudioStreams 中按 Id 去重，按 Bandwidth 升序排列
-                var audioGroups = dashResult.AudioStreams
-                    .GroupBy(a => a.Id)
-                    .Select(g => g.OrderByDescending(a => a.Bandwidth).First())
-                    .OrderBy(a => a.Bandwidth)
-                    .ToList();
-                foreach (var a in audioGroups)
-                {
-                    AudioQualityOptions.Add(new BiliQualityOption
-                    {
-                        QualityId = a.Id,
-                        DisplayName = FormatAudioQualityName(a.Id, a.Bandwidth)
-                    });
-                }
-                // 默认选最高码率
-                SelectedAudioQuality = AudioQualityOptions.LastOrDefault();
-            }
-
-            IsMultiVideo = collection.Items.Count > 1;
-            UseGroupFolder = IsMultiVideo; // 多视频时默认勾选
-
-            IsParsed = true;
-            DownloadInfo = $"解析成功: {collection.SeriesTitle} ({collection.Items.Count} 个视频)";
-            IsModified = true;
-        }
-        catch (Exception ex)
-        {
-            DownloadInfo = $"解析异常: {ex.Message}";
-            IsParsed = false;
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    #endregion
-
     #region 任务提交
 
     private void SubmitDownload()
@@ -429,7 +267,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             return;
         }
 
-        if (SelectedQuality == null)
+        if (DownloadConfig.SelectedQuality == null)
         {
             DownloadInfo = "请选择清晰度";
             return;
@@ -446,7 +284,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         var downloadItems = selectedItems.Select(v => new DownloadItemInfo
         {
             ItemId = v.ItemId,
-            Title = AddIndexToTitle ? $"{v.Index}.{v.Title}" : v.Title,
+            Title = DownloadConfig.AddIndexToTitle ? $"{v.Index}.{v.Title}" : v.Title,
             Aid = v.Aid,
             Bvid = v.Bvid,
             Cid = v.Cid,
@@ -455,13 +293,13 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
         var message = new SubmitDownloadTaskMessage(
             sourceDocumentId: DocumentId,
-            seriesTitle: VideoCollection?.SeriesTitle ?? "下载",
+            seriesTitle: _videoCollection?.SeriesTitle ?? "下载",
             items: downloadItems,
-            qualityId: SelectedQuality.QualityId,
-            audioQualityId: SelectedAudioQuality?.QualityId ?? 0,
-            outputDirectory: OutputDirectory,
+            qualityId: DownloadConfig.SelectedQuality.QualityId,
+            audioQualityId: DownloadConfig.SelectedAudioQuality?.QualityId ?? 0,
+            outputDirectory: DownloadConfig.OutputDirectory,
             cookie: BiliLoginStateService.Instance.CookieHeader,
-            useGroupFolder: UseGroupFolder);
+            useGroupFolder: DownloadConfig.UseGroupFolder);
 
         // 通过消息总线发送给调度器
         try
@@ -534,133 +372,6 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         _ => status,
     };
 
-    /// <summary>
-    /// 格式化音频清晰度显示名称
-    /// </summary>
-    private static string FormatAudioQualityName(int audioId, long bandwidth)
-    {
-        var kbps = bandwidth / 1000;
-        return audioId switch
-        {
-            30216 => $"{kbps}kbps (标准)",
-            30232 => $"{kbps}kbps (高品质)",
-            30280 => $"{kbps}kbps (无损)",
-            _ when audioId >= 30250 => $"{kbps}kbps (Hi-Res)",
-            _ => $"{kbps}kbps (ID:{audioId})"
-        };
-    }
-
-    #endregion
-
-    #region 批量重命名
-
-    private void ApplyRename()
-    {
-        if (VideoItems.Count == 0) return;
-
-        var newTitles = NewTitlesText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-
-        // 行数必须与视频数量一致
-        if (newTitles.Length != VideoItems.Count)
-        {
-            DownloadInfo = $"重命名失败：新标题行数({newTitles.Length})与视频数量({VideoItems.Count})不一致";
-            return;
-        }
-
-        for (int i = 0; i < VideoItems.Count; i++)
-        {
-            var trimmed = newTitles[i].Trim();
-            if (!string.IsNullOrEmpty(trimmed))
-                VideoItems[i].Title = trimmed;
-        }
-
-        DownloadInfo = $"已应用批量重命名（{VideoItems.Count} 个视频）";
-    }
-
-    #endregion
-
-    #region 文件夹选择
-
-    private async Task SelectFolderAsync()
-    {
-        try
-        {
-            var dialog = new OpenFolderDialog
-            {
-                Title = "选择下载输出目录"
-            };
-
-            var parentWindow = GetParentWindow();
-            if (parentWindow != null)
-            {
-                var result = await dialog.ShowAsync(parentWindow);
-                if (!string.IsNullOrEmpty(result))
-                {
-                    OutputDirectory = result;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            DownloadInfo = $"选择文件夹失败: {ex.Message}";
-        }
-    }
-
-    private async Task InitDefaultOutputDirectoryAsync()
-    {
-        try
-        {
-            var store = new DownloadTaskStore();
-            await store.InitAsync();
-            var savedDir = await store.GetSettingAsync("default_output_dir");
-            if (!string.IsNullOrEmpty(savedDir))
-            {
-                OutputDirectory = savedDir;
-                return;
-            }
-        }
-        catch { /* 忽略 */ }
-
-        // 回退默认值：程序根目录/视频下载
-        var appDir = Path.GetDirectoryName(typeof(BiliDownloaderViewModel).Assembly.Location) ?? "";
-        OutputDirectory = Path.Combine(appDir, "视频下载");
-    }
-
-    #endregion
-
-    #region 登录相关
-
-    private async Task ShowLoginWindowAsync()
-    {
-        var vm = new LoginWindowViewModel();
-        var window = new LoginWindow { DataContext = vm };
-        var parentWindow = GetParentWindow();
-        if (parentWindow != null)
-            await window.ShowDialog(parentWindow);
-        else
-            window.Show();
-    }
-
-    private async Task LogoutAsync()
-    {
-        await BiliLoginStateService.Instance.LogoutAsync();
-    }
-
-    private Window? GetParentWindow()
-    {
-        try
-        {
-            var app = Avalonia.Application.Current;
-            return app?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
-                ? desktop.MainWindow
-                : null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     #endregion
 
     #region 持久化
@@ -670,11 +381,11 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         var saveDataObject = new
         {
             DocumentId,
-            Url = _url,
+            Url = VideoParse.Url,
             DownloadInfo = _downloadInfo,
-            OutputDirectory = _outputDirectory,
-            UseGroupFolder = _useGroupFolder,
-            AddIndexToTitle = _addIndexToTitle,
+            OutputDirectory = DownloadConfig.OutputDirectory,
+            UseGroupFolder = DownloadConfig.UseGroupFolder,
+            AddIndexToTitle = DownloadConfig.AddIndexToTitle,
         };
 
         var saveData = new DocumentSaveData
@@ -698,30 +409,29 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             var data = JsonConvert.DeserializeObject<dynamic>(saveData.Content);
             if (data == null) return;
 
-            _url = data.Url?.ToString() ?? "";
-            _downloadInfo = data.DownloadInfo?.ToString() ?? "";
-            _outputDirectory = data.OutputDirectory?.ToString() ?? _outputDirectory;
+            var url = data.Url?.ToString() ?? "";
+            var downloadInfo = data.DownloadInfo?.ToString() ?? "";
+            var outputDirectory = data.OutputDirectory?.ToString() ?? DownloadConfig.OutputDirectory;
+
+            VideoParse.Url = url;
+            DownloadInfo = downloadInfo;
+            DownloadConfig.OutputDirectory = outputDirectory;
 
             // 恢复 UseGroupFolder
             var useGroupFolderVal = data.UseGroupFolder;
             if (useGroupFolderVal != null && useGroupFolderVal.Type != JTokenType.Null)
-                _useGroupFolder = (bool)useGroupFolderVal;
+                DownloadConfig.UseGroupFolder = (bool)useGroupFolderVal;
 
             // 恢复 AddIndexToTitle
             var addIndexVal = data.AddIndexToTitle;
             if (addIndexVal != null && addIndexVal.Type != JTokenType.Null)
-                _addIndexToTitle = (bool)addIndexVal;
+                DownloadConfig.AddIndexToTitle = (bool)addIndexVal;
 
             // 恢复 DocumentId
             var savedDocId = data.DocumentId?.ToString();
             if (!string.IsNullOrEmpty(savedDocId))
                 DocumentId = savedDocId;
 
-            OnPropertyChanged(nameof(Url));
-            OnPropertyChanged(nameof(DownloadInfo));
-            OnPropertyChanged(nameof(OutputDirectory));
-            OnPropertyChanged(nameof(UseGroupFolder));
-            OnPropertyChanged(nameof(AddIndexToTitle));
             OnPropertyChanged(nameof(DocumentId));
         }
         catch (Exception ex)

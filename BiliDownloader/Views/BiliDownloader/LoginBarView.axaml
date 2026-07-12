@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="60"
+             x:Class="BiliDownloader.Views.BiliDownloader.LoginBarView"
+             x:DataType="vm:LoginBarViewModel">
+    <Border Background="#30FFFFFF" CornerRadius="6" Padding="12">
+        <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        Grid.Column="0"
+                        IsVisible="{Binding IsLoggedIn}">
+                <TextBlock Text="已登录：" VerticalAlignment="Center" FontWeight="Bold"/>
+                <TextBlock Text="{Binding UserName}"
+                           VerticalAlignment="Center"
+                           Foreground="#00A1D6"/>
+            </StackPanel>
+            <Button Content="退出登录"
+                    Grid.Column="1"
+                    Command="{Binding LogoutCommand}"
+                    IsVisible="{Binding IsLoggedIn}"
+                    Padding="12,4"/>
+
+            <Button Content="点击登录 Bilibili"
+                    Grid.Column="0" Grid.ColumnSpan="2"
+                    Command="{Binding LoginCommand}"
+                    IsVisible="{Binding !IsLoggedIn}"
+                    HorizontalAlignment="Left"
+                    Padding="16,6"/>
+        </Grid>
+    </Border>
+</UserControl>
