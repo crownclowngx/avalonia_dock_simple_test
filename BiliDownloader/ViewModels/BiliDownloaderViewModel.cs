@@ -131,6 +131,27 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         set => SetProperty(ref _totalProgress, value);
     }
 
+    private bool _showRenamePanel;
+    public bool ShowRenamePanel
+    {
+        get => _showRenamePanel;
+        set => SetProperty(ref _showRenamePanel, value);
+    }
+
+    private string _originalTitlesText = "";
+    public string OriginalTitlesText
+    {
+        get => _originalTitlesText;
+        set => SetProperty(ref _originalTitlesText, value);
+    }
+
+    private string _newTitlesText = "";
+    public string NewTitlesText
+    {
+        get => _newTitlesText;
+        set => SetProperty(ref _newTitlesText, value);
+    }
+
     #endregion
 
     #region Commands
@@ -140,6 +161,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     public IRelayCommand SubmitDownloadCommand { get; }
     public IRelayCommand SelectAllCommand { get; }
     public IRelayCommand DeselectAllCommand { get; }
+    public IRelayCommand ToggleRenamePanelCommand { get; }
+    public IRelayCommand ApplyRenameCommand { get; }
     public IAsyncRelayCommand LoginCommand { get; }
     public IAsyncRelayCommand LogoutCommand { get; }
 
@@ -152,6 +175,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         SubmitDownloadCommand = new RelayCommand(SubmitDownload);
         SelectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = true; });
         DeselectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = false; });
+        ToggleRenamePanelCommand = new RelayCommand(() => ShowRenamePanel = !ShowRenamePanel);
+        ApplyRenameCommand = new RelayCommand(ApplyRename);
         LoginCommand = new AsyncRelayCommand(ShowLoginWindowAsync);
         LogoutCommand = new AsyncRelayCommand(LogoutAsync);
 
@@ -250,6 +275,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                     item = new BiliVideoItem
                     {
                         ItemId = record.TaskId,
+                        OriginalTitle = record.ItemTitle,
                         Title = record.ItemTitle,
                         Aid = record.Aid,
                         Bvid = record.Bvid,
@@ -313,7 +339,15 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             // 填充视频列表
             VideoItems.Clear();
             foreach (var item in collection.Items)
+            {
+                item.OriginalTitle = item.Title;
                 VideoItems.Add(item);
+            }
+
+            // 生成重命名面板初始文本（原标题和新标题初始一致）
+            var titlesLines = string.Join(Environment.NewLine, collection.Items.Select(i => i.Title));
+            OriginalTitlesText = titlesLines;
+            NewTitlesText = titlesLines;
 
             // 获取可用清晰度和音频流（用第一个视频试探）
             QualityOptions.Clear();
@@ -503,6 +537,33 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             _ when audioId >= 30250 => $"{kbps}kbps (Hi-Res)",
             _ => $"{kbps}kbps (ID:{audioId})"
         };
+    }
+
+    #endregion
+
+    #region 批量重命名
+
+    private void ApplyRename()
+    {
+        if (VideoItems.Count == 0) return;
+
+        var newTitles = NewTitlesText.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+
+        // 行数必须与视频数量一致
+        if (newTitles.Length != VideoItems.Count)
+        {
+            DownloadInfo = $"重命名失败：新标题行数({newTitles.Length})与视频数量({VideoItems.Count})不一致";
+            return;
+        }
+
+        for (int i = 0; i < VideoItems.Count; i++)
+        {
+            var trimmed = newTitles[i].Trim();
+            if (!string.IsNullOrEmpty(trimmed))
+                VideoItems[i].Title = trimmed;
+        }
+
+        DownloadInfo = $"已应用批量重命名（{VideoItems.Count} 个视频）";
     }
 
     #endregion

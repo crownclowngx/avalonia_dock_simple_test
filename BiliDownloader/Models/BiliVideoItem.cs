@@ -12,7 +12,30 @@ public partial class BiliVideoItem : ObservableObject
     /// </summary>
     public string ItemId { get; set; } = Guid.NewGuid().ToString("N");
 
-    public string Title { get; set; } = string.Empty;
+    /// <summary>
+    /// 原始标题（解析时赋值，重命名后不变）
+    /// </summary>
+    public string OriginalTitle { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 当前标题（可被用户重命名）
+    /// </summary>
+    [ObservableProperty]
+    private string _title = string.Empty;
+
+    /// <summary>
+    /// 是否已被重命名
+    /// </summary>
+    public bool IsRenamed => Title != OriginalTitle;
+
+    /// <summary>
+    /// Title 变更时同步通知 IsRenamed
+    /// </summary>
+    partial void OnTitleChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsRenamed));
+    }
+
     public long Aid { get; set; }
     public string Bvid { get; set; } = string.Empty;
     public long Cid { get; set; }
