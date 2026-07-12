@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -15,7 +14,7 @@ using Newtonsoft.Json.Linq;
 namespace BiliDownloader.ViewModels;
 
 /// <summary>
-/// BiliDownloader Document ViewModel：负责子 VM 组合、任务提交、进度接收、持久化
+/// BiliDownloader Document ViewModel：负责子 VM 组合、持久化
 /// </summary>
 public class BiliDownloaderViewModel : Document, ISavableDocument
 {
@@ -34,13 +33,11 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     public LoginBarViewModel LoginBar { get; }
     public VideoParseViewModel VideoParse { get; }
     public DownloadConfigViewModel DownloadConfig { get; }
-    public RenamePanelViewModel RenamePanel { get; }
+    public VideoListViewModel VideoList { get; }
 
     #endregion
 
     #region 属性
-
-    public ObservableCollection<BiliVideoItem> VideoItems { get; } = new();
 
     private BiliVideoCollection? _videoCollection;
 
@@ -51,27 +48,12 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         set => SetProperty(ref _isParsed, value);
     }
 
-    private double _totalProgress;
-    public double TotalProgress
-    {
-        get => _totalProgress;
-        set => SetProperty(ref _totalProgress, value);
-    }
-
     private string _downloadInfo = "";
     public string DownloadInfo
     {
         get => _downloadInfo;
         set => SetProperty(ref _downloadInfo, value);
     }
-
-    #endregion
-
-    #region Commands
-
-    public IRelayCommand SubmitDownloadCommand { get; }
-    public IRelayCommand SelectAllCommand { get; }
-    public IRelayCommand DeselectAllCommand { get; }
 
     #endregion
 
@@ -86,19 +68,42 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
         DownloadConfig = new DownloadConfigViewModel();
 
-        RenamePanel = new RenamePanelViewModel(
-            onRenameApplied: ApplyRenameToVideoItems,
-            getVideoCount: () => VideoItems.Count);
-
-        SubmitDownloadCommand = new RelayCommand(SubmitDownload);
-        SelectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = true; });
-        DeselectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = false; });
-
-        // 注册消息总线
+        // 注册消息总线（需要在 VideoList 构造前初始化）
         try
         {
             _messengerService = new MessengerService();
+        }
+        catch
+        {
+            // ServiceProvider 尚未初始化时忽略
+        }
 
+        VideoList = new VideoListViewModel(
+            getSubmitContext: () => new SubmitContext
+            {
+                DocumentId = DocumentId,
+                Cookie = BiliLoginStateService.Instance.CookieHeader,
+                QualityId = DownloadConfig.SelectedQuality?.QualityId ?? 0,
+                AudioQualityId = DownloadConfig.SelectedAudioQuality?.QualityId ?? 0,
+                OutputDirectory = DownloadConfig.OutputDirectory,
+                UseGroupFolder = DownloadConfig.UseGroupFolder,
+                AddIndexToTitle = DownloadConfig.AddIndexToTitle,
+                SeriesTitle = _videoCollection?.SeriesTitle ?? "下载",
+            },
+            messengerService: _messengerService,
+            onStatusMessage: msg => DownloadInfo = msg);
+
+        RegisterMessengers();
+    }
+
+    #region 消息总线注册
+
+    private void RegisterMessengers()
+    {
+        if (_messengerService == null) return;
+
+        try
+        {
             // 登录状态变更 -> 同步到 LoginBar 子 VM
             _messengerService.Register<BiliDownloaderViewModel, LoginStateChangedMessage>(
                 this, (vm, msg) =>
@@ -107,59 +112,49 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                     vm.LoginBar.UserName = msg.UserName;
                 });
 
-            // 下载进度回传（按 DocumentId 过滤）
+            // 下载进度回传（按 DocumentId 过滤）-> 委托给 VideoList
             _messengerService.Register<BiliDownloaderViewModel, DownloadTaskProgressMessage>(
                 this, (vm, msg) =>
                 {
                     if (msg.TargetDocumentId != vm.DocumentId) return;
-                    vm.HandleProgressMessage(msg);
+                    vm.VideoList.UpdateItemProgress(msg);
                 });
 
-            // 任务被删除通知（从 VideoItems 中移除）
+            // 任务被删除通知 -> 委托给 VideoList
             _messengerService.Register<BiliDownloaderViewModel, DownloadTaskDeletedMessage>(
                 this, (vm, msg) =>
                 {
                     if (msg.TargetDocumentId != vm.DocumentId) return;
-                    var item = vm.VideoItems.FirstOrDefault(v => v.ItemId == msg.TaskId);
-                    if (item != null)
-                        vm.VideoItems.Remove(item);
+                    vm.VideoList.RemoveItem(msg.TaskId);
                 });
 
-            // 调度器自主状态变更通知（重试、自动恢复等）
+            // 调度器自主状态变更通知 -> 委托给 VideoList
             _messengerService.Register<BiliDownloaderViewModel, DownloadTaskStatusChangedMessage>(
                 this, (vm, msg) =>
                 {
                     if (msg.TargetDocumentId != vm.DocumentId) return;
-                    var item = vm.VideoItems.FirstOrDefault(v => v.ItemId == msg.TaskId);
-                    if (item == null) return;
-                    item.Status = MapStatusToDisplay(msg.NewStatus);
-                    item.StageText = MapStageToDisplay(msg.NewStatus);
-                    item.Progress = msg.Progress;
-                    item.VideoProgress = msg.VideoProgress;
-                    item.AudioProgress = msg.AudioProgress;
-                    item.MergeProgress = msg.MergeProgress;
-                    item.SpeedText = msg.SpeedText;
+                    vm.VideoList.UpdateItemStatus(msg);
                 });
         }
         catch
         {
-            // ServiceProvider 尚未初始化时忽略
+            // 忽略
         }
     }
+
+    #endregion
 
     #region 子 VM 回调处理
 
     /// <summary>
-    /// 解析成功后的回调：填充 VideoItems、分发清晰度到 DownloadConfig、初始化重命名面板
+    /// 解析成功后的回调：填充 VideoList、分发清晰度到 DownloadConfig
     /// </summary>
     private void HandleParseResult(VideoParseResult result)
     {
         _videoCollection = result.Collection;
 
-        // 填充视频列表
-        VideoItems.Clear();
-        foreach (var item in result.VideoItems)
-            VideoItems.Add(item);
+        // 填充视频列表 + 初始化重命名面板
+        VideoList.SetItems(result.VideoItems);
 
         // 分发清晰度到 DownloadConfig
         DownloadConfig.PopulateQualities(
@@ -169,28 +164,11 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             result.SelectedAudioQuality,
             result.IsMultiVideo);
 
-        // 初始化重命名面板
-        RenamePanel.InitTitles(result.VideoItems);
-
         IsParsed = true;
         IsModified = true;
 
         // 同步解析状态到 VideoParse 子 VM
         VideoParse.IsParsed = true;
-    }
-
-    /// <summary>
-    /// 重命名应用后的回调：将新标题写入 VideoItems
-    /// </summary>
-    private void ApplyRenameToVideoItems(List<string> newTitles)
-    {
-        for (int i = 0; i < VideoItems.Count && i < newTitles.Count; i++)
-        {
-            if (!string.IsNullOrEmpty(newTitles[i]))
-                VideoItems[i].Title = newTitles[i];
-        }
-
-        DownloadInfo = $"已应用批量重命名（{VideoItems.Count} 个视频）";
     }
 
     #endregion
@@ -214,34 +192,28 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             await store.InitAsync();
             var records = await store.GetByDocumentIdAsync(DocumentId);
 
-            int idx = VideoItems.Count + 1;
+            int idx = VideoList.Count + 1;
             foreach (var record in records)
             {
-                // 查找已有的 VideoItem（按 ItemId 匹配），没有则创建
-                var item = VideoItems.FirstOrDefault(v => v.ItemId == record.TaskId);
-                if (item == null)
+                var item = new BiliVideoItem
                 {
-                    item = new BiliVideoItem
-                    {
-                        Index = idx++,
-                        ItemId = record.TaskId,
-                        OriginalTitle = record.ItemTitle,
-                        Title = record.ItemTitle,
-                        Aid = record.Aid,
-                        Bvid = record.Bvid,
-                        Cid = record.Cid,
-                        IsSelected = false, // 已提交的任务不再勾选
-                    };
-                    VideoItems.Add(item);
-                }
-
-                item.Status = MapStatusToDisplay(record.Status);
-                item.StageText = MapStageToDisplay(record.Status);
-                item.Progress = record.Progress;
-                item.VideoProgress = record.VideoProgress;
-                item.AudioProgress = record.AudioProgress;
-                item.MergeProgress = record.MergeProgress;
-                item.SpeedText = record.SpeedText;
+                    Index = idx++,
+                    ItemId = record.TaskId,
+                    OriginalTitle = record.ItemTitle,
+                    Title = record.ItemTitle,
+                    Aid = record.Aid,
+                    Bvid = record.Bvid,
+                    Cid = record.Cid,
+                    IsSelected = false,
+                    Status = MapStatusToDisplay(record.Status),
+                    StageText = MapStageToDisplay(record.Status),
+                    Progress = record.Progress,
+                    VideoProgress = record.VideoProgress,
+                    AudioProgress = record.AudioProgress,
+                    MergeProgress = record.MergeProgress,
+                    SpeedText = record.SpeedText,
+                };
+                VideoList.AddRecoveredItem(item);
             }
         }
         catch (Exception ex)
@@ -250,105 +222,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         }
     }
 
-    #region 任务提交
-
-    private void SubmitDownload()
-    {
-        if (!IsParsed || VideoItems.Count == 0)
-        {
-            DownloadInfo = "请先解析视频";
-            return;
-        }
-
-        var selectedItems = VideoItems.Where(v => v.IsSelected).ToList();
-        if (selectedItems.Count == 0)
-        {
-            DownloadInfo = "请至少勾选一个视频";
-            return;
-        }
-
-        if (DownloadConfig.SelectedQuality == null)
-        {
-            DownloadInfo = "请选择清晰度";
-            return;
-        }
-
-        // 检查 ffmpeg 是否就绪
-        if (!FfmpegService.IsReady)
-        {
-            DownloadInfo = "ffmpeg 未就绪，请在调度器工具中等待下载完成或手动配置路径";
-            return;
-        }
-
-        // 构造消息
-        var downloadItems = selectedItems.Select(v => new DownloadItemInfo
-        {
-            ItemId = v.ItemId,
-            Title = DownloadConfig.AddIndexToTitle ? $"{v.Index}.{v.Title}" : v.Title,
-            Aid = v.Aid,
-            Bvid = v.Bvid,
-            Cid = v.Cid,
-            Duration = v.Duration,
-        }).ToList();
-
-        var message = new SubmitDownloadTaskMessage(
-            sourceDocumentId: DocumentId,
-            seriesTitle: _videoCollection?.SeriesTitle ?? "下载",
-            items: downloadItems,
-            qualityId: DownloadConfig.SelectedQuality.QualityId,
-            audioQualityId: DownloadConfig.SelectedAudioQuality?.QualityId ?? 0,
-            outputDirectory: DownloadConfig.OutputDirectory,
-            cookie: BiliLoginStateService.Instance.CookieHeader,
-            useGroupFolder: DownloadConfig.UseGroupFolder);
-
-        // 通过消息总线发送给调度器
-        try
-        {
-            _messengerService?.Send(message);
-            DownloadInfo = $"已提交 {selectedItems.Count} 个下载任务到调度器";
-
-            // 标记为已提交
-            foreach (var item in selectedItems)
-            {
-                item.Status = "排队中";
-                item.IsSelected = false;
-            }
-        }
-        catch (Exception ex)
-        {
-            DownloadInfo = $"提交任务失败: {ex.Message}";
-        }
-    }
-
-    #endregion
-
-    #region 进度接收
-
-    private void HandleProgressMessage(DownloadTaskProgressMessage msg)
-    {
-        var item = VideoItems.FirstOrDefault(v => v.ItemId == msg.TaskId);
-        if (item == null) return;
-
-        item.Status = MapStatusToDisplay(msg.Status);
-        item.StageText = MapStageToDisplay(msg.Status);
-        item.Progress = msg.Progress;
-        item.VideoProgress = msg.VideoProgress;
-        item.AudioProgress = msg.AudioProgress;
-        item.MergeProgress = msg.MergeProgress;
-        item.SpeedText = msg.SpeedText;
-
-        if (msg.Status == "failed" && !string.IsNullOrEmpty(msg.ErrorMessage))
-        {
-            item.Status = $"失败: {msg.ErrorMessage}";
-            item.StageText = "失败";
-        }
-
-        // 更新总进度
-        if (VideoItems.Count > 0)
-        {
-            TotalProgress = VideoItems.Average(v => v.Progress);
-        }
-    }
+    #region 辅助方法
 
     private static string MapStatusToDisplay(string status) => status switch
     {

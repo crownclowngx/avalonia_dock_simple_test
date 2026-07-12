@@ -3,8 +3,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:BiliDownloader.ViewModels"
-             xmlns:models="using:BiliDownloader.Models"
-             xmlns:conv="using:BiliDownloader.Converters"
              xmlns:sub="using:BiliDownloader.Views.BiliDownloader"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="BiliDownloader.Views.BiliDownloaderView"
@@ -31,117 +29,10 @@
                     <!-- 下载配置（清晰度/音频/输出目录） -->
                     <sub:DownloadConfigView DataContext="{Binding DownloadConfig}"/>
 
-                    <!-- 视频列表 -->
-                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,4,0,0">
-                        <TextBlock Text="视频列表：" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <Button Content="批量重命名" Grid.Column="1"
-                                Command="{Binding RenamePanel.ToggleRenamePanelCommand}"
-                                Padding="8,2" Margin="4,0"/>
-                        <Button Content="全选" Grid.Column="2" Command="{Binding SelectAllCommand}" Padding="8,2" Margin="4,0"/>
-                        <Button Content="全不选" Grid.Column="3" Command="{Binding DeselectAllCommand}" Padding="8,2"/>
-                    </Grid>
-
-                    <!-- 批量重命名面板 -->
-                    <sub:RenamePanelView DataContext="{Binding RenamePanel}"/>
-
-                    <ItemsControl ItemsSource="{Binding VideoItems}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="models:BiliVideoItem">
-                                <Border BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="4,6">
-                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" RowDefinitions="Auto,Auto">
-                                        <!-- 行1: 勾选 + 序号 + 标题 + 时长 + 阶段 + 速度 -->
-                                        <CheckBox IsChecked="{Binding IsSelected}"
-                                                  Grid.Column="0"
-                                                  VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding Index, StringFormat='{}{0}.'}"
-                                                   Grid.Column="1"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="Gray"
-                                                   Margin="2,0"
-                                                   MinWidth="24"/>
-                                        <TextBlock Grid.Column="2"
-                                                   VerticalAlignment="Center"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   Margin="4,0">
-                                            <TextBlock.Text>
-                                                <MultiBinding>
-                                                    <MultiBinding.Converter>
-                                                        <conv:RenameDisplayConverter/>
-                                                    </MultiBinding.Converter>
-                                                    <Binding Path="OriginalTitle"/>
-                                                    <Binding Path="Title"/>
-                                                </MultiBinding>
-                                            </TextBlock.Text>
-                                        </TextBlock>
-                                        <TextBlock Grid.Column="3"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="Gray"
-                                                   Margin="4,0">
-                                            <TextBlock.Text>
-                                                <MultiBinding StringFormat="{}{0}">
-                                                    <Binding Path="Duration"/>
-                                                </MultiBinding>
-                                            </TextBlock.Text>
-                                        </TextBlock>
-                                        <TextBlock Text="{Binding StageText}"
-                                                   Grid.Column="4"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="#00A1D6"
-                                                   Margin="4,0"
-                                                   MinWidth="50"/>
-                                        <TextBlock Text="{Binding SpeedText}"
-                                                   Grid.Column="5"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="#FFA500"
-                                                   Margin="4,0"
-                                                   MinWidth="60"/>
-
-                                        <!-- 行2: 三分段进度条 -->
-                                        <StackPanel Grid.Column="0" Grid.ColumnSpan="6" Grid.Row="1"
-                                                    Orientation="Horizontal" Spacing="8" Margin="0,3,0,0">
-                                            <StackPanel Orientation="Horizontal" Spacing="3">
-                                                <TextBlock Text="视频" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
-                                                <ProgressBar Value="{Binding VideoProgress}"
-                                                             Minimum="0" Maximum="100"
-                                                             Width="100" Height="4"/>
-                                            </StackPanel>
-                                            <StackPanel Orientation="Horizontal" Spacing="3">
-                                                <TextBlock Text="音频" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
-                                                <ProgressBar Value="{Binding AudioProgress}"
-                                                             Minimum="0" Maximum="100"
-                                                             Width="100" Height="4"/>
-                                            </StackPanel>
-                                            <StackPanel Orientation="Horizontal" Spacing="3">
-                                                <TextBlock Text="合成" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
-                                                <ProgressBar Value="{Binding MergeProgress}"
-                                                             Minimum="0" Maximum="100"
-                                                             Width="80" Height="4"/>
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- 提交下载 -->
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Command="{Binding SubmitDownloadCommand}"
-                                Content="提交下载"
-                                Width="120"
-                                Padding="8,6"/>
-                        <TextBlock Text="{Binding TotalProgress, StringFormat='总进度: {0:F1}%'}"
-                                   VerticalAlignment="Center"
-                                   Foreground="Gray"/>
-                    </StackPanel>
+                    <!-- 视频列表（含工具栏、重命名面板、提交下载、总进度） -->
+                    <sub:VideoListView DataContext="{Binding VideoList}"/>
                 </StackPanel>
             </Border>
-
-            <!-- 总进度条 -->
-            <ProgressBar Value="{Binding TotalProgress}"
-                         Minimum="0" Maximum="100"
-                         Height="8"
-                         IsVisible="{Binding IsParsed}"/>
 
             <!-- 日志区域 -->
             <TextBlock Text="输出信息：" FontWeight="SemiBold" Margin="0,4,0,0"/>
