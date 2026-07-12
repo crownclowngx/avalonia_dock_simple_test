@@ -176,7 +176,12 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                     var item = vm.VideoItems.FirstOrDefault(v => v.ItemId == msg.TaskId);
                     if (item == null) return;
                     item.Status = MapStatusToDisplay(msg.NewStatus);
+                    item.StageText = MapStageToDisplay(msg.NewStatus);
                     item.Progress = msg.Progress;
+                    item.VideoProgress = msg.VideoProgress;
+                    item.AudioProgress = msg.AudioProgress;
+                    item.MergeProgress = msg.MergeProgress;
+                    item.SpeedText = msg.SpeedText;
                 });
         }
         catch
@@ -229,7 +234,12 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 }
 
                 item.Status = MapStatusToDisplay(record.Status);
+                item.StageText = MapStageToDisplay(record.Status);
                 item.Progress = record.Progress;
+                item.VideoProgress = record.VideoProgress;
+                item.AudioProgress = record.AudioProgress;
+                item.MergeProgress = record.MergeProgress;
+                item.SpeedText = record.SpeedText;
             }
         }
         catch (Exception ex)
@@ -388,11 +398,17 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         if (item == null) return;
 
         item.Status = MapStatusToDisplay(msg.Status);
+        item.StageText = MapStageToDisplay(msg.Status);
         item.Progress = msg.Progress;
+        item.VideoProgress = msg.VideoProgress;
+        item.AudioProgress = msg.AudioProgress;
+        item.MergeProgress = msg.MergeProgress;
+        item.SpeedText = msg.SpeedText;
 
         if (msg.Status == "failed" && !string.IsNullOrEmpty(msg.ErrorMessage))
         {
             item.Status = $"失败: {msg.ErrorMessage}";
+            item.StageText = "失败";
         }
 
         // 更新总进度
@@ -403,6 +419,17 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     }
 
     private static string MapStatusToDisplay(string status) => status switch
+    {
+        "pending" => "排队中",
+        "downloading_video" => "下载视频",
+        "downloading_audio" => "下载音频",
+        "merging" => "合并中",
+        "done" => "完成",
+        "failed" => "失败",
+        _ => status,
+    };
+
+    private static string MapStageToDisplay(string status) => status switch
     {
         "pending" => "排队中",
         "downloading_video" => "下载视频",

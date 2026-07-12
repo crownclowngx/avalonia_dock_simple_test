@@ -75,7 +75,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="models:DownloadTaskRecord">
                         <Border BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="4,6">
-                            <StackPanel Spacing="2">
+                            <StackPanel Spacing="3">
                                 <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                                     <TextBlock Text="{Binding ItemTitle}"
                                                TextTrimming="CharacterEllipsis"
@@ -108,10 +108,33 @@
                                             ToolTip.Tip="删除任务"/>
                                 </Grid>
 
-                                <ProgressBar Value="{Binding Progress}"
-                                             Minimum="0" Maximum="100"
-                                             Height="4"
-                                             Margin="0,2"/>
+                                <!-- 速度文本 -->
+                                <TextBlock Text="{Binding SpeedText}"
+                                           FontSize="11"
+                                           Foreground="#FFA500"
+                                           IsVisible="{Binding SpeedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                                <!-- 三分段进度条 -->
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                        <TextBlock Text="视频" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                        <ProgressBar Value="{Binding VideoProgress}"
+                                                     Minimum="0" Maximum="100"
+                                                     Width="60" Height="3"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                        <TextBlock Text="音频" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                        <ProgressBar Value="{Binding AudioProgress}"
+                                                     Minimum="0" Maximum="100"
+                                                     Width="60" Height="3"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                        <TextBlock Text="合成" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                        <ProgressBar Value="{Binding MergeProgress}"
+                                                     Minimum="0" Maximum="100"
+                                                     Width="50" Height="3"/>
+                                    </StackPanel>
+                                </StackPanel>
 
                                 <TextBlock Text="{Binding ErrorMessage}"
                                            Foreground="Red"

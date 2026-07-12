@@ -26,15 +26,43 @@ public class DownloadTaskStatusChangedMessage
     /// </summary>
     public double Progress { get; }
 
+    /// <summary>
+    /// 视频下载进度 0~100
+    /// </summary>
+    public double VideoProgress { get; }
+
+    /// <summary>
+    /// 音频下载进度 0~100
+    /// </summary>
+    public double AudioProgress { get; }
+
+    /// <summary>
+    /// 合成进度 0~100
+    /// </summary>
+    public double MergeProgress { get; }
+
+    /// <summary>
+    /// 下载速度文本
+    /// </summary>
+    public string SpeedText { get; }
+
     public DownloadTaskStatusChangedMessage(
         string targetDocumentId,
         string taskId,
         string newStatus,
-        double progress)
+        double progress,
+        double videoProgress = 0,
+        double audioProgress = 0,
+        double mergeProgress = 0,
+        string speedText = "")
     {
         TargetDocumentId = targetDocumentId;
         TaskId = taskId;
         NewStatus = newStatus;
         Progress = progress;
+        VideoProgress = videoProgress;
+        AudioProgress = audioProgress;
+        MergeProgress = mergeProgress;
+        SpeedText = speedText;
     }
 }

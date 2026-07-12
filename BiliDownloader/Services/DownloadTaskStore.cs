@@ -83,10 +83,36 @@ public class DownloadTaskStore
                 temp_directory      TEXT NOT NULL DEFAULT '',
                 video_bytes         INTEGER NOT NULL DEFAULT 0,
                 audio_bytes         INTEGER NOT NULL DEFAULT 0,
+                video_progress      REAL NOT NULL DEFAULT 0,
+                audio_progress      REAL NOT NULL DEFAULT 0,
+                merge_progress      REAL NOT NULL DEFAULT 0,
+                speed_text          TEXT NOT NULL DEFAULT '',
                 created_at          TEXT NOT NULL DEFAULT (datetime('now','localtime'))
             );
             """;
         await cmd.ExecuteNonQueryAsync();
+
+        // 升级旧表：添加分段进度列（如果不存在）
+        string[] alterSqls =
+        {
+            "ALTER TABLE download_tasks ADD COLUMN video_progress REAL NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN audio_progress REAL NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN merge_progress REAL NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN speed_text TEXT NOT NULL DEFAULT '';",
+        };
+        foreach (var sql in alterSqls)
+        {
+            try
+            {
+                await using var alterCmd = connection.CreateCommand();
+                alterCmd.CommandText = sql;
+                await alterCmd.ExecuteNonQueryAsync();
+            }
+            catch
+            {
+                // 列已存在，忽略
+            }
+        }
     }
 
     /// <summary>
@@ -104,11 +130,15 @@ public class DownloadTaskStore
                 INSERT OR REPLACE INTO download_tasks
                     (task_id, document_id, series_title, item_title, aid, bvid, cid,
                      quality_id, output_directory, cookie, progress, status, error_message,
-                     temp_directory, video_bytes, audio_bytes, created_at)
+                     temp_directory, video_bytes, audio_bytes,
+                     video_progress, audio_progress, merge_progress, speed_text,
+                     created_at)
                 VALUES
                     ($task_id, $document_id, $series_title, $item_title, $aid, $bvid, $cid,
                      $quality_id, $output_directory, $cookie, $progress, $status, $error_message,
-                     $temp_directory, $video_bytes, $audio_bytes, $created_at);
+                     $temp_directory, $video_bytes, $audio_bytes,
+                     $video_progress, $audio_progress, $merge_progress, $speed_text,
+                     $created_at);
                 """;
             cmd.Parameters.AddWithValue("$task_id", r.TaskId);
             cmd.Parameters.AddWithValue("$document_id", r.DocumentId);
@@ -126,6 +156,10 @@ public class DownloadTaskStore
             cmd.Parameters.AddWithValue("$temp_directory", r.TempDirectory);
             cmd.Parameters.AddWithValue("$video_bytes", r.VideoBytesDownloaded);
             cmd.Parameters.AddWithValue("$audio_bytes", r.AudioBytesDownloaded);
+            cmd.Parameters.AddWithValue("$video_progress", r.VideoProgress);
+            cmd.Parameters.AddWithValue("$audio_progress", r.AudioProgress);
+            cmd.Parameters.AddWithValue("$merge_progress", r.MergeProgress);
+            cmd.Parameters.AddWithValue("$speed_text", r.SpeedText);
             cmd.Parameters.AddWithValue("$created_at", r.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
             await cmd.ExecuteNonQueryAsync();
         }
@@ -291,6 +325,38 @@ public class DownloadTaskStore
         }
     }
 
+    /// <summary>
+    /// 更新任务分段进度和速度
+    /// </summary>
+    public async Task UpdateStageProgressAsync(
+        string taskId,
+        double progress,
+        string status,
+        double videoProgress,
+        double audioProgress,
+        double mergeProgress,
+        string speedText)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            UPDATE download_tasks
+            SET progress = $progress, status = $status,
+                video_progress = $video_progress, audio_progress = $audio_progress,
+                merge_progress = $merge_progress, speed_text = $speed_text
+            WHERE task_id = $task_id;
+            """;
+        cmd.Parameters.AddWithValue("$task_id", taskId);
+        cmd.Parameters.AddWithValue("$progress", progress);
+        cmd.Parameters.AddWithValue("$status", status);
+        cmd.Parameters.AddWithValue("$video_progress", videoProgress);
+        cmd.Parameters.AddWithValue("$audio_progress", audioProgress);
+        cmd.Parameters.AddWithValue("$merge_progress", mergeProgress);
+        cmd.Parameters.AddWithValue("$speed_text", speedText);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
     private static DownloadTaskRecord ReadRecord(SqliteDataReader reader)
     {
         return new DownloadTaskRecord
@@ -313,9 +379,29 @@ public class DownloadTaskStore
             TempDirectory = reader.GetString(reader.GetOrdinal("temp_directory")),
             VideoBytesDownloaded = reader.GetInt64(reader.GetOrdinal("video_bytes")),
             AudioBytesDownloaded = reader.GetInt64(reader.GetOrdinal("audio_bytes")),
+            VideoProgress = TryGetDouble(reader, "video_progress"),
+            AudioProgress = TryGetDouble(reader, "audio_progress"),
+            MergeProgress = TryGetDouble(reader, "merge_progress"),
+            SpeedText = TryGetString(reader, "speed_text"),
             CreatedAt = DateTime.TryParse(
                 reader.GetString(reader.GetOrdinal("created_at")),
                 out var dt) ? dt : DateTime.Now,
         };
+    }
+
+    private static double TryGetDouble(SqliteDataReader reader, string column)
+    {
+        try { return reader.GetDouble(reader.GetOrdinal(column)); }
+        catch { return 0; }
+    }
+
+    private static string TryGetString(SqliteDataReader reader, string column)
+    {
+        try
+        {
+            var ordinal = reader.GetOrdinal(column);
+            return reader.IsDBNull(ordinal) ? "" : reader.GetString(ordinal);
+        }
+        catch { return ""; }
     }
 }

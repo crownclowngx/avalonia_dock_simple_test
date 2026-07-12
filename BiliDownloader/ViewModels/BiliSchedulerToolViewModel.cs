@@ -216,20 +216,27 @@ public partial class BiliSchedulerToolViewModel : Tool
                     await _downloadService.DownloadItemAsync(
                         nextTask,
                         _apiService,
-                        (progress, statusText) =>
+                        (info) =>
                         {
-                            nextTask.Progress = progress;
-                            nextTask.Status = statusText switch
+                            nextTask.Progress = info.OverallProgress;
+                            nextTask.VideoProgress = info.VideoProgress;
+                            nextTask.AudioProgress = info.AudioProgress;
+                            nextTask.MergeProgress = info.MergeProgress;
+                            nextTask.SpeedText = info.SpeedText;
+                            nextTask.Status = info.Stage switch
                             {
-                                var s when s.Contains("视频") => "downloading_video",
-                                var s when s.Contains("音频") => "downloading_audio",
-                                var s when s.Contains("合并") => "merging",
-                                var s when s.Contains("完成") => "done",
+                                "video" => "downloading_video",
+                                "audio" => "downloading_audio",
+                                "merging" => "merging",
+                                "done" => "done",
                                 _ => nextTask.Status,
                             };
 
                             // 写 SQLite + 发消息
-                            _ = _taskStore.UpdateProgressAsync(nextTask.TaskId, progress, nextTask.Status);
+                            _ = _taskStore.UpdateStageProgressAsync(
+                                nextTask.TaskId, nextTask.Progress, nextTask.Status,
+                                nextTask.VideoProgress, nextTask.AudioProgress,
+                                nextTask.MergeProgress, nextTask.SpeedText);
                             BroadcastProgress(nextTask);
                             UpdateCounts();
                         },
@@ -243,7 +250,12 @@ public partial class BiliSchedulerToolViewModel : Tool
                     // 标记完成
                     nextTask.Status = "done";
                     nextTask.Progress = 100;
-                    await _taskStore.UpdateProgressAsync(nextTask.TaskId, 100, "done");
+                    nextTask.VideoProgress = 100;
+                    nextTask.AudioProgress = 100;
+                    nextTask.MergeProgress = 100;
+                    nextTask.SpeedText = "";
+                    await _taskStore.UpdateStageProgressAsync(
+                        nextTask.TaskId, 100, "done", 100, 100, 100, "");
                     BroadcastProgress(nextTask);
                     BroadcastStatusChanged(nextTask);
                 }
@@ -286,7 +298,11 @@ public partial class BiliSchedulerToolViewModel : Tool
                 itemTitle: task.ItemTitle,
                 progress: task.Progress,
                 status: task.Status,
-                errorMessage: task.ErrorMessage));
+                errorMessage: task.ErrorMessage,
+                videoProgress: task.VideoProgress,
+                audioProgress: task.AudioProgress,
+                mergeProgress: task.MergeProgress,
+                speedText: task.SpeedText));
         }
         catch { /* 忽略广播失败 */ }
     }
@@ -302,7 +318,11 @@ public partial class BiliSchedulerToolViewModel : Tool
                 targetDocumentId: task.DocumentId,
                 taskId: task.TaskId,
                 newStatus: task.Status,
-                progress: task.Progress));
+                progress: task.Progress,
+                videoProgress: task.VideoProgress,
+                audioProgress: task.AudioProgress,
+                mergeProgress: task.MergeProgress,
+                speedText: task.SpeedText));
         }
         catch { /* 忽略广播失败 */ }
     }

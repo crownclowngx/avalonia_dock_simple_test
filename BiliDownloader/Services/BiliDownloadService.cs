@@ -30,14 +30,14 @@ public class BiliDownloadService
     /// </summary>
     /// <param name="task">任务记录（从 SQLite 加载，含所有参数）</param>
     /// <param name="apiService">API 服务（获取 DASH 流）</param>
-    /// <param name="onProgress">进度回调 (进度百分比, 状态文本)</param>
+    /// <param name="onProgress">进度回调（分段进度 + 速度信息）</param>
     /// <param name="onBytesUpdate">字节数更新回调（用于断点续传持久化）</param>
     /// <param name="ct">取消令牌</param>
     /// <returns>最终输出文件路径</returns>
     public async Task<string> DownloadItemAsync(
         DownloadTaskRecord task,
         BiliApiService apiService,
-        Action<double, string> onProgress,
+        Action<DownloadProgressInfo> onProgress,
         Action<long, long>? onBytesUpdate,
         CancellationToken ct)
     {
@@ -57,8 +57,26 @@ public class BiliDownloadService
         var safeTitle = SanitizeFileName(task.ItemTitle);
         var outputPath = GetUniqueFilePath(task.OutputDirectory, safeTitle, "mp4");
 
+        // 进度状态容器（跨三个阶段累计）
+        double videoProgress = 0, audioProgress = 0, mergeProgress = 0;
+        string currentSpeed = "";
+
+        void ReportProgress(string stage)
+        {
+            var overall = videoProgress * 0.45 + audioProgress * 0.45 + mergeProgress * 0.10;
+            onProgress(new DownloadProgressInfo
+            {
+                Stage = stage,
+                OverallProgress = overall,
+                VideoProgress = videoProgress,
+                AudioProgress = audioProgress,
+                MergeProgress = mergeProgress,
+                SpeedText = currentSpeed,
+            });
+        }
+
         // 1. 获取 DASH 流
-        onProgress(0, "获取播放地址...");
+        ReportProgress("fetching");
         var dashResult = await apiService.GetDashResultAsync(task.Aid, task.Cid, task.QualityId, task.Cookie);
 
         // 选择视频流：优先 AVC/H.264 (codecid=7)，选用户指定清晰度
@@ -74,37 +92,45 @@ public class BiliDownloadService
             throw new Exception("未找到音频流");
 
         // 2. 下载视频流
-        onProgress(5, "下载视频流...");
         await DownloadStreamAsync(
             videoStream.BaseUrl, videoTmp, task.Cookie,
             task.VideoBytesDownloaded,
-            (total, downloaded) =>
+            (total, downloaded, speed) =>
             {
                 task.VideoBytesDownloaded = downloaded;
-                var pct = total > 0 ? (double)downloaded / total * 45 : 0;
-                onProgress(5 + pct, $"下载视频 {FormatBytes(downloaded)}/{FormatBytes(total)}");
+                videoProgress = total > 0 ? (double)downloaded / total * 100 : 0;
+                currentSpeed = speed;
+                ReportProgress("video");
                 onBytesUpdate?.Invoke(task.VideoBytesDownloaded, task.AudioBytesDownloaded);
             },
             ct);
+        currentSpeed = "";
+        videoProgress = 100;
+        ReportProgress("video");
 
         // 3. 下载音频流
-        onProgress(50, "下载音频流...");
         await DownloadStreamAsync(
             audioStream.BaseUrl, audioTmp, task.Cookie,
             task.AudioBytesDownloaded,
-            (total, downloaded) =>
+            (total, downloaded, speed) =>
             {
                 task.AudioBytesDownloaded = downloaded;
-                var pct = total > 0 ? (double)downloaded / total * 40 : 0;
-                onProgress(50 + pct, $"下载音频 {FormatBytes(downloaded)}/{FormatBytes(total)}");
+                audioProgress = total > 0 ? (double)downloaded / total * 100 : 0;
+                currentSpeed = speed;
+                ReportProgress("audio");
                 onBytesUpdate?.Invoke(task.VideoBytesDownloaded, task.AudioBytesDownloaded);
             },
             ct);
+        currentSpeed = "";
+        audioProgress = 100;
+        ReportProgress("audio");
 
         // 4. ffmpeg 合并
-        onProgress(92, "合并音视频...");
+        mergeProgress = 10;
+        ReportProgress("merging");
         await MergeAsync(videoTmp, audioTmp, outputPath);
-        onProgress(100, "完成");
+        mergeProgress = 100;
+        ReportProgress("done");
 
         // 5. 清理临时文件
         try
@@ -121,20 +147,20 @@ public class BiliDownloadService
     }
 
     /// <summary>
-    /// HTTP 流式下载，支持断点续传（Range 请求）
+    /// HTTP 流式下载，支持断点续传（Range 请求），带速度计算
     /// </summary>
     /// <param name="url">下载 URL</param>
     /// <param name="outputPath">输出文件路径</param>
     /// <param name="cookie">Cookie</param>
     /// <param name="existingBytes">已下载字节数（用于续传，0=从头开始）</param>
-    /// <param name="onProgress">进度回调 (总字节, 已下载字节)</param>
+    /// <param name="onProgress">进度回调 (总字节, 已下载字节, 速度文本)</param>
     /// <param name="ct">取消令牌</param>
     public async Task DownloadStreamAsync(
         string url,
         string outputPath,
         string cookie,
         long existingBytes,
-        Action<long, long> onProgress,
+        Action<long, long, string> onProgress,
         CancellationToken ct)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -166,11 +192,28 @@ public class BiliDownloadService
         var downloaded = existingBytes;
         int bytesRead;
 
+        // 速度计算
+        var lastBytes = existingBytes;
+        var lastTime = DateTime.UtcNow;
+        var speedText = "";
+
         while ((bytesRead = await stream.ReadAsync(buffer, ct)) > 0)
         {
             await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
             downloaded += bytesRead;
-            onProgress(totalBytes, downloaded);
+
+            // 每 500ms 更新一次速度
+            var now = DateTime.UtcNow;
+            var elapsed = (now - lastTime).TotalSeconds;
+            if (elapsed >= 0.5)
+            {
+                var bytesPerSecond = (downloaded - lastBytes) / elapsed;
+                speedText = FormatSpeed((long)bytesPerSecond);
+                lastBytes = downloaded;
+                lastTime = now;
+            }
+
+            onProgress(totalBytes, downloaded, speedText);
         }
     }
 
@@ -261,5 +304,13 @@ public class BiliDownloadService
         if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
         if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
         return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+    }
+
+    private static string FormatSpeed(long bytesPerSecond)
+    {
+        if (bytesPerSecond <= 0) return "";
+        if (bytesPerSecond < 1024) return $"{bytesPerSecond} B/s";
+        if (bytesPerSecond < 1024 * 1024) return $"{bytesPerSecond / 1024.0:F1} KB/s";
+        return $"{bytesPerSecond / (1024.0 * 1024):F1} MB/s";
     }
 }

@@ -29,13 +29,43 @@ public partial class BiliVideoItem : ObservableObject
     private bool _isSelected = true;
 
     /// <summary>
-    /// 下载进度 0~100（由调度器回传）
+    /// 总下载进度 0~100（由调度器回传）
     /// </summary>
     [ObservableProperty]
     private double _progress;
 
     /// <summary>
-    /// 下载状态文本：等待中/下载视频/下载音频/合并中/完成/失败
+    /// 视频下载进度 0~100
+    /// </summary>
+    [ObservableProperty]
+    private double _videoProgress;
+
+    /// <summary>
+    /// 音频下载进度 0~100
+    /// </summary>
+    [ObservableProperty]
+    private double _audioProgress;
+
+    /// <summary>
+    /// 合成进度 0~100
+    /// </summary>
+    [ObservableProperty]
+    private double _mergeProgress;
+
+    /// <summary>
+    /// 下载速度文本，如 "2.5 MB/s"
+    /// </summary>
+    [ObservableProperty]
+    private string _speedText = "";
+
+    /// <summary>
+    /// 当前阶段文本：等待中/获取地址/下载视频/下载音频/合并中/完成/失败
+    /// </summary>
+    [ObservableProperty]
+    private string _stageText = "等待中";
+
+    /// <summary>
+    /// 下载状态文本（兼容旧逻辑）：等待中/下载视频/下载音频/合并中/完成/失败
     /// </summary>
     [ObservableProperty]
     private string _status = "等待中";

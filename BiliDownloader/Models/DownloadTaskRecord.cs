@@ -50,6 +50,26 @@ public class DownloadTaskRecord
     public double Progress { get; set; }
 
     /// <summary>
+    /// 视频下载进度 0~100
+    /// </summary>
+    public double VideoProgress { get; set; }
+
+    /// <summary>
+    /// 音频下载进度 0~100
+    /// </summary>
+    public double AudioProgress { get; set; }
+
+    /// <summary>
+    /// 合成进度 0~100
+    /// </summary>
+    public double MergeProgress { get; set; }
+
+    /// <summary>
+    /// 下载速度文本，如 "2.5 MB/s"
+    /// </summary>
+    public string SpeedText { get; set; } = "";
+
+    /// <summary>
     /// 当前状态：pending/downloading_video/downloading_audio/merging/done/failed
     /// </summary>
     public string Status { get; set; } = "pending";
