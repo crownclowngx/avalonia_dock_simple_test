@@ -1,5 +1,6 @@
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.ToolCreation;
+using BiliDownloader.Services;
 using BiliDownloader.ViewModels;
 
 namespace BiliDownloader.Create;
@@ -8,7 +9,7 @@ public class BiliSchedulerToolStrategy : IToolCreationStrategy
 {
     public Tool CreateTool()
     {
-        return new BiliSchedulerToolViewModel()
+        return new BiliSchedulerToolViewModel(BiliDownloadCoordinator.Instance)
         {
             Id = "BiliSchedulerTool",
             Title = "Bilibili调度工具",

@@ -52,8 +52,9 @@ public partial class DownloadTaskRecord : ObservableObject
     public string SubFolder { get; set; } = string.Empty;
 
     /// <summary>
-    /// 下载时的 Cookie
+    /// 下载时的 Cookie（已废弃：运行时从 IBiliCredentialProvider 获取）
     /// </summary>
+    [Obsolete("使用 IBiliCredentialProvider 获取运行时凭据，不再存储 Cookie")]
     public string Cookie { get; set; } = string.Empty;
 
     /// <summary>
@@ -117,4 +118,44 @@ public partial class DownloadTaskRecord : ObservableObject
     /// 创建时间
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+    /// <summary>
+    /// 预期视频文件大小（字节），用于完整性验证
+    /// </summary>
+    public long ExpectedVideoBytes { get; set; }
+
+    /// <summary>
+    /// 预期音频文件大小（字节），用于完整性验证
+    /// </summary>
+    public long ExpectedAudioBytes { get; set; }
+
+    /// <summary>
+    /// 视频完整性验证是否通过
+    /// </summary>
+    public bool VideoIntegrityPassed { get; set; }
+
+    /// <summary>
+    /// 音频完整性验证是否通过
+    /// </summary>
+    public bool AudioIntegrityPassed { get; set; }
+
+    /// <summary>
+    /// 最终输出文件路径
+    /// </summary>
+    public string OutputFilePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 最后更新时间
+    /// </summary>
+    public DateTime LastUpdatedAt { get; set; } = DateTime.Now;
+
+    /// <summary>
+    /// 错误分类（network/cdn/ffmpeg/auth/unknown），仅 failed 时有值
+    /// </summary>
+    public string? ErrorType { get; set; }
+
+    /// <summary>
+    /// 是否可重试
+    /// </summary>
+    public bool IsRetryable { get; set; }
 }

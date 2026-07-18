@@ -11,24 +11,14 @@ using BiliDownloader.Services;
 namespace BiliDownloader.ViewModels;
 
 /// <summary>
-/// BiliSchedulerTool ViewModel：接收下载任务、持久化到 SQLite、执行下载、回传进度
+/// BiliSchedulerTool ViewModel：纯展示层，负责 UI 绑定和用户命令。
+/// 所有下载编排逻辑委托给 BiliDownloadCoordinator。
 /// </summary>
 public partial class BiliSchedulerToolViewModel : Tool
 {
-    private readonly IMessengerService _messengerService;
+    private readonly BiliDownloadCoordinator _coordinator;
     private readonly DownloadTaskStore _taskStore;
-    private readonly BiliApiService _apiService = new();
-    private readonly BiliDownloadService _downloadService = new();
-
-    private CancellationTokenSource? _processingCts;
-    private Task? _processingTask;
-    private bool _isProcessing;
     private bool _initialized;
-
-    // SQLite 进度写入节流：每 500ms 最多写一次，避免高频并发写入
-    private DateTime _lastProgressDbWrite = DateTime.MinValue;
-    private DateTime _lastBytesDbWrite = DateTime.MinValue;
-    private static readonly TimeSpan DbWriteInterval = TimeSpan.FromMilliseconds(500);
 
     [ObservableProperty]
     private string _schedulerStatus = "调度器就绪";
@@ -61,10 +51,12 @@ public partial class BiliSchedulerToolViewModel : Tool
     public IAsyncRelayCommand BrowseOutputDirCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> DeleteTaskCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> RetryTaskCommand { get; }
+    public IAsyncRelayCommand StartCommand { get; }
+    public IAsyncRelayCommand StopCommand { get; }
 
-    public BiliSchedulerToolViewModel()
+    public BiliSchedulerToolViewModel(BiliDownloadCoordinator coordinator)
     {
-        _messengerService = new MessengerService();
+        _coordinator = coordinator;
         _taskStore = new DownloadTaskStore();
 
         ClearDoneCommand = new RelayCommand(ClearDoneTasks);
@@ -72,21 +64,31 @@ public partial class BiliSchedulerToolViewModel : Tool
         BrowseOutputDirCommand = new AsyncRelayCommand(BrowseOutputDirAsync);
         DeleteTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(DeleteTaskAsync);
         RetryTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(RetryTaskAsync);
+        StartCommand = new AsyncRelayCommand(StartAsync);
+        StopCommand = new AsyncRelayCommand(StopAsync);
 
         // 默认输出目录：程序根目录/视频下载
         var appDir = Path.GetDirectoryName(typeof(BiliSchedulerToolViewModel).Assembly.Location) ?? "";
         DefaultOutputDirectory = Path.Combine(appDir, "视频下载");
 
-        // 注册监听：接收 Document 发来的下载任务
-        _messengerService.Register<BiliSchedulerToolViewModel, SubmitDownloadTaskMessage>(
-            this, (vm, msg) =>
-            {
-                _ = vm.HandleSubmitMessageAsync(msg);
-            });
+        // 订阅 Coordinator 事件
+        _coordinator.SchedulerStatusChanged += status => SchedulerStatus = status;
+        _coordinator.TaskProgressChanged += task =>
+        {
+            // 更新 UI 集合中对应项的属性（ObservableObject 自动通知）
+        };
+        _coordinator.TaskStatusChanged += task =>
+        {
+            UpdateCounts();
+        };
+        _coordinator.TaskListChanged += () =>
+        {
+            _ = ReloadTasksAsync();
+        };
     }
 
     /// <summary>
-    /// 初始化：建表 + 加载历史任务（不自动恢复下载）
+    /// 初始化：委托给 Coordinator + 加载任务列表 + 检测 ffmpeg
     /// </summary>
     public async Task InitializeAsync()
     {
@@ -95,9 +97,11 @@ public partial class BiliSchedulerToolViewModel : Tool
 
         try
         {
-            await _taskStore.InitAsync();
+            // Coordinator 初始化（建表 + 迁移 Interrupted）
+            await _coordinator.InitializeAsync();
 
             // 加载全局默认输出目录
+            await _taskStore.InitAsync();
             var savedDir = await _taskStore.GetSettingAsync("default_output_dir");
             if (!string.IsNullOrEmpty(savedDir))
                 DefaultOutputDirectory = savedDir;
@@ -105,36 +109,20 @@ public partial class BiliSchedulerToolViewModel : Tool
             // 检测 ffmpeg
             await CheckFfmpegAsync();
 
-            SchedulerStatus = "调度器已初始化";
-
             // 加载所有任务到 UI
-            var allTasks = await _taskStore.GetAllAsync();
-
-            // 将异常退出前仍在运行的任务标记为"已中断"，不自动恢复
-            var interruptedCount = 0;
-            foreach (var t in allTasks)
-            {
-                if (t.Status is "downloading_video" or "downloading_audio" or "merging")
-                {
-                    t.Status = "interrupted";
-                    await _taskStore.UpdateProgressAsync(t.TaskId, t.Progress, "interrupted");
-                    interruptedCount++;
-                }
-            }
-
+            var allTasks = await _coordinator.LoadAllTasksAsync();
             Tasks.Clear();
             foreach (var t in allTasks)
                 Tasks.Add(t);
 
             UpdateCounts();
+            SchedulerStatus = $"已加载 {allTasks.Count} 个任务";
 
+            // 统计中断数量
+            var interruptedCount = allTasks.Count(t => t.Status == "interrupted");
             if (interruptedCount > 0)
             {
                 SchedulerStatus = $"已加载 {allTasks.Count} 个任务，{interruptedCount} 个已中断（需手动恢复）";
-            }
-            else
-            {
-                SchedulerStatus = $"已加载 {allTasks.Count} 个任务";
             }
         }
         catch (Exception ex)
@@ -143,238 +131,28 @@ public partial class BiliSchedulerToolViewModel : Tool
         }
     }
 
-    /// <summary>
-    /// 处理 Document 提交的下载任务
-    /// </summary>
-    private async Task HandleSubmitMessageAsync(SubmitDownloadTaskMessage msg)
+    private async Task ReloadTasksAsync()
     {
         try
         {
-            // 确保已初始化
-            await InitializeAsync();
-
-            // 将消息中的 Items 拆分为多条 DownloadTaskRecord 存入 SQLite
-            var records = new List<DownloadTaskRecord>();
-            var subFolder = msg.UseGroupFolder
-                ? BiliDownloadService.SanitizeFileName(msg.SeriesTitle)
-                : string.Empty;
-
-            foreach (var item in msg.Items)
-            {
-                var record = new DownloadTaskRecord
-                {
-                    TaskId = item.ItemId,
-                    DocumentId = msg.SourceDocumentId,
-                    SeriesTitle = msg.SeriesTitle,
-                    ItemTitle = item.Title,
-                    Aid = item.Aid,
-                    Bvid = item.Bvid,
-                    Cid = item.Cid,
-                    QualityId = msg.QualityId,
-                    AudioQualityId = msg.AudioQualityId,
-                    OutputDirectory = msg.OutputDirectory,
-                    SubFolder = subFolder,
-                    Cookie = msg.Cookie,
-                    Status = "pending",
-                    CreatedAt = DateTime.Now,
-                };
-                records.Add(record);
-            }
-
-            // 批量插入 SQLite
-            await _taskStore.InsertBatchAsync(records);
-
-            // 添加到 UI
-            foreach (var r in records)
-                Tasks.Add(r);
-
+            var allTasks = await _coordinator.LoadAllTasksAsync();
+            Tasks.Clear();
+            foreach (var t in allTasks)
+                Tasks.Add(t);
             UpdateCounts();
-            SchedulerStatus = $"已接收 {records.Count} 个新任务";
-
-            // 启动后台处理
-            StartProcessing();
         }
-        catch (Exception ex)
-        {
-            SchedulerStatus = $"接收任务失败: {ex.Message}";
-        }
+        catch { /* 忽略重新加载失败 */ }
     }
 
-    /// <summary>
-    /// 启动后台处理队列（幂等：如果已在处理则不重复启动）
-    /// </summary>
-    private void StartProcessing()
+    private async Task StartAsync()
     {
-        if (_isProcessing) return;
-        _isProcessing = true;
-        _processingCts = new CancellationTokenSource();
-        _processingTask = ProcessQueueAsync(_processingCts.Token);
+        await InitializeAsync();
+        _coordinator.StartProcessingAsync();
     }
 
-    /// <summary>
-    /// 后台处理队列：逐个取未完成任务执行下载
-    /// </summary>
-    private async Task ProcessQueueAsync(CancellationToken ct)
+    private async Task StopAsync()
     {
-        try
-        {
-            while (!ct.IsCancellationRequested)
-            {
-                // 查找下一个未完成的任务
-                var nextTask = Tasks.FirstOrDefault(t =>
-                    t.Status is "pending" or "downloading_video" or "downloading_audio" or "merging");
-
-                if (nextTask == null)
-                {
-                    SchedulerStatus = "所有任务已完成";
-                    _isProcessing = false;
-                    UpdateCounts();
-                    return;
-                }
-
-                // 更新临时目录
-                if (string.IsNullOrWhiteSpace(nextTask.TempDirectory))
-                {
-                    var tempBase = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                        "BiliDownloader", "temp");
-                    nextTask.TempDirectory = Path.Combine(tempBase, nextTask.TaskId);
-                    await _taskStore.UpdateTempDirectoryAsync(nextTask.TaskId, nextTask.TempDirectory);
-                }
-
-                SchedulerStatus = $"正在下载: {nextTask.ItemTitle}";
-
-                // 广播状态变更：开始下载（自动恢复通知）
-                BroadcastStatusChanged(nextTask);
-
-                try
-                {
-                    await _downloadService.DownloadItemAsync(
-                        nextTask,
-                        _apiService,
-                        (info) =>
-                        {
-                            nextTask.Progress = info.OverallProgress;
-                            nextTask.VideoProgress = info.VideoProgress;
-                            nextTask.AudioProgress = info.AudioProgress;
-                            nextTask.MergeProgress = info.MergeProgress;
-                            nextTask.SpeedText = info.SpeedText;
-                            nextTask.Status = info.Stage switch
-                            {
-                                "video" => "downloading_video",
-                                "audio" => "downloading_audio",
-                                "merging" => "merging",
-                                "done" => "done",
-                                _ => nextTask.Status,
-                            };
-
-                            // 节流写 SQLite：关键状态变更（done/merging）立即写入，其他节流
-                            var now = DateTime.UtcNow;
-                            var isCriticalState = info.Stage is "done" or "merging";
-                            if (isCriticalState || (now - _lastProgressDbWrite) >= DbWriteInterval)
-                            {
-                                _lastProgressDbWrite = now;
-                                _ = _taskStore.UpdateStageProgressAsync(
-                                    nextTask.TaskId, nextTask.Progress, nextTask.Status,
-                                    nextTask.VideoProgress, nextTask.AudioProgress,
-                                    nextTask.MergeProgress, nextTask.SpeedText);
-                            }
-
-                            // UI 广播不受节流影响，始终即时更新
-                            BroadcastProgress(nextTask);
-                            UpdateCounts();
-                        },
-                        (videoBytes, audioBytes) =>
-                        {
-                            // 节流保存字节数用于断点续传
-                            var now = DateTime.UtcNow;
-                            if ((now - _lastBytesDbWrite) >= DbWriteInterval)
-                            {
-                                _lastBytesDbWrite = now;
-                                _ = _taskStore.UpdateBytesAsync(nextTask.TaskId, videoBytes, audioBytes);
-                            }
-                        },
-                        ct);
-
-                    // 标记完成
-                    nextTask.Status = "done";
-                    nextTask.Progress = 100;
-                    nextTask.VideoProgress = 100;
-                    nextTask.AudioProgress = 100;
-                    nextTask.MergeProgress = 100;
-                    nextTask.SpeedText = "";
-                    await _taskStore.UpdateStageProgressAsync(
-                        nextTask.TaskId, 100, "done", 100, 100, 100, "");
-                    BroadcastProgress(nextTask);
-                    BroadcastStatusChanged(nextTask);
-                }
-                catch (OperationCanceledException)
-                {
-                    // 用户取消，保持当前状态，下次恢复
-                    nextTask.Status = "pending";
-                    await _taskStore.UpdateProgressAsync(nextTask.TaskId, nextTask.Progress, "pending");
-                    BroadcastProgress(nextTask);
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    nextTask.Status = "failed";
-                    nextTask.ErrorMessage = ex.Message;
-                    await _taskStore.UpdateProgressAsync(nextTask.TaskId, nextTask.Progress, "failed", ex.Message);
-                    BroadcastProgress(nextTask);
-                    BroadcastStatusChanged(nextTask);
-                }
-
-                UpdateCounts();
-            }
-        }
-        finally
-        {
-            _isProcessing = false;
-            _processingTask = null;
-        }
-    }
-
-    /// <summary>
-    /// 广播进度消息给对应的 Document
-    /// </summary>
-    private void BroadcastProgress(DownloadTaskRecord task)
-    {
-        try
-        {
-            _messengerService.Send(new DownloadTaskProgressMessage(
-                targetDocumentId: task.DocumentId,
-                taskId: task.TaskId,
-                itemTitle: task.ItemTitle,
-                progress: task.Progress,
-                status: task.Status,
-                errorMessage: task.ErrorMessage,
-                videoProgress: task.VideoProgress,
-                audioProgress: task.AudioProgress,
-                mergeProgress: task.MergeProgress,
-                speedText: task.SpeedText));
-        }
-        catch { /* 忽略广播失败 */ }
-    }
-
-    /// <summary>
-    /// 广播状态变更事件给对应的 Document（用于调度器自主操作通知）
-    /// </summary>
-    private void BroadcastStatusChanged(DownloadTaskRecord task)
-    {
-        try
-        {
-            _messengerService.Send(new DownloadTaskStatusChangedMessage(
-                targetDocumentId: task.DocumentId,
-                taskId: task.TaskId,
-                newStatus: task.Status,
-                progress: task.Progress,
-                videoProgress: task.VideoProgress,
-                audioProgress: task.AudioProgress,
-                mergeProgress: task.MergeProgress,
-                speedText: task.SpeedText));
-        }
-        catch { /* 忽略广播失败 */ }
+        await _coordinator.StopProcessingAsync();
     }
 
     /// <summary>
@@ -394,7 +172,7 @@ public partial class BiliSchedulerToolViewModel : Tool
     }
 
     /// <summary>
-    /// 删除单个任务：下载中的先停止，然后删除记录、清理临时文件、通知 Document
+    /// 删除单个任务：委托给 Coordinator
     /// </summary>
     private async Task DeleteTaskAsync(DownloadTaskRecord? task)
     {
@@ -402,45 +180,9 @@ public partial class BiliSchedulerToolViewModel : Tool
 
         try
         {
-            var isActive = task.Status is "downloading_video" or "downloading_audio" or "merging";
-
-            // 正在下载中：先停止处理队列（等待下载循环完全退出）
-            if (isActive)
-            {
-                await StopProcessingAsync();
-            }
-
-            // 从 SQLite 删除
-            await _taskStore.DeleteByIdAsync(task.TaskId);
-
-            // 从 UI 集合移除
+            await _coordinator.DeleteTaskAsync(task);
             Tasks.Remove(task);
-
-            // 通知对应 Document 移除对应项
-            try
-            {
-                _messengerService.Send(new DownloadTaskDeletedMessage(task.DocumentId, task.TaskId));
-            }
-            catch { /* 忽略广播失败 */ }
-
-            // 清理临时文件目录
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(task.TempDirectory) && Directory.Exists(task.TempDirectory))
-                {
-                    Directory.Delete(task.TempDirectory, true);
-                }
-            }
-            catch { /* 忽略清理失败 */ }
-
             UpdateCounts();
-            SchedulerStatus = $"已删除任务: {task.ItemTitle}";
-
-            // 如果停止了处理队列，重新启动
-            if (isActive)
-            {
-                StartProcessing();
-            }
         }
         catch (Exception ex)
         {
@@ -449,63 +191,21 @@ public partial class BiliSchedulerToolViewModel : Tool
     }
 
     /// <summary>
-    /// 重试/恢复任务：failed 重置为 pending，interrupted 恢复为 pending（保留已下载进度）
+    /// 重试/恢复任务：委托给 Coordinator
     /// </summary>
     private async Task RetryTaskAsync(DownloadTaskRecord? task)
     {
-        if (task == null || (task.Status != "failed" && task.Status != "interrupted")) return;
+        if (task == null) return;
 
         try
         {
-            var wasFailed = task.Status == "failed";
-
-            // failed 任务重置进度；interrupted 保留已下载字节数用于断点续传
-            if (wasFailed)
-            {
-                task.Progress = 0;
-                task.ErrorMessage = null;
-                task.VideoBytesDownloaded = 0;
-                task.AudioBytesDownloaded = 0;
-                await _taskStore.UpdateBytesAsync(task.TaskId, 0, 0);
-            }
-
-            task.Status = "pending";
-
-            // 更新 SQLite
-            await _taskStore.UpdateProgressAsync(task.TaskId, task.Progress, "pending");
-
-            // 广播状态变更通知 Document
-            BroadcastStatusChanged(task);
-
-            SchedulerStatus = $"重试任务: {task.ItemTitle}";
-
-            // 重新启动处理队列
-            StartProcessing();
+            await _coordinator.RetryTaskAsync(task);
+            UpdateCounts();
         }
         catch (Exception ex)
         {
             SchedulerStatus = $"重试任务失败: {ex.Message}";
         }
-    }
-
-    /// <summary>
-    /// 停止处理队列（异步等待处理循环完全退出）
-    /// </summary>
-    public async Task StopProcessingAsync()
-    {
-        if (_processingCts != null)
-        {
-            _processingCts.Cancel();
-            if (_processingTask != null)
-            {
-                try { await _processingTask; } catch (OperationCanceledException) { }
-            }
-            _processingCts.Dispose();
-            _processingCts = null;
-            _processingTask = null;
-        }
-        _isProcessing = false;
-        SchedulerStatus = "调度器已停止";
     }
 
     private void UpdateCounts()
@@ -529,7 +229,7 @@ public partial class BiliSchedulerToolViewModel : Tool
             FfmpegPath = path ?? "";
             FfmpegStatus = FfmpegReady
                 ? $"ffmpeg 就绪: {path}"
-                : "ffmpeg 未找到，请将 ffmpeg.exe 放入 D:\\soft\\FFMEPG 目录或手动浏览选择";
+                : "ffmpeg 未找到，请将 ffmpeg.exe 放入工具目录或手动浏览选择";
         });
     }
 

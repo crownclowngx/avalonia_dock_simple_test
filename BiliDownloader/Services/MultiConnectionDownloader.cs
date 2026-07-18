@@ -106,15 +106,12 @@ public class MultiConnectionDownloader
             var chunkIndex = i;
             var start = chunkIndex * chunkSize;
             var end = (chunkIndex == chunkCount - 1) ? totalSize - 1 : (chunkIndex + 1) * chunkSize - 1;
-            var chunkUrl = urls[chunkIndex % urls.Count];
             var chunkPath = $"{outputPath}.chunk{chunkIndex}";
 
             tasks[chunkIndex] = DownloadChunkAsync(
-                chunkUrl, chunkPath, cookie, start, end,
+                urls, chunkIndex, chunkPath, cookie, start, end,
                 (bytesDownloaded) =>
                 {
-                    // 线程安全地更新总下载量
-                    // 使用简单方案：每个 chunk 报告增量
                     Interlocked.Add(ref downloadedTotal, bytesDownloaded);
                     ReportProgress();
                 },
@@ -148,9 +145,56 @@ public class MultiConnectionDownloader
     }
 
     /// <summary>
-    /// 下载单个 chunk：Range 请求，写入临时文件，支持续传
+    /// 下载单个 chunk：支持 CDN 回退重试（最多 3 次，指数退避）
     /// </summary>
     private async Task DownloadChunkAsync(
+        List<string> urls,
+        int chunkIndex,
+        string chunkPath,
+        string cookie,
+        long rangeStart,
+        long rangeEnd,
+        Action<long> onBytesDelta,
+        HttpClient client,
+        CancellationToken ct)
+    {
+        const int maxRetries = 3;
+        Exception? lastException = null;
+
+        for (int attempt = 0; attempt < maxRetries; attempt++)
+        {
+            // Round-Robin 选择 CDN URL，每次重试切换不同 CDN
+            var url = urls[(chunkIndex + attempt) % urls.Count];
+
+            try
+            {
+                await DownloadChunkOnceAsync(url, chunkPath, cookie, rangeStart, rangeEnd, onBytesDelta, client, ct);
+                return; // 成功
+            }
+            catch (OperationCanceledException)
+            {
+                throw; // 取消直接传播
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+
+                if (attempt < maxRetries - 1)
+                {
+                    // 指数退避 + 随机 jitter
+                    var delayMs = (int)(Math.Pow(2, attempt) * 1000) + Random.Shared.Next(0, 500);
+                    await Task.Delay(delayMs, ct);
+                }
+            }
+        }
+
+        throw new Exception($"Chunk {chunkIndex} 下载失败（已重试 {maxRetries} 次）: {lastException?.Message}", lastException);
+    }
+
+    /// <summary>
+    /// 单次 chunk 下载尝试（无重试逻辑）
+    /// </summary>
+    private static async Task DownloadChunkOnceAsync(
         string url,
         string chunkPath,
         string cookie,

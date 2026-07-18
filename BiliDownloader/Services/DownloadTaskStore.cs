@@ -8,7 +8,7 @@ namespace BiliDownloader.Services;
 /// 下载任务 SQLite 持久化存储
 /// 数据库路径: %AppData%/BiliDownloader/bili_download_tasks.db
 /// </summary>
-public class DownloadTaskStore
+public class DownloadTaskStore : IDownloadTaskRepository
 {
     private readonly string _connectionString;
 
@@ -121,6 +121,15 @@ public class DownloadTaskStore
             "ALTER TABLE download_tasks ADD COLUMN speed_text TEXT NOT NULL DEFAULT '';",
             "ALTER TABLE download_tasks ADD COLUMN audio_quality_id INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN sub_folder TEXT NOT NULL DEFAULT '';",
+            // 架构改进：完整性验证和错误分类字段
+            "ALTER TABLE download_tasks ADD COLUMN expected_video_bytes INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN expected_audio_bytes INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN video_integrity_passed INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN audio_integrity_passed INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN output_file_path TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN last_updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'));",
+            "ALTER TABLE download_tasks ADD COLUMN error_type TEXT;",
+            "ALTER TABLE download_tasks ADD COLUMN is_retryable INTEGER NOT NULL DEFAULT 0;",
         };
         foreach (var sql in alterSqls)
         {
@@ -417,6 +426,15 @@ public class DownloadTaskStore
             CreatedAt = DateTime.TryParse(
                 reader.GetString(reader.GetOrdinal("created_at")),
                 out var dt) ? dt : DateTime.Now,
+            // 架构改进：新字段
+            ExpectedVideoBytes = TryGetLong(reader, "expected_video_bytes"),
+            ExpectedAudioBytes = TryGetLong(reader, "expected_audio_bytes"),
+            VideoIntegrityPassed = TryGetBool(reader, "video_integrity_passed"),
+            AudioIntegrityPassed = TryGetBool(reader, "audio_integrity_passed"),
+            OutputFilePath = TryGetString(reader, "output_file_path"),
+            LastUpdatedAt = TryGetDateTime(reader, "last_updated_at"),
+            ErrorType = TryGetNullableString(reader, "error_type"),
+            IsRetryable = TryGetBool(reader, "is_retryable"),
         };
     }
 
@@ -440,6 +458,39 @@ public class DownloadTaskStore
             return reader.IsDBNull(ordinal) ? "" : reader.GetString(ordinal);
         }
         catch { return ""; }
+    }
+
+    private static string? TryGetNullableString(SqliteDataReader reader, string column)
+    {
+        try
+        {
+            var ordinal = reader.GetOrdinal(column);
+            return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+        }
+        catch { return null; }
+    }
+
+    private static long TryGetLong(SqliteDataReader reader, string column)
+    {
+        try { return reader.GetInt64(reader.GetOrdinal(column)); }
+        catch { return 0; }
+    }
+
+    private static bool TryGetBool(SqliteDataReader reader, string column)
+    {
+        try { return reader.GetInt32(reader.GetOrdinal(column)) != 0; }
+        catch { return false; }
+    }
+
+    private static DateTime TryGetDateTime(SqliteDataReader reader, string column)
+    {
+        try
+        {
+            var ordinal = reader.GetOrdinal(column);
+            return reader.IsDBNull(ordinal) ? DateTime.Now
+                : DateTime.TryParse(reader.GetString(ordinal), out var dt) ? dt : DateTime.Now;
+        }
+        catch { return DateTime.Now; }
     }
 
     #region Settings

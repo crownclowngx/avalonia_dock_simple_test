@@ -8,11 +8,6 @@ namespace BiliDownloader.Services;
 public static class FfmpegService
 {
     /// <summary>
-    /// 本地 ffmpeg 存放根目录（单独打包，含子目录递归查找）
-    /// </summary>
-    private const string LocalFfmpegDir = @"D:\soft\FFMEPG";
-
-    /// <summary>
     /// 自定义路径（用户在 Tool 中手动设置时使用）
     /// </summary>
     public static string? CustomPath { get; set; }
@@ -23,7 +18,7 @@ public static class FfmpegService
     public static bool IsReady => ResolveFfmpegPath() != null;
 
     /// <summary>
-    /// 查找 ffmpeg 路径。优先级：CustomPath -> 本地目录(D:\soft\FFMEPG) -> 插件目录 -> 系统 PATH
+    /// 查找 ffmpeg 路径。优先级：CustomPath -> 插件目录 -> 系统 PATH
     /// </summary>
     public static string? ResolveFfmpegPath()
     {
@@ -31,19 +26,7 @@ public static class FfmpegService
         if (!string.IsNullOrEmpty(CustomPath) && File.Exists(CustomPath))
             return CustomPath;
 
-        // 2. 本地 ffmpeg 目录（D:\soft\FFMEPG，递归子目录）
-        try
-        {
-            if (Directory.Exists(LocalFfmpegDir))
-            {
-                var found = Directory.GetFiles(LocalFfmpegDir, "ffmpeg.exe", SearchOption.AllDirectories);
-                if (found.Length > 0)
-                    return found[0];
-            }
-        }
-        catch { /* 忽略本地目录查找失败 */ }
-
-        // 3. 插件目录（程序集所在目录及其子目录）
+        // 2. 插件目录（程序集所在目录及其子目录）
         try
         {
             var assemblyDir = Path.GetDirectoryName(typeof(FfmpegService).Assembly.Location);
@@ -56,7 +39,7 @@ public static class FfmpegService
         }
         catch { /* 忽略插件目录查找失败 */ }
 
-        // 4. 系统 PATH
+        // 3. 系统 PATH
         var pathDirs = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator);
         foreach (var dir in pathDirs)
         {
@@ -75,9 +58,9 @@ public static class FfmpegService
     }
 
     /// <summary>
-    /// 验证指定路径是否为有效的 ffmpeg 可执行文件
+    /// 验证指定路径是否为有效的 ffmpeg 可执行文件（异步 + 可取消）
     /// </summary>
-    public static async Task<bool> ValidatePathAsync(string path)
+    public static async Task<bool> ValidatePathAsync(string path, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             return false;
@@ -97,8 +80,21 @@ public static class FfmpegService
             using var process = Process.Start(psi);
             if (process == null) return false;
 
-            var exited = process.WaitForExit(5000);
-            return exited && process.ExitCode == 0;
+            try
+            {
+                // 异步等待退出，带超时 5 秒
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                cts.CancelAfter(TimeSpan.FromSeconds(5));
+
+                await process.WaitForExitAsync(cts.Token);
+                return process.ExitCode == 0;
+            }
+            catch (OperationCanceledException)
+            {
+                // 超时或外部取消，强制终止
+                try { if (!process.HasExited) process.Kill(true); } catch { }
+                return false;
+            }
         }
         catch
         {
