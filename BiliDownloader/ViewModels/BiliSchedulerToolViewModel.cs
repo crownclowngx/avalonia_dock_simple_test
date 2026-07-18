@@ -75,10 +75,29 @@ public partial class BiliSchedulerToolViewModel : Tool
         _coordinator.SchedulerStatusChanged += status => SchedulerStatus = status;
         _coordinator.TaskProgressChanged += task =>
         {
-            // 更新 UI 集合中对应项的属性（ObservableObject 自动通知）
+            // 通过 TaskId 找到 UI 集合中的对应对象，赋值触发 ObservableProperty 通知
+            var uiTask = Tasks.FirstOrDefault(t => t.TaskId == task.TaskId);
+            if (uiTask != null)
+            {
+                uiTask.Progress = task.Progress;
+                uiTask.VideoProgress = task.VideoProgress;
+                uiTask.AudioProgress = task.AudioProgress;
+                uiTask.MergeProgress = task.MergeProgress;
+                uiTask.SpeedText = task.SpeedText;
+                uiTask.Status = task.Status;
+                uiTask.ErrorMessage = task.ErrorMessage;
+            }
+            UpdateCounts();
         };
         _coordinator.TaskStatusChanged += task =>
         {
+            var uiTask = Tasks.FirstOrDefault(t => t.TaskId == task.TaskId);
+            if (uiTask != null)
+            {
+                uiTask.Status = task.Status;
+                uiTask.Progress = task.Progress;
+                uiTask.ErrorMessage = task.ErrorMessage;
+            }
             UpdateCounts();
         };
         _coordinator.TaskListChanged += () =>
