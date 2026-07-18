@@ -40,6 +40,20 @@
                             HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
+
+            <!-- 并发下载数 -->
+            <Border Background="#15FFFFFF" CornerRadius="4" Padding="8">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" FontSize="12" Text="并发下载数"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ComboBox ItemsSource="{Binding ConcurrentOptions}"
+                                  SelectedItem="{Binding MaxConcurrentDownloads}"
+                                  Width="80"/>
+                        <TextBlock Text="同时下载的任务数量 (1-5)"
+                                   VerticalAlignment="Center" FontSize="11" Foreground="Gray"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </Expander>
 </UserControl>

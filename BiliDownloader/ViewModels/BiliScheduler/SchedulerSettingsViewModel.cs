@@ -26,6 +26,14 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _defaultOutputDirectory = "";
 
+    [ObservableProperty]
+    private int _maxConcurrentDownloads = 1;
+
+    public List<int> ConcurrentOptions { get; } = new() { 1, 2, 3, 4, 5 };
+
+    /// <summary>并发下载数变更通知事件（供外部订阅）</summary>
+    public event Action<int>? MaxConcurrentDownloadsChanged;
+
     public IAsyncRelayCommand BrowseFfmpegCommand { get; }
     public IAsyncRelayCommand BrowseOutputDirCommand { get; }
 
@@ -56,6 +64,10 @@ public partial class SchedulerSettingsViewModel : ObservableObject
         if (!string.IsNullOrEmpty(savedFfmpeg))
             FfmpegService.CustomPath = savedFfmpeg;
 
+        var savedConcurrency = await _settingsStore.GetSettingAsync("max_concurrent_downloads");
+        if (int.TryParse(savedConcurrency, out var n) && n >= 1 && n <= 5)
+            MaxConcurrentDownloads = n;
+
         _settingsLoaded = true;
     }
 
@@ -66,6 +78,18 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     {
         if (!string.IsNullOrEmpty(value) && _settingsLoaded)
             _ = _settingsStore.SetSettingAsync("default_output_dir", value);
+    }
+
+    /// <summary>
+    /// MaxConcurrentDownloads 变化时自动保存到 SQLite 并通知外部
+    /// </summary>
+    partial void OnMaxConcurrentDownloadsChanged(int value)
+    {
+        if (_settingsLoaded)
+        {
+            _ = _settingsStore.SetSettingAsync("max_concurrent_downloads", value.ToString());
+            MaxConcurrentDownloadsChanged?.Invoke(value);
+        }
     }
 
     #region ffmpeg 管理

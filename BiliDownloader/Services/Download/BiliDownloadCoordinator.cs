@@ -54,6 +54,10 @@ public class BiliDownloadCoordinator
     private bool _isProcessing;
     private bool _initialized;
 
+    private SemaphoreSlim _concurrencySemaphore = new(1, 1);
+    private readonly List<Task> _activeTasks = new();
+    private readonly object _activeTasksLock = new();
+
     /// <summary>任务进度变更事件（UI 订阅）</summary>
     public event Action<DownloadTaskRecord>? TaskProgressChanged;
 
@@ -195,6 +199,16 @@ public class BiliDownloadCoordinator
     public void StartProcessingAsync()
     {
         StartProcessingInternal();
+    }
+
+    /// <summary>
+    /// 设置并发下载数（1-5），重建 SemaphoreSlim 以应用新的并发限制
+    /// </summary>
+    public void SetMaxConcurrentDownloads(int max)
+    {
+        var clamped = Math.Clamp(max, 1, 5);
+        _concurrencySemaphore = new SemaphoreSlim(clamped, clamped);
+        SchedulerStatusChanged?.Invoke($"并发下载数已设置为: {clamped}");
     }
 
     /// <summary>
@@ -356,79 +370,60 @@ public class BiliDownloadCoordinator
         {
             while (!ct.IsCancellationRequested)
             {
-                // 查找下一个待处理任务（从内存列表或数据库重新加载）
-                var allTasks = await _repository.GetAllAsync();
-                var nextTask = allTasks.FirstOrDefault(t =>
-                    DownloadTaskStatusMapper.IsRunning(ParseStatus(t.Status)) ||
-                    ParseStatus(t.Status) == DownloadTaskStatus.Ready);
-
-                if (nextTask == null)
+                // 清理已完成的任务引用
+                lock (_activeTasksLock)
                 {
+                    _activeTasks.RemoveAll(t => t.IsCompleted);
+                }
+
+                // 查找所有待处理任务
+                var allTasks = await _repository.GetAllAsync();
+                var readyTasks = allTasks.Where(t => ParseStatus(t.Status) == DownloadTaskStatus.Ready).ToList();
+
+                // 为每个 Ready 任务分配并发槽位
+                foreach (var task in readyTasks)
+                {
+                    await _concurrencySemaphore.WaitAsync(ct);
+
+                    // 确保临时目录
+                    if (string.IsNullOrWhiteSpace(task.TempDirectory))
+                    {
+                        var tempBase = Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                            "BiliDownloader", "temp");
+                        task.TempDirectory = Path.Combine(tempBase, task.TaskId);
+                        await _repository.UpdateTempDirectoryAsync(task.TaskId, task.TempDirectory);
+                    }
+
+                    SchedulerStatusChanged?.Invoke($"正在下载: {task.ItemTitle}");
+                    _tracker.BroadcastStatusChanged(task);
+
+                    var downloadTask = ProcessSingleTaskAsync(task, ct);
+                    lock (_activeTasksLock)
+                    {
+                        _activeTasks.Add(downloadTask);
+                    }
+                }
+
+                // 等待任意一个任务完成后重新检查队列
+                Task? completedTask = null;
+                lock (_activeTasksLock)
+                {
+                    if (_activeTasks.Count > 0)
+                        completedTask = Task.WhenAny(_activeTasks);
+                }
+
+                if (completedTask != null)
+                {
+                    await completedTask;
+                    await completedTask; // 解包异常
+                }
+                else if (readyTasks.Count == 0)
+                {
+                    // 没有 Ready 任务也没有活跃任务
                     SchedulerStatusChanged?.Invoke("所有任务已完成");
                     _isProcessing = false;
                     return;
-                }
-
-                // 确保临时目录
-                if (string.IsNullOrWhiteSpace(nextTask.TempDirectory))
-                {
-                    var tempBase = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                        "BiliDownloader", "temp");
-                    nextTask.TempDirectory = Path.Combine(tempBase, nextTask.TaskId);
-                    await _repository.UpdateTempDirectoryAsync(nextTask.TaskId, nextTask.TempDirectory);
-                }
-
-                SchedulerStatusChanged?.Invoke($"正在下载: {nextTask.ItemTitle}");
-                _tracker.BroadcastStatusChanged(nextTask);
-
-                try
-                {
-                    await _downloadService.DownloadItemAsync(
-                        nextTask,
-                        _apiService,
-                        (info) =>
-                        {
-                            _tracker.OnProgressChanged(nextTask, info);
-                            TaskProgressChanged?.Invoke(nextTask);
-                        },
-                        (videoBytes, audioBytes) =>
-                        {
-                            _tracker.OnBytesChanged(nextTask, videoBytes, audioBytes);
-                        },
-                        ct);
-
-                    // 标记完成
-                    nextTask.Status = ToStorage(DownloadTaskStatus.Completed);
-                    nextTask.Progress = 100;
-                    nextTask.VideoProgress = 100;
-                    nextTask.AudioProgress = 100;
-                    nextTask.MergeProgress = 100;
-                    nextTask.SpeedText = "";
-                    nextTask.LastUpdatedAt = DateTime.Now;
-                    await _repository.UpdateStageProgressAsync(
-                        nextTask.TaskId, 100, ToStorage(DownloadTaskStatus.Completed), 100, 100, 100, "");
-                    _tracker.BroadcastProgress(nextTask);
-                    _tracker.BroadcastStatusChanged(nextTask);
-                    TaskStatusChanged?.Invoke(nextTask);
-                }
-                catch (OperationCanceledException)
-                {
-                    nextTask.Status = ToStorage(DownloadTaskStatus.Ready);
-                    await _repository.UpdateProgressAsync(nextTask.TaskId, nextTask.Progress, ToStorage(DownloadTaskStatus.Ready));
-                    _tracker.BroadcastProgress(nextTask);
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    nextTask.Status = ToStorage(DownloadTaskStatus.Failed);
-                    nextTask.ErrorMessage = ex.Message;
-                    nextTask.LastUpdatedAt = DateTime.Now;
-                    Log.Error($"任务 {nextTask.TaskId} 下载失败: {ex.Message}", ex);
-                    await _repository.UpdateProgressAsync(nextTask.TaskId, nextTask.Progress, ToStorage(DownloadTaskStatus.Failed), ex.Message);
-                    _tracker.BroadcastProgress(nextTask);
-                    _tracker.BroadcastStatusChanged(nextTask);
-                    TaskStatusChanged?.Invoke(nextTask);
                 }
             }
         }
@@ -436,6 +431,64 @@ public class BiliDownloadCoordinator
         {
             _isProcessing = false;
             _processingTask = null;
+        }
+    }
+
+    /// <summary>
+    /// 处理单个下载任务（并发执行），完成后释放信号量
+    /// </summary>
+    private async Task ProcessSingleTaskAsync(DownloadTaskRecord task, CancellationToken ct)
+    {
+        try
+        {
+            await _downloadService.DownloadItemAsync(
+                task,
+                _apiService,
+                (info) =>
+                {
+                    _tracker.OnProgressChanged(task, info);
+                    TaskProgressChanged?.Invoke(task);
+                },
+                (videoBytes, audioBytes) =>
+                {
+                    _tracker.OnBytesChanged(task, videoBytes, audioBytes);
+                },
+                ct);
+
+            // 标记完成
+            task.Status = ToStorage(DownloadTaskStatus.Completed);
+            task.Progress = 100;
+            task.VideoProgress = 100;
+            task.AudioProgress = 100;
+            task.MergeProgress = 100;
+            task.SpeedText = "";
+            task.LastUpdatedAt = DateTime.Now;
+            await _repository.UpdateStageProgressAsync(
+                task.TaskId, 100, ToStorage(DownloadTaskStatus.Completed), 100, 100, 100, "");
+            _tracker.BroadcastProgress(task);
+            _tracker.BroadcastStatusChanged(task);
+            TaskStatusChanged?.Invoke(task);
+        }
+        catch (OperationCanceledException)
+        {
+            task.Status = ToStorage(DownloadTaskStatus.Ready);
+            await _repository.UpdateProgressAsync(task.TaskId, task.Progress, ToStorage(DownloadTaskStatus.Ready));
+            _tracker.BroadcastProgress(task);
+        }
+        catch (Exception ex)
+        {
+            task.Status = ToStorage(DownloadTaskStatus.Failed);
+            task.ErrorMessage = ex.Message;
+            task.LastUpdatedAt = DateTime.Now;
+            Log.Error($"任务 {task.TaskId} 下载失败: {ex.Message}", ex);
+            await _repository.UpdateProgressAsync(task.TaskId, task.Progress, ToStorage(DownloadTaskStatus.Failed), ex.Message);
+            _tracker.BroadcastProgress(task);
+            _tracker.BroadcastStatusChanged(task);
+            TaskStatusChanged?.Invoke(task);
+        }
+        finally
+        {
+            _concurrencySemaphore.Release();
         }
     }
 

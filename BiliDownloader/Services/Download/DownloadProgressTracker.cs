@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Infrastructure;
@@ -17,8 +18,8 @@ public class DownloadProgressTracker : IDownloadProgressTracker
     private readonly IMessengerService _messengerService;
     private static readonly TimeSpan DbWriteInterval = TimeSpan.FromMilliseconds(500);
 
-    private DateTime _lastProgressDbWrite = DateTime.MinValue;
-    private DateTime _lastBytesDbWrite = DateTime.MinValue;
+    private readonly ConcurrentDictionary<string, DateTime> _lastProgressDbWrite = new();
+    private readonly ConcurrentDictionary<string, DateTime> _lastBytesDbWrite = new();
 
     public DownloadProgressTracker(IDownloadTaskRepository repository, IMessengerService messengerService)
     {
@@ -46,9 +47,10 @@ public class DownloadProgressTracker : IDownloadProgressTracker
         // 节流写 SQLite
         var now = DateTime.UtcNow;
         var isCriticalState = info.Stage is "done" or "merging";
-        if (isCriticalState || (now - _lastProgressDbWrite) >= DbWriteInterval)
+        var lastWrite = _lastProgressDbWrite.GetOrAdd(task.TaskId, DateTime.MinValue);
+        if (isCriticalState || (now - lastWrite) >= DbWriteInterval)
         {
-            _lastProgressDbWrite = now;
+            _lastProgressDbWrite[task.TaskId] = now;
             _ = _repository.UpdateStageProgressAsync(
                 task.TaskId, task.Progress, task.Status,
                 task.VideoProgress, task.AudioProgress,
@@ -63,9 +65,10 @@ public class DownloadProgressTracker : IDownloadProgressTracker
     public void OnBytesChanged(DownloadTaskRecord task, long videoBytes, long audioBytes)
     {
         var now = DateTime.UtcNow;
-        if ((now - _lastBytesDbWrite) >= DbWriteInterval)
+        var lastWrite = _lastBytesDbWrite.GetOrAdd(task.TaskId, DateTime.MinValue);
+        if ((now - lastWrite) >= DbWriteInterval)
         {
-            _lastBytesDbWrite = now;
+            _lastBytesDbWrite[task.TaskId] = now;
             _ = _repository.UpdateBytesAsync(task.TaskId, videoBytes, audioBytes);
         }
     }

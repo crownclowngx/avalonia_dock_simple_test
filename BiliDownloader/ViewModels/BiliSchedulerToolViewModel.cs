@@ -39,6 +39,10 @@ public partial class BiliSchedulerToolViewModel : Tool
 
         // 订阅 Coordinator 全局状态事件
         _coordinator.SchedulerStatusChanged += status => SchedulerStatus = status;
+
+        // 订阅并发下载数变更事件，同步到 Coordinator
+        Settings.MaxConcurrentDownloadsChanged += count =>
+            _coordinator.SetMaxConcurrentDownloads(count);
     }
 
     /// <summary>
@@ -54,8 +58,11 @@ public partial class BiliSchedulerToolViewModel : Tool
             // Coordinator 初始化（建表 + 迁移 Interrupted）
             await _coordinator.InitializeAsync();
 
-            // 加载设置（ffmpeg 路径 + 默认输出目录）
+            // 加载设置（ffmpeg 路径 + 默认输出目录 + 并发下载数）
             await Settings.LoadSettingsAsync();
+
+            // 初始化 Coordinator 并发下载数
+            _coordinator.SetMaxConcurrentDownloads(Settings.MaxConcurrentDownloads);
 
             // 检测 ffmpeg
             await Settings.CheckFfmpegAsync();
