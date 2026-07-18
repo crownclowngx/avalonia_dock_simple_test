@@ -1,4 +1,4 @@
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Auth;
 
 /// <summary>
 /// Bilibili 凭据提供者接口：在下载执行时获取当前登录态

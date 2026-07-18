@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.Text;
 using BiliDownloader.Models;
+using BiliDownloader.Services.Api;
+using BiliDownloader.Services.Infrastructure;
 
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Download;
 
 /// <summary>
 /// 下载与合并服务：HTTP 流式下载（支持断点续传）+ ffmpeg 音视频合并

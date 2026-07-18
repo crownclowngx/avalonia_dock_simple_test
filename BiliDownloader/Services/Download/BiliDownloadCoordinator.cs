@@ -1,8 +1,12 @@
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
+using BiliDownloader.Services.Api;
+using BiliDownloader.Services.Auth;
+using BiliDownloader.Services.Infrastructure;
+using BiliDownloader.Services.Persistence;
 using MyAvaloniaManagementCommon.Message;
 
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Download;
 
 /// <summary>
 /// 下载任务协调器：负责任务状态机、后台执行队列、进度持久化和生命周期管理。

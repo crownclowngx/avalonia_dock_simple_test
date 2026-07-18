@@ -1,7 +1,7 @@
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using BiliDownloader.Constants;
-using BiliDownloader.Services;
+using BiliDownloader.Services.Auth;
 using BiliDownloader.ViewModels;
 
 namespace BiliDownloader.Create;

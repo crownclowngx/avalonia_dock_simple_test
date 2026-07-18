@@ -3,7 +3,7 @@ using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QRCoder;
-using BiliDownloader.Services;
+using BiliDownloader.Services.Auth;
 
 namespace BiliDownloader.ViewModels.Login;
 

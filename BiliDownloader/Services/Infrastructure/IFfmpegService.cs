@@ -1,4 +1,4 @@
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Infrastructure;
 
 /// <summary>
 /// ffmpeg 服务接口：抽象路径发现、验证和合并操作

@@ -1,4 +1,4 @@
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Auth;
 
 /// <summary>
 /// Bilibili 凭据提供者实现：委托给 BiliLoginStateService 获取当前登录态

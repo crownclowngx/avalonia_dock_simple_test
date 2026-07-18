@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Dock.Model.Mvvm.Controls;
-using BiliDownloader.Services;
+using BiliDownloader.Services.Download;
+using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels.BiliScheduler;
 
 namespace BiliDownloader.ViewModels;

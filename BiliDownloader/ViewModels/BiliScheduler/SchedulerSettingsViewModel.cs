@@ -1,7 +1,8 @@
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using BiliDownloader.Services;
+using BiliDownloader.Services.Infrastructure;
+using BiliDownloader.Services.Persistence;
 
 namespace BiliDownloader.ViewModels.BiliScheduler;
 

@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.Data.Sqlite;
 
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Auth;
 
 /// <summary>
 /// B站 Cookie SQLite 持久化存储

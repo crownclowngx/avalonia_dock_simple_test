@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Infrastructure;
 
 /// <summary>
 /// 插件内轻量日志接口

@@ -6,7 +6,7 @@ using BiliDownloader.Models;
 using Flurl.Http;
 using Newtonsoft.Json.Linq;
 
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Api;
 
 /// <summary>
 /// B站 API 封装：URL解析、视频信息获取、wbi签名、DASH流获取

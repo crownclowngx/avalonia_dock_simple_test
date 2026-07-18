@@ -3,7 +3,7 @@ using Flurl;
 using Flurl.Http;
 using Newtonsoft.Json.Linq;
 
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Auth;
 
 /// <summary>
 /// B站登录 API 封装（QR 码扫码登录）

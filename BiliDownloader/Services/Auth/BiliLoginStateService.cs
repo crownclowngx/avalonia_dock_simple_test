@@ -1,7 +1,7 @@
 using BiliDownloader.Messages;
 using MyAvaloniaManagementCommon.Message;
 
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Auth;
 
 /// <summary>
 /// B站登录全局状态管理服务（单例）。

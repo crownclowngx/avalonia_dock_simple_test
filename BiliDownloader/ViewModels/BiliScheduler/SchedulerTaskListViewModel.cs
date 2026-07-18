@@ -2,7 +2,8 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BiliDownloader.Models;
-using BiliDownloader.Services;
+using BiliDownloader.Services.Download;
+using BiliDownloader.Services.Persistence;
 
 namespace BiliDownloader.ViewModels.BiliScheduler;
 

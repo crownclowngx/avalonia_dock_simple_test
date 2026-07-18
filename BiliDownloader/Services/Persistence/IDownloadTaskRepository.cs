@@ -1,6 +1,6 @@
 using BiliDownloader.Models;
 
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Persistence;
 
 /// <summary>
 /// 下载任务仓储接口：抽象 SQLite 持久化操作

@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using BiliDownloader.Services;
+using BiliDownloader.Services.Auth;
 using BiliDownloader.Views.Login;
 using BiliDownloader.ViewModels.Login;
 

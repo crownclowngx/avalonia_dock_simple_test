@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using BiliDownloader.Models;
 using Microsoft.Data.Sqlite;
 
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Persistence;
 
 /// <summary>
 /// 下载任务 SQLite 持久化存储

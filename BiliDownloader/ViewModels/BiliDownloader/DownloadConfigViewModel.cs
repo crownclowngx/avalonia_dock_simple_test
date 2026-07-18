@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Avalonia.Controls;
 using BiliDownloader.Models;
-using BiliDownloader.Services;
+using BiliDownloader.Services.Persistence;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
 

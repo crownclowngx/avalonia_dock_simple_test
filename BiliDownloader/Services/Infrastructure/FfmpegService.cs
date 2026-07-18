@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Infrastructure;
 
 /// <summary>
 /// ffmpeg 管理服务：本地路径发现、路径验证

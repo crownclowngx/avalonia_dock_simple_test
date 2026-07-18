@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using MyAvaloniaManagementCommon.Message;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
-using BiliDownloader.Services;
+using BiliDownloader.Services.Infrastructure;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
 

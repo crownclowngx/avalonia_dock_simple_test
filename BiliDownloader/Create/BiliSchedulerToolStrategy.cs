@@ -1,6 +1,6 @@
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.ToolCreation;
-using BiliDownloader.Services;
+using BiliDownloader.Services.Download;
 using BiliDownloader.ViewModels;
 
 namespace BiliDownloader.Create;

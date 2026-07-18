@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
 
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Download;
 
 /// <summary>
 /// 多连接分块并行下载器

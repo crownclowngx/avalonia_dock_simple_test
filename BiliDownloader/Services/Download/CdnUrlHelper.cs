@@ -1,4 +1,4 @@
-namespace BiliDownloader.Services;
+namespace BiliDownloader.Services.Download;
 
 /// <summary>
 /// CDN URL 筛选与排序辅助类
