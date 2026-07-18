@@ -125,6 +125,11 @@ public partial class BiliSchedulerToolViewModel : Tool
             if (!string.IsNullOrEmpty(savedDir))
                 DefaultOutputDirectory = savedDir;
 
+            // 加载已保存的 ffmpeg 自定义路径
+            var savedFfmpeg = await _taskStore.GetSettingAsync("ffmpeg_custom_path");
+            if (!string.IsNullOrEmpty(savedFfmpeg))
+                FfmpegService.CustomPath = savedFfmpeg;
+
             // 检测 ffmpeg
             await CheckFfmpegAsync();
 
@@ -282,6 +287,7 @@ public partial class BiliSchedulerToolViewModel : Tool
             if (valid)
             {
                 FfmpegService.CustomPath = selectedPath;
+                await _taskStore.SetSettingAsync("ffmpeg_custom_path", selectedPath);
                 await CheckFfmpegAsync();
             }
             else

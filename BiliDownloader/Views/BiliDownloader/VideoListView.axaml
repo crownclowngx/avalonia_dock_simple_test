@@ -23,9 +23,17 @@
         <!-- 批量重命名面板 -->
         <sub:RenamePanelView DataContext="{Binding RenamePanel}"/>
 
-        <!-- 视频列表 -->
-        <ItemsControl ItemsSource="{Binding VideoItems}">
-            <ItemsControl.ItemTemplate>
+        <!-- 视频列表（虚拟化滚动，只渲染可见区域） -->
+        <ListBox ItemsSource="{Binding VideoItems}"
+                 MaxHeight="400"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+            <ListBox.Styles>
+                <Style Selector="ListBoxItem">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Padding" Value="0"/>
+                </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="models:BiliVideoItem">
                     <Border BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="4,6">
                         <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" RowDefinitions="Auto,Auto">
@@ -101,8 +109,8 @@
                         </Grid>
                     </Border>
                 </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+            </ListBox.ItemTemplate>
+        </ListBox>
 
         <!-- 提交下载 -->
         <StackPanel Orientation="Horizontal" Spacing="8">
