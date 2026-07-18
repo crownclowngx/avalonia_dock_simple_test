@@ -96,7 +96,7 @@ public partial class DownloadConfigViewModel : ObservableObject
     {
         try
         {
-            var store = new DownloadTaskStore();
+            var store = new SettingsStore();
             await store.InitAsync();
             var savedDir = await store.GetSettingAsync("default_output_dir");
             if (!string.IsNullOrEmpty(savedDir))

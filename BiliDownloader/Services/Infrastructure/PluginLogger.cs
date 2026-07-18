@@ -3,16 +3,6 @@ using System.Diagnostics;
 namespace BiliDownloader.Services.Infrastructure;
 
 /// <summary>
-/// 插件内轻量日志接口
-/// </summary>
-public interface IPluginLogger
-{
-    void Info(string message);
-    void Warn(string message);
-    void Error(string message, Exception? ex = null);
-}
-
-/// <summary>
 /// 默认日志实现：输出到 Debug 窗口 + 文件（可选）
 /// </summary>
 public class PluginLogger : IPluginLogger
@@ -83,25 +73,4 @@ public class PluginLogger : IPluginLogger
 
         return input;
     }
-}
-
-/// <summary>
-/// 日志工厂：获取指定源的日志实例
-/// </summary>
-public static class PluginLog
-{
-    static PluginLog()
-    {
-        PluginLogger.InitializeLogFile();
-    }
-
-    /// <summary>
-    /// 获取指定类型/模块的日志实例
-    /// </summary>
-    public static IPluginLogger For<T>() => new PluginLogger(typeof(T).Name);
-
-    /// <summary>
-    /// 获取指定名称的日志实例
-    /// </summary>
-    public static IPluginLogger For(string source) => new PluginLogger(source);
 }

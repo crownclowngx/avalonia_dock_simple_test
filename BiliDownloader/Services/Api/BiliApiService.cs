@@ -13,11 +13,6 @@ namespace BiliDownloader.Services.Api;
 /// </summary>
 public partial class BiliApiService
 {
-    private const string UserAgent =
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
-
-    private const string Referer = "https://www.bilibili.com/";
-
     // wbi 签名用的固定 encTab（与 BiliTools auth.ts 一致）
     private static readonly int[] MixinKeyEncTab =
     {
@@ -198,8 +193,8 @@ public partial class BiliApiService
         var fullUrl = $"{url}?{signedQuery}";
 
         var json = await fullUrl
-            .WithHeader("User-Agent", UserAgent)
-            .WithHeader("Referer", Referer)
+            .WithHeader("User-Agent", HttpConstants.UserAgent)
+            .WithHeader("Referer", HttpConstants.Referer)
             .WithHeader("Cookie", cookie)
             .GetStringAsync();
 
@@ -332,8 +327,8 @@ public partial class BiliApiService
             return _cachedMixinKey;
 
         var json = await "https://api.bilibili.com/x/web-interface/nav"
-            .WithHeader("User-Agent", UserAgent)
-            .WithHeader("Referer", Referer)
+            .WithHeader("User-Agent", HttpConstants.UserAgent)
+            .WithHeader("Referer", HttpConstants.Referer)
             .WithHeader("Cookie", cookie)
             .GetStringAsync();
 
@@ -405,8 +400,8 @@ public partial class BiliApiService
     private IFlurlRequest BuildRequest(string url, Dictionary<string, string> paramsDict, string cookie)
     {
         var req = url
-            .WithHeader("User-Agent", UserAgent)
-            .WithHeader("Referer", Referer)
+            .WithHeader("User-Agent", HttpConstants.UserAgent)
+            .WithHeader("Referer", HttpConstants.Referer)
             .WithHeader("Cookie", cookie);
 
         foreach (var kv in paramsDict)

@@ -6,13 +6,8 @@ namespace BiliDownloader.Services.Download;
 /// 多连接分块并行下载器
 /// 将文件分成多个 chunk，每个 chunk 使用不同 CDN URL 并行 Range 请求下载，叠加带宽
 /// </summary>
-public class MultiConnectionDownloader
+public class MultiConnectionDownloader : IDisposable
 {
-    private const string UserAgent =
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
-
-    private const string Referer = "https://www.bilibili.com/";
-
     /// <summary>
     /// 默认分块数
     /// </summary>
@@ -30,9 +25,9 @@ public class MultiConnectionDownloader
         for (int i = 0; i < _chunkCount; i++)
         {
             var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("User-Agent", UserAgent);
-            client.DefaultRequestHeaders.Add("Referer", Referer);
-            client.DefaultRequestHeaders.Add("Origin", "https://www.bilibili.com");
+            client.DefaultRequestHeaders.Add("User-Agent", HttpConstants.UserAgent);
+            client.DefaultRequestHeaders.Add("Referer", HttpConstants.Referer);
+            client.DefaultRequestHeaders.Add("Origin", HttpConstants.Origin);
             client.Timeout = TimeSpan.FromMinutes(60);
             _clients[i] = client;
         }
@@ -372,5 +367,13 @@ public class MultiConnectionDownloader
         if (bytesPerSecond < 1024) return $"{bytesPerSecond} B/s";
         if (bytesPerSecond < 1024 * 1024) return $"{bytesPerSecond / 1024.0:F1} KB/s";
         return $"{bytesPerSecond / (1024.0 * 1024):F1} MB/s";
+    }
+
+    public void Dispose()
+    {
+        foreach (var client in _clients)
+        {
+            client.Dispose();
+        }
     }
 }

@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using BiliDownloader.Services.Infrastructure;
 using Microsoft.Data.Sqlite;
 
 namespace BiliDownloader.Services.Auth;
@@ -10,38 +10,9 @@ public class BiliCookieStore
 {
     private readonly string _connectionString;
 
-    /// <summary>
-    /// 静态构造函数：注册原生库解析器，解决插件子目录中 e_sqlite3 无法被 .NET 运行时自动发现的问题
-    /// </summary>
     static BiliCookieStore()
     {
-        try
-        {
-            // 获取插件 DLL 所在目录
-            var assemblyDir = Path.GetDirectoryName(
-                typeof(BiliCookieStore).Assembly.Location) ?? "";
-
-            // 构造原生库路径，如 runtimes/win-x64/native/e_sqlite3.dll
-            var rid = RuntimeInformation.ProcessArchitecture switch
-            {
-                Architecture.X64 => "win-x64",
-                Architecture.X86 => "win-x86",
-                Architecture.Arm64 => "win-arm64",
-                Architecture.Arm => "win-arm",
-                _ => "win-x64"
-            };
-
-            var nativeLibPath = Path.Combine(assemblyDir, "runtimes", rid, "native", "e_sqlite3.dll");
-            if (File.Exists(nativeLibPath))
-            {
-                // 预加载原生库，后续 P/Invoke 会复用已加载的句柄
-                NativeLibrary.Load(nativeLibPath);
-            }
-        }
-        catch
-        {
-            // 若预加载失败则忽略，让运行时走默认解析路径
-        }
+        SqliteNativeLoader.EnsureLoaded();
     }
 
     public BiliCookieStore()

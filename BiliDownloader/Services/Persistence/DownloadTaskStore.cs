@@ -1,5 +1,5 @@
-using System.Runtime.InteropServices;
 using BiliDownloader.Models;
+using BiliDownloader.Services.Infrastructure;
 using Microsoft.Data.Sqlite;
 
 namespace BiliDownloader.Services.Persistence;
@@ -12,35 +12,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
 {
     private readonly string _connectionString;
 
-    /// <summary>
-    /// 静态构造函数：预加载 e_sqlite3 原生库，解决插件子目录中无法被发现的问题
-    /// </summary>
     static DownloadTaskStore()
     {
-        try
-        {
-            var assemblyDir = Path.GetDirectoryName(
-                typeof(DownloadTaskStore).Assembly.Location) ?? "";
-
-            var rid = RuntimeInformation.ProcessArchitecture switch
-            {
-                Architecture.X64 => "win-x64",
-                Architecture.X86 => "win-x86",
-                Architecture.Arm64 => "win-arm64",
-                Architecture.Arm => "win-arm",
-                _ => "win-x64"
-            };
-
-            var nativeLibPath = Path.Combine(assemblyDir, "runtimes", rid, "native", "e_sqlite3.dll");
-            if (File.Exists(nativeLibPath))
-            {
-                NativeLibrary.Load(nativeLibPath);
-            }
-        }
-        catch
-        {
-            // 若预加载失败则忽略
-        }
+        SqliteNativeLoader.EnsureLoaded();
     }
 
     public DownloadTaskStore()
@@ -101,16 +75,6 @@ public class DownloadTaskStore : IDownloadTaskRepository
             );
             """;
         await cmd.ExecuteNonQueryAsync();
-
-        // 创建 settings 表
-        await using var settingsCmd = connection.CreateCommand();
-        settingsCmd.CommandText = """
-            CREATE TABLE IF NOT EXISTS settings (
-                key   TEXT NOT NULL PRIMARY KEY,
-                value TEXT NOT NULL DEFAULT ''
-            );
-            """;
-        await settingsCmd.ExecuteNonQueryAsync();
 
         // 升级旧表：添加分段进度列和新字段（如果不存在）
         string[] alterSqls =
@@ -289,9 +253,13 @@ public class DownloadTaskStore : IDownloadTaskRepository
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
         await using var cmd = connection.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = $"""
             SELECT * FROM download_tasks
-            WHERE status IN ('pending', 'downloading_video', 'downloading_audio', 'merging')
+            WHERE status IN ({string.Join(", ",
+                new[] { DownloadTaskStatus.Ready, DownloadTaskStatus.DownloadingVideo,
+                        DownloadTaskStatus.DownloadingAudio, DownloadTaskStatus.Merging,
+                        DownloadTaskStatus.FetchingMetadata }
+                    .Select(s => $"'{DownloadTaskStatusMapper.ToStorageString(s)}'"))})
             ORDER BY created_at;
             """;
 
@@ -330,7 +298,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
         await using var cmd = connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM download_tasks WHERE status = 'done';";
+        cmd.CommandText = $"DELETE FROM download_tasks WHERE status = '{DownloadTaskStatusMapper.ToStorageString(DownloadTaskStatus.Completed)}';";
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -492,36 +460,4 @@ public class DownloadTaskStore : IDownloadTaskRepository
         }
         catch { return DateTime.Now; }
     }
-
-    #region Settings
-
-    /// <summary>
-    /// 获取配置项
-    /// </summary>
-    public async Task<string?> GetSettingAsync(string key)
-    {
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync();
-        await using var cmd = connection.CreateCommand();
-        cmd.CommandText = "SELECT value FROM settings WHERE key = $key;";
-        cmd.Parameters.AddWithValue("$key", key);
-        var result = await cmd.ExecuteScalarAsync();
-        return result as string;
-    }
-
-    /// <summary>
-    /// 设置配置项
-    /// </summary>
-    public async Task SetSettingAsync(string key, string value)
-    {
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync();
-        await using var cmd = connection.CreateCommand();
-        cmd.CommandText = "INSERT OR REPLACE INTO settings (key, value) VALUES ($key, $value);";
-        cmd.Parameters.AddWithValue("$key", key);
-        cmd.Parameters.AddWithValue("$value", value);
-        await cmd.ExecuteNonQueryAsync();
-    }
-
-    #endregion
 }

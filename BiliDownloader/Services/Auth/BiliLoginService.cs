@@ -10,9 +10,6 @@ namespace BiliDownloader.Services.Auth;
 /// </summary>
 public partial class BiliLoginService
 {
-    private const string UserAgent =
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
-
     /// <summary>
     /// 扫码轮询状态码
     /// </summary>
@@ -37,7 +34,7 @@ public partial class BiliLoginService
     public async Task<(string Url, string QrCodeKey)> GetQrCodeAsync()
     {
         var json = await "https://passport.bilibili.com/x/passport-login/web/qrcode/generate"
-            .WithHeader("User-Agent", UserAgent)
+            .WithHeader("User-Agent", HttpConstants.UserAgent)
             .GetStringAsync();
 
         var resp = JObject.Parse(json);
@@ -57,7 +54,7 @@ public partial class BiliLoginService
     {
         var resp = await "https://passport.bilibili.com/x/passport-login/web/qrcode/poll"
             .SetQueryParam("qrcode_key", qrcodeKey)
-            .WithHeader("User-Agent", UserAgent)
+            .WithHeader("User-Agent", HttpConstants.UserAgent)
             .GetAsync();
 
         var jsonStr = await resp.GetStringAsync();
@@ -94,7 +91,7 @@ public partial class BiliLoginService
         try
         {
             var json = await "https://api.bilibili.com/x/web-interface/nav"
-                .WithHeader("User-Agent", UserAgent)
+                .WithHeader("User-Agent", HttpConstants.UserAgent)
                 .WithHeader("Cookie", cookieHeader)
                 .GetStringAsync();
 
@@ -126,7 +123,7 @@ public partial class BiliLoginService
             var csrf = ExtractCookieValue(cookieHeader, "bili_jct") ?? "";
 
             var resp = await "https://passport.bilibili.com/login/exit/v2"
-                .WithHeader("User-Agent", UserAgent)
+                .WithHeader("User-Agent", HttpConstants.UserAgent)
                 .WithHeader("Cookie", cookieHeader)
                 .PostUrlEncodedAsync(new { biliCSRF = csrf });
 

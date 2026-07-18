@@ -31,6 +31,7 @@ public partial class LoginWindowViewModel : ObservableObject
 
     private string _qrCodeKey = string.Empty;
     private CancellationTokenSource? _pollCts;
+    private readonly BiliLoginService _loginService = new();
 
     public IAsyncRelayCommand LoadQrCodeCommand { get; }
 
@@ -51,7 +52,7 @@ public partial class LoginWindowViewModel : ObservableObject
             QrCodeImage = null;
 
             // 通过 BiliLoginService 获取二维码 URL
-            var service = new BiliLoginService();
+            var service = _loginService;
             var (url, key) = await service.GetQrCodeAsync();
             _qrCodeKey = key;
 
@@ -92,7 +93,7 @@ public partial class LoginWindowViewModel : ObservableObject
     /// </summary>
     private async Task PollAsync(CancellationToken ct)
     {
-        var service = new BiliLoginService();
+        var service = _loginService;
         while (!ct.IsCancellationRequested)
         {
             await Task.Delay(2000, ct);

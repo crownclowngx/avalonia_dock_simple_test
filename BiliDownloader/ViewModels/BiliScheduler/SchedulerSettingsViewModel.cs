@@ -11,7 +11,7 @@ namespace BiliDownloader.ViewModels.BiliScheduler;
 /// </summary>
 public partial class SchedulerSettingsViewModel : ObservableObject
 {
-    private readonly DownloadTaskStore _taskStore;
+    private readonly ISettingsRepository _settingsStore;
     private bool _settingsLoaded;
 
     [ObservableProperty]
@@ -29,9 +29,9 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     public IAsyncRelayCommand BrowseFfmpegCommand { get; }
     public IAsyncRelayCommand BrowseOutputDirCommand { get; }
 
-    public SchedulerSettingsViewModel(DownloadTaskStore taskStore)
+    public SchedulerSettingsViewModel(ISettingsRepository settingsStore)
     {
-        _taskStore = taskStore;
+        _settingsStore = settingsStore;
 
         BrowseFfmpegCommand = new AsyncRelayCommand(BrowseFfmpegAsync);
         BrowseOutputDirCommand = new AsyncRelayCommand(BrowseOutputDirAsync);
@@ -46,13 +46,13 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     /// </summary>
     public async Task LoadSettingsAsync()
     {
-        await _taskStore.InitAsync();
+        await _settingsStore.InitAsync();
 
-        var savedDir = await _taskStore.GetSettingAsync("default_output_dir");
+        var savedDir = await _settingsStore.GetSettingAsync("default_output_dir");
         if (!string.IsNullOrEmpty(savedDir))
             DefaultOutputDirectory = savedDir;
 
-        var savedFfmpeg = await _taskStore.GetSettingAsync("ffmpeg_custom_path");
+        var savedFfmpeg = await _settingsStore.GetSettingAsync("ffmpeg_custom_path");
         if (!string.IsNullOrEmpty(savedFfmpeg))
             FfmpegService.CustomPath = savedFfmpeg;
 
@@ -65,7 +65,7 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     partial void OnDefaultOutputDirectoryChanged(string value)
     {
         if (!string.IsNullOrEmpty(value) && _settingsLoaded)
-            _ = _taskStore.SetSettingAsync("default_output_dir", value);
+            _ = _settingsStore.SetSettingAsync("default_output_dir", value);
     }
 
     #region ffmpeg 管理
@@ -116,7 +116,7 @@ public partial class SchedulerSettingsViewModel : ObservableObject
             if (valid)
             {
                 FfmpegService.CustomPath = selectedPath;
-                await _taskStore.SetSettingAsync("ffmpeg_custom_path", selectedPath);
+                await _settingsStore.SetSettingAsync("ffmpeg_custom_path", selectedPath);
                 await CheckFfmpegAsync();
             }
             else

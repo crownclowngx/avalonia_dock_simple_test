@@ -11,6 +11,9 @@ public interface IFfmpegService
     /// <summary>当前解析到的 ffmpeg 路径</summary>
     string? ResolvedPath { get; }
 
+    /// <summary>查找 ffmpeg 路径</summary>
+    string? ResolveFfmpegPath();
+
     /// <summary>验证指定路径是否为有效的 ffmpeg 可执行文件</summary>
     Task<bool> ValidatePathAsync(string path, CancellationToken ct = default);
 

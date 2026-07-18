@@ -225,29 +225,11 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
     #region 辅助方法
 
-    private static string MapStatusToDisplay(string status) => status switch
-    {
-        "pending" => "排队中",
-        "downloading_video" => "下载视频",
-        "downloading_audio" => "下载音频",
-        "merging" => "合并中",
-        "done" => "完成",
-        "failed" => "失败",
-        "interrupted" => "已中断",
-        _ => status,
-    };
+    private static string MapStatusToDisplay(string status)
+        => DownloadTaskStatusMapper.ToDisplayText(DownloadTaskStatusMapper.FromStorageString(status));
 
-    private static string MapStageToDisplay(string status) => status switch
-    {
-        "pending" => "排队中",
-        "downloading_video" => "下载视频",
-        "downloading_audio" => "下载音频",
-        "merging" => "合并中",
-        "done" => "完成",
-        "failed" => "失败",
-        "interrupted" => "已中断",
-        _ => status,
-    };
+    private static string MapStageToDisplay(string status)
+        => DownloadTaskStatusMapper.ToDisplayText(DownloadTaskStatusMapper.FromStorageString(status));
 
     #endregion
 

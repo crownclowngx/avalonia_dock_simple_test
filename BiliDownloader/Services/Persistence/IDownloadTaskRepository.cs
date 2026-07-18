@@ -19,6 +19,9 @@ public interface IDownloadTaskRepository
     /// <summary>按 Document ID 查询任务列表</summary>
     Task<List<DownloadTaskRecord>> GetByDocumentIdAsync(string documentId);
 
+    /// <summary>查询所有未完成的任务（用于重启恢复）</summary>
+    Task<List<DownloadTaskRecord>> GetIncompleteAsync();
+
     /// <summary>更新任务进度和状态</summary>
     Task UpdateProgressAsync(string taskId, double progress, string status, string? errorMessage = null);
 
@@ -37,12 +40,9 @@ public interface IDownloadTaskRepository
     /// <summary>按 task_id 删除单条记录</summary>
     Task DeleteByIdAsync(string taskId);
 
+    /// <summary>按 task_id 列表批量删除记录</summary>
+    Task DeleteByIdsAsync(IEnumerable<string> taskIds);
+
     /// <summary>删除已完成的任务</summary>
     Task DeleteDoneAsync();
-
-    /// <summary>获取配置项</summary>
-    Task<string?> GetSettingAsync(string key);
-
-    /// <summary>设置配置项</summary>
-    Task SetSettingAsync(string key, string value);
 }

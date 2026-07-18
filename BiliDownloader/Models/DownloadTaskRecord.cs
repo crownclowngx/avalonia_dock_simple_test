@@ -88,10 +88,10 @@ public partial class DownloadTaskRecord : ObservableObject
     private string _speedText = "";
 
     /// <summary>
-    /// 当前状态：pending/downloading_video/downloading_audio/merging/done/failed
+    /// 当前状态（存储为字符串，兼容 SQLite）
     /// </summary>
     [ObservableProperty]
-    private string _status = "pending";
+    private string _status = DownloadTaskStatusMapper.ToStorageString(DownloadTaskStatus.Ready);
 
     /// <summary>
     /// 错误信息（仅 failed 时有值）

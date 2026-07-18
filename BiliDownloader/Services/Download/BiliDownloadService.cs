@@ -9,25 +9,26 @@ namespace BiliDownloader.Services.Download;
 /// <summary>
 /// 下载与合并服务：HTTP 流式下载（支持断点续传）+ ffmpeg 音视频合并
 /// </summary>
-public class BiliDownloadService
+public class BiliDownloadService : IDisposable
 {
-    private const string UserAgent =
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
-
-    private const string Referer = "https://www.bilibili.com/";
-
     private readonly HttpClient _httpClient;
     private readonly MultiConnectionDownloader _multiDownloader;
 
     public BiliDownloadService(int chunkCount = 4)
     {
         _httpClient = new HttpClient();
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
-        _httpClient.DefaultRequestHeaders.Add("Referer", Referer);
-        _httpClient.DefaultRequestHeaders.Add("Origin", "https://www.bilibili.com");
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", HttpConstants.UserAgent);
+        _httpClient.DefaultRequestHeaders.Add("Referer", HttpConstants.Referer);
+        _httpClient.DefaultRequestHeaders.Add("Origin", HttpConstants.Origin);
         _httpClient.Timeout = TimeSpan.FromMinutes(60);
 
         _multiDownloader = new MultiConnectionDownloader(chunkCount);
+    }
+
+    public void Dispose()
+    {
+        _httpClient.Dispose();
+        _multiDownloader.Dispose();
     }
 
     /// <summary>
@@ -236,65 +237,11 @@ public class BiliDownloadService
     }
 
     /// <summary>
-    /// ffmpeg 合并视频和音频（支持取消）
+    /// ffmpeg 合并视频和音频（委托给 FfmpegService）
     /// </summary>
     public async Task MergeAsync(string videoPath, string audioPath, string outputPath, CancellationToken ct = default)
     {
-        var ffmpegPath = FfmpegService.ResolveFfmpegPath();
-        if (ffmpegPath == null)
-            throw new Exception("ffmpeg 未就绪，请在调度器工具中配置 ffmpeg 路径或等待自动下载完成");
-
-        var psi = new ProcessStartInfo
-        {
-            FileName = ffmpegPath,
-            UseShellExecute = false,
-            RedirectStandardError = true,
-            CreateNoWindow = true,
-        };
-        psi.ArgumentList.Add("-hide_banner");
-        psi.ArgumentList.Add("-nostats");
-        psi.ArgumentList.Add("-loglevel");
-        psi.ArgumentList.Add("warning");
-        psi.ArgumentList.Add("-i");
-        psi.ArgumentList.Add(videoPath);
-        psi.ArgumentList.Add("-i");
-        psi.ArgumentList.Add(audioPath);
-        psi.ArgumentList.Add("-c");
-        psi.ArgumentList.Add("copy");
-        psi.ArgumentList.Add("-shortest");
-        psi.ArgumentList.Add(outputPath);
-
-        using var process = Process.Start(psi)
-            ?? throw new Exception("无法启动 ffmpeg 进程");
-
-        // 注册取消回调：取消时强制终止 ffmpeg 进程树
-        using var reg = ct.Register(() =>
-        {
-            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
-            catch { /* 忽略 */ }
-        });
-
-        // 先启动 stderr 异步读取，防止管道满导致 ffmpeg 阻塞（死锁）
-        var stderrTask = process.StandardError.ReadToEndAsync(ct);
-
-        try
-        {
-            await process.WaitForExitAsync(ct);
-        }
-        catch (OperationCanceledException)
-        {
-            // 取消后清理未完成的输出文件
-            try { if (File.Exists(outputPath)) File.Delete(outputPath); }
-            catch { /* 忽略 */ }
-            throw;
-        }
-
-        var error = await stderrTask;
-
-        if (process.ExitCode != 0)
-        {
-            throw new Exception($"ffmpeg 合并失败 (exit {process.ExitCode}): {error}");
-        }
+        await FfmpegService.MergeAsync(videoPath, audioPath, outputPath, ct);
     }
 
     /// <summary>

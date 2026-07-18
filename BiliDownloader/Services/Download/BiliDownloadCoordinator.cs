@@ -16,6 +16,12 @@ public class BiliDownloadCoordinator
 {
     private static readonly IPluginLogger Log = PluginLog.For<BiliDownloadCoordinator>();
 
+    /// <summary>将存储字符串解析为枚举的快捷方法</summary>
+    private static DownloadTaskStatus ParseStatus(string s) => DownloadTaskStatusMapper.FromStorageString(s);
+
+    /// <summary>将枚举转换为存储字符串的快捷方法</summary>
+    private static string ToStorage(DownloadTaskStatus s) => DownloadTaskStatusMapper.ToStorageString(s);
+
     #region 懒单例
 
     private static readonly Lazy<BiliDownloadCoordinator> _instance = new(CreateInstance);
@@ -23,10 +29,14 @@ public class BiliDownloadCoordinator
 
     private static BiliDownloadCoordinator CreateInstance()
     {
+        var repository = new DownloadTaskStore();
+        var messengerService = new MessengerService();
+        var tracker = new DownloadProgressTracker(repository, messengerService);
         return new BiliDownloadCoordinator(
-            new DownloadTaskStore(),
+            repository,
             new BiliCredentialProvider(),
-            new MessengerService());
+            messengerService,
+            tracker);
     }
 
     #endregion
@@ -34,6 +44,7 @@ public class BiliDownloadCoordinator
     private readonly IDownloadTaskRepository _repository;
     private readonly IBiliCredentialProvider _credentialProvider;
     private readonly IMessengerService _messengerService;
+    private readonly IDownloadProgressTracker _tracker;
     private readonly BiliApiService _apiService = new();
     private readonly BiliDownloadService _downloadService = new();
 
@@ -42,11 +53,6 @@ public class BiliDownloadCoordinator
     private Task? _processingTask;
     private bool _isProcessing;
     private bool _initialized;
-
-    // SQLite 进度写入节流
-    private DateTime _lastProgressDbWrite = DateTime.MinValue;
-    private DateTime _lastBytesDbWrite = DateTime.MinValue;
-    private static readonly TimeSpan DbWriteInterval = TimeSpan.FromMilliseconds(500);
 
     /// <summary>任务进度变更事件（UI 订阅）</summary>
     public event Action<DownloadTaskRecord>? TaskProgressChanged;
@@ -63,11 +69,13 @@ public class BiliDownloadCoordinator
     public BiliDownloadCoordinator(
         IDownloadTaskRepository repository,
         IBiliCredentialProvider credentialProvider,
-        IMessengerService messengerService)
+        IMessengerService messengerService,
+        IDownloadProgressTracker tracker)
     {
         _repository = repository;
         _credentialProvider = credentialProvider;
         _messengerService = messengerService;
+        _tracker = tracker;
 
         // 注册监听：接收 Document 发来的下载任务提交消息
         _messengerService.Register<BiliDownloadCoordinator, SubmitDownloadTaskMessage>(
@@ -103,11 +111,10 @@ public class BiliDownloadCoordinator
             var allTasks = await _repository.GetAllAsync();
             foreach (var t in allTasks)
             {
-                if (t.Status is "downloading_video" or "downloading_audio" or "merging" or
-                    "fetching_metadata")
+                if (DownloadTaskStatusMapper.IsRunning(ParseStatus(t.Status)))
                 {
-                    t.Status = "interrupted";
-                    await _repository.UpdateProgressAsync(t.TaskId, t.Progress, "interrupted");
+                    t.Status = ToStorage(DownloadTaskStatus.Interrupted);
+                    await _repository.UpdateProgressAsync(t.TaskId, t.Progress, ToStorage(DownloadTaskStatus.Interrupted));
                 }
             }
 
@@ -153,7 +160,7 @@ public class BiliDownloadCoordinator
 #pragma warning disable CS0618 // Cookie 已标记为 Obsolete，过渡期仍使用 msg.Cookie 供下载服务使用
                     Cookie = _credentialProvider.IsLoggedIn ? _credentialProvider.GetCookieHeader() : msg.Cookie,
 #pragma warning restore CS0618
-                    Status = "pending",
+                    Status = ToStorage(DownloadTaskStatus.Ready),
                     CreatedAt = DateTime.Now,
                     LastUpdatedAt = DateTime.Now,
                 };
@@ -215,8 +222,7 @@ public class BiliDownloadCoordinator
         await _commandLock.WaitAsync();
         try
         {
-            var isActive = task.Status is "downloading_video" or "downloading_audio" or "merging" or
-                "fetching_metadata";
+            var isActive = DownloadTaskStatusMapper.IsRunning(ParseStatus(task.Status));
 
             if (isActive)
             {
@@ -262,12 +268,13 @@ public class BiliDownloadCoordinator
     /// </summary>
     public async Task RetryTaskAsync(DownloadTaskRecord task)
     {
-        if (task.Status != "failed" && task.Status != "interrupted") return;
+        var statusEnum = ParseStatus(task.Status);
+        if (statusEnum != DownloadTaskStatus.Failed && statusEnum != DownloadTaskStatus.Interrupted) return;
 
         await _commandLock.WaitAsync();
         try
         {
-            var wasFailed = task.Status == "failed";
+            var wasFailed = statusEnum == DownloadTaskStatus.Failed;
 
             if (wasFailed)
             {
@@ -278,10 +285,10 @@ public class BiliDownloadCoordinator
                 await _repository.UpdateBytesAsync(task.TaskId, 0, 0);
             }
 
-            task.Status = "pending";
-            await _repository.UpdateProgressAsync(task.TaskId, task.Progress, "pending");
+            task.Status = ToStorage(DownloadTaskStatus.Ready);
+            await _repository.UpdateProgressAsync(task.TaskId, task.Progress, ToStorage(DownloadTaskStatus.Ready));
 
-            BroadcastStatusChanged(task);
+            _tracker.BroadcastStatusChanged(task);
             SchedulerStatusChanged?.Invoke($"重试任务: {task.ItemTitle}");
 
             StartProcessingInternal();
@@ -305,6 +312,10 @@ public class BiliDownloadCoordinator
                 _processingCts.Cancel();
                 try { await _processingTask; } catch (OperationCanceledException) { }
             }
+
+            // 释放下载服务资源（HttpClient + MultiConnectionDownloader）
+            _downloadService.Dispose();
+
             SchedulerStatusChanged?.Invoke("协调器已关闭");
         }
         finally
@@ -348,7 +359,8 @@ public class BiliDownloadCoordinator
                 // 查找下一个待处理任务（从内存列表或数据库重新加载）
                 var allTasks = await _repository.GetAllAsync();
                 var nextTask = allTasks.FirstOrDefault(t =>
-                    t.Status is "pending" or "downloading_video" or "downloading_audio" or "merging");
+                    DownloadTaskStatusMapper.IsRunning(ParseStatus(t.Status)) ||
+                    ParseStatus(t.Status) == DownloadTaskStatus.Ready);
 
                 if (nextTask == null)
                 {
@@ -368,7 +380,7 @@ public class BiliDownloadCoordinator
                 }
 
                 SchedulerStatusChanged?.Invoke($"正在下载: {nextTask.ItemTitle}");
-                BroadcastStatusChanged(nextTask);
+                _tracker.BroadcastStatusChanged(nextTask);
 
                 try
                 {
@@ -377,49 +389,17 @@ public class BiliDownloadCoordinator
                         _apiService,
                         (info) =>
                         {
-                            nextTask.Progress = info.OverallProgress;
-                            nextTask.VideoProgress = info.VideoProgress;
-                            nextTask.AudioProgress = info.AudioProgress;
-                            nextTask.MergeProgress = info.MergeProgress;
-                            nextTask.SpeedText = info.SpeedText;
-                            nextTask.Status = info.Stage switch
-                            {
-                                "video" => "downloading_video",
-                                "audio" => "downloading_audio",
-                                "merging" => "merging",
-                                "done" => "done",
-                                _ => nextTask.Status,
-                            };
-
-                            // 节流写 SQLite
-                            var now = DateTime.UtcNow;
-                            var isCriticalState = info.Stage is "done" or "merging";
-                            if (isCriticalState || (now - _lastProgressDbWrite) >= DbWriteInterval)
-                            {
-                                _lastProgressDbWrite = now;
-                                _ = _repository.UpdateStageProgressAsync(
-                                    nextTask.TaskId, nextTask.Progress, nextTask.Status,
-                                    nextTask.VideoProgress, nextTask.AudioProgress,
-                                    nextTask.MergeProgress, nextTask.SpeedText);
-                            }
-
-                            // UI 通知不受节流影响
-                            BroadcastProgress(nextTask);
+                            _tracker.OnProgressChanged(nextTask, info);
                             TaskProgressChanged?.Invoke(nextTask);
                         },
                         (videoBytes, audioBytes) =>
                         {
-                            var now = DateTime.UtcNow;
-                            if ((now - _lastBytesDbWrite) >= DbWriteInterval)
-                            {
-                                _lastBytesDbWrite = now;
-                                _ = _repository.UpdateBytesAsync(nextTask.TaskId, videoBytes, audioBytes);
-                            }
+                            _tracker.OnBytesChanged(nextTask, videoBytes, audioBytes);
                         },
                         ct);
 
                     // 标记完成
-                    nextTask.Status = "done";
+                    nextTask.Status = ToStorage(DownloadTaskStatus.Completed);
                     nextTask.Progress = 100;
                     nextTask.VideoProgress = 100;
                     nextTask.AudioProgress = 100;
@@ -427,27 +407,27 @@ public class BiliDownloadCoordinator
                     nextTask.SpeedText = "";
                     nextTask.LastUpdatedAt = DateTime.Now;
                     await _repository.UpdateStageProgressAsync(
-                        nextTask.TaskId, 100, "done", 100, 100, 100, "");
-                    BroadcastProgress(nextTask);
-                    BroadcastStatusChanged(nextTask);
+                        nextTask.TaskId, 100, ToStorage(DownloadTaskStatus.Completed), 100, 100, 100, "");
+                    _tracker.BroadcastProgress(nextTask);
+                    _tracker.BroadcastStatusChanged(nextTask);
                     TaskStatusChanged?.Invoke(nextTask);
                 }
                 catch (OperationCanceledException)
                 {
-                    nextTask.Status = "pending";
-                    await _repository.UpdateProgressAsync(nextTask.TaskId, nextTask.Progress, "pending");
-                    BroadcastProgress(nextTask);
+                    nextTask.Status = ToStorage(DownloadTaskStatus.Ready);
+                    await _repository.UpdateProgressAsync(nextTask.TaskId, nextTask.Progress, ToStorage(DownloadTaskStatus.Ready));
+                    _tracker.BroadcastProgress(nextTask);
                     break;
                 }
                 catch (Exception ex)
                 {
-                    nextTask.Status = "failed";
+                    nextTask.Status = ToStorage(DownloadTaskStatus.Failed);
                     nextTask.ErrorMessage = ex.Message;
                     nextTask.LastUpdatedAt = DateTime.Now;
                     Log.Error($"任务 {nextTask.TaskId} 下载失败: {ex.Message}", ex);
-                    await _repository.UpdateProgressAsync(nextTask.TaskId, nextTask.Progress, "failed", ex.Message);
-                    BroadcastProgress(nextTask);
-                    BroadcastStatusChanged(nextTask);
+                    await _repository.UpdateProgressAsync(nextTask.TaskId, nextTask.Progress, ToStorage(DownloadTaskStatus.Failed), ex.Message);
+                    _tracker.BroadcastProgress(nextTask);
+                    _tracker.BroadcastStatusChanged(nextTask);
                     TaskStatusChanged?.Invoke(nextTask);
                 }
             }
@@ -457,42 +437,6 @@ public class BiliDownloadCoordinator
             _isProcessing = false;
             _processingTask = null;
         }
-    }
-
-    private void BroadcastProgress(DownloadTaskRecord task)
-    {
-        try
-        {
-            _messengerService.Send(new DownloadTaskProgressMessage(
-                targetDocumentId: task.DocumentId,
-                taskId: task.TaskId,
-                itemTitle: task.ItemTitle,
-                progress: task.Progress,
-                status: task.Status,
-                errorMessage: task.ErrorMessage,
-                videoProgress: task.VideoProgress,
-                audioProgress: task.AudioProgress,
-                mergeProgress: task.MergeProgress,
-                speedText: task.SpeedText));
-        }
-        catch { /* 忽略广播失败 */ }
-    }
-
-    private void BroadcastStatusChanged(DownloadTaskRecord task)
-    {
-        try
-        {
-            _messengerService.Send(new DownloadTaskStatusChangedMessage(
-                targetDocumentId: task.DocumentId,
-                taskId: task.TaskId,
-                newStatus: task.Status,
-                progress: task.Progress,
-                videoProgress: task.VideoProgress,
-                audioProgress: task.AudioProgress,
-                mergeProgress: task.MergeProgress,
-                speedText: task.SpeedText));
-        }
-        catch { /* 忽略广播失败 */ }
     }
 
     #endregion

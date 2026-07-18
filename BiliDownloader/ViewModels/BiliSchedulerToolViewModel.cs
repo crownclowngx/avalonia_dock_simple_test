@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Dock.Model.Mvvm.Controls;
+using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels.BiliScheduler;
@@ -29,11 +30,12 @@ public partial class BiliSchedulerToolViewModel : Tool
     {
         _coordinator = coordinator;
         var taskStore = new DownloadTaskStore();
+        var settingsStore = new SettingsStore();
 
         TaskList = new SchedulerTaskListViewModel(coordinator, taskStore,
             onStatusMessage: msg => SchedulerStatus = msg);
 
-        Settings = new SchedulerSettingsViewModel(taskStore);
+        Settings = new SchedulerSettingsViewModel(settingsStore);
 
         // 订阅 Coordinator 全局状态事件
         _coordinator.SchedulerStatusChanged += status => SchedulerStatus = status;
@@ -65,7 +67,8 @@ public partial class BiliSchedulerToolViewModel : Tool
             SchedulerStatus = $"已加载 {totalCount} 个任务";
 
             // 统计中断数量
-            var interruptedCount = TaskList.Tasks.Count(t => t.Status == "interrupted");
+            var interruptedCount = TaskList.Tasks.Count(t =>
+                DownloadTaskStatusMapper.FromStorageString(t.Status) == DownloadTaskStatus.Interrupted);
             if (interruptedCount > 0)
             {
                 SchedulerStatus = $"已加载 {totalCount} 个任务，{interruptedCount} 个已中断（需手动恢复）";
