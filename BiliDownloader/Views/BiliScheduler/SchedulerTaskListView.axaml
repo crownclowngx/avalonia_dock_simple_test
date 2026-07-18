@@ -1,0 +1,91 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BiliDownloader.ViewModels.BiliScheduler"
+             xmlns:models="using:BiliDownloader.Models"
+             xmlns:conv="using:BiliDownloader.Converters"
+             mc:Ignorable="d" d:DesignWidth="350" d:DesignHeight="400"
+             x:Class="BiliDownloader.Views.BiliScheduler.SchedulerTaskListView"
+             x:DataType="vm:SchedulerTaskListViewModel">
+    <UserControl.Resources>
+        <conv:IsFailedStatusConverter x:Key="IsFailedStatusConverter"/>
+    </UserControl.Resources>
+    <ScrollViewer>
+        <ItemsControl ItemsSource="{Binding Tasks}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:DownloadTaskRecord">
+                    <Border BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="4,6">
+                        <StackPanel Spacing="3">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                                <TextBlock Text="{Binding ItemTitle}"
+                                           TextTrimming="CharacterEllipsis"
+                                           FontWeight="SemiBold"
+                                           FontSize="12"
+                                           Grid.Column="0"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Status}"
+                                           Grid.Column="1"
+                                           FontSize="11"
+                                           Foreground="#00A1D6"
+                                           Margin="4,0"
+                                           VerticalAlignment="Center"/>
+                                <Button Content="重试"
+                                        Grid.Column="2"
+                                        Command="{Binding $parent[UserControl].DataContext.RetryTaskCommand}"
+                                        CommandParameter="{Binding}"
+                                        IsVisible="{Binding Status, Converter={StaticResource IsFailedStatusConverter}}"
+                                        Padding="4,1"
+                                        FontSize="10"
+                                        Margin="2,0"
+                                        VerticalAlignment="Center"/>
+                                <Button Content="X"
+                                        Grid.Column="3"
+                                        Command="{Binding $parent[UserControl].DataContext.DeleteTaskCommand}"
+                                        CommandParameter="{Binding}"
+                                        Padding="4,1"
+                                        FontSize="10"
+                                        VerticalAlignment="Center"
+                                        ToolTip.Tip="删除任务"/>
+                            </Grid>
+
+                            <!-- 速度文本 -->
+                            <TextBlock Text="{Binding SpeedText}"
+                                       FontSize="11"
+                                       Foreground="#FFA500"
+                                       IsVisible="{Binding SpeedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                            <!-- 三分段进度条 -->
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="2">
+                                    <TextBlock Text="视频" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                    <ProgressBar Value="{Binding VideoProgress}"
+                                                 Minimum="0" Maximum="100"
+                                                 Width="60" Height="3"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="2">
+                                    <TextBlock Text="音频" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                    <ProgressBar Value="{Binding AudioProgress}"
+                                                 Minimum="0" Maximum="100"
+                                                 Width="60" Height="3"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="2">
+                                    <TextBlock Text="合成" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                    <ProgressBar Value="{Binding MergeProgress}"
+                                                 Minimum="0" Maximum="100"
+                                                 Width="50" Height="3"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding ErrorMessage}"
+                                       Foreground="Red"
+                                       FontSize="10"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl>
