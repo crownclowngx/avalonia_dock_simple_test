@@ -185,7 +185,15 @@ public class MultiConnectionDownloader
         request.Headers.Range = new RangeHeaderValue(actualStart, rangeEnd);
 
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-        response.EnsureSuccessStatusCode();
+
+        // 校验 Range 响应：服务器忽略 Range 时可能返回 200 OK 和完整文件，继续 Append 会导致数据错位
+        if (response.StatusCode != System.Net.HttpStatusCode.PartialContent)
+        {
+            // 服务器不支持 Range，删除可能不完整的 chunk 并报错
+            if (File.Exists(chunkPath)) File.Delete(chunkPath);
+            throw new InvalidOperationException(
+                $"CDN 返回 {(int)response.StatusCode} 而非 206 Partial Content，无法续传或分块下载");
+        }
 
         using var stream = await response.Content.ReadAsStreamAsync(ct);
 
@@ -268,6 +276,13 @@ public class MultiConnectionDownloader
 
         using var response = await _clients[0].SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();
+
+        // 校验 Range 响应：续传时服务器忽略 Range 返回 200 OK，删除已有文件从头开始
+        if (existingBytes > 0 && response.StatusCode != System.Net.HttpStatusCode.PartialContent)
+        {
+            if (File.Exists(outputPath)) File.Delete(outputPath);
+            existingBytes = 0;
+        }
 
         var totalBytes = response.Content.Headers.ContentLength ?? -1;
         if (existingBytes > 0 && totalBytes > 0)

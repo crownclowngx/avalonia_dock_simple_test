@@ -64,6 +64,14 @@ public class DownloadTaskStore
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
+
+        // 启用 WAL 模式以提升并发写入性能
+        await using (var pragmaCmd = connection.CreateCommand())
+        {
+            pragmaCmd.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;";
+            await pragmaCmd.ExecuteNonQueryAsync();
+        }
+
         await using var cmd = connection.CreateCommand();
         cmd.CommandText = """
             CREATE TABLE IF NOT EXISTS download_tasks (
@@ -130,12 +138,13 @@ public class DownloadTaskStore
     }
 
     /// <summary>
-    /// 批量插入任务记录
+    /// 批量插入任务记录（事务保护，避免部分插入）
     /// </summary>
     public async Task InsertBatchAsync(List<DownloadTaskRecord> records)
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
 
         foreach (var r in records)
         {
@@ -181,6 +190,8 @@ public class DownloadTaskStore
             cmd.Parameters.AddWithValue("$created_at", r.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
             await cmd.ExecuteNonQueryAsync();
         }
+
+        await transaction.CommitAsync();
     }
 
     /// <summary>

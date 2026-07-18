@@ -137,7 +137,7 @@ public class BiliDownloadService
         // 4. ffmpeg 合并
         mergeProgress = 10;
         ReportProgress("merging");
-        await MergeAsync(videoTmp, audioTmp, outputPath);
+        await MergeAsync(videoTmp, audioTmp, outputPath, ct);
         mergeProgress = 100;
         ReportProgress("done");
 
@@ -184,6 +184,13 @@ public class BiliDownloadService
         using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();
 
+        // 校验 Range 响应：续传时服务器忽略 Range 返回 200 OK，删除已有文件从头开始
+        if (existingBytes > 0 && response.StatusCode != System.Net.HttpStatusCode.PartialContent)
+        {
+            if (File.Exists(outputPath)) File.Delete(outputPath);
+            existingBytes = 0;
+        }
+
         var totalBytes = response.Content.Headers.ContentLength ?? -1;
         // 如果是续传，totalBytes 是剩余字节数，需要加上已下载的
         if (existingBytes > 0 && totalBytes > 0)
@@ -227,9 +234,9 @@ public class BiliDownloadService
     }
 
     /// <summary>
-    /// ffmpeg 合并视频和音频
+    /// ffmpeg 合并视频和音频（支持取消）
     /// </summary>
-    public async Task MergeAsync(string videoPath, string audioPath, string outputPath)
+    public async Task MergeAsync(string videoPath, string audioPath, string outputPath, CancellationToken ct = default)
     {
         var ffmpegPath = FfmpegService.ResolveFfmpegPath();
         if (ffmpegPath == null)
@@ -238,20 +245,52 @@ public class BiliDownloadService
         var psi = new ProcessStartInfo
         {
             FileName = ffmpegPath,
-            Arguments = $"-hide_banner -nostats -loglevel warning -i \"{videoPath}\" -i \"{audioPath}\" -c copy -shortest \"{outputPath}\"",
             UseShellExecute = false,
             RedirectStandardError = true,
             CreateNoWindow = true,
         };
+        psi.ArgumentList.Add("-hide_banner");
+        psi.ArgumentList.Add("-nostats");
+        psi.ArgumentList.Add("-loglevel");
+        psi.ArgumentList.Add("warning");
+        psi.ArgumentList.Add("-i");
+        psi.ArgumentList.Add(videoPath);
+        psi.ArgumentList.Add("-i");
+        psi.ArgumentList.Add(audioPath);
+        psi.ArgumentList.Add("-c");
+        psi.ArgumentList.Add("copy");
+        psi.ArgumentList.Add("-shortest");
+        psi.ArgumentList.Add(outputPath);
 
         using var process = Process.Start(psi)
             ?? throw new Exception("无法启动 ffmpeg 进程");
 
-        await process.WaitForExitAsync();
+        // 注册取消回调：取消时强制终止 ffmpeg 进程树
+        using var reg = ct.Register(() =>
+        {
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+            catch { /* 忽略 */ }
+        });
+
+        // 先启动 stderr 异步读取，防止管道满导致 ffmpeg 阻塞（死锁）
+        var stderrTask = process.StandardError.ReadToEndAsync(ct);
+
+        try
+        {
+            await process.WaitForExitAsync(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // 取消后清理未完成的输出文件
+            try { if (File.Exists(outputPath)) File.Delete(outputPath); }
+            catch { /* 忽略 */ }
+            throw;
+        }
+
+        var error = await stderrTask;
 
         if (process.ExitCode != 0)
         {
-            var error = await process.StandardError.ReadToEndAsync();
             throw new Exception($"ffmpeg 合并失败 (exit {process.ExitCode}): {error}");
         }
     }

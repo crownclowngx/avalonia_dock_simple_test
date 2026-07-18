@@ -21,8 +21,14 @@ public partial class BiliSchedulerToolViewModel : Tool
     private readonly BiliDownloadService _downloadService = new();
 
     private CancellationTokenSource? _processingCts;
+    private Task? _processingTask;
     private bool _isProcessing;
     private bool _initialized;
+
+    // SQLite 进度写入节流：每 500ms 最多写一次，避免高频并发写入
+    private DateTime _lastProgressDbWrite = DateTime.MinValue;
+    private DateTime _lastBytesDbWrite = DateTime.MinValue;
+    private static readonly TimeSpan DbWriteInterval = TimeSpan.FromMilliseconds(500);
 
     [ObservableProperty]
     private string _schedulerStatus = "调度器就绪";
@@ -80,7 +86,7 @@ public partial class BiliSchedulerToolViewModel : Tool
     }
 
     /// <summary>
-    /// 初始化：建表 + 加载未完成任务 + 自动恢复下载
+    /// 初始化：建表 + 加载历史任务（不自动恢复下载）
     /// </summary>
     public async Task InitializeAsync()
     {
@@ -103,24 +109,33 @@ public partial class BiliSchedulerToolViewModel : Tool
 
             // 加载所有任务到 UI
             var allTasks = await _taskStore.GetAllAsync();
+
+            // 将异常退出前仍在运行的任务标记为"已中断"，不自动恢复
+            var interruptedCount = 0;
+            foreach (var t in allTasks)
+            {
+                if (t.Status is "downloading_video" or "downloading_audio" or "merging")
+                {
+                    t.Status = "interrupted";
+                    await _taskStore.UpdateProgressAsync(t.TaskId, t.Progress, "interrupted");
+                    interruptedCount++;
+                }
+            }
+
             Tasks.Clear();
             foreach (var t in allTasks)
                 Tasks.Add(t);
 
             UpdateCounts();
 
-            // 自动恢复未完成的任务
-            var incomplete = allTasks.Where(t =>
-                t.Status is "pending" or "downloading_video" or "downloading_audio" or "merging")
-                .ToList();
-
-            if (incomplete.Count > 0)
+            if (interruptedCount > 0)
             {
-                SchedulerStatus = $"恢复 {incomplete.Count} 个未完成任务...";
-                StartProcessing();
+                SchedulerStatus = $"已加载 {allTasks.Count} 个任务，{interruptedCount} 个已中断（需手动恢复）";
             }
-
-
+            else
+            {
+                SchedulerStatus = $"已加载 {allTasks.Count} 个任务";
+            }
         }
         catch (Exception ex)
         {
@@ -193,7 +208,7 @@ public partial class BiliSchedulerToolViewModel : Tool
         if (_isProcessing) return;
         _isProcessing = true;
         _processingCts = new CancellationTokenSource();
-        _ = ProcessQueueAsync(_processingCts.Token);
+        _processingTask = ProcessQueueAsync(_processingCts.Token);
     }
 
     /// <summary>
@@ -253,18 +268,31 @@ public partial class BiliSchedulerToolViewModel : Tool
                                 _ => nextTask.Status,
                             };
 
-                            // 写 SQLite + 发消息
-                            _ = _taskStore.UpdateStageProgressAsync(
-                                nextTask.TaskId, nextTask.Progress, nextTask.Status,
-                                nextTask.VideoProgress, nextTask.AudioProgress,
-                                nextTask.MergeProgress, nextTask.SpeedText);
+                            // 节流写 SQLite：关键状态变更（done/merging）立即写入，其他节流
+                            var now = DateTime.UtcNow;
+                            var isCriticalState = info.Stage is "done" or "merging";
+                            if (isCriticalState || (now - _lastProgressDbWrite) >= DbWriteInterval)
+                            {
+                                _lastProgressDbWrite = now;
+                                _ = _taskStore.UpdateStageProgressAsync(
+                                    nextTask.TaskId, nextTask.Progress, nextTask.Status,
+                                    nextTask.VideoProgress, nextTask.AudioProgress,
+                                    nextTask.MergeProgress, nextTask.SpeedText);
+                            }
+
+                            // UI 广播不受节流影响，始终即时更新
                             BroadcastProgress(nextTask);
                             UpdateCounts();
                         },
                         (videoBytes, audioBytes) =>
                         {
-                            // 定期保存字节数用于断点续传
-                            _ = _taskStore.UpdateBytesAsync(nextTask.TaskId, videoBytes, audioBytes);
+                            // 节流保存字节数用于断点续传
+                            var now = DateTime.UtcNow;
+                            if ((now - _lastBytesDbWrite) >= DbWriteInterval)
+                            {
+                                _lastBytesDbWrite = now;
+                                _ = _taskStore.UpdateBytesAsync(nextTask.TaskId, videoBytes, audioBytes);
+                            }
                         },
                         ct);
 
@@ -303,6 +331,7 @@ public partial class BiliSchedulerToolViewModel : Tool
         finally
         {
             _isProcessing = false;
+            _processingTask = null;
         }
     }
 
@@ -375,10 +404,10 @@ public partial class BiliSchedulerToolViewModel : Tool
         {
             var isActive = task.Status is "downloading_video" or "downloading_audio" or "merging";
 
-            // 正在下载中：先停止处理队列
+            // 正在下载中：先停止处理队列（等待下载循环完全退出）
             if (isActive)
             {
-                StopProcessing();
+                await StopProcessingAsync();
             }
 
             // 从 SQLite 删除
@@ -420,24 +449,30 @@ public partial class BiliSchedulerToolViewModel : Tool
     }
 
     /// <summary>
-    /// 重试失败的任务：重置为 pending 并重新启动处理队列
+    /// 重试/恢复任务：failed 重置为 pending，interrupted 恢复为 pending（保留已下载进度）
     /// </summary>
     private async Task RetryTaskAsync(DownloadTaskRecord? task)
     {
-        if (task == null || task.Status != "failed") return;
+        if (task == null || (task.Status != "failed" && task.Status != "interrupted")) return;
 
         try
         {
-            // 重置状态
+            var wasFailed = task.Status == "failed";
+
+            // failed 任务重置进度；interrupted 保留已下载字节数用于断点续传
+            if (wasFailed)
+            {
+                task.Progress = 0;
+                task.ErrorMessage = null;
+                task.VideoBytesDownloaded = 0;
+                task.AudioBytesDownloaded = 0;
+                await _taskStore.UpdateBytesAsync(task.TaskId, 0, 0);
+            }
+
             task.Status = "pending";
-            task.Progress = 0;
-            task.ErrorMessage = null;
-            task.VideoBytesDownloaded = 0;
-            task.AudioBytesDownloaded = 0;
 
             // 更新 SQLite
-            await _taskStore.UpdateProgressAsync(task.TaskId, 0, "pending");
-            await _taskStore.UpdateBytesAsync(task.TaskId, 0, 0);
+            await _taskStore.UpdateProgressAsync(task.TaskId, task.Progress, "pending");
 
             // 广播状态变更通知 Document
             BroadcastStatusChanged(task);
@@ -454,12 +489,22 @@ public partial class BiliSchedulerToolViewModel : Tool
     }
 
     /// <summary>
-    /// 停止处理队列
+    /// 停止处理队列（异步等待处理循环完全退出）
     /// </summary>
-    public void StopProcessing()
+    public async Task StopProcessingAsync()
     {
-        _processingCts?.Cancel();
-        _processingCts = null;
+        if (_processingCts != null)
+        {
+            _processingCts.Cancel();
+            if (_processingTask != null)
+            {
+                try { await _processingTask; } catch (OperationCanceledException) { }
+            }
+            _processingCts.Dispose();
+            _processingCts = null;
+            _processingTask = null;
+        }
+        _isProcessing = false;
         SchedulerStatus = "调度器已停止";
     }
 

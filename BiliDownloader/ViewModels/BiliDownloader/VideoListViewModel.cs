@@ -266,6 +266,7 @@ public partial class VideoListViewModel : ObservableObject
         "merging" => "合并中",
         "done" => "完成",
         "failed" => "失败",
+        "interrupted" => "已中断",
         _ => status,
     };
 
@@ -277,6 +278,7 @@ public partial class VideoListViewModel : ObservableObject
         "merging" => "合并中",
         "done" => "完成",
         "failed" => "失败",
+        "interrupted" => "已中断",
         _ => status,
     };
 
