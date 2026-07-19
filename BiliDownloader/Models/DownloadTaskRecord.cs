@@ -31,6 +31,15 @@ public partial class DownloadTaskRecord : ObservableObject
     public string Bvid { get; set; } = string.Empty;
     public long Cid { get; set; }
 
+    /// <summary>媒体类型（video/bangumi）</summary>
+    public string MediaType { get; set; } = "video";
+
+    /// <summary>番剧 ep_id</summary>
+    public long EpId { get; set; }
+
+    /// <summary>番剧 season_id</summary>
+    public long SeasonId { get; set; }
+
     /// <summary>
     /// 用户选择的清晰度
     /// </summary>

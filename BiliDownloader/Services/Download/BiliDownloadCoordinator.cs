@@ -167,6 +167,9 @@ public class BiliDownloadCoordinator
                     Status = ToStorage(DownloadTaskStatus.Ready),
                     CreatedAt = DateTime.Now,
                     LastUpdatedAt = DateTime.Now,
+                    MediaType = item.MediaType.ToString().ToLowerInvariant(),
+                    EpId = item.EpId,
+                    SeasonId = item.SeasonId,
                 };
                 records.Add(record);
             }

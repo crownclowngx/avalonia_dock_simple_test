@@ -202,6 +202,9 @@ public partial class VideoListViewModel : ObservableObject
             Bvid = v.Bvid,
             Cid = v.Cid,
             Duration = v.Duration,
+            MediaType = v.MediaType,
+            EpId = v.EpId,
+            SeasonId = v.SeasonId,
         }).ToList();
 
         var message = new SubmitDownloadTaskMessage(

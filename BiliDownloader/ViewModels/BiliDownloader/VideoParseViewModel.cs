@@ -74,9 +74,10 @@ public partial class VideoParseViewModel : ObservableObject
         }
 
         var parsed = BiliApiService.ParseVideoId(Url);
-        if (parsed == null)
+        var bangumi = parsed == null ? BiliApiService.ParseBangumiId(Url) : null;
+        if (parsed == null && bangumi == null)
         {
-            DownloadInfo = "无法解析链接，请输入有效的B站视频链接（BV号或av号）";
+            DownloadInfo = "无法解析链接，请输入有效的B站视频或番剧链接";
             return;
         }
 
@@ -87,9 +88,18 @@ public partial class VideoParseViewModel : ObservableObject
 
             var cookie = BiliLoginStateService.Instance.CookieHeader;
 
-            // 获取视频集合
-            var collection = await _apiService.GetVideoCollectionAsync(
-                parsed.Value.Id, parsed.Value.IsBvid, cookie);
+            // 获取视频集合（根据类型路由）
+            BiliVideoCollection collection;
+            if (parsed != null)
+            {
+                collection = await _apiService.GetVideoCollectionAsync(
+                    parsed.Value.Id, parsed.Value.IsBvid, cookie);
+            }
+            else
+            {
+                collection = await _apiService.GetBangumiCollectionAsync(
+                    bangumi!.Value.Id, bangumi.Value.IsSeasonId, cookie);
+            }
             VideoCollection = collection;
 
             // 构建视频列表
@@ -115,7 +125,8 @@ public partial class VideoParseViewModel : ObservableObject
             {
                 var first = collection.Items[0];
                 var dashResult = await _apiService.GetDashResultAsync(
-                    first.Aid, first.Cid, 80, cookie);
+                    first.Aid, first.Cid, 80, cookie,
+                    first.MediaType, first.EpId, first.SeasonId);
 
                 // 视频清晰度
                 foreach (var q in dashResult.AcceptQualities)

@@ -50,6 +50,15 @@ public partial class BiliVideoItem : ObservableObject
     /// </summary>
     public int Duration { get; set; }
 
+    /// <summary>媒体类型（普通视频/番剧）</summary>
+    public BiliMediaType MediaType { get; set; } = BiliMediaType.Video;
+
+    /// <summary>番剧 ep_id（仅 Bangumi 时有值）</summary>
+    public long EpId { get; set; }
+
+    /// <summary>番剧 season_id（仅 Bangumi 时有值）</summary>
+    public long SeasonId { get; set; }
+
     /// <summary>
     /// 用户是否勾选下载
     /// </summary>

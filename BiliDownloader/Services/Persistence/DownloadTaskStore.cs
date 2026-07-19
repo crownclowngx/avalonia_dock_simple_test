@@ -94,6 +94,10 @@ public class DownloadTaskStore : IDownloadTaskRepository
             "ALTER TABLE download_tasks ADD COLUMN last_updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'));",
             "ALTER TABLE download_tasks ADD COLUMN error_type TEXT;",
             "ALTER TABLE download_tasks ADD COLUMN is_retryable INTEGER NOT NULL DEFAULT 0;",
+            // 番剧支持字段
+            "ALTER TABLE download_tasks ADD COLUMN media_type TEXT NOT NULL DEFAULT 'video';",
+            "ALTER TABLE download_tasks ADD COLUMN ep_id INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN season_id INTEGER NOT NULL DEFAULT 0;",
         };
         foreach (var sql in alterSqls)
         {
@@ -129,14 +133,14 @@ public class DownloadTaskStore : IDownloadTaskRepository
                      progress, status, error_message,
                      temp_directory, video_bytes, audio_bytes,
                      video_progress, audio_progress, merge_progress, speed_text,
-                     created_at)
+                     created_at, media_type, ep_id, season_id)
                 VALUES
                     ($task_id, $document_id, $series_title, $item_title, $aid, $bvid, $cid,
                      $quality_id, $audio_quality_id, $output_directory, $sub_folder, $cookie,
                      $progress, $status, $error_message,
                      $temp_directory, $video_bytes, $audio_bytes,
                      $video_progress, $audio_progress, $merge_progress, $speed_text,
-                     $created_at);
+                     $created_at, $media_type, $ep_id, $season_id);
                 """;
             cmd.Parameters.AddWithValue("$task_id", r.TaskId);
             cmd.Parameters.AddWithValue("$document_id", r.DocumentId);
@@ -161,6 +165,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.Parameters.AddWithValue("$merge_progress", r.MergeProgress);
             cmd.Parameters.AddWithValue("$speed_text", r.SpeedText);
             cmd.Parameters.AddWithValue("$created_at", r.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            cmd.Parameters.AddWithValue("$media_type", r.MediaType);
+            cmd.Parameters.AddWithValue("$ep_id", r.EpId);
+            cmd.Parameters.AddWithValue("$season_id", r.SeasonId);
             await cmd.ExecuteNonQueryAsync();
         }
 
@@ -403,6 +410,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
             LastUpdatedAt = TryGetDateTime(reader, "last_updated_at"),
             ErrorType = TryGetNullableString(reader, "error_type"),
             IsRetryable = TryGetBool(reader, "is_retryable"),
+            MediaType = TryGetString(reader, "media_type"),
+            EpId = TryGetLong(reader, "ep_id"),
+            SeasonId = TryGetLong(reader, "season_id"),
         };
     }
 

@@ -88,7 +88,10 @@ public class BiliDownloadService : IDisposable
 
         // 1. 获取 DASH 流
         ReportProgress("fetching");
-        var dashResult = await apiService.GetDashResultAsync(task.Aid, task.Cid, task.QualityId, task.Cookie);
+        var mediaType = Enum.TryParse<BiliMediaType>(task.MediaType, true, out var mt) ? mt : BiliMediaType.Video;
+        var dashResult = await apiService.GetDashResultAsync(
+            task.Aid, task.Cid, task.QualityId, task.Cookie,
+            mediaType, task.EpId, task.SeasonId);
 
         // 选择视频流：优先 AVC/H.264 (codecid=7)，选用户指定清晰度
         var videoStream = SelectVideoStream(dashResult.VideoStreams, task.QualityId);

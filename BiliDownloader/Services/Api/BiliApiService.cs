@@ -22,9 +22,9 @@ public partial class BiliApiService
         36, 20, 34, 44, 52
     };
 
-    // 缓存 wbi keys，避免每次都请求
-    private string? _cachedMixinKey;
-    private DateTime _mixinKeyExpireTime = DateTime.MinValue;
+    // 缓存 wbi keys，避免每次都请求（static 以便跨实例共享）
+    private static string? _cachedMixinKey;
+    private static DateTime _mixinKeyExpireTime = DateTime.MinValue;
 
     #region URL 解析
 
@@ -61,6 +61,37 @@ public partial class BiliApiService
         {
             // 简单尝试跟随重定向
             return null; // 后续可扩展
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 从用户输入中解析番剧 ID（ep/ss/md 号或 bangumi URL）
+    /// </summary>
+    /// <param name="input">用户输入的 URL 或 ID</param>
+    /// <returns>(原始ID, 是否为season_id) 或 null</returns>
+    public static (string Id, bool IsSeasonId)? ParseBangumiId(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return null;
+        input = input.Trim();
+
+        // 直接输入 ep/ss/md 号
+        if (EpRegex().IsMatch(input))
+            return (input, false); // ep_id
+        if (SsRegex().IsMatch(input))
+            return (input, true);  // season_id
+        if (MdRegex().IsMatch(input))
+            return (input, false); // media_id，后续需转换
+
+        // 从 URL 中提取：bilibili.com/bangumi/play/ep12345 或 ss12345
+        var urlMatch = BangumiUrlRegex().Match(input);
+        if (urlMatch.Success)
+        {
+            var id = urlMatch.Groups[1].Value;
+            if (id.StartsWith("ss", StringComparison.OrdinalIgnoreCase))
+                return (id, true);
+            return (id, false); // ep
         }
 
         return null;
@@ -171,23 +202,164 @@ public partial class BiliApiService
 
     #endregion
 
+    #region 番剧信息获取
+
+    /// <summary>
+    /// 获取番剧剧集列表
+    /// API: /pgc/view/web/season（不需要 wbi 签名）
+    /// md 号需先调 /pgc/review/user 转 season_id
+    /// </summary>
+    public async Task<BiliVideoCollection> GetBangumiCollectionAsync(string id, bool isSeasonId, string cookie)
+    {
+        var idPrefix = id[..2].ToLowerInvariant();
+        var idNum = id[2..]; // 去掉前缀
+
+        var paramsDict = new Dictionary<string, string>();
+
+        if (idPrefix == "md")
+        {
+            // md 号需先转为 season_id
+            var seasonId = await ResolveMediaIdToSeasonIdAsync(idNum, cookie);
+            paramsDict["season_id"] = seasonId.ToString();
+        }
+        else if (isSeasonId)
+        {
+            paramsDict["season_id"] = idNum;
+        }
+        else
+        {
+            paramsDict["ep_id"] = idNum;
+        }
+
+        var json = await BuildRequest("https://api.bilibili.com/pgc/view/web/season", paramsDict, cookie)
+            .GetStringAsync();
+        var resp = JObject.Parse(json);
+
+        if (resp["code"]?.Value<int>() != 0)
+            throw new Exception($"获取番剧信息失败: {resp["message"]?.Value<string>()}");
+
+        var data = resp["result"]!;
+        var seasonTitle = data["season_title"]?.Value<string>() ?? "未知番剧";
+        var seasonId2 = data["season_id"]?.Value<long>() ?? 0;
+        var cover = data["cover"]?.Value<string>() ?? "";
+
+        var collection = new BiliVideoCollection
+        {
+            SeriesTitle = seasonTitle,
+            Cover = cover,
+            Items = new List<BiliVideoItem>()
+        };
+
+        // 解析正片剧集列表
+        var episodes = data["episodes"] as JArray;
+        if (episodes != null)
+        {
+            int idx = 1;
+            foreach (var ep in episodes)
+            {
+                collection.Items.Add(new BiliVideoItem
+                {
+                    Index = idx++,
+                    Title = ep["long_title"]?.Value<string>() ?? ep["title"]?.Value<string>() ?? $"第{idx - 1}话",
+                    Aid = ep["aid"]?.Value<long>() ?? 0,
+                    Bvid = ep["bvid"]?.Value<string>() ?? "",
+                    Cid = ep["cid"]?.Value<long>() ?? 0,
+                    Duration = (int)((ep["duration"]?.Value<long>() ?? 0) / 1000), // 番剧 duration 为毫秒
+                    MediaType = BiliMediaType.Bangumi,
+                    EpId = ep["ep_id"]?.Value<long>() ?? 0,
+                    SeasonId = seasonId2,
+                });
+            }
+        }
+
+        // 解析 section（附加内容如 PV、SP 等）
+        var sections = data["section"] as JArray;
+        if (sections != null)
+        {
+            foreach (var section in sections)
+            {
+                var sectionEps = section["episodes"] as JArray;
+                if (sectionEps == null) continue;
+                foreach (var ep in sectionEps)
+                {
+                    collection.Items.Add(new BiliVideoItem
+                    {
+                        Title = ep["long_title"]?.Value<string>() ?? ep["title"]?.Value<string>() ?? "未知",
+                        Aid = ep["aid"]?.Value<long>() ?? 0,
+                        Bvid = ep["bvid"]?.Value<string>() ?? "",
+                        Cid = ep["cid"]?.Value<long>() ?? 0,
+                        Duration = (int)((ep["duration"]?.Value<long>() ?? 0) / 1000),
+                        MediaType = BiliMediaType.Bangumi,
+                        EpId = ep["ep_id"]?.Value<long>() ?? 0,
+                        SeasonId = seasonId2,
+                    });
+                }
+            }
+        }
+
+        return collection;
+    }
+
+    /// <summary>
+    /// md 号转 season_id
+    /// API: /pgc/review/user
+    /// </summary>
+    private async Task<long> ResolveMediaIdToSeasonIdAsync(string mediaId, string cookie)
+    {
+        var json = await BuildRequest("https://api.bilibili.com/pgc/review/user",
+            new Dictionary<string, string> { ["media_id"] = mediaId }, cookie)
+            .GetStringAsync();
+        var resp = JObject.Parse(json);
+
+        var seasonId = resp["result"]?["media"]?["season_id"]?.Value<long>();
+        if (seasonId == null || seasonId == 0)
+            throw new Exception($"无法解析 md 号对应的番剧: media_id={mediaId}");
+
+        return seasonId.Value;
+    }
+
+    #endregion
+
     #region DASH 流获取
 
     /// <summary>
     /// 获取 DASH 播放流信息（含可用清晰度列表和具体流 URL）
     /// </summary>
-    public async Task<BiliDashResult> GetDashResultAsync(long aid, long cid, int qualityId, string cookie)
+    /// <param name="aid">视频 aid</param>
+    /// <param name="cid">视频 cid</param>
+    /// <param name="qualityId">清晰度 ID</param>
+    /// <param name="cookie">Cookie</param>
+    /// <param name="mediaType">媒体类型（默认 Video，番剧传 Bangumi）</param>
+    /// <param name="epId">番剧 ep_id（仅 Bangumi 时需要）</param>
+    /// <param name="seasonId">番剧 season_id（仅 Bangumi 时需要）</param>
+    public async Task<BiliDashResult> GetDashResultAsync(
+        long aid, long cid, int qualityId, string cookie,
+        BiliMediaType mediaType = BiliMediaType.Video,
+        long epId = 0, long seasonId = 0)
     {
-        var url = "https://api.bilibili.com/x/player/wbi/playurl";
-        var paramsDict = new Dictionary<string, string>
+        string url;
+        var paramsDict = new Dictionary<string, string>();
+
+        if (mediaType == BiliMediaType.Bangumi)
         {
-            ["avid"] = aid.ToString(),
-            ["cid"] = cid.ToString(),
-            ["qn"] = qualityId.ToString(),
-            ["fnval"] = "4048",   // 请求 DASH 格式
-            ["fnver"] = "0",
-            ["fourk"] = "1",
-        };
+            url = "https://api.bilibili.com/pgc/player/web/v2/playurl";
+            paramsDict["ep_id"] = epId.ToString();
+            paramsDict["season_id"] = seasonId.ToString();
+            paramsDict["qn"] = qualityId.ToString();
+            paramsDict["fnval"] = "4048";
+            paramsDict["fnver"] = "0";
+            paramsDict["fourk"] = "1";
+        }
+        else
+        {
+            url = "https://api.bilibili.com/x/player/wbi/playurl";
+            paramsDict["avid"] = aid.ToString();
+            paramsDict["cid"] = cid.ToString();
+            paramsDict["qn"] = qualityId.ToString();
+            paramsDict["fnval"] = "4048";
+            paramsDict["fnver"] = "0";
+            paramsDict["fourk"] = "1";
+        }
 
         var signedQuery = await WbiSignAsync(paramsDict, cookie);
         var fullUrl = $"{url}?{signedQuery}";
@@ -200,8 +372,16 @@ public partial class BiliApiService
 
         var resp = JObject.Parse(json);
         if (resp["code"]?.Value<int>() != 0)
-            throw new Exception($"获取播放地址失败: {resp["message"]?.Value<string>()}");
+        {
+            var code = resp["code"]?.Value<int>() ?? -1;
+            var msg = resp["message"]?.Value<string>() ?? "未知错误";
+            // 番剧大会员检测
+            if (mediaType == BiliMediaType.Bangumi && (code == -403 || code == -10403))
+                throw new Exception($"该番剧需要大会员才能下载，请确认已登录大会员账号 (code: {code})");
+            throw new Exception($"获取播放地址失败: {msg} (code: {code})");
+        }
 
+        // 兼容普通视频（data）和番剧（result.video_info）两种响应格式
         var data = resp["data"] ?? resp["result"]?["video_info"];
         if (data == null)
             throw new Exception("无法解析播放数据");
@@ -410,7 +590,7 @@ public partial class BiliApiService
         return req;
     }
 
-    // 编译时正则
+    // 编译时正则 — 普通视频
     [GeneratedRegex(@"^BV[\w]{10}$", RegexOptions.IgnoreCase)]
     private static partial Regex BvRegex();
 
@@ -419,6 +599,19 @@ public partial class BiliApiService
 
     [GeneratedRegex(@"bilibili\.com/video/(BV[\w]{10}|av\d+)", RegexOptions.IgnoreCase)]
     private static partial Regex VideoUrlRegex();
+
+    // 编译时正则 — 番剧
+    [GeneratedRegex(@"^ep\d+$", RegexOptions.IgnoreCase)]
+    private static partial Regex EpRegex();
+
+    [GeneratedRegex(@"^ss\d+$", RegexOptions.IgnoreCase)]
+    private static partial Regex SsRegex();
+
+    [GeneratedRegex(@"^md\d+$", RegexOptions.IgnoreCase)]
+    private static partial Regex MdRegex();
+
+    [GeneratedRegex(@"bilibili\.com/bangumi/play/(ep\d+|ss\d+)", RegexOptions.IgnoreCase)]
+    private static partial Regex BangumiUrlRegex();
 
     #endregion
 }

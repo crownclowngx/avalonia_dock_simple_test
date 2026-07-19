@@ -1,3 +1,5 @@
+using BiliDownloader.Models;
+
 namespace BiliDownloader.Messages;
 
 /// <summary>
@@ -11,6 +13,15 @@ public class DownloadItemInfo
     public string Bvid { get; set; } = string.Empty;
     public long Cid { get; set; }
     public int Duration { get; set; }
+
+    /// <summary>媒体类型</summary>
+    public BiliMediaType MediaType { get; set; } = BiliMediaType.Video;
+
+    /// <summary>番剧 ep_id</summary>
+    public long EpId { get; set; }
+
+    /// <summary>番剧 season_id</summary>
+    public long SeasonId { get; set; }
 }
 
 /// <summary>
