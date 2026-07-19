@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BiliDownloader.Models;
@@ -30,6 +31,7 @@ public partial class SchedulerTaskListViewModel : ObservableObject
     public IRelayCommand ClearDoneCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> DeleteTaskCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> RetryTaskCommand { get; }
+    public IAsyncRelayCommand<DownloadTaskRecord> OpenFileLocationCommand { get; }
     public IAsyncRelayCommand StartCommand { get; }
     public IAsyncRelayCommand StopCommand { get; }
 
@@ -45,6 +47,7 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         ClearDoneCommand = new RelayCommand(ClearDoneTasks);
         DeleteTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(DeleteTaskAsync);
         RetryTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(RetryTaskAsync);
+        OpenFileLocationCommand = new AsyncRelayCommand<DownloadTaskRecord>(OpenFileLocationAsync);
         StartCommand = new AsyncRelayCommand(StartAsync);
         StopCommand = new AsyncRelayCommand(StopAsync);
 
@@ -167,4 +170,41 @@ public partial class SchedulerTaskListViewModel : ObservableObject
             t.Status is "pending" or "downloading_video" or "downloading_audio" or "merging");
         CompletedCount = Tasks.Count(t => t.Status == "done");
     }
+
+    #region 打开文件所在位置
+
+    private async Task OpenFileLocationAsync(DownloadTaskRecord? task)
+    {
+        if (task == null) return;
+        await Task.CompletedTask;
+
+        try
+        {
+            var actualDir = string.IsNullOrEmpty(task.SubFolder)
+                ? task.OutputDirectory
+                : Path.Combine(task.OutputDirectory, task.SubFolder);
+
+            var safeTitle = BiliDownloadService.SanitizeFileName(task.ItemTitle);
+            var filePath = Path.Combine(actualDir, $"{safeTitle}.mp4");
+
+            if (File.Exists(filePath))
+            {
+                Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+            }
+            else if (Directory.Exists(actualDir))
+            {
+                Process.Start("explorer.exe", actualDir);
+            }
+            else
+            {
+                _onStatusMessage($"目录不存在: {actualDir}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _onStatusMessage($"打开文件位置失败: {ex.Message}");
+        }
+    }
+
+    #endregion
 }

@@ -56,11 +56,11 @@ public partial class BiliApiService
                 return (id, false);
         }
 
-        // b23.tv 短链：不自动跟踪重定向，提示用户手动展开
+        // b23.tv 短链：自动跟踪重定向获取真实 URL
         if (input.Contains("b23.tv"))
         {
-            // 简单尝试跟随重定向
-            return null; // 后续可扩展
+            // 返回特殊标记，由调用方使用 ResolveB23TvAsync 异步解析
+            return null;
         }
 
         return null;
@@ -665,6 +665,38 @@ public partial class BiliApiService
         _cachedMixinKey = sb.ToString();
         _mixinKeyExpireTime = DateTime.UtcNow.AddMinutes(30); // 缓存30分钟
         return _cachedMixinKey;
+    }
+
+    #endregion
+
+    #region b23.tv 短链解析
+
+    /// <summary>
+    /// 检测输入是否包含 b23.tv 短链
+    /// </summary>
+    public static bool IsB23TvLink(string input) =>
+        !string.IsNullOrWhiteSpace(input) && input.Contains("b23.tv");
+
+    /// <summary>
+    /// 异步解析 b23.tv 短链，跟随重定向获取真实 URL
+    /// </summary>
+    /// <param name="b23TvUrl">b23.tv 短链 URL</param>
+    /// <returns>重定向后的真实 URL</returns>
+    public static async Task<string> ResolveB23TvAsync(string b23TvUrl)
+    {
+        var response = await b23TvUrl
+            .WithHeader("User-Agent", HttpConstants.UserAgent)
+            .WithAutoRedirect(false)
+            .HeadAsync();
+
+        var locationHeader = response.Headers
+            .FirstOrDefault(h => h.Name.Equals("Location", StringComparison.OrdinalIgnoreCase));
+        var location = locationHeader.Value;
+
+        if (!string.IsNullOrEmpty(location))
+            return location;
+
+        throw new Exception("无法解析 b23.tv 短链，请手动展开后重试");
     }
 
     #endregion

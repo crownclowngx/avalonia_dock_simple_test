@@ -19,6 +19,10 @@ public partial class BiliSchedulerToolViewModel : Tool
     [ObservableProperty]
     private string _schedulerStatus = "调度器就绪";
 
+    /// <summary>调度器是否正在处理任务（UI 绑定用）</summary>
+    [ObservableProperty]
+    private bool _isProcessing;
+
     #region 子 ViewModel
 
     public SchedulerTaskListViewModel TaskList { get; }
@@ -39,6 +43,7 @@ public partial class BiliSchedulerToolViewModel : Tool
 
         // 订阅 Coordinator 全局状态事件
         _coordinator.SchedulerStatusChanged += status => SchedulerStatus = status;
+        _coordinator.IsProcessingChanged += processing => IsProcessing = processing;
 
         // 订阅并发下载数变更事件，同步到 Coordinator
         Settings.MaxConcurrentDownloadsChanged += count =>

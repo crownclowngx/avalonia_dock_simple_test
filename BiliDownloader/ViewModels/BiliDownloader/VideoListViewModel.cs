@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MyAvaloniaManagementCommon.Message;
@@ -51,6 +52,7 @@ public partial class VideoListViewModel : ObservableObject
     public IRelayCommand SelectAllCommand { get; }
     public IRelayCommand DeselectAllCommand { get; }
     public IRelayCommand SubmitDownloadCommand { get; }
+    public IRelayCommand OpenOutputDirCommand { get; }
 
     /// <summary>
     /// 构造函数
@@ -70,6 +72,7 @@ public partial class VideoListViewModel : ObservableObject
         SelectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = true; });
         DeselectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = false; });
         SubmitDownloadCommand = new RelayCommand(SubmitDownload);
+        OpenOutputDirCommand = new RelayCommand(OpenOutputDir);
 
         RenamePanel = new RenamePanelViewModel(
             onRenameApplied: ApplyRenameToVideoItems,
@@ -301,6 +304,31 @@ public partial class VideoListViewModel : ObservableObject
         "interrupted" => "已中断",
         _ => status,
     };
+
+    #endregion
+
+    #region 打开输出目录
+
+    private void OpenOutputDir()
+    {
+        try
+        {
+            var ctx = _getSubmitContext();
+            var dir = ctx.OutputDirectory;
+            if (Directory.Exists(dir))
+            {
+                Process.Start("explorer.exe", dir);
+            }
+            else
+            {
+                _onStatusMessage($"目录不存在: {dir}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _onStatusMessage($"打开目录失败: {ex.Message}");
+        }
+    }
 
     #endregion
 }

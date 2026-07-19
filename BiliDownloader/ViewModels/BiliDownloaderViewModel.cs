@@ -96,7 +96,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 CoverUrl = _videoCollection?.Cover ?? "",
             },
             messengerService: _messengerService,
-            onStatusMessage: msg => DownloadInfo = msg);
+            onStatusMessage: msg => AppendLog(msg));
 
         RegisterMessengers();
     }
@@ -145,6 +145,20 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         {
             // 忽略
         }
+    }
+
+    #endregion
+
+    #region 日志追加
+
+    /// <summary>
+    /// 追加日志行（保留历史记录）
+    /// </summary>
+    private void AppendLog(string message)
+    {
+        var timestamp = DateTime.Now.ToString("HH:mm:ss");
+        var line = $"[{timestamp}] {message}";
+        DownloadInfo = string.IsNullOrEmpty(DownloadInfo) ? line : DownloadInfo + Environment.NewLine + line;
     }
 
     #endregion

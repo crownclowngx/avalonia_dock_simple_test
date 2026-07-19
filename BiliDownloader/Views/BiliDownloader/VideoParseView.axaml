@@ -15,12 +15,16 @@
                      Watermark="请输入链接，例如 https://www.bilibili.com/video/BV1xx411c7mD"
                      Grid.Column="0"
                      VerticalAlignment="Center"/>
-            <Button Command="{Binding ParseCommand}"
-                    Content="解析"
-                    Width="80"
-                    Grid.Column="1"
-                    Margin="8,0,0,0"
-                    IsEnabled="{Binding !IsLoading}"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="8,0,0,0">
+                <ProgressBar IsIndeterminate="True"
+                             IsVisible="{Binding IsLoading}"
+                             Width="80" Height="4"
+                             VerticalAlignment="Center"/>
+                <Button Command="{Binding ParseCommand}"
+                        Content="解析"
+                        Width="80"
+                        IsEnabled="{Binding !IsLoading}"/>
+            </StackPanel>
         </Grid>
     </StackPanel>
 </UserControl>

@@ -34,12 +34,23 @@
                        Foreground="Gray"
                        Margin="0,4"/>
 
-            <!-- 清除已完成 -->
-            <Button Content="清除已完成"
-                    Command="{Binding TaskList.ClearDoneCommand}"
-                    HorizontalAlignment="Left"
-                    Padding="8,3"
-                    FontSize="11"/>
+            <!-- 启动/暂停控制 + 清除已完成 -->
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Content="开始调度"
+                        Command="{Binding TaskList.StartCommand}"
+                        IsVisible="{Binding !IsProcessing}"
+                        Padding="8,3"
+                        FontSize="11"/>
+                <Button Content="暂停调度"
+                        Command="{Binding TaskList.StopCommand}"
+                        IsVisible="{Binding IsProcessing}"
+                        Padding="8,3"
+                        FontSize="11"/>
+                <Button Content="清除已完成"
+                        Command="{Binding TaskList.ClearDoneCommand}"
+                        Padding="8,3"
+                        FontSize="11"/>
+            </StackPanel>
 
             <Separator Margin="0,4"/>
         </StackPanel>

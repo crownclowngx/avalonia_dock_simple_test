@@ -73,8 +73,27 @@ public partial class VideoParseViewModel : ObservableObject
             return;
         }
 
-        var parsed = BiliApiService.ParseVideoId(Url);
-        var bangumi = parsed == null ? BiliApiService.ParseBangumiId(Url) : null;
+        // 解析 b23.tv 短链
+        var resolvedUrl = Url.Trim();
+        if (BiliApiService.IsB23TvLink(resolvedUrl))
+        {
+            try
+            {
+                IsLoading = true;
+                DownloadInfo = "正在解析短链...";
+                resolvedUrl = await BiliApiService.ResolveB23TvAsync(resolvedUrl);
+                Url = resolvedUrl; // 回写到输入框，让用户看到真实链接
+            }
+            catch (Exception ex)
+            {
+                DownloadInfo = $"短链解析失败: {ex.Message}";
+                IsLoading = false;
+                return;
+            }
+        }
+
+        var parsed = BiliApiService.ParseVideoId(resolvedUrl);
+        var bangumi = parsed == null ? BiliApiService.ParseBangumiId(resolvedUrl) : null;
         if (parsed == null && bangumi == null)
         {
             DownloadInfo = "无法解析链接，请输入有效的B站视频或番剧链接";

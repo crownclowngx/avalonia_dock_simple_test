@@ -35,12 +35,13 @@
             </Border>
 
             <!-- 日志区域 -->
-            <TextBlock Text="输出信息V3：" FontWeight="SemiBold" Margin="0,4,0,0"/>
+            <TextBlock Text="输出信息：" FontWeight="SemiBold" Margin="0,4,0,0"/>
             <TextBox Text="{Binding DownloadInfo}"
-                     Height="120"
-                     TextWrapping="Wrap"
+                     Height="160"
+                     TextWrapping="NoWrap"
                      AcceptsReturn="True"
-                     IsReadOnly="True"/>
+                     IsReadOnly="True"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

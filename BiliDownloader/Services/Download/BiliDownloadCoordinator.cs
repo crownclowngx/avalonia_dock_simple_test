@@ -54,6 +54,9 @@ public class BiliDownloadCoordinator
     private CancellationTokenSource? _processingCts;
     private Task? _processingTask;
     private bool _isProcessing;
+
+    /// <summary>调度器是否正在处理任务</summary>
+    public bool IsProcessing => _isProcessing;
     private bool _initialized;
 
     private SemaphoreSlim _concurrencySemaphore = new(1, 1);
@@ -71,6 +74,9 @@ public class BiliDownloadCoordinator
 
     /// <summary>调度器状态文本变更事件</summary>
     public event Action<string>? SchedulerStatusChanged;
+
+    /// <summary>调度器处理状态变更事件（true=正在处理，false=已停止）</summary>
+    public event Action<bool>? IsProcessingChanged;
 
     public BiliDownloadCoordinator(
         IDownloadTaskRepository repository,
@@ -351,6 +357,7 @@ public class BiliDownloadCoordinator
     {
         if (_isProcessing) return;
         _isProcessing = true;
+        IsProcessingChanged?.Invoke(true);
         _processingCts = new CancellationTokenSource();
         _processingTask = ProcessQueueAsync(_processingCts.Token);
     }
@@ -369,6 +376,7 @@ public class BiliDownloadCoordinator
             _processingTask = null;
         }
         _isProcessing = false;
+        IsProcessingChanged?.Invoke(false);
     }
 
     private async Task ProcessQueueAsync(CancellationToken ct)
@@ -437,6 +445,7 @@ public class BiliDownloadCoordinator
         finally
         {
             _isProcessing = false;
+            IsProcessingChanged?.Invoke(false);
             _processingTask = null;
         }
     }
