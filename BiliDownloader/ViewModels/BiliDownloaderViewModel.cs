@@ -90,6 +90,10 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 UseGroupFolder = DownloadConfig.UseGroupFolder,
                 AddIndexToTitle = DownloadConfig.AddIndexToTitle,
                 SeriesTitle = _videoCollection?.SeriesTitle ?? "下载",
+                DownloadDanmaku = DownloadConfig.DownloadDanmaku,
+                DownloadSubtitle = DownloadConfig.DownloadSubtitle,
+                DownloadCover = DownloadConfig.DownloadCover,
+                CoverUrl = _videoCollection?.Cover ?? "",
             },
             messengerService: _messengerService,
             onStatusMessage: msg => DownloadInfo = msg);

@@ -17,6 +17,7 @@
     <ItemGroup>
       <PackageReference Include="Flurl.Http" Version="4.0.2" />
       <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+      <PackageReference Include="protobuf-net" Version="3.2.46" />
       <PackageReference Include="QRCoder" Version="1.6.0" />
     </ItemGroup>
 

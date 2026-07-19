@@ -109,6 +109,7 @@ public partial class VideoParseViewModel : ObservableObject
             {
                 item.Index = idx++;
                 item.OriginalTitle = item.Title;
+                item.CoverUrl = collection.Cover; // 传递封面图 URL
                 videoItems.Add(item);
             }
 

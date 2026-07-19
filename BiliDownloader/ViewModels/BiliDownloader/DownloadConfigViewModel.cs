@@ -34,6 +34,18 @@ public partial class DownloadConfigViewModel : ObservableObject
     [ObservableProperty]
     private string _outputDirectory = "";
 
+    /// <summary>是否下载弹幕</summary>
+    [ObservableProperty]
+    private bool _downloadDanmaku;
+
+    /// <summary>是否下载字幕</summary>
+    [ObservableProperty]
+    private bool _downloadSubtitle;
+
+    /// <summary>是否下载封面图</summary>
+    [ObservableProperty]
+    private bool _downloadCover;
+
     public IRelayCommand SelectFolderCommand { get; }
 
     public DownloadConfigViewModel()

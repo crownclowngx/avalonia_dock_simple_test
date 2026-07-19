@@ -2,6 +2,7 @@ using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
+using BiliDownloader.Services.Download.Extras;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
 using MyAvaloniaManagementCommon.Message;
@@ -47,6 +48,7 @@ public class BiliDownloadCoordinator
     private readonly IDownloadProgressTracker _tracker;
     private readonly BiliApiService _apiService = new();
     private readonly BiliDownloadService _downloadService = new();
+    private readonly ExtrasHandlerRegistry _extrasRegistry = ExtrasHandlerRegistry.CreateDefault();
 
     private readonly SemaphoreSlim _commandLock = new(1, 1);
     private CancellationTokenSource? _processingCts;
@@ -170,6 +172,8 @@ public class BiliDownloadCoordinator
                     MediaType = item.MediaType.ToString().ToLowerInvariant(),
                     EpId = item.EpId,
                     SeasonId = item.SeasonId,
+                    ExtrasConfig = (int)msg.ExtrasConfig,
+                    CoverUrl = item.CoverUrl,
                 };
                 records.Add(record);
             }
@@ -458,6 +462,12 @@ public class BiliDownloadCoordinator
                 },
                 ct);
 
+            // 执行附加资源管线（失败不影响主任务状态）
+            if (task.ExtrasConfig != 0)
+            {
+                await ExecuteExtrasPipelineAsync(task, ct);
+            }
+
             // 标记完成
             task.Status = ToStorage(DownloadTaskStatus.Completed);
             task.Progress = 100;
@@ -492,6 +502,80 @@ public class BiliDownloadCoordinator
         finally
         {
             _concurrencySemaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// 执行附加资源下载管线（弹幕/字幕/封面）。
+    /// 失败不影响主任务状态，仅记录到 ExtrasResultSummary。
+    /// </summary>
+    private async Task ExecuteExtrasPipelineAsync(DownloadTaskRecord task, CancellationToken ct)
+    {
+        try
+        {
+            var extrasType = (ExtrasType)task.ExtrasConfig;
+            var handlers = _extrasRegistry.Resolve(extrasType);
+            if (handlers.Count == 0) return;
+
+            var results = new List<string>();
+            var actualOutputDir = string.IsNullOrEmpty(task.SubFolder)
+                ? task.OutputDirectory
+                : Path.Combine(task.OutputDirectory, task.SubFolder);
+            var baseFileName = BiliDownloadService.SanitizeFileName(task.ItemTitle);
+
+            var context = new ExtrasContext
+            {
+                TaskId = task.TaskId,
+                Aid = task.Aid,
+                Bvid = task.Bvid,
+                Cid = task.Cid,
+                EpId = task.EpId,
+                SeasonId = task.SeasonId,
+                MediaType = task.MediaType,
+                OutputDirectory = task.OutputDirectory,
+                SubFolder = task.SubFolder,
+                BaseFileName = baseFileName,
+#pragma warning disable CS0618
+                Cookie = _credentialProvider.IsLoggedIn ? _credentialProvider.GetCookieHeader() : task.Cookie,
+#pragma warning restore CS0618
+                CoverUrl = task.CoverUrl,
+                ApiService = _apiService,
+                ProgressReporter = new Progress<string>(msg =>
+                    SchedulerStatusChanged?.Invoke($"[{task.ItemTitle}] {msg}")),
+            };
+
+            foreach (var handler in handlers)
+            {
+                if (ct.IsCancellationRequested) break;
+
+                try
+                {
+                    var result = await handler.ExecuteAsync(context, ct);
+                    var status = result.Success ? "OK" : result.ErrorMessage;
+                    results.Add($"{handler.Type}: {status}");
+                    if (result.Success)
+                        Log.Info($"Extras [{handler.DisplayName}] 成功: {string.Join(", ", result.OutputFiles)}");
+                    else
+                        Log.Warn($"Extras [{handler.DisplayName}] 失败: {result.ErrorMessage}");
+                }
+                catch (OperationCanceledException)
+                {
+                    results.Add($"{handler.Type}: CANCELLED");
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn($"Extras [{handler.DisplayName}] 异常: {ex.Message}");
+                    results.Add($"{handler.Type}: FAIL - {ex.Message}");
+                }
+            }
+
+            task.ExtrasResultSummary = string.Join("; ", results);
+            await _repository.UpdateExtrasResultAsync(task.TaskId, task.ExtrasResultSummary);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn($"Extras 管线异常: {ex.Message}");
         }
     }
 

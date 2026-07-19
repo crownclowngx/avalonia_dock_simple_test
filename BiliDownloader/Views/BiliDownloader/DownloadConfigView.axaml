@@ -23,25 +23,41 @@
                       Width="200"/>
         </StackPanel>
 
-        <!-- 使用分组文件夹（仅多视频时可见） -->
-        <CheckBox Content="使用分组文件夹（以视频组名称命名）"
-                  IsChecked="{Binding UseGroupFolder}"
-                  IsVisible="{Binding IsMultiVideo}"/>
+        <!-- 高级设置（默认折叠） -->
+        <Expander Header="高级设置" IsExpanded="False" Margin="0,2,0,0">
+            <StackPanel Spacing="6" Margin="12,6,0,6">
+                <!-- 使用分组文件夹（仅多视频时可见） -->
+                <CheckBox Content="使用分组文件夹（以视频组名称命名）"
+                          IsChecked="{Binding UseGroupFolder}"
+                          IsVisible="{Binding IsMultiVideo}"/>
 
-        <!-- 写入序号到标题（仅多视频时可见） -->
-        <CheckBox Content="写入序号到标题（提交时在标题前添加 序号.）"
-                  IsChecked="{Binding AddIndexToTitle}"
-                  IsVisible="{Binding IsMultiVideo}"/>
+                <!-- 写入序号到标题（仅多视频时可见） -->
+                <CheckBox Content="写入序号到标题（提交时在标题前添加 序号.）"
+                          IsChecked="{Binding AddIndexToTitle}"
+                          IsVisible="{Binding IsMultiVideo}"/>
 
-        <!-- 输出目录 -->
-        <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="输出目录：" VerticalAlignment="Center"/>
-            <TextBox Text="{Binding OutputDirectory}"
-                     Width="400"
-                     IsReadOnly="True"/>
-            <Button Content="选择文件夹"
-                    Command="{Binding SelectFolderCommand}"
-                    Padding="8,4"/>
-        </StackPanel>
+                <!-- 附加资源下载选项 -->
+                <StackPanel Spacing="4" Margin="0,4,0,0">
+                    <TextBlock Text="附加资源下载：" FontWeight="SemiBold"/>
+                    <CheckBox Content="下载弹幕（XML 格式，按 360 秒分段获取后合并）"
+                              IsChecked="{Binding DownloadDanmaku}"/>
+                    <CheckBox Content="下载字幕（SRT 格式，自动获取所有可用字幕）"
+                              IsChecked="{Binding DownloadSubtitle}"/>
+                    <CheckBox Content="下载封面图"
+                              IsChecked="{Binding DownloadCover}"/>
+                </StackPanel>
+
+                <!-- 输出目录 -->
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="输出目录：" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding OutputDirectory}"
+                             Width="400"
+                             IsReadOnly="True"/>
+                    <Button Content="选择文件夹"
+                            Command="{Binding SelectFolderCommand}"
+                            Padding="8,4"/>
+                </StackPanel>
+            </StackPanel>
+        </Expander>
     </StackPanel>
 </UserControl>

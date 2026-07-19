@@ -98,6 +98,10 @@ public class DownloadTaskStore : IDownloadTaskRepository
             "ALTER TABLE download_tasks ADD COLUMN media_type TEXT NOT NULL DEFAULT 'video';",
             "ALTER TABLE download_tasks ADD COLUMN ep_id INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN season_id INTEGER NOT NULL DEFAULT 0;",
+            // 附加资源（extras）字段
+            "ALTER TABLE download_tasks ADD COLUMN extras_config INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN cover_url TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN extras_result_summary TEXT;",
         };
         foreach (var sql in alterSqls)
         {
@@ -133,14 +137,16 @@ public class DownloadTaskStore : IDownloadTaskRepository
                      progress, status, error_message,
                      temp_directory, video_bytes, audio_bytes,
                      video_progress, audio_progress, merge_progress, speed_text,
-                     created_at, media_type, ep_id, season_id)
+                     created_at, media_type, ep_id, season_id,
+                     extras_config, cover_url)
                 VALUES
                     ($task_id, $document_id, $series_title, $item_title, $aid, $bvid, $cid,
                      $quality_id, $audio_quality_id, $output_directory, $sub_folder, $cookie,
                      $progress, $status, $error_message,
                      $temp_directory, $video_bytes, $audio_bytes,
                      $video_progress, $audio_progress, $merge_progress, $speed_text,
-                     $created_at, $media_type, $ep_id, $season_id);
+                     $created_at, $media_type, $ep_id, $season_id,
+                     $extras_config, $cover_url);
                 """;
             cmd.Parameters.AddWithValue("$task_id", r.TaskId);
             cmd.Parameters.AddWithValue("$document_id", r.DocumentId);
@@ -168,6 +174,8 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.Parameters.AddWithValue("$media_type", r.MediaType);
             cmd.Parameters.AddWithValue("$ep_id", r.EpId);
             cmd.Parameters.AddWithValue("$season_id", r.SeasonId);
+            cmd.Parameters.AddWithValue("$extras_config", r.ExtrasConfig);
+            cmd.Parameters.AddWithValue("$cover_url", r.CoverUrl);
             await cmd.ExecuteNonQueryAsync();
         }
 
@@ -310,6 +318,24 @@ public class DownloadTaskStore : IDownloadTaskRepository
     }
 
     /// <summary>
+    /// 更新附加资源执行结果
+    /// </summary>
+    public async Task UpdateExtrasResultAsync(string taskId, string? extrasResultSummary)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            UPDATE download_tasks
+            SET extras_result_summary = $extras_result_summary
+            WHERE task_id = $task_id;
+            """;
+        cmd.Parameters.AddWithValue("$task_id", taskId);
+        cmd.Parameters.AddWithValue("$extras_result_summary", (object?)extrasResultSummary ?? DBNull.Value);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    /// <summary>
     /// 按 task_id 删除单条记录
     /// </summary>
     public async Task DeleteByIdAsync(string taskId)
@@ -413,6 +439,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
             MediaType = TryGetString(reader, "media_type"),
             EpId = TryGetLong(reader, "ep_id"),
             SeasonId = TryGetLong(reader, "season_id"),
+            ExtrasConfig = TryGetInt(reader, "extras_config"),
+            CoverUrl = TryGetString(reader, "cover_url"),
+            ExtrasResultSummary = TryGetNullableString(reader, "extras_result_summary"),
         };
     }
 

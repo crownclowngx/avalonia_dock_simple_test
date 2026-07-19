@@ -59,6 +59,9 @@ public partial class BiliVideoItem : ObservableObject
     /// <summary>番剧 season_id（仅 Bangumi 时有值）</summary>
     public long SeasonId { get; set; }
 
+    /// <summary>封面图 URL</summary>
+    public string CoverUrl { get; set; } = string.Empty;
+
     /// <summary>
     /// 用户是否勾选下载
     /// </summary>

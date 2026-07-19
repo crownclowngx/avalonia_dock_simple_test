@@ -1,4 +1,5 @@
 using BiliDownloader.Models;
+using BiliDownloader.Services.Download.Extras;
 
 namespace BiliDownloader.Messages;
 
@@ -22,6 +23,9 @@ public class DownloadItemInfo
 
     /// <summary>番剧 season_id</summary>
     public long SeasonId { get; set; }
+
+    /// <summary>封面图 URL</summary>
+    public string CoverUrl { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -69,6 +73,11 @@ public class SubmitDownloadTaskMessage
     /// </summary>
     public bool UseGroupFolder { get; }
 
+    /// <summary>
+    /// 启用的附加资源类型（位枚举）
+    /// </summary>
+    public ExtrasType ExtrasConfig { get; }
+
     public SubmitDownloadTaskMessage(
         string sourceDocumentId,
         string seriesTitle,
@@ -77,7 +86,8 @@ public class SubmitDownloadTaskMessage
         int audioQualityId,
         string outputDirectory,
         string cookie,
-        bool useGroupFolder = false)
+        bool useGroupFolder = false,
+        ExtrasType extrasConfig = ExtrasType.None)
     {
         SourceDocumentId = sourceDocumentId;
         SeriesTitle = seriesTitle;
@@ -87,5 +97,6 @@ public class SubmitDownloadTaskMessage
         OutputDirectory = outputDirectory;
         Cookie = cookie;
         UseGroupFolder = useGroupFolder;
+        ExtrasConfig = extrasConfig;
     }
 }

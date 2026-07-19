@@ -40,6 +40,15 @@ public partial class DownloadTaskRecord : ObservableObject
     /// <summary>番剧 season_id</summary>
     public long SeasonId { get; set; }
 
+    /// <summary>启用的附加资源类型（位枚举整数，0=无）</summary>
+    public int ExtrasConfig { get; set; }
+
+    /// <summary>封面图 URL</summary>
+    public string CoverUrl { get; set; } = string.Empty;
+
+    /// <summary>附加资源执行结果摘要</summary>
+    public string? ExtrasResultSummary { get; set; }
+
     /// <summary>
     /// 用户选择的清晰度
     /// </summary>

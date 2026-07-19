@@ -320,6 +320,137 @@ public partial class BiliApiService
 
     #endregion
 
+    #region 附加资源 API（弹幕/字幕）
+
+    /// <summary>
+    /// 获取弹幕分段（Protobuf 二进制数据）
+    /// API: /x/v2/dm/wbi/web/seg.so（需 wbi 签名）
+    /// </summary>
+    /// <param name="oid">视频 cid</param>
+    /// <param name="segmentIndex">分段序号（从 1 开始）</param>
+    /// <param name="aid">视频 aid</param>
+    /// <param name="cookie">Cookie</param>
+    /// <returns>Protobuf 二进制数据</returns>
+    public async Task<byte[]> GetDanmakuSegmentAsync(long oid, int segmentIndex, long aid, string cookie)
+    {
+        var url = "https://api.bilibili.com/x/v2/dm/wbi/web/seg.so";
+        var paramsDict = new Dictionary<string, string>
+        {
+            ["type"] = "1",
+            ["oid"] = oid.ToString(),
+            ["pid"] = aid.ToString(),
+            ["segment_index"] = segmentIndex.ToString(),
+        };
+
+        var signedQuery = await WbiSignAsync(paramsDict, cookie);
+        var fullUrl = $"{url}?{signedQuery}";
+
+        var response = await fullUrl
+            .WithHeader("User-Agent", HttpConstants.UserAgent)
+            .WithHeader("Referer", HttpConstants.Referer)
+            .WithHeader("Cookie", cookie)
+            .GetBytesAsync();
+
+        return response;
+    }
+
+    /// <summary>
+    /// 获取字幕列表（含字幕语言、下载 URL）
+    /// API: /x/player/wbi/v2（需 wbi 签名）
+    /// </summary>
+    public async Task<List<SubtitleListItem>> GetSubtitleListAsync(long aid, long cid, string cookie)
+    {
+        var url = "https://api.bilibili.com/x/player/wbi/v2";
+        var paramsDict = new Dictionary<string, string>
+        {
+            ["aid"] = aid.ToString(),
+            ["cid"] = cid.ToString(),
+        };
+
+        var signedQuery = await WbiSignAsync(paramsDict, cookie);
+        var fullUrl = $"{url}?{signedQuery}";
+
+        var json = await fullUrl
+            .WithHeader("User-Agent", HttpConstants.UserAgent)
+            .WithHeader("Referer", HttpConstants.Referer)
+            .WithHeader("Cookie", cookie)
+            .GetStringAsync();
+
+        var resp = JObject.Parse(json);
+        if (resp["code"]?.Value<int>() != 0)
+            throw new Exception($"获取字幕列表失败: {resp["message"]?.Value<string>()}");
+
+        var subtitles = new List<SubtitleListItem>();
+        var subtitleArray = resp["data"]?["subtitle"]?["subtitles"] as JArray;
+        if (subtitleArray == null)
+            return subtitles;
+
+        foreach (var sub in subtitleArray)
+        {
+            var subtitleUrl = sub["subtitle_url"]?.Value<string>() ?? "";
+            if (string.IsNullOrEmpty(subtitleUrl)) continue;
+
+            // 补充协议头（B站返回的 URL 可能是 // 开头）
+            if (subtitleUrl.StartsWith("//"))
+                subtitleUrl = "https:" + subtitleUrl;
+
+            subtitles.Add(new SubtitleListItem
+            {
+                Lan = sub["lan"]?.Value<string>() ?? "",
+                LanDoc = sub["lan_doc"]?.Value<string>() ?? "",
+                SubtitleUrl = subtitleUrl,
+            });
+        }
+
+        return subtitles;
+    }
+
+    /// <summary>
+    /// 下载字幕 JSON 内容并转换为 SRT 格式
+    /// </summary>
+    /// <param name="subtitleUrl">字幕下载 URL</param>
+    /// <param name="cookie">Cookie</param>
+    /// <returns>SRT 格式的字幕文本</returns>
+    public async Task<string> GetSubtitleSrtAsync(string subtitleUrl, string cookie)
+    {
+        var json = await subtitleUrl
+            .WithHeader("User-Agent", HttpConstants.UserAgent)
+            .WithHeader("Referer", HttpConstants.Referer)
+            .WithHeader("Cookie", cookie)
+            .GetStringAsync();
+
+        var resp = JObject.Parse(json);
+        var body = resp["body"] as JArray;
+        if (body == null || body.Count == 0)
+            return string.Empty;
+
+        var sb = new StringBuilder();
+        for (int i = 0; i < body.Count; i++)
+        {
+            var from = body[i]["from"]?.Value<double>() ?? 0;
+            var to = body[i]["to"]?.Value<double>() ?? 0;
+            var content = body[i]["content"]?.Value<string>() ?? "";
+
+            sb.AppendLine((i + 1).ToString());
+            sb.AppendLine($"{FormatSrtTime(from)} --> {FormatSrtTime(to)}");
+            sb.AppendLine(content);
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// 将秒数转换为 SRT 时间格式 (HH:mm:ss,fff)
+    /// </summary>
+    private static string FormatSrtTime(double seconds)
+    {
+        var ts = TimeSpan.FromSeconds(seconds);
+        return $"{(int)ts.TotalHours:00}:{ts.Minutes:00}:{ts.Seconds:00},{ts.Milliseconds:000}";
+    }
+
+    #endregion
+
     #region DASH 流获取
 
     /// <summary>

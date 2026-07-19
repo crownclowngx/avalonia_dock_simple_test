@@ -45,4 +45,7 @@ public interface IDownloadTaskRepository
 
     /// <summary>删除已完成的任务</summary>
     Task DeleteDoneAsync();
+
+    /// <summary>更新附加资源执行结果</summary>
+    Task UpdateExtrasResultAsync(string taskId, string? extrasResultSummary);
 }

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using MyAvaloniaManagementCommon.Message;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
+using BiliDownloader.Services.Download.Extras;
 using BiliDownloader.Services.Infrastructure;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
@@ -21,6 +22,14 @@ public class SubmitContext
     public bool UseGroupFolder { get; set; }
     public bool AddIndexToTitle { get; set; }
     public string SeriesTitle { get; set; } = "下载";
+
+    /// <summary>附加资源选项</summary>
+    public bool DownloadDanmaku { get; set; }
+    public bool DownloadSubtitle { get; set; }
+    public bool DownloadCover { get; set; }
+
+    /// <summary>封面图 URL</summary>
+    public string CoverUrl { get; set; } = "";
 }
 
 /// <summary>
@@ -205,7 +214,14 @@ public partial class VideoListViewModel : ObservableObject
             MediaType = v.MediaType,
             EpId = v.EpId,
             SeasonId = v.SeasonId,
+            CoverUrl = ctx.CoverUrl,
         }).ToList();
+
+        // 构建 ExtrasType 位枚举
+        var extras = ExtrasType.None;
+        if (ctx.DownloadDanmaku) extras |= ExtrasType.Danmaku;
+        if (ctx.DownloadSubtitle) extras |= ExtrasType.Subtitle;
+        if (ctx.DownloadCover) extras |= ExtrasType.Cover;
 
         var message = new SubmitDownloadTaskMessage(
             sourceDocumentId: ctx.DocumentId,
@@ -215,7 +231,8 @@ public partial class VideoListViewModel : ObservableObject
             audioQualityId: ctx.AudioQualityId,
             outputDirectory: ctx.OutputDirectory,
             cookie: ctx.Cookie,
-            useGroupFolder: ctx.UseGroupFolder);
+            useGroupFolder: ctx.UseGroupFolder,
+            extrasConfig: extras);
 
         // 通过消息总线发送给调度器
         try
