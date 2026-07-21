@@ -18,9 +18,9 @@ public class VideoEncryptorService
 {
     private readonly Secvid03Encryptor _encryptor;
 
-    public VideoEncryptorService()
+    public VideoEncryptorService(Secvid03Encryptor encryptor)
     {
-        _encryptor = new Secvid03Encryptor();
+        _encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
     }
 
     /// <summary>

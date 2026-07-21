@@ -7,12 +7,17 @@ namespace MySmallTools.InitPlug.SecretVideoPlayer;
 
 public class SecretVideoDocumentStrategy: IDocumentCreationStrategy
 {
+    private readonly IDocumentScopeFactory _documentScopeFactory;
+
+    public SecretVideoDocumentStrategy(IDocumentScopeFactory documentScopeFactory)
+    {
+        _documentScopeFactory = documentScopeFactory ?? throw new ArgumentNullException(nameof(documentScopeFactory));
+    }
+
     public Document CreateDocument(DocumentCreationParams @params)
     {
-        var videoDoc = new SecretVideoPlayerViewModel()
-        {
-            Title = string.IsNullOrEmpty(@params.Title) ? "加密视频播放器" : @params.Title,
-        };
+        var videoDoc = _documentScopeFactory.CreateDocument<SecretVideoPlayerViewModel>();
+        videoDoc.Title = string.IsNullOrEmpty(@params.Title) ? "加密视频播放器" : @params.Title;
 
         return videoDoc;
     }

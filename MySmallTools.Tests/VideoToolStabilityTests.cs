@@ -4,6 +4,7 @@ using MySmallTools.Constants;
 using MySmallTools.InitPlug.SecretVideoPlayer;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 using Xunit;
+using Dock.Model.Mvvm.Controls;
 
 namespace MySmallTools.Tests;
 
@@ -12,7 +13,7 @@ public sealed class VideoToolStabilityTests
     [Fact]
     public void VideoEncryptorDocument_DefaultTitleAndVideoTitle_AreIndependent()
     {
-        var strategy = new VideoEncryptorDocumentStrategy();
+        var strategy = CreateVideoEncryptorStrategy();
         var document = strategy.CreateDocument(
             new DocumentCreationParams(DocumentTypeIdConstant.VideoEncryptorDocumentId));
         var viewModel = Assert.IsType<VideoEncryptorViewModel>(document);
@@ -31,7 +32,7 @@ public sealed class VideoToolStabilityTests
     [Fact]
     public void VideoEncryptorDocument_PreservesCustomDocumentTitle()
     {
-        var strategy = new VideoEncryptorDocumentStrategy();
+        var strategy = CreateVideoEncryptorStrategy();
         var document = strategy.CreateDocument(new DocumentCreationParams(
             DocumentTypeIdConstant.VideoEncryptorDocumentId)
         {
@@ -169,6 +170,46 @@ public sealed class VideoToolStabilityTests
         Assert.Equal(["Play", "WaitForVideoOutput", "Seek:9750"], operations.Calls);
     }
 
+    [Fact]
+    public async Task VideoEncryptorDocument_DisposeCancelsEncryptionAndRemovesPartialFile()
+    {
+        var temporaryDirectory = Path.Combine(
+            Path.GetTempPath(),
+            "MySmallTools-DI-Cancel-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(temporaryDirectory);
+        var inputPath = Path.Combine(temporaryDirectory, "source.mp4");
+        var outputPath = Path.Combine(temporaryDirectory, "output.secvid");
+
+        try
+        {
+            // 使用稀疏文件保证加密操作不会在 Dispose 发出取消前完成，同时避免测试占用大量磁盘空间。
+            using (var input = new FileStream(inputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                input.SetLength(64L * 1024 * 1024);
+            }
+
+            var service = new VideoEncryptorService(new Secvid03Encryptor());
+            var viewModel = new VideoEncryptorViewModel(service)
+            {
+                SelectedFilePath = inputPath,
+                OutputFilePath = outputPath,
+                Password = "123456",
+                ConfirmPassword = "123456",
+            };
+
+            var encryption = viewModel.StartEncryptionCommand.ExecuteAsync(null);
+            viewModel.Dispose();
+            await encryption;
+
+            Assert.False(File.Exists(outputPath));
+            Assert.Empty(Directory.GetFiles(temporaryDirectory, "*.partial-*"));
+        }
+        finally
+        {
+            Directory.Delete(temporaryDirectory, recursive: true);
+        }
+    }
+
     private sealed class RecordingSurfaceRestoreOperations(long length) : IVideoSurfaceRestoreOperations
     {
         public List<string> Calls { get; } = [];
@@ -197,5 +238,26 @@ public sealed class VideoToolStabilityTests
         }
 
         public void Pause() => Calls.Add("Pause");
+    }
+
+    private static VideoEncryptorDocumentStrategy CreateVideoEncryptorStrategy() =>
+        new(new VideoToolTestDocumentScopeFactory());
+
+    /// <summary>
+    /// 这些测试只验证策略对 Dock Title 与视频公开标题的映射，不验证宿主 Scope 实现。
+    /// Scope 的创建、独立性和释放由 PluginTests 中的 DocumentScopeManager 测试覆盖。
+    /// </summary>
+    private sealed class VideoToolTestDocumentScopeFactory : IDocumentScopeFactory
+    {
+        public TDocument CreateDocument<TDocument>() where TDocument : Document
+        {
+            if (typeof(TDocument) == typeof(VideoEncryptorViewModel))
+            {
+                var service = new VideoEncryptorService(new Secvid03Encryptor());
+                return (TDocument)(Document)new VideoEncryptorViewModel(service);
+            }
+
+            throw new NotSupportedException($"测试未注册 Document: {typeof(TDocument).FullName}");
+        }
     }
 }

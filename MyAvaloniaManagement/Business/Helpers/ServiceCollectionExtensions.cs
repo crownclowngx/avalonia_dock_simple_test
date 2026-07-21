@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
 
 namespace MyAvaloniaManagement.Business.Helpers;
@@ -18,6 +19,12 @@ public static class ServiceCollectionExtensions
     {
         // 注册消息服务为单例
         services.AddSingleton<IMessengerService, MessengerService>();
+
+        // 每个由托管插件创建的 Document 都拥有独立 Scope。插件只依赖公共创建接口，
+        // Dock 关闭时则由宿主使用具体管理器释放对应 Scope。
+        services.AddSingleton<DocumentScopeManager>();
+        services.AddSingleton<IDocumentScopeFactory>(provider =>
+            provider.GetRequiredService<DocumentScopeManager>());
         
         // 注册ManagementFactory为单例
         services.AddSingleton<ManagementFactory>();

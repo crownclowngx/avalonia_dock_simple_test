@@ -3,7 +3,7 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer;
 /// <summary>
 /// 视频表面重建后需要恢复的用户可见播放状态。
 /// </summary>
-internal enum VideoSurfacePlaybackMode
+public enum VideoSurfacePlaybackMode
 {
     Playing,
     Paused
@@ -12,7 +12,7 @@ internal enum VideoSurfacePlaybackMode
 /// <summary>
 /// 与某一次媒体和表面丢失事件绑定的恢复快照。
 /// </summary>
-internal readonly record struct VideoSurfaceRecoveryRequest(
+public readonly record struct VideoSurfaceRecoveryRequest(
     long RequestId,
     long MediaGeneration,
     long PositionMs,
@@ -25,7 +25,7 @@ internal readonly record struct VideoSurfaceRecoveryRequest(
 /// 快照采用一次性消费语义。媒体切换、用户主动操作或普通停止都会使旧快照失效，
 /// 只有为释放旧 HWND/vout 而执行的内部 Stop 才会保留快照。
 /// </remarks>
-internal sealed class VideoSurfaceRecoveryPolicy
+public sealed class VideoSurfaceRecoveryPolicy
 {
     private long _nextRequestId;
     private VideoSurfaceRecoveryRequest? _pendingRecovery;

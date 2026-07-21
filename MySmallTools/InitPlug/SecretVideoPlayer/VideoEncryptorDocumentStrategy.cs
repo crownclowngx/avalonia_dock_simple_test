@@ -10,12 +10,17 @@ namespace MySmallTools.InitPlug.SecretVideoPlayer;
 /// </summary>
 public class VideoEncryptorDocumentStrategy : IDocumentCreationStrategy
 {
+    private readonly IDocumentScopeFactory _documentScopeFactory;
+
+    public VideoEncryptorDocumentStrategy(IDocumentScopeFactory documentScopeFactory)
+    {
+        _documentScopeFactory = documentScopeFactory ?? throw new ArgumentNullException(nameof(documentScopeFactory));
+    }
+
     public Document CreateDocument(DocumentCreationParams @params)
     {
-        var encryptorDoc = new VideoEncryptorViewModel()
-        {
-            Title = string.IsNullOrEmpty(@params.Title) ? "视频文件加密器" : @params.Title,
-        };
+        var encryptorDoc = _documentScopeFactory.CreateDocument<VideoEncryptorViewModel>();
+        encryptorDoc.Title = string.IsNullOrEmpty(@params.Title) ? "视频文件加密器" : @params.Title;
 
         return encryptorDoc;
     }

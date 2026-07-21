@@ -11,15 +11,15 @@ namespace MySmallTools.Business.SecretVideoPlayer;
 /// 初始化过程使用双重检查锁，保证播放器和元数据提取器在不同线程同时首次调用时也只执行一次 Core.Initialize。
 /// 本实现明确不回退到宿主根目录、PATH 或系统 VLC，避免误用版本不一致的原生库导致难以复现的崩溃。
 /// </remarks>
-public static class LibVlcRuntime
+public sealed class LibVlcRuntime
 {
-    private static readonly object SyncRoot = new();
-    private static bool _initialized;
+    private readonly object _syncRoot = new();
+    private bool _initialized;
 
     /// <summary>
     /// 获取当前 MySmallTools.dll 对应的 LibVLC 私有绝对目录。
     /// </summary>
-    public static string RuntimeDirectory
+    public string RuntimeDirectory
     {
         get
         {
@@ -32,14 +32,14 @@ public static class LibVlcRuntime
     /// <summary>
     /// 验证平台和必要原生文件，并以线程安全方式完成进程级初始化。
     /// </summary>
-    public static void EnsureInitialized()
+    public void EnsureInitialized()
     {
         if (_initialized)
         {
             return;
         }
 
-        lock (SyncRoot)
+        lock (_syncRoot)
         {
             if (_initialized)
             {

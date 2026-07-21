@@ -12,6 +12,13 @@ namespace MySmallTools.Business.SecretVideoPlayer.Helpers;
 /// </remarks>
 public class MetadataExtractor
 {
+    private readonly LibVlcRuntime _runtime;
+
+    public MetadataExtractor(LibVlcRuntime runtime)
+    {
+        _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+    }
+
     /// <summary>
     /// 提取视频文件元数据
     /// </summary>
@@ -19,7 +26,7 @@ public class MetadataExtractor
     {
         try
         {
-            LibVlcRuntime.EnsureInitialized();
+            _runtime.EnsureInitialized();
             
             using var libVLC = new LibVLC();
             using var media = new Media(libVLC, videoPath, FromType.FromPath);

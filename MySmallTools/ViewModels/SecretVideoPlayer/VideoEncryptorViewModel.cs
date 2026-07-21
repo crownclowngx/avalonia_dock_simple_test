@@ -10,15 +10,17 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer;
 /// <summary>
 /// 视频文件加密器视图模型
 /// </summary>
-public partial class VideoEncryptorViewModel : Document
+public partial class VideoEncryptorViewModel : Document, IDisposable
 {
     #region Fields
     private readonly VideoEncryptorService _encryptorService;
     private EncryptionTask _currentTask;
+    private CancellationTokenSource? _encryptionCancellation;
+    private bool _disposed;
 
-    public VideoEncryptorViewModel()
+    public VideoEncryptorViewModel(VideoEncryptorService encryptorService)
     {
-        _encryptorService = new VideoEncryptorService();
+        _encryptorService = encryptorService ?? throw new ArgumentNullException(nameof(encryptorService));
         _currentTask = new EncryptionTask();
         
         // 订阅任务属性变化
@@ -167,6 +169,15 @@ public partial class VideoEncryptorViewModel : Document
     [RelayCommand(CanExecute = nameof(CanStartEncryption))]
     private async Task StartEncryptionAsync()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        // 每次执行使用独立取消源。Document Scope 释放时只需要取消当前引用，
+        // 实际 FileStream 和 partial 文件仍由正在运行的加密调用按原有事务顺序清理。
+        var cancellation = new CancellationTokenSource();
+        var previousCancellation = Interlocked.Exchange(ref _encryptionCancellation, cancellation);
+        previousCancellation?.Cancel();
+        previousCancellation?.Dispose();
+
         try
         {
             IsEncrypting = true;
@@ -178,7 +189,15 @@ public partial class VideoEncryptorViewModel : Document
 
             // 执行加密
             var progress = new Progress<EncryptionProgress>(OnEncryptionProgress);
-            await _encryptorService.EncryptVideoWithProgressAsync(_currentTask, progress);
+            await _encryptorService.EncryptVideoWithProgressAsync(
+                _currentTask,
+                progress,
+                cancellation.Token);
+
+            if (_disposed)
+            {
+                return;
+            }
 
             _currentTask.IsCompleted = true;
             _currentTask.IsRunning = false;
@@ -188,8 +207,22 @@ public partial class VideoEncryptorViewModel : Document
             
             StatusMessage = $"加密完成！输出文件: {OutputFilePath}";
         }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            // 关闭 Document 是正常取消路径。Scope 已经释放时不再更新任何绑定属性，
+            // 避免已从视觉树移除的对象继续触发命令和界面通知。
+            if (!_disposed)
+            {
+                StatusMessage = "加密已取消";
+            }
+        }
         catch (Exception ex)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             _currentTask.IsRunning = false;
             _currentTask.ErrorMessage = ex.Message;
             _currentTask.Status = "加密失败";
@@ -197,14 +230,20 @@ public partial class VideoEncryptorViewModel : Document
         }
         finally
         {
-            IsEncrypting = false;
+            Interlocked.CompareExchange(ref _encryptionCancellation, null, cancellation);
+            cancellation.Dispose();
+            if (!_disposed)
+            {
+                IsEncrypting = false;
+            }
         }
     }
 
     private bool CanStartEncryption()
     {
         // UI 不通过截断输入来“修正”超限文本，避免用户无感丢失描述；只有全部约束满足时才允许开始。
-        return !IsEncrypting &&
+        return !_disposed &&
+               !IsEncrypting &&
                !string.IsNullOrEmpty(SelectedFilePath) &&
                !string.IsNullOrEmpty(OutputFilePath) &&
                !string.IsNullOrEmpty(Password) &&
@@ -232,6 +271,8 @@ public partial class VideoEncryptorViewModel : Document
         FileSizeText = string.Empty;
         FileFormatText = string.Empty;
         
+        // 旧任务在替换前必须解除订阅；否则它被异步进度对象短暂持有时仍会更新新 Document。
+        _currentTask.PropertyChanged -= OnTaskPropertyChanged;
         _currentTask = new EncryptionTask();
         _currentTask.PropertyChanged += OnTaskPropertyChanged;
     }
@@ -294,6 +335,11 @@ public partial class VideoEncryptorViewModel : Document
 
     private void OnTaskPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (_disposed || !ReferenceEquals(sender, _currentTask))
+        {
+            return;
+        }
+
         switch (e.PropertyName)
         {
             case nameof(EncryptionTask.Progress):
@@ -327,6 +373,11 @@ public partial class VideoEncryptorViewModel : Document
 
     private void OnEncryptionProgress(EncryptionProgress progress)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         Progress = progress.Percentage;
         ProgressText = $"{progress.Percentage:F1}%";
         StatusMessage = progress.Status;
@@ -335,6 +386,26 @@ public partial class VideoEncryptorViewModel : Document
         _currentTask.Progress = progress.Percentage;
         
         UpdateSpeedAndTimeInfo();
+    }
+
+    #endregion
+
+    #region IDisposable
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        _currentTask.PropertyChanged -= OnTaskPropertyChanged;
+
+        // 不在 UI 线程同步等待加密 Task，否则异步清理若需要返回 UI 上下文可能造成死锁。
+        // Cancel 会使 Secvid03Encryptor 退出循环并删除 partial 文件，取消源由任务 finally 负责释放。
+        Interlocked.Exchange(ref _encryptionCancellation, null)?.Cancel();
+        GC.SuppressFinalize(this);
     }
 
     #endregion

@@ -67,9 +67,10 @@ public sealed class Secvid03Tests(Secvid03Fixture fixture)
         if (!OperatingSystem.IsWindows() || RuntimeInformation.ProcessArchitecture != Architecture.X64)
             return;
 
-        Assert.EndsWith(Path.Combine("native", "win-x64", "libvlc"), LibVlcRuntime.RuntimeDirectory);
-        Assert.True(File.Exists(Path.Combine(LibVlcRuntime.RuntimeDirectory, "libvlc.dll")));
-        LibVlcRuntime.EnsureInitialized();
+        var runtime = new LibVlcRuntime();
+        Assert.EndsWith(Path.Combine("native", "win-x64", "libvlc"), runtime.RuntimeDirectory);
+        Assert.True(File.Exists(Path.Combine(runtime.RuntimeDirectory, "libvlc.dll")));
+        runtime.EnsureInitialized();
         using var libVlc = new LibVLC("--no-video-title-show");
     }
 

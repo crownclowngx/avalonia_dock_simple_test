@@ -12,9 +12,8 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer;
 /// 选择文件后立即读取明文公开区，不等待密码；真正加载媒体时才验证密码。
 /// 编辑信息前会主动释放播放器媒体，确保 LibVLC 不再持有文件句柄，随后才能安全地以读写方式打开同一容器。
 /// </remarks>
-public partial class SecretVideoPlayerViewModel : Document, IDisposable
+public partial class SecretVideoPlayerViewModel : Document
 {
-    private bool _disposed;
     private bool _mediaLoaded;
     private string _rawPublicTitle = string.Empty;
 
@@ -33,9 +32,9 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
     public int EditableTitleCharacterCount => EncryptedVideoContainer.CountRunes(EditableTitle);
     public int EditableDescriptionCharacterCount => EncryptedVideoContainer.CountRunes(EditableDescription);
 
-    public SecretVideoPlayerViewModel()
+    public SecretVideoPlayerViewModel(VideoPlayerControlViewModel playerViewModel)
     {
-        PlayerViewModel = new VideoPlayerControlViewModel();
+        PlayerViewModel = playerViewModel ?? throw new ArgumentNullException(nameof(playerViewModel));
     }
 
     partial void OnPasswordChanged(string value) => LoadVideoCommand.NotifyCanExecuteChanged();
@@ -187,17 +186,4 @@ public partial class SecretVideoPlayerViewModel : Document, IDisposable
         catch { return false; }
     }
 
-    public void Dispose()
-    {
-        if (_disposed) return;
-        PlayerViewModel.Dispose();
-        _disposed = true;
-        GC.SuppressFinalize(this);
-    }
-
-    public override bool OnClose()
-    {
-        PlayerViewModel.CleanupMedia();
-        return base.OnClose();
-    }
 }

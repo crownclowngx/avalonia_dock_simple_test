@@ -17,7 +17,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     private readonly object _syncLock = new object();
     private readonly SecureVideoPlayer _player;
     private readonly DispatcherTimer _positionTimer;
-    private readonly VideoSurfaceRecoveryPolicy _surfaceRecoveryPolicy = new();
+    private readonly VideoSurfaceRecoveryPolicy _surfaceRecoveryPolicy;
     private CancellationTokenSource? _surfaceRecoveryCancellation;
     private VideoSurfaceRecoveryRequest? _activeSurfaceRecovery;
     private long _mediaGeneration;
@@ -89,15 +89,19 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     /// <summary>
     /// MediaPlayer 实例，用于绑定到 VideoView
     /// </summary>
-    public MediaPlayer? MediaPlayer => _player?.GetMediaPlayer();
+    public MediaPlayer? MediaPlayer => _disposed ? null : _player.GetMediaPlayer();
 
     #endregion
 
     #region Constructor
 
-    public VideoPlayerControlViewModel()
+    public VideoPlayerControlViewModel(
+        SecureVideoPlayer player,
+        VideoSurfaceRecoveryPolicy surfaceRecoveryPolicy)
     {
-        _player = new SecureVideoPlayer();
+        _player = player ?? throw new ArgumentNullException(nameof(player));
+        _surfaceRecoveryPolicy = surfaceRecoveryPolicy ??
+            throw new ArgumentNullException(nameof(surfaceRecoveryPolicy));
 
         // 订阅播放器事件
         _player.PlaybackStateChanged += OnPlaybackStateChanged;
@@ -490,7 +494,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
                 throw new InvalidOperationException("LibVLC 未能在新视频表面上启动播放。");
             }
 
-            if (cancellation.IsCancellationRequested ||
+            if (_disposed || cancellation.IsCancellationRequested ||
                 !IsVideoSurfaceReady || request.MediaGeneration != _mediaGeneration)
             {
                 return;
@@ -512,7 +516,8 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         }
         catch (OperationCanceledException)
         {
-            if (_activeSurfaceRecovery?.RequestId == request.RequestId &&
+            if (!_disposed &&
+                _activeSurfaceRecovery?.RequestId == request.RequestId &&
                 request.MediaGeneration == _mediaGeneration && IsVideoSurfaceReady)
             {
                 HandleSurfaceRestoreFailure("等待视频输出或首帧超时");
@@ -521,7 +526,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            if (request.MediaGeneration == _mediaGeneration && IsVideoSurfaceReady)
+            if (!_disposed && request.MediaGeneration == _mediaGeneration && IsVideoSurfaceReady)
             {
                 HandleSurfaceRestoreFailure(ex.Message);
             }
@@ -582,8 +587,14 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         // 每个表面重建 Stop 对应消费一个 Stopped 事件，即使原生事件稍晚到达，
         // 也不会被误认为用户主动停止并清除恢复快照。
         var isSurfaceTransitionStop = e.State == PlaybackState.Stopped && TryConsumeSurfaceTransitionStop();
+        var mediaGeneration = Volatile.Read(ref _mediaGeneration);
         Dispatcher.UIThread.Post(() =>
         {
+            if (_disposed || mediaGeneration != Volatile.Read(ref _mediaGeneration))
+            {
+                return;
+            }
+
             if (e.State == PlaybackState.Stopped)
             {
                 _surfaceRecoveryPolicy.OnPlaybackStopped(isSurfaceTransitionStop);
@@ -650,22 +661,50 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
 
     private void OnTimeChanged(object? sender, TimeChangedEventArgs e)
     {
-        Dispatcher.UIThread.Post(() => { CurrentTime = FormatTime(e.Time); });
+        var mediaGeneration = Volatile.Read(ref _mediaGeneration);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed && mediaGeneration == Volatile.Read(ref _mediaGeneration))
+            {
+                CurrentTime = FormatTime(e.Time);
+            }
+        });
     }
 
     private void OnPositionChanged(object? sender, PositionChangedEventArgs e)
     {
-        Dispatcher.UIThread.Post(() => { Position = e.Position * 100; });
+        var mediaGeneration = Volatile.Read(ref _mediaGeneration);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed && mediaGeneration == Volatile.Read(ref _mediaGeneration))
+            {
+                Position = e.Position * 100;
+            }
+        });
     }
 
     private void OnLengthChanged(object? sender, LengthChangedEventArgs e)
     {
-        Dispatcher.UIThread.Post(() => { TotalTime = FormatTime(e.Length); });
+        var mediaGeneration = Volatile.Read(ref _mediaGeneration);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed && mediaGeneration == Volatile.Read(ref _mediaGeneration))
+            {
+                TotalTime = FormatTime(e.Length);
+            }
+        });
     }
 
     private void OnErrorOccurred(object? sender, string e)
     {
-        Dispatcher.UIThread.Post(() => { StatusMessage = e; });
+        var mediaGeneration = Volatile.Read(ref _mediaGeneration);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed && mediaGeneration == Volatile.Read(ref _mediaGeneration))
+            {
+                StatusMessage = e;
+            }
+        });
     }
 
     #endregion
@@ -682,10 +721,13 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     {
         if (!_disposed)
         {
+            // 先使所有已投递回调失效，再取消异步恢复。Scope 会在本对象 Dispose 返回后
+            // 继续释放 SecureVideoPlayer，因此这里绝不能再次释放注入的播放器。
+            _disposed = true;
+            _mediaGeneration++;
             if (disposing)
             {
                 CancelSurfaceRecovery();
-                _mediaGeneration++;
                 // 取消所有事件订阅
                 if (_player != null)
                 {
@@ -699,11 +741,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
                 // 释放定时器资源
                 _positionTimer?.Stop();
 
-                // 释放播放器资源
-                _player?.Dispose();
             }
-
-            _disposed = true;
         }
     }
 

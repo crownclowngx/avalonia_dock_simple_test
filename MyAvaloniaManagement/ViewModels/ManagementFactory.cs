@@ -37,11 +37,16 @@ public class ManagementFactory : Factory
     private readonly Dictionary<string, Tool> _createdTools;
     private readonly IServiceProvider _serviceProvider;
     private readonly PluginModuleCatalog _pluginModuleCatalog;
+    private readonly DocumentScopeManager _documentScopeManager;
 
-    public ManagementFactory(IServiceProvider serviceProvider, PluginModuleCatalog pluginModuleCatalog)
+    public ManagementFactory(
+        IServiceProvider serviceProvider,
+        PluginModuleCatalog pluginModuleCatalog,
+        DocumentScopeManager documentScopeManager)
     {
         _serviceProvider = serviceProvider;
         _pluginModuleCatalog = pluginModuleCatalog;
+        _documentScopeManager = documentScopeManager;
         _strategies = [];
         _toolStrategies = [];
         _documentMetadata = [];
@@ -402,6 +407,29 @@ public class ManagementFactory : Factory
             catch
             {
                 // 服务未初始化时忽略
+            }
+        }
+    }
+
+    /// <summary>
+    /// Dock 已经完成关闭后，释放托管 Document 对应的依赖注入作用域。
+    /// </summary>
+    /// <remarks>
+    /// 不能在 OnDockableClosing 或 Document.OnClose 中释放：这些阶段仍可能取消关闭。
+    /// 使用 finally 可以保证即使其他关闭通知处理器抛出异常，已经从 Dock 移除的 Document
+    /// 仍会释放播放器、定时器和文件句柄。历史插件 Document 不在管理器中，调用不会改变其行为。
+    /// </remarks>
+    public override void OnDockableClosed(IDockable? dockable)
+    {
+        try
+        {
+            base.OnDockableClosed(dockable);
+        }
+        finally
+        {
+            if (dockable is Document document)
+            {
+                _documentScopeManager.Release(document);
             }
         }
     }

@@ -24,10 +24,11 @@ public sealed class SecureVideoPlayer : IDisposable
     public event EventHandler<LengthChangedEventArgs>? LengthChanged;
     public event EventHandler<string>? ErrorOccurred;
 
-    public SecureVideoPlayer()
+    public SecureVideoPlayer(LibVlcRuntime runtime)
     {
+        ArgumentNullException.ThrowIfNull(runtime);
         // 必须先用插件内的绝对路径初始化 Core，再创建任何 LibVLC/MediaPlayer 实例。
-        LibVlcRuntime.EnsureInitialized();
+        runtime.EnsureInitialized();
         _libVlc = new LibVLC();
         _player = new MediaPlayer(_libVlc);
         SubscribeToPlayerEvents();

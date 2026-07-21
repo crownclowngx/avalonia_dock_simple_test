@@ -9,6 +9,8 @@ using MyAvaloniaManagementCommon.ToolCreation;
 using MyPlugTest.Models;
 using MyPlugTest.Plugin;
 using MySmallTools.InitPlug.SecretVideoPlayer;
+using MySmallTools.Plugin;
+using MySmallTools.ViewModels.SecretVideoPlayer;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -20,7 +22,6 @@ public sealed class PluginCompatibilityTests
         var legacyAssemblies = new[]
         {
             typeof(InvoiceInfoImportDocumentStrategy).Assembly,
-            typeof(SecretVideoDocumentStrategy).Assembly,
         };
 
         var catalog = PluginModuleCatalog.Discover(legacyAssemblies);
@@ -30,15 +31,17 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void BiliDownloader和MyPlugTest程序集显式接入模块且不改变公共策略接口()
+    public void BiliDownloader和MyPlugTest及MySmallTools程序集显式接入模块且不改变公共策略接口()
     {
         var biliAssembly = typeof(BiliDownloaderPluginModule).Assembly;
         var myPlugTestAssembly = typeof(MyPlugTestPluginModule).Assembly;
-        var catalog = PluginModuleCatalog.Discover([biliAssembly, myPlugTestAssembly]);
+        var mySmallToolsAssembly = typeof(MySmallToolsPluginModule).Assembly;
+        var catalog = PluginModuleCatalog.Discover([biliAssembly, myPlugTestAssembly, mySmallToolsAssembly]);
 
-        Assert.Equal(["BiliDownloader", "MyPlugTest"], catalog.Modules.Select(x => x.PluginId));
+        Assert.Equal(["BiliDownloader", "MyPlugTest", "MySmallTools"], catalog.Modules.Select(x => x.PluginId));
         Assert.True(catalog.IsManaged(biliAssembly));
         Assert.True(catalog.IsManaged(myPlugTestAssembly));
+        Assert.True(catalog.IsManaged(mySmallToolsAssembly));
         Assert.Equal(2, typeof(IDocumentCreationStrategy).GetMethods().Length);
         Assert.Equal(2, typeof(IToolCreationStrategy).GetMethods().Length);
     }
@@ -49,8 +52,6 @@ public sealed class PluginCompatibilityTests
         var strategyTypes = new[]
         {
             typeof(InvoiceInfoImportDocumentStrategy),
-            typeof(SecretVideoDocumentStrategy),
-            typeof(VideoEncryptorDocumentStrategy),
         };
 
         Assert.All(strategyTypes, type =>
@@ -67,7 +68,6 @@ public sealed class PluginCompatibilityTests
         var legacyAssemblies = new[]
         {
             typeof(InvoiceInfoImportDocumentStrategy).Assembly,
-            typeof(SecretVideoDocumentStrategy).Assembly,
         };
 
         // 这里刻意复刻改造前的发现条件：实现原策略接口、不是抽象类型，
@@ -96,8 +96,6 @@ public sealed class PluginCompatibilityTests
         Assert.Equal(new[]
         {
             typeof(InvoiceInfoImportDocumentStrategy).FullName!,
-            typeof(SecretVideoDocumentStrategy).FullName!,
-            typeof(VideoEncryptorDocumentStrategy).FullName!,
         }.OrderBy(name => name, StringComparer.Ordinal), documentStrategies);
         Assert.Empty(toolStrategies);
     }
@@ -116,16 +114,16 @@ public sealed class PluginCompatibilityTests
     [Fact]
     public void 策略激活器对历史插件使用无参路径对托管插件使用依赖注入路径()
     {
-        var legacyCatalog = PluginModuleCatalog.Discover([typeof(SecretVideoDocumentStrategy).Assembly]);
+        var legacyCatalog = PluginModuleCatalog.Discover([typeof(InvoiceInfoImportDocumentStrategy).Assembly]);
         using var emptyProvider = new ServiceCollection().BuildServiceProvider();
 
         var legacyStrategy = PluginStrategyActivator.Create<IDocumentCreationStrategy>(
-            typeof(SecretVideoDocumentStrategy),
-            typeof(SecretVideoDocumentStrategy).Assembly,
+            typeof(InvoiceInfoImportDocumentStrategy),
+            typeof(InvoiceInfoImportDocumentStrategy).Assembly,
             emptyProvider,
             legacyCatalog);
 
-        Assert.IsType<SecretVideoDocumentStrategy>(legacyStrategy);
+        Assert.IsType<InvoiceInfoImportDocumentStrategy>(legacyStrategy);
 
         var managedAssembly = typeof(TestManagedPluginModule).Assembly;
         var managedCatalog = PluginModuleCatalog.Discover([managedAssembly]);
@@ -140,6 +138,38 @@ public sealed class PluginCompatibilityTests
             managedCatalog);
 
         Assert.IsType<TestManagedToolStrategy>(managedStrategy);
+    }
+
+    [Fact]
+    public void MySmallTools模块注册可通过作用域验证且加密Document彼此独立()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<DocumentScopeManager>();
+        services.AddSingleton<IDocumentScopeFactory>(provider =>
+            provider.GetRequiredService<DocumentScopeManager>());
+        new MySmallToolsPluginModule().ConfigureServices(services);
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = true,
+        });
+
+        var assembly = typeof(MySmallToolsPluginModule).Assembly;
+        var catalog = PluginModuleCatalog.Discover([assembly]);
+        var strategy = PluginStrategyActivator.Create<IDocumentCreationStrategy>(
+            typeof(VideoEncryptorDocumentStrategy),
+            assembly,
+            provider,
+            catalog);
+        var first = Assert.IsType<VideoEncryptorViewModel>(strategy.CreateDocument(
+            new DocumentCreationParams("video-encryptor")));
+        var second = Assert.IsType<VideoEncryptorViewModel>(strategy.CreateDocument(
+            new DocumentCreationParams("video-encryptor")));
+
+        Assert.NotSame(first, second);
+        Assert.True(provider.GetRequiredService<DocumentScopeManager>().Release(first));
+        Assert.True(provider.GetRequiredService<DocumentScopeManager>().Release(second));
     }
 }
 
