@@ -17,7 +17,11 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     private readonly object _syncLock = new object();
     private readonly SecureVideoPlayer _player;
     private readonly DispatcherTimer _positionTimer;
-    private readonly VideoSurfaceResumePolicy _surfaceResumePolicy = new();
+    private readonly VideoSurfaceRecoveryPolicy _surfaceRecoveryPolicy = new();
+    private CancellationTokenSource? _surfaceRecoveryCancellation;
+    private VideoSurfaceRecoveryRequest? _activeSurfaceRecovery;
+    private long _mediaGeneration;
+    private int _pendingSurfaceTransitionStops;
     private bool _disposed = false;
 
     #region Properties
@@ -142,8 +146,8 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanPlay))]
     private async Task PlayAsync()
     {
-        // 用户主动播放意味着接受当前状态，不应继承之前尚未消费的自动续播请求。
-        _surfaceResumePolicy.Cancel();
+        // 用户主动播放意味着接受当前状态，不应继承之前尚未消费的自动恢复请求。
+        CancelSurfaceRecovery();
         await StartPlaybackAsync(isAutomaticResume: false);
     }
 
@@ -153,7 +157,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanPause))]
     private Task PauseAsync()
     {
-        _surfaceResumePolicy.Cancel();
+        CancelSurfaceRecovery();
         _player.Pause();
         _positionTimer.Stop();
         return Task.CompletedTask;
@@ -165,7 +169,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanStop))]
     private Task StopAsync()
     {
-        _surfaceResumePolicy.Cancel();
+        CancelSurfaceRecovery();
         _player.Stop();
         _positionTimer.Stop();
         Position = 0;
@@ -209,7 +213,8 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     /// <returns>是否加载成功</returns>
     public async Task<bool> LoadMediaAsync(string filePath, string password)
     {
-        _surfaceResumePolicy.Cancel();
+        CancelSurfaceRecovery();
+        _mediaGeneration++;
         try
         {
             var success = await _player.LoadEncryptedVideoAsync(filePath, password);
@@ -244,7 +249,8 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     /// </summary>
     public void CleanupMedia()
     {
-        _surfaceResumePolicy.Cancel();
+        CancelSurfaceRecovery();
+        _mediaGeneration++;
         _positionTimer.Stop();
         _player?.CleanupCurrentMedia();
         Position = 0;
@@ -261,8 +267,8 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     /// 接收 NativeControlHost 的同步表面状态通知。
     /// </summary>
     /// <remarks>
-    /// 表面丢失时必须在该方法返回前暂停 LibVLC，因为调用方随后就会销毁 HWND。
-    /// 表面恢复时只消费一次由“播放中丢失表面”产生的续播请求；用户主动暂停或停止不会进入这里的续播分支。
+    /// 表面丢失时必须在该方法返回前 Stop LibVLC，使旧 vout 在调用方销毁 HWND 前完整退出。
+    /// 表面恢复时只消费一次恢复快照，并还原播放中或暂停两种用户可见状态。
     /// </remarks>
     public void SetVideoSurfaceReady(bool isReady)
     {
@@ -273,22 +279,17 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
 
         if (!isReady)
         {
-            var isActuallyPlaying = CurrentState == PlayerStateEnum.Playing || _player.GetMediaPlayer().IsPlaying;
             IsVideoSurfaceReady = false;
-            if (_surfaceResumePolicy.OnSurfaceLost(isActuallyPlaying))
-            {
-                _player.Pause();
-                _positionTimer.Stop();
-                StatusMessage = "视频输出表面正在重建，已临时暂停";
-            }
+            BeginVideoSurfaceLoss(forcePlaying: false);
             return;
         }
 
         IsVideoSurfaceReady = true;
-        var hasMedia = _player.GetMediaPlayer().Media is not null;
-        if (_surfaceResumePolicy.ConsumeResumeRequest(hasMedia))
+        var request = _surfaceRecoveryPolicy.ConsumeRecovery(_mediaGeneration);
+        if (request is not null && _player.HasMedia)
         {
-            _ = ResumeAfterSurfaceRestoreAsync();
+            _activeSurfaceRecovery = request;
+            _ = RestoreAfterSurfaceRecreatedAsync(request.Value);
         }
     }
 
@@ -378,7 +379,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     {
         return IsVideoSurfaceReady &&
                CurrentState != PlayerStateEnum.Playing &&
-               _player.GetMediaPlayer().Media is not null;
+               _player.HasMedia;
     }
 
     /// <summary>
@@ -422,9 +423,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         // 立即暂停并登记下一次续播，绝不允许已启动的 vout 在零 HWND 上继续工作。
         if (!IsVideoSurfaceReady)
         {
-            _surfaceResumePolicy.OnSurfaceLost(isPlaying: true);
-            _player.Pause();
-            _positionTimer.Stop();
+            BeginVideoSurfaceLoss(forcePlaying: true);
             return false;
         }
 
@@ -432,19 +431,146 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         return true;
     }
 
-    private async Task ResumeAfterSurfaceRestoreAsync()
+    private void BeginVideoSurfaceLoss(bool forcePlaying)
     {
+        var previousRecovery = _activeSurfaceRecovery;
+        _activeSurfaceRecovery = null;
+        CancelSurfaceRecoveryCancellationOnly();
+
+        var isPlaying = previousRecovery?.PlaybackMode == VideoSurfacePlaybackMode.Playing ||
+                        forcePlaying ||
+                        CurrentState == PlayerStateEnum.Playing ||
+                        _player.GetMediaPlayer().IsPlaying;
+        var isPaused = previousRecovery?.PlaybackMode == VideoSurfacePlaybackMode.Paused ||
+                       (!isPlaying && (CurrentState == PlayerStateEnum.Paused || _player.IsPaused));
+
+        var request = _surfaceRecoveryPolicy.OnSurfaceLost(
+            _mediaGeneration,
+            previousRecovery?.PositionMs ?? _player.PlaybackTime,
+            _player.HasMedia,
+            isPlaying,
+            isPaused);
+        if (request is null)
+        {
+            return;
+        }
+
+        // Stop 必须发生在 EmbeddedVideoSurface 调用基类销毁旧 HWND 之前。
+        // 它会同步等待旧 vout 退出，因此切回时 Play 一定创建绑定新 HWND 的输出。
+        Interlocked.Increment(ref _pendingSurfaceTransitionStops);
         try
         {
-            if (await StartPlaybackAsync(isAutomaticResume: true))
+            _player.StopForVideoSurfaceTransition();
+        }
+        catch
+        {
+            Interlocked.Decrement(ref _pendingSurfaceTransitionStops);
+            throw;
+        }
+
+        _positionTimer.Stop();
+        StatusMessage = request.Value.PlaybackMode == VideoSurfacePlaybackMode.Playing
+            ? "视频输出表面正在重建，稍后自动继续播放"
+            : "视频输出表面正在重建，稍后恢复暂停画面";
+    }
+
+    private async Task RestoreAfterSurfaceRecreatedAsync(VideoSurfaceRecoveryRequest request)
+    {
+        var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        _surfaceRecoveryCancellation = cancellation;
+        try
+        {
+            var restored = await _player.RestoreVideoSurfaceAsync(
+                request.PositionMs,
+                request.PlaybackMode == VideoSurfacePlaybackMode.Paused,
+                cancellation.Token);
+
+            if (!restored)
             {
+                throw new InvalidOperationException("LibVLC 未能在新视频表面上启动播放。");
+            }
+
+            if (cancellation.IsCancellationRequested ||
+                !IsVideoSurfaceReady || request.MediaGeneration != _mediaGeneration)
+            {
+                return;
+            }
+
+            if (request.PlaybackMode == VideoSurfacePlaybackMode.Playing)
+            {
+                CurrentState = PlayerStateEnum.Playing;
+                _positionTimer.Start();
                 StatusMessage = "视频输出表面已恢复，继续播放";
             }
+            else
+            {
+                CurrentState = PlayerStateEnum.Paused;
+                _positionTimer.Stop();
+                UpdatePosition();
+                StatusMessage = "视频输出表面已恢复，保持暂停";
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            if (_activeSurfaceRecovery?.RequestId == request.RequestId &&
+                request.MediaGeneration == _mediaGeneration && IsVideoSurfaceReady)
+            {
+                HandleSurfaceRestoreFailure("等待视频输出或首帧超时");
+            }
+            // 其余取消来自再次切出、主动操作或媒体切换，新状态负责后续处理。
         }
         catch (Exception ex)
         {
-            StatusMessage = $"视频表面恢复后自动续播失败: {ex.Message}";
+            if (request.MediaGeneration == _mediaGeneration && IsVideoSurfaceReady)
+            {
+                HandleSurfaceRestoreFailure(ex.Message);
+            }
         }
+        finally
+        {
+            if (_activeSurfaceRecovery?.RequestId == request.RequestId)
+            {
+                _activeSurfaceRecovery = null;
+            }
+
+            if (ReferenceEquals(_surfaceRecoveryCancellation, cancellation))
+            {
+                _surfaceRecoveryCancellation = null;
+            }
+            cancellation.Dispose();
+        }
+    }
+
+    private void CancelSurfaceRecoveryCancellationOnly()
+    {
+        var cancellation = _surfaceRecoveryCancellation;
+        _surfaceRecoveryCancellation = null;
+        cancellation?.Cancel();
+    }
+
+    private void CancelSurfaceRecovery()
+    {
+        _activeSurfaceRecovery = null;
+        _surfaceRecoveryPolicy.Cancel();
+        CancelSurfaceRecoveryCancellationOnly();
+    }
+
+    private void HandleSurfaceRestoreFailure(string detail)
+    {
+        Interlocked.Increment(ref _pendingSurfaceTransitionStops);
+        try
+        {
+            _player.Stop();
+        }
+        catch
+        {
+            Interlocked.Decrement(ref _pendingSurfaceTransitionStops);
+            throw;
+        }
+        _surfaceRecoveryPolicy.Cancel();
+        _positionTimer.Stop();
+        CurrentState = PlayerStateEnum.Stopped;
+        StatusMessage = $"视频表面自动恢复失败，请手动播放: {detail}";
     }
 
     #endregion
@@ -453,8 +579,23 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
 
     private void OnPlaybackStateChanged(object? sender, PlaybackStateChangedEventArgs e)
     {
+        // 每个表面重建 Stop 对应消费一个 Stopped 事件，即使原生事件稍晚到达，
+        // 也不会被误认为用户主动停止并清除恢复快照。
+        var isSurfaceTransitionStop = e.State == PlaybackState.Stopped && TryConsumeSurfaceTransitionStop();
         Dispatcher.UIThread.Post(() =>
         {
+            if (e.State == PlaybackState.Stopped)
+            {
+                _surfaceRecoveryPolicy.OnPlaybackStopped(isSurfaceTransitionStop);
+                if (isSurfaceTransitionStop)
+                {
+                    PlayCommand.NotifyCanExecuteChanged();
+                    PauseCommand.NotifyCanExecuteChanged();
+                    StopCommand.NotifyCanExecuteChanged();
+                    return;
+                }
+            }
+
             CurrentState = e.State switch
             {
                 PlaybackState.Playing => PlayerStateEnum.Playing,
@@ -475,9 +616,9 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
                 _ => StatusMessage
             };
 
-            if (e.State is PlaybackState.Stopped or PlaybackState.Ended or PlaybackState.Error)
+            if (e.State is PlaybackState.Ended or PlaybackState.Error)
             {
-                _surfaceResumePolicy.Cancel();
+                CancelSurfaceRecovery();
             }
 
             // 更新命令状态
@@ -485,6 +626,26 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
             PauseCommand.NotifyCanExecuteChanged();
             StopCommand.NotifyCanExecuteChanged();
         });
+    }
+
+    private bool TryConsumeSurfaceTransitionStop()
+    {
+        while (true)
+        {
+            var pending = Volatile.Read(ref _pendingSurfaceTransitionStops);
+            if (pending <= 0)
+            {
+                return false;
+            }
+
+            if (Interlocked.CompareExchange(
+                    ref _pendingSurfaceTransitionStops,
+                    pending - 1,
+                    pending) == pending)
+            {
+                return true;
+            }
+        }
     }
 
     private void OnTimeChanged(object? sender, TimeChangedEventArgs e)
@@ -523,7 +684,8 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         {
             if (disposing)
             {
-                _surfaceResumePolicy.Cancel();
+                CancelSurfaceRecovery();
+                _mediaGeneration++;
                 // 取消所有事件订阅
                 if (_player != null)
                 {

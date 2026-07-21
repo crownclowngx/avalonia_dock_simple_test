@@ -118,6 +118,57 @@ public sealed class SecureVideoPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// 当前是否仍有可用于重新创建视频输出的媒体。
+    /// </summary>
+    public bool HasMedia => !_disposed && _currentMedia is not null;
+
+    /// <summary>
+    /// 当前原生播放器位置。未开始播放时 LibVLC 可能返回负值，这里统一归零。
+    /// </summary>
+    public long PlaybackTime => _disposed ? 0 : Math.Max(0, _player.Time);
+
+    /// <summary>
+    /// 当前是否处于暂停状态。
+    /// </summary>
+    public bool IsPaused => !_disposed && _player.State == VLCState.Paused;
+
+    /// <summary>
+    /// 在 Avalonia 销毁旧 HWND 前同步停止播放器，使旧 vout 完整退出。
+    /// </summary>
+    /// <remarks>
+    /// MediaPlayer.Stop 是同步调用，不能从 LibVLC 回调线程调用。本方法只允许由 Avalonia
+    /// NativeControlHost 的表面销毁通知在 UI 线程调用，并且不会解除当前 Media。
+    /// </remarks>
+    public void StopForVideoSurfaceTransition()
+    {
+        if (!_disposed && _currentMedia is not null)
+        {
+            _player.Stop();
+        }
+    }
+
+    /// <summary>
+    /// 在新 HWND 已经绑定后重新创建 vout，并恢复原来的位置和播放/暂停状态。
+    /// </summary>
+    public async Task<bool> RestoreVideoSurfaceAsync(
+        long positionMs,
+        bool restorePaused,
+        CancellationToken cancellationToken)
+    {
+        if (_disposed || _currentMedia is null)
+        {
+            return false;
+        }
+
+        var operations = new LibVlcVideoSurfaceRestoreOperations(_player);
+        return await VideoSurfaceRestoreSequence.ExecuteAsync(
+            operations,
+            positionMs,
+            restorePaused,
+            cancellationToken);
+    }
+
     public void Pause()
     {
         if (!_disposed) _player.Pause();
