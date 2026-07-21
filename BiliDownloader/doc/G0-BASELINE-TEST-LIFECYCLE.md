@@ -125,13 +125,18 @@ Coordinator 不再直接创建上述服务，只负责：
 
 ## 7. 自动化测试
 
-独立运行：
+测试按职责拆分为两个可独立运行的项目：
+
+- `BiliDownloader.Tests` 包含 7 项下载插件业务边界测试，验证 Coordinator、下载执行边界以及 BiliDownloader 模块的服务生命周期与宿主服务复用。
+- `MyAvaloniaManagement.PluginTests` 包含 9 项宿主插件架构测试，验证生命周期管理、策略激活以及 Legacy/Managed 跨插件兼容性。
+- MyPlugTest 只作为“不注册生命周期的 Managed Plugin”样本参与架构验证，不增加 MyPlugTest 业务测试。
 
 ```powershell
 dotnet test BiliDownloader.Tests\BiliDownloader.Tests.csproj -c Debug
+dotnet test MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj -c Debug
 ```
 
-当前测试覆盖：
+两个项目合计仍为 16 项测试，覆盖范围如下：
 
 - Managed 生命周期正序初始化、反序关闭、幂等和失败隔离。
 - DaTangAccountingHelpPlug 与 MySmallTools 不被误判为 Managed Plugin。
@@ -150,15 +155,15 @@ dotnet test BiliDownloader.Tests\BiliDownloader.Tests.csproj -c Debug
 
 ## 8. 构建基线与后续边界
 
-- BiliDownloader 本体和 BiliDownloader.Tests 新增代码为 0 编译警告。
+- BiliDownloader 本体、BiliDownloader.Tests 和 MyAvaloniaManagement.PluginTests 新增代码为 0 编译警告。
 - G0 初次完成时全解决方案基线为 0 个错误、26 个历史警告。
 - MyPlugTest 接入 DI 时自然消除了该项目原有的 4 个空值警告；当前仅保留
   DaTangAccountingHelpPlug 和 MySmallTools 的 22 个历史警告。
 - 2026-07-21 完成宿主界面冒烟：主窗口正常启动，Legacy 插件菜单仍可见，
   BiliSchedulerTool 正常创建，BiliDownloader Document 可由用户菜单创建，宿主可通过关闭按钮有序退出。
   冒烟过程中未点击登录、解析或下载入口，未触发远端请求和媒体执行链路。
-- 测试项目引用 BiliDownloader 和 MyPlugTest 时均通过 `SkipPluginDeploy=true`
-  跳过插件发布，避免测试构建覆盖宿主插件目录。
+- 两个测试项目引用 BiliDownloader 时，以及架构测试项目引用 MyPlugTest 时，均通过 `SkipPluginDeploy=true`
+  跳过插件发布，避免测试构建覆盖宿主插件目录。BiliDownloader.Tests 不再引用其他业务插件。
 - Cookie 字段和明文存储兼容代码仍保留，并以局部警告说明标注，由 G1 迁移。
 - 进度最终 Flush、Range 完整性和临时文件恢复校验由 G3 实现。
 - 并发数动态调整和单任务暂停/取消的竞争处理由 G2 实现。

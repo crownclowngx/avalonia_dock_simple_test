@@ -1,6 +1,6 @@
 using MyAvaloniaManagementCommon.Plugin;
 
-namespace BiliDownloader.Tests;
+namespace MyAvaloniaManagement.PluginTests;
 
 public sealed class PluginLifecycleManagerTests
 {

@@ -13,4 +13,6 @@ MySmallTools/bin/Debug/net9.0/MySmallTools.deps.json
 /BiliDownloader/obj
 /BiliDownloader.Tests/bin
 /BiliDownloader.Tests/obj
+/MyAvaloniaManagement.PluginTests/bin
+/MyAvaloniaManagement.PluginTests/obj
 .aiflow/insight/

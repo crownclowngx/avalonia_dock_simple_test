@@ -1,5 +1,7 @@
 using BiliDownloader.Plugin;
 using DaTangAccountingHelpPlug.Create;
+using Dock.Model.Mvvm.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Plugin;
@@ -7,12 +9,10 @@ using MyAvaloniaManagementCommon.ToolCreation;
 using MyPlugTest.Models;
 using MyPlugTest.Plugin;
 using MySmallTools.InitPlug.SecretVideoPlayer;
-using Microsoft.Extensions.DependencyInjection;
-using Dock.Model.Mvvm.Controls;
 
-namespace BiliDownloader.Tests;
+namespace MyAvaloniaManagement.PluginTests;
 
-public sealed class LegacyPluginCompatibilityTests
+public sealed class PluginCompatibilityTests
 {
     [Fact]
     public void 历史插件程序集不会被标记为宿主管理模块()
@@ -30,7 +30,7 @@ public sealed class LegacyPluginCompatibilityTests
     }
 
     [Fact]
-    public void BiliDownloader与MyPlugTest程序集显式接入模块_且不改变公共策略接口()
+    public void BiliDownloader和MyPlugTest程序集显式接入模块且不改变公共策略接口()
     {
         var biliAssembly = typeof(BiliDownloaderPluginModule).Assembly;
         var myPlugTestAssembly = typeof(MyPlugTestPluginModule).Assembly;
@@ -62,7 +62,7 @@ public sealed class LegacyPluginCompatibilityTests
     }
 
     [Fact]
-    public void 当前所有历史Document与Tool策略仍可按原规则发现()
+    public void 当前所有历史Document和Tool策略仍可按原规则发现()
     {
         var legacyAssemblies = new[]
         {
@@ -114,7 +114,7 @@ public sealed class LegacyPluginCompatibilityTests
     }
 
     [Fact]
-    public void 策略激活器对历史插件使用无参路径_对托管插件使用依赖注入路径()
+    public void 策略激活器对历史插件使用无参路径对托管插件使用依赖注入路径()
     {
         var legacyCatalog = PluginModuleCatalog.Discover([typeof(SecretVideoDocumentStrategy).Assembly]);
         using var emptyProvider = new ServiceCollection().BuildServiceProvider();
@@ -145,6 +145,7 @@ public sealed class LegacyPluginCompatibilityTests
 
 /// <summary>
 /// 测试程序集中的最小托管模块，仅用于证明声明模块后策略会切换到 DI 激活路径。
+/// 它没有真实业务服务，也不注册生命周期，避免把架构测试替身误解为完整插件示例。
 /// </summary>
 public sealed class TestManagedPluginModule : IPluginModule
 {
