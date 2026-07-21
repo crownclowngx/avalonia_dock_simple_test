@@ -15,7 +15,8 @@
           <TextBlock Text="源视频" FontWeight="SemiBold" />
           <Grid ColumnDefinitions="*,Auto,Auto">
             <TextBox Grid.Column="0" Text="{Binding SelectedFilePath}" Watermark="选择视频文件..." IsReadOnly="True" />
-            <Button Grid.Column="1" Content="浏览" Command="{Binding SelectFileCommand}" Margin="8,0,0,0" />
+            <Button Grid.Column="1" Content="浏览" Click="OnBrowseFileClick"
+                    IsEnabled="{Binding !IsEncrypting}" Margin="8,0,0,0" />
             <Button Grid.Column="2" Content="清空" Command="{Binding ClearAllCommand}" Margin="8,0,0,0" />
           </Grid>
           <StackPanel Orientation="Horizontal" Spacing="18">
@@ -29,9 +30,9 @@
         <StackPanel Spacing="8">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="标题（可留空）" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="1" Text="{Binding TitleCharacterCount, StringFormat='{}{0} / 200'}" Foreground="Gray" />
+            <TextBlock Grid.Column="1" Text="{Binding VideoTitleCharacterCount, StringFormat='{}{0} / 200'}" Foreground="Gray" />
           </Grid>
-          <TextBox Text="{Binding Title}" Watermark="留空时播放器显示原始文件名" IsEnabled="{Binding !IsEncrypting}" />
+          <TextBox Text="{Binding VideoTitle}" Watermark="留空时播放器显示原始文件名" IsEnabled="{Binding !IsEncrypting}" />
 
           <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
             <TextBlock Text="描述（公开可见，可留空）" FontWeight="SemiBold" />

@@ -17,6 +17,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     private readonly object _syncLock = new object();
     private readonly SecureVideoPlayer _player;
     private readonly DispatcherTimer _positionTimer;
+    private readonly VideoSurfaceResumePolicy _surfaceResumePolicy = new();
     private bool _disposed = false;
 
     #region Properties
@@ -77,6 +78,11 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _statusMessage = "播放器就绪";
 
     /// <summary>
+    /// Avalonia 原生视频子窗口是否已经创建并绑定到当前 MediaPlayer。
+    /// </summary>
+    [ObservableProperty] private bool _isVideoSurfaceReady;
+
+    /// <summary>
     /// MediaPlayer 实例，用于绑定到 VideoView
     /// </summary>
     public MediaPlayer? MediaPlayer => _player?.GetMediaPlayer();
@@ -121,6 +127,11 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         _player?.SetVolume((int)value);
     }
 
+    partial void OnIsVideoSurfaceReadyChanged(bool value)
+    {
+        PlayCommand.NotifyCanExecuteChanged();
+    }
+
     #endregion
 
     #region Commands
@@ -131,10 +142,9 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanPlay))]
     private async Task PlayAsync()
     {
-        if (await _player.Play())
-        {
-            _positionTimer.Start();
-        }
+        // 用户主动播放意味着接受当前状态，不应继承之前尚未消费的自动续播请求。
+        _surfaceResumePolicy.Cancel();
+        await StartPlaybackAsync(isAutomaticResume: false);
     }
 
     /// <summary>
@@ -143,6 +153,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanPause))]
     private Task PauseAsync()
     {
+        _surfaceResumePolicy.Cancel();
         _player.Pause();
         _positionTimer.Stop();
         return Task.CompletedTask;
@@ -154,6 +165,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanStop))]
     private Task StopAsync()
     {
+        _surfaceResumePolicy.Cancel();
         _player.Stop();
         _positionTimer.Stop();
         Position = 0;
@@ -197,6 +209,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     /// <returns>是否加载成功</returns>
     public async Task<bool> LoadMediaAsync(string filePath, string password)
     {
+        _surfaceResumePolicy.Cancel();
         try
         {
             var success = await _player.LoadEncryptedVideoAsync(filePath, password);
@@ -231,6 +244,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     /// </summary>
     public void CleanupMedia()
     {
+        _surfaceResumePolicy.Cancel();
         _positionTimer.Stop();
         _player?.CleanupCurrentMedia();
         Position = 0;
@@ -238,6 +252,44 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         TotalTime = "00:00:00";
         StatusMessage = "播放器就绪";
         CurrentState = PlayerStateEnum.Stopped;
+        PlayCommand.NotifyCanExecuteChanged();
+        PauseCommand.NotifyCanExecuteChanged();
+        StopCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>
+    /// 接收 NativeControlHost 的同步表面状态通知。
+    /// </summary>
+    /// <remarks>
+    /// 表面丢失时必须在该方法返回前暂停 LibVLC，因为调用方随后就会销毁 HWND。
+    /// 表面恢复时只消费一次由“播放中丢失表面”产生的续播请求；用户主动暂停或停止不会进入这里的续播分支。
+    /// </remarks>
+    public void SetVideoSurfaceReady(bool isReady)
+    {
+        if (_disposed || IsVideoSurfaceReady == isReady)
+        {
+            return;
+        }
+
+        if (!isReady)
+        {
+            var isActuallyPlaying = CurrentState == PlayerStateEnum.Playing || _player.GetMediaPlayer().IsPlaying;
+            IsVideoSurfaceReady = false;
+            if (_surfaceResumePolicy.OnSurfaceLost(isActuallyPlaying))
+            {
+                _player.Pause();
+                _positionTimer.Stop();
+                StatusMessage = "视频输出表面正在重建，已临时暂停";
+            }
+            return;
+        }
+
+        IsVideoSurfaceReady = true;
+        var hasMedia = _player.GetMediaPlayer().Media is not null;
+        if (_surfaceResumePolicy.ConsumeResumeRequest(hasMedia))
+        {
+            _ = ResumeAfterSurfaceRestoreAsync();
+        }
     }
 
     #endregion
@@ -324,7 +376,9 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     /// </summary>
     private bool CanPlay()
     {
-        return CurrentState != PlayerStateEnum.Playing && _player?.GetMediaPlayer()?.Media != null;
+        return IsVideoSurfaceReady &&
+               CurrentState != PlayerStateEnum.Playing &&
+               _player.GetMediaPlayer().Media is not null;
     }
 
     /// <summary>
@@ -341,6 +395,56 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     private bool CanStop()
     {
         return CurrentState == PlayerStateEnum.Playing || CurrentState == PlayerStateEnum.Paused;
+    }
+
+    /// <summary>
+    /// 在确认 HWND 可用后启动播放，并处理播放准备期间表面再次丢失的竞争情况。
+    /// </summary>
+    private async Task<bool> StartPlaybackAsync(bool isAutomaticResume)
+    {
+        if (!IsVideoSurfaceReady)
+        {
+            StatusMessage = "视频输出表面尚未准备完成";
+            return false;
+        }
+
+        var success = await _player.Play();
+        if (!success)
+        {
+            if (isAutomaticResume)
+            {
+                StatusMessage = "视频表面恢复后自动续播失败，请手动播放";
+            }
+            return false;
+        }
+
+        // Media.Parse 可能产生异步等待；如果等待期间 Dock 又销毁了 HWND，
+        // 立即暂停并登记下一次续播，绝不允许已启动的 vout 在零 HWND 上继续工作。
+        if (!IsVideoSurfaceReady)
+        {
+            _surfaceResumePolicy.OnSurfaceLost(isPlaying: true);
+            _player.Pause();
+            _positionTimer.Stop();
+            return false;
+        }
+
+        _positionTimer.Start();
+        return true;
+    }
+
+    private async Task ResumeAfterSurfaceRestoreAsync()
+    {
+        try
+        {
+            if (await StartPlaybackAsync(isAutomaticResume: true))
+            {
+                StatusMessage = "视频输出表面已恢复，继续播放";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"视频表面恢复后自动续播失败: {ex.Message}";
+        }
     }
 
     #endregion
@@ -370,6 +474,11 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
                 PlaybackState.Error => "播放错误",
                 _ => StatusMessage
             };
+
+            if (e.State is PlaybackState.Stopped or PlaybackState.Ended or PlaybackState.Error)
+            {
+                _surfaceResumePolicy.Cancel();
+            }
 
             // 更新命令状态
             PlayCommand.NotifyCanExecuteChanged();
@@ -414,6 +523,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         {
             if (disposing)
             {
+                _surfaceResumePolicy.Cancel();
                 // 取消所有事件订阅
                 if (_player != null)
                 {

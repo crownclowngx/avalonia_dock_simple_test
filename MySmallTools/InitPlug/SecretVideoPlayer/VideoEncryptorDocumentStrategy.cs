@@ -24,7 +24,7 @@ public class VideoEncryptorDocumentStrategy : IDocumentCreationStrategy
     {
         return new DocumentMetadata(DocumentTypeIdConstant.VideoEncryptorDocumentId, "视频文件加密器")
         {
-            Description = "选择视频文件，输入密码进行AES-CTR加密，生成加密后的视频文件",
+            Description = "使用 SECVID03/AES-256-GCM 分块加密视频，支持标题、描述和随机读取播放",
             MenuCategory = "视频工具"
         };
     }

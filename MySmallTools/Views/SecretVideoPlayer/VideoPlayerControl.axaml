@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vlc="clr-namespace:LibVLCSharp.Avalonia;assembly=LibVLCSharp.Avalonia"
+             xmlns:local="clr-namespace:MySmallTools.Views.SecretVideoPlayer"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="clr-namespace:MyAvaloniaManagementCommon.Behaviors;assembly=MyAvaloniaManagementCommon"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
@@ -13,34 +13,24 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- 视频播放区域 -->
-        <Border Grid.Row="0" Margin="5">
-            <Grid>
-                <!-- LibVLC视频播放控件 -->
-                <vlc:VideoView MediaPlayer="{Binding MediaPlayer}" />
-
-                <!-- 状态信息 -->
-                <Border VerticalAlignment="Top" HorizontalAlignment="Left"
-                        Margin="10" Padding="10,5" CornerRadius="3"
-                        Background="#80000000"
-                        IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="White" />
-                </Border>
-
-                <!-- 缓存信息 -->
-                <Border VerticalAlignment="Top" HorizontalAlignment="Right"
-                        Margin="10" Padding="10,5" CornerRadius="3"
-                        Background="#80000000"
-                        IsVisible="{Binding BufferInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                    <TextBlock Text="{Binding BufferInfo}" FontSize="10" Foreground="White" />
-                </Border>
-            </Grid>
+        <Border Grid.Row="0" Margin="5" Background="Black">
+            <!-- 可靠视频表面会在原生 HWND 创建后显式绑定 MediaPlayer，禁止 LibVLC 回退到独立输出窗口。 -->
+            <local:EmbeddedVideoSurface x:Name="VideoSurface" />
         </Border>
 
+        <!-- 状态信息放在普通 Avalonia 布局中，不覆盖原生 HWND，避免 NativeControlHost 的 airspace 限制。 -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="10,2">
+            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="12" TextWrapping="Wrap" />
+            <TextBlock Grid.Column="1" Text="{Binding BufferInfo}" FontSize="10" Margin="12,0,0,0"
+                       IsVisible="{Binding BufferInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </Grid>
+
         <!-- 进度条区域 -->
-        <Border Grid.Row="1" Padding="10,5" Margin="5,0">
+        <Border Grid.Row="2" Padding="10,5" Margin="5,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -69,7 +59,7 @@
         </Border>
 
         <!-- 控制按钮区域 -->
-        <Border Grid.Row="2" Padding="10" Margin="5">
+        <Border Grid.Row="3" Padding="10" Margin="5">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />

@@ -12,15 +12,6 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer;
 /// </summary>
 public partial class VideoEncryptorViewModel : Document
 {
-    #region Events
-    
-    /// <summary>
-    /// 请求文件选择事件
-    /// </summary>
-    public event EventHandler? FileSelectionRequested;
-    
-    #endregion
-    
     #region Fields
     private readonly VideoEncryptorService _encryptorService;
     private EncryptionTask _currentTask;
@@ -87,13 +78,13 @@ public partial class VideoEncryptorViewModel : Document
     }
 
     [ObservableProperty]
-    private string _title = string.Empty;
+    private string _videoTitle = string.Empty;
 
-    partial void OnTitleChanged(string value)
+    partial void OnVideoTitleChanged(string value)
     {
         // 字数按 Unicode Rune 实时重算，确保 emoji 不会因为 UTF-16 占两个 char 而被错误计为两个字符。
         _currentTask.Title = value;
-        OnPropertyChanged(nameof(TitleCharacterCount));
+        OnPropertyChanged(nameof(VideoTitleCharacterCount));
         StartEncryptionCommand.NotifyCanExecuteChanged();
     }
 
@@ -107,7 +98,7 @@ public partial class VideoEncryptorViewModel : Document
         StartEncryptionCommand.NotifyCanExecuteChanged();
     }
 
-    public int TitleCharacterCount => EncryptedVideoContainer.CountRunes(Title);
+    public int VideoTitleCharacterCount => EncryptedVideoContainer.CountRunes(VideoTitle);
     public int DescriptionCharacterCount => EncryptedVideoContainer.CountRunes(Description);
 
     /// <summary>
@@ -119,7 +110,6 @@ public partial class VideoEncryptorViewModel : Document
     partial void OnIsEncryptingChanged(bool value)
     {
         // 手动触发相关命令状态更新
-        SelectFileCommand.NotifyCanExecuteChanged();
         StartEncryptionCommand.NotifyCanExecuteChanged();
         ClearAllCommand.NotifyCanExecuteChanged();
     }
@@ -174,21 +164,6 @@ public partial class VideoEncryptorViewModel : Document
 
     #region Commands
 
-    [RelayCommand(CanExecute = nameof(CanSelectFile))]
-    private void SelectFile()
-    {
-        try
-        {
-            FileSelectionRequested?.Invoke(this, EventArgs.Empty);
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"选择文件时出错: {ex.Message}";
-        }
-    }
-
-    private bool CanSelectFile() => !IsEncrypting;
-
     [RelayCommand(CanExecute = nameof(CanStartEncryption))]
     private async Task StartEncryptionAsync()
     {
@@ -235,7 +210,7 @@ public partial class VideoEncryptorViewModel : Document
                !string.IsNullOrEmpty(Password) &&
                Password == ConfirmPassword &&
                Password.Length >= 6 &&
-               TitleCharacterCount <= EncryptedVideoContainer.MaxTitleRunes &&
+               VideoTitleCharacterCount <= EncryptedVideoContainer.MaxTitleRunes &&
                DescriptionCharacterCount <= EncryptedVideoContainer.MaxDescriptionRunes;
     }
     
@@ -247,7 +222,7 @@ public partial class VideoEncryptorViewModel : Document
         OutputFilePath = string.Empty;
         Password = string.Empty;
         ConfirmPassword = string.Empty;
-        Title = string.Empty;
+        VideoTitle = string.Empty;
         Description = string.Empty;
         Progress = 0;
         ProgressText = "0%";

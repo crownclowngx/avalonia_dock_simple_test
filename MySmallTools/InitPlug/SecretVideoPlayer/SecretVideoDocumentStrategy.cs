@@ -21,7 +21,7 @@ public class SecretVideoDocumentStrategy: IDocumentCreationStrategy
     {
         return new DocumentMetadata(DocumentTypeIdConstant.SecretVideoDocumentId, "加密视频播放器")
         {
-            Description = "支持AES-CTR加密的视频播放器，保留头信息实时解密",
+            Description = "支持 SECVID03/AES-256-GCM 认证分块和随机读取的加密视频播放器",
             MenuCategory = "视频工具"
         };
     }
