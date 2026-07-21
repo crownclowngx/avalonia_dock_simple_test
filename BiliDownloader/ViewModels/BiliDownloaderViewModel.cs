@@ -7,6 +7,7 @@ using BiliDownloader.Constants;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Auth;
+using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels.BiliDownloader;
 using Newtonsoft.Json;
@@ -27,7 +28,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     /// </summary>
     public string DocumentId { get; private set; } = Guid.NewGuid().ToString("N");
 
-    private readonly IMessengerService? _messengerService;
+    private readonly IMessengerService _messengerService;
+    private readonly IDownloadTaskRepository _taskRepository;
+    private readonly IBiliCredentialProvider _credentialProvider;
 
     #region 子 ViewModel
 
@@ -58,32 +61,35 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
     #endregion
 
-    public BiliDownloaderViewModel()
+    public BiliDownloaderViewModel(
+        IMessengerService messengerService,
+        IDownloadTaskRepository taskRepository,
+        ISettingsRepository settingsRepository,
+        BiliLoginStateService loginStateService,
+        BiliLoginService loginService,
+        BiliApiService apiService,
+        IBiliCredentialProvider credentialProvider)
     {
+        _messengerService = messengerService;
+        _taskRepository = taskRepository;
+        _credentialProvider = credentialProvider;
+
         // 初始化子 ViewModel（通过回调通信）
-        LoginBar = new LoginBarViewModel();
+        LoginBar = new LoginBarViewModel(loginStateService, loginService);
 
         VideoParse = new VideoParseViewModel(
+            apiService,
+            credentialProvider,
             onParsed: HandleParseResult,
             isLoggedInCheck: () => LoginBar.IsLoggedIn);
 
-        DownloadConfig = new DownloadConfigViewModel();
-
-        // 注册消息总线（需要在 VideoList 构造前初始化）
-        try
-        {
-            _messengerService = new MessengerService();
-        }
-        catch
-        {
-            // ServiceProvider 尚未初始化时忽略
-        }
+        DownloadConfig = new DownloadConfigViewModel(settingsRepository);
 
         VideoList = new VideoListViewModel(
             getSubmitContext: () => new SubmitContext
             {
                 DocumentId = DocumentId,
-                Cookie = BiliLoginStateService.Instance.CookieHeader,
+                Cookie = _credentialProvider.GetCookieHeader(),
                 QualityId = DownloadConfig.SelectedQuality?.QualityId ?? 0,
                 AudioQualityId = DownloadConfig.SelectedAudioQuality?.QualityId ?? 0,
                 OutputDirectory = DownloadConfig.OutputDirectory,
@@ -105,8 +111,6 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
     private void RegisterMessengers()
     {
-        if (_messengerService == null) return;
-
         try
         {
             // 登录状态变更 -> 同步到 LoginBar 子 VM
@@ -193,7 +197,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     #endregion
 
     /// <summary>
-    /// 确保登录状态已初始化（由 View 的 OnAttachedToVisualTree 调用）
+    /// 在用户明确点击登录入口后加载并校验登录状态。
+    /// 本方法不得由构造函数或视觉树附加回调自动调用，否则打开 Document 就可能产生远端请求。
     /// </summary>
     public async Task EnsureLoggedInAsync()
     {
@@ -207,9 +212,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     {
         try
         {
-            var store = new DownloadTaskStore();
-            await store.InitAsync();
-            var records = await store.GetByDocumentIdAsync(DocumentId);
+            await _taskRepository.InitAsync();
+            var records = await _taskRepository.GetByDocumentIdAsync(DocumentId);
 
             int idx = VideoList.Count + 1;
             foreach (var record in records)
@@ -283,29 +287,29 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         try
         {
             if (saveData == null) return;
-            var data = JsonConvert.DeserializeObject<dynamic>(saveData.Content);
+            var data = JsonConvert.DeserializeObject<JObject>(saveData.Content);
             if (data == null) return;
 
-            var url = data.Url?.ToString() ?? "";
-            var downloadInfo = data.DownloadInfo?.ToString() ?? "";
-            var outputDirectory = data.OutputDirectory?.ToString() ?? DownloadConfig.OutputDirectory;
+            var url = data["Url"]?.ToString() ?? "";
+            var downloadInfo = data["DownloadInfo"]?.ToString() ?? "";
+            var outputDirectory = data["OutputDirectory"]?.ToString() ?? DownloadConfig.OutputDirectory;
 
             VideoParse.Url = url;
             DownloadInfo = downloadInfo;
             DownloadConfig.OutputDirectory = outputDirectory;
 
             // 恢复 UseGroupFolder
-            var useGroupFolderVal = data.UseGroupFolder;
+            var useGroupFolderVal = data["UseGroupFolder"];
             if (useGroupFolderVal != null && useGroupFolderVal.Type != JTokenType.Null)
                 DownloadConfig.UseGroupFolder = (bool)useGroupFolderVal;
 
             // 恢复 AddIndexToTitle
-            var addIndexVal = data.AddIndexToTitle;
+            var addIndexVal = data["AddIndexToTitle"];
             if (addIndexVal != null && addIndexVal.Type != JTokenType.Null)
                 DownloadConfig.AddIndexToTitle = (bool)addIndexVal;
 
             // 恢复 DocumentId
-            var savedDocId = data.DocumentId?.ToString();
+            var savedDocId = data["DocumentId"]?.ToString();
             if (!string.IsNullOrEmpty(savedDocId))
                 DocumentId = savedDocId;
 

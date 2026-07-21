@@ -5,12 +5,19 @@ namespace BiliDownloader.Services.Auth;
 /// </summary>
 public class BiliCredentialProvider : IBiliCredentialProvider
 {
-    /// <inheritdoc />
-    public string GetCookieHeader()
+    private readonly BiliLoginStateService _loginStateService;
+
+    public BiliCredentialProvider(BiliLoginStateService loginStateService)
     {
-        return BiliLoginStateService.Instance.CookieHeader;
+        _loginStateService = loginStateService;
     }
 
     /// <inheritdoc />
-    public bool IsLoggedIn => BiliLoginStateService.Instance.IsLoggedIn;
+    public string GetCookieHeader()
+    {
+        return _loginStateService.CookieHeader;
+    }
+
+    /// <inheritdoc />
+    public bool IsLoggedIn => _loginStateService.IsLoggedIn;
 }

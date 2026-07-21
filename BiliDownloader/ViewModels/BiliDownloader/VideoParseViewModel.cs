@@ -27,7 +27,8 @@ public class VideoParseResult
 /// </summary>
 public partial class VideoParseViewModel : ObservableObject
 {
-    private readonly BiliApiService _apiService = new();
+    private readonly BiliApiService _apiService;
+    private readonly IBiliCredentialProvider _credentialProvider;
     private readonly Action<VideoParseResult>? _onParsed;
     private readonly Func<bool> _isLoggedInCheck;
 
@@ -52,8 +53,14 @@ public partial class VideoParseViewModel : ObservableObject
     /// </summary>
     /// <param name="onParsed">解析成功后的回调，将结果传回主 VM</param>
     /// <param name="isLoggedInCheck">检查当前是否已登录的函数</param>
-    public VideoParseViewModel(Action<VideoParseResult>? onParsed, Func<bool> isLoggedInCheck)
+    public VideoParseViewModel(
+        BiliApiService apiService,
+        IBiliCredentialProvider credentialProvider,
+        Action<VideoParseResult>? onParsed,
+        Func<bool> isLoggedInCheck)
     {
+        _apiService = apiService;
+        _credentialProvider = credentialProvider;
         _onParsed = onParsed;
         _isLoggedInCheck = isLoggedInCheck;
         ParseCommand = new AsyncRelayCommand(ParseAsync);
@@ -105,7 +112,7 @@ public partial class VideoParseViewModel : ObservableObject
             IsLoading = true;
             DownloadInfo = "正在解析视频信息...";
 
-            var cookie = BiliLoginStateService.Instance.CookieHeader;
+            var cookie = _credentialProvider.GetCookieHeader();
 
             // 获取视频集合（根据类型路由）
             BiliVideoCollection collection;

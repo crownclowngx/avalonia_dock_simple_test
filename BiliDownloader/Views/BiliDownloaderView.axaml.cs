@@ -1,7 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using BiliDownloader.ViewModels;
 
@@ -9,7 +7,6 @@ namespace BiliDownloader.Views;
 
 public partial class BiliDownloaderView : UserControl
 {
-    private bool _hasCheckedLogin;
     private bool _hasRecoveredTasks;
 
     public BiliDownloaderView()
@@ -28,14 +25,7 @@ public partial class BiliDownloaderView : UserControl
 
         if (DataContext is BiliDownloaderViewModel vm)
         {
-            // 首次附加到视觉树时异步触发登录检查
-            if (!_hasCheckedLogin)
-            {
-                _hasCheckedLogin = true;
-                _ = vm.EnsureLoggedInAsync();
-            }
-
-            // 首次附加时从 SQLite 恢复未完成任务状态
+            // 视觉树只恢复当前 Document 的状态投影，不初始化插件服务，也不自动触发远端登录校验。
             if (!_hasRecoveredTasks)
             {
                 _hasRecoveredTasks = true;
@@ -44,14 +34,4 @@ public partial class BiliDownloaderView : UserControl
         }
     }
 
-    protected override void OnPointerPressed(PointerPressedEventArgs e)
-    {
-        base.OnPointerPressed(e);
-
-        // 点击视图时检查登录状态
-        if (DataContext is BiliDownloaderViewModel vm && !vm.LoginBar.IsLoggedIn)
-        {
-            _ = vm.EnsureLoggedInAsync();
-        }
-    }
 }

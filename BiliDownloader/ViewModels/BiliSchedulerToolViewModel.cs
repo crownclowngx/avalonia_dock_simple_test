@@ -4,6 +4,7 @@ using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels.BiliScheduler;
+using MyAvaloniaManagementCommon.Plugin;
 
 namespace BiliDownloader.ViewModels;
 
@@ -14,7 +15,8 @@ namespace BiliDownloader.ViewModels;
 public partial class BiliSchedulerToolViewModel : Tool
 {
     private readonly BiliDownloadCoordinator _coordinator;
-    private bool _initialized;
+    private readonly PluginLifecycleManager _lifecycleManager;
+    private bool _settingsInitialized;
 
     [ObservableProperty]
     private string _schedulerStatus = "调度器就绪";
@@ -30,11 +32,14 @@ public partial class BiliSchedulerToolViewModel : Tool
 
     #endregion
 
-    public BiliSchedulerToolViewModel(BiliDownloadCoordinator coordinator)
+    public BiliSchedulerToolViewModel(
+        BiliDownloadCoordinator coordinator,
+        IDownloadTaskRepository taskStore,
+        ISettingsRepository settingsStore,
+        PluginLifecycleManager lifecycleManager)
     {
         _coordinator = coordinator;
-        var taskStore = new DownloadTaskStore();
-        var settingsStore = new SettingsStore();
+        _lifecycleManager = lifecycleManager;
 
         TaskList = new SchedulerTaskListViewModel(coordinator, taskStore,
             onStatusMessage: msg => SchedulerStatus = msg);
@@ -51,28 +56,34 @@ public partial class BiliSchedulerToolViewModel : Tool
     }
 
     /// <summary>
-    /// 初始化：Coordinator 建表 -> 加载设置 -> 检测 ffmpeg -> 加载任务
+    /// 激活 Tool 的界面投影。
+    /// <para>
+    /// 插件级 Coordinator 已由宿主生命周期初始化；这里仅加载设置和任务列表，
+    /// 因而 Tool 被隐藏、恢复或重复附加到视觉树都不会控制下载后台服务的生存期。
+    /// </para>
     /// </summary>
-    public async Task InitializeAsync()
+    public async Task ActivateAsync()
     {
-        if (_initialized) return;
-        _initialized = true;
-
         try
         {
-            // Coordinator 初始化（建表 + 迁移 Interrupted）
-            await _coordinator.InitializeAsync();
+            var lifecycleState = _lifecycleManager.GetState("BiliDownloader");
+            if (lifecycleState?.Status == PluginLifecycleStatus.Failed)
+            {
+                SchedulerStatus = $"插件初始化失败: {lifecycleState.ErrorMessage}";
+                return;
+            }
 
-            // 加载设置（ffmpeg 路径 + 默认输出目录 + 并发下载数）
-            await Settings.LoadSettingsAsync();
+            if (!_settingsInitialized)
+            {
+                _settingsInitialized = true;
 
-            // 初始化 Coordinator 并发下载数
-            _coordinator.SetMaxConcurrentDownloads(Settings.MaxConcurrentDownloads);
+                // 设置和本地 ffmpeg 路径只需初始化一次；这里只检查文件路径，不启动 ffmpeg 进程。
+                await Settings.LoadSettingsAsync();
+                _coordinator.SetMaxConcurrentDownloads(Settings.MaxConcurrentDownloads);
+                await Settings.CheckFfmpegAsync();
+            }
 
-            // 检测 ffmpeg
-            await Settings.CheckFfmpegAsync();
-
-            // 加载所有任务到 UI
+            // 每次 Tool 重新进入视觉树都从事实源刷新投影，弥补隐藏期间可能错过的 UI 通知。
             await TaskList.ReloadTasksAsync();
 
             var totalCount = TaskList.Tasks.Count;

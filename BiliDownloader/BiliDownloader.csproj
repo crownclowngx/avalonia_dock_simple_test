@@ -17,6 +17,7 @@
     <ItemGroup>
       <PackageReference Include="Flurl.Http" Version="4.0.2" />
       <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
       <PackageReference Include="protobuf-net" Version="3.2.46" />
       <PackageReference Include="QRCoder" Version="1.6.0" />
     </ItemGroup>
@@ -34,7 +35,9 @@
         <HostProjectPath>$(MSBuildThisFileDirectory)..\MyAvaloniaManagement\MyAvaloniaManagement.csproj</HostProjectPath>
     </PropertyGroup>
 
-    <Target Name="DeployPluginToHost" AfterTargets="Build">
+    <Target Name="DeployPluginToHost"
+            AfterTargets="Build"
+            Condition="'$(SkipPluginDeploy)' != 'true'">
         <!-- 发布插件：获取完整运行时依赖集 -->
         <Exec Command="dotnet publish &quot;$(MSBuildProjectFullPath)&quot; -c $(Configuration) -o &quot;$(PluginPublishDir)&quot; --no-build"
               Condition="Exists('$(OutputPath)$(AssemblyName).dll')" />

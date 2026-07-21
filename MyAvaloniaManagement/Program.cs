@@ -1,6 +1,8 @@
 using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagementCommon.Plugin;
 using System;
 using System.Text;
 
@@ -8,24 +10,43 @@ namespace MyAvaloniaManagement;
 
 sealed class Program
 {
-    // Initialization code. Don't use any Avalonia, third-party APIs or any
-    // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
-    // yet and stuff might break.
+    // 在进入 Avalonia 主生命周期之前，只允许执行与 UI 无关的宿主组合工作。
+    // 此时 Avalonia、第三方 UI 组件和依赖 SynchronizationContext 的代码都尚未完成初始化，
+    // 因此插件模块注册与本地状态初始化必须保持为纯后台逻辑，不能创建控件或访问视觉树。
     [STAThread]
     public static void Main(string[] args)
     { 
         Console.OutputEncoding = Encoding.UTF8;
         
-        // 配置依赖注入容器
+        // 配置依赖注入容器。插件模块采用显式选择接入方式；
+        // 未声明模块的历史插件不会参与服务注册和宿主管理生命周期。
         var services = new ServiceCollection();
         ConfigureServices(services);
-        var serviceProvider = services.BuildServiceProvider();
+
+        var pluginAssemblies = AssemblyLoaderHelper.LoadPluginsFromDirectories(
+            AssemblyLoadConstant.PLUGINS_SUBDIRECTORY);
+        var pluginCatalog = PluginModuleCatalog.Discover(pluginAssemblies);
+        pluginCatalog.ConfigureServices(services);
+        services.AddSingleton(pluginCatalog);
+        services.AddSingleton<PluginLifecycleManager>();
+
+        using var serviceProvider = services.BuildServiceProvider();
         
         // 初始化全局服务提供者
         Business.Helpers.ServiceProvider.Initialize(serviceProvider);
         
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+        var lifecycleManager = serviceProvider.GetRequiredService<PluginLifecycleManager>();
+        lifecycleManager.InitializeAllAsync().GetAwaiter().GetResult();
+
+        try
+        {
+            BuildAvaloniaApp()
+                .StartWithClassicDesktopLifetime(args);
+        }
+        finally
+        {
+            lifecycleManager.ShutdownAllAsync().GetAwaiter().GetResult();
+        }
     } 
 
     /// <summary>
@@ -41,7 +62,7 @@ sealed class Program
         services.AddViewModels();
     }
 
-    // Avalonia configuration, don't remove; also used by visual designer.
+    // Avalonia 的统一启动配置，同时供运行时和可视化设计器使用，请勿从启动链路中移除。
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()

@@ -117,6 +117,7 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     {
         try
         {
+#pragma warning disable CS0618 // G0 不改写现有文件选择交互，后续统一迁移 StorageProvider API。
             var dialog = new OpenFileDialog
             {
                 Title = "选择 ffmpeg.exe",
@@ -126,6 +127,7 @@ public partial class SchedulerSettingsViewModel : ObservableObject
                     new() { Name = "所有文件", Extensions = { "*" } }
                 }
             };
+#pragma warning restore CS0618
 
             var parentWindow = GetParentWindow();
             if (parentWindow == null) return;
@@ -166,10 +168,12 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     {
         try
         {
+#pragma warning disable CS0618 // G0 保持原有对话框行为，避免生命周期改造混入 UI API 迁移。
             var dialog = new OpenFolderDialog
             {
                 Title = "选择默认下载输出目录"
             };
+#pragma warning restore CS0618
 
             var parentWindow = GetParentWindow();
             if (parentWindow != null)

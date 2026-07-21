@@ -7,8 +7,6 @@ namespace BiliDownloader.Views;
 
 public partial class BiliSchedulerToolView : UserControl
 {
-    private bool _hasInitialized;
-
     public BiliSchedulerToolView()
     {
         InitializeComponent();
@@ -23,11 +21,10 @@ public partial class BiliSchedulerToolView : UserControl
     {
         base.OnAttachedToVisualTree(e);
 
-        // 首次附加时初始化调度器（加载未完成任务、自动恢复）
-        if (!_hasInitialized && DataContext is BiliSchedulerToolViewModel vm)
+        // 视觉树只负责激活界面投影；Coordinator 的初始化和关闭由宿主插件生命周期统一管理。
+        if (DataContext is BiliSchedulerToolViewModel vm)
         {
-            _hasInitialized = true;
-            _ = vm.InitializeAsync();
+            _ = vm.ActivateAsync();
         }
     }
 }

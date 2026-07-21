@@ -47,6 +47,7 @@ public class BiliDownloadService : IDisposable
         Action<long, long>? onBytesUpdate,
         CancellationToken ct)
     {
+#pragma warning disable CS0618 // G1 将改为仅从凭据服务取 Cookie；G0 保留现有下载参数兼容性。
         // 确保临时目录和输出目录存在
         if (string.IsNullOrWhiteSpace(task.TempDirectory))
         {
@@ -159,6 +160,7 @@ public class BiliDownloadService : IDisposable
         catch { /* 忽略清理失败 */ }
 
         return outputPath;
+#pragma warning restore CS0618
     }
 
     /// <summary>

@@ -14,7 +14,7 @@ namespace BiliDownloader.ViewModels.BiliScheduler;
 public partial class SchedulerTaskListViewModel : ObservableObject
 {
     private readonly BiliDownloadCoordinator _coordinator;
-    private readonly DownloadTaskStore _taskStore;
+    private readonly IDownloadTaskRepository _taskStore;
     private readonly Action<string> _onStatusMessage;
 
     [ObservableProperty]
@@ -37,7 +37,7 @@ public partial class SchedulerTaskListViewModel : ObservableObject
 
     public SchedulerTaskListViewModel(
         BiliDownloadCoordinator coordinator,
-        DownloadTaskStore taskStore,
+        IDownloadTaskRepository taskStore,
         Action<string> onStatusMessage)
     {
         _coordinator = coordinator;

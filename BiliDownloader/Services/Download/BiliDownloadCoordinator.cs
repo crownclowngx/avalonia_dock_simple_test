@@ -1,8 +1,6 @@
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
-using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
-using BiliDownloader.Services.Download.Extras;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
 using MyAvaloniaManagementCommon.Message;
@@ -13,7 +11,7 @@ namespace BiliDownloader.Services.Download;
 /// 下载任务协调器：负责任务状态机、后台执行队列、进度持久化和生命周期管理。
 /// 从 BiliSchedulerToolViewModel 中提取，使下载编排不再依赖 UI 生命周期。
 /// </summary>
-public class BiliDownloadCoordinator
+public sealed class BiliDownloadCoordinator
 {
     private static readonly IPluginLogger Log = PluginLog.For<BiliDownloadCoordinator>();
 
@@ -23,42 +21,23 @@ public class BiliDownloadCoordinator
     /// <summary>将枚举转换为存储字符串的快捷方法</summary>
     private static string ToStorage(DownloadTaskStatus s) => DownloadTaskStatusMapper.ToStorageString(s);
 
-    #region 懒单例
-
-    private static readonly Lazy<BiliDownloadCoordinator> _instance = new(CreateInstance);
-    public static BiliDownloadCoordinator Instance => _instance.Value;
-
-    private static BiliDownloadCoordinator CreateInstance()
-    {
-        var repository = new DownloadTaskStore();
-        var messengerService = new MessengerService();
-        var tracker = new DownloadProgressTracker(repository, messengerService);
-        return new BiliDownloadCoordinator(
-            repository,
-            new BiliCredentialProvider(),
-            messengerService,
-            tracker);
-    }
-
-    #endregion
-
     private readonly IDownloadTaskRepository _repository;
     private readonly IBiliCredentialProvider _credentialProvider;
     private readonly IMessengerService _messengerService;
     private readonly IDownloadProgressTracker _tracker;
-    private readonly BiliApiService _apiService = new();
-    private readonly BiliDownloadService _downloadService = new();
-    private readonly ExtrasHandlerRegistry _extrasRegistry = ExtrasHandlerRegistry.CreateDefault();
+    private readonly IDownloadTaskExecutor _executor;
 
     private readonly SemaphoreSlim _commandLock = new(1, 1);
+    private readonly object _lifecycleLock = new();
+    private Task? _initializationTask;
+    private Task? _shutdownTask;
     private CancellationTokenSource? _processingCts;
     private Task? _processingTask;
     private bool _isProcessing;
+    private volatile bool _isShuttingDown;
 
     /// <summary>调度器是否正在处理任务</summary>
     public bool IsProcessing => _isProcessing;
-    private bool _initialized;
-
     private SemaphoreSlim _concurrencySemaphore = new(1, 1);
     private readonly List<Task> _activeTasks = new();
     private readonly object _activeTasksLock = new();
@@ -82,12 +61,14 @@ public class BiliDownloadCoordinator
         IDownloadTaskRepository repository,
         IBiliCredentialProvider credentialProvider,
         IMessengerService messengerService,
-        IDownloadProgressTracker tracker)
+        IDownloadProgressTracker tracker,
+        IDownloadTaskExecutor executor)
     {
         _repository = repository;
         _credentialProvider = credentialProvider;
         _messengerService = messengerService;
         _tracker = tracker;
+        _executor = executor;
 
         // 注册监听：接收 Document 发来的下载任务提交消息
         _messengerService.Register<BiliDownloadCoordinator, SubmitDownloadTaskMessage>(
@@ -102,41 +83,50 @@ public class BiliDownloadCoordinator
     /// </summary>
     private async Task HandleSubmitMessageAsync(SubmitDownloadTaskMessage msg)
     {
-        await SubmitTasksAsync(msg, msg.OutputDirectory);
+        try
+        {
+            await SubmitTasksAsync(msg, msg.OutputDirectory);
+        }
+        catch (Exception ex)
+        {
+            // 消息总线回调无法把异常返回给发送方，因此必须在边界处观察并记录，
+            // 避免 fire-and-forget 任务产生未观察异常。
+            Log.Error($"接收 Document 提交任务失败: {ex.Message}", ex);
+        }
     }
 
     /// <summary>
-    /// 初始化：建表 + 迁移 Interrupted 状态 + 检测 ffmpeg（不启动下载）
+    /// 初始化任务仓储并迁移异常退出前的运行状态。
+    /// 初始化任务由独立的生命周期锁保护，不复用命令锁，避免提交命令在持锁期间
+    /// 再次进入 InitializeAsync 形成异步重入死锁。
     /// </summary>
-    public async Task InitializeAsync()
+    public Task InitializeAsync()
     {
-        if (_initialized) return;
-
-        await _commandLock.WaitAsync();
-        try
+        lock (_lifecycleLock)
         {
-            if (_initialized) return;
+            return _initializationTask ??= InitializeCoreAsync();
+        }
+    }
 
-            await _repository.InitAsync();
+    private async Task InitializeCoreAsync()
+    {
+        await _repository.InitAsync();
 
-            // 将异常退出前仍在运行的任务标记为"已中断"
-            var allTasks = await _repository.GetAllAsync();
-            foreach (var t in allTasks)
+        // 启动阶段只迁移本地事实，不启动队列，也不调用下载执行器。
+        var allTasks = await _repository.GetAllAsync();
+        foreach (var task in allTasks)
+        {
+            if (DownloadTaskStatusMapper.IsRunning(ParseStatus(task.Status)))
             {
-                if (DownloadTaskStatusMapper.IsRunning(ParseStatus(t.Status)))
-                {
-                    t.Status = ToStorage(DownloadTaskStatus.Interrupted);
-                    await _repository.UpdateProgressAsync(t.TaskId, t.Progress, ToStorage(DownloadTaskStatus.Interrupted));
-                }
+                task.Status = ToStorage(DownloadTaskStatus.Interrupted);
+                await _repository.UpdateProgressAsync(
+                    task.TaskId,
+                    task.Progress,
+                    ToStorage(DownloadTaskStatus.Interrupted));
             }
+        }
 
-            _initialized = true;
-            SchedulerStatusChanged?.Invoke("协调器已初始化");
-        }
-        finally
-        {
-            _commandLock.Release();
-        }
+        SchedulerStatusChanged?.Invoke("协调器已初始化");
     }
 
     /// <summary>
@@ -144,10 +134,11 @@ public class BiliDownloadCoordinator
     /// </summary>
     public async Task SubmitTasksAsync(SubmitDownloadTaskMessage msg, string defaultOutputDirectory)
     {
+        await InitializeAsync();
         await _commandLock.WaitAsync();
         try
         {
-            await InitializeAsync();
+            ThrowIfShuttingDown();
 
             var records = new List<DownloadTaskRecord>();
             var subFolder = msg.UseGroupFolder
@@ -211,6 +202,7 @@ public class BiliDownloadCoordinator
     /// </summary>
     public void StartProcessingAsync()
     {
+        ThrowIfShuttingDown();
         StartProcessingInternal();
     }
 
@@ -329,19 +321,63 @@ public class BiliDownloadCoordinator
     /// <summary>
     /// 有序关闭：取消当前任务 + 等待退出 + Flush 最终进度
     /// </summary>
-    public async Task ShutdownAsync()
+    public Task ShutdownAsync()
     {
+        lock (_lifecycleLock)
+        {
+            return _shutdownTask ??= ShutdownCoreAsync();
+        }
+    }
+
+    private async Task ShutdownCoreAsync()
+    {
+        _isShuttingDown = true;
         await _commandLock.WaitAsync();
         try
         {
-            if (_processingCts != null && _processingTask != null)
+            if (_processingCts != null)
             {
                 _processingCts.Cancel();
-                try { await _processingTask; } catch (OperationCanceledException) { }
             }
 
-            // 释放下载服务资源（HttpClient + MultiConnectionDownloader）
-            _downloadService.Dispose();
+            var processingTask = _processingTask;
+            if (processingTask != null)
+            {
+                try
+                {
+                    await processingTask;
+                }
+                catch (OperationCanceledException)
+                {
+                    // 关闭流程主动取消队列属于预期结果。
+                }
+            }
+
+            Task[] activeTasks;
+            lock (_activeTasksLock)
+            {
+                activeTasks = _activeTasks.ToArray();
+            }
+
+            if (activeTasks.Length > 0)
+            {
+                try
+                {
+                    await Task.WhenAll(activeTasks);
+                }
+                catch (OperationCanceledException)
+                {
+                    // 活动任务确认收到关闭取消后会把状态持久化为 Interrupted。
+                }
+            }
+
+            _processingCts?.Dispose();
+            _processingCts = null;
+            _processingTask = null;
+            _isProcessing = false;
+
+            // Coordinator 注册在共享消息总线上；进程关闭前主动注销，避免继续接收提交消息。
+            _messengerService.UnregisterAll(this);
 
             SchedulerStatusChanged?.Invoke("协调器已关闭");
         }
@@ -355,7 +391,7 @@ public class BiliDownloadCoordinator
 
     private void StartProcessingInternal()
     {
-        if (_isProcessing) return;
+        if (_isProcessing || _isShuttingDown) return;
         _isProcessing = true;
         IsProcessingChanged?.Invoke(true);
         _processingCts = new CancellationTokenSource();
@@ -367,9 +403,10 @@ public class BiliDownloadCoordinator
         if (_processingCts != null)
         {
             _processingCts.Cancel();
-            if (_processingTask != null)
+            var processingTask = _processingTask;
+            if (processingTask != null)
             {
-                try { await _processingTask; } catch (OperationCanceledException) { }
+                try { await processingTask; } catch (OperationCanceledException) { }
             }
             _processingCts.Dispose();
             _processingCts = null;
@@ -421,7 +458,7 @@ public class BiliDownloadCoordinator
                 }
 
                 // 等待任意一个任务完成后重新检查队列
-                Task? completedTask = null;
+                Task<Task>? completedTask = null;
                 lock (_activeTasksLock)
                 {
                     if (_activeTasks.Count > 0)
@@ -430,8 +467,8 @@ public class BiliDownloadCoordinator
 
                 if (completedTask != null)
                 {
-                    await completedTask;
-                    await completedTask; // 解包异常
+                    var finishedTask = await completedTask;
+                    await finishedTask;
                 }
                 else if (readyTasks.Count == 0)
                 {
@@ -457,9 +494,8 @@ public class BiliDownloadCoordinator
     {
         try
         {
-            await _downloadService.DownloadItemAsync(
+            var result = await _executor.ExecuteAsync(
                 task,
-                _apiService,
                 (info) =>
                 {
                     _tracker.OnProgressChanged(task, info);
@@ -471,10 +507,10 @@ public class BiliDownloadCoordinator
                 },
                 ct);
 
-            // 执行附加资源管线（失败不影响主任务状态）
-            if (task.ExtrasConfig != 0)
+            if (!string.IsNullOrWhiteSpace(result.ExtrasResultSummary))
             {
-                await ExecuteExtrasPipelineAsync(task, ct);
+                task.ExtrasResultSummary = result.ExtrasResultSummary;
+                await _repository.UpdateExtrasResultAsync(task.TaskId, result.ExtrasResultSummary);
             }
 
             // 标记完成
@@ -493,8 +529,13 @@ public class BiliDownloadCoordinator
         }
         catch (OperationCanceledException)
         {
-            task.Status = ToStorage(DownloadTaskStatus.Ready);
-            await _repository.UpdateProgressAsync(task.TaskId, task.Progress, ToStorage(DownloadTaskStatus.Ready));
+            // 宿主退出与用户停止具有不同语义：宿主退出后的任务必须明确显示为已中断，
+            // 下次启动只能由用户手动恢复；普通停止暂时维持现有 Ready 语义，G2 再细化。
+            var cancelledStatus = _isShuttingDown
+                ? DownloadTaskStatus.Interrupted
+                : DownloadTaskStatus.Ready;
+            task.Status = ToStorage(cancelledStatus);
+            await _repository.UpdateProgressAsync(task.TaskId, task.Progress, task.Status);
             _tracker.BroadcastProgress(task);
         }
         catch (Exception ex)
@@ -514,77 +555,11 @@ public class BiliDownloadCoordinator
         }
     }
 
-    /// <summary>
-    /// 执行附加资源下载管线（弹幕/字幕/封面）。
-    /// 失败不影响主任务状态，仅记录到 ExtrasResultSummary。
-    /// </summary>
-    private async Task ExecuteExtrasPipelineAsync(DownloadTaskRecord task, CancellationToken ct)
+    private void ThrowIfShuttingDown()
     {
-        try
+        if (_isShuttingDown)
         {
-            var extrasType = (ExtrasType)task.ExtrasConfig;
-            var handlers = _extrasRegistry.Resolve(extrasType);
-            if (handlers.Count == 0) return;
-
-            var results = new List<string>();
-            var actualOutputDir = string.IsNullOrEmpty(task.SubFolder)
-                ? task.OutputDirectory
-                : Path.Combine(task.OutputDirectory, task.SubFolder);
-            var baseFileName = BiliDownloadService.SanitizeFileName(task.ItemTitle);
-
-            var context = new ExtrasContext
-            {
-                TaskId = task.TaskId,
-                Aid = task.Aid,
-                Bvid = task.Bvid,
-                Cid = task.Cid,
-                EpId = task.EpId,
-                SeasonId = task.SeasonId,
-                MediaType = task.MediaType,
-                OutputDirectory = task.OutputDirectory,
-                SubFolder = task.SubFolder,
-                BaseFileName = baseFileName,
-#pragma warning disable CS0618
-                Cookie = _credentialProvider.IsLoggedIn ? _credentialProvider.GetCookieHeader() : task.Cookie,
-#pragma warning restore CS0618
-                CoverUrl = task.CoverUrl,
-                ApiService = _apiService,
-                ProgressReporter = new Progress<string>(msg =>
-                    SchedulerStatusChanged?.Invoke($"[{task.ItemTitle}] {msg}")),
-            };
-
-            foreach (var handler in handlers)
-            {
-                if (ct.IsCancellationRequested) break;
-
-                try
-                {
-                    var result = await handler.ExecuteAsync(context, ct);
-                    var status = result.Success ? "OK" : result.ErrorMessage;
-                    results.Add($"{handler.Type}: {status}");
-                    if (result.Success)
-                        Log.Info($"Extras [{handler.DisplayName}] 成功: {string.Join(", ", result.OutputFiles)}");
-                    else
-                        Log.Warn($"Extras [{handler.DisplayName}] 失败: {result.ErrorMessage}");
-                }
-                catch (OperationCanceledException)
-                {
-                    results.Add($"{handler.Type}: CANCELLED");
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    Log.Warn($"Extras [{handler.DisplayName}] 异常: {ex.Message}");
-                    results.Add($"{handler.Type}: FAIL - {ex.Message}");
-                }
-            }
-
-            task.ExtrasResultSummary = string.Join("; ", results);
-            await _repository.UpdateExtrasResultAsync(task.TaskId, task.ExtrasResultSummary);
-        }
-        catch (Exception ex)
-        {
-            Log.Warn($"Extras 管线异常: {ex.Message}");
+            throw new InvalidOperationException("协调器正在关闭，不能接受新的执行命令。");
         }
     }
 

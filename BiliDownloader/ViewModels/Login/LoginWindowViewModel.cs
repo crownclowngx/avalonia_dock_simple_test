@@ -31,12 +31,17 @@ public partial class LoginWindowViewModel : ObservableObject
 
     private string _qrCodeKey = string.Empty;
     private CancellationTokenSource? _pollCts;
-    private readonly BiliLoginService _loginService = new();
+    private readonly BiliLoginService _loginService;
+    private readonly BiliLoginStateService _loginStateService;
 
     public IAsyncRelayCommand LoadQrCodeCommand { get; }
 
-    public LoginWindowViewModel()
+    public LoginWindowViewModel(
+        BiliLoginService loginService,
+        BiliLoginStateService loginStateService)
     {
+        _loginService = loginService;
+        _loginStateService = loginStateService;
         LoadQrCodeCommand = new AsyncRelayCommand(LoadQrCodeAsync);
     }
 
@@ -105,8 +110,8 @@ public partial class LoginWindowViewModel : ObservableObject
                     case BiliLoginService.QrCodeStatus.Success:
                         StatusText = "登录成功！";
                         IsPolling = false;
-                        // 调用全局状态服务完成登录
-                        await BiliLoginStateService.Instance.LoginAsync(cookies);
+                        // 通过插件级单例状态服务完成登录，避免弹窗自行创建第二套登录状态。
+                        await _loginStateService.LoginAsync(cookies);
                         LoginSuccess = true;
                         return;
 

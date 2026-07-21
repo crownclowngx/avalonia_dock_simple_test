@@ -7,14 +7,21 @@ namespace BiliDownloader.Create;
 
 public class BiliSchedulerToolStrategy : IToolCreationStrategy
 {
+    private readonly BiliSchedulerToolViewModel _viewModel;
+
+    public BiliSchedulerToolStrategy(BiliSchedulerToolViewModel viewModel)
+    {
+        _viewModel = viewModel;
+    }
+
     public Tool CreateTool()
     {
-        return new BiliSchedulerToolViewModel(BiliDownloadCoordinator.Instance)
-        {
-            Id = "BiliSchedulerTool",
-            Title = "Bilibili调度工具",
-            CanClose = true,
-        };
+        // Tool 由宿主保证只创建一次；这里返回 DI 中的单例 ViewModel，
+        // 隐藏和恢复 Tool 时不会创建新的 Coordinator 或任务队列。
+        _viewModel.Id = "BiliSchedulerTool";
+        _viewModel.Title = "Bilibili调度工具";
+        _viewModel.CanClose = true;
+        return _viewModel;
     }
 
     public ToolMetadata GetMetadata()

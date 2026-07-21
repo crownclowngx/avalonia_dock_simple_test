@@ -159,7 +159,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.Parameters.AddWithValue("$audio_quality_id", r.AudioQualityId);
             cmd.Parameters.AddWithValue("$output_directory", r.OutputDirectory);
             cmd.Parameters.AddWithValue("$sub_folder", r.SubFolder);
+#pragma warning disable CS0618 // G1 负责删除旧 Cookie 列；G0 必须继续兼容现有数据库写入。
             cmd.Parameters.AddWithValue("$cookie", r.Cookie);
+#pragma warning restore CS0618
             cmd.Parameters.AddWithValue("$progress", r.Progress);
             cmd.Parameters.AddWithValue("$status", r.Status);
             cmd.Parameters.AddWithValue("$error_message", (object?)r.ErrorMessage ?? DBNull.Value);
@@ -411,7 +413,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
             AudioQualityId = TryGetInt(reader, "audio_quality_id"),
             OutputDirectory = reader.GetString(reader.GetOrdinal("output_directory")),
             SubFolder = TryGetString(reader, "sub_folder"),
+#pragma warning disable CS0618 // G1 迁移完成前仍需读取旧表字段，避免历史任务加载失败。
             Cookie = reader.GetString(reader.GetOrdinal("cookie")),
+#pragma warning restore CS0618
             Progress = reader.GetDouble(reader.GetOrdinal("progress")),
             Status = reader.GetString(reader.GetOrdinal("status")),
             ErrorMessage = reader.IsDBNull(reader.GetOrdinal("error_message"))

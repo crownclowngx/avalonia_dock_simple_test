@@ -35,8 +35,13 @@ public class ManagementFactory : Factory
     
     // 存储已创建的Tool实例
     private readonly Dictionary<string, Tool> _createdTools;
-    public ManagementFactory()
+    private readonly IServiceProvider _serviceProvider;
+    private readonly PluginModuleCatalog _pluginModuleCatalog;
+
+    public ManagementFactory(IServiceProvider serviceProvider, PluginModuleCatalog pluginModuleCatalog)
     {
+        _serviceProvider = serviceProvider;
+        _pluginModuleCatalog = pluginModuleCatalog;
         _strategies = [];
         _toolStrategies = [];
         _documentMetadata = [];
@@ -91,15 +96,20 @@ public class ManagementFactory : Factory
         {
             try
             {
+                var managed = _pluginModuleCatalog.IsManaged(assembly);
                 var strategyTypes = assembly.GetTypes()
-                    .Where(t => typeof(IToolCreationStrategy).IsAssignableFrom(t) && 
-                                !t.IsAbstract && !t.IsInterface && 
-                                t.GetConstructor(Type.EmptyTypes) != null);
+                    .Where(t => typeof(IToolCreationStrategy).IsAssignableFrom(t) &&
+                                !t.IsAbstract && !t.IsInterface &&
+                                (managed || t.GetConstructor(Type.EmptyTypes) != null));
                 
                 // 为每个策略类型创建实例并注册
                 foreach (var strategyType in strategyTypes)
                 {
-                    var strategy = (IToolCreationStrategy)Activator.CreateInstance(strategyType)!;
+                    var strategy = PluginStrategyActivator.Create<IToolCreationStrategy>(
+                        strategyType,
+                        assembly,
+                        _serviceProvider,
+                        _pluginModuleCatalog);
                     RegisterToolStrategy(strategy);
                 }
             }
@@ -148,15 +158,20 @@ public class ManagementFactory : Factory
         {
             try
             {
+                var managed = _pluginModuleCatalog.IsManaged(assembly);
                 var strategyTypes = assembly.GetTypes()
-                    .Where(t => typeof(IDocumentCreationStrategy).IsAssignableFrom(t) && 
-                                !t.IsAbstract && !t.IsInterface && 
-                                t.GetConstructor(Type.EmptyTypes) != null);
+                    .Where(t => typeof(IDocumentCreationStrategy).IsAssignableFrom(t) &&
+                                !t.IsAbstract && !t.IsInterface &&
+                                (managed || t.GetConstructor(Type.EmptyTypes) != null));
                 
                 // 为每个策略类型创建实例并注册
                 foreach (var strategyType in strategyTypes)
                 {
-                    var strategy = (IDocumentCreationStrategy)Activator.CreateInstance(strategyType)!;
+                    var strategy = PluginStrategyActivator.Create<IDocumentCreationStrategy>(
+                        strategyType,
+                        assembly,
+                        _serviceProvider,
+                        _pluginModuleCatalog);
                     RegisterStrategy(strategy);
                 }
             }
@@ -381,7 +396,7 @@ public class ManagementFactory : Factory
         {
             try
             {
-                ServiceProvider.GetService<IMessengerService>()
+                Business.Helpers.ServiceProvider.GetService<IMessengerService>()
                     ?.Send(new ToolVisibilityChangedMessage("ToolHidden"));
             }
             catch

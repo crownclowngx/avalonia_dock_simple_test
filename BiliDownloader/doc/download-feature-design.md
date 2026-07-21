@@ -126,14 +126,17 @@ Bilibili API 需要 wbi 签名才能正常返回数据。本项目的实现：
 - 包含 `video.tmp` 和 `audio.tmp`
 - 合并成功后自动删除临时文件和空目录
 
-### 3.8 重启自动恢复
+### 3.8 重启后的手动恢复
 
-调度器 Tool 的 `InitializeAsync()` 方法在首次附加到视觉树时调用：
+插件级 Coordinator 由宿主生命周期初始化，不再依赖调度器 Tool 是否进入视觉树：
 
-1. 初始化 SQLite（建表）
-2. 加载所有任务到 UI
-3. 查找状态为 `pending`/`downloading_video`/`downloading_audio`/`merging` 的任务
-4. 若有未完成任务，自动启动后台处理队列
+1. 初始化 SQLite 并加载本地任务事实。
+2. 将上次退出前处于下载或合并阶段的任务迁移为 `interrupted`。
+3. Tool 显示时只读取任务投影，不启动后台处理队列。
+4. `pending` 和 `interrupted` 历史任务均不会在应用启动时自动联网。
+5. 只有用户明确提交新任务、点击开始或手动重试后，Coordinator 才启动执行队列。
+
+详细生命周期和 Legacy 插件兼容规则见 `G0-BASELINE-TEST-LIFECYCLE.md`。
 
 ## 4. 数据模型
 

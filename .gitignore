@@ -11,4 +11,6 @@ MySmallTools/bin/Debug/net9.0/MySmallTools.deps.json
 /MySmallTools/obj
 /BiliDownloader/bin
 /BiliDownloader/obj
+/BiliDownloader.Tests/bin
+/BiliDownloader.Tests/obj
 .aiflow/insight/

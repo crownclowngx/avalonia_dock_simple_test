@@ -7,18 +7,11 @@ namespace BiliDownloader.Services.Auth;
 /// B站登录全局状态管理服务（单例）。
 /// 持有当前登录态、Cookie、用户信息，并通过消息总线广播状态变更。
 /// </summary>
-public class BiliLoginStateService
+public sealed class BiliLoginStateService
 {
-    private static readonly Lazy<BiliLoginStateService> _instance =
-        new(() => new BiliLoginStateService());
-
-    /// <summary>
-    /// 全局单例
-    /// </summary>
-    public static BiliLoginStateService Instance => _instance.Value;
-
     private readonly BiliCookieStore _cookieStore;
     private readonly BiliLoginService _loginService;
+    private readonly IMessengerService _messengerService;
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private bool _initialized = false;
 
@@ -34,10 +27,14 @@ public class BiliLoginStateService
     /// <summary>当前 Cookie 字符串（可直接用于 HTTP 请求 Header）</summary>
     public string CookieHeader { get; private set; } = string.Empty;
 
-    private BiliLoginStateService()
+    public BiliLoginStateService(
+        BiliCookieStore cookieStore,
+        BiliLoginService loginService,
+        IMessengerService messengerService)
     {
-        _cookieStore = new BiliCookieStore();
-        _loginService = new BiliLoginService();
+        _cookieStore = cookieStore;
+        _loginService = loginService;
+        _messengerService = messengerService;
     }
 
     /// <summary>
@@ -169,9 +166,7 @@ public class BiliLoginStateService
     {
         try
         {
-            // MessengerService 底层使用 WeakReferenceMessenger.Default，全局共享同一实例
-            var messenger = new MessengerService();
-            messenger.Send(new LoginStateChangedMessage(IsLoggedIn, UserName, UserAvatar));
+            _messengerService.Send(new LoginStateChangedMessage(IsLoggedIn, UserName, UserAvatar));
         }
         catch
         {

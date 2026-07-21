@@ -11,6 +11,9 @@ namespace BiliDownloader.ViewModels.BiliDownloader;
 /// </summary>
 public partial class LoginBarViewModel : ObservableObject
 {
+    private readonly BiliLoginStateService _loginStateService;
+    private readonly BiliLoginService _loginService;
+
     [ObservableProperty]
     private bool _isLoggedIn;
 
@@ -20,26 +23,29 @@ public partial class LoginBarViewModel : ObservableObject
     public IAsyncRelayCommand LoginCommand { get; }
     public IAsyncRelayCommand LogoutCommand { get; }
 
-    public LoginBarViewModel()
+    public LoginBarViewModel(
+        BiliLoginStateService loginStateService,
+        BiliLoginService loginService)
     {
-        LoginCommand = new AsyncRelayCommand(ShowLoginWindowAsync);
+        _loginStateService = loginStateService;
+        _loginService = loginService;
+
+        LoginCommand = new AsyncRelayCommand(EnsureLoggedInAsync);
         LogoutCommand = new AsyncRelayCommand(LogoutAsync);
 
-        // 拉取当前登录状态
-        var stateService = BiliLoginStateService.Instance;
-        IsLoggedIn = stateService.IsLoggedIn;
-        UserName = stateService.UserName;
+        // 构造阶段只读取内存快照，不访问网络；远端校验只能由用户点击登录后触发。
+        IsLoggedIn = _loginStateService.IsLoggedIn;
+        UserName = _loginStateService.UserName;
     }
 
     /// <summary>
-    /// 确保登录状态已初始化（由 View 的 OnAttachedToVisualTree 调用）
+    /// 用户明确点击登录后，先尝试加载并验证历史登录态；验证失败时再显示二维码窗口。
     /// </summary>
     public async Task EnsureLoggedInAsync()
     {
-        await BiliLoginStateService.Instance.InitAsync();
-        var state = BiliLoginStateService.Instance;
-        IsLoggedIn = state.IsLoggedIn;
-        UserName = state.UserName;
+        await _loginStateService.InitAsync();
+        IsLoggedIn = _loginStateService.IsLoggedIn;
+        UserName = _loginStateService.UserName;
 
         if (IsLoggedIn) return;
         await ShowLoginWindowAsync();
@@ -47,7 +53,7 @@ public partial class LoginBarViewModel : ObservableObject
 
     private async Task ShowLoginWindowAsync()
     {
-        var vm = new LoginWindowViewModel();
+        var vm = new LoginWindowViewModel(_loginService, _loginStateService);
         var window = new LoginWindow { DataContext = vm };
         var parentWindow = GetParentWindow();
         if (parentWindow != null)
@@ -58,7 +64,7 @@ public partial class LoginBarViewModel : ObservableObject
 
     private async Task LogoutAsync()
     {
-        await BiliLoginStateService.Instance.LogoutAsync();
+        await _loginStateService.LogoutAsync();
     }
 
     private Avalonia.Controls.Window? GetParentWindow()

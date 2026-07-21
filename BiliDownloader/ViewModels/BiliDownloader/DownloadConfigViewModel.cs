@@ -12,6 +12,8 @@ namespace BiliDownloader.ViewModels.BiliDownloader;
 /// </summary>
 public partial class DownloadConfigViewModel : ObservableObject
 {
+    private readonly ISettingsRepository _settingsRepository;
+
     public ObservableCollection<BiliQualityOption> QualityOptions { get; } = new();
 
     [ObservableProperty]
@@ -48,8 +50,9 @@ public partial class DownloadConfigViewModel : ObservableObject
 
     public IRelayCommand SelectFolderCommand { get; }
 
-    public DownloadConfigViewModel()
+    public DownloadConfigViewModel(ISettingsRepository settingsRepository)
     {
+        _settingsRepository = settingsRepository;
         SelectFolderCommand = new AsyncRelayCommand(SelectFolderAsync);
         _ = InitDefaultOutputDirectoryAsync();
     }
@@ -82,10 +85,12 @@ public partial class DownloadConfigViewModel : ObservableObject
     {
         try
         {
+#pragma warning disable CS0618 // 现有 Avalonia 文件夹对话框迁移不属于 G0；此处保持用户交互行为不变。
             var dialog = new OpenFolderDialog
             {
                 Title = "选择下载输出目录"
             };
+#pragma warning restore CS0618
 
             var parentWindow = GetParentWindow();
             if (parentWindow != null)
@@ -108,9 +113,8 @@ public partial class DownloadConfigViewModel : ObservableObject
     {
         try
         {
-            var store = new SettingsStore();
-            await store.InitAsync();
-            var savedDir = await store.GetSettingAsync("default_output_dir");
+            await _settingsRepository.InitAsync();
+            var savedDir = await _settingsRepository.GetSettingAsync("default_output_dir");
             if (!string.IsNullOrEmpty(savedDir))
             {
                 OutputDirectory = savedDir;

@@ -14,8 +14,10 @@ namespace MyAvaloniaManagementCommon.Behaviors;
 /// </summary>
 public class HandledEventsAwareBehavior : Behavior<Control>
 {
-    private Delegate _handler;
-    private EventInfo _eventInfo;
+    // 行为尚未附加、事件名称无效或事件注册失败时，这两个反射对象都可能为空。
+    // 显式建模为空可以避免注销阶段因部分初始化而触发新的空引用异常。
+    private Delegate? _handler;
+    private EventInfo? _eventInfo;
 
     #region 依赖属性
 
@@ -123,9 +125,9 @@ public class HandledEventsAwareBehavior : Behavior<Control>
             {
                 // 获取事件信息 
                 _eventInfo = GetEventInfo(EventName);
-                _handler = CreateEventHandler(_eventInfo);
+                _handler = _eventInfo == null ? null : CreateEventHandler(_eventInfo);
 
-                if (_handler != null)
+                if (_handler != null && _eventInfo != null)
                 {
                     // 对于支持handledEventsToo的事件，使用AddHandler方法 
                     if (HandledEventsToo && typeof(Interactive).IsAssignableFrom(AssociatedObject.GetType()))
@@ -188,7 +190,10 @@ public class HandledEventsAwareBehavior : Behavior<Control>
                 }
 
                 // 对于其他事件，直接使用事件移除器
-                _eventInfo.RemoveEventHandler(AssociatedObject, _handler);
+                if (_eventInfo != null && _handler != null)
+                {
+                    _eventInfo.RemoveEventHandler(AssociatedObject, _handler);
+                }
             }
             catch (Exception ex)
             {
@@ -203,7 +208,7 @@ public class HandledEventsAwareBehavior : Behavior<Control>
     /// </summary>
     /// <param name="eventName">事件名称</param>
     /// <returns>事件信息对象</returns>
-    private EventInfo GetEventInfo(string eventName)
+    private EventInfo? GetEventInfo(string eventName)
     {
         // 尝试从常见的事件拥有者类型中查找事件
         var eventOwnerTypes = new[]
@@ -238,7 +243,7 @@ public class HandledEventsAwareBehavior : Behavior<Control>
     /// </summary>
     /// <param name="eventName">事件名称</param>
     /// <returns>路由事件对象</returns>
-    private RoutedEvent GetRoutedEvent(string eventName)
+    private RoutedEvent? GetRoutedEvent(string eventName)
     {
         // 尝试从常见的事件拥有者类型中查找路由事件字段
         var eventOwnerTypes = new[]
@@ -277,7 +282,7 @@ public class HandledEventsAwareBehavior : Behavior<Control>
     /// </summary>
     /// <param name="eventInfo">事件信息</param>
     /// <returns>事件处理器委托</returns>
-    private Delegate CreateEventHandler(EventInfo eventInfo)
+    private Delegate? CreateEventHandler(EventInfo eventInfo)
     {
         try
         {
@@ -300,20 +305,34 @@ public class HandledEventsAwareBehavior : Behavior<Control>
             if (parameters.Length == 2)
             {
                 // 标准的事件处理程序签名: (sender, e)
+                var method = typeof(HandledEventsAwareBehavior).GetMethod(
+                    "ExecuteCommandWithEventArgs",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+                if (method == null)
+                {
+                    return null;
+                }
+
                 handler = Delegate.CreateDelegate(
                     handlerType,
                     this,
-                    typeof(HandledEventsAwareBehavior).GetMethod("ExecuteCommandWithEventArgs",
-                        BindingFlags.NonPublic | BindingFlags.Instance));
+                    method);
             }
             else
             {
                 // 非标准的事件处理程序签名
+                var method = typeof(HandledEventsAwareBehavior).GetMethod(
+                    "ExecuteCommand",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+                if (method == null)
+                {
+                    return null;
+                }
+
                 handler = Delegate.CreateDelegate(
                     handlerType,
                     this,
-                    typeof(HandledEventsAwareBehavior).GetMethod("ExecuteCommand",
-                        BindingFlags.NonPublic | BindingFlags.Instance));
+                    method);
             }
 
             return handler;
@@ -328,7 +347,7 @@ public class HandledEventsAwareBehavior : Behavior<Control>
     /// <summary>
     /// 执行命令的通用方法（带事件参数）
     /// </summary>
-    private void ExecuteCommandWithEventArgs(object sender, EventArgs e)
+    private void ExecuteCommandWithEventArgs(object? sender, EventArgs e)
     {
         ExecuteCommandInternal();
     }
@@ -357,7 +376,7 @@ public class HandledEventsAwareBehavior : Behavior<Control>
     /// </summary>
     /// <param name="sender">发送者</param>
     /// <param name="e">属性变化参数</param>
-    private void OnPropertyChanged(object sender, AvaloniaPropertyChangedEventArgs e)
+    private void OnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
         // 如果EventName或HandledEventsToo属性发生变化，重新注册事件
         if (e.Property == EventNameProperty || e.Property == HandledEventsTooProperty)
