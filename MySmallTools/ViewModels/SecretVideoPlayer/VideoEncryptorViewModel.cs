@@ -86,6 +86,30 @@ public partial class VideoEncryptorViewModel : Document
         StartEncryptionCommand.NotifyCanExecuteChanged();
     }
 
+    [ObservableProperty]
+    private string _title = string.Empty;
+
+    partial void OnTitleChanged(string value)
+    {
+        // 字数按 Unicode Rune 实时重算，确保 emoji 不会因为 UTF-16 占两个 char 而被错误计为两个字符。
+        _currentTask.Title = value;
+        OnPropertyChanged(nameof(TitleCharacterCount));
+        StartEncryptionCommand.NotifyCanExecuteChanged();
+    }
+
+    [ObservableProperty]
+    private string _description = string.Empty;
+
+    partial void OnDescriptionChanged(string value)
+    {
+        _currentTask.Description = value;
+        OnPropertyChanged(nameof(DescriptionCharacterCount));
+        StartEncryptionCommand.NotifyCanExecuteChanged();
+    }
+
+    public int TitleCharacterCount => EncryptedVideoContainer.CountRunes(Title);
+    public int DescriptionCharacterCount => EncryptedVideoContainer.CountRunes(Description);
+
     /// <summary>
     /// 是否正在加密
     /// </summary>
@@ -204,12 +228,15 @@ public partial class VideoEncryptorViewModel : Document
 
     private bool CanStartEncryption()
     {
+        // UI 不通过截断输入来“修正”超限文本，避免用户无感丢失描述；只有全部约束满足时才允许开始。
         return !IsEncrypting &&
                !string.IsNullOrEmpty(SelectedFilePath) &&
                !string.IsNullOrEmpty(OutputFilePath) &&
                !string.IsNullOrEmpty(Password) &&
                Password == ConfirmPassword &&
-               Password.Length >= 6;
+               Password.Length >= 6 &&
+               TitleCharacterCount <= EncryptedVideoContainer.MaxTitleRunes &&
+               DescriptionCharacterCount <= EncryptedVideoContainer.MaxDescriptionRunes;
     }
     
 
@@ -220,6 +247,8 @@ public partial class VideoEncryptorViewModel : Document
         OutputFilePath = string.Empty;
         Password = string.Empty;
         ConfirmPassword = string.Empty;
+        Title = string.Empty;
+        Description = string.Empty;
         Progress = 0;
         ProgressText = "0%";
         StatusMessage = "请选择要加密的视频文件";
@@ -247,9 +276,8 @@ public partial class VideoEncryptorViewModel : Document
 
         var directory = Path.GetDirectoryName(SelectedFilePath);
         var fileNameWithoutExt = Path.GetFileNameWithoutExtension(SelectedFilePath);
-        var extension = Path.GetExtension(SelectedFilePath);
-        
-        OutputFilePath = Path.Combine(directory!, $"{fileNameWithoutExt}_encrypted{extension}");
+        // 新文件统一使用 .secvid，原始扩展名已经写入不可变固定头，不再依赖外部文件扩展名判断格式。
+        OutputFilePath = Path.Combine(directory!, $"{fileNameWithoutExt}_encrypted.secvid");
     }
 
     private bool CanGenerateOutputPath() => !string.IsNullOrEmpty(SelectedFilePath);

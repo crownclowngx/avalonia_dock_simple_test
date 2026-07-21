@@ -1,0 +1,139 @@
+using System.Security.Cryptography;
+
+namespace MySmallTools.Business.SecretVideoPlayer;
+
+/// <summary>
+/// 以流式方式创建 SECVID03 文件的加密器。
+/// </summary>
+/// <remarks>
+/// 原视频主体按 1 MiB 独立使用 AES-256-GCM 加密，内存占用与视频总大小无关。
+/// 每个块都有独立认证标签，因此播放器可以直接验证并解密目标块，不需要从文件开头顺序处理。
+/// </remarks>
+public sealed class Secvid03Encryptor
+{
+    /// <summary>
+    /// 将一个普通视频加密为 SECVID03 容器。
+    /// </summary>
+    /// <remarks>
+    /// 加密期间先写入同目录的唯一临时文件，全部成功并 Flush 后才覆盖目标路径。
+    /// 这样可避免取消、磁盘写满或认证计算异常留下一个看似完整的正式文件。
+    /// </remarks>
+    public async Task EncryptAsync(
+        string inputPath,
+        string outputPath,
+        string password,
+        string title,
+        string description,
+        IProgress<EncryptionProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(password);
+        if (Path.GetFullPath(inputPath).Equals(Path.GetFullPath(outputPath), StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("输入文件和输出文件不能相同。", nameof(outputPath));
+
+        var temporaryPath = outputPath + ".partial-" + Guid.NewGuid().ToString("N");
+        try
+        {
+            // 原视频只以顺序流打开；即使输入达到数百 GiB，也只保留一个块的明文和密文缓冲区。
+            await using var input = new FileStream(inputPath, FileMode.Open, FileAccess.Read, FileShare.Read, Secvid03Format.ChunkSize, true);
+            var originalHeaderLength = Secvid03Format.DetectOriginalHeaderLength(input);
+            var originalHeader = new byte[originalHeaderLength];
+            input.Position = 0;
+            await input.ReadExactlyAsync(originalHeader, cancellationToken);
+
+            var salt = RandomNumberGenerator.GetBytes(16);
+            var fileId = RandomNumberGenerator.GetBytes(16);
+            var noncePrefix = RandomNumberGenerator.GetBytes(8);
+            var extension = Path.GetExtension(inputPath).ToLowerInvariant();
+            var header = Secvid03Format.CreateHeader(input.Length, originalHeaderLength, extension, salt, fileId, noncePrefix);
+            var publicRegion = EncryptedVideoContainer.BuildPublicRegion(Path.GetFileName(inputPath), title, description);
+            var key = Secvid03Format.DeriveKey(password, header);
+
+            try
+            {
+                // 固定头和明文视频前缀共同构成不可变 AAD。公开标题/描述刻意不在其中，
+                // 因而它们可原地编辑，同时固定头、视频前缀和密文主体仍受完整性保护。
+                var immutableAad = Secvid03Format.CreateImmutableHeaderAad(header, originalHeader);
+                var immutableDigest = SHA256.HashData(immutableAad);
+                using var aes = new AesGcm(key, Secvid03Format.TagSize);
+                aes.Encrypt(Secvid03Format.CreateNonce(header, 0), ReadOnlySpan<byte>.Empty, Span<byte>.Empty,
+                    header.HeaderTag, immutableAad);
+                header.HeaderTag.CopyTo(header.Bytes, Secvid03Format.HeaderTagOffset);
+
+                await using var output = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                    Secvid03Format.ChunkSize, true);
+                await output.WriteAsync(header.Bytes, cancellationToken);
+                await output.WriteAsync(publicRegion, cancellationToken);
+                await output.WriteAsync(originalHeader, cancellationToken);
+
+                input.Position = originalHeaderLength;
+                var plain = new byte[Secvid03Format.ChunkSize];
+                var cipher = new byte[Secvid03Format.ChunkSize];
+                try
+                {
+                    long processedBody = 0;
+                    long chunkIndex = 0;
+                    while (processedBody < header.PlainBodyLength)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var required = (int)Math.Min(Secvid03Format.ChunkSize, header.PlainBodyLength - processedBody);
+                        await ReadExactlyAsync(input, plain.AsMemory(0, required), cancellationToken);
+                        var tag = new byte[Secvid03Format.TagSize];
+                        var aad = Secvid03Format.CreateChunkAad(immutableDigest, chunkIndex);
+                        aes.Encrypt(Secvid03Format.CreateNonce(header, checked((uint)chunkIndex + 1)),
+                            plain.AsSpan(0, required), cipher.AsSpan(0, required), tag, aad);
+                        await output.WriteAsync(cipher.AsMemory(0, required), cancellationToken);
+                        await output.WriteAsync(tag, cancellationToken);
+
+                        processedBody += required;
+                        chunkIndex++;
+                        var processed = originalHeaderLength + processedBody;
+                        var percentage = header.OriginalFileLength == 0 ? 100 : processed * 100d / header.OriginalFileLength;
+                        progress?.Report(new EncryptionProgress
+                        {
+                            ProcessedBytes = processed,
+                            TotalBytes = header.OriginalFileLength,
+                            Percentage = percentage,
+                            Status = $"正在加密... {percentage:F1}%"
+                        });
+                    }
+                }
+                finally
+                {
+                    // 明文块属于受保护内容，即使正常完成或异常退出，也尽快从托管数组中清零。
+                    CryptographicOperations.ZeroMemory(plain);
+                    CryptographicOperations.ZeroMemory(cipher);
+                }
+
+                await output.FlushAsync(cancellationToken);
+            }
+            finally
+            {
+                // 派生密钥只在本次加密调用中存活，不缓存到对象字段，也不会写入文件。
+                CryptographicOperations.ZeroMemory(key);
+            }
+
+            File.Move(temporaryPath, outputPath, overwrite: true);
+        }
+        catch
+        {
+            // 临时文件不是有效交付物。删除它可避免后续扫描误把未完成文件当成可播放容器。
+            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+            throw;
+        }
+    }
+
+    private static async Task ReadExactlyAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken)
+    {
+        // FileStream.ReadAsync 允许短读；循环到填满目标块，才能保证 GCM 标签对应准确的块边界。
+        var read = 0;
+        while (read < buffer.Length)
+        {
+            var current = await stream.ReadAsync(buffer[read..], cancellationToken);
+            if (current == 0) throw new EndOfStreamException("原视频在加密过程中被截断。");
+            read += current;
+        }
+    }
+}

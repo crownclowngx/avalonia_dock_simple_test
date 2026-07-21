@@ -16,3 +16,5 @@ MySmallTools/bin/Debug/net9.0/MySmallTools.deps.json
 /MyAvaloniaManagement.PluginTests/bin
 /MyAvaloniaManagement.PluginTests/obj
 .aiflow/insight/
+/MySmallTools.Tests/bin
+/MySmallTools.Tests/obj

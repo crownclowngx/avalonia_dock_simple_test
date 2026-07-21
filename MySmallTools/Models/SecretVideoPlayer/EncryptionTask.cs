@@ -12,6 +12,8 @@ public class EncryptionTask : INotifyPropertyChanged
     private string _inputFilePath = string.Empty;
     private string _outputFilePath = string.Empty;
     private string _password = string.Empty;
+    private string _title = string.Empty;
+    private string _description = string.Empty;
     private double _progress = 0;
     private string _status = "等待开始";
     private bool _isCompleted = false;
@@ -47,6 +49,18 @@ public class EncryptionTask : INotifyPropertyChanged
     {
         get => _password;
         set => SetProperty(ref _password, value);
+    }
+
+    public string Title
+    {
+        get => _title;
+        set => SetProperty(ref _title, value);
+    }
+
+    public string Description
+    {
+        get => _description;
+        set => SetProperty(ref _description, value);
     }
 
     /// <summary>

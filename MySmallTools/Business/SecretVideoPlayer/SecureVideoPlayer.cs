@@ -1,194 +1,115 @@
 using LibVLCSharp.Shared;
-using System.Security.Cryptography;
 
 namespace MySmallTools.Business.SecretVideoPlayer;
 
 /// <summary>
-/// 安全视频播放器 - 使用一次性解密方案
+/// 基于“认证随机读取流”的 SECVID03 安全视频播放器。
 /// </summary>
-public class SecureVideoPlayer : IDisposable
+/// <remarks>
+/// 播放链路固定为 SECVID03 → <see cref="SeekableEncryptedVideoStream"/> →
+/// <see cref="SeekableStreamMediaInput"/> → LibVLC Media → Avalonia VideoView。
+/// 该类不持有完整视频明文，只管理当前 Media、MediaInput 及 LibVLC 对象的生命周期。
+/// </remarks>
+public sealed class SecureVideoPlayer : IDisposable
 {
-    private readonly LibVLC _libVLC;
+    private readonly LibVLC _libVlc;
     private readonly MediaPlayer _player;
-    private readonly SmartVideoEncryptor _encryptor;
-    private static bool _isLibVlcInitialized = false;
-    
-    private FullVideoDecryptor? _decryptor;
     private Media? _currentMedia;
-    private SeekableMemoryMediaInput? _seekableMemoryMediaInput;
-    private string? _currentPassword;
+    private SeekableStreamMediaInput? _mediaInput;
     private bool _disposed;
-    private VideoMetadata? _cachedMetadata;
-    
-    // 播放状态事件
+
     public event EventHandler<PlaybackStateChangedEventArgs>? PlaybackStateChanged;
     public event EventHandler<TimeChangedEventArgs>? TimeChanged;
     public event EventHandler<PositionChangedEventArgs>? PositionChanged;
     public event EventHandler<LengthChangedEventArgs>? LengthChanged;
     public event EventHandler<string>? ErrorOccurred;
-    
-    
+
     public SecureVideoPlayer()
     {
-        // 确保LibVLC只初始化一次
-        if (!_isLibVlcInitialized)
-        {
-            Core.Initialize();
-            _isLibVlcInitialized = true;
-        }
-        _libVLC = new LibVLC();
-        _player = new MediaPlayer(_libVLC);
-        _encryptor = new SmartVideoEncryptor();
-        // 订阅播放器事件
+        // 必须先用插件内的绝对路径初始化 Core，再创建任何 LibVLC/MediaPlayer 实例。
+        LibVlcRuntime.EnsureInitialized();
+        _libVlc = new LibVLC();
+        _player = new MediaPlayer(_libVlc);
         SubscribeToPlayerEvents();
     }
-    
-    /// <summary>
-    /// 订阅播放器事件
-    /// </summary>
+
     private void SubscribeToPlayerEvents()
     {
-        _player.Playing += (s, e) => 
+        _player.Playing += (_, _) => PlaybackStateChanged?.Invoke(this, new(PlaybackState.Playing));
+        _player.Paused += (_, _) => PlaybackStateChanged?.Invoke(this, new(PlaybackState.Paused));
+        _player.Stopped += (_, _) => PlaybackStateChanged?.Invoke(this, new(PlaybackState.Stopped));
+        _player.EndReached += (_, _) => PlaybackStateChanged?.Invoke(this, new(PlaybackState.Ended));
+        _player.TimeChanged += (_, e) => TimeChanged?.Invoke(this, new(e.Time));
+        _player.PositionChanged += (_, e) => PositionChanged?.Invoke(this, new(e.Position));
+        _player.LengthChanged += (_, e) => LengthChanged?.Invoke(this, new(e.Length));
+        _player.EncounteredError += (_, _) =>
         {
-            PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Playing));
-        };
-        
-        _player.Paused += (s, e) => 
-        {
-            PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Paused));
-        };
-        
-        _player.Stopped += (s, e) => 
-        {
-            PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Stopped));
-        };
-        
-        _player.EndReached += (s, e) => 
-        {
-            PlaybackStateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Ended));
-        };
-        
-        _player.TimeChanged += (s, e) => 
-        {
-            TimeChanged?.Invoke(this, new TimeChangedEventArgs(e.Time));
-        };
-        
-        _player.PositionChanged += (s, e) => 
-        {
-            PositionChanged?.Invoke(this, new PositionChangedEventArgs(e.Position));
-        };
-        
-        _player.LengthChanged += (s, e) => 
-        {
-            ErrorOccurred?.Invoke(this, $"事件: 媒体长度变化 - {e.Length}ms");
-            LengthChanged?.Invoke(this, new LengthChangedEventArgs(e.Length));
+            // 原生事件本身不携带托管解密异常，优先转发 MediaInput 保存的认证/读取错误。
+            var detail = _mediaInput?.LastError?.Message;
+            ErrorOccurred?.Invoke(this, detail is null ? "播放失败。" : $"播放失败: {detail}");
+            PlaybackStateChanged?.Invoke(this, new(PlaybackState.Error));
         };
     }
-    
+
     /// <summary>
-    /// 加载加密视频文件
+    /// 验证 SECVID03 密码并把随机读取媒体绑定到播放器，保留原有公共方法签名。
     /// </summary>
+    /// <remarks>
+    /// 此处的“加载”只包含 PBKDF2、固定头认证和 LibVLC 媒体解析，不执行完整视频解密。
+    /// 因此首帧等待时间和内存占用不会随视频总大小线性增长。
+    /// </remarks>
     public async Task<bool> LoadEncryptedVideoAsync(string filePath, string password)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!File.Exists(filePath))
+        {
+            ErrorOccurred?.Invoke(this, "文件不存在。");
+            return false;
+        }
+
+        // 先释放旧 Media/Input，保证重复切换视频时不会留下文件句柄或把回调发送到旧流。
+        CleanupCurrentMedia();
+        SeekableStreamMediaInput? newInput = null;
+        Media? newMedia = null;
+
         try
         {
-            
-            if (_disposed) throw new ObjectDisposedException(nameof(SecureVideoPlayer));
-            
-            // 检查文件是否存在
-            if (!File.Exists(filePath))
-            {
-                return false;
-            }
-            
-            // 清理之前的资源
-            CleanupCurrentMedia();
-            
-            // 验证文件是否为加密视频
-            if (!_encryptor.IsEncryptedVideo(filePath))
-            {
-                return false;
-            }
-            
-            // 创建解密器
-            _decryptor = new FullVideoDecryptor(filePath, password);
-            
-            // 绑定解密进度事件
-            _decryptor.ProgressChanged += (sender, args) =>
-            {
-                ErrorOccurred?.Invoke(this, args.Message);
-            };
-            
-            // 执行解密
-            var decryptSuccess = await _decryptor.DecryptVideoAsync();
-            
-            if (!decryptSuccess)
-            {
-                return false;
-            }
-            
-            // 获取解密后的流
-            var decryptedStream = _decryptor.DecryptedStream;
-            if (decryptedStream == null)
-            {
-                return false;
-            }
-            // 使用自定义的SeekableMemoryMediaInput来支持seeking
-             _seekableMemoryMediaInput = new SeekableMemoryMediaInput(_decryptor);
-            // 使用自定义MediaInput创建媒体（支持seeking）
-            _currentMedia = new Media(_libVLC, _seekableMemoryMediaInput);
-            // 设置媒体到播放器
-            _player.Media = _currentMedia;
-            // 尝试解析媒体
-            await _currentMedia.Parse(MediaParseOptions.ParseLocal);
-            _currentPassword = password;
+            var stream = SeekableEncryptedVideoStream.Open(filePath, password);
+            newInput = new SeekableStreamMediaInput(stream);
+            newMedia = new Media(_libVlc, newInput);
+            _player.Media = newMedia;
+            await newMedia.Parse(MediaParseOptions.ParseLocal);
+
+            _mediaInput = newInput;
+            _currentMedia = newMedia;
             return true;
         }
         catch (Exception ex)
         {
+            // 创建过程可能在流、MediaInput 或 Media 任一阶段失败；按所有权逆序释放已经创建的对象。
+            _player.Media = null;
+            newMedia?.Dispose();
+            newInput?.Dispose();
             ErrorOccurred?.Invoke(this, $"加载失败: {ex.Message}");
             return false;
         }
     }
-    
 
-    
-    /// <summary>
-    /// 播放视频
-    /// </summary>
     public async Task<bool> Play()
     {
-        if (_disposed)
+        if (_disposed || _player.Media is null)
         {
             return false;
         }
-        
-        if (_player == null)
-        {
-            return false;
-        }
-        
-        if (_player.Media == null)
-        {
-            return false;
-        }
-        
+
         try
         {
-            // 检查媒体是否已解析
-            if (_currentMedia != null && !_currentMedia.IsParsed)
+            if (_currentMedia is { IsParsed: false })
             {
                 await _currentMedia.Parse(MediaParseOptions.ParseLocal);
-                
-                // 等待解析完成
-                var parseStart = DateTime.Now;
-                while (!_currentMedia.IsParsed && DateTime.Now - parseStart < TimeSpan.FromSeconds(5))
-                {
-                    await Task.Delay(100);
-                }
             }
-            var result = _player.Play();
-            return result;
+
+            return _player.Play();
         }
         catch (Exception ex)
         {
@@ -196,221 +117,82 @@ public class SecureVideoPlayer : IDisposable
             return false;
         }
     }
-    
-    /// <summary>
-    /// 暂停播放
-    /// </summary>
+
     public void Pause()
     {
-        if (_disposed || _player == null) return;
-        
-        try
-        {
-            _player.Pause();
-        }
-        catch (Exception ex)
-        {
-            ErrorOccurred?.Invoke(this, $"暂停失败: {ex.Message}");
-        }
+        if (!_disposed) _player.Pause();
     }
-    
-    /// <summary>
-    /// 停止播放
-    /// </summary>
+
     public void Stop()
     {
-        if (_disposed || _player == null) return;
-        
-        try
-        {
-            _player.Stop();
-        }
-        catch (Exception ex)
-        {
-            ErrorOccurred?.Invoke(this, $"停止失败: {ex.Message}");
-        }
+        if (!_disposed) _player.Stop();
     }
-    
-    /// <summary>
-    /// 设置播放位置（0.0 - 1.0）
-    /// </summary>
+
     public void SetPosition(float position)
     {
-        if (_disposed || _player?.Media == null) return;
-        
-        try
-        {
-            _player.Position = position;
-        }
-        catch (Exception ex)
-        {
-            ErrorOccurred?.Invoke(this, $"设置播放位置失败: {ex.Message}");
-        }
+        if (!_disposed && _player.Media is not null) _player.Position = Math.Clamp(position, 0, 1);
     }
-    
-    /// <summary>
-    /// 设置播放时间（毫秒）
-    /// </summary>
+
     public void SetTime(long timeMs)
     {
-        if (_disposed || _player?.Media == null) return;
-        
-        try
-        {
-            _player.Time = timeMs;
-        }
-        catch (Exception ex)
-        {
-            ErrorOccurred?.Invoke(this, $"设置播放时间失败: {ex.Message}");
-        }
+        if (!_disposed && _player.Media is not null) _player.Time = Math.Max(0, timeMs);
     }
-    
-    /// <summary>
-    /// 设置音量（0-100）
-    /// </summary>
+
     public bool SetVolume(int volume)
     {
-        if (_disposed || _player == null) return false;
-        
-        try
-        {
-            volume = Math.Clamp(volume, 0, 100);
-            _player.Volume = volume;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            ErrorOccurred?.Invoke(this, $"设置音量失败: {ex.Message}");
-            return false;
-        }
+        if (_disposed) return false;
+        _player.Volume = Math.Clamp(volume, 0, 100);
+        return true;
     }
-    
-    /// <summary>
-    /// 获取视频信息
-    /// </summary>
+
     public VideoInfo? GetVideoInfo()
     {
-        if (_disposed) return null;
-        
-        try
+        if (_disposed || _player.Media is null) return null;
+        return new VideoInfo
         {
-            var videoInfo = new VideoInfo();
-            
-            // 如果有缓存的元数据，优先使用
-            if (_cachedMetadata != null)
-            {
-                videoInfo.Duration = _cachedMetadata.Duration;
-                videoInfo.HasVideo = _cachedMetadata.VideoTrackCount > 0;
-                videoInfo.HasAudio = _cachedMetadata.AudioTrackCount > 0;
-                videoInfo.VideoTrackCount = _cachedMetadata.VideoTrackCount;
-                videoInfo.AudioTrackCount = _cachedMetadata.AudioTrackCount;
-                videoInfo.IsSeekable = false; // 加密视频通常是可寻址的
-            }
-            
-            // 从播放器获取实时信息（如果可用）
-            if (_player?.Media != null)
-            {
-                videoInfo.Position = _player.Time;
-                videoInfo.Volume = _player.Volume;
-                
-                // 如果没有缓存的元数据，从播放器获取
-                if (_cachedMetadata == null)
-                {
-                    videoInfo.Duration = _player.Length;
-                    videoInfo.IsSeekable = _player.IsSeekable;
-                    videoInfo.HasVideo = _player.VideoTrackCount > 0;
-                    videoInfo.HasAudio = _player.AudioTrackCount > 0;
-                    videoInfo.VideoTrackCount = _player.VideoTrackCount;
-                    videoInfo.AudioTrackCount = _player.AudioTrackCount;
-                }
-            }
-            
-            return videoInfo;
-        }
-        catch
-        {
-            return null;
-        }
+            Duration = _player.Length,
+            Position = _player.Time,
+            Volume = _player.Volume,
+            IsSeekable = _player.IsSeekable,
+            HasVideo = _player.VideoTrackCount > 0,
+            HasAudio = _player.AudioTrackCount > 0,
+            VideoTrackCount = _player.VideoTrackCount,
+            AudioTrackCount = _player.AudioTrackCount
+        };
     }
-    
-    /// <summary>
-    /// 获取详细的视频元数据（如果可用）
-    /// </summary>
-    public VideoMetadata? GetDetailedMetadata()
-    {
-        return _cachedMetadata;
-    }
-    
-    /// <summary>
-    /// 获取MediaPlayer实例（用于UI绑定）
-    /// </summary>
-    public MediaPlayer? GetMediaPlayer()
-    {
-        return _player;
-    }
-    
-    /// <summary>
-    /// 清理当前媒体资源
-    /// </summary>
+
+    public VideoMetadata? GetDetailedMetadata() => null;
+    public MediaPlayer GetMediaPlayer() => _player;
+
     public void CleanupCurrentMedia()
     {
-        // 释放媒体资源
-        if (_currentMedia != null)
-        {
-            _currentMedia.Dispose();
-            _currentMedia = null;
-        }
-        // 释放解密器资源
-        if (_decryptor != null)
-        {
-            _decryptor.Dispose();
-            _decryptor = null;
-        }
+        if (_disposed) return;
+        // 释放顺序很重要：先停止原生读取并解除 Media，再销毁 Media，最后由 MediaInput 释放解密流。
+        // 如果先关闭流，LibVLC 尚未结束的回调可能在关闭后的文件句柄上读取。
         _player.Stop();
-        _player.Media?.Dispose();
-        _seekableMemoryMediaInput?.Dispose();
-        // 清空引用
-        _currentPassword = null;
-        _cachedMetadata = null;
+        _player.Media = null;
+        _currentMedia?.Dispose();
+        _currentMedia = null;
+        _mediaInput?.Dispose();
+        _mediaInput = null;
     }
-    
+
     public void Dispose()
     {
-        if (!_disposed)
-        {
-        
-            // 清理媒体资源
-            CleanupCurrentMedia();
-        
-            // 释放播放器和LibVLC实例
-            if (_player != null)
-            {
-                _player.Dispose();
-            }
-        
-            // 注意：不要释放LibVLC，因为它是静态初始化的
-            _disposed = true;
-        }
+        if (_disposed) return;
+        CleanupCurrentMedia();
+        _disposed = true;
+        _player.Dispose();
+        // LibVLC 实例由本播放器独占；Core.Initialize 是进程级初始化，但 LibVLC 对象仍必须正常释放。
+        _libVlc.Dispose();
     }
-
 }
 
-/// <summary>
-/// 播放状态
-/// </summary>
-public enum PlaybackState
-{
-    Stopped,
-    Playing,
-    Paused,
-    Ended,
-    Error
-}
+/// <summary>播放器对界面公开的简化状态。</summary>
+public enum PlaybackState { Stopped, Playing, Paused, Ended, Error }
 
-/// <summary>
-/// 视频信息
-/// </summary>
-public class VideoInfo
+/// <summary>从当前 LibVLC MediaPlayer 快照得到的播放信息。</summary>
+public sealed class VideoInfo
 {
     public long Duration { get; set; }
     public long Position { get; set; }
@@ -422,54 +204,7 @@ public class VideoInfo
     public int AudioTrackCount { get; set; }
 }
 
-/// <summary>
-/// 播放状态变化事件参数
-/// </summary>
-public class PlaybackStateChangedEventArgs : EventArgs
-{
-    public PlaybackState State { get; }
-    
-    public PlaybackStateChangedEventArgs(PlaybackState state)
-    {
-        State = state;
-    }
-}
-
-/// <summary>
-/// 时间变化事件参数
-/// </summary>
-public class TimeChangedEventArgs : EventArgs
-{
-    public long Time { get; }
-    
-    public TimeChangedEventArgs(long time)
-    {
-        Time = time;
-    }
-}
-
-/// <summary>
-/// 位置变化事件参数
-/// </summary>
-public class PositionChangedEventArgs : EventArgs
-{
-    public float Position { get; }
-    
-    public PositionChangedEventArgs(float position)
-    {
-        Position = position;
-    }
-}
-
-/// <summary>
-/// 长度变化事件参数
-/// </summary>
-public class LengthChangedEventArgs : EventArgs
-{
-    public long Length { get; }
-    
-    public LengthChangedEventArgs(long length)
-    {
-        Length = length;
-    }
-}
+public sealed class PlaybackStateChangedEventArgs(PlaybackState state) : EventArgs { public PlaybackState State { get; } = state; }
+public sealed class TimeChangedEventArgs(long time) : EventArgs { public long Time { get; } = time; }
+public sealed class PositionChangedEventArgs(float position) : EventArgs { public float Position { get; } = position; }
+public sealed class LengthChangedEventArgs(long length) : EventArgs { public long Length { get; } = length; }

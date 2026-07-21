@@ -8,15 +8,19 @@ using MySmallTools.Models.SecretVideoPlayer;
 namespace MySmallTools.Business.SecretVideoPlayer;
 
 /// <summary>
-/// 视频文件加密服务
+/// 连接加密界面任务模型和 SECVID03 流式加密器的应用服务。
 /// </summary>
+/// <remarks>
+/// 服务负责输入校验、目录创建、任务状态和进度生命周期；密码学格式与磁盘写入集中在
+/// <see cref="Secvid03Encryptor"/> 中，避免界面层重复实现安全关键逻辑。
+/// </remarks>
 public class VideoEncryptorService
 {
-    private readonly SmartVideoEncryptor _encryptor;
+    private readonly Secvid03Encryptor _encryptor;
 
     public VideoEncryptorService()
     {
-        _encryptor = new SmartVideoEncryptor();
+        _encryptor = new Secvid03Encryptor();
     }
 
     /// <summary>
@@ -66,7 +70,7 @@ public class VideoEncryptorService
                 Directory.CreateDirectory(outputDir);
             }
 
-            // 执行加密（这里需要修改SmartVideoEncryptor以支持进度回调）
+            // SECVID03 流式分块加密，不在内存中保留完整视频。
             await EncryptWithProgressAsync(task, progressCallback, cancellationToken);
 
             // 完成
@@ -108,11 +112,12 @@ public class VideoEncryptorService
         IProgress<EncryptionProgress>? progressCallback,
         CancellationToken cancellationToken)
     {
-        // 直接调用SmartVideoEncryptor的带进度回调的方法
-        await _encryptor.EncryptVideoWithProgressAsync(
+        await _encryptor.EncryptAsync(
             task.InputFilePath, 
             task.OutputFilePath, 
             task.Password, 
+            task.Title,
+            task.Description,
             progressCallback, 
             cancellationToken);
     }

@@ -5,6 +5,11 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <PlatformTarget>x64</PlatformTarget>
+        <VlcWindowsX64Enabled>true</VlcWindowsX64Enabled>
+        <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
+        <!-- 把 NuGet 原生内容重定向到插件私有目录，禁止默认复制到宿主输出根目录。 -->
+        <VlcWindowsX64TargetDir>native\win-x64\libvlc</VlcWindowsX64TargetDir>
     </PropertyGroup>
 
     <ItemGroup>
@@ -17,9 +22,35 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="LibVLCSharp.Avalonia" Version="3.9.4" />
-      <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+      <PackageReference Include="LibVLCSharp" Version="3.9.4" GeneratePathProperty="true" />
+      <PackageReference Include="LibVLCSharp.Avalonia" Version="3.9.4" GeneratePathProperty="true" />
+      <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" PrivateAssets="all" />
       <PackageReference Include="System.Security.Cryptography.Algorithms" Version="4.3.1" />
     </ItemGroup>
+
+    <PropertyGroup>
+      <!-- 部署路径以宿主构建输出为基准；运行时则以 MySmallTools.dll 的实际位置反向定位 native。 -->
+      <HostProjectOutputDir>$(MSBuildThisFileDirectory)..\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
+      <PluginDeployDir>$(HostProjectOutputDir)\Controls\SmallTools</PluginDeployDir>
+    </PropertyGroup>
+
+    <Target Name="DeploySmallToolsPlugin"
+            AfterTargets="Build"
+            Condition="'$(SkipPluginDeploy)' != 'true'">
+      <ItemGroup>
+        <!-- 只部署插件本体、两个 LibVLCSharp 托管桥接程序集和 Windows x64 原生树，避免复制宿主已有依赖。 -->
+        <SmallToolsManaged Include="$(TargetPath)" />
+        <SmallToolsManaged Include="$(PkgLibVLCSharp)\lib\net8.0\LibVLCSharp.dll" />
+        <SmallToolsManaged Include="$(PkgLibVLCSharp_Avalonia)\lib\netstandard2.0\LibVLCSharp.Avalonia.dll" />
+        <SmallToolsNative Include="$(TargetDir)native\win-x64\libvlc\**\*" />
+      </ItemGroup>
+      <RemoveDir Directories="$(PluginDeployDir)" />
+      <!-- 每次重新创建插件目录，避免升级 LibVLC 后遗留已删除或改名的旧原生模块。 -->
+      <MakeDir Directories="$(PluginDeployDir)" />
+      <Copy SourceFiles="@(SmallToolsManaged)" DestinationFolder="$(PluginDeployDir)" SkipUnchangedFiles="true" />
+      <Copy SourceFiles="@(SmallToolsNative)"
+            DestinationFiles="@(SmallToolsNative->'$(PluginDeployDir)\native\win-x64\libvlc\%(RecursiveDir)%(Filename)%(Extension)')"
+            SkipUnchangedFiles="true" />
+    </Target>
 
 </Project>

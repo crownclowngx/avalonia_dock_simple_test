@@ -4,8 +4,12 @@ using LibVLCSharp.Shared;
 namespace MySmallTools.Business.SecretVideoPlayer.Helpers;
 
 /// <summary>
-/// 视频元数据提取器
+/// 使用插件私有 LibVLC 解析普通视频文件元数据。
 /// </summary>
+/// <remarks>
+/// 与安全播放器共用 <see cref="LibVlcRuntime"/>，确保两条调用路径不会分别从宿主根目录或系统环境加载不同版本的 VLC。
+/// 元数据解析失败时只返回文件大小和扩展名，避免辅助信息失败阻断主加密流程。
+/// </remarks>
 public class MetadataExtractor
 {
     /// <summary>
@@ -15,8 +19,7 @@ public class MetadataExtractor
     {
         try
         {
-            // 确保LibVLC已初始化
-            Core.Initialize();
+            LibVlcRuntime.EnsureInitialized();
             
             using var libVLC = new LibVLC();
             using var media = new Media(libVLC, videoPath, FromType.FromPath);

@@ -28,7 +28,7 @@ public partial class SecretVideoPlayerView : UserControl
             {
                 new FilePickerFileType("加密视频文件")
                 {
-                    Patterns = new[] { "*.mp4", "*.avi", "*.mkv", "*.mov", "*.wmv", "*.flv", "*.webm" }
+                    Patterns = new[] { "*.secvid" }
                 },
                 new FilePickerFileType("所有文件")
                 {

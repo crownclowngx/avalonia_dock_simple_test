@@ -12,6 +12,11 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// </summary>
 public class PluginLoadContext(string pluginPath) : AssemblyLoadContext
 {
+    private static readonly HashSet<string> SkippedDirectories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // 依赖解析必须与首次插件扫描遵循同一排除规则，否则缺少托管依赖时仍可能递归进入 VLC 原生目录。
+        "native", "runtimes", "libvlc"
+    };
     private readonly Dictionary<string, Assembly> _loadedAssemblies = [];
 
     protected override Assembly? Load(AssemblyName assemblyName)
@@ -82,6 +87,11 @@ public class PluginLoadContext(string pluginPath) : AssemblyLoadContext
             // 递归检查子目录
             foreach (string subdir in Directory.GetDirectories(directoryPath))
             {
+                if (SkippedDirectories.Contains(Path.GetFileName(subdir)))
+                {
+                    continue;
+                }
+
                 string? foundPath = FindAssemblyInDirectory(subdir, assemblyFileName);
                 if (foundPath != null)
                 {

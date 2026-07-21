@@ -31,7 +31,8 @@
     <ProjectReference Include="..\MyPlugTest\MyPlugTest.csproj"
                       AdditionalProperties="SkipPluginDeploy=true" />
     <ProjectReference Include="..\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj" />
-    <ProjectReference Include="..\MySmallTools\MySmallTools.csproj" />
+    <ProjectReference Include="..\MySmallTools\MySmallTools.csproj"
+                      AdditionalProperties="SkipPluginDeploy=true" />
   </ItemGroup>
 
 </Project>

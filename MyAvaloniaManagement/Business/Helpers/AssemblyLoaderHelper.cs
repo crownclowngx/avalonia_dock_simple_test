@@ -8,6 +8,14 @@ namespace MyAvaloniaManagement.Business.Helpers;
 
 public static class AssemblyLoaderHelper
 {
+    private static readonly HashSet<string> SkippedPluginDirectories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // 这些目录存放原生库或运行时资产，不是托管插件程序集。
+        // 跳过它们既可避免把 VLC 插件 DLL 交给 AssemblyLoadContext，也能显著减少启动期无意义的异常扫描。
+        "native",
+        "runtimes",
+        "libvlc"
+    };
     // 存储每个插件目录对应的AssemblyLoadContext
     private static readonly ConcurrentDictionary<string, PluginLoadContext> _pluginContexts = new();
     // 存储已加载的程序集
@@ -118,6 +126,12 @@ public static class AssemblyLoaderHelper
             string[] subdirectories = Directory.GetDirectories(directoryPath);
             foreach (string subdir in subdirectories)
             {
+                // 只按目录名判断，确保 native/libvlc 无论位于插件树的哪一层都不会被递归进入。
+                if (SkippedPluginDirectories.Contains(Path.GetFileName(subdir)))
+                {
+                    continue;
+                }
+
                 var subdirAssemblies = LoadAssembliesRecursively(subdir, loadContext);
                 loadedAssemblies.AddRange(subdirAssemblies);
             }
