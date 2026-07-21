@@ -5,6 +5,7 @@ using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.ToolCreation;
 using MyPlugTest.Models;
+using MyPlugTest.Plugin;
 using MySmallTools.InitPlug.SecretVideoPlayer;
 using Microsoft.Extensions.DependencyInjection;
 using Dock.Model.Mvvm.Controls;
@@ -18,7 +19,6 @@ public sealed class LegacyPluginCompatibilityTests
     {
         var legacyAssemblies = new[]
         {
-            typeof(MyCustomToolStrategy).Assembly,
             typeof(InvoiceInfoImportDocumentStrategy).Assembly,
             typeof(SecretVideoDocumentStrategy).Assembly,
         };
@@ -30,14 +30,15 @@ public sealed class LegacyPluginCompatibilityTests
     }
 
     [Fact]
-    public void BiliDownloader程序集显式接入模块_且不改变公共策略接口()
+    public void BiliDownloader与MyPlugTest程序集显式接入模块_且不改变公共策略接口()
     {
-        var assembly = typeof(BiliDownloaderPluginModule).Assembly;
-        var catalog = PluginModuleCatalog.Discover([assembly]);
+        var biliAssembly = typeof(BiliDownloaderPluginModule).Assembly;
+        var myPlugTestAssembly = typeof(MyPlugTestPluginModule).Assembly;
+        var catalog = PluginModuleCatalog.Discover([biliAssembly, myPlugTestAssembly]);
 
-        var module = Assert.Single(catalog.Modules);
-        Assert.Equal("BiliDownloader", module.PluginId);
-        Assert.True(catalog.IsManaged(assembly));
+        Assert.Equal(["BiliDownloader", "MyPlugTest"], catalog.Modules.Select(x => x.PluginId));
+        Assert.True(catalog.IsManaged(biliAssembly));
+        Assert.True(catalog.IsManaged(myPlugTestAssembly));
         Assert.Equal(2, typeof(IDocumentCreationStrategy).GetMethods().Length);
         Assert.Equal(2, typeof(IToolCreationStrategy).GetMethods().Length);
     }
@@ -47,12 +48,9 @@ public sealed class LegacyPluginCompatibilityTests
     {
         var strategyTypes = new[]
         {
-            typeof(MyCustomToolStrategy),
             typeof(InvoiceInfoImportDocumentStrategy),
             typeof(SecretVideoDocumentStrategy),
             typeof(VideoEncryptorDocumentStrategy),
-            typeof(TestMessageReceiveDocumentStrategy),
-            typeof(TestWelcomeDocumentStrategy),
         };
 
         Assert.All(strategyTypes, type =>
@@ -68,7 +66,6 @@ public sealed class LegacyPluginCompatibilityTests
     {
         var legacyAssemblies = new[]
         {
-            typeof(MyCustomToolStrategy).Assembly,
             typeof(InvoiceInfoImportDocumentStrategy).Assembly,
             typeof(SecretVideoDocumentStrategy).Assembly,
         };
@@ -100,15 +97,13 @@ public sealed class LegacyPluginCompatibilityTests
         {
             typeof(InvoiceInfoImportDocumentStrategy).FullName!,
             typeof(SecretVideoDocumentStrategy).FullName!,
-            typeof(TestMessageReceiveDocumentStrategy).FullName!,
-            typeof(TestWelcomeDocumentStrategy).FullName!,
             typeof(VideoEncryptorDocumentStrategy).FullName!,
         }.OrderBy(name => name, StringComparer.Ordinal), documentStrategies);
-        Assert.Equal([typeof(MyCustomToolStrategy).FullName!], toolStrategies);
+        Assert.Empty(toolStrategies);
     }
 
     [Fact]
-    public void 未注册生命周期的历史插件不会进入生命周期管理器()
+    public void 未注册生命周期的托管示例与历史插件都不会进入生命周期管理器()
     {
         var manager = new PluginLifecycleManager([]);
 
@@ -121,16 +116,16 @@ public sealed class LegacyPluginCompatibilityTests
     [Fact]
     public void 策略激活器对历史插件使用无参路径_对托管插件使用依赖注入路径()
     {
-        var legacyCatalog = PluginModuleCatalog.Discover([typeof(MyCustomToolStrategy).Assembly]);
+        var legacyCatalog = PluginModuleCatalog.Discover([typeof(SecretVideoDocumentStrategy).Assembly]);
         using var emptyProvider = new ServiceCollection().BuildServiceProvider();
 
-        var legacyStrategy = PluginStrategyActivator.Create<IToolCreationStrategy>(
-            typeof(MyCustomToolStrategy),
-            typeof(MyCustomToolStrategy).Assembly,
+        var legacyStrategy = PluginStrategyActivator.Create<IDocumentCreationStrategy>(
+            typeof(SecretVideoDocumentStrategy),
+            typeof(SecretVideoDocumentStrategy).Assembly,
             emptyProvider,
             legacyCatalog);
 
-        Assert.IsType<MyCustomToolStrategy>(legacyStrategy);
+        Assert.IsType<SecretVideoDocumentStrategy>(legacyStrategy);
 
         var managedAssembly = typeof(TestManagedPluginModule).Assembly;
         var managedCatalog = PluginModuleCatalog.Discover([managedAssembly]);

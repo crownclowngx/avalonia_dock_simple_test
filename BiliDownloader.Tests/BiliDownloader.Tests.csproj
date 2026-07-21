@@ -26,7 +26,8 @@
     <ProjectReference Include="..\BiliDownloader\BiliDownloader.csproj"
                       AdditionalProperties="SkipPluginDeploy=true" />
     <ProjectReference Include="..\MyAvaloniaManagement\MyAvaloniaManagement.csproj" />
-    <ProjectReference Include="..\MyPlugTest\MyPlugTest.csproj" />
+    <ProjectReference Include="..\MyPlugTest\MyPlugTest.csproj"
+                      AdditionalProperties="SkipPluginDeploy=true" />
     <ProjectReference Include="..\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj" />
     <ProjectReference Include="..\MySmallTools\MySmallTools.csproj" />
   </ItemGroup>

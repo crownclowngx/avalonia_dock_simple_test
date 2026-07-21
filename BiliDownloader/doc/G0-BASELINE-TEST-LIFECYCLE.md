@@ -2,9 +2,9 @@
 
 > 实施日期：2026-07-21
 >
-> 适用范围：MyAvaloniaManagement 宿主与 BiliDownloader 插件
+> 适用范围：MyAvaloniaManagement 宿主、BiliDownloader 与 MyPlugTest 插件
 >
-> 兼容原则：BiliDownloader 显式接入，其他插件继续使用历史初始化流程
+> 兼容原则：插件逐个显式接入；未迁移插件继续使用历史初始化流程
 
 ## 1. 完成目标
 
@@ -25,8 +25,9 @@ G0 建立了后续安全、任务控制和恢复改造所依赖的基础边界�
 | Legacy Plugin | 程序集未实现 `IPluginModule` | 保留公共无参构造函数并使用 `Activator.CreateInstance` | 完全保留插件原有流程 |
 | Managed Plugin | 程序集实现 `IPluginModule` | 使用 `ActivatorUtilities` 注入模块注册的服务 | 仅执行显式注册的 `IPluginLifecycle` |
 
-当前只有 BiliDownloader 属于 Managed Plugin。MyPlugTest、DaTangAccountingHelpPlug 和
-MySmallTools 均未实现模块接口，因此不会收到新的初始化或关闭回调。
+当前 BiliDownloader 与 MyPlugTest 属于 Managed Plugin。只有 BiliDownloader 注册了
+`IPluginLifecycle`；MyPlugTest 只使用依赖注入，不会进入生命周期状态列表。
+DaTangAccountingHelpPlug 和 MySmallTools 仍是 Legacy Plugin，不会收到新的初始化或关闭回调。
 
 公共策略接口 `IDocumentCreationStrategy` 和 `IToolCreationStrategy` 没有修改，历史插件无需重新设计。
 
@@ -59,6 +60,19 @@ MySmallTools 均未实现模块接口，因此不会收到新的初始化或关�
 - 共享服务：直接复用宿主 `IMessengerService`，插件不注册第二个消息总线。
 
 因此多个 Document、唯一 Tool 和宿主生命周期始终引用同一个 Coordinator 与 SQLite 任务事实源。
+
+### 4.1 MyPlugTest 轻量 DI 示例
+
+MyPlugTest 用于展示不需要后台生命周期时的最小 Managed Plugin 结构：
+
+- Singleton：唯一的 `MyCustomToolViewModel` 和无状态 URL 内容请求服务。
+- Transient：两个 Document ViewModel，以及每个欢迎 Document 独享的 URL 历史 ViewModel。
+- 共享服务：直接注入宿主 `IMessengerService`，插件不创建第二个消息总线。
+- 无生命周期：插件没有数据库、后台队列或退出清理工作，因此不注册空的 `IPluginLifecycle`。
+
+两个 Document 策略只保存根级 `IServiceProvider`，在用户明确创建 Document 时解析瞬态
+ViewModel；策略发现本身不会提前创建 Document。该示例说明 `IPluginModule` 与
+`IPluginLifecycle` 是彼此独立的可选能力，插件不应为了形式完整而注册无职责生命周期。
 
 ## 5. 下载执行边界
 
@@ -120,7 +134,8 @@ dotnet test BiliDownloader.Tests\BiliDownloader.Tests.csproj -c Debug
 当前测试覆盖：
 
 - Managed 生命周期正序初始化、反序关闭、幂等和失败隔离。
-- Legacy 程序集不被误判为 Managed Plugin。
+- DaTangAccountingHelpPlug 与 MySmallTools 不被误判为 Managed Plugin。
+- BiliDownloader 与 MyPlugTest 均能被识别为 Managed Plugin。
 - Legacy 策略继续使用公共无参构造函数。
 - Managed 策略使用 DI 构造路径。
 - BiliDownloader 模块的 Singleton/Transient 注册和宿主消息服务复用。
@@ -136,12 +151,14 @@ dotnet test BiliDownloader.Tests\BiliDownloader.Tests.csproj -c Debug
 ## 8. 构建基线与后续边界
 
 - BiliDownloader 本体和 BiliDownloader.Tests 新增代码为 0 编译警告。
-- 解决方案中其他插件的历史警告不属于 G0，不在本次修改中清理。
-- 全解决方案执行 `Rebuild` 成功，结果为 0 个错误、26 个历史警告，与改造前基线一致。
+- G0 初次完成时全解决方案基线为 0 个错误、26 个历史警告。
+- MyPlugTest 接入 DI 时自然消除了该项目原有的 4 个空值警告；当前仅保留
+  DaTangAccountingHelpPlug 和 MySmallTools 的 22 个历史警告。
 - 2026-07-21 完成宿主界面冒烟：主窗口正常启动，Legacy 插件菜单仍可见，
   BiliSchedulerTool 正常创建，BiliDownloader Document 可由用户菜单创建，宿主可通过关闭按钮有序退出。
   冒烟过程中未点击登录、解析或下载入口，未触发远端请求和媒体执行链路。
-- 测试项目引用 BiliDownloader 时通过 `SkipPluginDeploy=true` 跳过插件发布，避免测试构建覆盖宿主插件目录。
+- 测试项目引用 BiliDownloader 和 MyPlugTest 时均通过 `SkipPluginDeploy=true`
+  跳过插件发布，避免测试构建覆盖宿主插件目录。
 - Cookie 字段和明文存储兼容代码仍保留，并以局部警告说明标注，由 G1 迁移。
 - 进度最终 Flush、Range 完整性和临时文件恢复校验由 G3 实现。
 - 并发数动态调整和单任务暂停/取消的竞争处理由 G2 实现。

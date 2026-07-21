@@ -14,12 +14,14 @@ public partial class TestMessageReceiveViewModel : Document
     private ObservableCollection<MessageItem> _messages = [];
     private readonly IMessengerService _messengerService;
     private int _messageIdCounter = 1;
-    public TestMessageReceiveViewModel(IMessengerService messengerService = null)
+    public TestMessageReceiveViewModel(IMessengerService messengerService)
     {
         // 设置标题
         Title = "消息接收测试";
-        // 使用传入的messengerService或创建默认实例
-        _messengerService = messengerService ?? new MessengerService();
+
+        // 必须使用宿主注入的共享消息服务；发送 Document 与接收 Document
+        // 因此处于同一消息事实源中，插件内部不再创建第二个 MessengerService。
+        _messengerService = messengerService;
         
         // 注册消息接收器
         _messengerService.Register<TestMessageReceiveViewModel, RequestResponseMessage>(this, OnRequestResponseMessageReceived);

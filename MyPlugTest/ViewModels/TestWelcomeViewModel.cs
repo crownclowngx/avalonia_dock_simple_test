@@ -1,12 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
-using Flurl.Http;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
 using MyAvaloniaManagementCommon.Save;
 using MyPlugTest.Constants;
 using MyPlugTest.Models;
+using MyPlugTest.Services;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace MyPlugTest.ViewModels;
 
@@ -14,13 +15,15 @@ public class TestWelcomeViewModel : Document, ISavableDocument
 {
 
     public string SaveDocumentTypeId => SaveDocumentTypeIdConstant.TestWelcomeDocumentId;
-    public string FilePath { get; set; }
+    public string FilePath { get; set; } = string.Empty;
     
     private string _url = "https://example.com";
     private string _responseContent = "";
     private bool _isLoading = false;
     private readonly IMessengerService _messengerService;
-    // 添加URL历史记录ViewModel
+    private readonly IUrlContentService _urlContentService;
+
+    // 每个 Document 注入自己的瞬态 URL 历史记录 ViewModel，避免多个文档共享可变集合。
     public UrlHistoryViewModel UrlHistory { get; }
     
 
@@ -76,37 +79,29 @@ public class TestWelcomeViewModel : Document, ISavableDocument
     {
         try
         {
-            if (saveData != null)
+            var viewModelData = JsonConvert.DeserializeObject<JObject>(saveData.Content);
+            if (viewModelData == null)
             {
-                // 反序列化文档内容
-                var viewModelData = JsonConvert.DeserializeObject<dynamic>(saveData.Content);
-                if (viewModelData != null)
+                return;
+            }
+
+            // 使用明确的 JSON 节点读取保存数据，避免 dynamic 在字段缺失时产生空引用风险。
+            Url = viewModelData["Url"]?.ToString() ?? "https://example.com";
+            ResponseContent = viewModelData["ResponseContent"]?.ToString() ?? string.Empty;
+
+            // 每次加载都以保存文件为准重建当前 Document 的历史记录投影。
+            UrlHistory.HistoryItems.Clear();
+            if (viewModelData["HistoryItems"] is JArray historyItems)
+            {
+                foreach (var item in historyItems)
                 {
-                    // 恢复URL和响应内容
-                    _url = viewModelData.Url?.ToString() ?? "https://example.com";
-                    _responseContent = viewModelData.ResponseContent?.ToString() ?? "";
-                    OnPropertyChanged(nameof(Url));
-                    OnPropertyChanged(nameof(ResponseContent));
-                    
-                    // 恢复UrlHistory的状态
-                    if (viewModelData.HistoryItems != null)
+                    var url = item["Url"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(url))
                     {
-                        // 清空现有历史记录
-                        UrlHistory.HistoryItems.Clear();
-                        
-                        // 从保存的数据中添加历史记录项
-                        foreach (var item in viewModelData.HistoryItems)
-                        {
-                            string url = item.Url?.ToString();
-                            if (!string.IsNullOrEmpty(url))
-                            {
-                                // 创建新的历史记录项并添加
-                                UrlHistory.HistoryItems.Add(new UrlHistoryItem(url));
-                            }
-                        }
+                        UrlHistory.HistoryItems.Add(new UrlHistoryItem(url));
                     }
                 }
-            } 
+            }
         }
         catch (Exception ex)
         {
@@ -115,13 +110,17 @@ public class TestWelcomeViewModel : Document, ISavableDocument
         }
     }
     
-    public TestWelcomeViewModel(IMessengerService messengerService = null)
+    public TestWelcomeViewModel(
+        IMessengerService messengerService,
+        UrlHistoryViewModel urlHistory,
+        IUrlContentService urlContentService)
     {
-        // 使用传入的messengerService或创建默认实例
-        _messengerService = messengerService ?? new MessengerService();
+        // 三个依赖均由 MyPlugTestPluginModule 提供；这里不保留手工 new 的回退路径，
+        // 从而保证所有 Document 都使用宿主的共享消息总线和统一的网络服务所有权。
+        _messengerService = messengerService;
+        _urlContentService = urlContentService;
+        UrlHistory = urlHistory;
         SendRequestCommand = new AsyncRelayCommand(SendRequestAsync);
-        // 初始化URL历史记录ViewModel
-        UrlHistory = new UrlHistoryViewModel();
     }
     
     private async Task SendRequestAsync()
@@ -144,9 +143,8 @@ public class TestWelcomeViewModel : Document, ISavableDocument
                 url = "https://" + url;
             }
 
-            // 发送请求并获取响应内容
-            // Flurl提供了流畅的API，一行代码即可完成请求
-            string content = await url.GetStringAsync();
+            // 网络副作用通过注入服务执行，ViewModel 只负责界面状态和消息通信。
+            string content = await _urlContentService.GetStringAsync(url);
             ResponseContent = content;
             // 添加URL到历史记录
             UrlHistory.AddUrl(url);
@@ -154,10 +152,10 @@ public class TestWelcomeViewModel : Document, ISavableDocument
             // 发送成功消息到消息总线
             _messengerService.Send(new RequestResponseMessage(content, url, true));
         }
-        catch (FlurlHttpException ex)
+        catch (UrlContentRequestException ex)
         {
-            // 处理HTTP错误
-            ResponseContent = $"请求失败: 状态码 {ex.StatusCode}, 错误信息: {await ex.GetResponseStringAsync()}";
+            // 保持迁移前的错误展示格式，同时不让 ViewModel 依赖 Flurl 的异常类型。
+            ResponseContent = $"请求失败: 状态码 {ex.StatusCode}, 错误信息: {ex.ResponseContent}";
         }
         catch (Exception ex)
         {

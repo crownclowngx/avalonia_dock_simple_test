@@ -16,6 +16,7 @@
 
     <ItemGroup>
       <PackageReference Include="Flurl.Http" Version="4.0.2" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
     </ItemGroup>
 
     <!-- 构建后自动将插件及其第三方依赖部署到主项目的 Controls/MyPlugTest 目录 -->
@@ -31,7 +32,9 @@
         <HostProjectPath>$(MSBuildThisFileDirectory)..\MyAvaloniaManagement\MyAvaloniaManagement.csproj</HostProjectPath>
     </PropertyGroup>
 
-    <Target Name="DeployPluginToHost" AfterTargets="Build">
+    <Target Name="DeployPluginToHost"
+            AfterTargets="Build"
+            Condition="'$(SkipPluginDeploy)' != 'true'">
         <!-- 发布插件：获取完整运行时依赖集 -->
         <Exec Command="dotnet publish &quot;$(MSBuildProjectFullPath)&quot; -c $(Configuration) -o &quot;$(PluginPublishDir)&quot; --no-build"
               Condition="Exists('$(OutputPath)$(AssemblyName).dll')" />

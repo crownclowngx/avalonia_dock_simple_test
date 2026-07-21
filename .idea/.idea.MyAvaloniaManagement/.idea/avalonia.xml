@@ -3,6 +3,8 @@
   <component name="AvaloniaProject">
     <option name="projectPerEditor">
       <map>
+        <entry key="BiliDownloader/Views/BiliDownloaderView.axaml" value="BiliDownloader.Tests/BiliDownloader.Tests.csproj" />
+        <entry key="BiliDownloader/Views/BiliSchedulerToolView.axaml" value="BiliDownloader.Tests/BiliDownloader.Tests.csproj" />
         <entry key="MyAvaloniaManagement/App.axaml" value="MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
         <entry key="MyAvaloniaManagement/Views/Hello/Welcome.axaml" value="MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
         <entry key="MyAvaloniaManagement/Views/Hello/WelcomeView.axaml" value="MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
