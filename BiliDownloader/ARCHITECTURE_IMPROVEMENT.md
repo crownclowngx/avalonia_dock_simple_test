@@ -308,7 +308,8 @@ Cookie 不应复制到每一条下载任务记录中。退出登录后，任务�
 - 下载执行时通过 `IBiliCredentialProvider` 获取当前 Cookie。
 - 无有效登录态时将任务置为 `WaitingForLogin`，不直接失败。
 - 退出登录时暂停需要登录的任务。
-- Cookie 使用操作系统凭据保护；仅支持 Windows 时可优先使用 DPAPI。
+- Cookie 通过 `ICredentialProtector` 使用每安装随机 key 的 AES-256-GCM 保护，Windows 与 Linux 共用格式。
+- 当前 key 与凭据库同目录，解决明文落盘和篡改检测，不把用户数据目录整体泄露纳入防护范围。
 - 登录状态初始化失败后应允许再次尝试，不能提前永久设置 `_initialized = true`。
 - 登录窗口增加互斥状态，避免 View 附加和点击页面同时打开多个登录窗口。
 

@@ -2,6 +2,7 @@ using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Download.Extras;
+using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,14 +24,21 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
     /// <inheritdoc />
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<IBiliDataPaths, BiliDataPaths>();
+        services.AddSingleton<IBiliLocalStateInitializer, BiliLocalStateInitializer>();
+
         // SQLite 仓储在插件进程生命周期内保持唯一，确保 Tool、Document 和 Coordinator
         // 观察同一任务事实源，而不是各自创建数据库访问对象。
         services.AddSingleton<IDownloadTaskRepository, DownloadTaskStore>();
         services.AddSingleton<ISettingsRepository, SettingsStore>();
 
-        // 登录相关对象保持插件级单例。G0 只统一实例所有权，Cookie 加密和迁移留到 G1。
-        services.AddSingleton<BiliCookieStore>();
+        // 登录态只依赖凭据存储接口；SQLite 内只保存 AES-GCM 密文信封。
+        services.AddSingleton<InstallationKeyStore>();
+        services.AddSingleton<ICredentialProtector, AesGcmCredentialProtector>();
+        services.AddSingleton<IBiliCredentialStore, BiliCredentialStore>();
         services.AddSingleton<BiliLoginService>();
+        services.AddSingleton<IBiliSessionApi>(provider =>
+            provider.GetRequiredService<BiliLoginService>());
         services.AddSingleton<BiliLoginStateService>();
         services.AddSingleton<IBiliCredentialProvider, BiliCredentialProvider>();
 
@@ -51,15 +59,22 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
 }
 
 /// <summary>
-/// BiliDownloader 的宿主管理生命周期。初始化只迁移本地任务状态，
-/// 关闭时取消并等待 Coordinator 的活动工作，不依赖任何 Tool 或 Document 视图。
+/// BiliDownloader 的宿主管理生命周期。初始化先恢复本地状态，再启动非阻塞登录验证；
+/// 关闭时取消并等待后台验证与 Coordinator，不依赖任何 Tool 或 Document 视图。
 /// </summary>
 public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
 {
+    private readonly IBiliLocalStateInitializer _localStateInitializer;
+    private readonly BiliLoginStateService _loginStateService;
     private readonly BiliDownloadCoordinator _coordinator;
 
-    public BiliDownloaderPluginLifecycle(BiliDownloadCoordinator coordinator)
+    public BiliDownloaderPluginLifecycle(
+        IBiliLocalStateInitializer localStateInitializer,
+        BiliLoginStateService loginStateService,
+        BiliDownloadCoordinator coordinator)
     {
+        _localStateInitializer = localStateInitializer;
+        _loginStateService = loginStateService;
         _coordinator = coordinator;
     }
 
@@ -67,15 +82,19 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
 
     public int Order => 100;
 
-    public Task InitializeAsync(CancellationToken cancellationToken)
+    public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return _coordinator.InitializeAsync();
+        await _localStateInitializer.InitializeAsync(cancellationToken);
+        await _loginStateService.RestoreSavedSessionAsync(cancellationToken);
+        await _coordinator.InitializeAsync();
+        _loginStateService.StartBackgroundValidation();
     }
 
-    public Task ShutdownAsync(CancellationToken cancellationToken)
+    public async Task ShutdownAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return _coordinator.ShutdownAsync();
+        await _loginStateService.StopAsync(cancellationToken);
+        await _coordinator.ShutdownAsync();
     }
 }

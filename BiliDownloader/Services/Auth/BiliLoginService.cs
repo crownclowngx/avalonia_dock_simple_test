@@ -5,10 +5,35 @@ using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.Services.Auth;
 
+public enum LoginValidationStatus
+{
+    Valid,
+    Invalid,
+    Unavailable,
+}
+
+public sealed record LoginValidationResult(
+    LoginValidationStatus Status,
+    string? UserName = null,
+    string? UserAvatar = null);
+
+/// <summary>
+/// 登录状态管理只依赖会话验证与退出，不依赖二维码登录的其他能力。
+/// </summary>
+public interface IBiliSessionApi
+{
+    Task<LoginValidationResult> CheckLoginAsync(
+        string cookieHeader,
+        CancellationToken cancellationToken = default);
+    Task<bool> ExitLoginAsync(
+        string cookieHeader,
+        CancellationToken cancellationToken = default);
+}
+
 /// <summary>
 /// B站登录 API 封装（QR 码扫码登录）
 /// </summary>
-public partial class BiliLoginService
+public partial class BiliLoginService : IBiliSessionApi
 {
     /// <summary>
     /// 扫码轮询状态码
@@ -82,55 +107,74 @@ public partial class BiliLoginService
     /// 验证当前 Cookie 是否有效，同时返回用户名和头像。
     /// 若未登录或 Cookie 失效，返回 (false, null, null)。
     /// </summary>
-    public async Task<(bool IsLoggedIn, string? UserName, string? UserAvatar)> CheckLoginAsync(
-        string cookieHeader)
+    public async Task<LoginValidationResult> CheckLoginAsync(
+        string cookieHeader,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(cookieHeader))
-            return (false, null, null);
+            return new LoginValidationResult(LoginValidationStatus.Invalid);
 
         try
         {
             var json = await "https://api.bilibili.com/x/web-interface/nav"
                 .WithHeader("User-Agent", HttpConstants.UserAgent)
                 .WithHeader("Cookie", cookieHeader)
-                .GetStringAsync();
+                .WithTimeout(TimeSpan.FromSeconds(5))
+                .GetStringAsync(cancellationToken: cancellationToken);
 
             var resp = JObject.Parse(json);
 
             var isLogin = resp["data"]?["isLogin"]?.Value<bool>() ?? false;
-            if (!isLogin) return (false, null, null);
+            if (!isLogin)
+            {
+                return new LoginValidationResult(LoginValidationStatus.Invalid);
+            }
 
             var uname = resp["data"]?["uname"]?.ToString();
             var face = resp["data"]?["face"]?.ToString();
-            return (true, uname, face);
+            return new LoginValidationResult(LoginValidationStatus.Valid, uname, face);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch
         {
-            return (false, null, null);
+            return new LoginValidationResult(LoginValidationStatus.Unavailable);
         }
     }
 
     /// <summary>
     /// 调用 B站退出登录接口，使服务端 Cookie 失效
     /// </summary>
-    public async Task<bool> ExitLoginAsync(string cookieHeader)
+    public async Task<bool> ExitLoginAsync(
+        string cookieHeader,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(cookieHeader)) return true;
 
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // 先从 cookie 中提取 bili_jct 作为 csrf
             var csrf = ExtractCookieValue(cookieHeader, "bili_jct") ?? "";
 
             var resp = await "https://passport.bilibili.com/login/exit/v2"
                 .WithHeader("User-Agent", HttpConstants.UserAgent)
                 .WithHeader("Cookie", cookieHeader)
-                .PostUrlEncodedAsync(new { biliCSRF = csrf });
+                .WithTimeout(TimeSpan.FromSeconds(5))
+                .PostUrlEncodedAsync(
+                    new { biliCSRF = csrf },
+                    cancellationToken: cancellationToken);
 
             var jsonStr = await resp.GetStringAsync();
             var body = JObject.Parse(jsonStr);
             var code = body["code"]?.Value<int>() ?? -1;
             return code == 0;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch
         {

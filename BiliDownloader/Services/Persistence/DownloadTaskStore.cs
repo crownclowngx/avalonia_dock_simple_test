@@ -5,8 +5,7 @@ using Microsoft.Data.Sqlite;
 namespace BiliDownloader.Services.Persistence;
 
 /// <summary>
-/// 下载任务 SQLite 持久化存储
-/// 数据库路径: %AppData%/BiliDownloader/bili_download_tasks.db
+/// 下载任务 SQLite 持久化存储。路径由 <see cref="IBiliDataPaths"/> 统一决定。
 /// </summary>
 public class DownloadTaskStore : IDownloadTaskRepository
 {
@@ -17,16 +16,12 @@ public class DownloadTaskStore : IDownloadTaskRepository
         SqliteNativeLoader.EnsureLoaded();
     }
 
-    public DownloadTaskStore()
+    public DownloadTaskStore(IBiliDataPaths paths)
     {
-        var appDataDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "BiliDownloader");
-        Directory.CreateDirectory(appDataDir);
-        var dbPath = Path.Combine(appDataDir, "bili_download_tasks.db");
+        Directory.CreateDirectory(paths.DataDirectory);
         _connectionString = new SqliteConnectionStringBuilder
         {
-            DataSource = dbPath,
+            DataSource = paths.DownloadTaskDatabasePath,
             Mode = SqliteOpenMode.ReadWriteCreate
         }.ToString();
     }
@@ -60,7 +55,6 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 audio_quality_id    INTEGER NOT NULL DEFAULT 0,
                 output_directory    TEXT NOT NULL DEFAULT '',
                 sub_folder          TEXT NOT NULL DEFAULT '',
-                cookie              TEXT NOT NULL DEFAULT '',
                 progress            REAL NOT NULL DEFAULT 0,
                 status              TEXT NOT NULL DEFAULT 'pending',
                 error_message       TEXT,
@@ -133,7 +127,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.CommandText = """
                 INSERT OR REPLACE INTO download_tasks
                     (task_id, document_id, series_title, item_title, aid, bvid, cid,
-                     quality_id, audio_quality_id, output_directory, sub_folder, cookie,
+                     quality_id, audio_quality_id, output_directory, sub_folder,
                      progress, status, error_message,
                      temp_directory, video_bytes, audio_bytes,
                      video_progress, audio_progress, merge_progress, speed_text,
@@ -141,7 +135,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
                      extras_config, cover_url)
                 VALUES
                     ($task_id, $document_id, $series_title, $item_title, $aid, $bvid, $cid,
-                     $quality_id, $audio_quality_id, $output_directory, $sub_folder, $cookie,
+                     $quality_id, $audio_quality_id, $output_directory, $sub_folder,
                      $progress, $status, $error_message,
                      $temp_directory, $video_bytes, $audio_bytes,
                      $video_progress, $audio_progress, $merge_progress, $speed_text,
@@ -159,12 +153,11 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.Parameters.AddWithValue("$audio_quality_id", r.AudioQualityId);
             cmd.Parameters.AddWithValue("$output_directory", r.OutputDirectory);
             cmd.Parameters.AddWithValue("$sub_folder", r.SubFolder);
-#pragma warning disable CS0618 // G1 负责删除旧 Cookie 列；G0 必须继续兼容现有数据库写入。
-            cmd.Parameters.AddWithValue("$cookie", r.Cookie);
-#pragma warning restore CS0618
             cmd.Parameters.AddWithValue("$progress", r.Progress);
             cmd.Parameters.AddWithValue("$status", r.Status);
-            cmd.Parameters.AddWithValue("$error_message", (object?)r.ErrorMessage ?? DBNull.Value);
+            cmd.Parameters.AddWithValue(
+                "$error_message",
+                ToDatabaseValue(SensitiveDataSanitizer.Sanitize(r.ErrorMessage)));
             cmd.Parameters.AddWithValue("$temp_directory", r.TempDirectory);
             cmd.Parameters.AddWithValue("$video_bytes", r.VideoBytesDownloaded);
             cmd.Parameters.AddWithValue("$audio_bytes", r.AudioBytesDownloaded);
@@ -177,7 +170,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.Parameters.AddWithValue("$ep_id", r.EpId);
             cmd.Parameters.AddWithValue("$season_id", r.SeasonId);
             cmd.Parameters.AddWithValue("$extras_config", r.ExtrasConfig);
-            cmd.Parameters.AddWithValue("$cover_url", r.CoverUrl);
+            cmd.Parameters.AddWithValue(
+                "$cover_url",
+                SensitiveDataSanitizer.SanitizeUrlForStorage(r.CoverUrl));
             await cmd.ExecuteNonQueryAsync();
         }
 
@@ -200,7 +195,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
         cmd.Parameters.AddWithValue("$task_id", taskId);
         cmd.Parameters.AddWithValue("$progress", progress);
         cmd.Parameters.AddWithValue("$status", status);
-        cmd.Parameters.AddWithValue("$error_message", (object?)errorMessage ?? DBNull.Value);
+        cmd.Parameters.AddWithValue(
+            "$error_message",
+            ToDatabaseValue(SensitiveDataSanitizer.Sanitize(errorMessage)));
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -333,7 +330,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
             WHERE task_id = $task_id;
             """;
         cmd.Parameters.AddWithValue("$task_id", taskId);
-        cmd.Parameters.AddWithValue("$extras_result_summary", (object?)extrasResultSummary ?? DBNull.Value);
+        cmd.Parameters.AddWithValue(
+            "$extras_result_summary",
+            ToDatabaseValue(SensitiveDataSanitizer.Sanitize(extrasResultSummary)));
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -413,9 +412,6 @@ public class DownloadTaskStore : IDownloadTaskRepository
             AudioQualityId = TryGetInt(reader, "audio_quality_id"),
             OutputDirectory = reader.GetString(reader.GetOrdinal("output_directory")),
             SubFolder = TryGetString(reader, "sub_folder"),
-#pragma warning disable CS0618 // G1 迁移完成前仍需读取旧表字段，避免历史任务加载失败。
-            Cookie = reader.GetString(reader.GetOrdinal("cookie")),
-#pragma warning restore CS0618
             Progress = reader.GetDouble(reader.GetOrdinal("progress")),
             Status = reader.GetString(reader.GetOrdinal("status")),
             ErrorMessage = reader.IsDBNull(reader.GetOrdinal("error_message"))
@@ -448,6 +444,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
             ExtrasResultSummary = TryGetNullableString(reader, "extras_result_summary"),
         };
     }
+
+    private static object ToDatabaseValue(string? value)
+        => string.IsNullOrEmpty(value) ? DBNull.Value : value;
 
     private static double TryGetDouble(SqliteDataReader reader, string column)
     {

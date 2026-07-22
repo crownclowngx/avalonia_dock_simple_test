@@ -122,10 +122,10 @@ public sealed class BiliDownloadCoordinatorTests
         FakeDownloadTaskExecutor executor)
         => new(
             repository,
-            new FakeCredentialProvider(),
             new IsolatedMessengerService(),
             new NoOpDownloadProgressTracker(),
-            executor);
+            executor,
+            new TestDataPaths());
 
     private static SubmitDownloadTaskMessage CreateSubmitMessage(string taskId)
         => new(
@@ -144,8 +144,7 @@ public sealed class BiliDownloadCoordinatorTests
             ],
             qualityId: 80,
             audioQualityId: 0,
-            outputDirectory: "不应写入的测试目录",
-            cookie: string.Empty);
+            outputDirectory: "不应写入的测试目录");
 
     private static DownloadTaskRecord CreateRecord(string taskId, DownloadTaskStatus status)
         => new()

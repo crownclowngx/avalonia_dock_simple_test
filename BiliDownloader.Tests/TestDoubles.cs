@@ -1,11 +1,136 @@
 using BiliDownloader.Models;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Download;
+using BiliDownloader.Services.Infrastructure;
+using Microsoft.Data.Sqlite;
 using BiliDownloader.Services.Persistence;
 using CommunityToolkit.Mvvm.Messaging;
 using MyAvaloniaManagementCommon.Message;
 
 namespace BiliDownloader.Tests;
+
+internal sealed class TestDataPaths : IBiliDataPaths, IDisposable
+{
+    public TestDataPaths()
+    {
+        RootDirectory = Path.Combine(
+            Path.GetTempPath(),
+            "BiliDownloader.Tests",
+            Guid.NewGuid().ToString("N"),
+            "BiliDownloader");
+        DataDirectory = RootDirectory;
+        LogDirectory = Path.Combine(RootDirectory, "logs");
+        TempDirectory = Path.Combine(RootDirectory, "temp");
+        DownloadTaskDatabasePath = Path.Combine(RootDirectory, "bili_download_tasks.db");
+        CredentialDatabasePath = Path.Combine(RootDirectory, "credentials.db");
+        CredentialKeyPath = Path.Combine(RootDirectory, "credential.key");
+        StorageEpochMarkerPath = Path.Combine(RootDirectory, "storage_epoch_v2");
+        ResetDirectories = [RootDirectory];
+    }
+
+    public string RootDirectory { get; }
+    public string DataDirectory { get; }
+    public string LogDirectory { get; }
+    public string TempDirectory { get; }
+    public string DownloadTaskDatabasePath { get; }
+    public string CredentialDatabasePath { get; }
+    public string CredentialKeyPath { get; }
+    public string StorageEpochMarkerPath { get; }
+    public IReadOnlyList<string> ResetDirectories { get; }
+
+    public void Dispose()
+    {
+        SqliteConnection.ClearAllPools();
+        if (Directory.Exists(RootDirectory))
+        {
+            Directory.Delete(RootDirectory, recursive: true);
+        }
+    }
+}
+
+internal sealed class NoOpLocalStateInitializer : IBiliLocalStateInitializer
+{
+    public int InitializeCount { get; private set; }
+
+    public Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        InitializeCount++;
+        return Task.CompletedTask;
+    }
+}
+
+internal sealed class InMemoryBiliCredentialStore : IBiliCredentialStore
+{
+    public BiliCredentialSession? Session { get; private set; }
+    public int SaveCount { get; private set; }
+    public int DeleteCount { get; private set; }
+
+    public InMemoryBiliCredentialStore(BiliCredentialSession? session = null)
+    {
+        Session = Clone(session);
+    }
+
+    public Task InitAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.CompletedTask;
+    }
+
+    public Task SaveSessionAsync(
+        BiliCredentialSession session,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Session = Clone(session);
+        SaveCount++;
+        return Task.CompletedTask;
+    }
+
+    public Task<BiliCredentialSession?> LoadSessionAsync(
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(Clone(Session));
+    }
+
+    public Task DeleteAllAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Session = null;
+        DeleteCount++;
+        return Task.CompletedTask;
+    }
+
+    private static BiliCredentialSession? Clone(BiliCredentialSession? session)
+        => session is null
+            ? null
+            : session with { Cookies = session.Cookies.ToList() };
+}
+
+internal sealed class StubBiliSessionApi : IBiliSessionApi
+{
+    public LoginValidationResult ValidationResult { get; set; } =
+        new(LoginValidationStatus.Unavailable);
+    public int ValidationCount { get; private set; }
+
+    public Task<LoginValidationResult> CheckLoginAsync(
+        string cookieHeader,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ValidationCount++;
+        return Task.FromResult(ValidationResult);
+    }
+
+    public Task<bool> ExitLoginAsync(
+        string cookieHeader,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(true);
+    }
+}
 
 /// <summary>
 /// 线程安全的内存任务仓储。测试通过它观察持久化调用顺序，且不会访问真实 SQLite 或 AppData。

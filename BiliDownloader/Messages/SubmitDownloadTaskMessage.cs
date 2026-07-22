@@ -64,11 +64,6 @@ public class SubmitDownloadTaskMessage
     public string OutputDirectory { get; }
 
     /// <summary>
-    /// 当前 Cookie（下载时需要）
-    /// </summary>
-    public string Cookie { get; }
-
-    /// <summary>
     /// 是否使用分组文件夹（以视频组名称命名子文件夹）
     /// </summary>
     public bool UseGroupFolder { get; }
@@ -85,7 +80,6 @@ public class SubmitDownloadTaskMessage
         int qualityId,
         int audioQualityId,
         string outputDirectory,
-        string cookie,
         bool useGroupFolder = false,
         ExtrasType extrasConfig = ExtrasType.None)
     {
@@ -95,7 +89,6 @@ public class SubmitDownloadTaskMessage
         QualityId = qualityId;
         AudioQualityId = audioQualityId;
         OutputDirectory = outputDirectory;
-        Cookie = cookie;
         UseGroupFolder = useGroupFolder;
         ExtrasConfig = extrasConfig;
     }

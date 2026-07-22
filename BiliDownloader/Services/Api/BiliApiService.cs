@@ -345,11 +345,10 @@ public partial class BiliApiService
         var signedQuery = await WbiSignAsync(paramsDict, cookie);
         var fullUrl = $"{url}?{signedQuery}";
 
-        var response = await fullUrl
+        var request = fullUrl
             .WithHeader("User-Agent", HttpConstants.UserAgent)
-            .WithHeader("Referer", HttpConstants.Referer)
-            .WithHeader("Cookie", cookie)
-            .GetBytesAsync();
+            .WithHeader("Referer", HttpConstants.Referer);
+        var response = await WithCookie(request, cookie).GetBytesAsync();
 
         return response;
     }
@@ -370,11 +369,10 @@ public partial class BiliApiService
         var signedQuery = await WbiSignAsync(paramsDict, cookie);
         var fullUrl = $"{url}?{signedQuery}";
 
-        var json = await fullUrl
+        var request = fullUrl
             .WithHeader("User-Agent", HttpConstants.UserAgent)
-            .WithHeader("Referer", HttpConstants.Referer)
-            .WithHeader("Cookie", cookie)
-            .GetStringAsync();
+            .WithHeader("Referer", HttpConstants.Referer);
+        var json = await WithCookie(request, cookie).GetStringAsync();
 
         var resp = JObject.Parse(json);
         if (resp["code"]?.Value<int>() != 0)
@@ -413,11 +411,10 @@ public partial class BiliApiService
     /// <returns>SRT 格式的字幕文本</returns>
     public async Task<string> GetSubtitleSrtAsync(string subtitleUrl, string cookie)
     {
-        var json = await subtitleUrl
+        var request = subtitleUrl
             .WithHeader("User-Agent", HttpConstants.UserAgent)
-            .WithHeader("Referer", HttpConstants.Referer)
-            .WithHeader("Cookie", cookie)
-            .GetStringAsync();
+            .WithHeader("Referer", HttpConstants.Referer);
+        var json = await WithCookie(request, cookie).GetStringAsync();
 
         var resp = JObject.Parse(json);
         var body = resp["body"] as JArray;
@@ -495,11 +492,10 @@ public partial class BiliApiService
         var signedQuery = await WbiSignAsync(paramsDict, cookie);
         var fullUrl = $"{url}?{signedQuery}";
 
-        var json = await fullUrl
+        var request = fullUrl
             .WithHeader("User-Agent", HttpConstants.UserAgent)
-            .WithHeader("Referer", HttpConstants.Referer)
-            .WithHeader("Cookie", cookie)
-            .GetStringAsync();
+            .WithHeader("Referer", HttpConstants.Referer);
+        var json = await WithCookie(request, cookie).GetStringAsync();
 
         var resp = JObject.Parse(json);
         if (resp["code"]?.Value<int>() != 0)
@@ -637,11 +633,10 @@ public partial class BiliApiService
         if (_cachedMixinKey != null && DateTime.UtcNow < _mixinKeyExpireTime)
             return _cachedMixinKey;
 
-        var json = await "https://api.bilibili.com/x/web-interface/nav"
+        var request = "https://api.bilibili.com/x/web-interface/nav"
             .WithHeader("User-Agent", HttpConstants.UserAgent)
-            .WithHeader("Referer", HttpConstants.Referer)
-            .WithHeader("Cookie", cookie)
-            .GetStringAsync();
+            .WithHeader("Referer", HttpConstants.Referer);
+        var json = await WithCookie(request, cookie).GetStringAsync();
 
         var resp = JObject.Parse(json);
         var wbiImg = resp["data"]?["wbi_img"];
@@ -744,14 +739,19 @@ public partial class BiliApiService
     {
         var req = url
             .WithHeader("User-Agent", HttpConstants.UserAgent)
-            .WithHeader("Referer", HttpConstants.Referer)
-            .WithHeader("Cookie", cookie);
+            .WithHeader("Referer", HttpConstants.Referer);
+        req = WithCookie(req, cookie);
 
         foreach (var kv in paramsDict)
             req = req.SetQueryParam(kv.Key, kv.Value);
 
         return req;
     }
+
+    private static IFlurlRequest WithCookie(IFlurlRequest request, string cookie)
+        => string.IsNullOrWhiteSpace(cookie)
+            ? request
+            : request.WithHeader("Cookie", cookie);
 
     // 编译时正则 — 普通视频
     [GeneratedRegex(@"^BV[\w]{10}$", RegexOptions.IgnoreCase)]

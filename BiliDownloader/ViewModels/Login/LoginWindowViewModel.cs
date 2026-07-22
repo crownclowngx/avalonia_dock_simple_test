@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using QRCoder;
 using BiliDownloader.Services.Auth;
+using BiliDownloader.Services.Infrastructure;
 
 namespace BiliDownloader.ViewModels.Login;
 
@@ -89,7 +90,7 @@ public partial class LoginWindowViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusText = $"获取二维码失败：{ex.Message}";
+            StatusText = $"获取二维码失败：{SensitiveDataSanitizer.Sanitize(ex.Message)}";
         }
     }
 
@@ -108,11 +109,12 @@ public partial class LoginWindowViewModel : ObservableObject
                 switch (status)
                 {
                     case BiliLoginService.QrCodeStatus.Success:
-                        StatusText = "登录成功！";
                         IsPolling = false;
                         // 通过插件级单例状态服务完成登录，避免弹窗自行创建第二套登录状态。
-                        await _loginStateService.LoginAsync(cookies);
-                        LoginSuccess = true;
+                        LoginSuccess = await _loginStateService.LoginAsync(cookies);
+                        StatusText = LoginSuccess
+                            ? _loginStateService.StatusMessage ?? "登录成功！"
+                            : _loginStateService.StatusMessage ?? "登录失败，请重试。";
                         return;
 
                     case BiliLoginService.QrCodeStatus.ScannedPending:
@@ -131,7 +133,7 @@ public partial class LoginWindowViewModel : ObservableObject
             }
             catch (Exception ex)
             {
-                StatusText = $"轮询异常：{ex.Message}，2秒后重试...";
+                StatusText = $"轮询异常：{SensitiveDataSanitizer.Sanitize(ex.Message)}，2秒后重试...";
             }
         }
     }

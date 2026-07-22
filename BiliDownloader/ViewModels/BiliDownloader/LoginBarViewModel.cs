@@ -20,6 +20,9 @@ public partial class LoginBarViewModel : ObservableObject
     [ObservableProperty]
     private string? _userName;
 
+    [ObservableProperty]
+    private string? _statusMessage;
+
     public IAsyncRelayCommand LoginCommand { get; }
     public IAsyncRelayCommand LogoutCommand { get; }
 
@@ -35,7 +38,8 @@ public partial class LoginBarViewModel : ObservableObject
 
         // 构造阶段只读取内存快照，不访问网络；远端校验只能由用户点击登录后触发。
         IsLoggedIn = _loginStateService.IsLoggedIn;
-        UserName = _loginStateService.UserName;
+        UserName = GetDisplayName(_loginStateService.IsLoggedIn, _loginStateService.UserName);
+        StatusMessage = _loginStateService.StatusMessage;
     }
 
     /// <summary>
@@ -45,7 +49,8 @@ public partial class LoginBarViewModel : ObservableObject
     {
         await _loginStateService.InitAsync();
         IsLoggedIn = _loginStateService.IsLoggedIn;
-        UserName = _loginStateService.UserName;
+        UserName = GetDisplayName(_loginStateService.IsLoggedIn, _loginStateService.UserName);
+        StatusMessage = _loginStateService.StatusMessage;
 
         if (IsLoggedIn) return;
         await ShowLoginWindowAsync();
@@ -81,4 +86,7 @@ public partial class LoginBarViewModel : ObservableObject
             return null;
         }
     }
+
+    internal static string? GetDisplayName(bool isLoggedIn, string? userName)
+        => isLoggedIn && string.IsNullOrWhiteSpace(userName) ? "已保存账号" : userName;
 }

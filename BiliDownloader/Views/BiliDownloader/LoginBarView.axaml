@@ -7,7 +7,7 @@
              x:Class="BiliDownloader.Views.BiliDownloader.LoginBarView"
              x:DataType="vm:LoginBarViewModel">
     <Border Background="#30FFFFFF" CornerRadius="6" Padding="12">
-        <Grid ColumnDefinitions="*,Auto">
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         Grid.Column="0"
                         IsVisible="{Binding IsLoggedIn}">
@@ -28,6 +28,12 @@
                     IsVisible="{Binding !IsLoggedIn}"
                     HorizontalAlignment="Left"
                     Padding="16,6"/>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                       Margin="0,6,0,0"
+                       Text="{Binding StatusMessage}"
+                       TextWrapping="Wrap"
+                       Foreground="#D18B00"/>
         </Grid>
     </Border>
 </UserControl>

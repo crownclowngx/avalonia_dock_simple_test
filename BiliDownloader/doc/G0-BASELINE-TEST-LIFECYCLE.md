@@ -114,7 +114,7 @@ Coordinator 不再直接创建上述服务，只负责：
 - Tool 再次显示时重新读取 SQLite/Coordinator 投影，隐藏期间不停止下载。
 - Document 附加时只恢复自身 `DocumentId` 的投影。
 - Document 关闭不取消已提交任务。
-- 登录远端校验只在用户点击登录后执行。
+- G0 完成时登录远端校验只在用户点击登录后执行；G1 后续改为先本地恢复、再非阻塞后台验证，下载任务仍不会自动联网恢复。
 
 关闭：
 
@@ -164,6 +164,7 @@ dotnet test MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.cs
   冒烟过程中未点击登录、解析或下载入口，未触发远端请求和媒体执行链路。
 - 两个测试项目引用 BiliDownloader 时，以及架构测试项目引用 MyPlugTest 时，均通过 `SkipPluginDeploy=true`
   跳过插件发布，避免测试构建覆盖宿主插件目录。BiliDownloader.Tests 不再引用其他业务插件。
-- Cookie 字段和明文存储兼容代码仍保留，并以局部警告说明标注，由 G1 迁移。
+- G0 完成时 Cookie 字段和明文存储兼容代码仍保留；该限制已由
+  [G1-CREDENTIAL-DATA-SECURITY.md](G1-CREDENTIAL-DATA-SECURITY.md) 消除。
 - 进度最终 Flush、Range 完整性和临时文件恢复校验由 G3 实现。
 - 并发数动态调整和单任务暂停/取消的竞争处理由 G2 实现。
