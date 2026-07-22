@@ -23,11 +23,11 @@ public class PluginLogger : IPluginLogger
     {
         try
         {
-            var appDataDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "BiliDownloader", "logs");
-            Directory.CreateDirectory(appDataDir);
-            _logFilePath = Path.Combine(appDataDir, $"bilidownloader_{DateTime.Now:yyyyMMdd}.log");
+            var paths = new BiliDataPaths();
+            Directory.CreateDirectory(paths.LogDirectory);
+            _logFilePath = Path.Combine(
+                paths.LogDirectory,
+                $"bilidownloader_{DateTime.Now:yyyyMMdd}.log");
         }
         catch { /* 忽略初始化失败 */ }
     }
@@ -41,7 +41,9 @@ public class PluginLogger : IPluginLogger
         var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
         var logLine = $"[{timestamp}] [{level}] [{_source}] {message}";
         if (ex != null)
-            logLine += $"\n  Exception: {ex.GetType().Name}: {ex.Message}";
+            logLine += $"\n  Exception: {ex}";
+
+        logLine = SensitiveDataSanitizer.Sanitize(logLine);
 
         // 输出到 Debug 窗口
         Debug.WriteLine(logLine);
@@ -64,13 +66,5 @@ public class PluginLogger : IPluginLogger
     /// 过滤敏感信息：Cookie、完整 URL 参数等不写入日志
     /// </summary>
     public static string SanitizeForLog(string input)
-    {
-        if (string.IsNullOrEmpty(input)) return input;
-
-        // 截断过长的字符串（如 Cookie）
-        if (input.Length > 100)
-            return input[..50] + "...(truncated)";
-
-        return input;
-    }
+        => SensitiveDataSanitizer.Sanitize(input);
 }

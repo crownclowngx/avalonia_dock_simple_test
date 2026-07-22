@@ -2,6 +2,7 @@ using BiliDownloader.Plugin;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Persistence;
+using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Message;
@@ -43,6 +44,7 @@ public sealed class BiliDownloaderModuleTests
         // 不会读取登录 Cookie，也不会构造会访问网络、媒体目录或 ffmpeg 的生产执行器。
         var repository = new InMemoryDownloadTaskRepository();
         services.AddSingleton<IMessengerService>(new IsolatedMessengerService());
+        services.AddSingleton<IBiliLocalStateInitializer>(new NoOpLocalStateInitializer());
         services.AddSingleton<IDownloadTaskRepository>(repository);
         services.AddSingleton<IBiliCredentialProvider>(new FakeCredentialProvider());
         services.AddSingleton<IDownloadTaskExecutor>(new FakeDownloadTaskExecutor());

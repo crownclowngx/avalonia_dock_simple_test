@@ -1,3 +1,4 @@
+using BiliDownloader.Services.Infrastructure;
 using Microsoft.Data.Sqlite;
 
 namespace BiliDownloader.Services.Persistence;
@@ -9,16 +10,12 @@ public class SettingsStore : ISettingsRepository
 {
     private readonly string _connectionString;
 
-    public SettingsStore()
+    public SettingsStore(IBiliDataPaths paths)
     {
-        var appDataDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "BiliDownloader");
-        Directory.CreateDirectory(appDataDir);
-        var dbPath = Path.Combine(appDataDir, "bili_download_tasks.db");
+        Directory.CreateDirectory(paths.DataDirectory);
         _connectionString = new SqliteConnectionStringBuilder
         {
-            DataSource = dbPath,
+            DataSource = paths.DownloadTaskDatabasePath,
             Mode = SqliteOpenMode.ReadWriteCreate
         }.ToString();
     }

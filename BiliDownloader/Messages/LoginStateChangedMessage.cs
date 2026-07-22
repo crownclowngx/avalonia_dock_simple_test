@@ -20,10 +20,23 @@ public class LoginStateChangedMessage
     /// </summary>
     public string? UserAvatar { get; }
 
-    public LoginStateChangedMessage(bool isLoggedIn, string? userName, string? userAvatar)
+    /// <summary>登录态是否已经持久化到本地。</summary>
+    public bool IsPersistent { get; }
+
+    /// <summary>面向用户的简短状态提示。</summary>
+    public string? StatusMessage { get; }
+
+    public LoginStateChangedMessage(
+        bool isLoggedIn,
+        string? userName,
+        string? userAvatar,
+        bool isPersistent = false,
+        string? statusMessage = null)
     {
         IsLoggedIn = isLoggedIn;
         UserName = userName;
         UserAvatar = userAvatar;
+        IsPersistent = isPersistent;
+        StatusMessage = statusMessage;
     }
 }

@@ -1,80 +1,95 @@
 using BiliDownloader.Messages;
+using BiliDownloader.Services.Infrastructure;
 using MyAvaloniaManagementCommon.Message;
 
 namespace BiliDownloader.Services.Auth;
 
 /// <summary>
-/// B站登录全局状态管理服务（单例）。
-/// 持有当前登录态、Cookie、用户信息，并通过消息总线广播状态变更。
+/// Bilibili 登录全局状态。持久化失败时允许本次进程继续使用内存登录态。
 /// </summary>
 public sealed class BiliLoginStateService
 {
-    private readonly BiliCookieStore _cookieStore;
+    private static readonly IPluginLogger Log = PluginLog.For<BiliLoginStateService>();
+    private readonly IBiliCredentialStore _credentialStore;
     private readonly BiliLoginService _loginService;
     private readonly IMessengerService _messengerService;
     private readonly SemaphoreSlim _initLock = new(1, 1);
-    private bool _initialized = false;
+    private bool _initialized;
+    private string _cookieHeader = string.Empty;
 
-    /// <summary>当前是否已登录</summary>
     public bool IsLoggedIn { get; private set; }
-
-    /// <summary>当前用户名</summary>
+    public bool IsPersistentLogin { get; private set; }
     public string? UserName { get; private set; }
-
-    /// <summary>当前用户头像 URL</summary>
     public string? UserAvatar { get; private set; }
+    public string? StatusMessage { get; private set; }
 
-    /// <summary>当前 Cookie 字符串（可直接用于 HTTP 请求 Header）</summary>
-    public string CookieHeader { get; private set; } = string.Empty;
+    internal string CookieHeader => _cookieHeader;
 
     public BiliLoginStateService(
-        BiliCookieStore cookieStore,
+        IBiliCredentialStore credentialStore,
         BiliLoginService loginService,
         IMessengerService messengerService)
     {
-        _cookieStore = cookieStore;
+        _credentialStore = credentialStore;
         _loginService = loginService;
         _messengerService = messengerService;
     }
 
     /// <summary>
-    /// 初始化：建表 + 加载历史 Cookie + 验证有效性。
-    /// 若 Cookie 已过期/失效，自动清空数据库和内存状态。
-    /// 支持重复调用（幂等）。
+    /// 用户明确点击登录后加载并验证历史凭据。网络不可用时保留密文并允许重试。
     /// </summary>
     public async Task InitAsync()
     {
         await _initLock.WaitAsync();
         try
         {
-            if (_initialized) return;
-            _initialized = true;
-
-            await _cookieStore.InitAsync();
-            var cookieStr = await _cookieStore.GetCookieStringAsync();
-            if (string.IsNullOrWhiteSpace(cookieStr))
+            if (_initialized)
             {
-                IsLoggedIn = false;
                 return;
             }
 
-            // 验证历史 Cookie 是否仍有效
-            var (isLoggedIn, userName, userAvatar) =
-                await _loginService.CheckLoginAsync(cookieStr);
-
-            if (isLoggedIn)
+            IReadOnlyDictionary<string, string> cookies;
+            try
             {
-                IsLoggedIn = true;
-                UserName = userName;
-                UserAvatar = userAvatar;
-                CookieHeader = cookieStr;
-                // 初始化成功后广播，通知已创建的 ViewModel 更新状态
-                BroadcastState();
+                await _credentialStore.InitAsync();
+                cookies = await _credentialStore.LoadCookiesAsync();
             }
-            else
+            catch (Exception ex)
             {
-                // Cookie 失效，清理数据库和内存
-                await ClearLoginStateAsync();
+                StatusMessage = "无法读取已保存的登录信息，可重新登录并仅在本次会话使用。";
+                Log.Error(StatusMessage, ex);
+                BroadcastState();
+                return;
+            }
+
+            var cookieHeader = BuildCookieHeader(cookies);
+            if (string.IsNullOrWhiteSpace(cookieHeader))
+            {
+                _initialized = true;
+                ResetMemoryState();
+                return;
+            }
+
+            var validation = await _loginService.CheckLoginAsync(cookieHeader);
+            switch (validation.Status)
+            {
+                case LoginValidationStatus.Valid:
+                    ApplyLoggedInState(cookieHeader, validation, isPersistent: true);
+                    _initialized = true;
+                    BroadcastState();
+                    break;
+
+                case LoginValidationStatus.Invalid:
+                    await _credentialStore.DeleteAllAsync();
+                    ResetMemoryState();
+                    _initialized = true;
+                    BroadcastState();
+                    break;
+
+                case LoginValidationStatus.Unavailable:
+                    StatusMessage = "当前无法验证历史登录状态，请检查网络后重试。";
+                    BroadcastState();
+                    break;
             }
         }
         finally
@@ -84,93 +99,139 @@ public sealed class BiliLoginStateService
     }
 
     /// <summary>
-    /// 登录成功后的处理：保存 Cookie、刷新状态、广播。
+    /// 扫码成功后的处理。安全持久化失败不会丢弃本次会话 Cookie。
     /// </summary>
-    public async Task LoginAsync(List<(string Name, string Value)> cookies)
+    public async Task<bool> LoginAsync(List<(string Name, string Value)> cookies)
     {
-        await _cookieStore.SaveCookiesAsync(cookies);
-
-        var cookieStr = await _cookieStore.GetCookieStringAsync();
-        var (isLoggedIn, userName, userAvatar) =
-            await _loginService.CheckLoginAsync(cookieStr);
-
-        if (isLoggedIn)
+        var cookieHeader = BuildCookieHeader(cookies);
+        var validation = await _loginService.CheckLoginAsync(cookieHeader);
+        if (validation.Status != LoginValidationStatus.Valid)
         {
-            IsLoggedIn = true;
-            UserName = userName;
-            UserAvatar = userAvatar;
-            CookieHeader = cookieStr;
+            StatusMessage = validation.Status == LoginValidationStatus.Unavailable
+                ? "登录已确认，但当前无法验证账号信息，请稍后重试。"
+                : "登录凭据无效，请重新扫码。";
             BroadcastState();
+            return false;
         }
+
+        var persisted = true;
+        try
+        {
+            await _credentialStore.SaveCookiesAsync(cookies);
+        }
+        catch (Exception ex)
+        {
+            persisted = false;
+            Log.Error("登录信息无法持久化，将仅在本次会话中使用。", ex);
+        }
+
+        ApplyLoggedInState(cookieHeader, validation, persisted);
+        _initialized = true;
+        BroadcastState();
+        return true;
     }
 
-    /// <summary>
-    /// 主动退出登录：调用 B站 exit API -> 清空本地数据库和内存 -> 广播。
-    /// </summary>
     public async Task LogoutAsync()
     {
-        // 先调服务端退出（忽略失败）
-        if (!string.IsNullOrWhiteSpace(CookieHeader))
+        if (!string.IsNullOrWhiteSpace(_cookieHeader))
         {
-            await _loginService.ExitLoginAsync(CookieHeader);
+            await _loginService.ExitLoginAsync(_cookieHeader);
         }
 
-        // 清空本地状态和数据库
-        await ClearLoginStateAsync();
+        try
+        {
+            await _credentialStore.DeleteAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("清除本地登录信息失败。", ex);
+        }
 
-        // 广播状态变更
+        ResetMemoryState();
+        _initialized = true;
         BroadcastState();
     }
 
-    /// <summary>
-    /// 验证当前 Cookie 是否仍然有效。
-    /// 若失效则清空数据库和内存状态并广播。
-    /// 返回当前是否有效。
-    /// </summary>
     public async Task<bool> CheckLoginValidAsync()
     {
-        if (!IsLoggedIn) return false;
-
-        var (isLoggedIn, userName, userAvatar) =
-            await _loginService.CheckLoginAsync(CookieHeader);
-
-        if (isLoggedIn)
+        if (!IsLoggedIn)
         {
-            UserName = userName;
-            UserAvatar = userAvatar;
+            return false;
+        }
+
+        var validation = await _loginService.CheckLoginAsync(_cookieHeader);
+        if (validation.Status == LoginValidationStatus.Valid)
+        {
+            UserName = validation.UserName;
+            UserAvatar = validation.UserAvatar;
+            StatusMessage = IsPersistentLogin ? null : "登录信息仅在本次会话有效。";
             return true;
         }
 
-        // Cookie 失效，清理
-        await ClearLoginStateAsync();
+        if (validation.Status == LoginValidationStatus.Unavailable)
+        {
+            StatusMessage = "当前无法验证登录状态，已保留现有凭据。";
+            BroadcastState();
+            return true;
+        }
+
+        try
+        {
+            await _credentialStore.DeleteAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("删除已失效登录信息失败。", ex);
+        }
+
+        ResetMemoryState();
         BroadcastState();
         return false;
     }
 
-    /// <summary>
-    /// 本地清理：清空 SQLite 表 + 重置内存状态。
-    /// </summary>
-    private async Task ClearLoginStateAsync()
+    private void ApplyLoggedInState(
+        string cookieHeader,
+        LoginValidationResult validation,
+        bool isPersistent)
     {
-        await _cookieStore.DeleteAllCookiesAsync();
-        IsLoggedIn = false;
-        UserName = null;
-        UserAvatar = null;
-        CookieHeader = string.Empty;
+        _cookieHeader = cookieHeader;
+        IsLoggedIn = true;
+        IsPersistentLogin = isPersistent;
+        UserName = validation.UserName;
+        UserAvatar = validation.UserAvatar;
+        StatusMessage = isPersistent ? null : "登录信息仅在本次会话有效。";
     }
 
-    /// <summary>
-    /// 通过消息总线广播当前登录状态
-    /// </summary>
+    private void ResetMemoryState()
+    {
+        _cookieHeader = string.Empty;
+        IsLoggedIn = false;
+        IsPersistentLogin = false;
+        UserName = null;
+        UserAvatar = null;
+        StatusMessage = null;
+    }
+
+    private static string BuildCookieHeader(IEnumerable<KeyValuePair<string, string>> cookies)
+        => string.Join("; ", cookies.Select(cookie => $"{cookie.Key}={cookie.Value}"));
+
+    private static string BuildCookieHeader(IEnumerable<(string Name, string Value)> cookies)
+        => string.Join("; ", cookies.Select(cookie => $"{cookie.Name}={cookie.Value}"));
+
     private void BroadcastState()
     {
         try
         {
-            _messengerService.Send(new LoginStateChangedMessage(IsLoggedIn, UserName, UserAvatar));
+            _messengerService.Send(new LoginStateChangedMessage(
+                IsLoggedIn,
+                UserName,
+                UserAvatar,
+                IsPersistentLogin,
+                StatusMessage));
         }
         catch
         {
-            // 忽略广播失败
+            // UI 消息失败不改变登录事实。
         }
     }
 }

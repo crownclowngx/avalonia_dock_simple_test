@@ -38,16 +38,18 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
         Action<long, long> onBytesChanged,
         CancellationToken cancellationToken)
     {
+        var cookieHeader = _credentialProvider.GetCookieHeader();
         var outputFilePath = await _downloadService.DownloadItemAsync(
             task,
             _apiService,
+            cookieHeader,
             onProgress,
             onBytesChanged,
             cancellationToken);
 
         var extrasSummary = task.ExtrasConfig == 0
             ? null
-            : await ExecuteExtrasPipelineAsync(task, cancellationToken);
+            : await ExecuteExtrasPipelineAsync(task, cookieHeader, cancellationToken);
 
         return new DownloadExecutionResult(outputFilePath, extrasSummary);
     }
@@ -58,6 +60,7 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
     /// </summary>
     private async Task<string?> ExecuteExtrasPipelineAsync(
         DownloadTaskRecord task,
+        string cookieHeader,
         CancellationToken cancellationToken)
     {
         var extrasType = (ExtrasType)task.ExtrasConfig;
@@ -81,11 +84,7 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
             OutputDirectory = task.OutputDirectory,
             SubFolder = task.SubFolder,
             BaseFileName = baseFileName,
-#pragma warning disable CS0618 // G1 将彻底移除任务模型中的 Cookie 过渡字段。
-            Cookie = _credentialProvider.IsLoggedIn
-                ? _credentialProvider.GetCookieHeader()
-                : task.Cookie,
-#pragma warning restore CS0618
+            Cookie = cookieHeader,
             CoverUrl = task.CoverUrl,
             ApiService = _apiService,
             ProgressReporter = new Progress<string>(),
@@ -97,7 +96,8 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
             try
             {
                 var result = await handler.ExecuteAsync(context, cancellationToken);
-                var status = result.Success ? "OK" : result.ErrorMessage;
+                var safeError = SensitiveDataSanitizer.Sanitize(result.ErrorMessage);
+                var status = result.Success ? "OK" : safeError;
                 results.Add($"{handler.Type}: {status}");
 
                 if (result.Success)
@@ -106,7 +106,7 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
                 }
                 else
                 {
-                    Log.Warn($"Extras [{handler.DisplayName}] 失败: {result.ErrorMessage}");
+                    Log.Warn($"Extras [{handler.DisplayName}] 失败: {safeError}");
                 }
             }
             catch (OperationCanceledException)
@@ -115,8 +115,9 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
             }
             catch (Exception ex)
             {
-                Log.Warn($"Extras [{handler.DisplayName}] 异常: {ex.Message}");
-                results.Add($"{handler.Type}: FAIL - {ex.Message}");
+                var safeError = SensitiveDataSanitizer.Sanitize(ex.Message);
+                Log.Warn($"Extras [{handler.DisplayName}] 异常: {safeError}");
+                results.Add($"{handler.Type}: FAIL - {safeError}");
             }
         }
 

@@ -220,7 +220,10 @@ public class MultiConnectionDownloader : IDisposable
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Add("Cookie", cookie);
+        if (!string.IsNullOrWhiteSpace(cookie))
+        {
+            request.Headers.Add("Cookie", cookie);
+        }
         request.Headers.Range = new RangeHeaderValue(actualStart, rangeEnd);
 
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
@@ -280,7 +283,10 @@ public class MultiConnectionDownloader : IDisposable
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Head, url);
-            request.Headers.Add("Cookie", cookie);
+            if (!string.IsNullOrWhiteSpace(cookie))
+            {
+                request.Headers.Add("Cookie", cookie);
+            }
 
             using var response = await _clients[0].SendAsync(request, ct);
             response.EnsureSuccessStatusCode();
@@ -304,7 +310,10 @@ public class MultiConnectionDownloader : IDisposable
         CancellationToken ct)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Add("Cookie", cookie);
+        if (!string.IsNullOrWhiteSpace(cookie))
+        {
+            request.Headers.Add("Cookie", cookie);
+        }
 
         long existingBytes = 0;
         if (File.Exists(outputPath))

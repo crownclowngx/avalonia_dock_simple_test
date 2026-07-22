@@ -70,12 +70,6 @@ public partial class DownloadTaskRecord : ObservableObject
     public string SubFolder { get; set; } = string.Empty;
 
     /// <summary>
-    /// 下载时的 Cookie（已废弃：运行时从 IBiliCredentialProvider 获取）
-    /// </summary>
-    [Obsolete("使用 IBiliCredentialProvider 获取运行时凭据，不再存储 Cookie")]
-    public string Cookie { get; set; } = string.Empty;
-
-    /// <summary>
     /// 最新进度 0~100
     /// </summary>
     [ObservableProperty]

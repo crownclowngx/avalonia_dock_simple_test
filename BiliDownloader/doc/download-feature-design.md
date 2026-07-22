@@ -122,7 +122,7 @@ Bilibili API 需要 wbi 签名才能正常返回数据。本项目的实现：
 
 **临时文件管理**：
 
-- 临时目录：`%AppData%/BiliDownloader/temp/{TaskId}/`
+- 临时目录：由 `IBiliDataPaths.TempDirectory` 决定，任务目录为 `{TempDirectory}/{TaskId}/`
 - 包含 `video.tmp` 和 `audio.tmp`
 - 合并成功后自动删除临时文件和空目录
 
@@ -154,7 +154,7 @@ Bilibili API 需要 wbi 签名才能正常返回数据。本项目的实现：
 ### 4.2 SQLite 表结构
 
 ```sql
--- 数据库: %AppData%/BiliDownloader/bili_download_tasks.db
+-- 数据库: 由 IBiliDataPaths.DownloadTaskDatabasePath 决定
 CREATE TABLE download_tasks (
     task_id             TEXT PRIMARY KEY,     -- 任务唯一ID
     document_id         TEXT NOT NULL,        -- 关联Document实例ID
@@ -165,7 +165,6 @@ CREATE TABLE download_tasks (
     cid                 INTEGER,              -- cid
     quality_id          INTEGER DEFAULT 80,   -- 清晰度ID
     output_directory    TEXT,                 -- 输出目录
-    cookie              TEXT,                 -- 下载时的Cookie
     progress            REAL DEFAULT 0,       -- 进度 0~100
     status              TEXT DEFAULT 'pending', -- 状态
     error_message       TEXT,                 -- 错误信息
@@ -182,8 +181,11 @@ CREATE TABLE download_tasks (
 
 | 消息 | 方向 | 关键字段 |
 |------|------|----------|
-| `SubmitDownloadTaskMessage` | Document -> Tool | SourceDocumentId, Items, QualityId, OutputDirectory, Cookie |
+| `SubmitDownloadTaskMessage` | Document -> Coordinator | SourceDocumentId, Items, QualityId, OutputDirectory, ExtrasConfig |
 | `DownloadTaskProgressMessage` | Tool -> Document | TargetDocumentId, TaskId, Progress, Status, ErrorMessage |
+
+任务和消息不保存 Cookie。`BiliDownloadTaskExecutor` 在每次执行开始时通过
+`IBiliCredentialProvider` 获取当前登录凭据快照，并将其仅用于本次网络请求。
 
 ## 5. 外部依赖
 

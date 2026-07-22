@@ -1,6 +1,5 @@
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
-using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
 using MyAvaloniaManagementCommon.Message;
@@ -22,10 +21,10 @@ public sealed class BiliDownloadCoordinator
     private static string ToStorage(DownloadTaskStatus s) => DownloadTaskStatusMapper.ToStorageString(s);
 
     private readonly IDownloadTaskRepository _repository;
-    private readonly IBiliCredentialProvider _credentialProvider;
     private readonly IMessengerService _messengerService;
     private readonly IDownloadProgressTracker _tracker;
     private readonly IDownloadTaskExecutor _executor;
+    private readonly IBiliDataPaths _paths;
 
     private readonly SemaphoreSlim _commandLock = new(1, 1);
     private readonly object _lifecycleLock = new();
@@ -59,16 +58,16 @@ public sealed class BiliDownloadCoordinator
 
     public BiliDownloadCoordinator(
         IDownloadTaskRepository repository,
-        IBiliCredentialProvider credentialProvider,
         IMessengerService messengerService,
         IDownloadProgressTracker tracker,
-        IDownloadTaskExecutor executor)
+        IDownloadTaskExecutor executor,
+        IBiliDataPaths paths)
     {
         _repository = repository;
-        _credentialProvider = credentialProvider;
         _messengerService = messengerService;
         _tracker = tracker;
         _executor = executor;
+        _paths = paths;
 
         // 注册监听：接收 Document 发来的下载任务提交消息
         _messengerService.Register<BiliDownloadCoordinator, SubmitDownloadTaskMessage>(
@@ -160,9 +159,6 @@ public sealed class BiliDownloadCoordinator
                     AudioQualityId = msg.AudioQualityId,
                     OutputDirectory = msg.OutputDirectory,
                     SubFolder = subFolder,
-#pragma warning disable CS0618 // Cookie 已标记为 Obsolete，过渡期仍使用 msg.Cookie 供下载服务使用
-                    Cookie = _credentialProvider.IsLoggedIn ? _credentialProvider.GetCookieHeader() : msg.Cookie,
-#pragma warning restore CS0618
                     Status = ToStorage(DownloadTaskStatus.Ready),
                     CreatedAt = DateTime.Now,
                     LastUpdatedAt = DateTime.Now,
@@ -440,10 +436,7 @@ public sealed class BiliDownloadCoordinator
                     // 确保临时目录
                     if (string.IsNullOrWhiteSpace(task.TempDirectory))
                     {
-                        var tempBase = Path.Combine(
-                            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                            "BiliDownloader", "temp");
-                        task.TempDirectory = Path.Combine(tempBase, task.TaskId);
+                        task.TempDirectory = Path.Combine(_paths.TempDirectory, task.TaskId);
                         await _repository.UpdateTempDirectoryAsync(task.TaskId, task.TempDirectory);
                     }
 
@@ -540,11 +533,16 @@ public sealed class BiliDownloadCoordinator
         }
         catch (Exception ex)
         {
+            var safeError = SensitiveDataSanitizer.Sanitize(ex.Message);
             task.Status = ToStorage(DownloadTaskStatus.Failed);
-            task.ErrorMessage = ex.Message;
+            task.ErrorMessage = safeError;
             task.LastUpdatedAt = DateTime.Now;
-            Log.Error($"任务 {task.TaskId} 下载失败: {ex.Message}", ex);
-            await _repository.UpdateProgressAsync(task.TaskId, task.Progress, ToStorage(DownloadTaskStatus.Failed), ex.Message);
+            Log.Error($"任务 {task.TaskId} 下载失败: {safeError}", ex);
+            await _repository.UpdateProgressAsync(
+                task.TaskId,
+                task.Progress,
+                ToStorage(DownloadTaskStatus.Failed),
+                safeError);
             _tracker.BroadcastProgress(task);
             _tracker.BroadcastStatusChanged(task);
             TaskStatusChanged?.Invoke(task);

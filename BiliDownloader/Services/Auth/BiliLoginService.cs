@@ -5,6 +5,18 @@ using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.Services.Auth;
 
+public enum LoginValidationStatus
+{
+    Valid,
+    Invalid,
+    Unavailable,
+}
+
+public sealed record LoginValidationResult(
+    LoginValidationStatus Status,
+    string? UserName = null,
+    string? UserAvatar = null);
+
 /// <summary>
 /// B站登录 API 封装（QR 码扫码登录）
 /// </summary>
@@ -82,11 +94,11 @@ public partial class BiliLoginService
     /// 验证当前 Cookie 是否有效，同时返回用户名和头像。
     /// 若未登录或 Cookie 失效，返回 (false, null, null)。
     /// </summary>
-    public async Task<(bool IsLoggedIn, string? UserName, string? UserAvatar)> CheckLoginAsync(
+    public async Task<LoginValidationResult> CheckLoginAsync(
         string cookieHeader)
     {
         if (string.IsNullOrWhiteSpace(cookieHeader))
-            return (false, null, null);
+            return new LoginValidationResult(LoginValidationStatus.Invalid);
 
         try
         {
@@ -98,15 +110,18 @@ public partial class BiliLoginService
             var resp = JObject.Parse(json);
 
             var isLogin = resp["data"]?["isLogin"]?.Value<bool>() ?? false;
-            if (!isLogin) return (false, null, null);
+            if (!isLogin)
+            {
+                return new LoginValidationResult(LoginValidationStatus.Invalid);
+            }
 
             var uname = resp["data"]?["uname"]?.ToString();
             var face = resp["data"]?["face"]?.ToString();
-            return (true, uname, face);
+            return new LoginValidationResult(LoginValidationStatus.Valid, uname, face);
         }
         catch
         {
-            return (false, null, null);
+            return new LoginValidationResult(LoginValidationStatus.Unavailable);
         }
     }
 

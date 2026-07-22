@@ -16,7 +16,6 @@ namespace BiliDownloader.ViewModels.BiliDownloader;
 public class SubmitContext
 {
     public string DocumentId { get; set; } = "";
-    public string Cookie { get; set; } = "";
     public int QualityId { get; set; }
     public int AudioQualityId { get; set; }
     public string OutputDirectory { get; set; } = "";
@@ -233,7 +232,6 @@ public partial class VideoListViewModel : ObservableObject
             qualityId: ctx.QualityId,
             audioQualityId: ctx.AudioQualityId,
             outputDirectory: ctx.OutputDirectory,
-            cookie: ctx.Cookie,
             useGroupFolder: ctx.UseGroupFolder,
             extrasConfig: extras);
 

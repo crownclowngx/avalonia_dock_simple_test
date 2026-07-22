@@ -9,6 +9,7 @@ using BiliDownloader.Models;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Persistence;
+using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.ViewModels.BiliDownloader;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -20,6 +21,7 @@ namespace BiliDownloader.ViewModels;
 /// </summary>
 public class BiliDownloaderViewModel : Document, ISavableDocument
 {
+    private static readonly IPluginLogger Log = PluginLog.For<BiliDownloaderViewModel>();
     public string SaveDocumentTypeId => SaveDocumentTypeIdConstant.BiliDownloaderDocumentId;
     public string FilePath { get; set; } = string.Empty;
 
@@ -30,7 +32,6 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
     private readonly IMessengerService _messengerService;
     private readonly IDownloadTaskRepository _taskRepository;
-    private readonly IBiliCredentialProvider _credentialProvider;
 
     #region 子 ViewModel
 
@@ -72,7 +73,6 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     {
         _messengerService = messengerService;
         _taskRepository = taskRepository;
-        _credentialProvider = credentialProvider;
 
         // 初始化子 ViewModel（通过回调通信）
         LoginBar = new LoginBarViewModel(loginStateService, loginService);
@@ -89,7 +89,6 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             getSubmitContext: () => new SubmitContext
             {
                 DocumentId = DocumentId,
-                Cookie = _credentialProvider.GetCookieHeader(),
                 QualityId = DownloadConfig.SelectedQuality?.QualityId ?? 0,
                 AudioQualityId = DownloadConfig.SelectedAudioQuality?.QualityId ?? 0,
                 OutputDirectory = DownloadConfig.OutputDirectory,
@@ -119,6 +118,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 {
                     vm.LoginBar.IsLoggedIn = msg.IsLoggedIn;
                     vm.LoginBar.UserName = msg.UserName;
+                    vm.LoginBar.StatusMessage = msg.StatusMessage;
                 });
 
             // 下载进度回传（按 DocumentId 过滤）-> 委托给 VideoList
@@ -317,7 +317,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"加载文档错误: {ex.Message}");
+            Log.Error("加载文档失败。", ex);
         }
     }
 

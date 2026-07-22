@@ -13,9 +13,11 @@ public class BiliDownloadService : IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly MultiConnectionDownloader _multiDownloader;
+    private readonly IBiliDataPaths _paths;
 
-    public BiliDownloadService(int chunkCount = 4)
+    public BiliDownloadService(IBiliDataPaths paths, int chunkCount = 4)
     {
+        _paths = paths;
         _httpClient = new HttpClient();
         _httpClient.DefaultRequestHeaders.Add("User-Agent", HttpConstants.UserAgent);
         _httpClient.DefaultRequestHeaders.Add("Referer", HttpConstants.Referer);
@@ -43,18 +45,15 @@ public class BiliDownloadService : IDisposable
     public async Task<string> DownloadItemAsync(
         DownloadTaskRecord task,
         BiliApiService apiService,
+        string cookieHeader,
         Action<DownloadProgressInfo> onProgress,
         Action<long, long>? onBytesUpdate,
         CancellationToken ct)
     {
-#pragma warning disable CS0618 // G1 将改为仅从凭据服务取 Cookie；G0 保留现有下载参数兼容性。
         // 确保临时目录和输出目录存在
         if (string.IsNullOrWhiteSpace(task.TempDirectory))
         {
-            var tempBase = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "BiliDownloader", "temp");
-            task.TempDirectory = Path.Combine(tempBase, task.TaskId);
+            task.TempDirectory = Path.Combine(_paths.TempDirectory, task.TaskId);
         }
         Directory.CreateDirectory(task.TempDirectory);
 
@@ -91,7 +90,7 @@ public class BiliDownloadService : IDisposable
         ReportProgress("fetching");
         var mediaType = Enum.TryParse<BiliMediaType>(task.MediaType, true, out var mt) ? mt : BiliMediaType.Video;
         var dashResult = await apiService.GetDashResultAsync(
-            task.Aid, task.Cid, task.QualityId, task.Cookie,
+            task.Aid, task.Cid, task.QualityId, cookieHeader,
             mediaType, task.EpId, task.SeasonId);
 
         // 选择视频流：优先 AVC/H.264 (codecid=7)，选用户指定清晰度
@@ -110,7 +109,7 @@ public class BiliDownloadService : IDisposable
         // 2. 下载视频流（多连接加速）
         var videoUrls = CdnUrlHelper.FilterAndSortUrls(videoStream.BaseUrl, videoStream.BackupUrls);
         await _multiDownloader.DownloadAsync(
-            videoUrls, videoTmp, task.Cookie,
+            videoUrls, videoTmp, cookieHeader,
             (total, downloaded, speed) =>
             {
                 task.VideoBytesDownloaded = downloaded;
@@ -127,7 +126,7 @@ public class BiliDownloadService : IDisposable
         // 3. 下载音频流（多连接加速）
         var audioUrls = CdnUrlHelper.FilterAndSortUrls(audioStream.BaseUrl, audioStream.BackupUrls);
         await _multiDownloader.DownloadAsync(
-            audioUrls, audioTmp, task.Cookie,
+            audioUrls, audioTmp, cookieHeader,
             (total, downloaded, speed) =>
             {
                 task.AudioBytesDownloaded = downloaded;
@@ -160,7 +159,6 @@ public class BiliDownloadService : IDisposable
         catch { /* 忽略清理失败 */ }
 
         return outputPath;
-#pragma warning restore CS0618
     }
 
     /// <summary>
@@ -181,7 +179,10 @@ public class BiliDownloadService : IDisposable
         CancellationToken ct)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Add("Cookie", cookie);
+        if (!string.IsNullOrWhiteSpace(cookie))
+        {
+            request.Headers.Add("Cookie", cookie);
+        }
 
         // 断点续传：设置 Range 头
         if (existingBytes > 0 && File.Exists(outputPath))

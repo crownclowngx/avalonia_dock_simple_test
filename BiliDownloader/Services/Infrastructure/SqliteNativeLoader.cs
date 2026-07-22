@@ -15,27 +15,49 @@ public static class SqliteNativeLoader
     public static void EnsureLoaded()
     {
         if (_loaded) return;
-        _loaded = true;
 
         try
         {
             var assemblyDir = Path.GetDirectoryName(
                 typeof(SqliteNativeLoader).Assembly.Location) ?? "";
 
-            var rid = RuntimeInformation.ProcessArchitecture switch
+            var os = OperatingSystem.IsWindows()
+                ? "win"
+                : OperatingSystem.IsLinux()
+                    ? "linux"
+                    : null;
+            if (os is null)
             {
-                Architecture.X64 => "win-x64",
-                Architecture.X86 => "win-x86",
-                Architecture.Arm64 => "win-arm64",
-                Architecture.Arm => "win-arm",
-                _ => "win-x64"
+                return;
+            }
+
+            var architecture = RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.X64 => "x64",
+                Architecture.X86 => "x86",
+                Architecture.Arm64 => "arm64",
+                Architecture.Arm => "arm",
+                _ => throw new PlatformNotSupportedException(
+                    $"不支持的 SQLite CPU 架构: {RuntimeInformation.ProcessArchitecture}"),
             };
 
-            var nativeLibPath = Path.Combine(assemblyDir, "runtimes", rid, "native", "e_sqlite3.dll");
+            var rid = $"{os}-{architecture}";
+            var nativeLibraryName = OperatingSystem.IsWindows()
+                ? "e_sqlite3.dll"
+                : "libe_sqlite3.so";
+
+            var nativeLibPath = Path.Combine(
+                assemblyDir,
+                "runtimes",
+                rid,
+                "native",
+                nativeLibraryName);
             if (File.Exists(nativeLibPath))
             {
                 NativeLibrary.Load(nativeLibPath);
             }
+
+            _loaded = true;
         }
         catch
         {

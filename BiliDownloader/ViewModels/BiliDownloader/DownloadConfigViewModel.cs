@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Avalonia.Controls;
 using BiliDownloader.Models;
+using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
@@ -12,6 +13,7 @@ namespace BiliDownloader.ViewModels.BiliDownloader;
 /// </summary>
 public partial class DownloadConfigViewModel : ObservableObject
 {
+    private static readonly IPluginLogger Log = PluginLog.For<DownloadConfigViewModel>();
     private readonly ISettingsRepository _settingsRepository;
 
     public ObservableCollection<BiliQualityOption> QualityOptions { get; } = new();
@@ -104,8 +106,7 @@ public partial class DownloadConfigViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            // 忽略文件夹选择失败
-            System.Diagnostics.Debug.WriteLine($"选择文件夹失败: {ex.Message}");
+            Log.Error("选择文件夹失败。", ex);
         }
     }
 
