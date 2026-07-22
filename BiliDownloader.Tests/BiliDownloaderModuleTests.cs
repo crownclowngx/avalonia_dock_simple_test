@@ -45,6 +45,8 @@ public sealed class BiliDownloaderModuleTests
         var repository = new InMemoryDownloadTaskRepository();
         services.AddSingleton<IMessengerService>(new IsolatedMessengerService());
         services.AddSingleton<IBiliLocalStateInitializer>(new NoOpLocalStateInitializer());
+        services.AddSingleton<IBiliCredentialStore>(new InMemoryBiliCredentialStore());
+        services.AddSingleton<IBiliSessionApi>(new StubBiliSessionApi());
         services.AddSingleton<IDownloadTaskRepository>(repository);
         services.AddSingleton<IBiliCredentialProvider>(new FakeCredentialProvider());
         services.AddSingleton<IDownloadTaskExecutor>(new FakeDownloadTaskExecutor());

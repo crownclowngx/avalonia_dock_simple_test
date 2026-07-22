@@ -75,15 +75,18 @@ public sealed class CredentialSecurityTests
         var protector = new AesGcmCredentialProtector(new InstallationKeyStore(paths));
         var store = new BiliCredentialStore(paths, protector);
 
-        await store.SaveCookiesAsync(
+        await store.SaveSessionAsync(new BiliCredentialSession(
         [
-            ("SESSDATA", "top-secret-session"),
-            ("bili_jct", "top-secret-csrf"),
-        ]);
+            new("SESSDATA", "top-secret-session"),
+            new("bili_jct", "top-secret-csrf"),
+        ], "encrypted-user", "https://example.test/encrypted-avatar"));
 
-        var loaded = await store.LoadCookiesAsync();
-        Assert.Equal("top-secret-session", loaded["SESSDATA"]);
-        Assert.Equal("top-secret-csrf", loaded["bili_jct"]);
+        var loaded = Assert.IsType<BiliCredentialSession>(await store.LoadSessionAsync());
+        Assert.Contains(loaded.Cookies, cookie =>
+            cookie.Name == "SESSDATA" && cookie.Value == "top-secret-session");
+        Assert.Contains(loaded.Cookies, cookie =>
+            cookie.Name == "bili_jct" && cookie.Value == "top-secret-csrf");
+        Assert.Equal("encrypted-user", loaded.UserName);
 
         SqliteConnection.ClearAllPools();
         var databaseBytes = await File.ReadAllBytesAsync(paths.CredentialDatabasePath);
@@ -91,6 +94,103 @@ public sealed class CredentialSecurityTests
         Assert.DoesNotContain("SESSDATA", databaseText, StringComparison.Ordinal);
         Assert.DoesNotContain("top-secret-session", databaseText, StringComparison.Ordinal);
         Assert.DoesNotContain("bili_jct", databaseText, StringComparison.Ordinal);
+        Assert.DoesNotContain("encrypted-user", databaseText, StringComparison.Ordinal);
+        Assert.DoesNotContain("encrypted-avatar", databaseText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task 版本1凭据可读取并在保存账号资料时升级为版本2()
+    {
+        using var paths = new TestDataPaths();
+        await new BiliLocalStateInitializer(paths).InitializeAsync();
+        var protector = new AesGcmCredentialProtector(new InstallationKeyStore(paths));
+        var store = new BiliCredentialStore(paths, protector);
+        await store.InitAsync();
+
+        var legacyPlaintext = Encoding.UTF8.GetBytes(
+            """{"Version":1,"Cookies":[{"Name":"SESSDATA","Value":"legacy-session"}]}""");
+        try
+        {
+            var envelope = protector.Protect(legacyPlaintext);
+            var connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = paths.CredentialDatabasePath,
+                Mode = SqliteOpenMode.ReadWrite,
+            }.ToString();
+            await using var connection = new SqliteConnection(connectionString);
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO credential_store (id, version, nonce, ciphertext, tag)
+                VALUES (1, $version, $nonce, $ciphertext, $tag);
+                """;
+            command.Parameters.AddWithValue("$version", envelope.Version);
+            command.Parameters.AddWithValue("$nonce", envelope.Nonce);
+            command.Parameters.AddWithValue("$ciphertext", envelope.Ciphertext);
+            command.Parameters.AddWithValue("$tag", envelope.Tag);
+            await command.ExecuteNonQueryAsync();
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(legacyPlaintext);
+        }
+
+        var legacySession = Assert.IsType<BiliCredentialSession>(await store.LoadSessionAsync());
+        Assert.Null(legacySession.UserName);
+        Assert.Contains(legacySession.Cookies, cookie => cookie.Value == "legacy-session");
+
+        var sessionApi = new StubBiliSessionApi
+        {
+            ValidationResult = new LoginValidationResult(
+                LoginValidationStatus.Valid,
+                "upgraded-user",
+                "upgraded-avatar"),
+        };
+        var state = new BiliLoginStateService(
+            store,
+            sessionApi,
+            new IsolatedMessengerService());
+        await state.RestoreSavedSessionAsync();
+        state.StartBackgroundValidation();
+        await state.StopAsync();
+
+        var upgradedSession = Assert.IsType<BiliCredentialSession>(await store.LoadSessionAsync());
+        Assert.Equal("upgraded-user", upgradedSession.UserName);
+        Assert.Equal("upgraded-avatar", upgradedSession.UserAvatar);
+    }
+
+    [Fact]
+    public async Task 新进程可以仅从本地密文恢复登录状态()
+    {
+        using var paths = new TestDataPaths();
+        await new BiliLocalStateInitializer(paths).InitializeAsync();
+        var firstStore = new BiliCredentialStore(
+            paths,
+            new AesGcmCredentialProtector(new InstallationKeyStore(paths)));
+        await firstStore.SaveSessionAsync(new BiliCredentialSession(
+        [
+            new("SESSDATA", "persistent-session"),
+            new("bili_jct", "persistent-csrf"),
+        ], "cached-user", "cached-avatar"));
+
+        var reloadedStore = new BiliCredentialStore(
+            paths,
+            new AesGcmCredentialProtector(new InstallationKeyStore(paths)));
+        var state = new BiliLoginStateService(
+            reloadedStore,
+            new StubBiliSessionApi(),
+            new IsolatedMessengerService());
+
+        await state.RestoreSavedSessionAsync();
+
+        Assert.True(state.IsLoggedIn);
+        Assert.True(state.IsPersistentLogin);
+        Assert.Equal("cached-user", state.UserName);
+        Assert.Contains(
+            "SESSDATA=persistent-session",
+            new BiliCredentialProvider(state).GetCookieHeader(),
+            StringComparison.Ordinal);
+        Assert.Equal("正在验证已保存的登录状态…", state.StatusMessage);
     }
 
     [Fact]

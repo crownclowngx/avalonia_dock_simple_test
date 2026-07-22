@@ -117,7 +117,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 this, (vm, msg) =>
                 {
                     vm.LoginBar.IsLoggedIn = msg.IsLoggedIn;
-                    vm.LoginBar.UserName = msg.UserName;
+                    vm.LoginBar.UserName = LoginBarViewModel.GetDisplayName(
+                        msg.IsLoggedIn,
+                        msg.UserName);
                     vm.LoginBar.StatusMessage = msg.StatusMessage;
                 });
 

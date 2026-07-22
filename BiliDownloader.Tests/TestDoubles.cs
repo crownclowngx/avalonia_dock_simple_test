@@ -60,6 +60,78 @@ internal sealed class NoOpLocalStateInitializer : IBiliLocalStateInitializer
     }
 }
 
+internal sealed class InMemoryBiliCredentialStore : IBiliCredentialStore
+{
+    public BiliCredentialSession? Session { get; private set; }
+    public int SaveCount { get; private set; }
+    public int DeleteCount { get; private set; }
+
+    public InMemoryBiliCredentialStore(BiliCredentialSession? session = null)
+    {
+        Session = Clone(session);
+    }
+
+    public Task InitAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.CompletedTask;
+    }
+
+    public Task SaveSessionAsync(
+        BiliCredentialSession session,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Session = Clone(session);
+        SaveCount++;
+        return Task.CompletedTask;
+    }
+
+    public Task<BiliCredentialSession?> LoadSessionAsync(
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(Clone(Session));
+    }
+
+    public Task DeleteAllAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Session = null;
+        DeleteCount++;
+        return Task.CompletedTask;
+    }
+
+    private static BiliCredentialSession? Clone(BiliCredentialSession? session)
+        => session is null
+            ? null
+            : session with { Cookies = session.Cookies.ToList() };
+}
+
+internal sealed class StubBiliSessionApi : IBiliSessionApi
+{
+    public LoginValidationResult ValidationResult { get; set; } =
+        new(LoginValidationStatus.Unavailable);
+    public int ValidationCount { get; private set; }
+
+    public Task<LoginValidationResult> CheckLoginAsync(
+        string cookieHeader,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ValidationCount++;
+        return Task.FromResult(ValidationResult);
+    }
+
+    public Task<bool> ExitLoginAsync(
+        string cookieHeader,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(true);
+    }
+}
+
 /// <summary>
 /// 线程安全的内存任务仓储。测试通过它观察持久化调用顺序，且不会访问真实 SQLite 或 AppData。
 /// </summary>

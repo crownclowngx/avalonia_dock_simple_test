@@ -37,6 +37,8 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<ICredentialProtector, AesGcmCredentialProtector>();
         services.AddSingleton<IBiliCredentialStore, BiliCredentialStore>();
         services.AddSingleton<BiliLoginService>();
+        services.AddSingleton<IBiliSessionApi>(provider =>
+            provider.GetRequiredService<BiliLoginService>());
         services.AddSingleton<BiliLoginStateService>();
         services.AddSingleton<IBiliCredentialProvider, BiliCredentialProvider>();
 
@@ -57,19 +59,22 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
 }
 
 /// <summary>
-/// BiliDownloader 的宿主管理生命周期。初始化只迁移本地任务状态，
-/// 关闭时取消并等待 Coordinator 的活动工作，不依赖任何 Tool 或 Document 视图。
+/// BiliDownloader 的宿主管理生命周期。初始化先恢复本地状态，再启动非阻塞登录验证；
+/// 关闭时取消并等待后台验证与 Coordinator，不依赖任何 Tool 或 Document 视图。
 /// </summary>
 public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
 {
     private readonly IBiliLocalStateInitializer _localStateInitializer;
+    private readonly BiliLoginStateService _loginStateService;
     private readonly BiliDownloadCoordinator _coordinator;
 
     public BiliDownloaderPluginLifecycle(
         IBiliLocalStateInitializer localStateInitializer,
+        BiliLoginStateService loginStateService,
         BiliDownloadCoordinator coordinator)
     {
         _localStateInitializer = localStateInitializer;
+        _loginStateService = loginStateService;
         _coordinator = coordinator;
     }
 
@@ -81,12 +86,15 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _localStateInitializer.InitializeAsync(cancellationToken);
+        await _loginStateService.RestoreSavedSessionAsync(cancellationToken);
         await _coordinator.InitializeAsync();
+        _loginStateService.StartBackgroundValidation();
     }
 
-    public Task ShutdownAsync(CancellationToken cancellationToken)
+    public async Task ShutdownAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return _coordinator.ShutdownAsync();
+        await _loginStateService.StopAsync(cancellationToken);
+        await _coordinator.ShutdownAsync();
     }
 }

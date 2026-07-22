@@ -5,25 +5,36 @@ using Microsoft.Data.Sqlite;
 
 namespace BiliDownloader.Services.Auth;
 
+public sealed record BiliCredentialCookie(string Name, string Value);
+
 /// <summary>
-/// Bilibili Cookie 密文存储边界。
+/// 加密持久化的完整登录会话。账号资料与 Cookie 使用同一个 AES-GCM 信封。
+/// </summary>
+public sealed record BiliCredentialSession(
+    IReadOnlyList<BiliCredentialCookie> Cookies,
+    string? UserName = null,
+    string? UserAvatar = null);
+
+/// <summary>
+/// Bilibili 登录会话密文存储边界。
 /// </summary>
 public interface IBiliCredentialStore
 {
     Task InitAsync(CancellationToken cancellationToken = default);
-    Task SaveCookiesAsync(
-        IReadOnlyCollection<(string Name, string Value)> cookies,
+    Task SaveSessionAsync(
+        BiliCredentialSession session,
         CancellationToken cancellationToken = default);
-    Task<IReadOnlyDictionary<string, string>> LoadCookiesAsync(
+    Task<BiliCredentialSession?> LoadSessionAsync(
         CancellationToken cancellationToken = default);
     Task DeleteAllAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
-/// SQLite 只保存 AES-GCM 信封；Cookie 名称和值都位于密文内部。
+/// SQLite 只保存 AES-GCM 信封；Cookie 和账号资料都位于密文内部。
 /// </summary>
 public sealed class BiliCredentialStore : IBiliCredentialStore
 {
+    private const int CurrentPayloadVersion = 2;
     private readonly string _connectionString;
     private readonly ICredentialProtector _protector;
 
@@ -59,20 +70,23 @@ public sealed class BiliCredentialStore : IBiliCredentialStore
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    public async Task SaveCookiesAsync(
-        IReadOnlyCollection<(string Name, string Value)> cookies,
+    public async Task SaveSessionAsync(
+        BiliCredentialSession session,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(cookies);
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(session.Cookies);
         await InitAsync(cancellationToken);
 
-        var payload = new CookiePayload
+        var payload = new CredentialPayload
         {
-            Version = 1,
-            Cookies = cookies
+            Version = CurrentPayloadVersion,
+            Cookies = session.Cookies
+                .Where(cookie => !string.IsNullOrWhiteSpace(cookie.Name))
                 .OrderBy(cookie => cookie.Name, StringComparer.Ordinal)
-                .Select(cookie => new StoredCookie(cookie.Name, cookie.Value))
                 .ToList(),
+            UserName = session.UserName,
+            UserAvatar = session.UserAvatar,
         };
         var plaintext = JsonSerializer.SerializeToUtf8Bytes(payload);
         try
@@ -105,7 +119,7 @@ public sealed class BiliCredentialStore : IBiliCredentialStore
         }
     }
 
-    public async Task<IReadOnlyDictionary<string, string>> LoadCookiesAsync(
+    public async Task<BiliCredentialSession?> LoadSessionAsync(
         CancellationToken cancellationToken = default)
     {
         await InitAsync(cancellationToken);
@@ -116,7 +130,7 @@ public sealed class BiliCredentialStore : IBiliCredentialStore
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken))
         {
-            return new Dictionary<string, string>(StringComparer.Ordinal);
+            return null;
         }
 
         var envelope = new CredentialEnvelope(
@@ -129,24 +143,29 @@ public sealed class BiliCredentialStore : IBiliCredentialStore
         try
         {
             plaintext = _protector.Unprotect(envelope);
-            var payload = JsonSerializer.Deserialize<CookiePayload>(plaintext)
+            var payload = JsonSerializer.Deserialize<CredentialPayload>(plaintext)
                 ?? throw new InvalidDataException("凭据载荷为空。");
-            if (payload.Version != 1)
+            if (payload.Version is not 1 and not CurrentPayloadVersion)
             {
                 throw new InvalidDataException("凭据载荷版本无效。");
             }
 
-            return payload.Cookies
+            var cookies = payload.Cookies
                 .Where(cookie => !string.IsNullOrWhiteSpace(cookie.Name))
                 .GroupBy(cookie => cookie.Name, StringComparer.Ordinal)
-                .ToDictionary(group => group.Key, group => group.Last().Value, StringComparer.Ordinal);
+                .Select(group => group.Last())
+                .ToList();
+            return new BiliCredentialSession(
+                cookies,
+                payload.Version >= 2 ? payload.UserName : null,
+                payload.Version >= 2 ? payload.UserAvatar : null);
         }
         catch (Exception ex) when (ex is CryptographicException or InvalidDataException or JsonException)
         {
-            // G1 不保留不可读历史凭据：删除密文和 key，下一次登录重新生成。
+            // 不保留不可读凭据：删除密文和 key，下一次登录重新生成。
             await DeleteAllAsync(cancellationToken);
             _protector.ResetKey();
-            return new Dictionary<string, string>(StringComparer.Ordinal);
+            return null;
         }
         finally
         {
@@ -167,11 +186,11 @@ public sealed class BiliCredentialStore : IBiliCredentialStore
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    private sealed class CookiePayload
+    private sealed class CredentialPayload
     {
         public int Version { get; init; }
-        public List<StoredCookie> Cookies { get; init; } = [];
+        public List<BiliCredentialCookie> Cookies { get; init; } = [];
+        public string? UserName { get; init; }
+        public string? UserAvatar { get; init; }
     }
-
-    private sealed record StoredCookie(string Name, string Value);
 }
