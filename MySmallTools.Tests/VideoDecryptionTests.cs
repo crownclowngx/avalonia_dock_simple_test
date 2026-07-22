@@ -154,7 +154,9 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
         var service = new StubDecryptionService();
         using var viewModel = new VideoDecryptorViewModel(service);
 
+        Assert.False(viewModel.HasItems);
         await viewModel.AddFilesAsync(["one.secvid", "one.secvid", "bad.secvid"]);
+        Assert.True(viewModel.HasItems);
         viewModel.Password = "top-secret";
 
         Assert.Equal(2, viewModel.ItemCount);

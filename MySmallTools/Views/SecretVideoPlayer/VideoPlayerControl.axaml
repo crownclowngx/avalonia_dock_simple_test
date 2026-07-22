@@ -7,85 +7,63 @@
              xmlns:behaviors="clr-namespace:MyAvaloniaManagementCommon.Behaviors;assembly=MyAvaloniaManagementCommon"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="MySmallTools.Views.SecretVideoPlayer.VideoPlayerControl">
+  <UserControl.Styles>
+    <StyleInclude Source="avares://MySmallTools/Styles/VideoDocumentStyles.axaml" />
+  </UserControl.Styles>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+  <Grid RowDefinitions="*,Auto,Auto,Auto" RowSpacing="3">
+    <!-- 原生视频表面单独占据内容区；Avalonia 控件不得覆盖其 HWND。 -->
+    <Border Grid.Row="0" Background="Black" CornerRadius="4" ClipToBounds="True">
+      <local:EmbeddedVideoSurface x:Name="VideoSurface" />
+    </Border>
 
-        <!-- 视频播放区域 -->
-        <Border Grid.Row="0" Margin="5" Background="Black">
-            <!-- 可靠视频表面会在原生 HWND 创建后显式绑定 MediaPlayer，禁止 LibVLC 回退到独立输出窗口。 -->
-            <local:EmbeddedVideoSurface x:Name="VideoSurface" />
-        </Border>
-
-        <!-- 状态信息放在普通 Avalonia 布局中，不覆盖原生 HWND，避免 NativeControlHost 的 airspace 限制。 -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="10,2">
-            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="12" TextWrapping="Wrap" />
-            <TextBlock Grid.Column="1" Text="{Binding BufferInfo}" FontSize="10" Margin="12,0,0,0"
-                       IsVisible="{Binding BufferInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-        </Grid>
-
-        <!-- 进度条区域 -->
-        <Border Grid.Row="2" Padding="10,5" Margin="5,0">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Grid.Column="0" Text="{Binding CurrentTime}" VerticalAlignment="Center"
-                           FontFamily="Consolas" FontSize="12" Margin="0,0,10,0" />
-
-                <Slider x:Name="ProgressSlider" Grid.Column="1" Value="{Binding Position}" Minimum="0" Maximum="100"
-                        IsEnabled="True" TickFrequency="1" IsSnapToTickEnabled="False">
-                    <i:Interaction.Behaviors>
-                        <behaviors:HandledEventsAwareBehavior EventName="PointerPressed"
-                                                              Command="{Binding StartSliderDragCommand}"
-                                                              HandledEventsToo="True" />
-                        <behaviors:HandledEventsAwareBehavior EventName="PointerReleased"
-                                                              Command="{Binding EndSliderDragCommand}"
-                                                              HandledEventsToo="True" />
-                    </i:Interaction.Behaviors>
-                </Slider>
-
-                <TextBlock Grid.Column="2" Text="{Binding TotalTime}" VerticalAlignment="Center"
-                           FontFamily="Consolas" FontSize="12" Margin="10,0,0,0" />
-            </Grid>
-        </Border>
-
-        <!-- 控制按钮区域 -->
-        <Border Grid.Row="3" Padding="10" Margin="5">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <!-- 播放控制按钮 -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
-                    <Button Content="▶" Command="{Binding PlayCommand}"
-                            IsVisible="{Binding !IsPlaying}" MinWidth="40" FontSize="14" />
-                    <Button Content="⏸" Command="{Binding PauseCommand}"
-                            IsVisible="{Binding IsPlaying}" MinWidth="40" FontSize="14" />
-                    <Button Content="⏹" Command="{Binding StopCommand}" MinWidth="40" FontSize="14" />
-                </StackPanel>
-
-                <!-- 音量控制 -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
-                    <TextBlock Text="🔊" VerticalAlignment="Center" FontSize="14" />
-                    <Slider Value="{Binding Volume}" Minimum="0" Maximum="100" Width="100"
-                            TickFrequency="10" IsSnapToTickEnabled="False" />
-                    <TextBlock Text="{Binding Volume, StringFormat={}{0:F0}%}" VerticalAlignment="Center"
-                               FontFamily="Consolas" FontSize="12" MinWidth="35" />
-                </StackPanel>
-            </Grid>
-        </Border>
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="4,2" ColumnSpacing="10">
+      <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" Classes="StatusText"
+                 TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding StatusMessage}" />
+      <TextBlock Grid.Column="1" Text="{Binding BufferInfo}" Classes="Caption"
+                 IsVisible="{Binding BufferInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
     </Grid>
 
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="4,0" ColumnSpacing="8">
+      <TextBlock Grid.Column="0" Text="{Binding CurrentTime}" VerticalAlignment="Center"
+                 FontFamily="Consolas" Classes="Caption" />
+      <Slider x:Name="ProgressSlider" Grid.Column="1" Value="{Binding Position}"
+              Minimum="0" Maximum="100" IsEnabled="{Binding IsSeekable}"
+              TickFrequency="1" IsSnapToTickEnabled="False"
+              AutomationProperties.Name="视频播放进度">
+        <i:Interaction.Behaviors>
+          <behaviors:HandledEventsAwareBehavior EventName="PointerPressed"
+                                                Command="{Binding StartSliderDragCommand}"
+                                                HandledEventsToo="True" />
+          <behaviors:HandledEventsAwareBehavior EventName="PointerReleased"
+                                                Command="{Binding EndSliderDragCommand}"
+                                                HandledEventsToo="True" />
+        </i:Interaction.Behaviors>
+      </Slider>
+      <TextBlock Grid.Column="2" Text="{Binding TotalTime}" VerticalAlignment="Center"
+                 FontFamily="Consolas" Classes="Caption" />
+    </Grid>
+
+    <Border Grid.Row="3" Classes="TaskFooter" Padding="4,5,4,0">
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4">
+          <Button Content="▶" Command="{Binding PlayCommand}" IsVisible="{Binding !IsPlaying}"
+                  Classes="IconButton" ToolTip.Tip="播放" AutomationProperties.Name="播放" />
+          <Button Content="⏸" Command="{Binding PauseCommand}" IsVisible="{Binding IsPlaying}"
+                  Classes="IconButton" ToolTip.Tip="暂停" AutomationProperties.Name="暂停" />
+          <Button Content="■" Command="{Binding StopCommand}" Classes="IconButton"
+                  ToolTip.Tip="停止" AutomationProperties.Name="停止" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <TextBlock Text="音量" VerticalAlignment="Center" Classes="Caption" />
+          <Slider Value="{Binding Volume}" Minimum="0" Maximum="100" Width="96"
+                  TickFrequency="10" IsSnapToTickEnabled="False"
+                  AutomationProperties.Name="音量" />
+          <TextBlock Text="{Binding Volume, StringFormat={}{0:F0}%}" VerticalAlignment="Center"
+                     FontFamily="Consolas" Classes="Caption" MinWidth="34" />
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
 </UserControl>

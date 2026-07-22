@@ -59,7 +59,11 @@ public sealed class VideoLibraryTests(Secvid03Fixture fixture)
             Ready("b.secvid", "b", "Second", "secret Needle text")
         ]));
 
+        Assert.False(browser.HasFolder);
+        Assert.False(browser.HasVisibleItems);
         await browser.LoadFolderAsync("virtual-library");
+        Assert.True(browser.HasFolder);
+        Assert.True(browser.HasVisibleItems);
         Assert.Equal(["a", "b", "unique-file-77"], browser.VisibleItems.Select(item => item.FileNameWithoutExtension));
         Assert.Equal("a（First Alpha）", browser.VisibleItems[0].DisplayName);
 
@@ -70,6 +74,10 @@ public sealed class VideoLibraryTests(Secvid03Fixture fixture)
         browser.SearchText = "needle";
         await WaitForFilterAsync();
         Assert.Equal("b", Assert.Single(browser.VisibleItems).FileNameWithoutExtension);
+
+        browser.SearchText = "no-match";
+        await WaitForFilterAsync();
+        Assert.False(browser.HasVisibleItems);
 
         browser.SearchText = "77";
         await WaitForFilterAsync();

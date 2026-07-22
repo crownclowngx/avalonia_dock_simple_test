@@ -33,6 +33,8 @@ public partial class VideoLibraryBrowserViewModel : ObservableObject, IDisposabl
     [ObservableProperty] private string _statusMessage = "请选择包含 .secvid 文件的文件夹";
 
     public ReadOnlyObservableCollection<VideoLibraryItemViewModel> VisibleItems { get; }
+    public bool HasFolder => !string.IsNullOrWhiteSpace(FolderPath);
+    public bool HasVisibleItems => VisibleItemCount > 0;
 
     public VideoLibraryBrowserViewModel(IVideoLibraryScanner scanner)
     {
@@ -42,7 +44,13 @@ public partial class VideoLibraryBrowserViewModel : ObservableObject, IDisposabl
 
     partial void OnSearchTextChanged(string value) => ScheduleFilter();
 
-    partial void OnFolderPathChanged(string value) => RefreshCommand.NotifyCanExecuteChanged();
+    partial void OnFolderPathChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasFolder));
+        RefreshCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnVisibleItemCountChanged(int value) => OnPropertyChanged(nameof(HasVisibleItems));
 
     public Task LoadFolderAsync(string folderPath)
     {

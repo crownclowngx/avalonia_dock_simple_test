@@ -4,47 +4,59 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="720"
              x:Class="MySmallTools.Views.SecretVideoPlayer.VideoDecryptorView">
-  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="10" Margin="16">
-    <StackPanel Grid.Row="0" Spacing="3">
-      <TextBlock Text="SECVID03 批量视频解密" FontSize="22" FontWeight="Bold" />
+  <UserControl.Styles>
+    <StyleInclude Source="avares://MySmallTools/Styles/VideoDocumentStyles.axaml" />
+  </UserControl.Styles>
+
+  <Grid Classes="DocumentPage" RowDefinitions="Auto,Auto,Auto,*,Auto">
+    <StackPanel Grid.Row="0" Spacing="2">
+      <TextBlock Text="SECVID03 批量视频解密" Classes="PageTitle" />
       <TextBlock Text="所选视频共用一个密码；每个文件独立验证，失败不会影响其他文件。"
-                 Foreground="Gray" TextWrapping="Wrap" />
+                 Classes="Caption" TextWrapping="Wrap" />
     </StackPanel>
 
-    <Border Grid.Row="1" BorderBrush="LightGray" BorderThickness="1" CornerRadius="6" Padding="10">
-      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
-        <Button Grid.Column="0" Content="添加视频" Click="OnAddFilesClick" IsEnabled="{Binding !IsBusy}" />
-        <Button Grid.Column="1" Content="移除所选" Command="{Binding RemoveSelectedCommand}" />
-        <Button Grid.Column="2" Content="清空列表" Command="{Binding ClearCommand}" />
+    <Border Grid.Row="1" Classes="DocumentToolbar">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="6">
+        <Button Grid.Column="0" Content="添加视频" Click="OnAddFilesClick"
+                IsEnabled="{Binding !IsBusy}" Classes="CompactButton" />
+        <Button Grid.Column="1" Content="移除所选" Command="{Binding RemoveSelectedCommand}"
+                Classes="CompactButton" />
+        <Button Grid.Column="2" Content="清空" Command="{Binding ClearCommand}"
+                Classes="CompactButton" />
         <TextBlock Grid.Column="3" VerticalAlignment="Center"
-                   Text="{Binding ItemCount, StringFormat='{}{0} 个文件'}" Foreground="Gray" />
-        <ProgressBar Grid.Column="4" Width="70" Height="4" IsIndeterminate="True"
+                   Text="{Binding ItemCount, StringFormat='{}{0} 个文件'}" Classes="Caption" />
+        <ProgressBar Grid.Column="4" Width="72" Height="3" IsIndeterminate="True"
                      IsVisible="{Binding IsInspecting}" VerticalAlignment="Center" />
       </Grid>
     </Border>
 
-    <Border Grid.Row="2" BorderBrush="LightGray" BorderThickness="1" CornerRadius="6" Padding="10">
-      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto" RowSpacing="8" ColumnSpacing="8">
-        <TextBlock Grid.Row="0" Grid.Column="0" Text="输出目录" VerticalAlignment="Center" FontWeight="SemiBold" />
+    <Border Grid.Row="2" Classes="DocumentSection">
+      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto" RowSpacing="6" ColumnSpacing="6">
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="输出目录" VerticalAlignment="Center" Classes="Caption" />
         <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding OutputDirectory}" IsReadOnly="True"
                  Watermark="选择统一输出目录" ToolTip.Tip="{Binding OutputDirectory}" />
         <Button Grid.Row="0" Grid.Column="2" Content="选择目录" Click="OnChooseOutputDirectoryClick"
-                IsEnabled="{Binding !IsBusy}" />
+                IsEnabled="{Binding !IsBusy}" Classes="CompactButton" />
 
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="公共密码" VerticalAlignment="Center" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="公共密码" VerticalAlignment="Center" Classes="Caption" />
         <Grid Grid.Row="1" Grid.Column="1">
           <TextBox Text="{Binding Password}" PasswordChar="●" Watermark="输入所有视频共用的密码"
                    IsVisible="{Binding !ShowPassword}" IsEnabled="{Binding !IsRunning}" />
           <TextBox Text="{Binding Password}" Watermark="输入所有视频共用的密码"
                    IsVisible="{Binding ShowPassword}" IsEnabled="{Binding !IsRunning}" />
         </Grid>
-        <Button Grid.Row="1" Grid.Column="2" Content="显示/隐藏"
-                Command="{Binding TogglePasswordVisibilityCommand}" />
+        <Button Grid.Row="1" Grid.Column="2" Content="显示" Command="{Binding TogglePasswordVisibilityCommand}"
+                IsVisible="{Binding !ShowPassword}" Classes="CompactButton" MinWidth="70"
+                ToolTip.Tip="显示密码" AutomationProperties.Name="显示密码" />
+        <Button Grid.Row="1" Grid.Column="2" Content="隐藏" Command="{Binding TogglePasswordVisibilityCommand}"
+                IsVisible="{Binding ShowPassword}" Classes="CompactButton" MinWidth="70"
+                ToolTip.Tip="隐藏密码" AutomationProperties.Name="隐藏密码" />
       </Grid>
     </Border>
 
-    <Border Grid.Row="3" BorderBrush="LightGray" BorderThickness="1" CornerRadius="6" Padding="6">
-      <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}">
+    <Grid Grid.Row="3" MinHeight="150">
+      <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
+               IsVisible="{Binding HasItems}">
         <ListBox.Styles>
           <Style Selector="ListBoxItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -52,44 +64,54 @@
         </ListBox.Styles>
         <ListBox.ItemTemplate>
           <DataTemplate>
-            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" Margin="4" RowSpacing="2">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto"
+                  Margin="5,4" RowSpacing="1">
               <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding EncryptedFileName}"
                          TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding InputPath}" />
               <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding StateText}"
                          FontSize="11" FontWeight="SemiBold" Margin="8,0,0,0" />
               <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding PublicTitle}"
-                         IsVisible="{Binding HasPublicTitle}" FontSize="11" Foreground="Gray"
+                         IsVisible="{Binding HasPublicTitle}" Classes="Caption"
                          TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding PublicTitle}" />
               <ProgressBar Grid.Row="2" Grid.ColumnSpan="2" Minimum="0" Maximum="100"
-                           Value="{Binding Progress}" Height="4" Margin="0,3,0,1"
+                           Value="{Binding Progress}" Height="3" Margin="0,3,0,1"
                            IsVisible="{Binding IsRunning}" />
               <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding OutputPath}"
-                         IsVisible="{Binding HasOutputPath}" FontSize="10" Foreground="DarkGreen"
+                         IsVisible="{Binding HasOutputPath}" Classes="Caption"
                          TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding OutputPath}" />
               <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding Message}"
-                         IsVisible="{Binding HasMessage}" FontSize="10" Foreground="DarkOrange"
+                         IsVisible="{Binding HasMessage}" Classes="Caption"
                          TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Message}" />
             </Grid>
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
-    </Border>
 
-    <Border Grid.Row="4" BorderBrush="LightGray" BorderThickness="1" CornerRadius="6" Padding="10">
-      <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
-        <ProgressBar Grid.Row="0" Minimum="0" Maximum="100" Value="{Binding OverallProgress}" Height="14" />
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                  IsVisible="{Binding !HasItems}" Spacing="4">
+        <TextBlock Text="队列为空" HorizontalAlignment="Center" Classes="SectionTitle" />
+        <TextBlock Text="添加 SECVID03 视频开始批量解密" HorizontalAlignment="Center" Classes="Caption" />
+      </StackPanel>
+    </Grid>
+
+    <Border Grid.Row="4" Classes="TaskFooter">
+      <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="5">
+        <ProgressBar Grid.Row="0" Minimum="0" Maximum="100" Value="{Binding OverallProgress}" Height="5" />
         <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
-          <TextBlock Grid.Column="0" Text="{Binding CurrentFile}" TextTrimming="CharacterEllipsis" />
-          <TextBlock Grid.Column="1" Text="{Binding SucceededCount, StringFormat='成功 {0}'}" Foreground="DarkGreen" />
-          <TextBlock Grid.Column="2" Text="{Binding FailedCount, StringFormat='失败 {0}'}" Foreground="DarkOrange" />
-          <TextBlock Grid.Column="3" Text="{Binding CancelledCount, StringFormat='取消 {0}'}" Foreground="Gray" />
+          <TextBlock Grid.Column="0" Text="{Binding CurrentFile}" Classes="Caption"
+                     TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding CurrentFile}" />
+          <TextBlock Grid.Column="1" Text="{Binding SucceededCount, StringFormat='成功 {0}'}" Classes="Caption" />
+          <TextBlock Grid.Column="2" Text="{Binding FailedCount, StringFormat='失败 {0}'}" Classes="Caption" />
+          <TextBlock Grid.Column="3" Text="{Binding CancelledCount, StringFormat='取消 {0}'}" Classes="Caption" />
         </Grid>
-        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-          <SelectableTextBlock Grid.Column="0" Text="{Binding StatusMessage}" TextWrapping="Wrap"
-                               VerticalAlignment="Center" Foreground="DarkBlue" />
-          <Button Grid.Column="1" Content="取消" Command="{Binding CancelCommand}" MinWidth="90" />
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+          <SelectableTextBlock Grid.Column="0" Text="{Binding StatusMessage}" Classes="StatusText"
+                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding StatusMessage}"
+                               VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="取消" Command="{Binding CancelCommand}"
+                  Classes="CompactButton" MinWidth="76" />
           <Button Grid.Column="2" Content="开始解密" Command="{Binding StartDecryptionCommand}"
-                  MinWidth="120" MinHeight="36" />
+                  Classes="CompactButton accent" MinWidth="108" IsDefault="True" />
         </Grid>
       </Grid>
     </Border>

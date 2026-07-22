@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MySmallTools.Business.SecretVideoPlayer;
 using MySmallTools.Constants;
@@ -10,6 +11,25 @@ namespace MySmallTools.Tests;
 
 public sealed class VideoToolStabilityTests
 {
+    [Fact]
+    public void VideoDocuments_TogglePasswordVisibility()
+    {
+        var player = RuntimeHelpers.GetUninitializedObject(typeof(VideoPlayerControlViewModel))
+            as VideoPlayerControlViewModel;
+        Assert.NotNull(player);
+
+        var singlePlayer = new SecretVideoPlayerViewModel(player);
+        Assert.False(singlePlayer.ShowPassword);
+        singlePlayer.TogglePasswordVisibilityCommand.Execute(null);
+        Assert.True(singlePlayer.ShowPassword);
+
+        using var browser = new VideoLibraryBrowserViewModel(new EmptyScanner());
+        using var library = new SecretVideoLibraryViewModel(browser, player);
+        Assert.False(library.ShowPassword);
+        library.TogglePasswordVisibilityCommand.Execute(null);
+        Assert.True(library.ShowPassword);
+    }
+
     [Fact]
     public void VideoEncryptorDocument_DefaultTitleAndVideoTitle_AreIndependent()
     {
@@ -210,6 +230,49 @@ public sealed class VideoToolStabilityTests
         }
     }
 
+    [Fact]
+    public async Task VideoEncryptorDocument_ExplicitCancelIsOnlyAvailableWhileRunning()
+    {
+        var temporaryDirectory = Path.Combine(
+            Path.GetTempPath(),
+            "MySmallTools-Explicit-Cancel-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(temporaryDirectory);
+        var inputPath = Path.Combine(temporaryDirectory, "source.mp4");
+        var outputPath = Path.Combine(temporaryDirectory, "output.secvid");
+
+        try
+        {
+            using (var input = new FileStream(inputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                input.SetLength(64L * 1024 * 1024);
+
+            using var viewModel = new VideoEncryptorViewModel(
+                new VideoEncryptorService(new Secvid03Encryptor()))
+            {
+                SelectedFilePath = inputPath,
+                OutputFilePath = outputPath,
+                Password = "123456",
+                ConfirmPassword = "123456"
+            };
+
+            Assert.False(viewModel.CancelEncryptionCommand.CanExecute(null));
+            var encryption = viewModel.StartEncryptionCommand.ExecuteAsync(null);
+            Assert.True(viewModel.CancelEncryptionCommand.CanExecute(null));
+
+            viewModel.CancelEncryptionCommand.Execute(null);
+            await encryption;
+
+            Assert.False(viewModel.IsEncrypting);
+            Assert.False(viewModel.CancelEncryptionCommand.CanExecute(null));
+            Assert.Equal("加密已取消", viewModel.StatusMessage);
+            Assert.False(File.Exists(outputPath));
+            Assert.Empty(Directory.GetFiles(temporaryDirectory, "*.partial-*"));
+        }
+        finally
+        {
+            Directory.Delete(temporaryDirectory, recursive: true);
+        }
+    }
+
     private sealed class RecordingSurfaceRestoreOperations(long length) : IVideoSurfaceRestoreOperations
     {
         public List<string> Calls { get; } = [];
@@ -242,6 +305,17 @@ public sealed class VideoToolStabilityTests
 
     private static VideoEncryptorDocumentStrategy CreateVideoEncryptorStrategy() =>
         new(new VideoToolTestDocumentScopeFactory());
+
+    private sealed class EmptyScanner : IVideoLibraryScanner
+    {
+        public async IAsyncEnumerable<VideoLibraryScanResult> ScanAsync(
+            string folderPath,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            await Task.CompletedTask;
+            yield break;
+        }
+    }
 
     /// <summary>
     /// 这些测试只验证策略对 Dock Title 与视频公开标题的映射，不验证宿主 Scope 实现。

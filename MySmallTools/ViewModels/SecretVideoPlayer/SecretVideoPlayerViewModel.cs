@@ -19,6 +19,7 @@ public partial class SecretVideoPlayerViewModel : Document
 
     [ObservableProperty] private string _filePath = string.Empty;
     [ObservableProperty] private string _password = string.Empty;
+    [ObservableProperty] private bool _showPassword;
     [ObservableProperty] private string _statusMessage = "请选择 SECVID03 加密视频文件";
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private VideoPlayerControlViewModel _playerViewModel;
@@ -144,6 +145,9 @@ public partial class SecretVideoPlayerViewModel : Document
 
     [RelayCommand]
     private void CancelEditPublicInfo() => IsEditingPublicInfo = false;
+
+    [RelayCommand]
+    private void TogglePasswordVisibility() => ShowPassword = !ShowPassword;
 
     private void ReadPublicInfo(string path)
     {

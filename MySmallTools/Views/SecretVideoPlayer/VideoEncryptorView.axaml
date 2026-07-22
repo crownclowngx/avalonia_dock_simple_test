@@ -4,80 +4,120 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="850" d:DesignHeight="800"
              x:Class="MySmallTools.Views.SecretVideoPlayer.VideoEncryptorView">
-  <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="20" Spacing="14">
-      <TextBlock Text="SECVID03 视频加密" FontSize="24" FontWeight="Bold" />
-      <TextBlock Text="视频按 1 MiB 独立加密；标题和描述为公开信息，可在输入密码前查看和原地修改。"
-                 TextWrapping="Wrap" Foreground="Gray" />
+  <UserControl.Styles>
+    <StyleInclude Source="avares://MySmallTools/Styles/VideoDocumentStyles.axaml" />
+  </UserControl.Styles>
 
-      <Border BorderBrush="LightGray" BorderThickness="1" CornerRadius="6" Padding="14">
-        <StackPanel Spacing="8">
-          <TextBlock Text="源视频" FontWeight="SemiBold" />
-          <Grid ColumnDefinitions="*,Auto,Auto">
-            <TextBox Grid.Column="0" Text="{Binding SelectedFilePath}" Watermark="选择视频文件..." IsReadOnly="True" />
-            <Button Grid.Column="1" Content="浏览" Click="OnBrowseFileClick"
-                    IsEnabled="{Binding !IsEncrypting}" Margin="8,0,0,0" />
-            <Button Grid.Column="2" Content="清空" Command="{Binding ClearAllCommand}" Margin="8,0,0,0" />
-          </Grid>
-          <StackPanel Orientation="Horizontal" Spacing="18">
-            <TextBlock Text="{Binding FileSizeText}" Foreground="Gray" />
-            <TextBlock Text="{Binding FileFormatText}" Foreground="Gray" />
+  <Grid Classes="DocumentPage" RowDefinitions="Auto,*,Auto">
+    <Border Grid.Row="0" Classes="DocumentToolbar">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <StackPanel Spacing="2">
+          <TextBlock Text="SECVID03 视频加密" Classes="PageTitle" />
+          <TextBlock Text="按 1 MiB 独立加密；标题和描述为公开信息。"
+                     Classes="Caption" TextWrapping="Wrap" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="清空" Command="{Binding ClearAllCommand}"
+                Classes="CompactButton" VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="8" Margin="0,2,4,2">
+        <Border Classes="DocumentSection">
+          <StackPanel Spacing="7">
+            <TextBlock Text="文件" Classes="SectionTitle" />
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+              <TextBlock Grid.Column="0" Text="源视频" VerticalAlignment="Center" Classes="Caption" />
+              <TextBox Grid.Column="1" Text="{Binding SelectedFilePath}" Watermark="选择视频文件..."
+                       IsReadOnly="True" ToolTip.Tip="{Binding SelectedFilePath}" />
+              <Button Grid.Column="2" Content="浏览" Click="OnBrowseFileClick"
+                      IsEnabled="{Binding !IsEncrypting}" Classes="CompactButton" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+              <TextBlock Grid.Column="0" Text="输出到" VerticalAlignment="Center" Classes="Caption" />
+              <TextBox Grid.Column="1" Text="{Binding OutputFilePath}" Watermark="输出 .secvid 路径"
+                       IsEnabled="{Binding !IsEncrypting}" ToolTip.Tip="{Binding OutputFilePath}" />
+              <Button Grid.Column="2" Content="自动生成" Command="{Binding GenerateOutputPathCommand}"
+                      Classes="CompactButton" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="16" Margin="52,0,0,0">
+              <TextBlock Text="{Binding FileSizeText}" Classes="Caption" />
+              <TextBlock Text="{Binding FileFormatText}" Classes="Caption" />
+            </StackPanel>
           </StackPanel>
-        </StackPanel>
-      </Border>
+        </Border>
 
-      <Border BorderBrush="LightGray" BorderThickness="1" CornerRadius="6" Padding="14">
-        <StackPanel Spacing="8">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="标题（可留空）" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="1" Text="{Binding VideoTitleCharacterCount, StringFormat='{}{0} / 200'}" Foreground="Gray" />
-          </Grid>
-          <TextBox Text="{Binding VideoTitle}" Watermark="留空时播放器显示原始文件名" IsEnabled="{Binding !IsEncrypting}" />
+        <Border Classes="DocumentSection">
+          <Expander Header="公开信息" IsExpanded="True">
+            <StackPanel Spacing="7" Margin="0,8,0,0">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="标题（可留空）" Classes="Caption" />
+                <TextBlock Grid.Column="1" Text="{Binding VideoTitleCharacterCount, StringFormat='{}{0} / 200'}"
+                           Classes="Caption" />
+              </Grid>
+              <TextBox Text="{Binding VideoTitle}" Watermark="留空时播放器显示原始文件名"
+                       IsEnabled="{Binding !IsEncrypting}" />
+              <Grid ColumnDefinitions="*,Auto" Margin="0,3,0,0">
+                <TextBlock Text="描述（公开可见，可留空）" Classes="Caption" />
+                <TextBlock Grid.Column="1" Text="{Binding DescriptionCharacterCount, StringFormat='{}{0} / 10000'}"
+                           Classes="Caption" />
+              </Grid>
+              <TextBox Text="{Binding Description}" Watermark="最多 10,000 个 Unicode 字符"
+                       AcceptsReturn="True" TextWrapping="Wrap" MinHeight="110" MaxHeight="180"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto" IsEnabled="{Binding !IsEncrypting}" />
+            </StackPanel>
+          </Expander>
+        </Border>
 
-          <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
-            <TextBlock Text="描述（公开可见，可留空）" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="1" Text="{Binding DescriptionCharacterCount, StringFormat='{}{0} / 10000'}" Foreground="Gray" />
-          </Grid>
-          <TextBox Text="{Binding Description}" Watermark="最多 10,000 个 Unicode 字符"
-                   AcceptsReturn="True" TextWrapping="Wrap" Height="170"
-                   ScrollViewer.VerticalScrollBarVisibility="Auto" IsEnabled="{Binding !IsEncrypting}" />
-        </StackPanel>
-      </Border>
+        <Border Classes="DocumentSection">
+          <StackPanel Spacing="7">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="安全" Classes="SectionTitle" />
+              <Button Grid.Column="1" Content="显示密码" Command="{Binding TogglePasswordVisibilityCommand}"
+                      IsVisible="{Binding !ShowPassword}" Classes="CompactButton"
+                      ToolTip.Tip="显示密码" AutomationProperties.Name="显示两个密码输入框" />
+              <Button Grid.Column="1" Content="隐藏密码" Command="{Binding TogglePasswordVisibilityCommand}"
+                      IsVisible="{Binding ShowPassword}" Classes="CompactButton"
+                      ToolTip.Tip="隐藏密码" AutomationProperties.Name="隐藏两个密码输入框" />
+            </Grid>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+              <Grid Grid.Column="0">
+                <TextBox Text="{Binding Password}" PasswordChar="●" Watermark="密码（至少 6 个字符）"
+                         IsVisible="{Binding !ShowPassword}" IsEnabled="{Binding !IsEncrypting}" />
+                <TextBox Text="{Binding Password}" Watermark="密码（至少 6 个字符）"
+                         IsVisible="{Binding ShowPassword}" IsEnabled="{Binding !IsEncrypting}" />
+              </Grid>
+              <Grid Grid.Column="1">
+                <TextBox Text="{Binding ConfirmPassword}" PasswordChar="●" Watermark="再次输入密码"
+                         IsVisible="{Binding !ShowPassword}" IsEnabled="{Binding !IsEncrypting}" />
+                <TextBox Text="{Binding ConfirmPassword}" Watermark="再次输入密码"
+                         IsVisible="{Binding ShowPassword}" IsEnabled="{Binding !IsEncrypting}" />
+              </Grid>
+            </Grid>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
 
-      <Border BorderBrush="LightGray" BorderThickness="1" CornerRadius="6" Padding="14">
-        <StackPanel Spacing="8">
-          <TextBlock Text="输出文件" FontWeight="SemiBold" />
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBox Grid.Column="0" Text="{Binding OutputFilePath}" Watermark="输出 .secvid 路径" />
-            <Button Grid.Column="1" Content="自动生成" Command="{Binding GenerateOutputPathCommand}" Margin="8,0,0,0" />
-          </Grid>
-        </StackPanel>
-      </Border>
-
-      <Border BorderBrush="LightGray" BorderThickness="1" CornerRadius="6" Padding="14">
-        <StackPanel Spacing="8">
-          <TextBlock Text="密码（至少 6 个字符）" FontWeight="SemiBold" />
-          <Grid ColumnDefinitions="*,*">
-            <TextBox Grid.Column="0" Text="{Binding Password}" PasswordChar="●" Watermark="输入密码" Margin="0,0,4,0" />
-            <TextBox Grid.Column="1" Text="{Binding ConfirmPassword}" PasswordChar="●" Watermark="再次输入密码" Margin="4,0,0,0" />
-          </Grid>
-        </StackPanel>
-      </Border>
-
-      <Button Content="开始加密" Command="{Binding StartEncryptionCommand}"
-              HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="42" />
-
-      <Border BorderBrush="LightGray" BorderThickness="1" CornerRadius="6" Padding="14">
-        <StackPanel Spacing="8">
-          <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}" Height="18" />
-          <Grid ColumnDefinitions="Auto,*,Auto">
-            <TextBlock Text="{Binding ProgressText}" />
-            <TextBlock Grid.Column="1" Text="{Binding ProcessingSpeedText}" HorizontalAlignment="Center" Foreground="Gray" />
-            <TextBlock Grid.Column="2" Text="{Binding EstimatedTimeText}" Foreground="Gray" />
-          </Grid>
-          <SelectableTextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Foreground="DarkBlue" />
-        </StackPanel>
-      </Border>
-    </StackPanel>
-  </ScrollViewer>
+    <Border Grid.Row="2" Classes="TaskFooter">
+      <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="5">
+        <ProgressBar Grid.Row="0" Minimum="0" Maximum="100" Value="{Binding Progress}" Height="5" />
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <TextBlock Text="{Binding ProgressText}" Classes="StatusText" />
+          <TextBlock Grid.Column="1" Text="{Binding ProcessingSpeedText}" HorizontalAlignment="Center"
+                     Classes="Caption" />
+          <TextBlock Grid.Column="2" Text="{Binding EstimatedTimeText}" Classes="Caption" />
+        </Grid>
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+          <SelectableTextBlock Text="{Binding StatusMessage}" Classes="StatusText"
+                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding StatusMessage}"
+                               VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="取消" Command="{Binding CancelEncryptionCommand}"
+                  Classes="CompactButton" MinWidth="76" />
+          <Button Grid.Column="2" Content="开始加密" Command="{Binding StartEncryptionCommand}"
+                  Classes="CompactButton accent" MinWidth="108" IsDefault="True" />
+        </Grid>
+      </Grid>
+    </Border>
+  </Grid>
 </UserControl>

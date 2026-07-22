@@ -24,6 +24,7 @@ public partial class VideoDecryptorViewModel : Document, IDisposable
 
     public ReadOnlyObservableCollection<DecryptionQueueItemViewModel> Items { get; }
     public int ItemCount => _items.Count;
+    public bool HasItems => _items.Count > 0;
     public bool IsBusy => IsInspecting || IsRunning;
 
     [ObservableProperty] private DecryptionQueueItemViewModel? _selectedItem;
@@ -255,6 +256,7 @@ public partial class VideoDecryptorViewModel : Document, IDisposable
     private void OnQueueChanged()
     {
         OnPropertyChanged(nameof(ItemCount));
+        OnPropertyChanged(nameof(HasItems));
         RecalculateCounts();
         NotifyCommandStates();
     }

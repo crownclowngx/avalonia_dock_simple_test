@@ -114,6 +114,7 @@ public partial class VideoEncryptorViewModel : Document, IDisposable
         // 手动触发相关命令状态更新
         StartEncryptionCommand.NotifyCanExecuteChanged();
         ClearAllCommand.NotifyCanExecuteChanged();
+        CancelEncryptionCommand.NotifyCanExecuteChanged();
     }
     
     /// <summary>
@@ -284,6 +285,21 @@ public partial class VideoEncryptorViewModel : Document, IDisposable
     {
         ShowPassword = !ShowPassword;
     }
+
+    [RelayCommand(CanExecute = nameof(CanCancelEncryption))]
+    private void CancelEncryption()
+    {
+        try
+        {
+            Volatile.Read(ref _encryptionCancellation)?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // 任务可能恰好在点击时完成；此时取消已没有工作需要执行。
+        }
+    }
+
+    private bool CanCancelEncryption() => !_disposed && IsEncrypting;
 
     [RelayCommand(CanExecute = nameof(CanGenerateOutputPath))]
     private void GenerateOutputPath()
