@@ -107,6 +107,38 @@ flowchart TD
 
 加密器只保留一个明文块和一个密文块缓冲区。输入流允许其他读取者，但输出临时文件使用独占写入；输入文件在加密过程中被截断时，精确读取会抛出异常，不会为不完整块生成标签。
 
+### 3.1 批量解密与明文提交
+
+批量解密被分为三个窄职责：`VideoDecryptorViewModel` 管理队列和取消源，`IVideoDecryptionService` 顺序编排并隔离单项失败，`ISecvid03Decryptor` 只处理一个容器。输出命名由独立的 `DecryptionOutputPathResolver` 净化公开文件名、使用固定头扩展名并避让磁盘及批次内冲突。
+
+```mermaid
+sequenceDiagram
+    participant UI as VideoDecryptorViewModel
+    participant Batch as VideoDecryptionService
+    participant One as Secvid03Decryptor
+    participant Crypto as Secvid03Cryptography
+    participant Disk as 文件系统
+
+    UI->>Batch: DecryptBatchAsync(候选、输出目录、密码)
+    loop 每个有效且未成功的候选
+        Batch->>Batch: 分配不覆盖的安全输出名
+        Batch->>One: DecryptAsync
+        One->>Disk: 读取固定头和原视频前缀
+        One->>Crypto: 派生密钥并认证固定头
+        Crypto-->>One: AuthenticationContext
+        One->>Disk: 创建唯一 partial
+        loop 每个加密块
+            One->>Crypto: 认证并解密块
+            One->>Disk: 写入已认证明文
+        end
+        One->>Disk: Flush + Move(no overwrite)
+        One-->>Batch: 成功或分类错误
+        Batch-->>UI: 项目与总字节进度
+    end
+```
+
+播放器和导出器共享 `Secvid03Cryptography` 的认证上下文及块解密规则，nonce、AAD 和标签语义只有一个实现。认证上下文释放时清零派生密钥；导出器还会清零复用的明文、密文和标签缓冲区。错误密码发生在创建 partial 之前，块篡改、取消或 I/O 失败由单文件事务清理当前 partial，已成功项目不回滚。
+
 ## 4. 加载与播放数据流
 
 ```mermaid
@@ -198,7 +230,7 @@ sequenceDiagram
 - 插件模块只注册构造关系，不保存 Scope，也不预创建原生对象。
 - ViewModel 可以取消自己发起的异步工作、退订事件和使回调失效，但不能重复释放由 DI 注入且同样由 Scope 托管的服务。
 - `SecureVideoPlayer` 独占并释放自己的 `LibVLC`、`MediaPlayer`、`Media` 和 `MediaInput`；进程级初始化不等于原生实例无需释放。
-- 关闭加密文档只发送取消，不在 UI 线程同步等待任务；底层加密调用在退出路径删除临时文件。
+- 关闭加密或批量解密文档只发送取消，不在 UI 线程同步等待任务；底层调用在退出路径删除当前临时文件。
 - 宿主退出时，`DocumentScopeManager.Dispose` 会逆序释放仍未关闭文档的 Scope。
 
 ## 7. 播放状态与异步回调
@@ -222,4 +254,6 @@ Dock/原生表面的详细恢复时序及故障定位见[接入、约定与排�
 - [VideoPlayerControlViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoPlayerControlViewModel.cs)
 - [SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/SecureVideoPlayer.cs)
 - [VideoEncryptorViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoEncryptorViewModel.cs)
+- [VideoDecryptorViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoDecryptorViewModel.cs)
+- [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Secvid03Decryptor.cs)
 - [DocumentScopeManager.cs](../../../MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)

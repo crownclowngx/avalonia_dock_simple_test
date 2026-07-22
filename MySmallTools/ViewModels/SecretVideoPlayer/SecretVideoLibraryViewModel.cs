@@ -15,6 +15,7 @@ public partial class SecretVideoLibraryViewModel : Document, IDisposable
 
     [ObservableProperty] private string _password = string.Empty;
     [ObservableProperty] private bool _isOpening;
+    [ObservableProperty] private bool _isLibraryPaneOpen = true;
     [ObservableProperty] private string _statusMessage = "请选择文件夹并输入公共密码";
 
     public VideoLibraryBrowserViewModel Browser { get; }
@@ -103,6 +104,9 @@ public partial class SecretVideoLibraryViewModel : Document, IDisposable
         Browser.SelectedItem is { FilePath: var path } &&
         File.Exists(path) &&
         !string.IsNullOrEmpty(Password);
+
+    [RelayCommand]
+    private void ToggleLibraryPane() => IsLibraryPaneOpen = !IsLibraryPaneOpen;
 
     private void OnBrowserPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

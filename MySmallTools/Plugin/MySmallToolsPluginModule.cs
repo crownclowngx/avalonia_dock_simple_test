@@ -39,6 +39,12 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddScoped<VideoEncryptorService>();
         services.AddScoped<VideoEncryptorViewModel>();
 
+        // 单文件解密器无共享状态；批处理编排和队列则跟随各自 Document Scope。
+        services.AddTransient<ISecvid03Decryptor, Secvid03Decryptor>();
+        services.AddTransient<DecryptionOutputPathResolver>();
+        services.AddScoped<IVideoDecryptionService, VideoDecryptionService>();
+        services.AddScoped<VideoDecryptorViewModel>();
+
         // 元数据读取是短操作，调用结束后不保留媒体对象。
         services.AddTransient<MetadataExtractor>();
     }

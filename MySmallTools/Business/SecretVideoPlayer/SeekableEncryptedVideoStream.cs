@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace MySmallTools.Business.SecretVideoPlayer;
 
 /// <summary>
@@ -14,9 +12,8 @@ public sealed class SeekableEncryptedVideoStream : Stream
 {
     private const int MaxCachedChunks = 4;
     private readonly FileStream _file;
+    private readonly Secvid03AuthenticationContext _authentication;
     private readonly Secvid03Header _header;
-    private readonly byte[] _key;
-    private readonly byte[] _immutableDigest;
     private readonly Dictionary<long, CacheEntry> _cache = [];
     private readonly LinkedList<long> _lru = [];
     private long _position;
@@ -24,12 +21,11 @@ public sealed class SeekableEncryptedVideoStream : Stream
 
     private sealed record CacheEntry(byte[] Data, int Length, LinkedListNode<long> Node);
 
-    private SeekableEncryptedVideoStream(FileStream file, Secvid03Header header, byte[] key, byte[] immutableDigest)
+    private SeekableEncryptedVideoStream(FileStream file, Secvid03AuthenticationContext authentication)
     {
         _file = file;
-        _header = header;
-        _key = key;
-        _immutableDigest = immutableDigest;
+        _authentication = authentication;
+        _header = authentication.Header;
     }
 
     /// <summary>
@@ -39,7 +35,7 @@ public sealed class SeekableEncryptedVideoStream : Stream
     public static SeekableEncryptedVideoStream Open(string path, string password)
     {
         var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, Secvid03Format.ChunkSize, false);
-        byte[]? key = null;
+        Secvid03AuthenticationContext? authentication = null;
         try
         {
             var headerBytes = new byte[Secvid03Format.FixedHeaderSize];
@@ -48,25 +44,19 @@ public sealed class SeekableEncryptedVideoStream : Stream
             var originalHeader = new byte[header.OriginalHeaderLength];
             file.Position = Secvid03Format.OriginalHeaderOffset;
             file.ReadExactly(originalHeader);
-            key = Secvid03Format.DeriveKey(password, header);
-            var immutableAad = Secvid03Format.CreateImmutableHeaderAad(header, originalHeader);
-            var immutableDigest = SHA256.HashData(immutableAad);
             try
             {
-                // 使用“空明文 + 固定头 AAD”的 GCM 标签验证密码。文件中不保存可离线比较的明文 key hash。
-                using var aes = new AesGcm(key, Secvid03Format.TagSize);
-                aes.Decrypt(Secvid03Format.CreateNonce(header, 0), ReadOnlySpan<byte>.Empty, header.HeaderTag,
-                    Span<byte>.Empty, immutableAad);
+                authentication = Secvid03Cryptography.Authenticate(password, header, originalHeader);
             }
-            catch (CryptographicException ex)
+            catch (Secvid03AuthenticationException ex)
             {
                 throw new UnauthorizedAccessException("密码错误或文件已损坏。", ex);
             }
-            return new SeekableEncryptedVideoStream(file, header, key, immutableDigest);
+            return new SeekableEncryptedVideoStream(file, authentication);
         }
         catch
         {
-            if (key is not null) CryptographicOperations.ZeroMemory(key);
+            authentication?.Dispose();
             file.Dispose();
             throw;
         }
@@ -146,10 +136,10 @@ public sealed class SeekableEncryptedVideoStream : Stream
             {
                 // 先关闭文件句柄，再清零缓存明文和派生密钥，确保切换视频后可立即删除或覆盖原容器。
                 _file.Dispose();
-                foreach (var entry in _cache.Values) CryptographicOperations.ZeroMemory(entry.Data);
+                foreach (var entry in _cache.Values) System.Security.Cryptography.CryptographicOperations.ZeroMemory(entry.Data);
                 _cache.Clear();
                 _lru.Clear();
-                CryptographicOperations.ZeroMemory(_key);
+                _authentication.Dispose();
             }
             _disposed = true;
         }
@@ -180,14 +170,10 @@ public sealed class SeekableEncryptedVideoStream : Stream
         var plain = new byte[plainLength];
         try
         {
-            // 必须先完成 GCM 验证才能把明文放入缓存。标签失败时立即终止当前读取，绝不返回部分未认证数据。
-            using var aes = new AesGcm(_key, Secvid03Format.TagSize);
-            aes.Decrypt(Secvid03Format.CreateNonce(_header, checked((uint)chunkIndex + 1)), cipher, tag, plain,
-                Secvid03Format.CreateChunkAad(_immutableDigest, chunkIndex));
+            Secvid03Cryptography.DecryptChunk(_authentication, chunkIndex, cipher, tag, plain);
         }
-        catch (CryptographicException ex)
+        catch (Secvid03ContentAuthenticationException ex)
         {
-            CryptographicOperations.ZeroMemory(plain);
             throw new InvalidDataException("密码错误或文件已损坏。", ex);
         }
 
@@ -195,7 +181,7 @@ public sealed class SeekableEncryptedVideoStream : Stream
         {
             // 淘汰时主动清零旧明文，缓存容量因此与视频文件大小完全解耦。
             var oldEntry = _cache[oldest.Value];
-            CryptographicOperations.ZeroMemory(oldEntry.Data);
+            System.Security.Cryptography.CryptographicOperations.ZeroMemory(oldEntry.Data);
             _cache.Remove(oldest.Value);
             _lru.RemoveLast();
         }

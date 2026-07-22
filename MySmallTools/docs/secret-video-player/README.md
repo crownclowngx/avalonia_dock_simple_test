@@ -76,6 +76,17 @@ flowchart LR
 
 公开信息损坏的文件仍会以磁盘文件名显示并标注错误。此类文件仍可尝试播放，因为公开区损坏不必然意味着受认证保护的视频主体损坏。
 
+侧栏默认展开，可通过箭头收起为 32 px 触发条；收起只改变布局，不会清理当前媒体或中断播放。文件夹、搜索、公共密码和扫描状态集中在紧凑顶部区域，列表分别用两行显示磁盘文件名和较小的公开标题。
+
+### 批量解密视频
+
+1. 在宿主中打开“批量视频解密器”，一次选择多个 `.secvid` 文件。
+2. 选择统一输出目录并输入这些文件共用的密码。
+3. 开始解密。任务严格顺序执行，一个文件失败不会阻止后续文件；失败或取消项可在修正密码后重试，已经成功的项目会被跳过。
+4. 输出名称来自经过净化的公开原始文件名，扩展名来自固定头；已有同名文件时自动追加编号，任何情况下都不会静默覆盖。
+
+单文件导出先验证固定头和密码，随后以固定大小缓冲区逐块认证解密。明文先写入唯一 `.partial-*`，完整刷新后才以不覆盖模式提交；取消、内容篡改或磁盘错误会删除当前半成品，而此前已经成功的文件保持不变。密码只存在于当前 Document 和调用链中，不写入队列模型、公开信息或日志。
+
 ### 编辑公开信息
 
 标题和描述位于固定的 64 KiB 公开区，可以在不移动或重新加密视频主体的情况下原地修改。进入编辑前，播放器会释放当前 `Media` 和 `MediaInput`，避免 LibVLC 后台读取与文件写入冲突。修改后需要重新输入密码加载媒体。
@@ -85,6 +96,7 @@ flowchart LR
 - 仅支持 Windows x64；项目和原生运行时都固定为 x64。
 - 播放器只接受 SECVID03。检测到 SECVID02 时会提示重新加密，不会回退到旧的完整内存解密方案。
 - 文件夹视频库第一版只扫描当前层的 `.secvid`，不提供递归、自动连播、目录监听或密码持久化。
+- 批量解密只支持显式多选文件和一个统一输出目录，不删除源容器，也不持久化公共密码。
 - 密码丢失后无法从容器恢复；公开区也不保存可直接比较的明文 key hash。
 - 标题最多 200 个 Unicode Rune，描述最多 10,000 个 Unicode Rune，同时还受 UTF-8 字节上限约束。
 - 公开信息使用 CRC32 检测意外损坏，不用于防篡改；拥有文件写权限的人可以重写公开信息和 CRC。
@@ -95,8 +107,9 @@ flowchart LR
 - 插件与服务注册：[MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
 - 加密与格式：[Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Secvid03Encryptor.cs)、[Secvid03Format.cs](../../Business/SecretVideoPlayer/Secvid03Format.cs)
 - 随机读取播放：[SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/SeekableEncryptedVideoStream.cs)、[SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/SecureVideoPlayer.cs)
+- 批量明文导出：[Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Secvid03Decryptor.cs)、[VideoDecryptionService.cs](../../Business/SecretVideoPlayer/VideoDecryptionService.cs)
 - Dock 视频表面：[EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)、[VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/VideoSurfaceRestoreSequence.cs)
 - 文件夹视频库：[VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/VideoLibraryScanner.cs)、[SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
-- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[VideoToolStabilityTests.cs](../../../MySmallTools.Tests/VideoToolStabilityTests.cs)、[VideoLibraryTests.cs](../../../MySmallTools.Tests/VideoLibraryTests.cs)
+- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[VideoDecryptionTests.cs](../../../MySmallTools.Tests/VideoDecryptionTests.cs)、[VideoToolStabilityTests.cs](../../../MySmallTools.Tests/VideoToolStabilityTests.cs)、[VideoLibraryTests.cs](../../../MySmallTools.Tests/VideoLibraryTests.cs)
 
 本文档描述当前实现，不把设想中的跨平台支持、旧格式兼容或其他加密算法写作已有能力。格式或接入行为变化时，应同时更新本目录文档和对应自动化测试。

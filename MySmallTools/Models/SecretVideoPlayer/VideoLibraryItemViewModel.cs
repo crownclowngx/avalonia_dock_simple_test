@@ -25,6 +25,7 @@ public sealed class VideoLibraryItemViewModel
     public VideoLibraryMetadataState MetadataState { get; }
     public string ErrorMessage { get; }
     public bool HasError => MetadataState == VideoLibraryMetadataState.Failed;
+    public bool HasPublicTitle => !string.IsNullOrWhiteSpace(PublicTitle);
 
     public string DisplayName => string.IsNullOrWhiteSpace(PublicTitle)
         ? FileNameWithoutExtension

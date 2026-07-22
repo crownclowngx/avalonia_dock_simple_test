@@ -167,6 +167,8 @@ flowchart TD
 - `SecureVideoPlayer.Dispose` 是其独占原生对象和媒体链路的最终所有者。
 - `VideoEncryptorViewModel.Dispose` 取消当前加密，不在 UI 线程同步等待任务，避免异步清理返回 UI 上下文时死锁。
 - 取消源由正在运行任务的 `finally` 释放；Document 释放路径只交换引用并调用 `Cancel`，避免取消源与任务竞争释放。
+- `VideoDecryptorViewModel.Dispose` 遵循相同规则：只取消当前批次并清空密码。当前单文件调用负责删除 partial，已经正式提交的明文文件不回滚。
+- 解密队列项只保存候选公开信息、路径和执行状态，绝不复制或持有公共密码。
 
 ## 6. UI 与命名约定
 
@@ -175,6 +177,9 @@ flowchart TD
 - `Document.Title` 是 Dock 标签页标题，例如“视频文件加密器”或调用方传入的自定义任务标题。
 - `VideoTitle`/公开 `Title` 是写入 SECVID03 公开区、供播放器展示的视频标题。
 - 清空加密表单或修改视频标题不能改变 Dock `Document.Title`。
+- 视频库使用 `SplitView/CompactInline`：展开 340 px，收起后保留 32 px 触发条。`IsLibraryPaneOpen` 只属于当前 Document，不写入全局配置；收起不得清理媒体或改变播放状态。
+- 视频库筛选区只改变布局密度；搜索字段仍匹配文件名、公开标题和公开描述，列表第一行显示文件名、第二行以小号字体显示公开标题。
+- 批量解密输出名必须通过 `DecryptionOutputPathResolver`。公开原始文件名不可信，不允许直接 `Path.Combine`；正式提交始终使用不覆盖模式。
 - 公开标题为空时，播放器回退显示公开区中的原始文件名；公开区不可读时，再回退到当前 `.secvid` 容器文件名。
 
 ### 6.2 文件选择器属于 View
@@ -281,6 +286,7 @@ flowchart TD
 - [ ] 注入的可释放服务是否只有一个最终所有者，避免重复 Dispose？
 - [ ] 已投递 UI 回调是否在对象释放或媒体代次变化后失效？
 - [ ] 关闭加密页是否取消任务、删除 partial 文件且不阻塞 UI 线程？
+- [ ] 关闭批量解密页是否清空密码、取消当前文件、保留已完成结果并清理当前 partial？
 
 ## 10. 测试与设计约束映射
 
@@ -292,6 +298,7 @@ flowchart TD
 | 文件夹视频库扫描、错误隔离、搜索、排序和过期结果淘汰 | `MySmallTools.Tests/VideoLibraryTests.cs` |
 | 表面恢复快照、代次、快速切换和调用顺序 | `MySmallTools.Tests/VideoToolStabilityTests.cs` |
 | 加密 Document 关闭取消和 partial 清理 | `MySmallTools.Tests/VideoToolStabilityTests.cs` |
+| 解密字节往返、认证失败、取消清理、不覆盖和批次失败隔离 | `MySmallTools.Tests/VideoDecryptionTests.cs` |
 | 原生目录不参与插件扫描和解析 | `MyAvaloniaManagement.PluginTests/NativeDirectoryScanTests.cs` |
 | 托管/历史插件激活兼容、MySmallTools Scope 注册 | `MyAvaloniaManagement.PluginTests/PluginCompatibilityTests.cs` |
 | Document 与 Scope 一一对应及关闭释放 | `MyAvaloniaManagement.PluginTests/DocumentScopeManagerTests.cs` |
@@ -311,5 +318,7 @@ dotnet test MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.cs
 - [VideoPlayerControlViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoPlayerControlViewModel.cs)
 - [VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/VideoSurfaceRestoreSequence.cs)
 - [MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
+- [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Secvid03Decryptor.cs)
+- [VideoDecryptionService.cs](../../Business/SecretVideoPlayer/VideoDecryptionService.cs)
 - [AssemblyLoaderHelper.cs](../../../MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs)
 - [DocumentScopeManager.cs](../../../MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)
