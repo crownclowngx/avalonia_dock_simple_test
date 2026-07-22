@@ -249,6 +249,22 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// 加载加密媒体并在验证成功后立即开始播放。
+    /// </summary>
+    /// <remarks>
+    /// 文件夹视频库使用该入口表达一次完整的“播放所选项”操作；单文件播放器仍可单独调用
+    /// <see cref="LoadMediaAsync"/>，保持加载后由用户手动播放的原有行为。
+    /// </remarks>
+    public async Task<bool> LoadAndPlayMediaAsync(string filePath, string password)
+    {
+        if (!await LoadMediaAsync(filePath, password))
+            return false;
+
+        CancelSurfaceRecovery();
+        return await StartPlaybackAsync(isAutomaticResume: false);
+    }
+
+    /// <summary>
     /// 清理当前媒体
     /// </summary>
     public void CleanupMedia()

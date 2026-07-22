@@ -27,6 +27,9 @@ flowchart TB
     subgraph Plugin["MySmallTools 插件"]
         Module["MySmallToolsPluginModule"]
         PlayerDoc["SecretVideoPlayerViewModel"]
+        LibraryDoc["SecretVideoLibraryViewModel"]
+        BrowserVM["VideoLibraryBrowserViewModel"]
+        Scanner["VideoLibraryScanner"]
         EncryptDoc["VideoEncryptorViewModel"]
         PlayerVM["VideoPlayerControlViewModel"]
         Recovery["VideoSurfaceRecoveryPolicy"]
@@ -43,8 +46,12 @@ flowchart TB
     Dock --> ScopeManager
     Module -.->|注册服务| ScopeManager
     ScopeManager --> PlayerDoc
+    ScopeManager --> LibraryDoc
     ScopeManager --> EncryptDoc
     PlayerDoc --> PlayerVM
+    LibraryDoc --> PlayerVM
+    LibraryDoc --> BrowserVM
+    BrowserVM --> Scanner
     PlayerVM --> Recovery
     PlayerVM --> Player
     Player --> Stream
@@ -59,8 +66,9 @@ flowchart TB
 
 | 层 | 主要类型 | 职责 |
 | --- | --- | --- |
-| 插件接入 | `MySmallToolsPluginModule`、两个 `DocumentStrategy` | 声明服务生命周期，由宿主为每个 Document 创建 Scope；不在模块加载时创建 View、LibVLC 或任务 |
-| 页面协调 | `SecretVideoPlayerViewModel`、`VideoEncryptorViewModel` | 命令、输入校验、状态文本、公开信息编辑和任务取消 |
+| 插件接入 | `MySmallToolsPluginModule`、三个 `DocumentStrategy` | 声明服务生命周期，由宿主为每个 Document 创建 Scope；不在模块加载时创建 View、LibVLC 或任务 |
+| 页面协调 | `SecretVideoPlayerViewModel`、`SecretVideoLibraryViewModel`、`VideoEncryptorViewModel` | 命令、输入校验、状态文本、公开信息编辑和任务取消 |
+| 视频库浏览 | `VideoLibraryBrowserViewModel`、`VideoLibraryScanner` | 限流异步扫描当前目录，隔离单文件错误，并按文件名、标题和描述筛选 |
 | 播放控件 | `VideoPlayerControlViewModel`、`VideoPlayerControl` | 播放控制、LibVLC 事件转 UI、媒体代次和视频表面恢复 |
 | 原生输出 | `EmbeddedVideoSurface` | 在原生句柄真正创建后绑定 `MediaPlayer.Hwnd`，销毁前同步发出表面丢失通知 |
 | 播放服务 | `SecureVideoPlayer` | 管理 `LibVLC`、`MediaPlayer`、`Media`、`MediaInput` 的所有权与释放顺序 |
@@ -159,10 +167,10 @@ flowchart LR
 | 生命周期 | 服务 |
 | --- | --- |
 | Singleton | `LibVlcRuntime` |
-| Scoped | `SecureVideoPlayer`、`VideoSurfaceRecoveryPolicy`、`VideoPlayerControlViewModel`、`SecretVideoPlayerViewModel`、`VideoEncryptorService`、`VideoEncryptorViewModel` |
-| Transient | `Secvid03Encryptor`、`MetadataExtractor` |
+| Scoped | `SecureVideoPlayer`、`VideoSurfaceRecoveryPolicy`、`VideoPlayerControlViewModel`、`SecretVideoPlayerViewModel`、`VideoLibraryBrowserViewModel`、`SecretVideoLibraryViewModel`、`VideoEncryptorService`、`VideoEncryptorViewModel` |
+| Transient | `Secvid03Encryptor`、`MetadataExtractor`、`IVideoLibraryScanner` |
 
-播放器和加密器策略都通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建文档。宿主的 `DocumentScopeManager` 维护 Document 与 `IServiceScope` 的一一对应关系；只有 Dock 真正确认关闭后才释放 Scope。
+单文件播放器、文件夹视频库和加密器策略都通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建文档。宿主的 `DocumentScopeManager` 维护 Document 与 `IServiceScope` 的一一对应关系；只有 Dock 真正确认关闭后才释放 Scope。
 
 ```mermaid
 sequenceDiagram
@@ -209,6 +217,8 @@ Dock/原生表面的详细恢复时序及故障定位见[接入、约定与排�
 
 - [MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
 - [SecretVideoPlayerViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoPlayerViewModel.cs)
+- [SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
+- [VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/VideoLibraryScanner.cs)
 - [VideoPlayerControlViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoPlayerControlViewModel.cs)
 - [SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/SecureVideoPlayer.cs)
 - [VideoEncryptorViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoEncryptorViewModel.cs)

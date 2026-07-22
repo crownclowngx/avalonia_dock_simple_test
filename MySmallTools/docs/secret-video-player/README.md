@@ -14,10 +14,11 @@
 
 ## 系统边界
 
-该子系统包含两项宿主菜单能力：
+该子系统包含三项宿主菜单能力：
 
 - **视频文件加密器**：把普通视频流式写为 `.secvid` 文件，显示进度，并在失败或取消时删除未完成的 `.partial-*` 文件。
 - **加密视频播放器**：无需密码读取公开标题和描述；输入密码后验证固定头，并把 SECVID03 暴露为可随机读取的原视频视图供 LibVLC 解码。
+- **加密视频库播放器**：异步扫描文件夹当前层的 `.secvid`，按文件名、公开标题和描述搜索，并用当前 Document 的公共密码在同一页面切换播放。
 
 核心链路如下：
 
@@ -66,6 +67,15 @@ flowchart LR
 3. 输入密码并加载。加载阶段执行 PBKDF2、固定头认证和 LibVLC 本地媒体解析，不会完整解密视频。
 4. 使用播放、暂停、停止、进度和音量控件。切换 Dock 标签页后，播放器会在新视频表面上恢复原位置及播放或暂停状态。
 
+### 浏览文件夹视频库
+
+1. 在宿主中打开“加密视频库播放器”，选择包含 `.secvid` 的文件夹。
+2. 页面只扫描当前目录，不递归子目录；公开信息在后台以最多四个并发读取任务逐项加入列表。
+3. 搜索框匹配磁盘文件名、公开标题和公开描述，描述本身不会显示在列表中。
+4. 输入当前视频库共用的密码，单击选择视频后双击列表项或点击“播放所选视频”。切换文件夹会释放当前媒体，“刷新”当前文件夹则不会中断正在播放的视频。
+
+公开信息损坏的文件仍会以磁盘文件名显示并标注错误。此类文件仍可尝试播放，因为公开区损坏不必然意味着受认证保护的视频主体损坏。
+
 ### 编辑公开信息
 
 标题和描述位于固定的 64 KiB 公开区，可以在不移动或重新加密视频主体的情况下原地修改。进入编辑前，播放器会释放当前 `Media` 和 `MediaInput`，避免 LibVLC 后台读取与文件写入冲突。修改后需要重新输入密码加载媒体。
@@ -74,6 +84,7 @@ flowchart LR
 
 - 仅支持 Windows x64；项目和原生运行时都固定为 x64。
 - 播放器只接受 SECVID03。检测到 SECVID02 时会提示重新加密，不会回退到旧的完整内存解密方案。
+- 文件夹视频库第一版只扫描当前层的 `.secvid`，不提供递归、自动连播、目录监听或密码持久化。
 - 密码丢失后无法从容器恢复；公开区也不保存可直接比较的明文 key hash。
 - 标题最多 200 个 Unicode Rune，描述最多 10,000 个 Unicode Rune，同时还受 UTF-8 字节上限约束。
 - 公开信息使用 CRC32 检测意外损坏，不用于防篡改；拥有文件写权限的人可以重写公开信息和 CRC。
@@ -85,6 +96,7 @@ flowchart LR
 - 加密与格式：[Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Secvid03Encryptor.cs)、[Secvid03Format.cs](../../Business/SecretVideoPlayer/Secvid03Format.cs)
 - 随机读取播放：[SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/SeekableEncryptedVideoStream.cs)、[SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/SecureVideoPlayer.cs)
 - Dock 视频表面：[EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)、[VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/VideoSurfaceRestoreSequence.cs)
-- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[VideoToolStabilityTests.cs](../../../MySmallTools.Tests/VideoToolStabilityTests.cs)
+- 文件夹视频库：[VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/VideoLibraryScanner.cs)、[SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
+- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[VideoToolStabilityTests.cs](../../../MySmallTools.Tests/VideoToolStabilityTests.cs)、[VideoLibraryTests.cs](../../../MySmallTools.Tests/VideoLibraryTests.cs)
 
 本文档描述当前实现，不把设想中的跨平台支持、旧格式兼容或其他加密算法写作已有能力。格式或接入行为变化时，应同时更新本目录文档和对应自动化测试。

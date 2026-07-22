@@ -29,6 +29,11 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddScoped<VideoPlayerControlViewModel>();
         services.AddScoped<SecretVideoPlayerViewModel>();
 
+        // 文件夹浏览只读取公开区；扫描器无跨调用状态，浏览和密码状态则严格属于单个 Document。
+        services.AddTransient<IVideoLibraryScanner, VideoLibraryScanner>();
+        services.AddScoped<VideoLibraryBrowserViewModel>();
+        services.AddScoped<SecretVideoLibraryViewModel>();
+
         // 加密任务状态属于单个 Document；底层加密器无跨任务可变状态，按需创建即可。
         services.AddTransient<Secvid03Encryptor>();
         services.AddScoped<VideoEncryptorService>();

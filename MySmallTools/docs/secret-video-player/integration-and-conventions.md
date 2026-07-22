@@ -289,6 +289,7 @@ flowchart TD
 | 私有 LibVLC 目录和初始化 | `MySmallTools.Tests/Secvid03Tests.cs` |
 | 公开信息 Unicode、上限、原地更新范围 | `MySmallTools.Tests/Secvid03Tests.cs` |
 | 顺序读取、随机 Seek、认证失败、文件句柄释放 | `MySmallTools.Tests/Secvid03Tests.cs` |
+| 文件夹视频库扫描、错误隔离、搜索、排序和过期结果淘汰 | `MySmallTools.Tests/VideoLibraryTests.cs` |
 | 表面恢复快照、代次、快速切换和调用顺序 | `MySmallTools.Tests/VideoToolStabilityTests.cs` |
 | 加密 Document 关闭取消和 partial 清理 | `MySmallTools.Tests/VideoToolStabilityTests.cs` |
 | 原生目录不参与插件扫描和解析 | `MyAvaloniaManagement.PluginTests/NativeDirectoryScanTests.cs` |
