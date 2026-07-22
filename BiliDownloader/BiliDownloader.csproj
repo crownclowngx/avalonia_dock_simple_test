@@ -22,32 +22,52 @@
       <PackageReference Include="QRCoder" Version="1.6.0" />
     </ItemGroup>
 
-    <!-- 构建后自动将插件及其第三方依赖部署到主项目的 Controls/BiliDownloader 目录 -->
-    <!-- 排除主项目已有的所有 DLL（含 MyAvaloniaManagementCommon 及其传递依赖 Avalonia/Dock 等） -->
+    <!-- 构建后将插件及其私有运行时依赖部署到宿主 Controls/BiliDownloader 目录。 -->
     <PropertyGroup>
-        <!-- 主项目输出目录 -->
-        <HostProjectOutputDir>..\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
-        <!-- 插件部署目标目录 -->
+        <HostProjectOutputDir>$(MSBuildThisFileDirectory)..\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
         <PluginDeployDir>$(HostProjectOutputDir)\Controls\BiliDownloader</PluginDeployDir>
-        <!-- publish 临时输出目录 -->
-        <PluginPublishDir>$(MSBuildThisFileDirectory)obj\publish\$(Configuration)</PluginPublishDir>
-        <HostPublishDir>$(MSBuildThisFileDirectory)obj\host-publish\$(Configuration)</HostPublishDir>
-        <HostProjectPath>$(MSBuildThisFileDirectory)..\MyAvaloniaManagement\MyAvaloniaManagement.csproj</HostProjectPath>
     </PropertyGroup>
 
     <Target Name="DeployPluginToHost"
             AfterTargets="Build"
+            DependsOnTargets="ResolveReferences"
             Condition="'$(SkipPluginDeploy)' != 'true'">
-        <!-- 发布插件：获取完整运行时依赖集 -->
-        <Exec Command="dotnet publish &quot;$(MSBuildProjectFullPath)&quot; -c $(Configuration) -o &quot;$(PluginPublishDir)&quot; --no-build"
-              Condition="Exists('$(OutputPath)$(AssemblyName).dll')" />
-        <!-- 发布主项目：获取主项目已有的所有 DLL 作为排除基准（不加 nobuild 参数，确保主项目未编译时也能工作） -->
-        <Exec Command="dotnet publish &quot;$(HostProjectPath)&quot; -c $(Configuration) -o &quot;$(HostPublishDir)&quot;" />
+        <ItemGroup>
+            <!-- 保留当前调试体验；自定义加载上下文运行时只要求插件 DLL 和私有依赖。 -->
+            <BiliPluginFiles Include="$(TargetPath)" />
+            <BiliPluginFiles Include="$(TargetDir)$(AssemblyName).pdb"
+                             Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+            <BiliPluginFiles Include="$(TargetDir)$(AssemblyName).deps.json"
+                             Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
 
-        <!-- 清理旧的部署文件，然后按文件名做差集仅复制主项目不提供的文件 -->
+            <!-- 宿主已提供 Avalonia、Dock、DI 和 Common；这里只选择插件自己的 NuGet 运行时依赖。 -->
+            <BiliPluginManaged Include="@(RuntimeCopyLocalItems)"
+                               Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Flurl' Or
+                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Flurl.Http' Or
+                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Microsoft.Data.Sqlite.Core' Or
+                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'protobuf-net' Or
+                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'protobuf-net.Core' Or
+                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'QRCoder' Or
+                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'SQLitePCLRaw.bundle_e_sqlite3' Or
+                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'SQLitePCLRaw.core' Or
+                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'SQLitePCLRaw.provider.e_sqlite3'" />
+
+            <!-- 保留 SQLitePCLRaw 当前提供的全部 RID，维持既有跨平台部署能力。 -->
+            <BiliPluginNative Include="@(RuntimeTargetsCopyLocalItems)"
+                              Condition="'%(RuntimeTargetsCopyLocalItems.NuGetPackageId)' == 'SQLitePCLRaw.lib.e_sqlite3'" />
+        </ItemGroup>
+
         <RemoveDir Directories="$(PluginDeployDir)" />
         <MakeDir Directories="$(PluginDeployDir)" />
-        <Exec Command="powershell -NoProfile -Command &quot;$base = (Resolve-Path '$(PluginPublishDir)').Path.TrimEnd('\'); $pf = Get-ChildItem -Path $base -Recurse -File; $hf = Get-ChildItem -Path '$(HostPublishDir)' -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { $_.Name }; $new = $pf | Where-Object { $hf -notcontains $_.Name }; foreach ($f in $new) { $rel = $f.DirectoryName.Substring($base.Length); if ($rel.StartsWith('\')) { $rel = $rel.Substring(1) }; $d = if ($rel) { Join-Path '$(PluginDeployDir)' $rel } else { '$(PluginDeployDir)' }; if (!(Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }; Copy-Item $f.FullName -Destination $d -Force }; Write-Host ('Deployed ' + $new.Count + ' files to $(PluginDeployDir)')&quot;" />
+        <Copy SourceFiles="@(BiliPluginFiles)"
+              DestinationFolder="$(PluginDeployDir)"
+              SkipUnchangedFiles="true" />
+        <Copy SourceFiles="@(BiliPluginManaged)"
+              DestinationFiles="@(BiliPluginManaged->'$(PluginDeployDir)\%(DestinationSubPath)')"
+              SkipUnchangedFiles="true" />
+        <Copy SourceFiles="@(BiliPluginNative)"
+              DestinationFiles="@(BiliPluginNative->'$(PluginDeployDir)\%(DestinationSubPath)')"
+              SkipUnchangedFiles="true" />
     </Target>
 
 </Project>
