@@ -19,6 +19,11 @@
     <Setter Property="BorderThickness" Value="1" />
   </Style>
 
+  <Style Selector="Expander.DocumentSectionExpander">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+
   <Style Selector="Border.TaskFooter">
     <Setter Property="Padding" Value="10,8,0,0" />
     <Setter Property="BorderBrush" Value="{DynamicResource DockThemeBorderLowBrush}" />

@@ -48,8 +48,16 @@
         </Border>
 
         <Border Classes="DocumentSection">
-          <Expander Header="公开信息" IsExpanded="True">
-            <StackPanel Spacing="7" Margin="0,8,0,0">
+          <Expander IsExpanded="True" Classes="DocumentSectionExpander">
+            <Expander.Header>
+              <Grid ColumnDefinitions="*,Auto" MinHeight="32"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <TextBlock Text="公开信息" Classes="SectionTitle" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="公开可见" Classes="Caption"
+                           VerticalAlignment="Center" Margin="12,0,0,0" />
+              </Grid>
+            </Expander.Header>
+            <StackPanel Spacing="7" Margin="0,8,0,0" HorizontalAlignment="Stretch">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="标题（可留空）" Classes="Caption" />
                 <TextBlock Grid.Column="1" Text="{Binding VideoTitleCharacterCount, StringFormat='{}{0} / 200'}"
