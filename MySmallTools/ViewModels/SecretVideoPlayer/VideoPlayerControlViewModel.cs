@@ -108,6 +108,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         _player.TimeChanged += OnTimeChanged;
         _player.PositionChanged += OnPositionChanged;
         _player.LengthChanged += OnLengthChanged;
+        _player.SeekableChanged += OnSeekableChanged;
         _player.ErrorOccurred += OnErrorOccurred;
         _player.SetVolume(50);
 
@@ -219,6 +220,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     {
         CancelSurfaceRecovery();
         _mediaGeneration++;
+        IsSeekable = false;
         try
         {
             var success = await _player.LoadEncryptedVideoAsync(filePath, password);
@@ -237,12 +239,14 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
             }
             else
             {
+                IsSeekable = false;
                 StatusMessage = "媒体加载失败";
                 return false;
             }
         }
         catch (Exception ex)
         {
+            IsSeekable = false;
             StatusMessage = $"加载失败: {ex.Message}";
             return false;
         }
@@ -273,6 +277,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         _mediaGeneration++;
         _positionTimer.Stop();
         _player?.CleanupCurrentMedia();
+        IsSeekable = false;
         Position = 0;
         CurrentTime = "00:00:00";
         TotalTime = "00:00:00";
@@ -633,6 +638,13 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
                 _ => CurrentState
             };
 
+            if (e.State is PlaybackState.Playing or PlaybackState.Paused)
+            {
+                // LibVLC 在媒体刚解析完成时可能仍报告不可定位；进入可播放状态后再次读取，
+                // 作为 SeekableChanged 事件过早到达或平台未及时投递时的兜底。
+                UpdateVideoInfo();
+            }
+
             StatusMessage = e.State switch
             {
                 PlaybackState.Playing => "正在播放",
@@ -711,6 +723,18 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         });
     }
 
+    private void OnSeekableChanged(object? sender, SeekableChangedEventArgs e)
+    {
+        var mediaGeneration = Volatile.Read(ref _mediaGeneration);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed && mediaGeneration == Volatile.Read(ref _mediaGeneration))
+            {
+                IsSeekable = e.IsSeekable;
+            }
+        });
+    }
+
     private void OnErrorOccurred(object? sender, string e)
     {
         var mediaGeneration = Volatile.Read(ref _mediaGeneration);
@@ -751,6 +775,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
                     _player.TimeChanged -= OnTimeChanged;
                     _player.PositionChanged -= OnPositionChanged;
                     _player.LengthChanged -= OnLengthChanged;
+                    _player.SeekableChanged -= OnSeekableChanged;
                     _player.ErrorOccurred -= OnErrorOccurred;
                 }
 

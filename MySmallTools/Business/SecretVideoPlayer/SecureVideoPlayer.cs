@@ -22,6 +22,7 @@ public sealed class SecureVideoPlayer : IDisposable
     public event EventHandler<TimeChangedEventArgs>? TimeChanged;
     public event EventHandler<PositionChangedEventArgs>? PositionChanged;
     public event EventHandler<LengthChangedEventArgs>? LengthChanged;
+    public event EventHandler<SeekableChangedEventArgs>? SeekableChanged;
     public event EventHandler<string>? ErrorOccurred;
 
     public SecureVideoPlayer(LibVlcRuntime runtime)
@@ -43,6 +44,7 @@ public sealed class SecureVideoPlayer : IDisposable
         _player.TimeChanged += (_, e) => TimeChanged?.Invoke(this, new(e.Time));
         _player.PositionChanged += (_, e) => PositionChanged?.Invoke(this, new(e.Position));
         _player.LengthChanged += (_, e) => LengthChanged?.Invoke(this, new(e.Length));
+        _player.SeekableChanged += (_, e) => SeekableChanged?.Invoke(this, new(e.Seekable != 0));
         _player.EncounteredError += (_, _) =>
         {
             // 原生事件本身不携带托管解密异常，优先转发 MediaInput 保存的认证/读取错误。
@@ -260,3 +262,4 @@ public sealed class PlaybackStateChangedEventArgs(PlaybackState state) : EventAr
 public sealed class TimeChangedEventArgs(long time) : EventArgs { public long Time { get; } = time; }
 public sealed class PositionChangedEventArgs(float position) : EventArgs { public float Position { get; } = position; }
 public sealed class LengthChangedEventArgs(long length) : EventArgs { public long Length { get; } = length; }
+public sealed class SeekableChangedEventArgs(bool isSeekable) : EventArgs { public bool IsSeekable { get; } = isSeekable; }

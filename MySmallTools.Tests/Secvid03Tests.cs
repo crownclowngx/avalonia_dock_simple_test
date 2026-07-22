@@ -124,6 +124,7 @@ public sealed class Secvid03Tests(Secvid03Fixture fixture)
     public void SeekableStream_SequentialAndRandomReadsMatchOriginal()
     {
         using var stream = SeekableEncryptedVideoStream.Open(fixture.EncryptedPath, Secvid03Fixture.Password);
+        Assert.True(stream.CanSeek);
         Assert.Equal(fixture.OriginalBytes.LongLength, stream.Length);
 
         var probes = new (long Position, int Length)[]
