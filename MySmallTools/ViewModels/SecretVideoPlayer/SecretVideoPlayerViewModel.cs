@@ -172,22 +172,7 @@ public partial class SecretVideoPlayerViewModel : Document
             PublicTitle = Path.GetFileName(path);
             PublicDescription = "描述不可读取";
             HasPublicDescription = true;
-            StatusMessage = IsSecvid02(path)
-                ? "旧格式 SECVID02 不支持随机播放，请重新加密"
-                : $"公开信息不可读取，仍可尝试输入密码播放: {ex.Message}";
+            StatusMessage = $"公开信息不可读取，文件可能不受支持或已经损坏；仍可尝试输入密码播放: {ex.Message}";
         }
     }
-
-    private static bool IsSecvid02(string path)
-    {
-        // 只读取 8 字节魔数用于给出明确迁移提示，不尝试用新播放器兼容旧的完整内存解密格式。
-        Span<byte> magic = stackalloc byte[8];
-        try
-        {
-            using var stream = File.OpenRead(path);
-            return stream.Read(magic) == magic.Length && magic.SequenceEqual("SECVID02"u8);
-        }
-        catch { return false; }
-    }
-
 }

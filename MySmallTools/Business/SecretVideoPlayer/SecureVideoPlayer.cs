@@ -215,7 +215,6 @@ public sealed class SecureVideoPlayer : IDisposable
         };
     }
 
-    public VideoMetadata? GetDetailedMetadata() => null;
     public MediaPlayer GetMediaPlayer() => _player;
 
     public void CleanupCurrentMedia()

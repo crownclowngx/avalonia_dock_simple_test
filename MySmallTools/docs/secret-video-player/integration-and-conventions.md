@@ -35,7 +35,7 @@ Controls/SmallTools/
 4. 调用 `Core.Initialize(runtimeDirectory)`。
 5. 之后才能创建任何 `LibVLC` 或 `MediaPlayer` 实例。
 
-`LibVlcRuntime` 使用双重检查锁，允许播放器和元数据提取器在不同线程首次调用时仍只初始化一次。它是进程级 Singleton，但保持惰性：仅加载插件不会触发 LibVLC 原生初始化。
+`LibVlcRuntime` 使用双重检查锁，允许多个播放器在不同线程首次调用时仍只初始化一次。它是进程级 Singleton，但保持惰性：仅加载插件不会触发 LibVLC 原生初始化。
 
 禁止回退到以下位置：
 
@@ -228,7 +228,7 @@ flowchart TD
 
 ### 8.2 密码正确但加载失败
 
-1. 检查魔数是否为 `SECVID03`；SECVID02 必须重新加密。
+1. 确认输入是受支持的 SECVID03 容器；其他魔数和结构不完整的文件都会被受控拒绝。
 2. 区分打开阶段和播放阶段：打开阶段失败通常是结构、固定头、密码或前缀认证问题；播放到特定位置失败通常是对应密文块或 Tag 损坏。
 3. 公开信息 CRC 错误不会单独阻止密码验证；若公开信息和播放都失败，应继续检查固定头和物理文件长度。
 4. 不要手工修正固定头长度、偏移或保留位；这些字段属于认证数据。
@@ -288,20 +288,20 @@ flowchart TD
 - [ ] 关闭加密页是否取消任务、删除 partial 文件且不阻塞 UI 线程？
 - [ ] 关闭批量解密页是否清空密码、取消当前文件、保留已完成结果并清理当前 partial？
 
-## 10. 测试与设计约束映射
+## 10. 能力、代码、测试与文档映射
 
-| 设计约束 | 自动化测试位置 |
-| --- | --- |
-| 私有 LibVLC 目录和初始化 | `MySmallTools.Tests/Secvid03Tests.cs` |
-| 公开信息 Unicode、上限、原地更新范围 | `MySmallTools.Tests/Secvid03Tests.cs` |
-| 顺序读取、随机 Seek、认证失败、文件句柄释放 | `MySmallTools.Tests/Secvid03Tests.cs` |
-| 文件夹视频库扫描、错误隔离、搜索、排序和过期结果淘汰 | `MySmallTools.Tests/VideoLibraryTests.cs` |
-| 表面恢复快照、代次、快速切换和调用顺序 | `MySmallTools.Tests/VideoToolStabilityTests.cs` |
-| 加密 Document 关闭取消和 partial 清理 | `MySmallTools.Tests/VideoToolStabilityTests.cs` |
-| 解密字节往返、认证失败、取消清理、不覆盖和批次失败隔离 | `MySmallTools.Tests/VideoDecryptionTests.cs` |
-| 原生目录不参与插件扫描和解析 | `MyAvaloniaManagement.PluginTests/NativeDirectoryScanTests.cs` |
-| 托管/历史插件激活兼容、MySmallTools Scope 注册 | `MyAvaloniaManagement.PluginTests/PluginCompatibilityTests.cs` |
-| Document 与 Scope 一一对应及关闭释放 | `MyAvaloniaManagement.PluginTests/DocumentScopeManagerTests.cs` |
+| 能力或约束 | 生产入口 | 自动化证据 | 权威文档 |
+| --- | --- | --- | --- |
+| SECVID03 流式加密与事务提交 | `Secvid03Encryptor`、`VideoEncryptorService` | `Secvid03Tests.cs`、`VideoToolStabilityTests.cs` | [格式](secvid03-format.md)、[架构](architecture-design.md) |
+| 批量解密、认证、取消与不覆盖 | `Secvid03Decryptor`、`VideoDecryptionService` | `VideoDecryptionTests.cs` | [README](README.md)、[格式](secvid03-format.md) |
+| 认证随机读取、Seek 与句柄释放 | `SeekableEncryptedVideoStream` | `Secvid03Tests.cs` | [格式](secvid03-format.md)、[架构](architecture-design.md) |
+| 文件夹媒体库扫描和过期结果淘汰 | `VideoLibraryScanner`、`VideoLibraryBrowserViewModel` | `VideoLibraryTests.cs` | [README](README.md)、[架构](architecture-design.md) |
+| Dock 表面恢复顺序和用户操作优先 | `VideoSurfaceRestoreSequence`、`VideoSurfaceRecoveryPolicy` | `VideoToolStabilityTests.cs` | 本文第 4 节、[架构](architecture-design.md) |
+| 每个 Document 独立 Scope 并在关闭时释放 | `DocumentScopeManager`、各 Document Strategy | `PluginCompatibilityTests.cs`、`DocumentScopeManagerTests.cs` | 本文第 5 节、[架构](architecture-design.md) |
+| 私有 LibVLC 目录且不参与插件扫描 | `LibVlcRuntime`、宿主插件扫描器 | `Secvid03Tests.cs`、`NativeDirectoryScanTests.cs` | 本文第 1～2 节 |
+| 真实 MP4/WebM 来源和字节完整性 | 不适用，仅为测试资产 | `RealMediaAssetTests.cs` | [真实媒体测试资产](real-media-test-assets.md) |
+
+G0 只证明真实媒体文件可复现、版权边界清晰且字节完整。真实 LibVLC 解码、播放和跨块 Seek 的环境集成回归属于路线图 G3，不在此表中宣称为已完成能力。
 
 建议验证命令：
 

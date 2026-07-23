@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
 using MySmallTools.Business.SecretVideoPlayer;
-using MySmallTools.Business.SecretVideoPlayer.Helpers;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 
 namespace MySmallTools.Plugin;
@@ -20,7 +19,7 @@ public sealed class MySmallToolsPluginModule : IPluginModule
 
     public void ConfigureServices(IServiceCollection services)
     {
-        // Core.Initialize 是进程级操作，但初始化时机保持惰性：只有首次解析播放器或元数据提取器时才执行。
+        // Core.Initialize 是进程级操作，但初始化时机保持惰性：只有首次解析播放器时才执行。
         services.AddSingleton<LibVlcRuntime>();
 
         // 每个 Document Scope 拥有独立播放器及其恢复状态，绝不在不同视频标签页之间共享原生对象。
@@ -45,7 +44,5 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddScoped<IVideoDecryptionService, VideoDecryptionService>();
         services.AddScoped<VideoDecryptorViewModel>();
 
-        // 元数据读取是短操作，调用结束后不保留媒体对象。
-        services.AddTransient<MetadataExtractor>();
     }
 }

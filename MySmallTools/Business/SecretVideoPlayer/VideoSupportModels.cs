@@ -1,27 +1,6 @@
 namespace MySmallTools.Business.SecretVideoPlayer;
 
 /// <summary>
-/// 视频轨道和容器的只读描述模型。
-/// </summary>
-/// <remarks>
-/// 该模型用于把 LibVLC 的解析结果传递给界面，不参与 SECVID03 的磁盘序列化，
-/// 因而新增展示字段不会改变加密文件格式或固定头认证结果。
-/// </remarks>
-public sealed class VideoMetadata
-{
-    public long Duration { get; set; }
-    public int Width { get; set; }
-    public int Height { get; set; }
-    public double FrameRate { get; set; }
-    public int VideoTrackCount { get; set; }
-    public int AudioTrackCount { get; set; }
-    public string VideoCodec { get; set; } = string.Empty;
-    public string AudioCodec { get; set; } = string.Empty;
-    public long FileSize { get; set; }
-    public string OriginalFormat { get; set; } = string.Empty;
-}
-
-/// <summary>
 /// 流式加密过程向界面报告的进度快照。
 /// </summary>
 /// <remarks>

@@ -8,7 +8,7 @@ namespace MySmallTools.Business.SecretVideoPlayer;
 /// </summary>
 /// <remarks>
 /// 路径以当前程序集位置为基准，而不是以宿主进程工作目录为基准，因此插件移动到任意宿主目录后仍可自包含运行。
-/// 初始化过程使用双重检查锁，保证播放器和元数据提取器在不同线程同时首次调用时也只执行一次 Core.Initialize。
+/// 初始化过程使用双重检查锁，保证多个播放器在不同线程同时首次调用时也只执行一次 Core.Initialize。
 /// 本实现明确不回退到宿主根目录、PATH 或系统 VLC，避免误用版本不一致的原生库导致难以复现的崩溃。
 /// </remarks>
 public sealed class LibVlcRuntime

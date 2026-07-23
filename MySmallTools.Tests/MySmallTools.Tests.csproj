@@ -18,4 +18,9 @@
     <ProjectReference Include="..\MySmallTools\MySmallTools.csproj"
                       AdditionalProperties="SkipPluginDeploy=true" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="TestAssets\RealMedia\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

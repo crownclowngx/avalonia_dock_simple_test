@@ -12,7 +12,7 @@
 - Dock 销毁并重建原生 HWND 后，播放器恢复原位置和用户可见的播放或暂停状态。
 - 插件关闭后及时释放原生对象、文件句柄、派生密钥和明文缓存。
 
-不在当前范围内的能力包括：跨平台原生运行时、SECVID02 播放兼容、云端密钥管理、数字签名和公开元数据真实性认证。
+不在当前范围内的能力包括：跨平台原生运行时、旧容器兼容、云端密钥管理、数字签名和公开元数据真实性认证。
 
 ## 2. 分层与职责
 
@@ -200,7 +200,7 @@ flowchart LR
 | --- | --- |
 | Singleton | `LibVlcRuntime` |
 | Scoped | `SecureVideoPlayer`、`VideoSurfaceRecoveryPolicy`、`VideoPlayerControlViewModel`、`SecretVideoPlayerViewModel`、`VideoLibraryBrowserViewModel`、`SecretVideoLibraryViewModel`、`VideoEncryptorService`、`VideoEncryptorViewModel` |
-| Transient | `Secvid03Encryptor`、`MetadataExtractor`、`IVideoLibraryScanner` |
+| Transient | `Secvid03Encryptor`、`IVideoLibraryScanner` |
 
 单文件播放器、文件夹视频库和加密器策略都通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建文档。宿主的 `DocumentScopeManager` 维护 Document 与 `IServiceScope` 的一一对应关系；只有 Dock 真正确认关闭后才释放 Scope。
 
