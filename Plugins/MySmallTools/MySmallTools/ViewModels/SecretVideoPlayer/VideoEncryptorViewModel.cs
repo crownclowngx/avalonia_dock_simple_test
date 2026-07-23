@@ -1,260 +1,209 @@
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
 using MySmallTools.Business.SecretVideoPlayer.Container;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
-using MySmallTools.Models.SecretVideoPlayer;
+using MySmallTools.Business.SecretVideoPlayer.Operations;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer;
 
 /// <summary>
-/// 视频文件加密器视图模型
+/// 单文件加密 Document：持有当前表单密码，协调预检、执行、取消和界面状态。
 /// </summary>
 public partial class VideoEncryptorViewModel : Document, IDisposable
 {
-    #region Fields
-    private readonly VideoEncryptorService _encryptorService;
-    private EncryptionTask _currentTask;
-    private CancellationTokenSource? _encryptionCancellation;
+    private readonly IVideoEncryptionService _encryptorService;
+    private readonly ObservableCollection<VideoPreflightIssue> _preflightIssues = [];
+    private CancellationTokenSource? _operationCancellation;
+    private DateTime _startedAt;
+    private long _processedBytes;
+    private long _totalBytes;
+    private int _operationGeneration;
     private bool _disposed;
 
-    public VideoEncryptorViewModel(VideoEncryptorService encryptorService)
+    public VideoEncryptorViewModel(IVideoEncryptionService encryptorService)
     {
         _encryptorService = encryptorService ?? throw new ArgumentNullException(nameof(encryptorService));
-        _currentTask = new EncryptionTask();
-        
-        // 订阅任务属性变化
-        _currentTask.PropertyChanged += OnTaskPropertyChanged;
+        PreflightIssues = new ReadOnlyObservableCollection<VideoPreflightIssue>(_preflightIssues);
     }
 
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// 选中的文件路径
-    /// </summary>
-    [ObservableProperty]
-    private string _selectedFilePath = string.Empty;
-
-    partial void OnSelectedFilePathChanged(string value)
-    {
-        _currentTask.InputFilePath = value;
-        UpdateFileInfo();
-        GenerateOutputPathCommand.NotifyCanExecuteChanged();
-        StartEncryptionCommand.NotifyCanExecuteChanged();
-    }
-
-    /// <summary>
-    /// 输出文件路径
-    /// </summary>
-    [ObservableProperty]
-    private string _outputFilePath = string.Empty;
-
-    partial void OnOutputFilePathChanged(string value)
-    {
-        _currentTask.OutputFilePath = value;
-        StartEncryptionCommand.NotifyCanExecuteChanged();
-    }
-
-    /// <summary>
-    /// 加密密码
-    /// </summary>
-    [ObservableProperty]
-    private string _password = string.Empty;
-
-    partial void OnPasswordChanged(string value)
-    {
-        _currentTask.Password = value;
-        StartEncryptionCommand.NotifyCanExecuteChanged();
-    }
-
-    /// <summary>
-    /// 确认密码
-    /// </summary>
-    [ObservableProperty]
-    private string _confirmPassword = string.Empty;
-    partial void OnConfirmPasswordChanged(string value)
-    {
-        StartEncryptionCommand.NotifyCanExecuteChanged();
-    }
-
-    [ObservableProperty]
-    private string _videoTitle = string.Empty;
-
-    partial void OnVideoTitleChanged(string value)
-    {
-        // 字数按 Unicode Rune 实时重算，确保 emoji 不会因为 UTF-16 占两个 char 而被错误计为两个字符。
-        _currentTask.Title = value;
-        OnPropertyChanged(nameof(VideoTitleCharacterCount));
-        StartEncryptionCommand.NotifyCanExecuteChanged();
-    }
-
-    [ObservableProperty]
-    private string _description = string.Empty;
-
-    partial void OnDescriptionChanged(string value)
-    {
-        _currentTask.Description = value;
-        OnPropertyChanged(nameof(DescriptionCharacterCount));
-        StartEncryptionCommand.NotifyCanExecuteChanged();
-    }
-
+    public ReadOnlyObservableCollection<VideoPreflightIssue> PreflightIssues { get; }
+    public bool HasPreflightIssues => _preflightIssues.Count > 0;
+    public bool IsBusy => IsPreflighting || IsEncrypting;
     public int VideoTitleCharacterCount => EncryptedVideoContainer.CountRunes(VideoTitle);
     public int DescriptionCharacterCount => EncryptedVideoContainer.CountRunes(Description);
 
-    /// <summary>
-    /// 是否正在加密
-    /// </summary>
-    [ObservableProperty]
-    private bool _isEncrypting = false;
-    
+    [ObservableProperty] private string _selectedFilePath = string.Empty;
+    [ObservableProperty] private string _outputFilePath = string.Empty;
+    [ObservableProperty] private string _password = string.Empty;
+    [ObservableProperty] private string _confirmPassword = string.Empty;
+    [ObservableProperty] private string _videoTitle = string.Empty;
+    [ObservableProperty] private string _description = string.Empty;
+    [ObservableProperty] private bool _isPreflighting;
+    [ObservableProperty] private bool _isEncrypting;
+    [ObservableProperty] private string _statusMessage = "请选择要加密的视频文件";
+    [ObservableProperty] private double _progress;
+    [ObservableProperty] private string _progressText = "0%";
+    [ObservableProperty] private bool _showPassword;
+    [ObservableProperty] private string _estimatedTimeText = string.Empty;
+    [ObservableProperty] private string _processingSpeedText = string.Empty;
+    [ObservableProperty] private string _fileSizeText = string.Empty;
+    [ObservableProperty] private string _fileFormatText = string.Empty;
+    [ObservableProperty] private VideoTaskState _taskState = VideoTaskState.Pending;
+    [ObservableProperty] private string _failureCodeText = string.Empty;
+
+    partial void OnSelectedFilePathChanged(string value)
+    {
+        UpdateFileInfo();
+        GenerateOutputPathCommand.NotifyCanExecuteChanged();
+        NotifyCommandStates();
+    }
+
+    partial void OnOutputFilePathChanged(string value) => NotifyCommandStates();
+    partial void OnPasswordChanged(string value) => NotifyCommandStates();
+    partial void OnConfirmPasswordChanged(string value) => NotifyCommandStates();
+
+    partial void OnVideoTitleChanged(string value)
+    {
+        OnPropertyChanged(nameof(VideoTitleCharacterCount));
+        NotifyCommandStates();
+    }
+
+    partial void OnDescriptionChanged(string value)
+    {
+        OnPropertyChanged(nameof(DescriptionCharacterCount));
+        NotifyCommandStates();
+    }
+
+    partial void OnIsPreflightingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsBusy));
+        NotifyCommandStates();
+    }
+
     partial void OnIsEncryptingChanged(bool value)
     {
-        // 手动触发相关命令状态更新
-        StartEncryptionCommand.NotifyCanExecuteChanged();
-        ClearAllCommand.NotifyCanExecuteChanged();
-        CancelEncryptionCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(IsBusy));
+        NotifyCommandStates();
     }
-    
-    /// <summary>
-    /// 状态消息
-    /// </summary>
-    [ObservableProperty]
-    private string _statusMessage = "请选择要加密的视频文件";
-
-    /// <summary>
-    /// 进度值 (0-100)
-    /// </summary>
-    [ObservableProperty]
-    private double _progress = 0;
-
-    /// <summary>
-    /// 进度文本
-    /// </summary>
-    [ObservableProperty]
-    private string _progressText = "0%";
-
-    /// <summary>
-    /// 是否显示密码
-    /// </summary>
-    [ObservableProperty]
-    private bool _showPassword = false;
-
-    /// <summary>
-    /// 预估剩余时间文本
-    /// </summary>
-    [ObservableProperty]
-    private string _estimatedTimeText = string.Empty;
-
-    /// <summary>
-    /// 处理速度文本
-    /// </summary>
-    [ObservableProperty]
-    private string _processingSpeedText = string.Empty;
-
-    /// <summary>
-    /// 文件大小文本
-    /// </summary>
-    public string FileSizeText { get; private set; } = string.Empty;
-
-    /// <summary>
-    /// 文件格式文本
-    /// </summary>
-    public string FileFormatText { get; private set; } = string.Empty;
-
-    #endregion
-
-    #region Commands
 
     [RelayCommand(CanExecute = nameof(CanStartEncryption))]
     private async Task StartEncryptionAsync()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-
-        // 每次执行使用独立取消源。Document Scope 释放时只需要取消当前引用，
-        // 实际 FileStream 和 partial 文件仍由正在运行的加密调用按原有事务顺序清理。
+        var generation = Interlocked.Increment(ref _operationGeneration);
         var cancellation = new CancellationTokenSource();
-        var previousCancellation = Interlocked.Exchange(ref _encryptionCancellation, cancellation);
-        previousCancellation?.Cancel();
-        previousCancellation?.Dispose();
+        var previous = Interlocked.Exchange(ref _operationCancellation, cancellation);
+        previous?.Cancel();
+        previous?.Dispose();
 
+        var request = new VideoEncryptionRequest(
+            SelectedFilePath,
+            OutputFilePath,
+            VideoTitle,
+            Description);
+
+        ResetRunPresentation();
         try
         {
-            IsEncrypting = true;
-            _currentTask.IsRunning = true;
-            _currentTask.StartTime = DateTime.Now;
-            _currentTask.Status = "开始加密...";
-            
-            StatusMessage = "正在加密视频文件，请稍候...";
+            TaskState = VideoTaskState.Preflighting;
+            IsPreflighting = true;
+            StatusMessage = "正在检查输入、输出目录和磁盘空间...";
+            var preflight = await _encryptorService
+                .PreflightAsync(request, cancellation.Token);
 
-            // 执行加密
-            var progress = new Progress<EncryptionProgress>(OnEncryptionProgress);
-            await _encryptorService.EncryptVideoWithProgressAsync(
-                _currentTask,
-                progress,
-                cancellation.Token);
+            if (!IsCurrent(generation))
+                return;
 
-            if (_disposed)
+            ApplyPreflight(preflight);
+            var blocker = preflight.Issues.FirstOrDefault(issue =>
+                issue.Severity == PreflightSeverity.Blocking);
+            if (blocker is not null)
             {
+                TaskState = VideoTaskState.Failed;
+                FailureCodeText = blocker.Code.ToString();
+                StatusMessage = $"{blocker.Message} {blocker.SuggestedAction}";
                 return;
             }
 
-            _currentTask.IsCompleted = true;
-            _currentTask.IsRunning = false;
-            _currentTask.EndTime = DateTime.Now;
-            _currentTask.Progress = 100;
-            _currentTask.Status = "加密完成";
-            
+            TaskState = VideoTaskState.Ready;
+            IsPreflighting = false;
+            IsEncrypting = true;
+            _startedAt = DateTime.Now;
+            _totalBytes = 0;
+            StatusMessage = preflight.Issues.Count > 0
+                ? "预检通过（存在警告），开始加密..."
+                : "预检通过，开始加密...";
+
+            var progress = new Progress<VideoTaskProgress>(value =>
+            {
+                if (IsCurrent(generation))
+                    ApplyProgress(value);
+            });
+            await _encryptorService.EncryptAsync(
+                request,
+                Password,
+                progress,
+                cancellation.Token);
+
+            if (!IsCurrent(generation))
+                return;
+
+            TaskState = VideoTaskState.Succeeded;
+            Progress = 100;
+            ProgressText = "100%";
             StatusMessage = $"加密完成！输出文件: {OutputFilePath}";
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
-            // 关闭 Document 是正常取消路径。Scope 已经释放时不再更新任何绑定属性，
-            // 避免已从视觉树移除的对象继续触发命令和界面通知。
-            if (!_disposed)
+            if (IsCurrent(generation))
             {
-                StatusMessage = "加密已取消";
+                TaskState = VideoTaskState.Cancelled;
+                FailureCodeText = VideoTaskFailureCode.Cancelled.ToString();
+                StatusMessage = "加密已取消，未完成的临时文件已进入清理流程。";
             }
         }
-        catch (Exception ex)
+        catch (VideoTaskException ex)
         {
-            if (_disposed)
+            if (IsCurrent(generation))
             {
-                return;
+                TaskState = VideoTaskState.Failed;
+                FailureCodeText = ex.FailureCode.ToString();
+                StatusMessage = $"{ex.Message}（错误代码：{ex.FailureCode}）";
             }
-
-            _currentTask.IsRunning = false;
-            _currentTask.ErrorMessage = ex.Message;
-            _currentTask.Status = "加密失败";
-            StatusMessage = $"加密失败: {ex.Message}";
+        }
+        catch
+        {
+            if (IsCurrent(generation))
+            {
+                TaskState = VideoTaskState.Failed;
+                FailureCodeText = VideoTaskFailureCode.Unknown.ToString();
+                StatusMessage = "加密失败：发生未预期错误，请检查输入和输出位置后重试。";
+            }
         }
         finally
         {
-            Interlocked.CompareExchange(ref _encryptionCancellation, null, cancellation);
+            Interlocked.CompareExchange(ref _operationCancellation, null, cancellation);
             cancellation.Dispose();
-            if (!_disposed)
+            if (IsCurrent(generation))
             {
+                IsPreflighting = false;
                 IsEncrypting = false;
             }
         }
     }
 
-    private bool CanStartEncryption()
-    {
-        // UI 不通过截断输入来“修正”超限文本，避免用户无感丢失描述；只有全部约束满足时才允许开始。
-        return !_disposed &&
-               !IsEncrypting &&
-               !string.IsNullOrEmpty(SelectedFilePath) &&
-               !string.IsNullOrEmpty(OutputFilePath) &&
-               !string.IsNullOrEmpty(Password) &&
-               Password == ConfirmPassword &&
-               Password.Length >= 6 &&
-               VideoTitleCharacterCount <= EncryptedVideoContainer.MaxTitleRunes &&
-               DescriptionCharacterCount <= EncryptedVideoContainer.MaxDescriptionRunes;
-    }
-    
+    private bool CanStartEncryption() =>
+        !_disposed &&
+        !IsBusy &&
+        !string.IsNullOrWhiteSpace(SelectedFilePath) &&
+        !string.IsNullOrWhiteSpace(OutputFilePath) &&
+        !string.IsNullOrEmpty(Password) &&
+        Password == ConfirmPassword &&
+        Password.Length >= 6 &&
+        VideoTitleCharacterCount <= EncryptedVideoContainer.MaxTitleRunes &&
+        DescriptionCharacterCount <= EncryptedVideoContainer.MaxDescriptionRunes;
 
     [RelayCommand(CanExecute = nameof(CanClear))]
     private void ClearAll()
@@ -265,59 +214,46 @@ public partial class VideoEncryptorViewModel : Document, IDisposable
         ConfirmPassword = string.Empty;
         VideoTitle = string.Empty;
         Description = string.Empty;
-        Progress = 0;
-        ProgressText = "0%";
-        StatusMessage = "请选择要加密的视频文件";
-        EstimatedTimeText = string.Empty;
-        ProcessingSpeedText = string.Empty;
         FileSizeText = string.Empty;
         FileFormatText = string.Empty;
-        
-        // 旧任务在替换前必须解除订阅；否则它被异步进度对象短暂持有时仍会更新新 Document。
-        _currentTask.PropertyChanged -= OnTaskPropertyChanged;
-        _currentTask = new EncryptionTask();
-        _currentTask.PropertyChanged += OnTaskPropertyChanged;
+        ResetRunPresentation();
+        TaskState = VideoTaskState.Pending;
+        StatusMessage = "请选择要加密的视频文件";
     }
 
-    private bool CanClear() => !IsEncrypting;
+    private bool CanClear() => !_disposed && !IsBusy;
 
     [RelayCommand]
-    private void TogglePasswordVisibility()
-    {
-        ShowPassword = !ShowPassword;
-    }
+    private void TogglePasswordVisibility() => ShowPassword = !ShowPassword;
 
     [RelayCommand(CanExecute = nameof(CanCancelEncryption))]
     private void CancelEncryption()
     {
         try
         {
-            Volatile.Read(ref _encryptionCancellation)?.Cancel();
+            Volatile.Read(ref _operationCancellation)?.Cancel();
         }
         catch (ObjectDisposedException)
         {
-            // 任务可能恰好在点击时完成；此时取消已没有工作需要执行。
+            // 任务恰好结束时无需再次处理。
         }
     }
 
-    private bool CanCancelEncryption() => !_disposed && IsEncrypting;
+    private bool CanCancelEncryption() => !_disposed && IsBusy;
 
     [RelayCommand(CanExecute = nameof(CanGenerateOutputPath))]
     private void GenerateOutputPath()
     {
-        if (string.IsNullOrEmpty(SelectedFilePath)) return;
+        if (string.IsNullOrEmpty(SelectedFilePath))
+            return;
 
         var directory = Path.GetDirectoryName(SelectedFilePath);
-        var fileNameWithoutExt = Path.GetFileNameWithoutExtension(SelectedFilePath);
-        // 新文件统一使用 .secvid，原始扩展名已经写入不可变固定头，不再依赖外部文件扩展名判断格式。
-        OutputFilePath = Path.Combine(directory!, $"{fileNameWithoutExt}_encrypted.secvid");
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(SelectedFilePath);
+        if (!string.IsNullOrEmpty(directory))
+            OutputFilePath = Path.Combine(directory, $"{fileNameWithoutExtension}_encrypted.secvid");
     }
 
-    private bool CanGenerateOutputPath() => !string.IsNullOrEmpty(SelectedFilePath);
-
-    #endregion
-
-    #region Private Methods
+    private bool CanGenerateOutputPath() => !_disposed && !IsBusy && !string.IsNullOrEmpty(SelectedFilePath);
 
     private void UpdateFileInfo()
     {
@@ -331,99 +267,84 @@ public partial class VideoEncryptorViewModel : Document, IDisposable
         try
         {
             var fileInfo = new FileInfo(SelectedFilePath);
-            var sizeInMB = fileInfo.Length / (1024.0 * 1024.0);
-            FileSizeText = $"文件大小: {sizeInMB:F2} MB";
-            
-            var extension = Path.GetExtension(SelectedFilePath).ToLowerInvariant();
-            FileFormatText = $"文件格式: {extension}";
-            
-            _currentTask.TotalBytes = fileInfo.Length;
-            
-            // 自动生成输出路径
-            GenerateOutputPathCommand.Execute(null);
-            
+            FileSizeText = $"文件大小: {fileInfo.Length / (1024d * 1024):F2} MB";
+            FileFormatText = $"文件格式: {Path.GetExtension(SelectedFilePath).ToLowerInvariant()}";
+            GenerateOutputPath();
             StatusMessage = "文件已选择，请输入加密密码";
         }
-        catch (Exception ex)
+        catch
         {
-            StatusMessage = $"读取文件信息失败: {ex.Message}";
+            StatusMessage = "读取文件信息失败，请检查文件是否仍然可用。";
         }
     }
 
-    private void OnTaskPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void ApplyPreflight(VideoPreflightResult result)
     {
-        if (_disposed || !ReferenceEquals(sender, _currentTask))
-        {
-            return;
-        }
+        _preflightIssues.Clear();
+        foreach (var issue in result.Issues)
+            _preflightIssues.Add(issue);
+        OnPropertyChanged(nameof(HasPreflightIssues));
+    }
 
-        switch (e.PropertyName)
-        {
-            case nameof(EncryptionTask.Progress):
-                Progress = _currentTask.Progress;
-                ProgressText = $"{_currentTask.Progress:F1}%";
-                break;
-            case nameof(EncryptionTask.Status):
-                StatusMessage = _currentTask.Status;
-                break;
-            case nameof(EncryptionTask.ProcessedBytes):
-                UpdateSpeedAndTimeInfo();
-                break;
-        }
+    private void ApplyProgress(VideoTaskProgress value)
+    {
+        TaskState = value.State;
+        _processedBytes = value.ProcessedBytes;
+        _totalBytes = value.TotalBytes;
+        Progress = value.Percentage;
+        ProgressText = $"{value.Percentage:F1}%";
+        StatusMessage = value.Message;
+        FailureCodeText = value.FailureCode?.ToString() ?? string.Empty;
+        UpdateSpeedAndTimeInfo();
     }
 
     private void UpdateSpeedAndTimeInfo()
     {
-        var speed = _currentTask.ProcessingSpeed;
-        if (speed > 0)
-        {
-            var speedMB = speed / (1024 * 1024);
-            ProcessingSpeedText = $"处理速度: {speedMB:F2} MB/s";
-            
-            var remaining = _currentTask.EstimatedTimeRemaining;
-            if (remaining.TotalSeconds > 0)
-            {
-                EstimatedTimeText = $"预计剩余: {remaining:mm\\:ss}";
-            }
-        }
-    }
-
-    private void OnEncryptionProgress(EncryptionProgress progress)
-    {
-        if (_disposed)
-        {
+        var elapsed = DateTime.Now - _startedAt;
+        if (elapsed.TotalSeconds <= 0 || _processedBytes <= 0)
             return;
-        }
 
-        Progress = progress.Percentage;
-        ProgressText = $"{progress.Percentage:F1}%";
-        StatusMessage = progress.Status;
-        
-        _currentTask.ProcessedBytes = progress.ProcessedBytes;
-        _currentTask.Progress = progress.Percentage;
-        
-        UpdateSpeedAndTimeInfo();
+        var speed = _processedBytes / elapsed.TotalSeconds;
+        ProcessingSpeedText = $"处理速度: {speed / (1024 * 1024):F2} MB/s";
+        if (_totalBytes > _processedBytes && speed > 0)
+        {
+            var remaining = TimeSpan.FromSeconds((_totalBytes - _processedBytes) / speed);
+            EstimatedTimeText = $"预计剩余: {remaining:mm\\:ss}";
+        }
     }
 
-    #endregion
+    private void ResetRunPresentation()
+    {
+        Progress = 0;
+        ProgressText = "0%";
+        ProcessingSpeedText = string.Empty;
+        EstimatedTimeText = string.Empty;
+        FailureCodeText = string.Empty;
+        _preflightIssues.Clear();
+        OnPropertyChanged(nameof(HasPreflightIssues));
+    }
 
-    #region IDisposable
+    private bool IsCurrent(int generation) =>
+        !_disposed && generation == Volatile.Read(ref _operationGeneration);
+
+    private void NotifyCommandStates()
+    {
+        StartEncryptionCommand.NotifyCanExecuteChanged();
+        ClearAllCommand.NotifyCanExecuteChanged();
+        CancelEncryptionCommand.NotifyCanExecuteChanged();
+        GenerateOutputPathCommand.NotifyCanExecuteChanged();
+    }
 
     public void Dispose()
     {
         if (_disposed)
-        {
             return;
-        }
 
         _disposed = true;
-        _currentTask.PropertyChanged -= OnTaskPropertyChanged;
-
-        // 不在 UI 线程同步等待加密 Task，否则异步清理若需要返回 UI 上下文可能造成死锁。
-        // Cancel 会使 Secvid03Encryptor 退出循环并删除 partial 文件，取消源由任务 finally 负责释放。
-        Interlocked.Exchange(ref _encryptionCancellation, null)?.Cancel();
+        Interlocked.Increment(ref _operationGeneration);
+        Password = string.Empty;
+        ConfirmPassword = string.Empty;
+        Interlocked.Exchange(ref _operationCancellation, null)?.Cancel();
         GC.SuppressFinalize(this);
     }
-
-    #endregion
 }

@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using MySmallTools.Business.SecretVideoPlayer.Container;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
+using MySmallTools.Business.SecretVideoPlayer.Operations;
 using Xunit;
 
 namespace MySmallTools.Tests;
@@ -215,13 +216,13 @@ public sealed class Secvid03SecurityTests(Secvid03Fixture fixture)
         Assert.Throws<InvalidDataException>(() =>
             SeekableEncryptedVideoStream.Open(path, string.Empty));
 
-        var error = await Assert.ThrowsAsync<VideoDecryptionException>(() =>
+        var error = await Assert.ThrowsAsync<VideoTaskException>(() =>
             new Secvid03Decryptor().DecryptAsync(
                 path,
                 outputPath,
                 Secvid03Fixture.Password));
 
-        Assert.Equal(VideoDecryptionFailureCode.InvalidContainer, error.FailureCode);
+        Assert.Equal(VideoTaskFailureCode.InvalidFormat, error.FailureCode);
         Assert.False(Directory.Exists(outputDirectory));
         Assert.False(File.Exists(outputPath));
         Assert.Empty(Directory.GetFiles(fixture.DirectoryPath, "*.partial-*"));

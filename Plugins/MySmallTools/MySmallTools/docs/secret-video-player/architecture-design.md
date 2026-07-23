@@ -16,18 +16,19 @@
 
 ## 2. 分层与职责
 
-业务代码按能力而不是按泛化的 Service/Helper 类型分为五个子域：
+业务代码按能力而不是按泛化的 Service/Helper 类型分为六个窄职责区域：
 
 ```text
 Business/SecretVideoPlayer/
 ├─ Container/   SECVID03 布局、密码学、公开区和认证随机读取
+├─ Operations/  加解密共用状态、预检、错误和输出事务
 ├─ Encryption/  单文件流式加密与任务进度
 ├─ Decryption/  单文件/批量解密、失败模型和输出路径
 ├─ Playback/    LibVLC 运行时、播放器、MediaInput 和表面恢复
 └─ Library/     文件夹扫描契约和实现
 ```
 
-依赖方向固定为 `Container ← Encryption/Decryption/Playback/Library`。Container 不依赖其他四个业务子域，ViewModel 和插件 Composition Root 可以组合各子域；子域之间不得形成环。
+依赖方向固定为 `Container ← Encryption/Decryption/Playback/Library`，`Operations ← Encryption/Decryption`。Container 和 Operations 不反向依赖具体用例，ViewModel 和插件 Composition Root 组合这些职责；子域之间不得形成环。
 
 ```mermaid
 flowchart TB
@@ -49,6 +50,8 @@ flowchart TB
         Player["SecureVideoPlayer"]
         EncryptService["VideoEncryptorService"]
         Encryptor["Secvid03Encryptor"]
+        Preflight["StoragePreflightProbe"]
+        Transaction["OutputFileTransaction"]
         Stream["SeekableEncryptedVideoStream"]
         Input["SeekableStreamMediaInput"]
         Runtime["LibVlcRuntime"]
@@ -72,7 +75,9 @@ flowchart TB
     Player --> Runtime
     PlayerVM <--> Surface
     EncryptDoc --> EncryptService
+    EncryptService --> Preflight
     EncryptService --> Encryptor
+    Encryptor --> Transaction
 ```
 
 各层边界如下：
@@ -87,8 +92,9 @@ flowchart TB
 | 播放服务 | `Playback.SecureVideoPlayer` | 管理 `LibVLC`、`MediaPlayer`、`Media`、`MediaInput` 的所有权与释放顺序 |
 | 流适配 | `Playback.SeekableStreamMediaInput` | 把 .NET 可 Seek 流适配为 LibVLC `MediaInput`，串行化回调并保留底层异常 |
 | 容器读取 | `Container.SeekableEncryptedVideoStream` | 验证固定头，按需认证和解密目标块，维护四块 LRU 明文缓存 |
-| 加密 | `Encryption.VideoEncryptorService`、`Encryption.Secvid03Encryptor` | 任务状态、进度、目录准备，以及 SECVID03 的事务式流式写入 |
-| 解密 | `Decryption.VideoDecryptionService`、`Decryption.Secvid03Decryptor` | 批次编排、失败隔离、逐块认证导出和事务提交 |
+| 操作基础设施 | `Operations.StoragePreflightProbe`、`Operations.OutputFileTransaction` | 统一任务/错误契约、目录和空间检查，以及 partial 的不覆盖提交/回滚 |
+| 加密 | `Encryption.IVideoEncryptionService`、`Encryption.ISecvid03Encryptor` | 单文件预检、进度与 SECVID03 流式加密；密码只作为调用参数 |
+| 解密 | `Decryption.IVideoDecryptionService`、`Decryption.ISecvid03Decryptor` | 候选/批次预检、失败隔离、逐块认证导出和顺序执行 |
 | 格式与公开区 | `Container.Secvid03Format`、`Container.Secvid03Cryptography`、`Container.EncryptedVideoContainer` | 集中布局、严格解析、nonce/AAD/认证和公开信息读写 |
 | 原生运行时 | `Playback.LibVlcRuntime` | 从插件私有目录惰性、线程安全地完成一次进程级 `Core.Initialize` |
 
@@ -96,20 +102,19 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-    Start["校验输入、输出和密码"] --> Temp["创建同目录唯一 .partial-* 文件"]
-    Temp --> Prefix["检测并读取原视频最小前缀"]
+    Start["预检输入、冲突、写权限和空间"] --> Prefix["检测并读取原视频最小前缀"]
     Prefix --> Header["生成 salt、fileId、noncePrefix 和固定头"]
     Header --> Kdf["PBKDF2-SHA256 派生 256 位密钥"]
     Kdf --> HeaderAuth["认证固定头与原视频前缀"]
-    HeaderAuth --> Public["写固定头、64 KiB 公开区和原视频前缀"]
+    HeaderAuth --> Temp["事务创建同目录唯一 .partial-*"]
+    Temp --> Public["写固定头、64 KiB 公开区和原视频前缀"]
     Public --> Loop{"还有视频主体数据？"}
     Loop -->|是| Read["精确读取最多 1 MiB"]
     Read --> Gcm["AES-256-GCM 加密并生成 16 字节标签"]
     Gcm --> Write["写密文和标签，报告进度"]
     Write --> Loop
-    Loop -->|否| Flush["Flush 输出并清零密钥/缓冲区"]
-    Flush --> Commit["File.Move 覆盖目标文件"]
-    Start -.->|异常或取消| Rollback["删除 .partial-* 文件"]
+    Loop -->|否| Flush["FlushAsync + 落盘刷新 + 关闭"]
+    Flush --> Commit["File.Move overwrite:false"]
     Temp -.->|异常或取消| Rollback
     Prefix -.->|异常或取消| Rollback
     Header -.->|异常或取消| Rollback
@@ -119,11 +124,11 @@ flowchart TD
     Loop -.->|异常或取消| Rollback
 ```
 
-加密器只保留一个明文块和一个密文块缓冲区。输入流允许其他读取者，但输出临时文件使用独占写入；输入文件在加密过程中被截断时，精确读取会抛出异常，不会为不完整块生成标签。
+加密器只保留一个明文块和一个密文块缓冲区。输入流允许其他读取者，但输出事务使用独占写入；输入文件在加密过程中被截断时，精确读取会抛出分类错误，不会为不完整块生成标签。预检不替代提交竞争检查，正式目标永远不会被覆盖。
 
 ### 3.1 批量解密与明文提交
 
-批量解密被分为三个窄职责：`VideoDecryptorViewModel` 管理队列和取消源，`IVideoDecryptionService` 顺序编排并隔离单项失败，`ISecvid03Decryptor` 只处理一个容器。输出命名由独立的 `DecryptionOutputPathResolver` 净化公开文件名、使用固定头扩展名并避让磁盘及批次内冲突。
+批量解密被分为四个窄职责：`VideoDecryptorViewModel` 管理队列、预检展示和取消源，`IVideoDecryptionService` 重新检查候选、预检批次并隔离单项失败，`ISecvid03Decryptor` 只处理一个容器，`IOutputFileTransaction` 负责明文 partial 的提交与回滚。输出命名由独立的 `DecryptionOutputPathResolver` 净化公开文件名、使用固定头扩展名并避让磁盘及批次内冲突。
 
 ```mermaid
 sequenceDiagram
@@ -213,7 +218,8 @@ flowchart LR
 | 生命周期 | 服务 |
 | --- | --- |
 | Singleton | `LibVlcRuntime` |
-| Scoped | `SecureVideoPlayer`、`VideoSurfaceRecoveryPolicy`、`VideoPlayerControlViewModel`、`SecretVideoPlayerViewModel`、`VideoLibraryBrowserViewModel`、`SecretVideoLibraryViewModel`、`VideoEncryptorService`、`VideoEncryptorViewModel` |
+| Scoped | `SecureVideoPlayer`、`VideoSurfaceRecoveryPolicy`、播放器/媒体库 ViewModel、`IVideoEncryptionService`、`IVideoDecryptionService` 及两个任务 Document |
+| Transient | `IStoragePreflightProbe`、`IOutputFileTransactionFactory`、`ISecvid03Encryptor`、`ISecvid03Decryptor`、输出路径解析器 |
 | Transient | `Secvid03Encryptor`、`IVideoLibraryScanner` |
 
 单文件播放器、文件夹视频库和加密器策略都通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建文档。宿主的 `DocumentScopeManager` 维护 Document 与 `IServiceScope` 的一一对应关系；只有 Dock 真正确认关闭后才释放 Scope。

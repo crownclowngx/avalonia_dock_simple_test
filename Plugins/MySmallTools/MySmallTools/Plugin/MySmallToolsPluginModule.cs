@@ -3,6 +3,7 @@ using MyAvaloniaManagementCommon.Plugin;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
 using MySmallTools.Business.SecretVideoPlayer.Library;
+using MySmallTools.Business.SecretVideoPlayer.Operations;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 
@@ -36,9 +37,13 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddScoped<VideoLibraryBrowserViewModel>();
         services.AddScoped<SecretVideoLibraryViewModel>();
 
-        // 加密任务状态属于单个 Document；底层加密器无跨任务可变状态，按需创建即可。
-        services.AddTransient<Secvid03Encryptor>();
-        services.AddScoped<VideoEncryptorService>();
+        // 存储预检和输出事务无跨调用状态；加密/解密共享相同的不覆盖提交语义。
+        services.AddTransient<IStoragePreflightProbe, StoragePreflightProbe>();
+        services.AddTransient<IOutputFileTransactionFactory, OutputFileTransactionFactory>();
+
+        // 加密任务状态属于单个 Document；密码只在 ViewModel 调用栈中传递。
+        services.AddTransient<ISecvid03Encryptor, Secvid03Encryptor>();
+        services.AddScoped<IVideoEncryptionService, VideoEncryptorService>();
         services.AddScoped<VideoEncryptorViewModel>();
 
         // 单文件解密器无共享状态；批处理编排和队列则跟随各自 Document Scope。

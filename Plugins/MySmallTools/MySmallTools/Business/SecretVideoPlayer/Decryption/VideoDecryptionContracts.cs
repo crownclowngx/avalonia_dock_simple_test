@@ -1,3 +1,5 @@
+using MySmallTools.Business.SecretVideoPlayer.Operations;
+
 namespace MySmallTools.Business.SecretVideoPlayer.Decryption;
 
 public interface ISecvid03Decryptor
@@ -6,7 +8,7 @@ public interface ISecvid03Decryptor
         string inputPath,
         string outputPath,
         string password,
-        IProgress<VideoDecryptionProgress>? progress = null,
+        IProgress<VideoTaskProgress>? progress = null,
         CancellationToken cancellationToken = default);
 }
 
@@ -14,6 +16,11 @@ public interface IVideoDecryptionService
 {
     Task<IReadOnlyList<DecryptionCandidate>> InspectAsync(
         IReadOnlyList<string> inputPaths,
+        CancellationToken cancellationToken = default);
+
+    Task<BatchDecryptionPreflightResult> PreflightAsync(
+        IReadOnlyList<DecryptionCandidate> candidates,
+        string outputDirectory,
         CancellationToken cancellationToken = default);
 
     Task<BatchDecryptionResult> DecryptBatchAsync(

@@ -165,10 +165,21 @@ flowchart TD
 - 策略只申请某种 Document，不保存 `IServiceScope`；Scope 的真实释放时机由 Dock 和宿主决定。
 - `VideoPlayerControlViewModel.Dispose` 只使回调失效、取消恢复、退订事件和停止 UI 定时器，不再次 `Dispose` 注入的 `SecureVideoPlayer`。
 - `SecureVideoPlayer.Dispose` 是其独占原生对象和媒体链路的最终所有者。
-- `VideoEncryptorViewModel.Dispose` 取消当前加密，不在 UI 线程同步等待任务，避免异步清理返回 UI 上下文时死锁。
+- `VideoEncryptorViewModel.Dispose` 先使操作代次失效、清空密码，再取消当前预检或加密；不在 UI 线程同步等待任务，避免异步清理返回 UI 上下文时死锁。
 - 取消源由正在运行任务的 `finally` 释放；Document 释放路径只交换引用并调用 `Cancel`，避免取消源与任务竞争释放。
-- `VideoDecryptorViewModel.Dispose` 遵循相同规则：只取消当前批次并清空密码。当前单文件调用负责删除 partial，已经正式提交的明文文件不回滚。
-- 解密队列项只保存候选公开信息、路径和执行状态，绝不复制或持有公共密码。
+- `VideoDecryptorViewModel.Dispose` 遵循相同规则：使迟到回调失效、取消候选检查/批次并清空密码。当前输出事务负责删除 partial，已经正式提交的明文文件不回滚。
+- 解密队列项只保存候选公开信息、路径、稳定失败代码和执行状态，绝不复制或持有公共密码。
+- `IOutputFileTransaction` 是 partial 的唯一所有者；调用方不得在事务之外再次移动或删除同一 partial。
+- 预检只能提供操作前证据，不能替代最终提交时的 `overwrite:false`。任何目标竞争都必须返回 `OutputConflict`。
+
+### 5.1 加解密预检约定
+
+- 加密输出目录可以按现有产品行为创建；批量解密输出目录必须由用户预先选择且已经存在。
+- 可写检查必须实际创建、关闭和删除唯一探针，不能只依赖访问控制属性推断。
+- 已知可用空间小于预计输出时为阻止项；无法可靠获取网络目录空间时为警告。
+- 加密目标已存在时阻止，不自动重命名；解密输出继续通过安全名称解析器分配数字后缀。
+- 执行入口必须重新预检关键条件。解密密码认证不属于普通预检，避免重复 PBKDF2，但必须早于明文事务创建。
+- ViewModel 只显示稳定失败代码和安全消息，不直接显示未知异常的原始 `Message`。
 
 ## 6. UI 与命名约定
 
@@ -191,7 +202,7 @@ flowchart TD
 - 防止同一 View 实例重复打开选择器；加密页面使用 `_isFilePickerOpen`。
 - 打开对话框前保存发起请求的 ViewModel。
 - 对话框返回后只在当前 `DataContext` 仍为发起者时回写，防止 Dock 切换后污染另一文档。
-- 加密进行中不允许重新选择输入文件。
+- 预检或加密进行中不允许重新选择输入文件。
 - 选择结果必须是本地文件；错误写回当前文档的状态信息。
 
 播放器页面目前同样直接从 View 打开 `.secvid` 选择器；后续调整此处理器时，不得重新引入 ViewModel 事件订阅模式。
@@ -293,8 +304,9 @@ flowchart TD
 | 能力或约束 | 生产入口 | 自动化证据 | 权威文档 |
 | --- | --- | --- | --- |
 | SECVID03 流式加密与事务提交 | `Secvid03Encryptor`、`VideoEncryptorService` | `Secvid03Tests.cs`、`VideoToolStabilityTests.cs` | [格式](secvid03-format.md)、[架构](architecture-design.md) |
+| 加解密预检、统一失败代码与 partial 事务 | `StoragePreflightProbe`、`OutputFileTransaction`、两个应用服务 | `G2ReliabilityTests.cs` | [G2 可靠性闭环](G2-ENCRYPTION-DECRYPTION-PREFLIGHT-ERROR-RESOURCE-CLOSURE.md) |
 | SECVID03 格式冻结与安全边界 | `Secvid03Format`、`Secvid03Cryptography` | `Secvid03SecurityTests.cs`、`Secvid03GoldenVectorTests.cs` | [G1 安全验证](G1-SECVID03-FORMAT-SECURITY-VALIDATION.md) |
-| 批量解密、认证、取消与不覆盖 | `Secvid03Decryptor`、`VideoDecryptionService` | `VideoDecryptionTests.cs` | [README](README.md)、[格式](secvid03-format.md) |
+| 批量解密、认证、取消与不覆盖 | `Secvid03Decryptor`、`VideoDecryptionService` | `VideoDecryptionTests.cs`、`G2ReliabilityTests.cs` | [README](README.md)、[G2](G2-ENCRYPTION-DECRYPTION-PREFLIGHT-ERROR-RESOURCE-CLOSURE.md) |
 | 认证随机读取、Seek 与句柄释放 | `SeekableEncryptedVideoStream` | `Secvid03Tests.cs` | [格式](secvid03-format.md)、[架构](architecture-design.md) |
 | 文件夹媒体库扫描和过期结果淘汰 | `VideoLibraryScanner`、`VideoLibraryBrowserViewModel` | `VideoLibraryTests.cs` | [README](README.md)、[架构](architecture-design.md) |
 | Dock 表面恢复顺序和用户操作优先 | `VideoSurfaceRestoreSequence`、`VideoSurfaceRecoveryPolicy` | `VideoToolStabilityTests.cs` | 本文第 4 节、[架构](architecture-design.md) |

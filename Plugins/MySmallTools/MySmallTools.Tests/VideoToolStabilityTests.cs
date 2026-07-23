@@ -265,7 +265,7 @@ public sealed class VideoToolStabilityTests
 
             Assert.False(viewModel.IsEncrypting);
             Assert.False(viewModel.CancelEncryptionCommand.CanExecute(null));
-            Assert.Equal("加密已取消", viewModel.StatusMessage);
+            Assert.Contains("加密已取消", viewModel.StatusMessage);
             Assert.False(File.Exists(outputPath));
             Assert.Empty(Directory.GetFiles(temporaryDirectory, "*.partial-*"));
         }

@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using MySmallTools.Business.SecretVideoPlayer.Container;
+using MySmallTools.Business.SecretVideoPlayer.Operations;
 
 namespace MySmallTools.Business.SecretVideoPlayer.Decryption;
 
@@ -8,11 +9,23 @@ namespace MySmallTools.Business.SecretVideoPlayer.Decryption;
 /// </summary>
 public sealed class Secvid03Decryptor : ISecvid03Decryptor
 {
+    private readonly IOutputFileTransactionFactory _transactionFactory;
+
+    public Secvid03Decryptor()
+        : this(new OutputFileTransactionFactory())
+    {
+    }
+
+    public Secvid03Decryptor(IOutputFileTransactionFactory transactionFactory)
+    {
+        _transactionFactory = transactionFactory ?? throw new ArgumentNullException(nameof(transactionFactory));
+    }
+
     public async Task DecryptAsync(
         string inputPath,
         string outputPath,
         string password,
-        IProgress<VideoDecryptionProgress>? progress = null,
+        IProgress<VideoTaskProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
@@ -22,16 +35,31 @@ public sealed class Secvid03Decryptor : ISecvid03Decryptor
         var fullInputPath = Path.GetFullPath(inputPath);
         var fullOutputPath = Path.GetFullPath(outputPath);
         if (fullInputPath.Equals(fullOutputPath, StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("输入文件和输出文件不能相同。", nameof(outputPath));
+            throw new VideoTaskException(
+                VideoTaskFailureCode.InputOutputConflict,
+                "输入文件和输出文件不能相同。");
         if (File.Exists(fullOutputPath))
-            throw new VideoDecryptionException(VideoDecryptionFailureCode.OutputConflict, "输出文件已存在。");
+            throw new VideoTaskException(
+                VideoTaskFailureCode.OutputConflict,
+                "输出文件已存在，不会覆盖现有文件。");
 
-        var temporaryPath = fullOutputPath + ".partial-" + Guid.NewGuid().ToString("N");
+        IOutputFileTransaction? transaction = null;
+        Exception? primaryError = null;
         try
         {
             await using var input = OpenInput(fullInputPath);
             var headerBytes = new byte[Secvid03Format.FixedHeaderSize];
-            await ReadExactlyAsync(input, headerBytes, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await ReadExactlyAsync(input, headerBytes, cancellationToken).ConfigureAwait(false);
+            }
+            catch (EndOfStreamException ex)
+            {
+                throw new VideoTaskException(
+                    VideoTaskFailureCode.InvalidFormat,
+                    "文件不是完整的 SECVID03。",
+                    ex);
+            }
 
             Secvid03Header header;
             try
@@ -40,15 +68,25 @@ public sealed class Secvid03Decryptor : ISecvid03Decryptor
             }
             catch (InvalidDataException ex)
             {
-                throw new VideoDecryptionException(
-                    VideoDecryptionFailureCode.InvalidContainer,
+                throw new VideoTaskException(
+                    VideoTaskFailureCode.InvalidFormat,
                     "文件不是有效的 SECVID03。",
                     ex);
             }
 
             var originalHeader = new byte[header.OriginalHeaderLength];
             input.Position = Secvid03Format.OriginalHeaderOffset;
-            await ReadExactlyAsync(input, originalHeader, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await ReadExactlyAsync(input, originalHeader, cancellationToken).ConfigureAwait(false);
+            }
+            catch (EndOfStreamException ex)
+            {
+                throw new VideoTaskException(
+                    VideoTaskFailureCode.CorruptedContent,
+                    "加密视频已被截断。",
+                    ex);
+            }
 
             Secvid03AuthenticationContext authentication;
             try
@@ -61,22 +99,21 @@ public sealed class Secvid03Decryptor : ISecvid03Decryptor
             }
             catch (Secvid03AuthenticationException ex)
             {
-                throw new VideoDecryptionException(
-                    VideoDecryptionFailureCode.AuthenticationFailed,
+                throw new VideoTaskException(
+                    VideoTaskFailureCode.AuthenticationFailed,
                     "密码错误或固定头已损坏。",
                     ex);
             }
 
             using (authentication)
             {
+                // 只有固定头认证成功后才创建明文 partial。
                 cancellationToken.ThrowIfCancellationRequested();
-                var outputDirectory = Path.GetDirectoryName(fullOutputPath);
-                if (!string.IsNullOrEmpty(outputDirectory))
-                    Directory.CreateDirectory(outputDirectory);
-
-                await using var output = OpenTemporaryOutput(temporaryPath);
+                transaction = _transactionFactory.Create(fullOutputPath);
+                var output = transaction.Stream;
                 await output.WriteAsync(originalHeader, cancellationToken).ConfigureAwait(false);
-                progress?.Report(new VideoDecryptionProgress(
+                progress?.Report(new VideoTaskProgress(
+                    VideoTaskState.Running,
                     header.OriginalHeaderLength,
                     header.OriginalFileLength,
                     CalculatePercentage(header.OriginalHeaderLength, header.OriginalFileLength),
@@ -94,8 +131,20 @@ public sealed class Secvid03Decryptor : ISecvid03Decryptor
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         var length = (int)Math.Min(header.ChunkSize, header.PlainBodyLength - processedBody);
-                        await ReadExactlyAsync(input, cipher.AsMemory(0, length), cancellationToken).ConfigureAwait(false);
-                        await ReadExactlyAsync(input, tag, cancellationToken).ConfigureAwait(false);
+                        try
+                        {
+                            await ReadExactlyAsync(input, cipher.AsMemory(0, length), cancellationToken)
+                                .ConfigureAwait(false);
+                            await ReadExactlyAsync(input, tag, cancellationToken).ConfigureAwait(false);
+                        }
+                        catch (EndOfStreamException ex)
+                        {
+                            throw new VideoTaskException(
+                                VideoTaskFailureCode.CorruptedContent,
+                                "加密视频已被截断。",
+                                ex);
+                        }
+
                         try
                         {
                             Secvid03Cryptography.DecryptChunk(
@@ -107,8 +156,8 @@ public sealed class Secvid03Decryptor : ISecvid03Decryptor
                         }
                         catch (Secvid03ContentAuthenticationException ex)
                         {
-                            throw new VideoDecryptionException(
-                                VideoDecryptionFailureCode.CorruptedContent,
+                            throw new VideoTaskException(
+                                VideoTaskFailureCode.CorruptedContent,
                                 "视频内容已损坏，无法完成认证。",
                                 ex);
                         }
@@ -117,10 +166,10 @@ public sealed class Secvid03Decryptor : ISecvid03Decryptor
                         CryptographicOperations.ZeroMemory(plain.AsSpan(0, length));
                         processedBody += length;
                         chunkIndex++;
-
                         var processed = header.OriginalHeaderLength + processedBody;
                         var percentage = CalculatePercentage(processed, header.OriginalFileLength);
-                        progress?.Report(new VideoDecryptionProgress(
+                        progress?.Report(new VideoTaskProgress(
+                            VideoTaskState.Running,
                             processed,
                             header.OriginalFileLength,
                             percentage,
@@ -134,71 +183,38 @@ public sealed class Secvid03Decryptor : ISecvid03Decryptor
                     CryptographicOperations.ZeroMemory(tag);
                 }
 
-                await output.FlushAsync(cancellationToken).ConfigureAwait(false);
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            try
-            {
-                File.Move(temporaryPath, fullOutputPath, overwrite: false);
-            }
-            catch (IOException ex) when (File.Exists(fullOutputPath))
-            {
-                throw new VideoDecryptionException(
-                    VideoDecryptionFailureCode.OutputConflict,
-                    "输出文件已被其他程序创建。",
-                    ex);
-            }
-
-            progress?.Report(new VideoDecryptionProgress(
-                new FileInfo(fullOutputPath).Length,
-                new FileInfo(fullOutputPath).Length,
+            progress?.Report(new VideoTaskProgress(
+                VideoTaskState.Succeeded,
+                header.OriginalFileLength,
+                header.OriginalFileLength,
                 100,
                 "解密完成"));
         }
-        catch (VideoDecryptionException)
+        catch (OperationCanceledException ex)
         {
+            primaryError = ex;
             throw;
         }
-        catch (OperationCanceledException)
+        catch (VideoTaskException ex)
         {
+            primaryError = ex;
             throw;
         }
-        catch (UnauthorizedAccessException ex)
+        catch (Exception ex)
         {
-            throw new VideoDecryptionException(
-                File.Exists(fullInputPath)
-                    ? VideoDecryptionFailureCode.OutputUnavailable
-                    : VideoDecryptionFailureCode.InputUnavailable,
-                "没有读取输入文件或写入输出目录的权限。",
-                ex);
-        }
-        catch (FileNotFoundException ex)
-        {
-            throw new VideoDecryptionException(
-                VideoDecryptionFailureCode.InputUnavailable,
-                "输入文件不存在或已被删除。",
-                ex);
-        }
-        catch (EndOfStreamException ex)
-        {
-            throw new VideoDecryptionException(
-                VideoDecryptionFailureCode.CorruptedContent,
-                "加密视频已被截断。",
-                ex);
-        }
-        catch (IOException ex)
-        {
-            throw new VideoDecryptionException(
-                VideoDecryptionFailureCode.OutputUnavailable,
-                "读取输入文件或写入输出文件失败。",
-                ex);
+            primaryError = ex;
+            throw VideoTaskFailureClassifier.Map(ex, readingInput: transaction is null);
         }
         finally
         {
-            if (File.Exists(temporaryPath))
+            if (transaction is not null)
             {
-                try { File.Delete(temporaryPath); }
-                catch { /* 不掩盖原始错误；下次启动可识别 partial 文件。 */ }
+                await transaction.DisposeAsync().ConfigureAwait(false);
+                if (primaryError is null && transaction.CleanupError is not null)
+                    throw transaction.CleanupError;
             }
         }
     }
@@ -207,52 +223,17 @@ public sealed class Secvid03Decryptor : ISecvid03Decryptor
     {
         try
         {
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
-                Secvid03Format.ChunkSize, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            return new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                Secvid03Format.ChunkSize,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
         }
-        catch (FileNotFoundException ex)
+        catch (Exception ex)
         {
-            throw new VideoDecryptionException(
-                VideoDecryptionFailureCode.InputUnavailable,
-                "输入文件不存在或已被删除。",
-                ex);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            throw new VideoDecryptionException(
-                VideoDecryptionFailureCode.InputUnavailable,
-                "没有读取输入文件的权限。",
-                ex);
-        }
-        catch (IOException ex)
-        {
-            throw new VideoDecryptionException(
-                VideoDecryptionFailureCode.InputUnavailable,
-                "输入文件被占用或无法读取。",
-                ex);
-        }
-    }
-
-    private static FileStream OpenTemporaryOutput(string path)
-    {
-        try
-        {
-            return new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None,
-                Secvid03Format.ChunkSize, FileOptions.Asynchronous | FileOptions.SequentialScan);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            throw new VideoDecryptionException(
-                VideoDecryptionFailureCode.OutputUnavailable,
-                "没有写入输出目录的权限。",
-                ex);
-        }
-        catch (IOException ex)
-        {
-            throw new VideoDecryptionException(
-                VideoDecryptionFailureCode.OutputUnavailable,
-                "无法创建输出文件。",
-                ex);
+            throw VideoTaskFailureClassifier.Map(ex, readingInput: true);
         }
     }
 

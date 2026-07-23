@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using MySmallTools.Business.SecretVideoPlayer.Container;
+using MySmallTools.Business.SecretVideoPlayer.Operations;
 
 namespace MySmallTools.Business.SecretVideoPlayer.Encryption;
 
@@ -10,18 +11,32 @@ namespace MySmallTools.Business.SecretVideoPlayer.Encryption;
 /// 原视频主体按 1 MiB 独立使用 AES-256-GCM 加密，内存占用与视频总大小无关。
 /// 每个块都有独立认证标签，因此播放器可以直接验证并解密目标块，不需要从文件开头顺序处理。
 /// </remarks>
-public sealed class Secvid03Encryptor
+public sealed class Secvid03Encryptor : ISecvid03Encryptor
 {
     private readonly ISecvid03EntropySource _entropySource;
+    private readonly IOutputFileTransactionFactory _transactionFactory;
 
     public Secvid03Encryptor()
-        : this(RandomSecvid03EntropySource.Instance)
+        : this(RandomSecvid03EntropySource.Instance, new OutputFileTransactionFactory())
+    {
+    }
+
+    public Secvid03Encryptor(IOutputFileTransactionFactory transactionFactory)
+        : this(RandomSecvid03EntropySource.Instance, transactionFactory)
     {
     }
 
     internal Secvid03Encryptor(ISecvid03EntropySource entropySource)
+        : this(entropySource, new OutputFileTransactionFactory())
+    {
+    }
+
+    internal Secvid03Encryptor(
+        ISecvid03EntropySource entropySource,
+        IOutputFileTransactionFactory transactionFactory)
     {
         _entropySource = entropySource ?? throw new ArgumentNullException(nameof(entropySource));
+        _transactionFactory = transactionFactory ?? throw new ArgumentNullException(nameof(transactionFactory));
     }
 
     /// <summary>
@@ -31,22 +46,38 @@ public sealed class Secvid03Encryptor
     /// 加密期间先写入同目录的唯一临时文件，全部成功并 Flush 后才覆盖目标路径。
     /// 这样可避免取消、磁盘写满或认证计算异常留下一个看似完整的正式文件。
     /// </remarks>
-    public async Task EncryptAsync(
+    public Task EncryptAsync(
         string inputPath,
         string outputPath,
         string password,
         string title,
         string description,
-        IProgress<EncryptionProgress>? progress = null,
+        CancellationToken cancellationToken = default) =>
+        EncryptAsync(
+            new VideoEncryptionRequest(inputPath, outputPath, title, description),
+            password,
+            progress: null,
+            cancellationToken: cancellationToken);
+
+    public async Task EncryptAsync(
+        VideoEncryptionRequest request,
+        string password,
+        IProgress<VideoTaskProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.InputPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.OutputPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(password);
-        if (Path.GetFullPath(inputPath).Equals(Path.GetFullPath(outputPath), StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("输入文件和输出文件不能相同。", nameof(outputPath));
+        var inputPath = Path.GetFullPath(request.InputPath);
+        var outputPath = Path.GetFullPath(request.OutputPath);
+        if (inputPath.Equals(outputPath, StringComparison.OrdinalIgnoreCase))
+            throw new VideoTaskException(VideoTaskFailureCode.InputOutputConflict, "输入文件和输出文件不能相同。");
+        if (File.Exists(outputPath))
+            throw new VideoTaskException(VideoTaskFailureCode.OutputConflict, "输出文件已经存在，不会覆盖现有文件。");
 
-        var temporaryPath = outputPath + ".partial-" + Guid.NewGuid().ToString("N");
+        IOutputFileTransaction? transaction = null;
+        Exception? primaryError = null;
         try
         {
             // 原视频只以顺序流打开；即使输入达到数百 GiB，也只保留一个块的明文和密文缓冲区。
@@ -65,7 +96,10 @@ public sealed class Secvid03Encryptor
                 entropy.Salt,
                 entropy.FileId,
                 entropy.NoncePrefix);
-            var publicRegion = EncryptedVideoContainer.BuildPublicRegion(Path.GetFileName(inputPath), title, description);
+            var publicRegion = EncryptedVideoContainer.BuildPublicRegion(
+                Path.GetFileName(inputPath),
+                request.PublicTitle,
+                request.PublicDescription);
             var key = Secvid03Cryptography.DeriveKey(password, header);
             byte[]? immutableDigest = null;
 
@@ -80,8 +114,8 @@ public sealed class Secvid03Encryptor
                     header.HeaderTag, immutableAad);
                 header.HeaderTag.CopyTo(header.Bytes, Secvid03Format.HeaderTagOffset);
 
-                await using var output = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
-                    Secvid03Format.ChunkSize, true);
+                transaction = _transactionFactory.Create(outputPath);
+                var output = transaction.Stream;
                 await output.WriteAsync(header.Bytes, cancellationToken);
                 await output.WriteAsync(publicRegion, cancellationToken);
                 await output.WriteAsync(originalHeader, cancellationToken);
@@ -109,13 +143,12 @@ public sealed class Secvid03Encryptor
                         chunkIndex++;
                         var processed = originalHeaderLength + processedBody;
                         var percentage = header.OriginalFileLength == 0 ? 100 : processed * 100d / header.OriginalFileLength;
-                        progress?.Report(new EncryptionProgress
-                        {
-                            ProcessedBytes = processed,
-                            TotalBytes = header.OriginalFileLength,
-                            Percentage = percentage,
-                            Status = $"正在加密... {percentage:F1}%"
-                        });
+                        progress?.Report(new VideoTaskProgress(
+                            VideoTaskState.Running,
+                            processed,
+                            header.OriginalFileLength,
+                            percentage,
+                            $"正在加密... {percentage:F1}%"));
                     }
                 }
                 finally
@@ -125,7 +158,7 @@ public sealed class Secvid03Encryptor
                     CryptographicOperations.ZeroMemory(cipher);
                 }
 
-                await output.FlushAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -135,13 +168,37 @@ public sealed class Secvid03Encryptor
                 CryptographicOperations.ZeroMemory(key);
             }
 
-            File.Move(temporaryPath, outputPath, overwrite: true);
+            progress?.Report(new VideoTaskProgress(
+                VideoTaskState.Succeeded,
+                new FileInfo(inputPath).Length,
+                new FileInfo(inputPath).Length,
+                100,
+                "加密完成"));
         }
-        catch
+        catch (OperationCanceledException ex)
         {
-            // 临时文件不是有效交付物。删除它可避免后续扫描误把未完成文件当成可播放容器。
-            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+            primaryError = ex;
             throw;
+        }
+        catch (VideoTaskException ex)
+        {
+            primaryError = ex;
+            throw;
+        }
+        catch (Exception ex)
+        {
+            var mapped = VideoTaskFailureClassifier.Map(ex, readingInput: transaction is null);
+            primaryError = mapped;
+            throw mapped;
+        }
+        finally
+        {
+            if (transaction is not null)
+            {
+                await transaction.DisposeAsync().ConfigureAwait(false);
+                if (primaryError is null && transaction.CleanupError is not null)
+                    throw transaction.CleanupError;
+            }
         }
     }
 

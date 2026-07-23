@@ -11,6 +11,7 @@
 | [实施路线图](ROADMAP.md) | 当前基线、阶段时间线、功能依赖、退出条件和统一完成标准 | 产品、开发者、维护者 |
 | [G0 完成记录](G0-BASELINE-REAL-MEDIA-LEGACY-CLEANUP.md) | 真实素材、遗留清理、SOLID 边界和 37/15 测试基线 | 开发者、维护者、评审人员 |
 | [G1 安全验证](G1-SECVID03-FORMAT-SECURITY-VALIDATION.md) | 五子域整理、威胁模型、固定向量、畸形/篡改矩阵和性能基线 | 开发者、安全评审人员 |
+| [G2 可靠性闭环](G2-ENCRYPTION-DECRYPTION-PREFLIGHT-ERROR-RESOURCE-CLOSURE.md) | 加解密预检、统一错误、不覆盖事务、取消重试和资源释放证据 | 开发者、测试人员、评审人员 |
 | [概要设计](architecture-design.md) | 分层、组件职责、加密与播放数据流、DI 和 Document 生命周期 | 开发者、维护者 |
 | [SECVID03 文件格式](secvid03-format.md) | 二进制布局、密钥派生、GCM 认证、随机读取、公开信息和兼容策略 | 格式维护者、安全评审人员 |
 | [接入、约定与排障](integration-and-conventions.md) | LibVLC 部署、插件扫描、Dock 黑屏恢复、资源释放、已踩过的坑和回归检查 | 集成人员、问题排查人员 |
@@ -20,8 +21,8 @@
 
 该子系统包含四项宿主菜单能力：
 
-- **视频文件加密器**：把普通视频流式写为 `.secvid` 文件，显示进度，并在失败或取消时删除未完成的 `.partial-*` 文件。
-- **批量视频解密器**：顺序导出多个 SECVID03 文件，隔离单项失败，净化输出名称且不静默覆盖已有文件。
+- **视频文件加密器**：预检输入、目标冲突、目录写入和磁盘空间后，把普通视频流式写为 `.secvid`；正式提交不覆盖，失败或取消清理 partial。
+- **批量视频解密器**：重新预检未成功项，顺序导出多个 SECVID03 文件，隔离单项失败，净化输出名称且不静默覆盖已有文件。
 - **加密视频播放器**：无需密码读取公开标题和描述；输入密码后验证固定头，并把 SECVID03 暴露为可随机读取的原视频视图供 LibVLC 解码。
 - **加密视频库播放器**：异步扫描文件夹当前层的 `.secvid`，按文件名、公开标题和描述搜索，并用当前 Document 的公共密码在同一页面切换播放。
 
@@ -37,7 +38,7 @@ flowchart LR
     F --> G["EmbeddedVideoSurface<br/>Avalonia / Dock HWND"]
 ```
 
-加密器和播放器共用 SECVID03 格式定义，但不共享任务状态、播放位置或原生播放器实例。每个 Dock Document 都有独立 DI Scope；仅 `LibVlcRuntime` 作为进程级单例，负责从插件私有目录执行一次 `Core.Initialize`。
+加密、解密和播放器共用 SECVID03 格式定义，但不共享密码、任务状态、播放位置或原生播放器实例。每个 Dock Document 都有独立 DI Scope；仅 `LibVlcRuntime` 作为进程级单例，负责从插件私有目录执行一次 `Core.Initialize`。加解密共用预检严重级别、稳定失败代码和不覆盖输出事务，但仍保持独立应用服务。
 
 ## 运行基线
 
@@ -63,7 +64,9 @@ flowchart LR
 3. 输入并确认至少 6 个字符的密码，可选填公开标题和描述。
 4. 开始加密并等待正式输出文件生成。
 
-加密过程使用与目标文件相同目录中的唯一 `.partial-*` 临时文件。只有全部分块写入并刷新成功后，临时文件才会移动为目标文件；关闭文档、取消、磁盘错误或其他异常都会进入临时文件清理路径。
+开始按钮会先检查输入、同路径、目标冲突、公开信息长度、输出目录可写性和可用空间。阻止项必须处理后才能继续；无法可靠取得网络目录空间等警告不会阻止操作。
+
+加密过程使用与目标文件相同目录中的唯一 `.partial-*` 临时文件。只有全部分块写入、落盘刷新和关闭成功后，临时文件才会以不覆盖方式移动为目标文件；关闭文档、取消、磁盘错误或其他异常都会进入临时文件清理路径。
 
 ### 播放加密视频
 
@@ -115,6 +118,6 @@ flowchart LR
 - 批量明文导出：[Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)、[VideoDecryptionService.cs](../../Business/SecretVideoPlayer/Decryption/VideoDecryptionService.cs)
 - Dock 视频表面：[EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)、[VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/Playback/VideoSurfaceRestoreSequence.cs)
 - 文件夹视频库：[VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/Library/VideoLibraryScanner.cs)、[SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
-- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[Secvid03GoldenVectorTests.cs](../../../MySmallTools.Tests/Secvid03GoldenVectorTests.cs)
+- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[Secvid03GoldenVectorTests.cs](../../../MySmallTools.Tests/Secvid03GoldenVectorTests.cs)、[G2ReliabilityTests.cs](../../../MySmallTools.Tests/G2ReliabilityTests.cs)
 
 本文档描述当前实现，不把设想中的跨平台支持、旧格式兼容或其他加密算法写作已有能力。格式或接入行为变化时，应同时更新本目录文档和对应自动化测试。

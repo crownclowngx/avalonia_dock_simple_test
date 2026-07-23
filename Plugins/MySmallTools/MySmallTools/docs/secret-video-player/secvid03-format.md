@@ -189,14 +189,14 @@ stateDiagram-v2
     [*] --> WritingPartial: 创建 output.secvid.partial-GUID
     WritingPartial --> WritingPartial: 写固定头、公开区、前缀、密文块与 Tag
     WritingPartial --> Flushed: 所有数据完成并 Flush
-    Flushed --> Committed: File.Move(overwrite = true)
+    Flushed --> Committed: File.Move(overwrite = false)
     Committed --> [*]
     WritingPartial --> Cancelled: 取消或异常
     Flushed --> Cancelled: 提交前异常
     Cancelled --> [*]: 删除 partial 文件
 ```
 
-临时文件与目标文件位于同一目录，成功时使用 `File.Move(..., overwrite: true)` 提交。明文和密文块缓冲区、派生密钥在正常或异常退出时都会尽快清零。关闭加密 Document 会取消当前任务，任务退出路径负责关闭流并删除临时文件。
+临时文件与目标文件位于同一目录，成功时在落盘刷新并关闭流后使用 `File.Move(..., overwrite: false)` 提交；预检后出现同名竞争也不会覆盖现有文件。明文和密文块缓冲区、派生密钥在正常或异常退出时都会尽快清零。关闭加密 Document 会取消当前任务，输出事务负责关闭流并删除未提交的临时文件。
 
 ## 8. 随机读取模型
 

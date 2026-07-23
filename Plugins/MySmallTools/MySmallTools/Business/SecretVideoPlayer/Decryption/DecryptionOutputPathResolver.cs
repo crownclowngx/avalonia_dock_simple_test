@@ -1,5 +1,7 @@
 namespace MySmallTools.Business.SecretVideoPlayer.Decryption;
 
+using MySmallTools.Business.SecretVideoPlayer.Operations;
+
 /// <summary>
 /// 把不可信的公开文件名转换为安全、不会覆盖现有文件的输出路径。
 /// </summary>
@@ -37,8 +39,8 @@ public sealed class DecryptionOutputPathResolver
                 return path;
         }
 
-        throw new VideoDecryptionException(
-            VideoDecryptionFailureCode.OutputConflict,
+        throw new VideoTaskException(
+            VideoTaskFailureCode.OutputConflict,
             "无法为解密视频分配可用的输出文件名。");
     }
 

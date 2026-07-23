@@ -1,5 +1,6 @@
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
+using MySmallTools.Business.SecretVideoPlayer.Operations;
 using MySmallTools.Constants;
 using MySmallTools.InitPlug.SecretVideoPlayer;
 using MySmallTools.ViewModels.SecretVideoPlayer;
@@ -14,18 +15,18 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
     public async Task Decryptor_RoundTripsOriginalBytesAndReportsCompletion()
     {
         var outputPath = Path.Combine(fixture.DirectoryPath, "roundtrip.mp4");
-        var reported = new List<VideoDecryptionProgress>();
+        var reported = new List<VideoTaskProgress>();
 
         await new Secvid03Decryptor().DecryptAsync(
             fixture.EncryptedPath,
             outputPath,
             Secvid03Fixture.Password,
-            new InlineProgress<VideoDecryptionProgress>(reported.Add));
+            new InlineProgress<VideoTaskProgress>(reported.Add));
 
         Assert.Equal(fixture.OriginalBytes, await File.ReadAllBytesAsync(outputPath));
         Assert.NotEmpty(reported);
         Assert.Equal(100, reported[^1].Percentage);
-        Assert.Equal("解密完成", reported[^1].Status);
+        Assert.Equal("解密完成", reported[^1].Message);
         Assert.Empty(Directory.GetFiles(fixture.DirectoryPath, "*.partial-*"));
     }
 
@@ -33,12 +34,12 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
     public async Task Decryptor_WrongPasswordTamperingAndCancellationLeaveNoOutput()
     {
         var wrongPasswordOutput = Path.Combine(fixture.DirectoryPath, "wrong-password.mp4");
-        var wrongPassword = await Assert.ThrowsAsync<VideoDecryptionException>(() =>
+        var wrongPassword = await Assert.ThrowsAsync<VideoTaskException>(() =>
             new Secvid03Decryptor().DecryptAsync(
                 fixture.EncryptedPath,
                 wrongPasswordOutput,
                 "wrong-password"));
-        Assert.Equal(VideoDecryptionFailureCode.AuthenticationFailed, wrongPassword.FailureCode);
+        Assert.Equal(VideoTaskFailureCode.AuthenticationFailed, wrongPassword.FailureCode);
         Assert.False(File.Exists(wrongPasswordOutput));
 
         var tamperedPath = fixture.CopyEncrypted("decrypt-tampered.secvid");
@@ -47,12 +48,12 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
                            Secvid03Fixture.OriginalPrefixSize;
         FlipByte(tamperedPath, cipherOffset + 19);
         var tamperedOutput = Path.Combine(fixture.DirectoryPath, "tampered.mp4");
-        var tampered = await Assert.ThrowsAsync<VideoDecryptionException>(() =>
+        var tampered = await Assert.ThrowsAsync<VideoTaskException>(() =>
             new Secvid03Decryptor().DecryptAsync(
                 tamperedPath,
                 tamperedOutput,
                 Secvid03Fixture.Password));
-        Assert.Equal(VideoDecryptionFailureCode.CorruptedContent, tampered.FailureCode);
+        Assert.Equal(VideoTaskFailureCode.CorruptedContent, tampered.FailureCode);
         Assert.False(File.Exists(tamperedOutput));
 
         var cancelledOutput = Path.Combine(fixture.DirectoryPath, "cancelled.mp4");
@@ -62,7 +63,7 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
                 fixture.EncryptedPath,
                 cancelledOutput,
                 Secvid03Fixture.Password,
-                new InlineProgress<VideoDecryptionProgress>(_ => cancellation.Cancel()),
+                new InlineProgress<VideoTaskProgress>(_ => cancellation.Cancel()),
                 cancellation.Token));
         Assert.False(File.Exists(cancelledOutput));
         Assert.Empty(Directory.GetFiles(fixture.DirectoryPath, "*.partial-*"));
@@ -74,13 +75,13 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
         var outputPath = Path.Combine(fixture.DirectoryPath, "existing.mp4");
         await File.WriteAllTextAsync(outputPath, "keep-me");
 
-        var error = await Assert.ThrowsAsync<VideoDecryptionException>(() =>
+        var error = await Assert.ThrowsAsync<VideoTaskException>(() =>
             new Secvid03Decryptor().DecryptAsync(
                 fixture.EncryptedPath,
                 outputPath,
                 Secvid03Fixture.Password));
 
-        Assert.Equal(VideoDecryptionFailureCode.OutputConflict, error.FailureCode);
+        Assert.Equal(VideoTaskFailureCode.OutputConflict, error.FailureCode);
         Assert.Equal("keep-me", await File.ReadAllTextAsync(outputPath));
     }
 
@@ -89,7 +90,7 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
     {
         var invalidPath = Path.Combine(fixture.DirectoryPath, "broken.secvid");
         await File.WriteAllTextAsync(invalidPath, "not-secvid");
-        var service = new VideoDecryptionService(new RecordingDecryptor(), new DecryptionOutputPathResolver());
+        var service = CreateService(new RecordingDecryptor());
 
         var candidates = await service.InspectAsync(
             [fixture.EncryptedPath, fixture.EncryptedPath.ToUpperInvariant(), invalidPath]);
@@ -114,7 +115,7 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
             Candidate("third.secvid", "same.mp4", 300)
         };
         var progress = new List<BatchDecryptionProgress>();
-        var service = new VideoDecryptionService(new RecordingDecryptor("fail.secvid"), new DecryptionOutputPathResolver());
+        var service = CreateService(new RecordingDecryptor("fail.secvid"));
 
         var result = await service.DecryptBatchAsync(
             candidates,
@@ -124,7 +125,7 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
 
         Assert.Equal(2, result.SucceededCount);
         Assert.Equal(1, result.FailedCount);
-        Assert.Contains(progress, item => item.InputPath.EndsWith("fail.secvid") && item.State == DecryptionItemState.Failed);
+        Assert.Contains(progress, item => item.InputPath.EndsWith("fail.secvid") && item.State == VideoTaskState.Failed);
         Assert.True(progress.Zip(progress.Skip(1), (left, right) => right.OverallPercentage >= left.OverallPercentage)
             .All(isMonotonic => isMonotonic));
         Assert.Equal(["same (1).mp4", "same (3).mp4"],
@@ -224,6 +225,9 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
             true,
             string.Empty);
 
+    private static VideoDecryptionService CreateService(ISecvid03Decryptor decryptor) =>
+        new(decryptor, new DecryptionOutputPathResolver(), new StoragePreflightProbe());
+
     private static void FlipByte(string path, long offset)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
@@ -245,16 +249,16 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
             string inputPath,
             string outputPath,
             string password,
-            IProgress<VideoDecryptionProgress>? progress = null,
+            IProgress<VideoTaskProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (Path.GetFileName(inputPath).Equals(failingFileName, StringComparison.OrdinalIgnoreCase))
-                throw new VideoDecryptionException(
-                    VideoDecryptionFailureCode.AuthenticationFailed,
+                throw new VideoTaskException(
+                    VideoTaskFailureCode.AuthenticationFailed,
                     "密码错误或固定头已损坏。");
 
-            progress?.Report(new VideoDecryptionProgress(1, 1, 100, "解密完成"));
+            progress?.Report(new VideoTaskProgress(VideoTaskState.Running, 1, 1, 100, "解密完成"));
             await File.WriteAllTextAsync(outputPath, Path.GetFileName(inputPath), cancellationToken);
         }
     }
@@ -280,7 +284,13 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
             string password,
             IProgress<BatchDecryptionProgress>? progress = null,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(new BatchDecryptionResult(0, 0, 0, 0, []));
+             Task.FromResult(new BatchDecryptionResult(0, 0, 0, 0, []));
+
+        public Task<BatchDecryptionPreflightResult> PreflightAsync(
+            IReadOnlyList<DecryptionCandidate> candidates,
+            string outputDirectory,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(ReadyPreflight(candidates, outputDirectory));
     }
 
     private sealed class CancellationRecordingService : IVideoDecryptionService
@@ -317,7 +327,23 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
 
             throw new InvalidOperationException("Unreachable");
         }
+
+        public Task<BatchDecryptionPreflightResult> PreflightAsync(
+            IReadOnlyList<DecryptionCandidate> candidates,
+            string outputDirectory,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(ReadyPreflight(candidates, outputDirectory));
     }
+
+    private static BatchDecryptionPreflightResult ReadyPreflight(
+        IReadOnlyList<DecryptionCandidate> candidates,
+        string outputDirectory) =>
+        new(
+            VideoPreflightResult.Ready(candidates.Sum(candidate => candidate.OriginalFileLength)),
+            candidates.Select(candidate => new CandidateDecryptionPreflight(
+                candidate,
+                Path.Combine(outputDirectory, candidate.OriginalFileName),
+                VideoPreflightResult.Ready(candidate.OriginalFileLength))).ToArray());
 
     private sealed class DecryptorDocumentScopeFactory : IDocumentScopeFactory
     {
