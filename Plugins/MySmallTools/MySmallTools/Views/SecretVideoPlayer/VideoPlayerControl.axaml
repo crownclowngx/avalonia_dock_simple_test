@@ -17,11 +17,14 @@
       <local:EmbeddedVideoSurface x:Name="VideoSurface" />
     </Border>
 
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="4,2" ColumnSpacing="10">
-      <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" Classes="StatusText"
+    <Grid Grid.Row="1" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto"
+          Margin="4,2" ColumnSpacing="10" RowSpacing="2">
+      <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding StatusMessage}" Classes="StatusText"
                  TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding StatusMessage}" />
-      <TextBlock Grid.Column="1" Text="{Binding BufferInfo}" Classes="Caption"
+      <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding BufferInfo}" Classes="Caption"
                  IsVisible="{Binding BufferInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Height="3"
+                   IsVisible="{Binding IsMediaTransitioning}" IsIndeterminate="True" />
     </Grid>
 
     <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="4,0" ColumnSpacing="8">

@@ -12,6 +12,7 @@ public partial class SecretVideoLibraryViewModel : Document, IDisposable
 {
     private bool _disposed;
     private long _playGeneration;
+    private CancellationTokenSource? _playCancellation;
 
     [ObservableProperty] private string _password = string.Empty;
     [ObservableProperty] private bool _showPassword;
@@ -47,7 +48,7 @@ public partial class SecretVideoLibraryViewModel : Document, IDisposable
         var fullPath = Path.GetFullPath(folderPath);
         if (!string.Equals(Browser.FolderPath, fullPath, StringComparison.OrdinalIgnoreCase))
         {
-            PlayerViewModel.CleanupMedia();
+            await PlayerViewModel.CleanupMediaAsync();
             StatusMessage = "已切换视频文件夹";
         }
 
@@ -76,17 +77,27 @@ public partial class SecretVideoLibraryViewModel : Document, IDisposable
         }
 
         var generation = Interlocked.Increment(ref _playGeneration);
+        var cancellation = new CancellationTokenSource();
+        var previous = Interlocked.Exchange(ref _playCancellation, cancellation);
+        TryCancel(previous);
         IsOpening = true;
         StatusMessage = $"正在验证密码并打开 {item.DisplayName}...";
         try
         {
-            var success = await PlayerViewModel.LoadAndPlayMediaAsync(item.FilePath, Password);
+            var success = await PlayerViewModel.LoadAndPlayMediaAsync(
+                item.FilePath,
+                Password,
+                cancellation.Token);
             if (_disposed || generation != Volatile.Read(ref _playGeneration))
                 return;
 
             StatusMessage = success
                 ? $"正在播放 {item.DisplayName}"
                 : PlayerViewModel.StatusMessage;
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            // 更新的播放请求已经接管状态。
         }
         catch (Exception ex)
         {
@@ -95,13 +106,14 @@ public partial class SecretVideoLibraryViewModel : Document, IDisposable
         }
         finally
         {
+            Interlocked.CompareExchange(ref _playCancellation, null, cancellation);
+            cancellation.Dispose();
             if (!_disposed && generation == Volatile.Read(ref _playGeneration))
                 IsOpening = false;
         }
     }
 
     private bool CanPlaySelected() => !_disposed &&
-        !IsOpening &&
         Browser.SelectedItem is { FilePath: var path } &&
         File.Exists(path) &&
         !string.IsNullOrEmpty(Password);
@@ -125,8 +137,21 @@ public partial class SecretVideoLibraryViewModel : Document, IDisposable
 
         _disposed = true;
         Interlocked.Increment(ref _playGeneration);
+        TryCancel(Interlocked.Exchange(ref _playCancellation, null));
         Browser.PropertyChanged -= OnBrowserPropertyChanged;
         Password = string.Empty;
         GC.SuppressFinalize(this);
+    }
+
+    private static void TryCancel(CancellationTokenSource? cancellation)
+    {
+        try
+        {
+            cancellation?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // 请求可能恰好已在完成路径释放。
+        }
     }
 }

@@ -39,7 +39,7 @@ public partial class SecretVideoPlayerView : UserControl
 
         if (files.Count > 0)
         {
-            viewModel.FilePath = files[0].Path.LocalPath;
+            await viewModel.SelectFileAsync(files[0].Path.LocalPath);
         }
     }
 

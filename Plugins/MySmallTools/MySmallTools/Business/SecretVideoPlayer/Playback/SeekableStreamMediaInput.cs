@@ -17,6 +17,7 @@ public sealed class SeekableStreamMediaInput : MediaInput
     private readonly Stream _stream;
     private readonly object _syncRoot = new();
     private byte[] _buffer = Array.Empty<byte>();
+    private int _stopRequested;
     private bool _disposed;
 
     public SeekableStreamMediaInput(Stream stream)
@@ -37,6 +38,23 @@ public sealed class SeekableStreamMediaInput : MediaInput
     public Exception? LastError { get; private set; }
 
     /// <summary>
+    /// 请求当前原生读取尽快结束。该方法不会等待读取锁，因此可以在 LibVLC Stop 前安全调用。
+    /// </summary>
+    public void RequestStop() => Interlocked.Exchange(ref _stopRequested, 1);
+
+    /// <summary>
+    /// 为重新播放同一个 MediaInput 清除停止标志。
+    /// </summary>
+    public void PrepareForPlayback()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        Interlocked.Exchange(ref _stopRequested, 0);
+        LastError = null;
+    }
+
+    private bool IsStopRequested => Volatile.Read(ref _stopRequested) != 0;
+
+    /// <summary>
     /// 向 LibVLC 报告虚拟原视频长度并把流位置复位到开头。
     /// </summary>
     public override bool Open(out ulong size)
@@ -46,6 +64,12 @@ public sealed class SeekableStreamMediaInput : MediaInput
             try
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
+                if (IsStopRequested)
+                {
+                    size = 0;
+                    return false;
+                }
+
                 size = checked((ulong)_stream.Length);
                 _stream.Position = 0;
                 LastError = null;
@@ -65,11 +89,21 @@ public sealed class SeekableStreamMediaInput : MediaInput
     /// </summary>
     public override unsafe int Read(IntPtr buffer, uint length)
     {
+        if (IsStopRequested)
+        {
+            return -1;
+        }
+
         lock (_syncRoot)
         {
             try
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
+                if (IsStopRequested)
+                {
+                    return -1;
+                }
+
                 if (length == 0)
                 {
                     return 0;
@@ -84,6 +118,11 @@ public sealed class SeekableStreamMediaInput : MediaInput
                 }
 
                 var bytesRead = _stream.Read(_buffer, 0, requested);
+                if (IsStopRequested)
+                {
+                    return -1;
+                }
+
                 if (bytesRead == 0)
                 {
                     return 0;
@@ -111,11 +150,21 @@ public sealed class SeekableStreamMediaInput : MediaInput
     /// </summary>
     public override bool Seek(ulong offset)
     {
+        if (IsStopRequested)
+        {
+            return false;
+        }
+
         lock (_syncRoot)
         {
             try
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
+                if (IsStopRequested)
+                {
+                    return false;
+                }
+
                 if (offset > (ulong)_stream.Length || offset > long.MaxValue)
                 {
                     return false;
@@ -139,7 +188,7 @@ public sealed class SeekableStreamMediaInput : MediaInput
     {
         lock (_syncRoot)
         {
-            if (!_disposed)
+            if (!_disposed && !IsStopRequested)
             {
                 _stream.Position = 0;
             }

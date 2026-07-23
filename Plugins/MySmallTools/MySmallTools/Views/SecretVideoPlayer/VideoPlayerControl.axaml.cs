@@ -67,9 +67,9 @@ public partial class VideoPlayerControl : UserControl
     /// <summary>
     /// 清理当前媒体
     /// </summary>
-    public void CleanupMedia()
+    public Task CleanupMediaAsync(CancellationToken cancellationToken = default)
     {
-        ViewModel?.CleanupMedia();
+        return ViewModel?.CleanupMediaAsync(cancellationToken) ?? Task.CompletedTask;
     }
 
     /// <summary>

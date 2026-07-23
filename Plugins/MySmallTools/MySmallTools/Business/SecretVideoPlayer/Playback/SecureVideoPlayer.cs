@@ -15,9 +15,11 @@ public sealed class SecureVideoPlayer : IDisposable
 {
     private readonly LibVLC _libVlc;
     private readonly MediaPlayer _player;
+    private readonly SemaphoreSlim _operationGate = new(1, 1);
+    private readonly CancellationTokenSource _lifetimeCancellation = new();
     private Media? _currentMedia;
     private SeekableStreamMediaInput? _mediaInput;
-    private bool _disposed;
+    private int _disposeState;
 
     public event EventHandler<PlaybackStateChangedEventArgs>? PlaybackStateChanged;
     public event EventHandler<TimeChangedEventArgs>? TimeChanged;
@@ -62,55 +64,110 @@ public sealed class SecureVideoPlayer : IDisposable
     /// 此处的“加载”只包含 PBKDF2、固定头认证和 LibVLC 媒体解析，不执行完整视频解密。
     /// 因此首帧等待时间和内存占用不会随视频总大小线性增长。
     /// </remarks>
-    public async Task<bool> LoadEncryptedVideoAsync(string filePath, string password)
+    public async Task<bool> LoadEncryptedVideoAsync(
+        string filePath,
+        string password,
+        CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfDisposed();
+        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _lifetimeCancellation.Token);
+        var operationToken = operationCancellation.Token;
         if (!File.Exists(filePath))
         {
             ErrorOccurred?.Invoke(this, "文件不存在。");
             return false;
         }
 
-        // 先释放旧 Media/Input，保证重复切换视频时不会留下文件句柄或把回调发送到旧流。
-        CleanupCurrentMedia();
+        await _operationGate.WaitAsync(operationToken).ConfigureAwait(false);
         SeekableStreamMediaInput? newInput = null;
         Media? newMedia = null;
-
         try
         {
-            var stream = SeekableEncryptedVideoStream.Open(filePath, password);
-            newInput = new SeekableStreamMediaInput(stream);
-            newMedia = new Media(_libVlc, newInput);
-            _player.Media = newMedia;
-            await newMedia.Parse(MediaParseOptions.ParseLocal);
+            ThrowIfDisposed();
 
+            // 旧媒体的 Stop 一旦开始就必须完整结束；调用方取消只会阻止后续候选媒体提交。
+            await Task.Run(CleanupCurrentMediaCore).ConfigureAwait(false);
+            operationToken.ThrowIfCancellationRequested();
+
+            (newInput, newMedia) = await Task.Run(() =>
+            {
+                var stream = SeekableEncryptedVideoStream.Open(filePath, password);
+                var input = new SeekableStreamMediaInput(stream);
+                try
+                {
+                    return (input, new Media(_libVlc, input));
+                }
+                catch
+                {
+                    input.Dispose();
+                    throw;
+                }
+            }, operationToken).ConfigureAwait(false);
+
+            await newMedia
+                .Parse(MediaParseOptions.ParseLocal, -1, operationToken)
+                .ConfigureAwait(false);
+            operationToken.ThrowIfCancellationRequested();
+
+            _player.Media = newMedia;
             _mediaInput = newInput;
             _currentMedia = newMedia;
+            newInput = null;
+            newMedia = null;
             return true;
+        }
+        catch (OperationCanceledException) when (operationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            // 创建过程可能在流、MediaInput 或 Media 任一阶段失败；按所有权逆序释放已经创建的对象。
-            _player.Media = null;
-            newMedia?.Dispose();
-            newInput?.Dispose();
             ErrorOccurred?.Invoke(this, $"加载失败: {ex.Message}");
             return false;
         }
+        finally
+        {
+            try
+            {
+                newMedia?.Dispose();
+            }
+            finally
+            {
+                try
+                {
+                    newInput?.Dispose();
+                }
+                finally
+                {
+                    _operationGate.Release();
+                }
+            }
+        }
     }
 
-    public async Task<bool> Play()
+    public async Task<bool> Play(CancellationToken cancellationToken = default)
     {
-        if (_disposed || _player.Media is null)
-        {
-            return false;
-        }
-
+        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _lifetimeCancellation.Token);
+        var operationToken = operationCancellation.Token;
+        await _operationGate.WaitAsync(operationToken).ConfigureAwait(false);
         try
         {
+            ThrowIfDisposed();
+            if (_player.Media is null)
+            {
+                return false;
+            }
+
+            _mediaInput?.PrepareForPlayback();
             if (_currentMedia is { IsParsed: false })
             {
-                await _currentMedia.Parse(MediaParseOptions.ParseLocal);
+                await _currentMedia
+                    .Parse(MediaParseOptions.ParseLocal, -1, operationToken)
+                    .ConfigureAwait(false);
             }
 
             return _player.Play();
@@ -120,22 +177,26 @@ public sealed class SecureVideoPlayer : IDisposable
             ErrorOccurred?.Invoke(this, $"播放失败: {ex.Message}");
             return false;
         }
+        finally
+        {
+            _operationGate.Release();
+        }
     }
 
     /// <summary>
     /// 当前是否仍有可用于重新创建视频输出的媒体。
     /// </summary>
-    public bool HasMedia => !_disposed && _currentMedia is not null;
+    public bool HasMedia => Volatile.Read(ref _disposeState) == 0 && _currentMedia is not null;
 
     /// <summary>
     /// 当前原生播放器位置。未开始播放时 LibVLC 可能返回负值，这里统一归零。
     /// </summary>
-    public long PlaybackTime => _disposed ? 0 : Math.Max(0, _player.Time);
+    public long PlaybackTime => Volatile.Read(ref _disposeState) != 0 ? 0 : Math.Max(0, _player.Time);
 
     /// <summary>
     /// 当前是否处于暂停状态。
     /// </summary>
-    public bool IsPaused => !_disposed && _player.State == VLCState.Paused;
+    public bool IsPaused => Volatile.Read(ref _disposeState) == 0 && _player.State == VLCState.Paused;
 
     /// <summary>
     /// 在 Avalonia 销毁旧 HWND 前同步停止播放器，使旧 vout 完整退出。
@@ -146,9 +207,22 @@ public sealed class SecureVideoPlayer : IDisposable
     /// </remarks>
     public void StopForVideoSurfaceTransition()
     {
-        if (!_disposed && _currentMedia is not null)
+        if (Volatile.Read(ref _disposeState) != 0)
         {
-            _player.Stop();
+            return;
+        }
+
+        _operationGate.Wait();
+        try
+        {
+            if (Volatile.Read(ref _disposeState) == 0 && _currentMedia is not null)
+            {
+                StopCore(prepareForReplay: true);
+            }
+        }
+        finally
+        {
+            _operationGate.Release();
         }
     }
 
@@ -160,49 +234,78 @@ public sealed class SecureVideoPlayer : IDisposable
         bool restorePaused,
         CancellationToken cancellationToken)
     {
-        if (_disposed || _currentMedia is null)
+        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _lifetimeCancellation.Token);
+        var operationToken = operationCancellation.Token;
+        await _operationGate.WaitAsync(operationToken).ConfigureAwait(false);
+        try
         {
-            return false;
-        }
+            ThrowIfDisposed();
+            if (_currentMedia is null)
+            {
+                return false;
+            }
 
-        var operations = new LibVlcVideoSurfaceRestoreOperations(_player);
-        return await VideoSurfaceRestoreSequence.ExecuteAsync(
-            operations,
-            positionMs,
-            restorePaused,
-            cancellationToken);
+            _mediaInput?.PrepareForPlayback();
+            var operations = new LibVlcVideoSurfaceRestoreOperations(_player);
+            return await VideoSurfaceRestoreSequence.ExecuteAsync(
+                    operations,
+                    positionMs,
+                    restorePaused,
+                    operationToken)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
     }
 
     public void Pause()
     {
-        if (!_disposed) _player.Pause();
+        if (Volatile.Read(ref _disposeState) == 0) _player.Pause();
     }
 
-    public void Stop()
+    public async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        if (!_disposed) _player.Stop();
+        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _lifetimeCancellation.Token);
+        await _operationGate
+            .WaitAsync(operationCancellation.Token)
+            .ConfigureAwait(false);
+        try
+        {
+            ThrowIfDisposed();
+            await Task.Run(() => StopCore(prepareForReplay: true)).ConfigureAwait(false);
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
     }
 
     public void SetPosition(float position)
     {
-        if (!_disposed && _player.Media is not null) _player.Position = Math.Clamp(position, 0, 1);
+        if (Volatile.Read(ref _disposeState) == 0 && _player.Media is not null) _player.Position = Math.Clamp(position, 0, 1);
     }
 
     public void SetTime(long timeMs)
     {
-        if (!_disposed && _player.Media is not null) _player.Time = Math.Max(0, timeMs);
+        if (Volatile.Read(ref _disposeState) == 0 && _player.Media is not null) _player.Time = Math.Max(0, timeMs);
     }
 
     public bool SetVolume(int volume)
     {
-        if (_disposed) return false;
+        if (Volatile.Read(ref _disposeState) != 0) return false;
         _player.Volume = Math.Clamp(volume, 0, 100);
         return true;
     }
 
     public VideoInfo? GetVideoInfo()
     {
-        if (_disposed || _player.Media is null) return null;
+        if (Volatile.Read(ref _disposeState) != 0 || _player.Media is null) return null;
         return new VideoInfo
         {
             Duration = _player.Length,
@@ -218,26 +321,103 @@ public sealed class SecureVideoPlayer : IDisposable
 
     public MediaPlayer GetMediaPlayer() => _player;
 
-    public void CleanupCurrentMedia()
+    public async Task CleanupCurrentMediaAsync(CancellationToken cancellationToken = default)
     {
-        if (_disposed) return;
-        // 释放顺序很重要：先停止原生读取并解除 Media，再销毁 Media，最后由 MediaInput 释放解密流。
-        // 如果先关闭流，LibVLC 尚未结束的回调可能在关闭后的文件句柄上读取。
-        _player.Stop();
-        _player.Media = null;
-        _currentMedia?.Dispose();
-        _currentMedia = null;
-        _mediaInput?.Dispose();
-        _mediaInput = null;
+        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _lifetimeCancellation.Token);
+        await _operationGate
+            .WaitAsync(operationCancellation.Token)
+            .ConfigureAwait(false);
+        try
+        {
+            ThrowIfDisposed();
+            await Task.Run(CleanupCurrentMediaCore).ConfigureAwait(false);
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
-        CleanupCurrentMedia();
-        _disposed = true;
-        _player.Dispose();
-        // LibVLC 实例由本播放器独占；Core.Initialize 是进程级初始化，但 LibVLC 对象仍必须正常释放。
-        _libVlc.Dispose();
+        if (Interlocked.CompareExchange(ref _disposeState, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _lifetimeCancellation.Cancel();
+        _operationGate.Wait();
+        try
+        {
+            try
+            {
+                CleanupCurrentMediaCore();
+            }
+            finally
+            {
+                try
+                {
+                    _player.Dispose();
+                }
+                finally
+                {
+                    // LibVLC 实例由本播放器独占；Core.Initialize 是进程级初始化，但 LibVLC 对象仍必须正常释放。
+                    _libVlc.Dispose();
+                }
+            }
+        }
+        finally
+        {
+            Volatile.Write(ref _disposeState, 2);
+            _lifetimeCancellation.Dispose();
+            _operationGate.Release();
+        }
     }
+
+    private void StopCore(bool prepareForReplay)
+    {
+        if (_currentMedia is null)
+        {
+            return;
+        }
+
+        var input = _mediaInput;
+        input?.RequestStop();
+        _player.Stop();
+        if (prepareForReplay)
+        {
+            input?.PrepareForPlayback();
+        }
+    }
+
+    private void CleanupCurrentMediaCore()
+    {
+        if (_currentMedia is null && _mediaInput is null)
+        {
+            return;
+        }
+
+        // Stop 成功返回后，LibVLC 的读取线程已经退出，才能解除并释放 Media/Input。
+        StopCore(prepareForReplay: false);
+        _player.Media = null;
+
+        var media = _currentMedia;
+        var input = _mediaInput;
+        _currentMedia = null;
+        _mediaInput = null;
+
+        try
+        {
+            media?.Dispose();
+        }
+        finally
+        {
+            input?.Dispose();
+        }
+    }
+
+    private void ThrowIfDisposed() =>
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
 }

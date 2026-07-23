@@ -42,8 +42,6 @@ public partial class SecretVideoPlayerViewModel : Document
 
     partial void OnFilePathChanged(string value)
     {
-        // 文件发生变化时旧媒体的流、缓存和文件句柄都已经失效，必须先完整清理再读取新文件的公开区。
-        PlayerViewModel.CleanupMedia();
         _mediaLoaded = false;
         IsEditingPublicInfo = false;
         ReadPublicInfo(value);
@@ -106,13 +104,13 @@ public partial class SecretVideoPlayerViewModel : Document
     private bool CanLoadVideo() => !IsLoading && File.Exists(FilePath);
 
     [RelayCommand(CanExecute = nameof(CanEditPublicInfo))]
-    private void EditPublicInfo()
+    private async Task EditPublicInfoAsync()
     {
         // “编辑信息”是明确的资源切换点：即使视频当前已暂停，也先释放 Media/Input，
         // 避免公开区保存时与 LibVLC 的后台读取发生共享冲突。
         if (_mediaLoaded)
         {
-            PlayerViewModel.CleanupMedia();
+            await PlayerViewModel.CleanupMediaAsync();
             _mediaLoaded = false;
         }
 
@@ -122,6 +120,12 @@ public partial class SecretVideoPlayerViewModel : Document
     }
 
     private bool CanEditPublicInfo() => !IsLoading && File.Exists(FilePath);
+
+    public async Task SelectFileAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        await PlayerViewModel.CleanupMediaAsync(cancellationToken);
+        FilePath = filePath;
+    }
 
     [RelayCommand(CanExecute = nameof(CanSavePublicInfo))]
     private void SavePublicInfo()
