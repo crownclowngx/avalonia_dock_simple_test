@@ -26,7 +26,7 @@
     <!-- 本项目只验证 BiliDownloader 业务边界，不再承担宿主或其他插件的兼容性测试。 -->
     <ProjectReference Include="..\BiliDownloader\BiliDownloader.csproj"
                       AdditionalProperties="SkipPluginDeploy=true" />
-    <ProjectReference Include="..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
+    <ProjectReference Include="..\..\..\Host\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
   </ItemGroup>
 
 </Project>

@@ -321,5 +321,5 @@ dotnet test MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.cs
 - [MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
 - [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)
 - [VideoDecryptionService.cs](../../Business/SecretVideoPlayer/Decryption/VideoDecryptionService.cs)
-- [AssemblyLoaderHelper.cs](../../../MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs)
-- [DocumentScopeManager.cs](../../../MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)
+- [AssemblyLoaderHelper.cs](../../../../../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs)
+- [DocumentScopeManager.cs](../../../../../Host/MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)

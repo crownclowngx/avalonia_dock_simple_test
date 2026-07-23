@@ -26,12 +26,12 @@
     <!-- 架构测试需要观察宿主与当前插件集合，但不得触发插件部署覆盖宿主输出目录。 -->
     <ProjectReference Include="..\MyAvaloniaManagement\MyAvaloniaManagement.csproj" />
     <ProjectReference Include="..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
-    <ProjectReference Include="..\BiliDownloader\BiliDownloader.csproj"
+    <ProjectReference Include="..\..\Plugins\BiliDownloader\BiliDownloader\BiliDownloader.csproj"
                       AdditionalProperties="SkipPluginDeploy=true" />
-    <ProjectReference Include="..\MyPlugTest\MyPlugTest.csproj"
+    <ProjectReference Include="..\..\Plugins\MyPlugTest\MyPlugTest\MyPlugTest.csproj"
                       AdditionalProperties="SkipPluginDeploy=true" />
-    <ProjectReference Include="..\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj" />
-    <ProjectReference Include="..\MySmallTools\MySmallTools.csproj"
+    <ProjectReference Include="..\..\Plugins\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj" />
+    <ProjectReference Include="..\..\Plugins\MySmallTools\MySmallTools\MySmallTools.csproj"
                       AdditionalProperties="SkipPluginDeploy=true" />
   </ItemGroup>
 

@@ -97,6 +97,8 @@ internal sealed record BenchmarkOptions(
     public static BenchmarkOptions Parse(string[] args)
     {
         var vector = Path.Combine(
+            "Plugins",
+            "MySmallTools",
             "MySmallTools.Tests",
             "TestAssets",
             "Secvid03Vectors",

@@ -3,7 +3,7 @@
 > 评审日期：2026-07-22  
 > 评审对象：BiliDownloader 插件自身，以及它与 MyAvaloniaManagement 宿主的交互  
 > 默认边界：Windows x64、内部可信插件、关闭宿主后替换插件，不要求运行时卸载  
-> 关联文档：[产品定义](../PRODUCT.md) · [架构改进建议](../ARCHITECTURE_IMPROVEMENT.md) · [实施路线图](ROADMAP.md) · [G0 验证记录](G0-BASELINE-TEST-LIFECYCLE.md) · [宿主—插件架构评审](../../docs/host-plugin-architecture-review.md)
+> 关联文档：[产品定义](../PRODUCT.md) · [架构改进建议](../ARCHITECTURE_IMPROVEMENT.md) · [实施路线图](ROADMAP.md) · [G0 验证记录](G0-BASELINE-TEST-LIFECYCLE.md) · [宿主—插件架构评审](../../../../docs/host-plugin-architecture-review.md)
 
 ## 1. 总体结论：它已经是一个下载子系统
 

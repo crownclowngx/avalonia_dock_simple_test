@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
+      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -29,7 +29,7 @@
 
     <PropertyGroup>
       <!-- 部署路径以宿主构建输出为基准；运行时则以 MySmallTools.dll 的实际位置反向定位 native。 -->
-      <HostProjectOutputDir>$(MSBuildThisFileDirectory)..\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
+      <HostProjectOutputDir>$(MSBuildThisFileDirectory)..\..\..\Host\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
       <PluginDeployDir>$(HostProjectOutputDir)\Controls\SmallTools</PluginDeployDir>
     </PropertyGroup>
 

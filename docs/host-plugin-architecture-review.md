@@ -49,7 +49,7 @@ flowchart TB
     Host -. "兼容无参策略" .-> Legacy
 ```
 
-**[代码事实]** 宿主和全部插件项目都直接引用 `MyAvaloniaManagementCommon`；公共项目本身又引用 Avalonia、Dock、MVVM Toolkit 等 UI 库。因此它目前不是“UI 无关的插件协议”，而是“共享同一套桌面 UI 技术栈的扩展 SDK”。参见 [`MyAvaloniaManagementCommon.csproj`](../MyAvaloniaManagementCommon/MyAvaloniaManagementCommon.csproj) 和各插件 `.csproj`。
+**[代码事实]** 宿主和全部插件项目都直接引用 `MyAvaloniaManagementCommon`；公共项目本身又引用 Avalonia、Dock、MVVM Toolkit 等 UI 库。因此它目前不是“UI 无关的插件协议”，而是“共享同一套桌面 UI 技术栈的扩展 SDK”。参见 [`MyAvaloniaManagementCommon.csproj`](../Host/MyAvaloniaManagementCommon/MyAvaloniaManagementCommon.csproj) 和各插件 `.csproj`。
 
 **[架构判断]** 对内部可信插件，这种强类型、进程内、共享 UI 栈的方式有很高开发效率；代价是宿主、契约、Dock 和插件需要协同升级，不能把它当成稳定的第三方插件 ABI。
 
@@ -83,7 +83,7 @@ sequenceDiagram
     P->>DI: 释放根容器
 ```
 
-**[代码事实]** 入口按照“加载程序集 → 发现模块 → 插件注册服务 → 构建根容器 → 初始化插件生命周期 → 启动 UI → 反向关闭插件”的顺序运行，参见 [`Program.cs`](../MyAvaloniaManagement/Program.cs#L21)。
+**[代码事实]** 入口按照“加载程序集 → 发现模块 → 插件注册服务 → 构建根容器 → 初始化插件生命周期 → 启动 UI → 反向关闭插件”的顺序运行，参见 [`Program.cs`](../Host/MyAvaloniaManagement/Program.cs#L21)。
 
 ### 2.2 两种插件接入模型并存
 
@@ -92,9 +92,9 @@ sequenceDiagram
 | Legacy Plugin | 程序集中只有 Document/Tool 策略 | 公共无参构造函数、`Activator.CreateInstance` | Document/Tool，依赖由插件自行处理 | DaTangAccountingHelpPlug |
 | Managed Plugin | 程序集实现 `IPluginModule` | 策略通过宿主 DI 构造 | DI、Document/Tool、可选插件生命周期 | BiliDownloader、MyPlugTest、MySmallTools |
 
-**[代码事实]** `IPluginModule.ConfigureServices(IServiceCollection)` 让托管插件直接向宿主根服务集合注册依赖；未实现模块接口的程序集继续使用无参策略，不被自动迁移。参见 [`IPluginModule.cs`](../MyAvaloniaManagementCommon/Plugin/IPluginModule.cs#L13)、[`PluginModuleCatalog.cs`](../MyAvaloniaManagement/Business/Helpers/PluginModuleCatalog.cs#L39) 和 [`PluginStrategyActivator.cs`](../MyAvaloniaManagement/Business/Helpers/PluginStrategyActivator.cs)。
+**[代码事实]** `IPluginModule.ConfigureServices(IServiceCollection)` 让托管插件直接向宿主根服务集合注册依赖；未实现模块接口的程序集继续使用无参策略，不被自动迁移。参见 [`IPluginModule.cs`](../Host/MyAvaloniaManagementCommon/Plugin/IPluginModule.cs#L13)、[`PluginModuleCatalog.cs`](../Host/MyAvaloniaManagement/Business/Helpers/PluginModuleCatalog.cs#L39) 和 [`PluginStrategyActivator.cs`](../Host/MyAvaloniaManagement/Business/Helpers/PluginStrategyActivator.cs)。
 
-**[代码事实]** `IPluginLifecycle` 是可选能力。生命周期管理器按 `Order`、`PluginId` 串行初始化，单个插件失败不会阻止后续插件，退出时只反向关闭成功初始化的插件。参见 [`IPluginLifecycle.cs`](../MyAvaloniaManagementCommon/Plugin/IPluginLifecycle.cs#L10) 和 [`PluginLifecycleManager.cs`](../MyAvaloniaManagementCommon/Plugin/PluginLifecycleManager.cs#L78)。
+**[代码事实]** `IPluginLifecycle` 是可选能力。生命周期管理器按 `Order`、`PluginId` 串行初始化，单个插件失败不会阻止后续插件，退出时只反向关闭成功初始化的插件。参见 [`IPluginLifecycle.cs`](../Host/MyAvaloniaManagementCommon/Plugin/IPluginLifecycle.cs#L10) 和 [`PluginLifecycleManager.cs`](../Host/MyAvaloniaManagementCommon/Plugin/PluginLifecycleManager.cs#L78)。
 
 **[架构判断]** 兼容双轨是合理的过渡策略，但不能长期成为最终模型。只要两套对象所有权规则长期并存，宿主就难以统一保证释放、诊断和兼容性。
 
@@ -110,7 +110,7 @@ sequenceDiagram
 - 可以选择实现保存/恢复；
 - 标签页真正关闭后，实例相关资源必须释放。
 
-公共入口是 [`IDocumentCreationStrategy`](../MyAvaloniaManagementCommon/DocumentCreation/IDocumentCreationStrategy.cs#L9)，宿主按 `DocumentTypeId` 保存策略和元数据，再通过 `CreateManagementNewDocument` 调用对应策略，参见 [`ManagementFactory.cs`](../MyAvaloniaManagement/ViewModels/ManagementFactory.cs#L205)。
+公共入口是 [`IDocumentCreationStrategy`](../Host/MyAvaloniaManagementCommon/DocumentCreation/IDocumentCreationStrategy.cs#L9)，宿主按 `DocumentTypeId` 保存策略和元数据，再通过 `CreateManagementNewDocument` 调用对应策略，参见 [`ManagementFactory.cs`](../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs#L205)。
 
 ### 3.2 当前创建与释放流程
 
@@ -131,17 +131,17 @@ flowchart TD
     Managed -- "否" --> End["无 Document 级统一释放动作"]
 ```
 
-**[代码事实]** `DocumentScopeManager` 建立 `Document` 与 `IServiceScope` 的一一映射，并在 Dock 的 `OnDockableClosed` 之后释放，避免在仍可取消的 closing 阶段提前销毁。参见 [`DocumentScopeManager.cs`](../MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs#L19) 和 [`ManagementFactory.cs`](../MyAvaloniaManagement/ViewModels/ManagementFactory.cs#L415)。
+**[代码事实]** `DocumentScopeManager` 建立 `Document` 与 `IServiceScope` 的一一映射，并在 Dock 的 `OnDockableClosed` 之后释放，避免在仍可取消的 closing 阶段提前销毁。参见 [`DocumentScopeManager.cs`](../Host/MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs#L19) 和 [`ManagementFactory.cs`](../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs#L415)。
 
-**[代码事实]** MySmallTools 的两个策略已经通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建 Document；播放器、加密任务和相关 ViewModel 使用 scoped 生命周期。参见 [`SecretVideoDocumentStrategy.cs`](../MySmallTools/InitPlug/SecretVideoPlayer/SecretVideoDocumentStrategy.cs#L10)、[`VideoEncryptorDocumentStrategy.cs`](../MySmallTools/InitPlug/SecretVideoPlayer/VideoEncryptorDocumentStrategy.cs#L13) 和 [`MySmallToolsPluginModule.cs`](../MySmallTools/Plugin/MySmallToolsPluginModule.cs#L24)。
+**[代码事实]** MySmallTools 的两个策略已经通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建 Document；播放器、加密任务和相关 ViewModel 使用 scoped 生命周期。参见 [`SecretVideoDocumentStrategy.cs`](../Plugins/MySmallTools/MySmallTools/InitPlug/SecretVideoPlayer/SecretVideoDocumentStrategy.cs#L10)、[`VideoEncryptorDocumentStrategy.cs`](../Plugins/MySmallTools/MySmallTools/InitPlug/SecretVideoPlayer/VideoEncryptorDocumentStrategy.cs#L13) 和 [`MySmallToolsPluginModule.cs`](../Plugins/MySmallTools/MySmallTools/Plugin/MySmallToolsPluginModule.cs#L24)。
 
-**[代码事实]** BiliDownloader 和 MyPlugTest 的策略仍保存根 `IServiceProvider`，从根容器解析 transient Document。参见 [`BiliDownloaderDocumentStrategy.cs`](../BiliDownloader/Create/BiliDownloaderDocumentStrategy.cs#L18) 和 [`TestWelcomeDocumentStrategy.cs`](../MyPlugTest/Create/TestWelcomeDocumentStrategy.cs#L18)。
+**[代码事实]** BiliDownloader 和 MyPlugTest 的策略仍保存根 `IServiceProvider`，从根容器解析 transient Document。参见 [`BiliDownloaderDocumentStrategy.cs`](../Plugins/BiliDownloader/BiliDownloader/Create/BiliDownloaderDocumentStrategy.cs#L18) 和 [`TestWelcomeDocumentStrategy.cs`](../Plugins/MyPlugTest/MyPlugTest/Create/TestWelcomeDocumentStrategy.cs#L18)。
 
 **[架构判断]** 当前只能说“宿主具备每 Document Scope 能力”，不能说“所有 Managed Document 都已由 Scope 托管”。这是现阶段最重要的所有权不一致。
 
 ### 3.3 保存模型
 
-**[代码事实]** 实现 `ISavableDocument` 的 Document 可以生成统一的 `DocumentSaveData`；宿主负责文件选择、序列化和写入，插件负责 `Content` 与 `PluginMetadata`。参见 [`ISavableDocument.cs`](../MyAvaloniaManagementCommon/Save/ISavableDocument.cs)、[`DocumentSaveData.cs`](../MyAvaloniaManagementCommon/Save/DocumentSaveData.cs) 和 [`MainWindowViewModel.cs`](../MyAvaloniaManagement/ViewModels/MainWindowViewModel.cs#L209)。
+**[代码事实]** 实现 `ISavableDocument` 的 Document 可以生成统一的 `DocumentSaveData`；宿主负责文件选择、序列化和写入，插件负责 `Content` 与 `PluginMetadata`。参见 [`ISavableDocument.cs`](../Host/MyAvaloniaManagementCommon/Save/ISavableDocument.cs)、[`DocumentSaveData.cs`](../Host/MyAvaloniaManagementCommon/Save/DocumentSaveData.cs) 和 [`MainWindowViewModel.cs`](../Host/MyAvaloniaManagement/ViewModels/MainWindowViewModel.cs#L209)。
 
 当前缺少：
 
@@ -163,7 +163,7 @@ flowchart TD
 - 适合展示全局状态、导航和控制命令；
 - 不应拥有必须依赖 Tool 可见性才能存活的后台任务。
 
-**[代码事实]** `ManagementFactory` 启用了 `HideToolsOnClose`，并缓存所有已创建 Tool；托管示例也把 Tool ViewModel 注册为 singleton。参见 [`ManagementFactory.cs`](../MyAvaloniaManagement/ViewModels/ManagementFactory.cs#L55)、[`MyCustomToolStrategy.cs`](../MyPlugTest/Create/MyCustomToolStrategy.cs) 和 [`BiliSchedulerToolStrategy.cs`](../BiliDownloader/Create/BiliSchedulerToolStrategy.cs)。
+**[代码事实]** `ManagementFactory` 启用了 `HideToolsOnClose`，并缓存所有已创建 Tool；托管示例也把 Tool ViewModel 注册为 singleton。参见 [`ManagementFactory.cs`](../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs#L55)、[`MyCustomToolStrategy.cs`](../Plugins/MyPlugTest/MyPlugTest/Create/MyCustomToolStrategy.cs) 和 [`BiliSchedulerToolStrategy.cs`](../Plugins/BiliDownloader/BiliDownloader/Create/BiliSchedulerToolStrategy.cs)。
 
 ### 4.2 推荐的职责流
 
@@ -190,7 +190,7 @@ flowchart LR
 
 **[架构判断]** BiliDownloader 当前的方向是正确的：下载协调器作为插件级 singleton，由 `IPluginLifecycle` 初始化和关闭；Scheduler Tool 只是这个后台事实源的显示与控制入口。这样隐藏 Tool 或关闭提交任务的 Document 都不应停止下载。
 
-**[不成熟点]** `ToolMetadata.Alignment` 注释宣称支持 Left、Right、Top、Bottom，但布局构建和恢复逻辑实际上只区分 Left/Right，其他值会退化为左侧。参见 [`ToolMetadata.cs`](../MyAvaloniaManagementCommon/ToolCreation/ToolMetadata.cs#L31)、[`ManagementFactory.cs`](../MyAvaloniaManagement/ViewModels/ManagementFactory.cs#L250) 和 [`ToolManagementViewModel.cs`](../MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs#L226)。
+**[不成熟点]** `ToolMetadata.Alignment` 注释宣称支持 Left、Right、Top、Bottom，但布局构建和恢复逻辑实际上只区分 Left/Right，其他值会退化为左侧。参见 [`ToolMetadata.cs`](../Host/MyAvaloniaManagementCommon/ToolCreation/ToolMetadata.cs#L31)、[`ManagementFactory.cs`](../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs#L250) 和 [`ToolManagementViewModel.cs`](../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs#L226)。
 
 ## 5. 宿主与插件的实际交互通道
 
@@ -204,9 +204,9 @@ flowchart LR
 | 消息通信 | 共享 `WeakReferenceMessenger.Default` | 低耦合广播方便 | 全局命名空间、无所有者、无契约版本 |
 | 文件保存 | 宿主包装外层，插件序列化内部内容 | 职责基本合理 | 缺少迁移、脏状态和失败恢复 |
 
-**[代码事实]** `IMessengerService` 还直接暴露底层 `IMessenger`，其实现使用进程级 `WeakReferenceMessenger.Default`。参见 [`IMessengerService.cs`](../MyAvaloniaManagementCommon/Message/IMessengerService.cs#L8) 和 [`MessengerService.cs`](../MyAvaloniaManagementCommon/Message/MessengerService.cs#L24)。
+**[代码事实]** `IMessengerService` 还直接暴露底层 `IMessenger`，其实现使用进程级 `WeakReferenceMessenger.Default`。参见 [`IMessengerService.cs`](../Host/MyAvaloniaManagementCommon/Message/IMessengerService.cs#L8) 和 [`MessengerService.cs`](../Host/MyAvaloniaManagementCommon/Message/MessengerService.cs#L24)。
 
-**[代码事实]** 宿主自身仍存在静态 `ServiceProvider` 服务定位器；部分 Tool 甚至通过反射读取 `ManagementFactory` 私有字典。参见 [`ServiceProvider.cs`](../MyAvaloniaManagement/Business/Helpers/ServiceProvider.cs)、[`PlugGroupMenuViewModel.cs`](../MyAvaloniaManagement/ViewModels/Tools/PlugGroupMenuViewModel.cs#L20) 和 [`ToolManagementViewModel.cs`](../MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs#L63)。
+**[代码事实]** 宿主自身仍存在静态 `ServiceProvider` 服务定位器；部分 Tool 甚至通过反射读取 `ManagementFactory` 私有字典。参见 [`ServiceProvider.cs`](../Host/MyAvaloniaManagement/Business/Helpers/ServiceProvider.cs)、[`PlugGroupMenuViewModel.cs`](../Host/MyAvaloniaManagement/ViewModels/Tools/PlugGroupMenuViewModel.cs#L20) 和 [`ToolManagementViewModel.cs`](../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs#L63)。
 
 **[架构判断]** 当前模型可以概括为：**高自由度、低约束、强信任**。它适合内部插件，但需要把“能做什么”逐步收束为稳定的宿主能力，而不是继续暴露更多内部对象。
 
@@ -214,7 +214,7 @@ flowchart LR
 
 | 能力 | 状态 | 说明与证据 |
 | --- | --- | --- |
-| 插件目录扫描 | 已实现 | 按 Controls 下的一级目录建立 `PluginLoadContext`，递归加载托管 DLL，并排除 native/runtimes/libvlc；见 [`AssemblyLoaderHelper.cs`](../MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs#L30) |
+| 插件目录扫描 | 已实现 | 按 Controls 下的一级目录建立 `PluginLoadContext`，递归加载托管 DLL，并排除 native/runtimes/libvlc；见 [`AssemblyLoaderHelper.cs`](../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs#L30) |
 | Legacy/Managed 兼容 | 已实现 | 仅声明 `IPluginModule` 的程序集走 DI，Legacy 保持无参策略 |
 | Document/Tool 策略 | 已实现 | 反射发现策略，按字符串类型 ID 注册和创建 |
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient 服务 |
@@ -224,7 +224,7 @@ flowchart LR
 | 每 Document Scope | 部分成熟 | 基础设施和 MySmallTools 已完成，其他 Managed Document 尚未统一 |
 | 加载上下文隔离 | 部分成熟 | 每目录一个 ALC，但不是 collectible，没有卸载；共享依赖正确性依赖部署时按文件名排除 |
 | 错误处理与诊断 | 不成熟 | 多处捕获后仅输出 Console；没有宿主插件状态页、结构化日志或用户可操作错误 |
-| ID 与元数据 | 不成熟 | `PluginId`、Document/Tool ID 都是字符串；重复策略通过 `TryAdd` 静默保留首个实例，见 [`ManagementFactory.cs`](../MyAvaloniaManagement/ViewModels/ManagementFactory.cs#L130) |
+| ID 与元数据 | 不成熟 | `PluginId`、Document/Tool ID 都是字符串；重复策略通过 `TryAdd` 静默保留首个实例，见 [`ManagementFactory.cs`](../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs#L130) |
 | Tool 布局能力 | 不成熟 | 元数据承诺四个方向，实现只有左右两类 |
 | 构建与部署 | 不成熟 | BiliDownloader、MyPlugTest、MySmallTools 分别维护部署 Target，规则已经出现差异 |
 | 插件 manifest | 未实现 | 没有独立插件描述、版本、入口程序集、能力或依赖清单 |
@@ -237,7 +237,7 @@ flowchart LR
 
 ### 6.1 加载隔离需要准确理解
 
-**[代码事实]** `PluginLoadContext` 继承 `AssemblyLoadContext`，但构造时没有启用 `isCollectible`，宿主又长期缓存上下文和程序集。因此当前实现解决的是“按目录查找依赖”，不是“可卸载插件”。参见 [`PluginLoadContext.cs`](../MyAvaloniaManagement/Business/Helpers/PluginLoadContext.cs#L13) 和 [`AssemblyLoaderHelper.cs`](../MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs#L19)。
+**[代码事实]** `PluginLoadContext` 继承 `AssemblyLoadContext`，但构造时没有启用 `isCollectible`，宿主又长期缓存上下文和程序集。因此当前实现解决的是“按目录查找依赖”，不是“可卸载插件”。参见 [`PluginLoadContext.cs`](../Host/MyAvaloniaManagement/Business/Helpers/PluginLoadContext.cs#L13) 和 [`AssemblyLoaderHelper.cs`](../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs#L19)。
 
 **[架构判断]** 对“内部可信插件 + 重启更新”的既定边界，这不是必须修复的缺陷。更值得优先验证的是共享契约程序集只能由默认上下文提供，以及两个插件携带不同版本第三方依赖时不会互相串用。
 

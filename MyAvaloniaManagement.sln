@@ -1,24 +1,24 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement", "MyAvaloniaManagement\MyAvaloniaManagement.csproj", "{E7A5FA6B-1DB7-4790-87C1-F93F50490782}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement", "Host\MyAvaloniaManagement\MyAvaloniaManagement.csproj", "{E7A5FA6B-1DB7-4790-87C1-F93F50490782}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagementCommon", "MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj", "{4ED24BAB-F3DD-43CE-BADE-B08DFAB79832}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagementCommon", "Host\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj", "{4ED24BAB-F3DD-43CE-BADE-B08DFAB79832}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyPlugTest", "MyPlugTest\MyPlugTest.csproj", "{D7C9F48D-FAC5-4562-A5E7-6ED0085E5450}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyPlugTest", "Plugins\MyPlugTest\MyPlugTest\MyPlugTest.csproj", "{D7C9F48D-FAC5-4562-A5E7-6ED0085E5450}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj", "{FAAE3A0A-71D9-43CA-8C86-8A244AB98BD1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DaTangAccountingHelpPlug", "Plugins\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj", "{FAAE3A0A-71D9-43CA-8C86-8A244AB98BD1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySmallTools", "MySmallTools\MySmallTools.csproj", "{5129F0AA-D194-453D-A51F-F2A8F9DBDE71}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySmallTools", "Plugins\MySmallTools\MySmallTools\MySmallTools.csproj", "{5129F0AA-D194-453D-A51F-F2A8F9DBDE71}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BiliDownloader", "BiliDownloader\BiliDownloader.csproj", "{46146E1A-7EE6-4A19-B48B-F95522890FA8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BiliDownloader", "Plugins\BiliDownloader\BiliDownloader\BiliDownloader.csproj", "{46146E1A-7EE6-4A19-B48B-F95522890FA8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BiliDownloader.Tests", "BiliDownloader.Tests\BiliDownloader.Tests.csproj", "{A1F6CB50-0A58-4AA1-9C0E-BC69B2E93A11}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BiliDownloader.Tests", "Plugins\BiliDownloader\BiliDownloader.Tests\BiliDownloader.Tests.csproj", "{A1F6CB50-0A58-4AA1-9C0E-BC69B2E93A11}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement.PluginTests", "MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj", "{C3E55253-D3EE-4FD9-9A50-537C7659F487}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement.PluginTests", "Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj", "{C3E55253-D3EE-4FD9-9A50-537C7659F487}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySmallTools.Tests", "MySmallTools.Tests\MySmallTools.Tests.csproj", "{9EAD5C86-19F3-4D70-A46E-B9877E5C5142}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySmallTools.Tests", "Plugins\MySmallTools\MySmallTools.Tests\MySmallTools.Tests.csproj", "{9EAD5C86-19F3-4D70-A46E-B9877E5C5142}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySmallTools.SecurityBenchmarks", "MySmallTools.SecurityBenchmarks\MySmallTools.SecurityBenchmarks.csproj", "{7998A616-0618-4D86-B639-6FFF72B4C302}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySmallTools.SecurityBenchmarks", "Plugins\MySmallTools\MySmallTools.SecurityBenchmarks\MySmallTools.SecurityBenchmarks.csproj", "{7998A616-0618-4D86-B639-6FFF72B4C302}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Host", "Host", "{D3D5DCFB-A638-4239-87E7-0592AD7724B3}"
 EndProject

@@ -11,7 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
+      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -21,7 +21,7 @@
 
     <!-- 构建后将插件及其私有运行时依赖部署到宿主 Controls/MyPlugTest 目录。 -->
     <PropertyGroup>
-        <HostProjectOutputDir>$(MSBuildThisFileDirectory)..\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
+        <HostProjectOutputDir>$(MSBuildThisFileDirectory)..\..\..\Host\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
         <PluginDeployDir>$(HostProjectOutputDir)\Controls\MyPlugTest</PluginDeployDir>
     </PropertyGroup>
 
