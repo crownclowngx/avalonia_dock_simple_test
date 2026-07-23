@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
+using MySmallTools.Business.SecretVideoPlayer.Container;
 
-namespace MySmallTools.Business.SecretVideoPlayer;
+namespace MySmallTools.Business.SecretVideoPlayer.Decryption;
 
 /// <summary>
 /// 以常量内存顺序认证并导出一个 SECVID03 容器。

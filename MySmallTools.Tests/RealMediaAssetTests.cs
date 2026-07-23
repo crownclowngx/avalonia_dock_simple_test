@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
-using MySmallTools.Business.SecretVideoPlayer;
+using MySmallTools.Business.SecretVideoPlayer.Container;
 using Xunit;
 
 namespace MySmallTools.Tests;

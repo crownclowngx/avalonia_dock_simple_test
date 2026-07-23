@@ -1,4 +1,4 @@
-namespace MySmallTools.Business.SecretVideoPlayer;
+namespace MySmallTools.Business.SecretVideoPlayer.Encryption;
 
 /// <summary>
 /// 流式加密过程向界面报告的进度快照。

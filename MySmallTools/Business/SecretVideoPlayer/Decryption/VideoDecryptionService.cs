@@ -1,4 +1,6 @@
-namespace MySmallTools.Business.SecretVideoPlayer;
+using MySmallTools.Business.SecretVideoPlayer.Container;
+
+namespace MySmallTools.Business.SecretVideoPlayer.Decryption;
 
 /// <summary>
 /// 批量解密用例：预检候选文件、顺序执行、隔离单项失败并汇总进度。

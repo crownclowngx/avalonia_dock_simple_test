@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MySmallTools.Business.SecretVideoPlayer;
+using MySmallTools.Business.SecretVideoPlayer.Encryption;
+using MySmallTools.Business.SecretVideoPlayer.Library;
+using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.Constants;
 using MySmallTools.InitPlug.SecretVideoPlayer;
 using MySmallTools.ViewModels.SecretVideoPlayer;

@@ -1,5 +1,5 @@
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MySmallTools.Business.SecretVideoPlayer;
+using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Constants;
 using MySmallTools.InitPlug.SecretVideoPlayer;
 using MySmallTools.ViewModels.SecretVideoPlayer;

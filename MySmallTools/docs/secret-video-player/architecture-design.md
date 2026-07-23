@@ -16,6 +16,19 @@
 
 ## 2. 分层与职责
 
+业务代码按能力而不是按泛化的 Service/Helper 类型分为五个子域：
+
+```text
+Business/SecretVideoPlayer/
+├─ Container/   SECVID03 布局、密码学、公开区和认证随机读取
+├─ Encryption/  单文件流式加密与任务进度
+├─ Decryption/  单文件/批量解密、失败模型和输出路径
+├─ Playback/    LibVLC 运行时、播放器、MediaInput 和表面恢复
+└─ Library/     文件夹扫描契约和实现
+```
+
+依赖方向固定为 `Container ← Encryption/Decryption/Playback/Library`。Container 不依赖其他四个业务子域，ViewModel 和插件 Composition Root 可以组合各子域；子域之间不得形成环。
+
 ```mermaid
 flowchart TB
     subgraph Host["MyAvaloniaManagement 宿主"]
@@ -68,15 +81,16 @@ flowchart TB
 | --- | --- | --- |
 | 插件接入 | `MySmallToolsPluginModule`、三个 `DocumentStrategy` | 声明服务生命周期，由宿主为每个 Document 创建 Scope；不在模块加载时创建 View、LibVLC 或任务 |
 | 页面协调 | `SecretVideoPlayerViewModel`、`SecretVideoLibraryViewModel`、`VideoEncryptorViewModel` | 命令、输入校验、状态文本、公开信息编辑和任务取消 |
-| 视频库浏览 | `VideoLibraryBrowserViewModel`、`VideoLibraryScanner` | 限流异步扫描当前目录，隔离单文件错误，并按文件名、标题和描述筛选 |
+| 视频库浏览 | `VideoLibraryBrowserViewModel`、`Library.VideoLibraryScanner` | 限流异步扫描当前目录，隔离单文件错误，并按文件名、标题和描述筛选 |
 | 播放控件 | `VideoPlayerControlViewModel`、`VideoPlayerControl` | 播放控制、LibVLC 事件转 UI、媒体代次和视频表面恢复 |
 | 原生输出 | `EmbeddedVideoSurface` | 在原生句柄真正创建后绑定 `MediaPlayer.Hwnd`，销毁前同步发出表面丢失通知 |
-| 播放服务 | `SecureVideoPlayer` | 管理 `LibVLC`、`MediaPlayer`、`Media`、`MediaInput` 的所有权与释放顺序 |
-| 流适配 | `SeekableStreamMediaInput` | 把 .NET 可 Seek 流适配为 LibVLC `MediaInput`，串行化回调并保留底层异常 |
-| 容器读取 | `SeekableEncryptedVideoStream` | 验证固定头，按需认证和解密目标块，维护四块 LRU 明文缓存 |
-| 加密 | `VideoEncryptorService`、`Secvid03Encryptor` | 任务状态、进度、目录准备，以及 SECVID03 的事务式流式写入 |
-| 格式与公开区 | `Secvid03Format`、`EncryptedVideoContainer` | 固定偏移、nonce/AAD、边界校验、公开信息读取和原地更新 |
-| 原生运行时 | `LibVlcRuntime` | 从插件私有目录惰性、线程安全地完成一次进程级 `Core.Initialize` |
+| 播放服务 | `Playback.SecureVideoPlayer` | 管理 `LibVLC`、`MediaPlayer`、`Media`、`MediaInput` 的所有权与释放顺序 |
+| 流适配 | `Playback.SeekableStreamMediaInput` | 把 .NET 可 Seek 流适配为 LibVLC `MediaInput`，串行化回调并保留底层异常 |
+| 容器读取 | `Container.SeekableEncryptedVideoStream` | 验证固定头，按需认证和解密目标块，维护四块 LRU 明文缓存 |
+| 加密 | `Encryption.VideoEncryptorService`、`Encryption.Secvid03Encryptor` | 任务状态、进度、目录准备，以及 SECVID03 的事务式流式写入 |
+| 解密 | `Decryption.VideoDecryptionService`、`Decryption.Secvid03Decryptor` | 批次编排、失败隔离、逐块认证导出和事务提交 |
+| 格式与公开区 | `Container.Secvid03Format`、`Container.Secvid03Cryptography`、`Container.EncryptedVideoContainer` | 集中布局、严格解析、nonce/AAD/认证和公开信息读写 |
+| 原生运行时 | `Playback.LibVlcRuntime` | 从插件私有目录惰性、线程安全地完成一次进程级 `Core.Initialize` |
 
 ## 3. 加密数据流
 
@@ -250,10 +264,10 @@ Dock/原生表面的详细恢复时序及故障定位见[接入、约定与排�
 - [MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
 - [SecretVideoPlayerViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoPlayerViewModel.cs)
 - [SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
-- [VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/VideoLibraryScanner.cs)
+- [VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/Library/VideoLibraryScanner.cs)
 - [VideoPlayerControlViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoPlayerControlViewModel.cs)
-- [SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/SecureVideoPlayer.cs)
+- [SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)
 - [VideoEncryptorViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoEncryptorViewModel.cs)
 - [VideoDecryptorViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoDecryptorViewModel.cs)
-- [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Secvid03Decryptor.cs)
+- [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)
 - [DocumentScopeManager.cs](../../../MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)

@@ -1,4 +1,4 @@
-namespace MySmallTools.Business.SecretVideoPlayer;
+namespace MySmallTools.Business.SecretVideoPlayer.Decryption;
 
 /// <summary>
 /// 把不可信的公开文件名转换为安全、不会覆盖现有文件的输出路径。

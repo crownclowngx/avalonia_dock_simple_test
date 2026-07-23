@@ -1,4 +1,4 @@
-using MySmallTools.Business.SecretVideoPlayer;
+using MySmallTools.Business.SecretVideoPlayer.Library;
 
 namespace MySmallTools.Models.SecretVideoPlayer;
 

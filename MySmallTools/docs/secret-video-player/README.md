@@ -10,6 +10,7 @@
 | --- | --- | --- |
 | [实施路线图](ROADMAP.md) | 当前基线、阶段时间线、功能依赖、退出条件和统一完成标准 | 产品、开发者、维护者 |
 | [G0 完成记录](G0-BASELINE-REAL-MEDIA-LEGACY-CLEANUP.md) | 真实素材、遗留清理、SOLID 边界和 37/15 测试基线 | 开发者、维护者、评审人员 |
+| [G1 安全验证](G1-SECVID03-FORMAT-SECURITY-VALIDATION.md) | 五子域整理、威胁模型、固定向量、畸形/篡改矩阵和性能基线 | 开发者、安全评审人员 |
 | [概要设计](architecture-design.md) | 分层、组件职责、加密与播放数据流、DI 和 Document 生命周期 | 开发者、维护者 |
 | [SECVID03 文件格式](secvid03-format.md) | 二进制布局、密钥派生、GCM 认证、随机读取、公开信息和兼容策略 | 格式维护者、安全评审人员 |
 | [接入、约定与排障](integration-and-conventions.md) | LibVLC 部署、插件扫描、Dock 黑屏恢复、资源释放、已踩过的坑和回归检查 | 集成人员、问题排查人员 |
@@ -109,11 +110,11 @@ flowchart LR
 ## 源码入口
 
 - 插件与服务注册：[MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
-- 加密与格式：[Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Secvid03Encryptor.cs)、[Secvid03Format.cs](../../Business/SecretVideoPlayer/Secvid03Format.cs)
-- 随机读取播放：[SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/SeekableEncryptedVideoStream.cs)、[SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/SecureVideoPlayer.cs)
-- 批量明文导出：[Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Secvid03Decryptor.cs)、[VideoDecryptionService.cs](../../Business/SecretVideoPlayer/VideoDecryptionService.cs)
-- Dock 视频表面：[EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)、[VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/VideoSurfaceRestoreSequence.cs)
-- 文件夹视频库：[VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/VideoLibraryScanner.cs)、[SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
-- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[VideoDecryptionTests.cs](../../../MySmallTools.Tests/VideoDecryptionTests.cs)、[VideoToolStabilityTests.cs](../../../MySmallTools.Tests/VideoToolStabilityTests.cs)、[VideoLibraryTests.cs](../../../MySmallTools.Tests/VideoLibraryTests.cs)
+- 加密与格式：[Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Encryption/Secvid03Encryptor.cs)、[Secvid03Format.cs](../../Business/SecretVideoPlayer/Container/Secvid03Format.cs)
+- 随机读取播放：[SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/Container/SeekableEncryptedVideoStream.cs)、[SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)
+- 批量明文导出：[Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)、[VideoDecryptionService.cs](../../Business/SecretVideoPlayer/Decryption/VideoDecryptionService.cs)
+- Dock 视频表面：[EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)、[VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/Playback/VideoSurfaceRestoreSequence.cs)
+- 文件夹视频库：[VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/Library/VideoLibraryScanner.cs)、[SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
+- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[Secvid03GoldenVectorTests.cs](../../../MySmallTools.Tests/Secvid03GoldenVectorTests.cs)
 
 本文档描述当前实现，不把设想中的跨平台支持、旧格式兼容或其他加密算法写作已有能力。格式或接入行为变化时，应同时更新本目录文档和对应自动化测试。

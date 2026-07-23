@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
+using MySmallTools.Business.SecretVideoPlayer.Container;
 
-namespace MySmallTools.Business.SecretVideoPlayer;
+namespace MySmallTools.Business.SecretVideoPlayer.Encryption;
 
 /// <summary>
 /// 以流式方式创建 SECVID03 文件的加密器。
@@ -11,6 +12,18 @@ namespace MySmallTools.Business.SecretVideoPlayer;
 /// </remarks>
 public sealed class Secvid03Encryptor
 {
+    private readonly ISecvid03EntropySource _entropySource;
+
+    public Secvid03Encryptor()
+        : this(RandomSecvid03EntropySource.Instance)
+    {
+    }
+
+    internal Secvid03Encryptor(ISecvid03EntropySource entropySource)
+    {
+        _entropySource = entropySource ?? throw new ArgumentNullException(nameof(entropySource));
+    }
+
     /// <summary>
     /// 将一个普通视频加密为 SECVID03 容器。
     /// </summary>
@@ -43,22 +56,27 @@ public sealed class Secvid03Encryptor
             input.Position = 0;
             await input.ReadExactlyAsync(originalHeader, cancellationToken);
 
-            var salt = RandomNumberGenerator.GetBytes(16);
-            var fileId = RandomNumberGenerator.GetBytes(16);
-            var noncePrefix = RandomNumberGenerator.GetBytes(8);
+            var entropy = _entropySource.Create();
             var extension = Path.GetExtension(inputPath).ToLowerInvariant();
-            var header = Secvid03Format.CreateHeader(input.Length, originalHeaderLength, extension, salt, fileId, noncePrefix);
+            var header = Secvid03Format.CreateHeader(
+                input.Length,
+                originalHeaderLength,
+                extension,
+                entropy.Salt,
+                entropy.FileId,
+                entropy.NoncePrefix);
             var publicRegion = EncryptedVideoContainer.BuildPublicRegion(Path.GetFileName(inputPath), title, description);
-            var key = Secvid03Format.DeriveKey(password, header);
+            var key = Secvid03Cryptography.DeriveKey(password, header);
+            byte[]? immutableDigest = null;
 
             try
             {
                 // 固定头和明文视频前缀共同构成不可变 AAD。公开标题/描述刻意不在其中，
                 // 因而它们可原地编辑，同时固定头、视频前缀和密文主体仍受完整性保护。
-                var immutableAad = Secvid03Format.CreateImmutableHeaderAad(header, originalHeader);
-                var immutableDigest = SHA256.HashData(immutableAad);
+                var immutableAad = Secvid03Cryptography.CreateImmutableHeaderAad(header, originalHeader);
+                immutableDigest = SHA256.HashData(immutableAad);
                 using var aes = new AesGcm(key, Secvid03Format.TagSize);
-                aes.Encrypt(Secvid03Format.CreateNonce(header, 0), ReadOnlySpan<byte>.Empty, Span<byte>.Empty,
+                aes.Encrypt(Secvid03Cryptography.CreateNonce(header, 0), ReadOnlySpan<byte>.Empty, Span<byte>.Empty,
                     header.HeaderTag, immutableAad);
                 header.HeaderTag.CopyTo(header.Bytes, Secvid03Format.HeaderTagOffset);
 
@@ -81,8 +99,8 @@ public sealed class Secvid03Encryptor
                         var required = (int)Math.Min(Secvid03Format.ChunkSize, header.PlainBodyLength - processedBody);
                         await ReadExactlyAsync(input, plain.AsMemory(0, required), cancellationToken);
                         var tag = new byte[Secvid03Format.TagSize];
-                        var aad = Secvid03Format.CreateChunkAad(immutableDigest, chunkIndex);
-                        aes.Encrypt(Secvid03Format.CreateNonce(header, checked((uint)chunkIndex + 1)),
+                        var aad = Secvid03Cryptography.CreateChunkAad(immutableDigest, chunkIndex);
+                        aes.Encrypt(Secvid03Cryptography.CreateNonce(header, checked((uint)chunkIndex + 1)),
                             plain.AsSpan(0, required), cipher.AsSpan(0, required), tag, aad);
                         await output.WriteAsync(cipher.AsMemory(0, required), cancellationToken);
                         await output.WriteAsync(tag, cancellationToken);
@@ -111,7 +129,9 @@ public sealed class Secvid03Encryptor
             }
             finally
             {
-                // 派生密钥只在本次加密调用中存活，不缓存到对象字段，也不会写入文件。
+                // 派生材料只在本次加密调用中存活，不缓存到对象字段，也不会写入文件。
+                if (immutableDigest is not null)
+                    CryptographicOperations.ZeroMemory(immutableDigest);
                 CryptographicOperations.ZeroMemory(key);
             }
 

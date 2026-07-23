@@ -17,10 +17,10 @@ SECVID03 是当前安全视频子系统唯一支持的容器格式。它解决�
 
 设：
 
-- `H` 为原视频前缀长度。
+- `H` 为原视频前缀长度，合法范围为 `0..40` 字节。
 - `B` 为原视频主体长度，即 `OriginalFileLength - H`。
 - `C` 为块大小，固定为 `1,048,576` 字节（1 MiB）。
-- `N = ceil(B / C)` 为块数。
+- `N = ceil(B / C)` 为块数，最大为 `uint.MaxValue`。
 
 ```text
 物理偏移
@@ -45,7 +45,7 @@ EncryptedDataOffset  = 65,792 + H
 PhysicalFileLength   = EncryptedDataOffset + B + N × 16
 ```
 
-解析器不会信任文件中声明的派生长度和偏移，而是从原始长度、前缀长度、块大小重新计算，并使用 `checked` 算术拒绝整数溢出、截断和不一致的物理文件长度。
+解析器不会信任文件中声明的派生长度和偏移，而是从原始长度、前缀长度、块大小重新计算。非空主体使用 `1 + (B - 1) / C` 计算块数，避免向上取整时的加法溢出；所有偏移和物理长度继续使用 `checked` 算术，拒绝整数溢出、截断和尾随数据。
 
 ## 3. 固定头
 
@@ -74,7 +74,7 @@ PhysicalFileLength   = EncryptedDataOffset + B + N × 16
 | `148..163` | 16 | 固定头 GCM Tag |
 | `164..255` | 92 | 保留，必须全零 |
 
-原扩展名最多占 32 个 UTF-8 字节。解析前会检查版本、固定常量、长度范围、块计数、保留区、严格 UTF-8 以及物理文件长度。结构检查发生在 PBKDF2 前，避免对明显非法或恶意构造的文件执行高成本密钥派生。
+原扩展名最多占 32 个 UTF-8 字节，原视频前缀最多为 40 字节。解析器先检查版本、固定常量、长度范围、保留区和严格 UTF-8，再重新计算块计数、偏移及精确物理长度；只有结构通过后才读取前缀并执行 PBKDF2，避免畸形长度触发超大分配或高成本密钥派生。
 
 ## 4. 密钥、nonce 与 AAD
 
@@ -100,7 +100,7 @@ key = PBKDF2-HMAC-SHA256(
 
 - 计数器 `0` 专用于固定头认证。
 - 视频块 `i` 使用计数器 `i + 1`。
-- 解析器限制块数不超过 32 位计数器可表达范围，防止同一文件密钥下重复 nonce。
+- 固定头占用计数器 0，视频块依次使用 `1..uint.MaxValue`；解析器限制块数不超过 `uint.MaxValue`，防止同一文件密钥下重复 nonce。
 
 ### 4.3 固定头认证
 
@@ -150,7 +150,7 @@ chunkAad = immutableDigest || Int64BigEndian(chunkIndex)
 | `24..27` | 4 | 描述 UTF-8 长度 |
 | `28..31` | 4 | 负载 CRC32 |
 | `32..` | 可变 | 文件名、标题、描述的连续 UTF-8 负载 |
-| 记录末尾至 64 KiB | 可变 | 零填充 |
+| 记录末尾至 64 KiB | 可变 | 零填充；读取器要求全部为零 |
 
 公开区约束如下：
 
@@ -233,9 +233,11 @@ chunkPhysicalOffset = EncryptedDataOffset + chunkIndex × (1 MiB + 16)
 
 ## 10. 对应实现与测试
 
-- [Secvid03Format.cs](../../Business/SecretVideoPlayer/Secvid03Format.cs)：格式常量、边界解析、nonce 和 AAD。
-- [Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Secvid03Encryptor.cs)：流式加密与事务提交。
-- [EncryptedVideoContainer.cs](../../Business/SecretVideoPlayer/EncryptedVideoContainer.cs)：公开区读取和原地更新。
-- [SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/SeekableEncryptedVideoStream.cs)：按需认证解密和 LRU 缓存。
-- [SeekableStreamMediaInput.cs](../../Business/SecretVideoPlayer/SeekableStreamMediaInput.cs)：LibVLC 回调适配。
-- [Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)：Unicode、边界、顺序/随机读取、篡改、CRC 和文件句柄回归测试。
+- [Secvid03Format.cs](../../Business/SecretVideoPlayer/Container/Secvid03Format.cs)：格式常量、集中布局计算和严格解析。
+- [Secvid03Cryptography.cs](../../Business/SecretVideoPlayer/Container/Secvid03Cryptography.cs)：KDF、nonce、AAD 和认证规则。
+- [Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Encryption/Secvid03Encryptor.cs)：流式加密与事务提交。
+- [EncryptedVideoContainer.cs](../../Business/SecretVideoPlayer/Container/EncryptedVideoContainer.cs)：公开区读取和原地更新。
+- [SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/Container/SeekableEncryptedVideoStream.cs)：按需认证解密和 LRU 缓存。
+- [SeekableStreamMediaInput.cs](../../Business/SecretVideoPlayer/Playback/SeekableStreamMediaInput.cs)：LibVLC 回调适配。
+- [Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)：边界、逐字节篡改、块归属、资源和路径安全。
+- [Secvid03GoldenVectorTests.cs](../../../MySmallTools.Tests/Secvid03GoldenVectorTests.cs)：固定向量、逐字节输出和独立参考验证。

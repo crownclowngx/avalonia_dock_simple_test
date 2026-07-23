@@ -2,9 +2,9 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LibVLCSharp.Shared;
-using MySmallTools.Business.SecretVideoPlayer;
+using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.Constants.SecretVideoPlayer;
-using TimeChangedEventArgs = MySmallTools.Business.SecretVideoPlayer.TimeChangedEventArgs;
+using TimeChangedEventArgs = MySmallTools.Business.SecretVideoPlayer.Playback.TimeChangedEventArgs;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer;
 

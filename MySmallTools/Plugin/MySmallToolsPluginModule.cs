@@ -1,6 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
-using MySmallTools.Business.SecretVideoPlayer;
+using MySmallTools.Business.SecretVideoPlayer.Decryption;
+using MySmallTools.Business.SecretVideoPlayer.Encryption;
+using MySmallTools.Business.SecretVideoPlayer.Library;
+using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 
 namespace MySmallTools.Plugin;

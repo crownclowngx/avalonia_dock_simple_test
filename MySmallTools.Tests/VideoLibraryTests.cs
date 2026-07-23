@@ -1,4 +1,5 @@
-using MySmallTools.Business.SecretVideoPlayer;
+using MySmallTools.Business.SecretVideoPlayer.Container;
+using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Constants;
 using MySmallTools.InitPlug.SecretVideoPlayer;
 using MySmallTools.ViewModels.SecretVideoPlayer;

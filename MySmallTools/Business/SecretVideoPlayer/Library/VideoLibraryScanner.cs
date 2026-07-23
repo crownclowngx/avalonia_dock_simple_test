@@ -1,27 +1,7 @@
 using System.Runtime.CompilerServices;
+using MySmallTools.Business.SecretVideoPlayer.Container;
 
-namespace MySmallTools.Business.SecretVideoPlayer;
-
-public enum VideoLibraryMetadataState
-{
-    Ready,
-    Failed
-}
-
-public sealed record VideoLibraryScanResult(
-    string FilePath,
-    string FileNameWithoutExtension,
-    string PublicTitle,
-    string PublicDescription,
-    VideoLibraryMetadataState State,
-    string ErrorMessage);
-
-public interface IVideoLibraryScanner
-{
-    IAsyncEnumerable<VideoLibraryScanResult> ScanAsync(
-        string folderPath,
-        CancellationToken cancellationToken);
-}
+namespace MySmallTools.Business.SecretVideoPlayer.Library;
 
 /// <summary>
 /// 枚举当前目录中的 .secvid 文件，并以固定并发度读取无需密码的公开信息。

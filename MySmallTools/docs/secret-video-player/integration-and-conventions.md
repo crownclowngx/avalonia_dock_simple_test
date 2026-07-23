@@ -293,6 +293,7 @@ flowchart TD
 | 能力或约束 | 生产入口 | 自动化证据 | 权威文档 |
 | --- | --- | --- | --- |
 | SECVID03 流式加密与事务提交 | `Secvid03Encryptor`、`VideoEncryptorService` | `Secvid03Tests.cs`、`VideoToolStabilityTests.cs` | [格式](secvid03-format.md)、[架构](architecture-design.md) |
+| SECVID03 格式冻结与安全边界 | `Secvid03Format`、`Secvid03Cryptography` | `Secvid03SecurityTests.cs`、`Secvid03GoldenVectorTests.cs` | [G1 安全验证](G1-SECVID03-FORMAT-SECURITY-VALIDATION.md) |
 | 批量解密、认证、取消与不覆盖 | `Secvid03Decryptor`、`VideoDecryptionService` | `VideoDecryptionTests.cs` | [README](README.md)、[格式](secvid03-format.md) |
 | 认证随机读取、Seek 与句柄释放 | `SeekableEncryptedVideoStream` | `Secvid03Tests.cs` | [格式](secvid03-format.md)、[架构](architecture-design.md) |
 | 文件夹媒体库扫描和过期结果淘汰 | `VideoLibraryScanner`、`VideoLibraryBrowserViewModel` | `VideoLibraryTests.cs` | [README](README.md)、[架构](architecture-design.md) |
@@ -313,12 +314,12 @@ dotnet test MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.cs
 ## 11. 关键源码
 
 - [MySmallTools.csproj](../../MySmallTools.csproj)
-- [LibVlcRuntime.cs](../../Business/SecretVideoPlayer/LibVlcRuntime.cs)
+- [LibVlcRuntime.cs](../../Business/SecretVideoPlayer/Playback/LibVlcRuntime.cs)
 - [EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)
 - [VideoPlayerControlViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoPlayerControlViewModel.cs)
-- [VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/VideoSurfaceRestoreSequence.cs)
+- [VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/Playback/VideoSurfaceRestoreSequence.cs)
 - [MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
-- [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Secvid03Decryptor.cs)
-- [VideoDecryptionService.cs](../../Business/SecretVideoPlayer/VideoDecryptionService.cs)
+- [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)
+- [VideoDecryptionService.cs](../../Business/SecretVideoPlayer/Decryption/VideoDecryptionService.cs)
 - [AssemblyLoaderHelper.cs](../../../MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs)
 - [DocumentScopeManager.cs](../../../MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)

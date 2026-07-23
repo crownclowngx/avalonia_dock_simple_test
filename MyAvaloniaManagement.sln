@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement.Plugin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySmallTools.Tests", "MySmallTools.Tests\MySmallTools.Tests.csproj", "{9EAD5C86-19F3-4D70-A46E-B9877E5C5142}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySmallTools.SecurityBenchmarks", "MySmallTools.SecurityBenchmarks\MySmallTools.SecurityBenchmarks.csproj", "{7998A616-0618-4D86-B639-6FFF72B4C302}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -136,6 +138,18 @@ Global
 		{9EAD5C86-19F3-4D70-A46E-B9877E5C5142}.Release|x64.Build.0 = Release|Any CPU
 		{9EAD5C86-19F3-4D70-A46E-B9877E5C5142}.Release|x86.ActiveCfg = Release|Any CPU
 		{9EAD5C86-19F3-4D70-A46E-B9877E5C5142}.Release|x86.Build.0 = Release|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Debug|x64.Build.0 = Debug|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Debug|x86.Build.0 = Debug|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Release|x64.ActiveCfg = Release|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Release|x64.Build.0 = Release|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Release|x86.ActiveCfg = Release|Any CPU
+		{7998A616-0618-4D86-B639-6FFF72B4C302}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

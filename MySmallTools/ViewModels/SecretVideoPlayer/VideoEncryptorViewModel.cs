@@ -2,7 +2,8 @@ using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
-using MySmallTools.Business.SecretVideoPlayer;
+using MySmallTools.Business.SecretVideoPlayer.Container;
+using MySmallTools.Business.SecretVideoPlayer.Encryption;
 using MySmallTools.Models.SecretVideoPlayer;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer;

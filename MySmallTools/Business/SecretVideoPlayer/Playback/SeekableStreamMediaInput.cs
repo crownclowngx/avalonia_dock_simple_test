@@ -1,6 +1,7 @@
 using LibVLCSharp.Shared;
+using MySmallTools.Business.SecretVideoPlayer.Container;
 
-namespace MySmallTools.Business.SecretVideoPlayer;
+namespace MySmallTools.Business.SecretVideoPlayer.Playback;
 
 /// <summary>
 /// 将 .NET 可定位流桥接到 LibVLC 的 MediaInput 回调接口。

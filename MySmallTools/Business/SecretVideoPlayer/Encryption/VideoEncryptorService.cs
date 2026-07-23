@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MySmallTools.Models.SecretVideoPlayer;
 
-namespace MySmallTools.Business.SecretVideoPlayer;
+namespace MySmallTools.Business.SecretVideoPlayer.Encryption;
 
 /// <summary>
 /// 连接加密界面任务模型和 SECVID03 流式加密器的应用服务。

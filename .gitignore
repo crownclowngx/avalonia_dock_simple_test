@@ -18,3 +18,5 @@ MySmallTools/bin/Debug/net9.0/MySmallTools.deps.json
 .aiflow/insight/
 /MySmallTools.Tests/bin
 /MySmallTools.Tests/obj
+/MySmallTools.SecurityBenchmarks/bin
+/MySmallTools.SecurityBenchmarks/obj

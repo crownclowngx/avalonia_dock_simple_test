@@ -1,8 +1,7 @@
 using System.Buffers.Binary;
-using System.Security.Cryptography;
 using System.Text;
 
-namespace MySmallTools.Business.SecretVideoPlayer;
+namespace MySmallTools.Business.SecretVideoPlayer.Container;
 
 /// <summary>
 /// SECVID03 固定头解析后的内存模型。
@@ -20,15 +19,27 @@ internal sealed class Secvid03Header
     public required byte[] NoncePrefix { get; init; }
     public required byte[] HeaderTag { get; init; }
     public required string OriginalExtension { get; init; }
-    public required long OriginalFileLength { get; init; }
-    public required long PlainBodyLength { get; init; }
-    public required long EncryptedDataOffset { get; init; }
-    public required int OriginalHeaderLength { get; init; }
+    public required Secvid03Layout Layout { get; init; }
     public required int ChunkSize { get; init; }
     public required int KdfIterations { get; init; }
 
-    public long ChunkCount => PlainBodyLength == 0 ? 0 : (PlainBodyLength + ChunkSize - 1) / ChunkSize;
+    public long OriginalFileLength => Layout.OriginalFileLength;
+    public long PlainBodyLength => Layout.PlainBodyLength;
+    public long EncryptedDataOffset => Layout.EncryptedDataOffset;
+    public int OriginalHeaderLength => Layout.OriginalHeaderLength;
+    public long ChunkCount => Layout.ChunkCount;
 }
+
+/// <summary>
+/// 从受信任输入或严格解析后的固定头计算得到的 SECVID03 物理布局。
+/// </summary>
+internal readonly record struct Secvid03Layout(
+    long OriginalFileLength,
+    int OriginalHeaderLength,
+    long PlainBodyLength,
+    long EncryptedDataOffset,
+    long ChunkCount,
+    long PhysicalFileLength);
 
 internal static class Secvid03Format
 {
@@ -47,6 +58,7 @@ internal static class Secvid03Format
     public const int KdfIterations = 600_000;
     public const int HeaderTagOffset = 148;
     public const int OriginalHeaderOffset = FixedHeaderSize + PublicInfoCapacity;
+    public const int MaxOriginalHeaderLength = 40;
 
     private const int ExtensionOffset = 116;
     private const int ExtensionCapacity = 32;
@@ -66,10 +78,7 @@ internal static class Secvid03Format
         byte[] fileId,
         byte[] noncePrefix)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(originalFileLength);
-        ArgumentOutOfRangeException.ThrowIfNegative(originalHeaderLength);
-        if (originalHeaderLength > originalFileLength)
-            throw new ArgumentException("视频头长度不能超过原始文件长度。", nameof(originalHeaderLength));
+        var layout = CalculateLayout(originalFileLength, originalHeaderLength);
 
         originalExtension ??= string.Empty;
         var extensionBytes = Encoding.UTF8.GetBytes(originalExtension);
@@ -78,8 +87,6 @@ internal static class Secvid03Format
         if (salt.Length != 16 || fileId.Length != 16 || noncePrefix.Length != 8)
             throw new ArgumentException("SECVID03 随机参数长度不正确。");
 
-        var bodyLength = checked(originalFileLength - originalHeaderLength);
-        var encryptedOffset = checked((long)OriginalHeaderOffset + originalHeaderLength);
         var bytes = new byte[FixedHeaderSize];
         Encoding.ASCII.GetBytes(Magic).CopyTo(bytes, 0);
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(8, 4), Version);
@@ -88,8 +95,8 @@ internal static class Secvid03Format
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(24, 4), PublicInfoCapacity);
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(28, 4), originalHeaderLength);
         BinaryPrimitives.WriteInt64LittleEndian(bytes.AsSpan(32, 8), originalFileLength);
-        BinaryPrimitives.WriteInt64LittleEndian(bytes.AsSpan(40, 8), bodyLength);
-        BinaryPrimitives.WriteInt64LittleEndian(bytes.AsSpan(48, 8), encryptedOffset);
+        BinaryPrimitives.WriteInt64LittleEndian(bytes.AsSpan(40, 8), layout.PlainBodyLength);
+        BinaryPrimitives.WriteInt64LittleEndian(bytes.AsSpan(48, 8), layout.EncryptedDataOffset);
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(56, 4), ChunkSize);
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(60, 4), TagSize);
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(64, 4), KdfIterations);
@@ -107,10 +114,7 @@ internal static class Secvid03Format
             NoncePrefix = noncePrefix.ToArray(),
             HeaderTag = new byte[TagSize],
             OriginalExtension = originalExtension,
-            OriginalFileLength = originalFileLength,
-            PlainBodyLength = bodyLength,
-            EncryptedDataOffset = encryptedOffset,
-            OriginalHeaderLength = originalHeaderLength,
+            Layout = layout,
             ChunkSize = ChunkSize,
             KdfIterations = KdfIterations
         };
@@ -139,7 +143,8 @@ internal static class Secvid03Format
 
         if (version != Version || headerSize != FixedHeaderSize || publicOffset != FixedHeaderSize ||
             publicCapacity != PublicInfoCapacity || chunkSize != ChunkSize || tagSize != TagSize ||
-            iterations != KdfIterations || originalHeaderLength < 0 || originalFileLength < 0 || bodyLength < 0 ||
+            iterations != KdfIterations || originalHeaderLength < 0 ||
+            originalHeaderLength > MaxOriginalHeaderLength || originalFileLength < 0 || bodyLength < 0 ||
             extensionLength < 0 || extensionLength > ExtensionCapacity)
             throw new InvalidDataException("SECVID03 固定头字段无效。");
 
@@ -147,29 +152,6 @@ internal static class Secvid03Format
             !IsAllZero(bytes.Slice(ExtensionOffset + extensionLength, ExtensionCapacity - extensionLength)) ||
             !IsAllZero(bytes.Slice(HeaderTagOffset + TagSize)))
             throw new InvalidDataException("SECVID03 固定头保留字段必须为零。");
-
-        // 不信任文件中记录的派生长度和偏移，而是从原始长度重新计算并逐项比对。
-        // checked 算术用于阻止恶意长度在 long 运算中回绕后落入一个看似合法的文件范围。
-        long expectedBodyLength;
-        long expectedEncryptedOffset;
-        long chunkCount;
-        long expectedPhysicalLength;
-        try
-        {
-            expectedBodyLength = checked(originalFileLength - originalHeaderLength);
-            expectedEncryptedOffset = checked((long)OriginalHeaderOffset + originalHeaderLength);
-            chunkCount = bodyLength == 0 ? 0 : checked((bodyLength + chunkSize - 1) / chunkSize);
-            expectedPhysicalLength = checked(encryptedOffset + bodyLength + chunkCount * tagSize);
-        }
-        catch (OverflowException ex)
-        {
-            throw new InvalidDataException("SECVID03 长度字段溢出。", ex);
-        }
-
-        if (originalHeaderLength > originalFileLength || bodyLength != expectedBodyLength ||
-            encryptedOffset != expectedEncryptedOffset || expectedPhysicalLength != physicalFileLength ||
-            chunkCount > uint.MaxValue - 1L)
-            throw new InvalidDataException("SECVID03 文件长度或偏移不一致。");
 
         string extension;
         try
@@ -180,6 +162,22 @@ internal static class Secvid03Format
         {
             throw new InvalidDataException("SECVID03 原始扩展名不是有效的 UTF-8。", ex);
         }
+
+        Secvid03Layout layout;
+        try
+        {
+            layout = CalculateLayout(originalFileLength, originalHeaderLength);
+        }
+        catch (Exception ex) when (ex is ArgumentException or OverflowException)
+        {
+            throw new InvalidDataException("SECVID03 长度字段无效或溢出。", ex);
+        }
+
+        if (bodyLength != layout.PlainBodyLength ||
+            encryptedOffset != layout.EncryptedDataOffset ||
+            physicalFileLength != layout.PhysicalFileLength)
+            throw new InvalidDataException("SECVID03 文件长度或偏移不一致。");
+
         return new Secvid03Header
         {
             Bytes = bytes.ToArray(),
@@ -188,53 +186,37 @@ internal static class Secvid03Format
             NoncePrefix = bytes.Slice(104, 8).ToArray(),
             HeaderTag = bytes.Slice(HeaderTagOffset, TagSize).ToArray(),
             OriginalExtension = extension,
-            OriginalFileLength = originalFileLength,
-            PlainBodyLength = bodyLength,
-            EncryptedDataOffset = encryptedOffset,
-            OriginalHeaderLength = originalHeaderLength,
+            Layout = layout,
             ChunkSize = chunkSize,
             KdfIterations = iterations
         };
     }
 
-    public static byte[] DeriveKey(string password, Secvid03Header header) =>
-        Rfc2898DeriveBytes.Pbkdf2(password, header.Salt, header.KdfIterations, HashAlgorithmName.SHA256, 32);
-
-    /// <summary>
-    /// 生成 AES-GCM 使用的 96 位 nonce：前 64 位为每文件随机前缀，后 32 位为大端序计数器。
-    /// </summary>
-    /// <remarks>
-    /// 计数器 0 专用于固定头认证，视频块 i 使用 i+1，因此同一密钥下不会重复使用 nonce。
-    /// 文件块数量在解析时限制在计数器可表达的范围内。
-    /// </remarks>
-    public static byte[] CreateNonce(Secvid03Header header, uint counter)
+    internal static Secvid03Layout CalculateLayout(long originalFileLength, int originalHeaderLength)
     {
-        var nonce = new byte[12];
-        header.NoncePrefix.CopyTo(nonce, 0);
-        BinaryPrimitives.WriteUInt32BigEndian(nonce.AsSpan(8, 4), counter);
-        return nonce;
-    }
+        ArgumentOutOfRangeException.ThrowIfNegative(originalFileLength);
+        ArgumentOutOfRangeException.ThrowIfNegative(originalHeaderLength);
+        if (originalHeaderLength > MaxOriginalHeaderLength)
+            throw new ArgumentOutOfRangeException(
+                nameof(originalHeaderLength),
+                $"SECVID03 原视频前缀不能超过 {MaxOriginalHeaderLength} 字节。");
+        if (originalHeaderLength > originalFileLength)
+            throw new ArgumentException("视频头长度不能超过原始文件长度。", nameof(originalHeaderLength));
 
-    public static byte[] CreateImmutableHeaderAad(Secvid03Header header, ReadOnlySpan<byte> originalHeader)
-    {
-        // 标签不能认证自身，所以构造 AAD 时固定清零标签槽位。
-        // 原视频前缀虽然以明文保存，但也放入 AAD；任何人修改它都会导致密码验证失败。
-        var headerBytes = header.Bytes.ToArray();
-        headerBytes.AsSpan(HeaderTagOffset, TagSize).Clear();
-        var aad = new byte[checked(headerBytes.Length + originalHeader.Length)];
-        headerBytes.CopyTo(aad, 0);
-        originalHeader.CopyTo(aad.AsSpan(headerBytes.Length));
-        return aad;
-    }
+        var bodyLength = checked(originalFileLength - originalHeaderLength);
+        var encryptedDataOffset = checked((long)OriginalHeaderOffset + originalHeaderLength);
+        var chunkCount = bodyLength == 0 ? 0 : checked(1 + (bodyLength - 1) / ChunkSize);
+        if (chunkCount > uint.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(originalFileLength), "SECVID03 视频块数量超过 nonce 计数器范围。");
 
-    public static byte[] CreateChunkAad(ReadOnlySpan<byte> immutableHeaderDigest, long chunkIndex)
-    {
-        // 每块 AAD 绑定“不可变容器 + 原视频前缀”的摘要以及块序号。
-        // 这样既避免为每次随机读取重新拼接大 AAD，也可防止密文块被交换或复制到另一文件。
-        var aad = new byte[40];
-        immutableHeaderDigest.CopyTo(aad);
-        BinaryPrimitives.WriteInt64BigEndian(aad.AsSpan(32, 8), chunkIndex);
-        return aad;
+        var physicalFileLength = checked(encryptedDataOffset + bodyLength + chunkCount * TagSize);
+        return new Secvid03Layout(
+            originalFileLength,
+            originalHeaderLength,
+            bodyLength,
+            encryptedDataOffset,
+            chunkCount,
+            physicalFileLength);
     }
 
     public static int DetectOriginalHeaderLength(Stream stream)

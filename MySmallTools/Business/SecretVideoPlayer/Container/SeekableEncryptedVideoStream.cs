@@ -1,4 +1,4 @@
-namespace MySmallTools.Business.SecretVideoPlayer;
+namespace MySmallTools.Business.SecretVideoPlayer.Container;
 
 /// <summary>
 /// 把 SECVID03 暴露为与原视频内容完全一致的只读、可随机定位流。

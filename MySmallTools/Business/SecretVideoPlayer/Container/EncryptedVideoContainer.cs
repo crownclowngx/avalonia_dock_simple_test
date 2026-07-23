@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 
-namespace MySmallTools.Business.SecretVideoPlayer;
+namespace MySmallTools.Business.SecretVideoPlayer.Container;
 
 /// <summary>
 /// 无需密码即可读取的 SECVID03 公开信息。
@@ -153,6 +153,8 @@ public static class EncryptedVideoContainer
         var actualCrc = Crc32.Compute(region.Slice(PublicHeaderSize, totalLength - PublicHeaderSize));
         if (actualCrc != expectedCrc)
             throw new InvalidDataException("SECVID03 公开信息校验失败。");
+        if (!IsAllZero(region[totalLength..]))
+            throw new InvalidDataException("SECVID03 公开信息填充区域必须为零。");
 
         var offset = PublicHeaderSize;
         var fileName = DecodeUtf8(region.Slice(offset, fileNameLength));
@@ -206,6 +208,17 @@ public static class EncryptedVideoContainer
             if (rune.Value == 0 || (Rune.IsControl(rune) && rune.Value is not '\r' and not '\n' and not '\t'))
                 throw new ArgumentException($"{parameterName} 包含不允许的控制字符。", parameterName);
         }
+    }
+
+    private static bool IsAllZero(ReadOnlySpan<byte> bytes)
+    {
+        foreach (var value in bytes)
+        {
+            if (value != 0)
+                return false;
+        }
+
+        return true;
     }
 
     private static class Crc32

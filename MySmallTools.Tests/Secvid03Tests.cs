@@ -1,5 +1,7 @@
-using MySmallTools.Business.SecretVideoPlayer;
 using LibVLCSharp.Shared;
+using MySmallTools.Business.SecretVideoPlayer.Container;
+using MySmallTools.Business.SecretVideoPlayer.Encryption;
+using MySmallTools.Business.SecretVideoPlayer.Playback;
 using System.Runtime.InteropServices;
 using Xunit;
 

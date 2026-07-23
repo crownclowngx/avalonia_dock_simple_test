@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using LibVLCSharp.Shared;
 
-namespace MySmallTools.Business.SecretVideoPlayer;
+namespace MySmallTools.Business.SecretVideoPlayer.Playback;
 
 /// <summary>
 /// 负责从 MySmallTools 插件自身目录初始化唯一的 LibVLC 原生运行时。

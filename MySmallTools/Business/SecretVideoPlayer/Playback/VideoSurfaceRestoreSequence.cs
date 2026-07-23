@@ -1,6 +1,6 @@
 using LibVLCSharp.Shared;
 
-namespace MySmallTools.Business.SecretVideoPlayer;
+namespace MySmallTools.Business.SecretVideoPlayer.Playback;
 
 /// <summary>
 /// 可替换的视频表面恢复操作，便于验证 vout 重建顺序而不依赖真实窗口。
