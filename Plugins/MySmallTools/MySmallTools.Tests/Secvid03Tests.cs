@@ -156,6 +156,115 @@ public sealed class Secvid03Tests(Secvid03Fixture fixture)
     }
 
     [Fact]
+    public void SeekableStream_ReusesFixedBuffersAcrossRepeatedCacheMisses()
+    {
+        using var stream = SeekableEncryptedVideoStream.Open(
+            fixture.EncryptedPath,
+            Secvid03Fixture.Password);
+        var plaintextBuffers = stream.PlaintextBuffers.ToArray();
+        var destination = new byte[1];
+
+        Assert.Equal(4, plaintextBuffers.Length);
+        Assert.Equal(4, plaintextBuffers.Distinct(ReferenceEqualityComparer.Instance).Count());
+        Assert.All(plaintextBuffers, buffer => Assert.Equal(Secvid03Fixture.ChunkSize, buffer.Length));
+        Assert.Equal(Secvid03Fixture.ChunkSize, stream.CipherBuffer.Length);
+
+        for (var iteration = 0; iteration < 40; iteration++)
+        {
+            var chunkIndex = iteration % 5;
+            var position = Secvid03Fixture.OriginalPrefixSize +
+                           chunkIndex * (long)Secvid03Fixture.ChunkSize +
+                           127;
+            stream.Position = position;
+            Assert.Equal(1, stream.Read(destination));
+            Assert.Equal(fixture.OriginalBytes[position], destination[0]);
+        }
+
+        Assert.Equal(plaintextBuffers, stream.PlaintextBuffers);
+    }
+
+    [Fact]
+    public void SeekableStream_RepeatedCacheMissesHaveBoundedManagedAllocation()
+    {
+        using var stream = SeekableEncryptedVideoStream.Open(
+            fixture.EncryptedPath,
+            Secvid03Fixture.Password);
+        var destination = new byte[1];
+
+        // 预热 JIT、AES-GCM 和所有缓存槽，测量阶段只覆盖持续播放时的稳定热路径。
+        for (var chunkIndex = 0; chunkIndex < 5; chunkIndex++)
+        {
+            stream.Position = Secvid03Fixture.OriginalPrefixSize +
+                              chunkIndex * (long)Secvid03Fixture.ChunkSize;
+            Assert.Equal(1, stream.Read(destination));
+        }
+
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        for (var iteration = 0; iteration < 128; iteration++)
+        {
+            var chunkIndex = iteration % 5;
+            stream.Position = Secvid03Fixture.OriginalPrefixSize +
+                              chunkIndex * (long)Secvid03Fixture.ChunkSize +
+                              311;
+            Assert.Equal(1, stream.Read(destination));
+        }
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+
+        // 旧实现会为 128 次缓存未命中分配约 256 MiB；固定槽实现应只产生少量密码学对象。
+        Assert.True(
+            allocated < 16L * 1024 * 1024,
+            $"稳定读取阶段分配过多: {allocated / (1024d * 1024):F2} MiB");
+    }
+
+    [Fact]
+    public void SeekableStream_DisposeClearsAllOwnedPlaybackBuffers()
+    {
+        var stream = SeekableEncryptedVideoStream.Open(
+            fixture.EncryptedPath,
+            Secvid03Fixture.Password);
+        var plaintextBuffers = stream.PlaintextBuffers.ToArray();
+        var cipherBuffer = stream.CipherBuffer;
+        var destination = new byte[1];
+
+        for (var chunkIndex = 0; chunkIndex < 5; chunkIndex++)
+        {
+            stream.Position = Secvid03Fixture.OriginalPrefixSize +
+                              chunkIndex * (long)Secvid03Fixture.ChunkSize;
+            Assert.Equal(1, stream.Read(destination));
+        }
+        Assert.Contains(
+            plaintextBuffers,
+            buffer => buffer.AsSpan().IndexOfAnyExcept((byte)0) >= 0);
+
+        stream.Dispose();
+
+        Assert.All(
+            plaintextBuffers,
+            buffer => Assert.Equal(-1, buffer.AsSpan().IndexOfAnyExcept((byte)0)));
+        Assert.Equal(-1, cipherBuffer.AsSpan().IndexOfAnyExcept((byte)0));
+    }
+
+    [Fact]
+    public void SeekableStream_AuthenticationFailureClearsTheCandidateSlot()
+    {
+        var path = fixture.CopyEncrypted("slot-authentication-failure.secvid");
+        var container = File.ReadAllBytes(path);
+        var header = Secvid03Format.ParseHeader(
+            container.AsSpan(0, Secvid03Format.FixedHeaderSize),
+            container.LongLength);
+        FlipByte(path, header.EncryptedDataOffset + header.ChunkSize);
+
+        using var stream = SeekableEncryptedVideoStream.Open(path, Secvid03Fixture.Password);
+        var plaintextBuffers = stream.PlaintextBuffers.ToArray();
+        stream.Position = header.OriginalHeaderLength;
+
+        Assert.Throws<InvalidDataException>(() => stream.Read(new byte[1]));
+        Assert.All(
+            plaintextBuffers,
+            buffer => Assert.Equal(-1, buffer.AsSpan().IndexOfAnyExcept((byte)0)));
+    }
+
+    [Fact]
     public void Authentication_RejectsWrongPasswordHeaderAndCiphertextTampering()
     {
         Assert.Throws<UnauthorizedAccessException>(() =>

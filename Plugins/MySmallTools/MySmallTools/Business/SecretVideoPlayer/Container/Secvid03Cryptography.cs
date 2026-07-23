@@ -110,13 +110,17 @@ internal static class Secvid03Cryptography
     {
         try
         {
+            Span<byte> nonce = stackalloc byte[12];
+            WriteNonce(context.Header, checked((uint)chunkIndex + 1), nonce);
+            Span<byte> aad = stackalloc byte[40];
+            WriteChunkAad(context.ImmutableDigest, chunkIndex, aad);
             using var aes = new AesGcm(context.Key, Secvid03Format.TagSize);
             aes.Decrypt(
-                CreateNonce(context.Header, checked((uint)chunkIndex + 1)),
+                nonce,
                 cipher,
                 tag,
                 plain,
-                CreateChunkAad(context.ImmutableDigest, chunkIndex));
+                aad);
         }
         catch (CryptographicException ex)
         {
@@ -128,9 +132,17 @@ internal static class Secvid03Cryptography
     internal static byte[] CreateNonce(Secvid03Header header, uint counter)
     {
         var nonce = new byte[12];
-        header.NoncePrefix.CopyTo(nonce, 0);
-        BinaryPrimitives.WriteUInt32BigEndian(nonce.AsSpan(8, 4), counter);
+        WriteNonce(header, counter, nonce);
         return nonce;
+    }
+
+    private static void WriteNonce(Secvid03Header header, uint counter, Span<byte> destination)
+    {
+        if (destination.Length < 12)
+            throw new ArgumentException("Nonce 缓冲区必须至少为 12 字节。", nameof(destination));
+
+        header.NoncePrefix.CopyTo(destination);
+        BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(8, 4), counter);
     }
 
     internal static byte[] CreateImmutableHeaderAad(
@@ -150,8 +162,21 @@ internal static class Secvid03Cryptography
         long chunkIndex)
     {
         var aad = new byte[40];
-        immutableHeaderDigest.CopyTo(aad);
-        BinaryPrimitives.WriteInt64BigEndian(aad.AsSpan(32, 8), chunkIndex);
+        WriteChunkAad(immutableHeaderDigest, chunkIndex, aad);
         return aad;
+    }
+
+    private static void WriteChunkAad(
+        ReadOnlySpan<byte> immutableHeaderDigest,
+        long chunkIndex,
+        Span<byte> destination)
+    {
+        if (immutableHeaderDigest.Length != 32)
+            throw new ArgumentException("不可变头摘要必须为 32 字节。", nameof(immutableHeaderDigest));
+        if (destination.Length < 40)
+            throw new ArgumentException("块 AAD 缓冲区必须至少为 40 字节。", nameof(destination));
+
+        immutableHeaderDigest.CopyTo(destination);
+        BinaryPrimitives.WriteInt64BigEndian(destination.Slice(32, 8), chunkIndex);
     }
 }

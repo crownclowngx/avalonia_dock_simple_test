@@ -69,6 +69,7 @@ public sealed class SecureVideoPlayer : IDisposable
         string password,
         CancellationToken cancellationToken = default)
     {
+        using var diagnostics = PlaybackPerformanceDiagnostics.Begin("media-switch");
         ThrowIfDisposed();
         using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
@@ -88,7 +89,7 @@ public sealed class SecureVideoPlayer : IDisposable
             ThrowIfDisposed();
 
             // 旧媒体的 Stop 一旦开始就必须完整结束；调用方取消只会阻止后续候选媒体提交。
-            await Task.Run(CleanupCurrentMediaCore).ConfigureAwait(false);
+            await Task.Run(() => CleanupCurrentMediaCore(diagnostics)).ConfigureAwait(false);
             operationToken.ThrowIfCancellationRequested();
 
             (newInput, newMedia) = await Task.Run(() =>
@@ -105,10 +106,12 @@ public sealed class SecureVideoPlayer : IDisposable
                     throw;
                 }
             }, operationToken).ConfigureAwait(false);
+            diagnostics.Mark("open-auth");
 
             await newMedia
                 .Parse(MediaParseOptions.ParseLocal, -1, operationToken)
                 .ConfigureAwait(false);
+            diagnostics.Mark("parse");
             operationToken.ThrowIfCancellationRequested();
 
             _player.Media = newMedia;
@@ -116,6 +119,7 @@ public sealed class SecureVideoPlayer : IDisposable
             _currentMedia = newMedia;
             newInput = null;
             newMedia = null;
+            diagnostics.Mark("attach");
             return true;
         }
         catch (OperationCanceledException) when (operationToken.IsCancellationRequested)
@@ -207,6 +211,7 @@ public sealed class SecureVideoPlayer : IDisposable
     /// </remarks>
     public void StopForVideoSurfaceTransition()
     {
+        using var diagnostics = PlaybackPerformanceDiagnostics.Begin("dock-surface-stop");
         if (Volatile.Read(ref _disposeState) != 0)
         {
             return;
@@ -217,7 +222,7 @@ public sealed class SecureVideoPlayer : IDisposable
         {
             if (Volatile.Read(ref _disposeState) == 0 && _currentMedia is not null)
             {
-                StopCore(prepareForReplay: true);
+                StopCore(prepareForReplay: true, diagnostics);
             }
         }
         finally
@@ -269,6 +274,7 @@ public sealed class SecureVideoPlayer : IDisposable
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
+        using var diagnostics = PlaybackPerformanceDiagnostics.Begin("user-stop");
         using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
             _lifetimeCancellation.Token);
@@ -278,7 +284,7 @@ public sealed class SecureVideoPlayer : IDisposable
         try
         {
             ThrowIfDisposed();
-            await Task.Run(() => StopCore(prepareForReplay: true)).ConfigureAwait(false);
+            await Task.Run(() => StopCore(prepareForReplay: true, diagnostics)).ConfigureAwait(false);
         }
         finally
         {
@@ -323,6 +329,7 @@ public sealed class SecureVideoPlayer : IDisposable
 
     public async Task CleanupCurrentMediaAsync(CancellationToken cancellationToken = default)
     {
+        using var diagnostics = PlaybackPerformanceDiagnostics.Begin("media-cleanup");
         using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
             _lifetimeCancellation.Token);
@@ -332,7 +339,7 @@ public sealed class SecureVideoPlayer : IDisposable
         try
         {
             ThrowIfDisposed();
-            await Task.Run(CleanupCurrentMediaCore).ConfigureAwait(false);
+            await Task.Run(() => CleanupCurrentMediaCore(diagnostics)).ConfigureAwait(false);
         }
         finally
         {
@@ -342,6 +349,7 @@ public sealed class SecureVideoPlayer : IDisposable
 
     public void Dispose()
     {
+        using var diagnostics = PlaybackPerformanceDiagnostics.Begin("player-dispose");
         if (Interlocked.CompareExchange(ref _disposeState, 1, 0) != 0)
         {
             return;
@@ -353,7 +361,7 @@ public sealed class SecureVideoPlayer : IDisposable
         {
             try
             {
-                CleanupCurrentMediaCore();
+                CleanupCurrentMediaCore(diagnostics);
             }
             finally
             {
@@ -376,23 +384,27 @@ public sealed class SecureVideoPlayer : IDisposable
         }
     }
 
-    private void StopCore(bool prepareForReplay)
+    private void StopCore(
+        bool prepareForReplay,
+        PlaybackPerformanceDiagnostics? diagnostics = null)
     {
         if (_currentMedia is null)
         {
+            diagnostics?.Mark("stop-no-media");
             return;
         }
 
         var input = _mediaInput;
         input?.RequestStop();
         _player.Stop();
+        diagnostics?.Mark("stop");
         if (prepareForReplay)
         {
             input?.PrepareForPlayback();
         }
     }
 
-    private void CleanupCurrentMediaCore()
+    private void CleanupCurrentMediaCore(PlaybackPerformanceDiagnostics? diagnostics = null)
     {
         if (_currentMedia is null && _mediaInput is null)
         {
@@ -400,7 +412,7 @@ public sealed class SecureVideoPlayer : IDisposable
         }
 
         // Stop 成功返回后，LibVLC 的读取线程已经退出，才能解除并释放 Media/Input。
-        StopCore(prepareForReplay: false);
+        StopCore(prepareForReplay: false, diagnostics);
         _player.Media = null;
 
         var media = _currentMedia;
@@ -416,6 +428,7 @@ public sealed class SecureVideoPlayer : IDisposable
         {
             input?.Dispose();
         }
+        diagnostics?.Mark("release");
     }
 
     private void ThrowIfDisposed() =>

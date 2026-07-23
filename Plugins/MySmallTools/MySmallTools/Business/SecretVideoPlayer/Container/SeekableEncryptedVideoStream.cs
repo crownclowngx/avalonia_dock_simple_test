@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+
 namespace MySmallTools.Business.SecretVideoPlayer.Container;
 
 /// <summary>
@@ -16,6 +18,9 @@ public sealed class SeekableEncryptedVideoStream : Stream
     private readonly Secvid03Header _header;
     private readonly Dictionary<long, CacheEntry> _cache = [];
     private readonly LinkedList<long> _lru = [];
+    private readonly Stack<byte[]> _availablePlaintextBuffers = new(MaxCachedChunks);
+    private readonly byte[][] _plaintextBuffers = new byte[MaxCachedChunks][];
+    private readonly byte[] _cipherBuffer;
     private long _position;
     private bool _disposed;
 
@@ -26,7 +31,17 @@ public sealed class SeekableEncryptedVideoStream : Stream
         _file = file;
         _authentication = authentication;
         _header = authentication.Header;
+        _cipherBuffer = new byte[_header.ChunkSize];
+        for (var index = 0; index < _plaintextBuffers.Length; index++)
+        {
+            var buffer = new byte[_header.ChunkSize];
+            _plaintextBuffers[index] = buffer;
+            _availablePlaintextBuffers.Push(buffer);
+        }
     }
+
+    internal IReadOnlyList<byte[]> PlaintextBuffers => _plaintextBuffers;
+    internal byte[] CipherBuffer => _cipherBuffer;
 
     /// <summary>
     /// 打开容器、派生密钥并验证不可变固定头，不预读或解密视频主体。
@@ -132,16 +147,25 @@ public sealed class SeekableEncryptedVideoStream : Stream
     {
         if (!_disposed)
         {
+            _disposed = true;
             if (disposing)
             {
                 // 先关闭文件句柄，再清零缓存明文和派生密钥，确保切换视频后可立即删除或覆盖原容器。
-                _file.Dispose();
-                foreach (var entry in _cache.Values) System.Security.Cryptography.CryptographicOperations.ZeroMemory(entry.Data);
-                _cache.Clear();
-                _lru.Clear();
-                _authentication.Dispose();
+                try
+                {
+                    _file.Dispose();
+                }
+                finally
+                {
+                    foreach (var buffer in _plaintextBuffers)
+                        CryptographicOperations.ZeroMemory(buffer);
+                    CryptographicOperations.ZeroMemory(_cipherBuffer);
+                    _cache.Clear();
+                    _lru.Clear();
+                    _availablePlaintextBuffers.Clear();
+                    _authentication.Dispose();
+                }
             }
-            _disposed = true;
         }
         base.Dispose(disposing);
     }
@@ -161,33 +185,54 @@ public sealed class SeekableEncryptedVideoStream : Stream
         var chunkPlainOffset = checked(chunkIndex * _header.ChunkSize);
         var plainLength = (int)Math.Min(_header.ChunkSize, _header.PlainBodyLength - chunkPlainOffset);
         if (plainLength <= 0) throw new EndOfStreamException("请求的加密块超出视频范围。");
-        var cipher = new byte[plainLength];
-        var tag = new byte[Secvid03Format.TagSize];
         var physicalOffset = checked(_header.EncryptedDataOffset + chunkIndex * (_header.ChunkSize + Secvid03Format.TagSize));
         _file.Position = physicalOffset;
+        var cipher = _cipherBuffer.AsSpan(0, plainLength);
         _file.ReadExactly(cipher);
+        Span<byte> tag = stackalloc byte[Secvid03Format.TagSize];
         _file.ReadExactly(tag);
-        var plain = new byte[plainLength];
+
+        var plain = AcquirePlaintextBuffer();
         try
         {
-            Secvid03Cryptography.DecryptChunk(_authentication, chunkIndex, cipher, tag, plain);
+            Secvid03Cryptography.DecryptChunk(
+                _authentication,
+                chunkIndex,
+                cipher,
+                tag,
+                plain.AsSpan(0, plainLength));
         }
         catch (Secvid03ContentAuthenticationException ex)
         {
+            CryptographicOperations.ZeroMemory(plain);
+            _availablePlaintextBuffers.Push(plain);
             throw new InvalidDataException("密码错误或文件已损坏。", ex);
         }
-
-        if (_cache.Count >= MaxCachedChunks && _lru.Last is { } oldest)
+        catch
         {
-            // 淘汰时主动清零旧明文，缓存容量因此与视频文件大小完全解耦。
-            var oldEntry = _cache[oldest.Value];
-            System.Security.Cryptography.CryptographicOperations.ZeroMemory(oldEntry.Data);
-            _cache.Remove(oldest.Value);
-            _lru.RemoveLast();
+            CryptographicOperations.ZeroMemory(plain);
+            _availablePlaintextBuffers.Push(plain);
+            throw;
         }
+
         var node = _lru.AddFirst(chunkIndex);
         _cache[chunkIndex] = new CacheEntry(plain, plainLength, node);
         return (plain, plainLength);
+    }
+
+    private byte[] AcquirePlaintextBuffer()
+    {
+        if (_availablePlaintextBuffers.TryPop(out var available))
+            return available;
+
+        if (_lru.Last is not { } oldest)
+            throw new InvalidOperationException("明文缓存槽状态不一致。");
+
+        var oldEntry = _cache[oldest.Value];
+        _cache.Remove(oldest.Value);
+        _lru.RemoveLast();
+        CryptographicOperations.ZeroMemory(oldEntry.Data);
+        return oldEntry.Data;
     }
 
     private void Advance(int count, ref int totalRead, ref int remaining)
