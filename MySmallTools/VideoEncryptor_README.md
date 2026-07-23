@@ -13,6 +13,7 @@
 请从新的权威文档入口开始阅读：
 
 - [MySmallTools 安全视频子系统文档](docs/secret-video-player/README.md)
+- [安全视频子系统实施路线图](docs/secret-video-player/ROADMAP.md)
 - [概要设计](docs/secret-video-player/architecture-design.md)
 - [SECVID03 文件格式](docs/secret-video-player/secvid03-format.md)
 - [LibVLC 接入、开发约定与故障排查](docs/secret-video-player/integration-and-conventions.md)
