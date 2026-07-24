@@ -5,7 +5,7 @@
 > 计划基准日期：2026-07-23  
 > 计划启动日期：2026-07-27  
 > 估算口径：1 名全职开发者，不计算法定假期  
-> 当前状态：现有 SECVID03 主链路已可用；G0～G3 已完成，下一阶段为 G4
+> 当前状态：现有 SECVID03 主链路已可用；G0～G3.1 已完成，下一阶段为 G4
 
 ## 1. 文档目的
 
@@ -45,7 +45,7 @@
 ### 2.2 当前工程状态
 
 - `MySmallTools` 和 `MySmallTools.Tests` 以 .NET 9、Windows x64 为当前运行基线。
-- `MySmallTools.Tests` 当前有 82 项测试，覆盖格式边界、加解密往返、篡改拒绝、预检、输出竞争、资源释放、Document 取消、播放会话代次、视频表面恢复、媒体库扫描和真实媒体资产完整性。
+- `MySmallTools.Tests` 当前有 88 项测试，覆盖格式边界、加解密往返、篡改拒绝、预检、输出竞争、资源释放、Document 取消、播放会话代次、异步 Stop、提交失败回滚、有界回收、视频表面恢复、媒体库扫描和真实媒体资产完整性。
 - `MyAvaloniaManagement.PluginTests` 当前有 15 项测试，覆盖插件模块接入、Document Scope 隔离和原生目录扫描约束。
 - 2026-07-23 基线验证中，两组测试全部通过；宿主插件测试构建时存在其他插件的历史警告，但本路线图不得新增 MySmallTools 警告。
 - G0 已提交可复现的真实 MP4/WebM 并校验来源、授权、容器签名、长度和 SHA-256；G3 已建立真实 LibVLC 解码、真实 HWND/Dock 和 100 次 Document 生命周期集成门禁。
@@ -81,7 +81,7 @@
 ```text
 2026-07-27                                             2026-09-20
     └──────── P0：可靠与安全基线（W1～W8）──────────────┘
-       G0 基线清理 ─ G1 安全验证 ─ G2 加解密可靠性 ─ G3 播放稳定性 ─ G4 验收
+       G0 基线清理 ─ G1 安全验证 ─ G2 加解密可靠性 ─ G3 播放稳定性 ─ G3.1 UI 响应性 ─ G4 验收
 
 2026-09-21                                                       2026-12-13
     └──────────── P1：批量、媒体库与播放器体验（W9～W20）────────────┘
@@ -222,6 +222,38 @@ P0 不追求更多播放功能，重点是把已有四条链路变成稳定、�
 - 两轮 Release 门禁各完成 100 次 Document 生命周期，最终 Lease、Player、MediaInput、加密流、恢复任务和明文缓存计数均为零；文件无残留锁且没有额外顶层视频窗口。
 - Debug/Release `MySmallTools.Tests` 82/82、宿主插件测试 15/15 通过；MySmallTools Release 独立构建 0 警告、0 错误。
 
+### G3.1：播放切换异步化与 UI 响应性
+
+**时间：插入 G3 与 G4 之间，不改变 G3 已完成的历史事实。**
+
+**状态：已于 2026-07-24 完成。详细设计、内存分析和实施记录：[G3.1-ASYNC-PLAYBACK-UI-RESPONSIVENESS.md](G3.1-ASYNC-PLAYBACK-UI-RESPONSIVENESS.md)**
+
+主要工作：
+
+- 保持每个 Document 单 LibVLC、单 MediaPlayer 和单 HWND，普通媒体切换不再重建播放器或重绑 VideoView。
+- 把每视频资源拆为 MediaSource，并由 Factory 在后台完成 SECVID03 认证和最多 15 秒 Parse。
+- 使用 Document-scoped 单消费者 NativeDispatcher 串行执行 Pause、Stop、Media setter、Play 和 Seek。
+- 使用容量为 1 的 ResourceReaper 回收已解绑 Source，以异步背压限制快速切换时的资源积压。
+- 增加 `PlaybackActivity`、明确的阶段提示和组合式 `LoadAndPlayAsync`。
+- 同时记录 UI heartbeat、原生线程 ID、阶段耗时、GC、Working Set、Private Bytes 和资源计数。
+
+退出条件：
+
+- 普通 Stop 和媒体切换不阻塞 Avalonia UI Dispatcher。
+- 普通媒体切换前后 MediaPlayer 引用和 HWND 表面代次不变。
+- 快速切换只提交最后意图，所有原生命令严格串行。
+- 新视频启动后，旧 Source 回收不阻止当前媒体 Play、Pause 和 Seek。
+- Debug/Release 单测、宿主插件测试和两轮 Windows x64 真实窗口门禁全部通过。
+- 100 次 Document 生命周期后 Source、Player、Input、流、缓存、Dispatcher 和 Reaper 计数归零。
+
+完成记录：
+
+- 播放资源已拆分为 Document 级唯一 PlayerHost、每视频 MediaSource、候选 Factory、单消费者 NativeDispatcher 和容量 1 ResourceReaper。
+- ViewModel 已使用组合式 `LoadAndPlayAsync`，`PlaybackActivity` 提供准备、等待、停止、挂载、启动和回收阶段提示。
+- Stop、Media 替换和旧 Source 回收不再挂起 UI；普通切换保持同一 MediaPlayer 与同一 HWND 表面代次。
+- Debug/Release `MySmallTools.Tests` 88/88、宿主插件测试 15/15 通过，MySmallTools 与 IntegrationHarness Release 构建 0 警告、0 错误。
+- 两轮 Windows x64 门禁各通过 100 次 Document 生命周期、20+20 Dock 和 30 次快速切换；最大 UI heartbeat 间隔均为 22 ms，最终八类资源计数均为零。
+
 ### G4：P0 部署、验收与发布基线
 
 **时间：W8，2026-09-14～2026-09-20**
@@ -241,6 +273,7 @@ P0 统一退出条件：
 - 真实媒体播放、跨块 Seek、Dock 恢复和重复资源释放验收通过。
 - MySmallTools 相关自动化测试全部通过，构建不新增 MySmallTools 警告。
 - Windows x64 部署失败时，用户能够看到明确原因和处理入口。
+- 普通 Stop 和媒体切换期间 Avalonia UI Dispatcher 保持响应。
 
 ## 6. P1：批量、媒体库与播放器体验
 
@@ -425,7 +458,8 @@ flowchart LR
     G0 --> G2["G2 加解密可靠性"]
     G1 --> G3["G3 真实播放稳定性"]
     G2 --> G4["G4 P0 验收"]
-    G3 --> G4
+    G3 --> G31["G3.1 异步播放与 UI 响应性"]
+    G31 --> G4
     G4 --> G5["G5 批量加密"]
     G4 --> G6["G6 播放器体验"]
     G5 --> G7["G7 媒体库与历史"]
@@ -451,7 +485,7 @@ flowchart LR
 
 ### 10.1 自动化测试
 
-- 保留现有 82 项 MySmallTools 测试和 15 项插件测试，不以删除测试换取通过。
+- 保留并扩展现有 88 项 MySmallTools 测试和 15 项插件测试，不以删除测试换取通过。
 - 格式测试覆盖固定向量、边界长度、保留字段、截断、溢出、错误密码和各认证区域篡改。
 - 加解密测试覆盖输入输出冲突、无权限、磁盘失败注入、最终提交竞争、取消和 Document Dispose。
 - 播放流测试覆盖顺序读取、随机读取、跨块 Seek、尾块、缓存淘汰、重复打开释放和底层异常传播。
@@ -499,14 +533,15 @@ flowchart LR
 2. G1：SECVID03 威胁模型、测试向量和畸形输入矩阵。
 3. G2：加解密预检、任务状态、失败代码和资源释放时序。
 4. G3：真实 LibVLC 播放、Dock 表面恢复和错误传播矩阵。
-5. G4：Windows x64 部署自检与 P0 发布验收。
-6. G5：批量加密队列模型、交互和关闭行为。
-7. G6：全屏、倍速、快捷键、轨道和连续播放交互。
-8. G7：递归媒体库、目录监听、历史存储和隐私边界。
-9. G8：P1 规模、组合与敏感信息验收。
-10. G9：运行时、平台能力和原生视频表面接口。
-11. G10：性能基准、资源趋势和诊断脱敏格式。
-12. G11：全量回归、文档收口与后续平台评估。
+5. G3.1：单播放器、异步原生命令、有界回收和 UI heartbeat。
+6. G4：Windows x64 部署自检与 P0 发布验收。
+7. G5：批量加密队列模型、交互和关闭行为。
+8. G6：全屏、倍速、快捷键、轨道和连续播放交互。
+9. G7：递归媒体库、目录监听、历史存储和隐私边界。
+10. G8：P1 规模、组合与敏感信息验收。
+11. G9：运行时、平台能力和原生视频表面接口。
+12. G10：性能基准、资源趋势和诊断脱敏格式。
+13. G11：全量回归、文档收口与后续平台评估。
 
 每份详细计划至少包含：目标与非目标、当前代码入口、接口和数据变化、所有权与状态流转、异常与取消、兼容边界、测试用例、手工验收、文档更新和退出条件。
 

@@ -211,28 +211,18 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         bool startPlayback,
         CancellationToken cancellationToken)
     {
-        StatusMessage = "正在验证并解析候选视频...";
-        var load = await _session.LoadAsync(filePath, password, cancellationToken);
-        if (!load.Success)
-        {
-            ApplyFailure(load);
-            return false;
-        }
-        LastFailure = null;
-
-        if (!startPlayback)
-        {
-            StatusMessage = "媒体加载完成，可以开始播放";
-            return true;
-        }
-
-        var play = await _session.PlayAsync(cancellationToken);
-        ApplyFailure(play);
-        if (play.Success)
+        // 自动播放必须作为一个完整的业务意图交给播放服务。若 ViewModel 自己执行
+        // LoadAsync -> PlayAsync，两个调用之间可能插入 Stop 或另一条 Load，造成旧意图
+        // 意外启动新媒体；组合接口用同一个代次令牌保证“认证、提交、启动”不可被拆开。
+        var result = startPlayback
+            ? await _session.LoadAndPlayAsync(filePath, password, cancellationToken)
+            : await _session.LoadAsync(filePath, password, cancellationToken);
+        ApplyFailure(result);
+        if (result.Success)
         {
             LastFailure = null;
         }
-        return play.Success;
+        return result.Success;
     }
 
     private async Task AttachSurfaceAsync(
@@ -330,9 +320,21 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
             LastFailure = failure;
             StatusMessage = failure.Message;
         }
-        else if (snapshot.IsTransitioning)
+        else if (snapshot.Activity != PlaybackActivity.Idle)
         {
-            StatusMessage = "正在验证并切换媒体...";
+            // Activity 描述“当前正在做什么”，State 描述“播放器最终处于什么状态”。
+            // 两者分离后，即使旧视频仍在 Playing，也可以明确告诉用户候选视频正在后台解析。
+            StatusMessage = snapshot.Activity switch
+            {
+                PlaybackActivity.PreparingCandidate => "正在验证并解析新视频…",
+                PlaybackActivity.WaitingForPlayer => "播放器正在完成上一操作…",
+                PlaybackActivity.StoppingCurrent => "正在停止当前视频…",
+                PlaybackActivity.AttachingCandidate => "正在切换媒体…",
+                PlaybackActivity.StartingPlayback => "正在启动新视频…",
+                PlaybackActivity.Stopping => "正在停止并释放解码资源…",
+                PlaybackActivity.ReleasingOldMedia => "新视频已启动，正在后台清理旧资源…",
+                _ => StatusMessage
+            };
         }
         else
         {
@@ -350,7 +352,9 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
             };
         }
 
-        if (snapshot.State == PlaybackState.Playing)
+        // 切换或停止过程中停止位置轮询，避免 UI 定时器继续向已排队的原生操作施压；
+        // Dispatcher 本身仍保持响应，待活动回到 Idle 后会按最终状态自动恢复轮询。
+        if (snapshot.State == PlaybackState.Playing && !snapshot.IsTransitioning)
         {
             _positionTimer.Start();
         }

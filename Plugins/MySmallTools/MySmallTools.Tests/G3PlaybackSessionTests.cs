@@ -5,26 +5,81 @@ using Xunit;
 
 namespace MySmallTools.Tests;
 
+/// <summary>
+/// G3/G3.1 播放编排测试。
+/// </summary>
+/// <remarks>
+/// 测试替身刻意把 PlayerHost 与 MediaSource 分开：前者代表 Document 级唯一播放器，
+/// 后者代表可替换、可回收的单视频资源。这样测试本身也会阻止架构退回到
+/// “每次切换都创建一个 MediaPlayer”的旧模型。
+/// </remarks>
 public sealed class G3PlaybackSessionTests
 {
     [Fact]
     public async Task FailedCandidate_DoesNotReplaceCurrentMedia()
     {
-        var first = new FakeLease(1);
-        var factory = new FakeLeaseFactory(
-            _ => Task.FromResult<IPlaybackMediaLease>(first),
-            _ => throw new PlaybackOperationException(PlaybackFailureMapper.ParseFailed()));
-        using var session = new SecureVideoPlayer(factory);
+        var first = new FakeSource(1);
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(first),
+                (_, _) => throw new PlaybackOperationException(
+                    PlaybackFailureMapper.ParseFailed())));
 
-        var loaded = await session.LoadAsync("first.secvid", "password");
-        var failed = await session.LoadAsync("broken.secvid", "password");
+        var loaded = await rig.Session.LoadAsync("first.secvid", "password");
+        var failed = await rig.Session.LoadAsync("broken.secvid", "password");
 
         Assert.True(loaded.Success);
         Assert.False(failed.Success);
         Assert.Equal(PlaybackFailureCode.ParseFailed, failed.Failure?.Code);
-        Assert.Equal(1, session.Snapshot.MediaGeneration);
-        Assert.True(session.Snapshot.HasMedia);
+        Assert.Equal(1, rig.Session.Snapshot.MediaGeneration);
+        Assert.True(rig.Session.Snapshot.HasMedia);
+        Assert.Same(first, rig.Host.AttachedSource);
         Assert.False(first.IsDisposed);
+    }
+
+    [Fact]
+    public async Task AttachFailure_RestoresOldSourceBeforeCandidateIsReaped()
+    {
+        var oldSource = new FakeSource(1);
+        var candidate = new FakeSource(2);
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(oldSource),
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(candidate)));
+        Assert.True((await rig.Session.LoadAsync("old.secvid", "password")).Success);
+        rig.Host.FailAttachGeneration = 2;
+
+        var result = await rig.Session.LoadAsync("candidate.secvid", "password");
+
+        Assert.False(result.Success);
+        Assert.Same(oldSource, rig.Host.AttachedSource);
+        Assert.False(oldSource.IsDisposed);
+        Assert.True(candidate.IsDisposed);
+        Assert.Equal(1, rig.Session.Snapshot.MediaGeneration);
+    }
+
+    [Fact]
+    public async Task ImmediatePlayFailure_CompensatesBackToOldSource()
+    {
+        var oldSource = new FakeSource(1);
+        var candidate = new FakeSource(2);
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(oldSource),
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(candidate)));
+        Assert.True((await rig.Session.LoadAsync("old.secvid", "password")).Success);
+        rig.Host.PlayResult = false;
+
+        var result = await rig.Session.LoadAndPlayAsync(
+            "candidate.secvid",
+            "password");
+
+        Assert.False(result.Success);
+        Assert.Equal(PlaybackFailureCode.DecodeFailed, result.Failure?.Code);
+        Assert.Same(oldSource, rig.Host.AttachedSource);
+        Assert.False(oldSource.IsDisposed);
+        Assert.True(candidate.IsDisposed);
+        Assert.Equal(1, rig.Session.Snapshot.MediaGeneration);
     }
 
     [Fact]
@@ -34,29 +89,29 @@ public sealed class G3PlaybackSessionTests
             TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseFirst = new TaskCompletionSource(
             TaskCreationOptions.RunContinuationsAsynchronously);
-        var first = new FakeLease(1);
-        var second = new FakeLease(2);
-        var factory = new FakeLeaseFactory(
-            async cancellationToken =>
-            {
-                firstEntered.TrySetResult();
-                try
+        var first = new FakeSource(1);
+        var second = new FakeSource(2);
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                async (_, cancellationToken) =>
                 {
-                    await releaseFirst.Task.WaitAsync(cancellationToken);
-                    return first;
-                }
-                catch
-                {
-                    first.Dispose();
-                    throw;
-                }
-            },
-            _ => Task.FromResult<IPlaybackMediaLease>(second));
-        using var session = new SecureVideoPlayer(factory);
+                    firstEntered.TrySetResult();
+                    try
+                    {
+                        await releaseFirst.Task.WaitAsync(cancellationToken);
+                        return first;
+                    }
+                    catch
+                    {
+                        first.Dispose();
+                        throw;
+                    }
+                },
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(second)));
 
-        var older = session.LoadAsync("first.secvid", "password");
+        var older = rig.Session.LoadAsync("first.secvid", "password");
         await firstEntered.Task.WaitAsync(TimeSpan.FromSeconds(2));
-        var newer = session.LoadAsync("second.secvid", "password");
+        var newer = rig.Session.LoadAsync("second.secvid", "password");
         releaseFirst.TrySetResult();
 
         var olderResult = await older;
@@ -66,67 +121,179 @@ public sealed class G3PlaybackSessionTests
         Assert.Equal(PlaybackFailureCode.Cancelled, olderResult.Failure?.Code);
         Assert.True(first.IsDisposed);
         Assert.True(newerResult.Success);
-        Assert.Equal(2, session.Snapshot.MediaGeneration);
+        Assert.Equal(2, rig.Session.Snapshot.MediaGeneration);
+        Assert.Same(second, rig.Host.AttachedSource);
     }
 
     [Fact]
-    public async Task EventsFromDisposedOldLease_CannotChangeNewSession()
+    public async Task EventsFromOldGeneration_CannotChangeNewSession()
     {
-        var first = new FakeLease(1);
-        var second = new FakeLease(2);
-        var factory = new FakeLeaseFactory(
-            _ => Task.FromResult<IPlaybackMediaLease>(first),
-            _ => Task.FromResult<IPlaybackMediaLease>(second));
-        using var session = new SecureVideoPlayer(factory);
+        var first = new FakeSource(1);
+        var second = new FakeSource(2);
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(first),
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(second)));
 
-        Assert.True((await session.LoadAsync("first.secvid", "password")).Success);
-        Assert.True((await session.LoadAsync("second.secvid", "password")).Success);
-        first.RaiseState(PlaybackState.Faulted);
-        first.RaiseFailure(new PlaybackFailure(
-            PlaybackFailureCode.CorruptedContent,
-            "stale"));
+        Assert.True((await rig.Session.LoadAsync("first.secvid", "password")).Success);
+        Assert.True((await rig.Session.LoadAsync("second.secvid", "password")).Success);
+        rig.Host.RaiseState(1, PlaybackState.Faulted);
+        rig.Host.RaiseFailure(
+            1,
+            new PlaybackFailure(PlaybackFailureCode.CorruptedContent, "stale"));
 
         Assert.True(first.IsDisposed);
-        Assert.Equal(2, session.Snapshot.MediaGeneration);
-        Assert.Equal(PlaybackState.Ready, session.Snapshot.State);
+        Assert.Equal(2, rig.Session.Snapshot.MediaGeneration);
+        Assert.Equal(PlaybackState.Ready, rig.Session.Snapshot.State);
     }
 
     [Fact]
     public async Task Pause_IsIdempotentAndNeverTogglesPlayback()
     {
-        var lease = new FakeLease(1);
-        var factory = new FakeLeaseFactory(
-            _ => Task.FromResult<IPlaybackMediaLease>(lease));
-        using var session = new SecureVideoPlayer(factory);
+        var source = new FakeSource(1);
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(source)));
+        Assert.True((await rig.Session.LoadAsync("video.secvid", "password")).Success);
+
+        Assert.True((await rig.Session.PauseAsync()).Success);
+        Assert.True((await rig.Session.PauseAsync()).Success);
+
+        Assert.Equal([true, true], rig.Host.PauseRequests);
+        Assert.Equal(PlaybackState.Paused, rig.Session.Snapshot.State);
+    }
+
+    [Fact]
+    public async Task StopBlockedInNativeDispatcher_DoesNotBlockCallingThread()
+    {
+        var source = new FakeSource(1);
+        using var enteredStop = new ManualResetEventSlim();
+        using var releaseStop = new ManualResetEventSlim();
+        using var dispatcher = new PlaybackNativeDispatcher();
+        var host = new FakePlayerHost
+        {
+            StopEntered = enteredStop,
+            StopRelease = releaseStop
+        };
+        using var reaper = new ImmediateResourceReaper();
+        using var session = new SecureVideoPlayer(
+            host,
+            new FakeSourceFactory(
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(source)),
+            dispatcher,
+            reaper);
         Assert.True((await session.LoadAsync("video.secvid", "password")).Success);
 
-        Assert.True((await session.PauseAsync()).Success);
-        Assert.True((await session.PauseAsync()).Success);
+        var callerThreadId = Environment.CurrentManagedThreadId;
+        var stopTask = session.StopAsync();
+        Assert.True(enteredStop.Wait(TimeSpan.FromSeconds(2)));
 
-        Assert.Equal([true, true], lease.PauseRequests);
-        Assert.Equal(PlaybackState.Paused, session.Snapshot.State);
+        // Stop 仍被原生替身阻塞，但调用者已经拿到未完成的 Task 并能继续执行。
+        // 这正是 UI Dispatcher 能继续绘制和投递 heartbeat 的必要条件。
+        Assert.False(stopTask.IsCompleted);
+        Assert.NotEqual(callerThreadId, host.LastStopThreadId);
+        var heartbeat = 0;
+        heartbeat++;
+        Assert.Equal(1, heartbeat);
+
+        releaseStop.Set();
+        Assert.True((await stopTask.WaitAsync(TimeSpan.FromSeconds(2))).Success);
+    }
+
+    [Fact]
+    public async Task StopThenPlay_ReusesSameSourceAndWaitsForStop()
+    {
+        var source = new FakeSource(1);
+        using var enteredStop = new ManualResetEventSlim();
+        using var releaseStop = new ManualResetEventSlim();
+        using var dispatcher = new PlaybackNativeDispatcher();
+        var host = new FakePlayerHost
+        {
+            StopEntered = enteredStop,
+            StopRelease = releaseStop
+        };
+        using var reaper = new ImmediateResourceReaper();
+        using var session = new SecureVideoPlayer(
+            host,
+            new FakeSourceFactory(
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(source)),
+            dispatcher,
+            reaper);
+        Assert.True((await session.LoadAsync("video.secvid", "password")).Success);
+
+        var stopTask = session.StopAsync();
+        Assert.True(enteredStop.Wait(TimeSpan.FromSeconds(2)));
+        var playTask = session.PlayAsync();
+        Assert.False(playTask.IsCompleted);
+
+        releaseStop.Set();
+        Assert.True((await stopTask.WaitAsync(TimeSpan.FromSeconds(2))).Success);
+        Assert.True((await playTask.WaitAsync(TimeSpan.FromSeconds(2))).Success);
+        Assert.Same(source, host.AttachedSource);
+        Assert.Equal(1, source.PrepareCalls);
+    }
+
+    [Fact]
+    public async Task LoadAndPlay_PublishesDetailedActivitySequence()
+    {
+        var source = new FakeSource(1);
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(source)));
+        var activities = new List<PlaybackActivity>();
+        rig.Session.Changed += (_, args) => activities.Add(args.Snapshot.Activity);
+
+        var result = await rig.Session.LoadAndPlayAsync(
+            "video.secvid",
+            "password");
+
+        Assert.True(result.Success);
+        Assert.Contains(PlaybackActivity.PreparingCandidate, activities);
+        Assert.Contains(PlaybackActivity.AttachingCandidate, activities);
+        Assert.Contains(PlaybackActivity.StartingPlayback, activities);
+        Assert.Equal(PlaybackActivity.Idle, rig.Session.Snapshot.Activity);
+        Assert.Equal(PlaybackState.Playing, rig.Session.Snapshot.State);
+    }
+
+    [Fact]
+    public async Task ResourceReaper_HasCapacityOneAndAppliesAsyncBackpressure()
+    {
+        using var releaseFirst = new ManualResetEventSlim();
+        var first = new FakeSource(1) { DisposeRelease = releaseFirst };
+        var second = new FakeSource(2);
+        var third = new FakeSource(3);
+        using var reaper = new PlaybackResourceReaper();
+
+        await reaper.EnqueueAsync(first, waitForCompletion: false);
+        Assert.True(first.DisposeEntered.Wait(TimeSpan.FromSeconds(2)));
+        await reaper.EnqueueAsync(second, waitForCompletion: false);
+        var thirdEnqueue = reaper.EnqueueAsync(third, waitForCompletion: false);
+
+        Assert.False(thirdEnqueue.IsCompleted);
+        releaseFirst.Set();
+        await thirdEnqueue.WaitAsync(TimeSpan.FromSeconds(2));
     }
 
     [Fact]
     public async Task UserStopDuringSurfaceLoss_CancelsAutomaticRestore()
     {
-        var lease = new FakeLease(1);
-        var factory = new FakeLeaseFactory(
-            _ => Task.FromResult<IPlaybackMediaLease>(lease));
-        using var session = new SecureVideoPlayer(factory);
-        Assert.True((await session.LoadAsync("video.secvid", "password")).Success);
+        var source = new FakeSource(1);
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(source)));
+        Assert.True((await rig.Session.LoadAsync("video.secvid", "password")).Success);
 
         var firstSurface = new VideoSurfaceToken(1, (nint)101);
-        Assert.True((await session.AttachAndRestoreSurfaceAsync(firstSurface)).Success);
-        Assert.True((await session.PlayAsync()).Success);
-        session.DetachSurface(firstSurface);
-        Assert.True((await session.StopAsync()).Success);
+        Assert.True((await rig.Session.AttachAndRestoreSurfaceAsync(firstSurface)).Success);
+        Assert.True((await rig.Session.PlayAsync()).Success);
+        rig.Session.DetachSurface(firstSurface);
+        Assert.True((await rig.Session.StopAsync()).Success);
 
         var secondSurface = new VideoSurfaceToken(2, (nint)202);
-        Assert.True((await session.AttachAndRestoreSurfaceAsync(secondSurface)).Success);
+        Assert.True((await rig.Session.AttachAndRestoreSurfaceAsync(secondSurface)).Success);
 
-        Assert.Equal(0, lease.RestoreCalls);
-        Assert.Equal(PlaybackState.Stopped, session.Snapshot.State);
+        Assert.Equal(0, rig.Host.RestoreCalls);
+        Assert.Equal(PlaybackState.Stopped, rig.Session.Snapshot.State);
     }
 
     [Fact]
@@ -164,27 +331,81 @@ public sealed class G3PlaybackSessionTests
         }
     }
 
-    private sealed class FakeLeaseFactory(
-        params Func<CancellationToken, Task<IPlaybackMediaLease>>[] factories)
-        : IPlaybackMediaLeaseFactory
+    /// <summary>
+    /// 管理单测中的依赖释放顺序。生产环境由 Document DI Scope 完成同样的逆序释放。
+    /// </summary>
+    private sealed class TestRig : IDisposable
+    {
+        private readonly InlineNativeDispatcher _dispatcher = new();
+        private readonly ImmediateResourceReaper _reaper = new();
+
+        public TestRig(IPlaybackMediaSourceFactory factory)
+        {
+            Host = new FakePlayerHost();
+            Session = new SecureVideoPlayer(Host, factory, _dispatcher, _reaper);
+        }
+
+        public FakePlayerHost Host { get; }
+        public SecureVideoPlayer Session { get; }
+
+        public void Dispose()
+        {
+            Session.Dispose();
+            _reaper.Dispose();
+            _dispatcher.Dispose();
+            Host.Dispose();
+        }
+    }
+
+    private sealed class FakeSourceFactory(
+        params Func<long, CancellationToken, Task<IPlaybackMediaSource>>[] factories)
+        : IPlaybackMediaSourceFactory
     {
         private int _index;
 
-        public Task<IPlaybackMediaLease> CreateAsync(
+        public Task<IPlaybackMediaSource> CreateAsync(
             long generation,
             string filePath,
             string password,
             CancellationToken cancellationToken)
         {
             var index = Interlocked.Increment(ref _index) - 1;
-            return factories[Math.Min(index, factories.Length - 1)](cancellationToken);
+            return factories[Math.Min(index, factories.Length - 1)](
+                generation,
+                cancellationToken);
         }
     }
 
-    private sealed class FakeLease(long generation) : IPlaybackMediaLease
+    private sealed class FakeSource(long generation) : IPlaybackMediaSource
     {
         public long Generation { get; } = generation;
-        public MediaPlayer? NativePlayer => null;
+        public Media NativeMedia => null!;
+        public bool IsDisposed { get; private set; }
+        public int PrepareCalls { get; private set; }
+        public ManualResetEventSlim DisposeEntered { get; } = new();
+        public ManualResetEventSlim? DisposeRelease { get; init; }
+
+        public event Action<IPlaybackMediaSource, PlaybackFailure>? Failed;
+
+        public void PrepareForPlayback() => PrepareCalls++;
+        public void RequestStop()
+        {
+        }
+
+        public void RaiseFailure(PlaybackFailure failure) => Failed?.Invoke(this, failure);
+
+        public void Dispose()
+        {
+            DisposeEntered.Set();
+            DisposeRelease?.Wait();
+            IsDisposed = true;
+            Failed = null;
+        }
+    }
+
+    private sealed class FakePlayerHost : IPlaybackPlayerHost
+    {
+        public MediaPlayer NativePlayer => null!;
         public long PositionMs { get; private set; } = 1_000;
         public long DurationMs { get; } = 6_000;
         public bool IsSeekable { get; } = true;
@@ -195,28 +416,46 @@ public sealed class G3PlaybackSessionTests
         public bool IsPlaying { get; private set; }
         public bool IsPaused { get; private set; }
         public int Volume { get; private set; } = 50;
-        public bool IsDisposed { get; private set; }
+        public IPlaybackMediaSource? AttachedSource { get; private set; }
         public List<bool> PauseRequests { get; } = [];
         public int RestoreCalls { get; private set; }
         public nint OutputHandle { get; private set; }
+        public ManualResetEventSlim? StopEntered { get; init; }
+        public ManualResetEventSlim? StopRelease { get; init; }
+        public int LastStopThreadId { get; private set; }
+        public long? FailAttachGeneration { get; set; }
+        public bool PlayResult { get; set; } = true;
 
-        public event Action<IPlaybackMediaLease, PlaybackState>? StateChanged;
-        public event EventHandler? PositionChanged;
-        public event Action<IPlaybackMediaLease, PlaybackFailure>? Failed;
+        public event Action<long, PlaybackState>? StateChanged;
+        public event Action<long>? PositionChanged;
+        public event Action<long, PlaybackFailure>? Failed;
 
-        public void PrepareForPlayback()
+        public void Attach(IPlaybackMediaSource source)
         {
+            if (source.Generation == FailAttachGeneration)
+            {
+                throw new InvalidOperationException("Injected attach failure.");
+            }
+            AttachedSource = source;
         }
+        public void Detach() => AttachedSource = null;
 
-        public void RequestStop()
+        public bool Play()
         {
+            IsPlaying = true;
+            IsPaused = false;
+            RaiseState(AttachedSource?.Generation ?? 0, PlaybackState.Playing);
+            return PlayResult;
         }
 
         public void Stop()
         {
+            LastStopThreadId = Environment.CurrentManagedThreadId;
+            StopEntered?.Set();
+            StopRelease?.Wait();
             IsPlaying = false;
             IsPaused = false;
-            StateChanged?.Invoke(this, PlaybackState.Stopped);
+            RaiseState(AttachedSource?.Generation ?? 0, PlaybackState.Stopped);
         }
 
         public void SetPause(bool paused)
@@ -224,19 +463,12 @@ public sealed class G3PlaybackSessionTests
             PauseRequests.Add(paused);
             IsPaused = paused;
             IsPlaying = !paused;
-            StateChanged?.Invoke(this, paused ? PlaybackState.Paused : PlaybackState.Playing);
-        }
-
-        public bool Play()
-        {
-            IsPlaying = true;
-            IsPaused = false;
-            StateChanged?.Invoke(this, PlaybackState.Playing);
-            return true;
+            RaiseState(
+                AttachedSource?.Generation ?? 0,
+                paused ? PlaybackState.Paused : PlaybackState.Playing);
         }
 
         public void SetVolume(int volume) => Volume = Math.Clamp(volume, 0, 100);
-
         public void SetVideoOutputHandle(nint handle) => OutputHandle = handle;
 
         public Task SeekAsync(
@@ -245,7 +477,7 @@ public sealed class G3PlaybackSessionTests
             CancellationToken cancellationToken)
         {
             PositionMs = Math.Clamp(positionMs, 0, DurationMs);
-            PositionChanged?.Invoke(this, EventArgs.Empty);
+            PositionChanged?.Invoke(AttachedSource?.Generation ?? 0);
             return Task.CompletedTask;
         }
 
@@ -261,16 +493,70 @@ public sealed class G3PlaybackSessionTests
             return Task.FromResult(true);
         }
 
-        public void RaiseState(PlaybackState state) => StateChanged?.Invoke(this, state);
+        public void RaiseState(long generation, PlaybackState state) =>
+            StateChanged?.Invoke(generation, state);
 
-        public void RaiseFailure(PlaybackFailure failure) => Failed?.Invoke(this, failure);
+        public void RaiseFailure(long generation, PlaybackFailure failure) =>
+            Failed?.Invoke(generation, failure);
 
         public void Dispose()
         {
-            IsDisposed = true;
+            AttachedSource = null;
             StateChanged = null;
             PositionChanged = null;
             Failed = null;
+        }
+    }
+
+    /// <summary>
+    /// 普通编排测试使用同步替身，避免线程调度噪声；真正的后台行为由专门测试覆盖。
+    /// </summary>
+    private sealed class InlineNativeDispatcher : IPlaybackNativeDispatcher
+    {
+        public Task InvokeAsync(
+            string operation,
+            Action action,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            action();
+            return Task.CompletedTask;
+        }
+
+        public Task<T> InvokeAsync<T>(
+            string operation,
+            Func<T> action,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(action());
+        }
+
+        public Task<T> InvokeAsync<T>(
+            string operation,
+            Func<CancellationToken, Task<T>> action,
+            CancellationToken cancellationToken = default) =>
+            action(cancellationToken);
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class ImmediateResourceReaper : IPlaybackResourceReaper
+    {
+        public Task EnqueueAsync(
+            IPlaybackMediaSource source,
+            bool waitForCompletion,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            source.Dispose();
+            return Task.CompletedTask;
+        }
+
+        public void Dispose()
+        {
         }
     }
 

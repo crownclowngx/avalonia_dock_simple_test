@@ -15,6 +15,23 @@ public enum PlaybackState
     Disposed
 }
 
+/// <summary>
+/// 描述播放器当前正在执行的非稳定活动。
+/// <see cref="PlaybackState"/> 表示已经提交的播放状态，本枚举则用于告诉界面
+/// “为什么当前命令需要等待”，避免把耗时的原生 Stop 或媒体切换表现成 UI 假死。
+/// </summary>
+public enum PlaybackActivity
+{
+    Idle,
+    PreparingCandidate,
+    WaitingForPlayer,
+    StoppingCurrent,
+    AttachingCandidate,
+    StartingPlayback,
+    Stopping,
+    ReleasingOldMedia
+}
+
 /// <summary>播放器失败的稳定分类。用户界面不得根据异常文本推断失败原因。</summary>
 public enum PlaybackFailureCode
 {
@@ -64,7 +81,8 @@ public sealed record PlaybackSnapshot(
     bool HasVideo,
     bool HasAudio,
     int VideoTrackCount,
-    int AudioTrackCount)
+    int AudioTrackCount,
+    PlaybackActivity Activity)
 {
     public static PlaybackSnapshot Empty { get; } = new(
         0,
@@ -79,7 +97,8 @@ public sealed record PlaybackSnapshot(
         false,
         false,
         0,
-        0);
+        0,
+        PlaybackActivity.Idle);
 }
 
 /// <summary>携带媒体代次的统一播放通知。</summary>
@@ -103,6 +122,15 @@ public interface ISecureVideoPlaybackSession : IDisposable
     PlaybackSnapshot Snapshot { get; }
 
     Task<PlaybackOperationResult> LoadAsync(
+        string filePath,
+        string password,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 在同一次媒体切换事务中完成候选验证、提交和启动播放。
+    /// 该组合入口避免 ViewModel 在 Load 与 Play 之间观察到可被其他操作插入的中间状态。
+    /// </summary>
+    Task<PlaybackOperationResult> LoadAndPlayAsync(
         string filePath,
         string password,
         CancellationToken cancellationToken = default);

@@ -3,16 +3,16 @@ using MySmallTools.Business.SecretVideoPlayer.Container;
 
 namespace MySmallTools.Business.SecretVideoPlayer.Playback;
 
-/// <summary>G3 压力门禁使用的确定性资源快照。</summary>
 public readonly record struct PlaybackResourceSnapshot(
     int LiveLeases,
     int LivePlayers,
     int LiveMediaInputs,
     int LiveEncryptedStreams,
     int ActiveSurfaceRestores,
-    int CachedPlaintextChunks);
+    int CachedPlaintextChunks,
+    int LiveNativeDispatchers,
+    int LiveResourceReapers);
 
-/// <summary>为 G3 脱敏压力门禁公开的只读资源计数，不暴露媒体路径或内容。</summary>
 public static class SecurePlaybackDiagnostics
 {
     public static PlaybackResourceSnapshot CaptureResources()
@@ -39,6 +39,8 @@ internal static class PlaybackResourceDiagnostics
     private static int _livePlayers;
     private static int _liveMediaInputs;
     private static int _activeSurfaceRestores;
+    private static int _liveNativeDispatchers;
+    private static int _liveResourceReapers;
 
     public static PlaybackResourceSnapshot Capture() => new(
         Volatile.Read(ref _liveLeases),
@@ -46,7 +48,9 @@ internal static class PlaybackResourceDiagnostics
         Volatile.Read(ref _liveMediaInputs),
         0,
         Volatile.Read(ref _activeSurfaceRestores),
-        0);
+        0,
+        Volatile.Read(ref _liveNativeDispatchers),
+        Volatile.Read(ref _liveResourceReapers));
 
     public static void LeaseCreated() => Interlocked.Increment(ref _liveLeases);
     public static void LeaseDisposed() => Interlocked.Decrement(ref _liveLeases);
@@ -56,6 +60,14 @@ internal static class PlaybackResourceDiagnostics
     public static void InputDisposed() => Interlocked.Decrement(ref _liveMediaInputs);
     public static void SurfaceRestoreStarted() => Interlocked.Increment(ref _activeSurfaceRestores);
     public static void SurfaceRestoreFinished() => Interlocked.Decrement(ref _activeSurfaceRestores);
+    public static void NativeDispatcherCreated() =>
+        Interlocked.Increment(ref _liveNativeDispatchers);
+    public static void NativeDispatcherDisposed() =>
+        Interlocked.Decrement(ref _liveNativeDispatchers);
+    public static void ResourceReaperCreated() =>
+        Interlocked.Increment(ref _liveResourceReapers);
+    public static void ResourceReaperDisposed() =>
+        Interlocked.Decrement(ref _liveResourceReapers);
 }
 
 internal sealed class PlaybackOperationException(
@@ -65,10 +77,46 @@ internal sealed class PlaybackOperationException(
     public PlaybackFailure Failure { get; } = failure;
 }
 
-internal interface IPlaybackMediaLease : IDisposable
+/// <summary>
+/// 单个 SECVID03 视频的资源所有权边界。
+/// </summary>
+/// <remarks>
+/// Source 不控制 MediaPlayer，也不知道 HWND。它只拥有随媒体切换而变化的 Media、
+/// MediaInput、解密流、文件句柄、派生密钥和固定大小明文缓存，因此只有从 PlayerHost
+/// 解绑以后才允许交给后台回收器。这种拆分落实了单一职责，并消除了旧 Lease
+/// 同时拥有播放器和文件资源所造成的“换视频等于重建播放器”。
+/// </remarks>
+internal interface IPlaybackMediaSource : IDisposable
 {
     long Generation { get; }
-    MediaPlayer? NativePlayer { get; }
+    Media NativeMedia { get; }
+    event Action<IPlaybackMediaSource, PlaybackFailure>? Failed;
+    void PrepareForPlayback();
+    void RequestStop();
+}
+
+/// <summary>
+/// 在不修改当前播放器的前提下，认证并解析候选媒体。
+/// </summary>
+internal interface IPlaybackMediaSourceFactory
+{
+    Task<IPlaybackMediaSource> CreateAsync(
+        long generation,
+        string filePath,
+        string password,
+        CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Document 生命周期内唯一的 LibVLC/MediaPlayer 主机。
+/// </summary>
+/// <remarks>
+/// Host 只负责稳定的原生播放器和输出表面；它不打开 SECVID03 文件，也不决定
+/// 用户意图。接口使编排层依赖抽象，同时确保 MediaPlayer 的创建数量可单独测试。
+/// </remarks>
+internal interface IPlaybackPlayerHost : IDisposable
+{
+    MediaPlayer NativePlayer { get; }
     long PositionMs { get; }
     long DurationMs { get; }
     bool IsSeekable { get; }
@@ -80,15 +128,15 @@ internal interface IPlaybackMediaLease : IDisposable
     bool IsPaused { get; }
     int Volume { get; }
 
-    event Action<IPlaybackMediaLease, PlaybackState>? StateChanged;
-    event EventHandler? PositionChanged;
-    event Action<IPlaybackMediaLease, PlaybackFailure>? Failed;
+    event Action<long, PlaybackState>? StateChanged;
+    event Action<long>? PositionChanged;
+    event Action<long, PlaybackFailure>? Failed;
 
-    void PrepareForPlayback();
-    void RequestStop();
+    void Attach(IPlaybackMediaSource source);
+    void Detach();
+    bool Play();
     void Stop();
     void SetPause(bool paused);
-    bool Play();
     void SetVolume(int volume);
     void SetVideoOutputHandle(nint handle);
     Task SeekAsync(long positionMs, bool waitForFrame, CancellationToken cancellationToken);
@@ -98,85 +146,28 @@ internal interface IPlaybackMediaLease : IDisposable
         CancellationToken cancellationToken);
 }
 
-internal interface IPlaybackMediaLeaseFactory
-{
-    Task<IPlaybackMediaLease> CreateAsync(
-        long generation,
-        string filePath,
-        string password,
-        CancellationToken cancellationToken);
-}
-
-/// <summary>每个 Document 独占的 LibVLC 适配器和媒体 Lease 工厂。</summary>
-internal sealed class LibVlcPlaybackMediaLeaseFactory : IPlaybackMediaLeaseFactory, IDisposable
+/// <summary>
+/// 生产环境 PlayerHost：一个 Document 创建一次，关闭 Document 时释放一次。
+/// </summary>
+internal sealed class LibVlcDocumentPlayerHost : IPlaybackPlayerHost
 {
     private readonly LibVLC _libVlc;
-    private int _disposed;
+    private readonly MediaPlayer _player;
+    private IPlaybackMediaSource? _source;
+    private NativeEventSubscription? _events;
+    private int _disposeState;
 
-    public LibVlcPlaybackMediaLeaseFactory(LibVlcRuntime runtime)
+    public LibVlcDocumentPlayerHost(LibVlcRuntime runtime)
     {
         ArgumentNullException.ThrowIfNull(runtime);
         runtime.EnsureInitialized();
         _libVlc = new LibVLC();
-    }
-
-    public async Task<IPlaybackMediaLease> CreateAsync(
-        long generation,
-        string filePath,
-        string password,
-        CancellationToken cancellationToken)
-    {
-        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
-        return await PlaybackMediaLease.CreateAsync(
-                _libVlc,
-                generation,
-                filePath,
-                password,
-                cancellationToken)
-            .ConfigureAwait(false);
-    }
-
-    public void Dispose()
-    {
-        if (Interlocked.Exchange(ref _disposed, 1) == 0)
-        {
-            _libVlc.Dispose();
-        }
-    }
-}
-
-/// <summary>
-/// 独占一代媒体的原生播放器、Media、MediaInput 和认证随机读取流。
-/// 只有本对象可以决定它们的停止与释放顺序。
-/// </summary>
-internal sealed class PlaybackMediaLease : IPlaybackMediaLease
-{
-    private readonly SeekableStreamMediaInput _input;
-    private readonly Media _media;
-    private readonly MediaPlayer _player;
-    private PlaybackFailure? _firstFailure;
-    private int _failurePublished;
-    private int _disposeState;
-
-    private PlaybackMediaLease(
-        long generation,
-        SeekableStreamMediaInput input,
-        Media media,
-        MediaPlayer player)
-    {
-        Generation = generation;
-        _input = input;
-        _media = media;
-        _player = player;
-
-        PlaybackResourceDiagnostics.LeaseCreated();
-        PlaybackResourceDiagnostics.InputCreated();
+        _player = new MediaPlayer(_libVlc);
         PlaybackResourceDiagnostics.PlayerCreated();
-        Subscribe();
     }
 
-    public long Generation { get; }
-    public MediaPlayer? NativePlayer => _player;
+    internal LibVLC LibVlc => _libVlc;
+    public MediaPlayer NativePlayer => _player;
     public long PositionMs => Math.Max(0, _player.Time);
     public long DurationMs => Math.Max(0, _player.Length);
     public bool IsSeekable => _player.IsSeekable;
@@ -188,117 +179,59 @@ internal sealed class PlaybackMediaLease : IPlaybackMediaLease
     public bool IsPaused => _player.State == VLCState.Paused;
     public int Volume => _player.Volume;
 
-    public event Action<IPlaybackMediaLease, PlaybackState>? StateChanged;
-    public event EventHandler? PositionChanged;
-    public event Action<IPlaybackMediaLease, PlaybackFailure>? Failed;
+    public event Action<long, PlaybackState>? StateChanged;
+    public event Action<long>? PositionChanged;
+    public event Action<long, PlaybackFailure>? Failed;
 
-    public static async Task<PlaybackMediaLease> CreateAsync(
-        LibVLC libVlc,
-        long generation,
-        string filePath,
-        string password,
-        CancellationToken cancellationToken)
+    public void Attach(IPlaybackMediaSource source)
     {
-        ArgumentNullException.ThrowIfNull(libVlc);
-        if (string.IsNullOrWhiteSpace(filePath) || string.IsNullOrEmpty(password))
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
+        ArgumentNullException.ThrowIfNull(source);
+        if (_source is not null)
         {
-            throw new PlaybackOperationException(
-                new PlaybackFailure(PlaybackFailureCode.InvalidRequest, "文件路径和密码不能为空。"));
+            throw new InvalidOperationException("A media source is already attached.");
         }
 
-        SeekableStreamMediaInput? input = null;
-        Media? media = null;
-        MediaPlayer? player = null;
-        try
-        {
-            var stream = SeekableEncryptedVideoStream.Open(filePath, password);
-            input = new SeekableStreamMediaInput(stream);
-            media = new Media(libVlc, input);
-
-            var parsedStatus = await media
-                // MediaInput 在 LibVLC 中使用回调 MRL，不属于普通 file:// 本地路径；
-                // ParseNetwork 才会实际驱动 Open/Read/Seek 回调完成预解析。
-                .Parse(MediaParseOptions.ParseNetwork, 15_000, cancellationToken)
-                .ConfigureAwait(false);
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (parsedStatus is MediaParsedStatus.Failed or MediaParsedStatus.Timeout)
-            {
-                if (input.TryTakeLastFailure(out var inputFailure) && inputFailure is not null)
-                {
-                    throw new PlaybackOperationException(inputFailure);
-                }
-
-                throw new PlaybackOperationException(PlaybackFailureMapper.ParseFailed());
-            }
-
-            if (parsedStatus == MediaParsedStatus.Skipped &&
-                input.TryTakeLastFailure(out var skippedInputFailure) &&
-                skippedInputFailure is not null)
-            {
-                throw new PlaybackOperationException(skippedInputFailure);
-            }
-
-            // LibVLC 3.0.21 对 MediaInput 回调 MRL 会返回 Skipped。它不能被当成解析成功，
-            // 但也不能机械判为失败；G3 在这种情况下由实际 Play/轨道/Seek 门禁完成解码验证。
-
-            player = new MediaPlayer(libVlc)
-            {
-                Media = media
-            };
-
-            var lease = new PlaybackMediaLease(generation, input, media, player);
-            input = null;
-            media = null;
-            player = null;
-            return lease;
-        }
-        catch (PlaybackOperationException)
-        {
-            throw;
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            throw new PlaybackOperationException(PlaybackFailureMapper.MapLoad(ex), ex);
-        }
-        finally
-        {
-            player?.Dispose();
-            media?.Dispose();
-            input?.Dispose();
-        }
+        // Media setter 必须由 NativeDispatcher 调用。先完成原生绑定再更新托管字段，
+        // 可保证 setter 抛异常时 Host 仍保持“没有挂载 Source”的一致状态。
+        _player.Media = source.NativeMedia;
+        _source = source;
+        _events = new NativeEventSubscription(this, _player, source.Generation);
     }
 
-    public void PrepareForPlayback() => _input.PrepareForPlayback();
-
-    public void RequestStop() => _input.RequestStop();
-
-    public void Stop()
+    public void Detach()
     {
         if (Volatile.Read(ref _disposeState) != 0)
         {
             return;
         }
 
-        _input.RequestStop();
-        _player.Stop();
+        // 必须先退订带代次的事件，再清空 Media。否则清空过程中产生的 Stopped
+        // 回调可能以旧代次覆盖刚刚发布的新媒体状态。
+        _events?.Dispose();
+        _events = null;
+        _player.Media = null;
+        _source = null;
+    }
+
+    public bool Play()
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
+        return _player.Play();
+    }
+
+    public void Stop()
+    {
+        if (Volatile.Read(ref _disposeState) == 0 && _source is not null)
+        {
+            _player.Stop();
+        }
     }
 
     public void SetPause(bool paused)
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
         _player.SetPause(paused);
-    }
-
-    public bool Play()
-    {
-        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
-        _input.PrepareForPlayback();
-        return _player.Play();
     }
 
     public void SetVolume(int volume)
@@ -319,46 +252,7 @@ internal sealed class PlaybackMediaLease : IPlaybackMediaLease
         CancellationToken cancellationToken)
     {
         var operations = new LibVlcVideoSurfaceRestoreOperations(_player);
-        var inputFailed = new TaskCompletionSource<PlaybackFailure>(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-        void OnFailure(IPlaybackMediaLease _, PlaybackFailure failure) =>
-            inputFailed.TrySetResult(failure);
-        Failed += OnFailure;
-
-        try
-        {
-            Task seekTask;
-
-            // LibVLC 3.x does not consistently publish TimeChanged while a custom
-            // MediaInput is paused. A frame-confirmed paused seek therefore uses
-            // the same Play -> vout -> Seek -> explicit Pause sequence as a
-            // surface restore. SetPause(true) keeps this operation idempotent.
-            if (waitForFrame && IsPaused)
-            {
-                seekTask = RestorePausedSeekAsync();
-            }
-            else
-            {
-                seekTask = operations.SeekAsync(positionMs, waitForFrame, cancellationToken);
-            }
-
-            var completed = await Task
-                .WhenAny(seekTask, inputFailed.Task)
-                .ConfigureAwait(false);
-            if (completed == inputFailed.Task)
-            {
-                throw new PlaybackOperationException(
-                    await inputFailed.Task.ConfigureAwait(false));
-            }
-
-            await seekTask.ConfigureAwait(false);
-        }
-        finally
-        {
-            Failed -= OnFailure;
-        }
-
-        async Task RestorePausedSeekAsync()
+        if (waitForFrame && IsPaused)
         {
             var restored = await VideoSurfaceRestoreSequence
                 .ExecuteAsync(operations, positionMs, restorePaused: true, cancellationToken)
@@ -369,21 +263,22 @@ internal sealed class PlaybackMediaLease : IPlaybackMediaLease
                     PlaybackFailureCode.DecodeFailed,
                     "The media decoder could not resume for seeking."));
             }
+            return;
         }
+
+        await operations.SeekAsync(positionMs, waitForFrame, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public Task<bool> RestoreSurfaceAsync(
         long positionMs,
         bool restorePaused,
-        CancellationToken cancellationToken)
-    {
-        _input.PrepareForPlayback();
-        return VideoSurfaceRestoreSequence.ExecuteAsync(
+        CancellationToken cancellationToken) =>
+        VideoSurfaceRestoreSequence.ExecuteAsync(
             new LibVlcVideoSurfaceRestoreOperations(_player),
             positionMs,
             restorePaused,
             cancellationToken);
-    }
 
     public void Dispose()
     {
@@ -394,21 +289,225 @@ internal sealed class PlaybackMediaLease : IPlaybackMediaLease
 
         try
         {
-            _input.RequestStop();
             try
             {
                 _player.Stop();
             }
             catch
             {
-                // 释放路径继续解除所有托管/原生所有权，错误由发起操作的路径报告。
             }
 
+            _events?.Dispose();
+            _events = null;
             _player.Hwnd = nint.Zero;
             _player.Media = null;
-            Unsubscribe();
+            _source = null;
             _player.Dispose();
             PlaybackResourceDiagnostics.PlayerDisposed();
+            _libVlc.Dispose();
+        }
+        finally
+        {
+            Volatile.Write(ref _disposeState, 2);
+        }
+    }
+
+    private sealed class NativeEventSubscription : IDisposable
+    {
+        private readonly LibVlcDocumentPlayerHost _owner;
+        private readonly MediaPlayer _player;
+        private readonly long _generation;
+        private int _disposed;
+
+        public NativeEventSubscription(
+            LibVlcDocumentPlayerHost owner,
+            MediaPlayer player,
+            long generation)
+        {
+            // 每次 Attach 建立一组捕获 generation 的订阅。即便 LibVLC 延迟投递旧事件，
+            // SecureVideoPlayer 也能按 generation 丢弃它，而不是信任事件到达顺序。
+            _owner = owner;
+            _player = player;
+            _generation = generation;
+            _player.Playing += OnPlaying;
+            _player.Paused += OnPaused;
+            _player.Stopped += OnStopped;
+            _player.EndReached += OnEnded;
+            _player.TimeChanged += OnPositionChanged;
+            _player.PositionChanged += OnPositionChanged;
+            _player.LengthChanged += OnPositionChanged;
+            _player.SeekableChanged += OnPositionChanged;
+            _player.EncounteredError += OnEncounteredError;
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            {
+                return;
+            }
+
+            _player.Playing -= OnPlaying;
+            _player.Paused -= OnPaused;
+            _player.Stopped -= OnStopped;
+            _player.EndReached -= OnEnded;
+            _player.TimeChanged -= OnPositionChanged;
+            _player.PositionChanged -= OnPositionChanged;
+            _player.LengthChanged -= OnPositionChanged;
+            _player.SeekableChanged -= OnPositionChanged;
+            _player.EncounteredError -= OnEncounteredError;
+        }
+
+        private void OnPlaying(object? sender, EventArgs e) =>
+            _owner.StateChanged?.Invoke(_generation, PlaybackState.Playing);
+
+        private void OnPaused(object? sender, EventArgs e) =>
+            _owner.StateChanged?.Invoke(_generation, PlaybackState.Paused);
+
+        private void OnStopped(object? sender, EventArgs e)
+        {
+            var state = _owner.DurationMs > 0 &&
+                        _owner.PositionMs >= Math.Max(0, _owner.DurationMs - 500)
+                ? PlaybackState.Ended
+                : PlaybackState.Stopped;
+            _owner.StateChanged?.Invoke(_generation, state);
+        }
+
+        private void OnEnded(object? sender, EventArgs e) =>
+            _owner.StateChanged?.Invoke(_generation, PlaybackState.Ended);
+
+        private void OnPositionChanged(object? sender, EventArgs e) =>
+            _owner.PositionChanged?.Invoke(_generation);
+
+        private void OnEncounteredError(object? sender, EventArgs e) =>
+            _owner.Failed?.Invoke(_generation, PlaybackFailureMapper.DecodeFailed());
+    }
+}
+
+/// <summary>
+/// SECVID03 候选媒体工厂。调用方负责把整个 CreateAsync 放到后台线程，
+/// 因为 Open 中的密钥派生和 LibVLC Parse 都可能是耗时操作。
+/// </summary>
+internal sealed class LibVlcPlaybackMediaSourceFactory(
+    LibVlcDocumentPlayerHost playerHost) : IPlaybackMediaSourceFactory
+{
+    public async Task<IPlaybackMediaSource> CreateAsync(
+        long generation,
+        string filePath,
+        string password,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || string.IsNullOrEmpty(password))
+        {
+            throw new PlaybackOperationException(
+                new PlaybackFailure(
+                    PlaybackFailureCode.InvalidRequest,
+                    "文件路径和密码不能为空。"));
+        }
+
+        SeekableEncryptedVideoStream? stream = null;
+        SeekableStreamMediaInput? input = null;
+        Media? media = null;
+        try
+        {
+            // 资源按所有权转移构建：直到 Source 成功创建前，finally 始终负责清理；
+            // Source 创建成功后将 input/media 置空，避免工厂与 Source 双重 Dispose。
+            stream = SeekableEncryptedVideoStream.Open(filePath, password);
+            input = new SeekableStreamMediaInput(stream);
+            // 从这里开始 Input 接管 Stream；工厂 finally 只需释放仍由自己持有的对象。
+            stream = null;
+            media = new Media(playerHost.LibVlc, input);
+
+            var parsedStatus = await media
+                .Parse(MediaParseOptions.ParseNetwork, 15_000, cancellationToken)
+                .ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (parsedStatus is MediaParsedStatus.Failed or MediaParsedStatus.Timeout)
+            {
+                if (input.TryTakeLastFailure(out var inputFailure) && inputFailure is not null)
+                {
+                    throw new PlaybackOperationException(inputFailure);
+                }
+
+                throw new PlaybackOperationException(PlaybackFailureMapper.ParseFailed());
+            }
+
+            if (parsedStatus == MediaParsedStatus.Skipped &&
+                input.TryTakeLastFailure(out var skippedFailure) &&
+                skippedFailure is not null)
+            {
+                throw new PlaybackOperationException(skippedFailure);
+            }
+
+            var source = new LibVlcPlaybackMediaSource(generation, input, media);
+            input = null;
+            media = null;
+            return source;
+        }
+        catch (PlaybackOperationException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new PlaybackOperationException(PlaybackFailureMapper.MapLoad(ex), ex);
+        }
+        finally
+        {
+            media?.Dispose();
+            input?.Dispose();
+            stream?.Dispose();
+        }
+    }
+}
+
+/// <summary>
+/// 生产环境的单媒体资源聚合根。
+/// </summary>
+internal sealed class LibVlcPlaybackMediaSource : IPlaybackMediaSource
+{
+    private readonly SeekableStreamMediaInput _input;
+    private readonly Media _media;
+    private int _disposeState;
+
+    public LibVlcPlaybackMediaSource(
+        long generation,
+        SeekableStreamMediaInput input,
+        Media media)
+    {
+        Generation = generation;
+        _input = input;
+        _media = media;
+        _input.Failed += OnInputFailed;
+        PlaybackResourceDiagnostics.LeaseCreated();
+        PlaybackResourceDiagnostics.InputCreated();
+    }
+
+    public long Generation { get; }
+    public Media NativeMedia => _media;
+    public event Action<IPlaybackMediaSource, PlaybackFailure>? Failed;
+
+    public void PrepareForPlayback() => _input.PrepareForPlayback();
+    public void RequestStop() => _input.RequestStop();
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposeState, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            // 顺序不可交换：Media 可能仍持有 MediaInput 回调；先终止新读取并释放
+            // Media，再释放 Input，最终由 Input 关闭加密流、文件、缓存和密钥上下文。
+            _input.RequestStop();
+            _input.Failed -= OnInputFailed;
             _media.Dispose();
             _input.Dispose();
             PlaybackResourceDiagnostics.InputDisposed();
@@ -416,81 +515,11 @@ internal sealed class PlaybackMediaLease : IPlaybackMediaLease
         finally
         {
             PlaybackResourceDiagnostics.LeaseDisposed();
+            Failed = null;
             Volatile.Write(ref _disposeState, 2);
         }
     }
 
-    private void Subscribe()
-    {
-        _player.Playing += OnPlaying;
-        _player.Paused += OnPaused;
-        _player.Stopped += OnStopped;
-        _player.EndReached += OnEnded;
-        _player.TimeChanged += OnPositionChanged;
-        _player.PositionChanged += OnPositionChanged;
-        _player.LengthChanged += OnPositionChanged;
-        _player.SeekableChanged += OnPositionChanged;
-        _player.EncounteredError += OnEncounteredError;
-        _input.Failed += OnInputFailed;
-    }
-
-    private void Unsubscribe()
-    {
-        _player.Playing -= OnPlaying;
-        _player.Paused -= OnPaused;
-        _player.Stopped -= OnStopped;
-        _player.EndReached -= OnEnded;
-        _player.TimeChanged -= OnPositionChanged;
-        _player.PositionChanged -= OnPositionChanged;
-        _player.LengthChanged -= OnPositionChanged;
-        _player.SeekableChanged -= OnPositionChanged;
-        _player.EncounteredError -= OnEncounteredError;
-        _input.Failed -= OnInputFailed;
-    }
-
-    private void OnPlaying(object? sender, EventArgs e) =>
-        StateChanged?.Invoke(this, PlaybackState.Playing);
-
-    private void OnPaused(object? sender, EventArgs e) =>
-        StateChanged?.Invoke(this, PlaybackState.Paused);
-
-    private void OnStopped(object? sender, EventArgs e)
-    {
-        // With LibVLC 3.0.21 and a MediaInput callback source, natural EOF may
-        // emit Stopped without EndReached.  The demuxer has nevertheless
-        // completed when its reported position is inside the final 500 ms.
-        var state = DurationMs > 0 && PositionMs >= Math.Max(0, DurationMs - 500)
-            ? PlaybackState.Ended
-            : PlaybackState.Stopped;
-        StateChanged?.Invoke(this, state);
-    }
-
-    private void OnEnded(object? sender, EventArgs e) =>
-        StateChanged?.Invoke(this, PlaybackState.Ended);
-
-    private void OnPositionChanged(object? sender, EventArgs e) =>
-        PositionChanged?.Invoke(this, EventArgs.Empty);
-
-    private void OnEncounteredError(object? sender, EventArgs e)
-    {
-        var inputFailure = _input.TryTakeLastFailure(out var captured)
-            ? captured
-            : null;
-        PublishFailure(inputFailure ?? PlaybackFailureMapper.DecodeFailed());
-    }
-
-    private void OnInputFailed(PlaybackFailure failure)
-    {
-        _input.TryTakeLastFailure(out _);
-        PublishFailure(failure);
-    }
-
-    private void PublishFailure(PlaybackFailure failure)
-    {
-        Interlocked.CompareExchange(ref _firstFailure, failure, null);
-        if (Interlocked.Exchange(ref _failurePublished, 1) == 0)
-        {
-            Failed?.Invoke(this, _firstFailure!);
-        }
-    }
+    private void OnInputFailed(PlaybackFailure failure) =>
+        Failed?.Invoke(this, failure);
 }

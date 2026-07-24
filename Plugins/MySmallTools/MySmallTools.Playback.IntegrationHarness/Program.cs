@@ -96,6 +96,7 @@ internal sealed class G3PlaybackHarnessRunner(
     private readonly List<long> _randomSeekTargets = [];
     private readonly Dictionary<string, long> _stageDurationsMs = [];
     private readonly Stopwatch _elapsed = Stopwatch.StartNew();
+    private long _uiHeartbeatMaxIntervalMs;
 
     public async Task<int> RunAsync()
     {
@@ -126,6 +127,10 @@ internal sealed class G3PlaybackHarnessRunner(
 
             var placeholder = CreateDocument(mainViewModel, documentDock);
             placeholder.Title = "G3 占位标签";
+            // 占位标签本身也是一个真实 Document Scope。G3.1 的 PlayerHost、
+            // Dispatcher 和 Reaper 在 Scope 创建时即存在，所以中途资源检查应回到
+            // “仅占位标签存活”的基线，而不是错误地要求全进程为 default。
+            var placeholderResources = SecurePlaybackDiagnostics.CaptureResources();
 
             await MeasureStageAsync(
                 "functionalMatrix",
@@ -134,7 +139,8 @@ internal sealed class G3PlaybackHarnessRunner(
                     factory,
                     documentDock,
                     placeholder,
-                    assets));
+                    assets,
+                    placeholderResources));
 
             await MeasureStageAsync(
                 "lifecycleStress",
@@ -143,7 +149,8 @@ internal sealed class G3PlaybackHarnessRunner(
                     factory,
                     documentDock,
                     placeholder,
-                    assets));
+                    assets,
+                    placeholderResources));
 
             factory.CloseDockable(placeholder);
             await DrainDispatcherAsync();
@@ -210,7 +217,8 @@ internal sealed class G3PlaybackHarnessRunner(
         ManagementFactory factory,
         DocumentDock documentDock,
         SecretVideoPlayerViewModel placeholder,
-        IReadOnlyList<HarnessAsset> assets)
+        IReadOnlyList<HarnessAsset> assets,
+        PlaybackResourceSnapshot expectedResources)
     {
         var document = CreateDocument(mainViewModel, documentDock);
         try
@@ -232,6 +240,10 @@ internal sealed class G3PlaybackHarnessRunner(
             "真实 MP4 未进入播放状态或时间未推进。");
         Require(document.PlayerViewModel.PlaybackSnapshot.HasVideo, "MP4 未识别到视频轨。");
         Require(document.PlayerViewModel.PlaybackSnapshot.HasAudio, "MP4 未识别到音轨。");
+        var documentPlayer = document.PlayerViewModel.MediaPlayer;
+        var documentSurfaceGeneration =
+            document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration;
+        Require(documentPlayer is not null, "Document 未暴露稳定的 MediaPlayer。");
 
         var random = new Random(0x4733);
         var randomMaximum = Math.Max(
@@ -292,7 +304,9 @@ internal sealed class G3PlaybackHarnessRunner(
                 $"暂停态 Dock 恢复位置误差超过 750 ms：expected={expectedPosition}, actual={restoredPosition}。");
         }
 
-        await document.PlayerViewModel.StopCommand.ExecuteAsync(null);
+        var stopHeartbeat = await MeasureUiHeartbeatAsync(
+            () => document.PlayerViewModel.StopCommand.ExecuteAsync(null));
+        RecordHeartbeat("stop", stopHeartbeat);
         await WaitUntilAsync(
             () => document.PlayerViewModel.PlaybackSnapshot.State ==
                 PlaybackState.Stopped,
@@ -335,10 +349,20 @@ internal sealed class G3PlaybackHarnessRunner(
                         Password);
                 })
                 .ToArray();
-            var switchResults = await Task.WhenAll(switches);
+            bool[] switchResults = [];
+            var switchHeartbeat = await MeasureUiHeartbeatAsync(
+                async () => switchResults = await Task.WhenAll(switches));
+            RecordHeartbeat("mediaSwitch", switchHeartbeat);
             Require(
                 switchResults[^1] && switchResults.Count(result => result) == 1,
                 "快速媒体切换没有做到只有最后请求提交。");
+            Require(
+                ReferenceEquals(documentPlayer, document.PlayerViewModel.MediaPlayer),
+                "普通媒体切换替换了 Document 级 MediaPlayer。");
+            Require(
+                documentSurfaceGeneration ==
+                document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration,
+                "普通媒体切换意外重建了 HWND 视频表面。");
 
             var expectedLast = assets[(options.MediaSwitches - 1) % assets.Count];
             await document.PlayerViewModel.PlayCommand.ExecuteAsync(null);
@@ -398,9 +422,10 @@ internal sealed class G3PlaybackHarnessRunner(
             await DrainDispatcherAsync();
         }
 
+        var functionalResources = SecurePlaybackDiagnostics.CaptureResources();
         Require(
-            SecurePlaybackDiagnostics.CaptureResources() == default,
-            "功能矩阵关闭 Document 后播放资源未归零。");
+            functionalResources == expectedResources,
+            $"功能矩阵关闭 Document 后资源未回到占位基线: {functionalResources}。");
     }
 
     private async Task VerifyTamperedSeekAsync(
@@ -502,7 +527,8 @@ internal sealed class G3PlaybackHarnessRunner(
         ManagementFactory factory,
         DocumentDock documentDock,
         SecretVideoPlayerViewModel placeholder,
-        IReadOnlyList<HarnessAsset> assets)
+        IReadOnlyList<HarnessAsset> assets,
+        PlaybackResourceSnapshot expectedResources)
     {
         for (var cycle = 0; cycle < options.Cycles; cycle++)
         {
@@ -530,9 +556,10 @@ internal sealed class G3PlaybackHarnessRunner(
             factory.CloseDockable(document);
             await DrainDispatcherAsync();
 
+            var cycleResources = SecurePlaybackDiagnostics.CaptureResources();
             Require(
-                SecurePlaybackDiagnostics.CaptureResources() == default,
-                $"第 {cycle + 1} 轮关闭后播放资源未归零。");
+                cycleResources == expectedResources,
+                $"第 {cycle + 1} 轮关闭后资源未回到占位基线: {cycleResources}。");
             Require(
                 CountUnexpectedTopLevelWindows() == 0,
                 $"第 {cycle + 1} 轮检测到意外顶层视频窗口。");
@@ -654,6 +681,71 @@ internal sealed class G3PlaybackHarnessRunner(
         await Task.Delay(100);
     }
 
+    /// <summary>
+    /// 在真实 Avalonia Dispatcher 上测量操作期间的消息泵心跳。
+    /// </summary>
+    /// <remarks>
+    /// 这里不规定 Stop 或切换必须在固定毫秒内结束；不同机器和编码格式的原生释放
+    /// 时间本来就会变化。门禁只验证：当操作不是瞬时完成时，操作尚未结束期间
+    /// UI 定时器仍得到调度。若 LibVLC Stop 被错误地放回 UI 线程，心跳会归零。
+    /// </remarks>
+    private static async Task<UiHeartbeatResult> MeasureUiHeartbeatAsync(Func<Task> operation)
+    {
+        var clock = Stopwatch.StartNew();
+        var previousTick = clock.ElapsedMilliseconds;
+        var maximumGap = 0L;
+        var activeTicks = 0;
+        var operationActive = false;
+        var timer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(10)
+        };
+        EventHandler tick = (_, _) =>
+        {
+            var now = clock.ElapsedMilliseconds;
+            maximumGap = Math.Max(maximumGap, now - previousTick);
+            previousTick = now;
+            if (operationActive)
+            {
+                activeTicks++;
+            }
+        };
+        timer.Tick += tick;
+
+        try
+        {
+            timer.Start();
+            await Task.Delay(30);
+            var startedAt = clock.ElapsedMilliseconds;
+            operationActive = true;
+            await operation();
+            operationActive = false;
+            var elapsed = clock.ElapsedMilliseconds - startedAt;
+            await Task.Delay(30);
+            return new UiHeartbeatResult(elapsed, activeTicks, maximumGap);
+        }
+        finally
+        {
+            timer.Stop();
+            timer.Tick -= tick;
+        }
+    }
+
+    private void RecordHeartbeat(string operation, UiHeartbeatResult heartbeat)
+    {
+        _stageDurationsMs[$"{operation}UiHeartbeatTicks"] = heartbeat.ActiveTicks;
+        _stageDurationsMs[$"{operation}ElapsedMs"] = heartbeat.OperationElapsedMs;
+        _stageDurationsMs[$"{operation}UiHeartbeatMaxGapMs"] = heartbeat.MaximumGapMs;
+        _uiHeartbeatMaxIntervalMs = Math.Max(
+            _uiHeartbeatMaxIntervalMs,
+            heartbeat.MaximumGapMs);
+
+        // 小于一个采样周期的操作无需强求 tick；超过采样周期则必须看到活动期心跳。
+        Require(
+            heartbeat.OperationElapsedMs < 10 || heartbeat.ActiveTicks > 0,
+            $"{operation} 执行期间 Avalonia UI heartbeat 停止。");
+    }
+
     private async Task MeasureStageAsync(string name, Func<Task> operation)
     {
         var elapsed = Stopwatch.StartNew();
@@ -680,7 +772,7 @@ internal sealed class G3PlaybackHarnessRunner(
         IReadOnlyList<HarnessAsset> assets,
         PlaybackResourceSnapshot resources) =>
         new(
-            2,
+            3,
             success,
             DateTimeOffset.UtcNow,
             _elapsed.ElapsedMilliseconds,
@@ -701,6 +793,7 @@ internal sealed class G3PlaybackHarnessRunner(
                 asset.Sha256)).ToArray(),
             resources,
             new Dictionary<string, long>(_stageDurationsMs),
+            _uiHeartbeatMaxIntervalMs,
             _randomSeekTargets.ToArray(),
             _nearEndSeekChunkTrace.ToArray(),
             _failures.ToArray());
@@ -796,9 +889,15 @@ internal sealed record HarnessReport(
     IReadOnlyList<HarnessAssetReport> Assets,
     PlaybackResourceSnapshot FinalResources,
     IReadOnlyDictionary<string, long> StageDurationsMs,
+    long UiHeartbeatMaxIntervalMs,
     IReadOnlyList<long> RandomSeekTargets,
     IReadOnlyList<long> NearEndSeekChunkTrace,
     IReadOnlyList<string> Failures);
+
+internal readonly record struct UiHeartbeatResult(
+    long OperationElapsedMs,
+    int ActiveTicks,
+    long MaximumGapMs);
 
 internal sealed record HarnessOptions(
     int Cycles,
