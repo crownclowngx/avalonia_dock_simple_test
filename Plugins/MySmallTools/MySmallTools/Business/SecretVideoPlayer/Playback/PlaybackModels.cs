@@ -40,6 +40,7 @@ public enum PlaybackFailureCode
     AuthenticationFailed,
     CorruptedContent,
     InputUnavailable,
+    DeploymentUnavailable,
     ParseFailed,
     DecodeFailed,
     SurfaceRestoreFailed,
@@ -48,7 +49,11 @@ public enum PlaybackFailureCode
 }
 
 /// <summary>可公开到界面和脱敏验收报告的播放失败。</summary>
-public sealed record PlaybackFailure(PlaybackFailureCode Code, string Message);
+public sealed record PlaybackFailure(
+    PlaybackFailureCode Code,
+    string Message,
+    string? SuggestedAction = null,
+    string? DiagnosticCode = null);
 
 /// <summary>播放操作的统一返回值。</summary>
 public readonly record struct PlaybackOperationResult(

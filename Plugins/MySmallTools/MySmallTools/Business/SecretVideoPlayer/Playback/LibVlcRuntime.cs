@@ -14,7 +14,28 @@ namespace MySmallTools.Business.SecretVideoPlayer.Playback;
 public sealed class LibVlcRuntime
 {
     private readonly object _syncRoot = new();
+    private readonly IPlaybackDeploymentProbe _deploymentProbe;
+    private readonly Action<string> _initialize;
     private bool _initialized;
+
+    public LibVlcRuntime(IPlaybackDeploymentProbe deploymentProbe)
+        : this(deploymentProbe, Core.Initialize)
+    {
+    }
+
+    public LibVlcRuntime()
+        : this(new PlaybackDeploymentProbe(), Core.Initialize)
+    {
+    }
+
+    internal LibVlcRuntime(
+        IPlaybackDeploymentProbe deploymentProbe,
+        Action<string> initialize)
+    {
+        _deploymentProbe = deploymentProbe ??
+                           throw new ArgumentNullException(nameof(deploymentProbe));
+        _initialize = initialize ?? throw new ArgumentNullException(nameof(initialize));
+    }
 
     /// <summary>
     /// 获取当前 MySmallTools.dll 对应的 LibVLC 私有绝对目录。
@@ -23,9 +44,11 @@ public sealed class LibVlcRuntime
     {
         get
         {
-            var assemblyDirectory = Path.GetDirectoryName(typeof(LibVlcRuntime).Assembly.Location)
-                ?? throw new InvalidOperationException("无法确定 MySmallTools 程序集目录。");
-            return Path.GetFullPath(Path.Combine(assemblyDirectory, "native", "win-x64", "libvlc"));
+            return Path.Combine(
+                PlaybackDeploymentProbe.GetDefaultPluginDirectory(),
+                "native",
+                "win-x64",
+                "libvlc");
         }
     }
 
@@ -46,25 +69,27 @@ public sealed class LibVlcRuntime
                 return;
             }
 
-            if (!OperatingSystem.IsWindows() || RuntimeInformation.ProcessArchitecture != Architecture.X64)
+            var deployment = _deploymentProbe.Check();
+            if (!deployment.IsReady)
             {
-                throw new PlatformNotSupportedException("安全视频播放器首期仅支持 Windows x64。");
+                throw new PlaybackDeploymentException(deployment);
             }
 
-            var runtimeDirectory = RuntimeDirectory;
-            var libVlcPath = Path.Combine(runtimeDirectory, "libvlc.dll");
-            var libVlcCorePath = Path.Combine(runtimeDirectory, "libvlccore.dll");
-            var pluginsDirectory = Path.Combine(runtimeDirectory, "plugins");
-
-            if (!File.Exists(libVlcPath) || !File.Exists(libVlcCorePath) || !Directory.Exists(pluginsDirectory))
+            try
             {
-                // 错误信息包含实际检测的绝对目录，部署失败时可直接定位缺失文件，而不是得到模糊的 DllNotFoundException。
-                throw new FileNotFoundException(
-                    $"MySmallTools 的 LibVLC 原生运行库不完整。检测目录: {runtimeDirectory}");
+                _initialize(deployment.RuntimeDirectory);
+                _initialized = true;
             }
-
-            Core.Initialize(runtimeDirectory);
-            _initialized = true;
+            catch (PlaybackDeploymentException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new PlaybackDeploymentException(
+                    PlaybackDeploymentProbe.WithInitializationFailure(deployment),
+                    ex);
+            }
         }
     }
 }

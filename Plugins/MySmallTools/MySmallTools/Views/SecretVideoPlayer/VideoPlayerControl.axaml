@@ -11,13 +11,30 @@
     <StyleInclude Source="avares://MySmallTools/Styles/VideoDocumentStyles.axaml" />
   </UserControl.Styles>
 
-  <Grid RowDefinitions="*,Auto,Auto,Auto" RowSpacing="3">
+  <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="3">
+    <Border Grid.Row="0" IsVisible="{Binding !IsPlaybackAvailable}"
+            Background="#3A2A16" BorderBrush="#D89B3C" BorderThickness="1"
+            CornerRadius="4" Padding="10" Margin="4,2">
+      <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto"
+            ColumnSpacing="10" RowSpacing="4">
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding DeploymentIssueText}"
+                   FontWeight="SemiBold" TextWrapping="Wrap" />
+        <Button Grid.Row="0" Grid.Column="1" Content="重新检测"
+                Command="{Binding RetryDeploymentCheckCommand}" />
+        <SelectableTextBlock Grid.Row="1" Grid.ColumnSpan="2"
+                             Text="{Binding DeploymentCheckedPath}"
+                             FontFamily="Consolas" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="2" Grid.ColumnSpan="2"
+                   Text="{Binding DeploymentSuggestedAction}" TextWrapping="Wrap" />
+      </Grid>
+    </Border>
+
     <!-- 原生视频表面单独占据内容区；Avalonia 控件不得覆盖其 HWND。 -->
-    <Border Grid.Row="0" Background="Black" CornerRadius="4" ClipToBounds="True">
+    <Border Grid.Row="1" Background="Black" CornerRadius="4" ClipToBounds="True">
       <local:EmbeddedVideoSurface x:Name="VideoSurface" />
     </Border>
 
-    <Grid Grid.Row="1" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto"
+    <Grid Grid.Row="2" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto"
           Margin="4,2" ColumnSpacing="10" RowSpacing="2">
       <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding StatusMessage}" Classes="StatusText"
                  TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding StatusMessage}" />
@@ -27,7 +44,7 @@
                    IsVisible="{Binding IsMediaTransitioning}" IsIndeterminate="True" />
     </Grid>
 
-    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="4,0" ColumnSpacing="8">
+    <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto" Margin="4,0" ColumnSpacing="8">
       <TextBlock Grid.Column="0" Text="{Binding CurrentTime}" VerticalAlignment="Center"
                  FontFamily="Consolas" Classes="Caption" />
       <Slider x:Name="ProgressSlider" Grid.Column="1" Value="{Binding Position}"
@@ -47,7 +64,7 @@
                  FontFamily="Consolas" Classes="Caption" />
     </Grid>
 
-    <Border Grid.Row="3" Classes="TaskFooter" Padding="4,5,4,0">
+    <Border Grid.Row="4" Classes="TaskFooter" Padding="4,5,4,0">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4">
           <Button Content="▶" Command="{Binding PlayCommand}" IsVisible="{Binding !IsPlaying}"

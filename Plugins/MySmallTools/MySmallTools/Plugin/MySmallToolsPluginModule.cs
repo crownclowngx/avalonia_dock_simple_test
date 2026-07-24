@@ -24,6 +24,7 @@ public sealed class MySmallToolsPluginModule : IPluginModule
     public void ConfigureServices(IServiceCollection services)
     {
         // Core.Initialize 是进程级操作，但初始化时机保持惰性：只有首次解析播放器时才执行。
+        services.AddSingleton<IPlaybackDeploymentProbe, PlaybackDeploymentProbe>();
         services.AddSingleton<LibVlcRuntime>();
 
         // G3.1 的核心资源边界：
@@ -32,10 +33,14 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         // 2. MediaSource 仍按“一个视频一个实例”创建，它只拥有可安全独立回收的文件、解密流和 Media。
         // 3. Dispatcher 与 Reaper 都是 Document-scoped 单消费者，既把原生调用串行化，
         //    也防止快速连续切换产生无界的后台释放任务。
-        services.AddScoped<LibVlcDocumentPlayerHost>();
+        services.AddScoped<IPlaybackBackendFactory, LibVlcPlaybackBackendFactory>();
+        services.AddScoped<LazyPlaybackBackend>();
         services.AddScoped<IPlaybackPlayerHost>(provider =>
-            provider.GetRequiredService<LibVlcDocumentPlayerHost>());
-        services.AddScoped<IPlaybackMediaSourceFactory, LibVlcPlaybackMediaSourceFactory>();
+            provider.GetRequiredService<LazyPlaybackBackend>());
+        services.AddScoped<IPlaybackMediaSourceFactory>(provider =>
+            provider.GetRequiredService<LazyPlaybackBackend>());
+        services.AddScoped<IPlaybackBackendInitializer>(provider =>
+            provider.GetRequiredService<LazyPlaybackBackend>());
         services.AddScoped<IPlaybackNativeDispatcher, PlaybackNativeDispatcher>();
         services.AddScoped<IPlaybackResourceReaper, PlaybackResourceReaper>();
         services.AddScoped<SecureVideoPlayer>();

@@ -87,17 +87,43 @@ flowchart TB
 | 插件接入 | `MySmallToolsPluginModule`、三个 `DocumentStrategy` | 声明服务生命周期，由宿主为每个 Document 创建 Scope；不在模块加载时创建 View、LibVLC 或任务 |
 | 页面协调 | `SecretVideoPlayerViewModel`、`SecretVideoLibraryViewModel`、`VideoEncryptorViewModel` | 命令、输入校验、状态文本、公开信息编辑和任务取消 |
 | 视频库浏览 | `VideoLibraryBrowserViewModel`、`Library.VideoLibraryScanner` | 限流异步扫描当前目录，隔离单文件错误，并按文件名、标题和描述筛选 |
-| 播放控件 | `VideoPlayerControlViewModel`、`VideoPlayerControl` | 展示播放快照、转发用户命令，并把表面令牌交给会话；不编排 LibVLC 生命周期 |
+| 播放控件 | `VideoPlayerControlViewModel`、`VideoPlayerControl` | 展示部署诊断与播放快照、转发用户命令，并把表面令牌交给会话；不定位运行库 |
 | 原生输出 | `EmbeddedVideoSurface` | 在原生句柄真正创建后绑定 `MediaPlayer.Hwnd`，销毁前同步发出表面丢失通知 |
 | 播放会话 | `ISecureVideoPlaybackSession`、`Playback.SecureVideoPlayer` | 串行化命令、候选提交、媒体/表面代次、错误和 Dock 恢复 |
-| 媒体资源 | `Playback.PlaybackMediaLease` | 独占一代 `MediaPlayer`、`Media`、`MediaInput` 和加密流并规定逆序释放 |
+| 部署探针 | `Playback.IPlaybackDeploymentProbe`、`Playback.PlaybackDeploymentProbe` | 只读检查平台、托管桥接、AMD64 原生库与关键插件模块；返回不可变问题集合，不初始化 LibVLC |
+| backend 工厂 | `Playback.IPlaybackBackendFactory`、`Playback.LazyPlaybackBackend` | 为一个 Document 成套创建共享同一 LibVLC 上下文的 PlayerHost 和媒体源工厂，并保证最多创建一次 |
+| 媒体资源 | `Playback.PlaybackMediaSource` | 独占每次加载的 `Media`、`MediaInput` 和加密流并规定逆序释放；不拥有 Document 级 MediaPlayer |
 | 流适配 | `Playback.SeekableStreamMediaInput` | 把 .NET 可 Seek 流适配为 LibVLC `MediaInput`，串行化回调并首次失败优先 |
 | 容器读取 | `Container.SeekableEncryptedVideoStream` | 验证固定头，按需认证和解密目标块，维护四块 LRU 明文缓存 |
 | 操作基础设施 | `Operations.StoragePreflightProbe`、`Operations.OutputFileTransaction` | 统一任务/错误契约、目录和空间检查，以及 partial 的不覆盖提交/回滚 |
 | 加密 | `Encryption.IVideoEncryptionService`、`Encryption.ISecvid03Encryptor` | 单文件预检、进度与 SECVID03 流式加密；密码只作为调用参数 |
 | 解密 | `Decryption.IVideoDecryptionService`、`Decryption.ISecvid03Decryptor` | 候选/批次预检、失败隔离、逐块认证导出和顺序执行 |
 | 格式与公开区 | `Container.Secvid03Format`、`Container.Secvid03Cryptography`、`Container.EncryptedVideoContainer` | 集中布局、严格解析、nonce/AAD/认证和公开信息读写 |
-| 原生运行时 | `Playback.LibVlcRuntime` | 从插件私有目录惰性、线程安全地完成一次进程级 `Core.Initialize` |
+| 原生运行时 | `Playback.LibVlcRuntime` | 消费部署探针结果，从插件私有目录线程安全地完成一次进程级 `Core.Initialize` |
+
+### 2.1 部署与 backend 生命周期
+
+```mermaid
+flowchart TD
+    Doc["创建播放 Document"] --> Probe["IPlaybackDeploymentProbe.Check<br/>只读、聚合全部问题"]
+    Probe -->|失败| Banner["显示阻断诊断<br/>不创建 LibVLC/MediaPlayer"]
+    Banner --> Retry["用户修复后重新检测"]
+    Retry --> Probe
+    Probe -->|通过| Backend["LazyPlaybackBackend<br/>为本 Document 创建一次 backend"]
+    Backend --> Bind["VideoView 首次绑定 MediaPlayer"]
+    Bind --> Load["加载/切换 MediaSource"]
+    Load --> Reuse["复用同一 PlayerHost"]
+```
+
+这里的 “Lazy” 指 backend 不在插件模块加载或损坏部署的 Document 创建阶段产生，而不是强制等到用户按下播放。真实窗口压力测试表明，在 `VideoView` 首次绑定完成后再动态替换 `MediaPlayer` 会破坏 Avalonia/LibVLC 已验证的 HWND/vout 顺序。因此，自检通过的 Document 会在视图首次绑定前创建 backend；自检失败的 Document 则始终不创建任何原生对象。
+
+职责边界保持窄而明确：
+
+- 探针只回答“文件部署是否可用”，不执行原生初始化。
+- `LibVlcRuntime` 只保证进程级初始化一次，不拥有 Document 播放资源。
+- backend factory 只负责成套构造共享上下文的 host 与 source factory。
+- `SecureVideoPlayer` 只编排当前 Document 的媒体代次、命令与释放。
+- ViewModel 只把结构化结果转换为可操作的 UI 状态。
 
 ## 3. 加密数据流
 

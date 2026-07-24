@@ -116,7 +116,7 @@ internal interface IPlaybackMediaSourceFactory
 /// </remarks>
 internal interface IPlaybackPlayerHost : IDisposable
 {
-    MediaPlayer NativePlayer { get; }
+    MediaPlayer? NativePlayer { get; }
     long PositionMs { get; }
     long DurationMs { get; }
     bool IsSeekable { get; }

@@ -13,6 +13,7 @@ Controls/SmallTools/
 ├─ MySmallTools.dll
 ├─ LibVLCSharp.dll
 ├─ LibVLCSharp.Avalonia.dll
+├─ mysmalltools.release.json
 └─ native/win-x64/libvlc/
    ├─ libvlc.dll
    ├─ libvlccore.dll
@@ -30,12 +31,13 @@ Controls/SmallTools/
 正确顺序是：
 
 1. 通过 `typeof(LibVlcRuntime).Assembly.Location` 获取实际 `MySmallTools.dll` 目录。
-2. 组合绝对路径 `native/win-x64/libvlc`。
-3. 验证 Windows x64、`libvlc.dll`、`libvlccore.dll` 和 `plugins/`。
-4. 调用 `Core.Initialize(runtimeDirectory)`。
-5. 之后才能创建任何 `LibVLC` 或 `MediaPlayer` 实例。
+2. 由 `IPlaybackDeploymentProbe` 组合绝对路径 `native/win-x64/libvlc`。
+3. 一次性检查 Windows x64、两个托管桥接、AMD64 核心 DLL 和关键插件模块。
+4. 检查失败时返回全部结构化问题，不调用任何原生 API。
+5. 检查通过后由 `LibVlcRuntime` 调用 `Core.Initialize(runtimeDirectory)`。
+6. 之后才能创建 `LibVLC` 或 `MediaPlayer` 实例。
 
-`LibVlcRuntime` 使用双重检查锁，允许多个播放器在不同线程首次调用时仍只初始化一次。它是进程级 Singleton，但保持惰性：仅加载插件不会触发 LibVLC 原生初始化。
+`LibVlcRuntime` 使用双重检查锁，允许多个播放器在不同线程首次调用时仍只初始化一次。它是进程级 Singleton；仅加载插件或打开一个部署损坏的播放文档不会触发 LibVLC 原生初始化。部署完整时，Document backend 会在 `VideoView` 首次绑定前创建，以保持 G3/G3.1 验证过的 HWND/vout 时序；媒体切换不会重建 PlayerHost。
 
 禁止回退到以下位置：
 
@@ -52,7 +54,26 @@ Controls/SmallTools/
 
 `AssemblyLoaderHelper` 的首次扫描和 `PluginLoadContext` 的依赖解析必须采用同一排除规则：目录名为 `native`、`runtimes` 或 `libvlc` 时停止递归。不能只修首次扫描而忘记依赖解析，否则缺少托管依赖时，解析器仍会进入原生树。
 
-回归测试 `NativeDirectoryScanTests.PluginScannerAndResolver_DoNotEnterNativeDirectory` 会在 `native/win-x64/libvlc` 放置一个可加载的托管测试 DLL，并验证扫描器和解析器都不会发现它。
+回归测试 `NativeDirectoryScanTests.PluginScannerAndResolver_DoNotEnterNativeDirectory` 使用大小写不敏感参数矩阵，在任意深度的 `native`、`runtimes` 和 `libvlc` 下放置可加载的托管测试 DLL，并验证扫描器和解析器都不会发现它。
+
+## 2.1 发布包与统一门禁
+
+正式发布只允许通过仓库根目录脚本生成：
+
+```powershell
+.\scripts\Release-MySmallToolsP0.ps1
+```
+
+脚本拒绝 dirty worktree，串行运行构建、两套测试、打包/哈希复验、生产部署探针、内存门禁和两轮真实窗口门禁。`-AllowDirty` 只供开发中验证，报告会标记 `publishable: false`。不要手工复制少量 DLL 后把目录称为发布包；完整冻结版 LibVLC plugins、Lua 与辅助资源属于基线的一部分。
+
+产物位于 `artifacts/MySmallTools/p0-win-x64/`。ZIP 内从 `Controls/SmallTools/` 开始，因而可直接解压到宿主根目录。Manifest 只记录规范化相对路径、版本、长度和 SHA-256，不记录构建机绝对路径或用户媒体信息。
+
+部署问题的处理顺序是：
+
+1. 记录 UI 显示的稳定问题码与实际检查目录。
+2. 删除旧的 `Controls/SmallTools/`，重新解压完整 ZIP，避免混合版本。
+3. 点击播放页中的“重新检测”。
+4. 若为 `NativeInitializationFailed`，重新部署后必须重启宿主，因为进程内原生加载状态不可安全回滚。
 
 ## 3. Media、MediaInput 和文件句柄
 

@@ -14,6 +14,8 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
 {
     private readonly ISecureVideoPlaybackSession _session;
     private readonly ILibVlcVideoOutputSource _outputSource;
+    private readonly IPlaybackDeploymentProbe _deploymentProbe;
+    private readonly IPlaybackBackendInitializer _backendInitializer;
     private readonly DispatcherTimer _positionTimer;
     private CancellationTokenSource? _surfaceAttachmentCancellation;
     private VideoSurfaceToken _surface;
@@ -36,6 +38,10 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _isVideoSurfaceReady;
     [ObservableProperty] private bool _isMediaTransitioning;
     [ObservableProperty] private PlaybackFailure? _lastFailure;
+    [ObservableProperty] private bool _isPlaybackAvailable;
+    [ObservableProperty] private string _deploymentIssueText = string.Empty;
+    [ObservableProperty] private string _deploymentCheckedPath = string.Empty;
+    [ObservableProperty] private string _deploymentSuggestedAction = string.Empty;
 
     /// <summary>仅由 VideoPlayerControl 原生输出适配器读取。</summary>
     public MediaPlayer? MediaPlayer => _disposed ? null : _outputSource.MediaPlayer;
@@ -45,10 +51,16 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
 
     public VideoPlayerControlViewModel(
         ISecureVideoPlaybackSession session,
-        ILibVlcVideoOutputSource outputSource)
+        ILibVlcVideoOutputSource outputSource,
+        IPlaybackDeploymentProbe deploymentProbe,
+        IPlaybackBackendInitializer backendInitializer)
     {
         _session = session ?? throw new ArgumentNullException(nameof(session));
         _outputSource = outputSource ?? throw new ArgumentNullException(nameof(outputSource));
+        _deploymentProbe = deploymentProbe ??
+                           throw new ArgumentNullException(nameof(deploymentProbe));
+        _backendInitializer = backendInitializer ??
+                              throw new ArgumentNullException(nameof(backendInitializer));
         _session.Changed += OnPlaybackChanged;
         _outputSource.OutputChanged += OnNativeOutputChanged;
         _session.SetVolume(50);
@@ -58,6 +70,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
             Interval = TimeSpan.FromMilliseconds(100)
         };
         _positionTimer.Tick += OnPositionTimerTick;
+        RefreshDeploymentStatus();
     }
 
     partial void OnCurrentStateChanged(PlayerStateEnum value)
@@ -77,6 +90,10 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
 
     partial void OnIsVideoSurfaceReadyChanged(bool value) => NotifyCommandStates();
     partial void OnIsMediaTransitioningChanged(bool value) => NotifyCommandStates();
+    partial void OnIsPlaybackAvailableChanged(bool value) => NotifyCommandStates();
+
+    [RelayCommand]
+    private void RetryDeploymentCheck() => RefreshDeploymentStatus();
 
     [RelayCommand(CanExecute = nameof(CanPlay))]
     private async Task PlayAsync()
@@ -211,6 +228,18 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         bool startPlayback,
         CancellationToken cancellationToken)
     {
+        if (!IsPlaybackAvailable)
+        {
+            RefreshDeploymentStatus();
+            if (!IsPlaybackAvailable)
+            {
+                var unavailableResult = PlaybackOperationResult.Failed(
+                    PlaybackFailureMapper.MapDeployment(_deploymentProbe.Check()));
+                ApplyFailure(unavailableResult);
+                return false;
+            }
+        }
+
         // 自动播放必须作为一个完整的业务意图交给播放服务。若 ViewModel 自己执行
         // LoadAsync -> PlayAsync，两个调用之间可能插入 Stop 或另一条 Load，造成旧意图
         // 意外启动新媒体；组合接口用同一个代次令牌保证“认证、提交、启动”不可被拆开。
@@ -279,10 +308,9 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
             NativeOutputChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        // VideoView.Detach touches the old native MediaPlayer.  The notification
-        // must therefore finish on the UI thread before the playback service is
-        // allowed to dispose that player; posting it would race a stale HWND
-        // detach against libvlc_media_player_release.
+        // VideoView.Detach 会访问旧的原生 MediaPlayer，因此通知必须在播放服务允许释放
+        // Player 之前，于 UI 线程同步完成。若这里只 Post 后立即返回，旧 HWND 的 Detach
+        // 就可能与 libvlc_media_player_release 竞态，表现为低概率原生崩溃而非托管异常。
         if (Dispatcher.UIThread.CheckAccess())
         {
             NotifyView();
@@ -372,6 +400,16 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         {
             LastFailure = result.Failure;
             StatusMessage = result.Failure.Message;
+            if (result.Failure.Code == PlaybackFailureCode.DeploymentUnavailable)
+            {
+                var deployment = _deploymentProbe.Check();
+                IsPlaybackAvailable = false;
+                DeploymentIssueText =
+                    $"[{result.Failure.DiagnosticCode ?? "DEPLOYMENT_UNAVAILABLE"}] {result.Failure.Message}";
+                DeploymentCheckedPath = deployment.RuntimeDirectory;
+                DeploymentSuggestedAction = result.Failure.SuggestedAction ??
+                    "请重新部署插件并重启宿主。";
+            }
         }
     }
 
@@ -385,6 +423,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
 
     private bool CanPlay() =>
         !_disposed &&
+        IsPlaybackAvailable &&
         !IsMediaTransitioning &&
         IsVideoSurfaceReady &&
         CurrentState != PlayerStateEnum.Playing &&
@@ -392,11 +431,13 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
 
     private bool CanPause() =>
         !_disposed &&
+        IsPlaybackAvailable &&
         !IsMediaTransitioning &&
         CurrentState == PlayerStateEnum.Playing;
 
     private bool CanStop() =>
         !_disposed &&
+        IsPlaybackAvailable &&
         !IsMediaTransitioning &&
         CurrentState is PlayerStateEnum.Playing or PlayerStateEnum.Paused;
 
@@ -405,6 +446,61 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         PlayCommand.NotifyCanExecuteChanged();
         PauseCommand.NotifyCanExecuteChanged();
         StopCommand.NotifyCanExecuteChanged();
+    }
+
+    private void RefreshDeploymentStatus()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        var result = _deploymentProbe.Check();
+        IsPlaybackAvailable = result.IsReady;
+        if (result.IsReady)
+        {
+            try
+            {
+                // G3 的 100 次真实 HWND 生命周期证明：MediaPlayer 必须在 View 首次绑定前
+                // 准备好，不能等到线程池中的媒体解析阶段再动态替换原生输出。
+                // 因此这里采用“自检门控的页面启动初始化”：坏部署仍可打开诊断页，
+                // 完整部署则在页面绑定前恢复 G3 已验证的原生对象构造顺序。
+                _backendInitializer.Initialize();
+                DeploymentIssueText = string.Empty;
+                DeploymentCheckedPath = string.Empty;
+                DeploymentSuggestedAction = string.Empty;
+                if (_session.Snapshot.State == PlaybackState.Empty)
+                {
+                    StatusMessage = "播放器部署自检通过";
+                }
+            }
+            catch (PlaybackDeploymentException ex)
+            {
+                var failure = PlaybackFailureMapper.MapDeployment(ex.Result);
+                IsPlaybackAvailable = false;
+                DeploymentIssueText = $"[{failure.DiagnosticCode}] {failure.Message}";
+                DeploymentCheckedPath = ex.Result.RuntimeDirectory;
+                DeploymentSuggestedAction = failure.SuggestedAction ?? "请重新部署插件并重启宿主。";
+                StatusMessage = failure.Message;
+            }
+            return;
+        }
+
+        // 探针刻意聚合全部问题，UI 也不能退化成只显示第一项，否则用户修复一个文件后
+        // 还要反复重检才能发现下一个缺失项。路径和建议去重后逐行展示，既保留定位信息，
+        // 又避免多个 codec 问题重复刷出同一个“重新部署完整目录”提示。
+        DeploymentIssueText = string.Join(
+            Environment.NewLine,
+            result.Issues.Select(issue => $"[{issue.Code}] {issue.Summary}"));
+        DeploymentCheckedPath = string.Join(
+            Environment.NewLine,
+            result.Issues.Select(issue => issue.CheckedPath)
+                .Distinct(StringComparer.OrdinalIgnoreCase));
+        DeploymentSuggestedAction = string.Join(
+            Environment.NewLine,
+            result.Issues.Select(issue => issue.SuggestedAction)
+                .Distinct(StringComparer.Ordinal));
+        StatusMessage = result.Issues[0].Summary;
     }
 
     private void CancelSurfaceAttachment()

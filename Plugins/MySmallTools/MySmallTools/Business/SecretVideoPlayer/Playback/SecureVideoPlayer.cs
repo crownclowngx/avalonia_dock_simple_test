@@ -58,6 +58,10 @@ internal sealed class SecureVideoPlayer :
         _playerHost.StateChanged += OnHostStateChanged;
         _playerHost.PositionChanged += OnHostPositionChanged;
         _playerHost.Failed += OnHostFailed;
+        if (_playerHost is LazyPlaybackBackend lazyBackend)
+        {
+            lazyBackend.Created += OnBackendCreated;
+        }
         _playerHost.SetVolume(50);
     }
 
@@ -69,11 +73,7 @@ internal sealed class SecureVideoPlayer :
     /// </summary>
     // G3.1 后 PlayerHost 在 Document 生命周期内不再变化。保留该事件只是为了兼容
     // ILibVlcVideoOutputSource 的既有契约；普通换片不会再通知 View 重绑 MediaPlayer/HWND。
-    public event EventHandler? OutputChanged
-    {
-        add { }
-        remove { }
-    }
+    public event EventHandler? OutputChanged;
 
     public PlaybackSnapshot Snapshot
     {
@@ -125,6 +125,15 @@ internal sealed class SecureVideoPlayer :
         try
         {
             var generation = Interlocked.Increment(ref _nextMediaGeneration);
+
+            // 惰性 backend 只把构造推迟到首次用户加载，不把构造推入 Task.Run。
+            // 这样仍沿用 G3 已验证的 UI/STA 构造线程；真正昂贵的 PBKDF2、容器打开
+            // 和 Media.Parse 随后进入后台，而所有控制命令继续由 NativeDispatcher 串行化。
+            if (_playerHost is LazyPlaybackBackend lazyBackend)
+            {
+                token.ThrowIfCancellationRequested();
+                lazyBackend.EnsureCreatedForPlayback();
+            }
 
             // Open 会同步执行 PBKDF2，必须连同 Parse 一起移出 UI 线程。
             // 候选阶段不占用播放器操作门，因此旧视频可以继续播放，新 Load 也能取消本候选。
@@ -793,6 +802,10 @@ internal sealed class SecureVideoPlayer :
             _playerHost.StateChanged -= OnHostStateChanged;
             _playerHost.PositionChanged -= OnHostPositionChanged;
             _playerHost.Failed -= OnHostFailed;
+            if (_playerHost is LazyPlaybackBackend lazyBackend)
+            {
+                lazyBackend.Created -= OnBackendCreated;
+            }
             lock (_snapshotSync)
             {
                 _snapshot = PlaybackSnapshot.Empty with
@@ -805,11 +818,15 @@ internal sealed class SecureVideoPlayer :
         finally
         {
             Changed = null;
+            OutputChanged = null;
             Volatile.Write(ref _disposeState, 2);
             _lifetimeCancellation.Dispose();
             _operationGate.Release();
         }
     }
+
+    private void OnBackendCreated(object? sender, EventArgs e) =>
+        OutputChanged?.Invoke(this, EventArgs.Empty);
 
     private async Task RollBackFailedStartAsync(
         IPlaybackMediaSource? oldSource,

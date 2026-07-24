@@ -5,13 +5,19 @@ namespace MyAvaloniaManagement.PluginTests;
 
 public sealed class NativeDirectoryScanTests
 {
-    [Fact]
-    public void PluginScannerAndResolver_DoNotEnterNativeDirectory()
+    [Theory]
+    [InlineData("native")]
+    [InlineData("NATIVE")]
+    [InlineData("runtimes")]
+    [InlineData("RunTimes")]
+    [InlineData("libvlc")]
+    [InlineData("LIBVLC")]
+    public void PluginScannerAndResolver_DoNotEnterNativeDirectories(string excludedName)
     {
         var rootName = "NativeScanTest-" + Guid.NewGuid().ToString("N");
         var root = Path.Combine(AppContext.BaseDirectory, rootName);
         var plugin = Path.Combine(root, "PluginUnderTest");
-        var native = Path.Combine(plugin, "native", "win-x64", "libvlc");
+        var native = Path.Combine(plugin, "managed", excludedName, "deep");
         Directory.CreateDirectory(native);
 
         try

@@ -12,6 +12,17 @@
         <VlcWindowsX64TargetDir>native\win-x64\libvlc</VlcWindowsX64TargetDir>
     </PropertyGroup>
 
+    <!--
+      G4 规定托管部署文件只在这里声明一次。宿主构建复制这组文件，发布脚本再从已经
+      验证过的 Controls/SmallTools 目录生成 Manifest 和 ZIP，避免三套清单逐渐漂移。
+      原生树由 VideoLAN 包在构建输出中生成，保持完整复制，不在 P0 阶段做高风险裁剪。
+    -->
+    <ItemGroup>
+      <SmallToolsManagedDeployment Include="$(TargetPath)" />
+      <SmallToolsManagedDeployment Include="$(PkgLibVLCSharp)\lib\net8.0\LibVLCSharp.dll" />
+      <SmallToolsManagedDeployment Include="$(PkgLibVLCSharp_Avalonia)\lib\netstandard2.0\LibVLCSharp.Avalonia.dll" />
+    </ItemGroup>
+
     <ItemGroup>
       <Folder Include="Converters\SecretVideoPlayer\" />
       <Folder Include="Models\SecretVideoPlayer\" />
@@ -38,15 +49,12 @@
             Condition="'$(SkipPluginDeploy)' != 'true'">
       <ItemGroup>
         <!-- 只部署插件本体、两个 LibVLCSharp 托管桥接程序集和 Windows x64 原生树，避免复制宿主已有依赖。 -->
-        <SmallToolsManaged Include="$(TargetPath)" />
-        <SmallToolsManaged Include="$(PkgLibVLCSharp)\lib\net8.0\LibVLCSharp.dll" />
-        <SmallToolsManaged Include="$(PkgLibVLCSharp_Avalonia)\lib\netstandard2.0\LibVLCSharp.Avalonia.dll" />
         <SmallToolsNative Include="$(TargetDir)native\win-x64\libvlc\**\*" />
       </ItemGroup>
       <RemoveDir Directories="$(PluginDeployDir)" />
       <!-- 每次重新创建插件目录，避免升级 LibVLC 后遗留已删除或改名的旧原生模块。 -->
       <MakeDir Directories="$(PluginDeployDir)" />
-      <Copy SourceFiles="@(SmallToolsManaged)" DestinationFolder="$(PluginDeployDir)" SkipUnchangedFiles="true" />
+      <Copy SourceFiles="@(SmallToolsManagedDeployment)" DestinationFolder="$(PluginDeployDir)" SkipUnchangedFiles="true" />
       <Copy SourceFiles="@(SmallToolsNative)"
             DestinationFiles="@(SmallToolsNative->'$(PluginDeployDir)\native\win-x64\libvlc\%(RecursiveDir)%(Filename)%(Extension)')"
             SkipUnchangedFiles="true" />

@@ -14,6 +14,7 @@
 | [G2 可靠性闭环](G2-ENCRYPTION-DECRYPTION-PREFLIGHT-ERROR-RESOURCE-CLOSURE.md) | 加解密预检、统一错误、不覆盖事务、取消重试和资源释放证据 | 开发者、测试人员、评审人员 |
 | [G3 真实播放与 Dock 稳定性](G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md) | 播放会话契约、候选 Lease、类型化错误、真实 HWND/vout 门禁和 100 次压力证据 | 开发者、测试人员、评审人员 |
 | [G3.1 异步播放与 UI 响应性](G3.1-ASYNC-PLAYBACK-UI-RESPONSIVENESS.md) | 单 MediaPlayer、原生命令串行调度、有界异步回收、内存抖动分析和 UI heartbeat 门禁 | 开发者、测试人员、评审人员 |
+| [G4 P0 部署、验收与发布基线](G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md) | 部署探针、阻断诊断、确定性发布包、大文件内存与两轮真实播放门禁 | 开发者、发布人员、评审人员 |
 | [概要设计](architecture-design.md) | 分层、组件职责、加密与播放数据流、DI 和 Document 生命周期 | 开发者、维护者 |
 | [SECVID03 文件格式](secvid03-format.md) | 二进制布局、密钥派生、GCM 认证、随机读取、公开信息和兼容策略 | 格式维护者、安全评审人员 |
 | [接入、约定与排障](integration-and-conventions.md) | LibVLC 部署、插件扫描、Dock 黑屏恢复、资源释放、已踩过的坑和回归检查 | 集成人员、问题排查人员 |
@@ -40,7 +41,7 @@ flowchart LR
     F --> G["EmbeddedVideoSurface<br/>Avalonia / Dock HWND"]
 ```
 
-加密、解密和播放器共用 SECVID03 格式定义，但不共享密码、任务状态、播放位置或原生播放器实例。每个 Dock Document 都有独立 DI Scope；仅 `LibVlcRuntime` 作为进程级单例，负责从插件私有目录执行一次 `Core.Initialize`。加解密共用预检严重级别、稳定失败代码和不覆盖输出事务，但仍保持独立应用服务。
+加密、解密和播放器共用 SECVID03 格式定义，但不共享密码、任务状态、播放位置或原生播放器实例。每个 Dock Document 都有独立 DI Scope；`IPlaybackDeploymentProbe` 与 `LibVlcRuntime` 是无状态/进程级单例，前者只读验证部署，后者在检查通过后执行一次 `Core.Initialize`。加解密共用预检严重级别、稳定失败代码和不覆盖输出事务，但仍保持独立应用服务。
 
 ## 运行基线
 
@@ -56,6 +57,18 @@ flowchart LR
 | 原生运行时相对目录 | `native/win-x64/libvlc/` |
 
 运行时不会回退到宿主输出根目录、`PATH` 或系统安装的 VLC。私有原生目录不完整时，播放器会报告实际检查的绝对路径。
+
+## 快速部署与发布
+
+正式发布包只包含 `Controls/SmallTools/`，可直接解压到宿主根目录。单一发布入口会串行完成 Release 零警告构建、100 项插件测试、20 项宿主扫描测试、Manifest/ZIP 校验、64/512 MiB 内存门禁和两轮真实窗口播放门禁：
+
+```powershell
+.\scripts\Release-MySmallToolsP0.ps1
+```
+
+正式流程拒绝 dirty worktree。开发中若只验证未提交变更，可增加 `-AllowDirty`；对应报告会标记 `publishable: false`，不可当作正式发布候选。产物位于 `artifacts/MySmallTools/p0-win-x64/`。
+
+两个播放文档打开时都会先执行只读部署自检。失败不会阻止文档创建，也不会初始化 LibVLC；页面会显示问题码、实际路径、建议动作和“重新检测”，并仅禁用依赖 LibVLC 的命令。部署完整时，为保持 Avalonia `VideoView`、HWND 与 vout 的已验证绑定顺序，Document backend 在首次视图绑定前创建，后续媒体切换始终复用同一 PlayerHost。
 
 ## 快速使用
 
@@ -121,7 +134,8 @@ flowchart LR
 - 批量明文导出：[Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)、[VideoDecryptionService.cs](../../Business/SecretVideoPlayer/Decryption/VideoDecryptionService.cs)
 - Dock 视频表面：[EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)、[VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/Playback/VideoSurfaceRestoreSequence.cs)
 - 文件夹视频库：[VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/Library/VideoLibraryScanner.cs)、[SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
-- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[Secvid03GoldenVectorTests.cs](../../../MySmallTools.Tests/Secvid03GoldenVectorTests.cs)、[G2ReliabilityTests.cs](../../../MySmallTools.Tests/G2ReliabilityTests.cs)、[G3PlaybackSessionTests.cs](../../../MySmallTools.Tests/G3PlaybackSessionTests.cs)
+- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[Secvid03GoldenVectorTests.cs](../../../MySmallTools.Tests/Secvid03GoldenVectorTests.cs)、[G2ReliabilityTests.cs](../../../MySmallTools.Tests/G2ReliabilityTests.cs)、[G3PlaybackSessionTests.cs](../../../MySmallTools.Tests/G3PlaybackSessionTests.cs)、[G4DeploymentTests.cs](../../../MySmallTools.Tests/G4DeploymentTests.cs)
 - 真实窗口门禁：[MySmallTools.Playback.IntegrationHarness](../../../MySmallTools.Playback.IntegrationHarness/)
+- 发布门禁：[MySmallTools.ReleaseAcceptance](../../../MySmallTools.ReleaseAcceptance/)、[Release-MySmallToolsP0.ps1](../../../../../scripts/Release-MySmallToolsP0.ps1)
 
 本文档描述当前实现，不把设想中的跨平台支持、旧格式兼容或其他加密算法写作已有能力。格式或接入行为变化时，应同时更新本目录文档和对应自动化测试。

@@ -8,6 +8,8 @@ internal static class PlaybackFailureMapper
         ArgumentNullException.ThrowIfNull(exception);
         return exception switch
         {
+            PlaybackDeploymentException deploymentException =>
+                MapDeployment(deploymentException.Result),
             OperationCanceledException => Failure(
                 PlaybackFailureCode.Cancelled,
                 "操作已取消。"),
@@ -56,14 +58,33 @@ internal static class PlaybackFailureMapper
     }
 
     public static PlaybackFailure ParseFailed() =>
-        Failure(PlaybackFailureCode.ParseFailed, "LibVLC 无法解析该媒体。");
+        new(
+            PlaybackFailureCode.ParseFailed,
+            "LibVLC 无法解析该媒体。",
+            "请先检查文件完整性；若所有媒体均失败，请重新执行部署自检或重新部署插件。",
+            "PLAYBACK_PARSE_FAILED");
 
     public static PlaybackFailure DecodeFailed() =>
-        Failure(PlaybackFailureCode.DecodeFailed, "LibVLC 无法解码或播放该媒体。");
+        new(
+            PlaybackFailureCode.DecodeFailed,
+            "LibVLC 无法解码或播放该媒体。",
+            "请确认媒体编码受支持；若所有媒体均失败，请重新部署插件。",
+            "PLAYBACK_DECODE_FAILED");
 
     public static PlaybackFailure SurfaceRestoreFailed() =>
         Failure(PlaybackFailureCode.SurfaceRestoreFailed, "视频输出表面恢复失败，请手动播放。");
 
     private static PlaybackFailure Failure(PlaybackFailureCode code, string message) =>
         new(code, message);
+
+    public static PlaybackFailure MapDeployment(DeploymentCheckResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        var first = result.Issues.FirstOrDefault();
+        return new PlaybackFailure(
+            PlaybackFailureCode.DeploymentUnavailable,
+            first?.Summary ?? "安全视频播放运行库不可用。",
+            first?.SuggestedAction ?? "请重新部署 MySmallTools Windows x64 发布包并重启宿主。",
+            first is null ? "DEPLOYMENT_UNAVAILABLE" : $"DEPLOYMENT_{first.Code}");
+    }
 }
