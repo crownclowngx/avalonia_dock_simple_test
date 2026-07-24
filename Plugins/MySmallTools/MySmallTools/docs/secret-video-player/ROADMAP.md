@@ -255,6 +255,7 @@ P0 不追求更多播放功能，重点是把已有四条链路变成稳定、�
 ### G4：P0 部署、验收与发布基线
 
 **时间：W8，2026-09-14～2026-09-20**
+**状态：已于 2026-07-24 完成。详细设计、内存分析和实施记录：[G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md](G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md)**
 
 主要工作：
 
