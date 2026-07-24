@@ -101,30 +101,30 @@ sequenceDiagram
     participant Dock as Dock / NativeControlHost
     participant Surface as EmbeddedVideoSurface
     participant VM as VideoPlayerControlViewModel
-    participant Policy as VideoSurfaceRecoveryPolicy
-    participant Player as SecureVideoPlayer
+    participant Session as ISecureVideoPlaybackSession
+    participant Lease as PlaybackMediaLease
     participant VLC as LibVLC MediaPlayer
 
     Dock->>Surface: DestroyNativeControlCore
-    Surface->>VM: SetVideoSurfaceReady(false)（基类清句柄前）
-    VM->>Policy: 保存 mediaGeneration、位置、Playing/Paused
-    VM->>Player: StopForVideoSurfaceTransition()
-    Player->>VLC: Stop，等待旧 vout 同步退出
+    Surface->>VM: SetVideoSurface(token=null)（基类清句柄前）
+    VM->>Session: DetachSurface(oldToken)
+    Session->>Session: 保存 mediaGeneration、intent、位置、Playing/Paused
+    Session->>Lease: RequestStop
+    Lease->>VLC: Stop、Hwnd=0
     Surface->>Dock: 基类销毁旧 HWND
 
     Dock->>Surface: CreateNativeControlCore
-    Surface->>VLC: 绑定新 Hwnd
-    Surface->>VM: SetVideoSurfaceReady(true)
-    VM->>Policy: 按当前 mediaGeneration 一次性消费快照
-    VM->>Player: RestoreVideoSurfaceAsync
-    Player->>VLC: Play
-    VLC-->>Player: Playing 且 VoutCount > 0
-    Player->>VLC: Seek 到 min(原位置, Length - 250ms)
+    Surface->>VM: SetVideoSurface(newToken)
+    VM->>Session: AttachAndRestoreSurfaceAsync(newToken)
+    Session->>Lease: PrepareForPlayback、绑定 Hwnd
+    Lease->>VLC: Play
+    VLC-->>Lease: Playing 且 VoutCount > 0
+    Lease->>VLC: Seek 到 min(原位置, Length - 250ms)
     alt 原状态为暂停
-        VLC-->>Player: Seek 后收到首个 TimeChanged
-        Player->>VLC: SetPause(true)
+        VLC-->>Lease: Seek 后收到目标 TimeChanged
+        Lease->>VLC: SetPause(true)，确认 Paused 后重申目标位置
     else 原状态为播放
-        Player-->>VM: 保持播放
+        Session-->>VM: 发布 Playing 快照
     end
 ```
 
@@ -134,10 +134,10 @@ sequenceDiagram
 
 恢复逻辑同时使用以下保护：
 
-- **一次性快照**：一个 `VideoSurfaceRecoveryRequest` 只允许消费一次。
-- **请求编号**：快速连续丢失表面时，只保留最新 `RequestId`。
-- **媒体代次**：切换、加载、清理或释放媒体会推进 `mediaGeneration`；旧媒体请求和已投递 UI 回调直接失效。
-- **内部 Stop 计数**：表面切换产生的 `Stopped` 事件不会被误判为用户主动停止。用户 Stop 则会取消恢复快照。
+- **表面令牌**：每个非零 HWND 都有单调递增代次，旧 Lost 通知不能解绑新表面。
+- **一次性快照**：会话只保存最新的媒体代次、用户意图、位置和 Playing/Paused。
+- **媒体代次**：切换、清理或释放媒体会推进 `mediaGeneration`；旧 Lease 回调直接失效。
+- **切换状态**：旧 vout 停止到恢复完成期间 `IsTransitioning=true`，UI 不把中间的原生零位置当作稳定暂停态。
 - **取消源**：用户主动播放、暂停、停止、Seek、切换媒体或再次丢失表面会取消旧恢复。
 - **5 秒超时**：等待视频输出或暂停场景的目标帧超过 5 秒后停止恢复，并提示用户手动播放。
 - **释放检查**：Document Scope 释放后，所有异步恢复和 UI 回调都不得再修改绑定状态。
@@ -248,7 +248,7 @@ flowchart TD
 
 1. 确认当前输出仍为内嵌 HWND，没有出现独立 Direct3D11 窗口。
 2. 确认 `CreateNativeControlCore` 返回非零句柄后设置了 `MediaPlayer.Hwnd`。
-3. 确认 Lost 事件发生在基类清零句柄之前，并同步执行 `StopForVideoSurfaceTransition`。
+3. 确认 Lost 事件发生在基类清零句柄之前，并同步调用 `DetachSurface(oldToken)` 完成 RequestStop、Stop 和 HWND 解绑。
 4. 查看状态是否提示“等待视频输出或首帧超时”；恢复超时为 5 秒，失败后应允许手动播放。
 5. 对暂停场景确认顺序包含等待 vout、Seek、等待 Seek 后首帧、Pause。
 6. 对快速切换确认只消费最新请求，旧请求的媒体代次应失效。
@@ -309,18 +309,20 @@ flowchart TD
 | 批量解密、认证、取消与不覆盖 | `Secvid03Decryptor`、`VideoDecryptionService` | `VideoDecryptionTests.cs`、`G2ReliabilityTests.cs` | [README](README.md)、[G2](G2-ENCRYPTION-DECRYPTION-PREFLIGHT-ERROR-RESOURCE-CLOSURE.md) |
 | 认证随机读取、Seek 与句柄释放 | `SeekableEncryptedVideoStream` | `Secvid03Tests.cs` | [格式](secvid03-format.md)、[架构](architecture-design.md) |
 | 文件夹媒体库扫描和过期结果淘汰 | `VideoLibraryScanner`、`VideoLibraryBrowserViewModel` | `VideoLibraryTests.cs` | [README](README.md)、[架构](architecture-design.md) |
-| Dock 表面恢复顺序和用户操作优先 | `VideoSurfaceRestoreSequence`、`VideoSurfaceRecoveryPolicy` | `VideoToolStabilityTests.cs` | 本文第 4 节、[架构](architecture-design.md) |
+| Dock 表面恢复顺序和用户操作优先 | `SecureVideoPlayer`、`VideoSurfaceRestoreSequence`、`VideoSurfaceToken` | `VideoToolStabilityTests.cs`、真实播放门禁 | 本文第 4 节、[G3](G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md) |
+| 真实媒体播放、候选切换、类型化错误和真实 Dock 恢复 | `SecureVideoPlayer`、`PlaybackMediaLease`、`SeekableStreamMediaInput`、`EmbeddedVideoSurface` | `G3PlaybackSessionTests.cs`、`MySmallTools.Playback.IntegrationHarness` | [G3 真实播放与 Dock 稳定性](G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md) |
 | 每个 Document 独立 Scope 并在关闭时释放 | `DocumentScopeManager`、各 Document Strategy | `PluginCompatibilityTests.cs`、`DocumentScopeManagerTests.cs` | 本文第 5 节、[架构](architecture-design.md) |
 | 私有 LibVLC 目录且不参与插件扫描 | `LibVlcRuntime`、宿主插件扫描器 | `Secvid03Tests.cs`、`NativeDirectoryScanTests.cs` | 本文第 1～2 节 |
 | 真实 MP4/WebM 来源和字节完整性 | 不适用，仅为测试资产 | `RealMediaAssetTests.cs` | [真实媒体测试资产](real-media-test-assets.md) |
 
-G0 只证明真实媒体文件可复现、版权边界清晰且字节完整。真实 LibVLC 解码、播放和跨块 Seek 的环境集成回归属于路线图 G3，不在此表中宣称为已完成能力。
+G0 证明真实媒体文件可复现、版权边界清晰且字节完整；G3 已进一步用独立 Windows x64 门禁证明真实 LibVLC 解码、播放、跨块读取、篡改传播和 HWND/Dock 恢复。
 
 建议验证命令：
 
 ```powershell
 dotnet test MySmallTools.Tests/MySmallTools.Tests.csproj
 dotnet test MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj
+dotnet run --project MySmallTools.Playback.IntegrationHarness/MySmallTools.Playback.IntegrationHarness.csproj -c Release
 ```
 
 ## 11. 关键源码

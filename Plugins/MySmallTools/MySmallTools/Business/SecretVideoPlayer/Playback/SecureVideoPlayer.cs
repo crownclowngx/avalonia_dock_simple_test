@@ -1,185 +1,211 @@
 using LibVLCSharp.Shared;
-using MySmallTools.Business.SecretVideoPlayer.Container;
 
 namespace MySmallTools.Business.SecretVideoPlayer.Playback;
 
 /// <summary>
-/// 基于“认证随机读取流”的 SECVID03 安全视频播放器。
+/// SECVID03 播放应用服务。负责串行化用例、提交候选媒体、拒绝过期请求和维护表面恢复快照。
+/// LibVLC 资源的具体释放顺序由 <see cref="PlaybackMediaLease"/> 独占。
 /// </summary>
-/// <remarks>
-/// 播放链路固定为 SECVID03 → <see cref="SeekableEncryptedVideoStream"/> →
-/// <see cref="SeekableStreamMediaInput"/> → LibVLC Media → Avalonia VideoView。
-/// 该类不持有完整视频明文，只管理当前 Media、MediaInput 及 LibVLC 对象的生命周期。
-/// </remarks>
-public sealed class SecureVideoPlayer : IDisposable
+internal sealed class SecureVideoPlayer :
+    ISecureVideoPlaybackSession,
+    ILibVlcVideoOutputSource
 {
-    private readonly LibVLC _libVlc;
-    private readonly MediaPlayer _player;
+    private readonly IPlaybackMediaLeaseFactory _mediaLeaseFactory;
     private readonly SemaphoreSlim _operationGate = new(1, 1);
     private readonly CancellationTokenSource _lifetimeCancellation = new();
-    private Media? _currentMedia;
-    private SeekableStreamMediaInput? _mediaInput;
+    private readonly object _snapshotSync = new();
+
+    private IPlaybackMediaLease? _currentLease;
+    private SurfaceRecoverySnapshot? _pendingSurfaceRecovery;
+    private CancellationTokenSource? _surfaceRestoreCancellation;
+    private CancellationTokenSource? _mediaSwitchCancellation;
+    private VideoSurfaceToken _surface;
+    private PlaybackSnapshot _snapshot = PlaybackSnapshot.Empty;
+    private long _nextMediaGeneration;
+    private long _intentRevision;
     private int _disposeState;
 
-    public event EventHandler<PlaybackStateChangedEventArgs>? PlaybackStateChanged;
-    public event EventHandler<TimeChangedEventArgs>? TimeChanged;
-    public event EventHandler<PositionChangedEventArgs>? PositionChanged;
-    public event EventHandler<LengthChangedEventArgs>? LengthChanged;
-    public event EventHandler<SeekableChangedEventArgs>? SeekableChanged;
-    public event EventHandler<string>? ErrorOccurred;
+    private readonly record struct SurfaceRecoverySnapshot(
+        long MediaGeneration,
+        long IntentRevision,
+        long PositionMs,
+        PlaybackState State);
 
-    public SecureVideoPlayer(LibVlcRuntime runtime)
+    public event EventHandler<PlaybackChangedEventArgs>? Changed;
+    public event EventHandler? OutputChanged;
+
+    public SecureVideoPlayer(IPlaybackMediaLeaseFactory mediaLeaseFactory)
     {
-        ArgumentNullException.ThrowIfNull(runtime);
-        // 必须先用插件内的绝对路径初始化 Core，再创建任何 LibVLC/MediaPlayer 实例。
-        runtime.EnsureInitialized();
-        _libVlc = new LibVLC();
-        _player = new MediaPlayer(_libVlc);
-        SubscribeToPlayerEvents();
+        _mediaLeaseFactory = mediaLeaseFactory ??
+            throw new ArgumentNullException(nameof(mediaLeaseFactory));
     }
 
-    private void SubscribeToPlayerEvents()
+    public PlaybackSnapshot Snapshot
     {
-        _player.Playing += (_, _) => PlaybackStateChanged?.Invoke(this, new(PlaybackState.Playing));
-        _player.Paused += (_, _) => PlaybackStateChanged?.Invoke(this, new(PlaybackState.Paused));
-        _player.Stopped += (_, _) => PlaybackStateChanged?.Invoke(this, new(PlaybackState.Stopped));
-        _player.EndReached += (_, _) => PlaybackStateChanged?.Invoke(this, new(PlaybackState.Ended));
-        _player.TimeChanged += (_, e) => TimeChanged?.Invoke(this, new(e.Time));
-        _player.PositionChanged += (_, e) => PositionChanged?.Invoke(this, new(e.Position));
-        _player.LengthChanged += (_, e) => LengthChanged?.Invoke(this, new(e.Length));
-        _player.SeekableChanged += (_, e) => SeekableChanged?.Invoke(this, new(e.Seekable != 0));
-        _player.EncounteredError += (_, _) =>
+        get
         {
-            // 原生事件本身不携带托管解密异常，优先转发 MediaInput 保存的认证/读取错误。
-            var detail = _mediaInput?.LastError?.Message;
-            ErrorOccurred?.Invoke(this, detail is null ? "播放失败。" : $"播放失败: {detail}");
-            PlaybackStateChanged?.Invoke(this, new(PlaybackState.Error));
-        };
+            lock (_snapshotSync)
+            {
+                return _snapshot;
+            }
+        }
     }
 
-    /// <summary>
-    /// 验证 SECVID03 密码并把随机读取媒体绑定到播放器，保留原有公共方法签名。
-    /// </summary>
-    /// <remarks>
-    /// 此处的“加载”只包含 PBKDF2、固定头认证和 LibVLC 媒体解析，不执行完整视频解密。
-    /// 因此首帧等待时间和内存占用不会随视频总大小线性增长。
-    /// </remarks>
-    public async Task<bool> LoadEncryptedVideoAsync(
+    public MediaPlayer? MediaPlayer =>
+        Volatile.Read(ref _disposeState) == 0 ? _currentLease?.NativePlayer : null;
+
+    public async Task<PlaybackOperationResult> LoadAsync(
         string filePath,
         string password,
         CancellationToken cancellationToken = default)
     {
         using var diagnostics = PlaybackPerformanceDiagnostics.Begin("media-switch");
-        ThrowIfDisposed();
-        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            _lifetimeCancellation.Token);
-        var operationToken = operationCancellation.Token;
-        if (!File.Exists(filePath))
-        {
-            ErrorOccurred?.Invoke(this, "文件不存在。");
-            return false;
-        }
+        var intent = BeginUserIntent();
+        var requestCancellation = CreateOperationCancellation(cancellationToken);
+        var previousRequest = Interlocked.Exchange(
+            ref _mediaSwitchCancellation,
+            requestCancellation);
+        TryCancel(previousRequest);
+        var token = requestCancellation.Token;
 
-        await _operationGate.WaitAsync(operationToken).ConfigureAwait(false);
-        SeekableStreamMediaInput? newInput = null;
-        Media? newMedia = null;
+        await _operationGate.WaitAsync().ConfigureAwait(false);
+        IPlaybackMediaLease? candidate = null;
         try
         {
+            token.ThrowIfCancellationRequested();
             ThrowIfDisposed();
+            PublishCurrent(isTransitioning: true);
 
-            // 旧媒体的 Stop 一旦开始就必须完整结束；调用方取消只会阻止后续候选媒体提交。
-            await Task.Run(() => CleanupCurrentMediaCore(diagnostics)).ConfigureAwait(false);
-            operationToken.ThrowIfCancellationRequested();
-
-            (newInput, newMedia) = await Task.Run(() =>
-            {
-                var stream = SeekableEncryptedVideoStream.Open(filePath, password);
-                var input = new SeekableStreamMediaInput(stream);
-                try
-                {
-                    return (input, new Media(_libVlc, input));
-                }
-                catch
-                {
-                    input.Dispose();
-                    throw;
-                }
-            }, operationToken).ConfigureAwait(false);
-            diagnostics.Mark("open-auth");
-
-            await newMedia
-                .Parse(MediaParseOptions.ParseLocal, -1, operationToken)
+            var generation = Interlocked.Increment(ref _nextMediaGeneration);
+            // Opening SECVID03 performs the intentionally expensive PBKDF2
+            // before LibVLC reaches its asynchronous parse API. Keep that work
+            // off the UI thread and yield early enough for a newer Load request
+            // to cancel this candidate before it can commit.
+            candidate = await Task.Run(
+                    () => _mediaLeaseFactory.CreateAsync(
+                        generation,
+                        filePath,
+                        password,
+                        token),
+                    token)
                 .ConfigureAwait(false);
-            diagnostics.Mark("parse");
-            operationToken.ThrowIfCancellationRequested();
+            diagnostics.Mark("open-auth-parse");
 
-            _player.Media = newMedia;
-            _mediaInput = newInput;
-            _currentMedia = newMedia;
-            newInput = null;
-            newMedia = null;
-            diagnostics.Mark("attach");
-            return true;
+            token.ThrowIfCancellationRequested();
+            if (intent != Volatile.Read(ref _intentRevision))
+            {
+                return PlaybackOperationResult.Failed(
+                    new PlaybackFailure(PlaybackFailureCode.Cancelled, "操作已被更新的用户请求取代。"));
+            }
+
+            var previous = _currentLease;
+            if (previous is not null)
+            {
+                Unsubscribe(previous);
+                previous.SetVideoOutputHandle(nint.Zero);
+                previous.Stop();
+            }
+
+            _currentLease = candidate;
+            candidate = null;
+            Subscribe(_currentLease);
+
+            if (_surface.IsValid)
+            {
+                _currentLease.SetVideoOutputHandle(_surface.Handle);
+            }
+
+            _pendingSurfaceRecovery = null;
+            OutputChanged?.Invoke(this, EventArgs.Empty);
+            Publish(_currentLease, PlaybackState.Ready, isTransitioning: false);
+            diagnostics.Mark("commit");
+
+            previous?.Dispose();
+            diagnostics.Mark("release-old");
+            return PlaybackOperationResult.Succeeded();
         }
-        catch (OperationCanceledException) when (operationToken.IsCancellationRequested)
+        catch (PlaybackOperationException ex)
         {
-            throw;
+            if (intent == Volatile.Read(ref _intentRevision))
+            {
+                PublishCurrent(isTransitioning: false, ex.Failure);
+            }
+            return PlaybackOperationResult.Failed(ex.Failure);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            var failure = new PlaybackFailure(PlaybackFailureCode.Cancelled, "操作已取消。");
+            if (intent == Volatile.Read(ref _intentRevision))
+            {
+                PublishCurrent(isTransitioning: false, failure);
+            }
+            return PlaybackOperationResult.Failed(failure);
         }
         catch (Exception ex)
         {
-            ErrorOccurred?.Invoke(this, $"加载失败: {ex.Message}");
-            return false;
+            var failure = PlaybackFailureMapper.MapLoad(ex);
+            if (intent == Volatile.Read(ref _intentRevision))
+            {
+                PublishCurrent(isTransitioning: false, failure);
+            }
+            return PlaybackOperationResult.Failed(failure);
         }
         finally
         {
-            try
-            {
-                newMedia?.Dispose();
-            }
-            finally
-            {
-                try
-                {
-                    newInput?.Dispose();
-                }
-                finally
-                {
-                    _operationGate.Release();
-                }
-            }
+            candidate?.Dispose();
+            _operationGate.Release();
+            Interlocked.CompareExchange(
+                ref _mediaSwitchCancellation,
+                null,
+                requestCancellation);
+            requestCancellation.Dispose();
         }
     }
 
-    public async Task<bool> Play(CancellationToken cancellationToken = default)
+    public async Task<PlaybackOperationResult> PlayAsync(
+        CancellationToken cancellationToken = default)
     {
-        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            _lifetimeCancellation.Token);
-        var operationToken = operationCancellation.Token;
-        await _operationGate.WaitAsync(operationToken).ConfigureAwait(false);
+        BeginUserIntent();
+        using var linked = CreateOperationCancellation(cancellationToken);
+        await _operationGate.WaitAsync(linked.Token).ConfigureAwait(false);
         try
         {
             ThrowIfDisposed();
-            if (_player.Media is null)
+            if (_currentLease is null)
             {
-                return false;
+                return Fail(
+                    PlaybackFailureCode.InvalidRequest,
+                    "请先加载视频。",
+                    publish: true);
             }
 
-            _mediaInput?.PrepareForPlayback();
-            if (_currentMedia is { IsParsed: false })
+            if (!_surface.IsValid)
             {
-                await _currentMedia
-                    .Parse(MediaParseOptions.ParseLocal, -1, operationToken)
-                    .ConfigureAwait(false);
+                return Fail(
+                    PlaybackFailureCode.SurfaceRestoreFailed,
+                    "视频输出表面尚未准备完成。",
+                    publish: true);
             }
 
-            return _player.Play();
+            if (!_currentLease.Play())
+            {
+                return Fail(
+                    PlaybackFailureCode.DecodeFailed,
+                    "LibVLC 无法开始播放该媒体。",
+                    publish: true);
+            }
+
+            return PlaybackOperationResult.Succeeded();
+        }
+        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        {
+            return Cancelled();
         }
         catch (Exception ex)
         {
-            ErrorOccurred?.Invoke(this, $"播放失败: {ex.Message}");
-            return false;
+            var failure = PlaybackFailureMapper.MapMediaInput(ex);
+            PublishCurrent(false, failure, PlaybackState.Faulted);
+            return PlaybackOperationResult.Failed(failure);
         }
         finally
         {
@@ -187,79 +213,26 @@ public sealed class SecureVideoPlayer : IDisposable
         }
     }
 
-    /// <summary>
-    /// 当前是否仍有可用于重新创建视频输出的媒体。
-    /// </summary>
-    public bool HasMedia => Volatile.Read(ref _disposeState) == 0 && _currentMedia is not null;
-
-    /// <summary>
-    /// 当前原生播放器位置。未开始播放时 LibVLC 可能返回负值，这里统一归零。
-    /// </summary>
-    public long PlaybackTime => Volatile.Read(ref _disposeState) != 0 ? 0 : Math.Max(0, _player.Time);
-
-    /// <summary>
-    /// 当前是否处于暂停状态。
-    /// </summary>
-    public bool IsPaused => Volatile.Read(ref _disposeState) == 0 && _player.State == VLCState.Paused;
-
-    /// <summary>
-    /// 在 Avalonia 销毁旧 HWND 前同步停止播放器，使旧 vout 完整退出。
-    /// </summary>
-    /// <remarks>
-    /// MediaPlayer.Stop 是同步调用，不能从 LibVLC 回调线程调用。本方法只允许由 Avalonia
-    /// NativeControlHost 的表面销毁通知在 UI 线程调用，并且不会解除当前 Media。
-    /// </remarks>
-    public void StopForVideoSurfaceTransition()
+    public async Task<PlaybackOperationResult> PauseAsync(
+        CancellationToken cancellationToken = default)
     {
-        using var diagnostics = PlaybackPerformanceDiagnostics.Begin("dock-surface-stop");
-        if (Volatile.Read(ref _disposeState) != 0)
-        {
-            return;
-        }
-
-        _operationGate.Wait();
-        try
-        {
-            if (Volatile.Read(ref _disposeState) == 0 && _currentMedia is not null)
-            {
-                StopCore(prepareForReplay: true, diagnostics);
-            }
-        }
-        finally
-        {
-            _operationGate.Release();
-        }
-    }
-
-    /// <summary>
-    /// 在新 HWND 已经绑定后重新创建 vout，并恢复原来的位置和播放/暂停状态。
-    /// </summary>
-    public async Task<bool> RestoreVideoSurfaceAsync(
-        long positionMs,
-        bool restorePaused,
-        CancellationToken cancellationToken)
-    {
-        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            _lifetimeCancellation.Token);
-        var operationToken = operationCancellation.Token;
-        await _operationGate.WaitAsync(operationToken).ConfigureAwait(false);
+        BeginUserIntent();
+        using var linked = CreateOperationCancellation(cancellationToken);
+        await _operationGate.WaitAsync(linked.Token).ConfigureAwait(false);
         try
         {
             ThrowIfDisposed();
-            if (_currentMedia is null)
+            if (_currentLease is null)
             {
-                return false;
+                return Fail(
+                    PlaybackFailureCode.InvalidRequest,
+                    "当前没有可暂停的媒体。",
+                    publish: false);
             }
 
-            _mediaInput?.PrepareForPlayback();
-            var operations = new LibVlcVideoSurfaceRestoreOperations(_player);
-            return await VideoSurfaceRestoreSequence.ExecuteAsync(
-                    operations,
-                    positionMs,
-                    restorePaused,
-                    operationToken)
-                .ConfigureAwait(false);
+            _currentLease.SetPause(true);
+            Publish(_currentLease, PlaybackState.Paused, false);
+            return PlaybackOperationResult.Succeeded();
         }
         finally
         {
@@ -267,24 +240,25 @@ public sealed class SecureVideoPlayer : IDisposable
         }
     }
 
-    public void Pause()
-    {
-        if (Volatile.Read(ref _disposeState) == 0) _player.Pause();
-    }
-
-    public async Task StopAsync(CancellationToken cancellationToken = default)
+    public async Task<PlaybackOperationResult> StopAsync(
+        CancellationToken cancellationToken = default)
     {
         using var diagnostics = PlaybackPerformanceDiagnostics.Begin("user-stop");
-        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            _lifetimeCancellation.Token);
-        await _operationGate
-            .WaitAsync(operationCancellation.Token)
-            .ConfigureAwait(false);
+        BeginUserIntent();
+        using var linked = CreateOperationCancellation(cancellationToken);
+        await _operationGate.WaitAsync(linked.Token).ConfigureAwait(false);
         try
         {
             ThrowIfDisposed();
-            await Task.Run(() => StopCore(prepareForReplay: true, diagnostics)).ConfigureAwait(false);
+            if (_currentLease is null)
+            {
+                return PlaybackOperationResult.Succeeded();
+            }
+
+            await Task.Run(_currentLease.Stop).ConfigureAwait(false);
+            diagnostics.Mark("stop");
+            Publish(_currentLease, PlaybackState.Stopped, false);
+            return PlaybackOperationResult.Succeeded();
         }
         finally
         {
@@ -292,60 +266,256 @@ public sealed class SecureVideoPlayer : IDisposable
         }
     }
 
-    public void SetPosition(float position)
+    public async Task<PlaybackOperationResult> SeekAsync(
+        long positionMs,
+        bool waitForFrame = false,
+        CancellationToken cancellationToken = default)
     {
-        if (Volatile.Read(ref _disposeState) == 0 && _player.Media is not null) _player.Position = Math.Clamp(position, 0, 1);
+        BeginUserIntent();
+        using var linked = CreateOperationCancellation(cancellationToken);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var bounded = CancellationTokenSource.CreateLinkedTokenSource(
+            linked.Token,
+            timeout.Token);
+        await _operationGate.WaitAsync(bounded.Token).ConfigureAwait(false);
+        try
+        {
+            ThrowIfDisposed();
+            if (_currentLease is null || !_currentLease.IsSeekable)
+            {
+                return Fail(
+                    PlaybackFailureCode.InvalidRequest,
+                    "当前媒体不支持随机定位。",
+                    publish: false);
+            }
+
+            var maximum = Math.Max(0, _currentLease.DurationMs - 250);
+            var target = Math.Clamp(positionMs, 0, maximum);
+            await _currentLease
+                .SeekAsync(target, waitForFrame, bounded.Token)
+                .ConfigureAwait(false);
+            PublishCurrent(false);
+            return PlaybackOperationResult.Succeeded();
+        }
+        catch (PlaybackOperationException ex)
+        {
+            PublishCurrent(false, ex.Failure, PlaybackState.Faulted);
+            return PlaybackOperationResult.Failed(ex.Failure);
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            var failure = new PlaybackFailure(
+                PlaybackFailureCode.DecodeFailed,
+                "The media seek did not complete within the allowed time.");
+            PublishCurrent(false, failure, PlaybackState.Faulted);
+            return PlaybackOperationResult.Failed(failure);
+        }
+        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        {
+            return Cancelled();
+        }
+        catch (Exception ex)
+        {
+            var failure = PlaybackFailureMapper.MapMediaInput(ex);
+            PublishCurrent(false, failure, PlaybackState.Faulted);
+            return PlaybackOperationResult.Failed(failure);
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
     }
 
-    public void SetTime(long timeMs)
+    public async Task<PlaybackOperationResult> ReleaseAsync(
+        CancellationToken cancellationToken = default)
     {
-        if (Volatile.Read(ref _disposeState) == 0 && _player.Media is not null) _player.Time = Math.Max(0, timeMs);
+        BeginUserIntent();
+        using var linked = CreateOperationCancellation(cancellationToken);
+        await _operationGate.WaitAsync(linked.Token).ConfigureAwait(false);
+        try
+        {
+            ThrowIfDisposed();
+            ReleaseCurrentCore();
+            PublishEmpty();
+            return PlaybackOperationResult.Succeeded();
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
     }
 
     public bool SetVolume(int volume)
     {
-        if (Volatile.Read(ref _disposeState) != 0) return false;
-        _player.Volume = Math.Clamp(volume, 0, 100);
+        if (Volatile.Read(ref _disposeState) != 0)
+        {
+            return false;
+        }
+
+        var lease = _currentLease;
+        if (lease is null)
+        {
+            lock (_snapshotSync)
+            {
+                _snapshot = _snapshot with { Volume = Math.Clamp(volume, 0, 100) };
+            }
+            return true;
+        }
+
+        lease.SetVolume(volume);
+        PublishCurrent(false);
         return true;
     }
 
-    public VideoInfo? GetVideoInfo()
+    public void DetachSurface(VideoSurfaceToken surface)
     {
-        if (Volatile.Read(ref _disposeState) != 0 || _player.Media is null) return null;
-        return new VideoInfo
+        if (Volatile.Read(ref _disposeState) != 0 ||
+            !surface.IsValid ||
+            surface != _surface)
         {
-            Duration = _player.Length,
-            Position = _player.Time,
-            Volume = _player.Volume,
-            IsSeekable = _player.IsSeekable,
-            HasVideo = _player.VideoTrackCount > 0,
-            HasAudio = _player.AudioTrackCount > 0,
-            VideoTrackCount = _player.VideoTrackCount,
-            AudioTrackCount = _player.AudioTrackCount
-        };
-    }
+            return;
+        }
 
-    public MediaPlayer GetMediaPlayer() => _player;
-
-    public async Task CleanupCurrentMediaAsync(CancellationToken cancellationToken = default)
-    {
-        using var diagnostics = PlaybackPerformanceDiagnostics.Begin("media-cleanup");
-        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            _lifetimeCancellation.Token);
-        await _operationGate
-            .WaitAsync(operationCancellation.Token)
-            .ConfigureAwait(false);
+        CancelSurfaceRestore();
+        _operationGate.Wait();
         try
         {
-            ThrowIfDisposed();
-            await Task.Run(() => CleanupCurrentMediaCore(diagnostics)).ConfigureAwait(false);
+            if (Volatile.Read(ref _disposeState) != 0 || surface != _surface)
+            {
+                return;
+            }
+
+            var lease = _currentLease;
+            if (lease is not null &&
+                Snapshot.State is PlaybackState.Playing or PlaybackState.Paused)
+            {
+                _pendingSurfaceRecovery = new SurfaceRecoverySnapshot(
+                    lease.Generation,
+                    Volatile.Read(ref _intentRevision),
+                    lease.PositionMs,
+                    Snapshot.State);
+                lease.Stop();
+            }
+            else
+            {
+                _pendingSurfaceRecovery = null;
+            }
+
+            if (lease is not null)
+            {
+                lease.SetVideoOutputHandle(nint.Zero);
+            }
+
+            _surface = default;
+            PublishCurrent(_pendingSurfaceRecovery is not null);
         }
         finally
         {
             _operationGate.Release();
         }
     }
+
+    public async Task<PlaybackOperationResult> AttachAndRestoreSurfaceAsync(
+        VideoSurfaceToken surface,
+        CancellationToken cancellationToken = default)
+    {
+        if (!surface.IsValid)
+        {
+            return PlaybackOperationResult.Failed(
+                new PlaybackFailure(PlaybackFailureCode.InvalidRequest, "视频输出句柄无效。"));
+        }
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            timeout.Token,
+            _lifetimeCancellation.Token);
+        var restoreCancellation = CancellationTokenSource.CreateLinkedTokenSource(linked.Token);
+        var previous = Interlocked.Exchange(ref _surfaceRestoreCancellation, restoreCancellation);
+        TryCancelAndDispose(previous);
+
+        await _operationGate.WaitAsync(restoreCancellation.Token).ConfigureAwait(false);
+        var recoveryStarted = false;
+        try
+        {
+            ThrowIfDisposed();
+            _surface = surface;
+            var lease = _currentLease;
+            if (lease is null)
+            {
+                PublishEmpty(surface.Generation);
+                return PlaybackOperationResult.Succeeded();
+            }
+
+            lease.SetVideoOutputHandle(surface.Handle);
+            OutputChanged?.Invoke(this, EventArgs.Empty);
+
+            var recovery = _pendingSurfaceRecovery;
+            _pendingSurfaceRecovery = null;
+            if (recovery is null ||
+                recovery.Value.MediaGeneration != lease.Generation ||
+                recovery.Value.IntentRevision != Volatile.Read(ref _intentRevision))
+            {
+                PublishCurrent(false);
+                return PlaybackOperationResult.Succeeded();
+            }
+
+            PlaybackResourceDiagnostics.SurfaceRestoreStarted();
+            recoveryStarted = true;
+            var restored = await lease.RestoreSurfaceAsync(
+                    recovery.Value.PositionMs,
+                    recovery.Value.State == PlaybackState.Paused,
+                    restoreCancellation.Token)
+                .ConfigureAwait(false);
+            if (!restored)
+            {
+                var failure = PlaybackFailureMapper.SurfaceRestoreFailed();
+                Publish(lease, PlaybackState.Stopped, false, failure);
+                return PlaybackOperationResult.Failed(failure);
+            }
+
+            var restoredState = recovery.Value.State == PlaybackState.Paused
+                ? PlaybackState.Paused
+                : PlaybackState.Playing;
+            Publish(lease, restoredState, false);
+            return PlaybackOperationResult.Succeeded();
+        }
+        catch (OperationCanceledException)
+        {
+            if (timeout.IsCancellationRequested)
+            {
+                var failure = PlaybackFailureMapper.SurfaceRestoreFailed();
+                PublishCurrent(false, failure, PlaybackState.Stopped);
+                return PlaybackOperationResult.Failed(failure);
+            }
+
+            return Cancelled();
+        }
+        catch (Exception)
+        {
+            var failure = PlaybackFailureMapper.SurfaceRestoreFailed();
+            PublishCurrent(false, failure, PlaybackState.Stopped);
+            return PlaybackOperationResult.Failed(failure);
+        }
+        finally
+        {
+            if (recoveryStarted)
+            {
+                PlaybackResourceDiagnostics.SurfaceRestoreFinished();
+            }
+            _operationGate.Release();
+            if (Interlocked.CompareExchange(
+                    ref _surfaceRestoreCancellation,
+                    null,
+                    restoreCancellation) == restoreCancellation)
+            {
+                restoreCancellation.Dispose();
+            }
+        }
+    }
+
+    public static PlaybackResourceSnapshot CaptureResourceSnapshot() =>
+        SecurePlaybackDiagnostics.CaptureResources();
 
     public void Dispose()
     {
@@ -356,24 +526,15 @@ public sealed class SecureVideoPlayer : IDisposable
         }
 
         _lifetimeCancellation.Cancel();
+        TryCancel(Interlocked.Exchange(ref _mediaSwitchCancellation, null));
+        CancelSurfaceRestore();
         _operationGate.Wait();
         try
         {
-            try
+            ReleaseCurrentCore();
+            lock (_snapshotSync)
             {
-                CleanupCurrentMediaCore(diagnostics);
-            }
-            finally
-            {
-                try
-                {
-                    _player.Dispose();
-                }
-                finally
-                {
-                    // LibVLC 实例由本播放器独占；Core.Initialize 是进程级初始化，但 LibVLC 对象仍必须正常释放。
-                    _libVlc.Dispose();
-                }
+                _snapshot = PlaybackSnapshot.Empty with { State = PlaybackState.Disposed };
             }
         }
         finally
@@ -384,51 +545,223 @@ public sealed class SecureVideoPlayer : IDisposable
         }
     }
 
-    private void StopCore(
-        bool prepareForReplay,
-        PlaybackPerformanceDiagnostics? diagnostics = null)
+    private long BeginUserIntent()
     {
-        if (_currentMedia is null)
+        ThrowIfDisposed();
+        _pendingSurfaceRecovery = null;
+        CancelSurfaceRestore();
+        return Interlocked.Increment(ref _intentRevision);
+    }
+
+    private CancellationTokenSource CreateOperationCancellation(CancellationToken cancellationToken) =>
+        CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _lifetimeCancellation.Token);
+
+    private void Subscribe(IPlaybackMediaLease lease)
+    {
+        lease.StateChanged += OnLeaseStateChanged;
+        lease.PositionChanged += OnLeasePositionChanged;
+        lease.Failed += OnLeaseFailed;
+    }
+
+    private void Unsubscribe(IPlaybackMediaLease lease)
+    {
+        lease.StateChanged -= OnLeaseStateChanged;
+        lease.PositionChanged -= OnLeasePositionChanged;
+        lease.Failed -= OnLeaseFailed;
+    }
+
+    private void OnLeaseStateChanged(IPlaybackMediaLease lease, PlaybackState state)
+    {
+        if (!ReferenceEquals(_currentLease, lease))
         {
-            diagnostics?.Mark("stop-no-media");
             return;
         }
 
-        var input = _mediaInput;
-        input?.RequestStop();
-        _player.Stop();
-        diagnostics?.Mark("stop");
-        if (prepareForReplay)
+        // Surface transition Stop is an implementation detail; the user-visible state is restored later.
+        if (state == PlaybackState.Stopped &&
+            _pendingSurfaceRecovery is { MediaGeneration: var generation } &&
+            generation == lease.Generation)
         {
-            input?.PrepareForPlayback();
+            return;
+        }
+
+        Publish(lease, state, false);
+    }
+
+    private void OnLeasePositionChanged(object? sender, EventArgs e)
+    {
+        if (sender is IPlaybackMediaLease lease && ReferenceEquals(_currentLease, lease))
+        {
+            Publish(lease, Snapshot.State, Snapshot.IsTransitioning);
         }
     }
 
-    private void CleanupCurrentMediaCore(PlaybackPerformanceDiagnostics? diagnostics = null)
+    private void OnLeaseFailed(IPlaybackMediaLease lease, PlaybackFailure failure)
     {
-        if (_currentMedia is null && _mediaInput is null)
+        if (!ReferenceEquals(_currentLease, lease))
         {
             return;
         }
 
-        // Stop 成功返回后，LibVLC 的读取线程已经退出，才能解除并释放 Media/Input。
-        StopCore(prepareForReplay: false, diagnostics);
-        _player.Media = null;
-
-        var media = _currentMedia;
-        var input = _mediaInput;
-        _currentMedia = null;
-        _mediaInput = null;
-
         try
         {
-            media?.Dispose();
+            lease.Stop();
+        }
+        catch
+        {
+            // 根因 failure 已经保存，不用停止异常覆盖认证/读取失败。
+        }
+
+        Publish(lease, PlaybackState.Faulted, false, failure);
+    }
+
+    private void Publish(
+        IPlaybackMediaLease lease,
+        PlaybackState state,
+        bool isTransitioning,
+        PlaybackFailure? failure = null)
+    {
+        if (!ReferenceEquals(_currentLease, lease) ||
+            Volatile.Read(ref _disposeState) != 0)
+        {
+            return;
+        }
+
+        var snapshot = new PlaybackSnapshot(
+            lease.Generation,
+            state,
+            isTransitioning,
+            lease.PositionMs,
+            lease.DurationMs,
+            lease.IsSeekable,
+            true,
+            _surface.Generation,
+            lease.Volume,
+            lease.HasVideo,
+            lease.HasAudio,
+            lease.VideoTrackCount,
+            lease.AudioTrackCount);
+        lock (_snapshotSync)
+        {
+            _snapshot = snapshot;
+        }
+
+        Changed?.Invoke(this, new PlaybackChangedEventArgs(snapshot, failure));
+    }
+
+    private void PublishCurrent(
+        bool isTransitioning,
+        PlaybackFailure? failure = null,
+        PlaybackState? state = null)
+    {
+        var lease = _currentLease;
+        if (lease is null)
+        {
+            var snapshot = Snapshot with
+            {
+                State = state ?? PlaybackState.Empty,
+                IsTransitioning = isTransitioning,
+                SurfaceGeneration = _surface.Generation
+            };
+            lock (_snapshotSync)
+            {
+                _snapshot = snapshot;
+            }
+            Changed?.Invoke(this, new PlaybackChangedEventArgs(snapshot, failure));
+            return;
+        }
+
+        Publish(lease, state ?? Snapshot.State, isTransitioning, failure);
+    }
+
+    private void PublishEmpty(long surfaceGeneration = 0)
+    {
+        var snapshot = PlaybackSnapshot.Empty with
+        {
+            SurfaceGeneration = surfaceGeneration,
+            Volume = Snapshot.Volume
+        };
+        lock (_snapshotSync)
+        {
+            _snapshot = snapshot;
+        }
+        Changed?.Invoke(this, new PlaybackChangedEventArgs(snapshot));
+    }
+
+    private PlaybackOperationResult Fail(
+        PlaybackFailureCode code,
+        string message,
+        bool publish)
+    {
+        var failure = new PlaybackFailure(code, message);
+        if (publish)
+        {
+            PublishCurrent(false, failure, PlaybackState.Faulted);
+        }
+        return PlaybackOperationResult.Failed(failure);
+    }
+
+    private static PlaybackOperationResult Cancelled() =>
+        PlaybackOperationResult.Failed(
+            new PlaybackFailure(PlaybackFailureCode.Cancelled, "操作已取消。"));
+
+    private void ReleaseCurrentCore()
+    {
+        var lease = _currentLease;
+        _currentLease = null;
+        _pendingSurfaceRecovery = null;
+        if (lease is null)
+        {
+            return;
+        }
+
+        Unsubscribe(lease);
+        lease.SetVideoOutputHandle(nint.Zero);
+        OutputChanged?.Invoke(this, EventArgs.Empty);
+        lease.Dispose();
+    }
+
+    private void CancelSurfaceRestore()
+    {
+        var cancellation = Interlocked.Exchange(ref _surfaceRestoreCancellation, null);
+        TryCancelAndDispose(cancellation);
+    }
+
+    private static void TryCancelAndDispose(CancellationTokenSource? cancellation)
+    {
+        if (cancellation is null)
+        {
+            return;
+        }
+        try
+        {
+            cancellation.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
         }
         finally
         {
-            input?.Dispose();
+            cancellation.Dispose();
         }
-        diagnostics?.Mark("release");
+    }
+
+    private static void TryCancel(CancellationTokenSource? cancellation)
+    {
+        if (cancellation is null)
+        {
+            return;
+        }
+
+        try
+        {
+            cancellation.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
     }
 
     private void ThrowIfDisposed() =>

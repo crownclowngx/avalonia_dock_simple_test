@@ -1,5 +1,6 @@
 using Avalonia.Platform;
 using LibVLCSharp.Avalonia;
+using MySmallTools.Business.SecretVideoPlayer.Playback;
 
 namespace MySmallTools.Views.SecretVideoPlayer;
 
@@ -14,6 +15,8 @@ namespace MySmallTools.Views.SecretVideoPlayer;
 /// </remarks>
 public sealed class EmbeddedVideoSurface : VideoView
 {
+    private long _surfaceGeneration;
+
     /// <summary>
     /// 原生视频表面的可用状态发生变化时触发。
     /// </summary>
@@ -23,6 +26,9 @@ public sealed class EmbeddedVideoSurface : VideoView
     /// 当前是否已经创建非零 HWND，并可安全启动视频输出。
     /// </summary>
     public bool IsSurfaceReady { get; private set; }
+
+    /// <summary>当前真实 HWND 及其单调递增代次。</summary>
+    public VideoSurfaceToken? CurrentSurfaceToken { get; private set; }
 
     protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
     {
@@ -37,7 +43,10 @@ public sealed class EmbeddedVideoSurface : VideoView
                 MediaPlayer.Hwnd = control.Handle;
             }
 
-            SetSurfaceReady(true);
+            CurrentSurfaceToken = new VideoSurfaceToken(
+                Interlocked.Increment(ref _surfaceGeneration),
+                control.Handle);
+            SetSurfaceReady(true, CurrentSurfaceToken);
         }
 
         return control;
@@ -47,11 +56,13 @@ public sealed class EmbeddedVideoSurface : VideoView
     {
         // 状态事件必须在基类把 MediaPlayer.Hwnd 清零之前同步发出。
         // ViewModel 会在该回调中暂停正在播放的媒体，避免活动中的 vout 在 HWND 消失后创建独立窗口。
-        SetSurfaceReady(false);
+        var destroyedSurface = CurrentSurfaceToken;
+        SetSurfaceReady(false, destroyedSurface);
         base.DestroyNativeControlCore(control);
+        CurrentSurfaceToken = null;
     }
 
-    private void SetSurfaceReady(bool value)
+    private void SetSurfaceReady(bool value, VideoSurfaceToken? surface)
     {
         if (IsSurfaceReady == value)
         {
@@ -59,14 +70,19 @@ public sealed class EmbeddedVideoSurface : VideoView
         }
 
         IsSurfaceReady = value;
-        SurfaceReadyChanged?.Invoke(this, new VideoSurfaceReadyChangedEventArgs(value));
+        SurfaceReadyChanged?.Invoke(
+            this,
+            new VideoSurfaceReadyChangedEventArgs(value, surface));
     }
 }
 
 /// <summary>
 /// 视频表面可用状态事件参数。
 /// </summary>
-public sealed class VideoSurfaceReadyChangedEventArgs(bool isReady) : EventArgs
+public sealed class VideoSurfaceReadyChangedEventArgs(
+    bool isReady,
+    VideoSurfaceToken? surface) : EventArgs
 {
     public bool IsReady { get; } = isReady;
+    public VideoSurfaceToken? Surface { get; } = surface;
 }

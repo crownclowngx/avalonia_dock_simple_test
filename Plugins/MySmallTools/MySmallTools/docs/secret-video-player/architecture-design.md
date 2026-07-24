@@ -46,8 +46,8 @@ flowchart TB
         Scanner["VideoLibraryScanner"]
         EncryptDoc["VideoEncryptorViewModel"]
         PlayerVM["VideoPlayerControlViewModel"]
-        Recovery["VideoSurfaceRecoveryPolicy"]
-        Player["SecureVideoPlayer"]
+        Player["ISecureVideoPlaybackSession<br/>SecureVideoPlayer"]
+        Lease["PlaybackMediaLease"]
         EncryptService["VideoEncryptorService"]
         Encryptor["Secvid03Encryptor"]
         Preflight["StoragePreflightProbe"]
@@ -68,10 +68,10 @@ flowchart TB
     LibraryDoc --> PlayerVM
     LibraryDoc --> BrowserVM
     BrowserVM --> Scanner
-    PlayerVM --> Recovery
     PlayerVM --> Player
-    Player --> Stream
-    Player --> Input
+    Player --> Lease
+    Lease --> Stream
+    Lease --> Input
     Player --> Runtime
     PlayerVM <--> Surface
     EncryptDoc --> EncryptService
@@ -87,10 +87,11 @@ flowchart TB
 | 插件接入 | `MySmallToolsPluginModule`、三个 `DocumentStrategy` | 声明服务生命周期，由宿主为每个 Document 创建 Scope；不在模块加载时创建 View、LibVLC 或任务 |
 | 页面协调 | `SecretVideoPlayerViewModel`、`SecretVideoLibraryViewModel`、`VideoEncryptorViewModel` | 命令、输入校验、状态文本、公开信息编辑和任务取消 |
 | 视频库浏览 | `VideoLibraryBrowserViewModel`、`Library.VideoLibraryScanner` | 限流异步扫描当前目录，隔离单文件错误，并按文件名、标题和描述筛选 |
-| 播放控件 | `VideoPlayerControlViewModel`、`VideoPlayerControl` | 播放控制、LibVLC 事件转 UI、媒体代次和视频表面恢复 |
+| 播放控件 | `VideoPlayerControlViewModel`、`VideoPlayerControl` | 展示播放快照、转发用户命令，并把表面令牌交给会话；不编排 LibVLC 生命周期 |
 | 原生输出 | `EmbeddedVideoSurface` | 在原生句柄真正创建后绑定 `MediaPlayer.Hwnd`，销毁前同步发出表面丢失通知 |
-| 播放服务 | `Playback.SecureVideoPlayer` | 管理 `LibVLC`、`MediaPlayer`、`Media`、`MediaInput` 的所有权与释放顺序 |
-| 流适配 | `Playback.SeekableStreamMediaInput` | 把 .NET 可 Seek 流适配为 LibVLC `MediaInput`，串行化回调并保留底层异常 |
+| 播放会话 | `ISecureVideoPlaybackSession`、`Playback.SecureVideoPlayer` | 串行化命令、候选提交、媒体/表面代次、错误和 Dock 恢复 |
+| 媒体资源 | `Playback.PlaybackMediaLease` | 独占一代 `MediaPlayer`、`Media`、`MediaInput` 和加密流并规定逆序释放 |
+| 流适配 | `Playback.SeekableStreamMediaInput` | 把 .NET 可 Seek 流适配为 LibVLC `MediaInput`，串行化回调并首次失败优先 |
 | 容器读取 | `Container.SeekableEncryptedVideoStream` | 验证固定头，按需认证和解密目标块，维护四块 LRU 明文缓存 |
 | 操作基础设施 | `Operations.StoragePreflightProbe`、`Operations.OutputFileTransaction` | 统一任务/错误契约、目录和空间检查，以及 partial 的不覆盖提交/回滚 |
 | 加密 | `Encryption.IVideoEncryptionService`、`Encryption.ISecvid03Encryptor` | 单文件预检、进度与 SECVID03 流式加密；密码只作为调用参数 |
@@ -218,7 +219,7 @@ flowchart LR
 | 生命周期 | 服务 |
 | --- | --- |
 | Singleton | `LibVlcRuntime` |
-| Scoped | `SecureVideoPlayer`、`VideoSurfaceRecoveryPolicy`、播放器/媒体库 ViewModel、`IVideoEncryptionService`、`IVideoDecryptionService` 及两个任务 Document |
+| Scoped | `IPlaybackMediaLeaseFactory`、`ISecureVideoPlaybackSession`、`ILibVlcVideoOutputSource`、播放器/媒体库 ViewModel、`IVideoEncryptionService`、`IVideoDecryptionService` 及两个任务 Document |
 | Transient | `IStoragePreflightProbe`、`IOutputFileTransactionFactory`、`ISecvid03Encryptor`、`ISecvid03Decryptor`、输出路径解析器 |
 | Transient | `Secvid03Encryptor`、`IVideoLibraryScanner` |
 

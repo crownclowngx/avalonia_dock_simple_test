@@ -95,6 +95,10 @@ public class ManagementFactory : Factory
         // 从特定子目录加载其他程序集
         var pluginAssemblies = AssemblyLoaderHelper.LoadPluginsFromDirectories(AssemblyLoadConstant.PLUGINS_SUBDIRECTORY);
         assemblies.AddRange(pluginAssemblies);
+        // 集成宿主可直接把已发现模块程序集交给 Catalog，而不必复制到生产插件目录。
+        // 生产启动仍会得到相同集合；Distinct 避免同一程序集被扫描两次。
+        assemblies.AddRange(_pluginModuleCatalog.Modules.Select(module => module.GetType().Assembly));
+        assemblies = assemblies.Distinct().ToList();
         
         // 扫描所有程序集中的Tool策略类型
         foreach (var assembly in assemblies)
@@ -157,6 +161,8 @@ public class ManagementFactory : Factory
         // 从特定子目录加载其他程序集
         var pluginAssemblies = AssemblyLoaderHelper.LoadPluginsFromDirectories(AssemblyLoadConstant.PLUGINS_SUBDIRECTORY);
         assemblies.AddRange(pluginAssemblies);
+        assemblies.AddRange(_pluginModuleCatalog.Modules.Select(module => module.GetType().Assembly));
+        assemblies = assemblies.Distinct().ToList();
         
         // 扫描所有程序集中的策略类型
         foreach (var assembly in assemblies)

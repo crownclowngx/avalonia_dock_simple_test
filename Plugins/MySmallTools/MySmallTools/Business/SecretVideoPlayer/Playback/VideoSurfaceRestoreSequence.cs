@@ -11,7 +11,7 @@ internal interface IVideoSurfaceRestoreOperations
     bool Play();
     Task WaitForVideoOutputAsync(CancellationToken cancellationToken);
     Task SeekAsync(long positionMs, bool waitForFrame, CancellationToken cancellationToken);
-    void Pause();
+    Task PauseAtAsync(long positionMs, CancellationToken cancellationToken);
 }
 
 internal static class VideoSurfaceRestoreSequence
@@ -33,12 +33,15 @@ internal static class VideoSurfaceRestoreSequence
 
         var maximumPosition = Math.Max(0, operations.Length - 250);
         var targetPosition = Math.Clamp(positionMs, 0, maximumPosition);
-        await operations.SeekAsync(targetPosition, restorePaused, cancellationToken);
+        // A surface restore must re-issue the seek even when MediaPlayer.Time
+        // still reports the old value. Play can asynchronously reset that
+        // stale value to zero while the new vout is starting.
+        await operations.SeekAsync(targetPosition, waitForFrame: true, cancellationToken);
 
         if (restorePaused)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            operations.Pause();
+            await operations.PauseAtAsync(targetPosition, cancellationToken);
         }
 
         return true;
@@ -85,9 +88,8 @@ internal sealed class LibVlcVideoSurfaceRestoreOperations(MediaPlayer player) : 
 
     public async Task SeekAsync(long positionMs, bool waitForFrame, CancellationToken cancellationToken)
     {
-        if (!waitForFrame)
+        if (!waitForFrame && Math.Abs(player.Time - positionMs) <= 100)
         {
-            player.Time = positionMs;
             return;
         }
 
@@ -96,7 +98,10 @@ internal sealed class LibVlcVideoSurfaceRestoreOperations(MediaPlayer player) : 
 
         void OnTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs args)
         {
-            if (Volatile.Read(ref seekIssued) != 0)
+            // 压缩媒体通常只能定位到相邻关键帧；750 ms 是 G3 恢复验收容差，
+            // 这里额外留出事件采样误差，避免把 seek 前的普通时间事件当成完成。
+            if (Volatile.Read(ref seekIssued) != 0 &&
+                Math.Abs(args.Time - positionMs) <= 750)
             {
                 frameReady.TrySetResult();
             }
@@ -105,9 +110,8 @@ internal sealed class LibVlcVideoSurfaceRestoreOperations(MediaPlayer player) : 
         player.TimeChanged += OnTimeChanged;
         try
         {
-            player.Time = positionMs;
-            // 在设置 Time 返回后才接受 TimeChanged，避免把 seek 前正在播放的旧帧误判为目标帧。
             Volatile.Write(ref seekIssued, 1);
+            player.Time = positionMs;
             await frameReady.Task.WaitAsync(cancellationToken);
         }
         finally
@@ -116,5 +120,39 @@ internal sealed class LibVlcVideoSurfaceRestoreOperations(MediaPlayer player) : 
         }
     }
 
-    public void Pause() => player.SetPause(true);
+    public async Task PauseAtAsync(
+        long positionMs,
+        CancellationToken cancellationToken)
+    {
+        var paused = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        void TryComplete()
+        {
+            if (player.State == VLCState.Paused)
+            {
+                paused.TrySetResult();
+            }
+        }
+
+        void OnPaused(object? sender, EventArgs args) => TryComplete();
+
+        player.Paused += OnPaused;
+        try
+        {
+            player.SetPause(true);
+            TryComplete();
+            await paused.Task.WaitAsync(cancellationToken);
+
+            // Play can reset a callback-based input to zero after the first
+            // seek event. Re-assert the target only after Paused is confirmed;
+            // setting Time while paused is stable even when no TimeChanged is
+            // emitted for that final assignment.
+            player.Time = positionMs;
+        }
+        finally
+        {
+            player.Paused -= OnPaused;
+        }
+    }
 }

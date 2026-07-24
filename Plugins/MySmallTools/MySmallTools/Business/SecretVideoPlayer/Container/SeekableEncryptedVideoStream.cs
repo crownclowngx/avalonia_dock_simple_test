@@ -1,6 +1,47 @@
 using System.Security.Cryptography;
+using System.Collections.Concurrent;
 
 namespace MySmallTools.Business.SecretVideoPlayer.Container;
+
+internal readonly record struct EncryptedStreamResourceSnapshot(
+    int LiveStreams,
+    int CachedPlaintextChunks);
+
+internal static class EncryptedStreamResourceDiagnostics
+{
+    private const int MaximumTraceLength = 256;
+    private static readonly ConcurrentQueue<long> RecentChunkReads = new();
+    private static int _liveStreams;
+    private static int _cachedPlaintextChunks;
+
+    public static EncryptedStreamResourceSnapshot Capture() => new(
+        Volatile.Read(ref _liveStreams),
+        Volatile.Read(ref _cachedPlaintextChunks));
+
+    public static IReadOnlyList<long> CaptureRecentChunkReads() =>
+        RecentChunkReads.ToArray();
+
+    public static void ClearRecentChunkReads()
+    {
+        while (RecentChunkReads.TryDequeue(out _))
+        {
+        }
+    }
+
+    public static void StreamCreated() => Interlocked.Increment(ref _liveStreams);
+    public static void StreamDisposed() => Interlocked.Decrement(ref _liveStreams);
+    public static void ChunkCached() => Interlocked.Increment(ref _cachedPlaintextChunks);
+    public static void ChunkReleased() => Interlocked.Decrement(ref _cachedPlaintextChunks);
+
+    public static void ChunkRead(long chunkIndex)
+    {
+        RecentChunkReads.Enqueue(chunkIndex);
+        while (RecentChunkReads.Count > MaximumTraceLength)
+        {
+            RecentChunkReads.TryDequeue(out _);
+        }
+    }
+}
 
 /// <summary>
 /// 把 SECVID03 暴露为与原视频内容完全一致的只读、可随机定位流。
@@ -38,6 +79,7 @@ public sealed class SeekableEncryptedVideoStream : Stream
             _plaintextBuffers[index] = buffer;
             _availablePlaintextBuffers.Push(buffer);
         }
+        EncryptedStreamResourceDiagnostics.StreamCreated();
     }
 
     internal IReadOnlyList<byte[]> PlaintextBuffers => _plaintextBuffers;
@@ -159,11 +201,14 @@ public sealed class SeekableEncryptedVideoStream : Stream
                 {
                     foreach (var buffer in _plaintextBuffers)
                         CryptographicOperations.ZeroMemory(buffer);
+                    for (var index = 0; index < _cache.Count; index++)
+                        EncryptedStreamResourceDiagnostics.ChunkReleased();
                     CryptographicOperations.ZeroMemory(_cipherBuffer);
                     _cache.Clear();
                     _lru.Clear();
                     _availablePlaintextBuffers.Clear();
                     _authentication.Dispose();
+                    EncryptedStreamResourceDiagnostics.StreamDisposed();
                 }
             }
         }
@@ -172,6 +217,7 @@ public sealed class SeekableEncryptedVideoStream : Stream
 
     private (byte[] Data, int Length) GetDecryptedChunk(long chunkIndex)
     {
+        EncryptedStreamResourceDiagnostics.ChunkRead(chunkIndex);
         if (_cache.TryGetValue(chunkIndex, out var cached))
         {
             // 命中缓存时把节点提升到链表头，尾节点始终代表最久未使用的块。
@@ -217,6 +263,7 @@ public sealed class SeekableEncryptedVideoStream : Stream
 
         var node = _lru.AddFirst(chunkIndex);
         _cache[chunkIndex] = new CacheEntry(plain, plainLength, node);
+        EncryptedStreamResourceDiagnostics.ChunkCached();
         return (plain, plainLength);
     }
 
@@ -231,6 +278,7 @@ public sealed class SeekableEncryptedVideoStream : Stream
         var oldEntry = _cache[oldest.Value];
         _cache.Remove(oldest.Value);
         _lru.RemoveLast();
+        EncryptedStreamResourceDiagnostics.ChunkReleased();
         CryptographicOperations.ZeroMemory(oldEntry.Data);
         return oldEntry.Data;
     }

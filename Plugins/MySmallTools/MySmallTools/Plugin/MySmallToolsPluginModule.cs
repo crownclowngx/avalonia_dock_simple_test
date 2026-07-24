@@ -27,8 +27,12 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddSingleton<LibVlcRuntime>();
 
         // 每个 Document Scope 拥有独立播放器及其恢复状态，绝不在不同视频标签页之间共享原生对象。
+        services.AddScoped<IPlaybackMediaLeaseFactory, LibVlcPlaybackMediaLeaseFactory>();
         services.AddScoped<SecureVideoPlayer>();
-        services.AddScoped<VideoSurfaceRecoveryPolicy>();
+        services.AddScoped<ISecureVideoPlaybackSession>(provider =>
+            provider.GetRequiredService<SecureVideoPlayer>());
+        services.AddScoped<ILibVlcVideoOutputSource>(provider =>
+            provider.GetRequiredService<SecureVideoPlayer>());
         services.AddScoped<VideoPlayerControlViewModel>();
         services.AddScoped<SecretVideoPlayerViewModel>();
 

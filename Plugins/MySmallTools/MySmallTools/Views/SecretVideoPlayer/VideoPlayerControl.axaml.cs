@@ -32,21 +32,37 @@ public partial class VideoPlayerControl : UserControl
 
         // 控件回收给另一个文档时，先通知旧 ViewModel 表面已经不可用，
         // 再把当前 HWND 状态交给新的 ViewModel，避免两个播放器同时认为自己拥有同一个输出窗口。
-        _boundViewModel?.SetVideoSurfaceReady(false);
+        if (_boundViewModel is not null)
+        {
+            _boundViewModel.SetVideoSurface(null);
+            _boundViewModel.NativeOutputChanged -= OnNativeOutputChanged;
+        }
 
         // MediaPlayer 不使用 XAML 继承 DataContext 绑定，而是在这里按严格顺序切换：
         // 先暂停旧播放器，再让 VideoView 清除旧 Hwnd，最后绑定新播放器。
         // 这可避免 DataContext 向子控件传播得更早时，旧播放器在仍播放的状态下突然失去输出句柄。
         _boundViewModel = DataContext as VideoPlayerControlViewModel;
+        if (_boundViewModel is not null)
+        {
+            _boundViewModel.NativeOutputChanged += OnNativeOutputChanged;
+        }
         VideoSurface.MediaPlayer = _boundViewModel?.MediaPlayer;
-        _boundViewModel?.SetVideoSurfaceReady(VideoSurface.IsSurfaceReady);
+        _boundViewModel?.SetVideoSurface(VideoSurface.CurrentSurfaceToken);
     }
 
     private void OnSurfaceReadyChanged(object? sender, VideoSurfaceReadyChangedEventArgs e)
     {
         // 事件由 DestroyNativeControlCore 在清除 HWND 前同步触发，
         // 所以此处不可异步排队，必须立即让 ViewModel 暂停正在播放的媒体。
-        _boundViewModel?.SetVideoSurfaceReady(e.IsReady);
+        _boundViewModel?.SetVideoSurface(e.IsReady ? e.Surface : null);
+    }
+
+    private void OnNativeOutputChanged(object? sender, EventArgs e)
+    {
+        if (ReferenceEquals(sender, _boundViewModel))
+        {
+            VideoSurface.MediaPlayer = _boundViewModel?.MediaPlayer;
+        }
     }
 
     /// <summary>

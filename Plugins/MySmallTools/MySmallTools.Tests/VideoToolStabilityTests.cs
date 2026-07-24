@@ -189,7 +189,9 @@ public sealed class VideoToolStabilityTests
 
         Assert.True(restored);
         // 位置会避开媒体末尾，防止刚恢复就触发 EndReached。
-        Assert.Equal(["Play", "WaitForVideoOutput", "Seek:9750"], operations.Calls);
+        Assert.Equal(
+            ["Play", "WaitForVideoOutput", "Seek:9750", "WaitForFrame"],
+            operations.Calls);
     }
 
     [Fact]
@@ -302,7 +304,11 @@ public sealed class VideoToolStabilityTests
             return Task.CompletedTask;
         }
 
-        public void Pause() => Calls.Add("Pause");
+        public Task PauseAtAsync(long positionMs, CancellationToken cancellationToken)
+        {
+            Calls.Add("Pause");
+            return Task.CompletedTask;
+        }
     }
 
     private static VideoEncryptorDocumentStrategy CreateVideoEncryptorStrategy() =>

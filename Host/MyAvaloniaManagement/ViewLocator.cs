@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -34,6 +35,10 @@ public partial class ViewLocator : IDataTemplate
             var pluginAssemblies =
                 AssemblyLoaderHelper.LoadPluginsFromDirectories(AssemblyLoadConstant.PLUGINS_SUBDIRECTORY);
             assemblies.AddRange(pluginAssemblies);
+            // 测试宿主和静态链接部署可能已经把托管插件加载到当前 AppDomain，
+            // 但不会把它复制到生产插件目录。统一纳入已加载程序集可复用同一视图解析链路。
+            assemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies());
+            assemblies = assemblies.Distinct().ToList();
 
             foreach (var assembly in assemblies)
             {
