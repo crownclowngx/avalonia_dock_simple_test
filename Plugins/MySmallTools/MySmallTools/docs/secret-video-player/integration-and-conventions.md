@@ -1,12 +1,46 @@
 # LibVLC 接入、开发约定与故障排查
 
-本文集中记录 MySmallTools 安全视频子系统在插件宿主、LibVLC、Avalonia NativeControlHost 和 Dock 生命周期之间的集成约束。这些约束来自当前实现和已经修复的问题；删除某个看似多余的顺序、判断或目录规则前，应先确认对应回归测试仍能覆盖真实场景。
+本文记录 `MySmallTools` 安全视频子系统与插件宿主、LibVLC、Avalonia `NativeControlHost`、Dock 和发布流程之间的当前约束。这里的顺序和目录规则均有生产代码或回归门禁支撑；修改前应同时更新对应测试和专题文档。
 
-## 1. 插件部署与 LibVLC 初始化
+## 1. 当前支持矩阵
 
-### 1.1 部署目录必须自包含
+| 项目 | 当前值 |
+| --- | --- |
+| 运行平台 | Windows x64 |
+| 目标框架 | `net9.0`；真实窗口 Harness 为 `net9.0-windows` |
+| LibVLCSharp | `3.9.4` |
+| LibVLCSharp.Avalonia | `3.9.4` |
+| VideoLAN.LibVLC.Windows | `3.0.21` |
+| 原生私有目录 | `Controls/SmallTools/native/win-x64/libvlc/` |
+| 正式发布入口 | `scripts/Release-MySmallToolsP0.ps1` |
 
-`MySmallTools.csproj` 在构建后把插件部署到宿主输出目录的 `Controls/SmallTools/`：
+不允许自动回退到系统 VLC、`PATH`、进程工作目录或宿主根目录。
+
+## 2. 构建部署与正式发布包
+
+### 2.1 构建后的插件目录
+
+`MySmallTools.csproj` 的 `DeploySmallToolsPlugin` Target 在构建后重新创建宿主输出中的目录：
+
+```text
+Host/MyAvaloniaManagement/bin/<Configuration>/net9.0/
+└─ Controls/SmallTools/
+   ├─ MySmallTools.dll
+   ├─ LibVLCSharp.dll
+   ├─ LibVLCSharp.Avalonia.dll
+   └─ native/win-x64/libvlc/
+      ├─ libvlc.dll
+      ├─ libvlccore.dll
+      └─ plugins/
+```
+
+Target 先删除再创建 `Controls/SmallTools/`，防止升级 LibVLC 后遗留旧模块形成混合版本。`VideoLAN.LibVLC.Windows` 设置 `PrivateAssets="all"`，并通过 `VlcWindowsX64TargetDir` 把 NuGet 原生内容重定向到插件私有目录。
+
+设置 `SkipPluginDeploy=true` 只会跳过向宿主输出复制，不会产生可直接分发的发布包。测试和辅助工程使用此属性避免彼此争用宿主部署目录。
+
+### 2.2 正式 ZIP 布局
+
+正式发布脚本在 staging 阶段额外生成 `mysmalltools.release.json`：
 
 ```text
 Controls/SmallTools/
@@ -14,347 +48,365 @@ Controls/SmallTools/
 ├─ LibVLCSharp.dll
 ├─ LibVLCSharp.Avalonia.dll
 ├─ mysmalltools.release.json
-└─ native/win-x64/libvlc/
-   ├─ libvlc.dll
-   ├─ libvlccore.dll
-   └─ plugins/
+└─ native/win-x64/libvlc/...
 ```
 
-必须同时部署插件本体、两个托管桥接程序集和完整的 Windows x64 原生树。`VideoLAN.LibVLC.Windows` 使用 `PrivateAssets="all"`，NuGet 原生内容通过 `VlcWindowsX64TargetDir` 重定向到插件私有目录，不应默认散落到宿主输出根目录。
+`mysmalltools.release.json` 不由普通 MSBuild 部署 Target 生成。它只存在于正式打包 staging/ZIP 中，记录 schema、插件 ID、源码修订、平台、版本以及除 Manifest 自身外每个 payload 文件的规范化相对路径、长度和 SHA-256。
 
-部署 Target 会先删除并重新创建 `Controls/SmallTools/`。这是有意行为：升级 LibVLC 后如果只增量复制，新版本已经删除或改名的旧原生模块可能残留，导致运行时加载到混合版本。
+ZIP 从 `Controls/SmallTools/` 开始，可解压到宿主根目录。发布脚本按稳定路径排序并固定 ZIP 时间戳；随后从最终 ZIP 解压，重新检查所有 Manifest 哈希、额外文件和生产部署探针。
 
-如只需构建而不部署插件，可设置 `SkipPluginDeploy=true`；此时不能把宿主输出当作可直接运行的完整部署包。
+## 3. LibVLC 初始化与部署探针
 
-### 1.2 初始化顺序不能交换
+### 3.1 初始化顺序
 
 正确顺序是：
 
-1. 通过 `typeof(LibVlcRuntime).Assembly.Location` 获取实际 `MySmallTools.dll` 目录。
-2. 由 `IPlaybackDeploymentProbe` 组合绝对路径 `native/win-x64/libvlc`。
-3. 一次性检查 Windows x64、两个托管桥接、AMD64 核心 DLL 和关键插件模块。
-4. 检查失败时返回全部结构化问题，不调用任何原生 API。
-5. 检查通过后由 `LibVlcRuntime` 调用 `Core.Initialize(runtimeDirectory)`。
-6. 之后才能创建 `LibVLC` 或 `MediaPlayer` 实例。
+1. 以 `MySmallTools.dll` 的 `Assembly.Location` 确定插件绝对目录。
+2. 组合 `native/win-x64/libvlc`。
+3. `IPlaybackDeploymentProbe.Check()` 无副作用地收集全部问题。
+4. 只有 `DeploymentCheckResult.IsReady` 为 `true` 时，才调用 `LibVlcRuntime.EnsureInitialized()`。
+5. `LibVlcRuntime` 调用一次 `Core.Initialize(runtimeDirectory)`。
+6. 初始化成功后才创建 Document 级 `LibVLC` 和 `MediaPlayer`。
 
-`LibVlcRuntime` 使用双重检查锁，允许多个播放器在不同线程首次调用时仍只初始化一次。它是进程级 Singleton；仅加载插件或打开一个部署损坏的播放文档不会触发 LibVLC 原生初始化。部署完整时，Document backend 会在 `VideoView` 首次绑定前创建，以保持 G3/G3.1 验证过的 HWND/vout 时序；媒体切换不会重建 PlayerHost。
+`LibVlcRuntime` 是进程级 Singleton，并使用双重检查锁。`LazyPlaybackBackend` 是 Document scoped：部署失败时不创建原生对象；部署通过时，`VideoPlayerControlViewModel` 在 `VideoView` 首次绑定前调用 `IPlaybackBackendInitializer.Initialize()`，以保持真实 HWND 门禁验证过的创建顺序。
 
-禁止回退到以下位置：
+### 3.2 探针检查内容
 
-- `AppContext.BaseDirectory` 或宿主输出根目录；
-- 进程当前工作目录；
-- `PATH`；
-- 系统安装的 VLC。
+`PlaybackDeploymentProbe` 当前检查：
 
-回退会让开发机“偶尔可用”，部署机却失败，或者混用不兼容版本后产生难以复现的原生崩溃。当前实现选择快速失败，并在错误信息中包含实际检查的绝对目录。
+- Windows 操作系统和 x64 进程；
+- 插件目录是否存在；
+- `LibVLCSharp.dll`、`LibVLCSharp.Avalonia.dll` 是否存在且程序集名正确；
+- `libvlc.dll`、`libvlccore.dll` 是否为有效 AMD64 PE；
+- `plugins/demux/libmp4_plugin.dll`；
+- `plugins/demux/libmkv_plugin.dll`；
+- `plugins/codec/libavcodec_plugin.dll`；
+- `plugins/video_output/libdirect3d11_plugin.dll`；
+- `plugins/audio_output/libmmdevice_plugin.dll`。
 
-## 2. 插件扫描必须排除原生目录
+探针不会加载 DLL，也不会调用原生 API。它返回所有可识别问题，而不是只返回第一项。UI 必须展示稳定问题码、检查路径和建议操作。
 
-宿主会递归扫描插件目录下的 `.dll`。LibVLC 的 `plugins/` 中包含大量原生 DLL；如果把它们交给 `AssemblyLoadContext.LoadFromAssemblyPath`，会产生启动期异常、无意义日志和性能损耗。
+若 `Core.Initialize` 失败，会映射为 `NativeInitializationFailed`。用户重新部署后必须重启宿主；进程内已经发生的原生加载状态不做回滚。
 
-`AssemblyLoaderHelper` 的首次扫描和 `PluginLoadContext` 的依赖解析必须采用同一排除规则：目录名为 `native`、`runtimes` 或 `libvlc` 时停止递归。不能只修首次扫描而忘记依赖解析，否则缺少托管依赖时，解析器仍会进入原生树。
+## 4. 插件扫描必须排除原生目录
 
-回归测试 `NativeDirectoryScanTests.PluginScannerAndResolver_DoNotEnterNativeDirectory` 使用大小写不敏感参数矩阵，在任意深度的 `native`、`runtimes` 和 `libvlc` 下放置可加载的托管测试 DLL，并验证扫描器和解析器都不会发现它。
-
-## 2.1 发布包与统一门禁
-
-正式发布只允许通过仓库根目录脚本生成：
-
-```powershell
-.\scripts\Release-MySmallToolsP0.ps1
-```
-
-脚本拒绝 dirty worktree，串行运行构建、两套测试、打包/哈希复验、生产部署探针、内存门禁和两轮真实窗口门禁。`-AllowDirty` 只供开发中验证，报告会标记 `publishable: false`。不要手工复制少量 DLL 后把目录称为发布包；完整冻结版 LibVLC plugins、Lua 与辅助资源属于基线的一部分。
-
-产物位于 `artifacts/MySmallTools/p0-win-x64/`。ZIP 内从 `Controls/SmallTools/` 开始，因而可直接解压到宿主根目录。Manifest 只记录规范化相对路径、版本、长度和 SHA-256，不记录构建机绝对路径或用户媒体信息。
-
-部署问题的处理顺序是：
-
-1. 记录 UI 显示的稳定问题码与实际检查目录。
-2. 删除旧的 `Controls/SmallTools/`，重新解压完整 ZIP，避免混合版本。
-3. 点击播放页中的“重新检测”。
-4. 若为 `NativeInitializationFailed`，重新部署后必须重启宿主，因为进程内原生加载状态不可安全回滚。
-
-## 3. Media、MediaInput 和文件句柄
-
-`SecureVideoPlayer` 持有当前 `Media` 和 `SeekableStreamMediaInput`。释放顺序必须为：
+宿主递归扫描托管插件 DLL，但 LibVLC `plugins/` 下是原生 DLL。首次扫描和 `PluginLoadContext` 依赖解析必须使用同一排除规则：
 
 ```text
-MediaPlayer.Stop()
+遇到目录名 native、runtimes 或 libvlc（大小写不敏感）时停止递归
+```
+
+只修首次扫描不够。托管依赖缺失时，解析器也可能进入原生树并把原生 DLL 交给 `AssemblyLoadContext`。
+
+`NativeDirectoryScanTests.PluginScannerAndResolver_DoNotEnterNativeDirectory` 使用目录名和嵌套深度参数矩阵验证扫描器与解析器都不会发现原生树中的可加载测试程序集。
+
+## 5. 媒体切换、资源所有权与文件句柄
+
+### 5.1 当前资源模型
+
+G3.1 后不再使用“一个媒体 Lease 同时拥有 MediaPlayer”的模型。当前所有权为：
+
+```text
+Document Scope
+├─ LazyPlaybackBackend
+│  └─ LibVlcDocumentPlayerHost
+│     ├─ LibVLC
+│     └─ MediaPlayer
+├─ SecureVideoPlayer
+│  └─ 当前 IPlaybackMediaSource
+│     ├─ Media
+│     └─ SeekableStreamMediaInput
+│        └─ SeekableEncryptedVideoStream
+│           ├─ FileStream
+│           ├─ 4 块明文缓存
+│           └─ 密钥/摘要上下文
+├─ PlaybackNativeDispatcher
+└─ PlaybackResourceReaper
+```
+
+媒体切换只替换 Source，不重建 Document 级 PlayerHost。候选 Source 先在后台完成 SECVID03 认证和 LibVLC Parse；失败时旧媒体保持不变。
+
+### 5.2 提交与释放顺序
+
+候选提交的原生顺序：
+
+```text
+oldSource.RequestStop()
+→ MediaPlayer.Stop()
 → MediaPlayer.Media = null
+→ MediaPlayer.Media = candidate.Media
+→ 可选 Play()
+```
+
+Attach 或启动失败时，播放会话尝试重新挂载旧 Source。提交成功后，旧 Source 才进入有界回收器。
+
+单 Source 的释放顺序：
+
+```text
+MediaInput.RequestStop()
 → Media.Dispose()
 → MediaInput.Dispose()
 → SeekableEncryptedVideoStream.Dispose()
-→ 文件句柄关闭、明文缓存和派生密钥清零
+→ FileStream 关闭
+→ 明文/密文桥接缓存、派生密钥和摘要清零
 ```
 
-如果先关闭底层流，LibVLC 尚未结束的回调可能继续读取已关闭句柄。每次切换文件或重新加载前都要完整清理旧媒体，以免留下文件锁或让旧流的回调污染新媒体状态。
+不能先关闭底层流；LibVLC 仍可能从原生线程执行回调。Source 也不能在仍挂载到 `MediaPlayer` 时交给 Reaper。
 
-公开信息更新需要以读写方式打开同一个 `.secvid`。因此“编辑信息”不是单纯的 UI 状态切换：即使视频暂停，也必须先调用 `CleanupMedia`，让 LibVLC 彻底释放文件句柄，再执行原地写入。
+`PlaybackResourceReaper` 是 Document 级、容量为 1 的有界单消费者。快速换片时它提供背压，不为每次点击创建无界后台释放任务。
 
-## 4. Dock 切换与视频表面恢复
+### 5.3 编辑、删除或移动当前文件
 
-### 4.1 已出现的问题
+Pause 和 Stop 都不会保证文件句柄已关闭。要修改公开信息、删除或移动当前 `.secvid`，必须调用 `ReleaseAsync`/`CleanupMediaAsync`。显式 Release 会等待 Reaper 真正完成释放，然后才返回成功。
 
-Dock 切换文档时可能销毁 Avalonia `NativeControlHost` 对应的 HWND，稍后再创建新 HWND。LibVLCSharp.Avalonia 3.9.4 通常只在 `MediaPlayer` 属性变化或控件 `Initialized` 时尝试绑定句柄；这两个时机都可能早于原生句柄真正创建。
+如果另一个 Dock Document 正在播放同一个文件，它仍可合法持有自己的读取句柄；当前 Document 的 Release 不能替另一个 Scope 释放资源。
 
-历史表现包括：
+## 6. 原生回调与线程约定
 
-- 返回标签页后只有黑屏，声音或进度仍继续；
-- LibVLC 的 `Hwnd` 保持为零，回退创建独立 Direct3D11 输出窗口；
-- 只重新赋值 `Hwnd` 后仍无画面，因为旧 vout 没有完整退出；
-- 原来处于暂停状态时，Seek 后立刻暂停，目标帧尚未输出，界面仍停留在黑帧或旧帧。
+- PBKDF2、容器打开和 `Media.Parse` 在后台执行。
+- `MediaPlayer` 的 Play、Pause、Stop、Seek、挂载和解绑由 `PlaybackNativeDispatcher` 单消费者串行执行。
+- `SeekableStreamMediaInput` 用一把锁串行 Open/Read/Seek/Close，因为底层 Stream 的 Position 是共享状态。
+- 单次原生 Read 最多分配/复用 1 MiB 托管缓冲区。
+- LibVLC 回调边界不得抛出托管异常；Read 失败返回 `-1`，Seek 失败返回 `false`。
+- `SeekableStreamMediaInput` 保存首个类型化失败，并在回调锁释放后投递失败事件；禁止从 Read 回调内部直接调用 `MediaPlayer.Stop()`。
+- UI 绑定更新统一通过 `Dispatcher.UIThread`。
+- `DetachSurface` 是同步例外，因为旧 HWND 返回销毁调用前必须停止旧 vout。
 
-### 4.2 原生句柄绑定约定
+## 7. Dock 切换与视频表面恢复
 
-`EmbeddedVideoSurface` 继承 `VideoView` 并覆盖原生控件生命周期：
+### 7.1 原生句柄绑定
 
-- `CreateNativeControlCore` 必须先调用基类，等内部平台句柄完成赋值后，再把非零句柄写入 `MediaPlayer.Hwnd`，最后通知表面 Ready。
-- `DestroyNativeControlCore` 必须在调用基类、即基类清零 `Hwnd` 之前同步通知表面 Lost。
-- Lost 通知不可异步投递；ViewModel 需要在旧 HWND 消失前同步停止 LibVLC，使旧 vout 完整退出。
+`EmbeddedVideoSurface` 继承 `VideoView`：
 
-`VideoPlayerControl` 切换 `DataContext` 时也有严格所有权顺序：先通知旧 ViewModel 失去表面，再切换 `VideoSurface.MediaPlayer`，最后把当前表面状态交给新 ViewModel。这样同一个 HWND 不会同时被两个播放器视为自己的输出目标。
+- `CreateNativeControlCore` 先调用基类；平台句柄非零后绑定 `MediaPlayer.Hwnd`，再通知 Ready。
+- `DestroyNativeControlCore` 在调用基类、即基类清零 Hwnd 之前同步通知 Lost。
+- `VideoPlayerControl` 更换 `DataContext` 时，先让旧 ViewModel 失去表面，再切换 `MediaPlayer`，最后把当前表面交给新 ViewModel。
 
-### 4.3 完整恢复时序
+Lost 通知不能异步 Post。旧 vout 如果在 HWND 已销毁后仍工作，可能黑屏、弹出独立输出窗口或触发原生崩溃。
+
+### 7.2 恢复时序
 
 ```mermaid
 sequenceDiagram
     participant Dock as Dock / NativeControlHost
     participant Surface as EmbeddedVideoSurface
     participant VM as VideoPlayerControlViewModel
-    participant Session as ISecureVideoPlaybackSession
-    participant Lease as PlaybackMediaLease
-    participant VLC as LibVLC MediaPlayer
+    participant Session as SecureVideoPlayer
+    participant Host as Document PlayerHost
 
     Dock->>Surface: DestroyNativeControlCore
-    Surface->>VM: SetVideoSurface(token=null)（基类清句柄前）
+    Surface->>VM: SetVideoSurface(null)
     VM->>Session: DetachSurface(oldToken)
-    Session->>Session: 保存 mediaGeneration、intent、位置、Playing/Paused
-    Session->>Lease: RequestStop
-    Lease->>VLC: Stop、Hwnd=0
+    Session->>Session: 保存媒体代次、意图、位置和播放模式
+    Session->>Host: RequestStop → Stop → Hwnd=0
     Surface->>Dock: 基类销毁旧 HWND
 
     Dock->>Surface: CreateNativeControlCore
     Surface->>VM: SetVideoSurface(newToken)
-    VM->>Session: AttachAndRestoreSurfaceAsync(newToken)
-    Session->>Lease: PrepareForPlayback、绑定 Hwnd
-    Lease->>VLC: Play
-    VLC-->>Lease: Playing 且 VoutCount > 0
-    Lease->>VLC: Seek 到 min(原位置, Length - 250ms)
+    VM->>Session: AttachAndRestoreSurfaceAsync
+    Session->>Host: Hwnd=new → Prepare → Play
+    Host-->>Session: Playing 且有视频输出
+    Session->>Host: Seek 到 min(原位置, Length-250ms)
     alt 原状态为暂停
-        VLC-->>Lease: Seek 后收到目标 TimeChanged
-        Lease->>VLC: SetPause(true)，确认 Paused 后重申目标位置
-    else 原状态为播放
-        Session-->>VM: 发布 Playing 快照
+        Host-->>Session: 等待 Seek 后目标帧
+        Session->>Host: Pause 并重申目标位置
     end
 ```
 
-不能把恢复缩减为“Pause → 换 Hwnd → Play”，原因是暂停并不保证旧 vout 退出；也不能在暂停恢复时省略首帧等待，否则目标帧可能尚未渲染。恢复位置最多为 `Length - 250 ms`，避免靠近末尾的快照在恢复后立即触发 `EndReached`。
+恢复使用表面代次、媒体代次、用户意图代次、一次性快照和取消源。Play、Pause、Stop、Seek、换片、清理或再次丢失表面都会使旧恢复失效。等待 vout 或目标帧最多 5 秒。
 
-### 4.4 并发与过期保护
+不能把流程简化为 “Pause → 换 Hwnd → Play”：Pause 不保证旧 vout 退出；暂停恢复时也不能省略 Seek 后首帧等待。
 
-恢复逻辑同时使用以下保护：
+## 8. Document Scope 与 View 约定
 
-- **表面令牌**：每个非零 HWND 都有单调递增代次，旧 Lost 通知不能解绑新表面。
-- **一次性快照**：会话只保存最新的媒体代次、用户意图、位置和 Playing/Paused。
-- **媒体代次**：切换、清理或释放媒体会推进 `mediaGeneration`；旧 Lease 回调直接失效。
-- **切换状态**：旧 vout 停止到恢复完成期间 `IsTransitioning=true`，UI 不把中间的原生零位置当作稳定暂停态。
-- **取消源**：用户主动播放、暂停、停止、Seek、切换媒体或再次丢失表面会取消旧恢复。
-- **5 秒超时**：等待视频输出或暂停场景的目标帧超过 5 秒后停止恢复，并提示用户手动播放。
-- **释放检查**：Document Scope 释放后，所有异步恢复和 UI 回调都不得再修改绑定状态。
+### 8.1 四个 Document
 
-## 5. Document、DI 与资源所有权
+当前策略为：
 
-MySmallTools 通过 `IPluginModule` 显式接入宿主容器。托管插件策略使用 `ActivatorUtilities` 注入 `IDocumentScopeFactory`；历史插件仍保留公共无参构造路径，两者不能混为同一种激活方式。
+- `SecretVideoDocumentStrategy`：单文件安全视频播放器；
+- `SecretVideoLibraryDocumentStrategy`：文件夹媒体库；
+- `VideoEncryptorDocumentStrategy`：视频加密器；
+- `VideoDecryptorDocumentStrategy`：批量解密器。
 
-```mermaid
-flowchart TD
-    Strategy["Document Strategy"] --> Factory["IDocumentScopeFactory"]
-    Factory --> Scope["为本次 Document 创建 IServiceScope"]
-    Scope --> Doc["解析 Document ViewModel"]
-    Doc --> Dependencies["解析 scoped 播放器或加密服务"]
-    Factory --> Track["登记 Document → Scope"]
-    DockClose["Dock 确认关闭"] --> Release["DocumentScopeManager.Release"]
-    Release --> Dispose["Scope.Dispose"]
-    Dispose --> Cancel["取消异步工作、退订回调"]
-    Cancel --> Native["释放 Media、流、文件句柄和原生对象"]
-```
+所有策略都通过 `IDocumentScopeFactory` 创建 Document。`DocumentScopeManager` 保存 `Document → IServiceScope`，Dock 真正确认关闭后才释放 Scope。
 
-约定如下：
+ViewModel 可以取消自己发起的任务、退订事件和淘汰迟到回调，但不得再次 Dispose 同样由 Scope 拥有的注入服务。任务 Document 关闭时只发送取消，不在 UI 线程同步等待。
 
-- 每个 Document 必须由 `IDocumentScopeFactory` 创建，禁止从根容器直接解析可释放的 scoped/transient 文档对象。
-- 策略只申请某种 Document，不保存 `IServiceScope`；Scope 的真实释放时机由 Dock 和宿主决定。
-- `VideoPlayerControlViewModel.Dispose` 只使回调失效、取消恢复、退订事件和停止 UI 定时器，不再次 `Dispose` 注入的 `SecureVideoPlayer`。
-- `SecureVideoPlayer.Dispose` 是其独占原生对象和媒体链路的最终所有者。
-- `VideoEncryptorViewModel.Dispose` 先使操作代次失效、清空密码，再取消当前预检或加密；不在 UI 线程同步等待任务，避免异步清理返回 UI 上下文时死锁。
-- 取消源由正在运行任务的 `finally` 释放；Document 释放路径只交换引用并调用 `Cancel`，避免取消源与任务竞争释放。
-- `VideoDecryptorViewModel.Dispose` 遵循相同规则：使迟到回调失效、取消候选检查/批次并清空密码。当前输出事务负责删除 partial，已经正式提交的明文文件不回滚。
-- 解密队列项只保存候选公开信息、路径、稳定失败代码和执行状态，绝不复制或持有公共密码。
-- `IOutputFileTransaction` 是 partial 的唯一所有者；调用方不得在事务之外再次移动或删除同一 partial。
-- 预检只能提供操作前证据，不能替代最终提交时的 `overwrite:false`。任何目标竞争都必须返回 `OutputConflict`。
+### 8.2 文件选择器
 
-### 5.1 加解密预检约定
+文件/文件夹选择依赖 `TopLevel.StorageProvider`，因此保留在 View 点击处理器中。异步处理器必须：
 
-- 加密输出目录可以按现有产品行为创建；批量解密输出目录必须由用户预先选择且已经存在。
-- 可写检查必须实际创建、关闭和删除唯一探针，不能只依赖访问控制属性推断。
-- 已知可用空间小于预计输出时为阻止项；无法可靠获取网络目录空间时为警告。
-- 加密目标已存在时阻止，不自动重命名；解密输出继续通过安全名称解析器分配数字后缀。
-- 执行入口必须重新预检关键条件。解密密码认证不属于普通预检，避免重复 PBKDF2，但必须早于明文事务创建。
-- ViewModel 只显示稳定失败代码和安全消息，不直接显示未知异常的原始 `Message`。
+- 防止同一 View 重入打开多个选择器；
+- 保存发起请求时的 ViewModel；
+- 返回后确认当前 `DataContext` 仍是发起者；
+- 在任务执行期间禁止替换输入；
+- 只接受本地路径，并把安全错误写回当前 Document。
 
-## 6. UI 与命名约定
+不要改成 ViewModel 事件订阅，否则 Dock 重建 View 或重复设置 `DataContext` 时容易累计订阅。
 
-### 6.1 Document 标题与视频标题不同
+### 8.3 UI 命名
 
-- `Document.Title` 是 Dock 标签页标题，例如“视频文件加密器”或调用方传入的自定义任务标题。
-- `VideoTitle`/公开 `Title` 是写入 SECVID03 公开区、供播放器展示的视频标题。
-- 清空加密表单或修改视频标题不能改变 Dock `Document.Title`。
-- 视频库使用 `SplitView/CompactInline`：展开 340 px，收起后保留 32 px 触发条。`IsLibraryPaneOpen` 只属于当前 Document，不写入全局配置；收起不得清理媒体或改变播放状态。
-- 视频库筛选区只改变布局密度；搜索字段仍匹配文件名、公开标题和公开描述，列表第一行显示文件名、第二行以小号字体显示公开标题。
-- 批量解密输出名必须通过 `DecryptionOutputPathResolver`。公开原始文件名不可信，不允许直接 `Path.Combine`；正式提交始终使用不覆盖模式。
-- 公开标题为空时，播放器回退显示公开区中的原始文件名；公开区不可读时，再回退到当前 `.secvid` 容器文件名。
+- `Document.Title` 是 Dock 标签标题。
+- SECVID03 公开 `Title` 是视频业务标题。
+- 清空表单或修改公开标题不得修改 `Document.Title`。
+- 公开标题为空时回退到公开原始文件名；公开区不可读时回退到 `.secvid` 容器文件名。
+- 解密输出名必须经 `DecryptionOutputPathResolver` 净化，不能直接信任公开文件名并 `Path.Combine`。
 
-### 6.2 文件选择器属于 View
+## 9. 加解密预检与输出约定
 
-系统文件选择器依赖 `TopLevel.StorageProvider`，因此由 View 的点击处理器直接调用，不通过 ViewModel 事件转发。这样 Dock 重建 View 或重复设置 `DataContext` 时不会累计订阅。
+- 加密输出目录可按当前产品行为创建；批量解密目录必须已存在。
+- 可写检查通过创建、关闭并删除唯一探针文件完成，不只检查 ACL 属性。
+- 已知剩余空间不足是阻止项；无法可靠读取网络目录空间是警告。
+- 加密目标存在时阻止；解密输出使用安全数字后缀避让磁盘和批次内冲突。
+- 执行入口必须重新检查关键条件。
+- 密码认证不在普通预检中重复执行，但必须早于明文 partial 创建。
+- 最终提交始终使用 `File.Move(..., overwrite:false)`。
+- ViewModel 显示稳定失败代码和脱敏消息，不直接展示未知异常的原始 `Message`。
 
-异步文件选择处理器应遵守以下规则：
+## 10. 正式发布门禁
 
-- 防止同一 View 实例重复打开选择器；加密页面使用 `_isFilePickerOpen`。
-- 打开对话框前保存发起请求的 ViewModel。
-- 对话框返回后只在当前 `DataContext` 仍为发起者时回写，防止 Dock 切换后污染另一文档。
-- 预检或加密进行中不允许重新选择输入文件。
-- 选择结果必须是本地文件；错误写回当前文档的状态信息。
-
-播放器页面目前同样直接从 View 打开 `.secvid` 选择器；后续调整此处理器时，不得重新引入 ViewModel 事件订阅模式。
-
-### 6.3 用户操作优先于自动恢复
-
-用户主动播放、暂停、停止或拖动进度，表示用户接受并改变当前状态。此时必须取消尚未消费的自动恢复请求，不能让稍晚完成的异步恢复覆盖用户操作。
-
-## 7. 历史问题与解决方案
-
-| 现象 | 根因 | 当前解决方案 | 回归检查 |
-| --- | --- | --- | --- |
-| 开发机可播放、部署机报找不到 VLC 或原生崩溃 | 从工作目录、PATH 或系统 VLC 加载了错误版本 | 以 `MySmallTools.dll` 为基准定位私有绝对目录；文件不全立即失败 | `LibVlcRuntime_UsesPluginLocalWindowsX64Directory` |
-| 宿主启动扫描大量 VLC DLL 并打印 BadImageFormat 类错误 | 递归插件扫描把原生 DLL 当托管程序集 | 扫描和依赖解析统一跳过 `native`、`runtimes`、`libvlc` | `PluginScannerAndResolver_DoNotEnterNativeDirectory` |
-| 切换标签页后黑屏或弹出独立视频窗口 | HWND 创建时序竞争，Hwnd 为零；旧 vout 未退出 | 句柄创建后显式绑定，销毁前同步 Stop，新表面完整重建 vout | 表面恢复策略与顺序测试；手工快速切换 |
-| 暂停视频切回后仍黑屏 | Seek 后立即 Pause，目标帧尚未输出 | 等待 `TimeChanged` 确认 Seek 后首帧，再暂停 | `SurfaceRecoveryPolicy_RecordsPausedStateForFrameRestoration`、`SurfaceRestoreSequence_PausedModeWaitsForFrameBeforePausing` |
-| 快速切换或换视频后恢复到旧位置 | 迟到的恢复任务和 UI 回调没有版本边界 | `RequestId`、`mediaGeneration`、取消源、表面 Ready 状态联合校验 | `SurfaceRecoveryPolicy_MediaGenerationRejectsStaleRequest`、`RapidSurfaceLossKeepsOnlyLatestSnapshot` |
-| 内部 Stop 被当成用户停止，恢复快照消失 | 原生 `Stopped` 事件异步到达 | 对表面切换 Stop 计数并单独消费 | `SurfaceRecoveryPolicy_InternalStopPreservesRequest_ButUserStopCancelsIt` |
-| 编辑标题时报文件被占用 | 暂停并未释放 LibVLC 的 MediaInput/FileStream | 编辑前完整 `CleanupMedia`，保存后保持媒体未加载 | 手工“播放/暂停 → 编辑 → 保存 → 重新加载” |
-| 多开标签页共享播放状态或关闭后资源不释放 | 从根容器解析或手工 `new`/级联释放 | 每 Document 独立 Scope；宿主登记并在确认关闭后统一释放 | `MySmallTools模块注册可通过作用域验证且加密Document彼此独立`、`DocumentScopeManagerTests` |
-| 关闭加密页后仍生成文件或遗留半成品 | 后台任务未取消，或直接写正式目标 | Dispose 只发取消；底层使用唯一 partial 文件并在异常路径删除 | `VideoEncryptorDocument_DisposeCancelsEncryptionAndRemovesPartialFile` |
-| Dock 标题被视频标题或清空操作修改 | `Document.Title` 与业务标题使用同一属性 | 两类标题完全分离 | `VideoEncryptorDocument_DefaultTitleAndVideoTitle_AreIndependent` |
-| 选择文件窗口重复弹出或结果写入另一标签页 | `async void` 可重入，等待期间 DataContext 已变化 | View 级重入锁和发起 ViewModel 身份检查 | 手工连续点击并在对话框期间切换 Dock |
-
-## 8. 故障排查
-
-### 8.1 “LibVLC 原生运行库不完整”
-
-1. 读取异常中的实际检测目录，不要先安装系统 VLC。
-2. 确认进程为 Windows x64。
-3. 检查 `libvlc.dll`、`libvlccore.dll` 和 `plugins/` 是否都位于 `MySmallTools.dll/native/win-x64/libvlc/`。
-4. 重新构建 MySmallTools，确认没有设置 `SkipPluginDeploy=true`。
-5. 确认部署目录已被重新创建，没有复制或杀毒软件中断。
-
-### 8.2 密码正确但加载失败
-
-1. 确认输入是受支持的 SECVID03 容器；其他魔数和结构不完整的文件都会被受控拒绝。
-2. 区分打开阶段和播放阶段：打开阶段失败通常是结构、固定头、密码或前缀认证问题；播放到特定位置失败通常是对应密文块或 Tag 损坏。
-3. 公开信息 CRC 错误不会单独阻止密码验证；若公开信息和播放都失败，应继续检查固定头和物理文件长度。
-4. 不要手工修正固定头长度、偏移或保留位；这些字段属于认证数据。
-
-### 8.3 切换 Dock 后黑屏
-
-1. 确认当前输出仍为内嵌 HWND，没有出现独立 Direct3D11 窗口。
-2. 确认 `CreateNativeControlCore` 返回非零句柄后设置了 `MediaPlayer.Hwnd`。
-3. 确认 Lost 事件发生在基类清零句柄之前，并同步调用 `DetachSurface(oldToken)` 完成 RequestStop、Stop 和 HWND 解绑。
-4. 查看状态是否提示“等待视频输出或首帧超时”；恢复超时为 5 秒，失败后应允许手动播放。
-5. 对暂停场景确认顺序包含等待 vout、Seek、等待 Seek 后首帧、Pause。
-6. 对快速切换确认只消费最新请求，旧请求的媒体代次应失效。
-
-### 8.4 文件无法覆盖、删除或编辑
-
-1. 确认先调用 `CleanupCurrentMedia`，而不是只调用 Pause。
-2. 确认释放顺序为 Stop、解除 Media、Dispose Media、Dispose MediaInput。
-3. 确认没有第二个 Dock Document 正在播放同一个文件；各 Document 播放器独立，另一个 Scope 仍可能合法持有自己的读取句柄。
-4. 使用重复 Open/Read/Dispose 测试验证容器流自身不会遗留句柄。
-
-### 8.5 关闭加密页后存在 `.partial-*`
-
-1. 确认 `VideoEncryptorViewModel.Dispose` 已由 Document Scope 触发。
-2. 确认后台任务观察到取消并退出 `Secvid03Encryptor.EncryptAsync`。
-3. 检查临时文件删除是否被外部进程阻止。
-4. 不要在 UI Dispose 中同步等待任务；这可能造成死锁，并不能替代底层事务清理。
-
-## 9. 维护检查表
-
-### 修改 SECVID03 时
-
-- [ ] 是否保持现有固定偏移、块大小、Tag 长度、KDF 迭代数和 nonce 规则？
-- [ ] 若不保持，是否创建了新格式版本而不是静默改变 SECVID03？
-- [ ] 所有外部长度在 Slice、分配和偏移计算前是否经过范围及溢出检查？
-- [ ] 是否仍先认证后返回明文，并在淘汰、异常和 Dispose 时清零敏感缓冲区？
-- [ ] 是否补充顺序读取、跨块 Seek、错误密码、固定头/密文/Tag 篡改和边界测试？
-
-### 修改 LibVLC 或部署时
-
-- [ ] 两个 LibVLCSharp 托管包与原生 LibVLC 版本是否经过一起验证？
-- [ ] `Core.Initialize` 是否仍发生在任何 `new LibVLC()` 之前？
-- [ ] 插件是否仍能只依赖自身目录运行，没有回退到系统 VLC？
-- [ ] 部署是否清理旧原生树，扫描器和解析器是否继续跳过原生目录？
-
-### 修改 Dock 或播放控件时
-
-- [ ] HWND 绑定是否发生在句柄非零之后，Lost 通知是否发生在句柄清除之前？
-- [ ] 旧 ViewModel 是否在新 ViewModel 接管同一表面前收到 Lost？
-- [ ] 表面恢复是否仍按 Stop → 新 Hwnd → Play → 等待 vout → Seek → 等待首帧（暂停态）→ Pause？
-- [ ] 用户操作、媒体切换、快速表面切换和 Document 关闭能否取消或淘汰旧恢复？
-
-### 修改 DI 或关闭逻辑时
-
-- [ ] 每个 Document 是否仍使用独立 Scope？
-- [ ] 注入的可释放服务是否只有一个最终所有者，避免重复 Dispose？
-- [ ] 已投递 UI 回调是否在对象释放或媒体代次变化后失效？
-- [ ] 关闭加密页是否取消任务、删除 partial 文件且不阻塞 UI 线程？
-- [ ] 关闭批量解密页是否清空密码、取消当前文件、保留已完成结果并清理当前 partial？
-
-## 10. 能力、代码、测试与文档映射
-
-| 能力或约束 | 生产入口 | 自动化证据 | 权威文档 |
-| --- | --- | --- | --- |
-| SECVID03 流式加密与事务提交 | `Secvid03Encryptor`、`VideoEncryptorService` | `Secvid03Tests.cs`、`VideoToolStabilityTests.cs` | [格式](secvid03-format.md)、[架构](architecture-design.md) |
-| 加解密预检、统一失败代码与 partial 事务 | `StoragePreflightProbe`、`OutputFileTransaction`、两个应用服务 | `G2ReliabilityTests.cs` | [G2 可靠性闭环](G2-ENCRYPTION-DECRYPTION-PREFLIGHT-ERROR-RESOURCE-CLOSURE.md) |
-| SECVID03 格式冻结与安全边界 | `Secvid03Format`、`Secvid03Cryptography` | `Secvid03SecurityTests.cs`、`Secvid03GoldenVectorTests.cs` | [G1 安全验证](G1-SECVID03-FORMAT-SECURITY-VALIDATION.md) |
-| 批量解密、认证、取消与不覆盖 | `Secvid03Decryptor`、`VideoDecryptionService` | `VideoDecryptionTests.cs`、`G2ReliabilityTests.cs` | [README](README.md)、[G2](G2-ENCRYPTION-DECRYPTION-PREFLIGHT-ERROR-RESOURCE-CLOSURE.md) |
-| 认证随机读取、Seek 与句柄释放 | `SeekableEncryptedVideoStream` | `Secvid03Tests.cs` | [格式](secvid03-format.md)、[架构](architecture-design.md) |
-| 文件夹媒体库扫描和过期结果淘汰 | `VideoLibraryScanner`、`VideoLibraryBrowserViewModel` | `VideoLibraryTests.cs` | [README](README.md)、[架构](architecture-design.md) |
-| Dock 表面恢复顺序和用户操作优先 | `SecureVideoPlayer`、`VideoSurfaceRestoreSequence`、`VideoSurfaceToken` | `VideoToolStabilityTests.cs`、真实播放门禁 | 本文第 4 节、[G3](G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md) |
-| 真实媒体播放、候选切换、类型化错误和真实 Dock 恢复 | `SecureVideoPlayer`、`PlaybackMediaLease`、`SeekableStreamMediaInput`、`EmbeddedVideoSurface` | `G3PlaybackSessionTests.cs`、`MySmallTools.Playback.IntegrationHarness` | [G3 真实播放与 Dock 稳定性](G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md) |
-| 每个 Document 独立 Scope 并在关闭时释放 | `DocumentScopeManager`、各 Document Strategy | `PluginCompatibilityTests.cs`、`DocumentScopeManagerTests.cs` | 本文第 5 节、[架构](architecture-design.md) |
-| 私有 LibVLC 目录且不参与插件扫描 | `LibVlcRuntime`、宿主插件扫描器 | `Secvid03Tests.cs`、`NativeDirectoryScanTests.cs` | 本文第 1～2 节 |
-| 真实 MP4/WebM 来源和字节完整性 | 不适用，仅为测试资产 | `RealMediaAssetTests.cs` | [真实媒体测试资产](real-media-test-assets.md) |
-
-G0 证明真实媒体文件可复现、版权边界清晰且字节完整；G3 已进一步用独立 Windows x64 门禁证明真实 LibVLC 解码、播放、跨块读取、篡改传播和 HWND/Dock 恢复。
-
-建议验证命令：
+从仓库根目录运行：
 
 ```powershell
-dotnet test MySmallTools.Tests/MySmallTools.Tests.csproj
-dotnet test MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj
-dotnet run --project MySmallTools.Playback.IntegrationHarness/MySmallTools.Playback.IntegrationHarness.csproj -c Release
+.\scripts\Release-MySmallToolsP0.ps1
 ```
 
-## 11. 关键源码
+默认门禁按顺序执行：
+
+1. Windows x64 与 .NET 9 SDK 检查；
+2. 拒绝 dirty worktree；
+3. MySmallTools Release 构建，警告即失败；
+4. `MySmallTools.Tests`；
+5. 宿主插件测试；
+6. ReleaseAcceptance 构建；
+7. staging、Manifest、稳定 ZIP；
+8. 解压最终 ZIP 并复验哈希和封闭文件集；
+9. 对解压目录运行生产部署探针；
+10. 64 MiB/512 MiB 流式内存门禁；
+11. 两轮真实窗口播放与 Dock 门禁；
+12. 写出验收 JSON。
+
+输出目录：
+
+```text
+artifacts/MySmallTools/p0-win-x64/
+├─ MySmallTools-p0-win-x64-<revision>.zip
+├─ MySmallTools-p0-win-x64-<revision>.manifest.json
+├─ MySmallTools-p0-win-x64-<revision>.acceptance.json
+├─ deployment-probe.json
+├─ memory-gate.json
+├─ playback-run1.json
+└─ playback-run2.json
+```
+
+`-AllowDirty` 只用于开发验证，`publishable` 为 `false`。`-SkipPlaybackGate` 或改变默认内存规模同样不会产生可发布验收结果。
+
+## 11. 故障排查
+
+### 11.1 播放器部署不可用
+
+1. 记录 UI 中的所有稳定问题码、检查路径和建议。
+2. 不要先安装系统 VLC，也不要修改 `PATH`。
+3. 删除旧 `Controls/SmallTools/` 后解压完整 ZIP，避免混合版本。
+4. 在播放页点击“重新检测”。
+5. 若出现 `NativeInitializationFailed`，重新部署后重启宿主。
+
+### 11.2 密码正确但加载失败
+
+1. 确认输入魔数和结构是严格 SECVID03。
+2. 打开阶段失败通常属于结构、固定头、密码或前缀认证。
+3. 播放到特定位置才失败通常属于对应密文块或 Tag 损坏。
+4. 公开区 CRC 损坏不会单独阻止密码验证。
+5. 不要手工修正固定头长度、偏移或保留位；这些字段属于认证数据。
+
+### 11.3 Dock 切回后黑屏
+
+1. 确认当前输出仍是内嵌 HWND，没有独立 Direct3D11 窗口。
+2. 确认非零句柄创建后才设置 Hwnd。
+3. 确认 Lost 在基类销毁前同步执行 Stop 和 Hwnd 清零。
+4. 暂停恢复顺序必须包含 Play、等待 vout、Seek、等待目标帧、Pause。
+5. 检查是否出现 5 秒恢复超时。
+6. 快速切换时确认旧表面/媒体代次被丢弃。
+
+### 11.4 文件仍被占用
+
+1. 调用 `CleanupMediaAsync`/`ReleaseAsync`，不要只 Pause 或 Stop。
+2. 检查 Source 是否先从 Host 解绑，再进入 Reaper。
+3. 检查另一个 Document 是否仍播放同一文件。
+4. 用重复 Open/Read/Dispose 测试确认容器流没有遗留句柄。
+
+### 11.5 遗留 `.partial-*`
+
+1. 确认对应 Document Scope 已释放并触发取消。
+2. 确认后台任务观察到取消并离开加密/解密循环。
+3. 检查临时文件是否被外部进程占用。
+4. 检查 `CleanupFailed`；不要在 UI Dispose 中同步等待任务。
+
+## 12. 维护检查表
+
+### 修改 SECVID03
+
+- [ ] 保持固定偏移、块大小、Tag 长度、KDF、nonce 和 AAD；否则定义新格式。
+- [ ] 外部长度在 Slice、分配和偏移计算前完成范围及溢出检查。
+- [ ] 只返回已认证明文，并在异常、淘汰和 Dispose 时清零敏感缓冲区。
+- [ ] 更新安全、固定向量、顺序读取、跨块 Seek 和篡改测试。
+
+### 修改 LibVLC、部署或发布
+
+- [ ] 托管桥接和原生版本经过成套验证。
+- [ ] `Core.Initialize` 仍早于任何 `new LibVLC()`。
+- [ ] 探针仍无副作用并聚合全部问题。
+- [ ] 发布包不依赖系统 VLC，且原生树仍排除在插件扫描之外。
+- [ ] 更新 Manifest/ZIP/部署探针和两轮真实窗口门禁。
+
+### 修改播放或 Dock
+
+- [ ] 一个 Document 仍只创建一个 PlayerHost。
+- [ ] 候选验证失败不破坏旧媒体，提交失败可回滚。
+- [ ] Source 解绑后才释放，回收队列保持有界。
+- [ ] 普通原生命令不在 UI 线程执行。
+- [ ] Lost 同步屏障和完整恢复顺序仍成立。
+- [ ] 用户操作、媒体/表面代次和 Document 关闭能淘汰旧异步结果。
+
+### 修改 DI 或任务关闭
+
+- [ ] 四类 Document 仍各自使用独立 Scope。
+- [ ] 每个可释放资源只有一个最终所有者。
+- [ ] 迟到 UI 回调在 Dispose 或代次变化后失效。
+- [ ] 取消会清理当前 partial，不回滚已提交结果，不阻塞 UI 线程。
+
+## 13. 代码、测试与文档映射
+
+| 能力 | 生产入口 | 自动化证据 | 说明 |
+| --- | --- | --- | --- |
+| SECVID03 格式与认证 | `Secvid03Format`、`Secvid03Cryptography` | `Secvid03SecurityTests`、`Secvid03GoldenVectorTests` | [格式说明](secvid03-format.md) |
+| 加密/解密与输出事务 | `Secvid03Encryptor`、`Secvid03Decryptor`、`OutputFileTransaction` | `Secvid03Tests`、`VideoDecryptionTests`、`G2ReliabilityTests` | [架构](architecture-design.md) |
+| 候选换片与单 PlayerHost | `SecureVideoPlayer`、`PlaybackBackend`、`PlaybackMediaLease.cs` 中的 Source/Host | `G3PlaybackSessionTests` | [G3.1](G3.1-ASYNC-PLAYBACK-UI-RESPONSIVENESS.md) |
+| HWND/Dock 恢复 | `EmbeddedVideoSurface`、`VideoSurfaceRestoreSequence` | `VideoToolStabilityTests`、真实窗口 Harness | [G3](G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md) |
+| 部署探针与发布门禁 | `PlaybackDeploymentProbe`、发布脚本 | `G4DeploymentTests`、`ReleaseAcceptance` | [G4](G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md) |
+| 插件扫描排除 | 宿主 `AssemblyLoaderHelper`、`PluginLoadContext` | `NativeDirectoryScanTests` | 本文第 4 节 |
+| Document Scope | `DocumentScopeManager`、4 个 Strategy | 宿主插件兼容与 Scope 测试 | [架构](architecture-design.md) |
+| 真实 MP4/WebM | 测试资产和 Harness | `RealMediaAssetTests`、真实窗口门禁 | [测试资产](real-media-test-assets.md) |
+
+常用验证命令（从仓库根目录执行）：
+
+```powershell
+dotnet test .\Plugins\MySmallTools\MySmallTools.Tests\MySmallTools.Tests.csproj -c Release
+dotnet test .\Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj -c Release
+dotnet run --project .\Plugins\MySmallTools\MySmallTools.Playback.IntegrationHarness\MySmallTools.Playback.IntegrationHarness.csproj -c Release -- --report .\TestResults\manual-playback.json
+```
+
+## 14. 关键源码
 
 - [MySmallTools.csproj](../../MySmallTools.csproj)
+- [PlaybackDeployment.cs](../../Business/SecretVideoPlayer/Playback/PlaybackDeployment.cs)
 - [LibVlcRuntime.cs](../../Business/SecretVideoPlayer/Playback/LibVlcRuntime.cs)
+- [PlaybackBackend.cs](../../Business/SecretVideoPlayer/Playback/PlaybackBackend.cs)
+- [SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)
+- [PlaybackMediaLease.cs](../../Business/SecretVideoPlayer/Playback/PlaybackMediaLease.cs)
+- [PlaybackNativeDispatcher.cs](../../Business/SecretVideoPlayer/Playback/PlaybackNativeDispatcher.cs)
+- [PlaybackResourceReaper.cs](../../Business/SecretVideoPlayer/Playback/PlaybackResourceReaper.cs)
 - [EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)
 - [VideoPlayerControlViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoPlayerControlViewModel.cs)
-- [VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/Playback/VideoSurfaceRestoreSequence.cs)
-- [MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
-- [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)
-- [VideoDecryptionService.cs](../../Business/SecretVideoPlayer/Decryption/VideoDecryptionService.cs)
 - [AssemblyLoaderHelper.cs](../../../../../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs)
 - [DocumentScopeManager.cs](../../../../../Host/MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)

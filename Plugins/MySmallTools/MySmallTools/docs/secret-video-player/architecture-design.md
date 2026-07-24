@@ -1,161 +1,170 @@
-# 安全视频子系统概要设计
+# 安全视频子系统架构设计
 
-## 1. 设计目标
+## 1. 适用基线
 
-安全视频子系统需要同时满足以下目标：
+本文描述 `MySmallTools` 当前安全视频实现，不描述历史原型。
 
-- 大文件加密与播放的内存占用不随视频总大小线性增长。
-- 密码错误、固定头篡改和视频块篡改能够被明确拒绝。
-- 解码器可以像读取普通文件一样顺序读取或随机 Seek，无需生成完整明文副本。
-- 标题和描述可以在输入密码前展示，并可在不重写大型视频主体的情况下修改。
-- 多个 Dock 标签页互不共享播放状态、恢复快照、加密任务和原生播放器。
-- Dock 销毁并重建原生 HWND 后，播放器恢复原位置和用户可见的播放或暂停状态。
-- 插件关闭后及时释放原生对象、文件句柄、派生密钥和明文缓存。
+| 项目 | 当前基线 |
+| --- | --- |
+| 目标框架 | `.NET 9`（`net9.0`） |
+| 容器格式 | `SECVID03`，格式版本 3 |
+| 播放桥接 | `LibVLCSharp 3.9.4`、`LibVLCSharp.Avalonia 3.9.4` |
+| 原生运行时 | `VideoLAN.LibVLC.Windows 3.0.21` |
+| 支持平台 | Windows x64 |
+| 插件运行目录 | `Controls/SmallTools/` |
 
-不在当前范围内的能力包括：跨平台原生运行时、旧容器兼容、云端密钥管理、数字签名和公开元数据真实性认证。
+SECVID03 的磁盘布局已经冻结。G3.1 的异步播放改造和 G4 的部署、发布门禁没有改变容器偏移、密码学参数或公开区格式。
 
-## 2. 分层与职责
+## 2. 设计目标与边界
 
-业务代码按能力而不是按泛化的 Service/Helper 类型分为六个窄职责区域：
+当前实现保证：
+
+- 大文件加密、解密和播放采用流式或按块处理，内存不随视频总长度线性增长。
+- 密码错误、不可变头篡改、原视频前缀篡改和已读取视频块篡改会被拒绝。
+- LibVLC 可以通过只读可定位流执行顺序读取和随机 Seek，不生成完整明文副本。
+- 公开标题、描述和原始文件名可在输入密码前读取；标题和描述可在固定 64 KiB 区域内原地更新。
+- 每个 Dock Document 拥有独立播放状态、原生播放器、恢复快照、任务取消源和资源回收队列。
+- 媒体切换复用同一个 Document 级 `MediaPlayer`；候选媒体验证失败时不破坏当前媒体。
+- Dock 重建 HWND 后，可按原播放/暂停模式恢复到接近原位置。
+- 部署不完整时只显示结构化诊断，不初始化 LibVLC。
+- 关闭 Document 后释放文件句柄、原生对象、派生密钥和明文缓存。
+
+当前不提供跨平台原生运行时、旧容器兼容、云端密钥管理、数字签名、公开元数据真实性认证或 DRM。
+
+## 3. 模块划分与依赖方向
 
 ```text
 Business/SecretVideoPlayer/
-├─ Container/   SECVID03 布局、密码学、公开区和认证随机读取
-├─ Operations/  加解密共用状态、预检、错误和输出事务
-├─ Encryption/  单文件流式加密与任务进度
-├─ Decryption/  单文件/批量解密、失败模型和输出路径
-├─ Playback/    LibVLC 运行时、播放器、MediaInput 和表面恢复
-└─ Library/     文件夹扫描契约和实现
+├─ Container/   SECVID03 布局、认证、公开区和随机读取流
+├─ Operations/  加解密共用状态、预检、失败分类和输出事务
+├─ Encryption/  单文件流式加密
+├─ Decryption/  单文件/批量解密和安全输出命名
+├─ Playback/    部署探针、LibVLC backend、播放会话和表面恢复
+└─ Library/     SECVID 文件夹扫描
 ```
 
-依赖方向固定为 `Container ← Encryption/Decryption/Playback/Library`，`Operations ← Encryption/Decryption`。Container 和 Operations 不反向依赖具体用例，ViewModel 和插件 Composition Root 组合这些职责；子域之间不得形成环。
+依赖方向为：
+
+```text
+Container  ← Encryption / Decryption / Playback / Library
+Operations ← Encryption / Decryption
+Playback   ← ViewModels / Views
+Business   ← Plugin composition root
+```
+
+`Container` 不依赖 UI、LibVLC 或具体用例；`Operations` 不依赖加密器和解密器的具体实现。跨子域协作由应用服务、ViewModel 和 `MySmallToolsPluginModule` 完成，禁止形成反向依赖或环。
+
+## 4. 运行时组件
 
 ```mermaid
 flowchart TB
     subgraph Host["MyAvaloniaManagement 宿主"]
-        Menu["插件菜单 / Document Strategy"]
+        Strategy["4 个 Document Strategy"]
         ScopeManager["DocumentScopeManager"]
-        Dock["Dock Document 生命周期"]
+        Dock["Dock 生命周期"]
     end
 
     subgraph Plugin["MySmallTools 插件"]
         Module["MySmallToolsPluginModule"]
-        PlayerDoc["SecretVideoPlayerViewModel"]
-        LibraryDoc["SecretVideoLibraryViewModel"]
-        BrowserVM["VideoLibraryBrowserViewModel"]
-        Scanner["VideoLibraryScanner"]
-        EncryptDoc["VideoEncryptorViewModel"]
-        PlayerVM["VideoPlayerControlViewModel"]
-        Player["ISecureVideoPlaybackSession<br/>SecureVideoPlayer"]
-        Lease["PlaybackMediaLease"]
-        EncryptService["VideoEncryptorService"]
-        Encryptor["Secvid03Encryptor"]
-        Preflight["StoragePreflightProbe"]
-        Transaction["OutputFileTransaction"]
-        Stream["SeekableEncryptedVideoStream"]
+        PageVM["播放器 / 媒体库 / 加密 / 解密 Document"]
+        ControlVM["VideoPlayerControlViewModel"]
+        Probe["PlaybackDeploymentProbe"]
+        Backend["LazyPlaybackBackend"]
+        Session["SecureVideoPlayer"]
+        Dispatcher["PlaybackNativeDispatcher"]
+        HostPlayer["LibVlcDocumentPlayerHost"]
+        SourceFactory["LibVlcPlaybackMediaSourceFactory"]
+        Source["LibVlcPlaybackMediaSource"]
+        Reaper["PlaybackResourceReaper"]
         Input["SeekableStreamMediaInput"]
-        Runtime["LibVlcRuntime"]
+        Stream["SeekableEncryptedVideoStream"]
         Surface["EmbeddedVideoSurface"]
     end
 
-    Menu --> ScopeManager
+    Strategy --> ScopeManager
     Dock --> ScopeManager
-    Module -.->|注册服务| ScopeManager
-    ScopeManager --> PlayerDoc
-    ScopeManager --> LibraryDoc
-    ScopeManager --> EncryptDoc
-    PlayerDoc --> PlayerVM
-    LibraryDoc --> PlayerVM
-    LibraryDoc --> BrowserVM
-    BrowserVM --> Scanner
-    PlayerVM --> Player
-    Player --> Lease
-    Lease --> Stream
-    Lease --> Input
-    Player --> Runtime
-    PlayerVM <--> Surface
-    EncryptDoc --> EncryptService
-    EncryptService --> Preflight
-    EncryptService --> Encryptor
-    Encryptor --> Transaction
+    Module -.->|注册| ScopeManager
+    ScopeManager --> PageVM
+    PageVM --> ControlVM
+    ControlVM --> Probe
+    ControlVM --> Session
+    ControlVM <--> Surface
+    Probe -->|通过后初始化| Backend
+    Session --> Backend
+    Session --> Dispatcher
+    Session --> Reaper
+    Backend --> HostPlayer
+    Backend --> SourceFactory
+    SourceFactory --> Source
+    Source --> Input
+    Input --> Stream
+    HostPlayer --> Surface
 ```
 
-各层边界如下：
-
-| 层 | 主要类型 | 职责 |
+| 边界 | 当前类型 | 主要职责 |
 | --- | --- | --- |
-| 插件接入 | `MySmallToolsPluginModule`、三个 `DocumentStrategy` | 声明服务生命周期，由宿主为每个 Document 创建 Scope；不在模块加载时创建 View、LibVLC 或任务 |
-| 页面协调 | `SecretVideoPlayerViewModel`、`SecretVideoLibraryViewModel`、`VideoEncryptorViewModel` | 命令、输入校验、状态文本、公开信息编辑和任务取消 |
-| 视频库浏览 | `VideoLibraryBrowserViewModel`、`Library.VideoLibraryScanner` | 限流异步扫描当前目录，隔离单文件错误，并按文件名、标题和描述筛选 |
-| 播放控件 | `VideoPlayerControlViewModel`、`VideoPlayerControl` | 展示部署诊断与播放快照、转发用户命令，并把表面令牌交给会话；不定位运行库 |
-| 原生输出 | `EmbeddedVideoSurface` | 在原生句柄真正创建后绑定 `MediaPlayer.Hwnd`，销毁前同步发出表面丢失通知 |
-| 播放会话 | `ISecureVideoPlaybackSession`、`Playback.SecureVideoPlayer` | 串行化命令、候选提交、媒体/表面代次、错误和 Dock 恢复 |
-| 部署探针 | `Playback.IPlaybackDeploymentProbe`、`Playback.PlaybackDeploymentProbe` | 只读检查平台、托管桥接、AMD64 原生库与关键插件模块；返回不可变问题集合，不初始化 LibVLC |
-| backend 工厂 | `Playback.IPlaybackBackendFactory`、`Playback.LazyPlaybackBackend` | 为一个 Document 成套创建共享同一 LibVLC 上下文的 PlayerHost 和媒体源工厂，并保证最多创建一次 |
-| 媒体资源 | `Playback.PlaybackMediaSource` | 独占每次加载的 `Media`、`MediaInput` 和加密流并规定逆序释放；不拥有 Document 级 MediaPlayer |
-| 流适配 | `Playback.SeekableStreamMediaInput` | 把 .NET 可 Seek 流适配为 LibVLC `MediaInput`，串行化回调并首次失败优先 |
-| 容器读取 | `Container.SeekableEncryptedVideoStream` | 验证固定头，按需认证和解密目标块，维护四块 LRU 明文缓存 |
-| 操作基础设施 | `Operations.StoragePreflightProbe`、`Operations.OutputFileTransaction` | 统一任务/错误契约、目录和空间检查，以及 partial 的不覆盖提交/回滚 |
-| 加密 | `Encryption.IVideoEncryptionService`、`Encryption.ISecvid03Encryptor` | 单文件预检、进度与 SECVID03 流式加密；密码只作为调用参数 |
-| 解密 | `Decryption.IVideoDecryptionService`、`Decryption.ISecvid03Decryptor` | 候选/批次预检、失败隔离、逐块认证导出和顺序执行 |
-| 格式与公开区 | `Container.Secvid03Format`、`Container.Secvid03Cryptography`、`Container.EncryptedVideoContainer` | 集中布局、严格解析、nonce/AAD/认证和公开信息读写 |
-| 原生运行时 | `Playback.LibVlcRuntime` | 消费部署探针结果，从插件私有目录线程安全地完成一次进程级 `Core.Initialize` |
+| 插件组合根 | `MySmallToolsPluginModule` | 只注册依赖关系和生命周期，不创建 View、Document、任务或原生对象 |
+| Document 创建 | 4 个 `DocumentStrategy`、`DocumentScopeManager` | 每次创建一个独立 Scope，并在 Dock 确认关闭后释放 |
+| 页面协调 | `SecretVideoPlayerViewModel`、`SecretVideoLibraryViewModel`、`VideoEncryptorViewModel`、`VideoDecryptorViewModel` | 输入校验、命令、任务状态、公开信息和取消 |
+| 文件夹浏览 | `VideoLibraryBrowserViewModel`、`VideoLibraryScanner` | 异步扫描 `.secvid`、隔离单文件错误、过滤公开信息 |
+| 播放展示 | `VideoPlayerControlViewModel` | 把用户意图交给会话，把回调切换到 UI 线程，显示部署诊断和原子播放快照 |
+| 部署探针 | `IPlaybackDeploymentProbe`、`PlaybackDeploymentProbe` | 无副作用检查平台、托管桥接、AMD64 核心 DLL 和关键插件模块 |
+| backend 代理 | `LazyPlaybackBackend` | 一个 Document 最多创建一套 `PlayerHost + MediaSourceFactory`，缓存 HWND 和音量意图 |
+| 播放编排 | `SecureVideoPlayer` | 媒体候选事务、用户意图代次、命令串行化、表面恢复和状态发布 |
+| 原生命令 | `PlaybackNativeDispatcher` | 单消费者执行可能阻塞的 `MediaPlayer` 操作，避免阻塞 Avalonia UI 线程 |
+| Document 播放器 | `LibVlcDocumentPlayerHost` | 一个 Document 一个 `LibVLC + MediaPlayer`，负责媒体挂载、原生事件和 HWND |
+| 单媒体资源 | `LibVlcPlaybackMediaSource` | 一个视频一个 `Media + MediaInput + 加密流`，不拥有 `MediaPlayer` 或 HWND |
+| 旧媒体回收 | `PlaybackResourceReaper` | 容量为 1 的有界单消费者，只回收已从 `MediaPlayer` 解绑的媒体资源 |
+| LibVLC 流桥接 | `SeekableStreamMediaInput` | 串行化原生 Open/Read/Seek/Close 回调，限制单次读取为 1 MiB |
+| 容器流 | `SeekableEncryptedVideoStream` | 打开时认证固定头，读取时按需认证解密，维护 4 块 LRU 明文缓存 |
+| 原生表面 | `EmbeddedVideoSurface` | 在 HWND 创建后绑定，在 HWND 销毁前同步通知 Lost |
+| 输出事务 | `OutputFileTransaction` | 同目录 `.partial-GUID`、落盘刷新、`overwrite:false` 提交和失败清理 |
 
-### 2.1 部署与 backend 生命周期
-
-```mermaid
-flowchart TD
-    Doc["创建播放 Document"] --> Probe["IPlaybackDeploymentProbe.Check<br/>只读、聚合全部问题"]
-    Probe -->|失败| Banner["显示阻断诊断<br/>不创建 LibVLC/MediaPlayer"]
-    Banner --> Retry["用户修复后重新检测"]
-    Retry --> Probe
-    Probe -->|通过| Backend["LazyPlaybackBackend<br/>为本 Document 创建一次 backend"]
-    Backend --> Bind["VideoView 首次绑定 MediaPlayer"]
-    Bind --> Load["加载/切换 MediaSource"]
-    Load --> Reuse["复用同一 PlayerHost"]
-```
-
-这里的 “Lazy” 指 backend 不在插件模块加载或损坏部署的 Document 创建阶段产生，而不是强制等到用户按下播放。真实窗口压力测试表明，在 `VideoView` 首次绑定完成后再动态替换 `MediaPlayer` 会破坏 Avalonia/LibVLC 已验证的 HWND/vout 顺序。因此，自检通过的 Document 会在视图首次绑定前创建 backend；自检失败的 Document 则始终不创建任何原生对象。
-
-职责边界保持窄而明确：
-
-- 探针只回答“文件部署是否可用”，不执行原生初始化。
-- `LibVlcRuntime` 只保证进程级初始化一次，不拥有 Document 播放资源。
-- backend factory 只负责成套构造共享上下文的 host 与 source factory。
-- `SecureVideoPlayer` 只编排当前 Document 的媒体代次、命令与释放。
-- ViewModel 只把结构化结果转换为可操作的 UI 状态。
-
-## 3. 加密数据流
+## 5. 部署与 backend 生命周期
 
 ```mermaid
 flowchart TD
-    Start["预检输入、冲突、写权限和空间"] --> Prefix["检测并读取原视频最小前缀"]
-    Prefix --> Header["生成 salt、fileId、noncePrefix 和固定头"]
-    Header --> Kdf["PBKDF2-SHA256 派生 256 位密钥"]
-    Kdf --> HeaderAuth["认证固定头与原视频前缀"]
-    HeaderAuth --> Temp["事务创建同目录唯一 .partial-*"]
-    Temp --> Public["写固定头、64 KiB 公开区和原视频前缀"]
-    Public --> Loop{"还有视频主体数据？"}
-    Loop -->|是| Read["精确读取最多 1 MiB"]
-    Read --> Gcm["AES-256-GCM 加密并生成 16 字节标签"]
-    Gcm --> Write["写密文和标签，报告进度"]
-    Write --> Loop
-    Loop -->|否| Flush["FlushAsync + 落盘刷新 + 关闭"]
-    Flush --> Commit["File.Move overwrite:false"]
-    Temp -.->|异常或取消| Rollback
-    Prefix -.->|异常或取消| Rollback
-    Header -.->|异常或取消| Rollback
-    Kdf -.->|异常或取消| Rollback
-    HeaderAuth -.->|异常或取消| Rollback
-    Public -.->|异常或取消| Rollback
-    Loop -.->|异常或取消| Rollback
+    Create["创建播放 Document"] --> Check["PlaybackDeploymentProbe.Check"]
+    Check -->|有问题| Diagnostics["显示全部问题码、路径和建议"]
+    Diagnostics --> Retry["用户修复后重新检测"]
+    Retry --> Check
+    Check -->|通过| Init["IPlaybackBackendInitializer.Initialize"]
+    Init --> Runtime["LibVlcRuntime.EnsureInitialized"]
+    Runtime --> Backend["创建 Document 级 LibVLC + MediaPlayer"]
+    Backend --> Bind["VideoView 首次绑定同一个 MediaPlayer"]
+    Bind --> Switch["后续只切换 MediaSource"]
 ```
 
-加密器只保留一个明文块和一个密文块缓冲区。输入流允许其他读取者，但输出事务使用独占写入；输入文件在加密过程中被截断时，精确读取会抛出分类错误，不会为不完整块生成标签。预检不替代提交竞争检查，正式目标永远不会被覆盖。
+探针只读取文件系统和 PE/程序集元数据，不加载原生 DLL。`LibVlcRuntime` 是进程级 Singleton，只保证 `Core.Initialize(runtimeDirectory)` 成功执行一次；`LazyPlaybackBackend`、PlayerHost、调度器和回收器是 Document scoped。
 
-### 3.1 批量解密与明文提交
+“Lazy” 表示插件加载或损坏部署页面创建时不产生原生对象。部署完整时，ViewModel 会在 `VideoView` 首次绑定前初始化 backend，以保持真实 HWND 压力测试验证过的时序；脱离标准 UI 的调用方在首次加载时仍有幂等兜底。
 
-批量解密被分为四个窄职责：`VideoDecryptorViewModel` 管理队列、预检展示和取消源，`IVideoDecryptionService` 重新检查候选、预检批次并隔离单项失败，`ISecvid03Decryptor` 只处理一个容器，`IOutputFileTransaction` 负责明文 partial 的提交与回滚。输出命名由独立的 `DecryptionOutputPathResolver` 净化公开文件名、使用固定头扩展名并避让磁盘及批次内冲突。
+## 6. 加密与解密数据流
+
+### 6.1 流式加密
+
+```mermaid
+flowchart TD
+    Preflight["VideoEncryptorService 预检"] --> Prefix["检测最多 40 B 原视频前缀"]
+    Prefix --> Header["生成 salt / fileId / noncePrefix / 固定头"]
+    Header --> Public["构造 64 KiB PUBMETA1"]
+    Public --> Kdf["PBKDF2-SHA256 派生 32 B 密钥"]
+    Kdf --> HeaderTag["认证固定头 + 原视频前缀"]
+    HeaderTag --> Partial["创建同目录 .partial-GUID"]
+    Partial --> WriteBase["写固定头、公开区和前缀"]
+    WriteBase --> Chunk{"还有主体数据？"}
+    Chunk -->|是| Encrypt["精确读取 ≤ 1 MiB<br/>AES-256-GCM 加密"]
+    Encrypt --> WriteChunk["写密文 + 16 B Tag"]
+    WriteChunk --> Chunk
+    Chunk -->|否| Commit["FlushAsync + FlushToDisk + 关闭<br/>Move overwrite:false"]
+    Partial -.->|异常/取消| Cleanup["关闭并删除 partial"]
+```
+
+加密器只持有一个 1 MiB 明文缓冲区和一个 1 MiB 密文缓冲区。预检只提供操作前证据；目标文件在提交前被其他进程创建时，事务仍以 `OutputConflict` 失败，绝不覆盖。
+
+### 6.2 批量解密
+
+`VideoDecryptorViewModel` 管理队列和取消；`VideoDecryptionService` 检查候选、执行批次预检、分配安全输出名并隔离单项失败；`Secvid03Decryptor` 只解密一个文件；`OutputFileTransaction` 负责明文提交。
 
 ```mermaid
 sequenceDiagram
@@ -163,144 +172,142 @@ sequenceDiagram
     participant Batch as VideoDecryptionService
     participant One as Secvid03Decryptor
     participant Crypto as Secvid03Cryptography
-    participant Disk as 文件系统
+    participant Tx as OutputFileTransaction
 
-    UI->>Batch: DecryptBatchAsync(候选、输出目录、密码)
-    loop 每个有效且未成功的候选
-        Batch->>Batch: 分配不覆盖的安全输出名
+    UI->>Batch: DecryptBatchAsync
+    loop 每个可执行候选
+        Batch->>Batch: 净化名称并避让冲突
         Batch->>One: DecryptAsync
-        One->>Disk: 读取固定头和原视频前缀
-        One->>Crypto: 派生密钥并认证固定头
+        One->>Crypto: 结构检查、PBKDF2、固定头认证
         Crypto-->>One: AuthenticationContext
-        One->>Disk: 创建唯一 partial
-        loop 每个加密块
-            One->>Crypto: 认证并解密块
-            One->>Disk: 写入已认证明文
+        One->>Tx: 认证成功后才创建 partial
+        loop 每个块
+            One->>Crypto: 认证并解密
+            One->>Tx: 写入已认证明文
         end
-        One->>Disk: Flush + Move(no overwrite)
-        One-->>Batch: 成功或分类错误
-        Batch-->>UI: 项目与总字节进度
+        One->>Tx: Flush + Move(no overwrite)
+        One-->>Batch: 成功或稳定失败代码
     end
 ```
 
-播放器和导出器共享 `Secvid03Cryptography` 的认证上下文及块解密规则，nonce、AAD 和标签语义只有一个实现。认证上下文释放时清零派生密钥；导出器还会清零复用的明文、密文和标签缓冲区。错误密码发生在创建 partial 之前，块篡改、取消或 I/O 失败由单文件事务清理当前 partial，已成功项目不回滚。
+播放器和导出器共享 `Secvid03Cryptography` 的 KDF、nonce、AAD 和块认证实现。认证上下文释放时清零密钥与不可变摘要；加解密复用缓冲区在正常、异常和取消路径都会清零。
 
-## 4. 加载与播放数据流
+## 7. 媒体切换事务
+
+最新实现不会在验证新文件前清理旧媒体。候选阶段不持有播放器操作门，旧视频可继续播放。
 
 ```mermaid
 sequenceDiagram
     actor User as 用户
-    participant Page as SecretVideoPlayerViewModel
-    participant VM as VideoPlayerControlViewModel
-    participant Player as SecureVideoPlayer
-    participant Stream as SeekableEncryptedVideoStream
-    participant Input as SeekableStreamMediaInput
-    participant VLC as LibVLC
-    participant Surface as EmbeddedVideoSurface
+    participant Session as SecureVideoPlayer
+    participant Factory as MediaSourceFactory
+    participant Dispatch as NativeDispatcher
+    participant Host as Document PlayerHost
+    participant Reaper as ResourceReaper
 
-    User->>Page: 选择 .secvid
-    Page->>Page: 读取公开标题/描述（无需密码）
-    User->>Page: 输入密码并加载
-    Page->>VM: LoadMediaAsync
-    VM->>Player: LoadEncryptedVideoAsync
-    Player->>Player: 清理旧 Media/Input
-    Player->>Stream: Open(path, password)
-    Stream->>Stream: 结构检查、PBKDF2、固定头认证
-    Player->>Input: 包装可随机读取流
-    Player->>VLC: 创建 Media 并 ParseLocal
-    VLC-->>Player: 媒体解析结果
-    Player-->>VM: 加载成功
-    User->>VM: Play
-    VM->>VLC: Play
-    VLC->>Input: Open / Read / Seek 回调
-    Input->>Stream: 串行化读取
-    Stream->>Stream: 命中缓存或认证解密目标块
-    Stream-->>VLC: 返回原视频字节视图
-    VLC->>Surface: 输出到已绑定 HWND
+    User->>Session: LoadAsync / LoadAndPlayAsync
+    Session->>Factory: 后台 Open + PBKDF2 + Parse
+    note over Host: 当前媒体保持原状态
+    Factory-->>Session: 候选 MediaSource
+    Session->>Session: 获取 operationGate 并校验 intent
+    Session->>Dispatch: Stop old → Detach → Attach candidate
+    alt Attach 或启动失败
+        Dispatch->>Host: 重新 Attach old
+        Session->>Reaper: 回收失败候选
+    else 提交成功
+        Session->>Host: 发布 Ready 或启动 Play
+        Session->>Reaper: 后台回收 old source
+    end
 ```
 
-“加载成功”不表示视频主体已经完整解密。打开阶段只验证容器结构、密码和不可变头；某个视频块被篡改时，会在解码器实际读取该块时失败。`SeekableStreamMediaInput.LastError` 保存底层认证或读取异常，供 LibVLC 的通用错误事件生成更有意义的提示。
+`LoadAndPlayAsync` 把“验证、提交、启动”作为同一用户意图，避免 ViewModel 在 `LoadAsync` 与 `PlayAsync` 之间暴露可被 Stop 或另一条 Load 插入的窗口。每次候选、媒体、表面和用户意图都有代次或取消边界；迟到事件不能覆盖新状态。
 
-## 5. 公开信息编辑流程
+资源拆分后：
 
-公开标题和描述不属于视频密文认证数据，因此可以原地修改。页面层必须先切换资源状态，再写文件：
+- `LibVlcDocumentPlayerHost` 在整个 Document 生命周期内不因换片而重建。
+- `LibVlcPlaybackMediaSource` 只有从 Host 解绑后才能释放。
+- 显式 `ReleaseAsync` 会等待回收完成，保证随后可编辑、移动或删除文件。
+- 普通成功换片由有界 Reaper 后台释放旧 Source，避免把文件释放延迟直接压在 UI 操作上。
+
+## 8. 随机读取与明文边界
+
+打开 `SeekableEncryptedVideoStream` 时只做结构检查、PBKDF2 和不可变头认证，不预解密全部主体。LibVLC 第一次读取某块时才执行 AES-GCM 验证：
+
+```text
+虚拟流 = 明文原视频前缀 + 按需认证解密的视频主体
+```
+
+流最多缓存 4 个明文块，另有 1 个复用密文缓冲区；`SeekableStreamMediaInput` 另维护一个最大 1 MiB 的桥接缓冲区。缓存和缓冲区总量有固定上限，不受媒体总大小影响。
+
+原生回调不能抛出托管异常。`SeekableStreamMediaInput` 保存首个类型化失败，让 Read 返回 `-1`，并在回调锁释放后异步通知播放会话；播放会话再按媒体代次停止当前 Source 并发布稳定失败码。
+
+## 9. 公开信息编辑
+
+公开区不属于 GCM AAD。编辑标题和描述前必须调用 `ReleaseAsync`，因为暂停或 Stop 并不等于释放 `MediaInput` 的文件句柄。
 
 ```mermaid
 flowchart LR
-    Edit["用户进入编辑"] --> Cleanup["Stop 并释放 Media / MediaInput"]
-    Cleanup --> Build["校验 Rune、UTF-8 字节和控制字符"]
-    Build --> Payload["先写公开区负载和零填充"]
-    Payload --> Flush1["Flush 到磁盘"]
-    Flush1 --> Record["最后写 32 字节记录头和 CRC"]
-    Record --> Flush2["再次 Flush"]
-    Flush2 --> Reload["重新读取公开信息；媒体保持未加载"]
+    Edit["进入编辑"] --> Release["ReleaseAsync<br/>解绑并等待句柄关闭"]
+    Release --> Validate["校验 Rune、UTF-8 字节和控制字符"]
+    Validate --> Payload["先写偏移 32 后的负载与零填充"]
+    Payload --> Flush1["FlushToDisk"]
+    Flush1 --> Header["最后写 32 B 记录头与 CRC"]
+    Header --> Flush2["FlushToDisk"]
+    Flush2 --> ReadBack["重新读取公开信息<br/>媒体保持未加载"]
 ```
 
-先写负载、后提交记录头的顺序不能颠倒。进程在中途退出时，旧记录头和新负载不匹配会触发 CRC 错误，而不会把部分写入误认为有效公开信息。公开区损坏不阻止用户继续尝试密码验证和播放，因为公开区刻意不参与 GCM AAD。
+若进程在第一次 Flush 后退出，旧记录头与新负载不匹配，读取端会报告 CRC 错误。CRC 是可检测提交边界，不提供攻击者篡改防护。
 
-## 6. DI 与 Document 生命周期
+## 10. Dock 表面与线程模型
 
-`MySmallToolsPluginModule` 当前注册关系为：
+- 普通 Play、Pause、Stop、Seek、媒体提交和恢复操作都提交到 Document 级 `PlaybackNativeDispatcher`。
+- 候选媒体的 PBKDF2、容器打开和 `Media.Parse` 在后台执行。
+- `DetachSurface` 是例外：它必须在旧 HWND 销毁前同步完成 RequestStop、Stop 和 Hwnd 清零。
+- `VideoPlayerControlViewModel` 使用 `Dispatcher.UIThread.Post` 把播放快照更新切回 UI 线程。
+- `OutputChanged` 只为输出端口兼容保留；普通媒体切换不替换 `MediaPlayer`，因此不会要求 View 重绑。
+- 表面恢复使用表面代次、媒体代次、用户意图代次、一次性快照、取消源和 5 秒超时。
+
+详细 HWND 顺序见[接入、开发约定与故障排查](integration-and-conventions.md#5-dock-切换与视频表面恢复)。
+
+## 11. DI 与 Document 所有权
+
+`MySmallToolsPluginModule` 的当前生命周期如下：
 
 | 生命周期 | 服务 |
 | --- | --- |
-| Singleton | `LibVlcRuntime` |
-| Scoped | `IPlaybackMediaLeaseFactory`、`ISecureVideoPlaybackSession`、`ILibVlcVideoOutputSource`、播放器/媒体库 ViewModel、`IVideoEncryptionService`、`IVideoDecryptionService` 及两个任务 Document |
-| Transient | `IStoragePreflightProbe`、`IOutputFileTransactionFactory`、`ISecvid03Encryptor`、`ISecvid03Decryptor`、输出路径解析器 |
-| Transient | `Secvid03Encryptor`、`IVideoLibraryScanner` |
+| Singleton | `IPlaybackDeploymentProbe`、`LibVlcRuntime` |
+| Scoped | backend factory/代理/初始化端口、PlayerHost/SourceFactory 端口、NativeDispatcher、ResourceReaper、播放会话、播放器和媒体库 ViewModel、加密/解密应用服务及任务 ViewModel |
+| Transient | `IVideoLibraryScanner`、`IStoragePreflightProbe`、`IOutputFileTransactionFactory`、`ISecvid03Encryptor`、`ISecvid03Decryptor`、`DecryptionOutputPathResolver` |
 
-单文件播放器、文件夹视频库和加密器策略都通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建文档。宿主的 `DocumentScopeManager` 维护 Document 与 `IServiceScope` 的一一对应关系；只有 Dock 真正确认关闭后才释放 Scope。
+四个 Document Strategy 分别创建单文件播放器、文件夹媒体库、视频加密器和批量解密器。所有策略都通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建 Document；宿主维护 `Document → IServiceScope` 映射，并在 Dock 确认关闭或宿主退出时释放。
 
-```mermaid
-sequenceDiagram
-    participant Strategy as DocumentStrategy
-    participant Manager as DocumentScopeManager
-    participant DI as IServiceScope
-    participant Doc as Document ViewModel
-    participant Resource as 播放器或加密任务资源
-    participant Dock as Dock
+所有权规则：
 
-    Strategy->>Manager: CreateDocument<T>()
-    Manager->>DI: CreateScope
-    DI->>Resource: 构造 scoped 依赖
-    DI->>Doc: 构造 Document
-    Manager->>Manager: 登记 Doc 与 Scope
-    Manager-->>Strategy: 返回 Document
-    Dock->>Manager: 确认 Document 已关闭
-    Manager->>DI: Dispose Scope
-    DI->>Doc: Dispose（若实现）
-    DI->>Resource: 按容器所有权逆序 Dispose
-```
+- 插件模块不保存 Scope，不预创建 Document 或原生对象。
+- ViewModel 取消自己发起的工作、退订事件并使迟到回调失效，但不重复释放由 Scope 管理的注入服务。
+- `SecureVideoPlayer` 负责当前 Source 的解绑和会话收尾；`LazyPlaybackBackend` 最终释放 Document 级 PlayerHost。
+- `LibVlcPlaybackMediaSource` 按 `Media → MediaInput → 加密流/文件/缓存/密钥` 逆序释放。
+- `IOutputFileTransaction` 是 partial 的唯一所有者。
+- 关闭任务 Document 只发送取消，不在 UI 线程同步等待异步清理。
 
-由此产生以下所有权约定：
-
-- 插件模块只注册构造关系，不保存 Scope，也不预创建原生对象。
-- ViewModel 可以取消自己发起的异步工作、退订事件和使回调失效，但不能重复释放由 DI 注入且同样由 Scope 托管的服务。
-- `SecureVideoPlayer` 独占并释放自己的 `LibVLC`、`MediaPlayer`、`Media` 和 `MediaInput`；进程级初始化不等于原生实例无需释放。
-- 关闭加密或批量解密文档只发送取消，不在 UI 线程同步等待任务；底层调用在退出路径删除当前临时文件。
-- 宿主退出时，`DocumentScopeManager.Dispose` 会逆序释放仍未关闭文档的 Scope。
-
-## 7. 播放状态与异步回调
-
-`VideoPlayerControlViewModel` 是 LibVLC 线程与 Avalonia UI 线程之间的边界：
-
-- LibVLC 的状态、时间、位置、长度和错误事件通过 `Dispatcher.UIThread.Post` 更新绑定属性。
-- 每次加载或清理媒体都会推进 `mediaGeneration`。投递回 UI 队列的回调携带当时的代次；代次不匹配或对象已释放时直接丢弃。
-- 用户主动播放、暂停、停止、Seek、切换媒体或清理媒体都会取消尚未完成的视频表面自动恢复。
-- 表面恢复请求具有唯一 `RequestId` 且只消费一次；快速重复切换时只有最新快照生效。
-- 为表面重建执行的内部 `Stop` 与用户主动 `Stop` 分开计数，防止迟到的原生 `Stopped` 事件误删恢复快照。
-
-Dock/原生表面的详细恢复时序及故障定位见[接入、约定与排障](integration-and-conventions.md#4-dock-切换与视频表面恢复)。
-
-## 8. 关键源码
+## 12. 关键实现与验证
 
 - [MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
-- [SecretVideoPlayerViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoPlayerViewModel.cs)
-- [SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
-- [VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/Library/VideoLibraryScanner.cs)
-- [VideoPlayerControlViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoPlayerControlViewModel.cs)
+- [PlaybackDeployment.cs](../../Business/SecretVideoPlayer/Playback/PlaybackDeployment.cs)
+- [PlaybackBackend.cs](../../Business/SecretVideoPlayer/Playback/PlaybackBackend.cs)
 - [SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)
-- [VideoEncryptorViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoEncryptorViewModel.cs)
-- [VideoDecryptorViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoDecryptorViewModel.cs)
+- [PlaybackMediaLease.cs](../../Business/SecretVideoPlayer/Playback/PlaybackMediaLease.cs)（当前文件内类型为 PlayerHost、MediaSource 及其工厂）
+- [PlaybackNativeDispatcher.cs](../../Business/SecretVideoPlayer/Playback/PlaybackNativeDispatcher.cs)
+- [PlaybackResourceReaper.cs](../../Business/SecretVideoPlayer/Playback/PlaybackResourceReaper.cs)
+- [SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/Container/SeekableEncryptedVideoStream.cs)
+- [Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Encryption/Secvid03Encryptor.cs)
 - [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)
 - [DocumentScopeManager.cs](../../../../../Host/MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)
+
+主要验证入口：
+
+```powershell
+dotnet test .\Plugins\MySmallTools\MySmallTools.Tests\MySmallTools.Tests.csproj -c Release
+dotnet test .\Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj -c Release
+.\scripts\Release-MySmallToolsP0.ps1
+```
