@@ -60,9 +60,17 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddTransient<IStoragePreflightProbe, StoragePreflightProbe>();
         services.AddTransient<IOutputFileTransactionFactory, OutputFileTransactionFactory>();
 
-        // 加密任务状态属于单个 Document；密码只在 ViewModel 调用栈中传递。
+        // G5 队列运行器必须是 Document-scoped：它拥有“当前项”和两级取消源，跨 Document
+        // 共享会让一个标签页的取消命令影响另一个标签页。开放泛型只复用编排机制，
+        // 加密与解密仍使用各自的预检项目和应用服务。
+        services.AddScoped(typeof(ISequentialVideoQueueRunner<>), typeof(SequentialVideoQueueRunner<>));
+        services.AddTransient<IOutputPathConflictResolver, OutputPathConflictResolver>();
+
+        // 加密任务状态属于单个 Document；批次计划和单文件执行分离，密码仍只在
+        // ViewModel 调用单项服务的同步调用链中传递。
         services.AddTransient<ISecvid03Encryptor, Secvid03Encryptor>();
         services.AddScoped<IVideoEncryptionService, VideoEncryptorService>();
+        services.AddScoped<IVideoBatchEncryptionService, VideoBatchEncryptionService>();
         services.AddScoped<VideoEncryptorViewModel>();
 
         // 单文件解密器无共享状态；批处理编排和队列则跟随各自 Document Scope。

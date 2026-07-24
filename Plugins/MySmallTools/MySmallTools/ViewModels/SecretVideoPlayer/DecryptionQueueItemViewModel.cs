@@ -5,63 +5,106 @@ using MySmallTools.Business.SecretVideoPlayer.Operations;
 namespace MySmallTools.ViewModels.SecretVideoPlayer;
 
 /// <summary>
-/// 单个解密候选的可观察状态；不持有密码，也不执行文件操作。
+/// 一个 SECVID03 候选在当前解密 Document 队列中的公开状态。
 /// </summary>
+/// <remarks>
+/// 候选公开信息和共用运行状态通过组合保持独立；ItemId 负责拒绝迟到进度。类型不持有密码，
+/// 也不执行名称净化、预检或文件写入。
+/// </remarks>
 public partial class DecryptionQueueItemViewModel : ObservableObject
 {
+    /// <summary>使用新队列身份创建候选；保留给 G2 测试和简单调用方。</summary>
     public DecryptionQueueItemViewModel(DecryptionCandidate candidate)
+        : this(Guid.NewGuid(), candidate)
     {
-        _candidate = candidate ?? throw new ArgumentNullException(nameof(candidate));
-        State = candidate.IsValid ? VideoTaskState.Pending : VideoTaskState.Failed;
-        Message = candidate.ValidationMessage;
-        FailureCode = candidate.FailureCode;
     }
 
+    /// <summary>使用调用方提供的稳定身份创建候选。</summary>
+    public DecryptionQueueItemViewModel(Guid itemId, DecryptionCandidate candidate)
+    {
+        ItemId = itemId;
+        _candidate = candidate ?? throw new ArgumentNullException(nameof(candidate));
+        Status.State = candidate.IsValid ? VideoTaskState.Pending : VideoTaskState.Failed;
+        Status.Message = candidate.ValidationMessage;
+        Status.FailureCode = candidate.FailureCode;
+    }
+
+    /// <summary>Document 队列内稳定身份。</summary>
+    public Guid ItemId { get; }
+
+    /// <summary>加解密共用的可观察状态，不包含密码。</summary>
+    public VideoQueueItemStatusViewModel Status { get; } = new();
+
     [ObservableProperty] private DecryptionCandidate _candidate;
-    [ObservableProperty] private VideoTaskState _state;
-    [ObservableProperty] private double _progress;
-    [ObservableProperty] private string _message = string.Empty;
-    [ObservableProperty] private string _outputPath = string.Empty;
-    [ObservableProperty] private VideoTaskFailureCode? _failureCode;
 
     public string InputPath => Candidate.InputPath;
     public string EncryptedFileName => Candidate.EncryptedFileName;
     public string PublicTitle => Candidate.PublicTitle;
     public bool HasPublicTitle => !string.IsNullOrWhiteSpace(PublicTitle);
-    public string FailureCodeText => FailureCode?.ToString() ?? string.Empty;
-    public bool HasFailureCode => FailureCode.HasValue;
 
-    public string StateText => State switch
+    // 以下代理保留 G2 测试和现有 XAML 契约；状态的唯一存储仍是组合对象 Status。
+    public VideoTaskState State
     {
-        VideoTaskState.Pending => "等待",
-        VideoTaskState.Preflighting => "预检中",
-        VideoTaskState.Ready => "就绪",
-        VideoTaskState.Running => "解密中",
-        VideoTaskState.Succeeded => "完成",
-        VideoTaskState.Failed => "失败",
-        VideoTaskState.Cancelled => "已取消",
-        _ => string.Empty
-    };
-
-    public bool HasMessage => State != VideoTaskState.Succeeded && !string.IsNullOrWhiteSpace(Message);
-    public bool HasOutputPath => State == VideoTaskState.Succeeded && !string.IsNullOrWhiteSpace(OutputPath);
-    public bool IsRunning => State == VideoTaskState.Running;
-
-    partial void OnStateChanged(VideoTaskState value)
-    {
-        OnPropertyChanged(nameof(StateText));
-        OnPropertyChanged(nameof(IsRunning));
-        OnPropertyChanged(nameof(HasMessage));
-        OnPropertyChanged(nameof(HasOutputPath));
+        get => Status.State;
+        set
+        {
+            if (Status.State == value)
+                return;
+            Status.State = value;
+            RaiseStatusProxyProperties();
+        }
     }
 
-    partial void OnMessageChanged(string value) => OnPropertyChanged(nameof(HasMessage));
-    partial void OnOutputPathChanged(string value) => OnPropertyChanged(nameof(HasOutputPath));
-    partial void OnFailureCodeChanged(VideoTaskFailureCode? value)
+    public double Progress
     {
-        OnPropertyChanged(nameof(FailureCodeText));
-        OnPropertyChanged(nameof(HasFailureCode));
+        get => Status.Progress;
+        set
+        {
+            Status.Progress = value;
+            OnPropertyChanged();
+        }
     }
+
+    public string Message
+    {
+        get => Status.Message;
+        set
+        {
+            Status.Message = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasMessage));
+        }
+    }
+
+    public string OutputPath
+    {
+        get => Status.OutputPath;
+        set
+        {
+            Status.OutputPath = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasOutputPath));
+        }
+    }
+
+    public VideoTaskFailureCode? FailureCode
+    {
+        get => Status.FailureCode;
+        set
+        {
+            Status.FailureCode = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(FailureCodeText));
+            OnPropertyChanged(nameof(HasFailureCode));
+        }
+    }
+
+    public string FailureCodeText => Status.FailureCodeText;
+    public bool HasFailureCode => Status.HasFailureCode;
+    public string StateText => Status.StateText;
+    public bool HasMessage => Status.HasMessage;
+    public bool HasOutputPath => Status.HasOutputPath;
+    public bool IsRunning => Status.IsRunning;
 
     partial void OnCandidateChanged(DecryptionCandidate value)
     {
@@ -71,6 +114,7 @@ public partial class DecryptionQueueItemViewModel : ObservableObject
         OnPropertyChanged(nameof(HasPublicTitle));
     }
 
+    /// <summary>使用重新读取的公开信息替换候选并恢复等待状态。</summary>
     public void ApplyInspection(DecryptionCandidate candidate)
     {
         Candidate = candidate;
@@ -81,6 +125,7 @@ public partial class DecryptionQueueItemViewModel : ObservableObject
         State = candidate.IsValid ? VideoTaskState.Pending : VideoTaskState.Failed;
     }
 
+    /// <summary>应用带相同 ItemId 的不可变预检项目。</summary>
     public void ApplyPreflight(CandidateDecryptionPreflight preflight)
     {
         OutputPath = preflight.OutputPath;
@@ -98,18 +143,41 @@ public partial class DecryptionQueueItemViewModel : ObservableObject
         FailureCode = null;
         Message = preflight.Result.Issues.Count == 0
             ? "预检通过"
-            : string.Join(" ", preflight.Result.Issues.Select(issue => $"{issue.Message} {issue.SuggestedAction}"));
+            : string.Join(" ", preflight.Result.Issues.Select(issue =>
+                $"{issue.Message} {issue.SuggestedAction}"));
     }
 
+    /// <summary>应用通过 RunId/ItemId 校验后的公共队列进度。</summary>
+    public void ApplyProgress(VideoQueueProgress progress)
+    {
+        State = progress.State;
+        Progress = progress.FilePercentage;
+        Message = progress.Message;
+        FailureCode = progress.FailureCode;
+    }
+
+    /// <summary>将失败或取消项目恢复为等待重新检查。</summary>
     public void ResetForRetry()
     {
-        if (State == VideoTaskState.Succeeded)
+        if (!VideoQueueInteractionPolicy.CanRetry(State))
             return;
 
-        State = VideoTaskState.Pending;
-        Progress = 0;
-        Message = string.Empty;
-        OutputPath = string.Empty;
-        FailureCode = null;
+        Status.ResetForRetry();
+        RaiseStatusProxyProperties();
+    }
+
+    private void RaiseStatusProxyProperties()
+    {
+        OnPropertyChanged(nameof(State));
+        OnPropertyChanged(nameof(StateText));
+        OnPropertyChanged(nameof(IsRunning));
+        OnPropertyChanged(nameof(HasMessage));
+        OnPropertyChanged(nameof(HasOutputPath));
+        OnPropertyChanged(nameof(FailureCodeText));
+        OnPropertyChanged(nameof(HasFailureCode));
+        OnPropertyChanged(nameof(Progress));
+        OnPropertyChanged(nameof(Message));
+        OnPropertyChanged(nameof(OutputPath));
+        OnPropertyChanged(nameof(FailureCode));
     }
 }

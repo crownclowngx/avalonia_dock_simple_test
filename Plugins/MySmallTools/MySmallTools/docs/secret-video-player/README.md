@@ -15,6 +15,7 @@
 | [G3 真实播放与 Dock 稳定性](G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md) | 播放会话契约、候选 Lease、类型化错误、真实 HWND/vout 门禁和 100 次压力证据 | 开发者、测试人员、评审人员 |
 | [G3.1 异步播放与 UI 响应性](G3.1-ASYNC-PLAYBACK-UI-RESPONSIVENESS.md) | 单 MediaPlayer、原生命令串行调度、有界异步回收、内存抖动分析和 UI heartbeat 门禁 | 开发者、测试人员、评审人员 |
 | [G4 P0 部署、验收与发布基线](G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md) | 部署探针、阻断诊断、确定性发布包、大文件内存与两轮真实播放门禁 | 开发者、发布人员、评审人员 |
+| [G5 批量加密与统一队列](G5-BATCH-ENCRYPTION-UNIFIED-QUEUE.md) | 批量加密计划、严格顺序运行器、两级取消、冲突策略和 100 文件自动化证据 | 开发者、测试人员、评审人员 |
 | [概要设计](architecture-design.md) | 分层、组件职责、加密与播放数据流、DI 和 Document 生命周期 | 开发者、维护者 |
 | [SECVID03 文件格式](secvid03-format.md) | 二进制布局、密钥派生、GCM 认证、随机读取、公开信息和兼容策略 | 格式维护者、安全评审人员 |
 | [接入、约定与排障](integration-and-conventions.md) | LibVLC 部署、插件扫描、Dock 黑屏恢复、资源释放、已踩过的坑和回归检查 | 集成人员、问题排查人员 |
@@ -24,7 +25,7 @@
 
 该子系统包含四项宿主菜单能力：
 
-- **视频文件加密器**：预检输入、目标冲突、目录写入和磁盘空间后，把普通视频流式写为 `.secvid`；正式提交不覆盖，失败或取消清理 partial。
+- **批量视频加密器**：一次添加多个普通视频，通过两阶段预检和确认严格顺序写为 `.secvid`；正式提交不覆盖，单项失败或取消不阻断后续项目。
 - **批量视频解密器**：重新预检未成功项，顺序导出多个 SECVID03 文件，隔离单项失败，净化输出名称且不静默覆盖已有文件。
 - **加密视频播放器**：无需密码读取公开标题和描述；输入密码后验证固定头，并把 SECVID03 暴露为可随机读取的原视频视图供 LibVLC 解码。
 - **加密视频库播放器**：异步扫描文件夹当前层的 `.secvid`，按文件名、公开标题和描述搜索，并用当前 Document 的公共密码在同一页面切换播放。
@@ -41,7 +42,7 @@ flowchart LR
     F --> G["EmbeddedVideoSurface<br/>Avalonia / Dock HWND"]
 ```
 
-加密、解密和播放器共用 SECVID03 格式定义，但不共享密码、任务状态、播放位置或原生播放器实例。每个 Dock Document 都有独立 DI Scope；`IPlaybackDeploymentProbe` 与 `LibVlcRuntime` 是无状态/进程级单例，前者只读验证部署，后者在检查通过后执行一次 `Core.Initialize`。加解密共用预检严重级别、稳定失败代码和不覆盖输出事务，但仍保持独立应用服务。
+加密、解密和播放器共用 SECVID03 格式定义，但不共享密码、任务状态、播放位置或原生播放器实例。每个 Dock Document 都有独立 DI Scope；`IPlaybackDeploymentProbe` 与 `LibVlcRuntime` 是无状态/进程级单例，前者只读验证部署，后者在检查通过后执行一次 `Core.Initialize`。加解密共用预检严重级别、稳定失败代码、不覆盖输出事务和顺序队列语义，但仍保持独立应用服务。
 
 ## 运行基线
 
@@ -72,14 +73,15 @@ flowchart LR
 
 ## 快速使用
 
-### 创建加密视频
+### 批量创建加密视频
 
-1. 在宿主中打开“视频文件加密器”。
-2. 选择普通视频并确认输出 `.secvid` 路径；输入路径与输出路径不能相同。
-3. 输入并确认至少 6 个字符的密码，可选填公开标题和描述。
-4. 开始加密并等待正式输出文件生成。
+1. 在宿主中打开“视频文件加密器”，一次选择一个或多个普通视频。
+2. 每项默认输出到源文件旁的 `<原名>_encrypted.secvid`；可逐项修改输出、公开标题和公开描述。
+3. 选择严格阻止或安全数字后缀策略，输入并确认至少 6 个字符的公共密码。
+4. 点击“检查批次”，确认可执行、冲突、警告和阻止数量。
+5. 点击“开始执行”。任务严格顺序运行；可取消当前后继续，也可取消全部。
 
-开始按钮会先检查输入、同路径、目标冲突、公开信息长度、输出目录可写性和可用空间。阻止项必须处理后才能继续；无法可靠取得网络目录空间等警告不会阻止操作。
+批次检查会验证输入、同路径、公开信息、批次内/磁盘重名、目录写入和按卷累计空间。编辑输出或公开信息会使旧计划失效，必须重新检查。成功项在重试时自动跳过；失败/取消项可以逐项或批量重试。
 
 加密过程使用与目标文件相同目录中的唯一 `.partial-*` 临时文件。只有全部分块写入、落盘刷新和关闭成功后，临时文件才会以不覆盖方式移动为目标文件；关闭文档、取消、磁盘错误或其他异常都会进入临时文件清理路径。
 
@@ -119,7 +121,7 @@ flowchart LR
 - 仅支持 Windows x64；项目和原生运行时都固定为 x64。
 - 播放器只接受结构和认证均有效的 SECVID03；其他格式或损坏容器会被受控拒绝。
 - 文件夹视频库第一版只扫描当前层的 `.secvid`，不提供递归、自动连播、目录监听或密码持久化。
-- 批量解密只支持显式多选文件和一个统一输出目录，不删除源容器，也不持久化公共密码。
+- 批量加密和解密只支持显式多选文件，不持久化队列或公共密码；关闭 Document 会取消当前工作并放弃等待项。
 - 密码丢失后无法从容器恢复；公开区也不保存可直接比较的明文 key hash。
 - 标题最多 200 个 Unicode Rune，描述最多 10,000 个 Unicode Rune，同时还受 UTF-8 字节上限约束。
 - 公开信息使用 CRC32 检测意外损坏，不用于防篡改；拥有文件写权限的人可以重写公开信息和 CRC。
@@ -134,7 +136,7 @@ flowchart LR
 - 批量明文导出：[Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)、[VideoDecryptionService.cs](../../Business/SecretVideoPlayer/Decryption/VideoDecryptionService.cs)
 - Dock 视频表面：[EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)、[VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/Playback/VideoSurfaceRestoreSequence.cs)
 - 文件夹视频库：[VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/Library/VideoLibraryScanner.cs)、[SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
-- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[Secvid03GoldenVectorTests.cs](../../../MySmallTools.Tests/Secvid03GoldenVectorTests.cs)、[G2ReliabilityTests.cs](../../../MySmallTools.Tests/G2ReliabilityTests.cs)、[G3PlaybackSessionTests.cs](../../../MySmallTools.Tests/G3PlaybackSessionTests.cs)、[G4DeploymentTests.cs](../../../MySmallTools.Tests/G4DeploymentTests.cs)
+- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[Secvid03GoldenVectorTests.cs](../../../MySmallTools.Tests/Secvid03GoldenVectorTests.cs)、[G2ReliabilityTests.cs](../../../MySmallTools.Tests/G2ReliabilityTests.cs)、[G3PlaybackSessionTests.cs](../../../MySmallTools.Tests/G3PlaybackSessionTests.cs)、[G4DeploymentTests.cs](../../../MySmallTools.Tests/G4DeploymentTests.cs)、[G5BatchQueueTests.cs](../../../MySmallTools.Tests/G5BatchQueueTests.cs)
 - 真实窗口门禁：[MySmallTools.Playback.IntegrationHarness](../../../MySmallTools.Playback.IntegrationHarness/)
 - 发布门禁：[MySmallTools.ReleaseAcceptance](../../../MySmallTools.ReleaseAcceptance/)、[Release-MySmallToolsP0.ps1](../../../../../scripts/Release-MySmallToolsP0.ps1)
 

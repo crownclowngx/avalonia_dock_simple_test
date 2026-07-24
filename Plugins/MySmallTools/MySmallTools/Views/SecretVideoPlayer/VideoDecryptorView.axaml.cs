@@ -5,6 +5,9 @@ using MySmallTools.ViewModels.SecretVideoPlayer;
 
 namespace MySmallTools.Views.SecretVideoPlayer;
 
+/// <summary>
+/// 批量解密视图；只拥有窗口级文件/目录选择能力，队列状态全部属于当前 Document。
+/// </summary>
 public partial class VideoDecryptorView : UserControl
 {
     private bool _isFilePickerOpen;
@@ -44,10 +47,10 @@ public partial class VideoDecryptorView : UserControl
             if (files.Count > 0 && ReferenceEquals(DataContext, viewModel))
                 await viewModel.AddFilesAsync(files.Select(file => file.Path.LocalPath).ToArray());
         }
-        catch (Exception ex)
+        catch
         {
             if (ReferenceEquals(DataContext, viewModel))
-                viewModel.StatusMessage = $"选择视频失败：{ex.Message}";
+                viewModel.StatusMessage = "选择视频失败，请重新打开文件选择器后重试。";
         }
         finally
         {
@@ -76,10 +79,10 @@ public partial class VideoDecryptorView : UserControl
             if (folders.Count > 0 && ReferenceEquals(DataContext, viewModel))
                 viewModel.SetOutputDirectory(folders[0].Path.LocalPath);
         }
-        catch (Exception ex)
+        catch
         {
             if (ReferenceEquals(DataContext, viewModel))
-                viewModel.StatusMessage = $"选择输出目录失败：{ex.Message}";
+                viewModel.StatusMessage = "选择输出目录失败，请重新打开目录选择器后重试。";
         }
         finally
         {

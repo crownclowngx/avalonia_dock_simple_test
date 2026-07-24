@@ -7,6 +7,8 @@ using MySmallTools.Business.SecretVideoPlayer.Operations;
 /// </summary>
 public sealed class DecryptionOutputPathResolver
 {
+    private readonly IOutputPathConflictResolver _conflictResolver;
+
     private static readonly HashSet<string> WindowsReservedNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "CON", "PRN", "AUX", "NUL",
@@ -14,9 +16,40 @@ public sealed class DecryptionOutputPathResolver
         "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
     };
 
+    /// <summary>创建使用共享非覆盖冲突策略的解密名称解析器。</summary>
+    public DecryptionOutputPathResolver()
+        : this(new OutputPathConflictResolver())
+    {
+    }
+
+    /// <summary>
+    /// 注入计划阶段冲突解析器；公开文件名净化仍由本类型独占负责。
+    /// </summary>
+    public DecryptionOutputPathResolver(IOutputPathConflictResolver conflictResolver)
+    {
+        _conflictResolver = conflictResolver ?? throw new ArgumentNullException(nameof(conflictResolver));
+    }
+
+    /// <summary>
+    /// G2 兼容入口，保持“自动数字后缀且绝不覆盖”的既有行为。
+    /// </summary>
     public string GetAvailablePath(
         string outputDirectory,
         DecryptionCandidate candidate,
+        ISet<string> allocatedPaths) =>
+        ResolvePath(
+            outputDirectory,
+            candidate,
+            OutputConflictPolicy.GenerateUniqueName,
+            allocatedPaths).OutputPath;
+
+    /// <summary>
+    /// 先净化不可信公开名称，再应用用户明确选择的非覆盖冲突策略。
+    /// </summary>
+    public OutputPathResolution ResolvePath(
+        string outputDirectory,
+        DecryptionCandidate candidate,
+        OutputConflictPolicy conflictPolicy,
         ISet<string> allocatedPaths)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
@@ -29,19 +62,8 @@ public sealed class DecryptionOutputPathResolver
         var baseName = SanitizeFileName(originalBaseName, fallbackName);
         var extension = SanitizeExtension(candidate.OriginalExtension);
 
-        for (var suffix = 0; suffix < int.MaxValue; suffix++)
-        {
-            var fileName = suffix == 0
-                ? baseName + extension
-                : $"{baseName} ({suffix}){extension}";
-            var path = Path.Combine(fullDirectory, fileName);
-            if (!File.Exists(path) && allocatedPaths.Add(path))
-                return path;
-        }
-
-        throw new VideoTaskException(
-            VideoTaskFailureCode.OutputConflict,
-            "无法为解密视频分配可用的输出文件名。");
+        var requestedPath = Path.Combine(fullDirectory, baseName + extension);
+        return _conflictResolver.Resolve(requestedPath, conflictPolicy, allocatedPaths);
     }
 
     internal static string SanitizeFileName(string? requestedName, string fallbackName)

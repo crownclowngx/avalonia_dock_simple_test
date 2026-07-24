@@ -141,7 +141,35 @@ flowchart TD
 
 ## 6. 加密与解密数据流
 
-### 6.1 流式加密
+### 6.1 批量计划与流式加密
+
+`VideoEncryptorViewModel` 管理 Document 队列修订、两阶段命令和公共密码；
+`VideoBatchEncryptionService` 分配不覆盖输出、逐项调用 G2 预检并按卷累计空间；
+`SequentialVideoQueueRunner<PreparedEncryptionItem>` 严格顺序调用单文件服务。
+
+加密和解密只共享顺序、状态、稳定身份和取消语义，不共享领域应用服务。进度使用
+`RunId + ItemId`，避免路径编辑、项目移除或 Document 关闭后的迟到更新污染新任务。
+
+```mermaid
+sequenceDiagram
+    participant UI as Encryptor Document
+    participant Plan as BatchEncryptionService
+    participant Queue as SequentialQueueRunner
+    participant One as VideoEncryptionService
+    participant Tx as OutputFileTransaction
+
+    UI->>Plan: PrepareAsync(no password)
+    Plan-->>UI: immutable plan + summary
+    UI->>Queue: RunAsync(plan, execute delegate)
+    loop 每个仍在队列的 Ready 项
+        Queue->>One: EncryptAsync(request, call-time password)
+        One->>One: 再次预检（预检不是锁）
+        One->>Tx: 流式写入 + no-overwrite commit
+        One-->>Queue: success / stable failure
+    end
+```
+
+单文件加密数据流保持为：
 
 ```mermaid
 flowchart TD
@@ -164,19 +192,22 @@ flowchart TD
 
 ### 6.2 批量解密
 
-`VideoDecryptorViewModel` 管理队列和取消；`VideoDecryptionService` 检查候选、执行批次预检、分配安全输出名并隔离单项失败；`Secvid03Decryptor` 只解密一个文件；`OutputFileTransaction` 负责明文提交。
+`VideoDecryptorViewModel` 管理队列修订、两阶段命令和公共密码；`VideoDecryptionService` 检查候选、执行批次预检、分配安全输出名并解密单项；公共顺序运行器隔离失败并提供取消当前/全部；`Secvid03Decryptor` 只解密一个文件；`OutputFileTransaction` 负责明文提交。
 
 ```mermaid
 sequenceDiagram
     participant UI as VideoDecryptorViewModel
+    participant Queue as SequentialQueueRunner
     participant Batch as VideoDecryptionService
     participant One as Secvid03Decryptor
     participant Crypto as Secvid03Cryptography
     participant Tx as OutputFileTransaction
 
-    UI->>Batch: DecryptBatchAsync
+    UI->>Batch: Inspect + Preflight(no password)
+    Batch-->>UI: immutable prepared items
+    UI->>Queue: RunAsync
     loop 每个可执行候选
-        Batch->>Batch: 净化名称并避让冲突
+        Queue->>Batch: DecryptAsync(call-time password)
         Batch->>One: DecryptAsync
         One->>Crypto: 结构检查、PBKDF2、固定头认证
         Crypto-->>One: AuthenticationContext
@@ -186,7 +217,7 @@ sequenceDiagram
             One->>Tx: 写入已认证明文
         end
         One->>Tx: Flush + Move(no overwrite)
-        One-->>Batch: 成功或稳定失败代码
+        One-->>Queue: 成功或稳定失败代码
     end
 ```
 
@@ -276,8 +307,8 @@ flowchart LR
 | 生命周期 | 服务 |
 | --- | --- |
 | Singleton | `IPlaybackDeploymentProbe`、`LibVlcRuntime` |
-| Scoped | backend factory/代理/初始化端口、PlayerHost/SourceFactory 端口、NativeDispatcher、ResourceReaper、播放会话、播放器和媒体库 ViewModel、加密/解密应用服务及任务 ViewModel |
-| Transient | `IVideoLibraryScanner`、`IStoragePreflightProbe`、`IOutputFileTransactionFactory`、`ISecvid03Encryptor`、`ISecvid03Decryptor`、`DecryptionOutputPathResolver` |
+| Scoped | backend factory/代理/初始化端口、PlayerHost/SourceFactory 端口、NativeDispatcher、ResourceReaper、播放会话、播放器和媒体库 ViewModel、顺序队列运行器、加密/解密应用服务及任务 ViewModel |
+| Transient | `IVideoLibraryScanner`、`IStoragePreflightProbe`、`IOutputFileTransactionFactory`、输出冲突解析器、`ISecvid03Encryptor`、`ISecvid03Decryptor`、`DecryptionOutputPathResolver` |
 
 四个 Document Strategy 分别创建单文件播放器、文件夹媒体库、视频加密器和批量解密器。所有策略都通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建 Document；宿主维护 `Document → IServiceScope` 映射，并在 Dock 确认关闭或宿主退出时释放。
 

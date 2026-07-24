@@ -6,7 +6,7 @@ using MySmallTools.ViewModels.SecretVideoPlayer;
 namespace MySmallTools.Views.SecretVideoPlayer;
 
 /// <summary>
-/// 视频加密页面。
+/// 批量视频加密页面。
 /// </summary>
 /// <remarks>
 /// 文件选择属于窗口级 UI 能力，因此直接由视图调用 StorageProvider。
@@ -26,7 +26,7 @@ public partial class VideoEncryptorView : UserControl
         // async void 点击处理器在等待系统窗口期间仍可再次收到点击事件，
         // 因此必须显式增加重入保护，保证一个视图实例最多存在一个文件选择窗口。
         if (_isFilePickerOpen || DataContext is not VideoEncryptorViewModel initiatingViewModel ||
-            initiatingViewModel.IsEncrypting)
+            initiatingViewModel.IsBusy)
         {
             return;
         }
@@ -42,8 +42,8 @@ public partial class VideoEncryptorView : UserControl
         {
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "选择要加密的视频文件",
-                AllowMultiple = false,
+                Title = "选择要加入加密队列的视频文件",
+                AllowMultiple = true,
                 FileTypeFilter =
                 [
                     new FilePickerFileType("视频文件")
@@ -59,16 +59,22 @@ public partial class VideoEncryptorView : UserControl
 
             // 系统对话框打开期间 Dock 可能切换或回收当前视图。
             // 只有 DataContext 仍然是发起请求的文档时才回写路径，避免污染另一个文档实例。
-            if (ReferenceEquals(DataContext, initiatingViewModel) && files.Count > 0 && files[0].Path.IsFile)
+            if (ReferenceEquals(DataContext, initiatingViewModel) && files.Count > 0)
             {
-                initiatingViewModel.SelectedFilePath = files[0].Path.LocalPath;
+                var paths = files
+                    .Where(file => file.Path.IsFile)
+                    .Select(file => file.Path.LocalPath)
+                    .ToArray();
+                await initiatingViewModel.AddFilesAsync(paths);
             }
         }
-        catch (Exception ex)
+        catch
         {
             if (ReferenceEquals(DataContext, initiatingViewModel))
             {
-                initiatingViewModel.StatusMessage = $"选择文件时出错: {ex.Message}";
+                // 系统文件选择器的原始异常可能包含实现路径。队列 UI 只显示稳定、安全提示，
+                // 详细异常保留给调试器，而不进入用户可复制的任务消息。
+                initiatingViewModel.StatusMessage = "选择文件失败，请重新打开文件选择器后重试。";
             }
         }
         finally

@@ -72,9 +72,23 @@ public sealed class VideoDecryptionService : IVideoDecryptionService
     public async Task<BatchDecryptionPreflightResult> PreflightAsync(
         IReadOnlyList<DecryptionCandidate> candidates,
         string outputDirectory,
+        CancellationToken cancellationToken = default) =>
+        await PreflightAsync(
+                candidates.Select(candidate =>
+                    new DecryptionQueueRequest(Guid.NewGuid(), candidate)).ToArray(),
+                outputDirectory,
+                OutputConflictPolicy.GenerateUniqueName,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async Task<BatchDecryptionPreflightResult> PreflightAsync(
+        IReadOnlyList<DecryptionQueueRequest> requests,
+        string outputDirectory,
+        OutputConflictPolicy conflictPolicy,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(candidates);
+        ArgumentNullException.ThrowIfNull(requests);
         var overallIssues = new List<VideoPreflightIssue>();
         if (string.IsNullOrWhiteSpace(outputDirectory))
         {
@@ -82,7 +96,7 @@ public sealed class VideoDecryptionService : IVideoDecryptionService
                 VideoTaskFailureCode.InvalidRequest,
                 "输出目录不能为空。",
                 "请选择一个已经存在的输出目录。"));
-            return EmptyPreflight(candidates, overallIssues);
+            return EmptyPreflight(requests, overallIssues);
         }
 
         var storage = await _storageProbe
@@ -90,14 +104,15 @@ public sealed class VideoDecryptionService : IVideoDecryptionService
             .ConfigureAwait(false);
         overallIssues.AddRange(storage.Issues);
         if (overallIssues.Any(issue => issue.Severity == PreflightSeverity.Blocking))
-            return EmptyPreflight(candidates, overallIssues, storage.AvailableBytes);
+            return EmptyPreflight(requests, overallIssues, storage.AvailableBytes);
 
         var allocatedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var items = new List<CandidateDecryptionPreflight>(candidates.Count);
+        var items = new List<CandidateDecryptionPreflight>(requests.Count);
         long cumulativeRequired = 0;
-        foreach (var candidate in candidates)
+        foreach (var request in requests)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var candidate = request.Candidate;
             var issues = new List<VideoPreflightIssue>();
             var outputPath = string.Empty;
             if (!candidate.IsValid)
@@ -113,16 +128,40 @@ public sealed class VideoDecryptionService : IVideoDecryptionService
             {
                 try
                 {
-                    outputPath = _outputPathResolver.GetAvailablePath(
+                    var resolution = _outputPathResolver.ResolvePath(
                         outputDirectory,
                         candidate,
+                        conflictPolicy,
                         allocatedPaths);
+                    outputPath = resolution.OutputPath;
+                    if (resolution.HadConflict && !resolution.IsResolved)
+                    {
+                        issues.Add(Blocking(
+                            VideoTaskFailureCode.OutputConflict,
+                            "计划输出与批次内其他项目或磁盘上的文件重名。",
+                            "更换输出目录，或明确选择“安全改名”后重新检查批次。"));
+                    }
+                    else if (resolution.HadConflict)
+                    {
+                        issues.Add(new VideoPreflightIssue(
+                            VideoTaskFailureCode.OutputConflict,
+                            PreflightSeverity.Warning,
+                            $"输出重名，计划使用“{Path.GetFileName(outputPath)}”。",
+                            "执行前请确认自动分配的最终文件名符合预期。"));
+                    }
                 }
-                catch (VideoTaskException ex)
+                catch (Exception ex) when (
+                    ex is VideoTaskException or ArgumentException or NotSupportedException or PathTooLongException)
                 {
-                    issues.Add(Blocking(ex.FailureCode, ex.Message, "更换输出目录后重试。"));
+                    var taskException = ex as VideoTaskException;
+                    issues.Add(Blocking(
+                        taskException?.FailureCode ?? VideoTaskFailureCode.InvalidRequest,
+                        taskException?.Message ?? "无法为解密视频分配有效输出路径。",
+                        "更换输出目录后重试。"));
                 }
 
+                // 所有解密项共享一个输出目录，因此累计空间按队列顺序计算。失败项仍保留其
+                // 声明长度用于稳定总体进度，但无效候选不会在此分支占用空间预算。
                 var itemLength = Math.Max(0, candidate.OriginalFileLength);
                 if (itemLength > long.MaxValue - cumulativeRequired)
                 {
@@ -146,6 +185,7 @@ public sealed class VideoDecryptionService : IVideoDecryptionService
             }
 
             items.Add(new CandidateDecryptionPreflight(
+                request.ItemId,
                 candidate,
                 outputPath,
                 new VideoPreflightResult(
@@ -157,6 +197,33 @@ public sealed class VideoDecryptionService : IVideoDecryptionService
         return new BatchDecryptionPreflightResult(
             new VideoPreflightResult(cumulativeRequired, storage.AvailableBytes, overallIssues),
             items);
+    }
+
+    /// <inheritdoc />
+    public async Task DecryptAsync(
+        CandidateDecryptionPreflight item,
+        string password,
+        IProgress<VideoTaskProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (string.IsNullOrWhiteSpace(password))
+            throw new VideoTaskException(VideoTaskFailureCode.InvalidRequest, "密码不能为空。");
+
+        var blocker = item.Result.Issues.FirstOrDefault(issue =>
+            issue.Severity == PreflightSeverity.Blocking);
+        if (blocker is not null)
+            throw new VideoTaskException(blocker.Code, blocker.Message);
+
+        // 密码只穿过当前调用链进入单文件解密器。输出路径来自不可变计划，但预检不是锁：
+        // 如果执行前目标被其他进程创建，OutputFileTransaction 仍会以 OutputConflict 失败。
+        await _decryptor.DecryptAsync(
+                item.Candidate.InputPath,
+                item.OutputPath,
+                password,
+                progress,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public async Task<BatchDecryptionResult> DecryptBatchAsync(
@@ -361,16 +428,17 @@ public sealed class VideoDecryptionService : IVideoDecryptionService
         new(path, encryptedName, string.Empty, string.Empty, string.Empty, 0, false, message, failureCode);
 
     private static BatchDecryptionPreflightResult EmptyPreflight(
-        IReadOnlyList<DecryptionCandidate> candidates,
+        IReadOnlyList<DecryptionQueueRequest> requests,
         IReadOnlyList<VideoPreflightIssue> overallIssues,
         long? availableBytes = null) =>
         new(
             new VideoPreflightResult(0, availableBytes, overallIssues),
-            candidates.Select(candidate => new CandidateDecryptionPreflight(
-                candidate,
+            requests.Select(request => new CandidateDecryptionPreflight(
+                request.ItemId,
+                request.Candidate,
                 string.Empty,
                 new VideoPreflightResult(
-                    Math.Max(0, candidate.OriginalFileLength),
+                    Math.Max(0, request.Candidate.OriginalFileLength),
                     availableBytes,
                     Array.Empty<VideoPreflightIssue>()))).ToArray());
 
