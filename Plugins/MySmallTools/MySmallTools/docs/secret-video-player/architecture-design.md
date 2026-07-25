@@ -151,6 +151,28 @@ OverlayLayer 不持有业务状态。
 单文件播放器不提供该端口。媒体库使用规范化绝对路径保存当前播放身份，相邻项始终从
 当前 `VisibleItems` 计算，密码不进入导航上下文或媒体结束事件。
 
+## 4.2 G7 媒体目录与用户数据流
+
+```mermaid
+flowchart LR
+    Watcher["FileSystemWatcher"] --> Channel["容量 512 的事件 Channel"]
+    Scanner["VideoLibraryScanner"] --> Catalog["VideoLibraryCatalogSession"]
+    Channel --> Catalog
+    Catalog --> Batch["不可变变化批次"]
+    Batch --> Browser["VideoLibraryBrowserViewModel"]
+    Browser --> Virtualized["范围集合 + 虚拟化列表"]
+    Session["播放快照"] --> History["PlaybackHistoryCoordinator"]
+    History --> Store["SecretVideoUserDataStore"]
+    Store --> Json["当前用户 JSON 原子提交"]
+```
+
+目录会话拥有 watcher、Channel 和重扫节流；浏览 ViewModel 只做可见投影。历史协调器是
+Document-scoped，只跟踪当前媒体代次；JSON 存储是 Singleton，并通过播放偏好、媒体库设置和
+播放历史三个窄接口暴露。FileId 在扫描阶段只作不可信索引，密码认证仍由播放加载链路完成。
+
+历史恢复使用 `LoadAtPositionAsync`，在播放操作门内提交媒体并 Seek，最终发布 Ready 而不调用
+Play。这样不会在 ViewModel 的 Load 与 Seek 两步之间插入另一个用户意图。
+
 ## 5. 部署与 backend 生命周期
 
 ```mermaid
@@ -337,8 +359,8 @@ flowchart LR
 
 | 生命周期 | 服务 |
 | --- | --- |
-| Singleton | `IPlaybackDeploymentProbe`、`LibVlcRuntime` |
-| Scoped | backend factory/代理/初始化端口、PlayerHost/SourceFactory 端口、NativeDispatcher、ResourceReaper、播放会话、播放器和媒体库 ViewModel、顺序队列运行器、加密/解密应用服务及任务 ViewModel |
+| Singleton | `IPlaybackDeploymentProbe`、`LibVlcRuntime`、三个窄用户数据接口共用的 `SecretVideoUserDataStore` |
+| Scoped | backend factory/代理/初始化端口、PlayerHost/SourceFactory 端口、NativeDispatcher、ResourceReaper、播放会话、目录会话、历史协调器、播放器和媒体库 ViewModel、顺序队列运行器、加密/解密应用服务及任务 ViewModel |
 | Transient | `IVideoLibraryScanner`、`IStoragePreflightProbe`、`IOutputFileTransactionFactory`、输出冲突解析器、`ISecvid03Encryptor`、`ISecvid03Decryptor`、`DecryptionOutputPathResolver` |
 
 四个 Document Strategy 分别创建单文件播放器、文件夹媒体库、视频加密器和批量解密器。所有策略都通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建 Document；宿主维护 `Document → IServiceScope` 映射，并在 Dock 确认关闭或宿主退出时释放。

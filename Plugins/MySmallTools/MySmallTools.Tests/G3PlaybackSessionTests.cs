@@ -16,6 +16,25 @@ namespace MySmallTools.Tests;
 public sealed class G3PlaybackSessionTests
 {
     [Fact]
+    public async Task LoadAtPosition_AtomicallyRestoresWithoutStartingPlayback()
+    {
+        var source = new FakeSource(1);
+        using var rig = new TestRig(
+            new FakeSourceFactory((_, _) => Task.FromResult<IPlaybackMediaSource>(source)));
+
+        var result = await rig.Session.LoadAtPositionAsync(
+            "history.secvid",
+            "password",
+            4_000);
+
+        Assert.True(result.Success);
+        Assert.Equal(PlaybackState.Ready, rig.Session.Snapshot.State);
+        Assert.Equal(4_000, rig.Session.Snapshot.PositionMs);
+        Assert.False(rig.Host.IsPlaying);
+        Assert.Equal(0, source.PrepareCalls);
+    }
+
+    [Fact]
     public async Task FailedCandidate_DoesNotReplaceCurrentMedia()
     {
         var first = new FakeSource(1);

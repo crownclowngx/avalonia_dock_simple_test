@@ -105,22 +105,61 @@ internal sealed class SecureVideoPlayer :
     public MediaPlayer? MediaPlayer =>
         Volatile.Read(ref _disposeState) == 0 ? _playerHost.NativePlayer : null;
 
+    public void ApplyInitialPreferences(int volume, float rate)
+    {
+        ThrowIfDisposed();
+        SetVolume(Math.Clamp(volume, 0, 100));
+        if (SupportedRates.Any(candidate => Math.Abs(candidate - rate) < 0.0001f))
+        {
+            _desiredRate = rate;
+            UpdateControls(_controls with { Rate = rate });
+        }
+    }
+
     public Task<PlaybackOperationResult> LoadAsync(
         string filePath,
         string password,
         CancellationToken cancellationToken = default) =>
-        SwitchMediaAsync(filePath, password, startPlayback: false, cancellationToken);
+        SwitchMediaAsync(
+            filePath,
+            password,
+            startPlayback: false,
+            initialPositionMs: 0,
+            expectedIdentity: null,
+            cancellationToken);
+
+    public Task<PlaybackOperationResult> LoadAtPositionAsync(
+        string filePath,
+        string password,
+        long positionMs,
+        PlaybackMediaIdentity? expectedIdentity = null,
+        CancellationToken cancellationToken = default) =>
+        SwitchMediaAsync(
+            filePath,
+            password,
+            startPlayback: false,
+            initialPositionMs: Math.Max(0, positionMs),
+            expectedIdentity,
+            cancellationToken);
 
     public Task<PlaybackOperationResult> LoadAndPlayAsync(
         string filePath,
         string password,
         CancellationToken cancellationToken = default) =>
-        SwitchMediaAsync(filePath, password, startPlayback: true, cancellationToken);
+        SwitchMediaAsync(
+            filePath,
+            password,
+            startPlayback: true,
+            initialPositionMs: 0,
+            expectedIdentity: null,
+            cancellationToken);
 
     private async Task<PlaybackOperationResult> SwitchMediaAsync(
         string filePath,
         string password,
         bool startPlayback,
+        long initialPositionMs,
+        PlaybackMediaIdentity? expectedIdentity,
         CancellationToken cancellationToken)
     {
         using var diagnostics = PlaybackPerformanceDiagnostics.Begin(
@@ -221,6 +260,71 @@ internal sealed class SecureVideoPlayer :
                         committed,
                         token)
                     .ConfigureAwait(false);
+
+                if (!startPlayback &&
+                    initialPositionMs > 0 &&
+                    (expectedIdentity is null || committed.Identity == expectedIdentity))
+                {
+                    try
+                    {
+                        if (_playerHost.IsSeekable)
+                        {
+                            var maximum = Math.Max(0, _playerHost.DurationMs - 250);
+                            var target = Math.Clamp(initialPositionMs, 0, maximum);
+                            await _nativeDispatcher.InvokeAsync(
+                                    "restore-history-position",
+                                    async nativeToken =>
+                                    {
+                                        await _playerHost.SeekAsync(
+                                                target,
+                                                waitForFrame: false,
+                                                nativeToken)
+                                            .ConfigureAwait(false);
+                                        return true;
+                                    },
+                                    token)
+                                .ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            controlFailure = new PlaybackFailure(
+                                PlaybackFailureCode.ControlUnavailable,
+                                "当前媒体不支持恢复历史位置，已从头加载。");
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch
+                    {
+                        // 历史是可丢弃的体验数据。媒体已经通过认证并完成提交后，定位失败
+                        // 不应回滚到旧媒体，更不应把可播放媒体误报为加载失败。
+                        controlFailure = new PlaybackFailure(
+                            PlaybackFailureCode.ControlUnavailable,
+                            "历史位置恢复失败，已从头加载。");
+                        try
+                        {
+                            await _nativeDispatcher.InvokeAsync(
+                                    "reset-history-position",
+                                    async nativeToken =>
+                                    {
+                                        await _playerHost.SeekAsync(
+                                                0,
+                                                waitForFrame: false,
+                                                nativeToken)
+                                            .ConfigureAwait(false);
+                                        return true;
+                                    },
+                                    token)
+                                .ConfigureAwait(false);
+                        }
+                        catch
+                        {
+                            // 回退 Seek 仍失败时保持 Ready；用户稍后仍可尝试正常播放。
+                        }
+                    }
+                }
                 PublishCurrent(
                     PlaybackState.Ready,
                     PlaybackActivity.AttachingCandidate,
@@ -1393,7 +1497,8 @@ internal sealed class SecureVideoPlayer :
             _playerHost.VideoTrackCount,
             _playerHost.AudioTrackCount,
             _controls,
-            activity);
+            activity,
+            source.Identity);
         lock (_snapshotSync)
         {
             _snapshot = snapshot;

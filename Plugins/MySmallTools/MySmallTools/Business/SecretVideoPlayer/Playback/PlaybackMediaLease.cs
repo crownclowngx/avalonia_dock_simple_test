@@ -90,6 +90,7 @@ internal interface IPlaybackMediaSource : IDisposable
 {
     long Generation { get; }
     Media NativeMedia { get; }
+    PlaybackMediaIdentity? Identity => null;
     event Action<IPlaybackMediaSource, PlaybackFailure>? Failed;
     void PrepareForPlayback();
     void RequestStop();
@@ -569,6 +570,7 @@ internal sealed class LibVlcPlaybackMediaSource : IPlaybackMediaSource
 
     public long Generation { get; }
     public Media NativeMedia => _media;
+    public PlaybackMediaIdentity? Identity => _input.MediaIdentity;
     public event Action<IPlaybackMediaSource, PlaybackFailure>? Failed;
 
     public void PrepareForPlayback() => _input.PrepareForPlayback();

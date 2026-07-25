@@ -123,6 +123,8 @@ public sealed class SeekableEncryptedVideoStream : Stream
     public override bool CanSeek => !_disposed;
     public override bool CanWrite => false;
     public override long Length { get { ThrowIfDisposed(); return _header.OriginalFileLength; } }
+    internal string FileId => Convert.ToHexString(_header.FileId);
+    internal long OriginalFileLength => _header.OriginalFileLength;
     public override long Position
     {
         get { ThrowIfDisposed(); return _position; }

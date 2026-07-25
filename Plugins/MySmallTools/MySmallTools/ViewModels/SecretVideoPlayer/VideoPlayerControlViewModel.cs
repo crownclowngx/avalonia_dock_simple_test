@@ -2,6 +2,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LibVLCSharp.Shared;
+using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.Constants.SecretVideoPlayer;
 
@@ -16,6 +17,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     private readonly ILibVlcVideoOutputSource _outputSource;
     private readonly IPlaybackDeploymentProbe _deploymentProbe;
     private readonly IPlaybackBackendInitializer _backendInitializer;
+    private readonly IPlaybackPreferenceStore? _preferenceStore;
     private readonly DispatcherTimer _positionTimer;
     private CancellationTokenSource? _surfaceAttachmentCancellation;
     private VideoSurfaceToken _surface;
@@ -72,7 +74,8 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         ISecureVideoPlaybackSession session,
         ILibVlcVideoOutputSource outputSource,
         IPlaybackDeploymentProbe deploymentProbe,
-        IPlaybackBackendInitializer backendInitializer)
+        IPlaybackBackendInitializer backendInitializer,
+        IPlaybackPreferenceStore? preferenceStore = null)
     {
         _session = session ?? throw new ArgumentNullException(nameof(session));
         _outputSource = outputSource ?? throw new ArgumentNullException(nameof(outputSource));
@@ -80,9 +83,13 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
                            throw new ArgumentNullException(nameof(deploymentProbe));
         _backendInitializer = backendInitializer ??
                               throw new ArgumentNullException(nameof(backendInitializer));
+        _preferenceStore = preferenceStore;
         _session.Changed += OnPlaybackChanged;
         _outputSource.OutputChanged += OnNativeOutputChanged;
-        _session.SetVolume(50);
+        var preferences = preferenceStore?.CurrentPreferences ?? PlaybackPreferences.Default;
+        _session.ApplyInitialPreferences(preferences.Volume, preferences.Rate);
+        Volume = preferences.Volume;
+        SelectedRate = preferences.Rate;
 
         _positionTimer = new DispatcherTimer
         {
@@ -104,6 +111,9 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         if (!_disposed && !IsMediaTransitioning)
         {
             _session.SetVolume((int)value);
+            _preferenceStore?.UpdatePreferences(new PlaybackPreferences(
+                (int)Math.Clamp(value, 0, 100),
+                SelectedRate));
         }
     }
 
@@ -258,7 +268,35 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         string filePath,
         string password,
         CancellationToken cancellationToken = default) =>
-        SwitchMediaAsync(filePath, password, startPlayback: false, cancellationToken);
+        SwitchMediaAsync(
+            filePath,
+            password,
+            startPlayback: false,
+            initialPositionMs: 0,
+            expectedIdentity: null,
+            cancellationToken);
+
+    /// <summary>
+    /// 加载并恢复历史位置但不播放；真正的加载与 Seek 由播放会话作为一个原子意图执行。
+    /// </summary>
+    public Task<bool> LoadMediaAtPositionAsync(
+        string filePath,
+        string password,
+        long positionMs,
+        string? expectedFileId = null,
+        long expectedOriginalFileLength = 0,
+        CancellationToken cancellationToken = default) =>
+        SwitchMediaAsync(
+            filePath,
+            password,
+            startPlayback: false,
+            initialPositionMs: Math.Max(0, positionMs),
+            string.IsNullOrWhiteSpace(expectedFileId)
+                ? null
+                : new PlaybackMediaIdentity(
+                    expectedFileId,
+                    expectedOriginalFileLength),
+            cancellationToken);
 
     public Task<bool> LoadAndPlayMediaAsync(string filePath, string password) =>
         LoadAndPlayMediaAsync(filePath, password, CancellationToken.None);
@@ -267,7 +305,13 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         string filePath,
         string password,
         CancellationToken cancellationToken) =>
-        SwitchMediaAsync(filePath, password, startPlayback: true, cancellationToken);
+        SwitchMediaAsync(
+            filePath,
+            password,
+            startPlayback: true,
+            initialPositionMs: 0,
+            expectedIdentity: null,
+            cancellationToken);
 
     public async Task CleanupMediaAsync(CancellationToken cancellationToken = default)
     {
@@ -309,6 +353,12 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         CancellationToken cancellationToken = default)
     {
         var result = await _session.SetRateAsync(rate, cancellationToken);
+        if (result.Success)
+        {
+            _preferenceStore?.UpdatePreferences(new PlaybackPreferences(
+                (int)Math.Clamp(Volume, 0, 100),
+                rate));
+        }
         ApplyFailure(result);
         return result;
     }
@@ -390,6 +440,8 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         string filePath,
         string password,
         bool startPlayback,
+        long initialPositionMs,
+        PlaybackMediaIdentity? expectedIdentity,
         CancellationToken cancellationToken)
     {
         if (!IsPlaybackAvailable)
@@ -409,7 +461,14 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         // 意外启动新媒体；组合接口用同一个代次令牌保证“认证、提交、启动”不可被拆开。
         var result = startPlayback
             ? await _session.LoadAndPlayAsync(filePath, password, cancellationToken)
-            : await _session.LoadAsync(filePath, password, cancellationToken);
+            : initialPositionMs > 0
+                ? await _session.LoadAtPositionAsync(
+                    filePath,
+                    password,
+                    initialPositionMs,
+                    expectedIdentity,
+                    cancellationToken)
+                : await _session.LoadAsync(filePath, password, cancellationToken);
         ApplyFailure(result);
         if (result.Success)
         {

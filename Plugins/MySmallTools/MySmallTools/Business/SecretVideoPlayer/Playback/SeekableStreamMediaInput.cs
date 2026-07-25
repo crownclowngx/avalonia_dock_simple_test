@@ -32,8 +32,16 @@ public sealed class SeekableStreamMediaInput : MediaInput
         }
 
         _stream = stream;
+        if (stream is SeekableEncryptedVideoStream encrypted)
+        {
+            MediaIdentity = new PlaybackMediaIdentity(
+                encrypted.FileId,
+                encrypted.OriginalFileLength);
+        }
         CanSeek = true;
     }
+
+    internal PlaybackMediaIdentity? MediaIdentity { get; }
 
     /// <summary>
     /// 一次性取得原生回调边界内的首个类型化失败。

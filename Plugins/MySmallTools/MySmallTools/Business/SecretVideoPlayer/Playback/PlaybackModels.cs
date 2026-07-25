@@ -56,6 +56,9 @@ public sealed record PlaybackFailure(
     string? SuggestedAction = null,
     string? DiagnosticCode = null);
 
+/// <summary>密码认证成功后从固定头取得的非敏感媒体身份。</summary>
+public sealed record PlaybackMediaIdentity(string FileId, long OriginalFileLength);
+
 /// <summary>播放操作的统一返回值。</summary>
 public readonly record struct PlaybackOperationResult(
     bool Success,
@@ -163,7 +166,8 @@ public sealed record PlaybackSnapshot(
     int VideoTrackCount,
     int AudioTrackCount,
     PlaybackControlSnapshot Controls,
-    PlaybackActivity Activity)
+    PlaybackActivity Activity,
+    PlaybackMediaIdentity? MediaIdentity = null)
 {
     public static PlaybackSnapshot Empty { get; } = new(
         0,
@@ -180,7 +184,8 @@ public sealed record PlaybackSnapshot(
         0,
         0,
         PlaybackControlSnapshot.Empty,
-        PlaybackActivity.Idle);
+        PlaybackActivity.Idle,
+        null);
 }
 
 /// <summary>携带媒体代次的统一播放通知。</summary>
@@ -203,10 +208,43 @@ public interface ISecureVideoPlaybackSession : IDisposable
 
     PlaybackSnapshot Snapshot { get; }
 
+    /// <summary>
+    /// 在首次媒体加载前设置当前 Document 的初始音量和倍速。
+    /// </summary>
+    /// <remarks>
+    /// 该入口只初始化会话内偏好，不启动原生播放器，也不把存储职责引入播放服务。
+    /// </remarks>
+    void ApplyInitialPreferences(int volume, float rate)
+    {
+        SetVolume(volume);
+    }
+
     Task<PlaybackOperationResult> LoadAsync(
         string filePath,
         string password,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 在同一媒体切换事务中加载并定位，但不启动播放。
+    /// </summary>
+    /// <remarks>
+    /// 默认实现仅用于兼容既有测试替身；生产实现必须覆盖该方法，把提交和 Seek 放在同一个
+    /// 操作门内，避免两次调用之间被新的播放意图插入。
+    /// </remarks>
+    async Task<PlaybackOperationResult> LoadAtPositionAsync(
+        string filePath,
+        string password,
+        long positionMs,
+        PlaybackMediaIdentity? expectedIdentity = null,
+        CancellationToken cancellationToken = default)
+    {
+        var loaded = await LoadAsync(filePath, password, cancellationToken);
+        if (!loaded.Success || positionMs <= 0)
+            return loaded;
+        if (expectedIdentity is not null && Snapshot.MediaIdentity != expectedIdentity)
+            return loaded;
+        return await SeekAsync(positionMs, waitForFrame: false, cancellationToken);
+    }
 
     /// <summary>
     /// 在同一次媒体切换事务中完成候选验证、提交和启动播放。

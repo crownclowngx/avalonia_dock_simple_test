@@ -16,7 +16,8 @@ public sealed record EncryptedVideoPublicInfo(
     string OriginalExtension,
     string Title,
     string Description,
-    long OriginalFileLength);
+    long OriginalFileLength,
+    string FileId);
 
 /// <summary>
 /// 提供 SECVID03 公开信息的读取、校验和原地更新能力。
@@ -64,7 +65,8 @@ public static class EncryptedVideoContainer
             header.OriginalExtension,
             title,
             description,
-            header.OriginalFileLength);
+            header.OriginalFileLength,
+            Convert.ToHexString(header.FileId));
     }
 
     /// <summary>

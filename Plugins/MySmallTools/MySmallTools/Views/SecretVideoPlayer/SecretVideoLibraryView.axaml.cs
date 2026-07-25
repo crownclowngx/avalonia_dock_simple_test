@@ -1,7 +1,9 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 
 namespace MySmallTools.Views.SecretVideoPlayer;
@@ -13,6 +15,22 @@ public partial class SecretVideoLibraryView : UserControl
     public SecretVideoLibraryView()
     {
         InitializeComponent();
+        AttachedToVisualTree += OnAttachedToVisualTree;
+    }
+
+    private async void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (DataContext is not SecretVideoLibraryViewModel viewModel)
+            return;
+        try
+        {
+            await viewModel.InitializeAsync();
+        }
+        catch
+        {
+            if (ReferenceEquals(DataContext, viewModel))
+                viewModel.StatusMessage = "恢复最近媒体目录失败，请重新选择文件夹";
+        }
     }
 
     private async void OnBrowseFolderClick(object? sender, RoutedEventArgs e)

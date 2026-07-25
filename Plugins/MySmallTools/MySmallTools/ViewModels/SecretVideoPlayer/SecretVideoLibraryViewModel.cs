@@ -4,6 +4,7 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
+using MySmallTools.Business.SecretVideoPlayer.Library;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer;
 
@@ -20,6 +21,11 @@ public partial class SecretVideoLibraryViewModel :
     private CancellationTokenSource? _playCancellation;
     private CancellationTokenSource? _autoAdvanceCancellation;
     private long _lastHandledEndedGeneration;
+    private readonly IPlaybackHistoryStore? _historyStore;
+    private readonly IVideoLibrarySettingsStore? _settingsStore;
+    private readonly PlaybackHistoryCoordinator? _historyCoordinator;
+    private readonly ISecretVideoUserDataDiagnostics? _userDataDiagnostics;
+    private int _initializeState;
 
     [ObservableProperty] private string _password = string.Empty;
     [ObservableProperty] private bool _showPassword;
@@ -28,6 +34,7 @@ public partial class SecretVideoLibraryViewModel :
     [ObservableProperty] private string _statusMessage = "请选择文件夹并输入公共密码";
     [ObservableProperty] private string _currentPlayingPath = string.Empty;
     [ObservableProperty] private bool _isContinuousPlaybackEnabled;
+    [ObservableProperty] private bool _showClearHistoryConfirmation;
 
     public VideoLibraryBrowserViewModel Browser { get; }
     public VideoPlayerControlViewModel PlayerViewModel { get; }
@@ -47,10 +54,19 @@ public partial class SecretVideoLibraryViewModel :
 
     public SecretVideoLibraryViewModel(
         VideoLibraryBrowserViewModel browser,
-        VideoPlayerControlViewModel playerViewModel)
+        VideoPlayerControlViewModel playerViewModel,
+        IPlaybackHistoryStore? historyStore = null,
+        IVideoLibrarySettingsStore? settingsStore = null,
+        PlaybackHistoryCoordinator? historyCoordinator = null,
+        ISecretVideoUserDataDiagnostics? userDataDiagnostics = null)
     {
         Browser = browser ?? throw new ArgumentNullException(nameof(browser));
         PlayerViewModel = playerViewModel ?? throw new ArgumentNullException(nameof(playerViewModel));
+        _historyStore = historyStore;
+        _settingsStore = settingsStore;
+        _historyCoordinator = historyCoordinator;
+        _userDataDiagnostics = userDataDiagnostics;
+        IsLibraryPaneOpen = settingsStore?.CurrentSettings.IsLibraryPaneOpen ?? true;
         Browser.PropertyChanged += OnBrowserPropertyChanged;
         ((INotifyCollectionChanged)Browser.VisibleItems).CollectionChanged += OnVisibleItemsChanged;
         PlayerViewModel.MediaEnded += OnMediaEnded;
@@ -69,6 +85,24 @@ public partial class SecretVideoLibraryViewModel :
             // 只取消自动推进，不打断用户手动发起的媒体切换。
             TryCancel(Interlocked.Exchange(ref _autoAdvanceCancellation, null));
         }
+    }
+
+    partial void OnIsLibraryPaneOpenChanged(bool value)
+    {
+        if (_settingsStore is null)
+            return;
+        _settingsStore.UpdateSettings(
+            _settingsStore.CurrentSettings with { IsLibraryPaneOpen = value });
+    }
+
+    /// <summary>由 View 首次附加时调用一次，恢复最近目录但不加载或播放媒体。</summary>
+    public async Task InitializeAsync()
+    {
+        if (Interlocked.Exchange(ref _initializeState, 1) != 0)
+            return;
+        if (!string.IsNullOrWhiteSpace(_userDataDiagnostics?.LoadWarning))
+            StatusMessage = _userDataDiagnostics.LoadWarning;
+        await Browser.InitializeRecentFolderAsync();
     }
 
     /// <summary>
@@ -134,11 +168,49 @@ public partial class SecretVideoLibraryViewModel :
     [RelayCommand]
     private void TogglePasswordVisibility() => ShowPassword = !ShowPassword;
 
+    [RelayCommand(CanExecute = nameof(CanClearSelectedHistory))]
+    private void ClearSelectedHistory()
+    {
+        var item = Browser.SelectedItem;
+        if (item is null || _historyStore is null)
+            return;
+        if (string.Equals(
+                item.FilePath,
+                CurrentPlayingPath,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            _historyCoordinator?.SuppressCurrentGeneration();
+        }
+        _historyStore.Remove(item.FilePath, item.FileId, item.OriginalFileLength);
+        StatusMessage = "已清除所选视频的播放历史";
+    }
+
+    private bool CanClearSelectedHistory() =>
+        !_disposed &&
+        _historyStore is not null &&
+        Browser.SelectedItem is { HistoryState: not VideoPlaybackHistoryState.Unplayed };
+
+    [RelayCommand]
+    private void RequestClearAllHistory() => ShowClearHistoryConfirmation = true;
+
+    [RelayCommand]
+    private void CancelClearAllHistory() => ShowClearHistoryConfirmation = false;
+
+    [RelayCommand]
+    private void ConfirmClearAllHistory()
+    {
+        _historyCoordinator?.SuppressCurrentGeneration();
+        _historyStore?.Clear();
+        ShowClearHistoryConfirmation = false;
+        StatusMessage = "已清空全部播放历史";
+    }
+
     private void OnBrowserPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(VideoLibraryBrowserViewModel.SelectedItem))
         {
             PlaySelectedCommand.NotifyCanExecuteChanged();
+            ClearSelectedHistoryCommand.NotifyCanExecuteChanged();
         }
 
         if (e.PropertyName is nameof(VideoLibraryBrowserViewModel.SearchText) or
@@ -200,6 +272,7 @@ public partial class SecretVideoLibraryViewModel :
         }
 
         Browser.SelectedItem = item;
+        _historyCoordinator?.FlushCurrent();
         var generation = Interlocked.Increment(ref _playGeneration);
         var cancellation = new CancellationTokenSource();
         var previous = Interlocked.Exchange(ref _playCancellation, cancellation);
@@ -217,10 +290,25 @@ public partial class SecretVideoLibraryViewModel :
         StatusMessage = $"正在验证密码并打开 {item.DisplayName}...";
         try
         {
-            var success = await PlayerViewModel.LoadAndPlayMediaAsync(
+            var history = _historyStore?.Find(
                 item.FilePath,
-                Password,
-                cancellation.Token);
+                item.FileId,
+                item.OriginalFileLength);
+            var restorePosition = history is { IsCompleted: false }
+                ? history.PositionMs
+                : 0;
+            var success = origin == PlaybackRequestOrigin.UserSelection
+                ? await PlayerViewModel.LoadMediaAtPositionAsync(
+                    item.FilePath,
+                    Password,
+                    restorePosition,
+                    item.FileId,
+                    item.OriginalFileLength,
+                    cancellation.Token)
+                : await PlayerViewModel.LoadAndPlayMediaAsync(
+                    item.FilePath,
+                    Password,
+                    cancellation.Token);
             if (_disposed || generation != Volatile.Read(ref _playGeneration))
             {
                 return;
@@ -230,7 +318,31 @@ public partial class SecretVideoLibraryViewModel :
             {
                 // 路径是当前播放身份；密码和 Item 引用都不进入导航状态。
                 CurrentPlayingPath = Path.GetFullPath(item.FilePath);
-                StatusMessage = $"正在播放 {item.DisplayName}";
+                var authenticatedIdentity =
+                    PlayerViewModel.PlaybackSnapshot.MediaIdentity;
+                var trackedSource = authenticatedIdentity is null
+                    ? item.Source
+                    : item.Source with
+                    {
+                        FileId = authenticatedIdentity.FileId,
+                        OriginalFileLength = authenticatedIdentity.OriginalFileLength
+                    };
+                _historyCoordinator?.Track(
+                    trackedSource,
+                    PlayerViewModel.PlaybackSnapshot.MediaGeneration);
+                var restored = restorePosition > 0 &&
+                               authenticatedIdentity is not null &&
+                               string.Equals(
+                                   authenticatedIdentity.FileId,
+                                   item.FileId,
+                                   StringComparison.OrdinalIgnoreCase) &&
+                               authenticatedIdentity.OriginalFileLength ==
+                               item.OriginalFileLength;
+                StatusMessage = origin == PlaybackRequestOrigin.UserSelection
+                    ? restored
+                        ? $"已恢复到上次位置，按播放键继续 {item.DisplayName}"
+                        : $"已加载 {item.DisplayName}，按播放键开始"
+                    : $"正在播放 {item.DisplayName}";
             }
             else
             {

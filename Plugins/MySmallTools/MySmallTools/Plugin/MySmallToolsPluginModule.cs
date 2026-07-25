@@ -51,8 +51,23 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddScoped<VideoPlayerControlViewModel>();
         services.AddScoped<SecretVideoPlayerViewModel>();
 
-        // 文件夹浏览只读取公开区；扫描器无跨调用状态，浏览和密码状态则严格属于单个 Document。
+        // 用户数据文件是进程级唯一事实源；三个接口映射同一实例，既保证并发写入串行，
+        // 又让播放器、媒体库设置和历史协调器只依赖各自需要的窄契约。
+        services.AddSingleton<SecretVideoUserDataStore>();
+        services.AddSingleton<IPlaybackPreferenceStore>(provider =>
+            provider.GetRequiredService<SecretVideoUserDataStore>());
+        services.AddSingleton<IVideoLibrarySettingsStore>(provider =>
+            provider.GetRequiredService<SecretVideoUserDataStore>());
+        services.AddSingleton<IPlaybackHistoryStore>(provider =>
+            provider.GetRequiredService<SecretVideoUserDataStore>());
+        services.AddSingleton<ISecretVideoUserDataDiagnostics>(provider =>
+            provider.GetRequiredService<SecretVideoUserDataStore>());
+
+        // 目录会话和历史跟踪都属于 Document：关闭标签页必须终止 watcher、Channel
+        // 和位置订阅。扫描器本身无跨调用状态，仍保持 transient。
         services.AddTransient<IVideoLibraryScanner, VideoLibraryScanner>();
+        services.AddScoped<IVideoLibraryCatalogSession, VideoLibraryCatalogSession>();
+        services.AddScoped<PlaybackHistoryCoordinator>();
         services.AddScoped<VideoLibraryBrowserViewModel>();
         services.AddScoped<SecretVideoLibraryViewModel>();
 
