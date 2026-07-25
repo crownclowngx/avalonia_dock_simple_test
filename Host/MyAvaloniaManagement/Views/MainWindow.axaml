@@ -32,8 +32,16 @@
                    VerticalAlignment="Center"
                    VerticalContentAlignment="Center" />
         </Panel>
-        <Panel Margin="{Binding #MainWindowView.WindowDecorationMargin}">
+        <Grid Margin="{Binding #MainWindowView.WindowDecorationMargin}">
             <views:MainView />
-        </Panel>
+            <Border x:Name="ContentFullscreenLayer"
+                    IsVisible="False"
+                    Background="Black"
+                    ZIndex="10000">
+                <ContentControl x:Name="ContentFullscreenHost"
+                                HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Stretch" />
+            </Border>
+        </Grid>
     </Panel>
 </Window>

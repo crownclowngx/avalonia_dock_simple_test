@@ -80,11 +80,11 @@
     <Border Grid.Row="4" Classes="TaskFooter" Padding="4,5,4,0">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4">
-          <Button Content="⏮"
+          <Button Content="⏮ 上一项"
                   Command="{Binding #PlayerRoot.NavigationContext.PreviousCommand}"
                   IsVisible="{Binding #PlayerRoot.HasNavigationContext}"
                   IsEnabled="{Binding #PlayerRoot.NavigationContext.CanNavigatePrevious}"
-                  Classes="IconButton" ToolTip.Tip="播放当前筛选列表中的上一项"
+                  Classes="CompactButton" ToolTip.Tip="播放当前筛选列表中的上一项"
                   AutomationProperties.Name="上一项" />
           <Button Content="▶" Command="{Binding PlayCommand}" IsVisible="{Binding !IsPlaying}"
                   Classes="IconButton" ToolTip.Tip="播放" AutomationProperties.Name="播放" />
@@ -92,12 +92,23 @@
                   Classes="IconButton" ToolTip.Tip="暂停" AutomationProperties.Name="暂停" />
           <Button Content="■" Command="{Binding StopCommand}" Classes="IconButton"
                   ToolTip.Tip="停止" AutomationProperties.Name="停止" />
-          <Button Content="⏭"
+          <Button Content="下一项 ⏭"
                   Command="{Binding #PlayerRoot.NavigationContext.NextCommand}"
                   IsVisible="{Binding #PlayerRoot.HasNavigationContext}"
                   IsEnabled="{Binding #PlayerRoot.NavigationContext.CanNavigateNext}"
-                  Classes="IconButton" ToolTip.Tip="播放当前筛选列表中的下一项"
+                  Classes="CompactButton" ToolTip.Tip="播放当前筛选列表中的下一项"
                   AutomationProperties.Name="下一项" />
+          <CheckBox Content="连续播放"
+                    IsVisible="{Binding #PlayerRoot.HasNavigationContext}"
+                    IsChecked="{Binding #PlayerRoot.NavigationContext.IsContinuousPlaybackEnabled}"
+                    VerticalAlignment="Center"
+                    Margin="8,0,0,0"
+                    ToolTip.Tip="自然播放结束后播放当前筛选列表中的下一项；列表末尾停止"
+                    AutomationProperties.Name="连续播放" />
+          <TextBlock Text="（末尾停止）"
+                     IsVisible="{Binding #PlayerRoot.HasNavigationContext}"
+                     VerticalAlignment="Center"
+                     Classes="Caption" />
         </StackPanel>
 
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -115,7 +126,7 @@
     </Border>
 
     <Border Grid.Row="5" Classes="TaskFooter" Padding="4,2,4,5">
-      <Grid ColumnDefinitions="Auto,120,Auto,*,Auto,*,Auto" ColumnSpacing="6">
+      <Grid ColumnDefinitions="Auto,120,Auto,*,Auto,*" ColumnSpacing="6">
         <TextBlock Grid.Column="0" Text="倍速" Classes="Caption"
                    VerticalAlignment="Center" />
         <ComboBox Grid.Column="1"
@@ -158,13 +169,6 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
 
-        <CheckBox Grid.Column="6"
-                  Content="连续播放"
-                  IsVisible="{Binding #PlayerRoot.HasNavigationContext}"
-                  IsChecked="{Binding #PlayerRoot.NavigationContext.IsContinuousPlaybackEnabled}"
-                  VerticalAlignment="Center"
-                  ToolTip.Tip="自然播放结束后播放当前筛选列表中的下一项；列表末尾停止"
-                  AutomationProperties.Name="连续播放" />
       </Grid>
     </Border>
   </Grid>

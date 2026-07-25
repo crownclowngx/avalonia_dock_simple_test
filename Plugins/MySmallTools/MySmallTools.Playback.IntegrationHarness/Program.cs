@@ -5,20 +5,24 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagementCommon.Presentation;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.Constants;
 using MySmallTools.Plugin;
 using MySmallTools.ViewModels.SecretVideoPlayer;
+using MySmallTools.Views.SecretVideoPlayer;
 
 namespace MySmallTools.Playback.IntegrationHarness;
 
@@ -135,12 +139,22 @@ internal sealed class G3PlaybackHarnessRunner(
             await MeasureStageAsync(
                 "functionalMatrix",
                 () => RunFunctionalMatrixAsync(
+                    mainWindow,
                     mainViewModel,
                     factory,
                     documentDock,
                     placeholder,
                     assets,
                     placeholderResources));
+
+            await MeasureStageAsync(
+                "libraryPresentation",
+                () => VerifyLibraryPresentationAsync(
+                    mainWindow,
+                    mainViewModel,
+                    factory,
+                    documentDock,
+                    placeholder));
 
             await MeasureStageAsync(
                 "lifecycleStress",
@@ -213,6 +227,7 @@ internal sealed class G3PlaybackHarnessRunner(
     }
 
     private async Task RunFunctionalMatrixAsync(
+        Window mainWindow,
         MainWindowViewModel mainViewModel,
         ManagementFactory factory,
         DocumentDock documentDock,
@@ -294,7 +309,7 @@ internal sealed class G3PlaybackHarnessRunner(
             "关闭字幕后控制快照未记录 -1。");
 
         // G6 的内容区全屏复用同一个 PlayerShell。真实窗口中完成一次进出，验证
-        // OverlayLayer 迁移没有替换 Document 级 MediaPlayer，也没有丢失 HWND 恢复链路。
+        // 宿主全屏承载没有替换 Document 级 MediaPlayer，也没有丢失 HWND 恢复链路。
         Require(
             document.PlayerViewModel.ToggleFullscreenCommand.CanExecute(null),
             "真实媒体加载后全屏命令不可用。");
@@ -307,6 +322,25 @@ internal sealed class G3PlaybackHarnessRunner(
         Require(
             ReferenceEquals(documentPlayer, document.PlayerViewModel.MediaPlayer),
             "进入全屏替换了 Document 级 MediaPlayer。");
+        var fullscreenLayer = mainWindow.GetVisualDescendants()
+            .OfType<Border>()
+            .SingleOrDefault(control => control.Name == "ContentFullscreenLayer");
+        Require(fullscreenLayer is not null, "宿主没有创建内容区全屏承载层。");
+        if (fullscreenLayer is not null)
+        {
+            var fullscreenParent = fullscreenLayer.GetVisualParent() as Control;
+            Require(fullscreenLayer.IsVisible, "进入全屏后宿主承载层不可见。");
+            Require(
+                fullscreenParent is not null &&
+                Math.Abs(fullscreenLayer.Bounds.Width - fullscreenParent.Bounds.Width) <= 1 &&
+                Math.Abs(fullscreenLayer.Bounds.Height - fullscreenParent.Bounds.Height) <= 1,
+                $"全屏承载层未铺满窗口内容区: layer={fullscreenLayer.Bounds.Size}, " +
+                $"parent={fullscreenParent?.Bounds.Size}。");
+        }
+        Require(
+            mainWindow is IWindowContentFullscreenHost host &&
+            !host.TryRestore(new object()),
+            "非占用者错误地释放了窗口内容区全屏。");
         document.PlayerViewModel.ToggleFullscreenCommand.Execute(null);
         await WaitUntilAsync(
             () => !document.PlayerViewModel.IsFullscreen &&
@@ -314,6 +348,9 @@ internal sealed class G3PlaybackHarnessRunner(
                   document.PlayerViewModel.IsVideoSurfaceReady,
             TimeSpan.FromSeconds(8),
             "退出窗口内容区全屏超时。");
+        Require(
+            fullscreenLayer?.IsVisible == false,
+            "退出全屏后宿主承载层仍然可见。");
         Require(
             document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration >
             documentSurfaceGeneration,
@@ -506,6 +543,82 @@ internal sealed class G3PlaybackHarnessRunner(
         Require(
             functionalResources == expectedResources,
             $"功能矩阵关闭 Document 后资源未回到占位基线: {functionalResources}。");
+    }
+
+    private async Task VerifyLibraryPresentationAsync(
+        Window mainWindow,
+        MainWindowViewModel mainViewModel,
+        ManagementFactory factory,
+        DocumentDock documentDock,
+        SecretVideoPlayerViewModel placeholder)
+    {
+        mainViewModel.CreateDocument(DocumentTypeIdConstant.SecretVideoLibraryDocumentId);
+        var library = documentDock.VisibleDockables?
+            .OfType<SecretVideoLibraryViewModel>()
+            .LastOrDefault() ?? throw new InvalidOperationException(
+                "无法创建加密视频库播放器 Document。");
+
+        try
+        {
+            documentDock.ActiveDockable = library;
+            await WaitUntilAsync(
+                () => mainWindow.GetVisualDescendants()
+                    .OfType<VideoPlayerControl>()
+                    .Any(control => ReferenceEquals(
+                        control.DataContext,
+                        library.PlayerViewModel)),
+                TimeSpan.FromSeconds(8),
+                "媒体库播放器视图未附加到宿主视觉树。");
+            await DrainDispatcherAsync();
+
+            var playerControl = mainWindow.GetVisualDescendants()
+                .OfType<VideoPlayerControl>()
+                .Single(control => ReferenceEquals(
+                    control.DataContext,
+                    library.PlayerViewModel));
+            Require(
+                ReferenceEquals(playerControl.NavigationContext, library),
+                "媒体库导航上下文没有绑定到媒体库 ViewModel。");
+            Require(
+                playerControl.HasNavigationContext,
+                "媒体库播放器没有公开导航控件。");
+            Require(
+                !library.IsContinuousPlaybackEnabled,
+                "媒体库连续播放没有默认关闭。");
+
+            var previous = playerControl.GetVisualDescendants()
+                .OfType<Button>()
+                .SingleOrDefault(button => Equals(button.Content, "⏮ 上一项"));
+            var next = playerControl.GetVisualDescendants()
+                .OfType<Button>()
+                .SingleOrDefault(button => Equals(button.Content, "下一项 ⏭"));
+            var continuous = playerControl.GetVisualDescendants()
+                .OfType<CheckBox>()
+                .SingleOrDefault(checkBox => Equals(checkBox.Content, "连续播放"));
+            Require(
+                previous?.IsVisible == true &&
+                next?.IsVisible == true &&
+                continuous?.IsVisible == true,
+                "媒体库上一项、下一项或连续播放控件没有显示。");
+        }
+        finally
+        {
+            documentDock.ActiveDockable = placeholder;
+            await DrainDispatcherAsync();
+            factory.CloseDockable(library);
+            await DrainDispatcherAsync();
+        }
+
+        var singlePlayerControl = mainWindow.GetVisualDescendants()
+            .OfType<VideoPlayerControl>()
+            .SingleOrDefault(control => ReferenceEquals(
+                control.DataContext,
+                placeholder.PlayerViewModel));
+        Require(
+            singlePlayerControl is not null &&
+            singlePlayerControl.NavigationContext is null &&
+            !singlePlayerControl.HasNavigationContext,
+            "单文件播放器错误地显示了媒体库导航能力。");
     }
 
     private async Task VerifyTamperedSeekAsync(

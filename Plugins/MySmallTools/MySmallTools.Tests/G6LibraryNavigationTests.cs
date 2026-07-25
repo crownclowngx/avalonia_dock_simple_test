@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 using Xunit;
@@ -7,6 +8,24 @@ namespace MySmallTools.Tests;
 /// <summary>G6 媒体库导航顺序和筛选边界测试。</summary>
 public sealed class G6LibraryNavigationTests
 {
+    [Fact]
+    public void 连续播放默认关闭且不会跨文档持久化()
+    {
+        var firstPlayer = Assert.IsType<VideoPlayerControlViewModel>(
+            RuntimeHelpers.GetUninitializedObject(typeof(VideoPlayerControlViewModel)));
+        var secondPlayer = Assert.IsType<VideoPlayerControlViewModel>(
+            RuntimeHelpers.GetUninitializedObject(typeof(VideoPlayerControlViewModel)));
+        using var firstBrowser = new VideoLibraryBrowserViewModel(new FixedScanner([]));
+        using var secondBrowser = new VideoLibraryBrowserViewModel(new FixedScanner([]));
+        using var first = new SecretVideoLibraryViewModel(firstBrowser, firstPlayer);
+        using var second = new SecretVideoLibraryViewModel(secondBrowser, secondPlayer);
+
+        Assert.False(first.IsContinuousPlaybackEnabled);
+        first.IsContinuousPlaybackEnabled = true;
+        Assert.True(first.IsContinuousPlaybackEnabled);
+        Assert.False(second.IsContinuousPlaybackEnabled);
+    }
+
     [Fact]
     public async Task 相邻项使用当前可见排序而不是扫描输入顺序()
     {

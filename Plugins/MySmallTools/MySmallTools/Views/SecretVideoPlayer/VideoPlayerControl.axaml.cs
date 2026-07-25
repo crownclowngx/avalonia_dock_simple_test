@@ -1,11 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using MyAvaloniaManagementCommon.Presentation;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 
@@ -23,8 +22,7 @@ public partial class VideoPlayerControl : UserControl
 
     private VideoPlayerControlViewModel? _boundViewModel;
     private readonly SemaphoreSlim _fullscreenTransitionGate = new(1, 1);
-    private OverlayLayer? _overlayLayer;
-    private Border? _fullscreenHost;
+    private IWindowContentFullscreenHost? _fullscreenHost;
     private TopLevel? _fullscreenTopLevel;
     private bool _hasNavigationContext;
     private bool _forcingVisualReset;
@@ -170,33 +168,16 @@ public partial class VideoPlayerControl : UserControl
             return null;
         }
 
-        var overlay = OverlayLayer.GetOverlayLayer(this);
-        if (overlay is null)
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is not IWindowContentFullscreenHost fullscreenHost)
         {
             return new PlaybackFailure(
                 PlaybackFailureCode.ControlUnavailable,
                 "当前宿主窗口不支持内容区全屏。");
         }
 
-        // OverlayLayer 属于整个 TopLevel。只允许一个播放器 Shell 占用，避免两个
-        // Document 在同一窗口中同时认为自己拥有全屏输入和原生视频输出。
-        if (overlay.Children.OfType<Border>()
-            .Any(child => Equals(child.Tag, "MySmallTools.PlayerFullscreenHost")))
-        {
-            return new PlaybackFailure(
-                PlaybackFailureCode.ControlUnavailable,
-                "当前窗口已有播放器处于全屏状态。");
-        }
-
         var previousGeneration = VideoSurface.CurrentSurfaceToken?.Generation ?? 0;
         var attachment = WaitForNewSurfaceAttachmentAsync(previousGeneration);
-        var host = new Border
-        {
-            Tag = "MySmallTools.PlayerFullscreenHost",
-            Background = Brushes.Black,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch
-        };
 
         // 先从旧父容器移除，并把一次后台调度机会让给 Avalonia。若在同一个
         // UI 调度片段中“移除后立即加入”，框架会把两次变更合并成普通重设父级，
@@ -205,11 +186,18 @@ public partial class VideoPlayerControl : UserControl
         // 覆盖层再创建新的 HWND。整个过程仍只复用这一份 PlayerShell/VideoView。
         NormalPlaceholder.Content = null;
         await WaitForNativeSurfaceReleaseAsync();
-        host.Child = PlayerShell;
-        overlay.Children.Add(host);
-        _overlayLayer = overlay;
-        _fullscreenHost = host;
-        _fullscreenTopLevel = TopLevel.GetTopLevel(this);
+
+        if (!fullscreenHost.TryPresent(PlayerShell, this))
+        {
+            NormalPlaceholder.Content = PlayerShell;
+            var restoreFailure = await attachment;
+            return restoreFailure ?? new PlaybackFailure(
+                PlaybackFailureCode.ControlUnavailable,
+                "当前窗口已有播放器处于全屏状态。");
+        }
+
+        _fullscreenHost = fullscreenHost;
+        _fullscreenTopLevel = topLevel;
         _fullscreenTopLevel?.AddHandler(
             KeyDownEvent,
             OnFullscreenTopLevelKeyDown,
@@ -218,7 +206,7 @@ public partial class VideoPlayerControl : UserControl
         var failure = await attachment;
         if (failure is not null)
         {
-            ForceExitFullscreenVisual();
+            await RollBackFailedFullscreenEntryAsync(fullscreenHost);
             return failure;
         }
 
@@ -236,17 +224,42 @@ public partial class VideoPlayerControl : UserControl
         var previousGeneration = VideoSurface.CurrentSurfaceToken?.Generation ?? 0;
         var attachment = WaitForNewSurfaceAttachmentAsync(previousGeneration);
         var host = _fullscreenHost;
+        if (!host.TryRestore(this))
+        {
+            return new PlaybackFailure(
+                PlaybackFailureCode.ControlUnavailable,
+                "宿主窗口拒绝归还全屏播放器。");
+        }
+
         _fullscreenHost = null;
-        _overlayLayer?.Children.Remove(host);
-        host.Child = null;
         await WaitForNativeSurfaceReleaseAsync();
         NormalPlaceholder.Content = PlayerShell;
         RemoveFullscreenTopLevelHandler();
-        _overlayLayer = null;
 
         var failure = await attachment;
         Focus();
         return failure;
+    }
+
+    private async Task RollBackFailedFullscreenEntryAsync(
+        IWindowContentFullscreenHost fullscreenHost)
+    {
+        var previousGeneration = VideoSurface.CurrentSurfaceToken?.Generation ?? 0;
+        if (!fullscreenHost.TryRestore(this))
+        {
+            ForceExitFullscreenVisual();
+            return;
+        }
+
+        var attachment = WaitForNewSurfaceAttachmentAsync(previousGeneration);
+        _fullscreenHost = null;
+        RemoveFullscreenTopLevelHandler();
+        await WaitForNativeSurfaceReleaseAsync();
+        NormalPlaceholder.Content = PlayerShell;
+
+        // The original surface failure remains the user-facing error, but wait
+        // for the normal presentation to settle before completing the command.
+        _ = await attachment;
     }
 
     /// <summary>
@@ -324,12 +337,10 @@ public partial class VideoPlayerControl : UserControl
             RemoveFullscreenTopLevelHandler();
             if (_fullscreenHost is not null)
             {
-                _overlayLayer?.Children.Remove(_fullscreenHost);
-                _fullscreenHost.Child = null;
+                _fullscreenHost.TryRestore(this);
                 _fullscreenHost = null;
             }
 
-            _overlayLayer = null;
             if (NormalPlaceholder.Content is null && PlayerShell.Parent is null)
             {
                 NormalPlaceholder.Content = PlayerShell;
