@@ -170,8 +170,16 @@ flowchart LR
 Document-scoped，只跟踪当前媒体代次；JSON 存储是 Singleton，并通过播放偏好、媒体库设置和
 播放历史三个窄接口暴露。FileId 在扫描阶段只作不可信索引，密码认证仍由播放加载链路完成。
 
-历史恢复使用 `LoadAtPositionAsync`，在播放操作门内提交媒体并 Seek，最终发布 Ready 而不调用
-Play。这样不会在 ViewModel 的 Load 与 Seek 两步之间插入另一个用户意图。
+媒体库侧栏采用列表优先的渐进披露：搜索、虚拟化列表和主加载操作始终存在，目录、排序、
+筛选、公共密码与历史清理集中到一个有高度上限的原生 Expander。展开状态属于
+`VideoLibrarySettings` 的可选 UI 字段，由现有 v1 JSON 兼容持久化；缺少字段的旧文件按折叠
+处理。清除搜索只是浏览 ViewModel 的内存投影操作，既不触发目录扫描，也不改变监听会话。
+折叠摘要仅显示密码是否输入，不读取或拼接密码内容，避免为了界面便利扩大敏感数据边界。
+
+主按钮的历史恢复使用 `LoadAtPositionAsync`，在播放操作门内提交媒体并 Seek，最终发布
+Ready 而不调用 Play。列表双击和 Enter 则使用 `LoadAtPositionAndPlayAsync`，在同一操作门
+内完成认证、身份复核、Seek 和 Play。两个组合入口都避免 ViewModel 拼接多次调用，也防止
+停止、新加载或迟到的旧激活请求插入媒体切换事务。
 
 ## 5. 部署与 backend 生命周期
 

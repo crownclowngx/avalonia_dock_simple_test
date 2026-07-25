@@ -66,4 +66,59 @@
     <Setter Property="Padding" Value="4" />
     <Setter Property="FontSize" Value="14" />
   </Style>
+
+  <!--
+    媒体库沿用宿主主题的背景和边框资源，只补充层级、留白与尺寸。
+    这里不硬编码卡片底色，否则浅色/深色主题切换时容易出现对比度反转。
+  -->
+  <Style Selector="Border.LibraryPaneRail">
+    <Setter Property="Background" Value="{DynamicResource DockThemeBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DockThemeBorderLowBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,1,0" />
+  </Style>
+
+  <Style Selector="Border.LibrarySection">
+    <Setter Property="Padding" Value="10" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DockThemeBorderLowBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector="Border.LibraryListSection">
+    <Setter Property="Padding" Value="8" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DockThemeBorderLowBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector="Expander.LibrarySettingsExpander">
+    <Setter Property="Padding" Value="9,7" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DockThemeBorderLowBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+
+  <Style Selector="TextBlock.FieldLabel">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Opacity" Value="0.78" />
+  </Style>
+
+  <Style Selector="TextBlock.LibraryHint">
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="Opacity" Value="0.62" />
+  </Style>
+
+  <Style Selector="ListBox.LibraryList">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
+  <Style Selector="ListBox.LibraryList ListBoxItem">
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="Padding" Value="7,5" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
 </Styles>

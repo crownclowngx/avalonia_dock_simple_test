@@ -10,12 +10,24 @@ namespace MySmallTools.Views.SecretVideoPlayer;
 
 public partial class SecretVideoLibraryView : UserControl
 {
+    private const double InlinePaneMinimumWidth = 960;
     private bool _isFolderPickerOpen;
 
     public SecretVideoLibraryView()
     {
         InitializeComponent();
         AttachedToVisualTree += OnAttachedToVisualTree;
+        SizeChanged += OnLibraryViewSizeChanged;
+    }
+
+    private void OnLibraryViewSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        // 420px 的舒适侧栏在窄 Document 中若继续 Inline，会把原生视频表面压缩到几乎不可用。
+        // 低于阈值时只改变 SplitView 的呈现方式，不修改持久化的开关状态；窗口再次变宽后
+        // 自动回到并排布局，业务 ViewModel 因而无需感知像素尺寸或宿主窗口结构。
+        LibrarySplitView.DisplayMode = e.NewSize.Width >= InlinePaneMinimumWidth
+            ? SplitViewDisplayMode.CompactInline
+            : SplitViewDisplayMode.CompactOverlay;
     }
 
     private async void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
@@ -70,8 +82,8 @@ public partial class SecretVideoLibraryView : UserControl
 
     private async void OnVideoListDoubleTapped(object? sender, TappedEventArgs e)
     {
-        await ExecutePlaySelectedAsync();
         e.Handled = true;
+        await ExecuteActivateSelectedAsync();
     }
 
     private async void OnVideoListKeyDown(object? sender, KeyEventArgs e)
@@ -79,16 +91,16 @@ public partial class SecretVideoLibraryView : UserControl
         if (e.Key != Key.Enter)
             return;
 
-        await ExecutePlaySelectedAsync();
         e.Handled = true;
+        await ExecuteActivateSelectedAsync();
     }
 
-    private async Task ExecutePlaySelectedAsync()
+    private async Task ExecuteActivateSelectedAsync()
     {
         if (DataContext is not SecretVideoLibraryViewModel viewModel)
             return;
 
-        var command = viewModel.PlaySelectedCommand;
+        var command = viewModel.ActivateSelectedCommand;
         if (command.CanExecute(null))
             await command.ExecuteAsync(null);
     }

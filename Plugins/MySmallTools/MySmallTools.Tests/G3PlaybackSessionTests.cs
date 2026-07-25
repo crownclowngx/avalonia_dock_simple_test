@@ -35,6 +35,77 @@ public sealed class G3PlaybackSessionTests
     }
 
     [Fact]
+    public async Task LoadAtPositionAndPlay_RestoresBeforeStartingPlayback()
+    {
+        var source = new FakeSource(1);
+        using var rig = new TestRig(
+            new FakeSourceFactory((_, _) => Task.FromResult<IPlaybackMediaSource>(source)));
+
+        var result = await rig.Session.LoadAtPositionAndPlayAsync(
+            "history.secvid",
+            "password",
+            4_000);
+
+        Assert.True(result.Success);
+        Assert.Equal(PlaybackState.Playing, rig.Session.Snapshot.State);
+        Assert.Equal(4_000, rig.Session.Snapshot.PositionMs);
+        Assert.True(rig.Host.IsPlaying);
+        Assert.Equal(1, source.PrepareCalls);
+        Assert.Equal(["Seek:4000", "Play"], rig.Host.Operations);
+    }
+
+    [Fact]
+    public async Task LoadAtPositionAndPlay_IdentityMismatchSkipsHistoryButStillPlays()
+    {
+        var source = new FakeSource(1)
+        {
+            Identity = new PlaybackMediaIdentity("actual", 800)
+        };
+        using var rig = new TestRig(
+            new FakeSourceFactory((_, _) => Task.FromResult<IPlaybackMediaSource>(source)));
+
+        var result = await rig.Session.LoadAtPositionAndPlayAsync(
+            "replaced.secvid",
+            "password",
+            4_000,
+            new PlaybackMediaIdentity("stale", 800));
+
+        Assert.True(result.Success);
+        Assert.Equal(PlaybackState.Playing, rig.Session.Snapshot.State);
+        Assert.True(rig.Host.IsPlaying);
+        Assert.Equal(["Play"], rig.Host.Operations);
+    }
+
+    [Fact]
+    public async Task LoadAtPositionAndPlay_SeekFailureFallsBackAndContinuesPlaying()
+    {
+        var source = new FakeSource(1);
+        using var rig = new TestRig(
+            new FakeSourceFactory((_, _) => Task.FromResult<IPlaybackMediaSource>(source)));
+        rig.Host.ThrowOnSeek = true;
+        var warnings = new List<PlaybackFailure>();
+        rig.Session.Changed += (_, args) =>
+        {
+            if (args.Failure is not null)
+                warnings.Add(args.Failure);
+        };
+
+        var result = await rig.Session.LoadAtPositionAndPlayAsync(
+            "history.secvid",
+            "password",
+            4_000);
+
+        Assert.True(result.Success);
+        Assert.Equal(PlaybackState.Playing, rig.Session.Snapshot.State);
+        Assert.True(rig.Host.IsPlaying);
+        Assert.Equal("Play", Assert.Single(rig.Host.Operations));
+        Assert.Contains(
+            warnings,
+            failure => failure.Code == PlaybackFailureCode.ControlUnavailable &&
+                       failure.Message.Contains("历史位置恢复失败", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task FailedCandidate_DoesNotReplaceCurrentMedia()
     {
         var first = new FakeSource(1);
@@ -490,6 +561,7 @@ public sealed class G3PlaybackSessionTests
     {
         public long Generation { get; } = generation;
         public Media NativeMedia => null!;
+        public PlaybackMediaIdentity? Identity { get; init; }
         public bool IsDisposed { get; private set; }
         public int PrepareCalls { get; private set; }
         public ManualResetEventSlim DisposeEntered { get; } = new();
@@ -545,6 +617,8 @@ public sealed class G3PlaybackSessionTests
         public int LastStopThreadId { get; private set; }
         public long? FailAttachGeneration { get; set; }
         public bool PlayResult { get; set; } = true;
+        public bool ThrowOnSeek { get; set; }
+        public List<string> Operations { get; } = [];
 
         public event Action<long, PlaybackState>? StateChanged;
         public event Action<long>? PositionChanged;
@@ -562,6 +636,7 @@ public sealed class G3PlaybackSessionTests
 
         public bool Play()
         {
+            Operations.Add("Play");
             IsPlaying = true;
             IsPaused = false;
             RaiseState(AttachedSource?.Generation ?? 0, PlaybackState.Playing);
@@ -628,6 +703,9 @@ public sealed class G3PlaybackSessionTests
             bool waitForFrame,
             CancellationToken cancellationToken)
         {
+            if (ThrowOnSeek)
+                throw new InvalidOperationException("Injected seek failure.");
+            Operations.Add($"Seek:{positionMs}");
             PositionMs = Math.Clamp(positionMs, 0, DurationMs);
             PositionChanged?.Invoke(AttachedSource?.Generation ?? 0);
             return Task.CompletedTask;

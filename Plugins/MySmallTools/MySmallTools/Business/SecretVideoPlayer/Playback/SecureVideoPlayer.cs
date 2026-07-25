@@ -142,6 +142,21 @@ internal sealed class SecureVideoPlayer :
             expectedIdentity,
             cancellationToken);
 
+    /// <inheritdoc />
+    public Task<PlaybackOperationResult> LoadAtPositionAndPlayAsync(
+        string filePath,
+        string password,
+        long positionMs,
+        PlaybackMediaIdentity? expectedIdentity = null,
+        CancellationToken cancellationToken = default) =>
+        SwitchMediaAsync(
+            filePath,
+            password,
+            startPlayback: true,
+            initialPositionMs: Math.Max(0, positionMs),
+            expectedIdentity,
+            cancellationToken);
+
     public Task<PlaybackOperationResult> LoadAndPlayAsync(
         string filePath,
         string password,
@@ -261,8 +276,7 @@ internal sealed class SecureVideoPlayer :
                         token)
                     .ConfigureAwait(false);
 
-                if (!startPlayback &&
-                    initialPositionMs > 0 &&
+                if (initialPositionMs > 0 &&
                     (expectedIdentity is null || committed.Identity == expectedIdentity))
                 {
                     try
@@ -299,7 +313,8 @@ internal sealed class SecureVideoPlayer :
                     catch
                     {
                         // 历史是可丢弃的体验数据。媒体已经通过认证并完成提交后，定位失败
-                        // 不应回滚到旧媒体，更不应把可播放媒体误报为加载失败。
+                        // 不应回滚到旧媒体，更不应把可播放媒体误报为加载失败。对于双击
+                        // 激活请求，回退到开头后仍继续执行下方 Play，兑现“直接播放”意图。
                         controlFailure = new PlaybackFailure(
                             PlaybackFailureCode.ControlUnavailable,
                             "历史位置恢复失败，已从头加载。");

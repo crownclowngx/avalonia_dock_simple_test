@@ -31,6 +31,7 @@ public partial class SecretVideoLibraryViewModel :
     [ObservableProperty] private bool _showPassword;
     [ObservableProperty] private bool _isOpening;
     [ObservableProperty] private bool _isLibraryPaneOpen = true;
+    [ObservableProperty] private bool _isLibrarySettingsExpanded;
     [ObservableProperty] private string _statusMessage = "请选择文件夹并输入公共密码";
     [ObservableProperty] private string _currentPlayingPath = string.Empty;
     [ObservableProperty] private bool _isContinuousPlaybackEnabled;
@@ -38,6 +39,17 @@ public partial class SecretVideoLibraryViewModel :
 
     public VideoLibraryBrowserViewModel Browser { get; }
     public VideoPlayerControlViewModel PlayerViewModel { get; }
+
+    /// <summary>
+    /// 仅供界面摘要使用的密码状态，不包含密码正文。
+    /// </summary>
+    /// <remarks>
+    /// 折叠面板需要让用户知道是否已经输入密码，但任何绑定、设置或历史模型都不应复制
+    /// 密码内容。这里刻意只返回固定文案，避免现代摘要界面扩大敏感数据暴露面。
+    /// </remarks>
+    public string PasswordStateText =>
+        string.IsNullOrEmpty(Password) ? "密码未输入" : "密码已输入";
+
     public bool CanNavigatePrevious =>
         !_disposed &&
         Browser.FindVisibleAdjacent(CurrentPlayingPath, -1) is { FilePath: var path } &&
@@ -67,14 +79,23 @@ public partial class SecretVideoLibraryViewModel :
         _historyCoordinator = historyCoordinator;
         _userDataDiagnostics = userDataDiagnostics;
         IsLibraryPaneOpen = settingsStore?.CurrentSettings.IsLibraryPaneOpen ?? true;
+        IsLibrarySettingsExpanded =
+            settingsStore?.CurrentSettings.IsLibrarySettingsExpanded ?? false;
         Browser.PropertyChanged += OnBrowserPropertyChanged;
         ((INotifyCollectionChanged)Browser.VisibleItems).CollectionChanged += OnVisibleItemsChanged;
         PlayerViewModel.MediaEnded += OnMediaEnded;
     }
 
-    partial void OnPasswordChanged(string value) => PlaySelectedCommand.NotifyCanExecuteChanged();
+    partial void OnPasswordChanged(string value)
+    {
+        OnPropertyChanged(nameof(PasswordStateText));
+        PlaySelectedCommand.NotifyCanExecuteChanged();
+    }
 
-    partial void OnIsOpeningChanged(bool value) => PlaySelectedCommand.NotifyCanExecuteChanged();
+    partial void OnIsOpeningChanged(bool value)
+    {
+        PlaySelectedCommand.NotifyCanExecuteChanged();
+    }
 
     partial void OnCurrentPlayingPathChanged(string value) => NotifyNavigationState();
 
@@ -93,6 +114,17 @@ public partial class SecretVideoLibraryViewModel :
             return;
         _settingsStore.UpdateSettings(
             _settingsStore.CurrentSettings with { IsLibraryPaneOpen = value });
+    }
+
+    partial void OnIsLibrarySettingsExpandedChanged(bool value)
+    {
+        if (_settingsStore is null)
+            return;
+
+        // 展开状态是低敏感度的界面偏好，和侧栏开关一样共享给未来新建的 Document。
+        // 不根据选目录或播放成功自动改写，避免用户操作后面板发生不可预测的跳动。
+        _settingsStore.UpdateSettings(
+            _settingsStore.CurrentSettings with { IsLibrarySettingsExpanded = value });
     }
 
     /// <summary>由 View 首次附加时调用一次，恢复最近目录但不加载或播放媒体。</summary>
@@ -134,13 +166,36 @@ public partial class SecretVideoLibraryViewModel :
             StatusMessage = "请选择要播放的视频";
             return;
         }
-        await PlayItemAsync(item, PlaybackRequestOrigin.UserSelection);
+        await PlayItemAsync(item, PlaybackRequestOrigin.UserLoad);
+    }
+
+    /// <summary>
+    /// 激活列表中的所选媒体：恢复可信的未完成历史位置并立即开始播放。
+    /// </summary>
+    /// <remarks>
+    /// 此命令专供双击和 Enter 使用，与“加载所选视频”刻意分离。前者代表明确播放意图，
+    /// 后者仍遵守 G7 的“定位后暂停”语义，避免普通按钮操作意外自动播放。
+    /// </remarks>
+    [RelayCommand(CanExecute = nameof(CanActivateSelected))]
+    private async Task ActivateSelectedAsync()
+    {
+        var item = Browser.SelectedItem;
+        if (item is null)
+        {
+            StatusMessage = "请选择要播放的视频";
+            return;
+        }
+        await PlayItemAsync(item, PlaybackRequestOrigin.UserActivation);
     }
 
     private bool CanPlaySelected() => !_disposed &&
         Browser.SelectedItem is { FilePath: var path } &&
         File.Exists(path) &&
         !string.IsNullOrEmpty(Password);
+
+    private bool CanActivateSelected() => !_disposed &&
+        Browser.SelectedItem is { FilePath: var path } &&
+        File.Exists(path);
 
     [RelayCommand(CanExecute = nameof(CanNavigatePrevious))]
     private async Task PreviousAsync()
@@ -210,6 +265,7 @@ public partial class SecretVideoLibraryViewModel :
         if (e.PropertyName == nameof(VideoLibraryBrowserViewModel.SelectedItem))
         {
             PlaySelectedCommand.NotifyCanExecuteChanged();
+            ActivateSelectedCommand.NotifyCanExecuteChanged();
             ClearSelectedHistoryCommand.NotifyCanExecuteChanged();
         }
 
@@ -267,6 +323,7 @@ public partial class SecretVideoLibraryViewModel :
         {
             StatusMessage = "视频文件不存在或已被删除";
             PlaySelectedCommand.NotifyCanExecuteChanged();
+            ActivateSelectedCommand.NotifyCanExecuteChanged();
             NotifyNavigationState();
             return;
         }
@@ -297,18 +354,29 @@ public partial class SecretVideoLibraryViewModel :
             var restorePosition = history is { IsCompleted: false }
                 ? history.PositionMs
                 : 0;
-            var success = origin == PlaybackRequestOrigin.UserSelection
-                ? await PlayerViewModel.LoadMediaAtPositionAsync(
+            var success = origin switch
+            {
+                PlaybackRequestOrigin.UserLoad =>
+                    await PlayerViewModel.LoadMediaAtPositionAsync(
+                        item.FilePath,
+                        Password,
+                        restorePosition,
+                        item.FileId,
+                        item.OriginalFileLength,
+                        cancellation.Token),
+                PlaybackRequestOrigin.UserActivation =>
+                    await PlayerViewModel.LoadMediaAtPositionAndPlayAsync(
+                        item.FilePath,
+                        Password,
+                        restorePosition,
+                        item.FileId,
+                        item.OriginalFileLength,
+                        cancellation.Token),
+                _ => await PlayerViewModel.LoadAndPlayMediaAsync(
                     item.FilePath,
                     Password,
-                    restorePosition,
-                    item.FileId,
-                    item.OriginalFileLength,
                     cancellation.Token)
-                : await PlayerViewModel.LoadAndPlayMediaAsync(
-                    item.FilePath,
-                    Password,
-                    cancellation.Token);
+            };
             if (_disposed || generation != Volatile.Read(ref _playGeneration))
             {
                 return;
@@ -338,11 +406,13 @@ public partial class SecretVideoLibraryViewModel :
                                    StringComparison.OrdinalIgnoreCase) &&
                                authenticatedIdentity.OriginalFileLength ==
                                item.OriginalFileLength;
-                StatusMessage = origin == PlaybackRequestOrigin.UserSelection
+                StatusMessage = origin == PlaybackRequestOrigin.UserLoad
                     ? restored
                         ? $"已恢复到上次位置，按播放键继续 {item.DisplayName}"
                         : $"已加载 {item.DisplayName}，按播放键开始"
-                    : $"正在播放 {item.DisplayName}";
+                    : origin == PlaybackRequestOrigin.UserActivation && restored
+                        ? $"已从上次位置继续播放 {item.DisplayName}"
+                        : $"正在播放 {item.DisplayName}";
             }
             else
             {
@@ -412,7 +482,8 @@ public partial class SecretVideoLibraryViewModel :
 
     private enum PlaybackRequestOrigin
     {
-        UserSelection,
+        UserLoad,
+        UserActivation,
         Previous,
         Next,
         AutoAdvance

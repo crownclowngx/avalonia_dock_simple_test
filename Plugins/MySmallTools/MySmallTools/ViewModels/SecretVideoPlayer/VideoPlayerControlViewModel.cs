@@ -298,6 +298,32 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
                     expectedOriginalFileLength),
             cancellationToken);
 
+    /// <summary>
+    /// 原子加载媒体、恢复可信历史位置并立即播放。
+    /// </summary>
+    /// <remarks>
+    /// 此入口只表达用户已经通过双击或 Enter 明确发出的播放意图。认证、身份复核、Seek
+    /// 与 Play 由播放会话串行完成，ViewModel 不自行拼接操作，避免迟到请求启动错误媒体。
+    /// </remarks>
+    public Task<bool> LoadMediaAtPositionAndPlayAsync(
+        string filePath,
+        string password,
+        long positionMs,
+        string? expectedFileId = null,
+        long expectedOriginalFileLength = 0,
+        CancellationToken cancellationToken = default) =>
+        SwitchMediaAsync(
+            filePath,
+            password,
+            startPlayback: true,
+            initialPositionMs: Math.Max(0, positionMs),
+            string.IsNullOrWhiteSpace(expectedFileId)
+                ? null
+                : new PlaybackMediaIdentity(
+                    expectedFileId,
+                    expectedOriginalFileLength),
+            cancellationToken);
+
     public Task<bool> LoadAndPlayMediaAsync(string filePath, string password) =>
         LoadAndPlayMediaAsync(filePath, password, CancellationToken.None);
 
@@ -459,9 +485,24 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         // 自动播放必须作为一个完整的业务意图交给播放服务。若 ViewModel 自己执行
         // LoadAsync -> PlayAsync，两个调用之间可能插入 Stop 或另一条 Load，造成旧意图
         // 意外启动新媒体；组合接口用同一个代次令牌保证“认证、提交、启动”不可被拆开。
-        var result = startPlayback
-            ? await _session.LoadAndPlayAsync(filePath, password, cancellationToken)
-            : initialPositionMs > 0
+        PlaybackOperationResult result;
+        if (startPlayback)
+        {
+            result = initialPositionMs > 0
+                ? await _session.LoadAtPositionAndPlayAsync(
+                    filePath,
+                    password,
+                    initialPositionMs,
+                    expectedIdentity,
+                    cancellationToken)
+                : await _session.LoadAndPlayAsync(
+                    filePath,
+                    password,
+                    cancellationToken);
+        }
+        else
+        {
+            result = initialPositionMs > 0
                 ? await _session.LoadAtPositionAsync(
                     filePath,
                     password,
@@ -469,6 +510,7 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
                     expectedIdentity,
                     cancellationToken)
                 : await _session.LoadAsync(filePath, password, cancellationToken);
+        }
         ApplyFailure(result);
         if (result.Success)
         {

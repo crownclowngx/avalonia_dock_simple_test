@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.ViewModels.SecretVideoPlayer;
@@ -62,7 +63,8 @@ public sealed class G7MediaLibraryHistoryTests(Secvid03Fixture fixture)
                 store.UpdateSettings(VideoLibrarySettings.Default with
                 {
                     RecentFolder = root,
-                    IncludeSubdirectories = true
+                    IncludeSubdirectories = true,
+                    IsLibrarySettingsExpanded = true
                 });
                 for (var index = 0; index < 1001; index++)
                 {
@@ -92,7 +94,50 @@ public sealed class G7MediaLibraryHistoryTests(Secvid03Fixture fixture)
             using var reloaded = new SecretVideoUserDataStore(path);
             Assert.Equal(new PlaybackPreferences(73, 1.5f), reloaded.CurrentPreferences);
             Assert.True(reloaded.CurrentSettings.IncludeSubdirectories);
+            Assert.True(reloaded.CurrentSettings.IsLibrarySettingsExpanded);
             Assert.Equal(1000, reloaded.GetAll().Count);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void 旧版用户数据缺少设置展开字段时兼容加载并默认折叠()
+    {
+        var root = CreateDirectory();
+        var path = Path.Combine(root, "user-data-v1.json");
+        try
+        {
+            var legacyDocument = new
+            {
+                version = 1,
+                preferences = new { volume = 50, rate = 1.0f },
+                librarySettings = new
+                {
+                    recentFolder = root,
+                    includeSubdirectories = true,
+                    sortField = "ModifiedTime",
+                    sortDirection = "Descending",
+                    statusFilter = "InProgress",
+                    isLibraryPaneOpen = true
+                },
+                history = Array.Empty<object>()
+            };
+            File.WriteAllText(path, JsonSerializer.Serialize(legacyDocument));
+
+            using var store = new SecretVideoUserDataStore(path);
+
+            Assert.False(store.CurrentSettings.IsLibrarySettingsExpanded);
+            Assert.True(store.CurrentSettings.IncludeSubdirectories);
+            Assert.Equal(VideoLibrarySortField.ModifiedTime, store.CurrentSettings.SortField);
+            Assert.Equal(
+                VideoLibrarySortDirection.Descending,
+                store.CurrentSettings.SortDirection);
+            Assert.Equal(
+                VideoLibraryStatusFilter.InProgress,
+                store.CurrentSettings.StatusFilter);
         }
         finally
         {

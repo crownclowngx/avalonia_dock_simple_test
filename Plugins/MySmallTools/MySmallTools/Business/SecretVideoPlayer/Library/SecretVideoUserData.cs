@@ -16,7 +16,8 @@ public sealed record VideoLibrarySettings(
     VideoLibrarySortField SortField,
     VideoLibrarySortDirection SortDirection,
     VideoLibraryStatusFilter StatusFilter,
-    bool IsLibraryPaneOpen)
+    bool IsLibraryPaneOpen,
+    bool IsLibrarySettingsExpanded = false)
 {
     public static VideoLibrarySettings Default { get; } = new(
         string.Empty,
@@ -24,7 +25,8 @@ public sealed record VideoLibrarySettings(
         VideoLibrarySortField.FileName,
         VideoLibrarySortDirection.Ascending,
         VideoLibraryStatusFilter.All,
-        true);
+        true,
+        false);
 }
 
 /// <summary>
@@ -450,10 +452,11 @@ public sealed class SecretVideoUserDataStore :
             Enum.IsDefined(value.SortDirection)
                 ? value.SortDirection
                 : VideoLibrarySortDirection.Ascending,
-            Enum.IsDefined(value.StatusFilter)
-                ? value.StatusFilter
-                : VideoLibraryStatusFilter.All,
-            value.IsLibraryPaneOpen);
+             Enum.IsDefined(value.StatusFilter)
+                 ? value.StatusFilter
+                 : VideoLibraryStatusFilter.All,
+            value.IsLibraryPaneOpen,
+            value.IsLibrarySettingsExpanded);
     }
 
     private static VideoPlaybackHistoryEntry Sanitize(VideoPlaybackHistoryEntry value)

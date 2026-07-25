@@ -51,6 +51,9 @@ public partial class VideoLibraryBrowserViewModel : ObservableObject, IDisposabl
     public bool HasFolder => !string.IsNullOrWhiteSpace(FolderPath);
     public bool HasVisibleItems => VisibleItemCount > 0;
 
+    /// <summary>指示搜索框是否包含可清除的文本。</summary>
+    public bool HasSearchText => !string.IsNullOrEmpty(SearchText);
+
     public VideoLibraryBrowserViewModel(
         IVideoLibraryScanner scanner,
         IVideoLibrarySettingsStore? settingsStore = null,
@@ -74,7 +77,12 @@ public partial class VideoLibraryBrowserViewModel : ObservableObject, IDisposabl
         _historyStore.HistoryChanged += OnHistoryChanged;
     }
 
-    partial void OnSearchTextChanged(string value) => ScheduleProjection();
+    partial void OnSearchTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasSearchText));
+        ClearSearchCommand.NotifyCanExecuteChanged();
+        ScheduleProjection();
+    }
 
     partial void OnFolderPathChanged(string value)
     {
@@ -166,6 +174,16 @@ public partial class VideoLibraryBrowserViewModel : ObservableObject, IDisposabl
     private Task RefreshAsync() => StartCatalogAsync(clearItems: true);
 
     private bool CanRefresh() => !_disposed && HasFolder;
+
+    /// <summary>
+    /// 清除当前内存投影的搜索条件，不重新扫描磁盘或重建目录监听会话。
+    /// </summary>
+    /// <remarks>
+    /// 搜索属于纯展示状态。复用 <see cref="SearchText"/> 的防抖投影路径，可以保持选择恢复、
+    /// 排序和范围集合通知语义一致，同时避免现代搜索框的清除按钮意外触发昂贵 I/O。
+    /// </remarks>
+    [RelayCommand(CanExecute = nameof(HasSearchText))]
+    private void ClearSearch() => SearchText = string.Empty;
 
     private async Task StartCatalogAsync(bool clearItems)
     {

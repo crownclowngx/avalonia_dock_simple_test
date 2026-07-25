@@ -247,6 +247,35 @@ public interface ISecureVideoPlaybackSession : IDisposable
     }
 
     /// <summary>
+    /// 在同一次媒体切换事务中完成候选验证、身份复核、历史定位和启动播放。
+    /// </summary>
+    /// <remarks>
+    /// 这是“用户明确激活媒体”的组合用例。生产实现必须覆盖此方法，并让提交、Seek 和 Play
+    /// 共享同一个操作门与媒体代次；否则若 ViewModel 顺序调用三个公开方法，Stop 或新的
+    /// Load 可能插入中间状态，让已经过期的双击请求错误地启动另一段媒体。
+    ///
+    /// 默认实现只用于兼容轻量测试替身。它仍会先校验已认证媒体身份，再尝试播放，但不承诺
+    /// 跨调用原子性，不能作为生产播放会话的实现方案。
+    /// </remarks>
+    async Task<PlaybackOperationResult> LoadAtPositionAndPlayAsync(
+        string filePath,
+        string password,
+        long positionMs,
+        PlaybackMediaIdentity? expectedIdentity = null,
+        CancellationToken cancellationToken = default)
+    {
+        var loaded = await LoadAtPositionAsync(
+            filePath,
+            password,
+            positionMs,
+            expectedIdentity,
+            cancellationToken);
+        return loaded.Success
+            ? await PlayAsync(cancellationToken)
+            : loaded;
+    }
+
+    /// <summary>
     /// 在同一次媒体切换事务中完成候选验证、提交和启动播放。
     /// 该组合入口避免 ViewModel 在 Load 与 Play 之间观察到可被其他操作插入的中间状态。
     /// </summary>

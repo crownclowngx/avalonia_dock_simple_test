@@ -90,6 +90,31 @@ public sealed class VideoLibraryTests(Secvid03Fixture fixture)
     }
 
     [Fact]
+    public async Task Browser_ClearSearchRestoresProjectionWithoutRescanning()
+    {
+        var scanner = new FixedScanner(
+        [
+            Ready("a.secvid", "a", "Alpha", string.Empty),
+            Ready("b.secvid", "b", "Beta", string.Empty)
+        ]);
+        using var browser = new VideoLibraryBrowserViewModel(scanner);
+        await browser.LoadFolderAsync("virtual-clear-search");
+        Assert.Equal(1, scanner.ScanCalls);
+
+        browser.SearchText = "Alpha";
+        await WaitForFilterAsync();
+        Assert.Single(browser.VisibleItems);
+        Assert.True(browser.HasSearchText);
+
+        browser.ClearSearchCommand.Execute(null);
+        await WaitForFilterAsync();
+
+        Assert.False(browser.HasSearchText);
+        Assert.Equal(2, browser.VisibleItems.Count);
+        Assert.Equal(1, scanner.ScanCalls);
+    }
+
+    [Fact]
     public async Task Browser_RejectsLateResultsFromPreviousFolderAndAfterDispose()
     {
         var scanner = new SwitchingScanner();
@@ -148,10 +173,13 @@ public sealed class VideoLibraryTests(Secvid03Fixture fixture)
 
     private sealed class FixedScanner(IReadOnlyList<VideoLibraryScanResult> results) : IVideoLibraryScanner
     {
+        public int ScanCalls { get; private set; }
+
         public async IAsyncEnumerable<VideoLibraryScanResult> ScanAsync(
             string folderPath,
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
         {
+            ScanCalls++;
             foreach (var result in results)
             {
                 cancellationToken.ThrowIfCancellationRequested();

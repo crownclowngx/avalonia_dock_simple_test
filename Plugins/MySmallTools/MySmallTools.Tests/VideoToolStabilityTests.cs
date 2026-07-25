@@ -33,6 +33,47 @@ public sealed class VideoToolStabilityTests
     }
 
     [Fact]
+    public void LibrarySettingsExpansionPersistsWithoutExposingPasswordOrLosingOtherSettings()
+    {
+        var player = Assert.IsType<VideoPlayerControlViewModel>(
+            RuntimeHelpers.GetUninitializedObject(typeof(VideoPlayerControlViewModel)));
+        var initial = VideoLibrarySettings.Default with
+        {
+            RecentFolder = Path.GetFullPath("remembered-library"),
+            IncludeSubdirectories = true,
+            SortField = VideoLibrarySortField.ModifiedTime,
+            SortDirection = VideoLibrarySortDirection.Descending,
+            StatusFilter = VideoLibraryStatusFilter.InProgress
+        };
+        var settings = new RecordingLibrarySettingsStore(initial);
+        using var browser = new VideoLibraryBrowserViewModel(
+            new EmptyScanner(),
+            settingsStore: settings);
+        using var library = new SecretVideoLibraryViewModel(
+            browser,
+            player,
+            settingsStore: settings);
+
+        Assert.False(library.IsLibrarySettingsExpanded);
+        Assert.Equal("密码未输入", library.PasswordStateText);
+
+        library.Password = "must-not-appear-in-summary";
+        library.IsLibrarySettingsExpanded = true;
+
+        Assert.Equal("密码已输入", library.PasswordStateText);
+        Assert.DoesNotContain(
+            "must-not-appear",
+            library.PasswordStateText,
+            StringComparison.Ordinal);
+        Assert.True(settings.CurrentSettings.IsLibrarySettingsExpanded);
+        Assert.Equal(initial.RecentFolder, settings.CurrentSettings.RecentFolder);
+        Assert.True(settings.CurrentSettings.IncludeSubdirectories);
+        Assert.Equal(initial.SortField, settings.CurrentSettings.SortField);
+        Assert.Equal(initial.SortDirection, settings.CurrentSettings.SortDirection);
+        Assert.Equal(initial.StatusFilter, settings.CurrentSettings.StatusFilter);
+    }
+
+    [Fact]
     public void VideoEncryptorDocument_DefaultTitleAndVideoTitle_AreIndependent()
     {
         var strategy = CreateVideoEncryptorStrategy();
@@ -323,6 +364,15 @@ public sealed class VideoToolStabilityTests
             await Task.CompletedTask;
             yield break;
         }
+    }
+
+    private sealed class RecordingLibrarySettingsStore(VideoLibrarySettings initial)
+        : IVideoLibrarySettingsStore
+    {
+        public VideoLibrarySettings CurrentSettings { get; private set; } = initial;
+
+        public void UpdateSettings(VideoLibrarySettings settings) =>
+            CurrentSettings = settings;
     }
 
     /// <summary>
