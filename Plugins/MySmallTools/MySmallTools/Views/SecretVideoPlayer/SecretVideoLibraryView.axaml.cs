@@ -1,8 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 
@@ -11,7 +8,6 @@ namespace MySmallTools.Views.SecretVideoPlayer;
 public partial class SecretVideoLibraryView : UserControl
 {
     private const double InlinePaneMinimumWidth = 960;
-    private bool _isFolderPickerOpen;
 
     public SecretVideoLibraryView()
     {
@@ -45,63 +41,4 @@ public partial class SecretVideoLibraryView : UserControl
         }
     }
 
-    private async void OnBrowseFolderClick(object? sender, RoutedEventArgs e)
-    {
-        if (_isFolderPickerOpen ||
-            DataContext is not SecretVideoLibraryViewModel viewModel ||
-            viewModel.IsOpening)
-            return;
-
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null)
-            return;
-
-        _isFolderPickerOpen = true;
-        try
-        {
-            var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-            {
-                Title = "选择加密视频文件夹",
-                AllowMultiple = false
-            });
-
-            // Dock 等待系统对话框时可能替换 DataContext，结果只能写回发起请求的 Document。
-            if (folders.Count > 0 && ReferenceEquals(DataContext, viewModel))
-                await viewModel.OpenFolderAsync(folders[0].Path.LocalPath);
-        }
-        catch (Exception ex)
-        {
-            if (ReferenceEquals(DataContext, viewModel))
-                viewModel.StatusMessage = $"选择文件夹失败: {ex.Message}";
-        }
-        finally
-        {
-            _isFolderPickerOpen = false;
-        }
-    }
-
-    private async void OnVideoListDoubleTapped(object? sender, TappedEventArgs e)
-    {
-        e.Handled = true;
-        await ExecuteActivateSelectedAsync();
-    }
-
-    private async void OnVideoListKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key != Key.Enter)
-            return;
-
-        e.Handled = true;
-        await ExecuteActivateSelectedAsync();
-    }
-
-    private async Task ExecuteActivateSelectedAsync()
-    {
-        if (DataContext is not SecretVideoLibraryViewModel viewModel)
-            return;
-
-        var command = viewModel.ActivateSelectedCommand;
-        if (command.CanExecute(null))
-            await command.ExecuteAsync(null);
-    }
 }

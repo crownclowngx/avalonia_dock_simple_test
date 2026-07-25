@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MySmallTools.Views.SecretVideoPlayer.Library.LibraryListView">
+  <Grid RowDefinitions="Auto,*" RowSpacing="8">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+      <TextBox Grid.Column="0" Text="{Binding Owner.Browser.SearchText}"
+               Watermark="搜索文件名、公开标题或描述" AutomationProperties.Name="搜索媒体库" />
+      <Button Grid.Column="1" Content="×" Command="{Binding Owner.Browser.ClearSearchCommand}"
+              IsVisible="{Binding Owner.Browser.HasSearchText}" Classes="IconButton"
+              ToolTip.Tip="清除搜索" AutomationProperties.Name="清除搜索" />
+    </Grid>
+    <Border Grid.Row="1" Classes="LibraryListSection">
+      <Grid RowDefinitions="Auto,*" RowSpacing="5">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="6">
+          <TextBlock Grid.Column="0" Text="视频列表" Classes="SectionTitle" />
+          <TextBlock Grid.Column="1" Text="{Binding Owner.Browser.VisibleItemCount, StringFormat='{}{0} 项'}"
+                     VerticalAlignment="Center" Classes="LibraryHint" />
+          <TextBlock Grid.Column="2" Text="双击或按 Enter 直接播放"
+                     HorizontalAlignment="Right" VerticalAlignment="Center" Classes="LibraryHint" />
+        </Grid>
+        <Grid Grid.Row="1">
+          <ListBox Classes="LibraryList" ItemsSource="{Binding Owner.Browser.VisibleItems}"
+                   SelectedItem="{Binding Owner.Browser.SelectedItem}"
+                   DoubleTapped="OnVideoListDoubleTapped" KeyDown="OnVideoListKeyDown">
+            <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
+                  <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding FileNameWithoutExtension}"
+                               FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding FilePath}" />
+                    <TextBlock Grid.Column="1" Text="⚠" IsVisible="{Binding HasError}"
+                               Foreground="DarkOrange" Margin="6,0,0,0" ToolTip.Tip="{Binding ErrorMessage}" />
+                  </Grid>
+                  <TextBlock Grid.Row="1" Text="{Binding PublicTitle}" IsVisible="{Binding HasPublicTitle}"
+                             Classes="Caption" LineHeight="14" TextTrimming="CharacterEllipsis"
+                             ToolTip.Tip="{Binding PublicTitle}" />
+                  <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                    <TextBlock Grid.Column="0" Text="{Binding HistoryStateText}" Classes="Caption" />
+                    <TextBlock Grid.Column="1" Text="{Binding ModifiedTimeText}" Classes="Caption"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Text="{Binding LastPlayedTimeText}" Classes="Caption" />
+                  </Grid>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                      IsVisible="{Binding !Owner.Browser.HasFolder}" Spacing="4">
+            <TextBlock Text="尚未选择视频文件夹" HorizontalAlignment="Center" Classes="SectionTitle" />
+            <TextBlock Text="选择文件夹后将在这里显示视频" HorizontalAlignment="Center" Classes="Caption" />
+          </StackPanel>
+          <Border IsVisible="{Binding Owner.Browser.HasFolder}">
+            <TextBlock Text="没有找到视频，或当前搜索没有匹配项"
+                       IsVisible="{Binding !Owner.Browser.HasVisibleItems}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" Classes="Caption" />
+          </Border>
+        </Grid>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

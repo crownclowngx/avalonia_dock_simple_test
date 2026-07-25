@@ -232,6 +232,10 @@ sequenceDiagram
 
 ViewModel 可以取消自己发起的任务、退订事件和淘汰迟到回调，但不得再次 Dispose 同样由 Scope 拥有的注入服务。任务 Document 关闭时只发送取消，不在 UI 线程同步等待。
 
+G7.1 后，顶层 Document ViewModel 是宿主兼容外壳，实际实现按
+`Playback/Library/Encryption/Decryption/SingleVideo` 功能包组织。兼容代理必须指向同一个
+状态所有者，禁止为了旧绑定再复制一份密码、进度、队列或列表投影。
+
 ### 8.2 文件选择器
 
 文件/文件夹选择依赖 `TopLevel.StorageProvider`，因此保留在 View 点击处理器中。异步处理器必须：
@@ -243,6 +247,7 @@ ViewModel 可以取消自己发起的任务、退订事件和淘汰迟到回调�
 - 只接受本地路径，并把安全错误写回当前 Document。
 
 不要改成 ViewModel 事件订阅，否则 Dock 重建 View 或重复设置 `DataContext` 时容易累计订阅。
+文件/目录选择器位于实际功能子 View；顶层 View 不再集中处理其他组件的窗口级交互。
 
 ### 8.3 UI 命名
 

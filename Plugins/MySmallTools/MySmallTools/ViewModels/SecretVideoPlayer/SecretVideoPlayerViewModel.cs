@@ -1,182 +1,91 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
-using MySmallTools.Business.SecretVideoPlayer.Container;
+using MySmallTools.ViewModels.SecretVideoPlayer.SingleVideo;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer;
 
 /// <summary>
-/// 安全视频页面的协调视图模型，负责公开信息、密码加载和播放器资源状态之间的切换。
+/// 单文件播放器 Document 的兼容组合外壳。
 /// </summary>
 /// <remarks>
-/// 选择文件后立即读取明文公开区，不等待密码；真正加载媒体时才验证密码。
-/// 编辑信息前会主动释放播放器媒体，确保 LibVLC 不再持有文件句柄，随后才能安全地以读写方式打开同一容器。
+/// 新界面分别绑定 <see cref="Source"/> 和 <see cref="PublicInfo"/>；旧公开属性与命令继续
+/// 转发到唯一状态所有者，保证宿主、既有测试和外部绑定在 G8 前无需破坏式迁移。
 /// </remarks>
-public partial class SecretVideoPlayerViewModel : Document
+public sealed class SecretVideoPlayerViewModel : Document, IDisposable
 {
-    private bool _mediaLoaded;
-    private string _rawPublicTitle = string.Empty;
+    private bool _disposed;
 
-    [ObservableProperty] private string _filePath = string.Empty;
-    [ObservableProperty] private string _password = string.Empty;
-    [ObservableProperty] private bool _showPassword;
-    [ObservableProperty] private string _statusMessage = "请选择 SECVID03 加密视频文件";
-    [ObservableProperty] private bool _isLoading;
-    [ObservableProperty] private VideoPlayerControlViewModel _playerViewModel;
-    [ObservableProperty] private string _publicTitle = string.Empty;
-    [ObservableProperty] private string _publicDescription = string.Empty;
-    [ObservableProperty] private bool _hasPublicDescription;
-    [ObservableProperty] private bool _isEditingPublicInfo;
-    [ObservableProperty] private string _editableTitle = string.Empty;
-    [ObservableProperty] private string _editableDescription = string.Empty;
-
-    public int EditableTitleCharacterCount => EncryptedVideoContainer.CountRunes(EditableTitle);
-    public int EditableDescriptionCharacterCount => EncryptedVideoContainer.CountRunes(EditableDescription);
+    public VideoPlayerControlViewModel PlayerViewModel { get; }
+    public SingleVideoSourceViewModel Source { get; }
+    public PublicInfoEditorViewModel PublicInfo { get; }
 
     public SecretVideoPlayerViewModel(VideoPlayerControlViewModel playerViewModel)
     {
         PlayerViewModel = playerViewModel ?? throw new ArgumentNullException(nameof(playerViewModel));
+        Source = new SingleVideoSourceViewModel(PlayerViewModel, OnFileChanged);
+        PublicInfo = new PublicInfoEditorViewModel(PlayerViewModel, Source);
+        Source.PropertyChanged += OnSourcePropertyChanged;
+        PublicInfo.PropertyChanged += OnPublicInfoPropertyChanged;
     }
 
-    partial void OnPasswordChanged(string value) => LoadVideoCommand.NotifyCanExecuteChanged();
-
-    partial void OnFilePathChanged(string value)
+    public string FilePath { get => Source.FilePath; set => Source.FilePath = value; }
+    public string Password { get => Source.Password; set => Source.Password = value; }
+    public bool ShowPassword { get => Source.ShowPassword; set => Source.ShowPassword = value; }
+    public string StatusMessage { get => Source.StatusMessage; set => Source.StatusMessage = value; }
+    public bool IsLoading => Source.IsLoading;
+    public string PublicTitle => PublicInfo.PublicTitle;
+    public string PublicDescription => PublicInfo.PublicDescription;
+    public bool HasPublicDescription => PublicInfo.HasPublicDescription;
+    public bool IsEditingPublicInfo => PublicInfo.IsEditingPublicInfo;
+    public string EditableTitle { get => PublicInfo.EditableTitle; set => PublicInfo.EditableTitle = value; }
+    public string EditableDescription
     {
-        _mediaLoaded = false;
-        IsEditingPublicInfo = false;
-        ReadPublicInfo(value);
-        LoadVideoCommand.NotifyCanExecuteChanged();
-        EditPublicInfoCommand.NotifyCanExecuteChanged();
+        get => PublicInfo.EditableDescription;
+        set => PublicInfo.EditableDescription = value;
+    }
+    public int EditableTitleCharacterCount => PublicInfo.EditableTitleCharacterCount;
+    public int EditableDescriptionCharacterCount => PublicInfo.EditableDescriptionCharacterCount;
+
+    public IAsyncRelayCommand LoadVideoCommand => Source.LoadVideoCommand;
+    public IRelayCommand TogglePasswordVisibilityCommand => Source.TogglePasswordVisibilityCommand;
+    public IAsyncRelayCommand EditPublicInfoCommand => PublicInfo.EditPublicInfoCommand;
+    public IRelayCommand SavePublicInfoCommand => PublicInfo.SavePublicInfoCommand;
+    public IRelayCommand CancelEditPublicInfoCommand => PublicInfo.CancelEditPublicInfoCommand;
+
+    public Task SelectFileAsync(
+        string filePath,
+        CancellationToken cancellationToken = default) =>
+        Source.SelectFileAsync(filePath, cancellationToken);
+
+    private void OnFileChanged(string path)
+    {
+        PublicInfo?.Read(path);
+        PublicInfo?.EditPublicInfoCommand.NotifyCanExecuteChanged();
     }
 
-    partial void OnIsLoadingChanged(bool value)
+    private void OnSourcePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        LoadVideoCommand.NotifyCanExecuteChanged();
-        EditPublicInfoCommand.NotifyCanExecuteChanged();
+        if (e.PropertyName is not null)
+            OnPropertyChanged(e.PropertyName);
+        if (e.PropertyName is nameof(Source.FilePath) or nameof(Source.IsLoading))
+            PublicInfo.EditPublicInfoCommand.NotifyCanExecuteChanged();
     }
 
-    partial void OnEditableTitleChanged(string value)
+    private void OnPublicInfoPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        OnPropertyChanged(nameof(EditableTitleCharacterCount));
-        SavePublicInfoCommand.NotifyCanExecuteChanged();
+        if (e.PropertyName is not null)
+            OnPropertyChanged(e.PropertyName);
     }
 
-    partial void OnEditableDescriptionChanged(string value)
+    public void Dispose()
     {
-        OnPropertyChanged(nameof(EditableDescriptionCharacterCount));
-        SavePublicInfoCommand.NotifyCanExecuteChanged();
-    }
-
-    partial void OnIsEditingPublicInfoChanged(bool value)
-    {
-        SavePublicInfoCommand.NotifyCanExecuteChanged();
-    }
-
-    [RelayCommand(CanExecute = nameof(CanLoadVideo))]
-    private async Task LoadVideoAsync()
-    {
-        if (!File.Exists(FilePath) || string.IsNullOrEmpty(Password))
-        {
-            StatusMessage = "请选择文件并输入密码";
+        if (_disposed)
             return;
-        }
-
-        IsLoading = true;
-        StatusMessage = "正在验证密码并打开随机读取流...";
-        try
-        {
-            var success = await PlayerViewModel.LoadMediaAsync(FilePath, Password);
-            _mediaLoaded = success;
-            StatusMessage = success ? "视频已加载，可以开始播放" : "加载失败：密码错误、文件已损坏或不是 SECVID03";
-        }
-        catch (Exception ex)
-        {
-            _mediaLoaded = false;
-            StatusMessage = $"加载失败: {ex.Message}";
-        }
-        finally
-        {
-            IsLoading = false;
-            EditPublicInfoCommand.NotifyCanExecuteChanged();
-        }
-    }
-
-    private bool CanLoadVideo() => !IsLoading && File.Exists(FilePath);
-
-    [RelayCommand(CanExecute = nameof(CanEditPublicInfo))]
-    private async Task EditPublicInfoAsync()
-    {
-        // “编辑信息”是明确的资源切换点：即使视频当前已暂停，也先释放 Media/Input，
-        // 避免公开区保存时与 LibVLC 的后台读取发生共享冲突。
-        if (_mediaLoaded)
-        {
-            await PlayerViewModel.CleanupMediaAsync();
-            _mediaLoaded = false;
-        }
-
-        EditableTitle = _rawPublicTitle;
-        EditableDescription = PublicDescription;
-        IsEditingPublicInfo = true;
-    }
-
-    private bool CanEditPublicInfo() => !IsLoading && File.Exists(FilePath);
-
-    public async Task SelectFileAsync(string filePath, CancellationToken cancellationToken = default)
-    {
-        await PlayerViewModel.CleanupMediaAsync(cancellationToken);
-        FilePath = filePath;
-    }
-
-    [RelayCommand(CanExecute = nameof(CanSavePublicInfo))]
-    private void SavePublicInfo()
-    {
-        try
-        {
-            EncryptedVideoContainer.UpdatePublicInfo(FilePath, EditableTitle, EditableDescription);
-            IsEditingPublicInfo = false;
-            ReadPublicInfo(FilePath);
-            StatusMessage = "标题和描述已原地保存，视频密文未移动";
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"保存公开信息失败: {ex.Message}";
-        }
-    }
-
-    private bool CanSavePublicInfo() => IsEditingPublicInfo &&
-        EditableTitleCharacterCount <= EncryptedVideoContainer.MaxTitleRunes &&
-        EditableDescriptionCharacterCount <= EncryptedVideoContainer.MaxDescriptionRunes;
-
-    [RelayCommand]
-    private void CancelEditPublicInfo() => IsEditingPublicInfo = false;
-
-    [RelayCommand]
-    private void TogglePasswordVisibility() => ShowPassword = !ShowPassword;
-
-    private void ReadPublicInfo(string path)
-    {
-        // 先设置安全的容器文件名回退值。公开区损坏不应阻止用户继续输入密码验证视频主体。
-        PublicTitle = string.IsNullOrWhiteSpace(path) ? string.Empty : Path.GetFileName(path);
-        _rawPublicTitle = string.Empty;
-        PublicDescription = string.Empty;
-        HasPublicDescription = false;
-        if (!File.Exists(path)) return;
-
-        try
-        {
-            var info = EncryptedVideoContainer.ReadPublicInfo(path);
-            _rawPublicTitle = info.Title;
-            PublicTitle = string.IsNullOrEmpty(info.Title) ? info.OriginalFileName : info.Title;
-            PublicDescription = info.Description;
-            HasPublicDescription = !string.IsNullOrEmpty(info.Description);
-            StatusMessage = "公开信息已读取，请输入密码播放";
-        }
-        catch (Exception ex)
-        {
-            PublicTitle = Path.GetFileName(path);
-            PublicDescription = "描述不可读取";
-            HasPublicDescription = true;
-            StatusMessage = $"公开信息不可读取，文件可能不受支持或已经损坏；仍可尝试输入密码播放: {ex.Message}";
-        }
+        _disposed = true;
+        Source.PropertyChanged -= OnSourcePropertyChanged;
+        PublicInfo.PropertyChanged -= OnPublicInfoPropertyChanged;
+        Source.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

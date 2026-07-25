@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MySmallTools.Views.SecretVideoPlayer.Encryption.EncryptionOptionsView">
+  <Border Classes="DocumentSection">
+    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto" RowSpacing="6" ColumnSpacing="8">
+      <CheckBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                IsChecked="{Binding Owner.UseSafeRename}" IsEnabled="{Binding !Owner.IsBusy}"
+                Content="冲突时安全添加数字后缀（关闭时严格阻止）" />
+      <TextBlock Grid.Row="1" Grid.Column="0" Text="公共密码" VerticalAlignment="Center" Classes="Caption" />
+      <Grid Grid.Row="1" Grid.Column="1">
+        <TextBox Text="{Binding Owner.Password}" PasswordChar="●" Watermark="至少 6 个字符"
+                 IsVisible="{Binding !Owner.ShowPassword}" IsEnabled="{Binding !Owner.IsBusy}" />
+        <TextBox Text="{Binding Owner.Password}" Watermark="至少 6 个字符"
+                 IsVisible="{Binding Owner.ShowPassword}" IsEnabled="{Binding !Owner.IsBusy}" />
+      </Grid>
+      <Grid Grid.Row="1" Grid.Column="2" ColumnDefinitions="180,Auto" ColumnSpacing="6">
+        <Grid Grid.Column="0">
+          <TextBox Text="{Binding Owner.ConfirmPassword}" PasswordChar="●" Watermark="再次输入密码"
+                   IsVisible="{Binding !Owner.ShowPassword}" IsEnabled="{Binding !Owner.IsBusy}" />
+          <TextBox Text="{Binding Owner.ConfirmPassword}" Watermark="再次输入密码"
+                   IsVisible="{Binding Owner.ShowPassword}" IsEnabled="{Binding !Owner.IsBusy}" />
+        </Grid>
+        <Button Grid.Column="1" Content="显示" Command="{Binding Owner.TogglePasswordVisibilityCommand}"
+                IsVisible="{Binding !Owner.ShowPassword}" Classes="CompactButton" />
+        <Button Grid.Column="1" Content="隐藏" Command="{Binding Owner.TogglePasswordVisibilityCommand}"
+                IsVisible="{Binding Owner.ShowPassword}" Classes="CompactButton" />
+      </Grid>
+    </Grid>
+  </Border>
+</UserControl>

@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:encryption="clr-namespace:MySmallTools.Views.SecretVideoPlayer.Encryption"
+             x:Class="MySmallTools.Views.SecretVideoPlayer.Encryption.EncryptionQueueView">
+  <Grid RowDefinitions="Auto,Auto,*">
+    <Border Grid.Row="0" Classes="DocumentToolbar">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="6">
+        <Button Grid.Column="0" Content="添加视频" Click="OnBrowseFileClick"
+                IsEnabled="{Binding !Owner.IsBusy}" Classes="CompactButton accent" />
+        <Button Grid.Column="1" Content="移除所选" Command="{Binding Owner.RemoveSelectedCommand}" Classes="CompactButton" />
+        <Button Grid.Column="2" Content="重试所选" Command="{Binding Owner.RetrySelectedCommand}" Classes="CompactButton" />
+        <Button Grid.Column="3" Content="重试全部" Command="{Binding Owner.RetryAllCommand}" Classes="CompactButton" />
+        <Button Grid.Column="4" Content="清空已完成" Command="{Binding Owner.ClearCompletedCommand}" Classes="CompactButton" />
+        <TextBlock Grid.Column="5" VerticalAlignment="Center"
+                   Text="{Binding Owner.ItemCount, StringFormat='{}{0} 个文件'}" Classes="Caption" />
+        <ProgressBar Grid.Column="6" Width="72" Height="3" IsIndeterminate="True"
+                     IsVisible="{Binding Owner.IsPreflighting}" VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+
+    <encryption:EncryptionOptionsView Grid.Row="1" DataContext="{Binding Owner.Batch}" />
+
+    <Grid Grid.Row="2" ColumnDefinitions="3*,2*" ColumnSpacing="8" MinHeight="220">
+      <Grid Grid.Column="0">
+        <ListBox ItemsSource="{Binding Owner.Items}" SelectedItem="{Binding Owner.SelectedItem}"
+                 IsVisible="{Binding Owner.HasItems}">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch" /></Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" Margin="5,4" RowSpacing="2">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding FileName}"
+                           TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding InputPath}" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Status.StateText}"
+                           FontSize="11" FontWeight="SemiBold" Margin="8,0,0,0" />
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding RequestedOutputPath}"
+                           Classes="Caption" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding RequestedOutputPath}" />
+                <ProgressBar Grid.Row="2" Grid.ColumnSpan="2" Minimum="0" Maximum="100"
+                             Value="{Binding Status.Progress}" Height="3" IsVisible="{Binding Status.IsRunning}" />
+                <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding Status.Message}"
+                           IsVisible="{Binding Status.HasMessage}" Classes="Caption"
+                           TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Status.Message}" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                    IsVisible="{Binding !Owner.HasItems}" Spacing="4">
+          <TextBlock Text="队列为空" HorizontalAlignment="Center" Classes="SectionTitle" />
+          <TextBlock Text="一次选择多个普通视频开始批量加密"
+                     HorizontalAlignment="Center" Classes="Caption" />
+        </StackPanel>
+      </Grid>
+
+      <Border Grid.Column="1" Classes="DocumentSection" IsVisible="{Binding Owner.HasSelectedItem}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel DataContext="{Binding Owner.SelectedItem}" Spacing="7">
+            <TextBlock Text="所选项目" Classes="SectionTitle" />
+            <TextBlock Text="输出路径" Classes="Caption" />
+            <TextBox Text="{Binding RequestedOutputPath}"
+                     IsEnabled="{Binding !$parent[UserControl].DataContext.Owner.IsBusy}"
+                     ToolTip.Tip="{Binding RequestedOutputPath}" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="公开标题（可留空）" Classes="Caption" />
+              <TextBlock Grid.Column="1" Text="{Binding TitleCharacterCount, StringFormat='{}{0} / 200'}" Classes="Caption" />
+            </Grid>
+            <TextBox Text="{Binding PublicTitle}"
+                     IsEnabled="{Binding !$parent[UserControl].DataContext.Owner.IsBusy}"
+                     Watermark="留空时播放器显示原始文件名" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="公开描述（可留空）" Classes="Caption" />
+              <TextBlock Grid.Column="1" Text="{Binding DescriptionCharacterCount, StringFormat='{}{0} / 10000'}" Classes="Caption" />
+            </Grid>
+            <TextBox Text="{Binding PublicDescription}" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="100" MaxHeight="180"
+                     IsEnabled="{Binding !$parent[UserControl].DataContext.Owner.IsBusy}" />
+            <TextBlock Text="{Binding Status.FailureCodeText}"
+                       IsVisible="{Binding Status.HasFailureCode}" Classes="Caption" />
+            <TextBlock Text="{Binding PreparedOutputPath}" Classes="Caption" TextWrapping="Wrap" />
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

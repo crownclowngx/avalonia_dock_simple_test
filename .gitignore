@@ -2,3 +2,4 @@
 **/obj/
 .aiflow/insight/
 /artifacts/
+/.idea

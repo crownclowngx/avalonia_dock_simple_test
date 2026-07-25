@@ -48,6 +48,8 @@ public sealed class MySmallToolsPluginModule : IPluginModule
             provider.GetRequiredService<SecureVideoPlayer>());
         services.AddScoped<ILibVlcVideoOutputSource>(provider =>
             provider.GetRequiredService<SecureVideoPlayer>());
+        // G7.1 保留顶层类型作为宿主解析边界；Playback 功能包的状态与子组件由该兼容
+        // 外壳的基类在同一 Document Scope 内创建，不额外注册全局或跨文档 UI 状态。
         services.AddScoped<VideoPlayerControlViewModel>();
         services.AddScoped<SecretVideoPlayerViewModel>();
 
@@ -86,6 +88,8 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddTransient<ISecvid03Encryptor, Secvid03Encryptor>();
         services.AddScoped<IVideoEncryptionService, VideoEncryptorService>();
         services.AddScoped<IVideoBatchEncryptionService, VideoBatchEncryptionService>();
+        // 加密/解密顶层 Document 是无状态兼容外壳，队列与批次实现仍由各自 Document
+        // 独占，继续沿用原有 Scoped 服务和取消边界。
         services.AddScoped<VideoEncryptorViewModel>();
 
         // 单文件解密器无共享状态；批处理编排和队列则跟随各自 Document Scope。

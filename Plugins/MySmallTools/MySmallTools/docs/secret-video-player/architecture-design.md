@@ -105,10 +105,11 @@ flowchart TB
 | --- | --- | --- |
 | 插件组合根 | `MySmallToolsPluginModule` | 只注册依赖关系和生命周期，不创建 View、Document、任务或原生对象 |
 | Document 创建 | 4 个 `DocumentStrategy`、`DocumentScopeManager` | 每次创建一个独立 Scope，并在 Dock 确认关闭后释放 |
-| 页面协调 | `SecretVideoPlayerViewModel`、`SecretVideoLibraryViewModel`、`VideoEncryptorViewModel`、`VideoDecryptorViewModel` | 输入校验、命令、任务状态、公开信息和取消 |
-| 文件夹浏览 | `VideoLibraryBrowserViewModel`、`VideoLibraryScanner` | 异步扫描 `.secvid`、隔离单文件错误、过滤公开信息 |
-| 播放展示 | `VideoPlayerControlViewModel` | 把用户意图交给会话，把回调切换到 UI 线程，显示部署诊断、控制快照和全屏请求 |
-| 全屏与快捷键 | `VideoPlayerControl`、`PlaybackShortcutPolicy` | 处理 Avalonia 焦点、OverlayLayer 和唯一 PlayerShell 的视觉树迁移 |
+| 顶层兼容外壳 | 四个 Document ViewModel、`VideoPlayerControlViewModel` | 保持宿主类型名、构造函数和既有公开绑定，不复制功能状态 |
+| UI 功能包 | `Playback`、`Library`、`Encryption`、`Decryption`、`SingleVideo` | 按功能拥有状态、命令、取消和子 View，顶层 AXAML 只组合 |
+| 文件夹浏览 | `LibraryBrowserCoordinatorViewModel`、`VideoLibraryScanner` | 异步扫描 `.secvid`、隔离单文件错误、过滤公开信息 |
+| 播放展示 | `PlaybackCoordinatorViewModel` 及五个功能入口 | 把用户意图交给会话，把回调切换到 UI 线程，显示部署诊断和控制快照 |
+| 全屏与快捷键 | `FullscreenPlaybackPresenter`、`PlaybackShortcutRouter` | 处理 Avalonia 焦点、唯一 PlayerShell/HWND 迁移和播放器作用域按键 |
 | 播放列表导航 | `IPlaybackNavigationContext`、`SecretVideoLibraryViewModel` | 以可选端口提供当前筛选列表的相邻项和连续播放 |
 | 部署探针 | `IPlaybackDeploymentProbe`、`PlaybackDeploymentProbe` | 无副作用检查平台、托管桥接、AMD64 核心 DLL 和关键插件模块 |
 | backend 代理 | `LazyPlaybackBackend` | 一个 Document 最多创建一套 `PlayerHost + MediaSourceFactory`，缓存 HWND 和音量意图 |

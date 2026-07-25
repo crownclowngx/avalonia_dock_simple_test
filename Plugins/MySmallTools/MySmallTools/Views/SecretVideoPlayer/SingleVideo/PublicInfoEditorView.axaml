@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MySmallTools.Views.SecretVideoPlayer.SingleVideo.PublicInfoEditorView">
+  <Border Classes="DocumentSection">
+    <StackPanel Spacing="6">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock Text="{Binding PublicTitle}" FontSize="16" FontWeight="SemiBold"
+                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding PublicTitle}" />
+        <Button Grid.Column="1" Content="编辑信息" Command="{Binding EditPublicInfoCommand}"
+                Classes="CompactButton" />
+      </Grid>
+
+      <ScrollViewer MaxHeight="72" VerticalScrollBarVisibility="Auto"
+                    IsVisible="{Binding HasPublicDescription}">
+        <SelectableTextBlock Text="{Binding PublicDescription}" TextWrapping="Wrap"
+                             FontSize="11" Opacity="0.72" ToolTip.Tip="{Binding PublicDescription}" />
+      </ScrollViewer>
+
+      <Border BorderBrush="{DynamicResource DockThemeBorderLowBrush}" BorderThickness="1"
+              Padding="10" CornerRadius="5" IsVisible="{Binding IsEditingPublicInfo}">
+        <StackPanel Spacing="6">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="标题" Classes="SectionTitle" />
+            <TextBlock Grid.Column="1"
+                       Text="{Binding EditableTitleCharacterCount, StringFormat='{}{0} / 200'}"
+                       Classes="Caption" />
+          </Grid>
+          <TextBox Text="{Binding EditableTitle}" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="描述" Classes="SectionTitle" />
+            <TextBlock Grid.Column="1"
+                       Text="{Binding EditableDescriptionCharacterCount, StringFormat='{}{0} / 10000'}"
+                       Classes="Caption" />
+          </Grid>
+          <TextBox Text="{Binding EditableDescription}" AcceptsReturn="True" TextWrapping="Wrap"
+                   Height="110" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
+            <Button Content="取消" Command="{Binding CancelEditPublicInfoCommand}" Classes="CompactButton" />
+            <Button Content="保存信息" Command="{Binding SavePublicInfoCommand}"
+                    Classes="CompactButton accent" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

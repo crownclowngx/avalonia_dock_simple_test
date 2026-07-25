@@ -2,154 +2,19 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:decryption="clr-namespace:MySmallTools.Views.SecretVideoPlayer.Decryption"
              mc:Ignorable="d" d:DesignWidth="980" d:DesignHeight="720"
              x:Class="MySmallTools.Views.SecretVideoPlayer.VideoDecryptorView">
   <UserControl.Styles>
     <StyleInclude Source="avares://MySmallTools/Styles/VideoDocumentStyles.axaml" />
   </UserControl.Styles>
-
-  <Grid Classes="DocumentPage" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
+  <Grid Classes="DocumentPage" RowDefinitions="Auto,*,Auto">
     <StackPanel Grid.Row="0" Spacing="2">
       <TextBlock Text="SECVID03 批量视频解密" Classes="PageTitle" />
       <TextBlock Text="严格顺序处理；每个文件独立验证；任何策略都不会覆盖已有文件。"
                  Classes="Caption" TextWrapping="Wrap" />
     </StackPanel>
-
-    <Border Grid.Row="1" Classes="DocumentToolbar">
-      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="6">
-        <Button Grid.Column="0" Content="添加视频" Click="OnAddFilesClick"
-                IsEnabled="{Binding !IsBusy}" Classes="CompactButton accent" />
-        <Button Grid.Column="1" Content="移除所选" Command="{Binding RemoveSelectedCommand}"
-                Classes="CompactButton" />
-        <Button Grid.Column="2" Content="重试所选" Command="{Binding RetrySelectedCommand}"
-                Classes="CompactButton" />
-        <Button Grid.Column="3" Content="重试全部" Command="{Binding RetryAllCommand}"
-                Classes="CompactButton" />
-        <Button Grid.Column="4" Content="清空已完成" Command="{Binding ClearCompletedCommand}"
-                Classes="CompactButton" />
-        <TextBlock Grid.Column="5" VerticalAlignment="Center"
-                   Text="{Binding ItemCount, StringFormat='{}{0} 个文件'}" Classes="Caption" />
-        <ProgressBar Grid.Column="6" Width="72" Height="3" IsIndeterminate="True"
-                     IsVisible="{Binding IsInspecting}" VerticalAlignment="Center" />
-      </Grid>
-    </Border>
-
-    <Border Grid.Row="2" Classes="DocumentSection">
-      <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" RowSpacing="6" ColumnSpacing="6">
-        <TextBlock Grid.Row="0" Grid.Column="0" Text="输出目录" VerticalAlignment="Center" Classes="Caption" />
-        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding OutputDirectory}" IsReadOnly="True"
-                 Watermark="选择统一输出目录" ToolTip.Tip="{Binding OutputDirectory}" />
-        <Button Grid.Row="0" Grid.Column="2" Content="选择目录" Click="OnChooseOutputDirectoryClick"
-                IsEnabled="{Binding !IsBusy}" Classes="CompactButton" />
-
-        <CheckBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-                  IsChecked="{Binding UseSafeRename}"
-                  IsEnabled="{Binding !IsBusy}"
-                  Content="冲突时安全添加数字后缀（关闭时严格阻止）" />
-
-        <TextBlock Grid.Row="2" Grid.Column="0" Text="公共密码" VerticalAlignment="Center" Classes="Caption" />
-        <Grid Grid.Row="2" Grid.Column="1">
-          <TextBox Text="{Binding Password}" PasswordChar="●" Watermark="输入所有视频共用的密码"
-                   IsVisible="{Binding !ShowPassword}" IsEnabled="{Binding !IsBusy}" />
-          <TextBox Text="{Binding Password}" Watermark="输入所有视频共用的密码"
-                   IsVisible="{Binding ShowPassword}" IsEnabled="{Binding !IsBusy}" />
-        </Grid>
-        <Button Grid.Row="2" Grid.Column="2" Content="显示" Command="{Binding TogglePasswordVisibilityCommand}"
-                IsVisible="{Binding !ShowPassword}" Classes="CompactButton" MinWidth="70" />
-        <Button Grid.Row="2" Grid.Column="2" Content="隐藏" Command="{Binding TogglePasswordVisibilityCommand}"
-                IsVisible="{Binding ShowPassword}" Classes="CompactButton" MinWidth="70" />
-      </Grid>
-    </Border>
-
-    <Border Grid.Row="3" Classes="DocumentSection" IsVisible="{Binding HasPreflightIssues}">
-      <StackPanel Spacing="5">
-        <TextBlock Text="批次级预检" Classes="SectionTitle" />
-        <ItemsControl ItemsSource="{Binding PreflightIssues}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <StackPanel Margin="0,2" Spacing="1">
-                <TextBlock Text="{Binding SeverityText}" Classes="Caption" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Message}" Classes="StatusText" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding SuggestedAction}" Classes="Caption" TextWrapping="Wrap" />
-              </StackPanel>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </StackPanel>
-    </Border>
-
-    <Grid Grid.Row="4" MinHeight="150">
-      <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
-               IsVisible="{Binding HasItems}">
-        <ListBox.Styles>
-          <Style Selector="ListBoxItem">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-          </Style>
-        </ListBox.Styles>
-        <ListBox.ItemTemplate>
-          <DataTemplate>
-            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto"
-                  Margin="5,4" RowSpacing="1">
-              <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding EncryptedFileName}"
-                         TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding InputPath}" />
-              <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding StateText}"
-                         FontSize="11" FontWeight="SemiBold" Margin="8,0,0,0" />
-              <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding PublicTitle}"
-                         IsVisible="{Binding HasPublicTitle}" Classes="Caption"
-                         TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding PublicTitle}" />
-              <ProgressBar Grid.Row="2" Grid.ColumnSpan="2" Minimum="0" Maximum="100"
-                           Value="{Binding Progress}" Height="3" Margin="0,3,0,1"
-                           IsVisible="{Binding IsRunning}" />
-              <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding FailureCodeText}"
-                         IsVisible="{Binding HasFailureCode}" Classes="Caption" />
-              <TextBlock Grid.Row="4" Grid.ColumnSpan="2" Text="{Binding OutputPath}"
-                         IsVisible="{Binding HasOutputPath}" Classes="Caption"
-                         TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding OutputPath}" />
-              <TextBlock Grid.Row="4" Grid.ColumnSpan="2" Text="{Binding Message}"
-                         IsVisible="{Binding HasMessage}" Classes="Caption"
-                         TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Message}" />
-            </Grid>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
-
-      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                  IsVisible="{Binding !HasItems}" Spacing="4">
-        <TextBlock Text="队列为空" HorizontalAlignment="Center" Classes="SectionTitle" />
-        <TextBlock Text="添加 SECVID03 视频开始批量解密" HorizontalAlignment="Center" Classes="Caption" />
-      </StackPanel>
-    </Grid>
-
-    <Border Grid.Row="5" Classes="TaskFooter">
-      <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="5">
-        <ProgressBar Grid.Row="0" Minimum="0" Maximum="100" Value="{Binding OverallProgress}" Height="5" />
-        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="10">
-          <TextBlock Grid.Column="0" Text="{Binding CurrentFile}" Classes="Caption"
-                     TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding CurrentFile}" />
-          <TextBlock Grid.Column="1" Text="{Binding RunnableCount, StringFormat='可执行 {0}'}" Classes="Caption" />
-          <TextBlock Grid.Column="2" Text="{Binding ConflictCount, StringFormat='冲突 {0}'}" Classes="Caption" />
-          <TextBlock Grid.Column="3" Text="{Binding WarningCount, StringFormat='警告 {0}'}" Classes="Caption" />
-          <TextBlock Grid.Column="4" Text="{Binding BlockingCount, StringFormat='阻止 {0}'}" Classes="Caption" />
-        </Grid>
-        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
-          <TextBlock Grid.Column="0" />
-          <TextBlock Grid.Column="1" Text="{Binding SucceededCount, StringFormat='成功 {0}'}" Classes="Caption" />
-          <TextBlock Grid.Column="2" Text="{Binding FailedCount, StringFormat='失败 {0}'}" Classes="Caption" />
-          <TextBlock Grid.Column="3" Text="{Binding CancelledCount, StringFormat='取消 {0}'}" Classes="Caption" />
-        </Grid>
-        <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="6">
-          <SelectableTextBlock Grid.Column="0" Text="{Binding StatusMessage}" Classes="StatusText"
-                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding StatusMessage}" />
-          <Button Grid.Column="1" Content="取消当前" Command="{Binding CancelCurrentCommand}"
-                  Classes="CompactButton" />
-          <Button Grid.Column="2" Content="取消全部" Command="{Binding CancelAllCommand}"
-                  Classes="CompactButton" />
-          <Button Grid.Column="3" Content="检查批次" Command="{Binding CheckBatchCommand}"
-                  Classes="CompactButton" />
-          <Button Grid.Column="4" Content="开始执行" Command="{Binding StartBatchCommand}"
-                  Classes="CompactButton accent" IsDefault="True" />
-        </Grid>
-      </Grid>
-    </Border>
+    <decryption:DecryptionQueueView Grid.Row="1" DataContext="{Binding Queue}" />
+    <decryption:DecryptionExecutionView Grid.Row="2" DataContext="{Binding Batch}" />
   </Grid>
 </UserControl>

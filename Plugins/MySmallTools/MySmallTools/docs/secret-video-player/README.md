@@ -18,6 +18,7 @@
 | [G5 批量加密与统一队列](G5-BATCH-ENCRYPTION-UNIFIED-QUEUE.md) | 批量加密计划、严格顺序运行器、两级取消、冲突策略和 100 文件自动化证据 | 开发者、测试人员、评审人员 |
 | [G6 播放器日常控制](G6-PLAYER-DAILY-CONTROLS.md) | 全屏、倍速、快捷键、音轨/字幕、媒体库导航、连续播放和真实窗口证据 | 开发者、测试人员、评审人员 |
 | [G7 媒体库与播放历史](G7-MEDIA-LIBRARY-INCREMENTAL-HISTORY.md) | 递归扫描、目录监听、千项投影、设置/历史、隐私边界和原子恢复 | 开发者、测试人员、评审人员 |
+| [G7.1 UI 职责拆分](G7.1-UI-RESPONSIBILITY-REFACTOR.md) | 顶层兼容外壳、五个功能子包、子 View、全屏呈现器和状态所有权 | 开发者、维护者、评审人员 |
 | [概要设计](architecture-design.md) | 分层、组件职责、加密与播放数据流、DI 和 Document 生命周期 | 开发者、维护者 |
 | [SECVID03 文件格式](secvid03-format.md) | 二进制布局、密钥派生、GCM 认证、随机读取、公开信息和兼容策略 | 格式维护者、安全评审人员 |
 | [接入、约定与排障](integration-and-conventions.md) | LibVLC 部署、插件扫描、Dock 黑屏恢复、资源释放、已踩过的坑和回归检查 | 集成人员、问题排查人员 |
@@ -63,7 +64,7 @@ flowchart LR
 
 ## 快速部署与发布
 
-正式发布包只包含 `Controls/SmallTools/`，可直接解压到宿主根目录。单一发布入口会串行完成 Release 零警告构建、150 项插件测试、20 项宿主扫描测试、Manifest/ZIP 校验、64/512 MiB 内存门禁和两轮真实窗口播放门禁：
+正式发布包只包含 `Controls/SmallTools/`，可直接解压到宿主根目录。单一发布入口会串行完成 Release 零警告构建、153 项插件测试、20 项宿主扫描测试、Manifest/ZIP 校验、64/512 MiB 内存门禁和两轮真实窗口播放门禁：
 
 ```powershell
 .\scripts\Release-MySmallToolsP0.ps1
