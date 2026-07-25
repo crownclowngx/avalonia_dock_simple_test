@@ -457,6 +457,8 @@ internal sealed class G3PlaybackHarnessRunner(
 
         if (options.MediaSwitches > 0)
         {
+            var initialMediaGeneration =
+                document.PlayerViewModel.PlaybackSnapshot.MediaGeneration;
             var switches = Enumerable.Range(0, options.MediaSwitches)
                 .Select(index =>
                 {
@@ -473,6 +475,16 @@ internal sealed class G3PlaybackHarnessRunner(
             Require(
                 switchResults[^1] && switchResults.Count(result => result) == 1,
                 "快速媒体切换没有做到只有最后请求提交。");
+            var expectedMediaGeneration =
+                initialMediaGeneration + options.MediaSwitches;
+            var actualMediaGeneration =
+                document.PlayerViewModel.PlaybackSnapshot.MediaGeneration;
+            Require(
+                actualMediaGeneration == expectedMediaGeneration,
+                "快速媒体切换提交代次错误: " +
+                $"initial={initialMediaGeneration}, " +
+                $"expected={expectedMediaGeneration}, " +
+                $"actual={actualMediaGeneration}。");
             Require(
                 ReferenceEquals(documentPlayer, document.PlayerViewModel.MediaPlayer),
                 "普通媒体切换替换了 Document 级 MediaPlayer。");
@@ -481,17 +493,17 @@ internal sealed class G3PlaybackHarnessRunner(
                 document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration,
                 "普通媒体切换意外重建了 HWND 视频表面。");
 
-            var expectedLast = assets[(options.MediaSwitches - 1) % assets.Count];
             await document.PlayerViewModel.PlayCommand.ExecuteAsync(null);
             await WaitUntilAsync(
-                () => document.PlayerViewModel.PlaybackSnapshot.State ==
-                    PlaybackState.Playing,
+                () =>
+                {
+                    var snapshot = document.PlayerViewModel.PlaybackSnapshot;
+                    return snapshot.MediaGeneration == expectedMediaGeneration &&
+                           snapshot.State == PlaybackState.Playing &&
+                           !snapshot.IsTransitioning;
+                },
                 TimeSpan.FromSeconds(5),
                 "快速媒体切换的最终候选无法播放。");
-            Require(
-                document.PlayerViewModel.PlaybackSnapshot.HasAudio ==
-                expectedLast.FileName.EndsWith(".mp4", StringComparison.Ordinal),
-                "快速媒体切换最终提交的不是最后一个请求。");
         }
 
         var webm = assets.Single(asset => asset.FileName.EndsWith(".webm", StringComparison.Ordinal));

@@ -126,6 +126,97 @@ public sealed class G3PlaybackSessionTests
     }
 
     [Fact]
+    public async Task CrossThreadLoads_CommitHighestRegisteredGeneration()
+    {
+        var firstEntered = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirst = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var first = new FakeSource(1);
+        var second = new FakeSource(2);
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                async (_, _) =>
+                {
+                    firstEntered.TrySetResult();
+                    await releaseFirst.Task;
+                    return first;
+                },
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(second)));
+
+        var older = Task.Run(
+            () => rig.Session.LoadAsync("first.secvid", "password"));
+        await firstEntered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        var newer = Task.Run(
+            () => rig.Session.LoadAsync("second.secvid", "password"));
+
+        PlaybackOperationResult newerResult;
+        try
+        {
+            newerResult = await newer.WaitAsync(TimeSpan.FromSeconds(2));
+        }
+        finally
+        {
+            releaseFirst.TrySetResult();
+        }
+        var olderResult = await older.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.False(olderResult.Success);
+        Assert.Equal(PlaybackFailureCode.Cancelled, olderResult.Failure?.Code);
+        Assert.True(first.IsDisposed);
+        Assert.True(newerResult.Success);
+        Assert.Equal(2, rig.Session.Snapshot.MediaGeneration);
+        Assert.Same(second, rig.Host.AttachedSource);
+    }
+
+    [Fact]
+    public async Task ControlIntentCancelsOlderLoad_ButNotFollowingLoad()
+    {
+        var firstEntered = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirst = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var first = new FakeSource(1);
+        var second = new FakeSource(2);
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                async (_, _) =>
+                {
+                    firstEntered.TrySetResult();
+                    await releaseFirst.Task;
+                    return first;
+                },
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(second)));
+
+        var older = Task.Run(
+            () => rig.Session.LoadAsync("first.secvid", "password"));
+        await firstEntered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        PlaybackOperationResult stopResult;
+        PlaybackOperationResult newerResult;
+        try
+        {
+            stopResult = await Task.Run(() => rig.Session.StopAsync())
+                .WaitAsync(TimeSpan.FromSeconds(2));
+            newerResult = await Task.Run(
+                    () => rig.Session.LoadAsync("second.secvid", "password"))
+                .WaitAsync(TimeSpan.FromSeconds(2));
+        }
+        finally
+        {
+            releaseFirst.TrySetResult();
+        }
+        var olderResult = await older.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.True(stopResult.Success);
+        Assert.False(olderResult.Success);
+        Assert.Equal(PlaybackFailureCode.Cancelled, olderResult.Failure?.Code);
+        Assert.True(first.IsDisposed);
+        Assert.True(newerResult.Success);
+        Assert.Equal(2, rig.Session.Snapshot.MediaGeneration);
+        Assert.Same(second, rig.Host.AttachedSource);
+    }
+
+    [Fact]
     public async Task EventsFromOldGeneration_CannotChangeNewSession()
     {
         var first = new FakeSource(1);

@@ -26,6 +26,7 @@ internal sealed class SecureVideoPlayer :
     private readonly SemaphoreSlim _operationGate = new(1, 1);
     private readonly CancellationTokenSource _lifetimeCancellation = new();
     private readonly object _snapshotSync = new();
+    private readonly object _intentSync = new();
 
     private IPlaybackMediaSource? _currentSource;
     private SurfaceRecoverySnapshot? _pendingSurfaceRecovery;
@@ -48,6 +49,10 @@ internal sealed class SecureVideoPlayer :
         float Rate,
         int? AudioTrackId,
         int? SubtitleTrackId);
+
+    private readonly record struct MediaSwitchRegistration(
+        long IntentRevision,
+        CancellationTokenSource Cancellation);
 
     public SecureVideoPlayer(
         IPlaybackPlayerHost playerHost,
@@ -120,12 +125,9 @@ internal sealed class SecureVideoPlayer :
     {
         using var diagnostics = PlaybackPerformanceDiagnostics.Begin(
             startPlayback ? "media-switch-and-play" : "media-switch");
-        var intent = BeginUserIntent(cancelPendingLoad: false);
-        var requestCancellation = CreateOperationCancellation(cancellationToken);
-        var previousRequest = Interlocked.Exchange(
-            ref _mediaSwitchCancellation,
-            requestCancellation);
-        TryCancel(previousRequest);
+        var registration = BeginMediaSwitch(cancellationToken);
+        var intent = registration.IntentRevision;
+        var requestCancellation = registration.Cancellation;
         var token = requestCancellation.Token;
         IPlaybackMediaSource? candidate = null;
 
@@ -344,18 +346,14 @@ internal sealed class SecureVideoPlayer :
                 await ReapCandidateSafelyAsync(candidate).ConfigureAwait(false);
             }
 
-            Interlocked.CompareExchange(
-                ref _mediaSwitchCancellation,
-                null,
-                requestCancellation);
-            requestCancellation.Dispose();
+            CompleteMediaSwitch(requestCancellation);
         }
     }
 
     public async Task<PlaybackOperationResult> PlayAsync(
         CancellationToken cancellationToken = default)
     {
-        BeginUserIntent(cancelPendingLoad: true);
+        BeginControlIntent();
         using var linked = CreateOperationCancellation(cancellationToken);
         PublishWaitingIfBusy();
         await _operationGate.WaitAsync(linked.Token).ConfigureAwait(false);
@@ -412,7 +410,7 @@ internal sealed class SecureVideoPlayer :
     public async Task<PlaybackOperationResult> PauseAsync(
         CancellationToken cancellationToken = default)
     {
-        BeginUserIntent(cancelPendingLoad: true);
+        BeginControlIntent();
         using var linked = CreateOperationCancellation(cancellationToken);
         PublishWaitingIfBusy();
         await _operationGate.WaitAsync(linked.Token).ConfigureAwait(false);
@@ -442,7 +440,7 @@ internal sealed class SecureVideoPlayer :
         CancellationToken cancellationToken = default)
     {
         using var diagnostics = PlaybackPerformanceDiagnostics.Begin("user-stop");
-        BeginUserIntent(cancelPendingLoad: true);
+        BeginControlIntent();
         using var linked = CreateOperationCancellation(cancellationToken);
 
         // 先发布活动状态，让 UI 立即停止计时并显示反馈；真正的 Pause/Stop 随后在后台执行。
@@ -494,7 +492,7 @@ internal sealed class SecureVideoPlayer :
         bool waitForFrame = false,
         CancellationToken cancellationToken = default)
     {
-        BeginUserIntent(cancelPendingLoad: true);
+        BeginControlIntent();
         using var linked = CreateOperationCancellation(cancellationToken);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         using var bounded = CancellationTokenSource.CreateLinkedTokenSource(
@@ -555,7 +553,7 @@ internal sealed class SecureVideoPlayer :
         long deltaMs,
         CancellationToken cancellationToken = default)
     {
-        BeginUserIntent(cancelPendingLoad: true);
+        BeginControlIntent();
         using var linked = CreateOperationCancellation(cancellationToken);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         using var bounded = CancellationTokenSource.CreateLinkedTokenSource(
@@ -630,7 +628,7 @@ internal sealed class SecureVideoPlayer :
                 publish: false);
         }
 
-        BeginUserIntent(cancelPendingLoad: true);
+        BeginControlIntent();
         using var linked = CreateOperationCancellation(cancellationToken);
         PublishWaitingIfBusy();
         await _operationGate.WaitAsync(linked.Token).ConfigureAwait(false);
@@ -697,7 +695,7 @@ internal sealed class SecureVideoPlayer :
         bool subtitle,
         CancellationToken cancellationToken)
     {
-        BeginUserIntent(cancelPendingLoad: true);
+        BeginControlIntent();
         using var linked = CreateOperationCancellation(cancellationToken);
         PublishWaitingIfBusy();
         await _operationGate.WaitAsync(linked.Token).ConfigureAwait(false);
@@ -762,7 +760,7 @@ internal sealed class SecureVideoPlayer :
     public async Task<PlaybackOperationResult> ReleaseAsync(
         CancellationToken cancellationToken = default)
     {
-        BeginUserIntent(cancelPendingLoad: true);
+        BeginControlIntent();
         using var linked = CreateOperationCancellation(cancellationToken);
         PublishActivity(PlaybackActivity.ReleasingOldMedia);
         await _operationGate.WaitAsync(linked.Token).ConfigureAwait(false);
@@ -1020,7 +1018,14 @@ internal sealed class SecureVideoPlayer :
         }
 
         _lifetimeCancellation.Cancel();
-        TryCancel(Interlocked.Exchange(ref _mediaSwitchCancellation, null));
+        CancellationTokenSource? mediaSwitchCancellation;
+        lock (_intentSync)
+        {
+            mediaSwitchCancellation = _mediaSwitchCancellation;
+            _mediaSwitchCancellation = null;
+            _intentRevision++;
+        }
+        TryCancel(mediaSwitchCancellation);
         CancelSurfaceRestore();
         _operationGate.Wait();
         try
@@ -1272,16 +1277,59 @@ internal sealed class SecureVideoPlayer :
         }
     }
 
-    private long BeginUserIntent(bool cancelPendingLoad)
+    private MediaSwitchRegistration BeginMediaSwitch(
+        CancellationToken cancellationToken)
     {
-        ThrowIfDisposed();
-        _pendingSurfaceRecovery = null;
-        CancelSurfaceRestore();
-        if (cancelPendingLoad)
+        var cancellation = CreateOperationCancellation(cancellationToken);
+        CancellationTokenSource? previous;
+        long revision;
+        try
         {
-            TryCancel(Volatile.Read(ref _mediaSwitchCancellation));
+            lock (_intentSync)
+            {
+                ThrowIfDisposed();
+                _pendingSurfaceRecovery = null;
+                revision = ++_intentRevision;
+                previous = _mediaSwitchCancellation;
+                _mediaSwitchCancellation = cancellation;
+            }
         }
-        return Interlocked.Increment(ref _intentRevision);
+        catch
+        {
+            cancellation.Dispose();
+            throw;
+        }
+
+        CancelSurfaceRestore();
+        TryCancel(previous);
+        return new MediaSwitchRegistration(revision, cancellation);
+    }
+
+    private void BeginControlIntent()
+    {
+        CancellationTokenSource? pendingMediaSwitch;
+        lock (_intentSync)
+        {
+            ThrowIfDisposed();
+            _pendingSurfaceRecovery = null;
+            _intentRevision++;
+            pendingMediaSwitch = _mediaSwitchCancellation;
+        }
+
+        CancelSurfaceRestore();
+        TryCancel(pendingMediaSwitch);
+    }
+
+    private void CompleteMediaSwitch(CancellationTokenSource cancellation)
+    {
+        lock (_intentSync)
+        {
+            if (ReferenceEquals(_mediaSwitchCancellation, cancellation))
+            {
+                _mediaSwitchCancellation = null;
+            }
+        }
+        cancellation.Dispose();
     }
 
     private CancellationTokenSource CreateOperationCancellation(
