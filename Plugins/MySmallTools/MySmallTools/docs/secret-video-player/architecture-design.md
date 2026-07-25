@@ -403,4 +403,5 @@ flowchart LR
 dotnet test .\Plugins\MySmallTools\MySmallTools.Tests\MySmallTools.Tests.csproj -c Release
 dotnet test .\Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj -c Release
 .\scripts\Release-MySmallToolsP0.ps1
+.\scripts\Accept-MySmallToolsP1.ps1 -AllowDirty
 ```

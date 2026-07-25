@@ -392,6 +392,7 @@ artifacts/MySmallTools/p0-win-x64/
 | 插件扫描排除 | 宿主 `AssemblyLoaderHelper`、`PluginLoadContext` | `NativeDirectoryScanTests` | 本文第 4 节 |
 | Document Scope | `DocumentScopeManager`、4 个 Strategy | 宿主插件兼容与 Scope 测试 | [架构](architecture-design.md) |
 | 真实 MP4/WebM | 测试资产和 Harness | `RealMediaAssetTests`、真实窗口门禁 | [测试资产](real-media-test-assets.md) |
+| P1 规模与组合 | G8 Harness 套件、P1 串行脚本 | `G8P1IntegrationAcceptanceTests`、`G8DocumentScopeIsolationTests` | [G8](G8-P1-INTEGRATION-ACCEPTANCE.md) |
 
 常用验证命令（从仓库根目录执行）：
 
@@ -399,6 +400,7 @@ artifacts/MySmallTools/p0-win-x64/
 dotnet test .\Plugins\MySmallTools\MySmallTools.Tests\MySmallTools.Tests.csproj -c Release
 dotnet test .\Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj -c Release
 dotnet run --project .\Plugins\MySmallTools\MySmallTools.Playback.IntegrationHarness\MySmallTools.Playback.IntegrationHarness.csproj -c Release -- --report .\TestResults\manual-playback.json
+.\scripts\Accept-MySmallToolsP1.ps1 -AllowDirty
 ```
 
 ## 14. 关键源码
