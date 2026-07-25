@@ -416,6 +416,16 @@ public sealed class G3PlaybackSessionTests
         public bool IsPlaying { get; private set; }
         public bool IsPaused { get; private set; }
         public int Volume { get; private set; } = 50;
+        public float Rate { get; private set; } = 1.0f;
+        public int AudioTrack { get; private set; } = 1;
+        public int SubtitleTrack { get; private set; } = -1;
+        public IReadOnlyList<PlaybackTrackOption> AudioTracks { get; set; } =
+            [new PlaybackTrackOption(1, "音轨 1")];
+        public IReadOnlyList<PlaybackTrackOption> SubtitleTracks { get; set; } =
+            [new PlaybackTrackOption(-1, "关闭字幕")];
+        public bool RateResult { get; set; } = true;
+        public bool AudioTrackResult { get; set; } = true;
+        public bool SubtitleTrackResult { get; set; } = true;
         public IPlaybackMediaSource? AttachedSource { get; private set; }
         public List<bool> PauseRequests { get; } = [];
         public int RestoreCalls { get; private set; }
@@ -469,6 +479,38 @@ public sealed class G3PlaybackSessionTests
         }
 
         public void SetVolume(int volume) => Volume = Math.Clamp(volume, 0, 100);
+        public bool SetRate(float rate)
+        {
+            if (!RateResult)
+            {
+                return false;
+            }
+            Rate = rate;
+            return true;
+        }
+
+        public IReadOnlyList<PlaybackTrackOption> GetAudioTracks() => AudioTracks;
+        public IReadOnlyList<PlaybackTrackOption> GetSubtitleTracks() => SubtitleTracks;
+
+        public bool SetAudioTrack(int trackId)
+        {
+            if (!AudioTrackResult)
+            {
+                return false;
+            }
+            AudioTrack = trackId;
+            return true;
+        }
+
+        public bool SetSubtitleTrack(int trackId)
+        {
+            if (!SubtitleTrackResult)
+            {
+                return false;
+            }
+            SubtitleTrack = trackId;
+            return true;
+        }
         public void SetVideoOutputHandle(nint handle) => OutputHandle = handle;
 
         public Task SeekAsync(

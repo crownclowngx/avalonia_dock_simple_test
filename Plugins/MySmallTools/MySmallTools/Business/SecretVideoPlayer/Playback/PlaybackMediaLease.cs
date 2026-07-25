@@ -127,6 +127,9 @@ internal interface IPlaybackPlayerHost : IDisposable
     bool IsPlaying { get; }
     bool IsPaused { get; }
     int Volume { get; }
+    float Rate { get; }
+    int AudioTrack { get; }
+    int SubtitleTrack { get; }
 
     event Action<long, PlaybackState>? StateChanged;
     event Action<long>? PositionChanged;
@@ -138,6 +141,11 @@ internal interface IPlaybackPlayerHost : IDisposable
     void Stop();
     void SetPause(bool paused);
     void SetVolume(int volume);
+    bool SetRate(float rate);
+    IReadOnlyList<PlaybackTrackOption> GetAudioTracks();
+    IReadOnlyList<PlaybackTrackOption> GetSubtitleTracks();
+    bool SetAudioTrack(int trackId);
+    bool SetSubtitleTrack(int trackId);
     void SetVideoOutputHandle(nint handle);
     Task SeekAsync(long positionMs, bool waitForFrame, CancellationToken cancellationToken);
     Task<bool> RestoreSurfaceAsync(
@@ -178,6 +186,9 @@ internal sealed class LibVlcDocumentPlayerHost : IPlaybackPlayerHost
     public bool IsPlaying => _player.IsPlaying || _player.State == VLCState.Playing;
     public bool IsPaused => _player.State == VLCState.Paused;
     public int Volume => _player.Volume;
+    public float Rate => _player.Rate;
+    public int AudioTrack => _player.AudioTrack;
+    public int SubtitleTrack => _player.Spu;
 
     public event Action<long, PlaybackState>? StateChanged;
     public event Action<long>? PositionChanged;
@@ -238,6 +249,36 @@ internal sealed class LibVlcDocumentPlayerHost : IPlaybackPlayerHost
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
         _player.Volume = Math.Clamp(volume, 0, 100);
+    }
+
+    public bool SetRate(float rate)
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
+        return _player.SetRate(rate) == 0;
+    }
+
+    public IReadOnlyList<PlaybackTrackOption> GetAudioTracks()
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
+        return NormalizeTracks(_player.AudioTrackDescription, "音轨", includeSubtitleOff: false);
+    }
+
+    public IReadOnlyList<PlaybackTrackOption> GetSubtitleTracks()
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
+        return NormalizeTracks(_player.SpuDescription, "字幕", includeSubtitleOff: true);
+    }
+
+    public bool SetAudioTrack(int trackId)
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
+        return _player.SetAudioTrack(trackId);
+    }
+
+    public bool SetSubtitleTrack(int trackId)
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
+        return _player.SetSpu(trackId);
     }
 
     public void SetVideoOutputHandle(nint handle)
@@ -310,6 +351,44 @@ internal sealed class LibVlcDocumentPlayerHost : IPlaybackPlayerHost
         {
             Volatile.Write(ref _disposeState, 2);
         }
+    }
+
+    private static IReadOnlyList<PlaybackTrackOption> NormalizeTracks(
+        IEnumerable<LibVLCSharp.Shared.Structures.TrackDescription>? descriptions,
+        string fallbackPrefix,
+        bool includeSubtitleOff)
+    {
+        var result = new List<PlaybackTrackOption>();
+        if (includeSubtitleOff)
+        {
+            result.Add(new PlaybackTrackOption(-1, "关闭字幕"));
+        }
+
+        if (descriptions is null)
+        {
+            return result.ToArray();
+        }
+
+        var displayIndex = 1;
+        foreach (var description in descriptions)
+        {
+            // 音轨描述中的 -1 通常表示“禁用”。产品已有音量/静音入口，因此音轨列表不重复
+            // 暴露该伪轨道；字幕则由上面的稳定“关闭字幕”选项统一表达。
+            if (description.Id < 0)
+            {
+                continue;
+            }
+
+            result.Add(new PlaybackTrackOption(
+                description.Id,
+                PlaybackTrackNamePolicy.Sanitize(
+                    description.Name,
+                    fallbackPrefix,
+                    displayIndex)));
+            displayIndex++;
+        }
+
+        return result.ToArray();
     }
 
     private sealed class NativeEventSubscription : IDisposable

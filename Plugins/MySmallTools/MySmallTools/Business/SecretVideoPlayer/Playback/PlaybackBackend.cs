@@ -77,6 +77,9 @@ internal sealed class LazyPlaybackBackend :
     public bool IsPlaying => _backend?.PlayerHost.IsPlaying ?? false;
     public bool IsPaused => _backend?.PlayerHost.IsPaused ?? false;
     public int Volume => _backend?.PlayerHost.Volume ?? _desiredVolume;
+    public float Rate => _backend?.PlayerHost.Rate ?? 1.0f;
+    public int AudioTrack => _backend?.PlayerHost.AudioTrack ?? -1;
+    public int SubtitleTrack => _backend?.PlayerHost.SubtitleTrack ?? -1;
 
     public async Task<IPlaybackMediaSource> CreateAsync(
         long generation,
@@ -111,6 +114,19 @@ internal sealed class LazyPlaybackBackend :
         _desiredVolume = Math.Clamp(volume, 0, 100);
         _backend?.PlayerHost.SetVolume(_desiredVolume);
     }
+
+    public bool SetRate(float rate) => RequireHost().SetRate(rate);
+
+    public IReadOnlyList<PlaybackTrackOption> GetAudioTracks() =>
+        _backend?.PlayerHost.GetAudioTracks() ?? Array.Empty<PlaybackTrackOption>();
+
+    public IReadOnlyList<PlaybackTrackOption> GetSubtitleTracks() =>
+        _backend?.PlayerHost.GetSubtitleTracks()
+        ?? new[] { new PlaybackTrackOption(-1, "关闭字幕") };
+
+    public bool SetAudioTrack(int trackId) => RequireHost().SetAudioTrack(trackId);
+
+    public bool SetSubtitleTrack(int trackId) => RequireHost().SetSubtitleTrack(trackId);
 
     public void SetVideoOutputHandle(nint handle)
     {

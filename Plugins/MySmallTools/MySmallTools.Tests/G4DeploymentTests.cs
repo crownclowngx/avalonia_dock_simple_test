@@ -261,6 +261,26 @@ public sealed class G4DeploymentTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(PlaybackOperationResult.Succeeded());
 
+        public Task<PlaybackOperationResult> SeekRelativeAsync(
+            long deltaMs,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(PlaybackOperationResult.Succeeded());
+
+        public Task<PlaybackOperationResult> SetRateAsync(
+            float rate,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(PlaybackOperationResult.Succeeded());
+
+        public Task<PlaybackOperationResult> SelectAudioTrackAsync(
+            int trackId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(PlaybackOperationResult.Succeeded());
+
+        public Task<PlaybackOperationResult> SelectSubtitleTrackAsync(
+            int trackId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(PlaybackOperationResult.Succeeded());
+
         public Task<PlaybackOperationResult> ReleaseAsync(
             CancellationToken cancellationToken = default) =>
             Task.FromResult(PlaybackOperationResult.Succeeded());
@@ -328,6 +348,9 @@ public sealed class G4DeploymentTests
         public bool IsPlaying => false;
         public bool IsPaused => false;
         public int Volume { get; private set; }
+        public float Rate { get; private set; } = 1.0f;
+        public int AudioTrack { get; private set; } = -1;
+        public int SubtitleTrack { get; private set; } = -1;
         public nint OutputHandle { get; private set; }
         public event Action<long, PlaybackState>? StateChanged
         {
@@ -350,6 +373,25 @@ public sealed class G4DeploymentTests
         public void Stop() { }
         public void SetPause(bool paused) { }
         public void SetVolume(int volume) => Volume = volume;
+        public bool SetRate(float rate)
+        {
+            Rate = rate;
+            return true;
+        }
+        public IReadOnlyList<PlaybackTrackOption> GetAudioTracks() =>
+            Array.Empty<PlaybackTrackOption>();
+        public IReadOnlyList<PlaybackTrackOption> GetSubtitleTracks() =>
+            [new PlaybackTrackOption(-1, "关闭字幕")];
+        public bool SetAudioTrack(int trackId)
+        {
+            AudioTrack = trackId;
+            return true;
+        }
+        public bool SetSubtitleTrack(int trackId)
+        {
+            SubtitleTrack = trackId;
+            return true;
+        }
         public void SetVideoOutputHandle(nint handle) => OutputHandle = handle;
         public Task SeekAsync(long positionMs, bool waitForFrame, CancellationToken cancellationToken) =>
             Task.CompletedTask;

@@ -107,7 +107,9 @@ flowchart TB
 | Document 创建 | 4 个 `DocumentStrategy`、`DocumentScopeManager` | 每次创建一个独立 Scope，并在 Dock 确认关闭后释放 |
 | 页面协调 | `SecretVideoPlayerViewModel`、`SecretVideoLibraryViewModel`、`VideoEncryptorViewModel`、`VideoDecryptorViewModel` | 输入校验、命令、任务状态、公开信息和取消 |
 | 文件夹浏览 | `VideoLibraryBrowserViewModel`、`VideoLibraryScanner` | 异步扫描 `.secvid`、隔离单文件错误、过滤公开信息 |
-| 播放展示 | `VideoPlayerControlViewModel` | 把用户意图交给会话，把回调切换到 UI 线程，显示部署诊断和原子播放快照 |
+| 播放展示 | `VideoPlayerControlViewModel` | 把用户意图交给会话，把回调切换到 UI 线程，显示部署诊断、控制快照和全屏请求 |
+| 全屏与快捷键 | `VideoPlayerControl`、`PlaybackShortcutPolicy` | 处理 Avalonia 焦点、OverlayLayer 和唯一 PlayerShell 的视觉树迁移 |
+| 播放列表导航 | `IPlaybackNavigationContext`、`SecretVideoLibraryViewModel` | 以可选端口提供当前筛选列表的相邻项和连续播放 |
 | 部署探针 | `IPlaybackDeploymentProbe`、`PlaybackDeploymentProbe` | 无副作用检查平台、托管桥接、AMD64 核心 DLL 和关键插件模块 |
 | backend 代理 | `LazyPlaybackBackend` | 一个 Document 最多创建一套 `PlayerHost + MediaSourceFactory`，缓存 HWND 和音量意图 |
 | 播放编排 | `SecureVideoPlayer` | 媒体候选事务、用户意图代次、命令串行化、表面恢复和状态发布 |
@@ -119,6 +121,35 @@ flowchart TB
 | 容器流 | `SeekableEncryptedVideoStream` | 打开时认证固定头，读取时按需认证解密，维护 4 块 LRU 明文缓存 |
 | 原生表面 | `EmbeddedVideoSurface` | 在 HWND 创建后绑定，在 HWND 销毁前同步通知 Lost |
 | 输出事务 | `OutputFileTransaction` | 同目录 `.partial-GUID`、落盘刷新、`overwrite:false` 提交和失败清理 |
+
+## 4.1 G6 日常控制数据流
+
+G6 没有让 ViewModel 直接依赖 LibVLC。用户命令仍按同一方向流动：
+
+```mermaid
+flowchart LR
+    Input["按钮 / 播放器作用域快捷键"] --> VM["VideoPlayerControlViewModel"]
+    VM --> Session["ISecureVideoPlaybackSession"]
+    Session --> Gate["播放操作门 + 用户意图代次"]
+    Gate --> Dispatcher["PlaybackNativeDispatcher"]
+    Dispatcher --> Host["IPlaybackPlayerHost"]
+    Host --> Vlc["LibVLC MediaPlayer"]
+    Vlc --> Snapshot["PlaybackControlSnapshot"]
+    Snapshot --> VM
+```
+
+`PlaybackControlSnapshot` 是 `PlaybackSnapshot` 的不可变组成部分，包含倍速、净化后的
+音轨/字幕选项和真实选中 ID。轨道只在媒体提交、首个真实 Playing、控制成功或表面恢复时
+刷新，不随位置轮询重复构造。原生控制失败映射为稳定 `ControlUnavailable`，不把媒体置为
+`Faulted`，也不向 UI 泄漏原生异常。
+
+全屏属于呈现边界：ViewModel 只发布带修订号的进入/退出请求，View 迁移唯一
+`PlayerShell`，等待匹配的新 HWND 表面恢复后再回报结果。倍速和轨道仍由播放会话恢复，
+OverlayLayer 不持有业务状态。
+
+媒体库导航属于列表协调边界：`IPlaybackNavigationContext` 只暴露命令和能力；
+单文件播放器不提供该端口。媒体库使用规范化绝对路径保存当前播放身份，相邻项始终从
+当前 `VisibleItems` 计算，密码不进入导航上下文或媒体结束事件。
 
 ## 5. 部署与 backend 生命周期
 

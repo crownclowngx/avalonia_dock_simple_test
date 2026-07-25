@@ -245,6 +245,86 @@ internal sealed class G3PlaybackHarnessRunner(
             document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration;
         Require(documentPlayer is not null, "Document 未暴露稳定的 MediaPlayer。");
 
+        // G6：真实 LibVLC 倍速必须经过会话端口设置，并反映到不可变控制快照。
+        foreach (var rate in new[] { 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f })
+        {
+            var rateResult = await document.PlayerViewModel.SetPlaybackRateAsync(rate);
+            Require(rateResult.Success, $"真实媒体设置 {rate} 倍速失败。");
+            Require(
+                Math.Abs(document.PlayerViewModel.PlaybackSnapshot.Controls.Rate - rate) < 0.001f,
+                $"{rate} 倍速未写入控制快照。");
+        }
+        Require(
+            (await document.PlayerViewModel.SetPlaybackRateAsync(1.0f)).Success,
+            "真实媒体未能恢复 1.0 倍速。");
+
+        await WaitUntilAsync(
+            () => document.PlayerViewModel.PlaybackSnapshot.Controls.AudioTracks.Count >= 2 &&
+                  document.PlayerViewModel.PlaybackSnapshot.Controls.SubtitleTracks
+                      .Any(track => track.Id >= 0),
+            TimeSpan.FromSeconds(5),
+            "真实双音轨或内嵌字幕未进入控制快照。");
+
+        // 不只验证“列表能读到”，还逐条执行真实 LibVLC 切换，并确认选中 ID
+        // 回写到不可变控制快照。字幕 -1 是产品定义的稳定“关闭字幕”语义。
+        foreach (var audioTrack in document.PlayerViewModel.PlaybackSnapshot.Controls.AudioTracks)
+        {
+            var trackResult = await document.PlayerViewModel.SelectAudioTrackAsync(audioTrack.Id);
+            Require(trackResult.Success, $"真实音轨 {audioTrack.Id} 切换失败。");
+            Require(
+                document.PlayerViewModel.PlaybackSnapshot.Controls.SelectedAudioTrackId ==
+                audioTrack.Id,
+                $"真实音轨 {audioTrack.Id} 的选择未写入控制快照。");
+        }
+
+        var subtitleTrack = document.PlayerViewModel.PlaybackSnapshot.Controls.SubtitleTracks
+            .First(track => track.Id >= 0);
+        var subtitleResult =
+            await document.PlayerViewModel.SelectSubtitleTrackAsync(subtitleTrack.Id);
+        Require(subtitleResult.Success, "真实内嵌字幕启用失败。");
+        Require(
+            document.PlayerViewModel.PlaybackSnapshot.Controls.SelectedSubtitleTrackId ==
+            subtitleTrack.Id,
+            "真实内嵌字幕选中 ID 未写入控制快照。");
+        var disableSubtitleResult =
+            await document.PlayerViewModel.SelectSubtitleTrackAsync(-1);
+        Require(disableSubtitleResult.Success, "真实字幕关闭失败。");
+        Require(
+            document.PlayerViewModel.PlaybackSnapshot.Controls.SelectedSubtitleTrackId == -1,
+            "关闭字幕后控制快照未记录 -1。");
+
+        // G6 的内容区全屏复用同一个 PlayerShell。真实窗口中完成一次进出，验证
+        // OverlayLayer 迁移没有替换 Document 级 MediaPlayer，也没有丢失 HWND 恢复链路。
+        Require(
+            document.PlayerViewModel.ToggleFullscreenCommand.CanExecute(null),
+            "真实媒体加载后全屏命令不可用。");
+        document.PlayerViewModel.ToggleFullscreenCommand.Execute(null);
+        await WaitUntilAsync(
+            () => document.PlayerViewModel.IsFullscreen &&
+                  !document.PlayerViewModel.IsFullscreenTransitioning,
+            TimeSpan.FromSeconds(8),
+            "进入窗口内容区全屏超时。");
+        Require(
+            ReferenceEquals(documentPlayer, document.PlayerViewModel.MediaPlayer),
+            "进入全屏替换了 Document 级 MediaPlayer。");
+        document.PlayerViewModel.ToggleFullscreenCommand.Execute(null);
+        await WaitUntilAsync(
+            () => !document.PlayerViewModel.IsFullscreen &&
+                  !document.PlayerViewModel.IsFullscreenTransitioning &&
+                  document.PlayerViewModel.IsVideoSurfaceReady,
+            TimeSpan.FromSeconds(8),
+            "退出窗口内容区全屏超时。");
+        Require(
+            document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration >
+            documentSurfaceGeneration,
+            "全屏进出没有重建 HWND 视频表面。");
+
+        // 后续“普通媒体切换不得重建表面”的断言应当以全屏退出后的当前代次为
+        // 基准。若仍与进入全屏前的代次比较，会把全屏按设计产生的 HWND 迁移
+        // 错报为普通媒体切换造成的重建。
+        documentSurfaceGeneration =
+            document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration;
+
         var random = new Random(0x4733);
         var randomMaximum = Math.Max(
             251,
@@ -585,6 +665,7 @@ internal sealed class G3PlaybackHarnessRunner(
             "RealMedia");
         var names = new[]
         {
+            "synthetic-multitrack-subtitles.mp4",
             "synthetic-av-short.mp4",
             "synthetic-silent-multiblock.webm"
         };

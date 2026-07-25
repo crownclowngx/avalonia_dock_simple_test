@@ -44,6 +44,7 @@ public enum PlaybackFailureCode
     ParseFailed,
     DecodeFailed,
     SurfaceRestoreFailed,
+    ControlUnavailable,
     Cancelled,
     Unknown
 }
@@ -72,6 +73,80 @@ public readonly record struct VideoSurfaceToken(long Generation, nint Handle)
     public bool IsValid => Generation > 0 && Handle != nint.Zero;
 }
 
+/// <summary>
+/// 当前媒体的一条可选轨道。
+/// </summary>
+/// <remarks>
+/// ID 只在当前媒体代次内有效，不能持久化，也不能跨媒体复用。
+/// DisplayName 只用于界面展示；PlayerHost 在创建本对象前必须移除控制字符并限制长度，
+/// 防止媒体内嵌元数据破坏布局或进入后续诊断文本。
+/// </remarks>
+public sealed record PlaybackTrackOption(int Id, string DisplayName);
+
+/// <summary>
+/// 把不可信的容器轨道名称转换为只用于展示的短文本。
+/// </summary>
+/// <remarks>
+/// 轨道名称来自媒体容器，不能用于身份判断、路径或日志。策略独立于 LibVLC 类型，
+/// 便于用纯单元测试锁定控制字符、空名称和 Unicode Rune 上限。
+/// </remarks>
+internal static class PlaybackTrackNamePolicy
+{
+    public static string Sanitize(
+        string? value,
+        string fallbackPrefix,
+        int displayIndex)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return $"{fallbackPrefix} {displayIndex}";
+        }
+
+        var builder = new System.Text.StringBuilder();
+        var runeCount = 0;
+        foreach (var rune in value.EnumerateRunes())
+        {
+            if (runeCount >= 128)
+            {
+                break;
+            }
+
+            if (!System.Text.Rune.IsControl(rune))
+            {
+                builder.Append(rune.ToString());
+                runeCount++;
+            }
+        }
+
+        var normalized = builder.ToString().Trim();
+        return normalized.Length == 0
+            ? $"{fallbackPrefix} {displayIndex}"
+            : normalized;
+    }
+}
+
+/// <summary>
+/// 与高频位置状态分离的播放器日常控制快照。
+/// </summary>
+/// <remarks>
+/// 位置事件可能每 100 ms 发布一次，因此轨道集合必须作为不可变引用复用，
+/// 只有媒体提交、轨道刷新或用户控制成功时才创建新实例，避免播放期间持续分配集合。
+/// </remarks>
+public sealed record PlaybackControlSnapshot(
+    float Rate,
+    IReadOnlyList<PlaybackTrackOption> AudioTracks,
+    int? SelectedAudioTrackId,
+    IReadOnlyList<PlaybackTrackOption> SubtitleTracks,
+    int? SelectedSubtitleTrackId)
+{
+    public static PlaybackControlSnapshot Empty { get; } = new(
+        1.0f,
+        Array.Empty<PlaybackTrackOption>(),
+        null,
+        Array.Empty<PlaybackTrackOption>(),
+        null);
+}
+
 /// <summary>播放会话当前的原子只读快照。</summary>
 public sealed record PlaybackSnapshot(
     long MediaGeneration,
@@ -87,6 +162,7 @@ public sealed record PlaybackSnapshot(
     bool HasAudio,
     int VideoTrackCount,
     int AudioTrackCount,
+    PlaybackControlSnapshot Controls,
     PlaybackActivity Activity)
 {
     public static PlaybackSnapshot Empty { get; } = new(
@@ -103,6 +179,7 @@ public sealed record PlaybackSnapshot(
         false,
         0,
         0,
+        PlaybackControlSnapshot.Empty,
         PlaybackActivity.Idle);
 }
 
@@ -149,6 +226,26 @@ public interface ISecureVideoPlaybackSession : IDisposable
     Task<PlaybackOperationResult> SeekAsync(
         long positionMs,
         bool waitForFrame = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 在会话操作门内基于执行时的真实位置进行相对定位。
+    /// 该入口专门避免连续快捷键请求都基于同一份过期 UI 快照计算目标。
+    /// </summary>
+    Task<PlaybackOperationResult> SeekRelativeAsync(
+        long deltaMs,
+        CancellationToken cancellationToken = default);
+
+    Task<PlaybackOperationResult> SetRateAsync(
+        float rate,
+        CancellationToken cancellationToken = default);
+
+    Task<PlaybackOperationResult> SelectAudioTrackAsync(
+        int trackId,
+        CancellationToken cancellationToken = default);
+
+    Task<PlaybackOperationResult> SelectSubtitleTrackAsync(
+        int trackId,
         CancellationToken cancellationToken = default);
 
     Task<PlaybackOperationResult> ReleaseAsync(CancellationToken cancellationToken = default);

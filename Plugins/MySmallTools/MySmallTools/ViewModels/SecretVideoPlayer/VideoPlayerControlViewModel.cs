@@ -19,12 +19,20 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     private readonly DispatcherTimer _positionTimer;
     private CancellationTokenSource? _surfaceAttachmentCancellation;
     private VideoSurfaceToken _surface;
+    private bool _applyingSnapshot;
+    private long _lastEndedGeneration;
+    private long _fullscreenRequestRevision;
     private bool _disposed;
 
     public event EventHandler? NativeOutputChanged;
+    public event EventHandler<PlaybackMediaEndedEventArgs>? MediaEnded;
+    public event EventHandler<FullscreenPresentationRequestedEventArgs>? FullscreenPresentationRequested;
+    public event EventHandler<VideoSurfaceAttachmentCompletedEventArgs>? SurfaceAttachmentCompleted;
 
     public bool IsPlaying => CurrentState == PlayerStateEnum.Playing;
     public bool IsPaused => CurrentState == PlayerStateEnum.Paused;
+    public IReadOnlyList<float> AvailableRates { get; } =
+        [0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f];
 
     [ObservableProperty] private string _currentTime = "00:00:00";
     [ObservableProperty] private string _totalTime = "00:00:00";
@@ -42,6 +50,17 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _deploymentIssueText = string.Empty;
     [ObservableProperty] private string _deploymentCheckedPath = string.Empty;
     [ObservableProperty] private string _deploymentSuggestedAction = string.Empty;
+    [ObservableProperty] private float _selectedRate = 1.0f;
+    [ObservableProperty] private IReadOnlyList<PlaybackTrackOption> _audioTracks =
+        Array.Empty<PlaybackTrackOption>();
+    [ObservableProperty] private PlaybackTrackOption? _selectedAudioTrack;
+    [ObservableProperty] private IReadOnlyList<PlaybackTrackOption> _subtitleTracks =
+        Array.Empty<PlaybackTrackOption>();
+    [ObservableProperty] private PlaybackTrackOption? _selectedSubtitleTrack;
+    [ObservableProperty] private bool _hasAudioTracks;
+    [ObservableProperty] private bool _hasSubtitleTracks;
+    [ObservableProperty] private bool _isFullscreen;
+    [ObservableProperty] private bool _isFullscreenTransitioning;
 
     /// <summary>仅由 VideoPlayerControl 原生输出适配器读取。</summary>
     public MediaPlayer? MediaPlayer => _disposed ? null : _outputSource.MediaPlayer;
@@ -91,6 +110,31 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
     partial void OnIsVideoSurfaceReadyChanged(bool value) => NotifyCommandStates();
     partial void OnIsMediaTransitioningChanged(bool value) => NotifyCommandStates();
     partial void OnIsPlaybackAvailableChanged(bool value) => NotifyCommandStates();
+    partial void OnIsFullscreenTransitioningChanged(bool value) => NotifyCommandStates();
+
+    partial void OnSelectedRateChanged(float value)
+    {
+        if (!_applyingSnapshot && CanChangeAdvancedControl())
+        {
+            _ = SetRateFromSelectionAsync(value);
+        }
+    }
+
+    partial void OnSelectedAudioTrackChanged(PlaybackTrackOption? value)
+    {
+        if (!_applyingSnapshot && value is not null && CanChangeAdvancedControl())
+        {
+            _ = SelectAudioTrackFromSelectionAsync(value.Id);
+        }
+    }
+
+    partial void OnSelectedSubtitleTrackChanged(PlaybackTrackOption? value)
+    {
+        if (!_applyingSnapshot && value is not null && CanChangeAdvancedControl())
+        {
+            _ = SelectSubtitleTrackFromSelectionAsync(value.Id);
+        }
+    }
 
     [RelayCommand]
     private void RetryDeploymentCheck() => RefreshDeploymentStatus();
@@ -115,6 +159,71 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         StatusMessage = "正在停止...";
         var result = await _session.StopAsync();
         ApplyFailure(result);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanTogglePlayPause))]
+    private Task TogglePlayPauseAsync() => IsPlaying ? PauseAsync() : PlayAsync();
+
+    [RelayCommand(CanExecute = nameof(CanSeekByShortcut))]
+    private async Task SeekBackwardAsync()
+    {
+        var result = await _session.SeekRelativeAsync(-5_000);
+        ApplyFailure(result);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSeekByShortcut))]
+    private async Task SeekForwardAsync()
+    {
+        var result = await _session.SeekRelativeAsync(5_000);
+        ApplyFailure(result);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanAdjustVolume))]
+    private void IncreaseVolume() => Volume = Math.Clamp(Volume + 5, 0, 100);
+
+    [RelayCommand(CanExecute = nameof(CanAdjustVolume))]
+    private void DecreaseVolume() => Volume = Math.Clamp(Volume - 5, 0, 100);
+
+    [RelayCommand(CanExecute = nameof(CanToggleFullscreen))]
+    private void ToggleFullscreen()
+    {
+        var revision = Interlocked.Increment(ref _fullscreenRequestRevision);
+        IsFullscreenTransitioning = true;
+        FullscreenPresentationRequested?.Invoke(
+            this,
+            new FullscreenPresentationRequestedEventArgs(revision, !IsFullscreen));
+    }
+
+    /// <summary>
+    /// 由 View 在视觉树和原生表面迁移完成后提交真实结果。
+    /// 请求修订号可阻止较慢的旧“进入全屏”覆盖更新的退出请求。
+    /// </summary>
+    public void CompleteFullscreenPresentation(
+        long revision,
+        bool isFullscreen,
+        PlaybackFailure? failure = null)
+    {
+        if (_disposed || revision != Volatile.Read(ref _fullscreenRequestRevision))
+        {
+            return;
+        }
+
+        IsFullscreen = isFullscreen;
+        IsFullscreenTransitioning = false;
+        if (failure is not null)
+        {
+            LastFailure = failure;
+            StatusMessage = failure.Message;
+        }
+        NotifyCommandStates();
+    }
+
+    /// <summary>视图卸载时使所有尚未完成的全屏回调立即过期。</summary>
+    public void ResetFullscreenPresentation()
+    {
+        Interlocked.Increment(ref _fullscreenRequestRevision);
+        IsFullscreen = false;
+        IsFullscreenTransitioning = false;
     }
 
     [RelayCommand]
@@ -181,6 +290,61 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         CancellationToken cancellationToken = default)
     {
         var result = await _session.SeekAsync(positionMs, waitForFrame, cancellationToken);
+        ApplyFailure(result);
+        return result;
+    }
+
+    private async Task SetRateFromSelectionAsync(float rate)
+    {
+        var result = await SetPlaybackRateAsync(rate);
+        if (!result.Success)
+        {
+            ApplySnapshot(_session.Snapshot, result.Failure);
+        }
+    }
+
+    /// <summary>供组合 ViewModel、快捷入口和真实集成门禁使用的稳定倍速入口。</summary>
+    public async Task<PlaybackOperationResult> SetPlaybackRateAsync(
+        float rate,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _session.SetRateAsync(rate, cancellationToken);
+        ApplyFailure(result);
+        return result;
+    }
+
+    private async Task SelectAudioTrackFromSelectionAsync(int trackId)
+    {
+        var result = await SelectAudioTrackAsync(trackId);
+        if (!result.Success)
+        {
+            ApplySnapshot(_session.Snapshot, result.Failure);
+        }
+    }
+
+    public async Task<PlaybackOperationResult> SelectAudioTrackAsync(
+        int trackId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _session.SelectAudioTrackAsync(trackId, cancellationToken);
+        ApplyFailure(result);
+        return result;
+    }
+
+    private async Task SelectSubtitleTrackFromSelectionAsync(int trackId)
+    {
+        var result = await SelectSubtitleTrackAsync(trackId);
+        if (!result.Success)
+        {
+            ApplySnapshot(_session.Snapshot, result.Failure);
+        }
+    }
+
+    public async Task<PlaybackOperationResult> SelectSubtitleTrackAsync(
+        int trackId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _session.SelectSubtitleTrackAsync(trackId, cancellationToken);
         ApplyFailure(result);
         return result;
     }
@@ -267,6 +431,12 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
             {
                 ApplyFailure(result);
             }
+            if (!_disposed && !cancellation.IsCancellationRequested)
+            {
+                SurfaceAttachmentCompleted?.Invoke(
+                    this,
+                    new VideoSurfaceAttachmentCompletedEventArgs(surface, result));
+            }
         }
         catch (OperationCanceledException)
         {
@@ -342,6 +512,34 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
             PlaybackState.Faulted => PlayerStateEnum.Error,
             _ => PlayerStateEnum.Stopped
         };
+
+        _applyingSnapshot = true;
+        try
+        {
+            SelectedRate = snapshot.Controls.Rate;
+            AudioTracks = snapshot.Controls.AudioTracks;
+            SubtitleTracks = snapshot.Controls.SubtitleTracks;
+            SelectedAudioTrack = AudioTracks.FirstOrDefault(
+                option => option.Id == snapshot.Controls.SelectedAudioTrackId);
+            SelectedSubtitleTrack = SubtitleTracks.FirstOrDefault(
+                option => option.Id == snapshot.Controls.SelectedSubtitleTrackId);
+            HasAudioTracks = AudioTracks.Count > 0;
+            HasSubtitleTracks = SubtitleTracks.Any(option => option.Id >= 0);
+        }
+        finally
+        {
+            _applyingSnapshot = false;
+        }
+
+        if (snapshot.State == PlaybackState.Ended &&
+            snapshot.MediaGeneration > 0 &&
+            snapshot.MediaGeneration != Volatile.Read(ref _lastEndedGeneration))
+        {
+            Volatile.Write(ref _lastEndedGeneration, snapshot.MediaGeneration);
+            MediaEnded?.Invoke(
+                this,
+                new PlaybackMediaEndedEventArgs(snapshot.MediaGeneration));
+        }
 
         if (failure is not null)
         {
@@ -441,11 +639,43 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         !IsMediaTransitioning &&
         CurrentState is PlayerStateEnum.Playing or PlayerStateEnum.Paused;
 
+    private bool CanTogglePlayPause() => IsPlaying ? CanPause() : CanPlay();
+
+    private bool CanSeekByShortcut() =>
+        !_disposed &&
+        IsPlaybackAvailable &&
+        !IsMediaTransitioning &&
+        IsSeekable &&
+        _session.Snapshot.HasMedia;
+
+    private bool CanAdjustVolume() =>
+        !_disposed && IsPlaybackAvailable && !IsMediaTransitioning;
+
+    private bool CanChangeAdvancedControl() =>
+        !_disposed &&
+        IsPlaybackAvailable &&
+        !IsMediaTransitioning &&
+        _session.Snapshot.HasMedia;
+
+    private bool CanToggleFullscreen() =>
+        !_disposed &&
+        IsPlaybackAvailable &&
+        !IsMediaTransitioning &&
+        !IsFullscreenTransitioning &&
+        IsVideoSurfaceReady &&
+        _session.Snapshot.HasMedia;
+
     private void NotifyCommandStates()
     {
         PlayCommand.NotifyCanExecuteChanged();
         PauseCommand.NotifyCanExecuteChanged();
         StopCommand.NotifyCanExecuteChanged();
+        TogglePlayPauseCommand.NotifyCanExecuteChanged();
+        SeekBackwardCommand.NotifyCanExecuteChanged();
+        SeekForwardCommand.NotifyCanExecuteChanged();
+        IncreaseVolumeCommand.NotifyCanExecuteChanged();
+        DecreaseVolumeCommand.NotifyCanExecuteChanged();
+        ToggleFullscreenCommand.NotifyCanExecuteChanged();
     }
 
     private void RefreshDeploymentStatus()
@@ -533,6 +763,9 @@ public partial class VideoPlayerControlViewModel : ObservableObject, IDisposable
         _session.Changed -= OnPlaybackChanged;
         _outputSource.OutputChanged -= OnNativeOutputChanged;
         NativeOutputChanged = null;
+        MediaEnded = null;
+        FullscreenPresentationRequested = null;
+        SurfaceAttachmentCompleted = null;
         GC.SuppressFinalize(this);
     }
 }

@@ -17,6 +17,8 @@ internal sealed class SecureVideoPlayer :
     ISecureVideoPlaybackSession,
     ILibVlcVideoOutputSource
 {
+    private static readonly float[] SupportedRates = [0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f];
+
     private readonly IPlaybackPlayerHost _playerHost;
     private readonly IPlaybackMediaSourceFactory _mediaSourceFactory;
     private readonly IPlaybackNativeDispatcher _nativeDispatcher;
@@ -31,6 +33,9 @@ internal sealed class SecureVideoPlayer :
     private CancellationTokenSource? _mediaSwitchCancellation;
     private VideoSurfaceToken _surface;
     private PlaybackSnapshot _snapshot = PlaybackSnapshot.Empty;
+    private PlaybackControlSnapshot _controls = PlaybackControlSnapshot.Empty;
+    private float _desiredRate = 1.0f;
+    private long _playingControlsRefreshGeneration;
     private long _nextMediaGeneration;
     private long _intentRevision;
     private int _disposeState;
@@ -39,7 +44,10 @@ internal sealed class SecureVideoPlayer :
         long MediaGeneration,
         long IntentRevision,
         long PositionMs,
-        PlaybackState State);
+        PlaybackState State,
+        float Rate,
+        int? AudioTrackId,
+        int? SubtitleTrackId);
 
     public SecureVideoPlayer(
         IPlaybackPlayerHost playerHost,
@@ -204,9 +212,17 @@ internal sealed class SecureVideoPlayer :
                 candidate = null;
                 _currentSource = committed;
                 committed.Failed += OnSourceFailed;
+
+                // 轨道 ID 只属于当前媒体代次，因此提交新媒体后立即丢弃旧集合。
+                // 倍速则是当前 Document 的非敏感偏好，需要在新媒体启动前重新应用。
+                var controlFailure = await InitializeControlsForCurrentMediaAsync(
+                        committed,
+                        token)
+                    .ConfigureAwait(false);
                 PublishCurrent(
                     PlaybackState.Ready,
-                    PlaybackActivity.AttachingCandidate);
+                    PlaybackActivity.AttachingCandidate,
+                    controlFailure);
 
                 if (startPlayback)
                 {
@@ -245,11 +261,20 @@ internal sealed class SecureVideoPlayer :
                             publish: true);
                     }
 
-                    PublishCurrent(PlaybackState.Playing, PlaybackActivity.Idle);
+                    // 部分容器只有解码真正启动后才报告完整轨道，因此启动后再次刷新。
+                    await RefreshControlsForCurrentMediaAsync(committed, token)
+                        .ConfigureAwait(false);
+                    PublishCurrent(
+                        PlaybackState.Playing,
+                        PlaybackActivity.Idle,
+                        controlFailure);
                 }
                 else
                 {
-                    PublishCurrent(PlaybackState.Ready, PlaybackActivity.Idle);
+                    PublishCurrent(
+                        PlaybackState.Ready,
+                        PlaybackActivity.Idle,
+                        controlFailure);
                 }
 
                 if (oldSource is not null)
@@ -363,6 +388,8 @@ internal sealed class SecureVideoPlayer :
                     publish: true);
             }
 
+            await RefreshControlsForCurrentMediaAsync(source, linked.Token)
+                .ConfigureAwait(false);
             PublishCurrent(PlaybackState.Playing, PlaybackActivity.Idle);
             return PlaybackOperationResult.Succeeded();
         }
@@ -524,6 +551,214 @@ internal sealed class SecureVideoPlayer :
         }
     }
 
+    public async Task<PlaybackOperationResult> SeekRelativeAsync(
+        long deltaMs,
+        CancellationToken cancellationToken = default)
+    {
+        BeginUserIntent(cancelPendingLoad: true);
+        using var linked = CreateOperationCancellation(cancellationToken);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var bounded = CancellationTokenSource.CreateLinkedTokenSource(
+            linked.Token,
+            timeout.Token);
+        PublishWaitingIfBusy();
+        await _operationGate.WaitAsync(bounded.Token).ConfigureAwait(false);
+        try
+        {
+            ThrowIfDisposed();
+            if (_currentSource is null || !_playerHost.IsSeekable)
+            {
+                return ControlFailure(
+                    PlaybackFailureCode.InvalidRequest,
+                    "当前媒体不支持随机定位。",
+                    publish: false);
+            }
+
+            // 必须在操作门内读取当前位置。若快捷键连按，每一条命令会看到上一条已经
+            // 完成后的实际位置，而不会反复基于 UI 中同一份旧快照计算目标。
+            var maximum = Math.Max(0, _playerHost.DurationMs - 250);
+            var target = Math.Clamp(
+                SaturatingAdd(_playerHost.PositionMs, deltaMs),
+                0,
+                maximum);
+            var waitForFrame = Snapshot.State == PlaybackState.Paused;
+            await _nativeDispatcher.InvokeAsync(
+                    "seek-relative",
+                    async token =>
+                    {
+                        await _playerHost.SeekAsync(target, waitForFrame, token)
+                            .ConfigureAwait(false);
+                        return true;
+                    },
+                    bounded.Token)
+                .ConfigureAwait(false);
+            PublishCurrent(Snapshot.State, PlaybackActivity.Idle);
+            return PlaybackOperationResult.Succeeded();
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            return ControlFailure(
+                PlaybackFailureCode.DecodeFailed,
+                "媒体定位未能在允许时间内完成。",
+                publish: true);
+        }
+        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        {
+            return Cancelled();
+        }
+        catch (Exception ex)
+        {
+            var failure = PlaybackFailureMapper.MapMediaInput(ex);
+            PublishCurrent(PlaybackState.Faulted, PlaybackActivity.Idle, failure);
+            return PlaybackOperationResult.Failed(failure);
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
+    }
+
+    public async Task<PlaybackOperationResult> SetRateAsync(
+        float rate,
+        CancellationToken cancellationToken = default)
+    {
+        if (!SupportedRates.Any(candidate => Math.Abs(candidate - rate) < 0.0001f))
+        {
+            return ControlFailure(
+                PlaybackFailureCode.InvalidRequest,
+                "请选择播放器支持的倍速。",
+                publish: false);
+        }
+
+        BeginUserIntent(cancelPendingLoad: true);
+        using var linked = CreateOperationCancellation(cancellationToken);
+        PublishWaitingIfBusy();
+        await _operationGate.WaitAsync(linked.Token).ConfigureAwait(false);
+        try
+        {
+            ThrowIfDisposed();
+            if (_currentSource is null)
+            {
+                return ControlFailure(
+                    PlaybackFailureCode.InvalidRequest,
+                    "请先加载视频。",
+                    publish: false);
+            }
+
+            var changed = await _nativeDispatcher.InvokeAsync(
+                    "set-rate",
+                    () => _playerHost.SetRate(rate),
+                    linked.Token)
+                .ConfigureAwait(false);
+            if (!changed)
+            {
+                // 失败时不把用户请求保存为 Document 偏好，否则之后每次换片都会重复失败。
+                // 当前媒体继续保持原速度和可播放状态。
+                return ControlFailure(
+                    PlaybackFailureCode.ControlUnavailable,
+                    "当前媒体无法使用所选倍速。",
+                    publish: true);
+            }
+
+            _desiredRate = rate;
+            UpdateControls(_controls with { Rate = rate });
+            PublishCurrent(Snapshot.State, PlaybackActivity.Idle);
+            return PlaybackOperationResult.Succeeded();
+        }
+        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        {
+            return Cancelled();
+        }
+        catch
+        {
+            return ControlFailure(
+                PlaybackFailureCode.ControlUnavailable,
+                "当前媒体无法使用所选倍速。",
+                publish: true);
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
+    }
+
+    public Task<PlaybackOperationResult> SelectAudioTrackAsync(
+        int trackId,
+        CancellationToken cancellationToken = default) =>
+        SelectTrackAsync(trackId, subtitle: false, cancellationToken);
+
+    public Task<PlaybackOperationResult> SelectSubtitleTrackAsync(
+        int trackId,
+        CancellationToken cancellationToken = default) =>
+        SelectTrackAsync(trackId, subtitle: true, cancellationToken);
+
+    private async Task<PlaybackOperationResult> SelectTrackAsync(
+        int trackId,
+        bool subtitle,
+        CancellationToken cancellationToken)
+    {
+        BeginUserIntent(cancelPendingLoad: true);
+        using var linked = CreateOperationCancellation(cancellationToken);
+        PublishWaitingIfBusy();
+        await _operationGate.WaitAsync(linked.Token).ConfigureAwait(false);
+        try
+        {
+            ThrowIfDisposed();
+            if (_currentSource is null)
+            {
+                return ControlFailure(
+                    PlaybackFailureCode.InvalidRequest,
+                    "请先加载视频。",
+                    publish: false);
+            }
+
+            var options = subtitle ? _controls.SubtitleTracks : _controls.AudioTracks;
+            if (!options.Any(option => option.Id == trackId))
+            {
+                return ControlFailure(
+                    PlaybackFailureCode.InvalidRequest,
+                    subtitle ? "所选字幕轨已不可用。" : "所选音轨已不可用。",
+                    publish: false);
+            }
+
+            var changed = await _nativeDispatcher.InvokeAsync(
+                    subtitle ? "select-subtitle-track" : "select-audio-track",
+                    () => subtitle
+                        ? _playerHost.SetSubtitleTrack(trackId)
+                        : _playerHost.SetAudioTrack(trackId),
+                    linked.Token)
+                .ConfigureAwait(false);
+            if (!changed)
+            {
+                return ControlFailure(
+                    PlaybackFailureCode.ControlUnavailable,
+                    subtitle ? "字幕轨切换失败，已保留原选择。" : "音轨切换失败，已保留原选择。",
+                    publish: true);
+            }
+
+            UpdateControls(subtitle
+                ? _controls with { SelectedSubtitleTrackId = trackId }
+                : _controls with { SelectedAudioTrackId = trackId });
+            PublishCurrent(Snapshot.State, PlaybackActivity.Idle);
+            return PlaybackOperationResult.Succeeded();
+        }
+        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        {
+            return Cancelled();
+        }
+        catch
+        {
+            return ControlFailure(
+                PlaybackFailureCode.ControlUnavailable,
+                subtitle ? "字幕轨切换失败，已保留原选择。" : "音轨切换失败，已保留原选择。",
+                publish: true);
+        }
+        finally
+        {
+            _operationGate.Release();
+        }
+    }
+
     public async Task<PlaybackOperationResult> ReleaseAsync(
         CancellationToken cancellationToken = default)
     {
@@ -636,7 +871,10 @@ internal sealed class SecureVideoPlayer :
                     source.Generation,
                     Volatile.Read(ref _intentRevision),
                     _playerHost.PositionMs,
-                    Snapshot.State);
+                    Snapshot.State,
+                    _controls.Rate,
+                    _controls.SelectedAudioTrackId,
+                    _controls.SelectedSubtitleTrackId);
                 source.RequestStop();
                 _playerHost.Stop();
             }
@@ -725,10 +963,15 @@ internal sealed class SecureVideoPlayer :
                 return PlaybackOperationResult.Failed(failure);
             }
 
+            var controlFailure = await RestoreControlsAfterSurfaceAsync(
+                    source,
+                    recovery.Value,
+                    restoreCancellation.Token)
+                .ConfigureAwait(false);
             var restoredState = recovery.Value.State == PlaybackState.Paused
                 ? PlaybackState.Paused
                 : PlaybackState.Playing;
-            PublishCurrent(restoredState, PlaybackActivity.Idle);
+            PublishCurrent(restoredState, PlaybackActivity.Idle, controlFailure);
             return PlaybackOperationResult.Succeeded();
         }
         catch (OperationCanceledException)
@@ -909,6 +1152,55 @@ internal sealed class SecureVideoPlayer :
         }
 
         PublishCurrent(state, activity);
+
+        // Play() 返回成功只表示 LibVLC 接受了启动命令，此时解复用器未必已经公开
+        // 完整轨道。真正收到首个 Playing 事件后再刷新一次，才能稳定发现 MP4 的
+        // 多音轨和内嵌字幕。用媒体代次做一次性门禁，避免位置/缓冲导致的重复
+        // Playing 事件持续重建轨道快照。
+        if (state == PlaybackState.Playing &&
+            Interlocked.Exchange(
+                ref _playingControlsRefreshGeneration,
+                generation) != generation)
+        {
+            _ = RefreshControlsAfterPlayingAsync(source);
+        }
+    }
+
+    private async Task RefreshControlsAfterPlayingAsync(IPlaybackMediaSource source)
+    {
+        try
+        {
+            await _operationGate.WaitAsync(_lifetimeCancellation.Token)
+                .ConfigureAwait(false);
+            try
+            {
+                if (!ReferenceEquals(_currentSource, source))
+                {
+                    return;
+                }
+
+                await RefreshControlsForCurrentMediaAsync(
+                        source,
+                        _lifetimeCancellation.Token)
+                    .ConfigureAwait(false);
+                PublishCurrent(Snapshot.State, Snapshot.Activity);
+            }
+            finally
+            {
+                _operationGate.Release();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch
+        {
+            // 轨道发现属于增强控制；失败时保留媒体的播放状态和空轨道快照。
+            // 原生异常文本可能带私有路径，因此不能向 UI 或日志透传。
+        }
     }
 
     private void OnHostPositionChanged(long generation)
@@ -1052,6 +1344,7 @@ internal sealed class SecureVideoPlayer :
             _playerHost.HasAudio,
             _playerHost.VideoTrackCount,
             _playerHost.AudioTrackCount,
+            _controls,
             activity);
         lock (_snapshotSync)
         {
@@ -1074,11 +1367,14 @@ internal sealed class SecureVideoPlayer :
         {
             SurfaceGeneration = surfaceGeneration,
             Volume = Snapshot.Volume,
+            Controls = PlaybackControlSnapshot.Empty with { Rate = _desiredRate },
             Activity = activity,
             IsTransitioning = IsBlockingActivity(activity)
         };
         lock (_snapshotSync)
         {
+            // Release/切换文件夹后旧媒体轨道 ID 已经失效，字段和公开快照必须同时清空。
+            _controls = snapshot.Controls;
             _snapshot = snapshot;
         }
         Changed?.Invoke(this, new PlaybackChangedEventArgs(snapshot, failure));
@@ -1103,6 +1399,177 @@ internal sealed class SecureVideoPlayer :
             PublishCurrent(PlaybackState.Faulted, PlaybackActivity.Idle, failure);
         }
         return PlaybackOperationResult.Failed(failure);
+    }
+
+    private PlaybackOperationResult ControlFailure(
+        PlaybackFailureCode code,
+        string message,
+        bool publish)
+    {
+        var failure = new PlaybackFailure(code, message);
+        if (publish)
+        {
+            // 日常控制失败不代表媒体、解密流或解码器已经失效，因此必须保留稳定状态。
+            // 把这类失败发布成 Faulted 会让一个无效字幕 ID 错误地终止整段视频。
+            PublishCurrent(Snapshot.State, PlaybackActivity.Idle, failure);
+        }
+        return PlaybackOperationResult.Failed(failure);
+    }
+
+    private async Task<PlaybackFailure?> InitializeControlsForCurrentMediaAsync(
+        IPlaybackMediaSource source,
+        CancellationToken cancellationToken)
+    {
+        PlaybackFailure? failure = null;
+        var appliedRate = _desiredRate;
+        await _nativeDispatcher.InvokeAsync(
+                "initialize-media-controls",
+                () =>
+                {
+                    if (!_playerHost.SetRate(_desiredRate))
+                    {
+                        // 合法倍速仍可能被特定解复用器拒绝。回退到 1.0 后继续提交媒体，
+                        // 不能让体验型控制破坏已经认证成功的安全播放事务。
+                        _desiredRate = 1.0f;
+                        appliedRate = 1.0f;
+                        _playerHost.SetRate(1.0f);
+                        failure = new PlaybackFailure(
+                            PlaybackFailureCode.ControlUnavailable,
+                            "新媒体不支持之前选择的倍速，已恢复为 1.0 倍。");
+                    }
+
+                    return true;
+                },
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!ReferenceEquals(_currentSource, source))
+        {
+            return null;
+        }
+
+        UpdateControls(PlaybackControlSnapshot.Empty with { Rate = appliedRate });
+        await RefreshControlsForCurrentMediaAsync(source, cancellationToken)
+            .ConfigureAwait(false);
+        return failure;
+    }
+
+    private async Task RefreshControlsForCurrentMediaAsync(
+        IPlaybackMediaSource source,
+        CancellationToken cancellationToken)
+    {
+        var captured = await _nativeDispatcher.InvokeAsync(
+                "refresh-media-controls",
+                () =>
+                {
+                    var audio = _playerHost.GetAudioTracks();
+                    var subtitles = _playerHost.GetSubtitleTracks();
+                    int? audioId = audio.Any(option => option.Id == _playerHost.AudioTrack)
+                        ? _playerHost.AudioTrack
+                        : null;
+                    int? subtitleId = subtitles.Any(option => option.Id == _playerHost.SubtitleTrack)
+                        ? _playerHost.SubtitleTrack
+                        : subtitles.Any(option => option.Id == -1) ? -1 : null;
+                    return new PlaybackControlSnapshot(
+                        _desiredRate,
+                        audio,
+                        audioId,
+                        subtitles,
+                        subtitleId);
+                },
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        // 原生命令完成时可能已经有更新的媒体接管会话；旧轨道绝不能污染新代次。
+        if (ReferenceEquals(_currentSource, source))
+        {
+            UpdateControls(captured);
+        }
+    }
+
+    private async Task<PlaybackFailure?> RestoreControlsAfterSurfaceAsync(
+        IPlaybackMediaSource source,
+        SurfaceRecoverySnapshot recovery,
+        CancellationToken cancellationToken)
+    {
+        PlaybackFailure? failure = null;
+        await _nativeDispatcher.InvokeAsync(
+                "restore-media-controls",
+                () =>
+                {
+                    var restoredRate = _playerHost.SetRate(recovery.Rate);
+                    var audio = _playerHost.GetAudioTracks();
+                    var subtitles = _playerHost.GetSubtitleTracks();
+                    var audioId = recovery.AudioTrackId;
+                    var subtitleId = recovery.SubtitleTrackId;
+
+                    if (audioId.HasValue &&
+                        (!audio.Any(option => option.Id == audioId.Value) ||
+                         !_playerHost.SetAudioTrack(audioId.Value)))
+                    {
+                        audioId = audio.Any(option => option.Id == _playerHost.AudioTrack)
+                            ? _playerHost.AudioTrack
+                            : null;
+                        failure = new PlaybackFailure(
+                            PlaybackFailureCode.ControlUnavailable,
+                            "视频表面恢复后无法恢复原音轨，已使用媒体默认音轨。");
+                    }
+
+                    if (subtitleId.HasValue &&
+                        (!subtitles.Any(option => option.Id == subtitleId.Value) ||
+                         !_playerHost.SetSubtitleTrack(subtitleId.Value)))
+                    {
+                        subtitleId = subtitles.Any(option => option.Id == _playerHost.SubtitleTrack)
+                            ? _playerHost.SubtitleTrack
+                            : subtitles.Any(option => option.Id == -1) ? -1 : null;
+                        failure ??= new PlaybackFailure(
+                            PlaybackFailureCode.ControlUnavailable,
+                            "视频表面恢复后无法恢复原字幕轨，已使用媒体默认字幕设置。");
+                    }
+
+                    if (!restoredRate)
+                    {
+                        _desiredRate = 1.0f;
+                        _playerHost.SetRate(1.0f);
+                        failure ??= new PlaybackFailure(
+                            PlaybackFailureCode.ControlUnavailable,
+                            "视频表面恢复后无法恢复原倍速，已恢复为 1.0 倍。");
+                    }
+
+                    UpdateControls(new PlaybackControlSnapshot(
+                        restoredRate ? recovery.Rate : 1.0f,
+                        audio,
+                        audioId,
+                        subtitles,
+                        subtitleId));
+                    return true;
+                },
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return ReferenceEquals(_currentSource, source) ? failure : null;
+    }
+
+    private void UpdateControls(PlaybackControlSnapshot controls)
+    {
+        lock (_snapshotSync)
+        {
+            _controls = controls;
+            _snapshot = _snapshot with { Controls = controls };
+        }
+    }
+
+    private static long SaturatingAdd(long left, long right)
+    {
+        if (right > 0 && left > long.MaxValue - right)
+        {
+            return long.MaxValue;
+        }
+        if (right < 0 && left < long.MinValue - right)
+        {
+            return long.MinValue;
+        }
+        return left + right;
     }
 
     private static bool IsBlockingActivity(PlaybackActivity activity) =>

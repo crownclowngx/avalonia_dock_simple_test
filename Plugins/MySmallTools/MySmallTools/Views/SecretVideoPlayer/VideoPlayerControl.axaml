@@ -6,12 +6,25 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="clr-namespace:MyAvaloniaManagementCommon.Behaviors;assembly=MyAvaloniaManagementCommon"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
-             x:Class="MySmallTools.Views.SecretVideoPlayer.VideoPlayerControl">
+             x:Class="MySmallTools.Views.SecretVideoPlayer.VideoPlayerControl"
+             x:Name="PlayerRoot"
+             Focusable="True">
   <UserControl.Styles>
     <StyleInclude Source="avares://MySmallTools/Styles/VideoDocumentStyles.axaml" />
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="3">
+  <!--
+    PlayerShell 是普通模式和窗口内容区全屏共同使用的唯一播放器视觉树。
+    全屏时 code-behind 只迁移该实例，不复制 EmbeddedVideoSurface，避免一个 MediaPlayer
+    同时绑定两个 HWND。
+  -->
+  <ContentControl x:Name="NormalPlaceholder"
+                  HorizontalContentAlignment="Stretch"
+                  VerticalContentAlignment="Stretch">
+  <Grid x:Name="PlayerShell"
+        RowDefinitions="Auto,*,Auto,Auto,Auto,Auto"
+        RowSpacing="3"
+        Background="{DynamicResource DockThemeBackgroundBrush}">
     <Border Grid.Row="0" IsVisible="{Binding !IsPlaybackAvailable}"
             Background="#3A2A16" BorderBrush="#D89B3C" BorderThickness="1"
             CornerRadius="4" Padding="10" Margin="4,2">
@@ -67,12 +80,24 @@
     <Border Grid.Row="4" Classes="TaskFooter" Padding="4,5,4,0">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4">
+          <Button Content="⏮"
+                  Command="{Binding #PlayerRoot.NavigationContext.PreviousCommand}"
+                  IsVisible="{Binding #PlayerRoot.HasNavigationContext}"
+                  IsEnabled="{Binding #PlayerRoot.NavigationContext.CanNavigatePrevious}"
+                  Classes="IconButton" ToolTip.Tip="播放当前筛选列表中的上一项"
+                  AutomationProperties.Name="上一项" />
           <Button Content="▶" Command="{Binding PlayCommand}" IsVisible="{Binding !IsPlaying}"
                   Classes="IconButton" ToolTip.Tip="播放" AutomationProperties.Name="播放" />
           <Button Content="⏸" Command="{Binding PauseCommand}" IsVisible="{Binding IsPlaying}"
                   Classes="IconButton" ToolTip.Tip="暂停" AutomationProperties.Name="暂停" />
           <Button Content="■" Command="{Binding StopCommand}" Classes="IconButton"
                   ToolTip.Tip="停止" AutomationProperties.Name="停止" />
+          <Button Content="⏭"
+                  Command="{Binding #PlayerRoot.NavigationContext.NextCommand}"
+                  IsVisible="{Binding #PlayerRoot.HasNavigationContext}"
+                  IsEnabled="{Binding #PlayerRoot.NavigationContext.CanNavigateNext}"
+                  Classes="IconButton" ToolTip.Tip="播放当前筛选列表中的下一项"
+                  AutomationProperties.Name="下一项" />
         </StackPanel>
 
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -82,8 +107,66 @@
                   AutomationProperties.Name="音量" />
           <TextBlock Text="{Binding Volume, StringFormat={}{0:F0}%}" VerticalAlignment="Center"
                      FontFamily="Consolas" Classes="Caption" MinWidth="34" />
+          <Button Content="⛶" Command="{Binding ToggleFullscreenCommand}"
+                  Classes="IconButton" ToolTip.Tip="切换窗口内容区全屏（Esc 退出）"
+                  AutomationProperties.Name="切换全屏" />
         </StackPanel>
       </Grid>
     </Border>
+
+    <Border Grid.Row="5" Classes="TaskFooter" Padding="4,2,4,5">
+      <Grid ColumnDefinitions="Auto,120,Auto,*,Auto,*,Auto" ColumnSpacing="6">
+        <TextBlock Grid.Column="0" Text="倍速" Classes="Caption"
+                   VerticalAlignment="Center" />
+        <ComboBox Grid.Column="1"
+                  ItemsSource="{Binding AvailableRates}"
+                  SelectedItem="{Binding SelectedRate}"
+                  IsEnabled="{Binding !IsMediaTransitioning}"
+                  ToolTip.Tip="选择当前 Document 的播放速度；切换媒体后继续使用"
+                  AutomationProperties.Name="播放倍速" />
+
+        <TextBlock Grid.Column="2" Text="音轨" Classes="Caption"
+                   VerticalAlignment="Center" />
+        <ComboBox Grid.Column="3"
+                  ItemsSource="{Binding AudioTracks}"
+                  SelectedItem="{Binding SelectedAudioTrack}"
+                  IsEnabled="{Binding HasAudioTracks}"
+                  PlaceholderText="无音轨"
+                  ToolTip.Tip="选择当前媒体的音轨"
+                  MinWidth="120"
+                  AutomationProperties.Name="音轨">
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBlock Grid.Column="4" Text="字幕" Classes="Caption"
+                   VerticalAlignment="Center" />
+        <ComboBox Grid.Column="5"
+                  ItemsSource="{Binding SubtitleTracks}"
+                  SelectedItem="{Binding SelectedSubtitleTrack}"
+                  IsEnabled="{Binding !IsMediaTransitioning}"
+                  ToolTip.Tip="选择当前媒体的字幕；关闭字幕对应稳定 ID -1"
+                  MinWidth="120"
+                  AutomationProperties.Name="字幕轨">
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <CheckBox Grid.Column="6"
+                  Content="连续播放"
+                  IsVisible="{Binding #PlayerRoot.HasNavigationContext}"
+                  IsChecked="{Binding #PlayerRoot.NavigationContext.IsContinuousPlaybackEnabled}"
+                  VerticalAlignment="Center"
+                  ToolTip.Tip="自然播放结束后播放当前筛选列表中的下一项；列表末尾停止"
+                  AutomationProperties.Name="连续播放" />
+      </Grid>
+    </Border>
   </Grid>
+  </ContentControl>
 </UserControl>

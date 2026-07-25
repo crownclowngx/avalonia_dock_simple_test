@@ -62,6 +62,42 @@ public partial class VideoLibraryBrowserViewModel : ObservableObject, IDisposabl
         return ScanCurrentFolderAsync();
     }
 
+    /// <summary>
+    /// 按当前筛选后的可见顺序查找相邻媒体。
+    /// </summary>
+    /// <remarks>
+    /// 导航以正在播放的规范化路径为身份，而不是保存列表项引用。这样刷新扫描重新创建
+    /// ViewModel 后，只要同一路径仍存在，上一项/下一项能力就可以自然恢复。
+    /// </remarks>
+    public VideoLibraryItemViewModel? FindVisibleAdjacent(
+        string? currentPlayingPath,
+        int offset)
+    {
+        if (string.IsNullOrWhiteSpace(currentPlayingPath) ||
+            offset is not (-1 or 1))
+        {
+            return null;
+        }
+
+        var index = -1;
+        for (var candidateIndex = 0; candidateIndex < _visibleItems.Count; candidateIndex++)
+        {
+            if (string.Equals(
+                    _visibleItems[candidateIndex].FilePath,
+                    currentPlayingPath,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                index = candidateIndex;
+                break;
+            }
+        }
+
+        var target = index + offset;
+        return index >= 0 && target >= 0 && target < _visibleItems.Count
+            ? _visibleItems[target]
+            : null;
+    }
+
     [RelayCommand(CanExecute = nameof(CanRefresh))]
     private Task RefreshAsync() => ScanCurrentFolderAsync();
 

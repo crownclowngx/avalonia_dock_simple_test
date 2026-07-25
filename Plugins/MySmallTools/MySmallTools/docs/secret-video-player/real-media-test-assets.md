@@ -9,12 +9,14 @@ Plugins/MySmallTools/MySmallTools.Tests/TestAssets/RealMedia/
 ├─ manifest.json
 ├─ ASSET-LICENSE.md
 ├─ synthetic-av-short.mp4
-└─ synthetic-silent-multiblock.webm
+├─ synthetic-silent-multiblock.webm
+├─ synthetic-multitrack-subtitles.srt
+└─ synthetic-multitrack-subtitles.mp4
 ```
 
 这些文件用于替代开发者私人视频，为 SECVID03 加密/解密、真实 LibVLC Parse/播放、跨块读取、Seek、Dock 表面恢复和发布验收提供可复现输入。测试不得联网下载媒体，也不得在测试运行时动态生成媒体。
 
-这里的“真实媒体”表示真实可解码的 MP4/WebM 二进制文件，不表示来自真人、摄像机或第三方影视素材。两份资产均由 FFmpeg 合成源生成。
+这里的“真实媒体”表示真实可解码的 MP4/WebM 二进制文件，不表示来自真人、摄像机或第三方影视素材。三份资产均由 FFmpeg 合成源生成。
 
 ## 2. 当前资产矩阵
 
@@ -22,6 +24,7 @@ Plugins/MySmallTools/MySmallTools.Tests/TestAssets/RealMedia/
 | --- | --- | --- |
 | `synthetic-av-short.mp4` | 3 秒、320×180、H.264、AAC 单声道 | MP4 demux、音视频轨、短时长播放 |
 | `synthetic-silent-multiblock.webm` | 6 秒、640×360、VP9、无音轨 | Matroska/WebM demux、无声媒体、至少 3 个 SECVID03 明文块、跨块 Seek |
+| `synthetic-multitrack-subtitles.mp4` | 4 秒、320×180、H.264、两条 AAC、mov_text 字幕 | G6 六档倍速、双音轨切换、字幕启用与关闭 |
 
 以下机器可读值只以 [`manifest.json`](../../../MySmallTools.Tests/TestAssets/RealMedia/manifest.json) 为准，不在本文复制：
 
@@ -70,6 +73,7 @@ root
 - 视频源：`testsrc2`
 - WebM 额外滤镜：固定种子 `noise`（`all_seed=1`）
 - MP4 音频源：48 kHz、1000 Hz `sine`，编码为 AAC 单声道
+- G6 多轨 MP4：48 kHz、600/1200 Hz 两个 `sine` 音源和仓库内固定 SRT，字幕编码为 `mov_text`
 - 编码时使用 `-map_metadata -1` 移除外部元数据
 
 完整 FFmpeg 命令只从清单复制执行，不能根据本文手工还原。生成后使用同一发行包中的 `ffprobe` 检查：
@@ -78,6 +82,8 @@ root
 ffprobe -v error -show_entries "format=format_name,duration,size:stream=index,codec_name,codec_type,width,height,channels" -of json .\Plugins\MySmallTools\MySmallTools.Tests\TestAssets\RealMedia\synthetic-av-short.mp4
 
 ffprobe -v error -show_entries "format=format_name,duration,size:stream=index,codec_name,codec_type,width,height,channels" -of json .\Plugins\MySmallTools\MySmallTools.Tests\TestAssets\RealMedia\synthetic-silent-multiblock.webm
+
+ffprobe -v error -show_entries "format=format_name,duration,size:stream=index,codec_name,codec_type,width,height,channels:stream_tags=language,title" -of json .\Plugins\MySmallTools\MySmallTools.Tests\TestAssets\RealMedia\synthetic-multitrack-subtitles.mp4
 ```
 
 ## 5. 自动化如何使用资产
@@ -87,14 +93,14 @@ ffprobe -v error -show_entries "format=format_name,duration,size:stream=index,co
 | `MySmallTools.Tests.csproj` | 把 `TestAssets/RealMedia/**` 复制到测试输出目录 |
 | `RealMediaAssetTests` | 校验 schema、声明集合、容器签名、精确长度、SHA-256、来源和授权 |
 | `Secvid03Tests` / G2、G3 测试 | 使用真实媒体执行加密、解密、按块读取、Seek 和资源关闭 |
-| `MySmallTools.Playback.IntegrationHarness` | 链接并复制同一资产，运行真实 LibVLC、真实窗口和 Dock 生命周期门禁 |
+| `MySmallTools.Playback.IntegrationHarness` | 链接并复制同一资产，运行真实 LibVLC、六档倍速、双音轨/字幕、全屏、Dock 和生命周期门禁 |
 | `Release-MySmallToolsP0.ps1` | 通过测试、内存门禁和两轮 Harness 间接把资产纳入正式发布验收 |
 
-G0 证明资产来源、授权、清单和字节完整性；G3/G3.1 证明同一输入在真实 LibVLC 和 HWND 生命周期中可用；G4 把这些检查纳入统一发布门禁。
+G0 证明资产来源、授权、清单和字节完整性；G3/G3.1 证明同一输入在真实 LibVLC 和 HWND 生命周期中可用；G4 把这些检查纳入统一发布门禁；G6 增加双音轨、字幕和全屏迁移验证。
 
 ## 6. 授权与隐私边界
 
-两份媒体由 FFmpeg 合成视频、音频和噪声源生成，不包含私人视频、外部素材或第三方视听作品。项目按 `CC0-1.0` 提供这些资产；权威声明见 [`ASSET-LICENSE.md`](../../../MySmallTools.Tests/TestAssets/RealMedia/ASSET-LICENSE.md)。
+三份媒体由 FFmpeg 合成视频、音频、噪声源和仓库内字幕文本生成，不包含私人视频、外部素材或第三方视听作品。项目按 `CC0-1.0` 提供这些资产；权威声明见 [`ASSET-LICENSE.md`](../../../MySmallTools.Tests/TestAssets/RealMedia/ASSET-LICENSE.md)。
 
 更新资产时不得：
 
@@ -142,3 +148,4 @@ dotnet run --project .\Plugins\MySmallTools\MySmallTools.Playback.IntegrationHar
 - [架构设计](architecture-design.md)
 - [G3 真实播放与 Dock 稳定性](G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md)
 - [G4 发布基线](G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md)
+- [G6 播放器日常控制](G6-PLAYER-DAILY-CONTROLS.md)
