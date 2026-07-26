@@ -199,15 +199,16 @@ internal sealed class Phase4AcceptanceSuite(
                     Suite = HarnessSuite.G3,
                     ReportPath = Path.Combine(directory, "warmup-g3.json")
                 }).RunAsync();
-            var g8ExitCode = g3ExitCode == 0
-                ? await new G8P1AcceptanceSuite(
-                    services,
-                    options with
-                    {
-                        Suite = HarnessSuite.G8,
-                        ReportPath = Path.Combine(directory, "warmup-g8.json")
-                    }).RunAsync()
-                : 1;
+            // G3 与 G8 会初始化不同的 Avalonia、Dock 和线程池路径。即使 G3 已失败，
+            // 仍须完成 G8 预热；最终结果继续保留 NO-GO，但正式资源基线不会混入 G8
+            // 首次初始化成本，便于准确区分兼容性失败与重复生命周期泄漏。
+            var g8ExitCode = await new G8P1AcceptanceSuite(
+                services,
+                options with
+                {
+                    Suite = HarnessSuite.G8,
+                    ReportPath = Path.Combine(directory, "warmup-g8.json")
+                }).RunAsync();
             Require(g3ExitCode == 0, "PHASE4_WARMUP_G3_FAILED");
             Require(g8ExitCode == 0, "PHASE4_WARMUP_G8_FAILED");
             return g3ExitCode == 0 && g8ExitCode == 0;
