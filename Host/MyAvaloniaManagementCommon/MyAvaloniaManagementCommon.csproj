@@ -24,10 +24,6 @@
       <PackageReference Include="Dock.Settings" />
       <PackageReference Include="Irihi.Ursa" />
       <PackageReference Include="Irihi.Ursa.Themes.Semi" />
-      <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Newtonsoft.Json" />
       <PackageReference Include="Semi.Avalonia" />

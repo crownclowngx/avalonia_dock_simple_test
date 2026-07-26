@@ -1,7 +1,7 @@
 # G11 最终验收与完整测试手册
 
 > 适用范围：MySmallTools 安全视频子系统
-> 正式平台：Windows x64、.NET 9
+> 正式平台：Windows x64、.NET 10
 > 清单版本：`g11-guide-v1`
 
 ## 1. 目的与完成条件

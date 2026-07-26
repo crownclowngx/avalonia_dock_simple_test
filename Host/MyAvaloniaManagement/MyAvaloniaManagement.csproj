@@ -35,10 +35,6 @@
       <PackageReference Include="EmberDock.Settings" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
       <PackageReference Include="Microsoft.Extensions.Hosting" />
-      <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
       <PackageReference Include="Newtonsoft.Json" />
       <PackageReference Include="StaticViewLocator">
         <PrivateAssets>all</PrivateAssets>

@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
-    <!-- 阶段 1 只统一治理方式，暂时保留 net9 基线；阶段 2 再集中切换到 net10。 -->
-    <TargetFramework Condition="'$(TargetFramework)' == ''">net9.0</TargetFramework>
-    <LangVersion>13.0</LangVersion>
+    <!-- 普通项目共享同一稳定基座；只有依赖真实 Windows 窗口的 Harness 显式覆盖 TFM。 -->
+    <TargetFramework Condition="'$(TargetFramework)' == ''">net10.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
     <Nullable>enable</Nullable>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>

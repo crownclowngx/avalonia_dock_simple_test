@@ -14,6 +14,7 @@
 
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()
+$requiredDotnetMajor = 10
 
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $pluginProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools\MySmallTools.csproj'
@@ -136,8 +137,8 @@ if ($SmallMiB -lt 8 -or $LargeMiB -le $SmallMiB -or
 }
 
 $dotnetVersion = (& dotnet --version).Trim()
-if (-not $dotnetVersion.StartsWith('9.')) {
-    throw "The .NET 9 SDK is required; current version: $dotnetVersion."
+if (-not $dotnetVersion.StartsWith("$requiredDotnetMajor.")) {
+    throw "需要 .NET $requiredDotnetMajor SDK，当前版本为 $dotnetVersion。"
 }
 
 $revision = (& git -C $workspace rev-parse --short=12 HEAD).Trim()
@@ -167,7 +168,7 @@ if (Test-Path $artifactRoot) {
 New-Item -ItemType Directory -Path $artifactRoot -Force | Out-Null
 New-Item -ItemType Directory -Path $evidenceRoot -Force | Out-Null
 
-# The test projects share MyAvaloniaManagementCommon/obj and must run serially.
+# 测试项目共享 MyAvaloniaManagementCommon/obj，因此门禁保持串行执行。
 Invoke-Gate 'MySmallTools Release build (warnings are errors)' @(
     'build', $pluginProject, '-c', 'Release', '-warnaserror'
 )

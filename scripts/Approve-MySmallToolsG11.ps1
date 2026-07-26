@@ -5,6 +5,7 @@
 
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()
+$requiredDotnetMajor = 10
 
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $resultRoot = Join-Path $workspace 'TestResults\G11'
@@ -24,6 +25,9 @@ if (-not (Test-Path -LiteralPath $technicalPath)) {
 }
 
 $technical = Get-Content -Raw -LiteralPath $technicalPath | ConvertFrom-Json
+if (-not ([string]$technical.dotnetSdk).StartsWith("$requiredDotnetMajor.")) {
+    throw "G11 技术证据不是由 .NET $requiredDotnetMajor SDK 生成，拒绝签字。"
+}
 $revision = (& git -C $workspace rev-parse --short=12 HEAD).Trim()
 if ([string]$technical.sourceRevision -ne $revision) {
     throw 'G11 技术证据不属于当前源码版本，必须重新执行技术验收。'

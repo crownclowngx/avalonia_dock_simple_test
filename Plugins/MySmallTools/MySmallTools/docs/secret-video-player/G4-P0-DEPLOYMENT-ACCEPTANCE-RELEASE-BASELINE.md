@@ -2,7 +2,7 @@
 
 > 实施日期：2026-07-24
 >
-> 支持范围：Windows x64、`net9.0`、插件私有 LibVLC
+> 支持范围：Windows x64、`net10.0`、插件私有 LibVLC
 >
 > 发布标识：`p0-win-x64 + Git short revision`
 
@@ -120,7 +120,7 @@ Manifest 使用排序后的 `/` 相对路径，记录 schema、插件 ID、目�
 
 脚本按以下顺序执行，任一步失败都会返回非零退出码：
 
-1. 检查 Windows x64、Git 状态和 .NET 9。
+1. 检查 Windows x64、Git 状态和 .NET 10。
 2. 独立构建 MySmallTools Release，并把自身警告视为失败。
 3. 串行运行 MySmallTools 与宿主插件测试，避免共享 `obj/bin` 的构建锁竞争。
 4. 创建干净暂存目录、Manifest 和确定性 ZIP。

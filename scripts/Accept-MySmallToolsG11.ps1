@@ -4,6 +4,7 @@
 
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()
+$requiredDotnetMajor = 10
 
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $g4Script = Join-Path $PSScriptRoot 'Release-MySmallToolsP0.ps1'
@@ -131,8 +132,8 @@ if ($env:OS -ne 'Windows_NT' -or
 }
 
 $dotnetVersion = (& dotnet --version).Trim()
-if (-not $dotnetVersion.StartsWith('9.')) {
-    throw "G11 需要 .NET 9 SDK，当前版本为 $dotnetVersion。"
+if (-not $dotnetVersion.StartsWith("$requiredDotnetMajor.")) {
+    throw "G11 需要 .NET $requiredDotnetMajor SDK，当前版本为 $dotnetVersion。"
 }
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     throw 'G11 需要 Git 读取源码快照和工作树状态。'

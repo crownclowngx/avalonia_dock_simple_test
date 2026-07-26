@@ -44,7 +44,7 @@
 
 ### 2.2 当前工程状态
 
-- `MySmallTools` 和 `MySmallTools.Tests` 以 .NET 9、Windows x64 为当前运行基线。
+- `MySmallTools` 和 `MySmallTools.Tests` 以 .NET 10、Windows x64 为当前运行基线。
 - `MySmallTools.Tests` 当前有 180 项测试，G10 新增诊断白名单、错误域、路径脱敏、并发导出、缓存统计和性能比较门禁。
 - `MyAvaloniaManagement.PluginTests` 当前有 21 项测试，新增四类共八个 Document 的真实 DI Scope 隔离与释放门禁。
 - 2026-07-24 G4 验证中，两组测试全部通过，MySmallTools Release 构建 0 警告；宿主工程仍可能报告其他插件的历史警告。

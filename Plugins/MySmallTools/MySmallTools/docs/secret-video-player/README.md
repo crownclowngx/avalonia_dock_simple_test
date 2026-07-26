@@ -55,7 +55,7 @@ flowchart LR
 
 | 项目 | 当前基线 |
 | --- | --- |
-| .NET | .NET 9 (`net9.0`) |
+| .NET | .NET 10 (`net10.0`) |
 | 操作系统和架构 | Windows x64 |
 | LibVLCSharp | 3.9.4 |
 | LibVLCSharp.Avalonia | 3.9.4 |

@@ -7,7 +7,7 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 运行平台 | Windows x64 |
-| 目标框架 | `net9.0`；真实窗口 Harness 为 `net9.0-windows` |
+| 目标框架 | `net10.0`；真实窗口 Harness 为 `net10.0-windows` |
 | LibVLCSharp | `3.9.4` |
 | LibVLCSharp.Avalonia | `3.9.4` |
 | VideoLAN.LibVLC.Windows | `3.0.21` |
@@ -23,7 +23,7 @@
 `MySmallTools.csproj` 的 `DeploySmallToolsPlugin` Target 在构建后重新创建宿主输出中的目录：
 
 ```text
-Host/MyAvaloniaManagement/bin/<Configuration>/net9.0/
+Host/MyAvaloniaManagement/bin/<Configuration>/net10.0/
 └─ Controls/SmallTools/
    ├─ MySmallTools.dll
    ├─ LibVLCSharp.dll
@@ -278,7 +278,7 @@ G7.1 后，顶层 Document ViewModel 是宿主兼容外壳，实际实现按
 
 默认门禁按顺序执行：
 
-1. Windows x64 与 .NET 9 SDK 检查；
+1. Windows x64 与 .NET 10 SDK 检查；
 2. 拒绝 dirty worktree；
 3. MySmallTools Release 构建，警告即失败；
 4. `MySmallTools.Tests`；

@@ -6,7 +6,7 @@
 
 | 项目 | 当前基线 |
 | --- | --- |
-| 目标框架 | `.NET 9`（`net9.0`） |
+| 目标框架 | `.NET 10`（`net10.0`） |
 | 容器格式 | `SECVID03`，格式版本 3 |
 | 播放桥接 | `LibVLCSharp 3.9.4`、`LibVLCSharp.Avalonia 3.9.4` |
 | 原生运行时 | `VideoLAN.LibVLC.Windows 3.0.21` |

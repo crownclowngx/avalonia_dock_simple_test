@@ -4,15 +4,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- 阶段 1 先原样集中现有版本，避免把治理改造和依赖升级混为一次变更。 -->
-    <PackageVersion Include="Avalonia" Version="11.3.4" />
+    <!-- 稳定基座只更新补丁和非 UI 依赖，不在本阶段引入 Avalonia 12 或 Dock 12。 -->
+    <PackageVersion Include="Avalonia" Version="11.3.18" />
     <PackageVersion Include="Avalonia.Controls.TreeDataGrid" Version="11.1.1" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.3.4" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.4" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.4" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.4" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.18" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.18" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.18" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.18" />
     <PackageVersion Include="Avalonia.Xaml.Interactions" Version="11.3.0.6" />
-    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="Dock.Avalonia" Version="11.3.2.2" />
     <PackageVersion Include="Dock.Avalonia.Diagnostics" Version="11.3.2.2" />
     <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="11.3.2.2" />
@@ -22,26 +22,26 @@
     <PackageVersion Include="Dock.Model.Mvvm" Version="11.3.2.2" />
     <PackageVersion Include="Dock.Settings" Version="11.3.2.2" />
     <PackageVersion Include="EmberDock.Settings" Version="0.0.1" />
-    <PackageVersion Include="EPPlus" Version="8.1.1" />
+    <PackageVersion Include="EPPlus" Version="8.6.3" />
     <PackageVersion Include="Flurl.Http" Version="4.0.2" />
     <PackageVersion Include="Irihi.Ursa" Version="1.12.0" />
     <PackageVersion Include="Irihi.Ursa.Themes.Semi" Version="1.12.0" />
-    <PackageVersion Include="LibVLCSharp" Version="3.9.4" />
-    <PackageVersion Include="LibVLCSharp.Avalonia" Version="3.9.4" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-    <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />
-    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageVersion Include="protobuf-net" Version="3.2.46" />
-    <PackageVersion Include="QRCoder" Version="1.6.0" />
+    <PackageVersion Include="LibVLCSharp" Version="3.10.0" />
+    <PackageVersion Include="LibVLCSharp.Avalonia" Version="3.10.0" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageVersion Include="protobuf-net" Version="3.2.56" />
+    <PackageVersion Include="QRCoder" Version="1.8.0" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
     <PackageVersion Include="Semi.Avalonia" Version="11.2.1.9" />
     <PackageVersion Include="StaticViewLocator" Version="0.0.1" />
-    <PackageVersion Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
-    <PackageVersion Include="xunit" Version="2.9.2" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="VideoLAN.LibVLC.Windows" Version="3.0.23.1" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>
 </Project>

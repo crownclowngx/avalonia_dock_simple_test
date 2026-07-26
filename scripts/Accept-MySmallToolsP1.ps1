@@ -8,9 +8,10 @@
 
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+$requiredDotnetMajor = 10
 
-# The two test projects share MyAvaloniaManagementCommon/obj and must run serially.
-# This avoids reporting a compiler file lock as a product regression.
+# 两个测试项目共享 MyAvaloniaManagementCommon/obj，必须串行运行，
+# 避免把编译器文件锁误报为产品回归。
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $pluginProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools\MySmallTools.csproj'
 $unitTestProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools.Tests\MySmallTools.Tests.csproj'
@@ -95,8 +96,8 @@ if ($QueueItems -le 0 -or $LibraryItems -le 0) {
 }
 
 $dotnetVersion = (& dotnet --version).Trim()
-if (-not $dotnetVersion.StartsWith('9.')) {
-    throw "The .NET 9 SDK is required; current version: $dotnetVersion."
+if (-not $dotnetVersion.StartsWith("$requiredDotnetMajor.")) {
+    throw "需要 .NET $requiredDotnetMajor SDK，当前版本为 $dotnetVersion。"
 }
 
 $revision = (& git -C $workspace rev-parse --short=12 HEAD).Trim()

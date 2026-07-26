@@ -8,6 +8,8 @@
 
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+$requiredDotnetMajor = 10
+$targetFramework = 'net10.0'
 
 # 本脚本是 G4 唯一正式发布入口。刻意串行执行构建和测试，因为两个测试工程都引用
 # MyAvaloniaManagementCommon；并行构建会争用同一个 obj 输出，产生与产品无关的 CS2012 文件锁。
@@ -18,7 +20,7 @@ $unitTestProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools.Tests
 $hostTestProject = Join-Path $workspace 'Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj'
 $acceptanceProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools.ReleaseAcceptance\MySmallTools.ReleaseAcceptance.csproj'
 $playbackProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools.Playback.IntegrationHarness\MySmallTools.Playback.IntegrationHarness.csproj'
-$deployedPlugin = Join-Path $workspace 'Host\MyAvaloniaManagement\bin\Release\net9.0\Controls\SmallTools'
+$deployedPlugin = Join-Path $workspace "Host\MyAvaloniaManagement\bin\Release\$targetFramework\Controls\SmallTools"
 $artifactRoot = Join-Path $workspace 'artifacts\MySmallTools\p0-win-x64'
 $stageRoot = Join-Path $artifactRoot '.staging'
 $stagedPlugin = Join-Path $stageRoot 'Controls\SmallTools'
@@ -96,8 +98,8 @@ if ($env:OS -ne 'Windows_NT' -or
 }
 
 $dotnetVersion = (& dotnet --version).Trim()
-if (-not $dotnetVersion.StartsWith('9.')) {
-    throw "需要 .NET 9 SDK，当前版本为 $dotnetVersion。"
+if (-not $dotnetVersion.StartsWith("$requiredDotnetMajor.")) {
+    throw "需要 .NET $requiredDotnetMajor SDK，当前版本为 $dotnetVersion。"
 }
 
 $revision = (& git -C $workspace rev-parse --short=12 HEAD).Trim()
@@ -161,7 +163,7 @@ $manifest = [ordered]@{
     schemaVersion = 1
     pluginId = 'MySmallTools'
     release = 'p0'
-    targetFramework = 'net9.0'
+    targetFramework = $targetFramework
     runtimeIdentifier = 'win-x64'
     sourceRevision = $revision
     publishable = -not $isDirty
