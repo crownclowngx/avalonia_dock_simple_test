@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using LibVLCSharp.Avalonia;
 using LibVLCSharp.Shared;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.ViewModels.SecretVideoPlayer;
@@ -17,6 +19,23 @@ public sealed class G4DeploymentTests
         Assert.EndsWith(
             Path.Combine("native", "win-x64", "libvlc"),
             result.RuntimeDirectory);
+    }
+
+    [Fact]
+    public void 阶段3托管桥接与私有原生运行时版本匹配()
+    {
+        var result = new PlaybackDeploymentProbe().Check();
+
+        Assert.True(result.IsReady, string.Join(Environment.NewLine, result.Issues));
+        Assert.Equal(new Version(3, 10, 0, 0), typeof(LibVLC).Assembly.GetName().Version);
+        Assert.Equal(new Version(3, 10, 0, 0), typeof(VideoView).Assembly.GetName().Version);
+
+        AssertNativeVersion(Path.Combine(result.RuntimeDirectory, "libvlc.dll"));
+        AssertNativeVersion(Path.Combine(result.RuntimeDirectory, "libvlccore.dll"));
+        Assert.NotEmpty(Directory.EnumerateFiles(
+            Path.Combine(result.RuntimeDirectory, "plugins"),
+            "*",
+            SearchOption.AllDirectories));
     }
 
     [Theory]
@@ -414,6 +433,17 @@ public sealed class G4DeploymentTests
             SupportsSubtitleTrackSelection: true,
             UsesBundledRuntime: true,
             UnsupportedReason: null);
+
+    private static void AssertNativeVersion(string path)
+    {
+        Assert.True(File.Exists(path), $"缺少私有原生运行时：{path}");
+        var version = FileVersionInfo.GetVersionInfo(path);
+        // NuGet 包版本为 3.0.23.1，而 VideoLAN DLL 的文件版本只发布到 3.0.23；
+        // 两者分别验证，避免把包修订号错误地当成原生二进制版本段。
+        Assert.Equal(3, version.FileMajorPart);
+        Assert.Equal(0, version.FileMinorPart);
+        Assert.Equal(23, version.FileBuildPart);
+    }
 
     private sealed class DeploymentFixture : IDisposable
     {
