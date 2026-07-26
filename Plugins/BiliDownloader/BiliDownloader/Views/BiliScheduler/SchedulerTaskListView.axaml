@@ -33,7 +33,7 @@
                                            VerticalAlignment="Center"/>
                                 <Button Content="重试"
                                         Grid.Column="2"
-                                        Command="{Binding $parent[UserControl].DataContext.RetryTaskCommand}"
+                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).RetryTaskCommand}"
                                         CommandParameter="{Binding}"
                                         IsVisible="{Binding Status, Converter={StaticResource IsFailedStatusConverter}}"
                                         Padding="4,1"
@@ -42,7 +42,7 @@
                                         VerticalAlignment="Center"/>
                                 <Button Content="打开"
                                         Grid.Column="3"
-                                        Command="{Binding $parent[UserControl].DataContext.OpenFileLocationCommand}"
+                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).OpenFileLocationCommand}"
                                         CommandParameter="{Binding}"
                                         IsVisible="{Binding Status, Converter={StaticResource IsDoneStatusConverter}}"
                                         Padding="4,1"
@@ -51,7 +51,7 @@
                                         VerticalAlignment="Center"/>
                                 <Button Content="X"
                                         Grid.Column="4"
-                                        Command="{Binding $parent[UserControl].DataContext.DeleteTaskCommand}"
+                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).DeleteTaskCommand}"
                                         CommandParameter="{Binding}"
                                         Padding="4,1"
                                         FontSize="10"

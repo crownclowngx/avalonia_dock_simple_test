@@ -57,19 +57,19 @@
       </Grid>
 
       <Border Grid.Column="1" Classes="DocumentSection" IsVisible="{Binding Owner.HasSelectedItem}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <StackPanel DataContext="{Binding Owner.SelectedItem}" x:DataType="item:EncryptionQueueItemViewModel" Spacing="7">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" DataContext="{Binding Owner.SelectedItem}">
+          <StackPanel x:DataType="item:EncryptionQueueItemViewModel" Spacing="7">
             <TextBlock Text="所选项目" Classes="SectionTitle" />
             <TextBlock Text="输出路径" Classes="Caption" />
             <TextBox Text="{Binding RequestedOutputPath}"
-                     IsEnabled="{Binding !$parent[UserControl].DataContext.Owner.IsBusy}"
+                     IsEnabled="{Binding !$parent[UserControl].((vm:EncryptionQueueViewModel)DataContext).Owner.IsBusy}"
                      ToolTip.Tip="{Binding RequestedOutputPath}" />
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Text="公开标题（可留空）" Classes="Caption" />
               <TextBlock Grid.Column="1" Text="{Binding TitleCharacterCount, StringFormat='{}{0} / 200'}" Classes="Caption" />
             </Grid>
             <TextBox Text="{Binding PublicTitle}"
-                     IsEnabled="{Binding !$parent[UserControl].DataContext.Owner.IsBusy}"
+                     IsEnabled="{Binding !$parent[UserControl].((vm:EncryptionQueueViewModel)DataContext).Owner.IsBusy}"
                      PlaceholderText="留空时播放器显示原始文件名" />
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Text="公开描述（可留空）" Classes="Caption" />
@@ -77,7 +77,7 @@
             </Grid>
             <TextBox Text="{Binding PublicDescription}" AcceptsReturn="True" TextWrapping="Wrap"
                      MinHeight="100" MaxHeight="180"
-                     IsEnabled="{Binding !$parent[UserControl].DataContext.Owner.IsBusy}" />
+                     IsEnabled="{Binding !$parent[UserControl].((vm:EncryptionQueueViewModel)DataContext).Owner.IsBusy}" />
             <TextBlock Text="{Binding Status.FailureCodeText}"
                        IsVisible="{Binding Status.HasFailureCode}" Classes="Caption" />
             <TextBlock Text="{Binding PreparedOutputPath}" Classes="Caption" TextWrapping="Wrap" />
