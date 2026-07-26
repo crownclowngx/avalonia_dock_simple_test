@@ -2,7 +2,6 @@ using System.IO;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using QRCoder;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Infrastructure;
 
@@ -62,15 +61,7 @@ public partial class LoginWindowViewModel : ObservableObject
             var (url, key) = await service.GetQrCodeAsync();
             _qrCodeKey = key;
 
-            // 用 QRCoder 生成 PNG 字节（明确黑色像素 + 白色背景，确保高对比度）
-            using var qrGenerator = new QRCodeGenerator();
-            using var qrCodeData = qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
-            using var pngByteQRCode = new PngByteQRCode(qrCodeData);
-            var pngBytes = pngByteQRCode.GetGraphic(
-                pixelsPerModule: 8,
-                darkColorRgba: new byte[] { 0, 0, 0, 255 },
-                lightColorRgba: new byte[] { 255, 255, 255, 255 },
-                drawQuietZones: true);
+            var pngBytes = QrCodePngEncoder.Encode(url);
 
             // 转为 Avalonia Bitmap
             await using var ms = new MemoryStream(pngBytes);

@@ -13,7 +13,7 @@
       <ProjectReference Include="..\..\..\Host\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
+  <ItemGroup>
       <PackageReference Include="Flurl.Http" />
       <PackageReference Include="Microsoft.Data.Sqlite" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
@@ -21,7 +21,12 @@
       <PackageReference Include="QRCoder" />
       <!-- Microsoft.Data.Sqlite 10.0.10 仍允许旧原生包；显式固定安全 bundle，确保 SQLite 原生库一并升级。 -->
       <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
-    </ItemGroup>
+  </ItemGroup>
+
+  <ItemGroup>
+      <!-- 仅向测试程序集开放无状态编码帮助类，不扩大插件对宿主的公共契约。 -->
+      <InternalsVisibleTo Include="BiliDownloader.Tests" />
+  </ItemGroup>
 
     <!-- 构建后将插件及其私有运行时依赖部署到宿主 Controls/BiliDownloader 目录。 -->
     <PropertyGroup>
