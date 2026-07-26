@@ -29,6 +29,12 @@ internal sealed class Phase4AcceptanceSuite(
         var g8ReportPath = Path.Combine(reportDirectory, "phase4-g8.json");
         // 源码状态必须在生成任何证据文件前绑定，避免报告本身把 clean 快照误判为脏。
         var source = ReadSourceState();
+        // 采样器在预热前启动，使线程池与计时器句柄同时存在于资源起点和终点。
+        using var sampler = new Timer(
+            _ => CapturePeak(),
+            null,
+            TimeSpan.Zero,
+            TimeSpan.FromMilliseconds(500));
         var warmupPassed = await WarmUpRuntimeAsync();
 
         // Avalonia、D3D11 和 LibVLC 会按真实负载扩展进程级句柄池与缓存。资源闸门从
@@ -46,12 +52,6 @@ internal sealed class Phase4AcceptanceSuite(
             Interlocked.Increment(ref _unhandledExceptionCount);
         AppDomain.CurrentDomain.UnhandledException += unhandledHandler;
         TaskScheduler.UnobservedTaskException += unobservedHandler;
-
-        using var sampler = new Timer(
-            _ => CapturePeak(),
-            null,
-            TimeSpan.Zero,
-            TimeSpan.FromMilliseconds(250));
 
         var g3ExitCode = 1;
         var g8ExitCode = 1;
@@ -267,7 +267,36 @@ internal sealed class Phase4AcceptanceSuite(
             compacting: true);
         GC.WaitForPendingFinalizers();
         GC.Collect();
-        await Task.Delay(250);
+
+        // ThreadPool 会为原生播放回调临时扩容。必须留出退坡时间，并要求句柄和线程
+        // 连续稳定后再采样，避免把仍在运行的清理线程误判为最终资源。
+        var started = Stopwatch.StartNew();
+        var stableSamples = 0;
+        var lastHandleCount = -1;
+        var lastThreadCount = -1;
+        while (started.Elapsed < TimeSpan.FromSeconds(30))
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            using var process = Process.GetCurrentProcess();
+            process.Refresh();
+            if (process.HandleCount == lastHandleCount &&
+                process.Threads.Count == lastThreadCount)
+            {
+                stableSamples++;
+            }
+            else
+            {
+                stableSamples = 0;
+                lastHandleCount = process.HandleCount;
+                lastThreadCount = process.Threads.Count;
+            }
+
+            if (started.Elapsed >= TimeSpan.FromSeconds(15) &&
+                stableSamples >= 3)
+            {
+                break;
+            }
+        }
     }
 
     private static SourceState ReadSourceState()
