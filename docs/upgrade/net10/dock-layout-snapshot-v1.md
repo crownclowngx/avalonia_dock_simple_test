@@ -1,0 +1,55 @@
+# Dock 结构布局快照 V1
+
+## 设计边界
+
+布局文件固定为：
+
+`%LOCALAPPDATA%\MyAvaloniaManagement\layout-v1.json`
+
+它只保存宿主可重建的 Dock 结构：
+
+- 稳定布局节点 ID 及左右面板比例；
+- 稳定 Tool ID、所属 ToolDock、顺序和显隐；
+- 工具是否浮动及浮动窗口边界；
+- 活动工具 ID。
+
+它明确不保存 Document、密码、媒体路径、标题、播放状态、插件表单值或其他业务数据。重启后只创建默认欢迎 Document，不会自动重开历史 Document。
+
+## 稳定 ID
+
+- `Root`
+- `Workspace`
+- `WorkspaceColumns`
+- `LeftPane`
+- `LeftTools`
+- `Documents`
+- `RightPane`
+- `RightTools`
+
+旧代码仍可用 `Files` Locator 查找 DocumentDock，但持久化 ID 固定为 `Documents`。
+
+## 校验与回退
+
+读取后、修改 Dock 树前必须完整校验：
+
+- `schemaVersion` 必须为 `1`；
+- ID 只能包含 ASCII 字母、数字、点、短横线和下划线，且不得重复；
+- 同一 ToolDock 内顺序不得重复或为负数；
+- 面板比例必须为有限值且位于 `0.05–0.95`；
+- 浮动工具必须可见并具有有限、合理的窗口边界；
+- 快照引用的插件工具和稳定 Dock 节点必须存在。
+
+JSON 损坏、未知版本、重复 ID、无效比例或插件缺失时，原文件改名为带 UTC 时间戳的 `.invalid.bak`。日志只写固定错误码和通过校验的稳定 ID，不记录 JSON 内容。宿主随后使用完整默认布局启动，不应用部分状态。
+
+## 写入与生命周期
+
+写入先在同目录创建唯一临时文件并强制刷新，再用原子替换更新正式文件；无论成功失败都清理临时文件。
+
+启动顺序：
+
+1. 读取并校验快照；
+2. 创建默认 Dock 树；
+3. 执行 `InitLayout`；
+4. 主窗口 `Opened` 后应用工具结构。
+
+退出时从当前 Dock 树捕获结构、再次校验并原子保存。保存失败只记录固定错误码，不能阻止 Document Scope、插件或进程退出。

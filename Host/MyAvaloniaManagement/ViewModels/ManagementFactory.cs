@@ -10,6 +10,7 @@ using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.ViewModels.Hello;
@@ -39,6 +40,13 @@ public class ManagementFactory : Factory
     private readonly IServiceProvider _serviceProvider;
     private readonly PluginModuleCatalog _pluginModuleCatalog;
     private readonly DocumentScopeManager _documentScopeManager;
+
+    internal IReadOnlyDictionary<string, Tool> CreatedTools => _createdTools;
+
+    internal string GetToolAlignment(string toolId) =>
+        _toolMetadata.TryGetValue(toolId, out var metadata)
+            ? metadata.Alignment
+            : string.Empty;
 
     public ManagementFactory(
         IServiceProvider serviceProvider,
@@ -243,7 +251,7 @@ public class ManagementFactory : Factory
         };
         var documentDock = new DocumentDock
         {
-            Id = "Files",
+            Id = DockLayoutIds.Documents,
             Title = "Files",
             IsCollapsable = false,
             Proportion = double.NaN,
@@ -269,12 +277,14 @@ public class ManagementFactory : Factory
 
         var toolsRight = new ProportionalDock
         {
+            Id = DockLayoutIds.RightPane,
             Proportion = 0.15,
             Orientation = Orientation.Vertical,
             VisibleDockables = CreateList<IDockable>
             (
                 new ToolDock
                 {
+                    Id = DockLayoutIds.RightTools,
                     ActiveDockable = rightTools.Find(k=>k.Id == "plugGroupMenuViewModel"),
                     VisibleDockables = CreateList<IDockable>
                     (
@@ -288,12 +298,14 @@ public class ManagementFactory : Factory
         
         var toolsLeft = new ProportionalDock
         {
+            Id = DockLayoutIds.LeftPane,
             Proportion = 0.15,
             Orientation = Orientation.Vertical,
             VisibleDockables = CreateList<IDockable>
             (
                 new ToolDock
                 {
+                    Id = DockLayoutIds.LeftTools,
                     ActiveDockable = leftTools.Find(k=>k.Id=="fileSystemTree"),
                     VisibleDockables = CreateList<IDockable>
                     (
@@ -305,9 +317,11 @@ public class ManagementFactory : Factory
             )
         };
         var windowLayout = CreateRootDock();
+        windowLayout.Id = DockLayoutIds.Workspace;
         windowLayout.Title = "Default";
         var windowLayoutContent = new ProportionalDock
         {
+            Id = DockLayoutIds.WorkspaceColumns,
             Orientation = Orientation.Horizontal,
             IsCollapsable = false,
             VisibleDockables = CreateList<IDockable>
@@ -325,6 +339,7 @@ public class ManagementFactory : Factory
         windowLayout.ActiveDockable = windowLayoutContent;
 
         var rootDock = CreateRootDock();
+        rootDock.Id = DockLayoutIds.Root;
 
         rootDock.IsCollapsable = false;
         rootDock.VisibleDockables = CreateList<IDockable>(windowLayout);
@@ -356,6 +371,9 @@ public class ManagementFactory : Factory
         DockableLocator = new Dictionary<string, Func<IDockable?>>
         {
             ["Root"] = () => _rootDock,
+            [DockLayoutIds.Workspace] = () => _rootDock?.ActiveDockable,
+            [DockLayoutIds.Documents] = () => _documentDock,
+            // 历史 Harness 和插件仍可用 Files 查找；实际持久化 ID 固定为 Documents。
             ["Files"] = () => _documentDock,
             ["Plug"] = () => _plugGroupMenuTool,
         };

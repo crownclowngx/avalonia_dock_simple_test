@@ -12,6 +12,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -26,6 +27,7 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     private readonly ManagementFactory _factory;
     private readonly PluginMenuService _pluginMenuService;
     private readonly IMessengerService _messengerService;
+    private readonly DockLayoutLifecycle _layoutLifecycle;
     private IRootDock? _layout;
 
     public IRootDock? Layout
@@ -44,18 +46,18 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     /// <param name="factory">管理工厂</param>
     /// <param name="pluginMenuService">插件菜单服务</param>
     /// <param name="messengerService">消息服务</param>
-    public MainWindowViewModel(ManagementFactory factory, PluginMenuService pluginMenuService, IMessengerService messengerService)
+    internal MainWindowViewModel(
+        ManagementFactory factory,
+        PluginMenuService pluginMenuService,
+        IMessengerService messengerService,
+        DockLayoutLifecycle layoutLifecycle)
     {
         _factory = factory ?? throw new ArgumentNullException(nameof(factory));
         _pluginMenuService = pluginMenuService ?? throw new ArgumentNullException(nameof(pluginMenuService));
         _messengerService = messengerService ?? throw new ArgumentNullException(nameof(messengerService));
+        _layoutLifecycle = layoutLifecycle ?? throw new ArgumentNullException(nameof(layoutLifecycle));
         
-        Layout = _factory.CreateLayout();
-        
-        if (Layout is { })
-        {
-            _factory.InitLayout(Layout);
-        }
+        Layout = _layoutLifecycle.Prepare(_factory);
         
         // 注册消息接收器，用于接收打开文件的请求
         RegisterMessageHandlers();
@@ -67,8 +69,31 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     public MainWindowViewModel() : this(
         ServiceProvider.GetRequiredService<ManagementFactory>(),
         ServiceProvider.GetRequiredService<PluginMenuService>(),
-        ServiceProvider.GetRequiredService<IMessengerService>())
+        ServiceProvider.GetRequiredService<IMessengerService>(),
+        ServiceProvider.GetRequiredService<DockLayoutLifecycle>())
     {
+    }
+
+    internal void ApplyPendingLayout()
+    {
+        if (Layout is not { } current)
+        {
+            return;
+        }
+
+        var applied = _layoutLifecycle.ApplyPending(current, _factory);
+        if (!ReferenceEquals(applied, current))
+        {
+            Layout = applied;
+        }
+    }
+
+    internal void SaveLayout()
+    {
+        if (Layout is { } root)
+        {
+            _layoutLifecycle.Save(root, _factory);
+        }
     }
     
     /// <summary>

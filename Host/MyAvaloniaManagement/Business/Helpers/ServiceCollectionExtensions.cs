@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
@@ -25,6 +26,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());
+
+        services.AddSingleton<DockLayoutStore>();
+        services.AddSingleton<DockLayoutLifecycle>();
         
         // 注册ManagementFactory为单例
         services.AddSingleton<ManagementFactory>();
@@ -47,7 +51,11 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddViewModels(this IServiceCollection services)
     {
         // 注册MainWindowViewModel为瞬态，每次请求都创建新实例
-        services.AddTransient<MainWindowViewModel>();
+        services.AddTransient(provider => new MainWindowViewModel(
+            provider.GetRequiredService<ManagementFactory>(),
+            provider.GetRequiredService<PluginMenuService>(),
+            provider.GetRequiredService<IMessengerService>(),
+            provider.GetRequiredService<DockLayoutLifecycle>()));
         
         return services;
     }

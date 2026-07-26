@@ -1,6 +1,5 @@
 using System;
 using Avalonia.Controls;
-using Avalonia.Threading;
 using MyAvaloniaManagementCommon.Presentation;
 
 namespace MyAvaloniaManagement.Views;
@@ -12,6 +11,24 @@ public partial class MainWindow : Window, IWindowContentFullscreenHost
     public MainWindow()
     {
         InitializeComponent();
+        Opened += OnWindowOpened;
+        Closing += OnWindowClosing;
+    }
+
+    private void OnWindowOpened(object? sender, EventArgs e)
+    {
+        if (DataContext is ViewModels.MainWindowViewModel viewModel)
+        {
+            viewModel.ApplyPendingLayout();
+        }
+    }
+
+    private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (DataContext is ViewModels.MainWindowViewModel viewModel)
+        {
+            viewModel.SaveLayout();
+        }
     }
 
     public bool TryPresent(Control content, object owner)
@@ -54,9 +71,9 @@ public partial class MainWindow : Window, IWindowContentFullscreenHost
         return true;
     }
 
-    private static void EnsureUiThread()
+    private void EnsureUiThread()
     {
-        if (!Dispatcher.UIThread.CheckAccess())
+        if (!Dispatcher.CheckAccess())
         {
             throw new InvalidOperationException(
                 "窗口内容区全屏接口只能在 Avalonia UI 线程调用。");
