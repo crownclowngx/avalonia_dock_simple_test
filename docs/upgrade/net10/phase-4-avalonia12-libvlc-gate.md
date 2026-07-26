@@ -22,7 +22,7 @@
 脚本依次执行 locked restore、依赖图检查、Release 零警告构建、全解决方案测试、G3 真实窗口矩阵和 G8 八 Document 隔离矩阵。主报告为
 `TestResults/Phase4/avalonia12-libvlcsharp.json`。
 
-资源起点在一次缩小数据规模但覆盖完整 G3/G8 路径的进程内预热之后采集。
+资源起点在一次同规模、覆盖完整 G3/G8 路径的进程内预热之后采集。
 预热只排除 Avalonia、D3D11 与 LibVLC 的一次性初始化成本；正式的 100 次生命周期和
 8 Document 矩阵仍完整执行，终点继续使用 Handle `+10` 与私有内存 `+64 MiB` 硬闸门。
 

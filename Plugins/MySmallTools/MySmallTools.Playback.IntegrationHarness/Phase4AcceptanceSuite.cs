@@ -31,8 +31,8 @@ internal sealed class Phase4AcceptanceSuite(
         var source = ReadSourceState();
         var warmupPassed = await WarmUpRuntimeAsync();
 
-        // Avalonia、D3D11 和 LibVLC 首次播放会建立进程级缓存。资源闸门从一次完整
-        // G3/G8 预热后的稳定点起算，测量的是重复生命周期增长，而不是一次性初始化成本。
+        // Avalonia、D3D11 和 LibVLC 会按真实负载扩展进程级句柄池与缓存。资源闸门从
+        // 一次同规模 G3/G8 预热后的稳定点起算，测量重复生命周期增长而非池扩容成本。
         await StabilizeProcessAsync();
         var surfaceStart = EmbeddedVideoSurface.CaptureDiagnostics();
         var processStart = ProcessResourceSnapshot.Capture();
@@ -177,17 +177,9 @@ internal sealed class Phase4AcceptanceSuite(
         Directory.CreateDirectory(directory);
         try
         {
-            var warmupOptions = options with
-            {
-                Cycles = 1,
-                DockSwitches = 1,
-                MediaSwitches = 1,
-                QueueItems = 10,
-                LibraryItems = 100
-            };
             var g3ExitCode = await new G3PlaybackHarnessRunner(
                 services,
-                warmupOptions with
+                options with
                 {
                     Suite = HarnessSuite.G3,
                     ReportPath = Path.Combine(directory, "warmup-g3.json")
@@ -195,7 +187,7 @@ internal sealed class Phase4AcceptanceSuite(
             var g8ExitCode = g3ExitCode == 0
                 ? await new G8P1AcceptanceSuite(
                     services,
-                    warmupOptions with
+                    options with
                     {
                         Suite = HarnessSuite.G8,
                         ReportPath = Path.Combine(directory, "warmup-g8.json")
