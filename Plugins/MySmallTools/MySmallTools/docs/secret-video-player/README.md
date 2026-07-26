@@ -20,6 +20,7 @@
 | [G7 媒体库与播放历史](G7-MEDIA-LIBRARY-INCREMENTAL-HISTORY.md) | 递归扫描、目录监听、千项投影、设置/历史、隐私边界和原子恢复 | 开发者、测试人员、评审人员 |
 | [G7.1 UI 职责拆分](G7.1-UI-RESPONSIBILITY-REFACTOR.md) | 顶层兼容外壳、五个功能子包、子 View、全屏呈现器和状态所有权 | 开发者、维护者、评审人员 |
 | [G9 平台与原生表面抽象](G9-PLATFORM-NATIVE-SURFACE-ABSTRACTION.md) | 平台能力、私有运行时布局、部署初始化边界和无 HWND 的表面契约 | 开发者、测试人员、维护者 |
+| [G10 性能基线与脱敏诊断](G10-PERFORMANCE-REDACTED-DIAGNOSTICS.md) | 加解密/Seek/媒体库基线、真实播放器资源趋势、诊断 schema v1 和敏感扫描 | 开发者、测试人员、维护者、安全评审人员 |
 | [概要设计](architecture-design.md) | 分层、组件职责、加密与播放数据流、DI 和 Document 生命周期 | 开发者、维护者 |
 | [SECVID03 文件格式](secvid03-format.md) | 二进制布局、密钥派生、GCM 认证、随机读取、公开信息和兼容策略 | 格式维护者、安全评审人员 |
 | [接入、约定与排障](integration-and-conventions.md) | LibVLC 部署、插件扫描、Dock 黑屏恢复、资源释放、已踩过的坑和回归检查 | 集成人员、问题排查人员 |

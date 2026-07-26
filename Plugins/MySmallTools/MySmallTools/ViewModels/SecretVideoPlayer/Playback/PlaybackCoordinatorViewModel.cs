@@ -18,7 +18,9 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
     private readonly IPlaybackBackendInitializer _backendInitializer;
     private readonly IPlaybackPreferenceStore? _preferenceStore;
     private readonly DispatcherTimer _positionTimer;
+    private IPlaybackDiagnosticExporter? _diagnosticExporter;
     private bool _applyingSnapshot;
+    private int _diagnosticExportGate;
     private long _lastEndedGeneration;
     private long _fullscreenRequestRevision;
     private bool _disposed;
@@ -58,6 +60,8 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
     [ObservableProperty] private bool _hasSubtitleTracks;
     [ObservableProperty] private bool _isFullscreen;
     [ObservableProperty] private bool _isFullscreenTransitioning;
+    [ObservableProperty] private bool _isExportingDiagnostics;
+    [ObservableProperty] private string _diagnosticsStatusMessage = string.Empty;
 
     /// <summary>仅供播放器 View 的表面协调器绑定，不包含任何原生句柄。</summary>
     public IPlaybackSurfaceSession? SurfaceSession => _disposed ? null : _surfaceSession;
@@ -76,6 +80,8 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
 
     /// <summary>供宿主状态展示和 G3 脱敏集成门禁读取的只读快照。</summary>
     public PlaybackSnapshot PlaybackSnapshot => _session.Snapshot;
+    public bool CanExportDiagnostics =>
+        _diagnosticExporter is not null && !IsExportingDiagnostics;
 
     public PlaybackStateViewModel State { get; }
     public PlaybackTransportViewModel Transport { get; }
@@ -123,6 +129,48 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
         OnPropertyChanged(nameof(IsPaused));
         NotifyCommandStates();
     }
+
+    partial void OnIsExportingDiagnosticsChanged(bool value) =>
+        OnPropertyChanged(nameof(CanExportDiagnostics));
+
+    /// <summary>
+    /// 由插件装配边界注入诊断导出器，避免把内部诊断端口扩散到公开构造器。
+    /// </summary>
+    internal void ConfigureDiagnosticExporter(IPlaybackDiagnosticExporter exporter)
+    {
+        _diagnosticExporter = exporter ?? throw new ArgumentNullException(nameof(exporter));
+        OnPropertyChanged(nameof(CanExportDiagnostics));
+    }
+
+    /// <summary>在内存中创建完整脱敏 JSON；本方法不接触保存路径。</summary>
+    public async Task<ReadOnlyMemory<byte>> CreateDiagnosticJsonAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (_diagnosticExporter is null)
+            throw new InvalidOperationException("诊断导出器尚未配置。");
+        if (Interlocked.CompareExchange(ref _diagnosticExportGate, 1, 0) != 0)
+            throw new InvalidOperationException("诊断正在导出。");
+
+        IsExportingDiagnostics = true;
+        DiagnosticsStatusMessage = string.Empty;
+        try
+        {
+            return await _diagnosticExporter
+                .CreateJsonAsync(LastFailure, cancellationToken)
+                .ConfigureAwait(true);
+        }
+        finally
+        {
+            IsExportingDiagnostics = false;
+            Volatile.Write(ref _diagnosticExportGate, 0);
+        }
+    }
+
+    internal void ReportDiagnosticExportSucceeded() =>
+        DiagnosticsStatusMessage = "脱敏诊断已导出";
+
+    internal void ReportDiagnosticExportFailed() =>
+        DiagnosticsStatusMessage = "无法写入所选位置";
 
     partial void OnVolumeChanged(double value)
     {

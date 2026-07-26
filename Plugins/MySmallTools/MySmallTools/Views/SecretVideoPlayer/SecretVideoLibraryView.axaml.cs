@@ -5,9 +5,10 @@ using MySmallTools.ViewModels.SecretVideoPlayer;
 
 namespace MySmallTools.Views.SecretVideoPlayer;
 
-public partial class SecretVideoLibraryView : UserControl
+public partial class SecretVideoLibraryView : UserControl, IDisposable
 {
     private const double InlinePaneMinimumWidth = 960;
+    private bool _disposed;
 
     public SecretVideoLibraryView()
     {
@@ -39,6 +40,21 @@ public partial class SecretVideoLibraryView : UserControl
             if (ReferenceEquals(DataContext, viewModel))
                 viewModel.StatusMessage = "恢复最近媒体目录失败，请重新选择文件夹";
         }
+    }
+
+    /// <summary>
+    /// 最终关闭媒体库 Document 时释放播放器表面和 View 级事件。
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+        _disposed = true;
+        AttachedToVisualTree -= OnAttachedToVisualTree;
+        SizeChanged -= OnLibraryViewSizeChanged;
+        PlaybackControl.Dispose();
+        Content = null;
+        GC.SuppressFinalize(this);
     }
 
 }

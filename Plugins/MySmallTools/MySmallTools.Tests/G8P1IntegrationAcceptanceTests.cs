@@ -240,7 +240,9 @@ public sealed class G8P1IntegrationAcceptanceTests(Secvid03Fixture fixture)
                     break;
             }
 
-            for (var index = 0; index < 140; index++)
+            // 使用 G10 正式规模的 256 个唯一路径，为 FileSystemWatcher 在高负载下的
+            // 合并/丢弃保留余量；即便少量原始通知没有到达，也必须跨过 128 路径阈值。
+            for (var index = 0; index < 256; index++)
             {
                 File.Copy(
                     fixture.EncryptedPath,
@@ -257,9 +259,9 @@ public sealed class G8P1IntegrationAcceptanceTests(Secvid03Fixture fixture)
             }
 
             Assert.NotNull(stormSnapshot);
-            Assert.Equal(1140, stormSnapshot.Upserts.Count);
+            Assert.Equal(1256, stormSnapshot.Upserts.Count);
             Assert.Equal(
-                1140,
+                1256,
                 stormSnapshot.Upserts
                     .Select(item => item.FilePath)
                     .Distinct(StringComparer.OrdinalIgnoreCase)

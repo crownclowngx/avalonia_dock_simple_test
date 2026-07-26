@@ -372,7 +372,7 @@ flowchart LR
 | 生命周期 | 服务 |
 | --- | --- |
 | Singleton | `IPlaybackDeploymentProbe`、`LibVlcRuntime`、三个窄用户数据接口共用的 `SecretVideoUserDataStore` |
-| Scoped | backend factory/代理/初始化端口、PlayerHost/SourceFactory 端口、NativeDispatcher、ResourceReaper、播放会话、目录会话、历史协调器、播放器和媒体库 ViewModel、顺序队列运行器、加密/解密应用服务及任务 ViewModel |
+| Scoped | backend factory/代理/初始化端口、PlayerHost/SourceFactory 端口、NativeDispatcher、ResourceReaper、播放会话、诊断状态/导出器、目录会话、历史协调器、播放器和媒体库 ViewModel、顺序队列运行器、加密/解密应用服务及任务 ViewModel |
 | Transient | `IVideoLibraryScanner`、`IStoragePreflightProbe`、`IOutputFileTransactionFactory`、输出冲突解析器、`ISecvid03Encryptor`、`ISecvid03Decryptor`、`DecryptionOutputPathResolver` |
 
 四个 Document Strategy 分别创建单文件播放器、文件夹媒体库、视频加密器和批量解密器。所有策略都通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建 Document；宿主维护 `Document → IServiceScope` 映射，并在 Dock 确认关闭或宿主退出时释放。
@@ -382,11 +382,20 @@ flowchart LR
 - 插件模块不保存 Scope，不预创建 Document 或原生对象。
 - ViewModel 取消自己发起的工作、退订事件并使迟到回调失效，但不重复释放由 Scope 管理的注入服务。
 - `SecureVideoPlayer` 负责当前 Source 的解绑和会话收尾；`LazyPlaybackBackend` 最终释放 Document 级 PlayerHost。
+- 宿主 `DocumentControlRecycling` 保留标签切换复用，但在 Dock 确认最终关闭后逐项移除缓存并释放复合 View；播放器的无限进度动画只在真实忙碌期间启用，防止全局媒体时钟保留已关闭控件树。
 - `LibVlcPlaybackMediaSource` 按 `Media → MediaInput → 加密流/文件/缓存/密钥` 逆序释放。
 - `IOutputFileTransaction` 是 partial 的唯一所有者。
 - 关闭任务 Document 只发送取消，不在 UI 线程同步等待异步清理。
 
-## 12. 关键实现与验证
+## 12. G10 诊断数据流
+
+诊断不复用业务对象序列化。`SecureVideoPlayer` 同时实现 scoped 的窄状态端口，只原子捕获现有播放快照和已认证 SECVID03 结构摘要；`PlaybackDiagnosticExporter` 再组合 G9 平台事实、稳定失败码和资源即时值。
+
+路径不进入状态快照。ViewModel 只请求内存中的 UTF-8 JSON，View 才拥有保存选择器和输出流。这个边界使序列化失败不会留下半份文件，也避免保存路径被诊断服务反向采集。
+
+性能测量继续复用生产加解密器、随机读取流、目录扫描器、目录会话和浏览 ViewModel；测量器只负责场景、采样与判定，不进入产品 DI。
+
+## 13. 关键实现与验证
 
 - [MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
 - [PlaybackDeployment.cs](../../Business/SecretVideoPlayer/Playback/PlaybackDeployment.cs)
@@ -395,6 +404,7 @@ flowchart LR
 - [PlaybackMediaLease.cs](../../Business/SecretVideoPlayer/Playback/PlaybackMediaLease.cs)（当前文件内类型为 PlayerHost、MediaSource 及其工厂）
 - [PlaybackNativeDispatcher.cs](../../Business/SecretVideoPlayer/Playback/PlaybackNativeDispatcher.cs)
 - [PlaybackResourceReaper.cs](../../Business/SecretVideoPlayer/Playback/PlaybackResourceReaper.cs)
+- [PlaybackDiagnosticExporter.cs](../../Business/SecretVideoPlayer/Playback/PlaybackDiagnosticExporter.cs)
 - [SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/Container/SeekableEncryptedVideoStream.cs)
 - [Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Encryption/Secvid03Encryptor.cs)
 - [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)
@@ -407,4 +417,5 @@ dotnet test .\Plugins\MySmallTools\MySmallTools.Tests\MySmallTools.Tests.csproj 
 dotnet test .\Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj -c Release
 .\scripts\Release-MySmallToolsP0.ps1
 .\scripts\Accept-MySmallToolsP1.ps1 -AllowDirty
+.\scripts\Accept-MySmallToolsG10.ps1 -AllowDirty -AllowNonComparable
 ```

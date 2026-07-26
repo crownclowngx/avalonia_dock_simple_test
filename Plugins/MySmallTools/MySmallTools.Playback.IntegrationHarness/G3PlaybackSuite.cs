@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -36,8 +37,16 @@ internal sealed class G3PlaybackHarnessRunner(
     private readonly List<long> _nearEndSeekChunkTrace = [];
     private readonly List<long> _randomSeekTargets = [];
     private readonly Dictionary<string, long> _stageDurationsMs = [];
+    private readonly List<WeakReference<SecretVideoPlayerViewModel>>
+        _closedDocumentReferences = [];
+    private readonly List<WeakReference<VideoPlayerControl>> _closedViewReferences = [];
     private readonly Stopwatch _elapsed = Stopwatch.StartNew();
     private long _uiHeartbeatMaxIntervalMs;
+    private long _nativeOutputGeneration;
+    private long _surfaceGenerationBeforeMediaSwitch;
+    private long _surfaceGenerationAfterMediaSwitch;
+    private ProcessResourceSnapshot? _processBaseline;
+    private ProcessResourceSnapshot? _processFinal;
 
     public async Task<int> RunAsync()
     {
@@ -72,6 +81,11 @@ internal sealed class G3PlaybackHarnessRunner(
             // Dispatcher 和 Reaper 在 Scope 创建时即存在，所以中途资源检查应回到
             // “仅占位标签存活”的基线，而不是错误地要求全进程为 default。
             var placeholderResources = SecurePlaybackDiagnostics.CaptureResources();
+            if (options.Suite == HarnessSuite.G10)
+            {
+                await StabilizeProcessAsync();
+                _processBaseline = ProcessResourceSnapshot.Capture();
+            }
 
             await MeasureStageAsync(
                 "functionalMatrix",
@@ -96,6 +110,7 @@ internal sealed class G3PlaybackHarnessRunner(
             await MeasureStageAsync(
                 "lifecycleStress",
                 () => RunLifecycleStressAsync(
+                    mainWindow,
                     mainViewModel,
                     factory,
                     documentDock,
@@ -105,6 +120,11 @@ internal sealed class G3PlaybackHarnessRunner(
 
             factory.CloseDockable(placeholder);
             await DrainDispatcherAsync();
+            if (options.Suite == HarnessSuite.G10)
+            {
+                await StabilizeProcessAsync();
+                _processFinal = ProcessResourceSnapshot.Capture();
+            }
 
             var finalResources = SecurePlaybackDiagnostics.CaptureResources();
             Require(
@@ -196,6 +216,7 @@ internal sealed class G3PlaybackHarnessRunner(
             document.PlayerViewModel.SurfaceSession?.VideoOutput.Generation ?? 0;
         var documentSurfaceGeneration =
             document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration;
+        _nativeOutputGeneration = documentOutputGeneration;
         Require(documentOutputGeneration > 0, "Document 未暴露稳定的视频输出代次。");
 
         // G6：真实 LibVLC 倍速必须经过会话端口设置，并反映到不可变控制快照。
@@ -398,6 +419,8 @@ internal sealed class G3PlaybackHarnessRunner(
         // 当前代次比较，不能使用全屏退出时记录的历史代次。
         documentSurfaceGeneration =
             document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration;
+        _surfaceGenerationBeforeMediaSwitch = documentSurfaceGeneration;
+        _surfaceGenerationAfterMediaSwitch = documentSurfaceGeneration;
         if (options.MediaSwitches > 0)
         {
             var initialMediaGeneration =
@@ -436,6 +459,8 @@ internal sealed class G3PlaybackHarnessRunner(
                 documentSurfaceGeneration ==
                 document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration,
                 "普通媒体切换意外重建了 HWND 视频表面。");
+            _surfaceGenerationAfterMediaSwitch =
+                document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration;
 
             await document.PlayerViewModel.PlayCommand.ExecuteAsync(null);
             await WaitUntilAsync(
@@ -486,12 +511,20 @@ internal sealed class G3PlaybackHarnessRunner(
 
         await VerifyTamperedSeekAsync(document, webm, nearEnd);
         await VerifyUnavailableInputAsync(document, webm);
+        if (!string.IsNullOrWhiteSpace(options.DiagnosticReportPath))
+        {
+            var diagnostic = await document.PlayerViewModel.CreateDiagnosticJsonAsync();
+            var diagnosticPath = Path.GetFullPath(options.DiagnosticReportPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(diagnosticPath)!);
+            await File.WriteAllBytesAsync(diagnosticPath, diagnostic.ToArray());
+        }
         }
         finally
         {
             documentDock.ActiveDockable = placeholder;
             await DrainDispatcherAsync();
             factory.CloseDockable(document);
+            _closedDocumentReferences.Add(new WeakReference<SecretVideoPlayerViewModel>(document));
             await DrainDispatcherAsync();
         }
 
@@ -672,6 +705,7 @@ internal sealed class G3PlaybackHarnessRunner(
     }
 
     private async Task RunLifecycleStressAsync(
+        Window mainWindow,
         MainWindowViewModel mainViewModel,
         ManagementFactory factory,
         DocumentDock documentDock,
@@ -687,6 +721,11 @@ internal sealed class G3PlaybackHarnessRunner(
                 () => document.PlayerViewModel.IsVideoSurfaceReady,
                 TimeSpan.FromSeconds(8),
                 $"第 {cycle + 1} 轮 HWND 未创建。");
+            var playerView = mainWindow.GetVisualDescendants()
+                .OfType<VideoPlayerControl>()
+                .First(control => ReferenceEquals(
+                    control.DataContext,
+                    document.PlayerViewModel));
 
             var asset = assets[cycle % assets.Count];
             Require(
@@ -703,6 +742,8 @@ internal sealed class G3PlaybackHarnessRunner(
                 TimeSpan.FromSeconds(5),
                 $"第 {cycle + 1} 轮旧 HWND 未销毁。");
             factory.CloseDockable(document);
+            _closedDocumentReferences.Add(new WeakReference<SecretVideoPlayerViewModel>(document));
+            _closedViewReferences.Add(new WeakReference<VideoPlayerControl>(playerView));
             await DrainDispatcherAsync();
 
             var cycleResources = SecurePlaybackDiagnostics.CaptureResources();
@@ -922,7 +963,10 @@ internal sealed class G3PlaybackHarnessRunner(
         IReadOnlyList<HarnessAsset> assets,
         PlaybackResourceSnapshot resources) =>
         new(
-            3,
+            options.Suite == HarnessSuite.G10 ? 1 : 3,
+            options.Suite == HarnessSuite.G10
+                ? "g10-playback-resource-trend"
+                : "g3-playback-integration",
             success,
             DateTimeOffset.UtcNow,
             _elapsed.ElapsedMilliseconds,
@@ -946,7 +990,33 @@ internal sealed class G3PlaybackHarnessRunner(
             _uiHeartbeatMaxIntervalMs,
             _randomSeekTargets.ToArray(),
             _nearEndSeekChunkTrace.ToArray(),
+            _nativeOutputGeneration,
+            _surfaceGenerationBeforeMediaSwitch,
+            _surfaceGenerationAfterMediaSwitch,
+            _closedDocumentReferences.Count(reference =>
+                reference.TryGetTarget(out _)),
+            _closedViewReferences.Count(reference =>
+                reference.TryGetTarget(out _)),
+            SecurePlaybackDiagnostics.CaptureRetainedEncryptedStreamCount(),
+            _processBaseline,
+            _processFinal,
             _failures.ToArray());
+
+    private static async Task StabilizeProcessAsync()
+    {
+        // 播放缓存使用 1 MiB LOH 数组。资源已经释放后，LOH 的空闲段仍可能保留在堆中；
+        // 验收终点压缩一次 LOH，区分真实存活对象与 GC 为后续分配保留的空容量。
+        GCSettings.LargeObjectHeapCompactionMode =
+            GCLargeObjectHeapCompactionMode.CompactOnce;
+        GC.Collect(
+            GC.MaxGeneration,
+            GCCollectionMode.Forced,
+            blocking: true,
+            compacting: true);
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        await Task.Delay(250);
+    }
 
     private static string GetNativeLibVlcVersion()
     {
@@ -1021,6 +1091,7 @@ internal sealed record HarnessAssetReport(string FileName, string Sha256);
 
 internal sealed record HarnessReport(
     int SchemaVersion,
+    string Kind,
     bool Success,
     DateTimeOffset ExecutedAtUtc,
     long ElapsedMs,
@@ -1042,7 +1113,57 @@ internal sealed record HarnessReport(
     long UiHeartbeatMaxIntervalMs,
     IReadOnlyList<long> RandomSeekTargets,
     IReadOnlyList<long> NearEndSeekChunkTrace,
+    long NativeOutputGeneration,
+    long SurfaceGenerationBeforeMediaSwitch,
+    long SurfaceGenerationAfterMediaSwitch,
+    int AliveClosedDocuments,
+    int AliveClosedViews,
+    int AliveDisposedEncryptedStreams,
+    ProcessResourceSnapshot? ProcessBaseline,
+    ProcessResourceSnapshot? ProcessFinal,
     IReadOnlyList<string> Failures);
+
+internal sealed record ProcessResourceSnapshot(
+    long ManagedHeapBytes,
+    long LohSizeBytes,
+    long LohFragmentationBytes,
+    long PinnedObjectHeapSizeBytes,
+    long PinnedObjectHeapFragmentationBytes,
+    long PinnedObjectsCount,
+    long HeapSizeBytes,
+    long FragmentedBytes,
+    long TotalCommittedBytes,
+    long WorkingSetBytes,
+    long PrivateBytes,
+    int HandleCount,
+    int ThreadCount,
+    long PendingThreadPoolItems)
+{
+    public static ProcessResourceSnapshot Capture()
+    {
+        using var process = Process.GetCurrentProcess();
+        process.Refresh();
+        var memory = GC.GetGCMemoryInfo();
+        var generations = memory.GenerationInfo;
+        var loh = generations.Length > 3 ? generations[3] : default;
+        var poh = generations.Length > 4 ? generations[4] : default;
+        return new ProcessResourceSnapshot(
+            GC.GetTotalMemory(forceFullCollection: false),
+            loh.SizeAfterBytes,
+            loh.FragmentationAfterBytes,
+            poh.SizeAfterBytes,
+            poh.FragmentationAfterBytes,
+            memory.PinnedObjectsCount,
+            memory.HeapSizeBytes,
+            memory.FragmentedBytes,
+            memory.TotalCommittedBytes,
+            process.WorkingSet64,
+            process.PrivateMemorySize64,
+            process.HandleCount,
+            process.Threads.Count,
+            ThreadPool.PendingWorkItemCount);
+    }
+}
 
 internal readonly record struct UiHeartbeatResult(
     long OperationElapsedMs,
@@ -1056,7 +1177,8 @@ internal sealed record HarnessOptions(
     int MediaSwitches,
     int QueueItems,
     int LibraryItems,
-    string ReportPath)
+    string ReportPath,
+    string? DiagnosticReportPath)
 {
     public static HarnessOptions Parse(string[] args)
     {
@@ -1065,7 +1187,8 @@ internal sealed record HarnessOptions(
         {
             "g3" => HarnessSuite.G3,
             "g8" => HarnessSuite.G8,
-            _ => throw new ArgumentException("--suite 只支持 g3 或 g8。")
+            "g10" => HarnessSuite.G10,
+            _ => throw new ArgumentException("--suite 只支持 g3、g8 或 g10。")
         };
         var cycles = ReadInt(args, "--cycles", 100);
         var dockSwitches = ReadInt(args, "--dock-switches", 20);
@@ -1075,9 +1198,15 @@ internal sealed record HarnessOptions(
         var report = ReadString(
             args,
             "--report",
-            suite == HarnessSuite.G3
-                ? Path.Combine("TestResults", "G3", "g3-playback-windows-x64.json")
-                : Path.Combine("TestResults", "G8", "g8-p1-windows-x64.json"));
+            suite switch
+            {
+                HarnessSuite.G3 =>
+                    Path.Combine("TestResults", "G3", "g3-playback-windows-x64.json"),
+                HarnessSuite.G8 =>
+                    Path.Combine("TestResults", "G8", "g8-p1-windows-x64.json"),
+                _ => Path.Combine("TestResults", "G10", "g10-playback-resource-trend.json")
+            });
+        var diagnosticReport = ReadString(args, "--diagnostic-report", string.Empty);
         return new HarnessOptions(
             suite,
             cycles,
@@ -1085,7 +1214,8 @@ internal sealed record HarnessOptions(
             mediaSwitches,
             queueItems,
             libraryItems,
-            report);
+            report,
+            string.IsNullOrWhiteSpace(diagnosticReport) ? null : diagnosticReport);
     }
 
     private static int ReadInt(string[] args, string name, int fallback)
@@ -1116,5 +1246,6 @@ internal sealed record HarnessOptions(
 internal enum HarnessSuite
 {
     G3,
-    G8
+    G8,
+    G10
 }

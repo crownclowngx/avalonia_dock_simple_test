@@ -57,9 +57,23 @@ public sealed class MySmallToolsPluginModule : IPluginModule
             provider.GetRequiredService<SecureVideoPlayer>());
         services.AddScoped<IPlaybackSurfaceSession>(provider =>
             provider.GetRequiredService<SecureVideoPlayer>());
+        services.AddScoped<IPlaybackDiagnosticState>(provider =>
+            provider.GetRequiredService<SecureVideoPlayer>());
+        services.AddScoped<IPlaybackDiagnosticExporter, PlaybackDiagnosticExporter>();
         // G7.1 保留顶层类型作为宿主解析边界；Playback 功能包的状态与子组件由该兼容
         // 外壳的基类在同一 Document Scope 内创建，不额外注册全局或跨文档 UI 状态。
-        services.AddScoped<VideoPlayerControlViewModel>();
+        services.AddScoped<VideoPlayerControlViewModel>(provider =>
+        {
+            var viewModel = new VideoPlayerControlViewModel(
+                provider.GetRequiredService<ISecureVideoPlaybackSession>(),
+                provider.GetRequiredService<IPlaybackSurfaceSession>(),
+                provider.GetRequiredService<IPlaybackPlatformStatus>(),
+                provider.GetRequiredService<IPlaybackBackendInitializer>(),
+                provider.GetService<IPlaybackPreferenceStore>());
+            viewModel.ConfigureDiagnosticExporter(
+                provider.GetRequiredService<IPlaybackDiagnosticExporter>());
+            return viewModel;
+        });
         services.AddScoped<SecretVideoPlayerViewModel>();
 
         // 用户数据文件是进程级唯一事实源；三个接口映射同一实例，既保证并发写入串行，

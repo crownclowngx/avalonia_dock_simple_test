@@ -17,6 +17,9 @@
   <ItemGroup>
     <ProjectReference Include="..\MySmallTools\MySmallTools.csproj"
                       AdditionalProperties="SkipPluginDeploy=true" />
+    <ProjectReference Include="..\MySmallTools.SecurityBenchmarks\MySmallTools.SecurityBenchmarks.csproj"
+                      ReferenceOutputAssembly="true"
+                      AdditionalProperties="SkipPluginDeploy=true" />
   </ItemGroup>
   <ItemGroup>
     <None Update="TestAssets\RealMedia\**\*">

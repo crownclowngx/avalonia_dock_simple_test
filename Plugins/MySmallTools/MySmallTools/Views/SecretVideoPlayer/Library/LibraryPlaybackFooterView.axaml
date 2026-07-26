@@ -5,7 +5,10 @@
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="3">
       <TextBlock Grid.Row="0" Text="{Binding Owner.Browser.StatusMessage}" Classes="Caption"
                  TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Owner.Browser.StatusMessage}" />
-      <ProgressBar Grid.Row="1" IsVisible="{Binding Owner.Browser.IsScanning}" IsIndeterminate="True" Height="3" />
+      <ProgressBar Grid.Row="1"
+                   IsVisible="{Binding Owner.Browser.IsScanning}"
+                   IsIndeterminate="{Binding Owner.Browser.IsScanning}"
+                   Height="3" />
       <TextBlock Grid.Row="2" Text="{Binding Owner.StatusMessage}" Classes="StatusText"
                  TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Owner.StatusMessage}" />
       <Button Grid.Row="3" Content="加载所选视频" Command="{Binding Owner.PlaySelectedCommand}"

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 using MySmallTools.Views.SecretVideoPlayer.Playback;
 
@@ -11,7 +12,7 @@ namespace MySmallTools.Views.SecretVideoPlayer;
 /// 视频播放器控件
 /// 独立的播放器组件，可以在不同的视图中复用
 /// </summary>
-public partial class VideoPlayerControl : UserControl
+public partial class VideoPlayerControl : UserControl, IDisposable
 {
     public static readonly StyledProperty<IPlaybackNavigationContext?> NavigationContextProperty =
         AvaloniaProperty.Register<VideoPlayerControl, IPlaybackNavigationContext?>(
@@ -20,7 +21,10 @@ public partial class VideoPlayerControl : UserControl
     private VideoPlayerControlViewModel? _boundViewModel;
     private readonly PlaybackSurfaceCoordinator _surfaceCoordinator;
     private readonly FullscreenPlaybackPresenter _fullscreenPresenter;
+    private readonly IDisposable _navigationSubscription;
     private bool _hasNavigationContext;
+    private bool _isDiagnosticPickerOpen;
+    private bool _disposed;
 
     public IPlaybackNavigationContext? NavigationContext
     {
@@ -57,7 +61,8 @@ public partial class VideoPlayerControl : UserControl
         DetachedFromVisualTree += OnDetachedFromVisualTree;
         AddHandler(KeyDownEvent, OnPlayerKeyDown, RoutingStrategies.Tunnel);
         AddHandler(PointerPressedEvent, OnPlayerPointerPressed, RoutingStrategies.Tunnel);
-        this.GetObservable(NavigationContextProperty).Subscribe(value =>
+        _navigationSubscription =
+            this.GetObservable(NavigationContextProperty).Subscribe(value =>
             HasNavigationContext = value is not null);
     }
 
@@ -145,6 +150,101 @@ public partial class VideoPlayerControl : UserControl
             return;
         if (PlaybackShortcutRouter.TryHandle(e, viewModel))
             e.Handled = true;
+    }
+
+    private async void OnExportDiagnosticsClick(object? sender, RoutedEventArgs e)
+    {
+        if (_isDiagnosticPickerOpen ||
+            DataContext is not VideoPlayerControlViewModel viewModel)
+        {
+            return;
+        }
+
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is null)
+            return;
+
+        _isDiagnosticPickerOpen = true;
+        try
+        {
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(
+                new FilePickerSaveOptions
+                {
+                    Title = "导出 MySmallTools 脱敏诊断",
+                    SuggestedFileName =
+                        $"MySmallTools-diagnostics-{DateTime.Now:yyyyMMdd-HHmmss}.json",
+                    DefaultExtension = "json",
+                    FileTypeChoices =
+                    [
+                        new FilePickerFileType("JSON 诊断文件")
+                        {
+                            Patterns = ["*.json"],
+                            MimeTypes = ["application/json"]
+                        }
+                    ]
+                });
+            if (file is null || !ReferenceEquals(DataContext, viewModel))
+                return;
+
+            var json = await viewModel.CreateDiagnosticJsonAsync();
+            await using var output = await file.OpenWriteAsync();
+            if (output.CanSeek)
+                output.SetLength(0);
+            await output.WriteAsync(json);
+            await output.FlushAsync();
+            if (ReferenceEquals(DataContext, viewModel))
+                viewModel.ReportDiagnosticExportSucceeded();
+        }
+        catch (OperationCanceledException)
+        {
+            // 用户取消保存是正常交互，不覆盖此前可见状态。
+        }
+        catch
+        {
+            // 原始异常可能包含保存路径，界面只显示固定提示。
+            if (ReferenceEquals(DataContext, viewModel))
+                viewModel.ReportDiagnosticExportFailed();
+        }
+        finally
+        {
+            _isDiagnosticPickerOpen = false;
+        }
+    }
+
+    /// <summary>
+    /// 释放最终关闭的 View 所持有的 ViewModel、原生表面和可观察属性订阅。
+    /// </summary>
+    /// <remarks>
+    /// 标签切换不会调用本方法；只有宿主确认 Document 已关闭并逐项移出回收缓存后调用。
+    /// </remarks>
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+        _disposed = true;
+
+        _fullscreenPresenter.ForceReset();
+        if (_boundViewModel is not null)
+        {
+            _boundViewModel.ResetFullscreenPresentation();
+            _boundViewModel.FullscreenPresentationRequested -=
+                OnFullscreenPresentationRequested;
+        }
+
+        _surfaceCoordinator.Bind(null);
+        _surfaceCoordinator.Dispose();
+        _boundViewModel = null;
+        NavigationContext = null;
+        _navigationSubscription.Dispose();
+        DataContextChanged -= OnDataContextChanged;
+        AttachedToVisualTree -= OnAttachedToVisualTree;
+        DetachedFromVisualTree -= OnDetachedFromVisualTree;
+        RemoveHandler(KeyDownEvent, OnPlayerKeyDown);
+        RemoveHandler(PointerPressedEvent, OnPlayerPointerPressed);
+        // NativeControlHost 可能在窗口合成器完成下一帧前短暂保留原生表面。
+        // 断开内容树可避免该临时引用反向保留整套播放器控件。
+        Content = null;
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>

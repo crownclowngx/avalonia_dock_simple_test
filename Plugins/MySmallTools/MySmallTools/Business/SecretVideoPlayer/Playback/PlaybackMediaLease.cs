@@ -31,6 +31,16 @@ public static class SecurePlaybackDiagnostics
 
     public static void ClearRecentChunkReads() =>
         EncryptedStreamResourceDiagnostics.ClearRecentChunkReads();
+
+    public static PlaybackCacheStatistics CaptureCacheStatistics() =>
+        EncryptedStreamResourceDiagnostics.CaptureCacheStatistics();
+
+    /// <summary>仅供隔离的测试和性能场景建立本轮零点。</summary>
+    public static void ResetCacheStatistics() =>
+        EncryptedStreamResourceDiagnostics.ResetCacheStatistics();
+
+    internal static int CaptureRetainedEncryptedStreamCount() =>
+        EncryptedStreamResourceDiagnostics.CaptureRetainedStreamCount();
 }
 
 internal static class PlaybackResourceDiagnostics
@@ -91,6 +101,7 @@ internal interface IPlaybackMediaSource : IDisposable
     long Generation { get; }
     Media NativeMedia { get; }
     PlaybackMediaIdentity? Identity => null;
+    Secvid03DiagnosticSummary? DiagnosticSummary => null;
     event Action<IPlaybackMediaSource, PlaybackFailure>? Failed;
     void PrepareForPlayback();
     void RequestStop();
@@ -567,6 +578,7 @@ internal sealed class LibVlcPlaybackMediaSource : IPlaybackMediaSource
     public long Generation { get; }
     public Media NativeMedia => _media;
     public PlaybackMediaIdentity? Identity => _input.MediaIdentity;
+    public Secvid03DiagnosticSummary? DiagnosticSummary => _input.DiagnosticSummary;
     public event Action<IPlaybackMediaSource, PlaybackFailure>? Failed;
 
     public void PrepareForPlayback() => _input.PrepareForPlayback();

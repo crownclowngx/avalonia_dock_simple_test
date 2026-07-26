@@ -6,6 +6,22 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using MySmallTools.Business.SecretVideoPlayer.Container;
 
+if ((args.Any(value => string.Equals(value, "--suite", StringComparison.OrdinalIgnoreCase)) &&
+     args.SkipWhile(value => !string.Equals(
+             value,
+             "--suite",
+             StringComparison.OrdinalIgnoreCase))
+         .Skip(1)
+         .FirstOrDefault() is { } suite &&
+     string.Equals(suite, "g10", StringComparison.OrdinalIgnoreCase)) ||
+    args.Contains("--g10-child", StringComparer.OrdinalIgnoreCase) ||
+    args.Contains("--g10-aggregate", StringComparer.OrdinalIgnoreCase) ||
+    args.Contains("--g10-compare", StringComparer.OrdinalIgnoreCase))
+{
+    Environment.ExitCode = await G10BenchmarkProgram.RunAsync(args);
+    return;
+}
+
 var options = BenchmarkOptions.Parse(args);
 var vectorPath = Path.GetFullPath(options.VectorPath);
 if (!File.Exists(vectorPath))

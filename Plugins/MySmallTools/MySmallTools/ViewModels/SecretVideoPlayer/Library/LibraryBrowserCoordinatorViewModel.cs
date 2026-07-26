@@ -22,6 +22,7 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
     private readonly Dictionary<string, VideoLibraryItemViewModel> _items =
         new(StringComparer.OrdinalIgnoreCase);
     private readonly RangeObservableCollection<VideoLibraryItemViewModel> _visibleItems = [];
+    private readonly object _projectionSync = new();
     private CancellationTokenSource? _catalogCancellation;
     private CancellationTokenSource? _filterCancellation;
     private long _catalogGeneration;
@@ -156,23 +157,41 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
     {
         if (string.IsNullOrWhiteSpace(currentPlayingPath) || offset is not (-1 or 1))
             return null;
-        var index = _visibleItems
-            .Select((item, index) => (item, index))
-            .FirstOrDefault(pair => string.Equals(
-                pair.item.FilePath,
-                currentPlayingPath,
-                StringComparison.OrdinalIgnoreCase))
-            .index;
-        if (index == 0 &&
-            !string.Equals(
-                _visibleItems.ElementAtOrDefault(0)?.FilePath,
-                currentPlayingPath,
-                StringComparison.OrdinalIgnoreCase))
+        lock (_projectionSync)
         {
-            return null;
+            var index = _visibleItems
+                .Select((item, index) => (item, index))
+                .FirstOrDefault(pair => string.Equals(
+                    pair.item.FilePath,
+                    currentPlayingPath,
+                    StringComparison.OrdinalIgnoreCase))
+                .index;
+            if (index == 0 &&
+                !string.Equals(
+                    _visibleItems.ElementAtOrDefault(0)?.FilePath,
+                    currentPlayingPath,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+            var target = index + offset;
+            return target >= 0 && target < _visibleItems.Count
+                ? _visibleItems[target]
+                : null;
         }
-        var target = index + offset;
-        return target >= 0 && target < _visibleItems.Count ? _visibleItems[target] : null;
+    }
+
+    /// <summary>
+    /// 原子捕获当前可见投影，供性能门禁和无 UI 调度器的宿主只读使用。
+    /// </summary>
+    /// <remarks>
+    /// 产品 UI 仍绑定同一个只读 ObservableCollection；快照仅隔离 watcher 批次与
+    /// 搜索防抖恰好同时完成时的枚举竞态，不改变通知或排序语义。
+    /// </remarks>
+    internal IReadOnlyList<VideoLibraryItemViewModel> CaptureVisibleItems()
+    {
+        lock (_projectionSync)
+            return _visibleItems.ToArray();
     }
 
     [RelayCommand(CanExecute = nameof(CanRefresh))]
@@ -196,12 +215,15 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
         ReplaceCancellation(ref _catalogCancellation, out var cancellation);
         if (clearItems)
         {
-            _items.Clear();
-            _visibleItems.ReplaceAll(Array.Empty<VideoLibraryItemViewModel>());
-            SelectedItem = null;
-            ProcessedCount = 0;
-            FailedCount = 0;
-            VisibleItemCount = 0;
+            lock (_projectionSync)
+            {
+                _items.Clear();
+                _visibleItems.ReplaceAll(Array.Empty<VideoLibraryItemViewModel>());
+                SelectedItem = null;
+                ProcessedCount = 0;
+                FailedCount = 0;
+                VisibleItemCount = 0;
+            }
         }
         IsScanning = true;
         StatusMessage = "正在扫描，已读取 0 个";
@@ -234,25 +256,28 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
 
     private void ApplyBatch(VideoLibraryCatalogBatch batch)
     {
-        var selectedPath = SelectedItem?.FilePath;
-        if (batch.ReplaceAll)
-            _items.Clear();
-        foreach (var path in batch.RemovedPaths)
-            _items.Remove(Path.GetFullPath(path));
-        foreach (var result in batch.Upserts)
+        lock (_projectionSync)
         {
-            var history = _historyStore.Find(
-                result.FilePath,
-                result.FileId,
-                result.OriginalFileLength);
-            _items[Path.GetFullPath(result.FilePath)] =
-                new VideoLibraryItemViewModel(result, history);
+            var selectedPath = SelectedItem?.FilePath;
+            if (batch.ReplaceAll)
+                _items.Clear();
+            foreach (var path in batch.RemovedPaths)
+                _items.Remove(Path.GetFullPath(path));
+            foreach (var result in batch.Upserts)
+            {
+                var history = _historyStore.Find(
+                    result.FilePath,
+                    result.FileId,
+                    result.OriginalFileLength);
+                _items[Path.GetFullPath(result.FilePath)] =
+                    new VideoLibraryItemViewModel(result, history);
+            }
+            IsScanning = batch.IsScanning;
+            StatusMessage = batch.StatusMessage;
+            ProcessedCount = _items.Count;
+            FailedCount = _items.Values.Count(item => item.HasError);
+            ApplyProjection(selectedPath);
         }
-        IsScanning = batch.IsScanning;
-        StatusMessage = batch.StatusMessage;
-        ProcessedCount = _items.Count;
-        FailedCount = _items.Values.Count(item => item.HasError);
-        ApplyProjection(selectedPath);
     }
 
     private void ScheduleProjection()
@@ -284,19 +309,22 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
 
     private void ApplyProjection(string? selectedPath)
     {
-        var query = SearchText.Trim();
-        var items = _items.Values
-            .Where(item => MatchesSearch(item, query) && MatchesStatus(item))
-            .OrderBy(item => item, CreateComparer())
-            .ToArray();
-        _visibleItems.ReplaceAll(items);
-        SelectedItem = selectedPath is null
-            ? null
-            : items.FirstOrDefault(item => string.Equals(
-                item.FilePath,
-                selectedPath,
-                StringComparison.OrdinalIgnoreCase));
-        VisibleItemCount = items.Length;
+        lock (_projectionSync)
+        {
+            var query = SearchText.Trim();
+            var items = _items.Values
+                .Where(item => MatchesSearch(item, query) && MatchesStatus(item))
+                .OrderBy(item => item, CreateComparer())
+                .ToArray();
+            _visibleItems.ReplaceAll(items);
+            SelectedItem = selectedPath is null
+                ? null
+                : items.FirstOrDefault(item => string.Equals(
+                    item.FilePath,
+                    selectedPath,
+                    StringComparison.OrdinalIgnoreCase));
+            VisibleItemCount = items.Length;
+        }
     }
 
     private bool MatchesStatus(VideoLibraryItemViewModel item) => StatusFilter switch
@@ -369,23 +397,26 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
         {
             if (_disposed)
                 return;
-            foreach (var (path, item) in _items.ToArray())
+            lock (_projectionSync)
             {
-                if (e.Kind != PlaybackHistoryChangeKind.Cleared &&
-                    !string.Equals(
-                        item.FilePath,
-                        e.FilePath,
-                        StringComparison.OrdinalIgnoreCase))
+                foreach (var (path, item) in _items.ToArray())
                 {
-                    continue;
+                    if (e.Kind != PlaybackHistoryChangeKind.Cleared &&
+                        !string.Equals(
+                            item.FilePath,
+                            e.FilePath,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+                    var history = _historyStore.Find(
+                        item.FilePath,
+                        item.FileId,
+                        item.OriginalFileLength);
+                    _items[path] = new VideoLibraryItemViewModel(item.Source, history);
                 }
-                var history = _historyStore.Find(
-                    item.FilePath,
-                    item.FileId,
-                    item.OriginalFileLength);
-                _items[path] = new VideoLibraryItemViewModel(item.Source, history);
+                ApplyProjection(SelectedItem?.FilePath);
             }
-            ApplyProjection(SelectedItem?.FilePath);
         }
 
         if (Dispatcher.UIThread.CheckAccess())

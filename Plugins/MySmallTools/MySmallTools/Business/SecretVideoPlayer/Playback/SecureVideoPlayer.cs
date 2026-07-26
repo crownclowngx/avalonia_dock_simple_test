@@ -1,4 +1,5 @@
 using LibVLCSharp.Shared;
+using MySmallTools.Business.SecretVideoPlayer.Container;
 
 namespace MySmallTools.Business.SecretVideoPlayer.Playback;
 
@@ -17,7 +18,8 @@ internal sealed class SecureVideoPlayer :
     ISecureVideoPlaybackSession,
     IPlaybackSurfaceSession,
     IPlaybackVideoOutput,
-    ILibVlcVideoOutputAccessor
+    ILibVlcVideoOutputAccessor,
+    IPlaybackDiagnosticState
 {
     private static readonly float[] SupportedRates = [0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f];
 
@@ -37,6 +39,7 @@ internal sealed class SecureVideoPlayer :
     private VideoSurfaceIdentity _surface;
     private PlaybackSnapshot _snapshot = PlaybackSnapshot.Empty;
     private PlaybackControlSnapshot _controls = PlaybackControlSnapshot.Empty;
+    private Secvid03DiagnosticSummary? _currentDiagnosticSummary;
     private float _desiredRate = 1.0f;
     private long _playingControlsRefreshGeneration;
     private long _nextMediaGeneration;
@@ -277,6 +280,7 @@ internal sealed class SecureVideoPlayer :
                 var committed = candidate;
                 candidate = null;
                 _currentSource = committed;
+                SetDiagnosticSummary(committed.DiagnosticSummary);
                 committed.Failed += OnSourceFailed;
 
                 // 轨道 ID 只属于当前媒体代次，因此提交新媒体后立即丢弃旧集合。
@@ -915,6 +919,7 @@ internal sealed class SecureVideoPlayer :
                 .ConfigureAwait(false);
 
             _currentSource = null;
+            SetDiagnosticSummary(null);
             source.Failed -= OnSourceFailed;
             PublishEmpty(_surface.Generation, PlaybackActivity.ReleasingOldMedia);
 
@@ -1136,6 +1141,15 @@ internal sealed class SecureVideoPlayer :
     public static PlaybackResourceSnapshot CaptureResourceSnapshot() =>
         SecurePlaybackDiagnostics.CaptureResources();
 
+    PlaybackDiagnosticState IPlaybackDiagnosticState.CaptureDiagnosticState()
+    {
+        // 播放快照和容器摘要共用同一把锁，导出器不会观察到两个时刻拼接出的状态。
+        lock (_snapshotSync)
+        {
+            return new PlaybackDiagnosticState(_snapshot, _currentDiagnosticSummary);
+        }
+    }
+
     public void Dispose()
     {
         using var diagnostics = PlaybackPerformanceDiagnostics.Begin("player-dispose");
@@ -1159,6 +1173,7 @@ internal sealed class SecureVideoPlayer :
         {
             var source = _currentSource;
             _currentSource = null;
+            SetDiagnosticSummary(null);
             if (source is not null)
             {
                 source.Failed -= OnSourceFailed;
@@ -1230,6 +1245,7 @@ internal sealed class SecureVideoPlayer :
             // 绝不能强制释放它。此时把它保留为当前 Source；oldSource 已经在提交时
             // 与播放器解绑，可安全交给 Reaper，避免为了“可回滚”而永久遗失文件所有权。
             _currentSource = failedSource;
+            SetDiagnosticSummary(failedSource.DiagnosticSummary);
             if (oldSource is not null)
             {
                 oldSource.Failed -= OnSourceFailed;
@@ -1244,11 +1260,20 @@ internal sealed class SecureVideoPlayer :
 
         failedSource.Failed -= OnSourceFailed;
         _currentSource = oldSource;
+        SetDiagnosticSummary(oldSource?.DiagnosticSummary);
         await _resourceReaper.EnqueueAsync(
                 failedSource,
                 waitForCompletion: false,
                 CancellationToken.None)
             .ConfigureAwait(false);
+    }
+
+    private void SetDiagnosticSummary(Secvid03DiagnosticSummary? summary)
+    {
+        lock (_snapshotSync)
+        {
+            _currentDiagnosticSummary = summary;
+        }
     }
 
     private async Task ReapCandidateSafelyAsync(IPlaybackMediaSource candidate)

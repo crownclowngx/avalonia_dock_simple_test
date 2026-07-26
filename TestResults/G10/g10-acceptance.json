@@ -1,0 +1,20 @@
+{
+    "schemaVersion":  1,
+    "kind":  "g10-acceptance",
+    "sourceRevision":  "e02b4d3f254c",
+    "platform":  "windows-x64",
+    "dotnetSdk":  "9.0.315",
+    "worktreeWasClean":  false,
+    "technicalAcceptancePassed":  false,
+    "formalSignoffReady":  false,
+    "manualSignoff":  "pending",
+    "timingGate":  "baseline-missing-local-only",
+    "gates":  {
+                  "builds":  "passed",
+                  "unitTests":  "passed",
+                  "hostTests":  "passed",
+                  "performanceHardGates":  "passed-two-runs",
+                  "playbackResourceTrend":  "passed-two-short-long-pairs",
+                  "sensitiveScan":  "passed"
+              }
+}

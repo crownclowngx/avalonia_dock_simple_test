@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Avalonia;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -435,6 +436,14 @@ public class ManagementFactory : Factory
         {
             if (dockable is Document document)
             {
+                // Dock 的内容回收缓存默认会永久强引用已关闭的 Document。
+                // 最终关闭时只移除当前项，保留其他标签的控件复用行为。
+                if (Application.Current?.Resources["ControlRecyclingKey"]
+                    is DocumentControlRecycling recycling)
+                {
+                    recycling.Remove(document);
+                }
+
                 _documentScopeManager.Release(document);
             }
         }

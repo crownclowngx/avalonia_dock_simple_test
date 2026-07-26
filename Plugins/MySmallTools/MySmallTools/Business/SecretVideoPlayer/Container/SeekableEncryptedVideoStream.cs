@@ -13,10 +13,31 @@ internal static class EncryptedStreamResourceDiagnostics
     private static readonly ConcurrentQueue<long> RecentChunkReads = new();
     private static int _liveStreams;
     private static int _cachedPlaintextChunks;
+    private static long _cacheRequests;
+    private static long _cacheHits;
+    private static long _cacheMisses;
+    private static long _cacheEvictions;
+    private static readonly object RetainedSync = new();
+    private static readonly List<WeakReference<SeekableEncryptedVideoStream>>
+        RetainedStreams = [];
 
     public static EncryptedStreamResourceSnapshot Capture() => new(
         Volatile.Read(ref _liveStreams),
         Volatile.Read(ref _cachedPlaintextChunks));
+
+    public static PlaybackCacheStatistics CaptureCacheStatistics() => new(
+        Interlocked.Read(ref _cacheRequests),
+        Interlocked.Read(ref _cacheHits),
+        Interlocked.Read(ref _cacheMisses),
+        Interlocked.Read(ref _cacheEvictions));
+
+    public static void ResetCacheStatistics()
+    {
+        Interlocked.Exchange(ref _cacheRequests, 0);
+        Interlocked.Exchange(ref _cacheHits, 0);
+        Interlocked.Exchange(ref _cacheMisses, 0);
+        Interlocked.Exchange(ref _cacheEvictions, 0);
+    }
 
     public static IReadOnlyList<long> CaptureRecentChunkReads() =>
         RecentChunkReads.ToArray();
@@ -28,10 +49,31 @@ internal static class EncryptedStreamResourceDiagnostics
         }
     }
 
-    public static void StreamCreated() => Interlocked.Increment(ref _liveStreams);
+    public static void StreamCreated(SeekableEncryptedVideoStream stream)
+    {
+        Interlocked.Increment(ref _liveStreams);
+        lock (RetainedSync)
+        {
+            RetainedStreams.RemoveAll(reference => !reference.TryGetTarget(out _));
+            RetainedStreams.Add(new WeakReference<SeekableEncryptedVideoStream>(stream));
+        }
+    }
+
+    internal static int CaptureRetainedStreamCount()
+    {
+        lock (RetainedSync)
+        {
+            RetainedStreams.RemoveAll(reference => !reference.TryGetTarget(out _));
+            return RetainedStreams.Count;
+        }
+    }
     public static void StreamDisposed() => Interlocked.Decrement(ref _liveStreams);
     public static void ChunkCached() => Interlocked.Increment(ref _cachedPlaintextChunks);
     public static void ChunkReleased() => Interlocked.Decrement(ref _cachedPlaintextChunks);
+    public static void CacheRequested() => Interlocked.Increment(ref _cacheRequests);
+    public static void CacheHit() => Interlocked.Increment(ref _cacheHits);
+    public static void CacheMiss() => Interlocked.Increment(ref _cacheMisses);
+    public static void CacheEvicted() => Interlocked.Increment(ref _cacheEvictions);
 
     public static void ChunkRead(long chunkIndex)
     {
@@ -61,7 +103,7 @@ public sealed class SeekableEncryptedVideoStream : Stream
     private readonly LinkedList<long> _lru = [];
     private readonly Stack<byte[]> _availablePlaintextBuffers = new(MaxCachedChunks);
     private readonly byte[][] _plaintextBuffers = new byte[MaxCachedChunks][];
-    private readonly byte[] _cipherBuffer;
+    private byte[] _cipherBuffer;
     private long _position;
     private bool _disposed;
 
@@ -79,7 +121,7 @@ public sealed class SeekableEncryptedVideoStream : Stream
             _plaintextBuffers[index] = buffer;
             _availablePlaintextBuffers.Push(buffer);
         }
-        EncryptedStreamResourceDiagnostics.StreamCreated();
+        EncryptedStreamResourceDiagnostics.StreamCreated(this);
     }
 
     internal IReadOnlyList<byte[]> PlaintextBuffers => _plaintextBuffers;
@@ -125,6 +167,16 @@ public sealed class SeekableEncryptedVideoStream : Stream
     public override long Length { get { ThrowIfDisposed(); return _header.OriginalFileLength; } }
     internal string FileId => Convert.ToHexString(_header.FileId);
     internal long OriginalFileLength => _header.OriginalFileLength;
+    internal Secvid03DiagnosticSummary DiagnosticSummary => new(
+        "SECVID03",
+        Secvid03Format.Version,
+        _header.OriginalHeaderLength,
+        _header.OriginalFileLength,
+        _header.ChunkSize,
+        _header.ChunkCount,
+        Secvid03Format.TagSize,
+        "PBKDF2-SHA256",
+        _header.KdfIterations);
     public override long Position
     {
         get { ThrowIfDisposed(); return _position; }
@@ -201,11 +253,17 @@ public sealed class SeekableEncryptedVideoStream : Stream
                 }
                 finally
                 {
-                    foreach (var buffer in _plaintextBuffers)
-                        CryptographicOperations.ZeroMemory(buffer);
+                    for (var index = 0; index < _plaintextBuffers.Length; index++)
+                    {
+                        CryptographicOperations.ZeroMemory(_plaintextBuffers[index]);
+                        _plaintextBuffers[index] = Array.Empty<byte>();
+                    }
                     for (var index = 0; index < _cache.Count; index++)
                         EncryptedStreamResourceDiagnostics.ChunkReleased();
                     CryptographicOperations.ZeroMemory(_cipherBuffer);
+                    // LibVLC 的托管回调包装可能晚于 Dispose 才被 GC 回收。主动断开大数组
+                    // 引用，避免已清零的 1 MiB LOH 缓冲随包装对象继续保留多个 Document 周期。
+                    _cipherBuffer = Array.Empty<byte>();
                     _cache.Clear();
                     _lru.Clear();
                     _availablePlaintextBuffers.Clear();
@@ -219,15 +277,18 @@ public sealed class SeekableEncryptedVideoStream : Stream
 
     private (byte[] Data, int Length) GetDecryptedChunk(long chunkIndex)
     {
+        EncryptedStreamResourceDiagnostics.CacheRequested();
         EncryptedStreamResourceDiagnostics.ChunkRead(chunkIndex);
         if (_cache.TryGetValue(chunkIndex, out var cached))
         {
+            EncryptedStreamResourceDiagnostics.CacheHit();
             // 命中缓存时把节点提升到链表头，尾节点始终代表最久未使用的块。
             _lru.Remove(cached.Node);
             _lru.AddFirst(cached.Node);
             return (cached.Data, cached.Length);
         }
 
+        EncryptedStreamResourceDiagnostics.CacheMiss();
         // 物理偏移可以 O(1) 计算：每个完整块固定由 1 MiB 密文和 16 字节标签组成。
         // 最后一块可以较短，但它之前的所有块必然是完整块，因此公式对尾块同样成立。
         var chunkPlainOffset = checked(chunkIndex * _header.ChunkSize);
@@ -280,6 +341,7 @@ public sealed class SeekableEncryptedVideoStream : Stream
         var oldEntry = _cache[oldest.Value];
         _cache.Remove(oldest.Value);
         _lru.RemoveLast();
+        EncryptedStreamResourceDiagnostics.CacheEvicted();
         EncryptedStreamResourceDiagnostics.ChunkReleased();
         CryptographicOperations.ZeroMemory(oldEntry.Data);
         return oldEntry.Data;

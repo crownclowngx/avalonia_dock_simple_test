@@ -37,11 +37,13 @@ public sealed class SeekableStreamMediaInput : MediaInput
             MediaIdentity = new PlaybackMediaIdentity(
                 encrypted.FileId,
                 encrypted.OriginalFileLength);
+            DiagnosticSummary = encrypted.DiagnosticSummary;
         }
         CanSeek = true;
     }
 
     internal PlaybackMediaIdentity? MediaIdentity { get; }
+    internal Secvid03DiagnosticSummary? DiagnosticSummary { get; }
 
     /// <summary>
     /// 一次性取得原生回调边界内的首个类型化失败。

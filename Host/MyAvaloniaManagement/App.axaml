@@ -5,6 +5,7 @@
              xmlns:u="https://irihi.tech/ursa"
              x:Class="MyAvaloniaManagement.App"
              xmlns:local="using:MyAvaloniaManagement"
+             xmlns:helpers="using:MyAvaloniaManagement.Business.Helpers"
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
@@ -12,7 +13,7 @@
                  <local:ViewLocator />
              </Application.DataTemplates>
              <Application.Resources>
-                 <ControlRecycling x:Key="ControlRecyclingKey" />
+                 <helpers:DocumentControlRecycling x:Key="ControlRecyclingKey" />
              </Application.Resources>
              <Application.Styles>
                  <semi:SemiTheme Locale="zh-CN" />

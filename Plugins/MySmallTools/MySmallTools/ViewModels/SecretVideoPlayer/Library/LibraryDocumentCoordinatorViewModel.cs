@@ -18,6 +18,7 @@ public partial class LibraryDocumentCoordinatorViewModel :
     IDisposable
 {
     private bool _disposed;
+
     private long _playGeneration;
     private CancellationTokenSource? _playCancellation;
     private CancellationTokenSource? _autoAdvanceCancellation;
