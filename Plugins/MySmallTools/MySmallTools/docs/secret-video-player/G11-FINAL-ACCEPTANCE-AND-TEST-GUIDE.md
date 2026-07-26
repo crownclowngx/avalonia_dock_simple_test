@@ -172,7 +172,7 @@ dotnet test `
 
 ```text
 Plugins/MySmallTools/MySmallTools/docs/secret-video-player/benchmarks/
-g10-windows-x64-reference.json
+g10-windows-x64-net10-avalonia12-dock12-reference.json
 ```
 
 日常和最终验收禁止使用 `-UpdateBaseline`，必须与审核基线比较：

@@ -1,5 +1,4 @@
 using Avalonia.Platform;
-using Avalonia.Threading;
 using LibVLCSharp.Avalonia;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 
@@ -36,6 +35,12 @@ public sealed class VideoSurfaceChangedEventArgs(VideoSurfaceIdentity surface) :
 /// </remarks>
 public sealed class EmbeddedVideoSurface : VideoView, IPlaybackVideoSurface
 {
+    private static long _createdSurfaceCount;
+    private static long _destroyedSurfaceCount;
+    private static long _activeSurfaceCount;
+    private static string _lastHandleDescriptor = "unavailable";
+    private static int _lastHandleWasNonZero;
+
     private long _surfaceGeneration;
     private nint _nativeHandle;
     private IPlaybackVideoOutput? _output;
@@ -86,6 +91,12 @@ public sealed class EmbeddedVideoSurface : VideoView, IPlaybackVideoSurface
         }
 
         _nativeHandle = control.Handle;
+        Volatile.Write(
+            ref _lastHandleDescriptor,
+            control.HandleDescriptor ?? "unknown");
+        Volatile.Write(ref _lastHandleWasNonZero, 1);
+        Interlocked.Increment(ref _createdSurfaceCount);
+        Interlocked.Increment(ref _activeSurfaceCount);
         ApplyOutput();
         var identity = new VideoSurfaceIdentity(
             Interlocked.Increment(ref _surfaceGeneration));
@@ -102,12 +113,25 @@ public sealed class EmbeddedVideoSurface : VideoView, IPlaybackVideoSurface
             // 必须同步通知。订阅方只有在 Stop 返回后才允许本方法继续销毁 HWND，
             // 否则活动 vout 可能访问已经失效的窗口并产生进程级原生崩溃。
             SurfaceLosing?.Invoke(this, new VideoSurfaceChangedEventArgs(identity.Value));
+            Interlocked.Increment(ref _destroyedSurfaceCount);
+            Interlocked.Decrement(ref _activeSurfaceCount);
         }
 
         base.DestroyNativeControlCore(control);
         _nativeHandle = nint.Zero;
         CurrentSurface = null;
     }
+
+    /// <summary>
+    /// 只公开验收需要的描述符与计数，不把真实 HWND 句柄扩散到播放器业务层。
+    /// </summary>
+    public static EmbeddedVideoSurfaceDiagnostics CaptureDiagnostics() =>
+        new(
+            Volatile.Read(ref _lastHandleDescriptor),
+            Volatile.Read(ref _lastHandleWasNonZero) != 0,
+            Interlocked.Read(ref _createdSurfaceCount),
+            Interlocked.Read(ref _destroyedSurfaceCount),
+            Interlocked.Read(ref _activeSurfaceCount));
 
     private void OnOutputChanged(object? sender, EventArgs e)
     {
@@ -118,13 +142,13 @@ public sealed class EmbeddedVideoSurface : VideoView, IPlaybackVideoSurface
 
         // VideoView.Detach 会访问旧 MediaPlayer，所以输出切换必须在 UI 线程同步完成，
         // 不能 Post 后立即允许后台线程释放原生播放器。
-        if (Dispatcher.UIThread.CheckAccess())
+        if (Dispatcher.CheckAccess())
         {
             ApplyOutput();
             return;
         }
 
-        Dispatcher.UIThread.InvokeAsync(ApplyOutput).GetAwaiter().GetResult();
+        Dispatcher.InvokeAsync(ApplyOutput).GetAwaiter().GetResult();
     }
 
     private void ApplyOutput()
@@ -140,3 +164,10 @@ public sealed class EmbeddedVideoSurface : VideoView, IPlaybackVideoSurface
         }
     }
 }
+
+public readonly record struct EmbeddedVideoSurfaceDiagnostics(
+    string HandleDescriptor,
+    bool LastHandleWasNonZero,
+    long CreatedCount,
+    long DestroyedCount,
+    long ActiveCount);

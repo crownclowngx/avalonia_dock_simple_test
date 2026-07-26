@@ -98,7 +98,7 @@ Integration Harness 增加 `--suite g10`。统一脚本每轮分别启动短、�
 
 ## 6. 基线比较
 
-两轮性能报告使用 `--g10-aggregate` 聚合。可比指纹包括平台、进程架构、CPU 型号、逻辑处理器数、.NET、Release 配置、MySmallTools、LibVLCSharp 和 LibVLC 版本。OS Build 与可用物理内存仅记录。
+至少三轮性能报告使用 `--g10-aggregate` 聚合。可比指纹包括平台、进程架构、CPU 型号、逻辑处理器数、.NET、Release 配置、MySmallTools、LibVLCSharp 和 LibVLC 版本。OS Build 与可用物理内存仅记录。
 
 同指纹时：
 
@@ -124,9 +124,10 @@ Integration Harness 增加 `--suite g10`。统一脚本每轮分别启动短、�
 
 开发中可使用 `-AllowDirty`；仅检查非窗口部分可再加 `-SkipWindowGates`。这两种运行都不会被标记为正式证据。
 
-脚本串行执行 Release 零警告构建、插件与宿主全量测试、两轮性能套件、两轮短/长真实窗口趋势、产品诊断样本、基线比较和敏感 canary 扫描。目录约定：
+脚本串行执行 Release 零警告构建、插件与宿主全量测试、三轮性能套件、三轮短/长真实窗口趋势、产品诊断样本、基线比较和敏感 canary 扫描。目录约定：
 
-- 审核基线：`docs/secret-video-player/benchmarks/g10-windows-x64-reference.json`
+- 当前审核基线：`docs/secret-video-player/benchmarks/g10-windows-x64-net10-avalonia12-dock12-reference.json`
+- 升级前归档：`docs/secret-video-player/benchmarks/archive/g10-windows-x64-net9-legacy.json`
 - 可提交证据：`TestResults/G10/`
 - 大素材和中间文件：`artifacts/MySmallTools/g10/`
 
@@ -137,7 +138,7 @@ G11 通过 `-EvidenceRoot` 把 G10 阶段摘要暂存到 ignored artifacts，使
 
 以下条件全部满足前，路线图只能标记“技术实现完成”：
 
-- clean worktree 上两轮完整性能和真实窗口门禁通过。
+- clean worktree 上至少三轮完整性能和真实窗口门禁通过。
 - 可比环境没有越过耗时阈值，所有硬门禁通过。
 - 敏感扫描为零发现。
 - Release 构建零警告，G0～G9 回归全部通过。

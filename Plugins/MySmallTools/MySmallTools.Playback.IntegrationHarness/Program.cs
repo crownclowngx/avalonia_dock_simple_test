@@ -61,6 +61,7 @@ internal static class Program
             HarnessSuite.G3 => new G3PlaybackHarnessRunner(_provider, options),
             HarnessSuite.G8 => new G8P1AcceptanceSuite(_provider, options),
             HarnessSuite.G10 => new G3PlaybackHarnessRunner(_provider, options),
+            HarnessSuite.Phase4 => new Phase4AcceptanceSuite(_provider, options),
             _ => throw new ArgumentOutOfRangeException(nameof(options.Suite))
         };
 

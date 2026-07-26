@@ -75,10 +75,16 @@ $final = [ordered]@{
     evidenceFiles = @(
         'g11-technical-acceptance.json'
         'g11-manual-signoff.json'
+        'avalonia12-libvlcsharp.json'
+        'avalonia12-libvlcsharp-go.json'
         'g4-acceptance.json'
         'g8-acceptance.json'
         'g10-acceptance.json'
         'g10-sensitive-scan.json'
+        'package-graph-summary.json'
+        'nuget-vulnerabilities.json'
+        'nuget-outdated.json'
+        'mysmalltools-release-manifest.json'
     )
 }
 

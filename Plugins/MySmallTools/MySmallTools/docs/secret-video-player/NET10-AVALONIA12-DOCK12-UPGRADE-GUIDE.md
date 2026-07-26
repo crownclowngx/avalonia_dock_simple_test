@@ -215,7 +215,7 @@ dotnet test .\Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginT
 
 同时检查：
 
-- `benchmarks/g10-windows-x64-reference.json` 的运行时和依赖版本。
+- 当前 G10 审核基线的运行时和依赖版本。
 - 当前 `g11-final-acceptance.json` 的 `sourceRevision`、`manualSignoff` 和 `formalSignoffReady`。
 - `Release-MySmallToolsP0.ps1`、`Accept-MySmallToolsP1.ps1`、`Accept-MySmallToolsG10.ps1`、`Accept-MySmallToolsG11.ps1`、`Approve-MySmallToolsG11.ps1` 中的 SDK、TFM 和输出目录假设。
 
@@ -794,7 +794,10 @@ Dock 12 必须在宿主、Common 和全部插件中同步：
 3. G10：加解密、Seek、媒体库、内存、句柄和恢复延迟。
 4. G11：完整自动化、人工矩阵和最终签字。
 
-旧的 `g10-windows-x64-reference.json` 不直接覆盖。先保存升级前基线，再生成 .NET 10 新候选基线；只有结果通过审查才提升为新参考基线。
+旧基线归档为 `benchmarks/archive/g10-windows-x64-net9-legacy.json`，不直接覆盖。
+新候选至少执行三轮同机测量，并提升为
+`benchmarks/g10-windows-x64-net10-avalonia12-dock12-reference.json`；
+只有环境指纹、硬门禁和性能结果通过审查后，才允许作为正式参考基线提交。
 
 ### 12.4 性能判定
 
@@ -950,4 +953,3 @@ dotnet list .\MyAvaloniaManagement.sln package --vulnerable --include-transitive
 - [TreeDataGrid v12 Breaking Changes](https://docs.avaloniaui.net/controls/data-display/structured-data/treedatagrid/breaking-changes-v12)
 - [LibVLCSharp.Avalonia 3.10.0](https://www.nuget.org/packages/LibVLCSharp.Avalonia/3.10.0)
 - [Xaml.Behaviors](https://www.nuget.org/packages/Xaml.Behaviors)
-

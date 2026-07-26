@@ -3,7 +3,7 @@
     [switch]$SkipWindowGates,
     [switch]$AllowNonComparable,
     [switch]$UpdateBaseline,
-    [int]$Runs = 2,
+    [int]$Runs = 3,
     [int]$SmallMiB = 64,
     [int]$LargeMiB = 512,
     [int]$LibrarySmall = 100,
@@ -33,7 +33,9 @@ else {
     [IO.Path]::GetFullPath((Join-Path $workspace $EvidenceRoot))
 }
 $usesCustomEvidenceRoot = -not [string]::IsNullOrWhiteSpace($EvidenceRoot)
-$baselinePath = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools\docs\secret-video-player\benchmarks\g10-windows-x64-reference.json'
+$baselinePath = Join-Path $workspace (
+    'Plugins\MySmallTools\MySmallTools\docs\secret-video-player\benchmarks\' +
+    'g10-windows-x64-net10-avalonia12-dock12-reference.json')
 $utf8NoBom = [Text.UTF8Encoding]::new($false)
 
 function Assert-SafeArtifactPath {
@@ -121,14 +123,20 @@ function Assert-WindowReport {
         [long]$Report.surfaceGenerationAfterMediaSwitch) {
         throw "$Name replaced the document output or surface during media switching."
     }
+    # 与阶段 4 使用同一发布硬门槛，避免趋势比较掩盖单次运行的绝对泄漏。
+    if ((Get-Delta $Report.processFinal $Report.processBaseline 'HandleCount') -gt 10 -or
+        (Get-Delta $Report.processFinal $Report.processBaseline 'PrivateBytes') -gt
+        (64L * 1024 * 1024)) {
+        throw "$Name exceeded the Phase 4 handle or private-memory hard gate."
+    }
 }
 
 if ($env:OS -ne 'Windows_NT' -or
     [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -ne 'X64') {
     throw 'G10 acceptance requires a Windows x64 process.'
 }
-if ($Runs -ne 2) {
-    throw 'Formal G10 baseline requires exactly two runs.'
+if ($Runs -lt 3) {
+    throw '正式 G10 候选基线至少需要三轮同机测量。'
 }
 if ($SmallMiB -lt 8 -or $LargeMiB -le $SmallMiB -or
     $LibrarySmall -le 0 -or $LibraryLarge -le $LibrarySmall -or
@@ -148,7 +156,7 @@ if ($wasDirty -and -not $AllowDirty) {
     throw 'Formal G10 acceptance requires a clean worktree; use -AllowDirty locally.'
 }
 if ($UpdateBaseline -and ($wasDirty -or $AllowDirty)) {
-    throw '-UpdateBaseline is allowed only for two formal runs from a clean worktree.'
+    throw '-UpdateBaseline 只允许在 clean worktree 上提升三轮正式候选。'
 }
 $formalScale = $SmallMiB -eq 64 -and $LargeMiB -eq 512 -and
     $LibrarySmall -eq 100 -and $LibraryLarge -eq 1000 -and
@@ -239,21 +247,21 @@ for ($run = 1; $run -le $Runs; $run++) {
             run = $run
             passed = $true
             limits = [ordered]@{
-                handleDelta = 16
+                handleDelta = 10
                 threadDelta = 4
                 pendingThreadPoolDelta = 4
                 managedBytes = 32L * 1024 * 1024
                 workingSetBytes = 128L * 1024 * 1024
-                privateBytes = 128L * 1024 * 1024
+                privateBytes = 64L * 1024 * 1024
             }
         }
         $pairs = @(
-            @('HandleCount', 'handleDelta', 16L),
+            @('HandleCount', 'handleDelta', 10L),
             @('ThreadCount', 'threadDelta', 4L),
             @('PendingThreadPoolItems', 'pendingThreadPoolDelta', 4L),
             @('ManagedHeapBytes', 'managedBytes', (32L * 1024 * 1024)),
             @('WorkingSetBytes', 'workingSetBytes', (128L * 1024 * 1024)),
-            @('PrivateBytes', 'privateBytes', (128L * 1024 * 1024))
+            @('PrivateBytes', 'privateBytes', (64L * 1024 * 1024))
         )
         $measurements = [ordered]@{}
         foreach ($pair in $pairs) {
@@ -288,13 +296,15 @@ for ($run = 1; $run -le $Runs; $run++) {
 }
 
 $candidatePath = Join-Path $artifactRoot 'g10-performance-candidate.json'
-Invoke-Gate 'Aggregate two performance runs' @(
+$aggregateArguments = @(
     'run', '--project', $benchmarkProject, '-c', 'Release', '--no-build', '--',
-    '--g10-aggregate',
-    '--input', $performanceReports[0],
-    '--input', $performanceReports[1],
-    '--output', $candidatePath
+    '--g10-aggregate'
 )
+foreach ($performanceReport in $performanceReports) {
+    $aggregateArguments += '--input', $performanceReport
+}
+$aggregateArguments += '--output', $candidatePath
+Invoke-Gate "Aggregate $Runs performance runs" $aggregateArguments
 
 $comparisonPath = Join-Path $artifactRoot 'g10-performance-comparison.json'
 $timingGate = 'not-run'
@@ -409,9 +419,9 @@ $acceptance = [ordered]@{
         builds = 'passed'
         unitTests = 'passed'
         hostTests = 'passed'
-        performanceHardGates = 'passed-two-runs'
+        performanceHardGates = "passed-$Runs-runs"
         playbackResourceTrend =
-            if ($SkipWindowGates) { 'skipped' } else { 'passed-two-short-long-pairs' }
+            if ($SkipWindowGates) { 'skipped' } else { "passed-$Runs-short-long-pairs" }
         sensitiveScan = 'passed'
     }
 }

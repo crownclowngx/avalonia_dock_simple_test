@@ -1188,7 +1188,8 @@ internal sealed record HarnessOptions(
             "g3" => HarnessSuite.G3,
             "g8" => HarnessSuite.G8,
             "g10" => HarnessSuite.G10,
-            _ => throw new ArgumentException("--suite 只支持 g3、g8 或 g10。")
+            "phase4" => HarnessSuite.Phase4,
+            _ => throw new ArgumentException("--suite 只支持 g3、g8、g10 或 phase4。")
         };
         var cycles = ReadInt(args, "--cycles", 100);
         var dockSwitches = ReadInt(args, "--dock-switches", 20);
@@ -1204,6 +1205,8 @@ internal sealed record HarnessOptions(
                     Path.Combine("TestResults", "G3", "g3-playback-windows-x64.json"),
                 HarnessSuite.G8 =>
                     Path.Combine("TestResults", "G8", "g8-p1-windows-x64.json"),
+                HarnessSuite.Phase4 =>
+                    Path.Combine("TestResults", "Phase4", "avalonia12-libvlcsharp.json"),
                 _ => Path.Combine("TestResults", "G10", "g10-playback-resource-trend.json")
             });
         var diagnosticReport = ReadString(args, "--diagnostic-report", string.Empty);
@@ -1247,5 +1250,6 @@ internal enum HarnessSuite
 {
     G3,
     G8,
-    G10
+    G10,
+    Phase4
 }

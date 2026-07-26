@@ -158,6 +158,12 @@ $libVlcSharpAssembly = [Reflection.AssemblyName]::GetAssemblyName(
     (Join-Path $stagedPlugin 'LibVLCSharp.dll'))
 $libVlcFileVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo(
     (Join-Path $stagedPlugin 'native\win-x64\libvlc\libvlc.dll')).FileVersion
+[xml]$centralPackages = Get-Content -Raw -LiteralPath (
+    Join-Path $workspace 'Directory.Packages.props')
+$centralVersions = @{}
+foreach ($packageVersion in $centralPackages.Project.ItemGroup.PackageVersion) {
+    $centralVersions[[string]$packageVersion.Include] = [string]$packageVersion.Version
+}
 
 $manifest = [ordered]@{
     schemaVersion = 1
@@ -171,6 +177,11 @@ $manifest = [ordered]@{
         mySmallTools = $mySmallToolsAssembly.Version.ToString()
         libVLCSharp = $libVlcSharpAssembly.Version.ToString()
         libVLC = $libVlcFileVersion
+    }
+    requiredHost = [ordered]@{
+        avalonia = $centralVersions['Avalonia']
+        dock = $centralVersions['Dock.Avalonia']
+        targetFramework = $targetFramework
     }
     files = @($fileEntries)
 }

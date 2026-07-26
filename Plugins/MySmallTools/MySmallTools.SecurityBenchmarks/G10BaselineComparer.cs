@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 
 /// <summary>
-/// 把两轮 G10 结果聚合为可审核基线，并按环境指纹执行相对回归判断。
+/// 把至少三轮 G10 结果聚合为可审核基线，并按环境指纹执行相对回归判断。
 /// </summary>
 internal static class G10BaselineComparer
 {
@@ -17,10 +17,10 @@ internal static class G10BaselineComparer
         try
         {
             var inputs = ReadMany(args, "--input");
-            if (inputs.Count != 2)
-                throw new ArgumentException("G10 聚合必须提供恰好两份 --input。");
+            if (inputs.Count < 3)
+                throw new ArgumentException("G10 聚合必须提供至少三份 --input。");
             var reports = inputs.Select(Read<G10BenchmarkReport>).ToArray();
-            var aggregate = Aggregate(reports[0], reports[1]);
+            var aggregate = Aggregate(reports);
             Write(Required(args, "--output"), aggregate);
             return aggregate.HardGatePassed ? 0 : 1;
         }
@@ -50,30 +50,41 @@ internal static class G10BaselineComparer
         }
     }
 
-    public static G10AggregateReport Aggregate(
-        G10BenchmarkReport first,
-        G10BenchmarkReport second)
+    public static G10AggregateReport Aggregate(params G10BenchmarkReport[] reports)
     {
-        if (first.ComparableFingerprint != second.ComparableFingerprint)
-            throw new InvalidOperationException("两轮 G10 环境指纹不一致，不能聚合。");
-        var firstScenario = CreateScenarioSignature(first.Parameters);
-        var secondScenario = CreateScenarioSignature(second.Parameters);
-        if (firstScenario != secondScenario)
-            throw new InvalidOperationException("两轮 G10 场景参数不一致，不能聚合。");
+        ArgumentNullException.ThrowIfNull(reports);
+        if (reports.Length < 2)
+            throw new ArgumentException("至少需要两轮报告才能聚合。", nameof(reports));
 
-        var firstMetrics = Extract(first).ToDictionary(metric => metric.Name);
-        var secondMetrics = Extract(second).ToDictionary(metric => metric.Name);
-        var metrics = firstMetrics.Keys.Order(StringComparer.Ordinal)
+        var first = reports[0];
+        var firstScenario = CreateScenarioSignature(first.Parameters);
+        if (reports.Any(report =>
+                report.ComparableFingerprint != first.ComparableFingerprint))
+            throw new InvalidOperationException("各轮 G10 环境指纹不一致，不能聚合。");
+        if (reports.Any(report =>
+                CreateScenarioSignature(report.Parameters) != firstScenario))
+            throw new InvalidOperationException("各轮 G10 场景参数不一致，不能聚合。");
+
+        var metricSets = reports
+            .Select(Extract)
+            .Select(metrics => metrics.ToDictionary(metric => metric.Name))
+            .ToArray();
+        var metrics = metricSets[0].Keys.Order(StringComparer.Ordinal)
             .Select(name =>
             {
-                var left = firstMetrics[name];
-                var right = secondMetrics[name];
+                var samples = metricSets
+                    .Select(metrics => metrics.TryGetValue(name, out var metric)
+                        ? metric
+                        : throw new InvalidOperationException(
+                            $"G10 指标 {name} 在部分轮次中缺失。"))
+                    .ToArray();
+                var firstMetric = samples[0];
                 return new ComparableMetric(
                     name,
-                    left.Direction,
-                    left.Unit,
-                    Math.Round((left.Median + right.Median) / 2d, 4),
-                    Math.Round(Math.Max(left.P95, right.P95), 4));
+                    firstMetric.Direction,
+                    firstMetric.Unit,
+                    Math.Round(samples.Average(metric => metric.Median), 4),
+                    Math.Round(samples.Max(metric => metric.P95), 4));
             })
             .ToArray();
 
@@ -84,7 +95,7 @@ internal static class G10BaselineComparer
             first.Environment,
             first.ComparableFingerprint,
             firstScenario,
-            first.HardGate.Passed && second.HardGate.Passed,
+            reports.All(report => report.HardGate.Passed),
             metrics);
     }
 

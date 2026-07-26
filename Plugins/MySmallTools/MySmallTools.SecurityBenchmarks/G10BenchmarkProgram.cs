@@ -1096,6 +1096,8 @@ internal sealed record EnvironmentReport(
     string GcLatencyMode,
     string BuildConfiguration,
     string MySmallToolsVersion,
+    string AvaloniaVersion,
+    string DockVersion,
     string LibVlcSharpVersion,
     string LibVlcVersion)
 {
@@ -1122,6 +1124,9 @@ internal sealed record EnvironmentReport(
             GCSettings.LatencyMode.ToString(),
             configuration,
             plugin.GetName().Version?.ToString() ?? "unknown",
+            typeof(Avalonia.Application).Assembly.GetName().Version?.ToString() ?? "unknown",
+            typeof(Dock.Model.Mvvm.Controls.Document).Assembly.GetName().Version?.ToString() ??
+            "unknown",
             typeof(LibVLCSharp.Shared.Core).Assembly.GetName().Version?.ToString() ?? "unknown",
             File.Exists(runtimeRoot)
                 ? FileVersionInfo.GetVersionInfo(runtimeRoot).FileVersion ?? "unknown"
@@ -1139,6 +1144,8 @@ internal sealed record EnvironmentReport(
             Runtime,
             BuildConfiguration,
             MySmallToolsVersion,
+            AvaloniaVersion,
+            DockVersion,
             LibVlcSharpVersion,
             LibVlcVersion);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(input)))
