@@ -6,7 +6,8 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MySmallTools\MySmallTools.csproj"
-                      AdditionalProperties="SkipPluginDeploy=true" />
+    <ProjectReference Include="..\MySmallTools\MySmallTools.csproj">
+      <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
+    </ProjectReference>
   </ItemGroup>
 </Project>

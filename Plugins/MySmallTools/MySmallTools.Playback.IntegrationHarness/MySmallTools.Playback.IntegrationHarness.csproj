@@ -11,8 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MySmallTools\MySmallTools.csproj"
-                      AdditionalProperties="SkipPluginDeploy=true" />
+    <ProjectReference Include="..\MySmallTools\MySmallTools.csproj">
+      <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement\MyAvaloniaManagement.csproj" />
   </ItemGroup>
 

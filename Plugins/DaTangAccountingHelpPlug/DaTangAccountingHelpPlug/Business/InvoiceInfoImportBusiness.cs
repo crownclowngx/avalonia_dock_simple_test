@@ -40,7 +40,7 @@ public class InvoiceInfoImportBusiness
     public HashSet<string> AllNeedShowInvoiceNumbers { get; } = new HashSet<string>();
 
 
-    public async Task ClearAllData()
+    public Task ClearAllData()
     {
         InvoiceSummaryItems.Clear();
         InvoicePaymentGroupDetails.Clear();
@@ -48,6 +48,9 @@ public class InvoiceInfoImportBusiness
         SupplierTypeMapping.Clear();
         InvoicePaymentSummaryItems.Clear();
         AllNeedShowInvoiceNumbers.Clear();
+
+        // 保留 Task 契约以兼容现有调用方；当前清理过程同步完成，无需创建异步状态机。
+        return Task.CompletedTask;
     }
     // 构造函数，接受日志方法委托
     public InvoiceInfoImportBusiness(LogDelegate logMethod)
@@ -137,11 +140,11 @@ public class InvoiceInfoImportBusiness
         Log($"数据保存成功！文件路径：{filePath}");
     }
 
-    public async Task CalculateNewInvoiceSummary()
+    public Task CalculateNewInvoiceSummary()
     {
         foreach (var item in AllNeedShowInvoiceNumbers)
         {
-            InvoiceSummaryItems.TryGetValue(item, out InvoiceSummaryItem summaryItem);
+            InvoiceSummaryItems.TryGetValue(item, out InvoiceSummaryItem? summaryItem);
 
             if (summaryItem == null)
             {
@@ -184,6 +187,8 @@ public class InvoiceInfoImportBusiness
             if (y.InvoiceDate == null) return -1; // 没有日期的排在后面
             return y.InvoiceDate.Value.CompareTo(x.InvoiceDate.Value); // 倒序排序
         });
+
+        return Task.CompletedTask;
     }
 
     InvoicePaymentSummaryCalcItem GetOneInvoicePaymentSummaryCalc(String numbser)
@@ -252,7 +257,7 @@ public class InvoiceInfoImportBusiness
         return calcItem;
     }
 
-    public async Task CreateAllNeedShowInvoiceNumber(DateTime? startDate, DateTime? endDate)
+    public Task CreateAllNeedShowInvoiceNumber(DateTime? startDate, DateTime? endDate)
     {
         foreach (var invoicePaymentPreviousDetailItem in InvoicePaymentPreviousDetails)
         {
@@ -279,6 +284,7 @@ public class InvoiceInfoImportBusiness
         }
 
         Log($"新增的发票号数量 {newCount}");
+        return Task.CompletedTask;
     }
 
     public async Task ReadInvoicePaymentDetailPreviousMonthTable(string filePath)
@@ -298,7 +304,7 @@ public class InvoiceInfoImportBusiness
                     Log($"开始读取之前月付款数据，共 {endRow - startRow + 1} 行");
                     for (int row = startRow; row <= endRow; row++)
                     {
-                        InvoicePaymentPreviousDetailItem item =
+                        InvoicePaymentPreviousDetailItem? item =
                             CreateInvoicePaymentDetailItemByPreviousMonthDetailTable(row, worksheet);
                         if (item == null)
                         {
@@ -328,7 +334,7 @@ public class InvoiceInfoImportBusiness
         }
     }
 
-    private InvoicePaymentPreviousDetailItem CreateInvoicePaymentDetailItemByPreviousMonthDetailTable(int row,
+    private InvoicePaymentPreviousDetailItem? CreateInvoicePaymentDetailItemByPreviousMonthDetailTable(int row,
         ExcelWorksheet worksheet)
     {
         InvoicePaymentPreviousDetailItem item = new InvoicePaymentPreviousDetailItem();

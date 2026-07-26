@@ -22,16 +22,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- 架构测试需要观察宿主与当前插件集合，但不得触发插件部署覆盖宿主输出目录。 -->
+    <!-- 独立测试时跳过部署；解决方案构建时复用同一项目实例，避免不同全局属性并发写入 obj。 -->
     <ProjectReference Include="..\MyAvaloniaManagement\MyAvaloniaManagement.csproj" />
     <ProjectReference Include="..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
-    <ProjectReference Include="..\..\Plugins\BiliDownloader\BiliDownloader\BiliDownloader.csproj"
-                      AdditionalProperties="SkipPluginDeploy=true" />
-    <ProjectReference Include="..\..\Plugins\MyPlugTest\MyPlugTest\MyPlugTest.csproj"
-                      AdditionalProperties="SkipPluginDeploy=true" />
+    <ProjectReference Include="..\..\Plugins\BiliDownloader\BiliDownloader\BiliDownloader.csproj">
+      <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Plugins\MyPlugTest\MyPlugTest\MyPlugTest.csproj">
+      <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
+    </ProjectReference>
     <ProjectReference Include="..\..\Plugins\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj" />
-    <ProjectReference Include="..\..\Plugins\MySmallTools\MySmallTools\MySmallTools.csproj"
-                      AdditionalProperties="SkipPluginDeploy=true" />
+    <ProjectReference Include="..\..\Plugins\MySmallTools\MySmallTools\MySmallTools.csproj">
+      <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>

@@ -127,7 +127,8 @@ public partial class InvoiceInfoImportViewModel : Document
         }
         else
         {
-            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => LogEntries.Clear());
+            // 清空日志必须先完成，避免后续后台读取把新日志与上一轮残留日志交错。
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => LogEntries.Clear());
         }
 
         try
@@ -135,7 +136,7 @@ public partial class InvoiceInfoImportViewModel : Document
             await _invoiceInfoImportBusiness.ClearAllData();
             await ReadAllExcelData();
             AddLogLine("Excel文件读取完成！准备开始生成数据...");
-            await _invoiceInfoImportBusiness.CreateAllNeedShowInvoiceNumber(_startDate?.DateTime, _endDate?.DateTime);
+            await _invoiceInfoImportBusiness.CreateAllNeedShowInvoiceNumber(StartDate?.DateTime, EndDate?.DateTime);
             AddLogLine("识别完成，开始计算新表...");
             await _invoiceInfoImportBusiness.CalculateNewInvoiceSummary();
             AddLogLine("计算完成！开始导出表");
@@ -157,7 +158,7 @@ public partial class InvoiceInfoImportViewModel : Document
         try
         {
             // 获取主窗口
-            if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
                 desktop.MainWindow is not null)
             {
                 var mainWindow = desktop.MainWindow;
@@ -250,11 +251,18 @@ public partial class InvoiceInfoImportViewModel : Document
             var mainWindow = (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
             if (mainWindow == null) return;
 
+            var clipboard = mainWindow.Clipboard;
+            if (clipboard == null)
+            {
+                AddLogLine("当前窗口不支持剪贴板，无法复制日志");
+                return;
+            }
+
             // 将所有日志条目合并为一个字符串，每行之间用换行符分隔
             var allLogs = string.Join(Environment.NewLine, LogEntries);
             
             // 使用剪贴板设置文本
-            await mainWindow.Clipboard.SetTextAsync(allLogs);
+            await clipboard.SetTextAsync(allLogs);
             
             // 添加一条日志，表示复制成功
             AddLogLine("所有日志已复制到剪贴板");

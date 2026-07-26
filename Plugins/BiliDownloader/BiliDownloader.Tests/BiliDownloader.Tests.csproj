@@ -22,9 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- 本项目只验证 BiliDownloader 业务边界，不再承担宿主或其他插件的兼容性测试。 -->
-    <ProjectReference Include="..\BiliDownloader\BiliDownloader.csproj"
-                      AdditionalProperties="SkipPluginDeploy=true" />
+    <!-- 独立测试不覆盖宿主插件目录；解决方案构建则复用其统一调度的插件实例。 -->
+    <ProjectReference Include="..\BiliDownloader\BiliDownloader.csproj">
+      <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Host\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
   </ItemGroup>
 

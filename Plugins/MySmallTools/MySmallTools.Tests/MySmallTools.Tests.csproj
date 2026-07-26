@@ -14,11 +14,14 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MySmallTools\MySmallTools.csproj"
-                      AdditionalProperties="SkipPluginDeploy=true" />
+    <!-- 独立门禁跳过部署；解决方案构建不注入额外全局属性，以避免同一项目被并行编译两次。 -->
+    <ProjectReference Include="..\MySmallTools\MySmallTools.csproj">
+      <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
+    </ProjectReference>
     <ProjectReference Include="..\MySmallTools.SecurityBenchmarks\MySmallTools.SecurityBenchmarks.csproj"
-                      ReferenceOutputAssembly="true"
-                      AdditionalProperties="SkipPluginDeploy=true" />
+                      ReferenceOutputAssembly="true">
+      <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Update="TestAssets\RealMedia\**\*">

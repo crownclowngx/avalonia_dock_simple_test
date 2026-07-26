@@ -5,12 +5,12 @@ public class InvoicePaymentPreviousDetailItem
     /// <summary>
     /// 发票编号
     /// </summary>
-    public string InvoiceNumber { get; set; }
+    public string InvoiceNumber { get; set; } = string.Empty;
     
     /// <summary>
     /// 备注
     /// </summary>
-    public string ReMark { get; set; }
+    public string ReMark { get; set; } = string.Empty;
     
     /// <summary>
     /// 付 付款日期
