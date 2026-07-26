@@ -56,6 +56,14 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
         !hasForeignCapture &&
         !isButtonSource;
 
+    internal static bool ShouldCaptureOnMove(
+        bool hasArmedPointer,
+        bool isLeftButtonPressed,
+        bool hasForeignCapture) =>
+        hasArmedPointer &&
+        isLeftButtonPressed &&
+        !hasForeignCapture;
+
     internal static bool RecoverStaleVisualState(
         Control control,
         ITransform? originalRenderTransform)
@@ -131,6 +139,11 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
                 RoutingStrategies.Tunnel,
                 handledEventsToo: true);
             _owner.AddHandler(
+                InputElement.PointerMovedEvent,
+                OnPointerMoved,
+                RoutingStrategies.Tunnel,
+                handledEventsToo: true);
+            _owner.AddHandler(
                 InputElement.PointerReleasedEvent,
                 OnPointerReleased,
                 RoutingStrategies.Tunnel,
@@ -162,6 +175,7 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
             if (_isAttached)
             {
                 _owner.RemoveHandler(InputElement.PointerPressedEvent, OnPointerPressed);
+                _owner.RemoveHandler(InputElement.PointerMovedEvent, OnPointerMoved);
                 _owner.RemoveHandler(InputElement.PointerReleasedEvent, OnPointerReleased);
                 _owner.RemoveHandler(InputElement.PointerCaptureLostEvent, OnPointerCaptureLost);
                 _owner.AttachedToVisualTree -= OnAttachedToVisualTree;
@@ -196,11 +210,43 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
             _originalRenderTransform = _owner.RenderTransform;
             _activePointer = e.Pointer;
 
-            // 不设置 Handled；捕获仅补齐输入所有权，Dock 原有状态机必须继续收到同一个按下事件。
-            e.Pointer.Capture(_owner);
-            if (!ReferenceEquals(e.Pointer.Captured, _owner))
+            // 新建的浮动窗口可能只完成了显示而尚未激活。先激活再让同一个事件继续路由，
+            // 可以避免第一次手势只完成焦点切换、第二次手势才真正进入 Dock 拖拽。
+            if (_topLevelWindow is { IsActive: false })
             {
-                _activePointer = null;
+                _topLevelWindow.Activate();
+            }
+        }
+
+        private void OnPointerMoved(object? sender, PointerEventArgs e)
+        {
+            var hasArmedPointer = ReferenceEquals(e.Pointer, _activePointer);
+            var currentPoint = e.GetCurrentPoint(_owner);
+            var hasForeignCapture =
+                e.Pointer.Captured is not null &&
+                !ReferenceEquals(e.Pointer.Captured, _owner);
+
+            if (!ShouldCaptureOnMove(
+                    hasArmedPointer,
+                    currentPoint.Properties.IsLeftButtonPressed,
+                    hasForeignCapture))
+            {
+                if (hasArmedPointer &&
+                    (hasForeignCapture ||
+                     !currentPoint.Properties.IsLeftButtonPressed))
+                {
+                    _activePointer = null;
+                    ScheduleVisualRecovery();
+                }
+
+                return;
+            }
+
+            if (e.Pointer.Captured is null)
+            {
+                // 捕获延后到第一次移动，避免首次点击激活浮动窗口时与控件焦点处理争夺捕获权。
+                // 不设置 Handled，Dock 的 ItemDragHelper 仍会处理同一个移动事件。
+                e.Pointer.Capture(_owner);
             }
         }
 

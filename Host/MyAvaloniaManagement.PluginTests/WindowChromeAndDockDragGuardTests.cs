@@ -27,6 +27,25 @@ public sealed class WindowChromeAndDockDragGuardTests
         Assert.Equal(expected, actual);
     }
 
+    [Theory]
+    [InlineData(true, true, false, true)]
+    [InlineData(false, true, false, false)]
+    [InlineData(true, false, false, false)]
+    [InlineData(true, true, true, false)]
+    public void 首次移动只在手势已就绪且指针未被其他控件接管时捕获(
+        bool hasArmedPointer,
+        bool isLeftButtonPressed,
+        bool hasForeignCapture,
+        bool expected)
+    {
+        var actual = DockTabPointerCaptureGuard.ShouldCaptureOnMove(
+            hasArmedPointer,
+            isLeftButtonPressed,
+            hasForeignCapture);
+
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public void 重复启用和停用指针保护保持幂等()
     {
