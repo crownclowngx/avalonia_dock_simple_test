@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <!-- 阶段 1 只统一治理方式，暂时保留 net9 基线；阶段 2 再集中切换到 net10。 -->
+    <TargetFramework Condition="'$(TargetFramework)' == ''">net9.0</TargetFramework>
+    <LangVersion>13.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+</Project>

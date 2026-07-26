@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
@@ -15,11 +14,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Flurl.Http" Version="4.0.2" />
-      <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
-      <PackageReference Include="protobuf-net" Version="3.2.46" />
-      <PackageReference Include="QRCoder" Version="1.6.0" />
+      <PackageReference Include="Flurl.Http" />
+      <PackageReference Include="Microsoft.Data.Sqlite" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+      <PackageReference Include="protobuf-net" />
+      <PackageReference Include="QRCoder" />
     </ItemGroup>
 
     <!-- 构建后将插件及其私有运行时依赖部署到宿主 Controls/BiliDownloader 目录。 -->

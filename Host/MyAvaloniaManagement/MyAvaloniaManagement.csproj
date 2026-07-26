@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -18,30 +17,30 @@
     </ItemGroup>
     
     <ItemGroup>
-      <PackageReference Include="Avalonia" Version="11.3.4" />
-      <PackageReference Include="Avalonia.Controls.TreeDataGrid" Version="11.1.1" />
-      <PackageReference Include="Avalonia.Desktop" Version="11.3.4" />
-      <PackageReference Include="Avalonia.Diagnostics" Version="11.3.4" />
-      <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.4" />
-      <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.4" />
-      <PackageReference Include="Avalonia.Xaml.Interactions" Version="11.3.0.6" />
-      <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-      <PackageReference Include="Dock.Avalonia" Version="11.3.2.2" />
-      <PackageReference Include="Dock.Avalonia.Diagnostics" Version="11.3.2.2" />
-      <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="11.3.2.2" />
-      <PackageReference Include="Dock.Controls.ProportionalStackPanel" Version="11.3.2.2" />
-      <PackageReference Include="Dock.Controls.Recycling" Version="11.3.2.2" />
-      <PackageReference Include="Dock.Controls.Recycling.Model" Version="11.3.2.2" />
-      <PackageReference Include="Dock.Model.Mvvm" Version="11.3.2.2" />
-      <PackageReference Include="EmberDock.Settings" Version="0.0.1" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
-      <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-      <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+      <PackageReference Include="Avalonia" />
+      <PackageReference Include="Avalonia.Controls.TreeDataGrid" />
+      <PackageReference Include="Avalonia.Desktop" />
+      <PackageReference Include="Avalonia.Diagnostics" />
+      <PackageReference Include="Avalonia.Fonts.Inter" />
+      <PackageReference Include="Avalonia.Themes.Fluent" />
+      <PackageReference Include="Avalonia.Xaml.Interactions" />
+      <PackageReference Include="CommunityToolkit.Mvvm" />
+      <PackageReference Include="Dock.Avalonia" />
+      <PackageReference Include="Dock.Avalonia.Diagnostics" />
+      <PackageReference Include="Dock.Avalonia.Themes.Fluent" />
+      <PackageReference Include="Dock.Controls.ProportionalStackPanel" />
+      <PackageReference Include="Dock.Controls.Recycling" />
+      <PackageReference Include="Dock.Controls.Recycling.Model" />
+      <PackageReference Include="Dock.Model.Mvvm" />
+      <PackageReference Include="EmberDock.Settings" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" />
+      <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-      <PackageReference Include="StaticViewLocator" Version="0.0.1">
+      <PackageReference Include="Newtonsoft.Json" />
+      <PackageReference Include="StaticViewLocator">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
