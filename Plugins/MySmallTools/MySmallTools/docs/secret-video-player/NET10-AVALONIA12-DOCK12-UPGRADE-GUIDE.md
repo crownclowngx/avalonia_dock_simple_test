@@ -236,7 +236,7 @@ dotnet test .\Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginT
 
 回退点：无代码变更；删除本阶段生成物即可。
 
-## 6. 阶段 1：建立统一构建和依赖治理
+## 6. 阶段 1：建立统一构建和依赖治理（完成）
 
 预计 1～1.5 人日。
 
@@ -392,7 +392,7 @@ dotnet restore .\MyAvaloniaManagement.sln --locked-mode
 
 回退点：阶段 0 基线提交。
 
-## 7. 阶段 2：完成 .NET 10 稳定基座
+## 7. 阶段 2：完成 .NET 10 稳定基座（完成）
 
 预计 1.5～2.5 人日。
 
