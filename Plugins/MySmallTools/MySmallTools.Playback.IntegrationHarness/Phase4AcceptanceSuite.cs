@@ -27,11 +27,14 @@ internal sealed class Phase4AcceptanceSuite(
         Directory.CreateDirectory(reportDirectory);
         var g3ReportPath = Path.Combine(reportDirectory, "phase4-g3.json");
         var g8ReportPath = Path.Combine(reportDirectory, "phase4-g8.json");
-        var surfaceStart = EmbeddedVideoSurface.CaptureDiagnostics();
         // 源码状态必须在生成任何证据文件前绑定，避免报告本身把 clean 快照误判为脏。
         var source = ReadSourceState();
+        var warmupPassed = await WarmUpRuntimeAsync();
 
+        // Avalonia、D3D11 和 LibVLC 首次播放会建立进程级缓存。资源闸门从一次完整
+        // G3/G8 预热后的稳定点起算，测量的是重复生命周期增长，而不是一次性初始化成本。
         await StabilizeProcessAsync();
+        var surfaceStart = EmbeddedVideoSurface.CaptureDiagnostics();
         var processStart = ProcessResourceSnapshot.Capture();
         _peakPrivateBytes = processStart.PrivateBytes;
         _peakHandleCount = processStart.HandleCount;
@@ -138,6 +141,7 @@ internal sealed class Phase4AcceptanceSuite(
             typeof(Dock.Model.Core.IDockable).Assembly.GetName().Version?.ToString() ?? "unknown",
             typeof(LibVLCSharp.Shared.LibVLC).Assembly.GetName().Version?.ToString() ?? "unknown",
             GetNativeLibVlcVersion(),
+            warmupPassed,
             new HwndGateReport(
                 surfaceFinal.HandleDescriptor,
                 surfaceFinal.LastHandleWasNonZero),
@@ -163,6 +167,51 @@ internal sealed class Phase4AcceptanceSuite(
 
         Console.WriteLine($"Phase 4 report: {reportPath}");
         return report.Success ? 0 : 1;
+    }
+
+    private async Task<bool> WarmUpRuntimeAsync()
+    {
+        var directory = Path.Combine(
+            Path.GetTempPath(),
+            $"mysmalltools-phase4-warmup-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var warmupOptions = options with
+            {
+                Cycles = 1,
+                DockSwitches = 1,
+                MediaSwitches = 1,
+                QueueItems = 10,
+                LibraryItems = 100
+            };
+            var g3ExitCode = await new G3PlaybackHarnessRunner(
+                services,
+                warmupOptions with
+                {
+                    Suite = HarnessSuite.G3,
+                    ReportPath = Path.Combine(directory, "warmup-g3.json")
+                }).RunAsync();
+            var g8ExitCode = g3ExitCode == 0
+                ? await new G8P1AcceptanceSuite(
+                    services,
+                    warmupOptions with
+                    {
+                        Suite = HarnessSuite.G8,
+                        ReportPath = Path.Combine(directory, "warmup-g8.json")
+                    }).RunAsync()
+                : 1;
+            Require(g3ExitCode == 0, "PHASE4_WARMUP_G3_FAILED");
+            Require(g8ExitCode == 0, "PHASE4_WARMUP_G8_FAILED");
+            return g3ExitCode == 0 && g8ExitCode == 0;
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
     }
 
     private void CapturePeak()
@@ -352,6 +401,7 @@ internal sealed record Phase4Report(
     string DockVersion,
     string LibVlcSharpVersion,
     string NativeLibVlcVersion,
+    bool WarmupPassed,
     HwndGateReport Hwnd,
     long SurfaceCreatedCount,
     long SurfaceDestroyedCount,
