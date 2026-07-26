@@ -230,14 +230,15 @@ internal sealed class Phase4AcceptanceSuite(
             maximumWorkers,
             Math.Max(
                 minimumWorkers,
-                Math.Clamp(Environment.ProcessorCount * 2, 16, 64)));
+                Math.Clamp(Environment.ProcessorCount * 3, 32, 64)));
         if (!ThreadPool.SetMinThreads(targetWorkers, minimumIo))
         {
             throw new InvalidOperationException("无法设置阶段 4 ThreadPool 预热下限。");
         }
 
-        // 长生命周期原生调度任务会触发 ThreadPool 渐进扩容。基线前用一次受控并发
-        // 建立工作线程基础设施，避免把运行时池扩容误报为播放器句柄泄漏。
+        // 长生命周期原生调度任务会触发 ThreadPool 渐进扩容。G3 与 G8 的实测峰值高于
+        // 两倍处理器数，因此基线前按三倍处理器数（最多 64）受控建立工作线程基础设施，
+        // 避免把可复用的运行时池扩容误报为播放器句柄泄漏。
         using var ready = new CountdownEvent(targetWorkers);
         using var release = new ManualResetEventSlim(initialState: false);
         var workers = Enumerable.Range(0, targetWorkers)
