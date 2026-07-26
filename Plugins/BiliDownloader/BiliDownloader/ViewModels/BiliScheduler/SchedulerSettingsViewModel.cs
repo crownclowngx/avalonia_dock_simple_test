@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BiliDownloader.Services.Infrastructure;
@@ -117,25 +118,29 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     {
         try
         {
-#pragma warning disable CS0618 // G0 不改写现有文件选择交互，后续统一迁移 StorageProvider API。
-            var dialog = new OpenFileDialog
-            {
-                Title = "选择 ffmpeg.exe",
-                Filters = new List<FileDialogFilter>
-                {
-                    new() { Name = "可执行文件", Extensions = { "exe" } },
-                    new() { Name = "所有文件", Extensions = { "*" } }
-                }
-            };
-#pragma warning restore CS0618
-
             var parentWindow = GetParentWindow();
-            if (parentWindow == null) return;
+            if (parentWindow is null)
+            {
+                return;
+            }
 
-            var result = await dialog.ShowAsync(parentWindow);
-            if (result == null || result.Length == 0) return;
+            var result = await parentWindow.StorageProvider.OpenFilePickerAsync(
+                new FilePickerOpenOptions
+                {
+                    Title = "选择 ffmpeg.exe",
+                    AllowMultiple = false,
+                    FileTypeFilter =
+                    [
+                        new FilePickerFileType("可执行文件") { Patterns = ["*.exe"] },
+                        FilePickerFileTypes.All
+                    ]
+                });
+            if (result.Count == 0)
+            {
+                return;
+            }
 
-            var selectedPath = result[0];
+            var selectedPath = result[0].Path.LocalPath;
             FfmpegStatus = "正在验证 ffmpeg...";
 
             var valid = await FfmpegService.ValidatePathAsync(selectedPath);
@@ -168,19 +173,21 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     {
         try
         {
-#pragma warning disable CS0618 // G0 保持原有对话框行为，避免生命周期改造混入 UI API 迁移。
-            var dialog = new OpenFolderDialog
-            {
-                Title = "选择默认下载输出目录"
-            };
-#pragma warning restore CS0618
-
             var parentWindow = GetParentWindow();
-            if (parentWindow != null)
+            if (parentWindow is null)
             {
-                var result = await dialog.ShowAsync(parentWindow);
-                if (!string.IsNullOrEmpty(result))
-                    DefaultOutputDirectory = result;
+                return;
+            }
+
+            var result = await parentWindow.StorageProvider.OpenFolderPickerAsync(
+                new FolderPickerOpenOptions
+                {
+                    Title = "选择默认下载输出目录",
+                    AllowMultiple = false
+                });
+            if (result.Count > 0)
+            {
+                DefaultOutputDirectory = result[0].Path.LocalPath;
             }
         }
         catch (Exception ex)

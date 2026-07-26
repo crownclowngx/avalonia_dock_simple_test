@@ -1,10 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="MySmallTools.Views.SecretVideoPlayer.Library.LibraryListView">
+             xmlns:vm="clr-namespace:MySmallTools.ViewModels.SecretVideoPlayer.Library"
+             xmlns:model="clr-namespace:MySmallTools.Models.SecretVideoPlayer"
+             x:Class="MySmallTools.Views.SecretVideoPlayer.Library.LibraryListView"
+             x:DataType="vm:LibraryPlaybackViewModel">
   <Grid RowDefinitions="Auto,*" RowSpacing="8">
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="6">
       <TextBox Grid.Column="0" Text="{Binding Owner.Browser.SearchText}"
-               Watermark="搜索文件名、公开标题或描述" AutomationProperties.Name="搜索媒体库" />
+               PlaceholderText="搜索文件名、公开标题或描述" AutomationProperties.Name="搜索媒体库" />
       <Button Grid.Column="1" Content="×" Command="{Binding Owner.Browser.ClearSearchCommand}"
               IsVisible="{Binding Owner.Browser.HasSearchText}" Classes="IconButton"
               ToolTip.Tip="清除搜索" AutomationProperties.Name="清除搜索" />
@@ -24,7 +27,7 @@
                    DoubleTapped="OnVideoListDoubleTapped" KeyDown="OnVideoListKeyDown">
             <ListBox.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate></ListBox.ItemsPanel>
             <ListBox.ItemTemplate>
-              <DataTemplate>
+              <DataTemplate x:DataType="model:VideoLibraryItemViewModel">
                 <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
                   <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                     <TextBlock Grid.Column="0" Text="{Binding FileNameWithoutExtension}"

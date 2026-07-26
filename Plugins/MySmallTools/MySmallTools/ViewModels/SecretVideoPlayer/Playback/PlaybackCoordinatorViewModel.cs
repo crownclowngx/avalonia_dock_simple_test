@@ -1,4 +1,3 @@
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MySmallTools.Business.SecretVideoPlayer.Library;
@@ -17,7 +16,8 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
     private readonly IPlaybackPlatformStatus _platformStatus;
     private readonly IPlaybackBackendInitializer _backendInitializer;
     private readonly IPlaybackPreferenceStore? _preferenceStore;
-    private readonly DispatcherTimer _positionTimer;
+    private readonly CapturedUiScheduler _uiScheduler = new();
+    private readonly CapturedUiPeriodicTimer _positionTimer;
     private IPlaybackDiagnosticExporter? _diagnosticExporter;
     private bool _applyingSnapshot;
     private int _diagnosticExportGate;
@@ -110,11 +110,9 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
         Volume = preferences.Volume;
         SelectedRate = preferences.Rate;
 
-        _positionTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(100)
-        };
-        _positionTimer.Tick += OnPositionTimerTick;
+        _positionTimer = _uiScheduler.CreatePeriodicTimer(
+            TimeSpan.FromMilliseconds(100),
+            OnPositionTimerTick);
         State = new PlaybackStateViewModel(this);
         Transport = new PlaybackTransportViewModel(this);
         Options = new PlaybackOptionsViewModel(this);
@@ -574,7 +572,7 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
 
     private void OnPlaybackChanged(object? sender, PlaybackChangedEventArgs e)
     {
-        Dispatcher.UIThread.Post(() =>
+        _uiScheduler.Post(() =>
         {
             if (_disposed ||
                 e.Snapshot.MediaGeneration < _session.Snapshot.MediaGeneration)
@@ -712,7 +710,7 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
         }
     }
 
-    private void OnPositionTimerTick(object? sender, EventArgs e)
+    private void OnPositionTimerTick()
     {
         if (!_disposed && !IsSliderBeingDragged)
         {
@@ -854,8 +852,7 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
         }
 
         _disposed = true;
-        _positionTimer.Stop();
-        _positionTimer.Tick -= OnPositionTimerTick;
+        _positionTimer.Dispose();
         _session.Changed -= OnPlaybackChanged;
         MediaEnded = null;
         FullscreenPresentationRequested = null;

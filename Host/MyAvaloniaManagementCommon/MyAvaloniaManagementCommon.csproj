@@ -7,26 +7,22 @@
 
     <ItemGroup>
       <PackageReference Include="Avalonia" />
-      <PackageReference Include="Avalonia.Controls.TreeDataGrid" />
       <PackageReference Include="Avalonia.Desktop" />
-      <PackageReference Include="Avalonia.Diagnostics" />
       <PackageReference Include="Avalonia.Fonts.Inter" />
       <PackageReference Include="Avalonia.Themes.Fluent" />
-      <PackageReference Include="Avalonia.Xaml.Interactions" />
       <PackageReference Include="CommunityToolkit.Mvvm" />
       <PackageReference Include="Dock.Avalonia" />
-      <PackageReference Include="Dock.Avalonia.Diagnostics" />
       <PackageReference Include="Dock.Avalonia.Themes.Fluent" />
       <PackageReference Include="Dock.Controls.ProportionalStackPanel" />
       <PackageReference Include="Dock.Controls.Recycling" />
       <PackageReference Include="Dock.Controls.Recycling.Model" />
       <PackageReference Include="Dock.Model.Mvvm" />
-      <PackageReference Include="Dock.Settings" />
       <PackageReference Include="Irihi.Ursa" />
       <PackageReference Include="Irihi.Ursa.Themes.Semi" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Newtonsoft.Json" />
       <PackageReference Include="Semi.Avalonia" />
+      <PackageReference Include="Xaml.Behaviors" />
     </ItemGroup>
 
     <ItemGroup>

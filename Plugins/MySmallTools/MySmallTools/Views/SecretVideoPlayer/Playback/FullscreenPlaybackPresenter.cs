@@ -142,9 +142,9 @@ internal sealed class FullscreenPlaybackPresenter
         _ = await attachment;
     }
 
-    private static async Task WaitForNativeSurfaceReleaseAsync()
+    private async Task WaitForNativeSurfaceReleaseAsync()
     {
-        await Dispatcher.UIThread.InvokeAsync(
+        await _owner.Dispatcher.InvokeAsync(
             static () => { },
             DispatcherPriority.Background);
     }

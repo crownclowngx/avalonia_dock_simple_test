@@ -30,6 +30,7 @@ public partial class PlugGroupMenuViewModel:Tool
     /// 创建文档命令
     /// </summary>
     /// <param name="documentType">文档类型ID</param>
+    [RelayCommand]
     public void CreateDocument(string documentType)
     {
         var document = _factory?.CreateManagementNewDocument(new DocumentCreationParams(documentType));

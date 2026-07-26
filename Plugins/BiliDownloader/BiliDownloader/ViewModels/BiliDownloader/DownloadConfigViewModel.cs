@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
@@ -87,21 +88,21 @@ public partial class DownloadConfigViewModel : ObservableObject
     {
         try
         {
-#pragma warning disable CS0618 // 现有 Avalonia 文件夹对话框迁移不属于 G0；此处保持用户交互行为不变。
-            var dialog = new OpenFolderDialog
-            {
-                Title = "选择下载输出目录"
-            };
-#pragma warning restore CS0618
-
             var parentWindow = GetParentWindow();
-            if (parentWindow != null)
+            if (parentWindow is null)
             {
-                var result = await dialog.ShowAsync(parentWindow);
-                if (!string.IsNullOrEmpty(result))
+                return;
+            }
+
+            var result = await parentWindow.StorageProvider.OpenFolderPickerAsync(
+                new FolderPickerOpenOptions
                 {
-                    OutputDirectory = result;
-                }
+                    Title = "选择下载输出目录",
+                    AllowMultiple = false
+                });
+            if (result.Count > 0)
+            {
+                OutputDirectory = result[0].Path.LocalPath;
             }
         }
         catch (Exception ex)

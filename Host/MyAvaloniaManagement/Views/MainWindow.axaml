@@ -14,7 +14,7 @@
         Icon="/Assets/avalonia-logo.ico"
         Title="MyAvaloniaManagement"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="PreferSystemChrome">
+        WindowDecorations="Full">
 
     <Design.DataContext>
         <vm:MainWindowViewModel />
@@ -23,7 +23,7 @@
     <Window.KeyBindings>
         <KeyBinding Gesture="Control+S" Command="{Binding SaveDocumentCommand}" />
     </Window.KeyBindings>
-    <Panel Margin="{Binding #MainWindowView.OffScreenMargin}">
+    <Panel>
         <Panel Height="30" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Label Content="管理系统"
                    Margin="4,0,4,0"
@@ -32,7 +32,7 @@
                    VerticalAlignment="Center"
                    VerticalContentAlignment="Center" />
         </Panel>
-        <Grid Margin="{Binding #MainWindowView.WindowDecorationMargin}">
+        <Grid>
             <views:MainView />
             <Border x:Name="ContentFullscreenLayer"
                     IsVisible="False"

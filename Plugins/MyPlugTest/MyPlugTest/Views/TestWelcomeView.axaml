@@ -14,7 +14,7 @@
         <StackPanel Grid.Column="0" Spacing="10">
             <Label> 欢迎Test插件</Label>
             <Label Content="输入网址："/>
-            <TextBox Text="{Binding Url}" Watermark="请输入网址，例如 https://example.com" Width="400"/>
+            <TextBox Text="{Binding Url}" PlaceholderText="请输入网址，例如 https://example.com" Width="400"/>
             <Button Command="{Binding SendRequestCommand}" Content="发送请求" Width="100"/>
             <Label Content="请求结果："/>
             <TextBox Text="{Binding ResponseContent}" Height="300" TextWrapping="Wrap" AcceptsReturn="True"/>

@@ -1,7 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="clr-namespace:MySmallTools.Converters.SecretVideoPlayer"
-             x:Class="MySmallTools.Views.SecretVideoPlayer.Library.LibrarySettingsView">
+             xmlns:vm="clr-namespace:MySmallTools.ViewModels.SecretVideoPlayer.Library"
+             xmlns:library="clr-namespace:MySmallTools.Business.SecretVideoPlayer.Library"
+             x:Class="MySmallTools.Views.SecretVideoPlayer.Library.LibrarySettingsView"
+             x:DataType="vm:LibraryLayoutViewModel">
   <UserControl.Resources>
     <converters:VideoLibraryEnumDisplayConverter x:Key="LibraryEnumDisplay" />
   </UserControl.Resources>
@@ -32,7 +35,7 @@
           <StackPanel Spacing="6">
             <TextBlock Text="视频文件夹" Classes="FieldLabel" />
             <TextBox Text="{Binding Owner.Browser.FolderPath}" IsReadOnly="True"
-                     Watermark="选择包含 .secvid 的文件夹" ToolTip.Tip="{Binding Owner.Browser.FolderPath}" />
+                     PlaceholderText="选择包含 .secvid 的文件夹" ToolTip.Tip="{Binding Owner.Browser.FolderPath}" />
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
               <CheckBox Grid.Column="0" Content="包含子目录"
                         IsChecked="{Binding Owner.Browser.IncludeSubdirectories}" VerticalAlignment="Center" />
@@ -52,15 +55,15 @@
             <TextBlock Grid.Row="0" Grid.Column="2" Text="播放状态" Classes="FieldLabel" />
             <ComboBox Grid.Row="1" Grid.Column="0" ItemsSource="{Binding Owner.Browser.AvailableSortFields}"
                       SelectedItem="{Binding Owner.Browser.SortField}" ToolTip.Tip="排序字段">
-              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Converter={StaticResource LibraryEnumDisplay}}" /></DataTemplate></ComboBox.ItemTemplate>
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="library:VideoLibrarySortField"><TextBlock Text="{Binding Converter={StaticResource LibraryEnumDisplay}}" /></DataTemplate></ComboBox.ItemTemplate>
             </ComboBox>
             <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Owner.Browser.AvailableSortDirections}"
                       SelectedItem="{Binding Owner.Browser.SortDirection}" ToolTip.Tip="排序方向">
-              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Converter={StaticResource LibraryEnumDisplay}}" /></DataTemplate></ComboBox.ItemTemplate>
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="library:VideoLibrarySortDirection"><TextBlock Text="{Binding Converter={StaticResource LibraryEnumDisplay}}" /></DataTemplate></ComboBox.ItemTemplate>
             </ComboBox>
             <ComboBox Grid.Row="1" Grid.Column="2" ItemsSource="{Binding Owner.Browser.AvailableStatusFilters}"
                       SelectedItem="{Binding Owner.Browser.StatusFilter}" ToolTip.Tip="播放状态筛选">
-              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Converter={StaticResource LibraryEnumDisplay}}" /></DataTemplate></ComboBox.ItemTemplate>
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="library:VideoLibraryStatusFilter"><TextBlock Text="{Binding Converter={StaticResource LibraryEnumDisplay}}" /></DataTemplate></ComboBox.ItemTemplate>
             </ComboBox>
           </Grid>
         </Border>
@@ -68,9 +71,9 @@
           <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="6" RowSpacing="4">
             <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="播放密码" Classes="FieldLabel" />
             <Grid Grid.Row="1" Grid.Column="0">
-              <TextBox Text="{Binding Owner.Password}" PasswordChar="●" Watermark="输入当前视频库的公共密码"
+              <TextBox Text="{Binding Owner.Password}" PasswordChar="●" PlaceholderText="输入当前视频库的公共密码"
                        IsVisible="{Binding !Owner.ShowPassword}" />
-              <TextBox Text="{Binding Owner.Password}" Watermark="输入当前视频库的公共密码"
+              <TextBox Text="{Binding Owner.Password}" PlaceholderText="输入当前视频库的公共密码"
                        IsVisible="{Binding Owner.ShowPassword}" />
             </Grid>
             <Button Grid.Row="1" Grid.Column="1" Content="显示"

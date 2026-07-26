@@ -1,7 +1,7 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:semi="https://irihi.tech/semi"
-             xmlns:u-semi="https://irihi.tech/ursa/themes/semi"
+             xmlns:u-semi="clr-namespace:Ursa.Themes.Semi;assembly=Ursa.Themes.Semi"
              xmlns:u="https://irihi.tech/ursa"
              x:Class="MyAvaloniaManagement.App"
              xmlns:local="using:MyAvaloniaManagement"
@@ -16,12 +16,10 @@
                  <helpers:DocumentControlRecycling x:Key="ControlRecyclingKey" />
              </Application.Resources>
              <Application.Styles>
+                 <FluentTheme />
                  <semi:SemiTheme Locale="zh-CN" />
                  <semi:SemiPopupAnimations/>
-                 <u-semi:SemiTheme Locale="zh-CN" />
-                 <FluentTheme />
-
-                 <!--<StyleInclude Source="avares://Dock.Avalonia/Themes/DockFluentTheme.axaml" />-->
+                 <u-semi:UrsaSemiTheme Locale="zh-CN" />
                  <DockFluentTheme />
 
                  <Style Selector="DockControl">

@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MySmallTools.Business.SecretVideoPlayer.Library;
@@ -19,6 +18,7 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
     private readonly IVideoLibraryCatalogSession _catalog;
     private readonly IVideoLibrarySettingsStore _settingsStore;
     private readonly IPlaybackHistoryStore _historyStore;
+    private readonly CapturedUiScheduler _uiScheduler = new();
     private readonly Dictionary<string, VideoLibraryItemViewModel> _items =
         new(StringComparer.OrdinalIgnoreCase);
     private readonly RangeObservableCollection<VideoLibraryItemViewModel> _visibleItems = [];
@@ -419,10 +419,7 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
             }
         }
 
-        if (Dispatcher.UIThread.CheckAccess())
-            Apply();
-        else
-            Dispatcher.UIThread.Post(Apply);
+        _uiScheduler.Post(Apply);
     }
 
     private void PersistSettings()

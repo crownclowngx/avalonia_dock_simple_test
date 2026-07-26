@@ -12,7 +12,7 @@
         <!-- URL 输入 + 解析 -->
         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto">
             <TextBox Text="{Binding Url}"
-                     Watermark="请输入链接，例如 https://www.bilibili.com/video/BV1xx411c7mD"
+                     PlaceholderText="请输入链接，例如 https://www.bilibili.com/video/BV1xx411c7mD"
                      Grid.Column="0"
                      VerticalAlignment="Center"/>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="8,0,0,0">

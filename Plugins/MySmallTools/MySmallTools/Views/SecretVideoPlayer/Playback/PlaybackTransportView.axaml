@@ -2,7 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="clr-namespace:MyAvaloniaManagementCommon.Behaviors;assembly=MyAvaloniaManagementCommon"
+             xmlns:vm="clr-namespace:MySmallTools.ViewModels.SecretVideoPlayer.Playback"
              x:Class="MySmallTools.Views.SecretVideoPlayer.Playback.PlaybackTransportView"
+             x:DataType="vm:PlaybackTransportViewModel"
              x:Name="TransportRoot">
   <Grid RowDefinitions="Auto,Auto" RowSpacing="3">
     <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="4,0" ColumnSpacing="8">

@@ -28,7 +28,7 @@
                     <StackPanel>
                         <!-- 第一层：组名称 -->
                         <Button Content="{Binding CategoryName}"
-                                Command="{Binding DataContext.ToggleCategoryExpand, ElementName=PlugGroupMenuControl}"
+                                Command="{Binding DataContext.ToggleCategoryExpandCommand, ElementName=PlugGroupMenuControl}"
                                 CommandParameter="{Binding}"
                                 Classes="TreeItemButton"
                                 FontSize="14" 
@@ -40,7 +40,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="documentCreation:DocumentMetadata">
                                     <Button Content="{Binding DisplayName}"
-                                            Command="{Binding DataContext.CreateDocument, ElementName=PlugGroupMenuControl}"
+                                            Command="{Binding DataContext.CreateDocumentCommand, ElementName=PlugGroupMenuControl}"
                                             CommandParameter="{Binding DocumentTypeId}"
                                             Classes="TreeItemButton"/>
                                 </DataTemplate>

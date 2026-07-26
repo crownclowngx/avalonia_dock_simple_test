@@ -3,8 +3,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:encryption="clr-namespace:MySmallTools.Views.SecretVideoPlayer.Encryption"
+             xmlns:vm="clr-namespace:MySmallTools.ViewModels.SecretVideoPlayer"
              mc:Ignorable="d" d:DesignWidth="980" d:DesignHeight="760"
-             x:Class="MySmallTools.Views.SecretVideoPlayer.VideoEncryptorView">
+             x:Class="MySmallTools.Views.SecretVideoPlayer.VideoEncryptorView"
+             x:DataType="vm:VideoEncryptorViewModel">
   <UserControl.Styles>
     <StyleInclude Source="avares://MySmallTools/Styles/VideoDocumentStyles.axaml" />
   </UserControl.Styles>

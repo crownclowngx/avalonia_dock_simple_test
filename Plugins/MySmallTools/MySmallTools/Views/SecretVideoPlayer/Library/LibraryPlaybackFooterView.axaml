@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="MySmallTools.Views.SecretVideoPlayer.Library.LibraryPlaybackFooterView">
+             xmlns:vm="clr-namespace:MySmallTools.ViewModels.SecretVideoPlayer.Library"
+             x:Class="MySmallTools.Views.SecretVideoPlayer.Library.LibraryPlaybackFooterView"
+             x:DataType="vm:LibraryPlaybackViewModel">
   <Border Classes="TaskFooter" Padding="0,7,0,0">
     <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="3">
       <TextBlock Grid.Row="0" Text="{Binding Owner.Browser.StatusMessage}" Classes="Caption"

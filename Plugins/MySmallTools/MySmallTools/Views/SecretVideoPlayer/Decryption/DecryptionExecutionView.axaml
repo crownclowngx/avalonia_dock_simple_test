@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="MySmallTools.Views.SecretVideoPlayer.Decryption.DecryptionExecutionView">
+             xmlns:vm="clr-namespace:MySmallTools.ViewModels.SecretVideoPlayer.Decryption"
+             x:Class="MySmallTools.Views.SecretVideoPlayer.Decryption.DecryptionExecutionView"
+             x:DataType="vm:DecryptionBatchViewModel">
     <Border Classes="TaskFooter">
       <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="5">
         <ProgressBar Grid.Row="0" Minimum="0" Maximum="100" Value="{Binding Owner.OverallProgress}" Height="5" />

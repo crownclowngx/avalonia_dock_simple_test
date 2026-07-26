@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:DaTangAccountingHelpPlug.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="DaTangAccountingHelpPlug.Views.InvoiceInfoImportView">
+             x:Class="DaTangAccountingHelpPlug.Views.InvoiceInfoImportView"
+             x:DataType="vm:InvoiceInfoImportViewModel">
     <UserControl.DataContext>
         <vm:InvoiceInfoImportViewModel></vm:InvoiceInfoImportViewModel>
     </UserControl.DataContext>

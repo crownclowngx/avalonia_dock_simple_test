@@ -1,6 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="MySmallTools.Views.SecretVideoPlayer.Playback.PlaybackOptionsView">
+             xmlns:vm="clr-namespace:MySmallTools.ViewModels.SecretVideoPlayer.Playback"
+             xmlns:playback="clr-namespace:MySmallTools.Business.SecretVideoPlayer.Playback"
+             x:Class="MySmallTools.Views.SecretVideoPlayer.Playback.PlaybackOptionsView"
+             x:DataType="vm:PlaybackOptionsViewModel">
   <Border Classes="TaskFooter" Padding="4,2,4,5">
     <Grid ColumnDefinitions="Auto,120,Auto,*,Auto,*" ColumnSpacing="6">
       <TextBlock Grid.Column="0" Text="倍速" Classes="Caption" VerticalAlignment="Center" />
@@ -16,7 +19,7 @@
                 ToolTip.Tip="选择当前媒体的音轨" MinWidth="120"
                 AutomationProperties.Name="音轨">
         <ComboBox.ItemTemplate>
-          <DataTemplate><TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+          <DataTemplate x:DataType="playback:PlaybackTrackOption"><TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" /></DataTemplate>
         </ComboBox.ItemTemplate>
       </ComboBox>
       <TextBlock Grid.Column="4" Text="字幕" Classes="Caption" VerticalAlignment="Center" />
@@ -26,7 +29,7 @@
                 ToolTip.Tip="选择当前媒体的字幕；关闭字幕对应稳定 ID -1"
                 MinWidth="120" AutomationProperties.Name="字幕轨">
         <ComboBox.ItemTemplate>
-          <DataTemplate><TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+          <DataTemplate x:DataType="playback:PlaybackTrackOption"><TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" /></DataTemplate>
         </ComboBox.ItemTemplate>
       </ComboBox>
     </Grid>

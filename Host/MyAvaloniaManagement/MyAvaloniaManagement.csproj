@@ -18,21 +18,16 @@
     
     <ItemGroup>
       <PackageReference Include="Avalonia" />
-      <PackageReference Include="Avalonia.Controls.TreeDataGrid" />
       <PackageReference Include="Avalonia.Desktop" />
-      <PackageReference Include="Avalonia.Diagnostics" />
       <PackageReference Include="Avalonia.Fonts.Inter" />
       <PackageReference Include="Avalonia.Themes.Fluent" />
-      <PackageReference Include="Avalonia.Xaml.Interactions" />
       <PackageReference Include="CommunityToolkit.Mvvm" />
       <PackageReference Include="Dock.Avalonia" />
-      <PackageReference Include="Dock.Avalonia.Diagnostics" />
       <PackageReference Include="Dock.Avalonia.Themes.Fluent" />
       <PackageReference Include="Dock.Controls.ProportionalStackPanel" />
       <PackageReference Include="Dock.Controls.Recycling" />
       <PackageReference Include="Dock.Controls.Recycling.Model" />
       <PackageReference Include="Dock.Model.Mvvm" />
-      <PackageReference Include="EmberDock.Settings" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
       <PackageReference Include="Microsoft.Extensions.Hosting" />
       <PackageReference Include="Newtonsoft.Json" />
@@ -40,5 +35,6 @@
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
+      <PackageReference Include="Xaml.Behaviors" />
     </ItemGroup>
 </Project>

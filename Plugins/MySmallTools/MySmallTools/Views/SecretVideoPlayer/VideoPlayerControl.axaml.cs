@@ -21,7 +21,6 @@ public partial class VideoPlayerControl : UserControl, IDisposable
     private VideoPlayerControlViewModel? _boundViewModel;
     private readonly PlaybackSurfaceCoordinator _surfaceCoordinator;
     private readonly FullscreenPlaybackPresenter _fullscreenPresenter;
-    private readonly IDisposable _navigationSubscription;
     private bool _hasNavigationContext;
     private bool _isDiagnosticPickerOpen;
     private bool _disposed;
@@ -61,9 +60,15 @@ public partial class VideoPlayerControl : UserControl, IDisposable
         DetachedFromVisualTree += OnDetachedFromVisualTree;
         AddHandler(KeyDownEvent, OnPlayerKeyDown, RoutingStrategies.Tunnel);
         AddHandler(PointerPressedEvent, OnPlayerPointerPressed, RoutingStrategies.Tunnel);
-        _navigationSubscription =
-            this.GetObservable(NavigationContextProperty).Subscribe(value =>
-            HasNavigationContext = value is not null);
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == NavigationContextProperty)
+        {
+            HasNavigationContext = change.NewValue is IPlaybackNavigationContext;
+        }
     }
 
     // HasNavigationContext 只用于 XAML 显隐；DirectProperty 让 NavigationContext 改变时
@@ -235,7 +240,6 @@ public partial class VideoPlayerControl : UserControl, IDisposable
         _surfaceCoordinator.Dispose();
         _boundViewModel = null;
         NavigationContext = null;
-        _navigationSubscription.Dispose();
         DataContextChanged -= OnDataContextChanged;
         AttachedToVisualTree -= OnAttachedToVisualTree;
         DetachedFromVisualTree -= OnDetachedFromVisualTree;

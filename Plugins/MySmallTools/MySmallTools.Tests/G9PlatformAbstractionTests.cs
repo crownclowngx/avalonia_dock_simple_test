@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.ViewModels.SecretVideoPlayer;
+using MySmallTools.ViewModels.SecretVideoPlayer.Library;
 using MySmallTools.ViewModels.SecretVideoPlayer.Playback;
 using MySmallTools.Views.SecretVideoPlayer;
 using MySmallTools.Views.SecretVideoPlayer.Playback;
@@ -151,6 +152,36 @@ public sealed class G9PlatformAbstractionTests
                 StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void PlayerViewModels_DoNotDependOnUiDockOrNativePlayerTypes()
+    {
+        var viewModelTypes = typeof(VideoPlayerControlViewModel).Assembly
+            .GetTypes()
+            .Where(type =>
+                type == typeof(VideoPlayerControlViewModel) ||
+                type == typeof(LibraryBrowserCoordinatorViewModel) ||
+                type.Namespace?.StartsWith(
+                    "MySmallTools.ViewModels.SecretVideoPlayer.Playback",
+                    StringComparison.Ordinal) == true)
+            .ToArray();
+
+        var prohibited = viewModelTypes
+            .SelectMany(GetDeclaredDependencyTypes)
+            .Distinct()
+            .Where(type =>
+                type == typeof(IntPtr) ||
+                type == typeof(UIntPtr) ||
+                type.Name is "VideoView" or "MediaPlayer" ||
+                type.Namespace?.StartsWith("Avalonia", StringComparison.Ordinal) == true ||
+                type.Namespace?.StartsWith("Dock.", StringComparison.Ordinal) == true ||
+                type.Namespace?.StartsWith("LibVLCSharp", StringComparison.Ordinal) == true)
+            .Select(type => type.FullName ?? type.Name)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Empty(prohibited);
+    }
+
     private static async Task WaitForAttachmentAsync(
         PlaybackSurfaceCoordinator coordinator,
         long generation)
@@ -210,8 +241,70 @@ public sealed class G9PlatformAbstractionTests
         }
     }
 
+    private static IEnumerable<Type> GetDeclaredDependencyTypes(Type type)
+    {
+        if (type.BaseType is { } baseType)
+        {
+            foreach (var dependency in Flatten(baseType))
+                yield return dependency;
+        }
+
+        foreach (var interfaceType in type.GetInterfaces())
+        {
+            foreach (var dependency in Flatten(interfaceType))
+                yield return dependency;
+        }
+
+        foreach (var field in type.GetFields(
+                     BindingFlags.Instance |
+                     BindingFlags.Static |
+                     BindingFlags.Public |
+                     BindingFlags.NonPublic |
+                     BindingFlags.DeclaredOnly))
+        {
+            foreach (var dependency in Flatten(field.FieldType))
+                yield return dependency;
+        }
+
+        foreach (var constructor in type.GetConstructors(
+                     BindingFlags.Instance |
+                     BindingFlags.Public |
+                     BindingFlags.NonPublic |
+                     BindingFlags.DeclaredOnly))
+        {
+            foreach (var parameter in constructor.GetParameters())
+            {
+                foreach (var dependency in Flatten(parameter.ParameterType))
+                    yield return dependency;
+            }
+        }
+
+        foreach (var method in type.GetMethods(
+                     BindingFlags.Instance |
+                     BindingFlags.Static |
+                     BindingFlags.Public |
+                     BindingFlags.NonPublic |
+                     BindingFlags.DeclaredOnly))
+        {
+            foreach (var dependency in Flatten(method.ReturnType))
+                yield return dependency;
+            foreach (var parameter in method.GetParameters())
+            {
+                foreach (var dependency in Flatten(parameter.ParameterType))
+                    yield return dependency;
+            }
+        }
+    }
+
     private static IEnumerable<Type> Flatten(Type type)
     {
+        if (type.HasElementType)
+        {
+            foreach (var element in Flatten(type.GetElementType()!))
+                yield return element;
+            yield break;
+        }
+
         yield return type;
         if (type.IsGenericType)
         {
