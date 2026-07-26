@@ -9,6 +9,7 @@
 | 文档 | 内容 | 适合读者 |
 | --- | --- | --- |
 | [实施路线图](ROADMAP.md) | 当前基线、阶段时间线、功能依赖、退出条件和统一完成标准 | 产品、开发者、维护者 |
+| [.NET 10、Avalonia 12 与 Dock 12 升级实施指南](NET10-AVALONIA12-DOCK12-UPGRADE-GUIDE.md) | 全项目分阶段升级、中央依赖治理、播放器兼容性闸门、逐步交付物、回退和单人工期 | 开发者、测试人员、发布人员、技术负责人 |
 | [G0 完成记录](G0-BASELINE-REAL-MEDIA-LEGACY-CLEANUP.md) | 真实素材、遗留清理、SOLID 边界和 37/15 测试基线 | 开发者、维护者、评审人员 |
 | [G1 安全验证](G1-SECVID03-FORMAT-SECURITY-VALIDATION.md) | 五子域整理、威胁模型、固定向量、畸形/篡改矩阵和性能基线 | 开发者、安全评审人员 |
 | [G2 可靠性闭环](G2-ENCRYPTION-DECRYPTION-PREFLIGHT-ERROR-RESOURCE-CLOSURE.md) | 加解密预检、统一错误、不覆盖事务、取消重试和资源释放证据 | 开发者、测试人员、评审人员 |
