@@ -36,6 +36,7 @@ internal sealed class Phase4AcceptanceSuite(
         await StabilizeProcessAsync();
         var surfaceStart = EmbeddedVideoSurface.CaptureDiagnostics();
         var processStart = ProcessResourceSnapshot.Capture();
+        var handleTypesStart = WindowsHandleDiagnostics.CaptureCurrentProcessByType();
         _peakPrivateBytes = processStart.PrivateBytes;
         _peakHandleCount = processStart.HandleCount;
 
@@ -93,6 +94,7 @@ internal sealed class Phase4AcceptanceSuite(
         await StabilizeProcessAsync();
         CapturePeak();
         var processFinal = ProcessResourceSnapshot.Capture();
+        var handleTypesFinal = WindowsHandleDiagnostics.CaptureCurrentProcessByType();
         var surfaceFinal = EmbeddedVideoSurface.CaptureDiagnostics();
         var finalResources = SecurePlaybackDiagnostics.CaptureResources();
         var childFailures = ReadChildFailures(g3ReportPath)
@@ -150,6 +152,9 @@ internal sealed class Phase4AcceptanceSuite(
             processStart,
             new ProcessPeakSnapshot(_peakPrivateBytes, _peakHandleCount),
             processFinal,
+            handleTypesStart,
+            handleTypesFinal,
+            WindowsHandleDiagnostics.CreateDelta(handleTypesStart, handleTypesFinal),
             finalResources,
             Volatile.Read(ref _unhandledExceptionCount),
             blackScreenCount,
@@ -400,6 +405,9 @@ internal sealed record Phase4Report(
     ProcessResourceSnapshot ProcessStart,
     ProcessPeakSnapshot ProcessPeak,
     ProcessResourceSnapshot ProcessFinal,
+    IReadOnlyDictionary<string, int> HandleTypesStart,
+    IReadOnlyDictionary<string, int> HandleTypesFinal,
+    IReadOnlyDictionary<string, int> HandleTypeDeltas,
     PlaybackResourceSnapshot FinalPlaybackResources,
     int UnhandledExceptionCount,
     int BlackScreenCount,

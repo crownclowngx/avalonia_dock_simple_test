@@ -37,6 +37,9 @@
 - 未处理异常、黑屏、vout 错误和超时均为零；
 - G3 与 G8 子报告属于同一次运行。
 
+若句柄总数失败，报告中的 `handleTypesStart`、`handleTypesFinal` 和
+`handleTypeDeltas` 只记录内核对象类型与数量，不记录文件名、路径或句柄值。
+
 任何一项失败即为 NO-GO，不得调整阈值或跳过测试。
 
 ## 人工清单
