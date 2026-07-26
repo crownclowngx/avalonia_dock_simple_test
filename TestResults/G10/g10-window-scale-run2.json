@@ -13,15 +13,15 @@
                },
     "measurements":  {
                          "handleDelta":  {
-                                             "shortDelta":  17,
-                                             "longDelta":  15,
-                                             "limit":  33,
+                                             "shortDelta":  18,
+                                             "longDelta":  14,
+                                             "limit":  34,
                                              "passed":  true
                                          },
                          "threadDelta":  {
-                                             "shortDelta":  7,
+                                             "shortDelta":  6,
                                              "longDelta":  3,
-                                             "limit":  11,
+                                             "limit":  10,
                                              "passed":  true
                                          },
                          "pendingThreadPoolDelta":  {
@@ -37,15 +37,15 @@
                                               "passed":  true
                                           },
                          "workingSetBytes":  {
-                                                 "shortDelta":  70078464,
-                                                 "longDelta":  107565056,
-                                                 "limit":  204296192,
+                                                 "shortDelta":  85581824,
+                                                 "longDelta":  100200448,
+                                                 "limit":  219799552,
                                                  "passed":  true
                                              },
                          "privateBytes":  {
-                                              "shortDelta":  139247616,
-                                              "longDelta":  186826752,
-                                              "limit":  273465344,
+                                              "shortDelta":  134692864,
+                                              "longDelta":  173522944,
+                                              "limit":  268910592,
                                               "passed":  true
                                           }
                      }

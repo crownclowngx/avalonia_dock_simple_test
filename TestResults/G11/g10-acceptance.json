@@ -4,11 +4,11 @@
     "sourceRevision":  "065585a5e8a5",
     "platform":  "windows-x64",
     "dotnetSdk":  "9.0.315",
-    "worktreeWasClean":  true,
+    "worktreeWasClean":  false,
     "technicalAcceptancePassed":  true,
     "formalSignoffReady":  false,
     "manualSignoff":  "pending",
-    "timingGate":  "baseline-updated",
+    "timingGate":  "passed",
     "gates":  {
                   "builds":  "passed",
                   "unitTests":  "passed",

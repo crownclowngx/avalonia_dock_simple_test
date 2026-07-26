@@ -1,4 +1,4 @@
-param(
+﻿param(
     [switch]$AllowDirty,
     [switch]$SkipWindowGates,
     [switch]$AllowNonComparable,
@@ -8,7 +8,8 @@ param(
     [int]$LargeMiB = 512,
     [int]$LibrarySmall = 100,
     [int]$LibraryLarge = 1000,
-    [int]$StormEvents = 256
+    [int]$StormEvents = 256,
+    [string]$EvidenceRoot
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,7 +22,16 @@ $harnessProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools.Playba
 $unitTestProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools.Tests\MySmallTools.Tests.csproj'
 $hostTestProject = Join-Path $workspace 'Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj'
 $artifactRoot = Join-Path $workspace 'artifacts\MySmallTools\g10'
-$evidenceRoot = Join-Path $workspace 'TestResults\G10'
+$evidenceRoot = if ([string]::IsNullOrWhiteSpace($EvidenceRoot)) {
+    Join-Path $workspace 'TestResults\G10'
+}
+elseif ([IO.Path]::IsPathRooted($EvidenceRoot)) {
+    [IO.Path]::GetFullPath($EvidenceRoot)
+}
+else {
+    [IO.Path]::GetFullPath((Join-Path $workspace $EvidenceRoot))
+}
+$usesCustomEvidenceRoot = -not [string]::IsNullOrWhiteSpace($EvidenceRoot)
 $baselinePath = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools\docs\secret-video-player\benchmarks\g10-windows-x64-reference.json'
 $utf8NoBom = [Text.UTF8Encoding]::new($false)
 
@@ -37,6 +47,19 @@ function Assert-SafeArtifactPath {
     }
 }
 
+function Assert-SafeEvidencePath {
+    param([Parameter(Mandatory)] [string]$Path)
+    $fullEvidencePath = [IO.Path]::GetFullPath($Path)
+    $allowed = [IO.Path]::GetFullPath(
+        (Join-Path $workspace 'artifacts\MySmallTools'))
+    if ([string]::IsNullOrWhiteSpace($fullEvidencePath) -or
+        -not $fullEvidencePath.StartsWith(
+            $allowed + [IO.Path]::DirectorySeparatorChar,
+            [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to write G10 evidence outside artifacts/MySmallTools: $fullEvidencePath"
+    }
+}
+
 function Invoke-Gate {
     param(
         [Parameter(Mandatory)] [string]$Name,
@@ -47,6 +70,22 @@ function Invoke-Gate {
     if ($LASTEXITCODE -ne 0) {
         throw "$Name failed with exit code $LASTEXITCODE."
     }
+}
+
+function Copy-JsonEvidence {
+    param(
+        [Parameter(Mandatory)] [string]$Source,
+        [Parameter(Mandatory)] [string]$Destination
+    )
+
+    # Harness 可能按 Windows CRLF 写报告；提交证据统一使用 UTF-8/LF，
+    # 使数值变化可审查，而不是被整份行尾差异淹没。
+    $content = [IO.File]::ReadAllText($Source)
+    $normalized = $content.Replace("`r`n", "`n").Replace("`r", "`n")
+    [IO.File]::WriteAllText(
+        $Destination,
+        $normalized.TrimEnd([char[]]"`r`n") + "`n",
+        $utf8NoBom)
 }
 
 function Get-Delta {
@@ -115,6 +154,10 @@ $formalScale = $SmallMiB -eq 64 -and $LargeMiB -eq 512 -and
     $StormEvents -eq 256
 if ($UpdateBaseline -and (-not $formalScale -or $SkipWindowGates)) {
     throw '-UpdateBaseline requires the default full scale and all window gates.'
+}
+if ($usesCustomEvidenceRoot) {
+    # 正式 G11 运行期间只写 ignored artifacts，确保三个阶段共享同一 clean 源码快照。
+    Assert-SafeEvidencePath $evidenceRoot
 }
 
 Assert-SafeArtifactPath $artifactRoot
@@ -387,8 +430,8 @@ $evidenceFiles = @(
     $acceptancePath
 ) | Where-Object { $_ -and (Test-Path $_) }
 foreach ($file in $evidenceFiles) {
-    Copy-Item -LiteralPath $file -Destination (
-        Join-Path $evidenceRoot ([IO.Path]::GetFileName($file))) -Force
+    Copy-JsonEvidence $file (
+        Join-Path $evidenceRoot ([IO.Path]::GetFileName($file)))
 }
 
 Write-Host "`n[G10] Technical acceptance flow completed"

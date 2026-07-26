@@ -12,7 +12,9 @@
 - `g10-sensitive-scan.json`
 - `g10-acceptance.json`
 
-当前状态：技术实现已落地，正式 clean-worktree 两轮证据和人工导出签字待执行。没有 `manualSignoff = approved` 前，不得把 G10 宣称为正式完成。
+当前状态：2026-07-26 已从 clean worktree 完成两轮正式技术运行并建立审核基线；
+`technicalAcceptancePassed = true`，敏感扫描 0 命中。人工导出签字仍待按 G11 完整测试
+手册执行。没有真实人工签字前，不得把 G10/G11 宣称为最终完成。
 
 ## 人工验收记录
 

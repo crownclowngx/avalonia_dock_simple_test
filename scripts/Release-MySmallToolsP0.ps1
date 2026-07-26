@@ -2,7 +2,8 @@
     [switch]$AllowDirty,
     [switch]$SkipPlaybackGate,
     [int]$SmallMemoryMiB = 64,
-    [int]$LargeMemoryMiB = 512
+    [int]$LargeMemoryMiB = 512,
+    [string]$EvidenceRoot
 )
 
 $ErrorActionPreference = 'Stop'
@@ -22,6 +23,15 @@ $artifactRoot = Join-Path $workspace 'artifacts\MySmallTools\p0-win-x64'
 $stageRoot = Join-Path $artifactRoot '.staging'
 $stagedPlugin = Join-Path $stageRoot 'Controls\SmallTools'
 $validationRoot = Join-Path $artifactRoot '.validation'
+$resolvedEvidenceRoot = if ([string]::IsNullOrWhiteSpace($EvidenceRoot)) {
+    $null
+}
+elseif ([IO.Path]::IsPathRooted($EvidenceRoot)) {
+    [IO.Path]::GetFullPath($EvidenceRoot)
+}
+else {
+    [IO.Path]::GetFullPath((Join-Path $workspace $EvidenceRoot))
+}
 
 function Invoke-Gate {
     param(
@@ -47,6 +57,21 @@ function Assert-SafeGeneratedPath {
     if (-not $full.StartsWith($allowed + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) `
         -and -not $full.Equals($allowed, [StringComparison]::OrdinalIgnoreCase)) {
         throw "拒绝清理非发布目录：$full"
+    }
+}
+
+function Assert-SafeEvidencePath {
+    param([Parameter(Mandatory)] [string]$Path)
+
+    # G11 只允许把阶段证据重定向到 Git 忽略的 artifacts/MySmallTools 子目录。
+    # 默认不传参数时完全保留 G4 原有行为，不额外复制任何证据。
+    $full = [IO.Path]::GetFullPath($Path)
+    $allowed = [IO.Path]::GetFullPath(
+        (Join-Path $workspace 'artifacts\MySmallTools'))
+    if (-not $full.StartsWith(
+            $allowed + [IO.Path]::DirectorySeparatorChar,
+            [StringComparison]::OrdinalIgnoreCase)) {
+        throw "拒绝把 G4 证据写入 artifacts/MySmallTools 之外：$full"
     }
 }
 
@@ -81,6 +106,9 @@ $isDirty = $dirtyLines.Count -gt 0
 if ($isDirty -and -not $AllowDirty) {
     throw '正式发布拒绝 dirty worktree；本地验证请显式使用 -AllowDirty。'
 }
+if ($resolvedEvidenceRoot) {
+    Assert-SafeEvidencePath $resolvedEvidenceRoot
+}
 
 Invoke-Gate 'MySmallTools Release 独立构建（警告即失败）' 'dotnet' @(
     'build', $pluginProject, '-c', 'Release', '-warnaserror'
@@ -104,6 +132,9 @@ if (Test-Path $artifactRoot) {
     Remove-Item -LiteralPath $artifactRoot -Recurse -Force
 }
 New-Item -ItemType Directory -Path $stagedPlugin -Force | Out-Null
+if ($resolvedEvidenceRoot) {
+    New-Item -ItemType Directory -Path $resolvedEvidenceRoot -Force | Out-Null
+}
 Copy-Item -Path (Join-Path $deployedPlugin '*') -Destination $stagedPlugin -Recurse -Force
 
 # Manifest 的 files 不包含 Manifest 自身，避免出现“文件哈希依赖自身内容”的递归定义。
@@ -264,6 +295,22 @@ $acceptancePath = Join-Path $artifactRoot "$baseName.acceptance.json"
     ($acceptance | ConvertTo-Json -Depth 8),
     $utf8NoBom)
 
+if ($resolvedEvidenceRoot) {
+    $evidenceFiles = @(
+        $sidecarManifest
+        $probeReport
+        $memoryReport
+        $acceptancePath
+    )
+    foreach ($playbackReportName in $playbackReports) {
+        $evidenceFiles += Join-Path $artifactRoot $playbackReportName
+    }
+    foreach ($evidenceFile in $evidenceFiles) {
+        Copy-Item -LiteralPath $evidenceFile -Destination (
+            Join-Path $resolvedEvidenceRoot ([IO.Path]::GetFileName($evidenceFile))) -Force
+    }
+}
+
 Remove-Item -LiteralPath $stageRoot -Recurse -Force
 Remove-Item -LiteralPath $validationRoot -Recurse -Force
 
@@ -271,3 +318,6 @@ Write-Host "`n[G4] 发布基线通过"
 Write-Host "ZIP: $zipPath"
 Write-Host "Manifest: $sidecarManifest"
 Write-Host "Acceptance: $acceptancePath"
+if ($resolvedEvidenceRoot) {
+    Write-Host "Evidence: $resolvedEvidenceRoot"
+}

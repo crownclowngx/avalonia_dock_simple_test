@@ -1,8 +1,9 @@
-param(
+﻿param(
     [switch]$AllowDirty,
     [switch]$SkipWindowGates,
     [int]$QueueItems = 100,
-    [int]$LibraryItems = 1000
+    [int]$LibraryItems = 1000,
+    [string]$EvidenceRoot
 )
 
 $ErrorActionPreference = 'Stop'
@@ -16,7 +17,16 @@ $unitTestProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools.Tests
 $hostTestProject = Join-Path $workspace 'Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj'
 $harnessProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools.Playback.IntegrationHarness\MySmallTools.Playback.IntegrationHarness.csproj'
 $artifactRoot = Join-Path $workspace 'artifacts\MySmallTools\p1-acceptance'
-$evidenceRoot = Join-Path $workspace 'TestResults\G8'
+$evidenceRoot = if ([string]::IsNullOrWhiteSpace($EvidenceRoot)) {
+    Join-Path $workspace 'TestResults\G8'
+}
+elseif ([IO.Path]::IsPathRooted($EvidenceRoot)) {
+    [IO.Path]::GetFullPath($EvidenceRoot)
+}
+else {
+    [IO.Path]::GetFullPath((Join-Path $workspace $EvidenceRoot))
+}
+$usesCustomEvidenceRoot = -not [string]::IsNullOrWhiteSpace($EvidenceRoot)
 $utf8NoBom = [Text.UTF8Encoding]::new($false)
 
 function Assert-SafeArtifactPath {
@@ -32,6 +42,22 @@ function Assert-SafeArtifactPath {
     }
 }
 
+function Assert-SafeEvidencePath {
+    param([Parameter(Mandatory)] [string]$Path)
+
+    # 自定义证据目录仅供 G11 在 ignored artifacts 下编排阶段门禁，
+    # 防止前一阶段写入 TestResults 后把后续阶段误判为 dirty worktree。
+    $fullEvidencePath = [IO.Path]::GetFullPath($Path)
+    $allowed = [IO.Path]::GetFullPath(
+        (Join-Path $workspace 'artifacts\MySmallTools'))
+    if ([string]::IsNullOrWhiteSpace($fullEvidencePath) -or
+        -not $fullEvidencePath.StartsWith(
+            $allowed + [IO.Path]::DirectorySeparatorChar,
+            [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to write G8 evidence outside artifacts/MySmallTools: $fullEvidencePath"
+    }
+}
+
 function Invoke-Gate {
     param(
         [Parameter(Mandatory)] [string]$Name,
@@ -43,6 +69,21 @@ function Invoke-Gate {
     if ($LASTEXITCODE -ne 0) {
         throw "$Name failed with exit code $LASTEXITCODE."
     }
+}
+
+function Copy-JsonEvidence {
+    param(
+        [Parameter(Mandatory)] [string]$Source,
+        [Parameter(Mandatory)] [string]$Destination
+    )
+
+    # 可提交 JSON 统一为 UTF-8/LF，避免真实窗口进程的 CRLF 造成整份证据行尾漂移。
+    $content = [IO.File]::ReadAllText($Source)
+    $normalized = $content.Replace("`r`n", "`n").Replace("`r", "`n")
+    [IO.File]::WriteAllText(
+        $Destination,
+        $normalized.TrimEnd([char[]]"`r`n") + "`n",
+        $utf8NoBom)
 }
 
 if ($env:OS -ne 'Windows_NT' -or
@@ -63,6 +104,9 @@ $dirtyLines = @(& git -C $workspace status --porcelain)
 $wasDirty = $dirtyLines.Count -gt 0
 if ($wasDirty -and -not $AllowDirty) {
     throw 'Formal P1 acceptance requires a clean worktree. Use -AllowDirty for local validation.'
+}
+if ($usesCustomEvidenceRoot) {
+    Assert-SafeEvidencePath $evidenceRoot
 }
 
 Assert-SafeArtifactPath $artifactRoot
@@ -123,8 +167,8 @@ if (-not $SkipWindowGates) {
         finally {
             Remove-Item Env:\MYSMALLTOOLS_G8_RUN_CANARY -ErrorAction SilentlyContinue
         }
-        Copy-Item -LiteralPath $report -Destination (
-            Join-Path $evidenceRoot "g8-window-run$run.json") -Force
+        Copy-JsonEvidence $report (
+            Join-Path $evidenceRoot "g8-window-run$run.json")
         $windowReports += "g8-window-run$run.json"
     }
 }
@@ -183,8 +227,8 @@ $sensitivePath = Join-Path $artifactRoot 'g8-sensitive-scan.json'
     $sensitivePath,
     (($sensitiveReport | ConvertTo-Json -Depth 4) -replace "`r`n", "`n"),
     $utf8NoBom)
-Copy-Item -LiteralPath $sensitivePath -Destination (
-    Join-Path $evidenceRoot 'g8-sensitive-scan.json') -Force
+Copy-JsonEvidence $sensitivePath (
+    Join-Path $evidenceRoot 'g8-sensitive-scan.json')
 if ($findings -ne 0) {
     throw "Sensitive-data scan found $findings findings."
 }
@@ -220,8 +264,8 @@ $acceptancePath = Join-Path $artifactRoot 'g8-acceptance.json'
     $acceptancePath,
     (($acceptance | ConvertTo-Json -Depth 8) -replace "`r`n", "`n"),
     $utf8NoBom)
-Copy-Item -LiteralPath $acceptancePath -Destination (
-    Join-Path $evidenceRoot 'g8-acceptance.json') -Force
+Copy-JsonEvidence $acceptancePath (
+    Join-Path $evidenceRoot 'g8-acceptance.json')
 
 Write-Host "`n[G8] P1 technical acceptance passed"
 Write-Host "Artifacts: $artifactRoot"

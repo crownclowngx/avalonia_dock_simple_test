@@ -2,7 +2,11 @@
 
 ## 1. 当前状态
 
-G10 的产品代码、自动化性能入口、真实窗口资源趋势入口和统一验收脚本已经实现。正式状态仍为“技术实现完成，待正式证据与人工签字”，原因是审核基线只能在 clean worktree 上通过两轮完整运行显式建立，保存交互也必须由人工确认。
+G10 的产品代码、自动化性能入口、真实窗口资源趋势入口和统一验收脚本已经实现。2026-07-26
+已从 clean worktree 完成两轮正式运行并建立 Windows x64 审核基线：180 项 MySmallTools
+测试、21 项宿主测试、性能硬门禁、短/长真实窗口资源趋势和敏感扫描全部通过。人工保存交互
+仍必须按 [G11 最终验收手册](G11-FINAL-ACCEPTANCE-AND-TEST-GUIDE.md)真实执行并签字，因此
+当前不能单凭技术 JSON 宣布最终验收完成。
 
 本阶段没有修改 SECVID03 的磁盘布局、KDF、nonce、AAD、Tag 或兼容规则；生产平台仍只有 Windows x64。
 
@@ -125,6 +129,9 @@ Integration Harness 增加 `--suite g10`。统一脚本每轮分别启动短、�
 - 审核基线：`docs/secret-video-player/benchmarks/g10-windows-x64-reference.json`
 - 可提交证据：`TestResults/G10/`
 - 大素材和中间文件：`artifacts/MySmallTools/g10/`
+
+G11 通过 `-EvidenceRoot` 把 G10 阶段摘要暂存到 ignored artifacts，使 G4、G8、G10 能在
+同一个 clean 源码快照上连续运行。该参数不改变本脚本原有默认目录和单独执行方式。
 
 ## 8. 完成判定
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "mysmalltools-playback-diagnostics",
-  "createdUtc": "2026-07-26T03:10:30.5910179+00:00",
+  "createdUtc": "2026-07-26T03:34:53.8264919+00:00",
   "redactionProfile": "default-redacted-v1",
   "platform": {
     "platformId": "windows-x64",
@@ -15,7 +15,7 @@
     "usesBundledRuntime": true
   },
   "versions": {
-    "mySmallTools": "1.0.0\u002Be02b4d3f254cacb7fe7618b41385103b820aa990",
+    "mySmallTools": "1.0.0\u002B065585a5e8a575efc67bee0706d049b4eb0f67ed",
     "dotNet": ".NET 9.0.17",
     "libVlcSharp": "3.9.4\u002Bf08446b3fda43c7801b156a581fac8962bbf5466",
     "libVlc": "3.0.21"
@@ -46,11 +46,11 @@
     "cachedPlaintextChunks": 0,
     "liveNativeDispatchers": 2,
     "liveResourceReapers": 2,
-    "managedHeapBytes": 34168704,
-    "workingSetBytes": 356319232,
-    "privateBytes": 496590848,
-    "handleCount": 1623,
-    "threadCount": 77,
+    "managedHeapBytes": 34096792,
+    "workingSetBytes": 369065984,
+    "privateBytes": 541757440,
+    "handleCount": 1611,
+    "threadCount": 76,
     "pendingThreadPoolItems": 0,
     "isServerGc": false,
     "gcLatencyMode": "Interactive"

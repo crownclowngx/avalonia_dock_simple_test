@@ -401,7 +401,13 @@ dotnet test .\Plugins\MySmallTools\MySmallTools.Tests\MySmallTools.Tests.csproj 
 dotnet test .\Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj -c Release
 dotnet run --project .\Plugins\MySmallTools\MySmallTools.Playback.IntegrationHarness\MySmallTools.Playback.IntegrationHarness.csproj -c Release -- --report .\TestResults\manual-playback.json
 .\scripts\Accept-MySmallToolsP1.ps1 -AllowDirty
+.\scripts\Accept-MySmallToolsG10.ps1 -AllowDirty
+.\scripts\Accept-MySmallToolsG11.ps1 -AllowDirty
 ```
+
+正式 G11 必须从 clean worktree 执行，不带 `-AllowDirty`。完成全部人工交互后再由实际
+验收人运行 `Approve-MySmallToolsG11.ps1`；完整前置条件、命令、预期结果和失败处理见
+[G11 最终验收与完整测试手册](G11-FINAL-ACCEPTANCE-AND-TEST-GUIDE.md)。
 
 ## 14. 关键源码
 

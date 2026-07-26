@@ -395,7 +395,17 @@ flowchart LR
 
 性能测量继续复用生产加解密器、随机读取流、目录扫描器、目录会话和浏览 ViewModel；测量器只负责场景、采样与判定，不进入产品 DI。
 
-## 13. 关键实现与验证
+## 13. G11 验收编排边界
+
+G11 不进入产品 DI，也不增加业务 Coordinator。G4、G8、G10 脚本分别拥有自己的阶段规则；
+`Accept-MySmallToolsG11.ps1` 只是发布侧组合根，负责固定源码快照、顺序调用和汇总稳定
+JSON。`Approve-MySmallToolsG11.ps1` 只验证技术证据与当前 revision，并记录真实人工签字。
+
+三个阶段脚本通过可选 `-EvidenceRoot` 把中间摘要写入 ignored artifacts；不传参数时原有
+行为完全不变。这样既保持开放封闭原则，也避免前一阶段写入 TestResults 后污染后一阶段的
+clean-worktree 判定。产品公共 C# API、SECVID03、Document Scope 和播放表面契约均未变化。
+
+## 14. 关键实现与验证
 
 - [MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
 - [PlaybackDeployment.cs](../../Business/SecretVideoPlayer/Playback/PlaybackDeployment.cs)
@@ -418,4 +428,8 @@ dotnet test .\Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginT
 .\scripts\Release-MySmallToolsP0.ps1
 .\scripts\Accept-MySmallToolsP1.ps1 -AllowDirty
 .\scripts\Accept-MySmallToolsG10.ps1 -AllowDirty -AllowNonComparable
+.\scripts\Accept-MySmallToolsG11.ps1 -AllowDirty
 ```
+
+完整命令和人工验收矩阵见
+[G11 最终验收与完整测试手册](G11-FINAL-ACCEPTANCE-AND-TEST-GUIDE.md)。
