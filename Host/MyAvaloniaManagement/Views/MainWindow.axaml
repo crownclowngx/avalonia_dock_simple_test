@@ -12,8 +12,8 @@
         Foreground="{DynamicResource DockThemeForegroundBrush}"
         BorderThickness="1" BorderBrush="{DynamicResource DockThemeBorderLowBrush}"
         Icon="/Assets/avalonia-logo.ico"
-        Title="MyAvaloniaManagement"
-        ExtendClientAreaToDecorationsHint="True"
+        Title="管理系统"
+        ExtendClientAreaToDecorationsHint="False"
         WindowDecorations="Full">
 
     <Design.DataContext>
@@ -23,25 +23,15 @@
     <Window.KeyBindings>
         <KeyBinding Gesture="Control+S" Command="{Binding SaveDocumentCommand}" />
     </Window.KeyBindings>
-    <Panel>
-        <Panel Height="30" HorizontalAlignment="Center" VerticalAlignment="Top">
-            <Label Content="管理系统"
-                   Margin="4,0,4,0"
-                   FontSize="14"
-                   FontWeight="Normal"
-                   VerticalAlignment="Center"
-                   VerticalContentAlignment="Center" />
-        </Panel>
-        <Grid>
-            <views:MainView />
-            <Border x:Name="ContentFullscreenLayer"
-                    IsVisible="False"
-                    Background="Black"
-                    ZIndex="10000">
-                <ContentControl x:Name="ContentFullscreenHost"
-                                HorizontalContentAlignment="Stretch"
-                                VerticalContentAlignment="Stretch" />
-            </Border>
-        </Grid>
-    </Panel>
+    <Grid>
+        <views:MainView />
+        <Border x:Name="ContentFullscreenLayer"
+                IsVisible="False"
+                Background="Black"
+                ZIndex="10000">
+            <ContentControl x:Name="ContentFullscreenHost"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch" />
+        </Border>
+    </Grid>
 </Window>
