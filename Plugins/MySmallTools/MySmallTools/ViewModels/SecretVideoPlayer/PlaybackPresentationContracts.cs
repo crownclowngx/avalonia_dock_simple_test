@@ -37,9 +37,9 @@ public sealed class PlaybackMediaEndedEventArgs(long mediaGeneration) : EventArg
 
 /// <summary>一个新原生表面的异步绑定和恢复结果。</summary>
 public sealed class VideoSurfaceAttachmentCompletedEventArgs(
-    VideoSurfaceToken surface,
+    VideoSurfaceIdentity surface,
     PlaybackOperationResult result) : EventArgs
 {
-    public VideoSurfaceToken Surface { get; } = surface;
+    public VideoSurfaceIdentity Surface { get; } = surface;
     public PlaybackOperationResult Result { get; } = result;
 }

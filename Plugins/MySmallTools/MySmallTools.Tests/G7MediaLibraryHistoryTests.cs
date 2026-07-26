@@ -452,8 +452,8 @@ public sealed class G7MediaLibraryHistoryTests(Secvid03Fixture fixture)
         public Task<PlaybackOperationResult> ReleaseAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(PlaybackOperationResult.Succeeded());
         public bool SetVolume(int volume) => true;
-        public void DetachSurface(VideoSurfaceToken surface) { }
-        public Task<PlaybackOperationResult> AttachAndRestoreSurfaceAsync(VideoSurfaceToken surface, CancellationToken cancellationToken = default) =>
+        public void DetachSurface(VideoSurfaceIdentity surface) { }
+        public Task<PlaybackOperationResult> AttachAndRestoreSurfaceAsync(VideoSurfaceIdentity surface, CancellationToken cancellationToken = default) =>
             Task.FromResult(PlaybackOperationResult.Succeeded());
         public void Dispose() { }
     }

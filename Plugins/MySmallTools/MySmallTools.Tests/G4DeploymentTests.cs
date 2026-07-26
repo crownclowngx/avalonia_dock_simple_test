@@ -162,8 +162,8 @@ public sealed class G4DeploymentTests
         backend.Created += (_, _) => createdEvents++;
 
         backend.SetVolume(73);
-        backend.SetVideoOutputHandle((nint)123);
         Assert.Null(backend.NativePlayer);
+        Assert.Equal(0, backend.NativeOutputGeneration);
         Assert.Equal(0, factory.CreateCalls);
 
         using var first = await backend.CreateAsync(1, "one", "password", default);
@@ -172,7 +172,7 @@ public sealed class G4DeploymentTests
         Assert.Equal(1, factory.CreateCalls);
         Assert.Equal(1, createdEvents);
         Assert.Equal(73, factory.Host!.Volume);
-        Assert.Equal((nint)123, factory.Host.OutputHandle);
+        Assert.Equal(factory.Host.NativeOutputGeneration, backend.NativeOutputGeneration);
     }
 
     private static DeploymentCheckResult ReadyResult()
@@ -201,9 +201,12 @@ public sealed class G4DeploymentTests
         public DeploymentCheckResult Check() => result;
     }
 
-    private sealed class MutableProbe(DeploymentCheckResult result) : IPlaybackDeploymentProbe
+    private sealed class MutableProbe(DeploymentCheckResult result) :
+        IPlaybackDeploymentProbe,
+        IPlaybackPlatformStatus
     {
         public DeploymentCheckResult Result { get; set; } = result;
+        public PlaybackPlatformCapabilities Capabilities { get; } = SupportedCapabilities();
         public DeploymentCheckResult Check() => Result;
     }
 
@@ -215,7 +218,8 @@ public sealed class G4DeploymentTests
 
     private sealed class EmptySession :
         ISecureVideoPlaybackSession,
-        ILibVlcVideoOutputSource
+        IPlaybackSurfaceSession,
+        IPlaybackVideoOutput
     {
         public int LoadCalls { get; private set; }
         public event EventHandler<PlaybackChangedEventArgs>? Changed
@@ -229,7 +233,8 @@ public sealed class G4DeploymentTests
             remove { }
         }
         public PlaybackSnapshot Snapshot => PlaybackSnapshot.Empty;
-        public MediaPlayer? MediaPlayer => null;
+        public IPlaybackVideoOutput VideoOutput => this;
+        public long Generation => 0;
 
         public Task<PlaybackOperationResult> LoadAsync(
             string filePath,
@@ -286,10 +291,10 @@ public sealed class G4DeploymentTests
             Task.FromResult(PlaybackOperationResult.Succeeded());
 
         public bool SetVolume(int volume) => true;
-        public void DetachSurface(VideoSurfaceToken surface) { }
+        public void DetachSurface(VideoSurfaceIdentity surface) { }
 
         public Task<PlaybackOperationResult> AttachAndRestoreSurfaceAsync(
-            VideoSurfaceToken surface,
+            VideoSurfaceIdentity surface,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(PlaybackOperationResult.Succeeded());
 
@@ -338,6 +343,7 @@ public sealed class G4DeploymentTests
     private sealed class FakeHost : IPlaybackPlayerHost
     {
         public MediaPlayer? NativePlayer => null;
+        public long NativeOutputGeneration => 41;
         public long PositionMs => 0;
         public long DurationMs => 0;
         public bool IsSeekable => false;
@@ -351,7 +357,6 @@ public sealed class G4DeploymentTests
         public float Rate { get; private set; } = 1.0f;
         public int AudioTrack { get; private set; } = -1;
         public int SubtitleTrack { get; private set; } = -1;
-        public nint OutputHandle { get; private set; }
         public event Action<long, PlaybackState>? StateChanged
         {
             add { }
@@ -392,13 +397,23 @@ public sealed class G4DeploymentTests
             SubtitleTrack = trackId;
             return true;
         }
-        public void SetVideoOutputHandle(nint handle) => OutputHandle = handle;
         public Task SeekAsync(long positionMs, bool waitForFrame, CancellationToken cancellationToken) =>
             Task.CompletedTask;
         public Task<bool> RestoreSurfaceAsync(long positionMs, bool restorePaused, CancellationToken cancellationToken) =>
             Task.FromResult(true);
         public void Dispose() { }
     }
+
+    private static PlaybackPlatformCapabilities SupportedCapabilities() =>
+        new(
+            "windows-x64",
+            IsSupported: true,
+            SupportsNativeVideoOutput: true,
+            SupportsEmbeddedFullscreen: true,
+            SupportsAudioTrackSelection: true,
+            SupportsSubtitleTrackSelection: true,
+            UsesBundledRuntime: true,
+            UnsupportedReason: null);
 
     private sealed class DeploymentFixture : IDisposable
     {
@@ -434,7 +449,8 @@ public sealed class G4DeploymentTests
 
         public static DeploymentFixture Create()
         {
-            var sourceRoot = PlaybackDeploymentProbe.GetDefaultPluginDirectory();
+            var sourceRoot =
+                new PluginLocalPlaybackRuntimeLayoutProvider().Resolve().PluginDirectory;
             var root = Path.Combine(
                 Path.GetTempPath(),
                 "MySmallTools-G4-" + Guid.NewGuid().ToString("N"));

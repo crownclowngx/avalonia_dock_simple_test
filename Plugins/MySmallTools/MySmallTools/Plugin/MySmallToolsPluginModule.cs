@@ -23,9 +23,18 @@ public sealed class MySmallToolsPluginModule : IPluginModule
 
     public void ConfigureServices(IServiceCollection services)
     {
-        // Core.Initialize 是进程级操作，但初始化时机保持惰性：只有首次解析播放器时才执行。
-        services.AddSingleton<IPlaybackDeploymentProbe, PlaybackDeploymentProbe>();
+        // 平台能力、运行时布局和部署探针都是进程级无状态事实源。运行时初始化器仍保持
+        // 惰性，并且只消费已经通过检查的插件私有绝对目录。
+        services.AddSingleton<IPlaybackRuntimeLayoutProvider,
+            PluginLocalPlaybackRuntimeLayoutProvider>();
+        services.AddSingleton<WindowsX64PlaybackCapabilitiesProvider>();
+        services.AddSingleton<PlaybackDeploymentProbe>();
+        services.AddSingleton<IPlaybackDeploymentProbe>(provider =>
+            provider.GetRequiredService<PlaybackDeploymentProbe>());
+        services.AddSingleton<IPlaybackPlatformStatus, PlaybackPlatformStatus>();
         services.AddSingleton<LibVlcRuntime>();
+        services.AddSingleton<IPlaybackRuntimeInitializer>(provider =>
+            provider.GetRequiredService<LibVlcRuntime>());
 
         // G3.1 的核心资源边界：
         // 1. PlayerHost 在整个 Document 生命周期中只创建一次，所以切换媒体不会重新创建
@@ -46,7 +55,7 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddScoped<SecureVideoPlayer>();
         services.AddScoped<ISecureVideoPlaybackSession>(provider =>
             provider.GetRequiredService<SecureVideoPlayer>());
-        services.AddScoped<ILibVlcVideoOutputSource>(provider =>
+        services.AddScoped<IPlaybackSurfaceSession>(provider =>
             provider.GetRequiredService<SecureVideoPlayer>());
         // G7.1 保留顶层类型作为宿主解析边界；Playback 功能包的状态与子组件由该兼容
         // 外壳的基类在同一 Document Scope 内创建，不额外注册全局或跨文档 UI 状态。

@@ -118,6 +118,7 @@ internal interface IPlaybackMediaSourceFactory
 internal interface IPlaybackPlayerHost : IDisposable
 {
     MediaPlayer? NativePlayer { get; }
+    long NativeOutputGeneration { get; }
     long PositionMs { get; }
     long DurationMs { get; }
     bool IsSeekable { get; }
@@ -147,7 +148,6 @@ internal interface IPlaybackPlayerHost : IDisposable
     IReadOnlyList<PlaybackTrackOption> GetSubtitleTracks();
     bool SetAudioTrack(int trackId);
     bool SetSubtitleTrack(int trackId);
-    void SetVideoOutputHandle(nint handle);
     Task SeekAsync(long positionMs, bool waitForFrame, CancellationToken cancellationToken);
     Task<bool> RestoreSurfaceAsync(
         long positionMs,
@@ -160,23 +160,26 @@ internal interface IPlaybackPlayerHost : IDisposable
 /// </summary>
 internal sealed class LibVlcDocumentPlayerHost : IPlaybackPlayerHost
 {
+    private static long _nextNativeOutputGeneration;
     private readonly LibVLC _libVlc;
     private readonly MediaPlayer _player;
     private IPlaybackMediaSource? _source;
     private NativeEventSubscription? _events;
     private int _disposeState;
 
-    public LibVlcDocumentPlayerHost(LibVlcRuntime runtime)
+    public LibVlcDocumentPlayerHost(IPlaybackRuntimeInitializer runtime)
     {
         ArgumentNullException.ThrowIfNull(runtime);
         runtime.EnsureInitialized();
         _libVlc = new LibVLC();
         _player = new MediaPlayer(_libVlc);
+        NativeOutputGeneration = Interlocked.Increment(ref _nextNativeOutputGeneration);
         PlaybackResourceDiagnostics.PlayerCreated();
     }
 
     internal LibVLC LibVlc => _libVlc;
     public MediaPlayer NativePlayer => _player;
+    public long NativeOutputGeneration { get; }
     public long PositionMs => Math.Max(0, _player.Time);
     public long DurationMs => Math.Max(0, _player.Length);
     public bool IsSeekable => _player.IsSeekable;
@@ -282,12 +285,6 @@ internal sealed class LibVlcDocumentPlayerHost : IPlaybackPlayerHost
         return _player.SetSpu(trackId);
     }
 
-    public void SetVideoOutputHandle(nint handle)
-    {
-        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
-        _player.Hwnd = handle;
-    }
-
     public async Task SeekAsync(
         long positionMs,
         bool waitForFrame,
@@ -341,7 +338,6 @@ internal sealed class LibVlcDocumentPlayerHost : IPlaybackPlayerHost
 
             _events?.Dispose();
             _events = null;
-            _player.Hwnd = nint.Zero;
             _player.Media = null;
             _source = null;
             _player.Dispose();

@@ -192,10 +192,11 @@ internal sealed class G3PlaybackHarnessRunner(
             "真实 MP4 未进入播放状态或时间未推进。");
         Require(document.PlayerViewModel.PlaybackSnapshot.HasVideo, "MP4 未识别到视频轨。");
         Require(document.PlayerViewModel.PlaybackSnapshot.HasAudio, "MP4 未识别到音轨。");
-        var documentPlayer = document.PlayerViewModel.MediaPlayer;
+        var documentOutputGeneration =
+            document.PlayerViewModel.SurfaceSession?.VideoOutput.Generation ?? 0;
         var documentSurfaceGeneration =
             document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration;
-        Require(documentPlayer is not null, "Document 未暴露稳定的 MediaPlayer。");
+        Require(documentOutputGeneration > 0, "Document 未暴露稳定的视频输出代次。");
 
         // G6：真实 LibVLC 倍速必须经过会话端口设置，并反映到不可变控制快照。
         foreach (var rate in new[] { 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f })
@@ -246,7 +247,7 @@ internal sealed class G3PlaybackHarnessRunner(
             "关闭字幕后控制快照未记录 -1。");
 
         // G6 的内容区全屏复用同一个 PlayerShell。真实窗口中完成一次进出，验证
-        // 宿主全屏承载没有替换 Document 级 MediaPlayer，也没有丢失 HWND 恢复链路。
+        // 宿主全屏承载没有替换 Document 级视频输出，也没有丢失表面恢复链路。
         Require(
             document.PlayerViewModel.ToggleFullscreenCommand.CanExecute(null),
             "真实媒体加载后全屏命令不可用。");
@@ -257,8 +258,9 @@ internal sealed class G3PlaybackHarnessRunner(
             TimeSpan.FromSeconds(8),
             "进入窗口内容区全屏超时。");
         Require(
-            ReferenceEquals(documentPlayer, document.PlayerViewModel.MediaPlayer),
-            "进入全屏替换了 Document 级 MediaPlayer。");
+            documentOutputGeneration ==
+            document.PlayerViewModel.SurfaceSession?.VideoOutput.Generation,
+            "进入全屏替换了 Document 级视频输出。");
         var fullscreenLayer = mainWindow.GetVisualDescendants()
             .OfType<Border>()
             .SingleOrDefault(control => control.Name == "ContentFullscreenLayer");
@@ -392,6 +394,10 @@ internal sealed class G3PlaybackHarnessRunner(
                 "播放态 Dock 恢复位置误差超过 750 ms。");
         }
 
+        // 前面的 Dock 压测按设计会反复重建原生表面。普通媒体切换必须与紧邻切换前的
+        // 当前代次比较，不能使用全屏退出时记录的历史代次。
+        documentSurfaceGeneration =
+            document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration;
         if (options.MediaSwitches > 0)
         {
             var initialMediaGeneration =
@@ -423,8 +429,9 @@ internal sealed class G3PlaybackHarnessRunner(
                 $"expected={expectedMediaGeneration}, " +
                 $"actual={actualMediaGeneration}。");
             Require(
-                ReferenceEquals(documentPlayer, document.PlayerViewModel.MediaPlayer),
-                "普通媒体切换替换了 Document 级 MediaPlayer。");
+                documentOutputGeneration ==
+                document.PlayerViewModel.SurfaceSession?.VideoOutput.Generation,
+                "普通媒体切换替换了 Document 级视频输出。");
             Require(
                 documentSurfaceGeneration ==
                 document.PlayerViewModel.PlaybackSnapshot.SurfaceGeneration,

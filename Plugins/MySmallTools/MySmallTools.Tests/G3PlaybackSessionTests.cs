@@ -464,13 +464,13 @@ public sealed class G3PlaybackSessionTests
                 (_, _) => Task.FromResult<IPlaybackMediaSource>(source)));
         Assert.True((await rig.Session.LoadAsync("video.secvid", "password")).Success);
 
-        var firstSurface = new VideoSurfaceToken(1, (nint)101);
+        var firstSurface = new VideoSurfaceIdentity(1);
         Assert.True((await rig.Session.AttachAndRestoreSurfaceAsync(firstSurface)).Success);
         Assert.True((await rig.Session.PlayAsync()).Success);
         rig.Session.DetachSurface(firstSurface);
         Assert.True((await rig.Session.StopAsync()).Success);
 
-        var secondSurface = new VideoSurfaceToken(2, (nint)202);
+        var secondSurface = new VideoSurfaceIdentity(2);
         Assert.True((await rig.Session.AttachAndRestoreSurfaceAsync(secondSurface)).Success);
 
         Assert.Equal(0, rig.Host.RestoreCalls);
@@ -588,6 +588,7 @@ public sealed class G3PlaybackSessionTests
     private sealed class FakePlayerHost : IPlaybackPlayerHost
     {
         public MediaPlayer NativePlayer => null!;
+        public long NativeOutputGeneration => 1;
         public long PositionMs { get; private set; } = 1_000;
         public long DurationMs { get; } = 6_000;
         public bool IsSeekable { get; } = true;
@@ -611,7 +612,6 @@ public sealed class G3PlaybackSessionTests
         public IPlaybackMediaSource? AttachedSource { get; private set; }
         public List<bool> PauseRequests { get; } = [];
         public int RestoreCalls { get; private set; }
-        public nint OutputHandle { get; private set; }
         public ManualResetEventSlim? StopEntered { get; init; }
         public ManualResetEventSlim? StopRelease { get; init; }
         public int LastStopThreadId { get; private set; }
@@ -696,7 +696,6 @@ public sealed class G3PlaybackSessionTests
             SubtitleTrack = trackId;
             return true;
         }
-        public void SetVideoOutputHandle(nint handle) => OutputHandle = handle;
 
         public Task SeekAsync(
             long positionMs,

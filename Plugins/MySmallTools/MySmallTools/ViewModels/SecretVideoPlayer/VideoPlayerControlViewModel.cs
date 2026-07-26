@@ -11,14 +11,14 @@ public sealed class VideoPlayerControlViewModel : PlaybackCoordinatorViewModel
 {
     public VideoPlayerControlViewModel(
         ISecureVideoPlaybackSession session,
-        ILibVlcVideoOutputSource outputSource,
-        IPlaybackDeploymentProbe deploymentProbe,
+        IPlaybackSurfaceSession surfaceSession,
+        IPlaybackPlatformStatus platformStatus,
         IPlaybackBackendInitializer backendInitializer,
         IPlaybackPreferenceStore? preferenceStore = null)
         : base(
             session,
-            outputSource,
-            deploymentProbe,
+            surfaceSession,
+            platformStatus,
             backendInitializer,
             preferenceStore)
     {

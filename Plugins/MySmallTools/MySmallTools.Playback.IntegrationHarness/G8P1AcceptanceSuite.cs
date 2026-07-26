@@ -466,8 +466,9 @@ internal sealed class G8P1AcceptanceSuite(
             () => documents.PlayerA.PlayerViewModel.PlaybackSnapshot.PositionMs > 100,
             TimeSpan.FromSeconds(8),
             "G8-PLAYER-A-PROGRESS");
-        var playerA = documents.PlayerA.PlayerViewModel.MediaPlayer;
-        Require(playerA is not null, "G8-PLAYER-A-NATIVE");
+        var playerAOutputGeneration =
+            documents.PlayerA.PlayerViewModel.SurfaceSession?.VideoOutput.Generation ?? 0;
+        Require(playerAOutputGeneration > 0, "G8-PLAYER-A-NATIVE");
 
         documentDock.ActiveDockable = documents.PlayerB;
         await WaitUntilAsync(
@@ -500,7 +501,8 @@ internal sealed class G8P1AcceptanceSuite(
             TimeSpan.FromSeconds(8),
             "G8-DOCK-SWITCH-RESTORE");
         Require(
-            ReferenceEquals(playerA, documents.PlayerA.PlayerViewModel.MediaPlayer),
+            playerAOutputGeneration ==
+            documents.PlayerA.PlayerViewModel.SurfaceSession?.VideoOutput.Generation,
             "G8-DOCK-REPLACED-PLAYER");
 
         foreach (var rate in new[] { 0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f })
@@ -526,7 +528,8 @@ internal sealed class G8P1AcceptanceSuite(
                 TimeSpan.FromSeconds(8),
                 "G8-FULLSCREEN-EXIT");
             Require(
-                ReferenceEquals(playerA, documents.PlayerA.PlayerViewModel.MediaPlayer),
+                playerAOutputGeneration ==
+                documents.PlayerA.PlayerViewModel.SurfaceSession?.VideoOutput.Generation,
                 "G8-FULLSCREEN-REPLACED-PLAYER");
         }
     }

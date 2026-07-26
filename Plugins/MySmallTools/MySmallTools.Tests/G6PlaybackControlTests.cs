@@ -157,7 +157,7 @@ public sealed class G6PlaybackControlTests
         Assert.True((await rig.Session.SelectSubtitleTrackAsync(3)).Success);
         Assert.True((await rig.Session.PauseAsync()).Success);
 
-        var first = new VideoSurfaceToken(1, (nint)101);
+        var first = new VideoSurfaceIdentity(1);
         Assert.True((await rig.Session.AttachAndRestoreSurfaceAsync(first)).Success);
         rig.Session.DetachSurface(first);
 
@@ -166,7 +166,7 @@ public sealed class G6PlaybackControlTests
         rig.Host.Rate = 1.0f;
         rig.Host.AudioTrack = 1;
         rig.Host.SubtitleTrack = -1;
-        var second = new VideoSurfaceToken(2, (nint)202);
+        var second = new VideoSurfaceIdentity(2);
         Assert.True((await rig.Session.AttachAndRestoreSurfaceAsync(second)).Success);
 
         Assert.Equal(1.5f, rig.Host.Rate);
@@ -231,6 +231,7 @@ public sealed class G6PlaybackControlTests
         private IPlaybackMediaSource? _source;
 
         public MediaPlayer NativePlayer => null!;
+        public long NativeOutputGeneration => 1;
         public long PositionMs { get; set; } = 1_000;
         public long DurationMs => 60_000;
         public bool IsSeekable => true;
@@ -313,7 +314,6 @@ public sealed class G6PlaybackControlTests
             SubtitleTrack = trackId;
             return true;
         }
-        public void SetVideoOutputHandle(nint handle) { }
         public Task SeekAsync(
             long positionMs,
             bool waitForFrame,

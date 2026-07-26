@@ -15,12 +15,12 @@ namespace MySmallTools.Views.SecretVideoPlayer.Playback;
 /// 本类型只处理 Avalonia/TopLevel 呈现，不拥有播放状态。迁移被串行化，并等待
 /// NativeControlHost 完成旧 HWND 销毁后再连接新表面，避免一个 MediaPlayer 同时绑定两个句柄。
 /// </remarks>
-public sealed class FullscreenPlaybackPresenter
+internal sealed class FullscreenPlaybackPresenter
 {
     private readonly VideoPlayerControl _owner;
     private readonly ContentControl _normalPlaceholder;
     private readonly Control _playerShell;
-    private readonly PlaybackViewportView _viewport;
+    private readonly PlaybackSurfaceCoordinator _surfaceCoordinator;
     private readonly Func<VideoPlayerControlViewModel?> _viewModel;
     private readonly SemaphoreSlim _transitionGate = new(1, 1);
     private IWindowContentFullscreenHost? _fullscreenHost;
@@ -31,13 +31,13 @@ public sealed class FullscreenPlaybackPresenter
         VideoPlayerControl owner,
         ContentControl normalPlaceholder,
         Control playerShell,
-        PlaybackViewportView viewport,
+        PlaybackSurfaceCoordinator surfaceCoordinator,
         Func<VideoPlayerControlViewModel?> viewModel)
     {
         _owner = owner;
         _normalPlaceholder = normalPlaceholder;
         _playerShell = playerShell;
-        _viewport = viewport;
+        _surfaceCoordinator = surfaceCoordinator;
         _viewModel = viewModel;
     }
 
@@ -69,7 +69,7 @@ public sealed class FullscreenPlaybackPresenter
                 "当前宿主窗口不支持内容区全屏。");
         }
 
-        var previousGeneration = _viewport.Surface.CurrentSurfaceToken?.Generation ?? 0;
+        var previousGeneration = _surfaceCoordinator.CurrentSurface?.Generation ?? 0;
         var attachment = WaitForNewSurfaceAttachmentAsync(previousGeneration);
         _normalPlaceholder.Content = null;
         await WaitForNativeSurfaceReleaseAsync();
@@ -106,7 +106,7 @@ public sealed class FullscreenPlaybackPresenter
         if (_fullscreenHost is null)
             return null;
 
-        var previousGeneration = _viewport.Surface.CurrentSurfaceToken?.Generation ?? 0;
+        var previousGeneration = _surfaceCoordinator.CurrentSurface?.Generation ?? 0;
         var attachment = WaitForNewSurfaceAttachmentAsync(previousGeneration);
         var host = _fullscreenHost;
         if (!host.TryRestore(_owner))
@@ -127,7 +127,7 @@ public sealed class FullscreenPlaybackPresenter
 
     private async Task RollBackFailedEntryAsync(IWindowContentFullscreenHost fullscreenHost)
     {
-        var previousGeneration = _viewport.Surface.CurrentSurfaceToken?.Generation ?? 0;
+        var previousGeneration = _surfaceCoordinator.CurrentSurface?.Generation ?? 0;
         if (!fullscreenHost.TryRestore(_owner))
         {
             ForceReset();
@@ -173,7 +173,7 @@ public sealed class FullscreenPlaybackPresenter
                     "视频表面恢复失败。"));
         };
 
-        viewModel.SurfaceAttachmentCompleted += handler;
+        _surfaceCoordinator.AttachmentCompleted += handler;
         try
         {
             var completed = await Task.WhenAny(
@@ -187,7 +187,7 @@ public sealed class FullscreenPlaybackPresenter
         }
         finally
         {
-            viewModel.SurfaceAttachmentCompleted -= handler;
+            _surfaceCoordinator.AttachmentCompleted -= handler;
         }
     }
 

@@ -18,6 +18,7 @@ public partial class VideoPlayerControl : UserControl
             nameof(NavigationContext));
 
     private VideoPlayerControlViewModel? _boundViewModel;
+    private readonly PlaybackSurfaceCoordinator _surfaceCoordinator;
     private readonly FullscreenPlaybackPresenter _fullscreenPresenter;
     private bool _hasNavigationContext;
 
@@ -44,14 +45,14 @@ public partial class VideoPlayerControl : UserControl
     public VideoPlayerControl()
     {
         InitializeComponent();
+        _surfaceCoordinator = new PlaybackSurfaceCoordinator(Viewport.Surface);
         _fullscreenPresenter = new FullscreenPlaybackPresenter(
             this,
             NormalPlaceholder,
             PlayerShell,
-            Viewport,
+            _surfaceCoordinator,
             () => _boundViewModel);
         DataContextChanged += OnDataContextChanged;
-        Viewport.Surface.SurfaceReadyChanged += OnSurfaceReadyChanged;
         AttachedToVisualTree += OnAttachedToVisualTree;
         DetachedFromVisualTree += OnDetachedFromVisualTree;
         AddHandler(KeyDownEvent, OnPlayerKeyDown, RoutingStrategies.Tunnel);
@@ -80,22 +81,18 @@ public partial class VideoPlayerControl : UserControl
         {
             _fullscreenPresenter.ForceReset();
             _boundViewModel.ResetFullscreenPresentation();
-            _boundViewModel.SetVideoSurface(null);
-            _boundViewModel.NativeOutputChanged -= OnNativeOutputChanged;
             _boundViewModel.FullscreenPresentationRequested -= OnFullscreenPresentationRequested;
         }
+        _surfaceCoordinator.Bind(null);
 
-        // MediaPlayer 不使用 XAML 继承 DataContext 绑定，而是在这里按严格顺序切换：
-        // 先暂停旧播放器，再让 VideoView 清除旧 Hwnd，最后绑定新播放器。
-        // 这可避免 DataContext 向子控件传播得更早时，旧播放器在仍播放的状态下突然失去输出句柄。
+        // 原生输出不使用 XAML 继承 DataContext 绑定。协调器会按“旧会话同步分离、
+        // 清空旧输出、绑定新输出、恢复当前表面”的严格顺序切换 Document。
         _boundViewModel = DataContext as VideoPlayerControlViewModel;
         if (_boundViewModel is not null)
         {
-            _boundViewModel.NativeOutputChanged += OnNativeOutputChanged;
             _boundViewModel.FullscreenPresentationRequested += OnFullscreenPresentationRequested;
         }
-        Viewport.Surface.MediaPlayer = _boundViewModel?.MediaPlayer;
-        _boundViewModel?.SetVideoSurface(Viewport.Surface.CurrentSurfaceToken);
+        _surfaceCoordinator.Bind(_boundViewModel?.SurfaceSession);
     }
 
     private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
@@ -113,21 +110,6 @@ public partial class VideoPlayerControl : UserControl
         // 仍会截获输入并持有 HWND。这里执行纯视觉幂等回收，表面事件负责同步停止 vout。
         _fullscreenPresenter.ForceReset();
         _boundViewModel?.ResetFullscreenPresentation();
-    }
-
-    private void OnSurfaceReadyChanged(object? sender, VideoSurfaceReadyChangedEventArgs e)
-    {
-        // 事件由 DestroyNativeControlCore 在清除 HWND 前同步触发，
-        // 所以此处不可异步排队，必须立即让 ViewModel 暂停正在播放的媒体。
-        _boundViewModel?.SetVideoSurface(e.IsReady ? e.Surface : null);
-    }
-
-    private void OnNativeOutputChanged(object? sender, EventArgs e)
-    {
-        if (ReferenceEquals(sender, _boundViewModel))
-        {
-            Viewport.Surface.MediaPlayer = _boundViewModel?.MediaPlayer;
-        }
     }
 
     private async void OnFullscreenPresentationRequested(

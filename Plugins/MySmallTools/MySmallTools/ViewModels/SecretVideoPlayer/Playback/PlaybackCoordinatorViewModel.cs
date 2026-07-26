@@ -1,7 +1,6 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LibVLCSharp.Shared;
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.Constants.SecretVideoPlayer;
@@ -14,22 +13,18 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer.Playback;
 public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposable
 {
     private readonly ISecureVideoPlaybackSession _session;
-    private readonly ILibVlcVideoOutputSource _outputSource;
-    private readonly IPlaybackDeploymentProbe _deploymentProbe;
+    private readonly IPlaybackSurfaceSession _surfaceSession;
+    private readonly IPlaybackPlatformStatus _platformStatus;
     private readonly IPlaybackBackendInitializer _backendInitializer;
     private readonly IPlaybackPreferenceStore? _preferenceStore;
     private readonly DispatcherTimer _positionTimer;
-    private CancellationTokenSource? _surfaceAttachmentCancellation;
-    private VideoSurfaceToken _surface;
     private bool _applyingSnapshot;
     private long _lastEndedGeneration;
     private long _fullscreenRequestRevision;
     private bool _disposed;
 
-    public event EventHandler? NativeOutputChanged;
     public event EventHandler<PlaybackMediaEndedEventArgs>? MediaEnded;
     public event EventHandler<FullscreenPresentationRequestedEventArgs>? FullscreenPresentationRequested;
-    public event EventHandler<VideoSurfaceAttachmentCompletedEventArgs>? SurfaceAttachmentCompleted;
 
     public bool IsPlaying => CurrentState == PlayerStateEnum.Playing;
     public bool IsPaused => CurrentState == PlayerStateEnum.Paused;
@@ -64,8 +59,20 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
     [ObservableProperty] private bool _isFullscreen;
     [ObservableProperty] private bool _isFullscreenTransitioning;
 
-    /// <summary>仅由 VideoPlayerControl 原生输出适配器读取。</summary>
-    public MediaPlayer? MediaPlayer => _disposed ? null : _outputSource.MediaPlayer;
+    /// <summary>仅供播放器 View 的表面协调器绑定，不包含任何原生句柄。</summary>
+    public IPlaybackSurfaceSession? SurfaceSession => _disposed ? null : _surfaceSession;
+
+    public PlaybackPlatformCapabilities PlatformCapabilities =>
+        _platformStatus.Capabilities;
+
+    public bool SupportsEmbeddedFullscreen =>
+        PlatformCapabilities.SupportsEmbeddedFullscreen;
+
+    public bool SupportsAudioTrackSelection =>
+        PlatformCapabilities.SupportsAudioTrackSelection;
+
+    public bool SupportsSubtitleTrackSelection =>
+        PlatformCapabilities.SupportsSubtitleTrackSelection;
 
     /// <summary>供宿主状态展示和 G3 脱敏集成门禁读取的只读快照。</summary>
     public PlaybackSnapshot PlaybackSnapshot => _session.Snapshot;
@@ -78,20 +85,20 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
 
     public PlaybackCoordinatorViewModel(
         ISecureVideoPlaybackSession session,
-        ILibVlcVideoOutputSource outputSource,
-        IPlaybackDeploymentProbe deploymentProbe,
+        IPlaybackSurfaceSession surfaceSession,
+        IPlaybackPlatformStatus platformStatus,
         IPlaybackBackendInitializer backendInitializer,
         IPlaybackPreferenceStore? preferenceStore = null)
     {
         _session = session ?? throw new ArgumentNullException(nameof(session));
-        _outputSource = outputSource ?? throw new ArgumentNullException(nameof(outputSource));
-        _deploymentProbe = deploymentProbe ??
-                           throw new ArgumentNullException(nameof(deploymentProbe));
+        _surfaceSession = surfaceSession ??
+                          throw new ArgumentNullException(nameof(surfaceSession));
+        _platformStatus = platformStatus ??
+                          throw new ArgumentNullException(nameof(platformStatus));
         _backendInitializer = backendInitializer ??
                               throw new ArgumentNullException(nameof(backendInitializer));
         _preferenceStore = preferenceStore;
         _session.Changed += OnPlaybackChanged;
-        _outputSource.OutputChanged += OnNativeOutputChanged;
         var preferences = preferenceStore?.CurrentPreferences ?? PlaybackPreferences.Default;
         _session.ApplyInitialPreferences(preferences.Volume, preferences.Rate);
         Volume = preferences.Volume;
@@ -143,7 +150,10 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
 
     partial void OnSelectedAudioTrackChanged(PlaybackTrackOption? value)
     {
-        if (!_applyingSnapshot && value is not null && CanChangeAdvancedControl())
+        if (!_applyingSnapshot &&
+            SupportsAudioTrackSelection &&
+            value is not null &&
+            CanChangeAdvancedControl())
         {
             _ = SelectAudioTrackFromSelectionAsync(value.Id);
         }
@@ -151,7 +161,10 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
 
     partial void OnSelectedSubtitleTrackChanged(PlaybackTrackOption? value)
     {
-        if (!_applyingSnapshot && value is not null && CanChangeAdvancedControl())
+        if (!_applyingSnapshot &&
+            SupportsSubtitleTrackSelection &&
+            value is not null &&
+            CanChangeAdvancedControl())
         {
             _ = SelectSubtitleTrackFromSelectionAsync(value.Id);
         }
@@ -413,6 +426,15 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
         int trackId,
         CancellationToken cancellationToken = default)
     {
+        if (!SupportsAudioTrackSelection)
+        {
+            var unavailable = PlaybackOperationResult.Failed(new PlaybackFailure(
+                PlaybackFailureCode.ControlUnavailable,
+                "当前平台不支持音轨选择。"));
+            ApplyFailure(unavailable);
+            return unavailable;
+        }
+
         var result = await _session.SelectAudioTrackAsync(trackId, cancellationToken);
         ApplyFailure(result);
         return result;
@@ -431,46 +453,18 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
         int trackId,
         CancellationToken cancellationToken = default)
     {
+        if (!SupportsSubtitleTrackSelection)
+        {
+            var unavailable = PlaybackOperationResult.Failed(new PlaybackFailure(
+                PlaybackFailureCode.ControlUnavailable,
+                "当前平台不支持字幕轨选择。"));
+            ApplyFailure(unavailable);
+            return unavailable;
+        }
+
         var result = await _session.SelectSubtitleTrackAsync(trackId, cancellationToken);
         ApplyFailure(result);
         return result;
-    }
-
-    /// <summary>
-    /// 接收 EmbeddedVideoSurface 的真实 HWND 代次通知。
-    /// 丢失通知在 DestroyNativeControlCore 返回前同步完成旧 vout 停止。
-    /// </summary>
-    public void SetVideoSurface(VideoSurfaceToken? surface)
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        if (surface is null)
-        {
-            var previous = _surface;
-            _surface = default;
-            IsVideoSurfaceReady = false;
-            CancelSurfaceAttachment();
-            if (previous.IsValid)
-            {
-                _session.DetachSurface(previous);
-            }
-            return;
-        }
-
-        if (!surface.Value.IsValid || surface.Value == _surface)
-        {
-            return;
-        }
-
-        _surface = surface.Value;
-        IsVideoSurfaceReady = true;
-        CancelSurfaceAttachment();
-        var cancellation = new CancellationTokenSource();
-        _surfaceAttachmentCancellation = cancellation;
-        _ = AttachSurfaceAsync(surface.Value, cancellation);
     }
 
     private async Task<bool> SwitchMediaAsync(
@@ -487,7 +481,7 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
             if (!IsPlaybackAvailable)
             {
                 var unavailableResult = PlaybackOperationResult.Failed(
-                    PlaybackFailureMapper.MapDeployment(_deploymentProbe.Check()));
+                    PlaybackFailureMapper.MapDeployment(_platformStatus.Check()));
                 ApplyFailure(unavailableResult);
                 return false;
             }
@@ -530,39 +524,6 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
         return result.Success;
     }
 
-    private async Task AttachSurfaceAsync(
-        VideoSurfaceToken surface,
-        CancellationTokenSource cancellation)
-    {
-        try
-        {
-            var result = await _session.AttachAndRestoreSurfaceAsync(
-                surface,
-                cancellation.Token);
-            if (!_disposed && !cancellation.IsCancellationRequested && !result.Success)
-            {
-                ApplyFailure(result);
-            }
-            if (!_disposed && !cancellation.IsCancellationRequested)
-            {
-                SurfaceAttachmentCompleted?.Invoke(
-                    this,
-                    new VideoSurfaceAttachmentCompletedEventArgs(surface, result));
-            }
-        }
-        catch (OperationCanceledException)
-        {
-        }
-        finally
-        {
-            if (ReferenceEquals(_surfaceAttachmentCancellation, cancellation))
-            {
-                _surfaceAttachmentCancellation = null;
-            }
-            cancellation.Dispose();
-        }
-    }
-
     private void OnPlaybackChanged(object? sender, PlaybackChangedEventArgs e)
     {
         Dispatcher.UIThread.Post(() =>
@@ -577,33 +538,9 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
         });
     }
 
-    private void OnNativeOutputChanged(object? sender, EventArgs e)
-    {
-        void NotifyView()
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            OnPropertyChanged(nameof(MediaPlayer));
-            NativeOutputChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        // VideoView.Detach 会访问旧的原生 MediaPlayer，因此通知必须在播放服务允许释放
-        // Player 之前，于 UI 线程同步完成。若这里只 Post 后立即返回，旧 HWND 的 Detach
-        // 就可能与 libvlc_media_player_release 竞态，表现为低概率原生崩溃而非托管异常。
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            NotifyView();
-            return;
-        }
-
-        Dispatcher.UIThread.InvokeAsync(NotifyView).GetAwaiter().GetResult();
-    }
-
     private void ApplySnapshot(PlaybackSnapshot snapshot, PlaybackFailure? failure)
     {
+        IsVideoSurfaceReady = snapshot.SurfaceGeneration > 0;
         IsMediaTransitioning = snapshot.IsTransitioning;
         IsSeekable = snapshot.IsSeekable && !snapshot.IsTransitioning;
         Volume = snapshot.Volume;
@@ -629,8 +566,12 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
         try
         {
             SelectedRate = snapshot.Controls.Rate;
-            AudioTracks = snapshot.Controls.AudioTracks;
-            SubtitleTracks = snapshot.Controls.SubtitleTracks;
+            AudioTracks = SupportsAudioTrackSelection
+                ? snapshot.Controls.AudioTracks
+                : Array.Empty<PlaybackTrackOption>();
+            SubtitleTracks = SupportsSubtitleTrackSelection
+                ? snapshot.Controls.SubtitleTracks
+                : Array.Empty<PlaybackTrackOption>();
             SelectedAudioTrack = AudioTracks.FirstOrDefault(
                 option => option.Id == snapshot.Controls.SelectedAudioTrackId);
             SelectedSubtitleTrack = SubtitleTracks.FirstOrDefault(
@@ -712,7 +653,7 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
             StatusMessage = result.Failure.Message;
             if (result.Failure.Code == PlaybackFailureCode.DeploymentUnavailable)
             {
-                var deployment = _deploymentProbe.Check();
+                var deployment = _platformStatus.Check();
                 IsPlaybackAvailable = false;
                 DeploymentIssueText =
                     $"[{result.Failure.DiagnosticCode ?? "DEPLOYMENT_UNAVAILABLE"}] {result.Failure.Message}";
@@ -771,6 +712,7 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
 
     private bool CanToggleFullscreen() =>
         !_disposed &&
+        SupportsEmbeddedFullscreen &&
         IsPlaybackAvailable &&
         !IsMediaTransitioning &&
         !IsFullscreenTransitioning &&
@@ -797,9 +739,13 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
             return;
         }
 
-        var result = _deploymentProbe.Check();
-        IsPlaybackAvailable = result.IsReady;
-        if (result.IsReady)
+        var capabilities = _platformStatus.Capabilities;
+        var result = _platformStatus.Check();
+        IsPlaybackAvailable =
+            capabilities.IsSupported &&
+            capabilities.SupportsNativeVideoOutput &&
+            result.IsReady;
+        if (IsPlaybackAvailable)
         {
             try
             {
@@ -831,9 +777,11 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
         // 探针刻意聚合全部问题，UI 也不能退化成只显示第一项，否则用户修复一个文件后
         // 还要反复重检才能发现下一个缺失项。路径和建议去重后逐行展示，既保留定位信息，
         // 又避免多个 codec 问题重复刷出同一个“重新部署完整目录”提示。
-        DeploymentIssueText = string.Join(
-            Environment.NewLine,
-            result.Issues.Select(issue => $"[{issue.Code}] {issue.Summary}"));
+        DeploymentIssueText = result.Issues.Count == 0
+            ? $"[UnsupportedPlatform] {capabilities.UnsupportedReason ?? "当前平台不支持原生视频输出。"}"
+            : string.Join(
+                Environment.NewLine,
+                result.Issues.Select(issue => $"[{issue.Code}] {issue.Summary}"));
         DeploymentCheckedPath = string.Join(
             Environment.NewLine,
             result.Issues.Select(issue => issue.CheckedPath)
@@ -842,20 +790,9 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
             Environment.NewLine,
             result.Issues.Select(issue => issue.SuggestedAction)
                 .Distinct(StringComparer.Ordinal));
-        StatusMessage = result.Issues[0].Summary;
-    }
-
-    private void CancelSurfaceAttachment()
-    {
-        var cancellation = _surfaceAttachmentCancellation;
-        _surfaceAttachmentCancellation = null;
-        try
-        {
-            cancellation?.Cancel();
-        }
-        catch (ObjectDisposedException)
-        {
-        }
+        StatusMessage = result.Issues.FirstOrDefault()?.Summary
+                        ?? capabilities.UnsupportedReason
+                        ?? "当前平台不支持原生视频输出。";
     }
 
     private static string FormatTime(long timeMs) =>
@@ -869,15 +806,11 @@ public partial class PlaybackCoordinatorViewModel : ObservableObject, IDisposabl
         }
 
         _disposed = true;
-        CancelSurfaceAttachment();
         _positionTimer.Stop();
         _positionTimer.Tick -= OnPositionTimerTick;
         _session.Changed -= OnPlaybackChanged;
-        _outputSource.OutputChanged -= OnNativeOutputChanged;
-        NativeOutputChanged = null;
         MediaEnded = null;
         FullscreenPresentationRequested = null;
-        SurfaceAttachmentCompleted = null;
         GC.SuppressFinalize(this);
     }
 }

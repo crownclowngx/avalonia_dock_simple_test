@@ -15,7 +15,9 @@ namespace MySmallTools.Business.SecretVideoPlayer.Playback;
 /// </remarks>
 internal sealed class SecureVideoPlayer :
     ISecureVideoPlaybackSession,
-    ILibVlcVideoOutputSource
+    IPlaybackSurfaceSession,
+    IPlaybackVideoOutput,
+    ILibVlcVideoOutputAccessor
 {
     private static readonly float[] SupportedRates = [0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f];
 
@@ -32,7 +34,7 @@ internal sealed class SecureVideoPlayer :
     private SurfaceRecoverySnapshot? _pendingSurfaceRecovery;
     private CancellationTokenSource? _surfaceRestoreCancellation;
     private CancellationTokenSource? _mediaSwitchCancellation;
-    private VideoSurfaceToken _surface;
+    private VideoSurfaceIdentity _surface;
     private PlaybackSnapshot _snapshot = PlaybackSnapshot.Empty;
     private PlaybackControlSnapshot _controls = PlaybackControlSnapshot.Empty;
     private float _desiredRate = 1.0f;
@@ -85,7 +87,7 @@ internal sealed class SecureVideoPlayer :
     /// 只有未来真正替换 Document 级 PlayerHost 时才需要通知 View。
     /// </summary>
     // G3.1 后 PlayerHost 在 Document 生命周期内不再变化。保留该事件只是为了兼容
-    // ILibVlcVideoOutputSource 的既有契约；普通换片不会再通知 View 重绑 MediaPlayer/HWND。
+    // 普通换片不会通知 View 重绑输出；只有 Document 级 PlayerHost 真正创建或替换时才发布。
     public event EventHandler? OutputChanged;
 
     public PlaybackSnapshot Snapshot
@@ -99,10 +101,18 @@ internal sealed class SecureVideoPlayer :
         }
     }
 
+    /// <summary>当前 Document 原生视频输出的稳定代次。</summary>
+    public long Generation =>
+        Volatile.Read(ref _disposeState) == 0
+            ? _playerHost.NativeOutputGeneration
+            : 0;
+
+    public IPlaybackVideoOutput VideoOutput => this;
+
     /// <summary>
-    /// Document 生命周期内返回同一个 MediaPlayer，使 VideoView 和 HWND 不必随视频切换重绑。
+    /// 只有 Windows 原生表面适配器可以取得 MediaPlayer；业务公开接口不暴露该类型。
     /// </summary>
-    public MediaPlayer? MediaPlayer =>
+    MediaPlayer? ILibVlcVideoOutputAccessor.NativePlayer =>
         Volatile.Read(ref _disposeState) == 0 ? _playerHost.NativePlayer : null;
 
     public void ApplyInitialPreferences(int volume, float rate)
@@ -959,7 +969,7 @@ internal sealed class SecureVideoPlayer :
         }
     }
 
-    public void DetachSurface(VideoSurfaceToken surface)
+    public void DetachSurface(VideoSurfaceIdentity surface)
     {
         if (Volatile.Read(ref _disposeState) != 0 ||
             !surface.IsValid ||
@@ -1000,7 +1010,6 @@ internal sealed class SecureVideoPlayer :
                 _pendingSurfaceRecovery = null;
             }
 
-            _playerHost.SetVideoOutputHandle(nint.Zero);
             _surface = default;
             PublishCurrent(
                 Snapshot.State,
@@ -1015,7 +1024,7 @@ internal sealed class SecureVideoPlayer :
     }
 
     public async Task<PlaybackOperationResult> AttachAndRestoreSurfaceAsync(
-        VideoSurfaceToken surface,
+        VideoSurfaceIdentity surface,
         CancellationToken cancellationToken = default)
     {
         if (!surface.IsValid)
@@ -1023,7 +1032,7 @@ internal sealed class SecureVideoPlayer :
             return PlaybackOperationResult.Failed(
                 new PlaybackFailure(
                     PlaybackFailureCode.InvalidRequest,
-                    "视频输出句柄无效。"));
+                    "视频输出表面无效。"));
         }
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -1044,7 +1053,6 @@ internal sealed class SecureVideoPlayer :
         {
             ThrowIfDisposed();
             _surface = surface;
-            _playerHost.SetVideoOutputHandle(surface.Handle);
             var source = _currentSource;
             if (source is null)
             {

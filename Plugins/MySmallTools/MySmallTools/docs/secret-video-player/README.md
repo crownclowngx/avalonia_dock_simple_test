@@ -19,6 +19,7 @@
 | [G6 播放器日常控制](G6-PLAYER-DAILY-CONTROLS.md) | 全屏、倍速、快捷键、音轨/字幕、媒体库导航、连续播放和真实窗口证据 | 开发者、测试人员、评审人员 |
 | [G7 媒体库与播放历史](G7-MEDIA-LIBRARY-INCREMENTAL-HISTORY.md) | 递归扫描、目录监听、千项投影、设置/历史、隐私边界和原子恢复 | 开发者、测试人员、评审人员 |
 | [G7.1 UI 职责拆分](G7.1-UI-RESPONSIBILITY-REFACTOR.md) | 顶层兼容外壳、五个功能子包、子 View、全屏呈现器和状态所有权 | 开发者、维护者、评审人员 |
+| [G9 平台与原生表面抽象](G9-PLATFORM-NATIVE-SURFACE-ABSTRACTION.md) | 平台能力、私有运行时布局、部署初始化边界和无 HWND 的表面契约 | 开发者、测试人员、维护者 |
 | [概要设计](architecture-design.md) | 分层、组件职责、加密与播放数据流、DI 和 Document 生命周期 | 开发者、维护者 |
 | [SECVID03 文件格式](secvid03-format.md) | 二进制布局、密钥派生、GCM 认证、随机读取、公开信息和兼容策略 | 格式维护者、安全评审人员 |
 | [接入、约定与排障](integration-and-conventions.md) | LibVLC 部署、插件扫描、Dock 黑屏恢复、资源释放、已踩过的坑和回归检查 | 集成人员、问题排查人员 |
@@ -45,7 +46,7 @@ flowchart LR
     F --> G["EmbeddedVideoSurface<br/>Avalonia / Dock HWND"]
 ```
 
-加密、解密和播放器共用 SECVID03 格式定义，但不共享密码、任务状态、播放位置或原生播放器实例。每个 Dock Document 都有独立 DI Scope；`IPlaybackDeploymentProbe` 与 `LibVlcRuntime` 是无状态/进程级单例，前者只读验证部署，后者在检查通过后执行一次 `Core.Initialize`。加解密共用预检严重级别、稳定失败代码、不覆盖输出事务和顺序队列语义，但仍保持独立应用服务。
+加密、解密和播放器共用 SECVID03 格式定义，但不共享密码、任务状态、播放位置或原生播放器实例。每个 Dock Document 都有独立 DI Scope；平台状态、运行时布局和部署探针是进程级事实源，`LibVlcRuntime` 只在检查通过后执行一次 `Core.Initialize`。ViewModel 和播放会话不暴露 HWND 或 `MediaPlayer`；只有 Windows `EmbeddedVideoSurface` 负责两者绑定。加解密共用预检严重级别、稳定失败代码、不覆盖输出事务和顺序队列语义，但仍保持独立应用服务。
 
 ## 运行基线
 
@@ -143,9 +144,9 @@ LocalAppData。路径与位置是明文隐私数据；密码、密钥、公开�
 - 加密与格式：[Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Encryption/Secvid03Encryptor.cs)、[Secvid03Format.cs](../../Business/SecretVideoPlayer/Container/Secvid03Format.cs)
 - 随机读取播放：[SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/Container/SeekableEncryptedVideoStream.cs)、[SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)、[PlaybackMediaLease.cs](../../Business/SecretVideoPlayer/Playback/PlaybackMediaLease.cs)、[PlaybackNativeDispatcher.cs](../../Business/SecretVideoPlayer/Playback/PlaybackNativeDispatcher.cs)、[PlaybackResourceReaper.cs](../../Business/SecretVideoPlayer/Playback/PlaybackResourceReaper.cs)
 - 批量明文导出：[Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)、[VideoDecryptionService.cs](../../Business/SecretVideoPlayer/Decryption/VideoDecryptionService.cs)
-- Dock 视频表面：[EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)、[VideoSurfaceRestoreSequence.cs](../../Business/SecretVideoPlayer/Playback/VideoSurfaceRestoreSequence.cs)
+- 平台与 Dock 视频表面：[PlaybackPlatform.cs](../../Business/SecretVideoPlayer/Playback/PlaybackPlatform.cs)、[EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)、[PlaybackSurfaceCoordinator.cs](../../Views/SecretVideoPlayer/Playback/PlaybackSurfaceCoordinator.cs)
 - 文件夹视频库：[VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/Library/VideoLibraryScanner.cs)、[SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
-- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[G2ReliabilityTests.cs](../../../MySmallTools.Tests/G2ReliabilityTests.cs)、[G5BatchQueueTests.cs](../../../MySmallTools.Tests/G5BatchQueueTests.cs)、[G7MediaLibraryHistoryTests.cs](../../../MySmallTools.Tests/G7MediaLibraryHistoryTests.cs)、[G8P1IntegrationAcceptanceTests.cs](../../../MySmallTools.Tests/G8P1IntegrationAcceptanceTests.cs)
+- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[G2ReliabilityTests.cs](../../../MySmallTools.Tests/G2ReliabilityTests.cs)、[G5BatchQueueTests.cs](../../../MySmallTools.Tests/G5BatchQueueTests.cs)、[G8P1IntegrationAcceptanceTests.cs](../../../MySmallTools.Tests/G8P1IntegrationAcceptanceTests.cs)、[G9PlatformAbstractionTests.cs](../../../MySmallTools.Tests/G9PlatformAbstractionTests.cs)
 - 真实窗口门禁：[MySmallTools.Playback.IntegrationHarness](../../../MySmallTools.Playback.IntegrationHarness/)
 - 发布门禁：[MySmallTools.ReleaseAcceptance](../../../MySmallTools.ReleaseAcceptance/)、[Release-MySmallToolsP0.ps1](../../../../../scripts/Release-MySmallToolsP0.ps1)
 - P1 集成验收：[G8-P1-INTEGRATION-ACCEPTANCE.md](G8-P1-INTEGRATION-ACCEPTANCE.md)、[Accept-MySmallToolsP1.ps1](../../../../../scripts/Accept-MySmallToolsP1.ps1)

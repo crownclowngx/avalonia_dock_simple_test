@@ -1,5 +1,3 @@
-using LibVLCSharp.Shared;
-
 namespace MySmallTools.Business.SecretVideoPlayer.Playback;
 
 /// <summary>播放器对界面公开的稳定生命周期状态。</summary>
@@ -70,10 +68,16 @@ public readonly record struct PlaybackOperationResult(
         new(false, failure ?? throw new ArgumentNullException(nameof(failure)));
 }
 
-/// <summary>一次原生视频表面的不可伪造代次和 HWND。</summary>
-public readonly record struct VideoSurfaceToken(long Generation, nint Handle)
+/// <summary>
+/// 一次原生视频表面的单调递增身份。
+/// </summary>
+/// <remarks>
+/// 身份刻意不保存 HWND。业务层只用代次拒绝迟到的恢复结果，真实句柄始终留在
+/// Windows 视频表面适配器内部。
+/// </remarks>
+public readonly record struct VideoSurfaceIdentity(long Generation)
 {
-    public bool IsValid => Generation > 0 && Handle != nint.Zero;
+    public bool IsValid => Generation > 0;
 }
 
 /// <summary>
@@ -319,24 +323,36 @@ public interface ISecureVideoPlaybackSession : IDisposable
 
     bool SetVolume(int volume);
 
-    /// <summary>
-    /// 在 NativeControlHost 销毁 HWND 前同步停止旧 vout 并保存一次性恢复快照。
-    /// </summary>
-    void DetachSurface(VideoSurfaceToken surface);
-
-    /// <summary>绑定新 HWND，并在请求仍有效时恢复播放或暂停状态。</summary>
-    Task<PlaybackOperationResult> AttachAndRestoreSurfaceAsync(
-        VideoSurfaceToken surface,
-        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
-/// 仅供 Avalonia/LibVLC 视频输出适配器使用的原生输出端口。
-/// 业务 ViewModel 的播放行为不依赖该接口。
+/// View 与原生表面使用的不透明视频输出。
 /// </summary>
-public interface ILibVlcVideoOutputSource
+/// <remarks>
+/// 输出代次用于验收“同一 Document 不重建播放器”，不允许通过本接口取得
+/// LibVLC 或 MediaPlayer。Windows 适配器通过程序集内部端口访问具体原生对象。
+/// </remarks>
+public interface IPlaybackVideoOutput
 {
     event EventHandler? OutputChanged;
 
-    MediaPlayer? MediaPlayer { get; }
+    long Generation { get; }
+}
+
+/// <summary>
+/// 原生表面生命周期使用的语义化播放端口。
+/// </summary>
+public interface IPlaybackSurfaceSession
+{
+    IPlaybackVideoOutput VideoOutput { get; }
+
+    /// <summary>
+    /// 在 NativeControlHost 销毁原生表面前同步停止旧 vout 并保存一次性恢复快照。
+    /// </summary>
+    void DetachSurface(VideoSurfaceIdentity surface);
+
+    /// <summary>在新表面完成原生绑定后恢复播放或暂停状态。</summary>
+    Task<PlaybackOperationResult> AttachAndRestoreSurfaceAsync(
+        VideoSurfaceIdentity surface,
+        CancellationToken cancellationToken = default);
 }

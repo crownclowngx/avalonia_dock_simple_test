@@ -1,4 +1,3 @@
-using LibVLCSharp.Shared;
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.ViewModels.SecretVideoPlayer;
@@ -177,7 +176,8 @@ public sealed class G7LibraryActivationTests
 
     private sealed class RecordingSession :
         ISecureVideoPlaybackSession,
-        ILibVlcVideoOutputSource
+        IPlaybackSurfaceSession,
+        IPlaybackVideoOutput
     {
         public event EventHandler<PlaybackChangedEventArgs>? Changed;
         public event EventHandler? OutputChanged
@@ -186,7 +186,8 @@ public sealed class G7LibraryActivationTests
             remove { }
         }
         public PlaybackSnapshot Snapshot { get; private set; } = PlaybackSnapshot.Empty;
-        public MediaPlayer? MediaPlayer => null;
+        public IPlaybackVideoOutput VideoOutput => this;
+        public long Generation => 0;
         public int LoadAtPositionCalls { get; private set; }
         public int LoadAtPositionAndPlayCalls { get; private set; }
         public long LastRequestedPositionMs { get; private set; }
@@ -273,10 +274,10 @@ public sealed class G7LibraryActivationTests
             Complete(PlaybackState.Empty, positionMs: 0);
 
         public bool SetVolume(int volume) => true;
-        public void DetachSurface(VideoSurfaceToken surface) { }
+        public void DetachSurface(VideoSurfaceIdentity surface) { }
 
         public Task<PlaybackOperationResult> AttachAndRestoreSurfaceAsync(
-            VideoSurfaceToken surface,
+            VideoSurfaceIdentity surface,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(PlaybackOperationResult.Succeeded());
 
@@ -305,8 +306,18 @@ public sealed class G7LibraryActivationTests
         }
     }
 
-    private sealed class ReadyDeploymentProbe : IPlaybackDeploymentProbe
+    private sealed class ReadyDeploymentProbe : IPlaybackPlatformStatus
     {
+        public PlaybackPlatformCapabilities Capabilities { get; } = new(
+            "windows-x64",
+            IsSupported: true,
+            SupportsNativeVideoOutput: true,
+            SupportsEmbeddedFullscreen: true,
+            SupportsAudioTrackSelection: true,
+            SupportsSubtitleTrackSelection: true,
+            UsesBundledRuntime: true,
+            UnsupportedReason: null);
+
         public DeploymentCheckResult Check() =>
             new(string.Empty, string.Empty, Array.Empty<DeploymentIssue>());
     }

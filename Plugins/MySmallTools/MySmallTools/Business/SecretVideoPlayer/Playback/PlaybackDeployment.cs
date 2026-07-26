@@ -53,67 +53,86 @@ public sealed class PlaybackDeploymentProbe : IPlaybackDeploymentProbe
         (Path.Combine("plugins", "audio_output", "libmmdevice_plugin.dll"), "Windows audio output")
     ];
 
-    private readonly string _pluginDirectory;
-    private readonly Func<bool> _isWindows;
-    private readonly Func<Architecture> _processArchitecture;
+    private readonly IPlaybackRuntimeLayoutProvider _layoutProvider;
+    private readonly WindowsX64PlaybackCapabilitiesProvider _capabilitiesProvider;
 
     public PlaybackDeploymentProbe()
-        : this(GetDefaultPluginDirectory())
+        : this(
+            new PluginLocalPlaybackRuntimeLayoutProvider(),
+            new WindowsX64PlaybackCapabilitiesProvider())
     {
+    }
+
+    internal PlaybackDeploymentProbe(
+        IPlaybackRuntimeLayoutProvider layoutProvider,
+        WindowsX64PlaybackCapabilitiesProvider capabilitiesProvider)
+    {
+        _layoutProvider = layoutProvider ??
+                          throw new ArgumentNullException(nameof(layoutProvider));
+        _capabilitiesProvider = capabilitiesProvider ??
+                                throw new ArgumentNullException(nameof(capabilitiesProvider));
     }
 
     internal PlaybackDeploymentProbe(
         string pluginDirectory,
         Func<bool>? isWindows = null,
         Func<Architecture>? processArchitecture = null)
+        : this(
+            new FixedPlaybackRuntimeLayoutProvider(pluginDirectory),
+            new WindowsX64PlaybackCapabilitiesProvider(
+                isWindows ?? OperatingSystem.IsWindows,
+                processArchitecture ?? (() =>
+                    System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture)))
     {
-        _pluginDirectory = Path.GetFullPath(
-            pluginDirectory ?? throw new ArgumentNullException(nameof(pluginDirectory)));
-        _isWindows = isWindows ?? OperatingSystem.IsWindows;
-        _processArchitecture = processArchitecture ?? (() => RuntimeInformation.ProcessArchitecture);
     }
 
     public DeploymentCheckResult Check()
     {
         // 探针一次收集所有可识别问题，用户修复部署时不必经历“补一个文件、重启、
         // 再发现下一个文件”的循环。平台问题也不提前返回，因为发布目录可能同时损坏。
-        var runtimeDirectory = Path.Combine(
-            _pluginDirectory,
-            "native",
-            "win-x64",
-            "libvlc");
+        var layout = _layoutProvider.Resolve();
+        var pluginDirectory = layout.PluginDirectory;
+        var runtimeDirectory = layout.RuntimeDirectory;
         var issues = new List<DeploymentIssue>();
 
-        if (!_isWindows())
+        if (!_capabilitiesProvider.IsWindows)
         {
             issues.Add(Issue(
                 DeploymentIssueCode.UnsupportedOperatingSystem,
                 "安全视频播放器当前只支持 Windows。",
-                _pluginDirectory,
+                pluginDirectory,
                 "请在 Windows x64 宿主中使用该插件。"));
         }
 
-        if (_processArchitecture() != Architecture.X64)
+        if (_capabilitiesProvider.ProcessArchitecture != Architecture.X64)
         {
             issues.Add(Issue(
                 DeploymentIssueCode.UnsupportedProcessArchitecture,
                 "宿主进程不是 x64 架构。",
-                Environment.ProcessPath ?? _pluginDirectory,
+                Environment.ProcessPath ?? pluginDirectory,
                 "请安装并启动 Windows x64 版本的宿主。"));
         }
 
-        if (!Directory.Exists(_pluginDirectory))
+        if (!Directory.Exists(pluginDirectory))
         {
             issues.Add(Issue(
                 DeploymentIssueCode.PluginDirectoryMissing,
                 "MySmallTools 插件目录不存在。",
-                _pluginDirectory,
+                pluginDirectory,
                 "请重新解压完整的 MySmallTools Windows x64 发布包。"));
-            return new DeploymentCheckResult(_pluginDirectory, runtimeDirectory, issues);
+            return new DeploymentCheckResult(pluginDirectory, runtimeDirectory, issues);
         }
 
-        ValidateManagedBridge("LibVLCSharp.dll", "LibVLCSharp", issues);
-        ValidateManagedBridge("LibVLCSharp.Avalonia.dll", "LibVLCSharp.Avalonia", issues);
+        ValidateManagedBridge(
+            pluginDirectory,
+            "LibVLCSharp.dll",
+            "LibVLCSharp",
+            issues);
+        ValidateManagedBridge(
+            pluginDirectory,
+            "LibVLCSharp.Avalonia.dll",
+            "LibVLCSharp.Avalonia",
+            issues);
         ValidateNativeLibrary(Path.Combine(runtimeDirectory, "libvlc.dll"), issues);
         ValidateNativeLibrary(Path.Combine(runtimeDirectory, "libvlccore.dll"), issues);
 
@@ -142,14 +161,7 @@ public sealed class PlaybackDeploymentProbe : IPlaybackDeploymentProbe
             }
         }
 
-        return new DeploymentCheckResult(_pluginDirectory, runtimeDirectory, issues);
-    }
-
-    internal static string GetDefaultPluginDirectory()
-    {
-        var location = typeof(PlaybackDeploymentProbe).Assembly.Location;
-        return Path.GetDirectoryName(location)
-               ?? throw new InvalidOperationException("无法确定 MySmallTools 程序集目录。");
+        return new DeploymentCheckResult(pluginDirectory, runtimeDirectory, issues);
     }
 
     internal static DeploymentCheckResult WithInitializationFailure(
@@ -165,11 +177,12 @@ public sealed class PlaybackDeploymentProbe : IPlaybackDeploymentProbe
     }
 
     private void ValidateManagedBridge(
+        string pluginDirectory,
         string fileName,
         string expectedAssemblyName,
         ICollection<DeploymentIssue> issues)
     {
-        var path = Path.Combine(_pluginDirectory, fileName);
+        var path = Path.Combine(pluginDirectory, fileName);
         if (!File.Exists(path))
         {
             issues.Add(Issue(
@@ -257,6 +270,27 @@ public sealed class PlaybackDeploymentProbe : IPlaybackDeploymentProbe
         string checkedPath,
         string suggestedAction) =>
         new(code, summary, Path.GetFullPath(checkedPath), suggestedAction);
+
+    /// <summary>
+    /// 测试部署夹具使用的固定布局；生产代码始终使用程序集位置布局。
+    /// </summary>
+    private sealed class FixedPlaybackRuntimeLayoutProvider : IPlaybackRuntimeLayoutProvider
+    {
+        private readonly PlaybackRuntimeLayout _layout;
+
+        public FixedPlaybackRuntimeLayoutProvider(string pluginDirectory)
+        {
+            var fullPath = Path.GetFullPath(
+                pluginDirectory ?? throw new ArgumentNullException(nameof(pluginDirectory)));
+            _layout = new PlaybackRuntimeLayout(
+                fullPath,
+                Path.Combine(
+                    fullPath,
+                    PluginLocalPlaybackRuntimeLayoutProvider.RuntimeRelativePath));
+        }
+
+        public PlaybackRuntimeLayout Resolve() => _layout;
+    }
 }
 
 internal sealed class PlaybackDeploymentException(

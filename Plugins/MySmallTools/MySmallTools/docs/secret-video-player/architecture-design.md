@@ -108,19 +108,22 @@ flowchart TB
 | 顶层兼容外壳 | 四个 Document ViewModel、`VideoPlayerControlViewModel` | 保持宿主类型名、构造函数和既有公开绑定，不复制功能状态 |
 | UI 功能包 | `Playback`、`Library`、`Encryption`、`Decryption`、`SingleVideo` | 按功能拥有状态、命令、取消和子 View，顶层 AXAML 只组合 |
 | 文件夹浏览 | `LibraryBrowserCoordinatorViewModel`、`VideoLibraryScanner` | 异步扫描 `.secvid`、隔离单文件错误、过滤公开信息 |
-| 播放展示 | `PlaybackCoordinatorViewModel` 及五个功能入口 | 把用户意图交给会话，把回调切换到 UI 线程，显示部署诊断和控制快照 |
-| 全屏与快捷键 | `FullscreenPlaybackPresenter`、`PlaybackShortcutRouter` | 处理 Avalonia 焦点、唯一 PlayerShell/HWND 迁移和播放器作用域按键 |
+| 播放展示 | `PlaybackCoordinatorViewModel` 及五个功能入口 | 消费播放会话和平台能力，不暴露 HWND 或 `MediaPlayer` |
+| 全屏与快捷键 | `FullscreenPlaybackPresenter`、`PlaybackShortcutRouter` | 处理 Avalonia 焦点、唯一 PlayerShell 迁移和播放器作用域按键 |
 | 播放列表导航 | `IPlaybackNavigationContext`、`SecretVideoLibraryViewModel` | 以可选端口提供当前筛选列表的相邻项和连续播放 |
+| 平台能力 | `IPlaybackPlatformStatus`、`PlaybackPlatformCapabilities` | 显式声明 Windows x64、原生输出、全屏、轨道和自带运行时能力 |
+| 运行时布局 | `IPlaybackRuntimeLayoutProvider` | 只以插件程序集实际位置解析私有 LibVLC 绝对目录 |
 | 部署探针 | `IPlaybackDeploymentProbe`、`PlaybackDeploymentProbe` | 无副作用检查平台、托管桥接、AMD64 核心 DLL 和关键插件模块 |
-| backend 代理 | `LazyPlaybackBackend` | 一个 Document 最多创建一套 `PlayerHost + MediaSourceFactory`，缓存 HWND 和音量意图 |
+| backend 代理 | `LazyPlaybackBackend` | 一个 Document 最多创建一套 `PlayerHost + MediaSourceFactory`，只缓存音量意图 |
 | 播放编排 | `SecureVideoPlayer` | 媒体候选事务、用户意图代次、命令串行化、表面恢复和状态发布 |
 | 原生命令 | `PlaybackNativeDispatcher` | 单消费者执行可能阻塞的 `MediaPlayer` 操作，避免阻塞 Avalonia UI 线程 |
-| Document 播放器 | `LibVlcDocumentPlayerHost` | 一个 Document 一个 `LibVLC + MediaPlayer`，负责媒体挂载、原生事件和 HWND |
+| Document 播放器 | `LibVlcDocumentPlayerHost` | 一个 Document 一个 `LibVLC + MediaPlayer`，负责媒体挂载和原生事件，不操作 HWND |
 | 单媒体资源 | `LibVlcPlaybackMediaSource` | 一个视频一个 `Media + MediaInput + 加密流`，不拥有 `MediaPlayer` 或 HWND |
 | 旧媒体回收 | `PlaybackResourceReaper` | 容量为 1 的有界单消费者，只回收已从 `MediaPlayer` 解绑的媒体资源 |
 | LibVLC 流桥接 | `SeekableStreamMediaInput` | 串行化原生 Open/Read/Seek/Close 回调，限制单次读取为 1 MiB |
 | 容器流 | `SeekableEncryptedVideoStream` | 打开时认证固定头，读取时按需认证解密，维护 4 块 LRU 明文缓存 |
-| 原生表面 | `EmbeddedVideoSurface` | 在 HWND 创建后绑定，在 HWND 销毁前同步通知 Lost |
+| 原生表面 | `IPlaybackVideoSurface`、`EmbeddedVideoSurface` | 唯一读取/写入 HWND 的 Windows 适配器，销毁前同步通知 Losing |
+| 表面协调 | `PlaybackSurfaceCoordinator`、`IPlaybackSurfaceSession` | 按表面代次协调输出绑定、同步丢失和异步恢复 |
 | 输出事务 | `OutputFileTransaction` | 同目录 `.partial-GUID`、落盘刷新、`overwrite:false` 提交和失败清理 |
 
 ## 4.1 G6 日常控制数据流
@@ -186,20 +189,20 @@ Ready 而不调用 Play。列表双击和 Enter 则使用 `LoadAtPositionAndPlay
 
 ```mermaid
 flowchart TD
-    Create["创建播放 Document"] --> Check["PlaybackDeploymentProbe.Check"]
+    Create["创建播放 Document"] --> Check["IPlaybackPlatformStatus.Check"]
     Check -->|有问题| Diagnostics["显示全部问题码、路径和建议"]
     Diagnostics --> Retry["用户修复后重新检测"]
     Retry --> Check
     Check -->|通过| Init["IPlaybackBackendInitializer.Initialize"]
-    Init --> Runtime["LibVlcRuntime.EnsureInitialized"]
+    Init --> Runtime["IPlaybackRuntimeInitializer.EnsureInitialized"]
     Runtime --> Backend["创建 Document 级 LibVLC + MediaPlayer"]
-    Backend --> Bind["VideoView 首次绑定同一个 MediaPlayer"]
+    Backend --> Bind["IPlaybackVideoOutput 首次绑定 Windows 表面"]
     Bind --> Switch["后续只切换 MediaSource"]
 ```
 
-探针只读取文件系统和 PE/程序集元数据，不加载原生 DLL。`LibVlcRuntime` 是进程级 Singleton，只保证 `Core.Initialize(runtimeDirectory)` 成功执行一次；`LazyPlaybackBackend`、PlayerHost、调度器和回收器是 Document scoped。
+平台状态先返回显式能力，再由探针只读文件系统和 PE/程序集元数据，不加载原生 DLL。运行时布局只以插件程序集位置为锚点；`LibVlcRuntime` 是进程级 Singleton，只保证 `Core.Initialize(runtimeDirectory)` 成功执行一次；`LazyPlaybackBackend`、PlayerHost、调度器和回收器是 Document scoped。
 
-“Lazy” 表示插件加载或损坏部署页面创建时不产生原生对象。部署完整时，ViewModel 会在 `VideoView` 首次绑定前初始化 backend，以保持真实 HWND 压力测试验证过的时序；脱离标准 UI 的调用方在首次加载时仍有幂等兜底。
+“Lazy” 表示插件加载、不支持平台或损坏部署页面创建时不产生原生对象。部署完整时，ViewModel 会在原生表面首次绑定前初始化 backend；`EmbeddedVideoSurface` 是唯一读写 HWND 的适配器，业务会话只保存表面代次。脱离标准 UI 的调用方在首次加载时仍有幂等兜底。
 
 ## 6. 加密与解密数据流
 

@@ -2,6 +2,18 @@ using LibVLCSharp.Shared;
 
 namespace MySmallTools.Business.SecretVideoPlayer.Playback;
 
+/// <summary>
+/// Windows 表面适配器访问 LibVLC 输出的程序集内部端口。
+/// </summary>
+/// <remarks>
+/// 该接口绝不能提升为公共播放契约；它存在的唯一目的，是把 MediaPlayer 限制在
+/// LibVLC 与 Avalonia 原生表面的适配边界内。
+/// </remarks>
+internal interface ILibVlcVideoOutputAccessor : IPlaybackVideoOutput
+{
+    MediaPlayer? NativePlayer { get; }
+}
+
 internal sealed class PlaybackBackend(
     IPlaybackPlayerHost playerHost,
     IPlaybackMediaSourceFactory mediaSourceFactory) : IDisposable
@@ -29,7 +41,7 @@ public interface IPlaybackBackendInitializer
     void Initialize();
 }
 
-internal sealed class LibVlcPlaybackBackendFactory(LibVlcRuntime runtime)
+internal sealed class LibVlcPlaybackBackendFactory(IPlaybackRuntimeInitializer runtime)
     : IPlaybackBackendFactory
 {
     public PlaybackBackend Create()
@@ -53,7 +65,6 @@ internal sealed class LazyPlaybackBackend :
     private readonly object _syncRoot = new();
     private PlaybackBackend? _backend;
     private int _desiredVolume = 50;
-    private nint _desiredOutputHandle;
     private int _disposeState;
 
     public LazyPlaybackBackend(IPlaybackBackendFactory factory)
@@ -67,6 +78,8 @@ internal sealed class LazyPlaybackBackend :
     public event Action<long, PlaybackFailure>? Failed;
 
     public MediaPlayer? NativePlayer => _backend?.PlayerHost.NativePlayer;
+    public long NativeOutputGeneration =>
+        _backend?.PlayerHost.NativeOutputGeneration ?? 0;
     public long PositionMs => _backend?.PlayerHost.PositionMs ?? 0;
     public long DurationMs => _backend?.PlayerHost.DurationMs ?? 0;
     public bool IsSeekable => _backend?.PlayerHost.IsSeekable ?? false;
@@ -128,12 +141,6 @@ internal sealed class LazyPlaybackBackend :
 
     public bool SetSubtitleTrack(int trackId) => RequireHost().SetSubtitleTrack(trackId);
 
-    public void SetVideoOutputHandle(nint handle)
-    {
-        _desiredOutputHandle = handle;
-        _backend?.PlayerHost.SetVideoOutputHandle(handle);
-    }
-
     public Task SeekAsync(
         long positionMs,
         bool waitForFrame,
@@ -194,10 +201,9 @@ internal sealed class LazyPlaybackBackend :
             Subscribe(created.PlayerHost);
             try
             {
-                // 页面可能先于 backend 获得 HWND 或音量。创建完成后先回放这些无敏感
-                // 状态，再发布 Created；View 收到 OutputChanged 时看到的就是完整宿主。
+                // 页面可能先于 backend 设置音量。创建完成后先回放这项非敏感状态，
+                // 再发布 Created；原生表面会在输出事件到达时自行重绑当前 HWND。
                 created.PlayerHost.SetVolume(_desiredVolume);
-                created.PlayerHost.SetVideoOutputHandle(_desiredOutputHandle);
                 _backend = created;
             }
             catch
