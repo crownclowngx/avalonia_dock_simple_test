@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using Avalonia.Threading;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.Views.SecretVideoPlayer;
 
@@ -29,12 +30,9 @@ internal sealed class Phase4AcceptanceSuite(
         var g8ReportPath = Path.Combine(reportDirectory, "phase4-g8.json");
         // 源码状态必须在生成任何证据文件前绑定，避免报告本身把 clean 快照误判为脏。
         var source = ReadSourceState();
+        var threadPoolWarmupWorkerCount = await WarmUpThreadPoolAsync();
         // 采样器在预热前启动，使线程池与计时器句柄同时存在于资源起点和终点。
-        using var sampler = new Timer(
-            _ => CapturePeak(),
-            null,
-            TimeSpan.Zero,
-            TimeSpan.FromMilliseconds(500));
+        using var sampler = new DispatcherResourceSampler(CapturePeak);
         var warmupPassed = await WarmUpRuntimeAsync();
 
         // Avalonia、D3D11 和 LibVLC 会按真实负载扩展进程级句柄池与缓存。资源闸门从
@@ -55,6 +53,7 @@ internal sealed class Phase4AcceptanceSuite(
 
         var g3ExitCode = 1;
         var g8ExitCode = 1;
+        IReadOnlyDictionary<string, int> handleTypesAfterG3 = handleTypesStart;
         try
         {
             g3ExitCode = await new G3PlaybackHarnessRunner(
@@ -64,6 +63,9 @@ internal sealed class Phase4AcceptanceSuite(
                     Suite = HarnessSuite.G3,
                     ReportPath = g3ReportPath
                 }).RunAsync();
+            await StabilizeProcessAsync();
+            handleTypesAfterG3 =
+                WindowsHandleDiagnostics.CaptureCurrentProcessByType();
 
             if (g3ExitCode == 0)
             {
@@ -144,6 +146,7 @@ internal sealed class Phase4AcceptanceSuite(
             typeof(LibVLCSharp.Shared.LibVLC).Assembly.GetName().Version?.ToString() ?? "unknown",
             GetNativeLibVlcVersion(),
             warmupPassed,
+            threadPoolWarmupWorkerCount,
             new HwndGateReport(
                 surfaceFinal.HandleDescriptor,
                 surfaceFinal.LastHandleWasNonZero),
@@ -153,7 +156,14 @@ internal sealed class Phase4AcceptanceSuite(
             new ProcessPeakSnapshot(_peakPrivateBytes, _peakHandleCount),
             processFinal,
             handleTypesStart,
+            handleTypesAfterG3,
             handleTypesFinal,
+            WindowsHandleDiagnostics.CreateDelta(
+                handleTypesStart,
+                handleTypesAfterG3),
+            WindowsHandleDiagnostics.CreateDelta(
+                handleTypesAfterG3,
+                handleTypesFinal),
             WindowsHandleDiagnostics.CreateDelta(handleTypesStart, handleTypesFinal),
             finalResources,
             Volatile.Read(ref _unhandledExceptionCount),
@@ -209,6 +219,47 @@ internal sealed class Phase4AcceptanceSuite(
                 Directory.Delete(directory, recursive: true);
             }
         }
+    }
+
+    private static async Task<int> WarmUpThreadPoolAsync()
+    {
+        ThreadPool.GetMinThreads(out var minimumWorkers, out var minimumIo);
+        ThreadPool.GetMaxThreads(out var maximumWorkers, out _);
+        var targetWorkers = Math.Min(
+            maximumWorkers,
+            Math.Max(
+                minimumWorkers,
+                Math.Clamp(Environment.ProcessorCount * 2, 16, 64)));
+        if (!ThreadPool.SetMinThreads(targetWorkers, minimumIo))
+        {
+            throw new InvalidOperationException("无法设置阶段 4 ThreadPool 预热下限。");
+        }
+
+        // 长生命周期原生调度任务会触发 ThreadPool 渐进扩容。基线前用一次受控并发
+        // 建立工作线程基础设施，避免把运行时池扩容误报为播放器句柄泄漏。
+        using var ready = new CountdownEvent(targetWorkers);
+        using var release = new ManualResetEventSlim(initialState: false);
+        var workers = Enumerable.Range(0, targetWorkers)
+            .Select(_ => Task.Run(() =>
+            {
+                ready.Signal();
+                release.Wait();
+            }))
+            .ToArray();
+        try
+        {
+            if (!ready.Wait(TimeSpan.FromSeconds(15)))
+            {
+                throw new TimeoutException("阶段 4 ThreadPool 预热未在限时内就绪。");
+            }
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        await Task.WhenAll(workers);
+        return targetWorkers;
     }
 
     private void CapturePeak()
@@ -270,31 +321,56 @@ internal sealed class Phase4AcceptanceSuite(
 
         // ThreadPool 会为原生播放回调临时扩容。必须留出退坡时间，并要求句柄和线程
         // 连续稳定后再采样，避免把仍在运行的清理线程误判为最终资源。
+        var completion = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
         var started = Stopwatch.StartNew();
         var stableSamples = 0;
         var lastHandleCount = -1;
         var lastThreadCount = -1;
-        while (started.Elapsed < TimeSpan.FromSeconds(30))
+        var timer = new DispatcherTimer
         {
-            await Task.Delay(TimeSpan.FromSeconds(1));
-            using var process = Process.GetCurrentProcess();
-            process.Refresh();
-            if (process.HandleCount == lastHandleCount &&
-                process.Threads.Count == lastThreadCount)
-            {
-                stableSamples++;
-            }
-            else
-            {
-                stableSamples = 0;
-                lastHandleCount = process.HandleCount;
-                lastThreadCount = process.Threads.Count;
-            }
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        timer.Tick += OnTick;
+        timer.Start();
+        try
+        {
+            await completion.Task;
+        }
+        finally
+        {
+            timer.Stop();
+            timer.Tick -= OnTick;
+        }
 
-            if (started.Elapsed >= TimeSpan.FromSeconds(15) &&
-                stableSamples >= 3)
+        void OnTick(object? sender, EventArgs args)
+        {
+            try
             {
-                break;
+                using var process = Process.GetCurrentProcess();
+                process.Refresh();
+                if (process.HandleCount == lastHandleCount &&
+                    process.Threads.Count == lastThreadCount)
+                {
+                    stableSamples++;
+                }
+                else
+                {
+                    stableSamples = 0;
+                    lastHandleCount = process.HandleCount;
+                    lastThreadCount = process.Threads.Count;
+                }
+
+                if (started.Elapsed >= TimeSpan.FromSeconds(30) ||
+                    started.Elapsed >= TimeSpan.FromSeconds(15) &&
+                    stableSamples >= 3)
+                {
+                    completion.TrySetResult();
+                }
+            }
+            catch (Exception exception)
+            {
+                completion.TrySetException(exception);
             }
         }
     }
@@ -377,6 +453,29 @@ internal sealed class Phase4AcceptanceSuite(
     }
 
     private readonly record struct SourceState(string Revision, bool WorktreeClean);
+
+    private sealed class DispatcherResourceSampler : IDisposable
+    {
+        private readonly DispatcherTimer _timer;
+        private readonly EventHandler _handler;
+
+        public DispatcherResourceSampler(Action sample)
+        {
+            _handler = (_, _) => sample();
+            _timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(500)
+            };
+            _timer.Tick += _handler;
+            _timer.Start();
+        }
+
+        public void Dispose()
+        {
+            _timer.Stop();
+            _timer.Tick -= _handler;
+        }
+    }
 }
 
 internal static class InterlockedExtensions
@@ -428,6 +527,7 @@ internal sealed record Phase4Report(
     string LibVlcSharpVersion,
     string NativeLibVlcVersion,
     bool WarmupPassed,
+    int ThreadPoolWarmupWorkerCount,
     HwndGateReport Hwnd,
     long SurfaceCreatedCount,
     long SurfaceDestroyedCount,
@@ -435,7 +535,10 @@ internal sealed record Phase4Report(
     ProcessPeakSnapshot ProcessPeak,
     ProcessResourceSnapshot ProcessFinal,
     IReadOnlyDictionary<string, int> HandleTypesStart,
+    IReadOnlyDictionary<string, int> HandleTypesAfterG3,
     IReadOnlyDictionary<string, int> HandleTypesFinal,
+    IReadOnlyDictionary<string, int> G3HandleTypeDeltas,
+    IReadOnlyDictionary<string, int> G8HandleTypeDeltas,
     IReadOnlyDictionary<string, int> HandleTypeDeltas,
     PlaybackResourceSnapshot FinalPlaybackResources,
     int UnhandledExceptionCount,
