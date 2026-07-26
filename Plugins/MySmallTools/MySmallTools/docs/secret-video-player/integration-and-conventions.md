@@ -8,9 +8,9 @@
 | --- | --- |
 | 运行平台 | Windows x64 |
 | 目标框架 | `net10.0`；真实窗口 Harness 为 `net10.0-windows` |
-| LibVLCSharp | `3.9.4` |
-| LibVLCSharp.Avalonia | `3.9.4` |
-| VideoLAN.LibVLC.Windows | `3.0.21` |
+| LibVLCSharp | `3.10.0` |
+| LibVLCSharp.Avalonia | `3.10.0` |
+| VideoLAN.LibVLC.Windows | `3.0.23.1` |
 | 原生私有目录 | `Controls/SmallTools/native/win-x64/libvlc/` |
 | 正式发布入口 | `scripts/Release-MySmallToolsP0.ps1` |
 

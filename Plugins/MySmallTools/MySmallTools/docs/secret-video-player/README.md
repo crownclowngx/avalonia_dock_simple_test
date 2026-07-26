@@ -57,9 +57,9 @@ flowchart LR
 | --- | --- |
 | .NET | .NET 10 (`net10.0`) |
 | 操作系统和架构 | Windows x64 |
-| LibVLCSharp | 3.9.4 |
-| LibVLCSharp.Avalonia | 3.9.4 |
-| VideoLAN.LibVLC.Windows | 3.0.21 |
+| LibVLCSharp | 3.10.0 |
+| LibVLCSharp.Avalonia | 3.10.0 |
+| VideoLAN.LibVLC.Windows | 3.0.23.1 |
 | 容器格式 | SECVID03 |
 | 插件部署目录 | `Controls/SmallTools/` |
 | 原生运行时相对目录 | `native/win-x64/libvlc/` |
@@ -96,7 +96,7 @@ flowchart LR
 
 1. 在宿主中打开“加密视频播放器”。
 2. 选择 `.secvid` 文件。播放器会先显示无需密码的公开标题和描述。
-3. 输入密码并加载。加载阶段执行 PBKDF2、固定头认证和 15 秒受限 LibVLC 回调媒体解析；LibVLC 3.0.21 返回干净 `Skipped` 时由后续真实播放、轨道和 Seek 门禁继续判定，不会完整解密视频。
+3. 输入密码并加载。加载阶段执行 PBKDF2、固定头认证和 15 秒受限 LibVLC 回调媒体解析；LibVLC 3.0.23 返回干净 `Skipped` 时由后续真实播放、轨道和 Seek 门禁继续判定，不会完整解密视频。
 4. 使用播放、暂停、停止、进度、音量、六档倍速、音轨和字幕控件；全屏覆盖宿主内容区并保留标题栏。
 5. 播放器获得焦点后可用 `Space`、左右方向键和上下方向键控制播放、5 秒 Seek 与 5% 音量；全屏时按 `Esc` 退出。文本输入、下拉框、滑块、列表和按钮焦点不会被这些快捷键抢占。
 

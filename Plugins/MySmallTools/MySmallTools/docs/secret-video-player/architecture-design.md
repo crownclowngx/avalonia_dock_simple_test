@@ -8,8 +8,8 @@
 | --- | --- |
 | 目标框架 | `.NET 10`（`net10.0`） |
 | 容器格式 | `SECVID03`，格式版本 3 |
-| 播放桥接 | `LibVLCSharp 3.9.4`、`LibVLCSharp.Avalonia 3.9.4` |
-| 原生运行时 | `VideoLAN.LibVLC.Windows 3.0.21` |
+| 播放桥接 | `LibVLCSharp 3.10.0`、`LibVLCSharp.Avalonia 3.10.0` |
+| 原生运行时 | `VideoLAN.LibVLC.Windows 3.0.23.1` |
 | 支持平台 | Windows x64 |
 | 插件运行目录 | `Controls/SmallTools/` |
 
