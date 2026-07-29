@@ -1,0 +1,33 @@
+{
+  "overall": {
+    "line": 81.0,
+    "branch": 68.0,
+    "tolerance": 0.5
+  },
+  "groups": {
+    "A": {
+      "line": 85.0,
+      "branch": 70.0
+    },
+    "B": {
+      "line": 75.0,
+      "branch": 60.0
+    },
+    "C": {
+      "line": 70.0,
+      "branch": 55.0
+    }
+  },
+  "criticalFileMinimumLine": 60.0,
+  "criticalFiles": [
+    "Services/Auth/BiliCredentialStore.cs",
+    "Services/Auth/BiliLoginStateService.cs",
+    "Services/Api/BiliApiService.cs",
+    "Services/Download/BiliDownloadCoordinator.cs",
+    "Services/Download/CdnUrlHelper.cs",
+    "Services/Download/DownloadProgressTracker.cs",
+    "Services/Download/MultiConnectionDownloader.cs",
+    "Services/Infrastructure/SensitiveDataSanitizer.cs",
+    "Services/Persistence/DownloadTaskStore.cs"
+  ]
+}

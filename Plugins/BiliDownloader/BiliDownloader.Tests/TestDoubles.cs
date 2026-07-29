@@ -141,6 +141,9 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
     private readonly List<DownloadTaskRecord> _tasks = [];
 
     public int InitializeCount { get; private set; }
+    public int MaxConcurrentCalls { get; private set; }
+    public Exception? InitializeException { get; set; }
+    public Exception? InsertException { get; set; }
 
     public List<string> CallLog { get; } = [];
 
@@ -165,6 +168,11 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
 
     public Task InitAsync()
     {
+        if (InitializeException is not null)
+        {
+            return Task.FromException(InitializeException);
+        }
+
         lock (_gate)
         {
             InitializeCount++;
@@ -176,6 +184,11 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
 
     public Task InsertBatchAsync(List<DownloadTaskRecord> records)
     {
+        if (InsertException is not null)
+        {
+            return Task.FromException(InsertException);
+        }
+
         lock (_gate)
         {
             CallLog.Add("repository:insert");
@@ -258,6 +271,7 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
             var task = Find(taskId);
             task.VideoBytesDownloaded = videoBytes;
             task.AudioBytesDownloaded = audioBytes;
+            CallLog.Add("repository:bytes");
         }
 
         return Task.CompletedTask;
@@ -323,7 +337,11 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
 /// </summary>
 internal sealed class FakeDownloadTaskExecutor : IDownloadTaskExecutor
 {
+    private int _activeCount;
+
     public int ExecuteCount { get; private set; }
+    public int MaxActiveCount { get; private set; }
+    public List<DownloadTaskRecord> ExecutedTasks { get; } = [];
 
     public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -331,6 +349,7 @@ internal sealed class FakeDownloadTaskExecutor : IDownloadTaskExecutor
         = (_, _) => Task.FromResult(new DownloadExecutionResult(null, null));
 
     public Action? OnExecute { get; set; }
+    public Action<Action<DownloadProgressInfo>, Action<long, long>>? OnCallbacks { get; set; }
 
     public Task<DownloadExecutionResult> ExecuteAsync(
         DownloadTaskRecord task,
@@ -339,9 +358,27 @@ internal sealed class FakeDownloadTaskExecutor : IDownloadTaskExecutor
         CancellationToken cancellationToken)
     {
         ExecuteCount++;
+        ExecutedTasks.Add(task);
+        var active = Interlocked.Increment(ref _activeCount);
+        MaxActiveCount = Math.Max(MaxActiveCount, active);
         OnExecute?.Invoke();
+        OnCallbacks?.Invoke(onProgress, onBytesChanged);
         Started.TrySetResult();
-        return Handler(task, cancellationToken);
+        return ExecuteCoreAsync(task, cancellationToken);
+    }
+
+    private async Task<DownloadExecutionResult> ExecuteCoreAsync(
+        DownloadTaskRecord task,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await Handler(task, cancellationToken);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _activeCount);
+        }
     }
 }
 
@@ -398,4 +435,88 @@ internal sealed class IsolatedMessengerService : IMessengerService
 
     public void UnregisterAll(object receiver)
         => _messenger.UnregisterAll(receiver);
+}
+
+internal sealed class RecordingMessengerService : IMessengerService
+{
+    private readonly IMessenger _messenger = new StrongReferenceMessenger();
+
+    public List<object> SentMessages { get; } = [];
+    public bool ThrowOnSend { get; set; }
+
+    public IMessenger Messenger => _messenger;
+
+    public void Send<TMessage>(TMessage message) where TMessage : class
+    {
+        if (ThrowOnSend)
+        {
+            throw new InvalidOperationException("模拟消息发送失败");
+        }
+
+        SentMessages.Add(message);
+        _messenger.Send(message);
+    }
+
+    public void Register<TReceiver, TMessage>(
+        TReceiver receiver,
+        MyAvaloniaManagementCommon.Message.MessageHandler<TReceiver, TMessage> handler)
+        where TReceiver : class
+        where TMessage : class
+        => _messenger.Register<TReceiver, TMessage>(
+            receiver,
+            (target, message) => handler(target, message));
+
+    public void Unregister<TMessage>(object receiver) where TMessage : class
+        => _messenger.Unregister<TMessage>(receiver);
+
+    public void UnregisterAll(object receiver)
+        => _messenger.UnregisterAll(receiver);
+}
+
+internal sealed class InMemorySettingsRepository : ISettingsRepository
+{
+    private readonly Dictionary<string, string> _values = new(StringComparer.Ordinal);
+
+    public int InitializeCount { get; private set; }
+    public List<(string Key, string Value)> Writes { get; } = [];
+    public Exception? InitializeException { get; set; }
+
+    public void Seed(string key, string value) => _values[key] = value;
+
+    public Task InitAsync()
+    {
+        InitializeCount++;
+        return InitializeException is null
+            ? Task.CompletedTask
+            : Task.FromException(InitializeException);
+    }
+
+    public Task<string?> GetSettingAsync(string key)
+        => Task.FromResult(_values.GetValueOrDefault(key));
+
+    public Task SetSettingAsync(string key, string value)
+    {
+        _values[key] = value;
+        Writes.Add((key, value));
+        return Task.CompletedTask;
+    }
+}
+
+internal static class AsyncTest
+{
+    public static async Task EventuallyAsync(
+        Func<bool> condition,
+        TimeSpan? timeout = null)
+    {
+        var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(5));
+        while (!condition())
+        {
+            if (DateTime.UtcNow >= deadline)
+            {
+                throw new TimeoutException("等待测试条件超时。");
+            }
+
+            await Task.Delay(10);
+        }
+    }
 }

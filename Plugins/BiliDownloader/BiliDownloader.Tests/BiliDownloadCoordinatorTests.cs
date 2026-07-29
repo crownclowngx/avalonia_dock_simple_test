@@ -117,6 +117,267 @@ public sealed class BiliDownloadCoordinatorTests
         Assert.Equal(1, executor.ExecuteCount);
     }
 
+    [Fact]
+    public async Task 批量提交会完整映射字段并清洗分组目录()
+    {
+        var repository = new InMemoryDownloadTaskRepository();
+        var executor = new FakeDownloadTaskExecutor();
+        var coordinator = CreateCoordinator(repository, executor);
+        var message = new SubmitDownloadTaskMessage(
+            sourceDocumentId: "doc-map",
+            seriesTitle: "系列:标题",
+            items:
+            [
+                new DownloadItemInfo
+                {
+                    ItemId = "mapped",
+                    Title = "第一集",
+                    Aid = 11,
+                    Bvid = "BV1MAPPED00",
+                    Cid = 22,
+                    Duration = 33,
+                    MediaType = BiliMediaType.Bangumi,
+                    EpId = 44,
+                    SeasonId = 55,
+                    CoverUrl = "https://example.invalid/cover.jpg",
+                },
+            ],
+            qualityId: 120,
+            audioQualityId: 30280,
+            outputDirectory: "output",
+            useGroupFolder: true,
+            extrasConfig: Services.Download.Extras.ExtrasType.Subtitle
+                | Services.Download.Extras.ExtrasType.Cover);
+
+        await coordinator.SubmitTasksAsync(message, "ignored");
+        await AsyncTest.EventuallyAsync(() => executor.ExecuteCount == 1);
+
+        var task = Assert.Single(repository.Tasks);
+        Assert.Equal("doc-map", task.DocumentId);
+        Assert.Equal("系列:标题", task.SeriesTitle);
+        Assert.Equal("第一集", task.ItemTitle);
+        Assert.Equal(11, task.Aid);
+        Assert.Equal("BV1MAPPED00", task.Bvid);
+        Assert.Equal(22, task.Cid);
+        Assert.Equal(120, task.QualityId);
+        Assert.Equal(30280, task.AudioQualityId);
+        Assert.Equal("output", task.OutputDirectory);
+        Assert.Equal(BiliDownloadService.SanitizeFileName("系列:标题"), task.SubFolder);
+        Assert.Equal("bangumi", task.MediaType);
+        Assert.Equal(44, task.EpId);
+        Assert.Equal(55, task.SeasonId);
+        Assert.Equal(6, task.ExtrasConfig);
+        Assert.Equal("https://example.invalid/cover.jpg", task.CoverUrl);
+
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task 并发限制会钳制并确保队列完整排空()
+    {
+        var repository = new InMemoryDownloadTaskRepository();
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var executor = new FakeDownloadTaskExecutor
+        {
+            Handler = async (_, ct) =>
+            {
+                await release.Task.WaitAsync(ct);
+                return new DownloadExecutionResult(null, null);
+            },
+        };
+        var coordinator = CreateCoordinator(repository, executor);
+        coordinator.SetMaxConcurrentDownloads(2);
+        var message = CreateSubmitMessage("one");
+        message.Items.AddRange(
+        [
+            new DownloadItemInfo { ItemId = "two", Title = "two" },
+            new DownloadItemInfo { ItemId = "three", Title = "three" },
+            new DownloadItemInfo { ItemId = "four", Title = "four" },
+        ]);
+
+        await coordinator.SubmitTasksAsync(message, "unused");
+        await AsyncTest.EventuallyAsync(() => executor.ExecuteCount == 2);
+        Assert.Equal(2, executor.MaxActiveCount);
+
+        release.TrySetResult();
+        await AsyncTest.EventuallyAsync(() =>
+            repository.Tasks.Count == 4
+            && repository.Tasks.All(x => x.Status == "done"));
+        Assert.Equal(4, executor.ExecuteCount);
+        Assert.Equal(2, executor.MaxActiveCount);
+
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task 普通停止会把活动任务放回队列且之后可重新启动()
+    {
+        var repository = new InMemoryDownloadTaskRepository();
+        var executor = new FakeDownloadTaskExecutor
+        {
+            Handler = async (_, ct) =>
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+                return new DownloadExecutionResult(null, null);
+            },
+        };
+        var coordinator = CreateCoordinator(repository, executor);
+
+        await coordinator.SubmitTasksAsync(CreateSubmitMessage("resume"), "unused");
+        await executor.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await coordinator.StopProcessingAsync();
+
+        Assert.Equal("pending", Find(repository, "resume").Status);
+        Assert.False(coordinator.IsProcessing);
+
+        executor.Handler = (_, _) => Task.FromResult(new DownloadExecutionResult(null, null));
+        coordinator.StartProcessingAsync();
+        await AsyncTest.EventuallyAsync(() => Find(repository, "resume").Status == "done");
+        Assert.Equal(2, executor.ExecuteCount);
+
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task 失败重试清零断点而中断恢复保留断点()
+    {
+        var repository = new InMemoryDownloadTaskRepository();
+        repository.Seed(
+            CreateRecord("failed-reset", DownloadTaskStatus.Failed),
+            CreateRecord("interrupted-resume", DownloadTaskStatus.Interrupted));
+        Find(repository, "failed-reset").Progress = 42;
+        Find(repository, "failed-reset").ErrorMessage = "old";
+        Find(repository, "failed-reset").VideoBytesDownloaded = 100;
+        Find(repository, "failed-reset").AudioBytesDownloaded = 200;
+        Find(repository, "interrupted-resume").Progress = 55;
+        Find(repository, "interrupted-resume").VideoBytesDownloaded = 300;
+        var snapshots = new Dictionary<string, (double Progress, string? Error, long Video, long Audio)>();
+        var executor = new FakeDownloadTaskExecutor
+        {
+            OnExecute = () =>
+            {
+                var task = repository.Tasks.Single(x =>
+                    x.Status == "pending"
+                    && !snapshots.ContainsKey(x.TaskId));
+                snapshots[task.TaskId] = (
+                    task.Progress,
+                    task.ErrorMessage,
+                    task.VideoBytesDownloaded,
+                    task.AudioBytesDownloaded);
+            },
+        };
+        var coordinator = CreateCoordinator(repository, executor);
+
+        await coordinator.RetryTaskAsync(Find(repository, "failed-reset"));
+        await AsyncTest.EventuallyAsync(() => snapshots.ContainsKey("failed-reset"));
+        await coordinator.RetryTaskAsync(Find(repository, "interrupted-resume"));
+        await AsyncTest.EventuallyAsync(() => snapshots.Count == 2);
+
+        Assert.Equal((0d, null, 0L, 0L), snapshots["failed-reset"]);
+        Assert.Equal((55d, null, 300L, 0L), snapshots["interrupted-resume"]);
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task 删除任务会清理临时目录并发送定向通知()
+    {
+        using var paths = new TestDataPaths();
+        var repository = new InMemoryDownloadTaskRepository();
+        var messenger = new RecordingMessengerService();
+        var task = CreateRecord("delete-me", DownloadTaskStatus.Completed);
+        task.TempDirectory = Path.Combine(paths.TempDirectory, task.TaskId);
+        Directory.CreateDirectory(task.TempDirectory);
+        await File.WriteAllTextAsync(Path.Combine(task.TempDirectory, "part.tmp"), "data");
+        repository.Seed(task);
+        var coordinator = new BiliDownloadCoordinator(
+            repository,
+            messenger,
+            new NoOpDownloadProgressTracker(),
+            new FakeDownloadTaskExecutor(),
+            paths);
+
+        await coordinator.DeleteTaskAsync(task);
+
+        Assert.Empty(repository.Tasks);
+        Assert.False(Directory.Exists(task.TempDirectory));
+        var deleted = Assert.IsType<DownloadTaskDeletedMessage>(
+            Assert.Single(messenger.SentMessages));
+        Assert.Equal("document-1", deleted.TargetDocumentId);
+        Assert.Equal("delete-me", deleted.TaskId);
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task 进度回调和附加资源摘要会投影到事件及仓储()
+    {
+        var repository = new InMemoryDownloadTaskRepository();
+        var executor = new FakeDownloadTaskExecutor
+        {
+            OnCallbacks = (progress, bytes) =>
+            {
+                progress(new DownloadProgressInfo
+                {
+                    Stage = "video",
+                    OverallProgress = 25,
+                    VideoProgress = 50,
+                    SpeedText = "1 MB/s",
+                });
+                bytes(123, 45);
+            },
+            Handler = (_, _) => Task.FromResult(
+                new DownloadExecutionResult("final.mp4", "subtitle: OK")),
+        };
+        var coordinator = CreateCoordinator(repository, executor);
+        var progressEvents = 0;
+        var statusEvents = 0;
+        coordinator.TaskProgressChanged += _ => progressEvents++;
+        coordinator.TaskStatusChanged += _ => statusEvents++;
+
+        await coordinator.SubmitTasksAsync(CreateSubmitMessage("events"), "unused");
+        await AsyncTest.EventuallyAsync(() => Find(repository, "events").Status == "done");
+
+        Assert.Equal(1, progressEvents);
+        Assert.Equal(1, statusEvents);
+        Assert.Equal("subtitle: OK", Find(repository, "events").ExtrasResultSummary);
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task 下载异常中的敏感信息会在持久化前脱敏()
+    {
+        var repository = new InMemoryDownloadTaskRepository();
+        var executor = new FakeDownloadTaskExecutor
+        {
+            Handler = (_, _) => Task.FromException<DownloadExecutionResult>(
+                new InvalidOperationException(
+                    "Cookie: SESSDATA=secret; https://api.test/play?w_rid=signed")),
+        };
+        var coordinator = CreateCoordinator(repository, executor);
+
+        await coordinator.SubmitTasksAsync(CreateSubmitMessage("safe-error"), "unused");
+        await AsyncTest.EventuallyAsync(() => Find(repository, "safe-error").Status == "failed");
+
+        var error = Find(repository, "safe-error").ErrorMessage;
+        Assert.DoesNotContain("secret", error, StringComparison.Ordinal);
+        Assert.DoesNotContain("signed", error, StringComparison.Ordinal);
+        Assert.Contains("<redacted>", error, StringComparison.Ordinal);
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task 关闭幂等且关闭后拒绝新的执行命令()
+    {
+        var coordinator = CreateCoordinator(
+            new InMemoryDownloadTaskRepository(),
+            new FakeDownloadTaskExecutor());
+
+        await Task.WhenAll(coordinator.ShutdownAsync(), coordinator.ShutdownAsync());
+
+        Assert.Throws<InvalidOperationException>(() => coordinator.StartProcessingAsync());
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => coordinator.SubmitTasksAsync(CreateSubmitMessage("late"), "unused"));
+    }
+
     private static BiliDownloadCoordinator CreateCoordinator(
         InMemoryDownloadTaskRepository repository,
         FakeDownloadTaskExecutor executor)

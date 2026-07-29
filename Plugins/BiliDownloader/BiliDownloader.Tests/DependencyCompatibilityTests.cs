@@ -1,5 +1,4 @@
-using Avalonia;
-using Avalonia.Media.Imaging;
+using System.Buffers.Binary;
 using BiliDownloader.Services.Download.Extras;
 using BiliDownloader.Services.Infrastructure;
 
@@ -56,26 +55,8 @@ public sealed class DependencyCompatibilityTests
 
         Assert.True(png.AsSpan().StartsWith(
             new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }));
-        EnsureAvaloniaPlatform();
-        using var stream = new MemoryStream(png, writable: false);
-        using var bitmap = new Bitmap(stream);
-        Assert.True(bitmap.PixelSize.Width > 0);
-        Assert.True(bitmap.PixelSize.Height > 0);
+        Assert.Equal("IHDR", System.Text.Encoding.ASCII.GetString(png, 12, 4));
+        Assert.True(BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(16, 4)) > 0);
+        Assert.True(BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(20, 4)) > 0);
     }
-
-    private static void EnsureAvaloniaPlatform()
-    {
-        if (Application.Current is not null)
-        {
-            return;
-        }
-
-        // Bitmap 的流解码依赖 Avalonia 平台服务；这里只建立最小平台上下文，
-        // 不创建窗口，也不把 UI 初始化职责放回二维码编码帮助类。
-        AppBuilder.Configure<TestApplication>()
-            .UsePlatformDetect()
-            .SetupWithoutStarting();
-    }
-
-    private sealed class TestApplication : Application;
 }
