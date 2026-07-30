@@ -1,11 +1,26 @@
+using BiliDownloader.Services.Infrastructure;
+
 namespace BiliDownloader.Services.Download.Extras;
 
 /// <summary>
 /// 封面图下载处理器。
 /// 通过 HTTP GET 下载视频封面图片并保存到输出目录。
 /// </summary>
-public class CoverExtrasHandler : IExtrasHandler
+public sealed class CoverExtrasHandler : IExtrasHandler, IDisposable
 {
+    private readonly HttpClient _httpClient;
+
+    public CoverExtrasHandler(IBiliHttpClientFactory httpClientFactory)
+    {
+        _httpClient = httpClientFactory.CreateCoverClient();
+    }
+
+    /// <summary>兼容独立构造；生产路径由 DI 提供客户端工厂。</summary>
+    public CoverExtrasHandler()
+        : this(new BiliHttpClientFactory())
+    {
+    }
+
     public string Type => "cover";
     public string DisplayName => "封面";
 
@@ -24,16 +39,8 @@ public class CoverExtrasHandler : IExtrasHandler
 
         try
         {
-            using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
-            httpClient.DefaultRequestHeaders.Add("Referer", "https://www.bilibili.com/");
-
-            // 确保使用 HTTPS
-            var url = context.CoverUrl.Replace("http:", "https:");
-            if (url.StartsWith("//"))
-                url = "https:" + url;
-
-            var bytes = await httpClient.GetByteArrayAsync(url, ct);
+            var url = NormalizeHttpsUrl(context.CoverUrl);
+            var bytes = await _httpClient.GetByteArrayAsync(url, ct);
             await File.WriteAllBytesAsync(outputPath, bytes, ct);
 
             return ExtrasResult.Succeeded(Type, outputPath);
@@ -43,4 +50,30 @@ public class CoverExtrasHandler : IExtrasHandler
             return ExtrasResult.Failed(Type, $"封面下载失败: {ex.Message}");
         }
     }
+
+    private static Uri NormalizeHttpsUrl(string value)
+    {
+        var normalized = value.StartsWith("//", StringComparison.Ordinal)
+            ? "https:" + value
+            : value;
+        if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new UriFormatException("封面 URL 不是有效的 HTTP(S) 地址");
+        }
+
+        if (uri.Scheme == Uri.UriSchemeHttps)
+        {
+            return uri;
+        }
+
+        var builder = new UriBuilder(uri)
+        {
+            Scheme = Uri.UriSchemeHttps,
+            Port = -1,
+        };
+        return builder.Uri;
+    }
+
+    public void Dispose() => _httpClient.Dispose();
 }

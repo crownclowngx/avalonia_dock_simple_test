@@ -210,6 +210,45 @@ public sealed class BiliDownloadCoordinatorTests
     }
 
     [Fact]
+    public async Task 活动队列被新Ready任务唤醒并立即占用空闲槽()
+    {
+        var repository = new InMemoryDownloadTaskRepository();
+        repository.Seed(
+            CreateRecord("blocked", DownloadTaskStatus.Ready),
+            CreateRecord("restored", DownloadTaskStatus.Interrupted));
+        var blockedStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseBlocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var executor = new FakeDownloadTaskExecutor
+        {
+            Handler = async (task, ct) =>
+            {
+                if (task.TaskId == "blocked")
+                {
+                    blockedStarted.TrySetResult();
+                    await releaseBlocked.Task.WaitAsync(ct);
+                }
+                return new DownloadExecutionResult($"output-{task.TaskId}", null);
+            },
+        };
+        var coordinator = CreateCoordinator(repository, executor);
+        coordinator.SetMaxConcurrentDownloads(2);
+
+        coordinator.StartProcessingAsync();
+        await blockedStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await coordinator.RetryTaskAsync(Find(repository, "restored"));
+
+        await AsyncTest.EventuallyAsync(() =>
+            executor.ExecutedTasks.Any(task => task.TaskId == "restored")
+            && Find(repository, "restored").Status == "done");
+        Assert.Equal("pending", Find(repository, "blocked").Status);
+        Assert.Equal(2, executor.MaxActiveCount);
+
+        releaseBlocked.TrySetResult();
+        await AsyncTest.EventuallyAsync(() => Find(repository, "blocked").Status == "done");
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
     public async Task 普通停止会把活动任务放回队列且之后可重新启动()
     {
         var repository = new InMemoryDownloadTaskRepository();

@@ -1,7 +1,10 @@
 using System.Net;
 using System.Text;
+using BiliDownloader.Models;
+using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
+using Flurl.Http.Testing;
 
 namespace BiliDownloader.Tests;
 
@@ -166,7 +169,7 @@ public sealed class DownloadProtocolTests
         var progress = new List<(long Total, long Downloaded)>();
         using var downloader = new MultiConnectionDownloader(chunkCount: 4);
 
-        await downloader.DownloadAsync(
+        var result = await downloader.DownloadAsync(
             [server.Url("cdn-a"), server.Url("cdn-b")],
             output,
             "cookie=value",
@@ -174,6 +177,9 @@ public sealed class DownloadProtocolTests
             CancellationToken.None);
 
         Assert.Equal(allBytes, await File.ReadAllBytesAsync(output));
+        Assert.Equal(allBytes.LongLength, result.ExpectedBytes);
+        Assert.Equal(allBytes.LongLength, result.ActualBytes);
+        Assert.True(result.IntegrityPassed);
         Assert.Equal((allBytes.LongLength, allBytes.LongLength), progress.Last());
         Assert.False(File.Exists(output + ".chunk0"));
         Assert.False(File.Exists(output + ".chunk1"));
@@ -182,6 +188,63 @@ public sealed class DownloadProtocolTests
         Assert.All(getRequests, request => Assert.Equal("cookie=value", request.Header("Cookie")));
         Assert.Contains(getRequests, x => x.Target.StartsWith("/cdn-a", StringComparison.Ordinal));
         Assert.Contains(getRequests, x => x.Target.StartsWith("/cdn-b", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("wrong-start")]
+    [InlineData("short-body")]
+    [InlineData("wrong-total")]
+    public async Task 多连接拒绝错误Range响应且不生成最终文件(string scenario)
+    {
+        const int totalLength = 1_100_000;
+        await using var server = LoopbackHttpServer.Create(request =>
+        {
+            if (request.Method == "HEAD")
+            {
+                return LoopbackResponse.Bytes(
+                    [],
+                    headers: new Dictionary<string, string>
+                    {
+                        ["Content-Length"] = totalLength.ToString(),
+                    });
+            }
+
+            var (start, end) = ParseRange(request.Header("Range")!);
+            var bodyLength = checked((int)(end - start + 1));
+            if (scenario == "short-body")
+            {
+                bodyLength--;
+            }
+            var headerStart = scenario == "wrong-start" ? start + 1 : start;
+            var headerTotal = scenario == "wrong-total" ? totalLength + 1 : totalLength;
+            return LoopbackResponse.Bytes(
+                new byte[bodyLength],
+                206,
+                new Dictionary<string, string>
+                {
+                    ["Content-Range"] = $"bytes {headerStart}-{end}/{headerTotal}",
+                });
+        });
+        using var paths = new TestDataPaths();
+        Directory.CreateDirectory(paths.RootDirectory);
+        var output = Path.Combine(paths.RootDirectory, $"invalid-{scenario}.bin");
+        using var httpClient = new HttpClient();
+        var runtime = new FakeDownloadRuntime();
+        using var downloader = new MultiConnectionDownloader(httpClient, runtime, chunkCount: 2);
+
+        await Assert.ThrowsAsync<DownloadProtocolException>(() =>
+            downloader.DownloadAsync(
+                [server.Url("a"), server.Url("b")],
+                output,
+                "",
+                (_, _, _) => { },
+                CancellationToken.None));
+
+        Assert.False(File.Exists(output));
+        Assert.False(File.Exists(output + ".merging"));
+        Assert.False(File.Exists(output + ".chunk0"));
+        Assert.False(File.Exists(output + ".chunk1"));
+        Assert.True(runtime.DelayCount > 0);
     }
 
     [Fact]
@@ -266,6 +329,80 @@ public sealed class DownloadProtocolTests
     }
 
     [Fact]
+    public async Task 注入依赖可离线跑通媒体下载与Ffmpeg合并主链路()
+    {
+        using var state = new StaticStateScope();
+        using var apiHttp = new HttpTest();
+        apiHttp.ForCallsTo("https://api.bilibili.com/x/web-interface/nav")
+            .RespondWith("""
+                {"code":0,"data":{"wbi_img":{
+                  "img_url":"https://i.test/abcdefghijklmnopqrstuvwxyz123456.png",
+                  "sub_url":"https://i.test/654321zyxwvutsrqponmlkjihgfedcba.png"
+                }}}
+                """);
+        apiHttp.ForCallsTo("*x/player/wbi/playurl*")
+            .RespondWith("""
+                {"code":0,"data":{"dash":{
+                  "video":[{"id":80,"base_url":"https://media.test/video","codecid":7}],
+                  "audio":[{"id":30232,"base_url":"https://media.test/audio","bandwidth":192000}]
+                }}}
+                """);
+        var videoBytes = Encoding.UTF8.GetBytes("video-data");
+        var audioBytes = Encoding.UTF8.GetBytes("audio-data");
+        var httpFactory = new StubBiliHttpClientFactory(request =>
+        {
+            var bytes = request.RequestUri?.AbsolutePath == "/video" ? videoBytes : audioBytes;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(bytes),
+            };
+        });
+        using var paths = new TestDataPaths();
+        Directory.CreateDirectory(paths.RootDirectory);
+        var ffmpeg = new FakeFfmpegService
+        {
+            ReadyOverride = true,
+            CreateOutputFile = true,
+        };
+        using var service = new BiliDownloadService(
+            paths,
+            ffmpeg,
+            httpFactory,
+            new FakeDownloadRuntime(),
+            chunkCount: 1);
+        var task = new DownloadTaskRecord
+        {
+            TaskId = "offline-main",
+            ItemTitle = "离线主链路",
+            Aid = 1,
+            Cid = 2,
+            Bvid = "BV1TEST0001",
+            QualityId = 80,
+            AudioQualityId = 30232,
+            OutputDirectory = paths.RootDirectory,
+            MediaType = "video",
+        };
+
+        var result = await service.DownloadItemAsync(
+            task,
+            new BiliApiService(),
+            "SESSDATA=test",
+            _ => { },
+            (_, _) => { },
+            CancellationToken.None);
+
+        Assert.True(result.VideoTransfer.IntegrityPassed);
+        Assert.True(result.AudioTransfer.IntegrityPassed);
+        Assert.Equal(videoBytes.Length, result.VideoTransfer.ExpectedBytes);
+        Assert.Equal(audioBytes.Length, result.AudioTransfer.ExpectedBytes);
+        Assert.Single(ffmpeg.MergeCalls);
+        Assert.True(File.Exists(result.OutputFilePath));
+        Assert.Equal(2, httpFactory.Requests.Count);
+        Assert.All(httpFactory.Requests, request =>
+            Assert.Equal("SESSDATA=test", request.Headers["Cookie"]));
+    }
+
+    [Fact]
     public void 文件名清洗替换当前平台非法字符并去掉尾点()
     {
         var invalid = Path.GetInvalidFileNameChars().First();
@@ -282,13 +419,63 @@ public sealed class DownloadProtocolTests
         Directory.CreateDirectory(paths.RootDirectory);
         var fake = Path.Combine(paths.RootDirectory, "ffmpeg.exe");
         await File.WriteAllTextAsync(fake, "not an executable");
-        FfmpegService.CustomPath = fake;
+        var ffmpeg = new FfmpegService(new FfmpegProcessFactory())
+        {
+            CustomPath = fake,
+        };
 
-        Assert.Equal(fake, FfmpegService.ResolveFfmpegPath());
-        Assert.True(FfmpegService.IsReady);
-        Assert.False(await FfmpegService.ValidatePathAsync(fake));
-        Assert.False(await FfmpegService.ValidatePathAsync(
+        Assert.Equal(fake, ffmpeg.ResolveFfmpegPath());
+        Assert.True(ffmpeg.IsReady);
+        Assert.False(await ffmpeg.ValidatePathAsync(fake));
+        Assert.False(await ffmpeg.ValidatePathAsync(
             Path.Combine(paths.RootDirectory, "missing.exe")));
+    }
+
+    [Fact]
+    public async Task Ffmpeg合并使用安全参数列表并通过注入进程执行()
+    {
+        using var paths = new TestDataPaths();
+        Directory.CreateDirectory(paths.RootDirectory);
+        var executable = Path.Combine(paths.RootDirectory, "ffmpeg.exe");
+        await File.WriteAllTextAsync(executable, "marker");
+        var processFactory = new FakeFfmpegProcessFactory();
+        var ffmpeg = new FfmpegService(processFactory) { CustomPath = executable };
+        var video = Path.Combine(paths.RootDirectory, "video with space.tmp");
+        var audio = Path.Combine(paths.RootDirectory, "audio.tmp");
+        var output = Path.Combine(paths.RootDirectory, "output.mp4");
+
+        await ffmpeg.MergeAsync(video, audio, output);
+
+        Assert.Equal(executable, processFactory.StartInfo?.FileName);
+        Assert.Equal(
+            [
+                "-hide_banner", "-nostats", "-loglevel", "warning",
+                "-i", video, "-i", audio, "-c", "copy", "-shortest", output,
+            ],
+            processFactory.StartInfo?.ArgumentList);
+    }
+
+    [Fact]
+    public async Task Ffmpeg取消会终止进程树并清理未完成输出()
+    {
+        using var paths = new TestDataPaths();
+        Directory.CreateDirectory(paths.RootDirectory);
+        var executable = Path.Combine(paths.RootDirectory, "ffmpeg.exe");
+        var output = Path.Combine(paths.RootDirectory, "partial.mp4");
+        await File.WriteAllTextAsync(executable, "marker");
+        await File.WriteAllTextAsync(output, "partial");
+        var processFactory = new FakeFfmpegProcessFactory();
+        processFactory.Process.BlockUntilCancelled = true;
+        var ffmpeg = new FfmpegService(processFactory) { CustomPath = executable };
+        using var cancellation = new CancellationTokenSource();
+
+        var mergeTask = ffmpeg.MergeAsync("video.tmp", "audio.tmp", output, cancellation.Token);
+        await Task.Yield();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => mergeTask);
+        Assert.True(processFactory.Process.KillCalled);
+        Assert.False(File.Exists(output));
     }
 
     private static (long Start, long End) ParseRange(string value)

@@ -42,16 +42,16 @@ dotnet test ..\..\..\MyAvaloniaManagement.sln -c Release -p:SkipPluginDeploy=tru
 
 ## 稳定性约束
 
-- 涉及 Flurl、WBI 缓存、`FfmpegService.CustomPath` 和 PATH 的测试串行运行并恢复静态状态。
+- 涉及 Flurl、WBI 缓存和 PATH 的测试串行运行并恢复静态状态；ffmpeg 路径已经是实例状态。
 - 并发测试使用 `TaskCompletionSource` 和显式超时，不依赖任务碰巧完成的顺序。
 - SQLite、下载文件和密钥全部位于按测试创建的临时目录，测试结束后清理。
 - `coverage.runsettings` 排除测试程序集、生成代码、XAML 和纯 View；门禁定义见 `coverage-baseline.json`。
 
-## 当前受生产结构限制的测试空白
+## 当前测试边界
 
-- `BiliDownloadTaskExecutor` 依赖具体 `BiliDownloadService`/`BiliApiService`，且主链路最终静态调用 ffmpeg，无法在“不改生产代码”边界内隔离成功全链路。
-- `FfmpegService` 为静态进程服务；默认测试只验证路径解析和无效程序，不执行真实 ffmpeg。
-- `CoverExtrasHandler` 直接创建 HTTPS `HttpClient`；默认测试覆盖校验和失败契约，不建立受信任 TLS 测试服务器。
+- 下载—完整性验证—ffmpeg 合并主链路通过注入 HTTP 与 ffmpeg 假实现离线覆盖。
+- `FfmpegService` 的参数、退出码、取消和清理通过进程句柄假实现验证，默认测试不执行真实 ffmpeg。
+- `CoverExtrasHandler` 通过注入的 `HttpMessageHandler` 覆盖 HTTPS 规范化、请求头和成功写入。
 - `LoginWindowViewModel` 内置两秒轮询与 Avalonia Bitmap，不做窗口/计时自动化；登录 API 与登录状态服务已分别离线覆盖。
 
-这些空白不得通过访问真实网络或引入真实凭据来绕过。
+剩余 UI/真实环境边界不得通过访问真实网络或引入真实凭据来绕过。

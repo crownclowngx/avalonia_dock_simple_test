@@ -1,147 +1,160 @@
+using System.Net;
 using System.Net.Http.Headers;
+using BiliDownloader.Services.Infrastructure;
 
 namespace BiliDownloader.Services.Download;
 
 /// <summary>
-/// 多连接分块并行下载器
-/// 将文件分成多个 chunk，每个 chunk 使用不同 CDN URL 并行 Range 请求下载，叠加带宽
+/// 多连接分块下载器。所有可合并数据都必须先通过 Range 与长度验证。
 /// </summary>
-public class MultiConnectionDownloader : IDisposable
+public sealed class MultiConnectionDownloader : IDisposable
 {
-    /// <summary>
-    /// 默认分块数
-    /// </summary>
+    private const int MaxRetries = 3;
+
     private readonly int _chunkCount;
+    private readonly HttpClient _client;
+    private readonly IDownloadRuntime _runtime;
+    private readonly bool _ownsClient;
 
-    /// <summary>
-    /// 每个连接一个 HttpClient（避免连接池争用）
-    /// </summary>
-    private readonly HttpClient[] _clients;
-
-    public MultiConnectionDownloader(int chunkCount = 4)
+    public MultiConnectionDownloader(
+        HttpClient client,
+        IDownloadRuntime runtime,
+        int chunkCount = 4)
+        : this(client, runtime, chunkCount, ownsClient: false)
     {
-        _chunkCount = Math.Max(1, chunkCount);
-        _clients = new HttpClient[_chunkCount];
-        for (int i = 0; i < _chunkCount; i++)
-        {
-            var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("User-Agent", HttpConstants.UserAgent);
-            client.DefaultRequestHeaders.Add("Referer", HttpConstants.Referer);
-            client.DefaultRequestHeaders.Add("Origin", HttpConstants.Origin);
-            client.Timeout = TimeSpan.FromMinutes(60);
-            _clients[i] = client;
-        }
     }
 
     /// <summary>
-    /// 多线程分块下载
+    /// 兼容独立使用场景；生产 DI 路径使用显式依赖构造函数。
     /// </summary>
-    /// <param name="urls">多个 CDN URL（Round-Robin 分配给各 chunk）</param>
-    /// <param name="outputPath">最终输出文件路径</param>
-    /// <param name="cookie">Cookie</param>
-    /// <param name="onProgress">进度回调 (总字节, 已下载字节, 速度文本)</param>
-    /// <param name="ct">取消令牌</param>
-    public async Task DownloadAsync(
+    public MultiConnectionDownloader(int chunkCount = 4)
+        : this(
+            new BiliHttpClientFactory().CreateMediaClient(),
+            new SystemDownloadRuntime(),
+            chunkCount,
+            ownsClient: true)
+    {
+    }
+
+    private MultiConnectionDownloader(
+        HttpClient client,
+        IDownloadRuntime runtime,
+        int chunkCount,
+        bool ownsClient)
+    {
+        _client = client;
+        _runtime = runtime;
+        _chunkCount = Math.Max(1, chunkCount);
+        _ownsClient = ownsClient;
+    }
+
+    public async Task<DownloadTransferResult> DownloadAsync(
         List<string> urls,
         string outputPath,
         string cookie,
         Action<long, long, string> onProgress,
         CancellationToken ct)
     {
-        if (urls == null || urls.Count == 0)
+        if (urls is null || urls.Count == 0)
+        {
             throw new ArgumentException("至少需要一个下载 URL", nameof(urls));
+        }
 
-        // 只有一个 URL 或分块数为 1：退化为单连接
         if (urls.Count == 1 || _chunkCount <= 1)
         {
-            await DownloadSingleAsync(urls[0], outputPath, cookie, onProgress, ct);
-            return;
+            return await DownloadSingleAsync(urls[0], outputPath, cookie, onProgress, ct);
         }
 
-        // 1. HEAD 请求获取总文件大小
-        var primaryUrl = urls[0];
-        long totalSize = await GetContentLengthAsync(primaryUrl, cookie, ct);
+        var totalSize = await GetContentLengthAsync(urls[0], cookie, ct);
         if (totalSize <= 0)
         {
-            // 不支持 HEAD 或无法获取大小，回退到单连接
-            await DownloadSingleAsync(primaryUrl, outputPath, cookie, onProgress, ct);
-            return;
+            return await DownloadSingleAsync(urls[0], outputPath, cookie, onProgress, ct);
         }
 
-        // 2. 计算 chunk 边界
-        var chunkCount = Math.Min(_chunkCount, (int)Math.Ceiling((double)totalSize / (1024 * 1024)));
-        if (chunkCount < 1) chunkCount = 1;
+        var chunkCount = Math.Min(
+            _chunkCount,
+            Math.Max(1, (int)Math.Ceiling((double)totalSize / (1024 * 1024))));
         var chunkSize = totalSize / chunkCount;
-
-        // 3. 启动并行下载
-        var downloadedTotal = 0L; // Interlocked 汇总
+        var downloadedTotal = 0L;
         var lastReportedBytes = 0L;
-        var lastReportTime = DateTime.UtcNow;
-        var speedText = "";
-        var lockObj = new object();
+        var lastReportTime = _runtime.UtcNow;
+        var progressLock = new object();
 
-        void ReportProgress()
+        void AddProgress(long delta)
         {
-            var now = DateTime.UtcNow;
-            var elapsed = (now - lastReportTime).TotalSeconds;
-            if (elapsed >= 0.5)
+            var current = Interlocked.Add(ref downloadedTotal, delta);
+            lock (progressLock)
             {
-                var current = Interlocked.Read(ref downloadedTotal);
+                var now = _runtime.UtcNow;
+                var elapsed = (now - lastReportTime).TotalSeconds;
+                if (elapsed < 0.5)
+                {
+                    return;
+                }
+
                 var bytesPerSecond = (current - lastReportedBytes) / elapsed;
-                speedText = FormatSpeed((long)bytesPerSecond);
                 lastReportedBytes = current;
                 lastReportTime = now;
-                onProgress(totalSize, current, speedText);
+                onProgress(totalSize, current, FormatSpeed((long)bytesPerSecond));
             }
         }
 
-        var tasks = new Task[chunkCount];
-        for (int i = 0; i < chunkCount; i++)
+        var tasks = new List<Task>(chunkCount);
+        for (var chunkIndex = 0; chunkIndex < chunkCount; chunkIndex++)
         {
-            var chunkIndex = i;
             var start = chunkIndex * chunkSize;
-            var end = (chunkIndex == chunkCount - 1) ? totalSize - 1 : (chunkIndex + 1) * chunkSize - 1;
+            var end = chunkIndex == chunkCount - 1
+                ? totalSize - 1
+                : (chunkIndex + 1) * chunkSize - 1;
             var chunkPath = $"{outputPath}.chunk{chunkIndex}";
+            var expectedChunkLength = end - start + 1;
 
-            tasks[chunkIndex] = DownloadChunkAsync(
-                urls, chunkIndex, chunkPath, cookie, start, end,
-                (bytesDownloaded) =>
+            if (File.Exists(chunkPath))
+            {
+                var existingLength = new FileInfo(chunkPath).Length;
+                if (existingLength > expectedChunkLength)
                 {
-                    Interlocked.Add(ref downloadedTotal, bytesDownloaded);
-                    ReportProgress();
-                },
-                _clients[chunkIndex],
-                ct);
+                    File.Delete(chunkPath);
+                }
+                else
+                {
+                    Interlocked.Add(ref downloadedTotal, existingLength);
+                }
+            }
+
+            tasks.Add(DownloadChunkAsync(
+                urls,
+                chunkIndex,
+                chunkPath,
+                cookie,
+                start,
+                end,
+                totalSize,
+                AddProgress,
+                ct));
         }
 
+        lastReportedBytes = Interlocked.Read(ref downloadedTotal);
         try
         {
             await Task.WhenAll(tasks);
+            await MergeChunksAsync(outputPath, chunkCount, totalSize, ct);
         }
-        catch (OperationCanceledException)
+        catch
         {
-            // 取消时保留已下载的 chunk 文件，下次续传
+            DeleteIfExists(outputPath + ".merging");
             throw;
         }
 
-        // 4. 合并 chunk 文件
-        await MergeChunksAsync(outputPath, chunkCount, ct);
-
-        // 5. 清理 chunk 临时文件
-        for (int i = 0; i < chunkCount; i++)
+        for (var i = 0; i < chunkCount; i++)
         {
-            var chunkPath = $"{outputPath}.chunk{i}";
-            try { if (File.Exists(chunkPath)) File.Delete(chunkPath); }
-            catch { /* 忽略 */ }
+            DeleteIfExists($"{outputPath}.chunk{i}");
         }
 
-        // 最终进度报告
         onProgress(totalSize, totalSize, "");
+        return new DownloadTransferResult(totalSize, totalSize, IntegrityPassed: true);
     }
 
-    /// <summary>
-    /// 下载单个 chunk：支持 CDN 回退重试（最多 3 次，指数退避）
-    /// </summary>
     private async Task DownloadChunkAsync(
         List<string> urls,
         int chunkIndex,
@@ -149,149 +162,174 @@ public class MultiConnectionDownloader : IDisposable
         string cookie,
         long rangeStart,
         long rangeEnd,
+        long expectedTotalLength,
         Action<long> onBytesDelta,
-        HttpClient client,
         CancellationToken ct)
     {
-        const int maxRetries = 3;
         Exception? lastException = null;
-
-        for (int attempt = 0; attempt < maxRetries; attempt++)
+        for (var attempt = 0; attempt < MaxRetries; attempt++)
         {
-            // Round-Robin 选择 CDN URL，每次重试切换不同 CDN
             var url = urls[(chunkIndex + attempt) % urls.Count];
-
             try
             {
-                await DownloadChunkOnceAsync(url, chunkPath, cookie, rangeStart, rangeEnd, onBytesDelta, client, ct);
-                return; // 成功
+                await DownloadChunkOnceAsync(
+                    url,
+                    chunkPath,
+                    cookie,
+                    rangeStart,
+                    rangeEnd,
+                    expectedTotalLength,
+                    onBytesDelta,
+                    ct);
+                return;
             }
             catch (OperationCanceledException)
             {
-                throw; // 取消直接传播
+                throw;
             }
             catch (Exception ex)
             {
                 lastException = ex;
-
-                if (attempt < maxRetries - 1)
+                if (attempt < MaxRetries - 1)
                 {
-                    // 指数退避 + 随机 jitter
-                    var delayMs = (int)(Math.Pow(2, attempt) * 1000) + Random.Shared.Next(0, 500);
-                    await Task.Delay(delayMs, ct);
+                    await _runtime.DelayForRetryAsync(attempt, ct);
                 }
             }
         }
 
-        throw new Exception($"Chunk {chunkIndex} 下载失败（已重试 {maxRetries} 次）: {lastException?.Message}", lastException);
+        if (lastException is DownloadProtocolException protocolException)
+        {
+            throw new DownloadProtocolException(
+                $"Chunk {chunkIndex} 协议验证失败（已重试 {MaxRetries} 次）: {protocolException.Message}",
+                protocolException);
+        }
+
+        throw new IOException(
+            $"Chunk {chunkIndex} 下载失败（已重试 {MaxRetries} 次）: {lastException?.Message}",
+            lastException);
     }
 
-    /// <summary>
-    /// 单次 chunk 下载尝试（无重试逻辑）
-    /// </summary>
-    private static async Task DownloadChunkOnceAsync(
+    private async Task DownloadChunkOnceAsync(
         string url,
         string chunkPath,
         string cookie,
         long rangeStart,
         long rangeEnd,
+        long expectedTotalLength,
         Action<long> onBytesDelta,
-        HttpClient client,
         CancellationToken ct)
     {
-        // 检查续传：如果 chunk 文件已存在，从断点继续
-        long existingBytes = 0;
-        if (File.Exists(chunkPath))
+        var expectedChunkLength = rangeEnd - rangeStart + 1;
+        var existingBytes = File.Exists(chunkPath) ? new FileInfo(chunkPath).Length : 0;
+        if (existingBytes > expectedChunkLength)
         {
-            existingBytes = new FileInfo(chunkPath).Length;
+            DeleteIfExists(chunkPath);
+            existingBytes = 0;
         }
-
-        var actualStart = rangeStart + existingBytes;
-        if (actualStart > rangeEnd)
+        if (existingBytes == expectedChunkLength)
         {
-            // 这个 chunk 已经完成
             return;
         }
 
-        // 报告已下载的字节（续传时）
-        if (existingBytes > 0)
-        {
-            onBytesDelta(existingBytes);
-        }
-
+        var actualStart = rangeStart + existingBytes;
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        if (!string.IsNullOrWhiteSpace(cookie))
-        {
-            request.Headers.Add("Cookie", cookie);
-        }
+        AddCookie(request, cookie);
         request.Headers.Range = new RangeHeaderValue(actualStart, rangeEnd);
 
-        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-
-        // 校验 Range 响应：服务器忽略 Range 时可能返回 200 OK 和完整文件，继续 Append 会导致数据错位
-        if (response.StatusCode != System.Net.HttpStatusCode.PartialContent)
+        long writtenThisAttempt = 0;
+        var rangeValidated = false;
+        try
         {
-            // 服务器不支持 Range，删除可能不完整的 chunk 并报错
-            if (File.Exists(chunkPath)) File.Delete(chunkPath);
-            throw new InvalidOperationException(
-                $"CDN 返回 {(int)response.StatusCode} 而非 206 Partial Content，无法续传或分块下载");
-        }
-
-        using var stream = await response.Content.ReadAsStreamAsync(ct);
-
-        var fileMode = existingBytes > 0 ? FileMode.Append : FileMode.Create;
-        using var fileStream = new FileStream(chunkPath, fileMode, FileAccess.Write, FileShare.None, 8192);
-
-        var buffer = new byte[8192];
-        int bytesRead;
-
-        while ((bytesRead = await stream.ReadAsync(buffer, ct)) > 0)
-        {
-            await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
-            onBytesDelta(bytesRead);
-        }
-    }
-
-    /// <summary>
-    /// 合并所有 chunk 文件为最终文件
-    /// </summary>
-    private static async Task MergeChunksAsync(string outputPath, int chunkCount, CancellationToken ct)
-    {
-        using var outputStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192);
-        var buffer = new byte[8192];
-
-        for (int i = 0; i < chunkCount; i++)
-        {
-            var chunkPath = $"{outputPath}.chunk{i}";
-            if (!File.Exists(chunkPath))
-                throw new FileNotFoundException($"Chunk 文件缺失: {chunkPath}");
-
-            using var chunkStream = new FileStream(chunkPath, FileMode.Open, FileAccess.Read, FileShare.Read, 8192);
-            int bytesRead;
-            while ((bytesRead = await chunkStream.ReadAsync(buffer, ct)) > 0)
+            using var response = await _client.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                ct);
+            if (response.StatusCode != HttpStatusCode.PartialContent)
             {
-                await outputStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
+                throw new DownloadProtocolException(
+                    $"CDN 返回 {(int)response.StatusCode} 而非 206 Partial Content");
+            }
+
+            var expectedResponseLength = rangeEnd - actualStart + 1;
+            ValidateContentRange(
+                response.Content.Headers.ContentRange,
+                actualStart,
+                rangeEnd,
+                expectedTotalLength);
+            ValidateDeclaredContentLength(
+                response.Content.Headers.ContentLength,
+                expectedResponseLength);
+            rangeValidated = true;
+
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
+            await using var fileStream = new FileStream(
+                chunkPath,
+                existingBytes > 0 ? FileMode.Append : FileMode.Create,
+                FileAccess.Write,
+                FileShare.None,
+                8192,
+                useAsync: true);
+            var buffer = new byte[8192];
+            while (true)
+            {
+                var bytesRead = await stream.ReadAsync(buffer, ct);
+                if (bytesRead == 0)
+                {
+                    break;
+                }
+
+                if (writtenThisAttempt + bytesRead > expectedResponseLength)
+                {
+                    throw new DownloadProtocolException(
+                        $"Range 响应体超过声明区间，期望 {expectedResponseLength} 字节");
+                }
+
+                await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
+                writtenThisAttempt += bytesRead;
+                onBytesDelta(bytesRead);
+            }
+
+            if (writtenThisAttempt != expectedResponseLength)
+            {
+                throw new DownloadProtocolException(
+                    $"Range 响应体长度错误，期望 {expectedResponseLength}，实际 {writtenThisAttempt}");
             }
         }
+        catch (Exception ex)
+        {
+            RollbackFile(chunkPath, existingBytes);
+            if (writtenThisAttempt != 0)
+            {
+                onBytesDelta(-writtenThisAttempt);
+            }
+            if (rangeValidated
+                && ex is IOException
+                && ex is not DownloadProtocolException)
+            {
+                throw new DownloadProtocolException(
+                    $"Range 响应在达到预期长度前中断，已读取 {writtenThisAttempt} 字节",
+                    ex);
+            }
+            throw;
+        }
     }
 
-    /// <summary>
-    /// HEAD 请求获取 Content-Length
-    /// </summary>
-    private async Task<long> GetContentLengthAsync(string url, string cookie, CancellationToken ct)
+    private async Task<long> GetContentLengthAsync(
+        string url,
+        string cookie,
+        CancellationToken ct)
     {
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Head, url);
-            if (!string.IsNullOrWhiteSpace(cookie))
-            {
-                request.Headers.Add("Cookie", cookie);
-            }
-
-            using var response = await _clients[0].SendAsync(request, ct);
+            AddCookie(request, cookie);
+            using var response = await _client.SendAsync(request, ct);
             response.EnsureSuccessStatusCode();
-
             return response.Content.Headers.ContentLength ?? -1;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch
         {
@@ -299,74 +337,272 @@ public class MultiConnectionDownloader : IDisposable
         }
     }
 
-    /// <summary>
-    /// 单连接回退下载（与原有逻辑一致）
-    /// </summary>
-    private async Task DownloadSingleAsync(
+    private async Task<DownloadTransferResult> DownloadSingleAsync(
         string url,
         string outputPath,
         string cookie,
         Action<long, long, string> onProgress,
         CancellationToken ct)
     {
+        var existingBytes = File.Exists(outputPath) ? new FileInfo(outputPath).Length : 0;
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        AddCookie(request, cookie);
+        if (existingBytes > 0)
+        {
+            request.Headers.Range = new RangeHeaderValue(existingBytes, null);
+        }
+
+        using var response = await _client.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            ct);
+        response.EnsureSuccessStatusCode();
+
+        var append = existingBytes > 0 && response.StatusCode == HttpStatusCode.PartialContent;
+        long expectedTotal;
+        long expectedResponseLength;
+        if (append)
+        {
+            var contentRange = response.Content.Headers.ContentRange;
+            if (contentRange?.Length is not long totalLength)
+            {
+                throw new DownloadProtocolException("续传响应缺少 Content-Range 总长度");
+            }
+            if (contentRange.To is not long responseEnd)
+            {
+                throw new DownloadProtocolException("续传响应缺少 Content-Range 终点");
+            }
+
+            ValidateContentRange(contentRange, existingBytes, totalLength - 1, totalLength);
+            expectedTotal = totalLength;
+            expectedResponseLength = responseEnd - existingBytes + 1;
+            ValidateDeclaredContentLength(
+                response.Content.Headers.ContentLength,
+                expectedResponseLength);
+        }
+        else if (response.StatusCode == HttpStatusCode.PartialContent)
+        {
+            var contentRange = response.Content.Headers.ContentRange;
+            if (contentRange?.Length is not long totalLength)
+            {
+                throw new DownloadProtocolException("206 响应缺少 Content-Range 总长度");
+            }
+            ValidateContentRange(contentRange, 0, totalLength - 1, totalLength);
+            expectedTotal = totalLength;
+            expectedResponseLength = totalLength;
+            ValidateDeclaredContentLength(
+                response.Content.Headers.ContentLength,
+                expectedResponseLength);
+        }
+        else
+        {
+            // 服务器忽略 Range 返回 200 时明确从头覆盖。
+            existingBytes = 0;
+            expectedResponseLength = response.Content.Headers.ContentLength ?? 0;
+            expectedTotal = expectedResponseLength;
+        }
+
+        var initialLength = append ? existingBytes : 0;
+        long writtenThisAttempt = 0;
+        var lastBytes = existingBytes;
+        var lastTime = _runtime.UtcNow;
+        try
+        {
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
+            await using var fileStream = new FileStream(
+                outputPath,
+                append ? FileMode.Append : FileMode.Create,
+                FileAccess.Write,
+                FileShare.None,
+                8192,
+                useAsync: true);
+            var buffer = new byte[8192];
+            while (true)
+            {
+                var bytesRead = await stream.ReadAsync(buffer, ct);
+                if (bytesRead == 0)
+                {
+                    break;
+                }
+                if (expectedResponseLength > 0
+                    && writtenThisAttempt + bytesRead > expectedResponseLength)
+                {
+                    throw new DownloadProtocolException(
+                        $"响应体超过声明长度 {expectedResponseLength}");
+                }
+
+                await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
+                writtenThisAttempt += bytesRead;
+                var downloaded = existingBytes + writtenThisAttempt;
+                var now = _runtime.UtcNow;
+                var elapsed = (now - lastTime).TotalSeconds;
+                var speed = "";
+                if (elapsed >= 0.5)
+                {
+                    speed = FormatSpeed((long)((downloaded - lastBytes) / elapsed));
+                    lastBytes = downloaded;
+                    lastTime = now;
+                }
+                onProgress(expectedTotal > 0 ? expectedTotal : -1, downloaded, speed);
+            }
+
+            if (expectedResponseLength > 0 && writtenThisAttempt != expectedResponseLength)
+            {
+                throw new DownloadProtocolException(
+                    $"响应体长度错误，期望 {expectedResponseLength}，实际 {writtenThisAttempt}");
+            }
+        }
+        catch
+        {
+            RollbackFile(outputPath, initialLength);
+            throw;
+        }
+
+        var actualBytes = existingBytes + writtenThisAttempt;
+        var integrityPassed = expectedTotal > 0 && actualBytes == expectedTotal;
+        if (expectedTotal > 0 && !integrityPassed)
+        {
+            RollbackFile(outputPath, initialLength);
+            throw new DownloadProtocolException(
+                $"最终文件长度错误，期望 {expectedTotal}，实际 {actualBytes}");
+        }
+
+        onProgress(expectedTotal > 0 ? expectedTotal : -1, actualBytes, "");
+        return new DownloadTransferResult(expectedTotal, actualBytes, integrityPassed);
+    }
+
+    private static async Task MergeChunksAsync(
+        string outputPath,
+        int chunkCount,
+        long expectedTotalLength,
+        CancellationToken ct)
+    {
+        long sum = 0;
+        for (var i = 0; i < chunkCount; i++)
+        {
+            var chunkPath = $"{outputPath}.chunk{i}";
+            if (!File.Exists(chunkPath))
+            {
+                throw new DownloadProtocolException($"Chunk 文件缺失: {chunkPath}");
+            }
+            sum += new FileInfo(chunkPath).Length;
+        }
+        if (sum != expectedTotalLength)
+        {
+            throw new DownloadProtocolException(
+                $"Chunk 总长度错误，期望 {expectedTotalLength}，实际 {sum}");
+        }
+
+        var stagingPath = outputPath + ".merging";
+        DeleteIfExists(stagingPath);
+        try
+        {
+            await using (var outputStream = new FileStream(
+                stagingPath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.None,
+                8192,
+                useAsync: true))
+            {
+                var buffer = new byte[8192];
+                for (var i = 0; i < chunkCount; i++)
+                {
+                    await using var chunkStream = new FileStream(
+                        $"{outputPath}.chunk{i}",
+                        FileMode.Open,
+                        FileAccess.Read,
+                        FileShare.Read,
+                        8192,
+                        useAsync: true);
+                    while (true)
+                    {
+                        var bytesRead = await chunkStream.ReadAsync(buffer, ct);
+                        if (bytesRead == 0)
+                        {
+                            break;
+                        }
+                        await outputStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
+                    }
+                }
+            }
+
+            if (new FileInfo(stagingPath).Length != expectedTotalLength)
+            {
+                throw new DownloadProtocolException("合并后的文件长度与预期总长度不一致");
+            }
+            File.Move(stagingPath, outputPath, overwrite: true);
+        }
+        catch
+        {
+            DeleteIfExists(stagingPath);
+            throw;
+        }
+    }
+
+    private static void ValidateContentRange(
+        ContentRangeHeaderValue? contentRange,
+        long expectedFrom,
+        long expectedTo,
+        long expectedTotalLength)
+    {
+        if (contentRange is null
+            || !string.Equals(contentRange.Unit, "bytes", StringComparison.OrdinalIgnoreCase)
+            || contentRange.From != expectedFrom
+            || contentRange.To != expectedTo
+            || contentRange.Length != expectedTotalLength)
+        {
+            throw new DownloadProtocolException(
+                $"Content-Range 不匹配，期望 bytes {expectedFrom}-{expectedTo}/{expectedTotalLength}，"
+                + $"实际 {contentRange?.ToString() ?? "<missing>"}");
+        }
+    }
+
+    private static void ValidateDeclaredContentLength(long? declared, long expected)
+    {
+        if (declared is long actual && actual != expected)
+        {
+            throw new DownloadProtocolException(
+                $"Content-Length 不匹配，期望 {expected}，实际 {actual}");
+        }
+    }
+
+    private static void AddCookie(HttpRequestMessage request, string cookie)
+    {
         if (!string.IsNullOrWhiteSpace(cookie))
         {
             request.Headers.Add("Cookie", cookie);
         }
+    }
 
-        long existingBytes = 0;
-        if (File.Exists(outputPath))
+    private static void RollbackFile(string path, long length)
+    {
+        if (length == 0)
         {
-            existingBytes = new FileInfo(outputPath).Length;
-            request.Headers.Range = new RangeHeaderValue(existingBytes, null);
+            DeleteIfExists(path);
+            return;
+        }
+        if (!File.Exists(path))
+        {
+            return;
         }
 
-        using var response = await _clients[0].SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-        response.EnsureSuccessStatusCode();
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.None);
+        stream.SetLength(length);
+    }
 
-        // 校验 Range 响应：续传时服务器忽略 Range 返回 200 OK，删除已有文件从头开始
-        if (existingBytes > 0 && response.StatusCode != System.Net.HttpStatusCode.PartialContent)
+    private static void DeleteIfExists(string path)
+    {
+        try
         {
-            if (File.Exists(outputPath)) File.Delete(outputPath);
-            existingBytes = 0;
-        }
-
-        var totalBytes = response.Content.Headers.ContentLength ?? -1;
-        if (existingBytes > 0 && totalBytes > 0)
-            totalBytes += existingBytes;
-
-        using var stream = await response.Content.ReadAsStreamAsync(ct);
-
-        var fileMode = existingBytes > 0 && File.Exists(outputPath)
-            ? FileMode.Append
-            : FileMode.Create;
-
-        using var fileStream = new FileStream(outputPath, fileMode, FileAccess.Write, FileShare.None, 8192);
-        var buffer = new byte[8192];
-        var downloaded = existingBytes;
-        int bytesRead;
-
-        var lastBytes = existingBytes;
-        var lastTime = DateTime.UtcNow;
-        var speedText = "";
-
-        while ((bytesRead = await stream.ReadAsync(buffer, ct)) > 0)
-        {
-            await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
-            downloaded += bytesRead;
-
-            var now = DateTime.UtcNow;
-            var elapsed = (now - lastTime).TotalSeconds;
-            if (elapsed >= 0.5)
+            if (File.Exists(path))
             {
-                var bytesPerSecond = (downloaded - lastBytes) / elapsed;
-                speedText = FormatSpeed((long)bytesPerSecond);
-                lastBytes = downloaded;
-                lastTime = now;
+                File.Delete(path);
             }
-
-            onProgress(totalBytes, downloaded, speedText);
+        }
+        catch
+        {
+            // 临时文件清理失败不覆盖原始协议异常。
         }
     }
 
@@ -380,9 +616,9 @@ public class MultiConnectionDownloader : IDisposable
 
     public void Dispose()
     {
-        foreach (var client in _clients)
+        if (_ownsClient)
         {
-            client.Dispose();
+            _client.Dispose();
         }
     }
 }

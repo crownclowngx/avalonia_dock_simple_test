@@ -34,6 +34,31 @@ public interface IDownloadTaskRepository
     /// <summary>更新断点续传字节数</summary>
     Task UpdateBytesAsync(string taskId, long videoBytes, long audioBytes);
 
+    /// <summary>更新媒体预期长度和完整性验证事实</summary>
+    Task UpdateIntegrityAsync(
+        string taskId,
+        long expectedVideoBytes,
+        long expectedAudioBytes,
+        bool videoIntegrityPassed,
+        bool audioIntegrityPassed,
+        DateTime lastUpdatedAt);
+
+    /// <summary>原子标记任务完成并保存最终输出事实</summary>
+    Task MarkCompletedAsync(
+        string taskId,
+        string outputFilePath,
+        string? extrasResultSummary,
+        DateTime lastUpdatedAt);
+
+    /// <summary>原子标记任务失败并保存错误分类事实</summary>
+    Task MarkFailedAsync(
+        string taskId,
+        double progress,
+        string? errorMessage,
+        string? errorType,
+        bool isRetryable,
+        DateTime lastUpdatedAt);
+
     /// <summary>更新临时目录路径</summary>
     Task UpdateTempDirectoryAsync(string taskId, string tempDirectory);
 

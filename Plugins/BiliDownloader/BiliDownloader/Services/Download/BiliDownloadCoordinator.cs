@@ -3,6 +3,7 @@ using BiliDownloader.Models;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
 using MyAvaloniaManagementCommon.Message;
+using System.Threading.Channels;
 
 namespace BiliDownloader.Services.Download;
 
@@ -28,18 +29,25 @@ public sealed class BiliDownloadCoordinator
 
     private readonly SemaphoreSlim _commandLock = new(1, 1);
     private readonly object _lifecycleLock = new();
+    private readonly object _schedulerLock = new();
+    private readonly Channel<bool> _queueWakeups = Channel.CreateBounded<bool>(
+        new BoundedChannelOptions(1)
+        {
+            SingleReader = true,
+            SingleWriter = false,
+            FullMode = BoundedChannelFullMode.DropWrite,
+        });
     private Task? _initializationTask;
     private Task? _shutdownTask;
     private CancellationTokenSource? _processingCts;
     private Task? _processingTask;
-    private bool _isProcessing;
+    private volatile bool _isProcessing;
     private volatile bool _isShuttingDown;
 
     /// <summary>调度器是否正在处理任务</summary>
     public bool IsProcessing => _isProcessing;
-    private SemaphoreSlim _concurrencySemaphore = new(1, 1);
-    private readonly List<Task> _activeTasks = new();
-    private readonly object _activeTasksLock = new();
+    private int _maxConcurrentDownloads = 1;
+    private readonly Dictionary<string, Task> _activeTasks = new(StringComparer.Ordinal);
 
     /// <summary>任务进度变更事件（UI 订阅）</summary>
     public event Action<DownloadTaskRecord>? TaskProgressChanged;
@@ -208,7 +216,14 @@ public sealed class BiliDownloadCoordinator
     public void SetMaxConcurrentDownloads(int max)
     {
         var clamped = Math.Clamp(max, 1, 5);
-        _concurrencySemaphore = new SemaphoreSlim(clamped, clamped);
+        lock (_schedulerLock)
+        {
+            _maxConcurrentDownloads = clamped;
+            if (_isProcessing)
+            {
+                SignalQueueChanged();
+            }
+        }
         SchedulerStatusChanged?.Invoke($"并发下载数已设置为: {clamped}");
     }
 
@@ -350,9 +365,9 @@ public sealed class BiliDownloadCoordinator
             }
 
             Task[] activeTasks;
-            lock (_activeTasksLock)
+            lock (_schedulerLock)
             {
-                activeTasks = _activeTasks.ToArray();
+                activeTasks = _activeTasks.Values.ToArray();
             }
 
             if (activeTasks.Length > 0)
@@ -387,29 +402,85 @@ public sealed class BiliDownloadCoordinator
 
     private void StartProcessingInternal()
     {
-        if (_isProcessing || _isShuttingDown) return;
-        _isProcessing = true;
-        IsProcessingChanged?.Invoke(true);
-        _processingCts = new CancellationTokenSource();
-        _processingTask = ProcessQueueAsync(_processingCts.Token);
+        var started = false;
+        TaskCompletionSource? startGate = null;
+        lock (_schedulerLock)
+        {
+            if (_isShuttingDown)
+            {
+                return;
+            }
+
+            SignalQueueChanged();
+            if (_isProcessing)
+            {
+                return;
+            }
+
+            _isProcessing = true;
+            _processingCts?.Dispose();
+            _processingCts = new CancellationTokenSource();
+            startGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _processingTask = RunProcessQueueAfterStartSignalAsync(
+                startGate.Task,
+                _processingCts.Token);
+            started = true;
+        }
+
+        if (started)
+        {
+            IsProcessingChanged?.Invoke(true);
+            startGate!.TrySetResult();
+        }
+    }
+
+    private async Task RunProcessQueueAfterStartSignalAsync(
+        Task startSignal,
+        CancellationToken cancellationToken)
+    {
+        await startSignal;
+        await ProcessQueueAsync(cancellationToken);
     }
 
     private async Task StopProcessingInternalAsync()
     {
-        if (_processingCts != null)
+        Task? processingTask;
+        lock (_schedulerLock)
         {
-            _processingCts.Cancel();
-            var processingTask = _processingTask;
-            if (processingTask != null)
-            {
-                try { await processingTask; } catch (OperationCanceledException) { }
-            }
-            _processingCts.Dispose();
+            _processingCts?.Cancel();
+            SignalQueueChanged();
+            processingTask = _processingTask;
+        }
+
+        if (processingTask != null)
+        {
+            try { await processingTask; } catch (OperationCanceledException) { }
+        }
+
+        Task[] activeTasks;
+        lock (_schedulerLock)
+        {
+            activeTasks = _activeTasks.Values.ToArray();
+        }
+        if (activeTasks.Length > 0)
+        {
+            try { await Task.WhenAll(activeTasks); } catch (OperationCanceledException) { }
+        }
+
+        bool notifyStopped;
+        lock (_schedulerLock)
+        {
+            notifyStopped = _isProcessing;
+            _processingCts?.Dispose();
             _processingCts = null;
             _processingTask = null;
+            _activeTasks.Clear();
+            _isProcessing = false;
         }
-        _isProcessing = false;
-        IsProcessingChanged?.Invoke(false);
+        if (notifyStopped)
+        {
+            IsProcessingChanged?.Invoke(false);
+        }
     }
 
     private async Task ProcessQueueAsync(CancellationToken ct)
@@ -418,21 +489,36 @@ public sealed class BiliDownloadCoordinator
         {
             while (!ct.IsCancellationRequested)
             {
-                // 清理已完成的任务引用
-                lock (_activeTasksLock)
+                string[] completedIds;
+                lock (_schedulerLock)
                 {
-                    _activeTasks.RemoveAll(t => t.IsCompleted);
+                    completedIds = _activeTasks
+                        .Where(pair => pair.Value.IsCompleted)
+                        .Select(pair => pair.Key)
+                        .ToArray();
+                    foreach (var taskId in completedIds)
+                    {
+                        _activeTasks.Remove(taskId);
+                    }
                 }
 
                 // 查找所有待处理任务
                 var allTasks = await _repository.GetAllAsync();
-                var readyTasks = allTasks.Where(t => ParseStatus(t.Status) == DownloadTaskStatus.Ready).ToList();
-
-                // 为每个 Ready 任务分配并发槽位
-                foreach (var task in readyTasks)
+                List<DownloadTaskRecord> readyTasks;
+                int availableSlots;
+                lock (_schedulerLock)
                 {
-                    await _concurrencySemaphore.WaitAsync(ct);
+                    readyTasks = allTasks
+                        .Where(task =>
+                            ParseStatus(task.Status) == DownloadTaskStatus.Ready
+                            && !_activeTasks.ContainsKey(task.TaskId))
+                        .ToList();
+                    availableSlots = Math.Max(0, _maxConcurrentDownloads - _activeTasks.Count);
+                }
 
+                // 处理循环拥有唯一调度权，只填充当前可用槽位，不阻塞在信号量上。
+                foreach (var task in readyTasks.Take(availableSlots))
+                {
                     // 确保临时目录
                     if (string.IsNullOrWhiteSpace(task.TempDirectory))
                     {
@@ -444,44 +530,80 @@ public sealed class BiliDownloadCoordinator
                     _tracker.BroadcastStatusChanged(task);
 
                     var downloadTask = ProcessSingleTaskAsync(task, ct);
-                    lock (_activeTasksLock)
+                    lock (_schedulerLock)
                     {
-                        _activeTasks.Add(downloadTask);
+                        _activeTasks[task.TaskId] = downloadTask;
                     }
                 }
 
-                // 等待任意一个任务完成后重新检查队列
-                Task<Task>? completedTask = null;
-                lock (_activeTasksLock)
+                Task[] activeTasks;
+                lock (_schedulerLock)
                 {
-                    if (_activeTasks.Count > 0)
-                        completedTask = Task.WhenAny(_activeTasks);
+                    activeTasks = _activeTasks.Values.ToArray();
                 }
 
-                if (completedTask != null)
+                if (activeTasks.Length > 0)
                 {
-                    var finishedTask = await completedTask;
-                    await finishedTask;
+                    var activeCompletion = Task.WhenAny(activeTasks);
+                    var wakeup = _queueWakeups.Reader.WaitToReadAsync(ct).AsTask();
+                    var winner = await Task.WhenAny(activeCompletion, wakeup);
+                    if (winner == wakeup)
+                    {
+                        await wakeup;
+                        DrainQueueWakeups();
+                    }
+                    else
+                    {
+                        await await activeCompletion;
+                    }
                 }
-                else if (readyTasks.Count == 0)
+                else
                 {
-                    // 没有 Ready 任务也没有活跃任务
+                    // 与 StartProcessingInternal 使用同一把锁，确保“准备退出”与新唤醒不会交错丢失。
+                    var shouldContinue = false;
+                    lock (_schedulerLock)
+                    {
+                        if (_queueWakeups.Reader.TryRead(out _))
+                        {
+                            shouldContinue = true;
+                        }
+                        else
+                        {
+                            _isProcessing = false;
+                            _processingTask = null;
+                        }
+                    }
+
+                    if (shouldContinue)
+                    {
+                        DrainQueueWakeups();
+                        continue;
+                    }
+
                     SchedulerStatusChanged?.Invoke("所有任务已完成");
-                    _isProcessing = false;
+                    IsProcessingChanged?.Invoke(false);
                     return;
                 }
             }
         }
         finally
         {
-            _isProcessing = false;
-            IsProcessingChanged?.Invoke(false);
-            _processingTask = null;
+            var changed = false;
+            lock (_schedulerLock)
+            {
+                changed = _isProcessing;
+                _isProcessing = false;
+                _processingTask = null;
+            }
+            if (changed)
+            {
+                IsProcessingChanged?.Invoke(false);
+            }
         }
     }
 
     /// <summary>
-    /// 处理单个下载任务（并发执行），完成后释放信号量
+    /// 处理单个下载任务（并发执行）
     /// </summary>
     private async Task ProcessSingleTaskAsync(DownloadTaskRecord task, CancellationToken ct)
     {
@@ -506,6 +628,28 @@ public sealed class BiliDownloadCoordinator
                 await _repository.UpdateExtrasResultAsync(task.TaskId, result.ExtrasResultSummary);
             }
 
+            if (result.VideoTransfer is not null)
+            {
+                task.ExpectedVideoBytes = result.VideoTransfer.ExpectedBytes;
+                task.VideoIntegrityPassed = result.VideoTransfer.IntegrityPassed;
+            }
+            if (result.AudioTransfer is not null)
+            {
+                task.ExpectedAudioBytes = result.AudioTransfer.ExpectedBytes;
+                task.AudioIntegrityPassed = result.AudioTransfer.IntegrityPassed;
+            }
+            if (result.VideoTransfer is not null || result.AudioTransfer is not null)
+            {
+                task.LastUpdatedAt = DateTime.Now;
+                await _repository.UpdateIntegrityAsync(
+                    task.TaskId,
+                    task.ExpectedVideoBytes,
+                    task.ExpectedAudioBytes,
+                    task.VideoIntegrityPassed,
+                    task.AudioIntegrityPassed,
+                    task.LastUpdatedAt);
+            }
+
             // 标记完成
             task.Status = ToStorage(DownloadTaskStatus.Completed);
             task.Progress = 100;
@@ -513,9 +657,13 @@ public sealed class BiliDownloadCoordinator
             task.AudioProgress = 100;
             task.MergeProgress = 100;
             task.SpeedText = "";
+            task.OutputFilePath = result.OutputFilePath ?? "";
             task.LastUpdatedAt = DateTime.Now;
-            await _repository.UpdateStageProgressAsync(
-                task.TaskId, 100, ToStorage(DownloadTaskStatus.Completed), 100, 100, 100, "");
+            await _repository.MarkCompletedAsync(
+                task.TaskId,
+                task.OutputFilePath,
+                task.ExtrasResultSummary,
+                task.LastUpdatedAt);
             _tracker.BroadcastProgress(task);
             _tracker.BroadcastStatusChanged(task);
             TaskStatusChanged?.Invoke(task);
@@ -538,18 +686,25 @@ public sealed class BiliDownloadCoordinator
             task.ErrorMessage = safeError;
             task.LastUpdatedAt = DateTime.Now;
             Log.Error($"任务 {task.TaskId} 下载失败: {safeError}", ex);
-            await _repository.UpdateProgressAsync(
+            await _repository.MarkFailedAsync(
                 task.TaskId,
                 task.Progress,
-                ToStorage(DownloadTaskStatus.Failed),
-                safeError);
+                safeError,
+                task.ErrorType,
+                task.IsRetryable,
+                task.LastUpdatedAt);
             _tracker.BroadcastProgress(task);
             _tracker.BroadcastStatusChanged(task);
             TaskStatusChanged?.Invoke(task);
         }
-        finally
+    }
+
+    private void SignalQueueChanged() => _queueWakeups.Writer.TryWrite(true);
+
+    private void DrainQueueWakeups()
+    {
+        while (_queueWakeups.Reader.TryRead(out _))
         {
-            _concurrencySemaphore.Release();
         }
     }
 

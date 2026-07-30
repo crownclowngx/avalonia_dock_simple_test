@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
@@ -185,7 +186,7 @@ public sealed class ExtrasAndProgressTests
     public async Task 封面处理器空URL和非法URL返回失败结果()
     {
         using var paths = new TestDataPaths();
-        var handler = new CoverExtrasHandler();
+        using var handler = new CoverExtrasHandler();
 
         var empty = await handler.ExecuteAsync(
             Copy(CreateContext(paths), coverUrl: ""),
@@ -198,6 +199,30 @@ public sealed class ExtrasAndProgressTests
         Assert.False(invalid.Success);
         Assert.Contains("URL", empty.ErrorMessage, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("封面下载失败", invalid.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task 封面处理器通过注入客户端规范化Https并写入文件()
+    {
+        var expected = Encoding.UTF8.GetBytes("cover-bytes");
+        var factory = new StubBiliHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(expected),
+        });
+        using var handler = new CoverExtrasHandler(factory);
+        using var paths = new TestDataPaths();
+
+        var result = await handler.ExecuteAsync(
+            Copy(CreateContext(paths), coverUrl: "http://image.example.test/cover.jpg?q=1"),
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        var output = Assert.Single(result.OutputFiles);
+        Assert.Equal(expected, await File.ReadAllBytesAsync(output));
+        var request = Assert.Single(factory.Requests);
+        Assert.Equal("https", request.Uri?.Scheme);
+        Assert.Equal("/cover.jpg?q=1", request.Uri?.PathAndQuery);
+        Assert.Contains("bilibili.com", request.Headers["Referer"], StringComparison.Ordinal);
     }
 
     [Fact]

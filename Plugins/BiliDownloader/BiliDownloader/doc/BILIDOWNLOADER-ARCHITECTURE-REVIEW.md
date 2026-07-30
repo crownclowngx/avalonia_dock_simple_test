@@ -263,7 +263,7 @@ flowchart TB
 
 **[已实现]** 把外部副作用集中在 `IDownloadTaskExecutor` 之后，使 Coordinator 可以使用内存仓储、假凭据和假执行器进行完全离线测试。参见 [`IDownloadTaskExecutor.cs`](../Services/Download/IDownloadTaskExecutor.cs) 和 [`BiliDownloaderModuleTests.cs`](../../BiliDownloader.Tests/BiliDownloaderModuleTests.cs)。
 
-**[不成熟点]** `FfmpegService` 仍是静态类，路径状态和进程调用难以通过 DI 替换；后续应落实已经存在的 `IFfmpegService` 抽象或删除无效抽象。参见 [`FfmpegService.cs`](../Services/Infrastructure/FfmpegService.cs) 和 [`IFfmpegService.cs`](../Services/Infrastructure/IFfmpegService.cs)。
+**[已实现]** `FfmpegService` 已落实为实例级 `IFfmpegService`，并将进程创建、HTTP 客户端和下载计时/重试运行时纳入 DI；主下载与封面成功路径可完全离线验证。参见 [`FfmpegService.cs`](../Services/Infrastructure/FfmpegService.cs) 和 [`IFfmpegService.cs`](../Services/Infrastructure/IFfmpegService.cs)。
 
 **[不成熟点]** `BiliDownloadTaskExecutor` 仍保留从旧任务 Cookie 回退的兼容路径；这是迁移代码，不应被当作目标设计。参见 [`BiliDownloadTaskExecutor.cs`](../Services/Download/BiliDownloadTaskExecutor.cs#L80)。
 

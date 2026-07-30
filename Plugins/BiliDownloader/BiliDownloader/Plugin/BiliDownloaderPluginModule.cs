@@ -31,6 +31,10 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         // 观察同一任务事实源，而不是各自创建数据库访问对象。
         services.AddSingleton<IDownloadTaskRepository, DownloadTaskStore>();
         services.AddSingleton<ISettingsRepository, SettingsStore>();
+        services.AddSingleton<IFfmpegProcessFactory, FfmpegProcessFactory>();
+        services.AddSingleton<IFfmpegService, FfmpegService>();
+        services.AddSingleton<IBiliHttpClientFactory, BiliHttpClientFactory>();
+        services.AddSingleton<IDownloadRuntime, SystemDownloadRuntime>();
 
         // 登录态只依赖凭据存储接口；SQLite 内只保存 AES-GCM 密文信封。
         services.AddSingleton<InstallationKeyStore>();
@@ -46,7 +50,8 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         // Coordinator 测试可用假执行器完整替换这一边界。
         services.AddSingleton<BiliApiService>();
         services.AddSingleton<BiliDownloadService>();
-        services.AddSingleton(_ => ExtrasHandlerRegistry.CreateDefault());
+        services.AddSingleton(provider => ExtrasHandlerRegistry.CreateDefault(
+            provider.GetRequiredService<IBiliHttpClientFactory>()));
         services.AddSingleton<IDownloadTaskExecutor, BiliDownloadTaskExecutor>();
         services.AddSingleton<IDownloadProgressTracker, DownloadProgressTracker>();
 

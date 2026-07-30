@@ -3,6 +3,7 @@ using Dock.Model.Mvvm.Controls;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Persistence;
+using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.ViewModels.BiliScheduler;
 using MyAvaloniaManagementCommon.Plugin;
 
@@ -36,7 +37,8 @@ public partial class BiliSchedulerToolViewModel : Tool
         BiliDownloadCoordinator coordinator,
         IDownloadTaskRepository taskStore,
         ISettingsRepository settingsStore,
-        PluginLifecycleManager lifecycleManager)
+        PluginLifecycleManager lifecycleManager,
+        IFfmpegService ffmpegService)
     {
         _coordinator = coordinator;
         _lifecycleManager = lifecycleManager;
@@ -44,7 +46,7 @@ public partial class BiliSchedulerToolViewModel : Tool
         TaskList = new SchedulerTaskListViewModel(coordinator, taskStore,
             onStatusMessage: msg => SchedulerStatus = msg);
 
-        Settings = new SchedulerSettingsViewModel(settingsStore);
+        Settings = new SchedulerSettingsViewModel(settingsStore, ffmpegService);
 
         // 订阅 Coordinator 全局状态事件
         _coordinator.SchedulerStatusChanged += status => SchedulerStatus = status;

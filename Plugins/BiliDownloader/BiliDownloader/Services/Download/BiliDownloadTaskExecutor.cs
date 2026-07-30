@@ -39,7 +39,7 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
         CancellationToken cancellationToken)
     {
         var cookieHeader = _credentialProvider.GetCookieHeader();
-        var outputFilePath = await _downloadService.DownloadItemAsync(
+        var downloadResult = await _downloadService.DownloadItemAsync(
             task,
             _apiService,
             cookieHeader,
@@ -51,7 +51,11 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
             ? null
             : await ExecuteExtrasPipelineAsync(task, cookieHeader, cancellationToken);
 
-        return new DownloadExecutionResult(outputFilePath, extrasSummary);
+        return new DownloadExecutionResult(
+            downloadResult.OutputFilePath,
+            extrasSummary,
+            downloadResult.VideoTransfer,
+            downloadResult.AudioTransfer);
     }
 
     /// <summary>

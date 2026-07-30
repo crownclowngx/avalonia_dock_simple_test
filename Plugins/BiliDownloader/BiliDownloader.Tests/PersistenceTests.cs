@@ -48,6 +48,56 @@ public sealed class PersistenceTests
         Assert.Equal(404, actual.SeasonId);
         Assert.Equal(7, actual.ExtrasConfig);
         Assert.Equal("https://example.invalid/cover.jpg", actual.CoverUrl);
+        Assert.Equal("cover: OK", actual.ExtrasResultSummary);
+        Assert.Equal(1001, actual.ExpectedVideoBytes);
+        Assert.Equal(2002, actual.ExpectedAudioBytes);
+        Assert.True(actual.VideoIntegrityPassed);
+        Assert.True(actual.AudioIntegrityPassed);
+        Assert.Equal("final.mp4", actual.OutputFilePath);
+        Assert.Equal(DateTime.Parse("2026-01-01 11:12:13"), actual.LastUpdatedAt);
+        Assert.Equal("network", actual.ErrorType);
+        Assert.True(actual.IsRetryable);
+    }
+
+    [Fact]
+    public async Task 完整性完成与失败事实使用原子更新()
+    {
+        using var paths = new TestDataPaths();
+        await new BiliLocalStateInitializer(paths).InitializeAsync();
+        var store = new DownloadTaskStore(paths);
+        await store.InitAsync();
+        var completed = CreateRecord("complete-facts", "doc", DateTime.UtcNow);
+        var failed = CreateRecord("failed-facts", "doc", DateTime.UtcNow.AddSeconds(1));
+        await store.InsertBatchAsync([completed, failed]);
+        var integrityAt = DateTime.Parse("2026-02-03 04:05:06");
+        var completedAt = integrityAt.AddMinutes(1);
+        var failedAt = integrityAt.AddMinutes(2);
+
+        await store.UpdateIntegrityAsync(
+            completed.TaskId, 111, 222, true, true, integrityAt);
+        await store.MarkCompletedAsync(
+            completed.TaskId, "D:\\output\\done.mp4", "cover: OK", completedAt);
+        await store.MarkFailedAsync(
+            failed.TaskId, 37, "range mismatch", "cdn", true, failedAt);
+
+        var records = await store.GetAllAsync();
+        var actualCompleted = records.Single(x => x.TaskId == completed.TaskId);
+        Assert.Equal(111, actualCompleted.ExpectedVideoBytes);
+        Assert.Equal(222, actualCompleted.ExpectedAudioBytes);
+        Assert.True(actualCompleted.VideoIntegrityPassed);
+        Assert.True(actualCompleted.AudioIntegrityPassed);
+        Assert.Equal("done", actualCompleted.Status);
+        Assert.Equal("D:\\output\\done.mp4", actualCompleted.OutputFilePath);
+        Assert.Equal("cover: OK", actualCompleted.ExtrasResultSummary);
+        Assert.Equal(completedAt, actualCompleted.LastUpdatedAt);
+
+        var actualFailed = records.Single(x => x.TaskId == failed.TaskId);
+        Assert.Equal("failed", actualFailed.Status);
+        Assert.Equal(37, actualFailed.Progress);
+        Assert.Equal("range mismatch", actualFailed.ErrorMessage);
+        Assert.Equal("cdn", actualFailed.ErrorType);
+        Assert.True(actualFailed.IsRetryable);
+        Assert.Equal(failedAt, actualFailed.LastUpdatedAt);
     }
 
     [Fact]
@@ -233,5 +283,14 @@ public sealed class PersistenceTests
             SeasonId = 404,
             ExtrasConfig = 7,
             CoverUrl = "https://example.invalid/cover.jpg",
+            ExtrasResultSummary = "cover: OK",
+            ExpectedVideoBytes = 1001,
+            ExpectedAudioBytes = 2002,
+            VideoIntegrityPassed = true,
+            AudioIntegrityPassed = true,
+            OutputFilePath = "final.mp4",
+            LastUpdatedAt = DateTime.Parse("2026-01-01 11:12:13"),
+            ErrorType = "network",
+            IsRetryable = true,
         };
 }

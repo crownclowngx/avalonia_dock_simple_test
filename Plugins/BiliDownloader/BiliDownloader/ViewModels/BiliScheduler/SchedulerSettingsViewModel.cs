@@ -13,6 +13,7 @@ namespace BiliDownloader.ViewModels.BiliScheduler;
 public partial class SchedulerSettingsViewModel : ObservableObject
 {
     private readonly ISettingsRepository _settingsStore;
+    private readonly IFfmpegService _ffmpegService;
     private bool _settingsLoaded;
 
     [ObservableProperty]
@@ -38,9 +39,12 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     public IAsyncRelayCommand BrowseFfmpegCommand { get; }
     public IAsyncRelayCommand BrowseOutputDirCommand { get; }
 
-    public SchedulerSettingsViewModel(ISettingsRepository settingsStore)
+    public SchedulerSettingsViewModel(
+        ISettingsRepository settingsStore,
+        IFfmpegService ffmpegService)
     {
         _settingsStore = settingsStore;
+        _ffmpegService = ffmpegService;
 
         BrowseFfmpegCommand = new AsyncRelayCommand(BrowseFfmpegAsync);
         BrowseOutputDirCommand = new AsyncRelayCommand(BrowseOutputDirAsync);
@@ -63,7 +67,7 @@ public partial class SchedulerSettingsViewModel : ObservableObject
 
         var savedFfmpeg = await _settingsStore.GetSettingAsync("ffmpeg_custom_path");
         if (!string.IsNullOrEmpty(savedFfmpeg))
-            FfmpegService.CustomPath = savedFfmpeg;
+            _ffmpegService.CustomPath = savedFfmpeg;
 
         var savedConcurrency = await _settingsStore.GetSettingAsync("max_concurrent_downloads");
         if (int.TryParse(savedConcurrency, out var n) && n >= 1 && n <= 5)
@@ -102,7 +106,7 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     {
         await Task.Run(() =>
         {
-            var path = FfmpegService.ResolveFfmpegPath();
+            var path = _ffmpegService.ResolveFfmpegPath();
             FfmpegReady = path != null;
             FfmpegPath = path ?? "";
             FfmpegStatus = FfmpegReady
@@ -143,10 +147,10 @@ public partial class SchedulerSettingsViewModel : ObservableObject
             var selectedPath = result[0].Path.LocalPath;
             FfmpegStatus = "正在验证 ffmpeg...";
 
-            var valid = await FfmpegService.ValidatePathAsync(selectedPath);
+            var valid = await _ffmpegService.ValidatePathAsync(selectedPath);
             if (valid)
             {
-                FfmpegService.CustomPath = selectedPath;
+                _ffmpegService.CustomPath = selectedPath;
                 await _settingsStore.SetSettingAsync("ffmpeg_custom_path", selectedPath);
                 await CheckFfmpegAsync();
             }

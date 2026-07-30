@@ -1,4 +1,8 @@
+using System.Diagnostics;
+using System.Net;
+using BiliDownloader;
 using BiliDownloader.Models;
+using BiliDownloader.Services;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
@@ -234,6 +238,7 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
             task.Progress = progress;
             task.Status = status;
             task.ErrorMessage = errorMessage;
+            task.LastUpdatedAt = DateTime.Now;
             CallLog.Add($"repository:status:{status}");
         }
 
@@ -258,6 +263,7 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
             task.AudioProgress = audioProgress;
             task.MergeProgress = mergeProgress;
             task.SpeedText = speedText;
+            task.LastUpdatedAt = DateTime.Now;
             CallLog.Add($"repository:stage:{status}");
         }
 
@@ -271,7 +277,79 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
             var task = Find(taskId);
             task.VideoBytesDownloaded = videoBytes;
             task.AudioBytesDownloaded = audioBytes;
+            task.LastUpdatedAt = DateTime.Now;
             CallLog.Add("repository:bytes");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateIntegrityAsync(
+        string taskId,
+        long expectedVideoBytes,
+        long expectedAudioBytes,
+        bool videoIntegrityPassed,
+        bool audioIntegrityPassed,
+        DateTime lastUpdatedAt)
+    {
+        lock (_gate)
+        {
+            var task = Find(taskId);
+            task.ExpectedVideoBytes = expectedVideoBytes;
+            task.ExpectedAudioBytes = expectedAudioBytes;
+            task.VideoIntegrityPassed = videoIntegrityPassed;
+            task.AudioIntegrityPassed = audioIntegrityPassed;
+            task.LastUpdatedAt = lastUpdatedAt;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task MarkCompletedAsync(
+        string taskId,
+        string outputFilePath,
+        string? extrasResultSummary,
+        DateTime lastUpdatedAt)
+    {
+        lock (_gate)
+        {
+            var task = Find(taskId);
+            task.Progress = 100;
+            task.Status = "done";
+            task.VideoProgress = 100;
+            task.AudioProgress = 100;
+            task.MergeProgress = 100;
+            task.SpeedText = "";
+            task.OutputFilePath = outputFilePath;
+            task.ExtrasResultSummary = extrasResultSummary;
+            task.ErrorMessage = null;
+            task.ErrorType = null;
+            task.IsRetryable = false;
+            task.LastUpdatedAt = lastUpdatedAt;
+            CallLog.Add("repository:stage:done");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task MarkFailedAsync(
+        string taskId,
+        double progress,
+        string? errorMessage,
+        string? errorType,
+        bool isRetryable,
+        DateTime lastUpdatedAt)
+    {
+        lock (_gate)
+        {
+            var task = Find(taskId);
+            task.Progress = progress;
+            task.Status = "failed";
+            task.ErrorMessage = errorMessage;
+            task.ErrorType = errorType;
+            task.IsRetryable = isRetryable;
+            task.LastUpdatedAt = lastUpdatedAt;
+            CallLog.Add("repository:status:failed");
         }
 
         return Task.CompletedTask;
@@ -281,7 +359,9 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
     {
         lock (_gate)
         {
-            Find(taskId).TempDirectory = tempDirectory;
+            var task = Find(taskId);
+            task.TempDirectory = tempDirectory;
+            task.LastUpdatedAt = DateTime.Now;
         }
 
         return Task.CompletedTask;
@@ -322,7 +402,9 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
     {
         lock (_gate)
         {
-            Find(taskId).ExtrasResultSummary = extrasResultSummary;
+            var task = Find(taskId);
+            task.ExtrasResultSummary = extrasResultSummary;
+            task.LastUpdatedAt = DateTime.Now;
         }
 
         return Task.CompletedTask;
@@ -435,6 +517,182 @@ internal sealed class IsolatedMessengerService : IMessengerService
 
     public void UnregisterAll(object receiver)
         => _messenger.UnregisterAll(receiver);
+}
+
+internal sealed class FakeFfmpegService : IFfmpegService
+{
+    public bool? ReadyOverride { get; set; }
+    public bool CreateOutputFile { get; set; }
+    public string? CustomPath { get; set; }
+    public string? ResolvedPath => ResolveFfmpegPath();
+    public bool IsReady => ReadyOverride ?? ResolvedPath is not null;
+    public List<(string Video, string Audio, string Output)> MergeCalls { get; } = [];
+
+    public string? ResolveFfmpegPath()
+        => !string.IsNullOrWhiteSpace(CustomPath) && File.Exists(CustomPath)
+            ? CustomPath
+            : null;
+
+    public Task<bool> ValidatePathAsync(string path, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        return Task.FromResult(File.Exists(path));
+    }
+
+    public Task MergeAsync(
+        string videoPath,
+        string audioPath,
+        string outputPath,
+        CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        MergeCalls.Add((videoPath, audioPath, outputPath));
+        if (CreateOutputFile)
+        {
+            File.WriteAllBytes(outputPath, [0x01]);
+        }
+        return Task.CompletedTask;
+    }
+}
+
+internal sealed class FakeDownloadRuntime : IDownloadRuntime
+{
+    private DateTimeOffset _utcNow = DateTimeOffset.Parse("2026-01-01T00:00:00Z");
+
+    public int DelayCount { get; private set; }
+    public DateTimeOffset UtcNow
+    {
+        get
+        {
+            _utcNow = _utcNow.AddSeconds(1);
+            return _utcNow;
+        }
+    }
+
+    public Task DelayForRetryAsync(int failedAttempt, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        DelayCount++;
+        return Task.CompletedTask;
+    }
+}
+
+internal sealed record HttpRequestSnapshot(
+    HttpMethod Method,
+    Uri? Uri,
+    IReadOnlyDictionary<string, string> Headers);
+
+internal sealed class StubBiliHttpClientFactory : IBiliHttpClientFactory
+{
+    private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;
+
+    public StubBiliHttpClientFactory(Func<HttpRequestMessage, HttpResponseMessage> handler)
+    {
+        _handler = handler;
+    }
+
+    public List<HttpRequestSnapshot> Requests { get; } = [];
+
+    public HttpClient CreateMediaClient()
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Add("User-Agent", HttpConstants.UserAgent);
+        client.DefaultRequestHeaders.Add("Referer", HttpConstants.Referer);
+        client.DefaultRequestHeaders.Add("Origin", HttpConstants.Origin);
+        return client;
+    }
+
+    public HttpClient CreateCoverClient()
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Add("User-Agent", HttpConstants.UserAgent);
+        client.DefaultRequestHeaders.Add("Referer", HttpConstants.Referer);
+        return client;
+    }
+
+    private HttpClient CreateClient()
+        => new(new DelegateHttpHandler(request =>
+        {
+            Requests.Add(new HttpRequestSnapshot(
+                request.Method,
+                request.RequestUri,
+                request.Headers.ToDictionary(
+                    pair => pair.Key,
+                    pair => string.Join(", ", pair.Value),
+                    StringComparer.OrdinalIgnoreCase)));
+            return _handler(request);
+        }));
+
+    private sealed class DelegateHttpHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;
+
+        public DelegateHttpHandler(Func<HttpRequestMessage, HttpResponseMessage> handler)
+        {
+            _handler = handler;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(_handler(request));
+        }
+    }
+}
+
+internal sealed class FakeFfmpegProcessFactory : IFfmpegProcessFactory
+{
+    public FakeFfmpegProcess Process { get; } = new();
+    public ProcessStartInfo? StartInfo { get; private set; }
+
+    public IFfmpegProcess Start(ProcessStartInfo startInfo)
+    {
+        StartInfo = startInfo;
+        return Process;
+    }
+}
+
+internal sealed class FakeFfmpegProcess : IFfmpegProcess
+{
+    public bool HasExited { get; set; }
+    public int ExitCode { get; set; }
+    public string StandardOutput { get; set; } = "";
+    public string StandardError { get; set; } = "";
+    public bool BlockUntilCancelled { get; set; }
+    public bool KillCalled { get; private set; }
+
+    public async Task WaitForExitAsync(CancellationToken cancellationToken)
+    {
+        if (BlockUntilCancelled)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+        }
+        HasExited = true;
+    }
+
+    public Task<string> ReadStandardOutputAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(StandardOutput);
+    }
+
+    public Task<string> ReadStandardErrorAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(StandardError);
+    }
+
+    public void Kill(bool entireProcessTree)
+    {
+        KillCalled = true;
+        HasExited = true;
+    }
+
+    public void Dispose()
+    {
+    }
 }
 
 internal sealed class RecordingMessengerService : IMessengerService

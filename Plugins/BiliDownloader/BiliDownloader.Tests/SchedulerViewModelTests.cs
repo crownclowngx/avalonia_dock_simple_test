@@ -36,7 +36,8 @@ public sealed class SchedulerViewModelTests
 
         await vm.StartCommand.ExecuteAsync(null);
         await AsyncTest.EventuallyAsync(() =>
-            repository.Tasks.Single(x => x.TaskId == "pending").Status == "done");
+            repository.Tasks.Single(x => x.TaskId == "pending").Status == "done"
+            && vm.CompletedCount == 2);
         Assert.Equal(2, vm.CompletedCount);
 
         var failed = vm.Tasks.Single(x => x.TaskId == "failed");
@@ -101,7 +102,8 @@ public sealed class SchedulerViewModelTests
             coordinator,
             repository,
             settings,
-            lifecycle);
+            lifecycle,
+            new FakeFfmpegService());
 
         await vm.ActivateAsync();
         Assert.Single(vm.TaskList.Tasks);
@@ -131,7 +133,8 @@ public sealed class SchedulerViewModelTests
             coordinator,
             repository,
             new InMemorySettingsRepository(),
-            new PluginLifecycleManager([]));
+            new PluginLifecycleManager([]),
+            new FakeFfmpegService());
         var strategy = new BiliSchedulerToolStrategy(vm);
 
         Assert.Same(vm, strategy.CreateTool());

@@ -30,6 +30,15 @@ public sealed class BiliDownloaderModuleTests
         Assert.Equal(
             ServiceLifetime.Transient,
             FindDescriptor(services, typeof(BiliDownloaderViewModel)).Lifetime);
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IFfmpegService)).Lifetime);
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IBiliHttpClientFactory)).Lifetime);
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IDownloadRuntime)).Lifetime);
         Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IPluginLifecycle));
     }
 

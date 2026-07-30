@@ -1,10 +1,12 @@
+using BiliDownloader.Services.Infrastructure;
+
 namespace BiliDownloader.Services.Download.Extras;
 
 /// <summary>
 /// Extras 处理器注册表：管理所有可用的 extras 处理器实例。
 /// DIP：协调器依赖此注册表（抽象集合），不直接依赖具体处理器实现。
 /// </summary>
-public class ExtrasHandlerRegistry
+public class ExtrasHandlerRegistry : IDisposable
 {
     private readonly Dictionary<string, IExtrasHandler> _handlers = new();
 
@@ -40,12 +42,23 @@ public class ExtrasHandlerRegistry
     /// 创建默认注册表（工厂方法，在协调器初始化时调用）
     /// 注册所有内置处理器。
     /// </summary>
-    public static ExtrasHandlerRegistry CreateDefault()
+    public static ExtrasHandlerRegistry CreateDefault(IBiliHttpClientFactory httpClientFactory)
     {
         var registry = new ExtrasHandlerRegistry();
-        registry.Register(new CoverExtrasHandler());
+        registry.Register(new CoverExtrasHandler(httpClientFactory));
         registry.Register(new SubtitleExtrasHandler());
         registry.Register(new DanmakuExtrasHandler());
         return registry;
+    }
+
+    public static ExtrasHandlerRegistry CreateDefault()
+        => CreateDefault(new BiliHttpClientFactory());
+
+    public void Dispose()
+    {
+        foreach (var disposable in _handlers.Values.OfType<IDisposable>())
+        {
+            disposable.Dispose();
+        }
     }
 }

@@ -6,13 +6,11 @@ namespace BiliDownloader.Tests;
 
 internal sealed class StaticStateScope : IDisposable
 {
-    private readonly string? _ffmpegPath = FfmpegService.CustomPath;
     private readonly string? _systemPath = Environment.GetEnvironmentVariable("PATH");
 
     public StaticStateScope()
     {
         ResetWbiCache();
-        FfmpegService.CustomPath = null;
     }
 
     public static void ResetWbiCache()
@@ -26,7 +24,6 @@ internal sealed class StaticStateScope : IDisposable
 
     public void Dispose()
     {
-        FfmpegService.CustomPath = _ffmpegPath;
         Environment.SetEnvironmentVariable("PATH", _systemPath);
         ResetWbiCache();
     }

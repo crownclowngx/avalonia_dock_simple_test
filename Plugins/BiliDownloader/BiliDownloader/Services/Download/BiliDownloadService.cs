@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Api;
@@ -14,17 +13,30 @@ public class BiliDownloadService : IDisposable
     private readonly HttpClient _httpClient;
     private readonly MultiConnectionDownloader _multiDownloader;
     private readonly IBiliDataPaths _paths;
+    private readonly IFfmpegService _ffmpegService;
 
-    public BiliDownloadService(IBiliDataPaths paths, int chunkCount = 4)
+    public BiliDownloadService(
+        IBiliDataPaths paths,
+        IFfmpegService ffmpegService,
+        IBiliHttpClientFactory httpClientFactory,
+        IDownloadRuntime runtime,
+        int chunkCount = 4)
     {
         _paths = paths;
-        _httpClient = new HttpClient();
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", HttpConstants.UserAgent);
-        _httpClient.DefaultRequestHeaders.Add("Referer", HttpConstants.Referer);
-        _httpClient.DefaultRequestHeaders.Add("Origin", HttpConstants.Origin);
-        _httpClient.Timeout = TimeSpan.FromMinutes(60);
+        _ffmpegService = ffmpegService;
+        _httpClient = httpClientFactory.CreateMediaClient();
+        _multiDownloader = new MultiConnectionDownloader(_httpClient, runtime, chunkCount);
+    }
 
-        _multiDownloader = new MultiConnectionDownloader(chunkCount);
+    /// <summary>兼容独立构造；插件生产路径始终通过 DI 注入依赖。</summary>
+    public BiliDownloadService(IBiliDataPaths paths, int chunkCount = 4)
+        : this(
+            paths,
+            new FfmpegService(new FfmpegProcessFactory()),
+            new BiliHttpClientFactory(),
+            new SystemDownloadRuntime(),
+            chunkCount)
+    {
     }
 
     public void Dispose()
@@ -42,7 +54,7 @@ public class BiliDownloadService : IDisposable
     /// <param name="onBytesUpdate">字节数更新回调（用于断点续传持久化）</param>
     /// <param name="ct">取消令牌</param>
     /// <returns>最终输出文件路径</returns>
-    public async Task<string> DownloadItemAsync(
+    public async Task<BiliDownloadItemResult> DownloadItemAsync(
         DownloadTaskRecord task,
         BiliApiService apiService,
         string cookieHeader,
@@ -108,7 +120,7 @@ public class BiliDownloadService : IDisposable
 
         // 2. 下载视频流（多连接加速）
         var videoUrls = CdnUrlHelper.FilterAndSortUrls(videoStream.BaseUrl, videoStream.BackupUrls);
-        await _multiDownloader.DownloadAsync(
+        var videoTransfer = await _multiDownloader.DownloadAsync(
             videoUrls, videoTmp, cookieHeader,
             (total, downloaded, speed) =>
             {
@@ -121,11 +133,13 @@ public class BiliDownloadService : IDisposable
             ct);
         currentSpeed = "";
         videoProgress = 100;
+        task.ExpectedVideoBytes = videoTransfer.ExpectedBytes;
+        task.VideoIntegrityPassed = videoTransfer.IntegrityPassed;
         ReportProgress("video");
 
         // 3. 下载音频流（多连接加速）
         var audioUrls = CdnUrlHelper.FilterAndSortUrls(audioStream.BaseUrl, audioStream.BackupUrls);
-        await _multiDownloader.DownloadAsync(
+        var audioTransfer = await _multiDownloader.DownloadAsync(
             audioUrls, audioTmp, cookieHeader,
             (total, downloaded, speed) =>
             {
@@ -138,6 +152,8 @@ public class BiliDownloadService : IDisposable
             ct);
         currentSpeed = "";
         audioProgress = 100;
+        task.ExpectedAudioBytes = audioTransfer.ExpectedBytes;
+        task.AudioIntegrityPassed = audioTransfer.IntegrityPassed;
         ReportProgress("audio");
 
         // 4. ffmpeg 合并
@@ -158,7 +174,7 @@ public class BiliDownloadService : IDisposable
         }
         catch { /* 忽略清理失败 */ }
 
-        return outputPath;
+        return new BiliDownloadItemResult(outputPath, videoTransfer, audioTransfer);
     }
 
     /// <summary>
@@ -178,68 +194,11 @@ public class BiliDownloadService : IDisposable
         Action<long, long, string> onProgress,
         CancellationToken ct)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        if (!string.IsNullOrWhiteSpace(cookie))
+        if (File.Exists(outputPath) && new FileInfo(outputPath).Length != existingBytes)
         {
-            request.Headers.Add("Cookie", cookie);
+            throw new InvalidOperationException("传入的续传字节数与现有文件长度不一致");
         }
-
-        // 断点续传：设置 Range 头
-        if (existingBytes > 0 && File.Exists(outputPath))
-        {
-            request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(existingBytes, null);
-        }
-
-        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-        response.EnsureSuccessStatusCode();
-
-        // 校验 Range 响应：续传时服务器忽略 Range 返回 200 OK，删除已有文件从头开始
-        if (existingBytes > 0 && response.StatusCode != System.Net.HttpStatusCode.PartialContent)
-        {
-            if (File.Exists(outputPath)) File.Delete(outputPath);
-            existingBytes = 0;
-        }
-
-        var totalBytes = response.Content.Headers.ContentLength ?? -1;
-        // 如果是续传，totalBytes 是剩余字节数，需要加上已下载的
-        if (existingBytes > 0 && totalBytes > 0)
-            totalBytes += existingBytes;
-
-        using var stream = await response.Content.ReadAsStreamAsync(ct);
-
-        // 续传时 Append，否则 Create
-        var fileMode = existingBytes > 0 && File.Exists(outputPath)
-            ? FileMode.Append
-            : FileMode.Create;
-
-        using var fileStream = new FileStream(outputPath, fileMode, FileAccess.Write, FileShare.None, 8192);
-        var buffer = new byte[8192];
-        var downloaded = existingBytes;
-        int bytesRead;
-
-        // 速度计算
-        var lastBytes = existingBytes;
-        var lastTime = DateTime.UtcNow;
-        var speedText = "";
-
-        while ((bytesRead = await stream.ReadAsync(buffer, ct)) > 0)
-        {
-            await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
-            downloaded += bytesRead;
-
-            // 每 500ms 更新一次速度
-            var now = DateTime.UtcNow;
-            var elapsed = (now - lastTime).TotalSeconds;
-            if (elapsed >= 0.5)
-            {
-                var bytesPerSecond = (downloaded - lastBytes) / elapsed;
-                speedText = FormatSpeed((long)bytesPerSecond);
-                lastBytes = downloaded;
-                lastTime = now;
-            }
-
-            onProgress(totalBytes, downloaded, speedText);
-        }
+        await _multiDownloader.DownloadAsync([url], outputPath, cookie, onProgress, ct);
     }
 
     /// <summary>
@@ -247,7 +206,7 @@ public class BiliDownloadService : IDisposable
     /// </summary>
     public async Task MergeAsync(string videoPath, string audioPath, string outputPath, CancellationToken ct = default)
     {
-        await FfmpegService.MergeAsync(videoPath, audioPath, outputPath, ct);
+        await _ffmpegService.MergeAsync(videoPath, audioPath, outputPath, ct);
     }
 
     /// <summary>

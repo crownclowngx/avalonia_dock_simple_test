@@ -65,7 +65,21 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 audio_progress      REAL NOT NULL DEFAULT 0,
                 merge_progress      REAL NOT NULL DEFAULT 0,
                 speed_text          TEXT NOT NULL DEFAULT '',
-                created_at          TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+                created_at          TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+                expected_video_bytes INTEGER NOT NULL DEFAULT 0,
+                expected_audio_bytes INTEGER NOT NULL DEFAULT 0,
+                video_integrity_passed INTEGER NOT NULL DEFAULT 0,
+                audio_integrity_passed INTEGER NOT NULL DEFAULT 0,
+                output_file_path    TEXT NOT NULL DEFAULT '',
+                last_updated_at     TEXT NOT NULL DEFAULT '',
+                error_type          TEXT,
+                is_retryable        INTEGER NOT NULL DEFAULT 0,
+                media_type          TEXT NOT NULL DEFAULT 'video',
+                ep_id               INTEGER NOT NULL DEFAULT 0,
+                season_id           INTEGER NOT NULL DEFAULT 0,
+                extras_config       INTEGER NOT NULL DEFAULT 0,
+                cover_url           TEXT NOT NULL DEFAULT '',
+                extras_result_summary TEXT
             );
             """;
         await cmd.ExecuteNonQueryAsync();
@@ -85,7 +99,8 @@ public class DownloadTaskStore : IDownloadTaskRepository
             "ALTER TABLE download_tasks ADD COLUMN video_integrity_passed INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN audio_integrity_passed INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN output_file_path TEXT NOT NULL DEFAULT '';",
-            "ALTER TABLE download_tasks ADD COLUMN last_updated_at TEXT NOT NULL DEFAULT (datetime('now','localtime'));",
+            // SQLite 不允许 ADD COLUMN 使用非常量默认表达式；空值由读取兼容层解释为未知时间。
+            "ALTER TABLE download_tasks ADD COLUMN last_updated_at TEXT NOT NULL DEFAULT '';",
             "ALTER TABLE download_tasks ADD COLUMN error_type TEXT;",
             "ALTER TABLE download_tasks ADD COLUMN is_retryable INTEGER NOT NULL DEFAULT 0;",
             // 番剧支持字段
@@ -132,7 +147,10 @@ public class DownloadTaskStore : IDownloadTaskRepository
                      temp_directory, video_bytes, audio_bytes,
                      video_progress, audio_progress, merge_progress, speed_text,
                      created_at, media_type, ep_id, season_id,
-                     extras_config, cover_url)
+                     extras_config, cover_url, extras_result_summary,
+                     expected_video_bytes, expected_audio_bytes,
+                     video_integrity_passed, audio_integrity_passed,
+                     output_file_path, last_updated_at, error_type, is_retryable)
                 VALUES
                     ($task_id, $document_id, $series_title, $item_title, $aid, $bvid, $cid,
                      $quality_id, $audio_quality_id, $output_directory, $sub_folder,
@@ -140,7 +158,10 @@ public class DownloadTaskStore : IDownloadTaskRepository
                      $temp_directory, $video_bytes, $audio_bytes,
                      $video_progress, $audio_progress, $merge_progress, $speed_text,
                      $created_at, $media_type, $ep_id, $season_id,
-                     $extras_config, $cover_url);
+                     $extras_config, $cover_url, $extras_result_summary,
+                     $expected_video_bytes, $expected_audio_bytes,
+                     $video_integrity_passed, $audio_integrity_passed,
+                     $output_file_path, $last_updated_at, $error_type, $is_retryable);
                 """;
             cmd.Parameters.AddWithValue("$task_id", r.TaskId);
             cmd.Parameters.AddWithValue("$document_id", r.DocumentId);
@@ -173,6 +194,17 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.Parameters.AddWithValue(
                 "$cover_url",
                 SensitiveDataSanitizer.SanitizeUrlForStorage(r.CoverUrl));
+            cmd.Parameters.AddWithValue(
+                "$extras_result_summary",
+                ToDatabaseValue(SensitiveDataSanitizer.Sanitize(r.ExtrasResultSummary)));
+            cmd.Parameters.AddWithValue("$expected_video_bytes", r.ExpectedVideoBytes);
+            cmd.Parameters.AddWithValue("$expected_audio_bytes", r.ExpectedAudioBytes);
+            cmd.Parameters.AddWithValue("$video_integrity_passed", r.VideoIntegrityPassed ? 1 : 0);
+            cmd.Parameters.AddWithValue("$audio_integrity_passed", r.AudioIntegrityPassed ? 1 : 0);
+            cmd.Parameters.AddWithValue("$output_file_path", r.OutputFilePath);
+            cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(r.LastUpdatedAt));
+            cmd.Parameters.AddWithValue("$error_type", ToDatabaseValue(r.ErrorType));
+            cmd.Parameters.AddWithValue("$is_retryable", r.IsRetryable ? 1 : 0);
             await cmd.ExecuteNonQueryAsync();
         }
 
@@ -189,7 +221,8 @@ public class DownloadTaskStore : IDownloadTaskRepository
         await using var cmd = connection.CreateCommand();
         cmd.CommandText = """
             UPDATE download_tasks
-            SET progress = $progress, status = $status, error_message = $error_message
+            SET progress = $progress, status = $status, error_message = $error_message,
+                last_updated_at = $last_updated_at
             WHERE task_id = $task_id;
             """;
         cmd.Parameters.AddWithValue("$task_id", taskId);
@@ -198,6 +231,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
         cmd.Parameters.AddWithValue(
             "$error_message",
             ToDatabaseValue(SensitiveDataSanitizer.Sanitize(errorMessage)));
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(DateTime.Now));
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -211,12 +245,115 @@ public class DownloadTaskStore : IDownloadTaskRepository
         await using var cmd = connection.CreateCommand();
         cmd.CommandText = """
             UPDATE download_tasks
-            SET video_bytes = $video_bytes, audio_bytes = $audio_bytes
+            SET video_bytes = $video_bytes, audio_bytes = $audio_bytes,
+                last_updated_at = $last_updated_at
             WHERE task_id = $task_id;
             """;
         cmd.Parameters.AddWithValue("$task_id", taskId);
         cmd.Parameters.AddWithValue("$video_bytes", videoBytes);
         cmd.Parameters.AddWithValue("$audio_bytes", audioBytes);
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(DateTime.Now));
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task UpdateIntegrityAsync(
+        string taskId,
+        long expectedVideoBytes,
+        long expectedAudioBytes,
+        bool videoIntegrityPassed,
+        bool audioIntegrityPassed,
+        DateTime lastUpdatedAt)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            UPDATE download_tasks
+            SET expected_video_bytes = $expected_video_bytes,
+                expected_audio_bytes = $expected_audio_bytes,
+                video_integrity_passed = $video_integrity_passed,
+                audio_integrity_passed = $audio_integrity_passed,
+                last_updated_at = $last_updated_at
+            WHERE task_id = $task_id;
+            """;
+        cmd.Parameters.AddWithValue("$task_id", taskId);
+        cmd.Parameters.AddWithValue("$expected_video_bytes", expectedVideoBytes);
+        cmd.Parameters.AddWithValue("$expected_audio_bytes", expectedAudioBytes);
+        cmd.Parameters.AddWithValue("$video_integrity_passed", videoIntegrityPassed ? 1 : 0);
+        cmd.Parameters.AddWithValue("$audio_integrity_passed", audioIntegrityPassed ? 1 : 0);
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(lastUpdatedAt));
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task MarkCompletedAsync(
+        string taskId,
+        string outputFilePath,
+        string? extrasResultSummary,
+        DateTime lastUpdatedAt)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            UPDATE download_tasks
+            SET progress = 100,
+                status = $status,
+                video_progress = 100,
+                audio_progress = 100,
+                merge_progress = 100,
+                speed_text = '',
+                output_file_path = $output_file_path,
+                extras_result_summary = $extras_result_summary,
+                error_message = NULL,
+                error_type = NULL,
+                is_retryable = 0,
+                last_updated_at = $last_updated_at
+            WHERE task_id = $task_id;
+            """;
+        cmd.Parameters.AddWithValue("$task_id", taskId);
+        cmd.Parameters.AddWithValue(
+            "$status",
+            DownloadTaskStatusMapper.ToStorageString(DownloadTaskStatus.Completed));
+        cmd.Parameters.AddWithValue("$output_file_path", outputFilePath);
+        cmd.Parameters.AddWithValue(
+            "$extras_result_summary",
+            ToDatabaseValue(SensitiveDataSanitizer.Sanitize(extrasResultSummary)));
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(lastUpdatedAt));
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task MarkFailedAsync(
+        string taskId,
+        double progress,
+        string? errorMessage,
+        string? errorType,
+        bool isRetryable,
+        DateTime lastUpdatedAt)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            UPDATE download_tasks
+            SET progress = $progress,
+                status = $status,
+                error_message = $error_message,
+                error_type = $error_type,
+                is_retryable = $is_retryable,
+                last_updated_at = $last_updated_at
+            WHERE task_id = $task_id;
+            """;
+        cmd.Parameters.AddWithValue("$task_id", taskId);
+        cmd.Parameters.AddWithValue("$progress", progress);
+        cmd.Parameters.AddWithValue(
+            "$status",
+            DownloadTaskStatusMapper.ToStorageString(DownloadTaskStatus.Failed));
+        cmd.Parameters.AddWithValue(
+            "$error_message",
+            ToDatabaseValue(SensitiveDataSanitizer.Sanitize(errorMessage)));
+        cmd.Parameters.AddWithValue("$error_type", ToDatabaseValue(errorType));
+        cmd.Parameters.AddWithValue("$is_retryable", isRetryable ? 1 : 0);
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(lastUpdatedAt));
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -230,11 +367,13 @@ public class DownloadTaskStore : IDownloadTaskRepository
         await using var cmd = connection.CreateCommand();
         cmd.CommandText = """
             UPDATE download_tasks
-            SET temp_directory = $temp_directory
+            SET temp_directory = $temp_directory,
+                last_updated_at = $last_updated_at
             WHERE task_id = $task_id;
             """;
         cmd.Parameters.AddWithValue("$task_id", taskId);
         cmd.Parameters.AddWithValue("$temp_directory", tempDirectory);
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(DateTime.Now));
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -326,13 +465,15 @@ public class DownloadTaskStore : IDownloadTaskRepository
         await using var cmd = connection.CreateCommand();
         cmd.CommandText = """
             UPDATE download_tasks
-            SET extras_result_summary = $extras_result_summary
+            SET extras_result_summary = $extras_result_summary,
+                last_updated_at = $last_updated_at
             WHERE task_id = $task_id;
             """;
         cmd.Parameters.AddWithValue("$task_id", taskId);
         cmd.Parameters.AddWithValue(
             "$extras_result_summary",
             ToDatabaseValue(SensitiveDataSanitizer.Sanitize(extrasResultSummary)));
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(DateTime.Now));
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -384,7 +525,8 @@ public class DownloadTaskStore : IDownloadTaskRepository
             UPDATE download_tasks
             SET progress = $progress, status = $status,
                 video_progress = $video_progress, audio_progress = $audio_progress,
-                merge_progress = $merge_progress, speed_text = $speed_text
+                merge_progress = $merge_progress, speed_text = $speed_text,
+                last_updated_at = $last_updated_at
             WHERE task_id = $task_id;
             """;
         cmd.Parameters.AddWithValue("$task_id", taskId);
@@ -394,6 +536,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
         cmd.Parameters.AddWithValue("$audio_progress", audioProgress);
         cmd.Parameters.AddWithValue("$merge_progress", mergeProgress);
         cmd.Parameters.AddWithValue("$speed_text", speedText);
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(DateTime.Now));
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -448,6 +591,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
     private static object ToDatabaseValue(string? value)
         => string.IsNullOrEmpty(value) ? DBNull.Value : value;
 
+    private static string ToStorageTime(DateTime value)
+        => value.ToString("yyyy-MM-dd HH:mm:ss.fffffff");
+
     private static double TryGetDouble(SqliteDataReader reader, string column)
     {
         try { return reader.GetDouble(reader.GetOrdinal(column)); }
@@ -497,9 +643,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
         try
         {
             var ordinal = reader.GetOrdinal(column);
-            return reader.IsDBNull(ordinal) ? DateTime.Now
-                : DateTime.TryParse(reader.GetString(ordinal), out var dt) ? dt : DateTime.Now;
+            return reader.IsDBNull(ordinal) ? DateTime.MinValue
+                : DateTime.TryParse(reader.GetString(ordinal), out var dt) ? dt : DateTime.MinValue;
         }
-        catch { return DateTime.Now; }
+        catch { return DateTime.MinValue; }
     }
 }

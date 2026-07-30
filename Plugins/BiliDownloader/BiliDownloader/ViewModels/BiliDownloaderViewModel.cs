@@ -69,7 +69,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         BiliLoginStateService loginStateService,
         BiliLoginService loginService,
         BiliApiService apiService,
-        IBiliCredentialProvider credentialProvider)
+        IBiliCredentialProvider credentialProvider,
+        IFfmpegService ffmpegService)
     {
         _messengerService = messengerService;
         _taskRepository = taskRepository;
@@ -101,7 +102,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 CoverUrl = _videoCollection?.Cover ?? "",
             },
             messengerService: _messengerService,
-            onStatusMessage: msg => AppendLog(msg));
+            onStatusMessage: msg => AppendLog(msg),
+            ffmpegService: ffmpegService);
 
         RegisterMessengers();
     }

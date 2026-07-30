@@ -5,6 +5,9 @@ namespace BiliDownloader.Services.Infrastructure;
 /// </summary>
 public interface IFfmpegService
 {
+    /// <summary>用户配置的 ffmpeg 路径</summary>
+    string? CustomPath { get; set; }
+
     /// <summary>ffmpeg 是否就绪</summary>
     bool IsReady { get; }
 

@@ -40,6 +40,7 @@ public partial class VideoListViewModel : ObservableObject
     private readonly Func<SubmitContext> _getSubmitContext;
     private readonly IMessengerService? _messengerService;
     private readonly Action<string> _onStatusMessage;
+    private readonly IFfmpegService _ffmpegService;
 
     public ObservableCollection<BiliVideoItem> VideoItems { get; } = new();
 
@@ -62,11 +63,13 @@ public partial class VideoListViewModel : ObservableObject
     public VideoListViewModel(
         Func<SubmitContext> getSubmitContext,
         IMessengerService? messengerService,
-        Action<string> onStatusMessage)
+        Action<string> onStatusMessage,
+        IFfmpegService ffmpegService)
     {
         _getSubmitContext = getSubmitContext;
         _messengerService = messengerService;
         _onStatusMessage = onStatusMessage;
+        _ffmpegService = ffmpegService;
 
         SelectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = true; });
         DeselectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = false; });
@@ -198,7 +201,7 @@ public partial class VideoListViewModel : ObservableObject
         }
 
         // 检查 ffmpeg 是否就绪
-        if (!FfmpegService.IsReady)
+        if (!_ffmpegService.IsReady)
         {
             _onStatusMessage("ffmpeg 未就绪，请在调度器工具中等待下载完成或手动配置路径");
             return;

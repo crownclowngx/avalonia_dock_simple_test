@@ -30,4 +30,6 @@ public interface IDownloadTaskExecutor
 /// <param name="ExtrasResultSummary">字幕、弹幕、封面等附加资源的执行摘要。</param>
 public sealed record DownloadExecutionResult(
     string? OutputFilePath,
-    string? ExtrasResultSummary);
+    string? ExtrasResultSummary,
+    DownloadTransferResult? VideoTransfer = null,
+    DownloadTransferResult? AudioTransfer = null);

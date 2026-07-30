@@ -164,7 +164,8 @@ public sealed class PresentationLogicTests
         var vm = new VideoListViewModel(
             () => new SubmitContext(),
             new RecordingMessengerService(),
-            statuses.Add);
+            statuses.Add,
+            new FakeFfmpegService());
         var first = new BiliVideoItem { ItemId = "one", Title = "A", IsSelected = false };
         var second = new BiliVideoItem { ItemId = "two", Title = "B", IsSelected = false };
         vm.SetItems([first, second]);
@@ -209,7 +210,8 @@ public sealed class PresentationLogicTests
         var vm = new VideoListViewModel(
             () => context,
             new RecordingMessengerService(),
-            value => status = value);
+            value => status = value,
+            new FakeFfmpegService());
 
         vm.SubmitDownloadCommand.Execute(null);
         Assert.Equal("请先解析视频", status);
@@ -239,7 +241,7 @@ public sealed class PresentationLogicTests
         Directory.CreateDirectory(paths.RootDirectory);
         var fakeFfmpeg = Path.Combine(paths.RootDirectory, "ffmpeg.exe");
         await File.WriteAllTextAsync(fakeFfmpeg, "test marker");
-        FfmpegService.CustomPath = fakeFfmpeg;
+        var ffmpeg = new FakeFfmpegService { CustomPath = fakeFfmpeg };
         var messenger = new RecordingMessengerService();
         var status = "";
         var context = new SubmitContext
@@ -259,7 +261,8 @@ public sealed class PresentationLogicTests
         var vm = new VideoListViewModel(
             () => context,
             messenger,
-            value => status = value);
+            value => status = value,
+            ffmpeg);
         vm.SetItems(
         [
             new BiliVideoItem
@@ -337,13 +340,14 @@ public sealed class PresentationLogicTests
         settings.Seed("default_output_dir", "saved");
         settings.Seed("ffmpeg_custom_path", "missing-ffmpeg");
         settings.Seed("max_concurrent_downloads", "3");
-        var vm = new SchedulerSettingsViewModel(settings);
+        var ffmpeg = new FakeFfmpegService();
+        var vm = new SchedulerSettingsViewModel(settings, ffmpeg);
         var changed = 0;
         vm.MaxConcurrentDownloadsChanged += value => changed = value;
 
         await vm.LoadSettingsAsync();
         Assert.Equal("saved", vm.DefaultOutputDirectory);
-        Assert.Equal("missing-ffmpeg", FfmpegService.CustomPath);
+        Assert.Equal("missing-ffmpeg", ffmpeg.CustomPath);
         Assert.Equal(3, vm.MaxConcurrentDownloads);
 
         vm.DefaultOutputDirectory = "new-output";
@@ -360,7 +364,8 @@ public sealed class PresentationLogicTests
         using var state = new StaticStateScope();
         var settings = new InMemorySettingsRepository();
         settings.Seed("max_concurrent_downloads", "99");
-        var vm = new SchedulerSettingsViewModel(settings);
+        var ffmpeg = new FakeFfmpegService();
+        var vm = new SchedulerSettingsViewModel(settings, ffmpeg);
 
         await vm.LoadSettingsAsync();
         Assert.Equal(1, vm.MaxConcurrentDownloads);
@@ -368,7 +373,7 @@ public sealed class PresentationLogicTests
         await vm.BrowseOutputDirCommand.ExecuteAsync(null);
 
         Environment.SetEnvironmentVariable("PATH", "");
-        FfmpegService.CustomPath = null;
+        ffmpeg.CustomPath = null;
         await vm.CheckFfmpegAsync();
         Assert.False(vm.FfmpegReady);
         Assert.Contains("未找到", vm.FfmpegStatus, StringComparison.Ordinal);
@@ -415,10 +420,12 @@ public sealed class PresentationLogicTests
         };
         var messenger = new RecordingMessengerService();
         var status = "";
+        var ffmpeg = new FakeFfmpegService();
         var vm = new VideoListViewModel(
             () => context,
             messenger,
-            value => status = value);
+            value => status = value,
+            ffmpeg);
         vm.SetItems(
         [
             new BiliVideoItem
@@ -437,7 +444,7 @@ public sealed class PresentationLogicTests
         Directory.CreateDirectory(paths.RootDirectory);
         var fake = Path.Combine(paths.RootDirectory, "ffmpeg.exe");
         await File.WriteAllTextAsync(fake, "marker");
-        FfmpegService.CustomPath = fake;
+        ffmpeg.CustomPath = fake;
         messenger.ThrowOnSend = true;
         vm.VideoItems[0].IsSelected = true;
         vm.SubmitDownloadCommand.Execute(null);
@@ -502,6 +509,7 @@ public sealed class PresentationLogicTests
             new InMemoryBiliCredentialStore(),
             new StubBiliSessionApi(),
             messenger);
+        var ffmpeg = new FakeFfmpegService();
         var vm = new BiliDownloaderViewModel(
             messenger,
             repository,
@@ -509,7 +517,8 @@ public sealed class PresentationLogicTests
             loginState,
             new BiliLoginService(),
             new BiliApiService(),
-            new FakeCredentialProvider());
+            new FakeCredentialProvider(),
+            ffmpeg);
         vm.Title = "测试文档";
         vm.VideoParse.Url = "BV1abcDEF123";
         vm.DownloadInfo = "日志";
@@ -525,7 +534,8 @@ public sealed class PresentationLogicTests
             loginState,
             new BiliLoginService(),
             new BiliApiService(),
-            new FakeCredentialProvider());
+            new FakeCredentialProvider(),
+            ffmpeg);
         restored.LoadDocumentByMetaData(saved);
 
         Assert.Equal(vm.DocumentId, restored.DocumentId);
@@ -571,6 +581,7 @@ public sealed class PresentationLogicTests
             new InMemoryBiliCredentialStore(),
             new StubBiliSessionApi(),
             messenger);
+        var ffmpeg = new FakeFfmpegService();
         services.AddTransient(_ => new BiliDownloaderViewModel(
             messenger,
             repository,
@@ -578,7 +589,8 @@ public sealed class PresentationLogicTests
             loginState,
             new BiliLoginService(),
             new BiliApiService(),
-            new FakeCredentialProvider()));
+            new FakeCredentialProvider(),
+            ffmpeg));
         using var provider = services.BuildServiceProvider();
         var strategy = new BiliDownloaderDocumentStrategy(provider);
 
