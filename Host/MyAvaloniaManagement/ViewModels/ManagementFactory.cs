@@ -279,10 +279,9 @@ public class ManagementFactory : Factory
 
     public override IRootDock CreateLayout()
     {
-        var untitledViewModel = new WelcomeViewModel()
+        var untitledViewModel = new WelcomeViewModel(toolId => ShowTool(toolId))
         {
             Title = "欢迎",
-            Text = "欢迎使用MyAvaloniaManagement",
         };
         var documentDock = new DocumentDock
         {
@@ -513,6 +512,35 @@ public class ManagementFactory : Factory
         return true;
     }
 
+    /// <summary>
+    /// 显示并激活指定的宿主工具；已隐藏的工具会先恢复到稳定停靠区域。
+    /// </summary>
+    internal bool ShowTool(string toolId)
+    {
+        if (string.IsNullOrWhiteSpace(toolId) ||
+            _rootDock is null ||
+            !_createdTools.TryGetValue(toolId, out var tool))
+        {
+            return false;
+        }
+
+        if (!IsDockableAttached(_rootDock, tool) &&
+            !IsToolPinned(_rootDock, tool))
+        {
+            if (!RestoreTool(_rootDock, tool))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            SetActiveDockable(tool);
+        }
+
+        _messengerService.Send(new UpdateLayoutMessage("ShowTool"));
+        return true;
+    }
+
     private void InsertMissingPane(
         IRootDock root,
         ProportionalDock pane,
@@ -599,6 +627,24 @@ public class ManagementFactory : Factory
             ReferenceEquals(dockable, target) ||
             dockable is IDock childDock &&
             IsDockableAttached(childDock, target)) == true;
+
+    private static bool IsToolPinned(
+        IDock dock,
+        IDockable tool)
+    {
+        if (dock is IRootDock root &&
+            (root.LeftPinnedDockables?.Contains(tool) == true ||
+             root.RightPinnedDockables?.Contains(tool) == true ||
+             root.TopPinnedDockables?.Contains(tool) == true ||
+             root.BottomPinnedDockables?.Contains(tool) == true))
+        {
+            return true;
+        }
+
+        return dock.VisibleDockables?
+            .OfType<IDock>()
+            .Any(child => IsToolPinned(child, tool)) == true;
+    }
 
     private static void RemoveFromHiddenDockables(
         IDock root,

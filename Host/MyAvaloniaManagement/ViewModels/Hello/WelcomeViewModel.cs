@@ -1,12 +1,34 @@
-﻿using Dock.Model.Mvvm.Controls;
+using System;
+using System.Reflection;
+using CommunityToolkit.Mvvm.Input;
+using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Constants;
 
 namespace MyAvaloniaManagement.ViewModels.Hello;
 
-public class WelcomeViewModel: Document
+public partial class WelcomeViewModel : Document
 {
-    private string _text = "";
-    
-    
+    private const string DefaultIntroduction =
+        "MyAvaloniaManagement 是基于 Avalonia 与 Dock 构建的插件化桌面框架，" +
+        "用可停靠布局组织工具，用独立插件扩展业务能力。";
+
+    private readonly Action<string>? _showTool;
+    private string _text = DefaultIntroduction;
+
+    public WelcomeViewModel()
+    {
+    }
+
+    internal WelcomeViewModel(Action<string> showTool)
+    {
+        _showTool = showTool ?? throw new ArgumentNullException(nameof(showTool));
+    }
+
+    /// <summary>
+    /// 获取欢迎页显示的运行时版本。
+    /// </summary>
+    public string VersionText => $"版本 {GetVersion()}";
+
     public string Text
     {
         get => _text;
@@ -18,5 +40,31 @@ public class WelcomeViewModel: Document
                 IsModified = false;
             }
         }
+    }
+
+    [RelayCommand]
+    private void OpenPluginMenu() =>
+        _showTool?.Invoke(DockNameConstant.PlugGroupMenu);
+
+    [RelayCommand]
+    private void OpenToolManagement() =>
+        _showTool?.Invoke(DockNameConstant.ToolManagement);
+
+    private static string GetVersion()
+    {
+        var assembly = Assembly.GetEntryAssembly() ?? typeof(WelcomeViewModel).Assembly;
+        var informationalVersion = assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion;
+
+        if (!string.IsNullOrWhiteSpace(informationalVersion))
+        {
+            var metadataSeparator = informationalVersion.IndexOf('+');
+            return metadataSeparator >= 0
+                ? informationalVersion[..metadataSeparator]
+                : informationalVersion;
+        }
+
+        return assembly.GetName().Version?.ToString(3) ?? "1.0.0";
     }
 }
