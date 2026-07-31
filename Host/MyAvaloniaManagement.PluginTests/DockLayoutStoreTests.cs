@@ -109,6 +109,65 @@ public sealed class DockLayoutStoreTests
         Assert.DoesNotContain("playback", json, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void PinnedStateRoundTripsAndLegacyJsonDefaultsToExpanded()
+    {
+        using var workspace = new TemporaryLayoutWorkspace();
+        var store = new DockLayoutStore(workspace.LayoutPath);
+        var pinned = CreateValidSnapshot();
+        pinned.Tools[0] = pinned.Tools[0] with { IsPinned = true };
+
+        store.Save(pinned);
+
+        var loadedPinned = store.Load();
+        Assert.NotNull(loadedPinned);
+        Assert.True(loadedPinned.Tools[0].IsPinned);
+
+        var serializerOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        var legacyJson = JsonSerializer.Serialize(
+                CreateValidSnapshot(),
+                serializerOptions)
+            .Replace("\"isPinned\":false,", string.Empty, StringComparison.Ordinal);
+        Assert.DoesNotContain("isPinned", legacyJson, StringComparison.Ordinal);
+        File.WriteAllText(workspace.LayoutPath, legacyJson);
+
+        var loadedLegacy = store.Load();
+        Assert.NotNull(loadedLegacy);
+        Assert.False(loadedLegacy.Tools[0].IsPinned);
+        Assert.True(loadedLegacy.Tools[0].IsVisible);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public void InvalidPinnedStateIsRejected(bool isVisible, bool isFloating)
+    {
+        var snapshot = CreateValidSnapshot();
+        snapshot.Tools[0] = snapshot.Tools[0] with
+        {
+            IsVisible = isVisible,
+            IsPinned = true,
+            IsFloating = isFloating,
+            FloatingBounds = isFloating
+                ? new DockFloatingBoundsV1
+                {
+                    X = 10,
+                    Y = 10,
+                    Width = 300,
+                    Height = 300
+                }
+                : null
+        };
+
+        var error = DockLayoutSnapshotValidator.Validate(snapshot);
+
+        Assert.NotNull(error);
+        Assert.Equal("LAYOUT_PINNED_STATE_INVALID", error.Value.Code);
+    }
+
     private static DockLayoutSnapshotV1 CreateValidSnapshot() =>
         new()
         {

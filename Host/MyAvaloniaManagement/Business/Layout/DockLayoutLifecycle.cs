@@ -98,11 +98,13 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
             .OfType<IRootDock>()
             .SelectMany(dock => dock.HiddenDockables ?? [])
             .ToHashSet(ReferenceEqualityComparer.Instance);
+        var pinned = CapturePinnedPlacements(mainDockables);
 
         var placements = new Dictionary<string, ToolPlacement>(StringComparer.Ordinal);
         foreach (var pair in factory.CreatedTools)
         {
             var tool = pair.Value;
+            pinned.TryGetValue(tool, out var pinnedPlacement);
             var floatingWindow = floatingWindows.FirstOrDefault(window =>
                 window.Layout is not null &&
                 EnumerateDockables(window.Layout).Any(candidate =>
@@ -110,11 +112,13 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
             var currentDock = allToolDocks.FirstOrDefault(dock =>
                 dock.VisibleDockables?.Any(candidate =>
                     ReferenceEquals(candidate, tool)) == true);
-            var dockId = ResolveStableDockId(currentDock) ??
+            var dockId = pinnedPlacement?.DockId ??
+                         ResolveStableDockId(currentDock) ??
                          ResolveStableDockId(tool.OriginalOwner as IToolDock) ??
                          GetDefaultDockId(factory, tool.Id);
             var isFloating = floatingWindow is not null;
-            var isVisible = isFloating || currentDock is not null;
+            var isPinned = pinnedPlacement is not null;
+            var isVisible = isFloating || currentDock is not null || isPinned;
 
             placements.Add(
                 pair.Key,
@@ -122,6 +126,7 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
                     tool,
                     dockId,
                     isVisible && !hidden.Contains(tool),
+                    isPinned,
                     false,
                     null));
         }
@@ -138,7 +143,13 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
                 .OfType<Tool>()
                 .Select(tool => tool.Id)
                 .ToArray();
+            var pinnedOrder = pinned.Values
+                .Where(placement => placement.DockId == dockId)
+                .OrderBy(placement => placement.Order)
+                .Select(placement => placement.Tool.Id)
+                .ToArray();
             var order = visibleOrder
+                .Concat(pinnedOrder)
                 .Concat(placementGroup.Select(placement => placement.Tool.Id))
                 .Distinct(StringComparer.Ordinal)
                 .Select((id, index) => (id, index))
@@ -152,6 +163,7 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
                     DockId = dockId,
                     Order = order[placement.Tool.Id],
                     IsVisible = placement.IsVisible,
+                    IsPinned = placement.IsPinned,
                     IsFloating = placement.IsFloating,
                     FloatingBounds = placement.FloatingBounds
                 });
@@ -323,10 +335,18 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
             factory.HideDockable(factory.CreatedTools[toolState.Id]);
         }
 
+        foreach (var toolState in snapshot.Tools
+                     .Where(tool => tool.IsPinned)
+                     .OrderBy(tool => tool.DockId, StringComparer.Ordinal)
+                     .ThenBy(tool => tool.Order))
+        {
+            factory.PinDockable(factory.CreatedTools[toolState.Id]);
+        }
+
         if (snapshot.ActiveToolId is { } activeToolId)
         {
             var activeState = snapshot.Tools.Single(tool => tool.Id == activeToolId);
-            if (activeState.IsVisible)
+            if (activeState.IsVisible && !activeState.IsPinned)
             {
                 factory.SetActiveDockable(factory.CreatedTools[activeToolId]);
             }
@@ -501,10 +521,63 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
     private static bool IsKnownToolDockId(string? id) =>
         DockLayoutIds.IsToolDockId(id);
 
+    private static Dictionary<Tool, PinnedPlacement> CapturePinnedPlacements(
+        IEnumerable<IDockable> dockables)
+    {
+        var result = new Dictionary<Tool, PinnedPlacement>(
+            ReferenceEqualityComparer.Instance);
+
+        foreach (var rootDock in dockables.OfType<IRootDock>())
+        {
+            AddPinnedPlacements(
+                result,
+                rootDock.LeftPinnedDockables,
+                DockLayoutIds.LeftTools);
+            AddPinnedPlacements(
+                result,
+                rootDock.TopPinnedDockables,
+                DockLayoutIds.TopTools);
+            AddPinnedPlacements(
+                result,
+                rootDock.BottomPinnedDockables,
+                DockLayoutIds.BottomTools);
+            AddPinnedPlacements(
+                result,
+                rootDock.RightPinnedDockables,
+                DockLayoutIds.RightTools);
+        }
+
+        return result;
+    }
+
+    private static void AddPinnedPlacements(
+        IDictionary<Tool, PinnedPlacement> placements,
+        IEnumerable<IDockable>? dockables,
+        string dockId)
+    {
+        if (dockables is null)
+        {
+            return;
+        }
+
+        var order = 0;
+        foreach (var tool in dockables.OfType<Tool>())
+        {
+            placements.TryAdd(tool, new PinnedPlacement(tool, dockId, order));
+            order++;
+        }
+    }
+
     private sealed record ToolPlacement(
         Tool Tool,
         string DockId,
         bool IsVisible,
+        bool IsPinned,
         bool IsFloating,
         DockFloatingBoundsV1? FloatingBounds);
+
+    private sealed record PinnedPlacement(
+        Tool Tool,
+        string DockId,
+        int Order);
 }

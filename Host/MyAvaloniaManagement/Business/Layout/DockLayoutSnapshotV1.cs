@@ -40,6 +40,11 @@ internal sealed record DockToolSnapshotV1
 
     public bool IsVisible { get; init; }
 
+    /// <summary>
+    /// 工具是否以自动隐藏的边缘标签形式显示。
+    /// </summary>
+    public bool IsPinned { get; init; }
+
     public bool IsFloating { get; init; }
 
     public DockFloatingBoundsV1? FloatingBounds { get; init; }
@@ -128,6 +133,11 @@ internal static class DockLayoutSnapshotValidator
             if (!tool.IsFloating && tool.FloatingBounds is not null)
             {
                 return new("LAYOUT_FLOATING_STATE_INVALID", tool.Id);
+            }
+
+            if (tool.IsPinned && (!tool.IsVisible || tool.IsFloating))
+            {
+                return new("LAYOUT_PINNED_STATE_INVALID", tool.Id);
             }
 
             if (tool.IsFloating &&

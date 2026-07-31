@@ -167,6 +167,54 @@ public sealed class ToolViewModelTests
         manager.SyncToolsVisibility();
     }
 
+    [Fact]
+    public void PinnedToolRemainsVisibleInManagementAndCanBeHiddenAndRestored()
+    {
+        using var context = new TestHostContext();
+        var tool = new Tool
+        {
+            Id = "pinned-closable-tool",
+            Title = "Pinned Tool",
+            CanClose = true
+        };
+        context.Factory.RegisterToolStrategy(new StubToolStrategy(
+            tool,
+            new ToolMetadata
+            {
+                ToolTypeId = tool.Id,
+                DisplayName = tool.Title!,
+                Description = string.Empty,
+                IconPath = string.Empty,
+                Alignment = "Left"
+            }));
+        _ = context.CreateMainWindowViewModel();
+        var data = context.Factory.GetToolManagementData()!;
+        var manager = Assert.IsType<ToolManagementViewModel>(
+            context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
+        var item = manager.ToolItems.Single(candidate => candidate.ToolId == tool.Id);
+
+        context.Factory.PinDockable(tool);
+        manager.SyncToolsVisibility();
+
+        Assert.True(item.IsVisible);
+        var owningRoot = context.Factory.FindRoot(tool, _ => true)!;
+        Assert.Contains(tool, owningRoot.LeftPinnedDockables!);
+
+        manager.ToggleToolVisibility(item);
+
+        Assert.False(item.IsVisible);
+        Assert.DoesNotContain(tool, owningRoot.LeftPinnedDockables!);
+        Assert.Contains(tool, owningRoot.HiddenDockables!);
+
+        manager.ToggleToolVisibility(item);
+
+        Assert.True(item.IsVisible);
+        Assert.DoesNotContain(tool, owningRoot.HiddenDockables!);
+        Assert.Contains(
+            EnumerateDockables(data.RootDock),
+            dockable => ReferenceEquals(dockable, tool));
+    }
+
     private static IEnumerable<IDockable> EnumerateDockables(IDockable root)
     {
         yield return root;

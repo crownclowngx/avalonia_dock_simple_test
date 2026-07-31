@@ -153,6 +153,9 @@ public partial class ToolManagementViewModel : Tool
         // 如果在 HiddenDockables 中，则是被隐藏
         if (rootDock.HiddenDockables != null && rootDock.HiddenDockables.Contains(tool))
             return true;
+        // 图钉收起的工具位于 RootDock 的 PinnedDockables 集合中，仍属于已显示状态
+        if (IsToolPinned(rootDock, tool))
+            return false;
         // 如果不在任何 ToolDock 的 VisibleDockables 中，也是被隐藏
         return FindToolDockContainingTool(rootDock, tool) == null;
     }
@@ -183,13 +186,17 @@ public partial class ToolManagementViewModel : Tool
 
         // 检查工具当前是否在某个 ToolDock 的 VisibleDockables 中
         var currentDock = FindToolDockContainingTool(toolManagementData.RootDock, tool);
+        var isPinned = IsToolPinned(toolManagementData.RootDock, tool);
 
-        if (currentDock != null)
+        if (currentDock != null || isPinned)
         {
-            var nextActive = currentDock.VisibleDockables?
+            var nextActive = currentDock?.VisibleDockables?
                 .FirstOrDefault(candidate => !ReferenceEquals(candidate, tool));
             _factory.HideDockable(tool);
-            currentDock.ActiveDockable = nextActive;
+            if (currentDock is not null)
+            {
+                currentDock.ActiveDockable = nextActive;
+            }
             item.IsVisible = false;
         }
         else
@@ -231,6 +238,25 @@ public partial class ToolManagementViewModel : Tool
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// 递归检查所有 RootDock 的四个自动隐藏集合。
+    /// </summary>
+    private static bool IsToolPinned(IDock dock, IDockable tool)
+    {
+        if (dock is IRootDock rootDock &&
+            (rootDock.LeftPinnedDockables?.Contains(tool) == true ||
+             rootDock.RightPinnedDockables?.Contains(tool) == true ||
+             rootDock.TopPinnedDockables?.Contains(tool) == true ||
+             rootDock.BottomPinnedDockables?.Contains(tool) == true))
+        {
+            return true;
+        }
+
+        return dock.VisibleDockables?
+            .OfType<IDock>()
+            .Any(child => IsToolPinned(child, tool)) == true;
     }
 
     /// <summary>

@@ -9,7 +9,7 @@
 它只保存宿主可重建的 Dock 结构：
 
 - 稳定布局节点 ID 及左右面板比例；
-- 稳定 Tool ID、所属 ToolDock、顺序和显隐；
+- 稳定 Tool ID、所属 ToolDock、顺序，以及展开、图钉收起、关闭隐藏三种显示状态；
 - 旧版本工具浮动状态及窗口边界（仅用于兼容读取，当前版本保存时统一归一化为非浮动）；
 - 活动工具 ID。
 
@@ -41,6 +41,7 @@
 - ID 只能包含 ASCII 字母、数字、点、短横线和下划线，且不得重复；
 - 同一 ToolDock 内顺序不得重复或为负数；
 - 面板比例必须为有限值且位于 `0.05–0.95`；
+- `isPinned: true` 的工具必须同时 `isVisible: true` 且不能处于浮动状态；
 - 旧快照中的浮动工具必须可见并具有有限、合理的窗口边界；
 - 快照引用的插件工具和稳定 Dock 节点必须存在。
 
@@ -50,6 +51,12 @@ JSON 损坏、未知版本、重复 ID、无效比例或插件缺失时，原文
 `isFloating: true`，启动时会按照对应的 `dockId` 和 `order` 自动放回主窗体内的
 ToolDock；显隐与活动项继续恢复。下次保存时写为 `isFloating: false` 且不再写入
 `floatingBounds`，无需提升 schema 版本。
+
+Tool 状态仍使用 V1 快照，并通过 `isVisible` 与 `isPinned` 组合表示：展开为
+`isVisible: true, isPinned: false`，图钉收起为 `isVisible: true, isPinned: true`，
+关闭隐藏为 `isVisible: false, isPinned: false`。缺少 `isPinned` 的旧 JSON 按
+`false` 读取；由于旧版本曾把收起状态误写成隐藏状态，宿主不会猜测或批量改写这些
+旧记录，用户可从工具管理中手动显示一次，之后的新状态会正确保存。
 
 当前布局支持 Left、Right、Top、Bottom 四个稳定 ToolDock。Top/Bottom 位于完整
 Dock 工作区的上方和下方，横跨 Left、Document、Right，显示时默认各占工作区高度的

@@ -436,6 +436,138 @@ public sealed class DockFourWayLayoutTests
             captured.Tools.Single(tool => tool.Id == bottom.Id).DockId);
     }
 
+    [Theory]
+    [InlineData("Left", Alignment.Left, DockLayoutIds.LeftTools)]
+    [InlineData("Right", Alignment.Right, DockLayoutIds.RightTools)]
+    [InlineData("Top", Alignment.Top, DockLayoutIds.TopTools)]
+    [InlineData("Bottom", Alignment.Bottom, DockLayoutIds.BottomTools)]
+    public void PinnedToolRoundTripsAsCollapsedEdgeTab(
+        string metadataAlignment,
+        Alignment expectedAlignment,
+        string expectedDockId)
+    {
+        DockLayoutSnapshotV1 snapshot;
+        using (var firstContext = CreateFactory())
+        {
+            var firstFactory = firstContext.Factory;
+            var firstTool = RegisterTool(
+                firstFactory,
+                $"pinned{metadataAlignment}Tool",
+                metadataAlignment);
+            var firstRoot = firstFactory.CreateWorkspaceLayout(
+                CreateDocumentDock(firstFactory));
+            firstFactory.InitLayout(firstRoot);
+
+            firstFactory.PinDockable(firstTool);
+
+            var owningRoot = firstFactory.FindRoot(firstTool, _ => true)!;
+            Assert.Contains(
+                firstTool,
+                GetPinnedDockables(owningRoot, expectedAlignment)!);
+            snapshot = DockLayoutLifecycle.Capture(firstRoot, firstFactory);
+            var state = Assert.Single(snapshot.Tools);
+            Assert.Equal(expectedDockId, state.DockId);
+            Assert.True(state.IsVisible);
+            Assert.True(state.IsPinned);
+            Assert.False(state.IsFloating);
+        }
+
+        using var secondContext = CreateFactory();
+        var secondFactory = secondContext.Factory;
+        var restoredTool = RegisterTool(
+            secondFactory,
+            $"pinned{metadataAlignment}Tool",
+            metadataAlignment);
+        var secondRoot = secondFactory.CreateWorkspaceLayout(
+            CreateDocumentDock(secondFactory));
+        secondFactory.InitLayout(secondRoot);
+
+        DockLayoutLifecycle.ApplySnapshot(snapshot, secondRoot, secondFactory);
+
+        var restoredRoot = secondFactory.FindRoot(restoredTool, _ => true)!;
+        Assert.Contains(
+            restoredTool,
+            GetPinnedDockables(restoredRoot, expectedAlignment)!);
+        Assert.DoesNotContain(restoredTool, restoredRoot.HiddenDockables ?? []);
+        Assert.DoesNotContain(
+            restoredTool,
+            FindDock<ToolDock>(secondRoot, expectedDockId).VisibleDockables!);
+        var recaptured = DockLayoutLifecycle.Capture(secondRoot, secondFactory);
+        var recapturedState = Assert.Single(recaptured.Tools);
+        Assert.True(recapturedState.IsVisible);
+        Assert.True(recapturedState.IsPinned);
+        Assert.Equal(expectedDockId, recapturedState.DockId);
+    }
+
+    [Fact]
+    public void ExpandedPinnedAndHiddenToolsPreserveDistinctStatesAndPinnedOrder()
+    {
+        DockLayoutSnapshotV1 snapshot;
+        using (var firstContext = CreateFactory())
+        {
+            var firstFactory = firstContext.Factory;
+            var expanded = RegisterTool(firstFactory, "expandedTool", "Left");
+            var pinnedFirst = RegisterTool(firstFactory, "pinnedFirstTool", "Left");
+            var pinnedSecond = RegisterTool(firstFactory, "pinnedSecondTool", "Left");
+            var hidden = RegisterTool(firstFactory, "hiddenTool", "Left");
+            var firstRoot = firstFactory.CreateWorkspaceLayout(
+                CreateDocumentDock(firstFactory));
+            firstFactory.InitLayout(firstRoot);
+
+            firstFactory.PinDockable(pinnedFirst);
+            firstFactory.PinDockable(pinnedSecond);
+            firstFactory.HideDockable(hidden);
+            snapshot = DockLayoutLifecycle.Capture(firstRoot, firstFactory);
+
+            Assert.Equal((true, false), GetToolState(snapshot, expanded.Id));
+            Assert.Equal((true, true), GetToolState(snapshot, pinnedFirst.Id));
+            Assert.Equal((true, true), GetToolState(snapshot, pinnedSecond.Id));
+            Assert.Equal((false, false), GetToolState(snapshot, hidden.Id));
+            Assert.True(
+                snapshot.Tools.Single(tool => tool.Id == pinnedFirst.Id).Order <
+                snapshot.Tools.Single(tool => tool.Id == pinnedSecond.Id).Order);
+        }
+
+        using var secondContext = CreateFactory();
+        var secondFactory = secondContext.Factory;
+        var restoredExpanded = RegisterTool(secondFactory, "expandedTool", "Left");
+        var restoredPinnedFirst = RegisterTool(secondFactory, "pinnedFirstTool", "Left");
+        var restoredPinnedSecond = RegisterTool(secondFactory, "pinnedSecondTool", "Left");
+        var restoredHidden = RegisterTool(secondFactory, "hiddenTool", "Left");
+        var secondRoot = secondFactory.CreateWorkspaceLayout(
+            CreateDocumentDock(secondFactory));
+        secondFactory.InitLayout(secondRoot);
+
+        DockLayoutLifecycle.ApplySnapshot(snapshot, secondRoot, secondFactory);
+
+        var leftDock = FindDock<ToolDock>(secondRoot, DockLayoutIds.LeftTools);
+        Assert.Contains(restoredExpanded, leftDock.VisibleDockables!);
+        var restoredRoot = secondFactory.FindRoot(restoredPinnedFirst, _ => true)!;
+        Assert.Equal(
+            new[] { restoredPinnedFirst, restoredPinnedSecond },
+            GetPinnedDockables(restoredRoot, Alignment.Left));
+        Assert.Contains(restoredHidden, restoredRoot.HiddenDockables!);
+    }
+
+    private static (bool IsVisible, bool IsPinned) GetToolState(
+        DockLayoutSnapshotV1 snapshot,
+        string toolId)
+    {
+        var state = snapshot.Tools.Single(tool => tool.Id == toolId);
+        return (state.IsVisible, state.IsPinned);
+    }
+
+    private static IList<IDockable>? GetPinnedDockables(
+        IRootDock root,
+        Alignment alignment) =>
+        alignment switch
+        {
+            Alignment.Right => root.RightPinnedDockables,
+            Alignment.Top => root.TopPinnedDockables,
+            Alignment.Bottom => root.BottomPinnedDockables,
+            _ => root.LeftPinnedDockables
+        };
+
     private static Tool RegisterTool(
         ManagementFactory factory,
         string id,
