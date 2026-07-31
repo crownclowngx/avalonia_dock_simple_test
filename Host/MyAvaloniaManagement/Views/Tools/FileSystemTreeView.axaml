@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -6,45 +6,95 @@
              xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:convert="using:MyAvaloniaManagement.Business.Converter"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d"
+             d:DesignWidth="260"
+             d:DesignHeight="450"
              x:Class="MyAvaloniaManagement.Views.Tools.FileSystemTreeView"
              x:DataType="vm:FileSystemTreeViewModel"
-             x:Name="FileSystemTreeControl">
+             x:Name="FileSystemTreeControl"
+             Classes="host-tool-surface">
     <UserControl.DataContext>
         <vm:FileSystemTreeViewModel />
     </UserControl.DataContext>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <!-- 文件夹选择器区域 -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5" Spacing="5">
-            <Button Content="选择文件夹" Command="{Binding SelectFolderCommand}" />
-            <TextBlock Text="{Binding SelectedFolderPath}" VerticalAlignment="Center" Margin="5,0,0,0" />
-        </StackPanel>
-        <TreeView Grid.Row="1" ItemsSource="{Binding RootNodes}" 
-                  SelectedItem="{Binding SelectedNode, Mode=TwoWay}" >
+
+    <UserControl.Styles>
+        <Style Selector="TreeView.host-file-tree">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0,2" />
+        </Style>
+        <Style Selector="TreeView.host-file-tree TreeViewItem">
+            <Setter Property="MinHeight" Value="27" />
+            <Setter Property="Padding" Value="2,0" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="TreeView.host-file-tree TreeViewItem:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AppSubtlePanelBrush}" />
+        </Style>
+        <Style Selector="TreeView.host-file-tree TreeViewItem:selected">
+            <Setter Property="Background" Value="{DynamicResource AppToolSelectedBrush}" />
+        </Style>
+        <Style Selector="PathIcon.file-system-icon">
+            <Setter Property="Width" Value="15" />
+            <Setter Property="Height" Value="15" />
+            <Setter Property="Foreground" Value="{DynamicResource AppSecondaryTextBrush}" />
+        </Style>
+        <Style Selector="PathIcon.file-system-icon.directory">
+            <Setter Property="Foreground" Value="{DynamicResource AppInfoBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0" Classes="host-tool-toolbar">
+            <Grid ColumnDefinitions="Auto,*">
+                <Button Classes="host-tool-icon-button"
+                        Command="{Binding SelectFolderCommand}"
+                        ToolTip.Tip="选择文件夹">
+                    <PathIcon Width="16"
+                              Height="16"
+                              Data="{StaticResource HostToolFolderOpenGeometry}" />
+                </Button>
+                <TextBlock x:Name="SelectedFolderPathText"
+                           Grid.Column="1"
+                           Margin="6,0,4,0"
+                           Text="{Binding SelectedFolderPath}"
+                           ToolTip.Tip="{Binding SelectedFolderPath}"
+                           Foreground="{DynamicResource AppSecondaryTextBrush}"
+                           FontSize="12"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <TreeView Grid.Row="1"
+                  Classes="host-file-tree"
+                  ItemsSource="{Binding RootNodes}"
+                  SelectedItem="{Binding SelectedNode, Mode=TwoWay}">
             <i:Interaction.Behaviors>
                 <EventTriggerBehavior EventName="DoubleTapped">
-                    <InvokeCommandAction Command="{Binding OpenFileCommand}"/>
+                    <InvokeCommandAction Command="{Binding OpenFileCommand}" />
                 </EventTriggerBehavior>
             </i:Interaction.Behaviors>
             <TreeView.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="刷新所选节点" Command="{Binding RefreshNodeCommand}"/>
-                    <MenuItem Header="刷新全部" Command="{Binding RefreshAllCommand}"/>
-                    <MenuItem Header="打开文件" Command="{Binding OpenFileCommand}"/>
+                    <MenuItem Header="刷新所选节点" Command="{Binding RefreshNodeCommand}" />
+                    <MenuItem Header="刷新全部" Command="{Binding RefreshAllCommand}" />
+                    <MenuItem Header="打开文件" Command="{Binding OpenFileCommand}" />
                 </ContextMenu>
             </TreeView.ContextMenu>
             <TreeView.ItemTemplate>
                 <TreeDataTemplate ItemsSource="{Binding Children}">
-                    <WrapPanel HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <TextBlock Width="20" Height="20" Margin="0,0,4,0"
-                                   Text="{Binding IsDirectory, Converter={x:Static convert:FileSystemIconConverter.Instance}}" 
-                                   TextAlignment="Center" />
-                        <TextBlock Text="{Binding Name}"/>
-                    </WrapPanel>
+                    <Grid Height="27" ColumnDefinitions="18,*">
+                        <PathIcon Classes="file-system-icon"
+                                  Classes.directory="{Binding IsDirectory}"
+                                  Data="{Binding IsDirectory, Converter={x:Static convert:FileSystemIconConverter.Instance}}"
+                                  VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1"
+                                   Margin="3,0,5,0"
+                                   Text="{Binding Name}"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
+                    </Grid>
                 </TreeDataTemplate>
             </TreeView.ItemTemplate>
         </TreeView>

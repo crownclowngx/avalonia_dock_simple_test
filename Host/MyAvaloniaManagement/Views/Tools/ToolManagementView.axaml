@@ -1,38 +1,61 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:MyAvaloniaManagement.ViewModels.Tools"
              xmlns:tools="clr-namespace:MyAvaloniaManagement.Models.Tools"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d"
+             d:DesignWidth="260"
+             d:DesignHeight="450"
              x:Class="MyAvaloniaManagement.Views.Tools.ToolManagementView"
-             x:DataType="vm:ToolManagementViewModel">
+             x:DataType="vm:ToolManagementViewModel"
+             Classes="host-tool-surface">
     <UserControl.Styles>
         <Style Selector="CheckBox:disabled">
-            <Setter Property="Opacity" Value="0.5"/>
+            <Setter Property="Opacity" Value="0.48" />
         </Style>
         <Style Selector="TextBlock:disabled">
-            <Setter Property="Opacity" Value="0.5"/>
+            <Setter Property="Opacity" Value="0.52" />
         </Style>
     </UserControl.Styles>
-    <Grid>
-        <ListBox ItemsSource="{Binding ToolItems}"
-                 HorizontalAlignment="Stretch"
-                 VerticalAlignment="Stretch">
-            <ListBox.ItemTemplate>
-                <DataTemplate DataType="tools:ToolManagementItem">
-                    <StackPanel Orientation="Horizontal" Margin="4">
-                        <CheckBox IsChecked="{Binding IsVisible, Mode=TwoWay}"
-                                  IsEnabled="{Binding CanClose}"
-                                  Command="{Binding $parent[ListBox].DataContext.ToggleToolVisibilityCommand}"
-                                  CommandParameter="{Binding}"
-                                  Margin="0,0,8,0"/>
-                        <TextBlock Text="{Binding DisplayName}"
-                                   IsEnabled="{Binding CanClose}"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0" Classes="host-tool-toolbar">
+            <TextBlock Margin="4,0"
+                       Text="显示或隐藏工作区工具"
+                       Foreground="{DynamicResource AppSecondaryTextBrush}"
+                       FontSize="12"
+                       TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
+        </Border>
+
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="ToolItemsControl"
+                          ItemsSource="{Binding ToolItems}"
+                          Margin="0,2">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="tools:ToolManagementItem">
+                        <Border Classes="host-tool-list-row">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <CheckBox IsChecked="{Binding IsVisible, Mode=TwoWay}"
+                                          IsEnabled="{Binding CanClose}"
+                                          Command="{Binding $parent[ItemsControl].DataContext.ToggleToolVisibilityCommand}"
+                                          CommandParameter="{Binding}"
+                                          ToolTip.Tip="切换工具显示状态"
+                                          VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1"
+                                           Margin="7,0,4,0"
+                                           Text="{Binding DisplayName}"
+                                           IsEnabled="{Binding CanClose}"
+                                           TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
     </Grid>
 </UserControl>

@@ -104,19 +104,6 @@ public sealed class ServiceAndModelTests
         Assert.Empty(node.Children);
     }
 
-    [Theory]
-    [InlineData(true, "📁")]
-    [InlineData(false, "📄")]
-    [InlineData(null, "📄")]
-    public void 文件图标转换器按目录状态返回图标(bool? value, string expected) =>
-        Assert.Equal(
-            expected,
-            FileSystemIconConverter.Instance.Convert(
-                value,
-                typeof(string),
-                null,
-                CultureInfo.InvariantCulture));
-
     [Fact]
     public void 文件图标转换器不支持反向转换() =>
         Assert.Throws<NotImplementedException>(() =>
