@@ -14,6 +14,7 @@
         <entry key="MyAvaloniaManagement/Views/Tools/FileSystemTreeView.axaml" value="MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
         <entry key="MyAvaloniaManagement/Views/Tools/PlugGroupMenuView.axaml" value="MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
         <entry key="MyAvaloniaManagement/Views/Tools/ToolManagementView.axaml" value="MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
+        <entry key="Plugins/BiliDownloader/BiliDownloader/Styles/BiliDocumentStyles.axaml" value="Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csproj" />
         <entry key="Plugins/MyPlugTest/MyPlugTest/Views/TestMessageReceiveView.axaml" value="Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj" />
         <entry key="Plugins/MySmallTools/MySmallTools/Views/SecretVideoPlayer/SecretVideoLibraryView.axaml" value="Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj" />
         <entry key="Plugins/MySmallTools/MySmallTools/Views/SecretVideoPlayer/SecretVideoPlayerView.axaml" value="Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj" />
