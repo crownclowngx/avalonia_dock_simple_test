@@ -11,11 +11,13 @@
     <StyleInclude Source="avares://MySmallTools/Styles/VideoDocumentStyles.axaml" />
   </UserControl.Styles>
   <Grid Classes="DocumentPage" RowDefinitions="Auto,*,Auto">
-    <StackPanel Grid.Row="0" Spacing="2">
-      <TextBlock Text="SECVID03 批量视频解密" Classes="PageTitle" />
-      <TextBlock Text="严格顺序处理；每个文件独立验证；任何策略都不会覆盖已有文件。"
-                 Classes="Caption" TextWrapping="Wrap" />
-    </StackPanel>
+    <Border Grid.Row="0" Classes="DocumentHeader">
+      <StackPanel Spacing="2">
+        <TextBlock Text="SECVID03 批量视频解密" Classes="PageTitle" />
+        <TextBlock Text="严格顺序处理；每个文件独立验证；任何策略都不会覆盖已有文件。"
+                   Classes="Caption" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
     <decryption:DecryptionQueueView Grid.Row="1" DataContext="{Binding Queue}" />
     <decryption:DecryptionExecutionView Grid.Row="2" DataContext="{Binding Batch}" />
   </Grid>

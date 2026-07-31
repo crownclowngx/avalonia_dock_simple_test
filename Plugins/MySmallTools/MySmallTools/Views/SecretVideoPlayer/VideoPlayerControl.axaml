@@ -40,7 +40,7 @@
                    IsVisible="{Binding DiagnosticsStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         <!-- 不可见的无限动画仍会注册到 Avalonia 全局媒体时钟，并保留已关闭 View。
              让动画状态与可见状态一致，Document 关闭或切换完成后即可释放。 -->
-        <ProgressBar Grid.Row="2" Grid.ColumnSpan="3" Height="3"
+        <ProgressBar Grid.Row="2" Grid.ColumnSpan="3" Classes="ThinProgress"
                      IsVisible="{Binding IsMediaTransitioning}"
                      IsIndeterminate="{Binding IsMediaTransitioning}" />
       </Grid>

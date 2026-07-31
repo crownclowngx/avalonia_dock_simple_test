@@ -6,16 +6,16 @@
   <Border Classes="DocumentToolbar">
     <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto" RowSpacing="6" ColumnSpacing="6">
       <TextBlock Grid.Row="0" Grid.Column="0" Text="文件" VerticalAlignment="Center" Classes="SectionTitle" />
-      <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding FilePath}" IsReadOnly="True"
+      <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding FilePath}" IsReadOnly="True" Classes="CompactInput"
                PlaceholderText="选择 .secvid 文件..." ToolTip.Tip="{Binding FilePath}" />
       <Button Grid.Row="0" Grid.Column="2" Content="浏览" Click="OnBrowseFileClick"
               Classes="CompactButton" AutomationProperties.Name="浏览加密视频文件" />
 
       <TextBlock Grid.Row="1" Grid.Column="0" Text="密码" VerticalAlignment="Center" Classes="SectionTitle" />
       <Grid Grid.Row="1" Grid.Column="1">
-        <TextBox Text="{Binding Password}" PasswordChar="●" PlaceholderText="输入播放密码"
+        <TextBox Text="{Binding Password}" PasswordChar="●" PlaceholderText="输入播放密码" Classes="CompactInput"
                  IsVisible="{Binding !ShowPassword}" />
-        <TextBox Text="{Binding Password}" PlaceholderText="输入播放密码"
+        <TextBox Text="{Binding Password}" PlaceholderText="输入播放密码" Classes="CompactInput"
                  IsVisible="{Binding ShowPassword}" />
       </Grid>
       <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Spacing="6">
