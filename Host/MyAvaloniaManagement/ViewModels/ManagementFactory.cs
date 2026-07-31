@@ -319,6 +319,7 @@ public class ManagementFactory : Factory
         var windowLayout = CreateRootDock();
         windowLayout.Id = DockLayoutIds.Workspace;
         windowLayout.Title = "Default";
+        DisableFloating(windowLayout);
         var windowLayoutContent = new ProportionalDock
         {
             Id = DockLayoutIds.WorkspaceColumns,
@@ -340,6 +341,7 @@ public class ManagementFactory : Factory
 
         var rootDock = CreateRootDock();
         rootDock.Id = DockLayoutIds.Root;
+        DisableFloating(rootDock);
 
         rootDock.IsCollapsable = false;
         rootDock.VisibleDockables = CreateList<IDockable>(windowLayout);
@@ -350,6 +352,51 @@ public class ManagementFactory : Factory
         _rootDock = rootDock;
         return rootDock;
     }
+
+    /// <summary>
+    /// 禁止从当前主窗体 Dock 树创建独立浮动窗口，同时保留拖动和停靠能力。
+    /// </summary>
+    internal static void DisableFloating(IRootDock rootDock)
+    {
+        ArgumentNullException.ThrowIfNull(rootDock);
+        rootDock.RootDockCapabilityPolicy = new DockCapabilityPolicy
+        {
+            CanFloat = false
+        };
+    }
+
+    /// <summary>
+    /// 主工作区不支持把单个 Dockable 浮动为独立窗口。
+    /// </summary>
+    public override void FloatDockable(IDockable dockable)
+    {
+    }
+
+    /// <summary>
+    /// 主工作区不支持把单个 Dockable 浮动为独立窗口。
+    /// </summary>
+    public override void FloatDockable(
+        IDockable dockable,
+        DockWindowOptions? options)
+    {
+    }
+
+    /// <summary>
+    /// 主工作区不支持把整个 Dock 浮动为独立窗口。
+    /// </summary>
+    public override void FloatAllDockables(IDockable dockable)
+    {
+    }
+
+    /// <summary>
+    /// 主工作区不支持把整个 Dock 浮动为独立窗口。
+    /// </summary>
+    public override void FloatAllDockables(
+        IDockable dockable,
+        DockWindowOptions? options)
+    {
+    }
+
     public override void InitLayout(IDockable layout)
     {
         ContextLocator = new Dictionary<string, Func<object?>>

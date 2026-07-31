@@ -129,16 +129,8 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
                     tool,
                     dockId,
                     isVisible && !hidden.Contains(tool),
-                    isFloating,
-                    floatingWindow is null
-                        ? null
-                        : new DockFloatingBoundsV1
-                        {
-                            X = floatingWindow.X,
-                            Y = floatingWindow.Y,
-                            Width = floatingWindow.Width,
-                            Height = floatingWindow.Height
-                        }));
+                    false,
+                    null));
         }
 
         var toolSnapshots = new List<DockToolSnapshotV1>(placements.Count);
@@ -231,7 +223,7 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         return null;
     }
 
-    private static void ApplySnapshot(
+    internal static void ApplySnapshot(
         DockLayoutSnapshotV1 snapshot,
         IRootDock root,
         ManagementFactory factory)
@@ -250,8 +242,9 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
             paneMap[pane.Id].Proportion = pane.Proportion;
         }
 
+        // V1 快照可能来自仍支持浮动窗口的旧版本。无论旧状态是否浮动，
+        // 都按其稳定 DockId 和顺序放回主窗体；下次保存时会归一化为非浮动状态。
         foreach (var group in snapshot.Tools
-                     .Where(tool => !tool.IsFloating)
                      .GroupBy(tool => tool.DockId, StringComparer.Ordinal))
         {
             var targetDock = toolDocks[group.Key];
@@ -265,24 +258,6 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
                 factory.RemoveDockable(tool, collapse: false);
                 factory.InsertDockable(targetDock, tool, index);
             }
-        }
-
-        foreach (var toolState in snapshot.Tools.Where(tool => tool.IsFloating))
-        {
-            var tool = factory.CreatedTools[toolState.Id];
-            factory.FloatDockable(tool);
-            var window = root.Windows?
-                .LastOrDefault(candidate =>
-                    candidate.Layout is not null &&
-                    EnumerateDockables(candidate.Layout).Any(dockable =>
-                        ReferenceEquals(dockable, tool)))
-                ?? throw new InvalidOperationException(
-                    $"工具 {tool.Id} 浮动后没有对应 DockWindow。");
-            var bounds = toolState.FloatingBounds!;
-            window.X = bounds.X;
-            window.Y = bounds.Y;
-            window.Width = bounds.Width;
-            window.Height = bounds.Height;
         }
 
         foreach (var toolState in snapshot.Tools.Where(tool => !tool.IsVisible))
