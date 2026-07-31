@@ -61,7 +61,7 @@ public partial class ToolManagementViewModel : Tool
     private void LoadTools()
     {
         var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
-        var toolManagementData = factory?.GetToolManagementData();
+        var toolManagementData = factory.GetToolManagementData();
 
         // 清除现有项
         ToolItems.Clear();
@@ -133,7 +133,7 @@ public partial class ToolManagementViewModel : Tool
             return;
 
         var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
-        var toolManagementData = factory?.GetToolManagementData();
+        var toolManagementData = factory.GetToolManagementData();
         if (toolManagementData == null)
         {
             return;
@@ -149,44 +149,18 @@ public partial class ToolManagementViewModel : Tool
 
         if (currentDock != null)
         {
-            // 工具当前可见 → 隐藏它：从 VisibleDockables 中原地移除（不替换集合！）
-            currentDock.VisibleDockables!.Remove(tool);
-
-            // 处理 ActiveDockable 切换
-            if (currentDock.ActiveDockable == tool)
-            {
-                currentDock.ActiveDockable = currentDock.VisibleDockables.Count > 0
-                    ? currentDock.VisibleDockables[0]
-                    : null;
-            }
-
+            var nextActive = currentDock.VisibleDockables?
+                .FirstOrDefault(candidate => !ReferenceEquals(candidate, tool));
+            factory.HideDockable(tool);
+            currentDock.ActiveDockable = nextActive;
             item.IsVisible = false;
         }
         else
         {
-            // 工具当前不可可见 → 显示它：找到正确的 ToolDock，原地 Add（不替换集合！）
-            var targetDock = FindTargetToolDock(toolManagementData.RootDock, item.ToolId, toolManagementData.ToolMetadata);
-            if (targetDock == null)
+            if (!factory.RestoreTool(toolManagementData.RootDock, tool))
             {
                 return;
             }
-
-            // 如果工具在 HiddenDockables 中，先从中移除
-            if (toolManagementData.RootDock.HiddenDockables != null &&
-                toolManagementData.RootDock.HiddenDockables.Contains(tool))
-            {
-                toolManagementData.RootDock.HiddenDockables.Remove(tool);
-            }
-
-            // 确保不重复添加
-            if (!targetDock.VisibleDockables!.Contains(tool))
-            {
-                targetDock.VisibleDockables.Add(tool);
-            }
-
-            // 设置 Owner 并激活
-            tool.Owner = targetDock;
-            targetDock.ActiveDockable = tool;
 
             item.IsVisible = true;
         }
@@ -223,50 +197,13 @@ public partial class ToolManagementViewModel : Tool
     }
 
     /// <summary>
-    /// 根据工具的 Alignment 元数据查找目标 ToolDock
-    /// </summary>
-    private static ToolDock? FindTargetToolDock(IDock dock, string toolId, IReadOnlyDictionary<string, ToolMetadata> metadata)
-    {
-        var alignment = metadata.TryGetValue(toolId, out var meta) ? meta.Alignment : "Left";
-        var targetAlignment = alignment.Equals("Right", StringComparison.OrdinalIgnoreCase)
-            ? Alignment.Right
-            : Alignment.Left;
-        return FindToolDockByAlignment(dock, targetAlignment);
-    }
-
-    /// <summary>
-    /// 根据对齐方式查找匹配的 ToolDock
-    /// </summary>
-    private static ToolDock? FindToolDockByAlignment(IDock dock, Alignment targetAlignment)
-    {
-        if (dock is ToolDock toolDock && toolDock.Alignment == targetAlignment)
-        {
-            return toolDock;
-        }
-
-        if (dock.VisibleDockables != null)
-        {
-            foreach (var dockable in dock.VisibleDockables)
-            {
-                if (dockable is IDock childDock)
-                {
-                    var result = FindToolDockByAlignment(childDock, targetAlignment);
-                    if (result != null) return result;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
     /// 同步工具的实际可见状态
     /// 当初始化完成后调用此方法确保状态一致
     /// </summary>
     public void SyncToolsVisibility()
     {
         var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
-        var toolManagementData = factory?.GetToolManagementData();
+        var toolManagementData = factory.GetToolManagementData();
         if (toolManagementData == null) return;
 
         foreach (var item in ToolItems)

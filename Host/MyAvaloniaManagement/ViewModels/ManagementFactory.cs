@@ -43,10 +43,11 @@ public class ManagementFactory : Factory
 
     internal IReadOnlyDictionary<string, Tool> CreatedTools => _createdTools;
 
-    internal string GetToolAlignment(string toolId) =>
-        _toolMetadata.TryGetValue(toolId, out var metadata)
-            ? metadata.Alignment
-            : string.Empty;
+    internal Alignment GetToolAlignment(string toolId) =>
+        ToolDockPlacement.ParseAlignment(
+            _toolMetadata.TryGetValue(toolId, out var metadata)
+                ? metadata.Alignment
+                : null);
 
     public ManagementFactory(
         IServiceProvider serviceProvider,
@@ -263,58 +264,67 @@ public class ManagementFactory : Factory
         };
         // 创建所有注册的Tool
         CreateAllTools();
-        
-        // 根据对齐方式对Tool进行分组
-        var leftTools = _createdTools.Values
-            .Where(t => _toolMetadata.TryGetValue(t.Id, out var metadata) && 
-                        metadata.Alignment.Equals("Left", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        
-        var rightTools = _createdTools.Values
-            .Where(t => _toolMetadata.TryGetValue(t.Id, out var metadata) && 
-                        metadata.Alignment.Equals("Right", StringComparison.OrdinalIgnoreCase))
-            .ToList();
+        return CreateWorkspaceLayout(documentDock);
+    }
 
-        var toolsRight = new ProportionalDock
+    internal IRootDock CreateWorkspaceLayout(DocumentDock documentDock)
+    {
+        ArgumentNullException.ThrowIfNull(documentDock);
+
+        // 根据对齐方式对Tool进行分组
+        var toolsByAlignment = _createdTools.Values
+            .ToLookup(tool => GetToolAlignment(tool.Id));
+        var leftTools = toolsByAlignment[Alignment.Left].ToList();
+        var rightTools = toolsByAlignment[Alignment.Right].ToList();
+        var topTools = toolsByAlignment[Alignment.Top].ToList();
+        var bottomTools = toolsByAlignment[Alignment.Bottom].ToList();
+
+        var toolsLeft = CreateToolPane(
+            DockLayoutIds.LeftPane,
+            DockLayoutIds.LeftTools,
+            Alignment.Left,
+            leftTools,
+            0.15);
+        var toolsRight = CreateToolPane(
+            DockLayoutIds.RightPane,
+            DockLayoutIds.RightTools,
+            Alignment.Right,
+            rightTools,
+            0.15);
+
+        var centerRowsDockables = new List<IDockable>();
+        if (topTools.Count > 0)
         {
-            Id = DockLayoutIds.RightPane,
-            Proportion = 0.15,
-            Orientation = Orientation.Vertical,
-            VisibleDockables = CreateList<IDockable>
-            (
-                new ToolDock
-                {
-                    Id = DockLayoutIds.RightTools,
-                    ActiveDockable = rightTools.Find(k=>k.Id == "plugGroupMenuViewModel"),
-                    VisibleDockables = CreateList<IDockable>
-                    (
-                        [.. rightTools]
-                    ),
-                    Alignment = Alignment.Right,
-                    GripMode = GripMode.Visible
-                }
-            )
-        };
-        
-        var toolsLeft = new ProportionalDock
+            centerRowsDockables.Add(CreateToolPane(
+                DockLayoutIds.TopPane,
+                DockLayoutIds.TopTools,
+                Alignment.Top,
+                topTools,
+                0.20));
+            centerRowsDockables.Add(new ProportionalDockSplitter());
+        }
+
+        centerRowsDockables.Add(documentDock);
+
+        if (bottomTools.Count > 0)
         {
-            Id = DockLayoutIds.LeftPane,
-            Proportion = 0.15,
+            centerRowsDockables.Add(new ProportionalDockSplitter());
+            centerRowsDockables.Add(CreateToolPane(
+                DockLayoutIds.BottomPane,
+                DockLayoutIds.BottomTools,
+                Alignment.Bottom,
+                bottomTools,
+                0.20));
+        }
+
+        var workspaceCenterRows = new ProportionalDock
+        {
+            Id = DockLayoutIds.WorkspaceCenterRows,
             Orientation = Orientation.Vertical,
-            VisibleDockables = CreateList<IDockable>
-            (
-                new ToolDock
-                {
-                    Id = DockLayoutIds.LeftTools,
-                    ActiveDockable = leftTools.Find(k=>k.Id=="fileSystemTree"),
-                    VisibleDockables = CreateList<IDockable>
-                    (
-                        [.. leftTools]
-                    ),
-                    Alignment = Alignment.Left,
-                    GripMode = GripMode.Visible
-                }
-            )
+            IsCollapsable = false,
+            Proportion = double.NaN,
+            VisibleDockables = CreateList<IDockable>([.. centerRowsDockables]),
+            ActiveDockable = documentDock
         };
         var windowLayout = CreateRootDock();
         windowLayout.Id = DockLayoutIds.Workspace;
@@ -329,7 +339,7 @@ public class ManagementFactory : Factory
             (
                 toolsLeft,
                 new ProportionalDockSplitter(),
-                documentDock,
+                workspaceCenterRows,
                 new ProportionalDockSplitter(),
                 toolsRight
             )
@@ -351,6 +361,225 @@ public class ManagementFactory : Factory
         _documentDock = documentDock;
         _rootDock = rootDock;
         return rootDock;
+    }
+
+    private ProportionalDock CreateToolPane(
+        string paneId,
+        string toolDockId,
+        Alignment alignment,
+        IReadOnlyList<Tool> tools,
+        double proportion)
+    {
+        var toolDock = CreateStableToolDock(toolDockId, alignment, tools);
+
+        return new ProportionalDock
+        {
+            Id = paneId,
+            Proportion = proportion,
+            CollapsedProportion = proportion,
+            Orientation = Orientation.Vertical,
+            IsCollapsable = true,
+            VisibleDockables = CreateList<IDockable>(toolDock),
+            ActiveDockable = toolDock
+        };
+    }
+
+    private ToolDock CreateStableToolDock(
+        string toolDockId,
+        Alignment alignment,
+        IReadOnlyList<Tool>? tools = null) =>
+        new()
+        {
+            Id = toolDockId,
+            ActiveDockable = tools?.FirstOrDefault(),
+            VisibleDockables = tools is null
+                ? CreateList<IDockable>()
+                : CreateList<IDockable>([.. tools]),
+            Alignment = ToolDockPlacement.NormalizeAlignment(alignment),
+            GripMode = GripMode.Visible,
+            IsCollapsable = true
+        };
+
+    /// <summary>
+    /// Dock 在最后一个 Tool 隐藏时会移除空 ToolDock。恢复工具前重建稳定停靠点，
+    /// 避免 OriginalOwner 指向已经脱离主布局的 Dock。
+    /// </summary>
+    internal ToolDock EnsureToolDock(
+        IRootDock root,
+        Alignment alignment)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        alignment = ToolDockPlacement.NormalizeAlignment(alignment);
+        var toolDockId = ToolDockPlacement.GetDockId(alignment);
+        if (FindDockById<ToolDock>(root, toolDockId) is { } existingDock)
+        {
+            return existingDock;
+        }
+
+        var paneId = ToolDockPlacement.GetPaneId(alignment);
+        var pane = FindDockById<ProportionalDock>(root, paneId);
+        if (pane is null)
+        {
+            pane = CreateToolPane(
+                paneId,
+                toolDockId,
+                alignment,
+                [],
+                ToolDockPlacement.GetDefaultProportion(alignment));
+            InsertMissingPane(root, pane, alignment);
+            return (ToolDock)pane.VisibleDockables![0];
+        }
+
+        var toolDock = CreateStableToolDock(toolDockId, alignment);
+        AddDockable(pane, toolDock);
+        pane.ActiveDockable = toolDock;
+        return toolDock;
+    }
+
+    /// <summary>
+    /// 优先恢复仍附着在主布局中的原 Owner；原 Owner 已被折叠移除时，
+    /// 根据它的方向重建稳定 ToolDock 并通过 Factory API 加回工具。
+    /// </summary>
+    internal bool RestoreTool(
+        IRootDock root,
+        Tool tool)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(tool);
+
+        var originalToolDock = tool.OriginalOwner as IToolDock;
+        if (originalToolDock is IDock attachedOriginalOwner &&
+            IsDockAttached(root, attachedOriginalOwner))
+        {
+            RestoreDockable(tool);
+            if (IsDockableAttached(root, tool))
+            {
+                SetActiveDockable(tool);
+                return true;
+            }
+        }
+
+        var alignment = originalToolDock is null
+            ? GetToolAlignment(tool.Id)
+            : ToolDockPlacement.NormalizeAlignment(originalToolDock.Alignment);
+        var targetDock = EnsureToolDock(root, alignment);
+
+        RemoveFromHiddenDockables(root, tool);
+        if (FindRoot(tool, _ => true) is { HiddenDockables: { } hidden })
+        {
+            hidden.Remove(tool);
+        }
+
+        tool.OriginalOwner = null;
+        AddDockable(targetDock, tool);
+        SetActiveDockable(tool);
+        return true;
+    }
+
+    private void InsertMissingPane(
+        IRootDock root,
+        ProportionalDock pane,
+        Alignment alignment)
+    {
+        if (alignment is not (Alignment.Top or Alignment.Bottom))
+        {
+            throw new InvalidOperationException(
+                $"稳定停靠区域 '{pane.Id}' 已脱离主布局。");
+        }
+
+        var centerRows = FindDockById<ProportionalDock>(
+            root,
+            DockLayoutIds.WorkspaceCenterRows)
+            ?? throw new InvalidOperationException(
+                $"Dock '{DockLayoutIds.WorkspaceCenterRows}' was not found.");
+        var documentIndex = centerRows.VisibleDockables?
+            .ToList()
+            .FindIndex(dockable => dockable.Id == DockLayoutIds.Documents) ?? -1;
+        if (documentIndex < 0)
+        {
+            throw new InvalidOperationException(
+                $"Dock '{DockLayoutIds.Documents}' was not found.");
+        }
+
+        var splitter = new ProportionalDockSplitter();
+        if (alignment == Alignment.Top)
+        {
+            InsertDockable(centerRows, pane, documentIndex);
+            InsertDockable(centerRows, splitter, documentIndex + 1);
+        }
+        else
+        {
+            InsertDockable(centerRows, splitter, documentIndex + 1);
+            InsertDockable(centerRows, pane, documentIndex + 2);
+        }
+    }
+
+    private static T? FindDockById<T>(
+        IDock root,
+        string id)
+        where T : class, IDock
+    {
+        if (root is T typed && root.Id == id)
+        {
+            return typed;
+        }
+
+        if (root.VisibleDockables is null)
+        {
+            return null;
+        }
+
+        foreach (var child in root.VisibleDockables.OfType<IDock>())
+        {
+            if (FindDockById<T>(child, id) is { } result)
+            {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsDockAttached(
+        IDock root,
+        IDock target)
+    {
+        if (ReferenceEquals(root, target))
+        {
+            return true;
+        }
+
+        return root.VisibleDockables?
+            .OfType<IDock>()
+            .Any(child => IsDockAttached(child, target)) == true;
+    }
+
+    private static bool IsDockableAttached(
+        IDock root,
+        IDockable target) =>
+        root.VisibleDockables?.Any(dockable =>
+            ReferenceEquals(dockable, target) ||
+            dockable is IDock childDock &&
+            IsDockableAttached(childDock, target)) == true;
+
+    private static void RemoveFromHiddenDockables(
+        IDock root,
+        IDockable tool)
+    {
+        if (root is IRootDock { HiddenDockables: { } hidden })
+        {
+            hidden.Remove(tool);
+        }
+
+        if (root.VisibleDockables is null)
+        {
+            return;
+        }
+
+        foreach (var child in root.VisibleDockables.OfType<IDock>())
+        {
+            RemoveFromHiddenDockables(child, tool);
+        }
     }
 
     /// <summary>

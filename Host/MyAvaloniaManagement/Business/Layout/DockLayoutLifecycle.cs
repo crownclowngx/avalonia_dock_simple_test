@@ -15,12 +15,6 @@ namespace MyAvaloniaManagement.Business.Layout;
 /// </summary>
 internal sealed class DockLayoutLifecycle(DockLayoutStore store)
 {
-    private static readonly string[] PersistedPaneIds =
-    [
-        DockLayoutIds.LeftPane,
-        DockLayoutIds.RightPane
-    ];
-
     private DockLayoutSnapshotV1? _pendingSnapshot;
 
     internal IRootDock Prepare(ManagementFactory factory)
@@ -47,6 +41,9 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         {
             return defaultRoot;
         }
+
+        snapshot = NormalizeLegacyTwoWaySnapshot(snapshot, factory);
+        EnsureSnapshotDocks(snapshot, defaultRoot, factory);
 
         if (ValidateAgainstRuntime(snapshot, defaultRoot, factory) is { } error)
         {
@@ -93,16 +90,14 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         ManagementFactory factory)
     {
         var mainDockables = EnumerateDockables(root).ToArray();
-        var mainToolDocks = mainDockables
+        var allToolDocks = mainDockables
             .OfType<IToolDock>()
-            .Where(dock => dock.Id is DockLayoutIds.LeftTools or DockLayoutIds.RightTools)
-            .ToDictionary(dock => dock.Id, StringComparer.Ordinal);
+            .ToArray();
         var floatingWindows = root.Windows?.ToArray() ?? [];
-        var hidden = root.HiddenDockables is null
-            ? new HashSet<IDockable>(ReferenceEqualityComparer.Instance)
-            : new HashSet<IDockable>(
-                root.HiddenDockables,
-                ReferenceEqualityComparer.Instance);
+        var hidden = mainDockables
+            .OfType<IRootDock>()
+            .SelectMany(dock => dock.HiddenDockables ?? [])
+            .ToHashSet(ReferenceEqualityComparer.Instance);
 
         var placements = new Dictionary<string, ToolPlacement>(StringComparer.Ordinal);
         foreach (var pair in factory.CreatedTools)
@@ -112,14 +107,12 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
                 window.Layout is not null &&
                 EnumerateDockables(window.Layout).Any(candidate =>
                     ReferenceEquals(candidate, tool)));
-            var currentDock = mainToolDocks.Values.FirstOrDefault(dock =>
+            var currentDock = allToolDocks.FirstOrDefault(dock =>
                 dock.VisibleDockables?.Any(candidate =>
                     ReferenceEquals(candidate, tool)) == true);
-            var originalDockId = tool.OriginalOwner?.Id;
-            var dockId = currentDock?.Id ??
-                         (IsKnownToolDockId(originalDockId)
-                             ? originalDockId!
-                             : GetDefaultDockId(factory, tool.Id));
+            var dockId = ResolveStableDockId(currentDock) ??
+                         ResolveStableDockId(tool.OriginalOwner as IToolDock) ??
+                         GetDefaultDockId(factory, tool.Id);
             var isFloating = floatingWindow is not null;
             var isVisible = isFloating || currentDock is not null;
 
@@ -134,16 +127,17 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         }
 
         var toolSnapshots = new List<DockToolSnapshotV1>(placements.Count);
-        foreach (var dockId in new[] { DockLayoutIds.LeftTools, DockLayoutIds.RightTools })
+        foreach (var dockId in DockLayoutIds.ToolDockIds)
         {
             var placementGroup = placements.Values
                 .Where(placement => placement.DockId == dockId)
                 .ToArray();
-            var visibleOrder = mainToolDocks.GetValueOrDefault(dockId)?
-                .VisibleDockables?
+            var visibleOrder = allToolDocks
+                .Where(dock => ResolveStableDockId(dock) == dockId)
+                .SelectMany(dock => dock.VisibleDockables ?? [])
                 .OfType<Tool>()
                 .Select(tool => tool.Id)
-                .ToArray() ?? [];
+                .ToArray();
             var order = visibleOrder
                 .Concat(placementGroup.Select(placement => placement.Tool.Id))
                 .Distinct(StringComparer.Ordinal)
@@ -164,17 +158,10 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
             }
         }
 
-        var panes = mainDockables
-            .Where(dockable =>
-                dockable.Id is not null &&
-                PersistedPaneIds.Contains(dockable.Id, StringComparer.Ordinal) &&
-                double.IsFinite(dockable.Proportion))
-            .Select(dockable => new DockPaneSnapshotV1
-            {
-                Id = dockable.Id,
-                Proportion = dockable.Proportion
-            })
-            .ToList();
+        var panes = CapturePaneSnapshots(
+            mainDockables,
+            allToolDocks,
+            factory);
 
         return new DockLayoutSnapshotV1
         {
@@ -182,6 +169,75 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
             Tools = toolSnapshots,
             ActiveToolId = FindActiveToolId(root)
         };
+    }
+
+    /// <summary>
+    /// 修复旧版仅支持 Left/Right 时被错误记录到 LeftTools 的 Top/Bottom 工具。
+    /// </summary>
+    internal static DockLayoutSnapshotV1 NormalizeLegacyTwoWaySnapshot(
+        DockLayoutSnapshotV1 snapshot,
+        ManagementFactory factory)
+    {
+        var hasFourWayMarker =
+            snapshot.Panes.Any(pane =>
+                pane.Id is DockLayoutIds.TopPane or DockLayoutIds.BottomPane) ||
+            snapshot.Tools.Any(tool =>
+                tool.DockId is DockLayoutIds.TopTools or DockLayoutIds.BottomTools);
+        if (hasFourWayMarker)
+        {
+            return snapshot;
+        }
+
+        var indexedTools = snapshot.Tools
+            .Select((tool, index) => (Tool: tool, OriginalIndex: index))
+            .ToArray();
+        var changed = false;
+
+        for (var index = 0; index < indexedTools.Length; index++)
+        {
+            var entry = indexedTools[index];
+            var alignment = factory.GetToolAlignment(entry.Tool.Id);
+            if (alignment is not (Alignment.Top or Alignment.Bottom))
+            {
+                continue;
+            }
+
+            indexedTools[index] =
+            (
+                entry.Tool with
+                {
+                    DockId = ToolDockPlacement.GetDockId(alignment),
+                    IsVisible = true,
+                    IsFloating = false,
+                    FloatingBounds = null
+                },
+                entry.OriginalIndex
+            );
+            changed = true;
+        }
+
+        if (!changed)
+        {
+            return snapshot;
+        }
+
+        var dockIds = DockLayoutIds.ToolDockIds
+            .Concat(indexedTools.Select(entry => entry.Tool.DockId))
+            .Distinct(StringComparer.Ordinal);
+        var normalizedTools = new List<DockToolSnapshotV1>(indexedTools.Length);
+        foreach (var dockId in dockIds)
+        {
+            var order = 0;
+            foreach (var entry in indexedTools
+                         .Where(entry => entry.Tool.DockId == dockId)
+                         .OrderBy(entry => entry.Tool.Order)
+                         .ThenBy(entry => entry.OriginalIndex))
+            {
+                normalizedTools.Add(entry.Tool with { Order = order++ });
+            }
+        }
+
+        return snapshot with { Tools = normalizedTools };
     }
 
     private static DockLayoutValidationError? ValidateAgainstRuntime(
@@ -214,7 +270,7 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         foreach (var tool in snapshot.Tools)
         {
             if (!runtimeIds.Contains(tool.DockId) ||
-                tool.DockId is not (DockLayoutIds.LeftTools or DockLayoutIds.RightTools))
+                !DockLayoutIds.IsToolDockId(tool.DockId))
             {
                 return new("LAYOUT_TOOL_DOCK_MISSING", tool.Id);
             }
@@ -228,13 +284,15 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         IRootDock root,
         ManagementFactory factory)
     {
+        EnsureSnapshotDocks(snapshot, root, factory);
+
         var dockables = EnumerateDockables(root).ToArray();
         var paneMap = dockables
             .Where(dockable => !string.IsNullOrWhiteSpace(dockable.Id))
             .ToDictionary(dockable => dockable.Id, StringComparer.Ordinal);
         var toolDocks = dockables
             .OfType<IToolDock>()
-            .Where(dock => dock.Id is DockLayoutIds.LeftTools or DockLayoutIds.RightTools)
+            .Where(dock => DockLayoutIds.IsToolDockId(dock.Id))
             .ToDictionary(dock => dock.Id, StringComparer.Ordinal);
 
         foreach (var pane in snapshot.Panes)
@@ -329,14 +387,119 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
     private static string GetDefaultDockId(
         ManagementFactory factory,
         string toolId) =>
-        factory.GetToolAlignment(toolId).Equals(
-            "Right",
-            StringComparison.OrdinalIgnoreCase)
-            ? DockLayoutIds.RightTools
-            : DockLayoutIds.LeftTools;
+        ToolDockPlacement.GetDockId(factory.GetToolAlignment(toolId));
+
+    private static void EnsureSnapshotDocks(
+        DockLayoutSnapshotV1 snapshot,
+        IRootDock root,
+        ManagementFactory factory)
+    {
+        var alignments = snapshot.Tools
+            .Select(tool => tool.DockId)
+            .Select(id => ToolDockPlacement.TryGetAlignmentFromDockId(
+                id,
+                out var alignment)
+                ? alignment
+                : Alignment.Unset)
+            .Concat(snapshot.Panes.Select(pane =>
+                ToolDockPlacement.TryGetAlignmentFromPaneId(
+                    pane.Id,
+                    out var alignment)
+                    ? alignment
+                    : Alignment.Unset))
+            .Where(alignment => alignment != Alignment.Unset)
+            .Distinct();
+
+        foreach (var alignment in alignments)
+        {
+            factory.EnsureToolDock(root, alignment);
+        }
+    }
+
+    private static List<DockPaneSnapshotV1> CapturePaneSnapshots(
+        IReadOnlyCollection<IDockable> dockables,
+        IReadOnlyCollection<IToolDock> toolDocks,
+        ManagementFactory factory)
+    {
+        var createdTools = factory.CreatedTools.Values
+            .ToHashSet(ReferenceEqualityComparer.Instance);
+        var panes = new List<DockPaneSnapshotV1>();
+
+        foreach (var alignment in new[]
+                 {
+                     Alignment.Left,
+                     Alignment.Top,
+                     Alignment.Bottom,
+                     Alignment.Right
+                 })
+        {
+            var paneId = ToolDockPlacement.GetPaneId(alignment);
+            var stablePane = dockables.FirstOrDefault(
+                dockable => dockable.Id == paneId);
+            var dynamicToolDock = toolDocks.FirstOrDefault(dock =>
+                !DockLayoutIds.IsToolDockId(dock.Id) &&
+                ResolveStableDockId(dock) ==
+                ToolDockPlacement.GetDockId(alignment) &&
+                dock.VisibleDockables?.Any(createdTools.Contains) == true);
+            if (stablePane is null && dynamicToolDock is null)
+            {
+                continue;
+            }
+
+            var proportionSource = (IDockable?)dynamicToolDock ?? stablePane;
+            var proportion = GetPersistableProportion(
+                proportionSource,
+                alignment);
+            panes.Add(new DockPaneSnapshotV1
+            {
+                Id = paneId,
+                Proportion = proportion
+            });
+        }
+
+        return panes;
+    }
+
+    private static double GetPersistableProportion(
+        IDockable? dockable,
+        Alignment alignment)
+    {
+        var proportion = dockable?.Proportion ?? double.NaN;
+        if (!double.IsFinite(proportion) || proportion <= 0)
+        {
+            proportion = dockable?.CollapsedProportion ?? double.NaN;
+        }
+
+        if (!double.IsFinite(proportion) || proportion <= 0)
+        {
+            proportion = ToolDockPlacement.GetDefaultProportion(alignment);
+        }
+
+        return Math.Clamp(proportion, 0.05, 0.95);
+    }
+
+    private static string? ResolveStableDockId(IToolDock? dock)
+    {
+        if (dock is null)
+        {
+            return null;
+        }
+
+        if (IsKnownToolDockId(dock.Id))
+        {
+            return dock.Id;
+        }
+
+        return dock.Alignment is Alignment.Left
+            or Alignment.Right
+            or Alignment.Top
+            or Alignment.Bottom
+            ? ToolDockPlacement.GetDockId(dock.Alignment)
+            : null;
+    }
 
     private static bool IsKnownToolDockId(string? id) =>
-        id is DockLayoutIds.LeftTools or DockLayoutIds.RightTools;
+        DockLayoutIds.IsToolDockId(id);
 
     private sealed record ToolPlacement(
         Tool Tool,

@@ -20,9 +20,14 @@
 - `Root`
 - `Workspace`
 - `WorkspaceColumns`
+- `WorkspaceCenterRows`
 - `LeftPane`
 - `LeftTools`
+- `TopPane`
+- `TopTools`
 - `Documents`
+- `BottomPane`
+- `BottomTools`
 - `RightPane`
 - `RightTools`
 
@@ -45,6 +50,15 @@ JSON 损坏、未知版本、重复 ID、无效比例或插件缺失时，原文
 `isFloating: true`，启动时会按照对应的 `dockId` 和 `order` 自动放回主窗体内的
 ToolDock；显隐与活动项继续恢复。下次保存时写为 `isFloating: false` 且不再写入
 `floatingBounds`，无需提升 schema 版本。
+
+当前布局支持 Left、Right、Top、Bottom 四个稳定 ToolDock。Top/Bottom 位于中央
+Document 区域的上方和下方，显示时默认各占中央高度的 20%；没有可见 Tool 时通过
+Dock 的空布局折叠机制收缩为零高度。旧版只包含左右节点的 V1 快照会在内存中迁移：
+元数据声明为 Top/Bottom、但因旧实现被记录到 LeftTools 的工具将回到正确区域并显示，
+原有左右面板比例和其他工具状态保持不变；迁移结果在下次正常保存时写回。
+用户通过拖拽拆分产生的无稳定 ID ToolDock 会按实际 Alignment 归一化到四个稳定
+ToolDock；重启恢复前若目标节点尚不存在，宿主会先重建对应节点。最后一个 Tool
+隐藏导致空 ToolDock 被 Dock 移除时，再次显示也使用相同机制恢复。
 
 ## 写入与生命周期
 
