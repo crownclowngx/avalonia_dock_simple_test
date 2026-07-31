@@ -14,5 +14,27 @@
             <MenuItem Header="保存 (ctrl+s)" Command="{Binding SaveDocumentCommand}"/>
             <Separator/>
         </MenuItem>
+        <MenuItem Header="视图">
+            <MenuItem Header="主题">
+                <MenuItem Header="跟随系统"
+                          ToggleType="Radio"
+                          GroupName="ApplicationTheme"
+                          IsChecked="{Binding IsSystemTheme, Mode=OneWay}"
+                          Command="{Binding SetThemeCommand}"
+                          CommandParameter="System"/>
+                <MenuItem Header="浅色"
+                          ToggleType="Radio"
+                          GroupName="ApplicationTheme"
+                          IsChecked="{Binding IsLightTheme, Mode=OneWay}"
+                          Command="{Binding SetThemeCommand}"
+                          CommandParameter="Light"/>
+                <MenuItem Header="深色"
+                          ToggleType="Radio"
+                          GroupName="ApplicationTheme"
+                          IsChecked="{Binding IsDarkTheme, Mode=OneWay}"
+                          Command="{Binding SetThemeCommand}"
+                          CommandParameter="Dark"/>
+            </MenuItem>
+        </MenuItem>
     </Menu>
 </UserControl>

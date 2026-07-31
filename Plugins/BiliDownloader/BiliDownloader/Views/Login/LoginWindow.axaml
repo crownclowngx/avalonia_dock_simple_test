@@ -47,7 +47,7 @@
                        TextWrapping="Wrap"
                        HorizontalAlignment="Center"
                        TextAlignment="Center"
-                       Foreground="Gray"
+                       Foreground="{DynamicResource AppSecondaryTextBrush}"
                        FontSize="13"/>
 
             <!-- 刷新按钮（二维码过期时显示） -->

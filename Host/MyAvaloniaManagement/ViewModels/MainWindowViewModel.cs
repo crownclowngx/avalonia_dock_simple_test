@@ -10,6 +10,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Message;
@@ -36,6 +37,8 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     private readonly IMessengerService _messengerService;
     private readonly DockLayoutLifecycle _layoutLifecycle;
     private readonly IHostStorageService _storageService;
+    private readonly ApplicationThemeService _themeService;
+    private ApplicationThemeMode _themeMode;
     private IRootDock? _layout;
 
     /// <summary>
@@ -53,6 +56,15 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     public Dictionary<string, List<DocumentMetadata>> DocumentMetadataByCategory =>
         _pluginMenuService?.GetDocumentMetadataByCategory() ?? [];
 
+    public bool IsSystemTheme =>
+        _themeMode == ApplicationThemeMode.System;
+
+    public bool IsLightTheme =>
+        _themeMode == ApplicationThemeMode.Light;
+
+    public bool IsDarkTheme =>
+        _themeMode == ApplicationThemeMode.Dark;
+
     /// <summary>
     /// 使用显式依赖创建主窗口 ViewModel。
     /// </summary>
@@ -61,6 +73,7 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     /// <param name="messengerService">消息服务</param>
     /// <param name="layoutLifecycle">Dock 布局准备、恢复和保存生命周期。</param>
     /// <param name="storageService">文件选择与文本读写服务。</param>
+    /// <param name="themeService">应用主题切换与持久化服务。</param>
     /// <remarks>
     /// 该构造函数供依赖注入和测试使用。所有外部副作用均由参数提供，
     /// 因此可以验证打开、保存和消息流程，而不需要依赖静态全局状态。
@@ -70,13 +83,16 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         PluginMenuService pluginMenuService,
         IMessengerService messengerService,
         DockLayoutLifecycle layoutLifecycle,
-        IHostStorageService storageService)
+        IHostStorageService storageService,
+        ApplicationThemeService themeService)
     {
         _factory = factory ?? throw new ArgumentNullException(nameof(factory));
         _pluginMenuService = pluginMenuService ?? throw new ArgumentNullException(nameof(pluginMenuService));
         _messengerService = messengerService ?? throw new ArgumentNullException(nameof(messengerService));
         _layoutLifecycle = layoutLifecycle ?? throw new ArgumentNullException(nameof(layoutLifecycle));
         _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+        _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
+        _themeMode = _themeService.CurrentMode;
         
         Layout = _layoutLifecycle.Prepare(_factory);
         
@@ -95,7 +111,8 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         ServiceProvider.GetRequiredService<PluginMenuService>(),
         ServiceProvider.GetRequiredService<IMessengerService>(),
         ServiceProvider.GetRequiredService<DockLayoutLifecycle>(),
-        ServiceProvider.GetRequiredService<IHostStorageService>())
+        ServiceProvider.GetRequiredService<IHostStorageService>(),
+        ServiceProvider.GetRequiredService<ApplicationThemeService>())
     {
     }
 
@@ -200,6 +217,25 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         }
 
         await OpenAllFiles([filePath]);
+    }
+
+    [RelayCommand]
+    private void SetTheme(string? modeName)
+    {
+        if (!Enum.TryParse<ApplicationThemeMode>(
+                modeName,
+                ignoreCase: false,
+                out var mode) ||
+            !Enum.IsDefined(mode))
+        {
+            return;
+        }
+
+        _themeService.SetMode(mode);
+        _themeMode = mode;
+        OnPropertyChanged(nameof(IsSystemTheme));
+        OnPropertyChanged(nameof(IsLightTheme));
+        OnPropertyChanged(nameof(IsDarkTheme));
     }
 
     /// <summary>

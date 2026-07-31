@@ -3,6 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
+using Avalonia.Media;
+using Avalonia.Styling;
 using Dock.Avalonia.Controls;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels.Hello;
@@ -117,5 +119,113 @@ public sealed class ApplicationAndWindowTests
         Assert.False(locator.Match(new object()));
         Assert.Null(locator.Build(null));
         Assert.Throws<Exception>(() => locator.Build(new object()));
+    }
+
+    [AvaloniaFact]
+    public void 全局主题命令切换应用变体且菜单保持单选()
+    {
+        using var context = new UiTestContext();
+        var application = Assert.IsType<App>(Application.Current);
+        context.ThemeService.Initialize(application);
+        var menu = new MenuView
+        {
+            DataContext = context.ViewModel
+        };
+        var host = new Window { Content = menu };
+        host.Show();
+
+        try
+        {
+            context.ViewModel.SetThemeCommand.Execute("Dark");
+
+            Assert.Equal(ThemeVariant.Dark, application.RequestedThemeVariant);
+            Assert.True(context.ViewModel.IsDarkTheme);
+            var themeItems = menu.GetLogicalDescendants()
+                .OfType<MenuItem>()
+                .Where(item => item.GroupName == "ApplicationTheme")
+                .ToArray();
+            Assert.Equal(3, themeItems.Length);
+            Assert.Single(themeItems, item => item.IsChecked);
+            Assert.Equal(
+                "深色",
+                themeItems.Single(item => item.IsChecked).Header);
+
+            context.ViewModel.SetThemeCommand.Execute("System");
+            Assert.Equal(
+                ThemeVariant.Default,
+                application.RequestedThemeVariant);
+            Assert.True(context.ViewModel.IsSystemTheme);
+        }
+        finally
+        {
+            context.ThemeService.SetMode(
+                MyAvaloniaManagement.Business.Appearance
+                    .ApplicationThemeMode.System);
+            host.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void 浅色和深色语义资源解析为不同画刷()
+    {
+        var application = Assert.IsType<App>(Application.Current);
+
+        Assert.True(application.TryGetResource(
+            "AppPanelBrush",
+            ThemeVariant.Light,
+            out var lightValue));
+        Assert.True(application.TryGetResource(
+            "AppPanelBrush",
+            ThemeVariant.Dark,
+            out var darkValue));
+
+        var light = Assert.IsType<SolidColorBrush>(lightValue);
+        var dark = Assert.IsType<SolidColorBrush>(darkValue);
+        Assert.NotEqual(light.Color, dark.Color);
+    }
+
+    [AvaloniaFact]
+    public void 代表性插件视图在浅色和深色主题下均可加载()
+    {
+        using var context = new UiTestContext();
+        var application = Assert.IsType<App>(Application.Current);
+        context.ThemeService.Initialize(application);
+        var views = new Control[]
+        {
+            new BiliDownloader.Views.BiliDownloaderView(),
+            new MyPlugTest.Views.MyCustomToolView(),
+            new MySmallTools.Views.SecretVideoPlayer.Playback
+                .PlaybackDeploymentView()
+        };
+        var panel = new StackPanel();
+        foreach (var view in views)
+        {
+            panel.Children.Add(view);
+        }
+
+        var host = new Window { Content = panel };
+        host.Show();
+
+        try
+        {
+            context.ThemeService.SetMode(
+                MyAvaloniaManagement.Business.Appearance
+                    .ApplicationThemeMode.Light);
+            Assert.All(views, view =>
+                Assert.Equal(ThemeVariant.Light, view.ActualThemeVariant));
+
+            context.ThemeService.SetMode(
+                MyAvaloniaManagement.Business.Appearance
+                    .ApplicationThemeMode.Dark);
+            Assert.All(views, view =>
+                Assert.Equal(ThemeVariant.Dark, view.ActualThemeVariant));
+        }
+        finally
+        {
+            context.ThemeService.SetMode(
+                MyAvaloniaManagement.Business.Appearance
+                    .ApplicationThemeMode.System);
+            host.Close();
+        }
     }
 }

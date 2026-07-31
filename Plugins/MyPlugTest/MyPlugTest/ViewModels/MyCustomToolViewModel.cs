@@ -13,13 +13,13 @@ public partial class MyCustomToolViewModel : Tool
     private string _statusMessage = "等待修改";
 
     [ObservableProperty]
-    private string _statusColor = "Gray";
+    private bool _isStatusSuccess;
 
     [RelayCommand]
     private void UpdateProperty()
     {
         StatusMessage = $"属性已更新为：{CustomProperty}";
-        StatusColor = "Green";
+        IsStatusSuccess = true;
     }
 
     [RelayCommand]
@@ -27,6 +27,6 @@ public partial class MyCustomToolViewModel : Tool
     {
         CustomProperty = "默认值";
         StatusMessage = "属性已重置";
-        StatusColor = "Gray";
+        IsStatusSuccess = false;
     }
 }

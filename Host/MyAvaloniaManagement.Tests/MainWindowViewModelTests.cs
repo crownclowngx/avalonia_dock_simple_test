@@ -181,6 +181,25 @@ public sealed class MainWindowViewModelTests
         Assert.Single(GetDocuments(context));
     }
 
+    [Fact]
+    public void 主题命令更新单选状态并立即持久化()
+    {
+        using var context = CreateContextWithDocumentStrategy();
+        var viewModel = context.CreateMainWindowViewModel();
+        var changed = new List<string?>();
+        viewModel.PropertyChanged += (_, args) => changed.Add(args.PropertyName);
+
+        viewModel.SetThemeCommand.Execute("Dark");
+
+        Assert.False(viewModel.IsSystemTheme);
+        Assert.False(viewModel.IsLightTheme);
+        Assert.True(viewModel.IsDarkTheme);
+        Assert.True(File.Exists(context.AppearanceSettingsPath));
+        Assert.Contains(nameof(viewModel.IsSystemTheme), changed);
+        Assert.Contains(nameof(viewModel.IsLightTheme), changed);
+        Assert.Contains(nameof(viewModel.IsDarkTheme), changed);
+    }
+
     private static TestHostContext CreateContextWithDocumentStrategy()
     {
         var context = new TestHostContext();

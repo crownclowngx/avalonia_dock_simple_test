@@ -31,7 +31,7 @@
             <!-- 调度状态 -->
             <TextBlock Text="{Binding SchedulerStatus}"
                        TextWrapping="Wrap"
-                       Foreground="Gray"
+                       Foreground="{DynamicResource AppSecondaryTextBrush}"
                        Margin="0,4"/>
 
             <!-- 启动/暂停控制 + 清除已完成 -->

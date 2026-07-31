@@ -16,7 +16,8 @@
         <ItemsControl ItemsSource="{Binding Tasks}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:DownloadTaskRecord">
-                    <Border BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="4,6">
+                    <Border BorderBrush="{DynamicResource AppDividerBrush}"
+                            BorderThickness="0,0,0,1" Padding="4,6">
                         <StackPanel Spacing="3">
                             <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
                                 <TextBlock Text="{Binding ItemTitle}"
@@ -28,7 +29,7 @@
                                 <TextBlock Text="{Binding Status}"
                                            Grid.Column="1"
                                            FontSize="11"
-                                           Foreground="#00A1D6"
+                                           Foreground="{DynamicResource AppInfoBrush}"
                                            Margin="4,0"
                                            VerticalAlignment="Center"/>
                                 <Button Content="重试"
@@ -62,25 +63,31 @@
                             <!-- 速度文本 -->
                             <TextBlock Text="{Binding SpeedText}"
                                        FontSize="11"
-                                       Foreground="#FFA500"
+                                       Foreground="{DynamicResource AppWarningBrush}"
                                        IsVisible="{Binding SpeedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
                             <!-- 三分段进度条 -->
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <TextBlock Text="视频" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                    <TextBlock Text="视频" FontSize="10"
+                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                               VerticalAlignment="Center"/>
                                     <ProgressBar Value="{Binding VideoProgress}"
                                                  Minimum="0" Maximum="100"
                                                  Width="60" Height="3"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <TextBlock Text="音频" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                    <TextBlock Text="音频" FontSize="10"
+                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                               VerticalAlignment="Center"/>
                                     <ProgressBar Value="{Binding AudioProgress}"
                                                  Minimum="0" Maximum="100"
                                                  Width="60" Height="3"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <TextBlock Text="合成" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                    <TextBlock Text="合成" FontSize="10"
+                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                               VerticalAlignment="Center"/>
                                     <ProgressBar Value="{Binding MergeProgress}"
                                                  Minimum="0" Maximum="100"
                                                  Width="50" Height="3"/>

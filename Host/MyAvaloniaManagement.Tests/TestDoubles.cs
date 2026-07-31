@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels;
@@ -37,6 +38,10 @@ internal sealed class TestHostContext : IDisposable
         services.AddSingleton<IMessengerService>(Messenger);
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
+        services.AddSingleton(new AppearanceSettingsStore(
+            Path.Combine(
+                TempDirectory,
+                AppearanceSettingsStore.SettingsFileName)));
         services.AddSingleton(PluginModuleCatalog.Discover([]));
 
         Provider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -56,6 +61,14 @@ internal sealed class TestHostContext : IDisposable
     public Microsoft.Extensions.DependencyInjection.ServiceProvider Provider { get; }
 
     public ManagementFactory Factory { get; }
+
+    public ApplicationThemeService ThemeService =>
+        Provider.GetRequiredService<ApplicationThemeService>();
+
+    public string AppearanceSettingsPath =>
+        Path.Combine(
+            TempDirectory,
+            AppearanceSettingsStore.SettingsFileName);
 
     /// <summary>
     /// 从经过 ValidateOnBuild/ValidateScopes 校验的容器创建主 ViewModel。

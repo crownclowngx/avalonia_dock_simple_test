@@ -20,7 +20,9 @@
             <sub:VideoParseView DataContext="{Binding VideoParse}"/>
 
             <!-- 解析结果区域 -->
-            <Border IsVisible="{Binding IsParsed}" Background="#20FFFFFF" CornerRadius="6" Padding="10">
+            <Border IsVisible="{Binding IsParsed}"
+                    Background="{DynamicResource AppSubtlePanelBrush}"
+                    CornerRadius="6" Padding="10">
                 <StackPanel Spacing="6">
                     <!-- 系列标题 -->
                     <TextBlock FontWeight="Bold" FontSize="14"

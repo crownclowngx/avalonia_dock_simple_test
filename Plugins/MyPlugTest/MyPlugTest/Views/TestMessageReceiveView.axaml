@@ -7,6 +7,16 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MyPlugTest.Views.TestMessageReceiveView"
              x:DataType="vm:TestMessageReceiveViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.message-card">
+            <Setter Property="Background"
+                    Value="{DynamicResource AppUnreadMessageBackgroundBrush}"/>
+        </Style>
+        <Style Selector="Border.message-card.read">
+            <Setter Property="Background"
+                    Value="{DynamicResource AppReadMessageBackgroundBrush}"/>
+        </Style>
+    </UserControl.Styles>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -31,7 +41,8 @@
                             CornerRadius="4"
                             Padding="10"
                             Margin="0,0,0,5"
-                            Background="{Binding IsRead, Converter={x:Static models:BoolToBackgroundConverter.Instance}}"
+                            Classes="message-card"
+                            Classes.read="{Binding IsRead}"
                             x:DataType="models:MessageItem">
                         
                         <!-- 消息内容和状态 -->
@@ -42,11 +53,11 @@
                             <DockPanel LastChildFill="False">
                                 <TextBlock Text="ID: "
                                            FontSize="12"
-                                           Foreground="#666666"
+                                           Foreground="{DynamicResource AppSecondaryTextBrush}"
                                            DockPanel.Dock="Left"/>
                                 <TextBlock Text="{Binding Id}"
                                            FontSize="12"
-                                           Foreground="#666666"
+                                           Foreground="{DynamicResource AppSecondaryTextBrush}"
                                            DockPanel.Dock="Left"/>
                                 <CheckBox Content="已读"
                                           IsChecked="{Binding IsRead, Mode=TwoWay}"

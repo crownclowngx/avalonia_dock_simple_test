@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels;
@@ -35,6 +36,8 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<DockLayoutStore>();
         services.AddSingleton<DockLayoutLifecycle>();
+        services.AddSingleton<AppearanceSettingsStore>();
+        services.AddSingleton<ApplicationThemeService>();
         services.AddSingleton<IHostStorageService, AvaloniaHostStorageService>();
         
         // 注册ManagementFactory为单例
@@ -77,7 +80,8 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<PluginMenuService>(),
             provider.GetRequiredService<IMessengerService>(),
             provider.GetRequiredService<DockLayoutLifecycle>(),
-            provider.GetRequiredService<IHostStorageService>()));
+            provider.GetRequiredService<IHostStorageService>(),
+            provider.GetRequiredService<ApplicationThemeService>()));
         
         return services;
     }

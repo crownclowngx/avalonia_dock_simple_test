@@ -34,7 +34,8 @@
                                FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
                                ToolTip.Tip="{Binding FilePath}" />
                     <TextBlock Grid.Column="1" Text="⚠" IsVisible="{Binding HasError}"
-                               Foreground="DarkOrange" Margin="6,0,0,0" ToolTip.Tip="{Binding ErrorMessage}" />
+                               Foreground="{DynamicResource AppWarningBrush}"
+                               Margin="6,0,0,0" ToolTip.Tip="{Binding ErrorMessage}" />
                   </Grid>
                   <TextBlock Grid.Row="1" Text="{Binding PublicTitle}" IsVisible="{Binding HasPublicTitle}"
                              Classes="Caption" LineHeight="14" TextTrimming="CharacterEllipsis"

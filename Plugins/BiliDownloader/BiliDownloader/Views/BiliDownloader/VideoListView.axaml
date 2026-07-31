@@ -49,7 +49,7 @@
                             <TextBlock Text="{Binding Index, StringFormat='{}{0}.'}"
                                        Grid.Column="1"
                                        VerticalAlignment="Center"
-                                       Foreground="Gray"
+                                       Foreground="{DynamicResource AppSecondaryTextBrush}"
                                        Margin="2,0"
                                        MinWidth="24"/>
                             <TextBlock Grid.Column="2"
@@ -68,7 +68,7 @@
                             </TextBlock>
                             <TextBlock Grid.Column="3"
                                        VerticalAlignment="Center"
-                                       Foreground="Gray"
+                                       Foreground="{DynamicResource AppSecondaryTextBrush}"
                                        Margin="4,0">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{}{0}">
@@ -79,13 +79,13 @@
                             <TextBlock Text="{Binding StageText}"
                                        Grid.Column="4"
                                        VerticalAlignment="Center"
-                                       Foreground="#00A1D6"
+                                       Foreground="{DynamicResource AppInfoBrush}"
                                        Margin="4,0"
                                        MinWidth="50"/>
                             <TextBlock Text="{Binding SpeedText}"
                                        Grid.Column="5"
                                        VerticalAlignment="Center"
-                                       Foreground="#FFA500"
+                                       Foreground="{DynamicResource AppWarningBrush}"
                                        Margin="4,0"
                                        MinWidth="60"/>
 
@@ -93,19 +93,25 @@
                             <StackPanel Grid.Column="0" Grid.ColumnSpan="6" Grid.Row="1"
                                         Orientation="Horizontal" Spacing="8" Margin="0,3,0,0">
                                 <StackPanel Orientation="Horizontal" Spacing="3">
-                                    <TextBlock Text="视频" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                    <TextBlock Text="视频" FontSize="10"
+                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                               VerticalAlignment="Center"/>
                                     <ProgressBar Value="{Binding VideoProgress}"
                                                  Minimum="0" Maximum="100"
                                                  Width="100" Height="4"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="3">
-                                    <TextBlock Text="音频" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                    <TextBlock Text="音频" FontSize="10"
+                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                               VerticalAlignment="Center"/>
                                     <ProgressBar Value="{Binding AudioProgress}"
                                                  Minimum="0" Maximum="100"
                                                  Width="100" Height="4"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="3">
-                                    <TextBlock Text="合成" FontSize="10" Foreground="Gray" VerticalAlignment="Center"/>
+                                    <TextBlock Text="合成" FontSize="10"
+                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                               VerticalAlignment="Center"/>
                                     <ProgressBar Value="{Binding MergeProgress}"
                                                  Minimum="0" Maximum="100"
                                                  Width="80" Height="4"/>
@@ -128,7 +134,7 @@
                     Padding="8,6"/>
             <TextBlock Text="{Binding TotalProgress, StringFormat='总进度: {0:F1}%'}"
                        VerticalAlignment="Center"
-                       Foreground="Gray"/>
+                       Foreground="{DynamicResource AppSecondaryTextBrush}"/>
         </StackPanel>
     </StackPanel>
 </UserControl>

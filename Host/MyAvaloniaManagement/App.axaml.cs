@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.Views;
@@ -33,6 +34,9 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            ServiceProvider.GetRequiredService<ApplicationThemeService>()
+                .Initialize(this);
+
             var mainWindow = new MainWindow
             {
                 DataContext = ServiceProvider.GetRequiredService<MainWindowViewModel>(),

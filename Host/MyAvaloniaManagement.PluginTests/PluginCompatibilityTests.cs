@@ -1,6 +1,7 @@
 using BiliDownloader.Plugin;
 using DaTangAccountingHelpPlug.Create;
-using Dock.Model.Mvvm.Controls;
+using DaTangAccountingHelpPlug.Plugin;
+using DaTangAccountingHelpPlug.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -17,29 +18,31 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class PluginCompatibilityTests
 {
     [Fact]
-    public void 历史插件程序集不会被标记为宿主管理模块()
+    public void 未声明插件模块的共享程序集不会被标记为宿主管理模块()
     {
-        var legacyAssemblies = new[]
-        {
-            typeof(InvoiceInfoImportDocumentStrategy).Assembly,
-        };
+        var sharedAssembly = typeof(IPluginModule).Assembly;
 
-        var catalog = PluginModuleCatalog.Discover(legacyAssemblies);
+        var catalog = PluginModuleCatalog.Discover([sharedAssembly]);
 
         Assert.Empty(catalog.Modules);
-        Assert.All(legacyAssemblies, assembly => Assert.False(catalog.IsManaged(assembly)));
+        Assert.False(catalog.IsManaged(sharedAssembly));
     }
 
     [Fact]
-    public void BiliDownloader和MyPlugTest及MySmallTools程序集显式接入模块且不改变公共策略接口()
+    public void 四个插件程序集显式接入模块且不改变公共策略接口()
     {
         var biliAssembly = typeof(BiliDownloaderPluginModule).Assembly;
+        var daTangAssembly = typeof(DaTangAccountingHelpPluginModule).Assembly;
         var myPlugTestAssembly = typeof(MyPlugTestPluginModule).Assembly;
         var mySmallToolsAssembly = typeof(MySmallToolsPluginModule).Assembly;
-        var catalog = PluginModuleCatalog.Discover([biliAssembly, myPlugTestAssembly, mySmallToolsAssembly]);
+        var catalog = PluginModuleCatalog.Discover(
+            [biliAssembly, daTangAssembly, myPlugTestAssembly, mySmallToolsAssembly]);
 
-        Assert.Equal(["BiliDownloader", "MyPlugTest", "MySmallTools"], catalog.Modules.Select(x => x.PluginId));
+        Assert.Equal(
+            ["BiliDownloader", "DaTangAccountingHelpPlug", "MyPlugTest", "MySmallTools"],
+            catalog.Modules.Select(x => x.PluginId));
         Assert.True(catalog.IsManaged(biliAssembly));
+        Assert.True(catalog.IsManaged(daTangAssembly));
         Assert.True(catalog.IsManaged(myPlugTestAssembly));
         Assert.True(catalog.IsManaged(mySmallToolsAssembly));
         Assert.Equal(2, typeof(IDocumentCreationStrategy).GetMethods().Length);
@@ -47,61 +50,55 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void 当前历史策略仍保留公共无参构造函数()
+    public void DaTang模块注册Transient文档且不注册生命周期()
     {
-        var strategyTypes = new[]
-        {
-            typeof(InvoiceInfoImportDocumentStrategy),
-        };
+        var services = new ServiceCollection();
+        var module = new DaTangAccountingHelpPluginModule();
 
-        Assert.All(strategyTypes, type =>
+        module.ConfigureServices(services);
+
+        var descriptor = Assert.Single(
+            services,
+            item => item.ServiceType == typeof(InvoiceInfoImportViewModel));
+        Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime);
+        Assert.DoesNotContain(
+            services,
+            item => item.ServiceType == typeof(IPluginLifecycle));
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
-            var constructor = type.GetConstructor(Type.EmptyTypes);
-            Assert.NotNull(constructor);
-            Assert.NotNull(Activator.CreateInstance(type));
+            ValidateScopes = true,
+            ValidateOnBuild = true,
         });
+
+        Assert.NotSame(
+            provider.GetRequiredService<InvoiceInfoImportViewModel>(),
+            provider.GetRequiredService<InvoiceInfoImportViewModel>());
     }
 
     [Fact]
-    public void 当前所有历史Document和Tool策略仍可按原规则发现()
+    public void DaTang托管策略无需无参构造也能按当前规则发现()
     {
-        var legacyAssemblies = new[]
-        {
-            typeof(InvoiceInfoImportDocumentStrategy).Assembly,
-        };
+        var assembly = typeof(DaTangAccountingHelpPluginModule).Assembly;
+        var catalog = PluginModuleCatalog.Discover([assembly]);
 
-        // 这里刻意复刻改造前的发现条件：实现原策略接口、不是抽象类型，
-        // 并且具有公共无参构造函数。若后续宿主误把历史插件切换到依赖注入路径，
-        // 这份固定清单会立即暴露发现数量或策略类型的兼容性回归。
-        var documentStrategies = legacyAssemblies
-            .SelectMany(assembly => assembly.GetTypes())
+        var documentStrategies = assembly
+            .GetTypes()
             .Where(type => typeof(IDocumentCreationStrategy).IsAssignableFrom(type)
                            && !type.IsAbstract
                            && !type.IsInterface
-                           && type.GetConstructor(Type.EmptyTypes) != null)
+                           && (catalog.IsManaged(assembly)
+                               || type.GetConstructor(Type.EmptyTypes) != null))
             .Select(type => type.FullName!)
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToArray();
 
-        var toolStrategies = legacyAssemblies
-            .SelectMany(assembly => assembly.GetTypes())
-            .Where(type => typeof(IToolCreationStrategy).IsAssignableFrom(type)
-                           && !type.IsAbstract
-                           && !type.IsInterface
-                           && type.GetConstructor(Type.EmptyTypes) != null)
-            .Select(type => type.FullName!)
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToArray();
-
-        Assert.Equal(new[]
-        {
-            typeof(InvoiceInfoImportDocumentStrategy).FullName!,
-        }.OrderBy(name => name, StringComparer.Ordinal), documentStrategies);
-        Assert.Empty(toolStrategies);
+        Assert.Equal([typeof(InvoiceInfoImportDocumentStrategy).FullName!], documentStrategies);
+        Assert.Null(typeof(InvoiceInfoImportDocumentStrategy).GetConstructor(Type.EmptyTypes));
     }
 
     [Fact]
-    public void 未注册生命周期的托管示例与历史插件都不会进入生命周期管理器()
+    public void 未注册生命周期的托管插件不会进入生命周期管理器()
     {
         var manager = new PluginLifecycleManager([]);
 
@@ -112,32 +109,37 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void 策略激活器对历史插件使用无参路径对托管插件使用依赖注入路径()
+    public void DaTang策略通过托管激活器创建且每次返回独立文档()
     {
-        var legacyCatalog = PluginModuleCatalog.Discover([typeof(InvoiceInfoImportDocumentStrategy).Assembly]);
-        using var emptyProvider = new ServiceCollection().BuildServiceProvider();
-
-        var legacyStrategy = PluginStrategyActivator.Create<IDocumentCreationStrategy>(
-            typeof(InvoiceInfoImportDocumentStrategy),
-            typeof(InvoiceInfoImportDocumentStrategy).Assembly,
-            emptyProvider,
-            legacyCatalog);
-
-        Assert.IsType<InvoiceInfoImportDocumentStrategy>(legacyStrategy);
-
-        var managedAssembly = typeof(TestManagedPluginModule).Assembly;
-        var managedCatalog = PluginModuleCatalog.Discover([managedAssembly]);
+        var assembly = typeof(DaTangAccountingHelpPluginModule).Assembly;
+        var catalog = PluginModuleCatalog.Discover([assembly]);
         var services = new ServiceCollection();
-        services.AddSingleton<TestManagedDependency>();
-        using var managedProvider = services.BuildServiceProvider();
+        new DaTangAccountingHelpPluginModule().ConfigureServices(services);
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = true,
+        });
 
-        var managedStrategy = PluginStrategyActivator.Create<IToolCreationStrategy>(
-            typeof(TestManagedToolStrategy),
-            managedAssembly,
-            managedProvider,
-            managedCatalog);
+        var strategy = PluginStrategyActivator.Create<IDocumentCreationStrategy>(
+            typeof(InvoiceInfoImportDocumentStrategy),
+            assembly,
+            provider,
+            catalog);
+        var firstParams = new DocumentCreationParams("invoice-import")
+        {
+            Title = "第一份发票计算",
+        };
+        var secondParams = new DocumentCreationParams("invoice-import");
+        var first = Assert.IsType<InvoiceInfoImportViewModel>(
+            strategy.CreateDocument(firstParams));
+        var second = Assert.IsType<InvoiceInfoImportViewModel>(
+            strategy.CreateDocument(secondParams));
 
-        Assert.IsType<TestManagedToolStrategy>(managedStrategy);
+        Assert.NotSame(first, second);
+        Assert.Equal("第一份发票计算", first.Title);
+        Assert.Equal("发票信息导入和计算", second.Title);
+        Assert.Equal("大唐-会计", strategy.GetMetadata().MenuCategory);
     }
 
     [Fact]
@@ -171,40 +173,4 @@ public sealed class PluginCompatibilityTests
         Assert.True(provider.GetRequiredService<DocumentScopeManager>().Release(first));
         Assert.True(provider.GetRequiredService<DocumentScopeManager>().Release(second));
     }
-}
-
-/// <summary>
-/// 测试程序集中的最小托管模块，仅用于证明声明模块后策略会切换到 DI 激活路径。
-/// 它没有真实业务服务，也不注册生命周期，避免把架构测试替身误解为完整插件示例。
-/// </summary>
-public sealed class TestManagedPluginModule : IPluginModule
-{
-    public string PluginId => "TestManagedPlugin";
-
-    public void ConfigureServices(IServiceCollection services)
-    {
-    }
-}
-
-public sealed class TestManagedDependency;
-
-public sealed class TestManagedToolStrategy : IToolCreationStrategy
-{
-    public TestManagedToolStrategy(TestManagedDependency dependency)
-    {
-        Dependency = dependency;
-    }
-
-    public TestManagedDependency Dependency { get; }
-
-    public Tool CreateTool() => new();
-
-    public ToolMetadata GetMetadata() => new()
-    {
-        ToolTypeId = "TestManagedTool",
-        DisplayName = "测试托管工具",
-        Description = "仅用于验证托管插件策略的依赖注入激活路径",
-        IconPath = string.Empty,
-        Alignment = "Right",
-    };
 }

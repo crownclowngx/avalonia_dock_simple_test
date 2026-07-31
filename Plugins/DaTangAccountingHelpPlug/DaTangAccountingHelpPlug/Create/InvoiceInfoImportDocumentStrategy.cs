@@ -1,18 +1,26 @@
 ﻿using DaTangAccountingHelpPlug.Constants;
 using DaTangAccountingHelpPlug.ViewModels;
 using Dock.Model.Mvvm.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace DaTangAccountingHelpPlug.Create;
 
 public class InvoiceInfoImportDocumentStrategy: IDocumentCreationStrategy
 {
+    private readonly IServiceProvider _serviceProvider;
+
+    public InvoiceInfoImportDocumentStrategy(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
     public Document CreateDocument(DocumentCreationParams @params)
     {
-        var welcomeDoc = new InvoiceInfoImportViewModel
-        {
-            Title = string.IsNullOrEmpty(@params.Title) ? "发票信息导入和计算" : @params.Title,
-        };
+        // 策略由宿主长期保存；在用户创建文档时解析 Transient ViewModel，
+        // 确保多个发票计算文档之间不共享可变状态。
+        var welcomeDoc = _serviceProvider.GetRequiredService<InvoiceInfoImportViewModel>();
+        welcomeDoc.Title = string.IsNullOrEmpty(@params.Title) ? "发票信息导入和计算" : @params.Title;
 
         return welcomeDoc;
     }

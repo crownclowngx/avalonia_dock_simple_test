@@ -94,7 +94,8 @@
                       Command="{Binding Owner.RequestClearAllHistoryCommand}" Classes="CompactButton" />
             </Grid>
             <Border IsVisible="{Binding Owner.ShowClearHistoryConfirmation}"
-                    BorderBrush="DarkOrange" BorderThickness="1" CornerRadius="6" Padding="8">
+                    BorderBrush="{DynamicResource AppWarningBorderBrush}"
+                    BorderThickness="1" CornerRadius="6" Padding="8">
               <StackPanel Spacing="5">
                 <TextBlock Text="确定清空全部播放历史？此操作无法撤销。" Classes="Caption" />
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="6">

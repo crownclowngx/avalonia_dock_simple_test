@@ -6,6 +6,15 @@
              x:Class="MyPlugTest.Views.MyCustomToolView"
              x:DataType="vm:MyCustomToolViewModel"
              xmlns:vm="using:MyPlugTest.ViewModels">
+    <UserControl.Styles>
+        <Style Selector="TextBlock.status-message">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource AppSecondaryTextBrush}"/>
+        </Style>
+        <Style Selector="TextBlock.status-message.success">
+            <Setter Property="Foreground" Value="Green"/>
+        </Style>
+    </UserControl.Styles>
     <Grid  ColumnDefinitions="Auto, *" RowDefinitions="Auto, Auto, Auto, *">
         <!-- 标题区域 -->
         <TextBlock Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" 
@@ -39,7 +48,8 @@
         <TextBlock Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2" 
                    Text="{Binding StatusMessage}" 
                    TextWrapping="Wrap" 
-                   Foreground="{Binding StatusColor}" 
+                   Classes="status-message"
+                   Classes.success="{Binding IsStatusSuccess}"
                    Margin="0,10,0,0" 
                    VerticalAlignment="Top"/>
     </Grid>

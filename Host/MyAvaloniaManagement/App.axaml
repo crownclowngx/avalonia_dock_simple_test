@@ -15,7 +15,35 @@
                  <local:ViewLocator />
              </Application.DataTemplates>
              <Application.Resources>
-                 <helpers:DocumentControlRecycling x:Key="ControlRecyclingKey" />
+                 <ResourceDictionary>
+                     <helpers:DocumentControlRecycling x:Key="ControlRecyclingKey" />
+                     <ResourceDictionary.ThemeDictionaries>
+                         <ResourceDictionary x:Key="Light">
+                             <SolidColorBrush x:Key="AppPanelBrush" Color="#FFF5F5F5" />
+                             <SolidColorBrush x:Key="AppSubtlePanelBrush" Color="#0D000000" />
+                             <SolidColorBrush x:Key="AppDividerBrush" Color="#1F000000" />
+                             <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FF666666" />
+                             <SolidColorBrush x:Key="AppInfoBrush" Color="#FF0078A8" />
+                             <SolidColorBrush x:Key="AppWarningBrush" Color="#FF9A6700" />
+                             <SolidColorBrush x:Key="AppWarningPanelBrush" Color="#FFFFF4CE" />
+                             <SolidColorBrush x:Key="AppWarningBorderBrush" Color="#FFC28A00" />
+                             <SolidColorBrush x:Key="AppReadMessageBackgroundBrush" Color="#FFDCEEFF" />
+                             <SolidColorBrush x:Key="AppUnreadMessageBackgroundBrush" Color="#FFF5F5F5" />
+                         </ResourceDictionary>
+                         <ResourceDictionary x:Key="Dark">
+                             <SolidColorBrush x:Key="AppPanelBrush" Color="#FF252525" />
+                             <SolidColorBrush x:Key="AppSubtlePanelBrush" Color="#14FFFFFF" />
+                             <SolidColorBrush x:Key="AppDividerBrush" Color="#26FFFFFF" />
+                             <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB8B8B8" />
+                             <SolidColorBrush x:Key="AppInfoBrush" Color="#FF4CC2F1" />
+                             <SolidColorBrush x:Key="AppWarningBrush" Color="#FFFFB74D" />
+                             <SolidColorBrush x:Key="AppWarningPanelBrush" Color="#FF3A2A16" />
+                             <SolidColorBrush x:Key="AppWarningBorderBrush" Color="#FFD89B3C" />
+                             <SolidColorBrush x:Key="AppReadMessageBackgroundBrush" Color="#FF143A52" />
+                             <SolidColorBrush x:Key="AppUnreadMessageBackgroundBrush" Color="#FF252525" />
+                         </ResourceDictionary>
+                     </ResourceDictionary.ThemeDictionaries>
+                 </ResourceDictionary>
              </Application.Resources>
              <Application.Styles>
                  <FluentTheme />

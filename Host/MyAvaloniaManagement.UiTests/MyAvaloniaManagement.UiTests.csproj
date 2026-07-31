@@ -24,5 +24,8 @@
   <ItemGroup>
     <ProjectReference Include="..\MyAvaloniaManagement\MyAvaloniaManagement.csproj" />
     <ProjectReference Include="..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
+    <ProjectReference Include="..\..\Plugins\BiliDownloader\BiliDownloader\BiliDownloader.csproj" />
+    <ProjectReference Include="..\..\Plugins\MyPlugTest\MyPlugTest\MyPlugTest.csproj" />
+    <ProjectReference Include="..\..\Plugins\MySmallTools\MySmallTools\MySmallTools.csproj" />
   </ItemGroup>
 </Project>

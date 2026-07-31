@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels;
@@ -35,6 +36,10 @@ internal sealed class UiTestContext : IDisposable
         services.AddSingleton<IMessengerService>(Messenger);
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
+        services.AddSingleton(new AppearanceSettingsStore(
+            Path.Combine(
+                TempDirectory,
+                AppearanceSettingsStore.SettingsFileName)));
         services.AddSingleton(PluginModuleCatalog.Discover([]));
         Provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -58,6 +63,9 @@ internal sealed class UiTestContext : IDisposable
     public ManagementFactory Factory { get; }
 
     public MainWindowViewModel ViewModel { get; }
+
+    public ApplicationThemeService ThemeService =>
+        Provider.GetRequiredService<ApplicationThemeService>();
 
     public string LayoutPath =>
         Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName);

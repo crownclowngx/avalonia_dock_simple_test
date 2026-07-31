@@ -16,7 +16,8 @@
                 <DataTemplate>
                     <StackPanel>
                         <TextBlock Text="{Binding Url}" TextWrapping="Wrap" FontWeight="Medium"/>
-                        <TextBlock Text="{Binding DisplayTime}" FontSize="12" Foreground="Gray"/>
+                        <TextBlock Text="{Binding DisplayTime}" FontSize="12"
+                                   Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                     </StackPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>

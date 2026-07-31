@@ -31,7 +31,9 @@
     <ProjectReference Include="..\..\Plugins\MyPlugTest\MyPlugTest\MyPlugTest.csproj">
       <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
     </ProjectReference>
-    <ProjectReference Include="..\..\Plugins\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj" />
+    <ProjectReference Include="..\..\Plugins\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj">
+      <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
+    </ProjectReference>
     <ProjectReference Include="..\..\Plugins\MySmallTools\MySmallTools\MySmallTools.csproj">
       <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
     </ProjectReference>
