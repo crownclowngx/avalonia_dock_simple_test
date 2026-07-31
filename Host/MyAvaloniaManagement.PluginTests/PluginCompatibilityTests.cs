@@ -1,5 +1,6 @@
 using BiliDownloader.Plugin;
 using DaTangAccountingHelpPlug.Create;
+using DaTangAccountingHelpPlug.Create.BankBalanceReconciliation;
 using DaTangAccountingHelpPlug.Plugin;
 using DaTangAccountingHelpPlug.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -93,7 +94,13 @@ public sealed class PluginCompatibilityTests
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal([typeof(InvoiceInfoImportDocumentStrategy).FullName!], documentStrategies);
+        Assert.Equal(
+            [
+                typeof(BankBalanceReconciliationDocumentStrategy).FullName!,
+                typeof(InvoiceInfoImportDocumentStrategy).FullName!
+            ],
+            documentStrategies);
+        Assert.Null(typeof(BankBalanceReconciliationDocumentStrategy).GetConstructor(Type.EmptyTypes));
         Assert.Null(typeof(InvoiceInfoImportDocumentStrategy).GetConstructor(Type.EmptyTypes));
     }
 

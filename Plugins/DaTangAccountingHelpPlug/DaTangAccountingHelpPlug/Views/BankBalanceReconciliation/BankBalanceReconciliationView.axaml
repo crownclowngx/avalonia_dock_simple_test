@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation"
+             xmlns:local="using:DaTangAccountingHelpPlug.Views.BankBalanceReconciliation"
+             mc:Ignorable="d"
+             d:DesignWidth="980"
+             d:DesignHeight="760"
+             x:Class="DaTangAccountingHelpPlug.Views.BankBalanceReconciliation.BankBalanceReconciliationView"
+             x:DataType="vm:BankBalanceReconciliationViewModel">
+    <UserControl.Styles>
+        <StyleInclude Source="avares://DaTangAccountingHelpPlug/Views/BankBalanceReconciliation/BankBalanceReconciliationStyles.axaml" />
+    </UserControl.Styles>
+
+    <!-- 运行时 DataContext 由宿主 ViewLocator 注入；组合 View 只显式接收各自的子 ViewModel。 -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <Border Classes="recon-page">
+            <StackPanel Spacing="10">
+                <Border Classes="recon-header">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="银行余额调节表" Classes="recon-title" />
+                        <TextBlock Text="只读分析企业账与银行账；严格模式不会通过候选顺序猜测核销关系。"
+                                   Classes="recon-caption"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <local:ReconciliationSourceView DataContext="{Binding Source}" />
+                <local:ReconciliationOptionsView DataContext="{Binding Options}" />
+                <local:ReconciliationRunView DataContext="{Binding Run}" />
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>

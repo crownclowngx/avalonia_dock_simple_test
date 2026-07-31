@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation"
+             xmlns:model="using:DaTangAccountingHelpPlug.Models.BankBalanceReconciliation"
+             mc:Ignorable="d"
+             x:Class="DaTangAccountingHelpPlug.Views.BankBalanceReconciliation.ReconciliationRunView"
+             x:DataType="vm:ReconciliationRunViewModel">
+    <Border Classes="recon-section">
+        <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="7">
+                <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="3. 生成与复核" Classes="recon-section-title" />
+                    <TextBlock Text="{Binding StatusMessage}"
+                               Classes="recon-caption"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="recon-button"
+                        Content="生成调节表"
+                        Command="{Binding StartCommand}" />
+                <Button Grid.Column="2" Classes="recon-button"
+                        Content="取消"
+                        Command="{Binding CancelCommand}" />
+            </Grid>
+
+            <ProgressBar Classes="recon-progress"
+                         Minimum="0"
+                         Maximum="100"
+                         Value="{Binding ProgressPercent}" />
+
+            <Border Classes="recon-result" IsVisible="{Binding HasResult}">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="{Binding ResultMessage}"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap" />
+                    <WrapPanel Orientation="Horizontal">
+                        <TextBlock Margin="0,0,18,0" Text="{Binding MatchedCount, StringFormat='已匹配：{0}'}" />
+                        <TextBlock Margin="0,0,18,0" Text="{Binding AmbiguousCount, StringFormat='待复核：{0}'}" />
+                        <TextBlock Text="{Binding Difference, StringFormat='差额：{0:N2}'}" />
+                    </WrapPanel>
+                    <TextBlock Text="{Binding LastOutputPath}"
+                               Classes="recon-caption"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding LastOutputPath}" />
+                </StackPanel>
+            </Border>
+
+            <Expander Classes="recon-expander"
+                      IsExpanded="{Binding HasAuditIssues}">
+                <Expander.Header>
+                    <TextBlock Text="待复核项" Classes="recon-section-title" />
+                </Expander.Header>
+                <ListBox Classes="recon-list"
+                         MaxHeight="180"
+                         ItemsSource="{Binding AuditIssues}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="model:MatchDecision">
+                            <Grid ColumnDefinitions="70,90,*,Auto" ColumnSpacing="7">
+                                <TextBlock Grid.Column="0" Text="{Binding PrimaryEntry.SourceRow, StringFormat='第 {0} 行'}" />
+                                <TextBlock Grid.Column="1" Text="{Binding PrimaryEntry.Amount, StringFormat='{}{0:N2}'}" />
+                                <TextBlock Grid.Column="2" Text="{Binding Reason}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip.Tip="{Binding Reason}" />
+                                <TextBlock Grid.Column="3" Text="{Binding CandidateCount, StringFormat='候选 {0}'}"
+                                           Classes="recon-caption" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Expander>
+
+            <Expander Classes="recon-expander" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock Text="运行日志" Classes="recon-section-title" />
+                </Expander.Header>
+                <ListBox Classes="recon-list"
+                         MaxHeight="180"
+                         ItemsSource="{Binding LogEntries}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}"
+                                       FontFamily="Consolas"
+                                       FontSize="11"
+                                       TextWrapping="Wrap" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Expander>
+        </StackPanel>
+    </Border>
+</UserControl>

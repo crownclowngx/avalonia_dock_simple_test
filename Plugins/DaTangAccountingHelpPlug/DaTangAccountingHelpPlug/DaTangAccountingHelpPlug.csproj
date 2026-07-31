@@ -15,6 +15,12 @@
     </ItemGroup>
 
     <ItemGroup>
+      <!-- LogicalName 固定后，ProfileLoader 不依赖构建目录或插件部署路径。 -->
+      <EmbeddedResource Include="Resources\BankBalanceReconciliation\reconciliation-profiles.json"
+                        LogicalName="DaTangAccountingHelpPlug.Resources.BankBalanceReconciliation.reconciliation-profiles.json" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Folder Include="Styles\" />
     </ItemGroup>
     <ItemGroup>

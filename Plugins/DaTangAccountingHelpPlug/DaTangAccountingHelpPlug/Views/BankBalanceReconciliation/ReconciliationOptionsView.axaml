@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation"
+             mc:Ignorable="d"
+             x:Class="DaTangAccountingHelpPlug.Views.BankBalanceReconciliation.ReconciliationOptionsView"
+             x:DataType="vm:ReconciliationOptionsViewModel">
+    <Border Classes="recon-section">
+        <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="7">
+                <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="2. 对账选项" Classes="recon-section-title" />
+                    <TextBlock Text="{Binding ConfigurationStatus}"
+                               Classes="recon-caption"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="recon-button"
+                        Content="导入配置"
+                        Command="{Binding ImportConfigurationCommand}" />
+                <Button Grid.Column="2" Classes="recon-button"
+                        Content="导出配置"
+                        Command="{Binding ExportConfigurationCommand}" />
+            </Grid>
+
+            <CheckBox Content="旧宏兼容模式（按稳定顺序选择首个候选）"
+                      IsChecked="{Binding UseLegacyMode}" />
+            <CheckBox Margin="22,0,0,0"
+                      Content="启用宽松金额整理（仅兼容模式）"
+                      IsChecked="{Binding EnableLooseAmountAlignment}"
+                      IsEnabled="{Binding UseLegacyMode}" />
+
+            <Grid ColumnDefinitions="160,180,*" ColumnSpacing="8">
+                <TextBlock Grid.Column="0" Text="上月未达差额" Classes="recon-field-label" />
+                <TextBox Grid.Column="1" Classes="recon-input"
+                         Text="{Binding PreviousUnreconciledDifference}" />
+                <TextBlock Grid.Column="2"
+                           Classes="recon-caption"
+                           Text="正数调增企业侧，负数调增银行侧；结果会进入审计表。"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center" />
+            </Grid>
+
+            <TextBlock Classes="recon-caption"
+                       Text="严格模式默认启用：多个候选会保留为待复核，不会自动核销。"
+                       TextWrapping="Wrap" />
+        </StackPanel>
+    </Border>
+</UserControl>

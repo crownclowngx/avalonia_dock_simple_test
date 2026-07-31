@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation"
+             xmlns:model="using:DaTangAccountingHelpPlug.Models.BankBalanceReconciliation"
+             mc:Ignorable="d"
+             x:Class="DaTangAccountingHelpPlug.Views.BankBalanceReconciliation.ReconciliationSourceView"
+             x:DataType="vm:ReconciliationSourceViewModel">
+    <Border Classes="recon-section">
+        <StackPanel Spacing="8">
+            <TextBlock Text="1. 数据来源" Classes="recon-section-title" />
+
+            <Grid ColumnDefinitions="92,*" ColumnSpacing="8">
+                <TextBlock Grid.Column="0" Text="单位及账户" Classes="recon-field-label" />
+                <ComboBox Grid.Column="1"
+                          Classes="recon-input"
+                          ItemsSource="{Binding Profiles}"
+                          SelectedItem="{Binding SelectedProfile}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="model:BankReconciliationProfile">
+                            <StackPanel>
+                                <TextBlock Text="{Binding UnitShortName}" FontWeight="SemiBold" />
+                                <TextBlock Classes="recon-caption"
+                                           Text="{Binding BankShortName}"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </Grid>
+
+            <Grid ColumnDefinitions="92,*,Auto" ColumnSpacing="8">
+                <TextBlock Grid.Column="0" Text="企业明细账" Classes="recon-field-label" />
+                <TextBox Grid.Column="1" Classes="recon-input"
+                         Text="{Binding EnterpriseLedgerPath}"
+                         ToolTip.Tip="{Binding EnterpriseLedgerPath}" />
+                <Button Grid.Column="2" Classes="recon-button"
+                        Content="浏览…"
+                        Command="{Binding SelectEnterpriseLedgerCommand}" />
+            </Grid>
+
+            <Grid ColumnDefinitions="92,*,Auto" ColumnSpacing="8">
+                <TextBlock Grid.Column="0" Text="银行账" Classes="recon-field-label" />
+                <TextBox Grid.Column="1" Classes="recon-input"
+                         Text="{Binding BankStatementPath}"
+                         ToolTip.Tip="{Binding BankStatementPath}" />
+                <Button Grid.Column="2" Classes="recon-button"
+                        Content="浏览…"
+                        Command="{Binding SelectBankStatementCommand}" />
+            </Grid>
+
+            <Grid ColumnDefinitions="92,*,Auto,Auto" ColumnSpacing="8">
+                <TextBlock Grid.Column="0" Text="到款表（可选）" Classes="recon-field-label" />
+                <TextBox Grid.Column="1" Classes="recon-input"
+                         Text="{Binding ReceiptEnrichmentPath}"
+                         ToolTip.Tip="{Binding ReceiptEnrichmentPath}" />
+                <Button Grid.Column="2" Classes="recon-button"
+                        Content="浏览…"
+                        Command="{Binding SelectReceiptEnrichmentCommand}" />
+                <Button Grid.Column="3" Classes="recon-button"
+                        Content="清除"
+                        Command="{Binding ClearReceiptEnrichmentCommand}" />
+            </Grid>
+
+            <Grid ColumnDefinitions="92,220,*" ColumnSpacing="8">
+                <TextBlock Grid.Column="0" Text="截止日期" Classes="recon-field-label" />
+                <DatePicker Grid.Column="1" Classes="recon-input"
+                            SelectedDate="{Binding AsOfDate}" />
+                <TextBlock Grid.Column="2" Classes="recon-caption"
+                           Text="日期用于报告与审计，不自动删除超期流水。"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>
