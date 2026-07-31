@@ -3,37 +3,58 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="60"
+             mc:Ignorable="d" d:DesignWidth="360" d:DesignHeight="70"
              x:Class="BiliDownloader.Views.BiliDownloader.LoginBarView"
              x:DataType="vm:LoginBarViewModel">
-    <Border Background="{DynamicResource AppSubtlePanelBrush}" CornerRadius="6" Padding="12">
-        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-            <StackPanel Orientation="Horizontal" Spacing="8"
-                        Grid.Column="0"
-                        IsVisible="{Binding IsLoggedIn}">
-                <TextBlock Text="已登录：" VerticalAlignment="Center" FontWeight="Bold"/>
-                <TextBlock Text="{Binding UserName}"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource AppInfoBrush}"/>
-            </StackPanel>
-            <Button Content="退出登录"
-                    Grid.Column="1"
-                    Command="{Binding LogoutCommand}"
-                    IsVisible="{Binding IsLoggedIn}"
-                    Padding="12,4"/>
+    <Border Classes="bili-doc-login">
+        <Grid RowDefinitions="Auto,Auto">
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto">
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal"
+                            Spacing="6"
+                            IsVisible="{Binding IsLoggedIn}"
+                            VerticalAlignment="Center">
+                    <PathIcon Classes="bili-doc-icon accent"
+                              Data="{StaticResource BiliAccountGeometry}" />
+                    <TextBlock Text="已登录" Classes="bili-doc-caption" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding UserName}"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource AppInfoBrush}"
+                               MaxWidth="150"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding UserName}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
 
-            <Button Content="点击登录 Bilibili"
-                    Grid.Column="0" Grid.ColumnSpan="2"
-                    Command="{Binding LoginCommand}"
-                    IsVisible="{Binding !IsLoggedIn}"
-                    HorizontalAlignment="Left"
-                    Padding="16,6"/>
+                <Button Grid.Column="1"
+                        Margin="8,0,0,0"
+                        Content="退出"
+                        Command="{Binding LogoutCommand}"
+                        IsVisible="{Binding IsLoggedIn}"
+                        Classes="bili-doc-button" />
 
-            <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                       Margin="0,6,0,0"
+                <Button Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Command="{Binding LoginCommand}"
+                        IsVisible="{Binding !IsLoggedIn}"
+                        Classes="bili-doc-button">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Classes="bili-doc-icon accent"
+                                  Data="{StaticResource BiliAccountGeometry}" />
+                        <TextBlock Text="登录 Bilibili" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <TextBlock Grid.Row="1"
+                       Margin="0,5,0,0"
+                       MaxWidth="300"
                        Text="{Binding StatusMessage}"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                        TextWrapping="Wrap"
-                       Foreground="{DynamicResource AppWarningBrush}"/>
+                       FontSize="11"
+                       Foreground="{DynamicResource AppWarningBrush}" />
         </Grid>
     </Border>
 </UserControl>

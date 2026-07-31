@@ -3,28 +3,43 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="80"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="76"
              x:Class="BiliDownloader.Views.BiliDownloader.VideoParseView"
              x:DataType="vm:VideoParseViewModel">
-    <StackPanel Spacing="8">
-        <Label Content="Bilibili 视频下载器" FontSize="18" FontWeight="Bold"/>
+    <Border Classes="bili-doc-primary-strip">
+        <Grid RowDefinitions="Auto,Auto"
+              ColumnDefinitions="Auto,*,Auto,Auto"
+              ColumnSpacing="8"
+              RowSpacing="5">
+            <PathIcon Grid.Row="0" Grid.Column="0"
+                      Classes="bili-doc-icon accent"
+                      Data="{StaticResource BiliLinkGeometry}"
+                      VerticalAlignment="Center" />
+            <TextBox Grid.Row="0" Grid.Column="1"
+                     Classes="bili-doc-input"
+                     Text="{Binding Url}"
+                     PlaceholderText="粘贴 Bilibili 视频、番剧或 b23.tv 链接"
+                     ToolTip.Tip="{Binding Url}"
+                     VerticalAlignment="Center" />
+            <ProgressBar Grid.Row="0" Grid.Column="2"
+                         Classes="bili-doc-progress"
+                         IsIndeterminate="True"
+                         IsVisible="{Binding IsLoading}"
+                         Width="72"
+                         VerticalAlignment="Center" />
+            <Button Grid.Row="0" Grid.Column="3"
+                    Command="{Binding ParseCommand}"
+                    Content="解析链接"
+                    MinWidth="88"
+                    IsEnabled="{Binding !IsLoading}"
+                    Classes="bili-doc-button accent" />
 
-        <!-- URL 输入 + 解析 -->
-        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto">
-            <TextBox Text="{Binding Url}"
-                     PlaceholderText="请输入链接，例如 https://www.bilibili.com/video/BV1xx411c7mD"
-                     Grid.Column="0"
-                     VerticalAlignment="Center"/>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Margin="8,0,0,0">
-                <ProgressBar IsIndeterminate="True"
-                             IsVisible="{Binding IsLoading}"
-                             Width="80" Height="4"
-                             VerticalAlignment="Center"/>
-                <Button Command="{Binding ParseCommand}"
-                        Content="解析"
-                        Width="80"
-                        IsEnabled="{Binding !IsLoading}"/>
-            </StackPanel>
+            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                       Text="{Binding DownloadInfo}"
+                       IsVisible="{Binding DownloadInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                       Classes="bili-doc-caption"
+                       TextTrimming="CharacterEllipsis"
+                       ToolTip.Tip="{Binding DownloadInfo}" />
         </Grid>
-    </StackPanel>
+    </Border>
 </UserControl>

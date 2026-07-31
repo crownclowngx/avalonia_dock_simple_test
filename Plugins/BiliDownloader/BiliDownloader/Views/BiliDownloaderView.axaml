@@ -4,46 +4,82 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:BiliDownloader.ViewModels"
              xmlns:sub="using:BiliDownloader.Views.BiliDownloader"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="720"
              x:Class="BiliDownloader.Views.BiliDownloaderView"
              x:DataType="vm:BiliDownloaderViewModel">
+    <UserControl.Styles>
+        <StyleInclude Source="avares://BiliDownloader/Styles/BiliDocumentStyles.axaml" />
+    </UserControl.Styles>
+
     <Design.DataContext>
         <vm:BiliDownloaderViewModel />
     </Design.DataContext>
-    <ScrollViewer>
-        <StackPanel Spacing="8" Margin="15">
 
-            <!-- 登录状态区域 -->
-            <sub:LoginBarView DataContext="{Binding LoginBar}"/>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <Border Classes="bili-doc-content">
+            <StackPanel Spacing="10">
+                <Border Classes="bili-doc-header">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="Bilibili 视频下载器" Classes="bili-doc-title" />
+                            <TextBlock Text="解析视频链接，选择内容与质量后提交到后台调度器。"
+                                       Classes="bili-doc-caption"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <sub:LoginBarView Grid.Column="1"
+                                          DataContext="{Binding LoginBar}"
+                                          VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
 
-            <!-- URL 输入 + 解析 -->
-            <sub:VideoParseView DataContext="{Binding VideoParse}"/>
+                <sub:VideoParseView DataContext="{Binding VideoParse}" />
 
-            <!-- 解析结果区域 -->
-            <Border IsVisible="{Binding IsParsed}"
-                    Background="{DynamicResource AppSubtlePanelBrush}"
-                    CornerRadius="6" Padding="10">
-                <StackPanel Spacing="6">
-                    <!-- 系列标题 -->
-                    <TextBlock FontWeight="Bold" FontSize="14"
-                               Text="{Binding VideoParse.VideoCollection.SeriesTitle}"/>
+                <Border IsVisible="{Binding IsParsed}"
+                        Classes="bili-doc-workspace">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                            <PathIcon Grid.Column="0"
+                                      Classes="bili-doc-icon accent"
+                                      Data="{StaticResource BiliVideoGeometry}"
+                                      VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1"
+                                       Classes="bili-doc-section-title"
+                                       Text="{Binding VideoParse.VideoCollection.SeriesTitle}"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip.Tip="{Binding VideoParse.VideoCollection.SeriesTitle}"
+                                       VerticalAlignment="Center" />
+                        </Grid>
 
-                    <!-- 下载配置（清晰度/音频/输出目录） -->
-                    <sub:DownloadConfigView DataContext="{Binding DownloadConfig}"/>
+                        <sub:DownloadConfigView DataContext="{Binding DownloadConfig}" />
+                        <sub:VideoListView DataContext="{Binding VideoList}" />
+                    </StackPanel>
+                </Border>
 
-                    <!-- 视频列表（含工具栏、重命名面板、提交下载、总进度） -->
-                    <sub:VideoListView DataContext="{Binding VideoList}"/>
-                </StackPanel>
-            </Border>
-
-            <!-- 日志区域 -->
-            <TextBlock Text="输出信息：" FontWeight="SemiBold" Margin="0,4,0,0"/>
-            <TextBox Text="{Binding DownloadInfo}"
-                     Height="160"
-                     TextWrapping="NoWrap"
-                     AcceptsReturn="True"
-                     IsReadOnly="True"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-        </StackPanel>
+                <Expander x:Name="DownloadLogExpander"
+                          Classes="bili-doc-log"
+                          IsExpanded="True">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Classes="bili-doc-icon"
+                                      Data="{StaticResource BiliLogGeometry}" />
+                            <TextBlock Text="运行日志"
+                                       Classes="bili-doc-section-title"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Expander.Header>
+                    <TextBox Text="{Binding DownloadInfo}"
+                             Classes="bili-doc-log-output"
+                             Height="150"
+                             Margin="0,7,0,0"
+                             TextWrapping="NoWrap"
+                             AcceptsReturn="True"
+                             IsReadOnly="True"
+                             ToolTip.Tip="{Binding DownloadInfo}"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                </Expander>
+            </StackPanel>
+        </Border>
     </ScrollViewer>
 </UserControl>

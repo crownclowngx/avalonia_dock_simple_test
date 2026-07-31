@@ -6,135 +6,164 @@
              xmlns:models="using:BiliDownloader.Models"
              xmlns:conv="using:BiliDownloader.Converters"
              xmlns:sub="using:BiliDownloader.Views.BiliDownloader"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="440"
              x:Class="BiliDownloader.Views.BiliDownloader.VideoListView"
              x:DataType="vm:VideoListViewModel">
     <UserControl.Resources>
-        <conv:StatusToColorConverter x:Key="StatusToColorConverter"/>
+        <conv:StatusToColorConverter x:Key="StatusToColorConverter" />
+        <conv:RenameDisplayConverter x:Key="RenameDisplayConverter" />
     </UserControl.Resources>
-    <StackPanel Spacing="6">
-        <!-- 视频列表工具栏 -->
-        <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,4,0,0">
-            <TextBlock Text="视频列表：" FontWeight="SemiBold" VerticalAlignment="Center"/>
-            <Button Content="批量重命名" Grid.Column="1"
-                    Command="{Binding RenamePanel.ToggleRenamePanelCommand}"
-                    Padding="8,2" Margin="4,0"/>
-            <Button Content="全选" Grid.Column="2" Command="{Binding SelectAllCommand}" Padding="8,2" Margin="4,0"/>
-            <Button Content="全不选" Grid.Column="3" Command="{Binding DeselectAllCommand}" Padding="8,2"/>
+
+    <StackPanel Spacing="7">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBlock Grid.Column="0"
+                       Text="视频列表"
+                       Classes="bili-doc-section-title"
+                       VerticalAlignment="Center" />
+            <WrapPanel Grid.Column="1" HorizontalAlignment="Right">
+                <Button Content="批量重命名"
+                        Command="{Binding RenamePanel.ToggleRenamePanelCommand}"
+                        Classes="bili-doc-button"
+                        Margin="0,0,6,4" />
+                <Button Content="全选"
+                        Command="{Binding SelectAllCommand}"
+                        Classes="bili-doc-button"
+                        Margin="0,0,6,4" />
+                <Button Content="取消全选"
+                        Command="{Binding DeselectAllCommand}"
+                        Classes="bili-doc-button"
+                        Margin="0,0,0,4" />
+            </WrapPanel>
         </Grid>
 
-        <!-- 批量重命名面板 -->
-        <sub:RenamePanelView DataContext="{Binding RenamePanel}"/>
+        <sub:RenamePanelView DataContext="{Binding RenamePanel}" />
 
-        <!-- 视频列表（虚拟化滚动，只渲染可见区域） -->
-        <ListBox ItemsSource="{Binding VideoItems}"
+        <!-- 显式虚拟化，下载集合较大时只创建可见列表行。 -->
+        <ListBox x:Name="VideoItemsList"
+                 Classes="bili-doc-list"
+                 ItemsSource="{Binding VideoItems}"
                  MaxHeight="400"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto">
-            <ListBox.Styles>
-                <Style Selector="ListBoxItem">
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="Padding" Value="0"/>
-                </Style>
-            </ListBox.Styles>
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
             <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="models:BiliVideoItem">
                     <Border BorderBrush="{Binding StageText, Converter={StaticResource StatusToColorConverter}}"
                             BorderThickness="3,0,0,0"
-                            Padding="6,6">
-                        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" RowDefinitions="Auto,Auto">
-                            <!-- 行1: 勾选 + 序号 + 标题 + 时长 + 阶段 + 速度 -->
-                            <CheckBox IsChecked="{Binding IsSelected}"
-                                      Grid.Column="0"
-                                      VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Index, StringFormat='{}{0}.'}"
-                                       Grid.Column="1"
-                                       VerticalAlignment="Center"
-                                       Foreground="{DynamicResource AppSecondaryTextBrush}"
-                                       Margin="2,0"
-                                       MinWidth="24"/>
-                            <TextBlock Grid.Column="2"
-                                       VerticalAlignment="Center"
+                            Padding="7,5">
+                        <Grid RowDefinitions="Auto,Auto"
+                              ColumnDefinitions="Auto,Auto,*,Auto"
+                              RowSpacing="4"
+                              ColumnSpacing="6">
+                            <CheckBox Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                                      IsChecked="{Binding IsSelected}"
+                                      VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="0" Grid.Column="1"
+                                       Text="{Binding Index, StringFormat='{}{0}.'}"
+                                       Classes="bili-doc-caption"
+                                       MinWidth="24"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="0" Grid.Column="2"
                                        TextTrimming="CharacterEllipsis"
-                                       Margin="4,0">
+                                       ToolTip.Tip="{Binding Title}"
+                                       VerticalAlignment="Center">
                                 <TextBlock.Text>
-                                    <MultiBinding>
-                                        <MultiBinding.Converter>
-                                            <conv:RenameDisplayConverter/>
-                                        </MultiBinding.Converter>
-                                        <Binding Path="OriginalTitle"/>
-                                        <Binding Path="Title"/>
+                                    <MultiBinding Converter="{StaticResource RenameDisplayConverter}">
+                                        <Binding Path="OriginalTitle" />
+                                        <Binding Path="Title" />
                                     </MultiBinding>
                                 </TextBlock.Text>
                             </TextBlock>
-                            <TextBlock Grid.Column="3"
-                                       VerticalAlignment="Center"
-                                       Foreground="{DynamicResource AppSecondaryTextBrush}"
-                                       Margin="4,0">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="{}{0}">
-                                        <Binding Path="Duration"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
-                            <TextBlock Text="{Binding StageText}"
-                                       Grid.Column="4"
-                                       VerticalAlignment="Center"
-                                       Foreground="{DynamicResource AppInfoBrush}"
-                                       Margin="4,0"
-                                       MinWidth="50"/>
-                            <TextBlock Text="{Binding SpeedText}"
-                                       Grid.Column="5"
-                                       VerticalAlignment="Center"
-                                       Foreground="{DynamicResource AppWarningBrush}"
-                                       Margin="4,0"
-                                       MinWidth="60"/>
-
-                            <!-- 行2: 三分段进度条 -->
-                            <StackPanel Grid.Column="0" Grid.ColumnSpan="6" Grid.Row="1"
-                                        Orientation="Horizontal" Spacing="8" Margin="0,3,0,0">
-                                <StackPanel Orientation="Horizontal" Spacing="3">
-                                    <TextBlock Text="视频" FontSize="10"
-                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <ProgressBar Value="{Binding VideoProgress}"
-                                                 Minimum="0" Maximum="100"
-                                                 Width="100" Height="4"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Spacing="3">
-                                    <TextBlock Text="音频" FontSize="10"
-                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <ProgressBar Value="{Binding AudioProgress}"
-                                                 Minimum="0" Maximum="100"
-                                                 Width="100" Height="4"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Spacing="3">
-                                    <TextBlock Text="合成" FontSize="10"
-                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <ProgressBar Value="{Binding MergeProgress}"
-                                                 Minimum="0" Maximum="100"
-                                                 Width="80" Height="4"/>
-                                </StackPanel>
+                            <StackPanel Grid.Row="0" Grid.Column="3"
+                                        Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding StageText}"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppInfoBrush}"
+                                           MinWidth="48" />
+                                <TextBlock Text="{Binding SpeedText}"
+                                           Classes="bili-doc-caption"
+                                           MinWidth="58" />
                             </StackPanel>
+
+                            <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                                  ColumnDefinitions="Auto,*,Auto"
+                                  ColumnSpacing="9">
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding Duration, StringFormat='时长 {0}'}"
+                                           Classes="bili-doc-caption"
+                                           VerticalAlignment="Center" />
+                                <Grid Grid.Column="1"
+                                      ColumnDefinitions="*,*,*"
+                                      ColumnSpacing="10">
+                                    <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="4">
+                                        <TextBlock Text="视频" Classes="bili-doc-caption" VerticalAlignment="Center" />
+                                        <ProgressBar Grid.Column="1"
+                                                     Classes="bili-doc-progress"
+                                                     Value="{Binding VideoProgress}"
+                                                     Minimum="0" Maximum="100"
+                                                     VerticalAlignment="Center" />
+                                    </Grid>
+                                    <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="4">
+                                        <TextBlock Text="音频" Classes="bili-doc-caption" VerticalAlignment="Center" />
+                                        <ProgressBar Grid.Column="1"
+                                                     Classes="bili-doc-progress"
+                                                     Value="{Binding AudioProgress}"
+                                                     Minimum="0" Maximum="100"
+                                                     VerticalAlignment="Center" />
+                                    </Grid>
+                                    <Grid Grid.Column="2" ColumnDefinitions="Auto,*" ColumnSpacing="4">
+                                        <TextBlock Text="合成" Classes="bili-doc-caption" VerticalAlignment="Center" />
+                                        <ProgressBar Grid.Column="1"
+                                                     Classes="bili-doc-progress"
+                                                     Value="{Binding MergeProgress}"
+                                                     Minimum="0" Maximum="100"
+                                                     VerticalAlignment="Center" />
+                                    </Grid>
+                                </Grid>
+                            </Grid>
                         </Grid>
                     </Border>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <!-- 提交下载 + 打开目录 -->
-        <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Command="{Binding SubmitDownloadCommand}"
-                    Content="提交下载"
-                    Width="120"
-                    Padding="8,6"/>
-            <Button Command="{Binding OpenOutputDirCommand}"
-                    Content="打开输出目录"
-                    Padding="8,6"/>
-            <TextBlock Text="{Binding TotalProgress, StringFormat='总进度: {0:F1}%'}"
-                       VerticalAlignment="Center"
-                       Foreground="{DynamicResource AppSecondaryTextBrush}"/>
-        </StackPanel>
+        <Border Classes="bili-doc-flat-section">
+            <Grid RowDefinitions="Auto,Auto"
+                  ColumnDefinitions="Auto,Auto,*,Auto"
+                  ColumnSpacing="8"
+                  RowSpacing="6">
+                <Button Grid.Row="0" Grid.Column="0"
+                        Command="{Binding SubmitDownloadCommand}"
+                        Classes="bili-doc-button accent">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Width="15" Height="15"
+                                  Data="{StaticResource BiliDownloadGeometry}" />
+                        <TextBlock Text="提交下载" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Grid.Row="0" Grid.Column="1"
+                        Command="{Binding OpenOutputDirCommand}"
+                        Classes="bili-doc-button">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Classes="bili-doc-icon"
+                                  Data="{StaticResource BiliFolderGeometry}" />
+                        <TextBlock Text="打开输出目录" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <TextBlock Grid.Row="0" Grid.Column="3"
+                           Text="{Binding TotalProgress, StringFormat='总进度 {0:F1}%'}"
+                           Classes="bili-doc-caption"
+                           VerticalAlignment="Center" />
+                <ProgressBar Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4"
+                             Classes="bili-doc-progress"
+                             Value="{Binding TotalProgress}"
+                             Minimum="0" Maximum="100" />
+            </Grid>
+        </Border>
     </StackPanel>
 </UserControl>

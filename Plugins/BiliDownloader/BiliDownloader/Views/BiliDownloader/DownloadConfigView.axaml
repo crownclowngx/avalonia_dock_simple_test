@@ -3,60 +3,77 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="200"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="220"
              x:Class="BiliDownloader.Views.BiliDownloader.DownloadConfigView"
              x:DataType="vm:DownloadConfigViewModel">
     <StackPanel Spacing="6">
-        <!-- 清晰度选择 -->
-        <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="清晰度：" VerticalAlignment="Center"/>
-            <ComboBox ItemsSource="{Binding QualityOptions}"
-                      SelectedItem="{Binding SelectedQuality}"
-                      Width="200"/>
-        </StackPanel>
+        <Border Classes="bili-doc-flat-section">
+            <Grid ColumnDefinitions="Auto,220,Auto,220,*" ColumnSpacing="8">
+                <TextBlock Grid.Column="0" Text="视频质量" Classes="bili-doc-caption" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1"
+                          Classes="bili-doc-input"
+                          ItemsSource="{Binding QualityOptions}"
+                          SelectedItem="{Binding SelectedQuality}" />
+                <TextBlock Grid.Column="2" Text="音频质量" Classes="bili-doc-caption" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="3"
+                          Classes="bili-doc-input"
+                          ItemsSource="{Binding AudioQualityOptions}"
+                          SelectedItem="{Binding SelectedAudioQuality}" />
+            </Grid>
+        </Border>
 
-        <!-- 音频清晰度选择 -->
-        <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="音频：" VerticalAlignment="Center"/>
-            <ComboBox ItemsSource="{Binding AudioQualityOptions}"
-                      SelectedItem="{Binding SelectedAudioQuality}"
-                      Width="200"/>
-        </StackPanel>
+        <Expander Header="高级设置"
+                  IsExpanded="False"
+                  Classes="bili-doc-expander">
+            <StackPanel Spacing="8" Margin="0,7,0,0">
+                <WrapPanel>
+                    <CheckBox Content="使用分组文件夹"
+                              Margin="0,0,14,4"
+                              IsChecked="{Binding UseGroupFolder}"
+                              IsVisible="{Binding IsMultiVideo}" />
+                    <CheckBox Content="标题前添加视频序号"
+                              Margin="0,0,14,4"
+                              IsChecked="{Binding AddIndexToTitle}"
+                              IsVisible="{Binding IsMultiVideo}" />
+                </WrapPanel>
 
-        <!-- 高级设置（默认折叠） -->
-        <Expander Header="高级设置" IsExpanded="False" Margin="0,2,0,0">
-            <StackPanel Spacing="6" Margin="12,6,0,6">
-                <!-- 使用分组文件夹（仅多视频时可见） -->
-                <CheckBox Content="使用分组文件夹（以视频组名称命名）"
-                          IsChecked="{Binding UseGroupFolder}"
-                          IsVisible="{Binding IsMultiVideo}"/>
+                <Border Classes="bili-doc-flat-section">
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="附加资源" Classes="bili-doc-section-title" />
+                        <WrapPanel>
+                            <CheckBox Content="弹幕 XML"
+                                      Margin="0,0,14,4"
+                                      IsChecked="{Binding DownloadDanmaku}"
+                                      ToolTip.Tip="按 360 秒分段获取后合并" />
+                            <CheckBox Content="全部字幕 SRT"
+                                      Margin="0,0,14,4"
+                                      IsChecked="{Binding DownloadSubtitle}" />
+                            <CheckBox Content="封面图"
+                                      Margin="0,0,14,4"
+                                      IsChecked="{Binding DownloadCover}" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
 
-                <!-- 写入序号到标题（仅多视频时可见） -->
-                <CheckBox Content="写入序号到标题（提交时在标题前添加 序号.）"
-                          IsChecked="{Binding AddIndexToTitle}"
-                          IsVisible="{Binding IsMultiVideo}"/>
-
-                <!-- 附加资源下载选项 -->
-                <StackPanel Spacing="4" Margin="0,4,0,0">
-                    <TextBlock Text="附加资源下载：" FontWeight="SemiBold"/>
-                    <CheckBox Content="下载弹幕（XML 格式，按 360 秒分段获取后合并）"
-                              IsChecked="{Binding DownloadDanmaku}"/>
-                    <CheckBox Content="下载字幕（SRT 格式，自动获取所有可用字幕）"
-                              IsChecked="{Binding DownloadSubtitle}"/>
-                    <CheckBox Content="下载封面图"
-                              IsChecked="{Binding DownloadCover}"/>
-                </StackPanel>
-
-                <!-- 输出目录 -->
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="本次下载目录：" VerticalAlignment="Center"/>
-                    <TextBox Text="{Binding OutputDirectory}"
-                             Width="400"
-                             IsReadOnly="True"/>
-                    <Button Content="选择文件夹"
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="7">
+                    <PathIcon Grid.Column="0"
+                              Classes="bili-doc-icon"
+                              Data="{StaticResource BiliFolderGeometry}"
+                              VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1"
+                               Text="输出目录"
+                               Classes="bili-doc-caption"
+                               VerticalAlignment="Center" />
+                    <TextBox Grid.Column="2"
+                             Classes="bili-doc-input"
+                             Text="{Binding OutputDirectory}"
+                             IsReadOnly="True"
+                             ToolTip.Tip="{Binding OutputDirectory}" />
+                    <Button Grid.Column="3"
+                            Content="选择文件夹"
                             Command="{Binding SelectFolderCommand}"
-                            Padding="8,4"/>
-                </StackPanel>
+                            Classes="bili-doc-button" />
+                </Grid>
             </StackPanel>
         </Expander>
     </StackPanel>
