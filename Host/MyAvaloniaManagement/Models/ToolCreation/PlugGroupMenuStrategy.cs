@@ -1,37 +1,45 @@
 ﻿using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.ViewModels.Tools;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagementCommon.ToolCreation;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace MyAvaloniaManagement.Models.ToolCreation;
 
 /// <summary>
-/// PlugGroupMenu工具创建策略
+/// 创建并描述插件分组菜单工具。
 /// </summary>
-public class PlugGroupMenuStrategy : IToolCreationStrategy
+/// <param name="serviceProvider">用于解析带有工厂和菜单服务依赖的工具 ViewModel。</param>
+/// <remarks>
+/// 创建结果和元数据共同使用 <see cref="DockNameConstant.PlugGroupMenu"/>，
+/// 保证 DockableLocator、布局恢复和工具字典引用同一个稳定 ID。
+/// </remarks>
+public class PlugGroupMenuStrategy(IServiceProvider serviceProvider)
+    : IToolCreationStrategy
 {
     /// <summary>
-    /// 创建PlugGroupMenuViewModel实例
+    /// 从依赖注入容器创建并配置插件菜单工具实例。
     /// </summary>
     /// <returns>创建的Tool实例</returns>
     public Tool CreateTool()
     {
-        return new PlugGroupMenuViewModel
-        {
-            Id = "plugGroupMenu",
-            Title = "插件",
-            CanClose = false,
-        };
+        var tool = serviceProvider.GetRequiredService<PlugGroupMenuViewModel>();
+        tool.Id = DockNameConstant.PlugGroupMenu;
+        tool.Title = "插件";
+        tool.CanClose = false;
+        return tool;
     }
 
     /// <summary>
-    /// 获取PlugGroupMenu的元数据
+    /// 获取插件菜单工具的稳定类型、显示信息和默认停靠位置。
     /// </summary>
     /// <returns>Tool元数据</returns>
     public ToolMetadata GetMetadata()
     {
         return new ToolMetadata
         {
-            ToolTypeId = "plugGroupMenu",
+            ToolTypeId = DockNameConstant.PlugGroupMenu,
             DisplayName = "插件分组菜单",
             Description = "显示按分类组织的插件文档菜单",
             IconPath = "", // 可根据实际情况设置图标路径

@@ -16,16 +16,35 @@ using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.ViewModels.Tools;
 
+/// <summary>
+/// 展示宿主已注册工具，并协调工具的隐藏、恢复和实际可见状态。
+/// </summary>
+/// <remarks>
+/// 工具可见性以 Dock 树为事实来源，消息只承担变化通知。
+/// 这样无论变化来自本工具、关闭按钮还是外部布局恢复，界面状态都能重新同步。
+/// </remarks>
 public partial class ToolManagementViewModel : Tool
 {
-    // 工具管理项集合
+    private readonly ManagementFactory _factory;
+    private readonly IMessengerService _messengerService;
+
+    /// <summary>
+    /// 获取或设置可由用户管理的工具项集合。
+    /// </summary>
     [ObservableProperty] private ObservableCollection<ToolManagementItem> _toolItems = new();
 
     // 当前工具ID，用于排除自身
     private string _currentToolId;
 
-    public ToolManagementViewModel()
+    /// <summary>
+    /// 使用显式工厂和消息服务创建工具管理 ViewModel。
+    /// </summary>
+    internal ToolManagementViewModel(
+        ManagementFactory factory,
+        IMessengerService messengerService)
     {
+        _factory = factory;
+        _messengerService = messengerService;
         Id = DockNameConstant.ToolManagement;
         Title = "工具管理";
         _currentToolId = Id;
@@ -35,14 +54,26 @@ public partial class ToolManagementViewModel : Tool
     }
 
     /// <summary>
+    /// 使用应用全局服务创建实例，供设计器及兼容路径使用。
+    /// </summary>
+    public ToolManagementViewModel() : this(
+        ServiceProvider.GetRequiredService<ManagementFactory>(),
+        ServiceProvider.GetRequiredService<IMessengerService>())
+    {
+    }
+
+    /// <summary>
     /// 注册消息监听：当工具被外部隐藏/恢复时同步状态
     /// </summary>
+    /// <remarks>
+    /// 注册失败只可能出现在设计器或服务尚未初始化的兼容路径，
+    /// 此时仍可在布局建立后通过 <see cref="SyncToolsVisibility"/> 主动同步。
+    /// </remarks>
     private void RegisterMessages()
     {
         try
         {
-            var messenger = ServiceProvider.GetService<IMessengerService>();
-            messenger?.Register<ToolManagementViewModel, ToolVisibilityChangedMessage>(
+            _messengerService.Register<ToolManagementViewModel, ToolVisibilityChangedMessage>(
                 this,
                 (recipient, _) =>
                 {
@@ -56,21 +87,24 @@ public partial class ToolManagementViewModel : Tool
     }
 
     /// <summary>
-    /// 加载所有已注册的工具
+    /// 加载所有已注册且不是工具管理器自身的工具。
     /// </summary>
+    /// <remarks>
+    /// 正常情况下使用工厂公开的数据快照；根布局尚未建立时通过反射读取注册结果，
+    /// 是为了让工具管理列表能在 Dock 初始化前完成构造，后续同步仍以真实 Dock 树为准。
+    /// </remarks>
     private void LoadTools()
     {
-        var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
-        var toolManagementData = factory.GetToolManagementData();
+        var toolManagementData = _factory.GetToolManagementData();
 
         // 清除现有项
         ToolItems.Clear();
 
         // 即使 RootDock 尚未初始化，也可以通过反射获取元数据和已创建工具来填充列表
         var toolMetadata = toolManagementData?.ToolMetadata 
-            ?? GetFieldViaReflection<Dictionary<string, ToolMetadata>>(factory, "_toolMetadata");
+            ?? GetFieldViaReflection<Dictionary<string, ToolMetadata>>(_factory, "_toolMetadata");
         var createdTools = toolManagementData?.CreatedTools 
-            ?? GetFieldViaReflection<Dictionary<string, Tool>>(factory, "_createdTools");
+            ?? GetFieldViaReflection<Dictionary<string, Tool>>(_factory, "_createdTools");
 
         if (toolMetadata == null || createdTools == null)
         {
@@ -101,7 +135,7 @@ public partial class ToolManagementViewModel : Tool
     }
 
     /// <summary>
-    /// 通过反射获取私有字段
+    /// 在 Dock 根尚未初始化时读取工厂中的已注册工具数据。
     /// </summary>
     private static T? GetFieldViaReflection<T>(object? obj, string fieldName) where T : class
     {
@@ -112,7 +146,7 @@ public partial class ToolManagementViewModel : Tool
     }
 
     /// <summary>
-    /// 检查工具是否在 HiddenDockables 中，或不在任何 ToolDock 的 VisibleDockables 中
+    /// 判断工具是否已进入隐藏集合，或已经脱离所有可见 ToolDock。
     /// </summary>
     private static bool IsToolHidden(IRootDock rootDock, IDockable tool)
     {
@@ -124,16 +158,19 @@ public partial class ToolManagementViewModel : Tool
     }
 
     /// <summary>
-    /// 切换工具可见性命令
+    /// 根据当前 Dock 树状态隐藏或恢复指定工具。
     /// </summary>
+    /// <remarks>
+    /// 不可关闭工具受到保护；恢复失败时不提前修改界面状态。
+    /// 成功变化后发布布局刷新消息，使其他视图观察到同一状态。
+    /// </remarks>
     [RelayCommand]
     public void ToggleToolVisibility(ToolManagementItem item)
     {
         if (item == null || !item.CanClose)
             return;
 
-        var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
-        var toolManagementData = factory.GetToolManagementData();
+        var toolManagementData = _factory.GetToolManagementData();
         if (toolManagementData == null)
         {
             return;
@@ -151,13 +188,13 @@ public partial class ToolManagementViewModel : Tool
         {
             var nextActive = currentDock.VisibleDockables?
                 .FirstOrDefault(candidate => !ReferenceEquals(candidate, tool));
-            factory.HideDockable(tool);
+            _factory.HideDockable(tool);
             currentDock.ActiveDockable = nextActive;
             item.IsVisible = false;
         }
         else
         {
-            if (!factory.RestoreTool(toolManagementData.RootDock, tool))
+            if (!_factory.RestoreTool(toolManagementData.RootDock, tool))
             {
                 return;
             }
@@ -166,11 +203,11 @@ public partial class ToolManagementViewModel : Tool
         }
 
         // 通知布局刷新
-        ServiceProvider.GetRequiredService<IMessengerService>()?.Send(new UpdateLayoutMessage("UpdateLayout"));
+        _messengerService.Send(new UpdateLayoutMessage("UpdateLayout"));
     }
 
     /// <summary>
-    /// 递归查找包含特定工具的 ToolDock
+    /// 递归查找直接包含指定工具的 ToolDock。
     /// </summary>
     private static ToolDock? FindToolDockContainingTool(IDock dock, IDockable tool)
     {
@@ -197,13 +234,11 @@ public partial class ToolManagementViewModel : Tool
     }
 
     /// <summary>
-    /// 同步工具的实际可见状态
-    /// 当初始化完成后调用此方法确保状态一致
+    /// 以当前 Dock 树为准同步所有工具项的实际可见状态。
     /// </summary>
     public void SyncToolsVisibility()
     {
-        var factory = ServiceProvider.GetRequiredService<ManagementFactory>();
-        var toolManagementData = factory.GetToolManagementData();
+        var toolManagementData = _factory.GetToolManagementData();
         if (toolManagementData == null) return;
 
         foreach (var item in ToolItems)

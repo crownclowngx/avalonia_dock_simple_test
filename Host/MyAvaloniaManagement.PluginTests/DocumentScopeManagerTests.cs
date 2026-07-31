@@ -88,7 +88,11 @@ public sealed class DocumentScopeManagerTests
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
         var catalog = PluginModuleCatalog.Discover([]);
-        var factory = new ManagementFactory(provider, catalog, manager);
+        var factory = new ManagementFactory(
+            provider,
+            catalog,
+            manager,
+            new MyAvaloniaManagementCommon.Message.MessengerService());
         var document = manager.CreateDocument<TrackedDocument>();
 
         factory.OnDockableClosed(document);

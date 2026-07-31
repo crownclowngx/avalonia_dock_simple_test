@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
-using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
@@ -13,6 +11,7 @@ using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -22,40 +21,62 @@ using Newtonsoft.Json;
 
 namespace MyAvaloniaManagement.ViewModels;
 
+/// <summary>
+/// 协调主窗口布局、插件文档创建、文件打开保存以及宿主消息。
+/// </summary>
+/// <remarks>
+/// 本类只负责用例编排：Dock 行为交给 <see cref="ManagementFactory"/>，
+/// 布局持久化交给 <see cref="DockLayoutLifecycle"/>，文件系统交给
+/// <see cref="IHostStorageService"/>。拆开基础设施依赖后，核心流程无需创建真实窗口即可测试。
+/// </remarks>
 public partial class MainWindowViewModel : ObservableObject, IDropTarget
 {
     private readonly ManagementFactory _factory;
     private readonly PluginMenuService _pluginMenuService;
     private readonly IMessengerService _messengerService;
     private readonly DockLayoutLifecycle _layoutLifecycle;
+    private readonly IHostStorageService _storageService;
     private IRootDock? _layout;
 
+    /// <summary>
+    /// 获取或设置当前主窗口使用的 Dock 根布局。
+    /// </summary>
     public IRootDock? Layout
     {
         get => _layout;
         set => SetProperty(ref _layout, value);
     }
 
-    // 按分类分组的文档元数据，用于绑定菜单
+    /// <summary>
+    /// 获取按菜单分类组织的可创建文档元数据。
+    /// </summary>
     public Dictionary<string, List<DocumentMetadata>> DocumentMetadataByCategory =>
         _pluginMenuService?.GetDocumentMetadataByCategory() ?? [];
 
     /// <summary>
-    /// 构造函数 - 使用依赖注入
+    /// 使用显式依赖创建主窗口 ViewModel。
     /// </summary>
     /// <param name="factory">管理工厂</param>
     /// <param name="pluginMenuService">插件菜单服务</param>
     /// <param name="messengerService">消息服务</param>
+    /// <param name="layoutLifecycle">Dock 布局准备、恢复和保存生命周期。</param>
+    /// <param name="storageService">文件选择与文本读写服务。</param>
+    /// <remarks>
+    /// 该构造函数供依赖注入和测试使用。所有外部副作用均由参数提供，
+    /// 因此可以验证打开、保存和消息流程，而不需要依赖静态全局状态。
+    /// </remarks>
     internal MainWindowViewModel(
         ManagementFactory factory,
         PluginMenuService pluginMenuService,
         IMessengerService messengerService,
-        DockLayoutLifecycle layoutLifecycle)
+        DockLayoutLifecycle layoutLifecycle,
+        IHostStorageService storageService)
     {
         _factory = factory ?? throw new ArgumentNullException(nameof(factory));
         _pluginMenuService = pluginMenuService ?? throw new ArgumentNullException(nameof(pluginMenuService));
         _messengerService = messengerService ?? throw new ArgumentNullException(nameof(messengerService));
         _layoutLifecycle = layoutLifecycle ?? throw new ArgumentNullException(nameof(layoutLifecycle));
+        _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
         
         Layout = _layoutLifecycle.Prepare(_factory);
         
@@ -64,16 +85,26 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     }
 
     /// <summary>
-    /// 无参构造函数 - 用于向后兼容和设计时支持
+    /// 使用应用全局服务创建实例。
     /// </summary>
+    /// <remarks>
+    /// 保留无参构造是为了兼容 XAML 设计器和历史调用路径；正式运行时仍由容器解析依赖。
+    /// </remarks>
     public MainWindowViewModel() : this(
         ServiceProvider.GetRequiredService<ManagementFactory>(),
         ServiceProvider.GetRequiredService<PluginMenuService>(),
         ServiceProvider.GetRequiredService<IMessengerService>(),
-        ServiceProvider.GetRequiredService<DockLayoutLifecycle>())
+        ServiceProvider.GetRequiredService<DockLayoutLifecycle>(),
+        ServiceProvider.GetRequiredService<IHostStorageService>())
     {
     }
 
+    /// <summary>
+    /// 在主窗口真正打开后应用准备阶段读取到的待恢复布局。
+    /// </summary>
+    /// <remarks>
+    /// 把恢复延后到窗口 Opened 阶段，可以确保控件、Dock 宿主和资源已经完成初始化。
+    /// </remarks>
     internal void ApplyPendingLayout()
     {
         if (Layout is not { } current)
@@ -88,6 +119,12 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         }
     }
 
+    /// <summary>
+    /// 保存当前可用的 Dock 根布局。
+    /// </summary>
+    /// <remarks>
+    /// 此方法由窗口 Closing 生命周期调用，使真实退出和自动化冒烟走同一条生产路径。
+    /// </remarks>
     internal void SaveLayout()
     {
         if (Layout is { } root)
@@ -97,8 +134,11 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     }
     
     /// <summary>
-    /// 注册消息处理器
+    /// 注册打开文件和布局刷新消息处理器。
     /// </summary>
+    /// <remarks>
+    /// 消息服务通过构造函数注入，避免 ViewModel 在测试中依赖全局 Messenger。
+    /// </remarks>
     private void RegisterMessageHandlers()
     {
         _messengerService.Register<MainWindowViewModel, OpenFileMessage>(
@@ -122,9 +162,9 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     }
 
     /// <summary>
-    /// 创建文档
+    /// 根据插件文档类型创建文档并加入主文档区域。
     /// </summary>
-    /// <param name="documentType"></param>
+    /// <param name="documentType">插件注册的文档类型 ID。</param>
     [RelayCommand]
     public void CreateDocument(String documentType)
     {
@@ -137,79 +177,78 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     }
 
     /// <summary>
-    /// 打开文档
+    /// 显示多文件选择器并依次打开用户选择的文档。
     /// </summary>
     [RelayCommand]
     public async Task OpenDocument()
     {
-        // 使用正确的方式获取主窗口
-        var mainWindow = (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)
-            ?.MainWindow;
-        if (mainWindow == null) return;
-
-        var options = new FilePickerOpenOptions
-        {
-            Title = "打开文档",
-            AllowMultiple = true,
-            FileTypeFilter = [FilePickerFileTypes.TextPlain]
-        };
-
-        var files = await mainWindow.StorageProvider.OpenFilePickerAsync(options);
-        
-        await OpenAllFiles(files);
+        var paths = await _storageService.PickOpenFilesAsync();
+        await OpenAllFiles(paths);
     }
 
     /// <summary>
-    /// 通过文件路径字符串打开文档
+    /// 通过消息或其他宿主入口打开指定路径的文档。
     /// </summary>
     /// <param name="filePath">文件路径字符串</param>
     public async Task OpenDocumentByPath(string filePath)
     {
-        // 获取主窗口
-        var mainWindow = (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)
-            ?.MainWindow;
-        if (mainWindow == null) return;
-        // 检查文件是否存在
-        if (!File.Exists(filePath))
+        if (string.IsNullOrWhiteSpace(filePath) ||
+            !_storageService.FileExists(filePath))
         {
             Console.WriteLine($"文件不存在: {filePath}");
             return;
         }
-        var file = await mainWindow.StorageProvider.TryGetFileFromPathAsync(filePath);
-        if (file == null) return;
-        IReadOnlyList<IStorageFile> fileList = [file];
-        await OpenAllFiles(fileList);
+
+        await OpenAllFiles([filePath]);
     }
-    private async Task OpenAllFiles(IReadOnlyList<IStorageFile> files)
+
+    /// <summary>
+    /// 逐个处理一批文档路径。
+    /// </summary>
+    /// <remarks>
+    /// 每个文件拥有独立异常边界。重复文件只激活已有标签，损坏文件或未知类型
+    /// 只跳过当前项，避免一个失败项提前终止整个批次。
+    /// </remarks>
+    private async Task OpenAllFiles(IReadOnlyList<string> paths)
     {
-        if (files.Count > 0)
+        foreach (var path in paths)
         {
-            foreach (var storageFile in files)
+            try
             {
-                try
+                if (string.IsNullOrWhiteSpace(path) ||
+                    !_storageService.FileExists(path))
                 {
-                    if (LoadAndActiveIfNowTabHasThisDocument(storageFile))
-                    {
-                        return;
-                    }
-                    await LoadAndCreateNewDocument(storageFile);
+                    continue;
                 }
-                catch (Exception ex)
+
+                var normalizedPath = NormalizePath(path);
+                if (LoadAndActiveIfNowTabHasThisDocument(normalizedPath))
                 {
-                    // 实际应用中应使用更友好的错误处理
-                    Console.WriteLine($"打开文档错误: {ex.Message}");
+                    continue;
                 }
+
+                await LoadAndCreateNewDocument(normalizedPath);
+            }
+            catch (Exception ex)
+            {
+                // 单个文件失败不应阻止本次批量选择中的其他文件。
+                Console.WriteLine($"打开文档错误: {ex.Message}");
             }
         }
     }
 
-    private bool LoadAndActiveIfNowTabHasThisDocument(IStorageFile file)
+    /// <summary>
+    /// 如果规范化路径对应的文档已经打开，则激活现有标签。
+    /// </summary>
+    /// <returns>找到并激活已有文档时返回 <see langword="true"/>。</returns>
+    private bool LoadAndActiveIfNowTabHasThisDocument(string filePath)
     {
         if (Layout is IDock rootDock)
         {
             foreach (var dockable in FindAllDocuments(rootDock))
             {
-                if (dockable is ISavableDocument doc && doc.FilePath == file.Path.LocalPath)
+                if (dockable is ISavableDocument doc &&
+                    PathsEqual(doc.FilePath, filePath))
                 {
                     // 找到已打开的文档，高亮对应的选项卡
                     if (Layout is IRootDock root)
@@ -231,12 +270,16 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         return false;
     }
 
-    private async Task LoadAndCreateNewDocument(IStorageFile file)
+    /// <summary>
+    /// 单次读取文件，反序列化元数据，并由注册策略创建对应文档。
+    /// </summary>
+    /// <remarks>
+    /// 文件内容只读取和反序列化一次，随后同一份元数据直接交给文档加载，
+    /// 防止两次读取之间文件变化，也消除无用途的中间内存流。
+    /// </remarks>
+    private async Task LoadAndCreateNewDocument(string filePath)
     {
-        // 读取文件内容
-        using var stream = await file.OpenReadAsync();
-        using var reader = new StreamReader(stream);
-        var content = await reader.ReadToEndAsync();
+        var content = await _storageService.ReadAllTextAsync(filePath);
 
         // 反序列化文档数据
         var documentData = JsonConvert.DeserializeObject<DocumentSaveData>(content);
@@ -248,17 +291,8 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
 
             if (document is ISavableDocument savableDocument)
             {
-                savableDocument.FilePath = file.Path.LocalPath;
-                // 传递文件内容给文档加载
-                using (var memoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)))
-                {
-                    var fileContent = File.ReadAllText(file.Path.LocalPath);
-                    var saveData = JsonConvert.DeserializeObject<DocumentSaveData>(fileContent);
-                    if (saveData != null)
-                    {
-                        savableDocument.LoadDocumentByMetaData(saveData);
-                    }
-                }
+                savableDocument.FilePath = filePath;
+                savableDocument.LoadDocumentByMetaData(documentData);
 
                 var filesDock = _factory?.GetDockable<IDocumentDock>("Files") as DocumentDock;
                 if (document != null)
@@ -270,48 +304,34 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     }
 
     /// <summary>
-    /// 保存当前激活的文档
+    /// 保存当前激活的可保存文档。
     /// </summary>
+    /// <remarks>
+    /// 新文档根据其 DocumentMetadata 生成保存类型和扩展名；已有文档直接覆盖原路径。
+    /// 保存成功后统一同步文件路径、标题和序列化元数据，保证 UI 与磁盘状态一致。
+    /// </remarks>
     [RelayCommand]
     public async Task SaveDocument()
     {
         var activeDocument = GetActiveDocument();
         if (activeDocument is ISavableDocument savableDocument)
         {
-            // 使用正确的方式获取主窗口
-            var mainWindow =
-                (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)
-                ?.MainWindow;
-            if (mainWindow == null) return;
-            IStorageFile? file;
-            // 如果已有文件路径，则直接保存；否则显示保存对话框
+            string? filePath;
             if (string.IsNullOrEmpty(savableDocument.FilePath))
             {
-                // 获取文档类型的元数据，用于设置默认文件扩展名
-                var allMetadata = _factory?.GetAllDocumentMetadata();
-                var metadata = allMetadata?.FirstOrDefault(m => m.DocumentTypeId == savableDocument.SaveDocumentTypeId);
-
-                var fileType = metadata != null
-                    ? new FilePickerFileType(metadata.DisplayName)
-                        { Patterns = [$"*.{metadata.DocumentTypeId.ToLower()}"] }
-                    : FilePickerFileTypes.TextPlain;
-
-                var options = new FilePickerSaveOptions
-                {
-                    Title = "保存文档",
-                    DefaultExtension = "txt",
-                    FileTypeChoices = [FilePickerFileTypes.TextPlain]
-                };
-
-                file = await mainWindow.StorageProvider.SaveFilePickerAsync(options);
+                var metadata = _factory.GetAllDocumentMetadata()
+                    .FirstOrDefault(m =>
+                        m.DocumentTypeId == savableDocument.SaveDocumentTypeId);
+                filePath = await _storageService.PickSaveFileAsync(metadata);
             }
             else
             {
-                file = await mainWindow.StorageProvider.TryGetFileFromPathAsync(savableDocument.FilePath);
+                filePath = savableDocument.FilePath;
             }
-            if (file != null)
+
+            if (!string.IsNullOrWhiteSpace(filePath))
             {
-                var filePath = file.Path.LocalPath;
+                filePath = NormalizePath(filePath);
                 savableDocument.FilePath = filePath;
                 // 从文件路径中提取文件名并设置为文档标题
                 var fileName = Path.GetFileNameWithoutExtension(filePath);
@@ -325,7 +345,9 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
                 {
                     savableDocumentDocument.FilePath = filePath;
                 }
-                File.WriteAllText(filePath, JsonConvert.SerializeObject(saveData, Formatting.Indented));
+                await _storageService.WriteAllTextAsync(
+                    filePath,
+                    JsonConvert.SerializeObject(saveData, Formatting.Indented));
             }
         }
     }
@@ -340,7 +362,9 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         return filesDock?.ActiveDockable;
     }
 
-    // 辅助方法：查找所有文档
+    /// <summary>
+    /// 递归查找 Dock 树中的所有文档。
+    /// </summary>
     private static List<IDockable> FindAllDocuments(IDock dock)
     {
         var results = new List<IDockable>();
@@ -363,7 +387,9 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         return results;
     }
     
-    // 辅助方法：查找包含特定文档的DocumentDock
+    /// <summary>
+    /// 递归查找直接包含指定文档的文档 Dock。
+    /// </summary>
     private static IDocumentDock? FindDocumentDock(IDock dock, IDockable document)
     {
         if (dock is IDocumentDock docDock && 
@@ -388,10 +414,48 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     
         return null;
     }
+
+    /// <summary>
+    /// 按 Windows 文件系统规则比较两个路径是否指向同一文件。
+    /// </summary>
+    /// <remarks>
+    /// 先转为绝对规范路径，再进行不区分大小写比较，以覆盖相对路径、
+    /// 大小写差异和目录分隔形式差异；非法路径按不相等处理。
+    /// </remarks>
+    private static bool PathsEqual(string? left, string? right)
+    {
+        if (string.IsNullOrWhiteSpace(left) ||
+            string.IsNullOrWhiteSpace(right))
+        {
+            return false;
+        }
+
+        try
+        {
+            return string.Equals(
+                NormalizePath(left),
+                NormalizePath(right),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception) when (
+            left.IndexOfAny(Path.GetInvalidPathChars()) >= 0 ||
+            right.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 将文件路径规范化为绝对路径，作为文档去重和持久化的统一形式。
+    /// </summary>
+    private static string NormalizePath(string path) => Path.GetFullPath(path);
+
+    /// <inheritdoc />
     public void DragOver(object? sender, DragEventArgs e)
     {
     }
 
+    /// <inheritdoc />
     public void Drop(object? sender, DragEventArgs e)
     {
     }

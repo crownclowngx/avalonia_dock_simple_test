@@ -2,21 +2,28 @@
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.ToolCreation;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace MyAvaloniaManagement.Models.ToolCreation;
 
 /// <summary>
-/// 工具管理策略类，用于创建工具管理工具
+/// 创建并描述工具管理面板。
 /// </summary>
-public class ToolManagementStrategy : IToolCreationStrategy
+/// <param name="serviceProvider">用于解析带有工厂和消息服务依赖的工具 ViewModel。</param>
+/// <remarks>
+/// 工具管理器需要读取已经创建的其他工具，因此通过容器解析并由工厂最后创建。
+/// </remarks>
+public class ToolManagementStrategy(IServiceProvider serviceProvider)
+    : IToolCreationStrategy
 {
     /// <summary>
-    /// 创建工具管理工具实例
+    /// 从依赖注入容器创建工具管理实例。
     /// </summary>
     /// <returns>工具管理工具实例</returns>
     public Tool CreateTool()
     {
-        return new ToolManagementViewModel();
+        return serviceProvider.GetRequiredService<ToolManagementViewModel>();
     }
 
     /// <summary>

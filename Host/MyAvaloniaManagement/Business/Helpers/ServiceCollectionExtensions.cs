@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
 
@@ -16,6 +18,10 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">服务集合</param>
     /// <returns>服务集合</returns>
+    /// <remarks>
+    /// 状态协调器采用单例，保证全应用共享同一 Dock、消息和布局状态；
+    /// 存储服务也作为无状态单例注册，便于 ViewModel 通过接口替换测试实现。
+    /// </remarks>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         // 注册消息服务为单例
@@ -29,6 +35,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<DockLayoutStore>();
         services.AddSingleton<DockLayoutLifecycle>();
+        services.AddSingleton<IHostStorageService, AvaloniaHostStorageService>();
         
         // 注册ManagementFactory为单例
         services.AddSingleton<ManagementFactory>();
@@ -44,18 +51,33 @@ public static class ServiceCollectionExtensions
     }
     
     /// <summary>
-    /// 注册ViewModels
+    /// 注册主窗口及三个宿主工具 ViewModel。
     /// </summary>
     /// <param name="services">服务集合</param>
     /// <returns>服务集合</returns>
+    /// <remarks>
+    /// ViewModel 采用瞬态生命周期，避免设计器、Headless 测试和窗口实例之间共享可变绑定状态。
+    /// 显式工厂注册用于调用 internal 注入构造函数，同时保留公开无参构造的兼容能力。
+    /// </remarks>
     public static IServiceCollection AddViewModels(this IServiceCollection services)
     {
+        services.AddTransient(provider => new FileSystemTreeViewModel(
+            provider.GetRequiredService<IHostStorageService>(),
+            provider.GetRequiredService<IMessengerService>()));
+        services.AddTransient(provider => new PlugGroupMenuViewModel(
+            provider.GetRequiredService<ManagementFactory>(),
+            provider.GetRequiredService<PluginMenuService>()));
+        services.AddTransient(provider => new ToolManagementViewModel(
+            provider.GetRequiredService<ManagementFactory>(),
+            provider.GetRequiredService<IMessengerService>()));
+
         // 注册MainWindowViewModel为瞬态，每次请求都创建新实例
         services.AddTransient(provider => new MainWindowViewModel(
             provider.GetRequiredService<ManagementFactory>(),
             provider.GetRequiredService<PluginMenuService>(),
             provider.GetRequiredService<IMessengerService>(),
-            provider.GetRequiredService<DockLayoutLifecycle>()));
+            provider.GetRequiredService<DockLayoutLifecycle>(),
+            provider.GetRequiredService<IHostStorageService>()));
         
         return services;
     }

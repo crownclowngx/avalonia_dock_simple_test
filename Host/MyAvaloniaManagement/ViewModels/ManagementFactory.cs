@@ -8,6 +8,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
@@ -21,6 +22,13 @@ using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.ViewModels;
 
+/// <summary>
+/// 负责发现文档/工具策略、创建 Dock 布局并协调工具与文档生命周期。
+/// </summary>
+/// <remarks>
+/// 工厂是宿主 Dock 状态的唯一协调者。它持有稳定 ID 到策略、元数据和实例的映射，
+/// 使插件扩展、布局恢复及工具显隐都围绕同一份注册结果工作。
+/// </remarks>
 public class ManagementFactory : Factory
 {
     private readonly Dictionary<string, IDocumentCreationStrategy> _strategies;
@@ -40,6 +48,7 @@ public class ManagementFactory : Factory
     private readonly IServiceProvider _serviceProvider;
     private readonly PluginModuleCatalog _pluginModuleCatalog;
     private readonly DocumentScopeManager _documentScopeManager;
+    private readonly IMessengerService _messengerService;
     private bool _normalizingVerticalDock;
 
     internal IReadOnlyDictionary<string, Tool> CreatedTools => _createdTools;
@@ -50,14 +59,27 @@ public class ManagementFactory : Factory
                 ? metadata.Alignment
                 : null);
 
+    /// <summary>
+    /// 创建宿主管理工厂。
+    /// </summary>
+    /// <param name="serviceProvider">用于激活宿主策略和插件策略的服务提供器。</param>
+    /// <param name="pluginModuleCatalog">已发现且受宿主管理的插件模块目录。</param>
+    /// <param name="documentScopeManager">管理插件文档独立依赖注入作用域的服务。</param>
+    /// <param name="messengerService">发布工具显隐变化的消息服务。</param>
+    /// <remarks>
+    /// 消息服务直接注入，避免关闭工具时回到静态 ServiceProvider 查找依赖，
+    /// 从而使工厂的依赖关系可验证，也避免测试和多容器场景取到错误实例。
+    /// </remarks>
     public ManagementFactory(
         IServiceProvider serviceProvider,
         PluginModuleCatalog pluginModuleCatalog,
-        DocumentScopeManager documentScopeManager)
+        DocumentScopeManager documentScopeManager,
+        IMessengerService messengerService)
     {
         _serviceProvider = serviceProvider;
         _pluginModuleCatalog = pluginModuleCatalog;
         _documentScopeManager = documentScopeManager;
+        _messengerService = messengerService;
         _strategies = [];
         _toolStrategies = [];
         _documentMetadata = [];
@@ -95,6 +117,10 @@ public class ManagementFactory : Factory
     /// 自动注册所有程序集中实现了 IToolCreationStrategy 接口的非抽象类
     /// 包括主程序集和特定子目录中的程序集
     /// </summary>
+    /// <remarks>
+    /// 宿主策略允许构造函数注入，因此使用 ActivatorUtilities；
+    /// 插件策略仍走 PluginStrategyActivator，以保留插件隔离和原有兼容契约。
+    /// </remarks>
     private void RegisterAllToolStrategiesAutomatically()
     {
         // 获取当前程序集
@@ -116,20 +142,27 @@ public class ManagementFactory : Factory
         {
             try
             {
+                var isHostAssembly = assembly == currentAssembly;
                 var managed = _pluginModuleCatalog.IsManaged(assembly);
                 var strategyTypes = assembly.GetTypes()
                     .Where(t => typeof(IToolCreationStrategy).IsAssignableFrom(t) &&
                                 !t.IsAbstract && !t.IsInterface &&
-                                (managed || t.GetConstructor(Type.EmptyTypes) != null));
+                                (isHostAssembly ||
+                                 managed ||
+                                 t.GetConstructor(Type.EmptyTypes) != null));
                 
                 // 为每个策略类型创建实例并注册
                 foreach (var strategyType in strategyTypes)
                 {
-                    var strategy = PluginStrategyActivator.Create<IToolCreationStrategy>(
-                        strategyType,
-                        assembly,
-                        _serviceProvider,
-                        _pluginModuleCatalog);
+                    var strategy = isHostAssembly
+                        ? (IToolCreationStrategy)ActivatorUtilities.CreateInstance(
+                            _serviceProvider,
+                            strategyType)
+                        : PluginStrategyActivator.Create<IToolCreationStrategy>(
+                            strategyType,
+                            assembly,
+                            _serviceProvider,
+                            _pluginModuleCatalog);
                     RegisterToolStrategy(strategy);
                 }
             }
@@ -738,11 +771,18 @@ public class ManagementFactory : Factory
     {
     }
 
+    /// <summary>
+    /// 初始化 Dock 定位器，并把稳定工具 ID 映射到当前布局。
+    /// </summary>
+    /// <remarks>
+    /// 插件菜单在 ContextLocator、已创建工具字典和 DockableLocator 中使用同一个 ID，
+    /// 防止布局可见但通过 <c>DockableLocator["Plug"]</c> 无法取得真实工具。
+    /// </remarks>
     public override void InitLayout(IDockable layout)
     {
         ContextLocator = new Dictionary<string, Func<object?>>
         {
-            ["plugGroupMenuViewModel"] = ()  => layout,
+            [DockNameConstant.PlugGroupMenu] = ()  => layout,
             ["fileSystemTree"] = () => layout,
             ["toolManagement"] = () => layout,
         };
@@ -775,8 +815,11 @@ public class ManagementFactory : Factory
     }
     
     /// <summary>
-    /// 创建所有注册的Tool实例
+    /// 按依赖顺序创建所有已注册的 Tool 实例。
     /// </summary>
+    /// <remarks>
+    /// 工具管理器需要读取其他工具的元数据与实例，所以必须最后创建。
+    /// </remarks>
     private void CreateAllTools()
     {
         // 先创建所有非工具管理的Tool
@@ -785,7 +828,7 @@ public class ManagementFactory : Factory
             var tool = strategy.CreateTool();
             _createdTools[tool.Id] = tool;
             // 设置特定工具的引用
-            if (tool.Id == "plugGroupMenuViewModel")
+            if (tool.Id == DockNameConstant.PlugGroupMenu)
             {
                 _plugGroupMenuTool = tool;
             }
@@ -803,6 +846,10 @@ public class ManagementFactory : Factory
     /// 重写 OnDockableHidden：当工具被隐藏（如用户点击 X 关闭）时，
     /// 通知 ToolManagementViewModel 同步其 CheckBox 状态
     /// </summary>
+    /// <remarks>
+    /// 只发布宿主管理工具的变化，并使用构造函数注入的消息服务，
+    /// 避免静态服务定位器带来的隐藏依赖。
+    /// </remarks>
     public override void OnDockableHidden(IDockable? dockable)
     {
         base.OnDockableHidden(dockable);
@@ -814,8 +861,8 @@ public class ManagementFactory : Factory
         {
             try
             {
-                Business.Helpers.ServiceProvider.GetService<IMessengerService>()
-                    ?.Send(new ToolVisibilityChangedMessage("ToolHidden"));
+                _messengerService.Send(
+                    new ToolVisibilityChangedMessage("ToolHidden"));
             }
             catch
             {
