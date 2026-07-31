@@ -190,7 +190,7 @@ flowchart LR
 
 **[架构判断]** BiliDownloader 当前的方向是正确的：下载协调器作为插件级 singleton，由 `IPluginLifecycle` 初始化和关闭；Scheduler Tool 只是这个后台事实源的显示与控制入口。这样隐藏 Tool 或关闭提交任务的 Document 都不应停止下载。
 
-**[代码事实]** `ToolMetadata.Alignment` 支持 Left、Right、Top、Bottom，宿主使用统一映射完成默认布局、工具恢复和布局快照归属；未知值为兼容历史插件回退到 Left。Top/Bottom 位于中央 Document 区域上下方，没有可见工具时折叠为零高度。参见 [`ToolMetadata.cs`](../Host/MyAvaloniaManagementCommon/ToolCreation/ToolMetadata.cs#L31)、[`ManagementFactory.cs`](../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs) 和 [`ToolManagementViewModel.cs`](../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs)。
+**[代码事实]** `ToolMetadata.Alignment` 支持 Left、Right、Top、Bottom，宿主使用统一映射完成默认布局、工具恢复和布局快照归属；未知值为兼容历史插件回退到 Left。Top/Bottom 横跨完整 Dock 工作区，位于 Left/Document/Right 中间行的上下方，没有可见工具时折叠为零高度。参见 [`ToolMetadata.cs`](../Host/MyAvaloniaManagementCommon/ToolCreation/ToolMetadata.cs#L31)、[`ManagementFactory.cs`](../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs) 和 [`ToolManagementViewModel.cs`](../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs)。
 
 ## 5. 宿主与插件的实际交互通道
 

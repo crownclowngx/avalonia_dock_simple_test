@@ -33,7 +33,7 @@ public sealed class DockFourWayLayoutTests
     }
 
     [Fact]
-    public void FourWayLayoutPlacesTopAndBottomInsideCentralDocumentColumn()
+    public void FourWayLayoutPlacesTopAndBottomAcrossFullWorkspaceWidth()
     {
         using var context = CreateFactory();
         var factory = context.Factory;
@@ -49,9 +49,15 @@ public sealed class DockFourWayLayoutTests
         var columns = FindDock<ProportionalDock>(
             root,
             DockLayoutIds.WorkspaceColumns);
-        var centerRows = FindDock<ProportionalDock>(
+        var rows = FindDock<ProportionalDock>(
             root,
-            DockLayoutIds.WorkspaceCenterRows);
+            DockLayoutIds.WorkspaceRows);
+        var leftPane = FindDock<ProportionalDock>(
+            root,
+            DockLayoutIds.LeftPane);
+        var rightPane = FindDock<ProportionalDock>(
+            root,
+            DockLayoutIds.RightPane);
         var topPane = FindDock<ProportionalDock>(root, DockLayoutIds.TopPane);
         var bottomPane = FindDock<ProportionalDock>(
             root,
@@ -61,16 +67,24 @@ public sealed class DockFourWayLayoutTests
         var topDock = FindDock<ToolDock>(root, DockLayoutIds.TopTools);
         var bottomDock = FindDock<ToolDock>(root, DockLayoutIds.BottomTools);
 
+        Assert.Equal(Orientation.Vertical, rows.Orientation);
+        Assert.Equal(
+            new IDockable[] { topPane, columns, bottomPane },
+            rows.VisibleDockables!
+                .Where(dockable => dockable is not IProportionalDockSplitter));
+
         Assert.Equal(Orientation.Horizontal, columns.Orientation);
-        Assert.Contains(centerRows, columns.VisibleDockables!);
+        Assert.Equal(
+            new IDockable[] { leftPane, documentDock, rightPane },
+            columns.VisibleDockables!
+                .Where(dockable => dockable is not IProportionalDockSplitter));
         Assert.DoesNotContain(topPane, columns.VisibleDockables!);
         Assert.DoesNotContain(bottomPane, columns.VisibleDockables!);
-
-        Assert.Equal(Orientation.Vertical, centerRows.Orientation);
-        Assert.Equal(
-            new IDockable[] { topPane, documentDock, bottomPane },
-            centerRows.VisibleDockables!
-                .Where(dockable => dockable is not IProportionalDockSplitter));
+        Assert.Same(rows, topPane.Owner);
+        Assert.Same(rows, bottomPane.Owner);
+        Assert.Same(columns, leftPane.Owner);
+        Assert.Same(columns, rightPane.Owner);
+        Assert.Same(columns, documentDock.Owner);
 
         Assert.Equal(0.20, topPane.Proportion);
         Assert.Equal(0.20, topPane.CollapsedProportion);
@@ -94,12 +108,24 @@ public sealed class DockFourWayLayoutTests
 
         var root = factory.CreateWorkspaceLayout(documentDock);
         factory.InitLayout(root);
-        var centerRows = FindDock<ProportionalDock>(
+        var rows = FindDock<ProportionalDock>(
             root,
-            DockLayoutIds.WorkspaceCenterRows);
+            DockLayoutIds.WorkspaceRows);
+        var columns = FindDock<ProportionalDock>(
+            root,
+            DockLayoutIds.WorkspaceColumns);
 
-        Assert.Single(centerRows.VisibleDockables!);
-        Assert.Same(documentDock, centerRows.VisibleDockables![0]);
+        Assert.Single(rows.VisibleDockables!);
+        Assert.Same(columns, rows.VisibleDockables![0]);
+        Assert.Equal(
+            new IDockable[]
+            {
+                FindDock<ProportionalDock>(root, DockLayoutIds.LeftPane),
+                documentDock,
+                FindDock<ProportionalDock>(root, DockLayoutIds.RightPane)
+            },
+            columns.VisibleDockables!
+                .Where(dockable => dockable is not IProportionalDockSplitter));
         Assert.Null(FindDockOrDefault<ToolDock>(root, DockLayoutIds.TopTools));
         Assert.Null(FindDockOrDefault<ToolDock>(root, DockLayoutIds.BottomTools));
     }
@@ -194,8 +220,22 @@ public sealed class DockFourWayLayoutTests
             DockLayoutIds.BottomPane).IsEmpty);
     }
 
-    [Fact]
-    public void RuntimeBottomSplitIsCapturedAndRestoredToStableBottomDock()
+    [Theory]
+    [InlineData(
+        DockOperation.Top,
+        Alignment.Top,
+        DockLayoutIds.TopPane,
+        DockLayoutIds.TopTools)]
+    [InlineData(
+        DockOperation.Bottom,
+        Alignment.Bottom,
+        DockLayoutIds.BottomPane,
+        DockLayoutIds.BottomTools)]
+    public void RuntimeVerticalSplitImmediatelyUsesFullWidthStableDockAndRestores(
+        DockOperation operation,
+        Alignment expectedAlignment,
+        string expectedPaneId,
+        string expectedDockId)
     {
         DockLayoutSnapshotV1 snapshot;
         using (var firstContext = CreateFactory())
@@ -203,7 +243,7 @@ public sealed class DockFourWayLayoutTests
             var firstFactory = firstContext.Factory;
             var movedTool = RegisterTool(
                 firstFactory,
-                "runtimeBottomTool",
+                "runtimeVerticalTool",
                 "Right");
             RegisterTool(firstFactory, "rightSiblingTool", "Right");
             var documentDock = CreateDocumentDock(firstFactory);
@@ -218,28 +258,46 @@ public sealed class DockFourWayLayoutTests
                 movedTool,
                 sourceDock,
                 documentDock,
-                DockOperation.Bottom,
+                operation,
                 bExecute: true));
-            var runtimeBottomDock = Assert.IsType<ToolDock>(movedTool.Owner);
-            Assert.Equal(Alignment.Bottom, runtimeBottomDock.Alignment);
-            Assert.False(DockLayoutIds.IsToolDockId(runtimeBottomDock.Id));
+            var runtimeVerticalDock = Assert.IsType<ToolDock>(movedTool.Owner);
+            Assert.Equal(expectedAlignment, runtimeVerticalDock.Alignment);
+            Assert.Equal(expectedDockId, runtimeVerticalDock.Id);
+            var workspaceRows = FindDock<ProportionalDock>(
+                firstRoot,
+                DockLayoutIds.WorkspaceRows);
+            var workspaceColumns = FindDock<ProportionalDock>(
+                firstRoot,
+                DockLayoutIds.WorkspaceColumns);
+            var verticalPane = FindDock<ProportionalDock>(
+                firstRoot,
+                expectedPaneId);
+            Assert.Same(workspaceRows, verticalPane.Owner);
+            Assert.Same(verticalPane, runtimeVerticalDock.Owner);
+            Assert.Same(workspaceColumns, documentDock.Owner);
+            Assert.Equal(0.20, verticalPane.Proportion);
+            Assert.Equal(0.20, verticalPane.CollapsedProportion);
+            Assert.DoesNotContain(
+                EnumerateDocks(firstRoot).OfType<ToolDock>(),
+                dock => !DockLayoutIds.IsToolDockId(dock.Id) &&
+                        dock.Alignment == expectedAlignment);
 
             snapshot = DockLayoutLifecycle.Capture(
                 firstRoot,
                 firstFactory);
             Assert.Equal(
-                DockLayoutIds.BottomTools,
+                expectedDockId,
                 snapshot.Tools.Single(tool => tool.Id == movedTool.Id).DockId);
             Assert.Contains(
                 snapshot.Panes,
-                pane => pane.Id == DockLayoutIds.BottomPane);
+                pane => pane.Id == expectedPaneId);
         }
 
         using var secondContext = CreateFactory();
         var secondFactory = secondContext.Factory;
         var restoredTool = RegisterTool(
             secondFactory,
-            "runtimeBottomTool",
+            "runtimeVerticalTool",
             "Right");
         RegisterTool(secondFactory, "rightSiblingTool", "Right");
         var secondRoot = secondFactory.CreateWorkspaceLayout(
@@ -247,19 +305,24 @@ public sealed class DockFourWayLayoutTests
         secondFactory.InitLayout(secondRoot);
         Assert.Null(FindDockOrDefault<ToolDock>(
             secondRoot,
-            DockLayoutIds.BottomTools));
+            expectedDockId));
 
         DockLayoutLifecycle.ApplySnapshot(
             snapshot,
             secondRoot,
             secondFactory);
 
-        var stableBottomDock = FindDock<ToolDock>(
+        var stableVerticalDock = FindDock<ToolDock>(
             secondRoot,
-            DockLayoutIds.BottomTools);
-        Assert.Contains(restoredTool, stableBottomDock.VisibleDockables!);
-        Assert.Same(stableBottomDock, restoredTool.Owner);
-        Assert.False(stableBottomDock.IsEmpty);
+            expectedDockId);
+        Assert.Contains(restoredTool, stableVerticalDock.VisibleDockables!);
+        Assert.Same(stableVerticalDock, restoredTool.Owner);
+        Assert.False(stableVerticalDock.IsEmpty);
+        Assert.Same(
+            FindDock<ProportionalDock>(
+                secondRoot,
+                DockLayoutIds.WorkspaceRows),
+            FindDock<ProportionalDock>(secondRoot, expectedPaneId).Owner);
     }
 
     [Fact]
@@ -341,6 +404,19 @@ public sealed class DockFourWayLayoutTests
         Assert.Same(
             FindDock<ToolDock>(root, DockLayoutIds.BottomTools),
             bottom.Owner);
+        var rows = FindDock<ProportionalDock>(
+            root,
+            DockLayoutIds.WorkspaceRows);
+        Assert.Same(
+            rows,
+            FindDock<ProportionalDock>(
+                root,
+                DockLayoutIds.TopPane).Owner);
+        Assert.Same(
+            rows,
+            FindDock<ProportionalDock>(
+                root,
+                DockLayoutIds.BottomPane).Owner);
         Assert.Contains(
             left,
             factory.FindRoot(left, _ => true)!.HiddenDockables!);
@@ -397,6 +473,23 @@ public sealed class DockFourWayLayoutTests
         where T : class, IDock =>
         FindDockOrDefault<T>(root, id)
         ?? throw new InvalidOperationException($"Dock '{id}' was not found.");
+
+    private static IEnumerable<IDock> EnumerateDocks(IDock root)
+    {
+        yield return root;
+        if (root.VisibleDockables is null)
+        {
+            yield break;
+        }
+
+        foreach (var child in root.VisibleDockables.OfType<IDock>())
+        {
+            foreach (var descendant in EnumerateDocks(child))
+            {
+                yield return descendant;
+            }
+        }
+    }
 
     private static T? FindDockOrDefault<T>(IDock root, string id)
         where T : class, IDock

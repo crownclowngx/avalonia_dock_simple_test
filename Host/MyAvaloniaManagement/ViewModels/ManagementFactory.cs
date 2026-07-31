@@ -40,6 +40,7 @@ public class ManagementFactory : Factory
     private readonly IServiceProvider _serviceProvider;
     private readonly PluginModuleCatalog _pluginModuleCatalog;
     private readonly DocumentScopeManager _documentScopeManager;
+    private bool _normalizingVerticalDock;
 
     internal IReadOnlyDictionary<string, Tool> CreatedTools => _createdTools;
 
@@ -292,24 +293,41 @@ public class ManagementFactory : Factory
             rightTools,
             0.15);
 
-        var centerRowsDockables = new List<IDockable>();
+        var workspaceColumns = new ProportionalDock
+        {
+            Id = DockLayoutIds.WorkspaceColumns,
+            Orientation = Orientation.Horizontal,
+            IsCollapsable = false,
+            Proportion = double.NaN,
+            VisibleDockables = CreateList<IDockable>
+            (
+                toolsLeft,
+                new ProportionalDockSplitter(),
+                documentDock,
+                new ProportionalDockSplitter(),
+                toolsRight
+            ),
+            ActiveDockable = documentDock
+        };
+
+        var workspaceRowsDockables = new List<IDockable>();
         if (topTools.Count > 0)
         {
-            centerRowsDockables.Add(CreateToolPane(
+            workspaceRowsDockables.Add(CreateToolPane(
                 DockLayoutIds.TopPane,
                 DockLayoutIds.TopTools,
                 Alignment.Top,
                 topTools,
                 0.20));
-            centerRowsDockables.Add(new ProportionalDockSplitter());
+            workspaceRowsDockables.Add(new ProportionalDockSplitter());
         }
 
-        centerRowsDockables.Add(documentDock);
+        workspaceRowsDockables.Add(workspaceColumns);
 
         if (bottomTools.Count > 0)
         {
-            centerRowsDockables.Add(new ProportionalDockSplitter());
-            centerRowsDockables.Add(CreateToolPane(
+            workspaceRowsDockables.Add(new ProportionalDockSplitter());
+            workspaceRowsDockables.Add(CreateToolPane(
                 DockLayoutIds.BottomPane,
                 DockLayoutIds.BottomTools,
                 Alignment.Bottom,
@@ -317,37 +335,23 @@ public class ManagementFactory : Factory
                 0.20));
         }
 
-        var workspaceCenterRows = new ProportionalDock
+        var workspaceRows = new ProportionalDock
         {
-            Id = DockLayoutIds.WorkspaceCenterRows,
+            Id = DockLayoutIds.WorkspaceRows,
             Orientation = Orientation.Vertical,
             IsCollapsable = false,
             Proportion = double.NaN,
-            VisibleDockables = CreateList<IDockable>([.. centerRowsDockables]),
-            ActiveDockable = documentDock
+            VisibleDockables = CreateList<IDockable>([.. workspaceRowsDockables]),
+            ActiveDockable = workspaceColumns
         };
         var windowLayout = CreateRootDock();
         windowLayout.Id = DockLayoutIds.Workspace;
         windowLayout.Title = "Default";
         DisableFloating(windowLayout);
-        var windowLayoutContent = new ProportionalDock
-        {
-            Id = DockLayoutIds.WorkspaceColumns,
-            Orientation = Orientation.Horizontal,
-            IsCollapsable = false,
-            VisibleDockables = CreateList<IDockable>
-            (
-                toolsLeft,
-                new ProportionalDockSplitter(),
-                workspaceCenterRows,
-                new ProportionalDockSplitter(),
-                toolsRight
-            )
-        };
 
         windowLayout.IsCollapsable = false;
-        windowLayout.VisibleDockables = CreateList<IDockable>(windowLayoutContent);
-        windowLayout.ActiveDockable = windowLayoutContent;
+        windowLayout.VisibleDockables = CreateList<IDockable>(workspaceRows);
+        windowLayout.ActiveDockable = workspaceRows;
 
         var rootDock = CreateRootDock();
         rootDock.Id = DockLayoutIds.Root;
@@ -487,30 +491,31 @@ public class ManagementFactory : Factory
                 $"稳定停靠区域 '{pane.Id}' 已脱离主布局。");
         }
 
-        var centerRows = FindDockById<ProportionalDock>(
+        var workspaceRows = FindDockById<ProportionalDock>(
             root,
-            DockLayoutIds.WorkspaceCenterRows)
+            DockLayoutIds.WorkspaceRows)
             ?? throw new InvalidOperationException(
-                $"Dock '{DockLayoutIds.WorkspaceCenterRows}' was not found.");
-        var documentIndex = centerRows.VisibleDockables?
+                $"Dock '{DockLayoutIds.WorkspaceRows}' was not found.");
+        var columnsIndex = workspaceRows.VisibleDockables?
             .ToList()
-            .FindIndex(dockable => dockable.Id == DockLayoutIds.Documents) ?? -1;
-        if (documentIndex < 0)
+            .FindIndex(dockable =>
+                dockable.Id == DockLayoutIds.WorkspaceColumns) ?? -1;
+        if (columnsIndex < 0)
         {
             throw new InvalidOperationException(
-                $"Dock '{DockLayoutIds.Documents}' was not found.");
+                $"Dock '{DockLayoutIds.WorkspaceColumns}' was not found.");
         }
 
         var splitter = new ProportionalDockSplitter();
         if (alignment == Alignment.Top)
         {
-            InsertDockable(centerRows, pane, documentIndex);
-            InsertDockable(centerRows, splitter, documentIndex + 1);
+            InsertDockable(workspaceRows, pane, columnsIndex);
+            InsertDockable(workspaceRows, splitter, columnsIndex + 1);
         }
         else
         {
-            InsertDockable(centerRows, splitter, documentIndex + 1);
-            InsertDockable(centerRows, pane, documentIndex + 2);
+            InsertDockable(workspaceRows, splitter, columnsIndex + 1);
+            InsertDockable(workspaceRows, pane, columnsIndex + 2);
         }
     }
 
@@ -579,6 +584,113 @@ public class ManagementFactory : Factory
         foreach (var child in root.VisibleDockables.OfType<IDock>())
         {
             RemoveFromHiddenDockables(child, tool);
+        }
+    }
+
+    /// <summary>
+    /// Dock 在 Top/Bottom 拆分时会创建局部临时 ToolDock。将其中工具立即迁移到
+    /// 工作区全宽的稳定停靠点，使拖拽完成后的结构与快照恢复结构保持一致。
+    /// </summary>
+    public override void OnDockableDocked(
+        IDockable? dockable,
+        DockOperation operation)
+    {
+        base.OnDockableDocked(dockable, operation);
+
+        if (_normalizingVerticalDock ||
+            operation is not (DockOperation.Top or DockOperation.Bottom) ||
+            dockable is not IToolDock sourceDock ||
+            sourceDock.VisibleDockables is not { Count: > 0 })
+        {
+            return;
+        }
+
+        var alignment = operation == DockOperation.Top
+            ? Alignment.Top
+            : Alignment.Bottom;
+        if (sourceDock.Id == ToolDockPlacement.GetDockId(alignment))
+        {
+            return;
+        }
+
+        var sourceTools = sourceDock.VisibleDockables
+            .OfType<Tool>()
+            .ToArray();
+        if (sourceTools.Length == 0)
+        {
+            return;
+        }
+
+        var root = FindRoot(sourceDock, _ => true) ?? _rootDock;
+        if (root is null)
+        {
+            return;
+        }
+
+        var activeTool = sourceDock.ActiveDockable as Tool
+                         ?? sourceTools[0];
+        _normalizingVerticalDock = true;
+        try
+        {
+            var targetDock = EnsureToolDock(root, alignment);
+            var temporaryOwner = sourceDock.Owner as IProportionalDock;
+            foreach (var tool in sourceTools)
+            {
+                RemoveDockable(tool, collapse: false);
+                AddDockable(targetDock, tool);
+            }
+
+            if (sourceDock.Owner is IDock sourceOwner &&
+                sourceOwner.VisibleDockables?.Contains(sourceDock) == true)
+            {
+                RemoveDockable(sourceDock, collapse: true);
+            }
+
+            FlattenTemporarySplit(temporaryOwner);
+            SetActiveDockable(activeTool);
+        }
+        finally
+        {
+            _normalizingVerticalDock = false;
+        }
+    }
+
+    private void FlattenTemporarySplit(IProportionalDock? temporaryDock)
+    {
+        if (temporaryDock is null ||
+            !string.IsNullOrEmpty(temporaryDock.Id) ||
+            temporaryDock.Owner is not IDock parent ||
+            temporaryDock.VisibleDockables is null)
+        {
+            return;
+        }
+
+        var remainingDockables = temporaryDock.VisibleDockables
+            .Where(dockable =>
+                dockable is not IProportionalDockSplitter)
+            .ToArray();
+        if (remainingDockables.Length != 1 ||
+            parent.VisibleDockables is null)
+        {
+            return;
+        }
+
+        var parentIndex = parent.VisibleDockables.IndexOf(temporaryDock);
+        if (parentIndex < 0)
+        {
+            return;
+        }
+
+        var remainingDockable = remainingDockables[0];
+        var wasActive = ReferenceEquals(
+            parent.ActiveDockable,
+            temporaryDock);
+        RemoveDockable(remainingDockable, collapse: false);
+        RemoveDockable(temporaryDock, collapse: false);
+        InsertDockable(parent, remainingDockable, parentIndex);
+        if (wasActive)
+        {
+            parent.ActiveDockable = remainingDockable;
         }
     }
 

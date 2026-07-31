@@ -8,7 +8,8 @@ internal static class DockLayoutIds
     public const string Root = "Root";
     public const string Workspace = "Workspace";
     public const string WorkspaceColumns = "WorkspaceColumns";
-    public const string WorkspaceCenterRows = "WorkspaceCenterRows";
+    public const string WorkspaceRows = "WorkspaceCenterRows";
+    public const string WorkspaceCenterRows = WorkspaceRows;
     public const string LeftPane = "LeftPane";
     public const string LeftTools = "LeftTools";
     public const string TopPane = "TopPane";

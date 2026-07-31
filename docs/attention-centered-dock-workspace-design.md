@@ -318,11 +318,11 @@ MyAvaloniaManagement 的默认 Dock 树形成稳定语义：
 - 中央 `Documents` 是主要工作区；
 - `LeftTools` 承载左侧导航类 Tool；
 - `RightTools` 承载右侧菜单、管理和状态类 Tool；
-- `TopTools` 与 `BottomTools` 在有可见工具时占用中央 Document 区域上方或下方的空间，无可见工具时折叠为零高度；
+- `TopTools` 与 `BottomTools` 在有可见工具时横跨完整 Dock 工作区，分别位于 Left/Document/Right 中间行的上方或下方，无可见工具时折叠为零高度；
 - 左右面板默认各占约 15% 比例；
-- 上下工具区域显示时默认各占中央区域高度的 20%；
+- 上下工具区域显示时默认各占完整 Dock 工作区高度的 20%；
 - Tool 可以隐藏和恢复；
-- 拖拽拆分生成的临时 ToolDock 在保存时按方向归一化，重启或空区域被移除后按稳定 ID 重建；
+- 拖拽拆分生成的临时 Top/Bottom ToolDock 会立即归一化到全宽区域，重启或空区域被移除后按稳定 ID 重建；
 - 布局快照保存面板比例、Tool 归属、顺序、显隐和活动项；旧版 Tool 浮动字段仅用于兼容读取，恢复时自动回到主窗体内的停靠区。
 
 布局快照只保存宿主可重建的空间结构，不保存 Document、密码、媒体路径、播放状态和插件表单值；重启后当前版本也不会自动重开历史 Document。参见[Dock 结构布局快照 V1](./upgrade/net10/dock-layout-snapshot-v1.md)。因此，本项目当前提供的是**运行期多上下文保留与可重建的 Tool 空间结构**，还不是完整的跨会话工作现场恢复。
