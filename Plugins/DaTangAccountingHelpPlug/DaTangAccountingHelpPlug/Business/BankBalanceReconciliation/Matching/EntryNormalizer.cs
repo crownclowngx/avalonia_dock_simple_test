@@ -29,10 +29,17 @@ public sealed class EntryNormalizer
 
     public IReadOnlyList<string> ResolveCandidateNames(
         ReconciliationEntry bankEntry,
-        IReadOnlyList<CounterpartyNormalizationRule> rules)
+        IReadOnlyList<CounterpartyNormalizationRule> rules,
+        string profileId)
     {
         foreach (var rule in rules)
         {
+            if (rule.CandidateProfileIds.Count > 0 &&
+                !rule.CandidateProfileIds.Contains(profileId, StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             var summaryMatches = Matches(rule.BankSummaryContains, bankEntry.Summary);
             var counterpartyMatches = Matches(rule.BankCounterpartyContains, bankEntry.Counterparty);
             if (summaryMatches && counterpartyMatches && rule.CandidateNames.Count > 0)

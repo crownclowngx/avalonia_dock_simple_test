@@ -158,6 +158,48 @@ public sealed class ReconciliationEngineTests
     }
 
     [Fact]
+    public void 工行资金上划可以匹配企业账上划资金工行摘要()
+    {
+        var request = ReconciliationTestData.Request();
+        request.Configuration.NormalizationRules.Insert(0, IcbcFundSweepRule());
+        var enterprise = ReconciliationTestData.Entry(
+            "E3162", ReconciliationDirection.EnterprisePaid, 895431.90m, "上划资金-工行7.30", 3162);
+        var bank = ReconciliationTestData.Entry(
+            "B3", ReconciliationDirection.BankPaid, 895431.90m, "中国大唐集团财务有限公司", 3) with
+        {
+            Summary = "资金上划"
+        };
+
+        var result = _engine.Reconcile(request, Input([enterprise], [bank]));
+
+        var match = Assert.Single(result.Decisions);
+        Assert.Equal(MatchDecisionStatus.Matched, match.Status);
+        Assert.Equal("E3162", match.MatchedEntry?.EntryId);
+        Assert.Equal("strict-name-amount", match.RuleId);
+    }
+
+    [Fact]
+    public void 工行资金上划名称规则不会影响其他银行Profile()
+    {
+        var request = ReconciliationTestData.Request();
+        request.Profile.Id = "other-bank";
+        request.Configuration.NormalizationRules.Insert(0, IcbcFundSweepRule());
+        var enterprise = ReconciliationTestData.Entry(
+            "E", ReconciliationDirection.EnterprisePaid, 100m, "上划资金-工行7.1-7.9", 10);
+        var bank = ReconciliationTestData.Entry(
+            "B", ReconciliationDirection.BankPaid, 100m, "中国大唐集团财务有限公司", 20) with
+        {
+            Summary = "资金上划"
+        };
+
+        var result = _engine.Reconcile(request, Input([enterprise], [bank]));
+
+        var bankDecision = Assert.Single(result.Decisions, decision => decision.PrimaryEntry.EntryId == "B");
+        Assert.Equal(MatchDecisionStatus.Unmatched, bankDecision.Status);
+        Assert.Equal("no-candidate", bankDecision.RuleId);
+    }
+
+    [Fact]
     public void 空对方户名的银行收费使用冒号后业务名称匹配()
     {
         var enterprise = ReconciliationTestData.Entry(
@@ -324,6 +366,15 @@ public sealed class ReconciliationEngineTests
         });
         return request;
     }
+
+    private static CounterpartyNormalizationRule IcbcFundSweepRule() => new()
+    {
+        Id = "icbc-fund-sweep",
+        CandidateProfileIds = ["bank"],
+        BankSummaryContains = "资金上划",
+        BankCounterpartyContains = "中国大唐集团财务有限公司",
+        CandidateNames = ["上划资金-工行"]
+    };
 
     private static ReconciliationEntry OriginalEntry(
         string id,

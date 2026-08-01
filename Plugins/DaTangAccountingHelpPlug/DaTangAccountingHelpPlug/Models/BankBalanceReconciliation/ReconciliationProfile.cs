@@ -65,6 +65,8 @@ public sealed class BankReconciliationProfile
 public sealed class CounterpartyNormalizationRule
 {
     public string Id { get; set; } = string.Empty;
+    /// <summary>为空时适用于全部账户；非空时仅限制银行候选名称映射，不改变企业账冲销识别。</summary>
+    public List<string> CandidateProfileIds { get; set; } = [];
     public string BankSummaryContains { get; set; } = string.Empty;
     public string BankCounterpartyContains { get; set; } = string.Empty;
     public List<string> CandidateNames { get; set; } = [];

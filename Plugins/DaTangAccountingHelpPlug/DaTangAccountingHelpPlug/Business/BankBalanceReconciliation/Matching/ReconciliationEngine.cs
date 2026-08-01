@@ -67,7 +67,8 @@ public sealed class ReconciliationEngine : IReconciliationEngine
                 .ToArray();
             var names = _normalizer.ResolveCandidateNames(
                 bankEntry,
-                request.Configuration.NormalizationRules);
+                request.Configuration.NormalizationRules,
+                request.Profile.Id);
             var namedCandidates = available
                 .Where(entry => _normalizer.ContainsCandidate(entry.Summary, names))
                 .ToArray();

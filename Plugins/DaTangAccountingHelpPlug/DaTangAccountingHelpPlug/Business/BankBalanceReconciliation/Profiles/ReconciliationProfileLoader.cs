@@ -119,6 +119,12 @@ public sealed partial class ReconciliationProfileLoader
 
         foreach (var rule in configuration.NormalizationRules)
         {
+            if (rule.CandidateProfileIds.Distinct(StringComparer.OrdinalIgnoreCase).Count() !=
+                rule.CandidateProfileIds.Count)
+                throw new InvalidDataException($"名称归一化规则 {rule.Id} 的适用银行配置存在重复 ID。");
+            if (rule.CandidateProfileIds.Any(id => !configuration.BankProfiles.Any(profile =>
+                    profile.Id.Equals(id, StringComparison.OrdinalIgnoreCase))))
+                throw new InvalidDataException($"名称归一化规则 {rule.Id} 引用了不存在的银行配置。");
             if (rule.ReorderPrefixLength < 0)
                 throw new InvalidDataException($"名称归一化规则 {rule.Id} 的冲销前缀长度不能为负数。");
             if (rule.CandidateNames.Count == 0 || rule.CandidateNames.Any(string.IsNullOrWhiteSpace))
