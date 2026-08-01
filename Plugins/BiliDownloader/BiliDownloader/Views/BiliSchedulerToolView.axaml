@@ -34,7 +34,7 @@
                        Foreground="{DynamicResource AppSecondaryTextBrush}"
                        Margin="0,4"/>
 
-            <!-- 启动/暂停控制 + 清除已完成 -->
+            <!-- 启动/暂停控制 + 清除已完成 + G2批量控制 -->
             <StackPanel Orientation="Horizontal" Spacing="6">
                 <Button Content="开始调度"
                         Command="{Binding TaskList.StartCommand}"
@@ -44,6 +44,14 @@
                 <Button Content="暂停调度"
                         Command="{Binding TaskList.StopCommand}"
                         IsVisible="{Binding IsProcessing}"
+                        Padding="8,3"
+                        FontSize="11"/>
+                <Button Content="全部暂停"
+                        Command="{Binding TaskList.PauseAllCommand}"
+                        Padding="8,3"
+                        FontSize="11"/>
+                <Button Content="全部恢复"
+                        Command="{Binding TaskList.ResumeAllCommand}"
                         Padding="8,3"
                         FontSize="11"/>
                 <Button Content="清除已完成"

@@ -11,6 +11,10 @@
     <UserControl.Resources>
         <conv:IsFailedStatusConverter x:Key="IsFailedStatusConverter"/>
         <conv:IsDoneStatusConverter x:Key="IsDoneStatusConverter"/>
+        <conv:IsRunningStatusConverter x:Key="IsRunningStatusConverter"/>
+        <conv:IsPausedStatusConverter x:Key="IsPausedStatusConverter"/>
+        <conv:IsCancelableStatusConverter x:Key="IsCancelableStatusConverter"/>
+        <conv:IsRestartableStatusConverter x:Key="IsRestartableStatusConverter"/>
     </UserControl.Resources>
     <ScrollViewer>
         <ItemsControl ItemsSource="{Binding Tasks}">
@@ -19,7 +23,7 @@
                     <Border BorderBrush="{DynamicResource AppDividerBrush}"
                             BorderThickness="0,0,0,1" Padding="4,6">
                         <StackPanel Spacing="3">
-                            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                 <TextBlock Text="{Binding ItemTitle}"
                                            TextTrimming="CharacterEllipsis"
                                            FontWeight="SemiBold"
@@ -32,30 +36,52 @@
                                            Foreground="{DynamicResource AppInfoBrush}"
                                            Margin="4,0"
                                            VerticalAlignment="Center"/>
-                                <Button Content="重试"
+                                <!-- G2: 暂停按钮（运行中可见） -->
+                                <Button Content="暂停"
                                         Grid.Column="2"
+                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).PauseTaskCommand}"
+                                        CommandParameter="{Binding}"
+                                        IsVisible="{Binding Status, Converter={StaticResource IsRunningStatusConverter}}"
+                                        Padding="4,1" FontSize="10" Margin="2,0"
+                                        VerticalAlignment="Center"
+                                        ToolTip.Tip="暂停任务"/>
+                                <!-- G2: 恢复按钮（暂停/等待登录可见） -->
+                                <Button Content="恢复"
+                                        Grid.Column="3"
+                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).ResumeTaskCommand}"
+                                        CommandParameter="{Binding}"
+                                        IsVisible="{Binding Status, Converter={StaticResource IsPausedStatusConverter}}"
+                                        Padding="4,1" FontSize="10" Margin="2,0"
+                                        VerticalAlignment="Center"
+                                        ToolTip.Tip="恢复任务"/>
+                                <!-- G2: 重新开始按钮（失败/中断/取消可见） -->
+                                <Button Content="重开"
+                                        Grid.Column="4"
+                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).RestartTaskCommand}"
+                                        CommandParameter="{Binding}"
+                                        IsVisible="{Binding Status, Converter={StaticResource IsRestartableStatusConverter}}"
+                                        Padding="4,1" FontSize="10" Margin="2,0"
+                                        VerticalAlignment="Center"
+                                        ToolTip.Tip="重新开始（清理断点从零下载）"/>
+                                <Button Content="重试"
+                                        Grid.Column="5"
                                         Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).RetryTaskCommand}"
                                         CommandParameter="{Binding}"
                                         IsVisible="{Binding Status, Converter={StaticResource IsFailedStatusConverter}}"
-                                        Padding="4,1"
-                                        FontSize="10"
-                                        Margin="2,0"
+                                        Padding="4,1" FontSize="10" Margin="2,0"
                                         VerticalAlignment="Center"/>
                                 <Button Content="打开"
-                                        Grid.Column="3"
+                                        Grid.Column="6"
                                         Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).OpenFileLocationCommand}"
                                         CommandParameter="{Binding}"
                                         IsVisible="{Binding Status, Converter={StaticResource IsDoneStatusConverter}}"
-                                        Padding="4,1"
-                                        FontSize="10"
-                                        Margin="2,0"
+                                        Padding="4,1" FontSize="10" Margin="2,0"
                                         VerticalAlignment="Center"/>
                                 <Button Content="X"
-                                        Grid.Column="4"
+                                        Grid.Column="7"
                                         Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).DeleteTaskCommand}"
                                         CommandParameter="{Binding}"
-                                        Padding="4,1"
-                                        FontSize="10"
+                                        Padding="4,1" FontSize="10"
                                         VerticalAlignment="Center"
                                         ToolTip.Tip="删除任务"/>
                             </Grid>

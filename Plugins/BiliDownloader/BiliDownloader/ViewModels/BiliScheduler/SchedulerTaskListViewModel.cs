@@ -35,6 +35,14 @@ public partial class SchedulerTaskListViewModel : ObservableObject
     public IAsyncRelayCommand StartCommand { get; }
     public IAsyncRelayCommand StopCommand { get; }
 
+    // G2: 单任务控制命令
+    public IAsyncRelayCommand<DownloadTaskRecord> PauseTaskCommand { get; }
+    public IAsyncRelayCommand<DownloadTaskRecord> ResumeTaskCommand { get; }
+    public IAsyncRelayCommand<DownloadTaskRecord> CancelTaskCommand { get; }
+    public IAsyncRelayCommand<DownloadTaskRecord> RestartTaskCommand { get; }
+    public IAsyncRelayCommand PauseAllCommand { get; }
+    public IAsyncRelayCommand ResumeAllCommand { get; }
+
     public SchedulerTaskListViewModel(
         BiliDownloadCoordinator coordinator,
         IDownloadTaskRepository taskStore,
@@ -50,6 +58,14 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         OpenFileLocationCommand = new AsyncRelayCommand<DownloadTaskRecord>(OpenFileLocationAsync);
         StartCommand = new AsyncRelayCommand(StartAsync);
         StopCommand = new AsyncRelayCommand(StopAsync);
+
+        // G2: 单任务控制命令初始化
+        PauseTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(PauseTaskAsync);
+        ResumeTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(ResumeTaskAsync);
+        CancelTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(CancelTaskAsync);
+        RestartTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(RestartTaskAsync);
+        PauseAllCommand = new AsyncRelayCommand(() => _coordinator.PauseAllActiveAsync());
+        ResumeAllCommand = new AsyncRelayCommand(() => _coordinator.ResumeAllPausedAsync());
 
         // 订阅 Coordinator 事件（任务进度/状态/列表变更）
         _coordinator.TaskProgressChanged += task =>
@@ -170,6 +186,66 @@ public partial class SchedulerTaskListViewModel : ObservableObject
             t.Status is "pending" or "downloading_video" or "downloading_audio" or "merging");
         CompletedCount = Tasks.Count(t => t.Status == "done");
     }
+
+    #region G2 单任务控制
+
+    private async Task PauseTaskAsync(DownloadTaskRecord? task)
+    {
+        if (task == null) return;
+        try
+        {
+            await _coordinator.PauseTaskAsync(task.TaskId);
+            UpdateCounts();
+        }
+        catch (Exception ex)
+        {
+            _onStatusMessage($"暂停任务失败: {ex.Message}");
+        }
+    }
+
+    private async Task ResumeTaskAsync(DownloadTaskRecord? task)
+    {
+        if (task == null) return;
+        try
+        {
+            await _coordinator.ResumeTaskAsync(task.TaskId);
+            UpdateCounts();
+        }
+        catch (Exception ex)
+        {
+            _onStatusMessage($"恢复任务失败: {ex.Message}");
+        }
+    }
+
+    private async Task CancelTaskAsync(DownloadTaskRecord? task)
+    {
+        if (task == null) return;
+        try
+        {
+            await _coordinator.CancelTaskAsync(task.TaskId);
+            UpdateCounts();
+        }
+        catch (Exception ex)
+        {
+            _onStatusMessage($"取消任务失败: {ex.Message}");
+        }
+    }
+
+    private async Task RestartTaskAsync(DownloadTaskRecord? task)
+    {
+        if (task == null) return;
+        try
+        {
+            await _coordinator.RestartTaskAsync(task.TaskId);
+            UpdateCounts();
+        }
+        catch (Exception ex)
+        {
+            _onStatusMessage($"重新开始任务失败: {ex.Message}");
+        }
+    }
+
+    #endregion
 
     #region 打开文件所在位置
 

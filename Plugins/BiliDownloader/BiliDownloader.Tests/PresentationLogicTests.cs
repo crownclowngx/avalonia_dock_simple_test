@@ -624,4 +624,71 @@ public sealed class PresentationLogicTests
         public string GetCookieHeader() => cookie;
         public bool IsLoggedIn => true;
     }
+
+    #region G2 Converter 测试
+
+    [Fact]
+    public void IsRunningStatusConverter正确识别运行中状态()
+    {
+        var culture = CultureInfo.InvariantCulture;
+        var converter = new IsRunningStatusConverter();
+        Assert.True((bool)converter.Convert("downloading_video", typeof(bool), null, culture));
+        Assert.True((bool)converter.Convert("merging", typeof(bool), null, culture));
+        Assert.False((bool)converter.Convert("paused", typeof(bool), null, culture));
+        Assert.False((bool)converter.Convert("done", typeof(bool), null, culture));
+        Assert.False((bool)converter.Convert(null, typeof(bool), null, culture));
+    }
+
+    [Fact]
+    public void IsPausedStatusConverter正确识别暂停和等待登录()
+    {
+        var culture = CultureInfo.InvariantCulture;
+        var converter = new IsPausedStatusConverter();
+        Assert.True((bool)converter.Convert("paused", typeof(bool), null, culture));
+        Assert.True((bool)converter.Convert("waiting_for_login", typeof(bool), null, culture));
+        Assert.False((bool)converter.Convert("pending", typeof(bool), null, culture));
+        Assert.False((bool)converter.Convert("done", typeof(bool), null, culture));
+    }
+
+    [Fact]
+    public void IsCancelableStatusConverter排除终态()
+    {
+        var culture = CultureInfo.InvariantCulture;
+        var converter = new IsCancelableStatusConverter();
+        Assert.True((bool)converter.Convert("pending", typeof(bool), null, culture));
+        Assert.True((bool)converter.Convert("downloading_video", typeof(bool), null, culture));
+        Assert.True((bool)converter.Convert("paused", typeof(bool), null, culture));
+        Assert.False((bool)converter.Convert("done", typeof(bool), null, culture));
+        Assert.False((bool)converter.Convert("canceled", typeof(bool), null, culture));
+    }
+
+    [Fact]
+    public void IsRestartableStatusConverter识别停滞状态()
+    {
+        var culture = CultureInfo.InvariantCulture;
+        var converter = new IsRestartableStatusConverter();
+        Assert.True((bool)converter.Convert("failed", typeof(bool), null, culture));
+        Assert.True((bool)converter.Convert("interrupted", typeof(bool), null, culture));
+        Assert.True((bool)converter.Convert("canceled", typeof(bool), null, culture));
+        Assert.False((bool)converter.Convert("done", typeof(bool), null, culture));
+        Assert.False((bool)converter.Convert("pending", typeof(bool), null, culture));
+    }
+
+    [Fact]
+    public void StatusToColorConverter新增暂停和等待登录颜色()
+    {
+        var culture = CultureInfo.InvariantCulture;
+        var converter = new StatusToColorConverter();
+        // 已暂停 → 橙色
+        var pausedBrush = (Avalonia.Media.SolidColorBrush)converter.Convert("已暂停", typeof(object), null, culture);
+        Assert.Equal(Avalonia.Media.Color.Parse("#FF9800"), pausedBrush.Color);
+        // 等待登录 → 深橙
+        var waitingBrush = (Avalonia.Media.SolidColorBrush)converter.Convert("等待登录", typeof(object), null, culture);
+        Assert.Equal(Avalonia.Media.Color.Parse("#FF5722"), waitingBrush.Color);
+        // 已取消 → 灰色
+        var canceledBrush = (Avalonia.Media.SolidColorBrush)converter.Convert("已取消", typeof(object), null, culture);
+        Assert.Equal(Avalonia.Media.Color.Parse("#9E9E9E"), canceledBrush.Color);
+    }
+
+    #endregion
 }

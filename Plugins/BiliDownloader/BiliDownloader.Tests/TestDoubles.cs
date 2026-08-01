@@ -466,9 +466,10 @@ internal sealed class FakeDownloadTaskExecutor : IDownloadTaskExecutor
 
 internal sealed class FakeCredentialProvider : IBiliCredentialProvider
 {
-    public string GetCookieHeader() => string.Empty;
+    /// <summary>可配置的登录态，默认 true 以兼容现有测试</summary>
+    public bool IsLoggedIn { get; set; } = true;
 
-    public bool IsLoggedIn => false;
+    public string GetCookieHeader() => IsLoggedIn ? "SESSDATA=fake" : string.Empty;
 }
 
 internal sealed class NoOpDownloadProgressTracker : IDownloadProgressTracker

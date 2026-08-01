@@ -20,6 +20,9 @@ public class StatusToColorConverter : IValueConverter
             "完成" => new SolidColorBrush(Color.Parse("#4CAF50")),
             "失败" or "已中断" => new SolidColorBrush(Color.Parse("#F44336")),
             "下载视频" or "下载音频" or "合并中" or "获取信息" => new SolidColorBrush(Color.Parse("#00A1D6")),
+            "已暂停" => new SolidColorBrush(Color.Parse("#FF9800")),
+            "等待登录" => new SolidColorBrush(Color.Parse("#FF5722")),
+            "已取消" => new SolidColorBrush(Color.Parse("#9E9E9E")),
             "排队中" or "等待中" => new SolidColorBrush(Color.Parse("#9E9E9E")),
             _ => Brushes.Transparent,
         };
