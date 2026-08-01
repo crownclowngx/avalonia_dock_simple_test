@@ -1069,7 +1069,10 @@
       "bankSummaryContains": "上存资金",
       "bankCounterpartyContains": "_DZ_Null_",
       "candidateNames": [
-        "上存"
+        "上存",
+        "自动上收",
+        "上收资金",
+        "上收"
       ],
       "reorderPrefix": "_DZ_Null_",
       "reorderPrefixLength": 0,
@@ -1083,6 +1086,7 @@
       "bankCounterpartyContains": "_DZ_Null_",
       "candidateNames": [
         "上收资金",
+        "自动上收",
         "手工上划",
         "上收"
       ],
@@ -1323,7 +1327,9 @@
       "bankSummaryContains": "收费",
       "bankCounterpartyContains": "_DZ_Null_",
       "candidateNames": [
-        "手续费"
+        "手续费",
+        "网上银行日常服务",
+        "数字证书年费"
       ],
       "reorderPrefix": "",
       "reorderPrefixLength": 0,
@@ -1756,6 +1762,22 @@
       "reorderPrefix": "",
       "reorderPrefixLength": 0,
       "aggregationKeywords": []
+    }
+  ],
+  "referenceAggregationRules": [
+    {
+      "id": "icbc-bidding-consulting-voucher",
+      "displayName": "招标工行咨询费凭证汇总",
+      "applicableProfileIds": [
+        "profile-12",
+        "profile-13"
+      ],
+      "bankDirection": "BankPaid",
+      "bankSummaryKeyword": "咨询费",
+      "enterpriseReferencePrefixes": [
+        "记帐-",
+        "记账-"
+      ]
     }
   ],
   "aggregationRules": [

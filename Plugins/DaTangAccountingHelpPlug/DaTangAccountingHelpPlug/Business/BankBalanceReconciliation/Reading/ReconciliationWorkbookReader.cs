@@ -129,7 +129,7 @@ public sealed class ReconciliationWorkbookReader : IReconciliationWorkbookReader
             endRow -= Math.Max(profile.BalanceTrailingRowOffset, 0);
 
         var result = new List<ReconciliationEntry>();
-        for (var row = profile.StartRow; row <= endRow; row++)
+        foreach (var row in EnumerateBankRows(profile.StartRow, endRow, profile.DirectionMode))
         {
             cancellationToken.ThrowIfCancellationRequested();
             var summary = sheet.Cells[row, profile.SummaryColumn].Text.Trim();
@@ -147,7 +147,7 @@ public sealed class ReconciliationWorkbookReader : IReconciliationWorkbookReader
                     enrichmentNames.TryGetValue(identifier, out var enrichedName))
                     counterparty = enrichedName;
             }
-            var transaction = ResolveBankTransaction(debit, credit, profile.DirectionMode, row);
+            var transaction = ResolveBankTransaction(debit, credit, row);
             result.Add(new ReconciliationEntry
             {
                 EntryId = $"B-{row}",
@@ -241,10 +241,39 @@ public sealed class ReconciliationWorkbookReader : IReconciliationWorkbookReader
                   - Math.Max(profile.BalanceTrailingRowOffset, 0),
                   profile.StartRow,
                   profile.BalanceColumn)
-            : profile.StartRow;
+            : profile.DirectionMode == 2
+                ? FindFirstTransactionBalanceRow(sheet, profile)
+                : profile.StartRow;
         if (row <= 0)
             throw new InvalidDataException("银行账余额行无效。");
         return ReconciliationResult.Money(ReadMoney(sheet.Cells[row, profile.BalanceColumn]));
+    }
+
+    private static int FindFirstTransactionBalanceRow(
+        ExcelWorksheet sheet,
+        BankReconciliationProfile profile)
+    {
+        var endRow = sheet.Dimension?.End.Row
+                     ?? throw new InvalidDataException("银行账没有可读取的数据。");
+        for (var row = profile.StartRow; row <= endRow; row++)
+        {
+            var summary = sheet.Cells[row, profile.SummaryColumn].Text.Trim();
+            var debit = ReadMoney(sheet.Cells[row, profile.DebitColumn]);
+            var credit = ReadMoney(sheet.Cells[row, profile.CreditColumn]);
+            if (ShouldIgnore(summary, debit, credit))
+                continue;
+
+            EnsureOnlyOneAmountSide(debit, credit, "银行账", row);
+            var balanceCell = sheet.Cells[row, profile.BalanceColumn];
+            if (balanceCell.Value is not null || !string.IsNullOrWhiteSpace(balanceCell.Text))
+            {
+                // DirectionMode=2 表示源表按时间倒序排列，第一条有效流水就是截止日最新记录。
+                // 该行余额才是截止日余额，不能读取查询条件行、标题行或工作表末尾的期初余额。
+                return row;
+            }
+        }
+
+        throw new InvalidDataException("倒序银行账没有找到同时包含交易金额和余额的有效流水行。");
     }
 
     private static int FindBalanceRow(
@@ -336,19 +365,33 @@ public sealed class ReconciliationWorkbookReader : IReconciliationWorkbookReader
     private static ResolvedTransaction ResolveBankTransaction(
         decimal debit,
         decimal credit,
-        int directionMode,
         int sourceRow)
     {
         EnsureOnlyOneAmountSide(debit, credit, "银行账", sourceRow);
 
-        // 不同银行模板对收付列的定义不同，但金额为负时都必须反转真实收付方向。
-        // 先换算为“正数代表收款”的带符号金额，可避免四个分支各自处理符号而产生偏差。
-        var signedReceiptAmount = directionMode == 2 ? debit - credit : credit - debit;
+        // 银行账统一遵循会计方向：借方减少是付款，贷方增加是收款；负数表示反向业务。
+        // DirectionMode 只决定源行遍历顺序，不得改变借贷列的会计含义。
+        var signedReceiptAmount = credit - debit;
         return new ResolvedTransaction(
             signedReceiptAmount > 0m
                 ? ReconciliationDirection.BankReceived
                 : ReconciliationDirection.BankPaid,
             ReconciliationResult.Money(Math.Abs(signedReceiptAmount)));
+    }
+
+    private static IEnumerable<int> EnumerateBankRows(int startRow, int endRow, int directionMode)
+    {
+        // 旧宏中的“方向”描述银行导出表的时间排列方式。
+        // Reader 在此保留源表稳定顺序，兼容模式才能复现旧宏逐笔消费候选的行为。
+        if (directionMode == 2)
+        {
+            for (var row = endRow; row >= startRow; row--)
+                yield return row;
+            yield break;
+        }
+
+        for (var row = startRow; row <= endRow; row++)
+            yield return row;
     }
 
     private static void EnsureOnlyOneAmountSide(decimal debit, decimal credit, string sourceName, int sourceRow)

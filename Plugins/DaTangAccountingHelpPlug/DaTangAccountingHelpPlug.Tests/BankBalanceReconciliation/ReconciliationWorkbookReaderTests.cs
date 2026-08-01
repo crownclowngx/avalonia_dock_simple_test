@@ -74,7 +74,7 @@ public sealed class ReconciliationWorkbookReaderTests
     }
 
     [Fact]
-    public async Task 方向模式二把银行借方解释为收款()
+    public async Task 方向模式二按源行降序读取并从首条有效流水取余额()
     {
         var directory = CreateTemporaryDirectory();
         try
@@ -82,17 +82,26 @@ public sealed class ReconciliationWorkbookReaderTests
             var enterprisePath = Path.Combine(directory, "enterprise.xlsx");
             var bankPath = Path.Combine(directory, "bank.xlsx");
             CreateEnterpriseFile(enterprisePath);
-            CreateBankFile(bankPath, directionMode: 2);
+            SaveRows(bankPath,
+            [
+                ["查询条件", "", "", "", "", "", ""],
+                ["日期", "户名", "摘要", "借方", "贷方", "标记", "余额"],
+                ["", "", "", "", "", "", ""],
+                ["2026-07-31", "最新客户", "收款", "0", "100", "", "286915"],
+                ["2026-07-30", "较早客户", "付款", "50", "0", "", "286815"]
+            ]);
             var request = ReconciliationTestData.Request(
                 enterprisePath: enterprisePath,
                 bankPath: bankPath);
             request.Profile.DirectionMode = 2;
+            request.Profile.StartRow = 2;
 
             var input = await new ReconciliationWorkbookReader(new EntryNormalizer()).ReadAsync(request);
 
-            Assert.Equal(
-                DaTangAccountingHelpPlug.Models.BankBalanceReconciliation.ReconciliationDirection.BankReceived,
-                Assert.Single(input.BankEntries).Direction);
+            Assert.Equal(["B-5", "B-4"], input.BankEntries.Select(entry => entry.EntryId));
+            Assert.Equal(ReconciliationDirection.BankPaid, input.BankEntries[0].Direction);
+            Assert.Equal(ReconciliationDirection.BankReceived, input.BankEntries[1].Direction);
+            Assert.Equal(286915m, input.BankBalance);
         }
         finally
         {
@@ -138,10 +147,10 @@ public sealed class ReconciliationWorkbookReaderTests
     [InlineData(1, "0", "-100", ReconciliationDirection.BankPaid)]
     [InlineData(1, "100", "0", ReconciliationDirection.BankPaid)]
     [InlineData(1, "-100", "0", ReconciliationDirection.BankReceived)]
-    [InlineData(2, "100", "0", ReconciliationDirection.BankReceived)]
-    [InlineData(2, "-100", "0", ReconciliationDirection.BankPaid)]
-    [InlineData(2, "0", "100", ReconciliationDirection.BankPaid)]
-    [InlineData(2, "0", "-100", ReconciliationDirection.BankReceived)]
+    [InlineData(2, "100", "0", ReconciliationDirection.BankPaid)]
+    [InlineData(2, "-100", "0", ReconciliationDirection.BankReceived)]
+    [InlineData(2, "0", "100", ReconciliationDirection.BankReceived)]
+    [InlineData(2, "0", "-100", ReconciliationDirection.BankPaid)]
     public async Task 银行账两种方向模式都按金额符号反转收付方向(
         int directionMode,
         string debit,
@@ -262,8 +271,8 @@ public sealed class ReconciliationWorkbookReaderTests
         string? debit = null,
         string? credit = null)
     {
-        debit ??= directionMode == 2 ? "100" : "0";
-        credit ??= directionMode == 2 ? "0" : "100";
+        debit ??= "0";
+        credit ??= "100";
         var rows = new[]
         {
             new[] { "日期", "户名", "摘要", "借方", "贷方", "标记", "余额" },

@@ -21,6 +21,12 @@ public sealed class ReconciliationProfileTests
             Assert.True(profile.DirectionMode is 1 or 2));
         Assert.All(configuration.BankProfiles, profile =>
             Assert.Contains(configuration.EnterpriseLayouts, layout => layout.Id == profile.EnterpriseLayoutId));
+        Assert.Contains("自动上收",
+            configuration.NormalizationRules.Single(rule => rule.Id == "norm-04").CandidateNames);
+        var referenceRule = Assert.Single(configuration.ReferenceAggregationRules);
+        Assert.Equal("icbc-bidding-consulting-voucher", referenceRule.Id);
+        Assert.Equal(["profile-12", "profile-13"], referenceRule.ApplicableProfileIds);
+        Assert.Equal(ReconciliationDirection.BankPaid, referenceRule.BankDirection);
     }
 
     [Fact]
@@ -68,5 +74,25 @@ public sealed class ReconciliationProfileTests
             new ReconciliationProfileLoader().Validate(configuration));
 
         Assert.Contains("冲销前缀长度不能为负数", exception.Message);
+    }
+
+    [Fact]
+    public void 凭证汇总规则必须引用现有Profile并提供凭证前缀()
+    {
+        var configuration = ReconciliationTestData.Configuration();
+        configuration.ReferenceAggregationRules.Add(new ReferenceAggregationRule
+        {
+            Id = "invalid-reference",
+            DisplayName = "无效规则",
+            ApplicableProfileIds = ["missing-profile"],
+            BankDirection = ReconciliationDirection.BankPaid,
+            BankSummaryKeyword = "咨询费",
+            EnterpriseReferencePrefixes = []
+        });
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            new ReconciliationProfileLoader().Validate(configuration));
+
+        Assert.Contains("不存在", exception.Message);
     }
 }

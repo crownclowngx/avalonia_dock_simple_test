@@ -48,7 +48,10 @@ public sealed class ReconciliationReportWriterTests
                         Status = MatchDecisionStatus.Unmatched,
                         PrimaryEntry = bankEntry,
                         RuleId = "no-candidate",
-                        Reason = "测试银行未达"
+                        Reason = "测试银行未达",
+                        GroupKey = "reference:test:1",
+                        GroupTitle = "咨询费1",
+                        GroupEntryCount = 1
                     },
                     new MatchDecision
                     {
@@ -83,14 +86,18 @@ public sealed class ReconciliationReportWriterTests
             Assert.Contains("ROUND(", balance.Cells[balance.Dimension.End.Row, 8].Formula);
             var audit = package.Workbook.Worksheets["匹配审计"];
             Assert.Equal("来源行", audit.Cells[8, 5].Text);
-            Assert.Equal("候选数", audit.Cells[8, 12].Text);
+            Assert.Equal("业务组", audit.Cells[8, 12].Text);
+            Assert.Equal("组内笔数", audit.Cells[8, 13].Text);
+            Assert.Equal("候选数", audit.Cells[8, 14].Text);
+            Assert.Equal("咨询费1", audit.Cells[11, 12].Text);
+            Assert.Equal("1", audit.Cells[11, 13].Text);
             Assert.Equal("FAIL", audit.Cells[6, 2].Text);
             Assert.Equal("已排除", audit.Cells[10, 1].Text);
             Assert.Equal("21", audit.Cells[10, 5].Text);
             Assert.Equal("20", audit.Cells[10, 9].Text);
             Assert.Equal("记账-00344", audit.Cells[10, 10].Text);
             Assert.Equal("enterprise-reversal-reference", audit.Cells[10, 11].Text);
-            Assert.Contains("原凭证号 记账-00344", audit.Cells[10, 13].Text);
+            Assert.Contains("原凭证号 记账-00344", audit.Cells[10, 15].Text);
         }
         finally
         {

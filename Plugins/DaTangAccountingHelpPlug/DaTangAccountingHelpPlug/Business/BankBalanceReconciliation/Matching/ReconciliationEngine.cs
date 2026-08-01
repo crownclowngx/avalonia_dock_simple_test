@@ -7,13 +7,16 @@ public sealed class ReconciliationEngine : IReconciliationEngine
 {
     private readonly EntryNormalizer _normalizer;
     private readonly AggregationRuleMatcher _aggregationRuleMatcher;
+    private readonly ReferenceAggregationMatcher _referenceAggregationMatcher;
 
     public ReconciliationEngine(
         EntryNormalizer normalizer,
-        AggregationRuleMatcher aggregationRuleMatcher)
+        AggregationRuleMatcher aggregationRuleMatcher,
+        ReferenceAggregationMatcher referenceAggregationMatcher)
     {
         _normalizer = normalizer;
         _aggregationRuleMatcher = aggregationRuleMatcher;
+        _referenceAggregationMatcher = referenceAggregationMatcher;
     }
 
     public ReconciliationResult Reconcile(
@@ -25,6 +28,7 @@ public sealed class ReconciliationEngine : IReconciliationEngine
         ArgumentNullException.ThrowIfNull(input);
 
         var decisions = new List<MatchDecision>();
+        var consumedBankIds = new HashSet<string>(StringComparer.Ordinal);
         var consumedEnterpriseIds = new HashSet<string>(StringComparer.Ordinal);
         var reversedEnterpriseIds = DetectEnterpriseReversals(
             input.EnterpriseEntries,
@@ -33,14 +37,28 @@ public sealed class ReconciliationEngine : IReconciliationEngine
             cancellationToken);
         consumedEnterpriseIds.UnionWith(reversedEnterpriseIds);
 
+        // 带业务编号的多笔付款必须先按凭证汇总；否则兼容模式会把单笔金额
+        // 错配给其他同金额凭证，随后真正的汇总凭证反而无法被核销。
+        _referenceAggregationMatcher.Apply(
+            request,
+            input,
+            decisions,
+            consumedBankIds,
+            consumedEnterpriseIds,
+            cancellationToken);
+
         var enterpriseBuckets = input.EnterpriseEntries
             .Where(entry => !consumedEnterpriseIds.Contains(entry.EntryId))
             .GroupBy(entry => (entry.Direction, entry.Amount))
             .ToDictionary(group => group.Key, group => group.OrderBy(entry => entry.SourceRow).ToArray());
 
-        foreach (var bankEntry in input.BankEntries.OrderBy(entry => entry.SourceRow))
+        // 银行流水顺序已由 Reader 按银行配置确定；这里必须原样消费，
+        // 否则倒序银行账会被再次改成升序，兼容模式的首个候选关系也会随之改变。
+        foreach (var bankEntry in input.BankEntries)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (consumedBankIds.Contains(bankEntry.EntryId))
+                continue;
             var enterpriseDirection = Counterpart(bankEntry.Direction);
             enterpriseBuckets.TryGetValue((enterpriseDirection, bankEntry.Amount), out var amountCandidates);
             amountCandidates ??= [];
@@ -55,11 +73,13 @@ public sealed class ReconciliationEngine : IReconciliationEngine
                 .ToArray();
 
             IReadOnlyList<ReconciliationEntry> candidates = namedCandidates;
+            var usedAmountOnlyFallback = false;
             if (request.Mode == ReconciliationMode.LegacyCompatible &&
                 request.EnableLooseAmountAlignment &&
                 candidates.Count == 0)
             {
                 candidates = available;
+                usedAmountOnlyFallback = candidates.Count > 0;
             }
 
             if (candidates.Count == 1 ||
@@ -73,10 +93,16 @@ public sealed class ReconciliationEngine : IReconciliationEngine
                     PrimaryEntry = bankEntry,
                     MatchedEntry = matched,
                     Candidates = candidates,
-                    RuleId = request.Mode == ReconciliationMode.Strict ? "strict-name-amount" : "legacy-first-match",
-                    Reason = candidates.Count == 1
-                        ? "收付方向、金额和候选名称唯一匹配"
-                        : "兼容模式按旧宏顺序选择首个候选"
+                    RuleId = request.Mode == ReconciliationMode.Strict
+                        ? "strict-name-amount"
+                        : usedAmountOnlyFallback
+                            ? "legacy-amount-only"
+                            : "legacy-first-name-match",
+                    Reason = usedAmountOnlyFallback
+                        ? "兼容宽松金额整理未通过单位名称校验，按稳定顺序选择首个同方向同金额候选"
+                        : request.Mode == ReconciliationMode.LegacyCompatible
+                            ? "兼容模式在单位名称校验通过后，按稳定顺序选择首个候选"
+                            : "收付方向、金额和候选名称唯一匹配"
                 });
             }
             else if (candidates.Count > 1)

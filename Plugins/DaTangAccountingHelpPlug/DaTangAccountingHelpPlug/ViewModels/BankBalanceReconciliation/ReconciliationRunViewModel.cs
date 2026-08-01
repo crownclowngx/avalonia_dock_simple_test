@@ -19,7 +19,7 @@ public partial class ReconciliationRunViewModel : ObservableObject, IDisposable
     private bool _disposed;
 
     public ObservableCollection<string> LogEntries { get; } = [];
-    public ObservableCollection<MatchDecision> AuditIssues { get; } = [];
+    public ObservableCollection<ReconciliationIssueViewModel> AuditIssues { get; } = [];
     public bool HasAuditIssues => AuditIssues.Count > 0;
 
     [ObservableProperty] private bool _isRunning;
@@ -30,6 +30,7 @@ public partial class ReconciliationRunViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _isBalanced;
     [ObservableProperty] private decimal _difference;
     [ObservableProperty] private int _matchedCount;
+    [ObservableProperty] private int _reviewIssueCount;
     [ObservableProperty] private int _ambiguousCount;
     [ObservableProperty] private string _lastOutputPath = string.Empty;
 
@@ -103,16 +104,16 @@ public partial class ReconciliationRunViewModel : ObservableObject, IDisposable
             IsBalanced = result.IsBalanced;
             Difference = result.Difference;
             MatchedCount = result.MatchedCount;
+            ReviewIssueCount = result.ReviewIssueCount;
             AmbiguousCount = result.AmbiguousCount;
-            foreach (var issue in result.Decisions.Where(item =>
-                         item.Status is MatchDecisionStatus.Ambiguous or MatchDecisionStatus.Unmatched))
+            foreach (var issue in ReconciliationIssueViewModel.Create(result.Decisions))
                 AuditIssues.Add(issue);
             OnPropertyChanged(nameof(HasAuditIssues));
             LastOutputPath = outputPath;
             HasResult = true;
             ResultMessage = result.IsBalanced
-                ? $"对账已平，歧义 {result.AmbiguousCount} 条"
-                : $"对账不平，差额 {result.Difference:N2}，歧义 {result.AmbiguousCount} 条";
+                ? $"对账已平，复核 {result.ReviewIssueCount} 组，歧义 {result.AmbiguousCount} 条"
+                : $"对账不平，差额 {result.Difference:N2}，复核 {result.ReviewIssueCount} 组，歧义 {result.AmbiguousCount} 条";
             foreach (var warning in result.Input.Warnings)
                 LogEntries.Add($"[警告] {warning}");
             return new ReconciliationRunSummary(

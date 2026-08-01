@@ -3,7 +3,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation"
-             xmlns:model="using:DaTangAccountingHelpPlug.Models.BankBalanceReconciliation"
              mc:Ignorable="d"
              x:Class="DaTangAccountingHelpPlug.Views.BankBalanceReconciliation.ReconciliationRunView"
              x:DataType="vm:ReconciliationRunViewModel">
@@ -36,7 +35,8 @@
                                TextWrapping="Wrap" />
                     <WrapPanel Orientation="Horizontal">
                         <TextBlock Margin="0,0,18,0" Text="{Binding MatchedCount, StringFormat='已匹配：{0}'}" />
-                        <TextBlock Margin="0,0,18,0" Text="{Binding AmbiguousCount, StringFormat='待复核：{0}'}" />
+                        <TextBlock Margin="0,0,18,0" Text="{Binding ReviewIssueCount, StringFormat='复核组：{0}'}" />
+                        <TextBlock Margin="0,0,18,0" Text="{Binding AmbiguousCount, StringFormat='歧义：{0}'}" />
                         <TextBlock Text="{Binding Difference, StringFormat='差额：{0:N2}'}" />
                     </WrapPanel>
                     <TextBlock Text="{Binding LastOutputPath}"
@@ -49,22 +49,47 @@
             <Expander Classes="recon-expander"
                       IsExpanded="{Binding HasAuditIssues}">
                 <Expander.Header>
-                    <TextBlock Text="待复核项" Classes="recon-section-title" />
+                    <TextBlock Text="复核组" Classes="recon-section-title" />
                 </Expander.Header>
                 <ListBox Classes="recon-list"
                          MaxHeight="180"
                          ItemsSource="{Binding AuditIssues}">
                     <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="model:MatchDecision">
-                            <Grid ColumnDefinitions="70,90,*,Auto" ColumnSpacing="7">
-                                <TextBlock Grid.Column="0" Text="{Binding PrimaryEntry.SourceRow, StringFormat='第 {0} 行'}" />
-                                <TextBlock Grid.Column="1" Text="{Binding PrimaryEntry.Amount, StringFormat='{}{0:N2}'}" />
-                                <TextBlock Grid.Column="2" Text="{Binding Reason}"
-                                           TextTrimming="CharacterEllipsis"
-                                           ToolTip.Tip="{Binding Reason}" />
-                                <TextBlock Grid.Column="3" Text="{Binding CandidateCount, StringFormat='候选 {0}'}"
-                                           Classes="recon-caption" />
-                            </Grid>
+                        <DataTemplate x:DataType="vm:ReconciliationIssueViewModel">
+                            <Expander IsExpanded="False">
+                                <Expander.Header>
+                                    <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="8">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Title}"
+                                                   FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip.Tip="{Binding Title}" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Summary}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip.Tip="{Binding Reason}" />
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding EntryCount, StringFormat='明细 {0}'}"
+                                                   Classes="recon-caption" />
+                                    </Grid>
+                                </Expander.Header>
+                                <ItemsControl Margin="14,4,0,4" ItemsSource="{Binding Entries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ReconciliationIssueEntryViewModel">
+                                            <Grid ColumnDefinitions="58,72,90,100,*" ColumnSpacing="7">
+                                                <TextBlock Grid.Column="0" Text="{Binding SourceLabel}" Classes="recon-caption" />
+                                                <TextBlock Grid.Column="1" Text="{Binding SourceRow, StringFormat='第 {0} 行'}" />
+                                                <TextBlock Grid.Column="2" Text="{Binding Amount, StringFormat='{}{0:N2}'}" />
+                                                <TextBlock Grid.Column="3" Text="{Binding ReferenceNumber}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Grid.Column="4"
+                                                           Text="{Binding Description}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           ToolTip.Tip="{Binding Description}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Expander>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>

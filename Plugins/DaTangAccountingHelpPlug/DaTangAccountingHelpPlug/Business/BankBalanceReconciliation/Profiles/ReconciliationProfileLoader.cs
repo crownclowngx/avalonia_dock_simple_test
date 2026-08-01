@@ -74,6 +74,7 @@ public sealed partial class ReconciliationProfileLoader
         EnsureUnique(configuration.EnterpriseLayouts.Select(item => item.Id), "企业账布局");
         EnsureUnique(configuration.BankProfiles.Select(item => item.Id), "银行配置");
         EnsureUnique(configuration.NormalizationRules.Select(item => item.Id), "名称归一化规则");
+        EnsureUnique(configuration.ReferenceAggregationRules.Select(item => item.Id), "凭证汇总规则");
         EnsureUnique(configuration.AggregationRules.Select(item => item.Id), "汇总规则");
 
         var layoutIds = configuration.EnterpriseLayouts
@@ -125,6 +126,22 @@ public sealed partial class ReconciliationProfileLoader
             if (string.IsNullOrWhiteSpace(rule.BankSummaryContains) &&
                 string.IsNullOrWhiteSpace(rule.BankCounterpartyContains))
                 throw new InvalidDataException($"名称归一化规则 {rule.Id} 至少需要一个匹配条件。");
+        }
+
+        foreach (var rule in configuration.ReferenceAggregationRules)
+        {
+            if (string.IsNullOrWhiteSpace(rule.DisplayName) ||
+                string.IsNullOrWhiteSpace(rule.BankSummaryKeyword))
+                throw new InvalidDataException($"凭证汇总规则 {rule.Id} 必须包含显示名称和银行摘要关键字。");
+            if (rule.BankDirection is not (ReconciliationDirection.BankReceived or ReconciliationDirection.BankPaid))
+                throw new InvalidDataException($"凭证汇总规则 {rule.Id} 的银行方向无效。");
+            if (rule.ApplicableProfileIds.Count == 0 ||
+                rule.ApplicableProfileIds.Any(id => !configuration.BankProfiles.Any(profile =>
+                    profile.Id.Equals(id, StringComparison.OrdinalIgnoreCase))))
+                throw new InvalidDataException($"凭证汇总规则 {rule.Id} 引用了不存在的银行配置。");
+            if (rule.EnterpriseReferencePrefixes.Count == 0 ||
+                rule.EnterpriseReferencePrefixes.Any(string.IsNullOrWhiteSpace))
+                throw new InvalidDataException($"凭证汇总规则 {rule.Id} 必须包含非空企业凭证前缀。");
         }
     }
 

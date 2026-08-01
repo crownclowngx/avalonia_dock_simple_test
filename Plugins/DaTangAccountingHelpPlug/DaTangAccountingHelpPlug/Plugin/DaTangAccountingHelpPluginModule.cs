@@ -33,6 +33,7 @@ public sealed class DaTangAccountingHelpPluginModule : IPluginModule
         // 读取、规范化、匹配和写出服务无界面状态，按需创建可以保持依赖关系清晰。
         services.AddTransient<EntryNormalizer>();
         services.AddTransient<AggregationRuleMatcher>();
+        services.AddTransient<ReferenceAggregationMatcher>();
         services.AddTransient<IReconciliationWorkbookReader, ReconciliationWorkbookReader>();
         services.AddTransient<IReconciliationEngine, ReconciliationEngine>();
         services.AddTransient<IReconciliationReportWriter, ReconciliationReportWriter>();

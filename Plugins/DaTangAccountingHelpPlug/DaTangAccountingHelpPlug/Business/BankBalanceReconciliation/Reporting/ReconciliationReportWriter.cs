@@ -243,7 +243,7 @@ public sealed class ReconciliationReportWriter : IReconciliationReportWriter
     private static void BuildAuditSheet(ExcelWorksheet sheet, ReconciliationResult result)
     {
         sheet.View.ShowGridLines = false;
-        sheet.Cells["A1:N1"].Merge = true;
+        sheet.Cells["A1:P1"].Merge = true;
         sheet.Cells["A1"].Value = "银行余额调节匹配审计";
         sheet.Cells["A1"].Style.Font.Size = 16;
         sheet.Cells["A1"].Style.Font.Bold = true;
@@ -253,8 +253,8 @@ public sealed class ReconciliationReportWriter : IReconciliationReportWriter
             { "单位", result.Request.Profile.UnitName, "银行", result.Request.Profile.BankName, "账号", MaskAccount(result.Request.Profile.AccountNumber) },
             { "截止日期", result.Request.AsOfDate, "模式", result.Request.Mode == ReconciliationMode.Strict ? "严格审计" : "旧宏兼容", "配置版本", result.Request.Configuration.SchemaVersion },
             { "企业账文件", Path.GetFileName(result.Request.EnterpriseLedgerPath), "银行账文件", Path.GetFileName(result.Request.BankStatementPath), "输出文件", Path.GetFileName(result.Request.OutputPath) },
-            { "匹配数", result.MatchedCount, "歧义数", result.AmbiguousCount, "银企差额", result.Difference },
-            { "模型状态", result.IsBalanced && result.AmbiguousCount == 0 ? "PASS" : "FAIL", "企业调节后余额", result.AdjustedEnterpriseBalance, "银行调节后余额", result.AdjustedBankBalance }
+            { "匹配数", result.MatchedCount, "复核组数", result.ReviewIssueCount, "银企差额", result.Difference },
+            { "模型状态", result.IsBalanced && result.ReviewIssueCount == 0 ? "PASS" : "FAIL", "企业调节后余额", result.AdjustedEnterpriseBalance, "银行调节后余额", result.AdjustedBankBalance }
         };
         sheet.Cells[2, 1, 6, 6].Value = metadata;
         sheet.Cells[2, 1, 6, 1].Style.Font.Bold = true;
@@ -269,10 +269,10 @@ public sealed class ReconciliationReportWriter : IReconciliationReportWriter
         const int headerRow = 8;
         var headers = new object[,]
         {
-            { "状态", "来源", "方向", "金额", "来源行", "日期", "编号", "对方/摘要", "匹配来源行", "匹配编号", "规则", "候选数", "原因", "候选行" }
+            { "状态", "来源", "方向", "金额", "来源行", "日期", "编号", "对方/摘要", "匹配来源行", "匹配编号", "规则", "业务组", "组内笔数", "候选数", "原因", "候选行" }
         };
-        sheet.Cells[headerRow, 1, headerRow, 14].Value = headers;
-        StyleHeader(sheet.Cells[headerRow, 1, headerRow, 14]);
+        sheet.Cells[headerRow, 1, headerRow, 16].Value = headers;
+        StyleHeader(sheet.Cells[headerRow, 1, headerRow, 16]);
         var row = headerRow + 1;
         foreach (var decision in result.Decisions
                      .OrderBy(item => item.PrimaryEntry.Source)
@@ -289,20 +289,22 @@ public sealed class ReconciliationReportWriter : IReconciliationReportWriter
             sheet.Cells[row, 9].Value = decision.MatchedEntry?.SourceRow;
             sheet.Cells[row, 10].Value = decision.MatchedEntry?.ReferenceNumber;
             sheet.Cells[row, 11].Value = decision.RuleId;
-            sheet.Cells[row, 12].Value = decision.Candidates.Count;
-            sheet.Cells[row, 13].Value = decision.Reason;
-            sheet.Cells[row, 14].Value = string.Join(",", decision.Candidates.Select(item => item.SourceRow));
+            sheet.Cells[row, 12].Value = decision.GroupTitle;
+            sheet.Cells[row, 13].Value = decision.GroupEntryCount;
+            sheet.Cells[row, 14].Value = decision.Candidates.Count;
+            sheet.Cells[row, 15].Value = decision.Reason;
+            sheet.Cells[row, 16].Value = string.Join(",", decision.Candidates.Select(item => item.SourceRow));
             row++;
         }
 
         var lastRow = Math.Max(row - 1, headerRow + 1);
-        sheet.Cells[headerRow, 1, lastRow, 14].AutoFilter = true;
+        sheet.Cells[headerRow, 1, lastRow, 16].AutoFilter = true;
         sheet.Cells[headerRow + 1, 4, lastRow, 4].Style.Numberformat.Format = CurrencyFormat;
         sheet.Cells[headerRow + 1, 6, lastRow, 6].Style.Numberformat.Format = "yyyy-mm-dd";
         sheet.Cells[headerRow + 1, 8, lastRow, 8].Style.WrapText = true;
-        sheet.Cells[headerRow + 1, 13, lastRow, 13].Style.WrapText = true;
+        sheet.Cells[headerRow + 1, 15, lastRow, 15].Style.WrapText = true;
         sheet.View.FreezePanes(headerRow + 1, 1);
-        var widths = new[] { 12d, 10d, 16d, 16d, 9d, 12d, 14d, 42d, 11d, 14d, 24d, 9d, 42d, 18d };
+        var widths = new[] { 12d, 10d, 16d, 16d, 9d, 12d, 14d, 42d, 11d, 14d, 24d, 18d, 10d, 9d, 42d, 18d };
         for (var index = 0; index < widths.Length; index++)
             sheet.Column(index + 1).Width = widths[index];
     }

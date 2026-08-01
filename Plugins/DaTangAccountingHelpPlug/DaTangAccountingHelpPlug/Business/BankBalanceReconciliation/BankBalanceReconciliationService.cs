@@ -39,7 +39,7 @@ public sealed class BankBalanceReconciliationService
         var result = _engine.Reconcile(request, input, cancellationToken);
         progress?.Report(new ReconciliationProgress(
             "匹配",
-            $"匹配完成：已匹配 {result.MatchedCount} 条，歧义 {result.AmbiguousCount} 条",
+            $"匹配完成：已匹配 {result.MatchedCount} 条，复核 {result.ReviewIssueCount} 组，歧义 {result.AmbiguousCount} 条",
             70));
         await _writer.WriteAsync(result, progress, cancellationToken);
         return result;

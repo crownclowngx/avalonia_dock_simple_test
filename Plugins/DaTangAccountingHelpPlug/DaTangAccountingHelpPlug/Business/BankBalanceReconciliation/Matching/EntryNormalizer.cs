@@ -46,7 +46,17 @@ public sealed class EntryNormalizer
         }
 
         var fallback = NormalizeText(bankEntry.Counterparty);
-        return fallback.Length == 0 ? [] : [fallback];
+        if (fallback.Length > 0)
+            return [fallback];
+
+        // 手续费等银行内部扣款通常没有对方户名，只有“业务类别：具体项目”的摘要。
+        // 此时使用冒号后的具体项目作为名称证据，仍然要求企业摘要包含该文本，不能退化为仅按金额匹配。
+        var normalizedSummary = NormalizeText(bankEntry.Summary);
+        var separator = normalizedSummary.IndexOfAny(['：', ':']);
+        var summaryCandidate = separator >= 0
+            ? normalizedSummary[(separator + 1)..].Trim()
+            : normalizedSummary;
+        return summaryCandidate.Length == 0 ? [] : [summaryCandidate];
     }
 
     public bool ContainsCandidate(string enterpriseSummary, IReadOnlyList<string> candidates)

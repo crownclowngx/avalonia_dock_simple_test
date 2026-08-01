@@ -6,6 +6,7 @@ public sealed class ReconciliationConfiguration
     public List<EnterpriseLedgerLayout> EnterpriseLayouts { get; set; } = [];
     public List<BankReconciliationProfile> BankProfiles { get; set; } = [];
     public List<CounterpartyNormalizationRule> NormalizationRules { get; set; } = [];
+    public List<ReferenceAggregationRule> ReferenceAggregationRules { get; set; } = [];
     public List<AggregationRule> AggregationRules { get; set; } = [];
 }
 
@@ -38,7 +39,7 @@ public sealed class BankReconciliationProfile
     public string BankShortName { get; set; } = string.Empty;
     public string AccountNumber { get; set; } = string.Empty;
     public string SourceName { get; set; } = string.Empty;
-    /// <summary>1 表示贷方为银行收款，2 表示借方为银行收款；来源于 DZ Main 的“方向”列。</summary>
+    /// <summary>来源于 DZ Main 的“方向”列：1 按源行升序处理，2 按源行降序处理。</summary>
     public int DirectionMode { get; set; } = 1;
     public string EnterpriseLayoutId { get; set; } = string.Empty;
     public int StartRow { get; set; }
@@ -80,4 +81,15 @@ public sealed class AggregationRule
     public ReconciliationDirection BankDirection { get; set; }
     public List<string> BankKeywords { get; set; } = [];
     public List<string> EnterpriseKeywords { get; set; } = [];
+}
+
+/// <summary>按银行摘要中的业务编号汇总，并关联企业凭证号。</summary>
+public sealed class ReferenceAggregationRule
+{
+    public string Id { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public List<string> ApplicableProfileIds { get; set; } = [];
+    public ReconciliationDirection BankDirection { get; set; }
+    public string BankSummaryKeyword { get; set; } = string.Empty;
+    public List<string> EnterpriseReferencePrefixes { get; set; } = [];
 }

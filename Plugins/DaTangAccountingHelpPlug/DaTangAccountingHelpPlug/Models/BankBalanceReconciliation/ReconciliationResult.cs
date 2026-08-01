@@ -26,6 +26,13 @@ public sealed class ReconciliationResult
     public bool IsBalanced => Difference == 0m;
     public int AmbiguousCount => Decisions.Count(item => item.Status == MatchDecisionStatus.Ambiguous);
     public int MatchedCount => Decisions.Count(item => item.Status is MatchDecisionStatus.Matched or MatchDecisionStatus.Aggregated);
+    public int ReviewIssueCount => Decisions
+        .Where(item => item.Status is MatchDecisionStatus.Unmatched or MatchDecisionStatus.Ambiguous)
+        .Select(item => string.IsNullOrWhiteSpace(item.GroupKey)
+            ? $"entry:{item.PrimaryEntry.EntryId}"
+            : item.GroupKey)
+        .Distinct(StringComparer.Ordinal)
+        .Count();
 
     private IReadOnlyList<ReconciliationEntry> Unmatched(ReconciliationDirection direction) =>
         Decisions

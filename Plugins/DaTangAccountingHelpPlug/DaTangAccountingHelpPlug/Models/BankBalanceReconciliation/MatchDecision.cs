@@ -18,5 +18,9 @@ public sealed record MatchDecision
     public IReadOnlyList<ReconciliationEntry> Candidates { get; init; } = [];
     public string RuleId { get; init; } = string.Empty;
     public string Reason { get; init; } = string.Empty;
+    /// <summary>同一业务组使用相同键，界面据此压缩展示，审计表仍保留每条来源记录。</summary>
+    public string GroupKey { get; init; } = string.Empty;
+    public string GroupTitle { get; init; } = string.Empty;
+    public int GroupEntryCount { get; init; }
     public int CandidateCount => Candidates.Count;
 }

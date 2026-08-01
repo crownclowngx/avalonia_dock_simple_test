@@ -6,7 +6,10 @@ namespace DaTangAccountingHelpPlug.Tests.BankBalanceReconciliation;
 
 public sealed class ReconciliationEngineTests
 {
-    private readonly ReconciliationEngine _engine = new(new EntryNormalizer(), new AggregationRuleMatcher());
+    private readonly ReconciliationEngine _engine = new(
+        new EntryNormalizer(),
+        new AggregationRuleMatcher(),
+        new ReferenceAggregationMatcher());
 
     [Fact]
     public void 严格模式仅自动核销唯一候选()
@@ -70,6 +73,108 @@ public sealed class ReconciliationEngineTests
         Assert.Equal("E-first", matches[0].MatchedEntry?.EntryId);
         Assert.Equal("E-later", matches[1].MatchedEntry?.EntryId);
         Assert.Equal(2, matches.Select(item => item.MatchedEntry?.EntryId).Distinct().Count());
+        Assert.All(matches, item => Assert.Equal("legacy-first-name-match", item.RuleId));
+    }
+
+    [Fact]
+    public void 匹配引擎保留Reader提供的银行流水顺序()
+    {
+        var enterprise = new[]
+        {
+            ReconciliationTestData.Entry("E-first", ReconciliationDirection.EnterpriseReceived, 100m, "同一客户", 3),
+            ReconciliationTestData.Entry("E-later", ReconciliationDirection.EnterpriseReceived, 100m, "同一客户", 8)
+        };
+        var banks = new[]
+        {
+            ReconciliationTestData.Entry("B-row-8", ReconciliationDirection.BankReceived, 100m, "同一客户", 8),
+            ReconciliationTestData.Entry("B-row-3", ReconciliationDirection.BankReceived, 100m, "同一客户", 3)
+        };
+
+        var result = _engine.Reconcile(
+            ReconciliationTestData.Request(ReconciliationMode.LegacyCompatible),
+            Input(enterprise, banks));
+        var matches = result.Decisions.Where(item => item.Status == MatchDecisionStatus.Matched).ToArray();
+
+        Assert.Equal(["B-row-8", "B-row-3"], matches.Select(item => item.PrimaryEntry.EntryId));
+        Assert.Equal(["E-first", "E-later"], matches.Select(item => item.MatchedEntry?.EntryId));
+    }
+
+    [Fact]
+    public void 兼容宽松金额匹配明确暴露未通过单位名称校验()
+    {
+        var enterprise = ReconciliationTestData.Entry(
+            "E1", ReconciliationDirection.EnterpriseReceived, 100m, "企业甲", 2);
+        var bank = ReconciliationTestData.Entry(
+            "B1", ReconciliationDirection.BankReceived, 100m, "完全不同的单位", 2);
+
+        var result = _engine.Reconcile(
+            ReconciliationTestData.Request(ReconciliationMode.LegacyCompatible, looseAmount: true),
+            Input([enterprise], [bank]));
+
+        var match = Assert.Single(result.Decisions);
+        Assert.Equal(MatchDecisionStatus.Matched, match.Status);
+        Assert.Equal("legacy-amount-only", match.RuleId);
+        Assert.Contains("未通过单位名称校验", match.Reason);
+    }
+
+    [Fact]
+    public void 中英文括号差异不影响普通单位名称匹配()
+    {
+        var enterprise = ReconciliationTestData.Entry(
+            "E1", ReconciliationDirection.EnterpriseReceived, 100m, "收到保定设备（集团）有限公司款", 2);
+        var bank = ReconciliationTestData.Entry(
+            "B1", ReconciliationDirection.BankReceived, 100m, "保定设备(集团)有限公司", 2);
+
+        var result = _engine.Reconcile(
+            ReconciliationTestData.Request(),
+            Input([enterprise], [bank]));
+
+        Assert.Equal(MatchDecisionStatus.Matched, Assert.Single(result.Decisions).Status);
+    }
+
+    [Fact]
+    public void 资金上划规则可以匹配企业账自动上收摘要()
+    {
+        var request = ReconciliationTestData.Request();
+        request.Configuration.NormalizationRules.Add(new CounterpartyNormalizationRule
+        {
+            Id = "fund-sweep",
+            BankSummaryContains = "上划",
+            CandidateNames = ["上收资金", "自动上收", "手工上划", "上收"]
+        });
+        var enterprise = ReconciliationTestData.Entry(
+            "E247", ReconciliationDirection.EnterprisePaid, 30623m, "自动上收", 247);
+        var bank = ReconciliationTestData.Entry(
+            "B740", ReconciliationDirection.BankPaid, 30623m, "财务公司", 740) with
+        {
+            Summary = "资金上划"
+        };
+
+        var result = _engine.Reconcile(request, Input([enterprise], [bank]));
+
+        var match = Assert.Single(result.Decisions);
+        Assert.Equal(MatchDecisionStatus.Matched, match.Status);
+        Assert.Equal("E247", match.MatchedEntry?.EntryId);
+    }
+
+    [Fact]
+    public void 空对方户名的银行收费使用冒号后业务名称匹配()
+    {
+        var enterprise = ReconciliationTestData.Entry(
+            "E254", ReconciliationDirection.EnterprisePaid, 100m, "中信银行数字证书年费", 254);
+        var bank = ReconciliationTestData.Entry(
+            "B659", ReconciliationDirection.BankPaid, 100m, string.Empty, 659) with
+        {
+            Summary = "银行收费：数字证书年费"
+        };
+
+        var result = _engine.Reconcile(
+            ReconciliationTestData.Request(ReconciliationMode.LegacyCompatible, looseAmount: true),
+            Input([enterprise], [bank]));
+
+        var match = Assert.Single(result.Decisions);
+        Assert.Equal(MatchDecisionStatus.Matched, match.Status);
+        Assert.Equal("legacy-first-name-match", match.RuleId);
     }
 
     [Fact]

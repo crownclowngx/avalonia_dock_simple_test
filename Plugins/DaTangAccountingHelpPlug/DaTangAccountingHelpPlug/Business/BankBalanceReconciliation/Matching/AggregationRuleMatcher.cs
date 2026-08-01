@@ -22,14 +22,19 @@ public sealed class AggregationRuleMatcher
 
             var bank = decisions.Where(decision =>
                     decision.Status == MatchDecisionStatus.Unmatched &&
+                    string.IsNullOrWhiteSpace(decision.GroupKey) &&
                     decision.PrimaryEntry.Direction == rule.BankDirection &&
                     ContainsAny(decision.PrimaryEntry, rule.BankKeywords))
                 .ToArray();
             var enterprise = decisions.Where(decision =>
                     decision.Status == MatchDecisionStatus.Unmatched &&
+                    string.IsNullOrWhiteSpace(decision.GroupKey) &&
                     decision.PrimaryEntry.Direction == enterpriseDirection &&
                     ContainsAny(decision.PrimaryEntry, rule.EnterpriseKeywords))
                 .ToArray();
+
+            // 凭证编号汇总阶段形成的组必须保持完整。
+            // 金额不等或凭证不唯一时，后续通用汇总不能拆散业务组再尝试“凑平”。
 
             if (bank.Length == 0 || enterprise.Length == 0)
                 continue;
