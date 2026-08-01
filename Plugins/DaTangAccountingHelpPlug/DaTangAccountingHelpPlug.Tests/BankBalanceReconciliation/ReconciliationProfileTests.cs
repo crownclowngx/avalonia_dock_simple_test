@@ -14,7 +14,7 @@ public sealed class ReconciliationProfileTests
         Assert.Equal(1, configuration.SchemaVersion);
         Assert.Equal(4, configuration.EnterpriseLayouts.Count);
         Assert.Equal(35, configuration.BankProfiles.Count);
-        Assert.Equal(62, configuration.NormalizationRules.Count);
+        Assert.Equal(63, configuration.NormalizationRules.Count);
         Assert.Contains(configuration.BankProfiles, profile => profile.DirectionMode == 1);
         Assert.Contains(configuration.BankProfiles, profile => profile.DirectionMode == 2);
         Assert.All(configuration.BankProfiles, profile =>
@@ -26,6 +26,11 @@ public sealed class ReconciliationProfileTests
         var fundSweepRule = configuration.NormalizationRules.Single(rule => rule.Id == "norm-icbc-fund-sweep");
         Assert.Equal(["profile-12", "profile-13"], fundSweepRule.CandidateProfileIds);
         Assert.Equal(["上划资金-工行"], fundSweepRule.CandidateNames);
+        var financeSweepRule = configuration.NormalizationRules.Single(rule =>
+            rule.Id == "norm-finance-company-fund-sweep");
+        Assert.Equal(["profile-14"], financeSweepRule.CandidateProfileIds);
+        Assert.Contains("上划资金-工行", financeSweepRule.CandidateNames);
+        Assert.Contains("自动上收", financeSweepRule.CandidateNames);
         var referenceRule = Assert.Single(configuration.ReferenceAggregationRules);
         Assert.Equal("icbc-bidding-consulting-voucher", referenceRule.Id);
         Assert.Equal(["profile-12", "profile-13"], referenceRule.ApplicableProfileIds);

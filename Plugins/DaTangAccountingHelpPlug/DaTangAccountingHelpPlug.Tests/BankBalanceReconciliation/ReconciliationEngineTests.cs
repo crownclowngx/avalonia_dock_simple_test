@@ -200,6 +200,44 @@ public sealed class ReconciliationEngineTests
     }
 
     [Fact]
+    public void 财务公司资金上划同时保留工行上划和中信上收候选()
+    {
+        var request = ReconciliationTestData.Request();
+        request.Configuration.NormalizationRules.Insert(0, FinanceCompanyFundSweepRule());
+        var enterprise = new[]
+        {
+            ReconciliationTestData.Entry(
+                "E-icbc", ReconciliationDirection.EnterpriseReceived, 263920m, "上划资金-工行7.1-7.9", 10),
+            ReconciliationTestData.Entry(
+                "E-citic", ReconciliationDirection.EnterpriseReceived, 481646m, "自动上收-中信7.1-7.8", 11)
+        };
+        var bank = new[]
+        {
+            ReconciliationTestData.Entry(
+                "B-icbc", ReconciliationDirection.BankReceived, 263920m, "北京国电工程招标有限公司", 20) with
+            {
+                Summary = "资金上划"
+            },
+            ReconciliationTestData.Entry(
+                "B-citic", ReconciliationDirection.BankReceived, 481646m, "北京国电工程招标有限公司", 21) with
+            {
+                Summary = "资金上划"
+            }
+        };
+
+        var result = _engine.Reconcile(request, Input(enterprise, bank));
+
+        Assert.Equal(2, result.MatchedCount);
+        Assert.All(result.Decisions, decision =>
+        {
+            Assert.Equal(MatchDecisionStatus.Matched, decision.Status);
+            Assert.Equal("strict-name-amount", decision.RuleId);
+        });
+        Assert.Equal(["E-icbc", "E-citic"],
+            result.Decisions.Select(decision => decision.MatchedEntry!.EntryId).ToArray());
+    }
+
+    [Fact]
     public void 空对方户名的银行收费使用冒号后业务名称匹配()
     {
         var enterprise = ReconciliationTestData.Entry(
@@ -374,6 +412,15 @@ public sealed class ReconciliationEngineTests
         BankSummaryContains = "资金上划",
         BankCounterpartyContains = "中国大唐集团财务有限公司",
         CandidateNames = ["上划资金-工行"]
+    };
+
+    private static CounterpartyNormalizationRule FinanceCompanyFundSweepRule() => new()
+    {
+        Id = "finance-company-fund-sweep",
+        CandidateProfileIds = ["bank"],
+        BankSummaryContains = "资金上划",
+        BankCounterpartyContains = "北京国电工程招标有限公司",
+        CandidateNames = ["上划资金-工行", "自动上收", "上收资金", "手工上划", "上收"]
     };
 
     private static ReconciliationEntry OriginalEntry(
