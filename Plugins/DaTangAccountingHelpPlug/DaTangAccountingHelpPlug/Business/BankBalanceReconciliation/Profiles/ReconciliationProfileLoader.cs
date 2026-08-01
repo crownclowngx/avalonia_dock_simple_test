@@ -118,6 +118,8 @@ public sealed partial class ReconciliationProfileLoader
 
         foreach (var rule in configuration.NormalizationRules)
         {
+            if (rule.ReorderPrefixLength < 0)
+                throw new InvalidDataException($"名称归一化规则 {rule.Id} 的冲销前缀长度不能为负数。");
             if (rule.CandidateNames.Count == 0 || rule.CandidateNames.Any(string.IsNullOrWhiteSpace))
                 throw new InvalidDataException($"名称归一化规则 {rule.Id} 必须包含非空候选名称。");
             if (string.IsNullOrWhiteSpace(rule.BankSummaryContains) &&

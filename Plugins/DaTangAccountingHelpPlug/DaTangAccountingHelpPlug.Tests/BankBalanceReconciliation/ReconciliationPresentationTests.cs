@@ -52,6 +52,33 @@ public sealed class ReconciliationPresentationTests
         Assert.Contains("HorizontalScrollBarVisibility=\"Disabled\"", rootXaml);
     }
 
+    [Fact]
+    public void 账户选择器在同一行展示单位银行和银行账来源()
+    {
+        var path = FindRepositoryFile(
+            "Plugins", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug",
+            "Views", "BankBalanceReconciliation", "ReconciliationSourceView.axaml");
+        var document = XDocument.Load(path);
+        var comboBox = Assert.Single(document.Descendants(),
+            element => element.Name.LocalName == "ComboBox" &&
+                       (string?)element.Attribute("ItemsSource") == "{Binding Profiles}");
+        Assert.Contains("recon-profile-picker", (string?)comboBox.Attribute("Classes"));
+
+        var itemTemplate = Assert.Single(comboBox.Descendants(),
+            element => element.Name.LocalName == "ComboBox.ItemTemplate");
+        var row = Assert.Single(itemTemplate.Descendants(),
+            element => element.Name.LocalName == "Grid");
+        Assert.Equal("120,90,*", (string?)row.Attribute("ColumnDefinitions"));
+
+        var displayedBindings = itemTemplate.Descendants()
+            .Where(element => element.Name.LocalName == "TextBlock")
+            .Select(element => (string?)element.Attribute("Text"))
+            .ToArray();
+        Assert.Contains("{Binding UnitShortName}", displayedBindings);
+        Assert.Contains("{Binding BankShortName}", displayedBindings);
+        Assert.Contains("{Binding SourceName}", displayedBindings);
+    }
+
     private static void AssertMapping(Type viewModel, Type view)
     {
         var expected = viewModel.FullName!.Replace("ViewModels", "Views", StringComparison.Ordinal)

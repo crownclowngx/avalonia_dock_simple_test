@@ -14,17 +14,34 @@
             <Grid ColumnDefinitions="92,*" ColumnSpacing="8">
                 <TextBlock Grid.Column="0" Text="单位及账户" Classes="recon-field-label" />
                 <ComboBox Grid.Column="1"
-                          Classes="recon-input"
+                          Classes="recon-input recon-profile-picker"
                           ItemsSource="{Binding Profiles}"
                           SelectedItem="{Binding SelectedProfile}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate x:DataType="model:BankReconciliationProfile">
-                            <StackPanel>
-                                <TextBlock Text="{Binding UnitShortName}" FontWeight="SemiBold" />
-                                <TextBlock Classes="recon-caption"
+                            <!--
+                            同一账户可能对应多种银行流水格式，因此必须把来源格式直接展示出来。
+                            三列保持在同一行，既便于快速比较，也避免把不同读取配置误认为重复数据。
+                            -->
+                            <Grid ColumnDefinitions="120,90,*"
+                                  ColumnSpacing="14"
+                                  MinHeight="34">
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding UnitShortName}"
+                                           FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1"
                                            Text="{Binding BankShortName}"
-                                           TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
+                                           TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2"
+                                           Classes="recon-caption"
+                                           Text="{Binding SourceName}"
+                                           ToolTip.Tip="{Binding SourceName}"
+                                           TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" />
+                            </Grid>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>

@@ -26,7 +26,11 @@ public sealed class ReconciliationEngine : IReconciliationEngine
 
         var decisions = new List<MatchDecision>();
         var consumedEnterpriseIds = new HashSet<string>(StringComparer.Ordinal);
-        var reversedEnterpriseIds = DetectEnterpriseReversals(input.EnterpriseEntries, decisions);
+        var reversedEnterpriseIds = DetectEnterpriseReversals(
+            input.EnterpriseEntries,
+            request.Configuration.NormalizationRules,
+            decisions,
+            cancellationToken);
         consumedEnterpriseIds.UnionWith(reversedEnterpriseIds);
 
         var enterpriseBuckets = input.EnterpriseEntries
@@ -129,45 +133,111 @@ public sealed class ReconciliationEngine : IReconciliationEngine
 
     private HashSet<string> DetectEnterpriseReversals(
         IReadOnlyList<ReconciliationEntry> entries,
-        ICollection<MatchDecision> decisions)
+        IReadOnlyList<CounterpartyNormalizationRule> normalizationRules,
+        ICollection<MatchDecision> decisions,
+        CancellationToken cancellationToken)
     {
         var consumed = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var group in entries.GroupBy(entry =>
-                     (entry.Direction, entry.Amount, Summary: _normalizer.NormalizeText(entry.Summary))))
+        var positiveEntries = entries
+            .Where(IsPositiveEntry)
+            .OrderBy(entry => entry.SourceRow)
+            .ToArray();
+
+        foreach (var reversal in entries
+                     .Where(IsNegativeEntry)
+                     .OrderBy(entry => entry.SourceRow))
         {
-            var positives = group.Where(entry => entry.Debit > 0m || entry.Credit > 0m).ToList();
-            var negatives = group.Where(entry => entry.Debit < 0m || entry.Credit < 0m).ToList();
-            while (positives.Count > 0 && negatives.Count > 0)
+            cancellationToken.ThrowIfCancellationRequested();
+            if (consumed.Contains(reversal.EntryId) ||
+                !_normalizer.TryResolveReversal(reversal.Summary, normalizationRules, out var descriptor))
             {
-                var positive = positives[0];
-                var negative = negatives[0];
-                positives.RemoveAt(0);
-                negatives.RemoveAt(0);
-                consumed.Add(positive.EntryId);
-                consumed.Add(negative.EntryId);
-                decisions.Add(new MatchDecision
-                {
-                    Status = MatchDecisionStatus.Matched,
-                    PrimaryEntry = positive,
-                    MatchedEntry = negative,
-                    Candidates = [negative],
-                    RuleId = "enterprise-reversal",
-                    Reason = "企业账同摘要同金额正负冲销"
-                });
-                decisions.Add(new MatchDecision
-                {
-                    Status = MatchDecisionStatus.Matched,
-                    PrimaryEntry = negative,
-                    MatchedEntry = positive,
-                    Candidates = [positive],
-                    RuleId = "enterprise-reversal",
-                    Reason = "企业账同摘要同金额正负冲销"
-                });
+                continue;
             }
+
+            var candidates = positiveEntries
+                .Where(candidate =>
+                    !consumed.Contains(candidate.EntryId) &&
+                    candidate.Amount == reversal.Amount &&
+                    candidate.Direction == OppositeEnterpriseDirection(reversal.Direction))
+                .Where(candidate => descriptor.OriginalReferenceNumber.Length > 0
+                    ? string.Equals(
+                        _normalizer.NormalizeReference(candidate.ReferenceNumber),
+                        _normalizer.NormalizeReference(descriptor.OriginalReferenceNumber),
+                        StringComparison.OrdinalIgnoreCase)
+                    : descriptor.OriginalSummary.Length > 0 &&
+                      string.Equals(
+                          _normalizer.NormalizeReversalSummary(candidate.Summary),
+                          descriptor.OriginalSummary,
+                          StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            if (candidates.Length == 1)
+            {
+                var original = candidates[0];
+                consumed.Add(original.EntryId);
+                consumed.Add(reversal.EntryId);
+                var ruleId = descriptor.OriginalReferenceNumber.Length > 0
+                    ? "enterprise-reversal-reference"
+                    : "enterprise-reversal-summary";
+                var evidence = descriptor.OriginalReferenceNumber.Length > 0
+                    ? $"原凭证号 {descriptor.OriginalReferenceNumber}"
+                    : $"原摘要 {descriptor.OriginalSummary}";
+
+                // 凭证号比摘要更能证明会计记录的唯一关系；只有唯一候选时才排除冲销双方。
+                // 两条决定互相引用，使输出审计表可以从任一行追溯到对应的原记录或冲销记录。
+                decisions.Add(CreateReversalExclusion(original, reversal, ruleId, evidence));
+                decisions.Add(CreateReversalExclusion(reversal, original, ruleId, evidence));
+                continue;
+            }
+
+            if (candidates.Length == 0)
+                continue;
+
+            // 多个同凭证候选仍不能证明唯一关系。冲销记录停止自动匹配，正数候选保留给银行流水。
+            consumed.Add(reversal.EntryId);
+            var ambiguousEvidence = descriptor.OriginalReferenceNumber.Length > 0
+                ? $"原凭证号 {descriptor.OriginalReferenceNumber}"
+                : $"原摘要 {descriptor.OriginalSummary}";
+            decisions.Add(new MatchDecision
+            {
+                Status = MatchDecisionStatus.Ambiguous,
+                PrimaryEntry = reversal,
+                Candidates = candidates,
+                RuleId = "enterprise-reversal-ambiguous",
+                Reason = $"{ambiguousEvidence} 存在 {candidates.Length} 条同金额候选，无法唯一识别企业账内部冲销"
+            });
         }
 
         return consumed;
     }
+
+    private static MatchDecision CreateReversalExclusion(
+        ReconciliationEntry primary,
+        ReconciliationEntry matched,
+        string ruleId,
+        string evidence) => new()
+    {
+        Status = MatchDecisionStatus.Excluded,
+        PrimaryEntry = primary,
+        MatchedEntry = matched,
+        Candidates = [matched],
+        RuleId = ruleId,
+        Reason = $"{evidence}；企业账内部冲销，不参与银企匹配"
+    };
+
+    private static bool IsPositiveEntry(ReconciliationEntry entry) =>
+        entry.Debit > 0m || entry.Credit > 0m;
+
+    private static bool IsNegativeEntry(ReconciliationEntry entry) =>
+        entry.Debit < 0m || entry.Credit < 0m;
+
+    private static ReconciliationDirection OppositeEnterpriseDirection(
+        ReconciliationDirection direction) => direction switch
+    {
+        ReconciliationDirection.EnterpriseReceived => ReconciliationDirection.EnterprisePaid,
+        ReconciliationDirection.EnterprisePaid => ReconciliationDirection.EnterpriseReceived,
+        _ => throw new InvalidOperationException("冲销记录必须来自企业账。")
+    };
 
     private static ReconciliationDirection Counterpart(ReconciliationDirection bankDirection) =>
         bankDirection switch

@@ -50,4 +50,23 @@ public sealed class ReconciliationProfileTests
 
         Assert.Contains("匹配条件", exception.Message);
     }
+
+    [Fact]
+    public void 配置整包校验拒绝负数冲销前缀长度()
+    {
+        var configuration = ReconciliationTestData.Configuration();
+        configuration.NormalizationRules.Add(new CounterpartyNormalizationRule
+        {
+            Id = "invalid-reversal",
+            BankSummaryContains = "冲销",
+            CandidateNames = ["候选"],
+            ReorderPrefix = "冲销记帐-",
+            ReorderPrefixLength = -1
+        });
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            new ReconciliationProfileLoader().Validate(configuration));
+
+        Assert.Contains("冲销前缀长度不能为负数", exception.Message);
+    }
 }

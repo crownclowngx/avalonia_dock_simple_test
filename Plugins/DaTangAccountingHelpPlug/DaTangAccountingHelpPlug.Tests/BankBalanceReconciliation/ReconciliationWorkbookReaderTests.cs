@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using DaTangAccountingHelpPlug.Business.BankBalanceReconciliation.Matching;
 using DaTangAccountingHelpPlug.Business.BankBalanceReconciliation.Reading;
+using DaTangAccountingHelpPlug.Models.BankBalanceReconciliation;
 using OfficeOpenXml;
 using Xunit;
 
@@ -99,24 +100,174 @@ public sealed class ReconciliationWorkbookReaderTests
         }
     }
 
-    private static void CreateEnterpriseFile(string path)
+    [Theory]
+    [InlineData("100", "0", ReconciliationDirection.EnterpriseReceived)]
+    [InlineData("-100", "0", ReconciliationDirection.EnterprisePaid)]
+    [InlineData("0", "100", ReconciliationDirection.EnterprisePaid)]
+    [InlineData("0", "-100", ReconciliationDirection.EnterpriseReceived)]
+    public async Task 企业账按借贷列和金额符号确定真实方向(
+        string debit,
+        string credit,
+        ReconciliationDirection expectedDirection)
+    {
+        var directory = CreateTemporaryDirectory();
+        try
+        {
+            var enterprisePath = Path.Combine(directory, "enterprise.xlsx");
+            var bankPath = Path.Combine(directory, "bank.xlsx");
+            CreateEnterpriseFile(enterprisePath, debit, credit);
+            CreateBankFile(bankPath);
+
+            var input = await new ReconciliationWorkbookReader(new EntryNormalizer()).ReadAsync(
+                ReconciliationTestData.Request(enterprisePath: enterprisePath, bankPath: bankPath));
+
+            var entry = Assert.Single(input.EnterpriseEntries);
+            Assert.Equal(expectedDirection, entry.Direction);
+            Assert.Equal(100m, entry.Amount);
+            Assert.Equal(decimal.Parse(debit), entry.Debit);
+            Assert.Equal(decimal.Parse(credit), entry.Credit);
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    [Theory]
+    [InlineData(1, "0", "100", ReconciliationDirection.BankReceived)]
+    [InlineData(1, "0", "-100", ReconciliationDirection.BankPaid)]
+    [InlineData(1, "100", "0", ReconciliationDirection.BankPaid)]
+    [InlineData(1, "-100", "0", ReconciliationDirection.BankReceived)]
+    [InlineData(2, "100", "0", ReconciliationDirection.BankReceived)]
+    [InlineData(2, "-100", "0", ReconciliationDirection.BankPaid)]
+    [InlineData(2, "0", "100", ReconciliationDirection.BankPaid)]
+    [InlineData(2, "0", "-100", ReconciliationDirection.BankReceived)]
+    public async Task 银行账两种方向模式都按金额符号反转收付方向(
+        int directionMode,
+        string debit,
+        string credit,
+        ReconciliationDirection expectedDirection)
+    {
+        var directory = CreateTemporaryDirectory();
+        try
+        {
+            var enterprisePath = Path.Combine(directory, "enterprise.xlsx");
+            var bankPath = Path.Combine(directory, "bank.xlsx");
+            CreateEnterpriseFile(enterprisePath);
+            CreateBankFile(bankPath, directionMode, debit, credit);
+            var request = ReconciliationTestData.Request(
+                enterprisePath: enterprisePath,
+                bankPath: bankPath);
+            request.Profile.DirectionMode = directionMode;
+
+            var input = await new ReconciliationWorkbookReader(new EntryNormalizer()).ReadAsync(request);
+
+            var entry = Assert.Single(input.BankEntries);
+            Assert.Equal(expectedDirection, entry.Direction);
+            Assert.Equal(100m, entry.Amount);
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public async Task 企业账借贷双方同时非零时报告来源行()
+    {
+        var directory = CreateTemporaryDirectory();
+        try
+        {
+            var enterprisePath = Path.Combine(directory, "enterprise.xlsx");
+            var bankPath = Path.Combine(directory, "bank.xlsx");
+            CreateEnterpriseFile(enterprisePath, "100", "50");
+            CreateBankFile(bankPath);
+
+            var exception = await Assert.ThrowsAsync<InvalidDataException>(() =>
+                new ReconciliationWorkbookReader(new EntryNormalizer()).ReadAsync(
+                    ReconciliationTestData.Request(enterprisePath: enterprisePath, bankPath: bankPath)));
+
+            Assert.Contains("企业账第 2 行", exception.Message);
+            Assert.Contains("借方和贷方同时存在非零金额", exception.Message);
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public async Task 银行账借贷双方同时非零时报告来源行()
+    {
+        var directory = CreateTemporaryDirectory();
+        try
+        {
+            var enterprisePath = Path.Combine(directory, "enterprise.xlsx");
+            var bankPath = Path.Combine(directory, "bank.xlsx");
+            CreateEnterpriseFile(enterprisePath);
+            CreateBankFile(bankPath, debit: "100", credit: "50");
+
+            var exception = await Assert.ThrowsAsync<InvalidDataException>(() =>
+                new ReconciliationWorkbookReader(new EntryNormalizer()).ReadAsync(
+                    ReconciliationTestData.Request(enterprisePath: enterprisePath, bankPath: bankPath)));
+
+            Assert.Contains("银行账第 2 行", exception.Message);
+            Assert.Contains("借方和贷方同时存在非零金额", exception.Message);
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public async Task 汇总行在双边金额校验前过滤()
+    {
+        var directory = CreateTemporaryDirectory();
+        try
+        {
+            var enterprisePath = Path.Combine(directory, "enterprise.xlsx");
+            var bankPath = Path.Combine(directory, "bank.xlsx");
+            CreateEnterpriseFile(enterprisePath, "100", "50", "本日合计");
+            CreateBankFile(bankPath);
+
+            var input = await new ReconciliationWorkbookReader(new EntryNormalizer()).ReadAsync(
+                ReconciliationTestData.Request(enterprisePath: enterprisePath, bankPath: bankPath));
+
+            Assert.Empty(input.EnterpriseEntries);
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    private static void CreateEnterpriseFile(
+        string path,
+        string debit = "100",
+        string credit = "0",
+        string summary = "测试客户")
     {
         var rows = new[]
         {
             new[] { "日期", "凭证", "摘要", "借方", "贷方", "标记", "余额", "方向" },
-            new[] { "2026-07-30", "记-1", "测试客户", "100", "0", "", "1000", "借" }
+            new[] { "2026-07-30", "记-1", summary, debit, credit, "", "1000", "借" }
         };
         SaveRows(path, rows);
     }
 
-    private static void CreateBankFile(string path, int directionMode = 1)
+    private static void CreateBankFile(
+        string path,
+        int directionMode = 1,
+        string? debit = null,
+        string? credit = null)
     {
+        debit ??= directionMode == 2 ? "100" : "0";
+        credit ??= directionMode == 2 ? "0" : "100";
         var rows = new[]
         {
             new[] { "日期", "户名", "摘要", "借方", "贷方", "标记", "余额" },
-            directionMode == 2
-                ? new[] { "2026-07-30", "测试客户", "收款", "100", "0", "", "1000" }
-                : new[] { "2026-07-30", "测试客户", "收款", "0", "100", "", "1000" }
+            new[] { "2026-07-30", "测试客户", "收款", debit, credit, "", "1000" }
         };
         SaveRows(path, rows);
     }

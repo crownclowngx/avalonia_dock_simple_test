@@ -19,13 +19,24 @@ public sealed class ReconciliationReportWriterTests
                 "B1", ReconciliationDirection.BankReceived, 100m, "银行未达", 8);
             var enterpriseEntry = ReconciliationTestData.Entry(
                 "E1", ReconciliationDirection.EnterprisePaid, 50m, "企业未达", 9);
+            var originalEntry = ReconciliationTestData.Entry(
+                "E-original", ReconciliationDirection.EnterprisePaid, 80m, "冲销原记录", 20) with
+            {
+                ReferenceNumber = "记账-00344"
+            };
+            var reversalEntry = ReconciliationTestData.Entry(
+                "E-reversal", ReconciliationDirection.EnterpriseReceived, 80m, "冲销记账-00344(202607)", 21) with
+            {
+                Credit = -80m,
+                Debit = 0m
+            };
             var request = ReconciliationTestData.Request(outputPath: outputPath);
             var result = new ReconciliationResult
             {
                 Request = request,
                 Input = new ReconciliationInputData
                 {
-                    EnterpriseEntries = [enterpriseEntry],
+                    EnterpriseEntries = [enterpriseEntry, originalEntry, reversalEntry],
                     BankEntries = [bankEntry],
                     EnterpriseBalance = 1000m,
                     BankBalance = 1150m
@@ -46,6 +57,15 @@ public sealed class ReconciliationReportWriterTests
                         Candidates = [enterpriseEntry],
                         RuleId = "test-review",
                         Reason = "测试待复核"
+                    },
+                    new MatchDecision
+                    {
+                        Status = MatchDecisionStatus.Excluded,
+                        PrimaryEntry = reversalEntry,
+                        MatchedEntry = originalEntry,
+                        Candidates = [originalEntry],
+                        RuleId = "enterprise-reversal-reference",
+                        Reason = "原凭证号 记账-00344；企业账内部冲销，不参与银企匹配"
                     }
                 ]
             };
@@ -65,6 +85,12 @@ public sealed class ReconciliationReportWriterTests
             Assert.Equal("来源行", audit.Cells[8, 5].Text);
             Assert.Equal("候选数", audit.Cells[8, 12].Text);
             Assert.Equal("FAIL", audit.Cells[6, 2].Text);
+            Assert.Equal("已排除", audit.Cells[10, 1].Text);
+            Assert.Equal("21", audit.Cells[10, 5].Text);
+            Assert.Equal("20", audit.Cells[10, 9].Text);
+            Assert.Equal("记账-00344", audit.Cells[10, 10].Text);
+            Assert.Equal("enterprise-reversal-reference", audit.Cells[10, 11].Text);
+            Assert.Contains("原凭证号 记账-00344", audit.Cells[10, 13].Text);
         }
         finally
         {

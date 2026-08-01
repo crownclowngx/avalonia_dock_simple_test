@@ -94,14 +94,12 @@ public sealed class ReconciliationWorkbookReader : IReconciliationWorkbookReader
             if (ShouldIgnore(summary, debit, credit))
                 continue;
 
-            var direction = debit != 0m
-                ? ReconciliationDirection.EnterpriseReceived
-                : ReconciliationDirection.EnterprisePaid;
+            var transaction = ResolveEnterpriseTransaction(debit, credit, row);
             result.Add(new ReconciliationEntry
             {
                 EntryId = $"E-{row}",
                 Source = ReconciliationEntrySource.EnterpriseLedger,
-                Direction = direction,
+                Direction = transaction.Direction,
                 SourceRow = row,
                 TransactionDate = ReadDate(sheet.Cells[row, layout.DateColumn]),
                 ReferenceNumber = sheet.Cells[row, layout.ReferenceColumn].Text.Trim(),
@@ -110,7 +108,7 @@ public sealed class ReconciliationWorkbookReader : IReconciliationWorkbookReader
                 NormalizedCounterparty = _normalizer.NormalizeText(summary),
                 Debit = debit,
                 Credit = credit,
-                Amount = ReconciliationResult.Money(Math.Abs(debit != 0m ? debit : credit)),
+                Amount = transaction.Amount,
                 ExistingMarker = sheet.Cells[row, layout.MarkerColumn].Text.Trim()
             });
         }
@@ -149,15 +147,12 @@ public sealed class ReconciliationWorkbookReader : IReconciliationWorkbookReader
                     enrichmentNames.TryGetValue(identifier, out var enrichedName))
                     counterparty = enrichedName;
             }
-            var receivedAmount = profile.DirectionMode == 2 ? debit : credit;
-            var direction = receivedAmount != 0m
-                ? ReconciliationDirection.BankReceived
-                : ReconciliationDirection.BankPaid;
+            var transaction = ResolveBankTransaction(debit, credit, profile.DirectionMode, row);
             result.Add(new ReconciliationEntry
             {
                 EntryId = $"B-{row}",
                 Source = ReconciliationEntrySource.BankStatement,
-                Direction = direction,
+                Direction = transaction.Direction,
                 SourceRow = row,
                 TransactionDate = ReadDate(sheet.Cells[row, profile.DateColumn]),
                 ReferenceNumber = row.ToString(CultureInfo.InvariantCulture),
@@ -169,9 +164,7 @@ public sealed class ReconciliationWorkbookReader : IReconciliationWorkbookReader
                     : string.Empty,
                 Debit = debit,
                 Credit = credit,
-                Amount = ReconciliationResult.Money(Math.Abs(receivedAmount != 0m
-                    ? receivedAmount
-                    : profile.DirectionMode == 2 ? credit : debit)),
+                Amount = transaction.Amount,
                 ExistingMarker = sheet.Cells[row, profile.MarkerColumn].Text.Trim()
             });
         }
@@ -325,6 +318,51 @@ public sealed class ReconciliationWorkbookReader : IReconciliationWorkbookReader
     private static bool ShouldIgnore(string summary, decimal debit, decimal credit) =>
         debit == 0m && credit == 0m ||
         IgnoredSummaryKeywords.Any(keyword => summary.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+
+    private static ResolvedTransaction ResolveEnterpriseTransaction(decimal debit, decimal credit, int sourceRow)
+    {
+        EnsureOnlyOneAmountSide(debit, credit, "企业账", sourceRow);
+
+        // 企业账借方增加代表收款，贷方增加代表付款；负数则表示相反的经济方向。
+        // Amount 始终保存绝对值，原始借贷金额保留在 Entry 中，供冲销识别和审计追溯。
+        var signedReceiptAmount = debit != 0m ? debit : -credit;
+        return new ResolvedTransaction(
+            signedReceiptAmount > 0m
+                ? ReconciliationDirection.EnterpriseReceived
+                : ReconciliationDirection.EnterprisePaid,
+            ReconciliationResult.Money(Math.Abs(signedReceiptAmount)));
+    }
+
+    private static ResolvedTransaction ResolveBankTransaction(
+        decimal debit,
+        decimal credit,
+        int directionMode,
+        int sourceRow)
+    {
+        EnsureOnlyOneAmountSide(debit, credit, "银行账", sourceRow);
+
+        // 不同银行模板对收付列的定义不同，但金额为负时都必须反转真实收付方向。
+        // 先换算为“正数代表收款”的带符号金额，可避免四个分支各自处理符号而产生偏差。
+        var signedReceiptAmount = directionMode == 2 ? debit - credit : credit - debit;
+        return new ResolvedTransaction(
+            signedReceiptAmount > 0m
+                ? ReconciliationDirection.BankReceived
+                : ReconciliationDirection.BankPaid,
+            ReconciliationResult.Money(Math.Abs(signedReceiptAmount)));
+    }
+
+    private static void EnsureOnlyOneAmountSide(decimal debit, decimal credit, string sourceName, int sourceRow)
+    {
+        if (debit != 0m && credit != 0m)
+        {
+            throw new InvalidDataException(
+                $"{sourceName}第 {sourceRow} 行借方和贷方同时存在非零金额，无法唯一判断收付方向。");
+        }
+    }
+
+    private readonly record struct ResolvedTransaction(
+        ReconciliationDirection Direction,
+        decimal Amount);
 
     private static decimal ReadMoney(ExcelRange cell)
     {

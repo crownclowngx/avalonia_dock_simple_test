@@ -54,6 +54,14 @@
         <Setter Property="FontSize" Value="12" />
     </Style>
 
+    <!-- 账户选择器需要容纳单位、银行和来源格式三列，展开区域也保留足够的纵向浏览空间。 -->
+    <Style Selector="ComboBox.recon-profile-picker">
+        <Setter Property="MinHeight" Value="44" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="MaxDropDownHeight" Value="420" />
+    </Style>
+
     <Style Selector="Button.recon-button">
         <Setter Property="MinHeight" Value="31" />
         <Setter Property="Padding" Value="11,3" />
