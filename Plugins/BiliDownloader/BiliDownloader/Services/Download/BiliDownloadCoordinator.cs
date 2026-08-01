@@ -154,7 +154,51 @@ public sealed class BiliDownloadCoordinator
             }
         }
 
+        // G3: 校验临时文件事实，确保断点字节数与磁盘一致。
+        // 设计思考：以磁盘事实为准，而非信任数据库中的旧值。
+        // 异常退出可能导致数据库记录的字节数大于实际文件大小（写入后未 fsync），
+        // 如果信任旧值，续传时会从错误位置开始，导致文件损坏。
+        foreach (var task in allTasks)
+        {
+            var status = ParseStatus(task.Status);
+            if (status is DownloadTaskStatus.Interrupted or DownloadTaskStatus.Paused)
+            {
+                await ReconcileTempFilesAsync(task);
+            }
+        }
+
         SchedulerStatusChanged?.Invoke("协调器已初始化");
+    }
+
+    /// <summary>
+    /// G3: 校验临时文件事实：以磁盘上的实际文件大小为准修正数据库记录。
+    /// 不启动下载、不删除文件、不修改状态——只修正字节数。
+    /// </summary>
+    private async Task ReconcileTempFilesAsync(DownloadTaskRecord task)
+    {
+        if (string.IsNullOrWhiteSpace(task.TempDirectory) || !Directory.Exists(task.TempDirectory))
+        {
+            // 临时目录不存在：重置字节数
+            if (task.VideoBytesDownloaded != 0 || task.AudioBytesDownloaded != 0)
+            {
+                task.VideoBytesDownloaded = 0;
+                task.AudioBytesDownloaded = 0;
+                await _repository.UpdateBytesAsync(task.TaskId, 0, 0);
+            }
+            return;
+        }
+
+        var videoTmp = Path.Combine(task.TempDirectory, "video.tmp");
+        var audioTmp = Path.Combine(task.TempDirectory, "audio.tmp");
+        var actualVideo = File.Exists(videoTmp) ? new FileInfo(videoTmp).Length : 0;
+        var actualAudio = File.Exists(audioTmp) ? new FileInfo(audioTmp).Length : 0;
+
+        if (actualVideo != task.VideoBytesDownloaded || actualAudio != task.AudioBytesDownloaded)
+        {
+            task.VideoBytesDownloaded = actualVideo;
+            task.AudioBytesDownloaded = actualAudio;
+            await _repository.UpdateBytesAsync(task.TaskId, actualVideo, actualAudio);
+        }
     }
 
     /// <summary>
@@ -420,6 +464,9 @@ public sealed class BiliDownloadCoordinator
                     // 活动任务确认收到关闭取消后会把状态持久化为 Interrupted。
                 }
             }
+
+            // G3: 关闭前 flush 所有待写入进度，确保最后进度不丢失
+            await _tracker.ShutdownAsync();
 
             _processingCts?.Dispose();
             _processingCts = null;
@@ -719,6 +766,9 @@ public sealed class BiliDownloadCoordinator
                     task.LastUpdatedAt);
             }
 
+            // G3: 确保节流中的最后进度已落盘，再写终态
+            await _tracker.FlushAsync(task.TaskId);
+
             // 标记完成
             task.Status = ToStorage(DownloadTaskStatus.Completed);
             task.Progress = 100;
@@ -750,6 +800,9 @@ public sealed class BiliDownloadCoordinator
             else
                 cancelledStatus = DownloadTaskStatus.Canceled;      // 单任务取消
 
+            // G3: 确保节流中的最后进度已落盘，再写终态
+            await _tracker.FlushAsync(task.TaskId);
+
             task.Status = ToStorage(cancelledStatus);
             await _repository.UpdateProgressAsync(task.TaskId, task.Progress, task.Status);
             _tracker.BroadcastProgress(task);
@@ -762,10 +815,19 @@ public sealed class BiliDownloadCoordinator
         }
         catch (Exception ex)
         {
+            // G3: 确保节流中的最后进度已落盘，再写终态
+            await _tracker.FlushAsync(task.TaskId);
+
             var safeError = SensitiveDataSanitizer.Sanitize(ex.Message);
             task.Status = ToStorage(DownloadTaskStatus.Failed);
             task.ErrorMessage = safeError;
             task.LastUpdatedAt = DateTime.Now;
+
+            // G3: 错误分类 → 填充 ErrorType 和 IsRetryable，供 UI 展示和重试判断
+            var (errorType, isRetryable) = DownloadErrorClassifier.Classify(ex);
+            task.ErrorType = errorType;
+            task.IsRetryable = isRetryable;
+
             Log.Error($"任务 {task.TaskId} 下载失败: {safeError}", ex);
             await _repository.MarkFailedAsync(
                 task.TaskId,

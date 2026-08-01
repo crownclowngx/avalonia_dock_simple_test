@@ -492,6 +492,56 @@ internal sealed class NoOpDownloadProgressTracker : IDownloadProgressTracker
     public void BroadcastProgress(DownloadTaskRecord task)
     {
     }
+
+    public Task FlushAsync(string taskId) => Task.CompletedTask;
+
+    public Task ShutdownAsync() => Task.CompletedTask;
+}
+
+/// <summary>
+/// 记录 Flush/Broadcast 调用顺序的测试替身。
+/// 用于验证"先 flush → 再写终态 → 再广播"的时序。
+/// </summary>
+internal sealed class RecordingProgressTracker : IDownloadProgressTracker
+{
+    private readonly object _gate = new();
+
+    public List<string> CallLog { get; } = [];
+
+    public void OnProgressChanged(DownloadTaskRecord task, DownloadProgressInfo info)
+    {
+        task.Progress = info.OverallProgress;
+        lock (_gate) { CallLog.Add($"tracker:progress:{task.TaskId}"); }
+    }
+
+    public void OnBytesChanged(DownloadTaskRecord task, long videoBytes, long audioBytes)
+    {
+        task.VideoBytesDownloaded = videoBytes;
+        task.AudioBytesDownloaded = audioBytes;
+        lock (_gate) { CallLog.Add($"tracker:bytes:{task.TaskId}"); }
+    }
+
+    public void BroadcastStatusChanged(DownloadTaskRecord task)
+    {
+        lock (_gate) { CallLog.Add($"tracker:broadcast_status:{task.TaskId}"); }
+    }
+
+    public void BroadcastProgress(DownloadTaskRecord task)
+    {
+        lock (_gate) { CallLog.Add($"tracker:broadcast_progress:{task.TaskId}"); }
+    }
+
+    public Task FlushAsync(string taskId)
+    {
+        lock (_gate) { CallLog.Add($"tracker:flush:{taskId}"); }
+        return Task.CompletedTask;
+    }
+
+    public Task ShutdownAsync()
+    {
+        lock (_gate) { CallLog.Add("tracker:shutdown"); }
+        return Task.CompletedTask;
+    }
 }
 
 /// <summary>
