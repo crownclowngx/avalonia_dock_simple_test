@@ -11,7 +11,12 @@ using BiliDownloader.Services.Infrastructure;
 namespace BiliDownloader.ViewModels.BiliDownloader;
 
 /// <summary>
-/// 提交下载所需的上下文信息，由主 VM 提供
+/// 提交下载所需的上下文信息，由主 VM 提供。
+/// <para>
+/// 设计思考（G5 扩展）：新增 NamingTemplate/UpName/PublishDate 字段，
+/// 使命名模板能在 Document 侧渲染为最终文件名。
+/// Coordinator 接收的 Title 已是成品，无需感知模板逻辑。
+/// </para>
 /// </summary>
 public class SubmitContext
 {
@@ -30,6 +35,15 @@ public class SubmitContext
 
     /// <summary>封面图 URL</summary>
     public string CoverUrl { get; set; } = "";
+
+    /// <summary>G5: 命名模板（如 "{index}.{title}"）</summary>
+    public string NamingTemplate { get; set; } = "{index}.{title}";
+
+    /// <summary>G5: UP 主名称（供 {up} 变量使用）</summary>
+    public string UpName { get; set; } = "";
+
+    /// <summary>G5: 发布时间（供 {date} 变量使用）</summary>
+    public DateTime? PublishDate { get; set; }
 }
 
 /// <summary>
@@ -208,10 +222,27 @@ public partial class VideoListViewModel : ObservableObject
         }
 
         // 构造消息
+        // G5: 命名模板在 Document 侧（提交前）解析为最终标题。
+        // 设计思考：Coordinator 接收的 DownloadItemInfo.Title 已是成品文件名，
+        // 这保持了 Coordinator 的稳定性——G2/G3/G4 共 1200+ 行测试覆盖 Coordinator，
+        // 不应因命名逻辑变更而回归。
+        // 手动重命名优先级高于模板（IsRenamed 的项直接使用用户编辑的标题）。
         var downloadItems = selectedItems.Select(v => new DownloadItemInfo
         {
             ItemId = v.ItemId,
-            Title = ctx.AddIndexToTitle ? $"{v.Index}.{v.Title}" : v.Title,
+            Title = v.IsRenamed
+                ? v.Title
+                : Services.Naming.NamingTemplateEngine.Render(
+                    ctx.NamingTemplate,
+                    new Services.Naming.NamingContext
+                    {
+                        Title = v.Title,
+                        Index = v.Index,
+                        Bvid = v.Bvid,
+                        UpName = ctx.UpName,
+                        PublishDate = ctx.PublishDate,
+                        SeriesTitle = ctx.SeriesTitle
+                    }),
             Aid = v.Aid,
             Bvid = v.Bvid,
             Cid = v.Cid,

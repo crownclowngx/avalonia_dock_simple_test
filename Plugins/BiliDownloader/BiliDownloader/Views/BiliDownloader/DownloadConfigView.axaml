@@ -3,10 +3,32 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
-             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="220"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="260"
              x:Class="BiliDownloader.Views.BiliDownloader.DownloadConfigView"
              x:DataType="vm:DownloadConfigViewModel">
     <StackPanel Spacing="6">
+        <!-- G5: 预设选择栏 -->
+        <Border Classes="bili-doc-flat-section">
+            <Grid ColumnDefinitions="Auto,200,Auto,Auto,*" ColumnSpacing="8">
+                <TextBlock Grid.Column="0" Text="下载预设" Classes="bili-doc-caption" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1"
+                          Classes="bili-doc-input"
+                          ItemsSource="{Binding Presets}"
+                          SelectedItem="{Binding SelectedPreset}"
+                          PlaceholderText="选择预设" />
+                <Button Grid.Column="2"
+                        Content="应用"
+                        Command="{Binding ApplyPresetCommand}"
+                        Classes="bili-doc-button"
+                        ToolTip.Tip="将选中预设的配置应用到当前下载" />
+                <Button Grid.Column="3"
+                        Content="保存为预设"
+                        Command="{Binding SaveAsPresetCommand}"
+                        Classes="bili-doc-button"
+                        ToolTip.Tip="将当前配置保存为自定义预设" />
+            </Grid>
+        </Border>
+
         <Border Classes="bili-doc-flat-section">
             <Grid ColumnDefinitions="Auto,220,Auto,220,*" ColumnSpacing="8">
                 <TextBlock Grid.Column="0" Text="视频质量" Classes="bili-doc-caption" VerticalAlignment="Center" />

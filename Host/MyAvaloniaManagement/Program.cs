@@ -5,6 +5,7 @@ using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagementCommon.Plugin;
 using System;
 using System.Text;
+using System.Threading;
 
 namespace MyAvaloniaManagement;
 
@@ -51,9 +52,18 @@ sealed class Program
         }
         finally
         {
-            lifecycleManager.ShutdownAllAsync().GetAwaiter().GetResult();
+            ShutdownPlugins(lifecycleManager);
         }
     } 
+
+    /// <summary>
+    /// 在 Avalonia 消息循环结束后关闭插件，避免异步续体投递到已经停止的 UI 调度器。
+    /// </summary>
+    internal static void ShutdownPlugins(PluginLifecycleManager lifecycleManager)
+    {
+        SynchronizationContext.SetSynchronizationContext(null);
+        lifecycleManager.ShutdownAllAsync().GetAwaiter().GetResult();
+    }
 
     /// <summary>
     /// 配置依赖注入服务

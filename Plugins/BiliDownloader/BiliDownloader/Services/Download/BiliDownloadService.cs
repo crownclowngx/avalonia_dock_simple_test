@@ -233,15 +233,13 @@ public class BiliDownloadService : IDisposable
     }
 
     /// <summary>
-    /// 文件名非法字符替换
+    /// 文件名非法字符替换。
+    /// G5: 已迁移到 FileNameSanitizer.Sanitize，此方法保留为向后兼容转发。
     /// </summary>
+    [Obsolete("使用 BiliDownloader.Services.Naming.FileNameSanitizer.Sanitize 替代")]
     public static string SanitizeFileName(string name)
     {
-        var invalid = Path.GetInvalidFileNameChars();
-        var sb = new StringBuilder(name.Length);
-        foreach (var c in name)
-            sb.Append(invalid.Contains(c) ? '_' : c);
-        return sb.ToString().TrimEnd('.');
+        return Naming.FileNameSanitizer.Sanitize(name);
     }
 
     /// <summary>

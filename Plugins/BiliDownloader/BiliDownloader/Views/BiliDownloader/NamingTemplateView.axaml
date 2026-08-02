@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="130"
+             x:Class="BiliDownloader.Views.BiliDownloader.NamingTemplateView"
+             x:DataType="vm:NamingTemplateViewModel">
+    <!--
+        G5 命名模板面板：
+        设计思考：与 RenamePanelView（手动重命名）并列共存。
+        模板 = 自动模式（提交时按模板生成标题），手动重命名 = 覆盖模式。
+        面板包含：模板输入框 + 验证提示 + 变量提示 + 前 3 项预览。
+    -->
+    <Border Classes="bili-doc-rename-panel"
+            IsVisible="{Binding $parent[UserControl].IsVisible}">
+        <StackPanel Spacing="7">
+            <!-- 标题行 -->
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                    <PathIcon Classes="bili-doc-icon accent"
+                              Data="{StaticResource BiliRenameGeometry}"
+                              VerticalAlignment="Center" />
+                    <TextBlock Text="命名模板"
+                               Classes="bili-doc-section-title"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <!-- 验证错误提示 -->
+                <TextBlock Grid.Column="2"
+                           Text="{Binding ValidationError}"
+                           Classes="bili-doc-caption"
+                           Foreground="{DynamicResource AppErrorBrush}"
+                           IsVisible="{Binding ValidationError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- 模板输入框 -->
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <TextBlock Grid.Column="0"
+                           Text="模板"
+                           Classes="bili-doc-caption"
+                           VerticalAlignment="Center" />
+                <TextBox Grid.Column="1"
+                         Classes="bili-doc-input"
+                         Text="{Binding Template}"
+                         PlaceholderText="例如 {index}.{title}"
+                         ToolTip.Tip="支持变量：{title} {index} {bv} {up} {date} {series}" />
+                <!-- 可用变量提示 -->
+                <TextBlock Grid.Column="2"
+                           Classes="bili-doc-caption"
+                           VerticalAlignment="Center"
+                           ToolTip.Tip="点击输入框查看支持的变量">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="{}变量: {0} {1} {2} {3} {4} {5}">
+                            <Binding Path="AvailableVariables[0].Variable" />
+                            <Binding Path="AvailableVariables[1].Variable" />
+                            <Binding Path="AvailableVariables[2].Variable" />
+                            <Binding Path="AvailableVariables[3].Variable" />
+                            <Binding Path="AvailableVariables[4].Variable" />
+                            <Binding Path="AvailableVariables[5].Variable" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </Grid>
+
+            <!-- 前 3 项预览 -->
+            <StackPanel Spacing="3"
+                        IsVisible="{Binding PreviewItems.Count}">
+                <TextBlock Text="预览（前 3 项）" Classes="bili-doc-caption" />
+                <ItemsControl ItemsSource="{Binding PreviewItems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}"
+                                       Classes="bili-doc-caption"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip.Tip="{Binding}"
+                                       Margin="12,0,0,0" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

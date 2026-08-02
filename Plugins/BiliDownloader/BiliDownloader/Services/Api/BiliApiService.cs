@@ -133,6 +133,15 @@ public partial class BiliApiService
             Items = new List<BiliVideoItem>()
         };
 
+        // G5: 提取 UP 主名称和发布时间，供命名模板 {up}/{date} 变量使用。
+        // 零额外网络请求，仅多解析两个 JSON 字段。
+        // 番剧接口无 owner 字段时回退为空字符串，{up} 渲染结果为空。
+        collection.UpName = data["owner"]?["name"]?.Value<string>() ?? "";
+        var pubdate = data["pubdate"]?.Value<long>() ?? 0;
+        collection.PublishDate = pubdate > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(pubdate).LocalDateTime
+            : null;
+
         // 解析分P列表
         var pages = data["pages"] as JArray;
         if (pages != null && pages.Count > 0)

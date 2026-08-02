@@ -52,6 +52,10 @@
                         </Grid>
 
                         <sub:DownloadConfigView DataContext="{Binding DownloadConfig}" />
+
+                        <!-- G5: 命名模板面板（与手动重命名并列共存，模板=自动模式，重命名=覆盖模式） -->
+                        <sub:NamingTemplateView DataContext="{Binding NamingTemplate}" />
+
                         <sub:VideoListView DataContext="{Binding VideoList}" />
                     </StackPanel>
                 </Border>

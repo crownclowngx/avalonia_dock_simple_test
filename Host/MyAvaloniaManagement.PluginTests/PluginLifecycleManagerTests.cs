@@ -59,6 +59,45 @@ public sealed class PluginLifecycleManagerTests
         Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState("healthy")?.Status);
     }
 
+    [Fact]
+    public async Task Avalonia消息循环结束后_异步插件仍能完成关闭()
+    {
+        var lifecycle = new YieldingShutdownLifecycle();
+        var manager = new PluginLifecycleManager([lifecycle]);
+        await manager.InitializeAllAsync();
+
+        Exception? shutdownError = null;
+        var shutdownCompleted = false;
+        var contextCleared = false;
+        var thread = new Thread(() =>
+        {
+            var stoppedUiContext = new NonPumpingSynchronizationContext();
+            SynchronizationContext.SetSynchronizationContext(stoppedUiContext);
+            try
+            {
+                global::MyAvaloniaManagement.Program.ShutdownPlugins(manager);
+                shutdownCompleted = true;
+                contextCleared = SynchronizationContext.Current is null;
+            }
+            catch (Exception ex)
+            {
+                shutdownError = ex;
+            }
+        })
+        {
+            IsBackground = true,
+        };
+
+        thread.Start();
+
+        Assert.True(thread.Join(TimeSpan.FromSeconds(5)), "插件关闭发生死锁。");
+        Assert.Null(shutdownError);
+        Assert.True(shutdownCompleted);
+        Assert.True(contextCleared);
+        Assert.True(lifecycle.ShutdownCompleted);
+        Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState("yielding")?.Status);
+    }
+
     private sealed class RecordingLifecycle : IPluginLifecycle
     {
         private readonly List<string> _calls;
@@ -92,6 +131,31 @@ public sealed class PluginLifecycleManagerTests
         {
             _calls.Add($"shutdown:{PluginId}");
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class YieldingShutdownLifecycle : IPluginLifecycle
+    {
+        public string PluginId => "yielding";
+
+        public int Order => 0;
+
+        public bool ShutdownCompleted { get; private set; }
+
+        public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public async Task ShutdownAsync(CancellationToken cancellationToken)
+        {
+            await Task.Delay(10, cancellationToken);
+            ShutdownCompleted = true;
+        }
+    }
+
+    private sealed class NonPumpingSynchronizationContext : SynchronizationContext
+    {
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            // 模拟 StartWithClassicDesktopLifetime 返回后已经停止处理消息的 UI 上下文。
         }
     }
 }

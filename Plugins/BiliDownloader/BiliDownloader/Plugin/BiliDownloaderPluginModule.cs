@@ -31,6 +31,7 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         // 观察同一任务事实源，而不是各自创建数据库访问对象。
         services.AddSingleton<IDownloadTaskRepository, DownloadTaskStore>();
         services.AddSingleton<ISettingsRepository, SettingsStore>();
+        services.AddSingleton<IPresetRepository, PresetStore>(); // G5: 预设持久化
         services.AddSingleton<IFfmpegProcessFactory, FfmpegProcessFactory>();
         services.AddSingleton<IFfmpegService, FfmpegService>();
         services.AddSingleton<IBiliHttpClientFactory, BiliHttpClientFactory>();

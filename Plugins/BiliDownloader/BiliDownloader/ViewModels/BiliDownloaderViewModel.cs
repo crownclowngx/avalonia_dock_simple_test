@@ -40,6 +40,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     public DownloadConfigViewModel DownloadConfig { get; }
     public VideoListViewModel VideoList { get; }
 
+    /// <summary>G5: 命名模板子 VM（管理模板编辑、验证和预览）</summary>
+    public NamingTemplateViewModel NamingTemplate { get; }
+
     #endregion
 
     #region 属性
@@ -70,7 +73,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         BiliLoginService loginService,
         BiliApiService apiService,
         IBiliCredentialProvider credentialProvider,
-        IFfmpegService ffmpegService)
+        IFfmpegService ffmpegService,
+        IPresetRepository? presetRepository = null)
     {
         _messengerService = messengerService;
         _taskRepository = taskRepository;
@@ -84,7 +88,10 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             onParsed: HandleParseResult,
             isLoggedInCheck: () => LoginBar.IsLoggedIn);
 
-        DownloadConfig = new DownloadConfigViewModel(settingsRepository);
+        DownloadConfig = new DownloadConfigViewModel(settingsRepository, presetRepository);
+
+        // G5: 命名模板子 VM
+        NamingTemplate = new NamingTemplateViewModel();
 
         VideoList = new VideoListViewModel(
             getSubmitContext: () => new SubmitContext
@@ -100,6 +107,10 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 DownloadSubtitle = DownloadConfig.DownloadSubtitle,
                 DownloadCover = DownloadConfig.DownloadCover,
                 CoverUrl = _videoCollection?.Cover ?? "",
+                // G5: 命名模板和上下文变量
+                NamingTemplate = NamingTemplate.Template,
+                UpName = _videoCollection?.UpName ?? "",
+                PublishDate = _videoCollection?.PublishDate,
             },
             messengerService: _messengerService,
             onStatusMessage: msg => AppendLog(msg),
@@ -261,16 +272,31 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
     #region 持久化
 
+    /// <summary>
+    /// 创建保存数据（Document V2 格式）。
+    /// <para>
+    /// 设计思考（G5）：使用强类型 DocumentSaveDataV2 替代 V1 的匿名对象，
+    /// 提高可读性和版本演进能力。PluginMetadata.Version = "2.0" 供加载时判别版本。
+    /// </para>
+    /// </summary>
     public DocumentSaveData CreateSaveDocumentMetaData(string filePath)
     {
-        var saveDataObject = new
+        var saveDataObject = new DocumentSaveDataV2
         {
-            DocumentId,
+            DocumentId = DocumentId,
             Url = VideoParse.Url,
             DownloadInfo = _downloadInfo,
             OutputDirectory = DownloadConfig.OutputDirectory,
             UseGroupFolder = DownloadConfig.UseGroupFolder,
             AddIndexToTitle = DownloadConfig.AddIndexToTitle,
+            // V2 新增字段
+            PresetId = DownloadConfig.SelectedPreset?.Id ?? BuiltInPresets.CompatId,
+            NamingTemplate = NamingTemplate.Template,
+            QualityId = DownloadConfig.SelectedQuality?.QualityId ?? 0,
+            AudioQualityId = DownloadConfig.SelectedAudioQuality?.QualityId ?? 0,
+            DownloadDanmaku = DownloadConfig.DownloadDanmaku,
+            DownloadSubtitle = DownloadConfig.DownloadSubtitle,
+            DownloadCover = DownloadConfig.DownloadCover,
         };
 
         var saveData = new DocumentSaveData
@@ -279,43 +305,51 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             Title = Title,
             SaveTime = DateTime.Now,
             Content = JsonConvert.SerializeObject(saveDataObject),
-            PluginMetadata = JsonConvert.SerializeObject(new { Version = "1.0" })
+            PluginMetadata = JsonConvert.SerializeObject(new { Version = "2.0" })
         };
 
         IsModified = false;
         return saveData;
     }
 
+    /// <summary>
+    /// 从保存数据加载 Document（支持 V1 和 V2 版本）。
+    /// <para>
+    /// 设计思考（G5）：
+    /// - V1 路径保持 JObject 逐字段读取不变，仅追加默认值补齐，确保不回归。
+    /// - V2 路径反序列化 DocumentSaveDataV2，完整恢复所有配置。
+    /// - 未知版本宽容读取已知字段 + 日志警告（向前兼容，不崩溃）。
+    /// - V1 → V2 语义迁移：AddIndexToTitle=true → "{index}.{title}"，false → "{title}"。
+    /// </para>
+    /// </summary>
     public void LoadDocumentByMetaData(DocumentSaveData saveData)
     {
         try
         {
             if (saveData == null) return;
-            var data = JsonConvert.DeserializeObject<JObject>(saveData.Content);
-            if (data == null) return;
 
-            var url = data["Url"]?.ToString() ?? "";
-            var downloadInfo = data["DownloadInfo"]?.ToString() ?? "";
-            var outputDirectory = data["OutputDirectory"]?.ToString() ?? DownloadConfig.OutputDirectory;
+            // 解析版本号
+            var version = "1.0";
+            if (!string.IsNullOrEmpty(saveData.PluginMetadata))
+            {
+                var metadata = JsonConvert.DeserializeObject<JObject>(saveData.PluginMetadata);
+                version = metadata?["Version"]?.ToString() ?? "1.0";
+            }
 
-            VideoParse.Url = url;
-            DownloadInfo = downloadInfo;
-            DownloadConfig.OutputDirectory = outputDirectory;
-
-            // 恢复 UseGroupFolder
-            var useGroupFolderVal = data["UseGroupFolder"];
-            if (useGroupFolderVal != null && useGroupFolderVal.Type != JTokenType.Null)
-                DownloadConfig.UseGroupFolder = (bool)useGroupFolderVal;
-
-            // 恢复 AddIndexToTitle
-            var addIndexVal = data["AddIndexToTitle"];
-            if (addIndexVal != null && addIndexVal.Type != JTokenType.Null)
-                DownloadConfig.AddIndexToTitle = (bool)addIndexVal;
-
-            // 恢复 DocumentId
-            var savedDocId = data["DocumentId"]?.ToString();
-            if (!string.IsNullOrEmpty(savedDocId))
-                DocumentId = savedDocId;
+            if (version == "2.0")
+            {
+                LoadV2(saveData.Content);
+            }
+            else if (version == "1.0")
+            {
+                LoadV1(saveData.Content);
+            }
+            else
+            {
+                // 未知版本：宽容读取已知字段，不崩溃
+                Log.Error($"未知的 Document 版本: {version}，尝试宽容读取。", null);
+                LoadV1(saveData.Content); // 回退到 V1 逻辑
+            }
 
             OnPropertyChanged(nameof(DocumentId));
         }
@@ -324,6 +358,78 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             Log.Error("加载文档失败。", ex);
         }
     }
+
+    /// <summary>
+    /// V1 加载逻辑（保持原有行为 + 补齐默认值）。
+    /// </summary>
+    private void LoadV1(string content)
+    {
+        var data = JsonConvert.DeserializeObject<JObject>(content);
+        if (data == null) return;
+
+        var url = data["Url"]?.ToString() ?? "";
+        var downloadInfo = data["DownloadInfo"]?.ToString() ?? "";
+        var outputDirectory = data["OutputDirectory"]?.ToString() ?? DownloadConfig.OutputDirectory;
+
+        VideoParse.Url = url;
+        DownloadInfo = downloadInfo;
+        DownloadConfig.OutputDirectory = outputDirectory;
+
+        // 恢复 UseGroupFolder
+        var useGroupFolderVal = data["UseGroupFolder"];
+        if (useGroupFolderVal != null && useGroupFolderVal.Type != JTokenType.Null)
+            DownloadConfig.UseGroupFolder = (bool)useGroupFolderVal;
+
+        // 恢复 AddIndexToTitle
+        var addIndexVal = data["AddIndexToTitle"];
+        var addIndex = true;
+        if (addIndexVal != null && addIndexVal.Type != JTokenType.Null)
+        {
+            addIndex = (bool)addIndexVal;
+            DownloadConfig.AddIndexToTitle = addIndex;
+        }
+
+        // 恢复 DocumentId
+        var savedDocId = data["DocumentId"]?.ToString();
+        if (!string.IsNullOrEmpty(savedDocId))
+            DocumentId = savedDocId;
+
+        // G5: V1 → V2 语义迁移：根据 AddIndexToTitle 生成命名模板
+        NamingTemplate.Template = addIndex ? "{index}.{title}" : "{title}";
+    }
+
+    /// <summary>
+    /// V2 加载逻辑（完整恢复所有配置）。
+    /// </summary>
+    private void LoadV2(string content)
+    {
+        var data = JsonConvert.DeserializeObject<DocumentSaveDataV2>(content);
+        if (data == null) return;
+
+        // V1 兼容字段
+        VideoParse.Url = data.Url;
+        DownloadInfo = data.DownloadInfo;
+        DownloadConfig.OutputDirectory = data.OutputDirectory;
+        DownloadConfig.UseGroupFolder = data.UseGroupFolder;
+        DownloadConfig.AddIndexToTitle = data.AddIndexToTitle;
+
+        if (!string.IsNullOrEmpty(data.DocumentId))
+            DocumentId = data.DocumentId;
+
+        // V2 新增字段
+        NamingTemplate.Template = data.NamingTemplate;
+        DownloadConfig.DownloadDanmaku = data.DownloadDanmaku;
+        DownloadConfig.DownloadSubtitle = data.DownloadSubtitle;
+        DownloadConfig.DownloadCover = data.DownloadCover;
+
+        // 恢复预设选中状态（延迟到预设列表加载完成后生效）
+        // 设计思考：预设列表是异步加载的，此处只记录 ID，
+        // DownloadConfigViewModel.InitAsync 完成后会自动匹配。
+        _pendingPresetId = data.PresetId;
+    }
+
+    /// <summary>待匹配的预设 ID（V2 加载时设置，预设列表加载后匹配）</summary>
+    private string? _pendingPresetId;
 
     #endregion
 }

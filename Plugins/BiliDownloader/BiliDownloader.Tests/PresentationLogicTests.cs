@@ -269,6 +269,7 @@ public sealed class PresentationLogicTests
             {
                 Index = 2,
                 ItemId = "item",
+                OriginalTitle = "标题",
                 Title = "标题",
                 Aid = 1,
                 Bvid = "BV1abcDEF123",
