@@ -14,6 +14,8 @@ namespace BiliDownloader.Services.Naming;
 /// </summary>
 public static class FileNameSanitizer
 {
+    private static readonly HashSet<char> InvalidFileNameCharacters = BuildInvalidCharacterSet();
+
     /// <summary>Windows 保留设备名（不区分大小写，含扩展名变体如 CON.txt）</summary>
     private static readonly HashSet<string> ReservedNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -43,11 +45,10 @@ public static class FileNameSanitizer
             return FallbackName;
 
         // 第一步：替换所有非法字符为下划线
-        var invalidChars = Path.GetInvalidFileNameChars();
         var sb = new StringBuilder(name.Length);
         foreach (var c in name)
         {
-            sb.Append(invalidChars.Contains(c) ? '_' : c);
+            sb.Append(InvalidFileNameCharacters.Contains(c) ? '_' : c);
         }
 
         // 第二步：去除首尾空格和尾部点号（Windows 不允许文件名以点号或空格结尾）
@@ -99,12 +100,12 @@ public static class FileNameSanitizer
 
         // 可用空间不足以容纳哈希后缀（至少需要 7 字符：_ + 6位哈希），回退极短名
         if (availableForName < 8)
-            return FallbackName;
+            throw new PathTooLongException("输出目录本身过长，请选择更短的输出目录。");
 
         // 截断文件名并追加短哈希保证唯一性
         var hash = ComputeShortHash(fileName);
         var truncatedLength = availableForName - 7; // "_" + 6位哈希 = 7 字符
-        var truncated = fileName[..truncatedLength].TrimEnd('.');
+        var truncated = TruncateWithoutSplittingSurrogatePair(fileName, truncatedLength).TrimEnd('.', ' ');
 
         return $"{truncated}_{hash}";
     }
@@ -122,6 +123,37 @@ public static class FileNameSanitizer
     /// <summary>
     /// 计算字符串的 MD5 前 6 位十六进制哈希（用于截断后保证唯一性）。
     /// </summary>
+    private static HashSet<char> BuildInvalidCharacterSet()
+    {
+        var result = new HashSet<char>(Path.GetInvalidFileNameChars())
+        {
+            '<', '>', ':', '"', '/', '\\', '|', '?', '*'
+        };
+
+        for (var value = 0; value < 32; value++)
+        {
+            result.Add((char)value);
+        }
+
+        return result;
+    }
+
+    private static string TruncateWithoutSplittingSurrogatePair(string value, int maxUtf16Length)
+    {
+        if (value.Length <= maxUtf16Length)
+        {
+            return value;
+        }
+
+        var length = maxUtf16Length;
+        if (length > 0 && char.IsHighSurrogate(value[length - 1]))
+        {
+            length--;
+        }
+
+        return value[..length];
+    }
+
     private static string ComputeShortHash(string input)
     {
         var bytes = MD5.HashData(Encoding.UTF8.GetBytes(input));

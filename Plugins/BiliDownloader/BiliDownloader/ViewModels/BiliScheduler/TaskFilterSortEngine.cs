@@ -14,7 +14,8 @@ namespace BiliDownloader.ViewModels.BiliScheduler;
 public sealed record TaskFilterCriteria(
     string? TitleContains,
     string? StatusGroup,
-    string? DocumentId);
+    string? DocumentId,
+    TaskDateRange DateRange = TaskDateRange.All);
 
 /// <summary>
 /// G4: 排序字段枚举。
@@ -78,6 +79,16 @@ public static class TaskFilterSortEngine
         {
             query = query.Where(t => t.DocumentId == criteria.DocumentId);
         }
+
+        var threshold = criteria.DateRange switch
+        {
+            TaskDateRange.Today => DateTime.Today,
+            TaskDateRange.Last7Days => DateTime.Now.AddDays(-7),
+            TaskDateRange.Last30Days => DateTime.Now.AddDays(-30),
+            _ => DateTime.MinValue,
+        };
+        if (threshold != DateTime.MinValue)
+            query = query.Where(t => t.CreatedAt >= threshold);
 
         // 第二步：排序（ORDER BY 语义）
         query = sortField switch

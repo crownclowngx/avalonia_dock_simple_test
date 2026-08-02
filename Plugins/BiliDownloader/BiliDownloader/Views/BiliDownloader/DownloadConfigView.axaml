@@ -9,28 +9,82 @@
     <StackPanel Spacing="6">
         <!-- G5: 预设选择栏 -->
         <Border Classes="bili-doc-flat-section">
-            <Grid ColumnDefinitions="Auto,200,Auto,Auto,*" ColumnSpacing="8">
+            <Grid ColumnDefinitions="Auto,220,Auto,Auto,Auto,*"
+                  RowDefinitions="Auto,Auto"
+                  ColumnSpacing="8"
+                  RowSpacing="6">
                 <TextBlock Grid.Column="0" Text="下载预设" Classes="bili-doc-caption" VerticalAlignment="Center" />
                 <ComboBox Grid.Column="1"
                           Classes="bili-doc-input"
                           ItemsSource="{Binding Presets}"
                           SelectedItem="{Binding SelectedPreset}"
-                          PlaceholderText="选择预设" />
+                          PlaceholderText="选择预设">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Name}" />
+                                <TextBlock Text="{Binding Description}"
+                                           Classes="bili-doc-caption"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
                 <Button Grid.Column="2"
                         Content="应用"
                         Command="{Binding ApplyPresetCommand}"
                         Classes="bili-doc-button"
                         ToolTip.Tip="将选中预设的配置应用到当前下载" />
-                <Button Grid.Column="3"
-                        Content="保存为预设"
+                <TextBlock Grid.Column="3"
+                           Text="{Binding PresetStatusText}"
+                           Classes="bili-doc-caption"
+                           VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="1"
+                         Text="{Binding CustomPresetName}"
+                         Classes="bili-doc-input"
+                         PlaceholderText="自定义预设名称" />
+                <Button Grid.Row="1" Grid.Column="2"
+                        Content="保存副本"
                         Command="{Binding SaveAsPresetCommand}"
                         Classes="bili-doc-button"
                         ToolTip.Tip="将当前配置保存为自定义预设" />
+                <Button Grid.Row="1" Grid.Column="3"
+                        Content="重命名"
+                        Command="{Binding RenameSelectedPresetCommand}"
+                        Classes="bili-doc-button"
+                        ToolTip.Tip="输入新名称后重命名自定义预设" />
+                <Button Grid.Row="1" Grid.Column="4"
+                        Content="删除自定义预设"
+                        Command="{Binding DeleteSelectedPresetCommand}"
+                        Classes="bili-doc-button"
+                        ToolTip.Tip="内置预设不会被删除" />
             </Grid>
         </Border>
 
         <Border Classes="bili-doc-flat-section">
-            <Grid ColumnDefinitions="Auto,220,Auto,220,*" ColumnSpacing="8">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="7">
+                <PathIcon Grid.Column="0"
+                          Classes="bili-doc-icon"
+                          Data="{StaticResource BiliFolderGeometry}"
+                          VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1"
+                           Text="输出目录"
+                           Classes="bili-doc-caption"
+                           VerticalAlignment="Center" />
+                <TextBox Grid.Column="2"
+                         Classes="bili-doc-input"
+                         Text="{Binding OutputDirectory}"
+                         IsReadOnly="True"
+                         ToolTip.Tip="{Binding OutputDirectory}" />
+                <Button Grid.Column="3"
+                        Content="选择文件夹"
+                        Command="{Binding SelectFolderCommand}"
+                        Classes="bili-doc-button" />
+            </Grid>
+        </Border>
+
+        <Border Classes="bili-doc-flat-section">
+            <Grid ColumnDefinitions="Auto,220,Auto,220,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
                 <TextBlock Grid.Column="0" Text="视频质量" Classes="bili-doc-caption" VerticalAlignment="Center" />
                 <ComboBox Grid.Column="1"
                           Classes="bili-doc-input"
@@ -41,6 +95,12 @@
                           Classes="bili-doc-input"
                           ItemsSource="{Binding AudioQualityOptions}"
                           SelectedItem="{Binding SelectedAudioQuality}" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                           Text="{Binding QualityRestoreNotice}"
+                           Classes="bili-doc-caption"
+                           Foreground="{DynamicResource AppWarningBrush}"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding QualityRestoreNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </Grid>
         </Border>
 
@@ -77,25 +137,6 @@
                     </StackPanel>
                 </Border>
 
-                <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="7">
-                    <PathIcon Grid.Column="0"
-                              Classes="bili-doc-icon"
-                              Data="{StaticResource BiliFolderGeometry}"
-                              VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1"
-                               Text="输出目录"
-                               Classes="bili-doc-caption"
-                               VerticalAlignment="Center" />
-                    <TextBox Grid.Column="2"
-                             Classes="bili-doc-input"
-                             Text="{Binding OutputDirectory}"
-                             IsReadOnly="True"
-                             ToolTip.Tip="{Binding OutputDirectory}" />
-                    <Button Grid.Column="3"
-                            Content="选择文件夹"
-                            Command="{Binding SelectFolderCommand}"
-                            Classes="bili-doc-button" />
-                </Grid>
             </StackPanel>
         </Expander>
     </StackPanel>

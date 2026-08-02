@@ -1,5 +1,7 @@
 # G5：下载预设与命名模板
 
+> 2026-08-02 复核更新：基线 `615badc` 的预览未接通、非法/重复名称可提交、构造函数 fire-and-forget 初始化及 Document V2 恢复不完整问题已修复。下载配置使用完整不可变 `DownloadProfile`，预设支持复制、命名、重命名和删除；Document 配置优先于全局默认且画质可延迟恢复；命名预览随解析、选择和标题变化刷新，变量可点击插入，非法模板、空结果及批内重名会阻止提交。
+
 > 实施日期：2026-08-02
 >
 > 状态：已完成
@@ -163,7 +165,8 @@ G5 解决的是下载配置从"每次手动设置"到"一键复用方案"的产�
 | `DocumentV2G5Tests.cs`（版本判别） | 4 | 未知版本/空Metadata/空Content/null Content |
 | `DocumentV2G5Tests.cs`（模型） | 2 | 默认值/缺失字段反序列化 |
 | 现有测试回归 | 256 | 全部通过，无破坏性变更 |
-| **总计** | **323** | |
+| `AggressiveRefactorAcceptanceTests.cs` | 10 | G3–G5 闭环、缺失预设/画质回退与新提交边界 |
+| **总计** | **333** | |
 
 ## 8. 退出条件验证
 
@@ -180,5 +183,5 @@ G5 解决的是下载配置从"每次手动设置"到"一键复用方案"的产�
 - `{up}` 和 `{date}` 变量在番剧场景下为空（番剧无 UP 主概念，API 不返回 pubdate）。渲染结果为空串，经 Sanitize 后回退为 "download"。
 - 路径超长截断后追加 MD5 前 6 位哈希保证唯一性，但极端情况下仍有理论碰撞可能。G6 冲突预检阶段会进一步兜底。
 - 预设 JSON 格式未来变更时，`NullValueHandling.Ignore` + 字段默认值可保证向前兼容，但不支持字段重命名。
-- `BiliDownloadService.SanitizeFileName` 已标记 `[Obsolete]`，现有 4 处调用点产生编译警告。后续可渐进迁移到 `FileNameSanitizer.Sanitize`。
-- 剩余时间估算（EstimatedRemainingText）仍未实现（G4 遗留），留待后续优化。
+- 所有生产与测试调用点均已迁移到 `FileNameSanitizer.Sanitize`，过时兼容入口不再产生编译警告。
+- 剩余时间估算已使用持久化的数值速度计算，不再解析 UI 展示字符串作为主数据源。

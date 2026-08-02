@@ -39,14 +39,18 @@ public partial class BiliSchedulerToolViewModel : Tool
         ISettingsRepository settingsStore,
         PluginLifecycleManager lifecycleManager,
         IFfmpegService ffmpegService,
-        IConfirmationService? confirmationService = null)
+        IConfirmationService? confirmationService = null,
+        IFileRevealService? fileRevealService = null,
+        IUiDispatcher? uiDispatcher = null)
     {
         _coordinator = coordinator;
         _lifecycleManager = lifecycleManager;
 
         TaskList = new SchedulerTaskListViewModel(coordinator, taskStore,
             onStatusMessage: msg => SchedulerStatus = msg,
-            confirmationService: confirmationService);
+            confirmationService: confirmationService,
+            fileRevealService: fileRevealService,
+            uiDispatcher: uiDispatcher);
 
         Settings = new SchedulerSettingsViewModel(settingsStore, ffmpegService);
 

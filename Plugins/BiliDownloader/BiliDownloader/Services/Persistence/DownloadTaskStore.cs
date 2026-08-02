@@ -46,6 +46,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
             CREATE TABLE IF NOT EXISTS download_tasks (
                 task_id             TEXT NOT NULL PRIMARY KEY,
                 document_id         TEXT NOT NULL,
+                source_document_title TEXT NOT NULL DEFAULT '',
                 series_title        TEXT NOT NULL DEFAULT '',
                 item_title          TEXT NOT NULL DEFAULT '',
                 aid                 INTEGER NOT NULL DEFAULT 0,
@@ -65,6 +66,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 audio_progress      REAL NOT NULL DEFAULT 0,
                 merge_progress      REAL NOT NULL DEFAULT 0,
                 speed_text          TEXT NOT NULL DEFAULT '',
+                bytes_per_second    INTEGER NOT NULL DEFAULT 0,
                 created_at          TEXT NOT NULL DEFAULT (datetime('now','localtime')),
                 expected_video_bytes INTEGER NOT NULL DEFAULT 0,
                 expected_audio_bytes INTEGER NOT NULL DEFAULT 0,
@@ -91,6 +93,8 @@ public class DownloadTaskStore : IDownloadTaskRepository
             "ALTER TABLE download_tasks ADD COLUMN audio_progress REAL NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN merge_progress REAL NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN speed_text TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN bytes_per_second INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN source_document_title TEXT NOT NULL DEFAULT '';",
             "ALTER TABLE download_tasks ADD COLUMN audio_quality_id INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN sub_folder TEXT NOT NULL DEFAULT '';",
             // 架构改进：完整性验证和错误分类字段
@@ -141,22 +145,22 @@ public class DownloadTaskStore : IDownloadTaskRepository
             await using var cmd = connection.CreateCommand();
             cmd.CommandText = """
                 INSERT OR REPLACE INTO download_tasks
-                    (task_id, document_id, series_title, item_title, aid, bvid, cid,
+                    (task_id, document_id, source_document_title, series_title, item_title, aid, bvid, cid,
                      quality_id, audio_quality_id, output_directory, sub_folder,
                      progress, status, error_message,
                      temp_directory, video_bytes, audio_bytes,
-                     video_progress, audio_progress, merge_progress, speed_text,
+                     video_progress, audio_progress, merge_progress, speed_text, bytes_per_second,
                      created_at, media_type, ep_id, season_id,
                      extras_config, cover_url, extras_result_summary,
                      expected_video_bytes, expected_audio_bytes,
                      video_integrity_passed, audio_integrity_passed,
                      output_file_path, last_updated_at, error_type, is_retryable)
                 VALUES
-                    ($task_id, $document_id, $series_title, $item_title, $aid, $bvid, $cid,
+                    ($task_id, $document_id, $source_document_title, $series_title, $item_title, $aid, $bvid, $cid,
                      $quality_id, $audio_quality_id, $output_directory, $sub_folder,
                      $progress, $status, $error_message,
                      $temp_directory, $video_bytes, $audio_bytes,
-                     $video_progress, $audio_progress, $merge_progress, $speed_text,
+                     $video_progress, $audio_progress, $merge_progress, $speed_text, $bytes_per_second,
                      $created_at, $media_type, $ep_id, $season_id,
                      $extras_config, $cover_url, $extras_result_summary,
                      $expected_video_bytes, $expected_audio_bytes,
@@ -165,6 +169,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 """;
             cmd.Parameters.AddWithValue("$task_id", r.TaskId);
             cmd.Parameters.AddWithValue("$document_id", r.DocumentId);
+            cmd.Parameters.AddWithValue("$source_document_title", r.SourceDocumentTitle);
             cmd.Parameters.AddWithValue("$series_title", r.SeriesTitle);
             cmd.Parameters.AddWithValue("$item_title", r.ItemTitle);
             cmd.Parameters.AddWithValue("$aid", r.Aid);
@@ -186,6 +191,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.Parameters.AddWithValue("$audio_progress", r.AudioProgress);
             cmd.Parameters.AddWithValue("$merge_progress", r.MergeProgress);
             cmd.Parameters.AddWithValue("$speed_text", r.SpeedText);
+            cmd.Parameters.AddWithValue("$bytes_per_second", r.BytesPerSecond);
             cmd.Parameters.AddWithValue("$created_at", r.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
             cmd.Parameters.AddWithValue("$media_type", r.MediaType);
             cmd.Parameters.AddWithValue("$ep_id", r.EpId);
@@ -253,6 +259,39 @@ public class DownloadTaskStore : IDownloadTaskRepository
         cmd.Parameters.AddWithValue("$video_bytes", videoBytes);
         cmd.Parameters.AddWithValue("$audio_bytes", audioBytes);
         cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(DateTime.Now));
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task UpdateRuntimeSnapshotAsync(TaskRuntimeSnapshot snapshot)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            UPDATE download_tasks
+            SET progress = $progress,
+                status = $status,
+                video_progress = $video_progress,
+                audio_progress = $audio_progress,
+                merge_progress = $merge_progress,
+                speed_text = $speed_text,
+                bytes_per_second = $bytes_per_second,
+                video_bytes = $video_bytes,
+                audio_bytes = $audio_bytes,
+                last_updated_at = $last_updated_at
+            WHERE task_id = $task_id;
+            """;
+        cmd.Parameters.AddWithValue("$task_id", snapshot.TaskId);
+        cmd.Parameters.AddWithValue("$progress", snapshot.Progress);
+        cmd.Parameters.AddWithValue("$status", snapshot.Status);
+        cmd.Parameters.AddWithValue("$video_progress", snapshot.VideoProgress);
+        cmd.Parameters.AddWithValue("$audio_progress", snapshot.AudioProgress);
+        cmd.Parameters.AddWithValue("$merge_progress", snapshot.MergeProgress);
+        cmd.Parameters.AddWithValue("$speed_text", snapshot.SpeedText);
+        cmd.Parameters.AddWithValue("$bytes_per_second", snapshot.BytesPerSecond);
+        cmd.Parameters.AddWithValue("$video_bytes", snapshot.VideoBytes);
+        cmd.Parameters.AddWithValue("$audio_bytes", snapshot.AudioBytes);
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(snapshot.UpdatedAt));
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -546,6 +585,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
         {
             TaskId = reader.GetString(reader.GetOrdinal("task_id")),
             DocumentId = reader.GetString(reader.GetOrdinal("document_id")),
+            SourceDocumentTitle = TryGetString(reader, "source_document_title"),
             SeriesTitle = reader.GetString(reader.GetOrdinal("series_title")),
             ItemTitle = reader.GetString(reader.GetOrdinal("item_title")),
             Aid = reader.GetInt64(reader.GetOrdinal("aid")),
@@ -567,6 +607,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
             AudioProgress = TryGetDouble(reader, "audio_progress"),
             MergeProgress = TryGetDouble(reader, "merge_progress"),
             SpeedText = TryGetString(reader, "speed_text"),
+            BytesPerSecond = TryGetLong(reader, "bytes_per_second"),
             CreatedAt = DateTime.TryParse(
                 reader.GetString(reader.GetOrdinal("created_at")),
                 out var dt) ? dt : DateTime.Now,

@@ -10,6 +10,7 @@ using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.Services.Infrastructure;
+using BiliDownloader.Services.Naming;
 using BiliDownloader.ViewModels.BiliDownloader;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -32,6 +33,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
     private readonly IMessengerService _messengerService;
     private readonly IDownloadTaskRepository _taskRepository;
+    private readonly object _initializationLock = new();
+    private Task? _initializationTask;
 
     #region 子 ViewModel
 
@@ -88,15 +91,19 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             onParsed: HandleParseResult,
             isLoggedInCheck: () => LoginBar.IsLoggedIn);
 
-        DownloadConfig = new DownloadConfigViewModel(settingsRepository, presetRepository);
-
         // G5: 命名模板子 VM
         NamingTemplate = new NamingTemplateViewModel();
+        DownloadConfig = new DownloadConfigViewModel(
+            settingsRepository,
+            presetRepository,
+            () => NamingTemplate.Template);
+        DownloadConfig.PresetApplied += preset => NamingTemplate.Template = preset.NamingTemplate;
 
         VideoList = new VideoListViewModel(
             getSubmitContext: () => new SubmitContext
             {
                 DocumentId = DocumentId,
+                DocumentTitle = Title,
                 QualityId = DownloadConfig.SelectedQuality?.QualityId ?? 0,
                 AudioQualityId = DownloadConfig.SelectedAudioQuality?.QualityId ?? 0,
                 OutputDirectory = DownloadConfig.OutputDirectory,
@@ -111,12 +118,27 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 NamingTemplate = NamingTemplate.Template,
                 UpName = _videoCollection?.UpName ?? "",
                 PublishDate = _videoCollection?.PublishDate,
+                IsNamingValid = NamingTemplate.IsValid,
+                NamingValidationError = NamingTemplate.ValidationError ?? "",
             },
             messengerService: _messengerService,
             onStatusMessage: msg => AppendLog(msg),
             ffmpegService: ffmpegService);
+        VideoList.SelectionOrTitleChanged += RefreshNamingPreview;
 
         RegisterMessengers();
+    }
+
+    public Task InitializeAsync()
+    {
+        lock (_initializationLock)
+            return _initializationTask ??= InitializeCoreAsync();
+    }
+
+    private async Task InitializeCoreAsync()
+    {
+        await DownloadConfig.InitializeAsync();
+        await RecoverTasksFromStoreAsync();
     }
 
     #region 消息总线注册
@@ -201,12 +223,30 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             result.AudioQualityOptions,
             result.SelectedAudioQuality,
             result.IsMultiVideo);
+        RefreshNamingPreview();
 
         IsParsed = true;
         IsModified = true;
 
         // 同步解析状态到 VideoParse 子 VM
         VideoParse.IsParsed = true;
+    }
+
+    private void RefreshNamingPreview()
+    {
+        var contexts = VideoList.VideoItems
+            .Where(item => item.IsSelected)
+            .Select(item => new NamingContext
+            {
+                Title = item.Title,
+                Index = item.Index,
+                Bvid = item.Bvid,
+                UpName = _videoCollection?.UpName ?? "",
+                PublishDate = _videoCollection?.PublishDate,
+                SeriesTitle = _videoCollection?.SeriesTitle ?? "",
+            })
+            .ToList();
+        NamingTemplate.UpdatePreview(contexts);
     }
 
     #endregion
@@ -299,14 +339,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             DownloadCover = DownloadConfig.DownloadCover,
         };
 
-        var saveData = new DocumentSaveData
-        {
-            DocumentTypeId = SaveDocumentTypeId,
-            Title = Title,
-            SaveTime = DateTime.Now,
-            Content = JsonConvert.SerializeObject(saveDataObject),
-            PluginMetadata = JsonConvert.SerializeObject(new { Version = "2.0" })
-        };
+        var saveData = DocumentSaveCodec.EncodeV2(SaveDocumentTypeId, Title, saveDataObject);
 
         IsModified = false;
         return saveData;
@@ -328,27 +361,19 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         {
             if (saveData == null) return;
 
-            // 解析版本号
-            var version = "1.0";
-            if (!string.IsNullOrEmpty(saveData.PluginMetadata))
+            var decoded = DocumentSaveCodec.Decode(saveData);
+            if (decoded.MajorVersion == 2)
             {
-                var metadata = JsonConvert.DeserializeObject<JObject>(saveData.PluginMetadata);
-                version = metadata?["Version"]?.ToString() ?? "1.0";
+                LoadV2(decoded.Content);
             }
-
-            if (version == "2.0")
+            else if (decoded.MajorVersion == 1)
             {
-                LoadV2(saveData.Content);
-            }
-            else if (version == "1.0")
-            {
-                LoadV1(saveData.Content);
+                LoadV1(decoded.Content);
             }
             else
             {
-                // 未知版本：宽容读取已知字段，不崩溃
-                Log.Error($"未知的 Document 版本: {version}，尝试宽容读取。", null);
-                LoadV1(saveData.Content); // 回退到 V1 逻辑
+                Log.Error("未知的 Document 主版本，仅恢复安全公共字段。", null);
+                LoadSafeCommonFields(decoded.Content);
             }
 
             OnPropertyChanged(nameof(DocumentId));
@@ -373,12 +398,11 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
         VideoParse.Url = url;
         DownloadInfo = downloadInfo;
-        DownloadConfig.OutputDirectory = outputDirectory;
-
         // 恢复 UseGroupFolder
         var useGroupFolderVal = data["UseGroupFolder"];
-        if (useGroupFolderVal != null && useGroupFolderVal.Type != JTokenType.Null)
-            DownloadConfig.UseGroupFolder = (bool)useGroupFolderVal;
+        var useGroupFolder = useGroupFolderVal != null
+            && useGroupFolderVal.Type != JTokenType.Null
+            && (bool)useGroupFolderVal;
 
         // 恢复 AddIndexToTitle
         var addIndexVal = data["AddIndexToTitle"];
@@ -386,7 +410,6 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         if (addIndexVal != null && addIndexVal.Type != JTokenType.Null)
         {
             addIndex = (bool)addIndexVal;
-            DownloadConfig.AddIndexToTitle = addIndex;
         }
 
         // 恢复 DocumentId
@@ -396,6 +419,13 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
         // G5: V1 → V2 语义迁移：根据 AddIndexToTitle 生成命名模板
         NamingTemplate.Template = addIndex ? "{index}.{title}" : "{title}";
+        DownloadConfig.RestoreDocumentConfiguration(new DocumentSaveDataV2
+        {
+            OutputDirectory = outputDirectory,
+            UseGroupFolder = useGroupFolder,
+            AddIndexToTitle = addIndex,
+            NamingTemplate = NamingTemplate.Template,
+        });
     }
 
     /// <summary>
@@ -409,27 +439,25 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         // V1 兼容字段
         VideoParse.Url = data.Url;
         DownloadInfo = data.DownloadInfo;
-        DownloadConfig.OutputDirectory = data.OutputDirectory;
-        DownloadConfig.UseGroupFolder = data.UseGroupFolder;
-        DownloadConfig.AddIndexToTitle = data.AddIndexToTitle;
+        DownloadConfig.RestoreDocumentConfiguration(data);
 
         if (!string.IsNullOrEmpty(data.DocumentId))
             DocumentId = data.DocumentId;
 
         // V2 新增字段
         NamingTemplate.Template = data.NamingTemplate;
-        DownloadConfig.DownloadDanmaku = data.DownloadDanmaku;
-        DownloadConfig.DownloadSubtitle = data.DownloadSubtitle;
-        DownloadConfig.DownloadCover = data.DownloadCover;
-
-        // 恢复预设选中状态（延迟到预设列表加载完成后生效）
-        // 设计思考：预设列表是异步加载的，此处只记录 ID，
-        // DownloadConfigViewModel.InitAsync 完成后会自动匹配。
-        _pendingPresetId = data.PresetId;
     }
 
-    /// <summary>待匹配的预设 ID（V2 加载时设置，预设列表加载后匹配）</summary>
-    private string? _pendingPresetId;
+    private void LoadSafeCommonFields(string content)
+    {
+        var data = JsonConvert.DeserializeObject<JObject>(content);
+        if (data is null) return;
+        VideoParse.Url = data["Url"]?.ToString() ?? "";
+        var documentId = data["DocumentId"]?.ToString();
+        if (!string.IsNullOrWhiteSpace(documentId)) DocumentId = documentId;
+        var output = data["OutputDirectory"]?.ToString();
+        if (!string.IsNullOrWhiteSpace(output)) DownloadConfig.OutputDirectory = output;
+    }
 
     #endregion
 }

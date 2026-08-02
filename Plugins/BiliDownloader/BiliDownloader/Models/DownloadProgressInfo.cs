@@ -34,4 +34,7 @@ public class DownloadProgressInfo
     /// 下载速度文本，如 "2.5 MB/s"，非下载阶段为空
     /// </summary>
     public string SpeedText { get; set; } = "";
+
+    /// <summary>Numeric transfer speed used by UI and persistence.</summary>
+    public long BytesPerSecond { get; set; }
 }

@@ -1,3 +1,8 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using BiliDownloader.Models;
+
 namespace BiliDownloader.Services.Infrastructure;
 
 /// <summary>
@@ -19,15 +24,112 @@ public interface IConfirmationService
     Task<bool> ConfirmAsync(string title, string message);
 }
 
-/// <summary>
-/// 未注入确认服务时的空实现（始终返回 true）。
-/// 设计思考：保持与 G2 的 NullCredentialProvider 相同的向后兼容模式——
-/// 构造函数参数可选（= null），未注入时 fallback 到此实现，
-/// 确保现有测试和调用点无需修改即可编译通过。
-/// 注意：生产环境应注入真实的 Avalonia 对话框实现。
-/// </summary>
-public sealed class NullConfirmationService : IConfirmationService
+public interface IUserPromptService : IConfirmationService
 {
-    /// <inheritdoc />
-    public Task<bool> ConfirmAsync(string title, string message) => Task.FromResult(true);
+    Task<DeleteTaskPromptResult> ConfirmDeleteAsync(int taskCount, bool hasOutputFiles);
+}
+
+/// <summary>
+/// 未注入提示边界时采用安全取消，绝不隐式批准破坏性操作。
+/// </summary>
+public sealed class SafeCancellationConfirmationService : IUserPromptService
+{
+    public Task<bool> ConfirmAsync(string title, string message) => Task.FromResult(false);
+    public Task<DeleteTaskPromptResult> ConfirmDeleteAsync(int taskCount, bool hasOutputFiles)
+        => Task.FromResult(DeleteTaskPromptResult.Cancelled);
+}
+
+/// <summary>Application-owned modal prompts for destructive task actions.</summary>
+public sealed class AvaloniaUserPromptService : IUserPromptService
+{
+    public async Task<bool> ConfirmAsync(string title, string message)
+    {
+        var owner = GetOwner();
+        if (owner is null) return false;
+        var result = await CreateConfirmationWindow(title, message).ShowDialog<bool>(owner);
+        return result;
+    }
+
+    public async Task<DeleteTaskPromptResult> ConfirmDeleteAsync(int taskCount, bool hasOutputFiles)
+    {
+        var owner = GetOwner();
+        if (owner is null) return DeleteTaskPromptResult.Cancelled;
+
+        var tempCheck = new CheckBox { Content = "同时删除未完成的临时文件" };
+        var outputCheck = new CheckBox
+        {
+            Content = "同时删除已经下载的成品文件",
+            IsEnabled = hasOutputFiles,
+        };
+        var cancel = new Button { Content = "取消", MinWidth = 76 };
+        var confirm = new Button { Content = "删除任务记录", MinWidth = 108 };
+        var buttons = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+            Spacing = 8,
+            Children = { cancel, confirm },
+        };
+        var window = new Window
+        {
+            Title = "删除任务",
+            Width = 430,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new StackPanel
+            {
+                Margin = new Thickness(20),
+                Spacing = 12,
+                Children =
+                {
+                    new TextBlock { Text = $"将从任务中心移除 {taskCount} 个任务。默认不会删除本地文件。", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                    tempCheck,
+                    outputCheck,
+                    buttons,
+                },
+            },
+        };
+        cancel.Click += (_, _) => window.Close(DeleteTaskPromptResult.Cancelled);
+        confirm.Click += (_, _) => window.Close(new DeleteTaskPromptResult(
+            true, tempCheck.IsChecked == true, outputCheck.IsChecked == true));
+        return await window.ShowDialog<DeleteTaskPromptResult>(owner)
+            ?? DeleteTaskPromptResult.Cancelled;
+    }
+
+    private static Window CreateConfirmationWindow(string title, string message)
+    {
+        var cancel = new Button { Content = "取消", MinWidth = 76 };
+        var confirm = new Button { Content = "继续", MinWidth = 76 };
+        var window = new Window
+        {
+            Title = title,
+            Width = 410,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+        cancel.Click += (_, _) => window.Close(false);
+        confirm.Click += (_, _) => window.Close(true);
+        window.Content = new StackPanel
+        {
+            Margin = new Thickness(20),
+            Spacing = 14,
+            Children =
+            {
+                new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { cancel, confirm },
+                },
+            },
+        };
+        return window;
+    }
+
+    private static Window? GetOwner()
+        => (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
 }

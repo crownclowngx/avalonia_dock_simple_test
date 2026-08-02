@@ -6,6 +6,7 @@ using Avalonia.Styling;
 using BiliDownloader.Converters;
 using BiliDownloader.Views;
 using BiliDownloader.Views.BiliDownloader;
+using BiliDownloader.Views.BiliScheduler;
 using Xunit;
 
 namespace MyAvaloniaManagement.UiTests;
@@ -53,7 +54,31 @@ public sealed class BiliDownloaderDocumentVisualTests
     }
 
     [AvaloniaFact]
-    public void 运行日志默认展开且文档样式不影响调度工具()
+    public void 任务中心在关键断点与双主题下保持响应式和虚拟化()
+    {
+        using var context = new UiTestContext();
+        var application = Assert.IsType<App>(Application.Current);
+        var originalTheme = application.RequestedThemeVariant;
+        try
+        {
+            foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            foreach (var width in new[] { 320d, 479d, 480d, 640d, 700d })
+            {
+                application.RequestedThemeVariant = theme;
+                var view = new SchedulerTaskListView();
+                Measure(view, new Size(width, 700));
+                Assert.Equal(width < 480, view.Classes.Contains("compact"));
+                Assert.NotNull(view.FindControl<ListBox>("TaskList")?.ItemsPanel);
+            }
+        }
+        finally
+        {
+            application.RequestedThemeVariant = originalTheme;
+        }
+    }
+
+    [AvaloniaFact]
+    public void 运行日志默认折叠且文档样式不影响调度工具()
     {
         using var context = new UiTestContext();
         var document = new BiliDownloaderView();
@@ -61,7 +86,7 @@ public sealed class BiliDownloaderDocumentVisualTests
 
         var log = document.FindControl<Expander>("DownloadLogExpander");
         Assert.NotNull(log);
-        Assert.True(log.IsExpanded);
+        Assert.False(log.IsExpanded);
 
         var toolControls = schedulerTool.GetLogicalDescendants()
             .OfType<Control>()

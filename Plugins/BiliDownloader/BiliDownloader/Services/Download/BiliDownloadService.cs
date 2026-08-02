@@ -2,6 +2,7 @@ using System.Text;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Infrastructure;
+using BiliDownloader.Services.Naming;
 
 namespace BiliDownloader.Services.Download;
 
@@ -77,7 +78,7 @@ public class BiliDownloadService : IDisposable
 
         var videoTmp = Path.Combine(task.TempDirectory, "video.tmp");
         var audioTmp = Path.Combine(task.TempDirectory, "audio.tmp");
-        var safeTitle = SanitizeFileName(task.ItemTitle);
+        var safeTitle = FileNameSanitizer.Sanitize(task.ItemTitle);
         var outputPath = GetUniqueFilePath(actualOutputDir, safeTitle, "mp4");
 
         // 进度状态容器（跨三个阶段累计）

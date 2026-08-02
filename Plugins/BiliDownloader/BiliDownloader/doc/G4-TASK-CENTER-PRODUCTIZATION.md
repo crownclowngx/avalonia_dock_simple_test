@@ -1,5 +1,7 @@
 # G4：任务中心产品化
 
+> 2026-08-02 复核更新：基线 `eb5c20a` 的持久化模型/UI 状态混用、默认跳过删除确认、GUID 筛选文案和常驻批量按钮已重构。任务卡使用独立 `DownloadTaskItemViewModel`，选择按 TaskId 跨筛选保持；删除默认仅移除记录，临时文件/成品均需显式勾选；增加今天/7天/30天筛选、180ms 搜索防抖、中文选项、加载/空/错误状态、数值速度/ETA、480px 响应式布局和虚拟化列表。
+
 > 实施日期：2026-08-02
 >
 > 状态：已完成
@@ -142,8 +144,7 @@ Coordinator 事件
 ## 8. 明确限制与后续工作
 
 - 筛选为内存 LINQ 实现，100 条级别 < 1ms。若未来任务量增长到 1000+，可迁移到 SQLite 分页查询，`TaskFilterSortEngine` 纯函数接口不变。
-- 确认服务当前使用 `NullConfirmationService`（始终确认）作为默认实现。生产环境需注入 Avalonia 对话框实现（可在插件 DI 注册时替换）。
+- 生产环境已注册 `AvaloniaUserPromptService`；无 UI owner 时采用安全取消。
 - 进度节流间隔硬编码 500ms（G3 决策）。G4 未修改此值，后续可根据并发数动态调整。
-- `DownloadProgressTracker` 中 `_lastProgressDbWrite`/`_lastBytesDbWrite` 字典在任务删除后不清理（G3 遗留）。G4 的 `_taskIndex` 在删除时正确清理，但 Tracker 的清理留待后续。
-- 剩余时间估算（EstimatedRemainingText）未实现。需要解析 SpeedText 中的速度值并计算剩余字节/速度，留待 G5 或后续优化。
-- Document 筛选下拉框显示原始 DocumentId（GUID），用户可读性不佳。G5 预设与命名阶段可考虑显示 Document 标题。
+- 任务删除会清理 Tracker 与 UI 索引；ETA 使用数值 `BytesPerSecond` 计算。
+- Document 筛选优先显示工作台标题，旧记录回退为截断后的 Document ID。

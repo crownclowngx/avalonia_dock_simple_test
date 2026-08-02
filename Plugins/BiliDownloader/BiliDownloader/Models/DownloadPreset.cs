@@ -11,6 +11,35 @@ namespace BiliDownloader.Models;
 /// </summary>
 public sealed record DownloadPreset
 {
+    public override string ToString() => Name;
+
+    public string Description => Id switch
+    {
+        BuiltInPresets.CompatId => "720P，优先兼容与体积",
+        BuiltInPresets.QualityId => "最高画质并下载字幕",
+        BuiltInPresets.ArchiveId => "最高画质与全部附加资源",
+        _ => "自定义下载方案",
+    };
+
+    public DownloadProfile ToProfile() => new(
+        QualityPreference, AudioQualityId, UseGroupFolder, AddIndexToTitle,
+        DownloadDanmaku, DownloadSubtitle, DownloadCover, NamingTemplate, OutputDirectory);
+
+    public static DownloadPreset FromProfile(string id, string name, DownloadProfile profile) => new()
+    {
+        Id = id,
+        Name = name,
+        IsBuiltIn = false,
+        QualityPreference = profile.QualityPreference,
+        AudioQualityId = profile.AudioQualityId,
+        UseGroupFolder = profile.UseGroupFolder,
+        AddIndexToTitle = profile.AddIndexToTitle,
+        DownloadDanmaku = profile.DownloadDanmaku,
+        DownloadSubtitle = profile.DownloadSubtitle,
+        DownloadCover = profile.DownloadCover,
+        NamingTemplate = profile.NamingTemplate,
+        OutputDirectory = profile.OutputDirectory,
+    };
     /// <summary>预设唯一标识（内置为 "builtin_compat" 等，自定义为 GUID）</summary>
     public string Id { get; init; } = "";
 

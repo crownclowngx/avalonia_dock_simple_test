@@ -32,8 +32,13 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IDownloadTaskRepository, DownloadTaskStore>();
         services.AddSingleton<ISettingsRepository, SettingsStore>();
         services.AddSingleton<IPresetRepository, PresetStore>(); // G5: 预设持久化
+        services.AddSingleton<IDownloadPresetService, DownloadPresetService>();
         services.AddSingleton<IFfmpegProcessFactory, FfmpegProcessFactory>();
         services.AddSingleton<IFfmpegService, FfmpegService>();
+        services.AddSingleton<IUserPromptService, AvaloniaUserPromptService>();
+        services.AddSingleton<IConfirmationService>(provider => provider.GetRequiredService<IUserPromptService>());
+        services.AddSingleton<IFileRevealService, FileRevealService>();
+        services.AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>();
         services.AddSingleton<IBiliHttpClientFactory, BiliHttpClientFactory>();
         services.AddSingleton<IDownloadRuntime, SystemDownloadRuntime>();
 
@@ -55,6 +60,7 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
             provider.GetRequiredService<IBiliHttpClientFactory>()));
         services.AddSingleton<IDownloadTaskExecutor, BiliDownloadTaskExecutor>();
         services.AddSingleton<IDownloadProgressTracker, DownloadProgressTracker>();
+        services.AddSingleton<IDownloadRecoveryService, DownloadRecoveryService>();
 
         services.AddSingleton<BiliDownloadCoordinator>();
         services.AddSingleton<BiliSchedulerToolViewModel>();

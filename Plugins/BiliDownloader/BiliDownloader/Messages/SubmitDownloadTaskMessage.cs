@@ -33,10 +33,12 @@ public class DownloadItemInfo
 /// </summary>
 public class SubmitDownloadTaskMessage
 {
+    public DownloadSubmission Submission { get; }
     /// <summary>
     /// 发起方 Document 实例 ID（用于定向回传进度）
     /// </summary>
     public string SourceDocumentId { get; }
+    public string SourceDocumentTitle { get; }
 
     /// <summary>
     /// 系列标题（用于文件夹命名）
@@ -81,15 +83,71 @@ public class SubmitDownloadTaskMessage
         int audioQualityId,
         string outputDirectory,
         bool useGroupFolder = false,
-        ExtrasType extrasConfig = ExtrasType.None)
+        ExtrasType extrasConfig = ExtrasType.None,
+        string sourceDocumentTitle = "")
+        : this(new DownloadSubmission(
+            sourceDocumentId,
+            sourceDocumentTitle,
+            seriesTitle,
+            new DownloadProfileSnapshot(
+                qualityId,
+                audioQualityId,
+                outputDirectory,
+                useGroupFolder,
+                AddIndexToTitle: false,
+                extrasConfig.HasFlag(ExtrasType.Danmaku),
+                extrasConfig.HasFlag(ExtrasType.Subtitle),
+                extrasConfig.HasFlag(ExtrasType.Cover),
+                global::BiliDownloader.Services.Naming.NamingTemplateEngine.DefaultTemplate),
+            items.Select(item => new DownloadSubmissionItem(
+                item.ItemId, item.Title, item.Aid, item.Bvid, item.Cid, item.Duration,
+                item.MediaType, item.EpId, item.SeasonId, item.CoverUrl)).ToArray()))
     {
-        SourceDocumentId = sourceDocumentId;
-        SeriesTitle = seriesTitle;
-        Items = items;
-        QualityId = qualityId;
-        AudioQualityId = audioQualityId;
-        OutputDirectory = outputDirectory;
-        UseGroupFolder = useGroupFolder;
-        ExtrasConfig = extrasConfig;
     }
+
+    public SubmitDownloadTaskMessage(DownloadSubmission submission)
+    {
+        Submission = submission;
+        SourceDocumentId = submission.DocumentId;
+        SourceDocumentTitle = submission.DocumentTitle;
+        SeriesTitle = submission.SeriesTitle;
+        Items = submission.Items.Select(item => new DownloadItemInfo
+        {
+            ItemId = item.ItemId,
+            Title = item.Title,
+            Aid = item.Aid,
+            Bvid = item.Bvid,
+            Cid = item.Cid,
+            Duration = item.Duration,
+            MediaType = item.MediaType,
+            EpId = item.EpId,
+            SeasonId = item.SeasonId,
+            CoverUrl = item.CoverUrl,
+        }).ToList();
+        QualityId = submission.Profile.VideoQualityId;
+        AudioQualityId = submission.Profile.AudioQualityId;
+        OutputDirectory = submission.Profile.OutputDirectory;
+        UseGroupFolder = submission.Profile.UseGroupFolder;
+        ExtrasConfig = (submission.Profile.DownloadDanmaku ? ExtrasType.Danmaku : ExtrasType.None)
+            | (submission.Profile.DownloadSubtitle ? ExtrasType.Subtitle : ExtrasType.None)
+            | (submission.Profile.DownloadCover ? ExtrasType.Cover : ExtrasType.None);
+    }
+
+    public DownloadSubmission ToSubmission() => new(
+        SourceDocumentId,
+        SourceDocumentTitle,
+        SeriesTitle,
+        Submission.Profile with
+        {
+            VideoQualityId = QualityId,
+            AudioQualityId = AudioQualityId,
+            OutputDirectory = OutputDirectory,
+            UseGroupFolder = UseGroupFolder,
+            DownloadDanmaku = ExtrasConfig.HasFlag(ExtrasType.Danmaku),
+            DownloadSubtitle = ExtrasConfig.HasFlag(ExtrasType.Subtitle),
+            DownloadCover = ExtrasConfig.HasFlag(ExtrasType.Cover),
+        },
+        Items.Select(item => new DownloadSubmissionItem(
+            item.ItemId, item.Title, item.Aid, item.Bvid, item.Cid, item.Duration,
+            item.MediaType, item.EpId, item.SeasonId, item.CoverUrl)).ToArray());
 }

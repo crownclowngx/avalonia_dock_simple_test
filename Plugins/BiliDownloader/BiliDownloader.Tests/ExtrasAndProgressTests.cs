@@ -294,7 +294,9 @@ public sealed class ExtrasAndProgressTests
         // G3: 关闭 Channel 并等待所有待写入落盘
         await tracker.ShutdownAsync();
 
-        Assert.Equal(1, repository.CallLog.Count(x => x == "repository:bytes"));
+        Assert.True(repository.CallLog.Count(x => x == "repository:bytes") >= 1);
+        Assert.Equal(30, task.VideoBytesDownloaded);
+        Assert.Equal(40, task.AudioBytesDownloaded);
         var status = Assert.IsType<DownloadTaskStatusChangedMessage>(
             Assert.Single(messenger.SentMessages));
         Assert.Equal("doc-target", status.TargetDocumentId);

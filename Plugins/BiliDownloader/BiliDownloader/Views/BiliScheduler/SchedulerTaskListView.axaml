@@ -7,7 +7,22 @@
              xmlns:conv="using:BiliDownloader.Converters"
              mc:Ignorable="d" d:DesignWidth="380" d:DesignHeight="550"
              x:Class="BiliDownloader.Views.BiliScheduler.SchedulerTaskListView"
+             x:Name="Root"
              x:DataType="vm:SchedulerTaskListViewModel">
+    <UserControl.Styles>
+        <Style Selector="UserControl.compact Control.wide-only">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+        <Style Selector="Control.compact-only">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+        <Style Selector="UserControl.compact Control.compact-only">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
+        <Style Selector="Border.task-row:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AppSubtlePanelBrush}"/>
+        </Style>
+    </UserControl.Styles>
     <UserControl.Resources>
         <conv:IsFailedStatusConverter x:Key="IsFailedStatusConverter"/>
         <conv:IsDoneStatusConverter x:Key="IsDoneStatusConverter"/>
@@ -28,52 +43,59 @@
             <!-- 标题搜索 -->
             <TextBox Text="{Binding SearchText}"
                      PlaceholderText="搜索标题..."
+                     AutomationProperties.Name="搜索下载任务"
+                     MinHeight="36"
                      FontSize="11"
                      Padding="6,3"/>
 
             <!-- 筛选/排序行 -->
             <WrapPanel Orientation="Horizontal">
                 <!-- 状态筛选 -->
-                <ComboBox SelectedValue="{Binding StatusFilter}"
-                          SelectedValueBinding="{Binding}"
+                <ComboBox ItemsSource="{Binding StatusOptions}"
+                          SelectedItem="{Binding SelectedStatusOption}"
                           FontSize="10"
                           Margin="0,0,4,0"
                           Padding="4,2"
                           ToolTip.Tip="按状态筛选">
-                    <ComboBox.Items>
-                        <x:String>all</x:String>
-                        <x:String>running</x:String>
-                        <x:String>failed</x:String>
-                        <x:String>interrupted</x:String>
-                        <x:String>waiting_login</x:String>
-                        <x:String>done</x:String>
-                        <x:String>paused</x:String>
-                        <x:String>canceled</x:String>
-                        <x:String>pending</x:String>
-                    </ComboBox.Items>
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TaskChoiceOption"><TextBlock Text="{Binding Label}"/></DataTemplate>
+                    </ComboBox.ItemTemplate>
                 </ComboBox>
 
                 <!-- Document 筛选 -->
-                <ComboBox ItemsSource="{Binding AvailableDocuments}"
-                          SelectedItem="{Binding DocumentFilter}"
+                <ComboBox ItemsSource="{Binding AvailableDocumentOptions}"
+                          SelectedValue="{Binding DocumentFilter}"
+                          SelectedValueBinding="{Binding Id}"
                           FontSize="10"
                           Margin="0,0,4,0"
                           Padding="4,2"
                           MaxWidth="100"
-                          ToolTip.Tip="按 Document 筛选"/>
+                          ToolTip.Tip="按下载工作台筛选">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TaskDocumentFilterOption">
+                            <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <ComboBox ItemsSource="{Binding DateOptions}"
+                          SelectedItem="{Binding SelectedDateOption}"
+                          FontSize="10" Padding="4,2" Margin="0,0,4,0"
+                          ToolTip.Tip="按创建时间筛选">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TaskChoiceOption"><TextBlock Text="{Binding Label}"/></DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
 
                 <!-- 排序方式 -->
-                <ComboBox SelectedValue="{Binding SortBy}"
-                          SelectedValueBinding="{Binding}"
+                <ComboBox ItemsSource="{Binding SortOptions}"
+                          SelectedItem="{Binding SelectedSortOption}"
                           FontSize="10"
                           Padding="4,2"
                           ToolTip.Tip="排序方式">
-                    <ComboBox.Items>
-                        <x:String>created_desc</x:String>
-                        <x:String>created_asc</x:String>
-                        <x:String>status</x:String>
-                        <x:String>title</x:String>
-                    </ComboBox.Items>
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TaskChoiceOption"><TextBlock Text="{Binding Label}"/></DataTemplate>
+                    </ComboBox.ItemTemplate>
                 </ComboBox>
             </WrapPanel>
         </StackPanel>
@@ -83,7 +105,8 @@
              设计思考：批量操作放在列表底部，与顶部筛选栏形成"上筛下操"的布局。
              破坏性按钮（删除/重开）仅在有选中项时可见，减少误操作风险。
         ═══════════════════════════════════════════════════════════ -->
-        <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="0,6,0,0">
+        <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="0,6,0,0"
+                    IsVisible="{Binding HasSelection}">
             <Separator/>
             <!-- 选中统计 -->
             <TextBlock FontSize="10" Foreground="{DynamicResource AppSecondaryTextBrush}">
@@ -106,8 +129,10 @@
                 <Button Content="批量删除"
                         Command="{Binding BatchDeleteCommand}"
                         Padding="6,2" FontSize="10" Margin="0,0,4,2"
-                        Foreground="Red"
-                        ToolTip.Tip="删除选中任务（含文件，不可撤销）"/>
+                        Foreground="{DynamicResource AppErrorBrush}"
+                        MinHeight="36"
+                        AutomationProperties.Name="批量删除选中任务"
+                        ToolTip.Tip="移除选中任务；本地文件是否删除由随后对话框决定"/>
                 <Button Content="批量重试"
                         Command="{Binding BatchRetryCommand}"
                         Padding="6,2" FontSize="10" Margin="0,0,4,2"
@@ -135,7 +160,31 @@
              选中状态通过 CheckBox 绑定到模型的 IsSelected 属性（INPC），
              不依赖 ListBox 的 Selection 机制，避免虚拟化回收时选中状态丢失。
         ═══════════════════════════════════════════════════════════ -->
-        <ListBox ItemsSource="{Binding FilteredTasks}"
+        <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8"
+                    IsVisible="{Binding IsLoading}">
+            <ProgressBar IsIndeterminate="True" Width="120"/>
+            <TextBlock Text="正在加载任务…" Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+        </StackPanel>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8"
+                    IsVisible="{Binding ShowEmptyState}">
+            <TextBlock Text="还没有下载任务" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+            <TextBlock Text="从下载工作台提交内容后，会显示在这里。"
+                       Foreground="{DynamicResource AppSecondaryTextBrush}" TextWrapping="Wrap"/>
+        </StackPanel>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8"
+                    IsVisible="{Binding ShowNoResultsState}">
+            <TextBlock Text="没有符合条件的任务" FontWeight="SemiBold"/>
+            <TextBlock Text="请调整搜索词或筛选条件。" Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+        </StackPanel>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8"
+                    IsVisible="{Binding HasLoadError}">
+            <TextBlock Text="任务加载失败" FontWeight="SemiBold" Foreground="{DynamicResource AppErrorBrush}"/>
+            <TextBlock Text="{Binding LoadErrorMessage}" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <ListBox x:Name="TaskList"
+                 ItemsSource="{Binding FilteredTasks}"
                  SelectionMode="Multiple"
                  Background="Transparent"
                  BorderThickness="0"
@@ -151,9 +200,9 @@
                 </Style>
             </ListBox.Styles>
             <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="models:DownloadTaskRecord">
+                <DataTemplate x:DataType="vm:DownloadTaskItemViewModel">
                     <Border BorderBrush="{DynamicResource AppDividerBrush}"
-                            BorderThickness="0,0,0,1" Padding="4,6">
+                            BorderThickness="0,0,0,1" Padding="6,8" Classes="task-row">
                         <DockPanel>
                             <!-- G4: 多选 CheckBox（左侧） -->
                             <CheckBox IsChecked="{Binding IsSelected}"
@@ -163,14 +212,14 @@
 
                             <StackPanel Spacing="3">
                                 <!-- 第一行：标题 + 状态 + 操作按钮 -->
-                                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                     <TextBlock Text="{Binding ItemTitle}"
                                                TextTrimming="CharacterEllipsis"
                                                FontWeight="SemiBold"
                                                FontSize="12"
                                                Grid.Column="0"
                                                VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding Status}"
+                                    <TextBlock Text="{Binding StatusDisplayText}"
                                                Grid.Column="1"
                                                FontSize="11"
                                                Foreground="{DynamicResource AppInfoBrush}"
@@ -180,7 +229,7 @@
                                     <Button Content="暂停"
                                             Grid.Column="2"
                                             Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).PauseTaskCommand}"
-                                            CommandParameter="{Binding}"
+                                            CommandParameter="{Binding Record}"
                                             IsVisible="{Binding Status, Converter={StaticResource IsRunningStatusConverter}}"
                                             Padding="4,1" FontSize="10" Margin="2,0"
                                             VerticalAlignment="Center"
@@ -189,7 +238,7 @@
                                     <Button Content="恢复"
                                             Grid.Column="3"
                                             Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).ResumeTaskCommand}"
-                                            CommandParameter="{Binding}"
+                                            CommandParameter="{Binding Record}"
                                             IsVisible="{Binding Status, Converter={StaticResource IsPausedStatusConverter}}"
                                             Padding="4,1" FontSize="10" Margin="2,0"
                                             VerticalAlignment="Center"
@@ -198,7 +247,8 @@
                                     <Button Content="重开"
                                             Grid.Column="4"
                                             Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).RestartTaskCommand}"
-                                            CommandParameter="{Binding}"
+                                            CommandParameter="{Binding Record}"
+                                            Classes="wide-only"
                                             IsVisible="{Binding Status, Converter={StaticResource IsRestartableStatusConverter}}"
                                             Padding="4,1" FontSize="10" Margin="2,0"
                                             VerticalAlignment="Center"
@@ -206,24 +256,52 @@
                                     <Button Content="重试"
                                             Grid.Column="5"
                                             Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).RetryTaskCommand}"
-                                            CommandParameter="{Binding}"
+                                            CommandParameter="{Binding Record}"
+                                            Classes="wide-only"
                                             IsVisible="{Binding Status, Converter={StaticResource IsFailedStatusConverter}}"
                                             Padding="4,1" FontSize="10" Margin="2,0"
                                             VerticalAlignment="Center"/>
                                     <Button Content="打开"
                                             Grid.Column="6"
                                             Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).OpenFileLocationCommand}"
-                                            CommandParameter="{Binding}"
+                                            CommandParameter="{Binding Record}"
+                                            Classes="wide-only"
                                             IsVisible="{Binding Status, Converter={StaticResource IsDoneStatusConverter}}"
                                             Padding="4,1" FontSize="10" Margin="2,0"
                                             VerticalAlignment="Center"/>
                                     <Button Content="X"
                                             Grid.Column="7"
                                             Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).DeleteTaskCommand}"
-                                            CommandParameter="{Binding}"
-                                            Padding="4,1" FontSize="10"
+                                            CommandParameter="{Binding Record}"
+                                            Classes="wide-only"
+                                            Padding="8,4" FontSize="10"
+                                            MinWidth="36" MinHeight="36"
+                                            Foreground="{DynamicResource AppErrorBrush}"
+                                            AutomationProperties.Name="删除任务"
                                             VerticalAlignment="Center"
                                             ToolTip.Tip="删除任务"/>
+                                    <Button Content="⋯"
+                                            Grid.Column="8"
+                                            Classes="compact-only"
+                                            MinWidth="36" MinHeight="36"
+                                            AutomationProperties.Name="更多任务操作">
+                                        <Button.Flyout>
+                                            <MenuFlyout>
+                                                <MenuItem Header="重开"
+                                                          Command="{Binding #Root.((vm:SchedulerTaskListViewModel)DataContext).RestartTaskCommand}"
+                                                          CommandParameter="{Binding Record}" />
+                                                <MenuItem Header="重试"
+                                                          Command="{Binding #Root.((vm:SchedulerTaskListViewModel)DataContext).RetryTaskCommand}"
+                                                          CommandParameter="{Binding Record}" />
+                                                <MenuItem Header="打开位置"
+                                                          Command="{Binding #Root.((vm:SchedulerTaskListViewModel)DataContext).OpenFileLocationCommand}"
+                                                          CommandParameter="{Binding Record}" />
+                                                <MenuItem Header="删除"
+                                                          Command="{Binding #Root.((vm:SchedulerTaskListViewModel)DataContext).DeleteTaskCommand}"
+                                                          CommandParameter="{Binding Record}" />
+                                            </MenuFlyout>
+                                        </Button.Flyout>
+                                    </Button>
                                 </Grid>
 
                                 <!-- 速度文本 -->
@@ -231,9 +309,12 @@
                                            FontSize="11"
                                            Foreground="{DynamicResource AppWarningBrush}"
                                            IsVisible="{Binding SpeedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <TextBlock Text="{Binding EstimatedRemainingText}"
+                                           FontSize="10" Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                           IsVisible="{Binding EstimatedRemainingText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
                                 <!-- 三分段进度条 -->
-                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="6" Classes="wide-only">
                                     <StackPanel Orientation="Horizontal" Spacing="2">
                                         <TextBlock Text="视频" FontSize="10"
                                                    Foreground="{DynamicResource AppSecondaryTextBrush}"
@@ -264,7 +345,7 @@
                                      G4: 扩展信息展示行
                                      展示预计大小、已下载大小、质量、输出路径
                                 ═══════════════════════════════════════ -->
-                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="8" Classes="wide-only">
                                     <TextBlock FontSize="10"
                                                Foreground="{DynamicResource AppSecondaryTextBrush}">
                                         <Run Text="大小: "/>
@@ -281,6 +362,7 @@
 
                                 <!-- 输出路径（截断显示） -->
                                 <TextBlock Text="{Binding FullOutputPath}"
+                                           Classes="wide-only"
                                            FontSize="10"
                                            Foreground="{DynamicResource AppSecondaryTextBrush}"
                                            TextTrimming="CharacterEllipsis"
@@ -298,5 +380,6 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
+        </Grid>
     </DockPanel>
 </UserControl>

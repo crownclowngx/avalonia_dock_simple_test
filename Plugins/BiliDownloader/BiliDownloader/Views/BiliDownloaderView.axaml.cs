@@ -29,7 +29,7 @@ public partial class BiliDownloaderView : UserControl
             if (!_hasRecoveredTasks)
             {
                 _hasRecoveredTasks = true;
-                _ = vm.RecoverTasksFromStoreAsync();
+                _ = vm.InitializeAsync();
             }
         }
     }

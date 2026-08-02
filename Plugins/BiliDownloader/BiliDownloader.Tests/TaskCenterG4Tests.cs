@@ -241,7 +241,7 @@ public sealed class TaskCenterG4Tests
         // 搜索"视频"
         vm.StatusFilter = "all";
         vm.SearchText = "视频";
-        Assert.Equal(50, vm.FilteredTasks.Count);
+        await AsyncTest.EventuallyAsync(() => vm.FilteredTasks.Count == 50);
 
         await coordinator.ShutdownAsync();
     }

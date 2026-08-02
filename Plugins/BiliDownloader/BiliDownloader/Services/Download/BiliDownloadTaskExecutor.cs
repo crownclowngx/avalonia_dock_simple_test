@@ -3,6 +3,7 @@ using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Download.Extras;
 using BiliDownloader.Services.Infrastructure;
+using BiliDownloader.Services.Naming;
 
 namespace BiliDownloader.Services.Download;
 
@@ -75,7 +76,7 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
         }
 
         var results = new List<string>();
-        var baseFileName = BiliDownloadService.SanitizeFileName(task.ItemTitle);
+        var baseFileName = FileNameSanitizer.Sanitize(task.ItemTitle);
         var context = new ExtrasContext
         {
             TaskId = task.TaskId,

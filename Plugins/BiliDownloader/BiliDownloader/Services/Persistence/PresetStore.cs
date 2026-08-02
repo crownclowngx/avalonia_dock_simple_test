@@ -87,17 +87,19 @@ public class PresetStore : IPresetRepository
 
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
 
         // 写入预设数据
-        await SetValueAsync(connection, $"{PresetKeyPrefix}{preset.Id}", json);
+        await SetValueAsync(connection, $"{PresetKeyPrefix}{preset.Id}", json, transaction);
 
         // 更新索引（如果 ID 不在索引中则追加）
-        var ids = await GetPresetIndexAsync(connection);
+        var ids = await GetPresetIndexAsync(connection, transaction);
         if (!ids.Contains(preset.Id))
         {
             ids.Add(preset.Id);
-            await SetValueAsync(connection, PresetIndexKey, JsonConvert.SerializeObject(ids));
+            await SetValueAsync(connection, PresetIndexKey, JsonConvert.SerializeObject(ids), transaction);
         }
+        await transaction.CommitAsync();
     }
 
     /// <inheritdoc />
@@ -109,29 +111,35 @@ public class PresetStore : IPresetRepository
 
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
 
         // 删除预设数据
         await using (var cmd = connection.CreateCommand())
         {
             cmd.CommandText = "DELETE FROM settings WHERE key = $key;";
+            cmd.Transaction = (SqliteTransaction)transaction;
             cmd.Parameters.AddWithValue("$key", $"{PresetKeyPrefix}{id}");
             await cmd.ExecuteNonQueryAsync();
         }
 
         // 更新索引
-        var ids = await GetPresetIndexAsync(connection);
+        var ids = await GetPresetIndexAsync(connection, transaction);
         if (ids.Remove(id))
         {
-            await SetValueAsync(connection, PresetIndexKey, JsonConvert.SerializeObject(ids));
+            await SetValueAsync(connection, PresetIndexKey, JsonConvert.SerializeObject(ids), transaction);
         }
+        await transaction.CommitAsync();
     }
 
     /// <summary>
     /// 获取自定义预设 ID 索引列表（内部使用，使用外部连接）。
     /// </summary>
-    private async Task<List<string>> GetPresetIndexAsync(SqliteConnection connection)
+    private async Task<List<string>> GetPresetIndexAsync(
+        SqliteConnection connection,
+        System.Data.Common.DbTransaction? transaction = null)
     {
         await using var cmd = connection.CreateCommand();
+        if (transaction is not null) cmd.Transaction = (SqliteTransaction)transaction;
         cmd.CommandText = "SELECT value FROM settings WHERE key = $key;";
         cmd.Parameters.AddWithValue("$key", PresetIndexKey);
         var result = await cmd.ExecuteScalarAsync() as string;
@@ -190,9 +198,14 @@ public class PresetStore : IPresetRepository
     /// <summary>
     /// 向 settings 表写入 KV 值（INSERT OR REPLACE）。
     /// </summary>
-    private static async Task SetValueAsync(SqliteConnection connection, string key, string value)
+    private static async Task SetValueAsync(
+        SqliteConnection connection,
+        string key,
+        string value,
+        System.Data.Common.DbTransaction? transaction = null)
     {
         await using var cmd = connection.CreateCommand();
+        if (transaction is not null) cmd.Transaction = (SqliteTransaction)transaction;
         cmd.CommandText = "INSERT OR REPLACE INTO settings (key, value) VALUES ($key, $value);";
         cmd.Parameters.AddWithValue("$key", key);
         cmd.Parameters.AddWithValue("$value", value);

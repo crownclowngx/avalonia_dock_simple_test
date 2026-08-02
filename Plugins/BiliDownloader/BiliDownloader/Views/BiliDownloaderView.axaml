@@ -62,7 +62,7 @@
 
                 <Expander x:Name="DownloadLogExpander"
                           Classes="bili-doc-log"
-                          IsExpanded="True">
+                          IsExpanded="False">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <PathIcon Classes="bili-doc-icon"

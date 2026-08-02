@@ -21,6 +21,7 @@ namespace BiliDownloader.ViewModels.BiliDownloader;
 public class SubmitContext
 {
     public string DocumentId { get; set; } = "";
+    public string DocumentTitle { get; set; } = "";
     public int QualityId { get; set; }
     public int AudioQualityId { get; set; }
     public string OutputDirectory { get; set; } = "";
@@ -44,6 +45,8 @@ public class SubmitContext
 
     /// <summary>G5: 发布时间（供 {date} 变量使用）</summary>
     public DateTime? PublishDate { get; set; }
+    public bool IsNamingValid { get; set; } = true;
+    public string NamingValidationError { get; set; } = "";
 }
 
 /// <summary>
@@ -57,6 +60,7 @@ public partial class VideoListViewModel : ObservableObject
     private readonly IFfmpegService _ffmpegService;
 
     public ObservableCollection<BiliVideoItem> VideoItems { get; } = new();
+    public event Action? SelectionOrTitleChanged;
 
     [ObservableProperty]
     private double _totalProgress;
@@ -104,7 +108,14 @@ public partial class VideoListViewModel : ObservableObject
     {
         VideoItems.Clear();
         foreach (var item in items)
+        {
             VideoItems.Add(item);
+            item.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName is nameof(BiliVideoItem.IsSelected) or nameof(BiliVideoItem.Title))
+                    SelectionOrTitleChanged?.Invoke();
+            };
+        }
 
         RenamePanel.InitTitles(items);
         TotalProgress = 0;
@@ -208,6 +219,14 @@ public partial class VideoListViewModel : ObservableObject
 
         var ctx = _getSubmitContext();
 
+        if (!ctx.IsNamingValid)
+        {
+            _onStatusMessage(string.IsNullOrWhiteSpace(ctx.NamingValidationError)
+                ? "请先修正命名模板"
+                : ctx.NamingValidationError);
+            return;
+        }
+
         if (ctx.QualityId == 0)
         {
             _onStatusMessage("请选择清晰度");
@@ -253,21 +272,35 @@ public partial class VideoListViewModel : ObservableObject
             CoverUrl = ctx.CoverUrl,
         }).ToList();
 
-        // 构建 ExtrasType 位枚举
-        var extras = ExtrasType.None;
-        if (ctx.DownloadDanmaku) extras |= ExtrasType.Danmaku;
-        if (ctx.DownloadSubtitle) extras |= ExtrasType.Subtitle;
-        if (ctx.DownloadCover) extras |= ExtrasType.Cover;
+        var duplicateNames = downloadItems
+            .GroupBy(item => item.Title, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToList();
+        if (duplicateNames.Count > 0)
+        {
+            _onStatusMessage($"命名冲突：{string.Join("、", duplicateNames.Take(3))}。请加入 {{index}} 或 {{bv}} 变量。");
+            return;
+        }
 
-        var message = new SubmitDownloadTaskMessage(
-            sourceDocumentId: ctx.DocumentId,
-            seriesTitle: ctx.SeriesTitle,
-            items: downloadItems,
-            qualityId: ctx.QualityId,
-            audioQualityId: ctx.AudioQualityId,
-            outputDirectory: ctx.OutputDirectory,
-            useGroupFolder: ctx.UseGroupFolder,
-            extrasConfig: extras);
+        var submission = new DownloadSubmission(
+            ctx.DocumentId,
+            ctx.DocumentTitle,
+            ctx.SeriesTitle,
+            new DownloadProfileSnapshot(
+                ctx.QualityId,
+                ctx.AudioQualityId,
+                ctx.OutputDirectory,
+                ctx.UseGroupFolder,
+                ctx.AddIndexToTitle,
+                ctx.DownloadDanmaku,
+                ctx.DownloadSubtitle,
+                ctx.DownloadCover,
+                ctx.NamingTemplate),
+            downloadItems.Select(item => new DownloadSubmissionItem(
+                item.ItemId, item.Title, item.Aid, item.Bvid, item.Cid, item.Duration,
+                item.MediaType, item.EpId, item.SeasonId, item.CoverUrl)).ToArray());
+        var message = new SubmitDownloadTaskMessage(submission);
 
         // 通过消息总线发送给调度器
         try

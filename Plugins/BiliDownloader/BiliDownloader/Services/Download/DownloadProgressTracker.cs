@@ -32,14 +32,10 @@ public class DownloadProgressTracker : IDownloadProgressTracker
     /// <summary>进度写入节流间隔：同一任务在此间隔内只入队一次</summary>
     private static readonly TimeSpan DbWriteInterval = TimeSpan.FromMilliseconds(500);
 
-    /// <summary>per-task 上次进度入队时间（入口节流）</summary>
-    private readonly ConcurrentDictionary<string, DateTime> _lastProgressDbWrite = new(StringComparer.Ordinal);
-
-    /// <summary>per-task 上次字节数入队时间（入口节流）</summary>
-    private readonly ConcurrentDictionary<string, DateTime> _lastBytesDbWrite = new(StringComparer.Ordinal);
-
-    /// <summary>per-task 序列号计数器：每次入队递增，用于消费端合并判断</summary>
-    private readonly ConcurrentDictionary<string, long> _versionCounters = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, DateTime> _lastDbWrite = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, TaskRuntimeSnapshot> _latestSnapshots = new(StringComparer.Ordinal);
+    private readonly object _shutdownLock = new();
+    private Task? _shutdownTask;
 
     public DownloadProgressTracker(IDownloadTaskRepository repository, IMessengerService messengerService)
     {
@@ -56,6 +52,9 @@ public class DownloadProgressTracker : IDownloadProgressTracker
         task.AudioProgress = info.AudioProgress;
         task.MergeProgress = info.MergeProgress;
         task.SpeedText = info.SpeedText;
+        task.BytesPerSecond = info.BytesPerSecond > 0
+            ? info.BytesPerSecond
+            : ParseBytesPerSecond(info.SpeedText);
         task.Status = info.Stage switch
         {
             "video" => DownloadTaskStatusMapper.ToStorageString(DownloadTaskStatus.DownloadingVideo),
@@ -68,24 +67,14 @@ public class DownloadProgressTracker : IDownloadProgressTracker
         // 入口节流：关键状态（done/merging）立即入队，其余按 500ms 间隔
         var now = DateTime.UtcNow;
         var isCriticalState = info.Stage is "done" or "merging";
-        var lastWrite = _lastProgressDbWrite.GetOrAdd(task.TaskId, DateTime.MinValue);
+        var snapshot = TaskRuntimeSnapshot.From(task);
+        _latestSnapshots[task.TaskId] = snapshot;
+        var lastWrite = _lastDbWrite.GetOrAdd(task.TaskId, DateTime.MinValue);
 
         if (isCriticalState || (now - lastWrite) >= DbWriteInterval)
         {
-            _lastProgressDbWrite[task.TaskId] = now;
-
-            // 递增序列号并入队（替代原来的 fire-and-forget）
-            var version = _versionCounters.AddOrUpdate(task.TaskId, 1, (_, v) => v + 1);
-            _writeChannel.Enqueue(new ProgressWriteRequest(
-                TaskId: task.TaskId,
-                Version: version,
-                Kind: ProgressWriteKind.StageProgress,
-                Progress: task.Progress,
-                Status: task.Status,
-                VideoProgress: task.VideoProgress,
-                AudioProgress: task.AudioProgress,
-                MergeProgress: task.MergeProgress,
-                SpeedText: task.SpeedText));
+            _lastDbWrite[task.TaskId] = now;
+            _writeChannel.Enqueue(snapshot);
         }
 
         // UI 通知不受节流影响，立即广播
@@ -95,21 +84,18 @@ public class DownloadProgressTracker : IDownloadProgressTracker
     /// <inheritdoc />
     public void OnBytesChanged(DownloadTaskRecord task, long videoBytes, long audioBytes)
     {
-        // 入口节流：按 500ms 间隔入队
+        task.VideoBytesDownloaded = videoBytes;
+        task.AudioBytesDownloaded = audioBytes;
+        var snapshot = TaskRuntimeSnapshot.From(task);
+        _latestSnapshots[task.TaskId] = snapshot;
+
         var now = DateTime.UtcNow;
-        var lastWrite = _lastBytesDbWrite.GetOrAdd(task.TaskId, DateTime.MinValue);
+        var lastWrite = _lastDbWrite.GetOrAdd(task.TaskId, DateTime.MinValue);
 
         if ((now - lastWrite) >= DbWriteInterval)
         {
-            _lastBytesDbWrite[task.TaskId] = now;
-
-            var version = _versionCounters.AddOrUpdate(task.TaskId, 1, (_, v) => v + 1);
-            _writeChannel.Enqueue(new ProgressWriteRequest(
-                TaskId: task.TaskId,
-                Version: version,
-                Kind: ProgressWriteKind.Bytes,
-                VideoBytes: videoBytes,
-                AudioBytes: audioBytes));
+            _lastDbWrite[task.TaskId] = now;
+            _writeChannel.Enqueue(snapshot);
         }
     }
 
@@ -152,8 +138,47 @@ public class DownloadProgressTracker : IDownloadProgressTracker
     }
 
     /// <inheritdoc />
-    public Task FlushAsync(string taskId) => _writeChannel.FlushAsync(taskId);
+    public async Task FlushAsync(string taskId)
+    {
+        if (_latestSnapshots.TryGetValue(taskId, out var snapshot))
+            _writeChannel.Enqueue(snapshot with { UpdatedAt = DateTime.Now });
+        await _writeChannel.FlushAsync(taskId);
+    }
 
     /// <inheritdoc />
-    public Task ShutdownAsync() => _writeChannel.ShutdownAsync();
+    public Task ShutdownAsync()
+    {
+        lock (_shutdownLock)
+            return _shutdownTask ??= ShutdownCoreAsync();
+    }
+
+    private async Task ShutdownCoreAsync()
+    {
+        foreach (var snapshot in _latestSnapshots.Values)
+            _writeChannel.Enqueue(snapshot with { UpdatedAt = DateTime.Now });
+        await _writeChannel.ShutdownAsync();
+    }
+
+    public void Remove(string taskId)
+    {
+        _latestSnapshots.TryRemove(taskId, out _);
+        _lastDbWrite.TryRemove(taskId, out _);
+        _writeChannel.Remove(taskId);
+    }
+
+    private static long ParseBytesPerSecond(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return 0;
+        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 2 || !double.TryParse(parts[0], out var amount)) return 0;
+        var multiplier = parts[1].ToUpperInvariant() switch
+        {
+            "KB/S" => 1024d,
+            "MB/S" => 1024d * 1024,
+            "GB/S" => 1024d * 1024 * 1024,
+            "B/S" => 1d,
+            _ => 0d,
+        };
+        return multiplier <= 0 ? 0 : (long)(amount * multiplier);
+    }
 }

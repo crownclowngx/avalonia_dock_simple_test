@@ -34,6 +34,20 @@ public interface IDownloadTaskRepository
     /// <summary>更新断点续传字节数</summary>
     Task UpdateBytesAsync(string taskId, long videoBytes, long audioBytes);
 
+    /// <summary>Atomically updates all frequently changing runtime facts.</summary>
+    async Task UpdateRuntimeSnapshotAsync(TaskRuntimeSnapshot snapshot)
+    {
+        await UpdateStageProgressAsync(
+            snapshot.TaskId,
+            snapshot.Progress,
+            snapshot.Status,
+            snapshot.VideoProgress,
+            snapshot.AudioProgress,
+            snapshot.MergeProgress,
+            snapshot.SpeedText);
+        await UpdateBytesAsync(snapshot.TaskId, snapshot.VideoBytes, snapshot.AudioBytes);
+    }
+
     /// <summary>更新媒体预期长度和完整性验证事实</summary>
     Task UpdateIntegrityAsync(
         string taskId,

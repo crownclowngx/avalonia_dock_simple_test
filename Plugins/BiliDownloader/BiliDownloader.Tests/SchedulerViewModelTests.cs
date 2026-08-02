@@ -27,7 +27,8 @@ public sealed class SchedulerViewModelTests
             executor,
             paths);
         var messages = new List<string>();
-        var vm = new SchedulerTaskListViewModel(coordinator, repository, messages.Add);
+        var vm = new SchedulerTaskListViewModel(
+            coordinator, repository, messages.Add, new FakeConfirmationService { Result = true });
 
         await vm.ReloadTasksAsync();
         Assert.Equal(3, vm.Tasks.Count);
@@ -66,7 +67,8 @@ public sealed class SchedulerViewModelTests
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths);
-        var vm = new SchedulerTaskListViewModel(coordinator, repository, _ => { });
+        var vm = new SchedulerTaskListViewModel(
+            coordinator, repository, _ => { }, new FakeConfirmationService { Result = true });
         await vm.ReloadTasksAsync();
 
         await vm.DeleteTaskCommand.ExecuteAsync(null);

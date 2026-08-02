@@ -406,7 +406,7 @@ public sealed class DownloadProtocolTests
     public void 文件名清洗替换当前平台非法字符并去掉尾点()
     {
         var invalid = Path.GetInvalidFileNameChars().First();
-        var result = BiliDownloadService.SanitizeFileName($"a{invalid}b...");
+        var result = Services.Naming.FileNameSanitizer.Sanitize($"a{invalid}b...");
 
         Assert.Equal("a_b", result);
     }

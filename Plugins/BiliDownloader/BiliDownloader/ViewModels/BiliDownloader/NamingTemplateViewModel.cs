@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using BiliDownloader.Services.Naming;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
@@ -31,6 +32,9 @@ public partial class NamingTemplateViewModel : ObservableObject
     [ObservableProperty]
     private bool _isValid = true;
 
+    [ObservableProperty]
+    private bool _hasOutputConflicts;
+
     /// <summary>预览结果列表（最多 3 项，实时展示命名效果）</summary>
     public ObservableCollection<string> PreviewItems { get; } = new();
 
@@ -40,6 +44,15 @@ public partial class NamingTemplateViewModel : ObservableObject
 
     /// <summary>缓存的命名上下文列表（由外部在解析完成后设置）</summary>
     private IReadOnlyList<NamingContext> _cachedContexts = Array.Empty<NamingContext>();
+
+    [RelayCommand]
+    private void InsertVariable(string variable)
+    {
+        if (!string.IsNullOrWhiteSpace(variable))
+        {
+            Template += variable;
+        }
+    }
 
     /// <summary>
     /// Template 属性变更时自动触发验证和预览刷新。
@@ -85,6 +98,19 @@ public partial class NamingTemplateViewModel : ObservableObject
 
         // 渲染预览（前 3 项）
         var previews = NamingTemplateEngine.Preview(Template, _cachedContexts);
+        var allNames = _cachedContexts.Select(context => NamingTemplateEngine.Render(Template, context)).ToList();
+        var duplicates = allNames
+            .GroupBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .Take(3)
+            .ToList();
+        HasOutputConflicts = duplicates.Count > 0;
+        if (HasOutputConflicts)
+        {
+            IsValid = false;
+            ValidationError = $"多个内容会生成相同文件名：{string.Join("、", duplicates)}";
+        }
 
         // 重填 ObservableCollection（Clear + Add 策略，与 G4 一致）
         PreviewItems.Clear();

@@ -305,7 +305,7 @@ public sealed class PresentationLogicTests
         var settings = new InMemorySettingsRepository();
         settings.Seed("default_output_dir", "saved-output");
         var vm = new DownloadConfigViewModel(settings);
-        await AsyncTest.EventuallyAsync(() => vm.OutputDirectory == "saved-output");
+        await vm.InitializeAsync();
         var video = new BiliQualityOption { QualityId = 80, DisplayName = "1080P" };
         var audio = new BiliQualityOption { QualityId = 30232, DisplayName = "192kbps" };
 
@@ -327,7 +327,7 @@ public sealed class PresentationLogicTests
             InitializeException = new InvalidOperationException("broken"),
         };
         var vm = new DownloadConfigViewModel(settings);
-        await AsyncTest.EventuallyAsync(() => !string.IsNullOrEmpty(vm.OutputDirectory));
+        await vm.InitializeAsync();
 
         Assert.EndsWith("视频下载", vm.OutputDirectory, StringComparison.Ordinal);
         vm.SelectFolderCommand.Execute(null);

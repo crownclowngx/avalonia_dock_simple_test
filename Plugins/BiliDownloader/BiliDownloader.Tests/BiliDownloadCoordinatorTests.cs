@@ -162,7 +162,7 @@ public sealed class BiliDownloadCoordinatorTests
         Assert.Equal(120, task.QualityId);
         Assert.Equal(30280, task.AudioQualityId);
         Assert.Equal("output", task.OutputDirectory);
-        Assert.Equal(BiliDownloadService.SanitizeFileName("系列:标题"), task.SubFolder);
+        Assert.Equal(Services.Naming.FileNameSanitizer.Sanitize("系列:标题"), task.SubFolder);
         Assert.Equal("bangumi", task.MediaType);
         Assert.Equal(44, task.EpId);
         Assert.Equal(55, task.SeasonId);
@@ -335,7 +335,9 @@ public sealed class BiliDownloadCoordinatorTests
             new FakeDownloadTaskExecutor(),
             paths);
 
-        await coordinator.DeleteTaskAsync(task);
+        await coordinator.DeleteTaskAsync(
+            task,
+            new DeleteTaskOptions(DeleteTemporaryFiles: true, DeleteOutputFile: false));
 
         Assert.Empty(repository.Tasks);
         Assert.False(Directory.Exists(task.TempDirectory));

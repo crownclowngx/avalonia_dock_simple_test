@@ -6,6 +6,7 @@ using Avalonia.Platform.Storage;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
+using BiliDownloader.Services.Naming;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
 
@@ -21,7 +22,17 @@ public partial class DownloadConfigViewModel : ObservableObject
 {
     private static readonly IPluginLogger Log = PluginLog.For<DownloadConfigViewModel>();
     private readonly ISettingsRepository _settingsRepository;
-    private readonly IPresetRepository? _presetRepository;
+    private readonly IDownloadPresetService? _presetService;
+    private readonly Func<string>? _getNamingTemplate;
+    private readonly object _initializationLock = new();
+    private Task? _initializationTask;
+    private bool _documentConfigurationApplied;
+    private bool _isApplyingPreset;
+    private int? _pendingQualityId;
+    private int? _pendingAudioQualityId;
+    private string _restoredPresetId = "";
+
+    public event Action<DownloadPreset>? PresetApplied;
 
     public ObservableCollection<BiliQualityOption> QualityOptions { get; } = new();
 
@@ -75,18 +86,45 @@ public partial class DownloadConfigViewModel : ObservableObject
     /// <summary>当前预设的清晰度偏好（延迟匹配用）</summary>
     private string _pendingQualityPreference = "highest";
 
+    [ObservableProperty]
+    private string _customPresetName = "";
+
+    [ObservableProperty]
+    private bool _isPresetModified;
+
+    [ObservableProperty]
+    private bool _isRestoredPresetUnavailable;
+
+    [ObservableProperty]
+    private string _qualityRestoreNotice = "";
+
+    public string PresetStatusText => IsRestoredPresetUnavailable
+        ? "原预设不可用（已保留文档配置）"
+        : SelectedPreset is null
+        ? "未选择预设"
+        : IsPresetModified ? $"{SelectedPreset.Name} · 已修改" : SelectedPreset.Name;
+
+    public IAsyncRelayCommand DeleteSelectedPresetCommand { get; }
+    public IAsyncRelayCommand RenameSelectedPresetCommand { get; }
+
     #endregion
 
     public IRelayCommand SelectFolderCommand { get; }
 
-    public DownloadConfigViewModel(ISettingsRepository settingsRepository, IPresetRepository? presetRepository = null)
+    public DownloadConfigViewModel(
+        ISettingsRepository settingsRepository,
+        IPresetRepository? presetRepository = null,
+        Func<string>? getNamingTemplate = null,
+        IDownloadPresetService? presetService = null)
     {
         _settingsRepository = settingsRepository;
-        _presetRepository = presetRepository;
+        _presetService = presetService ?? (presetRepository is null ? null : new DownloadPresetService(presetRepository));
+        _getNamingTemplate = getNamingTemplate;
         SelectFolderCommand = new AsyncRelayCommand(SelectFolderAsync);
         ApplyPresetCommand = new RelayCommand(ApplySelectedPreset);
         SaveAsPresetCommand = new AsyncRelayCommand(SaveAsPresetAsync);
-        _ = InitAsync();
+        DeleteSelectedPresetCommand = new AsyncRelayCommand(DeleteSelectedPresetAsync);
+        RenameSelectedPresetCommand = new AsyncRelayCommand(RenameSelectedPresetAsync);
     }
 
     /// <summary>
@@ -94,35 +132,49 @@ public partial class DownloadConfigViewModel : ObservableObject
     /// 设计思考：合并原来的 InitDefaultOutputDirectoryAsync 和预设加载，
     /// 避免多次异步初始化竞争。
     /// </summary>
+    public Task InitializeAsync()
+    {
+        lock (_initializationLock)
+            return _initializationTask ??= InitAsync();
+    }
+
     private async Task InitAsync()
     {
         try
         {
             await _settingsRepository.InitAsync();
 
-            // 恢复输出目录
-            var savedDir = await _settingsRepository.GetSettingAsync("default_output_dir");
-            if (!string.IsNullOrEmpty(savedDir))
+            // Document 内保存的实际配置优先于全局默认目录。
+            if (!_documentConfigurationApplied)
             {
-                OutputDirectory = savedDir;
-            }
-            else
-            {
-                var appDir = Path.GetDirectoryName(typeof(DownloadConfigViewModel).Assembly.Location) ?? "";
-                OutputDirectory = Path.Combine(appDir, "视频下载");
+                var savedDir = await _settingsRepository.GetSettingAsync("default_output_dir");
+                if (!string.IsNullOrEmpty(savedDir))
+                {
+                    OutputDirectory = savedDir;
+                }
+                else
+                {
+                    var appDir = Path.GetDirectoryName(typeof(DownloadConfigViewModel).Assembly.Location) ?? "";
+                    OutputDirectory = Path.Combine(appDir, "视频下载");
+                }
             }
 
             // 加载预设列表
-            if (_presetRepository != null)
+            if (_presetService != null)
             {
-                var presets = await _presetRepository.GetAllAsync();
+                var presets = await _presetService.GetAllAsync();
                 Presets.Clear();
                 foreach (var p in presets)
                     Presets.Add(p);
 
+                if (_documentConfigurationApplied)
+                {
+                    SelectRestoredPreset(_restoredPresetId);
+                }
+
                 // 恢复最后使用的预设
                 var lastPresetId = await _settingsRepository.GetSettingAsync("last_preset_id");
-                if (!string.IsNullOrEmpty(lastPresetId))
+                if (!_documentConfigurationApplied && !string.IsNullOrEmpty(lastPresetId))
                 {
                     var lastPreset = presets.FirstOrDefault(p => p.Id == lastPresetId);
                     if (lastPreset != null)
@@ -132,12 +184,16 @@ public partial class DownloadConfigViewModel : ObservableObject
                     }
                 }
             }
+            else if (_documentConfigurationApplied)
+            {
+                SelectRestoredPreset(_restoredPresetId);
+            }
         }
         catch (Exception ex)
         {
             Log.Error("初始化下载配置失败。", ex);
             // 回退默认值
-            if (string.IsNullOrEmpty(OutputDirectory))
+            if (!_documentConfigurationApplied && string.IsNullOrEmpty(OutputDirectory))
             {
                 var appDir = Path.GetDirectoryName(typeof(DownloadConfigViewModel).Assembly.Location) ?? "";
                 OutputDirectory = Path.Combine(appDir, "视频下载");
@@ -165,10 +221,22 @@ public partial class DownloadConfigViewModel : ObservableObject
             AudioQualityOptions.Add(a);
 
         IsMultiVideo = isMultiVideo;
-        UseGroupFolder = isMultiVideo;
+        if (!_documentConfigurationApplied && SelectedPreset is null)
+            UseGroupFolder = isMultiVideo;
 
         // G5: 如果有待匹配的清晰度偏好，延迟匹配到实际可用选项
-        if (!string.IsNullOrEmpty(_pendingQualityPreference) && QualityOptions.Count > 0)
+        if (_pendingQualityId is int pendingQuality)
+        {
+            var restored = qualities.FirstOrDefault(q => q.QualityId == pendingQuality);
+            SelectedQuality = restored
+                ?? MatchQualityByPreference(qualities, _pendingQualityPreference)
+                ?? selectedQuality;
+            QualityRestoreNotice = restored is null
+                ? $"原视频画质 {pendingQuality} 当前不可用，已选择 {SelectedQuality?.DisplayName ?? "可用画质"}。"
+                : "";
+            _pendingQualityId = null;
+        }
+        else if (!string.IsNullOrEmpty(_pendingQualityPreference) && QualityOptions.Count > 0)
         {
             SelectedQuality = MatchQualityByPreference(qualities, _pendingQualityPreference);
             _pendingQualityPreference = ""; // 匹配完成后清除
@@ -178,7 +246,18 @@ public partial class DownloadConfigViewModel : ObservableObject
             SelectedQuality = selectedQuality;
         }
 
-        SelectedAudioQuality = selectedAudioQuality;
+        if (_pendingAudioQualityId is int pendingAudio)
+        {
+            var restoredAudio = audioQualities.FirstOrDefault(q => q.QualityId == pendingAudio);
+            SelectedAudioQuality = restoredAudio ?? selectedAudioQuality;
+            if (restoredAudio is null)
+                QualityRestoreNotice += $" 原音频质量 {pendingAudio} 当前不可用，已使用可用选项。";
+            _pendingAudioQualityId = null;
+        }
+        else
+        {
+            SelectedAudioQuality = selectedAudioQuality;
+        }
     }
 
     /// <summary>
@@ -190,6 +269,7 @@ public partial class DownloadConfigViewModel : ObservableObject
     /// </summary>
     public void ApplyPreset(DownloadPreset preset)
     {
+        _isApplyingPreset = true;
         UseGroupFolder = preset.UseGroupFolder;
         AddIndexToTitle = preset.AddIndexToTitle;
         DownloadDanmaku = preset.DownloadDanmaku;
@@ -202,6 +282,7 @@ public partial class DownloadConfigViewModel : ObservableObject
 
         // 清晰度偏好延迟匹配（解析完成后在 PopulateQualities 中生效）
         _pendingQualityPreference = preset.QualityPreference;
+        _pendingAudioQualityId = preset.AudioQualityId;
 
         // 如果清晰度选项已加载，立即匹配
         if (QualityOptions.Count > 0)
@@ -209,6 +290,16 @@ public partial class DownloadConfigViewModel : ObservableObject
             SelectedQuality = MatchQualityByPreference(QualityOptions.ToList(), preset.QualityPreference);
             _pendingQualityPreference = "";
         }
+        if (AudioQualityOptions.Count > 0)
+            SelectedAudioQuality = AudioQualityOptions.FirstOrDefault(q => q.QualityId == preset.AudioQualityId)
+                ?? AudioQualityOptions.FirstOrDefault();
+
+        SelectedPreset = preset;
+        IsRestoredPresetUnavailable = false;
+        IsPresetModified = false;
+        _isApplyingPreset = false;
+        PresetApplied?.Invoke(preset);
+        OnPropertyChanged(nameof(PresetStatusText));
     }
 
     /// <summary>
@@ -216,21 +307,36 @@ public partial class DownloadConfigViewModel : ObservableObject
     /// </summary>
     public DownloadPreset CaptureCurrentAsPreset(string id, string name)
     {
-        return new DownloadPreset
-        {
-            Id = id,
-            Name = name,
-            IsBuiltIn = false,
-            QualityPreference = _pendingQualityPreference,
-            AudioQualityId = SelectedAudioQuality?.QualityId ?? 0,
-            UseGroupFolder = UseGroupFolder,
-            AddIndexToTitle = AddIndexToTitle,
-            DownloadDanmaku = DownloadDanmaku,
-            DownloadSubtitle = DownloadSubtitle,
-            DownloadCover = DownloadCover,
-            NamingTemplate = "", // 由 NamingTemplateViewModel 提供
-            OutputDirectory = OutputDirectory
-        };
+        return DownloadPreset.FromProfile(id, name, CaptureCurrentProfile());
+    }
+
+    public DownloadProfile CaptureCurrentProfile() => new(
+        SelectedQuality is null ? (_pendingQualityPreference.Length == 0 ? "highest" : _pendingQualityPreference) : $"quality:{SelectedQuality.QualityId}",
+        SelectedAudioQuality?.QualityId ?? _pendingAudioQualityId ?? 0,
+        UseGroupFolder,
+        AddIndexToTitle,
+        DownloadDanmaku,
+        DownloadSubtitle,
+        DownloadCover,
+        _getNamingTemplate?.Invoke() ?? NamingTemplateEngine.DefaultTemplate,
+        OutputDirectory);
+
+    public void RestoreDocumentConfiguration(DocumentSaveDataV2 data)
+    {
+        _documentConfigurationApplied = true;
+        _isApplyingPreset = true;
+        OutputDirectory = data.OutputDirectory;
+        UseGroupFolder = data.UseGroupFolder;
+        AddIndexToTitle = data.AddIndexToTitle;
+        DownloadDanmaku = data.DownloadDanmaku;
+        DownloadSubtitle = data.DownloadSubtitle;
+        DownloadCover = data.DownloadCover;
+        _pendingQualityId = data.QualityId > 0 ? data.QualityId : null;
+        _pendingAudioQualityId = data.AudioQualityId;
+        _isApplyingPreset = false;
+        _restoredPresetId = data.PresetId;
+        if (_initializationTask?.IsCompletedSuccessfully == true)
+            SelectRestoredPreset(_restoredPresetId);
     }
 
     /// <summary>
@@ -250,23 +356,25 @@ public partial class DownloadConfigViewModel : ObservableObject
     /// </summary>
     private async Task SaveAsPresetAsync()
     {
-        if (_presetRepository == null) return;
+        if (_presetService == null) return;
 
         try
         {
-            var preset = CaptureCurrentAsPreset(
-                Guid.NewGuid().ToString("N"),
-                $"自定义预设 {Presets.Count(p => !p.IsBuiltIn) + 1}");
-
-            await _presetRepository.SaveAsync(preset);
+            var name = string.IsNullOrWhiteSpace(CustomPresetName)
+                ? $"自定义预设 {Presets.Count(p => !p.IsBuiltIn) + 1}"
+                : CustomPresetName.Trim();
+            var preset = await _presetService.SaveCopyAsync(CaptureCurrentProfile(), name);
 
             // 刷新预设列表
-            var allPresets = await _presetRepository.GetAllAsync();
+            var allPresets = await _presetService.GetAllAsync();
             Presets.Clear();
             foreach (var p in allPresets)
                 Presets.Add(p);
 
             SelectedPreset = preset;
+            IsPresetModified = false;
+            CustomPresetName = "";
+            await RememberLastPresetAsync(preset.Id);
         }
         catch (Exception ex)
         {
@@ -298,6 +406,11 @@ public partial class DownloadConfigViewModel : ObservableObject
     {
         if (qualities.Count == 0) return null;
 
+        if (preference.StartsWith("quality:", StringComparison.OrdinalIgnoreCase)
+            && int.TryParse(preference[8..], out var qualityId))
+            return qualities.FirstOrDefault(q => q.QualityId == qualityId)
+                ?? qualities.OrderByDescending(q => q.QualityId).FirstOrDefault();
+
         return preference.ToLowerInvariant() switch
         {
             "720p" => qualities.FirstOrDefault(q => q.QualityId == 64)
@@ -328,31 +441,13 @@ public partial class DownloadConfigViewModel : ObservableObject
             if (result.Count > 0)
             {
                 OutputDirectory = result[0].Path.LocalPath;
+                await _settingsRepository.SetSettingAsync("default_output_dir", OutputDirectory);
             }
         }
         catch (Exception ex)
         {
             Log.Error("选择文件夹失败。", ex);
         }
-    }
-
-    private async Task InitDefaultOutputDirectoryAsync()
-    {
-        try
-        {
-            await _settingsRepository.InitAsync();
-            var savedDir = await _settingsRepository.GetSettingAsync("default_output_dir");
-            if (!string.IsNullOrEmpty(savedDir))
-            {
-                OutputDirectory = savedDir;
-                return;
-            }
-        }
-        catch { /* 忽略 */ }
-
-        // 回退默认值：程序根目录/视频下载
-        var appDir = Path.GetDirectoryName(typeof(DownloadConfigViewModel).Assembly.Location) ?? "";
-        OutputDirectory = Path.Combine(appDir, "视频下载");
     }
 
     private Window? GetParentWindow()
@@ -369,4 +464,57 @@ public partial class DownloadConfigViewModel : ObservableObject
             return null;
         }
     }
+
+    private void SelectRestoredPreset(string presetId)
+    {
+        SelectedPreset = Presets.FirstOrDefault(p => p.Id == presetId);
+        IsRestoredPresetUnavailable = !string.IsNullOrWhiteSpace(presetId) && SelectedPreset is null;
+        IsPresetModified = SelectedPreset is null;
+        OnPropertyChanged(nameof(PresetStatusText));
+    }
+
+    private async Task DeleteSelectedPresetAsync()
+    {
+        if (_presetService is null || SelectedPreset is null || SelectedPreset.IsBuiltIn) return;
+        var id = SelectedPreset.Id;
+        await _presetService.DeleteAsync(id);
+        var all = await _presetService.GetAllAsync();
+        Presets.Clear();
+        foreach (var preset in all) Presets.Add(preset);
+        SelectedPreset = Presets.FirstOrDefault();
+        IsPresetModified = false;
+        OnPropertyChanged(nameof(PresetStatusText));
+    }
+
+    private async Task RenameSelectedPresetAsync()
+    {
+        if (_presetService is null || SelectedPreset is null || SelectedPreset.IsBuiltIn
+            || string.IsNullOrWhiteSpace(CustomPresetName)) return;
+        var oldPreset = SelectedPreset;
+        var renamed = await _presetService.RenameAsync(oldPreset.Id, CustomPresetName);
+        if (renamed is null) return;
+        var index = Presets.IndexOf(oldPreset);
+        if (index >= 0) Presets[index] = renamed;
+        SelectedPreset = renamed;
+        CustomPresetName = "";
+        OnPropertyChanged(nameof(PresetStatusText));
+    }
+
+    private void MarkPresetModified()
+    {
+        if (_isApplyingPreset || SelectedPreset is null) return;
+        IsPresetModified = true;
+        OnPropertyChanged(nameof(PresetStatusText));
+    }
+
+    partial void OnSelectedQualityChanged(BiliQualityOption? value) => MarkPresetModified();
+    partial void OnSelectedAudioQualityChanged(BiliQualityOption? value) => MarkPresetModified();
+    partial void OnUseGroupFolderChanged(bool value) => MarkPresetModified();
+    partial void OnAddIndexToTitleChanged(bool value) => MarkPresetModified();
+    partial void OnDownloadDanmakuChanged(bool value) => MarkPresetModified();
+    partial void OnDownloadSubtitleChanged(bool value) => MarkPresetModified();
+    partial void OnDownloadCoverChanged(bool value) => MarkPresetModified();
+    partial void OnOutputDirectoryChanged(string value) => MarkPresetModified();
+    partial void OnIsPresetModifiedChanged(bool value) => OnPropertyChanged(nameof(PresetStatusText));
+    partial void OnIsRestoredPresetUnavailableChanged(bool value) => OnPropertyChanged(nameof(PresetStatusText));
 }

@@ -3,6 +3,8 @@ using BiliDownloader.Models;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
+using BiliDownloader.Services.Naming;
+using BiliDownloader.Services.Download.Extras;
 using MyAvaloniaManagementCommon.Message;
 using System.Threading.Channels;
 
@@ -28,6 +30,7 @@ public sealed class BiliDownloadCoordinator
     private readonly IDownloadTaskExecutor _executor;
     private readonly IBiliDataPaths _paths;
     private readonly IBiliCredentialProvider _credentialProvider;
+    private readonly IDownloadRecoveryService _recoveryService;
 
     private readonly SemaphoreSlim _commandLock = new(1, 1);
     private readonly object _lifecycleLock = new();
@@ -75,7 +78,8 @@ public sealed class BiliDownloadCoordinator
         IDownloadProgressTracker tracker,
         IDownloadTaskExecutor executor,
         IBiliDataPaths paths,
-        IBiliCredentialProvider? credentialProvider = null)
+        IBiliCredentialProvider? credentialProvider = null,
+        IDownloadRecoveryService? recoveryService = null)
     {
         _repository = repository;
         _messengerService = messengerService;
@@ -83,6 +87,7 @@ public sealed class BiliDownloadCoordinator
         _executor = executor;
         _paths = paths;
         _credentialProvider = credentialProvider ?? new NullCredentialProvider();
+        _recoveryService = recoveryService ?? new DownloadRecoveryService(repository);
 
         // 注册监听：接收 Document 发来的下载任务提交消息
         _messengerService.Register<BiliDownloadCoordinator, SubmitDownloadTaskMessage>(
@@ -113,7 +118,7 @@ public sealed class BiliDownloadCoordinator
     {
         try
         {
-            await SubmitTasksAsync(msg, msg.OutputDirectory);
+            await SubmitTasksAsync(msg.ToSubmission());
         }
         catch (Exception ex)
         {
@@ -163,7 +168,7 @@ public sealed class BiliDownloadCoordinator
             var status = ParseStatus(task.Status);
             if (status is DownloadTaskStatus.Interrupted or DownloadTaskStatus.Paused)
             {
-                await ReconcileTempFilesAsync(task);
+                await _recoveryService.ReconcileAsync(task);
             }
         }
 
@@ -171,40 +176,12 @@ public sealed class BiliDownloadCoordinator
     }
 
     /// <summary>
-    /// G3: 校验临时文件事实：以磁盘上的实际文件大小为准修正数据库记录。
-    /// 不启动下载、不删除文件、不修改状态——只修正字节数。
-    /// </summary>
-    private async Task ReconcileTempFilesAsync(DownloadTaskRecord task)
-    {
-        if (string.IsNullOrWhiteSpace(task.TempDirectory) || !Directory.Exists(task.TempDirectory))
-        {
-            // 临时目录不存在：重置字节数
-            if (task.VideoBytesDownloaded != 0 || task.AudioBytesDownloaded != 0)
-            {
-                task.VideoBytesDownloaded = 0;
-                task.AudioBytesDownloaded = 0;
-                await _repository.UpdateBytesAsync(task.TaskId, 0, 0);
-            }
-            return;
-        }
-
-        var videoTmp = Path.Combine(task.TempDirectory, "video.tmp");
-        var audioTmp = Path.Combine(task.TempDirectory, "audio.tmp");
-        var actualVideo = File.Exists(videoTmp) ? new FileInfo(videoTmp).Length : 0;
-        var actualAudio = File.Exists(audioTmp) ? new FileInfo(audioTmp).Length : 0;
-
-        if (actualVideo != task.VideoBytesDownloaded || actualAudio != task.AudioBytesDownloaded)
-        {
-            task.VideoBytesDownloaded = actualVideo;
-            task.AudioBytesDownloaded = actualAudio;
-            await _repository.UpdateBytesAsync(task.TaskId, actualVideo, actualAudio);
-        }
-    }
-
-    /// <summary>
     /// 接收新任务：批量插入 SQLite 并启动处理队列
     /// </summary>
     public async Task SubmitTasksAsync(SubmitDownloadTaskMessage msg, string defaultOutputDirectory)
+        => await SubmitTasksAsync(msg.ToSubmission());
+
+    public async Task SubmitTasksAsync(DownloadSubmission submission)
     {
         await InitializeAsync();
         await _commandLock.WaitAsync();
@@ -213,24 +190,26 @@ public sealed class BiliDownloadCoordinator
             ThrowIfShuttingDown();
 
             var records = new List<DownloadTaskRecord>();
-            var subFolder = msg.UseGroupFolder
-                ? BiliDownloadService.SanitizeFileName(msg.SeriesTitle)
+            var profile = submission.Profile;
+            var subFolder = profile.UseGroupFolder
+                ? FileNameSanitizer.Sanitize(submission.SeriesTitle)
                 : string.Empty;
 
-            foreach (var item in msg.Items)
+            foreach (var item in submission.Items)
             {
                 var record = new DownloadTaskRecord
                 {
                     TaskId = item.ItemId,
-                    DocumentId = msg.SourceDocumentId,
-                    SeriesTitle = msg.SeriesTitle,
+                    DocumentId = submission.DocumentId,
+                    SourceDocumentTitle = submission.DocumentTitle,
+                    SeriesTitle = submission.SeriesTitle,
                     ItemTitle = item.Title,
                     Aid = item.Aid,
                     Bvid = item.Bvid,
                     Cid = item.Cid,
-                    QualityId = msg.QualityId,
-                    AudioQualityId = msg.AudioQualityId,
-                    OutputDirectory = msg.OutputDirectory,
+                    QualityId = profile.VideoQualityId,
+                    AudioQualityId = profile.AudioQualityId,
+                    OutputDirectory = profile.OutputDirectory,
                     SubFolder = subFolder,
                     Status = ToStorage(DownloadTaskStatus.Ready),
                     CreatedAt = DateTime.Now,
@@ -238,7 +217,9 @@ public sealed class BiliDownloadCoordinator
                     MediaType = item.MediaType.ToString().ToLowerInvariant(),
                     EpId = item.EpId,
                     SeasonId = item.SeasonId,
-                    ExtrasConfig = (int)msg.ExtrasConfig,
+                    ExtrasConfig = (profile.DownloadDanmaku ? (int)ExtrasType.Danmaku : 0)
+                        | (profile.DownloadSubtitle ? (int)ExtrasType.Subtitle : 0)
+                        | (profile.DownloadCover ? (int)ExtrasType.Cover : 0),
                     CoverUrl = item.CoverUrl,
                 };
                 records.Add(record);
@@ -323,8 +304,14 @@ public sealed class BiliDownloadCoordinator
     /// G2: 活动任务使用 per-task CTS 取消，不影响其他并发任务。
     /// </summary>
     public async Task DeleteTaskAsync(DownloadTaskRecord task)
+        => await DeleteTaskAsync(task, DeleteTaskOptions.RecordOnly, CancellationToken.None);
+
+    public async Task DeleteTaskAsync(
+        DownloadTaskRecord task,
+        DeleteTaskOptions options,
+        CancellationToken cancellationToken = default)
     {
-        await _commandLock.WaitAsync();
+        await _commandLock.WaitAsync(cancellationToken);
         try
         {
             // G2: 活动任务通过 per-task CTS 取消，不再停止全部队列
@@ -346,6 +333,7 @@ public sealed class BiliDownloadCoordinator
             }
 
             await _repository.DeleteByIdAsync(task.TaskId);
+            _tracker.Remove(task.TaskId);
 
             // 通知对应 Document 移除
             try
@@ -354,13 +342,15 @@ public sealed class BiliDownloadCoordinator
             }
             catch { /* 忽略广播失败 */ }
 
-            // 清理临时文件目录
-            CleanupTempFiles(task.TempDirectory);
+            if (options.DeleteTemporaryFiles)
+                CleanupTempFiles(task.TempDirectory);
 
             // 清理成品文件
             try
             {
-                if (!string.IsNullOrWhiteSpace(task.OutputFilePath) && File.Exists(task.OutputFilePath))
+                if (options.DeleteOutputFile
+                    && !string.IsNullOrWhiteSpace(task.OutputFilePath)
+                    && File.Exists(task.OutputFilePath))
                 {
                     File.Delete(task.OutputFilePath);
                 }
@@ -769,20 +759,22 @@ public sealed class BiliDownloadCoordinator
             // G3: 确保节流中的最后进度已落盘，再写终态
             await _tracker.FlushAsync(task.TaskId);
 
-            // 标记完成
+            // 数据库提交完成后再发布内存终态，避免 UI 先观察到不可恢复的状态。
+            var outputFilePath = result.OutputFilePath ?? "";
+            var completedAt = DateTime.Now;
+            await _repository.MarkCompletedAsync(
+                task.TaskId,
+                outputFilePath,
+                task.ExtrasResultSummary,
+                completedAt);
             task.Status = ToStorage(DownloadTaskStatus.Completed);
             task.Progress = 100;
             task.VideoProgress = 100;
             task.AudioProgress = 100;
             task.MergeProgress = 100;
             task.SpeedText = "";
-            task.OutputFilePath = result.OutputFilePath ?? "";
-            task.LastUpdatedAt = DateTime.Now;
-            await _repository.MarkCompletedAsync(
-                task.TaskId,
-                task.OutputFilePath,
-                task.ExtrasResultSummary,
-                task.LastUpdatedAt);
+            task.OutputFilePath = outputFilePath;
+            task.LastUpdatedAt = completedAt;
             _tracker.BroadcastProgress(task);
             _tracker.BroadcastStatusChanged(task);
             TaskStatusChanged?.Invoke(task);
@@ -803,8 +795,9 @@ public sealed class BiliDownloadCoordinator
             // G3: 确保节流中的最后进度已落盘，再写终态
             await _tracker.FlushAsync(task.TaskId);
 
-            task.Status = ToStorage(cancelledStatus);
-            await _repository.UpdateProgressAsync(task.TaskId, task.Progress, task.Status);
+            var cancelledStorageStatus = ToStorage(cancelledStatus);
+            await _repository.UpdateProgressAsync(task.TaskId, task.Progress, cancelledStorageStatus);
+            task.Status = cancelledStorageStatus;
             _tracker.BroadcastProgress(task);
 
             if (cancelledStatus is DownloadTaskStatus.Paused or DownloadTaskStatus.Canceled)
@@ -819,23 +812,23 @@ public sealed class BiliDownloadCoordinator
             await _tracker.FlushAsync(task.TaskId);
 
             var safeError = SensitiveDataSanitizer.Sanitize(ex.Message);
-            task.Status = ToStorage(DownloadTaskStatus.Failed);
-            task.ErrorMessage = safeError;
-            task.LastUpdatedAt = DateTime.Now;
-
             // G3: 错误分类 → 填充 ErrorType 和 IsRetryable，供 UI 展示和重试判断
-            var (errorType, isRetryable) = DownloadErrorClassifier.Classify(ex);
-            task.ErrorType = errorType;
-            task.IsRetryable = isRetryable;
+            var failure = DownloadErrorClassifier.ClassifyFailure(ex);
+            var failedAt = DateTime.Now;
 
             Log.Error($"任务 {task.TaskId} 下载失败: {safeError}", ex);
             await _repository.MarkFailedAsync(
                 task.TaskId,
                 task.Progress,
                 safeError,
-                task.ErrorType,
-                task.IsRetryable,
-                task.LastUpdatedAt);
+                failure.StorageValue,
+                failure.IsRetryable,
+                failedAt);
+            task.Status = ToStorage(DownloadTaskStatus.Failed);
+            task.ErrorMessage = safeError;
+            task.ErrorType = failure.StorageValue;
+            task.IsRetryable = failure.IsRetryable;
+            task.LastUpdatedAt = failedAt;
             _tracker.BroadcastProgress(task);
             _tracker.BroadcastStatusChanged(task);
             TaskStatusChanged?.Invoke(task);

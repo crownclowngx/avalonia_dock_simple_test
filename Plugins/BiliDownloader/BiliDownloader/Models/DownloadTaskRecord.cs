@@ -17,6 +17,9 @@ public partial class DownloadTaskRecord : ObservableObject
     /// </summary>
     public string DocumentId { get; set; } = string.Empty;
 
+    /// <summary>User-facing title of the Document that submitted this task.</summary>
+    public string SourceDocumentTitle { get; set; } = string.Empty;
+
     /// <summary>
     /// 系列标题
     /// </summary>
@@ -119,12 +122,21 @@ public partial class DownloadTaskRecord : ObservableObject
     /// <summary>
     /// 视频流已下载字节数（用于断点续传）
     /// </summary>
-    public long VideoBytesDownloaded { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalDownloadedBytes))]
+    private long _videoBytesDownloaded;
 
     /// <summary>
     /// 音频流已下载字节数（用于断点续传）
     /// </summary>
-    public long AudioBytesDownloaded { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalDownloadedBytes))]
+    private long _audioBytesDownloaded;
+
+    /// <summary>Current numeric transfer speed, used for ETA calculations.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EstimatedRemainingText))]
+    private long _bytesPerSecond;
 
     /// <summary>
     /// 创建时间
@@ -191,6 +203,19 @@ public partial class DownloadTaskRecord : ObservableObject
 
     /// <summary>已下载总大小（视频+音频），用于任务详情展示</summary>
     public long TotalDownloadedBytes => VideoBytesDownloaded + AudioBytesDownloaded;
+
+    public string EstimatedRemainingText
+    {
+        get
+        {
+            var remaining = Math.Max(0, TotalExpectedBytes - TotalDownloadedBytes);
+            if (BytesPerSecond <= 0 || remaining <= 0) return "";
+            var duration = TimeSpan.FromSeconds((double)remaining / BytesPerSecond);
+            return duration.TotalHours >= 1
+                ? $"约 {duration.Hours}小时{duration.Minutes}分钟"
+                : $"约 {Math.Max(1, duration.Minutes)}分钟";
+        }
+    }
 
     /// <summary>
     /// 质量显示文本（B站 qn 映射）。

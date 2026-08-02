@@ -29,4 +29,7 @@ public interface IDownloadProgressTracker
     /// 关闭写入队列，等待所有待写入完成。应用关闭时调用。
     /// </summary>
     Task ShutdownAsync();
+
+    /// <summary>Releases all per-task tracking state after record deletion.</summary>
+    void Remove(string taskId) { }
 }
