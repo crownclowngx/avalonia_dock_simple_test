@@ -811,6 +811,34 @@ internal sealed class InMemorySettingsRepository : ISettingsRepository
     }
 }
 
+/// <summary>
+/// G4: 确认服务测试替身。
+/// 可配置返回值（模拟用户确认/取消），并记录调用次数和最后一条消息，
+/// 供测试断言确认机制是否被正确触发。
+/// </summary>
+internal sealed class FakeConfirmationService : IConfirmationService
+{
+    /// <summary>配置返回结果（true=确认，false=取消）</summary>
+    public bool Result { get; set; } = true;
+
+    /// <summary>ConfirmAsync 被调用的次数</summary>
+    public int CallCount { get; private set; }
+
+    /// <summary>最后一次确认消息正文（供断言内容正确性）</summary>
+    public string? LastMessage { get; private set; }
+
+    /// <summary>最后一次确认标题</summary>
+    public string? LastTitle { get; private set; }
+
+    public Task<bool> ConfirmAsync(string title, string message)
+    {
+        CallCount++;
+        LastTitle = title;
+        LastMessage = message;
+        return Task.FromResult(Result);
+    }
+}
+
 internal static class AsyncTest
 {
     public static async Task EventuallyAsync(

@@ -17,7 +17,7 @@
             <Separator/>
 
             <!-- 状态摘要 -->
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto">
+            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto">
                 <TextBlock Grid.Column="0">
                     <Run Text="排队中: " FontWeight="SemiBold"/>
                     <Run Text="{Binding TaskList.PendingCount}"/>
@@ -25,6 +25,11 @@
                 <TextBlock Grid.Column="1">
                     <Run Text="已完成: " FontWeight="SemiBold"/>
                     <Run Text="{Binding TaskList.CompletedCount}"/>
+                </TextBlock>
+                <!-- G4: 筛选结果计数 -->
+                <TextBlock Grid.Column="2">
+                    <Run Text="显示: " FontWeight="SemiBold"/>
+                    <Run Text="{Binding TaskList.FilteredCount}"/>
                 </TextBlock>
             </Grid>
 

@@ -170,4 +170,53 @@ public partial class DownloadTaskRecord : ObservableObject
     /// 是否可重试
     /// </summary>
     public bool IsRetryable { get; set; }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // G4: 任务中心产品化 — UI 多选与展示计算属性
+    // ──────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// G4: UI 多选状态（非持久化，不写入 SQLite）。
+    /// 设计思考：将选择状态放在模型而非独立 SelectionManager，
+    /// 因为 CheckBox 绑定需要 INPC 通知，模型已继承 ObservableObject；
+    /// 100 条规模下无需额外间接层，直接绑定最简洁。
+    /// </summary>
+    [ObservableProperty]
+    private bool _isSelected;
+
+    // ── G4: 只读计算属性（供 UI 展示，不持久化） ──
+
+    /// <summary>预计总大小（视频+音频），用于任务详情展示</summary>
+    public long TotalExpectedBytes => ExpectedVideoBytes + ExpectedAudioBytes;
+
+    /// <summary>已下载总大小（视频+音频），用于任务详情展示</summary>
+    public long TotalDownloadedBytes => VideoBytesDownloaded + AudioBytesDownloaded;
+
+    /// <summary>
+    /// 质量显示文本（B站 qn 映射）。
+    /// 设计思考：将 QualityId 到用户可读文本的映射放在模型上，
+    /// 避免在 View 层使用转换器或重复的 switch 表达式。
+    /// </summary>
+    public string QualityDisplayText => QualityId switch
+    {
+        127 => "8K",
+        126 => "杜比视界",
+        125 => "HDR",
+        120 => "4K",
+        116 => "1080P60",
+        80 => "1080P",
+        64 => "720P",
+        32 => "480P",
+        16 => "360P",
+        _ => $"Q{QualityId}"
+    };
+
+    /// <summary>
+    /// 完整输出路径（含分组子文件夹）。
+    /// 设计思考：UI 展示时需要合并 OutputDirectory 和 SubFolder，
+    /// 放在模型上避免 View 中写路径拼接逻辑。
+    /// </summary>
+    public string FullOutputPath => string.IsNullOrEmpty(SubFolder)
+        ? OutputDirectory
+        : Path.Combine(OutputDirectory, SubFolder);
 }

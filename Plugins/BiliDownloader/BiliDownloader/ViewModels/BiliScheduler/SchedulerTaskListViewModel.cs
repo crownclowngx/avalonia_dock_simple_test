@@ -4,18 +4,40 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
+using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
 
 namespace BiliDownloader.ViewModels.BiliScheduler;
 
 /// <summary>
-/// 任务列表子 ViewModel：负责任务展示、调度控制和任务 CRUD。
+/// 任务列表子 ViewModel：负责任务展示、筛选排序、多选批量控制和任务 CRUD。
+/// 设计思考（G4 重构）：
+/// - 保留原有 Tasks 集合作为全量事实源（现有测试依赖此属性）；
+/// - 新增 FilteredTasks 作为 UI 绑定目标，通过 TaskFilterSortEngine 纯函数计算；
+/// - 进度更新只修改对象属性（INPC 自动通知 UI），不触发集合重建；
+/// - 批量命令使用快照语义：执行时捕获当前选中列表，后续集合变更不影响已捕获的操作范围。
 /// </summary>
 public partial class SchedulerTaskListViewModel : ObservableObject
 {
     private readonly BiliDownloadCoordinator _coordinator;
     private readonly IDownloadTaskRepository _taskStore;
+    private readonly IConfirmationService _confirmationService;
     private readonly Action<string> _onStatusMessage;
+
+    /// <summary>
+    /// G4: O(1) 任务索引，替代原有的 FirstOrDefault 线性查找。
+    /// 设计思考：5 并发下载时进度回调频率高（每 500ms × 5 = 10次/秒），
+    /// 原 FirstOrDefault 在 100 条时虽仍快速，但 Dictionary 查找更确定且语义更清晰。
+    /// </summary>
+    private readonly Dictionary<string, DownloadTaskRecord> _taskIndex = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// G4: 批量操作进行中标志。
+    /// 设计思考：批量命令执行期间，Coordinator 事件可能触发 ApplyFilterAndSort，
+    /// 导致集合重建与批量操作交叉，产生闪烁或不一致。
+    /// 此标志在批量操作期间暂停事件驱动的刷新，完成后一次性刷新。
+    /// </summary>
+    private bool _isBatchOperating;
 
     [ObservableProperty]
     private int _pendingCount;
@@ -23,10 +45,54 @@ public partial class SchedulerTaskListViewModel : ObservableObject
     [ObservableProperty]
     private int _completedCount;
 
+    // ── G4: 筛选/排序状态 ──
+
+    /// <summary>标题模糊搜索关键词</summary>
+    [ObservableProperty]
+    private string _searchText = "";
+
+    /// <summary>状态分组筛选（"all"/"running"/"failed"/"interrupted"/"waiting_login"/"done"/"paused"/"canceled"/"pending"）</summary>
+    [ObservableProperty]
+    private string _statusFilter = "all";
+
+    /// <summary>Document 筛选（"all" 或具体 DocumentId）</summary>
+    [ObservableProperty]
+    private string _documentFilter = "all";
+
+    /// <summary>排序键（"created_desc"/"created_asc"/"status"/"title"）</summary>
+    [ObservableProperty]
+    private string _sortBy = "created_desc";
+
+    // ── G4: 统计属性 ──
+
+    /// <summary>当前筛选结果数量</summary>
+    [ObservableProperty]
+    private int _filteredCount;
+
+    /// <summary>当前选中任务数量</summary>
+    [ObservableProperty]
+    private int _selectedCount;
+
     /// <summary>
-    /// 所有任务记录（UI 绑定）
+    /// 所有任务记录（全量事实源，现有测试和 Tool VM 依赖此属性）
     /// </summary>
     public ObservableCollection<DownloadTaskRecord> Tasks { get; } = new();
+
+    /// <summary>
+    /// G4: 筛选排序后的任务列表（UI 绑定目标）。
+    /// 设计思考：UI 的 ListBox 绑定此集合而非 Tasks，
+    /// 实现"全量数据"与"当前视图"的分离。
+    /// </summary>
+    public ObservableCollection<DownloadTaskRecord> FilteredTasks { get; } = new();
+
+    /// <summary>
+    /// G4: 可用的 Document 列表（供筛选下拉框使用）。
+    /// 设计思考：从全量任务中动态提取去重的 DocumentId，
+    /// 用户可据此筛选特定 Document 提交的任务批次。
+    /// </summary>
+    public ObservableCollection<string> AvailableDocuments { get; } = new();
+
+    // ── 原有命令 ──
 
     public IRelayCommand ClearDoneCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> DeleteTaskCommand { get; }
@@ -43,14 +109,40 @@ public partial class SchedulerTaskListViewModel : ObservableObject
     public IAsyncRelayCommand PauseAllCommand { get; }
     public IAsyncRelayCommand ResumeAllCommand { get; }
 
+    // ── G4: 多选与批量命令 ──
+
+    /// <summary>全选当前筛选结果</summary>
+    public IRelayCommand SelectAllFilteredCommand { get; }
+
+    /// <summary>取消所有选择</summary>
+    public IRelayCommand ClearSelectionCommand { get; }
+
+    /// <summary>批量删除选中任务（破坏性，需确认）</summary>
+    public IAsyncRelayCommand BatchDeleteCommand { get; }
+
+    /// <summary>批量重试选中任务中的失败/中断任务</summary>
+    public IAsyncRelayCommand BatchRetryCommand { get; }
+
+    /// <summary>批量重新开始选中任务（破坏性，需确认）</summary>
+    public IAsyncRelayCommand BatchRestartCommand { get; }
+
+    /// <summary>批量暂停选中任务中的运行中任务</summary>
+    public IAsyncRelayCommand BatchPauseCommand { get; }
+
+    /// <summary>批量恢复选中任务中的暂停/等待登录任务</summary>
+    public IAsyncRelayCommand BatchResumeCommand { get; }
+
     public SchedulerTaskListViewModel(
         BiliDownloadCoordinator coordinator,
         IDownloadTaskRepository taskStore,
-        Action<string> onStatusMessage)
+        Action<string> onStatusMessage,
+        IConfirmationService? confirmationService = null)
     {
         _coordinator = coordinator;
         _taskStore = taskStore;
         _onStatusMessage = onStatusMessage;
+        // G4: 确认服务可选注入，未注入时使用空实现（始终确认），保持向后兼容
+        _confirmationService = confirmationService ?? new NullConfirmationService();
 
         ClearDoneCommand = new RelayCommand(ClearDoneTasks);
         DeleteTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(DeleteTaskAsync);
@@ -67,11 +159,20 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         PauseAllCommand = new AsyncRelayCommand(() => _coordinator.PauseAllActiveAsync());
         ResumeAllCommand = new AsyncRelayCommand(() => _coordinator.ResumeAllPausedAsync());
 
+        // G4: 多选与批量命令初始化
+        SelectAllFilteredCommand = new RelayCommand(SelectAllFiltered);
+        ClearSelectionCommand = new RelayCommand(ClearSelection);
+        BatchDeleteCommand = new AsyncRelayCommand(BatchDeleteAsync);
+        BatchRetryCommand = new AsyncRelayCommand(BatchRetryAsync);
+        BatchRestartCommand = new AsyncRelayCommand(BatchRestartAsync);
+        BatchPauseCommand = new AsyncRelayCommand(BatchPauseAsync);
+        BatchResumeCommand = new AsyncRelayCommand(BatchResumeAsync);
+
         // 订阅 Coordinator 事件（任务进度/状态/列表变更）
         _coordinator.TaskProgressChanged += task =>
         {
-            var uiTask = Tasks.FirstOrDefault(t => t.TaskId == task.TaskId);
-            if (uiTask != null)
+            // G4: O(1) 索引查找替代 FirstOrDefault
+            if (_taskIndex.TryGetValue(task.TaskId, out var uiTask))
             {
                 uiTask.Progress = task.Progress;
                 uiTask.VideoProgress = task.VideoProgress;
@@ -82,23 +183,46 @@ public partial class SchedulerTaskListViewModel : ObservableObject
                 uiTask.ErrorMessage = task.ErrorMessage;
             }
             UpdateCounts();
+            // 设计思考：进度更新不触发 ApplyFilterAndSort，
+            // 因为进度变化不影响筛选条件（标题/状态分组/Document 不变），
+            // 仅通过 INPC 通知 UI 更新进度条和速度文本即可。
         };
         _coordinator.TaskStatusChanged += task =>
         {
-            var uiTask = Tasks.FirstOrDefault(t => t.TaskId == task.TaskId);
-            if (uiTask != null)
+            if (_taskIndex.TryGetValue(task.TaskId, out var uiTask))
             {
                 uiTask.Status = task.Status;
                 uiTask.Progress = task.Progress;
                 uiTask.ErrorMessage = task.ErrorMessage;
             }
             UpdateCounts();
+            // G4: 状态变更可能影响筛选结果（如状态筛选激活时），需要重建 FilteredTasks
+            if (!_isBatchOperating)
+                ApplyFilterAndSort();
         };
         _coordinator.TaskListChanged += () =>
         {
             _ = ReloadTasksAsync();
         };
     }
+
+    // ── G4: 筛选/排序属性变更回调 ──
+
+    /// <summary>搜索关键词变化时重新筛选</summary>
+    partial void OnSearchTextChanged(string value) => ApplyFilterAndSort();
+
+    /// <summary>状态筛选变化时重新筛选</summary>
+    partial void OnStatusFilterChanged(string value) => ApplyFilterAndSort();
+
+    /// <summary>Document 筛选变化时重新筛选</summary>
+    partial void OnDocumentFilterChanged(string value) => ApplyFilterAndSort();
+
+    /// <summary>排序方式变化时重新排序</summary>
+    partial void OnSortByChanged(string value) => ApplyFilterAndSort();
+
+    // ──────────────────────────────────────────────────────────────────────
+    // 核心方法
+    // ──────────────────────────────────────────────────────────────────────
 
     /// <summary>
     /// 从 Coordinator 加载所有任务到 UI
@@ -109,11 +233,60 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         {
             var allTasks = await _coordinator.LoadAllTasksAsync();
             Tasks.Clear();
+            _taskIndex.Clear();
             foreach (var t in allTasks)
+            {
                 Tasks.Add(t);
+                _taskIndex[t.TaskId] = t;
+            }
             UpdateCounts();
+            UpdateAvailableDocuments();
+            ApplyFilterAndSort();
         }
         catch { /* 忽略重新加载失败 */ }
+    }
+
+    /// <summary>
+    /// G4: 重新计算筛选排序结果并更新 FilteredTasks。
+    /// 设计思考：
+    /// - 委托 TaskFilterSortEngine 纯函数执行实际筛选排序（SRP）；
+    /// - 使用 Clear + 逐条 Add 重填集合（100 条级别开销可忽略）；
+    /// - 进度更新不调用此方法，仅状态变更/增删/筛选条件变化时调用。
+    /// </summary>
+    private void ApplyFilterAndSort()
+    {
+        var criteria = new TaskFilterCriteria(
+            TitleContains: string.IsNullOrWhiteSpace(SearchText) ? null : SearchText,
+            StatusGroup: StatusFilter,
+            DocumentId: DocumentFilter);
+
+        var (sortField, sortDescending) = TaskFilterSortEngine.ParseSortBy(SortBy);
+        var result = TaskFilterSortEngine.Apply(Tasks.ToList(), criteria, sortField, sortDescending);
+
+        FilteredTasks.Clear();
+        foreach (var task in result)
+            FilteredTasks.Add(task);
+
+        FilteredCount = FilteredTasks.Count;
+        UpdateSelectedCount();
+    }
+
+    /// <summary>
+    /// G4: 从全量任务中提取去重的 DocumentId 列表，供筛选下拉框使用。
+    /// </summary>
+    private void UpdateAvailableDocuments()
+    {
+        var documents = Tasks
+            .Select(t => t.DocumentId)
+            .Where(id => !string.IsNullOrEmpty(id))
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToList();
+
+        AvailableDocuments.Clear();
+        AvailableDocuments.Add("all");
+        foreach (var doc in documents)
+            AvailableDocuments.Add(doc);
     }
 
     private async Task StartAsync()
@@ -137,8 +310,13 @@ public partial class SchedulerTaskListViewModel : ObservableObject
             await _taskStore.DeleteDoneAsync();
             var doneTasks = Tasks.Where(t => t.Status == "done").ToList();
             foreach (var t in doneTasks)
+            {
                 Tasks.Remove(t);
+                _taskIndex.Remove(t.TaskId);
+            }
             UpdateCounts();
+            UpdateAvailableDocuments();
+            ApplyFilterAndSort();
         }
         catch { /* 忽略 */ }
     }
@@ -154,7 +332,9 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         {
             await _coordinator.DeleteTaskAsync(task);
             Tasks.Remove(task);
+            _taskIndex.Remove(task.TaskId);
             UpdateCounts();
+            ApplyFilterAndSort();
         }
         catch (Exception ex)
         {
@@ -186,6 +366,235 @@ public partial class SchedulerTaskListViewModel : ObservableObject
             t.Status is "pending" or "downloading_video" or "downloading_audio" or "merging");
         CompletedCount = Tasks.Count(t => t.Status == "done");
     }
+
+    /// <summary>
+    /// G4: 更新选中计数。
+    /// 设计思考：统计全量 Tasks 中 IsSelected 的数量（而非仅 FilteredTasks），
+    /// 确保用户切换筛选条件后仍能看到总选中数。
+    /// </summary>
+    private void UpdateSelectedCount()
+    {
+        SelectedCount = Tasks.Count(t => t.IsSelected);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // G4: 多选操作
+    // ──────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// G4: 全选当前筛选结果。
+    /// 设计思考：只选中当前 FilteredTasks 中的任务（而非全量 Tasks），
+    /// 符合"全选筛选结果"的用户直觉。
+    /// </summary>
+    private void SelectAllFiltered()
+    {
+        foreach (var task in FilteredTasks)
+            task.IsSelected = true;
+        UpdateSelectedCount();
+    }
+
+    /// <summary>
+    /// G4: 取消所有选择（全量清除，而非仅清除当前筛选结果中的选择）
+    /// </summary>
+    private void ClearSelection()
+    {
+        foreach (var task in Tasks)
+            task.IsSelected = false;
+        UpdateSelectedCount();
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // G4: 批量命令（带快照语义和确认机制）
+    // ──────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// G4: 获取当前选中任务的快照。
+    /// 设计思考：批量命令在执行开始时捕获快照，后续集合变更不影响操作范围。
+    /// 这满足了 ROADMAP 的"全选筛选结果只作用于命令开始时的结果快照"要求。
+    /// </summary>
+    private List<DownloadTaskRecord> GetSelectedSnapshot()
+    {
+        return Tasks.Where(t => t.IsSelected).ToList();
+    }
+
+    /// <summary>
+    /// G4: 批量删除选中任务。
+    /// 破坏性操作：删除临时文件和成品文件，不可撤销，需要用户确认。
+    /// </summary>
+    private async Task BatchDeleteAsync()
+    {
+        var snapshot = GetSelectedSnapshot();
+        if (snapshot.Count == 0) return;
+
+        // 确认机制：展示操作数量和影响描述
+        var confirmed = await _confirmationService.ConfirmAsync(
+            "批量删除确认",
+            $"即将删除 {snapshot.Count} 个任务（含临时文件和成品文件），此操作不可撤销。确定继续？");
+        if (!confirmed) return;
+
+        _isBatchOperating = true;
+        try
+        {
+            foreach (var task in snapshot)
+            {
+                try
+                {
+                    await _coordinator.DeleteTaskAsync(task);
+                    Tasks.Remove(task);
+                    _taskIndex.Remove(task.TaskId);
+                }
+                catch (Exception ex)
+                {
+                    _onStatusMessage($"删除任务 [{task.ItemTitle}] 失败: {ex.Message}");
+                }
+            }
+            UpdateCounts();
+            UpdateAvailableDocuments();
+        }
+        finally
+        {
+            _isBatchOperating = false;
+            ApplyFilterAndSort();
+        }
+    }
+
+    /// <summary>
+    /// G4: 批量重试选中任务中的失败/中断任务。
+    /// 非破坏性操作（恢复下载），不需要确认。
+    /// 设计思考：只处理 Failed 和 Interrupted 状态的任务，跳过其他状态，
+    /// 避免对已完成或运行中的任务产生副作用。
+    /// </summary>
+    private async Task BatchRetryAsync()
+    {
+        var snapshot = GetSelectedSnapshot()
+            .Where(t =>
+            {
+                var status = DownloadTaskStatusMapper.FromStorageString(t.Status);
+                return status is DownloadTaskStatus.Failed or DownloadTaskStatus.Interrupted;
+            })
+            .ToList();
+        if (snapshot.Count == 0) return;
+
+        _isBatchOperating = true;
+        try
+        {
+            foreach (var task in snapshot)
+            {
+                try { await _coordinator.RetryTaskAsync(task); }
+                catch (Exception ex) { _onStatusMessage($"重试任务 [{task.ItemTitle}] 失败: {ex.Message}"); }
+            }
+            UpdateCounts();
+        }
+        finally
+        {
+            _isBatchOperating = false;
+            ApplyFilterAndSort();
+        }
+    }
+
+    /// <summary>
+    /// G4: 批量重新开始选中任务。
+    /// 破坏性操作：清理旧断点和临时文件从零下载，需要用户确认。
+    /// </summary>
+    private async Task BatchRestartAsync()
+    {
+        var snapshot = GetSelectedSnapshot()
+            .Where(t =>
+            {
+                var status = DownloadTaskStatusMapper.FromStorageString(t.Status);
+                return status is DownloadTaskStatus.Failed
+                    or DownloadTaskStatus.Interrupted
+                    or DownloadTaskStatus.Canceled;
+            })
+            .ToList();
+        if (snapshot.Count == 0) return;
+
+        var confirmed = await _confirmationService.ConfirmAsync(
+            "批量重新开始确认",
+            $"即将重新开始 {snapshot.Count} 个任务（将清理旧断点从零下载）。确定继续？");
+        if (!confirmed) return;
+
+        _isBatchOperating = true;
+        try
+        {
+            foreach (var task in snapshot)
+            {
+                try { await _coordinator.RestartTaskAsync(task.TaskId); }
+                catch (Exception ex) { _onStatusMessage($"重新开始任务 [{task.ItemTitle}] 失败: {ex.Message}"); }
+            }
+            UpdateCounts();
+        }
+        finally
+        {
+            _isBatchOperating = false;
+            ApplyFilterAndSort();
+        }
+    }
+
+    /// <summary>
+    /// G4: 批量暂停选中任务中的运行中任务。
+    /// 非破坏性操作，不需要确认。
+    /// </summary>
+    private async Task BatchPauseAsync()
+    {
+        var snapshot = GetSelectedSnapshot()
+            .Where(t => DownloadTaskStatusMapper.IsRunning(
+                DownloadTaskStatusMapper.FromStorageString(t.Status)))
+            .ToList();
+        if (snapshot.Count == 0) return;
+
+        _isBatchOperating = true;
+        try
+        {
+            foreach (var task in snapshot)
+            {
+                try { await _coordinator.PauseTaskAsync(task.TaskId); }
+                catch (Exception ex) { _onStatusMessage($"暂停任务 [{task.ItemTitle}] 失败: {ex.Message}"); }
+            }
+            UpdateCounts();
+        }
+        finally
+        {
+            _isBatchOperating = false;
+            ApplyFilterAndSort();
+        }
+    }
+
+    /// <summary>
+    /// G4: 批量恢复选中任务中的暂停/等待登录任务。
+    /// 非破坏性操作，不需要确认。
+    /// </summary>
+    private async Task BatchResumeAsync()
+    {
+        var snapshot = GetSelectedSnapshot()
+            .Where(t =>
+            {
+                var status = DownloadTaskStatusMapper.FromStorageString(t.Status);
+                return status is DownloadTaskStatus.Paused or DownloadTaskStatus.WaitingForLogin;
+            })
+            .ToList();
+        if (snapshot.Count == 0) return;
+
+        _isBatchOperating = true;
+        try
+        {
+            foreach (var task in snapshot)
+            {
+                try { await _coordinator.ResumeTaskAsync(task.TaskId); }
+                catch (Exception ex) { _onStatusMessage($"恢复任务 [{task.ItemTitle}] 失败: {ex.Message}"); }
+            }
+            UpdateCounts();
+        }
+        finally
+        {
+            _isBatchOperating = false;
+            ApplyFilterAndSort();
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // G2: 单任务控制
+    // ──────────────────────────────────────────────────────────────────────
 
     #region G2 单任务控制
 
@@ -246,6 +655,10 @@ public partial class SchedulerTaskListViewModel : ObservableObject
     }
 
     #endregion
+
+    // ──────────────────────────────────────────────────────────────────────
+    // 打开文件所在位置
+    // ──────────────────────────────────────────────────────────────────────
 
     #region 打开文件所在位置
 

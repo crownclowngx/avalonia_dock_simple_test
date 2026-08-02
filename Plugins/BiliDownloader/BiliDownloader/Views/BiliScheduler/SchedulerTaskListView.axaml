@@ -5,7 +5,7 @@
              xmlns:vm="using:BiliDownloader.ViewModels.BiliScheduler"
              xmlns:models="using:BiliDownloader.Models"
              xmlns:conv="using:BiliDownloader.Converters"
-             mc:Ignorable="d" d:DesignWidth="350" d:DesignHeight="400"
+             mc:Ignorable="d" d:DesignWidth="380" d:DesignHeight="550"
              x:Class="BiliDownloader.Views.BiliScheduler.SchedulerTaskListView"
              x:DataType="vm:SchedulerTaskListViewModel">
     <UserControl.Resources>
@@ -15,120 +15,288 @@
         <conv:IsPausedStatusConverter x:Key="IsPausedStatusConverter"/>
         <conv:IsCancelableStatusConverter x:Key="IsCancelableStatusConverter"/>
         <conv:IsRestartableStatusConverter x:Key="IsRestartableStatusConverter"/>
+        <conv:ByteSizeConverter x:Key="ByteSizeConverter"/>
     </UserControl.Resources>
-    <ScrollViewer>
-        <ItemsControl ItemsSource="{Binding Tasks}">
-            <ItemsControl.ItemTemplate>
+
+    <DockPanel>
+        <!-- ═══════════════════════════════════════════════════════════
+             G4: 筛选/排序工具栏（DockPanel.Top）
+             设计思考：将筛选控件放在列表顶部，符合用户对"搜索框在列表上方"的直觉。
+             使用 WrapPanel 允许窄宽度时自动换行。
+        ═══════════════════════════════════════════════════════════ -->
+        <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,6">
+            <!-- 标题搜索 -->
+            <TextBox Text="{Binding SearchText}"
+                     PlaceholderText="搜索标题..."
+                     FontSize="11"
+                     Padding="6,3"/>
+
+            <!-- 筛选/排序行 -->
+            <WrapPanel Orientation="Horizontal">
+                <!-- 状态筛选 -->
+                <ComboBox SelectedValue="{Binding StatusFilter}"
+                          SelectedValueBinding="{Binding}"
+                          FontSize="10"
+                          Margin="0,0,4,0"
+                          Padding="4,2"
+                          ToolTip.Tip="按状态筛选">
+                    <ComboBox.Items>
+                        <x:String>all</x:String>
+                        <x:String>running</x:String>
+                        <x:String>failed</x:String>
+                        <x:String>interrupted</x:String>
+                        <x:String>waiting_login</x:String>
+                        <x:String>done</x:String>
+                        <x:String>paused</x:String>
+                        <x:String>canceled</x:String>
+                        <x:String>pending</x:String>
+                    </ComboBox.Items>
+                </ComboBox>
+
+                <!-- Document 筛选 -->
+                <ComboBox ItemsSource="{Binding AvailableDocuments}"
+                          SelectedItem="{Binding DocumentFilter}"
+                          FontSize="10"
+                          Margin="0,0,4,0"
+                          Padding="4,2"
+                          MaxWidth="100"
+                          ToolTip.Tip="按 Document 筛选"/>
+
+                <!-- 排序方式 -->
+                <ComboBox SelectedValue="{Binding SortBy}"
+                          SelectedValueBinding="{Binding}"
+                          FontSize="10"
+                          Padding="4,2"
+                          ToolTip.Tip="排序方式">
+                    <ComboBox.Items>
+                        <x:String>created_desc</x:String>
+                        <x:String>created_asc</x:String>
+                        <x:String>status</x:String>
+                        <x:String>title</x:String>
+                    </ComboBox.Items>
+                </ComboBox>
+            </WrapPanel>
+        </StackPanel>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             G4: 批量操作栏（DockPanel.Bottom）
+             设计思考：批量操作放在列表底部，与顶部筛选栏形成"上筛下操"的布局。
+             破坏性按钮（删除/重开）仅在有选中项时可见，减少误操作风险。
+        ═══════════════════════════════════════════════════════════ -->
+        <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="0,6,0,0">
+            <Separator/>
+            <!-- 选中统计 -->
+            <TextBlock FontSize="10" Foreground="{DynamicResource AppSecondaryTextBrush}">
+                <Run Text="已选 "/>
+                <Run Text="{Binding SelectedCount}"/>
+                <Run Text=" / 显示 "/>
+                <Run Text="{Binding FilteredCount}"/>
+                <Run Text=" 个"/>
+            </TextBlock>
+
+            <!-- 批量操作按钮 -->
+            <WrapPanel Orientation="Horizontal">
+                <Button Content="全选筛选"
+                        Command="{Binding SelectAllFilteredCommand}"
+                        Padding="6,2" FontSize="10" Margin="0,0,4,2"
+                        ToolTip.Tip="全选当前筛选结果"/>
+                <Button Content="取消选择"
+                        Command="{Binding ClearSelectionCommand}"
+                        Padding="6,2" FontSize="10" Margin="0,0,4,2"/>
+                <Button Content="批量删除"
+                        Command="{Binding BatchDeleteCommand}"
+                        Padding="6,2" FontSize="10" Margin="0,0,4,2"
+                        Foreground="Red"
+                        ToolTip.Tip="删除选中任务（含文件，不可撤销）"/>
+                <Button Content="批量重试"
+                        Command="{Binding BatchRetryCommand}"
+                        Padding="6,2" FontSize="10" Margin="0,0,4,2"
+                        ToolTip.Tip="重试选中的失败/中断任务"/>
+                <Button Content="批量重开"
+                        Command="{Binding BatchRestartCommand}"
+                        Padding="6,2" FontSize="10" Margin="0,0,4,2"
+                        ToolTip.Tip="重新开始选中任务（清理断点从零下载）"/>
+                <Button Content="批量暂停"
+                        Command="{Binding BatchPauseCommand}"
+                        Padding="6,2" FontSize="10" Margin="0,0,4,2"
+                        ToolTip.Tip="暂停选中的运行中任务"/>
+                <Button Content="批量恢复"
+                        Command="{Binding BatchResumeCommand}"
+                        Padding="6,2" FontSize="10" Margin="0,0,4,2"
+                        ToolTip.Tip="恢复选中的暂停/等待登录任务"/>
+            </WrapPanel>
+        </StackPanel>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             G4: 虚拟化任务列表
+             设计思考：将 ItemsControl 替换为 ListBox，
+             Avalonia 的 ListBox 默认使用 VirtualizingStackPanel，
+             仅实例化可视区域内的容器（约 10 个），100 个任务时不会生成全部视觉树。
+             选中状态通过 CheckBox 绑定到模型的 IsSelected 属性（INPC），
+             不依赖 ListBox 的 Selection 机制，避免虚拟化回收时选中状态丢失。
+        ═══════════════════════════════════════════════════════════ -->
+        <ListBox ItemsSource="{Binding FilteredTasks}"
+                 SelectionMode="Multiple"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 Padding="0">
+            <ListBox.Styles>
+                <!-- 移除 ListBox 默认选中高亮（选中由 CheckBox 控制） -->
+                <Style Selector="ListBoxItem">
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                </Style>
+                <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                    <Setter Property="Background" Value="Transparent"/>
+                </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="models:DownloadTaskRecord">
                     <Border BorderBrush="{DynamicResource AppDividerBrush}"
                             BorderThickness="0,0,0,1" Padding="4,6">
-                        <StackPanel Spacing="3">
-                            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-                                <TextBlock Text="{Binding ItemTitle}"
-                                           TextTrimming="CharacterEllipsis"
-                                           FontWeight="SemiBold"
-                                           FontSize="12"
-                                           Grid.Column="0"
-                                           VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Status}"
-                                           Grid.Column="1"
+                        <DockPanel>
+                            <!-- G4: 多选 CheckBox（左侧） -->
+                            <CheckBox IsChecked="{Binding IsSelected}"
+                                      DockPanel.Dock="Left"
+                                      VerticalAlignment="Top"
+                                      Margin="0,0,6,0"/>
+
+                            <StackPanel Spacing="3">
+                                <!-- 第一行：标题 + 状态 + 操作按钮 -->
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                    <TextBlock Text="{Binding ItemTitle}"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontWeight="SemiBold"
+                                               FontSize="12"
+                                               Grid.Column="0"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Status}"
+                                               Grid.Column="1"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource AppInfoBrush}"
+                                               Margin="4,0"
+                                               VerticalAlignment="Center"/>
+                                    <!-- G2: 暂停按钮（运行中可见） -->
+                                    <Button Content="暂停"
+                                            Grid.Column="2"
+                                            Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).PauseTaskCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsVisible="{Binding Status, Converter={StaticResource IsRunningStatusConverter}}"
+                                            Padding="4,1" FontSize="10" Margin="2,0"
+                                            VerticalAlignment="Center"
+                                            ToolTip.Tip="暂停任务"/>
+                                    <!-- G2: 恢复按钮（暂停/等待登录可见） -->
+                                    <Button Content="恢复"
+                                            Grid.Column="3"
+                                            Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).ResumeTaskCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsVisible="{Binding Status, Converter={StaticResource IsPausedStatusConverter}}"
+                                            Padding="4,1" FontSize="10" Margin="2,0"
+                                            VerticalAlignment="Center"
+                                            ToolTip.Tip="恢复任务"/>
+                                    <!-- G2: 重新开始按钮（失败/中断/取消可见） -->
+                                    <Button Content="重开"
+                                            Grid.Column="4"
+                                            Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).RestartTaskCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsVisible="{Binding Status, Converter={StaticResource IsRestartableStatusConverter}}"
+                                            Padding="4,1" FontSize="10" Margin="2,0"
+                                            VerticalAlignment="Center"
+                                            ToolTip.Tip="重新开始（清理断点从零下载）"/>
+                                    <Button Content="重试"
+                                            Grid.Column="5"
+                                            Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).RetryTaskCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsVisible="{Binding Status, Converter={StaticResource IsFailedStatusConverter}}"
+                                            Padding="4,1" FontSize="10" Margin="2,0"
+                                            VerticalAlignment="Center"/>
+                                    <Button Content="打开"
+                                            Grid.Column="6"
+                                            Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).OpenFileLocationCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsVisible="{Binding Status, Converter={StaticResource IsDoneStatusConverter}}"
+                                            Padding="4,1" FontSize="10" Margin="2,0"
+                                            VerticalAlignment="Center"/>
+                                    <Button Content="X"
+                                            Grid.Column="7"
+                                            Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).DeleteTaskCommand}"
+                                            CommandParameter="{Binding}"
+                                            Padding="4,1" FontSize="10"
+                                            VerticalAlignment="Center"
+                                            ToolTip.Tip="删除任务"/>
+                                </Grid>
+
+                                <!-- 速度文本 -->
+                                <TextBlock Text="{Binding SpeedText}"
                                            FontSize="11"
-                                           Foreground="{DynamicResource AppInfoBrush}"
-                                           Margin="4,0"
-                                           VerticalAlignment="Center"/>
-                                <!-- G2: 暂停按钮（运行中可见） -->
-                                <Button Content="暂停"
-                                        Grid.Column="2"
-                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).PauseTaskCommand}"
-                                        CommandParameter="{Binding}"
-                                        IsVisible="{Binding Status, Converter={StaticResource IsRunningStatusConverter}}"
-                                        Padding="4,1" FontSize="10" Margin="2,0"
-                                        VerticalAlignment="Center"
-                                        ToolTip.Tip="暂停任务"/>
-                                <!-- G2: 恢复按钮（暂停/等待登录可见） -->
-                                <Button Content="恢复"
-                                        Grid.Column="3"
-                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).ResumeTaskCommand}"
-                                        CommandParameter="{Binding}"
-                                        IsVisible="{Binding Status, Converter={StaticResource IsPausedStatusConverter}}"
-                                        Padding="4,1" FontSize="10" Margin="2,0"
-                                        VerticalAlignment="Center"
-                                        ToolTip.Tip="恢复任务"/>
-                                <!-- G2: 重新开始按钮（失败/中断/取消可见） -->
-                                <Button Content="重开"
-                                        Grid.Column="4"
-                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).RestartTaskCommand}"
-                                        CommandParameter="{Binding}"
-                                        IsVisible="{Binding Status, Converter={StaticResource IsRestartableStatusConverter}}"
-                                        Padding="4,1" FontSize="10" Margin="2,0"
-                                        VerticalAlignment="Center"
-                                        ToolTip.Tip="重新开始（清理断点从零下载）"/>
-                                <Button Content="重试"
-                                        Grid.Column="5"
-                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).RetryTaskCommand}"
-                                        CommandParameter="{Binding}"
-                                        IsVisible="{Binding Status, Converter={StaticResource IsFailedStatusConverter}}"
-                                        Padding="4,1" FontSize="10" Margin="2,0"
-                                        VerticalAlignment="Center"/>
-                                <Button Content="打开"
-                                        Grid.Column="6"
-                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).OpenFileLocationCommand}"
-                                        CommandParameter="{Binding}"
-                                        IsVisible="{Binding Status, Converter={StaticResource IsDoneStatusConverter}}"
-                                        Padding="4,1" FontSize="10" Margin="2,0"
-                                        VerticalAlignment="Center"/>
-                                <Button Content="X"
-                                        Grid.Column="7"
-                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).DeleteTaskCommand}"
-                                        CommandParameter="{Binding}"
-                                        Padding="4,1" FontSize="10"
-                                        VerticalAlignment="Center"
-                                        ToolTip.Tip="删除任务"/>
-                            </Grid>
+                                           Foreground="{DynamicResource AppWarningBrush}"
+                                           IsVisible="{Binding SpeedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
-                            <!-- 速度文本 -->
-                            <TextBlock Text="{Binding SpeedText}"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource AppWarningBrush}"
-                                       IsVisible="{Binding SpeedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <!-- 三分段进度条 -->
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                        <TextBlock Text="视频" FontSize="10"
+                                                   Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                                   VerticalAlignment="Center"/>
+                                        <ProgressBar Value="{Binding VideoProgress}"
+                                                     Minimum="0" Maximum="100"
+                                                     Width="60" Height="3"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                        <TextBlock Text="音频" FontSize="10"
+                                                   Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                                   VerticalAlignment="Center"/>
+                                        <ProgressBar Value="{Binding AudioProgress}"
+                                                     Minimum="0" Maximum="100"
+                                                     Width="60" Height="3"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                        <TextBlock Text="合成" FontSize="10"
+                                                   Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                                   VerticalAlignment="Center"/>
+                                        <ProgressBar Value="{Binding MergeProgress}"
+                                                     Minimum="0" Maximum="100"
+                                                     Width="50" Height="3"/>
+                                    </StackPanel>
+                                </StackPanel>
 
-                            <!-- 三分段进度条 -->
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <TextBlock Text="视频" FontSize="10"
-                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <ProgressBar Value="{Binding VideoProgress}"
-                                                 Minimum="0" Maximum="100"
-                                                 Width="60" Height="3"/>
+                                <!-- ═══════════════════════════════════════
+                                     G4: 扩展信息展示行
+                                     展示预计大小、已下载大小、质量、输出路径
+                                ═══════════════════════════════════════ -->
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock FontSize="10"
+                                               Foreground="{DynamicResource AppSecondaryTextBrush}">
+                                        <Run Text="大小: "/>
+                                        <Run Text="{Binding TotalDownloadedBytes, Converter={StaticResource ByteSizeConverter}}"/>
+                                        <Run Text=" / "/>
+                                        <Run Text="{Binding TotalExpectedBytes, Converter={StaticResource ByteSizeConverter}}"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="10"
+                                               Foreground="{DynamicResource AppSecondaryTextBrush}">
+                                        <Run Text="质量: "/>
+                                        <Run Text="{Binding QualityDisplayText}"/>
+                                    </TextBlock>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <TextBlock Text="音频" FontSize="10"
-                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <ProgressBar Value="{Binding AudioProgress}"
-                                                 Minimum="0" Maximum="100"
-                                                 Width="60" Height="3"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <TextBlock Text="合成" FontSize="10"
-                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <ProgressBar Value="{Binding MergeProgress}"
-                                                 Minimum="0" Maximum="100"
-                                                 Width="50" Height="3"/>
-                                </StackPanel>
+
+                                <!-- 输出路径（截断显示） -->
+                                <TextBlock Text="{Binding FullOutputPath}"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           IsVisible="{Binding FullOutputPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                                <!-- 错误信息 -->
+                                <TextBlock Text="{Binding ErrorMessage}"
+                                           Foreground="Red"
+                                           FontSize="10"
+                                           TextWrapping="Wrap"
+                                           IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             </StackPanel>
-
-                            <TextBlock Text="{Binding ErrorMessage}"
-                                       Foreground="Red"
-                                       FontSize="10"
-                                       TextWrapping="Wrap"
-                                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        </StackPanel>
+                        </DockPanel>
                     </Border>
                 </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-    </ScrollViewer>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
 </UserControl>
