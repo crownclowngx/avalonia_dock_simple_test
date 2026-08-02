@@ -7,13 +7,15 @@
              x:Class="BiliDownloader.Views.BiliDownloader.DownloadConfigView"
              x:DataType="vm:DownloadConfigViewModel">
     <StackPanel Spacing="6">
-        <!-- G5: 预设选择栏 -->
         <Border Classes="bili-doc-flat-section">
-            <Grid ColumnDefinitions="Auto,220,Auto,Auto,Auto,*"
+            <Grid ColumnDefinitions="Auto,*,Auto"
                   RowDefinitions="Auto,Auto"
                   ColumnSpacing="8"
-                  RowSpacing="6">
-                <TextBlock Grid.Column="0" Text="下载预设" Classes="bili-doc-caption" VerticalAlignment="Center" />
+                  RowSpacing="5">
+                <TextBlock Grid.Column="0"
+                           Text="下载预设"
+                           Classes="bili-doc-caption"
+                           VerticalAlignment="Center" />
                 <ComboBox Grid.Column="1"
                           Classes="bili-doc-input"
                           ItemsSource="{Binding Presets}"
@@ -35,29 +37,42 @@
                         Command="{Binding ApplyPresetCommand}"
                         Classes="bili-doc-button"
                         ToolTip.Tip="将选中预设的配置应用到当前下载" />
-                <TextBlock Grid.Column="3"
+                <TextBlock Grid.Row="1"
+                           Grid.Column="1"
+                           Grid.ColumnSpan="2"
                            Text="{Binding PresetStatusText}"
                            Classes="bili-doc-caption"
                            VerticalAlignment="Center" />
-                <TextBox Grid.Row="1" Grid.Column="1"
-                         Text="{Binding CustomPresetName}"
-                         Classes="bili-doc-input"
-                         PlaceholderText="自定义预设名称" />
-                <Button Grid.Row="1" Grid.Column="2"
-                        Content="保存副本"
-                        Command="{Binding SaveAsPresetCommand}"
-                        Classes="bili-doc-button"
-                        ToolTip.Tip="将当前配置保存为自定义预设" />
-                <Button Grid.Row="1" Grid.Column="3"
-                        Content="重命名"
-                        Command="{Binding RenameSelectedPresetCommand}"
-                        Classes="bili-doc-button"
-                        ToolTip.Tip="输入新名称后重命名自定义预设" />
-                <Button Grid.Row="1" Grid.Column="4"
-                        Content="删除自定义预设"
-                        Command="{Binding DeleteSelectedPresetCommand}"
-                        Classes="bili-doc-button"
-                        ToolTip.Tip="内置预设不会被删除" />
+            </Grid>
+        </Border>
+
+        <Border Classes="bili-doc-flat-section">
+            <Grid RowDefinitions="Auto,Auto"
+                  ColumnDefinitions="*,*"
+                  ColumnSpacing="12"
+                  RowSpacing="5">
+                <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                    <TextBlock Text="视频质量" Classes="bili-doc-caption" VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1"
+                              Classes="bili-doc-input"
+                              ItemsSource="{Binding QualityOptions}"
+                              SelectedItem="{Binding SelectedQuality}" />
+                </Grid>
+                <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                    <TextBlock Text="音频质量" Classes="bili-doc-caption" VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1"
+                              Classes="bili-doc-input"
+                              ItemsSource="{Binding AudioQualityOptions}"
+                              SelectedItem="{Binding SelectedAudioQuality}" />
+                </Grid>
+                <TextBlock Grid.Row="1"
+                           Grid.Column="0"
+                           Grid.ColumnSpan="2"
+                           Text="{Binding QualityRestoreNotice}"
+                           Classes="bili-doc-caption"
+                           Foreground="{DynamicResource AppWarningBrush}"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding QualityRestoreNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </Grid>
         </Border>
 
@@ -84,30 +99,8 @@
         </Border>
 
         <Border Classes="bili-doc-flat-section">
-            <Grid ColumnDefinitions="Auto,220,Auto,220,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
-                <TextBlock Grid.Column="0" Text="视频质量" Classes="bili-doc-caption" VerticalAlignment="Center" />
-                <ComboBox Grid.Column="1"
-                          Classes="bili-doc-input"
-                          ItemsSource="{Binding QualityOptions}"
-                          SelectedItem="{Binding SelectedQuality}" />
-                <TextBlock Grid.Column="2" Text="音频质量" Classes="bili-doc-caption" VerticalAlignment="Center" />
-                <ComboBox Grid.Column="3"
-                          Classes="bili-doc-input"
-                          ItemsSource="{Binding AudioQualityOptions}"
-                          SelectedItem="{Binding SelectedAudioQuality}" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
-                           Text="{Binding QualityRestoreNotice}"
-                           Classes="bili-doc-caption"
-                           Foreground="{DynamicResource AppWarningBrush}"
-                           TextWrapping="Wrap"
-                           IsVisible="{Binding QualityRestoreNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-            </Grid>
-        </Border>
-
-        <Expander Header="高级设置"
-                  IsExpanded="False"
-                  Classes="bili-doc-expander">
-            <StackPanel Spacing="8" Margin="0,7,0,0">
+            <StackPanel Spacing="5">
+                <TextBlock Text="下载内容" Classes="bili-doc-section-title" />
                 <WrapPanel>
                     <CheckBox Content="使用分组文件夹"
                               Margin="0,0,14,4"
@@ -117,27 +110,19 @@
                               Margin="0,0,14,4"
                               IsChecked="{Binding AddIndexToTitle}"
                               IsVisible="{Binding IsMultiVideo}" />
+                    <CheckBox Content="弹幕 XML"
+                              Margin="0,0,14,4"
+                              IsChecked="{Binding DownloadDanmaku}"
+                              ToolTip.Tip="按 360 秒分段获取后合并" />
+                    <CheckBox Content="全部字幕 SRT"
+                              Margin="0,0,14,4"
+                              IsChecked="{Binding DownloadSubtitle}" />
+                    <CheckBox Content="封面图"
+                              Margin="0,0,14,4"
+                              IsChecked="{Binding DownloadCover}" />
                 </WrapPanel>
-
-                <Border Classes="bili-doc-flat-section">
-                    <StackPanel Spacing="5">
-                        <TextBlock Text="附加资源" Classes="bili-doc-section-title" />
-                        <WrapPanel>
-                            <CheckBox Content="弹幕 XML"
-                                      Margin="0,0,14,4"
-                                      IsChecked="{Binding DownloadDanmaku}"
-                                      ToolTip.Tip="按 360 秒分段获取后合并" />
-                            <CheckBox Content="全部字幕 SRT"
-                                      Margin="0,0,14,4"
-                                      IsChecked="{Binding DownloadSubtitle}" />
-                            <CheckBox Content="封面图"
-                                      Margin="0,0,14,4"
-                                      IsChecked="{Binding DownloadCover}" />
-                        </WrapPanel>
-                    </StackPanel>
-                </Border>
-
             </StackPanel>
-        </Expander>
+        </Border>
+
     </StackPanel>
 </UserControl>

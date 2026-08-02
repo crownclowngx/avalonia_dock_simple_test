@@ -14,14 +14,21 @@
         <conv:RenameDisplayConverter x:Key="RenameDisplayConverter" />
     </UserControl.Resources>
 
-    <StackPanel Spacing="7">
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-            <TextBlock Grid.Column="0"
-                       Text="视频列表"
-                       Classes="bili-doc-section-title"
-                       VerticalAlignment="Center" />
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="7">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="视频列表"
+                           Classes="bili-doc-section-title"
+                           VerticalAlignment="Center" />
+                <TextBlock Text="{Binding ItemCount, StringFormat='{}{0} 项'}"
+                           Classes="bili-doc-caption"
+                           VerticalAlignment="Center" />
+                <TextBlock Text="{Binding SelectionSummaryText}"
+                           Classes="bili-doc-caption"
+                           VerticalAlignment="Center" />
+            </StackPanel>
             <WrapPanel Grid.Column="1" HorizontalAlignment="Right">
-                <Button Content="批量重命名"
+                <Button Content="重命名"
                         Command="{Binding RenamePanel.ToggleRenamePanelCommand}"
                         Classes="bili-doc-button"
                         Margin="0,0,6,4" />
@@ -29,20 +36,22 @@
                         Command="{Binding SelectAllCommand}"
                         Classes="bili-doc-button"
                         Margin="0,0,6,4" />
-                <Button Content="取消全选"
+                <Button Content="清空"
                         Command="{Binding DeselectAllCommand}"
                         Classes="bili-doc-button"
                         Margin="0,0,0,4" />
             </WrapPanel>
         </Grid>
 
-        <sub:RenamePanelView DataContext="{Binding RenamePanel}" />
+        <sub:RenamePanelView Grid.Row="1"
+                             DataContext="{Binding RenamePanel}" />
 
         <!-- 显式虚拟化，下载集合较大时只创建可见列表行。 -->
         <ListBox x:Name="VideoItemsList"
+                 Grid.Row="2"
                  Classes="bili-doc-list"
                  ItemsSource="{Binding VideoItems}"
-                 MaxHeight="400"
+                 MinHeight="64"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemsPanel>
@@ -132,21 +141,27 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <Border Classes="bili-doc-flat-section">
+        <Border Grid.Row="3"
+                x:Name="DownloadActionBar"
+                Classes="bili-doc-flat-section">
             <Grid RowDefinitions="Auto,Auto"
-                  ColumnDefinitions="Auto,Auto,*,Auto"
+                  ColumnDefinitions="*,Auto,Auto"
                   ColumnSpacing="8"
                   RowSpacing="6">
-                <Button Grid.Row="0" Grid.Column="0"
-                        Command="{Binding SubmitDownloadCommand}"
-                        Classes="bili-doc-button accent">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <PathIcon Width="15" Height="15"
-                                  Data="{StaticResource BiliDownloadGeometry}" />
-                        <TextBlock Text="提交下载" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-                <Button Grid.Row="0" Grid.Column="1"
+                <ProgressBar Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                             Classes="bili-doc-progress"
+                             Value="{Binding TotalProgress}"
+                             Minimum="0" Maximum="100"
+                             VerticalAlignment="Center" />
+                <TextBlock Grid.Row="0" Grid.Column="2"
+                           Text="{Binding TotalProgress, StringFormat='总进度 {0:F1}%'}"
+                           Classes="bili-doc-caption"
+                           VerticalAlignment="Center" />
+                <TextBlock Grid.Row="1" Grid.Column="0"
+                           Text="{Binding SelectionSummaryText}"
+                           Classes="bili-doc-caption"
+                           VerticalAlignment="Center" />
+                <Button Grid.Row="1" Grid.Column="1"
                         Command="{Binding OpenOutputDirCommand}"
                         Classes="bili-doc-button">
                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -155,15 +170,19 @@
                         <TextBlock Text="打开输出目录" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <TextBlock Grid.Row="0" Grid.Column="3"
-                           Text="{Binding TotalProgress, StringFormat='总进度 {0:F1}%'}"
-                           Classes="bili-doc-caption"
-                           VerticalAlignment="Center" />
-                <ProgressBar Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4"
-                             Classes="bili-doc-progress"
-                             Value="{Binding TotalProgress}"
-                             Minimum="0" Maximum="100" />
+                <Button Grid.Row="1" Grid.Column="2"
+                        x:Name="SubmitDownloadButton"
+                        Command="{Binding SubmitDownloadCommand}"
+                        IsEnabled="{Binding HasSelection}"
+                        Classes="bili-doc-button accent">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Width="15" Height="15"
+                                  Data="{StaticResource BiliDownloadGeometry}" />
+                        <TextBlock Text="{Binding SubmitButtonText}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
             </Grid>
         </Border>
-    </StackPanel>
+    </Grid>
 </UserControl>

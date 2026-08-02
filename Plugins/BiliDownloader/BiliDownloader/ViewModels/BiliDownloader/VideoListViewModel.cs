@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -58,12 +59,22 @@ public partial class VideoListViewModel : ObservableObject
     private readonly IMessengerService? _messengerService;
     private readonly Action<string> _onStatusMessage;
     private readonly IFfmpegService _ffmpegService;
+    private readonly Action? _onConfigurationBlocked;
+    private bool _isBulkSelectionUpdate;
 
     public ObservableCollection<BiliVideoItem> VideoItems { get; } = new();
     public event Action? SelectionOrTitleChanged;
 
     [ObservableProperty]
     private double _totalProgress;
+
+    [ObservableProperty]
+    private int _selectedCount;
+
+    public int ItemCount => VideoItems.Count;
+    public bool HasSelection => SelectedCount > 0;
+    public string SelectionSummaryText => $"已选 {SelectedCount} / {ItemCount}";
+    public string SubmitButtonText => $"下载所选 {SelectedCount} 项";
 
     public RenamePanelViewModel RenamePanel { get; }
 
@@ -82,15 +93,17 @@ public partial class VideoListViewModel : ObservableObject
         Func<SubmitContext> getSubmitContext,
         IMessengerService? messengerService,
         Action<string> onStatusMessage,
-        IFfmpegService ffmpegService)
+        IFfmpegService ffmpegService,
+        Action? onConfigurationBlocked = null)
     {
         _getSubmitContext = getSubmitContext;
         _messengerService = messengerService;
         _onStatusMessage = onStatusMessage;
         _ffmpegService = ffmpegService;
+        _onConfigurationBlocked = onConfigurationBlocked;
 
-        SelectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = true; });
-        DeselectAllCommand = new RelayCommand(() => { foreach (var v in VideoItems) v.IsSelected = false; });
+        SelectAllCommand = new RelayCommand(() => SetAllSelected(true));
+        DeselectAllCommand = new RelayCommand(() => SetAllSelected(false));
         SubmitDownloadCommand = new RelayCommand(SubmitDownload);
         OpenOutputDirCommand = new RelayCommand(OpenOutputDir);
 
@@ -106,19 +119,21 @@ public partial class VideoListViewModel : ObservableObject
     /// </summary>
     public void SetItems(List<BiliVideoItem> items)
     {
+        foreach (var oldItem in VideoItems)
+            oldItem.PropertyChanged -= OnVideoItemPropertyChanged;
+
         VideoItems.Clear();
         foreach (var item in items)
         {
+            // 解析结果始终从“未选择”开始，避免单视频或合集被意外提交。
+            item.IsSelected = false;
             VideoItems.Add(item);
-            item.PropertyChanged += (_, args) =>
-            {
-                if (args.PropertyName is nameof(BiliVideoItem.IsSelected) or nameof(BiliVideoItem.Title))
-                    SelectionOrTitleChanged?.Invoke();
-            };
+            item.PropertyChanged += OnVideoItemPropertyChanged;
         }
 
         RenamePanel.InitTitles(items);
         TotalProgress = 0;
+        NotifyCollectionSummaryChanged();
     }
 
     /// <summary>
@@ -128,7 +143,12 @@ public partial class VideoListViewModel : ObservableObject
     {
         var existing = VideoItems.FirstOrDefault(v => v.ItemId == item.ItemId);
         if (existing == null)
+        {
+            item.IsSelected = false;
             VideoItems.Add(item);
+            item.PropertyChanged += OnVideoItemPropertyChanged;
+            NotifyCollectionSummaryChanged();
+        }
         else
         {
             existing.Status = item.Status;
@@ -190,7 +210,11 @@ public partial class VideoListViewModel : ObservableObject
     {
         var item = VideoItems.FirstOrDefault(v => v.ItemId == taskId);
         if (item != null)
+        {
+            item.PropertyChanged -= OnVideoItemPropertyChanged;
             VideoItems.Remove(item);
+            NotifyCollectionSummaryChanged();
+        }
     }
 
     /// <summary>
@@ -221,6 +245,7 @@ public partial class VideoListViewModel : ObservableObject
 
         if (!ctx.IsNamingValid)
         {
+            _onConfigurationBlocked?.Invoke();
             _onStatusMessage(string.IsNullOrWhiteSpace(ctx.NamingValidationError)
                 ? "请先修正命名模板"
                 : ctx.NamingValidationError);
@@ -229,6 +254,7 @@ public partial class VideoListViewModel : ObservableObject
 
         if (ctx.QualityId == 0)
         {
+            _onConfigurationBlocked?.Invoke();
             _onStatusMessage("请选择清晰度");
             return;
         }
@@ -339,6 +365,58 @@ public partial class VideoListViewModel : ObservableObject
     #endregion
 
     #region 辅助方法
+
+    private void SetAllSelected(bool isSelected)
+    {
+        _isBulkSelectionUpdate = true;
+        try
+        {
+            foreach (var item in VideoItems)
+                item.IsSelected = isSelected;
+        }
+        finally
+        {
+            _isBulkSelectionUpdate = false;
+        }
+
+        UpdateSelectionSummary();
+        SelectionOrTitleChanged?.Invoke();
+    }
+
+    private void OnVideoItemPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(BiliVideoItem.IsSelected))
+        {
+            if (!_isBulkSelectionUpdate)
+            {
+                UpdateSelectionSummary();
+                SelectionOrTitleChanged?.Invoke();
+            }
+            return;
+        }
+
+        if (args.PropertyName == nameof(BiliVideoItem.Title))
+            SelectionOrTitleChanged?.Invoke();
+    }
+
+    private void NotifyCollectionSummaryChanged()
+    {
+        OnPropertyChanged(nameof(ItemCount));
+        UpdateSelectionSummary();
+    }
+
+    private void UpdateSelectionSummary()
+    {
+        SelectedCount = VideoItems.Count(item => item.IsSelected);
+        OnPropertyChanged(nameof(SelectionSummaryText));
+    }
+
+    partial void OnSelectedCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(SelectionSummaryText));
+        OnPropertyChanged(nameof(SubmitButtonText));
+    }
 
     private void UpdateTotalProgress()
     {

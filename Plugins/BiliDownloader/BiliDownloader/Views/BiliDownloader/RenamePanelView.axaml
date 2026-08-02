@@ -6,7 +6,7 @@
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="250"
              x:Class="BiliDownloader.Views.BiliDownloader.RenamePanelView"
              x:DataType="vm:RenamePanelViewModel">
-    <Border IsVisible="{Binding ShowRenamePanel}"
+    <Border IsVisible="{Binding ShowRenamePanel, FallbackValue=False}"
             Classes="bili-doc-rename-panel"
             Margin="0,2">
         <StackPanel Spacing="6">

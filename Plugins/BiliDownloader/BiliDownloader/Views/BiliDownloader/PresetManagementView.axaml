@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="100"
+             x:Class="BiliDownloader.Views.BiliDownloader.PresetManagementView"
+             x:DataType="vm:DownloadConfigViewModel">
+    <Expander Header="管理预设"
+              IsExpanded="False"
+              Classes="bili-doc-expander">
+        <StackPanel Spacing="6" Margin="0,7,0,0">
+            <TextBox Text="{Binding CustomPresetName}"
+                     Classes="bili-doc-input"
+                     PlaceholderText="自定义预设名称或新的名称" />
+            <WrapPanel>
+                <Button Content="保存副本"
+                        Command="{Binding SaveAsPresetCommand}"
+                        Classes="bili-doc-button"
+                        Margin="0,0,6,4"
+                        ToolTip.Tip="将当前配置保存为自定义预设" />
+                <Button Content="重命名"
+                        Command="{Binding RenameSelectedPresetCommand}"
+                        Classes="bili-doc-button"
+                        Margin="0,0,6,4"
+                        ToolTip.Tip="输入新名称后重命名自定义预设" />
+                <Button Content="删除自定义预设"
+                        Command="{Binding DeleteSelectedPresetCommand}"
+                        Classes="bili-doc-button"
+                        Margin="0,0,0,4"
+                        ToolTip.Tip="内置预设不会被删除" />
+            </WrapPanel>
+        </StackPanel>
+    </Expander>
+</UserControl>

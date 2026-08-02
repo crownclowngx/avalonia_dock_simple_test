@@ -166,14 +166,25 @@ public sealed class PresentationLogicTests
             new RecordingMessengerService(),
             statuses.Add,
             new FakeFfmpegService());
-        var first = new BiliVideoItem { ItemId = "one", Title = "A", IsSelected = false };
-        var second = new BiliVideoItem { ItemId = "two", Title = "B", IsSelected = false };
+        var first = new BiliVideoItem { ItemId = "one", Title = "A", IsSelected = true };
+        var second = new BiliVideoItem { ItemId = "two", Title = "B", IsSelected = true };
         vm.SetItems([first, second]);
+
+        Assert.Equal(2, vm.ItemCount);
+        Assert.Equal(0, vm.SelectedCount);
+        Assert.False(vm.HasSelection);
+        Assert.Equal("已选 0 / 2", vm.SelectionSummaryText);
+        Assert.Equal("下载所选 0 项", vm.SubmitButtonText);
+        Assert.All(vm.VideoItems, x => Assert.False(x.IsSelected));
 
         vm.SelectAllCommand.Execute(null);
         Assert.All(vm.VideoItems, x => Assert.True(x.IsSelected));
+        Assert.Equal(2, vm.SelectedCount);
+        Assert.True(vm.HasSelection);
+        Assert.Equal("下载所选 2 项", vm.SubmitButtonText);
         vm.DeselectAllCommand.Execute(null);
         Assert.All(vm.VideoItems, x => Assert.False(x.IsSelected));
+        Assert.Equal(0, vm.SelectedCount);
 
         vm.UpdateItemProgress(new DownloadTaskProgressMessage(
             "doc", "one", "A", 40, "downloading_video",
@@ -206,15 +217,18 @@ public sealed class PresentationLogicTests
     public void 视频提交前置校验提供明确消息()
     {
         var status = "";
+        var configurationBlockedCount = 0;
         var context = new SubmitContext();
         var vm = new VideoListViewModel(
             () => context,
             new RecordingMessengerService(),
             value => status = value,
-            new FakeFfmpegService());
+            new FakeFfmpegService(),
+            () => configurationBlockedCount++);
 
         vm.SubmitDownloadCommand.Execute(null);
         Assert.Equal("请先解析视频", status);
+        Assert.Equal(0, configurationBlockedCount);
 
         vm.SetItems(
         [
@@ -227,10 +241,19 @@ public sealed class PresentationLogicTests
         ]);
         vm.SubmitDownloadCommand.Execute(null);
         Assert.Equal("请至少勾选一个视频", status);
+        Assert.Equal(0, configurationBlockedCount);
 
         vm.VideoItems[0].IsSelected = true;
         vm.SubmitDownloadCommand.Execute(null);
         Assert.Equal("请选择清晰度", status);
+        Assert.Equal(1, configurationBlockedCount);
+
+        context.QualityId = 80;
+        context.IsNamingValid = false;
+        context.NamingValidationError = "命名模板无效";
+        vm.SubmitDownloadCommand.Execute(null);
+        Assert.Equal("命名模板无效", status);
+        Assert.Equal(2, configurationBlockedCount);
     }
 
     [Fact]
@@ -278,6 +301,7 @@ public sealed class PresentationLogicTests
                 IsSelected = true,
             },
         ]);
+        vm.VideoItems[0].IsSelected = true;
 
         vm.SubmitDownloadCommand.Execute(null);
 
@@ -295,6 +319,8 @@ public sealed class PresentationLogicTests
         Assert.Equal("2.标题", item.Title);
         Assert.Equal("https://cover.test/a.jpg", item.CoverUrl);
         Assert.False(vm.VideoItems[0].IsSelected);
+        Assert.Equal(0, vm.SelectedCount);
+        Assert.False(vm.HasSelection);
         Assert.Equal("排队中", vm.VideoItems[0].Status);
         Assert.Contains("已提交 1 个", status, StringComparison.Ordinal);
     }
@@ -331,6 +357,50 @@ public sealed class PresentationLogicTests
 
         Assert.EndsWith("视频下载", vm.OutputDirectory, StringComparison.Ordinal);
         vm.SelectFolderCommand.Execute(null);
+    }
+
+    [Fact]
+    public void 下载文档摘要实时更新且异常配置自动展开设置()
+    {
+        var messenger = new RecordingMessengerService();
+        var loginState = new BiliLoginStateService(
+            new InMemoryBiliCredentialStore(),
+            new StubBiliSessionApi(),
+            messenger);
+        var vm = new BiliDownloaderViewModel(
+            messenger,
+            new InMemoryDownloadTaskRepository(),
+            new InMemorySettingsRepository(),
+            loginState,
+            new BiliLoginService(),
+            new BiliApiService(),
+            new FakeCredentialProvider(),
+            new FakeFfmpegService());
+        var video = new BiliQualityOption { QualityId = 80, DisplayName = "1080P" };
+        var audio = new BiliQualityOption { QualityId = 30232, DisplayName = "192kbps" };
+
+        Assert.False(vm.IsDownloadSettingsExpanded);
+        vm.DownloadConfig.OutputDirectory = @"D:\downloads\series";
+        vm.DownloadConfig.PopulateQualities([video], video, [audio], audio, isMultiVideo: false);
+        vm.DownloadConfig.DownloadCover = true;
+
+        Assert.Contains("1080P", vm.DownloadSettingsSummary, StringComparison.Ordinal);
+        Assert.Contains("192kbps", vm.DownloadSettingsSummary, StringComparison.Ordinal);
+        Assert.Contains("1 项附加资源", vm.DownloadSettingsSummary, StringComparison.Ordinal);
+        Assert.Contains("series", vm.DownloadSettingsSummary, StringComparison.Ordinal);
+
+        vm.NamingTemplate.Template = "{unknown}";
+        Assert.True(vm.IsDownloadSettingsExpanded);
+
+        vm.IsDownloadSettingsExpanded = false;
+        vm.NamingTemplate.Template = "{title}";
+        vm.DownloadConfig.QualityRestoreNotice = "原画不可用，已回退";
+        Assert.True(vm.IsDownloadSettingsExpanded);
+
+        vm.IsDownloadSettingsExpanded = false;
+        vm.DownloadConfig.QualityRestoreNotice = "";
+        vm.DownloadConfig.IsRestoredPresetUnavailable = true;
+        Assert.True(vm.IsDownloadSettingsExpanded);
     }
 
     [Fact]
@@ -421,12 +491,14 @@ public sealed class PresentationLogicTests
         };
         var messenger = new RecordingMessengerService();
         var status = "";
+        var configurationBlockedCount = 0;
         var ffmpeg = new FakeFfmpegService();
         var vm = new VideoListViewModel(
             () => context,
             messenger,
             value => status = value,
-            ffmpeg);
+            ffmpeg,
+            () => configurationBlockedCount++);
         vm.SetItems(
         [
             new BiliVideoItem
@@ -436,9 +508,11 @@ public sealed class PresentationLogicTests
                 IsSelected = true,
             },
         ]);
+        vm.VideoItems[0].IsSelected = true;
 
         vm.SubmitDownloadCommand.Execute(null);
         Assert.Contains("ffmpeg 未就绪", status, StringComparison.Ordinal);
+        Assert.Equal(0, configurationBlockedCount);
         vm.OpenOutputDirCommand.Execute(null);
         Assert.Contains("目录不存在", status, StringComparison.Ordinal);
 
