@@ -31,6 +31,7 @@ public sealed class BiliDownloadCoordinator
     private readonly IBiliDataPaths _paths;
     private readonly IBiliCredentialProvider _credentialProvider;
     private readonly IDownloadRecoveryService _recoveryService;
+    private readonly ISubmissionPreflightService? _preflightService;
 
     private readonly SemaphoreSlim _commandLock = new(1, 1);
     private readonly object _lifecycleLock = new();
@@ -79,7 +80,8 @@ public sealed class BiliDownloadCoordinator
         IDownloadTaskExecutor executor,
         IBiliDataPaths paths,
         IBiliCredentialProvider? credentialProvider = null,
-        IDownloadRecoveryService? recoveryService = null)
+        IDownloadRecoveryService? recoveryService = null,
+        ISubmissionPreflightService? preflightService = null)
     {
         _repository = repository;
         _messengerService = messengerService;
@@ -88,6 +90,7 @@ public sealed class BiliDownloadCoordinator
         _paths = paths;
         _credentialProvider = credentialProvider ?? new NullCredentialProvider();
         _recoveryService = recoveryService ?? new DownloadRecoveryService(repository);
+        _preflightService = preflightService;
 
         // 注册监听：接收 Document 发来的下载任务提交消息
         _messengerService.Register<BiliDownloadCoordinator, SubmitDownloadTaskMessage>(
@@ -118,7 +121,19 @@ public sealed class BiliDownloadCoordinator
     {
         try
         {
-            await SubmitTasksAsync(msg.ToSubmission());
+            var submission = msg.ToSubmission();
+            if (_preflightService is null)
+            {
+                await SubmitTasksAsync(submission);
+                return;
+            }
+            var report = await _preflightService.InspectAsync(submission);
+            if (report.IsBlocked || report.RequiresConfirmation)
+            {
+                Log.Warn("旧消息提交需要用户确认或存在阻止项，已安全拒绝；请使用 G6 可等待提交服务。");
+                return;
+            }
+            await CommitPreparedAsync(new PreparedSubmission(report, false), _preflightService);
         }
         catch (Exception ex)
         {
@@ -237,6 +252,113 @@ public sealed class BiliDownloadCoordinator
             _commandLock.Release();
         }
     }
+
+    /// <summary>
+    /// 提交 G6 预检批次。Coordinator 在唯一命令锁内重新读取文件和任务事实；
+    /// 若指纹变化则返回 Stale，绝不沿用用户确认前的旧冲突数量。
+    /// 路径保留和任务插入由 SQLite 同一事务完成，因此并发 Document 只能有一个成功占用目标。
+    /// </summary>
+    public async Task<SubmissionCommitResult> CommitPreparedAsync(
+        PreparedSubmission prepared,
+        ISubmissionPreflightService preflight,
+        CancellationToken cancellationToken = default)
+    {
+        await InitializeAsync();
+        await _commandLock.WaitAsync(cancellationToken);
+        try
+        {
+            ThrowIfShuttingDown();
+            var current = await preflight.InspectAsync(prepared.Report.Submission, cancellationToken);
+            if (!string.Equals(current.Fingerprint, prepared.Report.Fingerprint, StringComparison.Ordinal))
+                return new(SubmissionCommitStatus.Stale, 0, current.SkipCount, "输出目录事实已变化，请重新确认预检结果。");
+            if (current.IsBlocked)
+                return new(SubmissionCommitStatus.Blocked, 0, current.SkipCount, BuildPreflightMessage(current));
+            if (current.RequiresConfirmation && !prepared.UserConfirmed)
+                return new(SubmissionCommitStatus.Blocked, 0, current.SkipCount, "当前预检结果需要用户明确确认。");
+
+            var profile = current.Submission.Profile;
+            var subFolder = profile.UseGroupFolder
+                ? FileNameSanitizer.Sanitize(current.Submission.SeriesTitle)
+                : string.Empty;
+            var records = new List<DownloadTaskRecord>();
+            var resumed = 0;
+            var resumedTaskIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var planned in current.Items.Where(item => item.ShouldSubmit))
+            {
+                if (planned.IsResume && !string.IsNullOrWhiteSpace(planned.ResumeTaskId))
+                {
+                    if (!resumedTaskIds.Add(planned.ResumeTaskId))
+                        return new(SubmissionCommitStatus.Blocked, 0, current.SkipCount,
+                            "同一续传任务在批次中出现多次，请重新选择内容。");
+                    await _repository.PrepareVerifiedResumeAsync(
+                        planned.ResumeTaskId,
+                        planned.OutputFilePath,
+                        planned.OutputPathKey,
+                        profile.ConflictPolicy,
+                        planned.EstimatedRequiredBytes);
+                    resumed++;
+                    continue;
+                }
+                var item = planned.Item;
+                records.Add(new DownloadTaskRecord
+                {
+                    TaskId = item.ItemId,
+                    DocumentId = current.Submission.DocumentId,
+                    SourceDocumentTitle = current.Submission.DocumentTitle,
+                    SeriesTitle = current.Submission.SeriesTitle,
+                    ItemTitle = item.Title,
+                    Aid = item.Aid,
+                    Bvid = item.Bvid,
+                    Cid = item.Cid,
+                    QualityId = profile.VideoQualityId,
+                    AudioQualityId = profile.AudioQualityId,
+                    OutputDirectory = profile.OutputDirectory,
+                    SubFolder = subFolder,
+                    OutputFilePath = planned.OutputFilePath,
+                    OutputPathKey = planned.OutputPathKey,
+                    ConflictPolicy = profile.ConflictPolicy,
+                    EstimatedRequiredBytes = planned.EstimatedRequiredBytes,
+                    OverwriteConfirmed = profile.ConflictPolicy == FileConflictPolicy.Overwrite && prepared.UserConfirmed,
+                    Status = ToStorage(DownloadTaskStatus.Ready),
+                    CreatedAt = DateTime.Now,
+                    LastUpdatedAt = DateTime.Now,
+                    MediaType = item.MediaType.ToString().ToLowerInvariant(),
+                    EpId = item.EpId,
+                    SeasonId = item.SeasonId,
+                    ExtrasConfig = (profile.DownloadDanmaku ? (int)ExtrasType.Danmaku : 0)
+                        | (profile.DownloadSubtitle ? (int)ExtrasType.Subtitle : 0)
+                        | (profile.DownloadCover ? (int)ExtrasType.Cover : 0),
+                    CoverUrl = item.CoverUrl,
+                });
+            }
+            if (records.Count > 0) await _repository.InsertBatchAsync(records);
+            var committed = records.Count + resumed;
+            if (committed > 0)
+            {
+                TaskListChanged?.Invoke();
+                SchedulerStatusChanged?.Invoke($"已接收 {committed} 个通过预检的任务");
+                StartProcessingInternal();
+            }
+            return new(SubmissionCommitStatus.Committed, committed, current.SkipCount,
+                $"已提交 {committed} 项，跳过 {current.SkipCount} 项。");
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 19)
+        {
+            return new(SubmissionCommitStatus.Stale, 0, prepared.Report.SkipCount,
+                "任务或输出路径已被其他提交占用，请重新预检。");
+        }
+        finally
+        {
+            _commandLock.Release();
+        }
+    }
+
+    private static string BuildPreflightMessage(SubmissionPreflightReport report)
+        => string.Join("；", report.GlobalIssues
+            .Concat(report.Items.SelectMany(item => item.Issues))
+            .Where(issue => issue.Severity == PreflightIssueSeverity.Blocking)
+            .Select(issue => issue.Message)
+            .Distinct());
 
     /// <summary>
     /// 加载所有任务（供 Tool ViewModel 初始化 UI）
@@ -815,6 +937,20 @@ public sealed class BiliDownloadCoordinator
             // G3: 错误分类 → 填充 ErrorType 和 IsRetryable，供 UI 展示和重试判断
             var failure = DownloadErrorClassifier.ClassifyFailure(ex);
             var failedAt = DateTime.Now;
+
+            if (ex is InsufficientDiskSpaceException or OutputConflictException)
+            {
+                await _repository.MarkFailedAsync(task.TaskId, task.Progress, safeError,
+                    failure.StorageValue, false, failedAt);
+                task.Status = ToStorage(DownloadTaskStatus.Paused);
+                await _repository.UpdateProgressAsync(task.TaskId, task.Progress, task.Status, safeError);
+                task.ErrorMessage = safeError;
+                task.ErrorType = failure.StorageValue;
+                task.IsRetryable = false;
+                _tracker.BroadcastStatusChanged(task);
+                TaskStatusChanged?.Invoke(task);
+                return;
+            }
 
             Log.Error($"任务 {task.TaskId} 下载失败: {safeError}", ex);
             await _repository.MarkFailedAsync(

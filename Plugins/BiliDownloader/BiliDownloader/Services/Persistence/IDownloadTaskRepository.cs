@@ -87,4 +87,15 @@ public interface IDownloadTaskRepository
 
     /// <summary>更新附加资源执行结果</summary>
     Task UpdateExtrasResultAsync(string taskId, string? extrasResultSummary);
+
+    /// <summary>
+    /// 为通过 G6 校验的旧任务固化最终路径并重新排队。实现必须让路径保留与任务更新处于同一事务，
+    /// 否则恢复任务可能与另一个 Document 同时获得同一输出路径。
+    /// </summary>
+    Task PrepareVerifiedResumeAsync(
+        string taskId,
+        string outputFilePath,
+        string outputPathKey,
+        FileConflictPolicy conflictPolicy,
+        long estimatedRequiredBytes);
 }

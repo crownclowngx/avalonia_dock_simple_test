@@ -7,6 +7,7 @@ using MyAvaloniaManagementCommon.Message;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download.Extras;
+using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
@@ -48,6 +49,7 @@ public class SubmitContext
     public DateTime? PublishDate { get; set; }
     public bool IsNamingValid { get; set; } = true;
     public string NamingValidationError { get; set; } = "";
+    public FileConflictPolicy ConflictPolicy { get; set; } = FileConflictPolicy.AutoNumber;
 }
 
 /// <summary>
@@ -60,6 +62,8 @@ public partial class VideoListViewModel : ObservableObject
     private readonly Action<string> _onStatusMessage;
     private readonly IFfmpegService _ffmpegService;
     private readonly Action? _onConfigurationBlocked;
+    private readonly IDownloadSubmissionService? _submissionService;
+    private readonly IUserPromptService? _promptService;
     private bool _isBulkSelectionUpdate;
 
     public ObservableCollection<BiliVideoItem> VideoItems { get; } = new();
@@ -76,11 +80,17 @@ public partial class VideoListViewModel : ObservableObject
     public string SelectionSummaryText => $"已选 {SelectedCount} / {ItemCount}";
     public string SubmitButtonText => $"下载所选 {SelectedCount} 项";
 
+    [ObservableProperty]
+    private bool _isPreflighting;
+
+    [ObservableProperty]
+    private string _preflightSummary = "";
+
     public RenamePanelViewModel RenamePanel { get; }
 
     public IRelayCommand SelectAllCommand { get; }
     public IRelayCommand DeselectAllCommand { get; }
-    public IRelayCommand SubmitDownloadCommand { get; }
+    public IAsyncRelayCommand SubmitDownloadCommand { get; }
     public IRelayCommand OpenOutputDirCommand { get; }
 
     /// <summary>
@@ -94,17 +104,21 @@ public partial class VideoListViewModel : ObservableObject
         IMessengerService? messengerService,
         Action<string> onStatusMessage,
         IFfmpegService ffmpegService,
-        Action? onConfigurationBlocked = null)
+        Action? onConfigurationBlocked = null,
+        IDownloadSubmissionService? submissionService = null,
+        IUserPromptService? promptService = null)
     {
         _getSubmitContext = getSubmitContext;
         _messengerService = messengerService;
         _onStatusMessage = onStatusMessage;
         _ffmpegService = ffmpegService;
         _onConfigurationBlocked = onConfigurationBlocked;
+        _submissionService = submissionService;
+        _promptService = promptService;
 
         SelectAllCommand = new RelayCommand(() => SetAllSelected(true));
         DeselectAllCommand = new RelayCommand(() => SetAllSelected(false));
-        SubmitDownloadCommand = new RelayCommand(SubmitDownload);
+        SubmitDownloadCommand = new AsyncRelayCommand(SubmitDownloadAsync);
         OpenOutputDirCommand = new RelayCommand(OpenOutputDir);
 
         RenamePanel = new RenamePanelViewModel(
@@ -226,7 +240,7 @@ public partial class VideoListViewModel : ObservableObject
 
     #region 任务提交
 
-    private void SubmitDownload()
+    private async Task SubmitDownloadAsync()
     {
         if (VideoItems.Count == 0)
         {
@@ -259,8 +273,8 @@ public partial class VideoListViewModel : ObservableObject
             return;
         }
 
-        // 检查 ffmpeg 是否就绪
-        if (!_ffmpegService.IsReady)
+        // 旧构造路径没有 G6 预检服务时保留本地兜底；生产路径由结构化预检统一报告。
+        if (_submissionService is null && !_ffmpegService.IsReady)
         {
             _onStatusMessage("ffmpeg 未就绪，请在调度器工具中等待下载完成或手动配置路径");
             return;
@@ -303,7 +317,7 @@ public partial class VideoListViewModel : ObservableObject
             .Where(group => group.Count() > 1)
             .Select(group => group.Key)
             .ToList();
-        if (duplicateNames.Count > 0)
+        if (_submissionService is null && duplicateNames.Count > 0)
         {
             _onStatusMessage($"命名冲突：{string.Join("、", duplicateNames.Take(3))}。请加入 {{index}} 或 {{bv}} 变量。");
             return;
@@ -322,20 +336,57 @@ public partial class VideoListViewModel : ObservableObject
                 ctx.DownloadDanmaku,
                 ctx.DownloadSubtitle,
                 ctx.DownloadCover,
-                ctx.NamingTemplate),
+                ctx.NamingTemplate,
+                ConflictPolicy: ctx.ConflictPolicy),
             downloadItems.Select(item => new DownloadSubmissionItem(
                 item.ItemId, item.Title, item.Aid, item.Bvid, item.Cid, item.Duration,
                 item.MediaType, item.EpId, item.SeasonId, item.CoverUrl)).ToArray());
-        var message = new SubmitDownloadTaskMessage(submission);
-
-        // 通过消息总线发送给调度器
+        var submittedIds = new HashSet<string>(downloadItems.Select(item => item.ItemId));
         try
         {
-            _messengerService?.Send(message);
-            _onStatusMessage($"已提交 {selectedItems.Count} 个下载任务到调度器");
+            if (_submissionService is null)
+            {
+                // 兼容旧测试和旧宿主构造路径；生产 DI 始终注入 G6 可等待提交服务。
+                _messengerService?.Send(new SubmitDownloadTaskMessage(submission));
+                _onStatusMessage($"已提交 {selectedItems.Count} 个下载任务到调度器");
+            }
+            else
+            {
+                IsPreflighting = true;
+                SubmissionCommitResult? result = null;
+                SubmissionPreflightReport? report = null;
+                for (var attempt = 0; attempt < 3; attempt++)
+                {
+                    report = await _submissionService.PreflightAsync(submission);
+                    PreflightSummary = $"可提交 {report.ReadyCount}，跳过 {report.SkipCount}，警告 {report.WarningCount}，阻止 {report.BlockedCount}";
+                    if (report.IsBlocked)
+                    {
+                        _onConfigurationBlocked?.Invoke();
+                        _onStatusMessage(PreflightSummary + "。请先处理阻止项。");
+                        return;
+                    }
+                    var confirmed = !report.RequiresConfirmation
+                        || (_promptService is not null && await _promptService.ConfirmSubmissionAsync(report));
+                    if (!confirmed)
+                    {
+                        _onStatusMessage("已取消提交，未创建任何任务。");
+                        return;
+                    }
+                    result = await _submissionService.CommitAsync(new PreparedSubmission(report, confirmed));
+                    if (result.Status != SubmissionCommitStatus.Stale) break;
+                }
+                if (result is null || result.Status != SubmissionCommitStatus.Committed)
+                {
+                    _onStatusMessage(result?.Message ?? "输出目录持续变化，提交已取消。");
+                    return;
+                }
+                submittedIds = report!.Items.Where(item => item.ShouldSubmit)
+                    .Select(item => item.Item.ItemId).ToHashSet();
+                _onStatusMessage(result.Message);
+            }
 
             // 标记为已提交
-            foreach (var item in selectedItems)
+            foreach (var item in selectedItems.Where(item => submittedIds.Contains(item.ItemId)))
             {
                 item.Status = "排队中";
                 item.IsSelected = false;
@@ -344,6 +395,10 @@ public partial class VideoListViewModel : ObservableObject
         catch (Exception ex)
         {
             _onStatusMessage($"提交任务失败: {ex.Message}");
+        }
+        finally
+        {
+            IsPreflighting = false;
         }
     }
 

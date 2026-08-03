@@ -55,7 +55,7 @@ public class SubtitleExtrasHandler : IExtrasHandler
                     // 文件名格式：{BaseFileName}.{lan}.srt
                     var outputPath = Path.Combine(actualOutputDir,
                         $"{context.BaseFileName}.{sub.Lan}.srt");
-                    await File.WriteAllTextAsync(outputPath, srtContent, ct);
+                    await ExtrasOutputWriter.WriteTextAsync(outputPath, srtContent, context, ct);
                     outputFiles.Add(outputPath);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)

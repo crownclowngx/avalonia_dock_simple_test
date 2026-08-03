@@ -53,4 +53,10 @@ public sealed class DocumentSaveDataV2
 
     /// <summary>是否下载封面</summary>
     public bool DownloadCover { get; set; }
+
+    /// <summary>
+    /// 文件冲突策略。旧 V1/V2 文档缺少该字段时由属性初值回退为自动序号，
+    /// 从而保持历史运行行为并继续满足“绝不静默覆盖”的安全约束。
+    /// </summary>
+    public FileConflictPolicy ConflictPolicy { get; set; } = FileConflictPolicy.AutoNumber;
 }

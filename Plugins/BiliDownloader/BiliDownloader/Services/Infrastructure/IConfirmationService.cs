@@ -27,6 +27,7 @@ public interface IConfirmationService
 public interface IUserPromptService : IConfirmationService
 {
     Task<DeleteTaskPromptResult> ConfirmDeleteAsync(int taskCount, bool hasOutputFiles);
+    Task<bool> ConfirmSubmissionAsync(SubmissionPreflightReport report);
 }
 
 /// <summary>
@@ -37,6 +38,7 @@ public sealed class SafeCancellationConfirmationService : IUserPromptService
     public Task<bool> ConfirmAsync(string title, string message) => Task.FromResult(false);
     public Task<DeleteTaskPromptResult> ConfirmDeleteAsync(int taskCount, bool hasOutputFiles)
         => Task.FromResult(DeleteTaskPromptResult.Cancelled);
+    public Task<bool> ConfirmSubmissionAsync(SubmissionPreflightReport report) => Task.FromResult(false);
 }
 
 /// <summary>Application-owned modal prompts for destructive task actions.</summary>
@@ -95,6 +97,51 @@ public sealed class AvaloniaUserPromptService : IUserPromptService
             true, tempCheck.IsChecked == true, outputCheck.IsChecked == true));
         return await window.ShowDialog<DeleteTaskPromptResult>(owner)
             ?? DeleteTaskPromptResult.Cancelled;
+    }
+
+    public async Task<bool> ConfirmSubmissionAsync(SubmissionPreflightReport report)
+    {
+        var owner = GetOwner();
+        if (owner is null) return false;
+        var issues = report.GlobalIssues.Concat(report.Items.SelectMany(item => item.Issues))
+            .Select(issue => "• " + issue.Message).Distinct().Take(8).ToArray();
+        var destructive = report.Submission.Profile.ConflictPolicy == FileConflictPolicy.Overwrite;
+        var message = $"可提交 {report.ReadyCount} 项，跳过 {report.SkipCount} 项，"
+            + $"警告 {report.WarningCount} 项，阻止 {report.BlockedCount} 项。"
+            + (issues.Length == 0 ? "" : Environment.NewLine + string.Join(Environment.NewLine, issues));
+        var cancel = new Button { Content = "取消", MinWidth = 76 };
+        var confirm = new Button
+        {
+            Content = destructive ? $"确认覆盖 {report.Items.Count(item => item.HasConflict)} 项" : "确认并提交",
+            MinWidth = 112,
+        };
+        var window = new Window
+        {
+            Title = destructive ? "确认覆盖已有文件" : "确认提交预检结果",
+            Width = 520,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+        cancel.Click += (_, _) => window.Close(false);
+        confirm.Click += (_, _) => window.Close(true);
+        window.Content = new StackPanel
+        {
+            Margin = new Thickness(20),
+            Spacing = 14,
+            Children =
+            {
+                new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { cancel, confirm },
+                },
+            },
+        };
+        return await window.ShowDialog<bool>(owner);
     }
 
     private static Window CreateConfirmationWindow(string title, string message)

@@ -1,4 +1,6 @@
 using BiliDownloader.Services.Api;
+using BiliDownloader.Models;
+using BiliDownloader.Services.Download;
 
 namespace BiliDownloader.Services.Download.Extras;
 
@@ -69,6 +71,12 @@ public class ExtrasContext
     /// <summary>不含扩展名的基础文件名（已做文件名合法化处理）</summary>
     public string BaseFileName { get; init; } = "";
 
+    /// <summary>附加资源必须服从与主视频相同的冲突策略，不能自行选择覆盖。</summary>
+    public FileConflictPolicy ConflictPolicy { get; init; } = FileConflictPolicy.AutoNumber;
+
+    /// <summary>覆盖策略是否已在本批提交中由用户明确确认。</summary>
+    public bool OverwriteConfirmed { get; init; }
+
     // === 凭据 ===
     public string Cookie { get; init; } = "";
 
@@ -82,6 +90,49 @@ public class ExtrasContext
 
     /// <summary>进度报告器（可选，用于反馈 extras 下载进度）</summary>
     public IProgress<string>? ProgressReporter { get; init; }
+}
+
+/// <summary>
+/// 附加资源安全发布器：先写同目录暂存文件，再按已确认策略原子移动。
+/// 这样自动序号任务不会因为字幕或封面晚到而静默覆盖外部文件，写入失败也不会留下半个成品。
+/// </summary>
+internal static class ExtrasOutputWriter
+{
+    public static async Task WriteTextAsync(string path, string content, ExtrasContext context, CancellationToken ct)
+    {
+        var staging = path + $".staging-{Guid.NewGuid():N}";
+        try
+        {
+            await File.WriteAllTextAsync(staging, content, ct);
+            Publish(staging, path, context);
+        }
+        finally
+        {
+            if (File.Exists(staging)) File.Delete(staging);
+        }
+    }
+
+    public static async Task WriteBytesAsync(string path, byte[] content, ExtrasContext context, CancellationToken ct)
+    {
+        var staging = path + $".staging-{Guid.NewGuid():N}";
+        try
+        {
+            await File.WriteAllBytesAsync(staging, content, ct);
+            Publish(staging, path, context);
+        }
+        finally
+        {
+            if (File.Exists(staging)) File.Delete(staging);
+        }
+    }
+
+    private static void Publish(string staging, string path, ExtrasContext context)
+    {
+        var mayOverwrite = context.ConflictPolicy == FileConflictPolicy.Overwrite
+            && context.OverwriteConfirmed;
+        if (File.Exists(path) && !mayOverwrite) throw new OutputConflictException(path);
+        File.Move(staging, path, overwrite: mayOverwrite);
+    }
 }
 
 /// <summary>

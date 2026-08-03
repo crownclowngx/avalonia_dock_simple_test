@@ -410,6 +410,27 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
         return Task.CompletedTask;
     }
 
+    public Task PrepareVerifiedResumeAsync(
+        string taskId,
+        string outputFilePath,
+        string outputPathKey,
+        FileConflictPolicy conflictPolicy,
+        long estimatedRequiredBytes)
+    {
+        lock (_gate)
+        {
+            var task = Find(taskId);
+            task.OutputFilePath = outputFilePath;
+            task.OutputPathKey = outputPathKey;
+            task.ConflictPolicy = conflictPolicy;
+            task.EstimatedRequiredBytes = estimatedRequiredBytes;
+            task.Status = "pending";
+            task.ErrorMessage = null;
+            task.ErrorType = null;
+        }
+        return Task.CompletedTask;
+    }
+
     private DownloadTaskRecord Find(string taskId)
         => _tasks.Single(x => x.TaskId == taskId);
 }

@@ -61,8 +61,16 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IDownloadTaskExecutor, BiliDownloadTaskExecutor>();
         services.AddSingleton<IDownloadProgressTracker, DownloadProgressTracker>();
         services.AddSingleton<IDownloadRecoveryService, DownloadRecoveryService>();
+        services.AddSingleton<IStorageCapacityProvider, SystemStorageCapacityProvider>();
+        services.AddSingleton<IMediaSizeEstimator, DashMediaSizeEstimator>();
+        services.AddSingleton<IFileConflictStrategy, SkipConflictStrategy>();
+        services.AddSingleton<IFileConflictStrategy, OverwriteConflictStrategy>();
+        services.AddSingleton<IFileConflictStrategy, ResumeVerifiedConflictStrategy>();
+        services.AddSingleton<IFileConflictStrategy, AutoNumberConflictStrategy>();
+        services.AddSingleton<ISubmissionPreflightService, SubmissionPreflightService>();
 
         services.AddSingleton<BiliDownloadCoordinator>();
+        services.AddSingleton<IDownloadSubmissionService, DownloadSubmissionService>();
         services.AddSingleton<BiliSchedulerToolViewModel>();
         services.AddTransient<BiliDownloaderViewModel>();
 

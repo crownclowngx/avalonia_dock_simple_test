@@ -41,7 +41,7 @@ public sealed class CoverExtrasHandler : IExtrasHandler, IDisposable
         {
             var url = NormalizeHttpsUrl(context.CoverUrl);
             var bytes = await _httpClient.GetByteArrayAsync(url, ct);
-            await File.WriteAllBytesAsync(outputPath, bytes, ct);
+            await ExtrasOutputWriter.WriteBytesAsync(outputPath, bytes, context, ct);
 
             return ExtrasResult.Succeeded(Type, outputPath);
         }

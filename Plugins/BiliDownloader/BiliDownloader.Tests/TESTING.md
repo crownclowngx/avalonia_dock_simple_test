@@ -5,6 +5,7 @@
 - A 级核心组：凭据、登录状态、SQLite、任务协调器、进度和敏感数据边界。
 - B 级协议组：Bilibili API 响应契约、WBI、CDN、Range 下载和附加资源。
 - C 级界面逻辑组：ViewModel、消息路由、Document 保存恢复、转换器和创建策略。
+- G6 冲突预检组：四种策略、目录与磁盘检查、续传事实、路径保留、预检过期和 Document 兼容迁移。
 - XAML 像素、真实窗口、真实扫码及真实 Bilibili 网络不属于默认自动化测试。
 
 测试只允许两种 HTTP 目标：
@@ -45,6 +46,7 @@ dotnet test ..\..\..\MyAvaloniaManagement.sln -c Release -p:SkipPluginDeploy=tru
 - 涉及 Flurl、WBI 缓存和 PATH 的测试串行运行并恢复静态状态；ffmpeg 路径已经是实例状态。
 - 并发测试使用 `TaskCompletionSource` 和显式超时，不依赖任务碰巧完成的顺序。
 - SQLite、下载文件和密钥全部位于按测试创建的临时目录，测试结束后清理。
+- G6 测试只在独享临时目录创建零字节冲突文件；媒体大小和磁盘容量使用确定性接口替身，不依赖开发机剩余空间。
 - `coverage.runsettings` 排除测试程序集、生成代码、XAML 和纯 View；门禁定义见 `coverage-baseline.json`。
 
 ## 当前测试边界

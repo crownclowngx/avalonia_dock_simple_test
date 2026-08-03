@@ -9,6 +9,7 @@ using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Api;
+using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Naming;
@@ -87,8 +88,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 + (DownloadConfig.DownloadCover ? 1 : 0);
             var extras = extrasCount == 0 ? "无附加资源" : $"{extrasCount} 项附加资源";
             var naming = NamingTemplate.IsValid ? "命名正常" : "命名需修正";
+            var conflict = DownloadConfig.SelectedConflictPolicy.DisplayName;
             var output = GetOutputDirectoryLabel(DownloadConfig.OutputDirectory);
-            return $"{preset} · {videoQuality} · {audioQuality} · {extras} · {naming} · {output}";
+            return $"{preset} · {videoQuality} · {audioQuality} · {extras} · {naming} · {conflict} · {output}";
         }
     }
 
@@ -103,7 +105,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         BiliApiService apiService,
         IBiliCredentialProvider credentialProvider,
         IFfmpegService ffmpegService,
-        IPresetRepository? presetRepository = null)
+        IPresetRepository? presetRepository = null,
+        IDownloadSubmissionService? submissionService = null,
+        IUserPromptService? promptService = null)
     {
         _messengerService = messengerService;
         _taskRepository = taskRepository;
@@ -148,11 +152,14 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 PublishDate = _videoCollection?.PublishDate,
                 IsNamingValid = NamingTemplate.IsValid,
                 NamingValidationError = NamingTemplate.ValidationError ?? "",
+                ConflictPolicy = DownloadConfig.SelectedConflictPolicy.Value,
             },
             messengerService: _messengerService,
             onStatusMessage: msg => AppendLog(msg),
             ffmpegService: ffmpegService,
-            onConfigurationBlocked: ExpandDownloadSettings);
+            onConfigurationBlocked: ExpandDownloadSettings,
+            submissionService: submissionService,
+            promptService: promptService);
         VideoList.SelectionOrTitleChanged += RefreshNamingPreview;
 
         RegisterMessengers();
@@ -396,6 +403,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             DownloadDanmaku = DownloadConfig.DownloadDanmaku,
             DownloadSubtitle = DownloadConfig.DownloadSubtitle,
             DownloadCover = DownloadConfig.DownloadCover,
+            ConflictPolicy = DownloadConfig.SelectedConflictPolicy.Value,
         };
 
         var saveData = DocumentSaveCodec.EncodeV2(SaveDocumentTypeId, Title, saveDataObject);

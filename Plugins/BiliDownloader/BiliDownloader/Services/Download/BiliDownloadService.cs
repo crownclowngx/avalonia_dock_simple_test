@@ -15,16 +15,19 @@ public class BiliDownloadService : IDisposable
     private readonly MultiConnectionDownloader _multiDownloader;
     private readonly IBiliDataPaths _paths;
     private readonly IFfmpegService _ffmpegService;
+    private readonly IStorageCapacityProvider _capacity;
 
     public BiliDownloadService(
         IBiliDataPaths paths,
         IFfmpegService ffmpegService,
         IBiliHttpClientFactory httpClientFactory,
         IDownloadRuntime runtime,
+        IStorageCapacityProvider? capacity = null,
         int chunkCount = 4)
     {
         _paths = paths;
         _ffmpegService = ffmpegService;
+        _capacity = capacity ?? new SystemStorageCapacityProvider();
         _httpClient = httpClientFactory.CreateMediaClient();
         _multiDownloader = new MultiConnectionDownloader(_httpClient, runtime, chunkCount);
     }
@@ -36,6 +39,7 @@ public class BiliDownloadService : IDisposable
             new FfmpegService(new FfmpegProcessFactory()),
             new BiliHttpClientFactory(),
             new SystemDownloadRuntime(),
+            new SystemStorageCapacityProvider(),
             chunkCount)
     {
     }
@@ -79,7 +83,17 @@ public class BiliDownloadService : IDisposable
         var videoTmp = Path.Combine(task.TempDirectory, "video.tmp");
         var audioTmp = Path.Combine(task.TempDirectory, "audio.tmp");
         var safeTitle = FileNameSanitizer.Sanitize(task.ItemTitle);
-        var outputPath = GetUniqueFilePath(actualOutputDir, safeTitle, "mp4");
+        var outputPath = string.IsNullOrWhiteSpace(task.OutputFilePath)
+            ? Path.Combine(actualOutputDir, safeTitle + ".mp4")
+            : task.OutputFilePath;
+        // staging 必须与最终文件位于同一目录，才能使用同卷原子移动；放在插件临时目录时，
+        // 用户把输出设到其他磁盘会退化为跨卷移动并在发布阶段失败。
+        var stagingPath = outputPath + $".staging-{task.TaskId}";
+        if (File.Exists(outputPath) && task.ConflictPolicy != FileConflictPolicy.Overwrite)
+            throw new OutputConflictException(outputPath);
+        if (task.ConflictPolicy == FileConflictPolicy.Overwrite && !task.OverwriteConfirmed && File.Exists(outputPath))
+            throw new OutputConflictException(outputPath);
+        EnsureSufficientSpace(task, actualOutputDir);
 
         // 进度状态容器（跨三个阶段累计）
         double videoProgress = 0, audioProgress = 0, mergeProgress = 0;
@@ -137,6 +151,7 @@ public class BiliDownloadService : IDisposable
         task.ExpectedVideoBytes = videoTransfer.ExpectedBytes;
         task.VideoIntegrityPassed = videoTransfer.IntegrityPassed;
         ReportProgress("video");
+        EnsureSufficientSpace(task, actualOutputDir);
 
         // 3. 下载音频流（多连接加速）
         var audioUrls = CdnUrlHelper.FilterAndSortUrls(audioStream.BaseUrl, audioStream.BackupUrls);
@@ -156,11 +171,23 @@ public class BiliDownloadService : IDisposable
         task.ExpectedAudioBytes = audioTransfer.ExpectedBytes;
         task.AudioIntegrityPassed = audioTransfer.IntegrityPassed;
         ReportProgress("audio");
+        EnsureSufficientSpace(task, actualOutputDir);
 
         // 4. ffmpeg 合并
         mergeProgress = 10;
         ReportProgress("merging");
-        await MergeAsync(videoTmp, audioTmp, outputPath, ct);
+        if (File.Exists(stagingPath)) File.Delete(stagingPath);
+        await MergeAsync(videoTmp, audioTmp, stagingPath, ct);
+        try
+        {
+            File.Move(stagingPath, outputPath,
+                overwrite: task.ConflictPolicy == FileConflictPolicy.Overwrite && task.OverwriteConfirmed);
+        }
+        catch (IOException) when (File.Exists(outputPath)
+            && task.ConflictPolicy != FileConflictPolicy.Overwrite)
+        {
+            throw new OutputConflictException(outputPath);
+        }
         mergeProgress = 100;
         ReportProgress("done");
 
@@ -244,19 +271,17 @@ public class BiliDownloadService : IDisposable
     }
 
     /// <summary>
-    /// 获取唯一文件路径（重名时追加序号）
+    /// 使用预检估算进行执行阶段硬检查。未知估算不在这里伪装为确定值；下载器仍会让操作系统
+    /// 报告真实写入错误。已下载断点字节会从需求中扣除，避免合法续传被重复按全量空间阻止。
     /// </summary>
-    private static string GetUniqueFilePath(string dir, string name, string ext)
+    private void EnsureSufficientSpace(DownloadTaskRecord task, string directory)
     {
-        var path = Path.Combine(dir, $"{name}.{ext}");
-        if (!File.Exists(path)) return path;
-
-        for (int i = 1; i < 10000; i++)
-        {
-            path = Path.Combine(dir, $"{name} ({i}).{ext}");
-            if (!File.Exists(path)) return path;
-        }
-        return path;
+        if (task.EstimatedRequiredBytes <= 0) return;
+        var available = _capacity.GetAvailableBytes(directory);
+        var required = Math.Max(0,
+            task.EstimatedRequiredBytes - task.VideoBytesDownloaded - task.AudioBytesDownloaded);
+        if (available is long value && value < required)
+            throw new InsufficientDiskSpaceException(required, value);
     }
 
     private static string FormatBytes(long bytes)

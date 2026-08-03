@@ -169,6 +169,21 @@ public partial class DownloadTaskRecord : ObservableObject
     public string OutputFilePath { get; set; } = string.Empty;
 
     /// <summary>
+    /// 经过平台大小写规则规范化的最终路径键。Coordinator 在提交事务中保留该键，
+    /// 从而让多个 Document 即使并发提交也不能把同一目标分配给两个活动任务。
+    /// </summary>
+    public string OutputPathKey { get; set; } = string.Empty;
+
+    /// <summary>提交时固化的冲突策略；后台恢复不得改用 Document 当前的新设置。</summary>
+    public FileConflictPolicy ConflictPolicy { get; set; } = FileConflictPolicy.AutoNumber;
+
+    /// <summary>预检得到的单项峰值空间估算；0 表示无法可靠估算。</summary>
+    public long EstimatedRequiredBytes { get; set; }
+
+    /// <summary>覆盖策略是否经过本批用户确认；未确认时执行层即使收到错误数据也拒绝覆盖。</summary>
+    public bool OverwriteConfirmed { get; set; }
+
+    /// <summary>
     /// 最后更新时间
     /// </summary>
     public DateTime LastUpdatedAt { get; set; } = DateTime.Now;

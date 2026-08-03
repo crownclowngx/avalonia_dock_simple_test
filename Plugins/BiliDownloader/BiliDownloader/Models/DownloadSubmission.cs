@@ -11,7 +11,8 @@ public sealed record DownloadProfileSnapshot(
     bool DownloadSubtitle,
     bool DownloadCover,
     string NamingTemplate,
-    string? PresetId = null);
+    string? PresetId = null,
+    FileConflictPolicy ConflictPolicy = FileConflictPolicy.AutoNumber);
 
 /// <summary>An immutable media item detached from parser and UI state.</summary>
 public sealed record DownloadSubmissionItem(

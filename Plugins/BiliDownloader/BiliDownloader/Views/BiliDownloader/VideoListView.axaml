@@ -144,7 +144,7 @@
         <Border Grid.Row="3"
                 x:Name="DownloadActionBar"
                 Classes="bili-doc-flat-section">
-            <Grid RowDefinitions="Auto,Auto"
+            <Grid RowDefinitions="Auto,Auto,Auto"
                   ColumnDefinitions="*,Auto,Auto"
                   ColumnSpacing="8"
                   RowSpacing="6">
@@ -157,11 +157,16 @@
                            Text="{Binding TotalProgress, StringFormat='总进度 {0:F1}%'}"
                            Classes="bili-doc-caption"
                            VerticalAlignment="Center" />
-                <TextBlock Grid.Row="1" Grid.Column="0"
+                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                           Text="{Binding PreflightSummary}"
+                           Classes="bili-doc-caption"
+                           Foreground="{DynamicResource AppWarningBrush}"
+                           IsVisible="{Binding PreflightSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Grid.Row="2" Grid.Column="0"
                            Text="{Binding SelectionSummaryText}"
                            Classes="bili-doc-caption"
                            VerticalAlignment="Center" />
-                <Button Grid.Row="1" Grid.Column="1"
+                <Button Grid.Row="2" Grid.Column="1"
                         Command="{Binding OpenOutputDirCommand}"
                         Classes="bili-doc-button">
                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -170,7 +175,7 @@
                         <TextBlock Text="打开输出目录" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <Button Grid.Row="1" Grid.Column="2"
+                <Button Grid.Row="2" Grid.Column="2"
                         x:Name="SubmitDownloadButton"
                         Command="{Binding SubmitDownloadCommand}"
                         IsEnabled="{Binding HasSelection}"

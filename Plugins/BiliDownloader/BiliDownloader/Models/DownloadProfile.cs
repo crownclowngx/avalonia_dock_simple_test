@@ -10,8 +10,10 @@ public sealed record DownloadProfile(
     bool DownloadSubtitle,
     bool DownloadCover,
     string NamingTemplate,
-    string OutputDirectory)
+    string OutputDirectory,
+    FileConflictPolicy ConflictPolicy = FileConflictPolicy.AutoNumber)
 {
     public static DownloadProfile Default { get; } = new(
-        "720p", 0, false, true, false, false, false, "{index}.{title}", "");
+        "720p", 0, false, true, false, false, false, "{index}.{title}", "",
+        FileConflictPolicy.AutoNumber);
 }

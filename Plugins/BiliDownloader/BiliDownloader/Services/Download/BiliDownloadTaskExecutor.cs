@@ -76,7 +76,11 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
         }
 
         var results = new List<string>();
-        var baseFileName = FileNameSanitizer.Sanitize(task.ItemTitle);
+        // G6：附加资源必须与提交阶段保留的 MP4 使用同一基础名；如果继续使用 ItemTitle，
+        // 自动序号只会作用于主视频，字幕和封面仍可能覆盖旧文件。
+        var baseFileName = string.IsNullOrWhiteSpace(task.OutputFilePath)
+            ? FileNameSanitizer.Sanitize(task.ItemTitle)
+            : Path.GetFileNameWithoutExtension(task.OutputFilePath);
         var context = new ExtrasContext
         {
             TaskId = task.TaskId,
@@ -86,9 +90,13 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
             EpId = task.EpId,
             SeasonId = task.SeasonId,
             MediaType = task.MediaType,
-            OutputDirectory = task.OutputDirectory,
-            SubFolder = task.SubFolder,
+            OutputDirectory = string.IsNullOrWhiteSpace(task.OutputFilePath)
+                ? task.OutputDirectory
+                : Path.GetDirectoryName(task.OutputFilePath) ?? task.OutputDirectory,
+            SubFolder = string.IsNullOrWhiteSpace(task.OutputFilePath) ? task.SubFolder : "",
             BaseFileName = baseFileName,
+            ConflictPolicy = task.ConflictPolicy,
+            OverwriteConfirmed = task.OverwriteConfirmed,
             Cookie = cookieHeader,
             CoverUrl = task.CoverUrl,
             ApiService = _apiService,

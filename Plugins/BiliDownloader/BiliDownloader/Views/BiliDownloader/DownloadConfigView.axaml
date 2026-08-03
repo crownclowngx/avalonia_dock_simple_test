@@ -99,6 +99,19 @@
         </Border>
 
         <Border Classes="bili-doc-flat-section">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                <TextBlock Text="文件冲突"
+                           Classes="bili-doc-caption"
+                           VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1"
+                          Classes="bili-doc-input"
+                          ItemsSource="{Binding ConflictPolicyOptions}"
+                          SelectedItem="{Binding SelectedConflictPolicy}"
+                          ToolTip.Tip="提交前会检查主视频、字幕、弹幕、封面和活动任务保留路径" />
+            </Grid>
+        </Border>
+
+        <Border Classes="bili-doc-flat-section">
             <StackPanel Spacing="5">
                 <TextBlock Text="下载内容" Classes="bili-doc-section-title" />
                 <WrapPanel>

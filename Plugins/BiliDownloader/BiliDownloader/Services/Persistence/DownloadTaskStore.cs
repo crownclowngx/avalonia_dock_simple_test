@@ -73,6 +73,10 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 video_integrity_passed INTEGER NOT NULL DEFAULT 0,
                 audio_integrity_passed INTEGER NOT NULL DEFAULT 0,
                 output_file_path    TEXT NOT NULL DEFAULT '',
+                output_path_key     TEXT NOT NULL DEFAULT '',
+                conflict_policy     TEXT NOT NULL DEFAULT 'AutoNumber',
+                estimated_required_bytes INTEGER NOT NULL DEFAULT 0,
+                overwrite_confirmed INTEGER NOT NULL DEFAULT 0,
                 last_updated_at     TEXT NOT NULL DEFAULT '',
                 error_type          TEXT,
                 is_retryable        INTEGER NOT NULL DEFAULT 0,
@@ -82,6 +86,12 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 extras_config       INTEGER NOT NULL DEFAULT 0,
                 cover_url           TEXT NOT NULL DEFAULT '',
                 extras_result_summary TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS output_path_reservations (
+                output_path_key TEXT NOT NULL PRIMARY KEY,
+                task_id         TEXT NOT NULL UNIQUE,
+                reserved_at     TEXT NOT NULL
             );
             """;
         await cmd.ExecuteNonQueryAsync();
@@ -103,6 +113,10 @@ public class DownloadTaskStore : IDownloadTaskRepository
             "ALTER TABLE download_tasks ADD COLUMN video_integrity_passed INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN audio_integrity_passed INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN output_file_path TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN output_path_key TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN conflict_policy TEXT NOT NULL DEFAULT 'AutoNumber';",
+            "ALTER TABLE download_tasks ADD COLUMN estimated_required_bytes INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN overwrite_confirmed INTEGER NOT NULL DEFAULT 0;",
             // SQLite 不允许 ADD COLUMN 使用非常量默认表达式；空值由读取兼容层解释为未知时间。
             "ALTER TABLE download_tasks ADD COLUMN last_updated_at TEXT NOT NULL DEFAULT '';",
             "ALTER TABLE download_tasks ADD COLUMN error_type TEXT;",
@@ -143,8 +157,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
         foreach (var r in records)
         {
             await using var cmd = connection.CreateCommand();
+            cmd.Transaction = (SqliteTransaction)transaction;
             cmd.CommandText = """
-                INSERT OR REPLACE INTO download_tasks
+                INSERT INTO download_tasks
                     (task_id, document_id, source_document_title, series_title, item_title, aid, bvid, cid,
                      quality_id, audio_quality_id, output_directory, sub_folder,
                      progress, status, error_message,
@@ -154,7 +169,8 @@ public class DownloadTaskStore : IDownloadTaskRepository
                      extras_config, cover_url, extras_result_summary,
                      expected_video_bytes, expected_audio_bytes,
                      video_integrity_passed, audio_integrity_passed,
-                     output_file_path, last_updated_at, error_type, is_retryable)
+                     output_file_path, output_path_key, conflict_policy, estimated_required_bytes, overwrite_confirmed,
+                     last_updated_at, error_type, is_retryable)
                 VALUES
                     ($task_id, $document_id, $source_document_title, $series_title, $item_title, $aid, $bvid, $cid,
                      $quality_id, $audio_quality_id, $output_directory, $sub_folder,
@@ -165,7 +181,8 @@ public class DownloadTaskStore : IDownloadTaskRepository
                      $extras_config, $cover_url, $extras_result_summary,
                      $expected_video_bytes, $expected_audio_bytes,
                      $video_integrity_passed, $audio_integrity_passed,
-                     $output_file_path, $last_updated_at, $error_type, $is_retryable);
+                     $output_file_path, $output_path_key, $conflict_policy, $estimated_required_bytes, $overwrite_confirmed,
+                     $last_updated_at, $error_type, $is_retryable);
                 """;
             cmd.Parameters.AddWithValue("$task_id", r.TaskId);
             cmd.Parameters.AddWithValue("$document_id", r.DocumentId);
@@ -208,9 +225,27 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.Parameters.AddWithValue("$video_integrity_passed", r.VideoIntegrityPassed ? 1 : 0);
             cmd.Parameters.AddWithValue("$audio_integrity_passed", r.AudioIntegrityPassed ? 1 : 0);
             cmd.Parameters.AddWithValue("$output_file_path", r.OutputFilePath);
+            cmd.Parameters.AddWithValue("$output_path_key", r.OutputPathKey);
+            cmd.Parameters.AddWithValue("$conflict_policy", r.ConflictPolicy.ToString());
+            cmd.Parameters.AddWithValue("$estimated_required_bytes", r.EstimatedRequiredBytes);
+            cmd.Parameters.AddWithValue("$overwrite_confirmed", r.OverwriteConfirmed ? 1 : 0);
             cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(r.LastUpdatedAt));
             cmd.Parameters.AddWithValue("$error_type", ToDatabaseValue(r.ErrorType));
             cmd.Parameters.AddWithValue("$is_retryable", r.IsRetryable ? 1 : 0);
+
+            if (!string.IsNullOrWhiteSpace(r.OutputPathKey))
+            {
+                await using var reserve = connection.CreateCommand();
+                reserve.Transaction = (SqliteTransaction)transaction;
+                reserve.CommandText = """
+                    INSERT INTO output_path_reservations(output_path_key, task_id, reserved_at)
+                    VALUES($output_path_key, $task_id, $reserved_at);
+                    """;
+                reserve.Parameters.AddWithValue("$output_path_key", r.OutputPathKey);
+                reserve.Parameters.AddWithValue("$task_id", r.TaskId);
+                reserve.Parameters.AddWithValue("$reserved_at", ToStorageTime(DateTime.Now));
+                await reserve.ExecuteNonQueryAsync();
+            }
             await cmd.ExecuteNonQueryAsync();
         }
 
@@ -239,6 +274,8 @@ public class DownloadTaskStore : IDownloadTaskRepository
             ToDatabaseValue(SensitiveDataSanitizer.Sanitize(errorMessage)));
         cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(DateTime.Now));
         await cmd.ExecuteNonQueryAsync();
+        if (status is "done" or "canceled")
+            await ReleaseReservationAsync(connection, taskId);
     }
 
     /// <summary>
@@ -359,6 +396,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
             ToDatabaseValue(SensitiveDataSanitizer.Sanitize(extrasResultSummary)));
         cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(lastUpdatedAt));
         await cmd.ExecuteNonQueryAsync();
+        await ReleaseReservationAsync(connection, taskId);
     }
 
     public async Task MarkFailedAsync(
@@ -490,7 +528,11 @@ public class DownloadTaskStore : IDownloadTaskRepository
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
         await using var cmd = connection.CreateCommand();
-        cmd.CommandText = $"DELETE FROM download_tasks WHERE status = '{DownloadTaskStatusMapper.ToStorageString(DownloadTaskStatus.Completed)}';";
+        cmd.CommandText = $"""
+            DELETE FROM output_path_reservations
+            WHERE task_id IN (SELECT task_id FROM download_tasks WHERE status = '{DownloadTaskStatusMapper.ToStorageString(DownloadTaskStatus.Completed)}');
+            DELETE FROM download_tasks WHERE status = '{DownloadTaskStatusMapper.ToStorageString(DownloadTaskStatus.Completed)}';
+            """;
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -516,6 +558,65 @@ public class DownloadTaskStore : IDownloadTaskRepository
         await cmd.ExecuteNonQueryAsync();
     }
 
+    public async Task PrepareVerifiedResumeAsync(
+        string taskId,
+        string outputFilePath,
+        string outputPathKey,
+        FileConflictPolicy conflictPolicy,
+        long estimatedRequiredBytes)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
+
+        await using (var release = connection.CreateCommand())
+        {
+            release.Transaction = (SqliteTransaction)transaction;
+            release.CommandText = "DELETE FROM output_path_reservations WHERE task_id = $task_id;";
+            release.Parameters.AddWithValue("$task_id", taskId);
+            await release.ExecuteNonQueryAsync();
+        }
+        await using (var reserve = connection.CreateCommand())
+        {
+            reserve.Transaction = (SqliteTransaction)transaction;
+            reserve.CommandText = """
+                INSERT INTO output_path_reservations(output_path_key, task_id, reserved_at)
+                VALUES($output_path_key, $task_id, $reserved_at);
+                """;
+            reserve.Parameters.AddWithValue("$output_path_key", outputPathKey);
+            reserve.Parameters.AddWithValue("$task_id", taskId);
+            reserve.Parameters.AddWithValue("$reserved_at", ToStorageTime(DateTime.Now));
+            await reserve.ExecuteNonQueryAsync();
+        }
+        await using (var update = connection.CreateCommand())
+        {
+            update.Transaction = (SqliteTransaction)transaction;
+            update.CommandText = """
+                UPDATE download_tasks
+                SET output_file_path = $output_file_path,
+                    output_path_key = $output_path_key,
+                    conflict_policy = $conflict_policy,
+                    estimated_required_bytes = $estimated_required_bytes,
+                    overwrite_confirmed = 0,
+                    status = $status,
+                    error_message = NULL,
+                    error_type = NULL,
+                    last_updated_at = $last_updated_at
+                WHERE task_id = $task_id;
+                """;
+            update.Parameters.AddWithValue("$task_id", taskId);
+            update.Parameters.AddWithValue("$output_file_path", outputFilePath);
+            update.Parameters.AddWithValue("$output_path_key", outputPathKey);
+            update.Parameters.AddWithValue("$conflict_policy", conflictPolicy.ToString());
+            update.Parameters.AddWithValue("$estimated_required_bytes", estimatedRequiredBytes);
+            update.Parameters.AddWithValue("$status", DownloadTaskStatusMapper.ToStorageString(DownloadTaskStatus.Ready));
+            update.Parameters.AddWithValue("$last_updated_at", ToStorageTime(DateTime.Now));
+            if (await update.ExecuteNonQueryAsync() != 1)
+                throw new InvalidOperationException("待续传任务不存在，无法建立输出路径保留。");
+        }
+        await transaction.CommitAsync();
+    }
+
     /// <summary>
     /// 按 task_id 删除单条记录
     /// </summary>
@@ -524,7 +625,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
         await using var cmd = connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM download_tasks WHERE task_id = $task_id;";
+        cmd.CommandText = "DELETE FROM output_path_reservations WHERE task_id = $task_id; DELETE FROM download_tasks WHERE task_id = $task_id;";
         cmd.Parameters.AddWithValue("$task_id", taskId);
         await cmd.ExecuteNonQueryAsync();
     }
@@ -539,7 +640,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
         foreach (var taskId in taskIds)
         {
             await using var cmd = connection.CreateCommand();
-            cmd.CommandText = "DELETE FROM download_tasks WHERE task_id = $task_id;";
+            cmd.CommandText = "DELETE FROM output_path_reservations WHERE task_id = $task_id; DELETE FROM download_tasks WHERE task_id = $task_id;";
             cmd.Parameters.AddWithValue("$task_id", taskId);
             await cmd.ExecuteNonQueryAsync();
         }
@@ -617,6 +718,10 @@ public class DownloadTaskStore : IDownloadTaskRepository
             VideoIntegrityPassed = TryGetBool(reader, "video_integrity_passed"),
             AudioIntegrityPassed = TryGetBool(reader, "audio_integrity_passed"),
             OutputFilePath = TryGetString(reader, "output_file_path"),
+            OutputPathKey = TryGetString(reader, "output_path_key"),
+            ConflictPolicy = TryGetConflictPolicy(reader),
+            EstimatedRequiredBytes = TryGetLong(reader, "estimated_required_bytes"),
+            OverwriteConfirmed = TryGetBool(reader, "overwrite_confirmed"),
             LastUpdatedAt = TryGetDateTime(reader, "last_updated_at"),
             ErrorType = TryGetNullableString(reader, "error_type"),
             IsRetryable = TryGetBool(reader, "is_retryable"),
@@ -677,6 +782,23 @@ public class DownloadTaskStore : IDownloadTaskRepository
     {
         try { return reader.GetInt32(reader.GetOrdinal(column)) != 0; }
         catch { return false; }
+    }
+
+    private static FileConflictPolicy TryGetConflictPolicy(SqliteDataReader reader)
+        => Enum.TryParse<FileConflictPolicy>(TryGetString(reader, "conflict_policy"), out var value)
+            ? value
+            : FileConflictPolicy.AutoNumber;
+
+    /// <summary>
+    /// 终态任务不再需要占用路径键。释放动作与状态写入使用同一连接顺序执行，
+    /// 即使进程在两条语句之间退出，下一次预检仍会以任务状态过滤陈旧保留，不会允许静默覆盖。
+    /// </summary>
+    private static async Task ReleaseReservationAsync(SqliteConnection connection, string taskId)
+    {
+        await using var release = connection.CreateCommand();
+        release.CommandText = "DELETE FROM output_path_reservations WHERE task_id = $task_id;";
+        release.Parameters.AddWithValue("$task_id", taskId);
+        await release.ExecuteNonQueryAsync();
     }
 
     private static DateTime TryGetDateTime(SqliteDataReader reader, string column)

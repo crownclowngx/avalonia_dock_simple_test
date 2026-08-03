@@ -23,7 +23,7 @@ public sealed record DownloadPreset
 
     public DownloadProfile ToProfile() => new(
         QualityPreference, AudioQualityId, UseGroupFolder, AddIndexToTitle,
-        DownloadDanmaku, DownloadSubtitle, DownloadCover, NamingTemplate, OutputDirectory);
+        DownloadDanmaku, DownloadSubtitle, DownloadCover, NamingTemplate, OutputDirectory, ConflictPolicy);
 
     public static DownloadPreset FromProfile(string id, string name, DownloadProfile profile) => new()
     {
@@ -39,6 +39,7 @@ public sealed record DownloadPreset
         DownloadCover = profile.DownloadCover,
         NamingTemplate = profile.NamingTemplate,
         OutputDirectory = profile.OutputDirectory,
+        ConflictPolicy = profile.ConflictPolicy,
     };
     /// <summary>预设唯一标识（内置为 "builtin_compat" 等，自定义为 GUID）</summary>
     public string Id { get; init; } = "";
@@ -79,6 +80,9 @@ public sealed record DownloadPreset
 
     /// <summary>输出目录（空字符串表示使用全局默认目录）</summary>
     public string OutputDirectory { get; init; } = "";
+
+    /// <summary>预设携带的文件冲突策略；缺失字段反序列化时采用安全的自动序号。</summary>
+    public FileConflictPolicy ConflictPolicy { get; init; } = FileConflictPolicy.AutoNumber;
 }
 
 /// <summary>
@@ -113,7 +117,8 @@ public static class BuiltInPresets
         DownloadSubtitle = false,
         DownloadCover = false,
         NamingTemplate = "{index}.{title}",
-        OutputDirectory = ""
+        OutputDirectory = "",
+        ConflictPolicy = FileConflictPolicy.AutoNumber
     };
 
     /// <summary>
@@ -133,7 +138,8 @@ public static class BuiltInPresets
         DownloadSubtitle = true,
         DownloadCover = false,
         NamingTemplate = "{title}",
-        OutputDirectory = ""
+        OutputDirectory = "",
+        ConflictPolicy = FileConflictPolicy.AutoNumber
     };
 
     /// <summary>
@@ -153,7 +159,8 @@ public static class BuiltInPresets
         DownloadSubtitle = true,
         DownloadCover = true,
         NamingTemplate = "{bv}_{title}",
-        OutputDirectory = ""
+        OutputDirectory = "",
+        ConflictPolicy = FileConflictPolicy.AutoNumber
     };
 
     /// <summary>

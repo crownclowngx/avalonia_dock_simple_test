@@ -226,6 +226,47 @@ public sealed class ExtrasAndProgressTests
     }
 
     [Fact]
+    public async Task 附加资源未确认覆盖时保留旧文件并返回失败()
+    {
+        var factory = new StubBiliHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(Encoding.UTF8.GetBytes("new")),
+        });
+        using var handler = new CoverExtrasHandler(factory);
+        using var paths = new TestDataPaths();
+        Directory.CreateDirectory(paths.RootDirectory);
+        var output = Path.Combine(paths.RootDirectory, "video_cover.jpg");
+        await File.WriteAllTextAsync(output, "old");
+
+        var result = await handler.ExecuteAsync(CreateContext(paths), CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal("old", await File.ReadAllTextAsync(output));
+    }
+
+    [Fact]
+    public async Task 附加资源只有覆盖策略已确认时才原子替换()
+    {
+        var factory = new StubBiliHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(Encoding.UTF8.GetBytes("new")),
+        });
+        using var handler = new CoverExtrasHandler(factory);
+        using var paths = new TestDataPaths();
+        Directory.CreateDirectory(paths.RootDirectory);
+        var output = Path.Combine(paths.RootDirectory, "video_cover.jpg");
+        await File.WriteAllTextAsync(output, "old");
+        var context = Copy(CreateContext(paths),
+            conflictPolicy: FileConflictPolicy.Overwrite,
+            overwriteConfirmed: true);
+
+        var result = await handler.ExecuteAsync(context, CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal("new", await File.ReadAllTextAsync(output));
+    }
+
+    [Fact]
     public async Task 进度追踪器映射阶段节流落库但每次广播UI()
     {
         var repository = new InMemoryDownloadTaskRepository();
@@ -322,7 +363,9 @@ public sealed class ExtrasAndProgressTests
     private static ExtrasContext Copy(
         ExtrasContext source,
         string? subFolder = null,
-        string? coverUrl = null)
+        string? coverUrl = null,
+        FileConflictPolicy? conflictPolicy = null,
+        bool? overwriteConfirmed = null)
         => new()
         {
             TaskId = source.TaskId,
@@ -333,6 +376,8 @@ public sealed class ExtrasAndProgressTests
             OutputDirectory = source.OutputDirectory,
             SubFolder = subFolder ?? source.SubFolder,
             BaseFileName = source.BaseFileName,
+            ConflictPolicy = conflictPolicy ?? source.ConflictPolicy,
+            OverwriteConfirmed = overwriteConfirmed ?? source.OverwriteConfirmed,
             Cookie = source.Cookie,
             CoverUrl = coverUrl ?? source.CoverUrl,
             ApiService = source.ApiService,

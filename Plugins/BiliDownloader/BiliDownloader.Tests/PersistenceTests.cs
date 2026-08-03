@@ -101,7 +101,7 @@ public sealed class PersistenceTests
     }
 
     [Fact]
-    public async Task 同任务ID会替换且Document查询彼此隔离()
+    public async Task 同任务ID拒绝静默替换且Document查询彼此隔离()
     {
         using var paths = new TestDataPaths();
         await new BiliLocalStateInitializer(paths).InitializeAsync();
@@ -110,14 +110,15 @@ public sealed class PersistenceTests
         var original = CreateRecord("same", "doc-a", DateTime.UtcNow);
         var other = CreateRecord("other", "doc-b", DateTime.UtcNow);
         await store.InsertBatchAsync([original, other]);
-        original.ItemTitle = "替换后";
-        original.Progress = 80;
+        var duplicate = CreateRecord("same", "doc-a", DateTime.UtcNow);
+        duplicate.ItemTitle = "不应替换";
+        duplicate.Progress = 80;
 
-        await store.InsertBatchAsync([original]);
+        await Assert.ThrowsAsync<SqliteException>(() => store.InsertBatchAsync([duplicate]));
 
         var docA = Assert.Single(await store.GetByDocumentIdAsync("doc-a"));
-        Assert.Equal("替换后", docA.ItemTitle);
-        Assert.Equal(80, docA.Progress);
+        Assert.Equal(original.ItemTitle, docA.ItemTitle);
+        Assert.Equal(original.Progress, docA.Progress);
         Assert.Single(await store.GetByDocumentIdAsync("doc-b"));
         Assert.Equal(2, (await store.GetAllAsync()).Count);
     }

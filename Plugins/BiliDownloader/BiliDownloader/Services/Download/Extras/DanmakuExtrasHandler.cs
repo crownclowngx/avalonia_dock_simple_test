@@ -70,7 +70,7 @@ public class DanmakuExtrasHandler : IExtrasHandler
             // 生成 XML
             var xmlContent = ProtobufDanmakuDecoder.ToXml(allElems);
             var outputPath = Path.Combine(actualOutputDir, $"{context.BaseFileName}.xml");
-            await File.WriteAllTextAsync(outputPath, xmlContent, ct);
+            await ExtrasOutputWriter.WriteTextAsync(outputPath, xmlContent, context, ct);
 
             context.ProgressReporter?.Report($"弹幕下载完成: {allElems.Count} 条");
 

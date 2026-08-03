@@ -68,6 +68,16 @@ public partial class DownloadConfigViewModel : ObservableObject
     [ObservableProperty]
     private bool _downloadCover;
 
+    /// <summary>供界面绑定的中文冲突策略选项；持久化始终使用对应枚举值。</summary>
+    public IReadOnlyList<FileConflictPolicyOption> ConflictPolicyOptions { get; } =
+        Enum.GetValues<FileConflictPolicy>()
+            .Select(policy => new FileConflictPolicyOption(policy, policy.ToDisplayText()))
+            .ToArray();
+
+    [ObservableProperty]
+    private FileConflictPolicyOption _selectedConflictPolicy =
+        new(FileConflictPolicy.AutoNumber, FileConflictPolicy.AutoNumber.ToDisplayText());
+
     #region G5: 预设管理
 
     /// <summary>可用预设列表（内置 + 自定义）</summary>
@@ -275,6 +285,7 @@ public partial class DownloadConfigViewModel : ObservableObject
         DownloadDanmaku = preset.DownloadDanmaku;
         DownloadSubtitle = preset.DownloadSubtitle;
         DownloadCover = preset.DownloadCover;
+        SelectedConflictPolicy = ConflictPolicyOptions.First(option => option.Value == preset.ConflictPolicy);
 
         // 输出目录：预设指定则使用，否则保持当前默认
         if (!string.IsNullOrEmpty(preset.OutputDirectory))
@@ -319,7 +330,8 @@ public partial class DownloadConfigViewModel : ObservableObject
         DownloadSubtitle,
         DownloadCover,
         _getNamingTemplate?.Invoke() ?? NamingTemplateEngine.DefaultTemplate,
-        OutputDirectory);
+        OutputDirectory,
+        SelectedConflictPolicy.Value);
 
     public void RestoreDocumentConfiguration(DocumentSaveDataV2 data)
     {
@@ -331,6 +343,7 @@ public partial class DownloadConfigViewModel : ObservableObject
         DownloadDanmaku = data.DownloadDanmaku;
         DownloadSubtitle = data.DownloadSubtitle;
         DownloadCover = data.DownloadCover;
+        SelectedConflictPolicy = ConflictPolicyOptions.First(option => option.Value == data.ConflictPolicy);
         _pendingQualityId = data.QualityId > 0 ? data.QualityId : null;
         _pendingAudioQualityId = data.AudioQualityId;
         _isApplyingPreset = false;
@@ -515,6 +528,13 @@ public partial class DownloadConfigViewModel : ObservableObject
     partial void OnDownloadSubtitleChanged(bool value) => MarkPresetModified();
     partial void OnDownloadCoverChanged(bool value) => MarkPresetModified();
     partial void OnOutputDirectoryChanged(string value) => MarkPresetModified();
+    partial void OnSelectedConflictPolicyChanged(FileConflictPolicyOption value) => MarkPresetModified();
     partial void OnIsPresetModifiedChanged(bool value) => OnPropertyChanged(nameof(PresetStatusText));
     partial void OnIsRestoredPresetUnavailableChanged(bool value) => OnPropertyChanged(nameof(PresetStatusText));
+}
+
+/// <summary>文件冲突策略的界面选项；显示文案与持久化值明确分离。</summary>
+public sealed record FileConflictPolicyOption(FileConflictPolicy Value, string DisplayName)
+{
+    public override string ToString() => DisplayName;
 }
