@@ -33,6 +33,14 @@ public sealed class BiliDownloaderModuleTests
         Assert.Equal(
             ServiceLifetime.Singleton,
             FindDescriptor(services, typeof(IFfmpegService)).Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IFfmpegRuntimeLocator)).Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IMediaMuxer)).Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IFfmpegPackageInstaller)).Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IDownloadFailureActionService)).Lifetime);
         Assert.Equal(
             ServiceLifetime.Singleton,
             FindDescriptor(services, typeof(IBiliHttpClientFactory)).Lifetime);
@@ -57,6 +65,8 @@ public sealed class BiliDownloaderModuleTests
         services.AddSingleton<IBiliCredentialStore>(new InMemoryBiliCredentialStore());
         services.AddSingleton<IBiliSessionApi>(new StubBiliSessionApi());
         services.AddSingleton<IDownloadTaskRepository>(repository);
+        services.AddSingleton<ISettingsRepository>(new InMemorySettingsRepository());
+        services.AddSingleton<IFfmpegRuntimeLocator>(new FakeFfmpegService { ReadyOverride = true });
         services.AddSingleton<IBiliCredentialProvider>(new FakeCredentialProvider());
         services.AddSingleton<IDownloadTaskExecutor>(new FakeDownloadTaskExecutor());
         services.AddSingleton<PluginLifecycleManager>();

@@ -6,6 +6,7 @@
 - B 级协议组：Bilibili API 响应契约、WBI、CDN、Range 下载和附加资源。
 - C 级界面逻辑组：ViewModel、消息路由、Document 保存恢复、转换器和创建策略。
 - G6 冲突预检组：四种策略、目录与磁盘检查、续传事实、路径保留、预检过期和 Document 兼容迁移。
+- G7 依赖恢复组：固定 ffmpeg 供应链、安全安装与回滚、运行时探测、媒体检查点、仅合并重试、十类错误行动和目录事务。
 - XAML 像素、真实窗口、真实扫码及真实 Bilibili 网络不属于默认自动化测试。
 
 测试只允许两种 HTTP 目标：
@@ -41,18 +42,23 @@ dotnet test .\BiliDownloader.Tests.csproj -c Release -p:SkipPluginDeploy=true
 dotnet test ..\..\..\MyAvaloniaManagement.sln -c Release -p:SkipPluginDeploy=true
 ```
 
+G7 完成时的证据（2026-08-04）：解决方案 Release 构建 0 错误、0 警告；插件 384/384、全解决方案 769/769 测试通过，0 跳过；`git diff --check` 通过。
+
 ## 稳定性约束
 
 - 涉及 Flurl、WBI 缓存和 PATH 的测试串行运行并恢复静态状态；ffmpeg 路径已经是实例状态。
 - 并发测试使用 `TaskCompletionSource` 和显式超时，不依赖任务碰巧完成的顺序。
 - SQLite、下载文件和密钥全部位于按测试创建的临时目录，测试结束后清理。
 - G6 测试只在独享临时目录创建零字节冲突文件；媒体大小和磁盘容量使用确定性接口替身，不依赖开发机剩余空间。
+- G7 安装测试使用内存下载器和测试 ZIP，不访问 Gyan 或其他公网地址；平台、进程探测、取消和并发顺序均使用确定性替身。
 - `coverage.runsettings` 排除测试程序集、生成代码、XAML 和纯 View；门禁定义见 `coverage-baseline.json`。
 
 ## 当前测试边界
 
 - 下载—完整性验证—ffmpeg 合并主链路通过注入 HTTP 与 ffmpeg 假实现离线覆盖。
 - `FfmpegService` 的参数、退出码、取消和清理通过进程句柄假实现验证，默认测试不执行真实 ffmpeg。
+- `FfmpegPackageInstaller` 覆盖固定摘要、大小上限、ZIP 越界与重复条目、缺失可执行文件、并发互斥、旧指针回滚和临时目录清理；真实发行包下载属于 G8 人工/集成验收。
+- 合并恢复测试验证检查点先于 ffmpeg 落库、无效临时媒体被拒绝，以及仅合并执行器不会调用完整下载入口。
 - `CoverExtrasHandler` 通过注入的 `HttpMessageHandler` 覆盖 HTTPS 规范化、请求头和成功写入。
 - `LoginWindowViewModel` 内置两秒轮询与 Avalonia Bitmap，不做窗口/计时自动化；登录 API 与登录状态服务已分别离线覆盖。
 

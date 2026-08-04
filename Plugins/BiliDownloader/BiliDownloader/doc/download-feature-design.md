@@ -195,14 +195,15 @@ CREATE TABLE download_tasks (
 | Microsoft.Data.Sqlite | 任务/进度持久化 | 已有 |
 | Newtonsoft.Json | JSON序列化 | 已有 |
 | CommunityToolkit.Mvvm | MVVM基础设施 | 已有 |
-| **ffmpeg** | 音视频合并 | **需用户自行安装** |
+| **ffmpeg** | 音视频合并 | **已有检测、自定义路径和 Windows x64 主动安装/修复** |
 
 ### ffmpeg 要求
 
-- 程序在系统 PATH 中查找 `ffmpeg.exe`
-- 若未找到，下载任务会报错提示用户安装
-- 推荐从 https://ffmpeg.org/download.html 下载并添加到 PATH
-- 后续可扩展为自动下载或内置 ffmpeg
+- 运行时按“已验证自定义路径 → 托管安装指针 → 插件目录 → 系统 PATH”探测 `ffmpeg`；无效自定义路径不会遮蔽可用托管版本。
+- Windows x64 用户可主动安装或修复代码中固定的 Gyan FFmpeg 8.1.2 essentials 包；安装过程校验固定 SHA-256、安全解压并原子切换活动指针，不修改 PATH。
+- 插件启动只加载设置并执行本地探测，不联网、不自动安装。其他平台可以重新检测或选择自定义路径，但不支持内置包安装。
+- 媒体下载和完整性校验完成后会在合并前保存检查点；ffmpeg 修复成功后可只重试合并，不重新下载主媒体。
+- 完整的供应链、失败回滚和错误行动设计见 [G7 文档](G7-FFMPEG-ERROR-ACTION-ENTRY.md)。
 
 ## 6. 当前限制与后续扩展方向
 
@@ -211,7 +212,7 @@ CREATE TABLE download_tasks (
 - 仅支持普通视频（暂不支持番剧付费集、课程等需要特殊权限的内容）
 - 不支持 b23.tv 短链自动展开
 - 不支持弹幕、字幕、封面等附加资源下载
-- ffmpeg 需用户手动安装
+- 非 Windows x64 平台需要提供适用于当前平台的 ffmpeg 自定义路径
 - 单线程下载（无 aria2c 多线程加速）
 
 ### 后续可扩展
@@ -222,6 +223,6 @@ CREATE TABLE download_tasks (
 - 字幕下载（JSON格式）
 - 封面/缩略图下载
 - 多线程下载（引入 aria2c 或自实现分块下载）
-- ffmpeg 自动下载/内置
+- ffmpeg 跨平台托管安装包
 - 下载速度限制
 - 并发下载数控制

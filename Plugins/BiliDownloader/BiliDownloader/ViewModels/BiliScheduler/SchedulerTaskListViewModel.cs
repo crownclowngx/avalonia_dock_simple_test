@@ -24,6 +24,8 @@ public partial class SchedulerTaskListViewModel : ObservableObject
     private readonly Action<string> _onStatusMessage;
     private readonly IFileRevealService _fileRevealService;
     private readonly IUiDispatcher _uiDispatcher;
+    private readonly IDownloadFailureActionService? _failureActionService;
+    private readonly IDownloadFailurePresentationPolicy _failurePolicy;
 
     /// <summary>
     /// G4: O(1) 任务索引，替代原有的 FirstOrDefault 线性查找。
@@ -146,6 +148,8 @@ public partial class SchedulerTaskListViewModel : ObservableObject
     public IAsyncRelayCommand<DownloadTaskRecord> OpenFileLocationCommand { get; }
     public IAsyncRelayCommand StartCommand { get; }
     public IAsyncRelayCommand StopCommand { get; }
+    /// <summary>执行任务卡片提供的结构化错误行动。</summary>
+    public IAsyncRelayCommand<DownloadFailureActionRequest> ExecuteFailureActionCommand { get; }
 
     // G2: 单任务控制命令
     public IAsyncRelayCommand<DownloadTaskRecord> PauseTaskCommand { get; }
@@ -184,7 +188,9 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         Action<string> onStatusMessage,
         IConfirmationService? confirmationService = null,
         IFileRevealService? fileRevealService = null,
-        IUiDispatcher? uiDispatcher = null)
+        IUiDispatcher? uiDispatcher = null,
+        IDownloadFailureActionService? failureActionService = null,
+        IDownloadFailurePresentationPolicy? failurePolicy = null)
     {
         _coordinator = coordinator;
         _taskStore = taskStore;
@@ -193,6 +199,8 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         _confirmationService = confirmationService ?? new SafeCancellationConfirmationService();
         _fileRevealService = fileRevealService ?? new FileRevealService();
         _uiDispatcher = uiDispatcher ?? new InlineUiDispatcher();
+        _failureActionService = failureActionService;
+        _failurePolicy = failurePolicy ?? new DownloadFailurePresentationPolicy();
         SelectedStatusOption = StatusOptions[0];
         SelectedSortOption = SortOptions[0];
         SelectedDateOption = DateOptions[0];
@@ -203,6 +211,7 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         OpenFileLocationCommand = new AsyncRelayCommand<DownloadTaskRecord>(OpenFileLocationAsync);
         StartCommand = new AsyncRelayCommand(StartAsync);
         StopCommand = new AsyncRelayCommand(StopAsync);
+        ExecuteFailureActionCommand = new AsyncRelayCommand<DownloadFailureActionRequest>(ExecuteFailureActionAsync);
 
         // G2: 单任务控制命令初始化
         PauseTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(PauseTaskAsync);
@@ -327,7 +336,7 @@ public partial class SchedulerTaskListViewModel : ObservableObject
             {
                 Tasks.Add(t);
                 _taskIndex[t.TaskId] = t;
-                var item = new DownloadTaskItemViewModel(t);
+                var item = new DownloadTaskItemViewModel(t, _failurePolicy);
                 item.PropertyChanged += (_, args) =>
                 {
                     if (args.PropertyName == nameof(DownloadTaskItemViewModel.IsSelected))
@@ -483,6 +492,19 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         {
             _onStatusMessage($"重试任务失败: {ex.Message}");
         }
+    }
+
+    private async Task ExecuteFailureActionAsync(DownloadFailureActionRequest? request)
+    {
+        if (request is null) return;
+        if (_failureActionService is null)
+        {
+            _onStatusMessage("当前构造路径未提供错误行动服务。");
+            return;
+        }
+        var result = await _failureActionService.ExecuteAsync(request.Task, request.Action);
+        _onStatusMessage(result.Message);
+        if (result.Success) await ReloadTasksAsync();
     }
 
     public void UpdateCounts()

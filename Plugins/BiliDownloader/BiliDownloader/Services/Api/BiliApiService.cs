@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using BiliDownloader.Models;
+using BiliDownloader.Services.Download;
 using Flurl.Http;
 using Newtonsoft.Json.Linq;
 
@@ -513,14 +514,16 @@ public partial class BiliApiService
             var msg = resp["message"]?.Value<string>() ?? "未知错误";
             // 番剧大会员检测
             if (mediaType == BiliMediaType.Bangumi && (code == -403 || code == -10403))
-                throw new Exception($"该番剧需要大会员才能下载，请确认已登录大会员账号 (code: {code})");
-            throw new Exception($"获取播放地址失败: {msg} (code: {code})");
+                throw new MediaAuthorizationException($"该番剧需要有效的大会员登录状态（code: {code}）");
+            if (code is -101 or -400)
+                throw new MediaAuthorizationException($"登录状态无效，无法获取播放地址（code: {code}）");
+            throw new ResourceUnavailableException($"获取播放地址失败：{msg}（code: {code}）");
         }
 
         // 兼容普通视频（data）和番剧（result.video_info）两种响应格式
         var data = resp["data"] ?? resp["result"]?["video_info"];
         if (data == null)
-            throw new Exception("无法解析播放数据");
+            throw new ResourceUnavailableException("播放数据缺失或已失效。");
 
         var result = new BiliDashResult();
 
@@ -546,7 +549,7 @@ public partial class BiliApiService
         // 解析 DASH 流
         var dash = data["dash"];
         if (dash == null || dash.Type != JTokenType.Object)
-            throw new Exception("该视频不支持 DASH 格式，请检查登录状态或视频权限");
+            throw new ResourceUnavailableException("该媒体当前没有可用的 DASH 资源。");
 
         // 视频流
         var videos = dash["video"] as JArray;

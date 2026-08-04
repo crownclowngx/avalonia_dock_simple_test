@@ -34,7 +34,7 @@ public interface IDownloadTaskRepository
     /// <summary>更新断点续传字节数</summary>
     Task UpdateBytesAsync(string taskId, long videoBytes, long audioBytes);
 
-    /// <summary>Atomically updates all frequently changing runtime facts.</summary>
+    /// <summary>原子更新所有高频变化的运行时事实；兼容实现可按阶段和字节两步退化写入。</summary>
     async Task UpdateRuntimeSnapshotAsync(TaskRuntimeSnapshot snapshot)
     {
         await UpdateStageProgressAsync(
@@ -98,4 +98,22 @@ public interface IDownloadTaskRepository
         string outputPathKey,
         FileConflictPolicy conflictPolicy,
         long estimatedRequiredBytes);
+
+    /// <summary>
+    /// 验证任务是否仍持有指定输出路径。默认实现服务于旧测试仓储；SQLite 实现必须查询保留表，
+    /// 合并重试只有在保留仍归属当前任务时才能发布成品。
+    /// </summary>
+    Task<bool> OwnsOutputPathReservationAsync(string taskId, string outputPathKey)
+        => Task.FromResult(true);
+
+    /// <summary>
+    /// 在一个事务中把任务迁移到新输出路径：旧保留只有在新保留成功后才会被替换。
+    /// 实现必须清除旧错误和旧覆盖确认，避免把针对旧文件的授权复用到新位置。
+    /// </summary>
+    Task RelocateOutputAsync(
+        string taskId,
+        string outputDirectory,
+        string outputFilePath,
+        string outputPathKey)
+        => Task.CompletedTask;
 }

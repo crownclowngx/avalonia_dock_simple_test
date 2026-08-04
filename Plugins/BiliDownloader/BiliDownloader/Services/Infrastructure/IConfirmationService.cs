@@ -24,10 +24,22 @@ public interface IConfirmationService
     Task<bool> ConfirmAsync(string title, string message);
 }
 
+/// <summary>
+/// 应用拥有的用户提示与路径选择边界。下载应用层只依赖用户决策结果，不直接创建 Avalonia 窗口，
+/// 因而取消、无窗口和测试替身都能使用同一安全语义。
+/// </summary>
 public interface IUserPromptService : IConfirmationService
 {
+    /// <summary>确认任务记录、临时媒体和成品文件三个彼此独立的删除范围。</summary>
     Task<DeleteTaskPromptResult> ConfirmDeleteAsync(int taskCount, bool hasOutputFiles);
+    /// <summary>确认带警告或覆盖风险的提交预检；阻止项不得通过本方法绕过。</summary>
     Task<bool> ConfirmSubmissionAsync(SubmissionPreflightReport report);
+    /// <summary>选择输出目录；用户取消或当前没有可用窗口时返回 null。</summary>
+    Task<string?> PickFolderAsync(string title, string? suggestedDirectory = null)
+        => Task.FromResult<string?>(null);
+    /// <summary>选择自定义 ffmpeg 可执行文件；用户取消时返回 null。</summary>
+    Task<string?> PickFfmpegExecutableAsync()
+        => Task.FromResult<string?>(null);
 }
 
 /// <summary>
@@ -41,7 +53,7 @@ public sealed class SafeCancellationConfirmationService : IUserPromptService
     public Task<bool> ConfirmSubmissionAsync(SubmissionPreflightReport report) => Task.FromResult(false);
 }
 
-/// <summary>Application-owned modal prompts for destructive task actions.</summary>
+/// <summary>应用统一拥有的模态提示实现，集中处理窗口所有者与安全取消语义。</summary>
 public sealed class AvaloniaUserPromptService : IUserPromptService
 {
     public async Task<bool> ConfirmAsync(string title, string message)
@@ -142,6 +154,38 @@ public sealed class AvaloniaUserPromptService : IUserPromptService
             },
         };
         return await window.ShowDialog<bool>(owner);
+    }
+
+    public async Task<string?> PickFolderAsync(string title, string? suggestedDirectory = null)
+    {
+        var owner = GetOwner();
+        if (owner is null) return null;
+        var result = await owner.StorageProvider.OpenFolderPickerAsync(new Avalonia.Platform.Storage.FolderPickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = false,
+            SuggestedStartLocation = string.IsNullOrWhiteSpace(suggestedDirectory)
+                ? null
+                : await owner.StorageProvider.TryGetFolderFromPathAsync(new Uri(suggestedDirectory)),
+        });
+        return result.Count == 0 ? null : result[0].Path.LocalPath;
+    }
+
+    public async Task<string?> PickFfmpegExecutableAsync()
+    {
+        var owner = GetOwner();
+        if (owner is null) return null;
+        var result = await owner.StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "选择 ffmpeg.exe",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("ffmpeg 可执行文件") { Patterns = ["*.exe"] },
+                Avalonia.Platform.Storage.FilePickerFileTypes.All,
+            ],
+        });
+        return result.Count == 0 ? null : result[0].Path.LocalPath;
     }
 
     private static Window CreateConfirmationWindow(string title, string message)

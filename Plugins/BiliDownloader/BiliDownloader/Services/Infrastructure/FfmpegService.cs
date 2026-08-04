@@ -1,117 +1,62 @@
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace BiliDownloader.Services.Infrastructure;
 
 /// <summary>
-/// ffmpeg 管理服务：实例级路径状态、路径验证和可取消合并。
+/// ffmpeg 本地运行时适配器：实现路径发现、进程探测与媒体封装。
+/// 安装职责位于 <see cref="FfmpegPackageInstaller"/>；这里仅消费已经存在的运行时，
+/// 因而提交预检和媒体下载不会意外触发网络请求或磁盘安装。
 /// </summary>
 public sealed class FfmpegService : IFfmpegService
 {
     private readonly IFfmpegProcessFactory _processFactory;
+    private readonly IBiliDataPaths _paths;
+    private string? _customPath;
+    private FfmpegRuntimeStatus? _lastStatus;
 
-    public FfmpegService(IFfmpegProcessFactory processFactory)
+    public FfmpegService(IFfmpegProcessFactory processFactory, IBiliDataPaths? paths = null)
     {
         _processFactory = processFactory;
+        _paths = paths ?? new BiliDataPaths();
     }
 
-    public string? CustomPath { get; set; }
+    public string? CustomPath
+    {
+        get => _customPath;
+        set
+        {
+            _customPath = value;
+            _lastStatus = null;
+        }
+    }
 
-    public bool IsReady => ResolvedPath is not null;
-
+    // 严格就绪状态只能来自进程探测，不能把一个同名空文件误报为可用运行时。
+    public bool IsReady => _lastStatus?.IsReady == true;
     public string? ResolvedPath => ResolveFfmpegPath();
 
     public string? ResolveFfmpegPath()
+        => EnumerateCandidates().Select(candidate => candidate.Path).FirstOrDefault(File.Exists);
+
+    public async Task<FfmpegRuntimeStatus> DetectAsync(CancellationToken ct = default)
     {
-        if (!string.IsNullOrEmpty(CustomPath) && File.Exists(CustomPath))
+        foreach (var candidate in EnumerateCandidates().Where(candidate => File.Exists(candidate.Path)))
         {
-            return CustomPath;
-        }
-
-        try
-        {
-            var assemblyDir = Path.GetDirectoryName(typeof(FfmpegService).Assembly.Location);
-            if (!string.IsNullOrEmpty(assemblyDir))
+            ct.ThrowIfCancellationRequested();
+            var probe = await ProbeAsync(candidate.Path, ct);
+            if (probe.IsValid)
             {
-                var found = Directory.GetFiles(assemblyDir, "ffmpeg.exe", SearchOption.AllDirectories);
-                if (found.Length > 0)
-                {
-                    return found[0];
-                }
-            }
-        }
-        catch
-        {
-            // 插件目录不可访问时继续检查 PATH。
-        }
-
-        var pathDirs = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator);
-        foreach (var dir in pathDirs)
-        {
-            var trimmed = dir.Trim();
-            if (string.IsNullOrEmpty(trimmed))
-            {
-                continue;
-            }
-
-            try
-            {
-                var candidate = Path.Combine(trimmed, "ffmpeg.exe");
-                if (File.Exists(candidate))
-                {
-                    return candidate;
-                }
-            }
-            catch
-            {
-                // 忽略单个无效 PATH 项。
+                return _lastStatus = new(true, candidate.Path, probe.Version, candidate.Source,
+                    $"ffmpeg {probe.Version ?? "未知版本"} 已就绪");
             }
         }
 
-        return null;
+        return _lastStatus = new(false, null, null, FfmpegRuntimeSource.None,
+            "未找到可用的 ffmpeg，可安装内置版本或选择自定义路径。");
     }
 
     public async Task<bool> ValidatePathAsync(string path, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
-        {
-            return false;
-        }
-
-        try
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = path,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-            };
-            startInfo.ArgumentList.Add("-version");
-
-            using var process = _processFactory.Start(startInfo);
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromSeconds(5));
-            var stdout = process.ReadStandardOutputAsync(timeout.Token);
-            var stderr = process.ReadStandardErrorAsync(timeout.Token);
-
-            try
-            {
-                await process.WaitForExitAsync(timeout.Token);
-                await Task.WhenAll(stdout, stderr);
-                return process.ExitCode == 0;
-            }
-            catch (OperationCanceledException)
-            {
-                TryKill(process);
-                return false;
-            }
-        }
-        catch
-        {
-            return false;
-        }
-    }
+        => (await ProbeAsync(path, ct)).IsValid;
 
     public async Task MergeAsync(
         string videoPath,
@@ -119,11 +64,13 @@ public sealed class FfmpegService : IFfmpegService
         string outputPath,
         CancellationToken ct = default)
     {
-        var ffmpegPath = ResolveFfmpegPath();
-        if (ffmpegPath is null)
+        // 合并只能消费最近一次通过进程验证的路径；配置变化会清空该状态。若尚未探测，则在本地
+        // 重新枚举所有候选。这样“存在但损坏”的自定义文件不会遮蔽后面的托管可用版本。
+        var runtime = _lastStatus?.IsReady == true ? _lastStatus : await DetectAsync(ct);
+        var ffmpegPath = runtime.ExecutablePath;
+        if (!runtime.IsReady || string.IsNullOrWhiteSpace(ffmpegPath))
         {
-            throw new InvalidOperationException(
-                "ffmpeg 未就绪，请在调度器工具中配置 ffmpeg 路径或等待自动下载完成");
+            throw new FfmpegUnavailableException("ffmpeg 未就绪，请安装内置版本或选择有效的自定义路径。");
         }
 
         var startInfo = new ProcessStartInfo
@@ -144,35 +91,150 @@ public sealed class FfmpegService : IFfmpegService
             startInfo.ArgumentList.Add(argument);
         }
 
-        using var process = _processFactory.Start(startInfo);
-        using var cancellation = ct.Register(() => TryKill(process));
-        var stdout = process.ReadStandardOutputAsync(CancellationToken.None);
-        var stderr = process.ReadStandardErrorAsync(CancellationToken.None);
-
+        IFfmpegProcess process;
         try
         {
-            await process.WaitForExitAsync(ct);
-            await Task.WhenAll(stdout, stderr);
-            if (process.ExitCode != 0)
+            process = _processFactory.Start(startInfo);
+        }
+        catch (Exception ex)
+        {
+            throw new FfmpegUnavailableException("无法启动 ffmpeg，请重新检测或修复运行时。", ex);
+        }
+
+        using (process)
+        using (ct.Register(() => TryKill(process)))
+        {
+            var stdout = process.ReadStandardOutputAsync(CancellationToken.None);
+            var stderr = process.ReadStandardErrorAsync(CancellationToken.None);
+
+            try
             {
+                await process.WaitForExitAsync(ct);
+                await Task.WhenAll(stdout, stderr);
+                if (process.ExitCode != 0)
+                {
+                    DeleteIncompleteOutput(outputPath);
+                    throw new MediaMergeException(
+                        $"ffmpeg 合并失败（退出码 {process.ExitCode}）：{await stderr}");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                TryKill(process);
+                await DrainOutputAsync(stdout, stderr);
                 DeleteIncompleteOutput(outputPath);
-                throw new InvalidOperationException(
-                    $"ffmpeg 合并失败 (exit {process.ExitCode}): {await stderr}");
+                throw;
+            }
+            catch (MediaMergeException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                TryKill(process);
+                await DrainOutputAsync(stdout, stderr);
+                DeleteIncompleteOutput(outputPath);
+                throw new MediaMergeException("ffmpeg 合并过程异常终止，已保留输入媒体。", ex);
             }
         }
-        catch (OperationCanceledException)
+    }
+
+    private IEnumerable<(string Path, FfmpegRuntimeSource Source)> EnumerateCandidates()
+    {
+        if (!string.IsNullOrWhiteSpace(CustomPath))
+            yield return (CustomPath, FfmpegRuntimeSource.Custom);
+
+        var managed = TryReadManagedPath();
+        if (!string.IsNullOrWhiteSpace(managed))
+            yield return (managed, FfmpegRuntimeSource.Managed);
+
+        var assemblyDir = Path.GetDirectoryName(typeof(FfmpegService).Assembly.Location);
+        if (!string.IsNullOrWhiteSpace(assemblyDir))
         {
-            TryKill(process);
-            await DrainOutputAsync(stdout, stderr);
-            DeleteIncompleteOutput(outputPath);
-            throw;
+            // 插件目录只检查约定位置，避免旧实现递归扫描整个宿主目录造成不可控延迟。
+            yield return (Path.Combine(assemblyDir, "ffmpeg.exe"), FfmpegRuntimeSource.Plugin);
+            yield return (Path.Combine(assemblyDir, "ffmpeg", "bin", "ffmpeg.exe"), FfmpegRuntimeSource.Plugin);
+        }
+
+        foreach (var directory in (Environment.GetEnvironmentVariable("PATH") ?? "")
+                     .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            string? candidate = null;
+            try
+            {
+                candidate = Path.Combine(directory.Trim(), "ffmpeg.exe");
+            }
+            catch
+            {
+                // 单个损坏的 PATH 项不能阻止后续候选探测。
+            }
+            if (!string.IsNullOrWhiteSpace(candidate))
+                yield return (candidate, FfmpegRuntimeSource.Path);
+        }
+    }
+
+    private string? TryReadManagedPath()
+    {
+        try
+        {
+            if (!File.Exists(_paths.FfmpegCurrentPointerPath)) return null;
+            var pointer = JsonSerializer.Deserialize<FfmpegInstallPointer>(
+                File.ReadAllText(_paths.FfmpegCurrentPointerPath));
+            if (pointer is null || string.IsNullOrWhiteSpace(pointer.RelativeExecutablePath)) return null;
+
+            var root = Path.GetFullPath(_paths.FfmpegDependencyDirectory)
+                .TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            var candidate = Path.GetFullPath(Path.Combine(
+                _paths.FfmpegDependencyDirectory, pointer.RelativeExecutablePath));
+            return candidate.StartsWith(root, StringComparison.OrdinalIgnoreCase) ? candidate : null;
         }
         catch
         {
-            TryKill(process);
-            await DrainOutputAsync(stdout, stderr);
-            DeleteIncompleteOutput(outputPath);
-            throw;
+            // 指针损坏时回退到插件目录和 PATH；修复命令会创建新的可信指针。
+            return null;
+        }
+    }
+
+    private async Task<(bool IsValid, string? Version)> ProbeAsync(string path, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return (false, null);
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = path,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+            startInfo.ArgumentList.Add("-version");
+
+            using var process = _processFactory.Start(startInfo);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromSeconds(5));
+            var stdout = process.ReadStandardOutputAsync(timeout.Token);
+            var stderr = process.ReadStandardErrorAsync(timeout.Token);
+            try
+            {
+                await process.WaitForExitAsync(timeout.Token);
+                await Task.WhenAll(stdout, stderr);
+                var text = await stdout;
+                if (process.ExitCode != 0 || !text.Contains("ffmpeg version", StringComparison.OrdinalIgnoreCase))
+                    return (false, null);
+                var firstLine = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                var version = firstLine?.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(2).FirstOrDefault();
+                return (true, version);
+            }
+            catch (OperationCanceledException)
+            {
+                TryKill(process);
+                return (false, null);
+            }
+        }
+        catch
+        {
+            return (false, null);
         }
     }
 
@@ -180,41 +242,30 @@ public sealed class FfmpegService : IFfmpegService
     {
         try
         {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-            }
+            if (!process.HasExited) process.Kill(entireProcessTree: true);
         }
         catch
         {
-            // 进程可能已在检查与 Kill 之间退出。
+            // 进程可能已在状态检查和 Kill 之间退出。
         }
     }
 
     private static void DeleteIncompleteOutput(string outputPath)
     {
-        try
-        {
-            if (File.Exists(outputPath))
-            {
-                File.Delete(outputPath);
-            }
-        }
-        catch
-        {
-            // 原始合并错误优先。
-        }
+        try { if (File.Exists(outputPath)) File.Delete(outputPath); }
+        catch { /* 原始合并错误优先，清理失败由日志诊断。 */ }
     }
 
     private static async Task DrainOutputAsync(params Task<string>[] outputTasks)
     {
-        try
-        {
-            await Task.WhenAll(outputTasks);
-        }
-        catch
-        {
-            // 原始进程错误或取消优先。
-        }
+        try { await Task.WhenAll(outputTasks); }
+        catch { /* 原始进程错误或取消优先。 */ }
     }
 }
+
+/// <summary>托管安装活动指针；只保存依赖根目录下的相对路径，禁止写入任意绝对路径。</summary>
+public sealed record FfmpegInstallPointer(
+    string Version,
+    string RelativeExecutablePath,
+    string PackageSha256,
+    DateTimeOffset ActivatedAt);

@@ -18,9 +18,34 @@
                                FontSize="11"
                                Foreground="{DynamicResource AppSecondaryTextBrush}"/>
 
+                    <TextBlock FontSize="10"
+                               Text="{Binding FfmpegPath}"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding FfmpegPath}"/>
+
+                    <TextBlock FontSize="10"
+                               Foreground="{DynamicResource AppSecondaryTextBrush}">
+                        <Run Text="来源："/><Run Text="{Binding FfmpegSource}"/>
+                        <Run Text="　版本："/><Run Text="{Binding FfmpegVersion}"/>
+                    </TextBlock>
+
+                    <ProgressBar Minimum="0" Maximum="100"
+                                 Value="{Binding FfmpegInstallProgress}"
+                                 IsVisible="{Binding IsInstallingFfmpeg}"
+                                 Height="6"/>
+
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Button Content="浏览..."
+                        <Button Content="安装/修复内置版本"
+                                Command="{Binding InstallOrRepairFfmpegCommand}"
+                                IsEnabled="{Binding !IsInstallingFfmpeg}"
+                                Padding="8,3" FontSize="11"/>
+                        <Button Content="重新检测"
+                                Command="{Binding RedetectFfmpegCommand}"
+                                IsEnabled="{Binding !IsInstallingFfmpeg}"
+                                Padding="8,3" FontSize="11"/>
+                        <Button Content="选择自定义路径"
                                 Command="{Binding BrowseFfmpegCommand}"
+                                IsEnabled="{Binding !IsInstallingFfmpeg}"
                                 Padding="8,3"
                                 FontSize="11"/>
                     </StackPanel>

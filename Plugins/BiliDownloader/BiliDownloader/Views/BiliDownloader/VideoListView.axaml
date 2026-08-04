@@ -157,11 +157,16 @@
                            Text="{Binding TotalProgress, StringFormat='总进度 {0:F1}%'}"
                            Classes="bili-doc-caption"
                            VerticalAlignment="Center" />
-                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                            Text="{Binding PreflightSummary}"
                            Classes="bili-doc-caption"
                            Foreground="{DynamicResource AppWarningBrush}"
                            IsVisible="{Binding PreflightSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <Button Grid.Row="1" Grid.Column="2"
+                        Content="{Binding BlockingActionLabel}"
+                        Command="{Binding ExecuteBlockingActionCommand}"
+                        IsVisible="{Binding HasBlockingAction}"
+                        Classes="bili-doc-button"/>
                 <TextBlock Grid.Row="2" Grid.Column="0"
                            Text="{Binding SelectionSummaryText}"
                            Classes="bili-doc-caption"

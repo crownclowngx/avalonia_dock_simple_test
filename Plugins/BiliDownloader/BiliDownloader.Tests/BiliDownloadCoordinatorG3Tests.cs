@@ -218,7 +218,7 @@ public sealed class BiliDownloadCoordinatorG3Tests
         Assert.Equal(("cdn", true), DownloadErrorClassifier.Classify(new DownloadProtocolException("x")));
         Assert.Equal(("network", true), DownloadErrorClassifier.Classify(new HttpRequestException("x")));
         Assert.Equal(("network", true), DownloadErrorClassifier.Classify(new TaskCanceledException()));
-        Assert.Equal(("disk", false), DownloadErrorClassifier.Classify(new UnauthorizedAccessException()));
+        Assert.Equal(("directory", false), DownloadErrorClassifier.Classify(new UnauthorizedAccessException()));
         Assert.Equal(("ffmpeg", false), DownloadErrorClassifier.Classify(new Exception("ffmpeg error")));
         Assert.Equal(("disk", false), DownloadErrorClassifier.Classify(new IOException("x")));
         Assert.Equal(("unknown", false), DownloadErrorClassifier.Classify(new Exception("random")));

@@ -278,7 +278,7 @@ public sealed class BiliDownloadCoordinatorTests
     }
 
     [Fact]
-    public async Task 失败重试清零断点而中断恢复保留断点()
+    public async Task 失败与中断重试都保留可信断点_只有重新开始才清零()
     {
         var repository = new InMemoryDownloadTaskRepository();
         repository.Seed(
@@ -312,7 +312,7 @@ public sealed class BiliDownloadCoordinatorTests
         await coordinator.RetryTaskAsync(Find(repository, "interrupted-resume"));
         await AsyncTest.EventuallyAsync(() => snapshots.Count == 2);
 
-        Assert.Equal((0d, null, 0L, 0L), snapshots["failed-reset"]);
+        Assert.Equal((42d, null, 100L, 200L), snapshots["failed-reset"]);
         Assert.Equal((55d, null, 300L, 0L), snapshots["interrupted-resume"]);
         await coordinator.ShutdownAsync();
     }

@@ -9,6 +9,10 @@ public interface IBiliDataPaths
     string DataDirectory { get; }
     string LogDirectory { get; }
     string TempDirectory { get; }
+    /// <summary>托管 ffmpeg 版本、活动指针和安装元数据所在的依赖根目录。</summary>
+    string FfmpegDependencyDirectory { get; }
+    /// <summary>原子切换的活动版本指针文件；运行时定位器只信任该文件指向的相对路径。</summary>
+    string FfmpegCurrentPointerPath { get; }
     string DownloadTaskDatabasePath { get; }
     string CredentialDatabasePath { get; }
     string CredentialKeyPath { get; }
@@ -60,11 +64,15 @@ public sealed class BiliDataPaths : IBiliDataPaths
         CredentialDatabasePath = Path.Combine(DataDirectory, "credentials.db");
         CredentialKeyPath = Path.Combine(DataDirectory, "credential.key");
         StorageEpochMarkerPath = Path.Combine(DataDirectory, "storage_epoch_v2");
+        FfmpegDependencyDirectory = Path.Combine(DataDirectory, "dependencies", "ffmpeg");
+        FfmpegCurrentPointerPath = Path.Combine(FfmpegDependencyDirectory, "current.json");
     }
 
     public string DataDirectory { get; }
     public string LogDirectory { get; }
     public string TempDirectory { get; }
+    public string FfmpegDependencyDirectory { get; }
+    public string FfmpegCurrentPointerPath { get; }
     public string DownloadTaskDatabasePath { get; }
     public string CredentialDatabasePath { get; }
     public string CredentialKeyPath { get; }

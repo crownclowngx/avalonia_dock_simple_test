@@ -296,6 +296,14 @@
                                                 <MenuItem Header="打开位置"
                                                           Command="{Binding #Root.((vm:SchedulerTaskListViewModel)DataContext).OpenFileLocationCommand}"
                                                           CommandParameter="{Binding Record}" />
+                                                <MenuItem Header="{Binding PrimaryFailureAction.Label}"
+                                                          IsVisible="{Binding HasFailureAction}"
+                                                          Command="{Binding #Root.((vm:SchedulerTaskListViewModel)DataContext).ExecuteFailureActionCommand}"
+                                                          CommandParameter="{Binding PrimaryFailureActionRequest}" />
+                                                <MenuItem Header="{Binding SecondaryFailureAction.Label}"
+                                                          IsVisible="{Binding HasSecondaryFailureAction}"
+                                                          Command="{Binding #Root.((vm:SchedulerTaskListViewModel)DataContext).ExecuteFailureActionCommand}"
+                                                          CommandParameter="{Binding SecondaryFailureActionRequest}" />
                                                 <MenuItem Header="删除"
                                                           Command="{Binding #Root.((vm:SchedulerTaskListViewModel)DataContext).DeleteTaskCommand}"
                                                           CommandParameter="{Binding Record}" />
@@ -370,10 +378,21 @@
 
                                 <!-- 错误信息 -->
                                 <TextBlock Text="{Binding ErrorMessage}"
-                                           Foreground="Red"
+                                           Foreground="{DynamicResource AppErrorBrush}"
                                            FontSize="10"
                                            TextWrapping="Wrap"
                                            IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <WrapPanel IsVisible="{Binding HasFailureAction}" Orientation="Horizontal">
+                                    <Button Content="{Binding PrimaryFailureAction.Label}"
+                                            Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).ExecuteFailureActionCommand}"
+                                            CommandParameter="{Binding PrimaryFailureActionRequest}"
+                                            Padding="8,3" FontSize="10" Margin="0,3,6,0"/>
+                                    <Button Content="{Binding SecondaryFailureAction.Label}"
+                                            IsVisible="{Binding HasSecondaryFailureAction}"
+                                            Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).ExecuteFailureActionCommand}"
+                                            CommandParameter="{Binding SecondaryFailureActionRequest}"
+                                            Padding="8,3" FontSize="10" Margin="0,3,0,0"/>
+                                </WrapPanel>
                             </StackPanel>
                         </DockPanel>
                     </Border>

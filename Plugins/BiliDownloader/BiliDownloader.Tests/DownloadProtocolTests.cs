@@ -425,7 +425,7 @@ public sealed class DownloadProtocolTests
         };
 
         Assert.Equal(fake, ffmpeg.ResolveFfmpegPath());
-        Assert.True(ffmpeg.IsReady);
+        Assert.False(ffmpeg.IsReady);
         Assert.False(await ffmpeg.ValidatePathAsync(fake));
         Assert.False(await ffmpeg.ValidatePathAsync(
             Path.Combine(paths.RootDirectory, "missing.exe")));
@@ -439,11 +439,13 @@ public sealed class DownloadProtocolTests
         var executable = Path.Combine(paths.RootDirectory, "ffmpeg.exe");
         await File.WriteAllTextAsync(executable, "marker");
         var processFactory = new FakeFfmpegProcessFactory();
+        processFactory.Process.StandardOutput = "ffmpeg version test";
         var ffmpeg = new FfmpegService(processFactory) { CustomPath = executable };
         var video = Path.Combine(paths.RootDirectory, "video with space.tmp");
         var audio = Path.Combine(paths.RootDirectory, "audio.tmp");
         var output = Path.Combine(paths.RootDirectory, "output.mp4");
 
+        Assert.True((await ffmpeg.DetectAsync()).IsReady);
         await ffmpeg.MergeAsync(video, audio, output);
 
         Assert.Equal(executable, processFactory.StartInfo?.FileName);
@@ -465,8 +467,11 @@ public sealed class DownloadProtocolTests
         await File.WriteAllTextAsync(executable, "marker");
         await File.WriteAllTextAsync(output, "partial");
         var processFactory = new FakeFfmpegProcessFactory();
-        processFactory.Process.BlockUntilCancelled = true;
+        processFactory.Process.StandardOutput = "ffmpeg version test";
         var ffmpeg = new FfmpegService(processFactory) { CustomPath = executable };
+        Assert.True((await ffmpeg.DetectAsync()).IsReady);
+        processFactory.Process.HasExited = false;
+        processFactory.Process.BlockUntilCancelled = true;
         using var cancellation = new CancellationTokenSource();
 
         var mergeTask = ffmpeg.MergeAsync("video.tmp", "audio.tmp", output, cancellation.Token);

@@ -29,6 +29,8 @@ internal sealed class TestDataPaths : IBiliDataPaths, IDisposable
         CredentialDatabasePath = Path.Combine(RootDirectory, "credentials.db");
         CredentialKeyPath = Path.Combine(RootDirectory, "credential.key");
         StorageEpochMarkerPath = Path.Combine(RootDirectory, "storage_epoch_v2");
+        FfmpegDependencyDirectory = Path.Combine(RootDirectory, "dependencies", "ffmpeg");
+        FfmpegCurrentPointerPath = Path.Combine(FfmpegDependencyDirectory, "current.json");
         ResetDirectories = [RootDirectory];
     }
 
@@ -40,6 +42,8 @@ internal sealed class TestDataPaths : IBiliDataPaths, IDisposable
     public string CredentialDatabasePath { get; }
     public string CredentialKeyPath { get; }
     public string StorageEpochMarkerPath { get; }
+    public string FfmpegDependencyDirectory { get; }
+    public string FfmpegCurrentPointerPath { get; }
     public IReadOnlyList<string> ResetDirectories { get; }
 
     public void Dispose()
@@ -148,6 +152,8 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
     public int MaxConcurrentCalls { get; private set; }
     public Exception? InitializeException { get; set; }
     public Exception? InsertException { get; set; }
+    /// <summary>控制合并重试的输出路径所有权结果，用于验证保留失效分支。</summary>
+    public bool OwnsOutputReservation { get; set; } = true;
 
     public List<string> CallLog { get; } = [];
 
@@ -431,6 +437,9 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
         return Task.CompletedTask;
     }
 
+    public Task<bool> OwnsOutputPathReservationAsync(string taskId, string outputPathKey)
+        => Task.FromResult(OwnsOutputReservation);
+
     private DownloadTaskRecord Find(string taskId)
         => _tasks.Single(x => x.TaskId == taskId);
 }
@@ -609,6 +618,16 @@ internal sealed class FakeFfmpegService : IFfmpegService
     {
         ct.ThrowIfCancellationRequested();
         return Task.FromResult(File.Exists(path));
+    }
+
+    public Task<FfmpegRuntimeStatus> DetectAsync(CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        var path = ResolveFfmpegPath();
+        var ready = ReadyOverride ?? path is not null;
+        return Task.FromResult(ready
+            ? new FfmpegRuntimeStatus(true, path ?? "fake-ffmpeg.exe", "test", FfmpegRuntimeSource.Custom, "ffmpeg test 已就绪")
+            : new FfmpegRuntimeStatus(false, null, null, FfmpegRuntimeSource.None, "未找到可用的 ffmpeg"));
     }
 
     public Task MergeAsync(

@@ -60,10 +60,11 @@ public partial class VideoListViewModel : ObservableObject
     private readonly Func<SubmitContext> _getSubmitContext;
     private readonly IMessengerService? _messengerService;
     private readonly Action<string> _onStatusMessage;
-    private readonly IFfmpegService _ffmpegService;
+    private readonly IFfmpegRuntimeLocator _ffmpegService;
     private readonly Action? _onConfigurationBlocked;
     private readonly IDownloadSubmissionService? _submissionService;
     private readonly IUserPromptService? _promptService;
+    private readonly Func<string, Task>? _onPreflightAction;
     private bool _isBulkSelectionUpdate;
 
     public ObservableCollection<BiliVideoItem> VideoItems { get; } = new();
@@ -86,11 +87,20 @@ public partial class VideoListViewModel : ObservableObject
     [ObservableProperty]
     private string _preflightSummary = "";
 
+    [ObservableProperty]
+    private string _blockingActionCode = "";
+
+    [ObservableProperty]
+    private string _blockingActionLabel = "";
+
+    public bool HasBlockingAction => !string.IsNullOrWhiteSpace(BlockingActionCode);
+
     public RenamePanelViewModel RenamePanel { get; }
 
     public IRelayCommand SelectAllCommand { get; }
     public IRelayCommand DeselectAllCommand { get; }
     public IAsyncRelayCommand SubmitDownloadCommand { get; }
+    public IAsyncRelayCommand ExecuteBlockingActionCommand { get; }
     public IRelayCommand OpenOutputDirCommand { get; }
 
     /// <summary>
@@ -103,10 +113,11 @@ public partial class VideoListViewModel : ObservableObject
         Func<SubmitContext> getSubmitContext,
         IMessengerService? messengerService,
         Action<string> onStatusMessage,
-        IFfmpegService ffmpegService,
+        IFfmpegRuntimeLocator ffmpegService,
         Action? onConfigurationBlocked = null,
         IDownloadSubmissionService? submissionService = null,
-        IUserPromptService? promptService = null)
+        IUserPromptService? promptService = null,
+        Func<string, Task>? onPreflightAction = null)
     {
         _getSubmitContext = getSubmitContext;
         _messengerService = messengerService;
@@ -115,10 +126,12 @@ public partial class VideoListViewModel : ObservableObject
         _onConfigurationBlocked = onConfigurationBlocked;
         _submissionService = submissionService;
         _promptService = promptService;
+        _onPreflightAction = onPreflightAction;
 
         SelectAllCommand = new RelayCommand(() => SetAllSelected(true));
         DeselectAllCommand = new RelayCommand(() => SetAllSelected(false));
         SubmitDownloadCommand = new AsyncRelayCommand(SubmitDownloadAsync);
+        ExecuteBlockingActionCommand = new AsyncRelayCommand(ExecuteBlockingActionAsync);
         OpenOutputDirCommand = new RelayCommand(OpenOutputDir);
 
         RenamePanel = new RenamePanelViewModel(
@@ -361,6 +374,7 @@ public partial class VideoListViewModel : ObservableObject
                     PreflightSummary = $"可提交 {report.ReadyCount}，跳过 {report.SkipCount}，警告 {report.WarningCount}，阻止 {report.BlockedCount}";
                     if (report.IsBlocked)
                     {
+                        SetBlockingAction(report);
                         _onConfigurationBlocked?.Invoke();
                         _onStatusMessage(PreflightSummary + "。请先处理阻止项。");
                         return;
@@ -380,6 +394,9 @@ public partial class VideoListViewModel : ObservableObject
                     _onStatusMessage(result?.Message ?? "输出目录持续变化，提交已取消。");
                     return;
                 }
+                BlockingActionCode = "";
+                BlockingActionLabel = "";
+                OnPropertyChanged(nameof(HasBlockingAction));
                 submittedIds = report!.Items.Where(item => item.ShouldSubmit)
                     .Select(item => item.Item.ItemId).ToHashSet();
                 _onStatusMessage(result.Message);
@@ -400,6 +417,30 @@ public partial class VideoListViewModel : ObservableObject
         {
             IsPreflighting = false;
         }
+    }
+
+    private async Task ExecuteBlockingActionAsync()
+    {
+        if (_onPreflightAction is null || string.IsNullOrWhiteSpace(BlockingActionCode)) return;
+        await _onPreflightAction(BlockingActionCode);
+    }
+
+    private void SetBlockingAction(SubmissionPreflightReport report)
+    {
+        var codes = report.GlobalIssues.Concat(report.Items.SelectMany(item => item.Issues))
+            .Where(issue => issue.Severity == PreflightIssueSeverity.Blocking)
+            .Select(issue => issue.Code)
+            .ToHashSet(StringComparer.Ordinal);
+        (BlockingActionCode, BlockingActionLabel) = codes.Contains("login")
+            ? ("login", "重新登录")
+            : codes.Contains("ffmpeg")
+                ? ("ffmpeg", "安装/修复 ffmpeg")
+                : codes.Contains("disk_insufficient")
+                    ? ("disk", "更换输出目录")
+                    : codes.Contains("output_empty") || codes.Contains("output_unwritable")
+                        ? ("directory", "选择输出目录")
+                        : ("", "");
+        OnPropertyChanged(nameof(HasBlockingAction));
     }
 
     #endregion

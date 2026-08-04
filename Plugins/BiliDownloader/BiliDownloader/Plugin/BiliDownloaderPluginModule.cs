@@ -34,7 +34,16 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IPresetRepository, PresetStore>(); // G5: 预设持久化
         services.AddSingleton<IDownloadPresetService, DownloadPresetService>();
         services.AddSingleton<IFfmpegProcessFactory, FfmpegProcessFactory>();
-        services.AddSingleton<IFfmpegService, FfmpegService>();
+        services.AddSingleton<FfmpegService>();
+        // 同一个本地适配器分别暴露定位与封装能力，消费者只依赖自己真正需要的接口。
+        // 保留 IFfmpegService 映射仅用于旧构造路径兼容，不再作为生产类的首选依赖。
+        services.AddSingleton<IFfmpegRuntimeLocator>(provider => provider.GetRequiredService<FfmpegService>());
+        services.AddSingleton<IMediaMuxer>(provider => provider.GetRequiredService<FfmpegService>());
+        services.AddSingleton<IFfmpegService>(provider => provider.GetRequiredService<FfmpegService>());
+        services.AddSingleton<IFfmpegPackageDownloader, HttpFfmpegPackageDownloader>();
+        services.AddSingleton<IFfmpegInstallPlatform, SystemFfmpegInstallPlatform>();
+        services.AddSingleton(FfmpegPackageManifest.GyanReleaseEssentials812);
+        services.AddSingleton<IFfmpegPackageInstaller, FfmpegPackageInstaller>();
         services.AddSingleton<IUserPromptService, AvaloniaUserPromptService>();
         services.AddSingleton<IConfirmationService>(provider => provider.GetRequiredService<IUserPromptService>());
         services.AddSingleton<IFileRevealService, FileRevealService>();
@@ -50,6 +59,7 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IBiliSessionApi>(provider =>
             provider.GetRequiredService<BiliLoginService>());
         services.AddSingleton<BiliLoginStateService>();
+        services.AddSingleton<ILoginDialogService, AvaloniaLoginDialogService>();
         services.AddSingleton<IBiliCredentialProvider, BiliCredentialProvider>();
 
         // 有网络和文件副作用的服务集中在 IDownloadTaskExecutor 之后，
@@ -68,9 +78,11 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IFileConflictStrategy, ResumeVerifiedConflictStrategy>();
         services.AddSingleton<IFileConflictStrategy, AutoNumberConflictStrategy>();
         services.AddSingleton<ISubmissionPreflightService, SubmissionPreflightService>();
+        services.AddSingleton<IDownloadFailurePresentationPolicy, DownloadFailurePresentationPolicy>();
 
         services.AddSingleton<BiliDownloadCoordinator>();
         services.AddSingleton<IDownloadSubmissionService, DownloadSubmissionService>();
+        services.AddSingleton<IDownloadFailureActionService, DownloadFailureActionService>();
         services.AddSingleton<BiliSchedulerToolViewModel>();
         services.AddTransient<BiliDownloaderViewModel>();
 
@@ -87,15 +99,21 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
     private readonly IBiliLocalStateInitializer _localStateInitializer;
     private readonly BiliLoginStateService _loginStateService;
     private readonly BiliDownloadCoordinator _coordinator;
+    private readonly ISettingsRepository _settings;
+    private readonly IFfmpegRuntimeLocator _ffmpeg;
 
     public BiliDownloaderPluginLifecycle(
         IBiliLocalStateInitializer localStateInitializer,
         BiliLoginStateService loginStateService,
-        BiliDownloadCoordinator coordinator)
+        BiliDownloadCoordinator coordinator,
+        ISettingsRepository settings,
+        IFfmpegRuntimeLocator ffmpeg)
     {
         _localStateInitializer = localStateInitializer;
         _loginStateService = loginStateService;
         _coordinator = coordinator;
+        _settings = settings;
+        _ffmpeg = ffmpeg;
     }
 
     public string PluginId => "BiliDownloader";
@@ -106,6 +124,11 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
     {
         cancellationToken.ThrowIfCancellationRequested();
         await _localStateInitializer.InitializeAsync(cancellationToken);
+        // 仅加载本地配置并执行 -version 探测，不下载任何内容。这样 Document 即使先于 Tool 打开，
+        // 提交预检也能观察到真实 ffmpeg 状态，而不是依赖某个设置视图曾经被激活。
+        await _settings.InitAsync();
+        _ffmpeg.CustomPath = await _settings.GetSettingAsync("ffmpeg_custom_path");
+        await _ffmpeg.DetectAsync(cancellationToken);
         await _loginStateService.RestoreSavedSessionAsync(cancellationToken);
         await _coordinator.InitializeAsync();
         _loginStateService.StartBackgroundValidation();

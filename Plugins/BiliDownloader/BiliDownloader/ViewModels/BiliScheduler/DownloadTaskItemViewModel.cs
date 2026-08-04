@@ -1,17 +1,25 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using BiliDownloader.Models;
+using BiliDownloader.Services.Download;
 
 namespace BiliDownloader.ViewModels.BiliScheduler;
 
-/// <summary>UI-only projection for a persisted download task.</summary>
+/// <summary>持久化下载任务的纯 UI 投影；不拥有任务状态，也不直接执行失败恢复动作。</summary>
 public partial class DownloadTaskItemViewModel : ObservableObject
 {
+    private readonly IDownloadFailurePresentationPolicy _failurePolicy;
     public DownloadTaskRecord Record { get; }
 
     [ObservableProperty]
     private bool _isSelected;
 
-    public DownloadTaskItemViewModel(DownloadTaskRecord record) => Record = record;
+    public DownloadTaskItemViewModel(
+        DownloadTaskRecord record,
+        IDownloadFailurePresentationPolicy? failurePolicy = null)
+    {
+        Record = record;
+        _failurePolicy = failurePolicy ?? new DownloadFailurePresentationPolicy();
+    }
 
     public string TaskId => Record.TaskId;
     public string ItemTitle => Record.ItemTitle;
@@ -30,16 +38,18 @@ public partial class DownloadTaskItemViewModel : ObservableObject
     public string FullOutputPath => !string.IsNullOrWhiteSpace(Record.OutputFilePath)
         ? Record.OutputFilePath
         : Record.FullOutputPath;
-    public string? ErrorMessage => Record.ErrorMessage;
-    public string ErrorActionHint => Record.ErrorType switch
-    {
-        "network" => "检查网络后重试",
-        "cdn" => "切换节点后重试",
-        "auth" => "重新登录后恢复",
-        "ffmpeg" => "检查 ffmpeg 设置",
-        "disk" => "检查磁盘空间和目录权限",
-        _ => string.IsNullOrWhiteSpace(Record.ErrorMessage) ? "" : "查看详细日志",
-    };
+    public string? ErrorMessage => string.IsNullOrWhiteSpace(Record.ErrorType)
+        ? Record.ErrorMessage
+        : FailurePresentation.UserMessage;
+    public DownloadFailurePresentation FailurePresentation => _failurePolicy.Resolve(Record.ErrorType);
+    public DownloadFailureAction PrimaryFailureAction => FailurePresentation.PrimaryAction;
+    public DownloadFailureAction? SecondaryFailureAction => FailurePresentation.SecondaryAction;
+    public DownloadFailureActionRequest PrimaryFailureActionRequest => new(Record, PrimaryFailureAction.Kind);
+    public DownloadFailureActionRequest? SecondaryFailureActionRequest => SecondaryFailureAction is null
+        ? null
+        : new(Record, SecondaryFailureAction.Kind);
+    public bool HasFailureAction => !string.IsNullOrWhiteSpace(Record.ErrorType);
+    public bool HasSecondaryFailureAction => SecondaryFailureAction is not null;
     public string SourceDocumentDisplay => !string.IsNullOrWhiteSpace(Record.SourceDocumentTitle)
         ? Record.SourceDocumentTitle
         : string.IsNullOrWhiteSpace(Record.DocumentId)
@@ -66,6 +76,11 @@ public partial class DownloadTaskItemViewModel : ObservableObject
         OnPropertyChanged(string.Empty);
     }
 }
+
+/// <summary>任务卡片命令参数，把任务事实与结构化行动一起传给应用服务。</summary>
+public sealed record DownloadFailureActionRequest(
+    DownloadTaskRecord Task,
+    DownloadFailureActionKind Action);
 
 public enum TaskDateRange
 {

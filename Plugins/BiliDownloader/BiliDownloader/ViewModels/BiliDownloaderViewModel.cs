@@ -104,16 +104,20 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         BiliLoginService loginService,
         BiliApiService apiService,
         IBiliCredentialProvider credentialProvider,
-        IFfmpegService ffmpegService,
+        IFfmpegRuntimeLocator ffmpegService,
         IPresetRepository? presetRepository = null,
         IDownloadSubmissionService? submissionService = null,
-        IUserPromptService? promptService = null)
+        IUserPromptService? promptService = null,
+        ILoginDialogService? loginDialogService = null,
+        IFfmpegPackageInstaller? ffmpegInstaller = null)
     {
         _messengerService = messengerService;
         _taskRepository = taskRepository;
 
         // 初始化子 ViewModel（通过回调通信）
-        LoginBar = new LoginBarViewModel(loginStateService, loginService);
+        LoginBar = loginDialogService is null
+            ? new LoginBarViewModel(loginStateService, loginService)
+            : new LoginBarViewModel(loginStateService, loginDialogService);
 
         VideoParse = new VideoParseViewModel(
             apiService,
@@ -159,7 +163,38 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             ffmpegService: ffmpegService,
             onConfigurationBlocked: ExpandDownloadSettings,
             submissionService: submissionService,
-            promptService: promptService);
+            promptService: promptService,
+            onPreflightAction: async code =>
+            {
+                switch (code)
+                {
+                    case "login":
+                        await LoginBar.EnsureLoggedInAsync();
+                        AppendLog(LoginBar.IsLoggedIn ? "登录已恢复，请重新提交。" : "登录未完成。");
+                        break;
+                    case "ffmpeg":
+                        if (ffmpegInstaller is null)
+                        {
+                            AppendLog("请在调度器工具中选择自定义 ffmpeg 路径。");
+                            break;
+                        }
+                        var installation = await ffmpegInstaller.InstallOrRepairAsync();
+                        AppendLog(installation.Message);
+                        break;
+                    case "directory":
+                    case "disk":
+                        var directory = promptService is null
+                            ? null
+                            : await promptService.PickFolderAsync(
+                                "选择新的输出目录", DownloadConfig.OutputDirectory);
+                        if (!string.IsNullOrWhiteSpace(directory))
+                        {
+                            DownloadConfig.OutputDirectory = directory;
+                            AppendLog("输出目录已更新，请重新提交。");
+                        }
+                        break;
+                }
+            });
         VideoList.SelectionOrTitleChanged += RefreshNamingPreview;
 
         RegisterMessengers();

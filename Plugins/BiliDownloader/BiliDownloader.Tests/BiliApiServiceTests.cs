@@ -1,5 +1,6 @@
 using BiliDownloader.Models;
 using BiliDownloader.Services.Api;
+using BiliDownloader.Services.Download;
 using Flurl.Http.Testing;
 
 namespace BiliDownloader.Tests;
@@ -273,7 +274,7 @@ public sealed class BiliApiServiceTests
             ConfigureWbiNav(http);
             http.ForCallsTo("*pgc/player/web/v2/playurl*")
                 .RespondWith("""{"code":-10403,"message":"vip"}""");
-            var ex = await Assert.ThrowsAsync<Exception>(() =>
+            var ex = await Assert.ThrowsAsync<MediaAuthorizationException>(() =>
                 new BiliApiService().GetDashResultAsync(
                     1, 2, 80, "", BiliMediaType.Bangumi, 3, 4));
             Assert.Contains("大会员", ex.Message, StringComparison.Ordinal);
@@ -285,7 +286,7 @@ public sealed class BiliApiServiceTests
             ConfigureWbiNav(http);
             http.ForCallsTo("*x/player/wbi/playurl*")
                 .RespondWith("""{"code":0,"data":{}}""");
-            var ex = await Assert.ThrowsAsync<Exception>(() =>
+            var ex = await Assert.ThrowsAsync<ResourceUnavailableException>(() =>
                 new BiliApiService().GetDashResultAsync(1, 2, 80, ""));
             Assert.Contains("DASH", ex.Message, StringComparison.Ordinal);
         }

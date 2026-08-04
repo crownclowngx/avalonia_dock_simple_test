@@ -617,6 +617,83 @@ public class DownloadTaskStore : IDownloadTaskRepository
         await transaction.CommitAsync();
     }
 
+    public async Task<bool> OwnsOutputPathReservationAsync(string taskId, string outputPathKey)
+    {
+        if (string.IsNullOrWhiteSpace(outputPathKey)) return false;
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(1)
+            FROM output_path_reservations
+            WHERE task_id = $task_id AND output_path_key = $output_path_key;
+            """;
+        command.Parameters.AddWithValue("$task_id", taskId);
+        command.Parameters.AddWithValue("$output_path_key", outputPathKey);
+        return Convert.ToInt64(await command.ExecuteScalarAsync()) == 1;
+    }
+
+    public async Task RelocateOutputAsync(
+        string taskId,
+        string outputDirectory,
+        string outputFilePath,
+        string outputPathKey)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
+
+        // 先删除旧保留、再插入新保留都位于同一事务；新路径冲突时事务回滚，旧保留仍然存在。
+        await using (var release = connection.CreateCommand())
+        {
+            release.Transaction = (SqliteTransaction)transaction;
+            release.CommandText = "DELETE FROM output_path_reservations WHERE task_id = $task_id;";
+            release.Parameters.AddWithValue("$task_id", taskId);
+            await release.ExecuteNonQueryAsync();
+        }
+        await using (var reserve = connection.CreateCommand())
+        {
+            reserve.Transaction = (SqliteTransaction)transaction;
+            reserve.CommandText = """
+                INSERT INTO output_path_reservations(output_path_key, task_id, reserved_at)
+                VALUES($output_path_key, $task_id, $reserved_at);
+                """;
+            reserve.Parameters.AddWithValue("$output_path_key", outputPathKey);
+            reserve.Parameters.AddWithValue("$task_id", taskId);
+            reserve.Parameters.AddWithValue("$reserved_at", ToStorageTime(DateTime.Now));
+            await reserve.ExecuteNonQueryAsync();
+        }
+        await using (var update = connection.CreateCommand())
+        {
+            update.Transaction = (SqliteTransaction)transaction;
+            update.CommandText = """
+                UPDATE download_tasks
+                SET output_directory = $output_directory,
+                    sub_folder = '',
+                    output_file_path = $output_file_path,
+                    output_path_key = $output_path_key,
+                    conflict_policy = $conflict_policy,
+                    overwrite_confirmed = 0,
+                    status = $status,
+                    error_message = NULL,
+                    error_type = NULL,
+                    is_retryable = 0,
+                    last_updated_at = $last_updated_at
+                WHERE task_id = $task_id;
+                """;
+            update.Parameters.AddWithValue("$task_id", taskId);
+            update.Parameters.AddWithValue("$output_directory", outputDirectory);
+            update.Parameters.AddWithValue("$output_file_path", outputFilePath);
+            update.Parameters.AddWithValue("$output_path_key", outputPathKey);
+            update.Parameters.AddWithValue("$conflict_policy", FileConflictPolicy.AutoNumber.ToString());
+            update.Parameters.AddWithValue("$status", DownloadTaskStatusMapper.ToStorageString(DownloadTaskStatus.Ready));
+            update.Parameters.AddWithValue("$last_updated_at", ToStorageTime(DateTime.Now));
+            if (await update.ExecuteNonQueryAsync() != 1)
+                throw new InvalidOperationException("待迁移任务不存在。");
+        }
+        await transaction.CommitAsync();
+    }
+
     /// <summary>
     /// 按 task_id 删除单条记录
     /// </summary>

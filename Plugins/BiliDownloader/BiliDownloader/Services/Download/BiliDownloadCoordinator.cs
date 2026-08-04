@@ -28,6 +28,7 @@ public sealed class BiliDownloadCoordinator
     private readonly IMessengerService _messengerService;
     private readonly IDownloadProgressTracker _tracker;
     private readonly IDownloadTaskExecutor _executor;
+    private readonly IMediaMergeRetryExecutor? _mergeRetryExecutor;
     private readonly IBiliDataPaths _paths;
     private readonly IBiliCredentialProvider _credentialProvider;
     private readonly IDownloadRecoveryService _recoveryService;
@@ -81,7 +82,8 @@ public sealed class BiliDownloadCoordinator
         IBiliDataPaths paths,
         IBiliCredentialProvider? credentialProvider = null,
         IDownloadRecoveryService? recoveryService = null,
-        ISubmissionPreflightService? preflightService = null)
+        ISubmissionPreflightService? preflightService = null,
+        IMediaMergeRetryExecutor? mergeRetryExecutor = null)
     {
         _repository = repository;
         _messengerService = messengerService;
@@ -91,6 +93,7 @@ public sealed class BiliDownloadCoordinator
         _credentialProvider = credentialProvider ?? new NullCredentialProvider();
         _recoveryService = recoveryService ?? new DownloadRecoveryService(repository);
         _preflightService = preflightService;
+        _mergeRetryExecutor = mergeRetryExecutor ?? executor as IMediaMergeRetryExecutor;
 
         // 注册监听：接收 Document 发来的下载任务提交消息
         _messengerService.Register<BiliDownloadCoordinator, SubmitDownloadTaskMessage>(
@@ -499,16 +502,11 @@ public sealed class BiliDownloadCoordinator
         await _commandLock.WaitAsync();
         try
         {
-            var wasFailed = statusEnum == DownloadTaskStatus.Failed;
-
-            if (wasFailed)
-            {
-                task.Progress = 0;
-                task.ErrorMessage = null;
-                task.VideoBytesDownloaded = 0;
-                task.AudioBytesDownloaded = 0;
-                await _repository.UpdateBytesAsync(task.TaskId, 0, 0);
-            }
+            // G7：普通重试必须保留经过下载器验证的断点。只有 RestartTaskAsync 才代表用户明确
+            // 选择“从零开始”并清理字节事实，避免网络/CDN 短暂失败导致重复下载大文件。
+            task.ErrorMessage = null;
+            task.ErrorType = null;
+            task.IsRetryable = false;
 
             task.Status = ToStorage(DownloadTaskStatus.Ready);
             await _repository.UpdateProgressAsync(task.TaskId, task.Progress, ToStorage(DownloadTaskStatus.Ready));
@@ -839,6 +837,7 @@ public sealed class BiliDownloadCoordinator
 
             var result = await _executor.ExecuteAsync(
                 task,
+                new DownloadExecutionCallbacks(
                 (info) =>
                 {
                     _tracker.OnProgressChanged(task, info);
@@ -848,6 +847,21 @@ public sealed class BiliDownloadCoordinator
                 {
                     _tracker.OnBytesChanged(task, videoBytes, audioBytes);
                 },
+                async checkpoint =>
+                {
+                    task.ExpectedVideoBytes = checkpoint.ExpectedVideoBytes;
+                    task.ExpectedAudioBytes = checkpoint.ExpectedAudioBytes;
+                    task.VideoIntegrityPassed = checkpoint.VideoIntegrityPassed;
+                    task.AudioIntegrityPassed = checkpoint.AudioIntegrityPassed;
+                    task.LastUpdatedAt = DateTime.Now;
+                    await _repository.UpdateIntegrityAsync(
+                        task.TaskId,
+                        checkpoint.ExpectedVideoBytes,
+                        checkpoint.ExpectedAudioBytes,
+                        checkpoint.VideoIntegrityPassed,
+                        checkpoint.AudioIntegrityPassed,
+                        task.LastUpdatedAt);
+                }),
                 context.Token);  // G2: 使用 per-task token 替代全局 ct
 
             if (!string.IsNullOrWhiteSpace(result.ExtrasResultSummary))
@@ -974,6 +988,243 @@ public sealed class BiliDownloadCoordinator
             // G2: 清理 per-task 上下文
             CleanupTaskContext(task.TaskId);
         }
+    }
+
+    /// <summary>
+    /// 仅重试已经下载并校验完成的媒体合并。该命令在开始前验证持久化检查点、临时文件长度和
+    /// 输出路径所有权；任一事实不可信时拒绝执行，而不是静默退化为重新下载。
+    /// </summary>
+    public async Task RetryMergeAsync(string taskId)
+    {
+        if (_mergeRetryExecutor is null)
+            throw new InvalidOperationException("当前下载执行器不支持仅重试合并。");
+
+        DownloadTaskRecord task;
+        TaskRuntimeContext context;
+        await _commandLock.WaitAsync();
+        try
+        {
+            task = (await _repository.GetAllAsync()).SingleOrDefault(item => item.TaskId == taskId)
+                ?? throw new InvalidOperationException("待重试合并的任务不存在。");
+            if (ParseStatus(task.Status) != DownloadTaskStatus.Failed
+                || task.ErrorType is not ("ffmpeg" or "merge"))
+                throw new InvalidOperationException("只有 ffmpeg 或合并失败任务可以仅重试合并。");
+
+            ValidateMergeCheckpoint(task);
+            if (!await _repository.OwnsOutputPathReservationAsync(task.TaskId, task.OutputPathKey))
+                throw new InvalidOperationException("任务已失去输出路径保留，请重新选择输出位置。");
+
+            lock (_schedulerLock)
+            {
+                if (_activeTasks.ContainsKey(taskId))
+                    throw new InvalidOperationException("任务正在执行，不能重复启动合并。");
+                context = TaskRuntimeContext.CreateLinked(
+                    taskId, _processingCts?.Token ?? CancellationToken.None);
+                _activeContexts[taskId] = context;
+            }
+
+            task.Status = ToStorage(DownloadTaskStatus.Merging);
+            task.ErrorMessage = null;
+            await _repository.UpdateStageProgressAsync(
+                task.TaskId, task.Progress, task.Status,
+                100, 100, Math.Max(1, task.MergeProgress), "");
+            _tracker.BroadcastStatusChanged(task);
+            TaskStatusChanged?.Invoke(task);
+        }
+        finally
+        {
+            _commandLock.Release();
+        }
+
+        var operation = ExecuteMergeRetryCoreAsync(task, context);
+        lock (_schedulerLock) _activeTasks[taskId] = operation;
+        try
+        {
+            await operation;
+        }
+        finally
+        {
+            lock (_schedulerLock)
+            {
+                _activeTasks.Remove(taskId);
+                _activeContexts.Remove(taskId);
+            }
+            context.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// 将失败或暂停任务迁移到用户选择的新目录并重新排队。新位置始终使用自动编号策略，
+    /// 因为旧路径的覆盖确认只授权旧文件，绝不能跨目录复用。
+    /// </summary>
+    public async Task RelocateTaskOutputAsync(string taskId, string newDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(newDirectory)) return;
+        await _commandLock.WaitAsync();
+        try
+        {
+            var task = (await _repository.GetAllAsync()).SingleOrDefault(item => item.TaskId == taskId)
+                ?? throw new InvalidOperationException("待迁移任务不存在。");
+            lock (_schedulerLock)
+            {
+                if (_activeTasks.ContainsKey(taskId))
+                    throw new InvalidOperationException("任务正在执行，不能更换输出目录。");
+            }
+
+            string directory;
+            try
+            {
+                directory = Path.GetFullPath(newDirectory);
+                Directory.CreateDirectory(directory);
+                var probe = Path.Combine(directory, $".bili-write-probe-{Guid.NewGuid():N}");
+                File.WriteAllBytes(probe, []);
+                File.Delete(probe);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                throw new OutputDirectoryException("所选输出目录无法创建或写入。", ex);
+            }
+
+            var baseName = !string.IsNullOrWhiteSpace(task.OutputFilePath)
+                ? Path.GetFileNameWithoutExtension(task.OutputFilePath)
+                : FileNameSanitizer.Sanitize(task.ItemTitle);
+            var existing = (await _repository.GetAllAsync())
+                .Where(item => item.TaskId != taskId && !string.IsNullOrWhiteSpace(item.OutputFilePath))
+                .Select(item => NormalizePathKey(item.OutputFilePath))
+                .ToHashSet(GetPathComparer());
+
+            string outputPath = "";
+            string outputKey = "";
+            for (var suffix = 0; suffix <= 9999; suffix++)
+            {
+                var fileName = suffix == 0 ? $"{baseName}.mp4" : $"{baseName} ({suffix}).mp4";
+                var candidate = Path.Combine(directory, fileName);
+                var key = NormalizePathKey(candidate);
+                if (!File.Exists(candidate) && !existing.Contains(key))
+                {
+                    outputPath = candidate;
+                    outputKey = key;
+                    break;
+                }
+            }
+            if (string.IsNullOrWhiteSpace(outputPath))
+                throw new OutputDirectoryException("新目录中没有可用的自动编号文件名。");
+
+            await _repository.RelocateOutputAsync(taskId, directory, outputPath, outputKey);
+            task.OutputDirectory = directory;
+            task.SubFolder = "";
+            task.OutputFilePath = outputPath;
+            task.OutputPathKey = outputKey;
+            task.ConflictPolicy = FileConflictPolicy.AutoNumber;
+            task.OverwriteConfirmed = false;
+            task.Status = ToStorage(DownloadTaskStatus.Ready);
+            task.ErrorMessage = null;
+            task.ErrorType = null;
+            task.IsRetryable = false;
+            _tracker.BroadcastStatusChanged(task);
+            TaskStatusChanged?.Invoke(task);
+            SchedulerStatusChanged?.Invoke($"已更换输出目录: {task.ItemTitle}");
+            StartProcessingInternal();
+        }
+        finally
+        {
+            _commandLock.Release();
+        }
+    }
+
+    private static string NormalizePathKey(string path)
+    {
+        var full = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return OperatingSystem.IsWindows() ? full.ToUpperInvariant() : full;
+    }
+
+    private static StringComparer GetPathComparer()
+        => OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
+    private async Task ExecuteMergeRetryCoreAsync(DownloadTaskRecord task, TaskRuntimeContext context)
+    {
+        try
+        {
+            var result = await _mergeRetryExecutor!.ExecuteMergeOnlyAsync(
+                task,
+                info =>
+                {
+                    _tracker.OnProgressChanged(task, info);
+                    TaskProgressChanged?.Invoke(task);
+                },
+                context.Token);
+            if (!string.IsNullOrWhiteSpace(result.ExtrasResultSummary))
+            {
+                task.ExtrasResultSummary = result.ExtrasResultSummary;
+                await _repository.UpdateExtrasResultAsync(task.TaskId, result.ExtrasResultSummary);
+            }
+            await _tracker.FlushAsync(task.TaskId);
+            await CompleteTaskAsync(task, result);
+            SchedulerStatusChanged?.Invoke($"已完成合并重试: {task.ItemTitle}");
+        }
+        catch (OperationCanceledException)
+        {
+            await _tracker.FlushAsync(task.TaskId);
+            task.Status = ToStorage(_isShuttingDown
+                ? DownloadTaskStatus.Interrupted
+                : context.IsPaused ? DownloadTaskStatus.Paused : DownloadTaskStatus.Canceled);
+            await _repository.UpdateProgressAsync(task.TaskId, task.Progress, task.Status);
+            _tracker.BroadcastStatusChanged(task);
+            TaskStatusChanged?.Invoke(task);
+        }
+        catch (Exception ex)
+        {
+            await _tracker.FlushAsync(task.TaskId);
+            var failure = DownloadErrorClassifier.ClassifyFailure(ex);
+            var technical = SensitiveDataSanitizer.Sanitize(ex.Message);
+            Log.Error($"任务 {task.TaskId} 合并重试失败: {technical}", ex);
+            task.Status = ToStorage(DownloadTaskStatus.Failed);
+            task.ErrorMessage = technical;
+            task.ErrorType = failure.StorageValue;
+            task.IsRetryable = failure.IsRetryable;
+            task.LastUpdatedAt = DateTime.Now;
+            await _repository.MarkFailedAsync(
+                task.TaskId, task.Progress, task.ErrorMessage,
+                task.ErrorType, task.IsRetryable, task.LastUpdatedAt);
+            _tracker.BroadcastStatusChanged(task);
+            TaskStatusChanged?.Invoke(task);
+        }
+    }
+
+    private static void ValidateMergeCheckpoint(DownloadTaskRecord task)
+    {
+        if (!task.VideoIntegrityPassed || !task.AudioIntegrityPassed
+            || task.ExpectedVideoBytes <= 0 || task.ExpectedAudioBytes <= 0)
+            throw new InvalidOperationException("缺少可信媒体检查点，请执行完整重试或重新开始。");
+        if (string.IsNullOrWhiteSpace(task.TempDirectory))
+            throw new InvalidOperationException("任务临时目录缺失，请执行完整重试或重新开始。");
+        var video = Path.Combine(task.TempDirectory, "video.tmp");
+        var audio = Path.Combine(task.TempDirectory, "audio.tmp");
+        if (!File.Exists(video) || new FileInfo(video).Length != task.ExpectedVideoBytes
+            || !File.Exists(audio) || new FileInfo(audio).Length != task.ExpectedAudioBytes)
+            throw new InvalidOperationException("临时媒体长度与检查点不一致，请执行完整重试或重新开始。");
+    }
+
+    private async Task CompleteTaskAsync(DownloadTaskRecord task, DownloadExecutionResult result)
+    {
+        var outputFilePath = result.OutputFilePath ?? "";
+        var completedAt = DateTime.Now;
+        await _repository.MarkCompletedAsync(
+            task.TaskId, outputFilePath, task.ExtrasResultSummary, completedAt);
+        task.Status = ToStorage(DownloadTaskStatus.Completed);
+        task.Progress = 100;
+        task.VideoProgress = 100;
+        task.AudioProgress = 100;
+        task.MergeProgress = 100;
+        task.SpeedText = "";
+        task.OutputFilePath = outputFilePath;
+        task.ErrorMessage = null;
+        task.ErrorType = null;
+        task.IsRetryable = false;
+        task.LastUpdatedAt = completedAt;
+        _tracker.BroadcastProgress(task);
+        _tracker.BroadcastStatusChanged(task);
+        TaskStatusChanged?.Invoke(task);
     }
 
     private void SignalQueueChanged() => _queueWakeups.Writer.TryWrite(true);

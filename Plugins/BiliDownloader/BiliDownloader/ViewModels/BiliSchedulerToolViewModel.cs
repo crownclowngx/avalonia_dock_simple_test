@@ -38,10 +38,13 @@ public partial class BiliSchedulerToolViewModel : Tool
         IDownloadTaskRepository taskStore,
         ISettingsRepository settingsStore,
         PluginLifecycleManager lifecycleManager,
-        IFfmpegService ffmpegService,
+        IFfmpegRuntimeLocator ffmpegService,
+        IFfmpegPackageInstaller? ffmpegInstaller = null,
         IConfirmationService? confirmationService = null,
         IFileRevealService? fileRevealService = null,
-        IUiDispatcher? uiDispatcher = null)
+        IUiDispatcher? uiDispatcher = null,
+        IDownloadFailureActionService? failureActionService = null,
+        IDownloadFailurePresentationPolicy? failurePolicy = null)
     {
         _coordinator = coordinator;
         _lifecycleManager = lifecycleManager;
@@ -50,9 +53,11 @@ public partial class BiliSchedulerToolViewModel : Tool
             onStatusMessage: msg => SchedulerStatus = msg,
             confirmationService: confirmationService,
             fileRevealService: fileRevealService,
-            uiDispatcher: uiDispatcher);
+            uiDispatcher: uiDispatcher,
+            failureActionService: failureActionService,
+            failurePolicy: failurePolicy);
 
-        Settings = new SchedulerSettingsViewModel(settingsStore, ffmpegService);
+        Settings = new SchedulerSettingsViewModel(settingsStore, ffmpegService, ffmpegInstaller);
 
         // 订阅 Coordinator 全局状态事件
         _coordinator.SchedulerStatusChanged += status => SchedulerStatus = status;
@@ -85,7 +90,8 @@ public partial class BiliSchedulerToolViewModel : Tool
             {
                 _settingsInitialized = true;
 
-                // 设置和本地 ffmpeg 路径只需初始化一次；这里只检查文件路径，不启动 ffmpeg 进程。
+                // 设置和本地 ffmpeg 路径只需初始化一次；这里只执行本地 `-version` 进程探测，
+                // 不访问网络，也不会隐式进入安装流程。
                 await Settings.LoadSettingsAsync();
                 _coordinator.SetMaxConcurrentDownloads(Settings.MaxConcurrentDownloads);
                 await Settings.CheckFfmpegAsync();

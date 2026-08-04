@@ -104,7 +104,7 @@ public sealed class DashMediaSizeEstimator : IMediaSizeEstimator
 public sealed class SubmissionPreflightService : ISubmissionPreflightService
 {
     private readonly IBiliCredentialProvider _credentials;
-    private readonly IFfmpegService _ffmpeg;
+    private readonly IFfmpegRuntimeLocator _ffmpeg;
     private readonly IDownloadTaskRepository _tasks;
     private readonly IMediaSizeEstimator _sizeEstimator;
     private readonly IStorageCapacityProvider _capacity;
@@ -112,7 +112,7 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
 
     public SubmissionPreflightService(
         IBiliCredentialProvider credentials,
-        IFfmpegService ffmpeg,
+        IFfmpegRuntimeLocator ffmpeg,
         IDownloadTaskRepository tasks,
         IMediaSizeEstimator sizeEstimator,
         IStorageCapacityProvider capacity,

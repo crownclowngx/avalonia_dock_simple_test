@@ -1,8 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BiliDownloader.Services.Auth;
-using BiliDownloader.Views.Login;
-using BiliDownloader.ViewModels.Login;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
 
@@ -12,7 +10,7 @@ namespace BiliDownloader.ViewModels.BiliDownloader;
 public partial class LoginBarViewModel : ObservableObject
 {
     private readonly BiliLoginStateService _loginStateService;
-    private readonly BiliLoginService _loginService;
+    private readonly ILoginDialogService _loginDialogService;
 
     [ObservableProperty]
     private bool _isLoggedIn;
@@ -29,9 +27,16 @@ public partial class LoginBarViewModel : ObservableObject
     public LoginBarViewModel(
         BiliLoginStateService loginStateService,
         BiliLoginService loginService)
+        : this(loginStateService, new AvaloniaLoginDialogService(loginStateService, loginService))
+    {
+    }
+
+    public LoginBarViewModel(
+        BiliLoginStateService loginStateService,
+        ILoginDialogService loginDialogService)
     {
         _loginStateService = loginStateService;
-        _loginService = loginService;
+        _loginDialogService = loginDialogService;
 
         LoginCommand = new AsyncRelayCommand(EnsureLoggedInAsync);
         LogoutCommand = new AsyncRelayCommand(LogoutAsync);
@@ -53,38 +58,15 @@ public partial class LoginBarViewModel : ObservableObject
         StatusMessage = _loginStateService.StatusMessage;
 
         if (IsLoggedIn) return;
-        await ShowLoginWindowAsync();
-    }
-
-    private async Task ShowLoginWindowAsync()
-    {
-        var vm = new LoginWindowViewModel(_loginService, _loginStateService);
-        var window = new LoginWindow { DataContext = vm };
-        var parentWindow = GetParentWindow();
-        if (parentWindow != null)
-            await window.ShowDialog(parentWindow);
-        else
-            window.Show();
+        await _loginDialogService.EnsureLoggedInAsync();
+        IsLoggedIn = _loginStateService.IsLoggedIn;
+        UserName = GetDisplayName(IsLoggedIn, _loginStateService.UserName);
+        StatusMessage = _loginStateService.StatusMessage;
     }
 
     private async Task LogoutAsync()
     {
         await _loginStateService.LogoutAsync();
-    }
-
-    private Avalonia.Controls.Window? GetParentWindow()
-    {
-        try
-        {
-            var app = Avalonia.Application.Current;
-            return app?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
-                ? desktop.MainWindow
-                : null;
-        }
-        catch
-        {
-            return null;
-        }
     }
 
     internal static string? GetDisplayName(bool isLoggedIn, string? userName)

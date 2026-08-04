@@ -21,6 +21,44 @@ public interface IDownloadTaskExecutor
         Action<DownloadProgressInfo> onProgress,
         Action<long, long> onBytesChanged,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 使用聚合回调执行任务。默认实现兼容 G0-G6 执行器；G7 生产执行器会覆盖此方法，
+    /// 在启动 ffmpeg 之前等待媒体检查点持久化完成，确保突然退出后仍可安全判断是否仅重试合并。
+    /// </summary>
+    Task<DownloadExecutionResult> ExecuteAsync(
+        DownloadTaskRecord task,
+        DownloadExecutionCallbacks callbacks,
+        CancellationToken cancellationToken)
+        => ExecuteAsync(task, callbacks.OnProgress, callbacks.OnBytesChanged, cancellationToken);
+}
+
+/// <summary>
+/// 下载执行回调集合。把同一执行上下文的通知收敛为一个参数，避免以后每增加一个阶段检查点
+/// 就破坏所有执行器签名；其中媒体检查点是可等待回调，执行器必须等它落库后才能启动合并。
+/// </summary>
+public sealed record DownloadExecutionCallbacks(
+    Action<DownloadProgressInfo> OnProgress,
+    Action<long, long> OnBytesChanged,
+    Func<MediaReadyCheckpoint, Task> OnMediaReadyAsync);
+
+/// <summary>视频和音频都通过完整性校验后的持久化事实。</summary>
+public sealed record MediaReadyCheckpoint(
+    long ExpectedVideoBytes,
+    long ExpectedAudioBytes,
+    bool VideoIntegrityPassed,
+    bool AudioIntegrityPassed);
+
+/// <summary>
+/// 仅重试合并阶段的窄执行边界。Coordinator 在调用前验证任务状态、临时文件和路径保留，
+/// 实现不得重新请求 DASH 或重新下载主媒体。
+/// </summary>
+public interface IMediaMergeRetryExecutor
+{
+    Task<DownloadExecutionResult> ExecuteMergeOnlyAsync(
+        DownloadTaskRecord task,
+        Action<DownloadProgressInfo> onProgress,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>

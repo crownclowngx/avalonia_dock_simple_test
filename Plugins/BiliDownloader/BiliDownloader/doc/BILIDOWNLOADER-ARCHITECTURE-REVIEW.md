@@ -263,7 +263,9 @@ flowchart TB
 
 **[已实现]** 把外部副作用集中在 `IDownloadTaskExecutor` 之后，使 Coordinator 可以使用内存仓储、假凭据和假执行器进行完全离线测试。参见 [`IDownloadTaskExecutor.cs`](../Services/Download/IDownloadTaskExecutor.cs) 和 [`BiliDownloaderModuleTests.cs`](../../BiliDownloader.Tests/BiliDownloaderModuleTests.cs)。
 
-**[已实现]** `FfmpegService` 已落实为实例级 `IFfmpegService`，并将进程创建、HTTP 客户端和下载计时/重试运行时纳入 DI；主下载与封面成功路径可完全离线验证。参见 [`FfmpegService.cs`](../Services/Infrastructure/FfmpegService.cs) 和 [`IFfmpegService.cs`](../Services/Infrastructure/IFfmpegService.cs)。
+**[已实现]** G7 将 ffmpeg 边界收窄为运行时定位、包安装和媒体合并三项职责；安装 Facade 使用固定供应链清单、安全解压、进程探测及原子活动指针，启动阶段只做本地探测。参见 [`FfmpegService.cs`](../Services/Infrastructure/FfmpegService.cs)、[`FfmpegPackageInstaller.cs`](../Services/Infrastructure/FfmpegPackageInstaller.cs) 和 [`G7-FFMPEG-ERROR-ACTION-ENTRY.md`](G7-FFMPEG-ERROR-ACTION-ENTRY.md)。
+
+**[已实现]** 媒体完成校验后、合并前由 Coordinator 持久化检查点；`IMediaMergeRetryExecutor` 能在不重新请求 DASH 和主媒体的前提下仅重试合并。持久化错误由统一展示策略映射为十类摘要与有限行动，UI 不再直接展示长技术异常。
 
 **[不成熟点]** `BiliDownloadTaskExecutor` 仍保留从旧任务 Cookie 回退的兼容路径；这是迁移代码，不应被当作目标设计。参见 [`BiliDownloadTaskExecutor.cs`](../Services/Download/BiliDownloadTaskExecutor.cs#L80)。
 
@@ -275,7 +277,7 @@ flowchart TB
 | EP、SS 番剧解析 | 已实现 | 按当前账号合法权限获取 |
 | 分集、质量、批量重命名 | 已实现 | 尚无完整命名模板体系 |
 | 字幕、弹幕、封面 | 已实现 | 已拆为 Extras Handler |
-| DASH 下载与 MP4 合并 | 已实现 | 依赖外部 ffmpeg |
+| DASH 下载与 MP4 合并 | 已实现 | 支持可信媒体检查点和仅合并重试 |
 | 多连接分块和 CDN 回退 | 已实现 | 仍需加强协议级完整性校验 |
 | SQLite 任务事实源 | 已实现 | 生命周期和全局投影基础已经形成 |
 | 宿主托管插件生命周期 | 已实现 | G0 核心成果 |
@@ -283,8 +285,8 @@ flowchart TB
 | Document/Tool/后台服务分层 | 部分成熟 | 核心方向正确，Document Scope 尚未统一 |
 | 状态机 | 部分成熟 | 枚举与映射已形成，若干状态缺完整命令闭环 |
 | 断点续传 | 部分成熟 | 已有分块文件基础，恢复校验仍需 G3 收口 |
-| 错误分类和行动入口 | 部分成熟 | 有错误字段，缺少完整可操作 UI |
-| ffmpeg 管理 | 部分成熟 | 可检测和自定义路径，缺少一键安装与修复 |
+| 错误分类和行动入口 | 已实现 | 十类错误在任务卡片、紧凑菜单和提交预检中提供结构化行动 |
+| ffmpeg 管理 | 已实现 | Windows x64 固定版本安装/修复、原子回滚、重新检测与自定义路径均已闭环 |
 | Cookie 安全 | 未成熟 | SQLite 明文、旧任务字段仍兼容，G1 必须优先 |
 | 单任务暂停/继续/取消 | 未完成 | G2 |
 | 批量操作、筛选和虚拟化 | 未完成 | G4 |
@@ -351,7 +353,7 @@ flowchart TB
 - G4：筛选、排序、虚拟化、多选和批量命令；
 - G5：下载预设、变量命名模板和 Document V2；
 - G6：文件冲突、磁盘空间和提交预检；
-- G7：ffmpeg 安装/修复与错误行动入口。
+- G7：ffmpeg 安装/修复与错误行动入口（已完成，详见 [`G7-FFMPEG-ERROR-ACTION-ENTRY.md`](G7-FFMPEG-ERROR-ACTION-ENTRY.md)）。
 
 ### G8：用真实验收结束 P0
 
@@ -361,7 +363,7 @@ flowchart TB
 
 ## 10. 测试现状与建议矩阵
 
-评审基线中 `BiliDownloader.Tests` 共有 7 项测试通过，覆盖：
+截至 G7 完成时，`BiliDownloader.Tests` 共有 384 项测试通过；其中 G7 独立测试覆盖可信安装、失败回滚、安全 ZIP、运行时探测、检查点、仅合并重试、十类错误行动和目录事务。早期评审基线的核心覆盖仍包括：
 
 - 模块服务生命周期和宿主消息服务复用；
 - Coordinator 初始化幂等；
@@ -383,7 +385,7 @@ flowchart TB
 | P1 | Document 多开、关闭后任务继续、重新打开后定向投影 |
 | P1 | Tool 隐藏/恢复不重复注册消息或创建 Coordinator |
 | P1 | 真实 SQLite schema 从旧版本迁移 |
-| P1 | ffmpeg 缺失、不可执行、合并失败和残留文件清理 |
+| 已覆盖 | ffmpeg 缺失、不可执行、供应链校验、合并失败和临时文件保留 |
 
 ## 11. 最终评价
 

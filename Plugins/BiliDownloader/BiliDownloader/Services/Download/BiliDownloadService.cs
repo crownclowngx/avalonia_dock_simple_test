@@ -14,19 +14,19 @@ public class BiliDownloadService : IDisposable
     private readonly HttpClient _httpClient;
     private readonly MultiConnectionDownloader _multiDownloader;
     private readonly IBiliDataPaths _paths;
-    private readonly IFfmpegService _ffmpegService;
+    private readonly IMediaMuxer _mediaMuxer;
     private readonly IStorageCapacityProvider _capacity;
 
     public BiliDownloadService(
         IBiliDataPaths paths,
-        IFfmpegService ffmpegService,
+        IMediaMuxer mediaMuxer,
         IBiliHttpClientFactory httpClientFactory,
         IDownloadRuntime runtime,
         IStorageCapacityProvider? capacity = null,
         int chunkCount = 4)
     {
         _paths = paths;
-        _ffmpegService = ffmpegService;
+        _mediaMuxer = mediaMuxer;
         _capacity = capacity ?? new SystemStorageCapacityProvider();
         _httpClient = httpClientFactory.CreateMediaClient();
         _multiDownloader = new MultiConnectionDownloader(_httpClient, runtime, chunkCount);
@@ -65,7 +65,8 @@ public class BiliDownloadService : IDisposable
         string cookieHeader,
         Action<DownloadProgressInfo> onProgress,
         Action<long, long>? onBytesUpdate,
-        CancellationToken ct)
+        CancellationToken ct,
+        Func<MediaReadyCheckpoint, Task>? onMediaReadyAsync = null)
     {
         // 确保临时目录和输出目录存在
         if (string.IsNullOrWhiteSpace(task.TempDirectory))
@@ -123,7 +124,7 @@ public class BiliDownloadService : IDisposable
         // 选择视频流：优先 AVC/H.264 (codecid=7)，选用户指定清晰度
         var videoStream = SelectVideoStream(dashResult.VideoStreams, task.QualityId);
         if (videoStream == null)
-            throw new Exception("未找到匹配的视频流");
+            throw new ResourceUnavailableException("未找到匹配的视频流。");
 
         // 选择音频流：优先按用户指定的音频 ID 选择，没有则回退最高码率
         var audioStream = (task.AudioQualityId > 0
@@ -131,7 +132,7 @@ public class BiliDownloadService : IDisposable
                 : null)
             ?? dashResult.AudioStreams.OrderByDescending(a => a.Bandwidth).FirstOrDefault();
         if (audioStream == null)
-            throw new Exception("未找到音频流");
+            throw new ResourceUnavailableException("未找到可用的音频流。");
 
         // 2. 下载视频流（多连接加速）
         var videoUrls = CdnUrlHelper.FilterAndSortUrls(videoStream.BaseUrl, videoStream.BackupUrls);
@@ -173,6 +174,17 @@ public class BiliDownloadService : IDisposable
         ReportProgress("audio");
         EnsureSufficientSpace(task, actualOutputDir);
 
+        // G7：检查点必须在启动 ffmpeg 前完成持久化。若此处写库失败，任务应失败并保留输入，
+        // 绝不能先合并后再补写事实，否则进程崩溃后无法证明临时媒体是否可信。
+        if (onMediaReadyAsync is not null)
+        {
+            await onMediaReadyAsync(new MediaReadyCheckpoint(
+                videoTransfer.ExpectedBytes,
+                audioTransfer.ExpectedBytes,
+                videoTransfer.IntegrityPassed,
+                audioTransfer.IntegrityPassed));
+        }
+
         // 4. ffmpeg 合并
         mergeProgress = 10;
         ReportProgress("merging");
@@ -206,6 +218,61 @@ public class BiliDownloadService : IDisposable
     }
 
     /// <summary>
+    /// 复用已经通过 Coordinator 校验的临时媒体，只执行合并和最终文件发布。
+    /// 本方法不持有 API 服务或 Cookie，因此从类型边界上保证不会重新获取 DASH 或下载主媒体。
+    /// </summary>
+    public async Task<string> MergeDownloadedMediaAsync(
+        DownloadTaskRecord task,
+        Action<DownloadProgressInfo> onProgress,
+        CancellationToken ct)
+    {
+        var videoTmp = Path.Combine(task.TempDirectory, "video.tmp");
+        var audioTmp = Path.Combine(task.TempDirectory, "audio.tmp");
+        var actualOutputDir = string.IsNullOrWhiteSpace(task.OutputFilePath)
+            ? (string.IsNullOrEmpty(task.SubFolder)
+                ? task.OutputDirectory
+                : Path.Combine(task.OutputDirectory, task.SubFolder))
+            : Path.GetDirectoryName(task.OutputFilePath) ?? task.OutputDirectory;
+        Directory.CreateDirectory(actualOutputDir);
+        var outputPath = string.IsNullOrWhiteSpace(task.OutputFilePath)
+            ? Path.Combine(actualOutputDir, FileNameSanitizer.Sanitize(task.ItemTitle) + ".mp4")
+            : task.OutputFilePath;
+        var stagingPath = outputPath + $".staging-{task.TaskId}";
+
+        EnsureSufficientSpace(task, actualOutputDir);
+        if (File.Exists(stagingPath)) File.Delete(stagingPath);
+        onProgress(new DownloadProgressInfo
+        {
+            Stage = "merging",
+            OverallProgress = 91,
+            VideoProgress = 100,
+            AudioProgress = 100,
+            MergeProgress = 10,
+        });
+        await MergeAsync(videoTmp, audioTmp, stagingPath, ct);
+        try
+        {
+            File.Move(stagingPath, outputPath,
+                overwrite: task.ConflictPolicy == FileConflictPolicy.Overwrite && task.OverwriteConfirmed);
+        }
+        catch (IOException) when (File.Exists(outputPath)
+            && task.ConflictPolicy != FileConflictPolicy.Overwrite)
+        {
+            throw new OutputConflictException(outputPath);
+        }
+        onProgress(new DownloadProgressInfo
+        {
+            Stage = "done",
+            OverallProgress = 100,
+            VideoProgress = 100,
+            AudioProgress = 100,
+            MergeProgress = 100,
+        });
+        CleanupVerifiedInputs(task.TempDirectory, videoTmp, audioTmp);
+        return outputPath;
+    }
+
+    /// <summary>
     /// HTTP 流式下载，支持断点续传（Range 请求），带速度计算
     /// </summary>
     /// <param name="url">下载 URL</param>
@@ -234,7 +301,7 @@ public class BiliDownloadService : IDisposable
     /// </summary>
     public async Task MergeAsync(string videoPath, string audioPath, string outputPath, CancellationToken ct = default)
     {
-        await _ffmpegService.MergeAsync(videoPath, audioPath, outputPath, ct);
+        await _mediaMuxer.MergeAsync(videoPath, audioPath, outputPath, ct);
     }
 
     /// <summary>
@@ -282,6 +349,20 @@ public class BiliDownloadService : IDisposable
             task.EstimatedRequiredBytes - task.VideoBytesDownloaded - task.AudioBytesDownloaded);
         if (available is long value && value < required)
             throw new InsufficientDiskSpaceException(required, value);
+    }
+
+    private static void CleanupVerifiedInputs(string tempDirectory, params string[] files)
+    {
+        try
+        {
+            foreach (var file in files) if (File.Exists(file)) File.Delete(file);
+            if (Directory.Exists(tempDirectory) && Directory.GetFiles(tempDirectory).Length == 0)
+                Directory.Delete(tempDirectory);
+        }
+        catch
+        {
+            // 成品已经原子发布，临时文件清理失败不能把成功任务回滚为失败。
+        }
     }
 
     private static string FormatBytes(long bytes)

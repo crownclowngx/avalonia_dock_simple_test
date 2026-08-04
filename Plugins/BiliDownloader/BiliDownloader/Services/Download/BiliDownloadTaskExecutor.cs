@@ -11,7 +11,7 @@ namespace BiliDownloader.Services.Download;
 /// 生产环境下载任务执行器，组合现有 DASH 解析、媒体下载、ffmpeg 合并和附加资源管线。
 /// 将这些有网络与文件副作用的能力集中在一个边界内，避免 Coordinator 直接创建具体服务。
 /// </summary>
-public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
+public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor, IMediaMergeRetryExecutor
 {
     private static readonly IPluginLogger Log = PluginLog.For<BiliDownloadTaskExecutor>();
 
@@ -38,15 +38,26 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
         Action<DownloadProgressInfo> onProgress,
         Action<long, long> onBytesChanged,
         CancellationToken cancellationToken)
+        => await ExecuteAsync(task, new DownloadExecutionCallbacks(
+            onProgress,
+            onBytesChanged,
+            _ => Task.CompletedTask), cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<DownloadExecutionResult> ExecuteAsync(
+        DownloadTaskRecord task,
+        DownloadExecutionCallbacks callbacks,
+        CancellationToken cancellationToken)
     {
         var cookieHeader = _credentialProvider.GetCookieHeader();
         var downloadResult = await _downloadService.DownloadItemAsync(
             task,
             _apiService,
             cookieHeader,
-            onProgress,
-            onBytesChanged,
-            cancellationToken);
+            callbacks.OnProgress,
+            callbacks.OnBytesChanged,
+            cancellationToken,
+            callbacks.OnMediaReadyAsync);
 
         var extrasSummary = task.ExtrasConfig == 0
             ? null
@@ -57,6 +68,24 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor
             extrasSummary,
             downloadResult.VideoTransfer,
             downloadResult.AudioTransfer);
+    }
+
+    /// <inheritdoc />
+    public async Task<DownloadExecutionResult> ExecuteMergeOnlyAsync(
+        DownloadTaskRecord task,
+        Action<DownloadProgressInfo> onProgress,
+        CancellationToken cancellationToken)
+    {
+        var outputPath = await _downloadService.MergeDownloadedMediaAsync(
+            task, onProgress, cancellationToken);
+
+        // 主媒体合并不需要登录；附加资源仍按原有“失败写摘要但不推翻主媒体”的策略执行。
+        // 这样仅合并重试不会因为字幕或封面网络问题再次破坏已经发布的 MP4。
+        var extrasSummary = task.ExtrasConfig == 0
+            ? null
+            : await ExecuteExtrasPipelineAsync(
+                task, _credentialProvider.GetCookieHeader(), cancellationToken);
+        return new DownloadExecutionResult(outputPath, extrasSummary);
     }
 
     /// <summary>

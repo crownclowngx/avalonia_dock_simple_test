@@ -13,7 +13,8 @@ namespace BiliDownloader.ViewModels.BiliScheduler;
 public partial class SchedulerSettingsViewModel : ObservableObject
 {
     private readonly ISettingsRepository _settingsStore;
-    private readonly IFfmpegService _ffmpegService;
+    private readonly IFfmpegRuntimeLocator _ffmpegService;
+    private readonly IFfmpegPackageInstaller? _ffmpegInstaller;
     private bool _settingsLoaded;
 
     [ObservableProperty]
@@ -24,6 +25,18 @@ public partial class SchedulerSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private string _ffmpegStatus = "检测中...";
+
+    [ObservableProperty]
+    private string _ffmpegVersion = "";
+
+    [ObservableProperty]
+    private string _ffmpegSource = "";
+
+    [ObservableProperty]
+    private bool _isInstallingFfmpeg;
+
+    [ObservableProperty]
+    private double _ffmpegInstallProgress;
 
     [ObservableProperty]
     private string _defaultOutputDirectory = "";
@@ -37,17 +50,25 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     public event Action<int>? MaxConcurrentDownloadsChanged;
 
     public IAsyncRelayCommand BrowseFfmpegCommand { get; }
+    public IAsyncRelayCommand RedetectFfmpegCommand { get; }
+    public IAsyncRelayCommand InstallOrRepairFfmpegCommand { get; }
     public IAsyncRelayCommand BrowseOutputDirCommand { get; }
 
     public SchedulerSettingsViewModel(
         ISettingsRepository settingsStore,
-        IFfmpegService ffmpegService)
+        IFfmpegRuntimeLocator ffmpegService,
+        IFfmpegPackageInstaller? ffmpegInstaller = null)
     {
         _settingsStore = settingsStore;
         _ffmpegService = ffmpegService;
+        _ffmpegInstaller = ffmpegInstaller;
 
         BrowseFfmpegCommand = new AsyncRelayCommand(BrowseFfmpegAsync);
+        RedetectFfmpegCommand = new AsyncRelayCommand(CheckFfmpegAsync);
+        InstallOrRepairFfmpegCommand = new AsyncRelayCommand(InstallOrRepairFfmpegAsync);
         BrowseOutputDirCommand = new AsyncRelayCommand(BrowseOutputDirAsync);
+        if (_ffmpegInstaller is not null)
+            _ffmpegInstaller.ProgressChanged += OnInstallProgressChanged;
 
         // 默认输出目录：程序根目录/视频下载
         var appDir = Path.GetDirectoryName(typeof(SchedulerSettingsViewModel).Assembly.Location) ?? "";
@@ -104,15 +125,54 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     /// </summary>
     public async Task CheckFfmpegAsync()
     {
-        await Task.Run(() =>
+        FfmpegStatus = "正在重新检测 ffmpeg…";
+        var status = await _ffmpegService.DetectAsync();
+        FfmpegReady = status.IsReady;
+        FfmpegPath = status.ExecutablePath ?? "";
+        FfmpegVersion = status.Version ?? "";
+        FfmpegSource = ToSourceText(status.Source);
+        FfmpegStatus = status.Message;
+    }
+
+    /// <summary>
+    /// 只有用户点击按钮才进入安装流程。该命令不会在加载设置或提交任务时被隐式调用，
+    /// 从而保持“启动不联网、安装有明确用户意图”的产品约束。
+    /// </summary>
+    private async Task InstallOrRepairFfmpegAsync()
+    {
+        if (_ffmpegInstaller is null)
         {
-            var path = _ffmpegService.ResolveFfmpegPath();
-            FfmpegReady = path != null;
-            FfmpegPath = path ?? "";
-            FfmpegStatus = FfmpegReady
-                ? $"ffmpeg 就绪: {path}"
-                : "ffmpeg 未找到，请将 ffmpeg.exe 放入工具目录或手动浏览选择";
-        });
+            FfmpegStatus = "当前构造路径未提供 ffmpeg 安装服务，请选择自定义路径。";
+            return;
+        }
+
+        try
+        {
+            IsInstallingFfmpeg = true;
+            FfmpegInstallProgress = 0;
+            var result = await _ffmpegInstaller.InstallOrRepairAsync();
+            FfmpegStatus = result.Message;
+            if (result.Success)
+            {
+                // 安装内置版本代表用户选择托管运行时，清空旧自定义配置防止重启后再次遮蔽它。
+                await _settingsStore.SetSettingAsync("ffmpeg_custom_path", "");
+                await CheckFfmpegAsync();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            FfmpegStatus = "ffmpeg 安装已取消，原有版本未改变。";
+        }
+        finally
+        {
+            IsInstallingFfmpeg = false;
+        }
+    }
+
+    private void OnInstallProgressChanged(FfmpegInstallProgress progress)
+    {
+        FfmpegInstallProgress = progress.Percentage;
+        FfmpegStatus = progress.Message;
     }
 
     /// <summary>
@@ -167,6 +227,15 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     }
 
     #endregion
+
+    private static string ToSourceText(FfmpegRuntimeSource source) => source switch
+    {
+        FfmpegRuntimeSource.Custom => "自定义路径",
+        FfmpegRuntimeSource.Managed => "内置托管版本",
+        FfmpegRuntimeSource.Plugin => "插件目录",
+        FfmpegRuntimeSource.Path => "系统 PATH",
+        _ => "未检测到",
+    };
 
     #region 输出目录管理
 
