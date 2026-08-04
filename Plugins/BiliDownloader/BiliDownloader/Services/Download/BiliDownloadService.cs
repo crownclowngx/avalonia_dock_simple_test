@@ -328,16 +328,6 @@ public class BiliDownloadService : IDisposable
     }
 
     /// <summary>
-    /// 文件名非法字符替换。
-    /// G5: 已迁移到 FileNameSanitizer.Sanitize，此方法保留为向后兼容转发。
-    /// </summary>
-    [Obsolete("使用 BiliDownloader.Services.Naming.FileNameSanitizer.Sanitize 替代")]
-    public static string SanitizeFileName(string name)
-    {
-        return Naming.FileNameSanitizer.Sanitize(name);
-    }
-
-    /// <summary>
     /// 使用预检估算进行执行阶段硬检查。未知估算不在这里伪装为确定值；下载器仍会让操作系统
     /// 报告真实写入错误。已下载断点字节会从需求中扣除，避免合法续传被重复按全量空间阻止。
     /// </summary>

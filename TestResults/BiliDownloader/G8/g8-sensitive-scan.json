@@ -1,0 +1,17 @@
+{
+  "SchemaVersion": 1,
+  "StartedAtUtc": "2026-08-04T12:58:07.8926581+00:00",
+  "CompletedAtUtc": "2026-08-04T12:58:07.9253838+00:00",
+  "Passed": true,
+  "Gates": [
+    {
+      "Name": "sensitive-evidence",
+      "Passed": true,
+      "Summary": "\u6570\u636E\u5E93\u3001\u65E5\u5FD7\u3001\u6587\u672C\u548C\u4E8C\u8FDB\u5236\u672A\u53D1\u73B0\u53EF\u590D\u7528\u654F\u611F\u503C\u3002",
+      "Metrics": {
+        "files": 24,
+        "issues": []
+      }
+    }
+  ]
+}

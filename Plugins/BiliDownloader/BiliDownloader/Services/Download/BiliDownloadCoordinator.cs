@@ -102,12 +102,9 @@ public sealed class BiliDownloadCoordinator
                 _ = coordinator.HandleSubmitMessageAsync(msg);
             });
 
-        // G2: 监听登录状态变更，登录成功时自动恢复 WaitingForLogin 任务
-        _messengerService.Register<BiliDownloadCoordinator, LoginStateChangedMessage>(
-            this, (coordinator, msg) =>
-            {
-                _ = coordinator.HandleLoginStateChangedAsync(msg);
-            });
+        // 登录状态消息不能转换任务状态。等待登录任务属于已经暂停的用户意图，
+        // 即使凭据重新可用，也必须由用户点击“恢复”后才允许重新进入调度队列。
+        // Coordinator 因此只监听明确的任务提交命令，不把环境事件当成执行授权。
     }
 
     /// <summary>未注入凭据提供者时的空实现（向后兼容旧构造调用）</summary>
@@ -1278,32 +1275,48 @@ public sealed class BiliDownloadCoordinator
     }
 
     /// <summary>
-    /// 恢复已暂停的任务。将状态改回 Ready 并唤醒队列重新调度。
+    /// 恢复已暂停或等待登录的任务。等待登录任务会在此处重新检查当前凭据，
+    /// 只有这次显式用户命令和有效登录态同时成立时，任务才会重新进入 Ready。
+    /// 状态必须先落库并通知 UI，最后才释放暂停门控或唤醒调度器，避免执行先于事实源。
     /// </summary>
     public async Task ResumeTaskAsync(string taskId)
     {
         await _commandLock.WaitAsync();
         try
         {
+            var task = (await _repository.GetAllAsync()).FirstOrDefault(t => t.TaskId == taskId);
+            if (task is null)
+            {
+                return;
+            }
+
+            var status = ParseStatus(task.Status);
+            if ((status is DownloadTaskStatus.Paused or DownloadTaskStatus.WaitingForLogin)
+                && !_credentialProvider.IsLoggedIn)
+            {
+                SchedulerStatusChanged?.Invoke($"任务仍需登录，未启动: {task.ItemTitle}");
+                return;
+            }
+            if (status is not (DownloadTaskStatus.Paused or DownloadTaskStatus.WaitingForLogin))
+            {
+                return;
+            }
+
+            task.Status = ToStorage(DownloadTaskStatus.Ready);
+            await _repository.UpdateProgressAsync(taskId, task.Progress, task.Status);
+            _tracker.BroadcastStatusChanged(task);
+            TaskStatusChanged?.Invoke(task);
+
+            // 活动暂停任务可能仍停在执行器的暂停门控中。事实源和 UI 已经观察到 Ready 后
+            // 才释放门控，确保恢复瞬间崩溃时 SQLite 仍能解释任务为何继续执行。
             TaskRuntimeContext? ctx;
             lock (_schedulerLock) { _activeContexts.TryGetValue(taskId, out ctx); }
-
-            if (ctx != null && ctx.IsPaused)
+            if (ctx?.IsPaused == true)
             {
                 ctx.Resume();
             }
-
-            var task = (await _repository.GetAllAsync()).FirstOrDefault(t => t.TaskId == taskId);
-            if (task != null && ParseStatus(task.Status) == DownloadTaskStatus.Paused)
-            {
-                task.Status = ToStorage(DownloadTaskStatus.Ready);
-                await _repository.UpdateProgressAsync(taskId, task.Progress, task.Status);
-                _tracker.BroadcastStatusChanged(task);
-                TaskStatusChanged?.Invoke(task);
-            }
-
             StartProcessingInternal();
-            SchedulerStatusChanged?.Invoke($"已恢复任务: {task?.ItemTitle ?? taskId}");
+            SchedulerStatusChanged?.Invoke($"已恢复任务: {task.ItemTitle}");
         }
         finally { _commandLock.Release(); }
     }
@@ -1413,12 +1426,16 @@ public sealed class BiliDownloadCoordinator
             await PauseTaskAsync(id);
     }
 
-    /// <summary>恢复所有暂停任务</summary>
+    /// <summary>
+    /// 显式恢复所有暂停或等待登录任务。方法名为兼容既有调用保留；实际筛选语义与
+    /// 单项恢复一致，每一项仍会独立复核当前凭据，不能因批量命令绕过授权门禁。
+    /// </summary>
     public async Task ResumeAllPausedAsync()
     {
         var allTasks = await _repository.GetAllAsync();
-        var paused = allTasks.Where(t => ParseStatus(t.Status) == DownloadTaskStatus.Paused).ToList();
-        foreach (var t in paused)
+        var resumable = allTasks.Where(t => ParseStatus(t.Status)
+            is DownloadTaskStatus.Paused or DownloadTaskStatus.WaitingForLogin).ToList();
+        foreach (var t in resumable)
             await ResumeTaskAsync(t.TaskId);
     }
 
@@ -1443,40 +1460,6 @@ public sealed class BiliDownloadCoordinator
         }).ToList();
         foreach (var t in stalled)
             await RestartTaskAsync(t.TaskId);
-    }
-
-    /// <summary>
-    /// G2: 登录状态变更处理。登录成功时自动恢复所有 WaitingForLogin 任务。
-    /// </summary>
-    private async Task HandleLoginStateChangedAsync(LoginStateChangedMessage msg)
-    {
-        if (!msg.IsLoggedIn) return;
-
-        try
-        {
-            var allTasks = await _repository.GetAllAsync();
-            var waitingTasks = allTasks
-                .Where(t => ParseStatus(t.Status) == DownloadTaskStatus.WaitingForLogin)
-                .ToList();
-
-            foreach (var task in waitingTasks)
-            {
-                task.Status = ToStorage(DownloadTaskStatus.Ready);
-                await _repository.UpdateProgressAsync(task.TaskId, task.Progress, task.Status);
-                _tracker.BroadcastStatusChanged(task);
-                TaskStatusChanged?.Invoke(task);
-            }
-
-            if (waitingTasks.Count > 0)
-            {
-                SchedulerStatusChanged?.Invoke($"登录成功，{waitingTasks.Count} 个等待登录的任务已恢复");
-                StartProcessingInternal();
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"处理登录状态变更失败: {ex.Message}", ex);
-        }
     }
 
     /// <summary>

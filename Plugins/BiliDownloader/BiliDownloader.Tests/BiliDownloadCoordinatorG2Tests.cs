@@ -464,7 +464,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
     }
 
     [Fact]
-    public async Task 登录成功后WaitingForLogin任务自动恢复()
+    public async Task 登录成功消息不会自动恢复_显式命令后才执行()
     {
         var repository = new InMemoryDownloadTaskRepository();
         var executor = new FakeDownloadTaskExecutor();
@@ -477,12 +477,50 @@ public sealed class BiliDownloadCoordinatorG2Tests
         await WaitUntilAsync(() =>
             repository.Tasks.Single(x => x.TaskId == "t1").Status == "waiting_for_login");
 
-        // 模拟登录成功
+        // 登录成功只改变凭据可用性；环境事件本身不代表用户同意恢复历史任务。
         credential.IsLoggedIn = true;
         messenger.Send(new LoginStateChangedMessage(true, "user", null));
+        await Task.Delay(100);
+
+        Assert.Equal("waiting_for_login", repository.Tasks.Single(x => x.TaskId == "t1").Status);
+        Assert.Equal(0, executor.ExecuteCount);
+
+        await coordinator.ResumeTaskAsync("t1");
 
         await WaitUntilAsync(() =>
             repository.Tasks.Single(x => x.TaskId == "t1").Status == "done");
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task 未登录时显式恢复仍保持WaitingForLogin且不访问执行器()
+    {
+        var repository = new InMemoryDownloadTaskRepository();
+        var executor = new FakeDownloadTaskExecutor();
+        var credential = new FakeCredentialProvider { IsLoggedIn = false };
+        var coordinator = CreateCoordinator(repository, executor, credential);
+        repository.Seed(Record("t1", DownloadTaskStatus.WaitingForLogin));
+
+        await coordinator.ResumeTaskAsync("t1");
+
+        Assert.Equal("waiting_for_login", repository.Tasks.Single(x => x.TaskId == "t1").Status);
+        Assert.Equal(0, executor.ExecuteCount);
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task 未登录时显式恢复Paused仍保持原状态且不访问执行器()
+    {
+        var repository = new InMemoryDownloadTaskRepository();
+        var executor = new FakeDownloadTaskExecutor();
+        var credential = new FakeCredentialProvider { IsLoggedIn = false };
+        var coordinator = CreateCoordinator(repository, executor, credential);
+        repository.Seed(Record("t1", DownloadTaskStatus.Paused));
+
+        await coordinator.ResumeTaskAsync("t1");
+
+        Assert.Equal("paused", repository.Tasks.Single(x => x.TaskId == "t1").Status);
+        Assert.Equal(0, executor.ExecuteCount);
         await coordinator.ShutdownAsync();
     }
 
@@ -644,6 +682,23 @@ public sealed class BiliDownloadCoordinatorG2Tests
 
         await WaitUntilAsync(() =>
             repository.Tasks.Count(x => x.Status == "done") == 3, timeoutMs: 8000);
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task ResumeAllPaused也显式恢复WaitingForLogin任务()
+    {
+        var repository = new InMemoryDownloadTaskRepository();
+        var executor = new FakeDownloadTaskExecutor();
+        var credential = new FakeCredentialProvider { IsLoggedIn = true };
+        var coordinator = CreateCoordinator(repository, executor, credential);
+        repository.Seed(Record("paused", DownloadTaskStatus.Paused));
+        repository.Seed(Record("waiting", DownloadTaskStatus.WaitingForLogin));
+
+        await coordinator.ResumeAllPausedAsync();
+
+        await WaitUntilAsync(() => repository.Tasks.All(task => task.Status == "done"));
+        Assert.Equal(2, executor.ExecuteCount);
         await coordinator.ShutdownAsync();
     }
 

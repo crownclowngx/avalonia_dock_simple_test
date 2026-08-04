@@ -1,0 +1,41 @@
+{
+    "schemaVersion":  1,
+    "pluginId":  "BiliDownloader",
+    "release":  "p0",
+    "runtimeIdentifier":  "win-x64",
+    "sourceRevision":  "0b5dcf6a1ec4",
+    "createdAtUtc":  "2026-08-04T12:58:07.9991458+00:00",
+    "cleanWorktree":  false,
+    "liveAcceptance":  false,
+    "publishable":  false,
+    "tests":  {
+                  "plugin":  {
+                                 "total":  396,
+                                 "passed":  396,
+                                 "failed":  0,
+                                 "skipped":  0
+                             },
+                  "solution":  {
+                                   "total":  783,
+                                   "passed":  783,
+                                   "failed":  0,
+                                   "skipped":  0
+                               }
+              },
+    "gates":  {
+                  "releaseBuild":  "passed",
+                  "pluginTests":  "passed",
+                  "solutionBuild":  "passed",
+                  "solutionTests":  "passed",
+                  "hostPluginLoad":  "passed",
+                  "live":  "skipped",
+                  "packageIntegrity":  "passed",
+                  "sensitiveScan":  "passed",
+                  "gitDiffCheck":  "passed"
+              },
+    "artifact":  {
+                     "file":  "BiliDownloader-p0-win-x64-0b5dcf6a1ec4.zip",
+                     "length":  2068086,
+                     "sha256":  "94AA31A49984205A9000FA49AD818E42F8A732F7BBC33BCF80FC4E65C100DAD0"
+                 }
+}
