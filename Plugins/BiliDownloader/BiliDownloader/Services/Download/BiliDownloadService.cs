@@ -89,7 +89,7 @@ public class BiliDownloadService : IDisposable
             : task.OutputFilePath;
         // staging 必须与最终文件位于同一目录，才能使用同卷原子移动；放在插件临时目录时，
         // 用户把输出设到其他磁盘会退化为跨卷移动并在发布阶段失败。
-        var stagingPath = outputPath + $".staging-{task.TaskId}";
+        var stagingPath = BuildStagingPath(outputPath, task.TaskId);
         if (File.Exists(outputPath) && task.ConflictPolicy != FileConflictPolicy.Overwrite)
             throw new OutputConflictException(outputPath);
         if (task.ConflictPolicy == FileConflictPolicy.Overwrite && !task.OverwriteConfirmed && File.Exists(outputPath))
@@ -237,7 +237,7 @@ public class BiliDownloadService : IDisposable
         var outputPath = string.IsNullOrWhiteSpace(task.OutputFilePath)
             ? Path.Combine(actualOutputDir, FileNameSanitizer.Sanitize(task.ItemTitle) + ".mp4")
             : task.OutputFilePath;
-        var stagingPath = outputPath + $".staging-{task.TaskId}";
+        var stagingPath = BuildStagingPath(outputPath, task.TaskId);
 
         EnsureSufficientSpace(task, actualOutputDir);
         if (File.Exists(stagingPath)) File.Delete(stagingPath);
@@ -302,6 +302,18 @@ public class BiliDownloadService : IDisposable
     public async Task MergeAsync(string videoPath, string audioPath, string outputPath, CancellationToken ct = default)
     {
         await _mediaMuxer.MergeAsync(videoPath, audioPath, outputPath, ct);
+    }
+
+    /// <summary>
+    /// 临时输出与最终文件保持相同扩展名，确保 ffmpeg 能根据扩展名选择封装格式。
+    /// 临时文件仍位于最终目录，发布时可以使用同卷原子移动。
+    /// </summary>
+    internal static string BuildStagingPath(string outputPath, string taskId)
+    {
+        var extension = Path.GetExtension(outputPath);
+        return string.IsNullOrEmpty(extension)
+            ? outputPath + $".staging-{taskId}"
+            : Path.ChangeExtension(outputPath, $".staging-{taskId}{extension}");
     }
 
     /// <summary>

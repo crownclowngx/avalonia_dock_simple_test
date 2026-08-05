@@ -396,6 +396,9 @@ public sealed class DownloadProtocolTests
         Assert.Equal(videoBytes.Length, result.VideoTransfer.ExpectedBytes);
         Assert.Equal(audioBytes.Length, result.AudioTransfer.ExpectedBytes);
         Assert.Single(ffmpeg.MergeCalls);
+        var mergeOutputPath = ffmpeg.MergeCalls.Single().Output;
+        Assert.Equal(".mp4", Path.GetExtension(mergeOutputPath));
+        Assert.EndsWith(".staging-offline-main.mp4", mergeOutputPath, StringComparison.Ordinal);
         Assert.True(File.Exists(result.OutputFilePath));
         Assert.Equal(2, httpFactory.Requests.Count);
         Assert.All(httpFactory.Requests, request =>
@@ -449,6 +452,8 @@ public sealed class DownloadProtocolTests
         await ffmpeg.MergeAsync(video, audio, output);
 
         Assert.Equal(executable, processFactory.StartInfo?.FileName);
+        Assert.Equal(Encoding.UTF8, processFactory.StartInfo?.StandardOutputEncoding);
+        Assert.Equal(Encoding.UTF8, processFactory.StartInfo?.StandardErrorEncoding);
         Assert.Equal(
             [
                 "-hide_banner", "-nostats", "-loglevel", "warning",
