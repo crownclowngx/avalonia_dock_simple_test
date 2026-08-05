@@ -352,6 +352,90 @@ public sealed class G7FfmpegAndFailureActionTests
     }
 
     [Fact]
+    public async Task 错误行动覆盖安装失败自定义路径校验目录取消默认行动和取消令牌()
+    {
+        using var paths = new TestDataPaths();
+        var repository = new InMemoryDownloadTaskRepository();
+        var task = Record("action-branches", DownloadTaskStatus.Failed);
+        task.ErrorType = "network";
+        repository.Seed(task);
+        var coordinator = new BiliDownloadCoordinator(
+            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(),
+            new MergeOnlyExecutor(paths), paths);
+        var prompt = new StubPrompt();
+        var locator = new FakeFfmpegService();
+        var service = new DownloadFailureActionService(
+            coordinator, new StubInstaller(), locator, new StubLoginDialog(true),
+            prompt, new RecordingRevealService(), paths, new InMemorySettingsRepository());
+
+        var installFailed = await service.ExecuteAsync(task, DownloadFailureActionKind.InstallOrRepairFfmpeg);
+        prompt.FfmpegPath = Path.Combine(paths.RootDirectory, "missing-ffmpeg.exe");
+        var invalidFfmpeg = await service.ExecuteAsync(task, DownloadFailureActionKind.SelectCustomFfmpeg);
+        prompt.Folder = null;
+        var directoryCancelled = await service.ExecuteAsync(task, DownloadFailureActionKind.ChangeOutputDirectory);
+        var unknown = await service.ExecuteAsync(task, (DownloadFailureActionKind)999);
+
+        Directory.CreateDirectory(paths.RootDirectory);
+        var validFfmpeg = Path.Combine(paths.RootDirectory, "ffmpeg.exe");
+        await File.WriteAllTextAsync(validFfmpeg, "marker");
+        prompt.FfmpegPath = validFfmpeg;
+        var customEnabled = await service.ExecuteAsync(task, DownloadFailureActionKind.SelectCustomFfmpeg);
+        prompt.Folder = Path.Combine(paths.RootDirectory, "relocated");
+        var directoryChanged = await service.ExecuteAsync(task, DownloadFailureActionKind.ChangeOutputDirectory);
+        await AsyncTest.EventuallyAsync(() => task.Status == "done");
+
+        var cancellationService = new DownloadFailureActionService(
+            coordinator, new StubInstaller(), locator, new CancelingLoginDialog(),
+            prompt, new RecordingRevealService(), paths, new InMemorySettingsRepository());
+        var cancelled = await cancellationService.ExecuteAsync(task, DownloadFailureActionKind.LoginAndContinue);
+
+        Assert.False(installFailed.Success);
+        Assert.False(invalidFfmpeg.Success);
+        Assert.Contains("不是可用", invalidFfmpeg.Message, StringComparison.Ordinal);
+        Assert.False(directoryCancelled.Success);
+        Assert.False(unknown.Success);
+        Assert.True(customEnabled.Success, customEnabled.Message);
+        Assert.Equal(validFfmpeg, locator.CustomPath);
+        Assert.True(directoryChanged.Success, directoryChanged.Message);
+        Assert.False(cancelled.Success);
+        Assert.Contains("取消", cancelled.Message, StringComparison.Ordinal);
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task ffmpeg安装成功行动执行可信仅合并重试()
+    {
+        using var paths = new TestDataPaths();
+        var repository = new InMemoryDownloadTaskRepository();
+        var task = Record("install-success", DownloadTaskStatus.Failed);
+        task.ErrorType = "ffmpeg";
+        task.OutputPathKey = "reserved";
+        task.TempDirectory = Path.Combine(paths.TempDirectory, task.TaskId);
+        Directory.CreateDirectory(task.TempDirectory);
+        await File.WriteAllBytesAsync(Path.Combine(task.TempDirectory, "video.tmp"), new byte[3]);
+        await File.WriteAllBytesAsync(Path.Combine(task.TempDirectory, "audio.tmp"), new byte[2]);
+        task.ExpectedVideoBytes = 3;
+        task.ExpectedAudioBytes = 2;
+        task.VideoIntegrityPassed = true;
+        task.AudioIntegrityPassed = true;
+        repository.Seed(task);
+        var executor = new MergeOnlyExecutor(paths);
+        var coordinator = new BiliDownloadCoordinator(
+            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(), executor, paths);
+        var installer = new StubInstaller(new FfmpegInstallResult(true, "安装完成", "ffmpeg.exe"));
+        var service = new DownloadFailureActionService(
+            coordinator, installer, new FakeFfmpegService(), new StubLoginDialog(true),
+            new StubPrompt(), new RecordingRevealService(), paths, new InMemorySettingsRepository());
+
+        var result = await service.ExecuteAsync(task, DownloadFailureActionKind.InstallOrRepairFfmpeg);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal(1, executor.MergeExecuteCount);
+        Assert.Equal("done", task.Status);
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
     public async Task 合并检查点先落库_随后合并失败仍保留可信事实()
     {
         using var paths = new TestDataPaths();
@@ -627,12 +711,12 @@ public sealed class G7FfmpegAndFailureActionTests
         }
     }
 
-    private sealed class StubInstaller : IFfmpegPackageInstaller
+    private sealed class StubInstaller(FfmpegInstallResult? result = null) : IFfmpegPackageInstaller
     {
         public bool IsInstalling => false;
         public event Action<FfmpegInstallProgress>? ProgressChanged { add { } remove { } }
         public Task<FfmpegInstallResult> InstallOrRepairAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(FfmpegInstallResult.Failed("测试未执行安装"));
+            => Task.FromResult(result ?? FfmpegInstallResult.Failed("测试未执行安装"));
     }
 
     private sealed class StubLoginDialog(bool result) : ILoginDialogService
@@ -641,15 +725,23 @@ public sealed class G7FfmpegAndFailureActionTests
             => Task.FromResult(result);
     }
 
+    private sealed class CancelingLoginDialog : ILoginDialogService
+    {
+        public Task<bool> EnsureLoggedInAsync(CancellationToken cancellationToken = default)
+            => Task.FromCanceled<bool>(new CancellationToken(canceled: true));
+    }
+
     private sealed class StubPrompt : IUserPromptService
     {
+        public string? Folder { get; set; }
+        public string? FfmpegPath { get; set; }
         public Task<bool> ConfirmAsync(string title, string message) => Task.FromResult(false);
         public Task<DeleteTaskPromptResult> ConfirmDeleteAsync(int taskCount, bool hasOutputFiles)
             => Task.FromResult(DeleteTaskPromptResult.Cancelled);
         public Task<bool> ConfirmSubmissionAsync(SubmissionPreflightReport report) => Task.FromResult(false);
         public Task<string?> PickFolderAsync(string title, string? suggestedDirectory = null)
-            => Task.FromResult<string?>(null);
-        public Task<string?> PickFfmpegExecutableAsync() => Task.FromResult<string?>(null);
+            => Task.FromResult(Folder);
+        public Task<string?> PickFfmpegExecutableAsync() => Task.FromResult(FfmpegPath);
     }
 
     private sealed class RecordingRevealService : IFileRevealService

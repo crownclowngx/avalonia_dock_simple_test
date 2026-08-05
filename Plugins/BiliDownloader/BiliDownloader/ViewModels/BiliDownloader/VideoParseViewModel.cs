@@ -2,8 +2,10 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BiliDownloader.Models;
+using BiliDownloader.Models.ContentSources;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
+using BiliDownloader.Services.ContentSources;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
 
@@ -27,7 +29,8 @@ public class VideoParseResult
 /// </summary>
 public partial class VideoParseViewModel : ObservableObject
 {
-    private readonly BiliApiService _apiService;
+    private readonly IContentSourceProviderRegistry _providerRegistry;
+    private readonly IBiliMediaProbe _mediaProbe;
     private readonly IBiliCredentialProvider _credentialProvider;
     private readonly Action<VideoParseResult>? _onParsed;
     private readonly Func<bool> _isLoggedInCheck;
@@ -54,19 +57,39 @@ public partial class VideoParseViewModel : ObservableObject
     /// <param name="onParsed">解析成功后的回调，将结果传回主 VM</param>
     /// <param name="isLoggedInCheck">检查当前是否已登录的函数</param>
     public VideoParseViewModel(
-        BiliApiService apiService,
+        IContentSourceProviderRegistry providerRegistry,
+        IBiliMediaProbe mediaProbe,
         IBiliCredentialProvider credentialProvider,
         Action<VideoParseResult>? onParsed,
         Func<bool> isLoggedInCheck)
     {
-        _apiService = apiService;
+        _providerRegistry = providerRegistry;
+        _mediaProbe = mediaProbe;
         _credentialProvider = credentialProvider;
         _onParsed = onParsed;
         _isLoggedInCheck = isLoggedInCheck;
         ParseCommand = new AsyncRelayCommand(ParseAsync);
     }
 
-    private async Task ParseAsync()
+    /// <summary>
+    /// 保留 P0 的构造入口，但内部同样通过统一 Provider 路径解析，避免兼容代码形成第二条业务链路。
+    /// </summary>
+    public VideoParseViewModel(
+        BiliApiService apiService,
+        IBiliCredentialProvider credentialProvider,
+        Action<VideoParseResult>? onParsed,
+        Func<bool> isLoggedInCheck)
+        : this(
+            new ContentSourceProviderRegistry(
+                [new DirectLinkProvider(apiService, credentialProvider)]),
+            apiService,
+            credentialProvider,
+            onParsed,
+            isLoggedInCheck)
+    {
+    }
+
+    private async Task ParseAsync(CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(Url))
         {
@@ -74,70 +97,33 @@ public partial class VideoParseViewModel : ObservableObject
             return;
         }
 
-        if (!_isLoggedInCheck())
-        {
-            DownloadInfo = "请先登录后再解析";
-            return;
-        }
-
-        // 解析 b23.tv 短链
-        var resolvedUrl = Url.Trim();
-        if (BiliApiService.IsB23TvLink(resolvedUrl))
-        {
-            try
-            {
-                IsLoading = true;
-                DownloadInfo = "正在解析短链...";
-                resolvedUrl = await BiliApiService.ResolveB23TvAsync(resolvedUrl);
-                Url = resolvedUrl; // 回写到输入框，让用户看到真实链接
-            }
-            catch (Exception ex)
-            {
-                DownloadInfo = $"短链解析失败: {ex.Message}";
-                IsLoading = false;
-                return;
-            }
-        }
-
-        var parsed = BiliApiService.ParseVideoId(resolvedUrl);
-        var bangumi = parsed == null ? BiliApiService.ParseBangumiId(resolvedUrl) : null;
-        if (parsed == null && bangumi == null)
-        {
-            DownloadInfo = "无法解析链接，请输入有效的B站视频或番剧链接";
-            return;
-        }
-
         try
         {
+            var provider = _providerRegistry.GetRequired(ContentSourceKind.DirectLink);
+            if (provider.Capabilities.HasFlag(ContentSourceCapabilities.RequiresLogin) && !_isLoggedInCheck())
+            {
+                DownloadInfo = "请先登录后再解析";
+                return;
+            }
+
             IsLoading = true;
             DownloadInfo = "正在解析视频信息...";
 
-            var cookie = _credentialProvider.GetCookieHeader();
+            var descriptor = await provider.NormalizeAsync(Url, cancellationToken);
+            var request = new ContentPageRequest();
+            var page = await provider.GetPageAsync(descriptor, request, cancellationToken);
+            var accumulator = new ContentPageAccumulator();
+            var rootItems = accumulator.Append(provider, request, page);
+            if (rootItems.Count != 1)
+                throw new ContentSourceException(
+                    ContentSourceErrorCode.ProtocolViolation,
+                    "直接链接来源必须返回唯一根项目。");
 
-            // 获取视频集合（根据类型路由）
-            BiliVideoCollection collection;
-            if (parsed != null)
-            {
-                collection = await _apiService.GetVideoCollectionAsync(
-                    parsed.Value.Id, parsed.Value.IsBvid, cookie);
-            }
-            else
-            {
-                collection = await _apiService.GetBangumiCollectionAsync(
-                    bangumi!.Value.Id, bangumi.Value.IsSeasonId, cookie);
-            }
-            VideoCollection = collection;
-
-            // 构建视频列表
-            var videoItems = new List<BiliVideoItem>();
-            int idx = 1;
-            foreach (var item in collection.Items)
-            {
-                item.Index = idx++;
-                item.OriginalTitle = item.Title;
-                item.CoverUrl = collection.Cover; // 传递封面图 URL
-                videoItems.Add(item);
-            }
+            var collection = await provider.ResolveItemAsync(
+                descriptor,
+                rootItems[0],
+                cancellationToken);
+            var videoItems = collection.Items.ToList();
 
             // 生成重命名面板初始文本
             var titlesLines = string.Join(Environment.NewLine, collection.Items.Select(i => i.Title));
@@ -151,9 +137,15 @@ public partial class VideoParseViewModel : ObservableObject
             if (collection.Items.Count > 0)
             {
                 var first = collection.Items[0];
-                var dashResult = await _apiService.GetDashResultAsync(
-                    first.Aid, first.Cid, 80, cookie,
-                    first.MediaType, first.EpId, first.SeasonId);
+                var dashResult = await _mediaProbe.GetDashResultAsync(
+                    first.Aid,
+                    first.Cid,
+                    80,
+                    _credentialProvider.GetCookieHeader(),
+                    first.MediaType,
+                    first.EpId,
+                    first.SeasonId,
+                    cancellationToken);
 
                 // 视频清晰度
                 foreach (var q in dashResult.AcceptQualities)
@@ -179,6 +171,9 @@ public partial class VideoParseViewModel : ObservableObject
 
             var isMultiVideo = collection.Items.Count > 1;
 
+            // 所有远端调用完成后才提交状态，失败或取消不会留下半成品结果。
+            VideoCollection = collection;
+            Url = descriptor.DisplayName;
             IsParsed = true;
             DownloadInfo = $"解析成功: {collection.SeriesTitle} ({collection.Items.Count} 个视频)";
 
@@ -195,10 +190,23 @@ public partial class VideoParseViewModel : ObservableObject
                 TitlesText = titlesLines,
             });
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
         {
-            DownloadInfo = $"解析异常: {ex.Message}";
-            IsParsed = false;
+            DownloadInfo = "已取消解析，上一次成功结果保持不变";
+        }
+        catch (ContentSourceException ex)
+        {
+            DownloadInfo = ex.Code switch
+            {
+                ContentSourceErrorCode.InvalidInput => "无法解析链接，请输入有效的B站视频或番剧链接",
+                ContentSourceErrorCode.LoginRequired => "请先登录后再解析",
+                ContentSourceErrorCode.RemoteFailure => ex.Message,
+                _ => "内容源响应不符合协议，请稍后重试",
+            };
+        }
+        catch
+        {
+            DownloadInfo = "解析异常，请稍后重试";
         }
         finally
         {

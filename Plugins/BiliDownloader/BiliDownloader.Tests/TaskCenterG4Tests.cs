@@ -495,6 +495,110 @@ public sealed class TaskCenterG4Tests
         Assert.Equal(expected, ByteSizeConverter.FormatBytes(bytes));
     }
 
+    [Fact]
+    public void ByteSizeConverter覆盖Xaml输入类型和反向转换拒绝()
+    {
+        var converter = new ByteSizeConverter();
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+
+        Assert.Equal("1.0 KB", converter.Convert(1024L, typeof(string), null, culture));
+        Assert.Equal("2.0 KB", converter.Convert(2048, typeof(string), null, culture));
+        Assert.Equal("3.0 KB", converter.Convert(3072d, typeof(string), null, culture));
+        Assert.Equal("0 B", converter.Convert("invalid", typeof(string), null, culture));
+        Assert.Throws<NotImplementedException>(() =>
+            converter.ConvertBack("1 KB", typeof(long), null, culture));
+    }
+
+    [Fact]
+    public void 任务项投影完整映射展示字段并原子刷新运行态()
+    {
+        var record = new DownloadTaskRecord
+        {
+            TaskId = "task-1",
+            DocumentId = "document-123456789",
+            SourceDocumentTitle = "来源工作台",
+            ItemTitle = "视频",
+            Status = "failed",
+            Progress = 10,
+            VideoProgress = 20,
+            AudioProgress = 30,
+            MergeProgress = 40,
+            SpeedText = "1 MB/s",
+            BytesPerSecond = 1024,
+            VideoBytesDownloaded = 100,
+            AudioBytesDownloaded = 200,
+            ExpectedVideoBytes = 1000,
+            ExpectedAudioBytes = 2000,
+            QualityId = 80,
+            OutputDirectory = "root",
+            SubFolder = "series",
+            ErrorType = "network",
+            ErrorMessage = "raw error",
+            IsRetryable = true,
+        };
+        var item = new DownloadTaskItemViewModel(record);
+
+        Assert.Equal("task-1", item.TaskId);
+        Assert.Equal("视频", item.ItemTitle);
+        Assert.Equal("failed", item.Status);
+        Assert.NotEmpty(item.StatusDisplayText);
+        Assert.Equal(10, item.Progress);
+        Assert.Equal(20, item.VideoProgress);
+        Assert.Equal(30, item.AudioProgress);
+        Assert.Equal(40, item.MergeProgress);
+        Assert.Equal("1 MB/s", item.SpeedText);
+        Assert.NotNull(item.EstimatedRemainingText);
+        Assert.Equal(300, item.TotalDownloadedBytes);
+        Assert.Equal(3000, item.TotalExpectedBytes);
+        Assert.Equal("1080P", item.QualityDisplayText);
+        Assert.Equal(Path.Combine("root", "series"), item.FullOutputPath);
+        Assert.Equal("来源工作台", item.SourceDocumentDisplay);
+        Assert.NotEqual("raw error", item.ErrorMessage);
+        Assert.True(item.HasFailureAction);
+        Assert.NotNull(item.FailurePresentation);
+        Assert.NotNull(item.PrimaryFailureAction);
+        Assert.Equal(record, item.PrimaryFailureActionRequest.Task);
+        _ = item.SecondaryFailureAction;
+        _ = item.SecondaryFailureActionRequest;
+        _ = item.HasSecondaryFailureAction;
+
+        var source = new DownloadTaskRecord
+        {
+            Progress = 51,
+            VideoProgress = 52,
+            AudioProgress = 53,
+            MergeProgress = 54,
+            SpeedText = "2 MB/s",
+            BytesPerSecond = 2048,
+            VideoBytesDownloaded = 400,
+            AudioBytesDownloaded = 500,
+            Status = "downloading_video",
+            ErrorMessage = null,
+            ErrorType = null,
+            IsRetryable = false,
+            OutputFilePath = "final.mp4",
+            ExpectedVideoBytes = 4000,
+            ExpectedAudioBytes = 5000,
+        };
+
+        item.RefreshFrom(source);
+
+        Assert.Equal(51, item.Progress);
+        Assert.Equal(52, item.VideoProgress);
+        Assert.Equal(53, item.AudioProgress);
+        Assert.Equal(54, item.MergeProgress);
+        Assert.Equal("2 MB/s", item.SpeedText);
+        Assert.Equal("downloading_video", item.Status);
+        Assert.Equal("final.mp4", item.FullOutputPath);
+        Assert.False(item.HasFailureAction);
+        _ = item.SecondaryFailureActionRequest;
+
+        record.SourceDocumentTitle = "";
+        Assert.StartsWith("工作台 document", item.SourceDocumentDisplay, StringComparison.Ordinal);
+        record.DocumentId = "";
+        Assert.Equal("未知工作台", item.SourceDocumentDisplay);
+    }
+
     #endregion
 
     // ──────────────────────────────────────────────────────────────────────

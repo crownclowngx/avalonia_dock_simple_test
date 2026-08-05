@@ -1,5 +1,6 @@
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
+using BiliDownloader.Services.ContentSources;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Download.Extras;
 using BiliDownloader.Services.Infrastructure;
@@ -65,6 +66,11 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         // 有网络和文件副作用的服务集中在 IDownloadTaskExecutor 之后，
         // Coordinator 测试可用假执行器完整替换这一边界。
         services.AddSingleton<BiliApiService>();
+        // Provider 与解析界面只依赖窄 API；两个投影复用同一 BiliApiService 实例。
+        services.AddSingleton<IBiliContentSourceApi>(provider => provider.GetRequiredService<BiliApiService>());
+        services.AddSingleton<IBiliMediaProbe>(provider => provider.GetRequiredService<BiliApiService>());
+        services.AddSingleton<IContentSourceProvider, DirectLinkProvider>();
+        services.AddSingleton<IContentSourceProviderRegistry, ContentSourceProviderRegistry>();
         services.AddSingleton<BiliDownloadService>();
         services.AddSingleton(provider => ExtrasHandlerRegistry.CreateDefault(
             provider.GetRequiredService<IBiliHttpClientFactory>()));

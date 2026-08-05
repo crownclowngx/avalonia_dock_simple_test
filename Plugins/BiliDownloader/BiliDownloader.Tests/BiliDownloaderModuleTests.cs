@@ -1,5 +1,7 @@
 using BiliDownloader.Plugin;
 using BiliDownloader.Services.Auth;
+using BiliDownloader.Services.Api;
+using BiliDownloader.Services.ContentSources;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.Services.Infrastructure;
@@ -44,6 +46,18 @@ public sealed class BiliDownloaderModuleTests
         Assert.Equal(
             ServiceLifetime.Singleton,
             FindDescriptor(services, typeof(IBiliHttpClientFactory)).Lifetime);
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IBiliContentSourceApi)).Lifetime);
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IBiliMediaProbe)).Lifetime);
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IContentSourceProviderRegistry)).Lifetime);
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IContentSourceProvider)).Lifetime);
         Assert.Equal(
             ServiceLifetime.Singleton,
             FindDescriptor(services, typeof(IDownloadRuntime)).Lifetime);

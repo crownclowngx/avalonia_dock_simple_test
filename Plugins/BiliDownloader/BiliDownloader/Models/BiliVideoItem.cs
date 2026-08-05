@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using BiliDownloader.Models.ContentSources;
+using Newtonsoft.Json;
 
 namespace BiliDownloader.Models;
 
@@ -44,6 +46,13 @@ public partial class BiliVideoItem : ObservableObject
     public long Aid { get; set; }
     public string Bvid { get; set; } = string.Empty;
     public long Cid { get; set; }
+
+    /// <summary>
+    /// 解析后的稳定媒体身份，不参与 Document V2 和任务数据库持久化。
+    /// 设计意图：来源身份与媒体身份分离，后续可安全执行跨来源聚合。
+    /// </summary>
+    [JsonIgnore]
+    public MediaUnitKey? MediaUnitKey { get; set; }
 
     /// <summary>
     /// 时长（秒）

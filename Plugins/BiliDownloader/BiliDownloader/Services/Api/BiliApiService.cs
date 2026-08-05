@@ -12,7 +12,7 @@ namespace BiliDownloader.Services.Api;
 /// <summary>
 /// B站 API 封装：URL解析、视频信息获取、wbi签名、DASH流获取
 /// </summary>
-public partial class BiliApiService
+public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
 {
     // wbi 签名用的固定 encTab（与 BiliTools auth.ts 一致）
     private static readonly int[] MixinKeyEncTab =
@@ -105,7 +105,11 @@ public partial class BiliApiService
     /// <summary>
     /// 获取视频集合信息（支持单视频多P、番剧等）
     /// </summary>
-    public async Task<BiliVideoCollection> GetVideoCollectionAsync(string videoId, bool isBvid, string cookie)
+    public async Task<BiliVideoCollection> GetVideoCollectionAsync(
+        string videoId,
+        bool isBvid,
+        string cookie,
+        CancellationToken cancellationToken = default)
     {
         var url = "https://api.bilibili.com/x/web-interface/view";
         var paramsDict = new Dictionary<string, string>();
@@ -115,7 +119,8 @@ public partial class BiliApiService
         else
             paramsDict["aid"] = videoId[2..]; // 去掉 "av" 前缀
 
-        var json = await BuildRequest(url, paramsDict, cookie).GetStringAsync();
+        var json = await BuildRequest(url, paramsDict, cookie)
+            .GetStringAsync(cancellationToken: cancellationToken);
         var resp = JObject.Parse(json);
 
         if (resp["code"]?.Value<int>() != 0)
@@ -219,7 +224,11 @@ public partial class BiliApiService
     /// API: /pgc/view/web/season（不需要 wbi 签名）
     /// md 号需先调 /pgc/review/user 转 season_id
     /// </summary>
-    public async Task<BiliVideoCollection> GetBangumiCollectionAsync(string id, bool isSeasonId, string cookie)
+    public async Task<BiliVideoCollection> GetBangumiCollectionAsync(
+        string id,
+        bool isSeasonId,
+        string cookie,
+        CancellationToken cancellationToken = default)
     {
         var idPrefix = id[..2].ToLowerInvariant();
         var idNum = id[2..]; // 去掉前缀
@@ -229,7 +238,7 @@ public partial class BiliApiService
         if (idPrefix == "md")
         {
             // md 号需先转为 season_id
-            var seasonId = await ResolveMediaIdToSeasonIdAsync(idNum, cookie);
+            var seasonId = await ResolveMediaIdToSeasonIdAsync(idNum, cookie, cancellationToken);
             paramsDict["season_id"] = seasonId.ToString();
         }
         else if (isSeasonId)
@@ -242,7 +251,7 @@ public partial class BiliApiService
         }
 
         var json = await BuildRequest("https://api.bilibili.com/pgc/view/web/season", paramsDict, cookie)
-            .GetStringAsync();
+            .GetStringAsync(cancellationToken: cancellationToken);
         var resp = JObject.Parse(json);
 
         if (resp["code"]?.Value<int>() != 0)
@@ -314,11 +323,14 @@ public partial class BiliApiService
     /// md 号转 season_id
     /// API: /pgc/review/user
     /// </summary>
-    private async Task<long> ResolveMediaIdToSeasonIdAsync(string mediaId, string cookie)
+    private async Task<long> ResolveMediaIdToSeasonIdAsync(
+        string mediaId,
+        string cookie,
+        CancellationToken cancellationToken)
     {
         var json = await BuildRequest("https://api.bilibili.com/pgc/review/user",
             new Dictionary<string, string> { ["media_id"] = mediaId }, cookie)
-            .GetStringAsync();
+            .GetStringAsync(cancellationToken: cancellationToken);
         var resp = JObject.Parse(json);
 
         var seasonId = resp["result"]?["media"]?["season_id"]?.Value<long>();
@@ -473,7 +485,8 @@ public partial class BiliApiService
     public async Task<BiliDashResult> GetDashResultAsync(
         long aid, long cid, int qualityId, string cookie,
         BiliMediaType mediaType = BiliMediaType.Video,
-        long epId = 0, long seasonId = 0)
+        long epId = 0, long seasonId = 0,
+        CancellationToken cancellationToken = default)
     {
         string url;
         var paramsDict = new Dictionary<string, string>();
@@ -499,13 +512,14 @@ public partial class BiliApiService
             paramsDict["fourk"] = "1";
         }
 
-        var signedQuery = await WbiSignAsync(paramsDict, cookie);
+        var signedQuery = await WbiSignAsync(paramsDict, cookie, cancellationToken);
         var fullUrl = $"{url}?{signedQuery}";
 
         var request = fullUrl
             .WithHeader("User-Agent", HttpConstants.UserAgent)
             .WithHeader("Referer", HttpConstants.Referer);
-        var json = await WithCookie(request, cookie).GetStringAsync();
+        var json = await WithCookie(request, cookie)
+            .GetStringAsync(cancellationToken: cancellationToken);
 
         var resp = JObject.Parse(json);
         if (resp["code"]?.Value<int>() != 0)
@@ -615,9 +629,12 @@ public partial class BiliApiService
     /// <summary>
     /// 对请求参数进行 wbi 签名，返回签名后的查询字符串
     /// </summary>
-    public async Task<string> WbiSignAsync(Dictionary<string, string> queryParams, string cookie)
+    public async Task<string> WbiSignAsync(
+        Dictionary<string, string> queryParams,
+        string cookie,
+        CancellationToken cancellationToken = default)
     {
-        var mixinKey = await GetMixinKeyAsync(cookie);
+        var mixinKey = await GetMixinKeyAsync(cookie, cancellationToken);
 
         // 添加时间戳
         queryParams["wts"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
@@ -640,7 +657,7 @@ public partial class BiliApiService
     /// <summary>
     /// 获取或刷新 mixinKey
     /// </summary>
-    private async Task<string> GetMixinKeyAsync(string cookie)
+    private async Task<string> GetMixinKeyAsync(string cookie, CancellationToken cancellationToken)
     {
         if (_cachedMixinKey != null && DateTime.UtcNow < _mixinKeyExpireTime)
             return _cachedMixinKey;
@@ -648,7 +665,8 @@ public partial class BiliApiService
         var request = "https://api.bilibili.com/x/web-interface/nav"
             .WithHeader("User-Agent", HttpConstants.UserAgent)
             .WithHeader("Referer", HttpConstants.Referer);
-        var json = await WithCookie(request, cookie).GetStringAsync();
+        var json = await WithCookie(request, cookie)
+            .GetStringAsync(cancellationToken: cancellationToken);
 
         var resp = JObject.Parse(json);
         var wbiImg = resp["data"]?["wbi_img"];
@@ -690,11 +708,20 @@ public partial class BiliApiService
     /// <param name="b23TvUrl">b23.tv 短链 URL</param>
     /// <returns>重定向后的真实 URL</returns>
     public static async Task<string> ResolveB23TvAsync(string b23TvUrl)
+        => await ResolveB23TvCoreAsync(b23TvUrl, CancellationToken.None);
+
+    /// <inheritdoc />
+    public Task<string> ResolveShortLinkAsync(string shortLink, CancellationToken cancellationToken)
+        => ResolveB23TvCoreAsync(shortLink, cancellationToken);
+
+    private static async Task<string> ResolveB23TvCoreAsync(
+        string b23TvUrl,
+        CancellationToken cancellationToken)
     {
         var response = await b23TvUrl
             .WithHeader("User-Agent", HttpConstants.UserAgent)
             .WithAutoRedirect(false)
-            .HeadAsync();
+            .HeadAsync(cancellationToken: cancellationToken);
 
         var locationHeader = response.Headers
             .FirstOrDefault(h => h.Name.Equals("Location", StringComparison.OrdinalIgnoreCase));

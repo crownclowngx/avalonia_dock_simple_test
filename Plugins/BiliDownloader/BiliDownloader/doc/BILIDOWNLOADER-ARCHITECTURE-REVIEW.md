@@ -398,3 +398,10 @@ G0 已经把下载后台从 UI 生命周期中抽离，并建立了可以离线�
 接下来不应急于增加更多内容源。最高价值的工作依次是：凭据安全、单任务控制、恢复闭环、任务中心产品化、文件预检和真实验收。同时把 BiliDownloader Document 纳入宿主统一 Scope，并让插件部署、兼容性和诊断逐步交给宿主平台。
 
 完成这些工作后，BiliDownloader 才会从“能下载的视频插件”成为“可以长期、高频、可恢复使用的下载子系统”。
+## 12. P1-G0 内容源边界补充
+
+P1-G0 在原有 API 与 Document 解析界面之间增加统一内容源边界：`VideoParseViewModel` 只通过 `IContentSourceProviderRegistry` 选择来源策略，当前 `DirectLinkProvider` 负责 BV、AV、b23.tv、EP、SS 和 MD 的规范化与展开。Provider 只依赖窄接口 `IBiliContentSourceApi` 和凭据读取接口，不引用 UI、Coordinator、SQLite 或 Document。
+
+分页状态由会话级 `ContentPageAccumulator` 管理；它按 `ContentItemKey` 去重，并在游标不前进且没有新增项目时终止协议。解析后的跨来源媒体身份使用 `MediaUnitKey(Aid, Cid)`，不再混用来源项身份或随机任务 ID。
+
+这一边界采用 Strategy、Registry、Adapter 和分页 Guard，均对应明确的变化点；后续来源通过注册新的 Provider 扩展，不修改当前 ViewModel 的来源分支。

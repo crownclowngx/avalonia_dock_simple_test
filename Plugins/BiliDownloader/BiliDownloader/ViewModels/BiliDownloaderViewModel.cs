@@ -9,6 +9,7 @@ using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Api;
+using BiliDownloader.Services.ContentSources;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.Services.Infrastructure;
@@ -102,7 +103,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         ISettingsRepository settingsRepository,
         BiliLoginStateService loginStateService,
         BiliLoginService loginService,
-        BiliApiService apiService,
+        IContentSourceProviderRegistry providerRegistry,
+        IBiliMediaProbe mediaProbe,
         IBiliCredentialProvider credentialProvider,
         IFfmpegRuntimeLocator ffmpegService,
         IPresetRepository? presetRepository = null,
@@ -120,7 +122,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             : new LoginBarViewModel(loginStateService, loginDialogService);
 
         VideoParse = new VideoParseViewModel(
-            apiService,
+            providerRegistry,
+            mediaProbe,
             credentialProvider,
             onParsed: HandleParseResult,
             isLoggedInCheck: () => LoginBar.IsLoggedIn);
@@ -198,6 +201,42 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         VideoList.SelectionOrTitleChanged += RefreshNamingPreview;
 
         RegisterMessengers();
+    }
+
+    /// <summary>
+    /// P0 构造兼容入口。内部仍组装统一 Provider，避免旧调用方绕过 P1-G0 契约。
+    /// </summary>
+    internal BiliDownloaderViewModel(
+        IMessengerService messengerService,
+        IDownloadTaskRepository taskRepository,
+        ISettingsRepository settingsRepository,
+        BiliLoginStateService loginStateService,
+        BiliLoginService loginService,
+        BiliApiService apiService,
+        IBiliCredentialProvider credentialProvider,
+        IFfmpegRuntimeLocator ffmpegService,
+        IPresetRepository? presetRepository = null,
+        IDownloadSubmissionService? submissionService = null,
+        IUserPromptService? promptService = null,
+        ILoginDialogService? loginDialogService = null,
+        IFfmpegPackageInstaller? ffmpegInstaller = null)
+        : this(
+            messengerService,
+            taskRepository,
+            settingsRepository,
+            loginStateService,
+            loginService,
+            new ContentSourceProviderRegistry(
+                [new DirectLinkProvider(apiService, credentialProvider)]),
+            apiService,
+            credentialProvider,
+            ffmpegService,
+            presetRepository,
+            submissionService,
+            promptService,
+            loginDialogService,
+            ffmpegInstaller)
+    {
     }
 
     public Task InitializeAsync()
