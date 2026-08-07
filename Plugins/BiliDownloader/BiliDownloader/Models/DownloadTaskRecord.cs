@@ -74,6 +74,49 @@ public partial class DownloadTaskRecord : ObservableObject
     public int AudioQualityId { get; set; }
 
     /// <summary>
+    /// 提交快照结构版本。0 表示迁移前的旧任务，只能基于可证明字段执行兼容重建；
+    /// 1 表示已经完整保存 <see cref="DownloadProfileSnapshot"/> 中与重新下载有关的意图。
+    /// 设计意图：显式版本优于根据空字符串猜测新旧记录，避免把迁移默认值误认为用户真实选择。
+    /// </summary>
+    public int SubmissionSnapshotVersion { get; set; }
+
+    /// <summary>提交时媒体时长（秒），用于重新构造不可变下载项。</summary>
+    public int DurationSeconds { get; set; }
+
+    /// <summary>提交时是否使用系列分组目录。</summary>
+    public bool UseGroupFolder { get; set; }
+
+    /// <summary>提交时是否在标题中加入序号。</summary>
+    public bool AddIndexToTitle { get; set; }
+
+    /// <summary>提交时固化的命名模板；该字段不进入历史导出白名单。</summary>
+    public string NamingTemplate { get; set; } = string.Empty;
+
+    /// <summary>提交时引用的预设 ID；预设后续变化不会改变任务快照。</summary>
+    public string? PresetId { get; set; }
+
+    /// <summary>
+    /// 用户提交时选择的视频编码。旧任务为 null，历史中心必须显示“未知”，
+    /// 不得根据文件扩展名或当前默认设置倒推出一个看似确定的值。
+    /// </summary>
+    public VideoCodecPreference? SelectedVideoCodec { get; set; }
+
+    /// <summary>P1-G7 写入的实际视频编码；G6 只提供可兼容的未知占位。</summary>
+    public string ActualVideoCodec { get; set; } = string.Empty;
+
+    /// <summary>用户提交时选择的输出容器；旧任务为 null。</summary>
+    public OutputContainer? SelectedOutputContainer { get; set; }
+
+    /// <summary>用户提交时选择的输出模式；旧任务为 null。</summary>
+    public OutputMediaMode? SelectedOutputMediaMode { get; set; }
+
+    /// <summary>
+    /// 若任务由历史中心重新下载产生，则记录来源任务 ID。该关联只用于审计，
+    /// 不授予旧任务的覆盖确认、路径保留或断点恢复能力。
+    /// </summary>
+    public string RedownloadedFromTaskId { get; set; } = string.Empty;
+
+    /// <summary>
     /// 输出目录
     /// </summary>
     public string OutputDirectory { get; set; } = string.Empty;

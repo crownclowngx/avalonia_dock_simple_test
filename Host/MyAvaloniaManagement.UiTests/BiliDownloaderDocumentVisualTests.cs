@@ -141,6 +141,20 @@ public sealed class BiliDownloaderDocumentVisualTests
     }
 
     [AvaloniaFact]
+    public void 历史中心在宽窄布局下保持虚拟化列表和操作栏可测量()
+    {
+        using var context = new UiTestContext();
+        foreach (var size in new[] { new Size(760, 680), new Size(380, 560) })
+        {
+            var view = new TaskHistoryView();
+            Measure(view, size);
+            var list = view.FindControl<ListBox>("HistoryList");
+            Assert.NotNull(list);
+            Assert.NotNull(list.ItemsPanel);
+        }
+    }
+
+    [AvaloniaFact]
     public void 来源设置和日志同时展开时由Document主滚动兜底且区域不重叠()
     {
         using var context = new UiTestContext();

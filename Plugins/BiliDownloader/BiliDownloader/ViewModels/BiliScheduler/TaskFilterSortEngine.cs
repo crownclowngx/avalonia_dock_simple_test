@@ -15,7 +15,8 @@ public sealed record TaskFilterCriteria(
     string? TitleContains,
     string? StatusGroup,
     string? DocumentId,
-    TaskDateRange DateRange = TaskDateRange.All);
+    TaskDateRange DateRange = TaskDateRange.All,
+    bool ActiveOnly = false);
 
 /// <summary>
 /// G4: 排序字段枚举。
@@ -59,6 +60,12 @@ public static class TaskFilterSortEngine
     {
         // 第一步：筛选（WHERE 语义，多条件为 AND 关系）
         IEnumerable<DownloadTaskRecord> query = source;
+
+        if (criteria.ActiveOnly)
+        {
+            query = query.Where(static task => DownloadTaskStatusMapper.FromStorageString(task.Status) is not (
+                DownloadTaskStatus.Completed or DownloadTaskStatus.Failed or DownloadTaskStatus.Canceled));
+        }
 
         // 标题模糊搜索：不区分大小写的包含匹配
         if (!string.IsNullOrWhiteSpace(criteria.TitleContains))

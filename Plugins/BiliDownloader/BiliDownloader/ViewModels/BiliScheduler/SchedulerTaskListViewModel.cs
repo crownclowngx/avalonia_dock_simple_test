@@ -26,6 +26,7 @@ public partial class SchedulerTaskListViewModel : ObservableObject
     private readonly IUiDispatcher _uiDispatcher;
     private readonly IDownloadFailureActionService? _failureActionService;
     private readonly IDownloadFailurePresentationPolicy _failurePolicy;
+    private readonly bool _activeOnly;
 
     /// <summary>
     /// G4: O(1) 任务索引，替代原有的 FirstOrDefault 线性查找。
@@ -70,9 +71,9 @@ public partial class SchedulerTaskListViewModel : ObservableObject
 
     public IReadOnlyList<TaskChoiceOption> StatusOptions { get; } =
     [
-        new("all", "全部状态"), new("running", "进行中"), new("failed", "失败"),
+        new("all", "全部活动状态"), new("running", "进行中"),
         new("interrupted", "已中断"), new("waiting_login", "等待登录"),
-        new("done", "已完成"), new("paused", "已暂停"), new("canceled", "已取消"),
+        new("paused", "已暂停"),
         new("pending", "排队中"),
     ];
     public IReadOnlyList<TaskChoiceOption> SortOptions { get; } =
@@ -190,7 +191,8 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         IFileRevealService? fileRevealService = null,
         IUiDispatcher? uiDispatcher = null,
         IDownloadFailureActionService? failureActionService = null,
-        IDownloadFailurePresentationPolicy? failurePolicy = null)
+        IDownloadFailurePresentationPolicy? failurePolicy = null,
+        bool activeOnly = false)
     {
         _coordinator = coordinator;
         _taskStore = taskStore;
@@ -201,6 +203,7 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         _uiDispatcher = uiDispatcher ?? new InlineUiDispatcher();
         _failureActionService = failureActionService;
         _failurePolicy = failurePolicy ?? new DownloadFailurePresentationPolicy();
+        _activeOnly = activeOnly;
         SelectedStatusOption = StatusOptions[0];
         SelectedSortOption = SortOptions[0];
         SelectedDateOption = DateOptions[0];
@@ -375,7 +378,8 @@ public partial class SchedulerTaskListViewModel : ObservableObject
             TitleContains: string.IsNullOrWhiteSpace(SearchText) ? null : SearchText,
             StatusGroup: StatusFilter,
             DocumentId: DocumentFilter,
-            DateRange: DateRange);
+            DateRange: DateRange,
+            ActiveOnly: _activeOnly);
 
         var (sortField, sortDescending) = TaskFilterSortEngine.ParseSortBy(SortBy);
         var result = TaskFilterSortEngine.Apply(Tasks.ToList(), criteria, sortField, sortDescending);

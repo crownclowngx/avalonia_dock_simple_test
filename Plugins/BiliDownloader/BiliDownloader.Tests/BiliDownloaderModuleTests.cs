@@ -5,6 +5,7 @@ using BiliDownloader.Services.ContentSources;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.Services.Infrastructure;
+using BiliDownloader.Services.History;
 using BiliDownloader.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Message;
@@ -61,6 +62,16 @@ public sealed class BiliDownloaderModuleTests
         Assert.Equal(
             ServiceLifetime.Singleton,
             FindDescriptor(services, typeof(IDownloadRuntime)).Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(ITaskHistoryReadRepository)).Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(ITaskHistoryQueryService)).Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IOutputFileStatusService)).Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(ITaskHistoryExporter)).Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(ITaskHistoryRedownloadService)).Lifetime);
         Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IPluginLifecycle));
     }
 

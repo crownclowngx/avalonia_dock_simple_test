@@ -1,8 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
+using BiliDownloader.Services.History;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels.BiliScheduler;
 using MyAvaloniaManagementCommon.Plugin;
@@ -26,10 +28,19 @@ public partial class BiliSchedulerToolViewModel : Tool
     [ObservableProperty]
     private bool _isProcessing;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsActivitySelected))]
+    [NotifyPropertyChangedFor(nameof(IsHistorySelected))]
+    private string _selectedSection = "active";
+
+    public bool IsActivitySelected => SelectedSection == "active";
+    public bool IsHistorySelected => SelectedSection == "history";
+
     #region 子 ViewModel
 
     public SchedulerTaskListViewModel TaskList { get; }
     public SchedulerSettingsViewModel Settings { get; }
+    public TaskHistoryViewModel? History { get; }
 
     #endregion
 
@@ -44,7 +55,14 @@ public partial class BiliSchedulerToolViewModel : Tool
         IFileRevealService? fileRevealService = null,
         IUiDispatcher? uiDispatcher = null,
         IDownloadFailureActionService? failureActionService = null,
-        IDownloadFailurePresentationPolicy? failurePolicy = null)
+        IDownloadFailurePresentationPolicy? failurePolicy = null,
+        ITaskHistoryQueryService? historyQuery = null,
+        IOutputFileStatusService? outputFileStatus = null,
+        ITaskHistoryExporter? historyExporter = null,
+        ITaskHistoryRedownloadService? historyRedownload = null,
+        IDownloadSubmissionService? submissionService = null,
+        IUserPromptService? userPromptService = null,
+        IHistoryExportDestinationPicker? historyDestinationPicker = null)
     {
         _coordinator = coordinator;
         _lifecycleManager = lifecycleManager;
@@ -55,13 +73,43 @@ public partial class BiliSchedulerToolViewModel : Tool
             fileRevealService: fileRevealService,
             uiDispatcher: uiDispatcher,
             failureActionService: failureActionService,
-            failurePolicy: failurePolicy);
+            failurePolicy: failurePolicy,
+            activeOnly: true);
 
         Settings = new SchedulerSettingsViewModel(settingsStore, ffmpegService, ffmpegInstaller);
+
+        // 旧测试和宿主兼容构造路径可以不提供 G6 服务；生产 DI 会完整注入所有依赖。
+        // 使用可空组合而不是在这里临时 new SQLite 或文件选择器，避免破坏依赖倒置。
+        if (historyQuery is not null
+            && outputFileStatus is not null
+            && historyExporter is not null
+            && historyRedownload is not null
+            && submissionService is not null
+            && failureActionService is not null
+            && historyDestinationPicker is not null)
+        {
+            var prompts = userPromptService
+                ?? confirmationService as IUserPromptService
+                ?? new SafeCancellationConfirmationService();
+            History = new TaskHistoryViewModel(
+                historyQuery,
+                outputFileStatus,
+                historyExporter,
+                historyRedownload,
+                submissionService,
+                failureActionService,
+                prompts,
+                historyDestinationPicker,
+                fileRevealService ?? new FileRevealService(),
+                uiDispatcher ?? new AvaloniaUiDispatcher(),
+                msg => SchedulerStatus = msg);
+        }
 
         // 订阅 Coordinator 全局状态事件
         _coordinator.SchedulerStatusChanged += status => SchedulerStatus = status;
         _coordinator.IsProcessingChanged += processing => IsProcessing = processing;
+        _coordinator.TaskListChanged += RefreshVisibleHistory;
+        _coordinator.TaskStatusChanged += _ => RefreshVisibleHistory();
 
         // 订阅并发下载数变更事件，同步到 Coordinator
         Settings.MaxConcurrentDownloadsChanged += count =>
@@ -99,6 +147,8 @@ public partial class BiliSchedulerToolViewModel : Tool
 
             // 每次 Tool 重新进入视觉树都从事实源刷新投影，弥补隐藏期间可能错过的 UI 通知。
             await TaskList.ReloadTasksAsync();
+            if (IsHistorySelected && History is not null)
+                await History.ReloadAsync();
 
             var totalCount = TaskList.Tasks.Count;
             SchedulerStatus = $"已加载 {totalCount} 个任务";
@@ -115,5 +165,23 @@ public partial class BiliSchedulerToolViewModel : Tool
         {
             SchedulerStatus = $"初始化失败: {ex.Message}";
         }
+    }
+
+    partial void OnSelectedSectionChanged(string value)
+    {
+        if (value == "history" && History is not null)
+            _ = History.ReloadAsync();
+    }
+
+    [RelayCommand]
+    private void SelectSection(string? section)
+    {
+        if (section is "active" or "history") SelectedSection = section;
+    }
+
+    private void RefreshVisibleHistory()
+    {
+        if (IsHistorySelected && History is not null)
+            _ = History.ReloadAsync();
     }
 }

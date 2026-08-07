@@ -4,6 +4,7 @@ using BiliDownloader.Services.ContentSources;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Download.Extras;
 using BiliDownloader.Services.Infrastructure;
+using BiliDownloader.Services.History;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +32,8 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         // SQLite 仓储在插件进程生命周期内保持唯一，确保 Tool、Document 和 Coordinator
         // 观察同一任务事实源，而不是各自创建数据库访问对象。
         services.AddSingleton<IDownloadTaskRepository, DownloadTaskStore>();
+        services.AddSingleton<ITaskHistoryReadRepository>(provider =>
+            (ITaskHistoryReadRepository)provider.GetRequiredService<IDownloadTaskRepository>());
         services.AddSingleton<ISettingsRepository, SettingsStore>();
         services.AddSingleton<IPresetRepository, PresetStore>(); // G5: 预设持久化
         services.AddSingleton<IDownloadPresetService, DownloadPresetService>();
@@ -116,6 +119,14 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IFileConflictStrategy, AutoNumberConflictStrategy>();
         services.AddSingleton<ISubmissionPreflightService, SubmissionPreflightService>();
         services.AddSingleton<IDownloadFailurePresentationPolicy, DownloadFailurePresentationPolicy>();
+
+        // P1-G6：历史中心的四个业务能力分别注册到窄接口。文件选择器和文件系统探测
+        // 只在用户主动命令中调用，插件生命周期初始化不会遍历任何历史路径。
+        services.AddSingleton<ITaskHistoryQueryService, TaskHistoryQueryService>();
+        services.AddSingleton<IOutputFileStatusService, OutputFileStatusService>();
+        services.AddSingleton<ITaskHistoryExporter, TaskHistoryExporter>();
+        services.AddSingleton<ITaskHistoryRedownloadService, TaskHistoryRedownloadService>();
+        services.AddSingleton<IHistoryExportDestinationPicker, AvaloniaHistoryExportDestinationPicker>();
 
         services.AddSingleton<BiliDownloadCoordinator>();
         services.AddSingleton<IDownloadSubmissionService, DownloadSubmissionService>();

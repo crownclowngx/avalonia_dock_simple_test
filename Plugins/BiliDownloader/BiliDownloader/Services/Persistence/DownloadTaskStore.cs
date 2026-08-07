@@ -2,13 +2,15 @@ using BiliDownloader.Models;
 using BiliDownloader.Models.ContentSources;
 using BiliDownloader.Services.Infrastructure;
 using Microsoft.Data.Sqlite;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace BiliDownloader.Services.Persistence;
 
 /// <summary>
 /// 下载任务 SQLite 持久化存储。路径由 <see cref="IBiliDataPaths"/> 统一决定。
 /// </summary>
-public class DownloadTaskStore : IDownloadTaskRepository
+public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadRepository
 {
     private readonly string _connectionString;
 
@@ -57,6 +59,17 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 rendition_fingerprint TEXT NOT NULL DEFAULT '',
                 quality_id          INTEGER NOT NULL DEFAULT 80,
                 audio_quality_id    INTEGER NOT NULL DEFAULT 0,
+                submission_snapshot_version INTEGER NOT NULL DEFAULT 0,
+                duration_seconds    INTEGER NOT NULL DEFAULT 0,
+                use_group_folder    INTEGER NOT NULL DEFAULT 0,
+                add_index_to_title  INTEGER NOT NULL DEFAULT 0,
+                naming_template     TEXT NOT NULL DEFAULT '',
+                preset_id           TEXT,
+                selected_video_codec TEXT NOT NULL DEFAULT '',
+                actual_video_codec  TEXT NOT NULL DEFAULT '',
+                output_container    TEXT NOT NULL DEFAULT '',
+                output_media_mode   TEXT NOT NULL DEFAULT '',
+                redownloaded_from_task_id TEXT NOT NULL DEFAULT '',
                 output_directory    TEXT NOT NULL DEFAULT '',
                 sub_folder          TEXT NOT NULL DEFAULT '',
                 progress            REAL NOT NULL DEFAULT 0,
@@ -136,6 +149,18 @@ public class DownloadTaskStore : IDownloadTaskRepository
             // P1-G5：身份列只使用常量空默认值，避免旧数据在无法确认编码/容器时被伪装为完整指纹。
             "ALTER TABLE download_tasks ADD COLUMN media_unit_key TEXT NOT NULL DEFAULT '';",
             "ALTER TABLE download_tasks ADD COLUMN rendition_fingerprint TEXT NOT NULL DEFAULT '';",
+            // P1-G6：旧任务保持 snapshot_version=0 和未知枚举，不把兼容默认值伪装成历史事实。
+            "ALTER TABLE download_tasks ADD COLUMN submission_snapshot_version INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN duration_seconds INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN use_group_folder INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN add_index_to_title INTEGER NOT NULL DEFAULT 0;",
+            "ALTER TABLE download_tasks ADD COLUMN naming_template TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN preset_id TEXT;",
+            "ALTER TABLE download_tasks ADD COLUMN selected_video_codec TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN actual_video_codec TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN output_container TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN output_media_mode TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN redownloaded_from_task_id TEXT NOT NULL DEFAULT '';",
         };
         foreach (var sql in alterSqls)
         {
@@ -157,6 +182,12 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 ON download_tasks(media_unit_key);
             CREATE INDEX IF NOT EXISTS ix_download_tasks_rendition_fingerprint
                 ON download_tasks(rendition_fingerprint);
+            CREATE INDEX IF NOT EXISTS ix_download_tasks_history_status_created
+                ON download_tasks(status, created_at DESC, task_id DESC);
+            CREATE INDEX IF NOT EXISTS ix_download_tasks_history_document
+                ON download_tasks(document_id, created_at DESC);
+            CREATE INDEX IF NOT EXISTS ix_download_tasks_history_output
+                ON download_tasks(selected_video_codec, output_container, output_media_mode);
             """;
         await identityIndex.ExecuteNonQueryAsync();
     }
@@ -178,7 +209,11 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 INSERT INTO download_tasks
                     (task_id, document_id, source_document_title, series_title, item_title, aid, bvid, cid,
                      media_unit_key, rendition_fingerprint,
-                     quality_id, audio_quality_id, output_directory, sub_folder,
+                     quality_id, audio_quality_id,
+                     submission_snapshot_version, duration_seconds, use_group_folder, add_index_to_title,
+                     naming_template, preset_id, selected_video_codec, actual_video_codec,
+                     output_container, output_media_mode, redownloaded_from_task_id,
+                     output_directory, sub_folder,
                      progress, status, error_message,
                      temp_directory, video_bytes, audio_bytes,
                      video_progress, audio_progress, merge_progress, speed_text, bytes_per_second,
@@ -191,7 +226,11 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 VALUES
                     ($task_id, $document_id, $source_document_title, $series_title, $item_title, $aid, $bvid, $cid,
                      $media_unit_key, $rendition_fingerprint,
-                     $quality_id, $audio_quality_id, $output_directory, $sub_folder,
+                     $quality_id, $audio_quality_id,
+                     $submission_snapshot_version, $duration_seconds, $use_group_folder, $add_index_to_title,
+                     $naming_template, $preset_id, $selected_video_codec, $actual_video_codec,
+                     $output_container, $output_media_mode, $redownloaded_from_task_id,
+                     $output_directory, $sub_folder,
                      $progress, $status, $error_message,
                      $temp_directory, $video_bytes, $audio_bytes,
                      $video_progress, $audio_progress, $merge_progress, $speed_text, $bytes_per_second,
@@ -214,6 +253,17 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.Parameters.AddWithValue("$rendition_fingerprint", r.RenditionFingerprint);
             cmd.Parameters.AddWithValue("$quality_id", r.QualityId);
             cmd.Parameters.AddWithValue("$audio_quality_id", r.AudioQualityId);
+            cmd.Parameters.AddWithValue("$submission_snapshot_version", r.SubmissionSnapshotVersion);
+            cmd.Parameters.AddWithValue("$duration_seconds", r.DurationSeconds);
+            cmd.Parameters.AddWithValue("$use_group_folder", r.UseGroupFolder ? 1 : 0);
+            cmd.Parameters.AddWithValue("$add_index_to_title", r.AddIndexToTitle ? 1 : 0);
+            cmd.Parameters.AddWithValue("$naming_template", r.NamingTemplate);
+            cmd.Parameters.AddWithValue("$preset_id", ToDatabaseValue(r.PresetId));
+            cmd.Parameters.AddWithValue("$selected_video_codec", r.SelectedVideoCodec?.ToString() ?? "");
+            cmd.Parameters.AddWithValue("$actual_video_codec", r.ActualVideoCodec);
+            cmd.Parameters.AddWithValue("$output_container", r.SelectedOutputContainer?.ToString() ?? "");
+            cmd.Parameters.AddWithValue("$output_media_mode", r.SelectedOutputMediaMode?.ToString() ?? "");
+            cmd.Parameters.AddWithValue("$redownloaded_from_task_id", r.RedownloadedFromTaskId);
             cmd.Parameters.AddWithValue("$output_directory", r.OutputDirectory);
             cmd.Parameters.AddWithValue("$sub_folder", r.SubFolder);
             cmd.Parameters.AddWithValue("$progress", r.Progress);
@@ -541,6 +591,127 @@ public class DownloadTaskStore : IDownloadTaskRepository
     }
 
     /// <inheritdoc />
+    public async Task<TaskHistoryPage> QueryHistoryPageAsync(
+        TaskHistoryQuery query,
+        TaskHistoryPageRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.PageSize is < 1 or > 500)
+            throw new ArgumentOutOfRangeException(nameof(request), "历史分页大小必须在 1～500 之间。");
+
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        var where = BuildHistoryWhere(command, query);
+        if (!string.IsNullOrWhiteSpace(request.Cursor))
+        {
+            var (createdAt, taskId) = DecodeHistoryCursor(request.Cursor);
+            where.Add("(created_at < $cursor_created OR (created_at = $cursor_created AND task_id < $cursor_task))");
+            command.Parameters.AddWithValue("$cursor_created", createdAt);
+            command.Parameters.AddWithValue("$cursor_task", taskId);
+        }
+
+        command.CommandText = $"""
+            SELECT * FROM download_tasks
+            WHERE {string.Join(" AND ", where)}
+            ORDER BY created_at DESC, task_id DESC
+            LIMIT $limit;
+            """;
+        command.Parameters.AddWithValue("$limit", request.PageSize + 1);
+
+        var rows = new List<(TaskHistoryEntry Entry, string RawCreatedAt)>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var rawCreatedAt = reader.GetString(reader.GetOrdinal("created_at"));
+            rows.Add((TaskHistoryEntry.FromRecord(ReadRecord(reader)), rawCreatedAt));
+        }
+
+        var hasMore = rows.Count > request.PageSize;
+        if (hasMore) rows.RemoveAt(rows.Count - 1);
+        var nextCursor = hasMore && rows.Count > 0
+            ? EncodeHistoryCursor(rows[^1].RawCreatedAt, rows[^1].Entry.TaskId)
+            : null;
+        return new TaskHistoryPage(rows.Select(static row => row.Entry).ToArray(), nextCursor, hasMore);
+    }
+
+    /// <inheritdoc />
+    public async IAsyncEnumerable<TaskHistoryEntry> StreamHistoryAsync(
+        TaskHistoryQuery query,
+        IReadOnlyCollection<string>? taskIds = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var idSet = taskIds is { Count: > 0 }
+            ? taskIds.ToHashSet(StringComparer.Ordinal)
+            : null;
+        if (taskIds is { Count: 0 }) yield break;
+
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        // 导出期间保持一个 WAL 只读快照。这样任务状态即使在后台变化，导出文件内部仍然自洽，
+        // 同时不会阻塞 Coordinator 的正常写入。
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.Transaction = (SqliteTransaction)transaction;
+        var where = BuildHistoryWhere(command, query);
+        command.CommandText = $"""
+            SELECT * FROM download_tasks
+            WHERE {string.Join(" AND ", where)}
+            ORDER BY created_at DESC, task_id DESC;
+            """;
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var entry = TaskHistoryEntry.FromRecord(ReadRecord(reader));
+            if (idSet is null || idSet.Contains(entry.TaskId)) yield return entry;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<DownloadTaskRecord?> GetTaskByIdAsync(
+        string taskId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(taskId)) return null;
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT * FROM download_tasks WHERE task_id = $task_id LIMIT 1;";
+        command.Parameters.AddWithValue("$task_id", taskId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        return await reader.ReadAsync(cancellationToken) ? ReadRecord(reader) : null;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<TaskHistoryDocumentOption>> GetHistoryDocumentOptionsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT document_id, MAX(source_document_title) AS source_document_title
+            FROM download_tasks
+            WHERE status IN ('done', 'failed', 'canceled') AND document_id <> ''
+            GROUP BY document_id
+            ORDER BY source_document_title COLLATE NOCASE, document_id;
+            """;
+        var result = new List<TaskHistoryDocumentOption>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var id = reader.GetString(0);
+            var title = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
+            result.Add(new TaskHistoryDocumentOption(
+                id,
+                string.IsNullOrWhiteSpace(title) ? $"工作台 {id[..Math.Min(8, id.Length)]}" : title));
+        }
+        return result;
+    }
+
+    /// <inheritdoc />
     public async Task<List<DownloadTaskRecord>> GetByIdentityAsync(
         IReadOnlyCollection<MediaUnitKey> mediaUnitKeys,
         IReadOnlyCollection<string> renditionFingerprints,
@@ -853,6 +1024,17 @@ public class DownloadTaskStore : IDownloadTaskRepository
             RenditionFingerprint = TryGetString(reader, "rendition_fingerprint"),
             QualityId = reader.GetInt32(reader.GetOrdinal("quality_id")),
             AudioQualityId = TryGetInt(reader, "audio_quality_id"),
+            SubmissionSnapshotVersion = TryGetInt(reader, "submission_snapshot_version"),
+            DurationSeconds = TryGetInt(reader, "duration_seconds"),
+            UseGroupFolder = TryGetBool(reader, "use_group_folder"),
+            AddIndexToTitle = TryGetBool(reader, "add_index_to_title"),
+            NamingTemplate = TryGetString(reader, "naming_template"),
+            PresetId = TryGetNullableString(reader, "preset_id"),
+            SelectedVideoCodec = TryGetEnum<VideoCodecPreference>(reader, "selected_video_codec"),
+            ActualVideoCodec = TryGetString(reader, "actual_video_codec"),
+            SelectedOutputContainer = TryGetEnum<OutputContainer>(reader, "output_container"),
+            SelectedOutputMediaMode = TryGetEnum<OutputMediaMode>(reader, "output_media_mode"),
+            RedownloadedFromTaskId = TryGetString(reader, "redownloaded_from_task_id"),
             OutputDirectory = reader.GetString(reader.GetOrdinal("output_directory")),
             SubFolder = TryGetString(reader, "sub_folder"),
             Progress = reader.GetDouble(reader.GetOrdinal("progress")),
@@ -900,6 +1082,106 @@ public class DownloadTaskStore : IDownloadTaskRepository
         => value.ToString("yyyy-MM-dd HH:mm:ss.fffffff");
 
     /// <summary>
+    /// 构造历史查询 WHERE 子句。所有用户输入都使用参数，标题中的 LIKE 元字符先转义，
+    /// 因而搜索“100%”或“a_b”不会意外扩大结果集。
+    /// </summary>
+    private static List<string> BuildHistoryWhere(SqliteCommand command, TaskHistoryQuery query)
+    {
+        var terminal = new[]
+        {
+            DownloadTaskStatus.Completed,
+            DownloadTaskStatus.Failed,
+            DownloadTaskStatus.Canceled,
+        };
+        var requested = query.Statuses is null
+            ? terminal
+            : terminal.Where(query.Statuses.Contains).ToArray();
+        var where = new List<string>();
+        if (requested.Length == 0)
+        {
+            where.Add("1 = 0");
+        }
+        else
+        {
+            var names = new List<string>();
+            for (var index = 0; index < requested.Length; index++)
+            {
+                var name = $"$history_status_{index}";
+                names.Add(name);
+                command.Parameters.AddWithValue(name, DownloadTaskStatusMapper.ToStorageString(requested[index]));
+            }
+            where.Add($"status IN ({string.Join(',', names)})");
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Title))
+        {
+            where.Add("(item_title LIKE $history_title ESCAPE '\\' OR series_title LIKE $history_title ESCAPE '\\')");
+            command.Parameters.AddWithValue("$history_title", $"%{EscapeLike(query.Title.Trim())}%");
+        }
+        if (!string.IsNullOrWhiteSpace(query.DocumentId) && query.DocumentId != "all")
+        {
+            where.Add("document_id = $history_document");
+            command.Parameters.AddWithValue("$history_document", query.DocumentId);
+        }
+        if (query.CreatedFrom.HasValue)
+        {
+            where.Add("created_at >= $history_created_from");
+            command.Parameters.AddWithValue("$history_created_from", ToStorageTime(query.CreatedFrom.Value));
+        }
+
+        AddEnumFilter(command, where, "selected_video_codec", "$history_codec",
+            query.SelectedVideoCodec, query.IncludeUnknownVideoCodec);
+        AddEnumFilter(command, where, "output_container", "$history_container",
+            query.OutputContainer, query.IncludeUnknownOutputContainer);
+        AddEnumFilter(command, where, "output_media_mode", "$history_mode",
+            query.OutputMediaMode, query.IncludeUnknownOutputMode);
+        return where;
+    }
+
+    private static void AddEnumFilter<TEnum>(
+        SqliteCommand command,
+        ICollection<string> where,
+        string column,
+        string parameterName,
+        TEnum? value,
+        bool includeUnknown)
+        where TEnum : struct, Enum
+    {
+        if (value.HasValue)
+        {
+            where.Add($"{column} = {parameterName}");
+            command.Parameters.AddWithValue(parameterName, value.Value.ToString());
+        }
+        else if (includeUnknown)
+        {
+            where.Add($"{column} = ''");
+        }
+    }
+
+    private static string EscapeLike(string value) => value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("%", "\\%", StringComparison.Ordinal)
+        .Replace("_", "\\_", StringComparison.Ordinal);
+
+    private static string EncodeHistoryCursor(string rawCreatedAt, string taskId)
+        => Convert.ToBase64String(Encoding.UTF8.GetBytes(rawCreatedAt + "\n" + taskId));
+
+    private static (string CreatedAt, string TaskId) DecodeHistoryCursor(string cursor)
+    {
+        try
+        {
+            var value = Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
+            var separator = value.LastIndexOf('\n');
+            if (separator <= 0 || separator == value.Length - 1) throw new FormatException();
+            return (value[..separator], value[(separator + 1)..]);
+        }
+        catch (Exception ex) when (ex is FormatException or ArgumentException)
+        {
+            throw new ArgumentException("历史分页游标无效。", nameof(cursor), ex);
+        }
+    }
+
+    /// <summary>
     /// 旧行没有 media_unit_key 时可以由 Aid/Cid 无损恢复媒体身份；输出指纹还缺少编码和容器，
     /// 因此只补媒体键，绝不在读取层伪造 rendition_fingerprint。
     /// </summary>
@@ -926,6 +1208,13 @@ public class DownloadTaskStore : IDownloadTaskRepository
     {
         try { return reader.GetInt32(reader.GetOrdinal(column)); }
         catch { return 0; }
+    }
+
+    private static TEnum? TryGetEnum<TEnum>(SqliteDataReader reader, string column)
+        where TEnum : struct, Enum
+    {
+        var value = TryGetString(reader, column);
+        return Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed) ? parsed : null;
     }
 
     private static string TryGetString(SqliteDataReader reader, string column)

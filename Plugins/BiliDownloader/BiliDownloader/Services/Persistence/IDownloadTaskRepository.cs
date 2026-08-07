@@ -139,3 +139,27 @@ public interface IDownloadTaskRepository
         string outputPathKey)
         => Task.CompletedTask;
 }
+
+/// <summary>
+/// 历史读取专用持久化端口。下载写入仓储与历史查询通过两个接口隔离，
+/// 使查询服务不会获得删除、重排队等写权限，也便于使用内存替身验证筛选和导出。
+/// </summary>
+public interface ITaskHistoryReadRepository
+{
+    Task<TaskHistoryPage> QueryHistoryPageAsync(
+        TaskHistoryQuery query,
+        TaskHistoryPageRequest request,
+        CancellationToken cancellationToken = default);
+
+    IAsyncEnumerable<TaskHistoryEntry> StreamHistoryAsync(
+        TaskHistoryQuery query,
+        IReadOnlyCollection<string>? taskIds = null,
+        CancellationToken cancellationToken = default);
+
+    Task<DownloadTaskRecord?> GetTaskByIdAsync(
+        string taskId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<TaskHistoryDocumentOption>> GetHistoryDocumentOptionsAsync(
+        CancellationToken cancellationToken = default);
+}

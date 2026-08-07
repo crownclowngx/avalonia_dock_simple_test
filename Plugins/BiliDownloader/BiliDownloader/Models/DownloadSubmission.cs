@@ -45,7 +45,8 @@ public sealed record DownloadSubmission(
     string SeriesTitle,
     DownloadProfileSnapshot Profile,
     IReadOnlyList<DownloadSubmissionItem> Items,
-    IncrementalSubmissionExpectation? IncrementalExpectation = null);
+    IncrementalSubmissionExpectation? IncrementalExpectation = null,
+    string? RedownloadedFromTaskId = null);
 
 /// <summary>
 /// 增量预览交给提交边界的最小期望。Coordinator 不信任 UI 状态，只使用该 token 判断
