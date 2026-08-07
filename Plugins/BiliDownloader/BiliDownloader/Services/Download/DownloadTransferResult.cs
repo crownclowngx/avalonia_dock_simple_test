@@ -15,7 +15,8 @@ public sealed record DownloadTransferResult(
 public sealed record BiliDownloadItemResult(
     string OutputFilePath,
     DownloadTransferResult VideoTransfer,
-    DownloadTransferResult AudioTransfer);
+    DownloadTransferResult AudioTransfer,
+    BiliDownloader.Models.MediaOutputPlan? OutputPlan = null);
 
 /// <summary>
 /// 服务端 Range 响应与请求或声明长度不一致。

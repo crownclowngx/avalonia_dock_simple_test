@@ -305,6 +305,19 @@ public partial class DownloadTaskRecord : ObservableObject
         _ => $"Q{QualityId}"
     };
 
+    /// <summary>活动任务使用的用户选择、实际编码、容器与输出模式摘要。</summary>
+    public string OutputSpecificationDisplayText
+    {
+        get
+        {
+            var mode = SelectedOutputMediaMode ?? OutputMediaMode.AudioVideo;
+            var codec = mode == OutputMediaMode.AudioOnly
+                ? "不适用"
+                : $"{(SelectedVideoCodec ?? VideoCodecPreference.AutoCompatibility).ToDisplayText()} → {OutputOptionDisplay.ActualCodecToDisplayText(ActualVideoCodec)}";
+            return $"{codec} · {(SelectedOutputContainer ?? OutputContainer.Mp4).ToDisplayText()} · {mode.ToDisplayText()}";
+        }
+    }
+
     /// <summary>
     /// 完整输出路径（含分组子文件夹）。
     /// 设计思考：UI 展示时需要合并 OutputDirectory 和 SubFolder，

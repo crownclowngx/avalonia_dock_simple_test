@@ -36,10 +36,18 @@ public partial class TaskHistoryItemViewModel : ObservableObject
         : Entry.SourceDocumentTitle;
     public string CreatedAtText => Entry.CreatedAt.ToString("yyyy-MM-dd HH:mm");
     public string QualityText => $"Q{Entry.VideoQualityId} / A{Entry.AudioQualityId}";
-    public string OutputSpecificationText =>
-        $"{Entry.SelectedVideoCodec?.ToString() ?? "未知编码"} · "
-        + $"{Entry.OutputContainer?.ToString() ?? "未知容器"} · "
-        + $"{Entry.OutputMediaMode?.ToString() ?? "未知模式"}";
+    public string OutputSpecificationText
+    {
+        get
+        {
+            var codec = Entry.OutputMediaMode == OutputMediaMode.AudioOnly
+                ? "不适用"
+                : Entry.SelectedVideoCodec is null
+                    ? "未知编码"
+                    : $"{Entry.SelectedVideoCodec.Value.ToDisplayText()} ({Entry.SelectedVideoCodec.Value}) → {OutputOptionDisplay.ActualCodecToDisplayText(Entry.ActualVideoCodec)}";
+            return $"{codec} · {Entry.OutputContainer?.ToDisplayText() ?? "未知容器"} · {Entry.OutputMediaMode?.ToDisplayText() ?? "未知模式"}";
+        }
+    }
     public string OutputFilePath => Entry.OutputFilePath;
     public string ErrorSummary => string.IsNullOrWhiteSpace(Entry.ErrorMessage)
         ? string.Empty

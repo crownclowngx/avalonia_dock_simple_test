@@ -45,6 +45,7 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         // 保留 IFfmpegService 映射仅用于旧构造路径兼容，不再作为生产类的首选依赖。
         services.AddSingleton<IFfmpegRuntimeLocator>(provider => provider.GetRequiredService<FfmpegService>());
         services.AddSingleton<IMediaMuxer>(provider => provider.GetRequiredService<FfmpegService>());
+        services.AddSingleton<IMediaMuxerCapabilityProvider>(provider => provider.GetRequiredService<FfmpegService>());
         services.AddSingleton<IFfmpegService>(provider => provider.GetRequiredService<FfmpegService>());
         services.AddSingleton<IFfmpegPackageDownloader, HttpFfmpegPackageDownloader>();
         services.AddSingleton<IFfmpegInstallPlatform, SystemFfmpegInstallPlatform>();
@@ -112,6 +113,11 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IDownloadProgressTracker, DownloadProgressTracker>();
         services.AddSingleton<IDownloadRecoveryService, DownloadRecoveryService>();
         services.AddSingleton<IStorageCapacityProvider, SystemStorageCapacityProvider>();
+        services.AddSingleton<IOutputArtifactPolicy, OutputArtifactPolicy>();
+        services.AddSingleton<IMediaStreamSelectionPolicy, MediaStreamSelectionPolicy>();
+        services.AddSingleton<INativeAudioPublisher, NativeAudioPublisher>();
+        services.AddSingleton<IMediaSizeCalculator, MediaSizeCalculator>();
+        services.AddSingleton<IMediaPreflightAnalyzer, DashMediaPreflightAnalyzer>();
         services.AddSingleton<IMediaSizeEstimator, DashMediaSizeEstimator>();
         services.AddSingleton<IFileConflictStrategy, SkipConflictStrategy>();
         services.AddSingleton<IFileConflictStrategy, OverwriteConflictStrategy>();

@@ -21,7 +21,8 @@ public sealed record PreflightItemResult(
     string? ResumeTaskId,
     bool HasConflict,
     long EstimatedRequiredBytes,
-    IReadOnlyList<PreflightIssue> Issues);
+    IReadOnlyList<PreflightIssue> Issues,
+    MediaOutputPlan? OutputPlan = null);
 
 /// <summary>
 /// 提交预检报告。报告只描述检查时刻观察到的事实，不能代替 Coordinator 提交锁内的最终复检。
@@ -64,4 +65,10 @@ public sealed record SubmissionCommitResult(
     SubmissionCommitStatus Status,
     int SubmittedCount,
     int SkippedCount,
-    string Message);
+    string Message,
+    IReadOnlyList<CommittedTaskReference>? CommittedTasks = null)
+{
+    /// <summary>兼容旧调用方的非空视图；成功提交时映射 Document 会话项与独立任务 ID。</summary>
+    public IReadOnlyList<CommittedTaskReference> EffectiveCommittedTasks
+        => CommittedTasks ?? Array.Empty<CommittedTaskReference>();
+}

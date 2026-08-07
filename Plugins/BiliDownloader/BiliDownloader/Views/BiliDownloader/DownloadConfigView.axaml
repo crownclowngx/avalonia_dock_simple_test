@@ -55,6 +55,7 @@
                     <TextBlock Text="视频质量" Classes="bili-doc-caption" VerticalAlignment="Center" />
                     <ComboBox Grid.Column="1"
                               Classes="bili-doc-input"
+                              IsEnabled="{Binding IsVideoOutputEnabled}"
                               ItemsSource="{Binding QualityOptions}"
                               SelectedItem="{Binding SelectedQuality}" />
                 </Grid>
@@ -62,6 +63,7 @@
                     <TextBlock Text="音频质量" Classes="bili-doc-caption" VerticalAlignment="Center" />
                     <ComboBox Grid.Column="1"
                               Classes="bili-doc-input"
+                              IsEnabled="{Binding IsAudioOutputEnabled}"
                               ItemsSource="{Binding AudioQualityOptions}"
                               SelectedItem="{Binding SelectedAudioQuality}" />
                 </Grid>
@@ -74,6 +76,36 @@
                            TextWrapping="Wrap"
                            IsVisible="{Binding QualityRestoreNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </Grid>
+        </Border>
+
+        <Border Classes="bili-doc-flat-section">
+            <StackPanel Spacing="6">
+                <TextBlock Text="编码、容器与输出模式" Classes="bili-doc-section-title" />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                    <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="输出模式" Classes="bili-doc-caption" />
+                        <ComboBox Classes="bili-doc-input"
+                                  ItemsSource="{Binding OutputMediaModeOptions}"
+                                  SelectedItem="{Binding SelectedOutputMediaModeOption}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="3">
+                        <TextBlock Text="视频编码" Classes="bili-doc-caption" />
+                        <ComboBox Classes="bili-doc-input"
+                                  IsEnabled="{Binding IsVideoOutputEnabled}"
+                                  ItemsSource="{Binding VideoCodecOptions}"
+                                  SelectedItem="{Binding SelectedVideoCodecOption}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="3">
+                        <TextBlock Text="输出容器" Classes="bili-doc-caption" />
+                        <ComboBox Classes="bili-doc-input"
+                                  ItemsSource="{Binding AllowedOutputContainerOptions}"
+                                  SelectedItem="{Binding SelectedOutputContainerOption}" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock Text="{Binding OutputModeHint}"
+                           Classes="bili-doc-caption"
+                           TextWrapping="Wrap" />
+            </StackPanel>
         </Border>
 
         <Border Classes="bili-doc-flat-section">

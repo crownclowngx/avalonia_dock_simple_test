@@ -35,6 +35,7 @@ public partial class DownloadTaskItemViewModel : ObservableObject
     public long TotalDownloadedBytes => Record.TotalDownloadedBytes;
     public long TotalExpectedBytes => Record.TotalExpectedBytes;
     public string QualityDisplayText => Record.QualityDisplayText;
+    public string OutputSpecificationText => Record.OutputSpecificationDisplayText;
     public string FullOutputPath => !string.IsNullOrWhiteSpace(Record.OutputFilePath)
         ? Record.OutputFilePath
         : Record.FullOutputPath;

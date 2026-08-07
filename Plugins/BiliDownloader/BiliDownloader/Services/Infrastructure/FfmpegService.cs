@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using BiliDownloader.Models;
 
 namespace BiliDownloader.Services.Infrastructure;
 
@@ -15,6 +16,7 @@ public sealed class FfmpegService : IFfmpegService
     private readonly IBiliDataPaths _paths;
     private string? _customPath;
     private FfmpegRuntimeStatus? _lastStatus;
+    private (string ExecutablePath, MediaMuxerCapabilities Capabilities)? _lastMuxerCapabilities;
 
     public FfmpegService(IFfmpegProcessFactory processFactory, IBiliDataPaths? paths = null)
     {
@@ -29,6 +31,7 @@ public sealed class FfmpegService : IFfmpegService
         {
             _customPath = value;
             _lastStatus = null;
+            _lastMuxerCapabilities = null;
         }
     }
 
@@ -64,7 +67,19 @@ public sealed class FfmpegService : IFfmpegService
         string audioPath,
         string outputPath,
         CancellationToken ct = default)
+        => await MuxCoreAsync(new MediaMuxRequest(
+            videoPath, audioPath, outputPath, OutputContainer.Mp4, OutputMediaMode.AudioVideo),
+            legacyArguments: true, ct);
+
+    public async Task MuxAsync(MediaMuxRequest request, CancellationToken ct = default)
+        => await MuxCoreAsync(request, legacyArguments: false, ct);
+
+    private async Task MuxCoreAsync(
+        MediaMuxRequest request,
+        bool legacyArguments,
+        CancellationToken ct)
     {
+        ValidateMuxRequest(request);
         // 合并只能消费最近一次通过进程验证的路径；配置变化会清空该状态。若尚未探测，则在本地
         // 重新枚举所有候选。这样“存在但损坏”的自定义文件不会遮蔽后面的托管可用版本。
         var runtime = _lastStatus?.IsReady == true ? _lastStatus : await DetectAsync(ct);
@@ -87,12 +102,36 @@ public sealed class FfmpegService : IFfmpegService
         foreach (var argument in new[]
         {
             "-hide_banner", "-nostats", "-loglevel", "warning",
-            "-i", videoPath, "-i", audioPath,
-            "-c", "copy", "-shortest", outputPath,
         })
         {
             startInfo.ArgumentList.Add(argument);
         }
+        startInfo.ArgumentList.Add("-i");
+        startInfo.ArgumentList.Add(request.VideoPath!);
+        if (request.OutputMediaMode == OutputMediaMode.AudioVideo)
+        {
+            startInfo.ArgumentList.Add("-i");
+            startInfo.ArgumentList.Add(request.AudioPath!);
+        }
+        if (!legacyArguments)
+        {
+            startInfo.ArgumentList.Add("-map");
+            startInfo.ArgumentList.Add("0:v:0");
+            if (request.OutputMediaMode == OutputMediaMode.AudioVideo)
+            {
+                startInfo.ArgumentList.Add("-map");
+                startInfo.ArgumentList.Add("1:a:0");
+            }
+            else
+            {
+                startInfo.ArgumentList.Add("-an");
+            }
+        }
+        startInfo.ArgumentList.Add("-c");
+        startInfo.ArgumentList.Add("copy");
+        if (request.OutputMediaMode == OutputMediaMode.AudioVideo)
+            startInfo.ArgumentList.Add("-shortest");
+        startInfo.ArgumentList.Add(request.OutputPath);
 
         IFfmpegProcess process;
         try
@@ -116,7 +155,7 @@ public sealed class FfmpegService : IFfmpegService
                 await Task.WhenAll(stdout, stderr);
                 if (process.ExitCode != 0)
                 {
-                    DeleteIncompleteOutput(outputPath);
+                    DeleteIncompleteOutput(request.OutputPath);
                     throw new MediaMergeException(
                         $"ffmpeg 合并失败（退出码 {process.ExitCode}）：{await stderr}");
                 }
@@ -125,7 +164,7 @@ public sealed class FfmpegService : IFfmpegService
             {
                 TryKill(process);
                 await DrainOutputAsync(stdout, stderr);
-                DeleteIncompleteOutput(outputPath);
+                DeleteIncompleteOutput(request.OutputPath);
                 throw;
             }
             catch (MediaMergeException)
@@ -136,10 +175,63 @@ public sealed class FfmpegService : IFfmpegService
             {
                 TryKill(process);
                 await DrainOutputAsync(stdout, stderr);
-                DeleteIncompleteOutput(outputPath);
+                DeleteIncompleteOutput(request.OutputPath);
                 throw new MediaMergeException("ffmpeg 合并过程异常终止，已保留输入媒体。", ex);
             }
         }
+    }
+
+    /// <summary>
+    /// 使用 ffmpeg 自身的 muxer 列表验证容器能力。结果按已验证可执行路径缓存；
+    /// 自定义路径变化时缓存立即失效，防止沿用另一套运行时的能力事实。
+    /// </summary>
+    public async Task<MediaMuxerCapabilities> GetCapabilitiesAsync(CancellationToken ct = default)
+    {
+        var runtime = _lastStatus?.IsReady == true ? _lastStatus : await DetectAsync(ct);
+        if (!runtime.IsReady || string.IsNullOrWhiteSpace(runtime.ExecutablePath))
+            return new MediaMuxerCapabilities(false, false);
+        if (_lastMuxerCapabilities is { } cached
+            && string.Equals(cached.ExecutablePath, runtime.ExecutablePath, StringComparison.OrdinalIgnoreCase))
+            return cached.Capabilities;
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = runtime.ExecutablePath,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
+            CreateNoWindow = true,
+        };
+        startInfo.ArgumentList.Add("-hide_banner");
+        startInfo.ArgumentList.Add("-muxers");
+        using var process = _processFactory.Start(startInfo);
+        using var registration = ct.Register(() => TryKill(process));
+        var stdout = process.ReadStandardOutputAsync(CancellationToken.None);
+        var stderr = process.ReadStandardErrorAsync(CancellationToken.None);
+        await process.WaitForExitAsync(ct);
+        await Task.WhenAll(stdout, stderr);
+        if (process.ExitCode != 0) return new MediaMuxerCapabilities(false, false);
+        var text = await stdout;
+        var capabilities = new MediaMuxerCapabilities(
+            text.Contains(" mp4 ", StringComparison.OrdinalIgnoreCase)
+            || text.Contains(" mov,mp4", StringComparison.OrdinalIgnoreCase),
+            text.Contains(" matroska", StringComparison.OrdinalIgnoreCase));
+        _lastMuxerCapabilities = (runtime.ExecutablePath, capabilities);
+        return capabilities;
+    }
+
+    private static void ValidateMuxRequest(MediaMuxRequest request)
+    {
+        if (request.OutputMediaMode == OutputMediaMode.AudioOnly)
+            throw new ArgumentException("NativeAudio 不经过 ffmpeg 封装。", nameof(request));
+        if (string.IsNullOrWhiteSpace(request.VideoPath))
+            throw new ArgumentException("视频输出缺少视频输入。", nameof(request));
+        if (request.OutputMediaMode == OutputMediaMode.AudioVideo && string.IsNullOrWhiteSpace(request.AudioPath))
+            throw new ArgumentException("音视频输出缺少音频输入。", nameof(request));
+        if (request.OutputContainer is not (OutputContainer.Mp4 or OutputContainer.Mkv))
+            throw new ArgumentException("ffmpeg 封装只接受 MP4 或 MKV。", nameof(request));
     }
 
     private IEnumerable<(string Path, FfmpegRuntimeSource Source)> EnumerateCandidates()

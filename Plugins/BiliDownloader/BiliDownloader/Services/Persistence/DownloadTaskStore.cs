@@ -431,6 +431,26 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
         await cmd.ExecuteNonQueryAsync();
     }
 
+    public async Task UpdateActualVideoCodecAsync(
+        string taskId,
+        string actualVideoCodec,
+        DateTime lastUpdatedAt)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            UPDATE download_tasks
+            SET actual_video_codec = $actual_video_codec,
+                last_updated_at = $last_updated_at
+            WHERE task_id = $task_id;
+            """;
+        cmd.Parameters.AddWithValue("$task_id", taskId);
+        cmd.Parameters.AddWithValue("$actual_video_codec", actualVideoCodec);
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(lastUpdatedAt));
+        await cmd.ExecuteNonQueryAsync();
+    }
+
     public async Task MarkCompletedAsync(
         string taskId,
         string outputFilePath,
@@ -444,9 +464,9 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             UPDATE download_tasks
             SET progress = 100,
                 status = $status,
-                video_progress = 100,
-                audio_progress = 100,
-                merge_progress = 100,
+                video_progress = CASE WHEN output_media_mode = 'AudioOnly' THEN 0 ELSE 100 END,
+                audio_progress = CASE WHEN output_media_mode = 'VideoOnly' THEN 0 ELSE 100 END,
+                merge_progress = CASE WHEN output_media_mode = 'AudioOnly' THEN 0 ELSE 100 END,
                 speed_text = '',
                 output_file_path = $output_file_path,
                 extras_result_summary = $extras_result_summary,

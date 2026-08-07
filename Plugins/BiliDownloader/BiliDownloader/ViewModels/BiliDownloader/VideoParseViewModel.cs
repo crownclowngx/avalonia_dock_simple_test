@@ -160,6 +160,7 @@ public partial class VideoParseViewModel : ObservableObject
 
                 // 音频清晰度
                 var audioGroups = dashResult.AudioStreams
+                    .Where(a => a.AudioFeature == BiliAudioFeature.Standard)
                     .GroupBy(a => a.Id)
                     .Select(g => g.OrderByDescending(a => a.Bandwidth).First())
                     .OrderBy(a => a.Bandwidth)

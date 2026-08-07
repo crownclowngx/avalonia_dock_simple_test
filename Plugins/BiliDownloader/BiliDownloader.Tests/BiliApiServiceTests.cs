@@ -233,10 +233,10 @@ public sealed class BiliApiServiceTests
                     "accept_quality":[120,80],
                     "accept_description":["4K","1080P"],
                     "dash":{
-                      "video":[{"id":120,"base_url":"https://v.test/main","backup_url":["https://v.test/b1"],"codecid":7,"bandwidth":5000}],
-                      "audio":[{"id":30232,"baseUrl":"https://a.test/main","codecid":0,"bandwidth":192000}],
-                      "dolby":{"audio":[{"id":30250,"base_url":"https://a.test/dolby","bandwidth":384000}]},
-                      "flac":{"audio":{"id":30280,"base_url":"https://a.test/flac","bandwidth":1000000}}
+                      "video":[{"id":120,"base_url":"https://v.test/main","backup_url":["https://v.test/b1"],"codecid":7,"codecs":"avc1.640033","mime_type":"video/mp4","bandwidth":5000}],
+                      "audio":[{"id":30232,"baseUrl":"https://a.test/main","codecid":0,"codecs":"mp4a.40.2","mime_type":"audio/mp4","bandwidth":192000}],
+                      "dolby":{"audio":[{"id":30250,"base_url":"https://a.test/dolby","codecs":"ec-3","mime_type":"audio/mp4","bandwidth":384000}]},
+                      "flac":{"audio":{"id":30280,"base_url":"https://a.test/flac","codecs":"flac","mime_type":"audio/flac","bandwidth":1000000}}
                     }
                   }
                 }
@@ -253,8 +253,14 @@ public sealed class BiliApiServiceTests
         var video = Assert.Single(result.VideoStreams);
         Assert.Equal("https://v.test/main", video.BaseUrl);
         Assert.Equal(["https://v.test/b1"], video.BackupUrls);
+        Assert.Equal("avc1.640033", video.Codecs);
+        Assert.Equal("video/mp4", video.MimeType);
+        Assert.Equal(DashContainerHint.Mp4, video.ContainerHint);
         Assert.Equal(3, result.AudioStreams.Count);
-        Assert.Contains(result.AudioStreams, x => x.Id == 30280 && x.Bandwidth == 1_000_000);
+        Assert.Contains(result.AudioStreams, x => x.Id == 30232 && x.AudioFeature == BiliAudioFeature.Standard);
+        Assert.Contains(result.AudioStreams, x => x.Id == 30250 && x.AudioFeature == BiliAudioFeature.Dolby);
+        Assert.Contains(result.AudioStreams, x => x.Id == 30280 && x.Bandwidth == 1_000_000
+            && x.AudioFeature == BiliAudioFeature.HiRes && x.ContainerHint == DashContainerHint.Flac);
         http.ShouldHaveCalled("*x/player/wbi/playurl*")
             .WithQueryParam("avid", "1")
             .WithQueryParam("cid", "2")

@@ -15,13 +15,13 @@ internal static class Program
         }
         catch (OperationCanceledException)
         {
-            Console.Error.WriteLine("G8 验收已取消。");
+            Console.Error.WriteLine("发布验收已取消。");
             return 2;
         }
         catch (Exception ex)
         {
             // 顶层同样不输出 Message，避免外部 HTTP 异常把签名 URL 写入发布日志。
-            Console.Error.WriteLine($"G8 验收失败：{ex.GetType().Name}");
+            Console.Error.WriteLine($"发布验收失败：{ex.GetType().Name}");
             return 2;
         }
     }
@@ -70,6 +70,12 @@ internal static class Program
                 context = new ReleaseGateContext(sandbox, null, cookie);
                 gates = [new PackageVerificationGate(package)];
                 break;
+            case "media-output":
+                context = new ReleaseGateContext(sandbox, null, null);
+                context.Items["ffmpeg"] = RequiredOption(args, "--ffmpeg");
+                context.Items["ffprobe"] = RequiredOption(args, "--ffprobe");
+                gates = [new OfflineMediaOutputGate()];
+                break;
             default:
                 WriteUsage();
                 return 2;
@@ -78,7 +84,7 @@ internal static class Program
         Directory.CreateDirectory(context.SandboxRoot);
         var report = await new ReleaseGatePipeline(gates).ExecuteAsync(context, cancellationToken);
         await ReleaseGatePipeline.WriteReportAsync(reportPath, report, cancellationToken);
-        Console.WriteLine(report.Passed ? "G8 验收门禁通过。" : "G8 验收门禁未通过。");
+        Console.WriteLine(report.Passed ? "发布验收门禁通过。" : "发布验收门禁未通过。");
         return report.Passed ? 0 : 1;
     }
 
@@ -96,5 +102,6 @@ internal static class Program
         Console.Error.WriteLine("  live --sandbox <目录> --report <JSON>");
         Console.Error.WriteLine("  scan --root <目录> --sandbox <目录> --report <JSON>");
         Console.Error.WriteLine("  verify-package --package <ZIP> --sandbox <目录> --report <JSON>");
+        Console.Error.WriteLine("  media-output --ffmpeg <ffmpeg.exe> --ffprobe <ffprobe.exe> --sandbox <目录> --report <JSON>");
     }
 }

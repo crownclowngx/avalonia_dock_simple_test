@@ -61,11 +61,19 @@ public sealed class DashMediaSizeEstimator : IMediaSizeEstimator
 {
     private readonly BiliApiService _apiService;
     private readonly IBiliCredentialProvider _credentials;
+    private readonly IMediaStreamSelectionPolicy _selectionPolicy;
+    private readonly IMediaSizeCalculator _sizeCalculator;
 
-    public DashMediaSizeEstimator(BiliApiService apiService, IBiliCredentialProvider credentials)
+    public DashMediaSizeEstimator(
+        BiliApiService apiService,
+        IBiliCredentialProvider credentials,
+        IMediaStreamSelectionPolicy? selectionPolicy = null,
+        IMediaSizeCalculator? sizeCalculator = null)
     {
         _apiService = apiService;
         _credentials = credentials;
+        _selectionPolicy = selectionPolicy ?? new MediaStreamSelectionPolicy(new OutputArtifactPolicy());
+        _sizeCalculator = sizeCalculator ?? new MediaSizeCalculator();
     }
 
     public async Task<long?> EstimatePeakBytesAsync(
@@ -78,22 +86,12 @@ public sealed class DashMediaSizeEstimator : IMediaSizeEstimator
         var dash = await _apiService.GetDashResultAsync(
             item.Aid, item.Cid, profile.VideoQualityId, _credentials.GetCookieHeader(),
             item.MediaType, item.EpId, item.SeasonId);
-        var video = dash.VideoStreams
-            .Where(stream => stream.Id == profile.VideoQualityId)
-            .OrderBy(stream => stream.Codecid == 7 ? 0 : 1)
-            .ThenByDescending(stream => stream.Bandwidth)
-            .FirstOrDefault()
-            ?? dash.VideoStreams.OrderByDescending(stream => stream.Bandwidth).FirstOrDefault();
-        var audio = (profile.AudioQualityId > 0
-                ? dash.AudioStreams.FirstOrDefault(stream => stream.Id == profile.AudioQualityId)
-                : null)
-            ?? dash.AudioStreams.OrderByDescending(stream => stream.Bandwidth).FirstOrDefault();
-        if (video is null || audio is null || video.Bandwidth <= 0 || audio.Bandwidth <= 0) return null;
-
-        var streamBytes = checked((video.Bandwidth + audio.Bandwidth) * (long)item.Duration / 8L);
-        // 下载期间同时存在音视频临时流与最终 MP4。使用两倍流大小并追加 10% 安全余量，
-        // 宁可提示用户拆小批次，也不以乐观估算制造可预见的磁盘写满故障。
-        return checked(streamBytes * 22L / 10L);
+        var selection = _selectionPolicy.Select(dash, new MediaSelectionRequest(
+            profile.VideoQualityId, profile.AudioQualityId, profile.VideoCodecPreference,
+            profile.OutputContainer, profile.OutputMediaMode));
+        return selection is { Success: true, OutputPlan: not null }
+            ? _sizeCalculator.EstimatePeakBytes(selection.OutputPlan, item.Duration)
+            : null;
     }
 }
 
@@ -109,6 +107,9 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
     private readonly IMediaSizeEstimator _sizeEstimator;
     private readonly IStorageCapacityProvider _capacity;
     private readonly IReadOnlyDictionary<FileConflictPolicy, IFileConflictStrategy> _strategies;
+    private readonly IMediaPreflightAnalyzer? _mediaAnalyzer;
+    private readonly IOutputArtifactPolicy _outputPolicy;
+    private readonly IMediaMuxerCapabilityProvider? _muxerCapabilities;
 
     public SubmissionPreflightService(
         IBiliCredentialProvider credentials,
@@ -116,7 +117,10 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         IDownloadTaskRepository tasks,
         IMediaSizeEstimator sizeEstimator,
         IStorageCapacityProvider capacity,
-        IEnumerable<IFileConflictStrategy>? strategies = null)
+        IEnumerable<IFileConflictStrategy>? strategies = null,
+        IMediaPreflightAnalyzer? mediaAnalyzer = null,
+        IOutputArtifactPolicy? outputPolicy = null,
+        IMediaMuxerCapabilityProvider? muxerCapabilities = null)
     {
         _credentials = credentials;
         _ffmpeg = ffmpeg;
@@ -125,6 +129,9 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         _capacity = capacity;
         _strategies = (strategies ?? CreateDefaultStrategies())
             .ToDictionary(strategy => strategy.Policy);
+        _mediaAnalyzer = mediaAnalyzer;
+        _outputPolicy = outputPolicy ?? new OutputArtifactPolicy();
+        _muxerCapabilities = muxerCapabilities;
     }
 
     public async Task<SubmissionPreflightReport> InspectAsync(
@@ -132,14 +139,20 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         CancellationToken cancellationToken = default)
     {
         var global = new List<PreflightIssue>();
-        // P1-G5 先冻结输出身份字段，实际编码/容器执行仍属于 G7。显式阻止非兼容组合，
-        // 避免持久化指纹宣称一种输出，而当前执行器静默产生另一种文件。
-        if (submission.Profile.VideoCodecPreference != VideoCodecPreference.AutoCompatibility ||
-            submission.Profile.OutputContainer != OutputContainer.Mp4 ||
-            submission.Profile.OutputMediaMode != OutputMediaMode.AudioVideo)
-            global.Add(Block("output_not_implemented", "当前版本尚未执行所选编码、容器或输出模式，请使用兼容 MP4 音视频配置。"));
-        if (!_ffmpeg.IsReady)
-            global.Add(Block("ffmpeg", "ffmpeg 未就绪，请先在调度器工具中完成配置。"));
+        if (!_outputPolicy.IsValidCombination(
+                submission.Profile.OutputMediaMode, submission.Profile.OutputContainer))
+            global.Add(Block("invalid_output_combination", "输出模式与容器组合不合法。音视频/仅视频只支持 MP4、MKV；仅音频只支持原生音频。"));
+        if (submission.Profile.OutputMediaMode != OutputMediaMode.AudioOnly)
+        {
+            if (!_ffmpeg.IsReady)
+                global.Add(Block("ffmpeg", "ffmpeg 未就绪，请先在调度器工具中完成配置。"));
+            else if (_muxerCapabilities is not null)
+            {
+                var capabilities = await _muxerCapabilities.GetCapabilitiesAsync(cancellationToken);
+                if (!capabilities.Supports(submission.Profile.OutputContainer))
+                    global.Add(Block("ffmpeg_muxer", $"当前 ffmpeg 不支持 {submission.Profile.OutputContainer} 封装。"));
+            }
+        }
 
         var outputDirectory = NormalizeAndProbeDirectory(submission.Profile.OutputDirectory, global);
         var globallyBlocked = global.Any(issue => issue.Severity == PreflightIssueSeverity.Blocking);
@@ -166,8 +179,45 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         {
             cancellationToken.ThrowIfCancellationRequested();
             var issues = new List<PreflightIssue>();
+            MediaOutputPlan? outputPlan = null;
+            long? analyzedEstimate = null;
+            var mediaBlocked = false;
+            if (!globallyBlocked && _mediaAnalyzer is not null)
+            {
+                try
+                {
+                    var analysis = await _mediaAnalyzer.AnalyzeAsync(item, submission.Profile, cancellationToken);
+                    if (!analysis.Selection.Success || analysis.Selection.OutputPlan is null)
+                    {
+                        issues.Add(Block(
+                            "media_selection_" + analysis.Selection.FailureCode.ToString().ToLowerInvariant(),
+                            $"“{item.Title}”：{analysis.Selection.Message}", item.ItemId));
+                        mediaBlocked = true;
+                    }
+                    else
+                    {
+                        outputPlan = analysis.Selection.OutputPlan;
+                        analyzedEstimate = analysis.EstimatedPeakBytes;
+                        fingerprintParts.Add($"OUTPUT|{item.Aid}|{item.Cid}|{outputPlan.ActualVideoCodec}|{outputPlan.ActualAudioCodec}|{outputPlan.OutputContainer}|{outputPlan.OutputMediaMode}|{outputPlan.FileExtension}");
+                    }
+                }
+                catch (MediaAuthorizationException)
+                {
+                    issues.Add(Block("login", $"“{item.Title}”需要登录或更高账号权限。", item.ItemId));
+                    mediaBlocked = true;
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    issues.Add(Block("media_probe", $"“{item.Title}”无法验证可用媒体流：{ex.Message}", item.ItemId));
+                    mediaBlocked = true;
+                }
+            }
+            outputPlan ??= CreateCompatibilityOutputPlan(submission.Profile);
             RenditionFingerprint? rendition = null;
-            if (item.Aid > 0 && item.Cid > 0 && submission.Profile.VideoQualityId > 0)
+            if (item.Aid > 0 && item.Cid > 0
+                && (submission.Profile.VideoQualityId > 0
+                    || submission.Profile.OutputMediaMode == OutputMediaMode.AudioOnly))
             {
                 rendition = RenditionFingerprint.Create(
                     new Models.ContentSources.MediaUnitKey(item.Aid, item.Cid),
@@ -178,14 +228,14 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
             {
                 itemResults.Add(new(item, string.Empty, string.Empty,
                     ShouldSubmit: false, ShouldSkip: false, IsResume: false, ResumeTaskId: null,
-                    HasConflict: false, EstimatedRequiredBytes: 0, Issues: issues));
+                    HasConflict: false, EstimatedRequiredBytes: 0, Issues: issues, OutputPlan: outputPlan));
                 continue;
             }
             var actualDirectory = submission.Profile.UseGroupFolder
                 ? Path.Combine(outputDirectory, FileNameSanitizer.Sanitize(submission.SeriesTitle))
                 : outputDirectory;
             var baseName = FileNameSanitizer.Sanitize(item.Title);
-            var outputPath = Path.Combine(actualDirectory, baseName + ".mp4");
+            var outputPath = Path.Combine(actualDirectory, baseName + outputPlan.FileExtension);
             bool hasConflict;
             try
             {
@@ -197,7 +247,7 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
                     $"“{item.Title}”无法检查已有文件：{ex.Message}", item.ItemId));
                 itemResults.Add(new(item, outputPath, NormalizePathKey(outputPath),
                     ShouldSubmit: false, ShouldSkip: false, IsResume: false, ResumeTaskId: null,
-                    HasConflict: false, EstimatedRequiredBytes: 0, Issues: issues));
+                    HasConflict: false, EstimatedRequiredBytes: 0, Issues: issues, OutputPlan: outputPlan));
                 continue;
             }
             var shouldSubmit = true;
@@ -215,7 +265,7 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
             {
                 decision = strategy.Decide(new FileConflictContext(
                     item, outputPath, hasConflict, candidate, resumeValid, resumeReason,
-                    () => AllocateNumberedPath(actualDirectory, baseName, allocated, fingerprintParts)));
+                    () => AllocateNumberedPath(actualDirectory, baseName, outputPlan.FileExtension, allocated, fingerprintParts)));
             }
             catch (IOException ex)
             {
@@ -230,6 +280,7 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
             isResume = decision.IsResume;
             resumeTaskId = decision.ResumeTaskId;
             issues.AddRange(decision.EffectiveIssues);
+            if (mediaBlocked) shouldSubmit = false;
 
             if (rendition.HasValue && !batchRenditions.Add(rendition.Value.Value))
             {
@@ -291,7 +342,10 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
             {
                 try
                 {
-                    estimate = await _sizeEstimator.EstimatePeakBytesAsync(item, submission.Profile, cancellationToken) ?? 0;
+                    // 新分析器已经在一次 DASH 请求内完成选择与估算；未知时不得二次请求。
+                    estimate = _mediaAnalyzer is not null
+                        ? analyzedEstimate ?? 0
+                        : await _sizeEstimator.EstimatePeakBytesAsync(item, submission.Profile, cancellationToken) ?? 0;
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (MediaAuthorizationException)
@@ -304,7 +358,7 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
                 else estimatedTotal = checked(estimatedTotal + estimate);
             }
             itemResults.Add(new(item, outputPath, key, shouldSubmit, shouldSkip, isResume, resumeTaskId,
-                hasConflict, estimate, issues));
+                hasConflict, estimate, issues, outputPlan));
             fingerprintParts.Add($"PLAN|{key}|{shouldSubmit}|{shouldSkip}|{isResume}");
         }
 
@@ -389,11 +443,12 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
     }
 
     private static string AllocateNumberedPath(
-        string directory, string baseName, ISet<string> allocated, ICollection<string> fingerprint)
+        string directory, string baseName, string extension,
+        ISet<string> allocated, ICollection<string> fingerprint)
     {
         for (var index = 1; index < 10_000; index++)
         {
-            var candidate = Path.Combine(directory, $"{baseName} ({index}).mp4");
+            var candidate = Path.Combine(directory, $"{baseName} ({index}){extension}");
             if (!HasArtifactConflict(candidate, allocated, fingerprint)) return candidate;
         }
         throw new IOException("自动序号已达到 9999，无法继续分配输出路径。");
@@ -405,6 +460,9 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
             task.DocumentId == submission.DocumentId && task.Aid == item.Aid && task.Cid == item.Cid
             && task.EpId == item.EpId && task.QualityId == submission.Profile.VideoQualityId
             && task.AudioQualityId == submission.Profile.AudioQualityId
+            && (task.SelectedVideoCodec ?? VideoCodecPreference.AutoCompatibility) == submission.Profile.VideoCodecPreference
+            && (task.SelectedOutputContainer ?? OutputContainer.Mp4) == submission.Profile.OutputContainer
+            && (task.SelectedOutputMediaMode ?? OutputMediaMode.AudioVideo) == submission.Profile.OutputMediaMode
             && DownloadTaskStatusMapper.FromStorageString(task.Status) is
                 DownloadTaskStatus.Paused or DownloadTaskStatus.Interrupted or DownloadTaskStatus.Failed);
 
@@ -416,7 +474,10 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         var directory = string.IsNullOrWhiteSpace(task.SubFolder)
             ? task.OutputDirectory
             : Path.Combine(task.OutputDirectory, task.SubFolder);
-        return NormalizePathKey(Path.Combine(directory, FileNameSanitizer.Sanitize(task.ItemTitle) + ".mp4"));
+        var extension = task.SelectedOutputMediaMode == OutputMediaMode.AudioOnly
+            ? ".m4a"
+            : task.SelectedOutputContainer == OutputContainer.Mkv ? ".mkv" : ".mp4";
+        return NormalizePathKey(Path.Combine(directory, FileNameSanitizer.Sanitize(task.ItemTitle) + extension));
     }
 
     private static bool TryValidateResumeCandidate(DownloadTaskRecord task, out string reason)
@@ -426,13 +487,23 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
             reason = "临时目录不存在";
             return false;
         }
-        if (task.ExpectedVideoBytes <= 0 && task.ExpectedAudioBytes <= 0)
+        var mode = task.SelectedOutputMediaMode ?? OutputMediaMode.AudioVideo;
+        var requiresVideo = mode is OutputMediaMode.AudioVideo or OutputMediaMode.VideoOnly;
+        var requiresAudio = mode is OutputMediaMode.AudioVideo or OutputMediaMode.AudioOnly;
+        var legacySnapshot = task.SubmissionSnapshotVersion == 0;
+        if (legacySnapshot
+            ? task.ExpectedVideoBytes <= 0 && task.ExpectedAudioBytes <= 0
+            : (requiresVideo && task.ExpectedVideoBytes <= 0)
+            || (requiresAudio && task.ExpectedAudioBytes <= 0))
         {
             reason = "缺少可信的预期长度";
             return false;
         }
         var hasData = false;
-        foreach (var (name, expected) in new[] { ("video.tmp", task.ExpectedVideoBytes), ("audio.tmp", task.ExpectedAudioBytes) })
+        var expectedInputs = new List<(string Name, long Expected)>();
+        if (legacySnapshot || requiresVideo) expectedInputs.Add(("video.tmp", task.ExpectedVideoBytes));
+        if (legacySnapshot || requiresAudio) expectedInputs.Add(("audio.tmp", task.ExpectedAudioBytes));
+        foreach (var (name, expected) in expectedInputs)
         {
             var files = Directory.EnumerateFiles(task.TempDirectory, name + "*")
                 .Where(path => path == Path.Combine(task.TempDirectory, name)
@@ -481,4 +552,20 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         new ResumeVerifiedConflictStrategy(),
         new AutoNumberConflictStrategy(),
     ];
+
+    private MediaOutputPlan CreateCompatibilityOutputPlan(DownloadProfileSnapshot profile)
+    {
+        var audioCodec = profile.OutputMediaMode == OutputMediaMode.AudioOnly ? AudioCodec.Aac : AudioCodec.Unknown;
+        if (!_outputPolicy.IsValidCombination(profile.OutputMediaMode, profile.OutputContainer))
+            return new MediaOutputPlan(VideoCodec.Unknown, audioCodec, profile.OutputContainer,
+                profile.OutputMediaMode, ".invalid", 0, 0);
+        return new MediaOutputPlan(
+            VideoCodec.Unknown,
+            audioCodec,
+            profile.OutputContainer,
+            profile.OutputMediaMode,
+            _outputPolicy.GetFileExtension(profile.OutputMediaMode, profile.OutputContainer, audioCodec),
+            0,
+            0);
+    }
 }

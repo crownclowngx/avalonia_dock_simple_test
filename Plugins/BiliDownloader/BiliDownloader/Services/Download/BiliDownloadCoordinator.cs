@@ -298,6 +298,7 @@ public sealed class BiliDownloadCoordinator
                 ? FileNameSanitizer.Sanitize(current.Submission.SeriesTitle)
                 : string.Empty;
             var records = new List<DownloadTaskRecord>();
+            var taskReferences = new List<CommittedTaskReference>();
             var resumed = 0;
             var resumedTaskIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var planned in current.Items.Where(item => item.ShouldSubmit))
@@ -313,13 +314,15 @@ public sealed class BiliDownloadCoordinator
                         planned.OutputPathKey,
                         profile.ConflictPolicy,
                         planned.EstimatedRequiredBytes);
+                    taskReferences.Add(new CommittedTaskReference(planned.Item.ItemId, planned.ResumeTaskId));
                     resumed++;
                     continue;
                 }
                 var item = planned.Item;
+                var taskId = Guid.NewGuid().ToString("N");
                 records.Add(new DownloadTaskRecord
                 {
-                    TaskId = item.ItemId,
+                    TaskId = taskId,
                     DocumentId = current.Submission.DocumentId,
                     SourceDocumentTitle = current.Submission.DocumentTitle,
                     SeriesTitle = current.Submission.SeriesTitle,
@@ -340,6 +343,7 @@ public sealed class BiliDownloadCoordinator
                     SelectedVideoCodec = profile.VideoCodecPreference,
                     SelectedOutputContainer = profile.OutputContainer,
                     SelectedOutputMediaMode = profile.OutputMediaMode,
+                    ActualVideoCodec = ToStorageCodec(planned.OutputPlan?.ActualVideoCodec ?? VideoCodec.Unknown),
                     RedownloadedFromTaskId = current.Submission.RedownloadedFromTaskId ?? string.Empty,
                     OutputDirectory = profile.OutputDirectory,
                     SubFolder = subFolder,
@@ -359,6 +363,7 @@ public sealed class BiliDownloadCoordinator
                         | (profile.DownloadCover ? (int)ExtrasType.Cover : 0),
                     CoverUrl = item.CoverUrl,
                 });
+                taskReferences.Add(new CommittedTaskReference(item.ItemId, taskId));
             }
             if (records.Count > 0) await _repository.InsertBatchAsync(records);
             var committed = records.Count + resumed;
@@ -369,7 +374,7 @@ public sealed class BiliDownloadCoordinator
                 StartProcessingInternal();
             }
             return new(SubmissionCommitStatus.Committed, committed, current.SkipCount,
-                $"已提交 {committed} 项，跳过 {current.SkipCount} 项。");
+                $"已提交 {committed} 项，跳过 {current.SkipCount} 项。", taskReferences);
         }
         catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 19)
         {
@@ -890,6 +895,13 @@ public sealed class BiliDownloadCoordinator
                         checkpoint.VideoIntegrityPassed,
                         checkpoint.AudioIntegrityPassed,
                         task.LastUpdatedAt);
+                },
+                async outputPlan =>
+                {
+                    task.ActualVideoCodec = ToStorageCodec(outputPlan.ActualVideoCodec);
+                    task.LastUpdatedAt = DateTime.Now;
+                    await _repository.UpdateActualVideoCodecAsync(
+                        task.TaskId, task.ActualVideoCodec, task.LastUpdatedAt);
                 }),
                 context.Token);  // G2: 使用 per-task token 替代全局 ct
 
@@ -934,9 +946,7 @@ public sealed class BiliDownloadCoordinator
                 completedAt);
             task.Status = ToStorage(DownloadTaskStatus.Completed);
             task.Progress = 100;
-            task.VideoProgress = 100;
-            task.AudioProgress = 100;
-            task.MergeProgress = 100;
+            ApplyCompletedStageProgress(task);
             task.SpeedText = "";
             task.OutputFilePath = outputFilePath;
             task.LastUpdatedAt = completedAt;
@@ -1051,6 +1061,8 @@ public sealed class BiliDownloadCoordinator
             if (ParseStatus(task.Status) != DownloadTaskStatus.Failed
                 || task.ErrorType is not ("ffmpeg" or "merge"))
                 throw new InvalidOperationException("只有 ffmpeg 或合并失败任务可以仅重试合并。");
+            if ((task.SelectedOutputMediaMode ?? OutputMediaMode.AudioVideo) == OutputMediaMode.AudioOnly)
+                throw new InvalidOperationException("仅音频任务没有合并阶段，请使用普通重试或重新开始。");
 
             ValidateMergeCheckpoint(task);
             if (!await _repository.OwnsOutputPathReservationAsync(task.TaskId, task.OutputPathKey))
@@ -1069,7 +1081,9 @@ public sealed class BiliDownloadCoordinator
             task.ErrorMessage = null;
             await _repository.UpdateStageProgressAsync(
                 task.TaskId, task.Progress, task.Status,
-                100, 100, Math.Max(1, task.MergeProgress), "");
+                100,
+                (task.SelectedOutputMediaMode ?? OutputMediaMode.AudioVideo) == OutputMediaMode.AudioVideo ? 100 : 0,
+                Math.Max(1, task.MergeProgress), "");
             _tracker.BroadcastStatusChanged(task);
             TaskStatusChanged?.Invoke(task);
         }
@@ -1130,6 +1144,11 @@ public sealed class BiliDownloadCoordinator
             var baseName = !string.IsNullOrWhiteSpace(task.OutputFilePath)
                 ? Path.GetFileNameWithoutExtension(task.OutputFilePath)
                 : FileNameSanitizer.Sanitize(task.ItemTitle);
+            var extension = !string.IsNullOrWhiteSpace(task.OutputFilePath)
+                ? Path.GetExtension(task.OutputFilePath)
+                : (task.SelectedOutputMediaMode == OutputMediaMode.AudioOnly
+                    ? ".m4a"
+                    : task.SelectedOutputContainer == OutputContainer.Mkv ? ".mkv" : ".mp4");
             var existing = (await _repository.GetAllAsync())
                 .Where(item => item.TaskId != taskId && !string.IsNullOrWhiteSpace(item.OutputFilePath))
                 .Select(item => NormalizePathKey(item.OutputFilePath))
@@ -1139,7 +1158,7 @@ public sealed class BiliDownloadCoordinator
             string outputKey = "";
             for (var suffix = 0; suffix <= 9999; suffix++)
             {
-                var fileName = suffix == 0 ? $"{baseName}.mp4" : $"{baseName} ({suffix}).mp4";
+                var fileName = suffix == 0 ? baseName + extension : $"{baseName} ({suffix}){extension}";
                 var candidate = Path.Combine(directory, fileName);
                 var key = NormalizePathKey(candidate);
                 if (!File.Exists(candidate) && !existing.Contains(key))
@@ -1235,15 +1254,19 @@ public sealed class BiliDownloadCoordinator
 
     private static void ValidateMergeCheckpoint(DownloadTaskRecord task)
     {
-        if (!task.VideoIntegrityPassed || !task.AudioIntegrityPassed
-            || task.ExpectedVideoBytes <= 0 || task.ExpectedAudioBytes <= 0)
+        var mode = task.SelectedOutputMediaMode ?? OutputMediaMode.AudioVideo;
+        if (mode == OutputMediaMode.AudioOnly)
+            throw new InvalidOperationException("仅音频任务没有可重试的合并阶段。");
+        var requiresAudio = mode == OutputMediaMode.AudioVideo;
+        if (!task.VideoIntegrityPassed || task.ExpectedVideoBytes <= 0
+            || (requiresAudio && (!task.AudioIntegrityPassed || task.ExpectedAudioBytes <= 0)))
             throw new InvalidOperationException("缺少可信媒体检查点，请执行完整重试或重新开始。");
         if (string.IsNullOrWhiteSpace(task.TempDirectory))
             throw new InvalidOperationException("任务临时目录缺失，请执行完整重试或重新开始。");
         var video = Path.Combine(task.TempDirectory, "video.tmp");
         var audio = Path.Combine(task.TempDirectory, "audio.tmp");
         if (!File.Exists(video) || new FileInfo(video).Length != task.ExpectedVideoBytes
-            || !File.Exists(audio) || new FileInfo(audio).Length != task.ExpectedAudioBytes)
+            || (requiresAudio && (!File.Exists(audio) || new FileInfo(audio).Length != task.ExpectedAudioBytes)))
             throw new InvalidOperationException("临时媒体长度与检查点不一致，请执行完整重试或重新开始。");
     }
 
@@ -1255,9 +1278,7 @@ public sealed class BiliDownloadCoordinator
             task.TaskId, outputFilePath, task.ExtrasResultSummary, completedAt);
         task.Status = ToStorage(DownloadTaskStatus.Completed);
         task.Progress = 100;
-        task.VideoProgress = 100;
-        task.AudioProgress = 100;
-        task.MergeProgress = 100;
+        ApplyCompletedStageProgress(task);
         task.SpeedText = "";
         task.OutputFilePath = outputFilePath;
         task.ErrorMessage = null;
@@ -1268,6 +1289,36 @@ public sealed class BiliDownloadCoordinator
         _tracker.BroadcastStatusChanged(task);
         TaskStatusChanged?.Invoke(task);
     }
+
+    private static void ApplyCompletedStageProgress(DownloadTaskRecord task)
+    {
+        switch (task.SelectedOutputMediaMode ?? OutputMediaMode.AudioVideo)
+        {
+            case OutputMediaMode.VideoOnly:
+                task.VideoProgress = 100;
+                task.AudioProgress = 0;
+                task.MergeProgress = 100;
+                break;
+            case OutputMediaMode.AudioOnly:
+                task.VideoProgress = 0;
+                task.AudioProgress = 100;
+                task.MergeProgress = 0;
+                break;
+            default:
+                task.VideoProgress = 100;
+                task.AudioProgress = 100;
+                task.MergeProgress = 100;
+                break;
+        }
+    }
+
+    private static string ToStorageCodec(VideoCodec codec) => codec switch
+    {
+        VideoCodec.Avc => "avc",
+        VideoCodec.Hevc => "hevc",
+        VideoCodec.Av1 => "av1",
+        _ => string.Empty,
+    };
 
     private void SignalQueueChanged() => _queueWakeups.Writer.TryWrite(true);
 

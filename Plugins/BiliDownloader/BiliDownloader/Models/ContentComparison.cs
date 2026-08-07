@@ -29,8 +29,10 @@ public sealed record RenditionSpecification(
 {
     public void Validate()
     {
-        if (VideoQualityId <= 0)
-            throw new ArgumentOutOfRangeException(nameof(VideoQualityId), "视频质量 ID 必须为正数。");
+        if (OutputMediaMode != OutputMediaMode.AudioOnly && VideoQualityId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(VideoQualityId), "包含视频的输出必须具有正数视频质量 ID。");
+        if (OutputMediaMode == OutputMediaMode.AudioOnly && VideoQualityId != 0)
+            throw new ArgumentOutOfRangeException(nameof(VideoQualityId), "仅音频输出的规范化视频质量 ID 必须为 0。");
         if (AudioQualityId < 0)
             throw new ArgumentOutOfRangeException(nameof(AudioQualityId), "音频质量 ID 不能为负数。");
         if (!Enum.IsDefined(VideoCodecPreference))
@@ -40,6 +42,21 @@ public sealed record RenditionSpecification(
         if (!Enum.IsDefined(OutputMediaMode))
             throw new ArgumentOutOfRangeException(nameof(OutputMediaMode));
     }
+
+    /// <summary>
+    /// 清除当前输出模式不会消费的质量维度，避免隐藏设置变化制造内容完全相同的新版本。
+    /// </summary>
+    public RenditionSpecification Canonicalize() => OutputMediaMode switch
+    {
+        OutputMediaMode.AudioOnly => this with
+        {
+            VideoQualityId = 0,
+            VideoCodecPreference = VideoCodecPreference.AutoCompatibility,
+            OutputContainer = OutputContainer.NativeAudio,
+        },
+        OutputMediaMode.VideoOnly => this with { AudioQualityId = 0 },
+        _ => this,
+    };
 }
 
 /// <summary>
@@ -64,6 +81,7 @@ public readonly record struct RenditionFingerprint
 
     public static RenditionFingerprint Create(MediaUnitKey mediaUnitKey, RenditionSpecification specification)
     {
+        specification = specification.Canonicalize();
         specification.Validate();
         var canonical = string.Join('|',
             "rf1",

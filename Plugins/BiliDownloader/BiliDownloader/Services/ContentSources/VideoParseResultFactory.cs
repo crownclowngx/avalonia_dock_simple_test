@@ -52,7 +52,9 @@ public sealed class VideoParseResultFactory
             first.Aid, first.Cid, 80, _credentials.GetCookieHeader(),
             first.MediaType, first.EpId, first.SeasonId, cancellationToken);
         var qualities = dash.AcceptQualities.ToList();
-        var audio = dash.AudioStreams.GroupBy(stream => stream.Id)
+        var audio = dash.AudioStreams
+            .Where(stream => stream.AudioFeature == BiliAudioFeature.Standard)
+            .GroupBy(stream => stream.Id)
             .Select(group => group.OrderByDescending(stream => stream.Bandwidth).First())
             .OrderBy(stream => stream.Bandwidth)
             .Select(stream => new BiliQualityOption

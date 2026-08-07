@@ -118,3 +118,40 @@ public sealed record DanmakuOptions
         Formats = new[] { DanmakuOutputFormat.Xml },
     };
 }
+
+/// <summary>输出相关枚举的中文展示集中映射，避免活动任务与历史中心产生不同文案。</summary>
+public static class OutputOptionDisplay
+{
+    public static string ToDisplayText(this VideoCodecPreference value) => value switch
+    {
+        VideoCodecPreference.AutoCompatibility => "自动兼容",
+        VideoCodecPreference.Avc => "AVC/H.264",
+        VideoCodecPreference.Hevc => "HEVC/H.265",
+        VideoCodecPreference.Av1 => "AV1",
+        _ => "未知",
+    };
+
+    public static string ToDisplayText(this OutputContainer value) => value switch
+    {
+        OutputContainer.Mp4 => "MP4",
+        OutputContainer.Mkv => "MKV",
+        OutputContainer.NativeAudio => "原生音频",
+        _ => "未知",
+    };
+
+    public static string ToDisplayText(this OutputMediaMode value) => value switch
+    {
+        OutputMediaMode.AudioVideo => "音视频",
+        OutputMediaMode.VideoOnly => "仅视频",
+        OutputMediaMode.AudioOnly => "仅音频",
+        _ => "未知",
+    };
+
+    public static string ActualCodecToDisplayText(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        "avc" => "AVC/H.264",
+        "hevc" => "HEVC/H.265",
+        "av1" => "AV1",
+        _ => "未知",
+    };
+}

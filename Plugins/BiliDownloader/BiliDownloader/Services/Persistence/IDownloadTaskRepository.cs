@@ -79,6 +79,13 @@ public interface IDownloadTaskRepository
         bool audioIntegrityPassed,
         DateTime lastUpdatedAt);
 
+    /// <summary>
+    /// 在下载媒体前原子更新本次重新解析观察到的实际视频编码。旧完成任务不会通过扩展名反推该值。
+    /// 默认实现用于兼容旧测试仓储；生产 SQLite 实现必须覆盖。
+    /// </summary>
+    Task UpdateActualVideoCodecAsync(string taskId, string actualVideoCodec, DateTime lastUpdatedAt)
+        => Task.CompletedTask;
+
     /// <summary>原子标记任务完成并保存最终输出事实</summary>
     Task MarkCompletedAsync(
         string taskId,

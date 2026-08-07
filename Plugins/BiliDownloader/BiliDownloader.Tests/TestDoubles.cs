@@ -609,6 +609,7 @@ internal sealed class FakeFfmpegService : IFfmpegService
     public string? ResolvedPath => ResolveFfmpegPath();
     public bool IsReady => ReadyOverride ?? ResolvedPath is not null;
     public List<(string Video, string Audio, string Output)> MergeCalls { get; } = [];
+    public List<MediaMuxRequest> MuxCalls { get; } = [];
 
     public string? ResolveFfmpegPath()
         => !string.IsNullOrWhiteSpace(CustomPath) && File.Exists(CustomPath)
@@ -643,6 +644,17 @@ internal sealed class FakeFfmpegService : IFfmpegService
         {
             File.WriteAllBytes(outputPath, [0x01]);
         }
+        return Task.CompletedTask;
+    }
+
+    public Task MuxAsync(MediaMuxRequest request, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        MuxCalls.Add(request);
+        if (request.OutputMediaMode == OutputMediaMode.AudioVideo)
+            return MergeAsync(request.VideoPath!, request.AudioPath!, request.OutputPath, ct);
+        if (CreateOutputFile)
+            File.WriteAllBytes(request.OutputPath, [0x01]);
         return Task.CompletedTask;
     }
 }

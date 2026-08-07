@@ -577,7 +577,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
         {
             foreach (var v in videos)
             {
-                result.VideoStreams.Add(ParseDashStream(v));
+                result.VideoStreams.Add(ParseDashStream(v, BiliAudioFeature.Standard));
             }
         }
 
@@ -587,7 +587,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
         {
             foreach (var a in audios)
             {
-                result.AudioStreams.Add(ParseDashStream(a));
+                result.AudioStreams.Add(ParseDashStream(a, BiliAudioFeature.Standard));
             }
         }
 
@@ -600,7 +600,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
             {
                 foreach (var d in dolby)
                 {
-                    result.AudioStreams.Add(ParseDashStream(d));
+                    result.AudioStreams.Add(ParseDashStream(d, BiliAudioFeature.Dolby));
                 }
             }
         }
@@ -612,7 +612,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
             var flac = flacToken["audio"];
             if (flac != null && flac.Type == JTokenType.Object)
             {
-                result.AudioStreams.Add(ParseDashStream(flac));
+                result.AudioStreams.Add(ParseDashStream(flac, BiliAudioFeature.HiRes));
             }
         }
 
@@ -743,7 +743,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
 
     #region 辅助方法
 
-    private static BiliDashStream ParseDashStream(JToken token)
+    private static BiliDashStream ParseDashStream(JToken token, BiliAudioFeature audioFeature)
     {
         var backupUrls = new List<string>();
         var backupUrl = token["backup_url"] as JArray;
@@ -753,6 +753,17 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
                 backupUrls.Add(u.Value<string>() ?? "");
         }
 
+        var mimeType = token["mime_type"]?.Value<string>()
+                       ?? token["mimeType"]?.Value<string>()
+                       ?? string.Empty;
+        var containerHint = mimeType.ToLowerInvariant() switch
+        {
+            "video/mp4" or "audio/mp4" => DashContainerHint.Mp4,
+            "video/webm" or "audio/webm" => DashContainerHint.WebM,
+            "audio/flac" => DashContainerHint.Flac,
+            _ => DashContainerHint.Unknown,
+        };
+
         return new BiliDashStream
         {
             Id = token["id"]?.Value<int>() ?? 0,
@@ -760,6 +771,10 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
             BackupUrls = backupUrls,
             Codecid = token["codecid"]?.Value<int>() ?? 0,
             Bandwidth = token["bandwidth"]?.Value<long>() ?? 0,
+            Codecs = token["codecs"]?.Value<string>() ?? string.Empty,
+            MimeType = mimeType,
+            ContainerHint = containerHint,
+            AudioFeature = audioFeature,
         };
     }
 

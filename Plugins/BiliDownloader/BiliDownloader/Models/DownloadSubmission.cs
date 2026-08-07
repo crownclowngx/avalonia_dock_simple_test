@@ -17,12 +17,12 @@ public sealed record DownloadProfileSnapshot(
     OutputContainer OutputContainer = OutputContainer.Mp4,
     OutputMediaMode OutputMediaMode = OutputMediaMode.AudioVideo)
 {
-    public RenditionSpecification ToRenditionSpecification() => new(
+    public RenditionSpecification ToRenditionSpecification() => new RenditionSpecification(
         VideoQualityId,
         AudioQualityId,
         VideoCodecPreference,
         OutputContainer,
-        OutputMediaMode);
+        OutputMediaMode).Canonicalize();
 }
 
 /// <summary>An immutable media item detached from parser and UI state.</summary>

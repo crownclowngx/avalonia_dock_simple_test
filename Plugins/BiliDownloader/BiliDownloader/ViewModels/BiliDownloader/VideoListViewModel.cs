@@ -69,6 +69,7 @@ public partial class VideoListViewModel : ObservableObject
     private readonly IDownloadSubmissionService? _submissionService;
     private readonly IUserPromptService? _promptService;
     private readonly Func<string, Task>? _onPreflightAction;
+    private readonly Dictionary<string, string> _taskToSubmissionItem = new(StringComparer.Ordinal);
     private bool _isBulkSelectionUpdate;
 
     public ObservableCollection<BiliVideoItem> VideoItems { get; } = new();
@@ -150,6 +151,7 @@ public partial class VideoListViewModel : ObservableObject
     /// </summary>
     public void SetItems(List<BiliVideoItem> items)
     {
+        _taskToSubmissionItem.Clear();
         foreach (var oldItem in VideoItems)
             oldItem.PropertyChanged -= OnVideoItemPropertyChanged;
 
@@ -197,7 +199,7 @@ public partial class VideoListViewModel : ObservableObject
     /// </summary>
     public void UpdateItemProgress(DownloadTaskProgressMessage msg)
     {
-        var item = VideoItems.FirstOrDefault(v => v.ItemId == msg.TaskId);
+        var item = FindItemForTask(msg.TaskId);
         if (item == null) return;
 
         item.Status = MapStatusToDisplay(msg.Status);
@@ -222,7 +224,7 @@ public partial class VideoListViewModel : ObservableObject
     /// </summary>
     public void UpdateItemStatus(DownloadTaskStatusChangedMessage msg)
     {
-        var item = VideoItems.FirstOrDefault(v => v.ItemId == msg.TaskId);
+        var item = FindItemForTask(msg.TaskId);
         if (item == null) return;
 
         item.Status = MapStatusToDisplay(msg.NewStatus);
@@ -283,7 +285,7 @@ public partial class VideoListViewModel : ObservableObject
             return;
         }
 
-        if (ctx.QualityId == 0)
+        if (ctx.OutputMediaMode != OutputMediaMode.AudioOnly && ctx.QualityId == 0)
         {
             _onConfigurationBlocked?.Invoke();
             _onStatusMessage("请选择清晰度");
@@ -413,6 +415,8 @@ public partial class VideoListViewModel : ObservableObject
                 OnPropertyChanged(nameof(HasBlockingAction));
                 submittedIds = report!.Items.Where(item => item.ShouldSubmit)
                     .Select(item => item.Item.ItemId).ToHashSet();
+                foreach (var reference in result.EffectiveCommittedTasks)
+                    _taskToSubmissionItem[reference.TaskId] = reference.SubmissionItemId;
                 _onStatusMessage(result.Message);
             }
 
@@ -431,6 +435,12 @@ public partial class VideoListViewModel : ObservableObject
         {
             IsPreflighting = false;
         }
+    }
+
+    private BiliVideoItem? FindItemForTask(string taskId)
+    {
+        var itemId = _taskToSubmissionItem.GetValueOrDefault(taskId, taskId);
+        return VideoItems.FirstOrDefault(item => item.ItemId == itemId);
     }
 
     private async Task ExecuteBlockingActionAsync()

@@ -366,6 +366,10 @@
                                         <Run Text="质量: "/>
                                         <Run Text="{Binding QualityDisplayText}"/>
                                     </TextBlock>
+                                    <TextBlock FontSize="10"
+                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                               Text="{Binding OutputSpecificationText}"
+                                               TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
 
                                 <!-- 输出路径（截断显示） -->

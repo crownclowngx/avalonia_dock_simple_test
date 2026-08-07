@@ -16,6 +16,9 @@ public class BiliDownloadService : IDisposable
     private readonly IBiliDataPaths _paths;
     private readonly IMediaMuxer _mediaMuxer;
     private readonly IStorageCapacityProvider _capacity;
+    private readonly IMediaStreamSelectionPolicy _selectionPolicy;
+    private readonly IOutputArtifactPolicy _outputPolicy;
+    private readonly INativeAudioPublisher _nativeAudioPublisher;
 
     public BiliDownloadService(
         IBiliDataPaths paths,
@@ -23,11 +26,17 @@ public class BiliDownloadService : IDisposable
         IBiliHttpClientFactory httpClientFactory,
         IDownloadRuntime runtime,
         IStorageCapacityProvider? capacity = null,
-        int chunkCount = 4)
+        int chunkCount = 4,
+        IMediaStreamSelectionPolicy? selectionPolicy = null,
+        IOutputArtifactPolicy? outputPolicy = null,
+        INativeAudioPublisher? nativeAudioPublisher = null)
     {
         _paths = paths;
         _mediaMuxer = mediaMuxer;
         _capacity = capacity ?? new SystemStorageCapacityProvider();
+        _outputPolicy = outputPolicy ?? new OutputArtifactPolicy();
+        _selectionPolicy = selectionPolicy ?? new MediaStreamSelectionPolicy(_outputPolicy);
+        _nativeAudioPublisher = nativeAudioPublisher ?? new NativeAudioPublisher();
         _httpClient = httpClientFactory.CreateMediaClient();
         _multiDownloader = new MultiConnectionDownloader(_httpClient, runtime, chunkCount);
     }
@@ -66,7 +75,8 @@ public class BiliDownloadService : IDisposable
         Action<DownloadProgressInfo> onProgress,
         Action<long, long>? onBytesUpdate,
         CancellationToken ct,
-        Func<MediaReadyCheckpoint, Task>? onMediaReadyAsync = null)
+        Func<MediaReadyCheckpoint, Task>? onMediaReadyAsync = null,
+        Func<MediaOutputPlan, Task>? onMediaSelectionResolvedAsync = null)
     {
         // 确保临时目录和输出目录存在
         if (string.IsNullOrWhiteSpace(task.TempDirectory))
@@ -81,11 +91,16 @@ public class BiliDownloadService : IDisposable
             : Path.Combine(task.OutputDirectory, task.SubFolder);
         Directory.CreateDirectory(actualOutputDir);
 
+        var mode = task.SelectedOutputMediaMode ?? OutputMediaMode.AudioVideo;
+        var container = task.SelectedOutputContainer ?? OutputContainer.Mp4;
+        var codecPreference = task.SelectedVideoCodec ?? VideoCodecPreference.AutoCompatibility;
         var videoTmp = Path.Combine(task.TempDirectory, "video.tmp");
         var audioTmp = Path.Combine(task.TempDirectory, "audio.tmp");
         var safeTitle = FileNameSanitizer.Sanitize(task.ItemTitle);
+        var fallbackExtension = _outputPolicy.GetFileExtension(
+            mode, container, mode == OutputMediaMode.AudioOnly ? AudioCodec.Aac : AudioCodec.Unknown);
         var outputPath = string.IsNullOrWhiteSpace(task.OutputFilePath)
-            ? Path.Combine(actualOutputDir, safeTitle + ".mp4")
+            ? Path.Combine(actualOutputDir, safeTitle + fallbackExtension)
             : task.OutputFilePath;
         // staging 必须与最终文件位于同一目录，才能使用同卷原子移动；放在插件临时目录时，
         // 用户把输出设到其他磁盘会退化为跨卷移动并在发布阶段失败。
@@ -96,13 +111,18 @@ public class BiliDownloadService : IDisposable
             throw new OutputConflictException(outputPath);
         EnsureSufficientSpace(task, actualOutputDir);
 
-        // 进度状态容器（跨三个阶段累计）
+        // 权重由输出模式决定；不需要的阶段保持 0，供 UI 显示“不适用”。
         double videoProgress = 0, audioProgress = 0, mergeProgress = 0;
         string currentSpeed = "";
 
         void ReportProgress(string stage)
         {
-            var overall = videoProgress * 0.45 + audioProgress * 0.45 + mergeProgress * 0.10;
+            var overall = mode switch
+            {
+                OutputMediaMode.VideoOnly => videoProgress * 0.90 + mergeProgress * 0.10,
+                OutputMediaMode.AudioOnly => audioProgress,
+                _ => videoProgress * 0.45 + audioProgress * 0.45 + mergeProgress * 0.10,
+            };
             onProgress(new DownloadProgressInfo
             {
                 Stage = stage,
@@ -121,58 +141,64 @@ public class BiliDownloadService : IDisposable
             task.Aid, task.Cid, task.QualityId, cookieHeader,
             mediaType, task.EpId, task.SeasonId);
 
-        // 选择视频流：优先 AVC/H.264 (codecid=7)，选用户指定清晰度
-        var videoStream = SelectVideoStream(dashResult.VideoStreams, task.QualityId);
-        if (videoStream == null)
-            throw new ResourceUnavailableException("未找到匹配的视频流。");
+        var selection = _selectionPolicy.Select(dashResult, new MediaSelectionRequest(
+            task.QualityId, task.AudioQualityId, codecPreference, container, mode));
+        if (!selection.Success || selection.OutputPlan is null)
+            throw new ResourceUnavailableException(selection.Message);
+        var outputPlan = selection.OutputPlan;
+        if (!Path.GetExtension(outputPath).Equals(outputPlan.FileExtension, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("预留输出路径扩展名与运行时媒体选择不一致，请重新预检。");
+        if (onMediaSelectionResolvedAsync is not null)
+            await onMediaSelectionResolvedAsync(outputPlan);
 
-        // 选择音频流：优先按用户指定的音频 ID 选择，没有则回退最高码率
-        var audioStream = (task.AudioQualityId > 0
-                ? dashResult.AudioStreams.FirstOrDefault(a => a.Id == task.AudioQualityId)
-                : null)
-            ?? dashResult.AudioStreams.OrderByDescending(a => a.Bandwidth).FirstOrDefault();
-        if (audioStream == null)
-            throw new ResourceUnavailableException("未找到可用的音频流。");
+        var videoStream = selection.SelectedVideo;
+        var audioStream = selection.SelectedAudio;
 
         // 2. 下载视频流（多连接加速）
-        var videoUrls = CdnUrlHelper.FilterAndSortUrls(videoStream.BaseUrl, videoStream.BackupUrls);
-        var videoTransfer = await _multiDownloader.DownloadAsync(
-            videoUrls, videoTmp, cookieHeader,
-            (total, downloaded, speed) =>
-            {
-                task.VideoBytesDownloaded = downloaded;
-                videoProgress = total > 0 ? (double)downloaded / total * 100 : 0;
-                currentSpeed = speed;
-                ReportProgress("video");
-                onBytesUpdate?.Invoke(task.VideoBytesDownloaded, task.AudioBytesDownloaded);
-            },
-            ct);
-        currentSpeed = "";
-        videoProgress = 100;
+        var videoTransfer = new DownloadTransferResult(0, 0, false);
+        if (outputPlan.RequiresVideo)
+        {
+            var videoUrls = CdnUrlHelper.FilterAndSortUrls(videoStream!.BaseUrl, videoStream.BackupUrls);
+            videoTransfer = await _multiDownloader.DownloadAsync(
+                videoUrls, videoTmp, cookieHeader,
+                (total, downloaded, speed) =>
+                {
+                    task.VideoBytesDownloaded = downloaded;
+                    videoProgress = total > 0 ? (double)downloaded / total * 100 : 0;
+                    currentSpeed = speed;
+                    ReportProgress("video");
+                    onBytesUpdate?.Invoke(task.VideoBytesDownloaded, task.AudioBytesDownloaded);
+                }, ct);
+            currentSpeed = "";
+            videoProgress = 100;
+            ReportProgress("video");
+            EnsureSufficientSpace(task, actualOutputDir);
+        }
         task.ExpectedVideoBytes = videoTransfer.ExpectedBytes;
         task.VideoIntegrityPassed = videoTransfer.IntegrityPassed;
-        ReportProgress("video");
-        EnsureSufficientSpace(task, actualOutputDir);
 
         // 3. 下载音频流（多连接加速）
-        var audioUrls = CdnUrlHelper.FilterAndSortUrls(audioStream.BaseUrl, audioStream.BackupUrls);
-        var audioTransfer = await _multiDownloader.DownloadAsync(
-            audioUrls, audioTmp, cookieHeader,
-            (total, downloaded, speed) =>
-            {
-                task.AudioBytesDownloaded = downloaded;
-                audioProgress = total > 0 ? (double)downloaded / total * 100 : 0;
-                currentSpeed = speed;
-                ReportProgress("audio");
-                onBytesUpdate?.Invoke(task.VideoBytesDownloaded, task.AudioBytesDownloaded);
-            },
-            ct);
-        currentSpeed = "";
-        audioProgress = 100;
+        var audioTransfer = new DownloadTransferResult(0, 0, false);
+        if (outputPlan.RequiresAudio)
+        {
+            var audioUrls = CdnUrlHelper.FilterAndSortUrls(audioStream!.BaseUrl, audioStream.BackupUrls);
+            audioTransfer = await _multiDownloader.DownloadAsync(
+                audioUrls, audioTmp, cookieHeader,
+                (total, downloaded, speed) =>
+                {
+                    task.AudioBytesDownloaded = downloaded;
+                    audioProgress = total > 0 ? (double)downloaded / total * 100 : 0;
+                    currentSpeed = speed;
+                    ReportProgress("audio");
+                    onBytesUpdate?.Invoke(task.VideoBytesDownloaded, task.AudioBytesDownloaded);
+                }, ct);
+            currentSpeed = "";
+            audioProgress = 100;
+            ReportProgress("audio");
+            EnsureSufficientSpace(task, actualOutputDir);
+        }
         task.ExpectedAudioBytes = audioTransfer.ExpectedBytes;
         task.AudioIntegrityPassed = audioTransfer.IntegrityPassed;
-        ReportProgress("audio");
-        EnsureSufficientSpace(task, actualOutputDir);
 
         // G7：检查点必须在启动 ffmpeg 前完成持久化。若此处写库失败，任务应失败并保留输入，
         // 绝不能先合并后再补写事实，否则进程崩溃后无法证明临时媒体是否可信。
@@ -186,35 +212,58 @@ public class BiliDownloadService : IDisposable
         }
 
         // 4. ffmpeg 合并
-        mergeProgress = 10;
-        ReportProgress("merging");
         if (File.Exists(stagingPath)) File.Delete(stagingPath);
-        await MergeAsync(videoTmp, audioTmp, stagingPath, ct);
+        var published = false;
+        if (outputPlan.RequiresMuxer)
+        {
+            mergeProgress = 10;
+            ReportProgress("merging");
+            await _mediaMuxer.MuxAsync(new MediaMuxRequest(
+                outputPlan.RequiresVideo ? videoTmp : null,
+                outputPlan.RequiresAudio ? audioTmp : null,
+                stagingPath, container, mode), ct);
+            mergeProgress = 100;
+        }
+        else
+        {
+            try
+            {
+                await _nativeAudioPublisher.PublishAsync(
+                    audioTmp, stagingPath, outputPath,
+                    task.ConflictPolicy == FileConflictPolicy.Overwrite && task.OverwriteConfirmed, ct);
+            }
+            catch (IOException) when (File.Exists(outputPath)
+                                      && task.ConflictPolicy != FileConflictPolicy.Overwrite)
+            {
+                throw new OutputConflictException(outputPath);
+            }
+            published = true;
+        }
         try
         {
-            File.Move(stagingPath, outputPath,
-                overwrite: task.ConflictPolicy == FileConflictPolicy.Overwrite && task.OverwriteConfirmed);
+            if (!published)
+                File.Move(stagingPath, outputPath,
+                    overwrite: task.ConflictPolicy == FileConflictPolicy.Overwrite && task.OverwriteConfirmed);
         }
         catch (IOException) when (File.Exists(outputPath)
             && task.ConflictPolicy != FileConflictPolicy.Overwrite)
         {
             throw new OutputConflictException(outputPath);
         }
-        mergeProgress = 100;
         ReportProgress("done");
 
         // 5. 清理临时文件
         try
         {
-            if (File.Exists(videoTmp)) File.Delete(videoTmp);
-            if (File.Exists(audioTmp)) File.Delete(audioTmp);
+            if (outputPlan.RequiresVideo && File.Exists(videoTmp)) File.Delete(videoTmp);
+            if (outputPlan.RequiresAudio && File.Exists(audioTmp)) File.Delete(audioTmp);
             if (Directory.Exists(task.TempDirectory) &&
                 Directory.GetFiles(task.TempDirectory).Length == 0)
                 Directory.Delete(task.TempDirectory);
         }
         catch { /* 忽略清理失败 */ }
 
-        return new BiliDownloadItemResult(outputPath, videoTransfer, audioTransfer);
+        return new BiliDownloadItemResult(outputPath, videoTransfer, audioTransfer, outputPlan);
     }
 
     /// <summary>
@@ -226,6 +275,10 @@ public class BiliDownloadService : IDisposable
         Action<DownloadProgressInfo> onProgress,
         CancellationToken ct)
     {
+        var mode = task.SelectedOutputMediaMode ?? OutputMediaMode.AudioVideo;
+        if (mode == OutputMediaMode.AudioOnly)
+            throw new InvalidOperationException("仅音频任务没有可重试的合并阶段。");
+        var container = task.SelectedOutputContainer ?? OutputContainer.Mp4;
         var videoTmp = Path.Combine(task.TempDirectory, "video.tmp");
         var audioTmp = Path.Combine(task.TempDirectory, "audio.tmp");
         var actualOutputDir = string.IsNullOrWhiteSpace(task.OutputFilePath)
@@ -235,7 +288,8 @@ public class BiliDownloadService : IDisposable
             : Path.GetDirectoryName(task.OutputFilePath) ?? task.OutputDirectory;
         Directory.CreateDirectory(actualOutputDir);
         var outputPath = string.IsNullOrWhiteSpace(task.OutputFilePath)
-            ? Path.Combine(actualOutputDir, FileNameSanitizer.Sanitize(task.ItemTitle) + ".mp4")
+            ? Path.Combine(actualOutputDir, FileNameSanitizer.Sanitize(task.ItemTitle)
+                + _outputPolicy.GetFileExtension(mode, container))
             : task.OutputFilePath;
         var stagingPath = BuildStagingPath(outputPath, task.TaskId);
 
@@ -246,10 +300,15 @@ public class BiliDownloadService : IDisposable
             Stage = "merging",
             OverallProgress = 91,
             VideoProgress = 100,
-            AudioProgress = 100,
+            AudioProgress = mode == OutputMediaMode.AudioVideo ? 100 : 0,
             MergeProgress = 10,
         });
-        await MergeAsync(videoTmp, audioTmp, stagingPath, ct);
+        await _mediaMuxer.MuxAsync(new MediaMuxRequest(
+            videoTmp,
+            mode == OutputMediaMode.AudioVideo ? audioTmp : null,
+            stagingPath,
+            container,
+            mode), ct);
         try
         {
             File.Move(stagingPath, outputPath,
@@ -265,10 +324,11 @@ public class BiliDownloadService : IDisposable
             Stage = "done",
             OverallProgress = 100,
             VideoProgress = 100,
-            AudioProgress = 100,
+            AudioProgress = mode == OutputMediaMode.AudioVideo ? 100 : 0,
             MergeProgress = 100,
         });
-        CleanupVerifiedInputs(task.TempDirectory, videoTmp, audioTmp);
+        CleanupVerifiedInputs(task.TempDirectory,
+            mode == OutputMediaMode.AudioVideo ? [videoTmp, audioTmp] : [videoTmp]);
         return outputPath;
     }
 
@@ -314,29 +374,6 @@ public class BiliDownloadService : IDisposable
         return string.IsNullOrEmpty(extension)
             ? outputPath + $".staging-{taskId}"
             : Path.ChangeExtension(outputPath, $".staging-{taskId}{extension}");
-    }
-
-    /// <summary>
-    /// 从视频流列表中选择最佳流：优先 AVC (codecid=7)，匹配指定画质
-    /// </summary>
-    private static BiliDashStream? SelectVideoStream(List<BiliDashStream> streams, int qualityId)
-    {
-        if (streams.Count == 0) return null;
-
-        // 先找指定画质 + AVC
-        var match = streams.FirstOrDefault(s => s.Id == qualityId && s.Codecid == 7);
-        if (match != null) return match;
-
-        // 再找指定画质（任意编码）
-        match = streams.FirstOrDefault(s => s.Id == qualityId);
-        if (match != null) return match;
-
-        // 兜底：找最高画质的 AVC
-        match = streams.Where(s => s.Codecid == 7).OrderByDescending(s => s.Id).FirstOrDefault();
-        if (match != null) return match;
-
-        // 最终兜底：最高画质
-        return streams.OrderByDescending(s => s.Id).FirstOrDefault();
     }
 
     /// <summary>

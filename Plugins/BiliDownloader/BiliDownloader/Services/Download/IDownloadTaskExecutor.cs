@@ -40,7 +40,12 @@ public interface IDownloadTaskExecutor
 public sealed record DownloadExecutionCallbacks(
     Action<DownloadProgressInfo> OnProgress,
     Action<long, long> OnBytesChanged,
-    Func<MediaReadyCheckpoint, Task> OnMediaReadyAsync);
+    Func<MediaReadyCheckpoint, Task> OnMediaReadyAsync,
+    Func<MediaOutputPlan, Task>? OnMediaSelectionResolvedAsync = null)
+{
+    public Func<MediaOutputPlan, Task> EffectiveMediaSelectionResolvedAsync
+        => OnMediaSelectionResolvedAsync ?? (_ => Task.CompletedTask);
+}
 
 /// <summary>视频和音频都通过完整性校验后的持久化事实。</summary>
 public sealed record MediaReadyCheckpoint(

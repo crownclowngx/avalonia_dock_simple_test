@@ -28,6 +28,8 @@ public partial class DownloadConfigViewModel : ObservableObject
     private Task? _initializationTask;
     private bool _documentConfigurationApplied;
     private bool _isApplyingPreset;
+    private bool _isNormalizingOutputCombination;
+    private OutputContainer _lastVideoContainer = OutputContainer.Mp4;
     private int? _pendingQualityId;
     private int? _pendingAudioQualityId;
     private string _restoredPresetId = "";
@@ -77,6 +79,57 @@ public partial class DownloadConfigViewModel : ObservableObject
 
     [ObservableProperty]
     private OutputMediaMode _outputMediaMode = OutputMediaMode.AudioVideo;
+
+    /// <summary>编码下拉框使用中文展示对象，Value 才是 Document 与任务快照中的稳定值。</summary>
+    public IReadOnlyList<DownloadOutputOption<VideoCodecPreference>> VideoCodecOptions { get; } =
+    [
+        new(VideoCodecPreference.AutoCompatibility, "自动兼容（AVC → HEVC → AV1）"),
+        new(VideoCodecPreference.Avc, "AVC / H.264"),
+        new(VideoCodecPreference.Hevc, "HEVC / H.265"),
+        new(VideoCodecPreference.Av1, "AV1"),
+    ];
+
+    public IReadOnlyList<DownloadOutputOption<OutputMediaMode>> OutputMediaModeOptions { get; } =
+    [
+        new(OutputMediaMode.AudioVideo, "音视频"),
+        new(OutputMediaMode.VideoOnly, "仅视频"),
+        new(OutputMediaMode.AudioOnly, "仅音频"),
+    ];
+
+    public ObservableCollection<DownloadOutputOption<OutputContainer>> AllowedOutputContainerOptions { get; } =
+    [
+        new(OutputContainer.Mp4, "MP4"),
+        new(OutputContainer.Mkv, "MKV"),
+    ];
+
+    public DownloadOutputOption<VideoCodecPreference> SelectedVideoCodecOption
+    {
+        get => VideoCodecOptions.First(option => option.Value == VideoCodecPreference);
+        set { if (value is not null) VideoCodecPreference = value.Value; }
+    }
+
+    public DownloadOutputOption<OutputMediaMode> SelectedOutputMediaModeOption
+    {
+        get => OutputMediaModeOptions.First(option => option.Value == OutputMediaMode);
+        set { if (value is not null) OutputMediaMode = value.Value; }
+    }
+
+    public DownloadOutputOption<OutputContainer> SelectedOutputContainerOption
+    {
+        // 恢复期间容器与模式会依次写入，属性通知时允许短暂不匹配但不能抛出。
+        get => AllowedOutputContainerOptions.FirstOrDefault(option => option.Value == OutputContainer)
+               ?? new DownloadOutputOption<OutputContainer>(OutputContainer, OutputContainer.ToString());
+        set { if (value is not null) OutputContainer = value.Value; }
+    }
+
+    public bool IsVideoOutputEnabled => OutputMediaMode != OutputMediaMode.AudioOnly;
+    public bool IsAudioOutputEnabled => OutputMediaMode != OutputMediaMode.VideoOnly;
+    public string OutputModeHint => OutputMediaMode switch
+    {
+        OutputMediaMode.AudioOnly => "仅下载普通 AAC/MP4A 音频并以 .m4a 原子发布；Hi-Res 与杜比音频将在 G8 提供。",
+        OutputMediaMode.VideoOnly => "只下载视频流并以 stream copy 封装；不会创建音频临时文件。",
+        _ => "显式编码不可用时会在预检中阻止，不会静默切换到其他编码。",
+    };
 
     [ObservableProperty]
     private VideoDynamicRangePreference _videoDynamicRangePreference = VideoDynamicRangePreference.Auto;
@@ -384,13 +437,13 @@ public partial class DownloadConfigViewModel : ObservableObject
     public RenditionSpecification? CaptureRenditionSpecification()
     {
         var videoQualityId = SelectedQuality?.QualityId ?? _pendingQualityId ?? 0;
-        if (videoQualityId <= 0) return null;
+        if (OutputMediaMode != OutputMediaMode.AudioOnly && videoQualityId <= 0) return null;
         return new RenditionSpecification(
             videoQualityId,
             SelectedAudioQuality?.QualityId ?? _pendingAudioQualityId ?? 0,
             VideoCodecPreference,
             OutputContainer,
-            OutputMediaMode);
+            OutputMediaMode).Canonicalize();
     }
 
     public void RestoreDocumentConfiguration(DocumentSaveDataV2 data)
@@ -618,9 +671,49 @@ public partial class DownloadConfigViewModel : ObservableObject
     partial void OnDownloadDanmakuChanged(bool value) => MarkPresetModified();
     partial void OnDownloadSubtitleChanged(bool value) => MarkPresetModified();
     partial void OnDownloadCoverChanged(bool value) => MarkPresetModified();
-    partial void OnVideoCodecPreferenceChanged(VideoCodecPreference value) => MarkPresetModified();
-    partial void OnOutputContainerChanged(OutputContainer value) => MarkPresetModified();
-    partial void OnOutputMediaModeChanged(OutputMediaMode value) => MarkPresetModified();
+    partial void OnVideoCodecPreferenceChanged(VideoCodecPreference value)
+    {
+        OnPropertyChanged(nameof(SelectedVideoCodecOption));
+        MarkPresetModified();
+    }
+
+    partial void OnOutputContainerChanged(OutputContainer value)
+    {
+        if (!_isNormalizingOutputCombination && value is OutputContainer.Mp4 or OutputContainer.Mkv)
+            _lastVideoContainer = value;
+        OnPropertyChanged(nameof(SelectedOutputContainerOption));
+        MarkPresetModified();
+    }
+
+    partial void OnOutputMediaModeChanged(OutputMediaMode value)
+    {
+        _isNormalizingOutputCombination = true;
+        try
+        {
+            AllowedOutputContainerOptions.Clear();
+            if (value == OutputMediaMode.AudioOnly)
+            {
+                AllowedOutputContainerOptions.Add(new(OutputContainer.NativeAudio, "原生音频 (.m4a)"));
+                OutputContainer = OutputContainer.NativeAudio;
+            }
+            else
+            {
+                AllowedOutputContainerOptions.Add(new(OutputContainer.Mp4, "MP4"));
+                AllowedOutputContainerOptions.Add(new(OutputContainer.Mkv, "MKV"));
+                OutputContainer = _lastVideoContainer;
+            }
+        }
+        finally
+        {
+            _isNormalizingOutputCombination = false;
+        }
+        OnPropertyChanged(nameof(SelectedOutputMediaModeOption));
+        OnPropertyChanged(nameof(SelectedOutputContainerOption));
+        OnPropertyChanged(nameof(IsVideoOutputEnabled));
+        OnPropertyChanged(nameof(IsAudioOutputEnabled));
+        OnPropertyChanged(nameof(OutputModeHint));
+        MarkPresetModified();
+    }
     partial void OnVideoDynamicRangePreferenceChanged(VideoDynamicRangePreference value) => MarkPresetModified();
     partial void OnAudioFeaturePreferenceChanged(AudioFeaturePreference value) => MarkPresetModified();
     partial void OnSubtitleOptionsChanged(SubtitleOptions value) => MarkPresetModified();
@@ -649,6 +742,13 @@ public partial class DownloadConfigViewModel : ObservableObject
 
 /// <summary>文件冲突策略的界面选项；显示文案与持久化值明确分离。</summary>
 public sealed record FileConflictPolicyOption(FileConflictPolicy Value, string DisplayName)
+{
+    public override string ToString() => DisplayName;
+}
+
+/// <summary>通用下载输出下拉选项；显示文本不参与持久化和业务判断。</summary>
+public sealed record DownloadOutputOption<T>(T Value, string DisplayName)
+    where T : struct, Enum
 {
     public override string ToString() => DisplayName;
 }

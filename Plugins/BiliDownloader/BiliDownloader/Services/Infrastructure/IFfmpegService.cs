@@ -1,3 +1,5 @@
+using BiliDownloader.Models;
+
 namespace BiliDownloader.Services.Infrastructure;
 
 /// <summary>
@@ -62,13 +64,34 @@ public interface IMediaMuxer
 {
     /// <summary>将已验证的视频流和音频流无转码封装到目标文件。</summary>
     Task MergeAsync(string videoPath, string audioPath, string outputPath, CancellationToken ct = default);
+
+    /// <summary>
+    /// 按明确输出模式执行无转码封装。默认实现仅兼容历史音视频调用；支持仅视频的生产实现
+    /// 必须覆盖此方法并严格校验输入数量。
+    /// </summary>
+    Task MuxAsync(MediaMuxRequest request, CancellationToken ct = default)
+    {
+        if (request.OutputMediaMode != OutputMediaMode.AudioVideo
+            || string.IsNullOrWhiteSpace(request.VideoPath)
+            || string.IsNullOrWhiteSpace(request.AudioPath))
+            throw new NotSupportedException("当前媒体封装器只支持兼容音视频合并。");
+        return MergeAsync(request.VideoPath, request.AudioPath, request.OutputPath, ct);
+    }
+}
+
+/// <summary>ffmpeg muxer 能力读取边界；提交预检只依赖此窄接口。</summary>
+public interface IMediaMuxerCapabilityProvider
+{
+    /// <summary>返回当前已验证运行时的 MP4/Matroska 封装能力。</summary>
+    Task<MediaMuxerCapabilities> GetCapabilitiesAsync(CancellationToken ct = default)
+        => Task.FromResult(new MediaMuxerCapabilities(true, true));
 }
 
 /// <summary>
 /// 兼容旧构造路径的聚合接口。生产代码应优先依赖上面的窄接口；保留该接口可以让
 /// 历史测试替身和第三方构造代码平滑迁移，而不会重新把职责塞回单个消费者。
 /// </summary>
-public interface IFfmpegService : IFfmpegRuntimeLocator, IMediaMuxer;
+public interface IFfmpegService : IFfmpegRuntimeLocator, IMediaMuxer, IMediaMuxerCapabilityProvider;
 
 /// <summary>未找到或无法启动 ffmpeg 时抛出的明确异常，错误分类不得再解析中文消息。</summary>
 public sealed class FfmpegUnavailableException : Exception
