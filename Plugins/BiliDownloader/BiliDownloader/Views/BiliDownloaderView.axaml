@@ -39,6 +39,16 @@
                     </Grid>
                 </Border>
 
+                <Border IsVisible="{Binding HasCompatibilityWarning}"
+                        Padding="12"
+                        CornerRadius="6"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource DockThemeBorderLowBrush}"
+                        Background="{DynamicResource DockThemeBackgroundBrush}">
+                    <TextBlock Text="{Binding CompatibilityWarning}"
+                               TextWrapping="Wrap" />
+                </Border>
+
                 <sub:DownloadSourceWorkflowView DataContext="{Binding SourceWorkflow}" />
                 <sub:DownloadWorkspaceView DataContext="{Binding Workspace}" />
                 <sub:DownloadLogView DataContext="{Binding}" />

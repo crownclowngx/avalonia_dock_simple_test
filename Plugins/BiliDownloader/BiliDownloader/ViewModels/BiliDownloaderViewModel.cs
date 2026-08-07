@@ -20,7 +20,7 @@ namespace BiliDownloader.ViewModels;
 /// <summary>
 /// BiliDownloader Document ViewModel：负责子 VM 组合、持久化
 /// </summary>
-public class BiliDownloaderViewModel : Document, ISavableDocument
+public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSavePathPolicy
 {
     private static readonly IPluginLogger Log = PluginLog.For<BiliDownloaderViewModel>();
     public string SaveDocumentTypeId => SaveDocumentTypeIdConstant.BiliDownloaderDocumentId;
@@ -33,9 +33,34 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
     private readonly IMessengerService _messengerService;
     private readonly IDownloadTaskRepository _taskRepository;
-    private readonly BiliDownloaderDocumentStateMapper _documentStateMapper = new();
+    private readonly IBiliDownloaderDocumentStateMapper _documentStateMapper;
     private readonly object _initializationLock = new();
     private Task? _initializationTask;
+    private bool _isRestoringDocument;
+    private bool _hasLoadedDocument;
+    private bool _requiresSaveAs;
+
+    private static readonly HashSet<string> PersistedDownloadConfigProperties =
+    [
+        nameof(DownloadConfigViewModel.SelectedQuality),
+        nameof(DownloadConfigViewModel.SelectedAudioQuality),
+        nameof(DownloadConfigViewModel.UseGroupFolder),
+        nameof(DownloadConfigViewModel.AddIndexToTitle),
+        nameof(DownloadConfigViewModel.OutputDirectory),
+        nameof(DownloadConfigViewModel.DownloadDanmaku),
+        nameof(DownloadConfigViewModel.DownloadSubtitle),
+        nameof(DownloadConfigViewModel.DownloadCover),
+        nameof(DownloadConfigViewModel.SelectedConflictPolicy),
+        nameof(DownloadConfigViewModel.SelectedPreset),
+        nameof(DownloadConfigViewModel.VideoCodecPreference),
+        nameof(DownloadConfigViewModel.OutputContainer),
+        nameof(DownloadConfigViewModel.OutputMediaMode),
+        nameof(DownloadConfigViewModel.VideoDynamicRangePreference),
+        nameof(DownloadConfigViewModel.AudioFeaturePreference),
+        nameof(DownloadConfigViewModel.SubtitleOptions),
+        nameof(DownloadConfigViewModel.DanmakuOptions),
+        nameof(DownloadConfigViewModel.PerTaskRateLimitBytesPerSecond),
+    ];
 
     #region 子 ViewModel
 
@@ -43,6 +68,15 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     public VideoParseViewModel VideoParse { get; }
     public DownloadSourceWorkflowViewModel SourceWorkflow { get; }
     public DownloadWorkspaceViewModel Workspace { get; }
+
+    /// <summary>旧版迁移或未知未来版本的本地兼容提示。</summary>
+    public string CompatibilityWarning { get; private set; } = string.Empty;
+    public bool HasCompatibilityWarning => !string.IsNullOrWhiteSpace(CompatibilityWarning);
+
+    public bool RequiresSaveAs => _requiresSaveAs;
+    public string SaveAsReason => _requiresSaveAs
+        ? "未知版本文档必须另存为 V3 副本，原文件不会被覆盖。"
+        : string.Empty;
 
     // 兼容既有调用方；新 View 统一从 Workspace 绑定，转发属性不再承载展示逻辑。
     public DownloadConfigViewModel DownloadConfig => Workspace.DownloadConfig;
@@ -90,10 +124,12 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         IDownloadSubmissionService? submissionService = null,
         IUserPromptService? promptService = null,
         ILoginDialogService? loginDialogService = null,
-        IFfmpegPackageInstaller? ffmpegInstaller = null)
+        IFfmpegPackageInstaller? ffmpegInstaller = null,
+        IBiliDownloaderDocumentStateMapper? documentStateMapper = null)
     {
         _messengerService = messengerService;
         _taskRepository = taskRepository;
+        _documentStateMapper = documentStateMapper ?? new BiliDownloaderDocumentStateMapper();
 
         // 初始化子 ViewModel（通过回调通信）
         LoginBar = loginDialogService is null
@@ -197,6 +233,21 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 OnPropertyChanged(nameof(DownloadSettingsSummary));
         };
 
+        VideoParse.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(VideoParseViewModel.Url)) MarkDocumentModified();
+        };
+        SourceWorkflow.PersistentStateChanged += MarkDocumentModified;
+        DownloadConfig.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName is not null && PersistedDownloadConfigProperties.Contains(args.PropertyName))
+                MarkDocumentModified();
+        };
+        NamingTemplate.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(NamingTemplateViewModel.Template)) MarkDocumentModified();
+        };
+
         RegisterMessengers();
     }
 
@@ -251,8 +302,18 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
     private async Task InitializeCoreAsync()
     {
-        await DownloadConfig.InitializeAsync();
+        var suppressInitializationChanges = _hasLoadedDocument;
+        if (suppressInitializationChanges) _isRestoringDocument = true;
+        try
+        {
+            await DownloadConfig.InitializeAsync();
+        }
+        finally
+        {
+            if (suppressInitializationChanges) _isRestoringDocument = false;
+        }
         await RecoverTasksFromStoreAsync();
+        if (suppressInitializationChanges) IsModified = false;
     }
 
     #region 消息总线注册
@@ -332,6 +393,12 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         VideoParse.IsParsed = true;
     }
 
+    private void MarkDocumentModified()
+    {
+        if (_isRestoringDocument) return;
+        IsModified = true;
+    }
+
     #endregion
 
     /// <summary>
@@ -396,7 +463,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     #region 持久化
 
     /// <summary>
-    /// 创建保存数据（Document V2 格式）。
+    /// 创建保存数据（Document V3 格式）。
     /// <para>
     /// 设计思考（G5）：使用强类型 DocumentSaveDataV2 替代 V1 的匿名对象，
     /// 提高可读性和版本演进能力。PluginMetadata.Version = "2.0" 供加载时判别版本。
@@ -414,16 +481,28 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             DownloadConfig.DownloadDanmaku,
             DownloadConfig.DownloadSubtitle,
             DownloadConfig.DownloadCover,
-            DownloadConfig.SelectedConflictPolicy.Value);
+            DownloadConfig.SelectedConflictPolicy.Value,
+            DownloadConfig.VideoCodecPreference,
+            DownloadConfig.OutputContainer,
+            DownloadConfig.OutputMediaMode,
+            DownloadConfig.VideoDynamicRangePreference,
+            DownloadConfig.AudioFeaturePreference,
+            DownloadConfig.SubtitleOptions,
+            DownloadConfig.DanmakuOptions,
+            DownloadConfig.PerTaskRateLimitBytesPerSecond);
         var saveData = _documentStateMapper.Create(
-            Title, DocumentId, VideoParse.Url, _downloadInfo, configuration, NamingTemplate.Template);
-
-        IsModified = false;
+            Title,
+            DocumentId,
+            VideoParse.Url,
+            _downloadInfo,
+            configuration,
+            NamingTemplate.Template,
+            SourceWorkflow.CapturePersistentState());
         return saveData;
     }
 
     /// <summary>
-    /// 从保存数据加载 Document（支持 V1 和 V2 版本）。
+    /// 从保存数据加载 Document（支持 V1、V2 和 V3 版本）。
     /// <para>
     /// 设计思考（G5）：
     /// - V1 路径保持 JObject 逐字段读取不变，仅追加默认值补齐，确保不回归。
@@ -434,18 +513,25 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     /// </summary>
     public void LoadDocumentByMetaData(DocumentSaveData saveData)
     {
+        ArgumentNullException.ThrowIfNull(saveData);
+        _isRestoringDocument = true;
         try
         {
-            if (saveData == null) return;
-
             var restored = _documentStateMapper.Restore(saveData, DownloadConfig.OutputDirectory);
             ApplyRestoredState(restored);
-
+            _requiresSaveAs = restored.RequiresSaveAs;
+            CompatibilityWarning = restored.CompatibilityWarning;
             OnPropertyChanged(nameof(DocumentId));
+            OnPropertyChanged(nameof(CompatibilityWarning));
+            OnPropertyChanged(nameof(HasCompatibilityWarning));
+            OnPropertyChanged(nameof(RequiresSaveAs));
+            OnPropertyChanged(nameof(SaveAsReason));
+            _hasLoadedDocument = true;
+            IsModified = false;
         }
-        catch (Exception ex)
+        finally
         {
-            Log.Error("加载文档失败。", ex);
+            _isRestoringDocument = false;
         }
     }
 
@@ -465,6 +551,24 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         DownloadInfo = data.DownloadInfo;
         NamingTemplate.Template = data.NamingTemplate;
         DownloadConfig.RestoreDocumentConfiguration(data);
+        SourceWorkflow.RestorePersistentState(
+            new BiliDownloaderDocumentSourceState(data.Source, data.Filters, data.Baseline),
+            data.Url);
+    }
+
+    /// <summary>
+    /// 宿主完成磁盘写入后清除脏状态和未来版本保护；创建 JSON 但写盘失败时不会调用。
+    /// </summary>
+    public void NotifySaveCompleted(string filePath)
+    {
+        FilePath = filePath;
+        _requiresSaveAs = false;
+        CompatibilityWarning = string.Empty;
+        IsModified = false;
+        OnPropertyChanged(nameof(CompatibilityWarning));
+        OnPropertyChanged(nameof(HasCompatibilityWarning));
+        OnPropertyChanged(nameof(RequiresSaveAs));
+        OnPropertyChanged(nameof(SaveAsReason));
     }
 
     #endregion

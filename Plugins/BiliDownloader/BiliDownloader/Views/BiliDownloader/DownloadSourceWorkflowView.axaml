@@ -8,6 +8,21 @@
              x:Class="BiliDownloader.Views.BiliDownloader.DownloadSourceWorkflowView"
              x:DataType="vm:DownloadSourceWorkflowViewModel">
     <StackPanel Spacing="8">
+        <Border IsVisible="{Binding HasUnsupportedSource}"
+                Padding="12"
+                CornerRadius="6"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource DockThemeBorderLowBrush}"
+                Background="{DynamicResource DockThemeBackgroundBrush}">
+            <StackPanel Spacing="4">
+                <TextBlock Text="不支持的来源类型" FontWeight="SemiBold" />
+                <TextBlock Text="当前安装未提供该来源的 Provider。来源身份已原样保留，可查看并另存；不会自动联网。"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{Binding UnsupportedSourceSummary}"
+                           Opacity="0.72"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
         <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Content="链接下载" Command="{Binding UseQuickUrlCommand}" Classes="bili-doc-button" />
             <Button Content="个人内容来源" Command="{Binding UsePersonalSourceCommand}" Classes="bili-doc-button" />

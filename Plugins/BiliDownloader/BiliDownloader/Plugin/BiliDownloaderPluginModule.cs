@@ -34,6 +34,8 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<ISettingsRepository, SettingsStore>();
         services.AddSingleton<IPresetRepository, PresetStore>(); // G5: 预设持久化
         services.AddSingleton<IDownloadPresetService, DownloadPresetService>();
+        // Document 版本识别、迁移和安全校验为无状态单例；Document ViewModel 只依赖窄接口。
+        services.AddSingleton<IBiliDownloaderDocumentStateMapper, BiliDownloaderDocumentStateMapper>();
         services.AddSingleton<IFfmpegProcessFactory, FfmpegProcessFactory>();
         services.AddSingleton<FfmpegService>();
         // 同一个本地适配器分别暴露定位与封装能力，消费者只依赖自己真正需要的接口。

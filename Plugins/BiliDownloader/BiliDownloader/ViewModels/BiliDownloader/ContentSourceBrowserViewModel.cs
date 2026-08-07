@@ -72,6 +72,12 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
     private CancellationTokenSource? _resolveCts;
     private bool _synchronizingFilters;
 
+    /// <summary>
+    /// 仅在来源身份或可持久筛选发生变化时触发；分页、缓存和选择变化不会触发，
+    /// 从而避免把纯会话状态错误计入 Document 的 IsModified。
+    /// </summary>
+    public event Action? PersistentStateChanged;
+
     public ContentSourceBrowserViewModel(
         IContentSourceProviderRegistry registry,
         VideoParseResultFactory resultFactory,
@@ -184,6 +190,11 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
 
     private BrowserLevelState? CurrentLevel => _levels.Count == 0 ? null : _levels[^1];
 
+    public ContentSourceDescriptor? CurrentDescriptor => _descriptor;
+
+    /// <summary>截取当前活动层级的筛选意图；层级路径和勾选状态有意不进入 V3。</summary>
+    public SourceFilterRules CaptureFilters() => CurrentLevel?.Filters ?? SourceFilterRules.Empty;
+
     public async Task OpenAsync(ContentSourceDescriptor descriptor)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
@@ -194,12 +205,37 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
         AdvanceGeneration();
         RebuildBreadcrumbs();
         ApplyLevel();
+        PersistentStateChanged?.Invoke();
         await LoadMoreCoreAsync(CancellationToken.None, _queryCoordinator.Generation);
 
         if (descriptor.PublicParameters.TryGetValue("autoOpen", out var autoOpen) &&
             string.Equals(autoOpen, "true", StringComparison.OrdinalIgnoreCase) &&
             Items.Count == 1 && Items[0].CanOpen)
             await EnterItemAsync(Items[0]);
+    }
+
+    /// <summary>
+    /// 离线挂载已保存来源和筛选。该方法只构造本地浏览状态，绝不读取页面；
+    /// 用户随后明确点击刷新时才会进入现有 Provider 查询路径。
+    /// </summary>
+    public void RestoreOffline(ContentSourceDescriptor descriptor, SourceFilterRules filters)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(filters);
+        var provider = _registry.GetRequired(descriptor.Kind);
+        _descriptor = descriptor;
+        _levels.Clear();
+        var level = new BrowserLevelState(null, descriptor.DisplayName, provider.Capabilities)
+        {
+            Filters = filters,
+            Plan = ContentFilterPlanBuilder.Build(filters, provider.Capabilities),
+        };
+        _levels.Add(level);
+        AdvanceGeneration();
+        RebuildBreadcrumbs();
+        ApplyLevel();
+        Status = "来源方案已离线恢复；点击刷新后才会读取远端内容。";
+        CanRetry = true;
     }
 
     [RelayCommand]
@@ -529,6 +565,7 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
             SelectionInvalidatedMessage = "筛选条件已变化，“全部匹配”选择已清除，请重新确认选择范围。";
         level.Filters = rules;
         level.Plan = plan;
+        PersistentStateChanged?.Invoke();
         level.ResetQuery();
         AdvanceGeneration();
         ApplyLevel();

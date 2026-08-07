@@ -63,6 +63,24 @@ public sealed class ApplicationAndWindowTests
     }
 
     [AvaloniaFact]
+    public void 文档操作错误条_随宿主状态显示并可关闭()
+    {
+        using var context = new UiTestContext();
+        var view = new MainView { DataContext = context.ViewModel };
+        var window = new Window { Content = view };
+        window.Show();
+        var banner = view.FindControl<Border>("DocumentOperationErrorBanner")!;
+
+        Assert.False(banner.IsVisible);
+        context.ViewModel.DocumentOperationError = "测试错误，原文件未修改。";
+        Assert.True(banner.IsVisible);
+        context.ViewModel.DismissDocumentOperationErrorCommand.Execute(null);
+        Assert.False(banner.IsVisible);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void 主窗体内容全屏遵守所有者和内容互斥规则()
     {
         var window = new MainWindow();

@@ -203,13 +203,17 @@ internal sealed class TestMessengerService : IMessengerService
 /// <summary>
 /// 用于验证保存、加载和标题路径同步的最小可保存文档。
 /// </summary>
-internal sealed class TestSavableDocument : Document, ISavableDocument
+internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumentSavePathPolicy
 {
     public string FilePath { get; set; } = string.Empty;
 
     public string SaveDocumentTypeId => TestSavableStrategy.TypeId;
 
     public string Content { get; set; } = "initial";
+
+    public bool RequiresSaveAs { get; set; }
+    public string SaveAsReason { get; set; } = "测试文档需要另存。";
+    public int SaveCompletedCount { get; private set; }
 
     public DocumentSaveData CreateSaveDocumentMetaData(string filePath) =>
         new()
@@ -225,6 +229,13 @@ internal sealed class TestSavableDocument : Document, ISavableDocument
     {
         Title = saveData.Title;
         Content = saveData.Content;
+    }
+
+    public void NotifySaveCompleted(string filePath)
+    {
+        FilePath = filePath;
+        RequiresSaveAs = false;
+        SaveCompletedCount++;
     }
 }
 

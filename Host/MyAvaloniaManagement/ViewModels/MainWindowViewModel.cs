@@ -41,6 +41,11 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
     private ApplicationThemeMode _themeMode;
     private IRootDock? _layout;
 
+    [ObservableProperty]
+    private string _documentOperationError = string.Empty;
+
+    public bool HasDocumentOperationError => !string.IsNullOrWhiteSpace(DocumentOperationError);
+
     /// <summary>
     /// 获取或设置当前主窗口使用的 Dock 根布局。
     /// </summary>
@@ -268,10 +273,23 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
             catch (Exception ex)
             {
                 // 单个文件失败不应阻止本次批量选择中的其他文件。
-                Console.WriteLine($"打开文档错误: {ex.Message}");
+                var fileName = Path.GetFileName(path);
+                var reason = ex is DocumentLoadException
+                    ? ex.Message
+                    : ex is JsonException
+                        ? "文件结构损坏或不是受支持的 Document。"
+                        : "读取文件失败，请检查文件是否仍然存在且可访问。";
+                DocumentOperationError = $"无法打开“{fileName}”：{reason} 原文件未被修改。";
+                Console.WriteLine($"打开文档错误: {ex.GetType().Name}");
             }
         }
     }
+
+    [RelayCommand]
+    private void DismissDocumentOperationError() => DocumentOperationError = string.Empty;
+
+    partial void OnDocumentOperationErrorChanged(string value) =>
+        OnPropertyChanged(nameof(HasDocumentOperationError));
 
     /// <summary>
     /// 如果规范化路径对应的文档已经打开，则激活现有标签。
@@ -319,8 +337,9 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
 
         // 反序列化文档数据
         var documentData = JsonConvert.DeserializeObject<DocumentSaveData>(content);
-        if (documentData != null)
-        {
+        if (documentData == null)
+            throw new DocumentLoadException("文档信封为空，无法识别文档类型。");
+
             // 根据DocumentTypeId创建对应的文档
             var document = _factory?.CreateManagementNewDocument(
                 new DocumentCreationParams(documentData.DocumentTypeId) { Title = documentData.Title });
@@ -336,7 +355,6 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
                     filesDock?.AddDocument(document);
                 }
             }
-        }
     }
 
     /// <summary>
@@ -352,8 +370,11 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         var activeDocument = GetActiveDocument();
         if (activeDocument is ISavableDocument savableDocument)
         {
+            var savePathPolicy = activeDocument as IDocumentSavePathPolicy;
+            var originalPath = savableDocument.FilePath;
             string? filePath;
-            if (string.IsNullOrEmpty(savableDocument.FilePath))
+            if (string.IsNullOrEmpty(savableDocument.FilePath)
+                || savePathPolicy?.RequiresSaveAs == true)
             {
                 var metadata = _factory.GetAllDocumentMetadata()
                     .FirstOrDefault(m =>
@@ -368,22 +389,27 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
             if (!string.IsNullOrWhiteSpace(filePath))
             {
                 filePath = NormalizePath(filePath);
-                savableDocument.FilePath = filePath;
+                if (savePathPolicy?.RequiresSaveAs == true
+                    && !string.IsNullOrWhiteSpace(originalPath)
+                    && PathsEqual(originalPath, filePath))
+                {
+                    DocumentOperationError = $"{savePathPolicy.SaveAsReason} 请选择不同的文件路径。";
+                    return;
+                }
                 // 从文件路径中提取文件名并设置为文档标题
                 var fileName = Path.GetFileNameWithoutExtension(filePath);
                 var saveData = savableDocument.CreateSaveDocumentMetaData(filePath);
                 saveData.Title = fileName;
+                await _storageService.WriteAllTextAsync(
+                    filePath,
+                    JsonConvert.SerializeObject(saveData, Formatting.Indented));
                 if (activeDocument is Document document)
                 {
                     document.Title = fileName;
                 }
-                if (activeDocument is ISavableDocument savableDocumentDocument)
-                {
-                    savableDocumentDocument.FilePath = filePath;
-                }
-                await _storageService.WriteAllTextAsync(
-                    filePath,
-                    JsonConvert.SerializeObject(saveData, Formatting.Indented));
+                savableDocument.FilePath = filePath;
+                savePathPolicy?.NotifySaveCompleted(filePath);
+                DocumentOperationError = string.Empty;
             }
         }
     }

@@ -59,6 +59,8 @@ public sealed class MainWindowViewModelTests
         Assert.Equal(2, GetDocuments(context).Count);
         Assert.Contains(GetDocuments(context), item => item.Title == "第一");
         Assert.Contains(GetDocuments(context), item => item.Title == "第二");
+        Assert.True(viewModel.HasDocumentOperationError);
+        Assert.Contains("原文件未被修改", viewModel.DocumentOperationError);
     }
 
     [Fact]
@@ -153,6 +155,49 @@ public sealed class MainWindowViewModelTests
         Assert.Null(context.Storage.LastSaveMetadata);
         Assert.Equal(Path.GetFullPath(path),
             Assert.Single(context.Storage.Writes).Path);
+        Assert.Equal(1, document.SaveCompletedCount);
+    }
+
+    [Fact]
+    public async Task 受保护文档_强制另存并在写入成功后解除保护()
+    {
+        using var context = CreateContextWithDocumentStrategy();
+        var original = Path.Combine(context.TempDirectory, "future.testdoc");
+        var copy = Path.Combine(context.TempDirectory, "future-copy.testdoc");
+        context.Storage.SavePath = copy;
+        var viewModel = context.CreateMainWindowViewModel();
+        viewModel.CreateDocument(TestSavableStrategy.TypeId);
+        var document = GetDocuments(context).Single();
+        document.FilePath = original;
+        document.RequiresSaveAs = true;
+        GetDocumentDock(context).ActiveDockable = document;
+
+        await viewModel.SaveDocument();
+
+        Assert.Equal(Path.GetFullPath(copy), Assert.Single(context.Storage.Writes).Path);
+        Assert.False(document.RequiresSaveAs);
+        Assert.Equal(1, document.SaveCompletedCount);
+    }
+
+    [Fact]
+    public async Task 受保护文档_选择原路径时拒绝覆盖()
+    {
+        using var context = CreateContextWithDocumentStrategy();
+        var original = Path.Combine(context.TempDirectory, "future.testdoc");
+        context.Storage.SavePath = original;
+        var viewModel = context.CreateMainWindowViewModel();
+        viewModel.CreateDocument(TestSavableStrategy.TypeId);
+        var document = GetDocuments(context).Single();
+        document.FilePath = original;
+        document.RequiresSaveAs = true;
+        GetDocumentDock(context).ActiveDockable = document;
+
+        await viewModel.SaveDocument();
+
+        Assert.Empty(context.Storage.Writes);
+        Assert.True(document.RequiresSaveAs);
+        Assert.True(viewModel.HasDocumentOperationError);
+        Assert.Contains("不同的文件路径", viewModel.DocumentOperationError);
     }
 
     [Fact]

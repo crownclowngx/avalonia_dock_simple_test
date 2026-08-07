@@ -68,6 +68,31 @@ public partial class DownloadConfigViewModel : ObservableObject
     [ObservableProperty]
     private bool _downloadCover;
 
+    // P1-G4 先保存完整输出意图，P1-G7～G10 再把这些属性接入实际下载执行和专用编辑 UI。
+    [ObservableProperty]
+    private VideoCodecPreference _videoCodecPreference = VideoCodecPreference.AutoCompatibility;
+
+    [ObservableProperty]
+    private OutputContainer _outputContainer = OutputContainer.Mp4;
+
+    [ObservableProperty]
+    private OutputMediaMode _outputMediaMode = OutputMediaMode.AudioVideo;
+
+    [ObservableProperty]
+    private VideoDynamicRangePreference _videoDynamicRangePreference = VideoDynamicRangePreference.Auto;
+
+    [ObservableProperty]
+    private AudioFeaturePreference _audioFeaturePreference = AudioFeaturePreference.Auto;
+
+    [ObservableProperty]
+    private SubtitleOptions _subtitleOptions = SubtitleOptions.None;
+
+    [ObservableProperty]
+    private DanmakuOptions _danmakuOptions = DanmakuOptions.None;
+
+    [ObservableProperty]
+    private long _perTaskRateLimitBytesPerSecond;
+
     /// <summary>供界面绑定的中文冲突策略选项；持久化始终使用对应枚举值。</summary>
     public IReadOnlyList<FileConflictPolicyOption> ConflictPolicyOptions { get; } =
         Enum.GetValues<FileConflictPolicy>()
@@ -285,6 +310,16 @@ public partial class DownloadConfigViewModel : ObservableObject
         DownloadDanmaku = preset.DownloadDanmaku;
         DownloadSubtitle = preset.DownloadSubtitle;
         DownloadCover = preset.DownloadCover;
+        VideoCodecPreference = preset.VideoCodecPreference;
+        OutputContainer = preset.OutputContainer;
+        OutputMediaMode = preset.OutputMediaMode;
+        VideoDynamicRangePreference = preset.VideoDynamicRangePreference;
+        AudioFeaturePreference = preset.AudioFeaturePreference;
+        SubtitleOptions = NormalizeSubtitleOptions(preset.SubtitleOptions, preset.DownloadSubtitle);
+        DanmakuOptions = NormalizeDanmakuOptions(preset.DanmakuOptions, preset.DownloadDanmaku);
+        PerTaskRateLimitBytesPerSecond = Math.Max(0, preset.PerTaskRateLimitBytesPerSecond);
+        DownloadSubtitle = SubtitleOptions.SelectionMode != SubtitleSelectionMode.None;
+        DownloadDanmaku = DanmakuOptions.Formats.Count > 0;
         SelectedConflictPolicy = ConflictPolicyOptions.First(option => option.Value == preset.ConflictPolicy);
 
         // 输出目录：预设指定则使用，否则保持当前默认
@@ -331,7 +366,15 @@ public partial class DownloadConfigViewModel : ObservableObject
         DownloadCover,
         _getNamingTemplate?.Invoke() ?? NamingTemplateEngine.DefaultTemplate,
         OutputDirectory,
-        SelectedConflictPolicy.Value);
+        SelectedConflictPolicy.Value,
+        VideoCodecPreference,
+        OutputContainer,
+        OutputMediaMode,
+        VideoDynamicRangePreference,
+        AudioFeaturePreference,
+        NormalizeSubtitleOptions(SubtitleOptions, DownloadSubtitle),
+        NormalizeDanmakuOptions(DanmakuOptions, DownloadDanmaku),
+        PerTaskRateLimitBytesPerSecond);
 
     public void RestoreDocumentConfiguration(DocumentSaveDataV2 data)
     {
@@ -343,6 +386,37 @@ public partial class DownloadConfigViewModel : ObservableObject
         DownloadDanmaku = data.DownloadDanmaku;
         DownloadSubtitle = data.DownloadSubtitle;
         DownloadCover = data.DownloadCover;
+        SelectedConflictPolicy = ConflictPolicyOptions.First(option => option.Value == data.ConflictPolicy);
+        _pendingQualityId = data.QualityId > 0 ? data.QualityId : null;
+        _pendingAudioQualityId = data.AudioQualityId;
+        _isApplyingPreset = false;
+        _restoredPresetId = data.PresetId;
+        if (_initializationTask?.IsCompletedSuccessfully == true)
+            SelectRestoredPreset(_restoredPresetId);
+    }
+
+    /// <summary>
+    /// 从 V3 快照恢复完整配置。恢复阶段只赋值本地属性，不读取预设库之外的外部状态，
+    /// 也不会触发媒体解析或下载执行。
+    /// </summary>
+    public void RestoreDocumentConfiguration(DocumentSaveDataV3 data)
+    {
+        _documentConfigurationApplied = true;
+        _isApplyingPreset = true;
+        OutputDirectory = data.OutputDirectory;
+        UseGroupFolder = data.UseGroupFolder;
+        AddIndexToTitle = data.AddIndexToTitle;
+        DownloadCover = data.DownloadCover;
+        VideoCodecPreference = data.VideoCodecPreference;
+        OutputContainer = data.OutputContainer;
+        OutputMediaMode = data.OutputMediaMode;
+        VideoDynamicRangePreference = data.VideoDynamicRangePreference;
+        AudioFeaturePreference = data.AudioFeaturePreference;
+        SubtitleOptions = NormalizeSubtitleOptions(data.SubtitleOptions, data.DownloadSubtitle);
+        DanmakuOptions = NormalizeDanmakuOptions(data.DanmakuOptions, data.DownloadDanmaku);
+        DownloadSubtitle = SubtitleOptions.SelectionMode != SubtitleSelectionMode.None;
+        DownloadDanmaku = DanmakuOptions.Formats.Count > 0;
+        PerTaskRateLimitBytesPerSecond = data.PerTaskRateLimitBytesPerSecond;
         SelectedConflictPolicy = ConflictPolicyOptions.First(option => option.Value == data.ConflictPolicy);
         _pendingQualityId = data.QualityId > 0 ? data.QualityId : null;
         _pendingAudioQualityId = data.AudioQualityId;
@@ -527,10 +601,33 @@ public partial class DownloadConfigViewModel : ObservableObject
     partial void OnDownloadDanmakuChanged(bool value) => MarkPresetModified();
     partial void OnDownloadSubtitleChanged(bool value) => MarkPresetModified();
     partial void OnDownloadCoverChanged(bool value) => MarkPresetModified();
+    partial void OnVideoCodecPreferenceChanged(VideoCodecPreference value) => MarkPresetModified();
+    partial void OnOutputContainerChanged(OutputContainer value) => MarkPresetModified();
+    partial void OnOutputMediaModeChanged(OutputMediaMode value) => MarkPresetModified();
+    partial void OnVideoDynamicRangePreferenceChanged(VideoDynamicRangePreference value) => MarkPresetModified();
+    partial void OnAudioFeaturePreferenceChanged(AudioFeaturePreference value) => MarkPresetModified();
+    partial void OnSubtitleOptionsChanged(SubtitleOptions value) => MarkPresetModified();
+    partial void OnDanmakuOptionsChanged(DanmakuOptions value) => MarkPresetModified();
+    partial void OnPerTaskRateLimitBytesPerSecondChanging(long value)
+    {
+        if (value < 0)
+            throw new ArgumentOutOfRangeException(nameof(value), "单任务限速不能为负数。");
+    }
+    partial void OnPerTaskRateLimitBytesPerSecondChanged(long value) => MarkPresetModified();
     partial void OnOutputDirectoryChanged(string value) => MarkPresetModified();
     partial void OnSelectedConflictPolicyChanged(FileConflictPolicyOption value) => MarkPresetModified();
     partial void OnIsPresetModifiedChanged(bool value) => OnPropertyChanged(nameof(PresetStatusText));
     partial void OnIsRestoredPresetUnavailableChanged(bool value) => OnPropertyChanged(nameof(PresetStatusText));
+
+    private static SubtitleOptions NormalizeSubtitleOptions(SubtitleOptions? value, bool legacyEnabled) =>
+        value is not null && value.SelectionMode != SubtitleSelectionMode.None
+            ? value
+            : legacyEnabled ? global::BiliDownloader.Models.SubtitleOptions.LegacyEnabled : global::BiliDownloader.Models.SubtitleOptions.None;
+
+    private static DanmakuOptions NormalizeDanmakuOptions(DanmakuOptions? value, bool legacyEnabled) =>
+        value is not null && value.Formats.Count > 0
+            ? value
+            : legacyEnabled ? global::BiliDownloader.Models.DanmakuOptions.LegacyEnabled : global::BiliDownloader.Models.DanmakuOptions.None;
 }
 
 /// <summary>文件冲突策略的界面选项；显示文案与持久化值明确分离。</summary>

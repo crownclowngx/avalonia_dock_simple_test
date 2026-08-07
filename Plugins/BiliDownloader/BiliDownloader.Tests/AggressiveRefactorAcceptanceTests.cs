@@ -96,7 +96,9 @@ public sealed class AggressiveRefactorAcceptanceTests
         var service = new DownloadPresetService(new PresetStore(paths));
         var profile = new DownloadProfile(
             "quality:120", 30280, true, false, true, true, true,
-            "{bv}_{title}", "D:\\Media");
+            "{bv}_{title}", "D:\\Media",
+            SubtitleOptions: SubtitleOptions.LegacyEnabled,
+            DanmakuOptions: DanmakuOptions.LegacyEnabled);
 
         var saved = await service.SaveCopyAsync(profile, "个人归档");
         Assert.Equal(profile, saved.ToProfile());

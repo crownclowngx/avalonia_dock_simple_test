@@ -23,7 +23,10 @@ public sealed record DownloadPreset
 
     public DownloadProfile ToProfile() => new(
         QualityPreference, AudioQualityId, UseGroupFolder, AddIndexToTitle,
-        DownloadDanmaku, DownloadSubtitle, DownloadCover, NamingTemplate, OutputDirectory, ConflictPolicy);
+        DownloadDanmaku, DownloadSubtitle, DownloadCover, NamingTemplate, OutputDirectory, ConflictPolicy,
+        VideoCodecPreference, OutputContainer, OutputMediaMode,
+        VideoDynamicRangePreference, AudioFeaturePreference,
+        SubtitleOptions, DanmakuOptions, PerTaskRateLimitBytesPerSecond);
 
     public static DownloadPreset FromProfile(string id, string name, DownloadProfile profile) => new()
     {
@@ -40,6 +43,14 @@ public sealed record DownloadPreset
         NamingTemplate = profile.NamingTemplate,
         OutputDirectory = profile.OutputDirectory,
         ConflictPolicy = profile.ConflictPolicy,
+        VideoCodecPreference = profile.VideoCodecPreference,
+        OutputContainer = profile.OutputContainer,
+        OutputMediaMode = profile.OutputMediaMode,
+        VideoDynamicRangePreference = profile.VideoDynamicRangePreference,
+        AudioFeaturePreference = profile.AudioFeaturePreference,
+        SubtitleOptions = profile.EffectiveSubtitleOptions,
+        DanmakuOptions = profile.EffectiveDanmakuOptions,
+        PerTaskRateLimitBytesPerSecond = profile.PerTaskRateLimitBytesPerSecond,
     };
     /// <summary>预设唯一标识（内置为 "builtin_compat" 等，自定义为 GUID）</summary>
     public string Id { get; init; } = "";
@@ -83,6 +94,30 @@ public sealed record DownloadPreset
 
     /// <summary>预设携带的文件冲突策略；缺失字段反序列化时采用安全的自动序号。</summary>
     public FileConflictPolicy ConflictPolicy { get; init; } = FileConflictPolicy.AutoNumber;
+
+    /// <summary>P1 视频编码意图；P1-G7 接入实际流选择前保持兼容自动模式。</summary>
+    public VideoCodecPreference VideoCodecPreference { get; init; } = VideoCodecPreference.AutoCompatibility;
+
+    /// <summary>P1 输出容器意图。</summary>
+    public OutputContainer OutputContainer { get; init; } = OutputContainer.Mp4;
+
+    /// <summary>P1 输出流模式。</summary>
+    public OutputMediaMode OutputMediaMode { get; init; } = OutputMediaMode.AudioVideo;
+
+    /// <summary>P1 视频动态范围偏好。</summary>
+    public VideoDynamicRangePreference VideoDynamicRangePreference { get; init; } = VideoDynamicRangePreference.Auto;
+
+    /// <summary>P1 音频高规格偏好。</summary>
+    public AudioFeaturePreference AudioFeaturePreference { get; init; } = AudioFeaturePreference.Auto;
+
+    /// <summary>P1 结构化字幕配置；旧预设缺失时安全回退为不下载。</summary>
+    public SubtitleOptions SubtitleOptions { get; init; } = SubtitleOptions.None;
+
+    /// <summary>P1 结构化弹幕配置；旧预设缺失时安全回退为不下载。</summary>
+    public DanmakuOptions DanmakuOptions { get; init; } = DanmakuOptions.None;
+
+    /// <summary>单任务总限速，0 表示不限速。</summary>
+    public long PerTaskRateLimitBytesPerSecond { get; init; }
 }
 
 /// <summary>

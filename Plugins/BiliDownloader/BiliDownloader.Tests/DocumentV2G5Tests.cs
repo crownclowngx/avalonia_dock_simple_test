@@ -45,13 +45,13 @@ public class DocumentV2G5Tests
     #region V2 保存→加载往返
 
     [Fact]
-    public void V2保存_PluginMetadata版本为2()
+    public void 当前保存_PluginMetadata版本为3()
     {
         var vm = CreateVm();
         var saveData = vm.CreateSaveDocumentMetaData("test.doc");
 
         var metadata = JsonConvert.DeserializeObject<JObject>(saveData.PluginMetadata);
-        Assert.Equal("2.0", metadata?["Version"]?.ToString());
+        Assert.Equal("3.0", metadata?["Version"]?.ToString());
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class DocumentV2G5Tests
         vm.DownloadConfig.DownloadCover = true;
 
         var saveData = vm.CreateSaveDocumentMetaData("test.doc");
-        var content = JsonConvert.DeserializeObject<DocumentSaveDataV2>(saveData.Content);
+        var content = JsonConvert.DeserializeObject<DocumentSaveDataV3>(saveData.Content);
 
         Assert.NotNull(content);
         Assert.Equal("{bv}_{title}", content.NamingTemplate);

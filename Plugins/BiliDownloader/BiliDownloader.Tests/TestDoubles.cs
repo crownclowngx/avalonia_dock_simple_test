@@ -224,6 +224,7 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
     {
         lock (_gate)
         {
+            CallLog.Add($"repository:get-document:{documentId}");
             return Task.FromResult(_tasks.Where(x => x.DocumentId == documentId).ToList());
         }
     }

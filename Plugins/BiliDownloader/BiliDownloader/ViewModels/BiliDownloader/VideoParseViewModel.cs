@@ -34,6 +34,16 @@ public partial class VideoParseViewModel : ObservableObject
     private readonly IBiliMediaProbe _mediaProbe;
     private readonly IBiliCredentialProvider _credentialProvider;
     private readonly Action<VideoParseResult>? _onParsed;
+    private bool _restoringSource;
+
+    /// <summary>
+    /// 当前已规范化的直接链接来源。仅在成功解析或离线恢复时存在；
+    /// 用户重新编辑输入后立即清空，避免把旧来源身份保存到新的 URL 旁边。
+    /// </summary>
+    public ContentSourceDescriptor? CurrentSourceDescriptor { get; private set; }
+
+    /// <summary>规范化来源身份变化事件，不代表已经访问远端或创建下载任务。</summary>
+    public event Action? PersistentSourceChanged;
 
     [ObservableProperty]
     private string _url = "";
@@ -170,6 +180,8 @@ public partial class VideoParseViewModel : ObservableObject
             // 所有远端调用完成后才提交状态，失败或取消不会留下半成品结果。
             VideoCollection = collection;
             Url = descriptor.DisplayName;
+            CurrentSourceDescriptor = descriptor;
+            PersistentSourceChanged?.Invoke();
             IsParsed = true;
             DownloadInfo = $"解析成功: {collection.SeriesTitle} ({collection.Items.Count} 个视频)";
 
@@ -212,6 +224,26 @@ public partial class VideoParseViewModel : ObservableObject
         {
             IsLoading = false;
         }
+    }
+
+    /// <summary>
+    /// 只使用 Document 内的稳定描述符恢复输入，不调用 Normalize、GetPage 或 Resolve。
+    /// </summary>
+    public void RestoreSource(ContentSourceDescriptor descriptor, string? legacyUrl)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        _restoringSource = true;
+        Url = string.IsNullOrWhiteSpace(legacyUrl) ? descriptor.DisplayName : legacyUrl;
+        CurrentSourceDescriptor = descriptor;
+        _restoringSource = false;
+    }
+
+    partial void OnUrlChanged(string value)
+    {
+        if (_restoringSource) return;
+        if (CurrentSourceDescriptor is null) return;
+        CurrentSourceDescriptor = null;
+        PersistentSourceChanged?.Invoke();
     }
 
     private static string FormatAudioQualityName(int audioId, long bandwidth)

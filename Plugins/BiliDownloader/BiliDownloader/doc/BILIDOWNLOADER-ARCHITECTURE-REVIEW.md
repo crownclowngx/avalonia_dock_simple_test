@@ -242,6 +242,18 @@ stateDiagram-v2
 
 **[概念边界]** SQLite 是“已经提交的下载任务事实源”；Document 保存文件是“用户可再次打开和编辑的下载方案”。两者不能互相替代，也不应在恢复时重复提交同一批任务。
 
+### 5.1 P1-G4：Document V3 持久化边界
+
+**[已实现]** `IBiliDownloaderDocumentStateMapper` 集中负责版本识别、V1/V2 单向迁移、V3 安全校验和宿主保存信封。`BiliDownloaderViewModel` 只采集与应用不可变快照，不再自行解释 JSON 版本；生产 DI 使用无状态单例映射器，测试可替换该窄接口。
+
+**[已实现]** 来源通过 `SourceDescriptorSaveData` 白名单 DTO 保存，不序列化 Provider 或任意参数字典。筛选、轻量增量基线和完整 P1 输出配置分别拥有稳定 DTO/值对象；页面、游标链、跨页选择和任务状态明确排除。
+
+**[已实现]** 来源工作流具有专用离线恢复入口：加载只挂载描述符、筛选和空浏览层级，随后按 `DocumentId` 查询 SQLite 投影。缺失 Provider 时保留原始白名单 DTO并显示只读摘要，用户仍可另存。
+
+**[已实现]** 未知未来主版本实现宿主通用 `IDocumentSavePathPolicy`，强制选择新路径；损坏 V3 抛出稳定 `DocumentLoadException`，宿主显示错误但不创建标签。创建 JSON 不再提前清除 `IsModified`，只有宿主写盘成功通知后才清除。
+
+详细字段、默认值和迁移表见 [P1-G4 Document V3 与可复用方案](P1-G4-DOCUMENT-V3-REUSABLE-SCHEMES.md)。
+
 ## 6. 下载执行边界
 
 ```mermaid
