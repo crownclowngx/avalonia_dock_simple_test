@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text;
 using Newtonsoft.Json;
 
 namespace BiliDownloader.Models.ContentSources;
@@ -158,6 +159,7 @@ public readonly record struct MediaUnitKey
 /// <summary>内容源筛选规则值对象。G0 不执行筛选，只保证分页接口后续无需破坏性变更。</summary>
 public sealed class SourceFilterRules
 {
+    public const int MaxKeywordLength = 100;
     public static SourceFilterRules Empty { get; } = new();
 
     [JsonConstructor]
@@ -173,11 +175,21 @@ public sealed class SourceFilterRules
         if (!Enum.IsDefined(sortOrder))
             throw new ArgumentOutOfRangeException(nameof(sortOrder));
 
-        var mediaTypeArray = (mediaTypes ?? Array.Empty<ContentSourceItemType>()).ToArray();
+        var normalizedKeyword = string.IsNullOrWhiteSpace(keyword)
+            ? null
+            : keyword.Trim().Normalize(NormalizationForm.FormKC);
+        if (normalizedKeyword?.Length > MaxKeywordLength)
+            throw new ArgumentOutOfRangeException(
+                nameof(keyword), $"筛选关键词不能超过 {MaxKeywordLength} 个字符。");
+
+        var mediaTypeArray = (mediaTypes ?? Array.Empty<ContentSourceItemType>())
+            .Distinct()
+            .OrderBy(static type => type)
+            .ToArray();
         if (mediaTypeArray.Any(type => !Enum.IsDefined(type)))
             throw new ArgumentOutOfRangeException(nameof(mediaTypes), "媒体类型包含未知枚举值。");
 
-        Keyword = string.IsNullOrWhiteSpace(keyword) ? null : keyword.Trim();
+        Keyword = normalizedKeyword;
         PublishedFrom = publishedFrom;
         PublishedTo = publishedTo;
         MediaTypes = Array.AsReadOnly(mediaTypeArray);
@@ -297,6 +309,106 @@ public sealed class ContentSourceItem
     public ContentAccessState AccessState { get; }
     public int? ChildCount { get; }
     public int? DurationSeconds { get; }
+}
+
+/// <summary>
+/// 筛选规则的稳定、不含明文的身份。
+/// 设计意图：缓存、并发代际和“全部匹配”选择只比较规则身份，避免把用户关键词写入键或日志。
+/// </summary>
+public readonly record struct FilterFingerprint
+{
+    public FilterFingerprint(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException("筛选指纹不能为空。", nameof(value));
+        Value = value;
+    }
+
+    public string Value { get; }
+    public override string ToString() => Value;
+}
+
+/// <summary>跨页选择的表达范围。</summary>
+public enum SelectionScope
+{
+    ExplicitItems,
+    AllMatchingResults,
+}
+
+/// <summary>
+/// 当前浏览会话的规则式选择状态。
+/// 设计意图：选择事实以稳定业务键保存，不依赖可能被虚拟化回收的 ListBoxItem 或 Item ViewModel。
+/// </summary>
+public sealed class ContentSelectionState
+{
+    private readonly HashSet<ContentItemKey> _selectedKeys = [];
+    private readonly HashSet<ContentItemKey> _excludedKeys = [];
+
+    public SelectionScope Scope { get; private set; } = SelectionScope.ExplicitItems;
+    public FilterFingerprint? AllMatchingFingerprint { get; private set; }
+    public int ExplicitCount => _selectedKeys.Count;
+    public int ExclusionCount => _excludedKeys.Count;
+    public bool HasSelection => Scope == SelectionScope.AllMatchingResults || _selectedKeys.Count > 0;
+    public IReadOnlyCollection<ContentItemKey> SelectedKeys => _selectedKeys.ToArray();
+    public IReadOnlyCollection<ContentItemKey> ExcludedKeys => _excludedKeys.ToArray();
+
+    public bool IsSelected(ContentItemKey key, FilterFingerprint fingerprint) =>
+        Scope == SelectionScope.AllMatchingResults && AllMatchingFingerprint == fingerprint
+            ? !_excludedKeys.Contains(key)
+            : _selectedKeys.Contains(key);
+
+    public void SetSelected(ContentItemKey key, bool selected, FilterFingerprint fingerprint)
+    {
+        if (Scope == SelectionScope.AllMatchingResults && AllMatchingFingerprint == fingerprint)
+        {
+            if (selected) _excludedKeys.Remove(key);
+            else _excludedKeys.Add(key);
+            return;
+        }
+
+        if (selected) _selectedKeys.Add(key);
+        else _selectedKeys.Remove(key);
+    }
+
+    public void SelectLoaded(IEnumerable<ContentItemKey> keys, FilterFingerprint fingerprint)
+    {
+        ArgumentNullException.ThrowIfNull(keys);
+        foreach (var key in keys)
+            SetSelected(key, true, fingerprint);
+    }
+
+    public void DeselectLoaded(IEnumerable<ContentItemKey> keys, FilterFingerprint fingerprint)
+    {
+        ArgumentNullException.ThrowIfNull(keys);
+        foreach (var key in keys)
+            SetSelected(key, false, fingerprint);
+    }
+
+    public void SelectAllMatching(FilterFingerprint fingerprint)
+    {
+        Scope = SelectionScope.AllMatchingResults;
+        AllMatchingFingerprint = fingerprint;
+        _selectedKeys.Clear();
+        _excludedKeys.Clear();
+    }
+
+    /// <summary>筛选变化只使规则式全选失效；逐项选择属于明确用户意图，应继续保留。</summary>
+    public bool InvalidateAllMatching(FilterFingerprint currentFingerprint)
+    {
+        if (Scope != SelectionScope.AllMatchingResults || AllMatchingFingerprint == currentFingerprint)
+            return false;
+
+        Clear();
+        return true;
+    }
+
+    public void Clear()
+    {
+        Scope = SelectionScope.ExplicitItems;
+        AllMatchingFingerprint = null;
+        _selectedKeys.Clear();
+        _excludedKeys.Clear();
+    }
 }
 
 /// <summary>不可变分页结果，同时保证 HasMore 与下一游标的状态不会互相矛盾。</summary>

@@ -1,4 +1,5 @@
 using BiliDownloader.Models.ContentSources;
+using BiliDownloader.Services.ContentSources;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -23,15 +24,23 @@ public static class ContentAccessPresentationPolicy
 
 public sealed class ContentSourceItemViewModel : ObservableObject
 {
-    private bool _isSelected;
+    private readonly ContentSelectionState _selection;
+    private readonly Func<FilterFingerprint> _fingerprint;
+    private readonly Action? _selectionChanged;
 
     public ContentSourceItemViewModel(
         ContentSourceItem item,
         bool supportsResolution = true,
-        Func<ContentSourceItemViewModel, Task>? onOpen = null)
+        Func<ContentSourceItemViewModel, Task>? onOpen = null,
+        ContentSelectionState? selection = null,
+        Func<FilterFingerprint>? fingerprint = null,
+        Action? selectionChanged = null)
     {
         Item = item;
         SupportsResolution = supportsResolution;
+        _selection = selection ?? new ContentSelectionState();
+        _fingerprint = fingerprint ?? (() => ContentFilterPlanBuilder.CreateFingerprint(SourceFilterRules.Empty));
+        _selectionChanged = selectionChanged;
         OpenCommand = new AsyncRelayCommand(
             () => onOpen is null ? Task.CompletedTask : onOpen(this),
             () => CanOpen);
@@ -64,7 +73,16 @@ public sealed class ContentSourceItemViewModel : ObservableObject
 
     public bool IsSelected
     {
-        get => _isSelected;
-        set => SetProperty(ref _isSelected, CanSelect && value);
+        get => CanSelect && _selection.IsSelected(Item.Key, _fingerprint());
+        set
+        {
+            var normalized = CanSelect && value;
+            if (IsSelected == normalized) return;
+            _selection.SetSelected(Item.Key, normalized, _fingerprint());
+            OnPropertyChanged();
+            _selectionChanged?.Invoke();
+        }
     }
+
+    public void RefreshSelection() => OnPropertyChanged(nameof(IsSelected));
 }

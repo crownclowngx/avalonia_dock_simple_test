@@ -3,11 +3,11 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
-             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="390"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="560"
              x:Class="BiliDownloader.Views.BiliDownloader.ContentSourceBrowserView"
              x:DataType="vm:ContentSourceBrowserViewModel">
     <Border Classes="bili-doc-workspace" Padding="10" ClipToBounds="True">
-        <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="8">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" RowSpacing="8">
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                 <ItemsControl ItemsSource="{Binding Breadcrumbs}" VerticalAlignment="Center">
                     <ItemsControl.ItemsPanel>
@@ -16,7 +16,8 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:ContentSourceBreadcrumb">
                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                <Button Content="{Binding Title}" Command="{Binding NavigateCommand}" Classes="bili-doc-button" />
+                                <Button Content="{Binding Title}" Command="{Binding NavigateCommand}"
+                                        Classes="bili-doc-button" />
                                 <TextBlock Text="/" VerticalAlignment="Center" Classes="bili-doc-caption" />
                             </StackPanel>
                         </DataTemplate>
@@ -30,10 +31,105 @@
 
             <TextBlock Grid.Row="1" Text="{Binding Title}" Classes="bili-doc-section-title" />
 
+            <!--
+                筛选项采用统一的“标签 + 控件”结构，日期使用紧凑的日历输入。
+                这样可避免分段式 DatePicker 被压缩，也让窄文档通过换行自然增高。
+            -->
+            <Border x:Name="FilterPanel" Grid.Row="2" Padding="10,8" CornerRadius="4"
+                    Background="{DynamicResource AppSubtlePanelBrush}">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="筛选内容" Classes="bili-doc-section-title" />
+                    <WrapPanel Orientation="Horizontal">
+                        <StackPanel Width="240" Margin="0,0,8,6" Spacing="3">
+                            <TextBlock Text="关键词" Classes="bili-doc-caption" />
+                            <TextBox x:Name="SearchFilterBox" MinHeight="32"
+                                     PlaceholderText="搜索标题或作者…"
+                                     MaxLength="100"
+                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding AreFiltersEnabled}"
+                                     AutomationProperties.Name="搜索标题或作者" />
+                        </StackPanel>
+                        <StackPanel Width="170" Margin="0,0,8,6" Spacing="3">
+                            <TextBlock Text="开始日期" Classes="bili-doc-caption" />
+                            <CalendarDatePicker x:Name="PublishedFromPicker" MinHeight="32"
+                                                SelectedDate="{Binding PublishedFrom}"
+                                                ToolTip.Tip="开始日期（包含当天）"
+                                                IsEnabled="{Binding AreFiltersEnabled}"
+                                                AutomationProperties.Name="发布时间起点" />
+                        </StackPanel>
+                        <StackPanel Width="170" Margin="0,0,8,6" Spacing="3">
+                            <TextBlock Text="结束日期" Classes="bili-doc-caption" />
+                            <CalendarDatePicker x:Name="PublishedToPicker" MinHeight="32"
+                                                SelectedDate="{Binding PublishedTo}"
+                                                ToolTip.Tip="结束日期（包含当天）"
+                                                IsEnabled="{Binding AreFiltersEnabled}"
+                                                AutomationProperties.Name="发布时间终点" />
+                        </StackPanel>
+                        <StackPanel Width="120" Margin="0,0,8,6" Spacing="3">
+                            <TextBlock Text="内容类型" Classes="bili-doc-caption" />
+                            <Button x:Name="TypeFilterButton" Content="{Binding TypeFilterSummary}"
+                                    MinHeight="32" HorizontalContentAlignment="Left"
+                                    Classes="bili-doc-button" IsEnabled="{Binding AreFiltersEnabled}"
+                                    AutomationProperties.Name="选择内容类型">
+                                <Button.Flyout>
+                                    <Flyout Placement="Bottom">
+                                        <Border Padding="8" MinWidth="130">
+                                            <ItemsControl ItemsSource="{Binding TypeFilterOptions}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:ContentSourceTypeFilterOption">
+                                                        <CheckBox Content="{Binding Label}"
+                                                                  IsChecked="{Binding IsSelected}"
+                                                                  Margin="2" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Border>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                        <StackPanel Width="150" Margin="0,0,8,6" Spacing="3">
+                            <TextBlock Text="排序" Classes="bili-doc-caption" />
+                            <ComboBox x:Name="SortFilterComboBox" MinHeight="32"
+                                      ItemsSource="{Binding SortOptions}"
+                                      SelectedItem="{Binding SelectedSortOption}"
+                                      IsEnabled="{Binding AreFiltersEnabled}"
+                                      AutomationProperties.Name="排序方式">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ContentSourceSortOption">
+                                        <TextBlock Text="{Binding Label}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Width="90" Margin="0,0,0,6" Spacing="3">
+                            <TextBlock Text="操作" Classes="bili-doc-caption" />
+                            <Button Content="重置筛选" Command="{Binding ResetFiltersCommand}"
+                                    MinHeight="32" HorizontalContentAlignment="Center"
+                                    IsEnabled="{Binding AreFiltersEnabled}"
+                                    Classes="bili-doc-button" />
+                        </StackPanel>
+                    </WrapPanel>
+
+                    <!-- 状态提示属于筛选语境，放在卡片内可避免换行后与列表内容重叠。 -->
+                    <TextBlock x:Name="FilterScopeNotice" Text="{Binding FilterScopeText}"
+                               IsVisible="{Binding HasFilterScopeNotice}"
+                               Classes="bili-doc-caption" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding FilterValidationMessage}"
+                               IsVisible="{Binding HasFilterValidationMessage}"
+                               Foreground="{DynamicResource AppErrorBrush}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding SelectionInvalidatedMessage}"
+                               IsVisible="{Binding HasSelectionInvalidatedMessage}"
+                               Foreground="{DynamicResource AppWarningBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- 选择状态来自 ContentSelectionState，ListBox 只负责虚拟化和键盘滚动。 -->
             <ListBox x:Name="ContentSourceItemsList"
-                     Grid.Row="2"
+                     Grid.Row="3"
                      Classes="bili-doc-list"
                      ItemsSource="{Binding Items}"
+                     IsEnabled="{Binding IsNotBusy}"
                      Height="260"
                      ScrollViewer.IsScrollChainingEnabled="True"
                      ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -44,7 +140,8 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="vm:ContentSourceItemViewModel">
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" Margin="2">
-                            <CheckBox IsChecked="{Binding IsSelected}" IsVisible="{Binding ShowCheckBox}" />
+                            <CheckBox IsChecked="{Binding IsSelected}" IsVisible="{Binding ShowCheckBox}"
+                                      AutomationProperties.Name="选择此内容" />
                             <TextBlock Text="{Binding StateIcon}" IsVisible="{Binding ShowStateIcon}"
                                        Width="24" TextAlignment="Center" VerticalAlignment="Center" />
                             <StackPanel Grid.Column="1">
@@ -62,22 +159,52 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <Grid x:Name="SelectionScopeBar" Grid.Row="4" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8"
+                  IsVisible="{Binding CanShowSelectionBar}" IsEnabled="{Binding IsNotBusy}">
+                <CheckBox IsThreeState="True" IsChecked="{Binding LoadedSelectionState, Mode=OneWay}"
+                          Command="{Binding ToggleLoadedSelectionCommand}"
+                          Content="全选已加载" VerticalAlignment="Center"
+                          AutomationProperties.Name="切换全部已加载项目" />
+                <TextBlock Grid.Column="1" Text="{Binding SelectionSummaryText}"
+                           Classes="bili-doc-caption" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <Button Grid.Column="2" Content="取消已加载" Command="{Binding DeselectLoadedCommand}"
+                        Classes="bili-doc-button" />
+                <Button Grid.Column="3" Content="清空全部" Command="{Binding ClearSelectionCommand}"
+                        IsEnabled="{Binding HasSelection}" Classes="bili-doc-button" />
+            </Grid>
+
+            <Border x:Name="AllMatchingPrompt" Grid.Row="5" Padding="8,5" CornerRadius="4"
+                    Background="{DynamicResource AppSubtlePanelBrush}"
+                    IsVisible="{Binding ShowSelectAllMatchingPrompt}" IsEnabled="{Binding IsNotBusy}">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="已选择所有已加载项目。是否选择此筛选条件下的全部匹配结果？"
+                               TextWrapping="Wrap" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="选择全部匹配结果"
+                            Command="{Binding SelectAllMatchingCommand}"
+                            Classes="bili-doc-button accent" />
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="6" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                 <StackPanel>
                     <TextBlock Text="{Binding Status}" Classes="bili-doc-caption" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding ReadOnlyMessage}" IsVisible="{Binding IsReadOnlySource}"
                                Classes="bili-doc-caption" TextWrapping="Wrap" />
                 </StackPanel>
                 <Button Grid.Column="1" Content="重新读取" Command="{Binding RetryCommand}"
-                        IsVisible="{Binding CanRetry}" IsEnabled="{Binding IsNotBusy}" Classes="bili-doc-button" />
+                        IsVisible="{Binding CanRetry}" IsEnabled="{Binding IsNotBusy}"
+                        Classes="bili-doc-button" />
+                <Button Grid.Column="2" Content="加载更多" Command="{Binding LoadMoreCommand}"
+                        IsVisible="{Binding HasMore}" IsEnabled="{Binding IsNotBusy}"
+                        Classes="bili-doc-button" />
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
+                    <Button Content="取消" Command="{Binding CancelResolveCommand}"
+                            IsVisible="{Binding IsResolvingSelection}" Classes="bili-doc-button" />
+                    <Button Content="解析所选内容" Command="{Binding ResolveSelectedCommand}"
+                            IsVisible="{Binding CanResolveCurrentSource}"
+                            IsEnabled="{Binding CanResolveSelection}" Classes="bili-doc-button accent" />
+                </StackPanel>
             </Grid>
-
-            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                <Button Content="加载更多" Command="{Binding LoadMoreCommand}"
-                        IsVisible="{Binding HasMore}" Classes="bili-doc-button" />
-                <Button Content="解析所选内容" Command="{Binding ResolveSelectedCommand}"
-                        IsVisible="{Binding CanResolveCurrentSource}" Classes="bili-doc-button accent" />
-            </StackPanel>
         </Grid>
     </Border>
 </UserControl>
