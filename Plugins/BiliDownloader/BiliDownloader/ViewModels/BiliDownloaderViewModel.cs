@@ -125,7 +125,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
         IUserPromptService? promptService = null,
         ILoginDialogService? loginDialogService = null,
         IFfmpegPackageInstaller? ffmpegInstaller = null,
-        IBiliDownloaderDocumentStateMapper? documentStateMapper = null)
+        IBiliDownloaderDocumentStateMapper? documentStateMapper = null,
+        IIncrementalComparisonService? incrementalComparisonService = null)
     {
         _messengerService = messengerService;
         _taskRepository = taskRepository;
@@ -142,6 +143,14 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
             credentialProvider,
             onParsed: HandleParseResult,
             isLoggedInCheck: () => LoginBar.IsLoggedIn);
+        // G5: 命名模板子 VM
+        var namingTemplate = new NamingTemplateViewModel();
+        var downloadConfig = new DownloadConfigViewModel(
+            settingsRepository,
+            presetRepository,
+            () => namingTemplate.Template);
+        downloadConfig.PresetApplied += preset => namingTemplate.Template = preset.NamingTemplate;
+
         var favoriteDiscovery = providerRegistry.Providers
             .OfType<IFavoriteSourceDiscoveryService>()
             .FirstOrDefault() ?? new UnavailableFavoriteSourceDiscoveryService();
@@ -150,15 +159,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
             providerRegistry,
             favoriteDiscovery,
             new VideoParseResultFactory(mediaProbe, credentialProvider),
-            HandleParseResult);
-
-        // G5: 命名模板子 VM
-        var namingTemplate = new NamingTemplateViewModel();
-        var downloadConfig = new DownloadConfigViewModel(
-            settingsRepository,
-            presetRepository,
-            () => namingTemplate.Template);
-        downloadConfig.PresetApplied += preset => namingTemplate.Template = preset.NamingTemplate;
+            HandleParseResult,
+            incrementalComparisonService,
+            downloadConfig.CaptureRenditionSpecification);
 
         DownloadWorkspaceViewModel? workspace = null;
         var videoList = new VideoListViewModel(
@@ -183,6 +186,10 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
                 IsNamingValid = NamingTemplate.IsValid,
                 NamingValidationError = NamingTemplate.ValidationError ?? "",
                 ConflictPolicy = DownloadConfig.SelectedConflictPolicy.Value,
+                VideoCodecPreference = DownloadConfig.VideoCodecPreference,
+                OutputContainer = DownloadConfig.OutputContainer,
+                OutputMediaMode = DownloadConfig.OutputMediaMode,
+                IncrementalExpectation = SourceWorkflow.CreateSubmissionExpectation(),
             },
             messengerService: _messengerService,
             onStatusMessage: msg => AppendLog(msg),
@@ -219,6 +226,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
                             AppendLog("输出目录已更新，请重新提交。");
                         }
                         break;
+                    case "stale-comparison":
+                        await SourceWorkflow.RefreshComparisonFromCacheAsync();
+                        break;
                 }
             });
         workspace = new DownloadWorkspaceViewModel(downloadConfig, namingTemplate, videoList);
@@ -238,10 +248,55 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
             if (args.PropertyName == nameof(VideoParseViewModel.Url)) MarkDocumentModified();
         };
         SourceWorkflow.PersistentStateChanged += MarkDocumentModified;
+        SourceWorkflow.IncrementalItemsAccepted += (items, expectation) =>
+        {
+            var rendition = DownloadConfig.CaptureRenditionSpecification();
+            if (rendition is null || items.Count == 0) return;
+            for (var index = 0; index < items.Count; index++) items[index].Index = index + 1;
+            var collection = new BiliVideoCollection
+            {
+                SeriesTitle = SourceWorkflow.Browser.CurrentDescriptor?.DisplayName ?? "增量更新",
+                Items = items.ToList(),
+            };
+            HandleParseResult(new VideoParseResult
+            {
+                Collection = collection,
+                VideoItems = items.ToList(),
+                QualityOptions =
+                [
+                    new BiliQualityOption
+                    {
+                        QualityId = rendition.VideoQualityId,
+                        DisplayName = $"Q{rendition.VideoQualityId}",
+                    },
+                ],
+                SelectedQuality = new BiliQualityOption
+                {
+                    QualityId = rendition.VideoQualityId,
+                    DisplayName = $"Q{rendition.VideoQualityId}",
+                },
+                AudioQualityOptions = rendition.AudioQualityId > 0
+                    ? [new BiliQualityOption { QualityId = rendition.AudioQualityId, DisplayName = $"音频 {rendition.AudioQualityId}" }]
+                    : [],
+                SelectedAudioQuality = rendition.AudioQualityId > 0
+                    ? new BiliQualityOption { QualityId = rendition.AudioQualityId, DisplayName = $"音频 {rendition.AudioQualityId}" }
+                    : null,
+                IsMultiVideo = items.Count > 1,
+                TitlesText = string.Join(Environment.NewLine, items.Select(item => item.Title)),
+            });
+        };
         DownloadConfig.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName is not null && PersistedDownloadConfigProperties.Contains(args.PropertyName))
+            {
                 MarkDocumentModified();
+                if (args.PropertyName is nameof(DownloadConfigViewModel.SelectedQuality) or
+                    nameof(DownloadConfigViewModel.SelectedAudioQuality) or
+                    nameof(DownloadConfigViewModel.VideoCodecPreference) or
+                    nameof(DownloadConfigViewModel.OutputContainer) or
+                    nameof(DownloadConfigViewModel.OutputMediaMode))
+                    SourceWorkflow.MarkOutputIdentityChanged();
+            }
         };
         NamingTemplate.PropertyChanged += (_, args) =>
         {

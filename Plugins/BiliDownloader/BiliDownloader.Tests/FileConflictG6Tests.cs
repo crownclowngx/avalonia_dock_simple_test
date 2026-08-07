@@ -243,7 +243,7 @@ public sealed class FileConflictG6Tests
                 false, false, false, "{title}", ConflictPolicy: policy),
             Enumerable.Range(1, count)
                 .Select(index => new DownloadSubmissionItem(
-                    $"item-{index}", "标题", 1, "BV1", 2, 60,
+                    $"item-{index}", "标题", 1, "BV1", index + 1, 60,
                     BiliMediaType.Video, 0, 0, ""))
                 .ToArray());
 

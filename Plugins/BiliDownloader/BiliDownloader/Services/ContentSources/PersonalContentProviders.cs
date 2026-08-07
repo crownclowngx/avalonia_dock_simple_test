@@ -126,7 +126,8 @@ public sealed class UploaderSourceProvider : PersonalContentSourceProviderBase
         : base(resolver) { _api = api; _account = account; }
 
     public override ContentSourceKind Kind => ContentSourceKind.Uploader;
-    public override ContentSourceCapabilities Capabilities => ContentSourceCapabilities.SupportsPaging;
+    public override ContentSourceCapabilities Capabilities =>
+        ContentSourceCapabilities.SupportsPaging | ContentSourceCapabilities.SupportsIncremental;
 
     public override ValueTask<ContentSourceDescriptor> NormalizeAsync(string input, CancellationToken cancellationToken)
     {
@@ -153,7 +154,8 @@ public sealed class FavoriteSourceProvider : PersonalContentSourceProviderBase, 
         : base(resolver) { _api = api; _account = account; }
 
     public override ContentSourceKind Kind => ContentSourceKind.Favorite;
-    public override ContentSourceCapabilities Capabilities => ContentSourceCapabilities.SupportsPaging;
+    public override ContentSourceCapabilities Capabilities =>
+        ContentSourceCapabilities.SupportsPaging | ContentSourceCapabilities.SupportsIncremental;
 
     public override ValueTask<ContentSourceDescriptor> NormalizeAsync(string input, CancellationToken cancellationToken)
     {
@@ -193,7 +195,9 @@ public sealed class WatchLaterSourceProvider : PersonalContentSourceProviderBase
     { _api = api; _account = account; _snapshots = snapshots; }
 
     public override ContentSourceKind Kind => ContentSourceKind.WatchLater;
-    public override ContentSourceCapabilities Capabilities => ContentSourceCapabilities.RequiresLogin | ContentSourceCapabilities.SupportsPaging;
+    public override ContentSourceCapabilities Capabilities =>
+        ContentSourceCapabilities.RequiresLogin | ContentSourceCapabilities.SupportsPaging |
+        ContentSourceCapabilities.SupportsIncremental;
 
     public override ValueTask<ContentSourceDescriptor> NormalizeAsync(string input, CancellationToken cancellationToken)
     {
@@ -239,7 +243,9 @@ public sealed class HistorySourceProvider : PersonalContentSourceProviderBase
         : base(resolver) { _api = api; _account = account; }
 
     public override ContentSourceKind Kind => ContentSourceKind.History;
-    public override ContentSourceCapabilities Capabilities => ContentSourceCapabilities.RequiresLogin | ContentSourceCapabilities.SupportsPaging;
+    public override ContentSourceCapabilities Capabilities =>
+        ContentSourceCapabilities.RequiresLogin | ContentSourceCapabilities.SupportsPaging |
+        ContentSourceCapabilities.SupportsIncremental;
 
     public override ValueTask<ContentSourceDescriptor> NormalizeAsync(string input, CancellationToken cancellationToken)
     {

@@ -39,6 +39,8 @@
                     <Button Content="返回来源" Command="{Binding BackToSourcesCommand}"
                             HorizontalAlignment="Left" Classes="bili-doc-button" />
                     <views:ContentSourceBrowserView DataContext="{Binding Browser}" />
+                    <!-- 检查更新与普通浏览保持两个明确命令；该面板只生成预览，不直接提交任务。 -->
+                    <views:IncrementalComparisonView DataContext="{Binding Comparison}" />
                 </StackPanel>
             </Grid>
         </Grid>

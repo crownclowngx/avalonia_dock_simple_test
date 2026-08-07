@@ -1,5 +1,6 @@
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
+using BiliDownloader.Models.ContentSources;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
@@ -222,6 +223,8 @@ public sealed class BiliDownloadCoordinator
                     Aid = item.Aid,
                     Bvid = item.Bvid,
                     Cid = item.Cid,
+                    MediaUnitKey = CreateMediaUnitStorageKey(item),
+                    RenditionFingerprint = CreateRenditionStorageKey(item, profile),
                     QualityId = profile.VideoQualityId,
                     AudioQualityId = profile.AudioQualityId,
                     OutputDirectory = profile.OutputDirectory,
@@ -271,6 +274,10 @@ public sealed class BiliDownloadCoordinator
             var current = await preflight.InspectAsync(prepared.Report.Submission, cancellationToken);
             if (!string.Equals(current.Fingerprint, prepared.Report.Fingerprint, StringComparison.Ordinal))
                 return new(SubmissionCommitStatus.Stale, 0, current.SkipCount, "输出目录事实已变化，请重新确认预检结果。");
+            if (current.GlobalIssues.Concat(current.Items.SelectMany(item => item.Issues))
+                .Any(issue => issue.Code == "stale_comparison"))
+                return new(SubmissionCommitStatus.StaleComparison, 0, current.SkipCount,
+                    "增量检查后的任务事实已变化，已拒绝旧结果并要求刷新分类。");
             if (current.IsBlocked)
                 return new(SubmissionCommitStatus.Blocked, 0, current.SkipCount, BuildPreflightMessage(current));
             if (current.RequiresConfirmation && !prepared.UserConfirmed)
@@ -310,6 +317,8 @@ public sealed class BiliDownloadCoordinator
                     Aid = item.Aid,
                     Bvid = item.Bvid,
                     Cid = item.Cid,
+                    MediaUnitKey = CreateMediaUnitStorageKey(item),
+                    RenditionFingerprint = CreateRenditionStorageKey(item, profile),
                     QualityId = profile.VideoQualityId,
                     AudioQualityId = profile.AudioQualityId,
                     OutputDirectory = profile.OutputDirectory,
@@ -359,6 +368,19 @@ public sealed class BiliDownloadCoordinator
             .Where(issue => issue.Severity == PreflightIssueSeverity.Blocking)
             .Select(issue => issue.Message)
             .Distinct());
+
+    private static string CreateMediaUnitStorageKey(DownloadSubmissionItem item) =>
+        item.Aid > 0 && item.Cid > 0
+            ? new MediaUnitKey(item.Aid, item.Cid).ToStorageKey()
+            : string.Empty;
+
+    private static string CreateRenditionStorageKey(
+        DownloadSubmissionItem item,
+        DownloadProfileSnapshot profile) =>
+        item.Aid > 0 && item.Cid > 0 && profile.VideoQualityId > 0
+            ? RenditionFingerprint.Create(
+                new MediaUnitKey(item.Aid, item.Cid), profile.ToRenditionSpecification()).Value
+            : string.Empty;
 
     /// <summary>
     /// 加载所有任务（供 Tool ViewModel 初始化 UI）

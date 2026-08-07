@@ -96,6 +96,12 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IContentSourceProvider, CollectionSourceProvider>();
         services.AddSingleton<IContentSourceProvider, CourseSourceProvider>();
         services.AddSingleton<IContentSourceProviderRegistry, ContentSourceProviderRegistry>();
+        // P1-G5 将远端扫描、纯分类和任务事实编排拆成窄服务，检查更新因此不会依赖 Coordinator，
+        // 也不可能在扫描阶段意外创建或启动下载任务。
+        services.AddSingleton<IContentSourceScanService, ContentSourceScanService>();
+        services.AddSingleton<IOutputFileFactProvider, SystemOutputFileFactProvider>();
+        services.AddSingleton<IContentComparisonPolicy, ContentComparisonPolicy>();
+        services.AddSingleton<IIncrementalComparisonService, IncrementalComparisonService>();
         services.AddSingleton<BiliDownloadService>();
         services.AddSingleton(provider => ExtrasHandlerRegistry.CreateDefault(
             provider.GetRequiredService<IBiliHttpClientFactory>()));

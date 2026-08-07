@@ -1,4 +1,5 @@
 using BiliDownloader.Models;
+using BiliDownloader.Models.ContentSources;
 
 namespace BiliDownloader.Services.Persistence;
 
@@ -21,6 +22,27 @@ public interface IDownloadTaskRepository
 
     /// <summary>查询所有未完成的任务（用于重启恢复）</summary>
     Task<List<DownloadTaskRecord>> GetIncompleteAsync();
+
+    /// <summary>
+    /// 按媒体身份或完整输出指纹查询相关任务。默认实现仅用于旧测试替身；SQLite 实现必须使用索引查询，
+    /// 不能让一次增量检查退化为读取全部历史任务。
+    /// </summary>
+    async Task<List<DownloadTaskRecord>> GetByIdentityAsync(
+        IReadOnlyCollection<MediaUnitKey> mediaUnitKeys,
+        IReadOnlyCollection<string> renditionFingerprints,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var media = mediaUnitKeys.ToHashSet();
+        var fingerprints = renditionFingerprints.ToHashSet(StringComparer.Ordinal);
+        return (await GetAllAsync()).Where(task =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var hasMedia = task.Aid > 0 && task.Cid > 0 && media.Contains(new MediaUnitKey(task.Aid, task.Cid));
+            return hasMedia || (!string.IsNullOrWhiteSpace(task.RenditionFingerprint)
+                && fingerprints.Contains(task.RenditionFingerprint));
+        }).ToList();
+    }
 
     /// <summary>更新任务进度和状态</summary>
     Task UpdateProgressAsync(string taskId, double progress, string status, string? errorMessage = null);

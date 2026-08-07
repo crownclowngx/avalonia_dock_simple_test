@@ -140,6 +140,8 @@ public readonly record struct ContentItemKey
 /// <summary>解析后的媒体单元身份。跨来源聚合只比较 Aid 与 Cid。</summary>
 public readonly record struct MediaUnitKey
 {
+    private const string StoragePrefix = "mu1:";
+
     [JsonConstructor]
     public MediaUnitKey(long aid, long cid)
     {
@@ -154,6 +156,33 @@ public readonly record struct MediaUnitKey
 
     public long Aid { get; }
     public long Cid { get; }
+
+    /// <summary>
+    /// 返回可长期持久化的版本化媒体键。
+    /// 设计意图：SQLite 不依赖 JSON 属性顺序，也不把来源类型混入媒体身份；
+    /// 同一视频单元无论来自收藏夹、UP 投稿还是历史记录都得到完全相同的键。
+    /// </summary>
+    public string ToStorageKey() => $"{StoragePrefix}{Aid}:{Cid}";
+
+    /// <summary>兼容读取版本化媒体键；无法确认身份时返回 false，绝不猜测或抛出迁移异常。</summary>
+    public static bool TryParseStorageKey(string? value, out MediaUnitKey key)
+    {
+        key = default;
+        if (string.IsNullOrWhiteSpace(value) ||
+            !value.StartsWith(StoragePrefix, StringComparison.Ordinal))
+            return false;
+
+        var parts = value.AsSpan(StoragePrefix.Length);
+        var separator = parts.IndexOf(':');
+        if (separator <= 0 || separator == parts.Length - 1 ||
+            !long.TryParse(parts[..separator], out var aid) ||
+            !long.TryParse(parts[(separator + 1)..], out var cid) ||
+            aid <= 0 || cid <= 0)
+            return false;
+
+        key = new MediaUnitKey(aid, cid);
+        return true;
+    }
 }
 
 /// <summary>内容源筛选规则值对象。G0 不执行筛选，只保证分页接口后续无需破坏性变更。</summary>

@@ -7,6 +7,7 @@
 - P1-G0 内容源协议组：稳定键、Provider 注册、分页游标保护、DirectLink 适配、取消与敏感数据边界。
 - P1-G1～G3 来源产品化组：个人/订阅来源、跨页筛选、规则选择、缓存淘汰与虚拟化状态。
 - P1-G4 Document V3 组：V1/V2/V3 迁移、离线恢复、缺失 Provider、可复用预设、强制另存和敏感字段快照。
+- P1-G5 增量与身份组：递归扫描、五类状态、轻量基线、跨来源媒体聚合、输出指纹、旧任务兼容和 Coordinator 锁内竞态复检。
 - C 级界面逻辑组：ViewModel、消息路由、Document 保存恢复、转换器和创建策略。
 - G6 冲突预检组：四种策略、目录与磁盘检查、续传事实、路径保留、预检过期和 Document 兼容迁移。
 - G7 依赖恢复组：固定 ffmpeg 供应链、安全安装与回滚、运行时探测、媒体检查点、仅合并重试、十类错误行动和目录事务。
@@ -59,6 +60,7 @@ P1-G4 自动化基线（2026-08-07）：BiliDownloader Release 完整门禁 594/
 - `coverage.runsettings` 排除测试程序集、生成代码、XAML、纯 View、真实 Avalonia 模态/文件选择器、系统文件定位适配器，以及含 Bitmap 与两秒轮询的登录窗口 ViewModel；这些交互边界分别由接口替身、API/状态服务测试和 Headless UI 测试覆盖。门禁定义见 `coverage-baseline.json`。
 - `Services/ContentSources` 计入 B 级协议覆盖率；DirectLinkProvider、Provider Registry 与分页累加器执行关键文件最低覆盖率门禁。
 - Document 恢复测试必须使用计数 Provider 证明打开和初始化调用次数为零；测试不得用缓存命中伪装“零网络”。
+- 增量检查测试使用离线 Provider、任务仓储和文件事实替身；取消或部分失败必须断言零基线推进、零任务写入和零下载启动。
 
 ## 当前测试边界
 

@@ -50,6 +50,10 @@ public class SubmitContext
     public bool IsNamingValid { get; set; } = true;
     public string NamingValidationError { get; set; } = "";
     public FileConflictPolicy ConflictPolicy { get; set; } = FileConflictPolicy.AutoNumber;
+    public VideoCodecPreference VideoCodecPreference { get; set; } = VideoCodecPreference.AutoCompatibility;
+    public OutputContainer OutputContainer { get; set; } = OutputContainer.Mp4;
+    public OutputMediaMode OutputMediaMode { get; set; } = OutputMediaMode.AudioVideo;
+    public IncrementalSubmissionExpectation? IncrementalExpectation { get; set; }
 }
 
 /// <summary>
@@ -350,10 +354,14 @@ public partial class VideoListViewModel : ObservableObject
                 ctx.DownloadSubtitle,
                 ctx.DownloadCover,
                 ctx.NamingTemplate,
-                ConflictPolicy: ctx.ConflictPolicy),
+                ConflictPolicy: ctx.ConflictPolicy,
+                VideoCodecPreference: ctx.VideoCodecPreference,
+                OutputContainer: ctx.OutputContainer,
+                OutputMediaMode: ctx.OutputMediaMode),
             downloadItems.Select(item => new DownloadSubmissionItem(
                 item.ItemId, item.Title, item.Aid, item.Bvid, item.Cid, item.Duration,
-                item.MediaType, item.EpId, item.SeasonId, item.CoverUrl)).ToArray());
+                item.MediaType, item.EpId, item.SeasonId, item.CoverUrl)).ToArray(),
+            ctx.IncrementalExpectation);
         var submittedIds = new HashSet<string>(downloadItems.Select(item => item.ItemId));
         try
         {
@@ -387,7 +395,13 @@ public partial class VideoListViewModel : ObservableObject
                         return;
                     }
                     result = await _submissionService.CommitAsync(new PreparedSubmission(report, confirmed));
-                    if (result.Status != SubmissionCommitStatus.Stale) break;
+                    if (result.Status is not (SubmissionCommitStatus.Stale or SubmissionCommitStatus.StaleComparison)) break;
+                    if (result.Status == SubmissionCommitStatus.StaleComparison)
+                    {
+                        if (_onPreflightAction is not null) await _onPreflightAction("stale-comparison");
+                        _onStatusMessage(result.Message);
+                        return;
+                    }
                 }
                 if (result is null || result.Status != SubmissionCommitStatus.Committed)
                 {

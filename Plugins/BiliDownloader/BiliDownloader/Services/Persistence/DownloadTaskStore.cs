@@ -1,4 +1,5 @@
 using BiliDownloader.Models;
+using BiliDownloader.Models.ContentSources;
 using BiliDownloader.Services.Infrastructure;
 using Microsoft.Data.Sqlite;
 
@@ -52,6 +53,8 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 aid                 INTEGER NOT NULL DEFAULT 0,
                 bvid                TEXT NOT NULL DEFAULT '',
                 cid                 INTEGER NOT NULL DEFAULT 0,
+                media_unit_key      TEXT NOT NULL DEFAULT '',
+                rendition_fingerprint TEXT NOT NULL DEFAULT '',
                 quality_id          INTEGER NOT NULL DEFAULT 80,
                 audio_quality_id    INTEGER NOT NULL DEFAULT 0,
                 output_directory    TEXT NOT NULL DEFAULT '',
@@ -93,6 +96,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 task_id         TEXT NOT NULL UNIQUE,
                 reserved_at     TEXT NOT NULL
             );
+
             """;
         await cmd.ExecuteNonQueryAsync();
 
@@ -129,6 +133,9 @@ public class DownloadTaskStore : IDownloadTaskRepository
             "ALTER TABLE download_tasks ADD COLUMN extras_config INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN cover_url TEXT NOT NULL DEFAULT '';",
             "ALTER TABLE download_tasks ADD COLUMN extras_result_summary TEXT;",
+            // P1-G5：身份列只使用常量空默认值，避免旧数据在无法确认编码/容器时被伪装为完整指纹。
+            "ALTER TABLE download_tasks ADD COLUMN media_unit_key TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN rendition_fingerprint TEXT NOT NULL DEFAULT '';",
         };
         foreach (var sql in alterSqls)
         {
@@ -143,6 +150,15 @@ public class DownloadTaskStore : IDownloadTaskRepository
                 // 列已存在，忽略
             }
         }
+
+        await using var identityIndex = connection.CreateCommand();
+        identityIndex.CommandText = """
+            CREATE INDEX IF NOT EXISTS ix_download_tasks_media_unit_key
+                ON download_tasks(media_unit_key);
+            CREATE INDEX IF NOT EXISTS ix_download_tasks_rendition_fingerprint
+                ON download_tasks(rendition_fingerprint);
+            """;
+        await identityIndex.ExecuteNonQueryAsync();
     }
 
     /// <summary>
@@ -161,6 +177,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.CommandText = """
                 INSERT INTO download_tasks
                     (task_id, document_id, source_document_title, series_title, item_title, aid, bvid, cid,
+                     media_unit_key, rendition_fingerprint,
                      quality_id, audio_quality_id, output_directory, sub_folder,
                      progress, status, error_message,
                      temp_directory, video_bytes, audio_bytes,
@@ -173,6 +190,7 @@ public class DownloadTaskStore : IDownloadTaskRepository
                      last_updated_at, error_type, is_retryable)
                 VALUES
                     ($task_id, $document_id, $source_document_title, $series_title, $item_title, $aid, $bvid, $cid,
+                     $media_unit_key, $rendition_fingerprint,
                      $quality_id, $audio_quality_id, $output_directory, $sub_folder,
                      $progress, $status, $error_message,
                      $temp_directory, $video_bytes, $audio_bytes,
@@ -192,6 +210,8 @@ public class DownloadTaskStore : IDownloadTaskRepository
             cmd.Parameters.AddWithValue("$aid", r.Aid);
             cmd.Parameters.AddWithValue("$bvid", r.Bvid);
             cmd.Parameters.AddWithValue("$cid", r.Cid);
+            cmd.Parameters.AddWithValue("$media_unit_key", r.MediaUnitKey);
+            cmd.Parameters.AddWithValue("$rendition_fingerprint", r.RenditionFingerprint);
             cmd.Parameters.AddWithValue("$quality_id", r.QualityId);
             cmd.Parameters.AddWithValue("$audio_quality_id", r.AudioQualityId);
             cmd.Parameters.AddWithValue("$output_directory", r.OutputDirectory);
@@ -520,6 +540,66 @@ public class DownloadTaskStore : IDownloadTaskRepository
         return records;
     }
 
+    /// <inheritdoc />
+    public async Task<List<DownloadTaskRecord>> GetByIdentityAsync(
+        IReadOnlyCollection<MediaUnitKey> mediaUnitKeys,
+        IReadOnlyCollection<string> renditionFingerprints,
+        CancellationToken cancellationToken = default)
+    {
+        if (mediaUnitKeys.Count == 0 && renditionFingerprints.Count == 0) return [];
+
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        var records = new Dictionary<string, DownloadTaskRecord>(StringComparer.Ordinal);
+        var media = mediaUnitKeys.Distinct().ToArray();
+        var fingerprints = renditionFingerprints
+            .Where(static value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        // SQLite 默认参数上限有限。分块查询而不是截断输入，确保大型来源不会漏掉第 151 个媒体单元，
+        // 同时每个媒体单元兼容匹配新列和旧 Aid/Cid 行。
+        foreach (var mediaChunk in media.Chunk(150))
+        {
+            await using var cmd = connection.CreateCommand();
+            var predicates = new List<string>(mediaChunk.Length);
+            for (var index = 0; index < mediaChunk.Length; index++)
+            {
+                predicates.Add($"(media_unit_key = $mk{index} OR (aid = $aid{index} AND cid = $cid{index}))");
+                cmd.Parameters.AddWithValue($"$mk{index}", mediaChunk[index].ToStorageKey());
+                cmd.Parameters.AddWithValue($"$aid{index}", mediaChunk[index].Aid);
+                cmd.Parameters.AddWithValue($"$cid{index}", mediaChunk[index].Cid);
+            }
+            cmd.CommandText = $"SELECT * FROM download_tasks WHERE {string.Join(" OR ", predicates)} ORDER BY created_at;";
+            await ReadIntoAsync(cmd);
+        }
+
+        foreach (var fingerprintChunk in fingerprints.Chunk(400))
+        {
+            await using var cmd = connection.CreateCommand();
+            var names = new List<string>(fingerprintChunk.Length);
+            for (var index = 0; index < fingerprintChunk.Length; index++)
+            {
+                names.Add($"$rf{index}");
+                cmd.Parameters.AddWithValue($"$rf{index}", fingerprintChunk[index]);
+            }
+            cmd.CommandText = $"SELECT * FROM download_tasks WHERE rendition_fingerprint IN ({string.Join(',', names)}) ORDER BY created_at;";
+            await ReadIntoAsync(cmd);
+        }
+
+        return records.Values.OrderBy(record => record.CreatedAt).ToList();
+
+        async Task ReadIntoAsync(SqliteCommand command)
+        {
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var record = ReadRecord(reader);
+                records[record.TaskId] = record;
+            }
+        }
+    }
+
     /// <summary>
     /// 删除已完成的任务（可选清理）
     /// </summary>
@@ -769,6 +849,8 @@ public class DownloadTaskStore : IDownloadTaskRepository
             Aid = reader.GetInt64(reader.GetOrdinal("aid")),
             Bvid = reader.GetString(reader.GetOrdinal("bvid")),
             Cid = reader.GetInt64(reader.GetOrdinal("cid")),
+            MediaUnitKey = GetCompatibleMediaUnitKey(reader),
+            RenditionFingerprint = TryGetString(reader, "rendition_fingerprint"),
             QualityId = reader.GetInt32(reader.GetOrdinal("quality_id")),
             AudioQualityId = TryGetInt(reader, "audio_quality_id"),
             OutputDirectory = reader.GetString(reader.GetOrdinal("output_directory")),
@@ -816,6 +898,23 @@ public class DownloadTaskStore : IDownloadTaskRepository
 
     private static string ToStorageTime(DateTime value)
         => value.ToString("yyyy-MM-dd HH:mm:ss.fffffff");
+
+    /// <summary>
+    /// 旧行没有 media_unit_key 时可以由 Aid/Cid 无损恢复媒体身份；输出指纹还缺少编码和容器，
+    /// 因此只补媒体键，绝不在读取层伪造 rendition_fingerprint。
+    /// </summary>
+    private static string GetCompatibleMediaUnitKey(SqliteDataReader reader)
+    {
+        var stored = TryGetString(reader, "media_unit_key");
+        if (!string.IsNullOrWhiteSpace(stored)) return stored;
+        try
+        {
+            var aid = reader.GetInt64(reader.GetOrdinal("aid"));
+            var cid = reader.GetInt64(reader.GetOrdinal("cid"));
+            return aid > 0 && cid > 0 ? new MediaUnitKey(aid, cid).ToStorageKey() : string.Empty;
+        }
+        catch { return string.Empty; }
+    }
 
     private static double TryGetDouble(SqliteDataReader reader, string column)
     {

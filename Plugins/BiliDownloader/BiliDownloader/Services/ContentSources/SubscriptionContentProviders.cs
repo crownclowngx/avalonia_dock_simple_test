@@ -156,7 +156,8 @@ public abstract class FollowingSourceProviderBase : IContentSourceProvider, ICon
     public ContentSourceCapabilities Capabilities =>
         ContentSourceCapabilities.RequiresLogin |
         ContentSourceCapabilities.SupportsPaging |
-        ContentSourceCapabilities.SupportsChildPaging;
+        ContentSourceCapabilities.SupportsChildPaging |
+        ContentSourceCapabilities.SupportsIncremental;
     public int CapabilityVersion => 1;
 
     public ValueTask<ContentSourceDescriptor> NormalizeAsync(string input, CancellationToken cancellationToken)
@@ -351,7 +352,8 @@ public sealed class CollectionSourceProvider : IContentSourceProvider, IContentS
     public ContentSourceCapabilities Capabilities =>
         ContentSourceCapabilities.RequiresLogin |
         ContentSourceCapabilities.SupportsPaging |
-        ContentSourceCapabilities.SupportsChildPaging;
+        ContentSourceCapabilities.SupportsChildPaging |
+        ContentSourceCapabilities.SupportsIncremental;
     public int CapabilityVersion => 1;
 
     public ValueTask<ContentSourceDescriptor> NormalizeAsync(string input, CancellationToken cancellationToken)

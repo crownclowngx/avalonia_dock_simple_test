@@ -376,6 +376,23 @@ public partial class DownloadConfigViewModel : ObservableObject
         NormalizeDanmakuOptions(DanmakuOptions, DownloadDanmaku),
         PerTaskRateLimitBytesPerSecond);
 
+    /// <summary>
+    /// 取得增量去重使用的当前输出身份。恢复 Document 后画质可能尚未填充为下拉项，
+    /// 因此优先使用当前选择、其次使用 V3 保存的待匹配 ID；两者都不存在时返回 null，
+    /// 防止用 QualityId=0 生成不可复现的指纹。
+    /// </summary>
+    public RenditionSpecification? CaptureRenditionSpecification()
+    {
+        var videoQualityId = SelectedQuality?.QualityId ?? _pendingQualityId ?? 0;
+        if (videoQualityId <= 0) return null;
+        return new RenditionSpecification(
+            videoQualityId,
+            SelectedAudioQuality?.QualityId ?? _pendingAudioQualityId ?? 0,
+            VideoCodecPreference,
+            OutputContainer,
+            OutputMediaMode);
+    }
+
     public void RestoreDocumentConfiguration(DocumentSaveDataV2 data)
     {
         _documentConfigurationApplied = true;

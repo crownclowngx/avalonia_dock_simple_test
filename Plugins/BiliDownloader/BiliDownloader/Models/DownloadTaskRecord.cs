@@ -34,6 +34,17 @@ public partial class DownloadTaskRecord : ObservableObject
     public string Bvid { get; set; } = string.Empty;
     public long Cid { get; set; }
 
+    /// <summary>
+    /// 版本化媒体身份（mu1:Aid:Cid）。旧任务可能为空；为空只表示身份不完整，
+    /// 不能作为阻止新提交的充分依据。
+    /// </summary>
+    public string MediaUnitKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 版本化输出身份（rf1:SHA256）。该值不含 Document 和来源，因此可用于跨来源、跨 Document 去重。
+    /// </summary>
+    public string RenditionFingerprint { get; set; } = string.Empty;
+
     /// <summary>媒体类型（video/bangumi）</summary>
     public string MediaType { get; set; } = "video";
 

@@ -50,7 +50,14 @@ public sealed record SubmissionPreflightReport(
 /// <summary>已经通过用户确认、等待 Coordinator 原子提交的不可变批次。</summary>
 public sealed record PreparedSubmission(SubmissionPreflightReport Report, bool UserConfirmed);
 
-public enum SubmissionCommitStatus { Committed, Blocked, Stale }
+public enum SubmissionCommitStatus
+{
+    Committed,
+    Blocked,
+    Stale,
+    /// <summary>增量预览之后任务身份发生变化，调用方必须刷新分类且不得沿用旧确认。</summary>
+    StaleComparison,
+}
 
 /// <summary>提交结果明确区分成功、阻止和事实过期，ViewModel 不再猜测消息总线后台是否成功。</summary>
 public sealed record SubmissionCommitResult(

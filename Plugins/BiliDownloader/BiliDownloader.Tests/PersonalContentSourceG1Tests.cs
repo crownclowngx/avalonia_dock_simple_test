@@ -36,13 +36,15 @@ public sealed class PersonalContentProviderG1Tests
         var account = new FakeAccount(true, 42);
         var resolver = new FakeItemResolver();
 
-        Assert.Equal(ContentSourceCapabilities.SupportsPaging,
+        Assert.Equal(ContentSourceCapabilities.SupportsPaging | ContentSourceCapabilities.SupportsIncremental,
             new UploaderSourceProvider(new FakeUploaderApi(), account, resolver).Capabilities);
-        Assert.Equal(ContentSourceCapabilities.SupportsPaging,
+        Assert.Equal(ContentSourceCapabilities.SupportsPaging | ContentSourceCapabilities.SupportsIncremental,
             new FavoriteSourceProvider(new FakeFavoriteApi(), account, resolver).Capabilities);
-        Assert.Equal(ContentSourceCapabilities.RequiresLogin | ContentSourceCapabilities.SupportsPaging,
+        Assert.Equal(ContentSourceCapabilities.RequiresLogin | ContentSourceCapabilities.SupportsPaging |
+            ContentSourceCapabilities.SupportsIncremental,
             new WatchLaterSourceProvider(new FakeWatchLaterApi(), account, resolver, new()).Capabilities);
-        Assert.Equal(ContentSourceCapabilities.RequiresLogin | ContentSourceCapabilities.SupportsPaging,
+        Assert.Equal(ContentSourceCapabilities.RequiresLogin | ContentSourceCapabilities.SupportsPaging |
+            ContentSourceCapabilities.SupportsIncremental,
             new HistorySourceProvider(new FakeHistoryApi(), account, resolver).Capabilities);
     }
 

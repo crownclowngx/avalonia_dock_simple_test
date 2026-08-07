@@ -132,6 +132,12 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         CancellationToken cancellationToken = default)
     {
         var global = new List<PreflightIssue>();
+        // P1-G5 先冻结输出身份字段，实际编码/容器执行仍属于 G7。显式阻止非兼容组合，
+        // 避免持久化指纹宣称一种输出，而当前执行器静默产生另一种文件。
+        if (submission.Profile.VideoCodecPreference != VideoCodecPreference.AutoCompatibility ||
+            submission.Profile.OutputContainer != OutputContainer.Mp4 ||
+            submission.Profile.OutputMediaMode != OutputMediaMode.AudioVideo)
+            global.Add(Block("output_not_implemented", "当前版本尚未执行所选编码、容器或输出模式，请使用兼容 MP4 音视频配置。"));
         if (!_ffmpeg.IsReady)
             global.Add(Block("ffmpeg", "ffmpeg 未就绪，请先在调度器工具中完成配置。"));
 
@@ -147,6 +153,12 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         var allocated = new HashSet<string>(activeKeys, GetPathComparer());
         var itemResults = new List<PreflightItemResult>();
         var fingerprintParts = new List<string>();
+        var batchRenditions = new HashSet<string>(StringComparer.Ordinal);
+        var expectedNew = submission.IncrementalExpectation?.ExpectedNewRenditionFingerprints
+            .ToHashSet(StringComparer.Ordinal) ?? [];
+        if (submission.IncrementalExpectation is { ComparisonToken: var comparisonToken } &&
+            !comparisonToken.StartsWith("cmp1:", StringComparison.Ordinal))
+            global.Add(Block("stale_comparison", "增量比较标识无效，请重新检查更新。"));
         long estimatedTotal = 0;
         var hasUnknownEstimate = false;
 
@@ -154,6 +166,14 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         {
             cancellationToken.ThrowIfCancellationRequested();
             var issues = new List<PreflightIssue>();
+            RenditionFingerprint? rendition = null;
+            if (item.Aid > 0 && item.Cid > 0 && submission.Profile.VideoQualityId > 0)
+            {
+                rendition = RenditionFingerprint.Create(
+                    new Models.ContentSources.MediaUnitKey(item.Aid, item.Cid),
+                    submission.Profile.ToRenditionSpecification());
+                fingerprintParts.Add("RENDITION|" + rendition.Value.Value);
+            }
             if (string.IsNullOrWhiteSpace(outputDirectory))
             {
                 itemResults.Add(new(item, string.Empty, string.Empty,
@@ -210,6 +230,44 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
             isResume = decision.IsResume;
             resumeTaskId = decision.ResumeTaskId;
             issues.AddRange(decision.EffectiveIssues);
+
+            if (rendition.HasValue && !batchRenditions.Add(rendition.Value.Value))
+            {
+                issues.Add(Warn("duplicate_in_batch", $"“{item.Title}”与同批另一项目是相同输出版本，已合并跳过。", item.ItemId));
+                shouldSubmit = false;
+                shouldSkip = true;
+            }
+
+            if (rendition.HasValue)
+            {
+                if (submission.IncrementalExpectation is not null && !expectedNew.Contains(rendition.Value.Value))
+                {
+                    issues.Add(Block("stale_comparison",
+                        $"“{item.Title}”的输出设置已不同于增量预览，请重新分类。", item.ItemId));
+                    shouldSubmit = false;
+                }
+                var exactTasks = existingTasks.Where(task => string.Equals(
+                    task.RenditionFingerprint, rendition.Value.Value, StringComparison.Ordinal)).ToArray();
+                var occupied = exactTasks.Any(IsTrustedRenditionOccupant);
+                if (occupied)
+                {
+                    if (submission.IncrementalExpectation is not null && expectedNew.Contains(rendition.Value.Value))
+                        issues.Add(Block("stale_comparison", $"“{item.Title}”的任务事实已变化，请刷新增量分类。", item.ItemId));
+                    else
+                    {
+                        issues.Add(Warn("rendition_exists", $"“{item.Title}”已存在相同输出版本，已跳过。", item.ItemId));
+                        shouldSkip = true;
+                    }
+                    shouldSubmit = false;
+                }
+
+                if (existingTasks.Any(task => task.Aid == item.Aid && task.Cid == item.Cid &&
+                    task.QualityId == submission.Profile.VideoQualityId &&
+                    task.AudioQualityId == submission.Profile.AudioQualityId &&
+                    string.IsNullOrWhiteSpace(task.RenditionFingerprint)))
+                    issues.Add(Warn("legacy_identity_incomplete",
+                        $"“{item.Title}”存在输出身份不完整的旧任务；确认后仍可提交。", item.ItemId));
+            }
 
             // task_id 是任务事实主键。旧实现的 OR REPLACE 会把历史任务静默抹掉；G6 明确要求
             // 重复身份只能走任务中心“重来”或校验续传，不能借文件策略隐式替换数据库事实。
@@ -289,6 +347,22 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
             issues.Add(Block("output_unwritable", $"输出目录不可写：{ex.Message}"));
             return string.Empty;
         }
+    }
+
+    /// <summary>
+    /// 只有可信成品或仍可能产生成品的活动/可恢复任务占用输出身份。
+    /// 已取消、不可恢复失败以及成品丢失的完成任务允许用户重新下载。
+    /// </summary>
+    private static bool IsTrustedRenditionOccupant(DownloadTaskRecord task)
+    {
+        var status = DownloadTaskStatusMapper.FromStorageString(task.Status);
+        return status == DownloadTaskStatus.Completed && File.Exists(task.OutputFilePath) ||
+            status is DownloadTaskStatus.Ready or DownloadTaskStatus.FetchingMetadata or
+                DownloadTaskStatus.DownloadingVideo or DownloadTaskStatus.VideoReady or
+                DownloadTaskStatus.DownloadingAudio or DownloadTaskStatus.AudioReady or
+                DownloadTaskStatus.Merging or DownloadTaskStatus.Paused or
+                DownloadTaskStatus.Interrupted or DownloadTaskStatus.WaitingForLogin ||
+            status == DownloadTaskStatus.Failed && task.IsRetryable;
     }
 
     private static bool HasArtifactConflict(string mp4Path, ISet<string> allocated, ICollection<string> fingerprint)

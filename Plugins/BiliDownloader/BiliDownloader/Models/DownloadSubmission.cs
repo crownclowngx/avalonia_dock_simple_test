@@ -12,7 +12,18 @@ public sealed record DownloadProfileSnapshot(
     bool DownloadCover,
     string NamingTemplate,
     string? PresetId = null,
-    FileConflictPolicy ConflictPolicy = FileConflictPolicy.AutoNumber);
+    FileConflictPolicy ConflictPolicy = FileConflictPolicy.AutoNumber,
+    VideoCodecPreference VideoCodecPreference = VideoCodecPreference.AutoCompatibility,
+    OutputContainer OutputContainer = OutputContainer.Mp4,
+    OutputMediaMode OutputMediaMode = OutputMediaMode.AudioVideo)
+{
+    public RenditionSpecification ToRenditionSpecification() => new(
+        VideoQualityId,
+        AudioQualityId,
+        VideoCodecPreference,
+        OutputContainer,
+        OutputMediaMode);
+}
 
 /// <summary>An immutable media item detached from parser and UI state.</summary>
 public sealed record DownloadSubmissionItem(
@@ -33,4 +44,13 @@ public sealed record DownloadSubmission(
     string DocumentTitle,
     string SeriesTitle,
     DownloadProfileSnapshot Profile,
-    IReadOnlyList<DownloadSubmissionItem> Items);
+    IReadOnlyList<DownloadSubmissionItem> Items,
+    IncrementalSubmissionExpectation? IncrementalExpectation = null);
+
+/// <summary>
+/// 增量预览交给提交边界的最小期望。Coordinator 不信任 UI 状态，只使用该 token 判断
+/// “检查时为 New”的事实是否已被其他 Document 改变。
+/// </summary>
+public sealed record IncrementalSubmissionExpectation(
+    string ComparisonToken,
+    IReadOnlyList<string> ExpectedNewRenditionFingerprints);
