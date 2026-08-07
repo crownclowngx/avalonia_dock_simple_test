@@ -1,4 +1,39 @@
-# BiliDownloader P1：个人效率详细实施路线图
+flowchart TB
+    User["用户"] --> AIChat["AI 助手入口 (Document 或 Tool)"]
+    AIChat --> Agent["AI Agent 服务<br/>MEAI / Semantic Kernel + DeepSeek API"]
+    Agent -->|"function calling"| Registry["能力注册表<br/>IPluginCapability 集合"]
+    Agent -->|"选择/编排"| Engine["工作流引擎 (Elsa)"]
+    Registry --> Engine
+    Engine -->|"Activity 包装"| CapBili["BiliDownloader 能力"]
+    Engine -->|"Activity 包装"| CapSmall["MySmallTools 能力"]
+    Engine --> Status["工作流运行状态"]
+    Status --> Bus["宿主消息总线"]
+    Bus --> RunTool["运行状态 Tool"]
+    Bus --> Editorflowchart TB
+    User["用户"] --> AIChat["AI 助手入口 (Document 或 Tool)"]
+    AIChat --> Agent["AI Agent 服务<br/>MEAI / Semantic Kernel + DeepSeek API"]
+    Agent -->|"function calling"| Registry["能力注册表<br/>IPluginCapability 集合"]
+    Agent -->|"选择/编排"| Engine["工作流引擎 (Elsa)"]
+    Registry --> Engine
+    Engine -->|"Activity 包装"| CapBili["BiliDownloader 能力"]
+    Engine -->|"Activity 包装"| CapSmall["MySmallTools 能力"]
+    Engine --> Status["工作流运行状态"]
+    Status --> Bus["宿主消息总线"]
+    Bus --> RunTool["运行状态 Tool"]
+    Bus --> Editorflowchart LR
+    subgraph Discovery["① 发现 Discovery"]
+        Plugins["各插件 IPluginCapability"] --> Registry["能力注册表"]
+    end
+    subgraph Planning["② 规划 Planning"]
+        Registry -->|"能力清单注入提示词"| LLM["DeepSeek-chat"]
+        User["用户自然语言"] --> LLM
+        LLM -->|"tool_call"| Plan["计划 JSON"]
+    end
+    subgraph Execution["③ 分析执行 Execution"]
+        Plan --> Validator["计划校验管线"]
+        Validator -->|"校验失败"| LLM
+        Validator -->|"校验通过"| Confirm["风险确认"]
+        Confirm --> Elsa["Elsa 执行# BiliDownloader P1：个人效率详细实施路线图
 
 > 文档定位：P1 功能组的实施顺序、接口边界、迁移策略与验收计划
 > 总体路线图：[ROADMAP.md](ROADMAP.md)
