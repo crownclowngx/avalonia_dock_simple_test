@@ -16,7 +16,7 @@ public sealed class ContentSourceModelTests
     public void 来源枚举和能力位覆盖P1公共契约()
     {
         Assert.Equal(9, Enum.GetValues<ContentSourceKind>().Length);
-        Assert.Equal(6, Enum.GetValues<ContentSourceCapabilities>().Length - 1);
+        Assert.Equal(7, Enum.GetValues<ContentSourceCapabilities>().Length - 1);
 
         var capabilities = ContentSourceCapabilities.RequiresLogin |
                            ContentSourceCapabilities.SupportsPaging |
@@ -798,7 +798,7 @@ internal sealed class StubMediaProbe : IBiliMediaProbe
     }
 }
 
-internal sealed class CancelOnSecondResolveProvider : IContentSourceProvider
+internal sealed class CancelOnSecondResolveProvider : IContentSourceProvider, IContentSourceResolutionProvider
 {
     private int _resolveCount;
     public TaskCompletionSource SecondResolveStarted { get; } =

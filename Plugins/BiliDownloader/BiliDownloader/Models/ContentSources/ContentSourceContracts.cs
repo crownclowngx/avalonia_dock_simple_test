@@ -30,6 +30,31 @@ public enum ContentSourceCapabilities
     SupportsDateRange = 1 << 3,
     SupportsTypeFilter = 1 << 4,
     SupportsIncremental = 1 << 5,
+    /// <summary>支持在父集合内继续分页读取子项目。</summary>
+    SupportsChildPaging = 1 << 6,
+}
+
+/// <summary>内容源节点形态。容器只负责导航，媒体节点才可能进入解析边界。</summary>
+public enum ContentSourceNodeKind
+{
+    Media,
+    Container,
+}
+
+/// <summary>
+/// 平台侧内容可访问状态。
+/// 设计意图：权限事实与 UI 文案、客户端是否支持下载分离，未知状态默认拒绝解析。
+/// </summary>
+public enum ContentAccessState
+{
+    Available,
+    LoginRequired,
+    PurchaseRequired,
+    RegionRestricted,
+    Expired,
+    NotReleased,
+    DrmProtected,
+    Unknown,
 }
 
 /// <summary>来源列表项的稳定业务类型，不与下载执行器的媒体类型耦合。</summary>
@@ -177,7 +202,8 @@ public sealed class ContentPageRequest
     public ContentPageRequest(
         int pageSize = DefaultPageSize,
         string? continuationToken = null,
-        SourceFilterRules? filters = null)
+        SourceFilterRules? filters = null,
+        ContentItemKey? parentKey = null)
     {
         if (pageSize is < MinPageSize or > MaxPageSize)
             throw new ArgumentOutOfRangeException(nameof(pageSize), $"页大小必须在 {MinPageSize}～{MaxPageSize} 之间。");
@@ -185,11 +211,14 @@ public sealed class ContentPageRequest
         PageSize = pageSize;
         ContinuationToken = continuationToken;
         Filters = filters ?? SourceFilterRules.Empty;
+        ParentKey = parentKey;
     }
 
     public int PageSize { get; }
     public string? ContinuationToken { get; }
     public SourceFilterRules Filters { get; }
+    /// <summary>为空时读取根列表；非空时读取指定父集合的子页。</summary>
+    public ContentItemKey? ParentKey { get; }
 }
 
 /// <summary>
@@ -210,12 +239,27 @@ public sealed class ContentSourceItem
         long? cid = null,
         long? epId = null,
         long? seasonId = null,
-        long? mediaId = null)
+        long? mediaId = null,
+        ContentItemKey? parentKey = null,
+        ContentSourceNodeKind nodeKind = ContentSourceNodeKind.Media,
+        ContentAccessState accessState = ContentAccessState.Available,
+        int? childCount = null,
+        int? durationSeconds = null)
     {
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("内容标题不能为空。", nameof(title));
         if (!Enum.IsDefined(itemType))
             throw new ArgumentOutOfRangeException(nameof(itemType));
+        if (!Enum.IsDefined(nodeKind))
+            throw new ArgumentOutOfRangeException(nameof(nodeKind));
+        if (!Enum.IsDefined(accessState))
+            throw new ArgumentOutOfRangeException(nameof(accessState));
+        if (parentKey.HasValue && parentKey.Value.SourceKind != key.SourceKind)
+            throw new ArgumentException("父项目与子项目必须属于同一种内容源。", nameof(parentKey));
+        if (childCount is < 0)
+            throw new ArgumentOutOfRangeException(nameof(childCount));
+        if (durationSeconds is < 0)
+            throw new ArgumentOutOfRangeException(nameof(durationSeconds));
 
         Key = key;
         Title = title.Trim();
@@ -229,6 +273,11 @@ public sealed class ContentSourceItem
         EpId = epId;
         SeasonId = seasonId;
         MediaId = mediaId;
+        ParentKey = parentKey;
+        NodeKind = nodeKind;
+        AccessState = accessState;
+        ChildCount = childCount;
+        DurationSeconds = durationSeconds;
     }
 
     public ContentItemKey Key { get; }
@@ -243,6 +292,11 @@ public sealed class ContentSourceItem
     public long? EpId { get; }
     public long? SeasonId { get; }
     public long? MediaId { get; }
+    public ContentItemKey? ParentKey { get; }
+    public ContentSourceNodeKind NodeKind { get; }
+    public ContentAccessState AccessState { get; }
+    public int? ChildCount { get; }
+    public int? DurationSeconds { get; }
 }
 
 /// <summary>不可变分页结果，同时保证 HasMore 与下一游标的状态不会互相矛盾。</summary>

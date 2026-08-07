@@ -55,7 +55,7 @@ public sealed class BiliDownloaderModuleTests
         Assert.Equal(
             ServiceLifetime.Singleton,
             FindDescriptor(services, typeof(IContentSourceProviderRegistry)).Lifetime);
-        Assert.Equal(5, services.Count(descriptor =>
+        Assert.Equal(9, services.Count(descriptor =>
             descriptor.ServiceType == typeof(IContentSourceProvider)
             && descriptor.Lifetime == ServiceLifetime.Singleton));
         Assert.Equal(

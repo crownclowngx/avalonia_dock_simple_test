@@ -19,6 +19,16 @@ public interface IContentSourceProvider
         ContentPageRequest request,
         CancellationToken cancellationToken);
 
+}
+
+/// <summary>
+/// 可选的内容解析能力。
+/// 设计意图：目录可浏览不等于客户端可下载，课程来源因此无需伪造无法履行的方法。
+/// </summary>
+public interface IContentSourceResolutionProvider
+{
+    ContentSourceKind Kind { get; }
+
     Task<BiliVideoCollection> ResolveItemAsync(
         ContentSourceDescriptor descriptor,
         ContentSourceItem item,
@@ -31,6 +41,8 @@ public interface IContentSourceProviderRegistry
     IReadOnlyCollection<IContentSourceProvider> Providers { get; }
     bool TryGet(ContentSourceKind kind, out IContentSourceProvider? provider);
     IContentSourceProvider GetRequired(ContentSourceKind kind);
+    bool TryGetResolutionProvider(ContentSourceKind kind, out IContentSourceResolutionProvider? provider);
+    IContentSourceResolutionProvider GetRequiredResolutionProvider(ContentSourceKind kind);
 }
 
 public interface IFavoriteSourceDiscoveryService
@@ -49,6 +61,7 @@ public enum ContentSourceErrorCode
     RemoteFailure,
     ProtocolViolation,
     UnknownProvider,
+    UnsupportedOperation,
 }
 
 /// <summary>

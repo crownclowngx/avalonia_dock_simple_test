@@ -75,8 +75,13 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IBiliFavoriteCatalogApi>(provider => provider.GetRequiredService<BiliPersonalContentApi>());
         services.AddSingleton<IBiliWatchLaterCatalogApi>(provider => provider.GetRequiredService<BiliPersonalContentApi>());
         services.AddSingleton<IBiliHistoryCatalogApi>(provider => provider.GetRequiredService<BiliPersonalContentApi>());
+        services.AddSingleton<BiliSubscriptionContentApi>();
+        services.AddSingleton<IBiliFollowingCatalogApi>(provider => provider.GetRequiredService<BiliSubscriptionContentApi>());
+        services.AddSingleton<IBiliCollectedFolderApi>(provider => provider.GetRequiredService<BiliSubscriptionContentApi>());
+        services.AddSingleton<IBiliCourseCatalogApi>(provider => provider.GetRequiredService<BiliSubscriptionContentApi>());
         services.AddSingleton<IContentSourceItemResolver, ContentSourceItemResolver>();
         services.AddSingleton<BoundedContentSnapshotStore>();
+        services.AddSingleton<HierarchicalContentSnapshotStore>();
         services.AddSingleton<IContentSourceProvider, DirectLinkProvider>();
         services.AddSingleton<IContentSourceProvider, UploaderSourceProvider>();
         services.AddSingleton<FavoriteSourceProvider>();
@@ -84,6 +89,10 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IFavoriteSourceDiscoveryService>(provider => provider.GetRequiredService<FavoriteSourceProvider>());
         services.AddSingleton<IContentSourceProvider, WatchLaterSourceProvider>();
         services.AddSingleton<IContentSourceProvider, HistorySourceProvider>();
+        services.AddSingleton<IContentSourceProvider, FollowingBangumiSourceProvider>();
+        services.AddSingleton<IContentSourceProvider, FollowingCinemaSourceProvider>();
+        services.AddSingleton<IContentSourceProvider, CollectionSourceProvider>();
+        services.AddSingleton<IContentSourceProvider, CourseSourceProvider>();
         services.AddSingleton<IContentSourceProviderRegistry, ContentSourceProviderRegistry>();
         services.AddSingleton<BiliDownloadService>();
         services.AddSingleton(provider => ExtrasHandlerRegistry.CreateDefault(

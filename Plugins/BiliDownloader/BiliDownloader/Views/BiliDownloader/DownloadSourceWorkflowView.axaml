@@ -20,11 +20,12 @@
                 <views:ContentSourcePickerView DataContext="{Binding Picker}" />
             </Grid>
             <Grid IsVisible="{Binding IsBrowsing}">
-                <views:ContentSourceBrowserView DataContext="{Binding Browser}" />
+                <StackPanel Spacing="8">
+                    <Button Content="返回来源" Command="{Binding BackToSourcesCommand}"
+                            HorizontalAlignment="Left" Classes="bili-doc-button" />
+                    <views:ContentSourceBrowserView DataContext="{Binding Browser}" />
+                </StackPanel>
             </Grid>
-            <Button Content="返回来源" Command="{Binding BackToSourcesCommand}"
-                    IsVisible="{Binding IsBrowsing}" HorizontalAlignment="Right" VerticalAlignment="Top"
-                    Classes="bili-doc-button" />
         </Grid>
     </StackPanel>
 </UserControl>

@@ -1,40 +1,3 @@
-flowchart TB
-    User["用户"] --> AIChat["AI 助手入口 (Document 或 Tool)"]
-    AIChat --> Agent["AI Agent 服务<br/>MEAI / Semantic Kernel + DeepSeek API"]
-    Agent -->|"function calling"| Registry["能力注册表<br/>IPluginCapability 集合"]
-    Agent -->|"选择/编排"| Engine["工作流引擎 (Elsa)"]
-    Registry --> Engine
-    Engine -->|"Activity 包装"| CapBili["BiliDownloader 能力"]
-    Engine -->|"Activity 包装"| CapSmall["MySmallTools 能力"]
-    Engine --> Status["工作流运行状态"]
-    Status --> Bus["宿主消息总线"]
-    Bus --> RunTool["运行状态 Tool"]
-    Bus --> Editorflowchart TB
-    User["用户"] --> AIChat["AI 助手入口 (Document 或 Tool)"]
-    AIChat --> Agent["AI Agent 服务<br/>MEAI / Semantic Kernel + DeepSeek API"]
-    Agent -->|"function calling"| Registry["能力注册表<br/>IPluginCapability 集合"]
-    Agent -->|"选择/编排"| Engine["工作流引擎 (Elsa)"]
-    Registry --> Engine
-    Engine -->|"Activity 包装"| CapBili["BiliDownloader 能力"]
-    Engine -->|"Activity 包装"| CapSmall["MySmallTools 能力"]
-    Engine --> Status["工作流运行状态"]
-    Status --> Bus["宿主消息总线"]
-    Bus --> RunTool["运行状态 Tool"]
-    Bus --> Editorflowchart LR
-    subgraph Discovery["① 发现 Discovery"]
-        Plugins["各插件 IPluginCapability"] --> Registry["能力注册表"]
-    end
-    subgraph Planning["② 规划 Planning"]
-        Registry -->|"能力清单注入提示词"| LLM["DeepSeek-chat"]
-        User["用户自然语言"] --> LLM
-        LLM -->|"tool_call"| Plan["计划 JSON"]
-    end
-    subgraph Execution["③ 分析执行 Execution"]
-        Plan --> Validator["计划校验管线"]
-        Validator -->|"校验失败"| LLM
-        Validator -->|"校验通过"| Confirm["风险确认"]
-        Confirm --> Elsa["Elsa 执行# BiliDownloader P1：个人效率详细实施路线图
-
 > 文档定位：P1 功能组的实施顺序、接口边界、迁移策略与验收计划
 > 总体路线图：[ROADMAP.md](ROADMAP.md)
 > 产品基线：[PRODUCT.md](../PRODUCT.md)
@@ -396,11 +359,15 @@ ContentComparisonStatus 固定为：
 
 **时间：W17～W18，2026-09-02～2026-09-15**
 
+**实施状态：代码与离线自动化测试已完成；合法账号真实链路验收待执行，暂不标记最终完成。**
+
+实现记录见 [P1-G2-SUBSCRIPTIONS-BANGUMI-COURSE-SOURCES.md](P1-G2-SUBSCRIPTIONS-BANGUMI-COURSE-SOURCES.md)。
+
 ### 9.1 P1-G2 目标与非目标
 
 接入追番、追剧、订阅合集和课程，把具有层级、权限与失效语义的来源纳入统一模型。
 
-本组不实现 DRM 绕过、付费解锁、课程章节元数据写入和跨来源增量比较。
+本组不实现 DRM 绕过、付费解锁、课程播放地址与下载提交、课程章节元数据写入和跨来源增量比较。
 
 ### 9.2 P1-G2 前置依赖与现有入口
 
@@ -419,7 +386,7 @@ ContentComparisonStatus 固定为：
 
 1. 建立追番与追剧列表分页，并将 season/ep 层级映射为统一来源项。
 2. 建立订阅合集发现和合集内项目分页。
-3. 建立课程列表、课程章节与课时映射。
+3. 建立课程列表、课程章节与课时只读映射；课程下载不进入 P1-G2。
 4. 复用现有番剧解析，把来源项展开为可提交分集。
 5. 在 UI 中显示不可下载原因，不为无权限项目生成提交项。
 6. 对同一 EP 在追番、历史和直接 SS 来源中的 MediaUnitKey 做一致性测试。
@@ -445,7 +412,7 @@ ContentComparisonStatus 固定为：
 - 四类来源通过统一 Provider 和契约测试。
 - 无权限内容不会进入提交边界，也不会触发规避权限的备用请求。
 - 层级来源能够稳定展开，父子身份和最终媒体身份职责清晰。
-- EP/课程重复项在来源层和媒体层均可正确归一化。
+- EP 重复项在来源层和媒体层均可正确归一化；课程只验证稳定来源身份，不创建媒体提交项。
 
 ### 9.8 P1-G2 文档同步
 

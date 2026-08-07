@@ -114,7 +114,8 @@ public partial class VideoParseViewModel : ObservableObject
                     ContentSourceErrorCode.ProtocolViolation,
                     "直接链接来源必须返回唯一根项目。");
 
-            var collection = await provider.ResolveItemAsync(
+            var resolver = _providerRegistry.GetRequiredResolutionProvider(ContentSourceKind.DirectLink);
+            var collection = await resolver.ResolveItemAsync(
                 descriptor,
                 rootItems[0],
                 cancellationToken);

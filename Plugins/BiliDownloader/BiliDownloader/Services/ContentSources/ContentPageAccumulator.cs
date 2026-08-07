@@ -22,7 +22,14 @@ public sealed class ContentPageAccumulator
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(page);
 
-        if (!provider.Capabilities.HasFlag(ContentSourceCapabilities.SupportsPaging) && page.HasMore)
+        if (request.ParentKey.HasValue &&
+            !provider.Capabilities.HasFlag(ContentSourceCapabilities.SupportsChildPaging))
+            throw Protocol("非层级 Provider 收到了子集合分页请求。");
+        if (request.ParentKey.HasValue && request.ParentKey.Value.SourceKind != provider.Kind)
+            throw Protocol("父集合与 Provider 必须属于同一种内容源。");
+
+        if (!request.ParentKey.HasValue &&
+            !provider.Capabilities.HasFlag(ContentSourceCapabilities.SupportsPaging) && page.HasMore)
             throw Protocol("非分页 Provider 返回了下一页游标。");
 
         var added = new List<ContentSourceItem>();
@@ -30,6 +37,10 @@ public sealed class ContentPageAccumulator
         {
             if (item.Key.SourceKind != provider.Kind)
                 throw Protocol("分页项目的来源类型与 Provider 声明不一致。");
+            if (request.ParentKey.HasValue && item.ParentKey != request.ParentKey)
+                throw Protocol("子项目的父键与分页请求不一致。");
+            if (!request.ParentKey.HasValue && item.ParentKey.HasValue)
+                throw Protocol("根列表不得返回带父键的子项目。");
             if (_seenKeys.Add(item.Key))
             {
                 _items.Add(item);

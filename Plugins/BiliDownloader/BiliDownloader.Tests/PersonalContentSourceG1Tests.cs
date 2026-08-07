@@ -417,7 +417,7 @@ internal sealed class RiskControlledThenSuccessProvider : IContentSourceProvider
         CancellationToken cancellationToken) => throw new NotSupportedException();
 }
 
-internal sealed class AuthFailingSecondPageProvider : IContentSourceProvider
+internal sealed class AuthFailingSecondPageProvider : IContentSourceProvider, IContentSourceResolutionProvider
 {
     public ContentSourceKind Kind => ContentSourceKind.History;
     public ContentSourceCapabilities Capabilities => ContentSourceCapabilities.RequiresLogin | ContentSourceCapabilities.SupportsPaging;

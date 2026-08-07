@@ -11,7 +11,7 @@ namespace BiliDownloader.Services.ContentSources;
 /// 设计意图：把链接识别、短链展开和普通视频/番剧路由从 ViewModel 收敛到单一来源边界，
 /// 同时继续复用 <see cref="BiliApiService"/> 的 HTTP 与 JSON 映射能力。
 /// </summary>
-public sealed class DirectLinkProvider : IContentSourceProvider
+public sealed class DirectLinkProvider : IContentSourceProvider, IContentSourceResolutionProvider
 {
     private const string VideoBvPrefix = "video:bv:";
     private const string VideoAvPrefix = "video:av:";

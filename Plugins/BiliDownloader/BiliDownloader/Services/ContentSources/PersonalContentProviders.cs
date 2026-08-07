@@ -67,7 +67,7 @@ internal static class ContentCollectionAdapter
 }
 
 /// <summary>个人来源 Provider 的模板方法基类，只承载描述符校验、映射和项目解析三个稳定共性。</summary>
-public abstract class PersonalContentSourceProviderBase : IContentSourceProvider
+public abstract class PersonalContentSourceProviderBase : IContentSourceProvider, IContentSourceResolutionProvider
 {
     private readonly IContentSourceItemResolver _resolver;
 

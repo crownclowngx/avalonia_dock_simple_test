@@ -13,7 +13,8 @@ public sealed class ContentSourceProviderRegistry : IContentSourceProviderRegist
         ContentSourceCapabilities.SupportsKeyword |
         ContentSourceCapabilities.SupportsDateRange |
         ContentSourceCapabilities.SupportsTypeFilter |
-        ContentSourceCapabilities.SupportsIncremental;
+        ContentSourceCapabilities.SupportsIncremental |
+        ContentSourceCapabilities.SupportsChildPaging;
 
     private readonly IReadOnlyDictionary<ContentSourceKind, IContentSourceProvider> _providers;
 
@@ -59,6 +60,26 @@ public sealed class ContentSourceProviderRegistry : IContentSourceProviderRegist
             $"未注册内容源类型 {kind} 的 Provider。");
     }
 
+    public bool TryGetResolutionProvider(
+        ContentSourceKind kind,
+        out IContentSourceResolutionProvider? provider)
+    {
+        provider = TryGet(kind, out var catalog)
+            ? catalog as IContentSourceResolutionProvider
+            : null;
+        return provider is not null;
+    }
+
+    public IContentSourceResolutionProvider GetRequiredResolutionProvider(ContentSourceKind kind)
+    {
+        if (TryGetResolutionProvider(kind, out var provider))
+            return provider!;
+
+        throw new ContentSourceException(
+            ContentSourceErrorCode.UnsupportedOperation,
+            $"内容源类型 {kind} 当前只支持浏览。");
+    }
+
     private static void ValidateDeclaration(IContentSourceProvider provider)
     {
         if (!Enum.IsDefined(provider.Kind))
@@ -67,5 +88,7 @@ public sealed class ContentSourceProviderRegistry : IContentSourceProviderRegist
             throw new ContentSourceException(ContentSourceErrorCode.ProtocolViolation, "Provider 能力版本必须为正数。");
         if ((provider.Capabilities & ~AllCapabilities) != 0)
             throw new ContentSourceException(ContentSourceErrorCode.ProtocolViolation, "Provider 声明了未知能力位。");
+        if (provider is IContentSourceResolutionProvider resolver && resolver.Kind != provider.Kind)
+            throw new ContentSourceException(ContentSourceErrorCode.ProtocolViolation, "Provider 的目录与解析来源类型不一致。");
     }
 }
