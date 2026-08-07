@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="360"
+             x:Class="BiliDownloader.Views.BiliDownloader.ContentSourceBrowserView"
+             x:DataType="vm:ContentSourceBrowserViewModel">
+    <Border Classes="bili-doc-workspace" Padding="10" ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*,Auto,Auto" RowSpacing="8">
+            <TextBlock Text="{Binding Title}" Classes="bili-doc-section-title" />
+            <ListBox x:Name="ContentSourceItemsList"
+                     Grid.Row="1"
+                     Classes="bili-doc-list"
+                     ItemsSource="{Binding Items}"
+                     Height="260"
+                     ScrollViewer.IsScrollChainingEnabled="True"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ContentSourceItemViewModel">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="2">
+                            <CheckBox IsChecked="{Binding IsSelected}" />
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Detail}" Classes="bili-doc-caption" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <TextBlock Text="{Binding Status}" Classes="bili-doc-caption" TextWrapping="Wrap" />
+                <Button Grid.Column="1"
+                        Content="重新读取"
+                        Command="{Binding RetryCommand}"
+                        IsVisible="{Binding CanRetry}"
+                        IsEnabled="{Binding IsNotBusy}"
+                        Classes="bili-doc-button" />
+            </Grid>
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button Content="加载更多" Command="{Binding LoadMoreCommand}" IsVisible="{Binding HasMore}" Classes="bili-doc-button" />
+                <Button Content="解析所选内容" Command="{Binding ResolveSelectedCommand}" Classes="bili-doc-button accent" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

@@ -2,6 +2,7 @@ using BiliDownloader.Models;
 using BiliDownloader.Models.ContentSources;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
+using BiliDownloader.Services.Download;
 
 namespace BiliDownloader.Services.ContentSources;
 
@@ -28,7 +29,7 @@ public sealed class DirectLinkProvider : IContentSourceProvider
     }
 
     public ContentSourceKind Kind => ContentSourceKind.DirectLink;
-    public ContentSourceCapabilities Capabilities => ContentSourceCapabilities.RequiresLogin;
+    public ContentSourceCapabilities Capabilities => ContentSourceCapabilities.None;
     public int CapabilityVersion => 1;
 
     public async ValueTask<ContentSourceDescriptor> NormalizeAsync(
@@ -95,9 +96,6 @@ public sealed class DirectLinkProvider : IContentSourceProvider
             throw Protocol("来源项与描述符身份不一致。");
 
         var cookie = _credentials.GetCookieHeader();
-        if (string.IsNullOrWhiteSpace(cookie))
-            throw new ContentSourceException(ContentSourceErrorCode.LoginRequired, "请先登录后再解析。");
-
         try
         {
             BiliVideoCollection collection;
@@ -117,7 +115,7 @@ public sealed class DirectLinkProvider : IContentSourceProvider
                 collection = await _api.GetBangumiCollectionAsync(id, isSeasonId, cookie, cancellationToken);
             }
 
-            return AdaptCollection(collection);
+            return ContentCollectionAdapter.Normalize(collection);
         }
         catch (OperationCanceledException)
         {
@@ -126,6 +124,10 @@ public sealed class DirectLinkProvider : IContentSourceProvider
         catch (ContentSourceException)
         {
             throw;
+        }
+        catch (MediaAuthorizationException)
+        {
+            throw new ContentSourceException(ContentSourceErrorCode.LoginRequired, "此内容需要登录后才能访问。");
         }
         catch
         {
@@ -233,24 +235,6 @@ public sealed class DirectLinkProvider : IContentSourceProvider
         if (stableId.StartsWith(BangumiMdPrefix, StringComparison.Ordinal))
             return ("md" + stableId[BangumiMdPrefix.Length..], false);
         throw InvalidInput();
-    }
-
-    private static BiliVideoCollection AdaptCollection(BiliVideoCollection collection)
-    {
-        ArgumentNullException.ThrowIfNull(collection);
-        var index = 1;
-        foreach (var video in collection.Items)
-        {
-            if (video.Aid <= 0 || video.Cid <= 0)
-                throw Protocol("内容源返回了无效的 Aid/Cid。");
-
-            video.Index = index++;
-            video.OriginalTitle = video.Title;
-            video.CoverUrl = collection.Cover;
-            video.MediaUnitKey = new MediaUnitKey(video.Aid, video.Cid);
-        }
-
-        return collection;
     }
 
     private void ValidateDescriptor(ContentSourceDescriptor descriptor)

@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
+             xmlns:views="using:BiliDownloader.Views.BiliDownloader"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="320"
+             x:Class="BiliDownloader.Views.BiliDownloader.DownloadSourceWorkflowView"
+             x:DataType="vm:DownloadSourceWorkflowViewModel">
+    <StackPanel Spacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="链接下载" Command="{Binding UseQuickUrlCommand}" Classes="bili-doc-button" />
+            <Button Content="个人内容来源" Command="{Binding UsePersonalSourceCommand}" Classes="bili-doc-button" />
+        </StackPanel>
+        <Grid IsVisible="{Binding IsQuickUrl}">
+            <views:VideoParseView DataContext="{Binding QuickUrl}" />
+        </Grid>
+        <Grid IsVisible="{Binding IsPersonalSource}">
+            <Grid IsVisible="{Binding !IsBrowsing}">
+                <views:ContentSourcePickerView DataContext="{Binding Picker}" />
+            </Grid>
+            <Grid IsVisible="{Binding IsBrowsing}">
+                <views:ContentSourceBrowserView DataContext="{Binding Browser}" />
+            </Grid>
+            <Button Content="返回来源" Command="{Binding BackToSourcesCommand}"
+                    IsVisible="{Binding IsBrowsing}" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Classes="bili-doc-button" />
+        </Grid>
+    </StackPanel>
+</UserControl>

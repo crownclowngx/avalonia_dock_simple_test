@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using Dock.Model.Mvvm.Controls;
@@ -31,7 +32,8 @@ public partial class PlugGroupMenuViewModel:Tool
     /// 获取供树形菜单绑定的分类节点快照。
     /// </summary>
     public List<CategoryNode> CategoryNodes =>
-        DocumentMetadataByCategory.Select(kv => new CategoryNode(kv.Key, kv.Value)).ToList();
+        (_pluginMenuService?.GetCreationEntriesByCategory() ?? [])
+        .Select(kv => new CategoryNode(kv.Key, kv.Value)).ToList();
 
     /// <summary>
     /// 使用显式工厂和菜单服务创建插件菜单工具。
@@ -67,6 +69,20 @@ public partial class PlugGroupMenuViewModel:Tool
         {
             files?.AddDocument(document);
         }
+    }
+
+    /// <summary>按菜单入口创建文档，并把入口意图作为强类型参数传给策略。</summary>
+    [RelayCommand]
+    public void CreateDocumentEntry(DocumentCreationMenuEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        var document = _factory?.CreateManagementNewDocument(new DocumentCreationParams(entry.DocumentTypeId)
+        {
+            CreationIntentId = entry.CreationIntentId,
+        });
+        var files = _factory?.GetDockable<IDocumentDock>("Files") as DocumentDock;
+        if (document is not null)
+            files?.AddDocument(document);
     }
     
     /// <summary>

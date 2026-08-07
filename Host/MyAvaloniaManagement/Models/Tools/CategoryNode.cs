@@ -10,7 +10,7 @@ public class CategoryNode : INotifyPropertyChanged
     private bool _isExpanded = false;
     
     public string CategoryName { get; set; }
-    public List<DocumentMetadata> Documents { get; set; }
+    public List<DocumentCreationMenuEntry> Documents { get; set; }
     
     public bool IsExpanded 
     {
@@ -25,7 +25,7 @@ public class CategoryNode : INotifyPropertyChanged
         }
     }
 
-    public CategoryNode(string categoryName, List<DocumentMetadata> documents)
+    public CategoryNode(string categoryName, List<DocumentCreationMenuEntry> documents)
     {
         CategoryName = categoryName;
         Documents = documents;

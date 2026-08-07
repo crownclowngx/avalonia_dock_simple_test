@@ -123,7 +123,10 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
             .GetStringAsync(cancellationToken: cancellationToken);
         var resp = JObject.Parse(json);
 
-        if (resp["code"]?.Value<int>() != 0)
+        var responseCode = resp["code"]?.Value<int>() ?? int.MinValue;
+        if (responseCode == -101)
+            throw new MediaAuthorizationException("该视频需要有效登录状态。");
+        if (responseCode != 0)
             throw new Exception($"获取视频信息失败: {resp["message"]?.Value<string>()}");
 
         var data = resp["data"]!;
@@ -254,7 +257,10 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
             .GetStringAsync(cancellationToken: cancellationToken);
         var resp = JObject.Parse(json);
 
-        if (resp["code"]?.Value<int>() != 0)
+        var responseCode = resp["code"]?.Value<int>() ?? int.MinValue;
+        if (responseCode == -101)
+            throw new MediaAuthorizationException("该番剧需要有效登录状态。");
+        if (responseCode != 0)
             throw new Exception($"获取番剧信息失败: {resp["message"]?.Value<string>()}");
 
         var data = resp["result"]!;

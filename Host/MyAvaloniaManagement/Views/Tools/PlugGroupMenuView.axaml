@@ -43,10 +43,10 @@
                                       Margin="18,0,0,0"
                                       IsVisible="{Binding IsExpanded}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="documentCreation:DocumentMetadata">
+                                <DataTemplate DataType="documentCreation:DocumentCreationMenuEntry">
                                     <Button Classes="host-tool-row"
-                                            Command="{Binding DataContext.CreateDocumentCommand, ElementName=PlugGroupMenuControl}"
-                                            CommandParameter="{Binding DocumentTypeId}">
+                                            Command="{Binding DataContext.CreateDocumentEntryCommand, ElementName=PlugGroupMenuControl}"
+                                            CommandParameter="{Binding}">
                                         <Grid ColumnDefinitions="17,*">
                                             <PathIcon Width="13"
                                                       Height="13"

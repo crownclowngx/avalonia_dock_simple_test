@@ -11,3 +11,14 @@ public interface IBiliCredentialProvider
     /// <summary>当前是否已登录</summary>
     bool IsLoggedIn { get; }
 }
+
+/// <summary>
+/// 个人来源所需的最小账号上下文。
+/// 设计意图：Provider 不依赖登录 UI 或持久化实现，只读取当前请求所需的账号事实。
+/// </summary>
+public interface IBiliAccountContext
+{
+    bool IsLoggedIn { get; }
+    long? UserId { get; }
+    string GetCookieHeader();
+}

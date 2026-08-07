@@ -33,10 +33,19 @@ public interface IContentSourceProviderRegistry
     IContentSourceProvider GetRequired(ContentSourceKind kind);
 }
 
+public interface IFavoriteSourceDiscoveryService
+{
+    Task<IReadOnlyList<ContentSourceDescriptor>> GetMyFoldersAsync(CancellationToken cancellationToken);
+}
+
 public enum ContentSourceErrorCode
 {
     InvalidInput,
     LoginRequired,
+    Forbidden,
+    RiskControlled,
+    NotFound,
+    RateLimited,
     RemoteFailure,
     ProtocolViolation,
     UnknownProvider,

@@ -132,8 +132,6 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         CancellationToken cancellationToken = default)
     {
         var global = new List<PreflightIssue>();
-        if (!_credentials.IsLoggedIn)
-            global.Add(Block("login", "登录状态无效，请重新登录后再提交。"));
         if (!_ffmpeg.IsReady)
             global.Add(Block("ffmpeg", "ffmpeg 未就绪，请先在调度器工具中完成配置。"));
 
@@ -238,6 +236,11 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
                     estimate = await _sizeEstimator.EstimatePeakBytesAsync(item, submission.Profile, cancellationToken) ?? 0;
                 }
                 catch (OperationCanceledException) { throw; }
+                catch (MediaAuthorizationException)
+                {
+                    issues.Add(Block("login", $"“{item.Title}”需要登录或更高账号权限。", item.ItemId));
+                    shouldSubmit = false;
+                }
                 catch { estimate = 0; }
                 if (estimate <= 0) hasUnknownEstimate = true;
                 else estimatedTotal = checked(estimatedTotal + estimate);

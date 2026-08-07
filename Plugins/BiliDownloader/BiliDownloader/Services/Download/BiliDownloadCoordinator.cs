@@ -819,16 +819,6 @@ public sealed class BiliDownloadCoordinator
     {
         try
         {
-            // G2: 执行前检查登录态 → 无登录则进入 WaitingForLogin
-            if (!_credentialProvider.IsLoggedIn)
-            {
-                task.Status = ToStorage(DownloadTaskStatus.WaitingForLogin);
-                await _repository.UpdateProgressAsync(task.TaskId, task.Progress, task.Status);
-                _tracker.BroadcastStatusChanged(task);
-                TaskStatusChanged?.Invoke(task);
-                return;
-            }
-
             // G2: 阶段边界暂停检查（如果已暂停则阻塞直到恢复或取消）
             context.WaitIfPaused();
 
@@ -948,6 +938,19 @@ public sealed class BiliDownloadCoordinator
             // G3: 错误分类 → 填充 ErrorType 和 IsRetryable，供 UI 展示和重试判断
             var failure = DownloadErrorClassifier.ClassifyFailure(ex);
             var failedAt = DateTime.Now;
+
+            if (failure.Kind == DownloadFailureKind.Authentication)
+            {
+                task.Status = ToStorage(DownloadTaskStatus.WaitingForLogin);
+                task.ErrorMessage = safeError;
+                task.ErrorType = failure.StorageValue;
+                task.IsRetryable = false;
+                task.LastUpdatedAt = failedAt;
+                await _repository.UpdateProgressAsync(task.TaskId, task.Progress, task.Status, safeError);
+                _tracker.BroadcastStatusChanged(task);
+                TaskStatusChanged?.Invoke(task);
+                return;
+            }
 
             if (ex is InsufficientDiskSpaceException or OutputConflictException)
             {
@@ -1291,8 +1294,7 @@ public sealed class BiliDownloadCoordinator
             }
 
             var status = ParseStatus(task.Status);
-            if ((status is DownloadTaskStatus.Paused or DownloadTaskStatus.WaitingForLogin)
-                && !_credentialProvider.IsLoggedIn)
+            if (status == DownloadTaskStatus.WaitingForLogin && !_credentialProvider.IsLoggedIn)
             {
                 SchedulerStatusChanged?.Invoke($"任务仍需登录，未启动: {task.ItemTitle}");
                 return;

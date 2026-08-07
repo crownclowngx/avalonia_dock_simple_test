@@ -59,6 +59,33 @@ public sealed class ServiceAndModelTests
         Assert.Contains("未归类插件", groups.Keys);
     }
 
+    [Fact]
+    public void 多入口策略展开为同一文档类型的独立菜单项()
+    {
+        using var context = new TestHostContext();
+        context.Factory.RegisterStrategy(new MultiIntentDocumentStrategy());
+
+        var entries = new PluginMenuService(context.Factory)
+            .GetCreationEntriesByCategory()["测试"];
+
+        Assert.Equal(2, entries.Count);
+        Assert.All(entries, entry => Assert.Equal("multi-intent", entry.DocumentTypeId));
+        Assert.Equal(["quick-url", "personal-source"], entries.Select(entry => entry.CreationIntentId));
+    }
+
+    private sealed class MultiIntentDocumentStrategy : IDocumentCreationStrategy, IDocumentCreationIntentProvider
+    {
+        public Dock.Model.Mvvm.Controls.Document CreateDocument(DocumentCreationParams @params) => new();
+
+        public DocumentMetadata GetMetadata() => new("multi-intent", "下载") { MenuCategory = "测试" };
+
+        public IReadOnlyList<DocumentCreationIntentMetadata> GetCreationIntents() =>
+        [
+            new("quick-url", "链接下载"),
+            new("personal-source", "个人来源"),
+        ];
+    }
+
     [Theory]
     [InlineData(@"C:\", true)]
     [InlineData(@"\\server\share", true)]

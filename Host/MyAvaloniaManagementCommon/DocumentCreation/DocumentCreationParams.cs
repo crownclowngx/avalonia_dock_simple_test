@@ -24,6 +24,11 @@ public class DocumentCreationParams
     /// 其他可选参数
     /// </summary>
     public object AdditionalData { get; set; }
+
+    /// <summary>
+    /// 创建入口意图。它只决定文档首次展示的工作流，不改变文档类型和持久化契约。
+    /// </summary>
+    public string CreationIntentId { get; set; }
     
     public DocumentCreationParams(string documentType)
     {
@@ -31,5 +36,6 @@ public class DocumentCreationParams
         InitializationData = string.Empty;
         Title = string.Empty;
         AdditionalData = new object();
+        CreationIntentId = string.Empty;
     }
 }

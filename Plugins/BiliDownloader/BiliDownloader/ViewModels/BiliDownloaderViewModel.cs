@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -15,8 +14,6 @@ using BiliDownloader.Services.Persistence;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Naming;
 using BiliDownloader.ViewModels.BiliDownloader;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.ViewModels;
 
@@ -36,6 +33,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
     private readonly IMessengerService _messengerService;
     private readonly IDownloadTaskRepository _taskRepository;
+    private readonly BiliDownloaderDocumentStateMapper _documentStateMapper = new();
     private readonly object _initializationLock = new();
     private Task? _initializationTask;
 
@@ -43,23 +41,22 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
 
     public LoginBarViewModel LoginBar { get; }
     public VideoParseViewModel VideoParse { get; }
-    public DownloadConfigViewModel DownloadConfig { get; }
-    public VideoListViewModel VideoList { get; }
+    public DownloadSourceWorkflowViewModel SourceWorkflow { get; }
+    public DownloadWorkspaceViewModel Workspace { get; }
 
-    /// <summary>G5: 命名模板子 VM（管理模板编辑、验证和预览）</summary>
-    public NamingTemplateViewModel NamingTemplate { get; }
+    // 兼容既有调用方；新 View 统一从 Workspace 绑定，转发属性不再承载展示逻辑。
+    public DownloadConfigViewModel DownloadConfig => Workspace.DownloadConfig;
+    public VideoListViewModel VideoList => Workspace.VideoList;
+    public NamingTemplateViewModel NamingTemplate => Workspace.NamingTemplate;
 
     #endregion
 
     #region 属性
 
-    private BiliVideoCollection? _videoCollection;
-
-    private bool _isParsed;
     public bool IsParsed
     {
-        get => _isParsed;
-        set => SetProperty(ref _isParsed, value);
+        get => Workspace.IsParsed;
+        set => Workspace.IsParsed = value;
     }
 
     private string _downloadInfo = "";
@@ -69,31 +66,13 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         set => SetProperty(ref _downloadInfo, value);
     }
 
-    private bool _isDownloadSettingsExpanded;
     public bool IsDownloadSettingsExpanded
     {
-        get => _isDownloadSettingsExpanded;
-        set => SetProperty(ref _isDownloadSettingsExpanded, value);
+        get => Workspace.IsDownloadSettingsExpanded;
+        set => Workspace.IsDownloadSettingsExpanded = value;
     }
 
-    /// <summary>折叠状态下展示的下载方案摘要。</summary>
-    public string DownloadSettingsSummary
-    {
-        get
-        {
-            var preset = DownloadConfig.PresetStatusText;
-            var videoQuality = DownloadConfig.SelectedQuality?.DisplayName ?? "视频质量待定";
-            var audioQuality = DownloadConfig.SelectedAudioQuality?.DisplayName ?? "音频自动";
-            var extrasCount = (DownloadConfig.DownloadDanmaku ? 1 : 0)
-                + (DownloadConfig.DownloadSubtitle ? 1 : 0)
-                + (DownloadConfig.DownloadCover ? 1 : 0);
-            var extras = extrasCount == 0 ? "无附加资源" : $"{extrasCount} 项附加资源";
-            var naming = NamingTemplate.IsValid ? "命名正常" : "命名需修正";
-            var conflict = DownloadConfig.SelectedConflictPolicy.DisplayName;
-            var output = GetOutputDirectoryLabel(DownloadConfig.OutputDirectory);
-            return $"{preset} · {videoQuality} · {audioQuality} · {extras} · {naming} · {conflict} · {output}";
-        }
-    }
+    public string DownloadSettingsSummary => Workspace.DownloadSettingsSummary;
 
     #endregion
 
@@ -127,18 +106,26 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             credentialProvider,
             onParsed: HandleParseResult,
             isLoggedInCheck: () => LoginBar.IsLoggedIn);
+        var favoriteDiscovery = providerRegistry.Providers
+            .OfType<IFavoriteSourceDiscoveryService>()
+            .FirstOrDefault() ?? new UnavailableFavoriteSourceDiscoveryService();
+        SourceWorkflow = new DownloadSourceWorkflowViewModel(
+            VideoParse,
+            providerRegistry,
+            favoriteDiscovery,
+            new VideoParseResultFactory(mediaProbe, credentialProvider),
+            HandleParseResult);
 
         // G5: 命名模板子 VM
-        NamingTemplate = new NamingTemplateViewModel();
-        DownloadConfig = new DownloadConfigViewModel(
+        var namingTemplate = new NamingTemplateViewModel();
+        var downloadConfig = new DownloadConfigViewModel(
             settingsRepository,
             presetRepository,
-            () => NamingTemplate.Template);
-        DownloadConfig.PresetApplied += preset => NamingTemplate.Template = preset.NamingTemplate;
-        DownloadConfig.PropertyChanged += OnDownloadConfigPropertyChanged;
-        NamingTemplate.PropertyChanged += OnNamingTemplatePropertyChanged;
+            () => namingTemplate.Template);
+        downloadConfig.PresetApplied += preset => namingTemplate.Template = preset.NamingTemplate;
 
-        VideoList = new VideoListViewModel(
+        DownloadWorkspaceViewModel? workspace = null;
+        var videoList = new VideoListViewModel(
             getSubmitContext: () => new SubmitContext
             {
                 DocumentId = DocumentId,
@@ -148,15 +135,15 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                 OutputDirectory = DownloadConfig.OutputDirectory,
                 UseGroupFolder = DownloadConfig.UseGroupFolder,
                 AddIndexToTitle = DownloadConfig.AddIndexToTitle,
-                SeriesTitle = _videoCollection?.SeriesTitle ?? "下载",
+                SeriesTitle = workspace?.VideoCollection?.SeriesTitle ?? "下载",
                 DownloadDanmaku = DownloadConfig.DownloadDanmaku,
                 DownloadSubtitle = DownloadConfig.DownloadSubtitle,
                 DownloadCover = DownloadConfig.DownloadCover,
-                CoverUrl = _videoCollection?.Cover ?? "",
+                CoverUrl = workspace?.VideoCollection?.Cover ?? "",
                 // G5: 命名模板和上下文变量
                 NamingTemplate = NamingTemplate.Template,
-                UpName = _videoCollection?.UpName ?? "",
-                PublishDate = _videoCollection?.PublishDate,
+                UpName = workspace?.VideoCollection?.UpName ?? "",
+                PublishDate = workspace?.VideoCollection?.PublishDate,
                 IsNamingValid = NamingTemplate.IsValid,
                 NamingValidationError = NamingTemplate.ValidationError ?? "",
                 ConflictPolicy = DownloadConfig.SelectedConflictPolicy.Value,
@@ -164,7 +151,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
             messengerService: _messengerService,
             onStatusMessage: msg => AppendLog(msg),
             ffmpegService: ffmpegService,
-            onConfigurationBlocked: ExpandDownloadSettings,
+            onConfigurationBlocked: () => workspace?.ExpandSettings(),
             submissionService: submissionService,
             promptService: promptService,
             onPreflightAction: async code =>
@@ -198,10 +185,27 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
                         break;
                 }
             });
-        VideoList.SelectionOrTitleChanged += RefreshNamingPreview;
+        workspace = new DownloadWorkspaceViewModel(downloadConfig, namingTemplate, videoList);
+        Workspace = workspace;
+        Workspace.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(DownloadWorkspaceViewModel.IsParsed))
+                OnPropertyChanged(nameof(IsParsed));
+            if (args.PropertyName == nameof(DownloadWorkspaceViewModel.IsDownloadSettingsExpanded))
+                OnPropertyChanged(nameof(IsDownloadSettingsExpanded));
+            if (args.PropertyName == nameof(DownloadWorkspaceViewModel.DownloadSettingsSummary))
+                OnPropertyChanged(nameof(DownloadSettingsSummary));
+        };
 
         RegisterMessengers();
     }
+
+    /// <summary>创建意图只决定首次展示入口；保存与下载契约始终属于同一个 Document。</summary>
+    public void ApplyCreationIntent(string? intentId) =>
+        SourceWorkflow.SetInitialMode(
+            string.Equals(intentId, "personal-source", StringComparison.Ordinal)
+                ? DownloadCreationMode.PersonalSource
+                : DownloadCreationMode.QuickUrl);
 
     /// <summary>
     /// P0 构造兼容入口。内部仍组装统一 Provider，避免旧调用方绕过 P1-G0 契约。
@@ -321,72 +325,11 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     /// </summary>
     private void HandleParseResult(VideoParseResult result)
     {
-        _videoCollection = result.Collection;
-
-        // 填充视频列表 + 初始化重命名面板
-        VideoList.SetItems(result.VideoItems);
-
-        // 分发清晰度到 DownloadConfig
-        DownloadConfig.PopulateQualities(
-            result.QualityOptions,
-            result.SelectedQuality,
-            result.AudioQualityOptions,
-            result.SelectedAudioQuality,
-            result.IsMultiVideo);
-        RefreshNamingPreview();
-
-        IsParsed = true;
+        Workspace.ApplyParseResult(result);
         IsModified = true;
 
         // 同步解析状态到 VideoParse 子 VM
         VideoParse.IsParsed = true;
-    }
-
-    private void RefreshNamingPreview()
-    {
-        var contexts = VideoList.VideoItems
-            .Where(item => item.IsSelected)
-            .Select(item => new NamingContext
-            {
-                Title = item.Title,
-                Index = item.Index,
-                Bvid = item.Bvid,
-                UpName = _videoCollection?.UpName ?? "",
-                PublishDate = _videoCollection?.PublishDate,
-                SeriesTitle = _videoCollection?.SeriesTitle ?? "",
-            })
-            .ToList();
-        NamingTemplate.UpdatePreview(contexts);
-    }
-
-    private void OnDownloadConfigPropertyChanged(object? sender, PropertyChangedEventArgs args)
-    {
-        OnPropertyChanged(nameof(DownloadSettingsSummary));
-
-        if (DownloadConfig.IsRestoredPresetUnavailable
-            || !string.IsNullOrWhiteSpace(DownloadConfig.QualityRestoreNotice))
-        {
-            ExpandDownloadSettings();
-        }
-    }
-
-    private void OnNamingTemplatePropertyChanged(object? sender, PropertyChangedEventArgs args)
-    {
-        OnPropertyChanged(nameof(DownloadSettingsSummary));
-        if (!NamingTemplate.IsValid)
-            ExpandDownloadSettings();
-    }
-
-    private void ExpandDownloadSettings() => IsDownloadSettingsExpanded = true;
-
-    private static string GetOutputDirectoryLabel(string outputDirectory)
-    {
-        if (string.IsNullOrWhiteSpace(outputDirectory))
-            return "默认目录";
-
-        var trimmed = Path.TrimEndingDirectorySeparator(outputDirectory);
-        var leaf = Path.GetFileName(trimmed);
-        return string.IsNullOrWhiteSpace(leaf) ? trimmed : leaf;
     }
 
     #endregion
@@ -461,26 +404,19 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
     /// </summary>
     public DocumentSaveData CreateSaveDocumentMetaData(string filePath)
     {
-        var saveDataObject = new DocumentSaveDataV2
-        {
-            DocumentId = DocumentId,
-            Url = VideoParse.Url,
-            DownloadInfo = _downloadInfo,
-            OutputDirectory = DownloadConfig.OutputDirectory,
-            UseGroupFolder = DownloadConfig.UseGroupFolder,
-            AddIndexToTitle = DownloadConfig.AddIndexToTitle,
-            // V2 新增字段
-            PresetId = DownloadConfig.SelectedPreset?.Id ?? BuiltInPresets.CompatId,
-            NamingTemplate = NamingTemplate.Template,
-            QualityId = DownloadConfig.SelectedQuality?.QualityId ?? 0,
-            AudioQualityId = DownloadConfig.SelectedAudioQuality?.QualityId ?? 0,
-            DownloadDanmaku = DownloadConfig.DownloadDanmaku,
-            DownloadSubtitle = DownloadConfig.DownloadSubtitle,
-            DownloadCover = DownloadConfig.DownloadCover,
-            ConflictPolicy = DownloadConfig.SelectedConflictPolicy.Value,
-        };
-
-        var saveData = DocumentSaveCodec.EncodeV2(SaveDocumentTypeId, Title, saveDataObject);
+        var configuration = new DownloadConfigViewModelSnapshot(
+            DownloadConfig.OutputDirectory,
+            DownloadConfig.UseGroupFolder,
+            DownloadConfig.AddIndexToTitle,
+            DownloadConfig.SelectedPreset?.Id ?? BuiltInPresets.CompatId,
+            DownloadConfig.SelectedQuality?.QualityId ?? 0,
+            DownloadConfig.SelectedAudioQuality?.QualityId ?? 0,
+            DownloadConfig.DownloadDanmaku,
+            DownloadConfig.DownloadSubtitle,
+            DownloadConfig.DownloadCover,
+            DownloadConfig.SelectedConflictPolicy.Value);
+        var saveData = _documentStateMapper.Create(
+            Title, DocumentId, VideoParse.Url, _downloadInfo, configuration, NamingTemplate.Template);
 
         IsModified = false;
         return saveData;
@@ -502,20 +438,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         {
             if (saveData == null) return;
 
-            var decoded = DocumentSaveCodec.Decode(saveData);
-            if (decoded.MajorVersion == 2)
-            {
-                LoadV2(decoded.Content);
-            }
-            else if (decoded.MajorVersion == 1)
-            {
-                LoadV1(decoded.Content);
-            }
-            else
-            {
-                Log.Error("未知的 Document 主版本，仅恢复安全公共字段。", null);
-                LoadSafeCommonFields(decoded.Content);
-            }
+            var restored = _documentStateMapper.Restore(saveData, DownloadConfig.OutputDirectory);
+            ApplyRestoredState(restored);
 
             OnPropertyChanged(nameof(DocumentId));
         }
@@ -525,79 +449,22 @@ public class BiliDownloaderViewModel : Document, ISavableDocument
         }
     }
 
-    /// <summary>
-    /// V1 加载逻辑（保持原有行为 + 补齐默认值）。
-    /// </summary>
-    private void LoadV1(string content)
+    private void ApplyRestoredState(BiliDownloaderRestoredState restored)
     {
-        var data = JsonConvert.DeserializeObject<JObject>(content);
-        if (data == null) return;
-
-        var url = data["Url"]?.ToString() ?? "";
-        var downloadInfo = data["DownloadInfo"]?.ToString() ?? "";
-        var outputDirectory = data["OutputDirectory"]?.ToString() ?? DownloadConfig.OutputDirectory;
-
-        VideoParse.Url = url;
-        DownloadInfo = downloadInfo;
-        // 恢复 UseGroupFolder
-        var useGroupFolderVal = data["UseGroupFolder"];
-        var useGroupFolder = useGroupFolderVal != null
-            && useGroupFolderVal.Type != JTokenType.Null
-            && (bool)useGroupFolderVal;
-
-        // 恢复 AddIndexToTitle
-        var addIndexVal = data["AddIndexToTitle"];
-        var addIndex = true;
-        if (addIndexVal != null && addIndexVal.Type != JTokenType.Null)
-        {
-            addIndex = (bool)addIndexVal;
-        }
-
-        // 恢复 DocumentId
-        var savedDocId = data["DocumentId"]?.ToString();
-        if (!string.IsNullOrEmpty(savedDocId))
-            DocumentId = savedDocId;
-
-        // G5: V1 → V2 语义迁移：根据 AddIndexToTitle 生成命名模板
-        NamingTemplate.Template = addIndex ? "{index}.{title}" : "{title}";
-        DownloadConfig.RestoreDocumentConfiguration(new DocumentSaveDataV2
-        {
-            OutputDirectory = outputDirectory,
-            UseGroupFolder = useGroupFolder,
-            AddIndexToTitle = addIndex,
-            NamingTemplate = NamingTemplate.Template,
-        });
-    }
-
-    /// <summary>
-    /// V2 加载逻辑（完整恢复所有配置）。
-    /// </summary>
-    private void LoadV2(string content)
-    {
-        var data = JsonConvert.DeserializeObject<DocumentSaveDataV2>(content);
-        if (data == null) return;
-
-        // V1 兼容字段
+        var data = restored.Data;
+        if (!restored.IsKnownVersion)
+            Log.Error("未知的 Document 主版本，仅恢复安全公共字段。", null);
         VideoParse.Url = data.Url;
+        if (!string.IsNullOrWhiteSpace(data.DocumentId)) DocumentId = data.DocumentId;
+        if (!restored.RestoreFullConfiguration)
+        {
+            if (!string.IsNullOrWhiteSpace(data.OutputDirectory))
+                DownloadConfig.OutputDirectory = data.OutputDirectory;
+            return;
+        }
         DownloadInfo = data.DownloadInfo;
-        DownloadConfig.RestoreDocumentConfiguration(data);
-
-        if (!string.IsNullOrEmpty(data.DocumentId))
-            DocumentId = data.DocumentId;
-
-        // V2 新增字段
         NamingTemplate.Template = data.NamingTemplate;
-    }
-
-    private void LoadSafeCommonFields(string content)
-    {
-        var data = JsonConvert.DeserializeObject<JObject>(content);
-        if (data is null) return;
-        VideoParse.Url = data["Url"]?.ToString() ?? "";
-        var documentId = data["DocumentId"]?.ToString();
-        if (!string.IsNullOrWhiteSpace(documentId)) DocumentId = documentId;
-        var output = data["OutputDirectory"]?.ToString();
-        if (!string.IsNullOrWhiteSpace(output)) DownloadConfig.OutputDirectory = output;
+        DownloadConfig.RestoreDocumentConfiguration(data);
     }
 
     #endregion

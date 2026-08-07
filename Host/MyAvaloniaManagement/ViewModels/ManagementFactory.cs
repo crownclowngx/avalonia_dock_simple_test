@@ -245,6 +245,46 @@ public class ManagementFactory : Factory
     {
         return _documentMetadata.Values;
     }
+
+    /// <summary>
+    /// 展开所有可见文档策略的创建入口。未实现多入口契约的旧策略自动生成一个默认入口。
+    /// </summary>
+    public IEnumerable<DocumentCreationMenuEntry> GetAllDocumentCreationEntries()
+    {
+        foreach (var (documentTypeId, metadata) in _documentMetadata)
+        {
+            if (!metadata.ShowInMenu || !_strategies.TryGetValue(documentTypeId, out var strategy))
+                continue;
+
+            if (strategy is not IDocumentCreationIntentProvider intentProvider)
+            {
+                yield return ToMenuEntry(metadata, string.Empty, metadata.DisplayName, metadata.Description, metadata.IconPath);
+                continue;
+            }
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var intent in intentProvider.GetCreationIntents())
+            {
+                if (!seen.Add(intent.IntentId))
+                    throw new InvalidOperationException($"文档 {documentTypeId} 包含重复创建意图: {intent.IntentId}");
+
+                yield return ToMenuEntry(
+                    metadata,
+                    intent.IntentId,
+                    intent.DisplayName,
+                    string.IsNullOrWhiteSpace(intent.Description) ? metadata.Description : intent.Description,
+                    string.IsNullOrWhiteSpace(intent.IconPath) ? metadata.IconPath : intent.IconPath);
+            }
+        }
+    }
+
+    private static DocumentCreationMenuEntry ToMenuEntry(
+        DocumentMetadata metadata,
+        string intentId,
+        string displayName,
+        string description,
+        string iconPath) =>
+        new(metadata.DocumentTypeId, intentId, displayName, description, iconPath, metadata.MenuCategory);
     
     /// <summary>
     /// 注册新的策略

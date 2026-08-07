@@ -107,6 +107,40 @@ public sealed class ToolViewModelTests
     }
 
     [Fact]
+    public void 插件分组工具把创建意图传递给策略()
+    {
+        using var context = new TestHostContext();
+        var strategy = new CapturingIntentStrategy();
+        context.Factory.RegisterStrategy(strategy);
+        _ = context.CreateMainWindowViewModel();
+        var viewModel = new PlugGroupMenuViewModel(context.Factory, new PluginMenuService(context.Factory));
+        var entry = viewModel.CategoryNodes
+            .SelectMany(node => node.Documents)
+            .Single(item => item.DocumentTypeId == CapturingIntentStrategy.TypeId);
+
+        viewModel.CreateDocumentEntry(entry);
+
+        Assert.Equal("personal-source", strategy.LastIntentId);
+    }
+
+    private sealed class CapturingIntentStrategy : IDocumentCreationStrategy, IDocumentCreationIntentProvider
+    {
+        public const string TypeId = "intent-capture";
+        public string? LastIntentId { get; private set; }
+
+        public Document CreateDocument(DocumentCreationParams @params)
+        {
+            LastIntentId = @params.CreationIntentId;
+            return new Document();
+        }
+
+        public DocumentMetadata GetMetadata() => new(TypeId, "个人来源") { MenuCategory = "测试" };
+
+        public IReadOnlyList<DocumentCreationIntentMetadata> GetCreationIntents() =>
+            [new("personal-source", "个人来源")];
+    }
+
+    [Fact]
     public void 工具管理可以隐藏恢复并发送布局消息()
     {
         using var context = new TestHostContext();

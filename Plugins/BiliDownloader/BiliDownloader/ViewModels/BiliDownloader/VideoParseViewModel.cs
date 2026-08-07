@@ -6,6 +6,7 @@ using BiliDownloader.Models.ContentSources;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.ContentSources;
+using BiliDownloader.Services.Download;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
 
@@ -33,7 +34,6 @@ public partial class VideoParseViewModel : ObservableObject
     private readonly IBiliMediaProbe _mediaProbe;
     private readonly IBiliCredentialProvider _credentialProvider;
     private readonly Action<VideoParseResult>? _onParsed;
-    private readonly Func<bool> _isLoggedInCheck;
 
     [ObservableProperty]
     private string _url = "";
@@ -67,7 +67,8 @@ public partial class VideoParseViewModel : ObservableObject
         _mediaProbe = mediaProbe;
         _credentialProvider = credentialProvider;
         _onParsed = onParsed;
-        _isLoggedInCheck = isLoggedInCheck;
+        // 保留该参数以兼容已有调用方；鉴权现在以远端实际响应为准，不再依赖本地预判。
+        _ = isLoggedInCheck;
         ParseCommand = new AsyncRelayCommand(ParseAsync);
     }
 
@@ -100,12 +101,6 @@ public partial class VideoParseViewModel : ObservableObject
         try
         {
             var provider = _providerRegistry.GetRequired(ContentSourceKind.DirectLink);
-            if (provider.Capabilities.HasFlag(ContentSourceCapabilities.RequiresLogin) && !_isLoggedInCheck())
-            {
-                DownloadInfo = "请先登录后再解析";
-                return;
-            }
-
             IsLoading = true;
             DownloadInfo = "正在解析视频信息...";
 
@@ -203,6 +198,10 @@ public partial class VideoParseViewModel : ObservableObject
                 ContentSourceErrorCode.RemoteFailure => ex.Message,
                 _ => "内容源响应不符合协议，请稍后重试",
             };
+        }
+        catch (MediaAuthorizationException)
+        {
+            DownloadInfo = "此内容或清晰度需要登录，请登录后重试";
         }
         catch
         {

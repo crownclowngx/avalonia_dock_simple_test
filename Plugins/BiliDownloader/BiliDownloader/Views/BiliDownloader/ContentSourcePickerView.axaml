@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BiliDownloader.ViewModels.BiliDownloader"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="250"
+             x:Class="BiliDownloader.Views.BiliDownloader.ContentSourcePickerView"
+             x:DataType="vm:ContentSourcePickerViewModel">
+    <Border Classes="bili-doc-primary-strip">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+            <ComboBox Grid.Row="0" ItemsSource="{Binding Options}" SelectedItem="{Binding SelectedOption}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ContentSourceOption">
+                        <StackPanel><TextBlock Text="{Binding Name}" /><TextBlock Text="{Binding Description}" Classes="bili-doc-caption" /></StackPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding SelectedOption.RequiresInput}">
+                <TextBox Text="{Binding Input}" PlaceholderText="输入 UID、空间链接或收藏夹链接" Classes="bili-doc-input" />
+                <Button Grid.Column="1" Content="打开来源" Command="{Binding OpenCommand}" Classes="bili-doc-button accent" />
+            </Grid>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+                <Button Content="直接打开" Command="{Binding OpenCommand}" IsVisible="{Binding !SelectedOption.RequiresInput}" Classes="bili-doc-button accent" />
+                <Button Content="读取我的收藏夹" Command="{Binding LoadFavoriteFoldersCommand}" Classes="bili-doc-button" />
+                <ComboBox Width="280" ItemsSource="{Binding FavoriteFolders}" SelectedItem="{Binding SelectedFavoriteFolder}"
+                          DisplayMemberBinding="{Binding DisplayName}" IsVisible="{Binding HasFavoriteFolders}" />
+                <Button Content="打开所选收藏夹" Command="{Binding OpenFavoriteCommand}" IsVisible="{Binding HasFavoriteFolders}" Classes="bili-doc-button" />
+            </StackPanel>
+            <TextBlock Grid.Row="3" Text="{Binding Status}" Classes="bili-doc-caption" TextWrapping="Wrap" />
+        </Grid>
+    </Border>
+</UserControl>

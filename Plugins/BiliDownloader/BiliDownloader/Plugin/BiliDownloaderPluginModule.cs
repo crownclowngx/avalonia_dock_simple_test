@@ -62,6 +62,7 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<BiliLoginStateService>();
         services.AddSingleton<ILoginDialogService, AvaloniaLoginDialogService>();
         services.AddSingleton<IBiliCredentialProvider, BiliCredentialProvider>();
+        services.AddSingleton<IBiliAccountContext, BiliAccountContext>();
 
         // 有网络和文件副作用的服务集中在 IDownloadTaskExecutor 之后，
         // Coordinator 测试可用假执行器完整替换这一边界。
@@ -69,7 +70,20 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         // Provider 与解析界面只依赖窄 API；两个投影复用同一 BiliApiService 实例。
         services.AddSingleton<IBiliContentSourceApi>(provider => provider.GetRequiredService<BiliApiService>());
         services.AddSingleton<IBiliMediaProbe>(provider => provider.GetRequiredService<BiliApiService>());
+        services.AddSingleton<BiliPersonalContentApi>();
+        services.AddSingleton<IBiliUploaderCatalogApi>(provider => provider.GetRequiredService<BiliPersonalContentApi>());
+        services.AddSingleton<IBiliFavoriteCatalogApi>(provider => provider.GetRequiredService<BiliPersonalContentApi>());
+        services.AddSingleton<IBiliWatchLaterCatalogApi>(provider => provider.GetRequiredService<BiliPersonalContentApi>());
+        services.AddSingleton<IBiliHistoryCatalogApi>(provider => provider.GetRequiredService<BiliPersonalContentApi>());
+        services.AddSingleton<IContentSourceItemResolver, ContentSourceItemResolver>();
+        services.AddSingleton<BoundedContentSnapshotStore>();
         services.AddSingleton<IContentSourceProvider, DirectLinkProvider>();
+        services.AddSingleton<IContentSourceProvider, UploaderSourceProvider>();
+        services.AddSingleton<FavoriteSourceProvider>();
+        services.AddSingleton<IContentSourceProvider>(provider => provider.GetRequiredService<FavoriteSourceProvider>());
+        services.AddSingleton<IFavoriteSourceDiscoveryService>(provider => provider.GetRequiredService<FavoriteSourceProvider>());
+        services.AddSingleton<IContentSourceProvider, WatchLaterSourceProvider>();
+        services.AddSingleton<IContentSourceProvider, HistorySourceProvider>();
         services.AddSingleton<IContentSourceProviderRegistry, ContentSourceProviderRegistry>();
         services.AddSingleton<BiliDownloadService>();
         services.AddSingleton(provider => ExtrasHandlerRegistry.CreateDefault(

@@ -44,8 +44,7 @@ public sealed class BiliDownloaderDocumentVisualTests
                 Assert.Equal(520, view.Bounds.Height);
                 Assert.IsType<Border>(view.Content);
                 Assert.NotEmpty(view.GetLogicalDescendants().OfType<PathIcon>());
-                Assert.False(Assert.IsType<Expander>(
-                    view.FindControl<Expander>("DownloadSettingsExpander")).IsExpanded);
+                Assert.False(FindNamed<Expander>(view, "DownloadSettingsExpander").IsExpanded);
             }
         }
         finally
@@ -63,15 +62,16 @@ public sealed class BiliDownloaderDocumentVisualTests
 
         Assert.NotNull(list);
         Assert.NotNull(list.ItemsPanel);
-        Assert.True(double.IsPositiveInfinity(list.MaxHeight));
+        Assert.Equal(320, list.Height);
+        Assert.True(ScrollViewer.GetIsScrollChainingEnabled(list));
         Assert.IsType<RenameDisplayConverter>(view.Resources["RenameDisplayConverter"]);
     }
 
     [AvaloniaFact]
-    public void 下载列表占据剩余高度且底部操作栏保持可见()
+    public void 下载列表使用固定滚动窗口且底部操作栏顺序排列()
     {
         using var context = new UiTestContext();
-        foreach (var size in new[] { new Size(760, 420), new Size(480, 320) })
+        foreach (var size in new[] { new Size(760, 520), new Size(480, 520) })
         {
             var view = new VideoListView();
             var window = new Window
@@ -86,12 +86,10 @@ public sealed class BiliDownloaderDocumentVisualTests
                 Measure(view, size);
                 var list = Assert.IsType<ListBox>(view.FindControl<ListBox>("VideoItemsList"));
                 var actionBar = Assert.IsType<Border>(view.FindControl<Border>("DownloadActionBar"));
-                Assert.True(list.Bounds.Height >= 64,
-                    $"列表高度应至少为 64，实际为 {list.Bounds.Height}，视图高度为 {view.Bounds.Height}。");
+                Assert.Equal(320, list.Bounds.Height);
                 Assert.True(actionBar.Bounds.Height > 0);
-                Assert.True(actionBar.Bounds.Bottom <= view.Bounds.Bottom,
-                    $"操作栏底部 {actionBar.Bounds.Bottom} 超出视图底部 {view.Bounds.Bottom}；"
-                    + $"列表高度 {list.Bounds.Height}、MinHeight {list.MinHeight}、视图期望高度 {view.DesiredSize.Height}。");
+                Assert.True(list.Bounds.Bottom <= actionBar.Bounds.Top,
+                    $"列表底部 {list.Bounds.Bottom} 与操作栏顶部 {actionBar.Bounds.Top} 发生重叠。");
             }
             finally
             {
@@ -131,8 +129,7 @@ public sealed class BiliDownloaderDocumentVisualTests
         var document = new BiliDownloaderView();
         var schedulerTool = new BiliSchedulerToolView();
 
-        var log = document.FindControl<Expander>("DownloadLogExpander");
-        Assert.NotNull(log);
+        var log = FindNamed<Expander>(document, "DownloadLogExpander");
         Assert.False(log.IsExpanded);
 
         var toolControls = schedulerTool.GetLogicalDescendants()
@@ -141,6 +138,62 @@ public sealed class BiliDownloaderDocumentVisualTests
         Assert.DoesNotContain(
             toolControls,
             control => control.Classes.Any(item => item.StartsWith("bili-doc-", StringComparison.Ordinal)));
+    }
+
+    [AvaloniaFact]
+    public void 来源设置和日志同时展开时由Document主滚动兜底且区域不重叠()
+    {
+        using var context = new UiTestContext();
+        var application = Assert.IsType<App>(Application.Current);
+        var originalTheme = application.RequestedThemeVariant;
+        try
+        {
+            foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            foreach (var size in new[] { new Size(1240, 760), new Size(760, 620), new Size(520, 520) })
+            {
+                application.RequestedThemeVariant = theme;
+                var view = new BiliDownloaderView();
+                var window = new Window { Width = size.Width, Height = size.Height, Content = view };
+                try
+                {
+                    window.Show();
+                    var workspace = view.GetLogicalDescendants().OfType<DownloadWorkspaceView>().Single();
+                    workspace.IsVisible = true;
+                    var settingsExpander = FindNamed<Expander>(view, "DownloadSettingsExpander");
+                    settingsExpander.IsExpanded = true;
+                    FindNamed<Expander>(view, "DownloadLogExpander").IsExpanded = true;
+
+                    Measure(view, size);
+
+                    var documentScroll = Assert.IsType<ScrollViewer>(
+                        view.FindControl<ScrollViewer>("DocumentScrollViewer"));
+                    var source = view.GetLogicalDescendants().OfType<DownloadSourceWorkflowView>().Single();
+                    var log = view.GetLogicalDescendants().OfType<DownloadLogView>().Single();
+                    var videoList = FindNamed<ListBox>(view, "VideoItemsList");
+                    var sourceList = FindNamed<ListBox>(view, "ContentSourceItemsList");
+
+                    var documentContent = Assert.IsType<StackPanel>(documentScroll.Content);
+                    Assert.True(documentContent.Bounds.Height > documentScroll.Bounds.Height,
+                        $"Document 内容高度 {documentContent.Bounds.Height} 应大于主滚动视口 {documentScroll.Bounds.Height}；"
+                        + $"Extent={documentScroll.Extent.Height}, Viewport={documentScroll.Viewport.Height}。");
+                    Assert.True(BottomIn(view, source) <= TopIn(view, workspace) + 0.5);
+                    Assert.True(BottomIn(view, workspace) <= TopIn(view, log) + 0.5);
+                    Assert.True(BottomIn(view, settingsExpander) <= TopIn(view, videoList) + 0.5);
+                    Assert.Equal(260, sourceList.Height);
+                    Assert.Equal(320, videoList.Height);
+                    Assert.True(ScrollViewer.GetIsScrollChainingEnabled(sourceList));
+                    Assert.True(ScrollViewer.GetIsScrollChainingEnabled(videoList));
+                }
+                finally
+                {
+                    window.Close();
+                }
+            }
+        }
+        finally
+        {
+            application.RequestedThemeVariant = originalTheme;
+        }
     }
 
     [AvaloniaFact]
@@ -225,6 +278,15 @@ public sealed class BiliDownloaderDocumentVisualTests
         control.Measure(size);
         control.Arrange(new Rect(size));
     }
+
+    private static T FindNamed<T>(Control root, string name) where T : Control =>
+        root.GetLogicalDescendants().OfType<T>().Single(control => control.Name == name);
+
+    private static double TopIn(Control root, Control child) =>
+        child.TranslatePoint(new Point(0, 0), root)?.Y
+        ?? throw new InvalidOperationException($"无法计算 {child.Name ?? child.GetType().Name} 的布局位置。");
+
+    private static double BottomIn(Control root, Control child) => TopIn(root, child) + child.Bounds.Height;
 
     /// <summary>将插件持久化完全限制在当前 Headless 测试目录。</summary>
     private sealed class UiBiliDataPaths : IBiliDataPaths

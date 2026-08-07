@@ -57,22 +57,20 @@ public sealed class FileConflictG6Tests
         Assert.Contains(report.Items[0].Issues, issue => issue.Code == "overwrite");
     }
 
-    [Theory]
-    [InlineData(false, true, "login")]
-    [InlineData(true, false, "ffmpeg")]
-    public async Task 登录或ffmpeg未就绪_整批阻止(bool loggedIn, bool ffmpegReady, string code)
+    [Fact]
+    public async Task Ffmpeg未就绪_整批阻止()
     {
         using var paths = new TestDataPaths();
-        var service = CreateService(paths, out _, 1_000, 100_000, loggedIn, ffmpegReady);
+        var service = CreateService(paths, out _, 1_000, 100_000, false, false);
 
         var report = await service.InspectAsync(CreateSubmission(paths, FileConflictPolicy.AutoNumber));
 
         Assert.True(report.IsBlocked);
-        Assert.Contains(report.GlobalIssues, issue => issue.Code == code);
+        Assert.Contains(report.GlobalIssues, issue => issue.Code == "ffmpeg");
     }
 
     [Fact]
-    public async Task 登录阻止项出现后_不继续请求远端媒体大小()
+    public async Task 匿名公开内容仍执行媒体大小预检()
     {
         using var paths = new TestDataPaths();
         var estimator = new CountingSizeEstimator();
@@ -84,8 +82,8 @@ public sealed class FileConflictG6Tests
 
         var report = await service.InspectAsync(CreateSubmission(paths, FileConflictPolicy.AutoNumber));
 
-        Assert.True(report.IsBlocked);
-        Assert.Equal(0, estimator.CallCount);
+        Assert.False(report.IsBlocked);
+        Assert.Equal(1, estimator.CallCount);
     }
 
     [Fact]

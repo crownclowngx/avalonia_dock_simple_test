@@ -297,6 +297,10 @@ ContentComparisonStatus 固定为：
 
 **时间：W15～W16，2026-08-19～2026-09-01**
 
+**状态：已实现并通过离线 fixture、插件兼容与全解决方案回归（2026-08-07）。**
+
+实现记录见 [P1-G1-PERSONAL-CONTENT-SOURCES.md](P1-G1-PERSONAL-CONTENT-SOURCES.md)。
+
 ### 8.1 P1-G1 目标与非目标
 
 接入 UP 主投稿、收藏夹、稍后再看和历史记录，形成第一批个人高频来源。所有来源必须使用统一分页接口并明确登录要求。

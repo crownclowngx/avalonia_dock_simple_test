@@ -427,7 +427,7 @@ public sealed class DirectLinkProviderTests
     }
 
     [Fact]
-    public async Task 缺少登录态和非法输入使用结构化错误()
+    public async Task 匿名公开链接可解析且非法输入使用结构化错误()
     {
         var provider = new DirectLinkProvider(new StubContentSourceApi(), new StubCredentials(""));
         var invalid = await Assert.ThrowsAsync<ContentSourceException>(async () =>
@@ -436,9 +436,9 @@ public sealed class DirectLinkProviderTests
 
         var descriptor = await provider.NormalizeAsync("av1", CancellationToken.None);
         var page = await provider.GetPageAsync(descriptor, new ContentPageRequest(), CancellationToken.None);
-        var login = await Assert.ThrowsAsync<ContentSourceException>(() =>
-            provider.ResolveItemAsync(descriptor, page.Items[0], CancellationToken.None));
-        Assert.Equal(ContentSourceErrorCode.LoginRequired, login.Code);
+        var collection = await provider.ResolveItemAsync(descriptor, page.Items[0], CancellationToken.None);
+        Assert.Single(collection.Items);
+        Assert.Equal(ContentSourceCapabilities.None, provider.Capabilities);
     }
 
     [Fact]
@@ -608,7 +608,7 @@ public sealed class ContentSourceViewModelAndDiTests
     }
 
     [Fact]
-    public async Task 解析ViewModel依据Provider能力执行登录门控()
+    public async Task 解析ViewModel不以本地登录状态阻断公开来源()
     {
         var source = new CountingNormalizeProvider();
         var vm = new VideoParseViewModel(
@@ -623,8 +623,8 @@ public sealed class ContentSourceViewModelAndDiTests
 
         await vm.ParseCommand.ExecuteAsync(null);
 
-        Assert.Equal("请先登录后再解析", vm.DownloadInfo);
-        Assert.Equal(0, source.NormalizeCount);
+        Assert.Equal("解析异常，请稍后重试", vm.DownloadInfo);
+        Assert.Equal(1, source.NormalizeCount);
     }
 
     [Fact]

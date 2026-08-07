@@ -431,7 +431,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
     #region E. WaitingForLogin
 
     [Fact]
-    public async Task 未登录时任务进入WaitingForLogin()
+    public async Task 未登录时公开任务仍可正常执行()
     {
         var repository = new InMemoryDownloadTaskRepository();
         var executor = new FakeDownloadTaskExecutor();
@@ -442,15 +442,19 @@ public sealed class BiliDownloadCoordinatorG2Tests
         coordinator.StartProcessingAsync();
 
         await WaitUntilAsync(() =>
-            repository.Tasks.Single(x => x.TaskId == "t1").Status == "waiting_for_login");
+            repository.Tasks.Single(x => x.TaskId == "t1").Status == "done");
+        Assert.Equal(1, executor.ExecuteCount);
         await coordinator.ShutdownAsync();
     }
 
     [Fact]
-    public async Task WaitingForLogin任务不调用执行器()
+    public async Task 执行器实际返回鉴权失败时进入WaitingForLogin()
     {
         var repository = new InMemoryDownloadTaskRepository();
-        var executor = new FakeDownloadTaskExecutor();
+        var executor = new FakeDownloadTaskExecutor
+        {
+            Handler = (_, _) => throw new MediaAuthorizationException("需要登录"),
+        };
         var credential = new FakeCredentialProvider { IsLoggedIn = false };
         var coordinator = CreateCoordinator(repository, executor, credential);
         repository.Seed(Record("t1", DownloadTaskStatus.Ready));
@@ -459,7 +463,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
         await WaitUntilAsync(() =>
             repository.Tasks.Single(x => x.TaskId == "t1").Status == "waiting_for_login");
 
-        Assert.Equal(0, executor.ExecuteCount);
+        Assert.Equal(1, executor.ExecuteCount);
         await coordinator.ShutdownAsync();
     }
 
@@ -469,6 +473,9 @@ public sealed class BiliDownloadCoordinatorG2Tests
         var repository = new InMemoryDownloadTaskRepository();
         var executor = new FakeDownloadTaskExecutor();
         var credential = new FakeCredentialProvider { IsLoggedIn = false };
+        executor.Handler = (_, _) => credential.IsLoggedIn
+            ? Task.FromResult(new DownloadExecutionResult(null, null))
+            : throw new MediaAuthorizationException("需要登录");
         var messenger = new IsolatedMessengerService();
         var coordinator = CreateCoordinator(repository, executor, credential, messenger);
         repository.Seed(Record("t1", DownloadTaskStatus.Ready));
@@ -483,12 +490,13 @@ public sealed class BiliDownloadCoordinatorG2Tests
         await Task.Delay(100);
 
         Assert.Equal("waiting_for_login", repository.Tasks.Single(x => x.TaskId == "t1").Status);
-        Assert.Equal(0, executor.ExecuteCount);
+        Assert.Equal(1, executor.ExecuteCount);
 
         await coordinator.ResumeTaskAsync("t1");
 
         await WaitUntilAsync(() =>
             repository.Tasks.Single(x => x.TaskId == "t1").Status == "done");
+        Assert.Equal(2, executor.ExecuteCount);
         await coordinator.ShutdownAsync();
     }
 
@@ -509,7 +517,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
     }
 
     [Fact]
-    public async Task 未登录时显式恢复Paused仍保持原状态且不访问执行器()
+    public async Task 未登录时显式恢复Paused公开任务仍可执行()
     {
         var repository = new InMemoryDownloadTaskRepository();
         var executor = new FakeDownloadTaskExecutor();
@@ -519,8 +527,8 @@ public sealed class BiliDownloadCoordinatorG2Tests
 
         await coordinator.ResumeTaskAsync("t1");
 
-        Assert.Equal("paused", repository.Tasks.Single(x => x.TaskId == "t1").Status);
-        Assert.Equal(0, executor.ExecuteCount);
+        await WaitUntilAsync(() => repository.Tasks.Single(x => x.TaskId == "t1").Status == "done");
+        Assert.Equal(1, executor.ExecuteCount);
         await coordinator.ShutdownAsync();
     }
 
@@ -528,7 +536,10 @@ public sealed class BiliDownloadCoordinatorG2Tests
     public async Task 登出消息不触发恢复()
     {
         var repository = new InMemoryDownloadTaskRepository();
-        var executor = new FakeDownloadTaskExecutor();
+        var executor = new FakeDownloadTaskExecutor
+        {
+            Handler = (_, _) => throw new MediaAuthorizationException("需要登录"),
+        };
         var credential = new FakeCredentialProvider { IsLoggedIn = false };
         var messenger = new IsolatedMessengerService();
         var coordinator = CreateCoordinator(repository, executor, credential, messenger);
@@ -558,6 +569,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
 
         await WaitUntilAsync(() =>
             repository.Tasks.Single(x => x.TaskId == "t1").Status == "done");
+        Assert.Equal(1, executor.ExecuteCount);
         await coordinator.ShutdownAsync();
     }
 
