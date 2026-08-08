@@ -88,7 +88,8 @@ public sealed class DashMediaSizeEstimator : IMediaSizeEstimator
             item.MediaType, item.EpId, item.SeasonId);
         var selection = _selectionPolicy.Select(dash, new MediaSelectionRequest(
             profile.VideoQualityId, profile.AudioQualityId, profile.VideoCodecPreference,
-            profile.OutputContainer, profile.OutputMediaMode));
+            profile.OutputContainer, profile.OutputMediaMode,
+            profile.VideoDynamicRangePreference, profile.AudioFeaturePreference));
         return selection is { Success: true, OutputPlan: not null }
             ? _sizeCalculator.EstimatePeakBytes(selection.OutputPlan, item.Duration)
             : null;
@@ -166,6 +167,8 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         var allocated = new HashSet<string>(activeKeys, GetPathComparer());
         var itemResults = new List<PreflightItemResult>();
         var fingerprintParts = new List<string>();
+        fingerprintParts.Add(
+            $"PROFILE|{submission.Profile.VideoDynamicRangePreference}|{submission.Profile.AudioFeaturePreference}|{submission.Profile.OutputMediaMode}|{submission.Profile.OutputContainer}");
         var batchRenditions = new HashSet<string>(StringComparer.Ordinal);
         var expectedNew = submission.IncrementalExpectation?.ExpectedNewRenditionFingerprints
             .ToHashSet(StringComparer.Ordinal) ?? [];
@@ -198,7 +201,7 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
                     {
                         outputPlan = analysis.Selection.OutputPlan;
                         analyzedEstimate = analysis.EstimatedPeakBytes;
-                        fingerprintParts.Add($"OUTPUT|{item.Aid}|{item.Cid}|{outputPlan.ActualVideoCodec}|{outputPlan.ActualAudioCodec}|{outputPlan.OutputContainer}|{outputPlan.OutputMediaMode}|{outputPlan.FileExtension}");
+                        fingerprintParts.Add($"OUTPUT|{item.Aid}|{item.Cid}|{outputPlan.ActualVideoCodec}|{outputPlan.ActualAudioCodec}|{outputPlan.OutputContainer}|{outputPlan.OutputMediaMode}|{outputPlan.FileExtension}|{outputPlan.ExpectedMediaFeatures}");
                     }
                 }
                 catch (MediaAuthorizationException)

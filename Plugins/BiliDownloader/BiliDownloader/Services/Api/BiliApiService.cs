@@ -571,15 +571,25 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
         if (dash == null || dash.Type != JTokenType.Object)
             throw new ResourceUnavailableException("该媒体当前没有可用的 DASH 资源。");
 
-        // 视频流
+        var capabilityEvidence = new List<MediaFeatureEvidence>();
+
+        // 视频流。125/126 是协议层稳定的高规格标识；普通 HEVC 本身不能证明 HDR 或杜比视界。
         var videos = dash["video"] as JArray;
         if (videos != null)
         {
             foreach (var v in videos)
             {
-                result.VideoStreams.Add(ParseDashStream(v, BiliAudioFeature.Standard));
+                var feature = v["id"]?.Value<int>() switch
+                {
+                    125 => MediaFeatureFlags.Hdr,
+                    126 => MediaFeatureFlags.DolbyVision,
+                    _ => MediaFeatureFlags.None,
+                };
+                result.VideoStreams.Add(ParseDashStream(v, BiliAudioFeature.Standard, feature));
             }
         }
+        AddStreamAvailability(capabilityEvidence, result.VideoStreams, MediaFeatureFlags.Hdr, "dash_video_125");
+        AddStreamAvailability(capabilityEvidence, result.VideoStreams, MediaFeatureFlags.DolbyVision, "dash_video_126");
 
         // 音频流
         var audios = dash["audio"] as JArray;
@@ -591,18 +601,33 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
             }
         }
 
-        // 杜比音频
+        // 杜比音频。协议中的 type=1 只表示普通杜比，只有 type=2 且实际流为 E-AC-3 才能证明 Atmos。
         var dolbyToken = dash["dolby"];
         if (dolbyToken != null && dolbyToken.Type == JTokenType.Object)
         {
+            var dolbyType = dolbyToken["type"]?.Value<int>() ?? 0;
             var dolby = dolbyToken["audio"] as JArray;
             if (dolby != null)
             {
                 foreach (var d in dolby)
                 {
-                    result.AudioStreams.Add(ParseDashStream(d, BiliAudioFeature.Dolby));
+                    var isAtmos = dolbyType == 2 && IsEac3(d);
+                    result.AudioStreams.Add(ParseDashStream(
+                        d,
+                        isAtmos ? BiliAudioFeature.DolbyAtmos : BiliAudioFeature.Dolby,
+                        isAtmos ? MediaFeatureFlags.DolbyAtmos : MediaFeatureFlags.None));
                 }
             }
+            AddRestrictedOrUnavailableEvidence(
+                capabilityEvidence,
+                dolbyToken,
+                MediaFeatureFlags.DolbyAtmos,
+                result.AudioStreams.Any(stream => stream.Features.HasFlag(MediaFeatureFlags.DolbyAtmos)),
+                dolbyType == 1 ? "dolby_type_common" : "dolby_atmos_absent");
+        }
+        else
+        {
+            capabilityEvidence.Add(new(MediaFeatureFlags.DolbyAtmos, MediaCapabilityAvailability.Unavailable, "dolby_node_absent"));
         }
 
         // Hi-Res 无损音频
@@ -612,9 +637,26 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
             var flac = flacToken["audio"];
             if (flac != null && flac.Type == JTokenType.Object)
             {
-                result.AudioStreams.Add(ParseDashStream(flac, BiliAudioFeature.HiRes));
+                // 仅 flac.audio 节点与 FLAC 编码同时存在时才标记 Hi-Res，禁止根据高码率猜测。
+                var isHiRes = IsFlac(flac);
+                result.AudioStreams.Add(ParseDashStream(
+                    flac,
+                    isHiRes ? BiliAudioFeature.HiRes : BiliAudioFeature.Standard,
+                    isHiRes ? MediaFeatureFlags.HiResAudio : MediaFeatureFlags.None));
             }
+            AddRestrictedOrUnavailableEvidence(
+                capabilityEvidence,
+                flacToken,
+                MediaFeatureFlags.HiResAudio,
+                result.AudioStreams.Any(stream => stream.Features.HasFlag(MediaFeatureFlags.HiResAudio)),
+                "flac_audio_absent");
         }
+        else
+        {
+            capabilityEvidence.Add(new(MediaFeatureFlags.HiResAudio, MediaCapabilityAvailability.Unavailable, "flac_node_absent"));
+        }
+
+        result.Capabilities = new MediaCapabilitySnapshot(capabilityEvidence);
 
         return result;
     }
@@ -743,7 +785,10 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
 
     #region 辅助方法
 
-    private static BiliDashStream ParseDashStream(JToken token, BiliAudioFeature audioFeature)
+    private static BiliDashStream ParseDashStream(
+        JToken token,
+        BiliAudioFeature audioFeature,
+        MediaFeatureFlags features = MediaFeatureFlags.None)
     {
         var backupUrls = new List<string>();
         var backupUrl = token["backup_url"] as JArray;
@@ -775,7 +820,69 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
             MimeType = mimeType,
             ContainerHint = containerHint,
             AudioFeature = audioFeature,
+            Features = features,
         };
+    }
+
+    private static void AddStreamAvailability(
+        ICollection<MediaFeatureEvidence> evidence,
+        IEnumerable<BiliDashStream> streams,
+        MediaFeatureFlags feature,
+        string availableCode)
+    {
+        evidence.Add(streams.Any(stream => stream.Features.HasFlag(feature))
+            ? new MediaFeatureEvidence(feature, MediaCapabilityAvailability.Available, availableCode)
+            : new MediaFeatureEvidence(feature, MediaCapabilityAvailability.Unavailable, $"{availableCode}_absent"));
+    }
+
+    private static void AddRestrictedOrUnavailableEvidence(
+        ICollection<MediaFeatureEvidence> evidence,
+        JToken node,
+        MediaFeatureFlags feature,
+        bool available,
+        string unavailableCode)
+    {
+        if (available)
+        {
+            evidence.Add(new(feature, MediaCapabilityAvailability.Available, $"{unavailableCode}_stream"));
+            return;
+        }
+
+        // 不同播放接口可能使用 snake_case 或 camelCase；只读取显式布尔/数值字段，不解释文案。
+        var needPremium = ReadBoolean(node, "need_vip") || ReadBoolean(node, "needVip");
+        var needLogin = ReadBoolean(node, "need_login") || ReadBoolean(node, "needLogin");
+        var availability = needPremium
+            ? MediaCapabilityAvailability.RequiresPremium
+            : needLogin
+                ? MediaCapabilityAvailability.RequiresLogin
+                : MediaCapabilityAvailability.Unavailable;
+        evidence.Add(new(feature, availability, needPremium ? "need_vip" : needLogin ? "need_login" : unavailableCode));
+    }
+
+    private static bool ReadBoolean(JToken node, string name)
+    {
+        var value = node[name];
+        return value?.Type switch
+        {
+            JTokenType.Boolean => value.Value<bool>(),
+            JTokenType.Integer => value.Value<int>() != 0,
+            _ => false,
+        };
+    }
+
+    private static bool IsFlac(JToken token)
+    {
+        var codecs = token["codecs"]?.Value<string>() ?? string.Empty;
+        var mime = token["mime_type"]?.Value<string>() ?? token["mimeType"]?.Value<string>() ?? string.Empty;
+        return codecs.StartsWith("flac", StringComparison.OrdinalIgnoreCase)
+               || mime.Equals("audio/flac", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsEac3(JToken token)
+    {
+        var codecs = token["codecs"]?.Value<string>() ?? string.Empty;
+        return codecs.StartsWith("ec-3", StringComparison.OrdinalIgnoreCase)
+               || codecs.StartsWith("eac3", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string ExtractFileNameWithoutExt(string url)

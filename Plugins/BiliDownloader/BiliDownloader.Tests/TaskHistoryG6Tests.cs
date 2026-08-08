@@ -181,7 +181,7 @@ public sealed class TaskHistoryG6Tests
         var store = new DownloadTaskStore(paths);
         await store.InitAsync();
         var source = CreateRecord("source-task", DownloadTaskStatus.Canceled, DateTime.Now);
-        source.SubmissionSnapshotVersion = 1;
+        source.SubmissionSnapshotVersion = 2;
         source.DurationSeconds = 99;
         source.UseGroupFolder = true;
         source.AddIndexToTitle = true;
@@ -190,6 +190,8 @@ public sealed class TaskHistoryG6Tests
         source.SelectedVideoCodec = VideoCodecPreference.Av1;
         source.SelectedOutputContainer = OutputContainer.Mkv;
         source.SelectedOutputMediaMode = OutputMediaMode.AudioOnly;
+        source.SelectedVideoDynamicRangePreference = VideoDynamicRangePreference.Auto;
+        source.SelectedAudioFeaturePreference = AudioFeaturePreference.Auto;
         source.ConflictPolicy = FileConflictPolicy.AutoNumber;
         await store.InsertBatchAsync([source]);
         var service = new TaskHistoryRedownloadService(new TaskHistoryQueryService(store));
@@ -284,7 +286,7 @@ public sealed class TaskHistoryG6Tests
         var created = rows.Single(row => row.TaskId != source.TaskId);
         Assert.NotEqual(source.TaskId, created.TaskId);
         Assert.Equal(source.TaskId, created.RedownloadedFromTaskId);
-        Assert.Equal(1, created.SubmissionSnapshotVersion);
+        Assert.Equal(2, created.SubmissionSnapshotVersion);
         await coordinator.ShutdownAsync();
     }
 
@@ -473,7 +475,7 @@ public sealed class TaskHistoryG6Tests
         Assert.Contains("'  =HYPERLINK", csvText);
         Assert.Contains("?<redacted>", csvText);
         using var document = JsonDocument.Parse(jsonText);
-        Assert.Equal(1, document.RootElement.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(2, document.RootElement.GetProperty("schemaVersion").GetInt32());
         Assert.Equal(1000, document.RootElement.GetProperty("items").GetArrayLength());
         Assert.True(document.RootElement.GetProperty("items")[0].TryGetProperty("taskId", out _));
 

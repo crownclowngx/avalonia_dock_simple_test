@@ -25,7 +25,9 @@ public sealed record RenditionSpecification(
     int AudioQualityId,
     VideoCodecPreference VideoCodecPreference,
     OutputContainer OutputContainer,
-    OutputMediaMode OutputMediaMode)
+    OutputMediaMode OutputMediaMode,
+    VideoDynamicRangePreference VideoDynamicRangePreference = VideoDynamicRangePreference.Auto,
+    AudioFeaturePreference AudioFeaturePreference = AudioFeaturePreference.Auto)
 {
     public void Validate()
     {
@@ -41,6 +43,10 @@ public sealed record RenditionSpecification(
             throw new ArgumentOutOfRangeException(nameof(OutputContainer));
         if (!Enum.IsDefined(OutputMediaMode))
             throw new ArgumentOutOfRangeException(nameof(OutputMediaMode));
+        if (!Enum.IsDefined(VideoDynamicRangePreference))
+            throw new ArgumentOutOfRangeException(nameof(VideoDynamicRangePreference));
+        if (!Enum.IsDefined(AudioFeaturePreference))
+            throw new ArgumentOutOfRangeException(nameof(AudioFeaturePreference));
     }
 
     /// <summary>
@@ -52,9 +58,14 @@ public sealed record RenditionSpecification(
         {
             VideoQualityId = 0,
             VideoCodecPreference = VideoCodecPreference.AutoCompatibility,
+            VideoDynamicRangePreference = VideoDynamicRangePreference.Standard,
             OutputContainer = OutputContainer.NativeAudio,
         },
-        OutputMediaMode.VideoOnly => this with { AudioQualityId = 0 },
+        OutputMediaMode.VideoOnly => this with
+        {
+            AudioQualityId = 0,
+            AudioFeaturePreference = AudioFeaturePreference.Standard,
+        },
         _ => this,
     };
 }
@@ -65,14 +76,20 @@ public sealed record RenditionSpecification(
 /// </summary>
 public readonly record struct RenditionFingerprint
 {
-    public const string Prefix = "rf1:";
+    public const string LegacyPrefix = "rf1:";
+    public const string Prefix = "rf2:";
 
     public RenditionFingerprint(string value)
     {
+        var prefix = value?.StartsWith(Prefix, StringComparison.Ordinal) == true
+            ? Prefix
+            : value?.StartsWith(LegacyPrefix, StringComparison.Ordinal) == true
+                ? LegacyPrefix
+                : string.Empty;
         if (string.IsNullOrWhiteSpace(value) ||
-            !value.StartsWith(Prefix, StringComparison.Ordinal) ||
-            value.Length != Prefix.Length + 64 ||
-            !value.AsSpan(Prefix.Length).ToString().All(Uri.IsHexDigit))
+            string.IsNullOrEmpty(prefix) ||
+            value.Length != prefix.Length + 64 ||
+            !value.AsSpan(prefix.Length).ToString().All(Uri.IsHexDigit))
             throw new ArgumentException("输出版本指纹格式无效。", nameof(value));
         Value = value.ToLowerInvariant();
     }
@@ -84,13 +101,15 @@ public readonly record struct RenditionFingerprint
         specification = specification.Canonicalize();
         specification.Validate();
         var canonical = string.Join('|',
-            "rf1",
+            "rf2",
             mediaUnitKey.ToStorageKey(),
             $"vq={specification.VideoQualityId}",
             $"aq={specification.AudioQualityId}",
             $"codec={(int)specification.VideoCodecPreference}",
             $"container={(int)specification.OutputContainer}",
-            $"mode={(int)specification.OutputMediaMode}");
+            $"mode={(int)specification.OutputMediaMode}",
+            $"dynamic={(int)specification.VideoDynamicRangePreference}",
+            $"audioFeature={(int)specification.AudioFeaturePreference}");
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
         return new RenditionFingerprint(Prefix + hash);
     }

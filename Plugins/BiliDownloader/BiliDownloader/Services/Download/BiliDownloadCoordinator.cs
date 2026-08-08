@@ -227,7 +227,7 @@ public sealed class BiliDownloadCoordinator
                     RenditionFingerprint = CreateRenditionStorageKey(item, profile),
                     QualityId = profile.VideoQualityId,
                     AudioQualityId = profile.AudioQualityId,
-                    SubmissionSnapshotVersion = 1,
+                    SubmissionSnapshotVersion = 2,
                     DurationSeconds = item.Duration,
                     UseGroupFolder = profile.UseGroupFolder,
                     AddIndexToTitle = profile.AddIndexToTitle,
@@ -236,6 +236,9 @@ public sealed class BiliDownloadCoordinator
                     SelectedVideoCodec = profile.VideoCodecPreference,
                     SelectedOutputContainer = profile.OutputContainer,
                     SelectedOutputMediaMode = profile.OutputMediaMode,
+                    SelectedVideoDynamicRangePreference = profile.VideoDynamicRangePreference,
+                    SelectedAudioFeaturePreference = profile.AudioFeaturePreference,
+                    RequestedMediaFeatures = GetExplicitRequestedFeatures(profile),
                     RedownloadedFromTaskId = submission.RedownloadedFromTaskId ?? string.Empty,
                     OutputDirectory = profile.OutputDirectory,
                     SubFolder = subFolder,
@@ -334,7 +337,7 @@ public sealed class BiliDownloadCoordinator
                     RenditionFingerprint = CreateRenditionStorageKey(item, profile),
                     QualityId = profile.VideoQualityId,
                     AudioQualityId = profile.AudioQualityId,
-                    SubmissionSnapshotVersion = 1,
+                    SubmissionSnapshotVersion = 2,
                     DurationSeconds = item.Duration,
                     UseGroupFolder = profile.UseGroupFolder,
                     AddIndexToTitle = profile.AddIndexToTitle,
@@ -343,6 +346,10 @@ public sealed class BiliDownloadCoordinator
                     SelectedVideoCodec = profile.VideoCodecPreference,
                     SelectedOutputContainer = profile.OutputContainer,
                     SelectedOutputMediaMode = profile.OutputMediaMode,
+                    SelectedVideoDynamicRangePreference = profile.VideoDynamicRangePreference,
+                    SelectedAudioFeaturePreference = profile.AudioFeaturePreference,
+                    RequestedMediaFeatures = GetExplicitRequestedFeatures(profile),
+                    ExpectedMediaFeatures = planned.OutputPlan?.ExpectedMediaFeatures,
                     ActualVideoCodec = ToStorageCodec(planned.OutputPlan?.ActualVideoCodec ?? VideoCodec.Unknown),
                     RedownloadedFromTaskId = current.Submission.RedownloadedFromTaskId ?? string.Empty,
                     OutputDirectory = profile.OutputDirectory,
@@ -899,9 +906,12 @@ public sealed class BiliDownloadCoordinator
                 async outputPlan =>
                 {
                     task.ActualVideoCodec = ToStorageCodec(outputPlan.ActualVideoCodec);
+                    task.ExpectedMediaFeatures = outputPlan.ExpectedMediaFeatures;
                     task.LastUpdatedAt = DateTime.Now;
                     await _repository.UpdateActualVideoCodecAsync(
                         task.TaskId, task.ActualVideoCodec, task.LastUpdatedAt);
+                    await _repository.UpdateExpectedMediaFeaturesAsync(
+                        task.TaskId, outputPlan.ExpectedMediaFeatures, task.LastUpdatedAt);
                 }),
                 context.Token);  // G2: 使用 per-task token 替代全局 ct
 
@@ -939,6 +949,11 @@ public sealed class BiliDownloadCoordinator
             // 数据库提交完成后再发布内存终态，避免 UI 先观察到不可恢复的状态。
             var outputFilePath = result.OutputFilePath ?? "";
             var completedAt = DateTime.Now;
+            if (result.ActualMediaFeatures.HasValue)
+                task.ActualMediaFeatures = result.ActualMediaFeatures;
+            if (task.ActualMediaFeatures.HasValue)
+                await _repository.UpdateActualMediaFeaturesAsync(
+                    task.TaskId, task.ActualMediaFeatures.Value, completedAt);
             await _repository.MarkCompletedAsync(
                 task.TaskId,
                 outputFilePath,
@@ -1274,6 +1289,11 @@ public sealed class BiliDownloadCoordinator
     {
         var outputFilePath = result.OutputFilePath ?? "";
         var completedAt = DateTime.Now;
+        if (result.ActualMediaFeatures.HasValue)
+            task.ActualMediaFeatures = result.ActualMediaFeatures;
+        if (task.ActualMediaFeatures.HasValue)
+            await _repository.UpdateActualMediaFeaturesAsync(
+                task.TaskId, task.ActualMediaFeatures.Value, completedAt);
         await _repository.MarkCompletedAsync(
             task.TaskId, outputFilePath, task.ExtrasResultSummary, completedAt);
         task.Status = ToStorage(DownloadTaskStatus.Completed);
@@ -1601,6 +1621,34 @@ public sealed class BiliDownloadCoordinator
                 Directory.Delete(tempDir, true);
         }
         catch { /* 忽略清理失败 */ }
+    }
+
+    /// <summary>
+    /// 只把显式偏好记为“用户要求”。Auto 的实际高规格由运行时证据决定，不能事后改写成用户曾明确要求；
+    /// 同时按输出模式清除不会被消费的维度，保证审计事实与 rendition 规范化规则一致。
+    /// </summary>
+    private static MediaFeatureFlags GetExplicitRequestedFeatures(DownloadProfileSnapshot profile)
+    {
+        var features = MediaFeatureFlags.None;
+        if (profile.OutputMediaMode != OutputMediaMode.AudioOnly)
+        {
+            features |= profile.VideoDynamicRangePreference switch
+            {
+                VideoDynamicRangePreference.Hdr => MediaFeatureFlags.Hdr,
+                VideoDynamicRangePreference.DolbyVision => MediaFeatureFlags.DolbyVision,
+                _ => MediaFeatureFlags.None,
+            };
+        }
+        if (profile.OutputMediaMode != OutputMediaMode.VideoOnly)
+        {
+            features |= profile.AudioFeaturePreference switch
+            {
+                AudioFeaturePreference.HiRes => MediaFeatureFlags.HiResAudio,
+                AudioFeaturePreference.DolbyAtmos => MediaFeatureFlags.DolbyAtmos,
+                _ => MediaFeatureFlags.None,
+            };
+        }
+        return features;
     }
 
     #endregion

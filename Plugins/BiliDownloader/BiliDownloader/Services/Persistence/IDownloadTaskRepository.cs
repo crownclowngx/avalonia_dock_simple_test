@@ -86,6 +86,22 @@ public interface IDownloadTaskRepository
     Task UpdateActualVideoCodecAsync(string taskId, string actualVideoCodec, DateTime lastUpdatedAt)
         => Task.CompletedTask;
 
+    /// <summary>保存本次可信 DASH 选择得到的预期高规格，供崩溃恢复和仅合并重试使用。</summary>
+    Task UpdateExpectedMediaFeaturesAsync(
+        string taskId,
+        MediaFeatureFlags expectedFeatures,
+        DateTime lastUpdatedAt)
+        => Task.CompletedTask;
+
+    /// <summary>
+    /// 只在 staging 已通过发布前验证后写入实际高规格。默认实现保持测试替身的源代码兼容性。
+    /// </summary>
+    Task UpdateActualMediaFeaturesAsync(
+        string taskId,
+        MediaFeatureFlags actualFeatures,
+        DateTime lastUpdatedAt)
+        => Task.CompletedTask;
+
     /// <summary>原子标记任务完成并保存最终输出事实</summary>
     Task MarkCompletedAsync(
         string taskId,

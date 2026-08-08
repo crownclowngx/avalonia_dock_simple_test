@@ -109,6 +109,36 @@
         </Border>
 
         <Border Classes="bili-doc-flat-section">
+            <StackPanel Spacing="6">
+                <TextBlock Text="高规格媒体" Classes="bili-doc-section-title" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Grid.Column="0" Spacing="3">
+                        <TextBlock Text="视频动态范围" Classes="bili-doc-caption" />
+                        <ComboBox Classes="bili-doc-input"
+                                  IsEnabled="{Binding IsVideoOutputEnabled}"
+                                  ItemsSource="{Binding VideoDynamicRangeOptions}"
+                                  SelectedItem="{Binding SelectedVideoDynamicRangeOption}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="3">
+                        <TextBlock Text="音频规格" Classes="bili-doc-caption" />
+                        <ComboBox Classes="bili-doc-input"
+                                  IsEnabled="{Binding IsAudioOutputEnabled}"
+                                  ItemsSource="{Binding AudioFeatureOptions}"
+                                  SelectedItem="{Binding SelectedAudioFeatureOption}" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock Text="{Binding MediaCapabilityStatusText}"
+                           Classes="bili-doc-caption"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="当前显式高规格在部分所选媒体中不可用；设置会被保留，但提交预检将阻止静默降级。"
+                           Classes="bili-doc-caption"
+                           Foreground="{DynamicResource AppWarningBrush}"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding !IsHighSpecificationSelectionValid}" />
+            </StackPanel>
+        </Border>
+
+        <Border Classes="bili-doc-flat-section">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="7">
                 <PathIcon Grid.Column="0"
                           Classes="bili-doc-icon"

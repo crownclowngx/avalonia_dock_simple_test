@@ -15,6 +15,7 @@ public enum DownloadFailureKind
     Merge,
     Unknown,
     Conflict,
+    MediaValidation,
 }
 
 /// <summary>
@@ -66,6 +67,7 @@ public sealed record DownloadFailure(
         DownloadFailureKind.ResourceUnavailable => "resource",
         DownloadFailureKind.Merge => "merge",
         DownloadFailureKind.Conflict => "conflict",
+        DownloadFailureKind.MediaValidation => "media_validation",
         _ => "unknown",
     };
 }
@@ -122,6 +124,9 @@ internal static class DownloadErrorClassifier
                 DownloadFailureActionKind.SelectCustomFfmpeg, "选择自定义路径"),
             MediaMergeException or FfmpegExecutionException => Failure(DownloadFailureKind.Merge, true,
                 "音视频合并失败，已保留下载完成的临时媒体。", DownloadFailureActionKind.RetryMerge, "仅重试合并",
+                DownloadFailureActionKind.OpenLogs, "查看日志"),
+            MediaValidationException => Failure(DownloadFailureKind.MediaValidation, false,
+                "成品媒体特征与预期不一致，已阻止发布并保留可信输入。", DownloadFailureActionKind.Restart, "完整重试",
                 DownloadFailureActionKind.OpenLogs, "查看日志"),
             ResourceUnavailableException => Failure(DownloadFailureKind.ResourceUnavailable, true,
                 "媒体资源已失效或暂不可用，请重新解析后重试。", DownloadFailureActionKind.Retry, "重新解析并重试",
@@ -191,6 +196,7 @@ public sealed class DownloadFailurePresentationPolicy : IDownloadFailurePresenta
             "resource" => DownloadErrorClassifier.ClassifyFailure(new ResourceUnavailableException("")),
             "merge" => DownloadErrorClassifier.ClassifyFailure(new MediaMergeException("")),
             "conflict" => DownloadErrorClassifier.ClassifyFailure(new OutputConflictException("")),
+            "media_validation" => DownloadErrorClassifier.ClassifyFailure(new MediaValidationException("")),
             _ => DownloadErrorClassifier.ClassifyFailure(new Exception()),
         };
         return new(failure.UserMessage, failure.PrimaryAction, failure.SecondaryAction);

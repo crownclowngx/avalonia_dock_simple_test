@@ -18,6 +18,55 @@ public enum AudioCodec
     DolbyDigitalPlus,
 }
 
+/// <summary>
+/// 可以由播放信息或发布前探测证明的高规格媒体特征。使用位标志是为了让“视频特征 + 音频特征”
+/// 在预检、任务事实和验证器之间以一个不可变值传递，而不是散落成多组容易失配的布尔值。
+/// </summary>
+[Flags]
+public enum MediaFeatureFlags
+{
+    None = 0,
+    Hdr = 1,
+    DolbyVision = 1 << 1,
+    HiResAudio = 1 << 2,
+    DolbyAtmos = 1 << 3,
+}
+
+/// <summary>单项能力在当前登录态下的可用性；Unknown 与 Unavailable 必须严格区分。</summary>
+public enum MediaCapabilityAvailability
+{
+    Unknown,
+    Unavailable,
+    Available,
+    RequiresLogin,
+    RequiresPremium,
+}
+
+/// <summary>
+/// 一条可审计的能力证据。EvidenceCode 只能使用程序定义的稳定代码，不能放入接口原文、URL 或账号信息。
+/// </summary>
+public sealed record MediaFeatureEvidence(
+    MediaFeatureFlags Feature,
+    MediaCapabilityAvailability Availability,
+    string EvidenceCode);
+
+/// <summary>一次播放信息响应的高规格能力快照。</summary>
+public sealed record MediaCapabilitySnapshot(IReadOnlyList<MediaFeatureEvidence> Evidence)
+{
+    public static MediaCapabilitySnapshot Unknown { get; } = new(Array.Empty<MediaFeatureEvidence>());
+
+    /// <summary>返回指定特征的最可信状态；同一响应中实际流证据优先于限制提示。</summary>
+    public MediaCapabilityAvailability GetAvailability(MediaFeatureFlags feature)
+    {
+        var matches = Evidence.Where(item => item.Feature == feature).Select(item => item.Availability).ToArray();
+        if (matches.Contains(MediaCapabilityAvailability.Available)) return MediaCapabilityAvailability.Available;
+        if (matches.Contains(MediaCapabilityAvailability.RequiresPremium)) return MediaCapabilityAvailability.RequiresPremium;
+        if (matches.Contains(MediaCapabilityAvailability.RequiresLogin)) return MediaCapabilityAvailability.RequiresLogin;
+        if (matches.Contains(MediaCapabilityAvailability.Unavailable)) return MediaCapabilityAvailability.Unavailable;
+        return MediaCapabilityAvailability.Unknown;
+    }
+}
+
 /// <summary>媒体流选择失败的稳定机器码；中文消息只负责展示，业务分支只判断该枚举。</summary>
 public enum MediaSelectionFailureCode
 {
@@ -27,6 +76,8 @@ public enum MediaSelectionFailureCode
     ExplicitVideoCodecUnavailable,
     AudioStreamUnavailable,
     UnsupportedAudioCodec,
+    ExplicitMediaFeatureUnavailable,
+    MediaFeatureIncompatibleWithContainer,
 }
 
 /// <summary>纯流选择策略的不可变输入。</summary>
@@ -35,7 +86,9 @@ public sealed record MediaSelectionRequest(
     int AudioQualityId,
     VideoCodecPreference VideoCodecPreference,
     OutputContainer OutputContainer,
-    OutputMediaMode OutputMediaMode);
+    OutputMediaMode OutputMediaMode,
+    VideoDynamicRangePreference VideoDynamicRangePreference = VideoDynamicRangePreference.Auto,
+    AudioFeaturePreference AudioFeaturePreference = AudioFeaturePreference.Auto);
 
 /// <summary>
 /// 可以安全进入预检报告和 SQLite 的媒体输出计划。该类型刻意不持有 URL、Cookie 或请求头，
@@ -48,7 +101,8 @@ public sealed record MediaOutputPlan(
     OutputMediaMode OutputMediaMode,
     string FileExtension,
     long VideoBandwidth,
-    long AudioBandwidth)
+    long AudioBandwidth,
+    MediaFeatureFlags ExpectedMediaFeatures = MediaFeatureFlags.None)
 {
     /// <summary>当前模式是否必须选择并下载视频流。</summary>
     public bool RequiresVideo => OutputMediaMode is OutputMediaMode.AudioVideo or OutputMediaMode.VideoOnly;

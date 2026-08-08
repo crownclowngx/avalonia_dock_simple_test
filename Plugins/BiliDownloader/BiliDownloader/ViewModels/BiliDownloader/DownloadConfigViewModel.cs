@@ -7,6 +7,7 @@ using BiliDownloader.Models;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.Services.Naming;
+using BiliDownloader.Services.Download;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
 
@@ -126,9 +127,9 @@ public partial class DownloadConfigViewModel : ObservableObject
     public bool IsAudioOutputEnabled => OutputMediaMode != OutputMediaMode.VideoOnly;
     public string OutputModeHint => OutputMediaMode switch
     {
-        OutputMediaMode.AudioOnly => "仅下载普通 AAC/MP4A 音频并以 .m4a 原子发布；Hi-Res 与杜比音频将在 G8 提供。",
+        OutputMediaMode.AudioOnly => "原生音频会按实际规格发布：AAC/Atmos 为 .m4a，Hi-Res FLAC 为 .flac。",
         OutputMediaMode.VideoOnly => "只下载视频流并以 stream copy 封装；不会创建音频临时文件。",
-        _ => "显式编码不可用时会在预检中阻止，不会静默切换到其他编码。",
+        _ => "自动模式优先高规格；显式规格或编码不可用时会在预检中阻止，不会静默降级。",
     };
 
     [ObservableProperty]
@@ -136,6 +137,106 @@ public partial class DownloadConfigViewModel : ObservableObject
 
     [ObservableProperty]
     private AudioFeaturePreference _audioFeaturePreference = AudioFeaturePreference.Auto;
+
+    public IReadOnlyList<DownloadOutputOption<VideoDynamicRangePreference>> VideoDynamicRangeOptions { get; } =
+    [
+        new(VideoDynamicRangePreference.Auto, "自动（杜比视界 → HDR → 标准）"),
+        new(VideoDynamicRangePreference.Standard, "标准动态范围"),
+        new(VideoDynamicRangePreference.Hdr, "HDR"),
+        new(VideoDynamicRangePreference.DolbyVision, "杜比视界"),
+    ];
+
+    public IReadOnlyList<DownloadOutputOption<AudioFeaturePreference>> AudioFeatureOptions { get; } =
+    [
+        new(AudioFeaturePreference.Auto, "自动（Atmos → Hi-Res → 标准）"),
+        new(AudioFeaturePreference.Standard, "标准音频"),
+        new(AudioFeaturePreference.HiRes, "Hi-Res 无损"),
+        new(AudioFeaturePreference.DolbyAtmos, "杜比全景声"),
+    ];
+
+    public DownloadOutputOption<VideoDynamicRangePreference> SelectedVideoDynamicRangeOption
+    {
+        get => VideoDynamicRangeOptions.First(option => option.Value == VideoDynamicRangePreference);
+        set { if (value is not null) VideoDynamicRangePreference = value.Value; }
+    }
+
+    public DownloadOutputOption<AudioFeaturePreference> SelectedAudioFeatureOption
+    {
+        get => AudioFeatureOptions.First(option => option.Value == AudioFeaturePreference);
+        set { if (value is not null) AudioFeaturePreference = value.Value; }
+    }
+
+    [ObservableProperty]
+    private bool _isMediaCapabilityInspecting;
+
+    [ObservableProperty]
+    private string _mediaCapabilityStatusText = "请选择媒体后探测高规格能力。";
+
+    [ObservableProperty]
+    private MediaCapabilityAvailability _hdrAvailability = MediaCapabilityAvailability.Unknown;
+
+    [ObservableProperty]
+    private MediaCapabilityAvailability _dolbyVisionAvailability = MediaCapabilityAvailability.Unknown;
+
+    [ObservableProperty]
+    private MediaCapabilityAvailability _hiResAvailability = MediaCapabilityAvailability.Unknown;
+
+    [ObservableProperty]
+    private MediaCapabilityAvailability _dolbyAtmosAvailability = MediaCapabilityAvailability.Unknown;
+
+    /// <summary>
+    /// 仅用于立即反馈；提交边界仍会重新请求 DASH 并执行权威预检，不能把 UI 缓存当作授权事实。
+    /// 显式选择在状态变化后会被保留，并通过此属性标记无效，绝不自动改回 Auto。
+    /// </summary>
+    public bool IsHighSpecificationSelectionValid
+        => (OutputMediaMode == OutputMediaMode.AudioOnly || VideoDynamicRangePreference is VideoDynamicRangePreference.Auto or VideoDynamicRangePreference.Standard
+            || GetVideoAvailability(VideoDynamicRangePreference) == MediaCapabilityAvailability.Available)
+           && (OutputMediaMode == OutputMediaMode.VideoOnly || AudioFeaturePreference is AudioFeaturePreference.Auto or AudioFeaturePreference.Standard
+            || GetAudioAvailability(AudioFeaturePreference) == MediaCapabilityAvailability.Available);
+
+    public void ApplyMediaCapabilities(BatchMediaCapabilitySnapshot snapshot)
+    {
+        HdrAvailability = snapshot.GetAvailability(MediaFeatureFlags.Hdr);
+        DolbyVisionAvailability = snapshot.GetAvailability(MediaFeatureFlags.DolbyVision);
+        HiResAvailability = snapshot.GetAvailability(MediaFeatureFlags.HiResAudio);
+        DolbyAtmosAvailability = snapshot.GetAvailability(MediaFeatureFlags.DolbyAtmos);
+        MediaCapabilityStatusText = snapshot.ItemCount == 0
+            ? "请选择媒体后探测高规格能力。"
+            : $"批量交集（{snapshot.ItemCount} 项）："
+              + $"HDR {FormatCapability(snapshot, MediaFeatureFlags.Hdr)}，"
+              + $"杜比视界 {FormatCapability(snapshot, MediaFeatureFlags.DolbyVision)}，"
+              + $"Hi-Res {FormatCapability(snapshot, MediaFeatureFlags.HiResAudio)}，"
+              + $"Atmos {FormatCapability(snapshot, MediaFeatureFlags.DolbyAtmos)}";
+        OnPropertyChanged(nameof(IsHighSpecificationSelectionValid));
+    }
+
+    private MediaCapabilityAvailability GetVideoAvailability(VideoDynamicRangePreference preference) => preference switch
+    {
+        VideoDynamicRangePreference.Hdr => HdrAvailability,
+        VideoDynamicRangePreference.DolbyVision => DolbyVisionAvailability,
+        _ => MediaCapabilityAvailability.Available,
+    };
+
+    private MediaCapabilityAvailability GetAudioAvailability(AudioFeaturePreference preference) => preference switch
+    {
+        AudioFeaturePreference.HiRes => HiResAvailability,
+        AudioFeaturePreference.DolbyAtmos => DolbyAtmosAvailability,
+        _ => MediaCapabilityAvailability.Available,
+    };
+
+    private static string FormatCapability(BatchMediaCapabilitySnapshot snapshot, MediaFeatureFlags feature)
+    {
+        var count = snapshot.AvailableCounts.TryGetValue(feature, out var value) ? value : 0;
+        var state = snapshot.GetAvailability(feature) switch
+        {
+            MediaCapabilityAvailability.Available => "全部可用",
+            MediaCapabilityAvailability.RequiresPremium => "需要大会员",
+            MediaCapabilityAvailability.RequiresLogin => "需要登录",
+            MediaCapabilityAvailability.Unavailable => "不可用",
+            _ => "未知",
+        };
+        return $"{state}（{count}/{snapshot.ItemCount}）";
+    }
 
     [ObservableProperty]
     private SubtitleOptions _subtitleOptions = SubtitleOptions.None;
@@ -300,8 +401,13 @@ public partial class DownloadConfigViewModel : ObservableObject
         BiliQualityOption? selectedAudioQuality,
         bool isMultiVideo)
     {
+        // 125/126 是 HDR/杜比视界能力流，不是普通画质档位。把它们留在画质下拉会造成
+        // “选了 126 又选标准动态范围”这类矛盾状态，因此只由专用高规格偏好控制。
+        var standardQualities = qualities.Where(q => q.QualityId is not 125 and not 126).ToList();
+        if (selectedQuality?.QualityId is 125 or 126)
+            selectedQuality = standardQualities.FirstOrDefault();
         QualityOptions.Clear();
-        foreach (var q in qualities)
+        foreach (var q in standardQualities)
             QualityOptions.Add(q);
 
         AudioQualityOptions.Clear();
@@ -315,9 +421,9 @@ public partial class DownloadConfigViewModel : ObservableObject
         // G5: 如果有待匹配的清晰度偏好，延迟匹配到实际可用选项
         if (_pendingQualityId is int pendingQuality)
         {
-            var restored = qualities.FirstOrDefault(q => q.QualityId == pendingQuality);
+            var restored = standardQualities.FirstOrDefault(q => q.QualityId == pendingQuality);
             SelectedQuality = restored
-                ?? MatchQualityByPreference(qualities, _pendingQualityPreference)
+                ?? MatchQualityByPreference(standardQualities, _pendingQualityPreference)
                 ?? selectedQuality;
             QualityRestoreNotice = restored is null
                 ? $"原视频画质 {pendingQuality} 当前不可用，已选择 {SelectedQuality?.DisplayName ?? "可用画质"}。"
@@ -326,7 +432,7 @@ public partial class DownloadConfigViewModel : ObservableObject
         }
         else if (!string.IsNullOrEmpty(_pendingQualityPreference) && QualityOptions.Count > 0)
         {
-            SelectedQuality = MatchQualityByPreference(qualities, _pendingQualityPreference);
+            SelectedQuality = MatchQualityByPreference(standardQualities, _pendingQualityPreference);
             _pendingQualityPreference = ""; // 匹配完成后清除
         }
         else
@@ -443,7 +549,9 @@ public partial class DownloadConfigViewModel : ObservableObject
             SelectedAudioQuality?.QualityId ?? _pendingAudioQualityId ?? 0,
             VideoCodecPreference,
             OutputContainer,
-            OutputMediaMode).Canonicalize();
+            OutputMediaMode,
+            VideoDynamicRangePreference,
+            AudioFeaturePreference).Canonicalize();
     }
 
     public void RestoreDocumentConfiguration(DocumentSaveDataV2 data)
@@ -712,10 +820,21 @@ public partial class DownloadConfigViewModel : ObservableObject
         OnPropertyChanged(nameof(IsVideoOutputEnabled));
         OnPropertyChanged(nameof(IsAudioOutputEnabled));
         OnPropertyChanged(nameof(OutputModeHint));
+        OnPropertyChanged(nameof(IsHighSpecificationSelectionValid));
         MarkPresetModified();
     }
-    partial void OnVideoDynamicRangePreferenceChanged(VideoDynamicRangePreference value) => MarkPresetModified();
-    partial void OnAudioFeaturePreferenceChanged(AudioFeaturePreference value) => MarkPresetModified();
+    partial void OnVideoDynamicRangePreferenceChanged(VideoDynamicRangePreference value)
+    {
+        OnPropertyChanged(nameof(SelectedVideoDynamicRangeOption));
+        OnPropertyChanged(nameof(IsHighSpecificationSelectionValid));
+        MarkPresetModified();
+    }
+    partial void OnAudioFeaturePreferenceChanged(AudioFeaturePreference value)
+    {
+        OnPropertyChanged(nameof(SelectedAudioFeatureOption));
+        OnPropertyChanged(nameof(IsHighSpecificationSelectionValid));
+        MarkPresetModified();
+    }
     partial void OnSubtitleOptionsChanged(SubtitleOptions value) => MarkPresetModified();
     partial void OnDanmakuOptionsChanged(DanmakuOptions value) => MarkPresetModified();
     partial void OnPerTaskRateLimitBytesPerSecondChanging(long value)

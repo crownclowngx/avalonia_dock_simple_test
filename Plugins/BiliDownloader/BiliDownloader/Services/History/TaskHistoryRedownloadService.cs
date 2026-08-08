@@ -45,6 +45,11 @@ public sealed class TaskHistoryRedownloadService : ITaskHistoryRedownloadService
         {
             warnings.Add("该任务来自旧版本，编码、容器、输出模式和命名细节缺少完整快照；将使用兼容默认值重新预检。");
         }
+        var hasExactHighSpecificationSnapshot = task.SubmissionSnapshotVersion >= 2
+            && task.SelectedVideoDynamicRangePreference.HasValue
+            && task.SelectedAudioFeaturePreference.HasValue;
+        if (!hasExactHighSpecificationSnapshot)
+            warnings.Add("该任务没有 G8 高规格偏好快照；将使用 Auto 重新探测，不会根据旧文件或描述反推历史事实。");
 
         var extras = (ExtrasType)task.ExtrasConfig;
         var profile = new DownloadProfileSnapshot(
@@ -63,7 +68,13 @@ public sealed class TaskHistoryRedownloadService : ITaskHistoryRedownloadService
             task.ConflictPolicy,
             hasExactSnapshot ? task.SelectedVideoCodec!.Value : VideoCodecPreference.AutoCompatibility,
             hasExactSnapshot ? task.SelectedOutputContainer!.Value : OutputContainer.Mp4,
-            hasExactSnapshot ? task.SelectedOutputMediaMode!.Value : OutputMediaMode.AudioVideo);
+            hasExactSnapshot ? task.SelectedOutputMediaMode!.Value : OutputMediaMode.AudioVideo,
+            hasExactHighSpecificationSnapshot
+                ? task.SelectedVideoDynamicRangePreference!.Value
+                : VideoDynamicRangePreference.Auto,
+            hasExactHighSpecificationSnapshot
+                ? task.SelectedAudioFeaturePreference!.Value
+                : AudioFeaturePreference.Auto);
 
         var mediaType = Enum.TryParse<BiliMediaType>(task.MediaType, true, out var parsed)
             ? parsed

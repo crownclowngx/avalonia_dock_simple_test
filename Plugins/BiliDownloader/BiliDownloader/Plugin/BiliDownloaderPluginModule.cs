@@ -116,6 +116,8 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IOutputArtifactPolicy, OutputArtifactPolicy>();
         services.AddSingleton<IMediaStreamSelectionPolicy, MediaStreamSelectionPolicy>();
         services.AddSingleton<INativeAudioPublisher, NativeAudioPublisher>();
+        services.AddSingleton<IMediaOutputVerifier, FfprobeMediaOutputVerifier>();
+        services.AddSingleton<IMediaCapabilityInspectionService, MediaCapabilityInspectionService>();
         services.AddSingleton<IMediaSizeCalculator, MediaSizeCalculator>();
         services.AddSingleton<IMediaPreflightAnalyzer, DashMediaPreflightAnalyzer>();
         services.AddSingleton<IMediaSizeEstimator, DashMediaSizeEstimator>();

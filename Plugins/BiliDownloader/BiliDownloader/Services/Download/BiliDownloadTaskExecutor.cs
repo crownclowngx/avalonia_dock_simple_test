@@ -68,7 +68,8 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor, IMediaMerg
             downloadResult.OutputFilePath,
             extrasSummary,
             downloadResult.OutputPlan?.RequiresVideo == false ? null : downloadResult.VideoTransfer,
-            downloadResult.OutputPlan?.RequiresAudio == false ? null : downloadResult.AudioTransfer);
+            downloadResult.OutputPlan?.RequiresAudio == false ? null : downloadResult.AudioTransfer,
+            task.ActualMediaFeatures);
     }
 
     /// <inheritdoc />
@@ -86,7 +87,7 @@ public sealed class BiliDownloadTaskExecutor : IDownloadTaskExecutor, IMediaMerg
             ? null
             : await ExecuteExtrasPipelineAsync(
                 task, _credentialProvider.GetCookieHeader(), cancellationToken);
-        return new DownloadExecutionResult(outputPath, extrasSummary);
+        return new DownloadExecutionResult(outputPath, extrasSummary, ActualMediaFeatures: task.ActualMediaFeatures);
     }
 
     /// <summary>

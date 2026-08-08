@@ -19,6 +19,12 @@ public class BiliDashResult
     /// 音频流列表
     /// </summary>
     public List<BiliDashStream> AudioStreams { get; set; } = new();
+
+    /// <summary>
+    /// 本次播放信息响应能够证明的高规格能力。该快照只保存稳定的能力与受限状态，
+    /// 不保存播放 URL、Cookie 或账号信息，因而可以安全地进入预检报告与诊断日志。
+    /// </summary>
+    public MediaCapabilitySnapshot Capabilities { get; set; } = MediaCapabilitySnapshot.Unknown;
 }
 
 /// <summary>
@@ -71,6 +77,12 @@ public class BiliDashStream
     /// 但保留杜比和 Hi-Res 分类供 G8 在不改动 API 映射层的前提下扩展。
     /// </summary>
     public BiliAudioFeature AudioFeature { get; set; }
+
+    /// <summary>
+    /// 由平台响应中的结构化字段直接识别出的媒体特征。这里禁止依据码率、描述文案或 URL 猜测，
+    /// 以免普通杜比音频被误标为杜比全景声，或普通 HEVC 被误标为 HDR。
+    /// </summary>
+    public MediaFeatureFlags Features { get; set; }
 }
 
 /// <summary>DASH 输入流的容器提示；未知值必须保持未知，不能从临时 URL 扩展名猜测。</summary>
@@ -86,6 +98,8 @@ public enum DashContainerHint
 public enum BiliAudioFeature
 {
     Standard,
+    /// <summary>平台声明的普通杜比音频；它不是杜比全景声，选择策略不得将其当作 Atmos。</summary>
     Dolby,
     HiRes,
+    DolbyAtmos,
 }

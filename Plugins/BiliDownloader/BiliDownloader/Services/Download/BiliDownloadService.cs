@@ -19,6 +19,7 @@ public class BiliDownloadService : IDisposable
     private readonly IMediaStreamSelectionPolicy _selectionPolicy;
     private readonly IOutputArtifactPolicy _outputPolicy;
     private readonly INativeAudioPublisher _nativeAudioPublisher;
+    private readonly IMediaOutputVerifier _mediaOutputVerifier;
 
     public BiliDownloadService(
         IBiliDataPaths paths,
@@ -29,7 +30,8 @@ public class BiliDownloadService : IDisposable
         int chunkCount = 4,
         IMediaStreamSelectionPolicy? selectionPolicy = null,
         IOutputArtifactPolicy? outputPolicy = null,
-        INativeAudioPublisher? nativeAudioPublisher = null)
+        INativeAudioPublisher? nativeAudioPublisher = null,
+        IMediaOutputVerifier? mediaOutputVerifier = null)
     {
         _paths = paths;
         _mediaMuxer = mediaMuxer;
@@ -37,6 +39,10 @@ public class BiliDownloadService : IDisposable
         _outputPolicy = outputPolicy ?? new OutputArtifactPolicy();
         _selectionPolicy = selectionPolicy ?? new MediaStreamSelectionPolicy(_outputPolicy);
         _nativeAudioPublisher = nativeAudioPublisher ?? new NativeAudioPublisher();
+        _mediaOutputVerifier = mediaOutputVerifier
+            ?? (mediaMuxer is IFfmpegRuntimeLocator locator
+                ? new FfprobeMediaOutputVerifier(locator, new FfmpegProcessFactory())
+                : new UnavailableMediaOutputVerifier());
         _httpClient = httpClientFactory.CreateMediaClient();
         _multiDownloader = new MultiConnectionDownloader(_httpClient, runtime, chunkCount);
     }
@@ -94,6 +100,8 @@ public class BiliDownloadService : IDisposable
         var mode = task.SelectedOutputMediaMode ?? OutputMediaMode.AudioVideo;
         var container = task.SelectedOutputContainer ?? OutputContainer.Mp4;
         var codecPreference = task.SelectedVideoCodec ?? VideoCodecPreference.AutoCompatibility;
+        var dynamicRangePreference = task.SelectedVideoDynamicRangePreference ?? VideoDynamicRangePreference.Auto;
+        var audioFeaturePreference = task.SelectedAudioFeaturePreference ?? AudioFeaturePreference.Auto;
         var videoTmp = Path.Combine(task.TempDirectory, "video.tmp");
         var audioTmp = Path.Combine(task.TempDirectory, "audio.tmp");
         var safeTitle = FileNameSanitizer.Sanitize(task.ItemTitle);
@@ -142,7 +150,8 @@ public class BiliDownloadService : IDisposable
             mediaType, task.EpId, task.SeasonId);
 
         var selection = _selectionPolicy.Select(dashResult, new MediaSelectionRequest(
-            task.QualityId, task.AudioQualityId, codecPreference, container, mode));
+            task.QualityId, task.AudioQualityId, codecPreference, container, mode,
+            dynamicRangePreference, audioFeaturePreference));
         if (!selection.Success || selection.OutputPlan is null)
             throw new ResourceUnavailableException(selection.Message);
         var outputPlan = selection.OutputPlan;
@@ -226,18 +235,45 @@ public class BiliDownloadService : IDisposable
         }
         else
         {
+            if (outputPlan.ExpectedMediaFeatures != MediaFeatureFlags.None)
+            {
+                await CopyToStagingAsync(audioTmp, stagingPath, ct);
+            }
+            else
+            {
+                try
+                {
+                    await _nativeAudioPublisher.PublishAsync(
+                        audioTmp, stagingPath, outputPath,
+                        task.ConflictPolicy == FileConflictPolicy.Overwrite && task.OverwriteConfirmed, ct);
+                }
+                catch (IOException) when (File.Exists(outputPath)
+                                          && task.ConflictPolicy != FileConflictPolicy.Overwrite)
+                {
+                    throw new OutputConflictException(outputPath);
+                }
+                published = true;
+            }
+        }
+
+        if (outputPlan.ExpectedMediaFeatures != MediaFeatureFlags.None)
+        {
             try
             {
-                await _nativeAudioPublisher.PublishAsync(
-                    audioTmp, stagingPath, outputPath,
-                    task.ConflictPolicy == FileConflictPolicy.Overwrite && task.OverwriteConfirmed, ct);
+                task.ActualMediaFeatures = await _mediaOutputVerifier.VerifyAsync(
+                    stagingPath, outputPlan.ExpectedMediaFeatures, ct);
             }
-            catch (IOException) when (File.Exists(outputPath)
-                                      && task.ConflictPolicy != FileConflictPolicy.Overwrite)
+            catch
             {
-                throw new OutputConflictException(outputPath);
+                // staging 来自刚完成的 mux/copy，但没有通过媒体事实验证，必须删除；已通过长度校验的
+                // video.tmp/audio.tmp 仍保留，使用户可以在修复 ffprobe 或依赖后安全重试。
+                TryDeleteUntrustedStaging(stagingPath);
+                throw;
             }
-            published = true;
+        }
+        else
+        {
+            task.ActualMediaFeatures = MediaFeatureFlags.None;
         }
         try
         {
@@ -309,6 +345,19 @@ public class BiliDownloadService : IDisposable
             stagingPath,
             container,
             mode), ct);
+        if ((task.ExpectedMediaFeatures ?? MediaFeatureFlags.None) != MediaFeatureFlags.None)
+        {
+            try
+            {
+                task.ActualMediaFeatures = await _mediaOutputVerifier.VerifyAsync(
+                    stagingPath, task.ExpectedMediaFeatures!.Value, ct);
+            }
+            catch
+            {
+                TryDeleteUntrustedStaging(stagingPath);
+                throw;
+            }
+        }
         try
         {
             File.Move(stagingPath, outputPath,
@@ -330,6 +379,27 @@ public class BiliDownloadService : IDisposable
         CleanupVerifiedInputs(task.TempDirectory,
             mode == OutputMediaMode.AudioVideo ? [videoTmp, audioTmp] : [videoTmp]);
         return outputPath;
+    }
+
+    private static async Task CopyToStagingAsync(
+        string sourcePath,
+        string stagingPath,
+        CancellationToken cancellationToken)
+    {
+        await using var source = new FileStream(
+            sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read,
+            81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        await using var destination = new FileStream(
+            stagingPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+            81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        await source.CopyToAsync(destination, cancellationToken);
+        await destination.FlushAsync(cancellationToken);
+        destination.Flush(flushToDisk: true);
+    }
+
+    private static void TryDeleteUntrustedStaging(string path)
+    {
+        try { if (File.Exists(path)) File.Delete(path); } catch { }
     }
 
     /// <summary>

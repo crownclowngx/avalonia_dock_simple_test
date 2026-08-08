@@ -45,7 +45,7 @@ public partial class TaskHistoryItemViewModel : ObservableObject
                 : Entry.SelectedVideoCodec is null
                     ? "未知编码"
                     : $"{Entry.SelectedVideoCodec.Value.ToDisplayText()} ({Entry.SelectedVideoCodec.Value}) → {OutputOptionDisplay.ActualCodecToDisplayText(Entry.ActualVideoCodec)}";
-            return $"{codec} · {Entry.OutputContainer?.ToDisplayText() ?? "未知容器"} · {Entry.OutputMediaMode?.ToDisplayText() ?? "未知模式"}";
+            return $"{codec} · {Entry.OutputContainer?.ToDisplayText() ?? "未知容器"} · {Entry.OutputMediaMode?.ToDisplayText() ?? "未知模式"} · 实际 {Entry.ActualMediaFeatures.ToDisplayText()}";
         }
     }
     public string OutputFilePath => Entry.OutputFilePath;

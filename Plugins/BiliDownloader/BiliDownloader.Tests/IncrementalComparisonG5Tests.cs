@@ -264,7 +264,7 @@ public sealed class DownloadIdentityPersistenceG5Tests
 
         var restored = Assert.Single(await store.GetByIdentityAsync([new MediaUnitKey(1, 2)], []));
         Assert.Equal("mu1:1:2", restored.MediaUnitKey);
-        Assert.StartsWith("rf1:", restored.RenditionFingerprint);
+        Assert.StartsWith("rf2:", restored.RenditionFingerprint);
 
         await using var connection = new SqliteConnection($"Data Source={paths.DownloadTaskDatabasePath}");
         await connection.OpenAsync();

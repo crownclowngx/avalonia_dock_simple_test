@@ -69,6 +69,11 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
                 actual_video_codec  TEXT NOT NULL DEFAULT '',
                 output_container    TEXT NOT NULL DEFAULT '',
                 output_media_mode   TEXT NOT NULL DEFAULT '',
+                video_dynamic_range_preference TEXT NOT NULL DEFAULT '',
+                audio_feature_preference TEXT NOT NULL DEFAULT '',
+                requested_media_features TEXT NOT NULL DEFAULT '',
+                expected_media_features TEXT NOT NULL DEFAULT '',
+                actual_media_features TEXT NOT NULL DEFAULT '',
                 redownloaded_from_task_id TEXT NOT NULL DEFAULT '',
                 output_directory    TEXT NOT NULL DEFAULT '',
                 sub_folder          TEXT NOT NULL DEFAULT '',
@@ -160,6 +165,12 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             "ALTER TABLE download_tasks ADD COLUMN actual_video_codec TEXT NOT NULL DEFAULT '';",
             "ALTER TABLE download_tasks ADD COLUMN output_container TEXT NOT NULL DEFAULT '';",
             "ALTER TABLE download_tasks ADD COLUMN output_media_mode TEXT NOT NULL DEFAULT '';",
+            // P1-G8：空字符串专门表示旧任务“未知”；新任务的标准规格显式写入 None。
+            "ALTER TABLE download_tasks ADD COLUMN video_dynamic_range_preference TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN audio_feature_preference TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN requested_media_features TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN expected_media_features TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN actual_media_features TEXT NOT NULL DEFAULT '';",
             "ALTER TABLE download_tasks ADD COLUMN redownloaded_from_task_id TEXT NOT NULL DEFAULT '';",
         };
         foreach (var sql in alterSqls)
@@ -212,7 +223,10 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
                      quality_id, audio_quality_id,
                      submission_snapshot_version, duration_seconds, use_group_folder, add_index_to_title,
                      naming_template, preset_id, selected_video_codec, actual_video_codec,
-                     output_container, output_media_mode, redownloaded_from_task_id,
+                     output_container, output_media_mode,
+                     video_dynamic_range_preference, audio_feature_preference,
+                     requested_media_features, expected_media_features, actual_media_features,
+                     redownloaded_from_task_id,
                      output_directory, sub_folder,
                      progress, status, error_message,
                      temp_directory, video_bytes, audio_bytes,
@@ -229,7 +243,10 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
                      $quality_id, $audio_quality_id,
                      $submission_snapshot_version, $duration_seconds, $use_group_folder, $add_index_to_title,
                      $naming_template, $preset_id, $selected_video_codec, $actual_video_codec,
-                     $output_container, $output_media_mode, $redownloaded_from_task_id,
+                     $output_container, $output_media_mode,
+                     $video_dynamic_range_preference, $audio_feature_preference,
+                     $requested_media_features, $expected_media_features, $actual_media_features,
+                     $redownloaded_from_task_id,
                      $output_directory, $sub_folder,
                      $progress, $status, $error_message,
                      $temp_directory, $video_bytes, $audio_bytes,
@@ -263,6 +280,11 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             cmd.Parameters.AddWithValue("$actual_video_codec", r.ActualVideoCodec);
             cmd.Parameters.AddWithValue("$output_container", r.SelectedOutputContainer?.ToString() ?? "");
             cmd.Parameters.AddWithValue("$output_media_mode", r.SelectedOutputMediaMode?.ToString() ?? "");
+            cmd.Parameters.AddWithValue("$video_dynamic_range_preference", r.SelectedVideoDynamicRangePreference?.ToString() ?? "");
+            cmd.Parameters.AddWithValue("$audio_feature_preference", r.SelectedAudioFeaturePreference?.ToString() ?? "");
+            cmd.Parameters.AddWithValue("$requested_media_features", r.RequestedMediaFeatures?.ToString() ?? "");
+            cmd.Parameters.AddWithValue("$expected_media_features", r.ExpectedMediaFeatures?.ToString() ?? "");
+            cmd.Parameters.AddWithValue("$actual_media_features", r.ActualMediaFeatures?.ToString() ?? "");
             cmd.Parameters.AddWithValue("$redownloaded_from_task_id", r.RedownloadedFromTaskId);
             cmd.Parameters.AddWithValue("$output_directory", r.OutputDirectory);
             cmd.Parameters.AddWithValue("$sub_folder", r.SubFolder);
@@ -447,6 +469,48 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             """;
         cmd.Parameters.AddWithValue("$task_id", taskId);
         cmd.Parameters.AddWithValue("$actual_video_codec", actualVideoCodec);
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(lastUpdatedAt));
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateExpectedMediaFeaturesAsync(
+        string taskId,
+        MediaFeatureFlags expectedFeatures,
+        DateTime lastUpdatedAt)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            UPDATE download_tasks
+            SET expected_media_features = $expected_media_features,
+                last_updated_at = $last_updated_at
+            WHERE task_id = $task_id;
+            """;
+        cmd.Parameters.AddWithValue("$task_id", taskId);
+        cmd.Parameters.AddWithValue("$expected_media_features", expectedFeatures.ToString());
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(lastUpdatedAt));
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateActualMediaFeaturesAsync(
+        string taskId,
+        MediaFeatureFlags actualFeatures,
+        DateTime lastUpdatedAt)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            UPDATE download_tasks
+            SET actual_media_features = $actual_media_features,
+                last_updated_at = $last_updated_at
+            WHERE task_id = $task_id;
+            """;
+        cmd.Parameters.AddWithValue("$task_id", taskId);
+        cmd.Parameters.AddWithValue("$actual_media_features", actualFeatures.ToString());
         cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(lastUpdatedAt));
         await cmd.ExecuteNonQueryAsync();
     }
@@ -1054,6 +1118,11 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             ActualVideoCodec = TryGetString(reader, "actual_video_codec"),
             SelectedOutputContainer = TryGetEnum<OutputContainer>(reader, "output_container"),
             SelectedOutputMediaMode = TryGetEnum<OutputMediaMode>(reader, "output_media_mode"),
+            SelectedVideoDynamicRangePreference = TryGetEnum<VideoDynamicRangePreference>(reader, "video_dynamic_range_preference"),
+            SelectedAudioFeaturePreference = TryGetEnum<AudioFeaturePreference>(reader, "audio_feature_preference"),
+            RequestedMediaFeatures = TryGetEnum<MediaFeatureFlags>(reader, "requested_media_features"),
+            ExpectedMediaFeatures = TryGetEnum<MediaFeatureFlags>(reader, "expected_media_features"),
+            ActualMediaFeatures = TryGetEnum<MediaFeatureFlags>(reader, "actual_media_features"),
             RedownloadedFromTaskId = TryGetString(reader, "redownloaded_from_task_id"),
             OutputDirectory = reader.GetString(reader.GetOrdinal("output_directory")),
             SubFolder = TryGetString(reader, "sub_folder"),

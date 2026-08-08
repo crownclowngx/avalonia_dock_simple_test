@@ -15,14 +15,18 @@ public sealed record DownloadProfileSnapshot(
     FileConflictPolicy ConflictPolicy = FileConflictPolicy.AutoNumber,
     VideoCodecPreference VideoCodecPreference = VideoCodecPreference.AutoCompatibility,
     OutputContainer OutputContainer = OutputContainer.Mp4,
-    OutputMediaMode OutputMediaMode = OutputMediaMode.AudioVideo)
+    OutputMediaMode OutputMediaMode = OutputMediaMode.AudioVideo,
+    VideoDynamicRangePreference VideoDynamicRangePreference = VideoDynamicRangePreference.Auto,
+    AudioFeaturePreference AudioFeaturePreference = AudioFeaturePreference.Auto)
 {
     public RenditionSpecification ToRenditionSpecification() => new RenditionSpecification(
         VideoQualityId,
         AudioQualityId,
         VideoCodecPreference,
         OutputContainer,
-        OutputMediaMode).Canonicalize();
+        OutputMediaMode,
+        VideoDynamicRangePreference,
+        AudioFeaturePreference).Canonicalize();
 }
 
 /// <summary>An immutable media item detached from parser and UI state.</summary>

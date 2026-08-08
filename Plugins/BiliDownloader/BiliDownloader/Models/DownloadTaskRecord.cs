@@ -111,6 +111,27 @@ public partial class DownloadTaskRecord : ObservableObject
     public OutputMediaMode? SelectedOutputMediaMode { get; set; }
 
     /// <summary>
+    /// G8 提交时固化的视频动态范围偏好。旧任务保持 null，表示当时没有足够事实证明用户意图，
+    /// 读取层不得用当前默认值回填后再冒充历史选择。
+    /// </summary>
+    public VideoDynamicRangePreference? SelectedVideoDynamicRangePreference { get; set; }
+
+    /// <summary>G8 提交时固化的音频能力偏好；旧任务为 null。</summary>
+    public AudioFeaturePreference? SelectedAudioFeaturePreference { get; set; }
+
+    /// <summary>
+    /// 用户显式要求的高规格位标志。null 表示旧任务未知，None 表示新任务已知没有显式高规格要求；
+    /// Auto 的最终选择记录在 ExpectedMediaFeatures，而不伪装成用户显式要求。
+    /// </summary>
+    public MediaFeatureFlags? RequestedMediaFeatures { get; set; }
+
+    /// <summary>预检/运行时从可信 API 证据选出的预期高规格；供合并重试和发布前验证使用。</summary>
+    public MediaFeatureFlags? ExpectedMediaFeatures { get; set; }
+
+    /// <summary>发布前 ffprobe 验证成功后写入的实际高规格；在验证完成前必须保持 null。</summary>
+    public MediaFeatureFlags? ActualMediaFeatures { get; set; }
+
+    /// <summary>
     /// 若任务由历史中心重新下载产生，则记录来源任务 ID。该关联只用于审计，
     /// 不授予旧任务的覆盖确认、路径保留或断点恢复能力。
     /// </summary>
@@ -314,7 +335,7 @@ public partial class DownloadTaskRecord : ObservableObject
             var codec = mode == OutputMediaMode.AudioOnly
                 ? "不适用"
                 : $"{(SelectedVideoCodec ?? VideoCodecPreference.AutoCompatibility).ToDisplayText()} → {OutputOptionDisplay.ActualCodecToDisplayText(ActualVideoCodec)}";
-            return $"{codec} · {(SelectedOutputContainer ?? OutputContainer.Mp4).ToDisplayText()} · {mode.ToDisplayText()}";
+            return $"{codec} · {(SelectedOutputContainer ?? OutputContainer.Mp4).ToDisplayText()} · {mode.ToDisplayText()} · 实际 {ActualMediaFeatures.ToDisplayText()}";
         }
     }
 

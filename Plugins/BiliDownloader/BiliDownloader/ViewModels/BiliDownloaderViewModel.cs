@@ -189,6 +189,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
                 VideoCodecPreference = DownloadConfig.VideoCodecPreference,
                 OutputContainer = DownloadConfig.OutputContainer,
                 OutputMediaMode = DownloadConfig.OutputMediaMode,
+                VideoDynamicRangePreference = DownloadConfig.VideoDynamicRangePreference,
+                AudioFeaturePreference = DownloadConfig.AudioFeaturePreference,
+                IsHighSpecificationSelectionValid = DownloadConfig.IsHighSpecificationSelectionValid,
                 IncrementalExpectation = SourceWorkflow.CreateSubmissionExpectation(),
             },
             messengerService: _messengerService,
@@ -231,7 +234,11 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
                         break;
                 }
             });
-        workspace = new DownloadWorkspaceViewModel(downloadConfig, namingTemplate, videoList);
+        workspace = new DownloadWorkspaceViewModel(
+            downloadConfig,
+            namingTemplate,
+            videoList,
+            new MediaCapabilityInspectionService(mediaProbe, credentialProvider));
         Workspace = workspace;
         Workspace.PropertyChanged += (_, args) =>
         {
@@ -386,6 +393,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
                         msg.IsLoggedIn,
                         msg.UserName);
                     vm.LoginBar.StatusMessage = msg.StatusMessage;
+                    vm.Workspace.InvalidateMediaCapabilities();
                 });
 
             // 下载进度回传（按 DocumentId 过滤）-> 委托给 VideoList
@@ -463,6 +471,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     public async Task EnsureLoggedInAsync()
     {
         await LoginBar.EnsureLoggedInAsync();
+        Workspace.InvalidateMediaCapabilities();
     }
 
     /// <summary>

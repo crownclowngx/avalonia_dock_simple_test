@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Naming;
+using BiliDownloader.Services.Download;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace BiliDownloader.ViewModels.BiliDownloader;
@@ -14,19 +15,25 @@ public sealed class DownloadWorkspaceViewModel : ObservableObject
     private BiliVideoCollection? _videoCollection;
     private bool _isParsed;
     private bool _isDownloadSettingsExpanded;
+    private readonly IMediaCapabilityInspectionService? _capabilityInspector;
+    private CancellationTokenSource? _capabilityRefreshCts;
+    private long _capabilityRefreshVersion;
 
     public DownloadWorkspaceViewModel(
         DownloadConfigViewModel downloadConfig,
         NamingTemplateViewModel namingTemplate,
-        VideoListViewModel videoList)
+        VideoListViewModel videoList,
+        IMediaCapabilityInspectionService? capabilityInspector = null)
     {
         DownloadConfig = downloadConfig;
         NamingTemplate = namingTemplate;
         VideoList = videoList;
+        _capabilityInspector = capabilityInspector;
 
         DownloadConfig.PropertyChanged += OnDownloadConfigPropertyChanged;
         NamingTemplate.PropertyChanged += OnNamingTemplatePropertyChanged;
         VideoList.SelectionOrTitleChanged += RefreshNamingPreview;
+        VideoList.SelectionOrTitleChanged += ScheduleCapabilityRefresh;
     }
 
     public DownloadConfigViewModel DownloadConfig { get; }
@@ -72,6 +79,7 @@ public sealed class DownloadWorkspaceViewModel : ObservableObject
 
     public void ApplyParseResult(VideoParseResult result)
     {
+        _capabilityInspector?.Clear();
         VideoCollection = result.Collection;
         VideoList.SetItems(result.VideoItems);
         DownloadConfig.PopulateQualities(
@@ -82,6 +90,7 @@ public sealed class DownloadWorkspaceViewModel : ObservableObject
             result.IsMultiVideo);
         RefreshNamingPreview();
         IsParsed = true;
+        ScheduleCapabilityRefresh();
     }
 
     public void RefreshNamingPreview()
@@ -102,6 +111,66 @@ public sealed class DownloadWorkspaceViewModel : ObservableObject
     }
 
     public void ExpandSettings() => IsDownloadSettingsExpanded = true;
+
+    /// <summary>
+    /// 登录态变化会改变会员和登录限制事实，因此必须丢弃当前会话缓存并重新探测已选项目。
+    /// </summary>
+    public void InvalidateMediaCapabilities()
+    {
+        _capabilityInspector?.Clear();
+        ScheduleCapabilityRefresh();
+    }
+
+    private void ScheduleCapabilityRefresh()
+    {
+        _capabilityRefreshCts?.Cancel();
+        _capabilityRefreshCts?.Dispose();
+        _capabilityRefreshCts = new CancellationTokenSource();
+        var version = Interlocked.Increment(ref _capabilityRefreshVersion);
+        _ = RefreshCapabilitiesAsync(version, _capabilityRefreshCts.Token);
+    }
+
+    private async Task RefreshCapabilitiesAsync(long version, CancellationToken cancellationToken)
+    {
+        if (_capabilityInspector is null) return;
+        var selected = VideoList.VideoItems.Where(item => item.IsSelected).ToArray();
+        if (selected.Length == 0)
+        {
+            DownloadConfig.ApplyMediaCapabilities(new BatchMediaCapabilitySnapshot(
+                0,
+                new Dictionary<MediaFeatureFlags, MediaCapabilityAvailability>(),
+                new Dictionary<MediaFeatureFlags, int>()));
+            return;
+        }
+
+        DownloadConfig.IsMediaCapabilityInspecting = true;
+        DownloadConfig.MediaCapabilityStatusText = $"正在探测 {selected.Length} 项高规格能力…";
+        try
+        {
+            // 250 ms 防抖让连续勾选只触发一次批量探测；服务内部再以四路并发和会话缓存控制负载。
+            await Task.Delay(250, cancellationToken);
+            var snapshot = await _capabilityInspector.InspectAsync(
+                selected,
+                DownloadConfig.SelectedQuality?.QualityId ?? 80,
+                cancellationToken);
+            if (version == Volatile.Read(ref _capabilityRefreshVersion) && !cancellationToken.IsCancellationRequested)
+                DownloadConfig.ApplyMediaCapabilities(snapshot);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 新选择会取代旧结果；取消是预期控制流，不显示为错误。
+        }
+        catch
+        {
+            if (version == Volatile.Read(ref _capabilityRefreshVersion))
+                DownloadConfig.MediaCapabilityStatusText = "高规格能力探测失败；提交时仍会重新预检。";
+        }
+        finally
+        {
+            if (version == Volatile.Read(ref _capabilityRefreshVersion))
+                DownloadConfig.IsMediaCapabilityInspecting = false;
+        }
+    }
 
     private void OnDownloadConfigPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {

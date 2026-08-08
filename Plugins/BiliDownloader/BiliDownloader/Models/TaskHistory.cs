@@ -63,6 +63,11 @@ public sealed record TaskHistoryEntry(
     string ActualVideoCodec,
     OutputContainer? OutputContainer,
     OutputMediaMode? OutputMediaMode,
+    VideoDynamicRangePreference? VideoDynamicRangePreference,
+    AudioFeaturePreference? AudioFeaturePreference,
+    MediaFeatureFlags? RequestedMediaFeatures,
+    MediaFeatureFlags? ExpectedMediaFeatures,
+    MediaFeatureFlags? ActualMediaFeatures,
     string OutputFilePath,
     string Status,
     string? ErrorType,
@@ -81,6 +86,8 @@ public sealed record TaskHistoryEntry(
     string CoverUrl)
 {
     public bool HasExactSubmissionSnapshot => SubmissionSnapshotVersion >= 1;
+    public bool HasExactHighSpecificationSnapshot => SubmissionSnapshotVersion >= 2
+        && VideoDynamicRangePreference.HasValue && AudioFeaturePreference.HasValue;
 
     public static TaskHistoryEntry FromRecord(DownloadTaskRecord record) => new(
         record.TaskId,
@@ -103,6 +110,11 @@ public sealed record TaskHistoryEntry(
         record.ActualVideoCodec,
         record.SelectedOutputContainer,
         record.SelectedOutputMediaMode,
+        record.SelectedVideoDynamicRangePreference,
+        record.SelectedAudioFeaturePreference,
+        record.RequestedMediaFeatures,
+        record.ExpectedMediaFeatures,
+        record.ActualMediaFeatures,
         record.OutputFilePath,
         record.Status,
         record.ErrorType,

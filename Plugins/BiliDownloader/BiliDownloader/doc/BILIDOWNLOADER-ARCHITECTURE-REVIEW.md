@@ -419,3 +419,9 @@ P1-G0 在原有 API 与 Document 解析界面之间增加统一内容源边界�
 分页状态由会话级 `ContentPageAccumulator` 管理；它按 `ContentItemKey` 去重，并在游标不前进且没有新增项目时终止协议。解析后的跨来源媒体身份使用 `MediaUnitKey(Aid, Cid)`，不再混用来源项身份或随机任务 ID。
 
 这一边界采用 Strategy、Registry、Adapter 和分页 Guard，均对应明确的变化点；后续来源通过注册新的 Provider 扩展，不修改当前 ViewModel 的来源分支。
+
+## 13. P1-G8 高规格媒体边界补充
+
+P1-G8 没有把 HDR、杜比或 FLAC 判断继续堆入下载编排，而是拆成四个单一职责边界：API 映射只生成结构化证据；`MediaStreamSelectionPolicy` 以纯函数执行层级与编码选择；`OutputArtifactPolicy` 统一维护容器保真矩阵；`IMediaOutputVerifier` 在原子发布前解释 ffprobe 事实。工作区的批量探测另由 `IMediaCapabilityInspectionService` 负责，并且只缓存脱敏能力快照。
+
+数据流采用 Requested / Expected / Actual 三阶段事实，避免 Auto 结果冒充用户显式要求，也避免 API 声明在未验证时冒充实际成品。任务快照 v2、`rf2:` 和 SQLite 的 Unknown/None 区分共同保证旧数据不会被当前默认值回填。该结构满足 SRP、OCP、ISP 与 DIP；策略模式只用于确实存在替换与组合规则的位置，未为简单 DTO 映射引入额外抽象。

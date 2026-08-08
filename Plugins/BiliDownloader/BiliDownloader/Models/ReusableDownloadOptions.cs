@@ -154,4 +154,16 @@ public static class OutputOptionDisplay
         "av1" => "AV1",
         _ => "未知",
     };
+
+    public static string ToDisplayText(this MediaFeatureFlags? value)
+    {
+        if (!value.HasValue) return "高规格未知";
+        if (value.Value == MediaFeatureFlags.None) return "标准规格";
+        var labels = new List<string>();
+        if (value.Value.HasFlag(MediaFeatureFlags.DolbyVision)) labels.Add("杜比视界");
+        else if (value.Value.HasFlag(MediaFeatureFlags.Hdr)) labels.Add("HDR");
+        if (value.Value.HasFlag(MediaFeatureFlags.DolbyAtmos)) labels.Add("杜比全景声");
+        else if (value.Value.HasFlag(MediaFeatureFlags.HiResAudio)) labels.Add("Hi-Res");
+        return labels.Count == 0 ? "标准规格" : string.Join(" + ", labels);
+    }
 }

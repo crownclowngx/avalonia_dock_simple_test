@@ -75,4 +75,5 @@ public sealed record DownloadExecutionResult(
     string? OutputFilePath,
     string? ExtrasResultSummary,
     DownloadTransferResult? VideoTransfer = null,
-    DownloadTransferResult? AudioTransfer = null);
+    DownloadTransferResult? AudioTransfer = null,
+    MediaFeatureFlags? ActualMediaFeatures = null);

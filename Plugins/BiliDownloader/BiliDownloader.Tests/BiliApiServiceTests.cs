@@ -272,6 +272,38 @@ public sealed class BiliApiServiceTests
     }
 
     [Fact]
+    public async Task Dash只把Type2且Eac3的杜比流识别为Atmos并保留权限证据()
+    {
+        using var state = new StaticStateScope();
+        using var http = new HttpTest();
+        ConfigureWbiNav(http);
+        http.ForCallsTo("*x/player/wbi/playurl*")
+            .RespondWith("""
+                {"code":0,"data":{"dash":{
+                  "video":[
+                    {"id":80,"base_url":"https://v.test/std","codecid":7,"codecs":"avc1.640028","mime_type":"video/mp4"},
+                    {"id":125,"base_url":"https://v.test/hdr","codecid":12,"codecs":"hev1.1.6.L120","mime_type":"video/mp4"},
+                    {"id":126,"base_url":"https://v.test/dv","codecid":12,"codecs":"hev1.1.6.L120","mime_type":"video/mp4"}
+                  ],
+                  "audio":[{"id":30232,"base_url":"https://a.test/std","codecs":"mp4a.40.2","mime_type":"audio/mp4"}],
+                  "dolby":{"type":2,"audio":[{"id":30250,"base_url":"https://a.test/atmos","codecs":"ec-3","mime_type":"audio/mp4"}]},
+                  "flac":{"need_vip":1}
+                }}}
+                """);
+
+        var result = await new BiliApiService().GetDashResultAsync(1, 2, 80, "");
+
+        Assert.Contains(result.VideoStreams, stream => stream.Features == MediaFeatureFlags.Hdr);
+        Assert.Contains(result.VideoStreams, stream => stream.Features == MediaFeatureFlags.DolbyVision);
+        Assert.Contains(result.AudioStreams, stream => stream.AudioFeature == BiliAudioFeature.DolbyAtmos
+            && stream.Features == MediaFeatureFlags.DolbyAtmos);
+        Assert.Equal(MediaCapabilityAvailability.Available,
+            result.Capabilities.GetAvailability(MediaFeatureFlags.DolbyAtmos));
+        Assert.Equal(MediaCapabilityAvailability.RequiresPremium,
+            result.Capabilities.GetAvailability(MediaFeatureFlags.HiResAudio));
+    }
+
+    [Fact]
     public async Task 番剧会员错误与无Dash响应会给出明确错误()
     {
         using var state = new StaticStateScope();

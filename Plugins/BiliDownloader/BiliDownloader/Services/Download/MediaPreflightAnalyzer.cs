@@ -77,7 +77,9 @@ public sealed class DashMediaPreflightAnalyzer(
             profile.AudioQualityId,
             profile.VideoCodecPreference,
             profile.OutputContainer,
-            profile.OutputMediaMode));
+            profile.OutputMediaMode,
+            profile.VideoDynamicRangePreference,
+            profile.AudioFeaturePreference));
         return new MediaPreflightResult(
             selection,
             selection.OutputPlan is null ? null : sizeCalculator.EstimatePeakBytes(selection.OutputPlan, item.Duration));

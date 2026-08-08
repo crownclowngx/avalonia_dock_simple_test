@@ -53,6 +53,9 @@ public class SubmitContext
     public VideoCodecPreference VideoCodecPreference { get; set; } = VideoCodecPreference.AutoCompatibility;
     public OutputContainer OutputContainer { get; set; } = OutputContainer.Mp4;
     public OutputMediaMode OutputMediaMode { get; set; } = OutputMediaMode.AudioVideo;
+    public VideoDynamicRangePreference VideoDynamicRangePreference { get; set; } = VideoDynamicRangePreference.Auto;
+    public AudioFeaturePreference AudioFeaturePreference { get; set; } = AudioFeaturePreference.Auto;
+    public bool IsHighSpecificationSelectionValid { get; set; } = true;
     public IncrementalSubmissionExpectation? IncrementalExpectation { get; set; }
 }
 
@@ -292,6 +295,13 @@ public partial class VideoListViewModel : ObservableObject
             return;
         }
 
+        if (!ctx.IsHighSpecificationSelectionValid)
+        {
+            _onConfigurationBlocked?.Invoke();
+            _onStatusMessage("当前显式高规格并非所有所选媒体都可用；请调整选择或改为自动/标准。");
+            return;
+        }
+
         // 旧构造路径没有 G6 预检服务时保留本地兜底；生产路径由结构化预检统一报告。
         if (_submissionService is null && !_ffmpegService.IsReady)
         {
@@ -359,7 +369,9 @@ public partial class VideoListViewModel : ObservableObject
                 ConflictPolicy: ctx.ConflictPolicy,
                 VideoCodecPreference: ctx.VideoCodecPreference,
                 OutputContainer: ctx.OutputContainer,
-                OutputMediaMode: ctx.OutputMediaMode),
+                OutputMediaMode: ctx.OutputMediaMode,
+                VideoDynamicRangePreference: ctx.VideoDynamicRangePreference,
+                AudioFeaturePreference: ctx.AudioFeaturePreference),
             downloadItems.Select(item => new DownloadSubmissionItem(
                 item.ItemId, item.Title, item.Aid, item.Bvid, item.Cid, item.Duration,
                 item.MediaType, item.EpId, item.SeasonId, item.CoverUrl)).ToArray(),

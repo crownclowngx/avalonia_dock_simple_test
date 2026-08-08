@@ -22,7 +22,9 @@ public sealed class TaskHistoryExporter : ITaskHistoryExporter
         "taskId", "redownloadedFromTaskId", "mediaUnitKey", "aid", "bvid", "cid", "epId", "seasonId",
         "mediaType", "documentId", "sourceDocumentTitle", "seriesTitle", "itemTitle", "status",
         "videoQualityId", "audioQualityId", "selectedVideoCodec", "actualVideoCodec", "outputContainer",
-        "outputMediaMode", "outputFilePath", "filePresenceStatus", "createdAt", "lastUpdatedAt",
+        "outputMediaMode", "videoDynamicRangePreference", "audioFeaturePreference",
+        "requestedMediaFeatures", "expectedMediaFeatures", "actualMediaFeatures",
+        "outputFilePath", "filePresenceStatus", "createdAt", "lastUpdatedAt",
         "errorType", "errorSummary",
     ];
 
@@ -112,7 +114,7 @@ public sealed class TaskHistoryExporter : ITaskHistoryExporter
     {
         using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
         writer.WriteStartObject();
-        writer.WriteNumber("schemaVersion", 1);
+        writer.WriteNumber("schemaVersion", 2);
         writer.WriteString("exportedAt", DateTimeOffset.Now.ToString("O", CultureInfo.InvariantCulture));
         writer.WriteStartArray("items");
         var count = 0;
@@ -157,6 +159,11 @@ public sealed class TaskHistoryExporter : ITaskHistoryExporter
             Clean(entry.ActualVideoCodec),
             Clean(entry.OutputContainer?.ToString()),
             Clean(entry.OutputMediaMode?.ToString()),
+            Clean(entry.VideoDynamicRangePreference?.ToString()),
+            Clean(entry.AudioFeaturePreference?.ToString()),
+            Clean(entry.RequestedMediaFeatures?.ToString()),
+            Clean(entry.ExpectedMediaFeatures?.ToString()),
+            Clean(entry.ActualMediaFeatures?.ToString()),
             Clean(entry.OutputFilePath),
             status.ToString(),
             ToIso8601(entry.CreatedAt),
@@ -187,6 +194,11 @@ public sealed class TaskHistoryExporter : ITaskHistoryExporter
         yield return row.ActualVideoCodec;
         yield return row.OutputContainer;
         yield return row.OutputMediaMode;
+        yield return row.VideoDynamicRangePreference;
+        yield return row.AudioFeaturePreference;
+        yield return row.RequestedMediaFeatures;
+        yield return row.ExpectedMediaFeatures;
+        yield return row.ActualMediaFeatures;
         yield return row.OutputFilePath;
         yield return row.FilePresenceStatus;
         yield return row.CreatedAt;
@@ -247,6 +259,11 @@ public sealed class TaskHistoryExporter : ITaskHistoryExporter
         string ActualVideoCodec,
         string OutputContainer,
         string OutputMediaMode,
+        string VideoDynamicRangePreference,
+        string AudioFeaturePreference,
+        string RequestedMediaFeatures,
+        string ExpectedMediaFeatures,
+        string ActualMediaFeatures,
         string OutputFilePath,
         string FilePresenceStatus,
         string CreatedAt,
