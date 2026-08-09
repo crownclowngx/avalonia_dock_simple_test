@@ -24,6 +24,7 @@ public sealed class TaskHistoryExporter : ITaskHistoryExporter
         "videoQualityId", "audioQualityId", "selectedVideoCodec", "actualVideoCodec", "outputContainer",
         "outputMediaMode", "videoDynamicRangePreference", "audioFeaturePreference",
         "requestedMediaFeatures", "expectedMediaFeatures", "actualMediaFeatures",
+        "subtitleConfiguration", "danmakuFormats", "extrasResultStatuses",
         "outputFilePath", "filePresenceStatus", "createdAt", "lastUpdatedAt",
         "errorType", "errorSummary",
     ];
@@ -114,7 +115,7 @@ public sealed class TaskHistoryExporter : ITaskHistoryExporter
     {
         using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
         writer.WriteStartObject();
-        writer.WriteNumber("schemaVersion", 2);
+        writer.WriteNumber("schemaVersion", 3);
         writer.WriteString("exportedAt", DateTimeOffset.Now.ToString("O", CultureInfo.InvariantCulture));
         writer.WriteStartArray("items");
         var count = 0;
@@ -164,6 +165,9 @@ public sealed class TaskHistoryExporter : ITaskHistoryExporter
             Clean(entry.RequestedMediaFeatures?.ToString()),
             Clean(entry.ExpectedMediaFeatures?.ToString()),
             Clean(entry.ActualMediaFeatures?.ToString()),
+            BuildSubtitleConfiguration(entry.SubtitleOptions),
+            Clean(entry.DanmakuOptions is null ? string.Empty : string.Join('+', entry.DanmakuOptions.Formats)),
+            BuildSafeExtrasStatuses(entry.ExtrasResultSummary),
             Clean(entry.OutputFilePath),
             status.ToString(),
             ToIso8601(entry.CreatedAt),
@@ -199,6 +203,9 @@ public sealed class TaskHistoryExporter : ITaskHistoryExporter
         yield return row.RequestedMediaFeatures;
         yield return row.ExpectedMediaFeatures;
         yield return row.ActualMediaFeatures;
+        yield return row.SubtitleConfiguration;
+        yield return row.DanmakuFormats;
+        yield return row.ExtrasResultStatuses;
         yield return row.OutputFilePath;
         yield return row.FilePresenceStatus;
         yield return row.CreatedAt;
@@ -226,6 +233,16 @@ public sealed class TaskHistoryExporter : ITaskHistoryExporter
     }
 
     private static string Clean(string? value) => SensitiveDataSanitizer.Sanitize(value);
+
+    private static string BuildSubtitleConfiguration(SubtitleOptions? options)
+        => options is null || options.SelectionMode == SubtitleSelectionMode.None
+            ? string.Empty
+            : Clean($"{options.SelectionMode}/{options.OutputFormat}/{options.DeliveryMode}/"
+                    + string.Join('+', options.LanguageKeys));
+
+    private static string BuildSafeExtrasStatuses(string? summaryJson)
+        => string.Join(';', ExtrasExecutionSummaryCodec.Deserialize(summaryJson).Items.Select(item =>
+            Clean($"{item.Key}:{item.Status}:{item.ErrorCode}")));
 
     private static string ToIso8601(DateTime value)
     {
@@ -264,6 +281,9 @@ public sealed class TaskHistoryExporter : ITaskHistoryExporter
         string RequestedMediaFeatures,
         string ExpectedMediaFeatures,
         string ActualMediaFeatures,
+        string SubtitleConfiguration,
+        string DanmakuFormats,
+        string ExtrasResultStatuses,
         string OutputFilePath,
         string FilePresenceStatus,
         string CreatedAt,

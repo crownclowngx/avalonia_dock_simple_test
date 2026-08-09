@@ -4,6 +4,7 @@ using BiliDownloader.Services.Infrastructure;
 using Microsoft.Data.Sqlite;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 
 namespace BiliDownloader.Services.Persistence;
 
@@ -106,7 +107,9 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
                 season_id           INTEGER NOT NULL DEFAULT 0,
                 extras_config       INTEGER NOT NULL DEFAULT 0,
                 cover_url           TEXT NOT NULL DEFAULT '',
-                extras_result_summary TEXT
+                extras_result_summary TEXT,
+                subtitle_options_json TEXT NOT NULL DEFAULT '',
+                danmaku_options_json TEXT NOT NULL DEFAULT ''
             );
 
             CREATE TABLE IF NOT EXISTS output_path_reservations (
@@ -151,6 +154,9 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             "ALTER TABLE download_tasks ADD COLUMN extras_config INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN cover_url TEXT NOT NULL DEFAULT '';",
             "ALTER TABLE download_tasks ADD COLUMN extras_result_summary TEXT;",
+            // P1-G9：结构化附加资源意图。空字符串表示旧任务未知，不能冒充新快照。
+            "ALTER TABLE download_tasks ADD COLUMN subtitle_options_json TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE download_tasks ADD COLUMN danmaku_options_json TEXT NOT NULL DEFAULT '';",
             // P1-G5：身份列只使用常量空默认值，避免旧数据在无法确认编码/容器时被伪装为完整指纹。
             "ALTER TABLE download_tasks ADD COLUMN media_unit_key TEXT NOT NULL DEFAULT '';",
             "ALTER TABLE download_tasks ADD COLUMN rendition_fingerprint TEXT NOT NULL DEFAULT '';",
@@ -232,7 +238,7 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
                      temp_directory, video_bytes, audio_bytes,
                      video_progress, audio_progress, merge_progress, speed_text, bytes_per_second,
                      created_at, media_type, ep_id, season_id,
-                     extras_config, cover_url, extras_result_summary,
+                     extras_config, cover_url, extras_result_summary, subtitle_options_json, danmaku_options_json,
                      expected_video_bytes, expected_audio_bytes,
                      video_integrity_passed, audio_integrity_passed,
                      output_file_path, output_path_key, conflict_policy, estimated_required_bytes, overwrite_confirmed,
@@ -252,7 +258,7 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
                      $temp_directory, $video_bytes, $audio_bytes,
                      $video_progress, $audio_progress, $merge_progress, $speed_text, $bytes_per_second,
                      $created_at, $media_type, $ep_id, $season_id,
-                     $extras_config, $cover_url, $extras_result_summary,
+                     $extras_config, $cover_url, $extras_result_summary, $subtitle_options_json, $danmaku_options_json,
                      $expected_video_bytes, $expected_audio_bytes,
                      $video_integrity_passed, $audio_integrity_passed,
                      $output_file_path, $output_path_key, $conflict_policy, $estimated_required_bytes, $overwrite_confirmed,
@@ -312,6 +318,8 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             cmd.Parameters.AddWithValue(
                 "$extras_result_summary",
                 ToDatabaseValue(SensitiveDataSanitizer.Sanitize(r.ExtrasResultSummary)));
+            cmd.Parameters.AddWithValue("$subtitle_options_json", SerializeOptions(r.SubtitleOptions.Canonicalize()));
+            cmd.Parameters.AddWithValue("$danmaku_options_json", SerializeOptions(r.DanmakuOptions.Canonicalize()));
             cmd.Parameters.AddWithValue("$expected_video_bytes", r.ExpectedVideoBytes);
             cmd.Parameters.AddWithValue("$expected_audio_bytes", r.ExpectedAudioBytes);
             cmd.Parameters.AddWithValue("$video_integrity_passed", r.VideoIntegrityPassed ? 1 : 0);
@@ -1094,6 +1102,8 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
 
     private static DownloadTaskRecord ReadRecord(SqliteDataReader reader)
     {
+        var snapshotVersion = TryGetInt(reader, "submission_snapshot_version");
+        var extrasConfig = TryGetInt(reader, "extras_config");
         return new DownloadTaskRecord
         {
             TaskId = reader.GetString(reader.GetOrdinal("task_id")),
@@ -1108,7 +1118,7 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             RenditionFingerprint = TryGetString(reader, "rendition_fingerprint"),
             QualityId = reader.GetInt32(reader.GetOrdinal("quality_id")),
             AudioQualityId = TryGetInt(reader, "audio_quality_id"),
-            SubmissionSnapshotVersion = TryGetInt(reader, "submission_snapshot_version"),
+            SubmissionSnapshotVersion = snapshotVersion,
             DurationSeconds = TryGetInt(reader, "duration_seconds"),
             UseGroupFolder = TryGetBool(reader, "use_group_folder"),
             AddIndexToTitle = TryGetBool(reader, "add_index_to_title"),
@@ -1158,10 +1168,30 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             MediaType = TryGetString(reader, "media_type"),
             EpId = TryGetLong(reader, "ep_id"),
             SeasonId = TryGetLong(reader, "season_id"),
-            ExtrasConfig = TryGetInt(reader, "extras_config"),
+            ExtrasConfig = extrasConfig,
             CoverUrl = TryGetString(reader, "cover_url"),
             ExtrasResultSummary = TryGetNullableString(reader, "extras_result_summary"),
+            SubtitleOptions = ReadOptions(
+                reader, "subtitle_options_json",
+                (extrasConfig & 2) != 0 ? SubtitleOptions.LegacyEnabled : SubtitleOptions.None),
+            DanmakuOptions = ReadOptions(
+                reader, "danmaku_options_json",
+                (extrasConfig & 1) != 0 ? DanmakuOptions.LegacyEnabled : DanmakuOptions.None),
         };
+    }
+
+    private static string SerializeOptions<T>(T value) => JsonSerializer.Serialize(value);
+
+    /// <summary>
+    /// 读取结构化配置；空列和损坏 JSON 只在旧任务上使用布尔兼容值。
+    /// 新任务若发生损坏也选择安全兼容值，并由测试/日志诊断，而不让任务库初始化崩溃。
+    /// </summary>
+    private static T ReadOptions<T>(SqliteDataReader reader, string column, T compatibilityValue)
+    {
+        var json = TryGetString(reader, column);
+        if (string.IsNullOrWhiteSpace(json)) return compatibilityValue;
+        try { return JsonSerializer.Deserialize<T>(json) ?? compatibilityValue; }
+        catch (JsonException) { return compatibilityValue; }
     }
 
     private static object ToDatabaseValue(string? value)

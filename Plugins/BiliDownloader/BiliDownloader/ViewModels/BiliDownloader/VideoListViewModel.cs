@@ -55,6 +55,8 @@ public class SubmitContext
     public OutputMediaMode OutputMediaMode { get; set; } = OutputMediaMode.AudioVideo;
     public VideoDynamicRangePreference VideoDynamicRangePreference { get; set; } = VideoDynamicRangePreference.Auto;
     public AudioFeaturePreference AudioFeaturePreference { get; set; } = AudioFeaturePreference.Auto;
+    public SubtitleOptions SubtitleOptions { get; set; } = SubtitleOptions.None;
+    public DanmakuOptions DanmakuOptions { get; set; } = DanmakuOptions.None;
     public bool IsHighSpecificationSelectionValid { get; set; } = true;
     public IncrementalSubmissionExpectation? IncrementalExpectation { get; set; }
 }
@@ -371,7 +373,9 @@ public partial class VideoListViewModel : ObservableObject
                 OutputContainer: ctx.OutputContainer,
                 OutputMediaMode: ctx.OutputMediaMode,
                 VideoDynamicRangePreference: ctx.VideoDynamicRangePreference,
-                AudioFeaturePreference: ctx.AudioFeaturePreference),
+                AudioFeaturePreference: ctx.AudioFeaturePreference,
+                SubtitleOptions: ctx.SubtitleOptions,
+                DanmakuOptions: ctx.DanmakuOptions),
             downloadItems.Select(item => new DownloadSubmissionItem(
                 item.ItemId, item.Title, item.Aid, item.Bvid, item.Cid, item.Duration,
                 item.MediaType, item.EpId, item.SeasonId, item.CoverUrl)).ToArray(),

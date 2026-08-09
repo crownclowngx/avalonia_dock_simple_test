@@ -58,6 +58,63 @@ public sealed class FileConflictG6Tests
     }
 
     [Fact]
+    public async Task G9全部语言模式_提交时重新枚举对应字幕格式冲突()
+    {
+        using var paths = new TestDataPaths();
+        Directory.CreateDirectory(paths.RootDirectory);
+        File.WriteAllText(Path.Combine(paths.RootDirectory, "标题.zh-CN.vtt"), "old");
+        var service = CreateService(paths, out _, size: 1_000, available: 100_000);
+        var source = CreateSubmission(paths, FileConflictPolicy.AutoNumber);
+        var submission = source with
+        {
+            Profile = source.Profile with
+            {
+                SubtitleOptions = new SubtitleOptions
+                {
+                    SelectionMode = SubtitleSelectionMode.All,
+                    OutputFormat = SubtitleOutputFormat.Vtt,
+                    DeliveryMode = SubtitleDeliveryMode.External,
+                },
+            },
+        };
+
+        var report = await service.InspectAsync(submission);
+
+        Assert.EndsWith("标题 (1).mp4", report.Items[0].OutputFilePath);
+        Assert.True(report.Items[0].HasConflict);
+    }
+
+    [Fact]
+    public async Task G9选择语言和弹幕格式_仅检查最终会发布的附加文件()
+    {
+        using var paths = new TestDataPaths();
+        Directory.CreateDirectory(paths.RootDirectory);
+        File.WriteAllText(Path.Combine(paths.RootDirectory, "标题.zh-CN.ass"), "old-subtitle");
+        File.WriteAllText(Path.Combine(paths.RootDirectory, "标题.json"), "old-danmaku");
+        var service = CreateService(paths, out _, size: 1_000, available: 100_000);
+        var source = CreateSubmission(paths, FileConflictPolicy.AutoNumber);
+        var submission = source with
+        {
+            Profile = source.Profile with
+            {
+                SubtitleOptions = new SubtitleOptions
+                {
+                    SelectionMode = SubtitleSelectionMode.SelectedLanguages,
+                    LanguageKeys = ["zh-CN"],
+                    OutputFormat = SubtitleOutputFormat.Ass,
+                    DeliveryMode = SubtitleDeliveryMode.ExternalAndSoftMuxed,
+                },
+                DanmakuOptions = new DanmakuOptions { Formats = [DanmakuOutputFormat.Json] },
+            },
+        };
+
+        var report = await service.InspectAsync(submission);
+
+        Assert.EndsWith("标题 (1).mp4", report.Items[0].OutputFilePath);
+        Assert.True(report.Items[0].HasConflict);
+    }
+
+    [Fact]
     public async Task Ffmpeg未就绪_整批阻止()
     {
         using var paths = new TestDataPaths();

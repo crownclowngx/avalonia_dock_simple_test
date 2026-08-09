@@ -1,14 +1,16 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
+using BiliDownloader.Services.Download.Extras;
 using BiliDownloader.Services.Infrastructure;
 
 namespace BiliDownloader.ReleaseAcceptance;
 
 /// <summary>
-/// P1-G7 无凭据媒体验收门禁。它用固定版本 ffmpeg 生成完全可控的微型输入，随后只通过生产
-/// <see cref="FfmpegService"/> 执行 stream copy，并由 ffprobe 验证成品事实。
+/// P1-G7/G9 无凭据媒体验收门禁。它用固定版本 ffmpeg 生成完全可控的微型输入，随后只通过
+/// 生产 <see cref="FfmpegService"/> 执行 stream copy 与软字幕封装，并由 ffprobe 验证成品事实。
 /// </summary>
 internal sealed class OfflineMediaOutputGate : IReleaseGate
 {
@@ -67,6 +69,32 @@ internal sealed class OfflineMediaOutputGate : IReleaseGate
         await new NativeAudioPublisher().PublishAsync(
             audio, Staging(native), native, overwrite: false, cancellationToken);
 
+        // 字幕文本由生产格式化策略生成，门禁不维护另一套容易漂移的手写样本。
+        // 两种容器都使用两条轨，可同时证明轨数、顺序、语言、标题和 codec 元数据。
+        var cues = new[] { new SubtitleCue(TimeSpan.Zero, TimeSpan.FromMilliseconds(900), "你好\nP1-G9", 0) };
+        var srt = Path.Combine(root, "subtitle.zh.srt");
+        var ass = Path.Combine(root, "subtitle.en.ass");
+        await File.WriteAllTextAsync(srt, new SrtSubtitleFormatter().Format(cues),
+            new UTF8Encoding(false), cancellationToken);
+        await File.WriteAllTextAsync(ass, new AssSubtitleFormatter().Format(cues),
+            new UTF8Encoding(false), cancellationToken);
+        var subtitleTracks = new[]
+        {
+            new SubtitleMuxTrack(srt, "zh", "中文", SubtitleOutputFormat.Srt),
+            new SubtitleMuxTrack(ass, "en", "English", SubtitleOutputFormat.Ass),
+        };
+        var softMp4 = Path.Combine(root, "soft-subtitle.mp4");
+        var softMkv = Path.Combine(root, "soft-subtitle.mkv");
+        await muxer.MuxSubtitlesAsync(avMp4, subtitleTracks, Staging(softMp4),
+            OutputContainer.Mp4, cancellationToken);
+        File.Move(Staging(softMp4), softMp4, overwrite: false);
+        await muxer.MuxSubtitlesAsync(avMkv, subtitleTracks, Staging(softMkv),
+            OutputContainer.Mkv, cancellationToken);
+        File.Move(Staging(softMkv), softMkv, overwrite: false);
+        var subtitleVerifier = new FfprobeSubtitleTrackVerifier(muxer, new FfmpegProcessFactory());
+        await subtitleVerifier.VerifyAsync(softMp4, subtitleTracks, OutputContainer.Mp4, cancellationToken);
+        await subtitleVerifier.VerifyAsync(softMkv, subtitleTracks, OutputContainer.Mkv, cancellationToken);
+
         var checks = new[]
         {
             await VerifyAsync(ffprobe, avMp4, "h264", "aac", "mov,mp4", cancellationToken),
@@ -78,11 +106,12 @@ internal sealed class OfflineMediaOutputGate : IReleaseGate
             return ReleaseGateResult.Fail(Name, "ffprobe 检测到编码、容器或流数量与输出计划不一致。",
                 new Dictionary<string, object?> { ["checks"] = checks.Select(check => check.Label).ToArray() });
 
-        return ReleaseGateResult.Pass(Name, "AVC/HEVC/AV1、MP4/MKV、仅视频和原生 AAC 均通过 stream copy 验证。",
+        return ReleaseGateResult.Pass(Name, "媒体输出及 MP4 mov_text、MKV SubRip/ASS 软字幕均通过 ffprobe 验证。",
             new Dictionary<string, object?>
             {
                 ["ffmpegVersion"] = "8.1.2",
-                ["outputs"] = checks.Length,
+                ["outputs"] = checks.Length + 2,
+                ["subtitleTracks"] = subtitleTracks.Length * 2,
                 ["transcodingArguments"] = 0,
             });
     }

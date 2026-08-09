@@ -50,6 +50,9 @@ public sealed class TaskHistoryRedownloadService : ITaskHistoryRedownloadService
             && task.SelectedAudioFeaturePreference.HasValue;
         if (!hasExactHighSpecificationSnapshot)
             warnings.Add("该任务没有 G8 高规格偏好快照；将使用 Auto 重新探测，不会根据旧文件或描述反推历史事实。");
+        var hasExactExtrasSnapshot = task.SubmissionSnapshotVersion >= 3;
+        if (!hasExactExtrasSnapshot)
+            warnings.Add("该任务没有 G9 附加资源快照；将按旧布尔字段兼容为全部字幕 SRT 和弹幕 XML。");
 
         var extras = (ExtrasType)task.ExtrasConfig;
         var profile = new DownloadProfileSnapshot(
@@ -74,7 +77,13 @@ public sealed class TaskHistoryRedownloadService : ITaskHistoryRedownloadService
                 : VideoDynamicRangePreference.Auto,
             hasExactHighSpecificationSnapshot
                 ? task.SelectedAudioFeaturePreference!.Value
-                : AudioFeaturePreference.Auto);
+                : AudioFeaturePreference.Auto,
+            hasExactExtrasSnapshot
+                ? task.SubtitleOptions
+                : extras.HasFlag(ExtrasType.Subtitle) ? SubtitleOptions.LegacyEnabled : SubtitleOptions.None,
+            hasExactExtrasSnapshot
+                ? task.DanmakuOptions
+                : extras.HasFlag(ExtrasType.Danmaku) ? DanmakuOptions.LegacyEnabled : DanmakuOptions.None);
 
         var mediaType = Enum.TryParse<BiliMediaType>(task.MediaType, true, out var parsed)
             ? parsed

@@ -34,6 +34,8 @@ public partial class DownloadConfigViewModel : ObservableObject
     private int? _pendingQualityId;
     private int? _pendingAudioQualityId;
     private string _restoredPresetId = "";
+    private readonly Func<CancellationToken, Task<IReadOnlyList<SubtitleLanguageAvailability>>>? _subtitleDiscovery;
+    private bool _isNormalizingExtras;
 
     public event Action<DownloadPreset>? PresetApplied;
 
@@ -244,6 +246,68 @@ public partial class DownloadConfigViewModel : ObservableObject
     [ObservableProperty]
     private DanmakuOptions _danmakuOptions = DanmakuOptions.None;
 
+    /// <summary>当前会话手动探测到的语言；覆盖数量不进入 Document，避免恢复时联网。</summary>
+    public ObservableCollection<SubtitleLanguageOptionViewModel> SubtitleLanguageOptions { get; } = new();
+
+    public IReadOnlyList<DownloadOutputOption<SubtitleSelectionMode>> SubtitleSelectionModeOptions { get; } =
+    [
+        new(SubtitleSelectionMode.All, "全部可用语言"),
+        new(SubtitleSelectionMode.SelectedLanguages, "指定语言"),
+    ];
+
+    public IReadOnlyList<DownloadOutputOption<SubtitleOutputFormat>> SubtitleOutputFormatOptions { get; } =
+    [
+        new(SubtitleOutputFormat.Srt, "SRT"),
+        new(SubtitleOutputFormat.Ass, "ASS"),
+        new(SubtitleOutputFormat.Vtt, "WebVTT"),
+    ];
+
+    public IReadOnlyList<DownloadOutputOption<SubtitleDeliveryMode>> SubtitleDeliveryModeOptions { get; } =
+    [
+        new(SubtitleDeliveryMode.External, "外置文件"),
+        new(SubtitleDeliveryMode.SoftMuxed, "软字幕封装"),
+        new(SubtitleDeliveryMode.ExternalAndSoftMuxed, "外置 + 软字幕"),
+    ];
+
+    public DownloadOutputOption<SubtitleSelectionMode> SelectedSubtitleSelectionModeOption
+    {
+        get => SubtitleSelectionModeOptions.First(option => option.Value == SelectedSubtitleSelectionMode);
+        set { if (value is not null) SelectedSubtitleSelectionMode = value.Value; }
+    }
+    public DownloadOutputOption<SubtitleOutputFormat> SelectedSubtitleOutputFormatOption
+    {
+        get => SubtitleOutputFormatOptions.First(option => option.Value == SelectedSubtitleOutputFormat);
+        set { if (value is not null) SelectedSubtitleOutputFormat = value.Value; }
+    }
+    public DownloadOutputOption<SubtitleDeliveryMode> SelectedSubtitleDeliveryModeOption
+    {
+        get => SubtitleDeliveryModeOptions.First(option => option.Value == SelectedSubtitleDeliveryMode);
+        set { if (value is not null) SelectedSubtitleDeliveryMode = value.Value; }
+    }
+
+    [ObservableProperty] private bool _isSubtitleEnabled;
+    [ObservableProperty] private SubtitleSelectionMode _selectedSubtitleSelectionMode = SubtitleSelectionMode.All;
+    [ObservableProperty] private SubtitleOutputFormat _selectedSubtitleOutputFormat = SubtitleOutputFormat.Srt;
+    [ObservableProperty] private SubtitleDeliveryMode _selectedSubtitleDeliveryMode = SubtitleDeliveryMode.External;
+    [ObservableProperty] private bool _isSubtitleDetecting;
+    [ObservableProperty] private string _subtitleDetectionStatusText = "启用字幕后，可手动检测当前勾选项的可用语言。";
+    [ObservableProperty] private bool _danmakuXmlEnabled;
+    [ObservableProperty] private bool _danmakuAssEnabled;
+    [ObservableProperty] private bool _danmakuJsonEnabled;
+
+    public IAsyncRelayCommand DetectSubtitlesCommand { get; }
+
+    public bool IsSoftSubtitleCombinationValid
+        => !IsSubtitleEnabled
+           || SelectedSubtitleDeliveryMode == SubtitleDeliveryMode.External
+           || (OutputMediaMode != OutputMediaMode.AudioOnly
+               && !(OutputContainer == OutputContainer.Mkv
+                    && SelectedSubtitleOutputFormat == SubtitleOutputFormat.Vtt));
+
+    public string SoftSubtitleCompatibilityText => IsSoftSubtitleCombinationValid
+        ? "MP4 软字幕使用 mov_text；MKV 保留 SRT/ASS 字幕轨。"
+        : "当前容器/模式不支持所选软字幕；可改为外置字幕。";
+
     [ObservableProperty]
     private long _perTaskRateLimitBytesPerSecond;
 
@@ -304,16 +368,19 @@ public partial class DownloadConfigViewModel : ObservableObject
         ISettingsRepository settingsRepository,
         IPresetRepository? presetRepository = null,
         Func<string>? getNamingTemplate = null,
-        IDownloadPresetService? presetService = null)
+        IDownloadPresetService? presetService = null,
+        Func<CancellationToken, Task<IReadOnlyList<SubtitleLanguageAvailability>>>? subtitleDiscovery = null)
     {
         _settingsRepository = settingsRepository;
         _presetService = presetService ?? (presetRepository is null ? null : new DownloadPresetService(presetRepository));
         _getNamingTemplate = getNamingTemplate;
+        _subtitleDiscovery = subtitleDiscovery;
         SelectFolderCommand = new AsyncRelayCommand(SelectFolderAsync);
         ApplyPresetCommand = new RelayCommand(ApplySelectedPreset);
         SaveAsPresetCommand = new AsyncRelayCommand(SaveAsPresetAsync);
         DeleteSelectedPresetCommand = new AsyncRelayCommand(DeleteSelectedPresetAsync);
         RenameSelectedPresetCommand = new AsyncRelayCommand(RenameSelectedPresetAsync);
+        DetectSubtitlesCommand = new AsyncRelayCommand(DetectSubtitlesAsync, () => !IsSubtitleDetecting);
     }
 
     /// <summary>
@@ -790,6 +857,8 @@ public partial class DownloadConfigViewModel : ObservableObject
         if (!_isNormalizingOutputCombination && value is OutputContainer.Mp4 or OutputContainer.Mkv)
             _lastVideoContainer = value;
         OnPropertyChanged(nameof(SelectedOutputContainerOption));
+        OnPropertyChanged(nameof(IsSoftSubtitleCombinationValid));
+        OnPropertyChanged(nameof(SoftSubtitleCompatibilityText));
         MarkPresetModified();
     }
 
@@ -821,6 +890,8 @@ public partial class DownloadConfigViewModel : ObservableObject
         OnPropertyChanged(nameof(IsAudioOutputEnabled));
         OnPropertyChanged(nameof(OutputModeHint));
         OnPropertyChanged(nameof(IsHighSpecificationSelectionValid));
+        OnPropertyChanged(nameof(IsSoftSubtitleCombinationValid));
+        OnPropertyChanged(nameof(SoftSubtitleCompatibilityText));
         MarkPresetModified();
     }
     partial void OnVideoDynamicRangePreferenceChanged(VideoDynamicRangePreference value)
@@ -835,8 +906,40 @@ public partial class DownloadConfigViewModel : ObservableObject
         OnPropertyChanged(nameof(IsHighSpecificationSelectionValid));
         MarkPresetModified();
     }
-    partial void OnSubtitleOptionsChanged(SubtitleOptions value) => MarkPresetModified();
-    partial void OnDanmakuOptionsChanged(DanmakuOptions value) => MarkPresetModified();
+    partial void OnSubtitleOptionsChanged(SubtitleOptions value)
+    {
+        if (!_isNormalizingExtras) ApplySubtitleOptionsToEditor(value.Canonicalize());
+        MarkPresetModified();
+    }
+    partial void OnDanmakuOptionsChanged(DanmakuOptions value)
+    {
+        if (!_isNormalizingExtras) ApplyDanmakuOptionsToEditor(value.Canonicalize());
+        MarkPresetModified();
+    }
+    partial void OnIsSubtitleEnabledChanged(bool value) => UpdateSubtitleOptionsFromEditor();
+    partial void OnSelectedSubtitleSelectionModeChanged(SubtitleSelectionMode value)
+    {
+        OnPropertyChanged(nameof(SelectedSubtitleSelectionModeOption));
+        UpdateSubtitleOptionsFromEditor();
+    }
+    partial void OnSelectedSubtitleOutputFormatChanged(SubtitleOutputFormat value)
+    {
+        OnPropertyChanged(nameof(SelectedSubtitleOutputFormatOption));
+        UpdateSubtitleOptionsFromEditor();
+        OnPropertyChanged(nameof(IsSoftSubtitleCombinationValid));
+        OnPropertyChanged(nameof(SoftSubtitleCompatibilityText));
+    }
+    partial void OnSelectedSubtitleDeliveryModeChanged(SubtitleDeliveryMode value)
+    {
+        OnPropertyChanged(nameof(SelectedSubtitleDeliveryModeOption));
+        UpdateSubtitleOptionsFromEditor();
+        OnPropertyChanged(nameof(IsSoftSubtitleCombinationValid));
+        OnPropertyChanged(nameof(SoftSubtitleCompatibilityText));
+    }
+    partial void OnIsSubtitleDetectingChanged(bool value) => DetectSubtitlesCommand.NotifyCanExecuteChanged();
+    partial void OnDanmakuXmlEnabledChanged(bool value) => UpdateDanmakuOptionsFromEditor();
+    partial void OnDanmakuAssEnabledChanged(bool value) => UpdateDanmakuOptionsFromEditor();
+    partial void OnDanmakuJsonEnabledChanged(bool value) => UpdateDanmakuOptionsFromEditor();
     partial void OnPerTaskRateLimitBytesPerSecondChanging(long value)
     {
         if (value < 0)
@@ -857,6 +960,147 @@ public partial class DownloadConfigViewModel : ObservableObject
         value is not null && value.Formats.Count > 0
             ? value
             : legacyEnabled ? global::BiliDownloader.Models.DanmakuOptions.LegacyEnabled : global::BiliDownloader.Models.DanmakuOptions.None;
+
+    private async Task DetectSubtitlesAsync()
+    {
+        if (_subtitleDiscovery is null)
+        {
+            SubtitleDetectionStatusText = "当前构造路径没有字幕探测服务。";
+            return;
+        }
+        IsSubtitleDetecting = true;
+        try
+        {
+            var discovered = await _subtitleDiscovery(CancellationToken.None);
+            var selected = SubtitleOptions.LanguageKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            SubtitleLanguageOptions.Clear();
+            foreach (var language in discovered)
+                SubtitleLanguageOptions.Add(new SubtitleLanguageOptionViewModel(
+                    language, selected.Contains(language.StableLanguageKey), OnSubtitleLanguageSelectionChanged));
+            SubtitleDetectionStatusText = discovered.Count == 0
+                ? "所选媒体没有可用字幕。"
+                : $"已发现 {discovered.Count} 种语言；覆盖数量基于当前所选媒体。";
+        }
+        catch (OperationCanceledException)
+        {
+            SubtitleDetectionStatusText = "字幕检测已取消，保留上一次成功结果。";
+        }
+        catch (Exception ex)
+        {
+            SubtitleDetectionStatusText = "字幕检测失败：" + SensitiveDataSanitizer.Sanitize(ex.Message);
+        }
+        finally { IsSubtitleDetecting = false; }
+    }
+
+    private void OnSubtitleLanguageSelectionChanged() => UpdateSubtitleOptionsFromEditor();
+
+    private void UpdateSubtitleOptionsFromEditor()
+    {
+        if (_isNormalizingExtras) return;
+        _isNormalizingExtras = true;
+        try
+        {
+            SubtitleOptions = !IsSubtitleEnabled
+                ? global::BiliDownloader.Models.SubtitleOptions.None
+                : new SubtitleOptions
+                {
+                    SelectionMode = SelectedSubtitleSelectionMode,
+                    OutputFormat = SelectedSubtitleOutputFormat,
+                    DeliveryMode = SelectedSubtitleDeliveryMode,
+                    LanguageKeys = SubtitleLanguageOptions.Where(static item => item.IsSelected)
+                        .Select(static item => item.StableLanguageKey).ToArray(),
+                }.Canonicalize();
+            DownloadSubtitle = SubtitleOptions.SelectionMode != SubtitleSelectionMode.None;
+        }
+        finally { _isNormalizingExtras = false; }
+        MarkPresetModified();
+    }
+
+    private void ApplySubtitleOptionsToEditor(SubtitleOptions value)
+    {
+        _isNormalizingExtras = true;
+        try
+        {
+            IsSubtitleEnabled = value.SelectionMode != SubtitleSelectionMode.None;
+            SelectedSubtitleSelectionMode = value.SelectionMode == SubtitleSelectionMode.None
+                ? SubtitleSelectionMode.All : value.SelectionMode;
+            SelectedSubtitleOutputFormat = value.OutputFormat;
+            SelectedSubtitleDeliveryMode = value.DeliveryMode;
+            var selected = value.LanguageKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var language in SubtitleLanguageOptions)
+                language.SetSelectedWithoutCallback(selected.Contains(language.StableLanguageKey));
+        }
+        finally { _isNormalizingExtras = false; }
+    }
+
+    private void UpdateDanmakuOptionsFromEditor()
+    {
+        if (_isNormalizingExtras) return;
+        var formats = new List<DanmakuOutputFormat>();
+        if (DanmakuXmlEnabled) formats.Add(DanmakuOutputFormat.Xml);
+        if (DanmakuAssEnabled) formats.Add(DanmakuOutputFormat.Ass);
+        if (DanmakuJsonEnabled) formats.Add(DanmakuOutputFormat.Json);
+        _isNormalizingExtras = true;
+        try
+        {
+            DanmakuOptions = new DanmakuOptions { Formats = formats, AssStyleId = "default" };
+            DownloadDanmaku = formats.Count > 0;
+        }
+        finally { _isNormalizingExtras = false; }
+        MarkPresetModified();
+    }
+
+    private void ApplyDanmakuOptionsToEditor(DanmakuOptions value)
+    {
+        _isNormalizingExtras = true;
+        try
+        {
+            DanmakuXmlEnabled = value.Formats.Contains(DanmakuOutputFormat.Xml);
+            DanmakuAssEnabled = value.Formats.Contains(DanmakuOutputFormat.Ass);
+            DanmakuJsonEnabled = value.Formats.Contains(DanmakuOutputFormat.Json);
+        }
+        finally { _isNormalizingExtras = false; }
+    }
+}
+
+/// <summary>字幕语言多选项；回调只通知父 VM 重建不可变 SubtitleOptions。</summary>
+public sealed partial class SubtitleLanguageOptionViewModel : ObservableObject
+{
+    private readonly Action _selectionChanged;
+    private bool _suppressSelectionChanged;
+
+    public SubtitleLanguageOptionViewModel(
+        SubtitleLanguageAvailability availability, bool selected, Action selectionChanged)
+    {
+        StableLanguageKey = availability.StableLanguageKey;
+        DisplayName = availability.DisplayName;
+        SourceType = availability.SourceType;
+        AvailableItemCount = availability.AvailableItemCount;
+        TotalItemCount = availability.TotalItemCount;
+        _selectionChanged = selectionChanged;
+        _suppressSelectionChanged = true;
+        IsSelected = selected;
+        _suppressSelectionChanged = false;
+    }
+
+    public string StableLanguageKey { get; }
+    public string DisplayName { get; }
+    public SubtitleSourceType SourceType { get; }
+    public int AvailableItemCount { get; }
+    public int TotalItemCount { get; }
+    public string DisplayText => $"{DisplayName}（{SourceType}，{AvailableItemCount}/{TotalItemCount}）";
+
+    [ObservableProperty] private bool _isSelected;
+    partial void OnIsSelectedChanged(bool value)
+    {
+        if (!_suppressSelectionChanged) _selectionChanged();
+    }
+    public void SetSelectedWithoutCallback(bool value)
+    {
+        _suppressSelectionChanged = true;
+        IsSelected = value;
+        _suppressSelectionChanged = false;
+    }
 }
 
 /// <summary>文件冲突策略的界面选项；显示文案与持久化值明确分离。</summary>

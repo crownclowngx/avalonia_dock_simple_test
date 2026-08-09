@@ -185,17 +185,66 @@
                               Margin="0,0,14,4"
                               IsChecked="{Binding AddIndexToTitle}"
                               IsVisible="{Binding IsMultiVideo}" />
-                    <CheckBox Content="弹幕 XML"
-                              Margin="0,0,14,4"
-                              IsChecked="{Binding DownloadDanmaku}"
-                              ToolTip.Tip="按 360 秒分段获取后合并" />
-                    <CheckBox Content="全部字幕 SRT"
-                              Margin="0,0,14,4"
-                              IsChecked="{Binding DownloadSubtitle}" />
                     <CheckBox Content="封面图"
                               Margin="0,0,14,4"
                               IsChecked="{Binding DownloadCover}" />
                 </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Classes="bili-doc-flat-section">
+            <StackPanel Spacing="7">
+                <DockPanel LastChildFill="True">
+                    <CheckBox DockPanel.Dock="Left"
+                              Content="字幕"
+                              IsChecked="{Binding IsSubtitleEnabled}"
+                              Margin="0,0,12,0" />
+                    <Button DockPanel.Dock="Right"
+                            Content="检测所选项字幕"
+                            Command="{Binding DetectSubtitlesCommand}"
+                            IsEnabled="{Binding IsSubtitleEnabled}" />
+                </DockPanel>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" IsEnabled="{Binding IsSubtitleEnabled}">
+                    <ComboBox Grid.Column="0"
+                              ItemsSource="{Binding SubtitleSelectionModeOptions}"
+                              SelectedItem="{Binding SelectedSubtitleSelectionModeOption}" />
+                    <ComboBox Grid.Column="1"
+                              ItemsSource="{Binding SubtitleOutputFormatOptions}"
+                              SelectedItem="{Binding SelectedSubtitleOutputFormatOption}" />
+                    <ComboBox Grid.Column="2"
+                              ItemsSource="{Binding SubtitleDeliveryModeOptions}"
+                              SelectedItem="{Binding SelectedSubtitleDeliveryModeOption}" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding SubtitleLanguageOptions}"
+                              IsVisible="{Binding IsSubtitleEnabled}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding DisplayText}"
+                                      IsChecked="{Binding IsSelected}"
+                                      Margin="0,0,12,4" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{Binding SubtitleDetectionStatusText}"
+                           Classes="bili-doc-caption" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding SoftSubtitleCompatibilityText}"
+                           Classes="bili-doc-caption" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Border Classes="bili-doc-flat-section">
+            <StackPanel Spacing="6">
+                <TextBlock Text="弹幕外置格式" Classes="bili-doc-section-title" />
+                <WrapPanel>
+                    <CheckBox Content="XML（兼容）" IsChecked="{Binding DanmakuXmlEnabled}" Margin="0,0,14,4" />
+                    <CheckBox Content="ASS（默认 1920×1080）" IsChecked="{Binding DanmakuAssEnabled}" Margin="0,0,14,4" />
+                    <CheckBox Content="JSON" IsChecked="{Binding DanmakuJsonEnabled}" Margin="0,0,14,4" />
+                </WrapPanel>
+                <TextBlock Text="弹幕不会嵌入视频；ASS 使用内置 Arial 36px、2px 描边确定性样式。"
+                           Classes="bili-doc-caption" TextWrapping="Wrap" />
             </StackPanel>
         </Border>
 

@@ -95,6 +95,10 @@
                             <StackPanel Grid.Row="3" Grid.Column="1" Spacing="2">
                                 <TextBlock Text="{Binding OutputFilePath}" TextTrimming="CharacterEllipsis"
                                            Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+                                <TextBlock Text="{Binding ExtrasConfigurationText}" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+                                <TextBlock Text="{Binding ExtrasResultText}" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource AppSecondaryTextBrush}"/>
                                 <TextBlock Text="{Binding ErrorSummary}" TextWrapping="Wrap"
                                            Foreground="{DynamicResource AppDangerBrush}"/>
                             </StackPanel>

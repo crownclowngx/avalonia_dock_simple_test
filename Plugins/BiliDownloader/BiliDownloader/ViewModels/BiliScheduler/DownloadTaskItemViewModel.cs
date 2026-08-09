@@ -74,6 +74,9 @@ public partial class DownloadTaskItemViewModel : ObservableObject
         Record.OutputFilePath = source.OutputFilePath;
         Record.ExpectedVideoBytes = source.ExpectedVideoBytes;
         Record.ExpectedAudioBytes = source.ExpectedAudioBytes;
+        Record.ExtrasResultSummary = source.ExtrasResultSummary;
+        Record.SubtitleOptions = source.SubtitleOptions;
+        Record.DanmakuOptions = source.DanmakuOptions;
         OnPropertyChanged(string.Empty);
     }
 }

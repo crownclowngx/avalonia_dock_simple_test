@@ -30,12 +30,15 @@ public sealed class BiliDownloadCoordinator
     private readonly IDownloadProgressTracker _tracker;
     private readonly IDownloadTaskExecutor _executor;
     private readonly IMediaMergeRetryExecutor? _mergeRetryExecutor;
+    private readonly IExtrasRetryExecutor? _extrasRetryExecutor;
     private readonly IBiliDataPaths _paths;
     private readonly IBiliCredentialProvider _credentialProvider;
     private readonly IDownloadRecoveryService _recoveryService;
     private readonly ISubmissionPreflightService? _preflightService;
 
     private readonly SemaphoreSlim _commandLock = new(1, 1);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> _extrasRetryGates =
+        new(StringComparer.Ordinal);
     private readonly object _lifecycleLock = new();
     private readonly object _schedulerLock = new();
     private readonly Channel<bool> _queueWakeups = Channel.CreateBounded<bool>(
@@ -84,7 +87,8 @@ public sealed class BiliDownloadCoordinator
         IBiliCredentialProvider? credentialProvider = null,
         IDownloadRecoveryService? recoveryService = null,
         ISubmissionPreflightService? preflightService = null,
-        IMediaMergeRetryExecutor? mergeRetryExecutor = null)
+        IMediaMergeRetryExecutor? mergeRetryExecutor = null,
+        IExtrasRetryExecutor? extrasRetryExecutor = null)
     {
         _repository = repository;
         _messengerService = messengerService;
@@ -95,6 +99,7 @@ public sealed class BiliDownloadCoordinator
         _recoveryService = recoveryService ?? new DownloadRecoveryService(repository);
         _preflightService = preflightService;
         _mergeRetryExecutor = mergeRetryExecutor ?? executor as IMediaMergeRetryExecutor;
+        _extrasRetryExecutor = extrasRetryExecutor ?? executor as IExtrasRetryExecutor;
 
         // 注册监听：接收 Document 发来的下载任务提交消息
         _messengerService.Register<BiliDownloadCoordinator, SubmitDownloadTaskMessage>(
@@ -227,7 +232,7 @@ public sealed class BiliDownloadCoordinator
                     RenditionFingerprint = CreateRenditionStorageKey(item, profile),
                     QualityId = profile.VideoQualityId,
                     AudioQualityId = profile.AudioQualityId,
-                    SubmissionSnapshotVersion = 2,
+                    SubmissionSnapshotVersion = 3,
                     DurationSeconds = item.Duration,
                     UseGroupFolder = profile.UseGroupFolder,
                     AddIndexToTitle = profile.AddIndexToTitle,
@@ -251,6 +256,8 @@ public sealed class BiliDownloadCoordinator
                     ExtrasConfig = (profile.DownloadDanmaku ? (int)ExtrasType.Danmaku : 0)
                         | (profile.DownloadSubtitle ? (int)ExtrasType.Subtitle : 0)
                         | (profile.DownloadCover ? (int)ExtrasType.Cover : 0),
+                    SubtitleOptions = profile.EffectiveSubtitleOptions,
+                    DanmakuOptions = profile.EffectiveDanmakuOptions,
                     CoverUrl = item.CoverUrl,
                 };
                 records.Add(record);
@@ -337,7 +344,7 @@ public sealed class BiliDownloadCoordinator
                     RenditionFingerprint = CreateRenditionStorageKey(item, profile),
                     QualityId = profile.VideoQualityId,
                     AudioQualityId = profile.AudioQualityId,
-                    SubmissionSnapshotVersion = 2,
+                    SubmissionSnapshotVersion = 3,
                     DurationSeconds = item.Duration,
                     UseGroupFolder = profile.UseGroupFolder,
                     AddIndexToTitle = profile.AddIndexToTitle,
@@ -368,6 +375,8 @@ public sealed class BiliDownloadCoordinator
                     ExtrasConfig = (profile.DownloadDanmaku ? (int)ExtrasType.Danmaku : 0)
                         | (profile.DownloadSubtitle ? (int)ExtrasType.Subtitle : 0)
                         | (profile.DownloadCover ? (int)ExtrasType.Cover : 0),
+                    SubtitleOptions = profile.EffectiveSubtitleOptions,
+                    DanmakuOptions = profile.EffectiveDanmakuOptions,
                     CoverUrl = item.CoverUrl,
                 });
                 taskReferences.Add(new CommittedTaskReference(item.ItemId, taskId));
@@ -1121,6 +1130,51 @@ public sealed class BiliDownloadCoordinator
                 _activeContexts.Remove(taskId);
             }
             context.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// 仅重试结构化摘要中处于 Failed/PartialSuccess 的附加资源。任务级门控覆盖整个网络、
+    /// 文件和软封装操作，防止双击产生两个候选文件；主任务状态和媒体断点字段始终不变。
+    /// </summary>
+    public async Task<ExtrasExecutionSummary> RetryFailedExtrasAsync(
+        string taskId,
+        CancellationToken cancellationToken = default)
+    {
+        if (_extrasRetryExecutor is null)
+            throw new InvalidOperationException("当前下载执行器不支持附加资源独立重试。");
+        var gate = _extrasRetryGates.GetOrAdd(taskId, static _ => new SemaphoreSlim(1, 1));
+        if (!await gate.WaitAsync(0, cancellationToken))
+            throw new InvalidOperationException("该任务的附加资源正在重试，请勿重复操作。");
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var task = (await _repository.GetAllAsync()).SingleOrDefault(item => item.TaskId == taskId)
+                ?? throw new InvalidOperationException("待重试附加资源的任务不存在。");
+            if (ParseStatus(task.Status) != DownloadTaskStatus.Completed)
+                throw new InvalidOperationException("只有已完成主媒体的任务可以独立重试附加资源。");
+            if (string.IsNullOrWhiteSpace(task.OutputFilePath) || !File.Exists(task.OutputFilePath))
+                throw new InvalidOperationException("主媒体文件不存在，不能独立重试附加资源。");
+            lock (_schedulerLock)
+            {
+                if (_activeTasks.ContainsKey(taskId))
+                    throw new InvalidOperationException("任务正在执行，不能同时重试附加资源。");
+            }
+
+            var before = ExtrasExecutionSummaryCodec.Deserialize(task.ExtrasResultSummary);
+            if (!before.HasRetryableFailures) return before;
+            var json = await _extrasRetryExecutor.ExecuteFailedExtrasAsync(task, cancellationToken);
+            await _repository.UpdateExtrasResultAsync(taskId, json);
+            task.ExtrasResultSummary = json;
+            task.LastUpdatedAt = DateTime.Now;
+            TaskStatusChanged?.Invoke(task);
+            TaskListChanged?.Invoke();
+            SchedulerStatusChanged?.Invoke("失败的附加资源已完成独立重试。");
+            return ExtrasExecutionSummaryCodec.Deserialize(json);
+        }
+        finally
+        {
+            gate.Release();
         }
     }
 

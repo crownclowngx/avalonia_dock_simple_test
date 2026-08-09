@@ -425,3 +425,11 @@ P1-G0 在原有 API 与 Document 解析界面之间增加统一内容源边界�
 P1-G8 没有把 HDR、杜比或 FLAC 判断继续堆入下载编排，而是拆成四个单一职责边界：API 映射只生成结构化证据；`MediaStreamSelectionPolicy` 以纯函数执行层级与编码选择；`OutputArtifactPolicy` 统一维护容器保真矩阵；`IMediaOutputVerifier` 在原子发布前解释 ffprobe 事实。工作区的批量探测另由 `IMediaCapabilityInspectionService` 负责，并且只缓存脱敏能力快照。
 
 数据流采用 Requested / Expected / Actual 三阶段事实，避免 Auto 结果冒充用户显式要求，也避免 API 声明在未验证时冒充实际成品。任务快照 v2、`rf2:` 和 SQLite 的 Unknown/None 区分共同保证旧数据不会被当前默认值回填。该结构满足 SRP、OCP、ISP 与 DIP；策略模式只用于确实存在替换与组合规则的位置，未为简单 DTO 映射引入额外抽象。
+
+## 14. P1-G9 字幕、软字幕与弹幕边界补充
+
+P1-G9 将附加资源拆为目录发现、内容获取、cue 规范化、格式策略、媒体封装、轨道验证和失败重试七类窄边界。处理器只编排这些依赖，不解释平台 JSON、不拼接 ffmpeg 参数，也不直接访问 SQLite。字幕和弹幕格式采用 Strategy + Registry；其余只有单一实现的流程使用普通依赖倒置，避免为了模式而模式。
+
+主媒体与附加资源继续使用不同事实链：`RenditionFingerprint` 只描述媒体输出，`ExtrasExecutionSummary` 使用版本化逐项键描述语言、格式、交付和失败分类。软封装由 muxer 生成候选文件，ffprobe 证明 codec、语言、标题与精确轨数后才原子替换；失败时可信无字幕主文件保持不变。Coordinator 的附加资源重试只接受已完成且主文件存在的任务，并以任务级互斥保证不会并发重建同一文件。
+
+Document V3 只保存结构化意图，字幕目录是用户点击检测后产生的会话缓存，恢复文档不联网。SQLite 和安全历史导出只保存配置与结果元数据，禁止保存正文、Cookie、Header 或下载 URL。详细兼容矩阵、迁移和验收证据见 [`P1-G9-SUBTITLE-DANMAKU-ENHANCEMENT.md`](P1-G9-SUBTITLE-DANMAKU-ENHANCEMENT.md)。

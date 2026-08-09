@@ -74,6 +74,67 @@ public sealed class FfmpegService : IFfmpegService
     public async Task MuxAsync(MediaMuxRequest request, CancellationToken ct = default)
         => await MuxCoreAsync(request, legacyArguments: false, ct);
 
+    /// <inheritdoc />
+    public async Task MuxSubtitlesAsync(
+        string inputMediaPath,
+        IReadOnlyList<SubtitleMuxTrack> tracks,
+        string outputPath,
+        OutputContainer outputContainer,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(inputMediaPath) || !File.Exists(inputMediaPath))
+            throw new ArgumentException("软字幕封装缺少可读取的主媒体。", nameof(inputMediaPath));
+        if (tracks.Count == 0) throw new ArgumentException("软字幕封装至少需要一条字幕轨。", nameof(tracks));
+        if (outputContainer is not (OutputContainer.Mp4 or OutputContainer.Mkv))
+            throw new ArgumentException("软字幕只支持 MP4 或 MKV。", nameof(outputContainer));
+        if (outputContainer == OutputContainer.Mkv
+            && tracks.Any(static track => track.SourceFormat == SubtitleOutputFormat.Vtt))
+            throw new NotSupportedException("MKV 软字幕不支持 VTT，请改为 SRT/ASS 或仅输出外置字幕。");
+
+        var runtime = _lastStatus?.IsReady == true ? _lastStatus : await DetectAsync(cancellationToken);
+        if (!runtime.IsReady || string.IsNullOrWhiteSpace(runtime.ExecutablePath))
+            throw new FfmpegUnavailableException("ffmpeg 未就绪，无法封装软字幕。");
+        var startInfo = CreateProcessStartInfo(runtime.ExecutablePath);
+        startInfo.ArgumentList.Add("-i");
+        startInfo.ArgumentList.Add(inputMediaPath);
+        foreach (var track in tracks)
+        {
+            if (!File.Exists(track.InputPath))
+                throw new FileNotFoundException("软字幕暂存文件不存在。", track.InputPath);
+            startInfo.ArgumentList.Add("-i");
+            startInfo.ArgumentList.Add(track.InputPath);
+        }
+        // 重试时主媒体可能已经含有部分字幕。只保留原视频/音频并重新建立完整字幕集合，
+        // 避免重复轨和 metadata:s:s 索引漂移；章节与全局元数据从输入 0 复制。
+        startInfo.ArgumentList.Add("-map");
+        startInfo.ArgumentList.Add("0:v?");
+        startInfo.ArgumentList.Add("-map");
+        startInfo.ArgumentList.Add("0:a?");
+        for (var index = 0; index < tracks.Count; index++)
+        {
+            startInfo.ArgumentList.Add("-map");
+            startInfo.ArgumentList.Add($"{index + 1}:0");
+        }
+        startInfo.ArgumentList.Add("-c");
+        startInfo.ArgumentList.Add("copy");
+        startInfo.ArgumentList.Add("-map_metadata");
+        startInfo.ArgumentList.Add("0");
+        if (outputContainer == OutputContainer.Mp4)
+        {
+            startInfo.ArgumentList.Add("-c:s");
+            startInfo.ArgumentList.Add("mov_text");
+        }
+        for (var index = 0; index < tracks.Count; index++)
+        {
+            startInfo.ArgumentList.Add($"-metadata:s:s:{index}");
+            startInfo.ArgumentList.Add($"language={tracks[index].LanguageKey}");
+            startInfo.ArgumentList.Add($"-metadata:s:s:{index}");
+            startInfo.ArgumentList.Add($"title={tracks[index].Title}");
+        }
+        startInfo.ArgumentList.Add(outputPath);
+        await RunMediaProcessAsync(startInfo, outputPath, "软字幕封装", cancellationToken);
+    }
+
     private async Task MuxCoreAsync(
         MediaMuxRequest request,
         bool legacyArguments,
@@ -177,6 +238,66 @@ public sealed class FfmpegService : IFfmpegService
                 await DrainOutputAsync(stdout, stderr);
                 DeleteIncompleteOutput(request.OutputPath);
                 throw new MediaMergeException("ffmpeg 合并过程异常终止，已保留输入媒体。", ex);
+            }
+        }
+    }
+
+    private static ProcessStartInfo CreateProcessStartInfo(string executablePath)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = executablePath,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
+            CreateNoWindow = true,
+        };
+        foreach (var argument in new[] { "-hide_banner", "-nostats", "-loglevel", "warning" })
+            startInfo.ArgumentList.Add(argument);
+        return startInfo;
+    }
+
+    private async Task RunMediaProcessAsync(
+        ProcessStartInfo startInfo,
+        string outputPath,
+        string operationName,
+        CancellationToken cancellationToken)
+    {
+        IFfmpegProcess process;
+        try { process = _processFactory.Start(startInfo); }
+        catch (Exception ex) { throw new FfmpegUnavailableException($"无法启动 ffmpeg 执行{operationName}。", ex); }
+        using (process)
+        using (cancellationToken.Register(() => TryKill(process)))
+        {
+            var stdout = process.ReadStandardOutputAsync(CancellationToken.None);
+            var stderr = process.ReadStandardErrorAsync(CancellationToken.None);
+            try
+            {
+                await process.WaitForExitAsync(cancellationToken);
+                await Task.WhenAll(stdout, stderr);
+                if (process.ExitCode != 0)
+                {
+                    DeleteIncompleteOutput(outputPath);
+                    throw new MediaMergeException(
+                        $"ffmpeg {operationName}失败（退出码 {process.ExitCode}）：{await stderr}");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                TryKill(process);
+                await DrainOutputAsync(stdout, stderr);
+                DeleteIncompleteOutput(outputPath);
+                throw;
+            }
+            catch (MediaMergeException) { throw; }
+            catch (Exception ex)
+            {
+                TryKill(process);
+                await DrainOutputAsync(stdout, stderr);
+                DeleteIncompleteOutput(outputPath);
+                throw new MediaMergeException($"ffmpeg {operationName}异常终止。", ex);
             }
         }
     }

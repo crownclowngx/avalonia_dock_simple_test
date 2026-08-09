@@ -79,6 +79,38 @@ public interface IMediaMuxer
     }
 }
 
+/// <summary>交给 ffmpeg 的字幕轨描述；InputPath 是暂存文件，LanguageKey 和 Title 写入媒体元数据。</summary>
+public sealed record SubtitleMuxTrack(
+    string InputPath,
+    string LanguageKey,
+    string Title,
+    SubtitleOutputFormat SourceFormat);
+
+/// <summary>
+/// 软字幕封装窄接口。它与初始音视频合并分开，避免普通下载服务被字幕目录和语言策略污染。
+/// 实现必须只生成候选文件，原子替换现有主媒体由上层附加资源编排器负责。
+/// </summary>
+public interface ISubtitleMediaMuxer
+{
+    Task MuxSubtitlesAsync(
+        string inputMediaPath,
+        IReadOnlyList<SubtitleMuxTrack> tracks,
+        string outputPath,
+        OutputContainer outputContainer,
+        CancellationToken cancellationToken = default)
+        => Task.FromException(new NotSupportedException("当前媒体封装器不支持软字幕。"));
+}
+
+/// <summary>软字幕发布前验证边界；必须证明 codec、语言和标题元数据符合预期。</summary>
+public interface ISubtitleTrackVerifier
+{
+    Task VerifyAsync(
+        string mediaPath,
+        IReadOnlyList<SubtitleMuxTrack> expectedTracks,
+        OutputContainer outputContainer,
+        CancellationToken cancellationToken = default);
+}
+
 /// <summary>ffmpeg muxer 能力读取边界；提交预检只依赖此窄接口。</summary>
 public interface IMediaMuxerCapabilityProvider
 {
@@ -91,7 +123,7 @@ public interface IMediaMuxerCapabilityProvider
 /// 兼容旧构造路径的聚合接口。生产代码应优先依赖上面的窄接口；保留该接口可以让
 /// 历史测试替身和第三方构造代码平滑迁移，而不会重新把职责塞回单个消费者。
 /// </summary>
-public interface IFfmpegService : IFfmpegRuntimeLocator, IMediaMuxer, IMediaMuxerCapabilityProvider;
+public interface IFfmpegService : IFfmpegRuntimeLocator, IMediaMuxer, IMediaMuxerCapabilityProvider, ISubtitleMediaMuxer;
 
 /// <summary>未找到或无法启动 ffmpeg 时抛出的明确异常，错误分类不得再解析中文消息。</summary>
 public sealed class FfmpegUnavailableException : Exception

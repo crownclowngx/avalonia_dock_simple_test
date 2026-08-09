@@ -146,6 +146,7 @@ public partial class SchedulerTaskListViewModel : ObservableObject
     public IAsyncRelayCommand ClearDoneCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> DeleteTaskCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> RetryTaskCommand { get; }
+    public IAsyncRelayCommand<DownloadTaskRecord> RetryFailedExtrasCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> OpenFileLocationCommand { get; }
     public IAsyncRelayCommand StartCommand { get; }
     public IAsyncRelayCommand StopCommand { get; }
@@ -211,6 +212,7 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         ClearDoneCommand = new AsyncRelayCommand(ClearDoneTasksAsync);
         DeleteTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(DeleteTaskAsync);
         RetryTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(RetryTaskAsync);
+        RetryFailedExtrasCommand = new AsyncRelayCommand<DownloadTaskRecord>(RetryFailedExtrasAsync);
         OpenFileLocationCommand = new AsyncRelayCommand<DownloadTaskRecord>(OpenFileLocationAsync);
         StartCommand = new AsyncRelayCommand(StartAsync);
         StopCommand = new AsyncRelayCommand(StopAsync);
@@ -495,6 +497,21 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         catch (Exception ex)
         {
             _onStatusMessage($"重试任务失败: {ex.Message}");
+        }
+    }
+
+    private async Task RetryFailedExtrasAsync(DownloadTaskRecord? task)
+    {
+        if (task is null) return;
+        try
+        {
+            await _coordinator.RetryFailedExtrasAsync(task.TaskId);
+            _onStatusMessage("失败的附加资源已完成独立重试。");
+            await ReloadTasksAsync();
+        }
+        catch (Exception ex)
+        {
+            _onStatusMessage("附加资源重试失败：" + SensitiveDataSanitizer.Sanitize(ex.Message));
         }
     }
 

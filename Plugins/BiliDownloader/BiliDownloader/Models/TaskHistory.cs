@@ -83,11 +83,16 @@ public sealed record TaskHistoryEntry(
     string NamingTemplate,
     string? PresetId,
     int ExtrasConfig,
-    string CoverUrl)
+    string CoverUrl,
+    SubtitleOptions? SubtitleOptions = null,
+    DanmakuOptions? DanmakuOptions = null,
+    string? ExtrasResultSummary = null)
 {
     public bool HasExactSubmissionSnapshot => SubmissionSnapshotVersion >= 1;
     public bool HasExactHighSpecificationSnapshot => SubmissionSnapshotVersion >= 2
         && VideoDynamicRangePreference.HasValue && AudioFeaturePreference.HasValue;
+    public bool HasExactExtrasSnapshot => SubmissionSnapshotVersion >= 3
+        && SubtitleOptions is not null && DanmakuOptions is not null;
 
     public static TaskHistoryEntry FromRecord(DownloadTaskRecord record) => new(
         record.TaskId,
@@ -130,7 +135,10 @@ public sealed record TaskHistoryEntry(
         record.NamingTemplate,
         record.PresetId,
         record.ExtrasConfig,
-        record.CoverUrl);
+        record.CoverUrl,
+        record.SubtitleOptions,
+        record.DanmakuOptions,
+        record.ExtrasResultSummary);
 }
 
 /// <summary>历史分页结果。</summary>

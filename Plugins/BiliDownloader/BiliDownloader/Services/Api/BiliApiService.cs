@@ -12,7 +12,7 @@ namespace BiliDownloader.Services.Api;
 /// <summary>
 /// B站 API 封装：URL解析、视频信息获取、wbi签名、DASH流获取
 /// </summary>
-public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
+public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IBiliSubtitleApi, IBiliDanmakuApi
 {
     // wbi 签名用的固定 encTab（与 BiliTools auth.ts 一致）
     private static readonly int[] MixinKeyEncTab =
@@ -359,7 +359,9 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
     /// <param name="aid">视频 aid</param>
     /// <param name="cookie">Cookie</param>
     /// <returns>Protobuf 二进制数据</returns>
-    public async Task<byte[]> GetDanmakuSegmentAsync(long oid, int segmentIndex, long aid, string cookie)
+    public async Task<byte[]> GetDanmakuSegmentAsync(
+        long oid, int segmentIndex, long aid, string cookie,
+        CancellationToken cancellationToken = default)
     {
         var url = "https://api.bilibili.com/x/v2/dm/wbi/web/seg.so";
         var paramsDict = new Dictionary<string, string>
@@ -376,7 +378,8 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
         var request = fullUrl
             .WithHeader("User-Agent", HttpConstants.UserAgent)
             .WithHeader("Referer", HttpConstants.Referer);
-        var response = await WithCookie(request, cookie).GetBytesAsync();
+        var response = await WithCookie(request, cookie)
+            .GetBytesAsync(cancellationToken: cancellationToken);
 
         return response;
     }
@@ -385,7 +388,8 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
     /// 获取字幕列表（含字幕语言、下载 URL）
     /// API: /x/player/wbi/v2（需 wbi 签名）
     /// </summary>
-    public async Task<List<SubtitleListItem>> GetSubtitleListAsync(long aid, long cid, string cookie)
+    public async Task<List<SubtitleListItem>> GetSubtitleListAsync(
+        long aid, long cid, string cookie, CancellationToken cancellationToken = default)
     {
         var url = "https://api.bilibili.com/x/player/wbi/v2";
         var paramsDict = new Dictionary<string, string>
@@ -400,7 +404,8 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
         var request = fullUrl
             .WithHeader("User-Agent", HttpConstants.UserAgent)
             .WithHeader("Referer", HttpConstants.Referer);
-        var json = await WithCookie(request, cookie).GetStringAsync();
+        var json = await WithCookie(request, cookie)
+            .GetStringAsync(cancellationToken: cancellationToken);
 
         var resp = JObject.Parse(json);
         if (resp["code"]?.Value<int>() != 0)
@@ -425,10 +430,43 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
                 Lan = sub["lan"]?.Value<string>() ?? "",
                 LanDoc = sub["lan_doc"]?.Value<string>() ?? "",
                 SubtitleUrl = subtitleUrl,
+                TrackId = sub["id"]?.ToString() ?? string.Empty,
+                // 只读取平台结构化 ai_type，不解析会随语言变化的显示文案。
+                SourceType = (sub["ai_type"]?.Value<int>() ?? 0) != 0
+                    ? SubtitleSourceType.AiGenerated
+                    : SubtitleSourceType.Official,
             });
         }
 
         return subtitles;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<SubtitleTrackDescriptor>> GetSubtitleTracksAsync(
+        long aid, long cid, string cookie, CancellationToken cancellationToken = default)
+        => (await GetSubtitleListAsync(aid, cid, cookie, cancellationToken))
+            .Where(static item => !string.IsNullOrWhiteSpace(item.Lan))
+            .Select(static item => item.ToDescriptor(includeDownloadUrl: true))
+            .ToArray();
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<SubtitleCue>> GetSubtitleCuesAsync(
+        string subtitleUrl, string cookie, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(subtitleUrl))
+            throw new ArgumentException("字幕下载地址不能为空。", nameof(subtitleUrl));
+        var request = subtitleUrl
+            .WithHeader("User-Agent", HttpConstants.UserAgent)
+            .WithHeader("Referer", HttpConstants.Referer);
+        var json = await WithCookie(request, cookie)
+            .GetStringAsync(cancellationToken: cancellationToken);
+        var body = JObject.Parse(json)["body"] as JArray;
+        if (body is null || body.Count == 0) return Array.Empty<SubtitleCue>();
+
+        return SubtitleCueNormalizer.Normalize(body.Select(item => (
+            item["from"]?.Value<double>() ?? double.NaN,
+            item["to"]?.Value<double>() ?? double.NaN,
+            item["content"]?.Value<string>())));
     }
 
     /// <summary>
@@ -439,30 +477,8 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe
     /// <returns>SRT 格式的字幕文本</returns>
     public async Task<string> GetSubtitleSrtAsync(string subtitleUrl, string cookie)
     {
-        var request = subtitleUrl
-            .WithHeader("User-Agent", HttpConstants.UserAgent)
-            .WithHeader("Referer", HttpConstants.Referer);
-        var json = await WithCookie(request, cookie).GetStringAsync();
-
-        var resp = JObject.Parse(json);
-        var body = resp["body"] as JArray;
-        if (body == null || body.Count == 0)
-            return string.Empty;
-
-        var sb = new StringBuilder();
-        for (int i = 0; i < body.Count; i++)
-        {
-            var from = body[i]["from"]?.Value<double>() ?? 0;
-            var to = body[i]["to"]?.Value<double>() ?? 0;
-            var content = body[i]["content"]?.Value<string>() ?? "";
-
-            sb.AppendLine((i + 1).ToString());
-            sb.AppendLine($"{FormatSrtTime(from)} --> {FormatSrtTime(to)}");
-            sb.AppendLine(content);
-            sb.AppendLine();
-        }
-
-        return sb.ToString();
+        var cues = await GetSubtitleCuesAsync(subtitleUrl, cookie);
+        return new Download.Extras.SrtSubtitleFormatter().Format(cues);
     }
 
     /// <summary>

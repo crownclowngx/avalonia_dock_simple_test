@@ -67,6 +67,17 @@ public interface IMediaMergeRetryExecutor
 }
 
 /// <summary>
+/// 已完成任务的附加资源重试边界。实现不得请求 DASH、写入断点字节或重新下载主媒体，
+/// 只返回合并后的版本化结果摘要。
+/// </summary>
+public interface IExtrasRetryExecutor
+{
+    Task<string?> ExecuteFailedExtrasAsync(
+        DownloadTaskRecord task,
+        CancellationToken cancellationToken);
+}
+
+/// <summary>
 /// 单次任务执行产生的结果。G0 只传递现有字段，不新增数据库结构或恢复语义。
 /// </summary>
 /// <param name="OutputFilePath">执行器返回的最终输出路径；旧链路无法确定时允许为空。</param>

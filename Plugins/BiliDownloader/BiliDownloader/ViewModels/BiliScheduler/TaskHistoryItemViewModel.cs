@@ -49,6 +49,29 @@ public partial class TaskHistoryItemViewModel : ObservableObject
         }
     }
     public string OutputFilePath => Entry.OutputFilePath;
+    public string ExtrasConfigurationText
+    {
+        get
+        {
+            var subtitle = Entry.SubtitleOptions ?? SubtitleOptions.None;
+            var danmaku = Entry.DanmakuOptions ?? DanmakuOptions.None;
+            var labels = new List<string>();
+            if (subtitle.SelectionMode != SubtitleSelectionMode.None)
+                labels.Add($"字幕 {subtitle.SelectionMode}/{subtitle.OutputFormat}/{subtitle.DeliveryMode}");
+            if (danmaku.Formats.Count > 0) labels.Add("弹幕 " + string.Join('+', danmaku.Formats));
+            return labels.Count == 0 ? "无附加资源" : string.Join(" · ", labels);
+        }
+    }
+    public string ExtrasResultText
+    {
+        get
+        {
+            var summary = ExtrasExecutionSummaryCodec.Deserialize(Entry.ExtrasResultSummary);
+            return summary.Items.Count == 0
+                ? "附加资源结果未知"
+                : string.Join("；", summary.Items.Select(item => $"{item.Key}: {item.Status}"));
+        }
+    }
     public string ErrorSummary => string.IsNullOrWhiteSpace(Entry.ErrorMessage)
         ? string.Empty
         : Entry.ErrorMessage.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? string.Empty;

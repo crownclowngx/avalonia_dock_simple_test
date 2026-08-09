@@ -45,34 +45,7 @@ public static partial class ProtobufDanmakuDecoder
     /// ]]>
     /// </remarks>
     public static string ToXml(List<DanmakuElem> elems)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        sb.AppendLine("<i>");
-
-        foreach (var elem in elems)
-        {
-            // p 属性格式：出现时间(秒),模式,字号,颜色,创建时间,弹幕池,发送者hash,弹幕ID
-            var progressSec = elem.Progress / 1000.0;
-            var p = string.Join(",",
-                progressSec.ToString("F3"),
-                elem.Mode,
-                elem.Fontsize,
-                elem.Color,
-                elem.Ctime,
-                elem.Pool,
-                elem.MidHash,
-                elem.IdStr);
-
-            // 清理弹幕内容中的 XML 特殊字符
-            var content = StripXmlChars(elem.Content ?? "");
-
-            sb.AppendLine($"  <d p=\"{p}\">{content}</d>");
-        }
-
-        sb.AppendLine("</i>");
-        return sb.ToString();
-    }
+        => new XmlDanmakuFormatter().Format(elems);
 
     /// <summary>
     /// 清理弹幕文本中的 XML 特殊字符

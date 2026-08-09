@@ -63,6 +63,33 @@ public partial class DownloadTaskRecord : ObservableObject
     /// <summary>附加资源执行结果摘要</summary>
     public string? ExtrasResultSummary { get; set; }
 
+    /// <summary>G9 提交时固化的字幕意图；旧任务由读取层根据 ExtrasConfig 生成兼容值。</summary>
+    public SubtitleOptions SubtitleOptions { get; set; } = SubtitleOptions.None;
+
+    /// <summary>G9 提交时固化的弹幕意图；不包含弹幕正文或临时地址。</summary>
+    public DanmakuOptions DanmakuOptions { get; set; } = DanmakuOptions.None;
+
+    /// <summary>将版本化 JSON 或旧文本摘要统一投影为结构化结果。</summary>
+    public ExtrasExecutionSummary ExtrasExecutionSummary
+        => ExtrasExecutionSummaryCodec.Deserialize(ExtrasResultSummary);
+
+    /// <summary>任务中心是否应显示“仅重试失败附加资源”。</summary>
+    public bool HasRetryableExtrasFailures => ExtrasExecutionSummary.HasRetryableFailures;
+
+    /// <summary>活动任务和历史中心共享的附加资源配置摘要。</summary>
+    public string ExtrasConfigurationDisplayText
+    {
+        get
+        {
+            var labels = new List<string>();
+            if (SubtitleOptions.SelectionMode != SubtitleSelectionMode.None)
+                labels.Add($"字幕 {SubtitleOptions.SelectionMode}/{SubtitleOptions.OutputFormat}/{SubtitleOptions.DeliveryMode}");
+            if (DanmakuOptions.Formats.Count > 0)
+                labels.Add("弹幕 " + string.Join('+', DanmakuOptions.Formats));
+            return labels.Count == 0 ? "无附加资源" : string.Join(" · ", labels);
+        }
+    }
+
     /// <summary>
     /// 用户选择的清晰度
     /// </summary>
@@ -75,7 +102,7 @@ public partial class DownloadTaskRecord : ObservableObject
 
     /// <summary>
     /// 提交快照结构版本。0 表示迁移前的旧任务，只能基于可证明字段执行兼容重建；
-    /// 1 表示已经完整保存 <see cref="DownloadProfileSnapshot"/> 中与重新下载有关的意图。
+    /// 1 表示基础提交快照，2 表示高规格快照，3 表示包含结构化字幕/弹幕配置。
     /// 设计意图：显式版本优于根据空字符串猜测新旧记录，避免把迁移默认值误认为用户真实选择。
     /// </summary>
     public int SubmissionSnapshotVersion { get; set; }

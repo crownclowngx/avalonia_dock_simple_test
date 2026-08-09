@@ -10,6 +10,7 @@ using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.ContentSources;
 using BiliDownloader.Services.Download;
+using BiliDownloader.Services.Download.Extras;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Naming;
@@ -23,6 +24,14 @@ namespace BiliDownloader.ViewModels;
 public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSavePathPolicy
 {
     private static readonly IPluginLogger Log = PluginLog.For<BiliDownloaderViewModel>();
+
+    private static int SourcePriority(SubtitleSourceType source) => source switch
+    {
+        SubtitleSourceType.Official => 0,
+        SubtitleSourceType.Unknown => 1,
+        SubtitleSourceType.AiGenerated => 2,
+        _ => 3,
+    };
     public string SaveDocumentTypeId => SaveDocumentTypeIdConstant.BiliDownloaderDocumentId;
     public string FilePath { get; set; } = string.Empty;
 
@@ -126,7 +135,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
         ILoginDialogService? loginDialogService = null,
         IFfmpegPackageInstaller? ffmpegInstaller = null,
         IBiliDownloaderDocumentStateMapper? documentStateMapper = null,
-        IIncrementalComparisonService? incrementalComparisonService = null)
+        IIncrementalComparisonService? incrementalComparisonService = null,
+        ISubtitleCatalogService? subtitleCatalogService = null)
     {
         _messengerService = messengerService;
         _taskRepository = taskRepository;
@@ -145,10 +155,63 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
             isLoggedInCheck: () => LoginBar.IsLoggedIn);
         // G5: 命名模板子 VM
         var namingTemplate = new NamingTemplateViewModel();
+        VideoListViewModel? videoListForSubtitleDiscovery = null;
         var downloadConfig = new DownloadConfigViewModel(
             settingsRepository,
             presetRepository,
-            () => namingTemplate.Template);
+            () => namingTemplate.Template,
+            subtitleDiscovery: async cancellationToken =>
+            {
+                if (subtitleCatalogService is null)
+                    throw new InvalidOperationException("字幕目录服务未注册。");
+                var selected = videoListForSubtitleDiscovery?.VideoItems
+                    .Where(static item => item.IsSelected).ToArray() ?? Array.Empty<BiliVideoItem>();
+                if (selected.Length == 0) return Array.Empty<SubtitleLanguageAvailability>();
+
+                using var concurrency = new SemaphoreSlim(4, 4);
+                var sync = new object();
+                var availability = new Dictionary<string, (string Name, SubtitleSourceType Source, int Count)>(
+                    StringComparer.OrdinalIgnoreCase);
+                var successfulItems = 0;
+                await Task.WhenAll(selected.Select(async item =>
+                {
+                    await concurrency.WaitAsync(cancellationToken);
+                    try
+                    {
+                        var tracks = await subtitleCatalogService.GetPreferredTracksAsync(
+                            item.Aid, item.Cid, credentialProvider.GetCookieHeader(), cancellationToken);
+                        lock (sync)
+                        {
+                            successfulItems++;
+                            foreach (var track in tracks)
+                            {
+                                if (availability.TryGetValue(track.StableLanguageKey, out var current))
+                                {
+                                    var preferred = track.SourcePriority < SourcePriority(current.Source)
+                                        ? (track.DisplayName, track.SourceType) : (current.Name, current.Source);
+                                    availability[track.StableLanguageKey] = (preferred.Item1, preferred.Item2, current.Count + 1);
+                                }
+                                else
+                                {
+                                    availability[track.StableLanguageKey] = (track.DisplayName, track.SourceType, 1);
+                                }
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex)
+                    {
+                        Log.Warn($"字幕目录检测跳过媒体 {item.ItemId}：{SensitiveDataSanitizer.Sanitize(ex.Message)}");
+                    }
+                    finally { concurrency.Release(); }
+                }));
+                if (successfulItems == 0) throw new InvalidOperationException("所有所选媒体的字幕目录检测均失败。");
+                return availability
+                    .OrderBy(static pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(pair => new SubtitleLanguageAvailability(
+                        pair.Key, pair.Value.Name, pair.Value.Source, pair.Value.Count, selected.Length))
+                    .ToArray();
+            });
         downloadConfig.PresetApplied += preset => namingTemplate.Template = preset.NamingTemplate;
 
         var favoriteDiscovery = providerRegistry.Providers
@@ -191,6 +254,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
                 OutputMediaMode = DownloadConfig.OutputMediaMode,
                 VideoDynamicRangePreference = DownloadConfig.VideoDynamicRangePreference,
                 AudioFeaturePreference = DownloadConfig.AudioFeaturePreference,
+                SubtitleOptions = DownloadConfig.SubtitleOptions.Canonicalize(),
+                DanmakuOptions = DownloadConfig.DanmakuOptions.Canonicalize(),
                 IsHighSpecificationSelectionValid = DownloadConfig.IsHighSpecificationSelectionValid,
                 IncrementalExpectation = SourceWorkflow.CreateSubmissionExpectation(),
             },
@@ -234,6 +299,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
                         break;
                 }
             });
+        videoListForSubtitleDiscovery = videoList;
         workspace = new DownloadWorkspaceViewModel(
             downloadConfig,
             namingTemplate,

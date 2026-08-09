@@ -181,7 +181,7 @@ public sealed class TaskHistoryG6Tests
         var store = new DownloadTaskStore(paths);
         await store.InitAsync();
         var source = CreateRecord("source-task", DownloadTaskStatus.Canceled, DateTime.Now);
-        source.SubmissionSnapshotVersion = 2;
+        source.SubmissionSnapshotVersion = 3;
         source.DurationSeconds = 99;
         source.UseGroupFolder = true;
         source.AddIndexToTitle = true;
@@ -286,7 +286,7 @@ public sealed class TaskHistoryG6Tests
         var created = rows.Single(row => row.TaskId != source.TaskId);
         Assert.NotEqual(source.TaskId, created.TaskId);
         Assert.Equal(source.TaskId, created.RedownloadedFromTaskId);
-        Assert.Equal(2, created.SubmissionSnapshotVersion);
+        Assert.Equal(3, created.SubmissionSnapshotVersion);
         await coordinator.ShutdownAsync();
     }
 
@@ -475,7 +475,7 @@ public sealed class TaskHistoryG6Tests
         Assert.Contains("'  =HYPERLINK", csvText);
         Assert.Contains("?<redacted>", csvText);
         using var document = JsonDocument.Parse(jsonText);
-        Assert.Equal(2, document.RootElement.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(3, document.RootElement.GetProperty("schemaVersion").GetInt32());
         Assert.Equal(1000, document.RootElement.GetProperty("items").GetArrayLength());
         Assert.True(document.RootElement.GetProperty("items")[0].TryGetProperty("taskId", out _));
 

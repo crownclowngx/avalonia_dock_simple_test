@@ -45,6 +45,7 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         // 保留 IFfmpegService 映射仅用于旧构造路径兼容，不再作为生产类的首选依赖。
         services.AddSingleton<IFfmpegRuntimeLocator>(provider => provider.GetRequiredService<FfmpegService>());
         services.AddSingleton<IMediaMuxer>(provider => provider.GetRequiredService<FfmpegService>());
+        services.AddSingleton<ISubtitleMediaMuxer>(provider => provider.GetRequiredService<FfmpegService>());
         services.AddSingleton<IMediaMuxerCapabilityProvider>(provider => provider.GetRequiredService<FfmpegService>());
         services.AddSingleton<IFfmpegService>(provider => provider.GetRequiredService<FfmpegService>());
         services.AddSingleton<IFfmpegPackageDownloader, HttpFfmpegPackageDownloader>();
@@ -76,6 +77,8 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         // Provider 与解析界面只依赖窄 API；两个投影复用同一 BiliApiService 实例。
         services.AddSingleton<IBiliContentSourceApi>(provider => provider.GetRequiredService<BiliApiService>());
         services.AddSingleton<IBiliMediaProbe>(provider => provider.GetRequiredService<BiliApiService>());
+        services.AddSingleton<IBiliSubtitleApi>(provider => provider.GetRequiredService<BiliApiService>());
+        services.AddSingleton<IBiliDanmakuApi>(provider => provider.GetRequiredService<BiliApiService>());
         services.AddSingleton<BiliPersonalContentApi>();
         services.AddSingleton<IBiliUploaderCatalogApi>(provider => provider.GetRequiredService<BiliPersonalContentApi>());
         services.AddSingleton<IBiliFavoriteCatalogApi>(provider => provider.GetRequiredService<BiliPersonalContentApi>());
@@ -107,9 +110,32 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IContentComparisonPolicy, ContentComparisonPolicy>();
         services.AddSingleton<IIncrementalComparisonService, IncrementalComparisonService>();
         services.AddSingleton<BiliDownloadService>();
-        services.AddSingleton(provider => ExtrasHandlerRegistry.CreateDefault(
-            provider.GetRequiredService<IBiliHttpClientFactory>()));
-        services.AddSingleton<IDownloadTaskExecutor, BiliDownloadTaskExecutor>();
+        // P1-G9：格式策略与平台 API 分离注册。处理器只依赖窄接口，新增格式无需修改执行器。
+        services.AddSingleton<ISubtitleFormatter, SrtSubtitleFormatter>();
+        services.AddSingleton<ISubtitleFormatter, AssSubtitleFormatter>();
+        services.AddSingleton<ISubtitleFormatter, VttSubtitleFormatter>();
+        services.AddSingleton<SubtitleFormatterRegistry>();
+        services.AddSingleton<ISubtitleCatalogService, SubtitleCatalogService>();
+        services.AddSingleton<ISubtitleContentProvider, SubtitleContentProvider>();
+        services.AddSingleton<IDanmakuFormatter, XmlDanmakuFormatter>();
+        services.AddSingleton<IDanmakuFormatter, AssDanmakuFormatter>();
+        services.AddSingleton<IDanmakuFormatter, JsonDanmakuFormatter>();
+        services.AddSingleton<DanmakuFormatterRegistry>();
+        services.AddSingleton<IDanmakuRequestPacer, FixedDanmakuRequestPacer>();
+        services.AddSingleton<SubtitleExtrasHandler>();
+        services.AddSingleton<DanmakuExtrasHandler>();
+        services.AddSingleton(provider =>
+        {
+            var registry = new ExtrasHandlerRegistry();
+            registry.Register(new CoverExtrasHandler(provider.GetRequiredService<IBiliHttpClientFactory>()));
+            registry.Register(provider.GetRequiredService<SubtitleExtrasHandler>());
+            registry.Register(provider.GetRequiredService<DanmakuExtrasHandler>());
+            return registry;
+        });
+        services.AddSingleton<BiliDownloadTaskExecutor>();
+        services.AddSingleton<IDownloadTaskExecutor>(provider => provider.GetRequiredService<BiliDownloadTaskExecutor>());
+        services.AddSingleton<IMediaMergeRetryExecutor>(provider => provider.GetRequiredService<BiliDownloadTaskExecutor>());
+        services.AddSingleton<IExtrasRetryExecutor>(provider => provider.GetRequiredService<BiliDownloadTaskExecutor>());
         services.AddSingleton<IDownloadProgressTracker, DownloadProgressTracker>();
         services.AddSingleton<IDownloadRecoveryService, DownloadRecoveryService>();
         services.AddSingleton<IStorageCapacityProvider, SystemStorageCapacityProvider>();
@@ -117,6 +143,7 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IMediaStreamSelectionPolicy, MediaStreamSelectionPolicy>();
         services.AddSingleton<INativeAudioPublisher, NativeAudioPublisher>();
         services.AddSingleton<IMediaOutputVerifier, FfprobeMediaOutputVerifier>();
+        services.AddSingleton<ISubtitleTrackVerifier, FfprobeSubtitleTrackVerifier>();
         services.AddSingleton<IMediaCapabilityInspectionService, MediaCapabilityInspectionService>();
         services.AddSingleton<IMediaSizeCalculator, MediaSizeCalculator>();
         services.AddSingleton<IMediaPreflightAnalyzer, DashMediaPreflightAnalyzer>();

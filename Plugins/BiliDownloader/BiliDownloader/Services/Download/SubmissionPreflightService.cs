@@ -140,6 +140,26 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
         CancellationToken cancellationToken = default)
     {
         var global = new List<PreflightIssue>();
+        var subtitleOptions = submission.Profile.EffectiveSubtitleOptions;
+        var danmakuOptions = submission.Profile.EffectiveDanmakuOptions;
+        try
+        {
+            subtitleOptions.Validate();
+            danmakuOptions.Validate();
+        }
+        catch (ArgumentException ex)
+        {
+            global.Add(Block("invalid_extras_configuration", ex.Message));
+        }
+        var requestsSoftSubtitles = subtitleOptions.SelectionMode != SubtitleSelectionMode.None
+            && subtitleOptions.DeliveryMode is SubtitleDeliveryMode.SoftMuxed
+                or SubtitleDeliveryMode.ExternalAndSoftMuxed;
+        if (requestsSoftSubtitles && submission.Profile.OutputMediaMode == OutputMediaMode.AudioOnly)
+            global.Add(Block("soft_subtitle_audio_only", "原生音频不能封装软字幕；请改为外置字幕或选择包含视频的输出模式。"));
+        if (requestsSoftSubtitles
+            && submission.Profile.OutputContainer == OutputContainer.Mkv
+            && subtitleOptions.OutputFormat == SubtitleOutputFormat.Vtt)
+            global.Add(Block("soft_subtitle_mkv_vtt", "MKV 软字幕仅支持 SRT/ASS；VTT 仍可作为外置字幕输出。"));
         if (!_outputPolicy.IsValidCombination(
                 submission.Profile.OutputMediaMode, submission.Profile.OutputContainer))
             global.Add(Block("invalid_output_combination", "输出模式与容器组合不合法。音视频/仅视频只支持 MP4、MKV；仅音频只支持原生音频。"));
@@ -242,7 +262,8 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
             bool hasConflict;
             try
             {
-                hasConflict = HasArtifactConflict(outputPath, allocated, fingerprintParts);
+                hasConflict = HasArtifactConflict(
+                    outputPath, submission.Profile, allocated, fingerprintParts);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -268,7 +289,9 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
             {
                 decision = strategy.Decide(new FileConflictContext(
                     item, outputPath, hasConflict, candidate, resumeValid, resumeReason,
-                    () => AllocateNumberedPath(actualDirectory, baseName, outputPlan.FileExtension, allocated, fingerprintParts)));
+                    () => AllocateNumberedPath(
+                        actualDirectory, baseName, outputPlan.FileExtension,
+                        submission.Profile, allocated, fingerprintParts)));
             }
             catch (IOException ex)
             {
@@ -422,19 +445,51 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
             status == DownloadTaskStatus.Failed && task.IsRetryable;
     }
 
-    private static bool HasArtifactConflict(string mp4Path, ISet<string> allocated, ICollection<string> fingerprint)
+    private static bool HasArtifactConflict(
+        string mediaPath,
+        DownloadProfileSnapshot profile,
+        ISet<string> allocated,
+        ICollection<string> fingerprint)
     {
-        var directory = Path.GetDirectoryName(mp4Path) ?? string.Empty;
-        var stem = Path.GetFileNameWithoutExtension(mp4Path);
+        var directory = Path.GetDirectoryName(mediaPath) ?? string.Empty;
+        var stem = Path.GetFileNameWithoutExtension(mediaPath);
         var paths = new List<string>
         {
-            mp4Path,
+            mediaPath,
+            // P0 起即把这两个历史附加文件视为主媒体冲突域。即使本次没有勾选，也不能因
+            // G9 结构化配置而降低既有覆盖保护；否则旧文件可能在用户切换配置后被静默复用。
             Path.Combine(directory, stem + ".xml"),
             Path.Combine(directory, stem + "_cover.jpg"),
         };
-        if (Directory.Exists(directory))
-            paths.AddRange(Directory.EnumerateFiles(directory, stem + ".*.srt"));
-        var conflict = allocated.Contains(NormalizePathKey(mp4Path));
+
+        // 弹幕文件没有语言后缀，因此可以根据最终格式精确计算冲突。旧布尔配置通过
+        // EffectiveDanmakuOptions 映射为 XML，保证旧 Document 的提交行为不发生变化。
+        foreach (var format in profile.EffectiveDanmakuOptions.Formats)
+            paths.Add(Path.Combine(directory, stem + "." + format.ToString().ToLowerInvariant()));
+
+        var subtitle = profile.EffectiveSubtitleOptions;
+        var hasExternalSubtitle = subtitle.SelectionMode != SubtitleSelectionMode.None
+            && subtitle.DeliveryMode is SubtitleDeliveryMode.External
+                or SubtitleDeliveryMode.ExternalAndSoftMuxed;
+        if (hasExternalSubtitle)
+        {
+            var extension = "." + subtitle.OutputFormat.ToString().ToLowerInvariant();
+            if (subtitle.SelectionMode == SubtitleSelectionMode.SelectedLanguages)
+            {
+                // 文件系统名使用安全语言键；原始稳定键仍由执行摘要和字幕元数据保存。
+                // 在预检阶段使用与发布阶段相同的净化器，可避免“预检无冲突、发布时覆盖”的竞态。
+                paths.AddRange(subtitle.LanguageKeys.Select(language => Path.Combine(
+                    directory, $"{stem}.{FileNameSanitizer.Sanitize(language)}{extension}")));
+            }
+            else if (Directory.Exists(directory))
+            {
+                // All 模式的实际语言只有主动提交时联网取得目录后才能完全确定。这里重新枚举
+                // 当前目录中同格式的语言文件，将任何既有轨视为整组冲突，禁止静默覆盖缓存外文件。
+                paths.AddRange(Directory.EnumerateFiles(directory, $"{stem}.*{extension}"));
+            }
+        }
+
+        var conflict = allocated.Contains(NormalizePathKey(mediaPath));
         foreach (var path in paths.Distinct(GetPathComparer()))
         {
             if (!File.Exists(path)) continue;
@@ -447,12 +502,13 @@ public sealed class SubmissionPreflightService : ISubmissionPreflightService
 
     private static string AllocateNumberedPath(
         string directory, string baseName, string extension,
+        DownloadProfileSnapshot profile,
         ISet<string> allocated, ICollection<string> fingerprint)
     {
         for (var index = 1; index < 10_000; index++)
         {
             var candidate = Path.Combine(directory, $"{baseName} ({index}){extension}");
-            if (!HasArtifactConflict(candidate, allocated, fingerprint)) return candidate;
+            if (!HasArtifactConflict(candidate, profile, allocated, fingerprint)) return candidate;
         }
         throw new IOException("自动序号已达到 9999，无法继续分配输出路径。");
     }

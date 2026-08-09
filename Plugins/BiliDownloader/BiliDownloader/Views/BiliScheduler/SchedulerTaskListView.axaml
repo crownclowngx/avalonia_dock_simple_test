@@ -370,7 +370,17 @@
                                                Foreground="{DynamicResource AppSecondaryTextBrush}"
                                                Text="{Binding OutputSpecificationText}"
                                                TextTrimming="CharacterEllipsis" />
+                                    <TextBlock FontSize="10"
+                                               Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                               Text="{Binding Record.ExtrasConfigurationDisplayText}"
+                                               TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
+                                <Button Content="仅重试失败附加资源"
+                                        HorizontalAlignment="Left"
+                                        IsVisible="{Binding Record.HasRetryableExtrasFailures}"
+                                        Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).RetryFailedExtrasCommand}"
+                                        CommandParameter="{Binding Record}"
+                                        Padding="6,2" FontSize="10" />
 
                                 <!-- 输出路径（截断显示） -->
                                 <TextBlock Text="{Binding FullOutputPath}"

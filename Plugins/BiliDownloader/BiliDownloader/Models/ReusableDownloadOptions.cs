@@ -89,6 +89,43 @@ public sealed record SubtitleOptions
         OutputFormat = SubtitleOutputFormat.Srt,
         DeliveryMode = SubtitleDeliveryMode.External,
     };
+
+    /// <summary>
+    /// 将来自 Document、预设或旧任务的配置归一化为稳定值。
+    /// 设计意图是把“去空、去重、固定顺序”集中在值对象内部，避免 UI、提交边界和执行器
+    /// 各自生成略有差异的任务快照。语言键只做不区分大小写的比较，不擅自改写平台含义。
+    /// </summary>
+    public SubtitleOptions Canonicalize()
+    {
+        if (SelectionMode == SubtitleSelectionMode.None)
+            return None;
+
+        var languageKeys = SelectionMode == SubtitleSelectionMode.SelectedLanguages
+            ? LanguageKeys
+                .Select(static key => key?.Trim() ?? string.Empty)
+                .Where(static key => key.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(static key => key, StringComparer.OrdinalIgnoreCase)
+                .ToArray()
+            : Array.Empty<string>();
+
+        return this with { LanguageKeys = languageKeys };
+    }
+
+    /// <summary>
+    /// 校验配置内部一致性。容器与输出模式的兼容性由提交预检负责，值对象只校验自身，
+    /// 从而保持单一职责并允许文档离线恢复尚未选择媒体的配置。
+    /// </summary>
+    public void Validate()
+    {
+        if (!Enum.IsDefined(SelectionMode)
+            || !Enum.IsDefined(OutputFormat)
+            || !Enum.IsDefined(DeliveryMode))
+            throw new ArgumentException("字幕配置包含未知枚举值。");
+        if (SelectionMode == SubtitleSelectionMode.SelectedLanguages
+            && Canonicalize().LanguageKeys.Count == 0)
+            throw new ArgumentException("按语言选择字幕时至少需要一个稳定语言键。");
+    }
 }
 
 /// <summary>弹幕外置文件格式；弹幕不在本功能组内嵌到视频轨。</summary>
@@ -117,6 +154,26 @@ public sealed record DanmakuOptions
     {
         Formats = new[] { DanmakuOutputFormat.Xml },
     };
+
+    /// <summary>统一格式顺序并拒绝重复值，保证 Document 与 SQLite JSON 可以稳定比较。</summary>
+    public DanmakuOptions Canonicalize() => this with
+    {
+        Formats = Formats
+            .Where(Enum.IsDefined)
+            .Distinct()
+            .OrderBy(static value => value)
+            .ToArray(),
+        AssStyleId = string.IsNullOrWhiteSpace(AssStyleId) ? "default" : AssStyleId.Trim(),
+    };
+
+    /// <summary>验证弹幕配置；G9 仅发布内置 default 样式，未知样式不能静默回退。</summary>
+    public void Validate()
+    {
+        if (Formats.Any(static value => !Enum.IsDefined(value)))
+            throw new ArgumentException("弹幕配置包含未知输出格式。");
+        if (!string.Equals(Canonicalize().AssStyleId, "default", StringComparison.Ordinal))
+            throw new ArgumentException("当前版本仅支持内置 default 弹幕 ASS 样式。");
+    }
 }
 
 /// <summary>输出相关枚举的中文展示集中映射，避免活动任务与历史中心产生不同文案。</summary>

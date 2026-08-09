@@ -17,8 +17,20 @@ public sealed record DownloadProfileSnapshot(
     OutputContainer OutputContainer = OutputContainer.Mp4,
     OutputMediaMode OutputMediaMode = OutputMediaMode.AudioVideo,
     VideoDynamicRangePreference VideoDynamicRangePreference = VideoDynamicRangePreference.Auto,
-    AudioFeaturePreference AudioFeaturePreference = AudioFeaturePreference.Auto)
+    AudioFeaturePreference AudioFeaturePreference = AudioFeaturePreference.Auto,
+    SubtitleOptions? SubtitleOptions = null,
+    DanmakuOptions? DanmakuOptions = null)
 {
+    public SubtitleOptions EffectiveSubtitleOptions =>
+        (SubtitleOptions ?? (DownloadSubtitle
+            ? global::BiliDownloader.Models.SubtitleOptions.LegacyEnabled
+            : global::BiliDownloader.Models.SubtitleOptions.None)).Canonicalize();
+
+    public DanmakuOptions EffectiveDanmakuOptions =>
+        (DanmakuOptions ?? (DownloadDanmaku
+            ? global::BiliDownloader.Models.DanmakuOptions.LegacyEnabled
+            : global::BiliDownloader.Models.DanmakuOptions.None)).Canonicalize();
+
     public RenditionSpecification ToRenditionSpecification() => new RenditionSpecification(
         VideoQualityId,
         AudioQualityId,

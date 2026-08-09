@@ -35,3 +35,24 @@ public interface IBiliMediaProbe
         long seasonId = 0,
         CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// 字幕附加资源所需的最小平台边界。下载地址只在实现内部和运行时描述中流转，
+/// 消费者不能通过该接口取得原始响应或 Cookie，从而避免持久化层依赖临时鉴权数据。
+/// </summary>
+public interface IBiliSubtitleApi
+{
+    Task<IReadOnlyList<SubtitleTrackDescriptor>> GetSubtitleTracksAsync(
+        long aid, long cid, string cookie, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SubtitleCue>> GetSubtitleCuesAsync(
+        string subtitleUrl, string cookie, CancellationToken cancellationToken = default);
+}
+
+/// <summary>弹幕分段获取所需的最小平台边界；Protobuf 解码仍位于下载插件内部。</summary>
+public interface IBiliDanmakuApi
+{
+    Task<byte[]> GetDanmakuSegmentAsync(
+        long oid, int segmentIndex, long aid, string cookie,
+        CancellationToken cancellationToken = default);
+}
