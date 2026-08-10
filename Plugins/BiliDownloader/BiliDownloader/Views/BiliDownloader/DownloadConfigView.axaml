@@ -175,6 +175,23 @@
 
         <Border Classes="bili-doc-flat-section">
             <StackPanel Spacing="5">
+                <TextBlock Text="本次提交的主媒体限速" Classes="bili-doc-section-title" />
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                    <CheckBox Content="启用单任务限速"
+                              IsChecked="{Binding IsPerTaskRateLimitEnabled}"/>
+                    <NumericUpDown Minimum="64" Maximum="104857600" Increment="64"
+                                   Value="{Binding PerTaskRateLimitKiBPerSecond}"
+                                   IsEnabled="{Binding IsPerTaskRateLimitEnabled}"
+                                   Width="130"/>
+                    <TextBlock Text="KiB/s" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="0 表示不限速；该值会冻结到每个新任务，只约束视频/音频主媒体读取。"
+                           Classes="bili-doc-caption" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <Border Classes="bili-doc-flat-section">
+            <StackPanel Spacing="5">
                 <TextBlock Text="下载内容" Classes="bili-doc-section-title" />
                 <WrapPanel>
                     <CheckBox Content="使用分组文件夹"

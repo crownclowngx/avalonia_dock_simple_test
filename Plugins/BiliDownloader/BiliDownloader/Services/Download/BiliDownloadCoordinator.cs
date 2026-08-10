@@ -35,6 +35,7 @@ public sealed class BiliDownloadCoordinator
     private readonly IBiliCredentialProvider _credentialProvider;
     private readonly IDownloadRecoveryService _recoveryService;
     private readonly ISubmissionPreflightService? _preflightService;
+    private readonly ITaskBandwidthLimitManager _taskBandwidthLimits;
 
     private readonly SemaphoreSlim _commandLock = new(1, 1);
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> _extrasRetryGates =
@@ -88,7 +89,8 @@ public sealed class BiliDownloadCoordinator
         IDownloadRecoveryService? recoveryService = null,
         ISubmissionPreflightService? preflightService = null,
         IMediaMergeRetryExecutor? mergeRetryExecutor = null,
-        IExtrasRetryExecutor? extrasRetryExecutor = null)
+        IExtrasRetryExecutor? extrasRetryExecutor = null,
+        ITaskBandwidthLimitManager? taskBandwidthLimits = null)
     {
         _repository = repository;
         _messengerService = messengerService;
@@ -100,6 +102,8 @@ public sealed class BiliDownloadCoordinator
         _preflightService = preflightService;
         _mergeRetryExecutor = mergeRetryExecutor ?? executor as IMediaMergeRetryExecutor;
         _extrasRetryExecutor = extrasRetryExecutor ?? executor as IExtrasRetryExecutor;
+        _taskBandwidthLimits = taskBandwidthLimits
+            ?? new TaskBandwidthLimitManager(new SystemBandwidthClock());
 
         // 注册监听：接收 Document 发来的下载任务提交消息
         _messengerService.Register<BiliDownloadCoordinator, SubmitDownloadTaskMessage>(
@@ -232,7 +236,10 @@ public sealed class BiliDownloadCoordinator
                     RenditionFingerprint = CreateRenditionStorageKey(item, profile),
                     QualityId = profile.VideoQualityId,
                     AudioQualityId = profile.AudioQualityId,
-                    SubmissionSnapshotVersion = 3,
+                    SubmissionSnapshotVersion = 4,
+                    TaskRateLimitBytesPerSecond = BandwidthLimitPolicy.Validate(
+                        profile.PerTaskRateLimitBytesPerSecond,
+                        nameof(profile.PerTaskRateLimitBytesPerSecond)),
                     DurationSeconds = item.Duration,
                     UseGroupFolder = profile.UseGroupFolder,
                     AddIndexToTitle = profile.AddIndexToTitle,
@@ -344,7 +351,10 @@ public sealed class BiliDownloadCoordinator
                     RenditionFingerprint = CreateRenditionStorageKey(item, profile),
                     QualityId = profile.VideoQualityId,
                     AudioQualityId = profile.AudioQualityId,
-                    SubmissionSnapshotVersion = 3,
+                    SubmissionSnapshotVersion = 4,
+                    TaskRateLimitBytesPerSecond = BandwidthLimitPolicy.Validate(
+                        profile.PerTaskRateLimitBytesPerSecond,
+                        nameof(profile.PerTaskRateLimitBytesPerSecond)),
                     DurationSeconds = item.Duration,
                     UseGroupFolder = profile.UseGroupFolder,
                     AddIndexToTitle = profile.AddIndexToTitle,
@@ -465,6 +475,45 @@ public sealed class BiliDownloadCoordinator
             SignalQueueChanged();
         }
         SchedulerStatusChanged?.Invoke($"并发下载数已设置为: {clamped}");
+    }
+
+    /// <summary>
+    /// 持久化并热更新单任务主媒体限速。0 表示不限速；已完成任务作为历史事实不可编辑。
+    /// </summary>
+    public async Task UpdateTaskRateLimitAsync(
+        DownloadTaskRecord task,
+        long bytesPerSecond,
+        CancellationToken cancellationToken = default)
+    {
+        BandwidthLimitPolicy.Validate(bytesPerSecond);
+        if (ParseStatus(task.Status) == DownloadTaskStatus.Completed)
+            throw new InvalidOperationException("已完成任务的限速快照属于历史事实，不能修改。");
+
+        await _commandLock.WaitAsync(cancellationToken);
+        try
+        {
+            var previous = task.TaskRateLimitBytesPerSecond;
+            var updatedAt = DateTime.Now;
+            // 必须先持久化：如果 SQLite 写入失败，运行中的 limiter 和 UI 模型都维持旧值。
+            await _repository.UpdateTaskRateLimitAsync(task.TaskId, bytesPerSecond, updatedAt);
+            task.TaskRateLimitBytesPerSecond = bytesPerSecond;
+            task.LastUpdatedAt = updatedAt;
+            var appliedToActiveTask = _taskBandwidthLimits.TryUpdateLimit(
+                task.TaskId,
+                bytesPerSecond,
+                "user changed task rate limit");
+            Log.Info($"任务主媒体限速设置已提交；任务={task.TaskId}，旧值={previous} B/s，"
+                + $"新值={bytesPerSecond} B/s，活动 limiter 已更新={appliedToActiveTask}。"
+                + " 该操作不会清空断点、重启任务或修改输出规格。");
+            TaskStatusChanged?.Invoke(task);
+            SchedulerStatusChanged?.Invoke(bytesPerSecond == 0
+                ? $"任务 {task.ItemTitle} 已取消限速"
+                : $"任务 {task.ItemTitle} 已限速为 {bytesPerSecond / 1024} KiB/s");
+        }
+        finally
+        {
+            _commandLock.Release();
+        }
     }
 
     /// <summary>
@@ -880,8 +929,14 @@ public sealed class BiliDownloadCoordinator
     /// </summary>
     private async Task ProcessSingleTaskAsync(DownloadTaskRecord task, TaskRuntimeContext context)
     {
+        IDisposable? bandwidthActivation = null;
         try
         {
+            bandwidthActivation = _taskBandwidthLimits.Activate(
+                task.TaskId,
+                BandwidthLimitPolicy.Validate(
+                    task.TaskRateLimitBytesPerSecond,
+                    nameof(task.TaskRateLimitBytesPerSecond)));
             // G2: 阶段边界暂停检查（如果已暂停则阻塞直到恢复或取消）
             context.WaitIfPaused();
 
@@ -1061,6 +1116,8 @@ public sealed class BiliDownloadCoordinator
         }
         finally
         {
+            // 先释放任务桶并输出聚合诊断，再清理取消上下文。限速器从不拥有网络流或文件流。
+            bandwidthActivation?.Dispose();
             // G2: 清理 per-task 上下文
             CleanupTaskContext(task.TaskId);
         }

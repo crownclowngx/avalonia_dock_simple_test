@@ -16,6 +16,18 @@ namespace BiliDownloader.Tests;
 public sealed class G8ReleaseAcceptanceTests
 {
     [Fact]
+    public async Task P1限速发布门禁在真实单调时钟上通过()
+    {
+        using var sandbox = new AcceptanceSandbox();
+        var result = await new BandwidthLimitGate().ExecuteAsync(
+            new ReleaseGateContext(sandbox.Root, null, null), default);
+
+        Assert.True(result.Passed, result.Summary);
+        Assert.True((bool)result.Metrics!["hotUpdateReleasedWaiter"]!);
+        Assert.True((bool)result.Metrics["cancellationObserved"]!);
+    }
+
+    [Fact]
     public async Task 敏感扫描器同时发现文本二进制和SQLite泄漏()
     {
         using var sandbox = new AcceptanceSandbox();

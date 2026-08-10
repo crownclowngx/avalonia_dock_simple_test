@@ -58,6 +58,19 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>();
         services.AddSingleton<IBiliHttpClientFactory, BiliHttpClientFactory>();
         services.AddSingleton<IDownloadRuntime, SystemDownloadRuntime>();
+        // P1-G10：传输层只依赖组合后的 IBandwidthLimiter；全局桶、任务桶注册表和
+        // 单调时钟分别暴露窄端口，设置 UI 与下载器不会相互引用。
+        services.AddSingleton<IBandwidthClock, SystemBandwidthClock>();
+        services.AddSingleton<GlobalBandwidthLimiter>();
+        services.AddSingleton<IGlobalBandwidthLimitController>(provider =>
+            provider.GetRequiredService<GlobalBandwidthLimiter>());
+        services.AddSingleton<IGlobalBandwidthLimiter>(provider =>
+            provider.GetRequiredService<GlobalBandwidthLimiter>());
+        services.AddSingleton<TaskBandwidthLimitManager>();
+        services.AddSingleton<ITaskBandwidthLimitManager>(provider =>
+            provider.GetRequiredService<TaskBandwidthLimitManager>());
+        services.AddSingleton<IBandwidthLimiter, CompositeBandwidthLimiter>();
+        services.AddSingleton<IGlobalBandwidthLimitService, GlobalBandwidthLimitService>();
 
         // 登录态只依赖凭据存储接口；SQLite 内只保存 AES-GCM 密文信封。
         services.AddSingleton<InstallationKeyStore>();
@@ -184,19 +197,22 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
     private readonly BiliDownloadCoordinator _coordinator;
     private readonly ISettingsRepository _settings;
     private readonly IFfmpegRuntimeLocator _ffmpeg;
+    private readonly IGlobalBandwidthLimitService _globalBandwidthLimit;
 
     public BiliDownloaderPluginLifecycle(
         IBiliLocalStateInitializer localStateInitializer,
         BiliLoginStateService loginStateService,
         BiliDownloadCoordinator coordinator,
         ISettingsRepository settings,
-        IFfmpegRuntimeLocator ffmpeg)
+        IFfmpegRuntimeLocator ffmpeg,
+        IGlobalBandwidthLimitService globalBandwidthLimit)
     {
         _localStateInitializer = localStateInitializer;
         _loginStateService = loginStateService;
         _coordinator = coordinator;
         _settings = settings;
         _ffmpeg = ffmpeg;
+        _globalBandwidthLimit = globalBandwidthLimit;
     }
 
     public string PluginId => "BiliDownloader";
@@ -210,6 +226,7 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
         // 仅加载本地配置并执行 -version 探测，不下载任何内容。这样 Document 即使先于 Tool 打开，
         // 提交预检也能观察到真实 ffmpeg 状态，而不是依赖某个设置视图曾经被激活。
         await _settings.InitAsync();
+        await _globalBandwidthLimit.InitializeAsync(cancellationToken);
         _ffmpeg.CustomPath = await _settings.GetSettingAsync("ffmpeg_custom_path");
         await _ffmpeg.DetectAsync(cancellationToken);
         await _loginStateService.RestoreSavedSessionAsync(cancellationToken);

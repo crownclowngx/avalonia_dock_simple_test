@@ -57,6 +57,7 @@ public class SubmitContext
     public AudioFeaturePreference AudioFeaturePreference { get; set; } = AudioFeaturePreference.Auto;
     public SubtitleOptions SubtitleOptions { get; set; } = SubtitleOptions.None;
     public DanmakuOptions DanmakuOptions { get; set; } = DanmakuOptions.None;
+    public long PerTaskRateLimitBytesPerSecond { get; set; }
     public bool IsHighSpecificationSelectionValid { get; set; } = true;
     public IncrementalSubmissionExpectation? IncrementalExpectation { get; set; }
 }
@@ -375,7 +376,8 @@ public partial class VideoListViewModel : ObservableObject
                 VideoDynamicRangePreference: ctx.VideoDynamicRangePreference,
                 AudioFeaturePreference: ctx.AudioFeaturePreference,
                 SubtitleOptions: ctx.SubtitleOptions,
-                DanmakuOptions: ctx.DanmakuOptions),
+                DanmakuOptions: ctx.DanmakuOptions,
+                PerTaskRateLimitBytesPerSecond: ctx.PerTaskRateLimitBytesPerSecond),
             downloadItems.Select(item => new DownloadSubmissionItem(
                 item.ItemId, item.Title, item.Aid, item.Bvid, item.Cid, item.Duration,
                 item.MediaType, item.EpId, item.SeasonId, item.CoverUrl)).ToArray(),

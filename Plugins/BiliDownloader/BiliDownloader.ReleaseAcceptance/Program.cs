@@ -76,6 +76,10 @@ internal static class Program
                 context.Items["ffprobe"] = RequiredOption(args, "--ffprobe");
                 gates = [new OfflineMediaOutputGate()];
                 break;
+            case "bandwidth":
+                context = new ReleaseGateContext(sandbox, null, null);
+                gates = [new BandwidthLimitGate()];
+                break;
             default:
                 WriteUsage();
                 return 2;
@@ -103,5 +107,6 @@ internal static class Program
         Console.Error.WriteLine("  scan --root <目录> --sandbox <目录> --report <JSON>");
         Console.Error.WriteLine("  verify-package --package <ZIP> --sandbox <目录> --report <JSON>");
         Console.Error.WriteLine("  media-output --ffmpeg <ffmpeg.exe> --ffprobe <ffprobe.exe> --sandbox <目录> --report <JSON>");
+        Console.Error.WriteLine("  bandwidth --sandbox <目录> --report <JSON>");
     }
 }

@@ -311,6 +311,27 @@ public partial class DownloadConfigViewModel : ObservableObject
     [ObservableProperty]
     private long _perTaskRateLimitBytesPerSecond;
 
+    public bool IsPerTaskRateLimitEnabled
+    {
+        get => PerTaskRateLimitBytesPerSecond > 0;
+        set
+        {
+            if (value == IsPerTaskRateLimitEnabled) return;
+            PerTaskRateLimitBytesPerSecond = value
+                ? BandwidthLimitPolicy.DefaultEditorBytesPerSecond
+                : 0;
+        }
+    }
+
+    public long PerTaskRateLimitKiBPerSecond
+    {
+        get => PerTaskRateLimitBytesPerSecond == 0
+            ? BandwidthLimitPolicy.DefaultEditorBytesPerSecond / 1024
+            : BandwidthLimitPolicy.ToKibibytesPerSecond(PerTaskRateLimitBytesPerSecond);
+        set => PerTaskRateLimitBytesPerSecond =
+            BandwidthLimitPolicy.FromKibibytesPerSecond(value);
+    }
+
     /// <summary>供界面绑定的中文冲突策略选项；持久化始终使用对应枚举值。</summary>
     public IReadOnlyList<FileConflictPolicyOption> ConflictPolicyOptions { get; } =
         Enum.GetValues<FileConflictPolicy>()
@@ -543,7 +564,9 @@ public partial class DownloadConfigViewModel : ObservableObject
         AudioFeaturePreference = preset.AudioFeaturePreference;
         SubtitleOptions = NormalizeSubtitleOptions(preset.SubtitleOptions, preset.DownloadSubtitle);
         DanmakuOptions = NormalizeDanmakuOptions(preset.DanmakuOptions, preset.DownloadDanmaku);
-        PerTaskRateLimitBytesPerSecond = Math.Max(0, preset.PerTaskRateLimitBytesPerSecond);
+        PerTaskRateLimitBytesPerSecond = NormalizePersistedRateLimit(
+            preset.PerTaskRateLimitBytesPerSecond,
+            $"preset {preset.Id}");
         DownloadSubtitle = SubtitleOptions.SelectionMode != SubtitleSelectionMode.None;
         DownloadDanmaku = DanmakuOptions.Formats.Count > 0;
         SelectedConflictPolicy = ConflictPolicyOptions.First(option => option.Value == preset.ConflictPolicy);
@@ -942,10 +965,14 @@ public partial class DownloadConfigViewModel : ObservableObject
     partial void OnDanmakuJsonEnabledChanged(bool value) => UpdateDanmakuOptionsFromEditor();
     partial void OnPerTaskRateLimitBytesPerSecondChanging(long value)
     {
-        if (value < 0)
-            throw new ArgumentOutOfRangeException(nameof(value), "单任务限速不能为负数。");
+        BandwidthLimitPolicy.Validate(value, nameof(PerTaskRateLimitBytesPerSecond));
     }
-    partial void OnPerTaskRateLimitBytesPerSecondChanged(long value) => MarkPresetModified();
+    partial void OnPerTaskRateLimitBytesPerSecondChanged(long value)
+    {
+        OnPropertyChanged(nameof(IsPerTaskRateLimitEnabled));
+        OnPropertyChanged(nameof(PerTaskRateLimitKiBPerSecond));
+        MarkPresetModified();
+    }
     partial void OnOutputDirectoryChanged(string value) => MarkPresetModified();
     partial void OnSelectedConflictPolicyChanged(FileConflictPolicyOption value) => MarkPresetModified();
     partial void OnIsPresetModifiedChanged(bool value) => OnPropertyChanged(nameof(PresetStatusText));
@@ -960,6 +987,20 @@ public partial class DownloadConfigViewModel : ObservableObject
         value is not null && value.Formats.Count > 0
             ? value
             : legacyEnabled ? global::BiliDownloader.Models.DanmakuOptions.LegacyEnabled : global::BiliDownloader.Models.DanmakuOptions.None;
+
+    private static long NormalizePersistedRateLimit(long value, string source)
+    {
+        try
+        {
+            return BandwidthLimitPolicy.Validate(value);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            Log.Warn($"忽略无效的单任务限速配置；来源={source}，原值={value} B/s，回退为不限速。"
+                + $" 原因={ex.Message}");
+            return 0;
+        }
+    }
 
     private async Task DetectSubtitlesAsync()
     {

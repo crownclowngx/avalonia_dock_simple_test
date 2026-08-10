@@ -56,6 +56,13 @@ public interface IDownloadTaskRepository
     /// <summary>更新断点续传字节数</summary>
     Task UpdateBytesAsync(string taskId, long videoBytes, long audioBytes);
 
+    /// <summary>
+    /// 更新非终态任务的主媒体限速快照。实现必须先持久化，再由协调器更新活动 limiter，
+    /// 从而保证崩溃恢复后仍沿用用户最后确认的值；已完成任务的历史事实不可改写。
+    /// </summary>
+    Task UpdateTaskRateLimitAsync(string taskId, long bytesPerSecond, DateTime lastUpdatedAt)
+        => Task.CompletedTask;
+
     /// <summary>原子更新所有高频变化的运行时事实；兼容实现可按阶段和字节两步退化写入。</summary>
     async Task UpdateRuntimeSnapshotAsync(TaskRuntimeSnapshot snapshot)
     {

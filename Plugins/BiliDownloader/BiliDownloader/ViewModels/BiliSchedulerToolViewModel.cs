@@ -62,7 +62,8 @@ public partial class BiliSchedulerToolViewModel : Tool
         ITaskHistoryRedownloadService? historyRedownload = null,
         IDownloadSubmissionService? submissionService = null,
         IUserPromptService? userPromptService = null,
-        IHistoryExportDestinationPicker? historyDestinationPicker = null)
+        IHistoryExportDestinationPicker? historyDestinationPicker = null,
+        IGlobalBandwidthLimitService? globalBandwidthLimit = null)
     {
         _coordinator = coordinator;
         _lifecycleManager = lifecycleManager;
@@ -76,7 +77,8 @@ public partial class BiliSchedulerToolViewModel : Tool
             failurePolicy: failurePolicy,
             activeOnly: true);
 
-        Settings = new SchedulerSettingsViewModel(settingsStore, ffmpegService, ffmpegInstaller);
+        Settings = new SchedulerSettingsViewModel(
+            settingsStore, ffmpegService, ffmpegInstaller, globalBandwidthLimit);
 
         // 旧测试和宿主兼容构造路径可以不提供 G6 服务；生产 DI 会完整注入所有依赖。
         // 使用可空组合而不是在这里临时 new SQLite 或文件选择器，避免破坏依赖倒置。

@@ -8,10 +8,20 @@ namespace BiliDownloader.ViewModels.BiliScheduler;
 public partial class DownloadTaskItemViewModel : ObservableObject
 {
     private readonly IDownloadFailurePresentationPolicy _failurePolicy;
+    private long _lastKnownRateLimit;
     public DownloadTaskRecord Record { get; }
 
     [ObservableProperty]
     private bool _isSelected;
+
+    [ObservableProperty]
+    private bool _isRateLimitEnabled;
+
+    [ObservableProperty]
+    private long _rateLimitKiBPerSecond = BandwidthLimitPolicy.DefaultEditorBytesPerSecond / 1024;
+
+    [ObservableProperty]
+    private string _rateLimitValidationMessage = "";
 
     public DownloadTaskItemViewModel(
         DownloadTaskRecord record,
@@ -19,6 +29,8 @@ public partial class DownloadTaskItemViewModel : ObservableObject
     {
         Record = record;
         _failurePolicy = failurePolicy ?? new DownloadFailurePresentationPolicy();
+        _lastKnownRateLimit = record.TaskRateLimitBytesPerSecond;
+        SyncRateLimitEditor(record.TaskRateLimitBytesPerSecond);
     }
 
     public string TaskId => Record.TaskId;
@@ -51,6 +63,11 @@ public partial class DownloadTaskItemViewModel : ObservableObject
         : new(Record, SecondaryFailureAction.Kind);
     public bool HasFailureAction => !string.IsNullOrWhiteSpace(Record.ErrorType);
     public bool HasSecondaryFailureAction => SecondaryFailureAction is not null;
+    public bool IsRateLimitEditable =>
+        DownloadTaskStatusMapper.FromStorageString(Record.Status) != DownloadTaskStatus.Completed;
+    public string TaskRateLimitDisplayText => Record.TaskRateLimitBytesPerSecond == 0
+        ? "任务限速：不限速"
+        : $"任务限速：{Record.TaskRateLimitBytesPerSecond / 1024} KiB/s";
     public string SourceDocumentDisplay => !string.IsNullOrWhiteSpace(Record.SourceDocumentTitle)
         ? Record.SourceDocumentTitle
         : string.IsNullOrWhiteSpace(Record.DocumentId)
@@ -59,6 +76,7 @@ public partial class DownloadTaskItemViewModel : ObservableObject
 
     public void RefreshFrom(DownloadTaskRecord source)
     {
+        var rateLimitChanged = source.TaskRateLimitBytesPerSecond != _lastKnownRateLimit;
         Record.Progress = source.Progress;
         Record.VideoProgress = source.VideoProgress;
         Record.AudioProgress = source.AudioProgress;
@@ -77,7 +95,34 @@ public partial class DownloadTaskItemViewModel : ObservableObject
         Record.ExtrasResultSummary = source.ExtrasResultSummary;
         Record.SubtitleOptions = source.SubtitleOptions;
         Record.DanmakuOptions = source.DanmakuOptions;
+        Record.TaskRateLimitBytesPerSecond = source.TaskRateLimitBytesPerSecond;
+        if (rateLimitChanged)
+        {
+            _lastKnownRateLimit = source.TaskRateLimitBytesPerSecond;
+            SyncRateLimitEditor(source.TaskRateLimitBytesPerSecond);
+        }
         OnPropertyChanged(string.Empty);
+    }
+
+    public long GetRequestedRateLimitBytesPerSecond()
+        => IsRateLimitEnabled
+            ? BandwidthLimitPolicy.FromKibibytesPerSecond(RateLimitKiBPerSecond)
+            : 0;
+
+    public void MarkRateLimitApplied(long bytesPerSecond)
+    {
+        _lastKnownRateLimit = bytesPerSecond;
+        Record.TaskRateLimitBytesPerSecond = bytesPerSecond;
+        RateLimitValidationMessage = "";
+        SyncRateLimitEditor(bytesPerSecond);
+        OnPropertyChanged(nameof(TaskRateLimitDisplayText));
+    }
+
+    private void SyncRateLimitEditor(long bytesPerSecond)
+    {
+        IsRateLimitEnabled = bytesPerSecond > 0;
+        if (bytesPerSecond > 0)
+            RateLimitKiBPerSecond = BandwidthLimitPolicy.ToKibibytesPerSecond(bytesPerSecond);
     }
 }
 

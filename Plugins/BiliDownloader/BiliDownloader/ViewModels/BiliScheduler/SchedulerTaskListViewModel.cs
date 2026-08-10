@@ -158,6 +158,7 @@ public partial class SchedulerTaskListViewModel : ObservableObject
     public IAsyncRelayCommand<DownloadTaskRecord> ResumeTaskCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> CancelTaskCommand { get; }
     public IAsyncRelayCommand<DownloadTaskRecord> RestartTaskCommand { get; }
+    public IAsyncRelayCommand<DownloadTaskItemViewModel> ApplyTaskRateLimitCommand { get; }
     public IAsyncRelayCommand PauseAllCommand { get; }
     public IAsyncRelayCommand ResumeAllCommand { get; }
 
@@ -223,6 +224,7 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         ResumeTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(ResumeTaskAsync);
         CancelTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(CancelTaskAsync);
         RestartTaskCommand = new AsyncRelayCommand<DownloadTaskRecord>(RestartTaskAsync);
+        ApplyTaskRateLimitCommand = new AsyncRelayCommand<DownloadTaskItemViewModel>(ApplyTaskRateLimitAsync);
         PauseAllCommand = new AsyncRelayCommand(() => _coordinator.PauseAllActiveAsync());
         ResumeAllCommand = new AsyncRelayCommand(() => _coordinator.ResumeAllPausedAsync());
 
@@ -815,6 +817,25 @@ public partial class SchedulerTaskListViewModel : ObservableObject
         catch (Exception ex)
         {
             _onStatusMessage($"重新开始任务失败: {ex.Message}");
+        }
+    }
+
+    private async Task ApplyTaskRateLimitAsync(DownloadTaskItemViewModel? item)
+    {
+        if (item is null) return;
+        try
+        {
+            var bytesPerSecond = item.GetRequestedRateLimitBytesPerSecond();
+            await _coordinator.UpdateTaskRateLimitAsync(item.Record, bytesPerSecond);
+            item.MarkRateLimitApplied(bytesPerSecond);
+            _onStatusMessage(bytesPerSecond == 0
+                ? $"已取消任务 [{item.ItemTitle}] 的主媒体限速。"
+                : $"任务 [{item.ItemTitle}] 已限速为 {bytesPerSecond / 1024} KiB/s。");
+        }
+        catch (Exception ex)
+        {
+            item.RateLimitValidationMessage = SensitiveDataSanitizer.Sanitize(ex.Message);
+            _onStatusMessage($"更新任务限速失败: {item.RateLimitValidationMessage}");
         }
     }
 

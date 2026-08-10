@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
+using BiliDownloader.Services.Download;
 
 namespace BiliDownloader.ViewModels.BiliScheduler;
 
@@ -15,6 +16,7 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     private readonly ISettingsRepository _settingsStore;
     private readonly IFfmpegRuntimeLocator _ffmpegService;
     private readonly IFfmpegPackageInstaller? _ffmpegInstaller;
+    private readonly IGlobalBandwidthLimitService? _globalBandwidthLimit;
     private bool _settingsLoaded;
 
     [ObservableProperty]
@@ -44,6 +46,16 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     [ObservableProperty]
     private int _maxConcurrentDownloads = 1;
 
+    [ObservableProperty]
+    private bool _isGlobalRateLimitEnabled;
+
+    [ObservableProperty]
+    private long _globalRateLimitKiBPerSecond =
+        BandwidthLimitPolicy.DefaultEditorBytesPerSecond / 1024;
+
+    [ObservableProperty]
+    private string _bandwidthLimitStatus = "0 表示不限速；仅限制视频/音频主媒体读取。";
+
     public List<int> ConcurrentOptions { get; } = new() { 1, 2, 3, 4, 5 };
 
     /// <summary>并发下载数变更通知事件（供外部订阅）</summary>
@@ -53,20 +65,24 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     public IAsyncRelayCommand RedetectFfmpegCommand { get; }
     public IAsyncRelayCommand InstallOrRepairFfmpegCommand { get; }
     public IAsyncRelayCommand BrowseOutputDirCommand { get; }
+    public IAsyncRelayCommand ApplyGlobalRateLimitCommand { get; }
 
     public SchedulerSettingsViewModel(
         ISettingsRepository settingsStore,
         IFfmpegRuntimeLocator ffmpegService,
-        IFfmpegPackageInstaller? ffmpegInstaller = null)
+        IFfmpegPackageInstaller? ffmpegInstaller = null,
+        IGlobalBandwidthLimitService? globalBandwidthLimit = null)
     {
         _settingsStore = settingsStore;
         _ffmpegService = ffmpegService;
         _ffmpegInstaller = ffmpegInstaller;
+        _globalBandwidthLimit = globalBandwidthLimit;
 
         BrowseFfmpegCommand = new AsyncRelayCommand(BrowseFfmpegAsync);
         RedetectFfmpegCommand = new AsyncRelayCommand(CheckFfmpegAsync);
         InstallOrRepairFfmpegCommand = new AsyncRelayCommand(InstallOrRepairFfmpegAsync);
         BrowseOutputDirCommand = new AsyncRelayCommand(BrowseOutputDirAsync);
+        ApplyGlobalRateLimitCommand = new AsyncRelayCommand(ApplyGlobalRateLimitAsync);
         if (_ffmpegInstaller is not null)
             _ffmpegInstaller.ProgressChanged += OnInstallProgressChanged;
 
@@ -94,6 +110,18 @@ public partial class SchedulerSettingsViewModel : ObservableObject
         if (int.TryParse(savedConcurrency, out var n) && n >= 1 && n <= 5)
             MaxConcurrentDownloads = n;
 
+        if (_globalBandwidthLimit is not null)
+        {
+            await _globalBandwidthLimit.InitializeAsync();
+            var current = _globalBandwidthLimit.CurrentBytesPerSecond;
+            IsGlobalRateLimitEnabled = current > 0;
+            if (current > 0)
+                GlobalRateLimitKiBPerSecond = BandwidthLimitPolicy.ToKibibytesPerSecond(current);
+            BandwidthLimitStatus = current == 0
+                ? "当前不限速；修改后会立即作用于活动任务。"
+                : $"当前全局上限：{current / 1024} KiB/s；修改后立即生效。";
+        }
+
         _settingsLoaded = true;
     }
 
@@ -115,6 +143,30 @@ public partial class SchedulerSettingsViewModel : ObservableObject
         {
             _ = _settingsStore.SetSettingAsync("max_concurrent_downloads", value.ToString());
             MaxConcurrentDownloadsChanged?.Invoke(value);
+        }
+    }
+
+    private async Task ApplyGlobalRateLimitAsync()
+    {
+        if (_globalBandwidthLimit is null)
+        {
+            BandwidthLimitStatus = "当前构造路径未提供全局限速服务。";
+            return;
+        }
+
+        try
+        {
+            var bytesPerSecond = IsGlobalRateLimitEnabled
+                ? BandwidthLimitPolicy.FromKibibytesPerSecond(GlobalRateLimitKiBPerSecond)
+                : 0;
+            await _globalBandwidthLimit.UpdateAsync(bytesPerSecond, "scheduler settings UI");
+            BandwidthLimitStatus = bytesPerSecond == 0
+                ? "已取消全局限速，活动任务立即恢复不限速。"
+                : $"已应用 {GlobalRateLimitKiBPerSecond} KiB/s；所有活动任务共享该额度。";
+        }
+        catch (Exception ex)
+        {
+            BandwidthLimitStatus = $"全局限速保存失败，原设置保持不变：{ex.Message}";
         }
     }
 

@@ -485,7 +485,8 @@ public sealed class DocumentV3G4Tests
         AssertPersistentChangeIsIdempotent(vm, () => vm.DownloadConfig.SubtitleOptions = subtitle);
         var danmaku = new DanmakuOptions { Formats = [DanmakuOutputFormat.Xml] };
         AssertPersistentChangeIsIdempotent(vm, () => vm.DownloadConfig.DanmakuOptions = danmaku);
-        AssertPersistentChangeIsIdempotent(vm, () => vm.DownloadConfig.PerTaskRateLimitBytesPerSecond = 1_024);
+        AssertPersistentChangeIsIdempotent(vm, () =>
+            vm.DownloadConfig.PerTaskRateLimitBytesPerSecond = 64 * 1024);
 
         Assert.Throws<ArgumentOutOfRangeException>(
             () => vm.DownloadConfig.PerTaskRateLimitBytesPerSecond = -1);

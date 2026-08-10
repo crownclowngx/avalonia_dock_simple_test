@@ -53,6 +53,7 @@ public sealed class TaskHistoryRedownloadService : ITaskHistoryRedownloadService
         var hasExactExtrasSnapshot = task.SubmissionSnapshotVersion >= 3;
         if (!hasExactExtrasSnapshot)
             warnings.Add("该任务没有 G9 附加资源快照；将按旧布尔字段兼容为全部字幕 SRT 和弹幕 XML。");
+        var hasExactRateLimitSnapshot = task.SubmissionSnapshotVersion >= 4;
 
         var extras = (ExtrasType)task.ExtrasConfig;
         var profile = new DownloadProfileSnapshot(
@@ -83,7 +84,8 @@ public sealed class TaskHistoryRedownloadService : ITaskHistoryRedownloadService
                 : extras.HasFlag(ExtrasType.Subtitle) ? SubtitleOptions.LegacyEnabled : SubtitleOptions.None,
             hasExactExtrasSnapshot
                 ? task.DanmakuOptions
-                : extras.HasFlag(ExtrasType.Danmaku) ? DanmakuOptions.LegacyEnabled : DanmakuOptions.None);
+                : extras.HasFlag(ExtrasType.Danmaku) ? DanmakuOptions.LegacyEnabled : DanmakuOptions.None,
+            hasExactRateLimitSnapshot ? task.TaskRateLimitBytesPerSecond : 0);
 
         var mediaType = Enum.TryParse<BiliMediaType>(task.MediaType, true, out var parsed)
             ? parsed

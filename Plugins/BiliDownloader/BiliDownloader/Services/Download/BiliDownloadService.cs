@@ -31,7 +31,8 @@ public class BiliDownloadService : IDisposable
         IMediaStreamSelectionPolicy? selectionPolicy = null,
         IOutputArtifactPolicy? outputPolicy = null,
         INativeAudioPublisher? nativeAudioPublisher = null,
-        IMediaOutputVerifier? mediaOutputVerifier = null)
+        IMediaOutputVerifier? mediaOutputVerifier = null,
+        IBandwidthLimiter? bandwidthLimiter = null)
     {
         _paths = paths;
         _mediaMuxer = mediaMuxer;
@@ -44,7 +45,8 @@ public class BiliDownloadService : IDisposable
                 ? new FfprobeMediaOutputVerifier(locator, new FfmpegProcessFactory())
                 : new UnavailableMediaOutputVerifier());
         _httpClient = httpClientFactory.CreateMediaClient();
-        _multiDownloader = new MultiConnectionDownloader(_httpClient, runtime, chunkCount);
+        _multiDownloader = new MultiConnectionDownloader(
+            _httpClient, runtime, chunkCount, bandwidthLimiter ?? new UnlimitedBandwidthLimiter());
     }
 
     /// <summary>兼容独立构造；插件生产路径始终通过 DI 注入依赖。</summary>
@@ -169,7 +171,7 @@ public class BiliDownloadService : IDisposable
         {
             var videoUrls = CdnUrlHelper.FilterAndSortUrls(videoStream!.BaseUrl, videoStream.BackupUrls);
             videoTransfer = await _multiDownloader.DownloadAsync(
-                videoUrls, videoTmp, cookieHeader,
+                videoUrls, videoTmp, cookieHeader, task.TaskId,
                 (total, downloaded, speed) =>
                 {
                     task.VideoBytesDownloaded = downloaded;
@@ -192,7 +194,7 @@ public class BiliDownloadService : IDisposable
         {
             var audioUrls = CdnUrlHelper.FilterAndSortUrls(audioStream!.BaseUrl, audioStream.BackupUrls);
             audioTransfer = await _multiDownloader.DownloadAsync(
-                audioUrls, audioTmp, cookieHeader,
+                audioUrls, audioTmp, cookieHeader, task.TaskId,
                 (total, downloaded, speed) =>
                 {
                     task.AudioBytesDownloaded = downloaded;
@@ -423,7 +425,7 @@ public class BiliDownloadService : IDisposable
         {
             throw new InvalidOperationException("传入的续传字节数与现有文件长度不一致");
         }
-        await _multiDownloader.DownloadAsync([url], outputPath, cookie, onProgress, ct);
+        await _multiDownloader.DownloadAsync([url], outputPath, cookie, "standalone-stream", onProgress, ct);
     }
 
     /// <summary>

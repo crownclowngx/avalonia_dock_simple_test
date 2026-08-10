@@ -11,6 +11,7 @@
 - P1-G6 历史与安全导出组：终态查询、快照迁移、按需文件检查、新任务重下、CSV/JSON 流式白名单、公式注入与原子发布。
 - P1-G7 输出控制组：DASH 编码识别、纯选择策略、模式/容器矩阵、动态扩展名、实际编码落库、原子发布与模式化恢复。
 - P1-G8 高规格媒体组：API 能力证据、Auto/显式选择、批量交集、容器矩阵、v2 快照、rf2、历史导出和发布前 ffprobe 验证。
+- P1-G9～G10 收口组：字幕弹幕结构化结果，以及全局/单任务限速、公平队列、分块聚合、热更新、取消、SQLite v4 快照和发布计时门禁。
 - C 级界面逻辑组：ViewModel、消息路由、Document 保存恢复、转换器和创建策略。
 - G6 冲突预检组：四种策略、目录与磁盘检查、续传事实、路径保留、预检过期和 Document 兼容迁移。
 - G7 依赖恢复组：固定 ffmpeg 供应链、安全安装与回滚、运行时探测、媒体检查点、仅合并重试、十类错误行动和目录事务。
@@ -59,10 +60,18 @@ P1-G7 自动化基线（2026-08-07）：BiliDownloader Release 完整门禁 660/
 
 P1-G8 自动化基线（2026-08-08）：BiliDownloader Release 完整门禁 683/683 通过、0 跳过；覆盖率为总体行 83.99% / 分支 67.65%，A 组 89.17% / 77.83%，B 组 83.96% / 68.36%，C 组 75.84% / 56.70%，全部超过现行门禁；全解决方案 Release 回归 1079/1079 通过、0 跳过。专项覆盖 API 证据、批量交集、Auto/显式选择、容器矩阵、SQLite v2/rf2 与 ffprobe 成功、冲突、损坏 JSON、超时和取消。真实受版权和账号权限约束的 HDR/DV/Atmos 样本仍按 `P1-G8-HIGH-SPEC-MEDIA.md` 的固定摘要清单执行，不纳入默认联网测试。
 
+P1-G10 候选基线（2026-08-10）：BiliDownloader Release 完整门禁 723/723 通过、0 跳过；覆盖率为总体行 83.55% / 分支 67.50%，A 组 89.44% / 77.49%，B 组 85.23% / 69.44%，C 组 74.91% / 56.35%，全部达到或超过现行门禁。全解决方案 Release 构建 0 错误、0 警告，1119/1119 测试通过、0 跳过。专项覆盖 0/64 KiB/s 边界、全局公平、任务多连接聚合、运行时解除限制、取消唤醒、8 KiB 读取量子、settings 损坏回退、SQLite v4 往返与完成事实保护。用户提供的 2026 git ffmpeg 仅通过开发烟测；固定版 8.1.2 和实网门禁仍未完成。
+
 P1-G7 离线媒体验收：
 
 ```powershell
 dotnet run --project ..\BiliDownloader.ReleaseAcceptance\BiliDownloader.ReleaseAcceptance.csproj -c Release -- media-output --ffmpeg <ffmpeg.exe> --ffprobe <ffprobe.exe> --sandbox <临时目录> --report <报告.json>
+```
+
+P1-G10 本机限速门禁：
+
+```powershell
+dotnet run --project ..\BiliDownloader.ReleaseAcceptance\BiliDownloader.ReleaseAcceptance.csproj -c Release -- bandwidth --sandbox <临时目录> --report <报告.json>
 ```
 
 ## 稳定性约束

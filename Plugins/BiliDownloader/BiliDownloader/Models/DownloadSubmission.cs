@@ -19,7 +19,8 @@ public sealed record DownloadProfileSnapshot(
     VideoDynamicRangePreference VideoDynamicRangePreference = VideoDynamicRangePreference.Auto,
     AudioFeaturePreference AudioFeaturePreference = AudioFeaturePreference.Auto,
     SubtitleOptions? SubtitleOptions = null,
-    DanmakuOptions? DanmakuOptions = null)
+    DanmakuOptions? DanmakuOptions = null,
+    long PerTaskRateLimitBytesPerSecond = 0)
 {
     public SubtitleOptions EffectiveSubtitleOptions =>
         (SubtitleOptions ?? (DownloadSubtitle

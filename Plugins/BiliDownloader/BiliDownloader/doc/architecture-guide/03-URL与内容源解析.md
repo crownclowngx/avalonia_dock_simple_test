@@ -296,3 +296,6 @@ Provider 边界使用 `ContentSourceException` 和稳定错误码：
 7. 让 `ContentSourceProviderRegistry` 在启动时校验重复类型和非法能力。
 
 下载工作区和 Coordinator 通常不需要修改，这正是 Provider/Strategy 设计带来的开放封闭性。
+## 与 P1-G10 限速的边界
+
+内容源分页、详情解析、短链展开、DASH 元数据和字幕目录都不计入主媒体限速。Provider 也不读取 settings 或任务 limiter。只有内容已经通过提交与调度、进入 `MultiConnectionDownloader` 的视频/音频字节才申请额度。这个边界避免低速设置拖慢登录、预检和来源浏览，也防止 Provider 为了限速反向依赖执行层。

@@ -321,6 +321,28 @@
                                            FontSize="10" Foreground="{DynamicResource AppSecondaryTextBrush}"
                                            IsVisible="{Binding EstimatedRemainingText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
+                                <StackPanel Orientation="Horizontal" Spacing="6" Classes="wide-only"
+                                            IsVisible="{Binding IsRateLimitEditable}">
+                                    <CheckBox Content="任务限速"
+                                              IsChecked="{Binding IsRateLimitEnabled}"
+                                              VerticalAlignment="Center"/>
+                                    <NumericUpDown Minimum="64" Maximum="104857600" Increment="64"
+                                                   Value="{Binding RateLimitKiBPerSecond}"
+                                                   IsEnabled="{Binding IsRateLimitEnabled}"
+                                                   Width="110"/>
+                                    <TextBlock Text="KiB/s" VerticalAlignment="Center" FontSize="10"/>
+                                    <Button Content="应用"
+                                            Command="{Binding $parent[UserControl].((vm:SchedulerTaskListViewModel)DataContext).ApplyTaskRateLimitCommand}"
+                                            CommandParameter="{Binding}"
+                                            Padding="6,2" FontSize="10"/>
+                                    <TextBlock Text="{Binding RateLimitValidationMessage}"
+                                               Foreground="{DynamicResource AppErrorBrush}"
+                                               VerticalAlignment="Center" FontSize="10"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding TaskRateLimitDisplayText}"
+                                           Classes="compact-only" FontSize="10"
+                                           Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+
                                 <!-- 三分段进度条 -->
                                 <StackPanel Orientation="Horizontal" Spacing="6" Classes="wide-only">
                                     <StackPanel Orientation="Horizontal" Spacing="2">

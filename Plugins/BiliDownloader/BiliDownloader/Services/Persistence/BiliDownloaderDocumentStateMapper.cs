@@ -2,6 +2,7 @@ using BiliDownloader.Constants;
 using BiliDownloader.Models;
 using BiliDownloader.Models.ContentSources;
 using BiliDownloader.Services.Api;
+using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
 using MyAvaloniaManagementCommon.Save;
 using Newtonsoft.Json.Linq;
@@ -408,8 +409,9 @@ internal static class DocumentSaveSecurityPolicy
                 RejectSensitiveOrTemporaryValue(languageKey, "字幕语言键");
             foreach (var format in data.DanmakuOptions.Formats) ValidateEnum(format);
             RejectSensitiveOrTemporaryValue(data.DanmakuOptions.AssStyleId, "弹幕 ASS 样式 ID");
-            if (data.PerTaskRateLimitBytesPerSecond < 0)
-                throw new InvalidOperationException("单任务限速不能为负数。");
+            BandwidthLimitPolicy.Validate(
+                data.PerTaskRateLimitBytesPerSecond,
+                nameof(data.PerTaskRateLimitBytesPerSecond));
         }
         catch (DocumentLoadException)
         {

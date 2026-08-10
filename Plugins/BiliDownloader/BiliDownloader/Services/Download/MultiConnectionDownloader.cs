@@ -14,13 +14,16 @@ public sealed class MultiConnectionDownloader : IDisposable
     private readonly int _chunkCount;
     private readonly HttpClient _client;
     private readonly IDownloadRuntime _runtime;
+    private readonly IBandwidthLimiter _bandwidthLimiter;
     private readonly bool _ownsClient;
 
     public MultiConnectionDownloader(
         HttpClient client,
         IDownloadRuntime runtime,
-        int chunkCount = 4)
-        : this(client, runtime, chunkCount, ownsClient: false)
+        int chunkCount = 4,
+        IBandwidthLimiter? bandwidthLimiter = null)
+        : this(client, runtime, chunkCount,
+            bandwidthLimiter ?? new UnlimitedBandwidthLimiter(), ownsClient: false)
     {
     }
 
@@ -32,6 +35,7 @@ public sealed class MultiConnectionDownloader : IDisposable
             new BiliHttpClientFactory().CreateMediaClient(),
             new SystemDownloadRuntime(),
             chunkCount,
+            new UnlimitedBandwidthLimiter(),
             ownsClient: true)
     {
     }
@@ -40,10 +44,12 @@ public sealed class MultiConnectionDownloader : IDisposable
         HttpClient client,
         IDownloadRuntime runtime,
         int chunkCount,
+        IBandwidthLimiter bandwidthLimiter,
         bool ownsClient)
     {
         _client = client;
         _runtime = runtime;
+        _bandwidthLimiter = bandwidthLimiter;
         _chunkCount = Math.Max(1, chunkCount);
         _ownsClient = ownsClient;
     }
@@ -54,6 +60,18 @@ public sealed class MultiConnectionDownloader : IDisposable
         string cookie,
         Action<long, long, string> onProgress,
         CancellationToken ct)
+        => await DownloadAsync(urls, outputPath, cookie, "standalone", onProgress, ct);
+
+    /// <summary>
+    /// 下载属于指定任务的媒体流。taskId 只用于公平调度和诊断，不进入 HTTP 请求或文件名。
+    /// </summary>
+    public async Task<DownloadTransferResult> DownloadAsync(
+        List<string> urls,
+        string outputPath,
+        string cookie,
+        string taskId,
+        Action<long, long, string> onProgress,
+        CancellationToken ct)
     {
         if (urls is null || urls.Count == 0)
         {
@@ -62,13 +80,13 @@ public sealed class MultiConnectionDownloader : IDisposable
 
         if (urls.Count == 1 || _chunkCount <= 1)
         {
-            return await DownloadSingleAsync(urls[0], outputPath, cookie, onProgress, ct);
+            return await DownloadSingleAsync(urls[0], outputPath, cookie, taskId, onProgress, ct);
         }
 
         var totalSize = await GetContentLengthAsync(urls[0], cookie, ct);
         if (totalSize <= 0)
         {
-            return await DownloadSingleAsync(urls[0], outputPath, cookie, onProgress, ct);
+            return await DownloadSingleAsync(urls[0], outputPath, cookie, taskId, onProgress, ct);
         }
 
         var chunkCount = Math.Min(
@@ -130,6 +148,7 @@ public sealed class MultiConnectionDownloader : IDisposable
                 start,
                 end,
                 totalSize,
+                taskId,
                 AddProgress,
                 ct));
         }
@@ -163,6 +182,7 @@ public sealed class MultiConnectionDownloader : IDisposable
         long rangeStart,
         long rangeEnd,
         long expectedTotalLength,
+        string taskId,
         Action<long> onBytesDelta,
         CancellationToken ct)
     {
@@ -179,6 +199,7 @@ public sealed class MultiConnectionDownloader : IDisposable
                     rangeStart,
                     rangeEnd,
                     expectedTotalLength,
+                    taskId,
                     onBytesDelta,
                     ct);
                 return;
@@ -216,6 +237,7 @@ public sealed class MultiConnectionDownloader : IDisposable
         long rangeStart,
         long rangeEnd,
         long expectedTotalLength,
+        string taskId,
         Action<long> onBytesDelta,
         CancellationToken ct)
     {
@@ -272,7 +294,11 @@ public sealed class MultiConnectionDownloader : IDisposable
             var buffer = new byte[8192];
             while (true)
             {
-                var bytesRead = await stream.ReadAsync(buffer, ct);
+                var remaining = expectedResponseLength - writtenThisAttempt;
+                if (remaining == 0) break;
+                var plannedRead = (int)Math.Min(buffer.Length, remaining);
+                await _bandwidthLimiter.AcquireAsync(plannedRead, taskId, ct);
+                var bytesRead = await stream.ReadAsync(buffer.AsMemory(0, plannedRead), ct);
                 if (bytesRead == 0)
                 {
                     break;
@@ -341,6 +367,7 @@ public sealed class MultiConnectionDownloader : IDisposable
         string url,
         string outputPath,
         string cookie,
+        string taskId,
         Action<long, long, string> onProgress,
         CancellationToken ct)
     {
@@ -419,7 +446,13 @@ public sealed class MultiConnectionDownloader : IDisposable
             var buffer = new byte[8192];
             while (true)
             {
-                var bytesRead = await stream.ReadAsync(buffer, ct);
+                var remaining = expectedResponseLength > 0
+                    ? expectedResponseLength - writtenThisAttempt
+                    : buffer.Length;
+                if (remaining == 0) break;
+                var plannedRead = (int)Math.Min(buffer.Length, remaining);
+                await _bandwidthLimiter.AcquireAsync(plannedRead, taskId, ct);
+                var bytesRead = await stream.ReadAsync(buffer.AsMemory(0, plannedRead), ct);
                 if (bytesRead == 0)
                 {
                     break;

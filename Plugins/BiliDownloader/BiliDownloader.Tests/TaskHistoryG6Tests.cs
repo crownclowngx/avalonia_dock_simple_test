@@ -286,7 +286,8 @@ public sealed class TaskHistoryG6Tests
         var created = rows.Single(row => row.TaskId != source.TaskId);
         Assert.NotEqual(source.TaskId, created.TaskId);
         Assert.Equal(source.TaskId, created.RedownloadedFromTaskId);
-        Assert.Equal(3, created.SubmissionSnapshotVersion);
+        Assert.Equal(4, created.SubmissionSnapshotVersion);
+        Assert.Equal(source.TaskRateLimitBytesPerSecond, created.TaskRateLimitBytesPerSecond);
         await coordinator.ShutdownAsync();
     }
 

@@ -107,6 +107,12 @@ public partial class DownloadTaskRecord : ObservableObject
     /// </summary>
     public int SubmissionSnapshotVersion { get; set; }
 
+    /// <summary>
+    /// 提交时固化的主媒体总限速。0 表示不限速；该值约束本任务全部视频/音频分块连接，
+    /// 不参与输出版本指纹，也不改变断点合法性。
+    /// </summary>
+    public long TaskRateLimitBytesPerSecond { get; set; }
+
     /// <summary>提交时媒体时长（秒），用于重新构造不可变下载项。</summary>
     public int DurationSeconds { get; set; }
 

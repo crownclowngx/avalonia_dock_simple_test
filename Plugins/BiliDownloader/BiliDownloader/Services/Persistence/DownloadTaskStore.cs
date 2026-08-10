@@ -61,6 +61,7 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
                 quality_id          INTEGER NOT NULL DEFAULT 80,
                 audio_quality_id    INTEGER NOT NULL DEFAULT 0,
                 submission_snapshot_version INTEGER NOT NULL DEFAULT 0,
+                task_rate_limit_bytes_per_second INTEGER NOT NULL DEFAULT 0,
                 duration_seconds    INTEGER NOT NULL DEFAULT 0,
                 use_group_folder    INTEGER NOT NULL DEFAULT 0,
                 add_index_to_title  INTEGER NOT NULL DEFAULT 0,
@@ -162,6 +163,8 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             "ALTER TABLE download_tasks ADD COLUMN rendition_fingerprint TEXT NOT NULL DEFAULT '';",
             // P1-G6：旧任务保持 snapshot_version=0 和未知枚举，不把兼容默认值伪装成历史事实。
             "ALTER TABLE download_tasks ADD COLUMN submission_snapshot_version INTEGER NOT NULL DEFAULT 0;",
+            // P1-G10：0 表示不限速；旧库迁移后保持原有行为，不凭空施加带宽限制。
+            "ALTER TABLE download_tasks ADD COLUMN task_rate_limit_bytes_per_second INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN duration_seconds INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN use_group_folder INTEGER NOT NULL DEFAULT 0;",
             "ALTER TABLE download_tasks ADD COLUMN add_index_to_title INTEGER NOT NULL DEFAULT 0;",
@@ -227,7 +230,8 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
                     (task_id, document_id, source_document_title, series_title, item_title, aid, bvid, cid,
                      media_unit_key, rendition_fingerprint,
                      quality_id, audio_quality_id,
-                     submission_snapshot_version, duration_seconds, use_group_folder, add_index_to_title,
+                     submission_snapshot_version, task_rate_limit_bytes_per_second,
+                     duration_seconds, use_group_folder, add_index_to_title,
                      naming_template, preset_id, selected_video_codec, actual_video_codec,
                      output_container, output_media_mode,
                      video_dynamic_range_preference, audio_feature_preference,
@@ -247,7 +251,8 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
                     ($task_id, $document_id, $source_document_title, $series_title, $item_title, $aid, $bvid, $cid,
                      $media_unit_key, $rendition_fingerprint,
                      $quality_id, $audio_quality_id,
-                     $submission_snapshot_version, $duration_seconds, $use_group_folder, $add_index_to_title,
+                     $submission_snapshot_version, $task_rate_limit_bytes_per_second,
+                     $duration_seconds, $use_group_folder, $add_index_to_title,
                      $naming_template, $preset_id, $selected_video_codec, $actual_video_codec,
                      $output_container, $output_media_mode,
                      $video_dynamic_range_preference, $audio_feature_preference,
@@ -277,6 +282,7 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             cmd.Parameters.AddWithValue("$quality_id", r.QualityId);
             cmd.Parameters.AddWithValue("$audio_quality_id", r.AudioQualityId);
             cmd.Parameters.AddWithValue("$submission_snapshot_version", r.SubmissionSnapshotVersion);
+            cmd.Parameters.AddWithValue("$task_rate_limit_bytes_per_second", r.TaskRateLimitBytesPerSecond);
             cmd.Parameters.AddWithValue("$duration_seconds", r.DurationSeconds);
             cmd.Parameters.AddWithValue("$use_group_folder", r.UseGroupFolder ? 1 : 0);
             cmd.Parameters.AddWithValue("$add_index_to_title", r.AddIndexToTitle ? 1 : 0);
@@ -397,6 +403,25 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
         cmd.Parameters.AddWithValue("$audio_bytes", audioBytes);
         cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(DateTime.Now));
         await cmd.ExecuteNonQueryAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateTaskRateLimitAsync(string taskId, long bytesPerSecond, DateTime lastUpdatedAt)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            UPDATE download_tasks
+            SET task_rate_limit_bytes_per_second = $bytes_per_second,
+                last_updated_at = $last_updated_at
+            WHERE task_id = $task_id AND status <> 'done';
+            """;
+        cmd.Parameters.AddWithValue("$task_id", taskId);
+        cmd.Parameters.AddWithValue("$bytes_per_second", bytesPerSecond);
+        cmd.Parameters.AddWithValue("$last_updated_at", ToStorageTime(lastUpdatedAt));
+        if (await cmd.ExecuteNonQueryAsync() != 1)
+            throw new InvalidOperationException($"任务 {taskId} 不存在或已完成，不能修改限速历史快照。");
     }
 
     public async Task UpdateRuntimeSnapshotAsync(TaskRuntimeSnapshot snapshot)
@@ -1119,6 +1144,7 @@ public class DownloadTaskStore : IDownloadTaskRepository, ITaskHistoryReadReposi
             QualityId = reader.GetInt32(reader.GetOrdinal("quality_id")),
             AudioQualityId = TryGetInt(reader, "audio_quality_id"),
             SubmissionSnapshotVersion = snapshotVersion,
+            TaskRateLimitBytesPerSecond = TryGetLong(reader, "task_rate_limit_bytes_per_second"),
             DurationSeconds = TryGetInt(reader, "duration_seconds"),
             UseGroupFolder = TryGetBool(reader, "use_group_folder"),
             AddIndexToTitle = TryGetBool(reader, "add_index_to_title"),

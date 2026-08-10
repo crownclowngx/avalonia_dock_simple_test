@@ -80,6 +80,29 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+
+            <!-- 全局限速由应用服务统一持久化并热更新；UI 只使用 KiB/s，避免展示层泄露 B/s 存储细节。 -->
+            <Border Background="{DynamicResource AppSubtlePanelBrush}" CornerRadius="4" Padding="8">
+                <StackPanel Spacing="5">
+                    <TextBlock FontWeight="SemiBold" FontSize="12" Text="全局主媒体限速"/>
+                    <CheckBox Content="启用全局限速"
+                              IsChecked="{Binding IsGlobalRateLimitEnabled}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <NumericUpDown Minimum="64" Maximum="104857600"
+                                       Increment="64"
+                                       Value="{Binding GlobalRateLimitKiBPerSecond}"
+                                       IsEnabled="{Binding IsGlobalRateLimitEnabled}"
+                                       Width="130"/>
+                        <TextBlock Text="KiB/s" VerticalAlignment="Center"/>
+                        <Button Content="应用"
+                                Command="{Binding ApplyGlobalRateLimitCommand}"
+                                Padding="8,3"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding BandwidthLimitStatus}"
+                               TextWrapping="Wrap" FontSize="10"
+                               Foreground="{DynamicResource AppSecondaryTextBrush}"/>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </Expander>
 </UserControl>

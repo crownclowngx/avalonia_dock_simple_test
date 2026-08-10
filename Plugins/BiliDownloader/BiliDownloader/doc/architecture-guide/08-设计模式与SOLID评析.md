@@ -183,6 +183,14 @@ Provider 通过注册表的声明校验增强可替换性：同一 `Kind`、正�
 
 ## 扩展场景指南
 
+## P1-G10 的模式与 SOLID 取舍
+
+带宽实现优先使用窄接口而非把策略堆进下载器：`IBandwidthLimiter` 符合 DIP，`IBandwidthClock` 隔离时间，控制端口与读取端口符合 ISP；settings 应用服务、令牌桶、任务注册表和 UI 各自承担单一职责。新增另一种整形算法时可替换 limiter，而无需修改 HTTP 读取循环，体现 OCP。
+
+务实使用三种模式：Token Bucket 解决长期吞吐和小突发；Round Robin 解决多任务公平；Composite 解决全局与任务约束交集。没有为只有一个实现的数值校验或日志再建立工厂层。任务激活使用 lease，是为了让 finally 可证明释放，不是为了引入通用资源框架。
+
+一个刻意取舍是 Coordinator 的兼容构造路径仍可创建默认任务 limiter，保证大量旧测试和宿主调用不被一次性破坏；生产 DI 始终注入单例端口。后续移除兼容构造函数时，应先迁移所有调用方，而不是让生产链路出现两个任务注册表。
+
 ### 新增内容来源
 
 优先新增 Provider 与 API 窄接口；不要在 `VideoParseViewModel` 中加入新的大分支。只浏览的来源不要实现解析接口。

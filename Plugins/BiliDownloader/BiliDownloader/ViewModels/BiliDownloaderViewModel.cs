@@ -256,6 +256,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
                 AudioFeaturePreference = DownloadConfig.AudioFeaturePreference,
                 SubtitleOptions = DownloadConfig.SubtitleOptions.Canonicalize(),
                 DanmakuOptions = DownloadConfig.DanmakuOptions.Canonicalize(),
+                PerTaskRateLimitBytesPerSecond = DownloadConfig.PerTaskRateLimitBytesPerSecond,
                 IsHighSpecificationSelectionValid = DownloadConfig.IsHighSpecificationSelectionValid,
                 IncrementalExpectation = SourceWorkflow.CreateSubmissionExpectation(),
             },
