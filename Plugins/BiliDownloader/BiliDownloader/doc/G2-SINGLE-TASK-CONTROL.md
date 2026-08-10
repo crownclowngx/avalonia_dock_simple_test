@@ -27,21 +27,23 @@ G2 解决的是下载调度器缺乏 per-task 精确控制的问题：
 
 ### 2.2 暂停语义：取消+标记而非阻塞
 
-暂停不是让线程阻塞在 `ManualResetEventSlim.Wait()` 上（会导致任务永远留在 `_activeTasks` 中无法重新调度）。而是：
-1. `RequestPause()` 设置 `IsPaused = true` 并取消 per-task CTS
+暂停不是让线程阻塞在 `ManualResetEventSlim.Wait()` 上（会导致任务永远留在活动集合中无法重新调度）。而是：
+1. `RequestStop(TaskStopReason.Pause)` 固化停止原因并取消 per-task CTS
 2. 执行器在下一个取消点抛出 `OperationCanceledException`
-3. Coordinator 的 catch 块检查 `context.IsPaused` → 状态设为 Paused
-4. 任务从 `_activeTasks` 移除，恢复时由队列重新调度
+3. Coordinator 根据不可变的 `context.StopReason` 将状态设为 Paused
+4. 暂停命令等待旧执行完成状态写入并从 `_activeRuns` 移除，恢复时由队列创建全新上下文重新调度
+
+`Context` 与执行完成任务封装在同一个 `ActiveTaskRun` 中，并在执行器启动前原子登记。控制命令因此不会遇到“已观察到执行开始，却还找不到可等待的执行任务”的窗口。
 
 ### 2.3 不改变 IDownloadTaskExecutor 接口
 
-暂停检查点在 `ExecuteAsync` 调用前（`context.WaitIfPaused()`）。执行中的暂停响应依赖 CancellationToken 传播。不增加接口重载，避免破坏现有实现和测试。
+取消检查点在 `ExecuteAsync` 调用前（`context.ThrowIfCancellationRequested()`）。执行中的暂停响应依赖 CancellationToken 传播。不增加接口重载，避免破坏现有实现和测试。
 
 ### 2.4 四种 OperationCanceledException 语义区分
 
 | 条件 | 状态 | 含义 |
 |------|------|------|
-| `context.IsPaused` | Paused | 用户暂停，保留断点 |
+| `context.StopReason == TaskStopReason.Pause` | Paused | 用户暂停，保留断点 |
 | `_isShuttingDown` | Interrupted | 宿主关闭，需手动恢复 |
 | `context.IsParentCancelled` | Ready | 全局停止，放回队列 |
 | 其他 | Canceled | 单任务取消 |
@@ -54,8 +56,8 @@ G2 解决的是下载调度器缺乏 per-task 精确控制的问题：
 
 | 文件 | 职责 |
 |------|------|
-| `Services/Download/TaskRuntimeContext.cs` | per-task 控制原语（CTS + 暂停标记 + 父令牌引用） |
-| `Services/Download/BiliDownloadCoordinator.cs` | 调度器：per-task 字典、控制方法、批量方法、WaitingForLogin |
+| `Services/Download/TaskRuntimeContext.cs` | per-task 控制原语（CTS + 不可变停止原因 + 父令牌引用） |
+| `Services/Download/BiliDownloadCoordinator.cs` | 调度器：原子登记的 ActiveTaskRun、控制方法、批量方法、WaitingForLogin |
 | `ViewModels/BiliScheduler/SchedulerTaskListViewModel.cs` | UI 命令绑定：Pause/Resume/Cancel/Restart/PauseAll/ResumeAll |
 | `Converters/TaskControlConverters.cs` | 状态可见性转换器（4 个） |
 | `Converters/StatusToColorConverter.cs` | 新增暂停/等待登录/已取消颜色 |
@@ -105,15 +107,14 @@ Interrupted (终态，可重试/重新开始)
 
 | 测试文件 | 数量 | 覆盖范围 |
 |---------|------|---------|
-| `TaskRuntimeContextTests.cs` | 11 | 控制原语语义（暂停/恢复/取消/链接/幂等） |
-| `BiliDownloadCoordinatorG2Tests.cs` | 33 | Coordinator 集成（暂停/取消/重新开始/删除/WaitingForLogin/并发/批量/回归） |
+| `TaskRuntimeContextTests.cs` | 12 | 控制原语语义（不可变停止原因、取消传播、新上下文恢复、清理竞态与幂等） |
+| `BiliDownloadCoordinatorG2Tests.cs` | 36 | Coordinator 集成（暂停/取消/重新开始/删除/WaitingForLogin/并发/批量/竞态回归） |
 | `PresentationLogicTests.cs` (G2 部分) | 5 | Converter 状态识别和颜色映射 |
-| 现有测试回归 | 159 | 全部通过，无破坏性变更 |
-| **总计** | **208** | |
+| `BiliDownloader.Tests` 全套（2026-08-10） | 724 | 全部通过，无破坏性变更 |
 
 ## 8. 明确限制与后续工作
 
-- 暂停检查点仅在 `ExecuteAsync` 调用前。执行中的大文件下载暂停响应取决于执行器内部对 CancellationToken 的响应速度。G3 可在 MultiConnectionDownloader chunk 循环中增加检查点。
+- Coordinator 在 `ExecuteAsync` 调用前检查一次取消；进入执行器后的暂停响应取决于内部对 CancellationToken 的响应速度。下载循环应持续保留取消检查点。
 - 并发数缩减有 200ms 等待自然完成的延迟，极端情况下可能短暂超额。
 - WaitingForLogin 仅在执行前检查。执行中登出不会中断正在进行的下载。
 - 暂停后恢复是"重新调度"语义（从 Ready 重新开始），不是"线程恢复"语义。对于已执行到一半的任务，恢复后执行器需要自行利用断点字节数实现续传。

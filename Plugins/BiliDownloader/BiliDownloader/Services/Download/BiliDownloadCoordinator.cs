@@ -59,10 +59,15 @@ public sealed class BiliDownloadCoordinator
     /// <summary>调度器是否正在处理任务</summary>
     public bool IsProcessing => _isProcessing;
     private int _maxConcurrentDownloads = 1;
-    private readonly Dictionary<string, Task> _activeTasks = new(StringComparer.Ordinal);
+    /// <summary>
+    /// 一个任务 ID 对应一个原子登记的执行尝试。Context 与 Completion 不再存放于平行字典，
+    /// 避免执行器已经启动、控制命令却只能找到 Context 而无法等待 Completion 的窗口。
+    /// </summary>
+    private readonly Dictionary<string, ActiveTaskRun> _activeRuns = new(StringComparer.Ordinal);
 
-    /// <summary>活动任务的运行时上下文（per-task CTS + 暂停门控）</summary>
-    private readonly Dictionary<string, TaskRuntimeContext> _activeContexts = new(StringComparer.Ordinal);
+    private sealed record ActiveTaskRun(
+        TaskRuntimeContext Context,
+        Task Completion);
 
     /// <summary>任务进度变更事件（UI 订阅）</summary>
     public event Action<DownloadTaskRecord>? TaskProgressChanged;
@@ -549,21 +554,16 @@ public sealed class BiliDownloadCoordinator
         try
         {
             // G2: 活动任务通过 per-task CTS 取消，不再停止全部队列
-            TaskRuntimeContext? ctx;
-            Task? activeTask;
+            ActiveTaskRun? activeRun;
             lock (_schedulerLock)
             {
-                _activeContexts.TryGetValue(task.TaskId, out ctx);
-                _activeTasks.TryGetValue(task.TaskId, out activeTask);
+                _activeRuns.TryGetValue(task.TaskId, out activeRun);
             }
 
-            if (ctx != null)
+            if (activeRun != null)
             {
-                ctx.RequestCancellation();
-                if (activeTask != null)
-                {
-                    try { await activeTask; } catch (OperationCanceledException) { }
-                }
+                activeRun.Context.RequestStop(TaskStopReason.Delete);
+                await activeRun.Completion;
             }
 
             await _repository.DeleteByIdAsync(task.TaskId);
@@ -669,7 +669,9 @@ public sealed class BiliDownloadCoordinator
             Task[] activeTasks;
             lock (_schedulerLock)
             {
-                activeTasks = _activeTasks.Values.ToArray();
+                activeTasks = _activeRuns.Values
+                    .Select(run => run.Completion)
+                    .ToArray();
             }
 
             if (activeTasks.Length > 0)
@@ -765,7 +767,9 @@ public sealed class BiliDownloadCoordinator
         Task[] activeTasks;
         lock (_schedulerLock)
         {
-            activeTasks = _activeTasks.Values.ToArray();
+            activeTasks = _activeRuns.Values
+                .Select(run => run.Completion)
+                .ToArray();
         }
         if (activeTasks.Length > 0)
         {
@@ -779,10 +783,9 @@ public sealed class BiliDownloadCoordinator
             _processingCts?.Dispose();
             _processingCts = null;
             _processingTask = null;
-            _activeTasks.Clear();
-            // G2: 清理所有 per-task 上下文
-            foreach (var ctx in _activeContexts.Values) ctx.Dispose();
-            _activeContexts.Clear();
+            foreach (var run in _activeRuns.Values)
+                run.Context.Dispose();
+            _activeRuns.Clear();
             _isProcessing = false;
         }
         if (notifyStopped)
@@ -797,25 +800,6 @@ public sealed class BiliDownloadCoordinator
         {
             while (!ct.IsCancellationRequested)
             {
-                string[] completedIds;
-                lock (_schedulerLock)
-                {
-                    completedIds = _activeTasks
-                        .Where(pair => pair.Value.IsCompleted)
-                        .Select(pair => pair.Key)
-                        .ToArray();
-                    foreach (var taskId in completedIds)
-                    {
-                        _activeTasks.Remove(taskId);
-                        // G2: 同步清理已完成的 per-task 上下文
-                        if (_activeContexts.TryGetValue(taskId, out var ctx))
-                        {
-                            _activeContexts.Remove(taskId);
-                            ctx.Dispose();
-                        }
-                    }
-                }
-
                 // 查找所有待处理任务
                 var allTasks = await _repository.GetAllAsync();
                 List<DownloadTaskRecord> readyTasks;
@@ -825,9 +809,9 @@ public sealed class BiliDownloadCoordinator
                     readyTasks = allTasks
                         .Where(task =>
                             ParseStatus(task.Status) == DownloadTaskStatus.Ready
-                            && !_activeTasks.ContainsKey(task.TaskId))
+                            && !_activeRuns.ContainsKey(task.TaskId))
                         .ToList();
-                    availableSlots = Math.Max(0, _maxConcurrentDownloads - _activeTasks.Count);
+                    availableSlots = Math.Max(0, _maxConcurrentDownloads - _activeRuns.Count);
                 }
 
                 // 处理循环拥有唯一调度权，只填充当前可用槽位，不阻塞在信号量上。
@@ -843,24 +827,20 @@ public sealed class BiliDownloadCoordinator
                     SchedulerStatusChanged?.Invoke($"正在下载: {task.ItemTitle}");
                     _tracker.BroadcastStatusChanged(task);
 
-                    // G2: 为每个任务创建独立的运行时上下文（链接全局取消）
+                    // 先把 Context 与 Completion 作为一个执行尝试登记，再允许执行器启动。
+                    // 这样 Started 事件之后，所有控制命令都必然能够等待同一个 Completion。
                     var context = TaskRuntimeContext.CreateLinked(task.TaskId, ct);
-                    lock (_schedulerLock)
-                    {
-                        _activeContexts[task.TaskId] = context;
-                    }
-
-                    var downloadTask = ProcessSingleTaskAsync(task, context);
-                    lock (_schedulerLock)
-                    {
-                        _activeTasks[task.TaskId] = downloadTask;
-                    }
+                    RegisterAndStartActiveRun(
+                        task.TaskId,
+                        context,
+                        () => ProcessSingleTaskAsync(task, context));
                 }
-
                 Task[] activeTasks;
                 lock (_schedulerLock)
                 {
-                    activeTasks = _activeTasks.Values.ToArray();
+                    activeTasks = _activeRuns.Values
+                        .Select(run => run.Completion)
+                        .ToArray();
                 }
 
                 if (activeTasks.Length > 0)
@@ -937,8 +917,8 @@ public sealed class BiliDownloadCoordinator
                 BandwidthLimitPolicy.Validate(
                     task.TaskRateLimitBytesPerSecond,
                     nameof(task.TaskRateLimitBytesPerSecond)));
-            // G2: 阶段边界暂停检查（如果已暂停则阻塞直到恢复或取消）
-            context.WaitIfPaused();
+            // Context 可能在活动执行完成登记后、执行器真正启动前收到控制命令。
+            context.ThrowIfCancellationRequested();
 
             var result = await _executor.ExecuteAsync(
                 task,
@@ -1035,9 +1015,9 @@ public sealed class BiliDownloadCoordinator
         }
         catch (OperationCanceledException)
         {
-            // G2: 区分暂停/取消/关闭/全局停止四种语义
+            // 停止原因在第一次控制命令时固化，恢复等后续命令不能改写旧执行的分类。
             DownloadTaskStatus cancelledStatus;
-            if (context.IsPaused)
+            if (context.StopReason == TaskStopReason.Pause)
                 cancelledStatus = DownloadTaskStatus.Paused;        // 暂停：保留断点
             else if (_isShuttingDown)
                 cancelledStatus = DownloadTaskStatus.Interrupted;   // 关闭：标记中断
@@ -1116,10 +1096,8 @@ public sealed class BiliDownloadCoordinator
         }
         finally
         {
-            // 先释放任务桶并输出聚合诊断，再清理取消上下文。限速器从不拥有网络流或文件流。
+            // 释放任务级限速资源；运行上下文由 ActiveTaskRun 包装器统一清理。
             bandwidthActivation?.Dispose();
-            // G2: 清理 per-task 上下文
-            CleanupTaskContext(task.TaskId);
         }
     }
 
@@ -1133,7 +1111,7 @@ public sealed class BiliDownloadCoordinator
             throw new InvalidOperationException("当前下载执行器不支持仅重试合并。");
 
         DownloadTaskRecord task;
-        TaskRuntimeContext context;
+        ActiveTaskRun activeRun;
         await _commandLock.WaitAsync();
         try
         {
@@ -1151,11 +1129,8 @@ public sealed class BiliDownloadCoordinator
 
             lock (_schedulerLock)
             {
-                if (_activeTasks.ContainsKey(taskId))
+                if (_activeRuns.ContainsKey(taskId))
                     throw new InvalidOperationException("任务正在执行，不能重复启动合并。");
-                context = TaskRuntimeContext.CreateLinked(
-                    taskId, _processingCts?.Token ?? CancellationToken.None);
-                _activeContexts[taskId] = context;
             }
 
             task.Status = ToStorage(DownloadTaskStatus.Merging);
@@ -1167,27 +1142,20 @@ public sealed class BiliDownloadCoordinator
                 Math.Max(1, task.MergeProgress), "");
             _tracker.BroadcastStatusChanged(task);
             TaskStatusChanged?.Invoke(task);
+
+            var context = TaskRuntimeContext.CreateLinked(
+                taskId, _processingCts?.Token ?? CancellationToken.None);
+            activeRun = RegisterAndStartActiveRun(
+                taskId,
+                context,
+                () => ExecuteMergeRetryCoreAsync(task, context));
         }
         finally
         {
             _commandLock.Release();
         }
 
-        var operation = ExecuteMergeRetryCoreAsync(task, context);
-        lock (_schedulerLock) _activeTasks[taskId] = operation;
-        try
-        {
-            await operation;
-        }
-        finally
-        {
-            lock (_schedulerLock)
-            {
-                _activeTasks.Remove(taskId);
-                _activeContexts.Remove(taskId);
-            }
-            context.Dispose();
-        }
+        await activeRun.Completion;
     }
 
     /// <summary>
@@ -1214,7 +1182,7 @@ public sealed class BiliDownloadCoordinator
                 throw new InvalidOperationException("主媒体文件不存在，不能独立重试附加资源。");
             lock (_schedulerLock)
             {
-                if (_activeTasks.ContainsKey(taskId))
+                if (_activeRuns.ContainsKey(taskId))
                     throw new InvalidOperationException("任务正在执行，不能同时重试附加资源。");
             }
 
@@ -1249,7 +1217,7 @@ public sealed class BiliDownloadCoordinator
                 ?? throw new InvalidOperationException("待迁移任务不存在。");
             lock (_schedulerLock)
             {
-                if (_activeTasks.ContainsKey(taskId))
+                if (_activeRuns.ContainsKey(taskId))
                     throw new InvalidOperationException("任务正在执行，不能更换输出目录。");
             }
 
@@ -1354,7 +1322,9 @@ public sealed class BiliDownloadCoordinator
             await _tracker.FlushAsync(task.TaskId);
             task.Status = ToStorage(_isShuttingDown
                 ? DownloadTaskStatus.Interrupted
-                : context.IsPaused ? DownloadTaskStatus.Paused : DownloadTaskStatus.Canceled);
+                : context.StopReason == TaskStopReason.Pause
+                    ? DownloadTaskStatus.Paused
+                    : DownloadTaskStatus.Canceled);
             await _repository.UpdateProgressAsync(task.TaskId, task.Progress, task.Status);
             _tracker.BroadcastStatusChanged(task);
             TaskStatusChanged?.Invoke(task);
@@ -1451,6 +1421,71 @@ public sealed class BiliDownloadCoordinator
         _ => string.Empty,
     };
 
+    /// <summary>
+    /// 原子登记并启动一次任务执行。启动门在字典登记完成后才释放，确保任何观察到执行器
+    /// Started 的控制命令都能取得同一个 Completion 并等待旧执行停止写入。
+    /// </summary>
+    private ActiveTaskRun RegisterAndStartActiveRun(
+        string taskId,
+        TaskRuntimeContext context,
+        Func<Task> operation)
+    {
+        var startGate = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var completion = RunRegisteredActiveTaskAsync(
+            taskId,
+            context,
+            startGate.Task,
+            operation);
+        var run = new ActiveTaskRun(context, completion);
+
+        lock (_schedulerLock)
+        {
+            if (!_activeRuns.TryAdd(taskId, run))
+            {
+                startGate.TrySetCanceled();
+                context.Dispose();
+                throw new InvalidOperationException($"任务 {taskId} 已经存在活动执行。");
+            }
+        }
+
+        startGate.TrySetResult();
+        return run;
+    }
+
+    private async Task RunRegisteredActiveTaskAsync(
+        string taskId,
+        TaskRuntimeContext context,
+        Task startSignal,
+        Func<Task> operation)
+    {
+        try
+        {
+            await startSignal;
+            await operation();
+        }
+        finally
+        {
+            CleanupActiveRun(taskId, context);
+        }
+    }
+
+    private void CleanupActiveRun(string taskId, TaskRuntimeContext context)
+    {
+        var ownsRegistration = false;
+        lock (_schedulerLock)
+        {
+            if (_activeRuns.TryGetValue(taskId, out var current)
+                && ReferenceEquals(current.Context, context))
+            {
+                ownsRegistration = _activeRuns.Remove(taskId);
+            }
+        }
+
+        if (ownsRegistration)
+            context.Dispose();
+    }
+
     private void SignalQueueChanged() => _queueWakeups.Writer.TryWrite(true);
 
     private void DrainQueueWakeups()
@@ -1473,29 +1508,23 @@ public sealed class BiliDownloadCoordinator
     #region G2 单任务控制
 
     /// <summary>
-    /// 暂停单个任务。在下一个阶段边界生效，不取消 CTS（保留断点）。
+    /// 暂停单个任务：以 Pause 原因取消当前执行并保留断点。方法只在旧执行完成最终状态写入后返回，
+    /// 因此紧接着发出的恢复命令不会与旧执行的取消处理竞争。
     /// </summary>
     public async Task PauseTaskAsync(string taskId)
     {
         await _commandLock.WaitAsync();
         try
         {
-            TaskRuntimeContext? ctx;
-            lock (_schedulerLock) { _activeContexts.TryGetValue(taskId, out ctx); }
+            ActiveTaskRun? activeRun;
+            lock (_schedulerLock) { _activeRuns.TryGetValue(taskId, out activeRun); }
 
-            if (ctx == null) return; // 任务不在活动中
+            if (activeRun == null) return; // 任务不在活动中
 
-            ctx.RequestPause();
+            activeRun.Context.RequestStop(TaskStopReason.Pause);
+            await activeRun.Completion;
 
-            // 立即持久化状态（实际执行在阶段边界才暂停）
             var task = (await _repository.GetAllAsync()).FirstOrDefault(t => t.TaskId == taskId);
-            if (task != null)
-            {
-                task.Status = ToStorage(DownloadTaskStatus.Paused);
-                await _repository.UpdateProgressAsync(taskId, task.Progress, task.Status);
-                _tracker.BroadcastStatusChanged(task);
-                TaskStatusChanged?.Invoke(task);
-            }
             SchedulerStatusChanged?.Invoke($"已暂停任务: {task?.ItemTitle ?? taskId}");
         }
         finally { _commandLock.Release(); }
@@ -1504,7 +1533,7 @@ public sealed class BiliDownloadCoordinator
     /// <summary>
     /// 恢复已暂停或等待登录的任务。等待登录任务会在此处重新检查当前凭据，
     /// 只有这次显式用户命令和有效登录态同时成立时，任务才会重新进入 Ready。
-    /// 状态必须先落库并通知 UI，最后才释放暂停门控或唤醒调度器，避免执行先于事实源。
+    /// 暂停使用的 CTS 不可恢复；本方法只更新持久化事实并唤醒调度器，由调度器创建新 Context。
     /// </summary>
     public async Task ResumeTaskAsync(string taskId)
     {
@@ -1528,19 +1557,17 @@ public sealed class BiliDownloadCoordinator
                 return;
             }
 
+            lock (_schedulerLock)
+            {
+                if (_activeRuns.ContainsKey(taskId))
+                    throw new InvalidOperationException("任务的上一次执行尚未完全退出，暂时不能恢复。");
+            }
+
             task.Status = ToStorage(DownloadTaskStatus.Ready);
             await _repository.UpdateProgressAsync(taskId, task.Progress, task.Status);
             _tracker.BroadcastStatusChanged(task);
             TaskStatusChanged?.Invoke(task);
 
-            // 活动暂停任务可能仍停在执行器的暂停门控中。事实源和 UI 已经观察到 Ready 后
-            // 才释放门控，确保恢复瞬间崩溃时 SQLite 仍能解释任务为何继续执行。
-            TaskRuntimeContext? ctx;
-            lock (_schedulerLock) { _activeContexts.TryGetValue(taskId, out ctx); }
-            if (ctx?.IsPaused == true)
-            {
-                ctx.Resume();
-            }
             StartProcessingInternal();
             SchedulerStatusChanged?.Invoke($"已恢复任务: {task.ItemTitle}");
         }
@@ -1556,21 +1583,16 @@ public sealed class BiliDownloadCoordinator
         await _commandLock.WaitAsync();
         try
         {
-            TaskRuntimeContext? ctx;
-            Task? activeTask;
+            ActiveTaskRun? activeRun;
             lock (_schedulerLock)
             {
-                _activeContexts.TryGetValue(taskId, out ctx);
-                _activeTasks.TryGetValue(taskId, out activeTask);
+                _activeRuns.TryGetValue(taskId, out activeRun);
             }
 
-            if (ctx != null)
+            if (activeRun != null)
             {
-                ctx.RequestCancellation();
-                if (activeTask != null)
-                {
-                    try { await activeTask; } catch (OperationCanceledException) { }
-                }
+                activeRun.Context.RequestStop(TaskStopReason.Cancel);
+                await activeRun.Completion;
             }
 
             var task = (await _repository.GetAllAsync()).FirstOrDefault(t => t.TaskId == taskId);
@@ -1596,22 +1618,17 @@ public sealed class BiliDownloadCoordinator
         await _commandLock.WaitAsync();
         try
         {
-            // 先取消（如果在运行）
-            TaskRuntimeContext? ctx;
-            Task? activeTask;
+            // 先终止并等待旧执行停止写入，再重置为新的可调度事实。
+            ActiveTaskRun? activeRun;
             lock (_schedulerLock)
             {
-                _activeContexts.TryGetValue(taskId, out ctx);
-                _activeTasks.TryGetValue(taskId, out activeTask);
+                _activeRuns.TryGetValue(taskId, out activeRun);
             }
 
-            if (ctx != null)
+            if (activeRun != null)
             {
-                ctx.RequestCancellation();
-                if (activeTask != null)
-                {
-                    try { await activeTask; } catch (OperationCanceledException) { }
-                }
+                activeRun.Context.RequestStop(TaskStopReason.Restart);
+                await activeRun.Completion;
             }
 
             var task = (await _repository.GetAllAsync()).FirstOrDefault(t => t.TaskId == taskId);
@@ -1647,7 +1664,7 @@ public sealed class BiliDownloadCoordinator
     public async Task PauseAllActiveAsync()
     {
         string[] activeIds;
-        lock (_schedulerLock) { activeIds = _activeContexts.Keys.ToArray(); }
+        lock (_schedulerLock) { activeIds = _activeRuns.Keys.ToArray(); }
         foreach (var id in activeIds)
             await PauseTaskAsync(id);
     }
@@ -1669,7 +1686,7 @@ public sealed class BiliDownloadCoordinator
     public async Task CancelAllActiveAsync()
     {
         string[] activeIds;
-        lock (_schedulerLock) { activeIds = _activeContexts.Keys.ToArray(); }
+        lock (_schedulerLock) { activeIds = _activeRuns.Keys.ToArray(); }
         foreach (var id in activeIds)
             await CancelTaskAsync(id);
     }
@@ -1699,28 +1716,14 @@ public sealed class BiliDownloadCoordinator
         string[] excessIds;
         lock (_schedulerLock)
         {
-            var excess = _activeContexts.Count - targetCount;
+            var excess = _activeRuns.Count - targetCount;
             if (excess <= 0) return;
             // 取最后加入的（新任务断点少）
-            excessIds = _activeContexts.Keys.TakeLast(excess).ToArray();
+            excessIds = _activeRuns.Keys.TakeLast(excess).ToArray();
         }
 
         foreach (var id in excessIds)
             await PauseTaskAsync(id);
-    }
-
-    /// <summary>G2: 清理单个任务的运行时上下文</summary>
-    private void CleanupTaskContext(string taskId)
-    {
-        TaskRuntimeContext? ctx;
-        lock (_schedulerLock)
-        {
-            if (_activeContexts.TryGetValue(taskId, out ctx))
-            {
-                _activeContexts.Remove(taskId);
-            }
-        }
-        ctx?.Dispose();
     }
 
     /// <summary>清理临时文件目录（忽略失败）</summary>

@@ -95,28 +95,50 @@ public sealed class BiliDownloadCoordinatorG2Tests
     {
         var repository = new InMemoryDownloadTaskRepository();
         var executor = new FakeDownloadTaskExecutor();
-        var callCount = 0;
-        executor.Handler = (task, ct) =>
+        var attemptCount = 0;
+        var cancellationObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var allowFirstAttemptToExit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondAttemptStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        executor.Handler = async (_, ct) =>
         {
-            callCount++;
-            if (callCount == 1)
-                return Task.Delay(Timeout.Infinite, ct)
-                    .ContinueWith(_ => new DownloadExecutionResult(null, null), TaskContinuationOptions.OnlyOnRanToCompletion);
-            return Task.FromResult(new DownloadExecutionResult(null, null));
+            var attempt = Interlocked.Increment(ref attemptCount);
+            if (attempt == 1)
+            {
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, ct);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    cancellationObserved.TrySetResult();
+                    await allowFirstAttemptToExit.Task;
+                    throw;
+                }
+            }
+
+            secondAttemptStarted.TrySetResult();
+            return new DownloadExecutionResult(null, null);
         };
         var coordinator = CreateCoordinator(repository, executor);
         repository.Seed(Record("t1", DownloadTaskStatus.Ready));
 
         coordinator.StartProcessingAsync();
         await executor.Started.Task;
-        await coordinator.PauseTaskAsync("t1");
-        await WaitUntilAsync(() =>
-            repository.Tasks.Single(x => x.TaskId == "t1").Status == "paused");
+        var pauseTask = coordinator.PauseTaskAsync("t1");
+        await cancellationObserved.Task;
 
-        await coordinator.ResumeTaskAsync("t1");
+        // 暂停命令必须等待旧执行真正退出；恢复命令则应在命令锁后排队。
+        Assert.False(pauseTask.IsCompleted);
+        var resumeTask = coordinator.ResumeTaskAsync("t1");
+        Assert.False(resumeTask.IsCompleted);
 
-        await WaitUntilAsync(() =>
-            repository.Tasks.Single(x => x.TaskId == "t1").Status == "done");
+        allowFirstAttemptToExit.TrySetResult();
+        await pauseTask;
+        await resumeTask;
+        await secondAttemptStarted.Task;
+
+        await WaitUntilAsync(() => repository.Tasks.Single(x => x.TaskId == "t1").Status == "done");
+        Assert.Equal(2, attemptCount);
         await coordinator.ShutdownAsync();
     }
 
@@ -282,20 +304,51 @@ public sealed class BiliDownloadCoordinatorG2Tests
     {
         var repository = new InMemoryDownloadTaskRepository();
         var executor = new FakeDownloadTaskExecutor();
-        executor.Handler = (task, ct) => Task.Delay(Timeout.Infinite, ct)
-            .ContinueWith(_ => new DownloadExecutionResult(null, null), TaskContinuationOptions.OnlyOnRanToCompletion);
+        var attemptCount = 0;
+        var cancellationObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var allowFirstAttemptToExit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondAttemptStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        executor.Handler = async (_, ct) =>
+        {
+            var attempt = Interlocked.Increment(ref attemptCount);
+            if (attempt == 1)
+            {
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, ct);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    cancellationObserved.TrySetResult();
+                    await allowFirstAttemptToExit.Task;
+                    throw;
+                }
+            }
+
+            secondAttemptStarted.TrySetResult();
+            await Task.Delay(Timeout.Infinite, ct);
+            return new DownloadExecutionResult(null, null);
+        };
         var coordinator = CreateCoordinator(repository, executor);
         repository.Seed(Record("t1", DownloadTaskStatus.Ready));
 
         coordinator.StartProcessingAsync();
         await executor.Started.Task;
 
-        await coordinator.RestartTaskAsync("t1");
+        var restartTask = coordinator.RestartTaskAsync("t1");
+        await cancellationObserved.Task;
+
+        // 重置不能先于旧执行的取消收尾，否则旧执行会把 pending 覆盖成 canceled。
+        Assert.False(restartTask.IsCompleted);
+        allowFirstAttemptToExit.TrySetResult();
+        await restartTask;
+        await secondAttemptStarted.Task;
 
         var task = repository.Tasks.Single(x => x.TaskId == "t1");
         Assert.Equal(0, task.Progress);
         Assert.Equal(0, task.VideoBytesDownloaded);
         Assert.Equal("pending", task.Status);
+        Assert.Equal(2, attemptCount);
         await coordinator.ShutdownAsync();
     }
 

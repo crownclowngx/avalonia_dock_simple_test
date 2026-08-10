@@ -3,143 +3,121 @@ using BiliDownloader.Services.Download;
 namespace BiliDownloader.Tests;
 
 /// <summary>
-/// TaskRuntimeContext 纯单元测试：验证 per-task 控制原语的语义正确性。
-/// 不依赖 Coordinator，直接测试暂停/恢复/取消/链接传播。
+/// TaskRuntimeContext 纯单元测试：验证单次任务执行的取消传播和停止原因语义。
 /// </summary>
 public sealed class TaskRuntimeContextTests
 {
     [Fact]
-    public void 创建后Token未取消且暂停门控已打开()
+    public void 创建后令牌未取消且停止原因为None()
     {
         using var parentCts = new CancellationTokenSource();
         using var context = TaskRuntimeContext.CreateLinked("task1", parentCts.Token);
 
+        Assert.Equal("task1", context.TaskId);
         Assert.False(context.Token.IsCancellationRequested);
-        // WaitIfPaused 不应阻塞（门控初始为 open）
-        context.WaitIfPaused(); // 如果阻塞则测试超时失败
+        Assert.Equal(TaskStopReason.None, context.StopReason);
+        context.ThrowIfCancellationRequested();
     }
 
-    [Fact]
-    public void RequestPause后WaitIfPaused抛出OperationCanceledException()
+    [Theory]
+    [InlineData((int)TaskStopReason.Pause)]
+    [InlineData((int)TaskStopReason.Cancel)]
+    [InlineData((int)TaskStopReason.Restart)]
+    [InlineData((int)TaskStopReason.Delete)]
+    public void RequestStop记录原因并取消令牌(int reasonValue)
     {
         using var parentCts = new CancellationTokenSource();
         using var context = TaskRuntimeContext.CreateLinked("task1", parentCts.Token);
-        context.RequestPause();
+        var reason = (TaskStopReason)reasonValue;
 
-        Assert.Throws<OperationCanceledException>(() => context.WaitIfPaused());
+        context.RequestStop(reason);
+
+        Assert.Equal(reason, context.StopReason);
+        Assert.True(context.Token.IsCancellationRequested);
+        Assert.Throws<OperationCanceledException>(() => context.ThrowIfCancellationRequested());
     }
 
     [Fact]
-    public void Resume后WaitIfPaused不抛异常()
+    public void RequestStop拒绝None原因()
     {
-        using var parentCts = new CancellationTokenSource();
-        using var context = TaskRuntimeContext.CreateLinked("task1", parentCts.Token);
-        context.RequestPause();
-        context.Resume();
+        using var context = TaskRuntimeContext.CreateLinked("task1", CancellationToken.None);
 
-        // Resume 后 IsPaused=false，WaitIfPaused 不抛异常
-        var exception = Xunit.Record.Exception(() => context.WaitIfPaused());
-        Assert.Null(exception);
+        Assert.Throws<ArgumentOutOfRangeException>(() => context.RequestStop(TaskStopReason.None));
+        Assert.False(context.Token.IsCancellationRequested);
     }
 
     [Fact]
-    public void RequestCancellation取消Token()
+    public void 第一次停止原因不会被后续命令改写()
     {
-        using var parentCts = new CancellationTokenSource();
-        using var context = TaskRuntimeContext.CreateLinked("task1", parentCts.Token);
+        using var context = TaskRuntimeContext.CreateLinked("task1", CancellationToken.None);
 
-        context.RequestCancellation();
+        context.RequestStop(TaskStopReason.Pause);
+        context.RequestStop(TaskStopReason.Restart);
+        context.RequestStop(TaskStopReason.Cancel);
 
+        Assert.Equal(TaskStopReason.Pause, context.StopReason);
         Assert.True(context.Token.IsCancellationRequested);
     }
 
     [Fact]
-    public void 暂停状态下RequestCancellation不死锁()
-    {
-        using var parentCts = new CancellationTokenSource();
-        using var context = TaskRuntimeContext.CreateLinked("task1", parentCts.Token);
-        context.RequestPause();
-
-        // 取消应正常工作，不抛额外异常
-        var exception = Xunit.Record.Exception(() => context.RequestCancellation());
-        Assert.Null(exception);
-        Assert.True(context.Token.IsCancellationRequested);
-    }
-
-    [Fact]
-    public void 全局父Token取消传播到子Token()
+    public void 父令牌取消会传播但不伪造单任务停止原因()
     {
         using var parentCts = new CancellationTokenSource();
         using var context = TaskRuntimeContext.CreateLinked("task1", parentCts.Token);
 
         parentCts.Cancel();
 
+        Assert.True(context.IsParentCancelled);
         Assert.True(context.Token.IsCancellationRequested);
+        Assert.Equal(TaskStopReason.None, context.StopReason);
     }
 
     [Fact]
-    public void 单任务取消不影响父Token()
+    public void 单任务停止不会取消父令牌()
     {
         using var parentCts = new CancellationTokenSource();
         using var context = TaskRuntimeContext.CreateLinked("task1", parentCts.Token);
 
-        context.RequestCancellation();
+        context.RequestStop(TaskStopReason.Cancel);
 
         Assert.True(context.Token.IsCancellationRequested);
         Assert.False(parentCts.Token.IsCancellationRequested);
     }
 
     [Fact]
-    public void Dispose后资源释放不抛异常()
+    public void 恢复必须使用新的运行上下文()
     {
-        using var parentCts = new CancellationTokenSource();
-        var context = TaskRuntimeContext.CreateLinked("task1", parentCts.Token);
+        using var pausedContext = TaskRuntimeContext.CreateLinked("task1", CancellationToken.None);
+        pausedContext.RequestStop(TaskStopReason.Pause);
+
+        using var resumedContext = TaskRuntimeContext.CreateLinked("task1", CancellationToken.None);
+
+        Assert.True(pausedContext.Token.IsCancellationRequested);
+        Assert.Equal(TaskStopReason.Pause, pausedContext.StopReason);
+        Assert.False(resumedContext.Token.IsCancellationRequested);
+        Assert.Equal(TaskStopReason.None, resumedContext.StopReason);
+    }
+
+    [Fact]
+    public void Dispose可以重复调用()
+    {
+        var context = TaskRuntimeContext.CreateLinked("task1", CancellationToken.None);
 
         context.Dispose();
-        // 二次 Dispose 不应抛出（CancellationTokenSource.Dispose 是幂等的）
-        var exception = Record.Exception(() => context.Dispose());
+
+        var exception = Record.Exception(context.Dispose);
         Assert.Null(exception);
     }
 
     [Fact]
-    public void IsPaused属性正确反映状态()
+    public void 清理后到达的停止命令按幂等操作处理()
     {
-        using var parentCts = new CancellationTokenSource();
-        using var context = TaskRuntimeContext.CreateLinked("task1", parentCts.Token);
+        var context = TaskRuntimeContext.CreateLinked("task1", CancellationToken.None);
+        context.Dispose();
 
-        Assert.False(context.IsPaused);
-        context.RequestPause();
-        Assert.True(context.IsPaused);
-        context.Resume();
-        Assert.False(context.IsPaused);
-    }
+        var exception = Record.Exception(() => context.RequestStop(TaskStopReason.Pause));
 
-    [Fact]
-    public void 多次Pause幂等()
-    {
-        using var parentCts = new CancellationTokenSource();
-        using var context = TaskRuntimeContext.CreateLinked("task1", parentCts.Token);
-
-        context.RequestPause();
-        context.RequestPause(); // 第二次不应抛异常
-
-        Assert.True(context.IsPaused);
-        Assert.True(context.Token.IsCancellationRequested);
-        Assert.Throws<OperationCanceledException>(() => context.WaitIfPaused());
-    }
-
-    [Fact]
-    public void 多次Resume幂等()
-    {
-        using var parentCts = new CancellationTokenSource();
-        using var context = TaskRuntimeContext.CreateLinked("task1", parentCts.Token);
-
-        // ManualResetEventSlim.Set() 多次调用不抛异常
-        var exception = Record.Exception(() =>
-        {
-            context.Resume();
-            context.Resume();
-        });
         Assert.Null(exception);
+        Assert.Equal(TaskStopReason.Pause, context.StopReason);
     }
 }
