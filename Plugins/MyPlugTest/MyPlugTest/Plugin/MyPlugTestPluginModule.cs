@@ -29,6 +29,7 @@ public sealed class MyPlugTestPluginModule : IPluginModule
         // UrlHistoryViewModel 同样使用 Transient，确保不同欢迎 Document 的历史记录互不串扰。
         services.AddTransient<TestWelcomeViewModel>();
         services.AddTransient<TestMessageReceiveViewModel>();
+        services.AddTransient<BatchHttpGetViewModel>();
         services.AddTransient<UrlHistoryViewModel>();
 
         // URL 请求服务本身不保存单个 Document 的可变状态，可以作为插件级 Singleton 复用。

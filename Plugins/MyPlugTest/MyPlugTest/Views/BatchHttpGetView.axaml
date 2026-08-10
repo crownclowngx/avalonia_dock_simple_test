@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MyPlugTest.ViewModels"
+             mc:Ignorable="d"
+             d:DesignWidth="900"
+             d:DesignHeight="650"
+             x:Class="MyPlugTest.Views.BatchHttpGetView"
+             x:DataType="vm:BatchHttpGetViewModel">
+    <Grid Margin="16" RowDefinitions="Auto,2*,Auto,3*" RowSpacing="10">
+        <StackPanel Grid.Row="0" Spacing="4">
+            <TextBlock Text="请求地址（每行一个）" FontWeight="SemiBold" />
+            <TextBlock Text="没有协议时自动使用 http；空行会被忽略。"
+                       Opacity="0.7" />
+        </StackPanel>
+
+        <TextBox Grid.Row="1"
+                 Text="{Binding RequestLines, Mode=TwoWay}"
+                 AcceptsReturn="True"
+                 TextWrapping="NoWrap"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 PlaceholderText="http://example.com&#10;http://httpbin.org/get" />
+
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <Button Grid.Column="0"
+                    Content="按行执行 GET"
+                    Command="{Binding ExecuteRequestsCommand}" />
+            <TextBlock Grid.Column="1"
+                       Text="{Binding StatusText}"
+                       VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
+        </Grid>
+
+        <TextBox Grid.Row="3"
+                 Text="{Binding ResponseContent}"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="NoWrap"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 PlaceholderText="响应内容会按请求顺序显示在这里" />
+    </Grid>
+</UserControl>

@@ -6,4 +6,6 @@ public class SaveDocumentTypeIdConstant
 
     public const string TestMessageReceiveDocumentId = "384D28C4-F6E8-4D49-B0BD-2CE484D4D177";
 
+    public const string BatchHttpGetDocumentId = "C1B13C72-C21A-4C39-9612-77C341DA85B6";
+
 }
