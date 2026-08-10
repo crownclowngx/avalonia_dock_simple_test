@@ -1,5 +1,8 @@
 # Dock 结构布局快照 V1
 
+> 本文描述稳定的外部布局格式。主项目内部协作者及设计取舍参见
+> [`Host/MyAvaloniaManagement/docs`](../../../Host/MyAvaloniaManagement/docs/README.md)。
+
 ## 设计边界
 
 布局文件固定为：
@@ -71,7 +74,13 @@ Dock 的空布局折叠机制收缩为零高度。旧版只包含左右节点的
 
 ## 写入与生命周期
 
-写入先在同目录创建唯一临时文件并强制刷新，再用原子替换更新正式文件；无论成功失败都清理临时文件。
+`DockLayoutLifecycle` 只编排 Prepare、Apply 和 Save；运行时 Dock 树与快照互转由
+`DockLayoutSnapshotMapper` 负责，现有两向到四向兼容由 `DockLayoutSnapshotMigrator`
+负责，插件、Pane、Tool 和稳定 ID 校验由 `DockLayoutRuntimeValidator` 负责。
+
+写入统一委托给 `AtomicFileTransaction`：先在同目录创建唯一临时文件并强制刷新，
+再用原子替换更新正式文件；无论成功失败都清理临时文件。该事务组件同时供 Document
+保存使用，避免两条持久化链路产生不同的失败语义。
 
 启动顺序：
 

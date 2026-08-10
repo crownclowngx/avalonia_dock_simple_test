@@ -9,6 +9,7 @@ using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagementCommon.Message;
@@ -90,26 +91,22 @@ public partial class ToolManagementViewModel : Tool
     /// 加载所有已注册且不是工具管理器自身的工具。
     /// </summary>
     /// <remarks>
-    /// 正常情况下使用工厂公开的数据快照；根布局尚未建立时通过反射读取注册结果，
-    /// 是为了让工具管理列表能在 Dock 初始化前完成构造，后续同步仍以真实 Dock 树为准。
+    /// 布局建立后使用包含 RootDock 的管理数据；布局建立前使用内部只读注册快照。
+    /// 这样既不依赖私有字段反射，也能提前构造工具列表，后续可见性仍以真实 Dock 树为准。
     /// </remarks>
     private void LoadTools()
     {
         var toolManagementData = _factory.GetToolManagementData();
+        var registrySnapshot = _factory.GetToolRegistrySnapshot();
 
         // 清除现有项
         ToolItems.Clear();
 
-        // 即使 RootDock 尚未初始化，也可以通过反射获取元数据和已创建工具来填充列表
+        // RootDock 尚未初始化时使用工厂提供的只读注册快照。
         var toolMetadata = toolManagementData?.ToolMetadata 
-            ?? GetFieldViaReflection<Dictionary<string, ToolMetadata>>(_factory, "_toolMetadata");
+            ?? registrySnapshot.ToolMetadata;
         var createdTools = toolManagementData?.CreatedTools 
-            ?? GetFieldViaReflection<Dictionary<string, Tool>>(_factory, "_createdTools");
-
-        if (toolMetadata == null || createdTools == null)
-        {
-            return;
-        }
+            ?? registrySnapshot.CreatedTools;
 
         // 添加所有工具（排除自身）
         foreach (var metadata in toolMetadata.Values.Where(m => m.ToolTypeId != _currentToolId))
@@ -135,17 +132,6 @@ public partial class ToolManagementViewModel : Tool
     }
 
     /// <summary>
-    /// 在 Dock 根尚未初始化时读取工厂中的已注册工具数据。
-    /// </summary>
-    private static T? GetFieldViaReflection<T>(object? obj, string fieldName) where T : class
-    {
-        if (obj == null) return null;
-        var field = obj.GetType().GetField(fieldName, 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        return field?.GetValue(obj) as T;
-    }
-
-    /// <summary>
     /// 判断工具是否已进入隐藏集合，或已经脱离所有可见 ToolDock。
     /// </summary>
     private static bool IsToolHidden(IRootDock rootDock, IDockable tool)
@@ -154,10 +140,10 @@ public partial class ToolManagementViewModel : Tool
         if (rootDock.HiddenDockables != null && rootDock.HiddenDockables.Contains(tool))
             return true;
         // 图钉收起的工具位于 RootDock 的 PinnedDockables 集合中，仍属于已显示状态
-        if (IsToolPinned(rootDock, tool))
+        if (DockTreeNavigator.IsToolPinned(rootDock, tool))
             return false;
         // 如果不在任何 ToolDock 的 VisibleDockables 中，也是被隐藏
-        return FindToolDockContainingTool(rootDock, tool) == null;
+        return DockTreeNavigator.FindToolDock(rootDock, tool) == null;
     }
 
     /// <summary>
@@ -185,8 +171,12 @@ public partial class ToolManagementViewModel : Tool
         }
 
         // 检查工具当前是否在某个 ToolDock 的 VisibleDockables 中
-        var currentDock = FindToolDockContainingTool(toolManagementData.RootDock, tool);
-        var isPinned = IsToolPinned(toolManagementData.RootDock, tool);
+        var currentDock = DockTreeNavigator.FindToolDock(
+            toolManagementData.RootDock,
+            tool);
+        var isPinned = DockTreeNavigator.IsToolPinned(
+            toolManagementData.RootDock,
+            tool);
 
         if (currentDock != null || isPinned)
         {
@@ -211,52 +201,6 @@ public partial class ToolManagementViewModel : Tool
 
         // 通知布局刷新
         _messengerService.Send(new UpdateLayoutMessage("UpdateLayout"));
-    }
-
-    /// <summary>
-    /// 递归查找直接包含指定工具的 ToolDock。
-    /// </summary>
-    private static ToolDock? FindToolDockContainingTool(IDock dock, IDockable tool)
-    {
-        if (dock is ToolDock toolDock &&
-            toolDock.VisibleDockables != null &&
-            toolDock.VisibleDockables.Contains(tool))
-        {
-            return toolDock;
-        }
-
-        if (dock.VisibleDockables != null)
-        {
-            foreach (var dockable in dock.VisibleDockables)
-            {
-                if (dockable is IDock childDock)
-                {
-                    var result = FindToolDockContainingTool(childDock, tool);
-                    if (result != null) return result;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// 递归检查所有 RootDock 的四个自动隐藏集合。
-    /// </summary>
-    private static bool IsToolPinned(IDock dock, IDockable tool)
-    {
-        if (dock is IRootDock rootDock &&
-            (rootDock.LeftPinnedDockables?.Contains(tool) == true ||
-             rootDock.RightPinnedDockables?.Contains(tool) == true ||
-             rootDock.TopPinnedDockables?.Contains(tool) == true ||
-             rootDock.BottomPinnedDockables?.Contains(tool) == true))
-        {
-            return true;
-        }
-
-        return dock.VisibleDockables?
-            .OfType<IDock>()
-            .Any(child => IsToolPinned(child, tool)) == true;
     }
 
     /// <summary>

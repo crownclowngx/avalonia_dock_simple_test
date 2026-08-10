@@ -102,6 +102,12 @@ internal sealed class TestHostStorageService : IHostStorageService
 
     public DocumentMetadata? LastSaveMetadata { get; private set; }
 
+    public Exception? ReadException { get; set; }
+
+    public Exception? WriteException { get; set; }
+
+    public int ReadCount { get; private set; }
+
     public Dictionary<string, string> Files { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
@@ -128,6 +134,12 @@ internal sealed class TestHostStorageService : IHostStorageService
     /// <inheritdoc />
     public Task<string> ReadAllTextAsync(string path)
     {
+        ReadCount++;
+        if (ReadException is not null)
+        {
+            return Task.FromException<string>(ReadException);
+        }
+
         var normalized = Path.GetFullPath(path);
         if (Files.TryGetValue(normalized, out var content))
         {
@@ -140,6 +152,11 @@ internal sealed class TestHostStorageService : IHostStorageService
     /// <inheritdoc />
     public Task WriteAllTextAsync(string path, string content)
     {
+        if (WriteException is not null)
+        {
+            return Task.FromException(WriteException);
+        }
+
         var normalized = Path.GetFullPath(path);
         Files[normalized] = content;
         Writes.Add((normalized, content));

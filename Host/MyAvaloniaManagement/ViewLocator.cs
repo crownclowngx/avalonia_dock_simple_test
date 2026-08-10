@@ -52,7 +52,10 @@ public partial class ViewLocator : IDataTemplate
                     }
 
                     // 扫描所有符合命名约定的视图类
-                    foreach (var type in assembly.GetTypes())
+                    foreach (var type in AssemblyTypeCatalog.GetLoadableTypes(
+                                 assembly,
+                                 exception => Console.Error.WriteLine(
+                                     $"ViewLocator errorCode=VIEW_TYPE_SCAN_PARTIAL assembly={assembly.FullName} type={exception.GetType().Name}")))
                     {
                         if (typeof(Control).IsAssignableFrom(type) &&
                             !type.IsAbstract &&

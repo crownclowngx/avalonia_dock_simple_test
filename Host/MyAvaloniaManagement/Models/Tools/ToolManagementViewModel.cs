@@ -25,3 +25,11 @@ public class ToolManagementData
     /// </summary>
     public required IRootDock RootDock { get; init; }
 }
+
+/// <summary>
+/// 提供布局建立前可读取的工具注册只读快照。
+/// 该内部契约替代对 ManagementFactory 私有字段的反射，同时不扩大 public API。
+/// </summary>
+internal sealed record ToolRegistrySnapshot(
+    IReadOnlyDictionary<string, ToolMetadata> ToolMetadata,
+    IReadOnlyDictionary<string, Tool> CreatedTools);

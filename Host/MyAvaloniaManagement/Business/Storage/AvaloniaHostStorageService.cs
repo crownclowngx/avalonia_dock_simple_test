@@ -95,7 +95,7 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
 
     /// <inheritdoc />
     public Task WriteAllTextAsync(string path, string content) =>
-        File.WriteAllTextAsync(path, content);
+        AtomicFileTransaction.WriteAllTextAsync(path, content);
 
     /// <summary>
     /// 获取当前桌面主窗口的存储提供器。

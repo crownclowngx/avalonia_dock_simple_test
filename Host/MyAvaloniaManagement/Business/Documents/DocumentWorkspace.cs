@@ -1,0 +1,56 @@
+using System;
+using System.Linq;
+using Dock.Model.Controls;
+using Dock.Model.Core;
+using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagementCommon.Save;
+
+namespace MyAvaloniaManagement.Business.Documents;
+
+/// <summary>
+/// 将通用 Dock 对象图适配为面向文档的添加、激活、查重和当前项查询。
+/// 该适配层隔离 Dock 实现细节，使持久化流程不依赖具体的树遍历方式。
+/// </summary>
+internal sealed class DocumentWorkspace(ManagementFactory factory)
+{
+    internal void Add(Document document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        GetDocumentDock()?.AddDocument(document);
+    }
+
+    internal IDockable? GetActiveDocument() => GetDocumentDock()?.ActiveDockable;
+
+    internal bool TryActivate(IRootDock? root, string filePath)
+    {
+        if (root is null)
+        {
+            return false;
+        }
+
+        foreach (var dockable in DockTreeNavigator.Enumerate(root))
+        {
+            if (dockable is not ISavableDocument savable ||
+                !DocumentPathIdentity.Equals(savable.FilePath, filePath))
+            {
+                continue;
+            }
+
+            var documentDock = DockTreeNavigator.FindDocumentDock(root, dockable);
+            if (documentDock is null)
+            {
+                continue;
+            }
+
+            documentDock.ActiveDockable = dockable;
+            return true;
+        }
+
+        return false;
+    }
+
+    private DocumentDock? GetDocumentDock() =>
+        factory.GetDockable<IDocumentDock>("Files") as DocumentDock;
+}

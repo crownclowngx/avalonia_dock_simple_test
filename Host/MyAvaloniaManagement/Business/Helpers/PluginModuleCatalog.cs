@@ -8,68 +8,72 @@ using MyAvaloniaManagementCommon.Plugin;
 namespace MyAvaloniaManagement.Business.Helpers;
 
 /// <summary>
-/// 发现选择接入宿主依赖注入的插件模块，并记录对应的托管程序集。
-/// <para>
-/// 该目录只把真正声明 <see cref="IPluginModule"/> 的程序集标记为托管程序集。
-/// 其他程序集仍由 ManagementFactory 使用原有的无参构造路径实例化策略，
-/// 从而避免因为宿主增加 DI 能力而改变历史插件的构造函数选择或初始化时机。
-/// </para>
+/// 发现显式实现模块契约的托管插件，并保存本次发现使用的完整程序集快照。
+/// 策略注册与视图定位复用该快照，避免对插件目录进行重复扫描。
 /// </summary>
 public sealed class PluginModuleCatalog
 {
     private readonly HashSet<Assembly> _managedAssemblies;
+    private readonly IReadOnlyList<Assembly> _discoveredAssemblies;
 
-    private PluginModuleCatalog(IReadOnlyList<IPluginModule> modules)
+    private PluginModuleCatalog(
+        IReadOnlyList<IPluginModule> modules,
+        IReadOnlyList<Assembly> discoveredAssemblies)
     {
         Modules = modules;
-        _managedAssemblies = modules.Select(x => x.GetType().Assembly).ToHashSet();
+        _discoveredAssemblies = discoveredAssemblies;
+        _managedAssemblies = modules
+            .Select(module => module.GetType().Assembly)
+            .ToHashSet();
     }
 
     public IReadOnlyList<IPluginModule> Modules { get; }
 
-    /// <summary>
-    /// 判断指定程序集是否已显式声明插件模块，只有返回 true 时才允许用 DI 创建其中的策略。
-    /// </summary>
+    internal IReadOnlyList<Assembly> DiscoveredAssemblies => _discoveredAssemblies;
+
     public bool IsManaged(Assembly assembly) => _managedAssemblies.Contains(assembly);
 
-    /// <summary>
-    /// 从已经按原有插件目录规则加载的程序集中发现模块。
-    /// 模块本身必须提供无参构造函数，因为此阶段根级 ServiceProvider 尚未构建。
-    /// </summary>
     public static PluginModuleCatalog Discover(IEnumerable<Assembly> pluginAssemblies)
     {
+        ArgumentNullException.ThrowIfNull(pluginAssemblies);
+        var assemblies = pluginAssemblies.Distinct().ToArray();
         var modules = new List<IPluginModule>();
-        foreach (var assembly in pluginAssemblies)
-        {
-            try
-            {
-                var moduleTypes = assembly.GetTypes()
-                    .Where(type => typeof(IPluginModule).IsAssignableFrom(type)
-                                   && !type.IsAbstract
-                                   && !type.IsInterface
-                                   && type.GetConstructor(Type.EmptyTypes) != null);
 
-                foreach (var moduleType in moduleTypes)
+        foreach (var assembly in assemblies)
+        {
+            var moduleTypes = AssemblyTypeCatalog.GetLoadableTypes(
+                    assembly,
+                    exception => Console.Error.WriteLine(
+                        $"PluginCatalog errorCode=MODULE_TYPE_SCAN_PARTIAL assembly={assembly.FullName} type={exception.GetType().Name}"))
+                .Where(type => typeof(IPluginModule).IsAssignableFrom(type)
+                               && !type.IsAbstract
+                               && !type.IsInterface
+                               && type.GetConstructor(Type.EmptyTypes) is not null);
+
+            foreach (var moduleType in moduleTypes)
+            {
+                try
                 {
                     modules.Add((IPluginModule)Activator.CreateInstance(moduleType)!);
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"扫描插件模块 {assembly.FullName} 失败: {ex.Message}");
+                catch (Exception exception)
+                {
+                    Console.Error.WriteLine(
+                        $"PluginCatalog errorCode=MODULE_ACTIVATION_FAILED module={moduleType.FullName} type={exception.GetType().Name}");
+                }
             }
         }
 
-        return new PluginModuleCatalog(modules
-            .OrderBy(x => x.PluginId, StringComparer.Ordinal)
-            .ToArray());
+        return new PluginModuleCatalog(
+            modules
+                .OrderBy(module => module.PluginId, StringComparer.Ordinal)
+                .ToArray(),
+            assemblies);
     }
 
-    /// <summary>
-    /// 按稳定的 PluginId 顺序调用模块注册，确保不同启动过程中的服务注册顺序一致。
-    /// </summary>
     public void ConfigureServices(IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
         foreach (var module in Modules)
         {
             module.ConfigureServices(services);

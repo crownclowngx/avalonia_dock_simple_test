@@ -1,235 +1,229 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Threading;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
+/// <summary>
+/// 从部署目录加载插件程序集的兼容 Facade，保留既有 public 调用方式。
+/// 内部按规范化根目录建立线程安全快照，保证同一目录只扫描一次。
+/// </summary>
 public static class AssemblyLoaderHelper
 {
-    private static readonly HashSet<string> SkippedPluginDirectories = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> SkippedPluginDirectories = new(
+        StringComparer.OrdinalIgnoreCase)
     {
-        // 这些目录存放原生库或运行时资产，不是托管插件程序集。
-        // 跳过它们既可避免把 VLC 插件 DLL 交给 AssemblyLoadContext，也能显著减少启动期无意义的异常扫描。
         "native",
         "runtimes",
         "libvlc"
     };
-    // 存储每个插件目录对应的AssemblyLoadContext
-    private static readonly ConcurrentDictionary<string, PluginLoadContext> _pluginContexts = new();
-    // 存储已加载的程序集
-    private static readonly ConcurrentDictionary<string, Assembly> _loadedAssemblies = new();
-    
-    private static readonly ConcurrentDictionary<string, List<Assembly>> _loadedPluginAssemblies = new();
-    // 记录程序集解析事件是否已注册
-    private static bool _assemblyResolveHandlerRegistered = false;
+
+    private static readonly ConcurrentDictionary<string, PluginLoadContext> PluginContexts =
+        new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, Assembly> LoadedAssemblies =
+        new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, Lazy<IReadOnlyList<Assembly>>> RootSnapshots =
+        new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object LoadGate = new();
+    private static int _assemblyResolveHandlerRegistered;
 
     /// <summary>
-    /// 从应用程序执行目录下的特定子目录加载所有插件项目
-    /// 每个插件项目位于独立的子文件夹中，并使用独立的AssemblyLoadContext
+    /// 加载根目录下的全部插件项目，每个插件目录使用独立的程序集加载上下文。
+    /// 隔离上下文可以避免不同插件的私有依赖互相污染，同时保持原有返回类型。
     /// </summary>
-    /// <param name="rootPluginsDirName">根插件目录名称</param>
-    /// <returns>加载的程序集列表</returns>
     public static List<Assembly> LoadPluginsFromDirectories(string rootPluginsDirName)
     {
-        if (_loadedPluginAssemblies.TryGetValue(rootPluginsDirName, out var loadedAssemblies))
-        {
-            return loadedAssemblies;
-        }
-        // 注册程序集解析事件处理程序
-        if (!_assemblyResolveHandlerRegistered)
-        {
-            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => CurrentDomain_AssemblyResolve(sender!, args);
-            _assemblyResolveHandlerRegistered = true;
-        }
-        loadedAssemblies ??= [];
-        try
-        {
-            // 获取应用程序基目录
-            string appBaseDir = AppContext.BaseDirectory;
-            
-            // 构建根插件目录的完整路径
-            string rootPluginsDir = Path.Combine(appBaseDir, rootPluginsDirName);
-            
-            // 检查根插件目录是否存在，如果不存在则创建
-            if (!Directory.Exists(rootPluginsDir))
-            {
-                Directory.CreateDirectory(rootPluginsDir);
-                return loadedAssemblies;
-            }
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootPluginsDirName);
 
-            // 获取根插件目录下的所有子目录（每个子目录是一个独立的插件项目）
-            string[] pluginDirectories = Directory.GetDirectories(rootPluginsDir);
-            
-            // 加载每个插件项目
-            foreach (string pluginDir in pluginDirectories)
-            {
-                // 为每个插件创建独立的加载上下文
-                var loadContext = new PluginLoadContext(pluginDir);
-                _pluginContexts.TryAdd(pluginDir, loadContext);
-                
-                // 递归加载插件目录及其子目录中的所有DLL
-                var pluginAssemblies = LoadAssembliesRecursively(pluginDir, loadContext);
-                loadedAssemblies.AddRange(pluginAssemblies);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"加载插件目录时发生错误: {ex.Message}");
-        }
-        _loadedPluginAssemblies.TryAdd(rootPluginsDirName, loadedAssemblies);
-        return loadedAssemblies;
+        var rootPath = Path.GetFullPath(
+            Path.Combine(AppContext.BaseDirectory, rootPluginsDirName));
+        var snapshot = RootSnapshots.GetOrAdd(
+            rootPath,
+            static path => new Lazy<IReadOnlyList<Assembly>>(
+                () => LoadRootSnapshot(path),
+                LazyThreadSafetyMode.ExecutionAndPublication));
+
+        // 返回快照副本既保留 public List<Assembly> 契约，也避免调用方修改内部缓存。
+        return snapshot.Value.ToList();
     }
-    
-    /// <summary>
-    /// 递归加载指定目录及其子目录中的所有DLL程序集
-    /// </summary>
-    /// <param name="directoryPath">要扫描的目录路径</param>
-    /// <param name="loadContext">用于加载程序集的AssemblyLoadContext</param>
-    /// <returns>加载的程序集列表</returns>
-    private static List<Assembly> LoadAssembliesRecursively(string directoryPath, PluginLoadContext loadContext)
-    {
-        var loadedAssemblies = new List<Assembly>();
-        
-        try
-        {
-            // 获取当前目录中的所有DLL文件
-            string[] dllFiles = Directory.GetFiles(directoryPath, "*.dll");
-            
-            foreach (string dllFile in dllFiles)
-            {
-                try
-                {
-                    // 从文件路径创建程序集名称
-                    string assemblyName = Path.GetFileNameWithoutExtension(dllFile);
-                    
-                    // 避免重复加载
-                    if (_loadedAssemblies.ContainsKey(assemblyName))
-                    {
-                        continue;
-                    }
 
-                    // 使用指定的AssemblyLoadContext加载程序集
-                    Assembly assembly = loadContext.LoadFromAssemblyPath(dllFile);
-                    loadedAssemblies.Add(assembly);
-                    _loadedAssemblies.TryAdd(assemblyName, assembly);
-                }
-                catch (Exception ex)
+    private static IReadOnlyList<Assembly> LoadRootSnapshot(string rootPath)
+    {
+        lock (LoadGate)
+        {
+            RegisterAssemblyResolveHandler();
+            var loaded = new List<Assembly>();
+
+            try
+            {
+                if (!Directory.Exists(rootPath))
                 {
-                    // 记录错误但继续加载其他程序集
-                    Console.WriteLine($"加载程序集 {Path.GetFileName(dllFile)} 时出错: {ex.Message}");
+                    Directory.CreateDirectory(rootPath);
+                    return loaded;
+                }
+
+                foreach (var pluginDirectory in Directory.GetDirectories(rootPath))
+                {
+                    var fullPluginPath = Path.GetFullPath(pluginDirectory);
+                    var loadContext = PluginContexts.GetOrAdd(
+                        fullPluginPath,
+                        static path => new PluginLoadContext(path));
+                    loaded.AddRange(LoadAssembliesRecursively(
+                        fullPluginPath,
+                        loadContext));
                 }
             }
-
-            // 递归处理子目录
-            string[] subdirectories = Directory.GetDirectories(directoryPath);
-            foreach (string subdir in subdirectories)
+            catch (Exception exception)
             {
-                // 只按目录名判断，确保 native/libvlc 无论位于插件树的哪一层都不会被递归进入。
-                if (SkippedPluginDirectories.Contains(Path.GetFileName(subdir)))
+                Console.Error.WriteLine(
+                    $"PluginLoad errorCode=PLUGIN_ROOT_SCAN_FAILED type={exception.GetType().Name}");
+            }
+
+            return loaded.ToArray();
+        }
+    }
+
+    private static List<Assembly> LoadAssembliesRecursively(
+        string directoryPath,
+        PluginLoadContext loadContext)
+    {
+        var loaded = new List<Assembly>();
+
+        try
+        {
+            foreach (var dllPath in Directory.GetFiles(directoryPath, "*.dll"))
+            {
+                var assemblyName = Path.GetFileNameWithoutExtension(dllPath);
+                if (LoadedAssemblies.ContainsKey(assemblyName))
                 {
                     continue;
                 }
 
-                var subdirAssemblies = LoadAssembliesRecursively(subdir, loadContext);
-                loadedAssemblies.AddRange(subdirAssemblies);
+                try
+                {
+                    var assembly = loadContext.LoadFromAssemblyPath(
+                        Path.GetFullPath(dllPath));
+                    if (LoadedAssemblies.TryAdd(assemblyName, assembly))
+                    {
+                        loaded.Add(assembly);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Console.Error.WriteLine(
+                        $"PluginLoad errorCode=PLUGIN_ASSEMBLY_LOAD_FAILED assembly={Path.GetFileName(dllPath)} type={exception.GetType().Name}");
+                }
+            }
+
+            foreach (var subdirectory in Directory.GetDirectories(directoryPath))
+            {
+                if (SkippedPluginDirectories.Contains(Path.GetFileName(subdirectory)))
+                {
+                    continue;
+                }
+
+                loaded.AddRange(LoadAssembliesRecursively(subdirectory, loadContext));
             }
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            Console.WriteLine($"递归加载程序集时发生错误: {ex.Message}");
+            Console.Error.WriteLine(
+                $"PluginLoad errorCode=PLUGIN_DIRECTORY_SCAN_FAILED type={exception.GetType().Name}");
         }
 
-        return loadedAssemblies;
+        return loaded;
     }
-    
-    /// <summary>
-    /// 程序集解析事件处理程序，用于解析插件依赖的第三方库
-    /// </summary>
-    private static Assembly? CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+
+    private static void RegisterAssemblyResolveHandler()
+    {
+        if (Interlocked.Exchange(ref _assemblyResolveHandlerRegistered, 1) == 0)
+        {
+            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
+        }
+    }
+
+    private static Assembly? CurrentDomainAssemblyResolve(
+        object? sender,
+        ResolveEventArgs args)
     {
         try
         {
-            // 检查是否已经加载了该程序集
-            string? assemblyName = new AssemblyName(args.Name).Name;
-            if (assemblyName == null) {
+            var assemblyName = new AssemblyName(args.Name).Name;
+            if (assemblyName is null)
+            {
                 return null;
             }
-            if (_loadedAssemblies.TryGetValue(assemblyName, out var loadedAssembly))
+
+            if (LoadedAssemblies.TryGetValue(assemblyName, out var loadedAssembly))
             {
                 return loadedAssembly;
             }
 
-            // 如果是在解析插件依赖，让每个插件的AssemblyLoadContext尝试解析
-            foreach (var pluginContext in _pluginContexts.Values)
+            foreach (var pluginContext in PluginContexts.Values)
             {
                 try
                 {
-                    Assembly? assembly = pluginContext.ResolveAssembly(args.Name);
-                    if (assembly != null)
+                    if (pluginContext.ResolveAssembly(args.Name) is { } resolved)
                     {
-                        return assembly;
+                        return resolved;
                     }
                 }
-                catch { /* 忽略特定上下文的解析错误，继续尝试其他上下文 */ }
+                catch
+                {
+                // 单个插件上下文失败只跳过该插件，不能阻断其他插件的发现。
+                }
             }
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            Console.WriteLine($"程序集解析失败: {ex.Message}");
+            Console.Error.WriteLine(
+                $"PluginLoad errorCode=PLUGIN_ASSEMBLY_RESOLVE_FAILED type={exception.GetType().Name}");
         }
 
         return null;
     }
 
     /// <summary>
-    /// 从应用程序执行目录下的特定子目录加载所有DLL程序集
+    /// 加载部署子目录正下方的托管程序集，保留历史辅助方法的调用语义。
     /// </summary>
-    /// <param name="subdirectoryName">子目录名称</param>
-    /// <returns>加载的程序集列表</returns>
     public static List<Assembly> LoadAssembliesFromSubdirectory(string subdirectoryName)
     {
-        var loadedAssemblies = new List<Assembly>();
-        
+        ArgumentException.ThrowIfNullOrWhiteSpace(subdirectoryName);
+        var loaded = new List<Assembly>();
+
         try
         {
-            // 获取应用程序基目录
-            string appBaseDir = AppContext.BaseDirectory;
-            
-            // 构建子目录的完整路径
-            string pluginsDir = Path.Combine(appBaseDir, subdirectoryName);
-            
-            // 检查子目录是否存在，如果不存在则创建
-            if (!Directory.Exists(pluginsDir))
+            var directory = Path.GetFullPath(
+                Path.Combine(AppContext.BaseDirectory, subdirectoryName));
+            if (!Directory.Exists(directory))
             {
-                Directory.CreateDirectory(pluginsDir);
-                return loadedAssemblies;
+                Directory.CreateDirectory(directory);
+                return loaded;
             }
-            
-            // 获取子目录中的所有DLL文件
-            string[] dllFiles = Directory.GetFiles(pluginsDir, "*.dll");
-            
-            foreach (string dllFile in dllFiles)
+
+            foreach (var dllPath in Directory.GetFiles(directory, "*.dll"))
             {
                 try
                 {
-                    // 加载程序集
-                    Assembly assembly = Assembly.LoadFrom(dllFile);
-                    loadedAssemblies.Add(assembly);
+                    loaded.Add(Assembly.LoadFrom(dllPath));
                 }
-                catch (Exception ex)
+                catch (Exception exception)
                 {
-                    // 记录错误但继续加载其他程序集
-                    Console.WriteLine($"加载程序集 {Path.GetFileName(dllFile)} 时出错: {ex.Message}");
+                    Console.Error.WriteLine(
+                        $"PluginLoad errorCode=SUBDIRECTORY_ASSEMBLY_LOAD_FAILED assembly={Path.GetFileName(dllPath)} type={exception.GetType().Name}");
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            Console.WriteLine($"加载子目录程序集时发生错误: {ex.Message}");
+            Console.Error.WriteLine(
+                $"PluginLoad errorCode=SUBDIRECTORY_SCAN_FAILED type={exception.GetType().Name}");
         }
-        
-        return loadedAssemblies;
+
+        return loaded;
     }
 }

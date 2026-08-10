@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
@@ -11,80 +9,11 @@ using MyAvaloniaManagement.ViewModels;
 namespace MyAvaloniaManagement.Business.Layout;
 
 /// <summary>
-/// 协调默认 Dock 树、结构快照和宿主窗口生命周期。
+/// 在运行时 Dock 树与持久化 V1 快照之间进行双向映射。
+/// 映射只描述结构转换，不负责文件读写、版本决策或生命周期编排。
 /// </summary>
-internal sealed class DockLayoutLifecycle(DockLayoutStore store)
+internal static class DockLayoutSnapshotMapper
 {
-    private DockLayoutSnapshotV1? _pendingSnapshot;
-
-    internal IRootDock Prepare(ManagementFactory factory)
-    {
-        ArgumentNullException.ThrowIfNull(factory);
-        _pendingSnapshot = store.Load();
-        var root = factory.CreateLayout();
-        factory.InitLayout(root);
-        return root;
-    }
-
-    /// <summary>
-    /// 窗口显示后再移动或浮动工具，避免 Dock 的 HostWindow 尚未创建时产生半初始化窗口。
-    /// </summary>
-    internal IRootDock ApplyPending(
-        IRootDock defaultRoot,
-        ManagementFactory factory)
-    {
-        ArgumentNullException.ThrowIfNull(defaultRoot);
-        ArgumentNullException.ThrowIfNull(factory);
-
-        var snapshot = Interlocked.Exchange(ref _pendingSnapshot, null);
-        if (snapshot is null)
-        {
-            return defaultRoot;
-        }
-
-        snapshot = NormalizeLegacyTwoWaySnapshot(snapshot, factory);
-        EnsureSnapshotDocks(snapshot, defaultRoot, factory);
-
-        if (ValidateAgainstRuntime(snapshot, defaultRoot, factory) is { } error)
-        {
-            store.RejectLoadedSnapshot(error.Code, error.StableId);
-            return defaultRoot;
-        }
-
-        try
-        {
-            ApplySnapshot(snapshot, defaultRoot, factory);
-            return defaultRoot;
-        }
-        catch (Exception exception) when (
-            exception is InvalidOperationException or ArgumentException)
-        {
-            // 应用失败后必须丢弃整个已修改树，不能让一半旧布局和一半默认布局共同运行。
-            store.RejectLoadedSnapshot("LAYOUT_APPLY_FAILED", null);
-            var replacement = factory.CreateLayout();
-            factory.InitLayout(replacement);
-            return replacement;
-        }
-    }
-
-    internal void Save(IRootDock root, ManagementFactory factory)
-    {
-        ArgumentNullException.ThrowIfNull(root);
-        ArgumentNullException.ThrowIfNull(factory);
-
-        try
-        {
-            store.Save(Capture(root, factory));
-        }
-        catch (Exception exception) when (
-            exception is IOException or UnauthorizedAccessException or InvalidDataException)
-        {
-            // 退出保存失败不能阻止作用域释放或进程退出；错误仅使用固定代码记录。
-            Console.Error.WriteLine(
-                $"DockLayout errorCode=LAYOUT_SAVE_FAILED stableId=- type={exception.GetType().Name}");
-        }
-    }
-
     internal static DockLayoutSnapshotV1 Capture(
         IRootDock root,
         ManagementFactory factory)
@@ -252,7 +181,7 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         return snapshot with { Tools = normalizedTools };
     }
 
-    private static DockLayoutValidationError? ValidateAgainstRuntime(
+    internal static DockLayoutValidationError? ValidateAgainstRuntime(
         DockLayoutSnapshotV1 snapshot,
         IRootDock root,
         ManagementFactory factory)
@@ -409,7 +338,7 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         string toolId) =>
         ToolDockPlacement.GetDockId(factory.GetToolAlignment(toolId));
 
-    private static void EnsureSnapshotDocks(
+    internal static void EnsureSnapshotDocks(
         DockLayoutSnapshotV1 snapshot,
         IRootDock root,
         ManagementFactory factory)

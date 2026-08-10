@@ -245,6 +245,59 @@ public sealed class MainWindowViewModelTests
         Assert.Contains(nameof(viewModel.IsDarkTheme), changed);
     }
 
+    [Fact]
+    public async Task ConcurrentOpenOfSamePathCreatesOneDocumentAndReadsOnce()
+    {
+        using var context = CreateContextWithDocumentStrategy();
+        var path = Path.Combine(context.TempDirectory, "concurrent.testdoc");
+        context.Storage.AddFile(path, Serialize("Concurrent", "content"));
+        var viewModel = context.CreateMainWindowViewModel();
+
+        await Task.WhenAll(
+            viewModel.OpenDocumentByPath(path),
+            viewModel.OpenDocumentByPath(path));
+
+        Assert.Single(GetDocuments(context));
+        Assert.Equal(1, context.Storage.ReadCount);
+    }
+
+    [Fact]
+    public async Task SaveFailureDoesNotMutateDocumentState()
+    {
+        using var context = CreateContextWithDocumentStrategy();
+        var path = Path.Combine(context.TempDirectory, "failed.testdoc");
+        context.Storage.SavePath = path;
+        context.Storage.WriteException = new IOException("simulated");
+        var viewModel = context.CreateMainWindowViewModel();
+        viewModel.CreateDocument(TestSavableStrategy.TypeId);
+        var document = GetDocuments(context).Single();
+        var originalTitle = document.Title;
+        GetDocumentDock(context).ActiveDockable = document;
+
+        await viewModel.SaveDocument();
+
+        Assert.Equal(originalTitle, document.Title);
+        Assert.Equal(string.Empty, document.FilePath);
+        Assert.Equal(0, document.SaveCompletedCount);
+        Assert.True(viewModel.HasDocumentOperationError);
+        Assert.Empty(context.Storage.Writes);
+    }
+
+    [Fact]
+    public void OpenMessageObservesExpectedReadFailure()
+    {
+        using var context = CreateContextWithDocumentStrategy();
+        var path = Path.Combine(context.TempDirectory, "message-failure.testdoc");
+        context.Storage.AddFile(path, Serialize("Failure", "content"));
+        context.Storage.ReadException = new IOException("simulated");
+        var viewModel = context.CreateMainWindowViewModel();
+
+        context.Messenger.Send(new OpenFileMessage(path));
+
+        Assert.True(viewModel.HasDocumentOperationError);
+        Assert.Empty(GetDocuments(context));
+    }
+
     private static TestHostContext CreateContextWithDocumentStrategy()
     {
         var context = new TestHostContext();

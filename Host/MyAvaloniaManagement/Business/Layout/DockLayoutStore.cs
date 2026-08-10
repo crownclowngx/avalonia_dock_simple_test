@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using MyAvaloniaManagement.Business.Storage;
 
 namespace MyAvaloniaManagement.Business.Layout;
 
@@ -93,44 +94,12 @@ internal sealed class DockLayoutStore
                 $"布局快照未通过校验：{error.Code}，稳定 ID：{error.StableId ?? "-"}。");
         }
 
-        var directory = Path.GetDirectoryName(LayoutPath)
-            ?? throw new InvalidOperationException("布局文件没有父目录。");
-        Directory.CreateDirectory(directory);
-        var temporaryPath = Path.Combine(
-            directory,
-            $"{LayoutFileName}.{Guid.NewGuid():N}.tmp");
-
-        try
-        {
-            using (var stream = new FileStream(
-                       temporaryPath,
-                       FileMode.CreateNew,
-                       FileAccess.Write,
-                       FileShare.None,
-                       16 * 1024,
-                       FileOptions.WriteThrough))
-            {
-                JsonSerializer.Serialize(stream, snapshot, SerializerOptions);
-                stream.Flush(flushToDisk: true);
-            }
-
-            if (File.Exists(LayoutPath))
-            {
-                // 同目录 File.Replace 保证旧文件或新文件完整存在，进程中断不会留下半份 JSON。
-                File.Replace(temporaryPath, LayoutPath, destinationBackupFileName: null);
-            }
-            else
-            {
-                File.Move(temporaryPath, LayoutPath);
-            }
-        }
-        finally
-        {
-            if (File.Exists(temporaryPath))
-            {
-                File.Delete(temporaryPath);
-            }
-        }
+        AtomicFileTransaction.Write(
+            LayoutPath,
+            stream => JsonSerializer.Serialize(
+                stream,
+                snapshot,
+                SerializerOptions));
     }
 
     internal void RejectLoadedSnapshot(string errorCode, string? stableId) =>

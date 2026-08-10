@@ -1,7 +1,7 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
 > 更新日期：2026-08-10<br>
-> 代码基线：`4cdfdb2`（更新前工作区无未提交改动）<br>
+> 代码基线：主项目核心链路内部重构后的当前工作区<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系  
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
 > 不在本轮范围：逐项评审插件业务功能、第三方插件市场、运行时热卸载、插件沙箱
@@ -63,30 +63,38 @@ flowchart TB
 ```mermaid
 sequenceDiagram
     participant P as Program
+    participant R as HostRuntime
     participant L as AssemblyLoaderHelper
     participant C as PluginModuleCatalog
     participant DI as 根 IServiceProvider
     participant LM as PluginLifecycleManager
+    participant E as HostExtensionRegistry
     participant UI as Avalonia / ManagementFactory
 
-    P->>P: 注册宿主核心服务
-    P->>L: 扫描 Controls 下的插件目录
-    L-->>P: 返回已加载程序集
-    P->>C: 发现并实例化 IPluginModule
+    P->>R: Create
+    R->>R: 注册宿主核心服务
+    R->>L: 获取 Controls 插件程序集快照
+    L-->>R: 返回按规范化目录缓存的只读结果
+    R->>C: 发现并实例化 IPluginModule
     C->>DI: ConfigureServices(IServiceCollection)
-    P->>DI: BuildServiceProvider + ValidateScopes/ValidateOnBuild
-    P->>LM: InitializeAllAsync
-    LM-->>P: 记录 Ready 或 Failed
+    R->>DI: BuildServiceProvider + ValidateScopes/ValidateOnBuild
+    R->>LM: InitializeAllAsync
+    LM-->>R: 记录 Ready 或 Failed
     P->>UI: 启动 Avalonia
-    UI->>UI: 发现 Document / Tool 策略并建立 Dock
+    UI->>E: 从同一程序集快照发现 Document / Tool 策略
+    E-->>UI: 注册表、元数据和创建分派
+    UI->>UI: 建立四向 Dock
     UI->>UI: 窗口 Opened 后应用待恢复布局
     UI->>UI: 窗口 Closing 时保存布局
-    P->>LM: 消息循环退出后 ShutdownAllAsync
-    LM-->>P: 反向关闭成功初始化的插件
-    P->>DI: 释放根容器及剩余 Document Scope
+    P->>R: Dispose
+    R->>LM: 消息循环退出后 ShutdownAllAsync
+    LM-->>R: 反向关闭成功初始化的插件
+    R->>DI: 释放根容器及剩余 Document Scope
 ```
 
-**[代码事实]** 根容器启用了 `ValidateScopes` 与 `ValidateOnBuild`；插件生命周期在 Avalonia 消息循环之前初始化，在消息循环结束后反向关闭。参见 [`Program.cs`](../Host/MyAvaloniaManagement/Program.cs)、[`PluginLifecycleManager.cs`](../Host/MyAvaloniaManagementCommon/Plugin/PluginLifecycleManager.cs) 和 [`MainWindowViewModel.cs`](../Host/MyAvaloniaManagement/ViewModels/MainWindowViewModel.cs)。
+**[代码事实]** `HostRuntime` 是内部 Composition Root，统一拥有服务注册、插件发现、容器构建、生命周期初始化和反向关闭；`Program.Main` 与 `BuildAvaloniaApp()` 保持兼容入口。根容器启用了 `ValidateScopes` 与 `ValidateOnBuild`。参见 [`Program.cs`](../Host/MyAvaloniaManagement/Program.cs)、[`HostRuntime.cs`](../Host/MyAvaloniaManagement/Business/Helpers/HostRuntime.cs) 和 [`PluginLifecycleManager.cs`](../Host/MyAvaloniaManagementCommon/Plugin/PluginLifecycleManager.cs)。
+
+**[代码事实]** `AssemblyLoaderHelper` 仍是 public 兼容 Facade，但内部按规范化插件根目录使用线程安全快照；同一根目录只扫描一次，程序集解析器只注册一次，单个 DLL、依赖或类型失败不会终止其他插件。`HostExtensionRegistry` 和 `ViewLocator` 复用已加载程序集，不再为文档和工具分别触发目录扫描。
 
 ### 2.2 Managed 为现行模型，Legacy 仅保留兼容
 
@@ -119,8 +127,9 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    User["用户从菜单或文件入口创建 Document"] --> Host["ManagementFactory 按 DocumentTypeId 查找策略"]
-    Host --> Strategy["IDocumentCreationStrategy.CreateDocument"]
+    User["用户从菜单或文件入口创建 Document"] --> Host["ManagementFactory 兼容入口"]
+    Host --> Registry["HostExtensionRegistry 按 DocumentTypeId 分派策略"]
+    Registry --> Strategy["IDocumentCreationStrategy.CreateDocument"]
     Strategy --> Choice{"策略是否使用<br/>IDocumentScopeFactory?"}
     Choice -- "是" --> Scope["宿主创建独立 IServiceScope"]
     Scope --> Resolve["从 Scope 解析 Document 与 scoped 依赖"]
@@ -128,13 +137,13 @@ flowchart TD
     Resolve --> Dock["加入中央 DocumentDock"]
     Root --> Dock
     Dock --> Close["Dock 确认标签页已关闭"]
-    Close --> Release["移除控件回收引用并调用 DocumentScopeManager.Release"]
+    Close --> Release["DockDocumentLifetime 移除缓存并释放 Scope"]
     Release --> Managed{"该 Document 是否登记 Scope?"}
     Managed -- "是" --> Dispose["释放 Document、Scoped 服务和资源"]
     Managed -- "否" --> End["没有统一的 Document 级释放动作"]
 ```
 
-**[代码事实]** `DocumentScopeManager` 建立 `Document` 与 `IServiceScope` 的一一映射。`ManagementFactory.OnDockableClosed` 在 Dock 真正关闭后移除控件回收缓存对该 Document 的强引用，再释放对应 Scope；根容器释放时还会兜底释放仍打开的 Scope。参见 [`DocumentScopeManager.cs`](../Host/MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)、[`DocumentControlRecycling.cs`](../Host/MyAvaloniaManagement/Business/Helpers/DocumentControlRecycling.cs) 和 [`ManagementFactory.cs`](../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs)。
+**[代码事实]** `DocumentScopeManager` 建立 `Document` 与 `IServiceScope` 的一一映射。`ManagementFactory.OnDockableClosed` 把关闭后清理委托给 `DockDocumentLifetime`：先移除控件回收缓存对该 Document 的强引用，再释放对应 Scope；根容器释放时还会兜底释放仍打开的 Scope。参见 [`DocumentScopeManager.cs`](../Host/MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)、[`DockDocumentLifetime.cs`](../Host/MyAvaloniaManagement/Business/Helpers/DockDocumentLifetime.cs) 和 [`ManagementFactory.cs`](../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs)。
 
 当前接入情况：
 
@@ -150,7 +159,9 @@ flowchart TD
 
 ### 3.3 保存与恢复已经出现插件级版本化，但宿主契约仍偏薄
 
-**[代码事实]** 实现 `ISavableDocument` 的 Document 使用统一 `DocumentSaveData` 外壳；宿主负责文件选择、批量打开、重复文件激活、序列化和磁盘写入，插件负责解释 `Content` 与 `PluginMetadata`。单个文件损坏不会阻断同批其他文件。参见 [`ISavableDocument.cs`](../Host/MyAvaloniaManagementCommon/Save/ISavableDocument.cs)、[`DocumentSaveData.cs`](../Host/MyAvaloniaManagementCommon/Save/DocumentSaveData.cs) 和 [`MainWindowViewModel.cs`](../Host/MyAvaloniaManagement/ViewModels/MainWindowViewModel.cs)。
+**[代码事实]** 实现 `ISavableDocument` 的 Document 使用统一 `DocumentSaveData` 外壳；`DocumentPersistenceCoordinator` 负责选择文件、批量打开、重复激活、序列化、保存结果分类和文档写操作串行化，插件负责解释 `Content` 与 `PluginMetadata`。单个文件损坏不会阻断同批其他文件，同一路径的并发打开不会创建重复标签。参见 [`ISavableDocument.cs`](../Host/MyAvaloniaManagementCommon/Save/ISavableDocument.cs)、[`DocumentPersistenceCoordinator.cs`](../Host/MyAvaloniaManagement/Business/Documents/DocumentPersistenceCoordinator.cs) 和 [`DocumentWorkspace.cs`](../Host/MyAvaloniaManagement/Business/Documents/DocumentWorkspace.cs)。
+
+**[代码事实]** 文档保存使用与布局相同的 `AtomicFileTransaction`：先在目标目录写入并刷新临时文件，再替换正式文件。只有写入成功后才更新标题、路径和保存完成状态；预期 I/O、权限、路径和 JSON 故障转换为用户可见结果，编程错误继续向上传播。
 
 **[代码事实]** BiliDownloader 已在插件内部实现 Document V3、V1/V2 迁移、安全字段恢复、稳定 `DocumentLoadException`，以及未知未来版本强制“另存为新路径”的 `IDocumentSavePathPolicy`。这证明当前宿主外壳能够承载版本化插件内容，但这些能力尚未上升为所有 Document 共享的状态协议。参见 [`IDocumentSavePathPolicy.cs`](../Host/MyAvaloniaManagementCommon/Save/IDocumentSavePathPolicy.cs) 和 [`P1-G4-DOCUMENT-V3-REUSABLE-SCHEMES.md`](../Plugins/BiliDownloader/BiliDownloader/doc/P1-G4-DOCUMENT-V3-REUSABLE-SCHEMES.md)。
 
@@ -159,7 +170,7 @@ flowchart TD
 - 宿主外壳自身的格式版本和迁移入口；
 - 公共脏状态接口、关闭前保存确认和统一的保存失败呈现；
 - 未安装对应插件时的占位页或延迟恢复机制；
-- Document 文件的原子替换、备份和坏文件隔离；
+- Document 文件的备份和坏文件隔离；
 - 所有插件一致采用的版本化内容 DTO 与安全约束。
 
 ## 4. Tool：宿主级单例状态投影
@@ -218,14 +229,14 @@ flowchart LR
 | --- | --- | --- | --- |
 | UI 扩展 | 插件直接返回 Dock `Document` / `Tool` | 简单、强类型、UI 自由度高 | 与 Dock 版本和宿主布局模型强耦合 |
 | 服务接入 | 插件直接获得 `IServiceCollection` | 可完整使用 Microsoft DI | 可注册或覆盖根服务，缺少能力边界 |
-| 创建入口 | 反射发现策略；Document 可附加 Creation Intent | 新增类型和多入口成本低 | 没有显式贡献清单；冲突仍可能静默 |
+| 创建入口 | `HostExtensionRegistry` 单次遍历发现策略；Document 可附加 Creation Intent | 元数据只读取一次，新增类型和多入口成本低 | 没有显式贡献清单；为兼容仍采用首次注册胜出 |
 | 消息通信 | `IMessengerService` 包装进程级 messenger | 广播和解耦方便 | 仍暴露底层 `IMessenger`，无消息归属和契约版本 |
-| 文件能力 | 宿主包装选择器、打开和保存外壳 | ViewModel 不直接依赖根窗口 | 公共保存契约薄，普通 Document 写入不是原子替换 |
+| 文件能力 | 宿主包装选择器、打开和保存外壳 | ViewModel 不直接依赖根窗口，Document 与布局均原子写入 | 公共保存契约仍缺少统一脏状态和关闭确认 |
 | 布局能力 | 宿主持有 Dock 树和 V1 快照 | 四向、隐藏、固定、恢复已有测试 | 插件缺失时整份布局回退 |
 
 **[代码事实]** `IMessengerService` 仍直接暴露底层 `IMessenger`，生产实现使用 `WeakReferenceMessenger.Default`。参见 [`IMessengerService.cs`](../Host/MyAvaloniaManagementCommon/Message/IMessengerService.cs) 和 [`MessengerService.cs`](../Host/MyAvaloniaManagementCommon/Message/MessengerService.cs)。
 
-**[代码事实]** 宿主 ViewModel 的生产注册已经主要改为构造注入，`PlugGroupMenuViewModel` 也改用 `PluginMenuService`；但公开无参构造、`App` 和欢迎页仍依赖静态 `ServiceProvider`。`ToolManagementViewModel` 在根 Dock 尚未建立时仍通过反射读取 `ManagementFactory` 私有字典。参见 [`ServiceProvider.cs`](../Host/MyAvaloniaManagement/Business/Helpers/ServiceProvider.cs)、[`ServiceCollectionExtensions.cs`](../Host/MyAvaloniaManagement/Business/Helpers/ServiceCollectionExtensions.cs) 和 [`ToolManagementViewModel.cs`](../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs)。
+**[代码事实]** 宿主 ViewModel 的生产注册主要采用构造注入，`PlugGroupMenuViewModel` 使用 `PluginMenuService`；公开无参构造、`App` 和欢迎页仍通过静态 `ServiceProvider` 保持历史兼容。`ToolManagementViewModel` 在根 Dock 建立前读取 `ManagementFactory` 提供的内部只读注册快照，不再反射私有字段。参见 [`ServiceProvider.cs`](../Host/MyAvaloniaManagement/Business/Helpers/ServiceProvider.cs)、[`ServiceCollectionExtensions.cs`](../Host/MyAvaloniaManagement/Business/Helpers/ServiceCollectionExtensions.cs) 和 [`ToolManagementViewModel.cs`](../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs)。
 
 **[架构判断]** 当前模型仍可概括为：**高自由度、强信任、约束正在形成**。它适合内部插件，但下一步应把已经出现的宿主能力收束成稳定接口，而不是继续让插件或宿主 ViewModel 依赖内部字段和全局对象。
 
@@ -234,14 +245,14 @@ flowchart LR
 | 能力 | 状态 | 当前证据与边界 |
 | --- | --- | --- |
 | .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.0、Dock 12.0.0.2；版本由 `global.json`、`Directory.Build.props`、`Directory.Packages.props` 集中管理 |
-| 插件目录扫描 | 已实现 | 按 `Controls` 一级目录建立 `PluginLoadContext`，递归加载托管 DLL，并排除 native/runtimes/libvlc |
+| 插件目录扫描 | 已实现 | 按规范化根目录缓存线程安全快照；每个插件目录建立 `PluginLoadContext`，递归加载托管 DLL，并隔离单文件/局部类型失败 |
 | Managed/Legacy 兼容 | 已实现 | 四个现有插件均为 Managed；Legacy 无参激活路径和兼容测试仍保留 |
-| Document/Tool 策略 | 已实现 | 反射发现并按字符串类型 ID 注册；Document 已支持可选多入口意图 |
+| Document/Tool 策略 | 已实现 | `HostExtensionRegistry` 对程序集类型做一次遍历并按字符串 ID 注册；元数据只读取一次，Document 支持可选多入口意图 |
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient；根容器启用构建和 Scope 验证 |
 | 插件生命周期 | 部分成熟 | 顺序初始化、反序关闭、幂等和失败隔离已有测试；仍无超时、依赖图和用户可见状态页 |
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
 | 布局持久化 | 已实现 V1 | 原子写入、校验、坏文件隔离、两向迁移、历史浮动归一化已有测试；插件缺失时整份回退 |
-| Document 保存 | 部分成熟 | 宿主外壳、批量打开和错误隔离已实现；BiliDownloader 有 V3 迁移/保护，但公共脏状态、关闭确认和原子写入未统一 |
+| Document 保存 | 部分成熟 | 宿主外壳、批量打开、并发串行化、错误隔离和原子替换已实现；公共脏状态、关闭确认与坏文件恢复尚未统一 |
 | 每 Document Scope | 部分成熟 | 基础设施、MySmallTools 和 DaTang 对账已完成；BiliDownloader、MyPlugTest、DaTang 发票仍走根容器 transient |
 | 加载上下文隔离 | 部分成熟 | 每目录一个不可回收 ALC；加载器又按简单程序集名做全局缓存/解析，不能保证私有依赖版本完全隔离 |
 | 错误处理与诊断 | 不成熟 | 布局已有稳定错误码和隔离；插件扫描、策略发现和部分生命周期仍主要输出 Console，没有统一插件状态页 |
@@ -260,32 +271,24 @@ flowchart LR
 
 **[架构判断]** 对“内部可信插件 + 重启更新”的边界，不可卸载不是当前缺陷；但共享契约必须只由默认上下文提供、不同插件的同名私有依赖不得串用，这两点仍应由真实包测试证明。
 
-### 6.2 2026-08-10 测试基线
+### 6.2 2026-08-10 宿主专项测试基线
 
 执行命令：
 
 ```powershell
-dotnet test MyAvaloniaManagement.sln -p:SkipPluginDeploy=true --no-restore --nologo --verbosity minimal
+.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
 ```
 
-首次全量结果：
+本次主项目内部重构后的专项结果：
 
 | 测试项目 | 通过 | 失败 | 总计 |
 | --- | ---: | ---: | ---: |
-| `MyAvaloniaManagement.Tests` | 48 | 0 | 48 |
+| `MyAvaloniaManagement.Tests` | 55 | 0 | 55 |
 | `MyAvaloniaManagement.PluginTests` | 72 | 0 | 72 |
 | `MyAvaloniaManagement.UiTests` | 30 | 0 | 30 |
-| `DaTangAccountingHelpPlug.Tests` | 64 | 0 | 64 |
-| `MySmallTools.Tests` | 182 | 0 | 182 |
-| `BiliDownloader.Tests` | 721 | 2 | 723 |
-| **合计** | **1117** | **2** | **1119** |
+| **合计** | **157** | **0** | **157** |
 
-失败均位于 `BiliDownloadCoordinatorG2Tests`：
-
-- “恢复暂停任务后重新进入 Ready 并执行”在全量运行中等待超时；
-- “重新开始活动任务会先取消再重置”期望状态为 `pending`，实际为 `canceled`。
-
-单独复跑该测试类时共 36 项，35 项通过；超时项未复现，但状态断言仍失败。因此当前基线应记录为 **未全绿**：至少存在一个稳定的协调器状态语义回归，另有一个可能受套件并行或时序影响的超时。ReleaseAcceptance、Playback IntegrationHarness 和 SecurityBenchmarks 是可执行验收/基准项目，本命令会构建它们，但不会把它们计入上述 xUnit 数量。
+合并后的 Host 行覆盖率为 **80.74%**，分支覆盖率为 **65.17%**；public API 指纹、并发文档打开、保存失败状态保护、线程安全插件快照、Tool 只读注册快照和原子替换均进入回归。带 `-WindowsSmoke` 的真实窗口冒烟也通过。该专项门禁不等同于所有插件业务测试、媒体集成 Harness 或长期运行验证。
 
 **[判断边界]** 已通过的测试能证明宿主生命周期编排、Document Scope、四向布局、布局存储、Managed/Legacy 激活、真实窗口基础行为和大量插件业务边界；它们仍不能替代多插件真实发布目录启动、同名依赖冲突、Host API 版本拒绝和长期运行稳定性验证。
 
@@ -333,7 +336,7 @@ flowchart TB
     Tools --> UI
 ```
 
-**[建议]** 不需要立即禁止插件引用 Avalonia/Dock。内部插件的 UI 自由度是该项目的价值之一。应先限制插件和宿主 ViewModel 对内部状态的旁路访问：用稳定服务替代静态 `ServiceProvider`、私有字段反射和直接操纵根 Dock。
+**[建议]** 不需要立即禁止插件引用 Avalonia/Dock。内部插件的 UI 自由度是该项目的价值之一。宿主已经移除 Tool 私有字段反射，下一步应继续减少正常运行路径对静态 `ServiceProvider` 和根 Dock 直接操作的依赖，同时保留现有 public 兼容入口。
 
 ### 7.3 建议的候选契约
 
@@ -380,12 +383,11 @@ public interface IHostContext
 
 ### P0：收口当前已经暴露的所有权和稳定性问题
 
-1. 修复当前 BiliDownloader 协调器测试回归，恢复解决方案全绿；同时定位全量运行中的偶发超时是否来自共享状态或时序。
-2. 所有 Managed Document 都经 `IDocumentScopeFactory` 或新的 `IDocumentService` 创建，禁止从根容器解析 Document。
-3. 让 `ManagementFactory` 在 Dock 建立前也能提供只读 Tool 注册快照，移除 `ToolManagementViewModel` 的私有字段反射。
-4. 逐步移除公开无参构造和宿主运行路径中的静态 `ServiceProvider`，构造注入成为唯一正常路径。
-5. 对重复 `PluginId`、Document ID、Tool ID、空元数据和非法 Creation Intent 产生结构化加载错误，不再静默保留首项。
-6. 为程序集加载、模块构造、服务注册、生命周期、策略发现和布局恢复建立统一插件状态；用户能够看到失败插件、阶段、原因和建议动作。
+1. 所有 Managed Document 都经 `IDocumentScopeFactory` 或未来的 `IDocumentService` 创建，禁止从根容器解析 Document。
+2. 在不删除现有 public 无参构造的前提下，让构造注入成为唯一正常生产路径，继续缩小静态 `ServiceProvider` 的使用范围。
+3. 对重复 `PluginId`、空元数据和非法 Creation Intent 形成结构化诊断；Document/Tool 重复 ID 在改变“首次注册胜出”前必须先经过契约评审。
+4. 为程序集加载、模块构造、服务注册、生命周期、策略发现和布局恢复建立统一插件状态；用户能够看到失败插件、阶段、原因和建议动作。
+5. 增加完整发布目录下的多插件启动、同名依赖冲突和长期运行验证。
 
 ### P1：形成稳定宿主 API
 
@@ -393,7 +395,7 @@ public interface IHostContext
 2. 建立 Plugin Registry，集中保存插件身份、程序集、状态、Document/Tool 贡献和诊断。
 3. 以 `IHostContext`、`IDocumentService`、`IToolService` 收束宿主能力。
 4. 将消息按宿主事件、插件内部事件和跨插件公共事件分层，默认不暴露底层 messenger。
-5. 在公共契约中增加 Document 脏状态、关闭确认、宿主外壳版本和保存完成/失败语义；Document 磁盘写入采用原子替换。
+5. 在公共契约中增加 Document 脏状态、关闭确认、宿主外壳版本和更完整的保存结果语义；磁盘原子替换已由宿主内部统一实现。
 6. 为布局快照建立显式版本迁移，并允许插件缺失时部分恢复其余 Pane/Tool，而不是整份回退。
 
 ### P2：统一工程化和真实包验证
@@ -416,14 +418,14 @@ public interface IHostContext
 
 ## 10. 最终评价
 
-项目已经明显跨过“把几个 DLL 反射进 Dock”的阶段：四个插件都进入 Managed 模型；根容器启用验证；插件生命周期、每 Document Scope 基础设施、创建意图、四向 Tool、禁用浮动、布局原子持久化、坏文件隔离、真实窗口测试和插件级 Document V3 都已经落地。
+项目已经明显跨过“把几个 DLL 反射进 Dock”的阶段：四个插件都进入 Managed 模型；根容器启用验证；插件生命周期、每 Document Scope 基础设施、创建意图、四向 Tool、禁用浮动、文档/布局原子持久化、坏文件隔离、真实窗口测试和插件级 Document V3 都已经落地。宿主内部也已经形成 Composition Root、Registry、Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
 1. Managed Document 的所有权规则仍未统一；
-2. 插件仍能直接接触根 DI、Dock 类型和全局消息器，宿主自身也保留静态服务定位与反射旁路；
+2. 插件仍能直接接触根 DI、Dock 类型和全局消息器，宿主为外部兼容仍保留静态服务定位入口；
 3. 缺少运行前 manifest、Host API 兼容检查、统一注册表和用户可见诊断；
 4. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
-5. 当前解决方案测试不是全绿，协调器状态语义需要先恢复稳定。
+5. 宿主专项 157 项与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。
 
 因此，下一步最值得做的不是热加载或沙箱，而是把已有的正确方向彻底收口：**宿主拥有生命周期、布局与资源；Document 表达多实例工作上下文；Tool 表达单例状态投影；插件后台服务承载长期事实；所有扩展贡献在执行前可识别、执行中可诊断、关闭后可释放。**

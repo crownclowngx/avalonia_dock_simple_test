@@ -1,0 +1,40 @@
+# 项目文档导航
+
+本目录保存解决方案级文档。文档按用途分为“当前事实”“设计方法论与探索”以及“历史验收记录”，阅读时应先确认文档类型，避免把历史基线当作当前实现。
+
+## 当前实现与维护入口
+
+| 文档 | 用途 | 状态 |
+| --- | --- | --- |
+| [宿主—插件架构评审](./host-plugin-architecture-review.md) | 解决方案总体结构、插件边界、当前成熟度和演进方向 | 当前事实，已按主项目内部重构更新 |
+| [MyAvaloniaManagement 测试说明](./testing/myavalonia-management-tests.md) | 宿主专项测试、覆盖率和 Windows 冒烟门禁 | 当前事实 |
+| [Dock 布局快照 V1](./upgrade/net10/dock-layout-snapshot-v1.md) | `layout-v1.json` 的稳定 ID、校验、迁移和回退规则 | 当前契约 |
+| [主项目内部架构](../Host/MyAvaloniaManagement/docs/architecture.md) | `MyAvaloniaManagement` 内部协作者、依赖方向和运行链路 | 当前事实 |
+| [主项目设计方法论与取舍](../Host/MyAvaloniaManagement/docs/design-methodology-and-tradeoffs.md) | SOLID、设计模式、重构步骤、备选方案与取舍 | 当前决策依据 |
+| [主项目兼容约束](../Host/MyAvaloniaManagement/docs/compatibility-contracts.md) | public API、插件、Dock、JSON 和异常语义保护清单 | 当前契约 |
+
+## 设计方法论与探索
+
+以下文档用于解释产品和架构思想，其中部分内容属于研究推论或未来探索，不表示功能已经实现：
+
+- [以注意力为中心的可停靠工作台](./attention-centered-dock-workspace-design.md)：解释 Document、Tool 和 Dock 的产品设计意图。
+- [基于活动理论的需求分解方法论](./activity-theory-requirements-decomposition.md)：说明自然语言需求如何拆分到 Document、Tool 和后台服务。
+- [AI 工作流插件接入可行性探索](./ai-workflow-plugin-exploration.md)：候选能力、风险和 PoC 路线；属于探索文档，不是当前宿主契约。
+
+## 历史升级与验收记录
+
+`upgrade/net10/phase-*.md` 是分阶段升级时的证据快照。文档中的 `.NET 9`、旧依赖版本、当时的测试数量或阶段性限制是有意保留的历史事实，不应为了匹配当前代码而覆盖。
+
+- [阶段 0：基线](./upgrade/net10/phase-0-baseline.md)
+- [阶段 1：治理](./upgrade/net10/phase-1-governance.md)
+- [阶段 2：.NET 10 基座](./upgrade/net10/phase-2-net10-foundation.md)
+- [阶段 3：插件依赖](./upgrade/net10/phase-3-plugin-dependencies.md)
+- [阶段 4：Avalonia 12 与 LibVLCSharp 闸门](./upgrade/net10/phase-4-avalonia12-libvlc-gate.md)
+
+## 文档维护规则
+
+1. 描述当前代码的文档必须引用实际类型、测试或稳定文件格式，不把建议写成已实现事实。
+2. 历史验收记录只追加勘误或状态说明，不改写当时的命令和结果。
+3. public API、稳定 Dock ID、文档 JSON 或布局 JSON 发生有意变化时，代码、契约测试和文档必须在同一变更中更新。
+4. 内部重构只更新主项目内部架构文档；除非外部行为发生变化，不应要求插件文档跟随内部类名调整。
+5. 测试数量和覆盖率属于时间点证据，应同时记录日期与执行命令。
