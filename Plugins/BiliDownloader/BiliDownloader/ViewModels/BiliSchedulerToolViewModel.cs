@@ -130,9 +130,18 @@ public partial class BiliSchedulerToolViewModel : Tool
         try
         {
             var lifecycleState = _lifecycleManager.GetState("BiliDownloader");
-            if (lifecycleState?.Status == PluginLifecycleStatus.Failed)
+            if (lifecycleState?.Status is PluginLifecycleStatus.Failed
+                or PluginLifecycleStatus.Blocked
+                or PluginLifecycleStatus.TimedOut)
             {
-                SchedulerStatus = $"插件初始化失败: {lifecycleState.ErrorMessage}";
+                SchedulerStatus = lifecycleState.Status switch
+                {
+                    PluginLifecycleStatus.Blocked =>
+                        $"插件初始化被依赖阻塞: {lifecycleState.ErrorMessage}",
+                    PluginLifecycleStatus.TimedOut =>
+                        $"插件初始化超时: {lifecycleState.ErrorMessage}",
+                    _ => $"插件初始化失败: {lifecycleState.ErrorMessage}",
+                };
                 return;
             }
 

@@ -13,7 +13,7 @@ namespace MyAvaloniaManagement.Tests;
 public sealed class PublicApiContractTests
 {
     private const string ExpectedSha256 =
-        "FC3CCE9E8E6C547C4091ABC9E12C2B56A90FFDD7A549F49AE4DA18A1CA21EC79";
+        "D49EB41F46B08311229B3F8D6D3FCD6D014F1750E018952620562FA8634A0D56";
 
     [Fact]
     public void HostAndCommonPublicApiSurfaceRemainsStable()

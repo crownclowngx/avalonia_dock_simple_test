@@ -105,7 +105,7 @@ sequenceDiagram
 
 **[代码事实]** `IPluginModule.ConfigureServices(IServiceCollection)` 让托管插件在根容器构建前注册服务；未实现模块接口的程序集仍可走无参策略。参见 [`IPluginModule.cs`](../Host/MyAvaloniaManagementCommon/Plugin/IPluginModule.cs)、[`PluginModuleCatalog.cs`](../Host/MyAvaloniaManagement/Business/Helpers/PluginModuleCatalog.cs) 和 [`PluginStrategyActivator.cs`](../Host/MyAvaloniaManagement/Business/Helpers/PluginStrategyActivator.cs)。
 
-**[代码事实]** `IPluginLifecycle` 是可选能力，不是每个 Managed Plugin 的必选空壳。当前只有 BiliDownloader 注册生命周期，用它启动、恢复和关闭下载协调器；DaTang 没有常驻后台任务，因此只注册模块而不注册生命周期。生命周期管理器按 `Order`、`PluginId` 串行初始化，单个插件失败不会阻断后续插件，退出时只反向关闭成功初始化的实例。
+**[代码事实]** `IPluginLifecycle` 是可选能力，不是每个 Managed Plugin 的必选空壳。当前只有 BiliDownloader 注册生命周期，用它启动、恢复和关闭下载协调器；DaTang 没有常驻后台任务，因此只注册模块而不注册生命周期。生命周期管理器支持可选 `IPluginLifecycleDependencies`、拓扑排序和统一初始化/关闭超时；未声明依赖时仍按 `Order`、`PluginId` 串行初始化。失败、超时和依赖阻塞不会影响独立分支，退出时只反向关闭成功初始化的实例。
 
 **[架构判断]** 双轨兼容仍有价值，但文档、示例和新代码应默认 Managed。Legacy 应被视为迁移入口，而不是长期并列的目标模型。
 
@@ -249,19 +249,19 @@ flowchart LR
 | Managed/Legacy 兼容 | 已实现 | 四个现有插件均为 Managed；Legacy 无参激活路径和兼容测试仍保留 |
 | Document/Tool 策略 | 已实现 | `HostExtensionRegistry` 对程序集类型做一次遍历并按字符串 ID 注册；元数据只读取一次，Document 支持可选多入口意图 |
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient；根容器启用构建和 Scope 验证 |
-| 插件生命周期 | 部分成熟 | 顺序初始化、反序关闭、幂等和失败隔离已有测试；仍无超时、依赖图和用户可见状态页 |
+| 插件生命周期 | 已实现 V1 | 顺序初始化、反序关闭、幂等、失败隔离、超时、依赖图和只读插件状态 Tool 均已有测试；仍不支持运行时重试、禁用或热卸载 |
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
 | 布局持久化 | 已实现 V1 | 原子写入、校验、坏文件隔离、两向迁移、历史浮动归一化已有测试；插件缺失时整份回退 |
 | Document 保存 | 部分成熟 | 宿主外壳、批量打开、并发串行化、错误隔离和原子替换已实现；公共脏状态、关闭确认与坏文件恢复尚未统一 |
 | 每 Document Scope | 部分成熟 | 基础设施、MySmallTools 和 DaTang 对账已完成；BiliDownloader、MyPlugTest、DaTang 发票仍走根容器 transient |
 | 加载上下文隔离 | 部分成熟 | 每目录一个不可回收 ALC；加载器又按简单程序集名做全局缓存/解析，不能保证私有依赖版本完全隔离 |
-| 错误处理与诊断 | 不成熟 | 布局已有稳定错误码和隔离；插件扫描、策略发现和部分生命周期仍主要输出 Console，没有统一插件状态页 |
+| 错误处理与诊断 | 部分成熟 | 布局与生命周期已有稳定错误码、隔离和只读状态 Tool；程序集扫描、模块构造和策略发现仍主要输出 Console，尚未进入统一注册表 |
 | ID 与元数据 | 不成熟 | `PluginId`、Document/Tool ID 仍是字符串；策略重复通过 `TryAdd` 静默保留首个，模块也未统一拒绝重复 PluginId |
 | 构建与部署 | 部分成熟 | SDK/包版本已集中；四个插件仍分别维护部署 Target，共享依赖排除规则可能漂移 |
 | 真实包验证 | 部分成熟 | 已有 BiliDownloader win-x64 发布包加载测试、MySmallTools 集成/发布门禁和真实窗口 UI 测试；尚缺统一多插件包与依赖冲突矩阵 |
 | 插件 manifest | 未实现 | 发布产物可有验收清单，但宿主加载前没有统一的插件身份、版本、入口、能力和依赖 manifest |
 | Host API 兼容检查 | 未实现 | 加载代码前不校验目标宿主/公共契约版本 |
-| 插件启停与依赖图 | 未实现 | 没有用户配置、依赖声明、缺失依赖阻断或拓扑排序 |
+| 插件启停与依赖图 | 部分实现 | 生命周期支持可选依赖声明、缺失/重复/循环依赖阻断和确定性拓扑排序；仍没有用户启停配置 |
 | 能力权限声明 | 未实现 | 插件可向根容器注册服务并执行任意进程内代码 |
 | 运行时卸载/热更新 | 有意不做 | ALC 不可回收；内部插件采用重启更新 |
 
@@ -284,9 +284,9 @@ flowchart LR
 | 测试项目 | 通过 | 失败 | 总计 |
 | --- | ---: | ---: | ---: |
 | `MyAvaloniaManagement.Tests` | 55 | 0 | 55 |
-| `MyAvaloniaManagement.PluginTests` | 72 | 0 | 72 |
+| `MyAvaloniaManagement.PluginTests` | 82 | 0 | 82 |
 | `MyAvaloniaManagement.UiTests` | 30 | 0 | 30 |
-| **合计** | **157** | **0** | **157** |
+| **合计** | **167** | **0** | **167** |
 
 合并后的 Host 行覆盖率为 **80.74%**，分支覆盖率为 **65.17%**；public API 指纹、并发文档打开、保存失败状态保护、线程安全插件快照、Tool 只读注册快照和原子替换均进入回归。带 `-WindowsSmoke` 的真实窗口冒烟也通过。该专项门禁不等同于所有插件业务测试、媒体集成 Harness 或长期运行验证。
 
@@ -386,7 +386,7 @@ public interface IHostContext
 1. 所有 Managed Document 都经 `IDocumentScopeFactory` 或未来的 `IDocumentService` 创建，禁止从根容器解析 Document。
 2. 在不删除现有 public 无参构造的前提下，让构造注入成为唯一正常生产路径，继续缩小静态 `ServiceProvider` 的使用范围。
 3. 对重复 `PluginId`、空元数据和非法 Creation Intent 形成结构化诊断；Document/Tool 重复 ID 在改变“首次注册胜出”前必须先经过契约评审。
-4. 为程序集加载、模块构造、服务注册、生命周期、策略发现和布局恢复建立统一插件状态；用户能够看到失败插件、阶段、原因和建议动作。
+4. 将已经覆盖生命周期的只读插件状态 Tool 扩展到程序集加载、模块构造、服务注册、策略发现和布局恢复，使所有阶段进入同一诊断入口。
 5. 增加完整发布目录下的多插件启动、同名依赖冲突和长期运行验证。
 
 ### P1：形成稳定宿主 API
@@ -426,6 +426,6 @@ public interface IHostContext
 2. 插件仍能直接接触根 DI、Dock 类型和全局消息器，宿主为外部兼容仍保留静态服务定位入口；
 3. 缺少运行前 manifest、Host API 兼容检查、统一注册表和用户可见诊断；
 4. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
-5. 宿主专项 157 项与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。
+5. 宿主专项 167 项与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。
 
 因此，下一步最值得做的不是热加载或沙箱，而是把已有的正确方向彻底收口：**宿主拥有生命周期、布局与资源；Document 表达多实例工作上下文；Tool 表达单例状态投影；插件后台服务承载长期事实；所有扩展贡献在执行前可识别、执行中可诊断、关闭后可释放。**

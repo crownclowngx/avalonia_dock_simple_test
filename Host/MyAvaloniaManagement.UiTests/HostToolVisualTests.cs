@@ -42,14 +42,15 @@ public sealed class HostToolVisualTests
     }
 
     [AvaloniaFact]
-    public void 三个宿主工具在窄面板中可布局并使用统一样式()
+    public void 四个宿主工具在窄面板中可布局并使用统一样式()
     {
         using var context = new UiTestContext();
         var views = new UserControl[]
         {
             new FileSystemTreeView(),
             new PlugGroupMenuView(),
-            new ToolManagementView()
+            new ToolManagementView(),
+            new PluginStatusView()
         };
 
         foreach (var view in views)
@@ -71,6 +72,7 @@ public sealed class HostToolVisualTests
 
         Assert.IsNotType<ListBox>(views[2].Content);
         Assert.NotNull(views[2].FindControl<ItemsControl>("ToolItemsControl"));
+        Assert.NotNull(views[3].FindControl<ItemsControl>("PluginStatusItemsControl"));
     }
 
     [AvaloniaFact]

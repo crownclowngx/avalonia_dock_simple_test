@@ -5,6 +5,7 @@ using DaTangAccountingHelpPlug.Plugin;
 using DaTangAccountingHelpPlug.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.ToolCreation;
@@ -48,6 +49,42 @@ public sealed class PluginCompatibilityTests
         Assert.True(catalog.IsManaged(mySmallToolsAssembly));
         Assert.Equal(2, typeof(IDocumentCreationStrategy).GetMethods().Length);
         Assert.Equal(2, typeof(IToolCreationStrategy).GetMethods().Length);
+    }
+
+    [Fact]
+    public async Task 插件状态模型合并四个托管模块与生命周期结果()
+    {
+        var catalog = PluginModuleCatalog.Discover([
+            typeof(BiliDownloaderPluginModule).Assembly,
+            typeof(DaTangAccountingHelpPluginModule).Assembly,
+            typeof(MyPlugTestPluginModule).Assembly,
+            typeof(MySmallToolsPluginModule).Assembly,
+        ]);
+        var services = new ServiceCollection();
+        services.AddApplicationServices();
+        services.AddViewModels();
+        services.AddSingleton(catalog);
+        services.AddSingleton<IPluginLifecycle, ReadyBiliLifecycle>();
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = true,
+        });
+        var manager = provider.GetRequiredService<PluginLifecycleManager>();
+        await manager.InitializeAllAsync();
+        var viewModel = provider.GetRequiredService<PluginStatusViewModel>();
+
+        Assert.Equal(4, viewModel.Items.Count);
+        Assert.Equal(
+            ["BiliDownloader", "DaTangAccountingHelpPlug", "MyPlugTest", "MySmallTools"],
+            viewModel.Items.Select(item => item.PluginId));
+        Assert.Equal(
+            "运行正常",
+            viewModel.Items.Single(item => item.PluginId == "BiliDownloader").StatusText);
+        Assert.All(
+            viewModel.Items.Where(item => item.PluginId != "BiliDownloader"),
+            item => Assert.Contains("无需后台生命周期", item.StatusText));
     }
 
     [Fact]
@@ -179,5 +216,18 @@ public sealed class PluginCompatibilityTests
         Assert.NotSame(first, second);
         Assert.True(provider.GetRequiredService<DocumentScopeManager>().Release(first));
         Assert.True(provider.GetRequiredService<DocumentScopeManager>().Release(second));
+    }
+
+    private sealed class ReadyBiliLifecycle : IPluginLifecycle
+    {
+        public string PluginId => "BiliDownloader";
+
+        public int Order => 0;
+
+        public Task InitializeAsync(CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public Task ShutdownAsync(CancellationToken cancellationToken) =>
+            Task.CompletedTask;
     }
 }

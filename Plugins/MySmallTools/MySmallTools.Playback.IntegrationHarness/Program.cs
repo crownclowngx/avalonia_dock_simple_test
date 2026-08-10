@@ -45,7 +45,6 @@ internal static class Program
         var catalog = PluginModuleCatalog.Discover([typeof(MySmallToolsPluginModule).Assembly]);
         catalog.ConfigureServices(services);
         services.AddSingleton(catalog);
-        services.AddSingleton<PluginLifecycleManager>();
 
         _provider = services.BuildServiceProvider(new ServiceProviderOptions
         {

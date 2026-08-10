@@ -37,8 +37,6 @@ internal sealed class HostRuntime : IDisposable
         var pluginCatalog = PluginModuleCatalog.Discover(pluginAssemblies);
         pluginCatalog.ConfigureServices(services);
         services.AddSingleton(pluginCatalog);
-        services.AddSingleton<PluginLifecycleManager>();
-
         var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateScopes = true,

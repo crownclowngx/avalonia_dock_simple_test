@@ -8,46 +8,69 @@ public enum PluginLifecycleStatus
     Failed,
     Stopping,
     Stopped,
+    Blocked,
+    TimedOut,
+}
+
+public enum PluginLifecycleStage
+{
+    None,
+    Initialization,
+    Shutdown,
 }
 
 public sealed record PluginLifecycleState(
     string PluginId,
     PluginLifecycleStatus Status,
-    string? ErrorMessage = null);
+    string? ErrorMessage = null)
+{
+    public PluginLifecycleStage Stage { get; init; }
+
+    public string? ErrorCode { get; init; }
+
+    public TimeSpan? Duration { get; init; }
+
+    public IReadOnlyList<string> RequiredPluginIds { get; init; } = [];
+
+    public string? BlockingPluginId { get; init; }
+
+    public bool IsAvailable => Status == PluginLifecycleStatus.Ready;
+}
 
 /// <summary>
-/// 串行编排显式接入插件的初始化，并在宿主退出时按相反顺序关闭。
-/// <para>
-/// 生命周期实例完全来自依赖注入容器中的 <see cref="IPluginLifecycle"/> 注册。
-/// 未实现新模块接口的历史插件不会产生此注册，因此不会进入本管理器，原有初始化流程保持不变。
-/// </para>
+/// 按依赖计划串行初始化插件，并在宿主退出时反向关闭成功初始化的实例。
 /// </summary>
 public sealed class PluginLifecycleManager
 {
-    private readonly IReadOnlyList<IPluginLifecycle> _lifecycles;
-    private readonly List<IPluginLifecycle> _initialized = [];
-    private readonly Dictionary<string, PluginLifecycleState> _states = new(StringComparer.Ordinal);
+    private readonly PluginLifecyclePlan _plan;
+    private readonly PluginLifecycleOptions _options;
+    private readonly PluginLifecycleOperationRunner _runner = new();
+    private readonly List<PluginLifecyclePlanNode> _initialized = [];
+    private readonly Dictionary<string, PluginLifecycleState> _states;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private bool _initializationCompleted;
     private bool _shutdownCompleted;
 
     public PluginLifecycleManager(IEnumerable<IPluginLifecycle> lifecycles)
+        : this(lifecycles, new PluginLifecycleOptions())
     {
-        _lifecycles = lifecycles
-            .OrderBy(x => x.Order)
-            .ThenBy(x => x.PluginId, StringComparer.Ordinal)
-            .ToArray();
+    }
 
-        foreach (var lifecycle in _lifecycles)
-        {
-            _states[lifecycle.PluginId] = new PluginLifecycleState(
-                lifecycle.PluginId,
-                PluginLifecycleStatus.NotStarted);
-        }
+    public PluginLifecycleManager(
+        IEnumerable<IPluginLifecycle> lifecycles,
+        PluginLifecycleOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        options.Validate();
+        _options = options;
+        _plan = PluginLifecyclePlanBuilder.Build(lifecycles);
+        _states = new Dictionary<string, PluginLifecycleState>(
+            _plan.InitialStates,
+            StringComparer.Ordinal);
     }
 
     /// <summary>
-    /// 获取所有托管插件的当前状态快照。返回值不暴露内部可变字典。
+    /// 获取按 PluginId 排序的不可变状态快照。
     /// </summary>
     public IReadOnlyCollection<PluginLifecycleState> States
     {
@@ -55,14 +78,13 @@ public sealed class PluginLifecycleManager
         {
             lock (_states)
             {
-                return _states.Values.ToArray();
+                return _states.Values
+                    .OrderBy(state => state.PluginId, StringComparer.Ordinal)
+                    .ToArray();
             }
         }
     }
 
-    /// <summary>
-    /// 按插件标识读取当前生命周期状态；历史插件或未知标识返回 <see langword="null"/>。
-    /// </summary>
     public PluginLifecycleState? GetState(string pluginId)
     {
         lock (_states)
@@ -71,13 +93,9 @@ public sealed class PluginLifecycleManager
         }
     }
 
-    /// <summary>
-    /// 按 Order 和 PluginId 串行初始化所有托管插件。
-    /// 单个插件失败只记录该插件状态，不阻止其他互不依赖的插件继续初始化。
-    /// </summary>
     public async Task InitializeAllAsync(CancellationToken cancellationToken = default)
     {
-        await _gate.WaitAsync(cancellationToken);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (_initializationCompleted)
@@ -85,19 +103,102 @@ public sealed class PluginLifecycleManager
                 return;
             }
 
-            foreach (var lifecycle in _lifecycles)
+            foreach (var node in _plan.OrderedNodes)
             {
-                SetState(lifecycle.PluginId, PluginLifecycleStatus.Initializing);
+                cancellationToken.ThrowIfCancellationRequested();
+                var currentState = GetState(node.PluginId);
+                if (currentState?.Status != PluginLifecycleStatus.NotStarted)
+                {
+                    continue;
+                }
+
+                var blockingDependency = node.RequiredPluginIds.FirstOrDefault(
+                    dependency => GetState(dependency)?.Status != PluginLifecycleStatus.Ready);
+                if (blockingDependency is not null)
+                {
+                    SetState(new PluginLifecycleState(
+                        node.PluginId,
+                        PluginLifecycleStatus.Blocked,
+                        $"依赖插件 {blockingDependency} 未成功初始化。")
+                    {
+                        Stage = PluginLifecycleStage.Initialization,
+                        ErrorCode = "LIFECYCLE_DEPENDENCY_BLOCKED",
+                        RequiredPluginIds = node.RequiredPluginIds,
+                        BlockingPluginId = blockingDependency,
+                    });
+                    continue;
+                }
+
+                SetState(new PluginLifecycleState(
+                    node.PluginId,
+                    PluginLifecycleStatus.Initializing)
+                {
+                    Stage = PluginLifecycleStage.Initialization,
+                    RequiredPluginIds = node.RequiredPluginIds,
+                });
+
+                PluginLifecycleOperationResult result;
                 try
                 {
-                    await lifecycle.InitializeAsync(cancellationToken);
-                    _initialized.Add(lifecycle);
-                    SetState(lifecycle.PluginId, PluginLifecycleStatus.Ready);
+                    result = await _runner.RunAsync(
+                        node.Lifecycle.InitializeAsync,
+                        _options.InitializationTimeout,
+                        cancellationToken).ConfigureAwait(false);
                 }
-                catch (Exception ex)
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    SetState(lifecycle.PluginId, PluginLifecycleStatus.Failed, ex.Message);
-                    Console.Error.WriteLine($"插件 {lifecycle.PluginId} 初始化失败: {ex}");
+                    SetState(new PluginLifecycleState(
+                        node.PluginId,
+                        PluginLifecycleStatus.Failed,
+                        "宿主取消了插件初始化。")
+                    {
+                        Stage = PluginLifecycleStage.Initialization,
+                        ErrorCode = "LIFECYCLE_HOST_CANCELLED",
+                        RequiredPluginIds = node.RequiredPluginIds,
+                    });
+                    throw;
+                }
+                switch (result.Outcome)
+                {
+                    case PluginLifecycleOperationOutcome.Succeeded:
+                        _initialized.Add(node);
+                        SetState(new PluginLifecycleState(
+                            node.PluginId,
+                            PluginLifecycleStatus.Ready)
+                        {
+                            Stage = PluginLifecycleStage.Initialization,
+                            Duration = result.Duration,
+                            RequiredPluginIds = node.RequiredPluginIds,
+                        });
+                        break;
+
+                    case PluginLifecycleOperationOutcome.Failed:
+                        SetState(new PluginLifecycleState(
+                            node.PluginId,
+                            PluginLifecycleStatus.Failed,
+                            result.Exception?.Message)
+                        {
+                            Stage = PluginLifecycleStage.Initialization,
+                            ErrorCode = "LIFECYCLE_INITIALIZE_FAILED",
+                            Duration = result.Duration,
+                            RequiredPluginIds = node.RequiredPluginIds,
+                        });
+                        ReportFailure(node.PluginId, "initialize", result.Exception);
+                        break;
+
+                    case PluginLifecycleOperationOutcome.TimedOut:
+                        SetState(new PluginLifecycleState(
+                            node.PluginId,
+                            PluginLifecycleStatus.TimedOut,
+                            $"插件初始化超过 {_options.InitializationTimeout.TotalSeconds:0.###} 秒，插件可能未响应，建议重启应用。")
+                        {
+                            Stage = PluginLifecycleStage.Initialization,
+                            ErrorCode = "LIFECYCLE_UNRESPONSIVE",
+                            Duration = result.Duration,
+                            RequiredPluginIds = node.RequiredPluginIds,
+                        });
+                        ReportTimeout(node.PluginId, "initialize", result.Duration);
+                        break;
                 }
             }
 
@@ -109,13 +210,9 @@ public sealed class PluginLifecycleManager
         }
     }
 
-    /// <summary>
-    /// 仅关闭本次启动中成功初始化的插件，并严格按照初始化顺序反向执行。
-    /// 这样可以让后初始化、可能依赖前置服务的插件先释放自身资源。
-    /// </summary>
     public async Task ShutdownAllAsync(CancellationToken cancellationToken = default)
     {
-        await _gate.WaitAsync(cancellationToken);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (_shutdownCompleted)
@@ -125,17 +222,65 @@ public sealed class PluginLifecycleManager
 
             for (var index = _initialized.Count - 1; index >= 0; index--)
             {
-                var lifecycle = _initialized[index];
-                SetState(lifecycle.PluginId, PluginLifecycleStatus.Stopping);
-                try
+                cancellationToken.ThrowIfCancellationRequested();
+                var node = _initialized[index];
+                if (GetState(node.PluginId)?.Status == PluginLifecycleStatus.Stopped)
                 {
-                    await lifecycle.ShutdownAsync(cancellationToken);
-                    SetState(lifecycle.PluginId, PluginLifecycleStatus.Stopped);
+                    continue;
                 }
-                catch (Exception ex)
+
+                SetState(new PluginLifecycleState(
+                    node.PluginId,
+                    PluginLifecycleStatus.Stopping)
                 {
-                    SetState(lifecycle.PluginId, PluginLifecycleStatus.Failed, ex.Message);
-                    Console.Error.WriteLine($"插件 {lifecycle.PluginId} 关闭失败: {ex}");
+                    Stage = PluginLifecycleStage.Shutdown,
+                    RequiredPluginIds = node.RequiredPluginIds,
+                });
+
+                var result = await _runner.RunAsync(
+                    node.Lifecycle.ShutdownAsync,
+                    _options.ShutdownTimeout,
+                    cancellationToken).ConfigureAwait(false);
+                switch (result.Outcome)
+                {
+                    case PluginLifecycleOperationOutcome.Succeeded:
+                        SetState(new PluginLifecycleState(
+                            node.PluginId,
+                            PluginLifecycleStatus.Stopped)
+                        {
+                            Stage = PluginLifecycleStage.Shutdown,
+                            Duration = result.Duration,
+                            RequiredPluginIds = node.RequiredPluginIds,
+                        });
+                        break;
+
+                    case PluginLifecycleOperationOutcome.Failed:
+                        SetState(new PluginLifecycleState(
+                            node.PluginId,
+                            PluginLifecycleStatus.Failed,
+                            result.Exception?.Message)
+                        {
+                            Stage = PluginLifecycleStage.Shutdown,
+                            ErrorCode = "LIFECYCLE_SHUTDOWN_FAILED",
+                            Duration = result.Duration,
+                            RequiredPluginIds = node.RequiredPluginIds,
+                        });
+                        ReportFailure(node.PluginId, "shutdown", result.Exception);
+                        break;
+
+                    case PluginLifecycleOperationOutcome.TimedOut:
+                        SetState(new PluginLifecycleState(
+                            node.PluginId,
+                            PluginLifecycleStatus.TimedOut,
+                            $"插件关闭超过 {_options.ShutdownTimeout.TotalSeconds:0.###} 秒，宿主将继续退出。")
+                        {
+                            Stage = PluginLifecycleStage.Shutdown,
+                            ErrorCode = "LIFECYCLE_UNRESPONSIVE",
+                            Duration = result.Duration,
+                            RequiredPluginIds = node.RequiredPluginIds,
+                        });
+                        ReportTimeout(node.PluginId, "shutdown", result.Duration);
+                        break;
                 }
             }
 
@@ -147,11 +292,25 @@ public sealed class PluginLifecycleManager
         }
     }
 
-    private void SetState(string pluginId, PluginLifecycleStatus status, string? errorMessage = null)
+    private void SetState(PluginLifecycleState state)
     {
         lock (_states)
         {
-            _states[pluginId] = new PluginLifecycleState(pluginId, status, errorMessage);
+            _states[state.PluginId] = state;
         }
     }
+
+    private static void ReportFailure(
+        string pluginId,
+        string stage,
+        Exception? exception) =>
+        Console.Error.WriteLine(
+            $"PluginLifecycle errorCode=LIFECYCLE_{stage.ToUpperInvariant()}_FAILED pluginId={pluginId} type={exception?.GetType().Name ?? "Unknown"} message={exception?.Message ?? "-"}");
+
+    private static void ReportTimeout(
+        string pluginId,
+        string stage,
+        TimeSpan duration) =>
+        Console.Error.WriteLine(
+            $"PluginLifecycle errorCode=LIFECYCLE_UNRESPONSIVE pluginId={pluginId} stage={stage} durationMs={duration.TotalMilliseconds:0}");
 }

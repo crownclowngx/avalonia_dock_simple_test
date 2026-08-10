@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:MyAvaloniaManagement.ViewModels.Tools"
+             xmlns:plugins="clr-namespace:MyAvaloniaManagement.Models.Plugins"
+             mc:Ignorable="d"
+             d:DesignWidth="300"
+             d:DesignHeight="480"
+             x:Class="MyAvaloniaManagement.Views.Tools.PluginStatusView"
+             x:DataType="vm:PluginStatusViewModel"
+             Classes="host-tool-surface">
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0" Classes="host-tool-toolbar">
+            <TextBlock Margin="4,0"
+                       Text="当前会话的插件加载与生命周期状态"
+                       Foreground="{DynamicResource AppSecondaryTextBrush}"
+                       FontSize="12"
+                       TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
+        </Border>
+
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="PluginStatusItemsControl"
+                          ItemsSource="{Binding Items}"
+                          Margin="0,2">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="plugins:PluginStatusItem">
+                        <Border Classes="host-tool-list-row"
+                                Padding="6">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0"
+                                           Text="{Binding PluginId}"
+                                           FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Row="1"
+                                           Margin="0,2,0,0"
+                                           Text="{Binding StatusText}"
+                                           Foreground="{DynamicResource AppSecondaryTextBrush}" />
+                                <TextBlock Grid.Row="2"
+                                           Margin="0,2,0,0"
+                                           Text="{Binding AssemblyName, StringFormat='程序集：{0}'}"
+                                           FontSize="11"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Row="3"
+                                           Margin="0,2,0,0"
+                                           Text="{Binding DurationText, StringFormat='耗时：{0}'}"
+                                           FontSize="11" />
+                                <TextBlock Grid.Row="4"
+                                           Margin="0,2,0,0"
+                                           Text="{Binding DependenciesText, StringFormat='依赖：{0}'}"
+                                           FontSize="11"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Grid.Row="5"
+                                           Margin="0,3,0,0"
+                                           Text="{Binding Detail}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AppSecondaryTextBrush}"
+                                           TextWrapping="Wrap" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

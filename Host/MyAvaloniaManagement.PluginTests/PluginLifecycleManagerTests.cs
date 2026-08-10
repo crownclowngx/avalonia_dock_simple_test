@@ -98,7 +98,178 @@ public sealed class PluginLifecycleManagerTests
         Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState("yielding")?.Status);
     }
 
-    private sealed class RecordingLifecycle : IPluginLifecycle
+    [Fact]
+    public async Task 显式依赖优先于Order且同层仍使用稳定顺序()
+    {
+        var calls = new List<string>();
+        var manager = new PluginLifecycleManager([
+            new RecordingLifecycle("dependent", 0, calls, dependencies: ["foundation"]),
+            new RecordingLifecycle("z-independent", 20, calls),
+            new RecordingLifecycle("foundation", 100, calls),
+            new RecordingLifecycle("a-independent", 20, calls),
+        ]);
+
+        await manager.InitializeAllAsync();
+
+        Assert.Equal([
+            "init:a-independent",
+            "init:z-independent",
+            "init:foundation",
+            "init:dependent",
+        ], calls);
+        Assert.Equal(
+            ["foundation"],
+            manager.GetState("dependent")?.RequiredPluginIds);
+    }
+
+    [Fact]
+    public async Task 缺失依赖和循环依赖被阻塞但独立插件继续初始化()
+    {
+        var calls = new List<string>();
+        var manager = new PluginLifecycleManager([
+            new RecordingLifecycle("missing", 0, calls, dependencies: ["not-installed"]),
+            new RecordingLifecycle("cycle-a", 0, calls, dependencies: ["cycle-b"]),
+            new RecordingLifecycle("cycle-b", 0, calls, dependencies: ["cycle-a"]),
+            new RecordingLifecycle("cycle-dependent", 0, calls, dependencies: ["cycle-a"]),
+            new RecordingLifecycle("healthy", 0, calls),
+        ]);
+
+        await manager.InitializeAllAsync();
+
+        Assert.Equal(["init:healthy"], calls);
+        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState("missing")?.Status);
+        Assert.Equal(
+            "LIFECYCLE_DEPENDENCY_MISSING",
+            manager.GetState("missing")?.ErrorCode);
+        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState("cycle-a")?.Status);
+        Assert.Equal(
+            "LIFECYCLE_DEPENDENCY_CYCLE",
+            manager.GetState("cycle-b")?.ErrorCode);
+        Assert.Equal(
+            "cycle-a",
+            manager.GetState("cycle-dependent")?.BlockingPluginId);
+    }
+
+    [Fact]
+    public async Task 上游初始化失败只阻塞下游且不影响独立分支()
+    {
+        var calls = new List<string>();
+        var manager = new PluginLifecycleManager([
+            new RecordingLifecycle("broken", 0, calls, failInitialization: true),
+            new RecordingLifecycle("dependent", 0, calls, dependencies: ["broken"]),
+            new RecordingLifecycle("healthy", 0, calls),
+        ]);
+
+        await manager.InitializeAllAsync();
+
+        Assert.Equal(["init:broken", "init:healthy"], calls);
+        Assert.Equal(PluginLifecycleStatus.Failed, manager.GetState("broken")?.Status);
+        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState("dependent")?.Status);
+        Assert.Equal("broken", manager.GetState("dependent")?.BlockingPluginId);
+        Assert.True(manager.GetState("healthy")?.IsAvailable);
+    }
+
+    [Fact]
+    public async Task 重复PluginId不会选择任意实例执行()
+    {
+        var calls = new List<string>();
+        var manager = new PluginLifecycleManager([
+            new RecordingLifecycle("duplicate", 0, calls),
+            new RecordingLifecycle("duplicate", 1, calls),
+        ]);
+
+        await manager.InitializeAllAsync();
+
+        Assert.Empty(calls);
+        Assert.Equal(PluginLifecycleStatus.Failed, manager.GetState("duplicate")?.Status);
+        Assert.Equal(
+            "LIFECYCLE_PLUGIN_ID_DUPLICATE",
+            manager.GetState("duplicate")?.ErrorCode);
+    }
+
+    [Fact]
+    public async Task 初始化超时阻塞下游但迟到完成不会覆盖超时状态()
+    {
+        var calls = new List<string>();
+        var slow = new ControllableLifecycle("slow", calls);
+        var manager = new PluginLifecycleManager(
+            [
+                slow,
+                new RecordingLifecycle("dependent", 1, calls, dependencies: ["slow"]),
+                new RecordingLifecycle("healthy", 2, calls),
+            ],
+            new PluginLifecycleOptions
+            {
+                InitializationTimeout = TimeSpan.FromMilliseconds(50),
+                ShutdownTimeout = TimeSpan.FromMilliseconds(50),
+            });
+
+        await manager.InitializeAllAsync();
+        slow.CompleteInitialization();
+        await Task.Yield();
+
+        Assert.Equal(PluginLifecycleStatus.TimedOut, manager.GetState("slow")?.Status);
+        Assert.Equal("LIFECYCLE_UNRESPONSIVE", manager.GetState("slow")?.ErrorCode);
+        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState("dependent")?.Status);
+        Assert.Equal(PluginLifecycleStatus.Ready, manager.GetState("healthy")?.Status);
+        Assert.Contains("init:healthy", calls);
+    }
+
+    [Fact]
+    public async Task 关闭超时不会阻止更早初始化的插件继续关闭()
+    {
+        var calls = new List<string>();
+        var manager = new PluginLifecycleManager(
+            [
+                new RecordingLifecycle("first", 0, calls),
+                new HangingShutdownLifecycle("second", 1, calls),
+            ],
+            new PluginLifecycleOptions
+            {
+                InitializationTimeout = TimeSpan.FromMilliseconds(100),
+                ShutdownTimeout = TimeSpan.FromMilliseconds(50),
+            });
+
+        await manager.InitializeAllAsync();
+        await manager.ShutdownAllAsync();
+
+        Assert.Equal([
+            "init:first",
+            "init:second",
+            "shutdown:second",
+            "shutdown:first",
+        ], calls);
+        Assert.Equal(PluginLifecycleStatus.TimedOut, manager.GetState("second")?.Status);
+        Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState("first")?.Status);
+    }
+
+    [Fact]
+    public async Task 宿主取消会停止调度后续插件并向调用方传播()
+    {
+        var calls = new List<string>();
+        using var cancellation = new CancellationTokenSource();
+        var manager = new PluginLifecycleManager([
+            new CancellationAwareLifecycle("waiting", calls),
+            new RecordingLifecycle("never-started", 1, calls),
+        ]);
+
+        var initialization = manager.InitializeAllAsync(cancellation.Token);
+        await Task.Delay(20);
+        await cancellation.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => initialization);
+        Assert.DoesNotContain("init:never-started", calls);
+        Assert.Equal(
+            PluginLifecycleStatus.Failed,
+            manager.GetState("waiting")?.Status);
+        Assert.Equal(
+            "LIFECYCLE_HOST_CANCELLED",
+            manager.GetState("waiting")?.ErrorCode);
+    }
+
+    private sealed class RecordingLifecycle :
+        IPluginLifecycle,
+        IPluginLifecycleDependencies
     {
         private readonly List<string> _calls;
         private readonly bool _failInitialization;
@@ -107,17 +278,21 @@ public sealed class PluginLifecycleManagerTests
             string pluginId,
             int order,
             List<string> calls,
-            bool failInitialization = false)
+            bool failInitialization = false,
+            IReadOnlyCollection<string>? dependencies = null)
         {
             PluginId = pluginId;
             Order = order;
             _calls = calls;
             _failInitialization = failInitialization;
+            RequiredPluginIds = dependencies ?? [];
         }
 
         public string PluginId { get; }
 
         public int Order { get; }
+
+        public IReadOnlyCollection<string> RequiredPluginIds { get; }
 
         public Task InitializeAsync(CancellationToken cancellationToken)
         {
@@ -132,6 +307,73 @@ public sealed class PluginLifecycleManagerTests
             _calls.Add($"shutdown:{PluginId}");
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class ControllableLifecycle(
+        string pluginId,
+        List<string> calls) : IPluginLifecycle
+    {
+        private readonly TaskCompletionSource _initialization = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public string PluginId => pluginId;
+
+        public int Order => 0;
+
+        public Task InitializeAsync(CancellationToken cancellationToken)
+        {
+            calls.Add($"init:{PluginId}");
+            return _initialization.Task;
+        }
+
+        public Task ShutdownAsync(CancellationToken cancellationToken)
+        {
+            calls.Add($"shutdown:{PluginId}");
+            return Task.CompletedTask;
+        }
+
+        public void CompleteInitialization() => _initialization.TrySetResult();
+    }
+
+    private sealed class HangingShutdownLifecycle(
+        string pluginId,
+        int order,
+        List<string> calls) : IPluginLifecycle
+    {
+        public string PluginId => pluginId;
+
+        public int Order => order;
+
+        public Task InitializeAsync(CancellationToken cancellationToken)
+        {
+            calls.Add($"init:{PluginId}");
+            return Task.CompletedTask;
+        }
+
+        public Task ShutdownAsync(CancellationToken cancellationToken)
+        {
+            calls.Add($"shutdown:{PluginId}");
+            return new TaskCompletionSource(
+                TaskCreationOptions.RunContinuationsAsynchronously).Task;
+        }
+    }
+
+    private sealed class CancellationAwareLifecycle(
+        string pluginId,
+        List<string> calls) : IPluginLifecycle
+    {
+        public string PluginId => pluginId;
+
+        public int Order => 0;
+
+        public async Task InitializeAsync(CancellationToken cancellationToken)
+        {
+            calls.Add($"init:{PluginId}");
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+        }
+
+        public Task ShutdownAsync(CancellationToken cancellationToken) =>
+            Task.CompletedTask;
     }
 
     private sealed class YieldingShutdownLifecycle : IPluginLifecycle

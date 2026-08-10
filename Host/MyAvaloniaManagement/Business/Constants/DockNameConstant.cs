@@ -17,4 +17,9 @@ public class DockNameConstant
     /// 插件分组菜单的稳定 ID。
     /// </summary>
     public const string PlugGroupMenu = "plugGroupMenu";
+
+    /// <summary>
+    /// 插件状态面板的稳定 ID。
+    /// </summary>
+    public const string PluginStatus = "pluginStatus";
 }

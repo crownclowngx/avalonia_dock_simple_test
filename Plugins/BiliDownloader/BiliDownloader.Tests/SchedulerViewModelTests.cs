@@ -121,6 +121,34 @@ public sealed class SchedulerViewModelTests
     }
 
     [Fact]
+    public async Task Tool激活在插件生命周期被依赖阻塞时停止业务初始化()
+    {
+        using var paths = new TestDataPaths();
+        var repository = new InMemoryDownloadTaskRepository();
+        var settings = new InMemorySettingsRepository();
+        var coordinator = new BiliDownloadCoordinator(
+            repository,
+            new IsolatedMessengerService(),
+            new NoOpDownloadProgressTracker(),
+            new FakeDownloadTaskExecutor(),
+            paths);
+        var lifecycle = new PluginLifecycleManager([new BlockedBiliLifecycle()]);
+        await lifecycle.InitializeAllAsync();
+        var vm = new BiliSchedulerToolViewModel(
+            coordinator,
+            repository,
+            settings,
+            lifecycle,
+            new FakeFfmpegService());
+
+        await vm.ActivateAsync();
+
+        Assert.Contains("依赖阻塞", vm.SchedulerStatus, StringComparison.Ordinal);
+        Assert.Equal(0, settings.InitializeCount);
+        await coordinator.ShutdownAsync();
+    }
+
+    [Fact]
     public void Tool创建策略复用实例并返回稳定元数据()
     {
         using var paths = new TestDataPaths();
@@ -156,4 +184,21 @@ public sealed class SchedulerViewModelTests
             ItemTitle = id,
             Status = DownloadTaskStatusMapper.ToStorageString(status),
         };
+
+    private sealed class BlockedBiliLifecycle :
+        IPluginLifecycle,
+        IPluginLifecycleDependencies
+    {
+        public string PluginId => "BiliDownloader";
+
+        public int Order => 0;
+
+        public IReadOnlyCollection<string> RequiredPluginIds => ["MissingPlugin"];
+
+        public Task InitializeAsync(CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("依赖阻塞时不应执行初始化。");
+
+        public Task ShutdownAsync(CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+    }
 }

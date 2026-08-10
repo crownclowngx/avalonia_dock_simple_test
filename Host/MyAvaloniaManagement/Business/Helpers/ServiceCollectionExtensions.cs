@@ -6,6 +6,7 @@ using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Plugin;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -25,6 +26,9 @@ public static class ServiceCollectionExtensions
     /// </remarks>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+        services.AddSingleton(new PluginLifecycleOptions());
+        services.AddSingleton<PluginLifecycleManager>();
+
         // 注册消息服务为单例
         services.AddSingleton<IMessengerService, MessengerService>();
 
@@ -73,6 +77,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient(provider => new ToolManagementViewModel(
             provider.GetRequiredService<ManagementFactory>(),
             provider.GetRequiredService<IMessengerService>()));
+        services.AddTransient(provider => new PluginStatusViewModel(
+            provider.GetRequiredService<PluginModuleCatalog>(),
+            provider.GetRequiredService<PluginLifecycleManager>()));
 
         // 注册MainWindowViewModel为瞬态，每次请求都创建新实例
         services.AddTransient(provider => new MainWindowViewModel(
