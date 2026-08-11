@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avalonia.Media;
+using Dock.Model.Mvvm.Controls;
 using BiliDownloader.Converters;
 using BiliDownloader.Create;
 using BiliDownloader.Messages;
@@ -657,7 +658,7 @@ public sealed class PresentationLogicTests
             new StubBiliSessionApi(),
             messenger);
         var ffmpeg = new FakeFfmpegService();
-        services.AddTransient(_ => new BiliDownloaderViewModel(
+        services.AddScoped(_ => new BiliDownloaderViewModel(
             messenger,
             repository,
             new InMemorySettingsRepository(),
@@ -667,19 +668,71 @@ public sealed class PresentationLogicTests
             new FakeCredentialProvider(),
             ffmpeg));
         using var provider = services.BuildServiceProvider();
-        var strategy = new BiliDownloaderDocumentStrategy(provider);
+        using var scopeFactory = new TrackingDocumentScopeFactory(
+            provider.GetRequiredService<IServiceScopeFactory>());
+        var strategy = new BiliDownloaderDocumentStrategy(scopeFactory);
 
-        var custom = strategy.CreateDocument(
-            new DocumentCreationParams("BiliDownloader") { Title = "自定义" });
-        var fallback = strategy.CreateDocument(
-            new DocumentCreationParams("BiliDownloader"));
+        var custom = Assert.IsType<BiliDownloaderViewModel>(strategy.CreateDocument(
+            new DocumentCreationParams("BiliDownloader")
+            {
+                Title = "自定义",
+                CreationIntentId = "quick-url",
+            }));
+        var fallback = Assert.IsType<BiliDownloaderViewModel>(strategy.CreateDocument(
+            new DocumentCreationParams("BiliDownloader")
+            {
+                CreationIntentId = "personal-source",
+            }));
 
         Assert.NotSame(custom, fallback);
         Assert.Equal("自定义", custom.Title);
         Assert.Equal("Bilibili下载", fallback.Title);
+        Assert.True(custom.SourceWorkflow.IsQuickUrl);
+        Assert.True(fallback.SourceWorkflow.IsPersonalSource);
+        Assert.True(scopeFactory.Release(custom));
+        Assert.False(scopeFactory.Release(custom));
+        Assert.True(scopeFactory.Release(fallback));
         var metadata = strategy.GetMetadata();
         Assert.Equal("下载", metadata.DisplayName);
         Assert.Equal("Bilibili下载器", metadata.MenuCategory);
+    }
+
+    private sealed class TrackingDocumentScopeFactory(IServiceScopeFactory scopeFactory)
+        : IDocumentScopeFactory, IDisposable
+    {
+        private readonly Dictionary<Document, IServiceScope> _scopes =
+            new(ReferenceEqualityComparer.Instance);
+
+        public TDocument CreateDocument<TDocument>() where TDocument : Document
+        {
+            var scope = scopeFactory.CreateScope();
+            try
+            {
+                var document = scope.ServiceProvider.GetRequiredService<TDocument>();
+                _scopes.Add(document, scope);
+                scope = null!;
+                return document;
+            }
+            finally
+            {
+                scope?.Dispose();
+            }
+        }
+
+        public bool Release(Document document)
+        {
+            if (!_scopes.Remove(document, out var scope))
+                return false;
+            scope.Dispose();
+            return true;
+        }
+
+        public void Dispose()
+        {
+            foreach (var scope in _scopes.Values)
+                scope.Dispose();
+            _scopes.Clear();
+        }
     }
 
     private static void ConfigureWbiNav(HttpTest http)

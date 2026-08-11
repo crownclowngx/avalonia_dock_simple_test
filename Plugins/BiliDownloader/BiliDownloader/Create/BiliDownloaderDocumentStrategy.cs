@@ -2,17 +2,17 @@ using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using BiliDownloader.Constants;
 using BiliDownloader.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace BiliDownloader.Create;
 
 public class BiliDownloaderDocumentStrategy : IDocumentCreationStrategy, IDocumentCreationIntentProvider
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IDocumentScopeFactory _documentScopeFactory;
 
-    public BiliDownloaderDocumentStrategy(IServiceProvider serviceProvider)
+    public BiliDownloaderDocumentStrategy(IDocumentScopeFactory documentScopeFactory)
     {
-        _serviceProvider = serviceProvider;
+        _documentScopeFactory = documentScopeFactory
+                                ?? throw new ArgumentNullException(nameof(documentScopeFactory));
     }
 
     public Document CreateDocument(DocumentCreationParams @params)
@@ -21,9 +21,9 @@ public class BiliDownloaderDocumentStrategy : IDocumentCreationStrategy, IDocume
             && @params.CreationIntentId is not ("quick-url" or "personal-source"))
             throw new ArgumentException("未知的 BiliDownloader 创建意图。", nameof(@params));
 
-        // 每个 Document 保持独立 ViewModel，但其中的仓储、消息服务和 Coordinator
-        // 均来自同一个插件级容器；创建 Document 不再承担插件初始化职责。
-        var doc = _serviceProvider.GetRequiredService<BiliDownloaderViewModel>();
+        // 每个 Document 由宿主创建独立 Scope；仓储、消息服务和 Coordinator 仍复用
+        // 插件级单例，创建与关闭 Document 不承担插件级后台任务的生命周期职责。
+        var doc = _documentScopeFactory.CreateDocument<BiliDownloaderViewModel>();
         doc.Title = string.IsNullOrEmpty(@params.Title) ? "Bilibili下载" : @params.Title;
         doc.ApplyCreationIntent(@params.CreationIntentId);
 

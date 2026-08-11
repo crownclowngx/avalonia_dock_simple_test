@@ -1,6 +1,6 @@
 # BiliDownloader 插件架构 Review
 
-> 评审日期：2026-07-22  
+> 评审日期：2026-07-22；更新日期：2026-08-11<br>
 > 评审对象：BiliDownloader 插件自身，以及它与 MyAvaloniaManagement 宿主的交互  
 > 默认边界：Windows x64、内部可信插件、关闭宿主后替换插件，不要求运行时卸载  
 > 关联文档：[产品定义](../PRODUCT.md) · [架构改进建议](../ARCHITECTURE_IMPROVEMENT.md) · [实施路线图](ROADMAP.md) · [G0 验证记录](G0-BASELINE-TEST-LIFECYCLE.md) · [宿主—插件架构评审](../../../../docs/host-plugin-architecture-review.md)
@@ -60,7 +60,7 @@ flowchart TB
     Executor --> Ffmpeg
 ```
 
-**[代码事实]** 模块将仓储、登录服务、API、执行器、Coordinator 和 Tool 注册为插件级 singleton，将主 Document ViewModel 注册为 transient，并注册唯一的 `IPluginLifecycle`。参见 [`BiliDownloaderPluginModule.cs`](../Plugin/BiliDownloaderPluginModule.cs#L19)。
+**[代码事实]** 模块将仓储、登录服务、API、执行器、Coordinator 和 Tool 注册为插件级 singleton，将主 Document ViewModel 注册为 scoped，并注册唯一的 `IPluginLifecycle`。参见 [`BiliDownloaderPluginModule.cs`](../Plugin/BiliDownloaderPluginModule.cs#L19)。
 
 ## 2. 它如何接入宿主
 
@@ -105,11 +105,11 @@ sequenceDiagram
 | 根 DI 容器 | 宿主 | 插件通过 `IPluginModule` 注册自身服务 |
 | 消息总线 | 宿主 | 插件复用 `IMessengerService`，不创建第二个实例 |
 | 下载任务、设置、登录状态 | BiliDownloader | 插件级 singleton 与 SQLite |
-| Document 实例 | 宿主创建，插件实现 | 当前从根容器解析 transient |
+| Document 实例 | 宿主创建，插件实现 | `IDocumentScopeFactory` 创建 scoped ViewModel，关闭后由宿主释放 |
 | Tool 实例 | 宿主创建一次，插件实现 | singleton ViewModel，隐藏后恢复同一实例 |
 | 后台下载生命周期 | 插件实现，宿主触发 | `IPluginLifecycle` → Coordinator |
 
-**[不成熟点]** `BiliDownloaderDocumentStrategy` 仍然从根 `IServiceProvider` 解析 transient `BiliDownloaderViewModel`，没有使用宿主的每 Document Scope。当前 ViewModel 没有明显 scoped 可释放依赖时可以工作，但它与宿主已经建立的 Document 所有权模型不一致。参见 [`BiliDownloaderDocumentStrategy.cs`](../Create/BiliDownloaderDocumentStrategy.cs#L18)。
+**[已实现]** `BiliDownloaderDocumentStrategy` 只依赖宿主 `IDocumentScopeFactory`，每次创建独立 scoped `BiliDownloaderViewModel`；Dock 确认关闭后由宿主释放 Scope。仓储、Coordinator 和 Tool 仍是插件级 singleton，因此关闭 Document 不会终止已经提交的后台下载任务。参见 [`BiliDownloaderDocumentStrategy.cs`](../Create/BiliDownloaderDocumentStrategy.cs#L18)。
 
 ## 3. Document、Tool 和 Coordinator 的职责
 
@@ -294,7 +294,7 @@ flowchart TB
 | SQLite 任务事实源 | 已实现 | 生命周期和全局投影基础已经形成 |
 | 宿主托管插件生命周期 | 已实现 | G0 核心成果 |
 | Coordinator 可替换执行边界 | 已实现 | 支持离线测试 |
-| Document/Tool/后台服务分层 | 部分成熟 | 核心方向正确，Document Scope 尚未统一 |
+| Document/Tool/后台服务分层 | 已实现 | Document 使用宿主 Scope，Tool 与后台服务保持插件级 singleton |
 | 状态机 | 部分成熟 | 枚举与映射已形成，若干状态缺完整命令闭环 |
 | 断点续传 | 部分成熟 | 已有分块文件基础，恢复校验仍需 G3 收口 |
 | 错误分类和行动入口 | 已实现 | 十类错误在任务卡片、紧凑菜单和提交预检中提供结构化行动 |
@@ -319,8 +319,7 @@ flowchart TB
 1. **凭据明文存储**：Cookie 数据库与任务兼容字段仍可能保存敏感信息。
 2. **单任务控制不足**：队列级停止会影响其他活动任务，不能满足高频任务管理。
 3. **恢复事实不统一**：SQLite 字节数、分块文件和最终文件之间需要明确权威顺序。
-4. **Document Scope 未统一**：Document 生命周期尚未完全进入宿主托管模型。
-5. **文件冲突处理不足**：覆盖、跳过、续传、自动改名和批量确认需要统一预检。
+4. **文件冲突处理不足**：覆盖、跳过、续传、自动改名和批量确认需要统一预检。
 
 ### 8.2 工程性风险
 
@@ -409,7 +408,7 @@ BiliDownloader 当前最值得肯定的不是已经支持多少 URL，而是它�
 
 G0 已经把下载后台从 UI 生命周期中抽离，并建立了可以离线测试的执行边界。这说明插件已经从“功能堆在 ViewModel 中”进入“有明确运行内核”的阶段。
 
-接下来不应急于增加更多内容源。最高价值的工作依次是：凭据安全、单任务控制、恢复闭环、任务中心产品化、文件预检和真实验收。同时把 BiliDownloader Document 纳入宿主统一 Scope，并让插件部署、兼容性和诊断逐步交给宿主平台。
+接下来不应急于增加更多内容源。最高价值的工作依次是：凭据安全、单任务控制、恢复闭环、任务中心产品化、文件预检和真实验收。同时让插件部署、兼容性和诊断逐步交给宿主平台。
 
 完成这些工作后，BiliDownloader 才会从“能下载的视频插件”成为“可以长期、高频、可恢复使用的下载子系统”。
 ## 12. P1-G0 内容源边界补充

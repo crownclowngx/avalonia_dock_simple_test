@@ -332,7 +332,7 @@ public interface IPluginModule
 - `DownloadTaskStore`：Singleton 或稳定 Repository。
 - `BiliLoginStateService`：Singleton，通过 DI 创建，不再自行维护静态 Lazy。
 - `HttpClient`：由 `IHttpClientFactory` 或共享 `SocketsHttpHandler` 创建。
-- Document ViewModel：Transient。
+- Document ViewModel：Scoped，由宿主每 Document Scope 创建和释放。
 - Scheduler Tool ViewModel：Singleton，与宿主创建的唯一 Tool 对应。
 
 `InitializeAsync` 只初始化结构和加载任务，不启动下载；`ShutdownAsync` 负责取消并等待正在运行的任务。

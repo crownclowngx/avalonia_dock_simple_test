@@ -180,7 +180,7 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IDownloadSubmissionService, DownloadSubmissionService>();
         services.AddSingleton<IDownloadFailureActionService, DownloadFailureActionService>();
         services.AddSingleton<BiliSchedulerToolViewModel>();
-        services.AddTransient<BiliDownloaderViewModel>();
+        services.AddScoped<BiliDownloaderViewModel>();
 
         services.AddSingleton<IPluginLifecycle, BiliDownloaderPluginLifecycle>();
     }

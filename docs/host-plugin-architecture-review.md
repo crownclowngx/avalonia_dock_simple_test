@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-10<br>
+> 更新日期：2026-08-11<br>
 > 代码基线：主项目核心链路内部重构后的当前工作区<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系  
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
@@ -123,17 +123,17 @@ sequenceDiagram
 
 公共主入口仍是 `IDocumentCreationStrategy`。在不破坏旧接口的前提下，新增的 `IDocumentCreationIntentProvider` 允许一个 Document 类型声明多个菜单入口；宿主把 `CreationIntentId` 放入 `DocumentCreationParams` 传给同一策略。BiliDownloader 当前提供“链接下载”和“个人内容来源”两个入口。参见 [`IDocumentCreationStrategy.cs`](../Host/MyAvaloniaManagementCommon/DocumentCreation/IDocumentCreationStrategy.cs)、[`IDocumentCreationIntentProvider.cs`](../Host/MyAvaloniaManagementCommon/DocumentCreation/IDocumentCreationIntentProvider.cs) 和 [`BiliDownloaderDocumentStrategy.cs`](../Plugins/BiliDownloader/BiliDownloader/Create/BiliDownloaderDocumentStrategy.cs)。
 
-### 3.2 Scope 基础设施已落地，但所有权规则尚未统一
+### 3.2 所有 Managed Document 已统一纳入宿主 Scope
 
 ```mermaid
 flowchart TD
     User["用户从菜单或文件入口创建 Document"] --> Host["ManagementFactory 兼容入口"]
     Host --> Registry["HostExtensionRegistry 按 DocumentTypeId 分派策略"]
     Registry --> Strategy["IDocumentCreationStrategy.CreateDocument"]
-    Strategy --> Choice{"策略是否使用<br/>IDocumentScopeFactory?"}
-    Choice -- "是" --> Scope["宿主创建独立 IServiceScope"]
+    Strategy --> Choice["当前 Managed 策略统一调用 IDocumentScopeFactory"]
+    Choice --> Scope["宿主创建独立 IServiceScope"]
     Scope --> Resolve["从 Scope 解析 Document 与 scoped 依赖"]
-    Choice -- "否" --> Root["从根容器解析 transient Document"]
+    Strategy -. "Legacy 兼容" .-> Root["策略自行创建 Document"]
     Resolve --> Dock["加入中央 DocumentDock"]
     Root --> Dock
     Dock --> Close["Dock 确认标签页已关闭"]
@@ -151,11 +151,11 @@ flowchart TD
 | --- | --- | --- |
 | MySmallTools 的播放、库、加密、解密 Document | `IDocumentScopeFactory` + scoped ViewModel/资源 | 已纳入宿主所有权 |
 | DaTang 银行余额调节 Document | `IDocumentScopeFactory` + scoped 运行状态 | 已纳入宿主所有权 |
-| BiliDownloader Document | 从根容器解析 transient ViewModel | 多实例状态独立，但不具备统一 Scope 释放语义 |
-| MyPlugTest 两个 Document | 从根容器解析 transient ViewModel | 示例可工作，但仍走根容器路径 |
-| DaTang 发票导入 Document | 从根容器解析 transient ViewModel | 多实例状态独立，但与同插件另一 Document 的规则不同 |
+| BiliDownloader Document | `IDocumentScopeFactory` + scoped ViewModel | 已纳入宿主所有权；插件级下载任务不随标签关闭 |
+| MyPlugTest 三个 Document | `IDocumentScopeFactory` + scoped ViewModel/局部状态 | 已纳入宿主所有权 |
+| DaTang 发票导入 Document | `IDocumentScopeFactory` + scoped ViewModel | 已纳入宿主所有权，与同插件对账 Document 规则一致 |
 
-**[架构判断]** 当前可以说“宿主具备并验证了每 Document Scope 能力”，不能说“所有 Managed Document 都由 Scope 托管”。尤其 DaTang 同一插件内已经出现两套 Document 所有权规则，后续应统一。
+**[架构判断]** 当前全部 Managed Document 都由宿主 Scope 托管；Document 注册为 scoped，策略只依赖 `IDocumentScopeFactory`，根容器在 `ValidateScopes` 下不能直接解析这些 ViewModel。Legacy 无参策略仍保留原有自管创建语义，不纳入这一所有权承诺。
 
 ### 3.3 保存与恢复已经出现插件级版本化，但宿主契约仍偏薄
 
@@ -253,7 +253,7 @@ flowchart LR
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
 | 布局持久化 | 已实现 V1 | 原子写入、校验、坏文件隔离、两向迁移、历史浮动归一化已有测试；插件缺失时整份回退 |
 | Document 保存 | 部分成熟 | 宿主外壳、批量打开、并发串行化、错误隔离和原子替换已实现；公共脏状态、关闭确认与坏文件恢复尚未统一 |
-| 每 Document Scope | 部分成熟 | 基础设施、MySmallTools 和 DaTang 对账已完成；BiliDownloader、MyPlugTest、DaTang 发票仍走根容器 transient |
+| 每 Document Scope | 已实现 | 当前全部 Managed Document 均通过 `IDocumentScopeFactory` 创建 scoped ViewModel；关闭与宿主退出释放路径已有回归门禁 |
 | 加载上下文隔离 | 部分成熟 | 每目录一个不可回收 ALC；加载器又按简单程序集名做全局缓存/解析，不能保证私有依赖版本完全隔离 |
 | 错误处理与诊断 | 部分成熟 | 布局与生命周期已有稳定错误码、隔离和只读状态 Tool；程序集扫描、模块构造和策略发现仍主要输出 Console，尚未进入统一注册表 |
 | ID 与元数据 | 不成熟 | `PluginId`、Document/Tool ID 仍是字符串；策略重复通过 `TryAdd` 静默保留首个，模块也未统一拒绝重复 PluginId |
@@ -383,7 +383,7 @@ public interface IHostContext
 
 ### P0：收口当前已经暴露的所有权和稳定性问题
 
-1. 所有 Managed Document 都经 `IDocumentScopeFactory` 或未来的 `IDocumentService` 创建，禁止从根容器解析 Document。
+1. **已完成**：所有当前 Managed Document 都经 `IDocumentScopeFactory` 创建，scoped 注册与 `ValidateScopes` 共同禁止从根容器解析 Document；未来的 `IDocumentService` 可在此基础上扩展激活和查询能力。
 2. 在不删除现有 public 无参构造的前提下，让构造注入成为唯一正常生产路径，继续缩小静态 `ServiceProvider` 的使用范围。
 3. 对重复 `PluginId`、空元数据和非法 Creation Intent 形成结构化诊断；Document/Tool 重复 ID 在改变“首次注册胜出”前必须先经过契约评审。
 4. 将已经覆盖生命周期的只读插件状态 Tool 扩展到程序集加载、模块构造、服务注册、策略发现和布局恢复，使所有阶段进入同一诊断入口。
@@ -422,10 +422,9 @@ public interface IHostContext
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. Managed Document 的所有权规则仍未统一；
-2. 插件仍能直接接触根 DI、Dock 类型和全局消息器，宿主为外部兼容仍保留静态服务定位入口；
-3. 缺少运行前 manifest、Host API 兼容检查、统一注册表和用户可见诊断；
-4. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
-5. 宿主专项 167 项与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。
+1. 插件仍能直接接触根 DI、Dock 类型和全局消息器，宿主为外部兼容仍保留静态服务定位入口；
+2. 缺少运行前 manifest、Host API 兼容检查、统一注册表和用户可见诊断；
+3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
+4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。
 
 因此，下一步最值得做的不是热加载或沙箱，而是把已有的正确方向彻底收口：**宿主拥有生命周期、布局与资源；Document 表达多实例工作上下文；Tool 表达单例状态投影；插件后台服务承载长期事实；所有扩展贡献在执行前可识别、执行中可诊断、关闭后可释放。**

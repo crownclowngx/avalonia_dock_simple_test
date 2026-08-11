@@ -2,24 +2,22 @@
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyPlugTest.Constants;
 using MyPlugTest.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace MyPlugTest.Models;
 
 public class TestWelcomeDocumentStrategy : IDocumentCreationStrategy
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IDocumentScopeFactory _documentScopeFactory;
 
-    public TestWelcomeDocumentStrategy(IServiceProvider serviceProvider)
+    public TestWelcomeDocumentStrategy(IDocumentScopeFactory documentScopeFactory)
     {
-        _serviceProvider = serviceProvider;
+        _documentScopeFactory = documentScopeFactory
+                                ?? throw new ArgumentNullException(nameof(documentScopeFactory));
     }
 
     public Document CreateDocument(DocumentCreationParams @params)
     {
-        // 策略实例会被宿主长期保存，因此不能在策略构造阶段缓存瞬态 Document ViewModel。
-        // 每次用户明确创建 Document 时再从根容器解析，才能保证多个文档状态彼此独立。
-        var welcomeDoc = _serviceProvider.GetRequiredService<TestWelcomeViewModel>();
+        var welcomeDoc = _documentScopeFactory.CreateDocument<TestWelcomeViewModel>();
         welcomeDoc.Title = string.IsNullOrEmpty(@params.Title) ? "Test欢迎" : @params.Title;
 
         return welcomeDoc;

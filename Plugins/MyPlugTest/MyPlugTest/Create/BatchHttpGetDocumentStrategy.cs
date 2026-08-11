@@ -1,5 +1,4 @@
 using Dock.Model.Mvvm.Controls;
-using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyPlugTest.Constants;
 using MyPlugTest.ViewModels;
@@ -11,16 +10,17 @@ namespace MyPlugTest.Create;
 /// </summary>
 public sealed class BatchHttpGetDocumentStrategy : IDocumentCreationStrategy
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IDocumentScopeFactory _documentScopeFactory;
 
-    public BatchHttpGetDocumentStrategy(IServiceProvider serviceProvider)
+    public BatchHttpGetDocumentStrategy(IDocumentScopeFactory documentScopeFactory)
     {
-        _serviceProvider = serviceProvider;
+        _documentScopeFactory = documentScopeFactory
+                                ?? throw new ArgumentNullException(nameof(documentScopeFactory));
     }
 
     public Document CreateDocument(DocumentCreationParams @params)
     {
-        var document = _serviceProvider.GetRequiredService<BatchHttpGetViewModel>();
+        var document = _documentScopeFactory.CreateDocument<BatchHttpGetViewModel>();
         document.Title = string.IsNullOrWhiteSpace(@params.Title)
             ? "逐行 HTTP GET"
             : @params.Title;

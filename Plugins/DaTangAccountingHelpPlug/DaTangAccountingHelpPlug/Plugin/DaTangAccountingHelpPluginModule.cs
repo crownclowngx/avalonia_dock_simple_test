@@ -24,8 +24,8 @@ public sealed class DaTangAccountingHelpPluginModule : IPluginModule
     /// <inheritdoc />
     public void ConfigureServices(IServiceCollection services)
     {
-        // 每次创建文档都应得到独立状态，避免不同发票计算窗口共享路径、日志或计算结果。
-        services.AddTransient<InvoiceInfoImportViewModel>();
+        // 发票 Document 由宿主的独立 Scope 托管，避免不同窗口共享路径、日志或计算结果。
+        services.AddScoped<InvoiceInfoImportViewModel>();
 
         // 内置配置是不可变的版本化资源，跨 Document 复用加载器不会共享运行状态。
         services.AddSingleton<ReconciliationProfileLoader>();

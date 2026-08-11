@@ -31,7 +31,7 @@ public sealed class BiliDownloaderModuleTests
             ServiceLifetime.Singleton,
             FindDescriptor(services, typeof(BiliSchedulerToolViewModel)).Lifetime);
         Assert.Equal(
-            ServiceLifetime.Transient,
+            ServiceLifetime.Scoped,
             FindDescriptor(services, typeof(BiliDownloaderViewModel)).Lifetime);
         Assert.Equal(
             ServiceLifetime.Singleton,
@@ -73,6 +73,13 @@ public sealed class BiliDownloaderModuleTests
         Assert.Equal(ServiceLifetime.Singleton,
             FindDescriptor(services, typeof(ITaskHistoryRedownloadService)).Lifetime);
         Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IPluginLifecycle));
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+        });
+        Assert.Throws<InvalidOperationException>(
+            provider.GetRequiredService<BiliDownloaderViewModel>);
     }
 
     [Fact]

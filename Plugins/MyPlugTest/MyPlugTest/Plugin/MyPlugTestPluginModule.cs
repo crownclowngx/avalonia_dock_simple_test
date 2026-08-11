@@ -25,12 +25,12 @@ public sealed class MyPlugTestPluginModule : IPluginModule
         // Tool 被隐藏再恢复时仍返回同一对象，不会丢失界面状态或重复创建资源。
         services.AddSingleton<MyCustomToolViewModel>();
 
-        // Document 必须在用户每次执行“新建”时创建独立实例。
-        // UrlHistoryViewModel 同样使用 Transient，确保不同欢迎 Document 的历史记录互不串扰。
-        services.AddTransient<TestWelcomeViewModel>();
-        services.AddTransient<TestMessageReceiveViewModel>();
-        services.AddTransient<BatchHttpGetViewModel>();
-        services.AddTransient<UrlHistoryViewModel>();
+        // Document 及其局部状态由宿主创建的独立 Scope 托管。关闭标签页时宿主释放 Scope，
+        // 不同欢迎 Document 的 URL 历史记录也因此保持隔离。
+        services.AddScoped<TestWelcomeViewModel>();
+        services.AddScoped<TestMessageReceiveViewModel>();
+        services.AddScoped<BatchHttpGetViewModel>();
+        services.AddScoped<UrlHistoryViewModel>();
 
         // URL 请求服务本身不保存单个 Document 的可变状态，可以作为插件级 Singleton 复用。
         // IMessengerService 由宿主注册，本模块刻意不重复注册，保证发送方和接收方共享同一消息事实源。

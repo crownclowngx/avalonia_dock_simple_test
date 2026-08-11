@@ -7,7 +7,6 @@ using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.ContentSources;
 using BiliDownloader.ViewModels.BiliDownloader;
 using Flurl.Http.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace BiliDownloader.Tests;
@@ -17,14 +16,19 @@ public sealed class DocumentCreationIntentG1Tests
     [Fact]
     public void 两个菜单入口共享同一Document类型且未知意图被拒绝()
     {
-        using var services = new ServiceCollection().BuildServiceProvider();
-        var strategy = new BiliDownloaderDocumentStrategy(services);
+        var strategy = new BiliDownloaderDocumentStrategy(new ThrowingDocumentScopeFactory());
 
         Assert.Equal(["quick-url", "personal-source"],
             strategy.GetCreationIntents().Select(intent => intent.IntentId));
         Assert.Equal(SaveDocumentTypeIdConstant.BiliDownloaderDocumentId, strategy.GetMetadata().DocumentTypeId);
         Assert.Throws<ArgumentException>(() => strategy.CreateDocument(
             new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId) { CreationIntentId = "unknown" }));
+    }
+
+    private sealed class ThrowingDocumentScopeFactory : IDocumentScopeFactory
+    {
+        public TDocument CreateDocument<TDocument>() where TDocument : Dock.Model.Mvvm.Controls.Document =>
+            throw new InvalidOperationException("非法创建意图不应进入 Document Scope 创建流程。");
     }
 }
 

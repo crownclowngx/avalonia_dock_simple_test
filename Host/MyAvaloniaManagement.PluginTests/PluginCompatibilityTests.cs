@@ -7,10 +7,13 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagementCommon.Message;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.ToolCreation;
+using MyPlugTest.Create;
 using MyPlugTest.Models;
 using MyPlugTest.Plugin;
+using MyPlugTest.ViewModels;
 using MySmallTools.InitPlug.SecretVideoPlayer;
 using MySmallTools.Plugin;
 using MySmallTools.ViewModels.SecretVideoPlayer;
@@ -88,7 +91,7 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void DaTang模块注册Transient文档且不注册生命周期()
+    public void DaTang模块注册Scoped文档且禁止从根容器解析()
     {
         var services = new ServiceCollection();
         var module = new DaTangAccountingHelpPluginModule();
@@ -98,7 +101,7 @@ public sealed class PluginCompatibilityTests
         var descriptor = Assert.Single(
             services,
             item => item.ServiceType == typeof(InvoiceInfoImportViewModel));
-        Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime);
+        Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime);
         Assert.DoesNotContain(
             services,
             item => item.ServiceType == typeof(IPluginLifecycle));
@@ -109,9 +112,8 @@ public sealed class PluginCompatibilityTests
             ValidateOnBuild = true,
         });
 
-        Assert.NotSame(
-            provider.GetRequiredService<InvoiceInfoImportViewModel>(),
-            provider.GetRequiredService<InvoiceInfoImportViewModel>());
+        Assert.Throws<InvalidOperationException>(
+            provider.GetRequiredService<InvoiceInfoImportViewModel>);
     }
 
     [Fact]
@@ -158,6 +160,9 @@ public sealed class PluginCompatibilityTests
         var assembly = typeof(DaTangAccountingHelpPluginModule).Assembly;
         var catalog = PluginModuleCatalog.Discover([assembly]);
         var services = new ServiceCollection();
+        services.AddSingleton<DocumentScopeManager>();
+        services.AddSingleton<IDocumentScopeFactory>(provider =>
+            provider.GetRequiredService<DocumentScopeManager>());
         new DaTangAccountingHelpPluginModule().ConfigureServices(services);
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -184,6 +189,71 @@ public sealed class PluginCompatibilityTests
         Assert.Equal("第一份发票计算", first.Title);
         Assert.Equal("发票信息导入和计算", second.Title);
         Assert.Equal("大唐-会计", strategy.GetMetadata().MenuCategory);
+        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        Assert.True(manager.Release(first));
+        Assert.False(manager.Release(first));
+        Assert.True(manager.Release(second));
+    }
+
+    [Fact]
+    public void MyPlugTest三个Document策略均由独立Scope托管()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IMessengerService, MessengerService>();
+        services.AddSingleton<DocumentScopeManager>();
+        services.AddSingleton<IDocumentScopeFactory>(provider =>
+            provider.GetRequiredService<DocumentScopeManager>());
+        new MyPlugTestPluginModule().ConfigureServices(services);
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = true,
+        });
+
+        Assert.All(
+            new[]
+            {
+                typeof(TestWelcomeViewModel),
+                typeof(TestMessageReceiveViewModel),
+                typeof(BatchHttpGetViewModel),
+                typeof(UrlHistoryViewModel),
+            },
+            serviceType => Assert.Equal(
+                ServiceLifetime.Scoped,
+                Assert.Single(services, item => item.ServiceType == serviceType).Lifetime));
+        Assert.Throws<InvalidOperationException>(provider.GetRequiredService<TestWelcomeViewModel>);
+        Assert.Throws<InvalidOperationException>(provider.GetRequiredService<TestMessageReceiveViewModel>);
+        Assert.Throws<InvalidOperationException>(provider.GetRequiredService<BatchHttpGetViewModel>);
+
+        var assembly = typeof(MyPlugTestPluginModule).Assembly;
+        var catalog = PluginModuleCatalog.Discover([assembly]);
+        var welcomeStrategy = Activate<TestWelcomeDocumentStrategy>(assembly, provider, catalog);
+        var receiveStrategy = Activate<TestMessageReceiveDocumentStrategy>(assembly, provider, catalog);
+        var batchStrategy = Activate<BatchHttpGetDocumentStrategy>(assembly, provider, catalog);
+
+        var firstWelcome = Assert.IsType<TestWelcomeViewModel>(welcomeStrategy.CreateDocument(
+            new DocumentCreationParams("welcome") { Title = "欢迎 A" }));
+        var secondWelcome = Assert.IsType<TestWelcomeViewModel>(welcomeStrategy.CreateDocument(
+            new DocumentCreationParams("welcome")));
+        var receiver = Assert.IsType<TestMessageReceiveViewModel>(receiveStrategy.CreateDocument(
+            new DocumentCreationParams("receiver")));
+        var batch = Assert.IsType<BatchHttpGetViewModel>(batchStrategy.CreateDocument(
+            new DocumentCreationParams("batch")));
+
+        Assert.NotSame(firstWelcome, secondWelcome);
+        Assert.NotSame(firstWelcome.UrlHistory, secondWelcome.UrlHistory);
+        firstWelcome.UrlHistory.AddUrl("https://first.test");
+        Assert.Single(firstWelcome.UrlHistory.HistoryItems);
+        Assert.Empty(secondWelcome.UrlHistory.HistoryItems);
+        Assert.Equal("欢迎 A", firstWelcome.Title);
+
+        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        Assert.True(manager.Release(firstWelcome));
+        Assert.False(manager.Release(firstWelcome));
+        Assert.True(manager.Release(secondWelcome));
+        Assert.True(manager.Release(receiver));
+        Assert.True(manager.Release(batch));
     }
 
     [Fact]
@@ -230,4 +300,14 @@ public sealed class PluginCompatibilityTests
         public Task ShutdownAsync(CancellationToken cancellationToken) =>
             Task.CompletedTask;
     }
+
+    private static IDocumentCreationStrategy Activate<TStrategy>(
+        System.Reflection.Assembly assembly,
+        IServiceProvider provider,
+        PluginModuleCatalog catalog) where TStrategy : IDocumentCreationStrategy =>
+        PluginStrategyActivator.Create<IDocumentCreationStrategy>(
+            typeof(TStrategy),
+            assembly,
+            provider,
+            catalog);
 }
