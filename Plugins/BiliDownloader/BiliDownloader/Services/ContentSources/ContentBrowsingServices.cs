@@ -43,7 +43,11 @@ public sealed class ContentQueryCoordinator : IDisposable
         _disposed = true;
         _generationCts.Cancel();
         _generationCts.Dispose();
-        _gate.Dispose();
+        // 这里只取消当前查询代次，不释放 SemaphoreSlim。原因是 Dispose 发生时可能仍有
+        // 已经取得 GateLease 的异步查询正在退出；该查询在 finally 中归还租约时仍会调用
+        // Release。若此处提前 Dispose 信号量，就会把正常的协作取消变成
+        // ObjectDisposedException。SemaphoreSlim 在这里不持有非托管资源，随协调器一同
+        // 被 GC 回收即可，这个取舍优先保证关闭期间的并发退出安全。
     }
 
     private sealed class GateLease(SemaphoreSlim gate) : IDisposable

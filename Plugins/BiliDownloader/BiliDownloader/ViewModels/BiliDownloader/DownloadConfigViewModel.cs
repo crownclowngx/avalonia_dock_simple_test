@@ -19,7 +19,7 @@ namespace BiliDownloader.ViewModels.BiliDownloader;
 /// QualityPreference 在 PopulateQualities 时延迟匹配（预设记录偏好字符串，解析后映射到实际 QualityId）。
 /// </para>
 /// </summary>
-public partial class DownloadConfigViewModel : ObservableObject
+public partial class DownloadConfigViewModel : ObservableObject, IDisposable
 {
     private static readonly IPluginLogger Log = PluginLog.For<DownloadConfigViewModel>();
     private readonly ISettingsRepository _settingsRepository;
@@ -36,6 +36,9 @@ public partial class DownloadConfigViewModel : ObservableObject
     private string _restoredPresetId = "";
     private readonly Func<CancellationToken, Task<IReadOnlyList<SubtitleLanguageAvailability>>>? _subtitleDiscovery;
     private bool _isNormalizingExtras;
+    private readonly CancellationToken _documentToken;
+    private readonly CancellationTokenSource _disposeCts = new();
+    private int _disposed;
 
     public event Action<DownloadPreset>? PresetApplied;
 
@@ -390,12 +393,14 @@ public partial class DownloadConfigViewModel : ObservableObject
         IPresetRepository? presetRepository = null,
         Func<string>? getNamingTemplate = null,
         IDownloadPresetService? presetService = null,
-        Func<CancellationToken, Task<IReadOnlyList<SubtitleLanguageAvailability>>>? subtitleDiscovery = null)
+        Func<CancellationToken, Task<IReadOnlyList<SubtitleLanguageAvailability>>>? subtitleDiscovery = null,
+        CancellationToken documentToken = default)
     {
         _settingsRepository = settingsRepository;
         _presetService = presetService ?? (presetRepository is null ? null : new DownloadPresetService(presetRepository));
         _getNamingTemplate = getNamingTemplate;
         _subtitleDiscovery = subtitleDiscovery;
+        _documentToken = documentToken;
         SelectFolderCommand = new AsyncRelayCommand(SelectFolderAsync);
         ApplyPresetCommand = new RelayCommand(ApplySelectedPreset);
         SaveAsPresetCommand = new AsyncRelayCommand(SaveAsPresetAsync);
@@ -419,12 +424,18 @@ public partial class DownloadConfigViewModel : ObservableObject
     {
         try
         {
+            _documentToken.ThrowIfCancellationRequested();
+            _disposeCts.Token.ThrowIfCancellationRequested();
             await _settingsRepository.InitAsync();
+            _documentToken.ThrowIfCancellationRequested();
+            _disposeCts.Token.ThrowIfCancellationRequested();
 
             // Document 内保存的实际配置优先于全局默认目录。
             if (!_documentConfigurationApplied)
             {
                 var savedDir = await _settingsRepository.GetSettingAsync("default_output_dir");
+                _documentToken.ThrowIfCancellationRequested();
+                _disposeCts.Token.ThrowIfCancellationRequested();
                 if (!string.IsNullOrEmpty(savedDir))
                 {
                     OutputDirectory = savedDir;
@@ -440,6 +451,8 @@ public partial class DownloadConfigViewModel : ObservableObject
             if (_presetService != null)
             {
                 var presets = await _presetService.GetAllAsync();
+                _documentToken.ThrowIfCancellationRequested();
+                _disposeCts.Token.ThrowIfCancellationRequested();
                 Presets.Clear();
                 foreach (var p in presets)
                     Presets.Add(p);
@@ -451,6 +464,8 @@ public partial class DownloadConfigViewModel : ObservableObject
 
                 // 恢复最后使用的预设
                 var lastPresetId = await _settingsRepository.GetSettingAsync("last_preset_id");
+                _documentToken.ThrowIfCancellationRequested();
+                _disposeCts.Token.ThrowIfCancellationRequested();
                 if (!_documentConfigurationApplied && !string.IsNullOrEmpty(lastPresetId))
                 {
                     var lastPreset = presets.FirstOrDefault(p => p.Id == lastPresetId);
@@ -777,10 +792,15 @@ public partial class DownloadConfigViewModel : ObservableObject
         };
     }
 
-    private async Task SelectFolderAsync()
+    private async Task SelectFolderAsync(CancellationToken cancellationToken)
     {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _documentToken,
+            _disposeCts.Token);
         try
         {
+            linked.Token.ThrowIfCancellationRequested();
             var parentWindow = GetParentWindow();
             if (parentWindow is null)
             {
@@ -793,11 +813,23 @@ public partial class DownloadConfigViewModel : ObservableObject
                     Title = "选择下载输出目录",
                     AllowMultiple = false
                 });
+            linked.Token.ThrowIfCancellationRequested();
+            if (IsDisposed) return;
             if (result.Count > 0)
             {
                 OutputDirectory = result[0].Path.LocalPath;
                 await _settingsRepository.SetSettingAsync("default_output_dir", OutputDirectory);
             }
+        }
+        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        {
+            // Avalonia 的原生目录选择器没有取消令牌入口，无法保证关闭标签时同步关闭系统窗口。
+            // 因此这里把 Document 令牌作为“结果提交门禁”：对话框可以自然返回，但关闭后的
+            // 路径绝不写回 ViewModel，也不会继续保存为新的默认下载目录。
+        }
+        catch (OperationCanceledException) when (IsDisposed)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -1002,7 +1034,7 @@ public partial class DownloadConfigViewModel : ObservableObject
         }
     }
 
-    private async Task DetectSubtitlesAsync()
+    private async Task DetectSubtitlesAsync(CancellationToken cancellationToken)
     {
         if (_subtitleDiscovery is null)
         {
@@ -1012,7 +1044,12 @@ public partial class DownloadConfigViewModel : ObservableObject
         IsSubtitleDetecting = true;
         try
         {
-            var discovered = await _subtitleDiscovery(CancellationToken.None);
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken,
+                _documentToken,
+                _disposeCts.Token);
+            var discovered = await _subtitleDiscovery(linked.Token);
+            linked.Token.ThrowIfCancellationRequested();
             var selected = SubtitleOptions.LanguageKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
             SubtitleLanguageOptions.Clear();
             foreach (var language in discovered)
@@ -1030,7 +1067,20 @@ public partial class DownloadConfigViewModel : ObservableObject
         {
             SubtitleDetectionStatusText = "字幕检测失败：" + SensitiveDataSanitizer.Sanitize(ex.Message);
         }
-        finally { IsSubtitleDetecting = false; }
+        finally { if (!IsDisposed) IsSubtitleDetecting = false; }
+    }
+
+    private bool IsDisposed => Volatile.Read(ref _disposed) != 0 || _documentToken.IsCancellationRequested;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        DetectSubtitlesCommand.Cancel();
+        DeleteSelectedPresetCommand.Cancel();
+        RenameSelectedPresetCommand.Cancel();
+        (SelectFolderCommand as IAsyncRelayCommand)?.Cancel();
+        _disposeCts.Cancel();
+        _disposeCts.Dispose();
     }
 
     private void OnSubtitleLanguageSelectionChanged() => UpdateSubtitleOptionsFromEditor();

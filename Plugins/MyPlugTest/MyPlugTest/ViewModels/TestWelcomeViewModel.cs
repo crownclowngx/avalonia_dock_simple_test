@@ -11,8 +11,14 @@ using Newtonsoft.Json.Linq;
 
 namespace MyPlugTest.ViewModels;
 
-public class TestWelcomeViewModel : Document, ISavableDocument
+public class TestWelcomeViewModel : Document, ISavableDocument, IDisposable
 {
+    // 本地 CTS 与宿主 ClosingToken 共同组成操作令牌：正式 Scope 关闭由宿主触发，直接构造
+    // 场景则由 Dispose 触发。两条路径统一后，HTTP 结果、历史记录和 Messenger 消息都通过
+    // 同一个 IsClosing 门禁决定是否仍可提交，避免出现“请求已取消但成功消息仍迟到”的分裂状态。
+    private readonly CancellationTokenSource _disposeCts = new();
+    private readonly IDocumentLifetime? _documentLifetime;
+    private int _disposed;
 
     public string SaveDocumentTypeId => SaveDocumentTypeIdConstant.TestWelcomeDocumentId;
     public string FilePath { get; set; } = string.Empty;
@@ -46,7 +52,7 @@ public class TestWelcomeViewModel : Document, ISavableDocument
         set => SetProperty(ref _isLoading, value);
     }
 
-    public IRelayCommand SendRequestCommand { get; }
+    public IAsyncRelayCommand SendRequestCommand { get; }
     
     public DocumentSaveData CreateSaveDocumentMetaData(string filePath)
     {
@@ -113,21 +119,29 @@ public class TestWelcomeViewModel : Document, ISavableDocument
     public TestWelcomeViewModel(
         IMessengerService messengerService,
         UrlHistoryViewModel urlHistory,
-        IUrlContentService urlContentService)
+        IUrlContentService urlContentService,
+        IDocumentLifetime? documentLifetime = null)
     {
         // 三个依赖均由 MyPlugTestPluginModule 提供；这里不保留手工 new 的回退路径，
         // 从而保证所有 Document 都使用宿主的共享消息总线和统一的网络服务所有权。
         _messengerService = messengerService;
         _urlContentService = urlContentService;
+        _documentLifetime = documentLifetime;
         UrlHistory = urlHistory;
         SendRequestCommand = new AsyncRelayCommand(SendRequestAsync);
     }
     
-    private async Task SendRequestAsync()
+    private async Task SendRequestAsync(CancellationToken commandToken)
     {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            commandToken,
+            _disposeCts.Token,
+            _documentLifetime?.ClosingToken ?? CancellationToken.None);
+        var cancellationToken = linked.Token;
+
         if (string.IsNullOrWhiteSpace(Url))
         {
-            ResponseContent = "请输入有效的网址";
+            if (!IsClosing) ResponseContent = "请输入有效的网址";
             return;
         }
 
@@ -135,6 +149,7 @@ public class TestWelcomeViewModel : Document, ISavableDocument
         {
             IsLoading = true;
             ResponseContent = "正在发送请求...";
+            cancellationToken.ThrowIfCancellationRequested();
 
             // 确保URL格式正确
             string url = Url;
@@ -144,13 +159,20 @@ public class TestWelcomeViewModel : Document, ISavableDocument
             }
 
             // 网络副作用通过注入服务执行，ViewModel 只负责界面状态和消息通信。
-            string content = await _urlContentService.GetStringAsync(url);
+            string content = await _urlContentService.GetStringAsync(url, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (IsClosing) return;
             ResponseContent = content;
             // 添加URL到历史记录
             UrlHistory.AddUrl(url);
             IsModified = true;
             // 发送成功消息到消息总线
             _messengerService.Send(new RequestResponseMessage(content, url, true));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 关闭 Document 是用户结束当前页面生命周期，不是 HTTP 请求故障。保持静默可以
+            // 避免关闭后覆盖最后一次有效响应，也不会向共享消息总线广播一个伪造的失败结果。
         }
         catch (UrlContentRequestException ex)
         {
@@ -164,8 +186,20 @@ public class TestWelcomeViewModel : Document, ISavableDocument
         }
         finally
         {
-            IsLoading = false;
+            if (!IsClosing) IsLoading = false;
         }
+    }
+
+    private bool IsClosing => Volatile.Read(ref _disposed) != 0 || _documentLifetime?.IsClosing == true;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        // 先取消命令，再取消本地令牌，使命令基础设施和服务调用都能尽快观察关闭；不在这里
+        // 等待 HTTP Task 完成，迟到结果由 SendRequestAsync 中的关闭检查负责丢弃。
+        SendRequestCommand.Cancel();
+        _disposeCts.Cancel();
+        _disposeCts.Dispose();
     }
 
 }

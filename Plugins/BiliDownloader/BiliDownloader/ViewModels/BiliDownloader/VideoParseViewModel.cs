@@ -28,13 +28,19 @@ public class VideoParseResult
 /// <summary>
 /// URL 解析子 ViewModel：负责 URL 输入、解析按钮、解析状态
 /// </summary>
-public partial class VideoParseViewModel : ObservableObject
+public partial class VideoParseViewModel : ObservableObject, IDisposable
 {
     private readonly IContentSourceProviderRegistry _providerRegistry;
     private readonly IBiliMediaProbe _mediaProbe;
     private readonly IBiliCredentialProvider _credentialProvider;
     private readonly Action<VideoParseResult>? _onParsed;
     private bool _restoringSource;
+    // URL 解析、媒体能力探测和字幕发现都产生只服务于当前页面的临时结果，必须绑定 Document。
+    // 父级令牌负责宿主关闭，本地 CTS 负责子对象独立释放；成功回调前还会检查关闭状态，防止
+    // 已经完成底层网络调用的迟到结果重新填充 Workspace。
+    private readonly CancellationToken _documentToken;
+    private readonly CancellationTokenSource _disposeCts = new();
+    private int _disposed;
 
     /// <summary>
     /// 当前已规范化的直接链接来源。仅在成功解析或离线恢复时存在；
@@ -71,12 +77,14 @@ public partial class VideoParseViewModel : ObservableObject
         IBiliMediaProbe mediaProbe,
         IBiliCredentialProvider credentialProvider,
         Action<VideoParseResult>? onParsed,
-        Func<bool> isLoggedInCheck)
+        Func<bool> isLoggedInCheck,
+        CancellationToken documentToken = default)
     {
         _providerRegistry = providerRegistry;
         _mediaProbe = mediaProbe;
         _credentialProvider = credentialProvider;
         _onParsed = onParsed;
+        _documentToken = documentToken;
         // 保留该参数以兼容已有调用方；鉴权现在以远端实际响应为准，不再依赖本地预判。
         _ = isLoggedInCheck;
         ParseCommand = new AsyncRelayCommand(ParseAsync);
@@ -89,19 +97,27 @@ public partial class VideoParseViewModel : ObservableObject
         BiliApiService apiService,
         IBiliCredentialProvider credentialProvider,
         Action<VideoParseResult>? onParsed,
-        Func<bool> isLoggedInCheck)
+        Func<bool> isLoggedInCheck,
+        CancellationToken documentToken = default)
         : this(
             new ContentSourceProviderRegistry(
                 [new DirectLinkProvider(apiService, credentialProvider)]),
             apiService,
             credentialProvider,
             onParsed,
-            isLoggedInCheck)
+            isLoggedInCheck,
+            documentToken)
     {
     }
 
     private async Task ParseAsync(CancellationToken cancellationToken)
     {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _documentToken,
+            _disposeCts.Token);
+        cancellationToken = linked.Token;
+        if (IsDisposed) return;
         if (string.IsNullOrWhiteSpace(Url))
         {
             DownloadInfo = "请输入有效的B站视频链接";
@@ -179,6 +195,8 @@ public partial class VideoParseViewModel : ObservableObject
             var isMultiVideo = collection.Items.Count > 1;
 
             // 所有远端调用完成后才提交状态，失败或取消不会留下半成品结果。
+            cancellationToken.ThrowIfCancellationRequested();
+            if (IsDisposed) return;
             VideoCollection = collection;
             Url = descriptor.DisplayName;
             CurrentSourceDescriptor = descriptor;
@@ -201,6 +219,7 @@ public partial class VideoParseViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
+            if (IsDisposed) return;
             DownloadInfo = "已取消解析，上一次成功结果保持不变";
         }
         catch (ContentSourceException ex)
@@ -223,8 +242,18 @@ public partial class VideoParseViewModel : ObservableObject
         }
         finally
         {
-            IsLoading = false;
+            if (!IsDisposed) IsLoading = false;
         }
+    }
+
+    private bool IsDisposed => Volatile.Read(ref _disposed) != 0 || _documentToken.IsCancellationRequested;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        ParseCommand.Cancel();
+        _disposeCts.Cancel();
+        _disposeCts.Dispose();
     }
 
     /// <summary>

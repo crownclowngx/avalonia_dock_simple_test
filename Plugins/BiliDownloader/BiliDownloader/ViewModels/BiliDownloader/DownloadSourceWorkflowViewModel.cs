@@ -10,13 +10,18 @@ namespace BiliDownloader.ViewModels.BiliDownloader;
 public enum DownloadCreationMode { QuickUrl, PersonalSource }
 
 /// <summary>来源阶段的轻量编排 VM；不负责分页细节，也不负责下载配置与提交。</summary>
-public partial class DownloadSourceWorkflowViewModel : ObservableObject
+public partial class DownloadSourceWorkflowViewModel : ObservableObject, IDisposable
 {
     private readonly IContentSourceProviderRegistry _registry;
     private SourceDescriptorSaveData? _persistedSource;
     private SourceFilterRulesSaveData _persistedFilters = new();
     private IncrementalBaselineSaveData _baseline = new();
     private IncrementalSubmissionExpectation? _submissionExpectation;
+    // 来源工作流只是 Document 对象树中的组合节点，不创建第二个生命周期事实源。它把父级
+    // 令牌继续传给来源选择、分页浏览和增量比较，使任一深层异步操作都能响应同一次关闭；
+    // 自身的 disposed 标记另外负责阻止事件回调在级联释放期间重新进入组合逻辑。
+    private readonly CancellationToken _documentToken;
+    private int _disposed;
 
     /// <summary>来源、筛选或增量基线发生持久变化时触发。</summary>
     public event Action? PersistentStateChanged;
@@ -29,28 +34,32 @@ public partial class DownloadSourceWorkflowViewModel : ObservableObject
         VideoParseResultFactory resultFactory,
         Action<VideoParseResult> onResolved,
         IIncrementalComparisonService? incrementalComparisonService = null,
-        Func<RenditionSpecification?>? renditionProvider = null)
+        Func<RenditionSpecification?>? renditionProvider = null,
+        CancellationToken documentToken = default)
     {
         _registry = registry;
+        _documentToken = documentToken;
         QuickUrl = quickUrl;
         Browser = new ContentSourceBrowserViewModel(registry, resultFactory, result =>
         {
+            if (IsDisposed) return;
             _submissionExpectation = null;
             onResolved(result);
-        });
+        }, documentToken: documentToken);
         Comparison = new IncrementalComparisonViewModel(
             incrementalComparisonService,
             () => Browser.CurrentDescriptor,
             () => Browser.CaptureFilters(),
             () => BiliDownloaderDocumentStateMapper.CloneBaseline(_baseline),
             SetIncrementalBaseline,
-            renditionProvider ?? (() => null));
+            renditionProvider ?? (() => null),
+            documentToken);
         Comparison.ItemsAccepted += (items, expectation) =>
         {
             _submissionExpectation = expectation;
             IncrementalItemsAccepted?.Invoke(items, expectation);
         };
-        Picker = new ContentSourcePickerViewModel(registry, favorites, OpenDescriptorAsync);
+        Picker = new ContentSourcePickerViewModel(registry, favorites, OpenDescriptorAsync, documentToken);
         Browser.PersistentStateChanged += OnBrowserPersistentStateChanged;
         QuickUrl.PersistentSourceChanged += OnQuickUrlPersistentSourceChanged;
     }
@@ -91,6 +100,8 @@ public partial class DownloadSourceWorkflowViewModel : ObservableObject
 
     private async Task OpenDescriptorAsync(ContentSourceDescriptor descriptor)
     {
+        _documentToken.ThrowIfCancellationRequested();
+        if (IsDisposed) return;
         _persistedSource = ContentSourceSaveDataMapper.FromRuntime(descriptor);
         _persistedFilters = new SourceFilterRulesSaveData();
         _baseline = new IncrementalBaselineSaveData();
@@ -100,8 +111,26 @@ public partial class DownloadSourceWorkflowViewModel : ObservableObject
         _submissionExpectation = null;
         Comparison.ResetForSourceChange();
         PersistentStateChanged?.Invoke();
-        await Browser.OpenAsync(descriptor);
+        await Browser.OpenAsync(descriptor, _documentToken);
+        _documentToken.ThrowIfCancellationRequested();
+        if (IsDisposed) return;
         Comparison.RefreshCapability();
+    }
+
+    private bool IsDisposed => Volatile.Read(ref _disposed) != 0 || _documentToken.IsCancellationRequested;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        // 先断开组合层事件，再释放所拥有的子 ViewModel。设计意图是消除两类迟到入口：
+        // 一类是子对象在取消收尾时发出的持久化通知，另一类是异步结果回调重新进入父对象。
+        // Comparison、Browser、Picker 都由本对象构造并独占，因此所有权在这里明确闭合。
+        Browser.PersistentStateChanged -= OnBrowserPersistentStateChanged;
+        QuickUrl.PersistentSourceChanged -= OnQuickUrlPersistentSourceChanged;
+        Picker.Dispose();
+        Browser.Dispose();
+        Comparison.Dispose();
+        QuickUrl.Dispose();
     }
 
     /// <summary>
@@ -178,7 +207,8 @@ public partial class DownloadSourceWorkflowViewModel : ObservableObject
     /// <summary>当前进入工作区的增量选择期望；普通解析返回 null，不改变原有提交流程。</summary>
     public IncrementalSubmissionExpectation? CreateSubmissionExpectation() => _submissionExpectation;
 
-    public Task RefreshComparisonFromCacheAsync() => Comparison.RefreshFromCacheAsync();
+    public Task RefreshComparisonFromCacheAsync(CancellationToken cancellationToken = default) =>
+        Comparison.RefreshFromCacheAsync(cancellationToken);
 
     /// <summary>画质、编码、容器或输出模式变化时，旧比较不得继续作为 New 的提交依据。</summary>
     public void MarkOutputIdentityChanged() => Comparison.MarkStaleIfRenditionChanged();

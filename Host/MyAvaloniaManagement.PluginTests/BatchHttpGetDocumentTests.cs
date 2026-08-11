@@ -47,6 +47,53 @@ public sealed class BatchHttpGetDocumentTests
         Assert.Equal("执行完成：成功 0，失败 1，共 1 个请求", viewModel.StatusText);
     }
 
+    [Fact]
+    public async Task DisposingDocumentCancelsInFlightRequestWithoutRenderingAnError()
+    {
+        var service = new BlockingUrlContentService();
+        var viewModel = new BatchHttpGetViewModel(service)
+        {
+            RequestLines = "https://slow.test/request\nhttps://never.test/request",
+        };
+
+        var execution = viewModel.ExecuteRequestsCommand.ExecuteAsync(null);
+        await service.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var contentBeforeClose = viewModel.ResponseContent;
+
+        viewModel.Dispose();
+        await execution.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(service.CancellationObserved);
+        Assert.Equal(1, service.CallCount);
+        Assert.Equal(contentBeforeClose, viewModel.ResponseContent);
+    }
+
+    private sealed class BlockingUrlContentService : IUrlContentService
+    {
+        public TaskCompletionSource Started { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int CallCount { get; private set; }
+        public bool CancellationObserved { get; private set; }
+
+        public async Task<string> GetStringAsync(
+            string url,
+            CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+            Started.TrySetResult();
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                return string.Empty;
+            }
+            catch (OperationCanceledException)
+            {
+                CancellationObserved = true;
+                throw;
+            }
+        }
+    }
+
     private sealed class RecordingUrlContentService : IUrlContentService
     {
         public List<string> RequestedUrls { get; } = [];

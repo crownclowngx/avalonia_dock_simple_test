@@ -16,20 +16,28 @@ public sealed record ContentSourceOption(
     string AccountActionText);
 
 /// <summary>只负责来源类型、标识输入和“我的收藏夹”发现，不持有内容分页状态。</summary>
-public partial class ContentSourcePickerViewModel : ObservableObject
+public partial class ContentSourcePickerViewModel : ObservableObject, IDisposable
 {
     private readonly IContentSourceProviderRegistry _registry;
     private readonly IFavoriteSourceDiscoveryService _favorites;
     private readonly Func<ContentSourceDescriptor, Task> _onOpened;
+    // 来源发现既可能调用远端接口，也可能在返回后触发打开 Browser 的回调。联合父级令牌与
+    // 本地释放令牌，可以取消远端等待；回调前的 IsDisposed 检查则负责拦截恰好在关闭竞态中
+    // 返回的结果，避免重新创建或激活已经结束的来源浏览流程。
+    private readonly CancellationToken _documentToken;
+    private readonly CancellationTokenSource _disposeCts = new();
+    private int _disposed;
 
     public ContentSourcePickerViewModel(
         IContentSourceProviderRegistry registry,
         IFavoriteSourceDiscoveryService favorites,
-        Func<ContentSourceDescriptor, Task> onOpened)
+        Func<ContentSourceDescriptor, Task> onOpened,
+        CancellationToken documentToken = default)
     {
         _registry = registry;
         _favorites = favorites;
         _onOpened = onOpened;
+        _documentToken = documentToken;
         Options =
         [
             new(ContentSourceKind.Uploader, "UP 主投稿", "输入 UP 主空间链接或 UID", true, false, "输入 UID 或空间链接", ""),
@@ -61,6 +69,8 @@ public partial class ContentSourcePickerViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenAsync(CancellationToken cancellationToken)
     {
+        using var linked = Link(cancellationToken);
+        cancellationToken = linked.Token;
         await RunAsync(async () =>
         {
             var provider = _registry.GetRequired(SelectedOption.Kind);
@@ -71,19 +81,19 @@ public partial class ContentSourcePickerViewModel : ObservableObject
 
     [RelayCommand]
     private async Task OpenAccountAsync(CancellationToken cancellationToken) =>
-        await RunAsync(async () =>
+        await RunLinkedAsync(cancellationToken, async linkedToken =>
         {
             var provider = _registry.GetRequired(SelectedOption.Kind);
-            var descriptor = await provider.NormalizeAsync("self", cancellationToken);
+            var descriptor = await provider.NormalizeAsync("self", linkedToken);
             await _onOpened(descriptor);
         });
 
     [RelayCommand]
     private async Task LoadFavoriteFoldersAsync(CancellationToken cancellationToken) =>
-        await RunAsync(async () =>
+        await RunLinkedAsync(cancellationToken, async linkedToken =>
         {
             FavoriteFolders.Clear();
-            foreach (var folder in await _favorites.GetMyFoldersAsync(cancellationToken))
+            foreach (var folder in await _favorites.GetMyFoldersAsync(linkedToken))
                 FavoriteFolders.Add(folder);
             HasFavoriteFolders = FavoriteFolders.Count > 0;
             Status = HasFavoriteFolders
@@ -92,23 +102,46 @@ public partial class ContentSourcePickerViewModel : ObservableObject
         });
 
     [RelayCommand]
-    private async Task OpenFavoriteAsync()
+    private async Task OpenFavoriteAsync(CancellationToken cancellationToken)
     {
         if (SelectedFavoriteFolder is null)
         {
             Status = "请先选择收藏夹。";
             return;
         }
+        using var linked = Link(cancellationToken);
         await _onOpened(SelectedFavoriteFolder);
+        linked.Token.ThrowIfCancellationRequested();
+    }
+
+    private async Task RunLinkedAsync(
+        CancellationToken cancellationToken,
+        Func<CancellationToken, Task> action)
+    {
+        using var linked = Link(cancellationToken);
+        await RunAsync(() => action(linked.Token));
     }
 
     private async Task RunAsync(Func<Task> action)
     {
         try { IsBusy = true; Status = string.Empty; await action(); }
+        catch (OperationCanceledException) when (IsDisposed) { }
         catch (ContentSourceException ex) { Status = ex.Message; }
         catch (OperationCanceledException) { Status = "操作已取消。"; }
         catch { Status = "读取来源失败，请稍后重试。"; }
-        finally { IsBusy = false; }
+        finally { if (!IsDisposed) IsBusy = false; }
+    }
+
+    private CancellationTokenSource Link(CancellationToken token) =>
+        CancellationTokenSource.CreateLinkedTokenSource(token, _documentToken, _disposeCts.Token);
+
+    private bool IsDisposed => Volatile.Read(ref _disposed) != 0 || _documentToken.IsCancellationRequested;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        _disposeCts.Cancel();
+        _disposeCts.Dispose();
     }
 
     partial void OnSelectedOptionChanged(ContentSourceOption value)

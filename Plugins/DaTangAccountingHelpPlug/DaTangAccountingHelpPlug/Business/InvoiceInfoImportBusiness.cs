@@ -3,12 +3,14 @@ using OfficeOpenXml;
 
 namespace DaTangAccountingHelpPlug.Business;
 
-public class InvoiceInfoImportBusiness
+public class InvoiceInfoImportBusiness : IInvoiceInfoImportBusiness
 {
     // 定义日志回调委托，用于将日志信息传回ViewModel
     public delegate void LogDelegate(string logMessage);
 
-    private readonly LogDelegate _logMethod;
+    private readonly LogDelegate? _logMethod;
+
+    public event Action<string>? LogEmitted;
 
     // 存储发票摘要项的字典，以发票编号为key
     public Dictionary<string, InvoiceSummaryItem> InvoiceSummaryItems { get; } =
@@ -40,8 +42,9 @@ public class InvoiceInfoImportBusiness
     public HashSet<string> AllNeedShowInvoiceNumbers { get; } = new HashSet<string>();
 
 
-    public Task ClearAllData()
+    public Task ClearAllData(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         InvoiceSummaryItems.Clear();
         InvoicePaymentGroupDetails.Clear();
         InvoicePaymentPreviousDetails.Clear();
@@ -52,19 +55,27 @@ public class InvoiceInfoImportBusiness
         // 保留 Task 契约以兼容现有调用方；当前清理过程同步完成，无需创建异步状态机。
         return Task.CompletedTask;
     }
+    public InvoiceInfoImportBusiness()
+    {
+    }
+
     // 构造函数，接受日志方法委托
     public InvoiceInfoImportBusiness(LogDelegate logMethod)
     {
         _logMethod = logMethod;
     }
 
-    public async Task SaveInvoicePaymentSummaryToExcel(string filePath)
+    public async Task SaveInvoicePaymentSummaryToExcel(
+        string filePath,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         Log($"开始保存数据到文件: {Path.GetFileName(filePath)}");
 
         // 在后台线程中创建和保存Excel文件
         await Task.Run(() =>
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // 设置EPPlus非商业使用许可
             ExcelPackage.License.SetNonCommercialPersonal("DaTangAccountingHelpPlug");
 
@@ -106,6 +117,7 @@ public class InvoiceInfoImportBusiness
                 int row = 2;
                 foreach (var item in InvoicePaymentSummaryItems)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     worksheet.Cells[row, 1].Value = item.InvoiceType;
                     worksheet.Cells[row, 2].Value = item.SupplierName;
                     worksheet.Cells[row, 3].Value = item.SupplierLocation;
@@ -130,20 +142,23 @@ public class InvoiceInfoImportBusiness
                 }
 
                 // 自动调整列宽
+                cancellationToken.ThrowIfCancellationRequested();
                 worksheet.Cells.AutoFitColumns();
 
                 // 保存文件
+                cancellationToken.ThrowIfCancellationRequested();
                 package.SaveAs(new FileInfo(filePath));
             }
-        });
+        }, cancellationToken);
 
         Log($"数据保存成功！文件路径：{filePath}");
     }
 
-    public Task CalculateNewInvoiceSummary()
+    public Task CalculateNewInvoiceSummary(CancellationToken cancellationToken = default)
     {
         foreach (var item in AllNeedShowInvoiceNumbers)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             InvoiceSummaryItems.TryGetValue(item, out InvoiceSummaryItem? summaryItem);
 
             if (summaryItem == null)
@@ -257,10 +272,14 @@ public class InvoiceInfoImportBusiness
         return calcItem;
     }
 
-    public Task CreateAllNeedShowInvoiceNumber(DateTime? startDate, DateTime? endDate)
+    public Task CreateAllNeedShowInvoiceNumber(
+        DateTime? startDate,
+        DateTime? endDate,
+        CancellationToken cancellationToken = default)
     {
         foreach (var invoicePaymentPreviousDetailItem in InvoicePaymentPreviousDetails)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (!AllNeedShowInvoiceNumbers.Contains(invoicePaymentPreviousDetailItem.Value.InvoiceNumber))
             {
                 AllNeedShowInvoiceNumbers.Add(invoicePaymentPreviousDetailItem.Value.InvoiceNumber);
@@ -270,6 +289,7 @@ public class InvoiceInfoImportBusiness
         int newCount = 0;
         foreach (var item in InvoiceSummaryItems)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (string.IsNullOrEmpty(item.Value.InvoiceNumber))
             {
                 continue;
@@ -287,7 +307,9 @@ public class InvoiceInfoImportBusiness
         return Task.CompletedTask;
     }
 
-    public async Task ReadInvoicePaymentDetailPreviousMonthTable(string filePath)
+    public async Task ReadInvoicePaymentDetailPreviousMonthTable(
+        string filePath,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -304,6 +326,7 @@ public class InvoiceInfoImportBusiness
                     Log($"开始读取之前月付款数据，共 {endRow - startRow + 1} 行");
                     for (int row = startRow; row <= endRow; row++)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         InvoicePaymentPreviousDetailItem? item =
                             CreateInvoicePaymentDetailItemByPreviousMonthDetailTable(row, worksheet);
                         if (item == null)
@@ -326,7 +349,11 @@ public class InvoiceInfoImportBusiness
                         InvoicePaymentPreviousDetails.Add(item.InvoiceNumber, item);
                     }
                 }
-            });
+            }, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -438,7 +465,9 @@ public class InvoiceInfoImportBusiness
         return item;
     }
 
-    public async Task ReadInvoicePaymentDetailCurrentMonthTable(string filePath)
+    public async Task ReadInvoicePaymentDetailCurrentMonthTable(
+        string filePath,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -459,6 +488,7 @@ public class InvoiceInfoImportBusiness
                     Log($"开始读取当前月付款数据，共 {endRow - startRow + 1} 行");
                     for (int row = startRow; row <= endRow; row++)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         InvoicePaymentDetailItem item =
                             CreateInvoicePaymentDetailItemByCurrentMonthDetailTable(row, worksheet);
                         if (string.IsNullOrEmpty(item.InvoiceNumber))
@@ -490,7 +520,11 @@ public class InvoiceInfoImportBusiness
                     // 处理完成后，记录成功读取的发票数量
                     Log($"当前月付款数据读取完成，成功加载 {InvoicePaymentGroupDetails.Count} 条发票记录");
                 }
-            });
+            }, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -699,7 +733,9 @@ public class InvoiceInfoImportBusiness
     }
 
     // 读取并索引发票总表
-    public async Task ReadAndIndexInvoiceSummary(string filePath)
+    public async Task ReadAndIndexInvoiceSummary(
+        string filePath,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -722,6 +758,7 @@ public class InvoiceInfoImportBusiness
                     Log($"开始读取发票数据，共 {endRow - startRow + 1} 行");
                     for (int row = startRow; row <= endRow; row++)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         InvoiceSummaryItem item = CreateInvoiceSummaryItem(row, worksheet);
                         // 将发票项添加到字典中，以发票编号为key
                         if (!string.IsNullOrEmpty(item.InvoiceNumber) &&
@@ -742,7 +779,11 @@ public class InvoiceInfoImportBusiness
                     // 处理完成后，记录成功读取的发票数量
                     Log($"发票数据读取完成，成功加载 {InvoiceSummaryItems.Count} 条记录");
                 }
-            });
+            }, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -754,5 +795,6 @@ public class InvoiceInfoImportBusiness
     private void Log(string message)
     {
         _logMethod?.Invoke(message);
+        LogEmitted?.Invoke(message);
     }
 }

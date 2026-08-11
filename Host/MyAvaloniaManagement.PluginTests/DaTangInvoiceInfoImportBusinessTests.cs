@@ -85,6 +85,22 @@ public sealed class DaTangInvoiceInfoImportBusinessTests
         Assert.Equal(["END", "START"], business.AllNeedShowInvoiceNumbers.OrderBy(number => number));
     }
 
+    [Fact]
+    public async Task CancellationStopsCalculationAndIsNotLoggedAsBusinessFailure()
+    {
+        var logs = new List<string>();
+        var business = new InvoiceInfoImportBusiness(logs.Add);
+        business.AllNeedShowInvoiceNumbers.Add("INV-001");
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            await business.CalculateNewInvoiceSummary(cancellation.Token));
+
+        Assert.Empty(business.InvoicePaymentSummaryItems);
+        Assert.Empty(logs);
+    }
+
     private static InvoiceInfoImportBusiness CreateBusiness() => new(_ => { });
 
     private static void AddInvoice(InvoiceInfoImportBusiness business, string invoiceNumber, DateTime invoiceDate)

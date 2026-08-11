@@ -34,9 +34,26 @@ public interface IUserPromptService : IConfirmationService
     Task<DeleteTaskPromptResult> ConfirmDeleteAsync(int taskCount, bool hasOutputFiles);
     /// <summary>确认带警告或覆盖风险的提交预检；阻止项不得通过本方法绕过。</summary>
     Task<bool> ConfirmSubmissionAsync(SubmissionPreflightReport report);
+    Task<bool> ConfirmSubmissionAsync(
+        SubmissionPreflightReport report,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ConfirmSubmissionAsync(report);
+    }
     /// <summary>选择输出目录；用户取消或当前没有可用窗口时返回 null。</summary>
     Task<string?> PickFolderAsync(string title, string? suggestedDirectory = null)
         => Task.FromResult<string?>(null);
+    async Task<string?> PickFolderAsync(
+        string title,
+        string? suggestedDirectory,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var result = await PickFolderAsync(title, suggestedDirectory);
+        cancellationToken.ThrowIfCancellationRequested();
+        return result;
+    }
     /// <summary>选择自定义 ffmpeg 可执行文件；用户取消时返回 null。</summary>
     Task<string?> PickFfmpegExecutableAsync()
         => Task.FromResult<string?>(null);
@@ -156,6 +173,31 @@ public sealed class AvaloniaUserPromptService : IUserPromptService
         return await window.ShowDialog<bool>(owner);
     }
 
+    public async Task<bool> ConfirmSubmissionAsync(
+        SubmissionPreflightReport report,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var owner = GetOwner();
+        if (owner is null) return false;
+
+        var issues = report.GlobalIssues.Concat(report.Items.SelectMany(item => item.Issues))
+            .Select(issue => "• " + issue.Message).Distinct().Take(8).ToArray();
+        var destructive = report.Submission.Profile.ConflictPolicy == FileConflictPolicy.Overwrite;
+        var message = $"可提交 {report.ReadyCount} 项，跳过 {report.SkipCount} 项，"
+            + $"警告 {report.WarningCount} 项，阻止 {report.BlockedCount} 项。"
+            + (issues.Length == 0 ? "" : Environment.NewLine + string.Join(Environment.NewLine, issues));
+        var window = CreateConfirmationWindow(
+            destructive ? "确认覆盖已有文件" : "确认提交预检结果",
+            message);
+        var dialog = window.ShowDialog<bool>(owner);
+        using var registration = cancellationToken.Register(() =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => window.Close(false)));
+        var result = await dialog;
+        cancellationToken.ThrowIfCancellationRequested();
+        return result;
+    }
+
     public async Task<string?> PickFolderAsync(string title, string? suggestedDirectory = null)
     {
         var owner = GetOwner();
@@ -169,6 +211,17 @@ public sealed class AvaloniaUserPromptService : IUserPromptService
                 : await owner.StorageProvider.TryGetFolderFromPathAsync(new Uri(suggestedDirectory)),
         });
         return result.Count == 0 ? null : result[0].Path.LocalPath;
+    }
+
+    public async Task<string?> PickFolderAsync(
+        string title,
+        string? suggestedDirectory,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var result = await PickFolderAsync(title, suggestedDirectory);
+        cancellationToken.ThrowIfCancellationRequested();
+        return result;
     }
 
     public async Task<string?> PickFfmpegExecutableAsync()

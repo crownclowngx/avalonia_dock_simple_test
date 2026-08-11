@@ -44,7 +44,7 @@ public sealed partial class ContentComparisonItemViewModel : ObservableObject
 /// 增量检查的会话级 ViewModel。它只持有内存扫描快照和选择状态；Document 基线通过回调写回，
 /// 下载任务仍必须进入现有预检与 Coordinator，避免 UI 成为第二个提交入口。
 /// </summary>
-public sealed partial class IncrementalComparisonViewModel : ObservableObject
+public sealed partial class IncrementalComparisonViewModel : ObservableObject, IDisposable
 {
     private readonly IIncrementalComparisonService? _service;
     private readonly Func<ContentSourceDescriptor?> _descriptorProvider;
@@ -54,6 +54,12 @@ public sealed partial class IncrementalComparisonViewModel : ObservableObject
     private readonly Func<RenditionSpecification?> _renditionProvider;
     private CancellationTokenSource? _checkCts;
     private IncrementalComparisonSnapshot? _snapshot;
+    // 增量比较会同时读取缓存基线、解析详情并重建 UI 分类，持续时间可能明显长于一次点击。
+    // Document 令牌负责标签关闭，本地 CTS 负责对象释放，_checkCts 负责用新比较替代旧比较；
+    // 三层令牌分工后，局部重试不会误取消整个页面，页面关闭又能覆盖所有在途比较阶段。
+    private readonly CancellationToken _documentToken;
+    private readonly CancellationTokenSource _disposeCts = new();
+    private int _disposed;
 
     public IncrementalComparisonViewModel(
         IIncrementalComparisonService? service,
@@ -61,7 +67,8 @@ public sealed partial class IncrementalComparisonViewModel : ObservableObject
         Func<SourceFilterRules> rulesProvider,
         Func<IncrementalBaselineSaveData> baselineProvider,
         Action<IncrementalBaselineSaveData> baselineWriter,
-        Func<RenditionSpecification?> renditionProvider)
+        Func<RenditionSpecification?> renditionProvider,
+        CancellationToken documentToken = default)
     {
         _service = service;
         _descriptorProvider = descriptorProvider;
@@ -69,6 +76,7 @@ public sealed partial class IncrementalComparisonViewModel : ObservableObject
         _baselineProvider = baselineProvider;
         _baselineWriter = baselineWriter;
         _renditionProvider = renditionProvider;
+        _documentToken = documentToken;
         StatusFilters =
         [
             new("全部", null),
@@ -164,7 +172,9 @@ public sealed partial class IncrementalComparisonViewModel : ObservableObject
 
         _checkCts?.Cancel();
         _checkCts?.Dispose();
-        _checkCts = new CancellationTokenSource();
+        _checkCts = CancellationTokenSource.CreateLinkedTokenSource(
+            _documentToken,
+            _disposeCts.Token);
         try
         {
             IsBusy = true;
@@ -185,7 +195,7 @@ public sealed partial class IncrementalComparisonViewModel : ObservableObject
         }
         finally
         {
-            IsBusy = false;
+            if (!IsDisposed) IsBusy = false;
             _checkCts?.Dispose();
             _checkCts = null;
             NotifyCommandState();
@@ -195,7 +205,7 @@ public sealed partial class IncrementalComparisonViewModel : ObservableObject
     [RelayCommand] private void Cancel() => _checkCts?.Cancel();
 
     [RelayCommand]
-    public async Task RefreshFromCacheAsync()
+    public async Task RefreshFromCacheAsync(CancellationToken cancellationToken = default)
     {
         if (_service is null || _snapshot?.SourceSnapshot is not { } source || IsBusy) return;
         var rendition = _renditionProvider();
@@ -207,14 +217,34 @@ public sealed partial class IncrementalComparisonViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            ApplySnapshot(await _service.ReclassifyAsync(
-                source, _baselineProvider(), rendition, CancellationToken.None));
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken,
+                _documentToken,
+                _disposeCts.Token);
+            var snapshot = await _service.ReclassifyAsync(
+                source, _baselineProvider(), rendition, linked.Token);
+            linked.Token.ThrowIfCancellationRequested();
+            if (!IsDisposed) ApplySnapshot(snapshot);
         }
         finally
         {
-            IsBusy = false;
-            NotifyCommandState();
+            if (!IsDisposed)
+            {
+                IsBusy = false;
+                NotifyCommandState();
+            }
         }
+    }
+
+    private bool IsDisposed => Volatile.Read(ref _disposed) != 0 || _documentToken.IsCancellationRequested;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        _checkCts?.Cancel();
+        _disposeCts.Cancel();
+        _checkCts?.Dispose();
+        _disposeCts.Dispose();
     }
 
     [RelayCommand]

@@ -1,6 +1,7 @@
 using System.Text;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagementCommon.DocumentCreation;
 using MyPlugTest.Services;
 
 namespace MyPlugTest.ViewModels;
@@ -8,17 +9,26 @@ namespace MyPlugTest.ViewModels;
 /// <summary>
 /// 按文本行顺序执行 HTTP GET 请求的临时文档。
 /// </summary>
-public sealed class BatchHttpGetViewModel : Document
+public sealed class BatchHttpGetViewModel : Document, IDisposable
 {
     private readonly IUrlContentService _urlContentService;
+    private readonly IDocumentLifetime? _documentLifetime;
+    // 本地 CTS 补足直接构造时的 Dispose 取消能力，宿主 ClosingToken 则覆盖真实 Dock 生命周期。
+    // 批处理循环使用二者的联合令牌，因此关闭既能中止当前 HTTP，也能阻止进入下一条 URL；
+    // 已完成请求的统计不会在关闭后继续刷新，以保持关闭瞬间的状态快照不再变化。
+    private readonly CancellationTokenSource _disposeCts = new();
+    private int _disposed;
     private string _requestLines = "http://example.com";
     private string _responseContent = string.Empty;
     private string _statusText = "等待执行";
     private bool _isRunning;
 
-    public BatchHttpGetViewModel(IUrlContentService urlContentService)
+    public BatchHttpGetViewModel(
+        IUrlContentService urlContentService,
+        IDocumentLifetime? documentLifetime = null)
     {
         _urlContentService = urlContentService;
+        _documentLifetime = documentLifetime;
         ExecuteRequestsCommand = new AsyncRelayCommand(ExecuteRequestsAsync);
     }
 
@@ -50,8 +60,14 @@ public sealed class BatchHttpGetViewModel : Document
 
     public IAsyncRelayCommand ExecuteRequestsCommand { get; }
 
-    private async Task ExecuteRequestsAsync()
+    private async Task ExecuteRequestsAsync(CancellationToken commandToken)
     {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            commandToken,
+            _disposeCts.Token,
+            _documentLifetime?.ClosingToken ?? CancellationToken.None);
+        var cancellationToken = linked.Token;
+
         var requests = RequestLines
             .ReplaceLineEndings("\n")
             .Split('\n')
@@ -75,6 +91,7 @@ public sealed class BatchHttpGetViewModel : Document
         {
             for (var index = 0; index < requests.Length; index++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var request = requests[index];
                 StatusText = $"正在执行 {index + 1}/{requests.Length}：{request.Value}";
                 output.AppendLine($"===== 第 {request.LineNumber} 行：{request.Value} =====");
@@ -89,7 +106,8 @@ public sealed class BatchHttpGetViewModel : Document
 
                 try
                 {
-                    var content = await _urlContentService.GetStringAsync(url);
+                    var content = await _urlContentService.GetStringAsync(url, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
                     output.AppendLine(content);
                     succeeded++;
                 }
@@ -102,21 +120,41 @@ public sealed class BatchHttpGetViewModel : Document
                         output.AppendLine(ex.ResponseContent);
                     }
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     output.AppendLine($"请求异常：{ex.Message}");
                 }
 
                 output.AppendLine();
-                ResponseContent = output.ToString();
+                if (!IsClosing) ResponseContent = output.ToString();
             }
 
             StatusText = $"执行完成：成功 {succeeded}，失败 {requests.Length - succeeded}，共 {requests.Length} 个请求";
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 命令主动取消和 Document 关闭共用同一协作取消路径。取消不会计入失败数量，
+            // 也不会把 OperationCanceledException 文本追加到响应区；关闭后的状态由 Scope
+            // 释放，不需要为了显示“已取消”而再次触碰已经失效的 ViewModel。
+        }
         finally
         {
-            IsRunning = false;
+            if (!IsClosing) IsRunning = false;
         }
+    }
+
+    private bool IsClosing => Volatile.Read(ref _disposed) != 0 || _documentLifetime?.IsClosing == true;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        ExecuteRequestsCommand.Cancel();
+        _disposeCts.Cancel();
+        _disposeCts.Dispose();
     }
 
     private static bool TryNormalizeHttpUrl(string value, out string url)

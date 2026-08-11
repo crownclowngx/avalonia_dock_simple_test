@@ -1,5 +1,7 @@
 # MyAvaloniaManagement 测试说明
 
+Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
+
 > 当前基线：2026-08-10，Release 共 157 项通过；Host 行覆盖率 80.74%，分支覆盖率 65.17%。
 
 ## 一键门禁

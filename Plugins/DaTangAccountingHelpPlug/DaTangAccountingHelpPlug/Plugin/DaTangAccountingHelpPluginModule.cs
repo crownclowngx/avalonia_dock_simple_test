@@ -3,6 +3,7 @@ using DaTangAccountingHelpPlug.Business.BankBalanceReconciliation.Matching;
 using DaTangAccountingHelpPlug.Business.BankBalanceReconciliation.Profiles;
 using DaTangAccountingHelpPlug.Business.BankBalanceReconciliation.Reading;
 using DaTangAccountingHelpPlug.Business.BankBalanceReconciliation.Reporting;
+using DaTangAccountingHelpPlug.Business;
 using DaTangAccountingHelpPlug.ViewModels;
 using DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,8 @@ public sealed class DaTangAccountingHelpPluginModule : IPluginModule
     {
         // 发票 Document 由宿主的独立 Scope 托管，避免不同窗口共享路径、日志或计算结果。
         services.AddScoped<InvoiceInfoImportViewModel>();
+        services.AddScoped<IInvoiceInfoImportBusiness, InvoiceInfoImportBusiness>();
+        services.AddSingleton<IInvoiceFileDialogService, AvaloniaInvoiceFileDialogService>();
 
         // 内置配置是不可变的版本化资源，跨 Document 复用加载器不会共享运行状态。
         services.AddSingleton<ReconciliationProfileLoader>();

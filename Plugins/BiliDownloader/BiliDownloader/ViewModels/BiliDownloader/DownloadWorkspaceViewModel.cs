@@ -10,7 +10,7 @@ namespace BiliDownloader.ViewModels.BiliDownloader;
 /// 下载工作区的组合 ViewModel，只协调配置、命名和视频列表三个子 ViewModel。
 /// 设计意图：解析后的展示逻辑不再堆积到 Document ViewModel，Document 只负责生命周期与消息路由。
 /// </summary>
-public sealed class DownloadWorkspaceViewModel : ObservableObject
+public sealed class DownloadWorkspaceViewModel : ObservableObject, IDisposable
 {
     private BiliVideoCollection? _videoCollection;
     private bool _isParsed;
@@ -18,17 +18,21 @@ public sealed class DownloadWorkspaceViewModel : ObservableObject
     private readonly IMediaCapabilityInspectionService? _capabilityInspector;
     private CancellationTokenSource? _capabilityRefreshCts;
     private long _capabilityRefreshVersion;
+    private readonly CancellationToken _documentToken;
+    private int _disposed;
 
     public DownloadWorkspaceViewModel(
         DownloadConfigViewModel downloadConfig,
         NamingTemplateViewModel namingTemplate,
         VideoListViewModel videoList,
-        IMediaCapabilityInspectionService? capabilityInspector = null)
+        IMediaCapabilityInspectionService? capabilityInspector = null,
+        CancellationToken documentToken = default)
     {
         DownloadConfig = downloadConfig;
         NamingTemplate = namingTemplate;
         VideoList = videoList;
         _capabilityInspector = capabilityInspector;
+        _documentToken = documentToken;
 
         DownloadConfig.PropertyChanged += OnDownloadConfigPropertyChanged;
         NamingTemplate.PropertyChanged += OnNamingTemplatePropertyChanged;
@@ -123,9 +127,10 @@ public sealed class DownloadWorkspaceViewModel : ObservableObject
 
     private void ScheduleCapabilityRefresh()
     {
+        if (IsDisposed) return;
         _capabilityRefreshCts?.Cancel();
         _capabilityRefreshCts?.Dispose();
-        _capabilityRefreshCts = new CancellationTokenSource();
+        _capabilityRefreshCts = CancellationTokenSource.CreateLinkedTokenSource(_documentToken);
         var version = Interlocked.Increment(ref _capabilityRefreshVersion);
         _ = RefreshCapabilitiesAsync(version, _capabilityRefreshCts.Token);
     }
@@ -153,7 +158,7 @@ public sealed class DownloadWorkspaceViewModel : ObservableObject
                 selected,
                 DownloadConfig.SelectedQuality?.QualityId ?? 80,
                 cancellationToken);
-            if (version == Volatile.Read(ref _capabilityRefreshVersion) && !cancellationToken.IsCancellationRequested)
+            if (!IsDisposed && version == Volatile.Read(ref _capabilityRefreshVersion) && !cancellationToken.IsCancellationRequested)
                 DownloadConfig.ApplyMediaCapabilities(snapshot);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -162,14 +167,32 @@ public sealed class DownloadWorkspaceViewModel : ObservableObject
         }
         catch
         {
-            if (version == Volatile.Read(ref _capabilityRefreshVersion))
+            if (!IsDisposed && version == Volatile.Read(ref _capabilityRefreshVersion))
                 DownloadConfig.MediaCapabilityStatusText = "高规格能力探测失败；提交时仍会重新预检。";
         }
         finally
         {
-            if (version == Volatile.Read(ref _capabilityRefreshVersion))
+            if (!IsDisposed && version == Volatile.Read(ref _capabilityRefreshVersion))
                 DownloadConfig.IsMediaCapabilityInspecting = false;
         }
+    }
+
+    private bool IsDisposed => Volatile.Read(ref _disposed) != 0 || _documentToken.IsCancellationRequested;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        // 工作区通过属性事件把配置、命名和视频列表连接成一张 UI 投影图。必须先拆除这些边，
+        // 再取消能力探测并释放子对象，否则子对象的取消收尾仍可能触发命名预览或媒体探测。
+        // 版本号递增与令牌取消共同失效已排队的探测结果，确保它们不能写回关闭后的配置状态。
+        DownloadConfig.PropertyChanged -= OnDownloadConfigPropertyChanged;
+        NamingTemplate.PropertyChanged -= OnNamingTemplatePropertyChanged;
+        VideoList.SelectionOrTitleChanged -= RefreshNamingPreview;
+        VideoList.SelectionOrTitleChanged -= ScheduleCapabilityRefresh;
+        _capabilityRefreshCts?.Cancel();
+        _capabilityRefreshCts?.Dispose();
+        (VideoList as IDisposable)?.Dispose();
+        DownloadConfig.Dispose();
     }
 
     private void OnDownloadConfigPropertyChanged(object? sender, PropertyChangedEventArgs args)

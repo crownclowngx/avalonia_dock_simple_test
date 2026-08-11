@@ -34,9 +34,7 @@ public static class ServiceCollectionExtensions
 
         // 每个由托管插件创建的 Document 都拥有独立 Scope。插件只依赖公共创建接口，
         // Dock 关闭时则由宿主使用具体管理器释放对应 Scope。
-        services.AddSingleton<DocumentScopeManager>();
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
+        services.AddDocumentScopeManagement();
 
         services.AddSingleton<DockLayoutStore>();
         services.AddSingleton<DockLayoutLifecycle>();
@@ -54,6 +52,25 @@ public static class ServiceCollectionExtensions
             return new PluginMenuService(factory);
         });
         
+        return services;
+    }
+
+    /// <summary>
+    /// 注册由宿主统一持有的每 Document Scope 与关闭取消信号。
+    /// </summary>
+    /// <remarks>
+    /// 将这组注册集中在同一个方法中，是为了确保生产组合根和生命周期测试采用完全相同的
+    /// scoped 语义，避免测试只注册 ScopeManager 却遗漏 IDocumentLifetime，导致测试通过、
+    /// 正式运行时才暴露取消链不完整的问题。
+    /// </remarks>
+    public static IServiceCollection AddDocumentScopeManagement(this IServiceCollection services)
+    {
+        services.AddScoped<DocumentLifetime>();
+        services.AddScoped<IDocumentLifetime>(provider =>
+            provider.GetRequiredService<DocumentLifetime>());
+        services.AddSingleton<DocumentScopeManager>();
+        services.AddSingleton<IDocumentScopeFactory>(provider =>
+            provider.GetRequiredService<DocumentScopeManager>());
         return services;
     }
     

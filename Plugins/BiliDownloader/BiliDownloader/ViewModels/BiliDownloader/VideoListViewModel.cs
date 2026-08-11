@@ -65,7 +65,7 @@ public class SubmitContext
 /// <summary>
 /// 视频列表子 ViewModel：负责视频列表展示、全选/全不选、提交下载、总进度
 /// </summary>
-public partial class VideoListViewModel : ObservableObject
+public partial class VideoListViewModel : ObservableObject, IDisposable
 {
     private readonly Func<SubmitContext> _getSubmitContext;
     private readonly IMessengerService? _messengerService;
@@ -77,6 +77,12 @@ public partial class VideoListViewModel : ObservableObject
     private readonly Func<string, Task>? _onPreflightAction;
     private readonly Dictionary<string, string> _taskToSubmissionItem = new(StringComparer.Ordinal);
     private bool _isBulkSelectionUpdate;
+    // Document 令牌只覆盖提交前仍属于页面的阶段，包括预检、用户确认和等待提交锁。
+    // Commit 成功后，任务所有权已经转移到插件级下载协调器；此 ViewModel 关闭时只停止消费
+    // 结果和进度，不撤销数据库中的任务，也不取消已经开始的后台下载。
+    private readonly CancellationToken _documentToken;
+    private readonly CancellationTokenSource _disposeCts = new();
+    private int _disposed;
 
     public ObservableCollection<BiliVideoItem> VideoItems { get; } = new();
     public event Action? SelectionOrTitleChanged;
@@ -128,7 +134,8 @@ public partial class VideoListViewModel : ObservableObject
         Action? onConfigurationBlocked = null,
         IDownloadSubmissionService? submissionService = null,
         IUserPromptService? promptService = null,
-        Func<string, Task>? onPreflightAction = null)
+        Func<string, Task>? onPreflightAction = null,
+        CancellationToken documentToken = default)
     {
         _getSubmitContext = getSubmitContext;
         _messengerService = messengerService;
@@ -138,6 +145,7 @@ public partial class VideoListViewModel : ObservableObject
         _submissionService = submissionService;
         _promptService = promptService;
         _onPreflightAction = onPreflightAction;
+        _documentToken = documentToken;
 
         SelectAllCommand = new RelayCommand(() => SetAllSelected(true));
         DeselectAllCommand = new RelayCommand(() => SetAllSelected(false));
@@ -265,8 +273,14 @@ public partial class VideoListViewModel : ObservableObject
 
     #region 任务提交
 
-    private async Task SubmitDownloadAsync()
+    private async Task SubmitDownloadAsync(CancellationToken commandToken)
     {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            commandToken,
+            _documentToken,
+            _disposeCts.Token);
+        var cancellationToken = linked.Token;
+        if (IsDisposed) return;
         if (VideoItems.Count == 0)
         {
             _onStatusMessage("请先解析视频");
@@ -398,7 +412,8 @@ public partial class VideoListViewModel : ObservableObject
                 SubmissionPreflightReport? report = null;
                 for (var attempt = 0; attempt < 3; attempt++)
                 {
-                    report = await _submissionService.PreflightAsync(submission);
+                    report = await _submissionService.PreflightAsync(submission, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
                     PreflightSummary = $"可提交 {report.ReadyCount}，跳过 {report.SkipCount}，警告 {report.WarningCount}，阻止 {report.BlockedCount}";
                     if (report.IsBlocked)
                     {
@@ -408,13 +423,18 @@ public partial class VideoListViewModel : ObservableObject
                         return;
                     }
                     var confirmed = !report.RequiresConfirmation
-                        || (_promptService is not null && await _promptService.ConfirmSubmissionAsync(report));
+                        || (_promptService is not null && await _promptService.ConfirmSubmissionAsync(
+                            report,
+                            cancellationToken));
                     if (!confirmed)
                     {
                         _onStatusMessage("已取消提交，未创建任何任务。");
                         return;
                     }
-                    result = await _submissionService.CommitAsync(new PreparedSubmission(report, confirmed));
+                    result = await _submissionService.CommitAsync(
+                        new PreparedSubmission(report, confirmed),
+                        cancellationToken);
+                    if (IsDisposed) return;
                     if (result.Status is not (SubmissionCommitStatus.Stale or SubmissionCommitStatus.StaleComparison)) break;
                     if (result.Status == SubmissionCommitStatus.StaleComparison)
                     {
@@ -445,13 +465,20 @@ public partial class VideoListViewModel : ObservableObject
                 item.IsSelected = false;
             }
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Document 关闭属于用户主动结束当前编辑上下文，不是下载提交失败。
+            // 取消只覆盖预检、确认窗口和等待 Coordinator 锁的阶段；如果 Commit 已经完成
+            // SQLite 原子写入，任务所有权已经转交给插件级 Coordinator，不能在这里回滚或
+            // 取消后台下载。因此关闭路径保持静默，并由 IsDisposed 门禁阻止迟到结果回写 UI。
+        }
         catch (Exception ex)
         {
             _onStatusMessage($"提交任务失败: {ex.Message}");
         }
         finally
         {
-            IsPreflighting = false;
+            if (!IsDisposed) IsPreflighting = false;
         }
     }
 
@@ -461,10 +488,30 @@ public partial class VideoListViewModel : ObservableObject
         return VideoItems.FirstOrDefault(item => item.ItemId == itemId);
     }
 
-    private async Task ExecuteBlockingActionAsync()
+    private async Task ExecuteBlockingActionAsync(CancellationToken cancellationToken)
     {
         if (_onPreflightAction is null || string.IsNullOrWhiteSpace(BlockingActionCode)) return;
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _documentToken,
+            _disposeCts.Token);
+        linked.Token.ThrowIfCancellationRequested();
         await _onPreflightAction(BlockingActionCode);
+        linked.Token.ThrowIfCancellationRequested();
+    }
+
+    private bool IsDisposed => Volatile.Read(ref _disposed) != 0 || _documentToken.IsCancellationRequested;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        // 命令取消用于唤醒尚处于预检或确认阶段的等待；事件解绑用于切断页面内部状态传播。
+        // 二者都不触碰提交服务和插件级 Coordinator，借此保持 Document 与后台任务的所有权边界。
+        SubmitDownloadCommand.Cancel();
+        ExecuteBlockingActionCommand.Cancel();
+        _disposeCts.Cancel();
+        foreach (var item in VideoItems) item.PropertyChanged -= OnVideoItemPropertyChanged;
+        _disposeCts.Dispose();
     }
 
     private void SetBlockingAction(SubmissionPreflightReport report)

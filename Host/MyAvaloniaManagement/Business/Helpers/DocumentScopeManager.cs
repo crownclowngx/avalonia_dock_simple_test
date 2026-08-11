@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -20,7 +21,7 @@ public sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly object _syncRoot = new();
-    private readonly Dictionary<Document, IServiceScope> _scopes =
+    private readonly Dictionary<Document, DocumentScopeLease> _scopes =
         new(ReferenceEqualityComparer.Instance);
     private bool _disposed;
 
@@ -37,13 +38,19 @@ public sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
         // Scope 在成功登记之前始终由局部变量拥有。解析构造函数失败、重复返回同一 Document，
         // 或宿主正在退出时，finally 都会立即释放已创建的服务，绝不留下半注册作用域。
         IServiceScope? scope = _scopeFactory.CreateScope();
+        DocumentLifetime? lifetime = null;
         try
         {
+            // 正式运行时，宿主会在每个 Document Scope 中注册唯一的 DocumentLifetime，
+            // 因而 Document 及其 scoped 依赖解析到的是同一个关闭信号。这里保留回退实例，
+            // 是为了兼容只注册 DocumentScopeManager 的轻量测试与旧组合入口；回退只影响
+            // 未注入 IDocumentLifetime 的旧对象，不会在正式路径中形成第二套生命周期事实源。
+            lifetime = scope.ServiceProvider.GetService<DocumentLifetime>() ?? new DocumentLifetime();
             var document = scope.ServiceProvider.GetRequiredService<TDocument>();
             lock (_syncRoot)
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
-                if (!_scopes.TryAdd(document, scope))
+                if (!_scopes.TryAdd(document, new DocumentScopeLease(scope, lifetime)))
                 {
                     throw new InvalidOperationException(
                         $"Document {typeof(TDocument).FullName} 已经关联到一个依赖注入作用域。");
@@ -51,11 +58,17 @@ public sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
             }
 
             scope = null;
+            lifetime = null;
             return document;
         }
         finally
         {
-            scope?.Dispose();
+            if (scope is not null)
+            {
+                lifetime?.RequestClose();
+                scope.Dispose();
+                lifetime?.Dispose();
+            }
         }
     }
 
@@ -66,23 +79,23 @@ public sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        IServiceScope? scope;
+        DocumentScopeLease? lease;
         lock (_syncRoot)
         {
-            if (!_scopes.Remove(document, out scope))
+            if (!_scopes.Remove(document, out lease))
             {
                 return false;
             }
         }
 
         // 不在锁内执行用户代码的 Dispose，避免某个服务释放时回调宿主造成锁重入或阻塞其他关闭操作。
-        scope.Dispose();
+        lease.Release();
         return true;
     }
 
     public void Dispose()
     {
-        IServiceScope[] remainingScopes;
+        DocumentScopeLease[] remainingScopes;
         lock (_syncRoot)
         {
             if (_disposed)
@@ -99,7 +112,33 @@ public sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
         // 逆序释放更符合“后创建的界面先退出”的直觉，也减少后创建对象引用先创建对象时的风险。
         for (var index = remainingScopes.Length - 1; index >= 0; index--)
         {
-            remainingScopes[index].Dispose();
+            remainingScopes[index].Release();
+        }
+    }
+
+    private sealed class DocumentScopeLease(IServiceScope scope, DocumentLifetime lifetime)
+    {
+        private int _released;
+
+        internal void Release()
+        {
+            if (Interlocked.Exchange(ref _released, 1) != 0)
+            {
+                return;
+            }
+
+            lifetime.RequestClose();
+            try
+            {
+                scope.Dispose();
+            }
+            finally
+            {
+                // 回退 Lifetime 没有被 DI Scope 捕获，必须由租约显式释放；正式 Lifetime
+                // 会随 Scope 再释放一次。DocumentLifetime.Dispose 保证幂等，因此统一调用
+                // 可以同时覆盖两条构造路径，而不需要把“是否来自容器”泄漏到释放主流程。
+                lifetime.Dispose();
+            }
         }
     }
 }

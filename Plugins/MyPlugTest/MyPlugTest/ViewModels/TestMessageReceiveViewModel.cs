@@ -2,19 +2,24 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
 using MyPlugTest.Models;
 
 namespace MyPlugTest.ViewModels;
 
-public partial class TestMessageReceiveViewModel : Document
+public partial class TestMessageReceiveViewModel : Document, IDisposable
 {
     // 列表数据源
     [ObservableProperty]
     private ObservableCollection<MessageItem> _messages = [];
     private readonly IMessengerService _messengerService;
+    private readonly IDocumentLifetime? _documentLifetime;
+    private int _disposed;
     private int _messageIdCounter = 1;
-    public TestMessageReceiveViewModel(IMessengerService messengerService)
+    public TestMessageReceiveViewModel(
+        IMessengerService messengerService,
+        IDocumentLifetime? documentLifetime = null)
     {
         // 设置标题
         Title = "消息接收测试";
@@ -22,6 +27,7 @@ public partial class TestMessageReceiveViewModel : Document
         // 必须使用宿主注入的共享消息服务；发送 Document 与接收 Document
         // 因此处于同一消息事实源中，插件内部不再创建第二个 MessengerService。
         _messengerService = messengerService;
+        _documentLifetime = documentLifetime;
         
         // 注册消息接收器
         _messengerService.Register<TestMessageReceiveViewModel, RequestResponseMessage>(this, OnRequestResponseMessageReceived);
@@ -33,6 +39,7 @@ public partial class TestMessageReceiveViewModel : Document
     /// </summary>
     private void OnRequestResponseMessageReceived(TestMessageReceiveViewModel receiver, RequestResponseMessage message)
     {
+        if (IsClosing) return;
         // 创建新的消息项并添加到集合
         var newMessage = new MessageItem
         {
@@ -45,15 +52,26 @@ public partial class TestMessageReceiveViewModel : Document
         if (Dispatcher.UIThread.CheckAccess())
         {
             // 已经在UI线程上，可以直接操作
-            Messages.Add(newMessage);
+            if (!IsClosing) Messages.Add(newMessage);
         }
         else
         {
             // 不在UI线程上，需要调度到UI线程
             Dispatcher.UIThread.InvokeAsync(() =>
             {
-                Messages.Add(newMessage);
+                if (!IsClosing) Messages.Add(newMessage);
             });
         }
+    }
+
+    private bool IsClosing => Volatile.Read(ref _disposed) != 0 || _documentLifetime?.IsClosing == true;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        // Messenger 注册的生命周期长于单个 Document，必须在 Scope 释放时主动解绑。消息接收
+        // 与 Dispatcher 回调都另有 IsClosing 二次门禁，因此已经入队但尚未执行的回调也会被
+        // 丢弃；这里不清空共享 Messenger，更不会影响其他仍打开的消息接收 Document。
+        _messengerService.UnregisterAll(this);
     }
 }

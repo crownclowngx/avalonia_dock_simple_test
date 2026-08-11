@@ -56,7 +56,7 @@ public sealed class ContentSourceTypeFilterOption : ObservableObject
 /// 单个来源的层级分页浏览器。
 /// 设计意图：ViewModel 只组合筛选、缓存、选择和物化服务；稳定业务状态不寄存在可回收的 UI 行中。
 /// </summary>
-public partial class ContentSourceBrowserViewModel : ObservableObject
+public partial class ContentSourceBrowserViewModel : ObservableObject, IDisposable
 {
     private const int UiPageSize = ContentPageRequest.DefaultPageSize;
     private static readonly SourceFilterRules EmptyFilters = SourceFilterRules.Empty;
@@ -71,6 +71,12 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
     private CancellationTokenSource? _filterDebounceCts;
     private CancellationTokenSource? _resolveCts;
     private bool _synchronizingFilters;
+    // 父级 Document 令牌用于统一关闭整棵页面对象树；本地 CTS 则表示当前 Browser 实例已经
+    // 被所有者释放。分页加载、筛选防抖和选择解析还会各自创建更短生命周期的 CTS，从而同时
+    // 支持“新操作替代旧操作”和“关闭页面终止全部操作”，而不把局部取消反向传播给 Document。
+    private readonly CancellationToken _documentToken;
+    private readonly CancellationTokenSource _disposeCts = new();
+    private int _disposed;
 
     /// <summary>
     /// 仅在来源身份或可持久筛选发生变化时触发；分页、缓存和选择变化不会触发，
@@ -84,7 +90,8 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
         Action<VideoParseResult> onResolved,
         IContentPageCache? pageCache = null,
         IContentSelectionMaterializer? materializer = null,
-        ContentQueryCoordinator? queryCoordinator = null)
+        ContentQueryCoordinator? queryCoordinator = null,
+        CancellationToken documentToken = default)
     {
         _registry = registry;
         _resultFactory = resultFactory;
@@ -92,6 +99,7 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
         _pageCache = pageCache ?? new MemoryContentPageCache();
         _materializer = materializer ?? new ContentSelectionMaterializer();
         _queryCoordinator = queryCoordinator ?? new ContentQueryCoordinator();
+        _documentToken = documentToken;
 
         SortOptions =
         [
@@ -195,8 +203,16 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
     /// <summary>截取当前活动层级的筛选意图；层级路径和勾选状态有意不进入 V3。</summary>
     public SourceFilterRules CaptureFilters() => CurrentLevel?.Filters ?? SourceFilterRules.Empty;
 
-    public async Task OpenAsync(ContentSourceDescriptor descriptor)
+    public async Task OpenAsync(
+        ContentSourceDescriptor descriptor,
+        CancellationToken cancellationToken = default)
     {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _documentToken,
+            _disposeCts.Token);
+        cancellationToken = linked.Token;
+        cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(descriptor);
         _descriptor = descriptor;
         _levels.Clear();
@@ -206,7 +222,7 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
         RebuildBreadcrumbs();
         ApplyLevel();
         PersistentStateChanged?.Invoke();
-        await LoadMoreCoreAsync(CancellationToken.None, _queryCoordinator.Generation);
+        await LoadMoreCoreAsync(cancellationToken, _queryCoordinator.Generation);
 
         if (descriptor.PublicParameters.TryGetValue("autoOpen", out var autoOpen) &&
             string.Equals(autoOpen, "true", StringComparison.OrdinalIgnoreCase) &&
@@ -354,7 +370,7 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
         AdvanceGeneration();
         RebuildBreadcrumbs();
         ApplyLevel();
-        return LoadMoreCoreAsync(CancellationToken.None, _queryCoordinator.Generation);
+        return LoadMoreCoreAsync(_documentToken, _queryCoordinator.Generation);
     }
 
     private Task NavigateToDepthAsync(int depth)
@@ -426,7 +442,10 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
         IReadOnlyList<ContentSourceItem> selected;
         _resolveCts?.Cancel();
         _resolveCts?.Dispose();
-        _resolveCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _resolveCts = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _documentToken,
+            _disposeCts.Token);
         try
         {
             IsResolvingSelection = true;
@@ -501,7 +520,9 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
         if (_synchronizingFilters) return;
         _filterDebounceCts?.Cancel();
         _filterDebounceCts?.Dispose();
-        _filterDebounceCts = new CancellationTokenSource();
+        _filterDebounceCts = CancellationTokenSource.CreateLinkedTokenSource(
+            _documentToken,
+            _disposeCts.Token);
         _ = ApplySearchAfterDebounceAsync(_filterDebounceCts.Token);
     }
 
@@ -569,7 +590,7 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
         level.ResetQuery();
         AdvanceGeneration();
         ApplyLevel();
-        await LoadMoreCoreAsync(CancellationToken.None, _queryCoordinator.Generation);
+        await LoadMoreCoreAsync(_documentToken, _queryCoordinator.Generation);
     }
 
     private void ApplyLevel()
@@ -698,6 +719,21 @@ public partial class ContentSourceBrowserViewModel : ObservableObject
         ContentSourceItemType.Course => "课程",
         _ => "未知",
     };
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        // 先取消具体操作，再取消实例令牌，并通过 Coordinator generation 使已经越过 await 的
+        // 旧查询失效。这里不等待网络或解析任务退出；所有结果应用点依靠令牌、generation 与
+        // disposed 三重门禁拒绝迟到写入，保证关闭标签不会卡住 Dock 线程。
+        _filterDebounceCts?.Cancel();
+        _resolveCts?.Cancel();
+        _disposeCts.Cancel();
+        _queryCoordinator.Dispose();
+        _filterDebounceCts?.Dispose();
+        _resolveCts?.Dispose();
+        _disposeCts.Dispose();
+    }
 
     private sealed class BrowserLevelState
     {

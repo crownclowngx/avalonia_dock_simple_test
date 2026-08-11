@@ -157,6 +157,8 @@ flowchart TD
 
 **[架构判断]** 当前全部 Managed Document 都由宿主 Scope 托管；Document 注册为 scoped，策略只依赖 `IDocumentScopeFactory`，根容器在 `ValidateScopes` 下不能直接解析这些 ViewModel。Legacy 无参策略仍保留原有自管创建语义，不纳入这一所有权承诺。
 
+**[代码事实]** Managed Document Scope 现在同时提供 scoped `IDocumentLifetime`。Dock 确认关闭后，`DocumentScopeManager` 先取消 `ClosingToken`，再释放 ViewModel 与 scoped 依赖；被否决的关闭不会提前取消，宿主退出则对仍打开的 Document 执行同一路径。取消是协作式且不等待：Document 局部的 HTTP、解析、浏览、探测与发票导入停止并禁止迟到 UI 回写；BiliDownloader 已提交到插件级 Coordinator 的下载任务继续运行。原生文件选择器只能丢弃迟到结果，EPPlus 已进入同步 `SaveAs` 后允许完成写入。
+
 ### 3.3 保存与恢复已经出现插件级版本化，但宿主契约仍偏薄
 
 **[代码事实]** 实现 `ISavableDocument` 的 Document 使用统一 `DocumentSaveData` 外壳；`DocumentPersistenceCoordinator` 负责选择文件、批量打开、重复激活、序列化、保存结果分类和文档写操作串行化，插件负责解释 `Content` 与 `PluginMetadata`。单个文件损坏不会阻断同批其他文件，同一路径的并发打开不会创建重复标签。参见 [`ISavableDocument.cs`](../Host/MyAvaloniaManagementCommon/Save/ISavableDocument.cs)、[`DocumentPersistenceCoordinator.cs`](../Host/MyAvaloniaManagement/Business/Documents/DocumentPersistenceCoordinator.cs) 和 [`DocumentWorkspace.cs`](../Host/MyAvaloniaManagement/Business/Documents/DocumentWorkspace.cs)。
@@ -254,6 +256,7 @@ flowchart LR
 | 布局持久化 | 已实现 V1 | 原子写入、校验、坏文件隔离、两向迁移、历史浮动归一化已有测试；插件缺失时整份回退 |
 | Document 保存 | 部分成熟 | 宿主外壳、批量打开、并发串行化、错误隔离和原子替换已实现；公共脏状态、关闭确认与坏文件恢复尚未统一 |
 | 每 Document Scope | 已实现 | 当前全部 Managed Document 均通过 `IDocumentScopeFactory` 创建 scoped ViewModel；关闭与宿主退出释放路径已有回归门禁 |
+| Document 关闭取消 | 已实现 | scoped `IDocumentLifetime` 在 Dock 确认关闭后先发出取消再释放 Scope；局部任务协作退出且不等待，插件级后台任务不受影响 |
 | 加载上下文隔离 | 部分成熟 | 每目录一个不可回收 ALC；加载器又按简单程序集名做全局缓存/解析，不能保证私有依赖版本完全隔离 |
 | 错误处理与诊断 | 部分成熟 | 布局与生命周期已有稳定错误码、隔离和只读状态 Tool；程序集扫描、模块构造和策略发现仍主要输出 Console，尚未进入统一注册表 |
 | ID 与元数据 | 不成熟 | `PluginId`、Document/Tool ID 仍是字符串；策略重复通过 `TryAdd` 静默保留首个，模块也未统一拒绝重复 PluginId |

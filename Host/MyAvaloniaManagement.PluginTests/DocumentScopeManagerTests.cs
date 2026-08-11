@@ -2,6 +2,7 @@ using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -102,6 +103,30 @@ public sealed class DocumentScopeManagerTests
         Assert.False(manager.Release(document));
     }
 
+    [Fact]
+    public void ReleaseCancelsLifetimeBeforeDisposingDocument()
+    {
+        var services = new ServiceCollection();
+        services.AddScoped<CancellationAwareDocument>();
+        services.AddDocumentScopeManagement();
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = true,
+        });
+        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        var document = manager.CreateDocument<CancellationAwareDocument>();
+
+        Assert.False(document.Lifetime.IsClosing);
+        Assert.True(manager.Release(document));
+
+        Assert.True(document.Lifetime.IsClosing);
+        Assert.True(document.WasClosingWhenDisposed);
+        Assert.Equal(1, document.DisposeCount);
+        Assert.False(manager.Release(document));
+    }
+
     public sealed class TrackedDependency : IDisposable
     {
         public bool IsDisposed { get; private set; }
@@ -126,6 +151,19 @@ public sealed class DocumentScopeManagerTests
         {
             _ = dependency;
             throw new InvalidOperationException("预期的 Document 构造失败");
+        }
+    }
+
+    public sealed class CancellationAwareDocument(IDocumentLifetime lifetime) : Document, IDisposable
+    {
+        public IDocumentLifetime Lifetime { get; } = lifetime;
+        public bool WasClosingWhenDisposed { get; private set; }
+        public int DisposeCount { get; private set; }
+
+        public void Dispose()
+        {
+            WasClosingWhenDisposed = Lifetime.IsClosing;
+            DisposeCount++;
         }
     }
 }
