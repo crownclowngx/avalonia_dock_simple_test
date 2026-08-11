@@ -18,6 +18,8 @@
     -->
     <ItemGroup>
       <SmallToolsManagedDeployment Include="$(TargetPath)" />
+      <SmallToolsManagedDeployment Include="$(TargetDir)$(AssemblyName).deps.json"
+                                   Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
       <SmallToolsManagedDeployment Include="$(PkgLibVLCSharp)\lib\net8.0\LibVLCSharp.dll" />
       <SmallToolsManagedDeployment Include="$(PkgLibVLCSharp_Avalonia)\lib\netstandard2.0\LibVLCSharp.Avalonia.dll" />
     </ItemGroup>

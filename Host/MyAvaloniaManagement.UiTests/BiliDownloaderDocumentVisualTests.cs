@@ -220,10 +220,16 @@ public sealed class BiliDownloaderDocumentVisualTests
         services.AddSingleton<IBiliDataPaths>(new UiBiliDataPaths(
             Path.Combine(ui.TempDirectory, "BiliDownloader")));
         services.AddSingleton<PluginLifecycleManager>();
-        using var provider = services.BuildServiceProvider();
+        var provider = services.BuildServiceProvider();
+        var documentScopes = Enumerable.Range(0, 3)
+            .Select(_ => provider.CreateScope())
+            .ToArray();
+        try
+        {
 
-        var documents = Enumerable.Range(0, 3)
-            .Select(_ => provider.GetRequiredService<BiliDownloaderViewModel>())
+        var documents = documentScopes
+            .Select(scope => scope.ServiceProvider
+                .GetRequiredService<BiliDownloaderViewModel>())
             .ToArray();
         var repository = provider.GetRequiredService<IDownloadTaskRepository>();
         await repository.InitAsync();
@@ -282,9 +288,18 @@ public sealed class BiliDownloaderDocumentVisualTests
             .Single(control => control.Name == "TaskList")
             .ItemsPanel);
 
-        // Microsoft.Data.Sqlite 默认连接池会在仓储方法返回后保留文件句柄；测试结束前清池，
-        // 让测试沙箱可以立即删除，同时不改变生产环境的连接池策略。
-        SqliteConnection.ClearAllPools();
+        }
+        finally
+        {
+            // 设计意图：必须先释放插件容器，确保 Tool、Document 和后台协作者不再创建新连接，
+            // 再清理 Microsoft.Data.Sqlite 连接池；否则清池后到容器释放前仍存在重新占用 tasks.db 的窗口。
+            foreach (var documentScope in documentScopes.Reverse())
+            {
+                documentScope.Dispose();
+            }
+            provider.Dispose();
+            SqliteConnection.ClearAllPools();
+        }
     }
 
     private static void Measure(Control control, Size size)

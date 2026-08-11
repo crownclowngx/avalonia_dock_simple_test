@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- 测试资产由各自项目编译，不能再次并入主测试程序集。 -->
+    <Compile Remove="TestAssets\PluginIsolation\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -37,6 +42,48 @@
     <ProjectReference Include="..\..\Plugins\MySmallTools\MySmallTools\MySmallTools.csproj">
       <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
     </ProjectReference>
+    <!-- 隔离夹具只参与构建，不进入测试进程默认上下文。 -->
+    <ProjectReference Include="TestAssets\PluginIsolation\PluginV1\PluginV1.csproj"
+                      ReferenceOutputAssembly="false" />
+    <ProjectReference Include="TestAssets\PluginIsolation\PluginV2\PluginV2.csproj"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <Target Name="CopyPluginIsolationFixtures" AfterTargets="Build">
+    <PropertyGroup>
+      <PluginIsolationAssetRoot>$(MSBuildThisFileDirectory)TestAssets\PluginIsolation</PluginIsolationAssetRoot>
+      <PluginIsolationOutputRoot>$(OutDir)PluginIsolationFixtures</PluginIsolationOutputRoot>
+      <PluginIsolationMissingOutputRoot>$(OutDir)PluginIsolationMissingFixtures</PluginIsolationMissingOutputRoot>
+    </PropertyGroup>
+    <ItemGroup>
+      <PluginIsolationV1 Include="$(PluginIsolationAssetRoot)\PluginV1\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.PluginV1.dll" />
+      <PluginIsolationV1 Include="$(PluginIsolationAssetRoot)\PluginV1\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.PluginV1.deps.json" />
+      <PluginIsolationV1 Include="$(PluginIsolationAssetRoot)\PluginV1\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.Dependency.dll" />
+      <!-- 故意携带一份本地 Common，验证共享策略仍强制返回默认上下文实例。 -->
+      <PluginIsolationV1 Include="$(OutDir)MyAvaloniaManagementCommon.dll" />
+      <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.PluginV2.dll" />
+      <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.PluginV2.deps.json" />
+      <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.Dependency.dll" />
+      <PluginIsolationV2 Include="$(OutDir)MyAvaloniaManagementCommon.dll" />
+    </ItemGroup>
+    <!--
+      设计意图：夹具项目没有加入根解决方案配置表，Solution Build 可能把普通 ProjectReference
+      映射回 Debug；复制前显式按当前测试配置构建一次，保证干净环境也一定存在对应 Release/Debug 资产。
+    -->
+    <MSBuild Projects="$(PluginIsolationAssetRoot)\PluginV1\PluginV1.csproj;$(PluginIsolationAssetRoot)\PluginV2\PluginV2.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)"
+             BuildInParallel="true" />
+    <RemoveDir Directories="$(PluginIsolationOutputRoot);$(PluginIsolationMissingOutputRoot)" />
+    <MakeDir Directories="$(PluginIsolationOutputRoot)\PluginV1;$(PluginIsolationOutputRoot)\PluginV2" />
+    <MakeDir Directories="$(PluginIsolationMissingOutputRoot)\PluginV1;$(PluginIsolationMissingOutputRoot)\PluginV2" />
+    <Copy SourceFiles="@(PluginIsolationV1)" DestinationFolder="$(PluginIsolationOutputRoot)\PluginV1" />
+    <Copy SourceFiles="@(PluginIsolationV2)" DestinationFolder="$(PluginIsolationOutputRoot)\PluginV2" />
+    <!-- 缺依赖夹具只复制 V1 入口和 deps；V2 保持完整，用于证明目录级失败隔离。 -->
+    <Copy SourceFiles="@(PluginIsolationV1)"
+          DestinationFolder="$(PluginIsolationMissingOutputRoot)\PluginV1"
+          Condition="'%(Filename)%(Extension)' != 'PluginIsolation.Dependency.dll'" />
+    <Copy SourceFiles="@(PluginIsolationV2)" DestinationFolder="$(PluginIsolationMissingOutputRoot)\PluginV2" />
+  </Target>
 
 </Project>

@@ -74,7 +74,7 @@ sequenceDiagram
     P->>R: Create
     R->>R: 注册宿主核心服务
     R->>L: 获取 Controls 插件程序集快照
-    L-->>R: 返回按规范化目录缓存的只读结果
+    L-->>R: 每插件目录独立 ALC，返回入口程序集快照
     R->>C: 发现并实例化 IPluginModule
     C->>DI: ConfigureServices(IServiceCollection)
     R->>DI: BuildServiceProvider + ValidateScopes/ValidateOnBuild
@@ -94,7 +94,7 @@ sequenceDiagram
 
 **[代码事实]** `HostRuntime` 是内部 Composition Root，统一拥有服务注册、插件发现、容器构建、生命周期初始化和反向关闭；`Program.Main` 与 `BuildAvaloniaApp()` 保持兼容入口。根容器启用了 `ValidateScopes` 与 `ValidateOnBuild`。参见 [`Program.cs`](../Host/MyAvaloniaManagement/Program.cs)、[`HostRuntime.cs`](../Host/MyAvaloniaManagement/Business/Helpers/HostRuntime.cs) 和 [`PluginLifecycleManager.cs`](../Host/MyAvaloniaManagementCommon/Plugin/PluginLifecycleManager.cs)。
 
-**[代码事实]** `AssemblyLoaderHelper` 仍是 public 兼容 Facade，但内部按规范化插件根目录使用线程安全快照；同一根目录只扫描一次，程序集解析器只注册一次，单个 DLL、依赖或类型失败不会终止其他插件。`HostExtensionRegistry` 和 `ViewLocator` 复用已加载程序集，不再为文档和工具分别触发目录扫描。
+**[代码事实]** `AssemblyLoaderHelper` 仍是 public 兼容 Facade，但内部按规范化插件根目录使用线程安全快照；同一根目录只扫描一次。标准插件通过唯一的“同名 DLL + `.deps.json`”确定入口，每个插件目录建立独立且不可回收的 `PluginLoadContext`；无 deps 的历史插件保留有序 DLL 回退。加载器不再注册全局 `AssemblyResolve`，也没有跨插件简单名称缓存。单个插件目录、依赖或类型失败不会终止其他插件。`HostExtensionRegistry` 和 `ViewLocator` 复用已加载入口程序集，不再为文档和工具分别触发目录扫描。
 
 ### 2.2 Managed 为现行模型，Legacy 仅保留兼容
 
@@ -247,7 +247,7 @@ flowchart LR
 | 能力 | 状态 | 当前证据与边界 |
 | --- | --- | --- |
 | .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.0、Dock 12.0.0.2；版本由 `global.json`、`Directory.Build.props`、`Directory.Packages.props` 集中管理 |
-| 插件目录扫描 | 已实现 | 按规范化根目录缓存线程安全快照；每个插件目录建立 `PluginLoadContext`，递归加载托管 DLL，并隔离单文件/局部类型失败 |
+| 插件目录扫描 | 已实现 | 按规范化根目录缓存线程安全快照；标准插件只主动加载唯一 deps 入口，私有依赖按需解析；Legacy 保留有序 DLL 回退，并隔离目录/局部类型失败 |
 | Managed/Legacy 兼容 | 已实现 | 四个现有插件均为 Managed；Legacy 无参激活路径和兼容测试仍保留 |
 | Document/Tool 策略 | 已实现 | `HostExtensionRegistry` 对程序集类型做一次遍历并按字符串 ID 注册；元数据只读取一次，Document 支持可选多入口意图 |
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient；根容器启用构建和 Scope 验证 |
@@ -257,11 +257,11 @@ flowchart LR
 | Document 保存 | 部分成熟 | 宿主外壳、批量打开、并发串行化、错误隔离和原子替换已实现；公共脏状态、关闭确认与坏文件恢复尚未统一 |
 | 每 Document Scope | 已实现 | 当前全部 Managed Document 均通过 `IDocumentScopeFactory` 创建 scoped ViewModel；关闭与宿主退出释放路径已有回归门禁 |
 | Document 关闭取消 | 已实现 | scoped `IDocumentLifetime` 在 Dock 确认关闭后先发出取消再释放 Scope；局部任务协作退出且不等待，插件级后台任务不受影响 |
-| 加载上下文隔离 | 部分成熟 | 每目录一个不可回收 ALC；加载器又按简单程序集名做全局缓存/解析，不能保证私有依赖版本完全隔离 |
+| 加载上下文隔离 | 已实现（托管私有依赖） | 每目录一个不可回收 ALC；共享 SDK 只来自默认上下文，普通私有依赖由各插件的 deps/目录索引独立解析，同名不同版本回归已覆盖 |
 | 错误处理与诊断 | 部分成熟 | 布局与生命周期已有稳定错误码、隔离和只读状态 Tool；程序集扫描、模块构造和策略发现仍主要输出 Console，尚未进入统一注册表 |
 | ID 与元数据 | 不成熟 | `PluginId`、Document/Tool ID 仍是字符串；策略重复通过 `TryAdd` 静默保留首个，模块也未统一拒绝重复 PluginId |
 | 构建与部署 | 部分成熟 | SDK/包版本已集中；四个插件仍分别维护部署 Target，共享依赖排除规则可能漂移 |
-| 真实包验证 | 部分成熟 | 已有 BiliDownloader win-x64 发布包加载测试、MySmallTools 集成/发布门禁和真实窗口 UI 测试；尚缺统一多插件包与依赖冲突矩阵 |
+| 真实包验证 | 部分成熟 | 四个当前 Managed Plugin 的真实构建目录均有动态加载测试；真实 `Controls` 四目录启动、BiliDownloader win-x64 包和同名不同版本依赖夹具已通过；尚缺统一全插件发布包矩阵与长期运行门禁 |
 | 插件 manifest | 未实现 | 发布产物可有验收清单，但宿主加载前没有统一的插件身份、版本、入口、能力和依赖 manifest |
 | Host API 兼容检查 | 未实现 | 加载代码前不校验目标宿主/公共契约版本 |
 | 插件启停与依赖图 | 部分实现 | 生命周期支持可选依赖声明、缺失/重复/循环依赖阻断和确定性拓扑排序；仍没有用户启停配置 |
@@ -270,16 +270,27 @@ flowchart LR
 
 ### 6.1 加载隔离需要准确理解
 
-**[代码事实]** `PluginLoadContext` 未启用 `isCollectible`，宿主长期缓存上下文和程序集。更重要的是，`AssemblyLoaderHelper` 使用仅以程序集简单名称为键的全局 `_loadedAssemblies`，同名 DLL 可能被跳过或由全局解析路径返回。因此当前实现主要解决“按插件目录查找依赖”，不能直接宣称“不同插件的任意第三方依赖版本已经完全隔离”。参见 [`PluginLoadContext.cs`](../Host/MyAvaloniaManagement/Business/Helpers/PluginLoadContext.cs) 和 [`AssemblyLoaderHelper.cs`](../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs)。
+**[已实现]** `PluginDirectoryLayout` 把入口识别和物理路径索引从加载上下文拆出。目录顶层存在 `.deps.json` 时，必须只有一个同名入口 DLL；没有 deps 时才进入 Legacy 有序扫描。`AssemblyLoaderHelper` 只缓存根目录的入口程序集快照，不再持有跨插件程序集名称表，也不再注册 `AppDomain.AssemblyResolve`。参见 [`PluginDirectoryLayout.cs`](../Host/MyAvaloniaManagement/Business/Helpers/PluginDirectoryLayout.cs) 和 [`AssemblyLoaderHelper.cs`](../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs)。
 
-**[架构判断]** 对“内部可信插件 + 重启更新”的边界，不可卸载不是当前缺陷；但共享契约必须只由默认上下文提供、不同插件的同名私有依赖不得串用，这两点仍应由真实包测试证明。
+**[已实现]** `PluginLoadContext` 使用 `AssemblyDependencyResolver` 处理托管、卫星和 RID 原生资产。共享策略以 `MyAvaloniaManagementCommon` 为根建立默认上下文依赖闭包；共享程序集版本或身份不兼容时拒绝当前插件，不加载插件自带副本。普通第三方依赖则优先从当前插件的 deps 图解析，deps 未覆盖时只查询当前目录索引，绝不横向搜索其他插件。该模型遵循微软对 [`AssemblyDependencyResolver`](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblydependencyresolver?view=net-10.0) 和 [`AssemblyLoadContext`](https://learn.microsoft.com/dotnet/core/dependency-loading/understanding-assemblyloadcontext) 的推荐用法。
 
-### 6.2 2026-08-10 宿主专项测试基线
+| 请求类型 | 解析位置 | 失败语义 |
+| --- | --- | --- |
+| `MyAvaloniaManagementCommon` 及公共 SDK 依赖闭包 | `AssemblyLoadContext.Default` | 身份或版本不兼容时拒绝当前插件 |
+| 插件 `.deps.json` 声明的托管/卫星依赖 | 当前插件 ALC | 当前插件失败，不借用其他插件程序集 |
+| 无 deps 的 Legacy 托管依赖 | 当前插件目录确定性索引 | 同目录同简单名多文件时拒绝该目录 |
+| RID 原生资产 | 当前插件的 `AssemblyDependencyResolver` | 返回标准原生加载失败，不递归扫描其他插件 |
+
+**[设计意图]** 共享契约优先是为了保证跨边界类型只有一个 CLR 身份；私有依赖按插件解析是为了允许同名不同版本并存；Legacy 回退只服务迁移，不是新插件部署规范。`PluginLoadContext` 仍未启用 `isCollectible`，因为当前内部可信插件采用“重启更新”。ALC 只提供程序集名称解析隔离，不是安全沙箱，也不能隔离原生崩溃、进程级原生全局状态或恶意代码。
+
+**[验证证据]** 插件测试包含两个最小插件：它们引用程序集简单名称和类型全名相同、版本分别为 1.0.0.0 与 2.0.0.0 的私有依赖。测试证明两个版本分别进入不同 `PluginLoadContext`、没有进入默认上下文，同时两个插件看到同一个 `MyAvaloniaManagementCommon` 实例；缺少 V1 私有依赖时，V2 插件仍可加载和执行。四个当前 Managed Plugin 也分别从真实 Release 构建目录完成模块发现。
+
+### 6.2 2026-08-11 宿主专项测试基线
 
 执行命令：
 
 ```powershell
-.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
+.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke
 ```
 
 本次主项目内部重构后的专项结果：
@@ -287,13 +298,13 @@ flowchart LR
 | 测试项目 | 通过 | 失败 | 总计 |
 | --- | ---: | ---: | ---: |
 | `MyAvaloniaManagement.Tests` | 55 | 0 | 55 |
-| `MyAvaloniaManagement.PluginTests` | 82 | 0 | 82 |
+| `MyAvaloniaManagement.PluginTests` | 92 | 0 | 92 |
 | `MyAvaloniaManagement.UiTests` | 30 | 0 | 30 |
-| **合计** | **167** | **0** | **167** |
+| **合计** | **177** | **0** | **177** |
 
-合并后的 Host 行覆盖率为 **80.74%**，分支覆盖率为 **65.17%**；public API 指纹、并发文档打开、保存失败状态保护、线程安全插件快照、Tool 只读注册快照和原子替换均进入回归。带 `-WindowsSmoke` 的真实窗口冒烟也通过。该专项门禁不等同于所有插件业务测试、媒体集成 Harness 或长期运行验证。
+合并后的 Host 行覆盖率为 **80.10%**，分支覆盖率为 **64.44%**；public API 指纹、并发文档打开、保存失败状态保护、线程安全插件快照、同名不同版本私有依赖、四个 Managed Plugin 动态加载、Tool 只读注册快照和原子替换均进入回归。带 `-WindowsSmoke` 的独立发布目录真实窗口冒烟通过；另外，Release 解决方案构建为 0 错误、0 警告，携带四个真实 `Controls` 插件目录的宿主启动退出码为 0。该专项门禁不等同于所有插件业务测试、媒体集成 Harness 或长期运行验证。
 
-**[判断边界]** 已通过的测试能证明宿主生命周期编排、Document Scope、四向布局、布局存储、Managed/Legacy 激活、真实窗口基础行为和大量插件业务边界；它们仍不能替代多插件真实发布目录启动、同名依赖冲突、Host API 版本拒绝和长期运行稳定性验证。
+**[判断边界]** 已通过的测试能证明宿主生命周期编排、Document Scope、四向布局、布局存储、Managed/Legacy 激活、托管私有依赖版本隔离、当前四插件构建目录加载和真实窗口基础行为；它们仍不能替代统一的全插件发布包矩阵、Host API 版本拒绝、原生库冲突和长期运行稳定性验证。
 
 ## 7. 宿主应该给插件多大自由度
 
@@ -390,7 +401,7 @@ public interface IHostContext
 2. 在不删除现有 public 无参构造的前提下，让构造注入成为唯一正常生产路径，继续缩小静态 `ServiceProvider` 的使用范围。
 3. 对重复 `PluginId`、空元数据和非法 Creation Intent 形成结构化诊断；Document/Tool 重复 ID 在改变“首次注册胜出”前必须先经过契约评审。
 4. 将已经覆盖生命周期的只读插件状态 Tool 扩展到程序集加载、模块构造、服务注册、策略发现和布局恢复，使所有阶段进入同一诊断入口。
-5. 增加完整发布目录下的多插件启动、同名依赖冲突和长期运行验证。
+5. **隔离部分已完成**：真实 `Controls` 四插件目录可启动，同名不同版本托管私有依赖已有独立 ALC 回归；统一全插件发布包矩阵、原生冲突和长期运行验证继续由 P2 承担。
 
 ### P1：形成稳定宿主 API
 
@@ -405,7 +416,7 @@ public interface IHostContext
 
 1. 把插件 publish、宿主共享依赖排除和部署目录规则抽成统一 MSBuild Target。
 2. 增加从临时 `Controls` 目录启动宿主并加载全部真实插件包的集成测试。
-3. 覆盖两个插件携带不同版本同名第三方依赖、缺少依赖、重复 ID、模块构造失败、生命周期超时和关闭异常。
+3. 扩展统一发布包矩阵，继续覆盖缺少依赖、重复 ID、模块构造失败、生命周期超时和关闭异常；同名不同版本托管依赖已由最小真实程序集夹具覆盖，仍需纳入最终发布包门禁。
 4. 覆盖 Document 多开、关闭释放、宿主退出释放、公共保存迁移、损坏文件恢复和缺失插件占位。
 5. 增加结构化日志、插件启动耗时、失败阶段和长期后台任务状态，并把发布验收入口统一到 CI。
 

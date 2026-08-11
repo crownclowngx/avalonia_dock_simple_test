@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PluginIsolation.PluginV2</AssemblyName>
+    <RootNamespace>PluginIsolation.Plugin</RootNamespace>
+    <GenerateDependencyFile>true</GenerateDependencyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DependencyV2\DependencyV2.csproj" />
+    <ProjectReference Include="..\..\..\..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

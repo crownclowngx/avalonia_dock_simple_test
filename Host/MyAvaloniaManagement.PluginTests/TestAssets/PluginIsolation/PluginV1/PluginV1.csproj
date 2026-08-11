@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PluginIsolation.PluginV1</AssemblyName>
+    <RootNamespace>PluginIsolation.Plugin</RootNamespace>
+    <GenerateDependencyFile>true</GenerateDependencyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DependencyV1\DependencyV1.csproj" />
+    <ProjectReference Include="..\..\..\..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj">
+      <!-- 公共契约必须由宿主提供；测试夹具不把它复制到插件目录。 -->
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+</Project>
