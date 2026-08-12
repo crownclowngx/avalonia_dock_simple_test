@@ -2,7 +2,7 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前基线：2026-08-10，Release 共 157 项通过；Host 行覆盖率 80.74%，分支覆盖率 65.17%。
+> 当前基线：2026-08-12，Release 共 208 项通过；Host 行覆盖率 76.45%，分支覆盖率 62.48%。
 
 ## 一键门禁
 
@@ -131,7 +131,7 @@ Dock ID 会被持久化，集中常量可以避免一个字符的差异导致工
 方法、属性、字段和事件生成稳定指纹。内部类拆分不会改变指纹；任何有意 public 契约
 调整都必须在独立评审中同步更新契约测试。
 
-`InternalRefactorTests` 保护策略元数据只读取一次、重复策略首次注册胜出、插件根目录
+`InternalRefactorTests` 保护策略元数据只读取一次、重复 ID 与元数据碰撞抛出 `HostCompositionException`、插件根目录
 并发加载共享同一快照但不向调用方暴露可变缓存，以及原子替换后不遗留临时文件。
 
 ### 布局隔离与真实冒烟
@@ -156,11 +156,12 @@ DI、Opened/Closing、布局保存和退出码，同时无需使用不稳定的�
 过滤后合并，既设置宿主总体门槛，也为四个高风险 ViewModel 设置独立门槛，
 防止用大量简单文件的覆盖率掩盖主流程缺口。
 
-当前 Release 专项结果：
+2026-08-12 执行 `.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke`
+的 Release 专项结果：
 
 | 测试项目 | 数量 |
 | --- | ---: |
-| `MyAvaloniaManagement.Tests` | 55 |
-| `MyAvaloniaManagement.UiTests` | 30 |
-| `MyAvaloniaManagement.PluginTests` | 72 |
-| **合计** | **157** |
+| `MyAvaloniaManagement.Tests` | 84 |
+| `MyAvaloniaManagement.UiTests` | 31 |
+| `MyAvaloniaManagement.PluginTests` | 93 |
+| **合计** | **208** |

@@ -100,9 +100,9 @@ flowchart TB
 - Document/Tool 元数据快照；
 - Document 菜单入口展开；
 - Managed/Legacy 创建分派；
-- 首次注册胜出规则。
+- Builder → Validate → Commit 三阶段原子发布。
 
-元数据在注册时只读取一次，避免属性访问包含计算或副作用时产生不一致。重复 ID 继续首次注册胜出，是为了保持历史契约；当前仅记录失败，不在内部重构中改成抛错或后者覆盖。
+元数据在注册时只读取一次，避免属性访问包含计算或副作用时产生不一致。注册表先扫描并激活候选策略、各读取一次元数据、校验主 ID、别名与命名空间的全量碰撞，无诊断时才一次性发布只读注册表。重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 均形成排序稳定的结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义。
 
 [`ViewLocator`](../ViewLocator.cs) 复用已经加载到当前进程的程序集和同一局部类型容错逻辑，不再次承担插件部署扫描职责。
 
@@ -218,7 +218,7 @@ Legacy 或未使用 `IDocumentScopeFactory` 的 Document 仍没有统一的 Docu
 | --- | --- |
 | public 签名漂移 | `PublicApiContractTests` |
 | 插件并发扫描、可变缓存泄漏 | `InternalRefactorTests` |
-| Managed/Legacy 与重复策略 | PluginTests、内部注册表测试 |
+| Managed/Legacy 与 ID 碰撞诊断 | PluginTests、内部注册表测试 |
 | 并发打开、保存失败状态 | `MainWindowViewModelTests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |

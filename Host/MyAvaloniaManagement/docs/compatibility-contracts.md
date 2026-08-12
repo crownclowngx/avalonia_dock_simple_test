@@ -36,7 +36,7 @@
 
 - 单个 DLL、模块、依赖或类型失败不终止其他插件发现；
 - `ReflectionTypeLoadException` 只排除不可加载类型；
-- Document/Tool 重复 ID 继续首次注册胜出；
+- 重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 形成排序稳定的结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义；
 - 策略元数据在注册时读取一次；
 - 插件根目录快照在进程内不刷新，更新插件需要重启应用。
 
@@ -122,7 +122,7 @@
 
 - [ ] public API 指纹通过，或变更已被明确批准；
 - [ ] Managed 与 Legacy 激活测试通过；
-- [ ] 重复策略、局部类型失败和并发扫描行为未变化；
+- [ ] 重复 ID 与碰撞诊断按预期阻断启动，局部类型失败和并发扫描行为未变化；
 - [ ] Document JSON 与 Save As 行为未变化；
 - [ ] 保存失败不会提交内存状态，且无 `.tmp` 遗留；
 - [ ] 四向 Dock、Pinned/Hidden、恢复和禁用浮动通过；
