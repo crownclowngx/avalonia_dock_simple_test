@@ -41,9 +41,8 @@ internal sealed class DocumentPersistenceCoordinator(
 
     internal void CreateDocument(string documentType)
     {
-        var document = factory.CreateManagementNewDocument(
+        factory.CreateAndPublishDocument(
             new DocumentCreationParams(DocumentTypeId.Parse(documentType)));
-        _workspace.Add(document);
     }
 
     internal async Task<DocumentOperationResult> OpenSelectedAsync(IRootDock? root)
@@ -194,17 +193,33 @@ internal sealed class DocumentPersistenceCoordinator(
         var data = _serializer.Deserialize(content);
         // 插件只观察规范 ID；历史别名的兼容责任留在宿主边界，下一次保存自然写回新值。
         data.DocumentTypeId = factory.NormalizePersistedDocumentTypeId(data.DocumentTypeId);
-        var document = factory.CreateManagementNewDocument(
+        Document? pendingDocument = factory.CreateManagementNewDocument(
             new DocumentCreationParams(data.DocumentTypeId)
             {
                 Title = data.Title
             });
-
-        if (document is ISavableDocument savableDocument)
+        try
         {
+            if (pendingDocument is not ISavableDocument savableDocument)
+            {
+                throw new DocumentLoadException(
+                    "该文档类型不支持从文件恢复。");
+            }
+
             savableDocument.FilePath = filePath;
             savableDocument.LoadDocumentByMetaData(data);
-            _workspace.Add(document);
+            factory.PublishDocument(pendingDocument);
+
+            // PublishDocument 完整返回是唯一的所有权转移点。清空引用后，finally 不再回滚，
+            // Document 将由 Dock 正常关闭路径或宿主退出兜底负责释放。
+            pendingDocument = null;
+        }
+        finally
+        {
+            if (pendingDocument is not null)
+            {
+                factory.ReleaseDocument(pendingDocument);
+            }
         }
     }
 

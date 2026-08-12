@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -15,12 +14,6 @@ namespace MyAvaloniaManagement.Business.Documents;
 /// </summary>
 internal sealed class DocumentWorkspace(ManagementFactory factory)
 {
-    internal void Add(Document document)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        GetDocumentDock()?.AddDocument(document);
-    }
-
     internal IDockable? GetActiveDocument() => GetDocumentDock()?.ActiveDockable;
 
     internal bool TryActivate(IRootDock? root, string filePath)

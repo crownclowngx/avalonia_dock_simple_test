@@ -23,7 +23,8 @@ internal sealed class TestHostContext : IDisposable
 {
     public TestHostContext(
         IEnumerable<IDocumentCreationStrategy>? documentStrategies = null,
-        IEnumerable<IToolCreationStrategy>? toolStrategies = null)
+        IEnumerable<IToolCreationStrategy>? toolStrategies = null,
+        Action<IServiceCollection>? configureServices = null)
     {
         TempDirectory = Path.Combine(
             Path.GetTempPath(),
@@ -49,6 +50,7 @@ internal sealed class TestHostContext : IDisposable
             services.AddSingleton(typeof(IDocumentCreationStrategy), strategy);
         foreach (var strategy in toolStrategies ?? [])
             services.AddSingleton(typeof(IToolCreationStrategy), strategy);
+        configureServices?.Invoke(services);
 
         Provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -297,6 +299,169 @@ internal sealed class StubDocumentStrategy(
         new() { Title = @params.Title };
 
     public DocumentMetadata GetMetadata() => metadata;
+}
+
+/// <summary>
+/// 汇总 scoped Document 回滚测试的生命周期观测值。
+/// </summary>
+internal sealed class DocumentLifecycleProbe
+{
+    private int _createdCount;
+    private int _loadCount;
+    private int _cancellationCount;
+    private int _documentDisposeCount;
+    private int _dependencyDisposeCount;
+    private int _documentDisposedBeforeClosing;
+
+    public bool ThrowOnLoad { get; set; }
+    public int CreatedCount => Volatile.Read(ref _createdCount);
+    public int LoadCount => Volatile.Read(ref _loadCount);
+    public int CancellationCount => Volatile.Read(ref _cancellationCount);
+    public int DocumentDisposeCount => Volatile.Read(ref _documentDisposeCount);
+    public int DependencyDisposeCount => Volatile.Read(ref _dependencyDisposeCount);
+    public bool AllDocumentsObservedClosing =>
+        Volatile.Read(ref _documentDisposedBeforeClosing) == 0;
+
+    internal void RecordCreated() => Interlocked.Increment(ref _createdCount);
+    internal void RecordLoad() => Interlocked.Increment(ref _loadCount);
+    internal void RecordCancellation() => Interlocked.Increment(ref _cancellationCount);
+
+    internal void RecordDocumentDispose(bool wasClosing)
+    {
+        Interlocked.Increment(ref _documentDisposeCount);
+        if (!wasClosing)
+        {
+            Interlocked.Increment(ref _documentDisposedBeforeClosing);
+        }
+    }
+
+    internal void RecordDependencyDispose() =>
+        Interlocked.Increment(ref _dependencyDisposeCount);
+}
+
+/// <summary>
+/// 用于证明 Document Scope 中的普通 scoped 依赖随回滚一起释放。
+/// </summary>
+internal sealed class TrackedScopedDependency(DocumentLifecycleProbe probe) : IDisposable
+{
+    public void Dispose() => probe.RecordDependencyDispose();
+}
+
+/// <summary>
+/// 可在元数据加载阶段稳定失败的 scoped Savable Document。
+/// </summary>
+internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument, IDisposable
+{
+    private readonly DocumentLifecycleProbe _probe;
+    private readonly IDocumentLifetime _lifetime;
+    private readonly CancellationTokenRegistration _closingRegistration;
+
+    public TrackedScopedSavableDocument(
+        DocumentLifecycleProbe probe,
+        TrackedScopedDependency dependency,
+        IDocumentLifetime lifetime)
+    {
+        _probe = probe;
+        _lifetime = lifetime;
+        _ = dependency;
+        _probe.RecordCreated();
+        _closingRegistration = lifetime.ClosingToken.Register(
+            _probe.RecordCancellation);
+    }
+
+    public string FilePath { get; set; } = string.Empty;
+    public DocumentTypeId SaveDocumentTypeId => TrackedScopedSavableStrategy.TypeId;
+
+    public DocumentSaveData CreateSaveDocumentMetaData(string filePath) =>
+        new()
+        {
+            DocumentTypeId = SaveDocumentTypeId,
+            Title = Title ?? string.Empty,
+            SaveTime = DateTime.UtcNow,
+            Content = string.Empty,
+            PluginMetadata = string.Empty,
+        };
+
+    public void LoadDocumentByMetaData(DocumentSaveData saveData)
+    {
+        _probe.RecordLoad();
+        if (_probe.ThrowOnLoad)
+        {
+            throw new DocumentLoadException("测试文档内容损坏。");
+        }
+
+        Title = saveData.Title;
+    }
+
+    public void Dispose()
+    {
+        _probe.RecordDocumentDispose(_lifetime.IsClosing);
+        _closingRegistration.Dispose();
+    }
+}
+
+/// <summary>
+/// 创建测试用 scoped Savable Document，生产代码仍只依赖公共 Scope 工厂。
+/// </summary>
+internal sealed class TrackedScopedSavableStrategy(
+    IDocumentScopeFactory scopeFactory) : IDocumentCreationStrategy
+{
+    internal static readonly DocumentTypeId TypeId =
+        new("myavalonia.host.document.scoped-savable-test");
+
+    public Document CreateDocument(DocumentCreationParams @params) =>
+        scopeFactory.CreateDocument<TrackedScopedSavableDocument>();
+
+    public DocumentMetadata GetMetadata() =>
+        new(TypeId, "Scoped Savable 测试文档")
+        {
+            MenuCategory = "测试",
+        };
+}
+
+/// <summary>
+/// 故意不实现保存契约，用于验证恢复入口拒绝类型后仍释放 Scope。
+/// </summary>
+internal sealed class TrackedScopedNonSavableDocument : Document, IDisposable
+{
+    private readonly DocumentLifecycleProbe _probe;
+    private readonly IDocumentLifetime _lifetime;
+    private readonly CancellationTokenRegistration _closingRegistration;
+
+    public TrackedScopedNonSavableDocument(
+        DocumentLifecycleProbe probe,
+        TrackedScopedDependency dependency,
+        IDocumentLifetime lifetime)
+    {
+        _probe = probe;
+        _lifetime = lifetime;
+        _ = dependency;
+        _probe.RecordCreated();
+        _closingRegistration = lifetime.ClosingToken.Register(
+            _probe.RecordCancellation);
+    }
+
+    public void Dispose()
+    {
+        _probe.RecordDocumentDispose(_lifetime.IsClosing);
+        _closingRegistration.Dispose();
+    }
+}
+
+internal sealed class TrackedScopedNonSavableStrategy(
+    IDocumentScopeFactory scopeFactory) : IDocumentCreationStrategy
+{
+    internal static readonly DocumentTypeId TypeId =
+        new("myavalonia.host.document.scoped-non-savable-test");
+
+    public Document CreateDocument(DocumentCreationParams @params) =>
+        scopeFactory.CreateDocument<TrackedScopedNonSavableDocument>();
+
+    public DocumentMetadata GetMetadata() =>
+        new(TypeId, "Scoped Non-Savable 测试文档")
+        {
+            MenuCategory = "测试",
+        };
 }
 
 /// <summary>

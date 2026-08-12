@@ -1,6 +1,12 @@
 using Dock.Model.Controls;
+using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
+using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Message;
+using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagement.ViewModels.Tools;
+using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Save;
 using Newtonsoft.Json;
 
@@ -298,10 +304,241 @@ public sealed class MainWindowViewModelTests
         Assert.Empty(GetDocuments(context));
     }
 
+    [Fact]
+    public async Task Scoped文档加载失败会立即取消并释放且Dock无残留()
+    {
+        var probe = new DocumentLifecycleProbe { ThrowOnLoad = true };
+        using var context = CreateScopedSavableContext(probe);
+        var path = Path.Combine(context.TempDirectory, "broken-scoped.testdoc");
+        context.Storage.AddFile(
+            path,
+            Serialize(TrackedScopedSavableStrategy.TypeId, "损坏文档", "broken"));
+        var viewModel = context.CreateMainWindowViewModel();
+
+        await viewModel.OpenDocumentByPath(path);
+
+        Assert.True(viewModel.HasDocumentOperationError);
+        Assert.Empty(GetDocumentDock(context).VisibleDockables!
+            .OfType<TrackedScopedSavableDocument>());
+        Assert.Equal(1, probe.CreatedCount);
+        Assert.Equal(1, probe.LoadCount);
+        Assert.Equal(1, probe.CancellationCount);
+        Assert.Equal(1, probe.DocumentDisposeCount);
+        Assert.Equal(1, probe.DependencyDisposeCount);
+        Assert.True(probe.AllDocumentsObservedClosing);
+    }
+
+    [Fact]
+    public async Task Scoped文档成功恢复后由Dock接管并在正常关闭时释放()
+    {
+        var probe = new DocumentLifecycleProbe();
+        using var context = CreateScopedSavableContext(probe);
+        var path = Path.Combine(context.TempDirectory, "opened-scoped.testdoc");
+        context.Storage.AddFile(
+            path,
+            Serialize(TrackedScopedSavableStrategy.TypeId, "成功恢复", "content"));
+        var viewModel = context.CreateMainWindowViewModel();
+
+        await viewModel.OpenDocumentByPath(path);
+
+        var document = Assert.Single(GetDocumentDock(context).VisibleDockables!
+            .OfType<TrackedScopedSavableDocument>());
+        Assert.Equal(Path.GetFullPath(path), document.FilePath);
+        Assert.Equal("成功恢复", document.Title);
+        Assert.Equal(0, probe.CancellationCount);
+        Assert.Equal(0, probe.DocumentDisposeCount);
+        Assert.Equal(0, probe.DependencyDisposeCount);
+
+        context.Factory.CloseDockable(document);
+
+        Assert.DoesNotContain(document, GetDocumentDock(context).VisibleDockables!);
+        Assert.Equal(1, probe.CancellationCount);
+        Assert.Equal(1, probe.DocumentDisposeCount);
+        Assert.Equal(1, probe.DependencyDisposeCount);
+        Assert.True(probe.AllDocumentsObservedClosing);
+    }
+
+    [Fact]
+    public async Task 非Savable文档恢复返回稳定错误并释放Scope()
+    {
+        var probe = new DocumentLifecycleProbe();
+        using var context = CreateScopedNonSavableContext(probe);
+        var path = Path.Combine(context.TempDirectory, "non-savable.testdoc");
+        context.Storage.AddFile(
+            path,
+            Serialize(TrackedScopedNonSavableStrategy.TypeId, "不可恢复", "content"));
+        var viewModel = context.CreateMainWindowViewModel();
+
+        await viewModel.OpenDocumentByPath(path);
+
+        Assert.Contains(
+            "该文档类型不支持从文件恢复",
+            viewModel.DocumentOperationError);
+        Assert.Empty(GetDocumentDock(context).VisibleDockables!
+            .OfType<TrackedScopedNonSavableDocument>());
+        Assert.Equal(1, probe.CreatedCount);
+        Assert.Equal(0, probe.LoadCount);
+        Assert.Equal(1, probe.CancellationCount);
+        Assert.Equal(1, probe.DocumentDisposeCount);
+        Assert.Equal(1, probe.DependencyDisposeCount);
+        Assert.True(probe.AllDocumentsObservedClosing);
+    }
+
+    [Fact]
+    public async Task 同一损坏文件连续打开会为每次尝试独立创建并回滚Scope()
+    {
+        var probe = new DocumentLifecycleProbe { ThrowOnLoad = true };
+        using var context = CreateScopedSavableContext(probe);
+        var path = Path.Combine(context.TempDirectory, "retry-broken.testdoc");
+        context.Storage.AddFile(
+            path,
+            Serialize(TrackedScopedSavableStrategy.TypeId, "重复损坏", "broken"));
+        var viewModel = context.CreateMainWindowViewModel();
+
+        await viewModel.OpenDocumentByPath(path);
+        await viewModel.OpenDocumentByPath(path);
+
+        Assert.Equal(2, context.Storage.ReadCount);
+        Assert.Equal(2, probe.CreatedCount);
+        Assert.Equal(2, probe.LoadCount);
+        Assert.Equal(2, probe.CancellationCount);
+        Assert.Equal(2, probe.DocumentDisposeCount);
+        Assert.Equal(2, probe.DependencyDisposeCount);
+        Assert.Empty(GetDocumentDock(context).VisibleDockables!
+            .OfType<TrackedScopedSavableDocument>());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task 恢复发布失败会撤销半提交Dock并释放Scope(
+        bool throwAfterAdd)
+    {
+        var probe = new DocumentLifecycleProbe();
+        using var context = CreateScopedSavableContext(probe);
+        var path = Path.Combine(context.TempDirectory, "publish-failure.testdoc");
+        context.Storage.AddFile(
+            path,
+            Serialize(TrackedScopedSavableStrategy.TypeId, "发布失败", "content"));
+        var viewModel = context.CreateMainWindowViewModel();
+        var failingDock = ReplaceDocumentDock(
+            context,
+            viewModel,
+            new ThrowingDocumentDock(throwAfterAdd));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => viewModel.OpenDocumentByPath(path));
+
+        Assert.Empty((failingDock.VisibleDockables ?? [])
+            .OfType<TrackedScopedSavableDocument>());
+        Assert.Equal(1, probe.CreatedCount);
+        Assert.Equal(1, probe.LoadCount);
+        Assert.Equal(1, probe.CancellationCount);
+        Assert.Equal(1, probe.DocumentDisposeCount);
+        Assert.Equal(1, probe.DependencyDisposeCount);
+        Assert.True(probe.AllDocumentsObservedClosing);
+    }
+
+    [Fact]
+    public void 主窗口与插件菜单新建发布失败复用同一回滚入口()
+    {
+        var probe = new DocumentLifecycleProbe();
+        using var context = CreateScopedSavableContext(probe);
+        var viewModel = context.CreateMainWindowViewModel();
+        var failingDock = ReplaceDocumentDock(
+            context,
+            viewModel,
+            new ThrowingDocumentDock(throwAfterAdd: true));
+        var pluginMenu = new PlugGroupMenuViewModel(
+            context.Factory,
+            context.Provider.GetRequiredService<PluginMenuService>());
+
+        Assert.Throws<InvalidOperationException>(() =>
+            viewModel.CreateDocument(TrackedScopedSavableStrategy.TypeId.Value));
+        Assert.Throws<InvalidOperationException>(() =>
+            pluginMenu.CreateDocument(TrackedScopedSavableStrategy.TypeId.Value));
+        Assert.Throws<InvalidOperationException>(() =>
+            pluginMenu.CreateDocumentEntry(new DocumentCreationMenuEntry(
+                TrackedScopedSavableStrategy.TypeId,
+                null,
+                "测试入口",
+                string.Empty,
+                string.Empty,
+                "测试")));
+
+        Assert.Empty((failingDock.VisibleDockables ?? [])
+            .OfType<TrackedScopedSavableDocument>());
+        Assert.Equal(3, probe.CreatedCount);
+        Assert.Equal(3, probe.CancellationCount);
+        Assert.Equal(3, probe.DocumentDisposeCount);
+        Assert.Equal(3, probe.DependencyDisposeCount);
+    }
+
+    [Fact]
+    public async Task 回滚后释放宿主容器不会再次释放DocumentScope()
+    {
+        var probe = new DocumentLifecycleProbe { ThrowOnLoad = true };
+        var context = CreateScopedSavableContext(probe);
+        try
+        {
+            var path = Path.Combine(context.TempDirectory, "dispose-after-rollback.testdoc");
+            context.Storage.AddFile(
+                path,
+                Serialize(TrackedScopedSavableStrategy.TypeId, "回滚后退出", "broken"));
+            var viewModel = context.CreateMainWindowViewModel();
+            await viewModel.OpenDocumentByPath(path);
+
+            context.Dispose();
+
+            Assert.Equal(1, probe.CancellationCount);
+            Assert.Equal(1, probe.DocumentDisposeCount);
+            Assert.Equal(1, probe.DependencyDisposeCount);
+        }
+        finally
+        {
+            context.Dispose();
+        }
+    }
+
     private static TestHostContext CreateContextWithDocumentStrategy()
     {
         return new TestHostContext(
             documentStrategies: [new TestSavableStrategy()]);
+    }
+
+    private static TestHostContext CreateScopedSavableContext(
+        DocumentLifecycleProbe probe) =>
+        new(configureServices: services =>
+        {
+            services.AddSingleton(probe);
+            services.AddScoped<TrackedScopedDependency>();
+            services.AddScoped<TrackedScopedSavableDocument>();
+            services.AddSingleton<IDocumentCreationStrategy>(provider =>
+                new TrackedScopedSavableStrategy(
+                    provider.GetRequiredService<IDocumentScopeFactory>()));
+        });
+
+    private static TestHostContext CreateScopedNonSavableContext(
+        DocumentLifecycleProbe probe) =>
+        new(configureServices: services =>
+        {
+            services.AddSingleton(probe);
+            services.AddScoped<TrackedScopedDependency>();
+            services.AddScoped<TrackedScopedNonSavableDocument>();
+            services.AddSingleton<IDocumentCreationStrategy>(provider =>
+                new TrackedScopedNonSavableStrategy(
+                    provider.GetRequiredService<IDocumentScopeFactory>()));
+        });
+
+    private static DocumentDock ReplaceDocumentDock(
+        TestHostContext context,
+        MainWindowViewModel viewModel,
+        DocumentDock documentDock)
+    {
+        var root = context.Factory.CreateWorkspaceLayout(documentDock);
+        context.Factory.InitLayout(root);
+        viewModel.Layout = root;
+        return documentDock;
     }
 
     private static DocumentDock GetDocumentDock(TestHostContext context) =>
@@ -315,12 +552,32 @@ public sealed class MainWindowViewModelTests
             .ToList();
 
     private static string Serialize(string title, string content) =>
+        Serialize(TestSavableStrategy.TypeId, title, content);
+
+    private static string Serialize(
+        DocumentTypeId documentTypeId,
+        string title,
+        string content) =>
         JsonConvert.SerializeObject(new DocumentSaveData
         {
-            DocumentTypeId = TestSavableStrategy.TypeId,
+            DocumentTypeId = documentTypeId,
             Title = title,
             Content = content,
             PluginMetadata = """{"test":true}""",
             SaveTime = DateTime.UtcNow
         });
+
+    private sealed class ThrowingDocumentDock(bool throwAfterAdd) : DocumentDock
+    {
+        public override void AddDocument(IDockable document)
+        {
+            if (!throwAfterAdd)
+            {
+                throw new InvalidOperationException("模拟 Dock 在加入前失败。");
+            }
+
+            base.AddDocument(document);
+            throw new InvalidOperationException("模拟 Dock 在加入后失败。");
+        }
+    }
 }

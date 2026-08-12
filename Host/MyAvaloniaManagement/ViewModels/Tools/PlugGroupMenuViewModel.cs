@@ -2,7 +2,6 @@
 using System.Linq;
 using System;
 using CommunityToolkit.Mvvm.Input;
-using Dock.Model.Controls;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Models.Tools;
@@ -63,13 +62,8 @@ public partial class PlugGroupMenuViewModel:Tool
     [RelayCommand]
     public void CreateDocument(string documentType)
     {
-        var document = _factory?.CreateManagementNewDocument(
+        _factory?.CreateAndPublishDocument(
             new DocumentCreationParams(DocumentTypeId.Parse(documentType)));
-        var files = _factory?.GetDockable<IDocumentDock>("Files") as DocumentDock;
-        if (document != null)
-        {
-            files?.AddDocument(document);
-        }
     }
 
     /// <summary>按菜单入口创建文档，并把入口意图作为强类型参数传给策略。</summary>
@@ -77,13 +71,10 @@ public partial class PlugGroupMenuViewModel:Tool
     public void CreateDocumentEntry(DocumentCreationMenuEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        var document = _factory?.CreateManagementNewDocument(new DocumentCreationParams(entry.DocumentTypeId)
+        _factory?.CreateAndPublishDocument(new DocumentCreationParams(entry.DocumentTypeId)
         {
             CreationIntentId = entry.CreationIntentId,
         });
-        var files = _factory?.GetDockable<IDocumentDock>("Files") as DocumentDock;
-        if (document is not null)
-            files?.AddDocument(document);
     }
     
     /// <summary>

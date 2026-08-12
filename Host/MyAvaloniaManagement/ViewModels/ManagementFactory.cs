@@ -141,6 +141,100 @@ public class ManagementFactory : Factory
     public Document CreateManagementNewDocument(DocumentCreationParams @params)
         => _extensions.CreateDocument(@params);
 
+    /// <summary>
+    /// 创建 Document，并在同一个所有权边界内将其发布到主文档 Dock。
+    /// </summary>
+    /// <param name="params">传递给文档创建策略的强类型参数。</param>
+    /// <returns>已经成功加入主文档 Dock 的 Document。</returns>
+    /// <remarks>
+    /// 创建策略可能返回由 <see cref="DocumentScopeManager"/> 托管的 scoped Document。
+    /// 在成功发布以前，该对象仍属于本方法；只要 Dock 不存在、拒绝添加，或在激活、聚焦
+    /// 阶段抛出异常，本方法都会撤销可能产生的半提交 Dock 状态，并通过与正常关闭相同的
+    /// 生命周期入口释放对象。只有 <see cref="PublishDocument"/> 完整返回后，所有权才转交
+    /// 给 Dock，后续由 <see cref="OnDockableClosed"/> 负责释放。
+    /// </remarks>
+    internal Document CreateAndPublishDocument(DocumentCreationParams @params)
+    {
+        ArgumentNullException.ThrowIfNull(@params);
+
+        Document? pendingDocument = CreateManagementNewDocument(@params);
+        try
+        {
+            PublishDocument(pendingDocument);
+            var publishedDocument = pendingDocument;
+            pendingDocument = null;
+            return publishedDocument;
+        }
+        finally
+        {
+            if (pendingDocument is not null)
+            {
+                ReleaseDocument(pendingDocument);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 将已经完成初始化的 Document 发布到主文档 Dock。
+    /// </summary>
+    /// <param name="document">尚未由 Dock 接管所有权的 Document。</param>
+    /// <remarks>
+    /// Dock 的添加过程不是原子操作：实现会依次加入集合、激活并聚焦 Document。
+    /// 因此不能仅以 <c>AddDocument</c> 是否开始执行判断成功，而要在完整调用返回后确认
+    /// 对象确实存在于可见集合中。任何异常都会先撤销已经写入的 Dock 状态，再把异常交还
+    /// 调用方；Scope 的释放由仍持有待提交引用的调用方统一完成。
+    /// </remarks>
+    internal void PublishDocument(Document document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+
+        var documentDock = _documentDock ??
+            throw new InvalidOperationException("主文档 Dock 尚未初始化，无法发布 Document。");
+        if (ContainsDocument(documentDock, document))
+        {
+            throw new InvalidOperationException("同一个 Document 实例不能重复发布到 Dock。");
+        }
+
+        try
+        {
+            documentDock.AddDocument(document);
+            if (!ContainsDocument(documentDock, document))
+            {
+                throw new InvalidOperationException("主文档 Dock 未接受待发布的 Document。");
+            }
+        }
+        catch
+        {
+            if (ContainsDocument(documentDock, document))
+            {
+                RemoveDockable(document, collapse: false);
+            }
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 释放尚未发布或已经正常关闭的 Document。
+    /// </summary>
+    /// <param name="document">需要结束宿主所有权的 Document。</param>
+    /// <remarks>
+    /// 正常 Dock 关闭、创建失败和恢复失败必须汇合到同一释放实现，才能稳定保持
+    /// “移除控件回收缓存、发出关闭取消、释放 Document 与 scoped 依赖”的既有顺序。
+    /// 非托管 Document 与重复调用由底层 Scope 管理器幂等处理。
+    /// </remarks>
+    internal void ReleaseDocument(Document document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        _documentLifetime.Release(document);
+    }
+
+    private static bool ContainsDocument(
+        DocumentDock documentDock,
+        Document document) =>
+        documentDock.VisibleDockables?.Any(candidate =>
+            ReferenceEquals(candidate, document)) == true;
+
     public override IRootDock CreateLayout()
     {
         var untitledViewModel = new WelcomeViewModel(toolId => ShowTool(toolId))
@@ -389,7 +483,7 @@ public class ManagementFactory : Factory
             {
                 // Dock 的内容回收缓存默认会永久强引用已关闭的 Document。
                 // 最终关闭时只移除当前项，保留其他标签的控件复用行为。
-                _documentLifetime.Release(document);
+                ReleaseDocument(document);
             }
         }
     }
