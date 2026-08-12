@@ -87,8 +87,8 @@ public sealed class ToolViewModelTests
     [Fact]
     public void 插件分组工具创建文档并切换分类展开()
     {
-        using var context = new TestHostContext();
-        context.Factory.RegisterStrategy(new TestSavableStrategy());
+        using var context = new TestHostContext(
+            documentStrategies: [new TestSavableStrategy()]);
         _ = context.CreateMainWindowViewModel();
         var viewModel = new PlugGroupMenuViewModel(
             context.Factory,
@@ -97,7 +97,7 @@ public sealed class ToolViewModelTests
             node.CategoryName == "测试");
 
         viewModel.ToggleCategoryExpand(category);
-        viewModel.CreateDocument(TestSavableStrategy.TypeId);
+        viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
 
         Assert.True(category.IsExpanded);
         var dock = Assert.IsType<DocumentDock>(
@@ -109,9 +109,8 @@ public sealed class ToolViewModelTests
     [Fact]
     public void 插件分组工具把创建意图传递给策略()
     {
-        using var context = new TestHostContext();
         var strategy = new CapturingIntentStrategy();
-        context.Factory.RegisterStrategy(strategy);
+        using var context = new TestHostContext(documentStrategies: [strategy]);
         _ = context.CreateMainWindowViewModel();
         var viewModel = new PlugGroupMenuViewModel(context.Factory, new PluginMenuService(context.Factory));
         var entry = viewModel.CategoryNodes
@@ -120,13 +119,14 @@ public sealed class ToolViewModelTests
 
         viewModel.CreateDocumentEntry(entry);
 
-        Assert.Equal("personal-source", strategy.LastIntentId);
+        Assert.Equal("personal-source", strategy.LastIntentId?.Value);
     }
 
     private sealed class CapturingIntentStrategy : IDocumentCreationStrategy, IDocumentCreationIntentProvider
     {
-        public const string TypeId = "intent-capture";
-        public string? LastIntentId { get; private set; }
+        public static readonly DocumentTypeId TypeId =
+            new("myavalonia.host.document.intent-capture");
+        public CreationIntentId? LastIntentId { get; private set; }
 
         public Document CreateDocument(DocumentCreationParams @params)
         {
@@ -137,29 +137,29 @@ public sealed class ToolViewModelTests
         public DocumentMetadata GetMetadata() => new(TypeId, "个人来源") { MenuCategory = "测试" };
 
         public IReadOnlyList<DocumentCreationIntentMetadata> GetCreationIntents() =>
-            [new("personal-source", "个人来源")];
+            [new(new CreationIntentId("personal-source"), "个人来源")];
     }
 
     [Fact]
     public void 工具管理可以隐藏恢复并发送布局消息()
     {
-        using var context = new TestHostContext();
         var tool = new Tool
         {
-            Id = "closable-tool",
+            Id = "myavalonia.host.tool.closable",
             Title = "可关闭工具",
             CanClose = true
         };
-        context.Factory.RegisterToolStrategy(new StubToolStrategy(
+        var strategy = new StubToolStrategy(
             tool,
-            new ToolMetadata
+            new ToolMetadata(
+                new ToolTypeId(tool.Id),
+                tool.Title!,
+                ToolDockSide.Left)
             {
-                ToolTypeId = tool.Id,
-                DisplayName = tool.Title!,
                 Description = string.Empty,
-                IconPath = string.Empty,
-                Alignment = "Left"
-            }));
+                IconPath = string.Empty
+            });
+        using var context = new TestHostContext(toolStrategies: [strategy]);
         _ = context.CreateMainWindowViewModel();
         var manager = Assert.IsType<ToolManagementViewModel>(
             context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
@@ -204,23 +204,23 @@ public sealed class ToolViewModelTests
     [Fact]
     public void PinnedToolRemainsVisibleInManagementAndCanBeHiddenAndRestored()
     {
-        using var context = new TestHostContext();
         var tool = new Tool
         {
-            Id = "pinned-closable-tool",
+            Id = "myavalonia.host.tool.pinned-closable",
             Title = "Pinned Tool",
             CanClose = true
         };
-        context.Factory.RegisterToolStrategy(new StubToolStrategy(
+        var strategy = new StubToolStrategy(
             tool,
-            new ToolMetadata
+            new ToolMetadata(
+                new ToolTypeId(tool.Id),
+                tool.Title!,
+                ToolDockSide.Left)
             {
-                ToolTypeId = tool.Id,
-                DisplayName = tool.Title!,
                 Description = string.Empty,
-                IconPath = string.Empty,
-                Alignment = "Left"
-            }));
+                IconPath = string.Empty
+            });
+        using var context = new TestHostContext(toolStrategies: [strategy]);
         _ = context.CreateMainWindowViewModel();
         var data = context.Factory.GetToolManagementData()!;
         var manager = Assert.IsType<ToolManagementViewModel>(

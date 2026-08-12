@@ -2,6 +2,7 @@ using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.ToolCreation;
 using BiliDownloader.Services.Download;
 using BiliDownloader.ViewModels;
+using BiliDownloader.Constants;
 
 namespace BiliDownloader.Create;
 
@@ -18,7 +19,6 @@ public class BiliSchedulerToolStrategy : IToolCreationStrategy
     {
         // Tool 由宿主保证只创建一次；这里返回 DI 中的单例 ViewModel，
         // 隐藏和恢复 Tool 时不会创建新的 Coordinator 或任务队列。
-        _viewModel.Id = "BiliSchedulerTool";
         _viewModel.Title = "Bilibili调度工具";
         _viewModel.CanClose = true;
         return _viewModel;
@@ -26,13 +26,14 @@ public class BiliSchedulerToolStrategy : IToolCreationStrategy
 
     public ToolMetadata GetMetadata()
     {
-        return new ToolMetadata
+        return new ToolMetadata(
+            SaveDocumentTypeIdConstant.SchedulerToolId,
+            "Bilibili调度工具",
+            ToolDockSide.Right,
+            [SaveDocumentTypeIdConstant.LegacySchedulerToolId])
         {
-            ToolTypeId = "BiliSchedulerTool",
-            DisplayName = "Bilibili调度工具",
             Description = "下载调度与ffmpeg处理管理",
-            IconPath = "",
-            Alignment = "Right"
+            IconPath = ""
         };
     }
 }

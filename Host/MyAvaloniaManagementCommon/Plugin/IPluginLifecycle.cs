@@ -12,7 +12,7 @@ public interface IPluginLifecycle
     /// <summary>
     /// 与模块一致的稳定插件标识。
     /// </summary>
-    string PluginId { get; }
+    PluginId PluginId { get; }
 
     /// <summary>
     /// 初始化顺序。数值较小的插件先初始化，关闭时按成功初始化顺序反向执行。

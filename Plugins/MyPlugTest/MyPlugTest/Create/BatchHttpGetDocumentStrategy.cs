@@ -28,7 +28,10 @@ public sealed class BatchHttpGetDocumentStrategy : IDocumentCreationStrategy
     }
 
     public DocumentMetadata GetMetadata() =>
-        new(SaveDocumentTypeIdConstant.BatchHttpGetDocumentId, "逐行 HTTP GET")
+        new(
+            SaveDocumentTypeIdConstant.BatchHttpGetDocumentId,
+            "逐行 HTTP GET",
+            [SaveDocumentTypeIdConstant.LegacyBatchHttpGetDocumentId])
         {
             Description = "将多行网址按输入顺序逐个执行 GET 请求",
             MenuCategory = "测试插件",

@@ -25,7 +25,10 @@ public class TestMessageReceiveDocumentStrategy: IDocumentCreationStrategy
 
     public DocumentMetadata GetMetadata()
     {
-        return new DocumentMetadata(SaveDocumentTypeIdConstant.TestMessageReceiveDocumentId, "测试消息订阅组件")
+        return new DocumentMetadata(
+            SaveDocumentTypeIdConstant.TestMessageReceiveDocumentId,
+            "测试消息订阅组件",
+            [SaveDocumentTypeIdConstant.LegacyTestMessageReceiveDocumentId])
         {
             Description = "消息订阅测试",
             MenuCategory = "测试插件"

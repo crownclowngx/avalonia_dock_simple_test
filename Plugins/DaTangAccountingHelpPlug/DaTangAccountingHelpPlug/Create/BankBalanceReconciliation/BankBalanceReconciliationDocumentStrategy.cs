@@ -28,7 +28,10 @@ public sealed class BankBalanceReconciliationDocumentStrategy : IDocumentCreatio
     }
 
     public DocumentMetadata GetMetadata() =>
-        new(SaveDocumentTypeIdConstant.BankBalanceReconciliationDocument, "银行余额调节表")
+        new(
+            SaveDocumentTypeIdConstant.BankBalanceReconciliationDocument,
+            "银行余额调节表",
+            [SaveDocumentTypeIdConstant.LegacyBankBalanceReconciliationDocument])
         {
             Description = "只读分析企业账与银行账，生成调节表、收付款明细和匹配审计",
             MenuCategory = "大唐-会计"

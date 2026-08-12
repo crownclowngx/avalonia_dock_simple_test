@@ -17,8 +17,7 @@ public class BiliDownloaderDocumentStrategy : IDocumentCreationStrategy, IDocume
 
     public Document CreateDocument(DocumentCreationParams @params)
     {
-        if (!string.IsNullOrEmpty(@params.CreationIntentId)
-            && @params.CreationIntentId is not ("quick-url" or "personal-source"))
+        if (@params.CreationIntentId is { Value: not ("quick-url" or "personal-source") })
             throw new ArgumentException("未知的 BiliDownloader 创建意图。", nameof(@params));
 
         // 每个 Document 由宿主创建独立 Scope；仓储、消息服务和 Coordinator 仍复用
@@ -32,7 +31,10 @@ public class BiliDownloaderDocumentStrategy : IDocumentCreationStrategy, IDocume
 
     public DocumentMetadata GetMetadata()
     {
-        return new DocumentMetadata(SaveDocumentTypeIdConstant.BiliDownloaderDocumentId, "下载")
+        return new DocumentMetadata(
+            SaveDocumentTypeIdConstant.BiliDownloaderDocumentId,
+            "下载",
+            [SaveDocumentTypeIdConstant.LegacyBiliDownloaderDocumentId])
         {
             Description = "Bilibili视频下载器",
             MenuCategory = "Bilibili下载器"
@@ -41,7 +43,7 @@ public class BiliDownloaderDocumentStrategy : IDocumentCreationStrategy, IDocume
 
     public IReadOnlyList<DocumentCreationIntentMetadata> GetCreationIntents() =>
     [
-        new("quick-url", "链接下载") { Description = "粘贴视频、番剧或短链接并创建下载计划。" },
-        new("personal-source", "个人内容来源") { Description = "浏览 UP 主投稿、收藏夹、稍后再看和历史记录。" },
+        new(new CreationIntentId("quick-url"), "链接下载") { Description = "粘贴视频、番剧或短链接并创建下载计划。" },
+        new(new CreationIntentId("personal-source"), "个人内容来源") { Description = "浏览 UP 主投稿、收藏夹、稍后再看和历史记录。" },
     ];
 }

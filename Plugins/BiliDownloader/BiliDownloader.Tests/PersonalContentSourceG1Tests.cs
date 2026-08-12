@@ -19,10 +19,13 @@ public sealed class DocumentCreationIntentG1Tests
         var strategy = new BiliDownloaderDocumentStrategy(new ThrowingDocumentScopeFactory());
 
         Assert.Equal(["quick-url", "personal-source"],
-            strategy.GetCreationIntents().Select(intent => intent.IntentId));
+            strategy.GetCreationIntents().Select(intent => intent.IntentId.Value));
         Assert.Equal(SaveDocumentTypeIdConstant.BiliDownloaderDocumentId, strategy.GetMetadata().DocumentTypeId);
         Assert.Throws<ArgumentException>(() => strategy.CreateDocument(
-            new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId) { CreationIntentId = "unknown" }));
+            new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)
+            {
+                CreationIntentId = new CreationIntentId("unknown")
+            }));
     }
 
     private sealed class ThrowingDocumentScopeFactory : IDocumentScopeFactory

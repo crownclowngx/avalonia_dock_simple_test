@@ -17,7 +17,7 @@ public sealed class MainWindowViewModelTests
         using var context = CreateContextWithDocumentStrategy();
         var viewModel = context.CreateMainWindowViewModel();
 
-        viewModel.CreateDocument(TestSavableStrategy.TypeId);
+        viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
 
         var dock = GetDocumentDock(context);
         Assert.Contains(dock.VisibleDockables!, item =>
@@ -85,7 +85,7 @@ public sealed class MainWindowViewModelTests
             unknown,
             JsonConvert.SerializeObject(new DocumentSaveData
             {
-                DocumentTypeId = "unknown",
+                DocumentTypeId = new("unknown"),
                 Title = "未知",
                 Content = "",
                 PluginMetadata = "",
@@ -108,7 +108,7 @@ public sealed class MainWindowViewModelTests
         var savePath = Path.Combine(context.TempDirectory, "saved.testdoc");
         context.Storage.SavePath = savePath;
         var viewModel = context.CreateMainWindowViewModel();
-        viewModel.CreateDocument(TestSavableStrategy.TypeId);
+        viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var document = GetDocuments(context).Single();
         GetDocumentDock(context).ActiveDockable = document;
         document.Content = "保存内容";
@@ -130,7 +130,7 @@ public sealed class MainWindowViewModelTests
     {
         using var context = CreateContextWithDocumentStrategy();
         var viewModel = context.CreateMainWindowViewModel();
-        viewModel.CreateDocument(TestSavableStrategy.TypeId);
+        viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         GetDocumentDock(context).ActiveDockable =
             GetDocuments(context).Single();
 
@@ -145,7 +145,7 @@ public sealed class MainWindowViewModelTests
         using var context = CreateContextWithDocumentStrategy();
         var path = Path.Combine(context.TempDirectory, "existing.testdoc");
         var viewModel = context.CreateMainWindowViewModel();
-        viewModel.CreateDocument(TestSavableStrategy.TypeId);
+        viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var document = GetDocuments(context).Single();
         document.FilePath = path;
         GetDocumentDock(context).ActiveDockable = document;
@@ -166,7 +166,7 @@ public sealed class MainWindowViewModelTests
         var copy = Path.Combine(context.TempDirectory, "future-copy.testdoc");
         context.Storage.SavePath = copy;
         var viewModel = context.CreateMainWindowViewModel();
-        viewModel.CreateDocument(TestSavableStrategy.TypeId);
+        viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var document = GetDocuments(context).Single();
         document.FilePath = original;
         document.RequiresSaveAs = true;
@@ -186,7 +186,7 @@ public sealed class MainWindowViewModelTests
         var original = Path.Combine(context.TempDirectory, "future.testdoc");
         context.Storage.SavePath = original;
         var viewModel = context.CreateMainWindowViewModel();
-        viewModel.CreateDocument(TestSavableStrategy.TypeId);
+        viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var document = GetDocuments(context).Single();
         document.FilePath = original;
         document.RequiresSaveAs = true;
@@ -269,7 +269,7 @@ public sealed class MainWindowViewModelTests
         context.Storage.SavePath = path;
         context.Storage.WriteException = new IOException("simulated");
         var viewModel = context.CreateMainWindowViewModel();
-        viewModel.CreateDocument(TestSavableStrategy.TypeId);
+        viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var document = GetDocuments(context).Single();
         var originalTitle = document.Title;
         GetDocumentDock(context).ActiveDockable = document;
@@ -300,9 +300,8 @@ public sealed class MainWindowViewModelTests
 
     private static TestHostContext CreateContextWithDocumentStrategy()
     {
-        var context = new TestHostContext();
-        context.Factory.RegisterStrategy(new TestSavableStrategy());
-        return context;
+        return new TestHostContext(
+            documentStrategies: [new TestSavableStrategy()]);
     }
 
     private static DocumentDock GetDocumentDock(TestHostContext context) =>

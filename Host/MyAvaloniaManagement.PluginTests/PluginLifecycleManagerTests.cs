@@ -55,8 +55,8 @@ public sealed class PluginLifecycleManagerTests
             "init:healthy",
             "shutdown:healthy",
         ], calls);
-        Assert.Equal(PluginLifecycleStatus.Failed, manager.GetState("broken")?.Status);
-        Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState("healthy")?.Status);
+        Assert.Equal(PluginLifecycleStatus.Failed, manager.GetState(new PluginId("broken"))?.Status);
+        Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState(new PluginId("healthy"))?.Status);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public sealed class PluginLifecycleManagerTests
         Assert.True(shutdownCompleted);
         Assert.True(contextCleared);
         Assert.True(lifecycle.ShutdownCompleted);
-        Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState("yielding")?.Status);
+        Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState(new PluginId("yielding"))?.Status);
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public sealed class PluginLifecycleManagerTests
         ], calls);
         Assert.Equal(
             ["foundation"],
-            manager.GetState("dependent")?.RequiredPluginIds);
+            manager.GetState(new PluginId("dependent"))?.RequiredPluginIds.Select(id => id.Value));
     }
 
     [Fact]
@@ -137,17 +137,17 @@ public sealed class PluginLifecycleManagerTests
         await manager.InitializeAllAsync();
 
         Assert.Equal(["init:healthy"], calls);
-        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState("missing")?.Status);
+        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState(new PluginId("missing"))?.Status);
         Assert.Equal(
             "LIFECYCLE_DEPENDENCY_MISSING",
-            manager.GetState("missing")?.ErrorCode);
-        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState("cycle-a")?.Status);
+            manager.GetState(new PluginId("missing"))?.ErrorCode);
+        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState(new PluginId("cycle-a"))?.Status);
         Assert.Equal(
             "LIFECYCLE_DEPENDENCY_CYCLE",
-            manager.GetState("cycle-b")?.ErrorCode);
+            manager.GetState(new PluginId("cycle-b"))?.ErrorCode);
         Assert.Equal(
             "cycle-a",
-            manager.GetState("cycle-dependent")?.BlockingPluginId);
+            manager.GetState(new PluginId("cycle-dependent"))?.BlockingPluginId?.Value);
     }
 
     [Fact]
@@ -163,10 +163,10 @@ public sealed class PluginLifecycleManagerTests
         await manager.InitializeAllAsync();
 
         Assert.Equal(["init:broken", "init:healthy"], calls);
-        Assert.Equal(PluginLifecycleStatus.Failed, manager.GetState("broken")?.Status);
-        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState("dependent")?.Status);
-        Assert.Equal("broken", manager.GetState("dependent")?.BlockingPluginId);
-        Assert.True(manager.GetState("healthy")?.IsAvailable);
+        Assert.Equal(PluginLifecycleStatus.Failed, manager.GetState(new PluginId("broken"))?.Status);
+        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState(new PluginId("dependent"))?.Status);
+        Assert.Equal("broken", manager.GetState(new PluginId("dependent"))?.BlockingPluginId?.Value);
+        Assert.True(manager.GetState(new PluginId("healthy"))?.IsAvailable);
     }
 
     [Fact]
@@ -181,10 +181,10 @@ public sealed class PluginLifecycleManagerTests
         await manager.InitializeAllAsync();
 
         Assert.Empty(calls);
-        Assert.Equal(PluginLifecycleStatus.Failed, manager.GetState("duplicate")?.Status);
+        Assert.Equal(PluginLifecycleStatus.Failed, manager.GetState(new PluginId("duplicate"))?.Status);
         Assert.Equal(
             "LIFECYCLE_PLUGIN_ID_DUPLICATE",
-            manager.GetState("duplicate")?.ErrorCode);
+            manager.GetState(new PluginId("duplicate"))?.ErrorCode);
     }
 
     [Fact]
@@ -208,10 +208,10 @@ public sealed class PluginLifecycleManagerTests
         slow.CompleteInitialization();
         await Task.Yield();
 
-        Assert.Equal(PluginLifecycleStatus.TimedOut, manager.GetState("slow")?.Status);
-        Assert.Equal("LIFECYCLE_UNRESPONSIVE", manager.GetState("slow")?.ErrorCode);
-        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState("dependent")?.Status);
-        Assert.Equal(PluginLifecycleStatus.Ready, manager.GetState("healthy")?.Status);
+        Assert.Equal(PluginLifecycleStatus.TimedOut, manager.GetState(new PluginId("slow"))?.Status);
+        Assert.Equal("LIFECYCLE_UNRESPONSIVE", manager.GetState(new PluginId("slow"))?.ErrorCode);
+        Assert.Equal(PluginLifecycleStatus.Blocked, manager.GetState(new PluginId("dependent"))?.Status);
+        Assert.Equal(PluginLifecycleStatus.Ready, manager.GetState(new PluginId("healthy"))?.Status);
         Assert.Contains("init:healthy", calls);
     }
 
@@ -239,8 +239,8 @@ public sealed class PluginLifecycleManagerTests
             "shutdown:second",
             "shutdown:first",
         ], calls);
-        Assert.Equal(PluginLifecycleStatus.TimedOut, manager.GetState("second")?.Status);
-        Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState("first")?.Status);
+        Assert.Equal(PluginLifecycleStatus.TimedOut, manager.GetState(new PluginId("second"))?.Status);
+        Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState(new PluginId("first"))?.Status);
     }
 
     [Fact]
@@ -261,10 +261,10 @@ public sealed class PluginLifecycleManagerTests
         Assert.DoesNotContain("init:never-started", calls);
         Assert.Equal(
             PluginLifecycleStatus.Failed,
-            manager.GetState("waiting")?.Status);
+            manager.GetState(new PluginId("waiting"))?.Status);
         Assert.Equal(
             "LIFECYCLE_HOST_CANCELLED",
-            manager.GetState("waiting")?.ErrorCode);
+            manager.GetState(new PluginId("waiting"))?.ErrorCode);
     }
 
     private sealed class RecordingLifecycle :
@@ -281,18 +281,18 @@ public sealed class PluginLifecycleManagerTests
             bool failInitialization = false,
             IReadOnlyCollection<string>? dependencies = null)
         {
-            PluginId = pluginId;
+            PluginId = new PluginId(pluginId);
             Order = order;
             _calls = calls;
             _failInitialization = failInitialization;
-            RequiredPluginIds = dependencies ?? [];
+            RequiredPluginIds = (dependencies ?? []).Select(id => new PluginId(id)).ToArray();
         }
 
-        public string PluginId { get; }
+        public PluginId PluginId { get; }
 
         public int Order { get; }
 
-        public IReadOnlyCollection<string> RequiredPluginIds { get; }
+        public IReadOnlyCollection<PluginId> RequiredPluginIds { get; }
 
         public Task InitializeAsync(CancellationToken cancellationToken)
         {
@@ -316,7 +316,7 @@ public sealed class PluginLifecycleManagerTests
         private readonly TaskCompletionSource _initialization = new(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public string PluginId => pluginId;
+        public PluginId PluginId { get; } = new(pluginId);
 
         public int Order => 0;
 
@@ -340,7 +340,7 @@ public sealed class PluginLifecycleManagerTests
         int order,
         List<string> calls) : IPluginLifecycle
     {
-        public string PluginId => pluginId;
+        public PluginId PluginId { get; } = new(pluginId);
 
         public int Order => order;
 
@@ -362,7 +362,7 @@ public sealed class PluginLifecycleManagerTests
         string pluginId,
         List<string> calls) : IPluginLifecycle
     {
-        public string PluginId => pluginId;
+        public PluginId PluginId { get; } = new(pluginId);
 
         public int Order => 0;
 
@@ -378,7 +378,7 @@ public sealed class PluginLifecycleManagerTests
 
     private sealed class YieldingShutdownLifecycle : IPluginLifecycle
     {
-        public string PluginId => "yielding";
+        public PluginId PluginId { get; } = new("yielding");
 
         public int Order => 0;
 

@@ -7,13 +7,14 @@ using MyAvaloniaManagementCommon.Plugin;
 namespace MyAvaloniaManagement.Tests;
 
 /// <summary>
-/// 锁定 Host 与 Common 程序集导出的元数据表面，使内部重构不会意外改变外部契约。
-/// 只有经过单独评审的契约变更才能更新该指纹，避免实现调整掩盖签名变化。
+/// 锁定 Host 与 Common 程序集导出的公共 API，避免普通内部重构意外改变插件契约。
+/// 本次指纹更新对应已经评审的破坏性升级：字符串身份统一替换为强类型值对象，
+/// 旧插件二进制不在兼容范围内；后续实现调整不得顺带修改此指纹。
 /// </summary>
 public sealed class PublicApiContractTests
 {
     private const string ExpectedSha256 =
-        "AAD0D3BD26707755C6FB803A64DCD0150766F4D73F6E6C921D677233F90092E0";
+        "D87D745DFA56F69A1FC4392954DF8683F154D9AAD15C431753AEEF53471A988F";
 
     [Fact]
     public void HostAndCommonPublicApiSurfaceRemainsStable()

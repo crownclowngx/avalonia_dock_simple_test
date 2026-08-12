@@ -1,5 +1,6 @@
 using System;
 using Dock.Model.Core;
+using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.Business.Layout;
 
@@ -8,6 +9,14 @@ namespace MyAvaloniaManagement.Business.Layout;
 /// </summary>
 internal static class ToolDockPlacement
 {
+    public static Alignment ToAlignment(ToolDockSide side) => side switch
+    {
+        ToolDockSide.Right => Alignment.Right,
+        ToolDockSide.Top => Alignment.Top,
+        ToolDockSide.Bottom => Alignment.Bottom,
+        _ => Alignment.Left,
+    };
+
     public static Alignment NormalizeAlignment(Alignment alignment) =>
         alignment is Alignment.Left
             or Alignment.Right

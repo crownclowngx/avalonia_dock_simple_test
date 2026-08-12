@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
+using MySmallTools.Constants;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
 using MySmallTools.Business.SecretVideoPlayer.Library;
@@ -19,7 +20,7 @@ namespace MySmallTools.Plugin;
 /// </remarks>
 public sealed class MySmallToolsPluginModule : IPluginModule
 {
-    public string PluginId => "MySmallTools";
+    public PluginId PluginId => DocumentTypeIdConstant.PluginId;
 
     public void ConfigureServices(IServiceCollection services)
     {

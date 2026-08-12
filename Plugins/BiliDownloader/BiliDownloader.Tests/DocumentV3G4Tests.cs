@@ -732,7 +732,7 @@ public sealed class DocumentV3G4Tests
     {
         var decoded = DocumentSaveCodec.Decode(new DocumentSaveData
         {
-            DocumentTypeId = "test-document",
+            DocumentTypeId = new("test-document"),
             Title = "版本识别",
             PluginMetadata = pluginMetadata ?? string.Empty,
             Content = content,
@@ -1096,7 +1096,7 @@ public sealed class DocumentV3G4Tests
 
     private static DocumentSaveData EnvelopeRaw(string version, string content) => new()
     {
-        DocumentTypeId = "A3F7E1B2-9C4D-4E8A-B6F1-2D5E8A7C3B10",
+        DocumentTypeId = new("A3F7E1B2-9C4D-4E8A-B6F1-2D5E8A7C3B10"),
         Title = "测试",
         SaveTime = DateTime.Now,
         Content = content,

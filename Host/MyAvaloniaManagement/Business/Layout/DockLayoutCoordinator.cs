@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using Dock.Model.Controls;
 using MyAvaloniaManagement.ViewModels;
@@ -37,6 +38,11 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         }
 
         snapshot = DockLayoutSnapshotMigrator.Normalize(snapshot, factory);
+        if (DockLayoutSnapshotValidator.Validate(snapshot) is { } migratedError)
+        {
+            store.RejectLoadedSnapshot(migratedError.Code, migratedError.StableId);
+            return defaultRoot;
+        }
         DockLayoutSnapshotMapper.EnsureSnapshotDocks(
             snapshot,
             defaultRoot,
@@ -113,10 +119,22 @@ internal static class DockLayoutSnapshotMigrator
 {
     internal static DockLayoutSnapshotV1 Normalize(
         DockLayoutSnapshotV1 snapshot,
-        ManagementFactory factory) =>
-        DockLayoutSnapshotMapper.NormalizeLegacyTwoWaySnapshot(
-            snapshot,
-            factory);
+        ManagementFactory factory)
+    {
+        // 先迁移 Tool 身份，再执行历史停靠方向修复；否则旧 ID 无法查询新元数据的默认方向。
+        var migratedTools = snapshot.Tools
+            .Select(tool => tool with { Id = factory.NormalizePersistedToolId(tool.Id) })
+            .ToList();
+        var activeToolId = snapshot.ActiveToolId is null
+            ? null
+            : factory.NormalizePersistedToolId(snapshot.ActiveToolId);
+        var migrated = snapshot with
+        {
+            Tools = migratedTools,
+            ActiveToolId = activeToolId,
+        };
+        return DockLayoutSnapshotMapper.NormalizeLegacyTwoWaySnapshot(migrated, factory);
+    }
 }
 
 /// <summary>

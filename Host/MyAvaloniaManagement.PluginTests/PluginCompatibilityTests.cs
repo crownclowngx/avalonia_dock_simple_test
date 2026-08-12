@@ -9,6 +9,7 @@ using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
 using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
 using MyPlugTest.Create;
 using MyPlugTest.Models;
@@ -22,6 +23,71 @@ namespace MyAvaloniaManagement.PluginTests;
 
 public sealed class PluginCompatibilityTests
 {
+    [Fact]
+    public void 全部历史Document与ToolId经真实四插件注册表迁移到规范Id()
+    {
+        var assemblies = new[]
+        {
+            typeof(BiliDownloaderPluginModule).Assembly,
+            typeof(DaTangAccountingHelpPluginModule).Assembly,
+            typeof(MyPlugTestPluginModule).Assembly,
+            typeof(MySmallToolsPluginModule).Assembly
+        };
+        var catalog = PluginModuleCatalog.Discover(assemblies);
+        var services = new ServiceCollection();
+        services.AddApplicationServices();
+        services.AddViewModels();
+        catalog.ConfigureServices(services);
+        services.AddSingleton(catalog);
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = true
+        });
+        var factory = provider.GetRequiredService<MyAvaloniaManagement.ViewModels.ManagementFactory>();
+
+        var documentMappings = new (string Legacy, string Canonical)[]
+        {
+            ("DD7A1E38-07C5-B38C-FB02-1B991896EF49", "myavalonia.host.document.welcome"),
+            ("A3F7E1B2-9C4D-4E8A-B6F1-2D5E8A7C3B10", "myavalonia.plugin.bili-downloader.document.download"),
+            ("D8525F12-F58B-F95D-1B4B-62EE33CF128D", "myavalonia.plugin.datang-accounting-help.document.invoice-info-import"),
+            ("9D0ACD63-6C35-4CC8-87B1-E9B3C91E1C18", "myavalonia.plugin.datang-accounting-help.document.bank-balance-reconciliation"),
+            ("7DEE4212-DFF1-9923-B527-1B047D1B2918", "myavalonia.plugin.my-plug-test.document.welcome"),
+            ("384D28C4-F6E8-4D49-B0BD-2CE484D4D177", "myavalonia.plugin.my-plug-test.document.message-receiver"),
+            ("C1B13C72-C21A-4C39-9612-77C341DA85B6", "myavalonia.plugin.my-plug-test.document.batch-http-get"),
+            ("A1B2C3D4-E5F6-7890-ABCD-EF1234567890", "myavalonia.plugin.my-small-tools.document.secret-video-player"),
+            ("B2C3D4E5-F6G7-8901-BCDE-F23456789012", "myavalonia.plugin.my-small-tools.document.video-encryptor"),
+            ("C3D4E5F6-A7B8-4901-CDEF-345678901234", "myavalonia.plugin.my-small-tools.document.secret-video-library"),
+            ("D4E5F6A7-B8C9-4A12-DEF0-456789012345", "myavalonia.plugin.my-small-tools.document.video-decryptor")
+        };
+        foreach (var (legacy, canonical) in documentMappings)
+        {
+            var document = factory.CreateManagementNewDocument(
+                new DocumentCreationParams(new DocumentTypeId(legacy)));
+            Assert.Equal(
+                canonical,
+                factory.NormalizePersistedDocumentTypeId(new DocumentTypeId(legacy)).Value);
+            if (document is ISavableDocument savable)
+            {
+                Assert.Equal(canonical, savable.SaveDocumentTypeId.Value);
+            }
+
+            factory.OnDockableClosed(document);
+        }
+
+        var toolMappings = new (string Legacy, string Canonical)[]
+        {
+            ("fileSystemTree", "myavalonia.host.tool.file-system-tree"),
+            ("plugGroupMenu", "myavalonia.host.tool.plugin-menu"),
+            ("pluginStatus", "myavalonia.host.tool.plugin-status"),
+            ("toolManagement", "myavalonia.host.tool.management"),
+            ("BiliSchedulerTool", "myavalonia.plugin.bili-downloader.tool.scheduler"),
+            ("MyCustomTool", "myavalonia.plugin.my-plug-test.tool.custom")
+        };
+        Assert.All(toolMappings, mapping =>
+            Assert.Equal(mapping.Canonical, factory.NormalizePersistedToolId(mapping.Legacy)));
+    }
+
     [Fact]
     public void 未声明插件模块的共享程序集不会被标记为宿主管理模块()
     {
@@ -44,8 +110,13 @@ public sealed class PluginCompatibilityTests
             [biliAssembly, daTangAssembly, myPlugTestAssembly, mySmallToolsAssembly]);
 
         Assert.Equal(
-            ["BiliDownloader", "DaTangAccountingHelpPlug", "MyPlugTest", "MySmallTools"],
-            catalog.Modules.Select(x => x.PluginId));
+            [
+                "myavalonia.plugin.bili-downloader",
+                "myavalonia.plugin.datang-accounting-help",
+                "myavalonia.plugin.my-plug-test",
+                "myavalonia.plugin.my-small-tools"
+            ],
+            catalog.Modules.Select(x => x.PluginId.Value));
         Assert.True(catalog.IsManaged(biliAssembly));
         Assert.True(catalog.IsManaged(daTangAssembly));
         Assert.True(catalog.IsManaged(myPlugTestAssembly));
@@ -80,13 +151,20 @@ public sealed class PluginCompatibilityTests
 
         Assert.Equal(4, viewModel.Items.Count);
         Assert.Equal(
-            ["BiliDownloader", "DaTangAccountingHelpPlug", "MyPlugTest", "MySmallTools"],
+            [
+                "myavalonia.plugin.bili-downloader",
+                "myavalonia.plugin.datang-accounting-help",
+                "myavalonia.plugin.my-plug-test",
+                "myavalonia.plugin.my-small-tools"
+            ],
             viewModel.Items.Select(item => item.PluginId));
         Assert.Equal(
             "运行正常",
-            viewModel.Items.Single(item => item.PluginId == "BiliDownloader").StatusText);
+            viewModel.Items.Single(item =>
+                item.PluginId == "myavalonia.plugin.bili-downloader").StatusText);
         Assert.All(
-            viewModel.Items.Where(item => item.PluginId != "BiliDownloader"),
+            viewModel.Items.Where(item =>
+                item.PluginId != "myavalonia.plugin.bili-downloader"),
             item => Assert.Contains("无需后台生命周期", item.StatusText));
     }
 
@@ -149,9 +227,9 @@ public sealed class PluginCompatibilityTests
         var manager = new PluginLifecycleManager([]);
 
         Assert.Empty(manager.States);
-        Assert.Null(manager.GetState("MyPlugTest"));
-        Assert.Null(manager.GetState("DaTangAccountingHelpPlug"));
-        Assert.Null(manager.GetState("MySmallTools"));
+        Assert.Null(manager.GetState(MyPlugTest.Constants.SaveDocumentTypeIdConstant.PluginId));
+        Assert.Null(manager.GetState(DaTangAccountingHelpPlug.Constants.SaveDocumentTypeIdConstant.PluginId));
+        Assert.Null(manager.GetState(MySmallTools.Constants.DocumentTypeIdConstant.PluginId));
     }
 
     [Fact]
@@ -175,11 +253,11 @@ public sealed class PluginCompatibilityTests
             assembly,
             provider,
             catalog);
-        var firstParams = new DocumentCreationParams("invoice-import")
+        var firstParams = new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)
         {
             Title = "第一份发票计算",
         };
-        var secondParams = new DocumentCreationParams("invoice-import");
+        var secondParams = new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId);
         var first = Assert.IsType<InvoiceInfoImportViewModel>(
             strategy.CreateDocument(firstParams));
         var second = Assert.IsType<InvoiceInfoImportViewModel>(
@@ -233,13 +311,13 @@ public sealed class PluginCompatibilityTests
         var batchStrategy = Activate<BatchHttpGetDocumentStrategy>(assembly, provider, catalog);
 
         var firstWelcome = Assert.IsType<TestWelcomeViewModel>(welcomeStrategy.CreateDocument(
-            new DocumentCreationParams("welcome") { Title = "欢迎 A" }));
+            new DocumentCreationParams(welcomeStrategy.GetMetadata().DocumentTypeId) { Title = "欢迎 A" }));
         var secondWelcome = Assert.IsType<TestWelcomeViewModel>(welcomeStrategy.CreateDocument(
-            new DocumentCreationParams("welcome")));
+            new DocumentCreationParams(welcomeStrategy.GetMetadata().DocumentTypeId)));
         var receiver = Assert.IsType<TestMessageReceiveViewModel>(receiveStrategy.CreateDocument(
-            new DocumentCreationParams("receiver")));
+            new DocumentCreationParams(receiveStrategy.GetMetadata().DocumentTypeId)));
         var batch = Assert.IsType<BatchHttpGetViewModel>(batchStrategy.CreateDocument(
-            new DocumentCreationParams("batch")));
+            new DocumentCreationParams(batchStrategy.GetMetadata().DocumentTypeId)));
 
         Assert.NotSame(firstWelcome, secondWelcome);
         Assert.NotSame(firstWelcome.UrlHistory, secondWelcome.UrlHistory);
@@ -279,9 +357,9 @@ public sealed class PluginCompatibilityTests
             provider,
             catalog);
         var first = Assert.IsType<VideoEncryptorViewModel>(strategy.CreateDocument(
-            new DocumentCreationParams("video-encryptor")));
+            new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)));
         var second = Assert.IsType<VideoEncryptorViewModel>(strategy.CreateDocument(
-            new DocumentCreationParams("video-encryptor")));
+            new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)));
 
         Assert.NotSame(first, second);
         Assert.True(provider.GetRequiredService<DocumentScopeManager>().Release(first));
@@ -290,7 +368,7 @@ public sealed class PluginCompatibilityTests
 
     private sealed class ReadyBiliLifecycle : IPluginLifecycle
     {
-        public string PluginId => "BiliDownloader";
+        public PluginId PluginId => BiliDownloader.Constants.SaveDocumentTypeIdConstant.PluginId;
 
         public int Order => 0;
 

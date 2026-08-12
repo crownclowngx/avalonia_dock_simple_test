@@ -2,48 +2,32 @@ namespace MyAvaloniaManagementCommon.Plugin;
 
 internal sealed record PluginLifecyclePlanNode(
     IPluginLifecycle Lifecycle,
-    string PluginId,
-    IReadOnlyList<string> RequiredPluginIds);
+    PluginId PluginId,
+    IReadOnlyList<PluginId> RequiredPluginIds);
 
 internal sealed record PluginLifecyclePlan(
     IReadOnlyList<PluginLifecyclePlanNode> OrderedNodes,
-    IReadOnlyDictionary<string, PluginLifecycleState> InitialStates);
+    IReadOnlyDictionary<PluginId, PluginLifecycleState> InitialStates);
 
 /// <summary>
-/// 把生命周期声明转换成确定性的依赖计划；本类型不执行任何插件代码。
+/// 把生命周期声明转换成确定性的强类型依赖计划；本类型不执行任何插件代码。
 /// </summary>
 internal static class PluginLifecyclePlanBuilder
 {
-    internal static PluginLifecyclePlan Build(
-        IEnumerable<IPluginLifecycle> lifecycles)
+    internal static PluginLifecyclePlan Build(IEnumerable<IPluginLifecycle> lifecycles)
     {
         ArgumentNullException.ThrowIfNull(lifecycles);
-        var candidates = lifecycles.Select((lifecycle, index) =>
-            CreateCandidate(lifecycle, index)).ToArray();
-        var initialStates = new Dictionary<string, PluginLifecycleState>(
-            StringComparer.Ordinal);
-
-        foreach (var invalid in candidates.Where(item => !item.HasValidPluginId))
-        {
-            initialStates[invalid.StateKey] = FailureState(
-                invalid.StateKey,
-                "LIFECYCLE_PLUGIN_ID_INVALID",
-                "插件生命周期必须提供非空 PluginId。",
-                invalid.RequiredPluginIds);
-        }
-
-        var validCandidates = candidates.Where(item => item.HasValidPluginId).ToArray();
-        var duplicateIds = validCandidates
-            .GroupBy(item => item.PluginId, StringComparer.Ordinal)
+        var candidates = lifecycles.Select(CreateCandidate).ToArray();
+        var initialStates = new Dictionary<PluginId, PluginLifecycleState>();
+        var duplicateIds = candidates
+            .GroupBy(item => item.PluginId)
             .Where(group => group.Count() > 1)
             .Select(group => group.Key)
-            .ToHashSet(StringComparer.Ordinal);
+            .ToHashSet();
 
         foreach (var duplicateId in duplicateIds)
         {
-            var dependencies = validCandidates
-                .First(item => item.PluginId == duplicateId)
-                .RequiredPluginIds;
+            var dependencies = candidates.First(item => item.PluginId == duplicateId).RequiredPluginIds;
             initialStates[duplicateId] = FailureState(
                 duplicateId,
                 "LIFECYCLE_PLUGIN_ID_DUPLICATE",
@@ -51,9 +35,9 @@ internal static class PluginLifecyclePlanBuilder
                 dependencies);
         }
 
-        var nodes = validCandidates
+        var nodes = candidates
             .Where(item => !duplicateIds.Contains(item.PluginId))
-            .ToDictionary(item => item.PluginId, StringComparer.Ordinal);
+            .ToDictionary(item => item.PluginId);
 
         foreach (var node in nodes.Values)
         {
@@ -101,68 +85,45 @@ internal static class PluginLifecyclePlanBuilder
                 node.RequiredPluginIds.FirstOrDefault(cycleIds.Contains));
         }
 
-        return new PluginLifecyclePlan(
-            TopologicalSort(nodes, cycleIds),
-            initialStates);
+        return new PluginLifecyclePlan(TopologicalSort(nodes, cycleIds), initialStates);
     }
 
-    private static Candidate CreateCandidate(
-        IPluginLifecycle lifecycle,
-        int index)
+    private static Candidate CreateCandidate(IPluginLifecycle lifecycle)
     {
         ArgumentNullException.ThrowIfNull(lifecycle);
-        var pluginId = lifecycle.PluginId?.Trim() ?? string.Empty;
-        var stateKey = string.IsNullOrWhiteSpace(pluginId)
-            ? $"<invalid:{index}:{lifecycle.GetType().Name}>"
-            : pluginId;
+        var pluginId = lifecycle.PluginId ??
+                       throw new ArgumentException("插件生命周期必须提供 PluginId。", nameof(lifecycle));
         var dependencies = lifecycle is IPluginLifecycleDependencies declaration
             ? (declaration.RequiredPluginIds ?? [])
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Select(id => id.Trim())
-                .Distinct(StringComparer.Ordinal)
-                .Order(StringComparer.Ordinal)
+                .Where(id => id is not null)
+                .Distinct()
+                .OrderBy(id => id.Value, StringComparer.Ordinal)
                 .ToArray()
             : [];
-
-        return new Candidate(
-            lifecycle,
-            pluginId,
-            stateKey,
-            !string.IsNullOrWhiteSpace(pluginId),
-            dependencies);
+        return new Candidate(lifecycle, pluginId, dependencies);
     }
 
-    private static HashSet<string> FindCycleIds(
-        IReadOnlyDictionary<string, Candidate> nodes)
+    private static HashSet<PluginId> FindCycleIds(
+        IReadOnlyDictionary<PluginId, Candidate> nodes)
     {
-        var visitStates = new Dictionary<string, int>(StringComparer.Ordinal);
-        var stack = new List<string>();
-        var cycleIds = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (var pluginId in nodes.Keys.Order(StringComparer.Ordinal))
+        var visitStates = new Dictionary<PluginId, int>();
+        var stack = new List<PluginId>();
+        var cycleIds = new HashSet<PluginId>();
+        foreach (var pluginId in nodes.Keys.OrderBy(id => id.Value, StringComparer.Ordinal))
         {
             Visit(pluginId);
         }
 
         return cycleIds;
 
-        void Visit(string pluginId)
+        void Visit(PluginId pluginId)
         {
-            if (visitStates.GetValueOrDefault(pluginId) == 2)
-            {
-                return;
-            }
-
+            if (visitStates.GetValueOrDefault(pluginId) == 2) return;
             visitStates[pluginId] = 1;
             stack.Add(pluginId);
-
             foreach (var dependency in nodes[pluginId].RequiredPluginIds)
             {
-                if (dependency == pluginId || !nodes.ContainsKey(dependency))
-                {
-                    continue;
-                }
-
+                if (dependency == pluginId || !nodes.ContainsKey(dependency)) continue;
                 var dependencyState = visitStates.GetValueOrDefault(dependency);
                 if (dependencyState == 0)
                 {
@@ -172,9 +133,7 @@ internal static class PluginLifecyclePlanBuilder
                 {
                     var cycleStart = stack.IndexOf(dependency);
                     for (var index = cycleStart; index < stack.Count; index++)
-                    {
                         cycleIds.Add(stack[index]);
-                    }
                 }
             }
 
@@ -184,30 +143,18 @@ internal static class PluginLifecyclePlanBuilder
     }
 
     private static IReadOnlyList<PluginLifecyclePlanNode> TopologicalSort(
-        IReadOnlyDictionary<string, Candidate> nodes,
-        IReadOnlySet<string> cycleIds)
+        IReadOnlyDictionary<PluginId, Candidate> nodes,
+        IReadOnlySet<PluginId> cycleIds)
     {
         var sortable = nodes.Values
             .Where(node => !cycleIds.Contains(node.PluginId))
-            .ToDictionary(node => node.PluginId, StringComparer.Ordinal);
-        var indegrees = sortable.Keys.ToDictionary(
-            pluginId => pluginId,
-            _ => 0,
-            StringComparer.Ordinal);
-        var dependents = sortable.Keys.ToDictionary(
-            pluginId => pluginId,
-            _ => new List<string>(),
-            StringComparer.Ordinal);
-
+            .ToDictionary(node => node.PluginId);
+        var indegrees = sortable.Keys.ToDictionary(pluginId => pluginId, _ => 0);
+        var dependents = sortable.Keys.ToDictionary(pluginId => pluginId, _ => new List<PluginId>());
         foreach (var node in sortable.Values)
         {
-            foreach (var dependency in node.RequiredPluginIds)
+            foreach (var dependency in node.RequiredPluginIds.Where(sortable.ContainsKey))
             {
-                if (!sortable.ContainsKey(dependency))
-                {
-                    continue;
-                }
-
                 indegrees[node.PluginId]++;
                 dependents[dependency].Add(node.PluginId);
             }
@@ -218,31 +165,21 @@ internal static class PluginLifecyclePlanBuilder
             var order = left.Lifecycle.Order.CompareTo(right.Lifecycle.Order);
             return order != 0
                 ? order
-                : StringComparer.Ordinal.Compare(left.PluginId, right.PluginId);
+                : StringComparer.Ordinal.Compare(left.PluginId.Value, right.PluginId.Value);
         });
         var ready = new SortedSet<Candidate>(comparer);
         foreach (var node in sortable.Values.Where(node => indegrees[node.PluginId] == 0))
-        {
             ready.Add(node);
-        }
 
         var result = new List<PluginLifecyclePlanNode>(sortable.Count);
         while (ready.Count > 0)
         {
             var node = ready.Min!;
             ready.Remove(node);
-            result.Add(new PluginLifecyclePlanNode(
-                node.Lifecycle,
-                node.PluginId,
-                node.RequiredPluginIds));
-
+            result.Add(new PluginLifecyclePlanNode(node.Lifecycle, node.PluginId, node.RequiredPluginIds));
             foreach (var dependent in dependents[node.PluginId])
             {
-                indegrees[dependent]--;
-                if (indegrees[dependent] == 0)
-                {
-                    ready.Add(sortable[dependent]);
-                }
+                if (--indegrees[dependent] == 0) ready.Add(sortable[dependent]);
             }
         }
 
@@ -250,10 +187,10 @@ internal static class PluginLifecyclePlanBuilder
     }
 
     private static PluginLifecycleState FailureState(
-        string pluginId,
+        PluginId pluginId,
         string errorCode,
         string message,
-        IReadOnlyList<string> dependencies) =>
+        IReadOnlyList<PluginId> dependencies) =>
         new(pluginId, PluginLifecycleStatus.Failed, message)
         {
             Stage = PluginLifecycleStage.Initialization,
@@ -262,11 +199,11 @@ internal static class PluginLifecyclePlanBuilder
         };
 
     private static PluginLifecycleState BlockedState(
-        string pluginId,
+        PluginId pluginId,
         string errorCode,
         string message,
-        IReadOnlyList<string> dependencies,
-        string? blockingPluginId) =>
+        IReadOnlyList<PluginId> dependencies,
+        PluginId? blockingPluginId) =>
         new(pluginId, PluginLifecycleStatus.Blocked, message)
         {
             Stage = PluginLifecycleStage.Initialization,
@@ -277,8 +214,6 @@ internal static class PluginLifecyclePlanBuilder
 
     private sealed record Candidate(
         IPluginLifecycle Lifecycle,
-        string PluginId,
-        string StateKey,
-        bool HasValidPluginId,
-        IReadOnlyList<string> RequiredPluginIds);
+        PluginId PluginId,
+        IReadOnlyList<PluginId> RequiredPluginIds);
 }

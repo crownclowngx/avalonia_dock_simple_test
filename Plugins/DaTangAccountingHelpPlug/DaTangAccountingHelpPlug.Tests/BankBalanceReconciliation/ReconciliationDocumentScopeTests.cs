@@ -1,4 +1,5 @@
 using DaTangAccountingHelpPlug.Create.BankBalanceReconciliation;
+using DaTangAccountingHelpPlug.Constants;
 using DaTangAccountingHelpPlug.Plugin;
 using DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,9 +28,11 @@ public sealed class ReconciliationDocumentScopeTests
         var manager = provider.GetRequiredService<DocumentScopeManager>();
         var strategy = new BankBalanceReconciliationDocumentStrategy(manager);
         var first = Assert.IsType<BankBalanceReconciliationViewModel>(
-            strategy.CreateDocument(new DocumentCreationParams("对账一")));
+            strategy.CreateDocument(new DocumentCreationParams(
+                SaveDocumentTypeIdConstant.BankBalanceReconciliationDocument)));
         var second = Assert.IsType<BankBalanceReconciliationViewModel>(
-            strategy.CreateDocument(new DocumentCreationParams("对账二")));
+            strategy.CreateDocument(new DocumentCreationParams(
+                SaveDocumentTypeIdConstant.BankBalanceReconciliationDocument)));
 
         first.Source.EnterpriseLedgerPath = "first.xlsx";
         first.Options.UseLegacyMode = true;

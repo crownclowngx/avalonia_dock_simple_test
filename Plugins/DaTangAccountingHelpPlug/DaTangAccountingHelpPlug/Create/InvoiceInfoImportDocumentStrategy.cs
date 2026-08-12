@@ -25,7 +25,10 @@ public class InvoiceInfoImportDocumentStrategy: IDocumentCreationStrategy
 
     public DocumentMetadata GetMetadata()
     {
-        return new DocumentMetadata(SaveDocumentTypeIdConstant.InvoiceInfoImportDocument, "综合计算发票信息")
+        return new DocumentMetadata(
+            SaveDocumentTypeIdConstant.InvoiceInfoImportDocument,
+            "综合计算发票信息",
+            [SaveDocumentTypeIdConstant.LegacyInvoiceInfoImportDocument])
         {
             Description = "依照发票表，当月明细，上月以及以前的综合计算 当月的综合表",
             MenuCategory = "大唐-会计"

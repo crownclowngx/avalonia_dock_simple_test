@@ -32,7 +32,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
         SubtitleSourceType.AiGenerated => 2,
         _ => 3,
     };
-    public string SaveDocumentTypeId => SaveDocumentTypeIdConstant.BiliDownloaderDocumentId;
+    public DocumentTypeId SaveDocumentTypeId => SaveDocumentTypeIdConstant.BiliDownloaderDocumentId;
     public string FilePath { get; set; } = string.Empty;
 
     /// <summary>
@@ -405,9 +405,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     }
 
     /// <summary>创建意图只决定首次展示入口；保存与下载契约始终属于同一个 Document。</summary>
-    public void ApplyCreationIntent(string? intentId) =>
+    public void ApplyCreationIntent(CreationIntentId? intentId) =>
         SourceWorkflow.SetInitialMode(
-            string.Equals(intentId, "personal-source", StringComparison.Ordinal)
+            string.Equals(intentId?.Value, "personal-source", StringComparison.Ordinal)
                 ? DownloadCreationMode.PersonalSource
                 : DownloadCreationMode.QuickUrl);
 

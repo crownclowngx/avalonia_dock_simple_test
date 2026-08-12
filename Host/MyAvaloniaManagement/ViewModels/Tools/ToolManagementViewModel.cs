@@ -46,7 +46,7 @@ public partial class ToolManagementViewModel : Tool
     {
         _factory = factory;
         _messengerService = messengerService;
-        Id = DockNameConstant.ToolManagement;
+        Id = HostExtensionIds.ToolManagement.Value;
         Title = "工具管理";
         _currentToolId = Id;
         CanClose = false;
@@ -109,9 +109,9 @@ public partial class ToolManagementViewModel : Tool
             ?? registrySnapshot.CreatedTools;
 
         // 添加所有工具（排除自身）
-        foreach (var metadata in toolMetadata.Values.Where(m => m.ToolTypeId != _currentToolId))
+        foreach (var metadata in toolMetadata.Values.Where(m => m.ToolTypeId.Value != _currentToolId))
         {
-            if (!createdTools.TryGetValue(metadata.ToolTypeId, out var tool))
+            if (!createdTools.TryGetValue(metadata.ToolTypeId.Value, out var tool))
             {
                 continue;
             }
@@ -123,7 +123,7 @@ public partial class ToolManagementViewModel : Tool
 
             ToolItems.Add(new ToolManagementItem
             {
-                ToolId = metadata.ToolTypeId,
+                ToolId = metadata.ToolTypeId.Value,
                 DisplayName = metadata.DisplayName,
                 IsVisible = isVisible,
                 CanClose = tool.CanClose

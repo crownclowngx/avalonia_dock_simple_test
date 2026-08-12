@@ -16,7 +16,7 @@ public sealed class BiliDownloaderReleasePackageTests
         var pluginRoot = string.IsNullOrWhiteSpace(configured)
             ? Path.GetFullPath(Path.Combine(
                 AppContext.BaseDirectory,
-                "..", "..", "..", "..", "MyAvaloniaManagement", "bin", "Release", "net10.0",
+                "..", "..", "..", "..", "MyAvaloniaManagement", "bin", "Debug", "net10.0",
                 "Controls", "BiliDownloader"))
             : Path.GetFullPath(configured);
         var pluginPath = Path.Combine(pluginRoot, "BiliDownloader.dll");
@@ -27,7 +27,7 @@ public sealed class BiliDownloaderReleasePackageTests
         var catalog = PluginModuleCatalog.Discover([assembly]);
 
         var module = Assert.Single(catalog.Modules);
-        Assert.Equal("BiliDownloader", module.PluginId);
+        Assert.Equal("myavalonia.plugin.bili-downloader", module.PluginId.Value);
         Assert.True(typeof(IPluginModule).IsAssignableFrom(module.GetType()));
         Assert.NotNull(context.ResolveAssembly("Microsoft.Data.Sqlite"));
 

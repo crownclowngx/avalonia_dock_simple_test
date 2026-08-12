@@ -25,7 +25,6 @@ public class PlugGroupMenuStrategy(IServiceProvider serviceProvider)
     public Tool CreateTool()
     {
         var tool = serviceProvider.GetRequiredService<PlugGroupMenuViewModel>();
-        tool.Id = DockNameConstant.PlugGroupMenu;
         tool.Title = "插件";
         tool.CanClose = false;
         return tool;
@@ -37,13 +36,14 @@ public class PlugGroupMenuStrategy(IServiceProvider serviceProvider)
     /// <returns>Tool元数据</returns>
     public ToolMetadata GetMetadata()
     {
-        return new ToolMetadata
+        return new ToolMetadata(
+            HostExtensionIds.PluginMenu,
+            "插件分组菜单",
+            ToolDockSide.Right,
+            [new ToolTypeId("plugGroupMenu")])
         {
-            ToolTypeId = DockNameConstant.PlugGroupMenu,
-            DisplayName = "插件分组菜单",
             Description = "显示按分类组织的插件文档菜单",
-            IconPath = "", // 可根据实际情况设置图标路径
-            Alignment = "Right" // 该工具应该在右侧面板
+            IconPath = ""
         };
     }
 }

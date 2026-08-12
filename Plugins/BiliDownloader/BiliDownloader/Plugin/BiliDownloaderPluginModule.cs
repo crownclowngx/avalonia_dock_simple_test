@@ -9,6 +9,7 @@ using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
+using BiliDownloader.Constants;
 
 namespace BiliDownloader.Plugin;
 
@@ -21,7 +22,7 @@ namespace BiliDownloader.Plugin;
 /// </summary>
 public sealed class BiliDownloaderPluginModule : IPluginModule
 {
-    public string PluginId => "BiliDownloader";
+    public PluginId PluginId => SaveDocumentTypeIdConstant.PluginId;
 
     /// <inheritdoc />
     public void ConfigureServices(IServiceCollection services)
@@ -215,7 +216,7 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
         _globalBandwidthLimit = globalBandwidthLimit;
     }
 
-    public string PluginId => "BiliDownloader";
+    public PluginId PluginId => SaveDocumentTypeIdConstant.PluginId;
 
     public int Order => 100;
 

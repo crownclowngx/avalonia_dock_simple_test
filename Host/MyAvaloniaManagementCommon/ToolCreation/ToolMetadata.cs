@@ -1,32 +1,41 @@
-﻿namespace MyAvaloniaManagementCommon.ToolCreation;
+namespace MyAvaloniaManagementCommon.ToolCreation;
 
 /// <summary>
-/// Tool元数据类，用于存储Tool的说明信息
+/// Tool 在主工作区中的稳定停靠方向。
 /// </summary>
-public class ToolMetadata
+public enum ToolDockSide
 {
-    /// <summary>
-    /// Tool类型ID
-    /// </summary>
-    public required string ToolTypeId { get; set; }
-    
-    /// <summary>
-    /// 显示名称
-    /// </summary>
-    public required string DisplayName { get; set; }
-    
-    /// <summary>
-    /// 描述信息
-    /// </summary>
-    public required string Description { get; set; }
-    
-    /// <summary>
-    /// 图标路径
-    /// </summary>
-    public required string IconPath { get; set; }
-    
-    /// <summary>
-    /// Tool的对齐方式（Left, Right, Top, Bottom）
-    /// </summary>
-    public required string Alignment { get; set; } = "Left";
+    Left,
+    Right,
+    Top,
+    Bottom,
+}
+
+/// <summary>
+/// 描述一种宿主级单例 Tool 扩展贡献。
+/// </summary>
+/// <remarks>
+/// Tool 的 Dock Id 由宿主根据本元数据统一赋值，策略不再维护第二份字符串 ID。
+/// 这使元数据成为身份的唯一事实源，也让布局迁移可以在实例创建之前完成。
+/// </remarks>
+public sealed class ToolMetadata
+{
+    public ToolMetadata(
+        ToolTypeId toolTypeId,
+        string displayName,
+        ToolDockSide dockSide,
+        IEnumerable<ToolTypeId>? legacyIds = null)
+    {
+        ToolTypeId = toolTypeId ?? throw new ArgumentNullException(nameof(toolTypeId));
+        DisplayName = displayName ?? string.Empty;
+        DockSide = dockSide;
+        LegacyIds = Array.AsReadOnly((legacyIds ?? []).ToArray());
+    }
+
+    public ToolTypeId ToolTypeId { get; }
+    public string DisplayName { get; }
+    public string Description { get; init; } = string.Empty;
+    public string IconPath { get; init; } = string.Empty;
+    public ToolDockSide DockSide { get; }
+    public IReadOnlyList<ToolTypeId> LegacyIds { get; }
 }

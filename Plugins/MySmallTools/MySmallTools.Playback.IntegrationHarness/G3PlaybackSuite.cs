@@ -541,7 +541,7 @@ internal sealed class G3PlaybackHarnessRunner(
         DocumentDock documentDock,
         SecretVideoPlayerViewModel placeholder)
     {
-        mainViewModel.CreateDocument(DocumentTypeIdConstant.SecretVideoLibraryDocumentId);
+        mainViewModel.CreateDocument(DocumentTypeIdConstant.SecretVideoLibraryDocumentId.Value);
         var library = documentDock.VisibleDockables?
             .OfType<SecretVideoLibraryViewModel>()
             .LastOrDefault() ?? throw new InvalidOperationException(
@@ -760,7 +760,7 @@ internal sealed class G3PlaybackHarnessRunner(
         MainWindowViewModel mainViewModel,
         DocumentDock documentDock)
     {
-        mainViewModel.CreateDocument(DocumentTypeIdConstant.SecretVideoDocumentId);
+        mainViewModel.CreateDocument(DocumentTypeIdConstant.SecretVideoDocumentId.Value);
         var document = documentDock.VisibleDockables?
             .OfType<SecretVideoPlayerViewModel>()
             .LastOrDefault();

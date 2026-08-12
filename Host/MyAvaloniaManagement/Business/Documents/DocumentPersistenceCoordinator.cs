@@ -42,7 +42,7 @@ internal sealed class DocumentPersistenceCoordinator(
     internal void CreateDocument(string documentType)
     {
         var document = factory.CreateManagementNewDocument(
-            new DocumentCreationParams(documentType));
+            new DocumentCreationParams(DocumentTypeId.Parse(documentType)));
         _workspace.Add(document);
     }
 
@@ -192,6 +192,8 @@ internal sealed class DocumentPersistenceCoordinator(
     {
         var content = await storageService.ReadAllTextAsync(filePath);
         var data = _serializer.Deserialize(content);
+        // 插件只观察规范 ID；历史别名的兼容责任留在宿主边界，下一次保存自然写回新值。
+        data.DocumentTypeId = factory.NormalizePersistedDocumentTypeId(data.DocumentTypeId);
         var document = factory.CreateManagementNewDocument(
             new DocumentCreationParams(data.DocumentTypeId)
             {

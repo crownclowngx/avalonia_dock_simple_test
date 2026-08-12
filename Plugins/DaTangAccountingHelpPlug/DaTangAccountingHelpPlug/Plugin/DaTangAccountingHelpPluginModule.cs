@@ -8,6 +8,7 @@ using DaTangAccountingHelpPlug.ViewModels;
 using DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
+using DaTangAccountingHelpPlug.Constants;
 
 namespace DaTangAccountingHelpPlug.Plugin;
 
@@ -20,7 +21,7 @@ namespace DaTangAccountingHelpPlug.Plugin;
 /// </remarks>
 public sealed class DaTangAccountingHelpPluginModule : IPluginModule
 {
-    public string PluginId => "DaTangAccountingHelpPlug";
+    public PluginId PluginId => SaveDocumentTypeIdConstant.PluginId;
 
     /// <inheritdoc />
     public void ConfigureServices(IServiceCollection services)

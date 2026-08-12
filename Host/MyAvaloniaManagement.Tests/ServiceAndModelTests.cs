@@ -31,25 +31,30 @@ public sealed class ServiceAndModelTests
     [Fact]
     public void 插件菜单只分组可见文档()
     {
-        using var context = new TestHostContext();
-        context.Factory.RegisterStrategy(new StubDocumentStrategy(
-            new DocumentMetadata("visible-a", "A")
+        var strategies = new IDocumentCreationStrategy[]
+        {
+            new StubDocumentStrategy(
+            new DocumentMetadata(new DocumentTypeId("myavalonia.host.document.visible-a"), "A")
             {
                 MenuCategory = "分类一"
-            }));
-        context.Factory.RegisterStrategy(new StubDocumentStrategy(
-            new DocumentMetadata("visible-b", "B")
+            }),
+            new StubDocumentStrategy(
+            new DocumentMetadata(new DocumentTypeId("myavalonia.host.document.visible-b"), "B")
             {
                 MenuCategory = "分类一"
-            }));
-        context.Factory.RegisterStrategy(new StubDocumentStrategy(
-            new DocumentMetadata("hidden", "隐藏")
+            }),
+            new StubDocumentStrategy(
+            new DocumentMetadata(new DocumentTypeId("myavalonia.host.document.hidden"), "隐藏")
             {
                 MenuCategory = "分类二",
                 ShowInMenu = false
-            }));
-        context.Factory.RegisterStrategy(new StubDocumentStrategy(
-            new DocumentMetadata("uncategorized", "未分类")));
+            }),
+            new StubDocumentStrategy(
+                new DocumentMetadata(
+                    new DocumentTypeId("myavalonia.host.document.uncategorized"),
+                    "未分类")),
+        };
+        using var context = new TestHostContext(documentStrategies: strategies);
 
         var groups = new PluginMenuService(context.Factory)
             .GetDocumentMetadataByCategory();
@@ -62,27 +67,33 @@ public sealed class ServiceAndModelTests
     [Fact]
     public void 多入口策略展开为同一文档类型的独立菜单项()
     {
-        using var context = new TestHostContext();
-        context.Factory.RegisterStrategy(new MultiIntentDocumentStrategy());
+        using var context = new TestHostContext(
+            documentStrategies: [new MultiIntentDocumentStrategy()]);
 
         var entries = new PluginMenuService(context.Factory)
             .GetCreationEntriesByCategory()["测试"];
 
         Assert.Equal(2, entries.Count);
-        Assert.All(entries, entry => Assert.Equal("multi-intent", entry.DocumentTypeId));
-        Assert.Equal(["quick-url", "personal-source"], entries.Select(entry => entry.CreationIntentId));
+        Assert.All(entries, entry => Assert.Equal(
+            "myavalonia.host.document.multi-intent",
+            entry.DocumentTypeId.Value));
+        Assert.Equal(
+            ["quick-url", "personal-source"],
+            entries.Select(entry => entry.CreationIntentId?.Value));
     }
 
     private sealed class MultiIntentDocumentStrategy : IDocumentCreationStrategy, IDocumentCreationIntentProvider
     {
         public Dock.Model.Mvvm.Controls.Document CreateDocument(DocumentCreationParams @params) => new();
 
-        public DocumentMetadata GetMetadata() => new("multi-intent", "下载") { MenuCategory = "测试" };
+        public DocumentMetadata GetMetadata() => new(
+            new DocumentTypeId("myavalonia.host.document.multi-intent"),
+            "下载") { MenuCategory = "测试" };
 
         public IReadOnlyList<DocumentCreationIntentMetadata> GetCreationIntents() =>
         [
-            new("quick-url", "链接下载"),
-            new("personal-source", "个人来源"),
+            new(new CreationIntentId("quick-url"), "链接下载"),
+            new(new CreationIntentId("personal-source"), "个人来源"),
         ];
     }
 

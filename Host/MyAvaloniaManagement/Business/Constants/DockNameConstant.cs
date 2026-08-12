@@ -11,15 +11,15 @@ public class DockNameConstant
     /// <summary>
     /// 工具管理面板的稳定 ID。
     /// </summary>
-    public const string ToolManagement = "toolManagement";
+    public const string ToolManagement = "myavalonia.host.tool.management";
 
     /// <summary>
     /// 插件分组菜单的稳定 ID。
     /// </summary>
-    public const string PlugGroupMenu = "plugGroupMenu";
+    public const string PlugGroupMenu = "myavalonia.host.tool.plugin-menu";
 
     /// <summary>
     /// 插件状态面板的稳定 ID。
     /// </summary>
-    public const string PluginStatus = "pluginStatus";
+    public const string PluginStatus = "myavalonia.host.tool.plugin-status";
 }

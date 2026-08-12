@@ -1,10 +1,12 @@
 using BiliDownloader.Create;
+using BiliDownloader.Constants;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.ViewModels;
 using BiliDownloader.ViewModels.BiliScheduler;
 using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace BiliDownloader.Tests;
 
@@ -168,12 +170,13 @@ public sealed class SchedulerViewModelTests
         var strategy = new BiliSchedulerToolStrategy(vm);
 
         Assert.Same(vm, strategy.CreateTool());
-        Assert.Equal("BiliSchedulerTool", vm.Id);
+        // 策略只负责创建实例；Dock 的字符串 ID 由宿主 Factory 根据元数据统一写入。
+        Assert.Equal(string.Empty, vm.Id);
         Assert.Equal("Bilibili调度工具", vm.Title);
         Assert.True(vm.CanClose);
         var metadata = strategy.GetMetadata();
-        Assert.Equal("BiliSchedulerTool", metadata.ToolTypeId);
-        Assert.Equal("Right", metadata.Alignment);
+        Assert.Equal(SaveDocumentTypeIdConstant.SchedulerToolId, metadata.ToolTypeId);
+        Assert.Equal(ToolDockSide.Right, metadata.DockSide);
     }
 
     private static DownloadTaskRecord Record(string id, DownloadTaskStatus status)
@@ -189,11 +192,12 @@ public sealed class SchedulerViewModelTests
         IPluginLifecycle,
         IPluginLifecycleDependencies
     {
-        public string PluginId => "BiliDownloader";
+        public PluginId PluginId => SaveDocumentTypeIdConstant.PluginId;
 
         public int Order => 0;
 
-        public IReadOnlyCollection<string> RequiredPluginIds => ["MissingPlugin"];
+        public IReadOnlyCollection<PluginId> RequiredPluginIds =>
+            [new PluginId("missing-plugin")];
 
         public Task InitializeAsync(CancellationToken cancellationToken) =>
             throw new InvalidOperationException("依赖阻塞时不应执行初始化。");

@@ -125,7 +125,7 @@ public class DocumentV2G5Tests
 
         var saveData = new DocumentSaveData
         {
-            DocumentTypeId = "bilitools.bilidownloader",
+            DocumentTypeId = new("bilitools.bilidownloader"),
             Title = "测试",
             SaveTime = DateTime.Now,
             Content = JsonConvert.SerializeObject(v1Content),
@@ -156,7 +156,7 @@ public class DocumentV2G5Tests
 
         var saveData = new DocumentSaveData
         {
-            DocumentTypeId = "bilitools.bilidownloader",
+            DocumentTypeId = new("bilitools.bilidownloader"),
             Title = "测试",
             SaveTime = DateTime.Now,
             Content = JsonConvert.SerializeObject(v1Content),
@@ -184,7 +184,7 @@ public class DocumentV2G5Tests
 
         var saveData = new DocumentSaveData
         {
-            DocumentTypeId = "bilitools.bilidownloader",
+            DocumentTypeId = new("bilitools.bilidownloader"),
             Title = "测试",
             SaveTime = DateTime.Now,
             Content = JsonConvert.SerializeObject(v1Content),
@@ -210,7 +210,7 @@ public class DocumentV2G5Tests
         var content = new { DocumentId = "doc-future", Url = "https://test.com" };
         var saveData = new DocumentSaveData
         {
-            DocumentTypeId = "bilitools.bilidownloader",
+            DocumentTypeId = new("bilitools.bilidownloader"),
             Title = "测试",
             SaveTime = DateTime.Now,
             Content = JsonConvert.SerializeObject(content),
@@ -228,7 +228,7 @@ public class DocumentV2G5Tests
         var content = new { DocumentId = "doc-no-meta", Url = "https://test.com" };
         var saveData = new DocumentSaveData
         {
-            DocumentTypeId = "bilitools.bilidownloader",
+            DocumentTypeId = new("bilitools.bilidownloader"),
             Title = "测试",
             SaveTime = DateTime.Now,
             Content = JsonConvert.SerializeObject(content),
@@ -246,7 +246,7 @@ public class DocumentV2G5Tests
     {
         var saveData = new DocumentSaveData
         {
-            DocumentTypeId = "bilitools.bilidownloader",
+            DocumentTypeId = new("bilitools.bilidownloader"),
             Title = "测试",
             SaveTime = DateTime.Now,
             Content = "",
@@ -263,7 +263,7 @@ public class DocumentV2G5Tests
     {
         var saveData = new DocumentSaveData
         {
-            DocumentTypeId = "bilitools.bilidownloader",
+            DocumentTypeId = new("bilitools.bilidownloader"),
             Title = "测试",
             SaveTime = DateTime.Now,
             Content = null!,

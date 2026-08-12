@@ -47,11 +47,23 @@ public class ManagementFactory : Factory
 
     internal IReadOnlyDictionary<string, Tool> CreatedTools => _createdTools;
 
+    /// <summary>
+    /// 把布局文件中的历史 Tool ID 归一化为当前规范 ID；未知值原样返回，交给运行时校验处理。
+    /// </summary>
+    internal string NormalizePersistedToolId(string toolId) =>
+        _extensions.TryResolveToolTypeId(toolId, out var typeId) && typeId is not null
+            ? typeId.Value
+            : toolId;
+
+    internal DocumentTypeId NormalizePersistedDocumentTypeId(DocumentTypeId documentTypeId) =>
+        _extensions.ResolveDocumentTypeId(documentTypeId);
+
     internal Alignment GetToolAlignment(string toolId) =>
-        ToolDockPlacement.ParseAlignment(
-            _extensions.ToolMetadata.TryGetValue(toolId, out var metadata)
-                ? metadata.Alignment
-                : null);
+        _extensions.TryResolveToolTypeId(toolId, out var typeId) &&
+        typeId is not null &&
+        _extensions.ToolMetadata.TryGetValue(typeId, out var metadata)
+            ? ToolDockPlacement.ToAlignment(metadata.DockSide)
+            : Alignment.Left;
 
     /// <summary>
     /// 创建宿主管理工厂。
@@ -64,14 +76,12 @@ public class ManagementFactory : Factory
     /// 消息服务直接注入，避免关闭工具时回到静态 ServiceProvider 查找依赖，
     /// 从而使工厂的依赖关系可验证，也避免测试和多容器场景取到错误实例。
     /// </remarks>
-    public ManagementFactory(
-        IServiceProvider serviceProvider,
-        PluginModuleCatalog pluginModuleCatalog,
+    internal ManagementFactory(
+        HostExtensionRegistry extensions,
         DocumentScopeManager documentScopeManager,
         IMessengerService messengerService)
     {
-        ArgumentNullException.ThrowIfNull(serviceProvider);
-        ArgumentNullException.ThrowIfNull(pluginModuleCatalog);
+        ArgumentNullException.ThrowIfNull(extensions);
         ArgumentNullException.ThrowIfNull(documentScopeManager);
         _documentLifetime = new DockDocumentLifetime(documentScopeManager);
         _workspaceBuilder = new DockWorkspaceBuilder(this);
@@ -81,9 +91,7 @@ public class ManagementFactory : Factory
             _workspaceBuilder,
             GetToolAlignment,
             messengerService);
-        _extensions = new HostExtensionRegistry(
-            serviceProvider,
-            pluginModuleCatalog);
+        _extensions = extensions;
         _createdTools = [];
         // 启用 HideToolsOnClose：关闭工具时移入 HiddenDockables 而非真正移除，
         // 这样可以后续通过 RestoreDockable 恢复
@@ -113,13 +121,6 @@ public class ManagementFactory : Factory
         new(_extensions.ToolMetadata, _createdTools);
     
     /// <summary>
-    /// 注册新的Tool策略
-    /// </summary>
-    /// <param name="strategy">Tool策略实例</param>
-    public void RegisterToolStrategy(IToolCreationStrategy strategy)
-        => _extensions.RegisterToolStrategy(strategy);
-
-    /// <summary>
     /// 获取所有文档类型的元数据
     /// </summary>
     /// <returns>所有文档类型的元数据列表</returns>
@@ -132,13 +133,6 @@ public class ManagementFactory : Factory
     public IEnumerable<DocumentCreationMenuEntry> GetAllDocumentCreationEntries()
         => _extensions.GetCreationEntries();
     
-    /// <summary>
-    /// 注册新的策略
-    /// </summary>
-    /// <param name="strategy">策略实例</param>
-    public void RegisterStrategy(IDocumentCreationStrategy strategy)
-        => _extensions.RegisterDocumentStrategy(strategy);
-
     /// <summary>
     /// 根据参数创建Document
     /// </summary>
@@ -276,9 +270,9 @@ public class ManagementFactory : Factory
     {
         ContextLocator = new Dictionary<string, Func<object?>>
         {
-            [DockNameConstant.PlugGroupMenu] = ()  => layout,
-            ["fileSystemTree"] = () => layout,
-            ["toolManagement"] = () => layout,
+            [HostExtensionIds.PluginMenu.Value] = ()  => layout,
+            [HostExtensionIds.FileSystemTree.Value] = () => layout,
+            [HostExtensionIds.ToolManagement.Value] = () => layout,
         };
         
         // 动态注册所有已创建的工具到 ContextLocator（包括插件工具）
@@ -318,7 +312,7 @@ public class ManagementFactory : Factory
     {
         // 先创建所有非工具管理的Tool
         foreach (var toolTypeId in _extensions.ToolMetadata.Keys.Where(
-                     id => id != DockNameConstant.ToolManagement))
+                     id => id != HostExtensionIds.ToolManagement))
         {
             if (!_extensions.TryGetToolStrategy(toolTypeId, out var strategy))
             {
@@ -326,9 +320,10 @@ public class ManagementFactory : Factory
             }
 
             var tool = strategy.CreateTool();
-            _createdTools[tool.Id] = tool;
+            tool.Id = toolTypeId.Value;
+            _createdTools[toolTypeId.Value] = tool;
             // 设置特定工具的引用
-            if (tool.Id == DockNameConstant.PlugGroupMenu)
+            if (toolTypeId == HostExtensionIds.PluginMenu)
             {
                 _plugGroupMenuTool = tool;
             }
@@ -336,10 +331,11 @@ public class ManagementFactory : Factory
         
         // 再创建工具管理Tool（需要在其他Tool之后创建，因为它需要读取其他Tool的信息）
         if (_extensions.TryGetToolStrategy(
-                DockNameConstant.ToolManagement,
+                HostExtensionIds.ToolManagement,
                 out var managementStrategy))
         {
             var managementTool = managementStrategy.CreateTool();
+            managementTool.Id = HostExtensionIds.ToolManagement.Value;
             _createdTools[managementTool.Id] = managementTool;
         }
     }

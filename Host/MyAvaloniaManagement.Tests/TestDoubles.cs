@@ -21,7 +21,9 @@ namespace MyAvaloniaManagement.Tests;
 /// </remarks>
 internal sealed class TestHostContext : IDisposable
 {
-    public TestHostContext()
+    public TestHostContext(
+        IEnumerable<IDocumentCreationStrategy>? documentStrategies = null,
+        IEnumerable<IToolCreationStrategy>? toolStrategies = null)
     {
         TempDirectory = Path.Combine(
             Path.GetTempPath(),
@@ -43,6 +45,10 @@ internal sealed class TestHostContext : IDisposable
                 TempDirectory,
                 AppearanceSettingsStore.SettingsFileName)));
         services.AddSingleton(PluginModuleCatalog.Discover([]));
+        foreach (var strategy in documentStrategies ?? [])
+            services.AddSingleton(typeof(IDocumentCreationStrategy), strategy);
+        foreach (var strategy in toolStrategies ?? [])
+            services.AddSingleton(typeof(IToolCreationStrategy), strategy);
 
         Provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -224,7 +230,7 @@ internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumen
 {
     public string FilePath { get; set; } = string.Empty;
 
-    public string SaveDocumentTypeId => TestSavableStrategy.TypeId;
+    public DocumentTypeId SaveDocumentTypeId => TestSavableStrategy.TypeId;
 
     public string Content { get; set; } = "initial";
 
@@ -262,7 +268,8 @@ internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumen
 internal sealed class TestSavableStrategy(
     DocumentMetadata? metadata = null) : IDocumentCreationStrategy
 {
-    internal const string TypeId = "testdoc";
+    internal static readonly DocumentTypeId TypeId =
+        new("myavalonia.host.document.test");
     private readonly DocumentMetadata _metadata = metadata ??
         new DocumentMetadata(TypeId, "测试文档")
         {

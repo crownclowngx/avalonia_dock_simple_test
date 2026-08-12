@@ -3,6 +3,7 @@ using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.ToolCreation;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using MyAvaloniaManagement.Business.Constants;
 
 namespace MyAvaloniaManagement.Models.ToolCreation;
 
@@ -23,7 +24,6 @@ public class FileSystemTreeStrategy(IServiceProvider serviceProvider)
     public Tool CreateTool()
     {
         var tool = serviceProvider.GetRequiredService<FileSystemTreeViewModel>();
-        tool.Id = "fileSystemTree";
         tool.Title = "文件";
         tool.CanClose = false;
         return tool;
@@ -35,13 +35,14 @@ public class FileSystemTreeStrategy(IServiceProvider serviceProvider)
     /// <returns>Tool元数据</returns>
     public ToolMetadata GetMetadata()
     {
-        return new ToolMetadata
+        return new ToolMetadata(
+            HostExtensionIds.FileSystemTree,
+            "文件系统浏览器",
+            ToolDockSide.Left,
+            [new ToolTypeId("fileSystemTree")])
         {
-            ToolTypeId = "fileSystemTree",
-            DisplayName = "文件系统浏览器",
             Description = "浏览和管理文件系统",
-            IconPath = "", // 可根据实际情况设置图标路径
-            Alignment = "Left" // 该工具应该在左侧面板
+            IconPath = ""
         };
     }
 }

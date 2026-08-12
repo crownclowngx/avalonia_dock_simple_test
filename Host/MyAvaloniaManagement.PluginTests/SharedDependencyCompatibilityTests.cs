@@ -27,7 +27,7 @@ public sealed class SharedDependencyCompatibilityTests
     {
         var expected = new DocumentSaveData
         {
-            DocumentTypeId = "phase3-document",
+            DocumentTypeId = new("phase3-document"),
             Title = "阶段三文档",
             SaveTime = new DateTime(2026, 7, 26, 12, 30, 0, DateTimeKind.Utc),
             Content = "{\"position\":1250}",

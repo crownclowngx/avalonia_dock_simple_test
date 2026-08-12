@@ -136,7 +136,7 @@ public sealed class AggressiveRefactorAcceptanceTests
     {
         var decoded = DocumentSaveCodec.Decode(new DocumentSaveData
         {
-            DocumentTypeId = "bili",
+            DocumentTypeId = new("bili"),
             Title = "test",
             Content = "{}",
             PluginMetadata = "{\"Version\":\"9.0\"}",

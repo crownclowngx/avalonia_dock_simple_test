@@ -1,5 +1,6 @@
 using BiliDownloader.Models;
 using MyAvaloniaManagementCommon.Save;
+using MyAvaloniaManagementCommon.DocumentCreation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -16,7 +17,7 @@ public static class DocumentSaveCodec
     };
 
     public static DocumentSaveData EncodeV2(
-        string documentTypeId,
+        DocumentTypeId documentTypeId,
         string title,
         DocumentSaveDataV2 content) => new()
     {
@@ -32,7 +33,7 @@ public static class DocumentSaveCodec
     /// 业务往返测试应比较 Content 而不是要求时间戳相同。
     /// </summary>
     public static DocumentSaveData EncodeV3(
-        string documentTypeId,
+        DocumentTypeId documentTypeId,
         string title,
         DocumentSaveDataV3 content) => new()
     {

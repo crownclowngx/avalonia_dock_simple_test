@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia.Media;
 using Dock.Model.Mvvm.Controls;
 using BiliDownloader.Converters;
+using BiliDownloader.Constants;
 using BiliDownloader.Create;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
@@ -673,15 +674,15 @@ public sealed class PresentationLogicTests
         var strategy = new BiliDownloaderDocumentStrategy(scopeFactory);
 
         var custom = Assert.IsType<BiliDownloaderViewModel>(strategy.CreateDocument(
-            new DocumentCreationParams("BiliDownloader")
+            new DocumentCreationParams(SaveDocumentTypeIdConstant.BiliDownloaderDocumentId)
             {
                 Title = "自定义",
-                CreationIntentId = "quick-url",
+                CreationIntentId = new CreationIntentId("quick-url"),
             }));
         var fallback = Assert.IsType<BiliDownloaderViewModel>(strategy.CreateDocument(
-            new DocumentCreationParams("BiliDownloader")
+            new DocumentCreationParams(SaveDocumentTypeIdConstant.BiliDownloaderDocumentId)
             {
-                CreationIntentId = "personal-source",
+                CreationIntentId = new CreationIntentId("personal-source"),
             }));
 
         Assert.NotSame(custom, fallback);

@@ -8,6 +8,7 @@ using BiliDownloader.Services.History;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels.BiliScheduler;
 using MyAvaloniaManagementCommon.Plugin;
+using BiliDownloader.Constants;
 
 namespace BiliDownloader.ViewModels;
 
@@ -129,7 +130,8 @@ public partial class BiliSchedulerToolViewModel : Tool
     {
         try
         {
-            var lifecycleState = _lifecycleManager.GetState("BiliDownloader");
+            var lifecycleState = _lifecycleManager.GetState(
+                SaveDocumentTypeIdConstant.PluginId);
             if (lifecycleState?.Status is PluginLifecycleStatus.Failed
                 or PluginLifecycleStatus.Blocked
                 or PluginLifecycleStatus.TimedOut)

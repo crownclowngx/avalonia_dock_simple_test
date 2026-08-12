@@ -27,7 +27,10 @@ public class VideoEncryptorDocumentStrategy : IDocumentCreationStrategy
 
     public DocumentMetadata GetMetadata()
     {
-        return new DocumentMetadata(DocumentTypeIdConstant.VideoEncryptorDocumentId, "视频文件加密器")
+        return new DocumentMetadata(
+            DocumentTypeIdConstant.VideoEncryptorDocumentId,
+            "视频文件加密器",
+            [DocumentTypeIdConstant.LegacyVideoEncryptorDocumentId])
         {
             Description = "使用 SECVID03/AES-256-GCM 分块加密视频，支持标题、描述和随机读取播放",
             MenuCategory = "视频工具"

@@ -249,7 +249,7 @@ flowchart LR
 | .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.0、Dock 12.0.0.2；版本由 `global.json`、`Directory.Build.props`、`Directory.Packages.props` 集中管理 |
 | 插件目录扫描 | 已实现 | 按规范化根目录缓存线程安全快照；标准插件只主动加载唯一 deps 入口，私有依赖按需解析；Legacy 保留有序 DLL 回退，并隔离目录/局部类型失败 |
 | Managed/Legacy 兼容 | 已实现 | 四个现有插件均为 Managed；Legacy 无参激活路径和兼容测试仍保留 |
-| Document/Tool 策略 | 已实现 | `HostExtensionRegistry` 对程序集类型做一次遍历并按字符串 ID 注册；元数据只读取一次，Document 支持可选多入口意图 |
+| Document/Tool 策略 | 已实现 | `HostExtensionRegistry` 对程序集类型做一次遍历，以强类型主 ID 构建不可变注册表；元数据只读取一次，Document 支持可选多入口意图 |
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient；根容器启用构建和 Scope 验证 |
 | 插件生命周期 | 已实现 V1 | 顺序初始化、反序关闭、幂等、失败隔离、超时、依赖图和只读插件状态 Tool 均已有测试；仍不支持运行时重试、禁用或热卸载 |
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
@@ -258,8 +258,8 @@ flowchart LR
 | 每 Document Scope | 已实现 | 当前全部 Managed Document 均通过 `IDocumentScopeFactory` 创建 scoped ViewModel；关闭与宿主退出释放路径已有回归门禁 |
 | Document 关闭取消 | 已实现 | scoped `IDocumentLifetime` 在 Dock 确认关闭后先发出取消再释放 Scope；局部任务协作退出且不等待，插件级后台任务不受影响 |
 | 加载上下文隔离 | 已实现（托管私有依赖） | 每目录一个不可回收 ALC；共享 SDK 只来自默认上下文，普通私有依赖由各插件的 deps/目录索引独立解析，同名不同版本回归已覆盖 |
-| 错误处理与诊断 | 部分成熟 | 布局与生命周期已有稳定错误码、隔离和只读状态 Tool；程序集扫描、模块构造和策略发现仍主要输出 Console，尚未进入统一注册表 |
-| ID 与元数据 | 不成熟 | `PluginId`、Document/Tool ID 仍是字符串；策略重复通过 `TryAdd` 静默保留首个，模块也未统一拒绝重复 PluginId |
+| 错误处理与诊断 | 部分成熟 | 模块与扩展组合、布局和生命周期均有稳定错误码；ID、别名、所有权和元数据冲突会在 UI 启动前汇总失败，底层程序集加载异常仍以 Console 诊断为主 |
+| ID 与元数据 | 已实现 | `PluginId`、`DocumentTypeId`、`ToolTypeId`、`CreationIntentId` 均为引用型值对象；主 ID、旧别名和所有权经原子注册表统一校验，不再存在 `TryAdd` 首次胜出语义 |
 | 构建与部署 | 部分成熟 | SDK/包版本已集中；四个插件仍分别维护部署 Target，共享依赖排除规则可能漂移 |
 | 真实包验证 | 部分成熟 | 四个当前 Managed Plugin 的真实构建目录均有动态加载测试；真实 `Controls` 四目录启动、BiliDownloader win-x64 包和同名不同版本依赖夹具已通过；尚缺统一全插件发布包矩阵与长期运行门禁 |
 | 插件 manifest | 未实现 | 发布产物可有验收清单，但宿主加载前没有统一的插件身份、版本、入口、能力和依赖 manifest |
@@ -305,6 +305,37 @@ flowchart LR
 合并后的 Host 行覆盖率为 **80.10%**，分支覆盖率为 **64.44%**；public API 指纹、并发文档打开、保存失败状态保护、线程安全插件快照、同名不同版本私有依赖、四个 Managed Plugin 动态加载、Tool 只读注册快照和原子替换均进入回归。带 `-WindowsSmoke` 的独立发布目录真实窗口冒烟通过；另外，Release 解决方案构建为 0 错误、0 警告，携带四个真实 `Controls` 插件目录的宿主启动退出码为 0。该专项门禁不等同于所有插件业务测试、媒体集成 Harness 或长期运行验证。
 
 **[判断边界]** 已通过的测试能证明宿主生命周期编排、Document Scope、四向布局、布局存储、Managed/Legacy 激活、托管私有依赖版本隔离、当前四插件构建目录加载和真实窗口基础行为；它们仍不能替代统一的全插件发布包矩阵、Host API 版本拒绝、原生库冲突和长期运行稳定性验证。
+
+### 6.3 2026-08-12 强类型身份与元数据升级
+
+**[已实现]** Common 以不可变引用型值对象分别表达插件、Document 类型、Tool 类型和创建意图，避免不同身份在编译期误传，也避免值类型的 `default` 绕过构造校验。运行时比较固定区分大小写；值对象不做隐式字符串转换，也不自动裁剪输入。JSON Adapter 仍把 Document/Tool ID 写成字符串标量，Dock 与文件选择器等必须使用字符串的边界才读取 `.Value`。
+
+**[已实现]** `PluginModuleCatalog` 在调用任何 `ConfigureServices` 前验证“一程序集一模块”和全局唯一 `PluginId`。`HostExtensionRegistry` 随后按 Builder → Validate → Commit 三阶段构建：扫描并激活候选策略、各读取一次元数据、校验命名空间与别名的全量碰撞，最后一次性发布只读注册表。任何错误都会抛出包含错误码、冲突 ID、贡献类型和程序集的 `HostCompositionException`，宿主会在生命周期回调和 Avalonia UI 启动前失败并释放容器。
+
+插件贡献示例：
+
+```csharp
+public static class PluginIds
+{
+    public static readonly PluginId Plugin =
+        new("myavalonia.plugin.example");
+    public static readonly DocumentTypeId ReportDocument =
+        new("myavalonia.plugin.example.document.report");
+    public static readonly DocumentTypeId LegacyReportDocument =
+        new("A3F7E1B2-9C4D-4E8A-B6F1-2D5E8A7C3B10");
+}
+
+public DocumentMetadata GetMetadata() => new(
+    PluginIds.ReportDocument,
+    "报表",
+    [PluginIds.LegacyReportDocument])
+{
+    MenuCategory = "示例插件",
+    Description = "创建并维护业务报表"
+};
+```
+
+主 ID 必须采用小写点分层命名，并归属于模块的 `.document.*` 或 `.tool.*` 空间；历史大写 GUID、短名称等只能进入 `LegacyIds`。读取旧 Document 信封或 Tool 布局时，注册表先把别名规范化为主 ID，后续保存只写主 ID。新建与“另存为”统一建议 `.mamdoc`，但打开旧文件后的普通保存继续覆盖原路径，不强制改名。
 
 ## 7. 宿主应该给插件多大自由度
 
@@ -358,11 +389,11 @@ flowchart TB
 
 ```csharp
 public sealed record PluginDescriptor(
-    string PluginId,
+    PluginId PluginId,
     Version PluginVersion,
     Version RequiredHostApiVersion,
     IReadOnlyList<string> Capabilities,
-    IReadOnlyList<string> Dependencies);
+    IReadOnlyList<PluginId> Dependencies);
 
 public interface IHostContext
 {
@@ -399,7 +430,7 @@ public interface IHostContext
 
 1. **已完成**：所有当前 Managed Document 都经 `IDocumentScopeFactory` 创建，scoped 注册与 `ValidateScopes` 共同禁止从根容器解析 Document；未来的 `IDocumentService` 可在此基础上扩展激活和查询能力。
 2. 在不删除现有 public 无参构造的前提下，让构造注入成为唯一正常生产路径，继续缩小静态 `ServiceProvider` 的使用范围。
-3. 对重复 `PluginId`、空元数据和非法 Creation Intent 形成结构化诊断；Document/Tool 重复 ID 在改变“首次注册胜出”前必须先经过契约评审。
+3. **已完成**：重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 均形成排序稳定的结构化诊断；注册表无诊断时才一次性发布，不再有“首次注册胜出”。
 4. 将已经覆盖生命周期的只读插件状态 Tool 扩展到程序集加载、模块构造、服务注册、策略发现和布局恢复，使所有阶段进入同一诊断入口。
 5. **隔离部分已完成**：真实 `Controls` 四插件目录可启动，同名不同版本托管私有依赖已有独立 ALC 回归；统一全插件发布包矩阵、原生冲突和长期运行验证继续由 P2 承担。
 

@@ -25,7 +25,10 @@ public class TestWelcomeDocumentStrategy : IDocumentCreationStrategy
 
     public DocumentMetadata GetMetadata()
     {
-        return new DocumentMetadata(SaveDocumentTypeIdConstant.TestWelcomeDocumentId, "欢迎")
+        return new DocumentMetadata(
+            SaveDocumentTypeIdConstant.TestWelcomeDocumentId,
+            "欢迎",
+            [SaveDocumentTypeIdConstant.LegacyTestWelcomeDocumentId])
         {
             Description = "显示欢迎信息2",
             MenuCategory = "测试插件"

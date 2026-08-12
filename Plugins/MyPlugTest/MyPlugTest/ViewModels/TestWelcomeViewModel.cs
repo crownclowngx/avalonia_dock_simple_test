@@ -20,7 +20,7 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDisposable
     private readonly IDocumentLifetime? _documentLifetime;
     private int _disposed;
 
-    public string SaveDocumentTypeId => SaveDocumentTypeIdConstant.TestWelcomeDocumentId;
+    public DocumentTypeId SaveDocumentTypeId => SaveDocumentTypeIdConstant.TestWelcomeDocumentId;
     public string FilePath { get; set; } = string.Empty;
     
     private string _url = "https://example.com";

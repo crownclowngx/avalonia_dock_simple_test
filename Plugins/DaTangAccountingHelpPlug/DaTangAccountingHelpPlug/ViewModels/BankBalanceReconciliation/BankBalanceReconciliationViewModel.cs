@@ -4,6 +4,7 @@ using DaTangAccountingHelpPlug.Constants;
 using DaTangAccountingHelpPlug.Models.BankBalanceReconciliation;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.Save;
+using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 
@@ -17,7 +18,7 @@ public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocum
     public ReconciliationRunViewModel Run { get; }
 
     public string FilePath { get; set; } = string.Empty;
-    public string SaveDocumentTypeId => SaveDocumentTypeIdConstant.BankBalanceReconciliationDocument;
+    public DocumentTypeId SaveDocumentTypeId => SaveDocumentTypeIdConstant.BankBalanceReconciliationDocument;
 
     public BankBalanceReconciliationViewModel(
         ReconciliationSourceViewModel source,

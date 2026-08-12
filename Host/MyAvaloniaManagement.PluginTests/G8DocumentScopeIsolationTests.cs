@@ -48,19 +48,23 @@ public sealed class G8DocumentScopeIsolationTests
 
         var encryptors = Enumerable.Range(0, 2)
             .Select(index => Assert.IsType<VideoEncryptorViewModel>(
-                encryptorStrategy.CreateDocument(new DocumentCreationParams($"enc-{index}"))))
+                encryptorStrategy.CreateDocument(new DocumentCreationParams(
+                    encryptorStrategy.GetMetadata().DocumentTypeId))))
             .ToArray();
         var decryptors = Enumerable.Range(0, 2)
             .Select(index => Assert.IsType<VideoDecryptorViewModel>(
-                decryptorStrategy.CreateDocument(new DocumentCreationParams($"dec-{index}"))))
+                decryptorStrategy.CreateDocument(new DocumentCreationParams(
+                    decryptorStrategy.GetMetadata().DocumentTypeId))))
             .ToArray();
         var players = Enumerable.Range(0, 2)
             .Select(index => Assert.IsType<SecretVideoPlayerViewModel>(
-                playerStrategy.CreateDocument(new DocumentCreationParams($"player-{index}"))))
+                playerStrategy.CreateDocument(new DocumentCreationParams(
+                    playerStrategy.GetMetadata().DocumentTypeId))))
             .ToArray();
         var libraries = Enumerable.Range(0, 2)
             .Select(index => Assert.IsType<SecretVideoLibraryViewModel>(
-                libraryStrategy.CreateDocument(new DocumentCreationParams($"library-{index}"))))
+                libraryStrategy.CreateDocument(new DocumentCreationParams(
+                    libraryStrategy.GetMetadata().DocumentTypeId))))
             .ToArray();
 
         encryptors[0].Password = "enc-a";

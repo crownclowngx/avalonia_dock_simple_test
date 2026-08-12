@@ -9,24 +9,25 @@ namespace MyAvaloniaManagement.Tests;
 public sealed class InternalRefactorTests
 {
     [Fact]
-    public void StrategyMetadataIsReadOnceAndDuplicateRegistrationKeepsFirst()
+    public void StrategyMetadataIsReadOnceAndDuplicateRegistrationFailsAtomically()
     {
-        using var context = new TestHostContext();
         var toolStrategy = new CountingToolStrategy();
         var first = new StubDocumentStrategy(
-            new DocumentMetadata("duplicate-test", "First"));
+            new DocumentMetadata(
+                new DocumentTypeId("myavalonia.host.document.duplicate-test"),
+                "First"));
         var second = new StubDocumentStrategy(
-            new DocumentMetadata("duplicate-test", "Second"));
+            new DocumentMetadata(
+                new DocumentTypeId("myavalonia.host.document.duplicate-test"),
+                "Second"));
 
-        context.Factory.RegisterToolStrategy(toolStrategy);
-        context.Factory.RegisterStrategy(first);
-        context.Factory.RegisterStrategy(second);
+        var exception = Assert.Throws<HostCompositionException>(() =>
+            new HostExtensionRegistry([first, second], [toolStrategy]));
 
         Assert.Equal(1, toolStrategy.MetadataReadCount);
-        Assert.Equal(
-            "First",
-            Assert.Single(context.Factory.GetAllDocumentMetadata(),
-                item => item.DocumentTypeId == "duplicate-test").DisplayName);
+        Assert.Contains(exception.Diagnostics, item =>
+            item.Code == "DOCUMENT_ID_DUPLICATE" &&
+            item.StableId == "myavalonia.host.document.duplicate-test");
     }
 
     [Fact]
@@ -92,13 +93,13 @@ public sealed class InternalRefactorTests
         public ToolMetadata GetMetadata()
         {
             MetadataReadCount++;
-            return new ToolMetadata
+            return new ToolMetadata(
+                new ToolTypeId("myavalonia.host.tool.counting"),
+                "Counting",
+                ToolDockSide.Left)
             {
-                ToolTypeId = "counting-tool",
-                DisplayName = "Counting",
                 Description = string.Empty,
-                IconPath = string.Empty,
-                Alignment = "Left"
+                IconPath = string.Empty
             };
         }
     }

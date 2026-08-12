@@ -20,7 +20,7 @@ public enum PluginLifecycleStage
 }
 
 public sealed record PluginLifecycleState(
-    string PluginId,
+    PluginId PluginId,
     PluginLifecycleStatus Status,
     string? ErrorMessage = null)
 {
@@ -30,9 +30,9 @@ public sealed record PluginLifecycleState(
 
     public TimeSpan? Duration { get; init; }
 
-    public IReadOnlyList<string> RequiredPluginIds { get; init; } = [];
+    public IReadOnlyList<PluginId> RequiredPluginIds { get; init; } = [];
 
-    public string? BlockingPluginId { get; init; }
+    public PluginId? BlockingPluginId { get; init; }
 
     public bool IsAvailable => Status == PluginLifecycleStatus.Ready;
 }
@@ -46,7 +46,7 @@ public sealed class PluginLifecycleManager
     private readonly PluginLifecycleOptions _options;
     private readonly PluginLifecycleOperationRunner _runner = new();
     private readonly List<PluginLifecyclePlanNode> _initialized = [];
-    private readonly Dictionary<string, PluginLifecycleState> _states;
+    private readonly Dictionary<PluginId, PluginLifecycleState> _states;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private bool _initializationCompleted;
     private bool _shutdownCompleted;
@@ -64,9 +64,7 @@ public sealed class PluginLifecycleManager
         options.Validate();
         _options = options;
         _plan = PluginLifecyclePlanBuilder.Build(lifecycles);
-        _states = new Dictionary<string, PluginLifecycleState>(
-            _plan.InitialStates,
-            StringComparer.Ordinal);
+        _states = new Dictionary<PluginId, PluginLifecycleState>(_plan.InitialStates);
     }
 
     /// <summary>
@@ -79,13 +77,13 @@ public sealed class PluginLifecycleManager
             lock (_states)
             {
                 return _states.Values
-                    .OrderBy(state => state.PluginId, StringComparer.Ordinal)
+                    .OrderBy(state => state.PluginId.Value, StringComparer.Ordinal)
                     .ToArray();
             }
         }
     }
 
-    public PluginLifecycleState? GetState(string pluginId)
+    public PluginLifecycleState? GetState(PluginId pluginId)
     {
         lock (_states)
         {
@@ -301,14 +299,14 @@ public sealed class PluginLifecycleManager
     }
 
     private static void ReportFailure(
-        string pluginId,
+        PluginId pluginId,
         string stage,
         Exception? exception) =>
         Console.Error.WriteLine(
             $"PluginLifecycle errorCode=LIFECYCLE_{stage.ToUpperInvariant()}_FAILED pluginId={pluginId} type={exception?.GetType().Name ?? "Unknown"} message={exception?.Message ?? "-"}");
 
     private static void ReportTimeout(
-        string pluginId,
+        PluginId pluginId,
         string stage,
         TimeSpan duration) =>
         Console.Error.WriteLine(

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
+using MyPlugTest.Constants;
 using MyPlugTest.Services;
 using MyPlugTest.ViewModels;
 
@@ -16,7 +17,7 @@ namespace MyPlugTest.Plugin;
 /// </summary>
 public sealed class MyPlugTestPluginModule : IPluginModule
 {
-    public string PluginId => "MyPlugTest";
+    public PluginId PluginId => SaveDocumentTypeIdConstant.PluginId;
 
     /// <inheritdoc />
     public void ConfigureServices(IServiceCollection services)

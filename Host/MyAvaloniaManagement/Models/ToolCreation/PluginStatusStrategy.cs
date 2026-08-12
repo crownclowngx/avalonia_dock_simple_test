@@ -16,12 +16,13 @@ public sealed class PluginStatusStrategy(IServiceProvider serviceProvider)
     public Tool CreateTool() =>
         serviceProvider.GetRequiredService<PluginStatusViewModel>();
 
-    public ToolMetadata GetMetadata() => new()
+    public ToolMetadata GetMetadata() => new(
+        HostExtensionIds.PluginStatus,
+        "插件状态",
+        ToolDockSide.Right,
+        [new ToolTypeId("pluginStatus")])
     {
-        ToolTypeId = DockNameConstant.PluginStatus,
-        DisplayName = "插件状态",
         Description = "查看插件加载、依赖和生命周期诊断",
         IconPath = string.Empty,
-        Alignment = "Right",
     };
 }

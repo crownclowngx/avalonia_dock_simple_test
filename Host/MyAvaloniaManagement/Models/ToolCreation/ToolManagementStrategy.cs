@@ -32,13 +32,14 @@ public class ToolManagementStrategy(IServiceProvider serviceProvider)
     /// <returns>工具管理工具的元数据</returns>
     public ToolMetadata GetMetadata()
     {
-        return new ToolMetadata
+        return new ToolMetadata(
+            HostExtensionIds.ToolManagement,
+            "工具管理",
+            ToolDockSide.Right,
+            [new ToolTypeId("toolManagement")])
         {
-            ToolTypeId = DockNameConstant.ToolManagement,
-            DisplayName = "工具管理",
             Description = "管理所有工具的显示和隐藏",
-            IconPath = "",
-            Alignment = "Right"
+            IconPath = ""
         };
     }
 }

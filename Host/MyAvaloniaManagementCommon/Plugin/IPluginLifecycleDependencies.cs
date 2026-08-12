@@ -12,5 +12,5 @@ public interface IPluginLifecycleDependencies
     /// <summary>
     /// 获取必须先成功初始化的生命周期插件标识。
     /// </summary>
-    IReadOnlyCollection<string> RequiredPluginIds { get; }
+    IReadOnlyCollection<PluginId> RequiredPluginIds { get; }
 }

@@ -49,9 +49,9 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
             return null;
         }
 
-        var extension = string.IsNullOrWhiteSpace(metadata?.DocumentTypeId)
-            ? "txt"
-            : metadata.DocumentTypeId.ToLowerInvariant();
+        // Document 身份属于分派协议，不再承担文件扩展名职责。统一扩展名使用户可以
+        // 识别宿主管理文档，同时信封内的强类型 ID 仍负责选择具体插件策略。
+        const string extension = "mamdoc";
         var fileType = metadata is null
             ? FilePickerFileTypes.TextPlain
             : new FilePickerFileType(metadata.DisplayName)

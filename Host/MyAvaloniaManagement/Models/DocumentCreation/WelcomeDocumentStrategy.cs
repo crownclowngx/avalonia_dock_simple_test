@@ -3,6 +3,7 @@ using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagement.Business.Constants;
 
 namespace MyAvaloniaManagement.Models.DocumentCreation;
 
@@ -31,7 +32,10 @@ public class WelcomeDocumentStrategy : IDocumentCreationStrategy
 
     public DocumentMetadata GetMetadata()
     {
-        return new DocumentMetadata("DD7A1E38-07C5-B38C-FB02-1B991896EF49", "欢迎主程序")
+        return new DocumentMetadata(
+            HostExtensionIds.WelcomeDocument,
+            "欢迎主程序",
+            [new DocumentTypeId("DD7A1E38-07C5-B38C-FB02-1B991896EF49")])
         {
             Description = "显示欢迎信息",
             MenuCategory = "帮助"

@@ -22,7 +22,7 @@ public sealed class PluginStatusViewModel : Tool
         ArgumentNullException.ThrowIfNull(pluginModuleCatalog);
         ArgumentNullException.ThrowIfNull(lifecycleManager);
 
-        Id = DockNameConstant.PluginStatus;
+        Id = HostExtensionIds.PluginStatus.Value;
         Title = "插件状态";
         CanClose = true;
         Items = new ObservableCollection<PluginStatusItem>(
@@ -46,14 +46,14 @@ public sealed class PluginStatusViewModel : Tool
         PluginLifecycleManager manager)
     {
         var items = new List<PluginStatusItem>();
-        var moduleIds = new HashSet<string>(StringComparer.Ordinal);
+        var moduleIds = new HashSet<PluginId>();
 
         foreach (var module in catalog.Modules
-                     .OrderBy(module => module.PluginId, StringComparer.Ordinal))
+                     .OrderBy(module => module.PluginId.Value, StringComparer.Ordinal))
         {
             moduleIds.Add(module.PluginId);
             items.Add(ToItem(
-                module.PluginId,
+                module.PluginId.Value,
                 module.GetType().Assembly.GetName().Name ?? "未知程序集",
                 manager.GetState(module.PluginId)));
         }
@@ -61,7 +61,7 @@ public sealed class PluginStatusViewModel : Tool
         foreach (var state in manager.States
                      .Where(state => !moduleIds.Contains(state.PluginId)))
         {
-            items.Add(ToItem(state.PluginId, "未关联托管模块", state));
+            items.Add(ToItem(state.PluginId.Value, "未关联托管模块", state));
         }
 
         return items;

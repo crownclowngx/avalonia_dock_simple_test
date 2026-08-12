@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.ViewModels;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -43,9 +44,20 @@ internal sealed class HostRuntime : IDisposable
             ValidateOnBuild = true,
         });
 
-        return new HostRuntime(
-            provider,
-            provider.GetRequiredService<PluginLifecycleManager>());
+        try
+        {
+            // 显式解析工厂会构造并验证完整扩展注册表。必须在生命周期回调和 UI 启动前完成，
+            // 防止重复 ID 直到用户打开窗口时才暴露，也保证失败时能立即释放根容器。
+            provider.GetRequiredService<ManagementFactory>();
+            return new HostRuntime(
+                provider,
+                provider.GetRequiredService<PluginLifecycleManager>());
+        }
+        catch
+        {
+            provider.Dispose();
+            throw;
+        }
     }
 
     internal void InitializePlugins()

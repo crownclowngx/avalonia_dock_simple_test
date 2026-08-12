@@ -13,7 +13,7 @@ public class ToolManagementData
     /// <summary>
     /// 工具元数据字典（只读）
     /// </summary>
-    public required IReadOnlyDictionary<string, ToolMetadata> ToolMetadata { get; init; }
+    public required IReadOnlyDictionary<ToolTypeId, ToolMetadata> ToolMetadata { get; init; }
 
     /// <summary>
     /// 已创建的工具字典（只读）
@@ -31,5 +31,5 @@ public class ToolManagementData
 /// 该内部契约替代对 ManagementFactory 私有字段的反射，同时不扩大 public API。
 /// </summary>
 internal sealed record ToolRegistrySnapshot(
-    IReadOnlyDictionary<string, ToolMetadata> ToolMetadata,
+    IReadOnlyDictionary<ToolTypeId, ToolMetadata> ToolMetadata,
     IReadOnlyDictionary<string, Tool> CreatedTools);

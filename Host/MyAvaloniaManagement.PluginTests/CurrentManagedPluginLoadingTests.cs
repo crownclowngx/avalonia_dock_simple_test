@@ -9,10 +9,10 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class CurrentManagedPluginLoadingTests
 {
     [Theory]
-    [InlineData("BiliDownloader/BiliDownloader", "BiliDownloader", "BiliDownloader")]
-    [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "MyPlugTest")]
-    [InlineData("DaTangAccountingHelpPlug/DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug")]
-    [InlineData("MySmallTools/MySmallTools", "MySmallTools", "MySmallTools")]
+    [InlineData("BiliDownloader/BiliDownloader", "BiliDownloader", "myavalonia.plugin.bili-downloader")]
+    [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "myavalonia.plugin.my-plug-test")]
+    [InlineData("DaTangAccountingHelpPlug/DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "myavalonia.plugin.datang-accounting-help")]
+    [InlineData("MySmallTools/MySmallTools", "MySmallTools", "myavalonia.plugin.my-small-tools")]
     public void 当前Managed插件可从真实构建目录发现唯一模块(
         string projectPath,
         string assemblyName,
@@ -24,7 +24,7 @@ public sealed class CurrentManagedPluginLoadingTests
             "Plugins",
             projectPath.Replace('/', Path.DirectorySeparatorChar),
             "bin",
-            "Release",
+            "Debug",
             "net10.0"));
         var pluginAssemblyPath = Path.Combine(
             pluginDirectory,
@@ -42,7 +42,7 @@ public sealed class CurrentManagedPluginLoadingTests
         var catalog = PluginModuleCatalog.Discover([pluginAssembly]);
 
         var module = Assert.Single(catalog.Modules);
-        Assert.Equal(pluginId, module.PluginId);
+        Assert.Equal(pluginId, module.PluginId.Value);
         Assert.True(typeof(IPluginModule).IsAssignableFrom(module.GetType()));
         Assert.Same(
             typeof(IPluginModule).Assembly,

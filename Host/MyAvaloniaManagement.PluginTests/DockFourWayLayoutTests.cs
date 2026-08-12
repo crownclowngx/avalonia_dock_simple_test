@@ -3,6 +3,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using System.Runtime.CompilerServices;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.ViewModels;
@@ -12,6 +13,8 @@ namespace MyAvaloniaManagement.PluginTests;
 
 public sealed class DockFourWayLayoutTests
 {
+    private static readonly ConditionalWeakTable<ManagementFactory, Dictionary<string, Tool>> ToolMaps = new();
+
     [Theory]
     [InlineData("Left", Alignment.Left, DockLayoutIds.LeftTools)]
     [InlineData("RIGHT", Alignment.Right, DockLayoutIds.RightTools)]
@@ -35,7 +38,11 @@ public sealed class DockFourWayLayoutTests
     [Fact]
     public void FourWayLayoutPlacesTopAndBottomAcrossFullWorkspaceWidth()
     {
-        using var context = CreateFactory();
+        using var context = CreateFactory(
+            ("leftTool", "Left"),
+            ("rightTool", "Right"),
+            ("topTool", "Top"),
+            ("bottomTool", "Bottom"));
         var factory = context.Factory;
         var left = RegisterTool(factory, "leftTool", "Left");
         var right = RegisterTool(factory, "rightTool", "Right");
@@ -101,7 +108,7 @@ public sealed class DockFourWayLayoutTests
     [Fact]
     public void EmptyVerticalAlignmentsDoNotCreateBlankWorkspaceRows()
     {
-        using var context = CreateFactory();
+        using var context = CreateFactory(("leftOnlyTool", "Left"));
         var factory = context.Factory;
         RegisterTool(factory, "leftOnlyTool", "Left");
         var documentDock = CreateDocumentDock(factory);
@@ -133,7 +140,7 @@ public sealed class DockFourWayLayoutTests
     [Fact]
     public void HidingLastTopToolCollapsesPaneAndRestoreExpandsIt()
     {
-        using var context = CreateFactory();
+        using var context = CreateFactory(("collapsibleTopTool", "Top"));
         var factory = context.Factory;
         var top = RegisterTool(factory, "collapsibleTopTool", "Top");
         var root = factory.CreateWorkspaceLayout(CreateDocumentDock(factory));
@@ -172,7 +179,7 @@ public sealed class DockFourWayLayoutTests
     public void HiddenBottomToolCanBeRestoredAfterLayoutRestart()
     {
         DockLayoutSnapshotV1 snapshot;
-        using (var firstContext = CreateFactory())
+        using (var firstContext = CreateFactory(("restartBottomTool", "Bottom")))
         {
             var firstFactory = firstContext.Factory;
             var firstBottom = RegisterTool(
@@ -189,7 +196,7 @@ public sealed class DockFourWayLayoutTests
                 firstFactory);
         }
 
-        using var secondContext = CreateFactory();
+        using var secondContext = CreateFactory(("restartBottomTool", "Bottom"));
         var secondFactory = secondContext.Factory;
         var secondBottom = RegisterTool(
             secondFactory,
@@ -238,7 +245,9 @@ public sealed class DockFourWayLayoutTests
         string expectedDockId)
     {
         DockLayoutSnapshotV1 snapshot;
-        using (var firstContext = CreateFactory())
+        using (var firstContext = CreateFactory(
+                   ("runtimeVerticalTool", "Right"),
+                   ("rightSiblingTool", "Right")))
         {
             var firstFactory = firstContext.Factory;
             var movedTool = RegisterTool(
@@ -293,7 +302,9 @@ public sealed class DockFourWayLayoutTests
                 pane => pane.Id == expectedPaneId);
         }
 
-        using var secondContext = CreateFactory();
+        using var secondContext = CreateFactory(
+            ("runtimeVerticalTool", "Right"),
+            ("rightSiblingTool", "Right"));
         var secondFactory = secondContext.Factory;
         var restoredTool = RegisterTool(
             secondFactory,
@@ -328,7 +339,10 @@ public sealed class DockFourWayLayoutTests
     [Fact]
     public void LegacyTwoWaySnapshotMigratesVerticalToolsAndPreservesHorizontalState()
     {
-        using var context = CreateFactory();
+        using var context = CreateFactory(
+            ("legacyLeftTool", "Left"),
+            ("legacyTopTool", "Top"),
+            ("legacyBottomTool", "Bottom"));
         var factory = context.Factory;
         var left = RegisterTool(factory, "legacyLeftTool", "Left");
         var top = RegisterTool(factory, "legacyTopTool", "Top");
@@ -447,7 +461,8 @@ public sealed class DockFourWayLayoutTests
         string expectedDockId)
     {
         DockLayoutSnapshotV1 snapshot;
-        using (var firstContext = CreateFactory())
+        using (var firstContext = CreateFactory(
+                   ($"pinned{metadataAlignment}Tool", metadataAlignment)))
         {
             var firstFactory = firstContext.Factory;
             var firstTool = RegisterTool(
@@ -472,7 +487,8 @@ public sealed class DockFourWayLayoutTests
             Assert.False(state.IsFloating);
         }
 
-        using var secondContext = CreateFactory();
+        using var secondContext = CreateFactory(
+            ($"pinned{metadataAlignment}Tool", metadataAlignment));
         var secondFactory = secondContext.Factory;
         var restoredTool = RegisterTool(
             secondFactory,
@@ -503,7 +519,11 @@ public sealed class DockFourWayLayoutTests
     public void ExpandedPinnedAndHiddenToolsPreserveDistinctStatesAndPinnedOrder()
     {
         DockLayoutSnapshotV1 snapshot;
-        using (var firstContext = CreateFactory())
+        using (var firstContext = CreateFactory(
+                   ("expandedTool", "Left"),
+                   ("pinnedFirstTool", "Left"),
+                   ("pinnedSecondTool", "Left"),
+                   ("hiddenTool", "Left")))
         {
             var firstFactory = firstContext.Factory;
             var expanded = RegisterTool(firstFactory, "expandedTool", "Left");
@@ -528,7 +548,11 @@ public sealed class DockFourWayLayoutTests
                 snapshot.Tools.Single(tool => tool.Id == pinnedSecond.Id).Order);
         }
 
-        using var secondContext = CreateFactory();
+        using var secondContext = CreateFactory(
+            ("expandedTool", "Left"),
+            ("pinnedFirstTool", "Left"),
+            ("pinnedSecondTool", "Left"),
+            ("hiddenTool", "Left"));
         var secondFactory = secondContext.Factory;
         var restoredExpanded = RegisterTool(secondFactory, "expandedTool", "Left");
         var restoredPinnedFirst = RegisterTool(secondFactory, "pinnedFirstTool", "Left");
@@ -573,21 +597,16 @@ public sealed class DockFourWayLayoutTests
         string id,
         string alignment)
     {
-        var tool = (Tool)factory.CreateTool();
-        tool.Id = id;
-        tool.Title = id;
-        tool.CanClose = true;
-        factory.RegisterToolStrategy(new StubToolStrategy(
-            tool,
-            new ToolMetadata
-            {
-                ToolTypeId = id,
-                DisplayName = id,
-                Description = id,
-                IconPath = string.Empty,
-                Alignment = alignment
-            }));
-        ((Dictionary<string, Tool>)factory.CreatedTools).Add(id, tool);
+        var tools = ToolMaps.GetValue(factory, _ => []);
+        if (!tools.TryGetValue(id, out var tool))
+        {
+            throw new InvalidOperationException(
+                $"测试 Tool '{id}' 必须在构建不可变注册表之前声明，不能运行时补注册。" );
+        }
+
+        // 这里只模拟 Factory 已创建实例的缓存状态；策略与元数据已在构造 Factory 前原子提交，
+        // 因而不会重新引入生产路径已经删除的“运行时后注册”语义。
+        ((Dictionary<string, Tool>)factory.CreatedTools).TryAdd(tool.Id!, tool);
         return tool;
     }
 
@@ -648,20 +667,43 @@ public sealed class DockFourWayLayoutTests
         return null;
     }
 
-    private static FactoryContext CreateFactory()
+    private static FactoryContext CreateFactory(params (string Id, string Alignment)[] toolDefinitions)
     {
         var services = new ServiceCollection();
         services.AddSingleton<DocumentScopeManager>();
         var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var catalog = PluginModuleCatalog.Discover([]);
+        var tools = toolDefinitions.ToDictionary(
+            definition => definition.Id,
+            definition => new Tool
+            {
+                Id = CreateTestToolTypeId(definition.Id).Value,
+                Title = definition.Id,
+                CanClose = true
+            },
+            StringComparer.Ordinal);
+        var strategies = toolDefinitions.Select(definition =>
+        {
+            var dockSide = Enum.Parse<ToolDockSide>(definition.Alignment, ignoreCase: true);
+            var typeId = CreateTestToolTypeId(definition.Id);
+            return (IToolCreationStrategy)new StubToolStrategy(
+                tools[definition.Id],
+                new ToolMetadata(typeId, definition.Id, dockSide, [new ToolTypeId(definition.Id)])
+                {
+                    Description = definition.Id
+                });
+        }).ToArray();
+        var extensions = new HostExtensionRegistry([], strategies);
         var factory = new ManagementFactory(
-            provider,
-            catalog,
+            extensions,
             manager,
             new MyAvaloniaManagementCommon.Message.MessengerService());
+        ToolMaps.Add(factory, tools);
         return new FactoryContext(provider, factory);
     }
+
+    private static ToolTypeId CreateTestToolTypeId(string id) =>
+        new($"myavalonia.host.tool.test.{id.ToLowerInvariant()}");
 
     private sealed class StubToolStrategy(
         Tool tool,

@@ -15,7 +15,7 @@ public interface IPluginModule
     /// <summary>
     /// 插件的稳定标识，用于模块排序、生命周期状态查询和错误诊断。
     /// </summary>
-    string PluginId { get; }
+    PluginId PluginId { get; }
 
     /// <summary>
     /// 将插件需要由宿主统一管理的服务注册到根级依赖注入容器。

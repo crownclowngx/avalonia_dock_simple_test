@@ -1,41 +1,21 @@
-﻿namespace MyAvaloniaManagementCommon.DocumentCreation;
+namespace MyAvaloniaManagementCommon.DocumentCreation;
 
 /// <summary>
-/// 用于创建Document的参数类
+/// 创建 Document 时由宿主传给策略的参数。
 /// </summary>
-public class DocumentCreationParams
+public sealed class DocumentCreationParams
 {
-    /// <summary>
-    /// Document的类别
-    /// </summary>
-    public string DocumentType { get; set; }
-    
-    /// <summary>
-    /// 初始化字符串
-    /// </summary>
-    public string InitializationData { get; set; }
-    
-    /// <summary>
-    /// 文档标题
-    /// </summary>
-    public string Title { get; set; }
-    
-    /// <summary>
-    /// 其他可选参数
-    /// </summary>
-    public object AdditionalData { get; set; }
+    public DocumentCreationParams(DocumentTypeId documentTypeId) =>
+        DocumentTypeId = documentTypeId ??
+                         throw new ArgumentNullException(nameof(documentTypeId));
+
+    public DocumentTypeId DocumentTypeId { get; }
+    public string InitializationData { get; init; } = string.Empty;
+    public string Title { get; init; } = string.Empty;
+    public object AdditionalData { get; init; } = new();
 
     /// <summary>
-    /// 创建入口意图。它只决定文档首次展示的工作流，不改变文档类型和持久化契约。
+    /// 首次展示的工作流入口；null 表示该类型的默认入口。
     /// </summary>
-    public string CreationIntentId { get; set; }
-    
-    public DocumentCreationParams(string documentType)
-    {
-        DocumentType = documentType;
-        InitializationData = string.Empty;
-        Title = string.Empty;
-        AdditionalData = new object();
-        CreationIntentId = string.Empty;
-    }
+    public CreationIntentId? CreationIntentId { get; init; }
 }

@@ -7,6 +7,7 @@ using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
 using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -41,9 +42,17 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<AppearanceSettingsStore>();
         services.AddSingleton<ApplicationThemeService>();
         services.AddSingleton<IHostStorageService, AvaloniaHostStorageService>();
+        services.AddSingleton(provider => new HostExtensionRegistry(
+            provider,
+            provider.GetRequiredService<PluginModuleCatalog>(),
+            provider.GetServices<IDocumentCreationStrategy>(),
+            provider.GetServices<IToolCreationStrategy>()));
         
         // 注册ManagementFactory为单例
-        services.AddSingleton<ManagementFactory>();
+        services.AddSingleton(provider => new ManagementFactory(
+            provider.GetRequiredService<HostExtensionRegistry>(),
+            provider.GetRequiredService<DocumentScopeManager>(),
+            provider.GetRequiredService<IMessengerService>()));
         
         // 注册PluginMenuService为单例，依赖ManagementFactory
         services.AddSingleton<PluginMenuService>(provider =>

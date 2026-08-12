@@ -22,7 +22,10 @@ public sealed class VideoDecryptorDocumentStrategy : IDocumentCreationStrategy
     }
 
     public DocumentMetadata GetMetadata() =>
-        new(DocumentTypeIdConstant.VideoDecryptorDocumentId, "批量视频解密器")
+        new(
+            DocumentTypeIdConstant.VideoDecryptorDocumentId,
+            "批量视频解密器",
+            [DocumentTypeIdConstant.LegacyVideoDecryptorDocumentId])
         {
             Description = "使用一个公共密码批量解密 SECVID03 视频，并安全导出原始文件",
             MenuCategory = "视频工具"

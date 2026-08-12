@@ -228,42 +228,42 @@ internal sealed class G8P1AcceptanceSuite(
         var encryptorA = CreateDocument<VideoEncryptorViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.VideoEncryptorDocumentId,
+            DocumentTypeIdConstant.VideoEncryptorDocumentId.Value,
             "G8-ENC-A");
         var encryptorB = CreateDocument<VideoEncryptorViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.VideoEncryptorDocumentId,
+            DocumentTypeIdConstant.VideoEncryptorDocumentId.Value,
             "G8-ENC-B");
         var decryptorA = CreateDocument<VideoDecryptorViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.VideoDecryptorDocumentId,
+            DocumentTypeIdConstant.VideoDecryptorDocumentId.Value,
             "G8-DEC-A");
         var decryptorB = CreateDocument<VideoDecryptorViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.VideoDecryptorDocumentId,
+            DocumentTypeIdConstant.VideoDecryptorDocumentId.Value,
             "G8-DEC-B");
         var playerA = CreateDocument<SecretVideoPlayerViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.SecretVideoDocumentId,
+            DocumentTypeIdConstant.SecretVideoDocumentId.Value,
             "G8-PLAYER-A");
         var playerB = CreateDocument<SecretVideoPlayerViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.SecretVideoDocumentId,
+            DocumentTypeIdConstant.SecretVideoDocumentId.Value,
             "G8-PLAYER-B");
         var libraryA = CreateDocument<SecretVideoLibraryViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.SecretVideoLibraryDocumentId,
+            DocumentTypeIdConstant.SecretVideoLibraryDocumentId.Value,
             "G8-LIB-A");
         var libraryB = CreateDocument<SecretVideoLibraryViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.SecretVideoLibraryDocumentId,
+            DocumentTypeIdConstant.SecretVideoLibraryDocumentId.Value,
             "G8-LIB-B");
         await DrainDispatcherAsync();
         return new G8DocumentSet(

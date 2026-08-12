@@ -1,3 +1,4 @@
+using BiliDownloader.Constants;
 using BiliDownloader.Plugin;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Api;
@@ -110,14 +111,14 @@ public sealed class BiliDownloaderModuleTests
 
         Assert.Same(firstCoordinator, secondCoordinator);
         Assert.Single(manager.States);
-        Assert.Equal(PluginLifecycleStatus.NotStarted, manager.GetState("BiliDownloader")?.Status);
+        Assert.Equal(PluginLifecycleStatus.NotStarted, manager.GetState(SaveDocumentTypeIdConstant.PluginId)?.Status);
 
         await manager.InitializeAllAsync();
         Assert.Equal(1, repository.InitializeCount);
-        Assert.Equal(PluginLifecycleStatus.Ready, manager.GetState("BiliDownloader")?.Status);
+        Assert.Equal(PluginLifecycleStatus.Ready, manager.GetState(SaveDocumentTypeIdConstant.PluginId)?.Status);
 
         await manager.ShutdownAllAsync();
-        Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState("BiliDownloader")?.Status);
+        Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState(SaveDocumentTypeIdConstant.PluginId)?.Status);
     }
 
     private static ServiceDescriptor FindDescriptor(IServiceCollection services, Type serviceType)

@@ -22,7 +22,10 @@ public sealed class SecretVideoLibraryDocumentStrategy : IDocumentCreationStrate
     }
 
     public DocumentMetadata GetMetadata() =>
-        new(DocumentTypeIdConstant.SecretVideoLibraryDocumentId, "加密视频库播放器")
+        new(
+            DocumentTypeIdConstant.SecretVideoLibraryDocumentId,
+            "加密视频库播放器",
+            [DocumentTypeIdConstant.LegacySecretVideoLibraryDocumentId])
         {
             Description = "扫描文件夹中的 SECVID03 视频，支持公开信息搜索和公共密码播放",
             MenuCategory = "视频工具"

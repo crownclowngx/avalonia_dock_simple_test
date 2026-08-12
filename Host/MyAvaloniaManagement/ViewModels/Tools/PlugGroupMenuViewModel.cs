@@ -63,7 +63,8 @@ public partial class PlugGroupMenuViewModel:Tool
     [RelayCommand]
     public void CreateDocument(string documentType)
     {
-        var document = _factory?.CreateManagementNewDocument(new DocumentCreationParams(documentType));
+        var document = _factory?.CreateManagementNewDocument(
+            new DocumentCreationParams(DocumentTypeId.Parse(documentType)));
         var files = _factory?.GetDockable<IDocumentDock>("Files") as DocumentDock;
         if (document != null)
         {
