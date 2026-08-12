@@ -5,6 +5,7 @@ using System.Reflection;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.Save;
@@ -30,7 +31,8 @@ internal sealed class HostExtensionRegistry
         IServiceProvider serviceProvider,
         PluginModuleCatalog pluginModuleCatalog,
         IEnumerable<IDocumentCreationStrategy> additionalDocumentStrategies,
-        IEnumerable<IToolCreationStrategy> additionalToolStrategies)
+        IEnumerable<IToolCreationStrategy> additionalToolStrategies,
+        IHostDiagnosticSink? diagnosticSink = null)
     {
         ArgumentNullException.ThrowIfNull(serviceProvider);
         ArgumentNullException.ThrowIfNull(pluginModuleCatalog);
@@ -47,15 +49,23 @@ internal sealed class HostExtensionRegistry
         foreach (var assembly in assemblies)
         {
             var ownerId = ResolveOwnerId(assembly, hostAssembly, pluginModuleCatalog);
-            var types = AssemblyTypeCatalog.GetLoadableTypes(
-                assembly,
-                exception => Report("STRATEGY_TYPE_SCAN_PARTIAL", assembly.FullName, exception));
+            // 插件程序集复用启动预检形成的不可变类型集合；宿主自身程序集不属于插件候选，
+            // 仍使用兼容扫描。这样不会在服务注册后重新得到一套不同的插件类型结果。
+            var types = assembly == hostAssembly
+                ? AssemblyTypeCatalog.GetLoadableTypes(
+                    assembly,
+                    exception => Report(
+                        diagnosticSink,
+                        "STRATEGY_TYPE_SCAN_PARTIAL",
+                        assembly.FullName,
+                        exception))
+                : pluginModuleCatalog.GetDiscoveryTypes(assembly);
             foreach (var type in types)
             {
                 DiscoverDocumentStrategy(
-                    type, assembly, ownerId, serviceProvider, pluginModuleCatalog, documents, discoveryDiagnostics);
+                    type, assembly, ownerId, serviceProvider, pluginModuleCatalog, documents, discoveryDiagnostics, diagnosticSink);
                 DiscoverToolStrategy(
-                    type, assembly, hostAssembly, ownerId, serviceProvider, pluginModuleCatalog, tools, discoveryDiagnostics);
+                    type, assembly, hostAssembly, ownerId, serviceProvider, pluginModuleCatalog, tools, discoveryDiagnostics, diagnosticSink);
             }
         }
 
@@ -369,7 +379,8 @@ internal sealed class HostExtensionRegistry
         IServiceProvider serviceProvider,
         PluginModuleCatalog catalog,
         ICollection<DocumentRegistration> registrations,
-        ICollection<HostCompositionDiagnostic> diagnostics)
+        ICollection<HostCompositionDiagnostic> diagnostics,
+        IHostDiagnosticSink? diagnosticSink)
     {
         if (!typeof(IDocumentCreationStrategy).IsAssignableFrom(type) || type.IsAbstract || type.IsInterface ||
             (!catalog.IsManaged(assembly) && type.GetConstructor(Type.EmptyTypes) is null)) return;
@@ -383,8 +394,9 @@ internal sealed class HostExtensionRegistry
                 : [];
             registrations.Add(new DocumentRegistration(strategy, metadata, intents, type, ownerId));
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            ReportActivationFailure(diagnosticSink, ownerId, type, exception);
             diagnostics.Add(Diagnostic(
                 "EXTENSION_ACTIVATION_FAILED",
                 null,
@@ -400,7 +412,8 @@ internal sealed class HostExtensionRegistry
         IServiceProvider serviceProvider,
         PluginModuleCatalog catalog,
         ICollection<ToolRegistration> registrations,
-        ICollection<HostCompositionDiagnostic> diagnostics)
+        ICollection<HostCompositionDiagnostic> diagnostics,
+        IHostDiagnosticSink? diagnosticSink)
     {
         var isHost = assembly == hostAssembly;
         if (!typeof(IToolCreationStrategy).IsAssignableFrom(type) || type.IsAbstract || type.IsInterface ||
@@ -413,8 +426,9 @@ internal sealed class HostExtensionRegistry
             var metadata = strategy.GetMetadata() ?? throw new InvalidOperationException("Tool 元数据不能为空。");
             registrations.Add(new ToolRegistration(strategy, metadata, type, ownerId));
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            ReportActivationFailure(diagnosticSink, ownerId, type, exception);
             diagnostics.Add(Diagnostic(
                 "EXTENSION_ACTIVATION_FAILED",
                 null,
@@ -436,9 +450,46 @@ internal sealed class HostExtensionRegistry
     private static HostCompositionContributor ToContributor(Type type) =>
         new(type.FullName ?? type.Name, type.Assembly.GetName().Name ?? type.Assembly.FullName ?? "Unknown");
 
-    private static void Report(string errorCode, string? stableId, Exception exception) =>
-        Console.Error.WriteLine(
-            $"HostExtensionRegistry errorCode={errorCode} stableId={stableId ?? "-"} type={exception.GetType().Name}");
+    private static void Report(
+        IHostDiagnosticSink? diagnosticSink,
+        string errorCode,
+        string? stableId,
+        Exception exception)
+    {
+        if (diagnosticSink is null)
+        {
+            Console.Error.WriteLine(
+                $"HostExtensionRegistry errorCode={errorCode} stableId={stableId ?? "-"} type={exception.GetType().Name}");
+            return;
+        }
+
+        diagnosticSink.Report(new HostDiagnosticDraft(
+            errorCode,
+            HostDiagnosticPhase.ExtensionDiscovery,
+            "宿主扩展类型扫描失败。")
+        {
+            StableId = stableId,
+            Exception = exception,
+        });
+    }
+
+    private static void ReportActivationFailure(
+        IHostDiagnosticSink? diagnosticSink,
+        PluginId ownerId,
+        Type type,
+        Exception exception)
+    {
+        diagnosticSink?.Report(new HostDiagnosticDraft(
+            HostDiagnosticCodes.ExtensionActivationFailed,
+            HostDiagnosticPhase.ExtensionDiscovery,
+            "扩展策略激活或元数据读取失败。")
+        {
+            PluginId = ownerId.Value,
+            AssemblyName = type.Assembly.GetName().Name,
+            StableId = type.FullName,
+            Exception = exception,
+        });
+    }
 
     private sealed record DocumentRegistration(
         IDocumentCreationStrategy Strategy,

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagementCommon.Plugin;
 
 namespace MyAvaloniaManagement.Business.Helpers;
@@ -19,20 +20,26 @@ public sealed class PluginModuleCatalog
 {
     private readonly IReadOnlyDictionary<Assembly, PluginId> _pluginIdsByAssembly;
     private readonly IReadOnlyList<Assembly> _discoveredAssemblies;
+    private readonly IReadOnlyDictionary<Assembly, IReadOnlyList<Type>> _typesByAssembly;
 
     private PluginModuleCatalog(
         IReadOnlyList<IPluginModule> modules,
         IReadOnlyDictionary<Assembly, PluginId> pluginIdsByAssembly,
-        IReadOnlyList<Assembly> discoveredAssemblies)
+        IReadOnlyList<Assembly> discoveredAssemblies,
+        IReadOnlyDictionary<Assembly, IReadOnlyList<Type>> typesByAssembly)
     {
         Modules = modules;
         _pluginIdsByAssembly = pluginIdsByAssembly;
         _discoveredAssemblies = discoveredAssemblies;
+        _typesByAssembly = typesByAssembly;
     }
 
     public IReadOnlyList<IPluginModule> Modules { get; }
 
     internal IReadOnlyList<Assembly> DiscoveredAssemblies => _discoveredAssemblies;
+
+    internal IReadOnlyList<Type> GetDiscoveryTypes(Assembly assembly) =>
+        _typesByAssembly[assembly];
 
     public bool IsManaged(Assembly assembly) => _pluginIdsByAssembly.ContainsKey(assembly);
 
@@ -43,15 +50,43 @@ public sealed class PluginModuleCatalog
     {
         ArgumentNullException.ThrowIfNull(pluginAssemblies);
         var assemblies = pluginAssemblies.Distinct().ToArray();
+        return DiscoverCore(
+            assemblies,
+            assembly => AssemblyTypeCatalog.GetLoadableTypes(
+                assembly,
+                exception => Console.Error.WriteLine(
+                    $"PluginCatalog errorCode=MODULE_TYPE_SCAN_PARTIAL assembly={assembly.FullName} type={exception.GetType().Name} details={FormatLoaderErrors(exception)}")),
+            diagnosticSink: null);
+    }
+
+    /// <summary>
+    /// 使用插件目录阶段已经完成的严格类型预检结果发现模块。
+    /// </summary>
+    /// <remarks>
+    /// 设计意图：生产启动不得再次执行允许“部分类型成功”的兼容扫描，否则同一个插件
+    /// 可能在预检和模块发现阶段呈现两套不一致的类型集合。
+    /// </remarks>
+    internal static PluginModuleCatalog Discover(
+        PluginDiscoverySnapshot snapshot,
+        IHostDiagnosticSink? diagnosticSink = null)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        return DiscoverCore(snapshot.Assemblies, snapshot.GetPreflightTypes, diagnosticSink);
+    }
+
+    private static PluginModuleCatalog DiscoverCore(
+        IReadOnlyList<Assembly> assemblies,
+        Func<Assembly, IReadOnlyList<Type>> getTypes,
+        IHostDiagnosticSink? diagnosticSink)
+    {
         var modules = new List<IPluginModule>();
         var diagnostics = new List<HostCompositionDiagnostic>();
+        var typesByAssembly = new Dictionary<Assembly, IReadOnlyList<Type>>();
 
         foreach (var assembly in assemblies)
         {
-            var loadableTypes = AssemblyTypeCatalog.GetLoadableTypes(
-                    assembly,
-                    exception => Console.Error.WriteLine(
-                        $"PluginCatalog errorCode=MODULE_TYPE_SCAN_PARTIAL assembly={assembly.FullName} type={exception.GetType().Name} details={FormatLoaderErrors(exception)}"));
+            var loadableTypes = getTypes(assembly);
+            typesByAssembly.Add(assembly, loadableTypes);
             var moduleTypes = loadableTypes
                 .Where(type => typeof(IPluginModule).IsAssignableFrom(type)
                                && !type.IsAbstract
@@ -87,7 +122,7 @@ public sealed class PluginModuleCatalog
 
                 modules.Add(module);
             }
-            catch (Exception)
+            catch (Exception exception)
             {
                 // 模块构造或 PluginId getter 失败同样属于组合错误，不能记录日志后把程序集伪装成 Legacy。
                 // 这里使用稳定诊断而不是暴露异常文本，既保留来源定位，也避免插件异常消息污染启动协议。
@@ -95,6 +130,15 @@ public sealed class PluginModuleCatalog
                     "PLUGIN_ID_INVALID",
                     null,
                     moduleTypes));
+                diagnosticSink?.Report(new HostDiagnosticDraft(
+                    "PLUGIN_ID_INVALID",
+                    HostDiagnosticPhase.PluginModuleDiscovery,
+                    "插件模块构造或 PluginId 读取失败。")
+                {
+                    AssemblyName = assembly.GetName().Name,
+                    StableId = moduleTypes[0].FullName,
+                    Exception = exception,
+                });
             }
         }
 
@@ -117,7 +161,7 @@ public sealed class PluginModuleCatalog
         var map = orderedModules.ToDictionary(
             module => module.GetType().Assembly,
             module => module.PluginId);
-        return new PluginModuleCatalog(orderedModules, map, assemblies);
+        return new PluginModuleCatalog(orderedModules, map, assemblies, typesByAssembly);
     }
 
     public void ConfigureServices(IServiceCollection services)
@@ -126,6 +170,41 @@ public sealed class PluginModuleCatalog
         foreach (var module in Modules)
         {
             module.ConfigureServices(services);
+        }
+    }
+
+    /// <summary>
+    /// 按稳定 PluginId 顺序执行模块服务注册，并在插件代码抛出异常时立即记录致命诊断。
+    /// </summary>
+    /// <remarks>
+    /// IServiceCollection 没有通用事务语义；发生异常后调用方必须丢弃整个集合，
+    /// 不能尝试猜测插件已经添加、替换或移除了哪些描述符。
+    /// </remarks>
+    internal void ConfigureServices(
+        IServiceCollection services,
+        IHostDiagnosticSink diagnostics)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(diagnostics);
+        foreach (var module in Modules)
+        {
+            try
+            {
+                module.ConfigureServices(services);
+            }
+            catch (Exception exception)
+            {
+                diagnostics.Report(new HostDiagnosticDraft(
+                    HostDiagnosticCodes.PluginServiceRegistrationFailed,
+                    HostDiagnosticPhase.PluginServiceRegistration,
+                    "插件服务注册失败，宿主已放弃本次容器构建。")
+                {
+                    PluginId = module.PluginId.Value,
+                    AssemblyName = module.GetType().Assembly.GetName().Name,
+                    Exception = exception,
+                });
+                throw;
+            }
         }
     }
 

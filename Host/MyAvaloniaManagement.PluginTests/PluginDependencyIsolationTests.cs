@@ -55,22 +55,24 @@ public sealed class PluginDependencyIsolationTests
     }
 
     [Fact]
-    public void 一个插件缺少私有依赖时不会阻断其他插件入口加载()
+    public void 一个插件缺少私有依赖时隔离整个候选且不阻断其他插件()
     {
-        var assemblies = AssemblyLoaderHelper.LoadPluginsFromDirectories(
+        var snapshot = AssemblyLoaderHelper.Discover(
             "PluginIsolationMissingFixtures");
-        Assert.Equal(2, assemblies.Count);
+        var assemblies = snapshot.Assemblies;
+        Assert.Single(assemblies);
 
-        var pluginV1 = Assert.Single(
-            assemblies,
-            assembly => assembly.GetName().Name == "PluginIsolation.PluginV1");
         var pluginV2 = Assert.Single(
             assemblies,
             assembly => assembly.GetName().Name == "PluginIsolation.PluginV2");
 
-        var exception = Assert.Throws<TargetInvocationException>(
-            () => InvokePrivateVersion(pluginV1));
-        Assert.IsAssignableFrom<FileNotFoundException>(exception.InnerException);
+        Assert.DoesNotContain(
+            assemblies,
+            assembly => assembly.GetName().Name == "PluginIsolation.PluginV1");
+        Assert.Contains(
+            snapshot.Diagnostics,
+            item => item.Code == "PLUGIN_ASSEMBLY_LOAD_FAILED" &&
+                    item.PluginDirectory == "PluginV1");
         Assert.Equal("private-v2", InvokePrivateVersion(pluginV2));
     }
 

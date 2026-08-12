@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Models.Plugins;
 using MyAvaloniaManagementCommon.Plugin;
@@ -17,7 +18,8 @@ public sealed class PluginStatusViewModel : Tool
 {
     internal PluginStatusViewModel(
         PluginModuleCatalog pluginModuleCatalog,
-        PluginLifecycleManager lifecycleManager)
+        PluginLifecycleManager lifecycleManager,
+        HostDiagnosticSession? diagnostics = null)
     {
         ArgumentNullException.ThrowIfNull(pluginModuleCatalog);
         ArgumentNullException.ThrowIfNull(lifecycleManager);
@@ -26,7 +28,7 @@ public sealed class PluginStatusViewModel : Tool
         Title = "插件状态";
         CanClose = true;
         Items = new ObservableCollection<PluginStatusItem>(
-            CreateItems(pluginModuleCatalog, lifecycleManager));
+            CreateItems(pluginModuleCatalog, lifecycleManager, diagnostics));
     }
 
     /// <summary>
@@ -35,7 +37,8 @@ public sealed class PluginStatusViewModel : Tool
     public PluginStatusViewModel()
         : this(
             ServiceProvider.GetRequiredService<PluginModuleCatalog>(),
-            ServiceProvider.GetRequiredService<PluginLifecycleManager>())
+            ServiceProvider.GetRequiredService<PluginLifecycleManager>(),
+            ServiceProvider.GetService<HostDiagnosticSession>())
     {
     }
 
@@ -43,7 +46,8 @@ public sealed class PluginStatusViewModel : Tool
 
     private static IReadOnlyList<PluginStatusItem> CreateItems(
         PluginModuleCatalog catalog,
-        PluginLifecycleManager manager)
+        PluginLifecycleManager manager,
+        HostDiagnosticSession? diagnostics)
     {
         var items = new List<PluginStatusItem>();
         var moduleIds = new HashSet<PluginId>();
@@ -64,7 +68,36 @@ public sealed class PluginStatusViewModel : Tool
             items.Add(ToItem(state.PluginId.Value, "未关联托管模块", state));
         }
 
-        return items;
+        if (diagnostics is not null)
+        {
+            var rejectedCandidates = diagnostics.Snapshot
+                .Where(item =>
+                    item.PluginDirectory is not null &&
+                    item.Phase is HostDiagnosticPhase.PluginRootDiscovery
+                        or HostDiagnosticPhase.PluginAssemblyLoad
+                        or HostDiagnosticPhase.PluginTypePreflight)
+                .GroupBy(item => item.PluginDirectory!, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase);
+            foreach (var candidate in rejectedCandidates)
+            {
+                var records = candidate.OrderBy(item => item.Sequence).ToArray();
+                items.Add(new PluginStatusItem(
+                    $"目录：{candidate.Key}",
+                    records.Select(item => item.AssemblyName)
+                        .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? "未完成加载",
+                    "加载失败 · 已隔离",
+                    "—",
+                    "无",
+                    string.Join(
+                        Environment.NewLine,
+                        records.Select(item =>
+                            $"[{item.Code}] {ToPhaseText(item.Phase)}：{item.UserMessage}"))));
+            }
+        }
+
+        return items
+            .OrderBy(item => item.PluginId, StringComparer.Ordinal)
+            .ToArray();
     }
 
     private static PluginStatusItem ToItem(
@@ -128,5 +161,17 @@ public sealed class PluginStatusViewModel : Tool
         PluginLifecycleStatus.Stopping => "关闭中",
         PluginLifecycleStatus.Stopped => "已关闭",
         _ => status.ToString(),
+    };
+
+    private static string ToPhaseText(HostDiagnosticPhase phase) => phase switch
+    {
+        HostDiagnosticPhase.PluginRootDiscovery => "目录发现",
+        HostDiagnosticPhase.PluginAssemblyLoad => "程序集加载",
+        HostDiagnosticPhase.PluginTypePreflight => "类型预检",
+        HostDiagnosticPhase.PluginModuleDiscovery => "模块发现",
+        HostDiagnosticPhase.PluginServiceRegistration => "服务注册",
+        HostDiagnosticPhase.ExtensionDiscovery => "扩展组合",
+        HostDiagnosticPhase.PluginLifecycle => "生命周期",
+        _ => phase.ToString(),
     };
 }

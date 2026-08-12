@@ -1,0 +1,13 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MyAvaloniaManagement.StartupFailureApp"
+             RequestedThemeVariant="Default">
+    <Application.Resources>
+        <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FF666666" />
+        <SolidColorBrush x:Key="AppWarningPanelBrush" Color="#FFFFF4CE" />
+        <SolidColorBrush x:Key="AppWarningBorderBrush" Color="#FFC28A00" />
+    </Application.Resources>
+    <Application.Styles>
+        <FluentTheme />
+    </Application.Styles>
+</Application>

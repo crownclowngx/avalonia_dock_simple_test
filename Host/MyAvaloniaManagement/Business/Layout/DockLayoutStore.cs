@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Storage;
 
 namespace MyAvaloniaManagement.Business.Layout;
@@ -18,20 +19,45 @@ internal sealed class DockLayoutStore
         WriteIndented = true
     };
 
-    private readonly Action<string, string?> _log;
+    private readonly Action<string, string?, Exception?> _log;
 
     public DockLayoutStore()
-        : this(GetDefaultPath(), LogToStandardError)
+        : this(GetDefaultPath(), (code, stableId, _) => LogToStandardError(code, stableId))
+    {
+    }
+
+    /// <summary>
+    /// 创建接入宿主统一诊断会话的生产布局存储。
+    /// </summary>
+    internal DockLayoutStore(IHostDiagnosticSink diagnostics)
+        : this(
+            GetDefaultPath(),
+            (code, stableId, exception) => ReportToDiagnostics(
+                diagnostics,
+                code,
+                stableId,
+                exception))
     {
     }
 
     internal DockLayoutStore(
         string layoutPath,
         Action<string, string?>? log = null)
+        : this(
+            layoutPath,
+            log is null
+                ? (code, stableId, _) => LogToStandardError(code, stableId)
+                : (code, stableId, _) => log(code, stableId))
+    {
+    }
+
+    private DockLayoutStore(
+        string layoutPath,
+        Action<string, string?, Exception?> log)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(layoutPath);
         LayoutPath = Path.GetFullPath(layoutPath);
-        _log = log ?? LogToStandardError;
+        _log = log;
     }
 
     internal string LayoutPath { get; }
@@ -67,20 +93,20 @@ internal sealed class DockLayoutStore
 
             return snapshot;
         }
-        catch (JsonException)
+        catch (JsonException exception)
         {
-            Quarantine("LAYOUT_JSON_INVALID", null);
+            Quarantine("LAYOUT_JSON_INVALID", null, exception);
             return null;
         }
-        catch (IOException)
+        catch (IOException exception)
         {
             // 文件被其他实例占用时保留原文件；启动仍使用默认布局，避免争抢导致数据丢失。
-            _log("LAYOUT_READ_IO_FAILED", null);
+            _log("LAYOUT_READ_IO_FAILED", null, exception);
             return null;
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException exception)
         {
-            _log("LAYOUT_READ_ACCESS_DENIED", null);
+            _log("LAYOUT_READ_ACCESS_DENIED", null, exception);
             return null;
         }
     }
@@ -105,9 +131,18 @@ internal sealed class DockLayoutStore
     internal void RejectLoadedSnapshot(string errorCode, string? stableId) =>
         Quarantine(errorCode, stableId);
 
-    private void Quarantine(string errorCode, string? stableId)
+    /// <summary>
+    /// 记录没有触发布局隔离动作的读写诊断，例如关闭窗口时保存失败。
+    /// </summary>
+    internal void Report(string errorCode, string? stableId, Exception? exception = null) =>
+        _log(errorCode, stableId, exception);
+
+    private void Quarantine(
+        string errorCode,
+        string? stableId,
+        Exception? sourceException = null)
     {
-        _log(errorCode, stableId);
+        _log(errorCode, stableId, sourceException);
         if (!File.Exists(LayoutPath))
         {
             return;
@@ -124,13 +159,13 @@ internal sealed class DockLayoutStore
         {
             File.Move(LayoutPath, backupPath);
         }
-        catch (IOException)
+        catch (IOException exception)
         {
-            _log("LAYOUT_QUARANTINE_IO_FAILED", stableId);
+            _log("LAYOUT_QUARANTINE_IO_FAILED", stableId, exception);
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException exception)
         {
-            _log("LAYOUT_QUARANTINE_ACCESS_DENIED", stableId);
+            _log("LAYOUT_QUARANTINE_ACCESS_DENIED", stableId, exception);
         }
     }
 
@@ -158,4 +193,21 @@ internal sealed class DockLayoutStore
     private static void LogToStandardError(string errorCode, string? stableId) =>
         Console.Error.WriteLine(
             $"DockLayout errorCode={errorCode} stableId={stableId ?? "-"}");
+
+    private static void ReportToDiagnostics(
+        IHostDiagnosticSink diagnostics,
+        string errorCode,
+        string? stableId,
+        Exception? exception)
+    {
+        ArgumentNullException.ThrowIfNull(diagnostics);
+        diagnostics.Report(new HostDiagnosticDraft(
+            errorCode,
+            HostDiagnosticPhase.Layout,
+            "布局恢复或保存失败，宿主已使用安全回退并保留诊断。")
+        {
+            StableId = stableId,
+            Exception = exception,
+        });
+    }
 }

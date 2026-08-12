@@ -258,7 +258,7 @@ flowchart LR
 | 每 Document Scope | 已实现 | 当前全部 Managed Document 均通过 `IDocumentScopeFactory` 创建 scoped ViewModel；关闭与宿主退出释放路径已有回归门禁 |
 | Document 关闭取消 | 已实现 | scoped `IDocumentLifetime` 在 Dock 确认关闭后先发出取消再释放 Scope；局部任务协作退出且不等待，插件级后台任务不受影响 |
 | 加载上下文隔离 | 已实现（托管私有依赖） | 每目录一个不可回收 ALC；共享 SDK 只来自默认上下文，普通私有依赖由各插件的 deps/目录索引独立解析，同名不同版本回归已覆盖 |
-| 错误处理与诊断 | 部分成熟 | 模块与扩展组合、布局和生命周期均有稳定错误码；ID、别名、所有权和元数据冲突会在 UI 启动前汇总失败，底层程序集加载异常仍以 Console 诊断为主 |
+| 错误处理与诊断 | 已实现 V1 | 插件发现、程序集/依赖加载、模块与扩展组合、DI、生命周期和布局统一进入会话诊断；单插件加载失败隔离后继续，契约错误由独立启动错误窗汇总展示；JSON Lines 日志保留最近 20 次会话，Console/Trace 仅作兼容镜像 |
 | ID 与元数据 | 已实现 | `PluginId`、`DocumentTypeId`、`ToolTypeId`、`CreationIntentId` 均为引用型值对象；主 ID、旧别名和所有权经原子注册表统一校验，不再存在 `TryAdd` 首次胜出语义 |
 | 构建与部署 | 部分成熟 | SDK/包版本已集中；四个插件仍分别维护部署 Target，共享依赖排除规则可能漂移 |
 | 真实包验证 | 部分成熟 | 四个当前 Managed Plugin 的真实构建目录均有动态加载测试；真实 `Controls` 四目录启动、BiliDownloader win-x64 包和同名不同版本依赖夹具已通过；尚缺统一全插件发布包矩阵与长期运行门禁 |
@@ -283,7 +283,7 @@ flowchart LR
 
 **[设计意图]** 共享契约优先是为了保证跨边界类型只有一个 CLR 身份；私有依赖按插件解析是为了允许同名不同版本并存；Legacy 回退只服务迁移，不是新插件部署规范。`PluginLoadContext` 仍未启用 `isCollectible`，因为当前内部可信插件采用“重启更新”。ALC 只提供程序集名称解析隔离，不是安全沙箱，也不能隔离原生崩溃、进程级原生全局状态或恶意代码。
 
-**[验证证据]** 插件测试包含两个最小插件：它们引用程序集简单名称和类型全名相同、版本分别为 1.0.0.0 与 2.0.0.0 的私有依赖。测试证明两个版本分别进入不同 `PluginLoadContext`、没有进入默认上下文，同时两个插件看到同一个 `MyAvaloniaManagementCommon` 实例；缺少 V1 私有依赖时，V2 插件仍可加载和执行。四个当前 Managed Plugin 也分别从真实 Release 构建目录完成模块发现。
+**[验证证据]** 插件测试包含两个最小插件：它们引用程序集简单名称和类型全名相同、版本分别为 1.0.0.0 与 2.0.0.0 的私有依赖。测试证明两个版本分别进入不同 `PluginLoadContext`、没有进入默认上下文，同时两个插件看到同一个 `MyAvaloniaManagementCommon` 实例；缺少 V1 私有依赖时，V1 候选在服务注册前整体隔离，V2 插件仍可加载和执行。四个当前 Managed Plugin 也分别从真实 Release 构建目录完成模块发现。
 
 ### 6.2 2026-08-11 宿主专项测试基线
 
@@ -336,6 +336,16 @@ public DocumentMetadata GetMetadata() => new(
 ```
 
 主 ID 必须采用小写点分层命名，并归属于模块的 `.document.*` 或 `.tool.*` 空间；历史大写 GUID、短名称等只能进入 `LegacyIds`。读取旧 Document 信封或 Tool 布局时，注册表先把别名规范化为主 ID，后续保存只写主 ID。新建与“另存为”统一建议 `.mamdoc`，但打开旧文件后的普通保存继续覆盖原路径，不强制改名。
+
+### 6.4 2026-08-12 统一启动诊断 V1
+
+**[已实现]** 宿主在扫描插件之前创建 `HostDiagnosticSession`。每条诊断同时进入线程安全内存快照、逐条刷新的 JSON Lines 会话文件和 Trace/Console 兼容镜像；默认目录为 `%LOCALAPPDATA%/MyAvaloniaManagement/Diagnostics`，自动化仍可通过 `MYAVALONIA_DATA_DIRECTORY` 隔离数据，启动时仅保留最近 20 个会话。日志设施失败只产生 `DIAGNOSTIC_PERSISTENCE_UNAVAILABLE`，不会成为新的启动失败原因。
+
+**[已实现]** `AssemblyLoaderHelper` 的生产入口返回程序集、预检类型与失败记录来自同一次扫描的不可变快照。入口程序集加载后会先解析其完整程序集引用并执行类型预检；任一环节失败都隔离整个插件目录，不能以局部类型继续贡献服务或被误判为 Legacy。模块身份、服务注册、容器构建和扩展组合错误仍属于全局契约错误，阻止主工作台启动；生命周期和布局错误则记录后继续或回退。
+
+**[已实现]** 可恢复的加载错误进入“插件状态”Tool，即使尚未取得 `PluginId` 也会按目录名展示。致命错误使用独立的最小 Avalonia 应用显示错误码、对象与日志位置，可复制摘要或打开日志目录；该路径不加载 `App.axaml`、`ViewLocator`、Dock 或插件 ViewModel，关闭窗口返回退出码 1。宿主和 Common 的 public API 指纹保持不变。
+
+**[验证证据]** 2026-08-12 执行宿主 Release 专项门禁与 Windows 真实窗口冒烟：`MyAvaloniaManagement.Tests` 84、`MyAvaloniaManagement.PluginTests` 93、`MyAvaloniaManagement.UiTests` 31，合计 **208/208** 通过；Host 行覆盖率 **76.45%**、分支覆盖率 **62.48%**，真实 `Controls` 四插件目录启动退出码为 0。新增回归覆盖 JSON Lines 字段与留存、日志失败内存降级、失败策略、组合诊断来源、缺失依赖候选隔离、状态 Tool 投影和启动错误窗敏感详情隔离；独立失败冒烟同时验证 `PLUGIN_ROOT_SCAN_FAILED` 日志和退出码 1。
 
 ## 7. 宿主应该给插件多大自由度
 
@@ -431,7 +441,7 @@ public interface IHostContext
 1. **已完成**：所有当前 Managed Document 都经 `IDocumentScopeFactory` 创建，scoped 注册与 `ValidateScopes` 共同禁止从根容器解析 Document；未来的 `IDocumentService` 可在此基础上扩展激活和查询能力。
 2. 在不删除现有 public 无参构造的前提下，让构造注入成为唯一正常生产路径，继续缩小静态 `ServiceProvider` 的使用范围。
 3. **已完成**：重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 均形成排序稳定的结构化诊断；注册表无诊断时才一次性发布，不再有“首次注册胜出”。
-4. 将已经覆盖生命周期的只读插件状态 Tool 扩展到程序集加载、模块构造、服务注册、策略发现和布局恢复，使所有阶段进入同一诊断入口。
+4. **已完成**：只读插件状态 Tool 已覆盖程序集加载与生命周期结果；模块构造、服务注册、策略发现、DI 和布局均进入同一会话诊断，致命组合错误由独立启动错误窗展示。
 5. **隔离部分已完成**：真实 `Controls` 四插件目录可启动，同名不同版本托管私有依赖已有独立 ALC 回归；统一全插件发布包矩阵、原生冲突和长期运行验证继续由 P2 承担。
 
 ### P1：形成稳定宿主 API

@@ -81,28 +81,18 @@ public class PluginLoadContext : AssemblyLoadContext
 
     protected override Assembly? Load(AssemblyName assemblyName)
     {
-        try
+        // 设计意图：加载上下文只实现解析规则，不承担诊断展示或失败策略。
+        // CLR 抛出的异常会由目录预检、模块注册等有明确插件身份的阶段统一记录。
+        if (SharedPolicy.IsShared(assemblyName))
         {
-            // 设计意图：共享契约必须先于插件私有解析，以保证跨边界类型只有一个 CLR 身份。
-            // 若共享版本不兼容必须立即失败，不能加载插件副本形成难以诊断的类型转换错误。
-            if (SharedPolicy.IsShared(assemblyName))
-            {
-                return SharedPolicy.ResolveSharedAssembly(assemblyName);
-            }
+            return SharedPolicy.ResolveSharedAssembly(assemblyName);
+        }
 
-            var assemblyPath = _dependencyResolver?.ResolveAssemblyToPath(assemblyName)
-                               ?? _layout.ResolveAssemblyPath(assemblyName);
-            return assemblyPath is null
-                ? null
-                : LoadFromAssemblyPath(assemblyPath);
-        }
-        catch (Exception exception) when (
-            exception is FileLoadException or BadImageFormatException)
-        {
-            Console.Error.WriteLine(
-                $"PluginLoad errorCode={GetErrorCode(exception)} plugin={Path.GetFileName(_layout.DirectoryPath)} requested={assemblyName.FullName} stage=ResolveManaged type={exception.GetType().Name}");
-            throw;
-        }
+        var assemblyPath = _dependencyResolver?.ResolveAssemblyToPath(assemblyName)
+                           ?? _layout.ResolveAssemblyPath(assemblyName);
+        return assemblyPath is null
+            ? null
+            : LoadFromAssemblyPath(assemblyPath);
     }
 
     protected override nint LoadUnmanagedDll(string unmanagedDllName)
@@ -129,11 +119,4 @@ public class PluginLoadContext : AssemblyLoadContext
         throw new InvalidOperationException(
             $"{errorCode}: {errorDetail}");
     }
-
-    private static string GetErrorCode(Exception exception) =>
-        exception.Message.Contains(
-            "PLUGIN_SHARED_ASSEMBLY_MISMATCH",
-            StringComparison.Ordinal)
-            ? "PLUGIN_SHARED_ASSEMBLY_MISMATCH"
-            : "PLUGIN_ASSEMBLY_LOAD_FAILED";
 }

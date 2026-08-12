@@ -1,0 +1,58 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="MyAvaloniaManagement.Views.StartupFailureWindow"
+        Width="760"
+        Height="520"
+        MinWidth="560"
+        MinHeight="360"
+        WindowStartupLocation="CenterScreen"
+        Title="MyAvaloniaManagement 启动失败"
+        Icon="/Assets/avalonia-logo.ico">
+    <Grid Margin="20" RowDefinitions="Auto,Auto,*,Auto">
+        <StackPanel Grid.Row="0" Spacing="6">
+            <TextBlock Text="主工作台未启动"
+                       FontSize="22"
+                       FontWeight="SemiBold" />
+            <TextBlock x:Name="SummaryText"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource AppSecondaryTextBrush}" />
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Margin="0,14,0,10"
+                Padding="10"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource AppWarningBorderBrush}"
+                Background="{DynamicResource AppWarningPanelBrush}">
+            <TextBlock x:Name="LogPathText"
+                       TextWrapping="Wrap" />
+        </Border>
+
+        <ListBox x:Name="DiagnosticList"
+                 Grid.Row="2">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:CompileBindings="False">
+                    <TextBlock Margin="4,6"
+                               Text="{Binding}"
+                               TextWrapping="Wrap" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <StackPanel Grid.Row="3"
+                    Margin="0,14,0,0"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="8">
+            <Button x:Name="CopyButton"
+                    Content="复制诊断"
+                    Click="OnCopyClicked" />
+            <Button x:Name="OpenLogButton"
+                    Content="打开日志目录"
+                    Click="OnOpenLogClicked" />
+            <Button Content="退出"
+                    IsDefault="True"
+                    Click="OnExitClicked" />
+        </StackPanel>
+    </Grid>
+</Window>

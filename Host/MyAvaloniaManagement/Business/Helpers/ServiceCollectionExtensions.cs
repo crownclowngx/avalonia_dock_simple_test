@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
+using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels;
@@ -37,7 +38,13 @@ public static class ServiceCollectionExtensions
         // Dock 关闭时则由宿主使用具体管理器释放对应 Scope。
         services.AddDocumentScopeManagement();
 
-        services.AddSingleton<DockLayoutStore>();
+        services.AddSingleton(provider =>
+        {
+            var diagnostics = provider.GetService<IHostDiagnosticSink>();
+            return diagnostics is null
+                ? new DockLayoutStore()
+                : new DockLayoutStore(diagnostics);
+        });
         services.AddSingleton<DockLayoutLifecycle>();
         services.AddSingleton<AppearanceSettingsStore>();
         services.AddSingleton<ApplicationThemeService>();
@@ -46,21 +53,22 @@ public static class ServiceCollectionExtensions
             provider,
             provider.GetRequiredService<PluginModuleCatalog>(),
             provider.GetServices<IDocumentCreationStrategy>(),
-            provider.GetServices<IToolCreationStrategy>()));
-        
+            provider.GetServices<IToolCreationStrategy>(),
+            provider.GetService<IHostDiagnosticSink>()));
+
         // 注册ManagementFactory为单例
         services.AddSingleton(provider => new ManagementFactory(
             provider.GetRequiredService<HostExtensionRegistry>(),
             provider.GetRequiredService<DocumentScopeManager>(),
             provider.GetRequiredService<IMessengerService>()));
-        
+
         // 注册PluginMenuService为单例，依赖ManagementFactory
         services.AddSingleton<PluginMenuService>(provider =>
         {
             var factory = provider.GetRequiredService<ManagementFactory>();
             return new PluginMenuService(factory);
         });
-        
+
         return services;
     }
 
@@ -82,7 +90,7 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<DocumentScopeManager>());
         return services;
     }
-    
+
     /// <summary>
     /// 注册主窗口及三个宿主工具 ViewModel。
     /// </summary>
@@ -105,7 +113,8 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<IMessengerService>()));
         services.AddTransient(provider => new PluginStatusViewModel(
             provider.GetRequiredService<PluginModuleCatalog>(),
-            provider.GetRequiredService<PluginLifecycleManager>()));
+            provider.GetRequiredService<PluginLifecycleManager>(),
+            provider.GetService<HostDiagnosticSession>()));
 
         // 注册MainWindowViewModel为瞬态，每次请求都创建新实例
         services.AddTransient(provider => new MainWindowViewModel(
@@ -115,7 +124,7 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<DockLayoutLifecycle>(),
             provider.GetRequiredService<IHostStorageService>(),
             provider.GetRequiredService<ApplicationThemeService>()));
-        
+
         return services;
     }
 }

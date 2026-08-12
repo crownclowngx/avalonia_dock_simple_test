@@ -88,8 +88,7 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
                 UnauthorizedAccessException or
                 InvalidDataException)
         {
-            Console.Error.WriteLine(
-                $"DockLayout errorCode=LAYOUT_SAVE_FAILED stableId=- type={exception.GetType().Name}");
+            store.Report("LAYOUT_SAVE_FAILED", null, exception);
         }
     }
 
