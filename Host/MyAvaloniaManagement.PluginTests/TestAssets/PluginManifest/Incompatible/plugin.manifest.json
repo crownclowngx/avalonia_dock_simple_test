@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "pluginId": "myavalonia.plugin.incompatible-broken",
+  "pluginVersion": "1.0.0",
+  "entryAssembly": "BrokenPlugin.dll",
+  "compatibility": {
+    "hostApi": { "minInclusive": "9.0.0", "maxExclusive": "10.0.0" },
+    "commonContract": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" }
+  }
+}

@@ -3,6 +3,7 @@
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -22,6 +23,11 @@
       <!-- Microsoft.Data.Sqlite 10.0.10 仍允许旧原生包；显式固定安全 bundle，确保 SQLite 原生库一并升级。 -->
       <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
   </ItemGroup>
+
+    <ItemGroup>
+      <!-- 清单既进入独立构建目录，也进入 publish；宿主必须先读清单才能加载 DLL。 -->
+      <None Update="plugin.manifest.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
 
   <ItemGroup>
       <!-- 仅向测试程序集开放无状态编码帮助类，不扩大插件对宿主的公共契约。 -->
@@ -45,6 +51,7 @@
                              Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
             <BiliPluginFiles Include="$(TargetDir)$(AssemblyName).deps.json"
                              Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
+            <BiliPluginFiles Include="$(TargetDir)plugin.manifest.json" />
 
             <!-- 宿主已提供 Avalonia、Dock、DI 和 Common；这里只选择插件自己的 NuGet 运行时依赖。 -->
             <BiliPluginManaged Include="@(RuntimeCopyLocalItems)"

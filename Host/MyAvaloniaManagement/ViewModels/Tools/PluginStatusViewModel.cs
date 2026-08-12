@@ -56,16 +56,24 @@ public sealed class PluginStatusViewModel : Tool
                      .OrderBy(module => module.PluginId.Value, StringComparer.Ordinal))
         {
             moduleIds.Add(module.PluginId);
+            var hasManifest = catalog.TryGetManifest(
+                module.GetType().Assembly,
+                out var manifest);
             items.Add(ToItem(
                 module.PluginId.Value,
                 module.GetType().Assembly.GetName().Name ?? "未知程序集",
+                hasManifest ? manifest : null,
                 manager.GetState(module.PluginId)));
         }
 
         foreach (var state in manager.States
                      .Where(state => !moduleIds.Contains(state.PluginId)))
         {
-            items.Add(ToItem(state.PluginId.Value, "未关联托管模块", state));
+            items.Add(ToItem(
+                state.PluginId.Value,
+                "未关联托管模块",
+                manifest: null,
+                state: state));
         }
 
         if (diagnostics is not null)
@@ -73,7 +81,8 @@ public sealed class PluginStatusViewModel : Tool
             var rejectedCandidates = diagnostics.Snapshot
                 .Where(item =>
                     item.PluginDirectory is not null &&
-                    item.Phase is HostDiagnosticPhase.PluginRootDiscovery
+                    item.Phase is HostDiagnosticPhase.PluginManifestPreflight
+                        or HostDiagnosticPhase.PluginRootDiscovery
                         or HostDiagnosticPhase.PluginAssemblyLoad
                         or HostDiagnosticPhase.PluginTypePreflight)
                 .GroupBy(item => item.PluginDirectory!, StringComparer.OrdinalIgnoreCase)
@@ -82,16 +91,26 @@ public sealed class PluginStatusViewModel : Tool
             {
                 var records = candidate.OrderBy(item => item.Sequence).ToArray();
                 items.Add(new PluginStatusItem(
-                    $"目录：{candidate.Key}",
+                    records.Select(item => item.PluginId)
+                        .FirstOrDefault(id => !string.IsNullOrWhiteSpace(id))
+                    ?? $"目录：{candidate.Key}",
                     records.Select(item => item.AssemblyName)
                         .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? "未完成加载",
-                    "加载失败 · 已隔离",
+                    records.Any(item => item.Phase == HostDiagnosticPhase.PluginManifestPreflight)
+                        ? "兼容检查失败 · 未加载"
+                        : "加载失败 · 已隔离",
                     "—",
                     "无",
                     string.Join(
                         Environment.NewLine,
                         records.Select(item =>
-                            $"[{item.Code}] {ToPhaseText(item.Phase)}：{item.UserMessage}"))));
+                            $"[{item.Code}] {ToPhaseText(item.Phase)}：{item.UserMessage}")))
+                {
+                    VersionText = records.Select(item => item.PluginVersion)
+                        .FirstOrDefault(version => !string.IsNullOrWhiteSpace(version))
+                    ?? "未读取",
+                    CompatibilityText = ToRejectedCompatibilityText(records),
+                });
             }
         }
 
@@ -103,8 +122,15 @@ public sealed class PluginStatusViewModel : Tool
     private static PluginStatusItem ToItem(
         string pluginId,
         string assemblyName,
+        PluginManifest? manifest,
         PluginLifecycleState? state)
     {
+        var version = manifest is null
+            ? "未提供"
+            : PluginVersionText.Format(manifest.PluginVersion);
+        var compatibility = manifest is null
+            ? "未通过清单发现入口"
+            : $"Host API {manifest.HostApi}；Common {manifest.CommonContract}";
         if (state is null)
         {
             return new PluginStatusItem(
@@ -113,7 +139,11 @@ public sealed class PluginStatusViewModel : Tool
                 "已加载 · 无需后台生命周期",
                 "—",
                 "无",
-                "插件模块已完成服务注册，没有需要宿主管理的后台启动或关闭操作。");
+                "插件模块已完成服务注册，没有需要宿主管理的后台启动或关闭操作。")
+            {
+                VersionText = version,
+                CompatibilityText = compatibility,
+            };
         }
 
         var dependencies = state.RequiredPluginIds.Count == 0
@@ -147,7 +177,11 @@ public sealed class PluginStatusViewModel : Tool
             ToStatusText(state.Status),
             duration,
             dependencies,
-            detail);
+            detail)
+        {
+            VersionText = version,
+            CompatibilityText = compatibility,
+        };
     }
 
     private static string ToStatusText(PluginLifecycleStatus status) => status switch
@@ -166,6 +200,7 @@ public sealed class PluginStatusViewModel : Tool
     private static string ToPhaseText(HostDiagnosticPhase phase) => phase switch
     {
         HostDiagnosticPhase.PluginRootDiscovery => "目录发现",
+        HostDiagnosticPhase.PluginManifestPreflight => "兼容预检",
         HostDiagnosticPhase.PluginAssemblyLoad => "程序集加载",
         HostDiagnosticPhase.PluginTypePreflight => "类型预检",
         HostDiagnosticPhase.PluginModuleDiscovery => "模块发现",
@@ -174,4 +209,17 @@ public sealed class PluginStatusViewModel : Tool
         HostDiagnosticPhase.PluginLifecycle => "生命周期",
         _ => phase.ToString(),
     };
+
+    private static string ToRejectedCompatibilityText(
+        IReadOnlyList<HostDiagnosticRecord> records)
+    {
+        var hostRange = records.Select(item => item.HostApiRange)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        var commonRange = records.Select(item => item.CommonContractRange)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        var current = HostCompatibilityProfile.Current;
+        return
+            $"Host API {hostRange ?? "未声明"}（当前 {PluginVersionText.Format(current.HostApiVersion)}）；" +
+            $"Common {commonRange ?? "未声明"}（当前 {PluginVersionText.Format(current.CommonContractVersion)}）";
+    }
 }

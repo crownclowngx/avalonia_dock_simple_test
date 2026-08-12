@@ -3,10 +3,15 @@
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\..\..\Host\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="plugin.manifest.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>
@@ -43,6 +48,7 @@
                                Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
             <DaTangPluginFiles Include="$(TargetDir)$(AssemblyName).deps.json"
                                Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
+            <DaTangPluginFiles Include="$(TargetDir)plugin.manifest.json" />
 
             <!--
               宿主已提供 Avalonia、Dock、Common、DI 和 Microsoft.Extensions.Configuration。

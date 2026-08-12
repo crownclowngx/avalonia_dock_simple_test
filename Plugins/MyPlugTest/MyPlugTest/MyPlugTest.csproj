@@ -3,6 +3,7 @@
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -11,6 +12,10 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\..\Host\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="plugin.manifest.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>
@@ -34,6 +39,7 @@
                                    Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
             <MyPlugTestPluginFiles Include="$(TargetDir)$(AssemblyName).deps.json"
                                    Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
+            <MyPlugTestPluginFiles Include="$(TargetDir)plugin.manifest.json" />
             <MyPlugTestPluginManaged Include="@(RuntimeCopyLocalItems)"
                                      Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Flurl' Or
                                                 '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Flurl.Http'" />

@@ -25,7 +25,7 @@ public class PluginLoadContext : AssemblyLoadContext
     /// 为指定插件目录创建不可回收加载上下文。
     /// </summary>
     /// <param name="pluginPath">插件独占部署目录，而不是单个 DLL 路径。</param>
-    /// <exception cref="InvalidOperationException">目录不满足标准入口或 Legacy 回退约定。</exception>
+    /// <exception cref="InvalidOperationException">目录缺少有效清单、版本不兼容或不满足清单入口约定。</exception>
     public PluginLoadContext(string pluginPath)
         : this(CreateLayout(pluginPath), SharedAssemblyPolicy)
     {
@@ -107,8 +107,29 @@ public class PluginLoadContext : AssemblyLoadContext
     private static PluginDirectoryLayout CreateLayout(string pluginPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pluginPath);
+        if (!PluginManifestReader.TryRead(
+                pluginPath,
+                out var manifest,
+                out var manifestErrorCode,
+                out var manifestErrorDetail))
+        {
+            throw new InvalidOperationException(
+                $"{manifestErrorCode}: {manifestErrorDetail}");
+        }
+
+        if (!PluginCompatibilityEvaluator.TryEvaluate(
+                manifest!,
+                HostCompatibilityProfile.Current,
+                out var compatibilityErrorCode,
+                out var compatibilityErrorDetail))
+        {
+            throw new InvalidOperationException(
+                $"{compatibilityErrorCode}: {compatibilityErrorDetail}");
+        }
+
         if (PluginDirectoryLayout.TryCreate(
                 pluginPath,
+                manifest!,
                 out var layout,
                 out var errorCode,
                 out var errorDetail))

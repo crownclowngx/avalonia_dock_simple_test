@@ -30,7 +30,7 @@
                     <DataTemplate DataType="plugins:PluginStatusItem">
                         <Border Classes="host-tool-list-row"
                                 Padding="6">
-                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                 <TextBlock Grid.Row="0"
                                            Text="{Binding PluginId}"
                                            FontWeight="SemiBold"
@@ -41,19 +41,28 @@
                                            Foreground="{DynamicResource AppSecondaryTextBrush}" />
                                 <TextBlock Grid.Row="2"
                                            Margin="0,2,0,0"
+                                           Text="{Binding VersionText, StringFormat='版本：{0}'}"
+                                           FontSize="11" />
+                                <TextBlock Grid.Row="3"
+                                           Margin="0,2,0,0"
+                                           Text="{Binding CompatibilityText, StringFormat='兼容：{0}'}"
+                                           FontSize="11"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Grid.Row="4"
+                                           Margin="0,2,0,0"
                                            Text="{Binding AssemblyName, StringFormat='程序集：{0}'}"
                                            FontSize="11"
                                            TextTrimming="CharacterEllipsis" />
-                                <TextBlock Grid.Row="3"
+                                <TextBlock Grid.Row="5"
                                            Margin="0,2,0,0"
                                            Text="{Binding DurationText, StringFormat='耗时：{0}'}"
                                            FontSize="11" />
-                                <TextBlock Grid.Row="4"
+                                <TextBlock Grid.Row="6"
                                            Margin="0,2,0,0"
                                            Text="{Binding DependenciesText, StringFormat='依赖：{0}'}"
                                            FontSize="11"
                                            TextWrapping="Wrap" />
-                                <TextBlock Grid.Row="5"
+                                <TextBlock Grid.Row="7"
                                            Margin="0,3,0,0"
                                            Text="{Binding Detail}"
                                            FontSize="11"

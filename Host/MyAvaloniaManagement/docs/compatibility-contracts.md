@@ -18,7 +18,37 @@
 
 ## 3. 插件发现与激活
 
-### 3.1 Managed 插件
+### 3.1 加载前清单与版本检查
+
+每个插件独占目录必须在根级提供 `plugin.manifest.json`。宿主先完成全部清单预检和
+`pluginId` 全局唯一性检查，之后才允许创建 `PluginLoadContext` 或读取入口程序集元数据。
+清单缺失、损坏、schema 未知或版本不兼容时隔离当前目录；重复 `pluginId` 属于全局组合歧义，
+在加载任何插件 DLL 前阻断宿主启动。
+
+V1 清单格式：
+
+```json
+{
+  "schemaVersion": 1,
+  "pluginId": "myavalonia.plugin.sample",
+  "pluginVersion": "1.0.0",
+  "entryAssembly": "SamplePlugin.dll",
+  "compatibility": {
+    "hostApi": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" },
+    "commonContract": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" }
+  }
+}
+```
+
+- 字段名称区分大小写；未知、重复或缺失字段均拒绝，不允许注释或尾随逗号；
+- 版本只接受 `major.minor.patch[.revision]`，内部统一为四段比较；
+- Host API 与 Common 均采用 `minInclusive <= current < maxExclusive`；
+- `entryAssembly` 只能是插件根目录中的单个 DLL 文件名；
+- `pluginVersion` 必须与入口 `AssemblyVersion` 精确一致；Managed 模块的 `PluginId` 必须与清单一致；
+- Host 与 Common 当前 `AssemblyVersion` 均为 `1.0.0.0`。兼容新增提升次版本，破坏性变更提升主版本；
+- 清单只解决兼容和确定性加载，不提供签名、防篡改、权限沙箱或热卸载。
+
+### 3.2 Managed 插件
 
 - 程序集包含可实例化的 `IPluginModule`；
 - 模块使用 public 无参构造发现；
@@ -26,16 +56,17 @@
 - Document/Tool 策略使用 `ActivatorUtilities`，允许构造注入；
 - 可选 `IPluginLifecycle` 按既有顺序初始化并反向关闭。
 
-### 3.2 Legacy 插件
+### 3.3 Legacy 插件
 
 - 不属于 Managed 模块程序集；
+- 同样必须具有有效清单；无清单历史目录不再放行；
 - Document/Tool 策略必须具有 public 无参构造；
 - 不自动获得 Managed DI 激活语义。
 
-### 3.3 共同规则
+### 3.4 共同规则
 
 - 单个 DLL、模块、依赖或类型失败不终止其他插件发现；
-- `ReflectionTypeLoadException` 只排除不可加载类型；
+- 完整类型预检失败会隔离整个插件目录，不能把同一发布物拆成“部分成功”；
 - 重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 形成排序稳定的结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义；
 - 策略元数据在注册时读取一次；
 - 插件根目录快照在进程内不刷新，更新插件需要重启应用。
@@ -122,6 +153,8 @@
 
 - [ ] public API 指纹通过，或变更已被明确批准；
 - [ ] Managed 与 Legacy 激活测试通过；
+- [ ] 四个真实插件构建与发布目录均包含有效清单，版本和模块身份一致；
+- [ ] 清单缺失/损坏/不兼容在程序集加载前隔离，重复身份在任何 DLL 加载前阻断；
 - [ ] 重复 ID 与碰撞诊断按预期阻断启动，局部类型失败和并发扫描行为未变化；
 - [ ] Document JSON 与 Save As 行为未变化；
 - [ ] 保存失败不会提交内存状态，且无 `.tmp` 遗留；

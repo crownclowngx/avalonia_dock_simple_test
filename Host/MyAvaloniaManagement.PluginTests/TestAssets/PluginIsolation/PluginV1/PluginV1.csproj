@@ -3,6 +3,7 @@
     <AssemblyName>PluginIsolation.PluginV1</AssemblyName>
     <RootNamespace>PluginIsolation.Plugin</RootNamespace>
     <GenerateDependencyFile>true</GenerateDependencyFile>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,5 +12,9 @@
       <!-- 公共契约必须由宿主提供；测试夹具不把它复制到插件目录。 -->
       <Private>false</Private>
     </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="plugin.manifest.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

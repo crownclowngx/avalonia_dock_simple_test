@@ -6,6 +6,8 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <PlatformTarget>x64</PlatformTarget>
+        <!-- Host API 兼容检查的发布事实；破坏性 API 变更必须显式提升主版本。 -->
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>

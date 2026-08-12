@@ -12,7 +12,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// <remarks>
 /// 设计意图：把“哪个文件是插件入口”和“依赖名称对应哪个物理文件”的判断从
 /// <see cref="PluginLoadContext"/> 中拆出，使加载上下文只负责解析顺序，不再同时承担目录扫描职责。
-/// 新插件以唯一的“同名 DLL + .deps.json”为入口；没有 deps 文件的历史插件仍保留确定性回退。
+/// 入口只接受已经通过兼容预检的清单声明；私有依赖索引仍提供无 deps 包的确定性回退。
 /// </remarks>
 internal sealed class PluginDirectoryLayout
 {
@@ -45,7 +45,7 @@ internal sealed class PluginDirectoryLayout
 
     /// <summary>
     /// 用于创建 <see cref="System.Runtime.Loader.AssemblyDependencyResolver"/> 的主程序集。
-    /// Legacy 目录没有 deps 入口时为 <see langword="null"/>。
+    /// 入口没有同名 deps 文件时为 <see langword="null"/>。
     /// </summary>
     internal string? MainAssemblyPath { get; }
 
@@ -62,9 +62,11 @@ internal sealed class PluginDirectoryLayout
     /// <param name="layout">成功时返回不可变布局。</param>
     /// <param name="errorCode">失败时返回稳定诊断码。</param>
     /// <param name="errorDetail">失败时返回不包含异常堆栈的简短原因。</param>
-    /// <returns>目录是否满足标准入口或 Legacy 回退约定。</returns>
+    /// <param name="manifest">已经通过严格解析与版本兼容检查的清单。</param>
+    /// <returns>目录是否满足清单入口和私有依赖唯一性约定。</returns>
     internal static bool TryCreate(
         string pluginDirectory,
+        PluginManifest manifest,
         out PluginDirectoryLayout? layout,
         out string? errorCode,
         out string? errorDetail)
@@ -75,6 +77,7 @@ internal sealed class PluginDirectoryLayout
 
         try
         {
+            ArgumentNullException.ThrowIfNull(manifest);
             var directoryPath = Path.GetFullPath(pluginDirectory);
             if (!Directory.Exists(directoryPath))
             {
@@ -95,52 +98,36 @@ internal sealed class PluginDirectoryLayout
                 return false;
             }
 
-            var dependencyFiles = Directory.GetFiles(
-                    directoryPath,
-                    "*.deps.json",
-                    SearchOption.TopDirectoryOnly)
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            if (dependencyFiles.Length == 0)
+            var entryAssemblyPath = Path.GetFullPath(
+                Path.Combine(directoryPath, manifest.EntryAssembly));
+            if (!File.Exists(entryAssemblyPath))
             {
-                // 设计意图：Legacy 插件没有 deps 文件，只能保留历史的托管 DLL 扫描语义。
-                // 排序后的固定结果可以避免文件系统枚举顺序影响“首次注册胜出”的兼容行为。
-                layout = new PluginDirectoryLayout(
-                    directoryPath,
-                    mainAssemblyPath: null,
-                    managedPaths,
-                    assemblyPaths);
-                return true;
+                errorCode = "PLUGIN_ENTRY_INVALID";
+                errorDetail = $"清单入口 {manifest.EntryAssembly} 不存在。";
+                return false;
             }
 
-            var entryPaths = new List<string>(dependencyFiles.Length);
-            foreach (var dependencyFile in dependencyFiles)
+            // 设计意图：清单是入口的唯一事实源。deps 只决定是否启用标准解析器，
+            // 不再反向决定哪些 DLL 会被宿主主动加载和执行类型扫描。
+            var dependencyPath = Path.ChangeExtension(entryAssemblyPath, ".deps.json");
+            var mainAssemblyPath = File.Exists(dependencyPath)
+                ? entryAssemblyPath
+                : null;
+            try
             {
-                var fileName = Path.GetFileName(dependencyFile);
-                var assemblyFileName = fileName[..^".deps.json".Length] + ".dll";
-                var assemblyPath = Path.Combine(directoryPath, assemblyFileName);
-                if (!File.Exists(assemblyPath))
-                {
-                    errorCode = "PLUGIN_ENTRY_INVALID";
-                    errorDetail = $"依赖描述文件 {fileName} 缺少同名入口 DLL。";
-                    return false;
-                }
-
-                entryPaths.Add(Path.GetFullPath(assemblyPath));
+                _ = AssemblyName.GetAssemblyName(entryAssemblyPath);
             }
-
-            if (entryPaths.Count != 1)
+            catch (BadImageFormatException)
             {
-                errorCode = "PLUGIN_ENTRY_AMBIGUOUS";
-                errorDetail = $"插件目录包含 {entryPaths.Count} 个 deps 入口。";
+                errorCode = "PLUGIN_ENTRY_INVALID";
+                errorDetail = $"清单入口 {manifest.EntryAssembly} 不是有效托管程序集。";
                 return false;
             }
 
             layout = new PluginDirectoryLayout(
                 directoryPath,
-                entryPaths[0],
-                entryPaths,
+                mainAssemblyPath,
+                [entryAssemblyPath],
                 assemblyPaths);
             return true;
         }

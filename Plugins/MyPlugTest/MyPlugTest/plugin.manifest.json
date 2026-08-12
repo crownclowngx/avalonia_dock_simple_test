@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "pluginId": "myavalonia.plugin.my-plug-test",
+  "pluginVersion": "1.0.0",
+  "entryAssembly": "MyPlugTest.dll",
+  "compatibility": {
+    "hostApi": {
+      "minInclusive": "1.0.0",
+      "maxExclusive": "2.0.0"
+    },
+    "commonContract": {
+      "minInclusive": "1.0.0",
+      "maxExclusive": "2.0.0"
+    }
+  }
+}

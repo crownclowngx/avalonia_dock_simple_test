@@ -56,12 +56,13 @@ flowchart TB
 [`HostRuntime`](../Business/Helpers/HostRuntime.cs) 按以下顺序启动：
 
 1. 注册宿主核心服务和 ViewModel；
-2. 获取插件目录的程序集快照；
-3. 发现 `IPluginModule`；
-4. 允许 Managed 插件向 `IServiceCollection` 注册服务；
-5. 以 `ValidateScopes`、`ValidateOnBuild` 构建根容器；
-6. 初始化 `PluginLifecycleManager`；
-7. 将容器交给 Avalonia 启动路径。
+2. 读取全部插件清单并检查 Host API、Common 版本与全局身份；
+3. 仅为兼容候选建立 ALC、加载入口并生成严格类型快照；
+4. 发现 `IPluginModule` 并二次核对清单身份；
+5. 允许 Managed 插件向 `IServiceCollection` 注册服务；
+6. 以 `ValidateScopes`、`ValidateOnBuild` 构建根容器；
+7. 初始化 `PluginLifecycleManager`；
+8. 将容器交给 Avalonia 启动路径。
 
 关闭时顺序反转：先关闭成功初始化的插件，再释放根容器。这个所有权对称性防止 `Program`、`App` 和插件生命周期管理器分别持有一部分清理责任。
 
@@ -78,19 +79,21 @@ flowchart TB
 [`AssemblyLoaderHelper`](../Business/Helpers/AssemblyLoaderHelper.cs) 是 public 兼容 Facade，其内部行为是：
 
 - 用绝对、规范化且不区分大小写的插件根目录作为缓存键；
-- 通过 `Lazy<IReadOnlyList<Assembly>>` 保证并发调用只执行一次扫描；
+- 通过 `Lazy<PluginDiscoverySnapshot>` 保证并发调用只执行一次扫描；
+- 第一阶段只读严格 `plugin.manifest.json`，检查两个版本区间和全局 `pluginId`；
+- 第二阶段只为通过预检的候选创建加载上下文，清单声明是唯一入口来源；
 - 每个插件目录拥有自己的 `PluginLoadContext`；
-- `AssemblyResolve` 只注册一次；
-- 单个 DLL、目录、依赖或局部类型失败不会阻断其他插件；
+- 不注册进程级 `AssemblyResolve`，私有依赖只在当前插件 ALC 内解析；
+- 单个清单、目录、依赖或完整类型预检失败不会阻断其他独立插件；
 - 返回新的 `List<Assembly>`，避免调用方修改缓存快照。
 
 缓存的取舍是“稳定启动优先于进程内刷新”。部署模型要求替换插件后重启应用，因此不实现缓存失效和热加载。
 
 ### 4.2 Managed 与 Legacy 双轨
 
-[`PluginModuleCatalog`](../Business/Helpers/PluginModuleCatalog.cs) 发现 public 无参构造的 `IPluginModule`。模块所属程序集属于 Managed 插件，策略通过 `ActivatorUtilities` 使用 DI 激活；其他程序集中的策略仍走 Legacy public 无参构造。
+[`PluginModuleCatalog`](../Business/Helpers/PluginModuleCatalog.cs) 发现 public 无参构造的 `IPluginModule`，并在服务注册前核对模块 `PluginId` 与已验证清单。模块所属程序集属于 Managed 插件，策略通过 `ActivatorUtilities` 使用 DI 激活；带有效清单但没有模块的程序集仍可走 Legacy public 无参构造。无清单目录不会进入任何激活路径。
 
-`ReflectionTypeLoadException` 只排除无法加载的类型，已成功加载的类型继续参与发现。模块激活和策略激活分别隔离故障，防止一个插件破坏完整启动链。
+生产发现要求入口及引用程序集完成严格类型预检，失败时隔离整个目录，避免同一插件出现部分类型成功。模块身份或程序集版本与清单不一致属于发布物自相矛盾，在 `ConfigureServices` 前阻断组合。
 
 ### 4.3 单一扩展注册表
 

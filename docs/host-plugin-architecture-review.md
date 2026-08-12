@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-11<br>
+> 更新日期：2026-08-12<br>
 > 代码基线：主项目核心链路内部重构后的当前工作区<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系  
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
@@ -262,8 +262,8 @@ flowchart LR
 | ID 与元数据 | 已实现 | `PluginId`、`DocumentTypeId`、`ToolTypeId`、`CreationIntentId` 均为引用型值对象；主 ID、旧别名和所有权经原子注册表统一校验，不再存在 `TryAdd` 首次胜出语义 |
 | 构建与部署 | 部分成熟 | SDK/包版本已集中；四个插件仍分别维护部署 Target，共享依赖排除规则可能漂移 |
 | 真实包验证 | 部分成熟 | 四个当前 Managed Plugin 的真实构建目录均有动态加载测试；真实 `Controls` 四目录启动、BiliDownloader win-x64 包和同名不同版本依赖夹具已通过；尚缺统一全插件发布包矩阵与长期运行门禁 |
-| 插件 manifest | 未实现 | 发布产物可有验收清单，但宿主加载前没有统一的插件身份、版本、入口、能力和依赖 manifest |
-| Host API 兼容检查 | 未实现 | 加载代码前不校验目标宿主/公共契约版本 |
+| 插件 manifest | 已实现 V1 | 四个现有插件根目录均部署严格 `plugin.manifest.json`，加载前提供身份、插件版本、唯一入口以及 Host API/Common 兼容区间；能力和插件依赖声明仍未纳入 V1 |
+| Host API 兼容检查 | 已实现 V1 | 宿主先完成全部清单解析、显式左闭右开版本区间检查和 `pluginId` 全局去重，再创建 ALC；缺失/损坏/不兼容隔离单目录，重复身份在加载任何插件 DLL 前阻断启动 |
 | 插件启停与依赖图 | 部分实现 | 生命周期支持可选依赖声明、缺失/重复/循环依赖阻断和确定性拓扑排序；仍没有用户启停配置 |
 | 能力权限声明 | 未实现 | 插件可向根容器注册服务并执行任意进程内代码 |
 | 运行时卸载/热更新 | 有意不做 | ALC 不可回收；内部插件采用重启更新 |
@@ -346,6 +346,14 @@ public DocumentMetadata GetMetadata() => new(
 **[已实现]** 可恢复的加载错误进入“插件状态”Tool，即使尚未取得 `PluginId` 也会按目录名展示。致命错误使用独立的最小 Avalonia 应用显示错误码、对象与日志位置，可复制摘要或打开日志目录；该路径不加载 `App.axaml`、`ViewLocator`、Dock 或插件 ViewModel，关闭窗口返回退出码 1。宿主和 Common 的 public API 指纹保持不变。
 
 **[验证证据]** 2026-08-12 执行宿主 Release 专项门禁与 Windows 真实窗口冒烟：`MyAvaloniaManagement.Tests` 84、`MyAvaloniaManagement.PluginTests` 93、`MyAvaloniaManagement.UiTests` 31，合计 **208/208** 通过；Host 行覆盖率 **76.45%**、分支覆盖率 **62.48%**，真实 `Controls` 四插件目录启动退出码为 0。新增回归覆盖 JSON Lines 字段与留存、日志失败内存降级、失败策略、组合诊断来源、缺失依赖候选隔离、状态 Tool 投影和启动错误窗敏感详情隔离；独立失败冒烟同时验证 `PLUGIN_ROOT_SCAN_FAILED` 日志和退出码 1。
+
+### 6.5 2026-08-12 Host API 与公共契约兼容检查 V1
+
+**[已实现]** 每个插件根目录强制提供严格 `plugin.manifest.json`。发现过程先只读 JSON，校验 schema、稳定身份、插件版本、唯一根级入口和 Host API/Common 左闭右开版本区间；全部有效清单还会在任何 ALC 创建前完成全局 `pluginId` 去重。缺失、损坏、未知 schema 或不兼容只隔离单目录，重复身份属于致命全局歧义。
+
+**[已实现]** 通过兼容检查后，宿主才建立目录布局并加载清单声明的唯一入口；入口 `AssemblyVersion` 与 `pluginVersion`、Managed 模块 `PluginId` 与清单身份还会在 `ConfigureServices` 前二次核对。现有共享程序集身份检查继续作为运行时纵深校验。四个当前插件、私有依赖隔离夹具、构建输出和发布部署目录均已纳入清单规则。
+
+**[验证证据]** 最新 Release 专项门禁通过 `MyAvaloniaManagement.Tests` 88、`MyAvaloniaManagement.PluginTests` 102、`MyAvaloniaManagement.UiTests` 31，合计 **221/221**；Host 行覆盖率 **77.38%**、分支覆盖率 **63.80%**，Windows 真实窗口冒烟与携带四个真实 `Controls` 目录的宿主启动均无诊断错误。新增测试覆盖严格 JSON、大小限制、版本上下界、路径穿越、版本/模块身份二次核对、重复身份预加载阻断，以及“不兼容目录即使携带损坏 DLL 也不进入程序集加载阶段”。
 
 ## 7. 宿主应该给插件多大自由度
 
@@ -446,7 +454,7 @@ public interface IHostContext
 
 ### P1：形成稳定宿主 API
 
-1. 引入 `PluginDescriptor` 和 Host API 版本，在执行插件代码前完成身份、兼容性和依赖校验。
+1. **已完成 V1**：引入外部插件清单和 Host API/Common 显式版本区间，在执行插件代码前完成身份与兼容性校验；插件依赖与能力声明留待后续 Descriptor/Registry 演进。
 2. 建立 Plugin Registry，集中保存插件身份、程序集、状态、Document/Tool 贡献和诊断。
 3. 以 `IHostContext`、`IDocumentService`、`IToolService` 收束宿主能力。
 4. 将消息按宿主事件、插件内部事件和跨插件公共事件分层，默认不暴露底层 messenger。
@@ -473,12 +481,12 @@ public interface IHostContext
 
 ## 10. 最终评价
 
-项目已经明显跨过“把几个 DLL 反射进 Dock”的阶段：四个插件都进入 Managed 模型；根容器启用验证；插件生命周期、每 Document Scope 基础设施、创建意图、四向 Tool、禁用浮动、文档/布局原子持久化、坏文件隔离、真实窗口测试和插件级 Document V3 都已经落地。宿主内部也已经形成 Composition Root、Registry、Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
+项目已经明显跨过“把几个 DLL 反射进 Dock”的阶段：四个插件都进入 Managed 模型并具有加载前清单；Host API/Common 兼容预检、根容器验证、插件生命周期、每 Document Scope 基础设施、创建意图、四向 Tool、禁用浮动、文档/布局原子持久化、坏文件隔离、真实窗口测试和插件级 Document V3 都已经落地。宿主内部也已经形成 Composition Root、Registry、Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
 1. 插件仍能直接接触根 DI、Dock 类型和全局消息器，宿主为外部兼容仍保留静态服务定位入口；
-2. 缺少运行前 manifest、Host API 兼容检查、统一注册表和用户可见诊断；
+2. 运行前 manifest、Host API/Common 兼容检查和用户可见诊断已有 V1，仍缺少统一 Plugin Registry、能力声明和插件依赖清单；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。
 

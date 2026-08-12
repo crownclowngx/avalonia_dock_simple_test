@@ -18,13 +18,16 @@ public sealed class CurrentManagedPluginLoadingTests
         string assemblyName,
         string pluginId)
     {
+        var configuration = new DirectoryInfo(AppContext.BaseDirectory)
+            .Parent?.Name
+            ?? throw new InvalidOperationException("无法确定测试构建配置。");
         var pluginDirectory = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
             "..", "..", "..", "..", "..",
             "Plugins",
             projectPath.Replace('/', Path.DirectorySeparatorChar),
             "bin",
-            "Debug",
+            configuration,
             "net10.0"));
         var pluginAssemblyPath = Path.Combine(
             pluginDirectory,
@@ -36,9 +39,21 @@ public sealed class CurrentManagedPluginLoadingTests
         Assert.True(
             File.Exists(Path.Combine(pluginDirectory, assemblyName + ".deps.json")),
             $"插件缺少标准 deps 入口：{assemblyName}");
+        Assert.True(
+            PluginManifestReader.TryRead(
+                pluginDirectory,
+                out var manifest,
+                out var manifestErrorCode,
+                out var manifestErrorDetail),
+            $"插件清单无效：{manifestErrorCode}: {manifestErrorDetail}");
+        Assert.Equal(pluginId, manifest!.PluginId.Value);
+        Assert.Equal(assemblyName + ".dll", manifest.EntryAssembly);
 
         var context = new PluginLoadContext(pluginDirectory);
         var pluginAssembly = context.LoadFromAssemblyPath(pluginAssemblyPath);
+        Assert.True(PluginCompatibilityEvaluator.HasMatchingPluginVersion(
+            manifest,
+            pluginAssembly.GetName().Version));
         var catalog = PluginModuleCatalog.Discover([pluginAssembly]);
 
         var module = Assert.Single(catalog.Modules);

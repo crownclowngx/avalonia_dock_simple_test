@@ -19,6 +19,7 @@ internal enum HostDiagnosticPhase
 {
     DiagnosticInfrastructure,
     PluginRootDiscovery,
+    PluginManifestPreflight,
     PluginAssemblyLoad,
     PluginTypePreflight,
     PluginModuleDiscovery,
@@ -71,6 +72,12 @@ internal sealed record HostDiagnosticDraft(
 
     internal string? StableId { get; init; }
 
+    internal string? PluginVersion { get; init; }
+
+    internal string? HostApiRange { get; init; }
+
+    internal string? CommonContractRange { get; init; }
+
     internal Exception? Exception { get; init; }
 
     internal string? TechnicalDetail { get; init; }
@@ -107,6 +114,12 @@ internal sealed record HostDiagnosticRecord
 
     public string? StableId { get; init; }
 
+    public string? PluginVersion { get; init; }
+
+    public string? HostApiRange { get; init; }
+
+    public string? CommonContractRange { get; init; }
+
     public required string UserMessage { get; init; }
 
     public string? ExceptionType { get; init; }
@@ -129,6 +142,13 @@ internal static class HostDiagnosticCodes
 {
     internal const string PersistenceUnavailable = "DIAGNOSTIC_PERSISTENCE_UNAVAILABLE";
     internal const string PluginRootScanFailed = "PLUGIN_ROOT_SCAN_FAILED";
+    internal const string PluginManifestMissing = "PLUGIN_MANIFEST_MISSING";
+    internal const string PluginManifestInvalid = "PLUGIN_MANIFEST_INVALID";
+    internal const string PluginManifestSchemaUnsupported = "PLUGIN_MANIFEST_SCHEMA_UNSUPPORTED";
+    internal const string PluginHostApiIncompatible = "PLUGIN_HOST_API_INCOMPATIBLE";
+    internal const string PluginCommonContractIncompatible = "PLUGIN_COMMON_CONTRACT_INCOMPATIBLE";
+    internal const string PluginManifestIdentityDuplicate = "PLUGIN_MANIFEST_IDENTITY_DUPLICATE";
+    internal const string PluginManifestDescriptionMismatch = "PLUGIN_MANIFEST_DESCRIPTION_MISMATCH";
     internal const string PluginEntryInvalid = "PLUGIN_ENTRY_INVALID";
     internal const string PluginEntryAmbiguous = "PLUGIN_ENTRY_AMBIGUOUS";
     internal const string PluginPrivateDependencyAmbiguous = "PLUGIN_PRIVATE_DEPENDENCY_AMBIGUOUS";
@@ -157,6 +177,11 @@ internal static class HostDiagnosticFailurePolicy
         HostDiagnosticCodes.PluginAssemblyLoadFailed,
         HostDiagnosticCodes.PluginSharedAssemblyMismatch,
         HostDiagnosticCodes.PluginTypePreflightFailed,
+        HostDiagnosticCodes.PluginManifestMissing,
+        HostDiagnosticCodes.PluginManifestInvalid,
+        HostDiagnosticCodes.PluginManifestSchemaUnsupported,
+        HostDiagnosticCodes.PluginHostApiIncompatible,
+        HostDiagnosticCodes.PluginCommonContractIncompatible,
     };
 
     internal static (HostDiagnosticSeverity Severity, HostDiagnosticDisposition Disposition) Classify(
@@ -178,6 +203,8 @@ internal static class HostDiagnosticFailurePolicy
         }
 
         if (code == HostDiagnosticCodes.PluginRootScanFailed ||
+            code == HostDiagnosticCodes.PluginManifestIdentityDuplicate ||
+            code == HostDiagnosticCodes.PluginManifestDescriptionMismatch ||
             code == HostDiagnosticCodes.PluginServiceRegistrationFailed ||
             code == HostDiagnosticCodes.HostContainerBuildFailed ||
             code == HostDiagnosticCodes.HostStartupUnexpected ||
@@ -262,6 +289,9 @@ internal sealed class HostDiagnosticSession : IHostDiagnosticSink, IDisposable
             PluginDirectory = draft.PluginDirectory,
             AssemblyName = draft.AssemblyName,
             StableId = draft.StableId,
+            PluginVersion = draft.PluginVersion,
+            HostApiRange = draft.HostApiRange,
+            CommonContractRange = draft.CommonContractRange,
             UserMessage = draft.UserMessage,
             ExceptionType = draft.Exception?.GetType().FullName,
             TechnicalDetail = draft.TechnicalDetail ?? draft.Exception?.ToString(),

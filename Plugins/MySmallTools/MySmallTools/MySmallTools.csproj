@@ -7,6 +7,7 @@
         <PlatformTarget>x64</PlatformTarget>
         <VlcWindowsX64Enabled>true</VlcWindowsX64Enabled>
         <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
         <!-- 把 NuGet 原生内容重定向到插件私有目录，禁止默认复制到宿主输出根目录。 -->
         <VlcWindowsX64TargetDir>native\win-x64\libvlc</VlcWindowsX64TargetDir>
     </PropertyGroup>
@@ -20,8 +21,13 @@
       <SmallToolsManagedDeployment Include="$(TargetPath)" />
       <SmallToolsManagedDeployment Include="$(TargetDir)$(AssemblyName).deps.json"
                                    Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
+      <SmallToolsManagedDeployment Include="$(TargetDir)plugin.manifest.json" />
       <SmallToolsManagedDeployment Include="$(PkgLibVLCSharp)\lib\net8.0\LibVLCSharp.dll" />
       <SmallToolsManagedDeployment Include="$(PkgLibVLCSharp_Avalonia)\lib\netstandard2.0\LibVLCSharp.Avalonia.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="plugin.manifest.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,17 +20,20 @@ namespace MyAvaloniaManagement.Business.Helpers;
 public sealed class PluginModuleCatalog
 {
     private readonly IReadOnlyDictionary<Assembly, PluginId> _pluginIdsByAssembly;
+    private readonly IReadOnlyDictionary<Assembly, PluginManifest> _manifestsByAssembly;
     private readonly IReadOnlyList<Assembly> _discoveredAssemblies;
     private readonly IReadOnlyDictionary<Assembly, IReadOnlyList<Type>> _typesByAssembly;
 
     private PluginModuleCatalog(
         IReadOnlyList<IPluginModule> modules,
         IReadOnlyDictionary<Assembly, PluginId> pluginIdsByAssembly,
+        IReadOnlyDictionary<Assembly, PluginManifest> manifestsByAssembly,
         IReadOnlyList<Assembly> discoveredAssemblies,
         IReadOnlyDictionary<Assembly, IReadOnlyList<Type>> typesByAssembly)
     {
         Modules = modules;
         _pluginIdsByAssembly = pluginIdsByAssembly;
+        _manifestsByAssembly = manifestsByAssembly;
         _discoveredAssemblies = discoveredAssemblies;
         _typesByAssembly = typesByAssembly;
     }
@@ -46,6 +50,9 @@ public sealed class PluginModuleCatalog
     public bool TryGetPluginId(Assembly assembly, out PluginId pluginId) =>
         _pluginIdsByAssembly.TryGetValue(assembly, out pluginId!);
 
+    internal bool TryGetManifest(Assembly assembly, out PluginManifest manifest) =>
+        _manifestsByAssembly.TryGetValue(assembly, out manifest!);
+
     public static PluginModuleCatalog Discover(IEnumerable<Assembly> pluginAssemblies)
     {
         ArgumentNullException.ThrowIfNull(pluginAssemblies);
@@ -56,6 +63,7 @@ public sealed class PluginModuleCatalog
                 assembly,
                 exception => Console.Error.WriteLine(
                     $"PluginCatalog errorCode=MODULE_TYPE_SCAN_PARTIAL assembly={assembly.FullName} type={exception.GetType().Name} details={FormatLoaderErrors(exception)}")),
+            getManifest: _ => null,
             diagnosticSink: null);
     }
 
@@ -71,22 +79,33 @@ public sealed class PluginModuleCatalog
         IHostDiagnosticSink? diagnosticSink = null)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        return DiscoverCore(snapshot.Assemblies, snapshot.GetPreflightTypes, diagnosticSink);
+        return DiscoverCore(
+            snapshot.Assemblies,
+            snapshot.GetPreflightTypes,
+            snapshot.GetManifest,
+            diagnosticSink);
     }
 
     private static PluginModuleCatalog DiscoverCore(
         IReadOnlyList<Assembly> assemblies,
         Func<Assembly, IReadOnlyList<Type>> getTypes,
+        Func<Assembly, PluginManifest?> getManifest,
         IHostDiagnosticSink? diagnosticSink)
     {
         var modules = new List<IPluginModule>();
         var diagnostics = new List<HostCompositionDiagnostic>();
         var typesByAssembly = new Dictionary<Assembly, IReadOnlyList<Type>>();
+        var manifestsByAssembly = new Dictionary<Assembly, PluginManifest>();
 
         foreach (var assembly in assemblies)
         {
             var loadableTypes = getTypes(assembly);
             typesByAssembly.Add(assembly, loadableTypes);
+            var manifest = getManifest(assembly);
+            if (manifest is not null)
+            {
+                manifestsByAssembly.Add(assembly, manifest);
+            }
             var moduleTypes = loadableTypes
                 .Where(type => typeof(IPluginModule).IsAssignableFrom(type)
                                && !type.IsAbstract
@@ -117,6 +136,31 @@ public sealed class PluginModuleCatalog
                         "PLUGIN_ID_INVALID",
                         module.PluginId?.Value,
                         moduleTypes));
+                    continue;
+                }
+
+                if (manifest is not null && module.PluginId != manifest.PluginId)
+                {
+                    diagnostics.Add(Diagnostic(
+                        HostDiagnosticCodes.PluginManifestDescriptionMismatch,
+                        manifest.PluginId.Value,
+                        moduleTypes));
+                    diagnosticSink?.Report(new HostDiagnosticDraft(
+                        HostDiagnosticCodes.PluginManifestDescriptionMismatch,
+                        HostDiagnosticPhase.PluginModuleDiscovery,
+                        "插件模块身份与加载前清单声明不一致，宿主已中止组合。")
+                    {
+                        PluginId = manifest.PluginId.Value,
+                        PluginDirectory = Path.GetFileName(
+                            Path.GetDirectoryName(assembly.Location)),
+                        AssemblyName = assembly.GetName().Name,
+                        PluginVersion = PluginVersionText.Format(manifest.PluginVersion),
+                        HostApiRange = manifest.HostApi.ToString(),
+                        CommonContractRange = manifest.CommonContract.ToString(),
+                        StableId = manifest.PluginId.Value,
+                        TechnicalDetail =
+                            $"manifestPluginId={manifest.PluginId.Value}; modulePluginId={module.PluginId.Value}",
+                    });
                     continue;
                 }
 
@@ -161,7 +205,12 @@ public sealed class PluginModuleCatalog
         var map = orderedModules.ToDictionary(
             module => module.GetType().Assembly,
             module => module.PluginId);
-        return new PluginModuleCatalog(orderedModules, map, assemblies, typesByAssembly);
+        return new PluginModuleCatalog(
+            orderedModules,
+            map,
+            manifestsByAssembly,
+            assemblies,
+            typesByAssembly);
     }
 
     public void ConfigureServices(IServiceCollection services)
