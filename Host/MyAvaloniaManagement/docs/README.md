@@ -11,6 +11,7 @@
 解决方案级材料：
 
 - [项目文档导航](../../../docs/README.md)
+- [Managed 插件快速开始](../../../docs/quick-start/README.md)
 - [宿主—插件架构评审](../../../docs/design/host-plugin-architecture-review.md)
 - [宿主专项测试说明](../../../docs/reference/myavalonia-management-tests.md)
 - [Dock 布局快照 V1](../../../docs/reference/dock-layout-snapshot-v1.md)
