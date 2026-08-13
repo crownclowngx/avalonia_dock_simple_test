@@ -6,7 +6,7 @@
 >
 > 当前结论：实现与离线门禁通过；正式联网门禁未执行，因此 P0 尚未标记完成
 >
-> 本地证据：[TestResults/BiliDownloader/G8](../../../../TestResults/BiliDownloader/G8/README.md)
+> 本地证据：[TestResults/BiliDownloader/G8](../../../../../TestResults/BiliDownloader/G8/README.md)
 
 ## 1. 范围与发布判定
 

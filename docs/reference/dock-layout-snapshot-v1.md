@@ -1,7 +1,7 @@
 # Dock 结构布局快照 V1
 
 > 本文描述稳定的外部布局格式。主项目内部协作者及设计取舍参见
-> [`Host/MyAvaloniaManagement/docs`](../../../Host/MyAvaloniaManagement/docs/README.md)。
+> [`Host/MyAvaloniaManagement/docs`](../../Host/MyAvaloniaManagement/docs/README.md)。
 
 ## 设计边界
 

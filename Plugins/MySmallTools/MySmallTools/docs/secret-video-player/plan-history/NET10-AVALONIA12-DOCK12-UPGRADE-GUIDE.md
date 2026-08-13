@@ -475,7 +475,7 @@ dotnet list .\MyAvaloniaManagement.sln package --vulnerable --include-transitive
 
 > 完成状态：已完成。目标版本已在阶段 2 提交 `4600e93` 中提前落地，本阶段通过专项兼容测试、私有部署验证和真实窗口门禁补齐验收，没有回退版本或重写历史。
 >
-> 验收记录：[阶段 3：非 UI 与插件依赖升级验收记录](../../../../../docs/upgrade/net10/phase-3-plugin-dependencies.md)
+> 验收记录：[阶段 3：非 UI 与插件依赖升级验收记录](../../../../../../docs/plan-history/net10/phase-3-plugin-dependencies.md)
 
 预计 2～3 人日。
 

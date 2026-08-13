@@ -123,11 +123,11 @@ dotnet test MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.cs
 
 G0 完成后，文档职责如下：
 
-- [README](README.md)：当前用户能力、使用方式和限制。
-- [SECVID03 文件格式](secvid03-format.md)：冻结的磁盘布局和认证规则。
-- [概要设计](architecture-design.md)：组件、DI Scope、数据流和资源所有权。
-- [接入、约定与排障](integration-and-conventions.md)：能力—生产入口—测试—文档映射及集成约束。
-- [真实媒体测试资产](real-media-test-assets.md)：资产来源、授权、生成、校验和更新流程。
+- [README](../README.md)：当前用户能力、使用方式和限制。
+- [SECVID03 文件格式](../reference/secvid03-format.md)：冻结的磁盘布局和认证规则。
+- [概要设计](../design/architecture-design.md)：组件、DI Scope、数据流和资源所有权。
+- [接入、约定与排障](../troubleshooting/integration-and-conventions.md)：能力—生产入口—测试—文档映射及集成约束。
+- [真实媒体测试资产](../reference/real-media-test-assets.md)：资产来源、授权、生成、校验和更新流程。
 - [实施路线图](ROADMAP.md)：G0 完成状态和 G1～G11 后续计划。
 
 后续阶段不得把资产存在等同于真实播放已经验收：

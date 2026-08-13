@@ -83,12 +83,12 @@ function Test-AllGateValuesPassed {
 function Test-RequiredDocuments {
     $required = @(
         'README.md'
-        'ROADMAP.md'
-        'architecture-design.md'
-        'integration-and-conventions.md'
-        'secvid03-format.md'
-        'G10-PERFORMANCE-REDACTED-DIAGNOSTICS.md'
-        'G11-FINAL-ACCEPTANCE-AND-TEST-GUIDE.md'
+        'plan-history\ROADMAP.md'
+        'design\architecture-design.md'
+        'troubleshooting\integration-and-conventions.md'
+        'reference\secvid03-format.md'
+        'plan-history\G10-PERFORMANCE-REDACTED-DIAGNOSTICS.md'
+        'reference\G11-FINAL-ACCEPTANCE-AND-TEST-GUIDE.md'
     )
     foreach ($name in $required) {
         if (-not (Test-Path (Join-Path $documentRoot $name))) {
@@ -97,7 +97,7 @@ function Test-RequiredDocuments {
     }
 
     # 只检查本地 Markdown 链接；代码链接和外部 URL 由各自工具维护。
-    foreach ($file in Get-ChildItem -LiteralPath $documentRoot -Filter '*.md' -File) {
+    foreach ($file in Get-ChildItem -LiteralPath $documentRoot -Recurse -Filter '*.md' -File) {
         $content = Get-Content -Raw -LiteralPath $file.FullName
         $matches = [regex]::Matches(
             $content,

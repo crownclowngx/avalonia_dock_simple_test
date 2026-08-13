@@ -3,7 +3,7 @@
 > 评审日期：2026-07-22；更新日期：2026-08-11<br>
 > 评审对象：BiliDownloader 插件自身，以及它与 MyAvaloniaManagement 宿主的交互  
 > 默认边界：Windows x64、内部可信插件、关闭宿主后替换插件，不要求运行时卸载  
-> 关联文档：[产品定义](../PRODUCT.md) · [架构改进建议](../ARCHITECTURE_IMPROVEMENT.md) · [实施路线图](ROADMAP.md) · [G0 验证记录](G0-BASELINE-TEST-LIFECYCLE.md) · [宿主—插件架构评审](../../../../docs/host-plugin-architecture-review.md)
+> 关联文档：[产品定义](../reference/PRODUCT.md) · [架构改进建议](ARCHITECTURE_IMPROVEMENT.md) · [实施路线图](../plan-history/ROADMAP.md) · [G0 验证记录](../plan-history/G0-BASELINE-TEST-LIFECYCLE.md) · [宿主—插件架构评审](../../../../../docs/design/host-plugin-architecture-review.md)
 
 ## 1. 总体结论：它已经是一个下载子系统
 
@@ -20,7 +20,7 @@
 
 > **一个嵌入 Avalonia Dock 宿主的、以 SQLite 为任务事实源、以 Coordinator 为运行内核的 Bilibili 下载工作台。**
 
-当前成熟阶段可概括为：**下载内核基本可用，G0 架构基线已经完成，产品级安全、单任务控制、恢复和任务管理仍在建设中。** 这与 [`PRODUCT.md`](../PRODUCT.md#L54) 的产品阶段判断一致。
+当前成熟阶段可概括为：**下载内核基本可用，G0 架构基线已经完成，产品级安全、单任务控制、恢复和任务管理仍在建设中。** 这与 [`PRODUCT.md`](../reference/PRODUCT.md#L54) 的产品阶段判断一致。
 
 ### 1.1 插件内部结构
 
@@ -60,7 +60,7 @@ flowchart TB
     Executor --> Ffmpeg
 ```
 
-**[代码事实]** 模块将仓储、登录服务、API、执行器、Coordinator 和 Tool 注册为插件级 singleton，将主 Document ViewModel 注册为 scoped，并注册唯一的 `IPluginLifecycle`。参见 [`BiliDownloaderPluginModule.cs`](../Plugin/BiliDownloaderPluginModule.cs#L19)。
+**[代码事实]** 模块将仓储、登录服务、API、执行器、Coordinator 和 Tool 注册为插件级 singleton，将主 Document ViewModel 注册为 scoped，并注册唯一的 `IPluginLifecycle`。参见 [`BiliDownloaderPluginModule.cs`](../../Plugin/BiliDownloaderPluginModule.cs#L19)。
 
 ## 2. 它如何接入宿主
 
@@ -91,9 +91,9 @@ sequenceDiagram
     C-->>Host: Stopped
 ```
 
-**[代码事实]** `BiliDownloaderPluginLifecycle` 只代理 Coordinator 的初始化和关闭，避免启动时创建 Tool/Document 或依赖视觉树。参见 [`BiliDownloaderPluginModule.cs`](../Plugin/BiliDownloaderPluginModule.cs#L53)。
+**[代码事实]** `BiliDownloaderPluginLifecycle` 只代理 Coordinator 的初始化和关闭，避免启动时创建 Tool/Document 或依赖视觉树。参见 [`BiliDownloaderPluginModule.cs`](../../Plugin/BiliDownloaderPluginModule.cs#L53)。
 
-**[代码事实]** Coordinator 的初始化和关闭是幂等的；关闭时取消处理队列、等待活动任务并注销共享消息总线。参见 [`BiliDownloadCoordinator.cs`](../Services/Download/BiliDownloadCoordinator.cs)。
+**[代码事实]** Coordinator 的初始化和关闭是幂等的；关闭时取消处理队列、等待活动任务并注销共享消息总线。参见 [`BiliDownloadCoordinator.cs`](../../Services/Download/BiliDownloadCoordinator.cs)。
 
 **[架构判断]** 这是当前插件最成熟、最有价值的一次结构调整：下载任务的存活不再等价于某个 Tool 或 Document 是否打开。
 
@@ -109,7 +109,7 @@ sequenceDiagram
 | Tool 实例 | 宿主创建一次，插件实现 | singleton ViewModel，隐藏后恢复同一实例 |
 | 后台下载生命周期 | 插件实现，宿主触发 | `IPluginLifecycle` → Coordinator |
 
-**[已实现]** `BiliDownloaderDocumentStrategy` 只依赖宿主 `IDocumentScopeFactory`，每次创建独立 scoped `BiliDownloaderViewModel`；Dock 确认关闭后由宿主释放 Scope。仓储、Coordinator 和 Tool 仍是插件级 singleton，因此关闭 Document 不会终止已经提交的后台下载任务。参见 [`BiliDownloaderDocumentStrategy.cs`](../Create/BiliDownloaderDocumentStrategy.cs#L18)。
+**[已实现]** `BiliDownloaderDocumentStrategy` 只依赖宿主 `IDocumentScopeFactory`，每次创建独立 scoped `BiliDownloaderViewModel`；Dock 确认关闭后由宿主释放 Scope。仓储、Coordinator 和 Tool 仍是插件级 singleton，因此关闭 Document 不会终止已经提交的后台下载任务。参见 [`BiliDownloaderDocumentStrategy.cs`](../../Create/BiliDownloaderDocumentStrategy.cs#L18)。
 
 ## 3. Document、Tool 和 Coordinator 的职责
 
@@ -174,7 +174,7 @@ flowchart LR
     DB -->|"查询投影"| Tool
 ```
 
-**[代码事实]** 提交消息包含 Document ID、媒体项、清晰度、输出目录和附加资源配置；Coordinator 测试验证了“先持久化再执行”。参见 [`SubmitDownloadTaskMessage.cs`](../Messages/SubmitDownloadTaskMessage.cs) 和 [`BiliDownloadCoordinatorTests.cs`](../../BiliDownloader.Tests/BiliDownloadCoordinatorTests.cs#L44)。
+**[代码事实]** 提交消息包含 Document ID、媒体项、清晰度、输出目录和附加资源配置；Coordinator 测试验证了“先持久化再执行”。参见 [`SubmitDownloadTaskMessage.cs`](../../Messages/SubmitDownloadTaskMessage.cs) 和 [`BiliDownloadCoordinatorTests.cs`](../../../BiliDownloader.Tests/BiliDownloadCoordinatorTests.cs#L44)。
 
 **[架构判断]** 当前消息名称仍写作 `Document -> Tool`，实际接收者已经是 Coordinator。应更新概念和注释，避免新代码再次把 Tool 当作后台服务。
 
@@ -209,9 +209,9 @@ stateDiagram-v2
     WaitingForLogin --> Ready: 登录恢复
 ```
 
-**[代码事实]** 状态已从散落字符串集中为 `DownloadTaskStatus` 枚举，并保留 SQLite 旧字符串映射。参见 [`DownloadTaskStatus.cs`](../Models/DownloadTaskStatus.cs)。
+**[代码事实]** 状态已从散落字符串集中为 `DownloadTaskStatus` 枚举，并保留 SQLite 旧字符串映射。参见 [`DownloadTaskStatus.cs`](../../Models/DownloadTaskStatus.cs)。
 
-**[代码事实]** 初始化时，历史运行中状态被迁移为 `Interrupted`，不会自动开始下载；用户明确提交或恢复后才执行。这一行为已有离线测试。参见 [`BiliDownloadCoordinatorTests.cs`](../../BiliDownloader.Tests/BiliDownloadCoordinatorTests.cs#L8)。
+**[代码事实]** 初始化时，历史运行中状态被迁移为 `Interrupted`，不会自动开始下载；用户明确提交或恢复后才执行。这一行为已有离线测试。参见 [`BiliDownloadCoordinatorTests.cs`](../../../BiliDownloader.Tests/BiliDownloadCoordinatorTests.cs#L8)。
 
 ### 4.2 当前状态机仍未闭环的部分
 
@@ -234,9 +234,9 @@ stateDiagram-v2
 | 登录 Cookie | `bili_cookies.db` | 当前登录凭据，现阶段明文存储 |
 | Document 保存文件 | 宿主统一 JSON 外壳 | 某个 Document 的下载方案，而不是全局任务库 |
 
-**[代码事实]** `DownloadTaskStore` 使用 WAL 和 `synchronous=NORMAL`，包含一系列兼容式 `ALTER TABLE`，并保留已废弃 Cookie 列读取/写入。参见 [`DownloadTaskStore.cs`](../Services/Persistence/DownloadTaskStore.cs#L37)。
+**[代码事实]** `DownloadTaskStore` 使用 WAL 和 `synchronous=NORMAL`，包含一系列兼容式 `ALTER TABLE`，并保留已废弃 Cookie 列读取/写入。参见 [`DownloadTaskStore.cs`](../../Services/Persistence/DownloadTaskStore.cs#L37)。
 
-**[代码事实]** `BiliCookieStore` 直接把 Cookie 值写入用户 AppData 下的 SQLite，没有加密。参见 [`BiliCookieStore.cs`](../Services/Auth/BiliCookieStore.cs#L8)。
+**[代码事实]** `BiliCookieStore` 直接把 Cookie 值写入用户 AppData 下的 SQLite，没有加密。参见 [`BiliCookieStore.cs`](../../Services/Auth/BiliCookieStore.cs#L8)。
 
 **[安全结论]** G1 是当前最高优先级之一：Cookie 必须迁移到 DPAPI 或等价的 Windows 用户级保护；任务消息、任务表、日志和导出内容不应再包含 Cookie 或带签名 URL。
 
@@ -252,7 +252,7 @@ stateDiagram-v2
 
 **[已实现]** 未知未来主版本实现宿主通用 `IDocumentSavePathPolicy`，强制选择新路径；损坏 V3 抛出稳定 `DocumentLoadException`，宿主显示错误但不创建标签。创建 JSON 不再提前清除 `IsModified`，只有宿主写盘成功通知后才清除。
 
-详细字段、默认值和迁移表见 [P1-G4 Document V3 与可复用方案](P1-G4-DOCUMENT-V3-REUSABLE-SCHEMES.md)。
+详细字段、默认值和迁移表见 [P1-G4 Document V3 与可复用方案](../plan-history/P1-G4-DOCUMENT-V3-REUSABLE-SCHEMES.md)。
 
 ## 6. 下载执行边界
 
@@ -273,13 +273,13 @@ flowchart TB
     Result --> Coordinator
 ```
 
-**[已实现]** 把外部副作用集中在 `IDownloadTaskExecutor` 之后，使 Coordinator 可以使用内存仓储、假凭据和假执行器进行完全离线测试。参见 [`IDownloadTaskExecutor.cs`](../Services/Download/IDownloadTaskExecutor.cs) 和 [`BiliDownloaderModuleTests.cs`](../../BiliDownloader.Tests/BiliDownloaderModuleTests.cs)。
+**[已实现]** 把外部副作用集中在 `IDownloadTaskExecutor` 之后，使 Coordinator 可以使用内存仓储、假凭据和假执行器进行完全离线测试。参见 [`IDownloadTaskExecutor.cs`](../../Services/Download/IDownloadTaskExecutor.cs) 和 [`BiliDownloaderModuleTests.cs`](../../../BiliDownloader.Tests/BiliDownloaderModuleTests.cs)。
 
-**[已实现]** G7 将 ffmpeg 边界收窄为运行时定位、包安装和媒体合并三项职责；安装 Facade 使用固定供应链清单、安全解压、进程探测及原子活动指针，启动阶段只做本地探测。参见 [`FfmpegService.cs`](../Services/Infrastructure/FfmpegService.cs)、[`FfmpegPackageInstaller.cs`](../Services/Infrastructure/FfmpegPackageInstaller.cs) 和 [`G7-FFMPEG-ERROR-ACTION-ENTRY.md`](G7-FFMPEG-ERROR-ACTION-ENTRY.md)。
+**[已实现]** G7 将 ffmpeg 边界收窄为运行时定位、包安装和媒体合并三项职责；安装 Facade 使用固定供应链清单、安全解压、进程探测及原子活动指针，启动阶段只做本地探测。参见 [`FfmpegService.cs`](../../Services/Infrastructure/FfmpegService.cs)、[`FfmpegPackageInstaller.cs`](../../Services/Infrastructure/FfmpegPackageInstaller.cs) 和 [`G7-FFMPEG-ERROR-ACTION-ENTRY.md`](../plan-history/G7-FFMPEG-ERROR-ACTION-ENTRY.md)。
 
 **[已实现]** 媒体完成校验后、合并前由 Coordinator 持久化检查点；`IMediaMergeRetryExecutor` 能在不重新请求 DASH 和主媒体的前提下仅重试合并。持久化错误由统一展示策略映射为十类摘要与有限行动，UI 不再直接展示长技术异常。
 
-**[不成熟点]** `BiliDownloadTaskExecutor` 仍保留从旧任务 Cookie 回退的兼容路径；这是迁移代码，不应被当作目标设计。参见 [`BiliDownloadTaskExecutor.cs`](../Services/Download/BiliDownloadTaskExecutor.cs#L80)。
+**[不成熟点]** `BiliDownloadTaskExecutor` 仍保留从旧任务 Cookie 回退的兼容路径；这是迁移代码，不应被当作目标设计。参见 [`BiliDownloadTaskExecutor.cs`](../../Services/Download/BiliDownloadTaskExecutor.cs#L80)。
 
 ## 7. 能力成熟度盘点
 
@@ -310,7 +310,7 @@ flowchart TB
 | 课程 | 部分实现 | P1-G2 只读发现与浏览，不提供下载解析能力 |
 | MKV、仅音频、主动编码选择 | 未实现 | P1 |
 
-详细产品宣称应以 [`PRODUCT.md` 当前能力表](../PRODUCT.md#L439) 为准，而不是只根据类名或已有枚举推断。
+详细产品宣称应以 [`PRODUCT.md` 当前能力表](../reference/PRODUCT.md#L439) 为准，而不是只根据类名或已有枚举推断。
 
 ## 8. 主要风险与设计债务
 
@@ -366,7 +366,7 @@ flowchart TB
 - G4：筛选、排序、虚拟化、多选和批量命令；
 - G5：下载预设、变量命名模板和 Document V2；
 - G6：文件冲突、磁盘空间和提交预检；
-- G7：ffmpeg 安装/修复与错误行动入口（已完成，详见 [`G7-FFMPEG-ERROR-ACTION-ENTRY.md`](G7-FFMPEG-ERROR-ACTION-ENTRY.md)）。
+- G7：ffmpeg 安装/修复与错误行动入口（已完成，详见 [`G7-FFMPEG-ERROR-ACTION-ENTRY.md`](../plan-history/G7-FFMPEG-ERROR-ACTION-ENTRY.md)）。
 
 ### G8：用真实验收结束 P0
 
@@ -431,4 +431,4 @@ P1-G9 将附加资源拆为目录发现、内容获取、cue 规范化、格式�
 
 主媒体与附加资源继续使用不同事实链：`RenditionFingerprint` 只描述媒体输出，`ExtrasExecutionSummary` 使用版本化逐项键描述语言、格式、交付和失败分类。软封装由 muxer 生成候选文件，ffprobe 证明 codec、语言、标题与精确轨数后才原子替换；失败时可信无字幕主文件保持不变。Coordinator 的附加资源重试只接受已完成且主文件存在的任务，并以任务级互斥保证不会并发重建同一文件。
 
-Document V3 只保存结构化意图，字幕目录是用户点击检测后产生的会话缓存，恢复文档不联网。SQLite 和安全历史导出只保存配置与结果元数据，禁止保存正文、Cookie、Header 或下载 URL。详细兼容矩阵、迁移和验收证据见 [`P1-G9-SUBTITLE-DANMAKU-ENHANCEMENT.md`](P1-G9-SUBTITLE-DANMAKU-ENHANCEMENT.md)。
+Document V3 只保存结构化意图，字幕目录是用户点击检测后产生的会话缓存，恢复文档不联网。SQLite 和安全历史导出只保存配置与结果元数据，禁止保存正文、Cookie、Header 或下载 URL。详细兼容矩阵、迁移和验收证据见 [`P1-G9-SUBTITLE-DANMAKU-ENHANCEMENT.md`](../plan-history/P1-G9-SUBTITLE-DANMAKU-ENHANCEMENT.md)。

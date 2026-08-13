@@ -26,7 +26,7 @@ Plugins/MySmallTools/MySmallTools.Tests/TestAssets/RealMedia/
 | `synthetic-silent-multiblock.webm` | 6 秒、640×360、VP9、无音轨 | Matroska/WebM demux、无声媒体、至少 3 个 SECVID03 明文块、跨块 Seek |
 | `synthetic-multitrack-subtitles.mp4` | 4 秒、320×180、H.264、两条 AAC、mov_text 字幕 | G6 六档倍速、双音轨切换、字幕启用与关闭 |
 
-以下机器可读值只以 [`manifest.json`](../../../MySmallTools.Tests/TestAssets/RealMedia/manifest.json) 为准，不在本文复制：
+以下机器可读值只以 [`manifest.json`](../../../../MySmallTools.Tests/TestAssets/RealMedia/manifest.json) 为准，不在本文复制：
 
 - FFmpeg 名称、版本和下载来源；
 - 每个文件的用途、容器、视频/音频编码、分辨率和音轨标志；
@@ -100,7 +100,7 @@ G0 证明资产来源、授权、清单和字节完整性；G3/G3.1 证明同一
 
 ## 6. 授权与隐私边界
 
-三份媒体由 FFmpeg 合成视频、音频、噪声源和仓库内字幕文本生成，不包含私人视频、外部素材或第三方视听作品。项目按 `CC0-1.0` 提供这些资产；权威声明见 [`ASSET-LICENSE.md`](../../../MySmallTools.Tests/TestAssets/RealMedia/ASSET-LICENSE.md)。
+三份媒体由 FFmpeg 合成视频、音频、噪声源和仓库内字幕文本生成，不包含私人视频、外部素材或第三方视听作品。项目按 `CC0-1.0` 提供这些资产；权威声明见 [`ASSET-LICENSE.md`](../../../../MySmallTools.Tests/TestAssets/RealMedia/ASSET-LICENSE.md)。
 
 更新资产时不得：
 
@@ -141,11 +141,11 @@ dotnet run --project .\Plugins\MySmallTools\MySmallTools.Playback.IntegrationHar
 
 ## 8. 相关实现与文档
 
-- [RealMediaAssetTests.cs](../../../MySmallTools.Tests/RealMediaAssetTests.cs)
-- [MySmallTools.Tests.csproj](../../../MySmallTools.Tests/MySmallTools.Tests.csproj)
-- [Playback Integration Harness](../../../MySmallTools.Playback.IntegrationHarness/Program.cs)
+- [RealMediaAssetTests.cs](../../../../MySmallTools.Tests/RealMediaAssetTests.cs)
+- [MySmallTools.Tests.csproj](../../../../MySmallTools.Tests/MySmallTools.Tests.csproj)
+- [Playback Integration Harness](../../../../MySmallTools.Playback.IntegrationHarness/Program.cs)
 - [SECVID03 格式](secvid03-format.md)
-- [架构设计](architecture-design.md)
-- [G3 真实播放与 Dock 稳定性](G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md)
-- [G4 发布基线](G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md)
-- [G6 播放器日常控制](G6-PLAYER-DAILY-CONTROLS.md)
+- [架构设计](../design/architecture-design.md)
+- [G3 真实播放与 Dock 稳定性](../plan-history/G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md)
+- [G4 发布基线](../plan-history/G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md)
+- [G6 播放器日常控制](../plan-history/G6-PLAYER-DAILY-CONTROLS.md)

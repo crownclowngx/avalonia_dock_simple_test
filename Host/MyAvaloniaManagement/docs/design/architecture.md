@@ -53,7 +53,7 @@ flowchart TB
 
 ### 3.1 `HostRuntime` 是唯一实际组合根
 
-[`HostRuntime`](../Business/Helpers/HostRuntime.cs) 按以下顺序启动：
+[`HostRuntime`](../../Business/Helpers/HostRuntime.cs) 按以下顺序启动：
 
 1. 注册宿主核心服务和 ViewModel；
 2. 读取全部插件清单并检查 Host API、Common 版本与全局身份；
@@ -66,7 +66,7 @@ flowchart TB
 
 关闭时顺序反转：先关闭成功初始化的插件，再释放根容器。这个所有权对称性防止 `Program`、`App` 和插件生命周期管理器分别持有一部分清理责任。
 
-[`Program`](../Program.cs) 仍保留 `Main`、`BuildAvaloniaApp()` 和内部关闭辅助入口。历史 public 无参 ViewModel 与测试宿主仍可通过静态 `ServiceProvider` 工作，但该定位器不再是真正的组合根。
+[`Program`](../../Program.cs) 仍保留 `Main`、`BuildAvaloniaApp()` 和内部关闭辅助入口。历史 public 无参 ViewModel 与测试宿主仍可通过静态 `ServiceProvider` 工作，但该定位器不再是真正的组合根。
 
 ### 3.2 为什么不直接采用通用 Host Builder
 
@@ -76,7 +76,7 @@ flowchart TB
 
 ### 4.1 程序集快照
 
-[`AssemblyLoaderHelper`](../Business/Helpers/AssemblyLoaderHelper.cs) 是 public 兼容 Facade，其内部行为是：
+[`AssemblyLoaderHelper`](../../Business/Helpers/AssemblyLoaderHelper.cs) 是 public 兼容 Facade，其内部行为是：
 
 - 用绝对、规范化且不区分大小写的插件根目录作为缓存键；
 - 通过 `Lazy<PluginDiscoverySnapshot>` 保证并发调用只执行一次扫描；
@@ -91,13 +91,13 @@ flowchart TB
 
 ### 4.2 Managed 与 Legacy 双轨
 
-[`PluginModuleCatalog`](../Business/Helpers/PluginModuleCatalog.cs) 发现 public 无参构造的 `IPluginModule`，并在服务注册前核对模块 `PluginId` 与已验证清单。模块所属程序集属于 Managed 插件，策略通过 `ActivatorUtilities` 使用 DI 激活；带有效清单但没有模块的程序集仍可走 Legacy public 无参构造。无清单目录不会进入任何激活路径。
+[`PluginModuleCatalog`](../../Business/Helpers/PluginModuleCatalog.cs) 发现 public 无参构造的 `IPluginModule`，并在服务注册前核对模块 `PluginId` 与已验证清单。模块所属程序集属于 Managed 插件，策略通过 `ActivatorUtilities` 使用 DI 激活；带有效清单但没有模块的程序集仍可走 Legacy public 无参构造。无清单目录不会进入任何激活路径。
 
 生产发现要求入口及引用程序集完成严格类型预检，失败时隔离整个目录，避免同一插件出现部分类型成功。模块身份或程序集版本与清单不一致属于发布物自相矛盾，在 `ConfigureServices` 前阻断组合。
 
 ### 4.3 单一扩展注册表
 
-[`HostExtensionRegistry`](../Business/Helpers/HostExtensionRegistry.cs) 对宿主程序集和插件程序集做一次类型遍历，同时发现 Document 与 Tool 策略。它拥有：
+[`HostExtensionRegistry`](../../Business/Helpers/HostExtensionRegistry.cs) 对宿主程序集和插件程序集做一次类型遍历，同时发现 Document 与 Tool 策略。它拥有：
 
 - 策略 ID 到创建策略的映射；
 - Document/Tool 元数据快照；
@@ -107,11 +107,11 @@ flowchart TB
 
 元数据在注册时只读取一次，避免属性访问包含计算或副作用时产生不一致。注册表先扫描并激活候选策略、各读取一次元数据、校验主 ID、别名与命名空间的全量碰撞，无诊断时才一次性发布只读注册表。重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 均形成排序稳定的结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义。
 
-[`ViewLocator`](../ViewLocator.cs) 复用已经加载到当前进程的程序集和同一局部类型容错逻辑，不再次承担插件部署扫描职责。
+[`ViewLocator`](../../ViewLocator.cs) 复用已经加载到当前进程的程序集和同一局部类型容错逻辑，不再次承担插件部署扫描职责。
 
 ## 5. `ManagementFactory` 的 Facade 边界
 
-[`ManagementFactory`](../ViewModels/ManagementFactory.cs) 必须继承 Dock 的工厂类型并保留现有 public 方法、override 和定位器配置，因此不能简单删除。它现在主要承担协议适配与委托：
+[`ManagementFactory`](../../ViewModels/ManagementFactory.cs) 必须继承 Dock 的工厂类型并保留现有 public 方法、override 和定位器配置，因此不能简单删除。它现在主要承担协议适配与委托：
 
 | 协作者 | 单一职责 | 不负责 |
 | --- | --- | --- |
@@ -174,7 +174,7 @@ sequenceDiagram
 
 ## 7. 布局生命周期
 
-[`DockLayoutLifecycle`](../Business/Layout/DockLayoutCoordinator.cs) 只保留三个阶段：
+[`DockLayoutLifecycle`](../../Business/Layout/DockLayoutCoordinator.cs) 只保留三个阶段：
 
 1. `Prepare`：读取快照并创建、初始化默认 Dock 树；
 2. `ApplyPending`：迁移、补齐稳定节点、校验并应用快照；
@@ -192,7 +192,7 @@ sequenceDiagram
 
 ## 8. 原子文件事务
 
-[`AtomicFileTransaction`](../Business/Storage/AtomicFileTransaction.cs) 同时服务于文档和布局：
+[`AtomicFileTransaction`](../../Business/Storage/AtomicFileTransaction.cs) 同时服务于文档和布局：
 
 1. 将目标路径规范化并确保父目录存在；
 2. 在同目录创建唯一 `.tmp` 文件；
@@ -228,4 +228,4 @@ Legacy 或未使用 `IDocumentScopeFactory` 的 Document 仍没有统一的 Docu
 | 布局迁移、隔离、回退 | 布局生命周期与存储测试 |
 | XAML、绑定和真实窗口事件 | Headless UI 与 Windows Smoke |
 
-详细命令和门槛参见[测试说明](../../../docs/testing/myavalonia-management-tests.md)。
+详细命令和门槛参见[测试说明](../../../../docs/reference/myavalonia-management-tests.md)。

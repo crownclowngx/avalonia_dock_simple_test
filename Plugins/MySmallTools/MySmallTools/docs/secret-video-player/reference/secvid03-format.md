@@ -416,14 +416,14 @@ dotnet test .\Plugins\MySmallTools\MySmallTools.Tests\MySmallTools.Tests.csproj 
 
 ## 14. 对应实现与测试
 
-- [Secvid03Format.cs](../../Business/SecretVideoPlayer/Container/Secvid03Format.cs)：格式常量、布局计算、前缀检测和严格解析。
-- [Secvid03Cryptography.cs](../../Business/SecretVideoPlayer/Container/Secvid03Cryptography.cs)：KDF、nonce、AAD、固定头和块认证。
-- [EncryptedVideoContainer.cs](../../Business/SecretVideoPlayer/Container/EncryptedVideoContainer.cs)：公开区编码、CRC、读取和原地更新。
-- [Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Encryption/Secvid03Encryptor.cs)：流式写入。
-- [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)：逐块认证导出。
-- [OutputFileTransaction.cs](../../Business/SecretVideoPlayer/Operations/OutputFileTransaction.cs)：partial、落盘和不覆盖提交。
-- [SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/Container/SeekableEncryptedVideoStream.cs)：按需认证解密与 LRU。
-- [SeekableStreamMediaInput.cs](../../Business/SecretVideoPlayer/Playback/SeekableStreamMediaInput.cs)：LibVLC Stream 回调适配。
-- [Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)：结构边界、逐字节篡改、块归属、清零和路径安全。
-- [Secvid03GoldenVectorTests.cs](../../../MySmallTools.Tests/Secvid03GoldenVectorTests.cs)：固定向量与独立参考验证。
-- [Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)：端到端加密、公开信息和随机读取。
+- [Secvid03Format.cs](../../../Business/SecretVideoPlayer/Container/Secvid03Format.cs)：格式常量、布局计算、前缀检测和严格解析。
+- [Secvid03Cryptography.cs](../../../Business/SecretVideoPlayer/Container/Secvid03Cryptography.cs)：KDF、nonce、AAD、固定头和块认证。
+- [EncryptedVideoContainer.cs](../../../Business/SecretVideoPlayer/Container/EncryptedVideoContainer.cs)：公开区编码、CRC、读取和原地更新。
+- [Secvid03Encryptor.cs](../../../Business/SecretVideoPlayer/Encryption/Secvid03Encryptor.cs)：流式写入。
+- [Secvid03Decryptor.cs](../../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)：逐块认证导出。
+- [OutputFileTransaction.cs](../../../Business/SecretVideoPlayer/Operations/OutputFileTransaction.cs)：partial、落盘和不覆盖提交。
+- [SeekableEncryptedVideoStream.cs](../../../Business/SecretVideoPlayer/Container/SeekableEncryptedVideoStream.cs)：按需认证解密与 LRU。
+- [SeekableStreamMediaInput.cs](../../../Business/SecretVideoPlayer/Playback/SeekableStreamMediaInput.cs)：LibVLC Stream 回调适配。
+- [Secvid03SecurityTests.cs](../../../../MySmallTools.Tests/Secvid03SecurityTests.cs)：结构边界、逐字节篡改、块归属、清零和路径安全。
+- [Secvid03GoldenVectorTests.cs](../../../../MySmallTools.Tests/Secvid03GoldenVectorTests.cs)：固定向量与独立参考验证。
+- [Secvid03Tests.cs](../../../../MySmallTools.Tests/Secvid03Tests.cs)：端到端加密、公开信息和随机读取。

@@ -4,7 +4,7 @@
 >
 > 结论：离线候选通过，正式联网门禁未执行，`publishable: false`
 
-本目录只保留脱敏、可审计的 G8 证据，与其他插件的测试结果隔离。对应实现和判定规则见 [G8 验收与发布文档](../../../Plugins/BiliDownloader/BiliDownloader/doc/G8-P0-ACCEPTANCE-RELEASE.md)。
+本目录只保留脱敏、可审计的 G8 证据，与其他插件的测试结果隔离。对应实现和判定规则见 [G8 验收与发布文档](../../../Plugins/BiliDownloader/BiliDownloader/doc/plan-history/G8-P0-ACCEPTANCE-RELEASE.md)。
 
 本次结果：BiliDownloader 396/396、全解决方案 783/783，均为 0 失败、0 跳过；Release 构建 0 警告、0 错误；宿主候选加载、ZIP 复验和敏感扫描通过。真实 Bilibili、ffmpeg 下载/探测及 20 次 Range 恢复因未提供测试 BVID 和临时 Cookie 而显式跳过。
 

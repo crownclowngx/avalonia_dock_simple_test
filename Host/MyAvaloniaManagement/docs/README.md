@@ -4,16 +4,16 @@
 
 ## 阅读顺序
 
-1. [内部架构](./architecture.md)：先理解启动、插件发现、Dock、文档和布局持久化的完整链路。
-2. [设计方法论与取舍](./design-methodology-and-tradeoffs.md)：了解本轮重构如何应用 SOLID 和设计模式，以及没有采用哪些更复杂方案。
-3. [兼容约束](./compatibility-contracts.md)：修改代码前核对 public API、插件激活、稳定 ID 和 JSON 行为。
+1. [内部架构](./design/architecture.md)：先理解启动、插件发现、Dock、文档和布局持久化的完整链路。
+2. [设计方法论与取舍](./design/design-methodology-and-tradeoffs.md)：了解本轮重构如何应用 SOLID 和设计模式，以及没有采用哪些更复杂方案。
+3. [兼容约束](./reference/compatibility-contracts.md)：修改代码前核对 public API、插件激活、稳定 ID 和 JSON 行为。
 
 解决方案级材料：
 
 - [项目文档导航](../../../docs/README.md)
-- [宿主—插件架构评审](../../../docs/host-plugin-architecture-review.md)
-- [宿主专项测试说明](../../../docs/testing/myavalonia-management-tests.md)
-- [Dock 布局快照 V1](../../../docs/upgrade/net10/dock-layout-snapshot-v1.md)
+- [宿主—插件架构评审](../../../docs/design/host-plugin-architecture-review.md)
+- [宿主专项测试说明](../../../docs/reference/myavalonia-management-tests.md)
+- [Dock 布局快照 V1](../../../docs/reference/dock-layout-snapshot-v1.md)
 
 ## 文档定位
 

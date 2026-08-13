@@ -368,7 +368,7 @@ public async Task<JsonElement> InvokeAsync(JsonElement p, CancellationToken ct)
 
 ## 8. 跨插件调用的安全性分析（基于现有加载器代码）
 
-结合 [`PluginLoadContext.cs`](../Host/MyAvaloniaManagement/Business/Helpers/PluginLoadContext.cs) 与 [`AssemblyLoaderHelper.cs`](../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs) 的实际实现：
+结合 [`PluginLoadContext.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginLoadContext.cs) 与 [`AssemblyLoaderHelper.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs) 的实际实现：
 
 ### 8.1 没有问题的部分
 

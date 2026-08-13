@@ -384,15 +384,15 @@ artifacts/MySmallTools/p0-win-x64/
 
 | 能力 | 生产入口 | 自动化证据 | 说明 |
 | --- | --- | --- | --- |
-| SECVID03 格式与认证 | `Secvid03Format`、`Secvid03Cryptography` | `Secvid03SecurityTests`、`Secvid03GoldenVectorTests` | [格式说明](secvid03-format.md) |
-| 加密/解密与输出事务 | `Secvid03Encryptor`、`Secvid03Decryptor`、`OutputFileTransaction` | `Secvid03Tests`、`VideoDecryptionTests`、`G2ReliabilityTests` | [架构](architecture-design.md) |
-| 候选换片与单 PlayerHost | `SecureVideoPlayer`、`PlaybackBackend`、`PlaybackMediaLease.cs` 中的 Source/Host | `G3PlaybackSessionTests` | [G3.1](G3.1-ASYNC-PLAYBACK-UI-RESPONSIVENESS.md) |
-| HWND/Dock 恢复 | `EmbeddedVideoSurface`、`VideoSurfaceRestoreSequence` | `VideoToolStabilityTests`、真实窗口 Harness | [G3](G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md) |
-| 部署探针与发布门禁 | `PlaybackDeploymentProbe`、发布脚本 | `G4DeploymentTests`、`ReleaseAcceptance` | [G4](G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md) |
+| SECVID03 格式与认证 | `Secvid03Format`、`Secvid03Cryptography` | `Secvid03SecurityTests`、`Secvid03GoldenVectorTests` | [格式说明](../reference/secvid03-format.md) |
+| 加密/解密与输出事务 | `Secvid03Encryptor`、`Secvid03Decryptor`、`OutputFileTransaction` | `Secvid03Tests`、`VideoDecryptionTests`、`G2ReliabilityTests` | [架构](../design/architecture-design.md) |
+| 候选换片与单 PlayerHost | `SecureVideoPlayer`、`PlaybackBackend`、`PlaybackMediaLease.cs` 中的 Source/Host | `G3PlaybackSessionTests` | [G3.1](../plan-history/G3.1-ASYNC-PLAYBACK-UI-RESPONSIVENESS.md) |
+| HWND/Dock 恢复 | `EmbeddedVideoSurface`、`VideoSurfaceRestoreSequence` | `VideoToolStabilityTests`、真实窗口 Harness | [G3](../plan-history/G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md) |
+| 部署探针与发布门禁 | `PlaybackDeploymentProbe`、发布脚本 | `G4DeploymentTests`、`ReleaseAcceptance` | [G4](../plan-history/G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md) |
 | 插件扫描排除 | 宿主 `AssemblyLoaderHelper`、`PluginLoadContext` | `NativeDirectoryScanTests` | 本文第 4 节 |
-| Document Scope | `DocumentScopeManager`、4 个 Strategy | 宿主插件兼容与 Scope 测试 | [架构](architecture-design.md) |
-| 真实 MP4/WebM | 测试资产和 Harness | `RealMediaAssetTests`、真实窗口门禁 | [测试资产](real-media-test-assets.md) |
-| P1 规模与组合 | G8 Harness 套件、P1 串行脚本 | `G8P1IntegrationAcceptanceTests`、`G8DocumentScopeIsolationTests` | [G8](G8-P1-INTEGRATION-ACCEPTANCE.md) |
+| Document Scope | `DocumentScopeManager`、4 个 Strategy | 宿主插件兼容与 Scope 测试 | [架构](../design/architecture-design.md) |
+| 真实 MP4/WebM | 测试资产和 Harness | `RealMediaAssetTests`、真实窗口门禁 | [测试资产](../reference/real-media-test-assets.md) |
+| P1 规模与组合 | G8 Harness 套件、P1 串行脚本 | `G8P1IntegrationAcceptanceTests`、`G8DocumentScopeIsolationTests` | [G8](../plan-history/G8-P1-INTEGRATION-ACCEPTANCE.md) |
 
 常用验证命令（从仓库根目录执行）：
 
@@ -407,19 +407,19 @@ dotnet run --project .\Plugins\MySmallTools\MySmallTools.Playback.IntegrationHar
 
 正式 G11 必须从 clean worktree 执行，不带 `-AllowDirty`。完成全部人工交互后再由实际
 验收人运行 `Approve-MySmallToolsG11.ps1`；完整前置条件、命令、预期结果和失败处理见
-[G11 最终验收与完整测试手册](G11-FINAL-ACCEPTANCE-AND-TEST-GUIDE.md)。
+[G11 最终验收与完整测试手册](../reference/G11-FINAL-ACCEPTANCE-AND-TEST-GUIDE.md)。
 
 ## 14. 关键源码
 
-- [MySmallTools.csproj](../../MySmallTools.csproj)
-- [PlaybackDeployment.cs](../../Business/SecretVideoPlayer/Playback/PlaybackDeployment.cs)
-- [LibVlcRuntime.cs](../../Business/SecretVideoPlayer/Playback/LibVlcRuntime.cs)
-- [PlaybackBackend.cs](../../Business/SecretVideoPlayer/Playback/PlaybackBackend.cs)
-- [SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)
-- [PlaybackMediaLease.cs](../../Business/SecretVideoPlayer/Playback/PlaybackMediaLease.cs)
-- [PlaybackNativeDispatcher.cs](../../Business/SecretVideoPlayer/Playback/PlaybackNativeDispatcher.cs)
-- [PlaybackResourceReaper.cs](../../Business/SecretVideoPlayer/Playback/PlaybackResourceReaper.cs)
-- [EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)
-- [VideoPlayerControlViewModel.cs](../../ViewModels/SecretVideoPlayer/VideoPlayerControlViewModel.cs)
-- [AssemblyLoaderHelper.cs](../../../../../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs)
-- [DocumentScopeManager.cs](../../../../../Host/MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)
+- [MySmallTools.csproj](../../../MySmallTools.csproj)
+- [PlaybackDeployment.cs](../../../Business/SecretVideoPlayer/Playback/PlaybackDeployment.cs)
+- [LibVlcRuntime.cs](../../../Business/SecretVideoPlayer/Playback/LibVlcRuntime.cs)
+- [PlaybackBackend.cs](../../../Business/SecretVideoPlayer/Playback/PlaybackBackend.cs)
+- [SecureVideoPlayer.cs](../../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)
+- [PlaybackMediaLease.cs](../../../Business/SecretVideoPlayer/Playback/PlaybackMediaLease.cs)
+- [PlaybackNativeDispatcher.cs](../../../Business/SecretVideoPlayer/Playback/PlaybackNativeDispatcher.cs)
+- [PlaybackResourceReaper.cs](../../../Business/SecretVideoPlayer/Playback/PlaybackResourceReaper.cs)
+- [EmbeddedVideoSurface.cs](../../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)
+- [VideoPlayerControlViewModel.cs](../../../ViewModels/SecretVideoPlayer/VideoPlayerControlViewModel.cs)
+- [AssemblyLoaderHelper.cs](../../../../../../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs)
+- [DocumentScopeManager.cs](../../../../../../Host/MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)

@@ -160,10 +160,10 @@ LibVLC 在压力运行中仍会输出既有 `imem`、D3D11 thumbnail 和 paused 
 
 ## 9. 相关入口
 
-- [播放会话](../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)
-- [播放模型](../../Business/SecretVideoPlayer/Playback/PlaybackModels.cs)
-- [播放器 ViewModel](../../ViewModels/SecretVideoPlayer/VideoPlayerControlViewModel.cs)
-- [播放器 View](../../Views/SecretVideoPlayer/VideoPlayerControl.axaml.cs)
-- [媒体库 ViewModel](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
-- [真实资产说明](real-media-test-assets.md)
+- [播放会话](../../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)
+- [播放模型](../../../Business/SecretVideoPlayer/Playback/PlaybackModels.cs)
+- [播放器 ViewModel](../../../ViewModels/SecretVideoPlayer/VideoPlayerControlViewModel.cs)
+- [播放器 View](../../../Views/SecretVideoPlayer/VideoPlayerControl.axaml.cs)
+- [媒体库 ViewModel](../../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
+- [真实资产说明](../reference/real-media-test-assets.md)
 - [实施路线图](ROADMAP.md)

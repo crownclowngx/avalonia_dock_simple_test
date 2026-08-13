@@ -203,7 +203,7 @@ CREATE TABLE download_tasks (
 - Windows x64 用户可主动安装或修复代码中固定的 Gyan FFmpeg 8.1.2 essentials 包；安装过程校验固定 SHA-256、安全解压并原子切换活动指针，不修改 PATH。
 - 插件启动只加载设置并执行本地探测，不联网、不自动安装。其他平台可以重新检测或选择自定义路径，但不支持内置包安装。
 - 媒体下载和完整性校验完成后会在合并前保存检查点；ffmpeg 修复成功后可只重试合并，不重新下载主媒体。
-- 完整的供应链、失败回滚和错误行动设计见 [G7 文档](G7-FFMPEG-ERROR-ACTION-ENTRY.md)。
+- 完整的供应链、失败回滚和错误行动设计见 [G7 文档](../plan-history/G7-FFMPEG-ERROR-ACTION-ENTRY.md)。
 
 ## 6. 当前限制与后续扩展方向
 

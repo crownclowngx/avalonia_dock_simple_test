@@ -363,7 +363,7 @@ flowchart LR
 - `OutputChanged` 只为输出端口兼容保留；普通媒体切换不替换 `MediaPlayer`，因此不会要求 View 重绑。
 - 表面恢复使用表面代次、媒体代次、用户意图代次、一次性快照、取消源和 5 秒超时。
 
-详细 HWND 顺序见[接入、开发约定与故障排查](integration-and-conventions.md#5-dock-切换与视频表面恢复)。
+详细 HWND 顺序见[接入、开发约定与故障排查](../troubleshooting/integration-and-conventions.md#5-dock-切换与视频表面恢复)。
 
 ## 11. DI 与 Document 所有权
 
@@ -407,18 +407,18 @@ clean-worktree 判定。产品公共 C# API、SECVID03、Document Scope 和播�
 
 ## 14. 关键实现与验证
 
-- [MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
-- [PlaybackDeployment.cs](../../Business/SecretVideoPlayer/Playback/PlaybackDeployment.cs)
-- [PlaybackBackend.cs](../../Business/SecretVideoPlayer/Playback/PlaybackBackend.cs)
-- [SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)
-- [PlaybackMediaLease.cs](../../Business/SecretVideoPlayer/Playback/PlaybackMediaLease.cs)（当前文件内类型为 PlayerHost、MediaSource 及其工厂）
-- [PlaybackNativeDispatcher.cs](../../Business/SecretVideoPlayer/Playback/PlaybackNativeDispatcher.cs)
-- [PlaybackResourceReaper.cs](../../Business/SecretVideoPlayer/Playback/PlaybackResourceReaper.cs)
-- [PlaybackDiagnosticExporter.cs](../../Business/SecretVideoPlayer/Playback/PlaybackDiagnosticExporter.cs)
-- [SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/Container/SeekableEncryptedVideoStream.cs)
-- [Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Encryption/Secvid03Encryptor.cs)
-- [Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)
-- [DocumentScopeManager.cs](../../../../../Host/MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)
+- [MySmallToolsPluginModule.cs](../../../Plugin/MySmallToolsPluginModule.cs)
+- [PlaybackDeployment.cs](../../../Business/SecretVideoPlayer/Playback/PlaybackDeployment.cs)
+- [PlaybackBackend.cs](../../../Business/SecretVideoPlayer/Playback/PlaybackBackend.cs)
+- [SecureVideoPlayer.cs](../../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)
+- [PlaybackMediaLease.cs](../../../Business/SecretVideoPlayer/Playback/PlaybackMediaLease.cs)（当前文件内类型为 PlayerHost、MediaSource 及其工厂）
+- [PlaybackNativeDispatcher.cs](../../../Business/SecretVideoPlayer/Playback/PlaybackNativeDispatcher.cs)
+- [PlaybackResourceReaper.cs](../../../Business/SecretVideoPlayer/Playback/PlaybackResourceReaper.cs)
+- [PlaybackDiagnosticExporter.cs](../../../Business/SecretVideoPlayer/Playback/PlaybackDiagnosticExporter.cs)
+- [SeekableEncryptedVideoStream.cs](../../../Business/SecretVideoPlayer/Container/SeekableEncryptedVideoStream.cs)
+- [Secvid03Encryptor.cs](../../../Business/SecretVideoPlayer/Encryption/Secvid03Encryptor.cs)
+- [Secvid03Decryptor.cs](../../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)
+- [DocumentScopeManager.cs](../../../../../../Host/MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)
 
 主要验证入口：
 
@@ -432,4 +432,4 @@ dotnet test .\Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginT
 ```
 
 完整命令和人工验收矩阵见
-[G11 最终验收与完整测试手册](G11-FINAL-ACCEPTANCE-AND-TEST-GUIDE.md)。
+[G11 最终验收与完整测试手册](../reference/G11-FINAL-ACCEPTANCE-AND-TEST-GUIDE.md)。

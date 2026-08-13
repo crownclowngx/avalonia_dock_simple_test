@@ -14,7 +14,7 @@
 - `AssemblyLoaderHelper`、`PluginModuleCatalog`、`ServiceCollectionExtensions` 等现有 public 辅助入口；
 - 静态 `ServiceProvider` 兼容路径。
 
-[`PublicApiContractTests`](../../MyAvaloniaManagement.Tests/PublicApiContractTests.cs) 对 Host/Common 导出元数据生成 SHA-256 指纹。内部类型可以调整；有意 public 变更必须单独评审，并同步更新插件、契约测试和本文。
+[`PublicApiContractTests`](../../../MyAvaloniaManagement.Tests/PublicApiContractTests.cs) 对 Host/Common 导出元数据生成 SHA-256 指纹。内部类型可以调整；有意 public 变更必须单独评审，并同步更新插件、契约测试和本文。
 
 ## 3. 插件发现与激活
 
@@ -125,7 +125,7 @@ V1 清单格式：
 - 保存继续使用同目录原子替换；
 - 不自动部分恢复、不引入 V2。
 
-完整格式参见 [Dock 布局快照 V1](../../../docs/upgrade/net10/dock-layout-snapshot-v1.md)。
+完整格式参见 [Dock 布局快照 V1](../../../../docs/reference/dock-layout-snapshot-v1.md)。
 
 ## 7. 启动和关闭契约
 

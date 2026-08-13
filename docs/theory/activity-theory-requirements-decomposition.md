@@ -3,7 +3,7 @@
 > 文档性质：方法论草案（形式化与非形式化讨论并行）
 > 适用对象：开发团队、产品设计者、项目评审者
 > 前置阅读：[以注意力为中心的可停靠工作台设计](./attention-centered-dock-workspace-design.md)（下文简称《主设计文档》，其参考文献编号沿用为 M-n）
-> 关联文档：[宿主—插件交互架构评审](./host-plugin-architecture-review.md)
+> 关联文档：[宿主—插件交互架构评审](../design/host-plugin-architecture-review.md)
 > 状态说明：本文是"先定方向、后补严谨"的第一版方法论。其中活动理论映射属于概念框架，信息论部分中一部分是已有结论的直接引用、一部分是本项目提出的工程模型，两者会被明确区分。本文不构成任何已验证效果的声明。
 
 ## 摘要
@@ -309,7 +309,7 @@ A1 是四轴中对内部结构约束最强的一轴，给出操作定义：
 
 ### 6.3 分类轴与现有代码的咬合
 
-当前 [`DocumentMetadata`](../Host/MyAvaloniaManagementCommon/DocumentCreation/DocumentMetadata.cs) 只含 `DocumentTypeId`、`DisplayName`、`MenuCategory` 等展示性字段，尚无分类轴字段。若本方法论经回溯验证后被采纳，可将 A1–A4 以枚举或位标志形式加入元数据，供菜单分组、默认布局与恢复策略消费。**是否落码是后续决定，不属于本文承诺。**
+当前 [`DocumentMetadata`](../../Host/MyAvaloniaManagementCommon/DocumentCreation/DocumentMetadata.cs) 只含 `DocumentTypeId`、`DisplayName`、`MenuCategory` 等展示性字段，尚无分类轴字段。若本方法论经回溯验证后被采纳，可将 A1–A4 以枚举或位标志形式加入元数据，供菜单分组、默认布局与恢复策略消费。**是否落码是后续决定，不属于本文承诺。**
 
 ## 7. 判定问题 C（二）：Tool 的子分类轴
 

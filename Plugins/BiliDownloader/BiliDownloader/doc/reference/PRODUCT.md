@@ -6,11 +6,11 @@
 > 竞品调研日期：2026-07-20  
 > 文档状态：V1.1（G3–G5 闭环重构完成）
 
-> 2026-08-03 产品基线更新：G6 已完成四种文件冲突策略、统一提交预检、批量结果汇总、SQLite 原子路径保留、执行前磁盘复检和 staging 安全替换；旧 Document 默认迁移为自动序号，不允许静默覆盖。详细证据见 [G6 文件冲突与提交预检](doc/G6-FILE-CONFLICT-SUBMISSION-PREFLIGHT.md)。
+> 2026-08-03 产品基线更新：G6 已完成四种文件冲突策略、统一提交预检、批量结果汇总、SQLite 原子路径保留、执行前磁盘复检和 staging 安全替换；旧 Document 默认迁移为自动序号，不允许静默覆盖。详细证据见 [G6 文件冲突与提交预检](../plan-history/G6-FILE-CONFLICT-SUBMISSION-PREFLIGHT.md)。
 
-> 2026-08-09 产品基线更新：P1-G9 已完成多语言字幕、SRT/ASS/VTT、MP4/MKV 软字幕、弹幕 XML/ASS/JSON、结构化结果及附加资源独立重试；离线 Release 测试通过，固定版 ffmpeg 与 B 站实网发布验收待执行。详细证据见 [P1-G9 字幕、软字幕与弹幕增强](doc/P1-G9-SUBTITLE-DANMAKU-ENHANCEMENT.md)。
+> 2026-08-09 产品基线更新：P1-G9 已完成多语言字幕、SRT/ASS/VTT、MP4/MKV 软字幕、弹幕 XML/ASS/JSON、结构化结果及附加资源独立重试；离线 Release 测试通过，固定版 ffmpeg 与 B 站实网发布验收待执行。详细证据见 [P1-G9 字幕、软字幕与弹幕增强](../plan-history/P1-G9-SUBTITLE-DANMAKU-ENHANCEMENT.md)。
 
-> 2026-08-10 产品基线更新：P1-G10 已完成全局/单任务主媒体限速、运行时热更新、快照 v4、SQLite 迁移和离线门禁；固定版 ffmpeg、实网与桌面发布验收未完成，仍不可宣称 P1 正式发布。详细证据见 [P1-G10 限速与总验收](doc/P1-G10-BANDWIDTH-REGRESSION-RELEASE-ACCEPTANCE.md)。
+> 2026-08-10 产品基线更新：P1-G10 已完成全局/单任务主媒体限速、运行时热更新、快照 v4、SQLite 迁移和离线门禁；固定版 ffmpeg、实网与桌面发布验收未完成，仍不可宣称 P1 正式发布。详细证据见 [P1-G10 限速与总验收](../plan-history/P1-G10-BANDWIDTH-REGRESSION-RELEASE-ACCEPTANCE.md)。
 
 ## 目录
 

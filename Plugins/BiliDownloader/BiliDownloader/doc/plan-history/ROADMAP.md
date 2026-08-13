@@ -1,7 +1,7 @@
 # BiliDownloader 功能实施路线图
 
 > 文档定位：BiliDownloader 总体执行计划与功能时间线  
-> 产品基线：[PRODUCT.md](../PRODUCT.md)  
+> 产品基线：[PRODUCT.md](../reference/PRODUCT.md)  
 > 计划基准日期：2026-07-21  
 > 计划启动日期：2026-07-27  
 > 估算口径：1 名全职开发者，不计算法定假期  

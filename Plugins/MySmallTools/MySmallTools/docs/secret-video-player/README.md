@@ -8,25 +8,25 @@
 
 | 文档 | 内容 | 适合读者 |
 | --- | --- | --- |
-| [实施路线图](ROADMAP.md) | 当前基线、阶段时间线、功能依赖、退出条件和统一完成标准 | 产品、开发者、维护者 |
-| [.NET 10、Avalonia 12 与 Dock 12 升级实施指南](NET10-AVALONIA12-DOCK12-UPGRADE-GUIDE.md) | 全项目分阶段升级、中央依赖治理、播放器兼容性闸门、逐步交付物、回退和单人工期 | 开发者、测试人员、发布人员、技术负责人 |
-| [G0 完成记录](G0-BASELINE-REAL-MEDIA-LEGACY-CLEANUP.md) | 真实素材、遗留清理、SOLID 边界和 37/15 测试基线 | 开发者、维护者、评审人员 |
-| [G1 安全验证](G1-SECVID03-FORMAT-SECURITY-VALIDATION.md) | 五子域整理、威胁模型、固定向量、畸形/篡改矩阵和性能基线 | 开发者、安全评审人员 |
-| [G2 可靠性闭环](G2-ENCRYPTION-DECRYPTION-PREFLIGHT-ERROR-RESOURCE-CLOSURE.md) | 加解密预检、统一错误、不覆盖事务、取消重试和资源释放证据 | 开发者、测试人员、评审人员 |
-| [G3 真实播放与 Dock 稳定性](G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md) | 播放会话契约、候选 Lease、类型化错误、真实 HWND/vout 门禁和 100 次压力证据 | 开发者、测试人员、评审人员 |
-| [G3.1 异步播放与 UI 响应性](G3.1-ASYNC-PLAYBACK-UI-RESPONSIVENESS.md) | 单 MediaPlayer、原生命令串行调度、有界异步回收、内存抖动分析和 UI heartbeat 门禁 | 开发者、测试人员、评审人员 |
-| [G4 P0 部署、验收与发布基线](G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md) | 部署探针、阻断诊断、确定性发布包、大文件内存与两轮真实播放门禁 | 开发者、发布人员、评审人员 |
-| [G5 批量加密与统一队列](G5-BATCH-ENCRYPTION-UNIFIED-QUEUE.md) | 批量加密计划、严格顺序运行器、两级取消、冲突策略和 100 文件自动化证据 | 开发者、测试人员、评审人员 |
-| [G6 播放器日常控制](G6-PLAYER-DAILY-CONTROLS.md) | 全屏、倍速、快捷键、音轨/字幕、媒体库导航、连续播放和真实窗口证据 | 开发者、测试人员、评审人员 |
-| [G7 媒体库与播放历史](G7-MEDIA-LIBRARY-INCREMENTAL-HISTORY.md) | 递归扫描、目录监听、千项投影、设置/历史、隐私边界和原子恢复 | 开发者、测试人员、评审人员 |
-| [G7.1 UI 职责拆分](G7.1-UI-RESPONSIBILITY-REFACTOR.md) | 顶层兼容外壳、五个功能子包、子 View、全屏呈现器和状态所有权 | 开发者、维护者、评审人员 |
-| [G9 平台与原生表面抽象](G9-PLATFORM-NATIVE-SURFACE-ABSTRACTION.md) | 平台能力、私有运行时布局、部署初始化边界和无 HWND 的表面契约 | 开发者、测试人员、维护者 |
-| [G10 性能基线与脱敏诊断](G10-PERFORMANCE-REDACTED-DIAGNOSTICS.md) | 加解密/Seek/媒体库基线、真实播放器资源趋势、诊断 schema v1 和敏感扫描 | 开发者、测试人员、维护者、安全评审人员 |
-| [G11 最终验收与完整测试手册](G11-FINAL-ACCEPTANCE-AND-TEST-GUIDE.md) | 环境准备、全部命令、自动/人工矩阵、脱敏证据和最终签字 | 开发者、测试人员、发布人员、验收人员 |
-| [概要设计](architecture-design.md) | 分层、组件职责、加密与播放数据流、DI 和 Document 生命周期 | 开发者、维护者 |
-| [SECVID03 文件格式](secvid03-format.md) | 二进制布局、密钥派生、GCM 认证、随机读取、公开信息和兼容策略 | 格式维护者、安全评审人员 |
-| [接入、约定与排障](integration-and-conventions.md) | LibVLC 部署、插件扫描、Dock 黑屏恢复、资源释放、已踩过的坑和回归检查 | 集成人员、问题排查人员 |
-| [真实媒体测试资产](real-media-test-assets.md) | 合成 MP4/WebM 的来源、授权、生成、完整性和阶段边界 | 开发者、测试人员 |
+| [实施路线图](plan-history/ROADMAP.md) | 当前基线、阶段时间线、功能依赖、退出条件和统一完成标准 | 产品、开发者、维护者 |
+| [.NET 10、Avalonia 12 与 Dock 12 升级实施指南](plan-history/NET10-AVALONIA12-DOCK12-UPGRADE-GUIDE.md) | 全项目分阶段升级、中央依赖治理、播放器兼容性闸门、逐步交付物、回退和单人工期 | 开发者、测试人员、发布人员、技术负责人 |
+| [G0 完成记录](plan-history/G0-BASELINE-REAL-MEDIA-LEGACY-CLEANUP.md) | 真实素材、遗留清理、SOLID 边界和 37/15 测试基线 | 开发者、维护者、评审人员 |
+| [G1 安全验证](plan-history/G1-SECVID03-FORMAT-SECURITY-VALIDATION.md) | 五子域整理、威胁模型、固定向量、畸形/篡改矩阵和性能基线 | 开发者、安全评审人员 |
+| [G2 可靠性闭环](plan-history/G2-ENCRYPTION-DECRYPTION-PREFLIGHT-ERROR-RESOURCE-CLOSURE.md) | 加解密预检、统一错误、不覆盖事务、取消重试和资源释放证据 | 开发者、测试人员、评审人员 |
+| [G3 真实播放与 Dock 稳定性](plan-history/G3-REAL-MEDIA-PLAYBACK-DOCK-STABILITY.md) | 播放会话契约、候选 Lease、类型化错误、真实 HWND/vout 门禁和 100 次压力证据 | 开发者、测试人员、评审人员 |
+| [G3.1 异步播放与 UI 响应性](plan-history/G3.1-ASYNC-PLAYBACK-UI-RESPONSIVENESS.md) | 单 MediaPlayer、原生命令串行调度、有界异步回收、内存抖动分析和 UI heartbeat 门禁 | 开发者、测试人员、评审人员 |
+| [G4 P0 部署、验收与发布基线](plan-history/G4-P0-DEPLOYMENT-ACCEPTANCE-RELEASE-BASELINE.md) | 部署探针、阻断诊断、确定性发布包、大文件内存与两轮真实播放门禁 | 开发者、发布人员、评审人员 |
+| [G5 批量加密与统一队列](plan-history/G5-BATCH-ENCRYPTION-UNIFIED-QUEUE.md) | 批量加密计划、严格顺序运行器、两级取消、冲突策略和 100 文件自动化证据 | 开发者、测试人员、评审人员 |
+| [G6 播放器日常控制](plan-history/G6-PLAYER-DAILY-CONTROLS.md) | 全屏、倍速、快捷键、音轨/字幕、媒体库导航、连续播放和真实窗口证据 | 开发者、测试人员、评审人员 |
+| [G7 媒体库与播放历史](plan-history/G7-MEDIA-LIBRARY-INCREMENTAL-HISTORY.md) | 递归扫描、目录监听、千项投影、设置/历史、隐私边界和原子恢复 | 开发者、测试人员、评审人员 |
+| [G7.1 UI 职责拆分](plan-history/G7.1-UI-RESPONSIBILITY-REFACTOR.md) | 顶层兼容外壳、五个功能子包、子 View、全屏呈现器和状态所有权 | 开发者、维护者、评审人员 |
+| [G9 平台与原生表面抽象](plan-history/G9-PLATFORM-NATIVE-SURFACE-ABSTRACTION.md) | 平台能力、私有运行时布局、部署初始化边界和无 HWND 的表面契约 | 开发者、测试人员、维护者 |
+| [G10 性能基线与脱敏诊断](plan-history/G10-PERFORMANCE-REDACTED-DIAGNOSTICS.md) | 加解密/Seek/媒体库基线、真实播放器资源趋势、诊断 schema v1 和敏感扫描 | 开发者、测试人员、维护者、安全评审人员 |
+| [G11 最终验收与完整测试手册](reference/G11-FINAL-ACCEPTANCE-AND-TEST-GUIDE.md) | 环境准备、全部命令、自动/人工矩阵、脱敏证据和最终签字 | 开发者、测试人员、发布人员、验收人员 |
+| [概要设计](design/architecture-design.md) | 分层、组件职责、加密与播放数据流、DI 和 Document 生命周期 | 开发者、维护者 |
+| [SECVID03 文件格式](reference/secvid03-format.md) | 二进制布局、密钥派生、GCM 认证、随机读取、公开信息和兼容策略 | 格式维护者、安全评审人员 |
+| [接入、约定与排障](troubleshooting/integration-and-conventions.md) | LibVLC 部署、插件扫描、Dock 黑屏恢复、资源释放、已踩过的坑和回归检查 | 集成人员、问题排查人员 |
+| [真实媒体测试资产](reference/real-media-test-assets.md) | 合成 MP4/WebM 的来源、授权、生成、完整性和阶段边界 | 开发者、测试人员 |
 
 ## 系统边界
 
@@ -152,6 +152,6 @@ LocalAppData。路径与位置是明文隐私数据；密码、密钥、公开�
 - 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[G2ReliabilityTests.cs](../../../MySmallTools.Tests/G2ReliabilityTests.cs)、[G5BatchQueueTests.cs](../../../MySmallTools.Tests/G5BatchQueueTests.cs)、[G8P1IntegrationAcceptanceTests.cs](../../../MySmallTools.Tests/G8P1IntegrationAcceptanceTests.cs)、[G9PlatformAbstractionTests.cs](../../../MySmallTools.Tests/G9PlatformAbstractionTests.cs)
 - 真实窗口门禁：[MySmallTools.Playback.IntegrationHarness](../../../MySmallTools.Playback.IntegrationHarness/)
 - 发布门禁：[MySmallTools.ReleaseAcceptance](../../../MySmallTools.ReleaseAcceptance/)、[Release-MySmallToolsP0.ps1](../../../../../scripts/Release-MySmallToolsP0.ps1)
-- P1 集成验收：[G8-P1-INTEGRATION-ACCEPTANCE.md](G8-P1-INTEGRATION-ACCEPTANCE.md)、[Accept-MySmallToolsP1.ps1](../../../../../scripts/Accept-MySmallToolsP1.ps1)
+- P1 集成验收：[G8-P1-INTEGRATION-ACCEPTANCE.md](plan-history/G8-P1-INTEGRATION-ACCEPTANCE.md)、[Accept-MySmallToolsP1.ps1](../../../../../scripts/Accept-MySmallToolsP1.ps1)
 
 本文档描述当前实现，不把设想中的跨平台支持、旧格式兼容或其他加密算法写作已有能力。格式或接入行为变化时，应同时更新本目录文档和对应自动化测试。
