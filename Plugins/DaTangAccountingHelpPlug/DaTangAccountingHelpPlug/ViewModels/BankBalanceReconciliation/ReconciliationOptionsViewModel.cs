@@ -37,6 +37,7 @@ public partial class ReconciliationOptionsViewModel : ObservableObject
     {
         _profileLoader.Validate(configuration);
         Configuration = configuration;
+        OnPropertyChanged(nameof(Configuration));
         _source.ApplyProfiles(configuration.BankProfiles, selectedProfileId);
         ConfigurationStatus = $"配置版本 {configuration.SchemaVersion}：{configuration.BankProfiles.Count} 个银行账户";
     }

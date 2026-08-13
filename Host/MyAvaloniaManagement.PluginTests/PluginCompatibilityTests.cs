@@ -325,6 +325,20 @@ public sealed class PluginCompatibilityTests
         Assert.Single(firstWelcome.UrlHistory.HistoryItems);
         Assert.Empty(secondWelcome.UrlHistory.HistoryItems);
         Assert.Equal("欢迎 A", firstWelcome.Title);
+        Assert.True(firstWelcome.IsDirty);
+        _ = firstWelcome.CreateSaveDocumentMetaData("unused.mamdoc");
+        Assert.True(firstWelcome.IsDirty);
+        firstWelcome.AcceptChanges();
+        Assert.False(firstWelcome.IsDirty);
+        Assert.Throws<DocumentLoadException>(() =>
+            firstWelcome.LoadDocumentByMetaData(new DocumentSaveData
+            {
+                DocumentTypeId = firstWelcome.SaveDocumentTypeId,
+                Title = "损坏",
+                SaveTime = DateTime.UtcNow,
+                Content = "{broken",
+                PluginMetadata = "{}",
+            }));
 
         var manager = provider.GetRequiredService<DocumentScopeManager>();
         Assert.True(manager.Release(firstWelcome));

@@ -21,7 +21,7 @@ namespace BiliDownloader.ViewModels;
 /// <summary>
 /// BiliDownloader Document ViewModel：负责子 VM 组合、持久化
 /// </summary>
-public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSavePathPolicy, IDisposable
+public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSaveState, IDisposable
 {
     private static readonly IPluginLogger Log = PluginLog.For<BiliDownloaderViewModel>();
 
@@ -53,7 +53,6 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     private Task? _initializationTask;
     private bool _isRestoringDocument;
     private bool _hasLoadedDocument;
-    private bool _requiresSaveAs;
 
     private static readonly HashSet<string> PersistedDownloadConfigProperties =
     [
@@ -84,14 +83,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     public DownloadSourceWorkflowViewModel SourceWorkflow { get; }
     public DownloadWorkspaceViewModel Workspace { get; }
 
-    /// <summary>旧版迁移或未知未来版本的本地兼容提示。</summary>
-    public string CompatibilityWarning { get; private set; } = string.Empty;
-    public bool HasCompatibilityWarning => !string.IsNullOrWhiteSpace(CompatibilityWarning);
-
-    public bool RequiresSaveAs => _requiresSaveAs;
-    public string SaveAsReason => _requiresSaveAs
-        ? "未知版本文档必须另存为 V3 副本，原文件不会被覆盖。"
-        : string.Empty;
+    public bool IsDirty => IsModified;
 
     // 兼容既有调用方；新 View 统一从 Workspace 绑定，转发属性不再承载展示逻辑。
     public DownloadConfigViewModel DownloadConfig => Workspace.DownloadConfig;
@@ -654,8 +646,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     /// <summary>
     /// 创建保存数据（Document V3 格式）。
     /// <para>
-    /// 设计思考（G5）：使用强类型 DocumentSaveDataV2 替代 V1 的匿名对象，
-    /// 提高可读性和版本演进能力。PluginMetadata.Version = "2.0" 供加载时判别版本。
+    /// 插件只负责采集业务字段并生成 V3 快照；方法不更新路径、标题或脏状态，
+    /// 这些提交动作由宿主在主文件写入成功后统一完成。
     /// </para>
     /// </summary>
     public DocumentSaveData CreateSaveDocumentMetaData(string filePath)
@@ -691,14 +683,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     }
 
     /// <summary>
-    /// 从保存数据加载 Document（支持 V1、V2 和 V3 版本）。
-    /// <para>
-    /// 设计思考（G5）：
-    /// - V1 路径保持 JObject 逐字段读取不变，仅追加默认值补齐，确保不回归。
-    /// - V2 路径反序列化 DocumentSaveDataV2，完整恢复所有配置。
-    /// - 未知版本宽容读取已知字段 + 日志警告（向前兼容，不崩溃）。
-    /// - V1 → V2 语义迁移：AddIndexToTitle=true → "{index}.{title}"，false → "{title}"。
-    /// </para>
+    /// 从当前 V3 保存数据加载 Document。项目没有历史文件兼容要求，因此非 V3 内容
+    /// 明确失败，不进行字段猜测、默认补齐或隐式迁移。
     /// </summary>
     public void LoadDocumentByMetaData(DocumentSaveData saveData)
     {
@@ -706,15 +692,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
         _isRestoringDocument = true;
         try
         {
-            var restored = _documentStateMapper.Restore(saveData, DownloadConfig.OutputDirectory);
+            var restored = _documentStateMapper.Restore(saveData);
             ApplyRestoredState(restored);
-            _requiresSaveAs = restored.RequiresSaveAs;
-            CompatibilityWarning = restored.CompatibilityWarning;
             OnPropertyChanged(nameof(DocumentId));
-            OnPropertyChanged(nameof(CompatibilityWarning));
-            OnPropertyChanged(nameof(HasCompatibilityWarning));
-            OnPropertyChanged(nameof(RequiresSaveAs));
-            OnPropertyChanged(nameof(SaveAsReason));
             _hasLoadedDocument = true;
             IsModified = false;
         }
@@ -727,16 +707,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     private void ApplyRestoredState(BiliDownloaderRestoredState restored)
     {
         var data = restored.Data;
-        if (!restored.IsKnownVersion)
-            Log.Error("未知的 Document 主版本，仅恢复安全公共字段。", null);
         VideoParse.Url = data.Url;
         if (!string.IsNullOrWhiteSpace(data.DocumentId)) DocumentId = data.DocumentId;
-        if (!restored.RestoreFullConfiguration)
-        {
-            if (!string.IsNullOrWhiteSpace(data.OutputDirectory))
-                DownloadConfig.OutputDirectory = data.OutputDirectory;
-            return;
-        }
         DownloadInfo = data.DownloadInfo;
         NamingTemplate.Template = data.NamingTemplate;
         DownloadConfig.RestoreDocumentConfiguration(data);
@@ -746,19 +718,10 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     }
 
     /// <summary>
-    /// 宿主完成磁盘写入后清除脏状态和未来版本保护；创建 JSON 但写盘失败时不会调用。
+    /// 接受宿主已经原子写入主文件的当前状态。生成保存快照时不能提前清除脏状态，
+    /// 否则磁盘写入失败会让关闭保护误以为数据已经安全保存。
     /// </summary>
-    public void NotifySaveCompleted(string filePath)
-    {
-        FilePath = filePath;
-        _requiresSaveAs = false;
-        CompatibilityWarning = string.Empty;
-        IsModified = false;
-        OnPropertyChanged(nameof(CompatibilityWarning));
-        OnPropertyChanged(nameof(HasCompatibilityWarning));
-        OnPropertyChanged(nameof(RequiresSaveAs));
-        OnPropertyChanged(nameof(SaveAsReason));
-    }
+    public void AcceptChanges() => IsModified = false;
 
     private bool IsClosing => Volatile.Read(ref _disposed) != 0 || _documentCts.IsCancellationRequested;
 

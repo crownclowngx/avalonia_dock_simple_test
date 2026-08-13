@@ -14,13 +14,13 @@ using Newtonsoft.Json.Linq;
 namespace BiliDownloader.Tests;
 
 /// <summary>
-/// P1-G4 Document V3 的迁移、离线恢复、复用方案和安全边界测试。
+/// Document V3 的往返、离线恢复、复用方案和安全边界测试。
 /// 所有 Provider 都是内存替身，测试不得访问真实 B 站或创建下载任务。
 /// </summary>
 public sealed class DocumentV3G4Tests
 {
     [Fact]
-    public void V3默认值_保持P0兼容行为()
+    public void V3默认值_符合当前产品基线()
     {
         var data = new DocumentSaveDataV3();
 
@@ -144,7 +144,7 @@ public sealed class DocumentV3G4Tests
     }
 
     [Fact]
-    public void V1迁移_规范链接离线转换且旧配置保留()
+    public void V1格式_明确拒绝而不执行隐式迁移()
     {
         var saveData = Envelope(1, new
         {
@@ -157,21 +157,16 @@ public sealed class DocumentV3G4Tests
         });
         var vm = CreateVm();
 
-        vm.LoadDocumentByMetaData(saveData);
-        var migrated = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateSaveDocumentMetaData("unused").Content)!;
+        var exception = Assert.Throws<DocumentLoadException>(() =>
+            vm.LoadDocumentByMetaData(saveData));
 
-        Assert.Equal("v1-doc", migrated.DocumentId);
-        Assert.Equal("video:bv:1abcDEF123", migrated.Source?.StableSourceId);
-        Assert.Equal("{title}", migrated.NamingTemplate);
-        Assert.Equal("D:\\Media", migrated.OutputDirectory);
-        Assert.Contains("V1", vm.CompatibilityWarning);
+        Assert.Contains("V3", exception.Message);
     }
 
     [Fact]
-    public void V2迁移_字幕弹幕布尔值转换为结构化配置()
+    public void V2格式_明确拒绝而不执行隐式迁移()
     {
-        var saveData = Envelope(2, new DocumentSaveDataV2
+        var saveData = Envelope(2, new
         {
             DocumentId = "v2-doc",
             Url = "ep123",
@@ -180,15 +175,10 @@ public sealed class DocumentV3G4Tests
         });
         var vm = CreateVm();
 
-        vm.LoadDocumentByMetaData(saveData);
-        var migrated = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateSaveDocumentMetaData("unused").Content)!;
+        var exception = Assert.Throws<DocumentLoadException>(() =>
+            vm.LoadDocumentByMetaData(saveData));
 
-        Assert.Equal(SubtitleSelectionMode.All, migrated.SubtitleOptions.SelectionMode);
-        Assert.Equal(SubtitleOutputFormat.Srt, migrated.SubtitleOptions.OutputFormat);
-        Assert.Equal(SubtitleDeliveryMode.External, migrated.SubtitleOptions.DeliveryMode);
-        Assert.Equal([DanmakuOutputFormat.Xml], migrated.DanmakuOptions.Formats);
-        Assert.Equal("bangumi:ep:123", migrated.Source?.StableSourceId);
+        Assert.Contains("V3", exception.Message);
     }
 
     [Fact]
@@ -207,7 +197,7 @@ public sealed class DocumentV3G4Tests
     }
 
     [Fact]
-    public void 未知主版本_只恢复安全字段并强制另存()
+    public void 未知主版本_明确拒绝而不猜测恢复字段()
     {
         var saveData = EnvelopeRaw("99.0", JsonConvert.SerializeObject(new
         {
@@ -219,14 +209,10 @@ public sealed class DocumentV3G4Tests
         }));
         var vm = CreateVm();
 
-        vm.LoadDocumentByMetaData(saveData);
+        var exception = Assert.Throws<DocumentLoadException>(() =>
+            vm.LoadDocumentByMetaData(saveData));
 
-        Assert.Equal("future-doc", vm.DocumentId);
-        Assert.Equal("D:\\Safe", vm.DownloadConfig.OutputDirectory);
-        Assert.False(vm.DownloadConfig.DownloadSubtitle);
-        Assert.Null(vm.SourceWorkflow.CapturePersistentState().Source);
-        Assert.True(vm.RequiresSaveAs);
-        Assert.Contains("未知", vm.CompatibilityWarning);
+        Assert.Contains("V3", exception.Message);
     }
 
     [Theory]
@@ -348,15 +334,15 @@ public sealed class DocumentV3G4Tests
     public void 持久配置变化_完整置脏且磁盘保存通知后清除()
     {
         var vm = CreateVm();
-        vm.NotifySaveCompleted("first.bili");
+        vm.AcceptChanges();
         Assert.False(vm.IsModified);
 
         vm.NamingTemplate.Template = "{title}";
         Assert.True(vm.IsModified);
-        vm.NotifySaveCompleted("second.bili");
+        vm.AcceptChanges();
         vm.DownloadConfig.OutputContainer = OutputContainer.Mkv;
         Assert.True(vm.IsModified);
-        vm.NotifySaveCompleted("third.bili");
+        vm.AcceptChanges();
         vm.SourceWorkflow.SetIncrementalBaseline(new IncrementalBaselineSaveData
         {
             SnapshotToken = "snapshot-2",
@@ -380,7 +366,7 @@ public sealed class DocumentV3G4Tests
             },
             Filters = new SourceFilterRulesSaveData(),
         }));
-        vm.NotifySaveCompleted("restored.bili");
+        vm.AcceptChanges();
         Assert.Equal(0, provider.GetPageCount);
 
         vm.SourceWorkflow.Browser.SearchText = "新筛选";
@@ -588,26 +574,6 @@ public sealed class DocumentV3G4Tests
         Assert.Equal("系列名", vm.Workspace.VideoCollection?.SeriesTitle);
     }
 
-    [Theory]
-    [InlineData("av123", "video:av:123")]
-    [InlineData("ss456", "bangumi:ss:456")]
-    [InlineData("md789", "bangumi:md:789")]
-    [InlineData("https://b23.tv/short", null)]
-    [InlineData("not-a-bilibili-id", null)]
-    public void 旧链接离线迁移_覆盖所有允许的稳定Id与不可展开输入(
-        string input,
-        string? expectedStableId)
-    {
-        var vm = CreateVm();
-
-        vm.LoadDocumentByMetaData(Envelope(2, new DocumentSaveDataV2 { Url = input }));
-        var migrated = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateSaveDocumentMetaData("migrated.bili").Content)!;
-
-        Assert.Equal(expectedStableId, migrated.Source?.StableSourceId);
-        Assert.Equal(input, migrated.Url);
-    }
-
     [Fact]
     public void V3结构化选项_加载时去重清理并兼容缺失集合()
     {
@@ -739,7 +705,7 @@ public sealed class DocumentV3G4Tests
         });
 
         Assert.Equal(expectedMajor, decoded.MajorVersion);
-        Assert.Equal(expectedMajor is 1 or 2 or 3, decoded.IsKnownVersion);
+        Assert.Equal(expectedMajor == 3, decoded.IsKnownVersion);
     }
 
     [Fact]
@@ -1052,11 +1018,11 @@ public sealed class DocumentV3G4Tests
     /// </summary>
     private static void AssertPersistentChangeIsIdempotent(BiliDownloaderViewModel vm, Action change)
     {
-        vm.NotifySaveCompleted("before-change.bili");
+        vm.AcceptChanges();
         change();
         Assert.True(vm.IsModified);
 
-        vm.NotifySaveCompleted("after-change.bili");
+        vm.AcceptChanges();
         change();
         Assert.False(vm.IsModified);
     }

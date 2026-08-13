@@ -32,7 +32,10 @@ flowchart TB
 
     Container --> MainVM["MainWindowViewModel<br/>绑定与消息编排"]
     MainVM --> Documents["DocumentPersistenceCoordinator"]
+    MainVM --> Close["DocumentCloseCoordinator"]
     Documents --> Workspace["DocumentWorkspace<br/>Dock Adapter"]
+    Documents --> Save["DocumentSaveService"]
+    Close --> Save
     Documents --> Storage["IHostStorageService"]
     Storage --> Atomic["AtomicFileTransaction"]
 
@@ -152,7 +155,9 @@ sequenceDiagram
 各组件职责：
 
 - `MainWindowViewModel`：绑定状态、命令、主题、布局生命周期和消息编排；
-- `DocumentPersistenceCoordinator`：选择、批量打开、保存、结果分类和操作串行化；
+- `DocumentPersistenceCoordinator`：选择、批量打开、恢复编排和单文件错误隔离；
+- `DocumentSaveService`：指定 Document 的路径决策、主文件提交、状态接受和恢复备份；
+- `DocumentCloseCoordinator`：标签/窗口关闭确认、批量保存和同步关闭的异步重入；
 - `DocumentWorkspace`：把 Dock 树适配为文档区操作；
 - `DocumentPathIdentity`：绝对路径与 Windows 不区分大小写身份；
 - `DocumentEnvelopeSerializer`：固定 Newtonsoft 与 `DocumentSaveData` 格式；
@@ -160,9 +165,9 @@ sequenceDiagram
 
 ### 6.2 并发与状态提交
 
-打开和保存共享一个 `SemaphoreSlim` 操作门。该方案牺牲同一窗口内文档 I/O 的并行度，换取简单、确定的查重和状态提交顺序。文档文件通常较小，稳定性收益高于有限的并行收益。
+打开和所有保存入口共享 `DocumentOperationGate`。该方案牺牲同一窗口内文档 I/O 的并行度，换取简单、确定的查重和状态提交顺序。文档文件通常较小，稳定性收益高于有限的并行收益。
 
-保存遵循“外部副作用成功后再提交内存状态”：先生成保存外壳并完成原子写入，之后才更新标题、路径和 `NotifySaveCompleted`。因此写入失败不会把未落盘状态伪装成已保存。
+保存遵循“主文件成功后再提交内存状态”：快照生成无副作用，原子写入完成后才更新标题、路径并调用 `IDocumentSaveState.AcceptChanges`。随后更新 `.recovery.bak`；备份失败只产生警告，不伪造主文件失败。
 
 消息总线无法等待异步回调时，ViewModel 通过内部异步观察方法捕获预期的文档操作结果，避免 `async void` 和未观察任务异常。
 
@@ -170,7 +175,7 @@ sequenceDiagram
 
 只把预期的文件、权限、路径、JSON 和 `DocumentLoadException` 转换为可恢复失败。空引用、无效程序状态等编程错误继续向上传播，使测试和诊断能够尽早暴露缺陷。
 
-批量打开以单文件为错误边界：一个文件失败不阻断后续文件。保存则以当前活动文档为事务边界，不进行跨文档批量提交。
+批量打开以单文件为错误边界：一个文件失败不阻断后续文件。窗口退出的“保存全部”按 Dock 顺序逐个提交，首个失败或取消即停止。
 
 ## 7. 布局生命周期
 
@@ -222,7 +227,7 @@ Legacy 或未使用 `IDocumentScopeFactory` 的 Document 仍没有统一的 Docu
 | public 签名漂移 | `PublicApiContractTests` |
 | 插件并发扫描、可变缓存泄漏 | `InternalRefactorTests` |
 | Managed/Legacy 与 ID 碰撞诊断 | PluginTests、内部注册表测试 |
-| 并发打开、保存失败状态 | `MainWindowViewModelTests` |
+| 并发打开、保存失败、关闭确认与坏文件恢复 | `MainWindowViewModelTests`、`DocumentPersistenceV1Tests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |
 | 布局迁移、隔离、回退 | 布局生命周期与存储测试 |

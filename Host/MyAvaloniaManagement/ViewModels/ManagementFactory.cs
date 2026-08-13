@@ -8,6 +8,7 @@ using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Message;
@@ -16,6 +17,7 @@ using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.ViewModels;
@@ -44,6 +46,8 @@ public class ManagementFactory : Factory
     private readonly DockWorkspaceBuilder _workspaceBuilder;
     private readonly ToolDockCoordinator _toolDockCoordinator;
     private readonly IMessengerService _messengerService;
+    private readonly DocumentCloseCoordinator? _documentCloseCoordinator;
+    private readonly DocumentRecoveryRegistry? _documentRecoveryRegistry;
 
     internal IReadOnlyDictionary<string, Tool> CreatedTools => _createdTools;
 
@@ -79,13 +83,17 @@ public class ManagementFactory : Factory
     internal ManagementFactory(
         HostExtensionRegistry extensions,
         DocumentScopeManager documentScopeManager,
-        IMessengerService messengerService)
+        IMessengerService messengerService,
+        DocumentCloseCoordinator? documentCloseCoordinator = null,
+        DocumentRecoveryRegistry? documentRecoveryRegistry = null)
     {
         ArgumentNullException.ThrowIfNull(extensions);
         ArgumentNullException.ThrowIfNull(documentScopeManager);
         _documentLifetime = new DockDocumentLifetime(documentScopeManager);
         _workspaceBuilder = new DockWorkspaceBuilder(this);
         _messengerService = messengerService;
+        _documentCloseCoordinator = documentCloseCoordinator;
+        _documentRecoveryRegistry = documentRecoveryRegistry;
         _toolDockCoordinator = new ToolDockCoordinator(
             this,
             _workspaceBuilder,
@@ -127,6 +135,12 @@ public class ManagementFactory : Factory
     public IEnumerable<DocumentMetadata> GetAllDocumentMetadata()
         => _extensions.DocumentMetadata.Values;
 
+    internal DocumentMetadata? GetDocumentMetadata(Document document) =>
+        document is ISavableDocument savable &&
+        _extensions.DocumentMetadata.TryGetValue(savable.SaveDocumentTypeId, out var metadata)
+            ? metadata
+            : null;
+
     /// <summary>
     /// 展开所有可见文档策略的创建入口。未实现多入口契约的旧策略自动生成一个默认入口。
     /// </summary>
@@ -139,7 +153,47 @@ public class ManagementFactory : Factory
     /// <param name="params">创建参数</param>
     /// <returns>创建的Document实例</returns>
     public Document CreateManagementNewDocument(DocumentCreationParams @params)
-        => _extensions.CreateDocument(@params);
+    {
+        var document = _extensions.CreateDocument(@params);
+        try
+        {
+            if (document is ISavableDocument savable)
+            {
+                var contributor = new HostCompositionContributor(
+                    document.GetType().FullName ?? document.GetType().Name,
+                    document.GetType().Assembly.GetName().Name ?? "UnknownAssembly");
+                if (savable.SaveDocumentTypeId !=
+                    NormalizePersistedDocumentTypeId(@params.DocumentTypeId))
+                {
+                    throw new HostCompositionException([
+                        new HostCompositionDiagnostic(
+                            "DOCUMENT_TYPE_MISMATCH",
+                            @params.DocumentTypeId.Value,
+                            [contributor])
+                    ]);
+                }
+
+                if (document is not IDocumentSaveState)
+                {
+                    throw new HostCompositionException([
+                        new HostCompositionDiagnostic(
+                            "DOCUMENT_SAVE_STATE_MISSING",
+                            @params.DocumentTypeId.Value,
+                            [contributor])
+                    ]);
+                }
+            }
+
+            return document;
+        }
+        catch
+        {
+            // 策略可能已经通过 IDocumentScopeFactory 创建了独立 Scope。契约校验位于创建后，
+            // 因而失败时必须从与正常关闭相同的入口回滚，不能让半创建 Scope 留在管理器中。
+            ReleaseDocument(document);
+            throw;
+        }
+    }
 
     /// <summary>
     /// 创建 Document，并在同一个所有权边界内将其发布到主文档 Dock。
@@ -464,6 +518,26 @@ public class ManagementFactory : Factory
     }
 
     /// <summary>
+    /// 在 Dock 真正移除 Document 前执行公共脏状态保护。
+    /// </summary>
+    public override bool OnDockableClosing(IDockable? dockable)
+    {
+        if (dockable is Document document &&
+            _documentCloseCoordinator is not null &&
+            !_documentCloseCoordinator.TryBeginDockClose(
+                document,
+                GetDocumentMetadata(document),
+                () => CloseDockable(document)))
+        {
+            return false;
+        }
+
+        // base.OnDockableClosing 可能继续执行 Document.OnClose。只有协调器已经允许本次关闭
+        // 后才调用它，保证被用户取消的首次请求不会触发插件自己的关闭副作用。
+        return base.OnDockableClosing(dockable);
+    }
+
+    /// <summary>
     /// Dock 已经完成关闭后，释放托管 Document 对应的依赖注入作用域。
     /// </summary>
     /// <remarks>
@@ -483,6 +557,7 @@ public class ManagementFactory : Factory
             {
                 // Dock 的内容回收缓存默认会永久强引用已关闭的 Document。
                 // 最终关闭时只移除当前项，保留其他标签的控件复用行为。
+                _documentRecoveryRegistry?.Clear(document);
                 ReleaseDocument(document);
             }
         }

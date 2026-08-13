@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.Input;
+using System.Collections.Specialized;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
@@ -11,7 +12,7 @@ using Newtonsoft.Json.Linq;
 
 namespace MyPlugTest.ViewModels;
 
-public class TestWelcomeViewModel : Document, ISavableDocument, IDisposable
+public class TestWelcomeViewModel : Document, ISavableDocument, IDocumentSaveState, IDisposable
 {
     // 本地 CTS 与宿主 ClosingToken 共同组成操作令牌：正式 Scope 关闭由宿主触发，直接构造
     // 场景则由 Dispose 触发。两条路径统一后，HTTP 结果、历史记录和 Messenger 消息都通过
@@ -19,9 +20,11 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDisposable
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly IDocumentLifetime? _documentLifetime;
     private int _disposed;
+    private bool _isRestoring;
 
     public DocumentTypeId SaveDocumentTypeId => SaveDocumentTypeIdConstant.TestWelcomeDocumentId;
     public string FilePath { get; set; } = string.Empty;
+    public bool IsDirty => IsModified;
     
     private string _url = "https://example.com";
     private string _responseContent = "";
@@ -37,13 +40,19 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDisposable
     public string Url
     {
         get => _url;
-        set => SetProperty(ref _url, value);
+        set
+        {
+            if (SetProperty(ref _url, value)) MarkDirty();
+        }
     }
 
     public string ResponseContent
     {
         get => _responseContent;
-        set => SetProperty(ref _responseContent, value);
+        set
+        {
+            if (SetProperty(ref _responseContent, value)) MarkDirty();
+        }
     }
 
     public bool IsLoading
@@ -77,18 +86,19 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDisposable
             Content = JsonConvert.SerializeObject(saveDataObject),
             PluginMetadata = JsonConvert.SerializeObject(new { Version = "1.0" })
         };
-        IsModified = false;
         return saveData;
     }
     
     public void LoadDocumentByMetaData(DocumentSaveData saveData)
     {
+        ArgumentNullException.ThrowIfNull(saveData);
+        _isRestoring = true;
         try
         {
             var viewModelData = JsonConvert.DeserializeObject<JObject>(saveData.Content);
             if (viewModelData == null)
             {
-                return;
+                throw new DocumentLoadException("测试文档内容为空。");
             }
 
             // 使用明确的 JSON 节点读取保存数据，避免 dynamic 在字段缺失时产生空引用风险。
@@ -108,11 +118,21 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDisposable
                     }
                 }
             }
+            IsModified = false;
         }
-        catch (Exception ex)
+        catch (DocumentLoadException)
         {
-            // 错误处理
-            Console.WriteLine($"加载文档错误: {ex.Message}");
+            throw;
+        }
+        catch (JsonException exception)
+        {
+            throw new DocumentLoadException(
+                "测试文档结构损坏或包含无效字段。",
+                exception);
+        }
+        finally
+        {
+            _isRestoring = false;
         }
     }
     
@@ -128,6 +148,7 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDisposable
         _urlContentService = urlContentService;
         _documentLifetime = documentLifetime;
         UrlHistory = urlHistory;
+        UrlHistory.HistoryItems.CollectionChanged += OnHistoryChanged;
         SendRequestCommand = new AsyncRelayCommand(SendRequestAsync);
     }
     
@@ -192,12 +213,26 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDisposable
 
     private bool IsClosing => Volatile.Read(ref _disposed) != 0 || _documentLifetime?.IsClosing == true;
 
+    public void AcceptChanges() => IsModified = false;
+
+    private void OnHistoryChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
+        MarkDirty();
+
+    private void MarkDirty()
+    {
+        if (!_isRestoring && !IsClosing)
+        {
+            IsModified = true;
+        }
+    }
+
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
         // 先取消命令，再取消本地令牌，使命令基础设施和服务调用都能尽快观察关闭；不在这里
         // 等待 HTTP Task 完成，迟到结果由 SendRequestAsync 中的关闭检查负责丢弃。
         SendRequestCommand.Cancel();
+        UrlHistory.HistoryItems.CollectionChanged -= OnHistoryChanged;
         _disposeCts.Cancel();
         _disposeCts.Dispose();
     }

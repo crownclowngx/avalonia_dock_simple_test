@@ -1,11 +1,9 @@
 using BiliDownloader.Constants;
 using BiliDownloader.Models;
 using BiliDownloader.Models.ContentSources;
-using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
 using MyAvaloniaManagementCommon.Save;
-using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.Services.Persistence;
 
@@ -15,20 +13,14 @@ public sealed record BiliDownloaderDocumentSourceState(
     SourceFilterRulesSaveData Filters,
     IncrementalBaselineSaveData Baseline);
 
-/// <summary>完成版本迁移和安全检查后的恢复结果。</summary>
-public sealed record BiliDownloaderRestoredState(
-    int MajorVersion,
-    bool IsKnownVersion,
-    DocumentSaveDataV3 Data,
-    bool RestoreFullConfiguration,
-    bool RequiresSaveAs,
-    string CompatibilityWarning);
+/// <summary>完成当前格式安全检查后的恢复结果。</summary>
+public sealed record BiliDownloaderRestoredState(DocumentSaveDataV3 Data);
 
 /// <summary>
 /// BiliDownloader Document 状态映射边界。
 /// </summary>
 /// <remarks>
-/// ViewModel 只负责采集和应用状态；版本判断、单向迁移、安全默认值与 JSON 信封均由本接口负责，
+/// ViewModel 只负责采集和应用状态；版本判断、安全约束与 JSON 信封均由本接口负责，
 /// 从而可以在不创建 Avalonia 控件或访问网络的条件下完整测试保存行为。
 /// </remarks>
 public interface IBiliDownloaderDocumentStateMapper
@@ -42,11 +34,11 @@ public interface IBiliDownloaderDocumentStateMapper
         string namingTemplate,
         BiliDownloaderDocumentSourceState sourceState);
 
-    BiliDownloaderRestoredState Restore(DocumentSaveData saveData, string defaultOutputDirectory);
+    BiliDownloaderRestoredState Restore(DocumentSaveData saveData);
 }
 
 /// <summary>
-/// V1/V2/V3 的纯状态映射器，不访问 Provider、SQLite、文件系统或 UI。
+/// Document V3 的纯状态映射器，不访问 Provider、SQLite、文件系统或 UI。
 /// </summary>
 public sealed class BiliDownloaderDocumentStateMapper : IBiliDownloaderDocumentStateMapper
 {
@@ -97,29 +89,19 @@ public sealed class BiliDownloaderDocumentStateMapper : IBiliDownloaderDocumentS
             data);
     }
 
-    public BiliDownloaderRestoredState Restore(DocumentSaveData saveData, string defaultOutputDirectory)
+    public BiliDownloaderRestoredState Restore(DocumentSaveData saveData)
     {
         ArgumentNullException.ThrowIfNull(saveData);
         var decoded = DocumentSaveCodec.Decode(saveData);
-        return decoded.MajorVersion switch
+        if (decoded.MajorVersion != 3)
         {
-            3 => Known(3, RestoreV3(decoded.Content), string.Empty),
-            2 => Known(2, MigrateV2(decoded.Content), "该文件已从 Document V2 兼容加载，保存后将升级为 V3。"),
-            1 => Known(1, MigrateV1(decoded.Content, defaultOutputDirectory), "该文件已从 Document V1 兼容加载，保存后将升级为 V3。"),
-            _ => new(
-                decoded.MajorVersion,
-                false,
-                RestoreSafeFields(decoded.Content, defaultOutputDirectory),
-                RestoreFullConfiguration: false,
-                RequiresSaveAs: true,
-                CompatibilityWarning: "该文件来自未知的未来版本，仅恢复了安全公共字段；保存时必须另存为 V3 副本。"),
-        };
-    }
+            throw new DocumentLoadException(
+                "该 BiliDownloader Document 不是当前支持的 V3 格式。");
+        }
 
-    private static BiliDownloaderRestoredState Known(int majorVersion, DocumentSaveDataV3 data, string warning)
-    {
+        var data = RestoreV3(decoded.Content);
         DocumentSaveSecurityPolicy.Validate(data);
-        return new(majorVersion, true, data, true, false, warning);
+        return new BiliDownloaderRestoredState(data);
     }
 
     private static DocumentSaveDataV3 RestoreV3(string content)
@@ -133,74 +115,6 @@ public sealed class BiliDownloaderDocumentStateMapper : IBiliDownloaderDocumentS
         return data;
     }
 
-    private static DocumentSaveDataV3 MigrateV2(string content)
-    {
-        var old = string.IsNullOrWhiteSpace(content)
-            ? new DocumentSaveDataV2()
-            : DocumentSaveCodec.Deserialize<DocumentSaveDataV2>(content) ?? new DocumentSaveDataV2();
-        return FromV2(old);
-    }
-
-    private static DocumentSaveDataV3 MigrateV1(string content, string defaultOutputDirectory)
-    {
-        var source = string.IsNullOrWhiteSpace(content)
-            ? new JObject()
-            : DocumentSaveCodec.DeserializeObject(content);
-        var addIndex = source["AddIndexToTitle"]?.Type is not null and not JTokenType.Null
-            ? source["AddIndexToTitle"]!.Value<bool>()
-            : true;
-        var url = source["Url"]?.ToString() ?? string.Empty;
-        return new DocumentSaveDataV3
-        {
-            DocumentId = source["DocumentId"]?.ToString() ?? string.Empty,
-            Url = SensitiveDataSanitizer.SanitizeUrlForStorage(url),
-            DownloadInfo = SensitiveDataSanitizer.Sanitize(source["DownloadInfo"]?.ToString()),
-            OutputDirectory = source["OutputDirectory"]?.ToString() ?? defaultOutputDirectory,
-            UseGroupFolder = source["UseGroupFolder"]?.Value<bool>() == true,
-            AddIndexToTitle = addIndex,
-            NamingTemplate = addIndex ? "{index}.{title}" : "{title}",
-            Source = DirectLinkSaveDataFactory.TryCreateOffline(url),
-        };
-    }
-
-    private static DocumentSaveDataV3 FromV2(DocumentSaveDataV2 old)
-    {
-        var subtitle = old.DownloadSubtitle ? SubtitleOptions.LegacyEnabled : SubtitleOptions.None;
-        var danmaku = old.DownloadDanmaku ? DanmakuOptions.LegacyEnabled : DanmakuOptions.None;
-        return new DocumentSaveDataV3
-        {
-            DocumentId = old.DocumentId,
-            Url = SensitiveDataSanitizer.SanitizeUrlForStorage(old.Url),
-            DownloadInfo = SensitiveDataSanitizer.Sanitize(old.DownloadInfo),
-            OutputDirectory = old.OutputDirectory,
-            UseGroupFolder = old.UseGroupFolder,
-            AddIndexToTitle = old.AddIndexToTitle,
-            PresetId = old.PresetId,
-            NamingTemplate = old.NamingTemplate,
-            QualityId = old.QualityId,
-            AudioQualityId = old.AudioQualityId,
-            DownloadDanmaku = old.DownloadDanmaku,
-            DownloadSubtitle = old.DownloadSubtitle,
-            DownloadCover = old.DownloadCover,
-            ConflictPolicy = old.ConflictPolicy,
-            Source = DirectLinkSaveDataFactory.TryCreateOffline(old.Url),
-            SubtitleOptions = subtitle,
-            DanmakuOptions = danmaku,
-        };
-    }
-
-    private static DocumentSaveDataV3 RestoreSafeFields(string content, string defaultOutputDirectory)
-    {
-        var source = string.IsNullOrWhiteSpace(content)
-            ? new JObject()
-            : DocumentSaveCodec.DeserializeObject(content);
-        return new DocumentSaveDataV3
-        {
-            DocumentId = source["DocumentId"]?.ToString() ?? string.Empty,
-            Url = SensitiveDataSanitizer.SanitizeUrlForStorage(source["Url"]?.ToString()),
-            OutputDirectory = source["OutputDirectory"]?.ToString() ?? defaultOutputDirectory,
-        };
-    }
 
     private static void NormalizeV3(DocumentSaveDataV3 data)
     {
@@ -339,45 +253,6 @@ internal static class ContentSourceSaveDataMapper
         data.PublishedTo,
         data.MediaTypes,
         data.SortOrder);
-}
-
-/// <summary>在不联网的前提下把旧版规范链接转换成 DirectLink 稳定身份。</summary>
-internal static class DirectLinkSaveDataFactory
-{
-    public static SourceDescriptorSaveData? TryCreateOffline(string? input)
-    {
-        if (string.IsNullOrWhiteSpace(input) || BiliApiService.IsB23TvLink(input))
-            return null;
-
-        var video = BiliApiService.ParseVideoId(input);
-        if (video is not null)
-        {
-            var stableId = video.Value.IsBvid
-                ? $"video:bv:{video.Value.Id[2..]}"
-                : $"video:av:{video.Value.Id[2..]}";
-            return Create(stableId, video.Value.Id);
-        }
-
-        var bangumi = BiliApiService.ParseBangumiId(input);
-        if (bangumi is null) return null;
-        var prefix = bangumi.Value.Id[..2].ToLowerInvariant();
-        var stablePrefix = prefix switch
-        {
-            "ep" => "bangumi:ep:",
-            "ss" => "bangumi:ss:",
-            "md" => "bangumi:md:",
-            _ => null,
-        };
-        return stablePrefix is null ? null : Create(stablePrefix + bangumi.Value.Id[2..], bangumi.Value.Id);
-    }
-
-    private static SourceDescriptorSaveData Create(string stableId, string displayName) => new()
-    {
-        Kind = ContentSourceKind.DirectLink.ToString(),
-        StableSourceId = stableId,
-        DisplayName = displayName,
-        CapabilityVersion = 1,
-    };
 }
 
 /// <summary>Document V3 的集中安全和结构约束。</summary>

@@ -230,9 +230,9 @@ public sealed class FileConflictG6Tests
     }
 
     [Fact]
-    public void 旧Document缺少冲突字段_默认自动序号()
+    public void 当前Document缺少可选冲突字段_默认自动序号()
     {
-        var dto = Newtonsoft.Json.JsonConvert.DeserializeObject<DocumentSaveDataV2>("{\"DocumentId\":\"old\"}");
+        var dto = Newtonsoft.Json.JsonConvert.DeserializeObject<DocumentSaveDataV3>("{\"DocumentId\":\"current\"}");
         Assert.NotNull(dto);
         Assert.Equal(FileConflictPolicy.AutoNumber, dto!.ConflictPolicy);
     }

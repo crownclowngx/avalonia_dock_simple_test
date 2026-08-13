@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -13,6 +14,7 @@ using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Save;
 
 namespace MyAvaloniaManagement.ViewModels;
 
@@ -58,7 +60,13 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         IMessengerService messengerService,
         DockLayoutLifecycle layoutLifecycle,
         IHostStorageService storageService,
-        ApplicationThemeService themeService)
+        ApplicationThemeService themeService,
+        DocumentSaveService saveService,
+        DocumentOperationGate operationGate,
+        DocumentRecoveryRegistry recoveryRegistry,
+        IDocumentInteractionService interactionService,
+        DocumentEnvelopeSerializer documentSerializer,
+        DocumentCloseCoordinator documentCloseCoordinator)
     {
         _factory = factory ?? throw new ArgumentNullException(nameof(factory));
         _pluginMenuService = pluginMenuService ??
@@ -70,7 +78,15 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         ArgumentNullException.ThrowIfNull(storageService);
         _themeService = themeService ??
             throw new ArgumentNullException(nameof(themeService));
-        _documents = new DocumentPersistenceCoordinator(factory, storageService);
+        _documents = new DocumentPersistenceCoordinator(
+            factory,
+            storageService,
+            saveService,
+            operationGate,
+            recoveryRegistry,
+            interactionService,
+            documentSerializer);
+        _documentCloseCoordinator = documentCloseCoordinator;
         _themeMode = _themeService.CurrentMode;
 
         Layout = _layoutLifecycle.Prepare(_factory);
@@ -87,9 +103,17 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
         ServiceProvider.GetRequiredService<IMessengerService>(),
         ServiceProvider.GetRequiredService<DockLayoutLifecycle>(),
         ServiceProvider.GetRequiredService<IHostStorageService>(),
-        ServiceProvider.GetRequiredService<ApplicationThemeService>())
+        ServiceProvider.GetRequiredService<ApplicationThemeService>(),
+        ServiceProvider.GetRequiredService<DocumentSaveService>(),
+        ServiceProvider.GetRequiredService<DocumentOperationGate>(),
+        ServiceProvider.GetRequiredService<DocumentRecoveryRegistry>(),
+        ServiceProvider.GetRequiredService<IDocumentInteractionService>(),
+        ServiceProvider.GetRequiredService<DocumentEnvelopeSerializer>(),
+        ServiceProvider.GetRequiredService<DocumentCloseCoordinator>())
     {
     }
+
+    private readonly DocumentCloseCoordinator _documentCloseCoordinator;
 
     internal void ApplyPendingLayout()
     {
@@ -112,6 +136,27 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
             _layoutLifecycle.Save(root, _factory);
         }
     }
+
+    /// <summary>
+    /// 在主窗口真正退出前汇总处理全部脏 Document。
+    /// </summary>
+    internal Task<bool> ConfirmWindowCloseAsync()
+    {
+        var documents = DocumentWorkspace.GetDocuments(Layout);
+        return _documentCloseCoordinator.ConfirmWindowCloseAsync(
+            documents,
+            _factory.GetDocumentMetadata);
+    }
+
+    /// <summary>
+    /// 同步判断窗口关闭是否需要进入异步确认。干净窗口保持 Avalonia 原生的一次关闭路径，
+    /// 避免无意义地取消后重入，也让布局保存和自动化退出保持同步可观察。
+    /// </summary>
+    internal bool HasDirtyDocuments() =>
+        DocumentWorkspace.GetDocuments(Layout)
+            .Any(document =>
+                document is ISavableDocument &&
+                document is IDocumentSaveState { IsDirty: true });
 
     private void RegisterMessageHandlers()
     {

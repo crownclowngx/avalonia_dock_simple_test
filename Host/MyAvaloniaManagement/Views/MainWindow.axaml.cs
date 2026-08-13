@@ -1,5 +1,6 @@
 using System;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using MyAvaloniaManagementCommon.Presentation;
 
 namespace MyAvaloniaManagement.Views;
@@ -7,6 +8,8 @@ namespace MyAvaloniaManagement.Views;
 public partial class MainWindow : Window, IWindowContentFullscreenHost
 {
     private object? _fullscreenOwner;
+    private bool _windowCloseApproved;
+    private bool _windowClosePending;
 
     public MainWindow()
     {
@@ -23,11 +26,47 @@ public partial class MainWindow : Window, IWindowContentFullscreenHost
         }
     }
 
-    private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
+    private async void OnWindowClosing(object? sender, WindowClosingEventArgs e)
     {
-        if (DataContext is ViewModels.MainWindowViewModel viewModel)
+        if (_windowCloseApproved)
         {
-            viewModel.SaveLayout();
+            if (DataContext is ViewModels.MainWindowViewModel approvedViewModel)
+            {
+                approvedViewModel.SaveLayout();
+            }
+            return;
+        }
+
+        if (DataContext is ViewModels.MainWindowViewModel cleanViewModel &&
+            !cleanViewModel.HasDirtyDocuments())
+        {
+            cleanViewModel.SaveLayout();
+            return;
+        }
+
+        // Avalonia Closing 是同步可取消事件。首次请求必须立即取消，再异步汇总保存；只有
+        // 用户完成决策后才重新 Close。这样窗口不会在文件选择器显示期间提前释放 Scope。
+        e.Cancel = true;
+        if (_windowClosePending ||
+            DataContext is not ViewModels.MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        _windowClosePending = true;
+        try
+        {
+            if (!await viewModel.ConfirmWindowCloseAsync())
+            {
+                return;
+            }
+
+            _windowCloseApproved = true;
+            Dispatcher.UIThread.Post(Close, DispatcherPriority.Background);
+        }
+        finally
+        {
+            _windowClosePending = false;
         }
     }
 

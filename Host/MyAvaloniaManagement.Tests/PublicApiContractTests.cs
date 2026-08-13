@@ -8,13 +8,13 @@ namespace MyAvaloniaManagement.Tests;
 
 /// <summary>
 /// 锁定 Host 与 Common 程序集导出的公共 API，避免普通内部重构意外改变插件契约。
-/// 本次指纹更新对应已经评审的破坏性升级：字符串身份统一替换为强类型值对象，
-/// 旧插件二进制不在兼容范围内；后续实现调整不得顺带修改此指纹。
+/// 本次指纹更新对应已经评审的保存契约升级：新增 IDocumentSaveState，要求可保存
+/// Document 明确报告并提交脏状态；后续实现调整不得顺带修改此指纹。
 /// </summary>
 public sealed class PublicApiContractTests
 {
     private const string ExpectedSha256 =
-        "D87D745DFA56F69A1FC4392954DF8683F154D9AAD15C431753AEEF53471A988F";
+        "0CCBB254B3C5A542A9388AA79DE6CDDFA58537206F57C3E08CB0A81E8FED2814";
 
     [Fact]
     public void HostAndCommonPublicApiSurfaceRemainsStable()

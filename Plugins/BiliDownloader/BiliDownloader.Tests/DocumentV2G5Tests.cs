@@ -12,8 +12,8 @@ using Newtonsoft.Json.Linq;
 namespace BiliDownloader.Tests;
 
 /// <summary>
-/// G5 Document V2 保存格式测试。
-/// 覆盖：V2 保存/加载往返、V1 兼容加载、版本判别。
+/// 当前 Document 保存格式及非当前格式拒绝测试。
+/// 文件名来自原测试分组；测试语义只覆盖当前 V3，不提供 V1/V2 兼容保证。
 /// </summary>
 public class DocumentV2G5Tests
 {
@@ -42,7 +42,7 @@ public class DocumentV2G5Tests
             ffmpeg);
     }
 
-    #region V2 保存→加载往返
+    #region 当前格式保存与加载往返
 
     [Fact]
     public void 当前保存_PluginMetadata版本为3()
@@ -55,7 +55,7 @@ public class DocumentV2G5Tests
     }
 
     [Fact]
-    public void V2保存_包含所有新增字段()
+    public void 当前保存_包含全部持久字段()
     {
         var vm = CreateVm();
         vm.NamingTemplate.Template = "{bv}_{title}";
@@ -74,7 +74,7 @@ public class DocumentV2G5Tests
     }
 
     [Fact]
-    public void V2保存加载_命名模板往返一致()
+    public void 当前保存加载_命名模板往返一致()
     {
         var vm = CreateVm();
         vm.NamingTemplate.Template = "{index}_{bv}_{title}";
@@ -88,7 +88,7 @@ public class DocumentV2G5Tests
     }
 
     [Fact]
-    public void V2保存加载_附加资源配置往返一致()
+    public void 当前保存加载_附加资源配置往返一致()
     {
         var vm = CreateVm();
         vm.DownloadConfig.DownloadDanmaku = true;
@@ -107,10 +107,10 @@ public class DocumentV2G5Tests
 
     #endregion
 
-    #region V1 兼容加载
+    #region 非当前格式拒绝
 
     [Fact]
-    public void V1加载_补齐命名模板默认值()
+    public void V1格式_不执行默认值迁移()
     {
         // 构造 V1 格式的保存数据
         var v1Content = new
@@ -133,16 +133,12 @@ public class DocumentV2G5Tests
         };
 
         var vm = CreateVm();
-        vm.LoadDocumentByMetaData(saveData);
-
-        // V1 AddIndexToTitle=true → 模板应为 "{index}.{title}"
-        Assert.Equal("{index}.{title}", vm.NamingTemplate.Template);
-        Assert.Equal("C:\\Videos", vm.DownloadConfig.OutputDirectory);
-        Assert.True(vm.DownloadConfig.UseGroupFolder);
+        Assert.Throws<DocumentLoadException>(() =>
+            vm.LoadDocumentByMetaData(saveData));
     }
 
     [Fact]
-    public void V1加载_AddIndexToTitle为false_模板为title()
+    public void V1格式_不迁移命名模板()
     {
         var v1Content = new
         {
@@ -164,13 +160,12 @@ public class DocumentV2G5Tests
         };
 
         var vm = CreateVm();
-        vm.LoadDocumentByMetaData(saveData);
-
-        Assert.Equal("{title}", vm.NamingTemplate.Template);
+        Assert.Throws<DocumentLoadException>(() =>
+            vm.LoadDocumentByMetaData(saveData));
     }
 
     [Fact]
-    public void V1加载_原有字段不丢失()
+    public void V1格式_不猜测恢复旧字段()
     {
         var v1Content = new
         {
@@ -192,12 +187,8 @@ public class DocumentV2G5Tests
         };
 
         var vm = CreateVm();
-        vm.LoadDocumentByMetaData(saveData);
-
-        Assert.Equal("my-doc-id", vm.DocumentId);
-        Assert.Equal("https://bilibili.com/video/BV1abc", vm.VideoParse.Url);
-        Assert.Equal("D:\\Downloads", vm.DownloadConfig.OutputDirectory);
-        Assert.True(vm.DownloadConfig.UseGroupFolder);
+        Assert.Throws<DocumentLoadException>(() =>
+            vm.LoadDocumentByMetaData(saveData));
     }
 
     #endregion
@@ -205,7 +196,7 @@ public class DocumentV2G5Tests
     #region 版本判别
 
     [Fact]
-    public void 未知版本_宽容读取不崩溃()
+    public void 未知版本_明确拒绝()
     {
         var content = new { DocumentId = "doc-future", Url = "https://test.com" };
         var saveData = new DocumentSaveData
@@ -218,12 +209,12 @@ public class DocumentV2G5Tests
         };
 
         var vm = CreateVm();
-        // 不应抛出异常
-        vm.LoadDocumentByMetaData(saveData);
+        Assert.Throws<DocumentLoadException>(() =>
+            vm.LoadDocumentByMetaData(saveData));
     }
 
     [Fact]
-    public void PluginMetadata为空_回退V1()
+    public void PluginMetadata为空_不猜测为旧版本()
     {
         var content = new { DocumentId = "doc-no-meta", Url = "https://test.com" };
         var saveData = new DocumentSaveData
@@ -236,13 +227,12 @@ public class DocumentV2G5Tests
         };
 
         var vm = CreateVm();
-        vm.LoadDocumentByMetaData(saveData);
-        // 应使用 V1 默认模板
-        Assert.Equal("{index}.{title}", vm.NamingTemplate.Template);
+        Assert.Throws<DocumentLoadException>(() =>
+            vm.LoadDocumentByMetaData(saveData));
     }
 
     [Fact]
-    public void Content为空_不崩溃()
+    public void 非V3且Content为空_明确拒绝()
     {
         var saveData = new DocumentSaveData
         {
@@ -254,12 +244,12 @@ public class DocumentV2G5Tests
         };
 
         var vm = CreateVm();
-        // 不应抛出异常
-        vm.LoadDocumentByMetaData(saveData);
+        Assert.Throws<DocumentLoadException>(() =>
+            vm.LoadDocumentByMetaData(saveData));
     }
 
     [Fact]
-    public void Content为null_不崩溃()
+    public void 非V3且Content为null_明确拒绝()
     {
         var saveData = new DocumentSaveData
         {
@@ -271,37 +261,10 @@ public class DocumentV2G5Tests
         };
 
         var vm = CreateVm();
-        vm.LoadDocumentByMetaData(saveData);
+        Assert.Throws<DocumentLoadException>(() =>
+            vm.LoadDocumentByMetaData(saveData));
     }
 
     #endregion
 
-    #region DocumentSaveDataV2 模型
-
-    [Fact]
-    public void V2模型_默认值正确()
-    {
-        var dto = new DocumentSaveDataV2();
-        Assert.Equal(BuiltInPresets.CompatId, dto.PresetId);
-        Assert.Equal("{index}.{title}", dto.NamingTemplate);
-        Assert.True(dto.AddIndexToTitle);
-        Assert.False(dto.DownloadDanmaku);
-        Assert.False(dto.DownloadSubtitle);
-        Assert.False(dto.DownloadCover);
-    }
-
-    [Fact]
-    public void V2模型_缺失字段反序列化补默认值()
-    {
-        // 模拟旧版本 JSON（缺少 V2 新增字段）
-        var json = """{"DocumentId":"test","Url":"https://x.com"}""";
-        var dto = JsonConvert.DeserializeObject<DocumentSaveDataV2>(json);
-
-        Assert.NotNull(dto);
-        Assert.Equal("test", dto.DocumentId);
-        Assert.Equal(BuiltInPresets.CompatId, dto.PresetId);
-        Assert.Equal("{index}.{title}", dto.NamingTemplate);
-    }
-
-    #endregion
 }

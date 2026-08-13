@@ -70,13 +70,17 @@ public sealed class ReconciliationDocumentScopeTests
         document.Source.BankStatementPath = "bank.xlsx";
         document.Options.PreviousUnreconciledDifference = 12.34m;
         document.Run.LastOutputPath = "result.xlsx";
+        Assert.True(document.IsDirty);
 
         var saveData = document.CreateSaveDocumentMetaData("document.json");
 
+        Assert.True(document.IsDirty);
         Assert.Contains("enterprise.xlsx", saveData.Content);
         Assert.Contains("result.xlsx", saveData.Content);
         Assert.DoesNotContain("EnterpriseEntries", saveData.Content);
         Assert.DoesNotContain("BankEntries", saveData.Content);
+        document.AcceptChanges();
+        Assert.False(document.IsDirty);
         Assert.True(manager.Release(document));
     }
 }

@@ -6,7 +6,7 @@
 > 竞品调研日期：2026-07-20  
 > 文档状态：V1.1（G3–G5 闭环重构完成）
 
-> 2026-08-03 产品基线更新：G6 已完成四种文件冲突策略、统一提交预检、批量结果汇总、SQLite 原子路径保留、执行前磁盘复检和 staging 安全替换；旧 Document 默认迁移为自动序号，不允许静默覆盖。详细证据见 [G6 文件冲突与提交预检](../plan-history/G6-FILE-CONFLICT-SUBMISSION-PREFLIGHT.md)。
+> 2026-08-13 Document 保存基线更新：当前文件冲突策略会随 V3 内容保存；项目没有历史 Document 文件兼容要求，V1/V2 不再迁移或猜测默认值。详细事务与恢复边界见[Document 持久化 V1 设计](../../../../../docs/design/document-persistence-v1-design.md)。
 
 > 2026-08-09 产品基线更新：P1-G9 已完成多语言字幕、SRT/ASS/VTT、MP4/MKV 软字幕、弹幕 XML/ASS/JSON、结构化结果及附加资源独立重试；离线 Release 测试通过，固定版 ffmpeg 与 B 站实网发布验收待执行。详细证据见 [P1-G9 字幕、软字幕与弹幕增强](../plan-history/P1-G9-SUBTITLE-DANMAKU-ENHANCEMENT.md)。
 
@@ -522,7 +522,7 @@ P1 目标是从“下载单个链接”升级为“管理可重复执行的内�
 | --- | --- | --- | --- |
 | P1-01 | 多内容源 | UP、收藏夹、稍后再看、历史、追番追剧、订阅合集和课程 | Document / Bili API |
 | P1-02 | 大列表筛选 | 分页、关键词、日期和类型筛选，支持选择当前页或全部结果 | Document |
-| P1-03 | 可复用方案 | **已实现**：Document V3 完整保存内容源、筛选、预设、命名、输出规则和轻量基线；离线恢复且兼容 V1/V2 | Document 保存机制 |
+| P1-03 | 可复用方案 | **已实现**：Document V3 完整保存内容源、筛选、预设、命名、输出规则和轻量基线；离线恢复，非 V3 明确拒绝 | Document 保存机制 |
 | P1-04 | 增量检查 | **已实现**：用户主动递归检查重复来源，区分新增、已下载、下载中、失效和规则排除；按媒体与输出指纹跨来源去重，检查不自动提交 | Document / SQLite |
 | P1-05 | 输出控制 | **已实现**：AVC/HEVC/AV1，MP4/MKV，音视频/仅视频/仅音频；stream copy、无静默降级、模式化恢复 | Document / 下载引擎 |
 | P1-06 | 高规格媒体 | **已实现**：基于结构化证据识别 HDR、杜比视界、Hi-Res 和 Atmos；批量交集、无静默降级、任务事实与发布前 ffprobe 验证 | Document / Bili API / 下载引擎 |

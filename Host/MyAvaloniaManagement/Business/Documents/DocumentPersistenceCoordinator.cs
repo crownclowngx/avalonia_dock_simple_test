@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Dock.Model.Controls;
 using Dock.Model.Mvvm.Controls;
@@ -33,11 +32,14 @@ internal readonly record struct DocumentOperationResult(
 /// </summary>
 internal sealed class DocumentPersistenceCoordinator(
     ManagementFactory factory,
-    IHostStorageService storageService)
+    IHostStorageService storageService,
+    DocumentSaveService saveService,
+    DocumentOperationGate operationGate,
+    DocumentRecoveryRegistry recoveryRegistry,
+    IDocumentInteractionService interactionService,
+    DocumentEnvelopeSerializer serializer)
 {
-    private readonly DocumentWorkspace _workspace = new(factory);
-    private readonly DocumentEnvelopeSerializer _serializer = new();
-    private readonly SemaphoreSlim _operationGate = new(1, 1);
+    private readonly DocumentWorkspace _workspace = new(factory, recoveryRegistry);
 
     internal void CreateDocument(string documentType)
     {
@@ -67,80 +69,33 @@ internal sealed class DocumentPersistenceCoordinator(
 
     internal async Task<DocumentOperationResult> SaveActiveAsync()
     {
-        await _operationGate.WaitAsync();
-        try
+        var activeDocument = _workspace.GetActiveDocument();
+        if (activeDocument is not Document document)
         {
-            var activeDocument = _workspace.GetActiveDocument();
-            if (activeDocument is not ISavableDocument savableDocument)
-            {
-                return DocumentOperationResult.NoChange;
-            }
-
-            var savePathPolicy = activeDocument as IDocumentSavePathPolicy;
-            var originalPath = savableDocument.FilePath;
-            string? filePath;
-            if (string.IsNullOrEmpty(originalPath) ||
-                savePathPolicy?.RequiresSaveAs == true)
-            {
-                var metadata = factory.GetAllDocumentMetadata()
-                    .FirstOrDefault(item =>
-                        item.DocumentTypeId == savableDocument.SaveDocumentTypeId);
-                filePath = await storageService.PickSaveFileAsync(metadata);
-            }
-            else
-            {
-                filePath = originalPath;
-            }
-
-            if (string.IsNullOrWhiteSpace(filePath))
-            {
-                return DocumentOperationResult.NoChange;
-            }
-
-            filePath = DocumentPathIdentity.Normalize(filePath);
-            if (savePathPolicy?.RequiresSaveAs == true &&
-                !string.IsNullOrWhiteSpace(originalPath) &&
-                DocumentPathIdentity.Equals(originalPath, filePath))
-            {
-                return DocumentOperationResult.Failure(
-                    $"{savePathPolicy.SaveAsReason} 请选择不同的文件路径。");
-            }
-
-            var fileName = Path.GetFileNameWithoutExtension(filePath);
-            var saveData = savableDocument.CreateSaveDocumentMetaData(filePath);
-            saveData.Title = fileName;
-            await storageService.WriteAllTextAsync(
-                filePath,
-                _serializer.Serialize(saveData));
-
-            if (activeDocument is Document document)
-            {
-                document.Title = fileName;
-            }
-
-            savableDocument.FilePath = filePath;
-            savePathPolicy?.NotifySaveCompleted(filePath);
-            return DocumentOperationResult.ClearError;
+            return DocumentOperationResult.NoChange;
         }
-        catch (Exception exception) when (IsExpectedPersistenceFailure(exception))
+
+        var metadata = document is ISavableDocument savable
+            ? factory.GetAllDocumentMetadata().FirstOrDefault(item =>
+                item.DocumentTypeId == savable.SaveDocumentTypeId)
+            : null;
+        var result = await saveService.SaveAsync(document, metadata);
+        return result.Status switch
         {
-            Console.Error.WriteLine(
-                $"DocumentPersistence errorCode=DOCUMENT_SAVE_FAILED type={exception.GetType().Name}");
-            return DocumentOperationResult.Failure(
-                "保存文档失败，请检查目标路径是否可写。文档状态未被修改。");
-        }
-        finally
-        {
-            _operationGate.Release();
-        }
+            DocumentSaveStatus.Saved => DocumentOperationResult.ClearError,
+            DocumentSaveStatus.SavedWithBackupWarning =>
+                DocumentOperationResult.Failure(result.Message),
+            DocumentSaveStatus.Canceled or DocumentSaveStatus.NotSavable =>
+                DocumentOperationResult.NoChange,
+            _ => DocumentOperationResult.Failure(result.Message),
+        };
     }
 
     private async Task<DocumentOperationResult> OpenAllAsync(
         IReadOnlyList<string> paths,
         IRootDock? root)
     {
-        await _operationGate.WaitAsync();
-        try
+        return await operationGate.RunAsync(async () =>
         {
             DocumentOperationResult result = DocumentOperationResult.NoChange;
             foreach (var path in paths)
@@ -159,7 +114,7 @@ internal sealed class DocumentPersistenceCoordinator(
                         continue;
                     }
 
-                    await LoadAndAddAsync(normalizedPath);
+                    await LoadPrimaryOrRecoveryAsync(normalizedPath);
                 }
                 catch (Exception exception) when (
                     exception is DocumentLoadException ||
@@ -180,19 +135,64 @@ internal sealed class DocumentPersistenceCoordinator(
             }
 
             return result;
-        }
-        finally
+        });
+    }
+
+    private async Task LoadPrimaryOrRecoveryAsync(string primaryPath)
+    {
+        try
         {
-            _operationGate.Release();
+            var primary = await CreateLoadedDocumentAsync(primaryPath);
+            PublishLoadedDocument(primary, recoverySourcePath: null);
+            return;
+        }
+        catch (Exception primaryException) when (
+            primaryException is DocumentLoadException or JsonException)
+        {
+            var backupPath = DocumentRecoveryRegistry.GetBackupPath(primaryPath);
+            if (!storageService.FileExists(backupPath))
+            {
+                throw;
+            }
+
+            Document backup;
+            try
+            {
+                // 先在未发布的新 Scope 中完整加载备份，再询问用户。这样“发现恢复备份”
+                // 明确表示备份已通过宿主信封和插件内容校验，不会先给出一个虚假的恢复入口。
+                backup = await CreateLoadedDocumentAsync(backupPath);
+            }
+            catch (Exception backupException) when (
+                backupException is DocumentLoadException or JsonException)
+            {
+                throw new DocumentLoadException(
+                    "主文件及恢复备份均已损坏，无法安全恢复。",
+                    backupException);
+            }
+
+            if (!await interactionService.ConfirmRecoveryAsync(Path.GetFileName(primaryPath)))
+            {
+                factory.ReleaseDocument(backup);
+                throw;
+            }
+
+            PublishLoadedDocument(backup, primaryPath);
         }
     }
 
-    private async Task LoadAndAddAsync(string filePath)
+    private async Task<Document> CreateLoadedDocumentAsync(string filePath)
     {
         var content = await storageService.ReadAllTextAsync(filePath);
-        var data = _serializer.Deserialize(content);
-        // 插件只观察规范 ID；历史别名的兼容责任留在宿主边界，下一次保存自然写回新值。
-        data.DocumentTypeId = factory.NormalizePersistedDocumentTypeId(data.DocumentTypeId);
+        var data = serializer.Deserialize(content);
+        var canonicalTypeId = factory.NormalizePersistedDocumentTypeId(data.DocumentTypeId);
+        if (canonicalTypeId != data.DocumentTypeId)
+        {
+            // Document 文件只接受当前契约写出的规范类型 ID。策略注册中的别名仍可服务于
+            // 运行期创建意图，但不能悄悄把历史文件迁移为当前格式，否则插件会在不知情时
+            // 接收到一个宿主改写过身份的文件，违背“无旧文件兼容”的明确产品边界。
+            throw new DocumentLoadException(
+                "文档类型标识不是当前规范值，宿主不会迁移历史 Document 文件。");
+        }
         Document? pendingDocument = factory.CreateManagementNewDocument(
             new DocumentCreationParams(data.DocumentTypeId)
             {
@@ -206,18 +206,53 @@ internal sealed class DocumentPersistenceCoordinator(
                     "该文档类型不支持从文件恢复。");
             }
 
+            if (pendingDocument is not IDocumentSaveState)
+            {
+                throw new DocumentLoadException(
+                    "该文档类型未实现公共保存状态契约。");
+            }
+
             savableDocument.FilePath = filePath;
             savableDocument.LoadDocumentByMetaData(data);
-            factory.PublishDocument(pendingDocument);
-
-            // PublishDocument 完整返回是唯一的所有权转移点。清空引用后，finally 不再回滚，
-            // Document 将由 Dock 正常关闭路径或宿主退出兜底负责释放。
+            var loadedDocument = pendingDocument;
             pendingDocument = null;
+            return loadedDocument;
         }
         finally
         {
             if (pendingDocument is not null)
             {
+                recoveryRegistry.Clear(pendingDocument);
+                factory.ReleaseDocument(pendingDocument);
+            }
+        }
+    }
+
+    private void PublishLoadedDocument(
+        Document document,
+        string? recoverySourcePath)
+    {
+        var pendingDocument = document;
+        try
+        {
+            if (recoverySourcePath is not null)
+            {
+                // 备份只用于构造一个脱离损坏原件的新工作副本。清空主路径并在宿主注册
+                // 恢复来源，确保后续普通保存也必须经过另存选择，且不能覆盖原件或备份。
+                ((ISavableDocument)pendingDocument).FilePath = string.Empty;
+                pendingDocument.Title = $"{pendingDocument.Title}（已恢复）";
+                pendingDocument.IsModified = true;
+                recoveryRegistry.Register(pendingDocument, recoverySourcePath);
+            }
+
+            factory.PublishDocument(pendingDocument);
+            pendingDocument = null!;
+        }
+        finally
+        {
+            if (pendingDocument is not null)
+            {
+                recoveryRegistry.Clear(pendingDocument);
                 factory.ReleaseDocument(pendingDocument);
             }
         }

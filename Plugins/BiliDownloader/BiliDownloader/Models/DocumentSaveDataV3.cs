@@ -54,7 +54,7 @@ public sealed class IncrementalBaselineSaveData
 /// BiliDownloader Document V3 的稳定保存契约。
 /// </summary>
 /// <remarks>
-/// V3 有意保留 V2 的平铺字段，降低迁移风险；新增字段全部具有兼容默认值。
+/// V3 使用平铺字段和确定默认值，便于当前格式校验与缺失可选字段的安全处理。
 /// 本 DTO 只表达用户意图和轻量基线，不得加入下载线程、完整任务状态、远端页面、
 /// ContinuationToken、跨页勾选、Cookie、请求头或临时媒体地址。
 /// </remarks>

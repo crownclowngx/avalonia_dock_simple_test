@@ -9,9 +9,10 @@ using MyAvaloniaManagementCommon.DocumentCreation;
 namespace DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 
 /// <summary>银行余额调节 Document 的组合外壳。</summary>
-public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocument, IDisposable
+public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocument, IDocumentSaveState, IDisposable
 {
     private bool _disposed;
+    private bool _isRestoring;
 
     public ReconciliationSourceViewModel Source { get; }
     public ReconciliationOptionsViewModel Options { get; }
@@ -19,6 +20,7 @@ public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocum
 
     public string FilePath { get; set; } = string.Empty;
     public DocumentTypeId SaveDocumentTypeId => SaveDocumentTypeIdConstant.BankBalanceReconciliationDocument;
+    public bool IsDirty => IsModified;
 
     public BankBalanceReconciliationViewModel(
         ReconciliationSourceViewModel source,
@@ -29,6 +31,37 @@ public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocum
         Options = options;
         Run = run;
         Title = "银行余额调节表";
+
+        // 只观察会进入 SavedState 的字段。运行进度、提示和审计投影不属于 Document
+        // 持久状态，不能因为一次执行过程就制造无法解释的关闭提示。
+        Source.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName is nameof(Source.SelectedProfile)
+                or nameof(Source.EnterpriseLedgerPath)
+                or nameof(Source.BankStatementPath)
+                or nameof(Source.ReceiptEnrichmentPath)
+                or nameof(Source.AsOfDate))
+            {
+                MarkDirty();
+            }
+        };
+        Options.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName is nameof(Options.Configuration)
+                or nameof(Options.UseLegacyMode)
+                or nameof(Options.EnableLooseAmountAlignment)
+                or nameof(Options.PreviousUnreconciledDifference))
+            {
+                MarkDirty();
+            }
+        };
+        Run.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(Run.LastOutputPath))
+            {
+                MarkDirty();
+            }
+        };
     }
 
     public DocumentSaveData CreateSaveDocumentMetaData(string filePath)
@@ -46,8 +79,6 @@ public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocum
             PreviousUnreconciledDifference = Options.PreviousUnreconciledDifference,
             LastOutputPath = Run.LastOutputPath
         };
-        FilePath = filePath;
-        IsModified = false;
         return new DocumentSaveData
         {
             DocumentTypeId = SaveDocumentTypeId,
@@ -60,21 +91,54 @@ public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocum
 
     public void LoadDocumentByMetaData(DocumentSaveData saveData)
     {
-        var state = JsonSerializer.Deserialize<SavedState>(saveData.Content);
-        if (state is null)
-            return;
-        if (state.Configuration is not null)
+        ArgumentNullException.ThrowIfNull(saveData);
+        _isRestoring = true;
+        try
+        {
+            SavedState state;
+            try
+            {
+                state = JsonSerializer.Deserialize<SavedState>(saveData.Content)
+                    ?? throw new DocumentLoadException("银行余额调节文档内容为空。");
+            }
+            catch (JsonException exception)
+            {
+                throw new DocumentLoadException(
+                    "银行余额调节文档结构损坏或包含无效字段。",
+                    exception);
+            }
+
+            if (state.Configuration is null)
+            {
+                throw new DocumentLoadException("银行余额调节文档缺少配置数据。");
+            }
+
             Options.ApplyConfiguration(state.Configuration, state.SelectedProfileId);
-        Source.EnterpriseLedgerPath = state.EnterpriseLedgerPath;
-        Source.BankStatementPath = state.BankStatementPath;
-        Source.ReceiptEnrichmentPath = state.ReceiptEnrichmentPath;
-        Source.AsOfDate = state.AsOfDate;
-        Options.UseLegacyMode = state.UseLegacyMode;
-        Options.EnableLooseAmountAlignment = state.EnableLooseAmountAlignment;
-        Options.PreviousUnreconciledDifference = state.PreviousUnreconciledDifference;
-        Run.LastOutputPath = state.LastOutputPath;
-        Title = string.IsNullOrWhiteSpace(saveData.Title) ? "银行余额调节表" : saveData.Title;
-        IsModified = false;
+            Source.EnterpriseLedgerPath = state.EnterpriseLedgerPath;
+            Source.BankStatementPath = state.BankStatementPath;
+            Source.ReceiptEnrichmentPath = state.ReceiptEnrichmentPath;
+            Source.AsOfDate = state.AsOfDate;
+            Options.UseLegacyMode = state.UseLegacyMode;
+            Options.EnableLooseAmountAlignment = state.EnableLooseAmountAlignment;
+            Options.PreviousUnreconciledDifference = state.PreviousUnreconciledDifference;
+            Run.LastOutputPath = state.LastOutputPath;
+            Title = string.IsNullOrWhiteSpace(saveData.Title) ? "银行余额调节表" : saveData.Title;
+            IsModified = false;
+        }
+        finally
+        {
+            _isRestoring = false;
+        }
+    }
+
+    public void AcceptChanges() => IsModified = false;
+
+    private void MarkDirty()
+    {
+        if (!_isRestoring && !_disposed)
+        {
+            IsModified = true;
+        }
     }
 
     public void Dispose()

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels;
@@ -49,6 +50,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<AppearanceSettingsStore>();
         services.AddSingleton<ApplicationThemeService>();
         services.AddSingleton<IHostStorageService, AvaloniaHostStorageService>();
+        services.AddSingleton<DocumentEnvelopeSerializer>();
+        services.AddSingleton<DocumentOperationGate>();
+        services.AddSingleton<DocumentRecoveryRegistry>();
+        services.AddSingleton<DocumentSaveService>();
+        services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
+        services.AddSingleton<DocumentCloseCoordinator>();
         services.AddSingleton(provider => new HostExtensionRegistry(
             provider,
             provider.GetRequiredService<PluginModuleCatalog>(),
@@ -60,7 +67,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(provider => new ManagementFactory(
             provider.GetRequiredService<HostExtensionRegistry>(),
             provider.GetRequiredService<DocumentScopeManager>(),
-            provider.GetRequiredService<IMessengerService>()));
+            provider.GetRequiredService<IMessengerService>(),
+            provider.GetRequiredService<DocumentCloseCoordinator>(),
+            provider.GetRequiredService<DocumentRecoveryRegistry>()));
 
         // 注册PluginMenuService为单例，依赖ManagementFactory
         services.AddSingleton<PluginMenuService>(provider =>
@@ -123,7 +132,13 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<IMessengerService>(),
             provider.GetRequiredService<DockLayoutLifecycle>(),
             provider.GetRequiredService<IHostStorageService>(),
-            provider.GetRequiredService<ApplicationThemeService>()));
+            provider.GetRequiredService<ApplicationThemeService>(),
+            provider.GetRequiredService<DocumentSaveService>(),
+            provider.GetRequiredService<DocumentOperationGate>(),
+            provider.GetRequiredService<DocumentRecoveryRegistry>(),
+            provider.GetRequiredService<IDocumentInteractionService>(),
+            provider.GetRequiredService<DocumentEnvelopeSerializer>(),
+            provider.GetRequiredService<DocumentCloseCoordinator>()));
 
         return services;
     }

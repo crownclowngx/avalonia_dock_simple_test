@@ -74,7 +74,7 @@ public sealed record DownloadPreset
     /// <summary>是否使用分组文件夹（多 P / 番剧时按系列名建子目录）</summary>
     public bool UseGroupFolder { get; init; }
 
-    /// <summary>是否在标题前添加序号（V1 兼容字段，V2 中由 NamingTemplate 取代）</summary>
+    /// <summary>是否在标题前添加序号的简化选项；规范命名仍由 NamingTemplate 表达。</summary>
     public bool AddIndexToTitle { get; init; }
 
     /// <summary>是否下载弹幕</summary>

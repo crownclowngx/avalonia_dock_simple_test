@@ -16,18 +16,6 @@ public static class DocumentSaveCodec
         MaxDepth = 64,
     };
 
-    public static DocumentSaveData EncodeV2(
-        DocumentTypeId documentTypeId,
-        string title,
-        DocumentSaveDataV2 content) => new()
-    {
-        DocumentTypeId = documentTypeId,
-        Title = title,
-        SaveTime = DateTime.Now,
-        Content = JsonConvert.SerializeObject(content),
-        PluginMetadata = JsonConvert.SerializeObject(new { Version = "2.0" }),
-    };
-
     /// <summary>
     /// 将已验证的 V3 DTO 放入宿主统一信封。SaveTime 属于本次磁盘快照，
     /// 业务往返测试应比较 Content 而不是要求时间戳相同。
@@ -62,7 +50,7 @@ public static class DocumentSaveCodec
 
         var known = Version.TryParse(versionText, out var version);
         var major = known ? version!.Major : -1;
-        return new DecodedDocument(major, saveData.Content ?? "", known && major is 1 or 2 or 3);
+        return new DecodedDocument(major, saveData.Content ?? "", known && major == 3);
     }
 
     internal static T? Deserialize<T>(string content)

@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
@@ -33,11 +34,13 @@ internal sealed class TestHostContext : IDisposable
         Directory.CreateDirectory(TempDirectory);
 
         Storage = new TestHostStorageService();
+        Interactions = new TestDocumentInteractionService();
         Messenger = new TestMessengerService();
         var services = new ServiceCollection();
         services.AddApplicationServices();
         services.AddViewModels();
         services.AddSingleton<IHostStorageService>(Storage);
+        services.AddSingleton<IDocumentInteractionService>(Interactions);
         services.AddSingleton<IMessengerService>(Messenger);
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
@@ -63,6 +66,8 @@ internal sealed class TestHostContext : IDisposable
     public string TempDirectory { get; }
 
     public TestHostStorageService Storage { get; }
+
+    public TestDocumentInteractionService Interactions { get; }
 
     public TestMessengerService Messenger { get; }
 
@@ -98,6 +103,48 @@ internal sealed class TestHostContext : IDisposable
 }
 
 /// <summary>
+/// 可编排关闭和恢复选择的无 UI 交互替身。
+/// </summary>
+internal sealed class TestDocumentInteractionService : IDocumentInteractionService
+{
+    public Queue<DocumentCloseChoice> CloseChoices { get; } = [];
+    public Queue<bool> RecoveryChoices { get; } = [];
+    public List<(IReadOnlyList<string> Names, bool IsExit)> CloseRequests { get; } = [];
+    public List<string> RecoveryRequests { get; } = [];
+    public List<string> Errors { get; } = [];
+    public TaskCompletionSource<DocumentCloseChoice>? PendingCloseChoice { get; set; }
+
+    public Task<DocumentCloseChoice> ConfirmCloseAsync(
+        IReadOnlyList<string> documentNames,
+        bool isApplicationExit)
+    {
+        CloseRequests.Add((documentNames, isApplicationExit));
+        if (PendingCloseChoice is { } pending)
+        {
+            PendingCloseChoice = null;
+            return pending.Task;
+        }
+        return Task.FromResult(
+            CloseChoices.Count == 0
+                ? DocumentCloseChoice.Cancel
+                : CloseChoices.Dequeue());
+    }
+
+    public Task<bool> ConfirmRecoveryAsync(string fileName)
+    {
+        RecoveryRequests.Add(fileName);
+        return Task.FromResult(
+            RecoveryChoices.Count != 0 && RecoveryChoices.Dequeue());
+    }
+
+    public Task ShowErrorAsync(string message)
+    {
+        Errors.Add(message);
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>
 /// 可编排选择结果并在内存中读写文件的宿主存储替身。
 /// </summary>
 internal sealed class TestHostStorageService : IHostStorageService
@@ -113,6 +160,8 @@ internal sealed class TestHostStorageService : IHostStorageService
     public Exception? ReadException { get; set; }
 
     public Exception? WriteException { get; set; }
+
+    public Queue<Exception?> WriteOutcomes { get; } = [];
 
     public int ReadCount { get; private set; }
 
@@ -160,6 +209,11 @@ internal sealed class TestHostStorageService : IHostStorageService
     /// <inheritdoc />
     public Task WriteAllTextAsync(string path, string content)
     {
+        if (WriteOutcomes.Count != 0 && WriteOutcomes.Dequeue() is { } outcome)
+        {
+            return Task.FromException(outcome);
+        }
+
         if (WriteException is not null)
         {
             return Task.FromException(WriteException);
@@ -228,7 +282,7 @@ internal sealed class TestMessengerService : IMessengerService
 /// <summary>
 /// 用于验证保存、加载和标题路径同步的最小可保存文档。
 /// </summary>
-internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumentSavePathPolicy
+internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumentSaveState, IDocumentSavePathPolicy
 {
     public string FilePath { get; set; } = string.Empty;
 
@@ -239,6 +293,8 @@ internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumen
     public bool RequiresSaveAs { get; set; }
     public string SaveAsReason { get; set; } = "测试文档需要另存。";
     public int SaveCompletedCount { get; private set; }
+    public bool IsDirty => IsModified;
+    public int AcceptChangesCount { get; private set; }
 
     public DocumentSaveData CreateSaveDocumentMetaData(string filePath) =>
         new()
@@ -261,6 +317,12 @@ internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumen
         FilePath = filePath;
         RequiresSaveAs = false;
         SaveCompletedCount++;
+    }
+
+    public void AcceptChanges()
+    {
+        IsModified = false;
+        AcceptChangesCount++;
     }
 }
 
@@ -350,7 +412,7 @@ internal sealed class TrackedScopedDependency(DocumentLifecycleProbe probe) : ID
 /// <summary>
 /// 可在元数据加载阶段稳定失败的 scoped Savable Document。
 /// </summary>
-internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument, IDisposable
+internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument, IDocumentSaveState, IDisposable
 {
     private readonly DocumentLifecycleProbe _probe;
     private readonly IDocumentLifetime _lifetime;
@@ -371,6 +433,7 @@ internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument,
 
     public string FilePath { get; set; } = string.Empty;
     public DocumentTypeId SaveDocumentTypeId => TrackedScopedSavableStrategy.TypeId;
+    public bool IsDirty => IsModified;
 
     public DocumentSaveData CreateSaveDocumentMetaData(string filePath) =>
         new()
@@ -392,6 +455,8 @@ internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument,
 
         Title = saveData.Title;
     }
+
+    public void AcceptChanges() => IsModified = false;
 
     public void Dispose()
     {

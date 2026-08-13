@@ -76,13 +76,16 @@ V1 清单格式：
 - 创建继续通过 `IDocumentCreationStrategy` 和 `DocumentCreationParams`；
 - 可选多入口继续通过 `IDocumentCreationIntentProvider`；
 - 保存外壳继续使用 Newtonsoft 序列化的 `DocumentSaveData`；
+- `ISavableDocument` 必须同时实现 `IDocumentSaveState`，缺失时以 `DOCUMENT_SAVE_STATE_MISSING` 拒绝发布；
 - 插件仍负责解释 `Content` 和 `PluginMetadata`；
 - 路径转绝对路径后按 Windows 不区分大小写规则查重；
 - 批量打开以单文件为错误边界；
 - 同一路径已打开时激活原文档，不创建重复实例；
 - Save As 继续遵循 `IDocumentSavePathPolicy`；
-- 写入失败不得更新标题、路径或调用保存完成通知；
-- 文档文件通过同目录临时文件原子替换，不改变 JSON 内容格式；
+- 快照创建不得更新标题、路径或脏状态；主文件写入失败不得调用 `AcceptChanges` 或保存完成通知；
+- 主文件和 `<主路径>.recovery.bak` 均通过同目录临时文件原子替换；备份失败不得回滚已成功的主文件；
+- 标签关闭和窗口退出必须保护脏 Document；取消确认或保存失败不得提前取消 `ClosingToken`；
+- 当前 Document 文件不兼容历史内容格式，插件不得猜测迁移旧字段；
 - `DocumentLoadException`、JSON、I/O、权限和路径故障属于预期持久化失败；编程错误不应被宽泛捕获。
 
 拥有独立 DI Scope 的 Document 在 Dock 确认关闭后释放；未采用 `IDocumentScopeFactory` 的历史 Document 维持原有所有权行为。
@@ -156,8 +159,10 @@ V1 清单格式：
 - [ ] 四个真实插件构建与发布目录均包含有效清单，版本和模块身份一致；
 - [ ] 清单缺失/损坏/不兼容在程序集加载前隔离，重复身份在任何 DLL 加载前阻断；
 - [ ] 重复 ID 与碰撞诊断按预期阻断启动，局部类型失败和并发扫描行为未变化；
-- [ ] Document JSON 与 Save As 行为未变化；
-- [ ] 保存失败不会提交内存状态，且无 `.tmp` 遗留；
+- [ ] 当前 Document JSON、安全加载与 Save As 行为符合新契约，不存在历史格式兼容分支；
+- [ ] 保存失败不会提交内存状态，备份失败只产生警告，且无 `.tmp` 遗留；
+- [ ] 脏标签与窗口退出的保存、放弃、取消路径均通过；
+- [ ] 损坏主文件只从有效 `.recovery.bak` 创建强制另存副本，原件保持不变；
 - [ ] 四向 Dock、Pinned/Hidden、恢复和禁用浮动通过；
 - [ ] 布局 V1 迁移、隔离和默认回退通过；
 - [ ] Document Scope 与控件缓存关闭后释放；

@@ -109,7 +109,7 @@ Coordinator 以 `DownloadTaskStatus` 管理任务，并明确区分暂停、取�
 - `MultiConnectionDownloader` 只管 HTTP 字节传输与协议校验。
 - `FfmpegService` 只管运行时定位与媒体进程。
 - `DownloadProgressTracker` 只管进度投影和持久化队列。
-- `DocumentStateMapper` 只管 Document 版本和迁移。
+- `DocumentStateMapper` 只管当前 Document V3 的快照映射、版本校验和内容校验，不迁移历史文件。
 
 现实取舍是 `BiliDownloadCoordinator` 仍然较大，因为它集中承载状态机、控制命令、生命周期和原子提交。这里的“大”不完全等于职责混乱：这些职责共享同一任务事实和锁。不过后续可按“提交端口、调度循环、任务控制、重试命令”继续拆成内部协作者。
 

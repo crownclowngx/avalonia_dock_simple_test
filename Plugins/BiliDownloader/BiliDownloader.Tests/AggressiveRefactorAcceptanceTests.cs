@@ -161,7 +161,7 @@ public sealed class AggressiveRefactorAcceptanceTests
     public async Task Document缺失预设和画质_保留配置并向用户说明回退()
     {
         var vm = new DownloadConfigViewModel(new InMemorySettingsRepository());
-        vm.RestoreDocumentConfiguration(new DocumentSaveDataV2
+        vm.RestoreDocumentConfiguration(new DocumentSaveDataV3
         {
             PresetId = "deleted-preset",
             OutputDirectory = "document-output",

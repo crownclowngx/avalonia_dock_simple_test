@@ -4,8 +4,8 @@ using Newtonsoft.Json;
 namespace MyAvaloniaManagement.Business.Documents;
 
 /// <summary>
-/// 封装现有 <see cref="DocumentSaveData"/> 的 Newtonsoft 序列化规则。
-/// 将格式细节隔离在文档工作流之外，确保重构期间继续读写同一种历史 JSON 契约。
+/// 封装当前 <see cref="DocumentSaveData"/> 信封的 Newtonsoft 序列化规则。
+/// 将 JSON 细节隔离在文档工作流之外；本类型只读写当前契约，不承担旧字段猜测或版本迁移。
 /// </summary>
 internal sealed class DocumentEnvelopeSerializer
 {

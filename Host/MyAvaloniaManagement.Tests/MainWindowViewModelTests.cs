@@ -2,6 +2,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.ViewModels;
@@ -125,8 +126,14 @@ public sealed class MainWindowViewModelTests
             context.Storage.LastSaveMetadata?.DocumentTypeId);
         Assert.Equal(Path.GetFullPath(savePath), document.FilePath);
         Assert.Equal("saved", document.Title);
+        var primaryWrite = Assert.Single(context.Storage.Writes, item =>
+            item.Path.Equals(Path.GetFullPath(savePath), StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(context.Storage.Writes, item =>
+            item.Path.Equals(
+                Path.GetFullPath(savePath) + DocumentRecoveryRegistry.BackupSuffix,
+                StringComparison.OrdinalIgnoreCase));
         var stored = JsonConvert.DeserializeObject<DocumentSaveData>(
-            Assert.Single(context.Storage.Writes).Content);
+            primaryWrite.Content);
         Assert.Equal("saved", stored?.Title);
         Assert.Equal("保存内容", stored?.Content);
     }
@@ -159,8 +166,8 @@ public sealed class MainWindowViewModelTests
         await viewModel.SaveDocument();
 
         Assert.Null(context.Storage.LastSaveMetadata);
-        Assert.Equal(Path.GetFullPath(path),
-            Assert.Single(context.Storage.Writes).Path);
+        Assert.Contains(context.Storage.Writes, item =>
+            item.Path.Equals(Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase));
         Assert.Equal(1, document.SaveCompletedCount);
     }
 
@@ -180,7 +187,8 @@ public sealed class MainWindowViewModelTests
 
         await viewModel.SaveDocument();
 
-        Assert.Equal(Path.GetFullPath(copy), Assert.Single(context.Storage.Writes).Path);
+        Assert.Contains(context.Storage.Writes, item =>
+            item.Path.Equals(Path.GetFullPath(copy), StringComparison.OrdinalIgnoreCase));
         Assert.False(document.RequiresSaveAs);
         Assert.Equal(1, document.SaveCompletedCount);
     }
@@ -271,19 +279,26 @@ public sealed class MainWindowViewModelTests
     public async Task SaveFailureDoesNotMutateDocumentState()
     {
         using var context = CreateContextWithDocumentStrategy();
-        var path = Path.Combine(context.TempDirectory, "failed.testdoc");
-        context.Storage.SavePath = path;
+        var originalPath = Path.Combine(context.TempDirectory, "protected.testdoc");
+        var attemptedPath = Path.Combine(context.TempDirectory, "failed-copy.testdoc");
+        context.Storage.SavePath = attemptedPath;
         context.Storage.WriteException = new IOException("simulated");
         var viewModel = context.CreateMainWindowViewModel();
         viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var document = GetDocuments(context).Single();
         var originalTitle = document.Title;
+        document.FilePath = originalPath;
+        document.RequiresSaveAs = true;
+        document.IsModified = true;
         GetDocumentDock(context).ActiveDockable = document;
 
         await viewModel.SaveDocument();
 
         Assert.Equal(originalTitle, document.Title);
-        Assert.Equal(string.Empty, document.FilePath);
+        Assert.Equal(originalPath, document.FilePath);
+        Assert.True(document.IsDirty);
+        Assert.True(document.RequiresSaveAs);
+        Assert.Equal(0, document.AcceptChangesCount);
         Assert.Equal(0, document.SaveCompletedCount);
         Assert.True(viewModel.HasDocumentOperationError);
         Assert.Empty(context.Storage.Writes);

@@ -60,7 +60,7 @@
 | `MainWindowViewModel` 选择文件、读写 JSON、查重、修改 Dock | Persistence Coordinator + Workspace Adapter |
 | `DockLayoutLifecycle` 映射、迁移、验证、文件事务、窗口编排 | Mapper、Migrator、Validator、Store、Atomic Transaction |
 
-SRP 在这里指“只有一个变化原因”，不是“每个类只能有一个方法”。例如 `DocumentPersistenceCoordinator` 同时包含打开和保存，因为二者共享同一文档事务顺序、路径身份和错误呈现边界。
+SRP 在这里指“只有一个变化原因”，不是“每个类只能有一个方法”。Document 打开/恢复由 `DocumentPersistenceCoordinator` 编排，主文件与备份提交由 `DocumentSaveService` 负责，异步关闭确认由 `DocumentCloseCoordinator` 负责；三者共享窄操作门，但不会共享彼此的 UI 或序列化职责。
 
 ### 3.2 开闭原则（OCP）
 

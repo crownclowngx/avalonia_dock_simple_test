@@ -184,7 +184,10 @@ dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c De
 
 ## 保存和后台生命周期是按需能力
 
-- 只有 Document 需要写入 `.mamdoc` 时才实现 `ISavableDocument`；插件负责自己的 `Content` 和 `PluginMetadata` 版本兼容。参考 [`TestWelcomeViewModel`](../../Plugins/MyPlugTest/MyPlugTest/ViewModels/TestWelcomeViewModel.cs) 及 [Dock 布局快照 V1](../reference/dock-layout-snapshot-v1.md)。
+- 只有 Document 需要写入 `.mamdoc` 时才实现保存能力；此时必须同时实现 `ISavableDocument` 和 `IDocumentSaveState`。`IsDirty` 通常映射 Dock 的 `IsModified`，持久字段变化时置为 `true`，宿主主文件写入成功后通过 `AcceptChanges()` 清除。
+- `CreateSaveDocumentMetaData` 必须只生成快照，不得修改 `FilePath`、标题或脏状态。加载空值、损坏 JSON、缺失必填字段和不支持的格式时抛出脱敏的 `DocumentLoadException`，不要静默返回或输出原始正文。
+- 当前项目没有历史 Document 文件兼容要求。新插件只读取自己当前声明的内容格式，不添加旧字段猜测、默认回退或迁移链。宿主会为成功保存的主文件维护 `.recovery.bak`，插件不应自行操作该文件。
+- 完整事务、关闭与恢复规则参见 [Document 保存 V1 设计](../design/document-persistence-v1-design.md)。
 - 只有插件级后台服务确实需要随宿主启动、停止时才实现并注册 `IPluginLifecycle`。初始化必须幂等，关闭返回前必须停止后台工作；不要用它代替 Document Scope 或 Tool 的视觉生命周期。
 
 完成首次接入后，继续执行[验证与排错](./verification-and-troubleshooting.md)中的清单。

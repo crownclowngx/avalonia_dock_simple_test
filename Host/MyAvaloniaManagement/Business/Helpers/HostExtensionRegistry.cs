@@ -202,18 +202,7 @@ internal sealed class HostExtensionRegistry
                 AdditionalData = parameters.AdditionalData,
                 CreationIntentId = parameters.CreationIntentId,
             };
-        var document = registration.Strategy.CreateDocument(normalized);
-        if (document is ISavableDocument savable && savable.SaveDocumentTypeId != canonical)
-        {
-            throw new HostCompositionException([
-                new HostCompositionDiagnostic(
-                    "DOCUMENT_TYPE_MISMATCH",
-                    canonical.Value,
-                    [ToContributor(registration.StrategyType)])
-            ]);
-        }
-
-        return document;
+        return registration.Strategy.CreateDocument(normalized);
     }
 
     internal IEnumerable<DocumentCreationMenuEntry> GetCreationEntries()

@@ -159,20 +159,20 @@ flowchart TD
 
 **[代码事实]** Managed Document Scope 现在同时提供 scoped `IDocumentLifetime`。Dock 确认关闭后，`DocumentScopeManager` 先取消 `ClosingToken`，再释放 ViewModel 与 scoped 依赖；被否决的关闭不会提前取消，宿主退出则对仍打开的 Document 执行同一路径。取消是协作式且不等待：Document 局部的 HTTP、解析、浏览、探测与发票导入停止并禁止迟到 UI 回写；BiliDownloader 已提交到插件级 Coordinator 的下载任务继续运行。原生文件选择器只能丢弃迟到结果，EPPlus 已进入同步 `SaveAs` 后允许完成写入。
 
-### 3.3 保存与恢复已经出现插件级版本化，但宿主契约仍偏薄
+### 3.3 Document 保存、关闭保护与坏文件恢复已形成 V1
 
-**[代码事实]** 实现 `ISavableDocument` 的 Document 使用统一 `DocumentSaveData` 外壳；`DocumentPersistenceCoordinator` 负责选择文件、批量打开、重复激活、序列化、保存结果分类和文档写操作串行化，插件负责解释 `Content` 与 `PluginMetadata`。单个文件损坏不会阻断同批其他文件，同一路径的并发打开不会创建重复标签。参见 [`ISavableDocument.cs`](../../Host/MyAvaloniaManagementCommon/Save/ISavableDocument.cs)、[`DocumentPersistenceCoordinator.cs`](../../Host/MyAvaloniaManagement/Business/Documents/DocumentPersistenceCoordinator.cs) 和 [`DocumentWorkspace.cs`](../../Host/MyAvaloniaManagement/Business/Documents/DocumentWorkspace.cs)。
+**[代码事实]** 实现 `ISavableDocument` 的 Document 同时必须实现 `IDocumentSaveState`；插件报告脏状态，宿主只在主文件成功提交后调用 `AcceptChanges`。不完整契约以 `DOCUMENT_SAVE_STATE_MISSING` 拒绝发布并回滚 Document Scope。`DocumentPersistenceCoordinator` 继续负责批量打开、重复激活和单文件错误隔离，菜单保存、关闭保存和退出保存则统一复用 `DocumentSaveService` 与同一串行门。参见 [`document-persistence-v1-design.md`](./document-persistence-v1-design.md)。
 
-**[代码事实]** 文档保存使用与布局相同的 `AtomicFileTransaction`：先在目标目录写入并刷新临时文件，再替换正式文件。只有写入成功后才更新标题、路径和保存完成状态；预期 I/O、权限、路径和 JSON 故障转换为用户可见结果，编程错误继续向上传播。
+**[代码事实]** 主文件与 `<主路径>.recovery.bak` 均使用 `AtomicFileTransaction`。主文件成功是唯一业务提交点：失败时不改变标题、路径、脏状态或另存保护；备份失败不回滚主文件，而是返回明确警告。损坏主文件只有在恢复备份于新 Scope 中完整加载成功后才展示恢复确认，恢复副本强制另存且永不覆盖损坏原件。
 
-**[代码事实]** BiliDownloader 已在插件内部实现 Document V3、V1/V2 迁移、安全字段恢复、稳定 `DocumentLoadException`，以及未知未来版本强制“另存为新路径”的 `IDocumentSavePathPolicy`。这证明当前宿主外壳能够承载版本化插件内容，但这些能力尚未上升为所有 Document 共享的状态协议。参见 [`IDocumentSavePathPolicy.cs`](../../Host/MyAvaloniaManagementCommon/Save/IDocumentSavePathPolicy.cs) 和 [`P1-G4-DOCUMENT-V3-REUSABLE-SCHEMES.md`](../../Plugins/BiliDownloader/BiliDownloader/doc/plan-history/P1-G4-DOCUMENT-V3-REUSABLE-SCHEMES.md)。
+**[代码事实]** Dock 标签关闭采用“同步否决、异步确认、一次性重入”；被取消的关闭不会提前触发 `ClosingToken`。主窗口退出用一个汇总对话框处理全部脏 Document，保存全部按 Dock 顺序串行执行并在首个失败或取消处停止。BiliDownloader 只接受当前 Document V3，不再保留 V1/V2 或未知主版本的兼容读取分支。
 
-当前仍缺少：
+**[验证证据]** 2026-08-13 Release 专项门禁通过 `MyAvaloniaManagement.Tests` 105、`MyAvaloniaManagement.PluginTests` 102、`MyAvaloniaManagement.UiTests` 31，合计 **238/238**；Host 行覆盖率 **76.86%**、分支覆盖率 **63.65%**，Windows 真实窗口冒烟通过。完整解决方案另有 BiliDownloader 720、银行插件 64、MySmallTools 182 项测试通过。
 
-- 宿主外壳自身的格式版本和迁移入口；
-- 公共脏状态接口、关闭前保存确认和统一的保存失败呈现；
+以下能力刻意不纳入 Document 保存 V1：
+
+- 宿主信封版本迁移框架和历史 Document 内容迁移；
 - 未安装对应插件时的占位页或延迟恢复机制；
-- Document 文件的备份和坏文件隔离；
 - 所有插件一致采用的版本化内容 DTO 与安全约束。
 
 ## 4. Tool：宿主级单例状态投影
@@ -254,7 +254,7 @@ flowchart LR
 | 插件生命周期 | 已实现 V1 | 顺序初始化、反序关闭、幂等、失败隔离、超时、依赖图和只读插件状态 Tool 均已有测试；仍不支持运行时重试、禁用或热卸载 |
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
 | 布局持久化 | 已实现 V1 | 原子写入、校验、坏文件隔离、两向迁移、历史浮动归一化已有测试；插件缺失时整份回退 |
-| Document 保存 | 部分成熟 | 宿主外壳、批量打开、并发串行化、错误隔离和原子替换已实现；公共脏状态、关闭确认与坏文件恢复尚未统一 |
+| Document 保存 | 已实现 V1 | 公共脏状态、无副作用快照、统一保存结果、标签/退出确认、最近成功备份、坏文件恢复副本和原子替换均有回归测试；不兼容历史 Document 文件 |
 | 每 Document Scope | 已实现 | 当前全部 Managed Document 均通过 `IDocumentScopeFactory` 创建 scoped ViewModel；关闭与宿主退出释放路径已有回归门禁 |
 | Document 关闭取消 | 已实现 | scoped `IDocumentLifetime` 在 Dock 确认关闭后先发出取消再释放 Scope；局部任务协作退出且不等待，插件级后台任务不受影响 |
 | 加载上下文隔离 | 已实现（托管私有依赖） | 每目录一个不可回收 ALC；共享 SDK 只来自默认上下文，普通私有依赖由各插件的 deps/目录索引独立解析，同名不同版本回归已覆盖 |
@@ -353,7 +353,7 @@ public DocumentMetadata GetMetadata() => new(
 
 **[已实现]** 通过兼容检查后，宿主才建立目录布局并加载清单声明的唯一入口；入口 `AssemblyVersion` 与 `pluginVersion`、Managed 模块 `PluginId` 与清单身份还会在 `ConfigureServices` 前二次核对。现有共享程序集身份检查继续作为运行时纵深校验。四个当前插件、私有依赖隔离夹具、构建输出和发布部署目录均已纳入清单规则。
 
-**[验证证据]** 最新 Release 专项门禁通过 `MyAvaloniaManagement.Tests` 88、`MyAvaloniaManagement.PluginTests` 102、`MyAvaloniaManagement.UiTests` 31，合计 **221/221**；Host 行覆盖率 **77.38%**、分支覆盖率 **63.80%**，Windows 真实窗口冒烟与携带四个真实 `Controls` 目录的宿主启动均无诊断错误。新增测试覆盖严格 JSON、大小限制、版本上下界、路径穿越、版本/模块身份二次核对、重复身份预加载阻断，以及“不兼容目录即使携带损坏 DLL 也不进入程序集加载阶段”。
+**[验证证据]** 最新 Release 专项门禁通过 `MyAvaloniaManagement.Tests` 105、`MyAvaloniaManagement.PluginTests` 102、`MyAvaloniaManagement.UiTests` 31，合计 **238/238**；Host 行覆盖率 **76.86%**、分支覆盖率 **63.65%**，Windows 真实窗口冒烟与携带四个真实 `Controls` 目录的宿主启动均无诊断错误。回归继续覆盖严格 JSON、大小限制、版本上下界、路径穿越、版本/模块身份二次核对、重复身份预加载阻断，以及“不兼容目录即使携带损坏 DLL 也不进入程序集加载阶段”。
 
 ## 7. 宿主应该给插件多大自由度
 
@@ -425,7 +425,7 @@ public interface IHostContext
 - `IDocumentService`：创建、激活、关闭、按 ID 查询，并统一建立/释放 Document Scope。
 - `IToolService`：注册、显示、隐藏、固定和查询 Tool，不向插件暴露根 Dock 树。
 - `IHostEventBus`：不再暴露底层 `IMessenger`，要求消息归属、作用域和错误诊断。
-- `IDocumentState`：统一脏状态、关闭确认、保存结果通知、格式版本和迁移。
+- `IDocumentSaveState`：已经统一公共脏状态与成功提交；关闭确认和磁盘事务由宿主协调器负责，当前版本不提供历史 Document 格式迁移。
 - `PluginDescriptor`：加载代码前即可完成身份、兼容性和依赖检查。
 
 ## 8. 哪些场景适合做插件
@@ -458,7 +458,7 @@ public interface IHostContext
 2. 建立 Plugin Registry，集中保存插件身份、程序集、状态、Document/Tool 贡献和诊断。
 3. 以 `IHostContext`、`IDocumentService`、`IToolService` 收束宿主能力。
 4. 将消息按宿主事件、插件内部事件和跨插件公共事件分层，默认不暴露底层 messenger。
-5. 在公共契约中增加 Document 脏状态、关闭确认、宿主外壳版本和更完整的保存结果语义；磁盘原子替换已由宿主内部统一实现。
+5. **已完成 V1**：公共脏状态、标签与退出确认、统一保存结果、最近成功备份和坏文件恢复已落地；宿主外壳版本不在本轮范围。
 6. 为布局快照建立显式版本迁移，并允许插件缺失时部分恢复其余 Pane/Tool，而不是整份回退。
 
 ### P2：统一工程化和真实包验证
@@ -466,7 +466,7 @@ public interface IHostContext
 1. 把插件 publish、宿主共享依赖排除和部署目录规则抽成统一 MSBuild Target。
 2. 增加从临时 `Controls` 目录启动宿主并加载全部真实插件包的集成测试。
 3. 扩展统一发布包矩阵，继续覆盖缺少依赖、重复 ID、模块构造失败、生命周期超时和关闭异常；同名不同版本托管依赖已由最小真实程序集夹具覆盖，仍需纳入最终发布包门禁。
-4. 覆盖 Document 多开、关闭释放、宿主退出释放、公共保存迁移、损坏文件恢复和缺失插件占位。
+4. Document 多开、关闭释放、宿主退出释放和损坏文件恢复已覆盖；缺失插件占位仍待实现。
 5. 增加结构化日志、插件启动耗时、失败阶段和长期后台任务状态，并把发布验收入口统一到 CI。
 
 ### 当前明确不做

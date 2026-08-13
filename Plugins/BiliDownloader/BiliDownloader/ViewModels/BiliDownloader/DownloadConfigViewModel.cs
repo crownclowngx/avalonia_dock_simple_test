@@ -659,25 +659,6 @@ public partial class DownloadConfigViewModel : ObservableObject, IDisposable
             AudioFeaturePreference).Canonicalize();
     }
 
-    public void RestoreDocumentConfiguration(DocumentSaveDataV2 data)
-    {
-        _documentConfigurationApplied = true;
-        _isApplyingPreset = true;
-        OutputDirectory = data.OutputDirectory;
-        UseGroupFolder = data.UseGroupFolder;
-        AddIndexToTitle = data.AddIndexToTitle;
-        DownloadDanmaku = data.DownloadDanmaku;
-        DownloadSubtitle = data.DownloadSubtitle;
-        DownloadCover = data.DownloadCover;
-        SelectedConflictPolicy = ConflictPolicyOptions.First(option => option.Value == data.ConflictPolicy);
-        _pendingQualityId = data.QualityId > 0 ? data.QualityId : null;
-        _pendingAudioQualityId = data.AudioQualityId;
-        _isApplyingPreset = false;
-        _restoredPresetId = data.PresetId;
-        if (_initializationTask?.IsCompletedSuccessfully == true)
-            SelectRestoredPreset(_restoredPresetId);
-    }
-
     /// <summary>
     /// 从 V3 快照恢复完整配置。恢复阶段只赋值本地属性，不读取预设库之外的外部状态，
     /// 也不会触发媒体解析或下载执行。
