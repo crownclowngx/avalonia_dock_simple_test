@@ -180,6 +180,11 @@
           "Dock.Model": "12.0.0.2"
         }
       },
+      "EPPlus.Interfaces": {
+        "type": "Transitive",
+        "resolved": "8.6.2",
+        "contentHash": "Xl1ncbV84UCz7QxcHuWjGa6PKXnOTwbC+y2ZdDqe5Zt5MbozWQINOwchcKW+agqx9Rybl2SQ3GdN1fbPIbjVOA=="
+      },
       "Flurl": {
         "type": "Transitive",
         "resolved": "4.0.0",
@@ -492,6 +497,11 @@
         "resolved": "10.0.10",
         "contentHash": "5wu/GrYVd8mG2DVUw3vFJzF+O336TyTGg/Kmcgw9bfwYhCoFiV5lR5QeEmKecJyrW4W54nMfD3p3589E8a7czQ=="
       },
+      "Microsoft.IO.RecyclableMemoryStream": {
+        "type": "Transitive",
+        "resolved": "3.0.1",
+        "contentHash": "s/s20YTVY9r9TPfTrN5g8zPF1YhwxyqO6PxUkrYTGI2B+OGPe9AdajWZrLhFqXIvqIW23fnUE4+ztrUWNU1+9g=="
+      },
       "Microsoft.Testing.Extensions.Telemetry": {
         "type": "Transitive",
         "resolved": "1.9.1",
@@ -597,6 +607,11 @@
           "SQLitePCLRaw.core": "2.1.12"
         }
       },
+      "System.ComponentModel.Annotations": {
+        "type": "Transitive",
+        "resolved": "5.0.0",
+        "contentHash": "dMkqfy2el8A8/I76n2Hi1oBFEbG1SfxD2l5nhwXV3XjlnOmwxJlQbYpJH4W51odnU9sARCSAgv7S3CyAFMkpYg=="
+      },
       "System.Diagnostics.EventLog": {
         "type": "Transitive",
         "resolved": "10.0.10",
@@ -608,6 +623,19 @@
         "contentHash": "NfuoKUiP2nUWwKZN6twGqXioIe1zVD0RIj2t976A+czLHr2nY454RwwXs6JU9Htc6mwqL6Dn/nEL3dpVf2jOhg==",
         "dependencies": {
           "Microsoft.Win32.SystemEvents": "6.0.0"
+        }
+      },
+      "System.Security.Cryptography.Pkcs": {
+        "type": "Transitive",
+        "resolved": "10.0.10",
+        "contentHash": "KG8t5RHczdgB3IWvRndpI0nE1DSo7ikDYSDbITxfgRFyIvnYiKzuPjaZOsPnwFQ1aOGUl9sEulJul9wlHLEUoA=="
+      },
+      "System.Security.Cryptography.Xml": {
+        "type": "Transitive",
+        "resolved": "10.0.10",
+        "contentHash": "Mz6Y+s+uMQKj1H2BUF0OhlmaOQkLgSG34/IrUaBDirYBQ6bgwcFvO/XtXWcoDlBLFoFB0uKqDNhybHOd+fQK1A==",
+        "dependencies": {
+          "System.Security.Cryptography.Pkcs": "10.0.10"
         }
       },
       "Tmds.DBus.Protocol": {
@@ -740,6 +768,7 @@
       "myplugtest": {
         "type": "Project",
         "dependencies": {
+          "EPPlus": "[8.6.3, )",
           "Flurl.Http": "[4.0.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
           "MyAvaloniaManagementCommon": "[1.0.0, )"
@@ -851,6 +880,20 @@
         "dependencies": {
           "CommunityToolkit.Mvvm": "8.4.0",
           "Dock.Model": "12.0.0.2"
+        }
+      },
+      "EPPlus": {
+        "type": "CentralTransitive",
+        "requested": "[8.6.3, )",
+        "resolved": "8.6.3",
+        "contentHash": "/IcP3A26oHjDDR3ud2HR6klrmX5AjzywF2lmaRQPtNcYz3n6BxhuMfhfoeoKVMSgF5sFBRGMxZ5yNhJFMy23HA==",
+        "dependencies": {
+          "EPPlus.Interfaces": "8.6.2",
+          "Microsoft.Extensions.Configuration.Json": "10.0.10",
+          "Microsoft.IO.RecyclableMemoryStream": "3.0.1",
+          "System.ComponentModel.Annotations": "5.0.0",
+          "System.Security.Cryptography.Pkcs": "10.0.10",
+          "System.Security.Cryptography.Xml": "10.0.10"
         }
       },
       "Flurl.Http": {

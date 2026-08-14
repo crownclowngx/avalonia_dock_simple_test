@@ -1,0 +1,195 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MyPlugTest.ViewModels"
+             xmlns:models="using:MyPlugTest.Models"
+             mc:Ignorable="d"
+             d:DesignWidth="1100"
+             d:DesignHeight="850"
+             x:Class="MyPlugTest.Views.ExcelGetUrlGeneratorView"
+             x:DataType="vm:ExcelGetUrlGeneratorViewModel">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="16" Spacing="12">
+            <TextBlock Text="Excel GET 地址生成器"
+                       FontSize="20"
+                       FontWeight="SemiBold" />
+
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <TextBlock Grid.Column="0"
+                           Text="基础地址"
+                           VerticalAlignment="Center" />
+                <TextBox Grid.Column="1"
+                         Text="{Binding BaseAddress, Mode=TwoWay}"
+                         PlaceholderText="https://example.com/api 或 https://example.com/api?fixed=1" />
+                <Button Grid.Column="2"
+                        Content="选择 Excel…"
+                        Command="{Binding SelectWorkbookCommand}"
+                        IsEnabled="{Binding CanInteract}" />
+            </Grid>
+
+            <Grid ColumnDefinitions="*,Auto,220" ColumnSpacing="12">
+                <TextBlock Grid.Column="0"
+                           Text="{Binding WorkbookPath}"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center"
+                           Opacity="0.75" />
+                <CheckBox Grid.Column="1"
+                          Content="排除第一行（标题行）"
+                          IsChecked="{Binding SkipHeader, Mode=TwoWay}"
+                          VerticalAlignment="Center" />
+                <ComboBox Grid.Column="2"
+                          ItemsSource="{Binding Worksheets}"
+                          SelectedItem="{Binding SelectedWorksheet, Mode=TwoWay}"
+                          PlaceholderText="选择工作表">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:ExcelWorksheetPreview">
+                            <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </Grid>
+
+            <StackPanel Spacing="6">
+                <TextBlock Text="Excel 前 5 行预览" FontWeight="SemiBold" />
+                <Border BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  MaxHeight="210">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="64" Padding="8,5" BorderThickness="0,0,1,1"
+                                        BorderBrush="{DynamicResource AppBorderBrush}">
+                                    <TextBlock Text="#" FontWeight="SemiBold" />
+                                </Border>
+                                <ItemsControl ItemsSource="{Binding PreviewColumns}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:ExcelColumnOption">
+                                            <Border Width="140" Padding="8,5" BorderThickness="0,0,1,1"
+                                                    BorderBrush="{DynamicResource AppBorderBrush}">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            <ItemsControl ItemsSource="{Binding PreviewRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:ExcelPreviewRow">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Width="64" Padding="8,5" BorderThickness="0,0,1,1"
+                                                    BorderBrush="{DynamicResource AppBorderBrush}">
+                                                <TextBlock Text="{Binding RowNumber}" />
+                                            </Border>
+                                            <ItemsControl ItemsSource="{Binding Cells}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="models:ExcelPreviewCell">
+                                                        <Border Width="140" Padding="8,5" BorderThickness="0,0,1,1"
+                                                                BorderBrush="{DynamicResource AppBorderBrush}">
+                                                            <TextBlock Text="{Binding Value}"
+                                                                       TextTrimming="CharacterEllipsis" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="参数映射" FontWeight="SemiBold" />
+                    <Button Grid.Column="1"
+                            Content="添加参数"
+                            Command="{Binding AddMappingCommand}"
+                            IsEnabled="{Binding CanInteract}" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding ParameterMappings}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:ExcelParameterMappingViewModel">
+                            <Grid ColumnDefinitions="*,180,Auto" ColumnSpacing="8" Margin="0,3">
+                                <TextBox Grid.Column="0"
+                                         Text="{Binding ParameterName, Mode=TwoWay}"
+                                         PlaceholderText="参数名，例如 userId" />
+                                <ComboBox Grid.Column="1"
+                                          ItemsSource="{Binding AvailableColumns}"
+                                          SelectedItem="{Binding SelectedColumn, Mode=TwoWay}"
+                                          PlaceholderText="选择 Excel 列">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:ExcelColumnOption">
+                                            <TextBlock Text="{Binding Name}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <Button Grid.Column="2"
+                                        Content="删除"
+                                        Command="{Binding RemoveCommand}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <StackPanel Spacing="6">
+                <TextBlock Text="示例地址（最多 5 条）" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding ExampleMessage}"
+                           TextWrapping="Wrap"
+                           Opacity="0.75" />
+                <ItemsControl ItemsSource="{Binding ExampleUrls}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" TextWrapping="NoWrap" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Button Grid.Column="0"
+                        Content="生成全部地址到 TXT"
+                        Command="{Binding GenerateCommand}"
+                        IsEnabled="{Binding CanInteract}" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding StatusText}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+            </Grid>
+
+            <TextBlock Text="当前输出对应旧配置，请重新生成。"
+                       IsVisible="{Binding IsOutputStale}"
+                       Foreground="OrangeRed"
+                       FontWeight="SemiBold" />
+            <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto">
+                <TextBlock Text="{Binding ValidationText}"
+                           TextWrapping="Wrap"
+                           Foreground="OrangeRed" />
+            </ScrollViewer>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <TextBlock Grid.Column="0"
+                           Text="输出文件："
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding OutputFilePath}"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

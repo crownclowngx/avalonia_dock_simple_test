@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -19,6 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="EPPlus" />
       <PackageReference Include="Flurl.Http" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     </ItemGroup>
@@ -41,7 +42,12 @@
                                    Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
             <MyPlugTestPluginFiles Include="$(TargetDir)plugin.manifest.json" />
             <MyPlugTestPluginManaged Include="@(RuntimeCopyLocalItems)"
-                                     Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Flurl' Or
+                                     Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'EPPlus' Or
+                                                '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'EPPlus.Interfaces' Or
+                                                '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Microsoft.IO.RecyclableMemoryStream' Or
+                                                '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'System.Security.Cryptography.Pkcs' Or
+                                                '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'System.Security.Cryptography.Xml' Or
+                                                '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Flurl' Or
                                                 '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Flurl.Http'" />
         </ItemGroup>
 

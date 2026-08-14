@@ -31,10 +31,14 @@ public sealed class MyPlugTestPluginModule : IPluginModule
         services.AddScoped<TestWelcomeViewModel>();
         services.AddScoped<TestMessageReceiveViewModel>();
         services.AddScoped<BatchHttpGetViewModel>();
+        services.AddScoped<ExcelGetUrlGeneratorViewModel>();
         services.AddScoped<UrlHistoryViewModel>();
 
         // URL 请求服务本身不保存单个 Document 的可变状态，可以作为插件级 Singleton 复用。
         // IMessengerService 由宿主注册，本模块刻意不重复注册，保证发送方和接收方共享同一消息事实源。
         services.AddSingleton<IUrlContentService, FlurlUrlContentService>();
+        services.AddSingleton<IExcelFileDialogService, AvaloniaExcelFileDialogService>();
+        services.AddSingleton<IExcelWorkbookReader, EpplusExcelWorkbookReader>();
+        services.AddSingleton<ExcelGetUrlBuilder>();
     }
 }

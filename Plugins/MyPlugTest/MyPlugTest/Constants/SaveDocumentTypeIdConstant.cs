@@ -19,6 +19,8 @@ public static class SaveDocumentTypeIdConstant
         new("myavalonia.plugin.my-plug-test.document.batch-http-get");
     public static readonly DocumentTypeId LegacyBatchHttpGetDocumentId =
         new("C1B13C72-C21A-4C39-9612-77C341DA85B6");
+    public static readonly DocumentTypeId ExcelGetUrlGeneratorDocumentId =
+        new("myavalonia.plugin.my-plug-test.document.excel-get-url-generator");
     public static readonly ToolTypeId CustomToolId =
         new("myavalonia.plugin.my-plug-test.tool.custom");
     public static readonly ToolTypeId LegacyCustomToolId = new("MyCustomTool");
