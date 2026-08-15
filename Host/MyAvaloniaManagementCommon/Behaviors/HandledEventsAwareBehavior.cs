@@ -21,15 +21,19 @@ public class HandledEventsAwareBehavior : Behavior<Control>
 
     #region 依赖属性
 
+    /// <summary>标识 <see cref="EventName"/> 的 Avalonia 样式属性。</summary>
     public static readonly StyledProperty<string> EventNameProperty =
         AvaloniaProperty.Register<HandledEventsAwareBehavior, string>(nameof(EventName));
 
+    /// <summary>标识 <see cref="Command"/> 的 Avalonia 样式属性。</summary>
     public static readonly StyledProperty<ICommand> CommandProperty =
         AvaloniaProperty.Register<HandledEventsAwareBehavior, ICommand>(nameof(Command));
 
+    /// <summary>标识 <see cref="CommandParameter"/> 的 Avalonia 样式属性。</summary>
     public static readonly StyledProperty<object> CommandParameterProperty =
         AvaloniaProperty.Register<HandledEventsAwareBehavior, object>(nameof(CommandParameter));
 
+    /// <summary>标识 <see cref="HandledEventsToo"/> 的 Avalonia 样式属性。</summary>
     public static readonly StyledProperty<bool> HandledEventsTooProperty =
         AvaloniaProperty.Register<HandledEventsAwareBehavior, bool>(nameof(HandledEventsToo), true);
 

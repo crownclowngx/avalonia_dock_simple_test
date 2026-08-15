@@ -6,7 +6,8 @@
 
 > Managed Plugin v1 的正式支持边界已在 G1 冻结：Windows x64、可信进程内 Managed Plugin、
 > 严格清单、退出后替换插件。G2 已将 Host 自有实现全部收口为 internal；当前代码中的 Legacy
-> 激活仍是 G4 完成前的过渡事实，不构成 v1 兼容承诺。
+> 激活仍是 G4 完成前的过渡事实，不构成 v1 兼容承诺。G3 已形成正式基础 SDK、可选 UI Profile
+> 和宿主语义样式契约。
 
 ## 2. public API
 
@@ -28,6 +29,38 @@
 - manifest、布局、外观、诊断和未来 Document 信封分别拥有整数 schema，不共享全局数字；
 - 插件内容 schema 由内容所有者解释，不能使用插件发布版本替代；
 - 普通进程内消息不添加无迁移或分派行为的版本占位字段。
+
+### 2.2 SDK 包边界
+
+- 正式基础包 ID 为 `MyAvaloniaManagement.PluginSdk`，包内程序集仍为 `MyAvaloniaManagementCommon`；
+- 基础包不包含 Host，也不直接依赖 Desktop、字体、Fluent/Semi/Ursa/Dock 主题或 Dock 视觉控件；
+- `Dock.Model.Mvvm` 是当前 public 签名的必要依赖，其上游传递的
+  `Dock.Controls.Recycling.Model` 是已知例外，不等于基础 SDK 承诺 Dock 视觉控件；
+- `MyAvaloniaManagement.PluginSdk.UI` 是同版本 dependency-only package，供直接使用 Semi、Ursa、
+  Dock UI 的插件选择；第三方 UI 依赖使用精确 NuGet 版本；
+- UI Profile 的兼容新增可以随 SDK 次版本发布；任何会破坏已编译 UI 插件的变化必须提升 SDK 主版本；
+- 当前不自动发布公共 NuGet。宿主发布制品应同时提供两个 nupkg；对外分发前必须补充项目许可证。
+
+### 2.3 插件样式与 UI Profile
+
+Host 在 Light/Dark 下均提供以下 `SolidColorBrush` 语义资源：
+
+```text
+AppPanelBrush                 AppSubtlePanelBrush
+AppToolSelectedBrush          AppDividerBrush
+AppBorderBrush                AppSecondaryTextBrush
+AppInfoBrush                  AppWarningBrush
+AppWarningPanelBrush          AppWarningBorderBrush
+AppErrorBrush                 AppDangerBrush
+AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
+```
+
+- 主题相关引用必须使用 `DynamicResource`；删除、改名或改变资源类型属于 SDK 破坏性变化；
+- 标准 Avalonia 控件自动继承 Host 全局主题，普通插件不需要 UI Profile；
+- 插件可以通过本程序集内的 `StyleInclude` 组织局部样式，资源键和 Style Class 使用插件 ID 前缀；
+- 插件不得向 `Application.Current.Styles` 注入或替换全局主题；
+- `DockTheme*`、Semi、Ursa 内部资源键不属于基础语义契约；直接使用时必须引用同版本 UI Profile；
+- Host 按 Fluent、Semi、Ursa Semi、Dock Fluent、Host Styles 的固定所有权顺序组合主题。
 
 ## 3. 插件发现与激活
 
@@ -82,6 +115,11 @@ V1 清单格式：
 - 重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 形成排序稳定的结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义；
 - 策略元数据在注册时读取一次；
 - 插件根目录快照在进程内不刷新，更新插件需要重启应用。
+
+基础 SDK 及其 public 签名依赖、受支持 UI Profile 及其依赖均由
+`AssemblyLoadContext.Default` 提供。插件目录不得携带这些 DLL 的私有副本；身份或版本不兼容时，
+宿主在完整类型预检阶段以 `PLUGIN_SHARED_ASSEMBLY_MISMATCH` 隔离插件。普通业务依赖仍由当前插件
+ALC 私有解析，不能因为宿主碰巧加载过同名程序集就进入共享集合。
 
 ## 4. Document 契约
 

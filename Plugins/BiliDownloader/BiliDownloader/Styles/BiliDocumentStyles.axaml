@@ -169,7 +169,7 @@
     <Style Selector="TextBox.bili-doc-log-output">
         <Setter Property="MinHeight" Value="140" />
         <Setter Property="FontSize" Value="11" />
-        <Setter Property="Background" Value="{DynamicResource DockThemeBackgroundBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AppPanelBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AppDividerBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="2" />

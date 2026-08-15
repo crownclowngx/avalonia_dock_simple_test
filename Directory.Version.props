@@ -18,6 +18,16 @@
     <MyAvaloniaPluginSdkAssemblyVersion>1.0.0.0</MyAvaloniaPluginSdkAssemblyVersion>
 
     <!--
+      Plugin SDK UI Profile 与宿主使用同一组 UI 依赖事实。基础 SDK 不引用这些实现包；
+      可选 UI Profile 在打包时把下列值写成精确 NuGet 区间，避免外部插件在还原时
+      自动漂移到宿主未验证的主题版本。
+    -->
+    <MyAvaloniaAvaloniaUiVersion>12.1.0</MyAvaloniaAvaloniaUiVersion>
+    <MyAvaloniaDockUiVersion>12.0.0.2</MyAvaloniaDockUiVersion>
+    <MyAvaloniaSemiUiVersion>12.1.0</MyAvaloniaSemiUiVersion>
+    <MyAvaloniaUrsaUiVersion>2.1.0</MyAvaloniaUrsaUiVersion>
+
+    <!--
       manifest schema 与数据根代际是各自所有者解释的整数/目录协议，不是产品版本。
       代码中的对应常量由 VersionPolicyTests 交叉校验，禁止静默漂移。
     -->

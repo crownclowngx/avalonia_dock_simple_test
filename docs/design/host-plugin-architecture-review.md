@@ -52,7 +52,12 @@ flowchart TB
 
 **[代码事实]** 当前四个插件程序集都实现了 `IPluginModule`，均属于 Managed Plugin；Legacy 无参策略路径在 G4 删除前仍存在，但只属于过渡实现，不是 Managed Plugin v1 的兼容承诺。仓库中没有把它作为当前生产接入方式的插件。参见 [`PluginCompatibilityTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/PluginCompatibilityTests.cs) 和各插件的 `Plugin/*PluginModule.cs`。
 
-**[代码事实]** 宿主和插件直接引用 `MyAvaloniaManagementCommon`；公共项目本身又引用 Avalonia、Dock、MVVM Toolkit、主题与 JSON 库。因此它不是 UI 无关的插件协议，而是共享同一桌面技术栈的扩展 SDK。参见 [`MyAvaloniaManagementCommon.csproj`](../../Host/MyAvaloniaManagementCommon/MyAvaloniaManagementCommon.csproj)。
+**[代码事实]** `MyAvaloniaManagementCommon` 已打包为 `MyAvaloniaManagement.PluginSdk`，只直接引用
+公共签名实际需要的 Avalonia、Dock Model、MVVM Toolkit、DI、JSON 和 Behavior。Host 显式拥有
+字体和全局主题；直接使用 Semi、Ursa 或 Dock UI 的插件选择同版本纯依赖包
+`MyAvaloniaManagement.PluginSdk.UI`。因此它仍是共享桌面技术栈的进程内 SDK，但普通插件不再被迫
+携带完整主题闭包。参见 [`MyAvaloniaManagementCommon.csproj`](../../Host/MyAvaloniaManagementCommon/MyAvaloniaManagementCommon.csproj)
+和 [G3 记录](../plan-history/host-v1/g3-plugin-sdk-and-ui-profile.md)。
 
 **[架构判断]** 对内部可信插件，这种强类型、进程内、共享 UI 栈的方式开发效率很高；代价是宿主、公共契约、Avalonia、Dock 和插件需要协同升级，不能把它当成稳定的第三方插件 ABI。
 
@@ -272,11 +277,16 @@ flowchart LR
 
 **[已实现]** `PluginDirectoryLayout` 把入口识别和物理路径索引从加载上下文拆出。目录顶层存在 `.deps.json` 时，必须只有一个同名入口 DLL；没有 deps 时才进入 Legacy 有序扫描。`AssemblyLoaderHelper` 只缓存根目录的入口程序集快照，不再持有跨插件程序集名称表，也不再注册 `AppDomain.AssemblyResolve`。参见 [`PluginDirectoryLayout.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginDirectoryLayout.cs) 和 [`AssemblyLoaderHelper.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs)。
 
-**[已实现]** `PluginLoadContext` 使用 `AssemblyDependencyResolver` 处理托管、卫星和 RID 原生资产。共享策略以 `MyAvaloniaManagementCommon` 为根建立默认上下文依赖闭包；共享程序集版本或身份不兼容时拒绝当前插件，不加载插件自带副本。普通第三方依赖则优先从当前插件的 deps 图解析，deps 未覆盖时只查询当前目录索引，绝不横向搜索其他插件。该模型遵循微软对 [`AssemblyDependencyResolver`](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblydependencyresolver?view=net-10.0) 和 [`AssemblyLoadContext`](https://learn.microsoft.com/dotnet/core/dependency-loading/understanding-assemblyloadcontext) 的推荐用法。
+**[已实现]** `PluginLoadContext` 使用 `AssemblyDependencyResolver` 处理托管、卫星和 RID 原生资产。
+共享策略以基础 SDK 与显式 UI Profile 两组根建立默认上下文依赖闭包；共享程序集版本或身份不兼容
+时拒绝当前插件，不加载插件自带副本。普通第三方依赖则优先从当前插件的 deps 图解析，deps 未覆盖
+时只查询当前目录索引，绝不横向搜索其他插件。该模型遵循微软对
+[`AssemblyDependencyResolver`](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblydependencyresolver?view=net-10.0)
+和 [`AssemblyLoadContext`](https://learn.microsoft.com/dotnet/core/dependency-loading/understanding-assemblyloadcontext) 的推荐用法。
 
 | 请求类型 | 解析位置 | 失败语义 |
 | --- | --- | --- |
-| `MyAvaloniaManagementCommon` 及公共 SDK 依赖闭包 | `AssemblyLoadContext.Default` | 身份或版本不兼容时拒绝当前插件 |
+| `MyAvaloniaManagementCommon`、基础 SDK 依赖与显式 UI Profile | `AssemblyLoadContext.Default` | 身份或版本不兼容时拒绝当前插件 |
 | 插件 `.deps.json` 声明的托管/卫星依赖 | 当前插件 ALC | 当前插件失败，不借用其他插件程序集 |
 | 无 deps 的 Legacy 托管依赖 | 当前插件目录确定性索引 | 同目录同简单名多文件时拒绝该目录 |
 | RID 原生资产 | 当前插件的 `AssemblyDependencyResolver` | 返回标准原生加载失败，不递归扫描其他插件 |

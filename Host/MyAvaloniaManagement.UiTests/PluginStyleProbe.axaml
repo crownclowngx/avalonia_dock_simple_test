@@ -1,0 +1,9 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MyAvaloniaManagement.UiTests.PluginStyleProbe">
+  <!-- 模拟插件视图：只消费宿主语义资源，不引用任何主题实现包的资源键。 -->
+  <Border x:Name="Surface"
+          Width="32"
+          Height="32"
+          Background="{DynamicResource AppPanelBrush}" />
+</UserControl>

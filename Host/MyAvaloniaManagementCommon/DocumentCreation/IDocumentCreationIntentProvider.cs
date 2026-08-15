@@ -6,5 +6,8 @@ namespace MyAvaloniaManagementCommon.DocumentCreation;
 /// </summary>
 public interface IDocumentCreationIntentProvider
 {
+    /// <summary>取得该策略支持的全部显式创建入口。</summary>
+    /// <returns>稳定顺序的只读元数据；没有多入口时返回空集合。</returns>
+    /// <remarks>宿主读取后会执行身份去重，插件不得在后续调用中改变既有入口的语义。</remarks>
     IReadOnlyList<DocumentCreationIntentMetadata> GetCreationIntents();
 }

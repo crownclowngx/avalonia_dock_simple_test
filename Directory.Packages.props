@@ -5,22 +5,22 @@
 
   <ItemGroup>
     <!-- UI 大版本必须作为一个发布单元升级，避免宿主与插件加载不同版本的公共类型。 -->
-    <PackageVersion Include="Avalonia" Version="12.1.0" />
-    <PackageVersion Include="Avalonia.Desktop" Version="12.1.0" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.0" />
+    <PackageVersion Include="Avalonia" Version="$(MyAvaloniaAvaloniaUiVersion)" />
+    <PackageVersion Include="Avalonia.Desktop" Version="$(MyAvaloniaAvaloniaUiVersion)" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="$(MyAvaloniaAvaloniaUiVersion)" />
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.0" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.0" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(MyAvaloniaAvaloniaUiVersion)" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageVersion Include="Dock.Avalonia" Version="12.0.0.2" />
-    <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="12.0.0.2" />
-    <PackageVersion Include="Dock.Controls.ProportionalStackPanel" Version="12.0.0.2" />
-    <PackageVersion Include="Dock.Controls.Recycling" Version="12.0.0.2" />
-    <PackageVersion Include="Dock.Controls.Recycling.Model" Version="12.0.0.2" />
-    <PackageVersion Include="Dock.Model.Mvvm" Version="12.0.0.2" />
+    <PackageVersion Include="Dock.Avalonia" Version="$(MyAvaloniaDockUiVersion)" />
+    <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="$(MyAvaloniaDockUiVersion)" />
+    <PackageVersion Include="Dock.Controls.ProportionalStackPanel" Version="$(MyAvaloniaDockUiVersion)" />
+    <PackageVersion Include="Dock.Controls.Recycling" Version="$(MyAvaloniaDockUiVersion)" />
+    <PackageVersion Include="Dock.Controls.Recycling.Model" Version="$(MyAvaloniaDockUiVersion)" />
+    <PackageVersion Include="Dock.Model.Mvvm" Version="$(MyAvaloniaDockUiVersion)" />
     <PackageVersion Include="EPPlus" Version="8.6.3" />
     <PackageVersion Include="Flurl.Http" Version="4.0.2" />
-    <PackageVersion Include="Irihi.Ursa" Version="2.1.0" />
-    <PackageVersion Include="Irihi.Ursa.Themes.Semi" Version="2.1.0" />
+    <PackageVersion Include="Irihi.Ursa" Version="$(MyAvaloniaUrsaUiVersion)" />
+    <PackageVersion Include="Irihi.Ursa.Themes.Semi" Version="$(MyAvaloniaUrsaUiVersion)" />
     <PackageVersion Include="LibVLCSharp" Version="3.10.0" />
     <PackageVersion Include="LibVLCSharp.Avalonia" Version="3.10.0" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.10" />
@@ -32,7 +32,7 @@
     <PackageVersion Include="protobuf-net" Version="3.2.56" />
     <PackageVersion Include="QRCoder" Version="1.8.0" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
-    <PackageVersion Include="Semi.Avalonia" Version="12.1.0" />
+    <PackageVersion Include="Semi.Avalonia" Version="$(MyAvaloniaSemiUiVersion)" />
     <PackageVersion Include="VideoLAN.LibVLC.Windows" Version="3.0.23.1" />
     <PackageVersion Include="Xaml.Behaviors" Version="12.0.5" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />

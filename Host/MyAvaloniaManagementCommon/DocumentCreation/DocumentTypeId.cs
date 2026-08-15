@@ -15,15 +15,27 @@ namespace MyAvaloniaManagementCommon.DocumentCreation;
 [System.Text.Json.Serialization.JsonConverter(typeof(DocumentTypeIdSystemTextJsonConverter))]
 public sealed record DocumentTypeId
 {
+    /// <summary>使用经过规范校验的字符串创建 Document 类型身份。</summary>
+    /// <param name="value">插件命名空间内唯一的持久化标识。</param>
+    /// <exception cref="ArgumentException">值不满足稳定标识规则。</exception>
     public DocumentTypeId(string value) =>
         Value = StableIdentifierRules.Validate(value, nameof(value));
 
+    /// <summary>获取布局、文档信封和诊断使用的稳定字符串。</summary>
     public string Value { get; }
 
+    /// <summary>获取该值是否满足当前规范格式。</summary>
     public bool IsCanonical => StableIdentifierRules.IsCanonical(Value);
 
+    /// <summary>解析 Document 类型身份。</summary>
+    /// <param name="value">待解析字符串。</param>
+    /// <returns>有效身份。</returns>
     public static DocumentTypeId Parse(string value) => new(value);
 
+    /// <summary>尝试解析 Document 类型身份。</summary>
+    /// <param name="value">待解析字符串。</param>
+    /// <param name="documentTypeId">成功时为有效身份，否则为 <see langword="null"/>。</param>
+    /// <returns>解析是否成功。</returns>
     public static bool TryParse(string? value, out DocumentTypeId? documentTypeId)
     {
         documentTypeId = StableIdentifierRules.TryValidate(value, out var validated)
@@ -32,6 +44,7 @@ public sealed record DocumentTypeId
         return documentTypeId is not null;
     }
 
+    /// <inheritdoc />
     public override string ToString() => Value;
 }
 
@@ -44,6 +57,7 @@ public sealed record DocumentTypeId
 /// </remarks>
 public sealed class DocumentTypeIdSystemTextJsonConverter : System.Text.Json.Serialization.JsonConverter<DocumentTypeId>
 {
+    /// <inheritdoc />
     public override DocumentTypeId Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
@@ -64,6 +78,7 @@ public sealed class DocumentTypeIdSystemTextJsonConverter : System.Text.Json.Ser
         }
     }
 
+    /// <inheritdoc />
     public override void Write(
         Utf8JsonWriter writer,
         DocumentTypeId value,
@@ -76,12 +91,14 @@ public sealed class DocumentTypeIdSystemTextJsonConverter : System.Text.Json.Ser
 /// </summary>
 public sealed class DocumentTypeIdNewtonsoftJsonConverter : Newtonsoft.Json.JsonConverter<DocumentTypeId>
 {
+    /// <inheritdoc />
     public override void WriteJson(
         JsonWriter writer,
         DocumentTypeId? value,
         Newtonsoft.Json.JsonSerializer serializer) =>
         writer.WriteValue(value?.Value);
 
+    /// <inheritdoc />
     public override DocumentTypeId? ReadJson(
         JsonReader reader,
         Type objectType,

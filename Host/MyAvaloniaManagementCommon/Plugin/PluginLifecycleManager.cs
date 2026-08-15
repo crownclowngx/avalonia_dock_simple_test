@@ -1,39 +1,62 @@
 namespace MyAvaloniaManagementCommon.Plugin;
 
+/// <summary>描述插件生命周期在当前宿主进程中的可观察状态。</summary>
 public enum PluginLifecycleStatus
 {
+    /// <summary>尚未执行初始化。</summary>
     NotStarted,
+    /// <summary>正在执行初始化。</summary>
     Initializing,
+    /// <summary>初始化成功，可提供服务。</summary>
     Ready,
+    /// <summary>生命周期回调失败或被宿主取消。</summary>
     Failed,
+    /// <summary>正在执行关闭回调。</summary>
     Stopping,
+    /// <summary>关闭回调成功完成。</summary>
     Stopped,
+    /// <summary>因依赖缺失、循环或上游失败而未执行。</summary>
     Blocked,
+    /// <summary>生命周期回调超过宿主期限。</summary>
     TimedOut,
 }
 
+/// <summary>标识状态产生于初始化、关闭还是尚未进入回调阶段。</summary>
 public enum PluginLifecycleStage
 {
+    /// <summary>尚未进入生命周期回调。</summary>
     None,
+    /// <summary>状态产生于初始化阶段。</summary>
     Initialization,
+    /// <summary>状态产生于关闭阶段。</summary>
     Shutdown,
 }
 
+/// <summary>插件生命周期在某一时刻的不可变诊断快照。</summary>
+/// <param name="PluginId">状态所属插件的稳定身份。</param>
+/// <param name="Status">当前状态。</param>
+/// <param name="ErrorMessage">可展示的失败摘要；成功状态为 <see langword="null"/>。</param>
 public sealed record PluginLifecycleState(
     PluginId PluginId,
     PluginLifecycleStatus Status,
     string? ErrorMessage = null)
 {
+    /// <summary>获取产生当前状态的生命周期阶段。</summary>
     public PluginLifecycleStage Stage { get; init; }
 
+    /// <summary>获取供自动化与诊断使用的稳定错误码。</summary>
     public string? ErrorCode { get; init; }
 
+    /// <summary>获取已完成或超时操作的实际耗时。</summary>
     public TimeSpan? Duration { get; init; }
 
+    /// <summary>获取插件声明的直接生命周期依赖。</summary>
     public IReadOnlyList<PluginId> RequiredPluginIds { get; init; } = [];
 
+    /// <summary>获取直接阻止当前插件初始化的依赖身份。</summary>
     public PluginId? BlockingPluginId { get; init; }
 
+    /// <summary>获取插件是否已经初始化成功并可被宿主使用。</summary>
     public bool IsAvailable => Status == PluginLifecycleStatus.Ready;
 }
 
@@ -51,11 +74,18 @@ public sealed class PluginLifecycleManager
     private bool _initializationCompleted;
     private bool _shutdownCompleted;
 
+    /// <summary>使用宿主默认期限创建生命周期协调器。</summary>
+    /// <param name="lifecycles">本次 Runtime 中的全部插件生命周期实例。</param>
     public PluginLifecycleManager(IEnumerable<IPluginLifecycle> lifecycles)
         : this(lifecycles, new PluginLifecycleOptions())
     {
     }
 
+    /// <summary>使用显式期限创建生命周期协调器并预先构建依赖计划。</summary>
+    /// <param name="lifecycles">本次 Runtime 中的全部插件生命周期实例。</param>
+    /// <param name="options">由宿主统一拥有的超时设置。</param>
+    /// <exception cref="ArgumentException">插件身份或依赖声明无效。</exception>
+    /// <exception cref="ArgumentOutOfRangeException">任一期限不大于零。</exception>
     public PluginLifecycleManager(
         IEnumerable<IPluginLifecycle> lifecycles,
         PluginLifecycleOptions options)
@@ -83,6 +113,9 @@ public sealed class PluginLifecycleManager
         }
     }
 
+    /// <summary>按稳定身份查找当前状态快照。</summary>
+    /// <param name="pluginId">需要查询的插件身份。</param>
+    /// <returns>已知状态；没有对应生命周期注册时为 <see langword="null"/>。</returns>
     public PluginLifecycleState? GetState(PluginId pluginId)
     {
         lock (_states)
@@ -91,6 +124,9 @@ public sealed class PluginLifecycleManager
         }
     }
 
+    /// <summary>按依赖顺序初始化尚未执行的插件。</summary>
+    /// <param name="cancellationToken">宿主停止启动流程时使用的取消信号。</param>
+    /// <remarks>该操作幂等；单个插件失败会记录状态并阻塞其依赖方，不会重复初始化成功实例。</remarks>
     public async Task InitializeAllAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -208,6 +244,9 @@ public sealed class PluginLifecycleManager
         }
     }
 
+    /// <summary>按成功初始化的相反顺序关闭插件。</summary>
+    /// <param name="cancellationToken">宿主强制结束关闭流程时使用的取消信号。</param>
+    /// <remarks>该操作幂等，只关闭已成功初始化的实例。</remarks>
     public async Task ShutdownAllAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);

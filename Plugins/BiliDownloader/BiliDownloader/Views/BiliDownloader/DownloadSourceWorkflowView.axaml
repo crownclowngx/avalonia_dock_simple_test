@@ -12,8 +12,8 @@
                 Padding="12"
                 CornerRadius="6"
                 BorderThickness="1"
-                BorderBrush="{DynamicResource DockThemeBorderLowBrush}"
-                Background="{DynamicResource DockThemeBackgroundBrush}">
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                Background="{DynamicResource AppPanelBrush}">
             <StackPanel Spacing="4">
                 <TextBlock Text="不支持的来源类型" FontWeight="SemiBold" />
                 <TextBlock Text="当前安装未提供该来源的 Provider。来源身份已原样保留，可查看并另存；不会自动联网。"

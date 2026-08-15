@@ -33,9 +33,16 @@
       <PackageReference Include="Dock.Controls.Recycling" />
       <PackageReference Include="Dock.Controls.Recycling.Model" />
       <PackageReference Include="Dock.Model.Mvvm" />
+      <!--
+        全局主题由宿主拥有。显式引用避免 App.axaml 依赖 Common 的传递包，
+        也让 Plugin SDK 可以独立收口而不改变应用外观。
+      -->
+      <PackageReference Include="Irihi.Ursa" />
+      <PackageReference Include="Irihi.Ursa.Themes.Semi" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
       <PackageReference Include="Microsoft.Extensions.Hosting" />
       <PackageReference Include="Newtonsoft.Json" />
+      <PackageReference Include="Semi.Avalonia" />
       <PackageReference Include="Xaml.Behaviors" />
     </ItemGroup>
 </Project>

@@ -191,7 +191,7 @@
 
   <!-- 媒体库保持 VS Code Explorer 式平面分区和虚拟化列表。 -->
   <Style Selector="Border.LibraryPaneRail">
-    <Setter Property="Background" Value="{DynamicResource DockThemeBackgroundBrush}" />
+    <Setter Property="Background" Value="{DynamicResource AppPanelBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource AppDividerBrush}" />
     <Setter Property="BorderThickness" Value="0,0,1,0" />
   </Style>

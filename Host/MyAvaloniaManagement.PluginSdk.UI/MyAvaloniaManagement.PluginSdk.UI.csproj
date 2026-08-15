@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      这是纯依赖 Profile，不生成需要进入插件目录的运行时程序集。
+      Profile 只回答“宿主正式支持哪一组 UI 包”，全局主题仍由 Host 组合根加载。
+    -->
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>false</SuppressDependenciesWhenPacking>
+    <PackageId>MyAvaloniaManagement.PluginSdk.UI</PackageId>
+    <Version>$(MyAvaloniaPluginSdkVersion)</Version>
+    <PackageVersion>$(MyAvaloniaPluginSdkVersion)</PackageVersion>
+    <Title>MyAvaloniaManagement Plugin SDK UI Profile</Title>
+    <Description>可选的 Managed Plugin v1 UI 依赖 Profile，为直接使用 Fluent、Semi、Ursa 和 Dock UI 的插件固定宿主验证版本。</Description>
+    <Authors>MyAvaloniaManagement Contributors</Authors>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>
+    <PackageTags>avalonia;plugin;sdk;ui;semi;ursa;dock</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ProjectReference 在 pack 时转为同版本基础 SDK 依赖；仓库开发无需本地 NuGet 源。 -->
+    <ProjectReference Include="..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
+
+    <!--
+      闭区间有意禁止 NuGet 自动选择未经过宿主验证的更高版本。
+      版本事实全部来自 Directory.Version.props，不在 Profile 中复制数字。
+    -->
+    <PackageReference Include="Avalonia.Themes.Fluent"
+                      VersionOverride="[$(MyAvaloniaAvaloniaUiVersion)]" />
+    <PackageReference Include="Dock.Avalonia"
+                      VersionOverride="[$(MyAvaloniaDockUiVersion)]" />
+    <PackageReference Include="Dock.Avalonia.Themes.Fluent"
+                      VersionOverride="[$(MyAvaloniaDockUiVersion)]" />
+    <PackageReference Include="Dock.Controls.ProportionalStackPanel"
+                      VersionOverride="[$(MyAvaloniaDockUiVersion)]" />
+    <PackageReference Include="Dock.Controls.Recycling"
+                      VersionOverride="[$(MyAvaloniaDockUiVersion)]" />
+    <PackageReference Include="Dock.Controls.Recycling.Model"
+                      VersionOverride="[$(MyAvaloniaDockUiVersion)]" />
+    <PackageReference Include="Irihi.Ursa"
+                      VersionOverride="[$(MyAvaloniaUrsaUiVersion)]" />
+    <PackageReference Include="Irihi.Ursa.Themes.Semi"
+                      VersionOverride="[$(MyAvaloniaUrsaUiVersion)]" />
+    <PackageReference Include="Semi.Avalonia"
+                      VersionOverride="[$(MyAvaloniaSemiUiVersion)]" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <!-- NuGet 元包约定：用 _._ 表示该 TFM 有依赖但有意不提供运行时程序集。 -->
+    <None Include="_._" Pack="true" PackagePath="lib\$(TargetFramework)\" />
+  </ItemGroup>
+
+</Project>

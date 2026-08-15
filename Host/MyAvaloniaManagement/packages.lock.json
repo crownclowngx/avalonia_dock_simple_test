@@ -111,6 +111,28 @@
           "Dock.Model": "12.0.0.2"
         }
       },
+      "Irihi.Ursa": {
+        "type": "Direct",
+        "requested": "[2.1.0, )",
+        "resolved": "2.1.0",
+        "contentHash": "G2wAmenCgMZkBOqs5MYRtlurhU2tAKKmcNJzjjaA9Mj5v3YIivuv7wyNpIpgYZ602sOZhFtQwYrCaLVUhn9Htw==",
+        "dependencies": {
+          "Avalonia": "12.0.2",
+          "Irihi.Avalonia.Shared": "0.4.0",
+          "Irihi.Avalonia.Shared.Contracts": "0.4.0"
+        }
+      },
+      "Irihi.Ursa.Themes.Semi": {
+        "type": "Direct",
+        "requested": "[2.1.0, )",
+        "resolved": "2.1.0",
+        "contentHash": "vz7iA6YcAqJ9Z34CXGtapsROERLjZ7vD1CqblO7V5NWQyrJ5igbAYSuFFWnZnPVFKkyKM/c43oGmcWjiDBLoHA==",
+        "dependencies": {
+          "Avalonia": "12.0.2",
+          "Irihi.Ursa": "2.1.0",
+          "Semi.Avalonia": "12.0.1"
+        }
+      },
       "Microsoft.Extensions.DependencyInjection": {
         "type": "Direct",
         "requested": "[10.0.10, )",
@@ -155,6 +177,16 @@
         "requested": "[13.0.4, )",
         "resolved": "13.0.4",
         "contentHash": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A=="
+      },
+      "Semi.Avalonia": {
+        "type": "Direct",
+        "requested": "[12.1.0, )",
+        "resolved": "12.1.0",
+        "contentHash": "me56M9qqcCTdYrsnf2vmd1xNF9gBN33PE3CXc9Gq1NPHO8fieZgFkmeqvaJnLMHg927UQyb7xmRSRf/ORAbv/w==",
+        "dependencies": {
+          "Avalonia": "12.1.0",
+          "Irihi.Avalonia.Shared": "0.4.0"
+        }
       },
       "Xaml.Behaviors": {
         "type": "Direct",
@@ -606,48 +638,15 @@
         "resolved": "0.94.1",
         "contentHash": "11YMr7FnAbL83bQmVxlhbIKHvSLxjO81D12Ej0QMSGXMDTxNA9MTOa4MQxx43nv5el/efuPHwzyrj6a5ha2gug=="
       },
-      "myavaloniamanagementcommon": {
+      "MyAvaloniaManagement.PluginSdk": {
         "type": "Project",
         "dependencies": {
           "Avalonia": "[12.1.0, )",
-          "Avalonia.Desktop": "[12.1.0, )",
-          "Avalonia.Fonts.Inter": "[12.1.0, )",
-          "Avalonia.Themes.Fluent": "[12.1.0, )",
           "CommunityToolkit.Mvvm": "[8.4.2, )",
-          "Dock.Avalonia": "[12.0.0.2, )",
-          "Dock.Avalonia.Themes.Fluent": "[12.0.0.2, )",
-          "Dock.Controls.ProportionalStackPanel": "[12.0.0.2, )",
-          "Dock.Controls.Recycling": "[12.0.0.2, )",
-          "Dock.Controls.Recycling.Model": "[12.0.0.2, )",
           "Dock.Model.Mvvm": "[12.0.0.2, )",
-          "Irihi.Ursa": "[2.1.0, )",
-          "Irihi.Ursa.Themes.Semi": "[2.1.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
           "Newtonsoft.Json": "[13.0.4, )",
-          "Semi.Avalonia": "[12.1.0, )",
           "Xaml.Behaviors": "[12.0.5, )"
-        }
-      },
-      "Irihi.Ursa": {
-        "type": "CentralTransitive",
-        "requested": "[2.1.0, )",
-        "resolved": "2.1.0",
-        "contentHash": "G2wAmenCgMZkBOqs5MYRtlurhU2tAKKmcNJzjjaA9Mj5v3YIivuv7wyNpIpgYZ602sOZhFtQwYrCaLVUhn9Htw==",
-        "dependencies": {
-          "Avalonia": "12.0.2",
-          "Irihi.Avalonia.Shared": "0.4.0",
-          "Irihi.Avalonia.Shared.Contracts": "0.4.0"
-        }
-      },
-      "Irihi.Ursa.Themes.Semi": {
-        "type": "CentralTransitive",
-        "requested": "[2.1.0, )",
-        "resolved": "2.1.0",
-        "contentHash": "vz7iA6YcAqJ9Z34CXGtapsROERLjZ7vD1CqblO7V5NWQyrJ5igbAYSuFFWnZnPVFKkyKM/c43oGmcWjiDBLoHA==",
-        "dependencies": {
-          "Avalonia": "12.0.2",
-          "Irihi.Ursa": "2.1.0",
-          "Semi.Avalonia": "12.0.1"
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
@@ -655,16 +654,6 @@
         "requested": "[10.0.10, )",
         "resolved": "10.0.10",
         "contentHash": "z/2xXlFw2aLGjHyEm6E0tQ+In6VfzQzTrtArbQ2c0TQE16ZbyDCMGPvaUT9I0s8rgy9sRWlU2P9waW37qV04qA=="
-      },
-      "Semi.Avalonia": {
-        "type": "CentralTransitive",
-        "requested": "[12.1.0, )",
-        "resolved": "12.1.0",
-        "contentHash": "me56M9qqcCTdYrsnf2vmd1xNF9gBN33PE3CXc9Gq1NPHO8fieZgFkmeqvaJnLMHg927UQyb7xmRSRf/ORAbv/w==",
-        "dependencies": {
-          "Avalonia": "12.1.0",
-          "Irihi.Avalonia.Shared": "0.4.0"
-        }
       }
     }
   }

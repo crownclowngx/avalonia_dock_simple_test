@@ -19,7 +19,7 @@
     <Grid x:Name="PlayerShell"
           RowDefinitions="Auto,*,Auto,Auto,Auto"
           RowSpacing="3"
-          Background="{DynamicResource DockThemeBackgroundBrush}">
+          Background="{DynamicResource AppPanelBrush}">
       <playback:PlaybackDeploymentView Grid.Row="0" DataContext="{Binding Presentation}" />
       <playback:PlaybackViewportView x:Name="Viewport" Grid.Row="1" />
 

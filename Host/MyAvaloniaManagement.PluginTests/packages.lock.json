@@ -626,7 +626,7 @@
           "Flurl.Http": "[4.0.2, )",
           "Microsoft.Data.Sqlite": "[10.0.10, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "MyAvaloniaManagementCommon": "[1.0.0, )",
+          "MyAvaloniaManagement.PluginSdk": "[1.0.0, )",
           "QRCoder": "[1.8.0, )",
           "SQLitePCLRaw.bundle_e_sqlite3": "[2.1.12, )",
           "protobuf-net": "[3.2.56, )"
@@ -637,7 +637,7 @@
         "dependencies": {
           "EPPlus": "[8.6.3, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "MyAvaloniaManagementCommon": "[1.0.0, )"
+          "MyAvaloniaManagement.PluginSdk": "[1.0.0, )"
         }
       },
       "myavaloniamanagement": {
@@ -654,32 +654,24 @@
           "Dock.Controls.Recycling": "[12.0.0.2, )",
           "Dock.Controls.Recycling.Model": "[12.0.0.2, )",
           "Dock.Model.Mvvm": "[12.0.0.2, )",
+          "Irihi.Ursa": "[2.1.0, )",
+          "Irihi.Ursa.Themes.Semi": "[2.1.0, )",
           "Microsoft.Extensions.DependencyInjection": "[10.0.10, )",
           "Microsoft.Extensions.Hosting": "[10.0.10, )",
-          "MyAvaloniaManagementCommon": "[1.0.0, )",
+          "MyAvaloniaManagement.PluginSdk": "[1.0.0, )",
           "Newtonsoft.Json": "[13.0.4, )",
+          "Semi.Avalonia": "[12.1.0, )",
           "Xaml.Behaviors": "[12.0.5, )"
         }
       },
-      "myavaloniamanagementcommon": {
+      "MyAvaloniaManagement.PluginSdk": {
         "type": "Project",
         "dependencies": {
           "Avalonia": "[12.1.0, )",
-          "Avalonia.Desktop": "[12.1.0, )",
-          "Avalonia.Fonts.Inter": "[12.1.0, )",
-          "Avalonia.Themes.Fluent": "[12.1.0, )",
           "CommunityToolkit.Mvvm": "[8.4.2, )",
-          "Dock.Avalonia": "[12.0.0.2, )",
-          "Dock.Avalonia.Themes.Fluent": "[12.0.0.2, )",
-          "Dock.Controls.ProportionalStackPanel": "[12.0.0.2, )",
-          "Dock.Controls.Recycling": "[12.0.0.2, )",
-          "Dock.Controls.Recycling.Model": "[12.0.0.2, )",
           "Dock.Model.Mvvm": "[12.0.0.2, )",
-          "Irihi.Ursa": "[2.1.0, )",
-          "Irihi.Ursa.Themes.Semi": "[2.1.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
           "Newtonsoft.Json": "[13.0.4, )",
-          "Semi.Avalonia": "[12.1.0, )",
           "Xaml.Behaviors": "[12.0.5, )"
         }
       },
@@ -689,7 +681,7 @@
           "EPPlus": "[8.6.3, )",
           "Flurl.Http": "[4.0.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "MyAvaloniaManagementCommon": "[1.0.0, )"
+          "MyAvaloniaManagement.PluginSdk": "[1.0.0, )"
         }
       },
       "mysmalltools": {
@@ -697,7 +689,7 @@
         "dependencies": {
           "LibVLCSharp": "[3.10.0, )",
           "LibVLCSharp.Avalonia": "[3.10.0, )",
-          "MyAvaloniaManagementCommon": "[1.0.0, )"
+          "MyAvaloniaManagement.PluginSdk": "[1.0.0, )"
         }
       },
       "Avalonia": {

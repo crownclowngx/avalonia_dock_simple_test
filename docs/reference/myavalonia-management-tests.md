@@ -2,7 +2,7 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前基线：2026-08-15，Release 共 265 项通过；Host 行覆盖率 77.75%，分支覆盖率 63.91%，Windows Smoke 通过。数量来自本次 TRX 与 `summary.json`，不是永久固定门槛。
+> 当前基线：2026-08-15，Release 共 275 项通过；Host 行覆盖率 77.85%，分支覆盖率 64.03%，Windows Smoke 通过。数量来自本次 TRX 与 `summary.json`，不是永久固定门槛。
 
 ## 一键门禁
 
@@ -27,6 +27,19 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 ```powershell
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Debug
 ```
+
+## Plugin SDK 包门禁
+
+G3 新增独立包消费门禁：
+
+```powershell
+.\scripts\Test-PluginSdkPackage.ps1 -Configuration Release
+```
+
+脚本在系统临时目录打包并消费 `MyAvaloniaManagement.PluginSdk` 与
+`MyAvaloniaManagement.PluginSdk.UI`，检查包内容、nuspec、基础依赖白名单和 UI 精确版本。
+随后分别编译最小 Managed Plugin 与实际使用 Ursa、Dock UI、宿主语义资源的 XAML 插件。
+临时目录在结束时删除，不读取用户数据根，也不发布到公共 NuGet。
 
 ## 覆盖率门槛
 
@@ -59,8 +72,8 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 
 - 单元层覆盖 DI、ViewModel、文件模型、文档保存、消息和 Tool 行为。
 - Headless 层覆盖生产 XAML、主题资源、绑定、DockControl、ViewLocator、
-  主窗口事件和内容全屏。
-- PluginTests 继续覆盖 Dock 布局、Document Scope、插件生命周期和兼容性。
+  主窗口事件、内容全屏、14 个插件语义画刷和主题动态切换。
+- PluginTests 继续覆盖 Dock 布局、Document Scope、插件生命周期、SDK 依赖边界和 UI 共享程序集。
 - 像素截图、真实插件安装包、媒体播放和长时间稳定性不属于本门禁。
 
 ## 设计思路与原因

@@ -9,30 +9,31 @@
         <FileVersion>$(MyAvaloniaPluginSdkFileVersion)</FileVersion>
         <InformationalVersion>$(MyAvaloniaPluginSdkVersion)</InformationalVersion>
         <AssemblyVersion>$(MyAvaloniaPluginSdkAssemblyVersion)</AssemblyVersion>
+        <PackageId>MyAvaloniaManagement.PluginSdk</PackageId>
+        <Title>MyAvaloniaManagement Plugin SDK</Title>
+        <Description>Managed Plugin v1 的基础编译契约。包含插件身份、Document、Tool、生命周期、消息和保存边界，不包含宿主实现或全局主题。</Description>
+        <Authors>MyAvaloniaManagement Contributors</Authors>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>
+        <PackageTags>avalonia;plugin;sdk;managed-plugin</PackageTags>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <!-- public 契约缺少说明即阻断打包；G9/G11 删除契约时也必须同步清理文档。 -->
+        <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="Avalonia" />
-      <PackageReference Include="Avalonia.Desktop" />
-      <PackageReference Include="Avalonia.Fonts.Inter" />
-      <PackageReference Include="Avalonia.Themes.Fluent" />
       <PackageReference Include="CommunityToolkit.Mvvm" />
-      <PackageReference Include="Dock.Avalonia" />
-      <PackageReference Include="Dock.Avalonia.Themes.Fluent" />
-      <PackageReference Include="Dock.Controls.ProportionalStackPanel" />
-      <PackageReference Include="Dock.Controls.Recycling" />
-      <PackageReference Include="Dock.Controls.Recycling.Model" />
       <PackageReference Include="Dock.Model.Mvvm" />
-      <PackageReference Include="Irihi.Ursa" />
-      <PackageReference Include="Irihi.Ursa.Themes.Semi" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Newtonsoft.Json" />
-      <PackageReference Include="Semi.Avalonia" />
       <PackageReference Include="Xaml.Behaviors" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Chain\" />
+      <None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
 </Project>

@@ -3,7 +3,7 @@
 > 状态：待整改，不满足封板条件
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`
-> 整改进度：G0、G1、G2 已于 2026-08-15 完成；G3–G16 待完成
+> 整改进度：G0、G1、G2、G3 已于 2026-08-15 完成；G4–G16 待完成
 > 适用范围：`MyAvaloniaManagement` 宿主、`MyAvaloniaManagementCommon`、插件装载与注册边界、Document/Tool 公共契约和发布门禁
 > 不评审：现有插件的领域业务正确性、第三方插件市场、运行时热卸载和恶意插件隔离
 
@@ -12,7 +12,8 @@
 本文用于回答一个具体问题：在后续主要转入插件开发之前，主程序还需要完成哪些工作，删除哪些历史或占位能力，并建立哪些兼容规则，才能把宿主认定为可长期演进的 **Managed Plugin v1**。
 
 结论是：当前宿主已经有较完整的插件运行骨架，G0 已恢复绿色基线，G1 已冻结支持边界、
-版本线和 v1 数据根，G2 也已完成 Host public 面与静态服务定位收口，但 **尚不能封板**。
+版本线和 v1 数据根，G2 已完成 Host public 面与静态服务定位收口，G3 也已形成正式 SDK 包、
+可选 UI Profile 与宿主样式契约，但 **尚不能封板**。
 剩余主要问题是 Document 宿主信封没有版本、消息总线泄漏第三方抽象、Legacy 激活仍在，
 插件部署与兼容门禁也没有形成单一发布入口。
 
@@ -86,6 +87,10 @@ G2 完成后的当前基线为 Unit 113、UI 34、Plugin 118，共 **265/265 通
 77.75%、分支覆盖率 63.91%，Windows Smoke 通过。Host 已没有任何自有命名空间导出类型，
 详细证据见 [G2 Host 实现面收口记录](../plan-history/host-v1/g2-host-api-surface.md)。
 
+G3 完成后的当前基线为 Unit 113、UI 37、Plugin 125，共 **275/275 通过**；Host 行覆盖率
+77.85%、分支覆盖率 64.03%，Windows Smoke 通过。基础 SDK 与可选 UI Profile 均已通过临时
+NuGet 消费测试，详细证据见 [G3 Plugin SDK 与 UI Profile 记录](../plan-history/host-v1/g3-plugin-sdk-and-ui-profile.md)。
+
 ### 2.3 当前风险清单
 
 | 等级 | 发现 | 影响 |
@@ -98,7 +103,7 @@ G2 完成后的当前基线为 Unit 113、UI 34、Plugin 118，共 **265/265 通
 | 高 | 插件可直接修改完整 `IServiceCollection` | 可信插件仍可能误覆盖宿主核心服务，错误直到运行期才暴露 |
 | 高 | ViewLocator 通过静态构造、AppDomain 和命名约定重复发现视图 | 贡献来源不明确，异常被吞掉或只写控制台，难以形成确定性注册表 |
 | 高 | 诊断记录默认使用 `Exception.ToString()` | 可能把路径、URL、插件异常正文或其他敏感上下文写入长期日志 |
-| 中 | Common 引用了整套 Avalonia/Dock 主题和控件包 | 放大共享程序集闭包和插件协同升级面，增加版本冲突概率 |
+| 已解决（G3） | Common 曾直接引用整套字体、主题、Ursa、Semi 与 Dock UI 控件包 | 基础 SDK 现只保留契约依赖；Host 直接拥有主题，可选 UI Profile 固定受支持 UI 版本 |
 | 中 | 四个插件分别维护部署 Target | 共享依赖排除、入口、清单和原生资产规则可能漂移 |
 | 中 | 仓库没有统一 CI 工作流 | 本地曾通过的门禁不能保证每次提交和干净环境都执行 |
 | 低 | `AdditionalData`、未实际传入的初始化字段、未使用 Behavior 和空 `Chain` 项 | 在 v1 public API 中制造无语义兼容负担 |
@@ -256,6 +261,11 @@ StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 A
 ### G3：形成正式 Plugin SDK
 
 **优先级：阻断；依赖：G1、G2**
+
+**状态：已完成（2026-08-15）**。基础包 `MyAvaloniaManagement.PluginSdk`、可选依赖包
+`MyAvaloniaManagement.PluginSdk.UI`、Host 主题所有权、14 个语义画刷、默认上下文 UI 共享策略和
+临时 NuGet 消费门禁均已落地；完整门禁 275/275 通过。详细设计、SOLID 取舍、已知 Dock Model
+传递依赖和验证证据见 [G3 Plugin SDK 与 UI Profile 记录](../plan-history/host-v1/g3-plugin-sdk-and-ui-profile.md)。
 
 - 目标：把 `MyAvaloniaManagementCommon` 收口为唯一插件编译契约并生成可验证的 SDK 包。
 - 修改边界：包元数据、XML 文档、依赖闭包和 public API。
