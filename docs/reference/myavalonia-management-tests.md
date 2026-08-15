@@ -2,7 +2,7 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前基线：2026-08-13，Release 共 238 项通过；Host 行覆盖率 76.86%，分支覆盖率 63.65%。
+> 当前基线：2026-08-15，Release 共 249 项通过；Host 行覆盖率 76.86%，分支覆盖率 63.65%，Windows Smoke 通过。数量来自本次 TRX 与 `summary.json`，不是永久固定门槛。
 
 ## 一键门禁
 
@@ -155,6 +155,29 @@ DI、Opened/Closing、布局保存和退出码，同时无需使用不稳定的�
 集成要求 v3；既有 xUnit 2 测试不迁移，以减少无关变更。覆盖率按程序集和源文件
 过滤后合并，既设置宿主总体门槛，也为四个高风险 ViewModel 设置独立门槛，
 防止用大量简单文件的覆盖率掩盖主流程缺口。
+
+### 当前绿色基线
+
+2026-08-15 先执行锁定还原和解决方案 Release 构建，再执行：
+
+```powershell
+.\scripts\Invoke-MyAvaloniaManagementTests.ps1 `
+  -Configuration Release -NoRestore -WindowsSmoke
+```
+
+本次结果来自 `Unit.trx`、`UI.trx`、`Plugin.trx` 和 `summary.json`：
+
+| 测试项目 | 数量 |
+| --- | ---: |
+| `MyAvaloniaManagement.Tests` | 105 |
+| `MyAvaloniaManagement.UiTests` | 32 |
+| `MyAvaloniaManagement.PluginTests` | 112 |
+| **合计** | **249** |
+
+Host 行覆盖率为 76.86%，分支覆盖率为 63.65%，Windows Smoke 为通过。完整的 G0 根因、
+修改边界和验证过程见 [G0 绿色基线恢复记录](../plan-history/host-v1/g0-green-baseline.md)。
+
+以下结果保留为历史时间点证据，不用当前数字覆盖：
 
 2026-08-12 执行 `.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke`
 的 Release 专项结果：

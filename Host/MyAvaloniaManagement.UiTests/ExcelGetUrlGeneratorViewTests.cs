@@ -12,7 +12,7 @@ namespace MyAvaloniaManagement.UiTests;
 public sealed class ExcelGetUrlGeneratorViewTests
 {
     [AvaloniaFact]
-    public void 视图可完成绑定并提供只读可复制输出框()
+    public void 视图可完成绑定并提供示例列表与TXT输出入口()
     {
         var viewModel = new ExcelGetUrlGeneratorViewModel(
             new EmptyDialogService(),
@@ -27,9 +27,9 @@ public sealed class ExcelGetUrlGeneratorViewTests
             Assert.Contains(controls.OfType<Button>(), button =>
                 Equals(button.Content, "选择 Excel…"));
             Assert.Contains(controls.OfType<Button>(), button =>
-                Equals(button.Content, "生成全部地址"));
-            Assert.Contains(controls.OfType<TextBox>(), textBox =>
-                textBox.IsReadOnly && textBox.AcceptsReturn);
+                Equals(button.Content, "生成全部地址到 TXT"));
+            Assert.Contains(controls.OfType<ItemsControl>(), itemsControl =>
+                ReferenceEquals(itemsControl.ItemsSource, viewModel.ExampleUrls));
             Assert.Contains(controls.OfType<CheckBox>(), checkBox =>
                 checkBox.IsChecked == true);
         }
@@ -42,8 +42,24 @@ public sealed class ExcelGetUrlGeneratorViewTests
 
     private sealed class EmptyDialogService : IExcelFileDialogService
     {
-        public Task<string?> PickWorkbookAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult<string?>(null);
+        /*
+         * 设计意图：该 Headless 测试只验证生产 XAML 和绑定，不应打开原生文件窗口或访问
+         * 文件系统。因此两个选择操作都以 null 表示用户取消；同时主动传播取消令牌，
+         * 使这个最小 Stub 与生产实现保持一致的可观察取消行为。
+         */
+        public Task<string?> PickWorkbookAsync(CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult<string?>(null);
+        }
+
+        public Task<string?> PickOutputTextFileAsync(
+            string suggestedFileName,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult<string?>(null);
+        }
     }
 
     private sealed class EmptyWorkbookReader : IExcelWorkbookReader

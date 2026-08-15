@@ -153,7 +153,7 @@ public sealed class ExcelGetUrlGeneratorTests
     {
         var reader = new SwitchingWorkbookReader();
         var viewModel = new ExcelGetUrlGeneratorViewModel(
-            new FixedFileDialogService("input.xlsx"),
+            new StubExcelFileDialogService("input.xlsx"),
             reader,
             new ExcelGetUrlBuilder());
 
@@ -174,35 +174,48 @@ public sealed class ExcelGetUrlGeneratorTests
     [Fact]
     public async Task ViewModel成功后输入变化标记过期且失败不覆盖旧输出()
     {
+        var outputPath = Path.Combine(
+            Path.GetTempPath(),
+            $"excel-get-output-{Guid.NewGuid():N}.txt");
         var reader = new MutableWorkbookReader
         {
             Rows = [new ExcelRowData(2, new Dictionary<int, string> { [1] = "张三" })],
         };
         var viewModel = new ExcelGetUrlGeneratorViewModel(
-            new FixedFileDialogService("input.xlsx"),
+            new StubExcelFileDialogService("input.xlsx", outputPath),
             reader,
             new ExcelGetUrlBuilder());
 
-        await viewModel.SelectWorkbookCommand.ExecuteAsync(null);
-        viewModel.BaseAddress = "https://api.test/users";
-        viewModel.ParameterMappings[0].ParameterName = "name";
-        viewModel.ParameterMappings[0].SelectedColumn =
-            viewModel.ParameterMappings[0].AvailableColumns.Single();
-        await viewModel.GenerateCommand.ExecuteAsync(null);
+        try
+        {
+            await viewModel.SelectWorkbookCommand.ExecuteAsync(null);
+            viewModel.BaseAddress = "https://api.test/users";
+            viewModel.ParameterMappings[0].ParameterName = "name";
+            viewModel.ParameterMappings[0].SelectedColumn =
+                viewModel.ParameterMappings[0].AvailableColumns.Single();
+            await viewModel.GenerateCommand.ExecuteAsync(null);
 
-        var successfulOutput = viewModel.OutputText;
-        Assert.Equal("https://api.test/users?name=张三", successfulOutput);
-        Assert.False(viewModel.IsOutputStale);
+            Assert.Equal(outputPath, viewModel.OutputFilePath);
+            var successfulOutput = await File.ReadAllLinesAsync(outputPath);
+            Assert.Equal(["https://api.test/users?name=张三"], successfulOutput);
+            Assert.False(viewModel.IsOutputStale);
 
-        viewModel.BaseAddress = "https://api.test/changed";
-        Assert.True(viewModel.IsOutputStale);
-        reader.Rows = [new ExcelRowData(2, new Dictionary<int, string> { [1] = "bad value" })];
-        await viewModel.GenerateCommand.ExecuteAsync(null);
+            viewModel.BaseAddress = "https://api.test/changed";
+            Assert.True(viewModel.IsOutputStale);
+            reader.Rows = [new ExcelRowData(2, new Dictionary<int, string> { [1] = "bad value" })];
+            await viewModel.GenerateCommand.ExecuteAsync(null);
 
-        Assert.Equal(successfulOutput, viewModel.OutputText);
-        Assert.Contains("第 2 行、A 列", viewModel.ValidationText);
-        Assert.Contains("旧结果未被覆盖", viewModel.StatusText);
-        viewModel.Dispose();
+            Assert.Equal(successfulOutput, await File.ReadAllLinesAsync(outputPath));
+            Assert.Contains("第 2 行、A 列", viewModel.ValidationText);
+            Assert.Contains("旧结果未被覆盖", viewModel.StatusText);
+        }
+        finally
+        {
+            // 设计意图：测试拥有自己创建的输出文件，因此无论断言或命令是否失败，
+            // 都必须在这里释放 ViewModel 并清理文件，避免污染后续测试和开发者环境。
+            viewModel.Dispose();
+            File.Delete(outputPath);
+        }
     }
 
     [Fact]
@@ -252,10 +265,29 @@ public sealed class ExcelGetUrlGeneratorTests
         return path;
     }
 
-    private sealed class FixedFileDialogService(string path) : IExcelFileDialogService
+    /*
+     * 设计意图：这是确定性的 Stub，只负责替代原生文件选择器，不模拟 Avalonia 窗口。
+     * 输入工作簿与输出 TXT 使用两个独立路径，防止生成测试意外覆盖输入文件；未提供
+     * 输出路径时返回 null，严格表达生产契约中的“用户取消保存”。即使 Stub 立即返回，
+     * 也先传播取消令牌，保证它能够替换生产实现而不改变调用方可观察到的取消语义。
+     */
+    private sealed class StubExcelFileDialogService(
+        string workbookPath,
+        string? outputTextPath = null) : IExcelFileDialogService
     {
-        public Task<string?> PickWorkbookAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult<string?>(path);
+        public Task<string?> PickWorkbookAsync(CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult<string?>(workbookPath);
+        }
+
+        public Task<string?> PickOutputTextFileAsync(
+            string suggestedFileName,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(outputTextPath);
+        }
     }
 
     private sealed class MutableWorkbookReader : IExcelWorkbookReader

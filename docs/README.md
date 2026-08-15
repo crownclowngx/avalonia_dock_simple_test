@@ -17,6 +17,7 @@
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
 | [宿主—插件架构评审](./design/host-plugin-architecture-review.md) | 解决方案总体结构、插件边界、当前成熟度和演进方向 | 当前事实，已按主项目内部重构更新 |
+| [Managed Plugin v1 封板评审与整改任务书](./design/host-v1-sealing-readiness-plan.md) | 主程序封板差距、版本与兼容策略、删除清单、独立整改包和最终验收标准 | 当前整改计划，完成前不得认定宿主已封板 |
 | [Document 保存 V1](./design/document-persistence-v1-design.md) | 公共脏状态、保存事务、关闭确认、备份和坏文件恢复规则 | 当前契约与设计依据 |
 | [MyAvaloniaManagement 测试说明](./reference/myavalonia-management-tests.md) | 宿主专项测试、覆盖率和 Windows 冒烟门禁 | 当前事实 |
 | [Dock 布局快照 V1](./reference/dock-layout-snapshot-v1.md) | `layout-v1.json` 的稳定 ID、校验、迁移和回退规则 | 当前契约 |
@@ -33,6 +34,12 @@
 - [AI 工作流插件接入可行性探索](./design/ai-workflow-plugin-exploration.md)：候选能力、风险和 PoC 路线；属于探索文档，不是当前宿主契约。
 
 ## 历史升级与验收记录
+
+### Managed Plugin v1 整改记录
+
+- [G0：绿色基线恢复](./plan-history/host-v1/g0-green-baseline.md)：测试契约漂移修复、SOLID/Test Stub 设计意图、Release 构建、三层测试、覆盖率和 Windows Smoke 证据。
+
+### .NET 10 升级记录
 
 `upgrade/net10/phase-*.md` 是分阶段升级时的证据快照。文档中的 `.NET 9`、旧依赖版本、当时的测试数量或阶段性限制是有意保留的历史事实，不应为了匹配当前代码而覆盖。
 
