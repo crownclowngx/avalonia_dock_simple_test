@@ -4,9 +4,13 @@
 
 本文列出内部重构不得无意改变的外部可观察行为。它不是完整 API 参考，而是代码评审和回归测试清单。
 
+> Managed Plugin v1 的正式支持边界已在 G1 冻结：Windows x64、可信进程内 Managed Plugin、
+> 严格清单、退出后替换插件。当前代码中的 Legacy 激活和 Host public 实现面是 G2/G4 完成前的
+> 过渡事实，不构成 v1 兼容承诺；在对应任务完成前仍需测试保护，不能在无评审时意外破坏。
+
 ## 2. public API
 
-必须保持：
+在 G2 执行前，以下当前 public 面仍由指纹测试保护：
 
 - Host 和 `MyAvaloniaManagementCommon` 现有 public 类型、命名空间、构造函数、方法、属性、字段和事件；
 - `ManagementFactory` 的 public 方法与 Dock override；
@@ -15,6 +19,19 @@
 - 静态 `ServiceProvider` 兼容路径。
 
 [`PublicApiContractTests`](../../../MyAvaloniaManagement.Tests/PublicApiContractTests.cs) 对 Host/Common 导出元数据生成 SHA-256 指纹。内部类型可以调整；有意 public 变更必须单独评审，并同步更新插件、契约测试和本文。
+
+上述 Host 窗口、ViewModel、加载器和静态服务定位器不是 v1 Plugin SDK。G2 已获准将其改为
+internal 或删除；正式长期兼容面只由后续收口的 `MyAvaloniaManagementCommon`/Plugin SDK 承担。
+
+### 2.1 版本所有权
+
+- 产品版本、Host API 程序集身份和 Plugin SDK 版本集中定义在根级 `Directory.Version.props`；
+- 当前产品与 SDK 版本为 `1.0.0`，Host API 与 SDK `AssemblyVersion` 为 `1.0.0.0`；
+- 兼容的 SDK 新增提升次版本但保持同一主版本程序集身份；破坏性契约变化提升主版本；
+- 每个插件只拥有自己的 `PluginVersion`，清单版本必须与入口程序集精确一致；
+- manifest、布局、外观、诊断和未来 Document 信封分别拥有整数 schema，不共享全局数字；
+- 插件内容 schema 由内容所有者解释，不能使用插件发布版本替代；
+- 普通进程内消息不添加无迁移或分派行为的版本占位字段。
 
 ## 3. 插件发现与激活
 
@@ -58,10 +75,9 @@ V1 清单格式：
 
 ### 3.3 Legacy 插件
 
-- 不属于 Managed 模块程序集；
-- 同样必须具有有效清单；无清单历史目录不再放行；
-- Document/Tool 策略必须具有 public 无参构造；
-- 不自动获得 Managed DI 激活语义。
+以下仅描述 G4 删除前的当前过渡行为，不是 v1 支持面：Legacy 插件不属于 Managed 模块程序集，
+仍要求有效清单，策略依赖 public 无参构造且不获得 Managed DI 激活语义。v1 不兼容仓库外 Legacy
+二进制插件；G4 将删除该激活分支及其 public Facade。
 
 ### 3.4 共同规则
 
@@ -137,7 +153,8 @@ V1 清单格式：
 - 插件在 Avalonia 消息循环前初始化；
 - 只反向关闭成功初始化的生命周期实例；
 - 插件关闭后释放根容器和剩余 Document Scope；
-- `MYAVALONIA_DATA_DIRECTORY` 继续只覆盖数据目录，避免测试污染用户 LocalAppData；
+- 默认宿主数据根为 `%LOCALAPPDATA%\MyAvaloniaManagement\v1\`，旧预发布目录不读取、迁移或删除；
+- `MYAVALONIA_DATA_DIRECTORY` 继续表示完整数据根且不追加 `v1`，避免测试污染用户 LocalAppData；
 - `MYAVALONIA_SMOKE_TEST=1` 继续创建真实窗口并通过正常 Closing 路径退出。
 
 ## 8. 内部实现不构成契约

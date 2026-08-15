@@ -1,4 +1,7 @@
 <Project>
+  <!-- 版本事实与普通编译选项分离，版本评审不需要在多个项目文件中寻找。 -->
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Version.props" />
+
   <PropertyGroup>
     <!-- 普通项目共享同一稳定基座；只有依赖真实 Windows 窗口的 Harness 显式覆盖 TFM。 -->
     <TargetFramework Condition="'$(TargetFramework)' == ''">net10.0</TargetFramework>

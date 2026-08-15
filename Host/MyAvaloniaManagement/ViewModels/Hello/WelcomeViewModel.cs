@@ -52,7 +52,9 @@ public partial class WelcomeViewModel : Document
 
     private static string GetVersion()
     {
-        var assembly = Assembly.GetEntryAssembly() ?? typeof(WelcomeViewModel).Assembly;
+        // 设计意图：产品版本由宿主程序集拥有。若读取 EntryAssembly，单元测试、Harness
+        // 或未来引导器会把自己的版本误显示为产品版本，造成发布信息与实际宿主不一致。
+        var assembly = typeof(WelcomeViewModel).Assembly;
         var informationalVersion = assembly
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
             .InformationalVersion;

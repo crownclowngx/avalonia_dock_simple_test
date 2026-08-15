@@ -6,8 +6,11 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <PlatformTarget>x64</PlatformTarget>
-        <!-- Host API 兼容检查的发布事实；破坏性 API 变更必须显式提升主版本。 -->
-        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <!-- 产品发布版本与 Host API 二进制身份来自根级版本政策，不能在此手工复制。 -->
+        <Version>$(MyAvaloniaProductVersion)</Version>
+        <FileVersion>$(MyAvaloniaProductFileVersion)</FileVersion>
+        <InformationalVersion>$(MyAvaloniaProductVersion)</InformationalVersion>
+        <AssemblyVersion>$(MyAvaloniaHostApiAssemblyVersion)</AssemblyVersion>
     </PropertyGroup>
 
     <ItemGroup>

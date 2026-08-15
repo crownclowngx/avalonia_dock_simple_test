@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Avalonia.Styling;
 using MyAvaloniaManagement.Business.Appearance;
+using MyAvaloniaManagement.Business.Storage;
 
 namespace MyAvaloniaManagement.Tests;
 
@@ -102,9 +103,11 @@ public sealed class AppearanceSettingsTests
     {
         using var directory = new TemporaryDirectory();
 
-        var path = AppearanceSettingsStore.ResolveDefaultPath(
-            directory.Path,
-            Path.Combine(directory.Path, "unused"));
+        var path = Path.Combine(
+            HostDataRootPolicy.Resolve(
+                directory.Path,
+                Path.Combine(directory.Path, "unused")),
+            AppearanceSettingsStore.SettingsFileName);
 
         Assert.Equal(
             Path.Combine(

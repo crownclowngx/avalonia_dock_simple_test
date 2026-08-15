@@ -173,22 +173,11 @@ internal sealed class DockLayoutStore
     /// 计算生产布局文件路径，并允许自动化测试覆盖数据目录。
     /// </summary>
     /// <remarks>
-    /// 未设置 <c>MYAVALONIA_DATA_DIRECTORY</c> 时保持原 LocalAppData 行为；
-    /// 设置后使用调用方提供的隔离目录，确保真实启动冒烟不会污染用户布局。
+    /// 未设置覆盖时进入新的 v1 数据根，旧预发布布局保持原样；设置覆盖后使用调用方
+    /// 提供的完整隔离目录，确保真实启动冒烟不会污染用户布局。
     /// </remarks>
-    private static string GetDefaultPath()
-    {
-        var configuredDataDirectory =
-            Environment.GetEnvironmentVariable("MYAVALONIA_DATA_DIRECTORY");
-        var dataDirectory = string.IsNullOrWhiteSpace(configuredDataDirectory)
-            ? Path.Combine(
-                Environment.GetFolderPath(
-                    Environment.SpecialFolder.LocalApplicationData),
-                "MyAvaloniaManagement")
-            : Path.GetFullPath(configuredDataDirectory);
-
-        return Path.Combine(dataDirectory, LayoutFileName);
-    }
+    private static string GetDefaultPath() =>
+        Path.Combine(HostDataRootPolicy.ResolveDefault(), LayoutFileName);
 
     private static void LogToStandardError(string errorCode, string? stableId) =>
         Console.Error.WriteLine(

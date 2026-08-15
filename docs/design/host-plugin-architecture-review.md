@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-12<br>
+> 更新日期：2026-08-15（已同步 G1 版本与数据根政策）<br>
 > 代码基线：主项目核心链路内部重构后的当前工作区<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系  
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
@@ -50,7 +50,7 @@ flowchart TB
     Host -. "运行时扫描 Controls 子目录" .-> DaTang
 ```
 
-**[代码事实]** 当前四个插件程序集都实现了 `IPluginModule`，均属于 Managed Plugin；Legacy 无参策略路径仍为兼容能力，但仓库中已经没有把它作为当前生产接入方式的插件。参见 [`PluginCompatibilityTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/PluginCompatibilityTests.cs) 和各插件的 `Plugin/*PluginModule.cs`。
+**[代码事实]** 当前四个插件程序集都实现了 `IPluginModule`，均属于 Managed Plugin；Legacy 无参策略路径在 G4 删除前仍存在，但只属于过渡实现，不是 Managed Plugin v1 的兼容承诺。仓库中没有把它作为当前生产接入方式的插件。参见 [`PluginCompatibilityTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/PluginCompatibilityTests.cs) 和各插件的 `Plugin/*PluginModule.cs`。
 
 **[代码事实]** 宿主和插件直接引用 `MyAvaloniaManagementCommon`；公共项目本身又引用 Avalonia、Dock、MVVM Toolkit、主题与 JSON 库。因此它不是 UI 无关的插件协议，而是共享同一桌面技术栈的扩展 SDK。参见 [`MyAvaloniaManagementCommon.csproj`](../../Host/MyAvaloniaManagementCommon/MyAvaloniaManagementCommon.csproj)。
 
@@ -96,18 +96,18 @@ sequenceDiagram
 
 **[代码事实]** `AssemblyLoaderHelper` 仍是 public 兼容 Facade，但内部按规范化插件根目录使用线程安全快照；同一根目录只扫描一次。标准插件通过唯一的“同名 DLL + `.deps.json`”确定入口，每个插件目录建立独立且不可回收的 `PluginLoadContext`；无 deps 的历史插件保留有序 DLL 回退。加载器不再注册全局 `AssemblyResolve`，也没有跨插件简单名称缓存。单个插件目录、依赖或类型失败不会终止其他插件。`HostExtensionRegistry` 和 `ViewLocator` 复用已加载入口程序集，不再为文档和工具分别触发目录扫描。
 
-### 2.2 Managed 为现行模型，Legacy 仅保留兼容
+### 2.2 Managed 为现行模型，Legacy 仅为待删除过渡路径
 
 | 模型 | 识别方式 | 策略构造 | 可用能力 | 当前状态 |
 | --- | --- | --- | --- | --- |
 | Managed Plugin | 程序集实现 `IPluginModule` | `ActivatorUtilities` 使用宿主 DI 构造 | DI、Document/Tool、可选 `IPluginLifecycle` | 四个现有插件均采用 |
-| Legacy Plugin | 程序集中只有 Document/Tool 策略 | 公共无参构造函数 | Document/Tool，依赖自行处理 | 兼容路径保留，无当前插件示例 |
+| Legacy Plugin | 程序集中只有 Document/Tool 策略 | 公共无参构造函数 | Document/Tool，依赖自行处理 | G4 前过渡路径，无当前插件示例，不属于 v1 支持面 |
 
 **[代码事实]** `IPluginModule.ConfigureServices(IServiceCollection)` 让托管插件在根容器构建前注册服务；未实现模块接口的程序集仍可走无参策略。参见 [`IPluginModule.cs`](../../Host/MyAvaloniaManagementCommon/Plugin/IPluginModule.cs)、[`PluginModuleCatalog.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModuleCatalog.cs) 和 [`PluginStrategyActivator.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginStrategyActivator.cs)。
 
 **[代码事实]** `IPluginLifecycle` 是可选能力，不是每个 Managed Plugin 的必选空壳。当前只有 BiliDownloader 注册生命周期，用它启动、恢复和关闭下载协调器；DaTang 没有常驻后台任务，因此只注册模块而不注册生命周期。生命周期管理器支持可选 `IPluginLifecycleDependencies`、拓扑排序和统一初始化/关闭超时；未声明依赖时仍按 `Order`、`PluginId` 串行初始化。失败、超时和依赖阻塞不会影响独立分支，退出时只反向关闭成功初始化的实例。
 
-**[架构判断]** 双轨兼容仍有价值，但文档、示例和新代码应默认 Managed。Legacy 应被视为迁移入口，而不是长期并列的目标模型。
+**[架构判断]** 双轨只描述 G4 前的当前代码事实。v1 已冻结为 Managed-only，文档、示例和新代码只能采用 Managed；Legacy 不再作为迁移入口或长期兼容模型。
 
 ## 3. Document：多实例工作上下文
 
@@ -217,7 +217,7 @@ flowchart LR
 
 ### 4.3 布局持久化已经从“未实现”变为“可用 V1”
 
-**[代码事实]** `DockLayoutStore` 把 `layout-v1.json` 写入 LocalAppData（测试可通过 `MYAVALONIA_DATA_DIRECTORY` 隔离），采用同目录临时文件和原子替换；读取时校验版本、稳定 ID、重复项、Pane/Tool 状态和边界数据，损坏快照会被隔离为 `.invalid.bak`。参见 [`DockLayoutStore.cs`](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs) 和 [`DockLayoutSnapshotV1.cs`](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotV1.cs)。
+**[代码事实]** `DockLayoutStore` 把 `layout-v1.json` 写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v1\`（测试可通过 `MYAVALONIA_DATA_DIRECTORY` 提供完整隔离根），采用同目录临时文件和原子替换；读取时校验版本、稳定 ID、重复项、Pane/Tool 状态和边界数据，损坏快照会被隔离为 `.invalid.bak`。旧预发布父目录不会被读取、迁移或删除。参见 [`DockLayoutStore.cs`](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs) 和 [`DockLayoutSnapshotV1.cs`](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotV1.cs)。
 
 **[代码事实]** `DockLayoutLifecycle` 保存四向 Pane 比例、Tool 顺序、可见/固定状态和活动 Tool；能够迁移旧的两向布局，并把历史浮动 Tool 归一化回主窗口 Dock。若快照引用缺失插件、缺失 Pane 或非法 Dock，则隔离整个快照并回退默认布局。
 
@@ -246,9 +246,9 @@ flowchart LR
 
 | 能力 | 状态 | 当前证据与边界 |
 | --- | --- | --- |
-| .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.0、Dock 12.0.0.2；版本由 `global.json`、`Directory.Build.props`、`Directory.Packages.props` 集中管理 |
+| .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.0、Dock 12.0.0.2；产品/SDK、构建和包版本分别由 `Directory.Version.props`、`Directory.Build.props`、`Directory.Packages.props` 集中管理 |
 | 插件目录扫描 | 已实现 | 按规范化根目录缓存线程安全快照；标准插件只主动加载唯一 deps 入口，私有依赖按需解析；Legacy 保留有序 DLL 回退，并隔离目录/局部类型失败 |
-| Managed/Legacy 兼容 | 已实现 | 四个现有插件均为 Managed；Legacy 无参激活路径和兼容测试仍保留 |
+| Managed v1 / Legacy 过渡 | Managed 已实现 | 四个现有插件均为 Managed；Legacy 无参激活路径和回归测试只保留到 G4，不属于 v1 支持面 |
 | Document/Tool 策略 | 已实现 | `HostExtensionRegistry` 对程序集类型做一次遍历，以强类型主 ID 构建不可变注册表；元数据只读取一次，Document 支持可选多入口意图 |
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient；根容器启用构建和 Scope 验证 |
 | 插件生命周期 | 已实现 V1 | 顺序初始化、反序关闭、幂等、失败隔离、超时、依赖图和只读插件状态 Tool 均已有测试；仍不支持运行时重试、禁用或热卸载 |
@@ -339,7 +339,7 @@ public DocumentMetadata GetMetadata() => new(
 
 ### 6.4 2026-08-12 统一启动诊断 V1
 
-**[已实现]** 宿主在扫描插件之前创建 `HostDiagnosticSession`。每条诊断同时进入线程安全内存快照、逐条刷新的 JSON Lines 会话文件和 Trace/Console 兼容镜像；默认目录为 `%LOCALAPPDATA%/MyAvaloniaManagement/Diagnostics`，自动化仍可通过 `MYAVALONIA_DATA_DIRECTORY` 隔离数据，启动时仅保留最近 20 个会话。日志设施失败只产生 `DIAGNOSTIC_PERSISTENCE_UNAVAILABLE`，不会成为新的启动失败原因。
+**[已实现]** 宿主在扫描插件之前创建 `HostDiagnosticSession`。每条诊断同时进入线程安全内存快照、逐条刷新的 JSON Lines 会话文件和 Trace/Console 兼容镜像；默认目录为 `%LOCALAPPDATA%/MyAvaloniaManagement/v1/Diagnostics`，自动化仍可通过 `MYAVALONIA_DATA_DIRECTORY` 提供完整隔离根，启动时仅保留最近 20 个会话。日志设施失败只产生 `DIAGNOSTIC_PERSISTENCE_UNAVAILABLE`，不会成为新的启动失败原因。
 
 **[已实现]** `AssemblyLoaderHelper` 的生产入口返回程序集、预检类型与失败记录来自同一次扫描的不可变快照。入口程序集加载后会先解析其完整程序集引用并执行类型预检；任一环节失败都隔离整个插件目录，不能以局部类型继续贡献服务或被误判为 Legacy。模块身份、服务注册、容器构建和扩展组合错误仍属于全局契约错误，阻止主工作台启动；生命周期和布局错误则记录后继续或回退。
 

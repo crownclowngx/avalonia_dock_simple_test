@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using MyAvaloniaManagement.Business.Storage;
 
 namespace MyAvaloniaManagement.Business.Appearance;
 
@@ -208,29 +209,8 @@ internal sealed class AppearanceSettingsStore
         }
     }
 
-    private static string GetDefaultPath()
-    {
-        var configuredDataDirectory =
-            Environment.GetEnvironmentVariable("MYAVALONIA_DATA_DIRECTORY");
-        return ResolveDefaultPath(
-            configuredDataDirectory,
-            Environment.GetFolderPath(
-                Environment.SpecialFolder.LocalApplicationData));
-    }
-
-    internal static string ResolveDefaultPath(
-        string? configuredDataDirectory,
-        string localApplicationDataDirectory)
-    {
-        var dataDirectory = string.IsNullOrWhiteSpace(configuredDataDirectory)
-            ? Path.Combine(
-                localApplicationDataDirectory,
-                "MyAvaloniaManagement")
-            : Path.GetFullPath(configuredDataDirectory);
-
-        return Path.GetFullPath(
-            Path.Combine(dataDirectory, SettingsFileName));
-    }
+    private static string GetDefaultPath() =>
+        Path.Combine(HostDataRootPolicy.ResolveDefault(), SettingsFileName);
 
     private static void LogToStandardError(string errorCode) =>
         Console.Error.WriteLine($"AppearanceSettings errorCode={errorCode}");

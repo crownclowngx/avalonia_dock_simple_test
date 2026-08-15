@@ -30,7 +30,24 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 | [DaTangAccountingHelpPlug](./Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj) | 发票信息综合计算和银行余额调节 |
 | [MyPlugTest](./Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) | Managed Plugin 的 Document、Tool、消息通信和依赖注入示例 |
 
-四个当前插件均使用 Managed Plugin 接入。Legacy 激活路径只用于兼容历史实现，不推荐新插件采用。
+四个当前插件均使用 Managed Plugin 接入。代码中暂存的 Legacy 激活路径只属于 G4 删除前的
+过渡实现，不是 Managed Plugin v1 的兼容承诺，也不得用于新插件。
+
+## Managed Plugin v1 支持与版本边界
+
+v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。插件必须携带严格清单并位于
+独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
+权限系统、第三方市场、跨进程 UI 或用户动态启停插件。
+
+版本按所有者独立演进：产品版本、Plugin SDK 版本、每插件版本、manifest schema、每种宿主
+持久化 schema 和插件内容 schema 不能互相代替。当前产品与 Plugin SDK 基线均为 `1.0.0`，
+Host API 与 SDK 的程序集兼容身份均为 `1.0.0.0`；统一事实定义在
+[`Directory.Version.props`](./Directory.Version.props)。普通进程内强类型消息不增加无迁移行为的
+版本字段，发生破坏性语义变化时创建新消息类型或提升 SDK 主版本。
+
+宿主默认把布局、外观和诊断写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v1\`。旧预发布目录
+保持原样，不读取、迁移或删除。`MYAVALONIA_DATA_DIRECTORY` 仍表示完整数据根，不追加 `v1`，
+以保持自动化和部署隔离语义。
 
 ## 快速运行
 
@@ -91,6 +108,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - 插件加载上下文用于依赖解析隔离，不等同于安全沙箱；
 - 插件目录快照和加载上下文以进程为边界，不支持热更新或运行时卸载；
 - 当前没有官方插件 SDK/NuGet 包、插件市场或通用脚手架；
+- G4 完成前代码中仍有 Legacy 过渡路径，但它不属于 v1 支持面；
 - Host、`MyAvaloniaManagementCommon`、Avalonia、Dock 与插件需要按照兼容区间协同升级。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MyAvaloniaManagement.Business.Storage;
 
 namespace MyAvaloniaManagement.Business.Diagnostics;
 
@@ -340,7 +341,11 @@ internal sealed class HostDiagnosticSession : IHostDiagnosticSink, IDisposable
     {
         try
         {
-            var root = ResolveDataDirectory(dataDirectory);
+            var root = dataDirectory is null
+                ? HostDataRootPolicy.ResolveDefault()
+                : HostDataRootPolicy.Resolve(
+                    dataDirectory,
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
             var diagnosticDirectory = Path.Combine(root, "Diagnostics");
             Directory.CreateDirectory(diagnosticDirectory);
             var cleanupFailure = DeleteExpiredSessions(diagnosticDirectory);
@@ -427,17 +432,6 @@ internal sealed class HostDiagnosticSession : IHostDiagnosticSink, IDisposable
         };
         _records.Add(record);
         Mirror(record);
-    }
-
-    private static string ResolveDataDirectory(string? explicitDataDirectory)
-    {
-        var configured = explicitDataDirectory ??
-                         Environment.GetEnvironmentVariable("MYAVALONIA_DATA_DIRECTORY");
-        return string.IsNullOrWhiteSpace(configured)
-            ? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "MyAvaloniaManagement")
-            : Path.GetFullPath(configured);
     }
 
     private static Exception? DeleteExpiredSessions(string directory)

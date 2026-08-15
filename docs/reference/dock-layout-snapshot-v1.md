@@ -7,7 +7,10 @@
 
 布局文件固定为：
 
-`%LOCALAPPDATA%\MyAvaloniaManagement\layout-v1.json`
+`%LOCALAPPDATA%\MyAvaloniaManagement\v1\layout-v1.json`
+
+旧预发布父目录中的同名文件保持原样，v1 不读取、迁移或删除。设置
+`MYAVALONIA_DATA_DIRECTORY` 时，该值表示完整数据根，文件直接位于该目录下。
 
 它只保存宿主可重建的 Dock 结构：
 

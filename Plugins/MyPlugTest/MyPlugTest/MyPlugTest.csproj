@@ -3,7 +3,12 @@
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <!-- 插件只拥有一个发布版本事实，其余程序集元数据必须从这里派生。 -->
+        <PluginVersion>1.0.0</PluginVersion>
+        <Version>$(PluginVersion)</Version>
+        <FileVersion>$(PluginVersion).0</FileVersion>
+        <InformationalVersion>$(PluginVersion)</InformationalVersion>
+        <AssemblyVersion>$(PluginVersion).0</AssemblyVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">

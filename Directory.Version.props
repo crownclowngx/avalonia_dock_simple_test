@@ -1,0 +1,27 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      产品版本描述用户实际安装和看到的宿主发布，不承担 Plugin SDK 的兼容身份。
+      FileVersion 使用四段数字供 Windows 文件属性读取；InformationalVersion 可以由
+      SDK 追加源码修订元数据，欢迎页只显示加号前的产品版本。
+    -->
+    <MyAvaloniaProductVersion>1.0.0</MyAvaloniaProductVersion>
+    <MyAvaloniaProductFileVersion>1.0.0.0</MyAvaloniaProductFileVersion>
+
+    <!--
+      Host API 与 Plugin SDK 的 AssemblyVersion 是进程内二进制兼容身份。
+      兼容的 1.x 新增不改变该身份；删除、改签名或改变已承诺语义时才提升主版本。
+    -->
+    <MyAvaloniaHostApiAssemblyVersion>1.0.0.0</MyAvaloniaHostApiAssemblyVersion>
+    <MyAvaloniaPluginSdkVersion>1.0.0</MyAvaloniaPluginSdkVersion>
+    <MyAvaloniaPluginSdkFileVersion>1.0.0.0</MyAvaloniaPluginSdkFileVersion>
+    <MyAvaloniaPluginSdkAssemblyVersion>1.0.0.0</MyAvaloniaPluginSdkAssemblyVersion>
+
+    <!--
+      manifest schema 与数据根代际是各自所有者解释的整数/目录协议，不是产品版本。
+      代码中的对应常量由 VersionPolicyTests 交叉校验，禁止静默漂移。
+    -->
+    <MyAvaloniaManifestSchemaVersion>1</MyAvaloniaManifestSchemaVersion>
+    <MyAvaloniaHostDataRootGeneration>v1</MyAvaloniaHostDataRootGeneration>
+  </PropertyGroup>
+</Project>
