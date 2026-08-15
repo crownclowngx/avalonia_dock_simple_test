@@ -5,9 +5,9 @@
 本文列出内部重构不得无意改变的外部可观察行为。它不是完整 API 参考，而是代码评审和回归测试清单。
 
 > Managed Plugin v1 的正式支持边界已在 G1 冻结：Windows x64、可信进程内 Managed Plugin、
-> 严格清单、退出后替换插件。G2 已将 Host 自有实现全部收口为 internal；当前代码中的 Legacy
-> 激活仍是 G4 完成前的过渡事实，不构成 v1 兼容承诺。G3 已形成正式基础 SDK、可选 UI Profile
-> 和宿主语义样式契约。
+> 严格清单、退出后替换插件。G2 已将 Host 自有实现全部收口为 internal；G3 已形成正式基础
+> SDK、可选 UI Profile 和宿主语义样式契约；G4 已删除 Legacy 二进制激活、无 deps 回退和
+> 历史加载 Facade。
 
 ## 2. public API
 
@@ -90,36 +90,33 @@ V1 清单格式：
 - 版本只接受 `major.minor.patch[.revision]`，内部统一为四段比较；
 - Host API 与 Common 均采用 `minInclusive <= current < maxExclusive`；
 - `entryAssembly` 只能是插件根目录中的单个 DLL 文件名；
+- 入口必须携带同名 `.deps.json`，宿主不扫描目录猜测托管或原生依赖；
 - `pluginVersion` 必须与入口 `AssemblyVersion` 精确一致；Managed 模块的 `PluginId` 必须与清单一致；
 - Host 与 Common 当前 `AssemblyVersion` 均为 `1.0.0.0`。兼容新增提升次版本，破坏性变更提升主版本；
 - 清单只解决兼容和确定性加载，不提供签名、防篡改、权限沙箱或热卸载。
 
 ### 3.2 Managed 插件
 
-- 程序集包含可实例化的 `IPluginModule`；
+- 程序集恰好包含一个具体 `IPluginModule`；
 - 模块使用 public 无参构造发现；
 - `ConfigureServices` 在根容器构建前执行；
 - Document/Tool 策略使用 `ActivatorUtilities`，允许构造注入；
 - 可选 `IPluginLifecycle` 按既有顺序初始化并反向关闭。
 
-### 3.3 Legacy 插件
+### 3.3 拒绝与共同规则
 
-以下仅描述 G4 删除前的当前过渡行为，不是 v1 支持面：Legacy 插件不属于 Managed 模块程序集，
-仍要求有效清单，策略依赖 public 无参构造且不获得 Managed DI 激活语义。v1 不兼容仓库外 Legacy
-二进制插件；G4 将删除该激活分支及其 public Facade。
-
-### 3.4 共同规则
-
-- 单个 DLL、模块、依赖或类型失败不终止其他插件发现；
+- 缺少 deps、缺少模块、重复模块或模块缺少 public 无参构造时隔离当前目录；
+- 无模块策略程序集不再获得 public 无参构造激活，也不会生成 `myavalonia.legacy.*` 所有者；
 - 完整类型预检失败会隔离整个插件目录，不能把同一发布物拆成“部分成功”；
+- 模块构造、模块身份、服务注册和扩展所有权错误属于全局组合错误，在根容器投入使用前阻断启动；
 - 重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 形成排序稳定的结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义；
 - 策略元数据在注册时读取一次；
 - 插件根目录快照在进程内不刷新，更新插件需要重启应用。
 
 基础 SDK 及其 public 签名依赖、受支持 UI Profile 及其依赖均由
 `AssemblyLoadContext.Default` 提供。插件目录不得携带这些 DLL 的私有副本；身份或版本不兼容时，
-宿主在完整类型预检阶段以 `PLUGIN_SHARED_ASSEMBLY_MISMATCH` 隔离插件。普通业务依赖仍由当前插件
-ALC 私有解析，不能因为宿主碰巧加载过同名程序集就进入共享集合。
+宿主在完整类型预检阶段以 `PLUGIN_SHARED_ASSEMBLY_MISMATCH` 隔离插件。普通业务依赖只由当前
+插件的 deps/RID 图在独立 ALC 中解析，不能因为宿主碰巧加载过同名程序集就进入共享集合。
 
 ## 4. Document 契约
 
@@ -207,8 +204,8 @@ ALC 私有解析，不能因为宿主碰巧加载过同名程序集就进入共�
 提交宿主变更前确认：
 
 - [ ] Common 临时 API 指纹和 Host 零自有导出门禁通过，或变更已被明确批准；
-- [ ] Managed 与 Legacy 激活测试通过；
-- [ ] 四个真实插件构建与发布目录均包含有效清单，版本和模块身份一致；
+- [x] Managed-only 专项通过，Host 中不存在 Legacy 策略激活器和加载 Facade；
+- [ ] 四个真实插件构建与发布目录均包含有效清单、入口 `.deps.json`，版本和唯一模块身份一致；
 - [ ] 清单缺失/损坏/不兼容在程序集加载前隔离，重复身份在任何 DLL 加载前阻断；
 - [ ] 重复 ID 与碰撞诊断按预期阻断启动，局部类型失败和并发扫描行为未变化；
 - [ ] 当前 Document JSON、安全加载与 Save As 行为符合新契约，不存在历史格式兼容分支；

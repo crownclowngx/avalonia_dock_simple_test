@@ -41,11 +41,11 @@ public sealed class InternalRefactorTests
             var results = await Task.WhenAll(
                 Enumerable.Range(0, 16)
                     .Select(_ => Task.Run(() =>
-                        AssemblyLoaderHelper.LoadPluginsFromDirectories(rootName))));
+                        AssemblyLoaderHelper.Discover(rootName))));
 
-            Assert.All(results, Assert.Empty);
+            Assert.All(results, result => Assert.Empty(result.Assemblies));
             Assert.True(Directory.Exists(root));
-            Assert.NotSame(results[0], results[1]);
+            Assert.All(results, result => Assert.Same(results[0], result));
         }
         finally
         {

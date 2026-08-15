@@ -38,10 +38,11 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
   <Target Name="DeployPluginToHost"
           AfterTargets="Build"
           Condition="'$(SkipPluginDeploy)' != 'true'">
+    <Error Condition="!Exists('$(TargetDir)$(AssemblyName).deps.json')"
+           Text="Managed Plugin v1 requires $(AssemblyName).deps.json." />
     <ItemGroup>
       <PluginFiles Include="$(TargetPath)" />
-      <PluginFiles Include="$(TargetDir)$(AssemblyName).deps.json"
-                   Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
+      <PluginFiles Include="$(TargetDir)$(AssemblyName).deps.json" />
       <PluginFiles Include="$(TargetDir)plugin.manifest.json" />
     </ItemGroup>
     <RemoveDir Directories="$(PluginDeployDir)" />
@@ -198,10 +199,10 @@ Host/MyAvaloniaManagement/bin/Debug/net10.0/
     └── QuickStartPlugin/
         ├── plugin.manifest.json
         ├── QuickStartPlugin.dll
-        └── QuickStartPlugin.deps.json（生成时）
+        └── QuickStartPlugin.deps.json（必需）
 ```
 
-一个插件独占一个目录。同一目录中不能出现多个入口候选，也不能出现同名私有程序集的多个版本。宿主对插件目录的发现结果在单个进程内缓存；替换 DLL 或清单后必须完整退出并重新启动宿主。
+一个插件独占一个目录，入口只由清单声明；宿主不扫描其他 DLL 猜测入口或依赖。宿主对插件目录的发现结果在单个进程内缓存；替换 DLL、deps 或清单后必须完整退出并重新启动宿主。
 
 ## 外部作者的编译与交付边界
 

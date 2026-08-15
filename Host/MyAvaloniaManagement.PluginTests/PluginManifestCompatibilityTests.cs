@@ -249,6 +249,10 @@ public sealed class PluginManifestCompatibilityTests
             {
                 [assembly] = manifest,
             },
+            new Dictionary<Assembly, Type>
+            {
+                [assembly] = typeof(ManifestMismatchModule),
+            },
             diagnostics: []);
 
         var exception = Assert.Throws<HostCompositionException>(() =>

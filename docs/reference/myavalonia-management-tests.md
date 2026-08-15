@@ -2,7 +2,9 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前基线：2026-08-15，Release 共 275 项通过；Host 行覆盖率 77.85%，分支覆盖率 64.03%，Windows Smoke 通过。数量来自本次 TRX 与 `summary.json`，不是永久固定门槛。
+> 当前基线：2026-08-15，Release 共 277 项通过；Host 行覆盖率 78.70%，分支覆盖率 64.35%，
+> Windows Smoke 通过。覆盖率和数量来自本次
+> TRX 与 `summary.json`，不是永久固定门槛。
 
 ## 一键门禁
 
@@ -73,7 +75,7 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 - 单元层覆盖 DI、ViewModel、文件模型、文档保存、消息和 Tool 行为。
 - Headless 层覆盖生产 XAML、主题资源、绑定、DockControl、ViewLocator、
   主窗口事件、内容全屏、14 个插件语义画刷和主题动态切换。
-- PluginTests 继续覆盖 Dock 布局、Document Scope、插件生命周期、SDK 依赖边界和 UI 共享程序集。
+- PluginTests 继续覆盖 Managed-only 拒绝、Dock 布局、Document Scope、插件生命周期、SDK 依赖边界和 UI 共享程序集。
 - 像素截图、真实插件安装包、媒体播放和长时间稳定性不属于本门禁。
 
 ## 设计思路与原因
@@ -101,9 +103,16 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 生产 ViewModel 注册为瞬态，防止多个窗口或 Headless 测试共享绑定状态；
 Dock 工厂、消息、布局存储等协调服务保持单例，保证应用内只有一份布局事实。
 
-宿主 Tool 策略使用 `ActivatorUtilities` 创建，因此策略自身可以注入容器，
-再由容器创建 Tool ViewModel。插件策略仍使用原 `PluginStrategyActivator`，
-保留插件隔离和兼容行为。
+Host 与插件的 Document/Tool 策略都使用 `ActivatorUtilities` 创建，因此策略只需声明真实依赖，
+不再为了另一套二进制加载协议保留无参构造。模块仍用 public 无参构造，因为它发生在根容器
+建立之前。
+
+### Managed-only 加载
+
+`ManagedOnlyPluginLoadingTests` 通过 8 项专项场景保护严格清单、必需 `.deps.json`、唯一
+`IPluginModule`、结构错误目录隔离、DI-only 策略和四个真实插件所有权。测试夹具中的无模块
+策略构造函数故意抛错，用来证明宿主不会把它作为 Legacy 无参策略激活。私有依赖夹具仍验证
+同名不同版本程序集进入不同 ALC，并共享同一个 SDK 契约实例。
 
 ### 文档打开与保存
 
@@ -145,7 +154,7 @@ Dock ID 会被持久化，集中常量可以避免一个字符的差异导致工
 调整都必须在独立评审中同步更新契约测试。
 
 `InternalRefactorTests` 保护策略元数据只读取一次、重复 ID 与元数据碰撞抛出 `HostCompositionException`、插件根目录
-并发加载共享同一快照但不向调用方暴露可变缓存，以及原子替换后不遗留临时文件。
+并发加载共享同一不可变快照，以及原子替换后不遗留临时文件。
 
 ### 布局隔离与真实冒烟
 

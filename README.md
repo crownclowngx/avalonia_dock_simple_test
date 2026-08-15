@@ -30,8 +30,8 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 | [DaTangAccountingHelpPlug](./Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj) | 发票信息综合计算和银行余额调节 |
 | [MyPlugTest](./Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) | Managed Plugin 的 Document、Tool、消息通信和依赖注入示例 |
 
-四个当前插件均使用 Managed Plugin 接入。代码中暂存的 Legacy 激活路径只属于 G4 删除前的
-过渡实现，不是 Managed Plugin v1 的兼容承诺，也不得用于新插件。
+四个当前插件均使用 Managed Plugin 接入。G4 已删除 Legacy 二进制激活路径；无模块程序集、
+缺少入口 `.deps.json` 的目录以及依赖历史加载 Facade 的代码不会进入插件运行链。
 
 ## Managed Plugin v1 支持与版本边界
 
@@ -108,7 +108,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - 插件加载上下文用于依赖解析隔离，不等同于安全沙箱；
 - 插件目录快照和加载上下文以进程为边界，不支持热更新或运行时卸载；
 - 当前没有官方插件 SDK/NuGet 包、插件市场或通用脚手架；
-- G4 完成前代码中仍有 Legacy 过渡路径，但它不属于 v1 支持面；
+- G4 已完成：宿主只接受严格清单、入口 `.deps.json` 和唯一 `IPluginModule` 的 Managed Plugin；
 - Host、`MyAvaloniaManagementCommon`、Avalonia、Dock 与插件需要按照兼容区间协同升级。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

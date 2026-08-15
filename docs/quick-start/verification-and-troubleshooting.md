@@ -101,11 +101,13 @@ if ($broken) { $broken; throw '发现失效的本地 Markdown 链接。' }
 | `PLUGIN_MANIFEST_SCHEMA_UNSUPPORTED` | `schemaVersion` 不是宿主支持的版本 | 当前使用 `schemaVersion: 1` |
 | `PLUGIN_HOST_API_INCOMPATIBLE` / `PLUGIN_COMMON_CONTRACT_INCOMPATIBLE` | 当前宿主版本不在清单区间 | 针对目标版本重新编译验证，或修正已经验证过的区间 |
 | `PLUGIN_MANIFEST_DESCRIPTION_MISMATCH` | 清单版本、入口程序集身份或模块身份不一致 | 对齐 `pluginVersion`、`AssemblyVersion`、入口名称和模块 `PluginId` |
-| `PLUGIN_ENTRY_INVALID` / `PLUGIN_ENTRY_AMBIGUOUS` | 入口不存在、包含路径，或目录中有多个入口候选 | 每个插件使用独立目录，并只保留清单声明的根级入口 |
-| `PLUGIN_PRIVATE_DEPENDENCY_AMBIGUOUS` | 同一简单程序集名存在多个私有候选 | 每个插件依赖自包含，去除重复版本 |
+| `PLUGIN_ENTRY_INVALID` | 清单入口不存在、包含路径或不是托管程序集 | 每个插件使用独立目录，并提供清单声明的根级入口 |
+| `PLUGIN_DEPENDENCY_MANIFEST_MISSING` | 入口缺少同名 `.deps.json` | 启用依赖文件生成并把 deps 作为必需发布资产 |
 | `PLUGIN_ASSEMBLY_LOAD_FAILED` / `PLUGIN_TYPE_PREFLIGHT_FAILED` | 私有依赖缺失、RID 资产错误或类型无法完整加载 | 检查 `.deps.json`、私有托管依赖和原生资产是否完整 |
 | `PLUGIN_SHARED_ASSEMBLY_MISMATCH` | 插件私带了不兼容的宿主共享程序集 | 从插件包删除 Common 及共享闭包，并用匹配契约重新编译 |
 | `PLUGIN_MODULE_MULTIPLE` | 一个入口程序集实现了多个 `IPluginModule` | 只保留一个 public、可实例化模块入口 |
+| `PLUGIN_MODULE_MISSING` | 入口程序集没有具体 `IPluginModule` | 增加唯一模块，不能只交付 Document/Tool 策略 |
+| `PLUGIN_MODULE_CONSTRUCTOR_INVALID` | 唯一模块缺少 public 无参构造 | 模块仅作为 DI 建立前的引导对象，恢复 public 无参构造 |
 | `PLUGIN_ID_INVALID` / `PLUGIN_ID_DUPLICATE` | ID 不规范或与其他插件重复 | 使用规范命名空间并保持全局唯一 |
 | `EXTENSION_OWNER_MISMATCH` / `EXTENSION_METADATA_INVALID` | Document/Tool ID 不属于本插件，或主 ID/别名冲突 | 统一使用插件自己的 ID 前缀，检查所有元数据和迁移别名 |
 | `PLUGIN_SERVICE_REGISTRATION_FAILED` / `EXTENSION_ACTIVATION_FAILED` | 模块注册抛错，或策略构造依赖无法解析 | 检查 DI 注册和生命周期，确保 ViewModel、服务及策略依赖可解析 |

@@ -89,17 +89,6 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void 未声明插件模块的共享程序集不会被标记为宿主管理模块()
-    {
-        var sharedAssembly = typeof(IPluginModule).Assembly;
-
-        var catalog = PluginModuleCatalog.Discover([sharedAssembly]);
-
-        Assert.Empty(catalog.Modules);
-        Assert.False(catalog.IsManaged(sharedAssembly));
-    }
-
-    [Fact]
     public void 四个插件程序集显式接入模块且不改变公共策略接口()
     {
         var biliAssembly = typeof(BiliDownloaderPluginModule).Assembly;
@@ -117,10 +106,10 @@ public sealed class PluginCompatibilityTests
                 "myavalonia.plugin.my-small-tools"
             ],
             catalog.Modules.Select(x => x.PluginId.Value));
-        Assert.True(catalog.IsManaged(biliAssembly));
-        Assert.True(catalog.IsManaged(daTangAssembly));
-        Assert.True(catalog.IsManaged(myPlugTestAssembly));
-        Assert.True(catalog.IsManaged(mySmallToolsAssembly));
+        Assert.Equal("myavalonia.plugin.bili-downloader", catalog.GetRequiredPluginId(biliAssembly).Value);
+        Assert.Equal("myavalonia.plugin.datang-accounting-help", catalog.GetRequiredPluginId(daTangAssembly).Value);
+        Assert.Equal("myavalonia.plugin.my-plug-test", catalog.GetRequiredPluginId(myPlugTestAssembly).Value);
+        Assert.Equal("myavalonia.plugin.my-small-tools", catalog.GetRequiredPluginId(mySmallToolsAssembly).Value);
         Assert.Equal(2, typeof(IDocumentCreationStrategy).GetMethods().Length);
         Assert.Equal(2, typeof(IToolCreationStrategy).GetMethods().Length);
     }
@@ -198,15 +187,11 @@ public sealed class PluginCompatibilityTests
     public void DaTang托管策略无需无参构造也能按当前规则发现()
     {
         var assembly = typeof(DaTangAccountingHelpPluginModule).Assembly;
-        var catalog = PluginModuleCatalog.Discover([assembly]);
-
         var documentStrategies = assembly
             .GetTypes()
             .Where(type => typeof(IDocumentCreationStrategy).IsAssignableFrom(type)
                            && !type.IsAbstract
-                           && !type.IsInterface
-                           && (catalog.IsManaged(assembly)
-                               || type.GetConstructor(Type.EmptyTypes) != null))
+                           && !type.IsInterface)
             .Select(type => type.FullName!)
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToArray();
@@ -233,10 +218,8 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void DaTang策略通过托管激活器创建且每次返回独立文档()
+    public void DaTang策略通过统一DI激活且每次返回独立文档()
     {
-        var assembly = typeof(DaTangAccountingHelpPluginModule).Assembly;
-        var catalog = PluginModuleCatalog.Discover([assembly]);
         var services = new ServiceCollection();
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
@@ -248,11 +231,7 @@ public sealed class PluginCompatibilityTests
             ValidateOnBuild = true,
         });
 
-        var strategy = PluginStrategyActivator.Create<IDocumentCreationStrategy>(
-            typeof(InvoiceInfoImportDocumentStrategy),
-            assembly,
-            provider,
-            catalog);
+        var strategy = ActivatorUtilities.CreateInstance<InvoiceInfoImportDocumentStrategy>(provider);
         var firstParams = new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)
         {
             Title = "第一份发票计算",
@@ -304,11 +283,9 @@ public sealed class PluginCompatibilityTests
         Assert.Throws<InvalidOperationException>(provider.GetRequiredService<TestMessageReceiveViewModel>);
         Assert.Throws<InvalidOperationException>(provider.GetRequiredService<BatchHttpGetViewModel>);
 
-        var assembly = typeof(MyPlugTestPluginModule).Assembly;
-        var catalog = PluginModuleCatalog.Discover([assembly]);
-        var welcomeStrategy = Activate<TestWelcomeDocumentStrategy>(assembly, provider, catalog);
-        var receiveStrategy = Activate<TestMessageReceiveDocumentStrategy>(assembly, provider, catalog);
-        var batchStrategy = Activate<BatchHttpGetDocumentStrategy>(assembly, provider, catalog);
+        var welcomeStrategy = Activate<TestWelcomeDocumentStrategy>(provider);
+        var receiveStrategy = Activate<TestMessageReceiveDocumentStrategy>(provider);
+        var batchStrategy = Activate<BatchHttpGetDocumentStrategy>(provider);
 
         var firstWelcome = Assert.IsType<TestWelcomeViewModel>(welcomeStrategy.CreateDocument(
             new DocumentCreationParams(welcomeStrategy.GetMetadata().DocumentTypeId) { Title = "欢迎 A" }));
@@ -363,13 +340,7 @@ public sealed class PluginCompatibilityTests
             ValidateOnBuild = true,
         });
 
-        var assembly = typeof(MySmallToolsPluginModule).Assembly;
-        var catalog = PluginModuleCatalog.Discover([assembly]);
-        var strategy = PluginStrategyActivator.Create<IDocumentCreationStrategy>(
-            typeof(VideoEncryptorDocumentStrategy),
-            assembly,
-            provider,
-            catalog);
+        var strategy = ActivatorUtilities.CreateInstance<VideoEncryptorDocumentStrategy>(provider);
         var first = Assert.IsType<VideoEncryptorViewModel>(strategy.CreateDocument(
             new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)));
         var second = Assert.IsType<VideoEncryptorViewModel>(strategy.CreateDocument(
@@ -394,12 +365,6 @@ public sealed class PluginCompatibilityTests
     }
 
     private static IDocumentCreationStrategy Activate<TStrategy>(
-        System.Reflection.Assembly assembly,
-        IServiceProvider provider,
-        PluginModuleCatalog catalog) where TStrategy : IDocumentCreationStrategy =>
-        PluginStrategyActivator.Create<IDocumentCreationStrategy>(
-            typeof(TStrategy),
-            assembly,
-            provider,
-            catalog);
+        IServiceProvider provider) where TStrategy : IDocumentCreationStrategy =>
+        ActivatorUtilities.CreateInstance<TStrategy>(provider);
 }

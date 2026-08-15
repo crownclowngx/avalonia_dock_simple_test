@@ -70,8 +70,8 @@ flowchart TB
 
 1. 注册宿主核心服务和 ViewModel；
 2. 读取全部插件清单并检查 Host API、Common 版本与全局身份；
-3. 仅为兼容候选建立 ALC、加载入口并生成严格类型快照；
-4. 发现 `IPluginModule` 并二次核对清单身份；
+3. 验证入口 `.deps.json`，建立 ALC 并生成严格类型与唯一模块快照；
+4. 实例化已预检的 `IPluginModule` 并二次核对清单身份；
 5. 允许 Managed 插件向 `IServiceCollection` 注册服务；
 6. 以 `ValidateScopes`、`ValidateOnBuild` 构建根容器；
 7. 初始化 `PluginLifecycleManager`；
@@ -99,16 +99,18 @@ flowchart TB
 - 通过 `Lazy<PluginDiscoverySnapshot>` 保证并发调用只执行一次扫描；
 - 第一阶段只读严格 `plugin.manifest.json`，检查两个版本区间和全局 `pluginId`；
 - 第二阶段只为通过预检的候选创建加载上下文，清单声明是唯一入口来源；
+- 入口必须携带同名 `.deps.json`，托管和原生依赖只按 deps/RID 图解析；
+- 类型预检后要求唯一、具体且具有 public 无参构造的 `IPluginModule`；
 - 每个插件目录拥有自己的 `PluginLoadContext`；
 - 不注册进程级 `AssemblyResolve`，私有依赖只在当前插件 ALC 内解析；
 - 单个清单、目录、依赖或完整类型预检失败不会阻断其他独立插件；
-- 返回新的 `List<Assembly>`，避免调用方修改缓存快照。
+- 程序集、清单、类型和模块类型通过同一不可变快照发布。
 
 缓存的取舍是“稳定启动优先于进程内刷新”。部署模型要求替换插件后重启应用，因此不实现缓存失效和热加载。
 
-### 4.2 Managed 与 Legacy 双轨
+### 4.2 Managed-only 模块与激活
 
-[`PluginModuleCatalog`](../../Business/Helpers/PluginModuleCatalog.cs) 发现 public 无参构造的 `IPluginModule`，并在服务注册前核对模块 `PluginId` 与已验证清单。模块所属程序集属于 Managed 插件，策略通过 `ActivatorUtilities` 使用 DI 激活；带有效清单但没有模块的程序集仍可走 Legacy public 无参构造。无清单目录不会进入任何激活路径。
+[`PluginModulePreflight`](../../Business/Helpers/PluginModulePreflight.cs) 在不实例化插件对象的前提下验证唯一 `IPluginModule` 及其 public 无参构造；结构错误只隔离当前目录。随后 [`PluginModuleCatalog`](../../Business/Helpers/PluginModuleCatalog.cs) 只实例化快照中的模块，并在服务注册前核对模块 `PluginId` 与清单。Host 和插件的 Document/Tool 策略全部通过 `ActivatorUtilities` 激活，无模块程序集和 public 无参策略不再形成第二条路径。
 
 生产发现要求入口及引用程序集完成严格类型预检，失败时隔离整个目录，避免同一插件出现部分类型成功。模块身份或程序集版本与清单不一致属于发布物自相矛盾，在 `ConfigureServices` 前阻断组合。
 
@@ -119,7 +121,7 @@ flowchart TB
 - 策略 ID 到创建策略的映射；
 - Document/Tool 元数据快照；
 - Document 菜单入口展开；
-- Managed/Legacy 创建分派；
+- 统一 DI 策略创建；
 - Builder → Validate → Commit 三阶段原子发布。
 
 元数据在注册时只读取一次，避免属性访问包含计算或副作用时产生不一致。注册表先扫描并激活候选策略、各读取一次元数据、校验主 ID、别名与命名空间的全量碰撞，无诊断时才一次性发布只读注册表。重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 均形成排序稳定的结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义。
@@ -232,7 +234,7 @@ sequenceDiagram
 | Document 控件缓存 | `DocumentControlRecycling` | 对应 Document 确认关闭后移除 |
 | 布局快照待应用状态 | `DockLayoutLifecycle` | 首次 Apply 时原子取出 |
 
-Legacy 或未使用 `IDocumentScopeFactory` 的 Document 仍没有统一的 Document Scope 所有权，这是保留的现状边界，不在本轮内部重构中强制改造插件。
+当前仓库 Managed Document 均通过 `IDocumentScopeFactory` 建立独立 Scope。未来插件若绕过该工厂自行创建 Document，宿主无法替它拥有该实例的局部依赖；这属于 Document 注册契约由 G5 进一步收口的边界，不是 Legacy 激活能力。
 
 ## 10. 测试映射
 
@@ -240,7 +242,7 @@ Legacy 或未使用 `IDocumentScopeFactory` 的 Document 仍没有统一的 Docu
 | --- | --- |
 | public 签名漂移 | `PublicApiContractTests` |
 | 插件并发扫描、可变缓存泄漏 | `InternalRefactorTests` |
-| Managed/Legacy 与 ID 碰撞诊断 | PluginTests、内部注册表测试 |
+| Managed-only 拒绝、模块所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、内部注册表测试 |
 | 并发打开、保存失败、关闭确认与坏文件恢复 | `MainWindowViewModelTests`、`DocumentPersistenceV1Tests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |

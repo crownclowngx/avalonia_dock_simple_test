@@ -3,7 +3,7 @@
 > 状态：待整改，不满足封板条件
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`
-> 整改进度：G0、G1、G2、G3 已于 2026-08-15 完成；G4–G16 待完成
+> 整改进度：G0、G1、G2、G3、G4 已于 2026-08-15 完成；G5–G16 待完成
 > 适用范围：`MyAvaloniaManagement` 宿主、`MyAvaloniaManagementCommon`、插件装载与注册边界、Document/Tool 公共契约和发布门禁
 > 不评审：现有插件的领域业务正确性、第三方插件市场、运行时热卸载和恶意插件隔离
 
@@ -14,8 +14,8 @@
 结论是：当前宿主已经有较完整的插件运行骨架，G0 已恢复绿色基线，G1 已冻结支持边界、
 版本线和 v1 数据根，G2 已完成 Host public 面与静态服务定位收口，G3 也已形成正式 SDK 包、
 可选 UI Profile 与宿主样式契约，但 **尚不能封板**。
-剩余主要问题是 Document 宿主信封没有版本、消息总线泄漏第三方抽象、Legacy 激活仍在，
-插件部署与兼容门禁也没有形成单一发布入口。
+剩余主要问题是 Document 宿主信封没有版本、消息总线泄漏第三方抽象、插件贡献仍靠反射扫描，
+插件部署与兼容门禁也没有形成单一发布入口。Legacy 二进制激活已由 G4 删除。
 
 本次封板采用以下一次性定基线策略：
 
@@ -47,7 +47,7 @@
 | 能力 | 当前事实 | 封板处理 |
 | --- | --- | --- |
 | 插件清单 | `plugin.manifest.json` 严格解析，包含 schema、插件身份、入口和 Host/Common 左闭右开兼容区间 | 保留严格模式；未来扩展提升 manifest schema，不预留空字段 |
-| 插件加载隔离 | 每插件目录独立 `PluginLoadContext`，共享契约来自默认上下文，私有托管依赖按插件解析 | 保留；删除 Legacy 回退后进一步简化 |
+| 插件加载隔离 | 每插件目录独立 `PluginLoadContext`，共享契约来自默认上下文，私有托管依赖按插件 deps/RID 图解析 | G4 已删除 Legacy 回退；继续保留 Managed-only 隔离 |
 | 稳定身份 | `PluginId`、`DocumentTypeId`、`ToolTypeId`、`CreationIntentId` 已强类型化并校验 | 保留主 ID 与已发布别名；禁止重新使用历史 ID |
 | Document Scope | 每个 Managed Document 使用独立 DI Scope，关闭后取消 `ClosingToken` 并释放资源 | 保留，并纳入 SDK 回归门禁 |
 | 保存与关闭 | 主文件原子提交、恢复备份、脏状态、关闭确认和坏文件恢复已形成 V1 行为 | 保留事务语义；只重做宿主信封与插件内容的版本边界 |
@@ -99,7 +99,7 @@ NuGet 消费测试，详细证据见 [G3 Plugin SDK 与 UI Profile 记录](../pl
 | 已解决（G2） | Host 窗口、ViewModel、加载器、工厂和内部模型曾大量为 public，且存在静态服务定位器 | Host 自有导出类型现为 0；生产构造只走 Runtime DI |
 | 高 | Common/Plugin SDK 门禁仍只有一个 SHA256 | G2 已排除 Host 实现噪声，但仍不能审阅删除了哪个类型、改了哪个签名，也不能区分兼容新增 |
 | 高 | `IMessengerService` 暴露 `IMessenger`，生产实现使用 `WeakReferenceMessenger.Default` | SDK 被 CommunityToolkit 具体 API 绑定，不同 HostRuntime 和测试可能共享全局状态 |
-| 高 | Legacy 无模块激活、公共无参策略和无 `.deps.json` 回退仍存在 | 同一宿主同时维护两套所有权、依赖注入和错误语义 |
+| 已解决（G4） | Legacy 无模块激活、公共无参策略和无 `.deps.json` 回退曾同时存在 | 现只接受必需 deps、唯一模块和 DI 策略激活 |
 | 高 | 插件可直接修改完整 `IServiceCollection` | 可信插件仍可能误覆盖宿主核心服务，错误直到运行期才暴露 |
 | 高 | ViewLocator 通过静态构造、AppDomain 和命名约定重复发现视图 | 贡献来源不明确，异常被吞掉或只写控制台，难以形成确定性注册表 |
 | 高 | 诊断记录默认使用 `Exception.ToString()` | 可能把路径、URL、插件异常正文或其他敏感上下文写入长期日志 |
@@ -277,6 +277,11 @@ StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 A
 ### G4：删除 Legacy 二进制插件路径
 
 **优先级：阻断；依赖：G2、G3**
+
+**状态：已完成（2026-08-15）**。宿主现只接受严格清单、入口 `.deps.json` 和唯一
+`IPluginModule` 的 Managed Plugin；目录索引回退、无模块策略激活、Legacy 所有者推断和历史
+加载 Facade 已删除。专项 9/9、完整三层测试 277/277 通过；实现边界、SOLID 取舍、诊断码与
+证据见 [G4 Managed-only 插件加载记录](../plan-history/host-v1/g4-managed-only-plugin-loading.md)。
 
 - 目标：宿主只保留一套 Managed Plugin 所有权、DI 和错误语义。
 - 修改边界：无模块程序集发现、公共无参策略要求、无 `.deps.json` 入口回退、Legacy 加载 Facade 和对应测试。
@@ -518,7 +523,7 @@ G0 与 G15 可以并行。G7/G8、G9/G10 和 G11 在 G3 完成后可以分别独
 - [ ] 四个真实插件使用正式 SDK/打包规则构建；
 - [ ] v1 数据根和旧数据保留规则已经验证；
 - [ ] Document 信封与插件内容 schema 已分离；
-- [ ] Legacy 二进制插件路径和静态 Service Locator 已删除；
+- [x] Legacy 二进制插件路径和静态 Service Locator 已删除；
 - [x] Host 内部类型不再被误当作 Plugin SDK（G2 已完成）；
 - [ ] 消息总线不泄漏第三方接口或进程全局状态；
 - [ ] Release 构建、全部宿主测试、包矩阵和 Windows Smoke 全绿；

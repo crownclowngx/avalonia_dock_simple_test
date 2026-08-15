@@ -18,15 +18,14 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
     private static readonly IPluginSharedAssemblyPolicy SharedAssemblyPolicy =
         new HostContractAssemblyPolicy();
 
-    private readonly PluginDirectoryLayout _layout;
-    private readonly AssemblyDependencyResolver? _dependencyResolver;
+    private readonly AssemblyDependencyResolver _dependencyResolver;
 
     /// <summary>
     /// 为指定插件目录创建不可回收加载上下文。
     /// </summary>
     /// <param name="pluginPath">插件独占部署目录，而不是单个 DLL 路径。</param>
     /// <exception cref="InvalidOperationException">目录缺少有效清单、版本不兼容或不满足清单入口约定。</exception>
-    public PluginLoadContext(string pluginPath)
+    internal PluginLoadContext(string pluginPath)
         : this(CreateLayout(pluginPath), SharedAssemblyPolicy)
     {
     }
@@ -38,26 +37,26 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
             $"Plugin:{Path.GetFileName(layout.DirectoryPath)}",
             isCollectible: false)
     {
-        _layout = layout ?? throw new ArgumentNullException(nameof(layout));
+        ArgumentNullException.ThrowIfNull(layout);
         SharedPolicy = sharedAssemblyPolicy ??
                        throw new ArgumentNullException(nameof(sharedAssemblyPolicy));
-        _dependencyResolver = layout.MainAssemblyPath is { } mainAssemblyPath
-            ? new AssemblyDependencyResolver(mainAssemblyPath)
-            : null;
+        // PluginDirectoryLayout 已经保证入口与 deps 同时存在。这里保持非空解析器，
+        // 从类型结构上消除“有 deps/无 deps”两套依赖算法重新分叉的可能。
+        _dependencyResolver = new AssemblyDependencyResolver(layout.EntryAssemblyPath);
     }
 
     private IPluginSharedAssemblyPolicy SharedPolicy { get; }
 
     /// <summary>
-    /// 尝试解析指定程序集名称，保留历史 public 辅助入口。
+    /// 尝试按当前插件的共享策略和 deps 图解析指定程序集名称。
     /// </summary>
     /// <param name="assemblyName">程序集完整名称或简单名称。</param>
     /// <returns>当前插件或宿主共享上下文中的程序集；无法解析时返回 <see langword="null"/>。</returns>
     /// <remarks>
-    /// 设计意图：生产依赖加载由 CLR 自动调用 <see cref="Load"/>；本方法仅用于兼容既有探测和测试代码。
-    /// 它不会遍历其他插件上下文，也不会注册全局解析事件。
+    /// 设计意图：生产依赖加载由 CLR 自动调用 <see cref="Load"/>；该探测入口供宿主验证和测试
+    /// 同一套解析边界。它不会遍历目录、其他插件上下文，也不会注册全局解析事件。
     /// </remarks>
-    public Assembly? ResolveAssembly(string assemblyName)
+    internal Assembly? ResolveAssembly(string assemblyName)
     {
         try
         {
@@ -88,8 +87,7 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
             return SharedPolicy.ResolveSharedAssembly(assemblyName);
         }
 
-        var assemblyPath = _dependencyResolver?.ResolveAssemblyToPath(assemblyName)
-                           ?? _layout.ResolveAssemblyPath(assemblyName);
+        var assemblyPath = _dependencyResolver.ResolveAssemblyToPath(assemblyName);
         return assemblyPath is null
             ? null
             : LoadFromAssemblyPath(assemblyPath);
@@ -98,7 +96,7 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
     protected override nint LoadUnmanagedDll(string unmanagedDllName)
     {
         // 设计意图：原生资产只接受当前插件 deps/RID 图给出的确定路径，禁止递归搜索其他插件目录。
-        var libraryPath = _dependencyResolver?.ResolveUnmanagedDllToPath(unmanagedDllName);
+        var libraryPath = _dependencyResolver.ResolveUnmanagedDllToPath(unmanagedDllName);
         return libraryPath is null
             ? nint.Zero
             : LoadUnmanagedDllFromPath(libraryPath);

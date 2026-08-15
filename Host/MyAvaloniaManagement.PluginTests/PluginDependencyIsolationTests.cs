@@ -13,8 +13,8 @@ public sealed class PluginDependencyIsolationTests
     [Fact]
     public void 两个插件分别加载自己的同名私有依赖并共享宿主契约()
     {
-        var assemblies = AssemblyLoaderHelper.LoadPluginsFromDirectories(
-            "PluginIsolationFixtures");
+        var assemblies = AssemblyLoaderHelper.Discover(
+            "PluginIsolationFixtures").Assemblies;
 
         Assert.Equal(2, assemblies.Count);
         var pluginV1 = Assert.Single(

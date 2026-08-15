@@ -29,10 +29,11 @@ internal sealed class ViewLocator : IDataTemplate
             var currentAssembly = Assembly.GetExecutingAssembly();
             var assemblies = new List<Assembly> { currentAssembly };
 
-            // 从特定子目录加载其他程序集
-            var pluginAssemblies =
-                AssemblyLoaderHelper.LoadPluginsFromDirectories(AssemblyLoadConstant.PLUGINS_SUBDIRECTORY);
-            assemblies.AddRange(pluginAssemblies);
+            // 只复用生产组合根的不可变发现快照；目录未通过清单、deps、类型和模块结构
+            // 预检的程序集不会进入 View 发现。G5 会进一步把命名扫描替换为显式 View 贡献。
+            var pluginSnapshot =
+                AssemblyLoaderHelper.Discover(AssemblyLoadConstant.PLUGINS_SUBDIRECTORY);
+            assemblies.AddRange(pluginSnapshot.Assemblies);
             // 测试宿主和静态链接部署可能已经把托管插件加载到当前 AppDomain，
             // 但不会把它复制到生产插件目录。统一纳入已加载程序集可复用同一视图解析链路。
             assemblies.AddRange(AppDomain.CurrentDomain.GetAssemblies());

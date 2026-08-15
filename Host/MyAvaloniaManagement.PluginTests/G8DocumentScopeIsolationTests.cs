@@ -26,25 +26,10 @@ public sealed class G8DocumentScopeIsolationTests
             ValidateScopes = true,
             ValidateOnBuild = true
         });
-        var assembly = typeof(MySmallToolsPluginModule).Assembly;
-        var catalog = PluginModuleCatalog.Discover([assembly]);
-
-        var encryptorStrategy = Activate<VideoEncryptorDocumentStrategy>(
-            assembly,
-            provider,
-            catalog);
-        var decryptorStrategy = Activate<VideoDecryptorDocumentStrategy>(
-            assembly,
-            provider,
-            catalog);
-        var playerStrategy = Activate<SecretVideoDocumentStrategy>(
-            assembly,
-            provider,
-            catalog);
-        var libraryStrategy = Activate<SecretVideoLibraryDocumentStrategy>(
-            assembly,
-            provider,
-            catalog);
+        var encryptorStrategy = Activate<VideoEncryptorDocumentStrategy>(provider);
+        var decryptorStrategy = Activate<VideoDecryptorDocumentStrategy>(provider);
+        var playerStrategy = Activate<SecretVideoDocumentStrategy>(provider);
+        var libraryStrategy = Activate<SecretVideoLibraryDocumentStrategy>(provider);
 
         var encryptors = Enumerable.Range(0, 2)
             .Select(index => Assert.IsType<VideoEncryptorViewModel>(
@@ -117,13 +102,7 @@ public sealed class G8DocumentScopeIsolationTests
     }
 
     private static TStrategy Activate<TStrategy>(
-        System.Reflection.Assembly assembly,
-        IServiceProvider provider,
-        PluginModuleCatalog catalog)
+        IServiceProvider provider)
         where TStrategy : class, IDocumentCreationStrategy =>
-        (TStrategy)PluginStrategyActivator.Create<IDocumentCreationStrategy>(
-            typeof(TStrategy),
-            assembly,
-            provider,
-            catalog);
+        ActivatorUtilities.CreateInstance<TStrategy>(provider);
 }

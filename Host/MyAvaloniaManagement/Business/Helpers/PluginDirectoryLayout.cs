@@ -1,41 +1,26 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
+using MyAvaloniaManagement.Business.Diagnostics;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
 /// <summary>
-/// 描述一个插件目录中可以参与托管程序集加载的文件布局。
+/// 描述一个满足 Managed Plugin v1 发布约定的插件目录。
 /// </summary>
 /// <remarks>
-/// 设计意图：把“哪个文件是插件入口”和“依赖名称对应哪个物理文件”的判断从
-/// <see cref="PluginLoadContext"/> 中拆出，使加载上下文只负责解析顺序，不再同时承担目录扫描职责。
-/// 入口只接受已经通过兼容预检的清单声明；私有依赖索引仍提供无 deps 包的确定性回退。
+/// 设计意图：目录布局只验证清单声明的入口和标准依赖清单，不扫描或猜测其他 DLL。
+/// 这样 <see cref="PluginLoadContext"/> 可以完全依赖 .NET 的 deps/RID 图解析依赖，避免重新引入
+/// 无清单、无 deps 或按目录碰运气加载的第二套二进制插件协议。
 /// </remarks>
 internal sealed class PluginDirectoryLayout
 {
-    private static readonly HashSet<string> SkippedDirectories = new(
-        StringComparer.OrdinalIgnoreCase)
-    {
-        "native",
-        "runtimes",
-        "libvlc"
-    };
-
-    private readonly IReadOnlyDictionary<string, string> _assemblyPaths;
-
     private PluginDirectoryLayout(
         string directoryPath,
-        string? mainAssemblyPath,
-        IReadOnlyList<string> entryAssemblyPaths,
-        IReadOnlyDictionary<string, string> assemblyPaths)
+        string entryAssemblyPath)
     {
         DirectoryPath = directoryPath;
-        MainAssemblyPath = mainAssemblyPath;
-        EntryAssemblyPaths = entryAssemblyPaths;
-        _assemblyPaths = assemblyPaths;
+        EntryAssemblyPath = entryAssemblyPath;
     }
 
     /// <summary>
@@ -44,16 +29,9 @@ internal sealed class PluginDirectoryLayout
     internal string DirectoryPath { get; }
 
     /// <summary>
-    /// 用于创建 <see cref="System.Runtime.Loader.AssemblyDependencyResolver"/> 的主程序集。
-    /// 入口没有同名 deps 文件时为 <see langword="null"/>。
+    /// 用于创建 <see cref="System.Runtime.Loader.AssemblyDependencyResolver"/> 的唯一入口程序集。
     /// </summary>
-    internal string? MainAssemblyPath { get; }
-
-    /// <summary>
-    /// 需要主动交给宿主进行模块和策略发现的入口程序集。
-    /// 私有依赖只按需加载，不再被误当成插件入口进行全量类型扫描。
-    /// </summary>
-    internal IReadOnlyList<string> EntryAssemblyPaths { get; }
+    internal string EntryAssemblyPath { get; }
 
     /// <summary>
     /// 尝试建立插件目录布局。
@@ -86,18 +64,6 @@ internal sealed class PluginDirectoryLayout
                 return false;
             }
 
-            var managedPaths = EnumerateManagedAssemblyPaths(directoryPath)
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-            if (!TryBuildAssemblyIndex(
-                    managedPaths,
-                    out var assemblyPaths,
-                    out errorDetail))
-            {
-                errorCode = "PLUGIN_PRIVATE_DEPENDENCY_AMBIGUOUS";
-                return false;
-            }
-
             var entryAssemblyPath = Path.GetFullPath(
                 Path.Combine(directoryPath, manifest.EntryAssembly));
             if (!File.Exists(entryAssemblyPath))
@@ -107,12 +73,16 @@ internal sealed class PluginDirectoryLayout
                 return false;
             }
 
-            // 设计意图：清单是入口的唯一事实源。deps 只决定是否启用标准解析器，
-            // 不再反向决定哪些 DLL 会被宿主主动加载和执行类型扫描。
+            // Managed Plugin v1 只有标准 deps/RID 图一条依赖解析路径。缺少 deps 时立即拒绝，
+            // 不能退回目录索引，否则发布包的真实依赖闭包会再次变成不可审阅的隐式规则。
             var dependencyPath = Path.ChangeExtension(entryAssemblyPath, ".deps.json");
-            var mainAssemblyPath = File.Exists(dependencyPath)
-                ? entryAssemblyPath
-                : null;
+            if (!File.Exists(dependencyPath))
+            {
+                errorCode = HostDiagnosticCodes.PluginDependencyManifestMissing;
+                errorDetail = $"清单入口 {manifest.EntryAssembly} 缺少同名 .deps.json。";
+                return false;
+            }
+
             try
             {
                 _ = AssemblyName.GetAssemblyName(entryAssemblyPath);
@@ -124,11 +94,7 @@ internal sealed class PluginDirectoryLayout
                 return false;
             }
 
-            layout = new PluginDirectoryLayout(
-                directoryPath,
-                mainAssemblyPath,
-                [entryAssemblyPath],
-                assemblyPaths);
+            layout = new PluginDirectoryLayout(directoryPath, entryAssemblyPath);
             return true;
         }
         catch (Exception exception)
@@ -139,90 +105,4 @@ internal sealed class PluginDirectoryLayout
         }
     }
 
-    /// <summary>
-    /// 按程序集简单名称查找当前插件目录中的唯一托管依赖。
-    /// </summary>
-    /// <remarks>
-    /// 设计意图：该索引只用于当前插件内部的 Legacy 回退，绝不访问其他插件目录。
-    /// 同一插件目录出现两个同名程序集时会在布局建立阶段拒绝，避免 ALC 的单名称单版本规则产生隐式选择。
-    /// </remarks>
-    internal string? ResolveAssemblyPath(AssemblyName assemblyName) =>
-        assemblyName.Name is { } name && _assemblyPaths.TryGetValue(name, out var path)
-            ? path
-            : null;
-
-    private static IEnumerable<string> EnumerateManagedAssemblyPaths(string directoryPath)
-    {
-        foreach (var dllPath in Directory.GetFiles(
-                     directoryPath,
-                     "*.dll",
-                     SearchOption.TopDirectoryOnly))
-        {
-            if (IsManagedAssembly(dllPath))
-            {
-                yield return Path.GetFullPath(dllPath);
-            }
-        }
-
-        foreach (var subdirectory in Directory.GetDirectories(directoryPath))
-        {
-            if (SkippedDirectories.Contains(Path.GetFileName(subdirectory)))
-            {
-                continue;
-            }
-
-            foreach (var dllPath in EnumerateManagedAssemblyPaths(subdirectory))
-            {
-                yield return dllPath;
-            }
-        }
-    }
-
-    private static bool TryBuildAssemblyIndex(
-        IEnumerable<string> managedPaths,
-        out IReadOnlyDictionary<string, string> assemblyPaths,
-        out string? errorDetail)
-    {
-        var index = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var path in managedPaths)
-        {
-            var assemblyName = AssemblyName.GetAssemblyName(path).Name;
-            if (assemblyName is null)
-            {
-                continue;
-            }
-
-            if (index.TryGetValue(assemblyName, out var existingPath) &&
-                !string.Equals(existingPath, path, StringComparison.OrdinalIgnoreCase))
-            {
-                assemblyPaths = index;
-                errorDetail = $"同一插件目录包含多个名为 {assemblyName} 的托管程序集。";
-                return false;
-            }
-
-            index.Add(assemblyName, path);
-        }
-
-        assemblyPaths = index;
-        errorDetail = null;
-        return true;
-    }
-
-    private static bool IsManagedAssembly(string path)
-    {
-        try
-        {
-            _ = AssemblyName.GetAssemblyName(path);
-            return true;
-        }
-        catch (BadImageFormatException)
-        {
-            // 原生 DLL 可能位于插件根目录；它不属于托管入口索引，按原生解析规则处理。
-            return false;
-        }
-        catch (FileLoadException)
-        {
-            return false;
-        }
-    }
 }

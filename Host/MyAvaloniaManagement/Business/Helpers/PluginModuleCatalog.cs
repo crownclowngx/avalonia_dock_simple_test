@@ -45,10 +45,18 @@ internal sealed class PluginModuleCatalog
     internal IReadOnlyList<Type> GetDiscoveryTypes(Assembly assembly) =>
         _typesByAssembly[assembly];
 
-    public bool IsManaged(Assembly assembly) => _pluginIdsByAssembly.ContainsKey(assembly);
-
-    public bool TryGetPluginId(Assembly assembly, out PluginId pluginId) =>
-        _pluginIdsByAssembly.TryGetValue(assembly, out pluginId!);
+    /// <summary>
+    /// 取得已通过 Managed Plugin 发现的程序集所有者。
+    /// </summary>
+    /// <remarks>
+    /// 设计意图：G4 后 Catalog 不再表达“Managed 或 Legacy”二选一状态。调用方若传入未登记的
+    /// 外部程序集即违反组合根不变量，应立即失败，而不是生成一个猜测出来的所有者身份。
+    /// </remarks>
+    internal PluginId GetRequiredPluginId(Assembly assembly) =>
+        _pluginIdsByAssembly.TryGetValue(assembly, out var pluginId)
+            ? pluginId
+            : throw new InvalidOperationException(
+                $"程序集 {assembly.GetName().Name} 不属于已验证的 Managed Plugin。");
 
     internal bool TryGetManifest(Assembly assembly, out PluginManifest manifest) =>
         _manifestsByAssembly.TryGetValue(assembly, out manifest!);
@@ -64,6 +72,7 @@ internal sealed class PluginModuleCatalog
                 exception => Console.Error.WriteLine(
                     $"PluginCatalog errorCode=MODULE_TYPE_SCAN_PARTIAL assembly={assembly.FullName} type={exception.GetType().Name} details={FormatLoaderErrors(exception)}")),
             getManifest: _ => null,
+            getPreflightModuleType: _ => null,
             diagnosticSink: null);
     }
 
@@ -83,6 +92,7 @@ internal sealed class PluginModuleCatalog
             snapshot.Assemblies,
             snapshot.GetPreflightTypes,
             snapshot.GetManifest,
+            snapshot.GetModuleType,
             diagnosticSink);
     }
 
@@ -90,6 +100,7 @@ internal sealed class PluginModuleCatalog
         IReadOnlyList<Assembly> assemblies,
         Func<Assembly, IReadOnlyList<Type>> getTypes,
         Func<Assembly, PluginManifest?> getManifest,
+        Func<Assembly, Type?> getPreflightModuleType,
         IHostDiagnosticSink? diagnosticSink)
     {
         var modules = new List<IPluginModule>();
@@ -106,28 +117,27 @@ internal sealed class PluginModuleCatalog
             {
                 manifestsByAssembly.Add(assembly, manifest);
             }
-            var moduleTypes = loadableTypes
-                .Where(type => typeof(IPluginModule).IsAssignableFrom(type)
-                               && !type.IsAbstract
-                               && !type.IsInterface
-                               && type.GetConstructor(Type.EmptyTypes) is not null)
-                .OrderBy(type => type.FullName, StringComparer.Ordinal)
-                .ToArray();
-
-            if (moduleTypes.Length > 1)
+            var moduleType = getPreflightModuleType(assembly);
+            if (moduleType is null && !PluginModulePreflight.TryValidate(
+                    loadableTypes,
+                    out moduleType,
+                    out var moduleErrorCode,
+                    out _))
             {
-                diagnostics.Add(Diagnostic("PLUGIN_MODULE_MULTIPLE", assembly.GetName().Name, moduleTypes));
-                continue;
-            }
-
-            if (moduleTypes.Length == 0)
-            {
+                var contributors = loadableTypes.Where(type =>
+                    typeof(IPluginModule).IsAssignableFrom(type) &&
+                    !type.IsAbstract &&
+                    !type.IsInterface);
+                diagnostics.Add(Diagnostic(
+                    moduleErrorCode!,
+                    assembly.GetName().Name,
+                    contributors));
                 continue;
             }
 
             try
             {
-                var module = (IPluginModule)Activator.CreateInstance(moduleTypes[0])!;
+                var module = (IPluginModule)Activator.CreateInstance(moduleType!)!;
                 if (module.PluginId is null ||
                     !module.PluginId.IsCanonical ||
                     !module.PluginId.Value.StartsWith("myavalonia.plugin.", StringComparison.Ordinal))
@@ -135,7 +145,7 @@ internal sealed class PluginModuleCatalog
                     diagnostics.Add(Diagnostic(
                         "PLUGIN_ID_INVALID",
                         module.PluginId?.Value,
-                        moduleTypes));
+                        [moduleType!]));
                     continue;
                 }
 
@@ -144,7 +154,7 @@ internal sealed class PluginModuleCatalog
                     diagnostics.Add(Diagnostic(
                         HostDiagnosticCodes.PluginManifestDescriptionMismatch,
                         manifest.PluginId.Value,
-                        moduleTypes));
+                        [moduleType!]));
                     diagnosticSink?.Report(new HostDiagnosticDraft(
                         HostDiagnosticCodes.PluginManifestDescriptionMismatch,
                         HostDiagnosticPhase.PluginModuleDiscovery,
@@ -173,14 +183,14 @@ internal sealed class PluginModuleCatalog
                 diagnostics.Add(Diagnostic(
                     "PLUGIN_ID_INVALID",
                     null,
-                    moduleTypes));
+                    [moduleType!]));
                 diagnosticSink?.Report(new HostDiagnosticDraft(
                     "PLUGIN_ID_INVALID",
                     HostDiagnosticPhase.PluginModuleDiscovery,
                     "插件模块构造或 PluginId 读取失败。")
                 {
                     AssemblyName = assembly.GetName().Name,
-                    StableId = moduleTypes[0].FullName,
+                    StableId = moduleType!.FullName,
                     Exception = exception,
                 });
             }

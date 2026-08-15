@@ -238,13 +238,8 @@ public sealed class ExcelGetUrlGeneratorTests
             ValidateScopes = true,
             ValidateOnBuild = true,
         });
-        var assembly = typeof(MyPlugTestPluginModule).Assembly;
-        var catalog = PluginModuleCatalog.Discover([assembly]);
-        var strategy = PluginStrategyActivator.Create<IDocumentCreationStrategy>(
-            typeof(ExcelGetUrlGeneratorDocumentStrategy),
-            assembly,
-            provider,
-            catalog);
+        var strategy = ActivatorUtilities.CreateInstance<ExcelGetUrlGeneratorDocumentStrategy>(
+            provider);
         var document = Assert.IsType<ExcelGetUrlGeneratorViewModel>(strategy.CreateDocument(
             new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)));
 

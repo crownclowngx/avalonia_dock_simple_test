@@ -63,9 +63,9 @@ internal sealed class HostExtensionRegistry
             foreach (var type in types)
             {
                 DiscoverDocumentStrategy(
-                    type, assembly, hostAssembly, ownerId, serviceProvider, pluginModuleCatalog, documents, discoveryDiagnostics, diagnosticSink);
+                    type, ownerId, serviceProvider, documents, discoveryDiagnostics, diagnosticSink);
                 DiscoverToolStrategy(
-                    type, assembly, hostAssembly, ownerId, serviceProvider, pluginModuleCatalog, tools, discoveryDiagnostics, diagnosticSink);
+                    type, ownerId, serviceProvider, tools, discoveryDiagnostics, diagnosticSink);
             }
         }
 
@@ -351,43 +351,27 @@ internal sealed class HostExtensionRegistry
         PluginModuleCatalog catalog)
     {
         if (assembly == hostAssembly) return HostExtensionIds.Owner;
-        if (catalog.TryGetPluginId(assembly, out var pluginId)) return pluginId;
-        var assemblyName = assembly.GetName().Name ?? "extension";
-        var slug = string.Concat(assemblyName.Select(character =>
-                char.IsAsciiLetterOrDigit(character)
-                    ? char.ToLowerInvariant(character)
-                    : '-'))
-            .Trim('-');
-        return new PluginId($"myavalonia.legacy.{(slug.Length == 0 ? "extension" : slug)}");
+        return catalog.GetRequiredPluginId(assembly);
     }
 
     private static void DiscoverDocumentStrategy(
         Type type,
-        Assembly assembly,
-        Assembly hostAssembly,
         PluginId ownerId,
         IServiceProvider serviceProvider,
-        PluginModuleCatalog catalog,
         ICollection<DocumentRegistration> registrations,
         ICollection<HostCompositionDiagnostic> diagnostics,
         IHostDiagnosticSink? diagnosticSink)
     {
-        var isHost = assembly == hostAssembly;
-        if (!typeof(IDocumentCreationStrategy).IsAssignableFrom(type) || type.IsAbstract || type.IsInterface ||
-            (!isHost && !catalog.IsManaged(assembly) && type.GetConstructor(Type.EmptyTypes) is null)) return;
+        if (!typeof(IDocumentCreationStrategy).IsAssignableFrom(type) ||
+            type.IsAbstract ||
+            type.IsInterface) return;
         try
         {
-            // Host 内置策略属于根容器的一部分，可使用构造注入。Legacy 插件仍维持 G4 前的
-            // public 无参激活语义，不能因本次 Host public 收口被悄然改成 Managed 行为。
-            var strategy = isHost
-                ? (IDocumentCreationStrategy)ActivatorUtilities.CreateInstance(
-                    serviceProvider,
-                    type)
-                : PluginStrategyActivator.Create<IDocumentCreationStrategy>(
-                    type,
-                    assembly,
-                    serviceProvider,
-                    catalog);
+            // Host 与插件策略现在共享唯一的 DI 激活语义。策略可以只声明其真实依赖，
+            // 不需要为旧二进制加载路径保留一个无业务意义的 public 无参构造。
+            var strategy = (IDocumentCreationStrategy)ActivatorUtilities.CreateInstance(
+                serviceProvider,
+                type);
             var metadata = strategy.GetMetadata() ?? throw new InvalidOperationException("Document 元数据不能为空。");
             var intents = strategy is IDocumentCreationIntentProvider provider
                 ? (provider.GetCreationIntents() ?? []).ToArray()
@@ -406,23 +390,20 @@ internal sealed class HostExtensionRegistry
 
     private static void DiscoverToolStrategy(
         Type type,
-        Assembly assembly,
-        Assembly hostAssembly,
         PluginId ownerId,
         IServiceProvider serviceProvider,
-        PluginModuleCatalog catalog,
         ICollection<ToolRegistration> registrations,
         ICollection<HostCompositionDiagnostic> diagnostics,
         IHostDiagnosticSink? diagnosticSink)
     {
-        var isHost = assembly == hostAssembly;
-        if (!typeof(IToolCreationStrategy).IsAssignableFrom(type) || type.IsAbstract || type.IsInterface ||
-            (!isHost && !catalog.IsManaged(assembly) && type.GetConstructor(Type.EmptyTypes) is null)) return;
+        if (!typeof(IToolCreationStrategy).IsAssignableFrom(type) ||
+            type.IsAbstract ||
+            type.IsInterface) return;
         try
         {
-            var strategy = isHost
-                ? (IToolCreationStrategy)ActivatorUtilities.CreateInstance(serviceProvider, type)
-                : PluginStrategyActivator.Create<IToolCreationStrategy>(type, assembly, serviceProvider, catalog);
+            var strategy = (IToolCreationStrategy)ActivatorUtilities.CreateInstance(
+                serviceProvider,
+                type);
             var metadata = strategy.GetMetadata() ?? throw new InvalidOperationException("Tool 元数据不能为空。");
             registrations.Add(new ToolRegistration(strategy, metadata, type, ownerId));
         }

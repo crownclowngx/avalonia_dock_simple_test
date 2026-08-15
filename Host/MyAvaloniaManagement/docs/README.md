@@ -15,13 +15,14 @@
 - [宿主—插件架构评审](../../../docs/design/host-plugin-architecture-review.md)
 - [宿主专项测试说明](../../../docs/reference/myavalonia-management-tests.md)
 - [Dock 布局快照 V1](../../../docs/reference/dock-layout-snapshot-v1.md)
+- [G4 Managed-only 插件加载记录](../../../docs/plan-history/host-v1/g4-managed-only-plugin-loading.md)
 
 ## 文档定位
 
-这些文档描述的是当前实现，不是新功能路线图。本轮内部重构明确保持以下边界：
+这些文档描述的是当前实现，不是新功能路线图。当前明确保持以下边界：
 
-- 不改变 Host 与 `MyAvaloniaManagementCommon` 的 public 契约；
-- 不改变 Managed/Legacy 插件双轨规则；
+- Plugin SDK public 契约保持不变，Host 自有实现不属于插件 API；
+- 插件只支持严格清单、必需 `.deps.json` 和唯一 `IPluginModule` 的 Managed 模型；
 - 不改变 `DocumentSaveData` 与 `layout-v1.json` 格式；
 - 不新增布局版本、插件市场、热加载、沙箱或用户可见诊断功能；
 - 不要求插件跟随宿主内部协作者重编写业务逻辑。
@@ -37,4 +38,5 @@
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke
 ```
 
-2026-08-10 基线为 157 项通过，Host 行覆盖率 80.74%，分支覆盖率 65.17%，Windows 真实窗口冒烟通过。
+2026-08-15 G4 基线为 Host Unit 113、Headless UI 37、Plugin 127，合计 277/277；
+Windows 真实窗口冒烟通过。测试数量由脚本从 TRX 动态统计。

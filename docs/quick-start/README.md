@@ -2,9 +2,8 @@
 
 本组文档面向两类读者：在当前仓库内增加插件的开发者，以及为既有宿主版本交付二进制插件的外部作者。主路径只介绍 **Managed Plugin**，目标是在约 10 分钟内让一个同时包含 Document 和 Tool 的最小插件被宿主发现并显示。
 
-> 当前代码在 G4 完成前仍保留 Legacy 过渡激活，但 Managed Plugin v1 明确不承诺 Legacy
-> 二进制兼容，新插件不得以该路径起步。Managed Plugin 可以在宿主构建根容器前注册依赖，
-> Document 和 Tool 策略也可以使用构造注入。
+> G4 已删除 Legacy 二进制激活。插件必须携带严格清单、入口 `.deps.json` 和唯一
+> `IPluginModule`；Document 和 Tool 策略统一使用构造注入。
 
 ## 完成后你将得到什么
 

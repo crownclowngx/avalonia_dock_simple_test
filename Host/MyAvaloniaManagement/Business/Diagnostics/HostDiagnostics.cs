@@ -151,11 +151,13 @@ internal static class HostDiagnosticCodes
     internal const string PluginManifestIdentityDuplicate = "PLUGIN_MANIFEST_IDENTITY_DUPLICATE";
     internal const string PluginManifestDescriptionMismatch = "PLUGIN_MANIFEST_DESCRIPTION_MISMATCH";
     internal const string PluginEntryInvalid = "PLUGIN_ENTRY_INVALID";
-    internal const string PluginEntryAmbiguous = "PLUGIN_ENTRY_AMBIGUOUS";
-    internal const string PluginPrivateDependencyAmbiguous = "PLUGIN_PRIVATE_DEPENDENCY_AMBIGUOUS";
+    internal const string PluginDependencyManifestMissing = "PLUGIN_DEPENDENCY_MANIFEST_MISSING";
     internal const string PluginAssemblyLoadFailed = "PLUGIN_ASSEMBLY_LOAD_FAILED";
     internal const string PluginSharedAssemblyMismatch = "PLUGIN_SHARED_ASSEMBLY_MISMATCH";
     internal const string PluginTypePreflightFailed = "PLUGIN_TYPE_PREFLIGHT_FAILED";
+    internal const string PluginModuleMissing = "PLUGIN_MODULE_MISSING";
+    internal const string PluginModuleMultiple = "PLUGIN_MODULE_MULTIPLE";
+    internal const string PluginModuleConstructorInvalid = "PLUGIN_MODULE_CONSTRUCTOR_INVALID";
     internal const string PluginServiceRegistrationFailed = "PLUGIN_SERVICE_REGISTRATION_FAILED";
     internal const string HostContainerBuildFailed = "HOST_CONTAINER_BUILD_FAILED";
     internal const string ExtensionDiscoveryFailed = "EXTENSION_DISCOVERY_FAILED";
@@ -173,8 +175,7 @@ internal static class HostDiagnosticFailurePolicy
     private static readonly HashSet<string> RecoverablePluginLoadCodes = new(StringComparer.Ordinal)
     {
         HostDiagnosticCodes.PluginEntryInvalid,
-        HostDiagnosticCodes.PluginEntryAmbiguous,
-        HostDiagnosticCodes.PluginPrivateDependencyAmbiguous,
+        HostDiagnosticCodes.PluginDependencyManifestMissing,
         HostDiagnosticCodes.PluginAssemblyLoadFailed,
         HostDiagnosticCodes.PluginSharedAssemblyMismatch,
         HostDiagnosticCodes.PluginTypePreflightFailed,
@@ -183,6 +184,9 @@ internal static class HostDiagnosticFailurePolicy
         HostDiagnosticCodes.PluginManifestSchemaUnsupported,
         HostDiagnosticCodes.PluginHostApiIncompatible,
         HostDiagnosticCodes.PluginCommonContractIncompatible,
+        HostDiagnosticCodes.PluginModuleMissing,
+        HostDiagnosticCodes.PluginModuleMultiple,
+        HostDiagnosticCodes.PluginModuleConstructorInvalid,
     };
 
     internal static (HostDiagnosticSeverity Severity, HostDiagnosticDisposition Disposition) Classify(
