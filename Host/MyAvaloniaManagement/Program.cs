@@ -21,10 +21,6 @@ sealed class Program
         try
         {
             runtime = HostRuntime.Create(diagnostics);
-
-            // public 无参 ViewModel 和外部测试宿主仍依赖历史服务定位器；
-            // 实际容器所有权归 HostRuntime，避免兼容入口重新承担组合根职责。
-            Business.Helpers.ServiceProvider.Initialize(runtime.Services);
             runtime.InitializePlugins();
         }
         catch (Exception exception)
@@ -63,7 +59,7 @@ sealed class Program
 
         try
         {
-            return BuildAvaloniaApp()
+            return runtime!.BuildAvaloniaApp()
                 .StartWithClassicDesktopLifetime(args);
         }
         finally
@@ -81,16 +77,6 @@ sealed class Program
         SynchronizationContext.SetSynchronizationContext(null);
         lifecycleManager.ShutdownAllAsync().GetAwaiter().GetResult();
     }
-
-    /// <summary>
-    /// 创建生产启动与兼容测试宿主共用的 Avalonia 应用构建器。
-    /// 维持单一构建路径可防止两种启动方式产生不同的平台配置。
-    /// </summary>
-    public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
-            .UsePlatformDetect()
-            .WithInterFont()
-            .LogToTrace();
 
     /// <summary>
     /// 创建不包含 ViewLocator、Dock 和插件资源的最小错误应用。

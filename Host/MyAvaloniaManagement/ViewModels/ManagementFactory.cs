@@ -29,7 +29,7 @@ namespace MyAvaloniaManagement.ViewModels;
 /// 工厂是宿主 Dock 状态的唯一协调者。它持有稳定 ID 到策略、元数据和实例的映射，
 /// 使插件扩展、布局恢复及工具显隐都围绕同一份注册结果工作。
 /// </remarks>
-public class ManagementFactory : Factory
+internal sealed class ManagementFactory : Factory
 {
     private readonly HostExtensionRegistry _extensions;
     private IRootDock? _rootDock;

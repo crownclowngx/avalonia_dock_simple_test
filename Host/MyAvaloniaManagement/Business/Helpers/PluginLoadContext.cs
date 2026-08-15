@@ -13,7 +13,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// 从结构上禁止通过简单程序集名访问其他插件。当前产品采用“重启更新”，因此上下文有意保持不可回收；
 /// 这不是安全沙箱，也不能隔离原生崩溃或进程级全局状态。
 /// </remarks>
-public class PluginLoadContext : AssemblyLoadContext
+internal sealed class PluginLoadContext : AssemblyLoadContext
 {
     private static readonly IPluginSharedAssemblyPolicy SharedAssemblyPolicy =
         new HostContractAssemblyPolicy();

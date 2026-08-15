@@ -1,3 +1,4 @@
+using System;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels;
@@ -10,14 +11,14 @@ namespace MyAvaloniaManagement.Models.DocumentCreation;
 /// <summary>
 /// 创建 Welcome 文档的策略。
 /// </summary>
-public class WelcomeDocumentStrategy : IDocumentCreationStrategy
+internal sealed class WelcomeDocumentStrategy(
+    Func<ManagementFactory> managementFactory) : IDocumentCreationStrategy
 {
     public Document CreateDocument(DocumentCreationParams @params)
     {
         var welcomeDoc = new WelcomeViewModel(toolId =>
         {
-            ServiceProvider.GetRequiredService<ManagementFactory>()
-                .ShowTool(toolId);
+            managementFactory().ShowTool(toolId);
         })
         {
             Title = string.IsNullOrEmpty(@params.Title) ? "欢迎" : @params.Title,

@@ -16,7 +16,7 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// 菜单查询与 Dock 文档创建分别委托给 <see cref="PluginMenuService"/>
 /// 和 <see cref="ManagementFactory"/>，从而保持插件契约不变。
 /// </remarks>
-public partial class PlugGroupMenuViewModel:Tool
+internal sealed partial class PlugGroupMenuViewModel : Tool
 {
     private readonly ManagementFactory? _factory;
     private readonly PluginMenuService? _pluginMenuService;
@@ -44,15 +44,6 @@ public partial class PlugGroupMenuViewModel:Tool
         Title = "插件分组菜单";
         _factory = factory;
         _pluginMenuService = pluginMenuService;
-    }
-
-    /// <summary>
-    /// 使用应用全局服务创建实例，供设计器及兼容路径使用。
-    /// </summary>
-    public PlugGroupMenuViewModel() : this(
-        ServiceProvider.GetRequiredService<ManagementFactory>(),
-        ServiceProvider.GetRequiredService<PluginMenuService>())
-    {
     }
 
     /// <summary>

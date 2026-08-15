@@ -8,7 +8,7 @@ namespace MyAvaloniaManagement.Models.Tools;
 /// <summary>
 /// 工具管理数据结构，包含工具管理所需的所有信息
 /// </summary>
-public class ToolManagementData
+internal sealed class ToolManagementData
 {
     /// <summary>
     /// 工具元数据字典（只读）

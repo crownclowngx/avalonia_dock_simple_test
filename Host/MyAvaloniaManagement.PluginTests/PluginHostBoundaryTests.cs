@@ -1,0 +1,91 @@
+using System.Reflection;
+using System.Xml.Linq;
+using BiliDownloader.Plugin;
+using DaTangAccountingHelpPlug.Plugin;
+using MyPlugTest.Plugin;
+using MySmallTools.Plugin;
+
+namespace MyAvaloniaManagement.PluginTests;
+
+/// <summary>锁定生产插件只引用 Common，Host 引用只允许存在于仓库测试和 Harness。</summary>
+public sealed class PluginHostBoundaryTests
+{
+    private static readonly string RepositoryRoot = FindRepositoryRoot();
+
+    [Fact]
+    public void HostApiBoundary_四个生产插件程序集不引用Host()
+    {
+        var assemblies = new[]
+        {
+            typeof(BiliDownloaderPluginModule).Assembly,
+            typeof(DaTangAccountingHelpPluginModule).Assembly,
+            typeof(MyPlugTestPluginModule).Assembly,
+            typeof(MySmallToolsPluginModule).Assembly,
+        };
+
+        Assert.All(assemblies, assembly => Assert.DoesNotContain(
+            assembly.GetReferencedAssemblies(),
+            reference => string.Equals(
+                reference.Name,
+                "MyAvaloniaManagement",
+                StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void HostApiBoundary_Plugins目录只有获准测试项目引用Host()
+    {
+        var pluginsRoot = Path.Combine(RepositoryRoot, "Plugins");
+        var consumers = Directory.EnumerateFiles(
+                pluginsRoot,
+                "*.csproj",
+                SearchOption.AllDirectories)
+            .Where(ReferencesHostProject)
+            .Select(path => Path.GetRelativePath(RepositoryRoot, path)
+                .Replace('\\', '/'))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(
+            new[]
+            {
+                "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.Tests/DaTangAccountingHelpPlug.Tests.csproj",
+                "Plugins/MySmallTools/MySmallTools.Playback.IntegrationHarness/MySmallTools.Playback.IntegrationHarness.csproj",
+            },
+            consumers);
+    }
+
+    private static bool ReferencesHostProject(string projectPath)
+    {
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        return XDocument.Load(projectPath)
+            .Descendants()
+            .Where(element => element.Name.LocalName == "ProjectReference")
+            .Select(element => element.Attribute("Include")?.Value)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => Path.GetFullPath(value!, projectDirectory))
+            .Any(path => string.Equals(
+                path,
+                Path.Combine(
+                    RepositoryRoot,
+                    "Host",
+                    "MyAvaloniaManagement",
+                    "MyAvaloniaManagement.csproj"),
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        for (var current = new DirectoryInfo(AppContext.BaseDirectory);
+             current is not null;
+             current = current.Parent)
+        {
+            if (File.Exists(Path.Combine(current.FullName, "MyAvaloniaManagement.sln")))
+            {
+                return current.FullName;
+            }
+        }
+
+        throw new DirectoryNotFoundException(
+            $"无法从 {AppContext.BaseDirectory} 定位仓库根目录。");
+    }
+}

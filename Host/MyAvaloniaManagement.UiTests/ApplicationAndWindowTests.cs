@@ -8,6 +8,8 @@ using Avalonia.Styling;
 using Dock.Avalonia.Controls;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels.Hello;
+using MyAvaloniaManagement.ViewModels.Bindings;
+using MyAvaloniaManagement.ViewModels.Design;
 using MyAvaloniaManagement.Views;
 using MyAvaloniaManagement.Views.Hello;
 using MyAvaloniaManagement.Views.Tools;
@@ -60,6 +62,33 @@ public sealed class ApplicationAndWindowTests
 
         window.Close();
         Assert.True(File.Exists(context.LayoutPath));
+    }
+
+    [AvaloniaFact]
+    public void 文件树视图不覆盖策略注入的运行时DataContext()
+    {
+        var view = new FileSystemTreeView();
+        Assert.Null(view.DataContext);
+
+        var sentinel = new object();
+        view.DataContext = sentinel;
+        Assert.Same(sentinel, view.DataContext);
+    }
+
+    [AvaloniaFact]
+    public void 设计时数据实现窄绑定端口且提供纯内存样例()
+    {
+        IMainWindowViewBindings main = new MainWindowDesignData();
+        IFileSystemTreeViewBindings files = new FileSystemTreeDesignData();
+
+        Assert.NotNull(main.Layout);
+        Assert.True(main.HasDocumentOperationError);
+        Assert.NotNull(main.OpenDocumentCommand);
+        Assert.NotNull(main.SaveDocumentCommand);
+        Assert.NotEmpty(files.RootNodes);
+        Assert.NotEmpty(files.RootNodes[0].Children);
+        Assert.NotNull(files.SelectFolderCommand);
+        Assert.NotNull(files.RefreshAllCommand);
     }
 
     [AvaloniaFact]

@@ -4,7 +4,7 @@ using Avalonia.Markup.Xaml;
 
 namespace MyAvaloniaManagement.Views.Tools;
 
-public partial class PlugGroupMenuView : UserControl
+internal sealed partial class PlugGroupMenuView : UserControl
 {
     public PlugGroupMenuView()
     {

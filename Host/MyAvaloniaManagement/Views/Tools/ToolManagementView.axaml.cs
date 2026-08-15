@@ -4,7 +4,7 @@ using Avalonia.Markup.Xaml;
 
 namespace MyAvaloniaManagement.Views.Tools;
 
-public partial class ToolManagementView : UserControl
+internal sealed partial class ToolManagementView : UserControl
 {
     public ToolManagementView()
     {

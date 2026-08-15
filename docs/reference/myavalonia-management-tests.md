@@ -2,7 +2,7 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前基线：2026-08-15，Release 共 258 项通过；Host 行覆盖率 77.01%，分支覆盖率 63.79%，Windows Smoke 通过。数量来自本次 TRX 与 `summary.json`，不是永久固定门槛。
+> 当前基线：2026-08-15，Release 共 265 项通过；Host 行覆盖率 77.75%，分支覆盖率 63.91%，Windows Smoke 通过。数量来自本次 TRX 与 `summary.json`，不是永久固定门槛。
 
 ## 一键门禁
 
@@ -80,12 +80,12 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 
 ### 构造函数与依赖注入
 
-`MainWindowViewModel` 和三个 Tool ViewModel 都增加了显式依赖构造函数，
-正式容器及测试通过该构造函数传入服务；公开无参构造仍保留给 XAML 设计器和
-历史代码，通过兼容 `ServiceProvider` 转接到同一个构造函数。
+`MainWindowViewModel` 和四个 Host Tool ViewModel 只保留显式依赖构造函数，正式容器及测试
+通过该构造函数传入服务。历史静态 `ServiceProvider` 与生产无参构造已经删除；XAML 设计器
+改用实现窄绑定接口的纯内存样例，不构造生产对象图。
 
 核心行为只存在一套实现，避免“测试构造路径”和“生产构造路径”逐渐分叉。
-ViewModel 注册为瞬态，防止多个窗口、设计器或 Headless 测试共享绑定状态；
+生产 ViewModel 注册为瞬态，防止多个窗口或 Headless 测试共享绑定状态；
 Dock 工厂、消息、布局存储等协调服务保持单例，保证应用内只有一份布局事实。
 
 宿主 Tool 策略使用 `ActivatorUtilities` 创建，因此策略自身可以注入容器，
@@ -156,7 +156,7 @@ DI、Opened/Closing、布局保存和退出码，同时无需使用不稳定的�
 过滤后合并，既设置宿主总体门槛，也为四个高风险 ViewModel 设置独立门槛，
 防止用大量简单文件的覆盖率掩盖主流程缺口。
 
-### G1 当前绿色基线
+### G2 当前绿色基线
 
 2026-08-15 先执行锁定还原和解决方案 Release 构建，再执行：
 
@@ -169,19 +169,23 @@ DI、Opened/Closing、布局保存和退出码，同时无需使用不稳定的�
 
 | 测试项目 | 数量 |
 | --- | ---: |
-| `MyAvaloniaManagement.Tests` | 110 |
-| `MyAvaloniaManagement.UiTests` | 32 |
-| `MyAvaloniaManagement.PluginTests` | 116 |
-| **合计** | **258** |
+| `MyAvaloniaManagement.Tests` | 113 |
+| `MyAvaloniaManagement.UiTests` | 34 |
+| `MyAvaloniaManagement.PluginTests` | 118 |
+| **合计** | **265** |
 
-Host 行覆盖率为 77.01%，分支覆盖率为 63.79%，Windows Smoke 为通过。完整的版本政策、
-数据根隔离和验证过程见 [G1 支持边界与版本线冻结记录](../plan-history/host-v1/g1-support-boundary-and-version-lines.md)。
+Host 行覆盖率为 77.75%，分支覆盖率为 63.91%，Windows Smoke 为通过。完整的 Host public
+收口、构造注入与 friend 边界见 [G2 Host 实现面收口记录](../plan-history/host-v1/g2-host-api-surface.md)。
 
 以下结果保留为历史时间点证据，不用当前数字覆盖：
 
 G0 在 2026-08-15 的独立绿色基线为 Unit 105、UI 32、Plugin 112，共 249 项；Host 行覆盖率
 76.86%、分支覆盖率 63.65%，Windows Smoke 通过。详细根因与证据见
 [G0 绿色基线恢复记录](../plan-history/host-v1/g0-green-baseline.md)。
+
+G1 在 2026-08-15 的独立绿色基线为 Unit 110、UI 32、Plugin 116，共 258 项；Host 行覆盖率
+77.01%、分支覆盖率 63.79%，Windows Smoke 通过。详细版本与数据根证据见
+[G1 支持边界与版本线冻结记录](../plan-history/host-v1/g1-support-boundary-and-version-lines.md)。
 
 2026-08-12 执行 `.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke`
 的 Release 专项结果：

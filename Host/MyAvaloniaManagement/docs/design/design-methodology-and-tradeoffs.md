@@ -16,7 +16,7 @@
 
 重构前先把以下内容视为约束，而不是“顺手优化”的对象：
 
-- Host/Common 的 public 类型和成员；
+- Common/Plugin SDK 的 public 类型和成员；Host 自有实现不得导出；
 - Managed 使用 DI、Legacy 使用 public 无参构造；
 - 策略发现的故障隔离与元数据一致性；本轮结束时重复 ID 语义已由“首次注册胜出”有意升级为结构化诊断阻断启动；
 - `Files` 历史 Locator 与稳定 `Documents` Dock ID；
@@ -31,7 +31,7 @@
 采用的顺序是：
 
 1. 运行现有测试，记录 150 项基线；
-2. 增加 public API 反射指纹；
+2. 增加 Plugin SDK 反射指纹和 Host 零自有导出门禁；
 3. 找到重复扫描、重复遍历、私有字段反射和分散文件写入等接缝；
 4. 先抽取内部协作者，再让旧 public 类型转为委托；
 5. 每完成一条链路立即运行对应测试；
@@ -80,7 +80,9 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 
 ### 3.5 依赖倒置原则（DIP）
 
-主窗口依赖文档用例协调器与存储边界，插件 Managed 策略依赖 DI。静态 `ServiceProvider` 仅作为 public 无参构造和历史路径的兼容桥，不作为新增正常依赖的入口。
+主窗口依赖文档用例协调器与存储边界，插件 Managed 策略依赖 DI。App 依赖内部桌面 Shell，
+内建策略依赖窄 `Func<T>` 工厂；静态 `ServiceProvider` 与生产无参构造已删除。服务解析只允许
+出现在 `HostRuntime`、动态策略激活和 Document Scope 等明确组合边界。
 
 ## 4. 采用的设计模式
 
@@ -189,7 +191,7 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 
 内部重构完成至少需要：
 
-- public API 指纹不变；
+- Plugin SDK API 门禁通过，Host 不重新导出自有实现类型；
 - Managed/Legacy、Dock 稳定 ID、文档 JSON 和布局 V1 回归通过；
 - 预期失败不会留下错误内存状态或临时文件；
 - Scope、缓存和根容器的释放时机有测试；

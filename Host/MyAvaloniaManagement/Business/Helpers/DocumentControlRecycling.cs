@@ -17,7 +17,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// 本实现保留标签切换时的控件复用，同时让宿主在关闭边界精确释放对应强引用，
 /// 避免已释放的 scoped 播放器、文件监视器和视图长期滞留。
 /// </remarks>
-public sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycling
+internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycling
 {
     private readonly Dictionary<object, object> _cache = [];
     private bool _tryToUseIdAsKey;

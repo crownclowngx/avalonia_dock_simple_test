@@ -1,6 +1,5 @@
 using System;
 using Dock.Model.Mvvm.Controls;
-using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.ToolCreation;
@@ -10,11 +9,12 @@ namespace MyAvaloniaManagement.Models.ToolCreation;
 /// <summary>
 /// 创建宿主只读插件状态工具。
 /// </summary>
-public sealed class PluginStatusStrategy(IServiceProvider serviceProvider)
+internal sealed class PluginStatusStrategy(
+    Func<PluginStatusViewModel> viewModelFactory)
     : IToolCreationStrategy
 {
     public Tool CreateTool() =>
-        serviceProvider.GetRequiredService<PluginStatusViewModel>();
+        viewModelFactory();
 
     public ToolMetadata GetMetadata() => new(
         HostExtensionIds.PluginStatus,

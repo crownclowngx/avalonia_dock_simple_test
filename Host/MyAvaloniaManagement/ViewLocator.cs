@@ -7,12 +7,10 @@ using Avalonia.Controls.Templates;
 using Dock.Model.Core;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
-using StaticViewLocator;
 
 namespace MyAvaloniaManagement;
 
-[StaticViewLocator]
-public partial class ViewLocator : IDataTemplate
+internal sealed class ViewLocator : IDataTemplate
 {
     // 用于存储动态发现的视图
     private static readonly Dictionary<Type, Func<Control>> _dynamicViews = [];
@@ -115,11 +113,6 @@ public partial class ViewLocator : IDataTemplate
             }
         }
 
-        if (s_views.TryGetValue(type, out var func))
-        {
-            return func.Invoke();
-        }
-
         // 如果没有找到匹配的视图，尝试使用命名约定创建
         var viewTypeName = type.FullName?.Replace("ViewModel", "View") ?? string.Empty;
         var viewType = Type.GetType(viewTypeName);
@@ -153,6 +146,6 @@ public partial class ViewLocator : IDataTemplate
         }
 
         var type = data.GetType();
-        return data is IDockable || _dynamicViews.ContainsKey(type) || s_views.ContainsKey(type);
+        return data is IDockable || _dynamicViews.ContainsKey(type);
     }
 }

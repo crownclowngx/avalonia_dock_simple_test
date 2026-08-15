@@ -17,7 +17,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// IServiceCollection 留下无法回滚的部分注册。一个程序集只允许一个模块，也是为了让
 /// Assembly 到 PluginId 的所有权映射始终无歧义。
 /// </remarks>
-public sealed class PluginModuleCatalog
+internal sealed class PluginModuleCatalog
 {
     private readonly IReadOnlyDictionary<Assembly, PluginId> _pluginIdsByAssembly;
     private readonly IReadOnlyDictionary<Assembly, PluginManifest> _manifestsByAssembly;

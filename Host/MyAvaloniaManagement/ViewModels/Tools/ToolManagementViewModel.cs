@@ -8,7 +8,6 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.Tools;
@@ -24,7 +23,7 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// 工具可见性以 Dock 树为事实来源，消息只承担变化通知。
 /// 这样无论变化来自本工具、关闭按钮还是外部布局恢复，界面状态都能重新同步。
 /// </remarks>
-public partial class ToolManagementViewModel : Tool
+internal sealed partial class ToolManagementViewModel : Tool
 {
     private readonly ManagementFactory _factory;
     private readonly IMessengerService _messengerService;
@@ -52,15 +51,6 @@ public partial class ToolManagementViewModel : Tool
         CanClose = false;
         LoadTools();
         RegisterMessages();
-    }
-
-    /// <summary>
-    /// 使用应用全局服务创建实例，供设计器及兼容路径使用。
-    /// </summary>
-    public ToolManagementViewModel() : this(
-        ServiceProvider.GetRequiredService<ManagementFactory>(),
-        ServiceProvider.GetRequiredService<IMessengerService>())
-    {
     }
 
     /// <summary>

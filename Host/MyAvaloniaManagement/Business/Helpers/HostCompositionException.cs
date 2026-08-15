@@ -8,14 +8,14 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// <summary>
 /// 标识一个参与宿主组合的具体类型及其程序集来源。
 /// </summary>
-public sealed record HostCompositionContributor(
+internal sealed record HostCompositionContributor(
     string TypeName,
     string AssemblyName);
 
 /// <summary>
 /// 宿主启动阶段发现的一条确定性契约诊断。
 /// </summary>
-public sealed record HostCompositionDiagnostic(
+internal sealed record HostCompositionDiagnostic(
     string Code,
     string? StableId,
     IReadOnlyList<HostCompositionContributor> Contributors);
@@ -27,7 +27,7 @@ public sealed record HostCompositionDiagnostic(
 /// 设计意图：内部可信插件发生身份冲突时必须尽早失败，不能任意选择一个实现继续运行。
 /// Diagnostics 按错误码、稳定 ID 和来源排序，使 CI、日志与本地启动得到完全相同的结果。
 /// </remarks>
-public sealed class HostCompositionException : Exception
+internal sealed class HostCompositionException : Exception
 {
     public HostCompositionException(IEnumerable<HostCompositionDiagnostic> diagnostics)
         : base(BuildMessage(diagnostics, out var snapshot))

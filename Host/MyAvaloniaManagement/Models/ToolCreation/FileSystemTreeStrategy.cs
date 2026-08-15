@@ -1,8 +1,7 @@
 ﻿using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.ViewModels.Tools;
-using MyAvaloniaManagementCommon.ToolCreation;
-using Microsoft.Extensions.DependencyInjection;
 using System;
+using MyAvaloniaManagementCommon.ToolCreation;
 using MyAvaloniaManagement.Business.Constants;
 
 namespace MyAvaloniaManagement.Models.ToolCreation;
@@ -10,20 +9,21 @@ namespace MyAvaloniaManagement.Models.ToolCreation;
 /// <summary>
 /// 创建并描述文件系统浏览工具。
 /// </summary>
-/// <param name="serviceProvider">用于解析带有可测试依赖的工具 ViewModel。</param>
+/// <param name="viewModelFactory">创建带有完整依赖的文件树 ViewModel。</param>
 /// <remarks>
-/// 由容器创建 ViewModel，而不是直接调用无参构造，确保生产和测试都使用同一依赖图。
+/// 策略只依赖窄工厂，不获得整个容器；实际工厂由 Host 组合根注册。
 /// </remarks>
-public class FileSystemTreeStrategy(IServiceProvider serviceProvider)
+internal sealed class FileSystemTreeStrategy(
+    Func<FileSystemTreeViewModel> viewModelFactory)
     : IToolCreationStrategy
 {
     /// <summary>
-    /// 从依赖注入容器创建并配置文件系统工具实例。
+    /// 通过组合根提供的窄工厂创建并配置文件系统工具实例。
     /// </summary>
     /// <returns>创建的Tool实例</returns>
     public Tool CreateTool()
     {
-        var tool = serviceProvider.GetRequiredService<FileSystemTreeViewModel>();
+        var tool = viewModelFactory();
         tool.Title = "文件";
         tool.CanClose = false;
         return tool;

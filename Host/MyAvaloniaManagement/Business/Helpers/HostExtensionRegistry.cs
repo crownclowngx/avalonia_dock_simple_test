@@ -63,7 +63,7 @@ internal sealed class HostExtensionRegistry
             foreach (var type in types)
             {
                 DiscoverDocumentStrategy(
-                    type, assembly, ownerId, serviceProvider, pluginModuleCatalog, documents, discoveryDiagnostics, diagnosticSink);
+                    type, assembly, hostAssembly, ownerId, serviceProvider, pluginModuleCatalog, documents, discoveryDiagnostics, diagnosticSink);
                 DiscoverToolStrategy(
                     type, assembly, hostAssembly, ownerId, serviceProvider, pluginModuleCatalog, tools, discoveryDiagnostics, diagnosticSink);
             }
@@ -364,6 +364,7 @@ internal sealed class HostExtensionRegistry
     private static void DiscoverDocumentStrategy(
         Type type,
         Assembly assembly,
+        Assembly hostAssembly,
         PluginId ownerId,
         IServiceProvider serviceProvider,
         PluginModuleCatalog catalog,
@@ -371,12 +372,22 @@ internal sealed class HostExtensionRegistry
         ICollection<HostCompositionDiagnostic> diagnostics,
         IHostDiagnosticSink? diagnosticSink)
     {
+        var isHost = assembly == hostAssembly;
         if (!typeof(IDocumentCreationStrategy).IsAssignableFrom(type) || type.IsAbstract || type.IsInterface ||
-            (!catalog.IsManaged(assembly) && type.GetConstructor(Type.EmptyTypes) is null)) return;
+            (!isHost && !catalog.IsManaged(assembly) && type.GetConstructor(Type.EmptyTypes) is null)) return;
         try
         {
-            var strategy = PluginStrategyActivator.Create<IDocumentCreationStrategy>(
-                type, assembly, serviceProvider, catalog);
+            // Host 内置策略属于根容器的一部分，可使用构造注入。Legacy 插件仍维持 G4 前的
+            // public 无参激活语义，不能因本次 Host public 收口被悄然改成 Managed 行为。
+            var strategy = isHost
+                ? (IDocumentCreationStrategy)ActivatorUtilities.CreateInstance(
+                    serviceProvider,
+                    type)
+                : PluginStrategyActivator.Create<IDocumentCreationStrategy>(
+                    type,
+                    assembly,
+                    serviceProvider,
+                    catalog);
             var metadata = strategy.GetMetadata() ?? throw new InvalidOperationException("Document 元数据不能为空。");
             var intents = strategy is IDocumentCreationIntentProvider provider
                 ? (provider.GetCreationIntents() ?? []).ToArray()

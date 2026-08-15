@@ -5,23 +5,19 @@
 本文列出内部重构不得无意改变的外部可观察行为。它不是完整 API 参考，而是代码评审和回归测试清单。
 
 > Managed Plugin v1 的正式支持边界已在 G1 冻结：Windows x64、可信进程内 Managed Plugin、
-> 严格清单、退出后替换插件。当前代码中的 Legacy 激活和 Host public 实现面是 G2/G4 完成前的
-> 过渡事实，不构成 v1 兼容承诺；在对应任务完成前仍需测试保护，不能在无评审时意外破坏。
+> 严格清单、退出后替换插件。G2 已将 Host 自有实现全部收口为 internal；当前代码中的 Legacy
+> 激活仍是 G4 完成前的过渡事实，不构成 v1 兼容承诺。
 
 ## 2. public API
 
-在 G2 执行前，以下当前 public 面仍由指纹测试保护：
+正式 public 插件契约只来自 `MyAvaloniaManagementCommon`。Host 窗口、View、ViewModel、加载器、
+注册表、工厂、消息和内建策略均为 internal；静态 `ServiceProvider` 与生产 ViewModel 无参构造
+已经删除。插件不得编译引用 Host 可执行程序集。
 
-- Host 和 `MyAvaloniaManagementCommon` 现有 public 类型、命名空间、构造函数、方法、属性、字段和事件；
-- `ManagementFactory` 的 public 方法与 Dock override；
-- `MainWindowViewModel` 的 public 无参构造、属性、命令和文件拖放入口；
-- `AssemblyLoaderHelper`、`PluginModuleCatalog`、`ServiceCollectionExtensions` 等现有 public 辅助入口；
-- 静态 `ServiceProvider` 兼容路径。
-
-[`PublicApiContractTests`](../../../MyAvaloniaManagement.Tests/PublicApiContractTests.cs) 对 Host/Common 导出元数据生成 SHA-256 指纹。内部类型可以调整；有意 public 变更必须单独评审，并同步更新插件、契约测试和本文。
-
-上述 Host 窗口、ViewModel、加载器和静态服务定位器不是 v1 Plugin SDK。G2 已获准将其改为
-internal 或删除；正式长期兼容面只由后续收口的 `MyAvaloniaManagementCommon`/Plugin SDK 承担。
+[`PublicApiContractTests`](../../../MyAvaloniaManagement.Tests/PublicApiContractTests.cs) 在 G13 前继续
+对 Common 导出元数据生成临时 SHA-256；[`HostApiBoundaryTests`](../../../MyAvaloniaManagement.Tests/HostApiBoundaryTests.cs)
+使用可读断言确保 Host 不导出 `MyAvaloniaManagement.*` 类型。测试和真实窗口 Harness 只能通过
+明确的 `InternalsVisibleTo` 使用 Host 实现，这不构成发布兼容承诺。
 
 ### 2.1 版本所有权
 
@@ -148,7 +144,8 @@ V1 清单格式：
 
 ## 7. 启动和关闭契约
 
-- `Program.Main` 与 `BuildAvaloniaApp()` 签名保持不变；
+- `Program.Main` 继续作为唯一生产入口；Avalonia Builder 是 Host internal 组合根能力；
+- App 通过 `IHostDesktopShell` 构造注入，生产启动不得读取进程全局服务定位器；
 - 根容器继续启用 `ValidateScopes` 与 `ValidateOnBuild`；
 - 插件在 Avalonia 消息循环前初始化；
 - 只反向关闭成功初始化的生命周期实例；
@@ -171,7 +168,7 @@ V1 清单格式：
 
 提交宿主变更前确认：
 
-- [ ] public API 指纹通过，或变更已被明确批准；
+- [ ] Common 临时 API 指纹和 Host 零自有导出门禁通过，或变更已被明确批准；
 - [ ] Managed 与 Legacy 激活测试通过；
 - [ ] 四个真实插件构建与发布目录均包含有效清单，版本和模块身份一致；
 - [ ] 清单缺失/损坏/不兼容在程序集加载前隔离，重复身份在任何 DLL 加载前阻断；

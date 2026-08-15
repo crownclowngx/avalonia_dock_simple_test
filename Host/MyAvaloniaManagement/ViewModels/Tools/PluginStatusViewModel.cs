@@ -14,7 +14,7 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// <summary>
 /// 展示当前启动会话中所有托管插件的加载和生命周期结果。
 /// </summary>
-public sealed class PluginStatusViewModel : Tool
+internal sealed class PluginStatusViewModel : Tool
 {
     internal PluginStatusViewModel(
         PluginModuleCatalog pluginModuleCatalog,
@@ -29,17 +29,6 @@ public sealed class PluginStatusViewModel : Tool
         CanClose = true;
         Items = new ObservableCollection<PluginStatusItem>(
             CreateItems(pluginModuleCatalog, lifecycleManager, diagnostics));
-    }
-
-    /// <summary>
-    /// 供设计器与历史无参激活路径使用。
-    /// </summary>
-    public PluginStatusViewModel()
-        : this(
-            ServiceProvider.GetRequiredService<PluginModuleCatalog>(),
-            ServiceProvider.GetRequiredService<PluginLifecycleManager>(),
-            ServiceProvider.GetService<HostDiagnosticSession>())
-    {
     }
 
     public ObservableCollection<PluginStatusItem> Items { get; }

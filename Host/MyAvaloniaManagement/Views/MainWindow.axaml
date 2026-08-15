@@ -1,12 +1,13 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:MyAvaloniaManagement.ViewModels"
+        xmlns:bindings="using:MyAvaloniaManagement.ViewModels.Bindings"
+        xmlns:design="using:MyAvaloniaManagement.ViewModels.Design"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="using:MyAvaloniaManagement.Views"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="MyAvaloniaManagement.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
+        x:DataType="bindings:IMainWindowViewBindings"
         x:Name="MainWindowView"
         WindowState="Normal" WindowStartupLocation="CenterScreen"
         Foreground="{DynamicResource DockThemeForegroundBrush}"
@@ -17,7 +18,7 @@
         WindowDecorations="Full">
 
     <Design.DataContext>
-        <vm:MainWindowViewModel />
+        <design:MainWindowDesignData />
     </Design.DataContext>
     <!-- 添加快捷键绑定 -->
     <Window.KeyBindings>

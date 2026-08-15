@@ -6,7 +6,7 @@ using MyAvaloniaManagement.Business.Constants;
 
 namespace MyAvaloniaManagement.ViewModels.Hello;
 
-public partial class WelcomeViewModel : Document
+internal sealed partial class WelcomeViewModel : Document
 {
     private const string DefaultIntroduction =
         "MyAvaloniaManagement 是基于 Avalonia 与 Dock 构建的插件化桌面框架，" +

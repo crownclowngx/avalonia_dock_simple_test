@@ -6,7 +6,7 @@
 /// <remarks>
 /// 稳定 ID 会进入布局快照，必须避免在不同调用位置重复硬编码而产生拼写不一致。
 /// </remarks>
-public class DockNameConstant
+internal static class DockNameConstant
 {
     /// <summary>
     /// 工具管理面板的稳定 ID。

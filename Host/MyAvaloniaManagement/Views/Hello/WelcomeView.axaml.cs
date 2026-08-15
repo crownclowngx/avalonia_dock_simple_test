@@ -4,7 +4,7 @@ using Avalonia.VisualTree;
 
 namespace MyAvaloniaManagement.Views.Hello;
 
-public partial class WelcomeView : UserControl
+internal sealed partial class WelcomeView : UserControl
 {
     private const double CompactWidth = 760;
 

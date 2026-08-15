@@ -8,7 +8,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// <summary>
 /// 插件菜单服务，用于处理插件菜单的生成和管理
 /// </summary>
-public class PluginMenuService
+internal sealed class PluginMenuService
 {
     private readonly ManagementFactory _factory;
 

@@ -11,7 +11,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// 保持原有构造函数选择与初始化时机；只有托管插件程序集才允许从宿主容器解析构造参数。
 /// </para>
 /// </summary>
-public static class PluginStrategyActivator
+internal static class PluginStrategyActivator
 {
     /// <summary>
     /// 创建一个 Document 或 Tool 策略。调用方负责先验证类型确实实现目标策略接口。

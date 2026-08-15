@@ -2,7 +2,7 @@
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
-public class FileHelper
+internal static class FileHelper
 {
     // 辅助方法：判断是否为驱动器路径
     public static bool IsDrivePath(string path)

@@ -17,7 +17,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// Dock 真正确认关闭后再释放 Scope。插件不能自行保存或释放 Scope，避免提前释放、重复释放，
 /// 以及从根容器解析可释放 transient 后一直存活到进程退出的问题。
 /// </remarks>
-public sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
+internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly object _syncRoot = new();

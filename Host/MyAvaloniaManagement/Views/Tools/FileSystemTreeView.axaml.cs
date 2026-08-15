@@ -4,7 +4,7 @@ using Avalonia.Markup.Xaml;
 
 namespace MyAvaloniaManagement.Views.Tools;
 
-public partial class FileSystemTreeView : UserControl
+internal sealed partial class FileSystemTreeView : UserControl
 {
     public FileSystemTreeView()
     {

@@ -1,12 +1,12 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
-using System.Runtime.InteropServices.JavaScript;
+using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MyAvaloniaManagement.Business.Helpers;
 
 namespace MyAvaloniaManagement.Models.FileSystem;
 
-public partial class FileSystemNode : ObservableObject
+internal sealed partial class FileSystemNode : ObservableObject
 {
     public FileSystemNode(string path)
     {
@@ -24,6 +24,32 @@ public partial class FileSystemNode : ObservableObject
             // 延迟加载子节点
             _areChildrenLoaded = false;
         }
+    }
+
+    /// <summary>创建不访问文件系统的设计时节点树。</summary>
+    /// <remarks>
+    /// 该入口为 internal，且显式接收已经确定的名称、目录标记和子节点。设计器因此不会因
+    /// 预览一个 View 而读取开发机器目录；生产路径仍使用基于真实路径的公开构造函数。
+    /// </remarks>
+    internal static FileSystemNode CreateDesignSample(
+        string path,
+        string name,
+        bool isDirectory,
+        params FileSystemNode[] children)
+    {
+        var node = new FileSystemNode(path, name, isDirectory);
+        node._children = new ObservableCollection<FileSystemNode>(children);
+        node._areChildrenLoaded = true;
+        return node;
+    }
+
+    private FileSystemNode(string path, string name, bool isDirectory)
+    {
+        _path = path;
+        _name = name;
+        _isDirectory = isDirectory;
+        _children = [];
+        _areChildrenLoaded = true;
     }
 
     [ObservableProperty]

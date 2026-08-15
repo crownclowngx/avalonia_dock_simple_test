@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="using:MyAvaloniaManagement.ViewModels.Tools"
+             xmlns:bindings="using:MyAvaloniaManagement.ViewModels.Bindings"
+             xmlns:design="using:MyAvaloniaManagement.ViewModels.Design"
              xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:convert="using:MyAvaloniaManagement.Business.Converter"
@@ -10,13 +11,12 @@
              d:DesignWidth="260"
              d:DesignHeight="450"
              x:Class="MyAvaloniaManagement.Views.Tools.FileSystemTreeView"
-             x:DataType="vm:FileSystemTreeViewModel"
+             x:DataType="bindings:IFileSystemTreeViewBindings"
              x:Name="FileSystemTreeControl"
              Classes="host-tool-surface">
-    <UserControl.DataContext>
-        <vm:FileSystemTreeViewModel />
-    </UserControl.DataContext>
-
+    <Design.DataContext>
+        <design:FileSystemTreeDesignData />
+    </Design.DataContext>
     <UserControl.Styles>
         <Style Selector="TreeView.host-file-tree">
             <Setter Property="Background" Value="Transparent" />

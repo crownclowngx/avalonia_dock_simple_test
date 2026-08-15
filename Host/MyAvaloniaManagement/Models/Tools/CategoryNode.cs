@@ -5,7 +5,7 @@ using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace MyAvaloniaManagement.Models.Tools;
 
-public class CategoryNode : INotifyPropertyChanged
+internal class CategoryNode : INotifyPropertyChanged
 {
     private bool _isExpanded = false;
     

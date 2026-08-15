@@ -3,7 +3,7 @@
 > 状态：待整改，不满足封板条件
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`
-> 整改进度：G0、G1 已于 2026-08-15 完成；G2–G16 待完成
+> 整改进度：G0、G1、G2 已于 2026-08-15 完成；G3–G16 待完成
 > 适用范围：`MyAvaloniaManagement` 宿主、`MyAvaloniaManagementCommon`、插件装载与注册边界、Document/Tool 公共契约和发布门禁
 > 不评审：现有插件的领域业务正确性、第三方插件市场、运行时热卸载和恶意插件隔离
 
@@ -11,7 +11,10 @@
 
 本文用于回答一个具体问题：在后续主要转入插件开发之前，主程序还需要完成哪些工作，删除哪些历史或占位能力，并建立哪些兼容规则，才能把宿主认定为可长期演进的 **Managed Plugin v1**。
 
-结论是：当前宿主已经有较完整的插件运行骨架，G0 已恢复解决方案绿色基线，G1 也已冻结支持边界、版本线和 v1 数据根，但 **尚不能封板**。主要问题不是 Dock、Document Scope 或插件隔离没有实现，而是公共面仍未真正收口：Host 内部实现被意外纳入 public API，Document 宿主信封没有版本，消息总线泄漏第三方抽象，Legacy 激活和静态服务定位仍在，插件部署与兼容门禁也没有形成单一发布入口。
+结论是：当前宿主已经有较完整的插件运行骨架，G0 已恢复绿色基线，G1 已冻结支持边界、
+版本线和 v1 数据根，G2 也已完成 Host public 面与静态服务定位收口，但 **尚不能封板**。
+剩余主要问题是 Document 宿主信封没有版本、消息总线泄漏第三方抽象、Legacy 激活仍在，
+插件部署与兼容门禁也没有形成单一发布入口。
 
 本次封板采用以下一次性定基线策略：
 
@@ -79,13 +82,17 @@ dotnet build MyAvaloniaManagement.sln `
 
 G0 已于 2026-08-15 完成。最终执行锁定还原、解决方案 Release 构建和带 Windows Smoke 的综合门禁，结果为 **0 警告、0 错误**，Unit 105、UI 32、Plugin 112，共 **249/249 通过**；Host 行覆盖率 76.86%、分支覆盖率 63.65%。详细根因、SOLID 取舍、失败过程和可重放命令见 [G0 绿色基线恢复记录](../plan-history/host-v1/g0-green-baseline.md)。测试数量是时间点证据，后续继续从 TRX 和 `summary.json` 动态读取。
 
+G2 完成后的当前基线为 Unit 113、UI 34、Plugin 118，共 **265/265 通过**；Host 行覆盖率
+77.75%、分支覆盖率 63.91%，Windows Smoke 通过。Host 已没有任何自有命名空间导出类型，
+详细证据见 [G2 Host 实现面收口记录](../plan-history/host-v1/g2-host-api-surface.md)。
+
 ### 2.3 当前风险清单
 
 | 等级 | 发现 | 影响 |
 | --- | --- | --- |
 | 高 | `DocumentSaveData` 没有宿主 `schemaVersion`，插件用自由格式 `PluginMetadata` 记录内容版本 | 宿主升级后无法可靠区分信封版本、插件版本和业务内容版本 |
-| 高 | Host 窗口、ViewModel、加载器、服务定位器、工厂和内部模型大量为 public | 普通内部重构会被误判为插件 API 破坏，或反过来意外锁死实现 |
-| 高 | API 门禁只有一个 SHA256 | 只能知道“变了”，不能审阅删除了哪个类型、改了哪个签名，也不能区分兼容新增 |
+| 已解决（G2） | Host 窗口、ViewModel、加载器、工厂和内部模型曾大量为 public，且存在静态服务定位器 | Host 自有导出类型现为 0；生产构造只走 Runtime DI |
+| 高 | Common/Plugin SDK 门禁仍只有一个 SHA256 | G2 已排除 Host 实现噪声，但仍不能审阅删除了哪个类型、改了哪个签名，也不能区分兼容新增 |
 | 高 | `IMessengerService` 暴露 `IMessenger`，生产实现使用 `WeakReferenceMessenger.Default` | SDK 被 CommunityToolkit 具体 API 绑定，不同 HostRuntime 和测试可能共享全局状态 |
 | 高 | Legacy 无模块激活、公共无参策略和无 `.deps.json` 回退仍存在 | 同一宿主同时维护两套所有权、依赖注入和错误语义 |
 | 高 | 插件可直接修改完整 `IServiceCollection` | 可信插件仍可能误覆盖宿主核心服务，错误直到运行期才暴露 |
@@ -192,7 +199,9 @@ G0 已于 2026-08-15 完成。最终执行锁定还原、解决方案 Release �
 - 未被任何 XAML 或代码引用的 `HandledEventsAwareBehavior`；
 - Common 项目中的空 `Chain` 项目项。
 
-Avalonia XAML 或源生成确实要求 public 的 `App`、窗口和 View 可以保持 public，但它们不属于 Plugin SDK，也不纳入 SDK 兼容承诺。
+G2 已验证 Avalonia XAML 不要求 Host 自有 App、窗口或 View 对程序集外 public。移除冗余的
+StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 Avalonia 编译器生成的非 Host
+命名空间资源类型。
 
 ### 4.3 不能因为抛异常就删除的方法
 
@@ -233,6 +242,9 @@ Avalonia XAML 或源生成确实要求 public 的 `App`、窗口和 View 可以�
 ### G2：将 Host 实现移出插件 API
 
 **优先级：阻断；依赖：G0**
+
+> 实施状态：已完成。详细设计、边界变化和验证证据见
+> [G2 Host 实现面收口记录](../plan-history/host-v1/g2-host-api-surface.md)。
 
 - 目标：插件只引用 Plugin SDK，不引用 Host 可执行程序集的实现类型。
 - 修改边界：Host 类型可见性、测试访问入口、静态服务定位器和无参 ViewModel 构造。
@@ -356,7 +368,7 @@ Avalonia XAML 或源生成确实要求 public 的 `App`、窗口和 View 可以�
 
 **优先级：高；依赖：G3、G11**
 
-- 目标：替换只输出 SHA256 的 Host/Common 全程序集指纹。
+- 目标：替换 G2 后只针对 Common、但仍不可读的 SHA256 指纹。
 - 修改边界：只对正式 Plugin SDK 建立 public API 文本或元数据基线；Host 实现程序集不作为插件契约。
 - 验收：兼容新增被标记为可接受；删除类型、收窄可见性、改参数、改返回类型和删除成员给出具体差异并阻断。
 - 验收命令：新增并执行 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v1`；脚本需在测试副本中证明删除一个 public 成员时会失败并打印该成员。
@@ -497,7 +509,7 @@ G0 与 G15 可以并行。G7/G8、G9/G10 和 G11 在 G3 完成后可以分别独
 - [ ] v1 数据根和旧数据保留规则已经验证；
 - [ ] Document 信封与插件内容 schema 已分离；
 - [ ] Legacy 二进制插件路径和静态 Service Locator 已删除；
-- [ ] Host 内部类型不再被误当作 Plugin SDK；
+- [x] Host 内部类型不再被误当作 Plugin SDK（G2 已完成）；
 - [ ] 消息总线不泄漏第三方接口或进程全局状态；
 - [ ] Release 构建、全部宿主测试、包矩阵和 Windows Smoke 全绿；
 - [ ] 诊断日志通过敏感信息扫描；

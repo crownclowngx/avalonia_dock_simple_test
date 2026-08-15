@@ -23,7 +23,7 @@ flowchart TB
     Runtime --> Container["根 DI 容器"]
     Runtime --> Lifecycle["PluginLifecycleManager"]
 
-    Container --> Factory["ManagementFactory<br/>public 兼容 Facade"]
+    Container --> Factory["ManagementFactory<br/>Host internal Dock 协调器"]
     Factory --> Registry["HostExtensionRegistry<br/>策略与元数据注册表"]
     Factory --> Builder["DockWorkspaceBuilder<br/>初始结构"]
     Factory --> Navigator["DockTreeNavigator<br/>统一查询"]
@@ -69,17 +69,21 @@ flowchart TB
 
 关闭时顺序反转：先关闭成功初始化的插件，再释放根容器。这个所有权对称性防止 `Program`、`App` 和插件生命周期管理器分别持有一部分清理责任。
 
-[`Program`](../../Program.cs) 仍保留 `Main`、`BuildAvaloniaApp()` 和内部关闭辅助入口。历史 public 无参 ViewModel 与测试宿主仍可通过静态 `ServiceProvider` 工作，但该定位器不再是真正的组合根。
+[`Program`](../../Program.cs) 只保留进程入口和失败应用编排。`HostRuntime` 通过 internal
+`HostAvaloniaBuilder` 使用 `Func<App>` 创建应用；App 注入 `IHostDesktopShell`，不再存在静态
+`ServiceProvider` 或生产 ViewModel 无参构造。仓库测试与 Harness 通过明确 friend assembly
+访问 internal 组合入口。
 
 ### 3.2 为什么不直接采用通用 Host Builder
 
-当前应用已有固定的 Avalonia 启动方式和 public 兼容入口。内部 `HostRuntime` 足以集中所有权，而引入另一套通用 Host 生命周期会增加双重启动/关闭语义。本轮选择最小可验证边界，不改变进程模型。
+当前应用已有固定的 Avalonia 启动方式。内部 `HostRuntime` 与桌面 Shell 足以集中所有权，而引入
+另一套通用 Host 生命周期会增加双重启动/关闭语义。本轮选择最小可验证边界，不改变进程模型。
 
 ## 4. 插件发现和策略注册
 
 ### 4.1 程序集快照
 
-[`AssemblyLoaderHelper`](../../Business/Helpers/AssemblyLoaderHelper.cs) 是 public 兼容 Facade，其内部行为是：
+[`AssemblyLoaderHelper`](../../Business/Helpers/AssemblyLoaderHelper.cs) 是 Host internal 加载边界，其行为是：
 
 - 用绝对、规范化且不区分大小写的插件根目录作为缓存键；
 - 通过 `Lazy<PluginDiscoverySnapshot>` 保证并发调用只执行一次扫描；

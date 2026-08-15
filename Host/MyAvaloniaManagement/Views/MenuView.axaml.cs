@@ -4,7 +4,7 @@ using Avalonia.Markup.Xaml;
 
 namespace MyAvaloniaManagement.Views;
 
-public partial class MenuView : UserControl
+internal sealed partial class MenuView : UserControl
 {
     public MenuView()
     {

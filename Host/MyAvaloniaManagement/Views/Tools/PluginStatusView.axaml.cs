@@ -3,7 +3,7 @@ using Avalonia.Markup.Xaml;
 
 namespace MyAvaloniaManagement.Views.Tools;
 
-public partial class PluginStatusView : UserControl
+internal sealed partial class PluginStatusView : UserControl
 {
     public PluginStatusView()
     {

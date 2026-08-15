@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagement.ViewModels;
 
@@ -31,8 +32,6 @@ internal sealed class HostRuntime : IDisposable
         _lifecycleManager = lifecycleManager;
         _diagnostics = diagnostics;
     }
-
-    internal IServiceProvider Services => _provider;
 
     internal static HostRuntime Create(HostDiagnosticSession diagnostics)
     {
@@ -137,6 +136,17 @@ internal sealed class HostRuntime : IDisposable
         _lifecycleManager.InitializeAllAsync().GetAwaiter().GetResult();
         ReportLifecycleFailures();
         _initialized = true;
+    }
+
+    /// <summary>使用当前 Runtime 独占的容器创建生产 Avalonia 应用。</summary>
+    /// <remarks>
+    /// Builder 工厂捕获的是本 Runtime 的 provider，不存在进程全局 Current 容器；消息循环结束后
+    /// Runtime 仍按反向插件生命周期顺序释放同一个 provider。
+    /// </remarks>
+    internal Avalonia.AppBuilder BuildAvaloniaApp()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return HostAvaloniaBuilder.Build(_provider);
     }
 
     public void Dispose()

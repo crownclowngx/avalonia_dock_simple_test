@@ -8,7 +8,7 @@ namespace MyAvaloniaManagement.Business.Converter;
 /// <summary>
 /// 将文件系统节点类型转换为可复用的轻量矢量图标。
 /// </summary>
-public class FileSystemIconConverter : IValueConverter
+internal sealed class FileSystemIconConverter : IValueConverter
 {
     private static readonly Lazy<StreamGeometry> FolderGeometry = new(() =>
         StreamGeometry.Parse("M2,4 H8 L10,6 H18 V16 H2 Z M2,7 H18"));

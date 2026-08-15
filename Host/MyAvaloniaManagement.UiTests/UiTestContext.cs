@@ -14,8 +14,8 @@ namespace MyAvaloniaManagement.UiTests;
 /// 为单个 Headless UI 测试建立隔离的服务容器、主 ViewModel 和布局目录。
 /// </summary>
 /// <remarks>
-/// 上下文会初始化生产代码使用的兼容 ServiceProvider，使 XAML 设计时构造路径也能工作；
-/// 每次测试结束都会释放容器并删除临时数据。
+/// 上下文直接从自己拥有的容器解析生产对象；每次测试结束都会释放容器并删除临时数据。
+/// 它不会写入任何进程全局服务入口，因此并行或连续测试不会取得另一个上下文的对象。
 /// </remarks>
 internal sealed class UiTestContext : IDisposable
 {
@@ -46,8 +46,6 @@ internal sealed class UiTestContext : IDisposable
             ValidateScopes = true,
             ValidateOnBuild = true
         });
-        MyAvaloniaManagement.Business.Helpers.ServiceProvider.Initialize(
-            Provider);
         Factory = Provider.GetRequiredService<ManagementFactory>();
         ViewModel = Provider.GetRequiredService<MainWindowViewModel>();
     }

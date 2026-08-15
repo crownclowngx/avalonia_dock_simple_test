@@ -15,6 +15,7 @@ using MyAvaloniaManagement.Message;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
 using MyAvaloniaManagementCommon.Save;
+using MyAvaloniaManagement.ViewModels.Bindings;
 
 namespace MyAvaloniaManagement.ViewModels;
 
@@ -22,7 +23,7 @@ namespace MyAvaloniaManagement.ViewModels;
 /// 负责主窗口绑定状态、命令和消息编排，并把 Dock 布局及文档持久化委托给内部服务。
 /// 该边界让 ViewModel 保持 UI 协调职责，不直接承担文件事务和 Dock 树遍历。
 /// </summary>
-public partial class MainWindowViewModel : ObservableObject, IDropTarget
+internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarget, IMainWindowViewBindings
 {
     private readonly ManagementFactory _factory;
     private readonly PluginMenuService _pluginMenuService;
@@ -91,26 +92,6 @@ public partial class MainWindowViewModel : ObservableObject, IDropTarget
 
         Layout = _layoutLifecycle.Prepare(_factory);
         RegisterMessageHandlers();
-    }
-
-    /// <summary>
-    /// 为 XAML 设计器和历史调用方保留的兼容构造函数。
-    /// 生产环境仍通过依赖注入解析显式构造函数，避免新增业务逻辑依赖静态定位器。
-    /// </summary>
-    public MainWindowViewModel() : this(
-        ServiceProvider.GetRequiredService<ManagementFactory>(),
-        ServiceProvider.GetRequiredService<PluginMenuService>(),
-        ServiceProvider.GetRequiredService<IMessengerService>(),
-        ServiceProvider.GetRequiredService<DockLayoutLifecycle>(),
-        ServiceProvider.GetRequiredService<IHostStorageService>(),
-        ServiceProvider.GetRequiredService<ApplicationThemeService>(),
-        ServiceProvider.GetRequiredService<DocumentSaveService>(),
-        ServiceProvider.GetRequiredService<DocumentOperationGate>(),
-        ServiceProvider.GetRequiredService<DocumentRecoveryRegistry>(),
-        ServiceProvider.GetRequiredService<IDocumentInteractionService>(),
-        ServiceProvider.GetRequiredService<DocumentEnvelopeSerializer>(),
-        ServiceProvider.GetRequiredService<DocumentCloseCoordinator>())
-    {
     }
 
     private readonly DocumentCloseCoordinator _documentCloseCoordinator;

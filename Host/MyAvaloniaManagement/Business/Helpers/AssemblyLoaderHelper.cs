@@ -67,7 +67,7 @@ internal sealed class PluginDiscoverySnapshot
 /// 同一规范化根目录只生成一次不可变快照，且每个插件目录使用独立加载上下文，
 /// 因而不同插件可以携带同名不同版本的私有依赖。
 /// </remarks>
-public static class AssemblyLoaderHelper
+internal static class AssemblyLoaderHelper
 {
     private static readonly IPluginSharedAssemblyPolicy SharedAssemblyPolicy =
         new HostContractAssemblyPolicy();

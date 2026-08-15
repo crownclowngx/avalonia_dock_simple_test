@@ -1,8 +1,10 @@
+using System;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.ViewModels.Tools;
@@ -16,7 +18,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// <summary>
 /// 依赖注入服务注册扩展方法
 /// </summary>
-public static class ServiceCollectionExtensions
+internal static class ServiceCollectionExtensions
 {
     /// <summary>
     /// 注册应用程序核心服务
@@ -101,13 +103,13 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 注册主窗口及三个宿主工具 ViewModel。
+    /// 注册主窗口、四个宿主工具 ViewModel 及其窄创建工厂。
     /// </summary>
     /// <param name="services">服务集合</param>
     /// <returns>服务集合</returns>
     /// <remarks>
-    /// ViewModel 采用瞬态生命周期，避免设计器、Headless 测试和窗口实例之间共享可变绑定状态。
-    /// 显式工厂注册用于调用 internal 注入构造函数，同时保留公开无参构造的兼容能力。
+    /// 生产 ViewModel 采用瞬态生命周期，避免 Headless 测试和窗口实例之间共享可变绑定状态。
+    /// 显式注册调用 internal 注入构造函数；设计器使用独立样例，不进入此生产对象图。
     /// </remarks>
     public static IServiceCollection AddViewModels(this IServiceCollection services)
     {
@@ -139,6 +141,26 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<IDocumentInteractionService>(),
             provider.GetRequiredService<DocumentEnvelopeSerializer>(),
             provider.GetRequiredService<DocumentCloseCoordinator>()));
+
+        // 内置策略只依赖“创建某类对象”的窄工厂，不依赖整个 IServiceProvider。
+        // 工厂闭包只存在于组合根，既保持每次创建的新实例语义，也避免策略成为服务定位器。
+        services.AddSingleton<Func<FileSystemTreeViewModel>>(provider =>
+            () => provider.GetRequiredService<FileSystemTreeViewModel>());
+        services.AddSingleton<Func<PlugGroupMenuViewModel>>(provider =>
+            () => provider.GetRequiredService<PlugGroupMenuViewModel>());
+        services.AddSingleton<Func<ToolManagementViewModel>>(provider =>
+            () => provider.GetRequiredService<ToolManagementViewModel>());
+        services.AddSingleton<Func<PluginStatusViewModel>>(provider =>
+            () => provider.GetRequiredService<PluginStatusViewModel>());
+
+        // Welcome 策略在 Registry 构建期间已经被创建，而 ManagementFactory 依赖该 Registry。
+        // 延迟工厂只在用户点击“显示工具”时解析 ManagementFactory，显式打破构造期循环。
+        services.AddSingleton<Func<ManagementFactory>>(provider =>
+            () => provider.GetRequiredService<ManagementFactory>());
+
+        services.AddTransient<IHostDesktopShell, HostDesktopShell>();
+        services.AddTransient(provider => new App(
+            provider.GetRequiredService<IHostDesktopShell>()));
 
         return services;
     }

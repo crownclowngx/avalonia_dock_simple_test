@@ -39,6 +39,7 @@
 
 - [G0：绿色基线恢复](./plan-history/host-v1/g0-green-baseline.md)：测试契约漂移修复、SOLID/Test Stub 设计意图、Release 构建、三层测试、覆盖率和 Windows Smoke 证据。
 - [G1：支持边界与版本线冻结](./plan-history/host-v1/g1-support-boundary-and-version-lines.md)：集中版本事实、v1 数据根隔离、版本政策门禁和正式支持范围。
+- [G2：Host 实现面收口](./plan-history/host-v1/g2-host-api-surface.md)：Host 零自有导出类型、构造注入启动链、显式设计数据、friend 测试边界和 265 项绿色证据。
 
 ### .NET 10 升级记录
 

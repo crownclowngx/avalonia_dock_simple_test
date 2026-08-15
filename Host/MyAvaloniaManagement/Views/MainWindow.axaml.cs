@@ -5,7 +5,7 @@ using MyAvaloniaManagementCommon.Presentation;
 
 namespace MyAvaloniaManagement.Views;
 
-public partial class MainWindow : Window, IWindowContentFullscreenHost
+internal sealed partial class MainWindow : Window, IWindowContentFullscreenHost
 {
     private object? _fullscreenOwner;
     private bool _windowCloseApproved;

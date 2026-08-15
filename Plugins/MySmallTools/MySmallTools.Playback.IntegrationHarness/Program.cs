@@ -5,6 +5,7 @@ using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagementCommon.Plugin;
 using MySmallTools.Plugin;
 
@@ -51,7 +52,6 @@ internal static class Program
             ValidateScopes = true,
             ValidateOnBuild = true
         });
-        MyAvaloniaManagement.Business.Helpers.ServiceProvider.Initialize(_provider);
         _lifecycleManager = _provider.GetRequiredService<PluginLifecycleManager>();
         _lifecycleManager.InitializeAllAsync().GetAwaiter().GetResult();
 
@@ -66,10 +66,7 @@ internal static class Program
 
         try
         {
-            return AppBuilder.Configure<App>()
-                .UsePlatformDetect()
-                .WithInterFont()
-                .LogToTrace()
+            return HostAvaloniaBuilder.Build(_provider)
                 .AfterSetup(_ =>
                 {
                     Dispatcher.UIThread.Post(async () =>

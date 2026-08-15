@@ -5,7 +5,7 @@ namespace MyAvaloniaManagement.Models.Tools;
 /// <summary>
 /// 工具管理项类，用于绑定列表数据
 /// </summary>
-public partial class ToolManagementItem : ObservableObject
+internal sealed partial class ToolManagementItem : ObservableObject
 {
     [ObservableProperty]
     private string _toolId = string.Empty;

@@ -1,31 +1,23 @@
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagementCommon.Plugin;
 
 namespace MyAvaloniaManagement.Tests;
 
 /// <summary>
-/// 锁定 Host 与 Common 程序集导出的公共 API，避免普通内部重构意外改变插件契约。
-/// 本次指纹更新对应已经评审的保存契约升级：新增 IDocumentSaveState，要求可保存
-/// Document 明确报告并提交脏状态；后续实现调整不得顺带修改此指纹。
+/// 在 G13 建立可审阅 API 文本基线前，暂时锁定唯一正式插件契约程序集 Common。
+/// Host 是可执行实现程序集，不再与 SDK 拼接为同一个不可读指纹。
 /// </summary>
 public sealed class PublicApiContractTests
 {
     private const string ExpectedSha256 =
-        "0CCBB254B3C5A542A9388AA79DE6CDDFA58537206F57C3E08CB0A81E8FED2814";
+        "A3C41FC09E0184E3BF9255733C35A92A0DB1682121A945137760868E2BEA2977";
 
     [Fact]
-    public void HostAndCommonPublicApiSurfaceRemainsStable()
+    public void PluginSdkPublicApiSurfaceRemainsStable()
     {
-        var lines = new[]
-            {
-                typeof(MainWindowViewModel).Assembly,
-                typeof(IPluginModule).Assembly
-            }
-            .Distinct()
-            .SelectMany(GetPublicSurface)
+        var lines = GetPublicSurface(typeof(IPluginModule).Assembly)
             .OrderBy(line => line, StringComparer.Ordinal)
             .ToArray();
         var payload = string.Join('\n', lines);

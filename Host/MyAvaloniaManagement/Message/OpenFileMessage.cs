@@ -5,7 +5,7 @@ namespace MyAvaloniaManagement.Message;
 /// <summary>
 /// 打开文件消息，用于在组件间传递打开文件的请求
 /// </summary>
-public class OpenFileMessage : ValueChangedMessage<string>
+internal sealed class OpenFileMessage : ValueChangedMessage<string>
 {
     /// <summary>
     /// 文件路径

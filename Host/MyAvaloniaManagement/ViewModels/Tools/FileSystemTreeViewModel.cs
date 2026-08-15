@@ -9,6 +9,7 @@ using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.FileSystem;
 using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagement.ViewModels.Bindings;
 
 namespace MyAvaloniaManagement.ViewModels.Tools;
 
@@ -19,7 +20,7 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// 文件夹选择和文件存在性检查通过 <see cref="IHostStorageService"/> 完成，
 /// 打开动作通过消息发布，使该工具不需要知道主窗口或文档创建细节。
 /// </remarks>
-public partial class FileSystemTreeViewModel : Tool
+internal sealed partial class FileSystemTreeViewModel : Tool, IFileSystemTreeViewBindings
 {
     private readonly IHostStorageService _storageService;
     private readonly IMessengerService _messengerService;
@@ -65,15 +66,6 @@ public partial class FileSystemTreeViewModel : Tool
         {
             InitializeTree();
         }
-    }
-
-    /// <summary>
-    /// 使用应用全局服务创建实例，供设计器及兼容路径使用。
-    /// </summary>
-    public FileSystemTreeViewModel() : this(
-        ServiceProvider.GetRequiredService<IHostStorageService>(),
-        ServiceProvider.GetRequiredService<IMessengerService>())
-    {
     }
 
     /// <summary>

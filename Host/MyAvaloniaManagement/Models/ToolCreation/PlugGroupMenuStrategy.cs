@@ -2,7 +2,6 @@
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagementCommon.ToolCreation;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace MyAvaloniaManagement.Models.ToolCreation;
@@ -10,21 +9,22 @@ namespace MyAvaloniaManagement.Models.ToolCreation;
 /// <summary>
 /// 创建并描述插件分组菜单工具。
 /// </summary>
-/// <param name="serviceProvider">用于解析带有工厂和菜单服务依赖的工具 ViewModel。</param>
+/// <param name="viewModelFactory">创建带有工厂和菜单依赖的工具 ViewModel。</param>
 /// <remarks>
 /// 创建结果和元数据共同使用 <see cref="DockNameConstant.PlugGroupMenu"/>，
 /// 保证 DockableLocator、布局恢复和工具字典引用同一个稳定 ID。
 /// </remarks>
-public class PlugGroupMenuStrategy(IServiceProvider serviceProvider)
+internal sealed class PlugGroupMenuStrategy(
+    Func<PlugGroupMenuViewModel> viewModelFactory)
     : IToolCreationStrategy
 {
     /// <summary>
-    /// 从依赖注入容器创建并配置插件菜单工具实例。
+    /// 通过组合根提供的窄工厂创建并配置插件菜单工具实例。
     /// </summary>
     /// <returns>创建的Tool实例</returns>
     public Tool CreateTool()
     {
-        var tool = serviceProvider.GetRequiredService<PlugGroupMenuViewModel>();
+        var tool = viewModelFactory();
         tool.Title = "插件";
         tool.CanClose = false;
         return tool;
