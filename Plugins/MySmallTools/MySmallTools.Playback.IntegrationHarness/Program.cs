@@ -38,14 +38,18 @@ internal static class Program
         }
 
         var services = new ServiceCollection();
-        services.AddApplicationServices();
+        var registryBuilder = new PluginRegistryBuilder();
+        services.AddApplicationServices(registryBuilder);
         services.AddViewModels();
 
         // 验收进程直接装配生产插件模块，保证 Document Scope 与真实宿主一致；
         // 不从部署目录二次加载程序集，避免同一类型出现两个加载上下文。
-        var catalog = PluginModuleCatalog.Discover([typeof(MySmallToolsPluginModule).Assembly]);
-        catalog.ConfigureServices(services);
-        services.AddSingleton(catalog);
+        var registration = new PluginRegistrationContext(
+            new PluginId("myavalonia.plugin.my-small-tools"),
+            services,
+            registryBuilder);
+        new MySmallToolsPluginModule().Configure(registration);
+        registration.SealAndGetBypassedContributionTypes();
 
         _provider = services.BuildServiceProvider(new ServiceProviderOptions
         {

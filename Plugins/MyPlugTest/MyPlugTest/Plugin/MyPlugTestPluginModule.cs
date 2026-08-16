@@ -3,6 +3,9 @@ using MyAvaloniaManagementCommon.Plugin;
 using MyPlugTest.Constants;
 using MyPlugTest.Services;
 using MyPlugTest.ViewModels;
+using MyPlugTest.Create;
+using MyPlugTest.Models;
+using MyPlugTest.Views;
 
 namespace MyPlugTest.Plugin;
 
@@ -17,11 +20,10 @@ namespace MyPlugTest.Plugin;
 /// </summary>
 public sealed class MyPlugTestPluginModule : IPluginModule
 {
-    public PluginId PluginId => SaveDocumentTypeIdConstant.PluginId;
-
     /// <inheritdoc />
-    public void ConfigureServices(IServiceCollection services)
+    public void Configure(IPluginRegistrationContext context)
     {
+        var services = context.Services;
         // Tool 在宿主中只存在一个实例，因此其 ViewModel 使用 Singleton。
         // Tool 被隐藏再恢复时仍返回同一对象，不会丢失界面状态或重复创建资源。
         services.AddSingleton<MyCustomToolViewModel>();
@@ -40,5 +42,17 @@ public sealed class MyPlugTestPluginModule : IPluginModule
         services.AddSingleton<IExcelFileDialogService, AvaloniaExcelFileDialogService>();
         services.AddSingleton<IExcelWorkbookReader, EpplusExcelWorkbookReader>();
         services.AddSingleton<ExcelGetUrlBuilder>();
+
+        // 宿主只消费本区块中的显式贡献；程序集里新增一个策略或 View 不会自动改变界面。
+        context.AddDocument<TestWelcomeDocumentStrategy>();
+        context.AddDocument<TestMessageReceiveDocumentStrategy>();
+        context.AddDocument<BatchHttpGetDocumentStrategy>();
+        context.AddDocument<ExcelGetUrlGeneratorDocumentStrategy>();
+        context.AddTool<MyCustomToolStrategy>();
+        context.AddView<TestWelcomeViewModel, TestWelcomeView>();
+        context.AddView<TestMessageReceiveViewModel, TestMessageReceiveView>();
+        context.AddView<BatchHttpGetViewModel, BatchHttpGetView>();
+        context.AddView<ExcelGetUrlGeneratorViewModel, ExcelGetUrlGeneratorView>();
+        context.AddView<MyCustomToolViewModel, MyCustomToolView>();
     }
 }

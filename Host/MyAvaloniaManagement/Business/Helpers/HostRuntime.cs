@@ -37,7 +37,8 @@ internal sealed class HostRuntime : IDisposable
     {
         ArgumentNullException.ThrowIfNull(diagnostics);
         var services = new ServiceCollection();
-        services.AddApplicationServices();
+        var registryBuilder = new PluginRegistryBuilder();
+        services.AddApplicationServices(registryBuilder);
         services.AddViewModels();
         services.AddSingleton(diagnostics);
         services.AddSingleton<IHostDiagnosticSink>(diagnostics);
@@ -62,7 +63,7 @@ internal sealed class HostRuntime : IDisposable
             throw;
         }
 
-        pluginCatalog.ConfigureServices(services, diagnostics);
+        pluginCatalog.Configure(services, registryBuilder, diagnostics);
         services.AddSingleton(pluginCatalog);
         Microsoft.Extensions.DependencyInjection.ServiceProvider provider;
         try
@@ -87,10 +88,11 @@ internal sealed class HostRuntime : IDisposable
 
         try
         {
-            // 显式解析工厂会构造并验证完整扩展注册表。必须在生命周期回调和 UI 启动前完成，
+            // 显式解析 Registry 会激活并验证全部贡献。必须在生命周期回调和 UI 启动前完成，
             // 防止重复 ID 直到用户打开窗口时才暴露，也保证失败时能立即释放根容器。
             try
             {
+                provider.GetRequiredService<PluginRegistry>();
                 provider.GetRequiredService<ManagementFactory>();
             }
             catch (HostCompositionException exception)

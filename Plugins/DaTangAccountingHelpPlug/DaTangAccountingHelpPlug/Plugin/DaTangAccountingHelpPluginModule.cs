@@ -9,6 +9,10 @@ using DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
 using DaTangAccountingHelpPlug.Constants;
+using DaTangAccountingHelpPlug.Create;
+using DaTangAccountingHelpPlug.Create.BankBalanceReconciliation;
+using DaTangAccountingHelpPlug.Views;
+using DaTangAccountingHelpPlug.Views.BankBalanceReconciliation;
 
 namespace DaTangAccountingHelpPlug.Plugin;
 
@@ -21,11 +25,10 @@ namespace DaTangAccountingHelpPlug.Plugin;
 /// </remarks>
 public sealed class DaTangAccountingHelpPluginModule : IPluginModule
 {
-    public PluginId PluginId => SaveDocumentTypeIdConstant.PluginId;
-
     /// <inheritdoc />
-    public void ConfigureServices(IServiceCollection services)
+    public void Configure(IPluginRegistrationContext context)
     {
+        var services = context.Services;
         // 发票 Document 由宿主的独立 Scope 托管，避免不同窗口共享路径、日志或计算结果。
         services.AddScoped<InvoiceInfoImportViewModel>();
         services.AddScoped<IInvoiceInfoImportBusiness, InvoiceInfoImportBusiness>();
@@ -48,5 +51,10 @@ public sealed class DaTangAccountingHelpPluginModule : IPluginModule
         services.AddScoped<ReconciliationOptionsViewModel>();
         services.AddScoped<ReconciliationRunViewModel>();
         services.AddScoped<BankBalanceReconciliationViewModel>();
+
+        context.AddDocument<InvoiceInfoImportDocumentStrategy>();
+        context.AddDocument<BankBalanceReconciliationDocumentStrategy>();
+        context.AddView<InvoiceInfoImportViewModel, InvoiceInfoImportView>();
+        context.AddView<BankBalanceReconciliationViewModel, BankBalanceReconciliationView>();
     }
 }

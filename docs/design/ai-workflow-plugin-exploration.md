@@ -87,7 +87,7 @@ flowchart LR
 
 ### 4.1 发现机制
 
-不做动态反射扫描，走 DI 收集——每个插件在 `IPluginModule.ConfigureServices` 里注册自己的能力实现，工作流插件注入 `IEnumerable<IPluginCapability>` 即自动汇总。与现有 Managed Plugin 接入方式完全一致，零新增机制。
+不做动态反射扫描，走 DI 收集——每个插件在 `IPluginModule.Configure` 中通过 `context.Services` 注册自己的私有能力实现，工作流插件注入 `IEnumerable<IPluginCapability>` 即自动汇总。这复用现有 Managed Plugin 的私有服务通道；如果未来能力需要由宿主治理，则应新增有明确语义的 Context 贡献方法，而不是把它伪装成 Document/Tool。
 
 ### 4.2 能力契约（定义在 MyAvaloniaManagementCommon）
 
@@ -308,7 +308,7 @@ public sealed class CapabilityActivity : CodeActivity<JsonElement>
 
 ### 7.2 正确通道：DI + 公共契约
 
-所有 Managed Plugin 的 `ConfigureServices` 都注册进**同一个根容器**，调用链是纯 DI 的：
+所有 Managed Plugin 的 `Configure` 都可通过 `context.Services` 注册进**同一个根容器**，调用链是纯 DI 的：
 
 ```mermaid
 flowchart LR
@@ -374,7 +374,7 @@ public async Task<JsonElement> InvokeAsync(JsonElement p, CancellationToken ct)
 
 1. **契约类型身份安全**。`PluginLoadContext.Load` 找不到程序集时返回 `null`，ALC 规则回退到默认上下文解析。只要插件部署目录里不带 `MyAvaloniaManagementCommon.dll`，所有插件拿到的 `IPluginCapability` 就是默认上下文的同一份类型，cast 与 DI 注册/解析完全正常。
 2. **对象传递、异常、线程无障碍**。ALC 隔离的是"程序集从哪加载"，不是对象。所有插件共享同一个 GC 堆、同一个 DI 容器、同一个线程池；能力实现内部 async 跑在自己的线程上，`await` 天然处理。
-3. **DI 解析顺序天然正确**。所有插件的 `ConfigureServices` 执行完才 `BuildServiceProvider`，`IEnumerable<IPluginCapability>` 一定能收全。
+3. **DI 解析顺序天然正确**。所有插件的 `Configure` 执行完才 `BuildServiceProvider`，`IEnumerable<IPluginCapability>` 一定能收全。
 
 ### 8.2 必须防住的三个坑
 

@@ -91,6 +91,11 @@ G3 完成后的当前基线为 Unit 113、UI 37、Plugin 125，共 **275/275 通
 77.85%、分支覆盖率 64.03%，Windows Smoke 通过。基础 SDK 与可选 UI Profile 均已通过临时
 NuGet 消费测试，详细证据见 [G3 Plugin SDK 与 UI Profile 记录](../plan-history/host-v1/g3-plugin-sdk-and-ui-profile.md)。
 
+G5 完成后的专项基线为 Unit 119、UI 37、Plugin 127，共 **283/283 通过**；解决方案 Release
+构建 0 警告、0 错误，SDK 最终 v1 样例编译成功、旧候选接口编译失败。G5 未重新采集覆盖率或
+Windows Smoke，不沿用旧数字冒充本次证据。详细记录见
+[G5 显式贡献与 Plugin Registry](../plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)。
+
 ### 2.3 当前风险清单
 
 | 等级 | 发现 | 影响 |
@@ -101,7 +106,7 @@ NuGet 消费测试，详细证据见 [G3 Plugin SDK 与 UI Profile 记录](../pl
 | 高 | `IMessengerService` 暴露 `IMessenger`，生产实现使用 `WeakReferenceMessenger.Default` | SDK 被 CommunityToolkit 具体 API 绑定，不同 HostRuntime 和测试可能共享全局状态 |
 | 已解决（G4） | Legacy 无模块激活、公共无参策略和无 `.deps.json` 回退曾同时存在 | 现只接受必需 deps、唯一模块和 DI 策略激活 |
 | 高 | 插件可直接修改完整 `IServiceCollection` | 可信插件仍可能误覆盖宿主核心服务，错误直到运行期才暴露 |
-| 高 | ViewLocator 通过静态构造、AppDomain 和命名约定重复发现视图 | 贡献来源不明确，异常被吞掉或只写控制台，难以形成确定性注册表 |
+| 已解决（G5） | ViewLocator 曾通过静态构造、AppDomain 和命名约定重复发现视图 | 现只消费 HostRuntime 私有不可变 Registry；未登记类型不可见，View 失败形成稳定诊断和占位 |
 | 高 | 诊断记录默认使用 `Exception.ToString()` | 可能把路径、URL、插件异常正文或其他敏感上下文写入长期日志 |
 | 已解决（G3） | Common 曾直接引用整套字体、主题、Ursa、Semi 与 Dock UI 控件包 | 基础 SDK 现只保留契约依赖；Host 直接拥有主题，可选 UI Profile 固定受支持 UI 版本 |
 | 中 | 四个插件分别维护部署 Target | 共享依赖排除、入口、清单和原生资产规则可能漂移 |
@@ -294,13 +299,19 @@ StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 A
 
 **优先级：阻断；依赖：G3、G4**
 
+**状态：已完成（2026-08-16）**。本次按封板前候选 SDK 的破坏式重定基线执行：删除
+模块和生命周期自报身份、旧 `ConfigureServices` 以及全部策略/View 隐式发现；宿主与四插件已经
+统一迁移到受控 Context，Builder 全量校验后原子发布不可变 Registry。最终 Release 构建 0 警告、
+0 错误，三套宿主测试 283/283 通过，SDK 最终样例/旧候选拒绝/UI Profile 包门禁通过。详细设计见
+[G5 显式贡献与 Plugin Registry](../plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)。
+
 - 目标：Document、Tool、View 和生命周期均由插件模块显式注册，清单是插件身份唯一事实源。
-- 修改边界：模块注册 API、HostExtensionRegistry、ViewLocator 和生命周期归属解析。
+- 修改边界：模块注册 API、Plugin Registry、ViewLocator 和生命周期归属解析。
 - 实施要求：提供 SDK 注册扩展，例如注册 Document 策略、Tool 策略、View 映射和生命周期；宿主不再通过 AppDomain 或名称替换猜测贡献。
-- Registry 至少保存：清单描述、入口程序集、状态、Document/Tool/View 贡献、生命周期和诊断摘要。
+- Registry 保存：清单描述、入口程序集、模块类型、Document/Tool/View 贡献和 manifest 所属生命周期；运行状态与诊断仍由专门组件维护并在状态 ViewModel 中投影。
 - 验收：未显式注册的策略或 View 不会被激活；重复贡献在 UI 启动前形成确定性诊断；View 创建异常进入统一诊断而非被静默吞掉。
-- 验收命令：执行 `dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release --filter FullyQualifiedName~ExplicitContribution` 和 `dotnet test Host/MyAvaloniaManagement.UiTests/MyAvaloniaManagement.UiTests.csproj -c Release --filter FullyQualifiedName~ViewRegistration`。
-- 完成定义：插件程序集只扫描一次，后续菜单、Dock、View 和状态页读取同一不可变注册快照。
+- 验收命令：执行完整解决方案 Release 构建、三套宿主测试与 `scripts/Test-PluginSdkPackage.ps1`；专项行为由 `ExplicitContributionAndPluginRegistryTests`、插件加载与 ViewLocator 测试覆盖。
+- 完成定义：模块目录只为严格模块预检读取类型；后续菜单、Dock、View、生命周期和状态页读取同一不可变注册快照。
 
 ### G6：保护宿主 DI
 

@@ -30,11 +30,11 @@ public sealed class StatusToolViewModel : Tool
 }
 ```
 
-上一章的模块注册必须保持：
+在模块的 `Configure` 中把 ViewModel 注册为插件私有服务：
 
 ```csharp
-services.AddScoped<WelcomeDocumentViewModel>();
-services.AddSingleton<StatusToolViewModel>();
+context.Services.AddScoped<WelcomeDocumentViewModel>();
+context.Services.AddSingleton<StatusToolViewModel>();
 ```
 
 Document 表示一次独立工作会话，因此每个标签从新的 DI Scope 解析。Tool 表示宿主级面板，因此注册为 Singleton；隐藏再恢复时仍是同一个对象。
@@ -124,9 +124,9 @@ public sealed class StatusToolStrategy : IToolCreationStrategy
 
 策略返回模块中注册的 Singleton，不应在每次调用时创建新 Tool。宿主会按元数据放置 Tool，并把关闭操作处理为隐藏；重新显示时仍返回原有实例。真实实现参见 [`MyCustomToolStrategy`](../../Plugins/MyPlugTest/MyPlugTest/Create/MyCustomToolStrategy.cs) 和 [`MyCustomToolViewModel`](../../Plugins/MyPlugTest/MyPlugTest/ViewModels/MyCustomToolViewModel.cs)。
 
-## 4. 按命名约定添加 View
+## 4. 添加 View
 
-宿主把 `QuickStartPlugin.ViewModels.WelcomeDocumentViewModel` 映射为 `QuickStartPlugin.Views.WelcomeDocumentView`，Tool 同理。View 必须是非抽象 Avalonia `Control`，并且能通过 public 无参构造创建。
+View 必须是非抽象 Avalonia `Control`，并且能通过 public 无参构造创建。宿主不扫描程序集，也不再把 `ViewModel` 名称替换成 `View` 猜测类型；映射会在第 5 节由模块显式登记。
 
 建立 `Views/WelcomeDocumentView.axaml`：
 
@@ -170,7 +170,41 @@ public partial class WelcomeDocumentView : UserControl
 
 Tool 的 code-behind 类名改为 `StatusToolView`。不要给 View 注入构造参数；业务依赖应进入由 DI 创建的 ViewModel。可对照 [`TestWelcomeView.axaml`](../../Plugins/MyPlugTest/MyPlugTest/Views/TestWelcomeView.axaml)、[`TestWelcomeView.axaml.cs`](../../Plugins/MyPlugTest/MyPlugTest/Views/TestWelcomeView.axaml.cs) 和 [`MyCustomToolView.axaml`](../../Plugins/MyPlugTest/MyPlugTest/Views/MyCustomToolView.axaml)。
 
-## 5. 构建并观察结果
+## 5. 显式登记全部贡献
+
+把唯一模块更新为完整版本：
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagementCommon.Plugin;
+using QuickStartPlugin.Create;
+using QuickStartPlugin.ViewModels;
+using QuickStartPlugin.Views;
+
+namespace QuickStartPlugin.Plugin;
+
+public sealed class QuickStartPluginModule : IPluginModule
+{
+    public void Configure(IPluginRegistrationContext context)
+    {
+        // Services 只承载插件的私有业务对象和 ViewModel 生命周期。
+        context.Services.AddScoped<WelcomeDocumentViewModel>();
+        context.Services.AddSingleton<StatusToolViewModel>();
+
+        // 四类宿主可见贡献必须逐项登记；未登记类型不会进入菜单、Dock 或 ViewLocator。
+        context.AddDocument<WelcomeDocumentStrategy>();
+        context.AddTool<StatusToolStrategy>();
+        context.AddView<WelcomeDocumentViewModel, WelcomeDocumentView>();
+        context.AddView<StatusToolViewModel, StatusToolView>();
+    }
+}
+```
+
+`AddDocument`、`AddTool` 会把策略登记为根级单例并在 Registry 发布前激活、读取一次元数据。
+`AddView` 保存 ViewModel 类型到无参 View 工厂的映射，控件只在 DataTemplate 实际请求时创建。
+只有全局 DataTemplate 动态解析的根 View 需要登记；由 XAML 直接嵌套创建的内部控件不进入 Registry。
+
+## 6. 构建并观察结果
 
 按上一章的顺序重新构建 Host 和插件，再以 `--no-build` 启动 Host：
 

@@ -1,25 +1,21 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace MyAvaloniaManagementCommon.Plugin;
 
 /// <summary>
-/// 插件选择接入宿主依赖注入容器时使用的可选入口。
-/// <para>
-/// 该接口采用显式接入设计：只有实现此接口的插件程序集才会在宿主构建
-/// <see cref="IServiceProvider"/> 前获得服务注册机会。未实现此接口的历史插件仍由
-/// 原有的无参构造函数和创建策略实例化，宿主不会尝试解析其内部依赖或改变初始化时机。
-/// </para>
+/// Managed Plugin 的唯一组合入口。
 /// </summary>
+/// <remarks>
+/// 宿主只会创建已经通过严格清单预检的模块，并为它提供绑定当前清单身份的
+/// <see cref="IPluginRegistrationContext"/>。模块不能自行声明插件身份，也不能在宿主启动后
+/// 再追加贡献；这使一次启动中的服务和扩展集合能够在 UI 出现前完整校验并冻结。
+/// </remarks>
 public interface IPluginModule
 {
     /// <summary>
-    /// 插件的稳定标识，用于模块排序、生命周期状态查询和错误诊断。
+    /// 注册插件私有服务以及宿主可见的显式贡献。
     /// </summary>
-    PluginId PluginId { get; }
-
-    /// <summary>
-    /// 将插件需要由宿主统一管理的服务注册到根级依赖注入容器。
-    /// 此方法在根级 ServiceProvider 构建前且每次进程启动只调用一次。
-    /// </summary>
-    void ConfigureServices(IServiceCollection services);
+    /// <param name="context">
+    /// 由宿主创建的一次性注册上下文。其 <see cref="IPluginRegistrationContext.PluginId"/>
+    /// 来自已经验证的 <c>plugin.manifest.json</c>，是本次注册的唯一身份事实。
+    /// </param>
+    void Configure(IPluginRegistrationContext context);
 }

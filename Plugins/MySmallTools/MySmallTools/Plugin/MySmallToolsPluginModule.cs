@@ -7,6 +7,8 @@ using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Business.SecretVideoPlayer.Operations;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.ViewModels.SecretVideoPlayer;
+using MySmallTools.InitPlug.SecretVideoPlayer;
+using MySmallTools.Views.SecretVideoPlayer;
 
 namespace MySmallTools.Plugin;
 
@@ -20,10 +22,9 @@ namespace MySmallTools.Plugin;
 /// </remarks>
 public sealed class MySmallToolsPluginModule : IPluginModule
 {
-    public PluginId PluginId => DocumentTypeIdConstant.PluginId;
-
-    public void ConfigureServices(IServiceCollection services)
+    public void Configure(IPluginRegistrationContext context)
     {
+        var services = context.Services;
         // 平台能力、运行时布局和部署探针都是进程级无状态事实源。运行时初始化器仍保持
         // 惰性，并且只消费已经通过检查的插件私有绝对目录。
         services.AddSingleton<IPlaybackRuntimeLayoutProvider,
@@ -122,5 +123,13 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddScoped<IVideoDecryptionService, VideoDecryptionService>();
         services.AddScoped<VideoDecryptorViewModel>();
 
+        context.AddDocument<SecretVideoDocumentStrategy>();
+        context.AddDocument<SecretVideoLibraryDocumentStrategy>();
+        context.AddDocument<VideoEncryptorDocumentStrategy>();
+        context.AddDocument<VideoDecryptorDocumentStrategy>();
+        context.AddView<SecretVideoPlayerViewModel, SecretVideoPlayerView>();
+        context.AddView<SecretVideoLibraryViewModel, SecretVideoLibraryView>();
+        context.AddView<VideoEncryptorViewModel, VideoEncryptorView>();
+        context.AddView<VideoDecryptorViewModel, VideoDecryptorView>();
     }
 }

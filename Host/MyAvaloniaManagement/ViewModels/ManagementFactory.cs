@@ -31,7 +31,7 @@ namespace MyAvaloniaManagement.ViewModels;
 /// </remarks>
 internal sealed class ManagementFactory : Factory
 {
-    private readonly HostExtensionRegistry _extensions;
+    private readonly PluginRegistry _extensions;
     private IRootDock? _rootDock;
     private DocumentDock? _documentDock;
     private ITool?  _plugGroupMenuTool;
@@ -81,7 +81,7 @@ internal sealed class ManagementFactory : Factory
     /// 从而使工厂的依赖关系可验证，也避免测试和多容器场景取到错误实例。
     /// </remarks>
     internal ManagementFactory(
-        HostExtensionRegistry extensions,
+        PluginRegistry extensions,
         DocumentScopeManager documentScopeManager,
         IMessengerService messengerService,
         DocumentCloseCoordinator? documentCloseCoordinator = null,

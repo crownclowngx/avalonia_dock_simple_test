@@ -19,7 +19,8 @@ public sealed class G8DocumentScopeIsolationTests
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());
-        new MySmallToolsPluginModule().ConfigureServices(services);
+        new MySmallToolsPluginModule().Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.my-small-tools"), services));
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {

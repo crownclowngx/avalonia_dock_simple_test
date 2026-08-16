@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.Message;
 using MyPlugTest.Create;
 using MyPlugTest.Models;
@@ -226,7 +227,8 @@ public sealed class ExcelGetUrlGeneratorTests
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());
-        new MyPlugTestPluginModule().ConfigureServices(services);
+        new MyPlugTestPluginModule().Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.my-plug-test"), services));
 
         Assert.Equal(
             ServiceLifetime.Scoped,

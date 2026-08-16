@@ -10,23 +10,25 @@ using BiliDownloader.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
 using BiliDownloader.Constants;
+using BiliDownloader.Create;
+using BiliDownloader.Views;
 
 namespace BiliDownloader.Plugin;
 
 /// <summary>
 /// BiliDownloader 选择接入宿主管理生命周期的模块入口。
 /// <para>
-/// 本类型只注册 BiliDownloader 自己的服务，不会扫描、替换或初始化其他插件。
-/// 其他未声明 <see cref="IPluginModule"/> 的程序集仍按宿主原有无参策略流程运行。
+/// 本类型只注册 BiliDownloader 自己的服务和显式贡献，不会扫描、替换或初始化其他插件。
+/// 宿主只消费下方通过 <see cref="IPluginRegistrationContext"/> 声明的贡献；没有唯一模块或没有
+/// 显式登记的类型不会进入菜单、Dock、View 映射或生命周期计划。
 /// </para>
 /// </summary>
 public sealed class BiliDownloaderPluginModule : IPluginModule
 {
-    public PluginId PluginId => SaveDocumentTypeIdConstant.PluginId;
-
     /// <inheritdoc />
-    public void ConfigureServices(IServiceCollection services)
+    public void Configure(IPluginRegistrationContext context)
     {
+        var services = context.Services;
         services.AddSingleton<IBiliDataPaths, BiliDataPaths>();
         services.AddSingleton<IBiliLocalStateInitializer, BiliLocalStateInitializer>();
 
@@ -181,9 +183,17 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IDownloadSubmissionService, DownloadSubmissionService>();
         services.AddSingleton<IDownloadFailureActionService, DownloadFailureActionService>();
         services.AddSingleton<BiliSchedulerToolViewModel>();
+        services.AddSingleton<Func<BiliSchedulerToolViewModel>>(provider =>
+            () => provider.GetRequiredService<BiliSchedulerToolViewModel>());
         services.AddScoped<BiliDownloaderViewModel>();
 
-        services.AddSingleton<IPluginLifecycle, BiliDownloaderPluginLifecycle>();
+        // 生命周期、创建策略和根级 View 都通过同一个 manifest 绑定上下文声明。类型存在于
+        // 程序集本身不再等同于被宿主公开，新增扩展必须在代码评审中显式出现在这里。
+        context.AddDocument<BiliDownloaderDocumentStrategy>();
+        context.AddTool<BiliSchedulerToolStrategy>();
+        context.AddView<BiliDownloaderViewModel, BiliDownloaderView>();
+        context.AddView<BiliSchedulerToolViewModel, BiliSchedulerToolView>();
+        context.AddLifecycle<BiliDownloaderPluginLifecycle>();
     }
 }
 
@@ -215,8 +225,6 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
         _ffmpeg = ffmpeg;
         _globalBandwidthLimit = globalBandwidthLimit;
     }
-
-    public PluginId PluginId => SaveDocumentTypeIdConstant.PluginId;
 
     public int Order => 100;
 

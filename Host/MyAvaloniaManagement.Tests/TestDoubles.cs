@@ -6,6 +6,7 @@ using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
@@ -37,7 +38,8 @@ internal sealed class TestHostContext : IDisposable
         Interactions = new TestDocumentInteractionService();
         Messenger = new TestMessengerService();
         var services = new ServiceCollection();
-        services.AddApplicationServices();
+        var registryBuilder = new PluginRegistryBuilder();
+        services.AddApplicationServices(registryBuilder);
         services.AddViewModels();
         services.AddSingleton<IHostStorageService>(Storage);
         services.AddSingleton<IDocumentInteractionService>(Interactions);
@@ -50,10 +52,41 @@ internal sealed class TestHostContext : IDisposable
                 AppearanceSettingsStore.SettingsFileName)));
         services.AddSingleton(PluginModuleCatalog.Discover([]));
         foreach (var strategy in documentStrategies ?? [])
-            services.AddSingleton(typeof(IDocumentCreationStrategy), strategy);
+        {
+            registryBuilder.AddDocumentInstance(HostExtensionIds.Owner, strategy);
+        }
         foreach (var strategy in toolStrategies ?? [])
-            services.AddSingleton(typeof(IToolCreationStrategy), strategy);
+        {
+            registryBuilder.AddToolInstance(HostExtensionIds.Owner, strategy);
+        }
+        var customServiceStart = services.Count;
         configureServices?.Invoke(services);
+        // 旧测试通过 DI 工厂创建 scoped 策略。生产模块已禁止这种绕行；测试组合根在构建前
+        // 将新增的接口描述符显式提升为 Builder 声明，以继续验证 Document Scope 行为。
+        for (var index = services.Count - 1; index >= customServiceStart; index--)
+        {
+            var descriptor = services[index];
+            if (descriptor.ServiceType == typeof(IDocumentCreationStrategy))
+            {
+                services.RemoveAt(index);
+                registryBuilder.AddDocumentFactoryForTests(
+                    HostExtensionIds.Owner,
+                    descriptor.ImplementationType ??
+                    descriptor.ImplementationInstance?.GetType() ??
+                    typeof(IDocumentCreationStrategy),
+                    provider => (IDocumentCreationStrategy)CreateFromDescriptor(provider, descriptor));
+            }
+            else if (descriptor.ServiceType == typeof(IToolCreationStrategy))
+            {
+                services.RemoveAt(index);
+                registryBuilder.AddToolFactoryForTests(
+                    HostExtensionIds.Owner,
+                    descriptor.ImplementationType ??
+                    descriptor.ImplementationInstance?.GetType() ??
+                    typeof(IToolCreationStrategy),
+                    provider => (IToolCreationStrategy)CreateFromDescriptor(provider, descriptor));
+            }
+        }
 
         Provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -88,6 +121,13 @@ internal sealed class TestHostContext : IDisposable
     /// </summary>
     public MainWindowViewModel CreateMainWindowViewModel() =>
         Provider.GetRequiredService<MainWindowViewModel>();
+
+    private static object CreateFromDescriptor(
+        IServiceProvider provider,
+        ServiceDescriptor descriptor) =>
+        descriptor.ImplementationInstance ??
+        descriptor.ImplementationFactory?.Invoke(provider) ??
+        ActivatorUtilities.CreateInstance(provider, descriptor.ImplementationType!);
 
     /// <summary>
     /// 释放服务容器并删除本测试创建的临时目录。

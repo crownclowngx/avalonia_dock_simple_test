@@ -88,7 +88,7 @@ public sealed class DocumentScopeManagerTests
 
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var extensions = new HostExtensionRegistry([], []);
+        var extensions = new PluginRegistry([], []);
         var factory = new ManagementFactory(
             extensions,
             manager,

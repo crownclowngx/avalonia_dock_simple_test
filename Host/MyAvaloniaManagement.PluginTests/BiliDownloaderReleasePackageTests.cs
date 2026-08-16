@@ -30,7 +30,10 @@ public sealed class BiliDownloaderReleasePackageTests
         var catalog = PluginModuleCatalog.Discover([assembly]);
 
         var module = Assert.Single(catalog.Modules);
-        Assert.Equal("myavalonia.plugin.bili-downloader", module.PluginId.Value);
+        Assert.True(PluginManifestReader.TryRead(
+            pluginRoot, out var manifest, out var errorCode, out var errorDetail),
+            $"插件清单无效：{errorCode}: {errorDetail}");
+        Assert.Equal("myavalonia.plugin.bili-downloader", manifest!.PluginId.Value);
         Assert.True(typeof(IPluginModule).IsAssignableFrom(module.GetType()));
         // 发布脚本的 staging 只允许 win-x64；普通构建目录仍保留跨平台资产，
         // 且独立项目输出不复制发布目标筛选出的全部私有依赖。因此仅在显式候选模式下

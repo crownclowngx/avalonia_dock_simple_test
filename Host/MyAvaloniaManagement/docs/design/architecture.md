@@ -4,8 +4,8 @@
 
 `MyAvaloniaManagement` 是 Avalonia 桌面宿主，负责：
 
-- 组合依赖、发现插件并管理插件生命周期；
-- 发现 Document/Tool 策略并分派创建请求；
+- 组合依赖、发现插件模块并管理插件生命周期；
+- 收集显式 Document/Tool/View/Lifecycle 贡献并分派创建请求；
 - 建立和维护四向 Dock 工作区；
 - 编排文档打开、保存和关闭后的资源释放；
 - 读取、迁移、校验和保存布局 V1；
@@ -30,11 +30,14 @@ flowchart TB
     Program["Program<br/>兼容启动入口"] --> Runtime["HostRuntime<br/>Composition Root"]
     Runtime --> Loader["AssemblyLoaderHelper<br/>插件程序集快照"]
     Runtime --> Catalog["PluginModuleCatalog<br/>Managed 模块"]
+    Runtime --> RegistryBuilder["PluginRegistryBuilder<br/>收集 / 激活 / 校验"]
     Runtime --> Container["根 DI 容器"]
     Runtime --> Lifecycle["PluginLifecycleManager"]
 
     Container --> Factory["ManagementFactory<br/>Host internal Dock 协调器"]
-    Factory --> Registry["HostExtensionRegistry<br/>策略与元数据注册表"]
+    Container --> Registry["PluginRegistry<br/>不可变贡献快照"]
+    RegistryBuilder --> Registry
+    Factory --> Registry
     Factory --> Builder["DockWorkspaceBuilder<br/>初始结构"]
     Factory --> Navigator["DockTreeNavigator<br/>统一查询"]
     Factory --> ToolCoordinator["ToolDockCoordinator<br/>工具状态流程"]
@@ -68,14 +71,15 @@ flowchart TB
 
 [`HostRuntime`](../../Business/Helpers/HostRuntime.cs) 按以下顺序启动：
 
-1. 注册宿主核心服务和 ViewModel；
+1. 创建 `PluginRegistryBuilder`，注册宿主核心服务、ViewModel 和宿主显式贡献；
 2. 读取全部插件清单并检查 Host API、Common 版本与全局身份；
 3. 验证入口 `.deps.json`，建立 ALC 并生成严格类型与唯一模块快照；
-4. 实例化已预检的 `IPluginModule` 并二次核对清单身份；
-5. 允许 Managed 插件向 `IServiceCollection` 注册服务；
+4. 实例化已预检的 `IPluginModule`；身份只取自已经验证的 manifest；
+5. 按 manifest `pluginId` 顺序执行 `Configure(IPluginRegistrationContext)`，分别收集插件私有服务与显式贡献；
 6. 以 `ValidateScopes`、`ValidateOnBuild` 构建根容器；
-7. 初始化 `PluginLifecycleManager`；
-8. 将容器交给 Avalonia 启动路径。
+7. 激活贡献、读取一次元数据并完成全量校验，成功后发布不可变 `PluginRegistry`；
+8. 显式解析 Registry、`ManagementFactory` 与生命周期计划，再初始化 `PluginLifecycleManager`；
+9. 将完全组合成功的容器交给 Avalonia 启动路径。
 
 关闭时顺序反转：先关闭成功初始化的插件，再释放根容器。这个所有权对称性防止 `Program`、`App` 和插件生命周期管理器分别持有一部分清理责任。
 
@@ -110,23 +114,25 @@ flowchart TB
 
 ### 4.2 Managed-only 模块与激活
 
-[`PluginModulePreflight`](../../Business/Helpers/PluginModulePreflight.cs) 在不实例化插件对象的前提下验证唯一 `IPluginModule` 及其 public 无参构造；结构错误只隔离当前目录。随后 [`PluginModuleCatalog`](../../Business/Helpers/PluginModuleCatalog.cs) 只实例化快照中的模块，并在服务注册前核对模块 `PluginId` 与清单。Host 和插件的 Document/Tool 策略全部通过 `ActivatorUtilities` 激活，无模块程序集和 public 无参策略不再形成第二条路径。
+[`PluginModulePreflight`](../../Business/Helpers/PluginModulePreflight.cs) 在不实例化插件对象的前提下验证唯一 `IPluginModule` 及其 public 无参构造；结构错误只隔离当前目录。随后 [`PluginModuleCatalog`](../../Business/Helpers/PluginModuleCatalog.cs) 只实例化快照中的模块，并把已经验证的 manifest `PluginId` 注入独立 [`PluginRegistrationContext`](../../Business/Helpers/PluginRegistrationContext.cs)。模块不再声明身份，也不能设置或覆盖 Context 的身份。
 
-生产发现要求入口及引用程序集完成严格类型预检，失败时隔离整个目录，避免同一插件出现部分类型成功。模块身份或程序集版本与清单不一致属于发布物自相矛盾，在 `ConfigureServices` 前阻断组合。
+模块只在组合阶段调用一次 `Configure`。`context.Services` 用于插件私有业务服务；Document、Tool、View 和 Lifecycle 必须调用专用 `Add*` 方法。未登记类型即使存在于入口程序集也不会被宿主发现；通过 `Services` 直接登记贡献接口会以 `CONTRIBUTION_REGISTRATION_BYPASS` 阻断组合。完整宿主服务覆盖保护由 G6 完成。
 
 ### 4.3 单一扩展注册表
 
-[`HostExtensionRegistry`](../../Business/Helpers/HostExtensionRegistry.cs) 对宿主程序集和插件程序集做一次类型遍历，同时发现 Document 与 Tool 策略。它拥有：
+[`PluginRegistryBuilder`](../../Business/Helpers/PluginRegistryBuilder.cs) 只收集宿主和模块通过受控 Context 提交的贡献声明。根容器建立后，它激活 Document、Tool、Lifecycle，读取一次元数据并执行全量校验；无诊断时才提交 [`PluginRegistry`](../../Business/Helpers/PluginRegistry.cs)。Registry 统一拥有：
 
+- manifest、入口程序集和模块类型快照；
+- manifest 所属的 Document、Tool、View 和 Lifecycle；
 - 策略 ID 到创建策略的映射；
 - Document/Tool 元数据快照；
 - Document 菜单入口展开；
-- 统一 DI 策略创建；
-- Builder → Validate → Commit 三阶段原子发布。
+- ViewModel 类型到无参 View 工厂的映射；
+- 生命周期实例及其 manifest 所有权。
 
-元数据在注册时只读取一次，避免属性访问包含计算或副作用时产生不一致。注册表先扫描并激活候选策略、各读取一次元数据、校验主 ID、别名与命名空间的全量碰撞，无诊断时才一次性发布只读注册表。重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 均形成排序稳定的结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义。
+元数据在提交前只读取一次，避免属性访问包含计算或副作用时产生不一致。重复贡献类型、ViewModel 映射、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 均形成结构化诊断，并以 `HostCompositionException` 阻断启动；失败的 Builder 和容器整体丢弃，不发布部分菜单或生命周期。
 
-[`ViewLocator`](../../ViewLocator.cs) 复用已经加载到当前进程的程序集和同一局部类型容错逻辑，不再次承担插件部署扫描职责。
+[`ViewLocator`](../../ViewLocator.cs) 是 DI 管理的普通实例，只读取当前 `PluginRegistry`。它不读取 AppDomain、插件目录或类型名称，不提供 `ViewModel` → `View` 字符串回退。未登记 Dockable 显示明确占位；View 工厂失败记录 `VIEW_CREATION_FAILED` 并显示占位，不持久化插件异常正文。
 
 ## 5. `ManagementFactory` 的 Facade 边界
 
@@ -134,7 +140,7 @@ flowchart TB
 
 | 协作者 | 单一职责 | 不负责 |
 | --- | --- | --- |
-| `HostExtensionRegistry` | 策略、元数据、菜单和创建分派 | Dock 树状态 |
+| `PluginRegistry` | 清单所有权、贡献、元数据、View 映射、菜单和创建分派 | 组合写入、Dock 树状态、生命周期运行状态 |
 | `DockWorkspaceBuilder` | 创建稳定四向初始布局 | 工具恢复和激活 |
 | `DockTreeNavigator` | Dock、Document、Tool、Pinned/Hidden 查询 | 修改业务状态 |
 | `ToolDockCoordinator` | 工具显示、恢复、停靠点重建和纵向区域归一化 | 策略发现 |
@@ -234,7 +240,7 @@ sequenceDiagram
 | Document 控件缓存 | `DocumentControlRecycling` | 对应 Document 确认关闭后移除 |
 | 布局快照待应用状态 | `DockLayoutLifecycle` | 首次 Apply 时原子取出 |
 
-当前仓库 Managed Document 均通过 `IDocumentScopeFactory` 建立独立 Scope。未来插件若绕过该工厂自行创建 Document，宿主无法替它拥有该实例的局部依赖；这属于 Document 注册契约由 G5 进一步收口的边界，不是 Legacy 激活能力。
+当前仓库 Managed Document 均通过 `IDocumentScopeFactory` 建立独立 Scope。显式注册保证宿主知道策略归属，但策略若绕过该工厂自行创建 Document，宿主仍无法替它拥有该实例的局部依赖；插件作者必须遵守 Document Scope 契约。
 
 ## 10. 测试映射
 
@@ -242,7 +248,7 @@ sequenceDiagram
 | --- | --- |
 | public 签名漂移 | `PublicApiContractTests` |
 | 插件并发扫描、可变缓存泄漏 | `InternalRefactorTests` |
-| Managed-only 拒绝、模块所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、内部注册表测试 |
+| Managed-only 拒绝、显式贡献所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、`ExplicitContributionAndPluginRegistryTests`、内部注册表测试 |
 | 并发打开、保存失败、关闭确认与坏文件恢复 | `MainWindowViewModelTests`、`DocumentPersistenceV1Tests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |

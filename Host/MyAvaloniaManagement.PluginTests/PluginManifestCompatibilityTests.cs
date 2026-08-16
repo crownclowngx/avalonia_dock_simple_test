@@ -230,7 +230,7 @@ public sealed class PluginManifestCompatibilityTests
     }
 
     [Fact]
-    public void 模块PluginId与清单不一致时在服务注册前中止组合()
+    public void 模块上下文身份只来自已经验证的清单()
     {
         var assembly = typeof(ManifestMismatchModule).Assembly;
         var manifest = CreateManifestModel(
@@ -255,12 +255,16 @@ public sealed class PluginManifestCompatibilityTests
             },
             diagnostics: []);
 
-        var exception = Assert.Throws<HostCompositionException>(() =>
-            PluginModuleCatalog.Discover(snapshot));
+        ManifestMismatchModule.ObservedPluginId = null;
+        var catalog = PluginModuleCatalog.Discover(snapshot);
+        var services = new ServiceCollection();
+        var builder = new PluginRegistryBuilder();
+        using var diagnostics = HostDiagnosticSession.Start(
+            Path.Combine(Path.GetTempPath(), $"manifest-identity-{Guid.NewGuid():N}"));
 
-        Assert.Contains(
-            exception.Diagnostics,
-            item => item.Code == HostDiagnosticCodes.PluginManifestDescriptionMismatch);
+        catalog.Configure(services, builder, diagnostics);
+
+        Assert.Equal(manifest.PluginId, ManifestMismatchModule.ObservedPluginId);
     }
 
     private static PluginManifest CreateManifestModel(
@@ -321,10 +325,9 @@ public sealed class PluginManifestCompatibilityTests
 
     public sealed class ManifestMismatchModule : IPluginModule
     {
-        public PluginId PluginId { get; } =
-            new("myavalonia.plugin.module-identity");
+        internal static PluginId? ObservedPluginId { get; set; }
 
-        public void ConfigureServices(IServiceCollection services) =>
-            throw new InvalidOperationException("身份不一致时不得执行服务注册。");
+        public void Configure(IPluginRegistrationContext context) =>
+            ObservedPluginId = context.PluginId;
     }
 }

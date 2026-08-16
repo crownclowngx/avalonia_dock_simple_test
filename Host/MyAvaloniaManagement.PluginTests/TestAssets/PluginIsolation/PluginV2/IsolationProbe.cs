@@ -1,6 +1,5 @@
 using System;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
 using PluginIsolation.Dependency;
 
@@ -22,8 +21,6 @@ public static class IsolationProbe
 /// </summary>
 public sealed class IsolationPluginModule : IPluginModule
 {
-    public PluginId PluginId { get; } = new("myavalonia.plugin.isolation-v2");
-
-    public void ConfigureServices(IServiceCollection services) =>
-        ArgumentNullException.ThrowIfNull(services);
+    public void Configure(IPluginRegistrationContext context) =>
+        ArgumentNullException.ThrowIfNull(context);
 }

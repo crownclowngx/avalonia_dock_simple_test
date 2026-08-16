@@ -14,10 +14,11 @@ internal sealed record PluginLifecyclePlan(
 /// </summary>
 internal static class PluginLifecyclePlanBuilder
 {
-    internal static PluginLifecyclePlan Build(IEnumerable<IPluginLifecycle> lifecycles)
+    internal static PluginLifecyclePlan Build(
+        IEnumerable<PluginLifecycleRegistration> registrations)
     {
-        ArgumentNullException.ThrowIfNull(lifecycles);
-        var candidates = lifecycles.Select(CreateCandidate).ToArray();
+        ArgumentNullException.ThrowIfNull(registrations);
+        var candidates = registrations.Select(CreateCandidate).ToArray();
         var initialStates = new Dictionary<PluginId, PluginLifecycleState>();
         var duplicateIds = candidates
             .GroupBy(item => item.PluginId)
@@ -88,11 +89,12 @@ internal static class PluginLifecyclePlanBuilder
         return new PluginLifecyclePlan(TopologicalSort(nodes, cycleIds), initialStates);
     }
 
-    private static Candidate CreateCandidate(IPluginLifecycle lifecycle)
+    private static Candidate CreateCandidate(PluginLifecycleRegistration registration)
     {
-        ArgumentNullException.ThrowIfNull(lifecycle);
-        var pluginId = lifecycle.PluginId ??
-                       throw new ArgumentException("插件生命周期必须提供 PluginId。", nameof(lifecycle));
+        ArgumentNullException.ThrowIfNull(registration);
+        ArgumentNullException.ThrowIfNull(registration.PluginId);
+        ArgumentNullException.ThrowIfNull(registration.Lifecycle);
+        var lifecycle = registration.Lifecycle;
         var dependencies = lifecycle is IPluginLifecycleDependencies declaration
             ? (declaration.RequiredPluginIds ?? [])
                 .Where(id => id is not null)
@@ -100,7 +102,7 @@ internal static class PluginLifecyclePlanBuilder
                 .OrderBy(id => id.Value, StringComparer.Ordinal)
                 .ToArray()
             : [];
-        return new Candidate(lifecycle, pluginId, dependencies);
+        return new Candidate(lifecycle, registration.PluginId, dependencies);
     }
 
     private static HashSet<PluginId> FindCycleIds(

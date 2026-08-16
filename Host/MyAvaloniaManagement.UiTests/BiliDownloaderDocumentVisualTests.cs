@@ -215,7 +215,8 @@ public sealed class BiliDownloaderDocumentVisualTests
     {
         using var ui = new UiTestContext();
         var services = new ServiceCollection();
-        new BiliDownloaderPluginModule().ConfigureServices(services);
+        new BiliDownloaderPluginModule().Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.bili-downloader"), services));
         services.AddSingleton<IMessengerService>(ui.Messenger);
         services.AddSingleton<IBiliDataPaths>(new UiBiliDataPaths(
             Path.Combine(ui.TempDirectory, "BiliDownloader")));

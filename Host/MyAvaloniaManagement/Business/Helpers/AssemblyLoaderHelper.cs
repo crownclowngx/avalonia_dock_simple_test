@@ -310,7 +310,7 @@ internal static class AssemblyLoaderHelper
         try
         {
             // GetTypes 不会解析只出现在方法体中的程序集引用。预先解析完整引用表，
-            // 才能在调用插件 ConfigureServices 前发现发布包遗漏的私有依赖。
+            // 才能在调用插件 Configure 前发现发布包遗漏的私有依赖。
             foreach (var reference in candidateAssembly.GetReferencedAssemblies())
             {
                 _ = loadContext.LoadFromAssemblyName(reference);

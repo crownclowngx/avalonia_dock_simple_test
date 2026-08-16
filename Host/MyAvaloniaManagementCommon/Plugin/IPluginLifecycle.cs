@@ -1,19 +1,14 @@
 namespace MyAvaloniaManagementCommon.Plugin;
 
 /// <summary>
-/// 由宿主统一管理的可选插件生命周期。
-/// <para>
-/// 只有插件模块主动注册到依赖注入容器中的实现才会参与初始化和关闭；
-/// 历史插件不会因为公共程序集新增了此接口而自动获得生命周期回调。
-/// </para>
+/// 由宿主统一管理的可选插件级后台生命周期。
 /// </summary>
+/// <remarks>
+/// 实现不声明插件身份；宿主根据调用 <see cref="IPluginRegistrationContext.AddLifecycle{TLifecycle}"/>
+/// 时绑定的 manifest 身份建立生命周期计划。没有显式登记的实现不会获得回调。
+/// </remarks>
 public interface IPluginLifecycle
 {
-    /// <summary>
-    /// 与模块一致的稳定插件标识。
-    /// </summary>
-    PluginId PluginId { get; }
-
     /// <summary>
     /// 初始化顺序。数值较小的插件先初始化，关闭时按成功初始化顺序反向执行。
     /// </summary>

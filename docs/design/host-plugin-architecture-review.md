@@ -72,22 +72,26 @@ sequenceDiagram
     participant L as AssemblyLoaderHelper
     participant C as PluginModuleCatalog
     participant DI as 根 IServiceProvider
+    participant B as PluginRegistryBuilder
+    participant E as PluginRegistry
     participant LM as PluginLifecycleManager
-    participant E as HostExtensionRegistry
     participant UI as Avalonia / ManagementFactory
 
     P->>R: Create
-    R->>R: 注册宿主核心服务
+    R->>B: 注册宿主显式贡献
     R->>L: 获取 Controls 插件程序集快照
     L-->>R: 清单、deps、类型、唯一模块不可变快照
     R->>C: 实例化已预检 IPluginModule
-    C->>DI: ConfigureServices(IServiceCollection)
+    C->>B: Configure(IPluginRegistrationContext)
+    C->>DI: 注册插件私有服务
     R->>DI: BuildServiceProvider + ValidateScopes/ValidateOnBuild
+    R->>B: 激活并全量校验贡献
+    B-->>E: 原子发布不可变 Registry
     R->>LM: InitializeAllAsync
     LM-->>R: 记录 Ready 或 Failed
     P->>UI: 启动 Avalonia
-    UI->>E: 从同一程序集快照发现 Document / Tool 策略
-    E-->>UI: 注册表、元数据和创建分派
+    UI->>E: 查询显式 Document / Tool / View 贡献
+    E-->>UI: 元数据、View 工厂和创建分派
     UI->>UI: 建立四向 Dock
     UI->>UI: 窗口 Opened 后应用待恢复布局
     UI->>UI: 窗口 Closing 时保存布局
@@ -99,17 +103,17 @@ sequenceDiagram
 
 **[代码事实]** `HostRuntime` 是内部 Composition Root，统一拥有服务注册、插件发现、容器构建、生命周期初始化、Avalonia App 工厂和反向关闭；`Program.Main` 只负责进程编排。App 通过内部桌面 Shell 构造注入，根容器启用了 `ValidateScopes` 与 `ValidateOnBuild`。参见 [`Program.cs`](../../Host/MyAvaloniaManagement/Program.cs)、[`HostRuntime.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/HostRuntime.cs) 和 [`PluginLifecycleManager.cs`](../../Host/MyAvaloniaManagementCommon/Plugin/PluginLifecycleManager.cs)。
 
-**[代码事实]** `AssemblyLoaderHelper` 已收口为 Host internal 加载边界，内部按规范化插件根目录使用线程安全快照；同一根目录只扫描一次。清单入口必须携带同名 `.deps.json`，每个插件目录建立独立且不可回收的 `PluginLoadContext`；加载器不注册全局 `AssemblyResolve`、不递归索引 DLL，也没有跨插件简单名称缓存。类型预检后还会在不实例化插件对象的前提下验证唯一模块结构。单个插件目录、依赖、类型或模块结构失败不会终止其他插件。`HostExtensionRegistry` 和 `ViewLocator` 复用已验证入口程序集。
+**[代码事实]** `AssemblyLoaderHelper` 已收口为 Host internal 加载边界，内部按规范化插件根目录使用线程安全快照；同一根目录只扫描一次。清单入口必须携带同名 `.deps.json`，每个插件目录建立独立且不可回收的 `PluginLoadContext`；加载器不注册全局 `AssemblyResolve`、不递归索引 DLL，也没有跨插件简单名称缓存。类型预检后还会在不实例化插件对象的前提下验证唯一模块结构。单个插件目录、依赖、类型或模块结构失败不会终止其他插件。后续贡献只来自模块的显式注册，不复用程序集快照扫描策略或 View。
 
 ### 2.2 Managed-only 为唯一模型
 
 | 入口要求 | 策略构造 | 可用能力 | 当前状态 |
 | --- | --- | --- | --- |
-| 严格清单、同名 deps、唯一 `IPluginModule` | `ActivatorUtilities` 使用宿主 DI 构造 | DI、Document/Tool、可选 `IPluginLifecycle` | 四个现有插件均采用且为唯一支持路径 |
+| 严格清单、同名 deps、唯一 `IPluginModule` | Context 显式登记，根 DI 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | 四个现有插件均采用且为唯一支持路径 |
 
-**[代码事实]** `PluginModulePreflight` 要求入口恰好存在一个具体模块并具有 public 无参构造；`IPluginModule.ConfigureServices(IServiceCollection)` 随后在根容器构建前注册服务。Document/Tool 策略统一使用 DI，可只保留表达真实依赖的构造。参见 [`IPluginModule.cs`](../../Host/MyAvaloniaManagementCommon/Plugin/IPluginModule.cs)、[`PluginModulePreflight.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModulePreflight.cs) 和 [`PluginModuleCatalog.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModuleCatalog.cs)。
+**[代码事实]** `PluginModulePreflight` 要求入口恰好存在一个具体模块并具有 public 无参构造；`IPluginModule.Configure(IPluginRegistrationContext)` 随后在根容器构建前执行一次。manifest 是身份唯一事实源，模块和 Lifecycle 不再声明 `PluginId`。私有业务服务使用 `context.Services`，四类宿主贡献使用专用 `Add*` 方法。参见 [`IPluginModule.cs`](../../Host/MyAvaloniaManagementCommon/Plugin/IPluginModule.cs)、[`IPluginRegistrationContext.cs`](../../Host/MyAvaloniaManagementCommon/Plugin/IPluginRegistrationContext.cs)、[`PluginModulePreflight.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModulePreflight.cs) 和 [`PluginModuleCatalog.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModuleCatalog.cs)。
 
-**[代码事实]** `IPluginLifecycle` 是可选能力，不是每个 Managed Plugin 的必选空壳。当前只有 BiliDownloader 注册生命周期，用它启动、恢复和关闭下载协调器；DaTang 没有常驻后台任务，因此只注册模块而不注册生命周期。生命周期管理器支持可选 `IPluginLifecycleDependencies`、拓扑排序和统一初始化/关闭超时；未声明依赖时仍按 `Order`、`PluginId` 串行初始化。失败、超时和依赖阻塞不会影响独立分支，退出时只反向关闭成功初始化的实例。
+**[代码事实]** `IPluginLifecycle` 是可选能力，不是每个 Managed Plugin 的必选空壳。当前只有 BiliDownloader 显式登记生命周期，用它启动、恢复和关闭下载协调器；DaTang 没有常驻后台任务，因此不登记生命周期。生命周期身份来自 Registry 中 manifest 所有权；管理器支持可选 `IPluginLifecycleDependencies`、拓扑排序和统一初始化/关闭超时，未声明依赖时按 `Order`、manifest `PluginId` 串行初始化。失败、超时和依赖阻塞不会影响独立分支，退出时只反向关闭成功初始化的实例。
 
 **[架构判断]** v1 已冻结并实现为 Managed-only；Legacy 只在历史验收记录和持久化数据迁移语境中出现，不是插件接入方式。
 
@@ -132,7 +136,7 @@ sequenceDiagram
 ```mermaid
 flowchart TD
     User["用户从菜单或文件入口创建 Document"] --> Host["ManagementFactory 兼容入口"]
-    Host --> Registry["HostExtensionRegistry 按 DocumentTypeId 分派策略"]
+    Host --> Registry["PluginRegistry 按 DocumentTypeId 分派显式策略"]
     Registry --> Strategy["IDocumentCreationStrategy.CreateDocument"]
     Strategy --> Choice["当前 Managed 策略统一调用 IDocumentScopeFactory"]
     Choice --> Scope["宿主创建独立 IServiceScope"]
@@ -232,8 +236,8 @@ flowchart LR
 | 通道 | 当前方式 | 已有价值 | 主要风险 |
 | --- | --- | --- | --- |
 | UI 扩展 | 插件直接返回 Dock `Document` / `Tool` | 简单、强类型、UI 自由度高 | 与 Dock 版本和宿主布局模型强耦合 |
-| 服务接入 | 插件直接获得 `IServiceCollection` | 可完整使用 Microsoft DI | 可注册或覆盖根服务，缺少能力边界 |
-| 创建入口 | `HostExtensionRegistry` 单次遍历发现策略；Document 可附加 Creation Intent | 元数据只读取一次，新增类型和多入口成本低 | 没有显式贡献清单；为兼容仍采用首次注册胜出 |
+| 服务接入 | 插件通过 Context 获得用于私有业务服务的 `IServiceCollection` | 可使用 Microsoft DI，并与贡献登记职责分离 | G6 前仍可能覆盖宿主非贡献核心服务 |
+| 创建入口 | Context 显式登记，`PluginRegistry` 原子发布；Document 可附加 Creation Intent | 未登记类型不可见，元数据只读一次，所有权明确 | 插件作者必须维护完整贡献清单 |
 | 消息通信 | `IMessengerService` 包装进程级 messenger | 广播和解耦方便 | 仍暴露底层 `IMessenger`，无消息归属和契约版本 |
 | 文件能力 | 宿主包装选择器、打开和保存外壳 | ViewModel 不直接依赖根窗口，Document 与布局均原子写入 | 公共保存契约仍缺少统一脏状态和关闭确认 |
 | 布局能力 | 宿主持有 Dock 树和 V1 快照 | 四向、隐藏、固定、恢复已有测试 | 插件缺失时整份布局回退 |
@@ -251,7 +255,7 @@ flowchart LR
 | .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.0、Dock 12.0.0.2；产品/SDK、构建和包版本分别由 `Directory.Version.props`、`Directory.Build.props`、`Directory.Packages.props` 集中管理 |
 | 插件目录扫描 | 已实现 | 按规范化根目录缓存线程安全快照；只加载清单声明且携带 deps 的入口，模块结构错误按目录隔离 |
 | Managed-only v1 | 已实现 | 四个现有插件均为 Managed；无模块激活、Legacy 所有者推断和历史加载 Facade 已删除 |
-| Document/Tool 策略 | 已实现 | `HostExtensionRegistry` 对程序集类型做一次遍历，以强类型主 ID 构建不可变注册表；元数据只读取一次，Document 支持可选多入口意图 |
+| 显式扩展贡献 | 已实现 | 宿主与四插件显式登记 Document/Tool/View/Lifecycle；Builder 激活、全量校验后原子发布不可变 `PluginRegistry`；未登记程序集类型不可见 |
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient；根容器启用构建和 Scope 验证 |
 | 插件生命周期 | 已实现 V1 | 顺序初始化、反序关闭、幂等、失败隔离、超时、依赖图和只读插件状态 Tool 均已有测试；仍不支持运行时重试、禁用或热卸载 |
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
@@ -317,7 +321,7 @@ flowchart LR
 
 **[已实现]** Common 以不可变引用型值对象分别表达插件、Document 类型、Tool 类型和创建意图，避免不同身份在编译期误传，也避免值类型的 `default` 绕过构造校验。运行时比较固定区分大小写；值对象不做隐式字符串转换，也不自动裁剪输入。JSON Adapter 仍把 Document/Tool ID 写成字符串标量，Dock 与文件选择器等必须使用字符串的边界才读取 `.Value`。
 
-**[已实现]** `PluginModuleCatalog` 在调用任何 `ConfigureServices` 前验证“一程序集一模块”和全局唯一 `PluginId`。`HostExtensionRegistry` 随后按 Builder → Validate → Commit 三阶段构建：扫描并激活候选策略、各读取一次元数据、校验命名空间与别名的全量碰撞，最后一次性发布只读注册表。任何错误都会抛出包含错误码、冲突 ID、贡献类型和程序集的 `HostCompositionException`，宿主会在生命周期回调和 Avalonia UI 启动前失败并释放容器。
+**[已实现，G5 后现状]** `PluginModuleCatalog` 只验证并实例化“一程序集一模块”，不再从模块读取身份或发现扩展。`PluginRegistrationContext` 绑定 manifest `PluginId`，`PluginRegistryBuilder` 按 Collect → Activate → Validate → Commit 构建：激活显式候选、各读取一次元数据、校验命名空间、别名、贡献类型和 View 映射，最后一次性发布只读 Registry。任何错误都会通过包含错误码、冲突 ID、贡献类型和程序集的 `HostCompositionException` 阻断生命周期与 Avalonia UI。
 
 插件贡献示例：
 
@@ -342,7 +346,7 @@ public DocumentMetadata GetMetadata() => new(
 };
 ```
 
-主 ID 必须采用小写点分层命名，并归属于模块的 `.document.*` 或 `.tool.*` 空间；历史大写 GUID、短名称等只能进入 `LegacyIds`。读取旧 Document 信封或 Tool 布局时，注册表先把别名规范化为主 ID，后续保存只写主 ID。新建与“另存为”统一建议 `.mamdoc`，但打开旧文件后的普通保存继续覆盖原路径，不强制改名。
+主 ID 必须采用小写点分层命名，并归属于 manifest 所有者的 `.document.*` 或 `.tool.*` 空间；历史大写 GUID、短名称等只能进入 `LegacyIds`。读取旧 Document 信封或 Tool 布局时，注册表先把别名规范化为主 ID，后续保存只写主 ID。新建与“另存为”统一建议 `.mamdoc`，但打开旧文件后的普通保存继续覆盖原路径，不强制改名。
 
 ### 6.4 2026-08-12 统一启动诊断 V1
 
@@ -358,7 +362,7 @@ public DocumentMetadata GetMetadata() => new(
 
 **[已实现]** 每个插件根目录强制提供严格 `plugin.manifest.json`。发现过程先只读 JSON，校验 schema、稳定身份、插件版本、唯一根级入口和 Host API/Common 左闭右开版本区间；全部有效清单还会在任何 ALC 创建前完成全局 `pluginId` 去重。缺失、损坏、未知 schema 或不兼容只隔离单目录，重复身份属于致命全局歧义。
 
-**[已实现]** 通过兼容检查后，宿主才建立目录布局并加载清单声明的唯一入口；入口 `AssemblyVersion` 与 `pluginVersion`、Managed 模块 `PluginId` 与清单身份还会在 `ConfigureServices` 前二次核对。现有共享程序集身份检查继续作为运行时纵深校验。四个当前插件、私有依赖隔离夹具、构建输出和发布部署目录均已纳入清单规则。
+**[已实现，G5 后现状]** 通过兼容检查后，宿主才建立目录布局并加载清单声明的唯一入口；入口 `AssemblyVersion` 与 `pluginVersion` 在插件配置前核对。模块不再自报身份，Context 只使用清单身份。现有共享程序集身份检查继续作为运行时纵深校验。四个当前插件、私有依赖隔离夹具、构建输出和发布部署目录均已纳入清单规则。
 
 **[验证证据]** 最新 Release 专项门禁通过 `MyAvaloniaManagement.Tests` 105、`MyAvaloniaManagement.PluginTests` 102、`MyAvaloniaManagement.UiTests` 31，合计 **238/238**；Host 行覆盖率 **76.86%**、分支覆盖率 **63.65%**，Windows 真实窗口冒烟与携带四个真实 `Controls` 目录的宿主启动均无诊断错误。回归继续覆盖严格 JSON、大小限制、版本上下界、路径穿越、版本/模块身份二次核对、重复身份预加载阻断，以及“不兼容目录即使携带损坏 DLL 也不进入程序集加载阶段”。
 
@@ -372,6 +376,18 @@ Document/Tool 策略统一使用 DI。详细设计和诊断语义见
 **[验证证据]** Managed-only 专项 9/9，Host Unit 113、Headless UI 37、Plugin 127，合计
 **277/277**；Host 行覆盖率 **78.70%**、分支覆盖率 **64.35%**，SDK 包消费和 Windows 真实窗口 Smoke 通过。稳定 ID、布局 V1 和旧浮动状态迁移
 测试仍保留。
+
+### 6.7 2026-08-16 显式贡献与 Plugin Registry
+
+**[已实现]** G5 破坏式重定基线删除了模块/生命周期重复 `PluginId`、`ConfigureServices`、策略扫描、
+View 的 AppDomain/目录扫描和命名推断。宿主与四个仓库插件统一使用
+`Configure(IPluginRegistrationContext)`；所有消费者读取同一不可变 `PluginRegistry`，其发布发生在
+生命周期初始化和窗口启动之前。详细契约、SOLID 依据、错误码和验收证据见
+[G5 显式贡献与 Plugin Registry](../plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)。
+
+**[验证证据]** 2026-08-16 锁定还原和解决方案 Release 构建通过，构建 0 警告、0 错误；
+Host Unit 119、Plugin 127、Headless UI 37，合计 **283/283**。SDK 包门禁证明最终 v1 示例可编译、
+旧候选模块接口以 `CS0535` 被拒绝，且 UI Profile 示例可编译。本次未重跑覆盖率和 Windows Smoke。
 
 ## 7. 宿主应该给插件多大自由度
 
@@ -506,7 +522,7 @@ public interface IHostContext
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
 1. 插件仍能直接接触根 DI、Dock 类型和全局消息器；G6、G9 仍需分别保护核心服务和消息边界；
-2. 运行前 manifest、Host API/Common 兼容检查和用户可见诊断已有 V1，仍缺少统一 Plugin Registry、能力声明和插件依赖清单；
+2. 运行前 manifest、Host API/Common 兼容检查、显式 Plugin Registry 和用户可见诊断已有 V1；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。
 

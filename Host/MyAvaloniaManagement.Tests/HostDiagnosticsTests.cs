@@ -155,7 +155,7 @@ public sealed class HostDiagnosticsTests
         });
 
         var viewModel = new PluginStatusViewModel(
-            PluginModuleCatalog.Discover([]),
+            new PluginRegistry([], []),
             new PluginLifecycleManager([]),
             session);
 

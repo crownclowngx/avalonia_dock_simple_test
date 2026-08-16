@@ -7,7 +7,7 @@
 > Managed Plugin v1 的正式支持边界已在 G1 冻结：Windows x64、可信进程内 Managed Plugin、
 > 严格清单、退出后替换插件。G2 已将 Host 自有实现全部收口为 internal；G3 已形成正式基础
 > SDK、可选 UI Profile 和宿主语义样式契约；G4 已删除 Legacy 二进制激活、无 deps 回退和
-> 历史加载 Facade。
+> 历史加载 Facade；G5 已用显式贡献和不可变 Plugin Registry 替换策略/View 隐式发现。
 
 ## 2. public API
 
@@ -91,7 +91,7 @@ V1 清单格式：
 - Host API 与 Common 均采用 `minInclusive <= current < maxExclusive`；
 - `entryAssembly` 只能是插件根目录中的单个 DLL 文件名；
 - 入口必须携带同名 `.deps.json`，宿主不扫描目录猜测托管或原生依赖；
-- `pluginVersion` 必须与入口 `AssemblyVersion` 精确一致；Managed 模块的 `PluginId` 必须与清单一致；
+- `pluginVersion` 必须与入口 `AssemblyVersion` 精确一致；manifest `pluginId` 是插件身份唯一事实源；
 - Host 与 Common 当前 `AssemblyVersion` 均为 `1.0.0.0`。兼容新增提升次版本，破坏性变更提升主版本；
 - 清单只解决兼容和确定性加载，不提供签名、防篡改、权限沙箱或热卸载。
 
@@ -99,18 +99,23 @@ V1 清单格式：
 
 - 程序集恰好包含一个具体 `IPluginModule`；
 - 模块使用 public 无参构造发现；
-- `ConfigureServices` 在根容器构建前执行；
-- Document/Tool 策略使用 `ActivatorUtilities`，允许构造注入；
-- 可选 `IPluginLifecycle` 按既有顺序初始化并反向关闭。
+- `Configure(IPluginRegistrationContext)` 在根容器构建前且每个进程只执行一次；
+- `context.PluginId` 由宿主从已验证 manifest 注入，只读且不能覆盖；
+- `context.Services` 只用于插件私有业务服务；Document、Tool、View、Lifecycle 必须使用对应 `Add*` 方法；
+- Document/Tool/Lifecycle 使用根容器激活，允许构造注入；View 使用无参工厂按需创建；
+- Lifecycle 的身份取自 Registry，可选依赖引用其他插件 manifest ID，并按计划初始化、反向关闭；
+- 注册只发生在组合阶段，不支持运行期追加、删除、启停或热卸载；未登记类型不会被发现。
 
 ### 3.3 拒绝与共同规则
 
 - 缺少 deps、缺少模块、重复模块或模块缺少 public 无参构造时隔离当前目录；
 - 无模块策略程序集不再获得 public 无参构造激活，也不会生成 `myavalonia.legacy.*` 所有者；
 - 完整类型预检失败会隔离整个插件目录，不能把同一发布物拆成“部分成功”；
-- 模块构造、模块身份、服务注册和扩展所有权错误属于全局组合错误，在根容器投入使用前阻断启动；
-- 重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 形成排序稳定的结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义；
+- 模块构造、模块配置、服务注册、贡献激活和扩展所有权错误属于全局组合错误，在根容器投入使用前阻断启动；
+- 通过 `context.Services` 直接登记三类贡献接口会以 `CONTRIBUTION_REGISTRATION_BYPASS` 拒绝；完整宿主服务覆盖保护属于 G6；
+- 重复 Document/Tool 主 ID 与别名、重复贡献类型、重复 ViewModel 映射、所有权错误、空元数据和重复 Creation Intent 形成结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义；
 - 策略元数据在注册时读取一次；
+- Builder 失败时整个容器和组合结果丢弃，不发布部分 Registry，不运行生命周期或 UI；
 - 插件根目录快照在进程内不刷新，更新插件需要重启应用。
 
 基础 SDK 及其 public 签名依赖、受支持 UI Profile 及其依赖均由
@@ -206,6 +211,9 @@ V1 清单格式：
 - [ ] Common 临时 API 指纹和 Host 零自有导出门禁通过，或变更已被明确批准；
 - [x] Managed-only 专项通过，Host 中不存在 Legacy 策略激活器和加载 Facade；
 - [ ] 四个真实插件构建与发布目录均包含有效清单、入口 `.deps.json`，版本和唯一模块身份一致；
+- [x] 四个插件及宿主使用显式 Context，生产代码不存在策略/View 隐式扫描与命名回退；
+- [x] manifest 是唯一身份来源，SDK 不再包含模块或生命周期 `PluginId`；
+- [x] 所有生产消费者使用同一个只读 `PluginRegistry`，Registry 在生命周期和 UI 前发布；
 - [ ] 清单缺失/损坏/不兼容在程序集加载前隔离，重复身份在任何 DLL 加载前阻断；
 - [ ] 重复 ID 与碰撞诊断按预期阻断启动，局部类型失败和并发扫描行为未变化；
 - [ ] 当前 Document JSON、安全加载与 Save As 行为符合新契约，不存在历史格式兼容分支；

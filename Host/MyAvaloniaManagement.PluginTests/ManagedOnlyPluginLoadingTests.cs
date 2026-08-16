@@ -34,7 +34,7 @@ public sealed class ManagedOnlyPluginLoadingTests
         var catalog = PluginModuleCatalog.Discover(snapshot);
         Assert.Equal(
             ["myavalonia.plugin.isolation-v1", "myavalonia.plugin.isolation-v2"],
-            catalog.Modules.Select(module => module.PluginId.Value));
+            catalog.Entries.Select(entry => entry.Manifest!.PluginId.Value));
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public sealed class ManagedOnlyPluginLoadingTests
         Assert.Equal(HostDiagnosticCodes.PluginModuleMissing, diagnostic.Code);
         Assert.Equal("LegacyNoModule", diagnostic.PluginDirectory);
         Assert.DoesNotContain(
-            typeof(HostExtensionRegistry).Assembly.GetTypes(),
+            typeof(PluginRegistry).Assembly.GetTypes(),
             type => type.Name == "PluginStrategyActivator");
     }
 
@@ -111,7 +111,8 @@ public sealed class ManagedOnlyPluginLoadingTests
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());
-        new DaTangAccountingHelpPluginModule().ConfigureServices(services);
+        new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.datang-accounting-help"), services));
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateScopes = true,
@@ -154,7 +155,7 @@ public sealed class ManagedOnlyPluginLoadingTests
     }
 
     [Fact]
-    public void 四个真实插件均具有唯一Managed模块所有者()
+    public void 四个真实插件均具有唯一Managed模块且模块不再自报所有者()
     {
         Assembly[] assemblies =
         [
@@ -167,11 +168,10 @@ public sealed class ManagedOnlyPluginLoadingTests
         var catalog = PluginModuleCatalog.Discover(assemblies);
 
         Assert.Equal(4, catalog.Modules.Count);
-        Assert.All(assemblies, assembly =>
-            Assert.StartsWith(
-                "myavalonia.plugin.",
-                catalog.GetRequiredPluginId(assembly).Value,
-                StringComparison.Ordinal));
+        Assert.Equal(4, catalog.Entries.Select(entry => entry.Assembly).Distinct().Count());
+        Assert.DoesNotContain(
+            typeof(IPluginModule).GetProperties(),
+            property => property.Name == "PluginId");
     }
 
     private static void WithCopiedPluginFixture(
@@ -214,18 +214,14 @@ public sealed class ManagedOnlyPluginLoadingTests
 
     private sealed class FirstModule : IPluginModule
     {
-        public PluginId PluginId { get; } = new("myavalonia.plugin.first");
-
-        public void ConfigureServices(IServiceCollection services) =>
-            ArgumentNullException.ThrowIfNull(services);
+        public void Configure(IPluginRegistrationContext context) =>
+            ArgumentNullException.ThrowIfNull(context);
     }
 
     private sealed class SecondModule : IPluginModule
     {
-        public PluginId PluginId { get; } = new("myavalonia.plugin.second");
-
-        public void ConfigureServices(IServiceCollection services) =>
-            ArgumentNullException.ThrowIfNull(services);
+        public void Configure(IPluginRegistrationContext context) =>
+            ArgumentNullException.ThrowIfNull(context);
     }
 
     private sealed class ConstructorDependency;
@@ -239,12 +235,10 @@ public sealed class ManagedOnlyPluginLoadingTests
             _dependency = dependency;
         }
 
-        public PluginId PluginId { get; } = new("myavalonia.plugin.constructor-invalid");
-
-        public void ConfigureServices(IServiceCollection services)
+        public void Configure(IPluginRegistrationContext context)
         {
             _ = _dependency;
-            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(context);
         }
     }
 }

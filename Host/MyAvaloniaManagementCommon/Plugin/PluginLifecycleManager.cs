@@ -75,25 +75,25 @@ public sealed class PluginLifecycleManager
     private bool _shutdownCompleted;
 
     /// <summary>使用宿主默认期限创建生命周期协调器。</summary>
-    /// <param name="lifecycles">本次 Runtime 中的全部插件生命周期实例。</param>
-    public PluginLifecycleManager(IEnumerable<IPluginLifecycle> lifecycles)
-        : this(lifecycles, new PluginLifecycleOptions())
+    /// <param name="registrations">本次 Runtime 中由 manifest 身份绑定的全部生命周期注册项。</param>
+    public PluginLifecycleManager(IEnumerable<PluginLifecycleRegistration> registrations)
+        : this(registrations, new PluginLifecycleOptions())
     {
     }
 
     /// <summary>使用显式期限创建生命周期协调器并预先构建依赖计划。</summary>
-    /// <param name="lifecycles">本次 Runtime 中的全部插件生命周期实例。</param>
+    /// <param name="registrations">本次 Runtime 中由 manifest 身份绑定的全部生命周期注册项。</param>
     /// <param name="options">由宿主统一拥有的超时设置。</param>
     /// <exception cref="ArgumentException">插件身份或依赖声明无效。</exception>
     /// <exception cref="ArgumentOutOfRangeException">任一期限不大于零。</exception>
     public PluginLifecycleManager(
-        IEnumerable<IPluginLifecycle> lifecycles,
+        IEnumerable<PluginLifecycleRegistration> registrations,
         PluginLifecycleOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
         options.Validate();
         _options = options;
-        _plan = PluginLifecyclePlanBuilder.Build(lifecycles);
+        _plan = PluginLifecyclePlanBuilder.Build(registrations);
         _states = new Dictionary<PluginId, PluginLifecycleState>(_plan.InitialStates);
     }
 

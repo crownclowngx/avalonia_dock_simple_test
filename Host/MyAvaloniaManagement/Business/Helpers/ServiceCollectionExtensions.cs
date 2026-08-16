@@ -1,13 +1,19 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Storage;
+using MyAvaloniaManagement.Models.DocumentCreation;
+using MyAvaloniaManagement.Models.ToolCreation;
 using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
+using MyAvaloniaManagement.Views.Hello;
+using MyAvaloniaManagement.Views.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
 using MyAvaloniaManagementCommon.Plugin;
@@ -29,10 +35,13 @@ internal static class ServiceCollectionExtensions
     /// 状态协调器采用单例，保证全应用共享同一 Dock、消息和布局状态；
     /// 存储服务也作为无状态单例注册，便于 ViewModel 通过接口替换测试实现。
     /// </remarks>
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddApplicationServices(
+        this IServiceCollection services,
+        PluginRegistryBuilder? registryBuilder = null)
     {
+        registryBuilder ??= new PluginRegistryBuilder();
         services.AddSingleton(new PluginLifecycleOptions());
-        services.AddSingleton<PluginLifecycleManager>();
+        services.AddSingleton(registryBuilder);
 
         // 注册消息服务为单例
         services.AddSingleton<IMessengerService, MessengerService>();
@@ -58,16 +67,19 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<DocumentSaveService>();
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
         services.AddSingleton<DocumentCloseCoordinator>();
-        services.AddSingleton(provider => new HostExtensionRegistry(
+        RegisterHostContributions(services, registryBuilder);
+        services.AddSingleton(provider => registryBuilder.Build(
             provider,
-            provider.GetRequiredService<PluginModuleCatalog>(),
-            provider.GetServices<IDocumentCreationStrategy>(),
-            provider.GetServices<IToolCreationStrategy>(),
+            provider.GetService<PluginModuleCatalog>(),
             provider.GetService<IHostDiagnosticSink>()));
+        services.AddSingleton(provider => new PluginLifecycleManager(
+            provider.GetRequiredService<PluginRegistry>().Lifecycles,
+            provider.GetRequiredService<PluginLifecycleOptions>()));
+        services.AddSingleton<ViewLocator>();
 
         // 注册ManagementFactory为单例
         services.AddSingleton(provider => new ManagementFactory(
-            provider.GetRequiredService<HostExtensionRegistry>(),
+            provider.GetRequiredService<PluginRegistry>(),
             provider.GetRequiredService<DocumentScopeManager>(),
             provider.GetRequiredService<IMessengerService>(),
             provider.GetRequiredService<DocumentCloseCoordinator>(),
@@ -81,6 +93,68 @@ internal static class ServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    /// <summary>
+    /// 将宿主内置扩展写入与插件完全相同的 Builder，而不是依赖宿主程序集扫描。
+    /// </summary>
+    /// <remarks>
+    /// 这些声明集中在组合根，新增宿主 Tool 或根级 DataTemplate 时必须显式修改此处；这是一项
+    /// 有意的可审阅成本，可防止仅因类型名称碰巧匹配就改变最终用户界面。
+    /// </remarks>
+    private static void RegisterHostContributions(
+        IServiceCollection services,
+        PluginRegistryBuilder builder)
+    {
+        RegisterHostDocument<WelcomeDocumentStrategy>(services, builder);
+        RegisterHostTool<FileSystemTreeStrategy>(services, builder);
+        RegisterHostTool<PlugGroupMenuStrategy>(services, builder);
+        RegisterHostTool<ToolManagementStrategy>(services, builder);
+        RegisterHostTool<PluginStatusStrategy>(services, builder);
+
+        builder.AddView(
+            HostExtensionIds.Owner,
+            typeof(WelcomeViewModel),
+            typeof(WelcomeView),
+            static () => new WelcomeView());
+        builder.AddView(
+            HostExtensionIds.Owner,
+            typeof(FileSystemTreeViewModel),
+            typeof(FileSystemTreeView),
+            static () => new FileSystemTreeView());
+        builder.AddView(
+            HostExtensionIds.Owner,
+            typeof(PlugGroupMenuViewModel),
+            typeof(PlugGroupMenuView),
+            static () => new PlugGroupMenuView());
+        builder.AddView(
+            HostExtensionIds.Owner,
+            typeof(ToolManagementViewModel),
+            typeof(ToolManagementView),
+            static () => new ToolManagementView());
+        builder.AddView(
+            HostExtensionIds.Owner,
+            typeof(PluginStatusViewModel),
+            typeof(PluginStatusView),
+            static () => new PluginStatusView());
+    }
+
+    private static void RegisterHostDocument<TStrategy>(
+        IServiceCollection services,
+        PluginRegistryBuilder builder)
+        where TStrategy : class, IDocumentCreationStrategy
+    {
+        services.AddSingleton<TStrategy>();
+        builder.AddDocument(HostExtensionIds.Owner, typeof(TStrategy));
+    }
+
+    private static void RegisterHostTool<TStrategy>(
+        IServiceCollection services,
+        PluginRegistryBuilder builder)
+        where TStrategy : class, IToolCreationStrategy
+    {
+        services.AddSingleton<TStrategy>();
+        builder.AddTool(HostExtensionIds.Owner, typeof(TStrategy));
     }
 
     /// <summary>
@@ -123,7 +197,7 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<ManagementFactory>(),
             provider.GetRequiredService<IMessengerService>()));
         services.AddTransient(provider => new PluginStatusViewModel(
-            provider.GetRequiredService<PluginModuleCatalog>(),
+            provider.GetRequiredService<PluginRegistry>(),
             provider.GetRequiredService<PluginLifecycleManager>(),
             provider.GetService<HostDiagnosticSession>()));
 
@@ -160,7 +234,8 @@ internal static class ServiceCollectionExtensions
 
         services.AddTransient<IHostDesktopShell, HostDesktopShell>();
         services.AddTransient(provider => new App(
-            provider.GetRequiredService<IHostDesktopShell>()));
+            provider.GetRequiredService<IHostDesktopShell>(),
+            provider.GetRequiredService<ViewLocator>()));
 
         return services;
     }

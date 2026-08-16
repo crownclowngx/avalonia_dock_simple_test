@@ -3,6 +3,7 @@ using DaTangAccountingHelpPlug.Constants;
 using DaTangAccountingHelpPlug.Plugin;
 using DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using Xunit;
@@ -18,7 +19,8 @@ public sealed class ReconciliationDocumentScopeTests
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());
-        new DaTangAccountingHelpPluginModule().ConfigureServices(services);
+        new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.datang-accounting-help"), services));
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -62,7 +64,8 @@ public sealed class ReconciliationDocumentScopeTests
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());
-        new DaTangAccountingHelpPluginModule().ConfigureServices(services);
+        new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.datang-accounting-help"), services));
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
         var document = manager.CreateDocument<BankBalanceReconciliationViewModel>();

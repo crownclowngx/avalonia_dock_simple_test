@@ -134,7 +134,11 @@ public sealed class SchedulerViewModelTests
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths);
-        var lifecycle = new PluginLifecycleManager([new BlockedBiliLifecycle()]);
+        var lifecycle = new PluginLifecycleManager([
+            new PluginLifecycleRegistration(
+                SaveDocumentTypeIdConstant.PluginId,
+                new BlockedBiliLifecycle())
+        ]);
         await lifecycle.InitializeAllAsync();
         var vm = new BiliSchedulerToolViewModel(
             coordinator,
@@ -167,7 +171,7 @@ public sealed class SchedulerViewModelTests
             new InMemorySettingsRepository(),
             new PluginLifecycleManager([]),
             new FakeFfmpegService());
-        var strategy = new BiliSchedulerToolStrategy(vm);
+        var strategy = new BiliSchedulerToolStrategy(() => vm);
 
         Assert.Same(vm, strategy.CreateTool());
         // 策略只负责创建实例；Dock 的字符串 ID 由宿主 Factory 根据元数据统一写入。
@@ -192,8 +196,6 @@ public sealed class SchedulerViewModelTests
         IPluginLifecycle,
         IPluginLifecycleDependencies
     {
-        public PluginId PluginId => SaveDocumentTypeIdConstant.PluginId;
-
         public int Order => 0;
 
         public IReadOnlyCollection<PluginId> RequiredPluginIds =>

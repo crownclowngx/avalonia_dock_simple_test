@@ -16,13 +16,15 @@
 - [宿主专项测试说明](../../../docs/reference/myavalonia-management-tests.md)
 - [Dock 布局快照 V1](../../../docs/reference/dock-layout-snapshot-v1.md)
 - [G4 Managed-only 插件加载记录](../../../docs/plan-history/host-v1/g4-managed-only-plugin-loading.md)
+- [G5 显式贡献与 Plugin Registry](../../../docs/plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)
 
 ## 文档定位
 
 这些文档描述的是当前实现，不是新功能路线图。当前明确保持以下边界：
 
-- Plugin SDK public 契约保持不变，Host 自有实现不属于插件 API；
+- G5 已对封板前候选 Plugin SDK 做一次破坏式重定基线；此后的最终 v1 public 契约进入兼容治理，Host 自有实现不属于插件 API；
 - 插件只支持严格清单、必需 `.deps.json` 和唯一 `IPluginModule` 的 Managed 模型；
+- manifest 是身份唯一事实源，Document、Tool、View 和 Lifecycle 只通过 Context 显式登记；
 - 不改变 `DocumentSaveData` 与 `layout-v1.json` 格式；
 - 不新增布局版本、插件市场、热加载、沙箱或用户可见诊断功能；
 - 不要求插件跟随宿主内部协作者重编写业务逻辑。
@@ -38,5 +40,6 @@
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke
 ```
 
-2026-08-15 G4 基线为 Host Unit 113、Headless UI 37、Plugin 127，合计 277/277；
-Windows 真实窗口冒烟通过。测试数量由脚本从 TRX 动态统计。
+2026-08-16 G5 专项基线为 Host Unit 119、Headless UI 37、Plugin 127，合计 283/283；
+解决方案 Release 构建 0 警告、0 错误，SDK 包新旧契约夹具通过。本次未重跑 Windows Smoke；
+G4 Smoke 仍是独立时间点证据。测试数量由命令输出动态统计。

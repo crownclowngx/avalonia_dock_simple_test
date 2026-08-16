@@ -4,6 +4,7 @@ using BiliDownloader.Plugin;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.ContentSources;
+using MyAvaloniaManagementCommon.Plugin;
 using BiliDownloader.ViewModels.BiliDownloader;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -512,7 +513,8 @@ public sealed class ContentSourceViewModelAndDiTests
     public void 模块注册RegistryProvider和同一Api的窄接口投影()
     {
         var services = new ServiceCollection();
-        new BiliDownloaderPluginModule().ConfigureServices(services);
+        new BiliDownloaderPluginModule().Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.bili-downloader"), services));
         services.AddSingleton<IBiliCredentialProvider>(new StubCredentials("SESSDATA=test"));
 
         using var provider = services.BuildServiceProvider();

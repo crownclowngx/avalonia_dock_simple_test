@@ -57,7 +57,7 @@ public sealed class CurrentManagedPluginLoadingTests
         var catalog = PluginModuleCatalog.Discover([pluginAssembly]);
 
         var module = Assert.Single(catalog.Modules);
-        Assert.Equal(pluginId, module.PluginId.Value);
+        Assert.Equal(pluginId, manifest.PluginId.Value);
         Assert.True(typeof(IPluginModule).IsAssignableFrom(module.GetType()));
         Assert.Same(
             typeof(IPluginModule).Assembly,

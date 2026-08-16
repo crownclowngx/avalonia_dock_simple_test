@@ -1,12 +1,13 @@
-param(
+﻿param(
     [ValidateSet("Debug", "Release")]
     [string]$Configuration = "Release"
 )
 
 $ErrorActionPreference = "Stop"
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
-$temporaryRoot = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ("MyAvaloniaPluginSdkG3-" + [Guid]::NewGuid().ToString("N"))))
+$temporaryRoot = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ("MyAvaloniaPluginSdkG5-" + [Guid]::NewGuid().ToString("N"))))
 $packageOutput = Join-Path $temporaryRoot "packages"
+$isolatedPackageCache = Join-Path $temporaryRoot "global-packages"
 $sdkVersion = ([xml](Get-Content -LiteralPath (Join-Path $repositoryRoot "Directory.Version.props"))).Project.PropertyGroup.MyAvaloniaPluginSdkVersion
 
 function Assert-True {
@@ -23,6 +24,23 @@ function Invoke-DotNet {
         & dotnet @Arguments
         if ($LASTEXITCODE -ne 0) {
             throw "dotnet $($Arguments -join ' ') 失败，退出码 $LASTEXITCODE。"
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Assert-DotNetBuildFails {
+    param([string]$ProjectPath, [string]$WorkingDirectory, [string[]]$ExpectedFragments)
+    Push-Location $WorkingDirectory
+    try {
+        $output = @(& dotnet build $ProjectPath -c Release --no-restore --nologo 2>&1)
+        $exitCode = $LASTEXITCODE
+        Assert-True ($exitCode -ne 0) "旧候选 SDK 夹具意外编译成功，破坏式 G5 基线没有生效。"
+        $text = $output -join [Environment]::NewLine
+        foreach ($fragment in $ExpectedFragments) {
+            Assert-True ($text.IndexOf($fragment, [StringComparison]::Ordinal) -ge 0) "旧候选夹具失败信息缺少 $fragment。"
         }
     }
     finally {
@@ -147,11 +165,16 @@ using MyAvaloniaManagementCommon.Plugin;
 
 public sealed class BasicPluginModule : IPluginModule
 {
-    public PluginId PluginId { get; } = new("myavalonia.plugin.package-probe");
-    public void ConfigureServices(IServiceCollection services) => services.AddSingleton<BasicPluginModule>();
+    public void Configure(IPluginRegistrationContext context)
+    {
+        _ = context.PluginId;
+        context.Services.AddSingleton<BasicPluginService>();
+    }
 }
+
+public sealed class BasicPluginService;
 '@
-    Invoke-DotNet @("restore", "BasicPlugin.csproj", "--configfile", $nugetConfig, "--nologo") $basicProject
+    Invoke-DotNet @("restore", "BasicPlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $basicProject
     Invoke-DotNet @("build", "BasicPlugin.csproj", "-c", "Release", "--no-restore", "--nologo") $basicProject
     $basicAssets = Get-Content -Raw -LiteralPath (Join-Path $basicProject "obj/project.assets.json")
     # Dock.Model.Mvvm 12.0.0.2 自身传递依赖 Dock.Controls.Recycling.Model；
@@ -161,6 +184,29 @@ public sealed class BasicPluginModule : IPluginModule
     foreach ($dependency in $forbiddenResolvedDependencies) {
         Assert-True (-not $basicAssets.Contains('"' + $dependency + '/')) "基础插件还原图错误包含 $dependency。"
     }
+
+    # 旧候选接口必须失败，防止未来为了偶然二进制兼容重新引入模块自报身份或 ConfigureServices。
+    $legacyProject = Join-Path $temporaryRoot "LegacyCandidatePlugin"
+    New-Item -ItemType Directory -Path $legacyProject | Out-Null
+    Set-Content -LiteralPath (Join-Path $legacyProject "LegacyCandidatePlugin.csproj") -Encoding UTF8 -Value @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup><PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="$sdkVersion" /></ItemGroup>
+</Project>
+"@
+    Set-Content -LiteralPath (Join-Path $legacyProject "LegacyCandidatePluginModule.cs") -Encoding UTF8 -Value @'
+using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagementCommon.Plugin;
+
+public sealed class LegacyCandidatePluginModule : IPluginModule
+{
+    public PluginId PluginId { get; } = new("myavalonia.plugin.legacy-candidate");
+    public void ConfigureServices(IServiceCollection services) =>
+        services.AddSingleton<LegacyCandidatePluginModule>();
+}
+'@
+    Invoke-DotNet @("restore", "LegacyCandidatePlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $legacyProject
+    Assert-DotNetBuildFails "LegacyCandidatePlugin.csproj" $legacyProject @("CS0535", "Configure")
 
     $uiProject = Join-Path $temporaryRoot "UiPlugin"
     New-Item -ItemType Directory -Path $uiProject | Out-Null
@@ -191,10 +237,10 @@ public sealed partial class ProfileView : UserControl
     public ProfileView() => AvaloniaXamlLoader.Load(this);
 }
 '@
-    Invoke-DotNet @("restore", "UiPlugin.csproj", "--configfile", $nugetConfig, "--nologo") $uiProject
+    Invoke-DotNet @("restore", "UiPlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $uiProject
     Invoke-DotNet @("build", "UiPlugin.csproj", "-c", "Release", "--no-restore", "--nologo") $uiProject
 
-    Write-Host "G3 Plugin SDK package acceptance passed. SDK=$sdkVersion"
+    Write-Host "G5 Plugin SDK package acceptance passed. SDK=$sdkVersion; final sample compiled; legacy candidate rejected."
 }
 finally {
     $systemTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())

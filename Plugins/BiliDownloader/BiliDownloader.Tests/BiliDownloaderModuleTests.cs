@@ -22,7 +22,8 @@ public sealed class BiliDownloaderModuleTests
         var services = new ServiceCollection();
         var module = new BiliDownloaderPluginModule();
 
-        module.ConfigureServices(services);
+        module.Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.bili-downloader"), services));
 
         Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IMessengerService));
         Assert.Equal(
@@ -87,7 +88,8 @@ public sealed class BiliDownloaderModuleTests
     public async Task 模块生命周期解析唯一协调器_且初始化关闭均由宿主管理器执行()
     {
         var services = new ServiceCollection();
-        new BiliDownloaderPluginModule().ConfigureServices(services);
+        new BiliDownloaderPluginModule().Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.bili-downloader"), services));
 
         // 测试在模块注册之后覆盖所有可能产生外部副作用的边界。
         // Microsoft DI 对单服务解析采用最后一次注册，因此这里不会创建真实 SQLite 仓储、

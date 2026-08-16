@@ -11,16 +11,19 @@ namespace MyAvaloniaManagement;
 internal sealed partial class App : Application
 {
     private readonly IHostDesktopShell _desktopShell;
+    private readonly ViewLocator _viewLocator;
 
     /// <summary>使用明确的桌面生命周期策略创建应用。</summary>
     /// <remarks>
     /// App 不允许无参生产构造。设计器和 Headless 测试若只需资源，可注入自己的内部 Shell；
     /// 这样不会为了框架入口重新引入全局 Service Locator。
     /// </remarks>
-    internal App(IHostDesktopShell desktopShell)
+    internal App(IHostDesktopShell desktopShell, ViewLocator viewLocator)
     {
         _desktopShell = desktopShell ??
             throw new System.ArgumentNullException(nameof(desktopShell));
+        _viewLocator = viewLocator ??
+            throw new System.ArgumentNullException(nameof(viewLocator));
     }
 
     /// <summary>
@@ -29,6 +32,9 @@ internal sealed partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        // XAML 不再通过无参构造创建静态 Locator。把 Runtime 独占实例安装到应用级模板集合，
+        // 可确保并行测试或未来多 Runtime 场景不会共享插件 View 映射。
+        DataTemplates.Add(_viewLocator);
     }
     /// <summary>
     /// 在 Avalonia 框架初始化完成后把经典桌面生命周期交给注入的 Shell。

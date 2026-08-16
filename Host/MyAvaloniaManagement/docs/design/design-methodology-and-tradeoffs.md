@@ -4,7 +4,7 @@
 
 本轮目标不是增加功能，而是在保持外部行为的前提下提高健壮性、可测试性和可理解性。衡量成功的标准不是新增类数量，而是：
 
-- Plugin SDK public 契约和持久化格式不变；插件激活有意收敛为 G1 冻结的 Managed-only 模型；
+- 持久化格式不变；封板前候选 Plugin SDK 允许一次破坏式重定基线，最终收敛为显式 Managed-only 模型；
 - 高风险规则具有唯一实现位置；
 - 异常、并发和资源所有权边界明确；
 - `ManagementFactory`、`MainWindowViewModel` 不再同时承担多个变化原因；
@@ -17,8 +17,8 @@
 重构前先把以下内容视为约束，而不是“顺手优化”的对象：
 
 - Common/Plugin SDK 的 public 类型和成员；Host 自有实现不得导出；
-- 插件必须具有严格清单、入口 `.deps.json` 和唯一 `IPluginModule`，策略统一使用 DI；
-- 策略发现的故障隔离与元数据一致性；本轮结束时重复 ID 语义已由“首次注册胜出”有意升级为结构化诊断阻断启动；
+- 插件必须具有严格清单、入口 `.deps.json` 和唯一 `IPluginModule`，manifest 是身份唯一事实源；
+- Document、Tool、View、Lifecycle 必须显式登记；未登记类型不可见，重复 ID 以结构化诊断阻断启动；
 - `Files` 历史 Locator 与稳定 `Documents` Dock ID；
 - Left/Right/Top/Bottom、隐藏/恢复、Pinned 和禁用浮动；
 - Newtonsoft `DocumentSaveData` 与 `layout-v1.json`；
@@ -64,13 +64,13 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 
 ### 3.2 开闭原则（OCP）
 
-新增 Document/Tool 策略继续通过现有接口扩展，宿主核心不需要为每个插件类型增加分支。Registry 将变化集中在策略发现与分派，不把扩展判断散落到 Dock 操作中。
+新增 Document/Tool/View/Lifecycle 通过 `IPluginRegistrationContext` 扩展，宿主核心不需要为每个插件类型增加分支。Registry 将变化集中在显式登记、校验与分派，不把扩展判断散落到 Dock 操作中。
 
-本轮没有新增 `PluginDescriptor` 或新的公共服务接口，因为那会改变扩展协议。开闭原则不能凌驾于兼容约束之上。
+本次有意破坏封板前候选 SDK，删除重复身份和隐式发现入口；完成后再以 v1 契约作为后续兼容基线。没有引入通用模块框架或运行期可变注册表。
 
 ### 3.3 里氏替换原则（LSP）
 
-`ManagementFactory` 仍满足 Dock 基类的 override 行为；禁用浮动、关闭通知和 Docked 后归一化没有绕过框架回调。Host 与 Managed Plugin 策略都通过统一 DI 创建并返回契约要求的 Document/Tool。
+`ManagementFactory` 仍满足 Dock 基类的 override 行为；禁用浮动、关闭通知和 Docked 后归一化没有绕过框架回调。Host 与 Managed Plugin 策略都通过显式贡献声明和统一 DI 创建，并返回契约要求的 Document/Tool。
 
 ### 3.4 接口隔离原则（ISP）
 
@@ -81,8 +81,9 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 ### 3.5 依赖倒置原则（DIP）
 
 主窗口依赖文档用例协调器与存储边界，插件 Managed 策略依赖 DI。App 依赖内部桌面 Shell，
-内建策略依赖窄 `Func<T>` 工厂；静态 `ServiceProvider` 与生产无参构造已删除。服务解析只允许
-出现在 `HostRuntime`、动态策略激活和 Document Scope 等明确组合边界。
+内建策略依赖窄 `Func<T>` 工厂；静态 `ServiceProvider` 与生产无参构造已删除。模块依赖 SDK
+抽象 `IPluginRegistrationContext`，具体 Context、Builder 和 Registry 均留在 Host 内部。服务解析只允许
+出现在 `HostRuntime`、显式贡献激活和 Document Scope 等明确组合边界。
 
 ## 4. 采用的设计模式
 
@@ -99,11 +100,11 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 
 取舍：Dock Facade 仍然看起来“能力较多”，但插件加载不再为兼容旧调用而丢失预检事实。
 
-### 4.3 Registry：`HostExtensionRegistry`
+### 4.3 Context、Builder 与不可变 `PluginRegistry`
 
-目的：让策略、元数据、菜单入口和创建分派拥有唯一事实源。
+目的：用受控 Context 表达插件贡献，通过 Builder 分阶段组合，再让元数据、菜单、View、生命周期所有权和创建分派共享同一不可变事实源。
 
-取舍：Registry 使用内部字典并以 Builder → Validate → Commit 三阶段原子发布，没有引入通用插件描述模型。这样减少概念数量，但暂时不能在加载代码前完成贡献校验；重复 ID 与碰撞不再静默胜出，而是以 `HostCompositionException` 阻断启动。
+取舍：模块仍能通过 `context.Services` 注册私有服务，但四类宿主贡献只能走专用方法。Builder 以 Collect → Activate → Validate → Commit 原子发布；失败时丢弃整套容器和 Builder。Registry 不提供写 API、覆盖操作或运行期热卸载。
 
 ### 4.4 Builder：`DockWorkspaceBuilder`
 
@@ -139,10 +140,11 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 
 | 决策 | 获得的价值 | 接受的代价 |
 | --- | --- | --- |
-| 内部类优先，不新增 public 抽象 | 零插件迁移、API 指纹稳定 | 外部插件暂时不能直接使用新能力 |
+| 封板前一次性破坏升级 SDK | 删除重复身份与隐式发现，形成可长期维护的 v1 基线 | 使用旧候选 SDK 编译的插件必须重新编译 |
 | 插件根目录扫描一次并缓存 | 并发安全、启动确定、减少 I/O | 进程内无法感知替换后的插件 |
 | 单个插件/类型失败隔离 | 一个坏插件不阻断其他插件 | 诊断呈现限于插件状态 Tool 与启动错误窗，尚无运行时用户级诊断入口 |
 | Managed-only 加载与统一 DI 激活 | 所有权、依赖和错误语义只有一套 | 无模块 Legacy 二进制插件不再加载 |
+| 显式贡献 + 不可变 Registry | 未登记类型不可见，所有消费者共享同一组合事实 | 插件作者必须完整列出贡献并随契约变化重编译 |
 | 重复 ID 与碰撞由结构化诊断阻断启动 | 配置冲突在组合阶段确定性拒绝 | 冲突插件需要修正后重启，不再静默兼容 |
 | 元数据只读取一次 | 一致性、减少潜在副作用 | 运行期元数据变化不会自动刷新 |
 | 文档操作串行化 | 同路径查重和状态提交确定 | 同窗口文档 I/O 不并行 |

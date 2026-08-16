@@ -80,7 +80,7 @@ public sealed class IdentityAndRegistryTests
         var legacy = new DocumentTypeId("OLD-DOCUMENT-ID");
         var strategy = new CapturingDocumentStrategy(
             new DocumentMetadata(primary, "示例", [legacy]));
-        var registry = new HostExtensionRegistry([strategy], []);
+        var registry = new PluginRegistry([strategy], []);
 
         var document = registry.CreateDocument(new DocumentCreationParams(legacy));
 
@@ -110,7 +110,7 @@ public sealed class IdentityAndRegistryTests
                 string.Empty));
 
         var exception = Assert.Throws<HostCompositionException>(() =>
-            new HostExtensionRegistry([first, second, aliasCollision, foreign], []));
+            new PluginRegistry([first, second, aliasCollision, foreign], []));
 
         Assert.Contains(exception.Diagnostics, item => item.Code == "DOCUMENT_ID_DUPLICATE");
         Assert.Contains(exception.Diagnostics, item => item.Code == "DOCUMENT_ID_ALIAS_DUPLICATE");
@@ -136,7 +136,10 @@ public sealed class IdentityAndRegistryTests
         var diagnostic = Assert.Single(
             exception.Diagnostics,
             item => item.Code == "PLUGIN_MODULE_MULTIPLE");
-        Assert.Equal(2, diagnostic.Contributors.Count);
+        Assert.Contains(diagnostic.Contributors,
+            contributor => contributor.TypeName == typeof(FirstModule).FullName);
+        Assert.Contains(diagnostic.Contributors,
+            contributor => contributor.TypeName == typeof(SecondModule).FullName);
         Assert.Equal(0, FirstModule.ConfigureCount);
         Assert.Equal(0, SecondModule.ConfigureCount);
     }
@@ -159,15 +162,13 @@ public sealed class IdentityAndRegistryTests
     {
         public FirstModule() { }
         internal static int ConfigureCount { get; set; }
-        public PluginId PluginId => new("myavalonia.plugin.first-test");
-        public void ConfigureServices(IServiceCollection services) => ConfigureCount++;
+        public void Configure(IPluginRegistrationContext context) => ConfigureCount++;
     }
 
     private sealed class SecondModule : IPluginModule
     {
         public SecondModule() { }
         internal static int ConfigureCount { get; set; }
-        public PluginId PluginId => new("myavalonia.plugin.second-test");
-        public void ConfigureServices(IServiceCollection services) => ConfigureCount++;
+        public void Configure(IPluginRegistrationContext context) => ConfigureCount++;
     }
 }

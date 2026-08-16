@@ -6,6 +6,7 @@ using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Dock.Avalonia.Controls;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Bindings;
@@ -149,7 +150,17 @@ public sealed class ApplicationAndWindowTests
     [AvaloniaFact]
     public void ViewLocator创建已知视图并为未知Dockable返回占位视图()
     {
-        var locator = new ViewLocator();
+        var registry = new PluginRegistry(
+            [],
+            [],
+            [],
+            [new PluginViewRegistration(
+                HostExtensionIds.Owner,
+                typeof(WelcomeViewModel),
+                typeof(WelcomeView),
+                static () => new WelcomeView())],
+            []);
+        var locator = new ViewLocator(registry);
         var known = locator.Build(new WelcomeViewModel
         {
             Title = "欢迎",
@@ -165,7 +176,7 @@ public sealed class ApplicationAndWindowTests
         Assert.True(locator.Match(new WelcomeViewModel()));
         Assert.False(locator.Match(new object()));
         Assert.Null(locator.Build(null));
-        Assert.Throws<Exception>(() => locator.Build(new object()));
+        Assert.Throws<InvalidOperationException>(() => locator.Build(new object()));
     }
 
     [AvaloniaFact]

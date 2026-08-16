@@ -20,6 +20,7 @@
 | [Managed Plugin v1 封板评审与整改任务书](./design/host-v1-sealing-readiness-plan.md) | 主程序封板差距、版本与兼容策略、删除清单、独立整改包和最终验收标准 | 当前整改计划，完成前不得认定宿主已封板 |
 | [Plugin SDK 与 UI Profile](./plan-history/host-v1/g3-plugin-sdk-and-ui-profile.md) | 基础 SDK 包、可选 UI 依赖 Profile、宿主语义资源与插件样式兼容规则 | 当前包与样式契约，G3 已完成 |
 | [Managed-only 插件加载](./plan-history/host-v1/g4-managed-only-plugin-loading.md) | 必需 deps、唯一模块、DI 激活、稳定拒绝诊断和数据兼容保留边界 | 当前插件加载契约，G4 已完成 |
+| [显式贡献与 Plugin Registry](./plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md) | 破坏式 v1 重定基线、Context/Builder/Registry、贡献所有权、失败原子性与迁移结果 | 当前显式扩展契约，G5 已完成 |
 | [Document 保存 V1](./design/document-persistence-v1-design.md) | 公共脏状态、保存事务、关闭确认、备份和坏文件恢复规则 | 当前契约与设计依据 |
 | [MyAvaloniaManagement 测试说明](./reference/myavalonia-management-tests.md) | 宿主专项测试、覆盖率和 Windows 冒烟门禁 | 当前事实 |
 | [Dock 布局快照 V1](./reference/dock-layout-snapshot-v1.md) | `layout-v1.json` 的稳定 ID、校验、迁移和回退规则 | 当前契约 |
@@ -44,6 +45,7 @@
 - [G2：Host 实现面收口](./plan-history/host-v1/g2-host-api-surface.md)：Host 零自有导出类型、构造注入启动链、显式设计数据、friend 测试边界和 265 项绿色证据。
 - [G3：Plugin SDK 与 UI Profile](./plan-history/host-v1/g3-plugin-sdk-and-ui-profile.md)：正式基础包、可选 UI Profile、14 个语义资源、共享程序集边界和 275 项绿色证据。
 - [G4：Managed-only 插件加载](./plan-history/host-v1/g4-managed-only-plugin-loading.md)：删除无模块二进制路径、无 deps 回退和双轨策略激活，保留稳定 ID 与数据迁移，277 项绿色证据。
+- [G5：显式贡献与 Plugin Registry](./plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)：破坏式删除重复身份和隐式发现，四插件与宿主迁移到 Context/Builder/不可变 Registry，283 项绿色证据与 SDK 新旧契约夹具通过。
 
 ### .NET 10 升级记录
 

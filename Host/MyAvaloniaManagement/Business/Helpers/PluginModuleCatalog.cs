@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,58 +9,26 @@ using MyAvaloniaManagementCommon.Plugin;
 namespace MyAvaloniaManagement.Business.Helpers;
 
 /// <summary>
-/// 发现并验证显式实现模块契约的托管插件。
+/// 发现严格清单入口中的唯一 Managed Plugin 模块。
 /// </summary>
 /// <remarks>
-/// 模块必须在调用任何 ConfigureServices 之前形成唯一身份，这样失败的发现不会向共享
-/// IServiceCollection 留下无法回滚的部分注册。一个程序集只允许一个模块，也是为了让
-/// Assembly 到 PluginId 的所有权映射始终无歧义。
+/// Catalog 只回答“哪个清单对应哪个模块”，不发现 Document、Tool 或 View。生产入口使用加载阶段
+/// 已经形成的预检类型集合，因此插件程序集只为确定唯一模块扫描一次。
 /// </remarks>
 internal sealed class PluginModuleCatalog
 {
-    private readonly IReadOnlyDictionary<Assembly, PluginId> _pluginIdsByAssembly;
-    private readonly IReadOnlyDictionary<Assembly, PluginManifest> _manifestsByAssembly;
-    private readonly IReadOnlyList<Assembly> _discoveredAssemblies;
-    private readonly IReadOnlyDictionary<Assembly, IReadOnlyList<Type>> _typesByAssembly;
-
-    private PluginModuleCatalog(
-        IReadOnlyList<IPluginModule> modules,
-        IReadOnlyDictionary<Assembly, PluginId> pluginIdsByAssembly,
-        IReadOnlyDictionary<Assembly, PluginManifest> manifestsByAssembly,
-        IReadOnlyList<Assembly> discoveredAssemblies,
-        IReadOnlyDictionary<Assembly, IReadOnlyList<Type>> typesByAssembly)
+    private PluginModuleCatalog(IReadOnlyList<PluginModuleEntry> entries)
     {
-        Modules = modules;
-        _pluginIdsByAssembly = pluginIdsByAssembly;
-        _manifestsByAssembly = manifestsByAssembly;
-        _discoveredAssemblies = discoveredAssemblies;
-        _typesByAssembly = typesByAssembly;
+        Entries = entries;
+        Modules = entries.Select(entry => entry.Module).ToArray();
     }
 
-    public IReadOnlyList<IPluginModule> Modules { get; }
+    internal IReadOnlyList<PluginModuleEntry> Entries { get; }
 
-    internal IReadOnlyList<Assembly> DiscoveredAssemblies => _discoveredAssemblies;
+    internal IReadOnlyList<IPluginModule> Modules { get; }
 
-    internal IReadOnlyList<Type> GetDiscoveryTypes(Assembly assembly) =>
-        _typesByAssembly[assembly];
-
-    /// <summary>
-    /// 取得已通过 Managed Plugin 发现的程序集所有者。
-    /// </summary>
-    /// <remarks>
-    /// 设计意图：G4 后 Catalog 不再表达“Managed 或 Legacy”二选一状态。调用方若传入未登记的
-    /// 外部程序集即违反组合根不变量，应立即失败，而不是生成一个猜测出来的所有者身份。
-    /// </remarks>
-    internal PluginId GetRequiredPluginId(Assembly assembly) =>
-        _pluginIdsByAssembly.TryGetValue(assembly, out var pluginId)
-            ? pluginId
-            : throw new InvalidOperationException(
-                $"程序集 {assembly.GetName().Name} 不属于已验证的 Managed Plugin。");
-
-    internal bool TryGetManifest(Assembly assembly, out PluginManifest manifest) =>
-        _manifestsByAssembly.TryGetValue(assembly, out manifest!);
-
-    public static PluginModuleCatalog Discover(IEnumerable<Assembly> pluginAssemblies)
+    /// <summary>测试和预检工具使用的无清单发现入口；结果不能进入生产组合。</summary>
+    internal static PluginModuleCatalog Discover(IEnumerable<Assembly> pluginAssemblies)
     {
         ArgumentNullException.ThrowIfNull(pluginAssemblies);
         var assemblies = pluginAssemblies.Distinct().ToArray();
@@ -76,13 +43,7 @@ internal sealed class PluginModuleCatalog
             diagnosticSink: null);
     }
 
-    /// <summary>
-    /// 使用插件目录阶段已经完成的严格类型预检结果发现模块。
-    /// </summary>
-    /// <remarks>
-    /// 设计意图：生产启动不得再次执行允许“部分类型成功”的兼容扫描，否则同一个插件
-    /// 可能在预检和模块发现阶段呈现两套不一致的类型集合。
-    /// </remarks>
+    /// <summary>复用插件目录阶段已经完成的严格类型预检结果发现模块。</summary>
     internal static PluginModuleCatalog Discover(
         PluginDiscoverySnapshot snapshot,
         IHostDiagnosticSink? diagnosticSink = null)
@@ -103,20 +64,12 @@ internal sealed class PluginModuleCatalog
         Func<Assembly, Type?> getPreflightModuleType,
         IHostDiagnosticSink? diagnosticSink)
     {
-        var modules = new List<IPluginModule>();
+        var entries = new List<PluginModuleEntry>();
         var diagnostics = new List<HostCompositionDiagnostic>();
-        var typesByAssembly = new Dictionary<Assembly, IReadOnlyList<Type>>();
-        var manifestsByAssembly = new Dictionary<Assembly, PluginManifest>();
 
         foreach (var assembly in assemblies)
         {
             var loadableTypes = getTypes(assembly);
-            typesByAssembly.Add(assembly, loadableTypes);
-            var manifest = getManifest(assembly);
-            if (manifest is not null)
-            {
-                manifestsByAssembly.Add(assembly, manifest);
-            }
             var moduleType = getPreflightModuleType(assembly);
             if (moduleType is null && !PluginModulePreflight.TryValidate(
                     loadableTypes,
@@ -124,70 +77,35 @@ internal sealed class PluginModuleCatalog
                     out var moduleErrorCode,
                     out _))
             {
-                var contributors = loadableTypes.Where(type =>
-                    typeof(IPluginModule).IsAssignableFrom(type) &&
-                    !type.IsAbstract &&
-                    !type.IsInterface);
                 diagnostics.Add(Diagnostic(
                     moduleErrorCode!,
                     assembly.GetName().Name,
-                    contributors));
+                    loadableTypes.Where(type =>
+                        typeof(IPluginModule).IsAssignableFrom(type) &&
+                        !type.IsAbstract &&
+                        !type.IsInterface)));
                 continue;
             }
 
             try
             {
                 var module = (IPluginModule)Activator.CreateInstance(moduleType!)!;
-                if (module.PluginId is null ||
-                    !module.PluginId.IsCanonical ||
-                    !module.PluginId.Value.StartsWith("myavalonia.plugin.", StringComparison.Ordinal))
-                {
-                    diagnostics.Add(Diagnostic(
-                        "PLUGIN_ID_INVALID",
-                        module.PluginId?.Value,
-                        [moduleType!]));
-                    continue;
-                }
-
-                if (manifest is not null && module.PluginId != manifest.PluginId)
-                {
-                    diagnostics.Add(Diagnostic(
-                        HostDiagnosticCodes.PluginManifestDescriptionMismatch,
-                        manifest.PluginId.Value,
-                        [moduleType!]));
-                    diagnosticSink?.Report(new HostDiagnosticDraft(
-                        HostDiagnosticCodes.PluginManifestDescriptionMismatch,
-                        HostDiagnosticPhase.PluginModuleDiscovery,
-                        "插件模块身份与加载前清单声明不一致，宿主已中止组合。")
-                    {
-                        PluginId = manifest.PluginId.Value,
-                        PluginDirectory = Path.GetFileName(
-                            Path.GetDirectoryName(assembly.Location)),
-                        AssemblyName = assembly.GetName().Name,
-                        PluginVersion = PluginVersionText.Format(manifest.PluginVersion),
-                        HostApiRange = manifest.HostApi.ToString(),
-                        CommonContractRange = manifest.CommonContract.ToString(),
-                        StableId = manifest.PluginId.Value,
-                        TechnicalDetail =
-                            $"manifestPluginId={manifest.PluginId.Value}; modulePluginId={module.PluginId.Value}",
-                    });
-                    continue;
-                }
-
-                modules.Add(module);
+                entries.Add(new PluginModuleEntry(
+                    module,
+                    moduleType!,
+                    assembly,
+                    getManifest(assembly)));
             }
             catch (Exception exception)
             {
-                // 模块构造或 PluginId getter 失败同样属于组合错误，不能记录日志后把程序集伪装成 Legacy。
-                // 这里使用稳定诊断而不是暴露异常文本，既保留来源定位，也避免插件异常消息污染启动协议。
                 diagnostics.Add(Diagnostic(
-                    "PLUGIN_ID_INVALID",
-                    null,
+                    "PLUGIN_MODULE_ACTIVATION_FAILED",
+                    assembly.GetName().Name,
                     [moduleType!]));
                 diagnosticSink?.Report(new HostDiagnosticDraft(
-                    "PLUGIN_ID_INVALID",
+                    "PLUGIN_MODULE_ACTIVATION_FAILED",
                     HostDiagnosticPhase.PluginModuleDiscovery,
-                    "插件模块构造或 PluginId 读取失败。")
+                    "插件模块无法通过公共无参构造创建。")
                 {
                     AssemblyName = assembly.GetName().Name,
                     StableId = moduleType!.FullName,
@@ -196,75 +114,106 @@ internal sealed class PluginModuleCatalog
             }
         }
 
-        foreach (var group in modules.GroupBy(module => module.PluginId).Where(group => group.Count() > 1))
-        {
-            diagnostics.Add(new HostCompositionDiagnostic(
-                "PLUGIN_ID_DUPLICATE",
-                group.Key.Value,
-                group.Select(module => ToContributor(module.GetType())).ToArray()));
-        }
-
         if (diagnostics.Count > 0)
         {
             throw new HostCompositionException(diagnostics);
         }
 
-        var orderedModules = modules
-            .OrderBy(module => module.PluginId.Value, StringComparer.Ordinal)
-            .ToArray();
-        var map = orderedModules.ToDictionary(
-            module => module.GetType().Assembly,
-            module => module.PluginId);
-        return new PluginModuleCatalog(
-            orderedModules,
-            map,
-            manifestsByAssembly,
-            assemblies,
-            typesByAssembly);
-    }
-
-    public void ConfigureServices(IServiceCollection services)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        foreach (var module in Modules)
-        {
-            module.ConfigureServices(services);
-        }
+        return new PluginModuleCatalog(entries
+            .OrderBy(entry => entry.Manifest?.PluginId.Value ?? entry.Assembly.FullName,
+                StringComparer.Ordinal)
+            .ToArray());
     }
 
     /// <summary>
-    /// 按稳定 PluginId 顺序执行模块服务注册，并在插件代码抛出异常时立即记录致命诊断。
+    /// 在每个 manifest 身份下执行唯一一次模块配置，并封闭对应注册上下文。
     /// </summary>
-    /// <remarks>
-    /// IServiceCollection 没有通用事务语义；发生异常后调用方必须丢弃整个集合，
-    /// 不能尝试猜测插件已经添加、替换或移除了哪些描述符。
-    /// </remarks>
-    internal void ConfigureServices(
+    internal void Configure(
         IServiceCollection services,
+        PluginRegistryBuilder registryBuilder,
         IHostDiagnosticSink diagnostics)
     {
         ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(registryBuilder);
         ArgumentNullException.ThrowIfNull(diagnostics);
-        foreach (var module in Modules)
+
+        foreach (var entry in Entries)
         {
+            var manifest = entry.Manifest ?? throw new InvalidOperationException(
+                "没有 manifest 的测试 Catalog 不能进入生产插件组合。");
+            var context = new PluginRegistrationContext(
+                manifest.PluginId,
+                services,
+                registryBuilder);
             try
             {
-                module.ConfigureServices(services);
+                entry.Module.Configure(context);
+                var bypasses = context.SealAndGetBypassedContributionTypes();
+                if (bypasses.Count > 0)
+                {
+                    throw new HostCompositionException(bypasses.Select(type =>
+                        new HostCompositionDiagnostic(
+                            "CONTRIBUTION_REGISTRATION_BYPASS",
+                            manifest.PluginId.Value,
+                            [ToContributor(type)])).ToArray());
+                }
             }
             catch (Exception exception)
             {
+                // IServiceCollection 没有事务能力；异常后由组合根丢弃整个集合，不能发布部分结果。
+                context.SealAndGetBypassedContributionTypes();
                 diagnostics.Report(new HostDiagnosticDraft(
                     HostDiagnosticCodes.PluginServiceRegistrationFailed,
                     HostDiagnosticPhase.PluginServiceRegistration,
-                    "插件服务注册失败，宿主已放弃本次容器构建。")
+                    "插件显式注册失败，宿主已放弃本次容器构建。")
                 {
-                    PluginId = module.PluginId.Value,
-                    AssemblyName = module.GetType().Assembly.GetName().Name,
+                    PluginId = manifest.PluginId.Value,
+                    AssemblyName = entry.Assembly.GetName().Name,
                     Exception = exception,
                 });
-                throw;
+                if (exception is HostCompositionException)
+                {
+                    throw;
+                }
+
+                throw new HostCompositionException([
+                    new HostCompositionDiagnostic(
+                        HostDiagnosticCodes.PluginServiceRegistrationFailed,
+                        manifest.PluginId.Value,
+                        [ToContributor(entry.ModuleType)])
+                ]);
             }
         }
+    }
+
+    internal IReadOnlyList<PluginRegistryPlugin> CreatePluginSnapshots(
+        IEnumerable<PluginRegistryBuilder.StrategyDeclaration> documents,
+        IEnumerable<PluginRegistryBuilder.StrategyDeclaration> tools,
+        IEnumerable<PluginRegistryBuilder.ViewDeclaration> views,
+        IEnumerable<PluginRegistryBuilder.StrategyDeclaration> lifecycles)
+    {
+        var result = new List<PluginRegistryPlugin>();
+        foreach (var entry in Entries)
+        {
+            if (entry.Manifest is not { } manifest)
+            {
+                continue;
+            }
+            result.Add(new PluginRegistryPlugin(
+                manifest,
+                entry.Assembly,
+                entry.ModuleType,
+                documents.Where(item => item.OwnerId == manifest.PluginId)
+                    .Select(item => item.ImplementationType).ToArray(),
+                tools.Where(item => item.OwnerId == manifest.PluginId)
+                    .Select(item => item.ImplementationType).ToArray(),
+                views.Where(item => item.OwnerId == manifest.PluginId)
+                    .Select(item => new PluginViewTypePair(item.ViewModelType, item.ViewType)).ToArray(),
+                lifecycles.Where(item => item.OwnerId == manifest.PluginId)
+                    .Select(item => item.ImplementationType).ToArray()));
+        }
+
+        return result;
     }
 
     private static HostCompositionDiagnostic Diagnostic(
@@ -274,7 +223,7 @@ internal sealed class PluginModuleCatalog
         new(code, stableId, types.Select(ToContributor).ToArray());
 
     private static HostCompositionContributor ToContributor(Type type) =>
-        new(type.FullName ?? type.Name, type.Assembly.GetName().Name ?? type.Assembly.FullName ?? "Unknown");
+        new(type.FullName ?? type.Name, type.Assembly.GetName().Name ?? "Unknown");
 
     private static string FormatLoaderErrors(Exception exception) =>
         exception is ReflectionTypeLoadException typeLoadException
@@ -283,3 +232,9 @@ internal sealed class PluginModuleCatalog
                 .Select(item => item!.Message.Replace(Environment.NewLine, " ", StringComparison.Ordinal)))
             : exception.Message.Replace(Environment.NewLine, " ", StringComparison.Ordinal);
 }
+
+internal sealed record PluginModuleEntry(
+    IPluginModule Module,
+    Type ModuleType,
+    Assembly Assembly,
+    PluginManifest? Manifest);

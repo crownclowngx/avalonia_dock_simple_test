@@ -22,7 +22,7 @@ public sealed class InternalRefactorTests
                 "Second"));
 
         var exception = Assert.Throws<HostCompositionException>(() =>
-            new HostExtensionRegistry([first, second], [toolStrategy]));
+            new PluginRegistry([first, second], [toolStrategy]));
 
         Assert.Equal(1, toolStrategy.MetadataReadCount);
         Assert.Contains(exception.Diagnostics, item =>

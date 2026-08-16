@@ -3,6 +3,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using MyAvaloniaManagement.Business.Presentation;
+using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.ViewModels.Hello;
+using MyAvaloniaManagement.Views.Hello;
 
 [assembly: AvaloniaTestApplication(typeof(
     MyAvaloniaManagement.UiTests.TestAppBuilder))]
@@ -22,11 +26,28 @@ public static class TestAppBuilder
     /// 创建供 AvaloniaTest 使用的无界面应用构建器。
     /// </summary>
     public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure(() => new App(NoOpDesktopShell.Instance))
+        AppBuilder.Configure(() => new App(
+                NoOpDesktopShell.Instance,
+                CreateViewLocator()))
             .UseHeadless(new AvaloniaHeadlessPlatformOptions
             {
                 UseHeadlessDrawing = true
             });
+
+    private static ViewLocator CreateViewLocator()
+    {
+        var registry = new PluginRegistry(
+            [],
+            [],
+            [],
+            [new PluginViewRegistration(
+                HostExtensionIds.Owner,
+                typeof(WelcomeViewModel),
+                typeof(WelcomeView),
+                static () => new WelcomeView())],
+            []);
+        return new ViewLocator(registry);
+    }
 
     /// <summary>
     /// Headless 套件只需要生产 App 资源，不创建第二套主窗口和根容器。

@@ -120,7 +120,7 @@ public sealed class DockFloatingDisabledTests
         services.AddSingleton<DocumentScopeManager>();
         var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var extensions = new HostExtensionRegistry([], []);
+        var extensions = new PluginRegistry([], []);
         var factory = new ManagementFactory(
             extensions,
             manager,

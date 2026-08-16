@@ -26,19 +26,18 @@ public sealed class PluginCompatibilityTests
     [Fact]
     public void 全部历史Document与ToolId经真实四插件注册表迁移到规范Id()
     {
-        var assemblies = new[]
-        {
-            typeof(BiliDownloaderPluginModule).Assembly,
-            typeof(DaTangAccountingHelpPluginModule).Assembly,
-            typeof(MyPlugTestPluginModule).Assembly,
-            typeof(MySmallToolsPluginModule).Assembly
-        };
-        var catalog = PluginModuleCatalog.Discover(assemblies);
         var services = new ServiceCollection();
-        services.AddApplicationServices();
+        var builder = new PluginRegistryBuilder();
+        services.AddApplicationServices(builder);
         services.AddViewModels();
-        catalog.ConfigureServices(services);
-        services.AddSingleton(catalog);
+        ConfigureModule(new BiliDownloaderPluginModule(),
+            "myavalonia.plugin.bili-downloader", services, builder);
+        ConfigureModule(new DaTangAccountingHelpPluginModule(),
+            "myavalonia.plugin.datang-accounting-help", services, builder);
+        ConfigureModule(new MyPlugTestPluginModule(),
+            "myavalonia.plugin.my-plug-test", services, builder);
+        ConfigureModule(new MySmallToolsPluginModule(),
+            "myavalonia.plugin.my-small-tools", services, builder);
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateScopes = true,
@@ -91,52 +90,96 @@ public sealed class PluginCompatibilityTests
     [Fact]
     public void 四个插件程序集显式接入模块且不改变公共策略接口()
     {
-        var biliAssembly = typeof(BiliDownloaderPluginModule).Assembly;
-        var daTangAssembly = typeof(DaTangAccountingHelpPluginModule).Assembly;
-        var myPlugTestAssembly = typeof(MyPlugTestPluginModule).Assembly;
-        var mySmallToolsAssembly = typeof(MySmallToolsPluginModule).Assembly;
-        var catalog = PluginModuleCatalog.Discover(
-            [biliAssembly, daTangAssembly, myPlugTestAssembly, mySmallToolsAssembly]);
+        Assert.DoesNotContain(
+            typeof(IPluginModule).GetProperties(),
+            property => property.Name == "PluginId");
+        Assert.DoesNotContain(
+            typeof(IPluginLifecycle).GetProperties(),
+            property => property.Name == "PluginId");
+        Assert.Equal(
+            ["Configure"],
+            typeof(IPluginModule).GetMethods().Select(method => method.Name));
+        Assert.Equal(2, typeof(IDocumentCreationStrategy).GetMethods().Length);
+        Assert.Equal(2, typeof(IToolCreationStrategy).GetMethods().Length);
+
+        var services = new ServiceCollection();
+        var contexts = new[]
+        {
+            ConfigureForInspection(new BiliDownloaderPluginModule(),
+                "myavalonia.plugin.bili-downloader", services),
+            ConfigureForInspection(new DaTangAccountingHelpPluginModule(),
+                "myavalonia.plugin.datang-accounting-help", services),
+            ConfigureForInspection(new MyPlugTestPluginModule(),
+                "myavalonia.plugin.my-plug-test", services),
+            ConfigureForInspection(new MySmallToolsPluginModule(),
+                "myavalonia.plugin.my-small-tools", services),
+        };
+        Assert.Equal(
+            [
+                "Document:BiliDownloaderDocumentStrategy",
+                "Tool:BiliSchedulerToolStrategy",
+                "View:BiliDownloaderViewModel->BiliDownloaderView",
+                "View:BiliSchedulerToolViewModel->BiliSchedulerToolView",
+                "Lifecycle:BiliDownloaderPluginLifecycle",
+            ],
+            Describe(contexts[0]));
+        Assert.Equal(
+            [
+                "Document:InvoiceInfoImportDocumentStrategy",
+                "Document:BankBalanceReconciliationDocumentStrategy",
+                "View:InvoiceInfoImportViewModel->InvoiceInfoImportView",
+                "View:BankBalanceReconciliationViewModel->BankBalanceReconciliationView",
+            ],
+            Describe(contexts[1]));
+        Assert.Equal(
+            [
+                "Document:TestWelcomeDocumentStrategy",
+                "Document:TestMessageReceiveDocumentStrategy",
+                "Document:BatchHttpGetDocumentStrategy",
+                "Document:ExcelGetUrlGeneratorDocumentStrategy",
+                "Tool:MyCustomToolStrategy",
+                "View:TestWelcomeViewModel->TestWelcomeView",
+                "View:TestMessageReceiveViewModel->TestMessageReceiveView",
+                "View:BatchHttpGetViewModel->BatchHttpGetView",
+                "View:ExcelGetUrlGeneratorViewModel->ExcelGetUrlGeneratorView",
+                "View:MyCustomToolViewModel->MyCustomToolView",
+            ],
+            Describe(contexts[2]));
+        Assert.Equal(
+            [
+                "Document:SecretVideoDocumentStrategy",
+                "Document:SecretVideoLibraryDocumentStrategy",
+                "Document:VideoEncryptorDocumentStrategy",
+                "Document:VideoDecryptorDocumentStrategy",
+                "View:SecretVideoPlayerViewModel->SecretVideoPlayerView",
+                "View:SecretVideoLibraryViewModel->SecretVideoLibraryView",
+                "View:VideoEncryptorViewModel->VideoEncryptorView",
+                "View:VideoDecryptorViewModel->VideoDecryptorView",
+            ],
+            Describe(contexts[3]));
 
         Assert.Equal(
             [
                 "myavalonia.plugin.bili-downloader",
                 "myavalonia.plugin.datang-accounting-help",
                 "myavalonia.plugin.my-plug-test",
-                "myavalonia.plugin.my-small-tools"
+                "myavalonia.plugin.my-small-tools",
             ],
-            catalog.Modules.Select(x => x.PluginId.Value));
-        Assert.Equal("myavalonia.plugin.bili-downloader", catalog.GetRequiredPluginId(biliAssembly).Value);
-        Assert.Equal("myavalonia.plugin.datang-accounting-help", catalog.GetRequiredPluginId(daTangAssembly).Value);
-        Assert.Equal("myavalonia.plugin.my-plug-test", catalog.GetRequiredPluginId(myPlugTestAssembly).Value);
-        Assert.Equal("myavalonia.plugin.my-small-tools", catalog.GetRequiredPluginId(mySmallToolsAssembly).Value);
-        Assert.Equal(2, typeof(IDocumentCreationStrategy).GetMethods().Length);
-        Assert.Equal(2, typeof(IToolCreationStrategy).GetMethods().Length);
+            contexts.Select(context => context.PluginId.Value));
     }
 
     [Fact]
     public async Task 插件状态模型合并四个托管模块与生命周期结果()
     {
-        var catalog = PluginModuleCatalog.Discover([
-            typeof(BiliDownloaderPluginModule).Assembly,
-            typeof(DaTangAccountingHelpPluginModule).Assembly,
-            typeof(MyPlugTestPluginModule).Assembly,
-            typeof(MySmallToolsPluginModule).Assembly,
+        var registry = new PluginRegistry(
+            CreatePluginSnapshots(), [], [], [], []);
+        var manager = new PluginLifecycleManager([
+            new PluginLifecycleRegistration(
+                new PluginId("myavalonia.plugin.bili-downloader"),
+                new ReadyBiliLifecycle())
         ]);
-        var services = new ServiceCollection();
-        services.AddApplicationServices();
-        services.AddViewModels();
-        services.AddSingleton(catalog);
-        services.AddSingleton<IPluginLifecycle, ReadyBiliLifecycle>();
-
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateScopes = true,
-            ValidateOnBuild = true,
-        });
-        var manager = provider.GetRequiredService<PluginLifecycleManager>();
         await manager.InitializeAllAsync();
-        var viewModel = provider.GetRequiredService<PluginStatusViewModel>();
+        var viewModel = new PluginStatusViewModel(registry, manager);
 
         Assert.Equal(4, viewModel.Items.Count);
         Assert.Equal(
@@ -163,7 +206,8 @@ public sealed class PluginCompatibilityTests
         var services = new ServiceCollection();
         var module = new DaTangAccountingHelpPluginModule();
 
-        module.ConfigureServices(services);
+        module.Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.datang-accounting-help"), services));
 
         var descriptor = Assert.Single(
             services,
@@ -224,7 +268,8 @@ public sealed class PluginCompatibilityTests
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());
-        new DaTangAccountingHelpPluginModule().ConfigureServices(services);
+        new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.datang-accounting-help"), services));
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateScopes = true,
@@ -260,7 +305,8 @@ public sealed class PluginCompatibilityTests
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());
-        new MyPlugTestPluginModule().ConfigureServices(services);
+        new MyPlugTestPluginModule().Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.my-plug-test"), services));
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -332,7 +378,8 @@ public sealed class PluginCompatibilityTests
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());
-        new MySmallToolsPluginModule().ConfigureServices(services);
+        new MySmallToolsPluginModule().Configure(new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.my-small-tools"), services));
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -353,8 +400,6 @@ public sealed class PluginCompatibilityTests
 
     private sealed class ReadyBiliLifecycle : IPluginLifecycle
     {
-        public PluginId PluginId => BiliDownloader.Constants.SaveDocumentTypeIdConstant.PluginId;
-
         public int Order => 0;
 
         public Task InitializeAsync(CancellationToken cancellationToken) =>
@@ -362,6 +407,55 @@ public sealed class PluginCompatibilityTests
 
         public Task ShutdownAsync(CancellationToken cancellationToken) =>
             Task.CompletedTask;
+    }
+
+    private static void ConfigureModule(
+        IPluginModule module,
+        string pluginId,
+        IServiceCollection services,
+        PluginRegistryBuilder builder)
+    {
+        var context = new PluginRegistrationContext(
+            new PluginId(pluginId), services, builder);
+        module.Configure(context);
+        Assert.Empty(context.SealAndGetBypassedContributionTypes());
+    }
+
+    private static TestPluginRegistrationContext ConfigureForInspection(
+        IPluginModule module,
+        string pluginId,
+        IServiceCollection services)
+    {
+        var context = new TestPluginRegistrationContext(new PluginId(pluginId), services);
+        module.Configure(context);
+        return context;
+    }
+
+    private static string[] Describe(TestPluginRegistrationContext context) =>
+        context.Contributions.Select(item => item.Second is null
+            ? $"{item.Kind}:{item.First.Name}"
+            : $"{item.Kind}:{item.First.Name}->{item.Second.Name}").ToArray();
+
+    private static IReadOnlyList<PluginRegistryPlugin> CreatePluginSnapshots() =>
+    [
+        Snapshot<BiliDownloaderPluginModule>("myavalonia.plugin.bili-downloader"),
+        Snapshot<DaTangAccountingHelpPluginModule>("myavalonia.plugin.datang-accounting-help"),
+        Snapshot<MyPlugTestPluginModule>("myavalonia.plugin.my-plug-test"),
+        Snapshot<MySmallToolsPluginModule>("myavalonia.plugin.my-small-tools"),
+    ];
+
+    private static PluginRegistryPlugin Snapshot<TModule>(string pluginId)
+    {
+        var assembly = typeof(TModule).Assembly;
+        var manifest = new PluginManifest(
+            1,
+            new PluginId(pluginId),
+            new Version(1, 0, 0, 0),
+            $"{assembly.GetName().Name}.dll",
+            new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0)),
+            new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0)));
+        return new PluginRegistryPlugin(
+            manifest, assembly, typeof(TModule), [], [], [], []);
     }
 
     private static IDocumentCreationStrategy Activate<TStrategy>(

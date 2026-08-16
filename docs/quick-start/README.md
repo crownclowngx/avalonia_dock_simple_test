@@ -3,14 +3,15 @@
 本组文档面向两类读者：在当前仓库内增加插件的开发者，以及为既有宿主版本交付二进制插件的外部作者。主路径只介绍 **Managed Plugin**，目标是在约 10 分钟内让一个同时包含 Document 和 Tool 的最小插件被宿主发现并显示。
 
 > G4 已删除 Legacy 二进制激活。插件必须携带严格清单、入口 `.deps.json` 和唯一
-> `IPluginModule`；Document 和 Tool 策略统一使用构造注入。
+> `IPluginModule`。G5 已删除策略/View 隐式发现和模块自报身份；manifest 是唯一身份来源，
+> Document、Tool、View 和 Lifecycle 必须通过 `IPluginRegistrationContext` 显式登记。
 
 ## 完成后你将得到什么
 
 - 一个具有稳定 `PluginId` 和严格 `plugin.manifest.json` 的插件程序集；
 - 一个每次打开都会创建独立实例的 Document；
 - 一个在宿主内保持单例、关闭后进入隐藏状态的 Tool；
-- 一套可以定位清单、依赖、类型发现和扩展激活问题的验证方法。
+- 一套可以定位清单、依赖、模块预检、显式贡献和扩展激活问题的验证方法。
 
 最小实现可以直接复制本文档中的片段；完整的生产示例请对照 [`MyPlugTest`](../../Plugins/MyPlugTest/MyPlugTest/)。
 
@@ -47,9 +48,13 @@ dotnet build Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug
 
 ### 外部二进制插件
 
-仓库当前没有发布官方插件 SDK/NuGet 包或脚手架。外部作者需要从宿主提供方取得与目标宿主版本匹配的编译契约引用集；打包时只交付插件入口、清单和插件私有依赖，**不得**把 `MyAvaloniaManagementCommon.dll` 或宿主共享依赖闭包放进插件目录。
+宿主发布方应提供同版本 `MyAvaloniaManagement.PluginSdk` nupkg；需要直接使用 Semi、Ursa 或 Dock
+UI 时改用同版本 `MyAvaloniaManagement.PluginSdk.UI`。仓库当前只生成可验证制品，尚未自动推送
+公共 NuGet。打包时只交付插件入口、清单和插件私有依赖，**不得**把
+`MyAvaloniaManagementCommon.dll` 或宿主共享依赖闭包放进插件目录。
 
-这表示当前支持的是“针对明确宿主版本编译并交付二进制插件”，不是独立于宿主版本的一键 SDK 开发体验。兼容范围必须由清单如实声明。
+外部插件必须针对明确的 Host/SDK 版本组合编译和验证，兼容范围由清单如实声明。使用 G5 前候选
+接口编译的插件不兼容最终 v1，必须重新编译并显式登记贡献。
 
 ## 推荐阅读顺序
 
@@ -62,5 +67,6 @@ dotnet build Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug
 - [宿主—插件架构评审](../design/host-plugin-architecture-review.md)
 - [主项目兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)
 - [主项目内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)
+- [G5 显式贡献与 Plugin Registry](../plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)
 
 上述契约文档和实际 public 类型是详细规则的事实来源；Quick Start 只保留完成首次接入所需的最短路径。

@@ -8,10 +8,9 @@ public sealed class PluginLifecycleManagerTests
     public async Task 初始化按顺序执行_关闭按相反顺序执行()
     {
         var calls = new List<string>();
-        var manager = new PluginLifecycleManager([
+        var manager = new PluginLifecycleManager(Registrations(
             new RecordingLifecycle("second", 20, calls),
-            new RecordingLifecycle("first", 10, calls),
-        ]);
+            new RecordingLifecycle("first", 10, calls)));
 
         await manager.InitializeAllAsync();
         await manager.ShutdownAllAsync();
@@ -28,9 +27,8 @@ public sealed class PluginLifecycleManagerTests
     public async Task 初始化与关闭均为幂等操作()
     {
         var calls = new List<string>();
-        var manager = new PluginLifecycleManager([
-            new RecordingLifecycle("only", 0, calls),
-        ]);
+        var manager = new PluginLifecycleManager(Registrations(
+            new RecordingLifecycle("only", 0, calls)));
 
         await Task.WhenAll(manager.InitializeAllAsync(), manager.InitializeAllAsync());
         await Task.WhenAll(manager.ShutdownAllAsync(), manager.ShutdownAllAsync());
@@ -42,10 +40,9 @@ public sealed class PluginLifecycleManagerTests
     public async Task 单个插件初始化失败_不会阻止其他插件且失败插件不参与关闭()
     {
         var calls = new List<string>();
-        var manager = new PluginLifecycleManager([
+        var manager = new PluginLifecycleManager(Registrations(
             new RecordingLifecycle("broken", 0, calls, failInitialization: true),
-            new RecordingLifecycle("healthy", 1, calls),
-        ]);
+            new RecordingLifecycle("healthy", 1, calls)));
 
         await manager.InitializeAllAsync();
         await manager.ShutdownAllAsync();
@@ -63,7 +60,7 @@ public sealed class PluginLifecycleManagerTests
     public async Task Avalonia消息循环结束后_异步插件仍能完成关闭()
     {
         var lifecycle = new YieldingShutdownLifecycle();
-        var manager = new PluginLifecycleManager([lifecycle]);
+        var manager = new PluginLifecycleManager(Registrations(lifecycle));
         await manager.InitializeAllAsync();
 
         Exception? shutdownError = null;
@@ -102,12 +99,11 @@ public sealed class PluginLifecycleManagerTests
     public async Task 显式依赖优先于Order且同层仍使用稳定顺序()
     {
         var calls = new List<string>();
-        var manager = new PluginLifecycleManager([
+        var manager = new PluginLifecycleManager(Registrations(
             new RecordingLifecycle("dependent", 0, calls, dependencies: ["foundation"]),
             new RecordingLifecycle("z-independent", 20, calls),
             new RecordingLifecycle("foundation", 100, calls),
-            new RecordingLifecycle("a-independent", 20, calls),
-        ]);
+            new RecordingLifecycle("a-independent", 20, calls)));
 
         await manager.InitializeAllAsync();
 
@@ -126,13 +122,12 @@ public sealed class PluginLifecycleManagerTests
     public async Task 缺失依赖和循环依赖被阻塞但独立插件继续初始化()
     {
         var calls = new List<string>();
-        var manager = new PluginLifecycleManager([
+        var manager = new PluginLifecycleManager(Registrations(
             new RecordingLifecycle("missing", 0, calls, dependencies: ["not-installed"]),
             new RecordingLifecycle("cycle-a", 0, calls, dependencies: ["cycle-b"]),
             new RecordingLifecycle("cycle-b", 0, calls, dependencies: ["cycle-a"]),
             new RecordingLifecycle("cycle-dependent", 0, calls, dependencies: ["cycle-a"]),
-            new RecordingLifecycle("healthy", 0, calls),
-        ]);
+            new RecordingLifecycle("healthy", 0, calls)));
 
         await manager.InitializeAllAsync();
 
@@ -154,11 +149,10 @@ public sealed class PluginLifecycleManagerTests
     public async Task 上游初始化失败只阻塞下游且不影响独立分支()
     {
         var calls = new List<string>();
-        var manager = new PluginLifecycleManager([
+        var manager = new PluginLifecycleManager(Registrations(
             new RecordingLifecycle("broken", 0, calls, failInitialization: true),
             new RecordingLifecycle("dependent", 0, calls, dependencies: ["broken"]),
-            new RecordingLifecycle("healthy", 0, calls),
-        ]);
+            new RecordingLifecycle("healthy", 0, calls)));
 
         await manager.InitializeAllAsync();
 
@@ -173,10 +167,9 @@ public sealed class PluginLifecycleManagerTests
     public async Task 重复PluginId不会选择任意实例执行()
     {
         var calls = new List<string>();
-        var manager = new PluginLifecycleManager([
+        var manager = new PluginLifecycleManager(Registrations(
             new RecordingLifecycle("duplicate", 0, calls),
-            new RecordingLifecycle("duplicate", 1, calls),
-        ]);
+            new RecordingLifecycle("duplicate", 1, calls)));
 
         await manager.InitializeAllAsync();
 
@@ -193,11 +186,10 @@ public sealed class PluginLifecycleManagerTests
         var calls = new List<string>();
         var slow = new ControllableLifecycle("slow", calls);
         var manager = new PluginLifecycleManager(
-            [
+            Registrations(
                 slow,
                 new RecordingLifecycle("dependent", 1, calls, dependencies: ["slow"]),
-                new RecordingLifecycle("healthy", 2, calls),
-            ],
+                new RecordingLifecycle("healthy", 2, calls)),
             new PluginLifecycleOptions
             {
                 InitializationTimeout = TimeSpan.FromMilliseconds(50),
@@ -220,10 +212,9 @@ public sealed class PluginLifecycleManagerTests
     {
         var calls = new List<string>();
         var manager = new PluginLifecycleManager(
-            [
+            Registrations(
                 new RecordingLifecycle("first", 0, calls),
-                new HangingShutdownLifecycle("second", 1, calls),
-            ],
+                new HangingShutdownLifecycle("second", 1, calls)),
             new PluginLifecycleOptions
             {
                 InitializationTimeout = TimeSpan.FromMilliseconds(100),
@@ -248,10 +239,9 @@ public sealed class PluginLifecycleManagerTests
     {
         var calls = new List<string>();
         using var cancellation = new CancellationTokenSource();
-        var manager = new PluginLifecycleManager([
+        var manager = new PluginLifecycleManager(Registrations(
             new CancellationAwareLifecycle("waiting", calls),
-            new RecordingLifecycle("never-started", 1, calls),
-        ]);
+            new RecordingLifecycle("never-started", 1, calls)));
 
         var initialization = manager.InitializeAllAsync(cancellation.Token);
         await Task.Delay(20);
@@ -267,8 +257,18 @@ public sealed class PluginLifecycleManagerTests
             manager.GetState(new PluginId("waiting"))?.ErrorCode);
     }
 
+    private static IReadOnlyList<PluginLifecycleRegistration> Registrations(
+        params ITestLifecycle[] lifecycles) => lifecycles
+        .Select(lifecycle => new PluginLifecycleRegistration(lifecycle.PluginId, lifecycle))
+        .ToArray();
+
+    private interface ITestLifecycle : IPluginLifecycle
+    {
+        PluginId PluginId { get; }
+    }
+
     private sealed class RecordingLifecycle :
-        IPluginLifecycle,
+        ITestLifecycle,
         IPluginLifecycleDependencies
     {
         private readonly List<string> _calls;
@@ -311,7 +311,7 @@ public sealed class PluginLifecycleManagerTests
 
     private sealed class ControllableLifecycle(
         string pluginId,
-        List<string> calls) : IPluginLifecycle
+        List<string> calls) : ITestLifecycle
     {
         private readonly TaskCompletionSource _initialization = new(
             TaskCreationOptions.RunContinuationsAsynchronously);
@@ -338,7 +338,7 @@ public sealed class PluginLifecycleManagerTests
     private sealed class HangingShutdownLifecycle(
         string pluginId,
         int order,
-        List<string> calls) : IPluginLifecycle
+        List<string> calls) : ITestLifecycle
     {
         public PluginId PluginId { get; } = new(pluginId);
 
@@ -360,7 +360,7 @@ public sealed class PluginLifecycleManagerTests
 
     private sealed class CancellationAwareLifecycle(
         string pluginId,
-        List<string> calls) : IPluginLifecycle
+        List<string> calls) : ITestLifecycle
     {
         public PluginId PluginId { get; } = new(pluginId);
 
@@ -376,7 +376,7 @@ public sealed class PluginLifecycleManagerTests
             Task.CompletedTask;
     }
 
-    private sealed class YieldingShutdownLifecycle : IPluginLifecycle
+    private sealed class YieldingShutdownLifecycle : ITestLifecycle
     {
         public PluginId PluginId { get; } = new("yielding");
 

@@ -17,42 +17,40 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 internal sealed class PluginStatusViewModel : Tool
 {
     internal PluginStatusViewModel(
-        PluginModuleCatalog pluginModuleCatalog,
+        PluginRegistry pluginRegistry,
         PluginLifecycleManager lifecycleManager,
         HostDiagnosticSession? diagnostics = null)
     {
-        ArgumentNullException.ThrowIfNull(pluginModuleCatalog);
+        ArgumentNullException.ThrowIfNull(pluginRegistry);
         ArgumentNullException.ThrowIfNull(lifecycleManager);
 
         Id = HostExtensionIds.PluginStatus.Value;
         Title = "插件状态";
         CanClose = true;
         Items = new ObservableCollection<PluginStatusItem>(
-            CreateItems(pluginModuleCatalog, lifecycleManager, diagnostics));
+            CreateItems(pluginRegistry, lifecycleManager, diagnostics));
     }
 
     public ObservableCollection<PluginStatusItem> Items { get; }
 
     private static IReadOnlyList<PluginStatusItem> CreateItems(
-        PluginModuleCatalog catalog,
+        PluginRegistry registry,
         PluginLifecycleManager manager,
         HostDiagnosticSession? diagnostics)
     {
         var items = new List<PluginStatusItem>();
         var moduleIds = new HashSet<PluginId>();
 
-        foreach (var module in catalog.Modules
-                     .OrderBy(module => module.PluginId.Value, StringComparer.Ordinal))
+        foreach (var plugin in registry.Plugins
+                     .OrderBy(item => item.Manifest.PluginId.Value, StringComparer.Ordinal))
         {
-            moduleIds.Add(module.PluginId);
-            var hasManifest = catalog.TryGetManifest(
-                module.GetType().Assembly,
-                out var manifest);
+            var pluginId = plugin.Manifest.PluginId;
+            moduleIds.Add(pluginId);
             items.Add(ToItem(
-                module.PluginId.Value,
-                module.GetType().Assembly.GetName().Name ?? "未知程序集",
-                hasManifest ? manifest : null,
-                manager.GetState(module.PluginId)));
+                pluginId.Value,
+                plugin.EntryAssembly.GetName().Name ?? "未知程序集",
+                plugin.Manifest,
+                manager.GetState(pluginId)));
         }
 
         foreach (var state in manager.States

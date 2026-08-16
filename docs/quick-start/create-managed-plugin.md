@@ -1,6 +1,6 @@
 # 创建 Managed 插件
 
-本篇以 `QuickStartPlugin` 为示例。完成后，宿主能够读取清单、加载入口程序集、实例化唯一的 `IPluginModule`，并在根容器构建前完成服务注册。Document 和 Tool 将在[下一篇](./add-document-and-tool.md)加入。
+本篇以 `QuickStartPlugin` 为示例。完成后，宿主能够读取清单、加载入口程序集、实例化唯一的 `IPluginModule`，并在根容器构建前完成受控注册。Document、Tool 和 View 贡献将在[下一篇](./add-document-and-tool.md)加入。
 
 完整实现可对照 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj)、[`plugin.manifest.json`](../../Plugins/MyPlugTest/MyPlugTest/plugin.manifest.json) 和 [`MyPlugTestPluginModule`](../../Plugins/MyPlugTest/MyPlugTest/Plugin/MyPlugTestPluginModule.cs)。正式包与样式边界见 [G3 Plugin SDK 与 UI Profile](../plan-history/host-v1/g3-plugin-sdk-and-ui-profile.md)。
 
@@ -122,28 +122,22 @@ public static class PluginIds
 建立 `Plugin/QuickStartPluginModule.cs`：
 
 ```csharp
-using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
-using QuickStartPlugin.Constants;
-using QuickStartPlugin.ViewModels;
 
 namespace QuickStartPlugin.Plugin;
 
 public sealed class QuickStartPluginModule : IPluginModule
 {
-    public PluginId PluginId => PluginIds.Plugin;
-
-    public void ConfigureServices(IServiceCollection services)
+    public void Configure(IPluginRegistrationContext context)
     {
-        services.AddScoped<WelcomeDocumentViewModel>();
-        services.AddSingleton<StatusToolViewModel>();
+        // 本章还没有业务服务或可见贡献；下一章会在这里显式登记。
     }
 }
 ```
 
-入口程序集必须只有一个可实例化的 `IPluginModule`，模块必须具有 public 无参构造。上面的隐式无参构造满足要求。模块的 `PluginId` 必须与清单完全一致，`ConfigureServices` 在根 `IServiceProvider` 构建前且每个进程只调用一次。
+入口程序集必须只有一个可实例化的 `IPluginModule`，模块必须具有 public 无参构造。上面的隐式无参构造满足要求。模块不声明 `PluginId`：manifest 是身份唯一事实源，宿主把已验证身份作为只读 `context.PluginId` 注入。`Configure` 在根 `IServiceProvider` 构建前且每个进程只调用一次。
 
-先保留这两个尚待创建的 ViewModel 注册；下一篇会补齐类型。只有确实存在插件级后台资源时才注册 `IPluginLifecycle`，且其初始化和关闭必须幂等、不得依赖 Document 或 Tool 的视觉树生命周期。
+`context.Services` 只用于插件自己的业务服务。Document、Tool、动态 View 和 Lifecycle 必须分别通过 `AddDocument`、`AddTool`、`AddView` 和 `AddLifecycle` 登记；直接向 DI 注册贡献接口会被宿主拒绝。未登记类型即使位于入口程序集也不会被发现。只有确实存在插件级后台资源时才登记 `IPluginLifecycle`，且其初始化和关闭必须幂等、不得依赖 Document 或 Tool 的视觉树生命周期。
 
 ## 5. 使用宿主样式
 

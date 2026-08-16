@@ -693,7 +693,7 @@ public sealed class DockFourWayLayoutTests
                     Description = definition.Id
                 });
         }).ToArray();
-        var extensions = new HostExtensionRegistry([], strategies);
+        var extensions = new PluginRegistry([], strategies);
         var factory = new ManagementFactory(
             extensions,
             manager,

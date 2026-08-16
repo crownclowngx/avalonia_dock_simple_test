@@ -10,8 +10,8 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// 在实例化插件代码之前验证 Managed Plugin 的唯一模块入口。
 /// </summary>
 /// <remarks>
-/// 设计意图：该验证器只解释类型结构，不构造模块、不读取 <see cref="IPluginModule.PluginId"/>，
-/// 也不调用 <see cref="IPluginModule.ConfigureServices"/>。调用方因此可以把无模块、重复模块或
+/// 设计意图：该验证器只解释类型结构，不构造模块，也不调用
+/// <see cref="IPluginModule.Configure(IPluginRegistrationContext)"/>。插件身份仅来自 manifest；调用方因此可以把无模块、重复模块或
 /// 构造契约错误限制在单个插件目录内，而不会向共享服务集合留下部分注册。
 /// </remarks>
 internal static class PluginModulePreflight
