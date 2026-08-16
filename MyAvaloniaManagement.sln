@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement", "Host\MyAvaloniaManagement\MyAvaloniaManagement.csproj", "{E7A5FA6B-1DB7-4790-87C1-F93F50490782}"
 EndProject
