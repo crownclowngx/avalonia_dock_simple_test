@@ -106,6 +106,8 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 
 取舍：模块仍能通过 `context.Services` 注册私有服务，但四类宿主贡献只能走专用方法。Builder 以 Collect → Activate → Validate → Commit 原子发布；失败时丢弃整套容器和 Builder。Registry 不提供写 API、覆盖操作或运行期热卸载。
 
+G6 在这条私有服务通道上采用 Policy + Transaction：Policy 从宿主现有描述符自动捕获保护类型，Transaction 把当前集合复制为插件工作副本，按引用和顺序检查既有项并只提交尾部增量。职责没有并入 Registry Builder，因为扩展所有权与 DI 描述符完整性是两个独立变化原因。最终仍使用一个 Microsoft DI 根容器，没有引入子容器或动态代理。
+
 ### 4.4 Builder：`DockWorkspaceBuilder`
 
 目的：以稳定 ID 构造四向初始布局，避免创建结构与运行时恢复交织。

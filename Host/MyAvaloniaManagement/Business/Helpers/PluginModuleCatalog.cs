@@ -137,13 +137,18 @@ internal sealed class PluginModuleCatalog
         ArgumentNullException.ThrowIfNull(registryBuilder);
         ArgumentNullException.ThrowIfNull(diagnostics);
 
+        // 保护基线只捕获一次宿主服务。每个插件仍会从“宿主 + 已提交的前序插件”建立工作副本，
+        // 因而不能删除或重排前序注册，但可继续为自己的私有接口追加多个实现。
+        var protectionPolicy = HostServiceDescriptorPolicy.Capture(services);
+
         foreach (var entry in Entries)
         {
             var manifest = entry.Manifest ?? throw new InvalidOperationException(
                 "没有 manifest 的测试 Catalog 不能进入生产插件组合。");
+            var registration = new PluginServiceRegistrationTransaction(services);
             var context = new PluginRegistrationContext(
                 manifest.PluginId,
-                services,
+                registration.Services,
                 registryBuilder);
             try
             {
@@ -181,6 +186,32 @@ internal sealed class PluginModuleCatalog
                         HostDiagnosticCodes.PluginServiceRegistrationFailed,
                         manifest.PluginId.Value,
                         [ToContributor(entry.ModuleType)])
+                ]);
+            }
+
+            if (!registration.TryCommit(protectionPolicy, out var violation))
+            {
+                var serviceType = violation!.Descriptor.ServiceType;
+                diagnostics.Report(new HostDiagnosticDraft(
+                    HostDiagnosticCodes.PluginHostServiceMutation,
+                    HostDiagnosticPhase.PluginServiceRegistration,
+                    "插件试图修改宿主依赖注入注册，宿主已放弃本次容器构建。")
+                {
+                    PluginId = manifest.PluginId.Value,
+                    AssemblyName = entry.Assembly.GetName().Name,
+                    StableId = serviceType.FullName ?? serviceType.Name,
+                    TechnicalDetail =
+                        $"violationKind={violation.Kind}; " +
+                        $"serviceType={serviceType.FullName ?? serviceType.Name}; " +
+                        $"lifetime={violation.Descriptor.Lifetime}; " +
+                        $"keyed={violation.Descriptor.IsKeyedService}",
+                });
+
+                throw new HostCompositionException([
+                    new HostCompositionDiagnostic(
+                        HostDiagnosticCodes.PluginHostServiceMutation,
+                        manifest.PluginId.Value,
+                        [ToContributor(serviceType)])
                 ]);
             }
         }

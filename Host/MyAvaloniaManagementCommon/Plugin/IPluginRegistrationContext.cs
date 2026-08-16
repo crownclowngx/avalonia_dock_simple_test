@@ -32,8 +32,15 @@ public interface IPluginRegistrationContext
     /// 获取用于注册插件私有业务服务的根级服务集合。
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// 该集合只允许追加由当前插件拥有的私有业务服务。插件不得删除、替换、重排既有描述符，
+    /// 也不得为宿主已经注册的服务类型追加实现；宿主会在构建根容器前以事务方式校验并提交增量。
+    /// </para>
+    /// <para>
+    /// 插件可以为自己的接口登记多个 singleton、scoped、transient、keyed 或开放泛型实现。
     /// 不得通过此集合直接注册 Document/Tool 策略或插件生命周期；这些宿主可见贡献必须使用
-    /// 本接口的专用方法。宿主核心服务覆盖保护由独立的 G6 组合门禁负责。
+    /// 本接口的专用方法。模块返回后保存并修改该集合不产生任何宿主注册效果。
+    /// </para>
     /// </remarks>
     IServiceCollection Services { get; }
 

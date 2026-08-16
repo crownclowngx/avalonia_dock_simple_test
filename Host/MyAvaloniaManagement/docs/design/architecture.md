@@ -116,7 +116,9 @@ flowchart TB
 
 [`PluginModulePreflight`](../../Business/Helpers/PluginModulePreflight.cs) 在不实例化插件对象的前提下验证唯一 `IPluginModule` 及其 public 无参构造；结构错误只隔离当前目录。随后 [`PluginModuleCatalog`](../../Business/Helpers/PluginModuleCatalog.cs) 只实例化快照中的模块，并把已经验证的 manifest `PluginId` 注入独立 [`PluginRegistrationContext`](../../Business/Helpers/PluginRegistrationContext.cs)。模块不再声明身份，也不能设置或覆盖 Context 的身份。
 
-模块只在组合阶段调用一次 `Configure`。`context.Services` 用于插件私有业务服务；Document、Tool、View 和 Lifecycle 必须调用专用 `Add*` 方法。未登记类型即使存在于入口程序集也不会被宿主发现；通过 `Services` 直接登记贡献接口会以 `CONTRIBUTION_REGISTRATION_BYPASS` 阻断组合。完整宿主服务覆盖保护由 G6 完成。
+模块只在组合阶段调用一次 `Configure`。`context.Services` 指向当前插件独占的服务集合工作副本，只允许追加插件私有业务服务；Document、Tool、View 和 Lifecycle 必须调用专用 `Add*` 方法。未登记类型即使存在于入口程序集也不会被宿主发现；通过 `Services` 直接登记贡献接口会以 `CONTRIBUTION_REGISTRATION_BYPASS` 阻断组合。
+
+[`HostServiceDescriptorPolicy`](../../Business/Helpers/PluginServiceRegistrationProtection.cs) 从完整宿主注册捕获保护类型，[`PluginServiceRegistrationTransaction`](../../Business/Helpers/PluginServiceRegistrationProtection.cs) 按模块复制当前描述符，以引用和顺序验证既有项，再只提交尾部新增项。插件删除、替换、重排既有描述符或追加宿主 ServiceType 会以 `PLUGIN_HOST_SERVICE_MUTATION` 在根容器构建前阻断；正常私有多实现、keyed 和开放泛型注册不受影响。模块返回后保存的工作副本已经与正式集合脱离。
 
 ### 4.3 单一扩展注册表
 
@@ -249,6 +251,7 @@ sequenceDiagram
 | public 签名漂移 | `PublicApiContractTests` |
 | 插件并发扫描、可变缓存泄漏 | `InternalRefactorTests` |
 | Managed-only 拒绝、显式贡献所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、`ExplicitContributionAndPluginRegistryTests`、内部注册表测试 |
+| 插件私有 DI 事务提交、宿主描述符保护与四插件回归 | `PluginServiceProtectionTests` |
 | 并发打开、保存失败、关闭确认与坏文件恢复 | `MainWindowViewModelTests`、`DocumentPersistenceV1Tests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |

@@ -101,7 +101,7 @@ V1 清单格式：
 - 模块使用 public 无参构造发现；
 - `Configure(IPluginRegistrationContext)` 在根容器构建前且每个进程只执行一次；
 - `context.PluginId` 由宿主从已验证 manifest 注入，只读且不能覆盖；
-- `context.Services` 只用于插件私有业务服务；Document、Tool、View、Lifecycle 必须使用对应 `Add*` 方法；
+- `context.Services` 只允许追加插件私有业务服务；插件不得删除、替换、重排既有描述符或追加宿主保护 ServiceType；私有多实现、keyed 和开放泛型注册继续允许；
 - Document/Tool/Lifecycle 使用根容器激活，允许构造注入；View 使用无参工厂按需创建；
 - Lifecycle 的身份取自 Registry，可选依赖引用其他插件 manifest ID，并按计划初始化、反向关闭；
 - 注册只发生在组合阶段，不支持运行期追加、删除、启停或热卸载；未登记类型不会被发现。
@@ -112,7 +112,7 @@ V1 清单格式：
 - 无模块策略程序集不再获得 public 无参构造激活，也不会生成 `myavalonia.legacy.*` 所有者；
 - 完整类型预检失败会隔离整个插件目录，不能把同一发布物拆成“部分成功”；
 - 模块构造、模块配置、服务注册、贡献激活和扩展所有权错误属于全局组合错误，在根容器投入使用前阻断启动；
-- 通过 `context.Services` 直接登记三类贡献接口会以 `CONTRIBUTION_REGISTRATION_BYPASS` 拒绝；完整宿主服务覆盖保护属于 G6；
+- 通过 `context.Services` 直接登记三类贡献接口会以 `CONTRIBUTION_REGISTRATION_BYPASS` 拒绝；删除、替换、重排或覆盖宿主服务会以 `PLUGIN_HOST_SERVICE_MUTATION` 在容器构建前拒绝；
 - 重复 Document/Tool 主 ID 与别名、重复贡献类型、重复 ViewModel 映射、所有权错误、空元数据和重复 Creation Intent 形成结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义；
 - 策略元数据在注册时读取一次；
 - Builder 失败时整个容器和组合结果丢弃，不发布部分 Registry，不运行生命周期或 UI；

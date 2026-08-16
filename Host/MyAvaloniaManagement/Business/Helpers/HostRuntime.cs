@@ -63,8 +63,10 @@ internal sealed class HostRuntime : IDisposable
             throw;
         }
 
-        pluginCatalog.Configure(services, registryBuilder, diagnostics);
+        // Catalog 本身也是宿主组合基础设施，必须在插件获得注册入口前进入 G6 保护基线。
+        // 若放在 Configure 之后，插件虽然无法引用 internal 类型，却仍可能通过反射追加同类型描述符。
         services.AddSingleton(pluginCatalog);
+        pluginCatalog.Configure(services, registryBuilder, diagnostics);
         Microsoft.Extensions.DependencyInjection.ServiceProvider provider;
         try
         {

@@ -105,7 +105,7 @@ Windows Smoke，不沿用旧数字冒充本次证据。详细记录见
 | 高 | Common/Plugin SDK 门禁仍只有一个 SHA256 | G2 已排除 Host 实现噪声，但仍不能审阅删除了哪个类型、改了哪个签名，也不能区分兼容新增 |
 | 高 | `IMessengerService` 暴露 `IMessenger`，生产实现使用 `WeakReferenceMessenger.Default` | SDK 被 CommunityToolkit 具体 API 绑定，不同 HostRuntime 和测试可能共享全局状态 |
 | 已解决（G4） | Legacy 无模块激活、公共无参策略和无 `.deps.json` 回退曾同时存在 | 现只接受必需 deps、唯一模块和 DI 策略激活 |
-| 高 | 插件可直接修改完整 `IServiceCollection` | 可信插件仍可能误覆盖宿主核心服务，错误直到运行期才暴露 |
+| 已解决（G6） | 插件曾可直接修改完整 `IServiceCollection` | 现通过每插件工作副本、描述符差异校验和尾部事务提交保护宿主对象图 |
 | 已解决（G5） | ViewLocator 曾通过静态构造、AppDomain 和命名约定重复发现视图 | 现只消费 HostRuntime 私有不可变 Registry；未登记类型不可见，View 失败形成稳定诊断和占位 |
 | 高 | 诊断记录默认使用 `Exception.ToString()` | 可能把路径、URL、插件异常正文或其他敏感上下文写入长期日志 |
 | 已解决（G3） | Common 曾直接引用整套字体、主题、Ursa、Semi 与 Dock UI 控件包 | 基础 SDK 现只保留契约依赖；Host 直接拥有主题，可选 UI Profile 固定受支持 UI 版本 |
@@ -317,12 +317,14 @@ StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 A
 
 **优先级：阻断；依赖：G5**
 
-- 目标：允许插件注册自己的服务，但阻止插件误替换宿主核心服务。
-- 修改边界：模块服务注册编排和诊断策略。
-- 实施要求：每个模块调用前后记录 `IServiceCollection` 差异；禁止删除或覆盖 Host 核心服务、SDK 基础服务、Plugin Registry、文档生命周期和诊断服务。
-- 验收：正常插件私有 singleton/scoped/transient 注册不受影响；覆盖宿主服务的夹具在容器构建前失败并定位到具体插件。
-- 验收命令：执行 `dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release --filter FullyQualifiedName~PluginServiceProtection`。
-- 完成定义：违规注册不会留下部分可用的根容器，宿主显示统一启动错误页。
+**状态：已完成（2026-08-16）**。宿主在全部核心服务、诊断和 Catalog 注册后捕获保护基线；每个
+插件只接触独立服务集合副本，通过 G5 贡献检查和 G6 描述符差异检查后才提交尾部新增项。
+
+- 已允许插件私有 singleton/scoped/transient、开放泛型、keyed 和多实现注册。
+- 已禁止删除、替换、重排既有描述符，以及追加任何宿主保护 ServiceType；keyed 注册不能绕过保护。
+- 已新增 `PLUGIN_HOST_SERVICE_MUTATION`，在容器构建前以插件 ID、程序集、违规类型和类别阻断启动。
+- 模块异常或违规不会提交当前插件的任何服务；模块返回后保存的工作集合也不能继续修改宿主。
+- 专项 11/11、Host Unit 120、Plugin 138、Headless UI 37，三套合计 **295/295**；Release 构建 0 警告、0 错误，SDK 包门禁通过。完整证据见 [G6 独立记录](../plan-history/host-v1/g6-host-di-protection.md)。
 
 ### G7：建立 Document 信封 v1
 

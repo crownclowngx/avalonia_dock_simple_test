@@ -99,6 +99,7 @@ public sealed class HostDiagnosticsTests
     [InlineData(HostDiagnosticCodes.PluginRootScanFailed, "PluginRootDiscovery", "AbortStartup")]
     [InlineData("PLUGIN_ID_DUPLICATE", "PluginModuleDiscovery", "AbortStartup")]
     [InlineData(HostDiagnosticCodes.PluginServiceRegistrationFailed, "PluginServiceRegistration", "AbortStartup")]
+    [InlineData(HostDiagnosticCodes.PluginHostServiceMutation, "PluginServiceRegistration", "AbortStartup")]
     [InlineData(HostDiagnosticCodes.HostContainerBuildFailed, "HostContainerBuild", "AbortStartup")]
     public void 失败策略按阶段和错误码给出稳定启动决策(
         string code,

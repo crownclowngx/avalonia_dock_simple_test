@@ -2,9 +2,10 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前 G5 专项基线：2026-08-16，Release 共 283 项通过，解决方案构建 0 警告、0 错误，
-> SDK 新契约消费与旧候选拒绝夹具通过。本次没有重新采集覆盖率或 Windows Smoke；最近一次
-> 覆盖率与 Smoke 仍是 G4 的独立时间点证据，不能冒充 G5 结果。数量来自命令输出，不是永久固定门槛。
+> 当前 G6 专项基线：2026-08-16，Release 共 295 项通过，解决方案构建 0 警告、0 错误，
+> PluginServiceProtection 专项 11/11，SDK 新契约消费与旧候选拒绝夹具通过。本次没有重新采集
+> 覆盖率或 Windows Smoke；最近一次覆盖率与 Smoke 仍是 G4 的独立时间点证据，不能冒充 G6
+> 结果。数量来自命令输出，不是永久固定门槛。
 
 ## 一键门禁
 
@@ -77,7 +78,7 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 - 单元层覆盖 DI、ViewModel、文件模型、文档保存、消息和 Tool 行为。
 - Headless 层覆盖生产 XAML、主题资源、绑定、DockControl、ViewLocator、
   主窗口事件、内容全屏、14 个插件语义画刷和主题动态切换。
-- PluginTests 继续覆盖 Managed-only 拒绝、Dock 布局、Document Scope、插件生命周期、SDK 依赖边界和 UI 共享程序集。
+- PluginTests 继续覆盖 Managed-only 拒绝、Dock 布局、Document Scope、插件生命周期、宿主 DI 保护、SDK 依赖边界和 UI 共享程序集。
 - 像素截图、真实插件安装包、媒体播放和长时间稳定性不属于本门禁。
 
 ## 设计思路与原因

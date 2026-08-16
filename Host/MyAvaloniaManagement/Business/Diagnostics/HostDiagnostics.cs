@@ -159,6 +159,7 @@ internal static class HostDiagnosticCodes
     internal const string PluginModuleMultiple = "PLUGIN_MODULE_MULTIPLE";
     internal const string PluginModuleConstructorInvalid = "PLUGIN_MODULE_CONSTRUCTOR_INVALID";
     internal const string PluginServiceRegistrationFailed = "PLUGIN_SERVICE_REGISTRATION_FAILED";
+    internal const string PluginHostServiceMutation = "PLUGIN_HOST_SERVICE_MUTATION";
     internal const string HostContainerBuildFailed = "HOST_CONTAINER_BUILD_FAILED";
     internal const string ExtensionDiscoveryFailed = "EXTENSION_DISCOVERY_FAILED";
     internal const string ExtensionActivationFailed = "EXTENSION_ACTIVATION_FAILED";
@@ -211,6 +212,7 @@ internal static class HostDiagnosticFailurePolicy
             code == HostDiagnosticCodes.PluginManifestIdentityDuplicate ||
             code == HostDiagnosticCodes.PluginManifestDescriptionMismatch ||
             code == HostDiagnosticCodes.PluginServiceRegistrationFailed ||
+            code == HostDiagnosticCodes.PluginHostServiceMutation ||
             code == HostDiagnosticCodes.HostContainerBuildFailed ||
             code == HostDiagnosticCodes.HostStartupUnexpected ||
             phase is HostDiagnosticPhase.PluginModuleDiscovery

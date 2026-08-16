@@ -111,7 +111,7 @@ sequenceDiagram
 | --- | --- | --- | --- |
 | 严格清单、同名 deps、唯一 `IPluginModule` | Context 显式登记，根 DI 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | 四个现有插件均采用且为唯一支持路径 |
 
-**[代码事实]** `PluginModulePreflight` 要求入口恰好存在一个具体模块并具有 public 无参构造；`IPluginModule.Configure(IPluginRegistrationContext)` 随后在根容器构建前执行一次。manifest 是身份唯一事实源，模块和 Lifecycle 不再声明 `PluginId`。私有业务服务使用 `context.Services`，四类宿主贡献使用专用 `Add*` 方法。参见 [`IPluginModule.cs`](../../Host/MyAvaloniaManagementCommon/Plugin/IPluginModule.cs)、[`IPluginRegistrationContext.cs`](../../Host/MyAvaloniaManagementCommon/Plugin/IPluginRegistrationContext.cs)、[`PluginModulePreflight.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModulePreflight.cs) 和 [`PluginModuleCatalog.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModuleCatalog.cs)。
+**[代码事实]** `PluginModulePreflight` 要求入口恰好存在一个具体模块并具有 public 无参构造；`IPluginModule.Configure(IPluginRegistrationContext)` 随后在根容器构建前执行一次。manifest 是身份唯一事实源，模块和 Lifecycle 不再声明 `PluginId`。私有业务服务通过 `context.Services` 的插件专属工作副本追加，四类宿主贡献使用专用 `Add*` 方法；宿主以描述符引用和顺序校验后只提交新增项。参见 [`IPluginModule.cs`](../../Host/MyAvaloniaManagementCommon/Plugin/IPluginModule.cs)、[`IPluginRegistrationContext.cs`](../../Host/MyAvaloniaManagementCommon/Plugin/IPluginRegistrationContext.cs)、[`PluginModulePreflight.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModulePreflight.cs) 和 [`PluginModuleCatalog.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModuleCatalog.cs)。
 
 **[代码事实]** `IPluginLifecycle` 是可选能力，不是每个 Managed Plugin 的必选空壳。当前只有 BiliDownloader 显式登记生命周期，用它启动、恢复和关闭下载协调器；DaTang 没有常驻后台任务，因此不登记生命周期。生命周期身份来自 Registry 中 manifest 所有权；管理器支持可选 `IPluginLifecycleDependencies`、拓扑排序和统一初始化/关闭超时，未声明依赖时按 `Order`、manifest `PluginId` 串行初始化。失败、超时和依赖阻塞不会影响独立分支，退出时只反向关闭成功初始化的实例。
 
@@ -236,7 +236,7 @@ flowchart LR
 | 通道 | 当前方式 | 已有价值 | 主要风险 |
 | --- | --- | --- | --- |
 | UI 扩展 | 插件直接返回 Dock `Document` / `Tool` | 简单、强类型、UI 自由度高 | 与 Dock 版本和宿主布局模型强耦合 |
-| 服务接入 | 插件通过 Context 获得用于私有业务服务的 `IServiceCollection` | 可使用 Microsoft DI，并与贡献登记职责分离 | G6 前仍可能覆盖宿主非贡献核心服务 |
+| 服务接入 | 插件通过 Context 获得用于私有业务服务的事务工作副本 | 可使用 Microsoft DI，多实现/keyed/开放泛型不受影响；宿主注册不可覆盖 | 仍是可信进程内代码，不构成安全沙箱 |
 | 创建入口 | Context 显式登记，`PluginRegistry` 原子发布；Document 可附加 Creation Intent | 未登记类型不可见，元数据只读一次，所有权明确 | 插件作者必须维护完整贡献清单 |
 | 消息通信 | `IMessengerService` 包装进程级 messenger | 广播和解耦方便 | 仍暴露底层 `IMessenger`，无消息归属和契约版本 |
 | 文件能力 | 宿主包装选择器、打开和保存外壳 | ViewModel 不直接依赖根窗口，Document 与布局均原子写入 | 公共保存契约仍缺少统一脏状态和关闭确认 |
@@ -389,6 +389,18 @@ View 的 AppDomain/目录扫描和命名推断。宿主与四个仓库插件统�
 Host Unit 119、Plugin 127、Headless UI 37，合计 **283/283**。SDK 包门禁证明最终 v1 示例可编译、
 旧候选模块接口以 `CS0535` 被拒绝，且 UI Profile 示例可编译。本次未重跑覆盖率和 Windows Smoke。
 
+### 6.8 2026-08-16 宿主 DI 保护
+
+**[已实现]** G6 在模块配置前捕获完整宿主 ServiceType 基线，每个插件只接触当前服务集合的工作
+副本。既有描述符必须按引用和顺序保持不变，尾部新增项不得使用宿主保护类型；通过校验后才把
+增量提交到最终根容器。私有三种生命周期、多实现、keyed 和开放泛型继续允许。删除、替换、
+重排和覆盖以 `PLUGIN_HOST_SERVICE_MUTATION` 在容器构建前阻断。详细规则见
+[G6 宿主 DI 保护](../plan-history/host-v1/g6-host-di-protection.md)。
+
+**[验证证据]** PluginServiceProtection 专项 11/11，Host Unit 120、Plugin 138、Headless UI 37，
+合计 **295/295**；锁定还原、解决方案 Release 0 警告/0 错误构建和 SDK 包门禁通过。四个真实
+插件通过完整 Catalog 保护链形成 Registry。本次未重跑覆盖率和 Windows Smoke。
+
 ## 7. 宿主应该给插件多大自由度
 
 ### 7.1 当前可信模型下的责任边界
@@ -521,7 +533,7 @@ public interface IHostContext
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. 插件仍能直接接触根 DI、Dock 类型和全局消息器；G6、G9 仍需分别保护核心服务和消息边界；
+1. G6 已将插件 DI 写入收口为工作副本和事务提交；插件仍直接使用 Dock 类型和全局消息器，消息边界由 G9 继续处理；
 2. 运行前 manifest、Host API/Common 兼容检查、显式 Plugin Registry 和用户可见诊断已有 V1；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。
