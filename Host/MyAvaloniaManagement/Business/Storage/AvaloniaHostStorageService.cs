@@ -17,6 +17,9 @@ namespace MyAvaloniaManagement.Business.Storage;
 /// </remarks>
 internal sealed class AvaloniaHostStorageService : IHostStorageService
 {
+    private const string DocumentExtension = "mamdoc";
+    private const string DocumentFileTypeName = "管理文档 (.mamdoc)";
+
     /// <inheritdoc />
     public async Task<IReadOnlyList<string>> PickOpenFilesAsync()
     {
@@ -26,12 +29,7 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
             return [];
         }
 
-        var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "打开文档",
-            AllowMultiple = true,
-            FileTypeFilter = [FilePickerFileTypes.TextPlain]
-        });
+        var files = await storageProvider.OpenFilePickerAsync(CreateOpenFilePickerOptions());
 
         return files
             .Select(file => file.TryGetLocalPath())
@@ -49,22 +47,8 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
             return null;
         }
 
-        // Document 身份属于分派协议，不再承担文件扩展名职责。统一扩展名使用户可以
-        // 识别宿主管理文档，同时信封内的强类型 ID 仍负责选择具体插件策略。
-        const string extension = "mamdoc";
-        var fileType = metadata is null
-            ? FilePickerFileTypes.TextPlain
-            : new FilePickerFileType(metadata.DisplayName)
-            {
-                Patterns = [$"*.{extension}"]
-            };
-
-        var file = await storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            Title = "保存文档",
-            DefaultExtension = extension,
-            FileTypeChoices = [fileType]
-        });
+        var file = await storageProvider.SaveFilePickerAsync(
+            CreateSaveFilePickerOptions(metadata));
 
         return file?.TryGetLocalPath();
     }
@@ -96,6 +80,40 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
     /// <inheritdoc />
     public Task WriteAllTextAsync(string path, string content) =>
         AtomicFileTransaction.WriteAllTextAsync(path, content);
+
+    /// <summary>
+    /// 创建统一的 Document 打开选项。该方法保持为内部可测试边界，避免打开和保存
+    /// 对扩展名产生不同理解。
+    /// </summary>
+    internal static FilePickerOpenOptions CreateOpenFilePickerOptions() => new()
+    {
+        Title = "打开文档",
+        AllowMultiple = true,
+        FileTypeFilter = [CreateDocumentFileType(DocumentFileTypeName)]
+    };
+
+    /// <summary>
+    /// 创建统一的 Document 保存选项。即使调用方暂时没有类型元数据，也必须使用
+    /// 宿主管理文档类型，不能回退为纯文本文件。
+    /// </summary>
+    internal static FilePickerSaveOptions CreateSaveFilePickerOptions(
+        DocumentMetadata? metadata) => new()
+    {
+        Title = "保存文档",
+        DefaultExtension = DocumentExtension,
+        FileTypeChoices =
+        [
+            CreateDocumentFileType(
+                string.IsNullOrWhiteSpace(metadata?.DisplayName)
+                    ? DocumentFileTypeName
+                    : metadata.DisplayName)
+        ]
+    };
+
+    private static FilePickerFileType CreateDocumentFileType(string name) => new(name)
+    {
+        Patterns = [$"*.{DocumentExtension}"]
+    };
 
     /// <summary>
     /// 获取当前桌面主窗口的存储提供器。
