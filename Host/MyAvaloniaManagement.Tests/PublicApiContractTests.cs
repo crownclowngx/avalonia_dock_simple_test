@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Plugin;
 
 namespace MyAvaloniaManagement.Tests;
@@ -12,7 +13,7 @@ namespace MyAvaloniaManagement.Tests;
 public sealed class PublicApiContractTests
 {
     private const string ExpectedSha256 =
-        "5D2A87B08485FA73FA71F65E51CF4E5CACEEEE4020E07983E718AD36AC122F81";
+        "0CB827AD85465575877C8B7B797694FE23616CE7200E8B98E60380470CFF7E75";
 
     [Fact]
     public void PluginSdkPublicApiSurfaceRemainsStable()
@@ -27,6 +28,27 @@ public sealed class PublicApiContractTests
         Assert.True(
             string.Equals(ExpectedSha256, hash, StringComparison.Ordinal),
             $"Public API SHA256: {hash}");
+    }
+
+    [Fact]
+    public void PluginSdk事件总线只暴露Sdk自有类型和Bcl令牌()
+    {
+        var eventBusType = typeof(IHostEventBus);
+        var methods = eventBusType.GetMethods(BindingFlags.Public | BindingFlags.Instance);
+
+        Assert.Equal(["Publish", "Subscribe"], methods.Select(method => method.Name).Order().ToArray());
+        Assert.DoesNotContain(
+            typeof(IPluginModule).Assembly.ExportedTypes
+                .SelectMany(type => type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+                .Select(member => member.ToString()),
+            signature => signature?.Contains(
+                "CommunityToolkit.Mvvm.Messaging",
+                StringComparison.Ordinal) == true);
+        Assert.Equal(typeof(IDisposable), methods.Single(method => method.Name == "Subscribe").ReturnType);
+        var assembly = typeof(IPluginModule).Assembly;
+        Assert.Null(assembly.GetType("MyAvaloniaManagementCommon.Message.IMessengerService"));
+        Assert.Null(assembly.GetType("MyAvaloniaManagementCommon.Message.MessengerService"));
+        Assert.Null(assembly.GetType("MyAvaloniaManagementCommon.Message.MessageHandler`2"));
     }
 
     private static IEnumerable<string> GetPublicSurface(Assembly assembly)

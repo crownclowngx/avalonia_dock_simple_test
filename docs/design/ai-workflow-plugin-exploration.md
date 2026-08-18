@@ -296,13 +296,14 @@ public sealed class CapabilityActivity : CodeActivity<JsonElement>
 
 ### 7.1 为什么消息总线不能用于能力调用
 
-现有 `MessengerService` 是 `WeakReferenceMessenger.Default` 的广播总线，`Send` 是 **void、无返回值、不保证有人接收** 的：
+现有 `IHostEventBus` 是每个 HostRuntime 独享的同步事件总线，`Publish` 是 **void、无返回值、无人订阅时
+正常返回** 的。它解决了旧进程默认实例和第三方接口泄漏，但仍不是请求-响应通道：
 
 | 需求 | 消息总线现状 |
 | --- | --- |
-| 执行 `encrypt_video` 必须拿到加密后的文件路径 | ❌ `Send<TMessage>` 无返回值，单向广播 |
-| 必须确认"对方真的处理了" | ❌ 没人订阅时消息静默丢失，工作流会假成功 |
-| 参数校验、超时、异常传播 | ❌ 全部没有，只能自建"请求-响应"轮子（相关性 ID + 回调 + 超时） |
+| 执行 `encrypt_video` 必须拿到加密后的文件路径 | ❌ `Publish<TEvent>` 无返回值，只表达通知 |
+| 必须确认"对方真的处理了" | ❌ 无订阅者时正常返回，不能作为能力存在证明 |
+| 参数校验、超时、结构化结果 | ❌ 总线只同步传播处理器异常，不提供返回值或超时协议 |
 
 **广播总线适合"一对多通知"，不适合"一对一请求-响应"。**
 

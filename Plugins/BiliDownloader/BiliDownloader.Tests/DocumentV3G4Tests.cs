@@ -6,7 +6,7 @@ using BiliDownloader.Services.ContentSources;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels;
 using BiliDownloader.ViewModels.BiliDownloader;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Save;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -1018,7 +1018,7 @@ public sealed class DocumentV3G4Tests
 
     private static BiliDownloaderViewModel CreateVm()
     {
-        var messenger = new RecordingMessengerService();
+        var messenger = new RecordingHostEventBus();
         var repository = new InMemoryDownloadTaskRepository();
         var loginState = new BiliLoginStateService(
             new InMemoryBiliCredentialStore(), new StubBiliSessionApi(), messenger);
@@ -1032,7 +1032,7 @@ public sealed class DocumentV3G4Tests
         CountingDocumentProvider provider,
         out InMemoryDownloadTaskRepository repository)
     {
-        var messenger = new RecordingMessengerService();
+        var messenger = new RecordingHostEventBus();
         repository = new InMemoryDownloadTaskRepository();
         var settings = new InMemorySettingsRepository();
         var loginState = new BiliLoginStateService(

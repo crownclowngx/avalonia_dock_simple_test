@@ -305,7 +305,7 @@ public sealed class P1G9SubtitleDanmakuTests
         });
         var executor = new BlockingExtrasRetryExecutor();
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(),
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(),
             executor, paths);
 
         var first = coordinator.RetryFailedExtrasAsync("extras-retry");

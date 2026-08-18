@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download.Extras;
@@ -68,7 +68,7 @@ public class SubmitContext
 public partial class VideoListViewModel : ObservableObject, IDisposable
 {
     private readonly Func<SubmitContext> _getSubmitContext;
-    private readonly IMessengerService? _messengerService;
+    private readonly IHostEventBus? _eventBus;
     private readonly Action<string> _onStatusMessage;
     private readonly IFfmpegRuntimeLocator _ffmpegService;
     private readonly Action? _onConfigurationBlocked;
@@ -124,11 +124,11 @@ public partial class VideoListViewModel : ObservableObject, IDisposable
     /// 构造函数
     /// </summary>
     /// <param name="getSubmitContext">获取提交上下文的函数（从主 VM 收集参数）</param>
-    /// <param name="messengerService">消息总线服务（用于发送提交消息）</param>
+    /// <param name="eventBus">宿主事件总线（用于发送提交事件）</param>
     /// <param name="onStatusMessage">状态消息回调（传回主 VM 显示日志）</param>
     public VideoListViewModel(
         Func<SubmitContext> getSubmitContext,
-        IMessengerService? messengerService,
+        IHostEventBus? eventBus,
         Action<string> onStatusMessage,
         IFfmpegRuntimeLocator ffmpegService,
         Action? onConfigurationBlocked = null,
@@ -138,7 +138,7 @@ public partial class VideoListViewModel : ObservableObject, IDisposable
         CancellationToken documentToken = default)
     {
         _getSubmitContext = getSubmitContext;
-        _messengerService = messengerService;
+        _eventBus = eventBus;
         _onStatusMessage = onStatusMessage;
         _ffmpegService = ffmpegService;
         _onConfigurationBlocked = onConfigurationBlocked;
@@ -402,7 +402,7 @@ public partial class VideoListViewModel : ObservableObject, IDisposable
             if (_submissionService is null)
             {
                 // 兼容旧测试和旧宿主构造路径；生产 DI 始终注入 G6 可等待提交服务。
-                _messengerService?.Send(new SubmitDownloadTaskMessage(submission));
+                _eventBus?.Publish(new SubmitDownloadTaskMessage(submission));
                 _onStatusMessage($"已提交 {selectedItems.Count} 个下载任务到调度器");
             }
             else

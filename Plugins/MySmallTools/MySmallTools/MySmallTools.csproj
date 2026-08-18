@@ -45,6 +45,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <!-- 插件 ViewModel 的实现依赖显式归属插件，而不是依赖 SDK 的传递引用。 -->
+      <PackageReference Include="CommunityToolkit.Mvvm" />
       <PackageReference Include="LibVLCSharp" GeneratePathProperty="true" />
       <PackageReference Include="LibVLCSharp.Avalonia" GeneratePathProperty="true" />
       <PackageReference Include="VideoLAN.LibVLC.Windows" PrivateAssets="all" />

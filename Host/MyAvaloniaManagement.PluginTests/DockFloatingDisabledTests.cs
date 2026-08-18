@@ -124,7 +124,7 @@ public sealed class DockFloatingDisabledTests
         var factory = new ManagementFactory(
             extensions,
             manager,
-            new MyAvaloniaManagementCommon.Message.MessengerService());
+            new MyAvaloniaManagement.Business.Events.HostEventBus());
         return new FactoryContext(provider, factory);
     }
 

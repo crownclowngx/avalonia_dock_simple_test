@@ -3,7 +3,7 @@ using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 
 namespace BiliDownloader.Services.Download;
 
@@ -26,7 +26,7 @@ public class DownloadProgressTracker : IDownloadProgressTracker
 {
     private static readonly IPluginLogger Log = PluginLog.For<DownloadProgressTracker>();
 
-    private readonly IMessengerService _messengerService;
+    private readonly IHostEventBus _eventBus;
     private readonly ProgressWriteChannel _writeChannel;
 
     /// <summary>进度写入节流间隔：同一任务在此间隔内只入队一次</summary>
@@ -37,9 +37,9 @@ public class DownloadProgressTracker : IDownloadProgressTracker
     private readonly object _shutdownLock = new();
     private Task? _shutdownTask;
 
-    public DownloadProgressTracker(IDownloadTaskRepository repository, IMessengerService messengerService)
+    public DownloadProgressTracker(IDownloadTaskRepository repository, IHostEventBus eventBus)
     {
-        _messengerService = messengerService;
+        _eventBus = eventBus;
         _writeChannel = new ProgressWriteChannel(repository);
     }
 
@@ -104,7 +104,7 @@ public class DownloadProgressTracker : IDownloadProgressTracker
     {
         try
         {
-            _messengerService.Send(new DownloadTaskStatusChangedMessage(
+            _eventBus.Publish(new DownloadTaskStatusChangedMessage(
                 targetDocumentId: task.DocumentId,
                 taskId: task.TaskId,
                 newStatus: task.Status,
@@ -122,7 +122,7 @@ public class DownloadProgressTracker : IDownloadProgressTracker
     {
         try
         {
-            _messengerService.Send(new DownloadTaskProgressMessage(
+            _eventBus.Publish(new DownloadTaskProgressMessage(
                 targetDocumentId: task.DocumentId,
                 taskId: task.TaskId,
                 itemTitle: task.ItemTitle,

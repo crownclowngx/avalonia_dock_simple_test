@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Save;
 using BiliDownloader.Constants;
 using BiliDownloader.Messages;
@@ -37,7 +37,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     /// </summary>
     public string DocumentId { get; private set; } = Guid.NewGuid().ToString("N");
 
-    private readonly IMessengerService _messengerService;
+    private readonly IHostEventBus _eventBus;
+    private readonly List<IDisposable> _eventSubscriptions = [];
     private readonly IDownloadTaskRepository _taskRepository;
     private readonly IBiliDownloaderDocumentStateMapper _documentStateMapper;
     // 这是 BiliDownloader Document 对象树的唯一关闭令牌源：宿主 ClosingToken 负责正常的
@@ -115,7 +116,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     #endregion
 
     public BiliDownloaderViewModel(
-        IMessengerService messengerService,
+        IHostEventBus eventBus,
         IDownloadTaskRepository taskRepository,
         ISettingsRepository settingsRepository,
         BiliLoginStateService loginStateService,
@@ -134,7 +135,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
         ISubtitleCatalogService? subtitleCatalogService = null,
         IDocumentLifetime? documentLifetime = null)
     {
-        _messengerService = messengerService;
+        _eventBus = eventBus;
         _taskRepository = taskRepository;
         _documentStateMapper = documentStateMapper ?? new BiliDownloaderDocumentStateMapper();
         _documentCts = CancellationTokenSource.CreateLinkedTokenSource(
@@ -264,7 +265,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
                 IsHighSpecificationSelectionValid = DownloadConfig.IsHighSpecificationSelectionValid,
                 IncrementalExpectation = SourceWorkflow.CreateSubmissionExpectation(),
             },
-            messengerService: _messengerService,
+            eventBus: _eventBus,
             onStatusMessage: msg => AppendLog(msg),
             ffmpegService: ffmpegService,
             onConfigurationBlocked: () => workspace?.ExpandSettings(),
@@ -390,7 +391,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
             if (args.PropertyName == nameof(NamingTemplateViewModel.Template)) MarkDocumentModified();
         };
 
-        RegisterMessengers();
+        RegisterEvents();
     }
 
     /// <summary>创建意图只决定首次展示入口；保存与下载契约始终属于同一个 Document。</summary>
@@ -404,7 +405,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     /// P0 构造兼容入口。内部仍组装统一 Provider，避免旧调用方绕过 P1-G0 契约。
     /// </summary>
     internal BiliDownloaderViewModel(
-        IMessengerService messengerService,
+        IHostEventBus eventBus,
         IDownloadTaskRepository taskRepository,
         ISettingsRepository settingsRepository,
         BiliLoginStateService loginStateService,
@@ -418,7 +419,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
         ILoginDialogService? loginDialogService = null,
         IFfmpegPackageInstaller? ffmpegInstaller = null)
         : this(
-            messengerService,
+            eventBus,
             taskRepository,
             settingsRepository,
             loginStateService,
@@ -475,55 +476,47 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
         if (suppressInitializationChanges) IsModified = false;
     }
 
-    #region 消息总线注册
+    #region 事件总线注册
 
-    private void RegisterMessengers()
+    private void RegisterEvents()
     {
+        // 注册发生在完整对象树创建之后。任何失败都表示宿主组合或生命周期已损坏，
+        // 必须向构造调用方暴露，不能留下只注册了一部分处理器的半可用 Document。
         try
         {
-            // 登录状态变更 -> 同步到 LoginBar 子 VM
-            _messengerService.Register<BiliDownloaderViewModel, LoginStateChangedMessage>(
-                this, (vm, msg) =>
-                {
-                    if (vm.IsClosing) return;
-                    vm.LoginBar.IsLoggedIn = msg.IsLoggedIn;
-                    vm.LoginBar.UserName = LoginBarViewModel.GetDisplayName(
-                        msg.IsLoggedIn,
-                        msg.UserName);
-                    vm.LoginBar.StatusMessage = msg.StatusMessage;
-                    vm.Workspace.InvalidateMediaCapabilities();
-                });
+            _eventSubscriptions.Add(_eventBus.Subscribe<LoginStateChangedMessage>(msg =>
+            {
+                if (IsClosing) return;
+                LoginBar.IsLoggedIn = msg.IsLoggedIn;
+                LoginBar.UserName = LoginBarViewModel.GetDisplayName(msg.IsLoggedIn, msg.UserName);
+                LoginBar.StatusMessage = msg.StatusMessage;
+                Workspace.InvalidateMediaCapabilities();
+            }));
 
-            // 下载进度回传（按 DocumentId 过滤）-> 委托给 VideoList
-            _messengerService.Register<BiliDownloaderViewModel, DownloadTaskProgressMessage>(
-                this, (vm, msg) =>
-                {
-                    if (vm.IsClosing) return;
-                    if (msg.TargetDocumentId != vm.DocumentId) return;
-                    vm.VideoList.UpdateItemProgress(msg);
-                });
+            _eventSubscriptions.Add(_eventBus.Subscribe<DownloadTaskProgressMessage>(msg =>
+            {
+                if (IsClosing || msg.TargetDocumentId != DocumentId) return;
+                VideoList.UpdateItemProgress(msg);
+            }));
 
-            // 任务被删除通知 -> 委托给 VideoList
-            _messengerService.Register<BiliDownloaderViewModel, DownloadTaskDeletedMessage>(
-                this, (vm, msg) =>
-                {
-                    if (vm.IsClosing) return;
-                    if (msg.TargetDocumentId != vm.DocumentId) return;
-                    vm.VideoList.RemoveItem(msg.TaskId);
-                });
+            _eventSubscriptions.Add(_eventBus.Subscribe<DownloadTaskDeletedMessage>(msg =>
+            {
+                if (IsClosing || msg.TargetDocumentId != DocumentId) return;
+                VideoList.RemoveItem(msg.TaskId);
+            }));
 
-            // 调度器自主状态变更通知 -> 委托给 VideoList
-            _messengerService.Register<BiliDownloaderViewModel, DownloadTaskStatusChangedMessage>(
-                this, (vm, msg) =>
-                {
-                    if (vm.IsClosing) return;
-                    if (msg.TargetDocumentId != vm.DocumentId) return;
-                    vm.VideoList.UpdateItemStatus(msg);
-                });
+            _eventSubscriptions.Add(_eventBus.Subscribe<DownloadTaskStatusChangedMessage>(msg =>
+            {
+                if (IsClosing || msg.TargetDocumentId != DocumentId) return;
+                VideoList.UpdateItemStatus(msg);
+            }));
         }
         catch
         {
-            // 忽略
+            // 注册多条事件必须全部成功或全部回滚。异常继续向构造调用方传播，
+            // 已成功登记的强引用订阅则先逆序释放，避免创建失败后泄漏 Document。
+            ReleaseEventSubscriptions();
+            throw;
         }
     }
 
@@ -727,16 +720,26 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
 
         // 释放顺序刻意遵循“先失效外部入口，再广播取消，最后级联释放子对象”：
-        // Messenger 先解绑，避免关闭过程中又收到后台进度；Document CTS 随后取消所有仍在
+        // 先释放总线令牌，避免关闭过程中又收到后台进度；Document CTS 随后取消所有仍在
         // 等待的页面操作；子 ViewModel 最后负责解绑各自事件并释放局部 CTS。整个过程不等待
         // 异步任务退出，因此 Dock 可以立即关闭，同时迟到回调会被 IsClosing 门禁丢弃。
-        _messengerService.UnregisterAll(this);
+        ReleaseEventSubscriptions();
         _documentCts.Cancel();
         (SourceWorkflow as IDisposable)?.Dispose();
         (Workspace as IDisposable)?.Dispose();
         (LoginBar as IDisposable)?.Dispose();
         VideoParse.Dispose();
         _documentCts.Dispose();
+    }
+
+    private void ReleaseEventSubscriptions()
+    {
+        for (var index = _eventSubscriptions.Count - 1; index >= 0; index--)
+        {
+            _eventSubscriptions[index].Dispose();
+        }
+
+        _eventSubscriptions.Clear();
     }
 
     #endregion

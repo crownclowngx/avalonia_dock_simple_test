@@ -3,7 +3,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyPlugTest.Models;
 
 namespace MyPlugTest.ViewModels;
@@ -13,31 +13,27 @@ public partial class TestMessageReceiveViewModel : Document, IDisposable
     // 列表数据源
     [ObservableProperty]
     private ObservableCollection<MessageItem> _messages = [];
-    private readonly IMessengerService _messengerService;
+    private readonly IDisposable _eventSubscription;
     private readonly IDocumentLifetime? _documentLifetime;
     private int _disposed;
     private int _messageIdCounter = 1;
     public TestMessageReceiveViewModel(
-        IMessengerService messengerService,
+        IHostEventBus eventBus,
         IDocumentLifetime? documentLifetime = null)
     {
         // 设置标题
         Title = "消息接收测试";
 
-        // 必须使用宿主注入的共享消息服务；发送 Document 与接收 Document
-        // 因此处于同一消息事实源中，插件内部不再创建第二个 MessengerService。
-        _messengerService = messengerService;
+        // 必须使用宿主注入的事件总线；发送 Document 与接收 Document 因此处于同一运行时。
+        // 返回令牌由当前 Document 持有，Scope 释放 Document 时会确定地结束这条强引用订阅。
         _documentLifetime = documentLifetime;
-        
-        // 注册消息接收器
-        _messengerService.Register<TestMessageReceiveViewModel, RequestResponseMessage>(this, OnRequestResponseMessageReceived);
-
+        _eventSubscription = eventBus.Subscribe<RequestResponseMessage>(OnRequestResponseMessageReceived);
     }
     
     /// <summary>
     /// 处理接收到的请求响应消息
     /// </summary>
-    private void OnRequestResponseMessageReceived(TestMessageReceiveViewModel receiver, RequestResponseMessage message)
+    private void OnRequestResponseMessageReceived(RequestResponseMessage message)
     {
         if (IsClosing) return;
         // 创建新的消息项并添加到集合
@@ -69,9 +65,9 @@ public partial class TestMessageReceiveViewModel : Document, IDisposable
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
-        // Messenger 注册的生命周期长于单个 Document，必须在 Scope 释放时主动解绑。消息接收
+        // 根级事件总线的生命周期长于单个 Document，必须在 Scope 释放时主动解绑。消息接收
         // 与 Dispatcher 回调都另有 IsClosing 二次门禁，因此已经入队但尚未执行的回调也会被
-        // 丢弃；这里不清空共享 Messenger，更不会影响其他仍打开的消息接收 Document。
-        _messengerService.UnregisterAll(this);
+        // 丢弃；这里仅释放自己的令牌，不会影响其他仍打开的消息接收 Document。
+        _eventSubscription.Dispose();
     }
 }

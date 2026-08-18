@@ -13,12 +13,6 @@
           "MicroCom.Runtime": "0.11.6"
         }
       },
-      "CommunityToolkit.Mvvm": {
-        "type": "Direct",
-        "requested": "[8.4.2, )",
-        "resolved": "8.4.2",
-        "contentHash": "WadCzGEc2U+3e20avRLng4qNtt4zoOGWrdUISqJWrHe3/FSnrYjuM5Sb4yQb09LhkBXrrI4Zt3dLKgRMbItsrg=="
-      },
       "Dock.Model.Mvvm": {
         "type": "Direct",
         "requested": "[12.0.0.2, )",
@@ -72,6 +66,12 @@
         "type": "Transitive",
         "resolved": "0.11.6",
         "contentHash": "NdNWGDiZ6eS/Mf/9+QHR91cj1K7Hy+PX9yrHI/zM7xFYuj9IWT2uxtB6sCHjrnxAeLV9fut1R6zHDUGKX6f9lQ=="
+      },
+      "CommunityToolkit.Mvvm": {
+        "type": "CentralTransitive",
+        "requested": "[8.4.2, )",
+        "resolved": "8.4.0",
+        "contentHash": "tqVU8yc/ADO9oiTRyTnwhFN68hCwvkliMierptWOudIAvWY1mWCh5VFh+guwHJmpMwfg0J0rY+yyd5Oy7ty9Uw=="
       },
       "Dock.Controls.Recycling.Model": {
         "type": "CentralTransitive",

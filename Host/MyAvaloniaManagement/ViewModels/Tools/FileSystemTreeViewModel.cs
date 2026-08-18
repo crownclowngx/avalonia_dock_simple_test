@@ -8,7 +8,7 @@ using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.FileSystem;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagement.ViewModels.Bindings;
 
 namespace MyAvaloniaManagement.ViewModels.Tools;
@@ -23,7 +23,7 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 internal sealed partial class FileSystemTreeViewModel : Tool, IFileSystemTreeViewBindings
 {
     private readonly IHostStorageService _storageService;
-    private readonly IMessengerService _messengerService;
+    private readonly IHostEventBus _eventBus;
 
     [ObservableProperty]
     private ObservableCollection<FileSystemNode> _rootNodes = [];
@@ -54,11 +54,11 @@ internal sealed partial class FileSystemTreeViewModel : Tool, IFileSystemTreeVie
     /// <param name="initializeTree">是否立即枚举系统驱动器；测试可关闭以避免依赖运行机器。</param>
     internal FileSystemTreeViewModel(
         IHostStorageService storageService,
-        IMessengerService messengerService,
+        IHostEventBus eventBus,
         bool initializeTree = true)
     {
         _storageService = storageService;
-        _messengerService = messengerService;
+        _eventBus = eventBus;
         Id = "fileSystemTree";
         Title = "文件系统";
         CanClose = true;
@@ -139,7 +139,7 @@ internal sealed partial class FileSystemTreeViewModel : Tool, IFileSystemTreeVie
     {
         if (SelectedNode != null && _storageService.FileExists(SelectedNode.Path))
         {
-            _messengerService.Send(new OpenFileMessage(SelectedNode.Path));
+            _eventBus.Publish(new OpenFileMessage(SelectedNode.Path));
         }
     }
     

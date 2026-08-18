@@ -215,7 +215,7 @@ public sealed class MainWindowViewModelTests
         var changed = new List<string?>();
         viewModel.PropertyChanged += (_, args) => changed.Add(args.PropertyName);
 
-        context.Messenger.Send(new UpdateLayoutMessage("refresh"));
+        context.EventBus.Publish(new UpdateLayoutMessage("refresh"));
 
         Assert.Contains(nameof(viewModel.Layout), changed);
     }
@@ -228,7 +228,7 @@ public sealed class MainWindowViewModelTests
         context.Storage.AddFile(path, Serialize("消息", "content"));
         _ = context.CreateMainWindowViewModel();
 
-        context.Messenger.Send(new OpenFileMessage(path));
+        context.EventBus.Publish(new OpenFileMessage(path));
 
         Assert.Single(GetDocuments(context));
     }
@@ -306,7 +306,7 @@ public sealed class MainWindowViewModelTests
         context.Storage.ReadException = new IOException("simulated");
         var viewModel = context.CreateMainWindowViewModel();
 
-        context.Messenger.Send(new OpenFileMessage(path));
+        context.EventBus.Publish(new OpenFileMessage(path));
 
         Assert.True(viewModel.HasDocumentOperationError);
         Assert.Empty(GetDocuments(context));

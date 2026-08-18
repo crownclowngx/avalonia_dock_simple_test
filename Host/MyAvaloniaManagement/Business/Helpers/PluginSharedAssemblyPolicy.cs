@@ -54,6 +54,19 @@ internal sealed class HostContractAssemblyPolicy : IPluginSharedAssemblyPolicy
         "Ursa.Themes.Semi",
     ];
 
+    /// <summary>
+    /// 宿主明确提供、但不属于 Plugin SDK 公共签名的插件框架程序集。
+    /// </summary>
+    /// <remarks>
+    /// CommunityToolkit 供宿主和仓库插件各自实现 ViewModel。G9 已从 SDK 包依赖中删除它，
+    /// 但宿主仍直接拥有并统一加载受支持版本，避免每个插件目录携带同一程序集并形成类型分裂。
+    /// 将普通业务依赖加入这里会破坏插件隔离，因此该清单必须保持最小且接受包边界测试。
+    /// </remarks>
+    private static readonly string[] SupportedPluginFrameworkAssemblyNames =
+    [
+        "CommunityToolkit.Mvvm",
+    ];
+
     private readonly IReadOnlyDictionary<string, Assembly> _sharedAssemblies;
 
     internal HostContractAssemblyPolicy()
@@ -62,6 +75,12 @@ internal sealed class HostContractAssemblyPolicy : IPluginSharedAssemblyPolicy
         {
             typeof(IPluginModule).Assembly,
         };
+
+        foreach (var assemblyName in SupportedPluginFrameworkAssemblyNames)
+        {
+            roots.Add(AssemblyLoadContext.Default.LoadFromAssemblyName(
+                new AssemblyName(assemblyName)));
+        }
 
         foreach (var assemblyName in SupportedUiProfileAssemblyNames)
         {

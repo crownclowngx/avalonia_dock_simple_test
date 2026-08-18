@@ -574,6 +574,7 @@
       "datangaccountinghelpplug": {
         "type": "Project",
         "dependencies": {
+          "CommunityToolkit.Mvvm": "[8.4.2, )",
           "EPPlus": "[8.6.3, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
           "MyAvaloniaManagement.PluginSdk": "[1.0.0, )"
@@ -607,7 +608,6 @@
         "type": "Project",
         "dependencies": {
           "Avalonia": "[12.1.0, )",
-          "CommunityToolkit.Mvvm": "[8.4.2, )",
           "Dock.Model.Mvvm": "[12.0.0.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
           "Newtonsoft.Json": "[13.0.4, )",

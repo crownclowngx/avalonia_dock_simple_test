@@ -266,7 +266,7 @@ public sealed class TaskHistoryG6Tests
             new HistoryFixedCapacity());
         var coordinator = new BiliDownloadCoordinator(
             store,
-            new IsolatedMessengerService(),
+            new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths,

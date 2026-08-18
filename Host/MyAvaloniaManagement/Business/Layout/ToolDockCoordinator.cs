@@ -7,7 +7,7 @@ using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 
 namespace MyAvaloniaManagement.Business.Layout;
 
@@ -19,7 +19,7 @@ internal sealed class ToolDockCoordinator(
     ManagementFactory factory,
     DockWorkspaceBuilder workspaceBuilder,
     Func<string, Alignment> getAlignment,
-    IMessengerService messengerService)
+    IHostEventBus eventBus)
 {
     private bool _normalizingVerticalDock;
 
@@ -113,7 +113,7 @@ internal sealed class ToolDockCoordinator(
             factory.SetActiveDockable(tool);
         }
 
-        messengerService.Send(new UpdateLayoutMessage("ShowTool"));
+        eventBus.Publish(new UpdateLayoutMessage("ShowTool"));
         return true;
     }
 

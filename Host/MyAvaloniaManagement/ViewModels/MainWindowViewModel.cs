@@ -13,7 +13,7 @@ using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagement.ViewModels.Bindings;
 
@@ -23,11 +23,12 @@ namespace MyAvaloniaManagement.ViewModels;
 /// 负责主窗口绑定状态、命令和消息编排，并把 Dock 布局及文档持久化委托给内部服务。
 /// 该边界让 ViewModel 保持 UI 协调职责，不直接承担文件事务和 Dock 树遍历。
 /// </summary>
-internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarget, IMainWindowViewBindings
+internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarget, IMainWindowViewBindings, IDisposable
 {
     private readonly ManagementFactory _factory;
     private readonly PluginMenuService _pluginMenuService;
-    private readonly IMessengerService _messengerService;
+    private readonly IHostEventBus _eventBus;
+    private readonly List<IDisposable> _eventSubscriptions = [];
     private readonly DockLayoutLifecycle _layoutLifecycle;
     private readonly ApplicationThemeService _themeService;
     private readonly DocumentPersistenceCoordinator _documents;
@@ -58,7 +59,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     internal MainWindowViewModel(
         ManagementFactory factory,
         PluginMenuService pluginMenuService,
-        IMessengerService messengerService,
+        IHostEventBus eventBus,
         DockLayoutLifecycle layoutLifecycle,
         IHostStorageService storageService,
         ApplicationThemeService themeService,
@@ -73,8 +74,8 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
         _factory = factory ?? throw new ArgumentNullException(nameof(factory));
         _pluginMenuService = pluginMenuService ??
             throw new ArgumentNullException(nameof(pluginMenuService));
-        _messengerService = messengerService ??
-            throw new ArgumentNullException(nameof(messengerService));
+        _eventBus = eventBus ??
+            throw new ArgumentNullException(nameof(eventBus));
         _layoutLifecycle = layoutLifecycle ??
             throw new ArgumentNullException(nameof(layoutLifecycle));
         ArgumentNullException.ThrowIfNull(storageService);
@@ -93,7 +94,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
         _themeMode = _themeService.CurrentMode;
 
         Layout = _layoutLifecycle.Prepare(_factory);
-        RegisterMessageHandlers();
+        RegisterEventHandlers();
     }
 
     private readonly DocumentCloseCoordinator _documentCloseCoordinator;
@@ -139,17 +140,39 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
                 document is ISavableDocument &&
                 document is IDocumentSaveState { IsDirty: true });
 
-    private void RegisterMessageHandlers()
+    private void RegisterEventHandlers()
     {
-        _messengerService.Register<MainWindowViewModel, OpenFileMessage>(
-            this,
-            static (recipient, message) =>
-                recipient.ObserveOpenMessage(message.FilePath));
+        try
+        {
+            _eventSubscriptions.Add(_eventBus.Subscribe<OpenFileMessage>(
+                message => ObserveOpenMessage(message.FilePath)));
+            _eventSubscriptions.Add(_eventBus.Subscribe<UpdateLayoutMessage>(
+                _ => OnPropertyChanged(nameof(Layout))));
+        }
+        catch
+        {
+            // 多条订阅必须具有失败原子性：若后续订阅失败，先释放已经成功登记的令牌，
+            // 再把原异常交给组合根。这里不隐藏契约错误，也不留下半初始化对象的强引用。
+            ReleaseEventSubscriptions();
+            throw;
+        }
+    }
 
-        _messengerService.Register<MainWindowViewModel, UpdateLayoutMessage>(
-            this,
-            static (recipient, _) =>
-                recipient.OnPropertyChanged(nameof(Layout)));
+    public void Dispose()
+    {
+        // ViewModel 由根容器创建并跟踪。逆序释放令牌与构造顺序对称；每个令牌自身幂等，
+        // 因此测试或宿主重复释放不会误删其他订阅者。
+        ReleaseEventSubscriptions();
+    }
+
+    private void ReleaseEventSubscriptions()
+    {
+        for (var index = _eventSubscriptions.Count - 1; index >= 0; index--)
+        {
+            _eventSubscriptions[index].Dispose();
+        }
+
+        _eventSubscriptions.Clear();
     }
 
     private void ObserveOpenMessage(string filePath) =>

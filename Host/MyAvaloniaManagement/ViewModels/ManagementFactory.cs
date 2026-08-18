@@ -16,7 +16,7 @@ using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
 
@@ -45,7 +45,7 @@ internal sealed class ManagementFactory : Factory
     private readonly DockDocumentLifetime _documentLifetime;
     private readonly DockWorkspaceBuilder _workspaceBuilder;
     private readonly ToolDockCoordinator _toolDockCoordinator;
-    private readonly IMessengerService _messengerService;
+    private readonly IHostEventBus _eventBus;
     private readonly DocumentPersistenceStateStore _documentPersistenceStates;
     private readonly DocumentCloseCoordinator? _documentCloseCoordinator;
     private readonly DocumentRecoveryRegistry? _documentRecoveryRegistry;
@@ -84,7 +84,7 @@ internal sealed class ManagementFactory : Factory
     internal ManagementFactory(
         PluginRegistry extensions,
         DocumentScopeManager documentScopeManager,
-        IMessengerService messengerService,
+        IHostEventBus eventBus,
         DocumentPersistenceStateStore? documentPersistenceStates = null,
         DocumentCloseCoordinator? documentCloseCoordinator = null,
         DocumentRecoveryRegistry? documentRecoveryRegistry = null)
@@ -93,7 +93,7 @@ internal sealed class ManagementFactory : Factory
         ArgumentNullException.ThrowIfNull(documentScopeManager);
         _documentLifetime = new DockDocumentLifetime(documentScopeManager);
         _workspaceBuilder = new DockWorkspaceBuilder(this);
-        _messengerService = messengerService;
+        _eventBus = eventBus;
         _documentPersistenceStates = documentPersistenceStates ?? new DocumentPersistenceStateStore();
         _documentCloseCoordinator = documentCloseCoordinator;
         _documentRecoveryRegistry = documentRecoveryRegistry;
@@ -101,7 +101,7 @@ internal sealed class ManagementFactory : Factory
             this,
             _workspaceBuilder,
             GetToolAlignment,
-            messengerService);
+            eventBus);
         _extensions = extensions;
         _createdTools = [];
         // 启用 HideToolsOnClose：关闭工具时移入 HiddenDockables 而非真正移除，
@@ -543,7 +543,7 @@ internal sealed class ManagementFactory : Factory
         {
             try
             {
-                _messengerService.Send(
+                _eventBus.Publish(
                     new ToolVisibilityChangedMessage("ToolHidden"));
             }
             catch

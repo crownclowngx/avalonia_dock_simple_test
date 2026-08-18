@@ -9,6 +9,7 @@
 - 建立和维护四向 Dock 工作区；
 - 严格读写唯一 Document 信封 v1，并编排打开、保存和关闭后的资源释放；
 - 读取、迁移、校验和保存布局 V1；
+- 提供每个 HostRuntime 独享的同步强类型事件总线；
 - 为 XAML、菜单、主题和宿主 Tool 提供绑定入口。
 
 宿主不负责插件的领域业务、插件内部 DTO 演进或后台任务实现。当前信任模型是同一团队维护的进程内可信插件，不提供沙箱、热卸载或第三方 ABI。
@@ -35,6 +36,7 @@ flowchart TB
     Runtime --> Lifecycle["PluginLifecycleManager"]
 
     Container --> Factory["ManagementFactory<br/>Host internal Dock 协调器"]
+    Container --> EventBus["IHostEventBus<br/>每根隔离的同步事件"]
     Container --> Registry["PluginRegistry<br/>不可变贡献快照"]
     RegistryBuilder --> Registry
     Factory --> Registry
@@ -43,7 +45,8 @@ flowchart TB
     Factory --> ToolCoordinator["ToolDockCoordinator<br/>工具状态流程"]
     Factory --> DocumentLifetime["DockDocumentLifetime<br/>关闭后释放"]
 
-    Container --> MainVM["MainWindowViewModel<br/>绑定与消息编排"]
+    Container --> MainVM["MainWindowViewModel<br/>绑定与事件编排"]
+    EventBus --> MainVM
     MainVM --> Documents["DocumentPersistenceCoordinator"]
     MainVM --> Close["DocumentCloseCoordinator"]
     Documents --> Workspace["DocumentWorkspace<br/>Dock Adapter"]
@@ -207,13 +210,25 @@ sequenceDiagram
 Registry、目标文件名和 `TimeProvider` 取得。v1 是第一个且唯一格式；不设置旧字段探测、别名
 归一化后继续打开或迁移分支。打开任一阶段失败时，未发布 Scope 被释放且不会执行写入。
 
-消息总线无法等待异步回调时，ViewModel 通过内部异步观察方法捕获预期的文档操作结果，避免 `async void` 和未观察任务异常。
+事件总线按契约同步派发且不等待异步回调；ViewModel 通过内部异步观察方法捕获预期的文档操作结果，
+避免 `async void` 和未观察任务异常。
 
 ### 6.3 异常边界
 
 只把预期的文件、权限、路径、JSON 和 `DocumentLoadException` 转换为可恢复失败。空引用、无效程序状态等编程错误继续向上传播，使测试和诊断能够尽早暴露缺陷。
 
 批量打开以单文件为错误边界：一个文件失败不阻断后续文件。窗口退出的“保存全部”按 Dock 顺序逐个提交，首个失败或取消即停止。
+
+### 6.4 事件总线
+
+SDK 的 `IHostEventBus` 是唯一公共进程内事件契约。Host 的 internal `HostEventBus` 由根容器注册为
+singleton，所以一个 HostRuntime 内共享、不同 HostRuntime 互相隔离。实现只在锁内维护订阅并创建
+发布快照，在锁外按登记顺序、发布线程同步调用用户代码；这允许处理器自释放或重入发布而不死锁。
+
+处理器异常原样传播并停止后续派发。订阅者保存独立、幂等的 `IDisposable` 令牌：Document 随自身
+Scope 释放，插件 Coordinator 在关闭流程释放，根级窗口和 Tool 由自身 `Dispose` 及根容器兜底。
+进入发布快照的处理器可能最后执行一次，因此 Document 仍以 `IDocumentLifetime.IsClosing` 阻止迟到
+副作用。总线只负责派发，不承担订阅者生命周期；Host 内部广播的直接协调器替换属于 G10。
 
 ## 7. 布局生命周期
 
@@ -250,6 +265,7 @@ Registry、目标文件名和 `TimeProvider` 取得。v1 是第一个且唯一�
 | 对象 | 所有者 | 释放时机 |
 | --- | --- | --- |
 | 根 DI 容器 | `HostRuntime` | 插件反向关闭后 |
+| Host 事件总线 | 根 DI 容器 | 根容器释放；订阅者应更早释放自己的令牌 |
 | Managed 插件生命周期 | `PluginLifecycleManager` | Avalonia 消息循环结束后 |
 | Tool 实例 | `ManagementFactory` | 根容器释放 |
 | 有独立 Scope 的 Document | `DocumentScopeManager` | Dock 确认关闭后；根容器退出时兜底 |
@@ -270,6 +286,7 @@ Registry、目标文件名和 `TimeProvider` 取得。v1 是第一个且唯一�
 | 并发打开、保存失败、关闭确认与坏文件恢复 | `MainWindowViewModelTests`、`DocumentPersistenceV1Tests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |
+| 同步顺序、重入、异常、并发、根隔离及订阅释放 | `HostEventBusTests`、Document Scope 测试 |
 | 布局迁移、隔离、回退 | 布局生命周期与存储测试 |
 | XAML、绑定和真实窗口事件 | Headless UI 与 Windows Smoke |
 

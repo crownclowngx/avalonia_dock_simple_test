@@ -11,7 +11,7 @@ using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.Tools;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.ViewModels.Tools;
@@ -23,10 +23,11 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// 工具可见性以 Dock 树为事实来源，消息只承担变化通知。
 /// 这样无论变化来自本工具、关闭按钮还是外部布局恢复，界面状态都能重新同步。
 /// </remarks>
-internal sealed partial class ToolManagementViewModel : Tool
+internal sealed partial class ToolManagementViewModel : Tool, IDisposable
 {
     private readonly ManagementFactory _factory;
-    private readonly IMessengerService _messengerService;
+    private readonly IHostEventBus _eventBus;
+    private readonly IDisposable _visibilitySubscription;
 
     /// <summary>
     /// 获取或设置可由用户管理的工具项集合。
@@ -41,16 +42,16 @@ internal sealed partial class ToolManagementViewModel : Tool
     /// </summary>
     internal ToolManagementViewModel(
         ManagementFactory factory,
-        IMessengerService messengerService)
+        IHostEventBus eventBus)
     {
         _factory = factory;
-        _messengerService = messengerService;
+        _eventBus = eventBus;
         Id = HostExtensionIds.ToolManagement.Value;
         Title = "工具管理";
         _currentToolId = Id;
         CanClose = false;
         LoadTools();
-        RegisterMessages();
+        _visibilitySubscription = RegisterEvents();
     }
 
     /// <summary>
@@ -60,21 +61,12 @@ internal sealed partial class ToolManagementViewModel : Tool
     /// 注册失败只可能出现在设计器或服务尚未初始化的兼容路径，
     /// 此时仍可在布局建立后通过 <see cref="SyncToolsVisibility"/> 主动同步。
     /// </remarks>
-    private void RegisterMessages()
+    private IDisposable RegisterEvents()
     {
-        try
-        {
-            _messengerService.Register<ToolManagementViewModel, ToolVisibilityChangedMessage>(
-                this,
-                (recipient, _) =>
-                {
-                    recipient.SyncToolsVisibility();
-                });
-        }
-        catch
-        {
-            // 服务未初始化时忽略，稍后 InitLayout 完成后可手动同步
-        }
+        // 总线是构造期必需依赖。注册失败表示对象图已经损坏，应让组合根立即失败，
+        // 而不是留下一个偶尔无法同步状态的半可用 Tool。
+        return _eventBus.Subscribe<ToolVisibilityChangedMessage>(
+            _ => SyncToolsVisibility());
     }
 
     /// <summary>
@@ -190,7 +182,7 @@ internal sealed partial class ToolManagementViewModel : Tool
         }
 
         // 通知布局刷新
-        _messengerService.Send(new UpdateLayoutMessage("UpdateLayout"));
+        _eventBus.Publish(new UpdateLayoutMessage("UpdateLayout"));
     }
 
     /// <summary>
@@ -215,4 +207,6 @@ internal sealed partial class ToolManagementViewModel : Tool
             }
         }
     }
+
+    public void Dispose() => _visibilitySubscription.Dispose();
 }

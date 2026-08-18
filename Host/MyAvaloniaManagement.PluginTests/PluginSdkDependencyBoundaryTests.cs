@@ -13,7 +13,6 @@ public sealed class PluginSdkDependencyBoundaryTests
     private static readonly string[] BaseSdkPackages =
     [
         "Avalonia",
-        "CommunityToolkit.Mvvm",
         "Dock.Model.Mvvm",
         "Microsoft.Extensions.DependencyInjection.Abstractions",
         "Newtonsoft.Json",
@@ -72,11 +71,12 @@ public sealed class PluginSdkDependencyBoundaryTests
     }
 
     [Theory]
+    [InlineData("CommunityToolkit.Mvvm")]
     [InlineData("Semi.Avalonia")]
     [InlineData("Ursa")]
     [InlineData("Dock.Avalonia")]
     [InlineData("Dock.Controls.Recycling.Model")]
-    public void UiProfile程序集由默认上下文共享(string assemblyName)
+    public void 宿主支持的共享程序集由默认上下文提供(string assemblyName)
     {
         var policy = new HostContractAssemblyPolicy();
         var requested = AssemblyLoadContext.Default
@@ -87,6 +87,18 @@ public sealed class PluginSdkDependencyBoundaryTests
         var resolved = policy.ResolveSharedAssembly(requested);
 
         Assert.Same(AssemblyLoadContext.Default, AssemblyLoadContext.GetLoadContext(resolved));
+    }
+
+    [Theory]
+    [InlineData("Plugins", "BiliDownloader", "BiliDownloader", "BiliDownloader.csproj")]
+    [InlineData("Plugins", "MyPlugTest", "MyPlugTest", "MyPlugTest.csproj")]
+    [InlineData("Plugins", "MySmallTools", "MySmallTools", "MySmallTools.csproj")]
+    [InlineData("Plugins", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug.csproj")]
+    public void 使用Toolkit的仓库插件显式拥有编译依赖(params string[] projectPath)
+    {
+        var project = LoadProject(projectPath);
+
+        Assert.Contains("CommunityToolkit.Mvvm", PackageReferences(project));
     }
 
     private static XDocument LoadProject(params string[] segments) =>

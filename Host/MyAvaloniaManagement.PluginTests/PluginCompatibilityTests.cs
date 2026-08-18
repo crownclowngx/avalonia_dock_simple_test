@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
@@ -296,7 +296,7 @@ public sealed class PluginCompatibilityTests
     public void MyPlugTest三个Document策略均由独立Scope托管()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IMessengerService, MessengerService>();
+        services.AddSingleton<IHostEventBus, MyAvaloniaManagement.Business.Events.HostEventBus>();
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());

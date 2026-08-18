@@ -697,7 +697,7 @@ public sealed class DockFourWayLayoutTests
         var factory = new ManagementFactory(
             extensions,
             manager,
-            new MyAvaloniaManagementCommon.Message.MessengerService());
+            new MyAvaloniaManagement.Business.Events.HostEventBus());
         ToolMaps.Add(factory, tools);
         return new FactoryContext(provider, factory);
     }

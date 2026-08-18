@@ -279,7 +279,7 @@ public sealed class P1G10BandwidthLimitingTests
         var manager = new RecordingTaskLimitManager();
         var coordinator = new BiliDownloadCoordinator(
             repository,
-            new IsolatedMessengerService(),
+            new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths,

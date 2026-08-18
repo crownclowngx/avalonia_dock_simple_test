@@ -20,6 +20,8 @@
     </ItemGroup>
 
   <ItemGroup>
+      <!-- 插件自身的 ViewModel 使用 Toolkit；该实现依赖不再由基础 SDK 偶然传递。 -->
+      <PackageReference Include="CommunityToolkit.Mvvm" />
       <PackageReference Include="Flurl.Http" />
       <PackageReference Include="Microsoft.Data.Sqlite" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />

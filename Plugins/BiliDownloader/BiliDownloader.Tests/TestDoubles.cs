@@ -8,8 +8,7 @@ using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
 using Microsoft.Data.Sqlite;
 using BiliDownloader.Services.Persistence;
-using CommunityToolkit.Mvvm.Messaging;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 
 namespace BiliDownloader.Tests;
 
@@ -576,29 +575,87 @@ internal sealed class RecordingProgressTracker : IDownloadProgressTracker
 }
 
 /// <summary>
-/// 每个测试实例独享的消息器，避免 WeakReferenceMessenger.Default 在并行测试间串扰。
+/// 每个测试实例独享的同步事件总线，用于验证插件逻辑且不在并行测试间共享状态。
 /// </summary>
-internal sealed class IsolatedMessengerService : IMessengerService
+internal sealed class IsolatedHostEventBus : IHostEventBus, IDisposable
 {
-    private readonly IMessenger _messenger = new StrongReferenceMessenger();
+    private readonly object _syncRoot = new();
+    private readonly Dictionary<Type, List<Subscription>> _subscriptions = [];
+    private bool _disposed;
 
-    public IMessenger Messenger => _messenger;
+    public void Publish<TEvent>(TEvent @event) where TEvent : class
+    {
+        ArgumentNullException.ThrowIfNull(@event);
+        Subscription[] snapshot;
+        lock (_syncRoot)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            snapshot = _subscriptions.TryGetValue(typeof(TEvent), out var subscriptions)
+                ? subscriptions.ToArray()
+                : [];
+        }
 
-    public void Send<TMessage>(TMessage message) where TMessage : class
-        => _messenger.Send(message);
+        foreach (var subscription in snapshot)
+        {
+            subscription.Handler(@event);
+        }
+    }
 
-    public void Register<TReceiver, TMessage>(
-        TReceiver receiver,
-        MyAvaloniaManagementCommon.Message.MessageHandler<TReceiver, TMessage> handler)
-        where TReceiver : class
-        where TMessage : class
-        => _messenger.Register<TReceiver, TMessage>(receiver, (target, message) => handler(target, message));
+    public IDisposable Subscribe<TEvent>(Action<TEvent> handler) where TEvent : class
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        var subscription = new Subscription(
+            this,
+            typeof(TEvent),
+            message => handler((TEvent)message));
+        lock (_syncRoot)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (!_subscriptions.TryGetValue(typeof(TEvent), out var subscriptions))
+            {
+                subscriptions = [];
+                _subscriptions.Add(typeof(TEvent), subscriptions);
+            }
+            subscriptions.Add(subscription);
+        }
+        return subscription;
+    }
 
-    public void Unregister<TMessage>(object receiver) where TMessage : class
-        => _messenger.Unregister<TMessage>(receiver);
+    public void Dispose()
+    {
+        lock (_syncRoot)
+        {
+            _disposed = true;
+            _subscriptions.Clear();
+        }
+    }
 
-    public void UnregisterAll(object receiver)
-        => _messenger.UnregisterAll(receiver);
+    private void Remove(Type eventType, Subscription subscription)
+    {
+        lock (_syncRoot)
+        {
+            if (_subscriptions.TryGetValue(eventType, out var subscriptions))
+            {
+                subscriptions.Remove(subscription);
+            }
+        }
+    }
+
+    private sealed class Subscription(
+        IsolatedHostEventBus owner,
+        Type eventType,
+        Action<object> handler) : IDisposable
+    {
+        private int _disposed;
+        internal Action<object> Handler { get; } = handler;
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+            {
+                owner.Remove(eventType, this);
+            }
+        }
+    }
 }
 
 internal sealed class FakeFfmpegService : IFfmpegService
@@ -799,40 +856,28 @@ internal sealed class FakeFfmpegProcess : IFfmpegProcess
     }
 }
 
-internal sealed class RecordingMessengerService : IMessengerService
+internal sealed class RecordingHostEventBus : IHostEventBus, IDisposable
 {
-    private readonly IMessenger _messenger = new StrongReferenceMessenger();
+    private readonly IsolatedHostEventBus _inner = new();
 
     public List<object> SentMessages { get; } = [];
-    public bool ThrowOnSend { get; set; }
+    public bool ThrowOnPublish { get; set; }
 
-    public IMessenger Messenger => _messenger;
-
-    public void Send<TMessage>(TMessage message) where TMessage : class
+    public void Publish<TEvent>(TEvent @event) where TEvent : class
     {
-        if (ThrowOnSend)
+        if (ThrowOnPublish)
         {
-            throw new InvalidOperationException("模拟消息发送失败");
+            throw new InvalidOperationException("模拟事件发布失败");
         }
 
-        SentMessages.Add(message);
-        _messenger.Send(message);
+        SentMessages.Add(@event);
+        _inner.Publish(@event);
     }
 
-    public void Register<TReceiver, TMessage>(
-        TReceiver receiver,
-        MyAvaloniaManagementCommon.Message.MessageHandler<TReceiver, TMessage> handler)
-        where TReceiver : class
-        where TMessage : class
-        => _messenger.Register<TReceiver, TMessage>(
-            receiver,
-            (target, message) => handler(target, message));
+    public IDisposable Subscribe<TEvent>(Action<TEvent> handler) where TEvent : class
+        => _inner.Subscribe(handler);
 
-    public void Unregister<TMessage>(object receiver) where TMessage : class
-        => _messenger.Unregister<TMessage>(receiver);
-
-    public void UnregisterAll(object receiver)
-        => _messenger.UnregisterAll(receiver);
+    public void Dispose() => _inner.Dispose();
 }
 
 internal sealed class InMemorySettingsRepository : ISettingsRepository

@@ -8,7 +8,7 @@ using MyAvaloniaManagement.Models.FileSystem;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.Tests;
@@ -25,7 +25,7 @@ public sealed class ToolViewModelTests
         var node = new FileSystemNode(context.TempDirectory);
         var viewModel = new FileSystemTreeViewModel(
             context.Storage,
-            context.Messenger,
+            context.EventBus,
             initializeTree: false);
 
         FileSystemTreeViewModel.ExpandNode(node);
@@ -45,13 +45,11 @@ public sealed class ToolViewModelTests
         var path = Path.Combine(context.TempDirectory, "open.txt");
         context.Storage.AddFile(path, "content");
         var received = new List<string>();
-        var receiver = new object();
-        context.Messenger.Register<object, OpenFileMessage>(
-            receiver,
-            (_, message) => received.Add(message.FilePath));
+        using var subscription = context.EventBus.Subscribe<OpenFileMessage>(
+            message => received.Add(message.FilePath));
         var viewModel = new FileSystemTreeViewModel(
             context.Storage,
-            context.Messenger,
+            context.EventBus,
             initializeTree: false);
         viewModel.NodeSelected(new FileSystemNode(path));
 
@@ -73,7 +71,7 @@ public sealed class ToolViewModelTests
         context.Storage.FolderPath = folder;
         var viewModel = new FileSystemTreeViewModel(
             context.Storage,
-            context.Messenger,
+            context.EventBus,
             initializeTree: false);
 
         await viewModel.SelectFolder();
@@ -166,10 +164,8 @@ public sealed class ToolViewModelTests
         var item = manager.ToolItems.Single(candidate =>
             candidate.ToolId == tool.Id);
         var updateCount = 0;
-        var receiver = new object();
-        context.Messenger.Register<object, UpdateLayoutMessage>(
-            receiver,
-            (_, _) => updateCount++);
+        using var subscription = context.EventBus.Subscribe<UpdateLayoutMessage>(
+            _ => updateCount++);
 
         manager.ToggleToolVisibility(item);
         Assert.False(item.IsVisible);
@@ -196,7 +192,7 @@ public sealed class ToolViewModelTests
         manager.ToggleToolVisibility(item);
 
         Assert.Equal(before, item.IsVisible);
-        context.Messenger.Send(
+        context.EventBus.Publish(
             new ToolVisibilityChangedMessage("external-change"));
         manager.SyncToolsVisibility();
     }

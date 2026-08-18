@@ -264,7 +264,7 @@ public sealed class FileConflictG6Tests
         var report = await preflight.InspectAsync(submission);
         File.WriteAllText(Path.Combine(paths.RootDirectory, "标题.mp4"), "external");
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(),
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(), paths, new FakeCredentialProvider(),
             new DownloadRecoveryService(repository));
 

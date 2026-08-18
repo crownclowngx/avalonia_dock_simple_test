@@ -7,7 +7,8 @@
 > Managed Plugin v1 的正式支持边界已在 G1 冻结：Windows x64、可信进程内 Managed Plugin、
 > 严格清单、退出后替换插件。G2 已将 Host 自有实现全部收口为 internal；G3 已形成正式基础
 > SDK、可选 UI Profile 和宿主语义样式契约；G4 已删除 Legacy 二进制激活、无 deps 回退和
-> 历史加载 Facade；G5 已用显式贡献和不可变 Plugin Registry 替换策略/View 隐式发现。
+> 历史加载 Facade；G5 已用显式贡献和不可变 Plugin Registry 替换策略/View 隐式发现；G9 已用
+> SDK 自有、每 HostRuntime 隔离的 `IHostEventBus` 收口进程内事件。
 
 ## 2. public API
 
@@ -35,13 +36,26 @@
 - 正式基础包 ID 为 `MyAvaloniaManagement.PluginSdk`，包内程序集仍为 `MyAvaloniaManagementCommon`；
 - 基础包不包含 Host，也不直接依赖 Desktop、字体、Fluent/Semi/Ursa/Dock 主题或 Dock 视觉控件；
 - `Dock.Model.Mvvm` 是当前 public 签名的必要依赖，其上游传递的
-  `Dock.Controls.Recycling.Model` 是已知例外，不等于基础 SDK 承诺 Dock 视觉控件；
+  `Dock.Controls.Recycling.Model` 和 `CommunityToolkit.Mvvm` 是已知还原图例外，不等于基础 SDK
+  对这些实现包建立新的 public 事件契约；基础包不得直接声明 Toolkit 依赖；
 - `MyAvaloniaManagement.PluginSdk.UI` 是同版本 dependency-only package，供直接使用 Semi、Ursa、
   Dock UI 的插件选择；第三方 UI 依赖使用精确 NuGet 版本；
 - UI Profile 的兼容新增可以随 SDK 次版本发布；任何会破坏已编译 UI 插件的变化必须提升 SDK 主版本；
 - 当前不自动发布公共 NuGet。宿主发布制品应同时提供两个 nupkg；对外分发前必须补充项目许可证。
 
-### 2.3 插件样式与 UI Profile
+### 2.3 事件总线
+
+- 公共契约只有 `IHostEventBus.Publish<TEvent>` 和返回 `IDisposable` 的
+  `Subscribe<TEvent>`，事件与处理器均不得为 `null`；
+- 发布在调用线程同步执行，只匹配精确泛型事件类型，并按订阅顺序派发；
+- 处理器异常原样传播并停止后续派发，不包装、吞掉、重试或切换线程；
+- 订阅令牌只移除自身且可重复释放；进入发布快照的处理器可能最后执行一次；
+- Document 必须持有令牌，并在自身 Scope 释放时退订；关闭竞态仍用
+  `IDocumentLifetime.IsClosing` 抑制迟到副作用；
+- 每个 HostRuntime 根容器独占总线实例；不允许静态默认实例、全局 Reset 或底层 messenger 暴露；
+- 总线释放后发布或订阅抛 `ObjectDisposedException`；普通内存事件不增加版本字段。
+
+### 2.4 插件样式与 UI Profile
 
 Host 在 Light/Dark 下均提供以下 `SolidColorBrush` 语义资源：
 

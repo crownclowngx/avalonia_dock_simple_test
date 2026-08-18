@@ -141,7 +141,40 @@ public sealed class QuickStartPluginModule : IPluginModule
 
 Document、Tool、动态 View 和 Lifecycle 必须分别通过 `AddDocument`、`AddTool`、`AddView` 和 `AddLifecycle` 登记；直接向 DI 注册贡献接口会被宿主拒绝。未登记类型即使位于入口程序集也不会被发现。只有确实存在插件级后台资源时才登记 `IPluginLifecycle`，且其初始化和关闭必须幂等、不得依赖 Document 或 Tool 的视觉树生命周期。
 
-## 5. 使用宿主样式
+## 5. 使用事件总线
+
+插件若需要跨 Document、Tool 或根级协调器发送进程内事件，构造注入 `IHostEventBus`。事件使用插件
+自有的强类型 class DTO；不要解析底层 messenger，也不要创建静态总线：
+
+```csharp
+using MyAvaloniaManagementCommon.Events;
+
+public sealed class StatusViewModel : IDisposable
+{
+    private readonly IDisposable _subscription;
+
+    public StatusViewModel(IHostEventBus eventBus)
+    {
+        ArgumentNullException.ThrowIfNull(eventBus);
+        _subscription = eventBus.Subscribe<TaskCompletedEvent>(OnTaskCompleted);
+    }
+
+    private void OnTaskCompleted(TaskCompletedEvent @event)
+    {
+        // Publish 在发布线程同步调用这里；异常会原样返回给发布者。
+    }
+
+    public void Dispose() => _subscription.Dispose();
+}
+
+public sealed record TaskCompletedEvent(string TaskId);
+```
+
+`Subscribe` 返回的令牌由订阅者所有，Document 应让自身 Scope 在关闭时释放它；根级 Coordinator
+应在插件关闭流程释放。令牌可以重复释放。发布只匹配精确事件类型，按订阅顺序同步执行；处理器抛错
+会停止后续处理器。事件不落盘时不要添加无行为的 `Version` 字段，语义破坏时创建新类型。
+
+## 6. 使用宿主样式
 
 普通插件不需要引用 Semi、Ursa 或 Dock Theme。标准 Avalonia 控件会继承宿主主题；主题相关颜色
 使用宿主稳定语义资源，例如：
@@ -177,7 +210,7 @@ Document、Tool、动态 View 和 Lifecycle 必须分别通过 `AddDocument`、`
 UI Profile 已传递基础 SDK，并把第三方 UI 包限制为宿主验证版本。第三方主题自己的资源键只在该
 Profile 版本内受支持，不属于基础 `App*` 语义资源契约。
 
-## 6. 构建、部署并启动
+## 7. 构建、部署并启动
 
 在仓库根目录按以下顺序执行：
 

@@ -1,12 +1,12 @@
-using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Appearance;
+using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 
 namespace MyAvaloniaManagement.UiTests;
 
@@ -27,13 +27,13 @@ internal sealed class UiTestContext : IDisposable
             Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(TempDirectory);
         Storage = new UiStorageService();
-        Messenger = new UiMessengerService();
+        EventBus = new HostEventBus();
 
         var services = new ServiceCollection();
         services.AddApplicationServices();
         services.AddViewModels();
         services.AddSingleton<IHostStorageService>(Storage);
-        services.AddSingleton<IMessengerService>(Messenger);
+        services.AddSingleton<IHostEventBus>(EventBus);
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
         services.AddSingleton(new AppearanceSettingsStore(
@@ -54,7 +54,7 @@ internal sealed class UiTestContext : IDisposable
 
     public UiStorageService Storage { get; }
 
-    public UiMessengerService Messenger { get; }
+    public HostEventBus EventBus { get; }
 
     public Microsoft.Extensions.DependencyInjection.ServiceProvider Provider { get; }
 
@@ -108,51 +108,4 @@ internal sealed class UiStorageService : IHostStorageService
 
     public Task WriteAllTextAsync(string path, string content) =>
         File.WriteAllTextAsync(path, content);
-}
-
-/// <summary>
-/// 在当前测试线程同步派发消息的 UI 测试实现。
-/// </summary>
-internal sealed class UiMessengerService : IMessengerService
-{
-    private readonly List<Registration> _registrations = [];
-
-    public IMessenger Messenger => WeakReferenceMessenger.Default;
-
-    public void Send<TMessage>(TMessage message)
-        where TMessage : class
-    {
-        foreach (var registration in _registrations
-                     .Where(item => item.MessageType == typeof(TMessage))
-                     .ToArray())
-        {
-            registration.Handler(registration.Receiver, message);
-        }
-    }
-
-    public void Register<TReceiver, TMessage>(
-        TReceiver receiver,
-        MyAvaloniaManagementCommon.Message.MessageHandler<TReceiver, TMessage> handler)
-        where TReceiver : class
-        where TMessage : class =>
-        _registrations.Add(new Registration(
-            typeof(TMessage),
-            receiver,
-            (target, message) =>
-                handler((TReceiver)target, (TMessage)message)));
-
-    public void Unregister<TMessage>(object receiver)
-        where TMessage : class =>
-        _registrations.RemoveAll(item =>
-            item.MessageType == typeof(TMessage) &&
-            ReferenceEquals(item.Receiver, receiver));
-
-    public void UnregisterAll(object receiver) =>
-        _registrations.RemoveAll(item =>
-            ReferenceEquals(item.Receiver, receiver));
-
-    private sealed record Registration(
-        Type MessageType,
-        object Receiver,
-        Action<object, object> Handler);
 }

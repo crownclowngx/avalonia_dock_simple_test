@@ -278,7 +278,7 @@ public sealed class ExtrasAndProgressTests
             Status = "pending",
         };
         repository.Seed(task);
-        var messenger = new RecordingMessengerService();
+        var messenger = new RecordingHostEventBus();
         var tracker = new DownloadProgressTracker(repository, messenger);
 
         tracker.OnProgressChanged(task, new DownloadProgressInfo
@@ -325,7 +325,7 @@ public sealed class ExtrasAndProgressTests
             Progress = 33,
         };
         repository.Seed(task);
-        var messenger = new RecordingMessengerService();
+        var messenger = new RecordingHostEventBus();
         var tracker = new DownloadProgressTracker(repository, messenger);
 
         tracker.OnBytesChanged(task, 10, 20);

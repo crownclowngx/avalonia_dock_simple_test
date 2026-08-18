@@ -6,7 +6,7 @@ using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.Services.Naming;
 using BiliDownloader.Services.Download.Extras;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using System.Threading.Channels;
 
 namespace BiliDownloader.Services.Download;
@@ -26,7 +26,8 @@ public sealed class BiliDownloadCoordinator
     private static string ToStorage(DownloadTaskStatus s) => DownloadTaskStatusMapper.ToStorageString(s);
 
     private readonly IDownloadTaskRepository _repository;
-    private readonly IMessengerService _messengerService;
+    private readonly IHostEventBus _eventBus;
+    private readonly IDisposable _submitSubscription;
     private readonly IDownloadProgressTracker _tracker;
     private readonly IDownloadTaskExecutor _executor;
     private readonly IMediaMergeRetryExecutor? _mergeRetryExecutor;
@@ -86,7 +87,7 @@ public sealed class BiliDownloadCoordinator
 
     public BiliDownloadCoordinator(
         IDownloadTaskRepository repository,
-        IMessengerService messengerService,
+        IHostEventBus eventBus,
         IDownloadProgressTracker tracker,
         IDownloadTaskExecutor executor,
         IBiliDataPaths paths,
@@ -98,7 +99,7 @@ public sealed class BiliDownloadCoordinator
         ITaskBandwidthLimitManager? taskBandwidthLimits = null)
     {
         _repository = repository;
-        _messengerService = messengerService;
+        _eventBus = eventBus;
         _tracker = tracker;
         _executor = executor;
         _paths = paths;
@@ -111,10 +112,10 @@ public sealed class BiliDownloadCoordinator
             ?? new TaskBandwidthLimitManager(new SystemBandwidthClock());
 
         // 注册监听：接收 Document 发来的下载任务提交消息
-        _messengerService.Register<BiliDownloadCoordinator, SubmitDownloadTaskMessage>(
-            this, (coordinator, msg) =>
+        _submitSubscription = _eventBus.Subscribe<SubmitDownloadTaskMessage>(
+            msg =>
             {
-                _ = coordinator.HandleSubmitMessageAsync(msg);
+                _ = HandleSubmitMessageAsync(msg);
             });
 
         // 登录状态消息不能转换任务状态。等待登录任务属于已经暂停的用户意图，
@@ -572,7 +573,7 @@ public sealed class BiliDownloadCoordinator
             // 通知对应 Document 移除
             try
             {
-                _messengerService.Send(new DownloadTaskDeletedMessage(task.DocumentId, task.TaskId));
+                _eventBus.Publish(new DownloadTaskDeletedMessage(task.DocumentId, task.TaskId));
             }
             catch { /* 忽略广播失败 */ }
 
@@ -645,6 +646,9 @@ public sealed class BiliDownloadCoordinator
     private async Task ShutdownCoreAsync()
     {
         _isShuttingDown = true;
+        // 关闭一开始就切断外部提交入口，再等待当前队列收敛。令牌释放幂等，
+        // 因此重复 ShutdownAsync 或根容器后续释放都不会影响其他订阅者。
+        _submitSubscription.Dispose();
         await _commandLock.WaitAsync();
         try
         {
@@ -693,9 +697,6 @@ public sealed class BiliDownloadCoordinator
             _processingCts = null;
             _processingTask = null;
             _isProcessing = false;
-
-            // Coordinator 注册在共享消息总线上；进程关闭前主动注销，避免继续接收提交消息。
-            _messengerService.UnregisterAll(this);
 
             SchedulerStatusChanged?.Invoke("协调器已关闭");
         }

@@ -3,7 +3,7 @@
 > 状态：待整改，不满足封板条件
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`
-> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G8 已于 2026-08-18 完成；G9–G16 待完成
+> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G9 已于 2026-08-18 完成；G10–G16 待完成
 > 适用范围：`MyAvaloniaManagement` 宿主、`MyAvaloniaManagementCommon`、插件装载与注册边界、Document/Tool 公共契约和发布门禁
 > 不评审：现有插件的领域业务正确性、第三方插件市场、运行时热卸载和恶意插件隔离
 
@@ -14,8 +14,9 @@
 结论是：当前宿主已经有较完整的插件运行骨架，G0 已恢复绿色基线，G1 已冻结支持边界、
 版本线和 v1 数据根，G2 已完成 Host public 面与静态服务定位收口，G3 也已形成正式 SDK 包、
 可选 UI Profile 与宿主样式契约，但 **尚不能封板**。G5、G6 已完成显式贡献和宿主 DI 保护，
-G7 已建立唯一 Document 信封 v1，G8 已将内容契约与宿主路径/所有权分离。剩余主要问题包括消息总线仍泄漏第三方抽象、插件部署与
-兼容门禁尚未形成单一发布入口。Legacy 二进制激活已由 G4 删除。
+G7 已建立唯一 Document 信封 v1，G8 已将内容契约与宿主路径/所有权分离，G9 已建立 SDK 自有且
+每个 HostRuntime 隔离的同步事件总线。剩余主要问题包括 Host 内部广播尚待删除、插件部署与兼容
+门禁尚未形成单一发布入口。Legacy 二进制激活已由 G4 删除。
 
 本次封板采用以下一次性定基线策略：
 
@@ -108,6 +109,12 @@ G8 完成后的当前基线为 Unit 151、UI 37、Plugin 141，共 **329/329 通
 SDK 包消费正反向门禁通过。详细证据见
 [G8 保存契约与内容版本](../plan-history/host-v1/g8-document-content-persistence-contract.md)。
 
+G9 完成后的当前基线为 Unit 162、UI 37、Plugin 146，共 **345/345 通过**；Host 行覆盖率
+80.57%、分支覆盖率 65.98%，Windows Smoke 通过。`HostEventBus` 专项 10/10、
+BiliDownloader 719/719、DaTangAccountingHelpPlug 64/64、MySmallTools 182/182 通过；SDK 包消费
+正反向门禁通过，关键事件总线文件行覆盖率门禁不低于 90%。完整设计、依赖所有权、并发语义和
+门禁记录见 [G9 SDK 事件总线](../plan-history/host-v1/g9-sdk-event-bus.md)。
+
 ### 2.3 当前风险清单
 
 | 等级 | 发现 | 影响 |
@@ -115,7 +122,7 @@ SDK 包消费正反向门禁通过。详细证据见
 | 已解决（G7/G8） | 旧候选保存契约曾混合宿主信封、路径和插件自报身份 | 现由唯一 v1 信封承载宿主字段，`DocumentContentSnapshot` 只保留内容版本和 payload，路径与规范所有权由宿主状态存储持有 |
 | 已解决（G2） | Host 窗口、ViewModel、加载器、工厂和内部模型曾大量为 public，且存在静态服务定位器 | Host 自有导出类型现为 0；生产构造只走 Runtime DI |
 | 高 | Common/Plugin SDK 门禁仍只有一个 SHA256 | G2 已排除 Host 实现噪声，但仍不能审阅删除了哪个类型、改了哪个签名，也不能区分兼容新增 |
-| 高 | `IMessengerService` 暴露 `IMessenger`，生产实现使用 `WeakReferenceMessenger.Default` | SDK 被 CommunityToolkit 具体 API 绑定，不同 HostRuntime 和测试可能共享全局状态 |
+| 已解决（G9） | 旧消息器包装曾暴露 CommunityToolkit 类型并使用进程默认实例 | 现由 SDK 自有 `IHostEventBus` 提供同步强类型发布/订阅，每个 HostRuntime 独享实例并由令牌确定释放 |
 | 已解决（G4） | Legacy 无模块激活、公共无参策略和无 `.deps.json` 回退曾同时存在 | 现只接受必需 deps、唯一模块和 DI 策略激活 |
 | 已解决（G6） | 插件曾可直接修改完整 `IServiceCollection` | 现通过每插件工作副本、描述符差异校验和尾部事务提交保护宿主对象图 |
 | 已解决（G5） | ViewLocator 曾通过静态构造、AppDomain 和命名约定重复发现视图 | 现只消费 HostRuntime 私有不可变 Registry；未登记类型不可见，View 失败形成稳定诊断和占位 |
@@ -371,12 +378,17 @@ StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 A
 
 **优先级：高；依赖：G3**
 
+**状态：已完成（2026-08-18）**。SDK 现只公开 `IHostEventBus.Publish/Subscribe`；Host 使用 internal、
+线程安全、同步且每根容器独享的实现。所有消费者持有独立幂等订阅令牌，Document 由 Scope 在关闭时
+确定释放；基础 SDK 已移除 Toolkit 直接依赖，仍使用 Toolkit ViewModel 的四插件显式拥有该依赖。
+
 - 目标：事件 API 不泄漏 CommunityToolkit 类型，也不依赖进程全局单例。
-- 修改边界：用 SDK 自有事件接口替换 `IMessengerService.Messenger`；每个 `HostRuntime` 创建独立总线实例。
+- 修改边界：用 SDK 自有事件接口替换旧消息器包装；每个 `HostRuntime` 创建独立总线实例。
 - 实施要求：订阅返回 `IDisposable` 或等价令牌；Document 订阅由 Scope 跟踪并在关闭时释放；发送和处理失败有明确策略。
 - 验收：两个 HostRuntime 互不收到对方事件；关闭 Document 后不再接收事件；测试并行执行不依赖全局 Reset。
 - 验收命令：执行 `dotnet test Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj -c Release --filter FullyQualifiedName~HostEventBus` 和 Document Scope 释放测试。
 - 完成定义：Plugin SDK public API 中没有 `CommunityToolkit.Mvvm.Messaging.IMessenger`。
+- 详细记录：见 [G9 SDK 事件总线](../plan-history/host-v1/g9-sdk-event-bus.md)。
 
 ### G10：删除 Host 内部广播消息
 
@@ -558,7 +570,7 @@ G0 与 G15 可以并行。G7/G8、G9/G10 和 G11 在 G3 完成后可以分别独
 - [x] Document 信封与插件内容 schema 已分离（G7 已完成）；
 - [x] Legacy 二进制插件路径和静态 Service Locator 已删除；
 - [x] Host 内部类型不再被误当作 Plugin SDK（G2 已完成）；
-- [ ] 消息总线不泄漏第三方接口或进程全局状态；
+- [x] 事件总线不泄漏第三方接口或进程全局状态；
 - [ ] Release 构建、全部宿主测试、包矩阵和 Windows Smoke 全绿；
 - [ ] 诊断日志通过敏感信息扫描；
 - [ ] 根 README、架构、兼容契约、快速开始和测试说明与代码一致；

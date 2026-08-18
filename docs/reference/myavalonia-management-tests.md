@@ -2,9 +2,9 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前 G8 专项基线：2026-08-18，新内容契约、宿主路径所有权、三个真实保存实现和
+> 当前 G9 专项基线：2026-08-18，SDK 自有事件总线、每根隔离、令牌生命周期和
 > SDK 正反向编译门禁已建立。完整 Release 数量、覆盖率与 Windows Smoke 结果见
-> [G8 保存契约记录](../plan-history/host-v1/g8-document-content-persistence-contract.md)。数量来自命令输出，不是
+> [G9 事件总线记录](../plan-history/host-v1/g9-sdk-event-bus.md)。数量来自命令输出，不是
 > 永久固定门槛。
 
 ## 一键门禁
@@ -43,7 +43,7 @@ G3 新增、G5 扩展的独立包消费门禁：
 `MyAvaloniaManagement.PluginSdk.UI`，检查包内容、nuspec、基础依赖白名单和 UI 精确版本。
 随后编译最终 `Configure(IPluginRegistrationContext)` Managed Plugin，并实际构造
 `DocumentContentSnapshot(contentSchemaVersion, payload)`；确认旧候选 `PluginId + ConfigureServices`、
-`DocumentSaveData`、旧保存方法、`FilePath` 和 `SaveDocumentTypeId` 夹具必须编译失败，
+`DocumentSaveData`、旧保存方法、`FilePath`、`SaveDocumentTypeId` 及旧消息器 API 夹具必须编译失败，
 再编译实际使用 Ursa、Dock UI、宿主
 语义资源的 XAML 插件。还原使用临时隔离 NuGet 缓存，不能误命中开发机中的同版本旧包。
 临时目录在结束时删除，不读取用户数据根，也不发布到公共 NuGet。
@@ -57,6 +57,7 @@ G3 新增、G5 扩展的独立包消费门禁：
 - 分支覆盖率不低于 50%；
 - `MainWindowViewModel` 行覆盖率不低于 75%；
 - 三个宿主 Tool ViewModel 各自行覆盖率不低于 70%。
+- `Business/Events/HostEventBus.cs` 行覆盖率不低于 90%。
 
 `obj`、XAML/C# 生成代码和测试程序集不参与统计。生产 View 和
 `App.axaml.cs` 不排除，因为 Headless 测试应保护实际加载、绑定和窗口事件。
@@ -106,7 +107,8 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 
 核心行为只存在一套实现，避免“测试构造路径”和“生产构造路径”逐渐分叉。
 生产 ViewModel 注册为瞬态，防止多个窗口或 Headless 测试共享绑定状态；
-Dock 工厂、消息、布局存储等协调服务保持单例，保证应用内只有一份布局事实。
+Dock 工厂、事件总线、布局存储等协调服务保持单例，保证一个 HostRuntime 内只有一份布局和事件事实；
+另一个 HostRuntime 会建立自己的根容器与总线，不共享进程全局状态。
 
 Host 与插件的 Document/Tool 策略都使用 `ActivatorUtilities` 创建，因此策略只需声明真实依赖，
 不再为了另一套二进制加载协议保留无参构造。模块仍用 public 无参构造，因为它发生在根容器
@@ -162,11 +164,20 @@ Host 行覆盖率 80.41%、分支覆盖率 65.71%，Windows Smoke 通过。G8 Ho
 MySmallTools 182/182。完整记录见
 [G8 保存契约与内容版本](../plan-history/host-v1/g8-document-content-persistence-contract.md)。
 
-### 工具显隐与稳定 ID
+### G9 当前绿色基线
 
-`ManagementFactory` 直接注入 `IMessengerService`，工具隐藏通知不再运行时访问
-静态服务定位器。这让依赖关系可见，也避免测试、多容器或初始化顺序变化时取到
-错误的消息实例。
+2026-08-18 执行锁定还原、Release 零警告构建、事件总线与 Document Scope 专项、三个插件完整
+测试、SDK 包消费和带 Windows Smoke 的综合门禁。结果为 Unit 162、UI 37、Plugin 146，共
+**345/345**；Host 行覆盖率 80.57%、分支覆盖率 65.98%，Windows Smoke 通过。
+`HostEventBusTests` 10/10、Document Scope 专项 5/5、BiliDownloader 719/719、
+DaTangAccountingHelpPlug 64/64、MySmallTools 182/182。完整记录见
+[G9 事件总线](../plan-history/host-v1/g9-sdk-event-bus.md)。
+
+### 事件总线、工具显隐与稳定 ID
+
+`ManagementFactory` 与其他消费者直接注入 SDK 的 `IHostEventBus`。发布在调用线程同步执行，订阅者
+保存独立 `IDisposable` 令牌并在自身生命周期结束时释放；Document 的令牌随 Scope 确定释放。
+这让依赖与所有权都可见，也避免测试、多容器或初始化顺序变化时串用进程全局消息实例。
 
 插件菜单的策略元数据、创建实例、`ContextLocator` 和
 `DockableLocator["Plug"]` 共用 `DockNameConstant.PlugGroupMenu`。

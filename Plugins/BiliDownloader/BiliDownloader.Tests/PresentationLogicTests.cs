@@ -165,7 +165,7 @@ public sealed class PresentationLogicTests
         var statuses = new List<string>();
         var vm = new VideoListViewModel(
             () => new SubmitContext(),
-            new RecordingMessengerService(),
+            new RecordingHostEventBus(),
             statuses.Add,
             new FakeFfmpegService());
         var first = new BiliVideoItem { ItemId = "one", Title = "A", IsSelected = true };
@@ -223,7 +223,7 @@ public sealed class PresentationLogicTests
         var context = new SubmitContext();
         var vm = new VideoListViewModel(
             () => context,
-            new RecordingMessengerService(),
+            new RecordingHostEventBus(),
             value => status = value,
             new FakeFfmpegService(),
             () => configurationBlockedCount++);
@@ -267,7 +267,7 @@ public sealed class PresentationLogicTests
         var fakeFfmpeg = Path.Combine(paths.RootDirectory, "ffmpeg.exe");
         await File.WriteAllTextAsync(fakeFfmpeg, "test marker");
         var ffmpeg = new FakeFfmpegService { CustomPath = fakeFfmpeg };
-        var messenger = new RecordingMessengerService();
+        var messenger = new RecordingHostEventBus();
         var status = "";
         var context = new SubmitContext
         {
@@ -364,7 +364,7 @@ public sealed class PresentationLogicTests
     [Fact]
     public void 下载文档摘要实时更新且异常配置自动展开设置()
     {
-        var messenger = new RecordingMessengerService();
+        var messenger = new RecordingHostEventBus();
         var loginState = new BiliLoginStateService(
             new InMemoryBiliCredentialStore(),
             new StubBiliSessionApi(),
@@ -464,7 +464,7 @@ public sealed class PresentationLogicTests
         var state = new BiliLoginStateService(
             store,
             api,
-            new IsolatedMessengerService());
+            new IsolatedHostEventBus());
         await state.RestoreSavedSessionAsync();
         var vm = new LoginBarViewModel(state, new BiliLoginService());
 
@@ -491,7 +491,7 @@ public sealed class PresentationLogicTests
             QualityId = 80,
             OutputDirectory = Path.Combine(paths.RootDirectory, "missing"),
         };
-        var messenger = new RecordingMessengerService();
+        var messenger = new RecordingHostEventBus();
         var status = "";
         var configurationBlockedCount = 0;
         var ffmpeg = new FakeFfmpegService();
@@ -522,7 +522,7 @@ public sealed class PresentationLogicTests
         var fake = Path.Combine(paths.RootDirectory, "ffmpeg.exe");
         await File.WriteAllTextAsync(fake, "marker");
         ffmpeg.CustomPath = fake;
-        messenger.ThrowOnSend = true;
+        messenger.ThrowOnPublish = true;
         vm.VideoItems[0].IsSelected = true;
         vm.SubmitDownloadCommand.Execute(null);
         Assert.Contains("提交任务失败", status, StringComparison.Ordinal);
@@ -580,7 +580,7 @@ public sealed class PresentationLogicTests
     public async Task Document保存恢复任务及消息按Document隔离()
     {
         var repository = new InMemoryDownloadTaskRepository();
-        var messenger = new RecordingMessengerService();
+        var messenger = new RecordingHostEventBus();
         var settings = new InMemorySettingsRepository();
         var loginState = new BiliLoginStateService(
             new InMemoryBiliCredentialStore(),
@@ -634,14 +634,14 @@ public sealed class PresentationLogicTests
         Assert.Equal("已中断", item.Status);
         Assert.Equal(45, item.Progress);
 
-        messenger.Send(new DownloadTaskProgressMessage(
+        messenger.Publish(new DownloadTaskProgressMessage(
             "other-doc", "recover", "ignored", 99, "done"));
         Assert.Equal(45, item.Progress);
-        messenger.Send(new DownloadTaskProgressMessage(
+        messenger.Publish(new DownloadTaskProgressMessage(
             restored.DocumentId, "recover", "target", 50, "downloading_audio"));
         Assert.Equal(50, item.Progress);
         Assert.Equal("下载音频", item.Status);
-        messenger.Send(new LoginStateChangedMessage(
+        messenger.Publish(new LoginStateChangedMessage(
             true, null, null, true, "已恢复"));
         Assert.True(restored.LoginBar.IsLoggedIn);
         Assert.Equal("已保存账号", restored.LoginBar.UserName);
@@ -653,7 +653,7 @@ public sealed class PresentationLogicTests
     {
         var services = new ServiceCollection();
         var repository = new InMemoryDownloadTaskRepository();
-        var messenger = new IsolatedMessengerService();
+        var messenger = new IsolatedHostEventBus();
         var loginState = new BiliLoginStateService(
             new InMemoryBiliCredentialStore(),
             new StubBiliSessionApi(),

@@ -1,8 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagement.Business.Events;
 using MyPlugTest.Create;
 using MyPlugTest.Models;
 using MyPlugTest.Plugin;
@@ -223,7 +224,7 @@ public sealed class ExcelGetUrlGeneratorTests
     public void 新Document由独立Scope创建并注册为Scoped()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IMessengerService, MessengerService>();
+        services.AddSingleton<IHostEventBus, HostEventBus>();
         services.AddSingleton<DocumentScopeManager>();
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());

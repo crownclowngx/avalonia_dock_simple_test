@@ -238,11 +238,14 @@ flowchart LR
 | UI 扩展 | 插件直接返回 Dock `Document` / `Tool` | 简单、强类型、UI 自由度高 | 与 Dock 版本和宿主布局模型强耦合 |
 | 服务接入 | 插件通过 Context 获得用于私有业务服务的事务工作副本 | 可使用 Microsoft DI，多实现/keyed/开放泛型不受影响；宿主注册不可覆盖 | 仍是可信进程内代码，不构成安全沙箱 |
 | 创建入口 | Context 显式登记，`PluginRegistry` 原子发布；Document 可附加 Creation Intent | 未登记类型不可见，元数据只读一次，所有权明确 | 插件作者必须维护完整贡献清单 |
-| 消息通信 | `IMessengerService` 包装进程级 messenger | 广播和解耦方便 | 仍暴露底层 `IMessenger`，无消息归属和契约版本 |
+| 事件通信 | SDK `IHostEventBus`，每 HostRuntime 独立实例 | 同步强类型、精确类型、令牌式生命周期 | Host 内部广播仍待 G10 改为直接协调器调用 |
 | 文件能力 | 宿主包装选择器、打开、保存、路径/所有权状态 | 内容契约与脏状态分离，Document 与布局均原子写入，关闭确认共用同一提交事实 | 当前仅存在单一内容版本分支；真实旧版本出现时需由对应插件显式读取 |
 | 布局能力 | 宿主持有 Dock 树和 V1 快照 | 四向、隐藏、固定、恢复已有测试 | 插件缺失时整份布局回退 |
 
-**[代码事实]** `IMessengerService` 仍直接暴露底层 `IMessenger`，生产实现使用 `WeakReferenceMessenger.Default`。参见 [`IMessengerService.cs`](../../Host/MyAvaloniaManagementCommon/Message/IMessengerService.cs) 和 [`MessengerService.cs`](../../Host/MyAvaloniaManagementCommon/Message/MessengerService.cs)。
+**[代码事实]** SDK 只公开 `IHostEventBus.Publish/Subscribe`，Host internal 实现由每个根容器独占。
+发布在调用线程按登记顺序同步执行，订阅者持有幂等令牌并在自身生命周期结束时释放；不存在静态
+默认实例或全局 Reset。参见 [`IHostEventBus.cs`](../../Host/MyAvaloniaManagementCommon/Events/IHostEventBus.cs)
+和 [`HostEventBus.cs`](../../Host/MyAvaloniaManagement/Business/Events/HostEventBus.cs)。
 
 **[代码事实]** 宿主生产 ViewModel 只使用构造注入，App 通过内部桌面 Shell 创建；内建 Tool 策略使用对应的 `Func<ViewModel>`，Welcome 策略使用延迟 `Func<ManagementFactory>` 打破注册表构造循环。静态 `ServiceProvider` 和生产无参构造已经删除。主窗口与文件树设计器改用无 I/O 的独立样例数据；`ToolManagementViewModel` 在根 Dock 建立前读取 `ManagementFactory` 提供的内部只读注册快照。参见 [`ServiceCollectionExtensions.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/ServiceCollectionExtensions.cs) 和 [`ToolManagementViewModel.cs`](../../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs)。
 
@@ -533,7 +536,7 @@ public interface IHostContext
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. G6 已将插件 DI 写入收口为工作副本和事务提交；插件仍直接使用 Dock 类型和全局消息器，消息边界由 G9 继续处理；
+1. G6 已将插件 DI 写入收口为工作副本和事务提交；G9 已删除全局消息器并建立 SDK 自有事件总线，插件仍直接使用 Dock 类型，Host 内部广播由 G10 继续处理；
 2. 运行前 manifest、Host API/Common 兼容检查、显式 Plugin Registry 和用户可见诊断已有 V1；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。

@@ -149,7 +149,7 @@ public sealed class CredentialSecurityTests
         var state = new BiliLoginStateService(
             store,
             sessionApi,
-            new IsolatedMessengerService());
+            new IsolatedHostEventBus());
         await state.RestoreSavedSessionAsync();
         state.StartBackgroundValidation();
         await state.StopAsync();
@@ -179,7 +179,7 @@ public sealed class CredentialSecurityTests
         var state = new BiliLoginStateService(
             reloadedStore,
             new StubBiliSessionApi(),
-            new IsolatedMessengerService());
+            new IsolatedHostEventBus());
 
         await state.RestoreSavedSessionAsync();
 

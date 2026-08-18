@@ -2,7 +2,7 @@
 using System.Collections.Specialized;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Save;
 using MyPlugTest.Models;
 using MyPlugTest.Services;
@@ -27,7 +27,7 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDocumentSaveSta
     private string _url = "https://example.com";
     private string _responseContent = "";
     private bool _isLoading = false;
-    private readonly IMessengerService _messengerService;
+    private readonly IHostEventBus _eventBus;
     private readonly IUrlContentService _urlContentService;
 
     // 每个 Document 注入自己的瞬态 URL 历史记录 ViewModel，避免多个文档共享可变集合。
@@ -153,14 +153,14 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDocumentSaveSta
     }
     
     public TestWelcomeViewModel(
-        IMessengerService messengerService,
+        IHostEventBus eventBus,
         UrlHistoryViewModel urlHistory,
         IUrlContentService urlContentService,
         IDocumentLifetime? documentLifetime = null)
     {
         // 三个依赖均由 MyPlugTestPluginModule 提供；这里不保留手工 new 的回退路径，
         // 从而保证所有 Document 都使用宿主的共享消息总线和统一的网络服务所有权。
-        _messengerService = messengerService;
+        _eventBus = eventBus;
         _urlContentService = urlContentService;
         _documentLifetime = documentLifetime;
         UrlHistory = urlHistory;
@@ -204,7 +204,7 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDocumentSaveSta
             UrlHistory.AddUrl(url);
             IsModified = true;
             // 发送成功消息到消息总线
-            _messengerService.Send(new RequestResponseMessage(content, url, true));
+            _eventBus.Publish(new RequestResponseMessage(content, url, true));
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

@@ -4,6 +4,7 @@ using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Documents;
+using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Storage;
@@ -15,7 +16,7 @@ using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagement.Views.Hello;
 using MyAvaloniaManagement.Views.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.ToolCreation;
 
@@ -43,8 +44,8 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(new PluginLifecycleOptions());
         services.AddSingleton(registryBuilder);
 
-        // 注册消息服务为单例
-        services.AddSingleton<IMessengerService, MessengerService>();
+        // 事件总线由当前根容器独占；禁止使用进程静态实例，确保多 Runtime 与并行测试互不串扰。
+        services.AddSingleton<IHostEventBus, HostEventBus>();
 
         // 每个由托管插件创建的 Document 都拥有独立 Scope。插件只依赖公共创建接口，
         // Dock 关闭时则由宿主使用具体管理器释放对应 Scope。
@@ -83,7 +84,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(provider => new ManagementFactory(
             provider.GetRequiredService<PluginRegistry>(),
             provider.GetRequiredService<DocumentScopeManager>(),
-            provider.GetRequiredService<IMessengerService>(),
+            provider.GetRequiredService<IHostEventBus>(),
             provider.GetRequiredService<DocumentPersistenceStateStore>(),
             provider.GetRequiredService<DocumentCloseCoordinator>(),
             provider.GetRequiredService<DocumentRecoveryRegistry>()));
@@ -192,13 +193,13 @@ internal static class ServiceCollectionExtensions
     {
         services.AddTransient(provider => new FileSystemTreeViewModel(
             provider.GetRequiredService<IHostStorageService>(),
-            provider.GetRequiredService<IMessengerService>()));
+            provider.GetRequiredService<IHostEventBus>()));
         services.AddTransient(provider => new PlugGroupMenuViewModel(
             provider.GetRequiredService<ManagementFactory>(),
             provider.GetRequiredService<PluginMenuService>()));
         services.AddTransient(provider => new ToolManagementViewModel(
             provider.GetRequiredService<ManagementFactory>(),
-            provider.GetRequiredService<IMessengerService>()));
+            provider.GetRequiredService<IHostEventBus>()));
         services.AddTransient(provider => new PluginStatusViewModel(
             provider.GetRequiredService<PluginRegistry>(),
             provider.GetRequiredService<PluginLifecycleManager>(),
@@ -208,7 +209,7 @@ internal static class ServiceCollectionExtensions
         services.AddTransient(provider => new MainWindowViewModel(
             provider.GetRequiredService<ManagementFactory>(),
             provider.GetRequiredService<PluginMenuService>(),
-            provider.GetRequiredService<IMessengerService>(),
+            provider.GetRequiredService<IHostEventBus>(),
             provider.GetRequiredService<DockLayoutLifecycle>(),
             provider.GetRequiredService<IHostStorageService>(),
             provider.GetRequiredService<ApplicationThemeService>(),

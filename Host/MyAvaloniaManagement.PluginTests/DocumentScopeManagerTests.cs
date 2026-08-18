@@ -92,7 +92,7 @@ public sealed class DocumentScopeManagerTests
         var factory = new ManagementFactory(
             extensions,
             manager,
-            new MyAvaloniaManagementCommon.Message.MessengerService());
+            new MyAvaloniaManagement.Business.Events.HostEventBus());
         var document = manager.CreateDocument<TrackedDocument>();
 
         factory.OnDockableClosed(document);

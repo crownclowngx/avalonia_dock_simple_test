@@ -24,6 +24,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <!-- 插件自身拥有 MVVM 与内部消息 DTO 依赖，基础 SDK 不再传递 Toolkit。 -->
+      <PackageReference Include="CommunityToolkit.Mvvm" />
       <PackageReference Include="EPPlus" />
       <PackageReference Include="Flurl.Http" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />

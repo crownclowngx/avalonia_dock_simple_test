@@ -1,15 +1,15 @@
-using CommunityToolkit.Mvvm.Messaging;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Documents;
+using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
 
@@ -36,14 +36,14 @@ internal sealed class TestHostContext : IDisposable
 
         Storage = new TestHostStorageService();
         Interactions = new TestDocumentInteractionService();
-        Messenger = new TestMessengerService();
+        EventBus = new HostEventBus();
         var services = new ServiceCollection();
         var registryBuilder = new PluginRegistryBuilder();
         services.AddApplicationServices(registryBuilder);
         services.AddViewModels();
         services.AddSingleton<IHostStorageService>(Storage);
         services.AddSingleton<IDocumentInteractionService>(Interactions);
-        services.AddSingleton<IMessengerService>(Messenger);
+        services.AddSingleton<IHostEventBus>(EventBus);
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
         services.AddSingleton(new AppearanceSettingsStore(
@@ -102,7 +102,7 @@ internal sealed class TestHostContext : IDisposable
 
     public TestDocumentInteractionService Interactions { get; }
 
-    public TestMessengerService Messenger { get; }
+    public HostEventBus EventBus { get; }
 
     public Microsoft.Extensions.DependencyInjection.ServiceProvider Provider { get; }
 
@@ -290,53 +290,6 @@ internal sealed class TestHostStorageService : IHostStorageService
     /// </summary>
     public void AddFile(string path, string content) =>
         Files[Path.GetFullPath(path)] = content;
-}
-
-/// <summary>
-/// 同步派发消息的测试实现，便于立即断言消息副作用。
-/// </summary>
-internal sealed class TestMessengerService : IMessengerService
-{
-    private readonly List<Registration> _registrations = [];
-
-    public IMessenger Messenger => WeakReferenceMessenger.Default;
-
-    public void Send<TMessage>(TMessage message)
-        where TMessage : class
-    {
-        foreach (var registration in _registrations
-                     .Where(item => item.MessageType == typeof(TMessage))
-                     .ToArray())
-        {
-            registration.Handler(registration.Receiver, message);
-        }
-    }
-
-    public void Register<TReceiver, TMessage>(
-        TReceiver receiver,
-        MyAvaloniaManagementCommon.Message.MessageHandler<TReceiver, TMessage> handler)
-        where TReceiver : class
-        where TMessage : class =>
-        _registrations.Add(new Registration(
-            typeof(TMessage),
-            receiver,
-            (target, message) =>
-                handler((TReceiver)target, (TMessage)message)));
-
-    public void Unregister<TMessage>(object receiver)
-        where TMessage : class =>
-        _registrations.RemoveAll(item =>
-            item.MessageType == typeof(TMessage) &&
-            ReferenceEquals(item.Receiver, receiver));
-
-    public void UnregisterAll(object receiver) =>
-        _registrations.RemoveAll(item =>
-            ReferenceEquals(item.Receiver, receiver));
-
-    private sealed record Registration(
-        Type MessageType,
-        object Receiver,
-        Action<object, object> Handler);
 }
 
 /// <summary>

@@ -4,6 +4,7 @@
     "branch": 50.0
   },
   "criticalFiles": {
+    "Business/Events/HostEventBus.cs": 90.0,
     "ViewModels/MainWindowViewModel.cs": 75.0,
     "ViewModels/Tools/FileSystemTreeViewModel.cs": 70.0,
     "ViewModels/Tools/PlugGroupMenuViewModel.cs": 70.0,

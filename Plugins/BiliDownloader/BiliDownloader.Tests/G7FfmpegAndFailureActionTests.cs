@@ -309,7 +309,7 @@ public sealed class G7FfmpegAndFailureActionTests
         repository.Seed(task);
         var executor = new MergeOnlyExecutor(paths);
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(), executor, paths);
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(), executor, paths);
         var service = new DownloadFailureActionService(
             coordinator, new StubInstaller(), new FakeFfmpegService(), new StubLoginDialog(true),
             new StubPrompt(), new RecordingRevealService(), paths, new InMemorySettingsRepository());
@@ -330,7 +330,7 @@ public sealed class G7FfmpegAndFailureActionTests
         var task = Record("safe-action", DownloadTaskStatus.Failed);
         repository.Seed(task);
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(),
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(),
             new MergeOnlyExecutor(paths), paths);
         var reveal = new RecordingRevealService { Error = new InvalidOperationException("模拟打开失败") };
         var service = new DownloadFailureActionService(
@@ -360,7 +360,7 @@ public sealed class G7FfmpegAndFailureActionTests
         task.ErrorType = "network";
         repository.Seed(task);
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(),
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(),
             new MergeOnlyExecutor(paths), paths);
         var prompt = new StubPrompt();
         var locator = new FakeFfmpegService();
@@ -421,7 +421,7 @@ public sealed class G7FfmpegAndFailureActionTests
         repository.Seed(task);
         var executor = new MergeOnlyExecutor(paths);
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(), executor, paths);
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(), executor, paths);
         var installer = new StubInstaller(new FfmpegInstallResult(true, "安装完成", "ffmpeg.exe"));
         var service = new DownloadFailureActionService(
             coordinator, installer, new FakeFfmpegService(), new StubLoginDialog(true),
@@ -444,7 +444,7 @@ public sealed class G7FfmpegAndFailureActionTests
         repository.Seed(task);
         var executor = new CheckpointThenFailExecutor();
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(), executor, paths);
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(), executor, paths);
 
         coordinator.StartProcessingAsync();
         await AsyncTest.EventuallyAsync(() => task.Status == "failed");
@@ -476,7 +476,7 @@ public sealed class G7FfmpegAndFailureActionTests
         repository.Seed(task);
         var executor = new MergeOnlyExecutor(paths);
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(), executor, paths);
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(), executor, paths);
 
         await coordinator.RetryMergeAsync(task.TaskId);
 
@@ -505,7 +505,7 @@ public sealed class G7FfmpegAndFailureActionTests
         repository.Seed(task);
         var executor = new MergeOnlyExecutor(paths);
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(), executor, paths);
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(), executor, paths);
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(
             () => coordinator.RetryMergeAsync(task.TaskId));
@@ -543,7 +543,7 @@ public sealed class G7FfmpegAndFailureActionTests
         repository.Seed(task);
         var executor = new MergeOnlyExecutor(paths);
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(), executor, paths);
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(), executor, paths);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => coordinator.RetryMergeAsync(task.TaskId));
 

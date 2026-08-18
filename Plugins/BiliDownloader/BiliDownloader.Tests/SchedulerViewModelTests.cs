@@ -24,7 +24,7 @@ public sealed class SchedulerViewModelTests
         var executor = new FakeDownloadTaskExecutor();
         var coordinator = new BiliDownloadCoordinator(
             repository,
-            new IsolatedMessengerService(),
+            new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(),
             executor,
             paths);
@@ -65,7 +65,7 @@ public sealed class SchedulerViewModelTests
         repository.Seed(task);
         var coordinator = new BiliDownloadCoordinator(
             repository,
-            new IsolatedMessengerService(),
+            new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths);
@@ -97,7 +97,7 @@ public sealed class SchedulerViewModelTests
         settings.Seed("max_concurrent_downloads", "2");
         var coordinator = new BiliDownloadCoordinator(
             repository,
-            new IsolatedMessengerService(),
+            new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths);
@@ -130,7 +130,7 @@ public sealed class SchedulerViewModelTests
         var settings = new InMemorySettingsRepository();
         var coordinator = new BiliDownloadCoordinator(
             repository,
-            new IsolatedMessengerService(),
+            new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths);
@@ -161,7 +161,7 @@ public sealed class SchedulerViewModelTests
         var repository = new InMemoryDownloadTaskRepository();
         var coordinator = new BiliDownloadCoordinator(
             repository,
-            new IsolatedMessengerService(),
+            new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths);

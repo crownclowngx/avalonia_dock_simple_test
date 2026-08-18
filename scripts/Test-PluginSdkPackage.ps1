@@ -5,7 +5,7 @@
 
 $ErrorActionPreference = "Stop"
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
-$temporaryRoot = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ("MyAvaloniaPluginSdkG5-" + [Guid]::NewGuid().ToString("N"))))
+$temporaryRoot = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ("MyAvaloniaPluginSdkG9-" + [Guid]::NewGuid().ToString("N"))))
 $packageOutput = Join-Path $temporaryRoot "packages"
 $isolatedPackageCache = Join-Path $temporaryRoot "global-packages"
 $sdkVersion = ([xml](Get-Content -LiteralPath (Join-Path $repositoryRoot "Directory.Version.props"))).Project.PropertyGroup.MyAvaloniaPluginSdkVersion
@@ -110,7 +110,7 @@ try {
     $uiNuspec = Read-Nuspec $uiPackage
     $baseDependencyIds = @($baseNuspec.package.metadata.dependencies.group.dependency | ForEach-Object id)
     $forbiddenBaseDependencies = @(
-        "Avalonia.Desktop", "Avalonia.Fonts.Inter", "Avalonia.Themes.Fluent",
+        "Avalonia.Desktop", "Avalonia.Fonts.Inter", "Avalonia.Themes.Fluent", "CommunityToolkit.Mvvm",
         "Dock.Avalonia", "Dock.Avalonia.Themes.Fluent",
         "Dock.Controls.ProportionalStackPanel", "Dock.Controls.Recycling",
         "Dock.Controls.Recycling.Model", "Irihi.Ursa", "Irihi.Ursa.Themes.Semi", "Semi.Avalonia"
@@ -160,7 +160,9 @@ try {
 </Project>
 "@
     Set-Content -LiteralPath (Join-Path $basicProject "BasicPluginModule.cs") -Encoding UTF8 -Value @'
+using System;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.Save;
 
@@ -175,6 +177,17 @@ public sealed class BasicPluginModule : IPluginModule
 
 public sealed class BasicPluginService;
 
+public sealed record BasicPluginEvent(string Value);
+
+public sealed class BasicPluginEventConsumer(IHostEventBus eventBus) : IDisposable
+{
+    private readonly IDisposable _subscription = eventBus.Subscribe<BasicPluginEvent>(_ => { });
+
+    public void Publish() => eventBus.Publish(new BasicPluginEvent("value"));
+
+    public void Dispose() => _subscription.Dispose();
+}
+
 public sealed class BasicDocumentContentFactory
 {
     public DocumentContentSnapshot Create() => new(1, "{\"value\":42}");
@@ -183,10 +196,11 @@ public sealed class BasicDocumentContentFactory
     Invoke-DotNet @("restore", "BasicPlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $basicProject
     Invoke-DotNet @("build", "BasicPlugin.csproj", "-c", "Release", "--no-restore", "--nologo") $basicProject
     $basicAssets = Get-Content -Raw -LiteralPath (Join-Path $basicProject "obj/project.assets.json")
-    # Dock.Model.Mvvm 12.0.0.2 自身传递依赖 Dock.Controls.Recycling.Model；
-    # 它不在基础包 nuspec 的直接依赖中，但会出现在最终还原图，G3 不改变现有 Dock public 签名。
+    # Dock.Model.Mvvm 12.0.0.2 自身传递依赖 Dock.Controls.Recycling.Model 与
+    # CommunityToolkit.Mvvm 8.4.0；它们不在基础包 nuspec 的直接依赖中，但会出现在最终还原图。
+    # G9 删除的是 SDK 自有直接依赖和 public 消息类型，不能改写上游 Dock 的依赖图。
     $forbiddenResolvedDependencies = $forbiddenBaseDependencies |
-        Where-Object { $_ -ne "Dock.Controls.Recycling.Model" }
+        Where-Object { $_ -notin @("Dock.Controls.Recycling.Model", "CommunityToolkit.Mvvm") }
     foreach ($dependency in $forbiddenResolvedDependencies) {
         Assert-True (-not $basicAssets.Contains('"' + $dependency + '/')) "基础插件还原图错误包含 $dependency。"
     }
@@ -263,6 +277,32 @@ public static class LegacySaveConsumer
     Assert-DotNetBuildFails "LegacyDocumentSaveContract.csproj" $legacySaveProject @(
         "CS1061", "FilePath", "SaveDocumentTypeId", "CreateSaveDocumentMetaData", "LoadDocumentByMetaData")
 
+    # G9 删除旧消息器、具体实现、处理委托和底层 Messenger 入口，不保留 Obsolete 适配层。
+    $legacyEventBusProject = Join-Path $temporaryRoot "LegacyMessengerContract"
+    New-Item -ItemType Directory -Path $legacyEventBusProject | Out-Null
+    Set-Content -LiteralPath (Join-Path $legacyEventBusProject "LegacyMessengerContract.csproj") -Encoding UTF8 -Value @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup><PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="$sdkVersion" /></ItemGroup>
+</Project>
+"@
+    Set-Content -LiteralPath (Join-Path $legacyEventBusProject "LegacyMessengerConsumer.cs") -Encoding UTF8 -Value @'
+using MyAvaloniaManagementCommon.Message;
+
+public static class LegacyMessengerConsumer
+{
+    public static object UseRemovedContract(IMessengerService service)
+    {
+        _ = service.Messenger;
+        MessageHandler<object, object> handler = static (_, _) => { };
+        return new MessengerService();
+    }
+}
+'@
+    Invoke-DotNet @("restore", "LegacyMessengerContract.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $legacyEventBusProject
+    Assert-DotNetBuildFails "LegacyMessengerContract.csproj" $legacyEventBusProject @(
+        "CS0234", "Message")
+
     $uiProject = Join-Path $temporaryRoot "UiPlugin"
     New-Item -ItemType Directory -Path $uiProject | Out-Null
     Set-Content -LiteralPath (Join-Path $uiProject "UiPlugin.csproj") -Encoding UTF8 -Value @"
@@ -295,7 +335,7 @@ public sealed partial class ProfileView : UserControl
     Invoke-DotNet @("restore", "UiPlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $uiProject
     Invoke-DotNet @("build", "UiPlugin.csproj", "-c", "Release", "--no-restore", "--nologo") $uiProject
 
-    Write-Host "G8 Plugin SDK package acceptance passed. SDK=$sdkVersion; content snapshot sample compiled; legacy module, DTO and save members rejected."
+    Write-Host "G9 Plugin SDK package acceptance passed. SDK=$sdkVersion; event bus/content samples compiled; legacy messenger, module, DTO and save members rejected."
 }
 finally {
     $systemTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())

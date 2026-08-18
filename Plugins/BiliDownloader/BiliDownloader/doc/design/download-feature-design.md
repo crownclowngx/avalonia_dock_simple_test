@@ -23,7 +23,8 @@ BiliDownloader 是一个基于 Avalonia 插件化架构的 Bilibili 视频下载
 | **BiliDownloaderViewModel (Document)** | 用户交互层 | URL输入、视频解析、清晰度选择、输出目录设置、任务提交 |
 | **BiliSchedulerToolViewModel (Tool)** | 后台执行层 | 接收任务、SQLite持久化、执行下载、ffmpeg合并、进度回传 |
 
-两个模块通过 **消息总线 (IMessengerService)** 进行松耦合通信，不直接引用对方实例。
+两个模块通过宿主 **事件总线 (`IHostEventBus`)** 进行松耦合通信，不直接引用对方实例。发布在调用
+线程同步执行，订阅者保存 `IDisposable` 令牌并在 Document Scope 或插件关闭时释放。
 
 ### 2.2 通信流程
 
@@ -87,7 +88,7 @@ Bilibili API 需要 wbi 签名才能正常返回数据。本项目的实现：
 
 ### 3.5 消息定向：DocumentId 过滤
 
-**问题**：WeakReferenceMessenger 是广播模式，多个 Document 实例会收到所有消息。
+**问题**：事件按类型广播，多个 Document 实例会收到同一类型的进度事件。
 
 **方案**：
 
@@ -96,7 +97,7 @@ Bilibili API 需要 wbi 签名才能正常返回数据。本项目的实现：
 - `DownloadTaskProgressMessage` 携带 `TargetDocumentId`
 - Document 在消息 handler 中过滤：`if (msg.TargetDocumentId != this.DocumentId) return;`
 
-无需修改公共消息框架，完全在业务层解决。
+无需为业务定向扩张公共事件总线，完全在业务层解决。
 
 ### 3.6 离线消息恢复：SQLite 作为唯一真相源
 

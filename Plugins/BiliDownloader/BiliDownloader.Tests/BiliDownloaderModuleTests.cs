@@ -9,7 +9,7 @@ using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.History;
 using BiliDownloader.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Plugin;
 
 namespace BiliDownloader.Tests;
@@ -26,7 +26,7 @@ public sealed class BiliDownloaderModuleTests
 
         module.Configure(context);
 
-        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IMessengerService));
+        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IHostEventBus));
         Assert.Equal(
             ServiceLifetime.Singleton,
             FindDescriptor(services, typeof(BiliDownloadCoordinator)).Lifetime);
@@ -100,7 +100,7 @@ public sealed class BiliDownloaderModuleTests
         // Microsoft DI 对单服务解析采用最后一次注册，因此这里不会创建真实 SQLite 仓储、
         // 不会读取登录 Cookie，也不会构造会访问网络、媒体目录或 ffmpeg 的生产执行器。
         var repository = new InMemoryDownloadTaskRepository();
-        services.AddSingleton<IMessengerService>(new IsolatedMessengerService());
+        services.AddSingleton<IHostEventBus>(new IsolatedHostEventBus());
         services.AddSingleton<IBiliLocalStateInitializer>(new NoOpLocalStateInitializer());
         services.AddSingleton<IBiliCredentialStore>(new InMemoryBiliCredentialStore());
         services.AddSingleton<IBiliSessionApi>(new StubBiliSessionApi());

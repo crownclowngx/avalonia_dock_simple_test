@@ -4,7 +4,7 @@ using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels;
 using BiliDownloader.ViewModels.BiliDownloader;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Save;
 using Newtonsoft.Json;
 
@@ -21,7 +21,7 @@ public class DocumentV2G5Tests
 {
     private static BiliDownloaderViewModel CreateVm(ISettingsRepository? settings = null)
     {
-        var messenger = new RecordingMessengerService();
+        var messenger = new RecordingHostEventBus();
         var taskRepo = new InMemoryDownloadTaskRepository();
         var settingsRepo = settings ?? new InMemorySettingsRepository();
         var loginState = new BiliLoginStateService(

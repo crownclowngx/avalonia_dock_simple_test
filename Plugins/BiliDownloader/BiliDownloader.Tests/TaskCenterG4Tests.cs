@@ -223,7 +223,7 @@ public sealed class TaskCenterG4Tests
             repository.Seed(MakeTask($"failed-{i}", $"失败{i}", DownloadTaskStatus.Failed));
 
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(),
+            repository, new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(), new FakeDownloadTaskExecutor(), paths);
         var vm = new SchedulerTaskListViewModel(coordinator, repository, _ => { });
 
@@ -256,7 +256,7 @@ public sealed class TaskCenterG4Tests
             MakeTask("t2", "B", DownloadTaskStatus.Failed),
             MakeTask("t3", "C", DownloadTaskStatus.Completed));
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(),
+            repository, new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(), new FakeDownloadTaskExecutor(), paths);
         var vm = new SchedulerTaskListViewModel(coordinator, repository, _ => { });
         await vm.ReloadTasksAsync();
@@ -289,7 +289,7 @@ public sealed class TaskCenterG4Tests
             MakeTask("t2", "B", DownloadTaskStatus.Failed),
             MakeTask("t3", "C", DownloadTaskStatus.Completed));
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(),
+            repository, new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(), new FakeDownloadTaskExecutor(), paths);
         var confirmService = new FakeConfirmationService { Result = true };
         var vm = new SchedulerTaskListViewModel(coordinator, repository, _ => { }, confirmService);
@@ -327,7 +327,7 @@ public sealed class TaskCenterG4Tests
             MakeTask("t1", "A", DownloadTaskStatus.Failed),
             MakeTask("t2", "B", DownloadTaskStatus.Completed));
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(),
+            repository, new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(), new FakeDownloadTaskExecutor(), paths);
         var confirmService = new FakeConfirmationService { Result = false };
         var vm = new SchedulerTaskListViewModel(coordinator, repository, _ => { }, confirmService);
@@ -355,7 +355,7 @@ public sealed class TaskCenterG4Tests
             MakeTask("t3", "C", DownloadTaskStatus.Completed));
         var executor = new FakeDownloadTaskExecutor();
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(),
+            repository, new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(), executor, paths);
         var vm = new SchedulerTaskListViewModel(coordinator, repository, _ => { });
         await vm.ReloadTasksAsync();
@@ -383,7 +383,7 @@ public sealed class TaskCenterG4Tests
         repository.Seed(MakeTask("t1", "A", DownloadTaskStatus.Ready));
         var executor = new FakeDownloadTaskExecutor();
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(),
+            repository, new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(), executor, paths);
         var vm = new SchedulerTaskListViewModel(coordinator, repository, _ => { });
         await vm.ReloadTasksAsync();
@@ -421,7 +421,7 @@ public sealed class TaskCenterG4Tests
             MakeTask("t2", "B", DownloadTaskStatus.Ready));
         var executor = new FakeDownloadTaskExecutor();
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(),
+            repository, new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(), executor, paths);
         var vm = new SchedulerTaskListViewModel(coordinator, repository, _ => { });
         await vm.ReloadTasksAsync();
@@ -458,7 +458,7 @@ public sealed class TaskCenterG4Tests
             MakeTask("t2", "B", DownloadTaskStatus.Ready, documentId: "doc-A"),
             MakeTask("t3", "C", DownloadTaskStatus.Ready, documentId: "doc-B"));
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(),
+            repository, new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(), new FakeDownloadTaskExecutor(), paths);
         var vm = new SchedulerTaskListViewModel(coordinator, repository, _ => { });
         await vm.ReloadTasksAsync();
@@ -692,7 +692,7 @@ public sealed class TaskCenterG4Tests
             repository.Seed(MakeTask($"task-{i}", $"视频{i}", DownloadTaskStatus.Failed));
 
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(),
+            repository, new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(), new FakeDownloadTaskExecutor(), paths);
         var confirmService = new FakeConfirmationService { Result = true };
         var vm = new SchedulerTaskListViewModel(coordinator, repository, _ => { }, confirmService);

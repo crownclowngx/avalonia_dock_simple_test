@@ -2,7 +2,7 @@ using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
-using MyAvaloniaManagementCommon.Message;
+using MyAvaloniaManagementCommon.Events;
 
 namespace BiliDownloader.Tests;
 
@@ -15,10 +15,10 @@ public sealed class BiliDownloadCoordinatorG2Tests
         InMemoryDownloadTaskRepository repository,
         FakeDownloadTaskExecutor executor,
         FakeCredentialProvider? credentialProvider = null,
-        IMessengerService? messenger = null)
+        IHostEventBus? eventBus = null)
         => new(
             repository,
-            messenger ?? new IsolatedMessengerService(),
+            eventBus ?? new IsolatedHostEventBus(),
             new NoOpDownloadProgressTracker(),
             executor,
             new TestDataPaths(),
@@ -281,7 +281,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
         executor.Handler = (task, ct) => Task.Delay(Timeout.Infinite, ct)
             .ContinueWith(_ => new DownloadExecutionResult(null, null), TaskContinuationOptions.OnlyOnRanToCompletion);
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(),
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(),
             executor, paths, new FakeCredentialProvider());
         var task = Record("t1", DownloadTaskStatus.Ready);
         task.TempDirectory = tempDir;
@@ -362,7 +362,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
         var repository = new InMemoryDownloadTaskRepository();
         var executor = new FakeDownloadTaskExecutor();
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedMessengerService(), new NoOpDownloadProgressTracker(),
+            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(),
             executor, paths, new FakeCredentialProvider());
         var task = Record("t1", DownloadTaskStatus.Failed);
         task.TempDirectory = tempDir;
@@ -529,7 +529,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
         executor.Handler = (_, _) => credential.IsLoggedIn
             ? Task.FromResult(new DownloadExecutionResult(null, null))
             : throw new MediaAuthorizationException("需要登录");
-        var messenger = new IsolatedMessengerService();
+        var messenger = new IsolatedHostEventBus();
         var coordinator = CreateCoordinator(repository, executor, credential, messenger);
         repository.Seed(Record("t1", DownloadTaskStatus.Ready));
 
@@ -539,7 +539,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
 
         // 登录成功只改变凭据可用性；环境事件本身不代表用户同意恢复历史任务。
         credential.IsLoggedIn = true;
-        messenger.Send(new LoginStateChangedMessage(true, "user", null));
+        messenger.Publish(new LoginStateChangedMessage(true, "user", null));
         await Task.Delay(100);
 
         Assert.Equal("waiting_for_login", repository.Tasks.Single(x => x.TaskId == "t1").Status);
@@ -594,7 +594,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
             Handler = (_, _) => throw new MediaAuthorizationException("需要登录"),
         };
         var credential = new FakeCredentialProvider { IsLoggedIn = false };
-        var messenger = new IsolatedMessengerService();
+        var messenger = new IsolatedHostEventBus();
         var coordinator = CreateCoordinator(repository, executor, credential, messenger);
         repository.Seed(Record("t1", DownloadTaskStatus.Ready));
 
@@ -602,7 +602,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
         await WaitUntilAsync(() =>
             repository.Tasks.Single(x => x.TaskId == "t1").Status == "waiting_for_login");
 
-        messenger.Send(new LoginStateChangedMessage(false, null, null));
+        messenger.Publish(new LoginStateChangedMessage(false, null, null));
         await Task.Delay(200);
 
         Assert.Equal("waiting_for_login", repository.Tasks.Single(x => x.TaskId == "t1").Status);
