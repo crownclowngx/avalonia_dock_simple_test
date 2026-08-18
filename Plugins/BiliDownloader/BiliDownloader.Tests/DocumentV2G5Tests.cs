@@ -7,19 +7,18 @@ using BiliDownloader.ViewModels.BiliDownloader;
 using MyAvaloniaManagementCommon.Message;
 using MyAvaloniaManagementCommon.Save;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.Tests;
 
 /// <summary>
-/// 当前 Document 保存格式及非当前格式拒绝测试。
-/// 文件名来自原测试分组；测试语义只覆盖当前 V3，不提供 V1/V2 兼容保证。
+/// BiliDownloader 当前内容 schema 的保存、往返和严格拒绝测试。
 /// </summary>
+/// <remarks>
+/// 文件名沿用已有测试分组，测试本身只承诺当前 V3。项目不存在旧 Document 信封，
+/// 因而这里没有旧字段、版本文本或迁移夹具。
+/// </remarks>
 public class DocumentV2G5Tests
 {
-    /// <summary>
-    /// 创建测试用的 BiliDownloaderViewModel 实例。
-    /// </summary>
     private static BiliDownloaderViewModel CreateVm(ISettingsRepository? settings = null)
     {
         var messenger = new RecordingMessengerService();
@@ -29,7 +28,6 @@ public class DocumentV2G5Tests
             new InMemoryBiliCredentialStore(),
             new StubBiliSessionApi(),
             messenger);
-        var ffmpeg = new FakeFfmpegService();
 
         return new BiliDownloaderViewModel(
             messenger,
@@ -39,19 +37,16 @@ public class DocumentV2G5Tests
             new BiliLoginService(),
             new BiliApiService(),
             new FakeCredentialProvider(),
-            ffmpeg);
+            new FakeFfmpegService());
     }
 
-    #region 当前格式保存与加载往返
-
     [Fact]
-    public void 当前保存_PluginMetadata版本为3()
+    public void 当前保存_使用独立整数内容Schema3()
     {
-        var vm = CreateVm();
-        var saveData = vm.CreateSaveDocumentMetaData("test.doc");
+        var saveData = CreateVm().CreateSaveDocumentMetaData("unused.mamdoc");
 
-        var metadata = JsonConvert.DeserializeObject<JObject>(saveData.PluginMetadata);
-        Assert.Equal("3.0", metadata?["Version"]?.ToString());
+        Assert.Equal(DocumentSaveCodec.CurrentContentSchemaVersion, saveData.ContentSchemaVersion);
+        Assert.False(string.IsNullOrWhiteSpace(saveData.Payload));
     }
 
     [Fact]
@@ -63,8 +58,8 @@ public class DocumentV2G5Tests
         vm.DownloadConfig.DownloadSubtitle = true;
         vm.DownloadConfig.DownloadCover = true;
 
-        var saveData = vm.CreateSaveDocumentMetaData("test.doc");
-        var content = JsonConvert.DeserializeObject<DocumentSaveDataV3>(saveData.Content);
+        var saveData = vm.CreateSaveDocumentMetaData("unused.mamdoc");
+        var content = JsonConvert.DeserializeObject<DocumentSaveDataV3>(saveData.Payload);
 
         Assert.NotNull(content);
         Assert.Equal("{bv}_{title}", content.NamingTemplate);
@@ -74,197 +69,55 @@ public class DocumentV2G5Tests
     }
 
     [Fact]
-    public void 当前保存加载_命名模板往返一致()
+    public void 当前保存加载_配置往返一致()
     {
-        var vm = CreateVm();
-        vm.NamingTemplate.Template = "{index}_{bv}_{title}";
+        var source = CreateVm();
+        source.NamingTemplate.Template = "{index}_{bv}_{title}";
+        source.DownloadConfig.DownloadDanmaku = true;
+        source.DownloadConfig.DownloadSubtitle = false;
+        source.DownloadConfig.DownloadCover = true;
 
-        var saveData = vm.CreateSaveDocumentMetaData("test.doc");
+        var target = CreateVm();
+        target.LoadDocumentByMetaData(source.CreateSaveDocumentMetaData("unused.mamdoc"));
 
-        var vm2 = CreateVm();
-        vm2.LoadDocumentByMetaData(saveData);
-
-        Assert.Equal("{index}_{bv}_{title}", vm2.NamingTemplate.Template);
+        Assert.Equal("{index}_{bv}_{title}", target.NamingTemplate.Template);
+        Assert.True(target.DownloadConfig.DownloadDanmaku);
+        Assert.False(target.DownloadConfig.DownloadSubtitle);
+        Assert.True(target.DownloadConfig.DownloadCover);
     }
 
-    [Fact]
-    public void 当前保存加载_附加资源配置往返一致()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(4)]
+    [InlineData(99)]
+    public void 非当前内容Schema_明确拒绝(int contentSchemaVersion)
     {
-        var vm = CreateVm();
-        vm.DownloadConfig.DownloadDanmaku = true;
-        vm.DownloadConfig.DownloadSubtitle = false;
-        vm.DownloadConfig.DownloadCover = true;
+        var saveData = new DocumentSaveData(contentSchemaVersion, "{}");
 
-        var saveData = vm.CreateSaveDocumentMetaData("test.doc");
+        var exception = Assert.Throws<DocumentLoadException>(() =>
+            CreateVm().LoadDocumentByMetaData(saveData));
 
-        var vm2 = CreateVm();
-        vm2.LoadDocumentByMetaData(saveData);
-
-        Assert.True(vm2.DownloadConfig.DownloadDanmaku);
-        Assert.False(vm2.DownloadConfig.DownloadSubtitle);
-        Assert.True(vm2.DownloadConfig.DownloadCover);
+        Assert.Equal("该 BiliDownloader Document 不是当前支持的 V3 格式。", exception.Message);
+        Assert.DoesNotContain("{}", exception.Message, StringComparison.Ordinal);
     }
 
-    #endregion
-
-    #region 非当前格式拒绝
-
-    [Fact]
-    public void V1格式_不执行默认值迁移()
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("{")]
+    public void 当前Schema正文损坏_返回稳定脱敏错误(string payload)
     {
-        // 构造 V1 格式的保存数据
-        var v1Content = new
-        {
-            DocumentId = "doc-v1",
-            Url = "https://bilibili.com/video/BV1test",
-            DownloadInfo = "",
-            OutputDirectory = "C:\\Videos",
-            UseGroupFolder = true,
-            AddIndexToTitle = true
-        };
+        var saveData = new DocumentSaveData(
+            DocumentSaveCodec.CurrentContentSchemaVersion,
+            payload);
 
-        var saveData = new DocumentSaveData
-        {
-            DocumentTypeId = new("bilitools.bilidownloader"),
-            Title = "测试",
-            SaveTime = DateTime.Now,
-            Content = JsonConvert.SerializeObject(v1Content),
-            PluginMetadata = JsonConvert.SerializeObject(new { Version = "1.0" })
-        };
+        var exception = Assert.Throws<DocumentLoadException>(() =>
+            CreateVm().LoadDocumentByMetaData(saveData));
 
-        var vm = CreateVm();
-        Assert.Throws<DocumentLoadException>(() =>
-            vm.LoadDocumentByMetaData(saveData));
+        if (payload.Length > 0)
+        {
+            Assert.DoesNotContain(payload, exception.Message, StringComparison.Ordinal);
+        }
     }
-
-    [Fact]
-    public void V1格式_不迁移命名模板()
-    {
-        var v1Content = new
-        {
-            DocumentId = "doc-v1",
-            Url = "",
-            DownloadInfo = "",
-            OutputDirectory = "",
-            UseGroupFolder = false,
-            AddIndexToTitle = false
-        };
-
-        var saveData = new DocumentSaveData
-        {
-            DocumentTypeId = new("bilitools.bilidownloader"),
-            Title = "测试",
-            SaveTime = DateTime.Now,
-            Content = JsonConvert.SerializeObject(v1Content),
-            PluginMetadata = JsonConvert.SerializeObject(new { Version = "1.0" })
-        };
-
-        var vm = CreateVm();
-        Assert.Throws<DocumentLoadException>(() =>
-            vm.LoadDocumentByMetaData(saveData));
-    }
-
-    [Fact]
-    public void V1格式_不猜测恢复旧字段()
-    {
-        var v1Content = new
-        {
-            DocumentId = "my-doc-id",
-            Url = "https://bilibili.com/video/BV1abc",
-            DownloadInfo = "日志内容",
-            OutputDirectory = "D:\\Downloads",
-            UseGroupFolder = true,
-            AddIndexToTitle = true
-        };
-
-        var saveData = new DocumentSaveData
-        {
-            DocumentTypeId = new("bilitools.bilidownloader"),
-            Title = "测试",
-            SaveTime = DateTime.Now,
-            Content = JsonConvert.SerializeObject(v1Content),
-            PluginMetadata = JsonConvert.SerializeObject(new { Version = "1.0" })
-        };
-
-        var vm = CreateVm();
-        Assert.Throws<DocumentLoadException>(() =>
-            vm.LoadDocumentByMetaData(saveData));
-    }
-
-    #endregion
-
-    #region 版本判别
-
-    [Fact]
-    public void 未知版本_明确拒绝()
-    {
-        var content = new { DocumentId = "doc-future", Url = "https://test.com" };
-        var saveData = new DocumentSaveData
-        {
-            DocumentTypeId = new("bilitools.bilidownloader"),
-            Title = "测试",
-            SaveTime = DateTime.Now,
-            Content = JsonConvert.SerializeObject(content),
-            PluginMetadata = JsonConvert.SerializeObject(new { Version = "99.0" })
-        };
-
-        var vm = CreateVm();
-        Assert.Throws<DocumentLoadException>(() =>
-            vm.LoadDocumentByMetaData(saveData));
-    }
-
-    [Fact]
-    public void PluginMetadata为空_不猜测为旧版本()
-    {
-        var content = new { DocumentId = "doc-no-meta", Url = "https://test.com" };
-        var saveData = new DocumentSaveData
-        {
-            DocumentTypeId = new("bilitools.bilidownloader"),
-            Title = "测试",
-            SaveTime = DateTime.Now,
-            Content = JsonConvert.SerializeObject(content),
-            PluginMetadata = ""
-        };
-
-        var vm = CreateVm();
-        Assert.Throws<DocumentLoadException>(() =>
-            vm.LoadDocumentByMetaData(saveData));
-    }
-
-    [Fact]
-    public void 非V3且Content为空_明确拒绝()
-    {
-        var saveData = new DocumentSaveData
-        {
-            DocumentTypeId = new("bilitools.bilidownloader"),
-            Title = "测试",
-            SaveTime = DateTime.Now,
-            Content = "",
-            PluginMetadata = JsonConvert.SerializeObject(new { Version = "2.0" })
-        };
-
-        var vm = CreateVm();
-        Assert.Throws<DocumentLoadException>(() =>
-            vm.LoadDocumentByMetaData(saveData));
-    }
-
-    [Fact]
-    public void 非V3且Content为null_明确拒绝()
-    {
-        var saveData = new DocumentSaveData
-        {
-            DocumentTypeId = new("bilitools.bilidownloader"),
-            Title = "测试",
-            SaveTime = DateTime.Now,
-            Content = null!,
-            PluginMetadata = JsonConvert.SerializeObject(new { Version = "2.0" })
-        };
-
-        var vm = CreateVm();
-        Assert.Throws<DocumentLoadException>(() =>
-            vm.LoadDocumentByMetaData(saveData));
-    }
-
-    #endregion
-
 }

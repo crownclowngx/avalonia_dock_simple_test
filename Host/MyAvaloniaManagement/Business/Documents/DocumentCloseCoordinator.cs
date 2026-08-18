@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagementCommon.Save;
 
 namespace MyAvaloniaManagement.Business.Documents;
@@ -26,7 +26,7 @@ internal sealed class DocumentCloseCoordinator(
 
     internal bool TryBeginDockClose(
         Document document,
-        DocumentMetadata? metadata,
+        PluginDocumentRegistration? registration,
         Action retryClose)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -59,16 +59,16 @@ internal sealed class DocumentCloseCoordinator(
             return false;
         }
 
-        _ = ConfirmDockCloseAsync(document, metadata, retryClose);
+        _ = ConfirmDockCloseAsync(document, registration, retryClose);
         return false;
     }
 
     internal async Task<bool> ConfirmWindowCloseAsync(
         IReadOnlyList<Document> documents,
-        Func<Document, DocumentMetadata?> metadataResolver)
+        Func<Document, PluginDocumentRegistration?> registrationResolver)
     {
         ArgumentNullException.ThrowIfNull(documents);
-        ArgumentNullException.ThrowIfNull(metadataResolver);
+        ArgumentNullException.ThrowIfNull(registrationResolver);
 
         if (_windowRequestPending)
         {
@@ -110,7 +110,7 @@ internal sealed class DocumentCloseCoordinator(
             {
                 var result = await saveService.SaveAsync(
                     document,
-                    metadataResolver(document));
+                    registrationResolver(document));
                 if (!result.IsSaved)
                 {
                     if (!string.IsNullOrWhiteSpace(result.Message))
@@ -136,7 +136,7 @@ internal sealed class DocumentCloseCoordinator(
 
     private async Task ConfirmDockCloseAsync(
         Document document,
-        DocumentMetadata? metadata,
+        PluginDocumentRegistration? registration,
         Action retryClose)
     {
         try
@@ -151,7 +151,7 @@ internal sealed class DocumentCloseCoordinator(
 
             if (choice == DocumentCloseChoice.Save)
             {
-                var result = await saveService.SaveAsync(document, metadata);
+                var result = await saveService.SaveAsync(document, registration);
                 if (!result.IsSaved)
                 {
                     if (!string.IsNullOrWhiteSpace(result.Message))

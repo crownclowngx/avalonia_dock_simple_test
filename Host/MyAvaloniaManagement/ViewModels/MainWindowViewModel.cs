@@ -126,7 +126,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
         var documents = DocumentWorkspace.GetDocuments(Layout);
         return _documentCloseCoordinator.ConfirmWindowCloseAsync(
             documents,
-            _factory.GetDocumentMetadata);
+            _factory.GetDocumentRegistration);
     }
 
     /// <summary>

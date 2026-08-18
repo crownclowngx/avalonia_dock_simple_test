@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagementCommon.Save;
 using Xunit;
 
 namespace DaTangAccountingHelpPlug.Tests.BankBalanceReconciliation;
@@ -78,12 +79,27 @@ public sealed class ReconciliationDocumentScopeTests
         var saveData = document.CreateSaveDocumentMetaData("document.json");
 
         Assert.True(document.IsDirty);
-        Assert.Contains("enterprise.xlsx", saveData.Content);
-        Assert.Contains("result.xlsx", saveData.Content);
-        Assert.DoesNotContain("EnterpriseEntries", saveData.Content);
-        Assert.DoesNotContain("BankEntries", saveData.Content);
+        Assert.Equal(1, saveData.ContentSchemaVersion);
+        Assert.Contains("enterprise.xlsx", saveData.Payload);
+        Assert.Contains("result.xlsx", saveData.Payload);
+        Assert.DoesNotContain("EnterpriseEntries", saveData.Payload);
+        Assert.DoesNotContain("BankEntries", saveData.Payload);
+        var restored = manager.CreateDocument<BankBalanceReconciliationViewModel>();
+        restored.LoadDocumentByMetaData(saveData);
+        Assert.Equal("enterprise.xlsx", restored.Source.EnterpriseLedgerPath);
+        Assert.Equal("bank.xlsx", restored.Source.BankStatementPath);
+        Assert.Equal(12.34m, restored.Options.PreviousUnreconciledDifference);
+        Assert.Equal("result.xlsx", restored.Run.LastOutputPath);
+        Assert.False(restored.IsDirty);
+        var unknownVersion = Assert.Throws<DocumentLoadException>(() =>
+            document.LoadDocumentByMetaData(new DocumentSaveData(2, saveData.Payload)));
+        Assert.DoesNotContain(saveData.Payload, unknownVersion.Message, StringComparison.Ordinal);
+        var damaged = Assert.Throws<DocumentLoadException>(() =>
+            document.LoadDocumentByMetaData(new DocumentSaveData(1, "{")));
+        Assert.DoesNotContain("{", damaged.Message, StringComparison.Ordinal);
         document.AcceptChanges();
         Assert.False(document.IsDirty);
+        Assert.True(manager.Release(restored));
         Assert.True(manager.Release(document));
     }
 }

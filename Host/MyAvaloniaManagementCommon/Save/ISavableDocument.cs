@@ -28,8 +28,12 @@ public interface ISavableDocument
     DocumentSaveData CreateSaveDocumentMetaData(string filePath);
 
     /// <summary>
-    /// 从已经通过宿主信封解析的保存数据恢复业务状态。
+    /// 从已经通过宿主信封解析的插件内容快照恢复业务状态。
     /// </summary>
+    /// <remarks>
+    /// 参数只包含内容 schema 和 payload。标题、插件身份、Document 类型及保存时间均已由
+    /// 宿主验证或应用，插件不得在 payload 中维护第二份宿主身份事实。
+    /// </remarks>
     /// <exception cref="DocumentLoadException">
     /// 内容损坏、不完整或违反安全读取约束时抛出。异常消息必须稳定且不包含原始正文。
     /// </exception>

@@ -92,9 +92,9 @@ public sealed class DocumentV3G4Tests
         var restored = CreateVm();
         restored.LoadDocumentByMetaData(saved);
         var savedAgain = restored.CreateSaveDocumentMetaData("unused-2");
-        var data = JsonConvert.DeserializeObject<DocumentSaveDataV3>(savedAgain.Content)!;
+        var data = JsonConvert.DeserializeObject<DocumentSaveDataV3>(savedAgain.Payload)!;
 
-        Assert.Equal("3.0", JObject.Parse(saved.PluginMetadata)["Version"]?.ToString());
+        Assert.Equal(DocumentSaveCodec.CurrentContentSchemaVersion, saved.ContentSchemaVersion);
         Assert.Equal("uploader:42", data.Source?.StableSourceId);
         Assert.Equal("教程", data.Filters.Keyword);
         Assert.Equal(ContentSourceSortOrder.PublishedNewest, data.Filters.SortOrder);
@@ -136,7 +136,7 @@ public sealed class DocumentV3G4Tests
             new IncrementalBaselineSaveData()), null);
 
         var data = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateSaveDocumentMetaData("unused").Content)!;
+            vm.CreateSaveDocumentMetaData("unused").Payload)!;
 
         Assert.Equal(kind.ToString(), data.Source?.Kind);
         Assert.Equal(stableId, data.Source?.StableSourceId);
@@ -186,20 +186,20 @@ public sealed class DocumentV3G4Tests
     {
         var content = JObject.FromObject(new DocumentSaveDataV3 { DocumentId = "known" });
         content["FutureMinorField"] = new JObject { ["Any"] = 1 };
-        var saveData = EnvelopeRaw("3.8", content.ToString(Formatting.None));
+        var saveData = EnvelopeRaw(3, content.ToString(Formatting.None));
         var vm = CreateVm();
 
         vm.LoadDocumentByMetaData(saveData);
         var savedAgain = vm.CreateSaveDocumentMetaData("unused");
 
         Assert.Equal("known", vm.DocumentId);
-        Assert.Null(JObject.Parse(savedAgain.Content)["FutureMinorField"]);
+        Assert.Null(JObject.Parse(savedAgain.Payload)["FutureMinorField"]);
     }
 
     [Fact]
     public void 未知主版本_明确拒绝而不猜测恢复字段()
     {
-        var saveData = EnvelopeRaw("99.0", JsonConvert.SerializeObject(new
+        var saveData = EnvelopeRaw(99, JsonConvert.SerializeObject(new
         {
             DocumentId = "future-doc",
             Url = "BV1abcDEF123",
@@ -221,16 +221,15 @@ public sealed class DocumentV3G4Tests
     public void 损坏V3内容_拒绝打开(string content)
     {
         var vm = CreateVm();
-        var saveData = EnvelopeRaw("3.0", content);
+        var saveData = EnvelopeRaw(3, content);
 
         Assert.Throws<DocumentLoadException>(() => vm.LoadDocumentByMetaData(saveData));
     }
 
     [Fact]
-    public void 损坏版本元数据_拒绝打开()
+    public void 非当前整数内容Schema_拒绝打开()
     {
-        var saveData = EnvelopeRaw("3.0", "{}");
-        saveData.PluginMetadata = "{";
+        var saveData = EnvelopeRaw(4, "{}");
 
         Assert.Throws<DocumentLoadException>(() => CreateVm().LoadDocumentByMetaData(saveData));
     }
@@ -284,7 +283,7 @@ public sealed class DocumentV3G4Tests
 
         vm.LoadDocumentByMetaData(Envelope(3, data));
         var saved = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateSaveDocumentMetaData("unused").Content)!;
+            vm.CreateSaveDocumentMetaData("unused").Payload)!;
 
         Assert.True(vm.SourceWorkflow.IsRestoredSourceUnsupported);
         Assert.Equal("FutureCatalog", saved.Source?.Kind);
@@ -312,7 +311,7 @@ public sealed class DocumentV3G4Tests
     [Fact]
     public void V3快照_不包含页面游标选择或临时媒体字段()
     {
-        var json = CreateVm().CreateSaveDocumentMetaData("unused").Content;
+        var json = CreateVm().CreateSaveDocumentMetaData("unused").Payload;
         var root = JObject.Parse(json);
 
         Assert.Equal(
@@ -590,7 +589,7 @@ public sealed class DocumentV3G4Tests
 
         vm.LoadDocumentByMetaData(Envelope(3, data));
         var legacyNormalized = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateSaveDocumentMetaData("normalized-legacy.bili").Content)!;
+            vm.CreateSaveDocumentMetaData("normalized-legacy.bili").Payload)!;
 
         Assert.Equal(SubtitleSelectionMode.All, legacyNormalized.SubtitleOptions.SelectionMode);
         Assert.Equal([DanmakuOutputFormat.Xml], legacyNormalized.DanmakuOptions.Formats);
@@ -612,7 +611,7 @@ public sealed class DocumentV3G4Tests
             },
         }));
         var structured = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            structuredVm.CreateSaveDocumentMetaData("normalized-structured.bili").Content)!;
+            structuredVm.CreateSaveDocumentMetaData("normalized-structured.bili").Payload)!;
 
         Assert.Equal(["zh-CN"], structured.SubtitleOptions.LanguageKeys);
         Assert.Equal([DanmakuOutputFormat.Xml, DanmakuOutputFormat.Ass],
@@ -687,25 +686,19 @@ public sealed class DocumentV3G4Tests
     }
 
     [Theory]
-    [InlineData(null, "", 1)]
-    [InlineData("{}", "", 1)]
-    [InlineData("{\"Version\":\"not-a-version\"}", "", -1)]
-    [InlineData("{\"Version\":\"2.5\"}", "{}", 2)]
-    public void 版本识别_缺失和非法元数据具有确定的安全结果(
-        string? pluginMetadata,
-        string content,
-        int expectedMajor)
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(3, true)]
+    [InlineData(99, false)]
+    public void 整数内容Schema识别_只接受当前V3(
+        int contentSchemaVersion,
+        bool expectedKnown)
     {
-        var decoded = DocumentSaveCodec.Decode(new DocumentSaveData
-        {
-            DocumentTypeId = new("test-document"),
-            Title = "版本识别",
-            PluginMetadata = pluginMetadata ?? string.Empty,
-            Content = content,
-        });
+        var decoded = DocumentSaveCodec.Decode(
+            new DocumentSaveData(contentSchemaVersion, "{}"));
 
-        Assert.Equal(expectedMajor, decoded.MajorVersion);
-        Assert.Equal(expectedMajor == 3, decoded.IsKnownVersion);
+        Assert.Equal(contentSchemaVersion, decoded.ContentSchemaVersion);
+        Assert.Equal(expectedKnown, decoded.IsKnownVersion);
     }
 
     [Fact]
@@ -1057,17 +1050,11 @@ public sealed class DocumentV3G4Tests
             registry, api, credentials, new FakeFfmpegService());
     }
 
-    private static DocumentSaveData Envelope(int majorVersion, object content) =>
-        EnvelopeRaw($"{majorVersion}.0", JsonConvert.SerializeObject(content));
+    private static DocumentSaveData Envelope(int contentSchemaVersion, object content) =>
+        EnvelopeRaw(contentSchemaVersion, JsonConvert.SerializeObject(content));
 
-    private static DocumentSaveData EnvelopeRaw(string version, string content) => new()
-    {
-        DocumentTypeId = new("A3F7E1B2-9C4D-4E8A-B6F1-2D5E8A7C3B10"),
-        Title = "测试",
-        SaveTime = DateTime.Now,
-        Content = content,
-        PluginMetadata = JsonConvert.SerializeObject(new { Version = version }),
-    };
+    private static DocumentSaveData EnvelopeRaw(int contentSchemaVersion, string content) =>
+        new(contentSchemaVersion, content);
 }
 
 /// <summary>用于证明 Document 恢复路径不会调用任何来源 API 的计数 Provider。</summary>

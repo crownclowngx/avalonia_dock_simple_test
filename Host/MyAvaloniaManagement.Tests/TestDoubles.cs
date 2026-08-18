@@ -229,6 +229,15 @@ internal sealed class TestHostStorageService : IHostStorageService
         Files.ContainsKey(Path.GetFullPath(path)) || File.Exists(path);
 
     /// <inheritdoc />
+    public long GetFileLength(string path)
+    {
+        var normalized = Path.GetFullPath(path);
+        return Files.TryGetValue(normalized, out var content)
+            ? System.Text.Encoding.UTF8.GetByteCount(content)
+            : new FileInfo(normalized).Length;
+    }
+
+    /// <inheritdoc />
     public Task<string> ReadAllTextAsync(string path)
     {
         ReadCount++;
@@ -337,19 +346,16 @@ internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumen
     public int AcceptChangesCount { get; private set; }
 
     public DocumentSaveData CreateSaveDocumentMetaData(string filePath) =>
-        new()
-        {
-            DocumentTypeId = SaveDocumentTypeId,
-            Title = Title ?? string.Empty,
-            SaveTime = DateTime.UtcNow,
-            Content = Content,
-            PluginMetadata = """{"source":"test"}"""
-        };
+        new(1, Content);
 
     public void LoadDocumentByMetaData(DocumentSaveData saveData)
     {
-        Title = saveData.Title;
-        Content = saveData.Content;
+        if (saveData.ContentSchemaVersion != 1)
+        {
+            throw new DocumentLoadException("测试文档内容版本不受支持。");
+        }
+
+        Content = saveData.Payload;
     }
 
     public void NotifySaveCompleted(string filePath)
@@ -476,14 +482,7 @@ internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument,
     public bool IsDirty => IsModified;
 
     public DocumentSaveData CreateSaveDocumentMetaData(string filePath) =>
-        new()
-        {
-            DocumentTypeId = SaveDocumentTypeId,
-            Title = Title ?? string.Empty,
-            SaveTime = DateTime.UtcNow,
-            Content = string.Empty,
-            PluginMetadata = string.Empty,
-        };
+        new(1, string.Empty);
 
     public void LoadDocumentByMetaData(DocumentSaveData saveData)
     {
@@ -493,7 +492,10 @@ internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument,
             throw new DocumentLoadException("测试文档内容损坏。");
         }
 
-        Title = saveData.Title;
+        if (saveData.ContentSchemaVersion != 1)
+        {
+            throw new DocumentLoadException("测试 scoped Document 内容版本不受支持。");
+        }
     }
 
     public void AcceptChanges() => IsModified = false;

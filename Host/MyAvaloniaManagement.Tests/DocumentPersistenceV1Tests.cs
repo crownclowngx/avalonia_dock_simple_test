@@ -1,5 +1,6 @@
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -265,14 +266,12 @@ public sealed class DocumentPersistenceV1Tests
             .ToList();
 
     private static string Serialize(string title, string content) =>
-        Newtonsoft.Json.JsonConvert.SerializeObject(new DocumentSaveData
-        {
-            DocumentTypeId = TestSavableStrategy.TypeId,
-            Title = title,
-            SaveTime = DateTime.UtcNow,
-            Content = content,
-            PluginMetadata = "{}",
-        });
+        new DocumentEnvelopeSerializer().Serialize(
+            HostExtensionIds.Owner,
+            TestSavableStrategy.TypeId,
+            title,
+            DateTimeOffset.UtcNow,
+            new DocumentSaveData(1, content));
 
     private sealed class MissingSaveStateDocument : Document, ISavableDocument
     {

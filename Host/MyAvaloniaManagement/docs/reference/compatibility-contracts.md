@@ -127,9 +127,12 @@ V1 清单格式：
 
 - 创建继续通过 `IDocumentCreationStrategy` 和 `DocumentCreationParams`；
 - 可选多入口继续通过 `IDocumentCreationIntentProvider`；
-- 保存外壳继续使用 Newtonsoft 序列化的 `DocumentSaveData`；
+- 唯一磁盘格式是宿主严格读写的 Document 信封 v1，必须且只能包含七个 camelCase 字段：`schemaVersion`、`pluginId`、`documentTypeId`、`contentSchemaVersion`、`title`、`savedAtUtc`、`payload`；
+- `schemaVersion` 只能为 `1`；UTF-8 文件上限为 8 MiB，JSON 最大深度为 8；注释、尾随逗号、重复、未知、缺失、大小写错误和错误类型字段均拒绝；
+- 插件公共 `DocumentSaveData` 是不可变内容 DTO，只包含正整数 `ContentSchemaVersion` 和非 null `Payload`；
 - `ISavableDocument` 必须同时实现 `IDocumentSaveState`，缺失时以 `DOCUMENT_SAVE_STATE_MISSING` 拒绝发布；
-- 插件仍负责解释 `Content` 和 `PluginMetadata`；
+- 宿主从不可变 Registry 拥有 `PluginId`、`DocumentTypeId`，从文件名拥有标题，从 `TimeProvider` 拥有 UTC 时间；插件只解释内容版本和 payload；
+- 信封中的 Document 类型必须是规范主 ID，不接受历史别名；`pluginId` 必须等于注册项所有者；
 - 路径转绝对路径后按 Windows 不区分大小写规则查重；
 - 批量打开以单文件为错误边界；
 - 同一路径已打开时激活原文档，不创建重复实例；
@@ -137,7 +140,8 @@ V1 清单格式：
 - 快照创建不得更新标题、路径或脏状态；主文件写入失败不得调用 `AcceptChanges` 或保存完成通知；
 - 主文件和 `<主路径>.recovery.bak` 均通过同目录临时文件原子替换；备份失败不得回滚已成功的主文件；
 - 标签关闭和窗口退出必须保护脏 Document；取消确认或保存失败不得提前取消 `ClosingToken`；
-- 当前 Document 文件不兼容历史内容格式，插件不得猜测迁移旧字段；
+- v1 是第一个且唯一受支持的 Document 信封；不存在旧信封兼容对象，任何非 v1 结构直接作为无效输入拒绝；
+- 打开失败不发布 Document、不泄漏临时 Scope，也不创建、迁移或覆盖任何文件；
 - `DocumentLoadException`、JSON、I/O、权限和路径故障属于预期持久化失败；编程错误不应被宽泛捕获。
 
 拥有独立 DI Scope 的 Document 在 Dock 确认关闭后释放；未采用 `IDocumentScopeFactory` 的历史 Document 维持原有所有权行为。

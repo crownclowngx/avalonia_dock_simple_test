@@ -19,7 +19,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 - Tool 单例创建、关闭隐藏和状态恢复；
 - Managed Plugin 服务注册、可选初始化与反向关闭生命周期；
 - 严格 `plugin.manifest.json`、插件目录隔离和私有依赖解析；
-- 文件打开与保存、插件状态面板和会话诊断日志。
+- 严格 Document 信封 v1、文件原子保存与恢复备份、插件状态面板和会话诊断日志。
 
 ## 现有插件
 
@@ -48,6 +48,11 @@ Host API 与 SDK 的程序集兼容身份均为 `1.0.0.0`；统一事实定义�
 宿主默认把布局、外观和诊断写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v1\`。旧预发布目录
 保持原样，不读取、迁移或删除。`MYAVALONIA_DATA_DIRECTORY` 仍表示完整数据根，不追加 `v1`，
 以保持自动化和部署隔离语义。
+
+Document 使用项目第一个且唯一的七字段信封 v1。宿主拥有 schema、插件和 Document 身份、标题与
+UTC 时间，插件只提供内容 schema 和字符串 payload。reader 严格拒绝任何非 v1 结构、历史 ID 别名
+和插件所有权冲突；文件 UTF-8 上限为 8 MiB，JSON 最大深度为 8。项目没有旧 Document 信封兼容
+或迁移路径，打开失败不会创建、迁移或覆盖文件。
 
 ## 快速运行
 

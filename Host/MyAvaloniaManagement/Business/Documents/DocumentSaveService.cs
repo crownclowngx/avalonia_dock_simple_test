@@ -1,11 +1,11 @@
 using System;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
-using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Save;
-using Newtonsoft.Json;
 
 namespace MyAvaloniaManagement.Business.Documents;
 
@@ -40,16 +40,17 @@ internal sealed class DocumentSaveService(
     IHostStorageService storageService,
     DocumentEnvelopeSerializer serializer,
     DocumentOperationGate operationGate,
-    DocumentRecoveryRegistry recoveryRegistry)
+    DocumentRecoveryRegistry recoveryRegistry,
+    TimeProvider timeProvider)
 {
     internal Task<DocumentSaveResult> SaveAsync(
         Document document,
-        DocumentMetadata? metadata) =>
-        operationGate.RunAsync(() => SaveCoreAsync(document, metadata));
+        PluginDocumentRegistration? registration) =>
+        operationGate.RunAsync(() => SaveCoreAsync(document, registration));
 
     private async Task<DocumentSaveResult> SaveCoreAsync(
         Document document,
-        DocumentMetadata? metadata)
+        PluginDocumentRegistration? registration)
     {
         if (document is not ISavableDocument savableDocument)
         {
@@ -63,6 +64,14 @@ internal sealed class DocumentSaveService(
                 "该 Document 未实现公共保存状态契约，宿主已拒绝保存。");
         }
 
+        if (registration is null ||
+            registration.Metadata.DocumentTypeId != savableDocument.SaveDocumentTypeId)
+        {
+            return new(
+                DocumentSaveStatus.Failed,
+                "该 Document 没有匹配的宿主注册所有权，已拒绝保存。");
+        }
+
         var savePathPolicy = document as IDocumentSavePathPolicy;
         var originalPath = savableDocument.FilePath;
         var isRecovered = recoveryRegistry.TryGet(document, out var recovery);
@@ -71,7 +80,7 @@ internal sealed class DocumentSaveService(
             isRecovered ||
             savePathPolicy?.RequiresSaveAs == true)
         {
-            filePath = await storageService.PickSaveFileAsync(metadata);
+            filePath = await storageService.PickSaveFileAsync(registration.Metadata);
         }
         else
         {
@@ -108,8 +117,12 @@ internal sealed class DocumentSaveService(
         {
             fileName = Path.GetFileNameWithoutExtension(filePath);
             var saveData = savableDocument.CreateSaveDocumentMetaData(filePath);
-            saveData.Title = fileName;
-            content = serializer.Serialize(saveData);
+            content = serializer.Serialize(
+                registration.OwnerId,
+                registration.Metadata.DocumentTypeId,
+                fileName,
+                timeProvider.GetUtcNow(),
+                saveData);
 
             // 主文件是唯一业务提交点。只有该原子写入完成后，内存 Document 才允许接受
             // 新基线；备份是恢复能力，不能反过来改变主文件已经成功提交的事实。

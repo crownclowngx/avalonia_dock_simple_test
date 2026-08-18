@@ -83,23 +83,20 @@ public sealed class BiliDownloaderDocumentStateMapper : IBiliDownloaderDocumentS
         };
 
         DocumentSaveSecurityPolicy.Validate(data);
-        return DocumentSaveCodec.EncodeV3(
-            SaveDocumentTypeIdConstant.BiliDownloaderDocumentId,
-            title,
-            data);
+        return DocumentSaveCodec.EncodeV3(data);
     }
 
     public BiliDownloaderRestoredState Restore(DocumentSaveData saveData)
     {
         ArgumentNullException.ThrowIfNull(saveData);
         var decoded = DocumentSaveCodec.Decode(saveData);
-        if (decoded.MajorVersion != 3)
+        if (!decoded.IsKnownVersion)
         {
             throw new DocumentLoadException(
                 "该 BiliDownloader Document 不是当前支持的 V3 格式。");
         }
 
-        var data = RestoreV3(decoded.Content);
+        var data = RestoreV3(decoded.Payload);
         DocumentSaveSecurityPolicy.Validate(data);
         return new BiliDownloaderRestoredState(data);
     }

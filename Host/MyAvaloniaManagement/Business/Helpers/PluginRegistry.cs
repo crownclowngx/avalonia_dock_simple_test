@@ -97,6 +97,18 @@ internal sealed class PluginRegistry
     internal bool TryGetView(Type viewModelType, out PluginViewRegistration registration) =>
         _views.TryGetValue(viewModelType, out registration!);
 
+    /// <summary>
+    /// 按规范主 ID 获取 Document 注册项，不应用历史别名。
+    /// </summary>
+    /// <remarks>
+    /// 布局和创建入口仍可在各自边界解析别名；Document 信封 v1 只允许写入主 ID，
+    /// 因而持久化流程必须使用精确查询，避免一次打开悄悄变成未声明的数据迁移。
+    /// </remarks>
+    internal bool TryGetDocumentRegistration(
+        DocumentTypeId documentTypeId,
+        out PluginDocumentRegistration registration) =>
+        _documents.TryGetValue(documentTypeId, out registration!);
+
     internal bool TryGetToolStrategy(ToolTypeId toolTypeId, out IToolCreationStrategy strategy)
     {
         var canonical = ResolveToolTypeId(toolTypeId);

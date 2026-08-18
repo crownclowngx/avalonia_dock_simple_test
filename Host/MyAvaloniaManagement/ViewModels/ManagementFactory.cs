@@ -142,6 +142,23 @@ internal sealed class ManagementFactory : Factory
             : null;
 
     /// <summary>
+    /// 获取可保存 Document 对应的完整注册项，使保存流程同时取得元数据和唯一所有者。
+    /// </summary>
+    internal PluginDocumentRegistration? GetDocumentRegistration(Document document) =>
+        document is ISavableDocument savable &&
+        _extensions.TryGetDocumentRegistration(savable.SaveDocumentTypeId, out var registration)
+            ? registration
+            : null;
+
+    /// <summary>
+    /// 按信封中的规范主 ID 查找注册项；此入口不会接受或归一化历史别名。
+    /// </summary>
+    internal bool TryGetPersistedDocumentRegistration(
+        DocumentTypeId documentTypeId,
+        out PluginDocumentRegistration registration) =>
+        _extensions.TryGetDocumentRegistration(documentTypeId, out registration);
+
+    /// <summary>
     /// 展开所有可见文档策略的创建入口。未实现多入口契约的旧策略自动生成一个默认入口。
     /// </summary>
     public IEnumerable<DocumentCreationMenuEntry> GetAllDocumentCreationEntries()
@@ -526,7 +543,7 @@ internal sealed class ManagementFactory : Factory
             _documentCloseCoordinator is not null &&
             !_documentCloseCoordinator.TryBeginDockClose(
                 document,
-                GetDocumentMetadata(document),
+                GetDocumentRegistration(document),
                 () => CloseDockable(document)))
         {
             return false;

@@ -2,6 +2,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Message;
@@ -90,14 +91,7 @@ public sealed class MainWindowViewModelTests
         var valid = Path.Combine(context.TempDirectory, "valid.testdoc");
         context.Storage.AddFile(
             unknown,
-            JsonConvert.SerializeObject(new DocumentSaveData
-            {
-                DocumentTypeId = new("unknown"),
-                Title = "未知",
-                Content = "",
-                PluginMetadata = "",
-                SaveTime = DateTime.UtcNow
-            }));
+            Serialize(new DocumentTypeId("unknown"), "未知", string.Empty));
         context.Storage.AddFile(valid, Serialize("有效", "ok"));
         context.Storage.OpenPaths = [unknown, valid];
         var viewModel = context.CreateMainWindowViewModel();
@@ -132,10 +126,9 @@ public sealed class MainWindowViewModelTests
             item.Path.Equals(
                 Path.GetFullPath(savePath) + DocumentRecoveryRegistry.BackupSuffix,
                 StringComparison.OrdinalIgnoreCase));
-        var stored = JsonConvert.DeserializeObject<DocumentSaveData>(
-            primaryWrite.Content);
-        Assert.Equal("saved", stored?.Title);
-        Assert.Equal("保存内容", stored?.Content);
+        using var stored = System.Text.Json.JsonDocument.Parse(primaryWrite.Content);
+        Assert.Equal("saved", stored.RootElement.GetProperty("title").GetString());
+        Assert.Equal("保存内容", stored.RootElement.GetProperty("payload").GetString());
     }
 
     [Fact]
@@ -573,14 +566,12 @@ public sealed class MainWindowViewModelTests
         DocumentTypeId documentTypeId,
         string title,
         string content) =>
-        JsonConvert.SerializeObject(new DocumentSaveData
-        {
-            DocumentTypeId = documentTypeId,
-            Title = title,
-            Content = content,
-            PluginMetadata = """{"test":true}""",
-            SaveTime = DateTime.UtcNow
-        });
+        new DocumentEnvelopeSerializer().Serialize(
+            HostExtensionIds.Owner,
+            documentTypeId,
+            title,
+            DateTimeOffset.UtcNow,
+            new DocumentSaveData(1, content));
 
     private sealed class ThrowingDocumentDock(bool throwAfterAdd) : DocumentDock
     {

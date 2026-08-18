@@ -11,6 +11,7 @@ namespace DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 /// <summary>银行余额调节 Document 的组合外壳。</summary>
 public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocument, IDocumentSaveState, IDisposable
 {
+    private const int CurrentContentSchemaVersion = 1;
     private bool _disposed;
     private bool _isRestoring;
 
@@ -79,26 +80,27 @@ public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocum
             PreviousUnreconciledDifference = Options.PreviousUnreconciledDifference,
             LastOutputPath = Run.LastOutputPath
         };
-        return new DocumentSaveData
-        {
-            DocumentTypeId = SaveDocumentTypeId,
-            Title = Title,
-            SaveTime = DateTime.Now,
-            Content = JsonSerializer.Serialize(state),
-            PluginMetadata = JsonSerializer.Serialize(new { Version = 1 })
-        };
+        // 内容 schema 属于插件；信封身份、标题和 UTC 时间由宿主从 Registry 与目标路径生成。
+        return new DocumentSaveData(
+            CurrentContentSchemaVersion,
+            JsonSerializer.Serialize(state));
     }
 
     public void LoadDocumentByMetaData(DocumentSaveData saveData)
     {
         ArgumentNullException.ThrowIfNull(saveData);
+        if (saveData.ContentSchemaVersion != CurrentContentSchemaVersion)
+        {
+            throw new DocumentLoadException("银行余额调节文档内容版本不受支持。");
+        }
+
         _isRestoring = true;
         try
         {
             SavedState state;
             try
             {
-                state = JsonSerializer.Deserialize<SavedState>(saveData.Content)
+                state = JsonSerializer.Deserialize<SavedState>(saveData.Payload)
                     ?? throw new DocumentLoadException("银行余额调节文档内容为空。");
             }
             catch (JsonException exception)
@@ -122,7 +124,6 @@ public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocum
             Options.EnableLooseAmountAlignment = state.EnableLooseAmountAlignment;
             Options.PreviousUnreconciledDifference = state.PreviousUnreconciledDifference;
             Run.LastOutputPath = state.LastOutputPath;
-            Title = string.IsNullOrWhiteSpace(saveData.Title) ? "银行余额调节表" : saveData.Title;
             IsModified = false;
         }
         finally

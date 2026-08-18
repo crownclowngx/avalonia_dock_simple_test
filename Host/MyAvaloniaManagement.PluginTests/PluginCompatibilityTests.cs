@@ -349,19 +349,26 @@ public sealed class PluginCompatibilityTests
         Assert.Empty(secondWelcome.UrlHistory.HistoryItems);
         Assert.Equal("欢迎 A", firstWelcome.Title);
         Assert.True(firstWelcome.IsDirty);
-        _ = firstWelcome.CreateSaveDocumentMetaData("unused.mamdoc");
+        firstWelcome.Url = "https://roundtrip.test";
+        firstWelcome.ResponseContent = "往返正文";
+        var currentSnapshot = firstWelcome.CreateSaveDocumentMetaData("unused.mamdoc");
+        Assert.Equal(1, currentSnapshot.ContentSchemaVersion);
         Assert.True(firstWelcome.IsDirty);
+        secondWelcome.LoadDocumentByMetaData(currentSnapshot);
+        Assert.Equal("https://roundtrip.test", secondWelcome.Url);
+        Assert.Equal("往返正文", secondWelcome.ResponseContent);
+        Assert.False(secondWelcome.IsDirty);
         firstWelcome.AcceptChanges();
         Assert.False(firstWelcome.IsDirty);
         Assert.Throws<DocumentLoadException>(() =>
-            firstWelcome.LoadDocumentByMetaData(new DocumentSaveData
-            {
-                DocumentTypeId = firstWelcome.SaveDocumentTypeId,
-                Title = "损坏",
-                SaveTime = DateTime.UtcNow,
-                Content = "{broken",
-                PluginMetadata = "{}",
-            }));
+            firstWelcome.LoadDocumentByMetaData(new DocumentSaveData(1, "{broken")));
+        Assert.Throws<DocumentLoadException>(() =>
+            firstWelcome.LoadDocumentByMetaData(new DocumentSaveData(1, "{}")));
+        Assert.Throws<DocumentLoadException>(() =>
+            firstWelcome.LoadDocumentByMetaData(new DocumentSaveData(1, "   ")));
+        var futureVersion = Assert.Throws<DocumentLoadException>(() =>
+            firstWelcome.LoadDocumentByMetaData(new DocumentSaveData(2, "secret-payload")));
+        Assert.DoesNotContain("secret-payload", futureVersion.Message, StringComparison.Ordinal);
 
         var manager = provider.GetRequiredService<DocumentScopeManager>();
         Assert.True(manager.Release(firstWelcome));

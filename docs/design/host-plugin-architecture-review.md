@@ -346,7 +346,7 @@ public DocumentMetadata GetMetadata() => new(
 };
 ```
 
-主 ID 必须采用小写点分层命名，并归属于 manifest 所有者的 `.document.*` 或 `.tool.*` 空间；历史大写 GUID、短名称等只能进入 `LegacyIds`。读取旧 Document 信封或 Tool 布局时，注册表先把别名规范化为主 ID，后续保存只写主 ID。新建与“另存为”统一建议 `.mamdoc`，但打开旧文件后的普通保存继续覆盖原路径，不强制改名。
+主 ID 必须采用小写点分层命名，并归属于 manifest 所有者的 `.document.*` 或 `.tool.*` 空间；历史大写 GUID、短名称等只能进入 `LegacyIds`。Tool 布局可按其独立兼容规则归一化别名；Document 信封 v1 只接受规范主 ID，别名不会归一化后继续打开。v1 是第一个且唯一的 Document 信封，不存在旧信封迁移。新建与“另存为”统一建议 `.mamdoc`。
 
 ### 6.4 2026-08-12 统一启动诊断 V1
 

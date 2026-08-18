@@ -21,9 +21,10 @@ public sealed class BiliDownloaderModuleTests
     {
         var services = new ServiceCollection();
         var module = new BiliDownloaderPluginModule();
+        var context = new TestPluginRegistrationContext(
+            new PluginId("myavalonia.plugin.bili-downloader"), services);
 
-        module.Configure(new TestPluginRegistrationContext(
-            new PluginId("myavalonia.plugin.bili-downloader"), services));
+        module.Configure(context);
 
         Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IMessengerService));
         Assert.Equal(
@@ -74,7 +75,9 @@ public sealed class BiliDownloaderModuleTests
             FindDescriptor(services, typeof(ITaskHistoryExporter)).Lifetime);
         Assert.Equal(ServiceLifetime.Singleton,
             FindDescriptor(services, typeof(ITaskHistoryRedownloadService)).Lifetime);
-        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IPluginLifecycle));
+        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IPluginLifecycle));
+        var lifecycle = Assert.Single(context.Contributions, item => item.Kind == "Lifecycle");
+        Assert.Equal(typeof(BiliDownloaderPluginLifecycle), lifecycle.First);
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -88,8 +91,10 @@ public sealed class BiliDownloaderModuleTests
     public async Task 模块生命周期解析唯一协调器_且初始化关闭均由宿主管理器执行()
     {
         var services = new ServiceCollection();
-        new BiliDownloaderPluginModule().Configure(new TestPluginRegistrationContext(
-            new PluginId("myavalonia.plugin.bili-downloader"), services));
+        var pluginId = new PluginId("myavalonia.plugin.bili-downloader");
+        var context = new TestPluginRegistrationContext(pluginId, services);
+        new BiliDownloaderPluginModule().Configure(context);
+        Assert.Single(context.Contributions, item => item.Kind == "Lifecycle");
 
         // 测试在模块注册之后覆盖所有可能产生外部副作用的边界。
         // Microsoft DI 对单服务解析采用最后一次注册，因此这里不会创建真实 SQLite 仓储、
@@ -104,6 +109,10 @@ public sealed class BiliDownloaderModuleTests
         services.AddSingleton<IFfmpegRuntimeLocator>(new FakeFfmpegService { ReadyOverride = true });
         services.AddSingleton<IBiliCredentialProvider>(new FakeCredentialProvider());
         services.AddSingleton<IDownloadTaskExecutor>(new FakeDownloadTaskExecutor());
+        services.AddSingleton<BiliDownloaderPluginLifecycle>();
+        services.AddSingleton(provider => new PluginLifecycleRegistration(
+            pluginId,
+            provider.GetRequiredService<BiliDownloaderPluginLifecycle>()));
         services.AddSingleton<PluginLifecycleManager>();
 
         using var provider = services.BuildServiceProvider();

@@ -1,6 +1,5 @@
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagementCommon.Save;
-using Newtonsoft.Json;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -23,25 +22,14 @@ public sealed class SharedDependencyCompatibilityTests
     }
 
     [Fact]
-    public void NewtonsoftJson往返保持文档保存契约()
+    public void Document内容快照只暴露独立Schema与正文()
     {
-        var expected = new DocumentSaveData
-        {
-            DocumentTypeId = new("phase3-document"),
-            Title = "阶段三文档",
-            SaveTime = new DateTime(2026, 7, 26, 12, 30, 0, DateTimeKind.Utc),
-            Content = "{\"position\":1250}",
-            PluginMetadata = "{\"version\":\"3\"}",
-        };
+        var snapshot = new DocumentSaveData(3, "{\"position\":1250}");
 
-        var json = JsonConvert.SerializeObject(expected);
-        var actual = JsonConvert.DeserializeObject<DocumentSaveData>(json);
-
-        Assert.NotNull(actual);
-        Assert.Equal(expected.DocumentTypeId, actual.DocumentTypeId);
-        Assert.Equal(expected.Title, actual.Title);
-        Assert.Equal(expected.SaveTime, actual.SaveTime);
-        Assert.Equal(expected.Content, actual.Content);
-        Assert.Equal(expected.PluginMetadata, actual.PluginMetadata);
+        Assert.Equal(3, snapshot.ContentSchemaVersion);
+        Assert.Equal("{\"position\":1250}", snapshot.Payload);
+        Assert.Equal(
+            ["ContentSchemaVersion", "Payload"],
+            typeof(DocumentSaveData).GetProperties().Select(property => property.Name).Order().ToArray());
     }
 }

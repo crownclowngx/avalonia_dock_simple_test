@@ -3,7 +3,7 @@
 > 状态：待整改，不满足封板条件
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`
-> 整改进度：G0、G1、G2、G3、G4 已于 2026-08-15 完成；G5–G16 待完成
+> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7 已于 2026-08-18 完成；G8–G16 待完成
 > 适用范围：`MyAvaloniaManagement` 宿主、`MyAvaloniaManagementCommon`、插件装载与注册边界、Document/Tool 公共契约和发布门禁
 > 不评审：现有插件的领域业务正确性、第三方插件市场、运行时热卸载和恶意插件隔离
 
@@ -13,9 +13,9 @@
 
 结论是：当前宿主已经有较完整的插件运行骨架，G0 已恢复绿色基线，G1 已冻结支持边界、
 版本线和 v1 数据根，G2 已完成 Host public 面与静态服务定位收口，G3 也已形成正式 SDK 包、
-可选 UI Profile 与宿主样式契约，但 **尚不能封板**。
-剩余主要问题是 Document 宿主信封没有版本、消息总线泄漏第三方抽象、插件贡献仍靠反射扫描，
-插件部署与兼容门禁也没有形成单一发布入口。Legacy 二进制激活已由 G4 删除。
+可选 UI Profile 与宿主样式契约，但 **尚不能封板**。G5、G6 已完成显式贡献和宿主 DI 保护，
+G7 已建立唯一 Document 信封 v1。剩余主要问题包括消息总线仍泄漏第三方抽象、插件部署与
+兼容门禁尚未形成单一发布入口。Legacy 二进制激活已由 G4 删除。
 
 本次封板采用以下一次性定基线策略：
 
@@ -96,11 +96,17 @@ G5 完成后的专项基线为 Unit 119、UI 37、Plugin 127，共 **283/283 通
 Windows Smoke，不沿用旧数字冒充本次证据。详细记录见
 [G5 显式贡献与 Plugin Registry](../plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)。
 
+G7 完成后的当前基线为 Unit 147、UI 37、Plugin 138，共 **322/322 通过**；Host 行覆盖率
+80.3%、分支覆盖率 65.47%，Windows Smoke 通过。`DocumentEnvelopeV1` 专项 24/24、
+BiliDownloader 719/719、DaTangAccountingHelpPlug 64/64 通过，SDK 包消费的新内容 DTO 正例与
+已删除旧成员反例均通过。详细记录见
+[G7 Document 信封 v1](../plan-history/host-v1/g7-document-envelope-v1.md)。
+
 ### 2.3 当前风险清单
 
 | 等级 | 发现 | 影响 |
 | --- | --- | --- |
-| 高 | `DocumentSaveData` 没有宿主 `schemaVersion`，插件用自由格式 `PluginMetadata` 记录内容版本 | 宿主升级后无法可靠区分信封版本、插件版本和业务内容版本 |
+| 已解决（G7） | `DocumentSaveData` 曾混合宿主信封与自由格式 `PluginMetadata` | 现由唯一 v1 信封承载宿主 schema 与身份，插件 DTO 只保留内容版本和 payload |
 | 已解决（G2） | Host 窗口、ViewModel、加载器、工厂和内部模型曾大量为 public，且存在静态服务定位器 | Host 自有导出类型现为 0；生产构造只走 Runtime DI |
 | 高 | Common/Plugin SDK 门禁仍只有一个 SHA256 | G2 已排除 Host 实现噪声，但仍不能审阅删除了哪个类型、改了哪个签名，也不能区分兼容新增 |
 | 高 | `IMessengerService` 暴露 `IMessenger`，生产实现使用 `WeakReferenceMessenger.Default` | SDK 被 CommunityToolkit 具体 API 绑定，不同 HostRuntime 和测试可能共享全局状态 |
@@ -162,11 +168,12 @@ Windows Smoke，不沿用旧数字冒充本次证据。详细记录见
 - `pluginId` 用于校验 Document 类型的所有权和缺失插件诊断；
 - `contentSchemaVersion` 由对应插件解释，不等于插件发布版本；
 - `title`、`savedAtUtc`、路径和原子事务由宿主拥有；
-- `savedAtUtc` 使用 `DateTimeOffset.UtcNow`；
+- `savedAtUtc` 使用注入的 `TimeProvider.GetUtcNow()`；
 - `payload` 是插件唯一拥有的业务部分；
 - 删除当前自由格式 `PluginMetadata`；
 - 未知宿主 schema、未知未来内容 schema、所有权不匹配或损坏 payload 都只能返回脱敏错误，不得改写原文件；
-- 当前预发布 Document 格式没有迁移器。v1 reader 不猜测旧字段，也不读取旧数据目录。
+- v1 是项目第一个且唯一受支持的 Document 信封；任何非 v1 结构都作为无效输入拒绝，不判断其来源或历史版本。
+- 打开失败不会创建、迁移或覆盖文件，也不会把未完整加载的 Document 发布到 Dock。
 
 ### 3.4 新数据根目录与回退
 
@@ -330,12 +337,15 @@ StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 A
 
 **优先级：阻断；依赖：G3**
 
-- 目标：实现本文第 3.3 节的宿主信封，并删除 `PluginMetadata`。
-- 修改边界：`DocumentSaveData`、序列化器、Document 打开/保存和各可保存插件的适配。
-- 验收：序列化字段、大小与深度约束、严格 schema、UTC 时间、插件所有权和 Document 类型校验都有测试。
-- 验收命令：执行 `dotnet test Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj -c Release --filter FullyQualifiedName~DocumentEnvelopeV1`。
-- 完成定义：宿主而非插件填充标题、时间、插件身份和文档类型；插件只返回内容版本和 payload。
-- 回滚：旧预发布文件不被自动改写，失败打开不会生成新版本覆盖原件。
+**状态：已完成（2026-08-18）**。v1 是第一个且唯一的 Document 信封，不存在旧信封兼容对象。
+
+- 已删除 `PluginMetadata` 及宿主字段在插件 DTO 中的重复所有权；插件只返回不可变内容版本和 payload。
+- 宿主从 Registry、目标文件名和 `TimeProvider` 填充身份、标题与 UTC 时间。
+- 严格 reader 只接受七个精确字段、schema 1、规范主 ID 和 UTC 时间；拒绝别名、未知字段、注释与尾随逗号。
+- UTF-8 文件上限为 8 MiB，JSON 最大深度为 8；读前、读后和写后均有边界检查。
+- 失败打开不发布 Document、不泄漏 Scope、不写入或覆盖任何文件。
+- 专项 24/24，Host 三层 322/322，两个实际插件测试 719/719 与 64/64，SDK 包门禁和 Windows Smoke 均通过。
+- 完整字段规范、SOLID 取舍、插件适配与证据见 [G7 独立记录](../plan-history/host-v1/g7-document-envelope-v1.md)。
 
 ### G8：重构保存契约与内容版本处理
 
@@ -489,11 +499,12 @@ G0 与 G15 可以并行。G7/G8、G9/G10 和 G11 在 G3 完成后可以分别独
 ### 7.3 Document 与磁盘兼容
 
 - Document 信封 v1 往返保持字段和内容一致；
+- v1 是第一个且唯一受支持的 Document 信封，非 v1 输入直接拒绝，不探测或迁移；
 - 插件发布版本变化但内容 schema 不变时仍可读取；
 - 未知信封版本、未知内容版本、所有权不匹配、损坏 payload 和缺失插件不会修改原文件；
 - 主文件失败不提交内存状态，备份失败只产生警告；
 - 恢复副本必须另存为且不能覆盖损坏主文件或恢复备份；
-- 新版只读取 v1 数据根，预发布目录保持原样。
+- 打开失败不创建、迁移或覆盖文件；新版只读取 v1 数据根，预发布目录保持原样。
 
 ### 7.4 生命周期与消息
 
@@ -535,7 +546,7 @@ G0 与 G15 可以并行。G7/G8、G9/G10 和 G11 在 G3 完成后可以分别独
 - [ ] Plugin SDK public API 基线已经生成并可读；
 - [ ] 四个真实插件使用正式 SDK/打包规则构建；
 - [ ] v1 数据根和旧数据保留规则已经验证；
-- [ ] Document 信封与插件内容 schema 已分离；
+- [x] Document 信封与插件内容 schema 已分离（G7 已完成）；
 - [x] Legacy 二进制插件路径和静态 Service Locator 已删除；
 - [x] Host 内部类型不再被误当作 Plugin SDK（G2 已完成）；
 - [ ] 消息总线不泄漏第三方接口或进程全局状态；

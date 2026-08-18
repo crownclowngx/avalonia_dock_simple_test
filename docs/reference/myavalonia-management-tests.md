@@ -2,10 +2,10 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前 G6 专项基线：2026-08-16，Release 共 295 项通过，解决方案构建 0 警告、0 错误，
-> PluginServiceProtection 专项 11/11，SDK 新契约消费与旧候选拒绝夹具通过。本次没有重新采集
-> 覆盖率或 Windows Smoke；最近一次覆盖率与 Smoke 仍是 G4 的独立时间点证据，不能冒充 G6
-> 结果。数量来自命令输出，不是永久固定门槛。
+> 当前 G7 专项基线：2026-08-18，Release 共 322 项通过，解决方案构建 0 警告、0 错误，
+> `DocumentEnvelopeV1` 专项 24/24；Host 行覆盖率 80.3%、分支覆盖率 65.47%，Windows Smoke
+> 通过。SDK 新内容 DTO 消费成功，已删除旧信封成员的负例编译失败。数量来自命令输出，不是
+> 永久固定门槛。
 
 ## 一键门禁
 
@@ -41,9 +41,10 @@ G3 新增、G5 扩展的独立包消费门禁：
 
 脚本在系统临时目录打包并消费 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`，检查包内容、nuspec、基础依赖白名单和 UI 精确版本。
-随后编译最终 `Configure(IPluginRegistrationContext)` Managed Plugin，确认旧候选
-`PluginId + ConfigureServices` 夹具必须编译失败，再编译实际使用 Ursa、Dock UI、宿主语义资源的
-XAML 插件。还原使用临时隔离 NuGet 缓存，不能误命中开发机中的同版本旧包。
+随后编译最终 `Configure(IPluginRegistrationContext)` Managed Plugin，并实际构造
+`DocumentSaveData(contentSchemaVersion, payload)`；确认旧候选 `PluginId + ConfigureServices` 以及
+访问已删除 `PluginMetadata` 等信封成员的夹具必须编译失败，再编译实际使用 Ursa、Dock UI、宿主
+语义资源的 XAML 插件。还原使用临时隔离 NuGet 缓存，不能误命中开发机中的同版本旧包。
 临时目录在结束时删除，不读取用户数据根，也不发布到公共 NuGet。
 
 ## 覆盖率门槛
@@ -124,7 +125,8 @@ Host 与插件的 Document/Tool 策略都使用 `ActivatorUtilities` 创建，�
 
 - 已打开的文件只激活原标签，然后继续处理后续文件；
 - 不存在、损坏 JSON、未知类型或读取失败只跳过当前文件；
-- 每个文件只读取一次、反序列化一次，同一份 `DocumentSaveData` 直接交给文档；
+- 文件读取前检查长度，读取后严格解析一次唯一七字段 v1；插件只收到内容版本和 payload；
+- `DocumentEnvelopeV1Tests` 覆盖精确字段、8 MiB、深度 8、UTC、主 ID、所有权与失败不发布；
 - Windows 路径先转绝对路径，再按不区分大小写规则比较，避免同一文件重复打开。
 - 并发打开同一路径时，后到请求会看到前一请求创建的文档并只执行激活。
 
@@ -132,6 +134,23 @@ Document 类型身份与文件扩展名已经解耦：新建和“另存为”�
 打开历史扩展名文件后的普通保存仍覆盖原路径。内容先通过同目录临时文件和原子替换提交；只有写入成功后才
 同步文档路径、标签标题和保存完成状态。I/O、权限、路径、JSON 与
 `DocumentLoadException` 等预期故障会转换为稳定错误结果，编程错误不会被吞掉。
+
+v1 是项目第一个且唯一受支持的 Document 信封。任何非 v1 结构直接拒绝，不探测旧字段、不使用
+历史 Document 别名继续打开，也不创建迁移副本。失败打开不会发布 Document、泄漏 Scope 或写入文件。
+
+### G7 当前绿色基线
+
+2026-08-18 执行锁定还原、解决方案 Release 构建、两个实际插件测试、SDK 包消费门禁，以及：
+
+```powershell
+.\scripts\Invoke-MyAvaloniaManagementTests.ps1 `
+  -Configuration Release -NoRestore -WindowsSmoke
+```
+
+结果为 Unit 147、UI 37、Plugin 138，共 **322/322**；Host 行覆盖率 80.3%、分支覆盖率
+65.47%，Windows Smoke 通过。`DocumentEnvelopeV1` 专项 24/24，BiliDownloader 719/719，
+DaTangAccountingHelpPlug 64/64。完整记录见
+[G7 Document 信封 v1](../plan-history/host-v1/g7-document-envelope-v1.md)。
 
 ### 工具显隐与稳定 ID
 

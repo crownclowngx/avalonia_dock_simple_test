@@ -75,6 +75,9 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
     public bool FileExists(string path) => File.Exists(path);
 
     /// <inheritdoc />
+    public long GetFileLength(string path) => new FileInfo(path).Length;
+
+    /// <inheritdoc />
     public Task<string> ReadAllTextAsync(string path) => File.ReadAllTextAsync(path);
 
     /// <inheritdoc />

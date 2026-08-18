@@ -162,6 +162,7 @@ try {
     Set-Content -LiteralPath (Join-Path $basicProject "BasicPluginModule.cs") -Encoding UTF8 -Value @'
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagementCommon.Save;
 
 public sealed class BasicPluginModule : IPluginModule
 {
@@ -173,6 +174,11 @@ public sealed class BasicPluginModule : IPluginModule
 }
 
 public sealed class BasicPluginService;
+
+public sealed class BasicDocumentContentFactory
+{
+    public DocumentSaveData Create() => new(1, "{\"value\":42}");
+}
 '@
     Invoke-DotNet @("restore", "BasicPlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $basicProject
     Invoke-DotNet @("build", "BasicPlugin.csproj", "-c", "Release", "--no-restore", "--nologo") $basicProject
@@ -208,6 +214,28 @@ public sealed class LegacyCandidatePluginModule : IPluginModule
     Invoke-DotNet @("restore", "LegacyCandidatePlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $legacyProject
     Assert-DotNetBuildFails "LegacyCandidatePlugin.csproj" $legacyProject @("CS0535", "Configure")
 
+    # G7 把 DocumentSaveData 收口为内容 schema + payload。最终夹具已经验证新构造可用；
+    # 此负向夹具防止未来为了偶然源码兼容重新加入 PluginMetadata 等宿主信封字段。
+    $legacyEnvelopeProject = Join-Path $temporaryRoot "LegacyDocumentEnvelope"
+    New-Item -ItemType Directory -Path $legacyEnvelopeProject | Out-Null
+    Set-Content -LiteralPath (Join-Path $legacyEnvelopeProject "LegacyDocumentEnvelope.csproj") -Encoding UTF8 -Value @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup><PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="$sdkVersion" /></ItemGroup>
+</Project>
+"@
+    Set-Content -LiteralPath (Join-Path $legacyEnvelopeProject "LegacyEnvelopeConsumer.cs") -Encoding UTF8 -Value @'
+using MyAvaloniaManagementCommon.Save;
+
+public static class LegacyEnvelopeConsumer
+{
+    public static string ReadRemovedMetadata() =>
+        new DocumentSaveData(1, "{}").PluginMetadata;
+}
+'@
+    Invoke-DotNet @("restore", "LegacyDocumentEnvelope.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $legacyEnvelopeProject
+    Assert-DotNetBuildFails "LegacyDocumentEnvelope.csproj" $legacyEnvelopeProject @("CS1061", "PluginMetadata")
+
     $uiProject = Join-Path $temporaryRoot "UiPlugin"
     New-Item -ItemType Directory -Path $uiProject | Out-Null
     Set-Content -LiteralPath (Join-Path $uiProject "UiPlugin.csproj") -Encoding UTF8 -Value @"
@@ -240,7 +268,7 @@ public sealed partial class ProfileView : UserControl
     Invoke-DotNet @("restore", "UiPlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $uiProject
     Invoke-DotNet @("build", "UiPlugin.csproj", "-c", "Release", "--no-restore", "--nologo") $uiProject
 
-    Write-Host "G5 Plugin SDK package acceptance passed. SDK=$sdkVersion; final sample compiled; legacy candidate rejected."
+    Write-Host "G7 Plugin SDK package acceptance passed. SDK=$sdkVersion; content snapshot sample compiled; legacy module and envelope members rejected."
 }
 finally {
     $systemTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())

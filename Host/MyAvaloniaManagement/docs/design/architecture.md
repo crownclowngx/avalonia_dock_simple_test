@@ -7,7 +7,7 @@
 - 组合依赖、发现插件模块并管理插件生命周期；
 - 收集显式 Document/Tool/View/Lifecycle 贡献并分派创建请求；
 - 建立和维护四向 Dock 工作区；
-- 编排文档打开、保存和关闭后的资源释放；
+- 严格读写唯一 Document 信封 v1，并编排打开、保存和关闭后的资源释放；
 - 读取、迁移、校验和保存布局 V1；
 - 为 XAML、菜单、主题和宿主 Tool 提供绑定入口。
 
@@ -160,6 +160,8 @@ sequenceDiagram
     participant C as DocumentPersistenceCoordinator
     participant W as DocumentWorkspace
     participant S as IHostStorageService
+    participant E as DocumentEnvelopeSerializer
+    participant R as PluginRegistry
     participant F as ManagementFactory
 
     VM->>C: OpenPathAsync / SaveActiveAsync
@@ -168,9 +170,12 @@ sequenceDiagram
     alt 已打开
         W->>W: 激活现有 Document
     else 未打开
-        C->>S: 读取文本
-        C->>C: Newtonsoft 反序列化 DocumentSaveData
-        C->>F: 按 DocumentTypeId 创建
+        C->>S: 读取前检查 8 MiB 上限并读取文本
+        C->>E: 严格解析唯一七字段 v1
+        E-->>C: 宿主信封 + 内容 DTO
+        C->>R: 精确查找主 ID 与所有者
+        C->>F: 使用宿主标题创建未发布 Document
+        C->>C: 校验保存契约并加载插件内容
         C->>W: 加入 DocumentDock 并激活
     end
     C-->>VM: DocumentOperationResult
@@ -184,14 +189,19 @@ sequenceDiagram
 - `DocumentCloseCoordinator`：标签/窗口关闭确认、批量保存和同步关闭的异步重入；
 - `DocumentWorkspace`：把 Dock 树适配为文档区操作；
 - `DocumentPathIdentity`：绝对路径与 Windows 不区分大小写身份；
-- `DocumentEnvelopeSerializer`：固定 Newtonsoft 与 `DocumentSaveData` 格式；
-- `IHostStorageService`：隔离 Avalonia 选择器和本机文件系统。
+- `DocumentEnvelopeSerializer`：严格读写 schema 1、七个精确字段、深度 8 和 UTF-8 8 MiB 边界；
+- `PluginRegistry`：提供不可变 Document 类型、主 ID 和插件所有权事实；
+- `IHostStorageService`：隔离 Avalonia 选择器、本机文件系统与读前长度检查。
 
 ### 6.2 并发与状态提交
 
 打开和所有保存入口共享 `DocumentOperationGate`。该方案牺牲同一窗口内文档 I/O 的并行度，换取简单、确定的查重和状态提交顺序。文档文件通常较小，稳定性收益高于有限的并行收益。
 
 保存遵循“主文件成功后再提交内存状态”：快照生成无副作用，原子写入完成后才更新标题、路径并调用 `IDocumentSaveState.AcceptChanges`。随后更新 `.recovery.bak`；备份失败只产生警告，不伪造主文件失败。
+
+插件快照只包含内容版本和 payload。`pluginId`、`documentTypeId`、标题和 UTC 时间由宿主分别从
+Registry、目标文件名和 `TimeProvider` 取得。v1 是第一个且唯一格式；不设置旧字段探测、别名
+归一化后继续打开或迁移分支。打开任一阶段失败时，未发布 Scope 被释放且不会执行写入。
 
 消息总线无法等待异步回调时，ViewModel 通过内部异步观察方法捕获预期的文档操作结果，避免 `async void` 和未观察任务异常。
 
@@ -252,6 +262,7 @@ sequenceDiagram
 | 插件并发扫描、可变缓存泄漏 | `InternalRefactorTests` |
 | Managed-only 拒绝、显式贡献所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、`ExplicitContributionAndPluginRegistryTests`、内部注册表测试 |
 | 插件私有 DI 事务提交、宿主描述符保护与四插件回归 | `PluginServiceProtectionTests` |
+| 严格七字段信封、资源边界、所有权与失败不发布 | `DocumentEnvelopeV1Tests` |
 | 并发打开、保存失败、关闭确认与坏文件恢复 | `MainWindowViewModelTests`、`DocumentPersistenceV1Tests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |

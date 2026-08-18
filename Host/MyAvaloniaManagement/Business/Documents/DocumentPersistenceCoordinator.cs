@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Dock.Model.Controls;
 using Dock.Model.Mvvm.Controls;
@@ -75,11 +74,9 @@ internal sealed class DocumentPersistenceCoordinator(
             return DocumentOperationResult.NoChange;
         }
 
-        var metadata = document is ISavableDocument savable
-            ? factory.GetAllDocumentMetadata().FirstOrDefault(item =>
-                item.DocumentTypeId == savable.SaveDocumentTypeId)
-            : null;
-        var result = await saveService.SaveAsync(document, metadata);
+        var result = await saveService.SaveAsync(
+            document,
+            factory.GetDocumentRegistration(document));
         return result.Status switch
         {
             DocumentSaveStatus.Saved => DocumentOperationResult.ClearError,
@@ -182,10 +179,13 @@ internal sealed class DocumentPersistenceCoordinator(
 
     private async Task<Document> CreateLoadedDocumentAsync(string filePath)
     {
+        // 长度预检发生在整文件读取前；读取后的反序列化仍会按实际 UTF-8 字节复核，
+        // 避免文件在检查与读取之间变化时绕过 8 MiB 门限。
+        serializer.ValidateFileLength(storageService.GetFileLength(filePath));
         var content = await storageService.ReadAllTextAsync(filePath);
-        var data = serializer.Deserialize(content);
-        var canonicalTypeId = factory.NormalizePersistedDocumentTypeId(data.DocumentTypeId);
-        if (canonicalTypeId != data.DocumentTypeId)
+        var envelope = serializer.Deserialize(content);
+        var canonicalTypeId = factory.NormalizePersistedDocumentTypeId(envelope.DocumentTypeId);
+        if (canonicalTypeId != envelope.DocumentTypeId)
         {
             // Document 文件只接受当前契约写出的规范类型 ID。策略注册中的别名仍可服务于
             // 运行期创建意图，但不能悄悄把历史文件迁移为当前格式，否则插件会在不知情时
@@ -193,13 +193,31 @@ internal sealed class DocumentPersistenceCoordinator(
             throw new DocumentLoadException(
                 "文档类型标识不是当前规范值，宿主不会迁移历史 Document 文件。");
         }
+
+        if (!factory.TryGetPersistedDocumentRegistration(
+                envelope.DocumentTypeId,
+                out var registration))
+        {
+            throw new NotSupportedException("当前宿主没有注册该 Document 类型。");
+        }
+
+        if (registration.OwnerId != envelope.PluginId)
+        {
+            throw new DocumentLoadException(
+                "文档声明的插件所有者与当前 Document 注册不匹配。");
+        }
+
         Document? pendingDocument = factory.CreateManagementNewDocument(
-            new DocumentCreationParams(data.DocumentTypeId)
+            new DocumentCreationParams(envelope.DocumentTypeId)
             {
-                Title = data.Title
+                Title = envelope.Title
             });
         try
         {
+            // 创建策略可以决定新建文档的默认标题，但从磁盘恢复时标题属于已经验证的宿主
+            // 信封。宿主在插件加载正文前再次应用它，确保策略是否消费 Title 参数不会改变
+            // 持久化语义，也避免插件通过 payload 维护第二份标题。
+            pendingDocument.Title = envelope.Title;
             if (pendingDocument is not ISavableDocument savableDocument)
             {
                 throw new DocumentLoadException(
@@ -213,7 +231,7 @@ internal sealed class DocumentPersistenceCoordinator(
             }
 
             savableDocument.FilePath = filePath;
-            savableDocument.LoadDocumentByMetaData(data);
+            savableDocument.LoadDocumentByMetaData(envelope.Content);
             var loadedDocument = pendingDocument;
             pendingDocument = null;
             return loadedDocument;

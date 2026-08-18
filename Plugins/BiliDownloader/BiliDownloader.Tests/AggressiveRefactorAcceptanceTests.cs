@@ -132,17 +132,11 @@ public sealed class AggressiveRefactorAcceptanceTests
     }
 
     [Fact]
-    public void DocumentCodec_未知主版本只标记安全读取而不伪装V1()
+    public void DocumentCodec_未知内容Schema只标记为不可读取()
     {
-        var decoded = DocumentSaveCodec.Decode(new DocumentSaveData
-        {
-            DocumentTypeId = new("bili"),
-            Title = "test",
-            Content = "{}",
-            PluginMetadata = "{\"Version\":\"9.0\"}",
-        });
+        var decoded = DocumentSaveCodec.Decode(new DocumentSaveData(9, "{}"));
 
-        Assert.Equal(9, decoded.MajorVersion);
+        Assert.Equal(9, decoded.ContentSchemaVersion);
         Assert.False(decoded.IsKnownVersion);
     }
 

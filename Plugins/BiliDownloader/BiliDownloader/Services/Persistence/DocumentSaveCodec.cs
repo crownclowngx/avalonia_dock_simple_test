@@ -1,15 +1,19 @@
 using BiliDownloader.Models;
 using MyAvaloniaManagementCommon.Save;
-using MyAvaloniaManagementCommon.DocumentCreation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.Services.Persistence;
 
-public sealed record DecodedDocument(int MajorVersion, string Content, bool IsKnownVersion);
+public sealed record DecodedDocument(
+    int ContentSchemaVersion,
+    string Payload,
+    bool IsKnownVersion);
 
 public static class DocumentSaveCodec
 {
+    public const int CurrentContentSchemaVersion = 3;
+
     private static readonly JsonSerializerSettings SerializerSettings = new()
     {
         TypeNameHandling = TypeNameHandling.None,
@@ -17,40 +21,21 @@ public static class DocumentSaveCodec
     };
 
     /// <summary>
-    /// 将已验证的 V3 DTO 放入宿主统一信封。SaveTime 属于本次磁盘快照，
-    /// 业务往返测试应比较 Content 而不是要求时间戳相同。
+    /// 将已验证的 V3 DTO 转换为插件内容快照。宿主会在保存事务中独立补充
+    /// PluginId、DocumentTypeId、标题和 UTC 时间，插件不能维护这些字段的副本。
     /// </summary>
-    public static DocumentSaveData EncodeV3(
-        DocumentTypeId documentTypeId,
-        string title,
-        DocumentSaveDataV3 content) => new()
-    {
-        DocumentTypeId = documentTypeId,
-        Title = title,
-        SaveTime = DateTime.Now,
-        Content = JsonConvert.SerializeObject(content, SerializerSettings),
-        PluginMetadata = JsonConvert.SerializeObject(new { Version = "3.0" }, SerializerSettings),
-    };
+    public static DocumentSaveData EncodeV3(DocumentSaveDataV3 content) =>
+        new(
+            CurrentContentSchemaVersion,
+            JsonConvert.SerializeObject(content, SerializerSettings));
 
     public static DecodedDocument Decode(DocumentSaveData saveData)
     {
-        var versionText = "1.0";
-        try
-        {
-            if (!string.IsNullOrWhiteSpace(saveData.PluginMetadata))
-            {
-                var metadata = JsonConvert.DeserializeObject<JObject>(saveData.PluginMetadata, SerializerSettings);
-                versionText = metadata?["Version"]?.ToString() ?? "1.0";
-            }
-        }
-        catch (JsonException ex)
-        {
-            throw new DocumentLoadException("文档版本元数据已损坏，无法安全打开。", ex);
-        }
-
-        var known = Version.TryParse(versionText, out var version);
-        var major = known ? version!.Major : -1;
-        return new DecodedDocument(major, saveData.Content ?? "", known && major == 3);
+        ArgumentNullException.ThrowIfNull(saveData);
+        return new DecodedDocument(
+            saveData.ContentSchemaVersion,
+            saveData.Payload,
+            saveData.ContentSchemaVersion == CurrentContentSchemaVersion);
     }
 
     internal static T? Deserialize<T>(string content)

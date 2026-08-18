@@ -14,6 +14,7 @@ namespace MyPlugTest.ViewModels;
 
 public class TestWelcomeViewModel : Document, ISavableDocument, IDocumentSaveState, IDisposable
 {
+    private const int CurrentContentSchemaVersion = 1;
     // 本地 CTS 与宿主 ClosingToken 共同组成操作令牌：正式 Scope 关闭由宿主触发，直接构造
     // 场景则由 Dispose 触发。两条路径统一后，HTTP 结果、历史记录和 Messenger 消息都通过
     // 同一个 IsClosing 门禁决定是否仍可提交，避免出现“请求已取消但成功消息仍迟到”的分裂状态。
@@ -77,46 +78,61 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDocumentSaveSta
                 item.RequestTime
             }).ToList()
         };
-        // 创建文档保存数据
-        var saveData = new DocumentSaveData
-        {
-            DocumentTypeId = SaveDocumentTypeId,
-            Title = Title,
-            SaveTime = DateTime.Now,
-            Content = JsonConvert.SerializeObject(saveDataObject),
-            PluginMetadata = JsonConvert.SerializeObject(new { Version = "1.0" })
-        };
-        return saveData;
+        // 插件只返回自己的内容版本和正文。标题、时间及稳定身份由宿主信封统一填充，
+        // 避免插件与 Registry 各自维护一份可能漂移的所有权事实。
+        return new DocumentSaveData(
+            CurrentContentSchemaVersion,
+            JsonConvert.SerializeObject(saveDataObject));
     }
     
     public void LoadDocumentByMetaData(DocumentSaveData saveData)
     {
         ArgumentNullException.ThrowIfNull(saveData);
+        if (saveData.ContentSchemaVersion != CurrentContentSchemaVersion)
+        {
+            throw new DocumentLoadException("测试文档内容版本不受支持。");
+        }
+
         _isRestoring = true;
         try
         {
-            var viewModelData = JsonConvert.DeserializeObject<JObject>(saveData.Content);
+            var viewModelData = JsonConvert.DeserializeObject<JObject>(saveData.Payload);
             if (viewModelData == null)
             {
                 throw new DocumentLoadException("测试文档内容为空。");
             }
 
-            // 使用明确的 JSON 节点读取保存数据，避免 dynamic 在字段缺失时产生空引用风险。
-            Url = viewModelData["Url"]?.ToString() ?? "https://example.com";
-            ResponseContent = viewModelData["ResponseContent"]?.ToString() ?? string.Empty;
-
-            // 每次加载都以保存文件为准重建当前 Document 的历史记录投影。
-            UrlHistory.HistoryItems.Clear();
-            if (viewModelData["HistoryItems"] is JArray historyItems)
+            // 三个字段都是当前 schema 1 自己写出的业务必填项。这里不为缺失字段补默认值，
+            // 否则截断文件会被悄悄当成合法空文档，用户下一次保存时反而覆盖原有状态。
+            if (viewModelData["Url"] is not { Type: JTokenType.String } urlToken ||
+                string.IsNullOrWhiteSpace(urlToken.Value<string>()) ||
+                viewModelData["ResponseContent"] is not { Type: JTokenType.String } responseToken ||
+                viewModelData["HistoryItems"] is not JArray historyItems)
             {
-                foreach (var item in historyItems)
+                throw new DocumentLoadException("测试文档缺少必填业务字段。");
+            }
+
+            // 先把整份数组验证到临时集合，再提交 ViewModel。这样后段记录损坏时不会
+            // 留下“URL 已更新、历史只加载一半”的部分状态。
+            var restoredUrls = new List<string>(historyItems.Count);
+            foreach (var item in historyItems)
+            {
+                if (item is not JObject historyItem ||
+                    historyItem["Url"] is not { Type: JTokenType.String } historyUrlToken ||
+                    string.IsNullOrWhiteSpace(historyUrlToken.Value<string>()))
                 {
-                    var url = item["Url"]?.ToString();
-                    if (!string.IsNullOrWhiteSpace(url))
-                    {
-                        UrlHistory.HistoryItems.Add(new UrlHistoryItem(url));
-                    }
+                    throw new DocumentLoadException("测试文档的历史记录字段无效。");
                 }
+
+                restoredUrls.Add(historyUrlToken.Value<string>()!);
+            }
+
+            Url = urlToken.Value<string>()!;
+            ResponseContent = responseToken.Value<string>()!;
+            UrlHistory.HistoryItems.Clear();
+            foreach (var restoredUrl in restoredUrls)
+            {
+                UrlHistory.HistoryItems.Add(new UrlHistoryItem(restoredUrl));
             }
             IsModified = false;
         }

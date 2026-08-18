@@ -223,8 +223,43 @@ dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c De
 ## 保存和后台生命周期是按需能力
 
 - 只有 Document 需要写入 `.mamdoc` 时才实现保存能力；此时必须同时实现 `ISavableDocument` 和 `IDocumentSaveState`。`IsDirty` 通常映射 Dock 的 `IsModified`，持久字段变化时置为 `true`，宿主主文件写入成功后通过 `AcceptChanges()` 清除。
-- `CreateSaveDocumentMetaData` 必须只生成快照，不得修改 `FilePath`、标题或脏状态。加载空值、损坏 JSON、缺失必填字段和不支持的格式时抛出脱敏的 `DocumentLoadException`，不要静默返回或输出原始正文。
-- 当前项目没有历史 Document 文件兼容要求。新插件只读取自己当前声明的内容格式，不添加旧字段猜测、默认回退或迁移链。宿主会为成功保存的主文件维护 `.recovery.bak`，插件不应自行操作该文件。
+- `CreateSaveDocumentMetaData` 必须只生成 `new DocumentSaveData(内容版本, payload)`，不得修改 `FilePath`、标题或脏状态。内容版本必须为正整数，payload 不得为 `null`。
+- `LoadDocumentByMetaData` 先精确检查 `ContentSchemaVersion`，再校验 `Payload` 的业务结构。加载空白、损坏 JSON、缺失必填字段和未知版本时抛出脱敏的 `DocumentLoadException`，不要静默返回或输出原始正文。
+- Host 独占信封中的 `schemaVersion`、`pluginId`、`documentTypeId`、`title` 和 `savedAtUtc`；插件不要复制或依赖这些宿主字段。示例实现如下：
+
+```csharp
+private const int CurrentContentSchemaVersion = 1;
+
+public DocumentSaveData CreateSaveDocumentMetaData(string _)
+{
+    // 创建快照只读取当前业务状态。路径、标题、时间和保存提交点均由宿主负责。
+    var payload = JsonSerializer.Serialize(new WelcomeState(Message));
+    return new DocumentSaveData(CurrentContentSchemaVersion, payload);
+}
+
+public void LoadDocumentByMetaData(DocumentSaveData saveData)
+{
+    // 不猜测未知版本，防止把未来格式误当成当前格式并产生静默数据损坏。
+    if (saveData.ContentSchemaVersion != CurrentContentSchemaVersion)
+    {
+        throw new DocumentLoadException("不支持该文档内容版本。");
+    }
+
+    try
+    {
+        var state = JsonSerializer.Deserialize<WelcomeState>(saveData.Payload);
+        Message = state?.Message
+            ?? throw new DocumentLoadException("文档内容缺少必填字段。");
+    }
+    catch (JsonException exception)
+    {
+        // 稳定消息不能包含原始 payload；内部异常只用于保留诊断原因。
+        throw new DocumentLoadException("文档内容已损坏。", exception);
+    }
+}
+```
+
+- v1 是项目第一个且唯一受支持的 Document 信封。新插件不添加旧字段猜测、默认回退或迁移链；任何非 v1 结构由宿主直接拒绝。宿主会为成功保存的主文件维护 `.recovery.bak`，插件不应自行操作该文件。
 - 完整事务、关闭与恢复规则参见 [Document 保存 V1 设计](../design/document-persistence-v1-design.md)。
 - 只有插件级后台服务确实需要随宿主启动、停止时才实现并注册 `IPluginLifecycle`。初始化必须幂等，关闭返回前必须停止后台工作；不要用它代替 Document Scope 或 Tool 的视觉生命周期。
 

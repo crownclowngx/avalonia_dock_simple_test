@@ -38,6 +38,15 @@ internal interface IHostStorageService
     bool FileExists(string path);
 
     /// <summary>
+    /// 获取指定文件当前占用的字节数。
+    /// </summary>
+    /// <remarks>
+    /// Document 打开流程会在分配整份文本前先做资源上限检查；读取后仍会再次校验，
+    /// 因而即使文件在两次操作之间发生变化，也不能绕过最终的信封大小限制。
+    /// </remarks>
+    long GetFileLength(string path);
+
+    /// <summary>
     /// 异步读取指定文件的全部文本。
     /// </summary>
     Task<string> ReadAllTextAsync(string path);

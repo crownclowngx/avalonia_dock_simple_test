@@ -101,6 +101,8 @@ internal sealed class UiStorageService : IHostStorageService
 
     public bool FileExists(string path) => File.Exists(path);
 
+    public long GetFileLength(string path) => new FileInfo(path).Length;
+
     public Task<string> ReadAllTextAsync(string path) =>
         File.ReadAllTextAsync(path);
 

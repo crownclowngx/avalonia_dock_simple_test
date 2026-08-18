@@ -1,17 +1,17 @@
 # Document 保存 V1 设计
 
 > 状态：已实现
-> 更新日期：2026-08-13
-> 边界：公共脏状态、关闭确认、最近成功备份与坏文件恢复；不包含历史 Document 格式迁移
+> 更新日期：2026-08-18
+> 边界：唯一 Document 信封 v1、插件内容快照、公共脏状态、关闭确认、最近成功备份与坏文件恢复
 
 ## 1. 设计目标
 
 Document 保存必须同时保证四件事：插件只解释自己的业务状态；宿主独占路径选择和磁盘事务；
 被取消的关闭不能提前释放 Document Scope；主文件损坏时不能为了恢复而覆盖原件。
 
-本轮没有历史 `.mamdoc` 文件需要兼容。所有插件保存和读取当前格式，不保留旧格式猜测、字段别名
-或迁移链。格式不匹配统一抛出脱敏的 `DocumentLoadException`，再由宿主决定是否尝试当前命名规则
-下的恢复备份。
+v1 是第一个且唯一受支持的 `.mamdoc` 信封，没有历史 Document 信封需要兼容。实现不保留旧格式
+猜测、字段别名或迁移链。任何非 v1 结构都作为无效输入拒绝，不判断来源或历史版本。格式不匹配
+统一形成脱敏失败；主文件内容损坏时，宿主才按既有命名规则验证恢复备份。
 
 ## 2. 职责与 SOLID
 
@@ -22,6 +22,8 @@ Document 保存必须同时保证四件事：插件只解释自己的业务状�
 | `DocumentSaveService` | 路径决策、主文件提交、备份更新 | Dock 关闭和恢复对话框 |
 | `DocumentCloseCoordinator` | 关闭决策、异步确认和一次性重入 | JSON 与文件系统细节 |
 | `DocumentPersistenceCoordinator` | 打开、批量错误隔离和恢复编排 | 插件业务字段解释 |
+| `DocumentEnvelopeSerializer` | 严格读写唯一七字段 v1 信封和资源边界 | 业务 payload 解释、文件事务 |
+| `PluginRegistry` | 提供不可变 Document 类型与插件所有权事实 | 文件读取和插件内容恢复 |
 | `DocumentWorkspace` | 将 Dock 树适配为 Document 查询与激活 | 保存策略 |
 
 这些类型通过构造注入协作。没有通用工作流、可扩展状态机或事件总线；变化点只用窄接口隔离。
@@ -34,12 +36,17 @@ Document 保存必须同时保证四件事：插件只解释自己的业务状�
 
 保存顺序不可调整：
 
-1. 插件执行无副作用的 `CreateSaveDocumentMetaData`；
-2. 宿主序列化一次，并使用同目录 staging 原子写入主文件；
-3. 主文件成功后更新标题与 `FilePath`；
-4. 调用 `IDocumentSaveState.AcceptChanges()`；
-5. 若存在路径保护，再调用 `IDocumentSavePathPolicy.NotifySaveCompleted()`；
-6. 将同一序列化内容原子写入 `<主路径>.recovery.bak`。
+1. 插件执行无副作用的 `CreateSaveDocumentMetaData`，只返回内容版本和 payload；
+2. 宿主从 Registry、目标文件名和 `TimeProvider` 取得身份、标题和 UTC 时间，组装并严格序列化 v1；
+3. 宿主使用同目录 staging 原子写入主文件；
+4. 主文件成功后更新标题与 `FilePath`；
+5. 调用 `IDocumentSaveState.AcceptChanges()`；
+6. 若存在路径保护，再调用 `IDocumentSavePathPolicy.NotifySaveCompleted()`；
+7. 将同一序列化内容原子写入 `<主路径>.recovery.bak`。
+
+信封必须且只能包含 `schemaVersion`、`pluginId`、`documentTypeId`、`contentSchemaVersion`、
+`title`、`savedAtUtc`、`payload`。它拒绝重复、未知、缺失、大小写错误和错误类型字段，以及注释、
+尾随逗号、非 UTC 时间、非规范 ID 和 Document 历史别名。UTF-8 上限为 8 MiB，JSON 最大深度为 8。
 
 主文件是业务提交点。主文件失败时，路径、标题、脏状态和路径保护全部保持原值；备份失败时主文件
 已经成功，Document 仍接受新基线，但宿主显示“已保存、备份更新失败”的警告。菜单保存、标签关闭
@@ -74,6 +81,10 @@ Dock 的 `OnDockableClosing` 同步返回，确认窗口和文件选择器是异
 - 新文件成功提交或标签最终关闭时清理恢复注册。
 
 损坏原件在所有分支中都不会被移动、删除或覆盖。
+
+打开时在读取前检查文件长度，严格解析后按 Registry 验证 Document 主 ID 和插件所有权。插件只接收
+`DocumentSaveData(contentSchemaVersion, payload)`。Document 在业务内容也成功加载前始终不发布；
+失败会释放临时 Scope，且不会创建、迁移或写入文件。
 
 ## 6. 失败与测试矩阵
 

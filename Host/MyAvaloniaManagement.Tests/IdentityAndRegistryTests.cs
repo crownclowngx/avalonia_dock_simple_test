@@ -46,22 +46,12 @@ public sealed class IdentityAndRegistryTests
     }
 
     [Fact]
-    public void Document与Tool在两种Json边界都保持字符串标量()
+    public void Document与Tool稳定Id在两种Json边界都保持字符串标量()
     {
         var documentId = new DocumentTypeId("myavalonia.host.document.sample");
-        var envelope = new DocumentSaveData
-        {
-            DocumentTypeId = documentId,
-            Title = "sample",
-            Content = "{}",
-            PluginMetadata = "{}"
-        };
-
-        var newtonsoftJson = JsonConvert.SerializeObject(envelope);
-        Assert.Contains("\"DocumentTypeId\":\"myavalonia.host.document.sample\"", newtonsoftJson);
-        Assert.Equal(
-            documentId,
-            JsonConvert.DeserializeObject<DocumentSaveData>(newtonsoftJson)!.DocumentTypeId);
+        var newtonsoftJson = JsonConvert.SerializeObject(documentId);
+        Assert.Equal("\"myavalonia.host.document.sample\"", newtonsoftJson);
+        Assert.Equal(documentId, JsonConvert.DeserializeObject<DocumentTypeId>(newtonsoftJson));
 
         var systemTextDocumentJson = System.Text.Json.JsonSerializer.Serialize(documentId);
         var toolId = new ToolTypeId("myavalonia.host.tool.sample");

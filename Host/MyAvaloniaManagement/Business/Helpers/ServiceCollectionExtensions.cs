@@ -61,6 +61,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<AppearanceSettingsStore>();
         services.AddSingleton<ApplicationThemeService>();
         services.AddSingleton<IHostStorageService, AvaloniaHostStorageService>();
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<DocumentEnvelopeSerializer>();
         services.AddSingleton<DocumentOperationGate>();
         services.AddSingleton<DocumentRecoveryRegistry>();

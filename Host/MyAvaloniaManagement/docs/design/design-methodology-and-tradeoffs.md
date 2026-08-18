@@ -21,7 +21,7 @@
 - Document、Tool、View、Lifecycle 必须显式登记；未登记类型不可见，重复 ID 以结构化诊断阻断启动；
 - `Files` 历史 Locator 与稳定 `Documents` Dock ID；
 - Left/Right/Top/Bottom、隐藏/恢复、Pinned 和禁用浮动；
-- Newtonsoft `DocumentSaveData` 与 `layout-v1.json`；
+- 严格 Document 信封 v1、插件内容 `DocumentSaveData` 与 `layout-v1.json`；
 - 快照整体无效时隔离并使用默认布局。
 
 只有先固定不变量，内部抽象才不会悄悄变成产品行为变更。

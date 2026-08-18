@@ -21,5 +21,10 @@ Document 策略和 Tool 策略由根容器创建；Lifecycle 为每插件至多�
 无参工厂按需创建，运行依赖应放入 ViewModel。注册只在根容器建立前发生，任何配置、激活或全量
 校验失败都会放弃整个组合结果，不会发布部分 Registry。
 
+可保存 Document 通过 `new DocumentSaveData(contentSchemaVersion, payload)` 只交付不可变业务内容。
+内容版本必须为正整数，payload 不得为 `null`，其业务有效性由插件校验。磁盘信封中的插件身份、
+Document 类型、标题、UTC 保存时间和宿主 schema 全部由 Host 拥有；插件不得在 payload 中复制并
+依赖这些字段。v1 是第一个且唯一受支持的信封，不提供旧字段探测或迁移。
+
 完整用法见仓库 `docs/quick-start/create-managed-plugin.md` 和
 `Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md`。
