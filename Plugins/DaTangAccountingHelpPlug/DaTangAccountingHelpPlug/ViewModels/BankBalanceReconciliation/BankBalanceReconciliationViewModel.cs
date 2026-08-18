@@ -1,10 +1,8 @@
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
-using DaTangAccountingHelpPlug.Constants;
 using DaTangAccountingHelpPlug.Models.BankBalanceReconciliation;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.Save;
-using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 
@@ -19,8 +17,6 @@ public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocum
     public ReconciliationOptionsViewModel Options { get; }
     public ReconciliationRunViewModel Run { get; }
 
-    public string FilePath { get; set; } = string.Empty;
-    public DocumentTypeId SaveDocumentTypeId => SaveDocumentTypeIdConstant.BankBalanceReconciliationDocument;
     public bool IsDirty => IsModified;
 
     public BankBalanceReconciliationViewModel(
@@ -65,7 +61,7 @@ public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocum
         };
     }
 
-    public DocumentSaveData CreateSaveDocumentMetaData(string filePath)
+    public DocumentContentSnapshot CreateContentSnapshot()
     {
         var state = new SavedState
         {
@@ -81,15 +77,18 @@ public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocum
             LastOutputPath = Run.LastOutputPath
         };
         // 内容 schema 属于插件；信封身份、标题和 UTC 时间由宿主从 Registry 与目标路径生成。
-        return new DocumentSaveData(
+        return new DocumentContentSnapshot(
             CurrentContentSchemaVersion,
             JsonSerializer.Serialize(state));
     }
 
-    public void LoadDocumentByMetaData(DocumentSaveData saveData)
+    public void RestoreContent(DocumentContentSnapshot snapshot)
     {
-        ArgumentNullException.ThrowIfNull(saveData);
-        if (saveData.ContentSchemaVersion != CurrentContentSchemaVersion)
+        ArgumentNullException.ThrowIfNull(snapshot);
+        // 只以 Document 内容 schema 判断正文结构，不读取插件包或程序集版本。
+        // 当前仓库没有需要兼容的旧银行调节 Document，因此不猜测版本、不做
+        // 默认回退；这能避免把未来正文误当成 schema 1 并在再次保存时丢失数据。
+        if (snapshot.ContentSchemaVersion != CurrentContentSchemaVersion)
         {
             throw new DocumentLoadException("银行余额调节文档内容版本不受支持。");
         }
@@ -100,7 +99,7 @@ public sealed class BankBalanceReconciliationViewModel : Document, ISavableDocum
             SavedState state;
             try
             {
-                state = JsonSerializer.Deserialize<SavedState>(saveData.Payload)
+                state = JsonSerializer.Deserialize<SavedState>(snapshot.Payload)
                     ?? throw new DocumentLoadException("银行余额调节文档内容为空。");
             }
             catch (JsonException exception)

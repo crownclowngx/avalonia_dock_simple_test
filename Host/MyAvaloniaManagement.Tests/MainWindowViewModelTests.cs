@@ -43,7 +43,7 @@ public sealed class MainWindowViewModelTests
         await viewModel.OpenDocumentByPath(path);
 
         var document = GetDocuments(context).Single();
-        Assert.Equal(Path.GetFullPath(path), document.FilePath);
+        Assert.Equal(Path.GetFullPath(path), context.GetDocumentFilePath(document));
         Assert.Equal("标题", document.Title);
         Assert.Equal("正文", document.Content);
     }
@@ -118,7 +118,7 @@ public sealed class MainWindowViewModelTests
 
         Assert.Equal(TestSavableStrategy.TypeId,
             context.Storage.LastSaveMetadata?.DocumentTypeId);
-        Assert.Equal(Path.GetFullPath(savePath), document.FilePath);
+        Assert.Equal(Path.GetFullPath(savePath), context.GetDocumentFilePath(document));
         Assert.Equal("saved", document.Title);
         var primaryWrite = Assert.Single(context.Storage.Writes, item =>
             item.Path.Equals(Path.GetFullPath(savePath), StringComparison.OrdinalIgnoreCase));
@@ -153,7 +153,7 @@ public sealed class MainWindowViewModelTests
         var viewModel = context.CreateMainWindowViewModel();
         viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var document = GetDocuments(context).Single();
-        document.FilePath = path;
+        context.SetDocumentFilePath(document, path);
         GetDocumentDock(context).ActiveDockable = document;
 
         await viewModel.SaveDocument();
@@ -174,7 +174,7 @@ public sealed class MainWindowViewModelTests
         var viewModel = context.CreateMainWindowViewModel();
         viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var document = GetDocuments(context).Single();
-        document.FilePath = original;
+        context.SetDocumentFilePath(document, original);
         document.RequiresSaveAs = true;
         GetDocumentDock(context).ActiveDockable = document;
 
@@ -195,7 +195,7 @@ public sealed class MainWindowViewModelTests
         var viewModel = context.CreateMainWindowViewModel();
         viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var document = GetDocuments(context).Single();
-        document.FilePath = original;
+        context.SetDocumentFilePath(document, original);
         document.RequiresSaveAs = true;
         GetDocumentDock(context).ActiveDockable = document;
 
@@ -280,7 +280,7 @@ public sealed class MainWindowViewModelTests
         viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var document = GetDocuments(context).Single();
         var originalTitle = document.Title;
-        document.FilePath = originalPath;
+        context.SetDocumentFilePath(document, originalPath);
         document.RequiresSaveAs = true;
         document.IsModified = true;
         GetDocumentDock(context).ActiveDockable = document;
@@ -288,7 +288,7 @@ public sealed class MainWindowViewModelTests
         await viewModel.SaveDocument();
 
         Assert.Equal(originalTitle, document.Title);
-        Assert.Equal(originalPath, document.FilePath);
+        Assert.Equal(originalPath, context.GetDocumentFilePath(document));
         Assert.True(document.IsDirty);
         Assert.True(document.RequiresSaveAs);
         Assert.Equal(0, document.AcceptChangesCount);
@@ -351,7 +351,7 @@ public sealed class MainWindowViewModelTests
 
         var document = Assert.Single(GetDocumentDock(context).VisibleDockables!
             .OfType<TrackedScopedSavableDocument>());
-        Assert.Equal(Path.GetFullPath(path), document.FilePath);
+        Assert.Equal(Path.GetFullPath(path), context.GetDocumentFilePath(document));
         Assert.Equal("成功恢复", document.Title);
         Assert.Equal(0, probe.CancellationCount);
         Assert.Equal(0, probe.DocumentDisposeCount);
@@ -571,7 +571,7 @@ public sealed class MainWindowViewModelTests
             documentTypeId,
             title,
             DateTimeOffset.UtcNow,
-            new DocumentSaveData(1, content));
+            new DocumentContentSnapshot(1, content));
 
     private sealed class ThrowingDocumentDock(bool throwAfterAdd) : DocumentDock
     {

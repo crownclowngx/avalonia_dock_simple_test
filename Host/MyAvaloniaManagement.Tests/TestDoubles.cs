@@ -108,6 +108,17 @@ internal sealed class TestHostContext : IDisposable
 
     public ManagementFactory Factory { get; }
 
+    public DocumentPersistenceStateStore PersistenceStates =>
+        Provider.GetRequiredService<DocumentPersistenceStateStore>();
+
+    public string GetDocumentFilePath(Document document) =>
+        PersistenceStates.TryGet(document, out var state)
+            ? state.FilePath
+            : throw new InvalidOperationException("测试 Document 没有宿主持久化状态。");
+
+    public void SetDocumentFilePath(Document document, string filePath) =>
+        PersistenceStates.CommitFilePath(document, filePath);
+
     public ApplicationThemeService ThemeService =>
         Provider.GetRequiredService<ApplicationThemeService>();
 
@@ -333,34 +344,31 @@ internal sealed class TestMessengerService : IMessengerService
 /// </summary>
 internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumentSaveState, IDocumentSavePathPolicy
 {
-    public string FilePath { get; set; } = string.Empty;
-
-    public DocumentTypeId SaveDocumentTypeId => TestSavableStrategy.TypeId;
-
     public string Content { get; set; } = "initial";
 
     public bool RequiresSaveAs { get; set; }
     public string SaveAsReason { get; set; } = "测试文档需要另存。";
     public int SaveCompletedCount { get; private set; }
+    public string LastNotifiedFilePath { get; private set; } = string.Empty;
     public bool IsDirty => IsModified;
     public int AcceptChangesCount { get; private set; }
 
-    public DocumentSaveData CreateSaveDocumentMetaData(string filePath) =>
+    public DocumentContentSnapshot CreateContentSnapshot() =>
         new(1, Content);
 
-    public void LoadDocumentByMetaData(DocumentSaveData saveData)
+    public void RestoreContent(DocumentContentSnapshot snapshot)
     {
-        if (saveData.ContentSchemaVersion != 1)
+        if (snapshot.ContentSchemaVersion != 1)
         {
             throw new DocumentLoadException("测试文档内容版本不受支持。");
         }
 
-        Content = saveData.Payload;
+        Content = snapshot.Payload;
     }
 
     public void NotifySaveCompleted(string filePath)
     {
-        FilePath = filePath;
+        LastNotifiedFilePath = filePath;
         RequiresSaveAs = false;
         SaveCompletedCount++;
     }
@@ -477,14 +485,12 @@ internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument,
             _probe.RecordCancellation);
     }
 
-    public string FilePath { get; set; } = string.Empty;
-    public DocumentTypeId SaveDocumentTypeId => TrackedScopedSavableStrategy.TypeId;
     public bool IsDirty => IsModified;
 
-    public DocumentSaveData CreateSaveDocumentMetaData(string filePath) =>
+    public DocumentContentSnapshot CreateContentSnapshot() =>
         new(1, string.Empty);
 
-    public void LoadDocumentByMetaData(DocumentSaveData saveData)
+    public void RestoreContent(DocumentContentSnapshot snapshot)
     {
         _probe.RecordLoad();
         if (_probe.ThrowOnLoad)
@@ -492,7 +498,7 @@ internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument,
             throw new DocumentLoadException("测试文档内容损坏。");
         }
 
-        if (saveData.ContentSchemaVersion != 1)
+        if (snapshot.ContentSchemaVersion != 1)
         {
             throw new DocumentLoadException("测试 scoped Document 内容版本不受支持。");
         }

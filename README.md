@@ -49,8 +49,8 @@ Host API 与 SDK 的程序集兼容身份均为 `1.0.0.0`；统一事实定义�
 保持原样，不读取、迁移或删除。`MYAVALONIA_DATA_DIRECTORY` 仍表示完整数据根，不追加 `v1`，
 以保持自动化和部署隔离语义。
 
-Document 使用项目第一个且唯一的七字段信封 v1。宿主拥有 schema、插件和 Document 身份、标题与
-UTC 时间，插件只提供内容 schema 和字符串 payload。reader 严格拒绝任何非 v1 结构、历史 ID 别名
+Document 使用项目第一个且唯一的七字段信封 v1。宿主拥有 schema、插件和 Document 身份、标题、路径与
+UTC 时间，插件只通过不可变 `DocumentContentSnapshot` 提供内容 schema 和字符串 payload。reader 严格拒绝任何非 v1 结构、历史 ID 别名
 和插件所有权冲突；文件 UTF-8 上限为 8 MiB，JSON 最大深度为 8。项目没有旧 Document 信封兼容
 或迁移路径，打开失败不会创建、迁移或覆盖文件。
 

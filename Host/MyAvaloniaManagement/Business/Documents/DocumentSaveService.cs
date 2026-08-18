@@ -40,17 +40,14 @@ internal sealed class DocumentSaveService(
     IHostStorageService storageService,
     DocumentEnvelopeSerializer serializer,
     DocumentOperationGate operationGate,
+    DocumentPersistenceStateStore persistenceStates,
     DocumentRecoveryRegistry recoveryRegistry,
     TimeProvider timeProvider)
 {
-    internal Task<DocumentSaveResult> SaveAsync(
-        Document document,
-        PluginDocumentRegistration? registration) =>
-        operationGate.RunAsync(() => SaveCoreAsync(document, registration));
+    internal Task<DocumentSaveResult> SaveAsync(Document document) =>
+        operationGate.RunAsync(() => SaveCoreAsync(document));
 
-    private async Task<DocumentSaveResult> SaveCoreAsync(
-        Document document,
-        PluginDocumentRegistration? registration)
+    private async Task<DocumentSaveResult> SaveCoreAsync(Document document)
     {
         if (document is not ISavableDocument savableDocument)
         {
@@ -64,16 +61,16 @@ internal sealed class DocumentSaveService(
                 "该 Document 未实现公共保存状态契约，宿主已拒绝保存。");
         }
 
-        if (registration is null ||
-            registration.Metadata.DocumentTypeId != savableDocument.SaveDocumentTypeId)
+        if (!persistenceStates.TryGet(document, out var persistenceState))
         {
             return new(
                 DocumentSaveStatus.Failed,
                 "该 Document 没有匹配的宿主注册所有权，已拒绝保存。");
         }
 
+        var registration = persistenceState.Registration;
         var savePathPolicy = document as IDocumentSavePathPolicy;
-        var originalPath = savableDocument.FilePath;
+        var originalPath = persistenceState.FilePath;
         var isRecovered = recoveryRegistry.TryGet(document, out var recovery);
         string? filePath;
         if (string.IsNullOrWhiteSpace(originalPath) ||
@@ -116,7 +113,9 @@ internal sealed class DocumentSaveService(
         try
         {
             fileName = Path.GetFileNameWithoutExtension(filePath);
-            var saveData = savableDocument.CreateSaveDocumentMetaData(filePath);
+            // 内容快照不接收目标路径，也不能提交标题或脏状态。路径选择与业务序列化完全
+            // 分离后，同一内存状态保存到不同位置仍会产生同一份插件 payload。
+            var saveData = savableDocument.CreateContentSnapshot();
             content = serializer.Serialize(
                 registration.OwnerId,
                 registration.Metadata.DocumentTypeId,
@@ -140,7 +139,7 @@ internal sealed class DocumentSaveService(
         // 插件回调位于主文件事务之后，回调异常属于契约/编程错误，必须向上传播，不能被
         // 伪装成“磁盘未修改”的预期失败。否则磁盘已经更新，错误文案却会陈述相反事实。
         document.Title = fileName;
-        savableDocument.FilePath = filePath;
+        persistenceStates.CommitFilePath(document, filePath);
         saveState.AcceptChanges();
         savePathPolicy?.NotifySaveCompleted(filePath);
         recoveryRegistry.Clear(document);

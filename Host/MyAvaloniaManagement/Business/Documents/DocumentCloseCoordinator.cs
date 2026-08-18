@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagementCommon.Save;
 
 namespace MyAvaloniaManagement.Business.Documents;
@@ -26,7 +25,6 @@ internal sealed class DocumentCloseCoordinator(
 
     internal bool TryBeginDockClose(
         Document document,
-        PluginDocumentRegistration? registration,
         Action retryClose)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -59,16 +57,13 @@ internal sealed class DocumentCloseCoordinator(
             return false;
         }
 
-        _ = ConfirmDockCloseAsync(document, registration, retryClose);
+        _ = ConfirmDockCloseAsync(document, retryClose);
         return false;
     }
 
-    internal async Task<bool> ConfirmWindowCloseAsync(
-        IReadOnlyList<Document> documents,
-        Func<Document, PluginDocumentRegistration?> registrationResolver)
+    internal async Task<bool> ConfirmWindowCloseAsync(IReadOnlyList<Document> documents)
     {
         ArgumentNullException.ThrowIfNull(documents);
-        ArgumentNullException.ThrowIfNull(registrationResolver);
 
         if (_windowRequestPending)
         {
@@ -108,9 +103,7 @@ internal sealed class DocumentCloseCoordinator(
 
             foreach (var document in dirty)
             {
-                var result = await saveService.SaveAsync(
-                    document,
-                    registrationResolver(document));
+                var result = await saveService.SaveAsync(document);
                 if (!result.IsSaved)
                 {
                     if (!string.IsNullOrWhiteSpace(result.Message))
@@ -136,7 +129,6 @@ internal sealed class DocumentCloseCoordinator(
 
     private async Task ConfirmDockCloseAsync(
         Document document,
-        PluginDocumentRegistration? registration,
         Action retryClose)
     {
         try
@@ -151,7 +143,7 @@ internal sealed class DocumentCloseCoordinator(
 
             if (choice == DocumentCloseChoice.Save)
             {
-                var result = await saveService.SaveAsync(document, registration);
+                var result = await saveService.SaveAsync(document);
                 if (!result.IsSaved)
                 {
                     if (!string.IsNullOrWhiteSpace(result.Message))

@@ -64,6 +64,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<DocumentEnvelopeSerializer>();
         services.AddSingleton<DocumentOperationGate>();
+        services.AddSingleton<DocumentPersistenceStateStore>();
         services.AddSingleton<DocumentRecoveryRegistry>();
         services.AddSingleton<DocumentSaveService>();
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
@@ -83,6 +84,7 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<PluginRegistry>(),
             provider.GetRequiredService<DocumentScopeManager>(),
             provider.GetRequiredService<IMessengerService>(),
+            provider.GetRequiredService<DocumentPersistenceStateStore>(),
             provider.GetRequiredService<DocumentCloseCoordinator>(),
             provider.GetRequiredService<DocumentRecoveryRegistry>()));
 
@@ -212,6 +214,7 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<ApplicationThemeService>(),
             provider.GetRequiredService<DocumentSaveService>(),
             provider.GetRequiredService<DocumentOperationGate>(),
+            provider.GetRequiredService<DocumentPersistenceStateStore>(),
             provider.GetRequiredService<DocumentRecoveryRegistry>(),
             provider.GetRequiredService<IDocumentInteractionService>(),
             provider.GetRequiredService<DocumentEnvelopeSerializer>(),

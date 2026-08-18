@@ -22,7 +22,7 @@ internal sealed record DocumentEnvelopeV1(
     DocumentTypeId DocumentTypeId,
     string Title,
     DateTimeOffset SavedAtUtc,
-    DocumentSaveData Content);
+    DocumentContentSnapshot Content);
 
 /// <summary>
 /// 独占 Document 信封 v1 的磁盘格式、资源限制和结构校验。
@@ -60,7 +60,7 @@ internal sealed class DocumentEnvelopeSerializer
         DocumentTypeId documentTypeId,
         string title,
         DateTimeOffset savedAtUtc,
-        DocumentSaveData content)
+        DocumentContentSnapshot content)
     {
         ArgumentNullException.ThrowIfNull(pluginId);
         ArgumentNullException.ThrowIfNull(documentTypeId);
@@ -174,7 +174,7 @@ internal sealed class DocumentEnvelopeSerializer
                 documentTypeId,
                 title,
                 savedAtUtc,
-                new DocumentSaveData(contentSchemaVersion, payload));
+                new DocumentContentSnapshot(contentSchemaVersion, payload));
         }
         catch (DocumentLoadException)
         {

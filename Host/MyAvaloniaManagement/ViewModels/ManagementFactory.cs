@@ -46,6 +46,7 @@ internal sealed class ManagementFactory : Factory
     private readonly DockWorkspaceBuilder _workspaceBuilder;
     private readonly ToolDockCoordinator _toolDockCoordinator;
     private readonly IMessengerService _messengerService;
+    private readonly DocumentPersistenceStateStore _documentPersistenceStates;
     private readonly DocumentCloseCoordinator? _documentCloseCoordinator;
     private readonly DocumentRecoveryRegistry? _documentRecoveryRegistry;
 
@@ -84,6 +85,7 @@ internal sealed class ManagementFactory : Factory
         PluginRegistry extensions,
         DocumentScopeManager documentScopeManager,
         IMessengerService messengerService,
+        DocumentPersistenceStateStore? documentPersistenceStates = null,
         DocumentCloseCoordinator? documentCloseCoordinator = null,
         DocumentRecoveryRegistry? documentRecoveryRegistry = null)
     {
@@ -92,6 +94,7 @@ internal sealed class ManagementFactory : Factory
         _documentLifetime = new DockDocumentLifetime(documentScopeManager);
         _workspaceBuilder = new DockWorkspaceBuilder(this);
         _messengerService = messengerService;
+        _documentPersistenceStates = documentPersistenceStates ?? new DocumentPersistenceStateStore();
         _documentCloseCoordinator = documentCloseCoordinator;
         _documentRecoveryRegistry = documentRecoveryRegistry;
         _toolDockCoordinator = new ToolDockCoordinator(
@@ -135,19 +138,12 @@ internal sealed class ManagementFactory : Factory
     public IEnumerable<DocumentMetadata> GetAllDocumentMetadata()
         => _extensions.DocumentMetadata.Values;
 
-    internal DocumentMetadata? GetDocumentMetadata(Document document) =>
-        document is ISavableDocument savable &&
-        _extensions.DocumentMetadata.TryGetValue(savable.SaveDocumentTypeId, out var metadata)
-            ? metadata
-            : null;
-
     /// <summary>
-    /// 获取可保存 Document 对应的完整注册项，使保存流程同时取得元数据和唯一所有者。
+    /// 获取宿主在创建时绑定到 Document 的完整注册项。
     /// </summary>
     internal PluginDocumentRegistration? GetDocumentRegistration(Document document) =>
-        document is ISavableDocument savable &&
-        _extensions.TryGetDocumentRegistration(savable.SaveDocumentTypeId, out var registration)
-            ? registration
+        _documentPersistenceStates.TryGet(document, out var state)
+            ? state.Registration
             : null;
 
     /// <summary>
@@ -172,19 +168,23 @@ internal sealed class ManagementFactory : Factory
     public Document CreateManagementNewDocument(DocumentCreationParams @params)
     {
         var document = _extensions.CreateDocument(@params);
+        // 策略违反“每次创建返回新实例”时，可能把已经由 Dock 持有的对象再次返回。
+        // 记住它在本次调用前是否已由宿主登记，使后续重复登记失败时只拒绝
+        // 新请求，不会误删原标签的路径与所有权，也不会误释放其 Scope。
+        var wasAlreadyRegistered = _documentPersistenceStates.TryGet(document, out _);
         try
         {
-            if (document is ISavableDocument savable)
+            if (document is ISavableDocument)
             {
                 var contributor = new HostCompositionContributor(
                     document.GetType().FullName ?? document.GetType().Name,
                     document.GetType().Assembly.GetName().Name ?? "UnknownAssembly");
-                if (savable.SaveDocumentTypeId !=
-                    NormalizePersistedDocumentTypeId(@params.DocumentTypeId))
+                var canonicalTypeId = NormalizePersistedDocumentTypeId(@params.DocumentTypeId);
+                if (!_extensions.TryGetDocumentRegistration(canonicalTypeId, out var registration))
                 {
                     throw new HostCompositionException([
                         new HostCompositionDiagnostic(
-                            "DOCUMENT_TYPE_MISMATCH",
+                            "DOCUMENT_REGISTRATION_MISSING",
                             @params.DocumentTypeId.Value,
                             [contributor])
                     ]);
@@ -199,6 +199,10 @@ internal sealed class ManagementFactory : Factory
                             [contributor])
                     ]);
                 }
+
+                // G8 后插件不再通过 SaveDocumentTypeId 自报身份。宿主把创建请求已经解析出的
+                // 规范 Registry 注册项绑定到实例，保存、关闭和路径查重只读取这份事实。
+                _documentPersistenceStates.Register(document, registration);
             }
 
             return document;
@@ -206,8 +210,13 @@ internal sealed class ManagementFactory : Factory
         catch
         {
             // 策略可能已经通过 IDocumentScopeFactory 创建了独立 Scope。契约校验位于创建后，
-            // 因而失败时必须从与正常关闭相同的入口回滚，不能让半创建 Scope 留在管理器中。
-            ReleaseDocument(document);
+            // 因而新实例失败时必须从与正常关闭相同的入口回滚。若策略错误地
+            // 返回已登记实例，该实例仍属于原 Dock，此次失败不得释放它。
+            if (!wasAlreadyRegistered)
+            {
+                ReleaseDocument(document);
+            }
+
             throw;
         }
     }
@@ -297,7 +306,17 @@ internal sealed class ManagementFactory : Factory
     internal void ReleaseDocument(Document document)
     {
         ArgumentNullException.ThrowIfNull(document);
-        _documentLifetime.Release(document);
+        try
+        {
+            _documentLifetime.Release(document);
+        }
+        finally
+        {
+            // 创建失败、加载失败和正常关闭都汇入此入口。即使插件 Dispose 抛出异常，
+            // 宿主也必须删除路径与恢复登记，避免已结束对象继续影响重复打开判断。
+            _documentPersistenceStates.Remove(document);
+            _documentRecoveryRegistry?.Clear(document);
+        }
     }
 
     private static bool ContainsDocument(
@@ -543,7 +562,6 @@ internal sealed class ManagementFactory : Factory
             _documentCloseCoordinator is not null &&
             !_documentCloseCoordinator.TryBeginDockClose(
                 document,
-                GetDocumentRegistration(document),
                 () => CloseDockable(document)))
         {
             return false;
@@ -574,7 +592,6 @@ internal sealed class ManagementFactory : Factory
             {
                 // Dock 的内容回收缓存默认会永久强引用已关闭的 Document。
                 // 最终关闭时只移除当前项，保留其他标签的控件复用行为。
-                _documentRecoveryRegistry?.Clear(document);
                 ReleaseDocument(document);
             }
         }

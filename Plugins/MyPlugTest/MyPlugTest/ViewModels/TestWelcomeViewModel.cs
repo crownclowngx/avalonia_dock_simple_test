@@ -4,7 +4,6 @@ using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Message;
 using MyAvaloniaManagementCommon.Save;
-using MyPlugTest.Constants;
 using MyPlugTest.Models;
 using MyPlugTest.Services;
 using Newtonsoft.Json;
@@ -23,8 +22,6 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDocumentSaveSta
     private int _disposed;
     private bool _isRestoring;
 
-    public DocumentTypeId SaveDocumentTypeId => SaveDocumentTypeIdConstant.TestWelcomeDocumentId;
-    public string FilePath { get; set; } = string.Empty;
     public bool IsDirty => IsModified;
     
     private string _url = "https://example.com";
@@ -64,7 +61,7 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDocumentSaveSta
 
     public IAsyncRelayCommand SendRequestCommand { get; }
     
-    public DocumentSaveData CreateSaveDocumentMetaData(string filePath)
+    public DocumentContentSnapshot CreateContentSnapshot()
     {
         var saveDataObject = new
         {
@@ -80,15 +77,18 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDocumentSaveSta
         };
         // 插件只返回自己的内容版本和正文。标题、时间及稳定身份由宿主信封统一填充，
         // 避免插件与 Registry 各自维护一份可能漂移的所有权事实。
-        return new DocumentSaveData(
+        return new DocumentContentSnapshot(
             CurrentContentSchemaVersion,
             JsonConvert.SerializeObject(saveDataObject));
     }
     
-    public void LoadDocumentByMetaData(DocumentSaveData saveData)
+    public void RestoreContent(DocumentContentSnapshot snapshot)
     {
-        ArgumentNullException.ThrowIfNull(saveData);
-        if (saveData.ContentSchemaVersion != CurrentContentSchemaVersion)
+        ArgumentNullException.ThrowIfNull(snapshot);
+        // 内容 schema 是该 Document 自己的整数协议，与插件包版本、程序集版本
+        // 或宿主信封 schema 无关。当前没有真实旧内容，因此精确只接受 1；
+        // 未来若出现旧版，应在此显式增加读取分支，而不是默认尝试当前结构。
+        if (snapshot.ContentSchemaVersion != CurrentContentSchemaVersion)
         {
             throw new DocumentLoadException("测试文档内容版本不受支持。");
         }
@@ -96,7 +96,7 @@ public class TestWelcomeViewModel : Document, ISavableDocument, IDocumentSaveSta
         _isRestoring = true;
         try
         {
-            var viewModelData = JsonConvert.DeserializeObject<JObject>(saveData.Payload);
+            var viewModelData = JsonConvert.DeserializeObject<JObject>(snapshot.Payload);
             if (viewModelData == null)
             {
                 throw new DocumentLoadException("测试文档内容为空。");

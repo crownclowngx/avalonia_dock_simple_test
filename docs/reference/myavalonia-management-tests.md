@@ -2,9 +2,9 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前 G7 专项基线：2026-08-18，Release 共 322 项通过，解决方案构建 0 警告、0 错误，
-> `DocumentEnvelopeV1` 专项 24/24；Host 行覆盖率 80.3%、分支覆盖率 65.47%，Windows Smoke
-> 通过。SDK 新内容 DTO 消费成功，已删除旧信封成员的负例编译失败。数量来自命令输出，不是
+> 当前 G8 专项基线：2026-08-18，新内容契约、宿主路径所有权、三个真实保存实现和
+> SDK 正反向编译门禁已建立。完整 Release 数量、覆盖率与 Windows Smoke 结果见
+> [G8 保存契约记录](../plan-history/host-v1/g8-document-content-persistence-contract.md)。数量来自命令输出，不是
 > 永久固定门槛。
 
 ## 一键门禁
@@ -42,8 +42,9 @@ G3 新增、G5 扩展的独立包消费门禁：
 脚本在系统临时目录打包并消费 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`，检查包内容、nuspec、基础依赖白名单和 UI 精确版本。
 随后编译最终 `Configure(IPluginRegistrationContext)` Managed Plugin，并实际构造
-`DocumentSaveData(contentSchemaVersion, payload)`；确认旧候选 `PluginId + ConfigureServices` 以及
-访问已删除 `PluginMetadata` 等信封成员的夹具必须编译失败，再编译实际使用 Ursa、Dock UI、宿主
+`DocumentContentSnapshot(contentSchemaVersion, payload)`；确认旧候选 `PluginId + ConfigureServices`、
+`DocumentSaveData`、旧保存方法、`FilePath` 和 `SaveDocumentTypeId` 夹具必须编译失败，
+再编译实际使用 Ursa、Dock UI、宿主
 语义资源的 XAML 插件。还原使用临时隔离 NuGet 缓存，不能误命中开发机中的同版本旧包。
 临时目录在结束时删除，不读取用户数据根，也不发布到公共 NuGet。
 
@@ -151,6 +152,15 @@ v1 是项目第一个且唯一受支持的 Document 信封。任何非 v1 结构
 65.47%，Windows Smoke 通过。`DocumentEnvelopeV1` 专项 24/24，BiliDownloader 719/719，
 DaTangAccountingHelpPlug 64/64。完整记录见
 [G7 Document 信封 v1](../plan-history/host-v1/g7-document-envelope-v1.md)。
+
+### G8 当前绿色基线
+
+2026-08-18 执行锁定还原、Release 零警告构建、三个插件完整测试、SDK 包消费和带
+Windows Smoke 的综合门禁。结果为 Unit 151、UI 37、Plugin 141，共 **329/329**；
+Host 行覆盖率 80.41%、分支覆盖率 65.71%，Windows Smoke 通过。G8 Host 专项
+37/37、Plugin 契约专项 2/2，BiliDownloader 719/719、DaTangAccountingHelpPlug 64/64、
+MySmallTools 182/182。完整记录见
+[G8 保存契约与内容版本](../plan-history/host-v1/g8-document-content-persistence-contract.md)。
 
 ### 工具显隐与稳定 ID
 

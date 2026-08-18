@@ -32,7 +32,7 @@ public sealed class DocumentPersistenceV1Tests
 
         Assert.False(document.IsDirty);
         Assert.Equal(1, document.AcceptChangesCount);
-        Assert.Equal(Path.GetFullPath(path), document.FilePath);
+        Assert.Equal(Path.GetFullPath(path), context.GetDocumentFilePath(document));
         Assert.True(viewModel.HasDocumentOperationError);
         Assert.Contains("备份更新失败", viewModel.DocumentOperationError);
         Assert.Single(context.Storage.Writes);
@@ -54,7 +54,7 @@ public sealed class DocumentPersistenceV1Tests
         await viewModel.OpenDocumentByPath(primary);
 
         var recovered = Assert.Single(GetDocuments(context));
-        Assert.Equal(string.Empty, recovered.FilePath);
+        Assert.Equal(string.Empty, context.GetDocumentFilePath(recovered));
         Assert.True(recovered.IsDirty);
         Assert.Contains("已恢复", recovered.Title);
         Assert.Equal("safe", recovered.Content);
@@ -83,7 +83,7 @@ public sealed class DocumentPersistenceV1Tests
         await viewModel.SaveDocument();
 
         Assert.False(recovered.IsDirty);
-        Assert.Equal(Path.GetFullPath(newPath), recovered.FilePath);
+        Assert.Equal(Path.GetFullPath(newPath), context.GetDocumentFilePath(recovered));
         Assert.Equal(originalContent, context.Storage.Files[Path.GetFullPath(primary)]);
         Assert.Contains(context.Storage.Writes, item =>
             item.Path.Equals(Path.GetFullPath(newPath), StringComparison.OrdinalIgnoreCase));
@@ -210,8 +210,12 @@ public sealed class DocumentPersistenceV1Tests
         viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var documents = GetDocuments(context);
-        documents[0].FilePath = Path.Combine(context.TempDirectory, "first.mamdoc");
-        documents[1].FilePath = Path.Combine(context.TempDirectory, "second.mamdoc");
+        context.SetDocumentFilePath(
+            documents[0],
+            Path.Combine(context.TempDirectory, "first.mamdoc"));
+        context.SetDocumentFilePath(
+            documents[1],
+            Path.Combine(context.TempDirectory, "second.mamdoc"));
         documents.ForEach(document => document.IsModified = true);
         context.Storage.WriteOutcomes.Enqueue(null);
         context.Storage.WriteOutcomes.Enqueue(null);
@@ -271,14 +275,12 @@ public sealed class DocumentPersistenceV1Tests
             TestSavableStrategy.TypeId,
             title,
             DateTimeOffset.UtcNow,
-            new DocumentSaveData(1, content));
+            new DocumentContentSnapshot(1, content));
 
     private sealed class MissingSaveStateDocument : Document, ISavableDocument
     {
-        public string FilePath { get; set; } = string.Empty;
-        public DocumentTypeId SaveDocumentTypeId => MissingSaveStateStrategy.TypeId;
-        public DocumentSaveData CreateSaveDocumentMetaData(string filePath) => throw new NotSupportedException();
-        public void LoadDocumentByMetaData(DocumentSaveData saveData) => throw new NotSupportedException();
+        public DocumentContentSnapshot CreateContentSnapshot() => throw new NotSupportedException();
+        public void RestoreContent(DocumentContentSnapshot snapshot) => throw new NotSupportedException();
     }
 
     private sealed class MissingSaveStateStrategy : IDocumentCreationStrategy

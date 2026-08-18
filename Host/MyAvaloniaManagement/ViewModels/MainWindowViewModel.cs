@@ -64,6 +64,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
         ApplicationThemeService themeService,
         DocumentSaveService saveService,
         DocumentOperationGate operationGate,
+        DocumentPersistenceStateStore persistenceStates,
         DocumentRecoveryRegistry recoveryRegistry,
         IDocumentInteractionService interactionService,
         DocumentEnvelopeSerializer documentSerializer,
@@ -84,6 +85,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
             storageService,
             saveService,
             operationGate,
+            persistenceStates,
             recoveryRegistry,
             interactionService,
             documentSerializer);
@@ -124,9 +126,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     internal Task<bool> ConfirmWindowCloseAsync()
     {
         var documents = DocumentWorkspace.GetDocuments(Layout);
-        return _documentCloseCoordinator.ConfirmWindowCloseAsync(
-            documents,
-            _factory.GetDocumentRegistration);
+        return _documentCloseCoordinator.ConfirmWindowCloseAsync(documents);
     }
 
     /// <summary>

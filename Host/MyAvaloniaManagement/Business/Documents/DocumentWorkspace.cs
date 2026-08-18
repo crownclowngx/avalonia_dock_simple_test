@@ -15,6 +15,7 @@ namespace MyAvaloniaManagement.Business.Documents;
 /// </summary>
 internal sealed class DocumentWorkspace(
     ManagementFactory factory,
+    DocumentPersistenceStateStore persistenceStates,
     DocumentRecoveryRegistry recoveryRegistry)
 {
     internal IDockable? GetActiveDocument() => GetDocumentDock()?.ActiveDockable;
@@ -28,8 +29,9 @@ internal sealed class DocumentWorkspace(
 
         foreach (var dockable in DockTreeNavigator.Enumerate(root))
         {
-            if (dockable is not ISavableDocument savable ||
-                !DocumentPathIdentity.Equals(savable.FilePath, filePath))
+            if (dockable is not Document document ||
+                !persistenceStates.TryGet(document, out var state) ||
+                !DocumentPathIdentity.Equals(state.FilePath, filePath))
             {
                 continue;
             }

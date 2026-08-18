@@ -66,11 +66,6 @@ public sealed class PluginCompatibilityTests
             Assert.Equal(
                 canonical,
                 factory.NormalizePersistedDocumentTypeId(new DocumentTypeId(legacy)).Value);
-            if (document is ISavableDocument savable)
-            {
-                Assert.Equal(canonical, savable.SaveDocumentTypeId.Value);
-            }
-
             factory.OnDockableClosed(document);
         }
 
@@ -351,23 +346,24 @@ public sealed class PluginCompatibilityTests
         Assert.True(firstWelcome.IsDirty);
         firstWelcome.Url = "https://roundtrip.test";
         firstWelcome.ResponseContent = "往返正文";
-        var currentSnapshot = firstWelcome.CreateSaveDocumentMetaData("unused.mamdoc");
+        var currentSnapshot = firstWelcome.CreateContentSnapshot();
         Assert.Equal(1, currentSnapshot.ContentSchemaVersion);
+        Assert.Equal("欢迎 A", firstWelcome.Title);
         Assert.True(firstWelcome.IsDirty);
-        secondWelcome.LoadDocumentByMetaData(currentSnapshot);
+        secondWelcome.RestoreContent(currentSnapshot);
         Assert.Equal("https://roundtrip.test", secondWelcome.Url);
         Assert.Equal("往返正文", secondWelcome.ResponseContent);
         Assert.False(secondWelcome.IsDirty);
         firstWelcome.AcceptChanges();
         Assert.False(firstWelcome.IsDirty);
         Assert.Throws<DocumentLoadException>(() =>
-            firstWelcome.LoadDocumentByMetaData(new DocumentSaveData(1, "{broken")));
+            firstWelcome.RestoreContent(new DocumentContentSnapshot(1, "{broken")));
         Assert.Throws<DocumentLoadException>(() =>
-            firstWelcome.LoadDocumentByMetaData(new DocumentSaveData(1, "{}")));
+            firstWelcome.RestoreContent(new DocumentContentSnapshot(1, "{}")));
         Assert.Throws<DocumentLoadException>(() =>
-            firstWelcome.LoadDocumentByMetaData(new DocumentSaveData(1, "   ")));
+            firstWelcome.RestoreContent(new DocumentContentSnapshot(1, "   ")));
         var futureVersion = Assert.Throws<DocumentLoadException>(() =>
-            firstWelcome.LoadDocumentByMetaData(new DocumentSaveData(2, "secret-payload")));
+            firstWelcome.RestoreContent(new DocumentContentSnapshot(2, "secret-payload")));
         Assert.DoesNotContain("secret-payload", futureVersion.Message, StringComparison.Ordinal);
 
         var manager = provider.GetRequiredService<DocumentScopeManager>();

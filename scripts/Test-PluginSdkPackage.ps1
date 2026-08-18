@@ -177,7 +177,7 @@ public sealed class BasicPluginService;
 
 public sealed class BasicDocumentContentFactory
 {
-    public DocumentSaveData Create() => new(1, "{\"value\":42}");
+    public DocumentContentSnapshot Create() => new(1, "{\"value\":42}");
 }
 '@
     Invoke-DotNet @("restore", "BasicPlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $basicProject
@@ -214,8 +214,8 @@ public sealed class LegacyCandidatePluginModule : IPluginModule
     Invoke-DotNet @("restore", "LegacyCandidatePlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $legacyProject
     Assert-DotNetBuildFails "LegacyCandidatePlugin.csproj" $legacyProject @("CS0535", "Configure")
 
-    # G7 把 DocumentSaveData 收口为内容 schema + payload。最终夹具已经验证新构造可用；
-    # 此负向夹具防止未来为了偶然源码兼容重新加入 PluginMetadata 等宿主信封字段。
+    # G8 破坏式删除旧候选 DTO。该夹具固定“旧类型本身不存在”，避免以后用别名或
+    # Obsolete 适配器重新形成第二套内容契约。
     $legacyEnvelopeProject = Join-Path $temporaryRoot "LegacyDocumentEnvelope"
     New-Item -ItemType Directory -Path $legacyEnvelopeProject | Out-Null
     Set-Content -LiteralPath (Join-Path $legacyEnvelopeProject "LegacyDocumentEnvelope.csproj") -Encoding UTF8 -Value @"
@@ -229,12 +229,39 @@ using MyAvaloniaManagementCommon.Save;
 
 public static class LegacyEnvelopeConsumer
 {
-    public static string ReadRemovedMetadata() =>
-        new DocumentSaveData(1, "{}").PluginMetadata;
+    public static object CreateRemovedType() => new DocumentSaveData(1, "{}");
 }
 '@
     Invoke-DotNet @("restore", "LegacyDocumentEnvelope.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $legacyEnvelopeProject
-    Assert-DotNetBuildFails "LegacyDocumentEnvelope.csproj" $legacyEnvelopeProject @("CS1061", "PluginMetadata")
+    Assert-DotNetBuildFails "LegacyDocumentEnvelope.csproj" $legacyEnvelopeProject @("CS0246", "DocumentSaveData")
+
+    # DTO 之外，G8 也删除插件侧路径、类型身份和旧方法名。使用最终接口编译这些成员必须
+    # 同时失败，证明 SDK 包没有保留任何可绕过宿主状态存储的入口。
+    $legacySaveProject = Join-Path $temporaryRoot "LegacyDocumentSaveContract"
+    New-Item -ItemType Directory -Path $legacySaveProject | Out-Null
+    Set-Content -LiteralPath (Join-Path $legacySaveProject "LegacyDocumentSaveContract.csproj") -Encoding UTF8 -Value @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup><PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="$sdkVersion" /></ItemGroup>
+</Project>
+"@
+    Set-Content -LiteralPath (Join-Path $legacySaveProject "LegacySaveConsumer.cs") -Encoding UTF8 -Value @'
+using MyAvaloniaManagementCommon.Save;
+
+public static class LegacySaveConsumer
+{
+    public static void UseRemovedMembers(ISavableDocument document)
+    {
+        _ = document.FilePath;
+        _ = document.SaveDocumentTypeId;
+        _ = document.CreateSaveDocumentMetaData("legacy.mamdoc");
+        document.LoadDocumentByMetaData(null!);
+    }
+}
+'@
+    Invoke-DotNet @("restore", "LegacyDocumentSaveContract.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $legacySaveProject
+    Assert-DotNetBuildFails "LegacyDocumentSaveContract.csproj" $legacySaveProject @(
+        "CS1061", "FilePath", "SaveDocumentTypeId", "CreateSaveDocumentMetaData", "LoadDocumentByMetaData")
 
     $uiProject = Join-Path $temporaryRoot "UiPlugin"
     New-Item -ItemType Directory -Path $uiProject | Out-Null
@@ -268,12 +295,27 @@ public sealed partial class ProfileView : UserControl
     Invoke-DotNet @("restore", "UiPlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $uiProject
     Invoke-DotNet @("build", "UiPlugin.csproj", "-c", "Release", "--no-restore", "--nologo") $uiProject
 
-    Write-Host "G7 Plugin SDK package acceptance passed. SDK=$sdkVersion; content snapshot sample compiled; legacy module and envelope members rejected."
+    Write-Host "G8 Plugin SDK package acceptance passed. SDK=$sdkVersion; content snapshot sample compiled; legacy module, DTO and save members rejected."
 }
 finally {
     $systemTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     if ($temporaryRoot.StartsWith($systemTemp, [StringComparison]::OrdinalIgnoreCase) -and
         (Test-Path -LiteralPath $temporaryRoot)) {
-        Remove-Item -LiteralPath $temporaryRoot -Recurse -Force
+        # Windows 上 dotnet/MSBuild 偶尔会在子进程退出后短暂持有生成目录句柄。
+        # 这里只对已验证位于系统临时根下的本次唯一目录做有界重试；
+        # 若句柄持续不释放仍让门禁失败，避免静默遗留大量 SDK 消费制品。
+        for ($attempt = 1; $attempt -le 10; $attempt++) {
+            try {
+                Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction Stop
+                break
+            }
+            catch {
+                if ($attempt -ge 10) {
+                    throw
+                }
+
+                Start-Sleep -Milliseconds 250
+            }
+        }
     }
 }

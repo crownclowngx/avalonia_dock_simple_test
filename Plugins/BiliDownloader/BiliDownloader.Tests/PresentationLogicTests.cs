@@ -603,7 +603,7 @@ public sealed class PresentationLogicTests
         vm.DownloadConfig.UseGroupFolder = true;
         vm.DownloadConfig.AddIndexToTitle = false;
 
-        var saved = vm.CreateSaveDocumentMetaData("unused");
+        var saved = vm.CreateContentSnapshot();
         var restored = new BiliDownloaderViewModel(
             messenger,
             repository,
@@ -613,7 +613,7 @@ public sealed class PresentationLogicTests
             new BiliApiService(),
             new FakeCredentialProvider(),
             ffmpeg);
-        restored.LoadDocumentByMetaData(saved);
+        restored.RestoreContent(saved);
 
         Assert.Equal(vm.DocumentId, restored.DocumentId);
         Assert.Equal("BV1abcDEF123", restored.VideoParse.Url);

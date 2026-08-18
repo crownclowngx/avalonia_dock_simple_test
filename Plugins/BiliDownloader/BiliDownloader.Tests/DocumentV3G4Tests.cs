@@ -88,10 +88,10 @@ public sealed class DocumentV3G4Tests
         };
         vm.DownloadConfig.PerTaskRateLimitBytesPerSecond = 2_000_000;
 
-        var saved = vm.CreateSaveDocumentMetaData("unused");
+        var saved = vm.CreateContentSnapshot();
         var restored = CreateVm();
-        restored.LoadDocumentByMetaData(saved);
-        var savedAgain = restored.CreateSaveDocumentMetaData("unused-2");
+        restored.RestoreContent(saved);
+        var savedAgain = restored.CreateContentSnapshot();
         var data = JsonConvert.DeserializeObject<DocumentSaveDataV3>(savedAgain.Payload)!;
 
         Assert.Equal(DocumentSaveCodec.CurrentContentSchemaVersion, saved.ContentSchemaVersion);
@@ -136,7 +136,7 @@ public sealed class DocumentV3G4Tests
             new IncrementalBaselineSaveData()), null);
 
         var data = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateSaveDocumentMetaData("unused").Payload)!;
+            vm.CreateContentSnapshot().Payload)!;
 
         Assert.Equal(kind.ToString(), data.Source?.Kind);
         Assert.Equal(stableId, data.Source?.StableSourceId);
@@ -158,7 +158,7 @@ public sealed class DocumentV3G4Tests
         var vm = CreateVm();
 
         var exception = Assert.Throws<DocumentLoadException>(() =>
-            vm.LoadDocumentByMetaData(saveData));
+            vm.RestoreContent(saveData));
 
         Assert.Contains("V3", exception.Message);
     }
@@ -176,7 +176,7 @@ public sealed class DocumentV3G4Tests
         var vm = CreateVm();
 
         var exception = Assert.Throws<DocumentLoadException>(() =>
-            vm.LoadDocumentByMetaData(saveData));
+            vm.RestoreContent(saveData));
 
         Assert.Contains("V3", exception.Message);
     }
@@ -189,8 +189,8 @@ public sealed class DocumentV3G4Tests
         var saveData = EnvelopeRaw(3, content.ToString(Formatting.None));
         var vm = CreateVm();
 
-        vm.LoadDocumentByMetaData(saveData);
-        var savedAgain = vm.CreateSaveDocumentMetaData("unused");
+        vm.RestoreContent(saveData);
+        var savedAgain = vm.CreateContentSnapshot();
 
         Assert.Equal("known", vm.DocumentId);
         Assert.Null(JObject.Parse(savedAgain.Payload)["FutureMinorField"]);
@@ -210,7 +210,7 @@ public sealed class DocumentV3G4Tests
         var vm = CreateVm();
 
         var exception = Assert.Throws<DocumentLoadException>(() =>
-            vm.LoadDocumentByMetaData(saveData));
+            vm.RestoreContent(saveData));
 
         Assert.Contains("V3", exception.Message);
     }
@@ -223,7 +223,7 @@ public sealed class DocumentV3G4Tests
         var vm = CreateVm();
         var saveData = EnvelopeRaw(3, content);
 
-        Assert.Throws<DocumentLoadException>(() => vm.LoadDocumentByMetaData(saveData));
+        Assert.Throws<DocumentLoadException>(() => vm.RestoreContent(saveData));
     }
 
     [Fact]
@@ -231,7 +231,7 @@ public sealed class DocumentV3G4Tests
     {
         var saveData = EnvelopeRaw(4, "{}");
 
-        Assert.Throws<DocumentLoadException>(() => CreateVm().LoadDocumentByMetaData(saveData));
+        Assert.Throws<DocumentLoadException>(() => CreateVm().RestoreContent(saveData));
     }
 
     [Fact]
@@ -255,7 +255,7 @@ public sealed class DocumentV3G4Tests
             new DownloadTaskRecord { TaskId = "target", DocumentId = "target-doc", ItemTitle = "目标任务", Status = "interrupted" },
             new DownloadTaskRecord { TaskId = "other", DocumentId = "other-doc", ItemTitle = "其他任务", Status = "interrupted" });
 
-        vm.LoadDocumentByMetaData(saveData);
+        vm.RestoreContent(saveData);
         await vm.InitializeAsync();
 
         Assert.Equal(0, provider.NormalizeCount);
@@ -281,9 +281,9 @@ public sealed class DocumentV3G4Tests
         };
         var vm = CreateVm();
 
-        vm.LoadDocumentByMetaData(Envelope(3, data));
+        vm.RestoreContent(Envelope(3, data));
         var saved = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateSaveDocumentMetaData("unused").Payload)!;
+            vm.CreateContentSnapshot().Payload)!;
 
         Assert.True(vm.SourceWorkflow.IsRestoredSourceUnsupported);
         Assert.Equal("FutureCatalog", saved.Source?.Kind);
@@ -305,13 +305,13 @@ public sealed class DocumentV3G4Tests
             new SourceFilterRulesSaveData(),
             new IncrementalBaselineSaveData()), null);
 
-        Assert.Throws<DocumentLoadException>(() => vm.CreateSaveDocumentMetaData("unused"));
+        Assert.Throws<DocumentLoadException>(() => vm.CreateContentSnapshot());
     }
 
     [Fact]
     public void V3快照_不包含页面游标选择或临时媒体字段()
     {
-        var json = CreateVm().CreateSaveDocumentMetaData("unused").Payload;
+        var json = CreateVm().CreateContentSnapshot().Payload;
         var root = JObject.Parse(json);
 
         Assert.Equal(
@@ -354,7 +354,7 @@ public sealed class DocumentV3G4Tests
     {
         var provider = new CountingDocumentProvider();
         var vm = CreateVm(provider, out _);
-        vm.LoadDocumentByMetaData(Envelope(3, new DocumentSaveDataV3
+        vm.RestoreContent(Envelope(3, new DocumentSaveDataV3
         {
             Source = new SourceDescriptorSaveData
             {
@@ -587,9 +587,9 @@ public sealed class DocumentV3G4Tests
             DanmakuOptions = null!,
         };
 
-        vm.LoadDocumentByMetaData(Envelope(3, data));
+        vm.RestoreContent(Envelope(3, data));
         var legacyNormalized = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateSaveDocumentMetaData("normalized-legacy.bili").Payload)!;
+            vm.CreateContentSnapshot().Payload)!;
 
         Assert.Equal(SubtitleSelectionMode.All, legacyNormalized.SubtitleOptions.SelectionMode);
         Assert.Equal([DanmakuOutputFormat.Xml], legacyNormalized.DanmakuOptions.Formats);
@@ -597,7 +597,7 @@ public sealed class DocumentV3G4Tests
         Assert.Empty(legacyNormalized.Baseline.BoundaryItemKeys);
 
         var structuredVm = CreateVm();
-        structuredVm.LoadDocumentByMetaData(Envelope(3, new DocumentSaveDataV3
+        structuredVm.RestoreContent(Envelope(3, new DocumentSaveDataV3
         {
             SubtitleOptions = new SubtitleOptions
             {
@@ -611,7 +611,7 @@ public sealed class DocumentV3G4Tests
             },
         }));
         var structured = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            structuredVm.CreateSaveDocumentMetaData("normalized-structured.bili").Payload)!;
+            structuredVm.CreateContentSnapshot().Payload)!;
 
         Assert.Equal(["zh-CN"], structured.SubtitleOptions.LanguageKeys);
         Assert.Equal([DanmakuOutputFormat.Xml, DanmakuOutputFormat.Ass],
@@ -665,7 +665,7 @@ public sealed class DocumentV3G4Tests
         {
             var data = new DocumentSaveDataV3();
             mutate(data);
-            Assert.Throws<DocumentLoadException>(() => CreateVm().LoadDocumentByMetaData(Envelope(3, data)));
+            Assert.Throws<DocumentLoadException>(() => CreateVm().RestoreContent(Envelope(3, data)));
         }
     }
 
@@ -682,23 +682,19 @@ public sealed class DocumentV3G4Tests
             Source = ValidSource(stableSourceId: unsafeValue),
         };
 
-        Assert.Throws<DocumentLoadException>(() => CreateVm().LoadDocumentByMetaData(Envelope(3, data)));
+        Assert.Throws<DocumentLoadException>(() => CreateVm().RestoreContent(Envelope(3, data)));
     }
 
     [Theory]
-    [InlineData(1, false)]
-    [InlineData(2, false)]
-    [InlineData(3, true)]
-    [InlineData(99, false)]
-    public void 整数内容Schema识别_只接受当前V3(
-        int contentSchemaVersion,
-        bool expectedKnown)
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(99)]
+    public void 整数内容Schema识别_未知版本稳定拒绝(int contentSchemaVersion)
     {
-        var decoded = DocumentSaveCodec.Decode(
-            new DocumentSaveData(contentSchemaVersion, "{}"));
+        var mapper = new BiliDownloaderDocumentStateMapper();
 
-        Assert.Equal(contentSchemaVersion, decoded.ContentSchemaVersion);
-        Assert.Equal(expectedKnown, decoded.IsKnownVersion);
+        Assert.Throws<DocumentLoadException>(() =>
+            mapper.Restore(new DocumentContentSnapshot(contentSchemaVersion, "{}")));
     }
 
     [Fact]
@@ -1050,10 +1046,10 @@ public sealed class DocumentV3G4Tests
             registry, api, credentials, new FakeFfmpegService());
     }
 
-    private static DocumentSaveData Envelope(int contentSchemaVersion, object content) =>
+    private static DocumentContentSnapshot Envelope(int contentSchemaVersion, object content) =>
         EnvelopeRaw(contentSchemaVersion, JsonConvert.SerializeObject(content));
 
-    private static DocumentSaveData EnvelopeRaw(int contentSchemaVersion, string content) =>
+    private static DocumentContentSnapshot EnvelopeRaw(int contentSchemaVersion, string content) =>
         new(contentSchemaVersion, content);
 }
 

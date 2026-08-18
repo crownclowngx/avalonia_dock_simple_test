@@ -23,6 +23,7 @@
 | [显式贡献与 Plugin Registry](./plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md) | 破坏式 v1 重定基线、Context/Builder/Registry、贡献所有权、失败原子性与迁移结果 | 当前显式扩展契约，G5 已完成 |
 | [宿主 DI 保护与插件注册事务](./plan-history/host-v1/g6-host-di-protection.md) | 追加式私有服务契约、宿主描述符保护、事务提交、稳定诊断与回滚边界 | 当前 DI 组合契约，G6 已完成 |
 | [Document 信封 v1](./plan-history/host-v1/g7-document-envelope-v1.md) | 唯一七字段磁盘格式、8 MiB/深度 8 限制、Registry 所有权、插件内容 DTO 与失败原子性 | 当前 Document 磁盘契约，G7 已完成 |
+| [G8 保存契约与内容版本](./plan-history/host-v1/g8-document-content-persistence-contract.md) | 内容快照最终 API、宿主路径/所有权状态、SOLID 取舍、插件矩阵和验收证据 | 当前保存内存契约，G8 已完成 |
 | [Document 保存 V1](./design/document-persistence-v1-design.md) | 公共脏状态、保存事务、关闭确认、备份和坏文件恢复规则 | 当前契约与设计依据 |
 | [MyAvaloniaManagement 测试说明](./reference/myavalonia-management-tests.md) | 宿主专项测试、覆盖率和 Windows 冒烟门禁 | 当前事实 |
 | [Dock 布局快照 V1](./reference/dock-layout-snapshot-v1.md) | `layout-v1.json` 的稳定 ID、校验、迁移和回退规则 | 当前契约 |
@@ -50,6 +51,7 @@
 - [G5：显式贡献与 Plugin Registry](./plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)：破坏式删除重复身份和隐式发现，四插件与宿主迁移到 Context/Builder/不可变 Registry，283 项绿色证据与 SDK 新旧契约夹具通过。
 - [G6：宿主 DI 保护](./plan-history/host-v1/g6-host-di-protection.md)：插件在隔离工作副本追加私有服务，宿主按描述符引用校验并事务提交；删除、替换、重排和覆盖宿主类型会在容器构建前阻断。
 - [G7：Document 信封 v1](./plan-history/host-v1/g7-document-envelope-v1.md)：建立第一个且唯一的严格七字段信封，分离宿主元数据与插件内容，加入资源边界、所有权校验和 322 项宿主绿色证据。
+- [G8：保存契约与内容版本](./plan-history/host-v1/g8-document-content-persistence-contract.md)：删除插件路径与身份所有权，最终收窄为不可变内容快照与恢复契约，保持七字段磁盘信封不变。
 
 ### .NET 10 升级记录
 

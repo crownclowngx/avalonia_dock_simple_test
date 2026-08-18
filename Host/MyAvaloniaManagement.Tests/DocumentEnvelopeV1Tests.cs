@@ -21,12 +21,12 @@ public sealed class DocumentEnvelopeV1Tests
     [Fact]
     public void 内容快照_只接受正整数Schema和非空引用正文()
     {
-        var snapshot = new DocumentSaveData(3, string.Empty);
+        var snapshot = new DocumentContentSnapshot(3, string.Empty);
 
         Assert.Equal(3, snapshot.ContentSchemaVersion);
         Assert.Equal(string.Empty, snapshot.Payload);
-        Assert.Throws<ArgumentOutOfRangeException>(() => new DocumentSaveData(0, "{}"));
-        Assert.Throws<ArgumentNullException>(() => new DocumentSaveData(1, null!));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DocumentContentSnapshot(0, "{}"));
+        Assert.Throws<ArgumentNullException>(() => new DocumentContentSnapshot(1, null!));
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class DocumentEnvelopeV1Tests
             new DocumentTypeId("myavalonia.plugin.sample.document.report"),
             "示例文档",
             FixedUtc,
-            new DocumentSaveData(7, payload));
+            new DocumentContentSnapshot(7, payload));
 
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
@@ -64,7 +64,7 @@ public sealed class DocumentEnvelopeV1Tests
             new DocumentTypeId("myavalonia.plugin.sample.document.report"),
             "示例文档",
             FixedUtc,
-            new DocumentSaveData(7, payload)));
+            new DocumentContentSnapshot(7, payload)));
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public sealed class DocumentEnvelopeV1Tests
             TestSavableStrategy.TypeId,
             "测试文档",
             FixedUtc,
-            new DocumentSaveData(1, exactPayload + "a")));
+            new DocumentContentSnapshot(1, exactPayload + "a")));
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public sealed class DocumentEnvelopeV1Tests
             TestSavableStrategy.TypeId,
             "错误所有者",
             FixedUtc,
-            new DocumentSaveData(1, "secret-payload"));
+            new DocumentContentSnapshot(1, "secret-payload"));
         context.Storage.AddFile(path, json);
         var viewModel = context.CreateMainWindowViewModel();
 
@@ -203,13 +203,13 @@ public sealed class DocumentEnvelopeV1Tests
             legacyId,
             "历史别名",
             FixedUtc,
-            new DocumentSaveData(1, "{}")));
+            new DocumentContentSnapshot(1, "{}")));
         context.Storage.AddFile(unknownPath, serializer.Serialize(
             HostExtensionIds.Owner,
             new DocumentTypeId("myavalonia.host.document.unknown"),
             "未知类型",
             FixedUtc,
-            new DocumentSaveData(1, "{}")));
+            new DocumentContentSnapshot(1, "{}")));
         context.Storage.OpenPaths = [aliasPath, unknownPath];
         var viewModel = context.CreateMainWindowViewModel();
 
@@ -257,7 +257,7 @@ public sealed class DocumentEnvelopeV1Tests
             TrackedScopedSavableStrategy.TypeId,
             "损坏内容",
             FixedUtc,
-            new DocumentSaveData(1, "secret-payload")));
+            new DocumentContentSnapshot(1, "secret-payload")));
         var viewModel = context.CreateMainWindowViewModel();
 
         await viewModel.OpenDocumentByPath(path);
@@ -302,7 +302,7 @@ public sealed class DocumentEnvelopeV1Tests
             TestSavableStrategy.TypeId,
             "测试文档",
             FixedUtc,
-            new DocumentSaveData(1, payload));
+            new DocumentContentSnapshot(1, payload));
 
     private static string CreateEnvelopeWithUnknownDepth(int nestedObjectCount)
     {

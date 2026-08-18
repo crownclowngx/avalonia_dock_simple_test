@@ -239,7 +239,7 @@ flowchart LR
 | 服务接入 | 插件通过 Context 获得用于私有业务服务的事务工作副本 | 可使用 Microsoft DI，多实现/keyed/开放泛型不受影响；宿主注册不可覆盖 | 仍是可信进程内代码，不构成安全沙箱 |
 | 创建入口 | Context 显式登记，`PluginRegistry` 原子发布；Document 可附加 Creation Intent | 未登记类型不可见，元数据只读一次，所有权明确 | 插件作者必须维护完整贡献清单 |
 | 消息通信 | `IMessengerService` 包装进程级 messenger | 广播和解耦方便 | 仍暴露底层 `IMessenger`，无消息归属和契约版本 |
-| 文件能力 | 宿主包装选择器、打开和保存外壳 | ViewModel 不直接依赖根窗口，Document 与布局均原子写入 | 公共保存契约仍缺少统一脏状态和关闭确认 |
+| 文件能力 | 宿主包装选择器、打开、保存、路径/所有权状态 | 内容契约与脏状态分离，Document 与布局均原子写入，关闭确认共用同一提交事实 | 当前仅存在单一内容版本分支；真实旧版本出现时需由对应插件显式读取 |
 | 布局能力 | 宿主持有 Dock 树和 V1 快照 | 四向、隐藏、固定、恢复已有测试 | 插件缺失时整份布局回退 |
 
 **[代码事实]** `IMessengerService` 仍直接暴露底层 `IMessenger`，生产实现使用 `WeakReferenceMessenger.Default`。参见 [`IMessengerService.cs`](../../Host/MyAvaloniaManagementCommon/Message/IMessengerService.cs) 和 [`MessengerService.cs`](../../Host/MyAvaloniaManagementCommon/Message/MessengerService.cs)。

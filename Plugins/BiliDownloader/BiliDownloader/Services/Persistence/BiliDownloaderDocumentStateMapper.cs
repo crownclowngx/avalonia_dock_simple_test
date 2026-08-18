@@ -25,7 +25,7 @@ public sealed record BiliDownloaderRestoredState(DocumentSaveDataV3 Data);
 /// </remarks>
 public interface IBiliDownloaderDocumentStateMapper
 {
-    DocumentSaveData Create(
+    DocumentContentSnapshot Create(
         string title,
         string documentId,
         string url,
@@ -34,7 +34,7 @@ public interface IBiliDownloaderDocumentStateMapper
         string namingTemplate,
         BiliDownloaderDocumentSourceState sourceState);
 
-    BiliDownloaderRestoredState Restore(DocumentSaveData saveData);
+    BiliDownloaderRestoredState Restore(DocumentContentSnapshot snapshot);
 }
 
 /// <summary>
@@ -42,7 +42,7 @@ public interface IBiliDownloaderDocumentStateMapper
 /// </summary>
 public sealed class BiliDownloaderDocumentStateMapper : IBiliDownloaderDocumentStateMapper
 {
-    public DocumentSaveData Create(
+    public DocumentContentSnapshot Create(
         string title,
         string documentId,
         string url,
@@ -86,17 +86,18 @@ public sealed class BiliDownloaderDocumentStateMapper : IBiliDownloaderDocumentS
         return DocumentSaveCodec.EncodeV3(data);
     }
 
-    public BiliDownloaderRestoredState Restore(DocumentSaveData saveData)
+    public BiliDownloaderRestoredState Restore(DocumentContentSnapshot snapshot)
     {
-        ArgumentNullException.ThrowIfNull(saveData);
-        var decoded = DocumentSaveCodec.Decode(saveData);
-        if (!decoded.IsKnownVersion)
+        ArgumentNullException.ThrowIfNull(snapshot);
+        // 内容 schema 是插件自己维护的整数协议，不读取程序集或 NuGet 版本。当前没有真实
+        // 历史内容，因此只接受 V3；未来只有出现受支持旧格式时才在这里显式增加分支。
+        if (snapshot.ContentSchemaVersion != DocumentSaveCodec.CurrentContentSchemaVersion)
         {
             throw new DocumentLoadException(
                 "该 BiliDownloader Document 不是当前支持的 V3 格式。");
         }
 
-        var data = RestoreV3(decoded.Payload);
+        var data = RestoreV3(snapshot.Payload);
         DocumentSaveSecurityPolicy.Validate(data);
         return new BiliDownloaderRestoredState(data);
     }

@@ -3,7 +3,7 @@
 > 状态：待整改，不满足封板条件
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`
-> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7 已于 2026-08-18 完成；G8–G16 待完成
+> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G8 已于 2026-08-18 完成；G9–G16 待完成
 > 适用范围：`MyAvaloniaManagement` 宿主、`MyAvaloniaManagementCommon`、插件装载与注册边界、Document/Tool 公共契约和发布门禁
 > 不评审：现有插件的领域业务正确性、第三方插件市场、运行时热卸载和恶意插件隔离
 
@@ -14,7 +14,7 @@
 结论是：当前宿主已经有较完整的插件运行骨架，G0 已恢复绿色基线，G1 已冻结支持边界、
 版本线和 v1 数据根，G2 已完成 Host public 面与静态服务定位收口，G3 也已形成正式 SDK 包、
 可选 UI Profile 与宿主样式契约，但 **尚不能封板**。G5、G6 已完成显式贡献和宿主 DI 保护，
-G7 已建立唯一 Document 信封 v1。剩余主要问题包括消息总线仍泄漏第三方抽象、插件部署与
+G7 已建立唯一 Document 信封 v1，G8 已将内容契约与宿主路径/所有权分离。剩余主要问题包括消息总线仍泄漏第三方抽象、插件部署与
 兼容门禁尚未形成单一发布入口。Legacy 二进制激活已由 G4 删除。
 
 本次封板采用以下一次性定基线策略：
@@ -102,11 +102,17 @@ BiliDownloader 719/719、DaTangAccountingHelpPlug 64/64 通过，SDK 包消费�
 已删除旧成员反例均通过。详细记录见
 [G7 Document 信封 v1](../plan-history/host-v1/g7-document-envelope-v1.md)。
 
+G8 完成后的当前基线为 Unit 151、UI 37、Plugin 141，共 **329/329 通过**；Host 行覆盖率
+80.41%、分支覆盖率 65.71%，Windows Smoke 通过。G8 Host 专项 37/37、Plugin 契约专项
+2/2，BiliDownloader 719/719、DaTangAccountingHelpPlug 64/64、MySmallTools 182/182 通过；
+SDK 包消费正反向门禁通过。详细证据见
+[G8 保存契约与内容版本](../plan-history/host-v1/g8-document-content-persistence-contract.md)。
+
 ### 2.3 当前风险清单
 
 | 等级 | 发现 | 影响 |
 | --- | --- | --- |
-| 已解决（G7） | `DocumentSaveData` 曾混合宿主信封与自由格式 `PluginMetadata` | 现由唯一 v1 信封承载宿主 schema 与身份，插件 DTO 只保留内容版本和 payload |
+| 已解决（G7/G8） | 旧候选保存契约曾混合宿主信封、路径和插件自报身份 | 现由唯一 v1 信封承载宿主字段，`DocumentContentSnapshot` 只保留内容版本和 payload，路径与规范所有权由宿主状态存储持有 |
 | 已解决（G2） | Host 窗口、ViewModel、加载器、工厂和内部模型曾大量为 public，且存在静态服务定位器 | Host 自有导出类型现为 0；生产构造只走 Runtime DI |
 | 高 | Common/Plugin SDK 门禁仍只有一个 SHA256 | G2 已排除 Host 实现噪声，但仍不能审阅删除了哪个类型、改了哪个签名，也不能区分兼容新增 |
 | 高 | `IMessengerService` 暴露 `IMessenger`，生产实现使用 `WeakReferenceMessenger.Default` | SDK 被 CommunityToolkit 具体 API 绑定，不同 HostRuntime 和测试可能共享全局状态 |
@@ -351,12 +357,15 @@ StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 A
 
 **优先级：阻断；依赖：G7**
 
-- 目标：插件只负责不可变业务快照和内容恢复，宿主继续独占路径、原子事务、备份和关闭提交点。
-- 修改边界：`ISavableDocument`、内容快照 DTO、各插件实现和恢复测试。
-- 实施要求：快照创建不得改变路径、标题或脏状态；未知内容版本通过稳定 `DocumentLoadException` 拒绝；未来需要迁移时由插件显式读取旧版本并输出当前版本。
-- 验收：当前版本往返、未知未来版本、损坏内容、主文件失败、备份失败和恢复另存全部覆盖。
-- 验收命令：执行 `dotnet test Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj -c Release --filter FullyQualifiedName~DocumentPersistence`，再执行四个插件各自的 Document 内容 schema 测试。
-- 完成定义：插件发布版本改变但内容 schema 不变时，旧文档仍可读取；内容 schema 改变时有独立测试和发布说明。
+**状态：已完成（2026-08-18）**。Document 信封 v1 的七字段磁盘格式未改变。
+
+- 已将 `ISavableDocument` 收窄为 `CreateContentSnapshot()` 和 `RestoreContent(snapshot)`，用不可变 `DocumentContentSnapshot` 替换旧候选 DTO。
+- 已删除插件侧路径、Document 类型、旧快照/恢复方法，不保留 `Obsolete` 转发或兼容适配器。
+- 已新增宿主内部 `DocumentPersistenceStateStore`，只从不可变 Registry 登记规范所有权，并在主文件成功或内容完整恢复后提交路径。
+- BiliDownloader 保持内容 schema 3，MyPlugTest 和银行余额调节保持 schema 1；只读当前版本，未知旧版/未来版与损坏内容稳定脱敏拒绝。
+- MySmallTools 的四个 Document 不声明保存能力，没有虚构内容 schema；`IDocumentSavePathPolicy` 继续留给 G11。
+- 公共 API、宿主事务/恢复、三个真实内容实现、非保存插件和 SDK 正反向编译门禁均已覆盖。
+- 完整 API 对照、SOLID 取舍、版本矩阵、真实门禁数量和回滚边界见 [G8 独立记录](../plan-history/host-v1/g8-document-content-persistence-contract.md)。
 
 ### G9：收口 SDK 事件总线
 

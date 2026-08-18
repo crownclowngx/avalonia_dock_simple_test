@@ -34,11 +34,15 @@ internal sealed class DocumentPersistenceCoordinator(
     IHostStorageService storageService,
     DocumentSaveService saveService,
     DocumentOperationGate operationGate,
+    DocumentPersistenceStateStore persistenceStates,
     DocumentRecoveryRegistry recoveryRegistry,
     IDocumentInteractionService interactionService,
     DocumentEnvelopeSerializer serializer)
 {
-    private readonly DocumentWorkspace _workspace = new(factory, recoveryRegistry);
+    private readonly DocumentWorkspace _workspace = new(
+        factory,
+        persistenceStates,
+        recoveryRegistry);
 
     internal void CreateDocument(string documentType)
     {
@@ -74,9 +78,7 @@ internal sealed class DocumentPersistenceCoordinator(
             return DocumentOperationResult.NoChange;
         }
 
-        var result = await saveService.SaveAsync(
-            document,
-            factory.GetDocumentRegistration(document));
+        var result = await saveService.SaveAsync(document);
         return result.Status switch
         {
             DocumentSaveStatus.Saved => DocumentOperationResult.ClearError,
@@ -230,8 +232,10 @@ internal sealed class DocumentPersistenceCoordinator(
                     "该文档类型未实现公共保存状态契约。");
             }
 
-            savableDocument.FilePath = filePath;
-            savableDocument.LoadDocumentByMetaData(envelope.Content);
+            savableDocument.RestoreContent(envelope.Content);
+            // 只有插件内容完整恢复后才把路径提交到宿主状态。若 RestoreContent 失败，
+            // finally 会释放 Scope 和临时状态，不会留下“已打开但正文无效”的路径登记。
+            persistenceStates.CommitFilePath(pendingDocument, filePath);
             var loadedDocument = pendingDocument;
             pendingDocument = null;
             return loadedDocument;
@@ -257,7 +261,7 @@ internal sealed class DocumentPersistenceCoordinator(
             {
                 // 备份只用于构造一个脱离损坏原件的新工作副本。清空主路径并在宿主注册
                 // 恢复来源，确保后续普通保存也必须经过另存选择，且不能覆盖原件或备份。
-                ((ISavableDocument)pendingDocument).FilePath = string.Empty;
+                persistenceStates.ClearFilePath(pendingDocument);
                 pendingDocument.Title = $"{pendingDocument.Title}（已恢复）";
                 pendingDocument.IsModified = true;
                 recoveryRegistry.Register(pendingDocument, recoverySourcePath);

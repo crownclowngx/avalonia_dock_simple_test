@@ -5,11 +5,6 @@ using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.Services.Persistence;
 
-public sealed record DecodedDocument(
-    int ContentSchemaVersion,
-    string Payload,
-    bool IsKnownVersion);
-
 public static class DocumentSaveCodec
 {
     public const int CurrentContentSchemaVersion = 3;
@@ -24,19 +19,10 @@ public static class DocumentSaveCodec
     /// 将已验证的 V3 DTO 转换为插件内容快照。宿主会在保存事务中独立补充
     /// PluginId、DocumentTypeId、标题和 UTC 时间，插件不能维护这些字段的副本。
     /// </summary>
-    public static DocumentSaveData EncodeV3(DocumentSaveDataV3 content) =>
+    public static DocumentContentSnapshot EncodeV3(DocumentSaveDataV3 content) =>
         new(
             CurrentContentSchemaVersion,
             JsonConvert.SerializeObject(content, SerializerSettings));
-
-    public static DecodedDocument Decode(DocumentSaveData saveData)
-    {
-        ArgumentNullException.ThrowIfNull(saveData);
-        return new DecodedDocument(
-            saveData.ContentSchemaVersion,
-            saveData.Payload,
-            saveData.ContentSchemaVersion == CurrentContentSchemaVersion);
-    }
 
     internal static T? Deserialize<T>(string content)
     {

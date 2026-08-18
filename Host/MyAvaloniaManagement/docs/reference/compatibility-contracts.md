@@ -129,9 +129,10 @@ V1 清单格式：
 - 可选多入口继续通过 `IDocumentCreationIntentProvider`；
 - 唯一磁盘格式是宿主严格读写的 Document 信封 v1，必须且只能包含七个 camelCase 字段：`schemaVersion`、`pluginId`、`documentTypeId`、`contentSchemaVersion`、`title`、`savedAtUtc`、`payload`；
 - `schemaVersion` 只能为 `1`；UTF-8 文件上限为 8 MiB，JSON 最大深度为 8；注释、尾随逗号、重复、未知、缺失、大小写错误和错误类型字段均拒绝；
-- 插件公共 `DocumentSaveData` 是不可变内容 DTO，只包含正整数 `ContentSchemaVersion` 和非 null `Payload`；
+- 插件公共 `DocumentContentSnapshot` 是不可变内容 DTO，只包含正整数 `ContentSchemaVersion` 和非 null `Payload`；
+- `ISavableDocument` 只包含 `CreateContentSnapshot()` 和 `RestoreContent(snapshot)`；插件不拥有路径或 Document 类型成员；
 - `ISavableDocument` 必须同时实现 `IDocumentSaveState`，缺失时以 `DOCUMENT_SAVE_STATE_MISSING` 拒绝发布；
-- 宿主从不可变 Registry 拥有 `PluginId`、`DocumentTypeId`，从文件名拥有标题，从 `TimeProvider` 拥有 UTC 时间；插件只解释内容版本和 payload；
+- 宿主从不可变 Registry 拥有 `PluginId`、`DocumentTypeId`，并由内部状态存储按 Document 引用保存规范注册项与当前主路径；标题来自文件名，UTC 时间来自 `TimeProvider`；插件只解释内容版本和 payload；
 - 信封中的 Document 类型必须是规范主 ID，不接受历史别名；`pluginId` 必须等于注册项所有者；
 - 路径转绝对路径后按 Windows 不区分大小写规则查重；
 - 批量打开以单文件为错误边界；

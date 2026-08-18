@@ -132,12 +132,12 @@ public sealed class AggressiveRefactorAcceptanceTests
     }
 
     [Fact]
-    public void DocumentCodec_未知内容Schema只标记为不可读取()
+    public void Document内容_未知Schema由状态映射器稳定拒绝()
     {
-        var decoded = DocumentSaveCodec.Decode(new DocumentSaveData(9, "{}"));
+        var mapper = new BiliDownloaderDocumentStateMapper();
 
-        Assert.Equal(9, decoded.ContentSchemaVersion);
-        Assert.False(decoded.IsKnownVersion);
+        Assert.Throws<DocumentLoadException>(() =>
+            mapper.Restore(new DocumentContentSnapshot(9, "{}")));
     }
 
     [Fact]

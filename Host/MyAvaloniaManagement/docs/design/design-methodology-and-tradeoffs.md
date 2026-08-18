@@ -21,7 +21,7 @@
 - Document、Tool、View、Lifecycle 必须显式登记；未登记类型不可见，重复 ID 以结构化诊断阻断启动；
 - `Files` 历史 Locator 与稳定 `Documents` Dock ID；
 - Left/Right/Top/Bottom、隐藏/恢复、Pinned 和禁用浮动；
-- 严格 Document 信封 v1、插件内容 `DocumentSaveData` 与 `layout-v1.json`；
+- 严格 Document 信封 v1、插件内容 `DocumentContentSnapshot` 与 `layout-v1.json`；
 - 快照整体无效时隔离并使用默认布局。
 
 只有先固定不变量，内部抽象才不会悄悄变成产品行为变更。
@@ -59,6 +59,7 @@
 | `ManagementFactory` 发现策略、读元数据、建树、查询、恢复、释放 | Registry、Builder、Navigator、Coordinator、Lifetime |
 | `MainWindowViewModel` 选择文件、读写 JSON、查重、修改 Dock | Persistence Coordinator + Workspace Adapter |
 | `DockLayoutLifecycle` 映射、迁移、验证、文件事务、窗口编排 | Mapper、Migrator、Validator、Store、Atomic Transaction |
+| 插件 Document 同时自报内容、路径和类型身份 | 内容快照 + 独立脏状态 + 宿主持久化状态存储 |
 
 SRP 在这里指“只有一个变化原因”，不是“每个类只能有一个方法”。Document 打开/恢复由 `DocumentPersistenceCoordinator` 编排，主文件与备份提交由 `DocumentSaveService` 负责，异步关闭确认由 `DocumentCloseCoordinator` 负责；三者共享窄操作门，但不会共享彼此的 UI 或序列化职责。
 
@@ -72,11 +73,16 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 
 `ManagementFactory` 仍满足 Dock 基类的 override 行为；禁用浮动、关闭通知和 Docked 后归一化没有绕过框架回调。Host 与 Managed Plugin 策略都通过显式贡献声明和统一 DI 创建，并返回契约要求的 Document/Tool。
 
+三个可保存 Document 实现遵守同一内容快照语义：创建快照无副作用，恢复前精确验版，
+任何成功保存都输出该插件当前内容 schema。宿主因此可以用同一提交流程替换它们，无需插件类型分支。
+
 ### 3.4 接口隔离原则（ISP）
 
 文件工作流依赖最小内部 `IHostStorageService`，而不是主窗口、`IStorageFile` 或整个 Avalonia 生命周期。内部协作者优先接收完成职责所需的最小对象。
 
 没有为每个内部类机械创建接口。只有存在真实替代实现、框架边界或测试边界时才使用接口，避免接口数量超过行为复杂度。
+
+G8 特别把 `ISavableDocument` 收窄为内容创建/恢复能力，而不将脏状态、路径策略或宿主事务塞入同一接口。
 
 ### 3.5 依赖倒置原则（DIP）
 

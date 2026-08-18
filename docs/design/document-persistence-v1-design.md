@@ -24,6 +24,7 @@ v1 是第一个且唯一受支持的 `.mamdoc` 信封，没有历史 Document �
 | `DocumentPersistenceCoordinator` | 打开、批量错误隔离和恢复编排 | 插件业务字段解释 |
 | `DocumentEnvelopeSerializer` | 严格读写唯一七字段 v1 信封和资源边界 | 业务 payload 解释、文件事务 |
 | `PluginRegistry` | 提供不可变 Document 类型与插件所有权事实 | 文件读取和插件内容恢复 |
+| `DocumentPersistenceStateStore` | 按 Document 引用保存规范注册项和宿主主路径 | 业务内容、文件 I/O 和插件自报身份 |
 | `DocumentWorkspace` | 将 Dock 树适配为 Document 查询与激活 | 保存策略 |
 
 这些类型通过构造注入协作。没有通用工作流、可扩展状态机或事件总线；变化点只用窄接口隔离。
@@ -36,10 +37,10 @@ v1 是第一个且唯一受支持的 `.mamdoc` 信封，没有历史 Document �
 
 保存顺序不可调整：
 
-1. 插件执行无副作用的 `CreateSaveDocumentMetaData`，只返回内容版本和 payload；
-2. 宿主从 Registry、目标文件名和 `TimeProvider` 取得身份、标题和 UTC 时间，组装并严格序列化 v1；
+1. 插件执行无副作用的 `CreateContentSnapshot()`，只返回内容版本和 payload；
+2. 宿主从 `DocumentPersistenceStateStore` 中的规范 Registry 注册项、目标文件名和 `TimeProvider` 取得身份、标题和 UTC 时间，组装并严格序列化 v1；
 3. 宿主使用同目录 staging 原子写入主文件；
-4. 主文件成功后更新标题与 `FilePath`；
+4. 主文件成功后更新标题与宿主状态存储中的路径；
 5. 调用 `IDocumentSaveState.AcceptChanges()`；
 6. 若存在路径保护，再调用 `IDocumentSavePathPolicy.NotifySaveCompleted()`；
 7. 将同一序列化内容原子写入 `<主路径>.recovery.bak`。
@@ -75,7 +76,7 @@ Dock 的 `OnDockableClosing` 同步返回，确认窗口和文件选择器是异
 
 用户确认后，恢复 Document：
 
-- 清空 `FilePath`，标题追加“（已恢复）”，并置为脏状态；
+- 清空宿主状态存储中的主路径，标题追加“（已恢复）”，并置为脏状态；
 - 在宿主恢复注册表中记录损坏主路径，重复打开时激活同一标签；
 - 保存时强制选择新路径，拒绝损坏原路径和备份路径；
 - 新文件成功提交或标签最终关闭时清理恢复注册。
@@ -83,7 +84,7 @@ Dock 的 `OnDockableClosing` 同步返回，确认窗口和文件选择器是异
 损坏原件在所有分支中都不会被移动、删除或覆盖。
 
 打开时在读取前检查文件长度，严格解析后按 Registry 验证 Document 主 ID 和插件所有权。插件只接收
-`DocumentSaveData(contentSchemaVersion, payload)`。Document 在业务内容也成功加载前始终不发布；
+`DocumentContentSnapshot(contentSchemaVersion, payload)`，并调用 `RestoreContent`。Document 在业务内容也成功恢复前始终不发布；
 失败会释放临时 Scope，且不会创建、迁移或写入文件。
 
 ## 6. 失败与测试矩阵

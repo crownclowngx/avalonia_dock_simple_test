@@ -32,9 +32,6 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
         SubtitleSourceType.AiGenerated => 2,
         _ => 3,
     };
-    public DocumentTypeId SaveDocumentTypeId => SaveDocumentTypeIdConstant.BiliDownloaderDocumentId;
-    public string FilePath { get; set; } = string.Empty;
-
     /// <summary>
     /// 本 Document 实例的唯一标识（持久化到 SaveData，跨重启不丢）
     /// </summary>
@@ -650,7 +647,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     /// 这些提交动作由宿主在主文件写入成功后统一完成。
     /// </para>
     /// </summary>
-    public DocumentSaveData CreateSaveDocumentMetaData(string filePath)
+    public DocumentContentSnapshot CreateContentSnapshot()
     {
         var configuration = new DownloadConfigViewModelSnapshot(
             DownloadConfig.OutputDirectory,
@@ -686,13 +683,13 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     /// 从当前 V3 保存数据加载 Document。项目没有历史文件兼容要求，因此非 V3 内容
     /// 明确失败，不进行字段猜测、默认补齐或隐式迁移。
     /// </summary>
-    public void LoadDocumentByMetaData(DocumentSaveData saveData)
+    public void RestoreContent(DocumentContentSnapshot snapshot)
     {
-        ArgumentNullException.ThrowIfNull(saveData);
+        ArgumentNullException.ThrowIfNull(snapshot);
         _isRestoringDocument = true;
         try
         {
-            var restored = _documentStateMapper.Restore(saveData);
+            var restored = _documentStateMapper.Restore(snapshot);
             ApplyRestoredState(restored);
             OnPropertyChanged(nameof(DocumentId));
             _hasLoadedDocument = true;

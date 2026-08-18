@@ -74,29 +74,37 @@ public sealed class ReconciliationDocumentScopeTests
         document.Source.BankStatementPath = "bank.xlsx";
         document.Options.PreviousUnreconciledDifference = 12.34m;
         document.Run.LastOutputPath = "result.xlsx";
+        var titleBeforeSnapshot = document.Title;
         Assert.True(document.IsDirty);
 
-        var saveData = document.CreateSaveDocumentMetaData("document.json");
+        var saveData = document.CreateContentSnapshot();
 
         Assert.True(document.IsDirty);
+        Assert.Equal(titleBeforeSnapshot, document.Title);
         Assert.Equal(1, saveData.ContentSchemaVersion);
         Assert.Contains("enterprise.xlsx", saveData.Payload);
         Assert.Contains("result.xlsx", saveData.Payload);
         Assert.DoesNotContain("EnterpriseEntries", saveData.Payload);
         Assert.DoesNotContain("BankEntries", saveData.Payload);
         var restored = manager.CreateDocument<BankBalanceReconciliationViewModel>();
-        restored.LoadDocumentByMetaData(saveData);
+        restored.RestoreContent(saveData);
         Assert.Equal("enterprise.xlsx", restored.Source.EnterpriseLedgerPath);
         Assert.Equal("bank.xlsx", restored.Source.BankStatementPath);
         Assert.Equal(12.34m, restored.Options.PreviousUnreconciledDifference);
         Assert.Equal("result.xlsx", restored.Run.LastOutputPath);
         Assert.False(restored.IsDirty);
         var unknownVersion = Assert.Throws<DocumentLoadException>(() =>
-            document.LoadDocumentByMetaData(new DocumentSaveData(2, saveData.Payload)));
+            document.RestoreContent(new DocumentContentSnapshot(2, saveData.Payload)));
         Assert.DoesNotContain(saveData.Payload, unknownVersion.Message, StringComparison.Ordinal);
         var damaged = Assert.Throws<DocumentLoadException>(() =>
-            document.LoadDocumentByMetaData(new DocumentSaveData(1, "{")));
+            document.RestoreContent(new DocumentContentSnapshot(1, "{")));
         Assert.DoesNotContain("{", damaged.Message, StringComparison.Ordinal);
+        var blank = Assert.Throws<DocumentLoadException>(() =>
+            document.RestoreContent(new DocumentContentSnapshot(1, "   ")));
+        Assert.DoesNotContain("   ", blank.Message, StringComparison.Ordinal);
+        var missingRequired = Assert.Throws<DocumentLoadException>(() =>
+            document.RestoreContent(new DocumentContentSnapshot(1, "{}")));
+        Assert.DoesNotContain("{}", missingRequired.Message, StringComparison.Ordinal);
         document.AcceptChanges();
         Assert.False(document.IsDirty);
         Assert.True(manager.Release(restored));

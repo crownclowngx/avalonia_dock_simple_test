@@ -43,10 +43,24 @@ public class DocumentV2G5Tests
     [Fact]
     public void 当前保存_使用独立整数内容Schema3()
     {
-        var saveData = CreateVm().CreateSaveDocumentMetaData("unused.mamdoc");
+        var saveData = CreateVm().CreateContentSnapshot();
 
         Assert.Equal(DocumentSaveCodec.CurrentContentSchemaVersion, saveData.ContentSchemaVersion);
         Assert.False(string.IsNullOrWhiteSpace(saveData.Payload));
+    }
+
+    [Fact]
+    public void 创建内容快照_不改变标题或脏状态()
+    {
+        var vm = CreateVm();
+        vm.Title = "快照前标题";
+        vm.IsModified = true;
+
+        var snapshot = vm.CreateContentSnapshot();
+
+        Assert.Equal(DocumentSaveCodec.CurrentContentSchemaVersion, snapshot.ContentSchemaVersion);
+        Assert.Equal("快照前标题", vm.Title);
+        Assert.True(vm.IsDirty);
     }
 
     [Fact]
@@ -58,7 +72,7 @@ public class DocumentV2G5Tests
         vm.DownloadConfig.DownloadSubtitle = true;
         vm.DownloadConfig.DownloadCover = true;
 
-        var saveData = vm.CreateSaveDocumentMetaData("unused.mamdoc");
+        var saveData = vm.CreateContentSnapshot();
         var content = JsonConvert.DeserializeObject<DocumentSaveDataV3>(saveData.Payload);
 
         Assert.NotNull(content);
@@ -78,7 +92,7 @@ public class DocumentV2G5Tests
         source.DownloadConfig.DownloadCover = true;
 
         var target = CreateVm();
-        target.LoadDocumentByMetaData(source.CreateSaveDocumentMetaData("unused.mamdoc"));
+        target.RestoreContent(source.CreateContentSnapshot());
 
         Assert.Equal("{index}_{bv}_{title}", target.NamingTemplate.Template);
         Assert.True(target.DownloadConfig.DownloadDanmaku);
@@ -93,10 +107,10 @@ public class DocumentV2G5Tests
     [InlineData(99)]
     public void 非当前内容Schema_明确拒绝(int contentSchemaVersion)
     {
-        var saveData = new DocumentSaveData(contentSchemaVersion, "{}");
+        var saveData = new DocumentContentSnapshot(contentSchemaVersion, "{}");
 
         var exception = Assert.Throws<DocumentLoadException>(() =>
-            CreateVm().LoadDocumentByMetaData(saveData));
+            CreateVm().RestoreContent(saveData));
 
         Assert.Equal("该 BiliDownloader Document 不是当前支持的 V3 格式。", exception.Message);
         Assert.DoesNotContain("{}", exception.Message, StringComparison.Ordinal);
@@ -108,12 +122,12 @@ public class DocumentV2G5Tests
     [InlineData("{")]
     public void 当前Schema正文损坏_返回稳定脱敏错误(string payload)
     {
-        var saveData = new DocumentSaveData(
+        var saveData = new DocumentContentSnapshot(
             DocumentSaveCodec.CurrentContentSchemaVersion,
             payload);
 
         var exception = Assert.Throws<DocumentLoadException>(() =>
-            CreateVm().LoadDocumentByMetaData(saveData));
+            CreateVm().RestoreContent(saveData));
 
         if (payload.Length > 0)
         {
