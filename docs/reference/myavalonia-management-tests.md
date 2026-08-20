@@ -2,9 +2,9 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前 G9 专项基线：2026-08-18，SDK 自有事件总线、每根隔离、令牌生命周期和
-> SDK 正反向编译门禁已建立。完整 Release 数量、覆盖率与 Windows Smoke 结果见
-> [G9 事件总线记录](../plan-history/host-v1/g9-sdk-event-bus.md)。数量来自命令输出，不是
+> 当前 G10 专项基线：2026-08-20，Host 文件打开、布局刷新和 Tool 显隐已经收口为根级状态、
+> 窄服务与 Dock 协调器直接调用。完整 Release 数量、覆盖率与 Windows Smoke 结果见
+> [G10 Host 内部直接协调](../plan-history/host-v1/g10-host-internal-coordination.md)。数量来自命令输出，不是
 > 永久固定门槛。
 
 ## 一键门禁
@@ -78,7 +78,7 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 
 ## 测试边界
 
-- 单元层覆盖 DI、ViewModel、文件模型、文档保存、消息和 Tool 行为。
+- 单元层覆盖 DI、ViewModel、文件模型、文档保存、直接协调、插件事件总线和 Tool 行为。
 - Headless 层覆盖生产 XAML、主题资源、绑定、DockControl、ViewLocator、
   主窗口事件、内容全屏、14 个插件语义画刷和主题动态切换。
 - PluginTests 继续覆盖 Managed-only 拒绝、Dock 布局、Document Scope、插件生命周期、宿主 DI 保护、SDK 依赖边界和 UI 共享程序集。
@@ -88,9 +88,9 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 
 ### 文件操作边界
 
-主窗口和文件树只依赖内部 `IHostStorageService`。接口只暴露路径选择、
-文件存在检查和异步文本读写，不向 ViewModel 泄漏 `IStorageFile`、主窗口或
-`System.IO.File` 静态调用。
+主窗口通过文档持久化协调器使用内部 `IHostStorageService`；文件树保留文件存在检查，并只通过
+单方法 `IHostDocumentOpenService` 提交打开意图。接口不会向文件树泄漏主窗口、Dock Factory、
+保存流程或 `IStorageFile`，生产实现仍复用同一持久化协调器。
 
 这样设计有三个原因：
 
@@ -173,11 +173,22 @@ MySmallTools 182/182。完整记录见
 DaTangAccountingHelpPlug 64/64、MySmallTools 182/182。完整记录见
 [G9 事件总线](../plan-history/host-v1/g9-sdk-event-bus.md)。
 
-### 事件总线、工具显隐与稳定 ID
+### G10 当前绿色基线
 
-`ManagementFactory` 与其他消费者直接注入 SDK 的 `IHostEventBus`。发布在调用线程同步执行，订阅者
-保存独立 `IDisposable` 令牌并在自身生命周期结束时释放；Document 的令牌随 Scope 确定释放。
-这让依赖与所有权都可见，也避免测试、多容器或初始化顺序变化时串用进程全局消息实例。
+2026-08-20 执行锁定还原、Release 零警告构建、G10 专项、三个插件完整回归、SDK 包消费和带
+Windows Smoke 的综合门禁。结果为 Unit 167、UI 37、Plugin 146，共 **350/350**；Host 行覆盖率
+80.65%、分支覆盖率 65.98%，Windows Smoke 通过。G10 MainWindow/Tool/结构专项 37/37，
+BiliDownloader 719/719、DaTangAccountingHelpPlug 64/64、MySmallTools 最终完整复跑 182/182。
+完整记录见 [G10 Host 内部直接协调](../plan-history/host-v1/g10-host-internal-coordination.md)。
+
+### 事件总线、Host 直接协调与稳定 ID
+
+插件与存在真实多消费者需求的 Document 继续注入 SDK `IHostEventBus`。发布在调用线程同步执行，
+订阅者保存独立 `IDisposable` 令牌并随自身生命周期释放；不同 HostRuntime 不共享总线。
+
+Host 自身的文件打开、布局刷新和 Tool 显隐不再使用该总线。文件树直接调用窄文档打开服务；
+`ManagementFactory` 在 Dock 变化完整提交后先同步 Tool 管理器，再通知当前主窗口刷新布局绑定。
+主窗口显式解除根级通知，结构门禁同时证明三个旧消息类型不存在且相关构造函数不再依赖公共总线。
 
 插件菜单的策略元数据、创建实例、`ContextLocator` 和
 `DockableLocator["Plug"]` 共用 `DockNameConstant.PlugGroupMenu`。

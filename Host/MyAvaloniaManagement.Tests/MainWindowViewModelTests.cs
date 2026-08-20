@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -15,7 +14,7 @@ using Newtonsoft.Json;
 namespace MyAvaloniaManagement.Tests;
 
 /// <summary>
-/// 验证主窗口 ViewModel 的布局、文件、消息和文档生命周期。
+/// 验证主窗口 ViewModel 的布局、文件、直接协调和文档生命周期。
 /// </summary>
 public sealed class MainWindowViewModelTests
 {
@@ -208,27 +207,29 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
-    public void 更新布局消息触发布局属性通知()
+    public void Factory布局提交触发布局属性通知()
     {
         using var context = CreateContextWithDocumentStrategy();
         var viewModel = context.CreateMainWindowViewModel();
         var changed = new List<string?>();
         viewModel.PropertyChanged += (_, args) => changed.Add(args.PropertyName);
 
-        context.EventBus.Publish(new UpdateLayoutMessage("refresh"));
+        context.Factory.NotifyLayoutChanged();
 
         Assert.Contains(nameof(viewModel.Layout), changed);
     }
 
     [Fact]
-    public void 打开文件消息调用路径打开流程()
+    public async Task 文件树窄服务调用路径打开流程()
     {
         using var context = CreateContextWithDocumentStrategy();
         var path = Path.Combine(context.TempDirectory, "message.testdoc");
         context.Storage.AddFile(path, Serialize("消息", "content"));
         _ = context.CreateMainWindowViewModel();
 
-        context.EventBus.Publish(new OpenFileMessage(path));
+        await context.Provider
+            .GetRequiredService<IHostDocumentOpenService>()
+            .OpenPathAsync(path);
 
         Assert.Single(GetDocuments(context));
     }
@@ -298,7 +299,7 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
-    public void OpenMessageObservesExpectedReadFailure()
+    public async Task 文件树窄服务观察预期读取失败并更新共享错误状态()
     {
         using var context = CreateContextWithDocumentStrategy();
         var path = Path.Combine(context.TempDirectory, "message-failure.testdoc");
@@ -306,10 +307,77 @@ public sealed class MainWindowViewModelTests
         context.Storage.ReadException = new IOException("simulated");
         var viewModel = context.CreateMainWindowViewModel();
 
-        context.EventBus.Publish(new OpenFileMessage(path));
+        await context.Provider
+            .GetRequiredService<IHostDocumentOpenService>()
+            .OpenPathAsync(path);
 
         Assert.True(viewModel.HasDocumentOperationError);
         Assert.Empty(GetDocuments(context));
+
+        viewModel.DismissDocumentOperationErrorCommand.Execute(null);
+
+        Assert.False(viewModel.HasDocumentOperationError);
+        Assert.Empty(viewModel.DocumentOperationError);
+    }
+
+    [Fact]
+    public async Task 文件树窄服务把意外异常转换为固定脱敏提示()
+    {
+        using var context = CreateContextWithDocumentStrategy();
+        var path = Path.Combine(context.TempDirectory, "unexpected.testdoc");
+        context.Storage.AddFile(path, Serialize("Unexpected", "content"));
+        context.Storage.ReadException = new InvalidOperationException("sensitive-details");
+        var viewModel = context.CreateMainWindowViewModel();
+
+        await context.Provider
+            .GetRequiredService<IHostDocumentOpenService>()
+            .OpenPathAsync(path);
+
+        Assert.Equal(
+            "无法打开文件：宿主处理文档时发生意外错误。原文件未被修改。",
+            viewModel.DocumentOperationError);
+        Assert.DoesNotContain("sensitive-details", viewModel.DocumentOperationError);
+        Assert.Empty(GetDocuments(context));
+    }
+
+    [Fact]
+    public void 不同HostRuntime的布局与文档状态互不串扰()
+    {
+        using var first = CreateContextWithDocumentStrategy();
+        using var second = CreateContextWithDocumentStrategy();
+        var firstViewModel = first.CreateMainWindowViewModel();
+        var secondViewModel = second.CreateMainWindowViewModel();
+        var firstChanges = new List<string?>();
+        var secondChanges = new List<string?>();
+        firstViewModel.PropertyChanged += (_, args) => firstChanges.Add(args.PropertyName);
+        secondViewModel.PropertyChanged += (_, args) => secondChanges.Add(args.PropertyName);
+
+        first.Factory.NotifyLayoutChanged();
+        first.Provider.GetRequiredService<DocumentOperationState>()
+            .Apply(DocumentOperationResult.Failure("first-only"));
+
+        Assert.Contains(nameof(firstViewModel.Layout), firstChanges);
+        Assert.Contains(nameof(firstViewModel.DocumentOperationError), firstChanges);
+        Assert.DoesNotContain(nameof(secondViewModel.Layout), secondChanges);
+        Assert.DoesNotContain(nameof(secondViewModel.DocumentOperationError), secondChanges);
+        Assert.Equal("first-only", firstViewModel.DocumentOperationError);
+        Assert.Empty(secondViewModel.DocumentOperationError);
+    }
+
+    [Fact]
+    public void 主窗口释放后不再接收根级协调通知()
+    {
+        using var context = CreateContextWithDocumentStrategy();
+        var viewModel = context.CreateMainWindowViewModel();
+        var changed = new List<string?>();
+        viewModel.PropertyChanged += (_, args) => changed.Add(args.PropertyName);
+
+        viewModel.Dispose();
+        context.Factory.NotifyLayoutChanged();
+        context.Provider.GetRequiredService<DocumentOperationState>()
+            .Apply(DocumentOperationResult.Failure("disposed"));
+
+        Assert.Empty(changed);
     }
 
     [Fact]

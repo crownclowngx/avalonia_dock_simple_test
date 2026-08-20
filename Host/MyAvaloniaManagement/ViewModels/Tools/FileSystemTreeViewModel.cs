@@ -4,11 +4,10 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
-using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.FileSystem;
-using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagement.ViewModels.Bindings;
 
 namespace MyAvaloniaManagement.ViewModels.Tools;
@@ -23,7 +22,7 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 internal sealed partial class FileSystemTreeViewModel : Tool, IFileSystemTreeViewBindings
 {
     private readonly IHostStorageService _storageService;
-    private readonly IHostEventBus _eventBus;
+    private readonly IHostDocumentOpenService _documentOpenService;
 
     [ObservableProperty]
     private ObservableCollection<FileSystemNode> _rootNodes = [];
@@ -47,18 +46,18 @@ internal sealed partial class FileSystemTreeViewModel : Tool, IFileSystemTreeVie
     private bool _showCustomFolder = false;
 
     /// <summary>
-    /// 使用可替换的存储和消息服务创建文件树工具。
+    /// 使用可替换的存储服务和窄文档打开端口创建文件树工具。
     /// </summary>
     /// <param name="storageService">文件夹选择和文件存在性服务。</param>
-    /// <param name="messengerService">向主窗体发布打开文件消息的服务。</param>
+    /// <param name="documentOpenService">直接处理宿主文档打开意图的窄服务。</param>
     /// <param name="initializeTree">是否立即枚举系统驱动器；测试可关闭以避免依赖运行机器。</param>
     internal FileSystemTreeViewModel(
         IHostStorageService storageService,
-        IHostEventBus eventBus,
+        IHostDocumentOpenService documentOpenService,
         bool initializeTree = true)
     {
         _storageService = storageService;
-        _eventBus = eventBus;
+        _documentOpenService = documentOpenService;
         Id = "fileSystemTree";
         Title = "文件系统";
         CanClose = true;
@@ -132,14 +131,14 @@ internal sealed partial class FileSystemTreeViewModel : Tool, IFileSystemTreeVie
     }
     
     /// <summary>
-    /// 当选中项是现有文件时，向主窗口发送打开请求。
+    /// 当选中项是现有文件时，直接调用宿主文档协调入口。
     /// </summary>
     [RelayCommand]
-    public void OpenFile()
+    public async Task OpenFile()
     {
         if (SelectedNode != null && _storageService.FileExists(SelectedNode.Path))
         {
-            _eventBus.Publish(new OpenFileMessage(SelectedNode.Path));
+            await _documentOpenService.OpenPathAsync(SelectedNode.Path);
         }
     }
     

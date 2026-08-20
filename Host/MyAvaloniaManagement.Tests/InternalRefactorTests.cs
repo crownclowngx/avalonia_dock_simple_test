@@ -9,6 +9,46 @@ namespace MyAvaloniaManagement.Tests;
 public sealed class InternalRefactorTests
 {
     [Fact]
+    public void G10Host内部广播类型已删除且消费者不再依赖公共事件总线()
+    {
+        var hostAssembly = typeof(MyAvaloniaManagement.ViewModels.ManagementFactory).Assembly;
+        const string removedNamespace = "MyAvaloniaManagement.Message.";
+        Assert.Null(hostAssembly.GetType(removedNamespace + "OpenFile" + "Message"));
+        Assert.Null(hostAssembly.GetType(removedNamespace + "UpdateLayout" + "Message"));
+        Assert.Null(hostAssembly.GetType(removedNamespace + "ToolVisibilityChanged" + "Message"));
+
+        Type[] directCoordinationConsumers =
+        [
+            typeof(MyAvaloniaManagement.ViewModels.MainWindowViewModel),
+            typeof(MyAvaloniaManagement.ViewModels.ManagementFactory),
+            typeof(MyAvaloniaManagement.Business.Layout.ToolDockCoordinator),
+            typeof(MyAvaloniaManagement.ViewModels.Tools.FileSystemTreeViewModel),
+            typeof(MyAvaloniaManagement.ViewModels.Tools.ToolManagementViewModel)
+        ];
+        foreach (var consumer in directCoordinationConsumers)
+        {
+            var constructorParameters = consumer
+                .GetConstructors(
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.NonPublic)
+                .SelectMany(constructor => constructor.GetParameters())
+                .Select(parameter => parameter.ParameterType);
+            Assert.DoesNotContain(
+                typeof(MyAvaloniaManagementCommon.Events.IHostEventBus),
+                constructorParameters);
+        }
+
+        var sdkEventTypes = typeof(MyAvaloniaManagementCommon.Events.IHostEventBus)
+            .Assembly.ExportedTypes
+            .Where(type => type.Namespace == "MyAvaloniaManagementCommon.Events")
+            .ToArray();
+        Assert.Equal(
+            [typeof(MyAvaloniaManagementCommon.Events.IHostEventBus)],
+            sdkEventTypes);
+    }
+
+    [Fact]
     public void StrategyMetadataIsReadOnceAndDuplicateRegistrationFailsAtomically()
     {
         var toolStrategy = new CountingToolStrategy();

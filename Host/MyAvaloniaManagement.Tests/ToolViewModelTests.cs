@@ -2,13 +2,12 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.FileSystem;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.Tests;
@@ -23,9 +22,10 @@ public sealed class ToolViewModelTests
     {
         using var context = new TestHostContext();
         var node = new FileSystemNode(context.TempDirectory);
+        var documentOpenService = new RecordingDocumentOpenService();
         var viewModel = new FileSystemTreeViewModel(
             context.Storage,
-            context.EventBus,
+            documentOpenService,
             initializeTree: false);
 
         FileSystemTreeViewModel.ExpandNode(node);
@@ -39,27 +39,25 @@ public sealed class ToolViewModelTests
     }
 
     [Fact]
-    public void 文件树只为存在文件发送打开消息()
+    public async Task 文件树只为存在文件调用窄打开服务()
     {
         using var context = new TestHostContext();
         var path = Path.Combine(context.TempDirectory, "open.txt");
         context.Storage.AddFile(path, "content");
-        var received = new List<string>();
-        using var subscription = context.EventBus.Subscribe<OpenFileMessage>(
-            message => received.Add(message.FilePath));
+        var documentOpenService = new RecordingDocumentOpenService();
         var viewModel = new FileSystemTreeViewModel(
             context.Storage,
-            context.EventBus,
+            documentOpenService,
             initializeTree: false);
         viewModel.NodeSelected(new FileSystemNode(path));
 
-        viewModel.OpenFile();
+        await viewModel.OpenFile();
 
-        Assert.Equal([path], received);
+        Assert.Equal([path], documentOpenService.Paths);
         viewModel.NodeSelected(new FileSystemNode(
             Path.Combine(context.TempDirectory, "missing.txt")));
-        viewModel.OpenFile();
-        Assert.Single(received);
+        await viewModel.OpenFile();
+        Assert.Single(documentOpenService.Paths);
     }
 
     [Fact]
@@ -69,9 +67,10 @@ public sealed class ToolViewModelTests
         var folder = Path.Combine(context.TempDirectory, "selected");
         Directory.CreateDirectory(folder);
         context.Storage.FolderPath = folder;
+        var documentOpenService = new RecordingDocumentOpenService();
         var viewModel = new FileSystemTreeViewModel(
             context.Storage,
-            context.EventBus,
+            documentOpenService,
             initializeTree: false);
 
         await viewModel.SelectFolder();
@@ -139,7 +138,7 @@ public sealed class ToolViewModelTests
     }
 
     [Fact]
-    public void 工具管理可以隐藏恢复并发送布局消息()
+    public void 工具管理隐藏恢复各提交一次布局变化()
     {
         var tool = new Tool
         {
@@ -158,14 +157,19 @@ public sealed class ToolViewModelTests
                 IconPath = string.Empty
             });
         using var context = new TestHostContext(toolStrategies: [strategy]);
-        _ = context.CreateMainWindowViewModel();
+        var mainViewModel = context.CreateMainWindowViewModel();
         var manager = Assert.IsType<ToolManagementViewModel>(
             context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
         var item = manager.ToolItems.Single(candidate =>
             candidate.ToolId == tool.Id);
         var updateCount = 0;
-        using var subscription = context.EventBus.Subscribe<UpdateLayoutMessage>(
-            _ => updateCount++);
+        mainViewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(mainViewModel.Layout))
+            {
+                updateCount++;
+            }
+        };
 
         manager.ToggleToolVisibility(item);
         Assert.False(item.IsVisible);
@@ -192,9 +196,52 @@ public sealed class ToolViewModelTests
         manager.ToggleToolVisibility(item);
 
         Assert.Equal(before, item.IsVisible);
-        context.EventBus.Publish(
-            new ToolVisibilityChangedMessage("external-change"));
-        manager.SyncToolsVisibility();
+        Assert.False(context.Factory.TrySetToolVisibility(item.ToolId, !before));
+        Assert.Equal(before, item.IsVisible);
+    }
+
+    [Fact]
+    public void Dock关闭与ShowTool直接同步管理器并各通知一次()
+    {
+        var tool = new Tool
+        {
+            Id = "myavalonia.host.tool.external-visibility",
+            Title = "外部显隐工具",
+            CanClose = true
+        };
+        var strategy = new StubToolStrategy(
+            tool,
+            new ToolMetadata(
+                new ToolTypeId(tool.Id),
+                tool.Title!,
+                ToolDockSide.Right)
+            {
+                Description = string.Empty,
+                IconPath = string.Empty
+            });
+        using var context = new TestHostContext(toolStrategies: [strategy]);
+        var mainViewModel = context.CreateMainWindowViewModel();
+        var manager = Assert.IsType<ToolManagementViewModel>(
+            context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
+        var item = manager.ToolItems.Single(candidate => candidate.ToolId == tool.Id);
+        var layoutChanges = 0;
+        mainViewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(mainViewModel.Layout))
+            {
+                layoutChanges++;
+            }
+        };
+
+        context.Factory.HideDockable(tool);
+
+        Assert.False(item.IsVisible);
+        Assert.Equal(1, layoutChanges);
+
+        Assert.True(context.Factory.ShowTool(tool.Id));
+
+        Assert.True(item.IsVisible);
+        Assert.Equal(2, layoutChanges);
     }
 
     [Fact]
@@ -259,6 +306,18 @@ public sealed class ToolViewModelTests
             {
                 yield return descendant;
             }
+        }
+    }
+
+    /// <summary>只记录文件树提交路径的窄服务替身。</summary>
+    private sealed class RecordingDocumentOpenService : IHostDocumentOpenService
+    {
+        internal List<string> Paths { get; } = [];
+
+        public Task OpenPathAsync(string filePath)
+        {
+            Paths.Add(filePath);
+            return Task.CompletedTask;
         }
     }
 }

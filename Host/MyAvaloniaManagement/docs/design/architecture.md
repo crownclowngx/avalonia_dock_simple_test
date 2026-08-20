@@ -45,9 +45,12 @@ flowchart TB
     Factory --> ToolCoordinator["ToolDockCoordinator<br/>工具状态流程"]
     Factory --> DocumentLifetime["DockDocumentLifetime<br/>关闭后释放"]
 
-    Container --> MainVM["MainWindowViewModel<br/>绑定与事件编排"]
-    EventBus --> MainVM
+    Container --> MainVM["MainWindowViewModel<br/>绑定与定向协调"]
     MainVM --> Documents["DocumentPersistenceCoordinator"]
+    Container --> OperationState["DocumentOperationState<br/>根级错误提示状态"]
+    Documents --> OperationState
+    MainVM --> OperationState
+    Factory --> MainVM
     MainVM --> Close["DocumentCloseCoordinator"]
     Documents --> Workspace["DocumentWorkspace<br/>Dock Adapter"]
     Documents --> Save["DocumentSaveService"]
@@ -189,8 +192,9 @@ sequenceDiagram
 
 各组件职责：
 
-- `MainWindowViewModel`：绑定状态、命令、主题、布局生命周期和消息编排；
-- `DocumentPersistenceCoordinator`：选择、批量打开、恢复编排和单文件错误隔离；
+- `MainWindowViewModel`：绑定状态、命令、主题、布局生命周期及根级状态的定向订阅；
+- `DocumentPersistenceCoordinator`：选择、批量打开、文件树窄入口、恢复编排和单文件错误隔离；
+- `DocumentOperationState`：保存当前 HostRuntime 唯一的文档错误条状态；文件菜单与文件树共享；
 - `DocumentSaveService`：指定 Document 的路径决策、主文件提交、状态接受和恢复备份；
 - `DocumentCloseCoordinator`：标签/窗口关闭确认、批量保存和同步关闭的异步重入；
 - `DocumentWorkspace`：把 Dock 树适配为文档区操作；
@@ -228,7 +232,12 @@ singleton，所以一个 HostRuntime 内共享、不同 HostRuntime 互相隔离
 处理器异常原样传播并停止后续派发。订阅者保存独立、幂等的 `IDisposable` 令牌：Document 随自身
 Scope 释放，插件 Coordinator 在关闭流程释放，根级窗口和 Tool 由自身 `Dispose` 及根容器兜底。
 进入发布快照的处理器可能最后执行一次，因此 Document 仍以 `IDocumentLifetime.IsClosing` 阻止迟到
-副作用。总线只负责派发，不承担订阅者生命周期；Host 内部广播的直接协调器替换属于 G10。
+副作用。总线只负责插件或 Document 中存在真实多消费者需求的派发，不承担订阅者生命周期。
+
+G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到公共总线。文件树只依赖单方法
+`IHostDocumentOpenService`，生产实现复用文档持久化协调器；`ManagementFactory` 作为 Dock 状态所有者，
+在显隐完整提交后直接同步 Tool 管理器并定向通知主窗口。两类根级通知都由瞬态主窗口在 `Dispose`
+时解除，不存在任意事件类型路由、静态订阅或跨 HostRuntime 状态。
 
 ## 7. 布局生命周期
 

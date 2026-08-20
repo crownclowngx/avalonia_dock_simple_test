@@ -19,7 +19,7 @@ internal interface IFileSystemTreeViewBindings
 
     IAsyncRelayCommand SelectFolderCommand { get; }
 
-    IRelayCommand OpenFileCommand { get; }
+    IAsyncRelayCommand OpenFileCommand { get; }
 
     IRelayCommand RefreshNodeCommand { get; }
 

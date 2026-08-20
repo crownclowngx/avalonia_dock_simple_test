@@ -11,12 +11,10 @@ using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
-using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
 
@@ -45,12 +43,24 @@ internal sealed class ManagementFactory : Factory
     private readonly DockDocumentLifetime _documentLifetime;
     private readonly DockWorkspaceBuilder _workspaceBuilder;
     private readonly ToolDockCoordinator _toolDockCoordinator;
-    private readonly IHostEventBus _eventBus;
+    private bool _suppressToolHiddenNotification;
     private readonly DocumentPersistenceStateStore _documentPersistenceStates;
     private readonly DocumentCloseCoordinator? _documentCloseCoordinator;
     private readonly DocumentRecoveryRegistry? _documentRecoveryRegistry;
 
     internal IReadOnlyDictionary<string, Tool> CreatedTools => _createdTools;
+
+    /// <summary>获取当前 HostRuntime 唯一的根 Dock；布局尚未建立时返回 null。</summary>
+    internal IRootDock? RootDock => _rootDock;
+
+    /// <summary>
+    /// 当当前根 Dock 已完整提交一次用户可见变化时触发。
+    /// </summary>
+    /// <remarks>
+    /// 这是 Factory 与主窗口之间的定向通知，不接受任意事件类型，也不会进入 Plugin SDK。
+    /// 订阅者必须按自身生命周期解除订阅，避免瞬态窗口被单例 Factory 持有。
+    /// </remarks>
+    internal event EventHandler? LayoutChanged;
 
     /// <summary>
     /// 把布局文件中的历史 Tool ID 归一化为当前规范 ID；未知值原样返回，交给运行时校验处理。
@@ -73,18 +83,10 @@ internal sealed class ManagementFactory : Factory
     /// <summary>
     /// 创建宿主管理工厂。
     /// </summary>
-    /// <param name="serviceProvider">用于激活宿主策略和插件策略的服务提供器。</param>
-    /// <param name="pluginModuleCatalog">已发现且受宿主管理的插件模块目录。</param>
     /// <param name="documentScopeManager">管理插件文档独立依赖注入作用域的服务。</param>
-    /// <param name="messengerService">发布工具显隐变化的消息服务。</param>
-    /// <remarks>
-    /// 消息服务直接注入，避免关闭工具时回到静态 ServiceProvider 查找依赖，
-    /// 从而使工厂的依赖关系可验证，也避免测试和多容器场景取到错误实例。
-    /// </remarks>
     internal ManagementFactory(
         PluginRegistry extensions,
         DocumentScopeManager documentScopeManager,
-        IHostEventBus eventBus,
         DocumentPersistenceStateStore? documentPersistenceStates = null,
         DocumentCloseCoordinator? documentCloseCoordinator = null,
         DocumentRecoveryRegistry? documentRecoveryRegistry = null)
@@ -93,15 +95,13 @@ internal sealed class ManagementFactory : Factory
         ArgumentNullException.ThrowIfNull(documentScopeManager);
         _documentLifetime = new DockDocumentLifetime(documentScopeManager);
         _workspaceBuilder = new DockWorkspaceBuilder(this);
-        _eventBus = eventBus;
         _documentPersistenceStates = documentPersistenceStates ?? new DocumentPersistenceStateStore();
         _documentCloseCoordinator = documentCloseCoordinator;
         _documentRecoveryRegistry = documentRecoveryRegistry;
         _toolDockCoordinator = new ToolDockCoordinator(
             this,
             _workspaceBuilder,
-            GetToolAlignment,
-            eventBus);
+            GetToolAlignment);
         _extensions = extensions;
         _createdTools = [];
         // 启用 HideToolsOnClose：关闭工具时移入 HiddenDockables 而非真正移除，
@@ -385,6 +385,80 @@ internal sealed class ManagementFactory : Factory
         => _toolDockCoordinator.ShowTool(_rootDock, _createdTools, toolId);
 
     /// <summary>
+    /// 将 Tool 管理器提交的目标可见状态应用到当前 Dock 树。
+    /// </summary>
+    /// <returns>仅当目标存在、允许关闭且实际完成状态变化时返回 true。</returns>
+    /// <remarks>
+    /// 隐藏动作最终会回调 <see cref="OnDockableHidden"/>。本方法在调用期间暂时抑制该回调的
+    /// 通知，等活动项调整也完成后再统一提交一次变化；恢复动作则在成功附着后直接提交。
+    /// 这样主窗口不会看到半完成布局，也不会为一次用户操作收到两次刷新。
+    /// </remarks>
+    internal bool TrySetToolVisibility(string toolId, bool isVisible)
+    {
+        if (_rootDock is null ||
+            string.IsNullOrWhiteSpace(toolId) ||
+            !_createdTools.TryGetValue(toolId, out var tool) ||
+            !tool.CanClose)
+        {
+            return false;
+        }
+
+        var currentDock = DockTreeNavigator.FindToolDock(_rootDock, tool);
+        var isPinned = DockTreeNavigator.IsToolPinned(_rootDock, tool);
+        var isCurrentlyVisible = currentDock is not null || isPinned;
+        if (isCurrentlyVisible == isVisible)
+        {
+            return false;
+        }
+
+        if (isVisible)
+        {
+            if (!_toolDockCoordinator.RestoreTool(_rootDock, tool))
+            {
+                return false;
+            }
+
+            NotifyLayoutChanged();
+            return true;
+        }
+
+        var nextActive = currentDock?.VisibleDockables?
+            .FirstOrDefault(candidate => !ReferenceEquals(candidate, tool));
+        _suppressToolHiddenNotification = true;
+        try
+        {
+            HideDockable(tool);
+            if (currentDock is not null)
+            {
+                currentDock.ActiveDockable = nextActive;
+            }
+        }
+        finally
+        {
+            _suppressToolHiddenNotification = false;
+        }
+
+        NotifyLayoutChanged();
+        return true;
+    }
+
+    /// <summary>
+    /// 提交一次已经完成的 Dock 变化：先让 Tool 管理器读取最终 Dock 树，再通知主窗口刷新布局绑定。
+    /// </summary>
+    internal void NotifyLayoutChanged()
+    {
+        if (_createdTools.TryGetValue(
+                HostExtensionIds.ToolManagement.Value,
+                out var managementTool) &&
+            managementTool is IToolVisibilityStateSink visibilityStateSink)
+        {
+            visibilityStateSink.SyncToolsVisibility();
+        }
+
+        LayoutChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
     /// Dock 在 Top/Bottom 拆分时会创建局部临时 ToolDock。将其中工具立即迁移到
     /// 工作区全宽的稳定停靠点，使拖拽完成后的结构与快照恢复结构保持一致。
     /// </summary>
@@ -525,31 +599,22 @@ internal sealed class ManagementFactory : Factory
     }
 
     /// <summary>
-    /// 重写 OnDockableHidden：当工具被隐藏（如用户点击 X 关闭）时，
-    /// 通知 ToolManagementViewModel 同步其 CheckBox 状态
+    /// 当 Tool 通过关闭按钮等 Dock 原生入口隐藏后，提交布局和可见状态变化。
     /// </summary>
     /// <remarks>
-    /// 只发布宿主管理工具的变化，并使用构造函数注入的消息服务，
-    /// 避免静态服务定位器带来的隐藏依赖。
+    /// 只处理当前 Factory 创建的 Tool，Document 和未知 Dockable 不进入此协调链。
+    /// Tool 管理器主动隐藏时由 <see cref="TrySetToolVisibility"/> 在全部步骤完成后统一通知，
+    /// 因此这里尊重短暂的抑制标志，保证一次变化只有一个提交点。
     /// </remarks>
     public override void OnDockableHidden(IDockable? dockable)
     {
         base.OnDockableHidden(dockable);
         
-        if (dockable == null) return;
-        
-        // 只对我们管理的工具发送通知（排除 Document 等其他 Dockable）
-        if (dockable is Tool && _createdTools.Values.Contains(dockable))
+        if (!_suppressToolHiddenNotification &&
+            dockable is Tool &&
+            _createdTools.Values.Contains(dockable))
         {
-            try
-            {
-                _eventBus.Publish(
-                    new ToolVisibilityChangedMessage("ToolHidden"));
-            }
-            catch
-            {
-                // 服务未初始化时忽略
-            }
+            NotifyLayoutChanged();
         }
     }
 

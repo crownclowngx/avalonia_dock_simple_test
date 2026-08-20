@@ -6,7 +6,9 @@ using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Dock.Avalonia.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Bindings;
@@ -102,7 +104,8 @@ public sealed class ApplicationAndWindowTests
         var banner = view.FindControl<Border>("DocumentOperationErrorBanner")!;
 
         Assert.False(banner.IsVisible);
-        context.ViewModel.DocumentOperationError = "测试错误，原文件未修改。";
+        context.Provider.GetRequiredService<DocumentOperationState>()
+            .Apply(DocumentOperationResult.Failure("测试错误，原文件未修改。"));
         Assert.True(banner.IsVisible);
         context.ViewModel.DismissDocumentOperationErrorCommand.Execute(null);
         Assert.False(banner.IsVisible);

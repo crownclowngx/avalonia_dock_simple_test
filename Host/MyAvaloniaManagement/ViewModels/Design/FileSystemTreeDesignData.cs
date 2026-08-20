@@ -29,7 +29,7 @@ internal sealed class FileSystemTreeDesignData : IFileSystemTreeViewBindings
         RootNodes = new ObservableCollection<FileSystemNode> { documents };
         SelectedNode = documents;
         SelectFolderCommand = new AsyncRelayCommand(() => System.Threading.Tasks.Task.CompletedTask);
-        OpenFileCommand = new RelayCommand(() => { });
+        OpenFileCommand = new AsyncRelayCommand(() => System.Threading.Tasks.Task.CompletedTask);
         RefreshNodeCommand = new RelayCommand(() => { });
         RefreshAllCommand = new RelayCommand(() => { });
     }
@@ -42,7 +42,7 @@ internal sealed class FileSystemTreeDesignData : IFileSystemTreeViewBindings
 
     public IAsyncRelayCommand SelectFolderCommand { get; }
 
-    public IRelayCommand OpenFileCommand { get; }
+    public IAsyncRelayCommand OpenFileCommand { get; }
 
     public IRelayCommand RefreshNodeCommand { get; }
 

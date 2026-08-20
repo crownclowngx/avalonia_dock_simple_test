@@ -27,7 +27,7 @@ internal readonly record struct DocumentOperationResult(
 
 /// <summary>
 /// 串行编排文档的打开与保存，并将预期的文件系统故障转换为稳定的操作结果。
-/// 这样窗口 ViewModel 只处理绑定和消息，且并发请求不会重复打开或互相覆盖状态。
+/// 这样窗口 ViewModel 只处理绑定和定向协调，且并发请求不会重复打开或互相覆盖状态。
 /// </summary>
 internal sealed class DocumentPersistenceCoordinator(
     ManagementFactory factory,
@@ -37,7 +37,8 @@ internal sealed class DocumentPersistenceCoordinator(
     DocumentPersistenceStateStore persistenceStates,
     DocumentRecoveryRegistry recoveryRegistry,
     IDocumentInteractionService interactionService,
-    DocumentEnvelopeSerializer serializer)
+    DocumentEnvelopeSerializer serializer,
+    DocumentOperationState operationState) : IHostDocumentOpenService
 {
     private readonly DocumentWorkspace _workspace = new(
         factory,
@@ -68,6 +69,26 @@ internal sealed class DocumentPersistenceCoordinator(
         }
 
         return await OpenAllAsync([filePath], root);
+    }
+
+    /// <summary>
+    /// 处理来自文件树的直接打开请求，并把用户可见结果提交到共享状态。
+    /// </summary>
+    /// <remarks>
+    /// 预期的持久化错误仍由内部打开流程转换为稳定结果；只有编程错误或第三方策略意外异常
+    /// 会进入兜底分支。这个边界替代了原先主窗口对广播消息的 fire-and-forget 处理，因此
+    /// 必须在异步命令内部观察异常，避免产生未观察任务，同时不能向界面泄漏异常正文。
+    /// </remarks>
+    async Task IHostDocumentOpenService.OpenPathAsync(string filePath)
+    {
+        try
+        {
+            operationState.Apply(await OpenPathAsync(filePath, factory.RootDock));
+        }
+        catch (Exception exception)
+        {
+            operationState.ReportUnexpectedOpenFailure(exception);
+        }
     }
 
     internal async Task<DocumentOperationResult> SaveActiveAsync()

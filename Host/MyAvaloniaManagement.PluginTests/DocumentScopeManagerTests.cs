@@ -91,8 +91,7 @@ public sealed class DocumentScopeManagerTests
         var extensions = new PluginRegistry([], []);
         var factory = new ManagementFactory(
             extensions,
-            manager,
-            new MyAvaloniaManagement.Business.Events.HostEventBus());
+            manager);
         var document = manager.CreateDocument<TrackedDocument>();
 
         factory.OnDockableClosed(document);

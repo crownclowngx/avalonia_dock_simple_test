@@ -5,9 +5,7 @@ using Avalonia;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagement.Message;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagementCommon.Events;
 
 namespace MyAvaloniaManagement.Business.Layout;
 
@@ -18,8 +16,7 @@ namespace MyAvaloniaManagement.Business.Layout;
 internal sealed class ToolDockCoordinator(
     ManagementFactory factory,
     DockWorkspaceBuilder workspaceBuilder,
-    Func<string, Alignment> getAlignment,
-    IHostEventBus eventBus)
+    Func<string, Alignment> getAlignment)
 {
     private bool _normalizingVerticalDock;
 
@@ -113,7 +110,7 @@ internal sealed class ToolDockCoordinator(
             factory.SetActiveDockable(tool);
         }
 
-        eventBus.Publish(new UpdateLayoutMessage("ShowTool"));
+        factory.NotifyLayoutChanged();
         return true;
     }
 

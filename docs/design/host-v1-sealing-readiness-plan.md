@@ -3,7 +3,7 @@
 > 状态：待整改，不满足封板条件
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`
-> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G9 已于 2026-08-18 完成；G10–G16 待完成
+> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G9 已于 2026-08-18 完成，G10 已于 2026-08-20 完成；G11–G16 待完成
 > 适用范围：`MyAvaloniaManagement` 宿主、`MyAvaloniaManagementCommon`、插件装载与注册边界、Document/Tool 公共契约和发布门禁
 > 不评审：现有插件的领域业务正确性、第三方插件市场、运行时热卸载和恶意插件隔离
 
@@ -15,8 +15,9 @@
 版本线和 v1 数据根，G2 已完成 Host public 面与静态服务定位收口，G3 也已形成正式 SDK 包、
 可选 UI Profile 与宿主样式契约，但 **尚不能封板**。G5、G6 已完成显式贡献和宿主 DI 保护，
 G7 已建立唯一 Document 信封 v1，G8 已将内容契约与宿主路径/所有权分离，G9 已建立 SDK 自有且
-每个 HostRuntime 隔离的同步事件总线。剩余主要问题包括 Host 内部广播尚待删除、插件部署与兼容
-门禁尚未形成单一发布入口。Legacy 二进制激活已由 G4 删除。
+每个 HostRuntime 隔离的同步事件总线，G10 已删除 Host 文件打开、布局刷新和 Tool 显隐广播，
+改由根级状态与 Dock 协调器直接协作。剩余主要问题包括插件部署与兼容门禁尚未形成单一发布入口。
+Legacy 二进制激活已由 G4 删除。
 
 本次封板采用以下一次性定基线策略：
 
@@ -114,6 +115,12 @@ G9 完成后的当前基线为 Unit 162、UI 37、Plugin 146，共 **345/345 通
 BiliDownloader 719/719、DaTangAccountingHelpPlug 64/64、MySmallTools 182/182 通过；SDK 包消费
 正反向门禁通过，关键事件总线文件行覆盖率门禁不低于 90%。完整设计、依赖所有权、并发语义和
 门禁记录见 [G9 SDK 事件总线](../plan-history/host-v1/g9-sdk-event-bus.md)。
+
+G10 完成后的当前基线为 Unit 167、UI 37、Plugin 146，共 **350/350 通过**；Host 行覆盖率
+80.65%、分支覆盖率 65.98%，Windows Smoke 通过。G10 MainWindow/Tool/结构专项 37/37，
+BiliDownloader 719/719、DaTangAccountingHelpPlug 64/64、MySmallTools 最终完整复跑 182/182 通过；
+SDK 包消费正反向门禁和锁定还原均通过。完整调用流、SOLID 取舍、时序复跑记录和门禁证据见
+[G10 Host 内部直接协调](../plan-history/host-v1/g10-host-internal-coordination.md)。
 
 ### 2.3 当前风险清单
 
@@ -394,12 +401,17 @@ StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 A
 
 **优先级：高；依赖：G9**
 
+**状态：已完成（2026-08-20）**。文件树通过 internal 窄端口直接进入文档持久化协调器，错误条由
+每 HostRuntime 独享的状态持有；Tool 显隐和布局提交统一由 `ManagementFactory`/`ToolDockCoordinator`
+完成。三个 Host 消息类型及其发送、订阅已删除，Plugin SDK `IHostEventBus` 和插件内部事件保持不变。
+
 - 目标：将文件打开、布局刷新和 Tool 显隐改为直接的宿主协调器或窄服务调用。
 - 修改边界：`OpenFileMessage`、`UpdateLayoutMessage`、`ToolVisibilityChangedMessage` 及发送/接收方。
 - 验收：文件树打开文件、Tool 隐藏恢复、布局更新和主窗口命令行为不变；Host 内部不再通过公共事件类型绕行。
 - 验收命令：运行 `dotnet test Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj -c Release --filter "FullyQualifiedName~MainWindowViewModelTests|FullyQualifiedName~ToolViewModelTests"`，并确认 `rg -n "OpenFileMessage|UpdateLayoutMessage|ToolVisibilityChangedMessage" Host` 无结果。
 - 完成定义：跨插件事件必须有真实跨插件消费者才可进入 SDK；BiliDownloader 等插件内部消息继续留在插件程序集。
 - 版本规则：内存消息不加统一 `Version`；破坏语义时创建新类型或提升 SDK 主版本。
+- 详细记录：见 [G10 Host 内部直接协调](../plan-history/host-v1/g10-host-internal-coordination.md)。
 
 ### G11：删除低价值 public 面和占位代码
 

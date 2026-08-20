@@ -68,6 +68,10 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<DocumentPersistenceStateStore>();
         services.AddSingleton<DocumentRecoveryRegistry>();
         services.AddSingleton<DocumentSaveService>();
+        services.AddSingleton<DocumentOperationState>();
+        services.AddSingleton<DocumentPersistenceCoordinator>();
+        services.AddSingleton<IHostDocumentOpenService>(provider =>
+            provider.GetRequiredService<DocumentPersistenceCoordinator>());
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
         services.AddSingleton<DocumentCloseCoordinator>();
         RegisterHostContributions(services, registryBuilder);
@@ -84,7 +88,6 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(provider => new ManagementFactory(
             provider.GetRequiredService<PluginRegistry>(),
             provider.GetRequiredService<DocumentScopeManager>(),
-            provider.GetRequiredService<IHostEventBus>(),
             provider.GetRequiredService<DocumentPersistenceStateStore>(),
             provider.GetRequiredService<DocumentCloseCoordinator>(),
             provider.GetRequiredService<DocumentRecoveryRegistry>()));
@@ -193,13 +196,12 @@ internal static class ServiceCollectionExtensions
     {
         services.AddTransient(provider => new FileSystemTreeViewModel(
             provider.GetRequiredService<IHostStorageService>(),
-            provider.GetRequiredService<IHostEventBus>()));
+            provider.GetRequiredService<IHostDocumentOpenService>()));
         services.AddTransient(provider => new PlugGroupMenuViewModel(
             provider.GetRequiredService<ManagementFactory>(),
             provider.GetRequiredService<PluginMenuService>()));
         services.AddTransient(provider => new ToolManagementViewModel(
-            provider.GetRequiredService<ManagementFactory>(),
-            provider.GetRequiredService<IHostEventBus>()));
+            provider.GetRequiredService<ManagementFactory>()));
         services.AddTransient(provider => new PluginStatusViewModel(
             provider.GetRequiredService<PluginRegistry>(),
             provider.GetRequiredService<PluginLifecycleManager>(),
@@ -209,16 +211,10 @@ internal static class ServiceCollectionExtensions
         services.AddTransient(provider => new MainWindowViewModel(
             provider.GetRequiredService<ManagementFactory>(),
             provider.GetRequiredService<PluginMenuService>(),
-            provider.GetRequiredService<IHostEventBus>(),
             provider.GetRequiredService<DockLayoutLifecycle>(),
-            provider.GetRequiredService<IHostStorageService>(),
             provider.GetRequiredService<ApplicationThemeService>(),
-            provider.GetRequiredService<DocumentSaveService>(),
-            provider.GetRequiredService<DocumentOperationGate>(),
-            provider.GetRequiredService<DocumentPersistenceStateStore>(),
-            provider.GetRequiredService<DocumentRecoveryRegistry>(),
-            provider.GetRequiredService<IDocumentInteractionService>(),
-            provider.GetRequiredService<DocumentEnvelopeSerializer>(),
+            provider.GetRequiredService<DocumentPersistenceCoordinator>(),
+            provider.GetRequiredService<DocumentOperationState>(),
             provider.GetRequiredService<DocumentCloseCoordinator>()));
 
         // 内置策略只依赖“创建某类对象”的窄工厂，不依赖整个 IServiceProvider。

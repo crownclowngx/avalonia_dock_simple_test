@@ -10,36 +10,30 @@ using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
-using MyAvaloniaManagement.Business.Storage;
-using MyAvaloniaManagement.Message;
 using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagement.ViewModels.Bindings;
 
 namespace MyAvaloniaManagement.ViewModels;
 
 /// <summary>
-/// 负责主窗口绑定状态、命令和消息编排，并把 Dock 布局及文档持久化委托给内部服务。
+/// 负责主窗口绑定状态、命令和定向协调，并把 Dock 布局及文档持久化委托给内部服务。
 /// 该边界让 ViewModel 保持 UI 协调职责，不直接承担文件事务和 Dock 树遍历。
 /// </summary>
 internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarget, IMainWindowViewBindings, IDisposable
 {
     private readonly ManagementFactory _factory;
     private readonly PluginMenuService _pluginMenuService;
-    private readonly IHostEventBus _eventBus;
-    private readonly List<IDisposable> _eventSubscriptions = [];
     private readonly DockLayoutLifecycle _layoutLifecycle;
     private readonly ApplicationThemeService _themeService;
     private readonly DocumentPersistenceCoordinator _documents;
+    private readonly DocumentOperationState _documentOperationState;
     private ApplicationThemeMode _themeMode;
     private IRootDock? _layout;
 
-    [ObservableProperty]
-    private string _documentOperationError = string.Empty;
+    public string DocumentOperationError => _documentOperationState.Error;
 
-    public bool HasDocumentOperationError =>
-        !string.IsNullOrWhiteSpace(DocumentOperationError);
+    public bool HasDocumentOperationError => _documentOperationState.HasError;
 
     public IRootDock? Layout
     {
@@ -59,42 +53,40 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     internal MainWindowViewModel(
         ManagementFactory factory,
         PluginMenuService pluginMenuService,
-        IHostEventBus eventBus,
         DockLayoutLifecycle layoutLifecycle,
-        IHostStorageService storageService,
         ApplicationThemeService themeService,
-        DocumentSaveService saveService,
-        DocumentOperationGate operationGate,
-        DocumentPersistenceStateStore persistenceStates,
-        DocumentRecoveryRegistry recoveryRegistry,
-        IDocumentInteractionService interactionService,
-        DocumentEnvelopeSerializer documentSerializer,
+        DocumentPersistenceCoordinator documents,
+        DocumentOperationState documentOperationState,
         DocumentCloseCoordinator documentCloseCoordinator)
     {
         _factory = factory ?? throw new ArgumentNullException(nameof(factory));
         _pluginMenuService = pluginMenuService ??
             throw new ArgumentNullException(nameof(pluginMenuService));
-        _eventBus = eventBus ??
-            throw new ArgumentNullException(nameof(eventBus));
         _layoutLifecycle = layoutLifecycle ??
             throw new ArgumentNullException(nameof(layoutLifecycle));
-        ArgumentNullException.ThrowIfNull(storageService);
         _themeService = themeService ??
             throw new ArgumentNullException(nameof(themeService));
-        _documents = new DocumentPersistenceCoordinator(
-            factory,
-            storageService,
-            saveService,
-            operationGate,
-            persistenceStates,
-            recoveryRegistry,
-            interactionService,
-            documentSerializer);
+        _documents = documents ?? throw new ArgumentNullException(nameof(documents));
+        _documentOperationState = documentOperationState ??
+            throw new ArgumentNullException(nameof(documentOperationState));
         _documentCloseCoordinator = documentCloseCoordinator;
         _themeMode = _themeService.CurrentMode;
 
-        Layout = _layoutLifecycle.Prepare(_factory);
-        RegisterEventHandlers();
+        // Factory 和文档状态都由根容器持有，而主窗口是瞬态对象。先登记定向通知，
+        // Dispose 时再成对解除，避免单例服务通过委托延长窗口生命周期。
+        _factory.LayoutChanged += OnLayoutChanged;
+        _documentOperationState.Changed += OnDocumentOperationStateChanged;
+        try
+        {
+            Layout = _layoutLifecycle.Prepare(_factory);
+        }
+        catch
+        {
+            // 布局准备失败时构造函数不会返回，DI 容器也就没有对象可供释放。
+            // 必须在这里主动撤销已登记的委托，避免单例状态持有一个半构造窗口。
+            ReleaseCoordinationSubscriptions();
+            throw;
+        }
     }
 
     private readonly DocumentCloseCoordinator _documentCloseCoordinator;
@@ -140,57 +132,28 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
                 document is ISavableDocument &&
                 document is IDocumentSaveState { IsDirty: true });
 
-    private void RegisterEventHandlers()
-    {
-        try
-        {
-            _eventSubscriptions.Add(_eventBus.Subscribe<OpenFileMessage>(
-                message => ObserveOpenMessage(message.FilePath)));
-            _eventSubscriptions.Add(_eventBus.Subscribe<UpdateLayoutMessage>(
-                _ => OnPropertyChanged(nameof(Layout))));
-        }
-        catch
-        {
-            // 多条订阅必须具有失败原子性：若后续订阅失败，先释放已经成功登记的令牌，
-            // 再把原异常交给组合根。这里不隐藏契约错误，也不留下半初始化对象的强引用。
-            ReleaseEventSubscriptions();
-            throw;
-        }
-    }
-
+    /// <summary>
+    /// 解除当前瞬态窗口对根级协调对象的定向通知。
+    /// </summary>
     public void Dispose()
     {
-        // ViewModel 由根容器创建并跟踪。逆序释放令牌与构造顺序对称；每个令牌自身幂等，
-        // 因此测试或宿主重复释放不会误删其他订阅者。
-        ReleaseEventSubscriptions();
+        ReleaseCoordinationSubscriptions();
     }
 
-    private void ReleaseEventSubscriptions()
+    private void ReleaseCoordinationSubscriptions()
     {
-        for (var index = _eventSubscriptions.Count - 1; index >= 0; index--)
-        {
-            _eventSubscriptions[index].Dispose();
-        }
-
-        _eventSubscriptions.Clear();
+        // .NET 事件解除不存在匹配委托时是安全的，因此该入口天然支持重复 Dispose。
+        _factory.LayoutChanged -= OnLayoutChanged;
+        _documentOperationState.Changed -= OnDocumentOperationStateChanged;
     }
 
-    private void ObserveOpenMessage(string filePath) =>
-        _ = ObserveOpenMessageAsync(filePath);
+    private void OnLayoutChanged(object? sender, EventArgs args) =>
+        OnPropertyChanged(nameof(Layout));
 
-    private async Task ObserveOpenMessageAsync(string filePath)
+    private void OnDocumentOperationStateChanged(object? sender, EventArgs args)
     {
-        try
-        {
-            await OpenDocumentByPath(filePath);
-        }
-        catch (Exception exception)
-        {
-            DocumentOperationError =
-                "无法打开文件：宿主处理文档时发生意外错误。原文件未被修改。";
-            Console.Error.WriteLine(
-                $"DocumentPersistence errorCode=DOCUMENT_MESSAGE_FAILED type={exception.GetType().Name}");
-        }
+        OnPropertyChanged(nameof(DocumentOperationError));
+        OnPropertyChanged(nameof(HasDocumentOperationError));
     }
 
     [RelayCommand]
@@ -200,18 +163,18 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     [RelayCommand]
     public async Task OpenDocument()
     {
-        ApplyOperationResult(await _documents.OpenSelectedAsync(Layout));
+        _documentOperationState.Apply(await _documents.OpenSelectedAsync(Layout));
     }
 
     public async Task OpenDocumentByPath(string filePath)
     {
-        ApplyOperationResult(await _documents.OpenPathAsync(filePath, Layout));
+        _documentOperationState.Apply(await _documents.OpenPathAsync(filePath, Layout));
     }
 
     [RelayCommand]
     public async Task SaveDocument()
     {
-        ApplyOperationResult(await _documents.SaveActiveAsync());
+        _documentOperationState.Apply(await _documents.SaveActiveAsync());
     }
 
     [RelayCommand]
@@ -235,18 +198,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
 
     [RelayCommand]
     private void DismissDocumentOperationError() =>
-        DocumentOperationError = string.Empty;
-
-    partial void OnDocumentOperationErrorChanged(string value) =>
-        OnPropertyChanged(nameof(HasDocumentOperationError));
-
-    private void ApplyOperationResult(DocumentOperationResult result)
-    {
-        if (result.ShouldUpdateError)
-        {
-            DocumentOperationError = result.Error;
-        }
-    }
+        _documentOperationState.Clear();
 
     public void DragOver(object? sender, DragEventArgs e)
     {

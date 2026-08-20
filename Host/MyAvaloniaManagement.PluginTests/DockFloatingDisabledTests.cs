@@ -123,8 +123,7 @@ public sealed class DockFloatingDisabledTests
         var extensions = new PluginRegistry([], []);
         var factory = new ManagementFactory(
             extensions,
-            manager,
-            new MyAvaloniaManagement.Business.Events.HostEventBus());
+            manager);
         return new FactoryContext(provider, factory);
     }
 
