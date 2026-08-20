@@ -9,26 +9,30 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class CurrentManagedPluginLoadingTests
 {
     [Theory]
-    [InlineData("BiliDownloader/BiliDownloader", "BiliDownloader", "myavalonia.plugin.bili-downloader")]
-    [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "myavalonia.plugin.my-plug-test")]
-    [InlineData("DaTangAccountingHelpPlug/DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "myavalonia.plugin.datang-accounting-help")]
-    [InlineData("MySmallTools/MySmallTools", "MySmallTools", "myavalonia.plugin.my-small-tools")]
+    [InlineData("BiliDownloader/BiliDownloader", "BiliDownloader", "BiliDownloader", "myavalonia.plugin.bili-downloader")]
+    [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "MyPlugTest", "myavalonia.plugin.my-plug-test")]
+    [InlineData("DaTangAccountingHelpPlug/DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTang", "myavalonia.plugin.datang-accounting-help")]
+    [InlineData("MySmallTools/MySmallTools", "MySmallTools", "SmallTools", "myavalonia.plugin.my-small-tools")]
     public void 当前Managed插件可从真实构建目录发现唯一模块(
         string projectPath,
         string assemblyName,
+        string directoryName,
         string pluginId)
     {
         var configuration = new DirectoryInfo(AppContext.BaseDirectory)
             .Parent?.Name
             ?? throw new InvalidOperationException("无法确定测试构建配置。");
-        var pluginDirectory = Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..", "..", "..", "..", "..",
-            "Plugins",
-            projectPath.Replace('/', Path.DirectorySeparatorChar),
-            "bin",
-            configuration,
-            "net10.0"));
+        var packageRoot = Environment.GetEnvironmentVariable("MYAVALONIA_G12_PACKAGE_ROOT");
+        var pluginDirectory = string.IsNullOrWhiteSpace(packageRoot)
+            ? Path.GetFullPath(Path.Combine(
+                AppContext.BaseDirectory,
+                "..", "..", "..", "..", "..",
+                "Plugins",
+                projectPath.Replace('/', Path.DirectorySeparatorChar),
+                "bin",
+                configuration,
+                "net10.0"))
+            : Path.GetFullPath(Path.Combine(packageRoot, "Controls", directoryName));
         var pluginAssemblyPath = Path.Combine(
             pluginDirectory,
             assemblyName + ".dll");

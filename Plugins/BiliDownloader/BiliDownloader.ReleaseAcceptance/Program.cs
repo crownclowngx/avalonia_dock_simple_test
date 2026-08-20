@@ -67,8 +67,9 @@ internal static class Program
                 break;
             case "verify-package":
                 var package = RequiredOption(args, "--package");
+                var manifest = RequiredOption(args, "--manifest");
                 context = new ReleaseGateContext(sandbox, null, cookie);
-                gates = [new PackageVerificationGate(package)];
+                gates = [new PackageVerificationGate(package, manifest)];
                 break;
             case "media-output":
                 context = new ReleaseGateContext(sandbox, null, null);
@@ -105,7 +106,7 @@ internal static class Program
         Console.Error.WriteLine("用法：");
         Console.Error.WriteLine("  live --sandbox <目录> --report <JSON>");
         Console.Error.WriteLine("  scan --root <目录> --sandbox <目录> --report <JSON>");
-        Console.Error.WriteLine("  verify-package --package <ZIP> --sandbox <目录> --report <JSON>");
+        Console.Error.WriteLine("  verify-package --package <ZIP> --manifest <JSON> --sandbox <目录> --report <JSON>");
         Console.Error.WriteLine("  media-output --ffmpeg <ffmpeg.exe> --ffprobe <ffprobe.exe> --sandbox <目录> --report <JSON>");
         Console.Error.WriteLine("  bandwidth --sandbox <目录> --report <JSON>");
     }

@@ -3,20 +3,20 @@
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <!-- 插件只拥有一个发布版本事实，其余程序集元数据必须从这里派生。 -->
+        <!-- 插件只声明自身发布事实；清单、版本映射和部署由统一协议负责。 -->
+        <ManagedPlugin>true</ManagedPlugin>
+        <ManagedPluginId>myavalonia.plugin.datang-accounting-help</ManagedPluginId>
+        <ManagedPluginDirectoryName>DaTang</ManagedPluginDirectoryName>
         <PluginVersion>1.0.0</PluginVersion>
-        <Version>$(PluginVersion)</Version>
-        <FileVersion>$(PluginVersion).0</FileVersion>
-        <InformationalVersion>$(PluginVersion)</InformationalVersion>
-        <AssemblyVersion>$(PluginVersion).0</AssemblyVersion>
+        <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
+        <ManagedPluginHostApiMinInclusive>1.0.0</ManagedPluginHostApiMinInclusive>
+        <ManagedPluginHostApiMaxExclusive>2.0.0</ManagedPluginHostApiMaxExclusive>
+        <ManagedPluginCommonContractMinInclusive>1.0.0</ManagedPluginCommonContractMinInclusive>
+        <ManagedPluginCommonContractMaxExclusive>2.0.0</ManagedPluginCommonContractMaxExclusive>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\..\..\Host\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Update="plugin.manifest.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>
@@ -39,44 +39,8 @@
         <AvaloniaResource Include="Styles/**" />
     </ItemGroup>
 
-    <!-- 构建后将插件及其私有运行时依赖部署到宿主 Controls/DaTang 目录。 -->
-    <PropertyGroup>
-        <HostProjectOutputDir>$(MSBuildThisFileDirectory)..\..\..\Host\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
-        <PluginDeployDir>$(HostProjectOutputDir)\Controls\DaTang</PluginDeployDir>
-    </PropertyGroup>
-
-    <Target Name="DeployDaTangPluginToHost"
-            AfterTargets="Build"
-            DependsOnTargets="ResolveReferences"
-            Condition="'$(SkipPluginDeploy)' != 'true'">
-        <ItemGroup>
-            <DaTangPluginFiles Include="$(TargetPath)" />
-            <DaTangPluginFiles Include="$(TargetDir)$(AssemblyName).pdb"
-                               Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
-            <DaTangPluginFiles Include="$(TargetDir)$(AssemblyName).deps.json"
-                               Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
-            <DaTangPluginFiles Include="$(TargetDir)plugin.manifest.json" />
-
-            <!--
-              宿主已提供 Avalonia、Dock、Common、DI 和 Microsoft.Extensions.Configuration。
-              此处只部署 EPPlus 在普通桌面宿主中不能由共享运行时满足的私有依赖。
-            -->
-            <DaTangPluginManaged Include="@(RuntimeCopyLocalItems)"
-                                 Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'EPPlus' Or
-                                            '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'EPPlus.Interfaces' Or
-                                            '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Microsoft.IO.RecyclableMemoryStream' Or
-                                            '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'System.Security.Cryptography.Pkcs' Or
-                                            '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'System.Security.Cryptography.Xml'" />
-        </ItemGroup>
-
-        <!-- 清理旧目录，避免依赖升级后残留已删除或改名的程序集。 -->
-        <RemoveDir Directories="$(PluginDeployDir)" />
-        <MakeDir Directories="$(PluginDeployDir)" />
-        <Copy SourceFiles="@(DaTangPluginFiles)"
-              DestinationFolder="$(PluginDeployDir)"
-              SkipUnchangedFiles="true" />
-        <Copy SourceFiles="@(DaTangPluginManaged)"
-              DestinationFiles="@(DaTangPluginManaged->'$(PluginDeployDir)\%(DestinationSubPath)')"
-              SkipUnchangedFiles="true" />
-    </Target>
+    <ItemGroup>
+      <!-- EPPlus 的业务依赖由插件拥有；宿主共享的 DI、Avalonia 和 Dock 不进入目录。 -->
+      <ManagedPluginPrivatePackage Include="EPPlus;EPPlus.Interfaces;Microsoft.IO.RecyclableMemoryStream;System.Security.Cryptography.Pkcs;System.Security.Cryptography.Xml" />
+    </ItemGroup>
 </Project>

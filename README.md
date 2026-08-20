@@ -69,7 +69,9 @@ dotnet build Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj -c Debug
 dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug --no-build
 ```
 
-插件项目的构建目标会把入口程序集、清单和私有运行时依赖部署到 Host 输出目录的独立 `Controls/<PluginFolder>/`。需要体验其他插件时，先构建对应插件项目，再使用 `--no-build` 启动 Host。
+统一 Managed Plugin 构建协议会生成严格清单，并把入口、deps、PDB 和私有运行时依赖部署到 Host
+输出目录的独立 `Controls/<PluginFolder>/`。需要体验其他插件时，先构建对应插件项目，再使用
+`--no-build` 启动 Host；构建只清理当前插件目录。
 
 创建新插件、编写严格清单及处理依赖部署时，请直接阅读 [Managed 插件快速开始](./docs/quick-start/README.md)，不要从本节推断完整打包规则。
 
@@ -105,6 +107,14 @@ TestResults/  需要保留的阶段验收与人工验证记录
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke
 ```
 
+验证四个插件的独立确定性 ZIP、协议负例和最终包加载：
+
+```powershell
+.\scripts\Test-ManagedPluginPackages.ps1 -Configuration Release
+```
+
+每个插件分别生成 `<AssemblyName>-<PluginVersion>-win-x64.zip`，不会生成四插件合集。
+
 插件还包含各自的单元测试、集成 Harness 或发布验收项目；其专用前置条件和命令以插件目录中的当前文档为准。
 
 ## 当前边界
@@ -112,7 +122,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - 插件是进程内可信代码，不提供权限隔离或恶意代码防护；
 - 插件加载上下文用于依赖解析隔离，不等同于安全沙箱；
 - 插件目录快照和加载上下文以进程为边界，不支持热更新或运行时卸载；
-- 当前没有官方插件 SDK/NuGet 包、插件市场或通用脚手架；
+- 仓库能生成正式 Plugin SDK/NuGet 制品，但不自动推送公共包源；当前没有插件市场或通用脚手架；
 - G4 已完成：宿主只接受严格清单、入口 `.deps.json` 和唯一 `IPluginModule` 的 Managed Plugin；
 - Host、`MyAvaloniaManagementCommon`、Avalonia、Dock 与插件需要按照兼容区间协同升级。
 

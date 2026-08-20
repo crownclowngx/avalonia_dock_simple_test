@@ -3,7 +3,7 @@
 > 状态：待整改，不满足封板条件
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`
-> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G9 已于 2026-08-18 完成，G10–G11 已于 2026-08-20 完成；G12–G16 待完成
+> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G9 已于 2026-08-18 完成，G10–G12 已于 2026-08-20 完成；G13–G16 待完成
 > 适用范围：`MyAvaloniaManagement` 宿主、`MyAvaloniaManagementCommon`、插件装载与注册边界、Document/Tool 公共契约和发布门禁
 > 不评审：现有插件的领域业务正确性、第三方插件市场、运行时热卸载和恶意插件隔离
 
@@ -16,7 +16,8 @@
 可选 UI Profile 与宿主样式契约，但 **尚不能封板**。G5、G6 已完成显式贡献和宿主 DI 保护，
 G7 已建立唯一 Document 信封 v1，G8 已将内容契约与宿主路径/所有权分离，G9 已建立 SDK 自有且
 每个 HostRuntime 隔离的同步事件总线，G10 已删除 Host 文件打开、布局刷新和 Tool 显隐广播，
-改由根级状态与 Dock 协调器直接协作。剩余主要问题包括插件部署与兼容门禁尚未形成单一发布入口。
+改由根级状态与 Dock 协调器直接协作。G12 已建立单插件统一构建、部署、确定性 ZIP 与最终包加载门禁。
+剩余主要问题集中在 SDK API 可审阅基线、CI、诊断脱敏和最终文档冻结。
 Legacy 二进制激活已由 G4 删除。
 
 本次封板采用以下一次性定基线策略：
@@ -128,6 +129,12 @@ DaTangAccountingHelpPlug 64/64、MySmallTools 183/183 通过；SDK 包的最小�
 删除契约反例均通过。完整删除证据、插件迁移、SOLID 取舍和失败修正过程见
 [G11 低价值 public 面清理](../plan-history/host-v1/g11-low-value-public-surface-cleanup.md)。
 
+G12 完成后的宿主基线仍为 Unit 168、UI 38、Plugin 146，共 **352/352 通过**；Host 行覆盖率
+80.62%、分支覆盖率 65.91%，Windows Smoke 通过。四个插件各自完成两次隔离构建并生成四个独立
+win-x64 ZIP，最终 ZIP 均通过宿主真实加载；16 个构建契约负例全部按预期失败。包文件数、长度和
+SHA-256 从本轮 `summary.json` 动态写入
+[G12 统一插件构建、部署与独立发布](../plan-history/host-v1/g12-unified-plugin-build-and-deployment.md)。
+
 ### 2.3 当前风险清单
 
 | 等级 | 发现 | 影响 |
@@ -141,7 +148,7 @@ DaTangAccountingHelpPlug 64/64、MySmallTools 183/183 通过；SDK 包的最小�
 | 已解决（G5） | ViewLocator 曾通过静态构造、AppDomain 和命名约定重复发现视图 | 现只消费 HostRuntime 私有不可变 Registry；未登记类型不可见，View 失败形成稳定诊断和占位 |
 | 高 | 诊断记录默认使用 `Exception.ToString()` | 可能把路径、URL、插件异常正文或其他敏感上下文写入长期日志 |
 | 已解决（G3） | Common 曾直接引用整套字体、主题、Ursa、Semi 与 Dock UI 控件包 | 基础 SDK 现只保留契约依赖；Host 直接拥有主题，可选 UI Profile 固定受支持 UI 版本 |
-| 中 | 四个插件分别维护部署 Target | 共享依赖排除、入口、清单和原生资产规则可能漂移 |
+| 已解决（G12） | 四个插件曾分别维护部署 Target | 现由一份声明式 Props/Targets 生成严格清单和同一资产集合；四插件保持独立 ZIP 与版本节奏 |
 | 中 | 仓库没有统一 CI 工作流 | 本地曾通过的门禁不能保证每次提交和干净环境都执行 |
 | 已解决（G11） | `AdditionalData`、未实际传入的初始化字段、无生产实现的保存策略和通用反射 Behavior 曾进入 SDK | 占位成员和接口已删除；唯一播放器消费者改为 View 内定向事件适配，基础 SDK 不再直接依赖 `Xaml.Behaviors`；空 `Chain` 项已由 G3 提前删除并由结构门禁保护 |
 
@@ -439,6 +446,11 @@ View 定向适配，DaTang 发票 Document 删除 XAML 运行时自建 DataConte
 
 **优先级：高；依赖：G3、G5**
 
+**状态：已完成（2026-08-20）**。四个插件已删除复制的部署 Target 和手写清单，统一声明身份、
+版本、兼容区间及私有资产；开发 build 仍默认部署，正式入口分别生成确定性 win-x64 ZIP 和外置
+文件摘要清单。完整的 SOLID 取舍、资产矩阵、16 个协议负例、四包摘要和回滚边界见
+[G12 独立记录](../plan-history/host-v1/g12-unified-plugin-build-and-deployment.md)。
+
 - 目标：四个插件共享同一 MSBuild 打包/部署规则，只声明插件特有的托管和原生资产。
 - 修改边界：统一 `.props/.targets`、清单生成或校验、共享依赖排除、`Controls/<Plugin>/` 输出布局。
 - 验收：四插件在干净目录构建后均包含唯一入口、清单、`.deps.json` 和所需私有资产，不携带 Host 或重复 SDK 副本。
@@ -570,6 +582,10 @@ G0 与 G15 可以并行。G7/G8、G9/G10 和 G11 在 G3 完成后可以分别独
 ## 8. 明确延后
 
 以下能力不作为 Managed Plugin v1 封板条件：
+
+外部插件构建包、`dotnet new` 模板以及平台 ZIP 导入、安装和回滚的完整候选方案，已单独归档为
+[外部 Managed Plugin 开发与平台安装候选计划](./external-managed-plugin-development-and-installation-plan.md)。
+该文档仅保存封版后重新审核的方向，不计入 G12，不改变本任务书的风险、验收或签署结论。
 
 - 运行时卸载或热更新；
 - 插件沙箱和恶意代码权限隔离；

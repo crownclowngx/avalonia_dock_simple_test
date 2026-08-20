@@ -76,21 +76,6 @@ function Assert-PathUnder {
     }
 }
 
-function Get-StableRelativePath {
-    param(
-        [Parameter(Mandatory)] [string]$BasePath,
-        [Parameter(Mandatory)] [string]$Path
-    )
-
-    # Windows PowerShell 5.1 没有 Path.GetRelativePath；Uri 只用于裁剪，并立即统一为
-    # ZIP 使用的正斜杠，使不同 PowerShell 版本生成同一清单键。
-    $baseFull = [IO.Path]::GetFullPath($BasePath).TrimEnd('\') + '\'
-    $pathFull = [IO.Path]::GetFullPath($Path)
-    $baseUri = [Uri]::new($baseFull)
-    $pathUri = [Uri]::new($pathFull)
-    return [Uri]::UnescapeDataString($baseUri.MakeRelativeUri($pathUri).ToString())
-}
-
 function Write-JsonUtf8 {
     param([Parameter(Mandatory)] [string]$Path, [Parameter(Mandatory)] $Value)
 
@@ -238,44 +223,28 @@ else {
 # 宽松开关本身就是“本地候选”声明；即使调用时工作树碰巧干净，使用 -AllowDirty
 # 也不能得到可发布标志，避免同一命令在不同机器上产生语义不同的正式结果。
 $publishable = (-not $AllowDirty) -and (-not $isDirty) -and (-not $SkipLiveAcceptance)
-$payloadFiles = Get-ChildItem -LiteralPath $stageRoot -File -Recurse |
-    Sort-Object { Get-StableRelativePath $stageRoot $_.FullName }
-$fileEntries = foreach ($file in $payloadFiles) {
-    [ordered]@{
-        path = Get-StableRelativePath $stageRoot $file.FullName
-        length = $file.Length
-        sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash
-    }
+
+# G12 以后，专项入口不再复制通用暂存、ZIP 和哈希算法。统一打包脚本以单个项目为
+# 输入并只生成该插件的 Controls/BiliDownloader/；G8 仍只负责联网、敏感信息与业务探针。
+& (Join-Path $PSScriptRoot 'Build-ManagedPluginPackage.ps1') `
+    -Project $pluginProject `
+    -Configuration Release `
+    -OutputDirectory $artifactRoot
+if ($LASTEXITCODE -ne 0) {
+    throw "G12 统一插件打包失败，退出码 $LASTEXITCODE。"
 }
 
-$pluginAssembly = [Reflection.AssemblyName]::GetAssemblyName((Join-Path $stageRoot 'BiliDownloader.dll'))
-$manifest = [ordered]@{
-    schemaVersion = 1
-    pluginId = 'BiliDownloader'
-    release = 'p0'
-    targetFramework = $targetFramework
-    runtimeIdentifier = $runtimeIdentifier
-    sourceRevision = $revision
-    publishable = $publishable
-    pluginVersion = $pluginAssembly.Version.ToString()
-    files = @($fileEntries)
-}
-$manifestPath = Join-Path $stageRoot 'bilidownloader.release.json'
-Write-JsonUtf8 $manifestPath $manifest
-
-$baseName = "BiliDownloader-p0-$runtimeIdentifier-$revision"
+[xml]$pluginProjectXml = Get-Content -Raw -LiteralPath $pluginProject
+$pluginVersion = ([string]$pluginProjectXml.Project.PropertyGroup.PluginVersion).Trim()
+$baseName = "BiliDownloader-$pluginVersion-$runtimeIdentifier"
 $zipPath = Join-Path $artifactRoot "$baseName.zip"
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-[IO.Compression.ZipFile]::CreateFromDirectory(
-    $stageRoot,
-    $zipPath,
-    [IO.Compression.CompressionLevel]::Optimal,
-    $false)
+$sidecarManifest = Join-Path $artifactRoot "$baseName.manifest.json"
 
 $packageReport = Join-Path $reportRoot 'g8-package.json'
 Invoke-Gate 'ZIP 封闭清单与摘要复验' 'dotnet' @(
     'run', '--project', $acceptanceProject, '-c', 'Release', '--no-build', '--',
-    'verify-package', '--package', $zipPath, '--sandbox', $validationRoot, '--report', $packageReport
+    'verify-package', '--package', $zipPath, '--manifest', $sidecarManifest,
+    '--sandbox', $validationRoot, '--report', $packageReport
 )
 
 $scanReport = Join-Path $reportRoot 'g8-sensitive-scan.json'
@@ -319,8 +288,6 @@ $acceptance = [ordered]@{
 }
 $acceptancePath = Join-Path $artifactRoot "$baseName.acceptance.json"
 Write-JsonUtf8 $acceptancePath $acceptance
-$sidecarManifest = Join-Path $artifactRoot "$baseName.manifest.json"
-Write-JsonUtf8 $sidecarManifest $manifest
 
 if (-not [string]::IsNullOrWhiteSpace($EvidenceRoot)) {
     $resolvedEvidence = if ([IO.Path]::IsPathRooted($EvidenceRoot)) {

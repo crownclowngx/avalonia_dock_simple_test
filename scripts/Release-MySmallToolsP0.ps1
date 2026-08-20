@@ -22,8 +22,6 @@ $acceptanceProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools.Rel
 $playbackProject = Join-Path $workspace 'Plugins\MySmallTools\MySmallTools.Playback.IntegrationHarness\MySmallTools.Playback.IntegrationHarness.csproj'
 $deployedPlugin = Join-Path $workspace "Host\MyAvaloniaManagement\bin\Release\$targetFramework\Controls\SmallTools"
 $artifactRoot = Join-Path $workspace 'artifacts\MySmallTools\p0-win-x64'
-$stageRoot = Join-Path $artifactRoot '.staging'
-$stagedPlugin = Join-Path $stageRoot 'Controls\SmallTools'
 $validationRoot = Join-Path $artifactRoot '.validation'
 $resolvedEvidenceRoot = if ([string]::IsNullOrWhiteSpace($EvidenceRoot)) {
     $null
@@ -77,21 +75,6 @@ function Assert-SafeEvidencePath {
     }
 }
 
-function Get-StableRelativePath {
-    param(
-        [Parameter(Mandatory)] [string]$BasePath,
-        [Parameter(Mandatory)] [string]$Path
-    )
-
-    # Windows PowerShell 5.1 所在的 .NET Framework 没有 Path.GetRelativePath。
-    # 使用 Uri 只做路径裁剪，并立即反转义、统一为 ZIP/Manifest 规定的正斜杠。
-    $baseFull = [IO.Path]::GetFullPath($BasePath).TrimEnd('\') + '\'
-    $pathFull = [IO.Path]::GetFullPath($Path)
-    $baseUri = [Uri]::new($baseFull)
-    $pathUri = [Uri]::new($pathFull)
-    return [Uri]::UnescapeDataString($baseUri.MakeRelativeUri($pathUri).ToString())
-}
-
 if ($env:OS -ne 'Windows_NT' -or
     [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -ne 'X64') {
     throw 'G4 正式发布只允许在 Windows x64 进程中执行。'
@@ -133,122 +116,36 @@ Assert-SafeGeneratedPath $artifactRoot
 if (Test-Path $artifactRoot) {
     Remove-Item -LiteralPath $artifactRoot -Recurse -Force
 }
-New-Item -ItemType Directory -Path $stagedPlugin -Force | Out-Null
 if ($resolvedEvidenceRoot) {
     New-Item -ItemType Directory -Path $resolvedEvidenceRoot -Force | Out-Null
 }
-Copy-Item -Path (Join-Path $deployedPlugin '*') -Destination $stagedPlugin -Recurse -Force
 
-# Manifest 的 files 不包含 Manifest 自身，避免出现“文件哈希依赖自身内容”的递归定义。
-# 发布验证要求除 mysmalltools.release.json 外没有额外文件，因此清单仍然是完整且封闭的。
-$payloadFiles = Get-ChildItem -LiteralPath $stagedPlugin -File -Recurse |
-    Sort-Object { Get-StableRelativePath $stagedPlugin $_.FullName }
-$fileEntries = foreach ($file in $payloadFiles) {
-    $relative = Get-StableRelativePath $stagedPlugin $file.FullName
-    [ordered]@{
-        path = $relative
-        length = $file.Length
-        sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash
-    }
+# G12 统一入口负责单插件构建、严格清单、稳定 ZIP 与最终 ZIP 哈希复验。
+# 本专项脚本只在通用包通过后继续执行 LibVLC 的生产加载、内存和真实播放门禁。
+& (Join-Path $PSScriptRoot 'Build-ManagedPluginPackage.ps1') `
+    -Project $pluginProject `
+    -Configuration Release `
+    -OutputDirectory $artifactRoot
+if ($LASTEXITCODE -ne 0) {
+    throw "G12 统一插件打包失败，退出码 $LASTEXITCODE。"
 }
 
-$mySmallToolsAssembly = [Reflection.AssemblyName]::GetAssemblyName(
-    (Join-Path $stagedPlugin 'MySmallTools.dll'))
-$libVlcSharpAssembly = [Reflection.AssemblyName]::GetAssemblyName(
-    (Join-Path $stagedPlugin 'LibVLCSharp.dll'))
-$libVlcFileVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo(
-    (Join-Path $stagedPlugin 'native\win-x64\libvlc\libvlc.dll')).FileVersion
-[xml]$centralPackages = Get-Content -Raw -LiteralPath (
-    Join-Path $workspace 'Directory.Packages.props')
-$centralVersions = @{}
-foreach ($packageVersion in $centralPackages.Project.ItemGroup.PackageVersion) {
-    $centralVersions[[string]$packageVersion.Include] = [string]$packageVersion.Version
-}
-
-$manifest = [ordered]@{
-    schemaVersion = 1
-    pluginId = 'MySmallTools'
-    release = 'p0'
-    targetFramework = $targetFramework
-    runtimeIdentifier = 'win-x64'
-    sourceRevision = $revision
-    publishable = -not $isDirty
-    versions = [ordered]@{
-        mySmallTools = $mySmallToolsAssembly.Version.ToString()
-        libVLCSharp = $libVlcSharpAssembly.Version.ToString()
-        libVLC = $libVlcFileVersion
-    }
-    requiredHost = [ordered]@{
-        avalonia = $centralVersions['Avalonia']
-        dock = $centralVersions['Dock.Avalonia']
-        targetFramework = $targetFramework
-    }
-    files = @($fileEntries)
-}
-$utf8NoBom = [Text.UTF8Encoding]::new($false)
-$manifestJson = $manifest | ConvertTo-Json -Depth 8
-$internalManifest = Join-Path $stagedPlugin 'mysmalltools.release.json'
-[IO.File]::WriteAllText($internalManifest, $manifestJson, $utf8NoBom)
-
-$baseName = "MySmallTools-p0-win-x64-$revision"
+[xml]$pluginProjectXml = Get-Content -Raw -LiteralPath $pluginProject
+$pluginVersion = ([string]$pluginProjectXml.Project.PropertyGroup.PluginVersion).Trim()
+$baseName = "MySmallTools-$pluginVersion-win-x64"
 $sidecarManifest = Join-Path $artifactRoot "$baseName.manifest.json"
-[IO.File]::WriteAllText($sidecarManifest, $manifestJson, $utf8NoBom)
 $zipPath = Join-Path $artifactRoot "$baseName.zip"
+$utf8NoBom = [Text.UTF8Encoding]::new($false)
 
-# Compress-Archive 会继承本机文件时间，导致相同输入产生不同 ZIP。
-# 这里直接使用 ZipArchive，按稳定相对路径排序，并把时间统一为 ZIP 可表示的最早安全日期。
-Add-Type -AssemblyName System.IO.Compression
+# 部署探针必须从最终 ZIP 解压目录运行，不能回退到普通 build 的 Host 部署目录。
+# 通用入口已经逐文件验证外置清单；这里解压只为给生产加载探针提供候选根目录。
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-$zipStream = [IO.File]::Open($zipPath, [IO.FileMode]::CreateNew)
-try {
-    $archive = [IO.Compression.ZipArchive]::new(
-        $zipStream,
-        [IO.Compression.ZipArchiveMode]::Create,
-        $false)
-    try {
-        $zipFiles = Get-ChildItem -LiteralPath $stageRoot -File -Recurse |
-            Sort-Object { Get-StableRelativePath $stageRoot $_.FullName }
-        foreach ($file in $zipFiles) {
-            $relative = Get-StableRelativePath $stageRoot $file.FullName
-            $entry = $archive.CreateEntry($relative, [IO.Compression.CompressionLevel]::Optimal)
-            $entry.LastWriteTime = [DateTimeOffset]::new(2000, 1, 1, 0, 0, 0, [TimeSpan]::Zero)
-            $entryStream = $entry.Open()
-            try {
-                $input = [IO.File]::OpenRead($file.FullName)
-                try { $input.CopyTo($entryStream) } finally { $input.Dispose() }
-            } finally {
-                $entryStream.Dispose()
-            }
-        }
-    } finally {
-        $archive.Dispose()
-    }
-} finally {
-    $zipStream.Dispose()
-}
-
-# 不能只相信打包前目录：必须从最终 ZIP 解压并重新验证哈希和部署探针，
-# 这样才能覆盖漏打文件、相对路径错误和 ZIP 写入损坏。
 Assert-SafeGeneratedPath $validationRoot
 New-Item -ItemType Directory -Path $validationRoot -Force | Out-Null
 [IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $validationRoot)
 $validatedPlugin = Join-Path $validationRoot 'Controls\SmallTools'
-$validatedManifestPath = Join-Path $validatedPlugin 'mysmalltools.release.json'
-$validatedManifest = Get-Content -Raw -LiteralPath $validatedManifestPath | ConvertFrom-Json
-foreach ($entry in $validatedManifest.files) {
-    $path = Join-Path $validatedPlugin $entry.path
-    if (-not (Test-Path $path)) {
-        throw "ZIP 缺少清单文件：$($entry.path)"
-    }
-    $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash
-    if ($actualHash -ne $entry.sha256) {
-        throw "ZIP 文件哈希不匹配：$($entry.path)"
-    }
-}
-$actualPayload = @(Get-ChildItem -LiteralPath $validatedPlugin -File -Recurse |
-    Where-Object Name -ne 'mysmalltools.release.json')
-if ($actualPayload.Count -ne $validatedManifest.files.Count) {
-    throw 'ZIP 存在未纳入 Manifest 的额外文件。'
+if (-not (Test-Path -LiteralPath $validatedPlugin -PathType Container)) {
+    throw 'G12 独立 ZIP 缺少 Controls/SmallTools 插件目录。'
 }
 
 $probeReport = Join-Path $artifactRoot 'deployment-probe.json'
@@ -324,7 +221,6 @@ if ($resolvedEvidenceRoot) {
     }
 }
 
-Remove-Item -LiteralPath $stageRoot -Recurse -Force
 Remove-Item -LiteralPath $validationRoot -Recurse -Force
 
 Write-Host "`n[G4] 发布基线通过"

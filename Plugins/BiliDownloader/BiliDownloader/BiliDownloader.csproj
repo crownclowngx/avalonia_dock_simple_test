@@ -3,12 +3,19 @@
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <!-- 插件只拥有一个发布版本事实，其余程序集元数据必须从这里派生。 -->
+        <!--
+          插件项目只声明自身身份、版本和兼容承诺；程序集元数据、严格清单与部署动作
+          由根级 Managed Plugin 构建协议统一派生。
+        -->
+        <ManagedPlugin>true</ManagedPlugin>
+        <ManagedPluginId>myavalonia.plugin.bili-downloader</ManagedPluginId>
+        <ManagedPluginDirectoryName>BiliDownloader</ManagedPluginDirectoryName>
         <PluginVersion>1.0.0</PluginVersion>
-        <Version>$(PluginVersion)</Version>
-        <FileVersion>$(PluginVersion).0</FileVersion>
-        <InformationalVersion>$(PluginVersion)</InformationalVersion>
-        <AssemblyVersion>$(PluginVersion).0</AssemblyVersion>
+        <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
+        <ManagedPluginHostApiMinInclusive>1.0.0</ManagedPluginHostApiMinInclusive>
+        <ManagedPluginHostApiMaxExclusive>2.0.0</ManagedPluginHostApiMaxExclusive>
+        <ManagedPluginCommonContractMinInclusive>1.0.0</ManagedPluginCommonContractMinInclusive>
+        <ManagedPluginCommonContractMaxExclusive>2.0.0</ManagedPluginCommonContractMaxExclusive>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -31,63 +38,17 @@
       <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
   </ItemGroup>
 
-    <ItemGroup>
-      <!-- 清单既进入独立构建目录，也进入 publish；宿主必须先读清单才能加载 DLL。 -->
-      <None Update="plugin.manifest.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    </ItemGroup>
-
   <ItemGroup>
       <!-- 仅向测试程序集开放无状态编码帮助类，不扩大插件对宿主的公共契约。 -->
       <InternalsVisibleTo Include="BiliDownloader.Tests" />
   </ItemGroup>
 
-    <!-- 构建后将插件及其私有运行时依赖部署到宿主 Controls/BiliDownloader 目录。 -->
-    <PropertyGroup>
-        <HostProjectOutputDir>$(MSBuildThisFileDirectory)..\..\..\Host\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
-        <PluginDeployDir>$(HostProjectOutputDir)\Controls\BiliDownloader</PluginDeployDir>
-    </PropertyGroup>
-
-    <Target Name="DeployPluginToHost"
-            AfterTargets="Build"
-            DependsOnTargets="ResolveReferences"
-            Condition="'$(SkipPluginDeploy)' != 'true'">
-        <ItemGroup>
-            <!-- 保留当前调试体验；自定义加载上下文运行时只要求插件 DLL 和私有依赖。 -->
-            <BiliPluginFiles Include="$(TargetPath)" />
-            <BiliPluginFiles Include="$(TargetDir)$(AssemblyName).pdb"
-                             Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
-            <BiliPluginFiles Include="$(TargetDir)$(AssemblyName).deps.json"
-                             Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
-            <BiliPluginFiles Include="$(TargetDir)plugin.manifest.json" />
-
-            <!-- 宿主已提供 Avalonia、Dock、DI 和 Common；这里只选择插件自己的 NuGet 运行时依赖。 -->
-            <BiliPluginManaged Include="@(RuntimeCopyLocalItems)"
-                               Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Flurl' Or
-                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Flurl.Http' Or
-                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Microsoft.Data.Sqlite.Core' Or
-                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'protobuf-net' Or
-                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'protobuf-net.Core' Or
-                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'QRCoder' Or
-                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'SQLitePCLRaw.bundle_e_sqlite3' Or
-                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'SQLitePCLRaw.core' Or
-                                          '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'SQLitePCLRaw.provider.e_sqlite3'" />
-
-            <!-- 保留 SQLitePCLRaw 当前提供的全部 RID，维持既有跨平台部署能力。 -->
-            <BiliPluginNative Include="@(RuntimeTargetsCopyLocalItems)"
-                              Condition="'%(RuntimeTargetsCopyLocalItems.NuGetPackageId)' == 'SQLitePCLRaw.lib.e_sqlite3'" />
-        </ItemGroup>
-
-        <RemoveDir Directories="$(PluginDeployDir)" />
-        <MakeDir Directories="$(PluginDeployDir)" />
-        <Copy SourceFiles="@(BiliPluginFiles)"
-              DestinationFolder="$(PluginDeployDir)"
-              SkipUnchangedFiles="true" />
-        <Copy SourceFiles="@(BiliPluginManaged)"
-              DestinationFiles="@(BiliPluginManaged->'$(PluginDeployDir)\%(DestinationSubPath)')"
-              SkipUnchangedFiles="true" />
-        <Copy SourceFiles="@(BiliPluginNative)"
-              DestinationFiles="@(BiliPluginNative->'$(PluginDeployDir)\%(DestinationSubPath)')"
-              SkipUnchangedFiles="true" />
-    </Target>
+    <ItemGroup>
+      <!--
+        这里只列插件私有 NuGet 包的资产所有权。公共 Target 根据 NuGetPackageId 收集
+        托管与 RID 资产，并把 SQLite 原生文件限制为 Managed Plugin v1 的 win-x64。
+      -->
+      <ManagedPluginPrivatePackage Include="Flurl;Flurl.Http;Microsoft.Data.Sqlite.Core;protobuf-net;protobuf-net.Core;QRCoder;SQLitePCLRaw.bundle_e_sqlite3;SQLitePCLRaw.core;SQLitePCLRaw.provider.e_sqlite3;SQLitePCLRaw.lib.e_sqlite3" />
+    </ItemGroup>
 
 </Project>

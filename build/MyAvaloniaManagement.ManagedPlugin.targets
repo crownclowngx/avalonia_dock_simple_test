@@ -1,0 +1,135 @@
+<Project>
+  <!--
+    本文件只承担四件事：校验声明、生成严格清单、收集已声明资产、复制到单插件目录。
+    ZIP、哈希和发布证据由 PowerShell 入口负责，避免 MSBuild 同时承担发布编排职责。
+  -->
+
+  <Target Name="ValidateManagedPluginDeclaration" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(ManagedPluginId)' == ''"
+           Text="Managed Plugin 缺少 ManagedPluginId。" />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginId)', '^myavalonia\.plugin\.[a-z0-9]+(?:[.-][a-z0-9]+)*$'))"
+           Text="ManagedPluginId 必须是以 myavalonia.plugin. 开头的规范小写稳定 ID，实际为 '$(ManagedPluginId)'。" />
+    <Error Condition="'$(PluginVersion)' == '' Or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(PluginVersion)', '^\d+\.\d+\.\d+$'))"
+           Text="PluginVersion 必须是 major.minor.patch 数字版本，实际为 '$(PluginVersion)'。" />
+    <Error Condition="'$(ManagedPluginDirectoryName)' == '' Or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginDirectoryName)', '^[A-Za-z0-9][A-Za-z0-9._-]*$'))"
+           Text="ManagedPluginDirectoryName 只能包含字母、数字、点、下划线和连字符，实际为 '$(ManagedPluginDirectoryName)'。" />
+    <Error Condition="'$(ManagedPluginManifestSchemaVersion)' != '1'"
+           Text="Managed Plugin v1 只能生成 schemaVersion=1，实际为 '$(ManagedPluginManifestSchemaVersion)'。" />
+    <Error Condition="'$(ManagedPluginRuntimeIdentifier)' != 'win-x64'"
+           Text="Managed Plugin v1 只允许 win-x64，实际为 '$(ManagedPluginRuntimeIdentifier)'。" />
+    <Error Condition="'$(ManagedPluginHostApiMinInclusive)' == '' Or '$(ManagedPluginHostApiMaxExclusive)' == '' Or '$(ManagedPluginCommonContractMinInclusive)' == '' Or '$(ManagedPluginCommonContractMaxExclusive)' == ''"
+           Text="Managed Plugin 必须显式声明 Host API 与 Common Contract 的左闭右开兼容区间。" />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginHostApiMinInclusive)', '^\d+\.\d+\.\d+$')) Or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginHostApiMaxExclusive)', '^\d+\.\d+\.\d+$')) Or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginCommonContractMinInclusive)', '^\d+\.\d+\.\d+$')) Or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginCommonContractMaxExclusive)', '^\d+\.\d+\.\d+$'))"
+           Text="Managed Plugin 兼容区间必须使用 major.minor.patch 数字版本。" />
+    <Error Condition="$([System.Version]::Parse('$(ManagedPluginHostApiMinInclusive)').CompareTo($([System.Version]::Parse('$(ManagedPluginHostApiMaxExclusive)')))) &gt;= 0 Or $([System.Version]::Parse('$(ManagedPluginCommonContractMinInclusive)').CompareTo($([System.Version]::Parse('$(ManagedPluginCommonContractMaxExclusive)')))) &gt;= 0"
+           Text="Managed Plugin 兼容区间必须满足 minInclusive 小于 maxExclusive。" />
+    <Error Condition="'$(ManagedPluginAssetDirectoryRelativePath)' != '' And ($([System.IO.Path]::IsPathRooted('$(ManagedPluginAssetDirectoryRelativePath)')) Or $([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginAssetDirectoryRelativePath)', '(^|[\/])\.\.([\/]|$)')))"
+           Text="ManagedPluginAssetDirectoryRelativePath 必须位于插件输出目录内：$(ManagedPluginAssetDirectoryRelativePath)" />
+  </Target>
+
+  <Target Name="GenerateManagedPluginManifest"
+          AfterTargets="Build"
+          DependsOnTargets="ValidateManagedPluginDeclaration">
+    <ItemGroup>
+      <!--
+        使用逐行项而不是拼接一整段转义字符串，让生成内容可直接评审；字段集合固定，
+        不允许插件通过额外属性悄悄扩展 schema v1。
+      -->
+      <_ManagedPluginManifestLine Include="{" />
+      <_ManagedPluginManifestLine Include="  &quot;schemaVersion&quot;: $(ManagedPluginManifestSchemaVersion)," />
+      <_ManagedPluginManifestLine Include="  &quot;pluginId&quot;: &quot;$(ManagedPluginId)&quot;," />
+      <_ManagedPluginManifestLine Include="  &quot;pluginVersion&quot;: &quot;$(PluginVersion)&quot;," />
+      <_ManagedPluginManifestLine Include="  &quot;entryAssembly&quot;: &quot;$(AssemblyName).dll&quot;," />
+      <_ManagedPluginManifestLine Include="  &quot;compatibility&quot;: {" />
+      <_ManagedPluginManifestLine Include="    &quot;hostApi&quot;: {" />
+      <_ManagedPluginManifestLine Include="      &quot;minInclusive&quot;: &quot;$(ManagedPluginHostApiMinInclusive)&quot;," />
+      <_ManagedPluginManifestLine Include="      &quot;maxExclusive&quot;: &quot;$(ManagedPluginHostApiMaxExclusive)&quot;" />
+      <_ManagedPluginManifestLine Include="    }," />
+      <_ManagedPluginManifestLine Include="    &quot;commonContract&quot;: {" />
+      <_ManagedPluginManifestLine Include="      &quot;minInclusive&quot;: &quot;$(ManagedPluginCommonContractMinInclusive)&quot;," />
+      <_ManagedPluginManifestLine Include="      &quot;maxExclusive&quot;: &quot;$(ManagedPluginCommonContractMaxExclusive)&quot;" />
+      <_ManagedPluginManifestLine Include="    }" />
+      <_ManagedPluginManifestLine Include="  }" />
+      <_ManagedPluginManifestLine Include="}" />
+    </ItemGroup>
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile File="$(ManagedPluginGeneratedManifest)"
+                      Lines="@(_ManagedPluginManifestLine)"
+                      Overwrite="true"
+                      Encoding="UTF-8" />
+    <Copy SourceFiles="$(ManagedPluginGeneratedManifest)"
+          DestinationFiles="$(TargetDir)plugin.manifest.json" />
+  </Target>
+
+  <Target Name="DeployManagedPlugin"
+          AfterTargets="GenerateManagedPluginManifest"
+          DependsOnTargets="ResolveReferences"
+          Condition="'$(SkipPluginDeploy)' != 'true'">
+    <PropertyGroup>
+      <!-- 前后分号用于做完整包 ID 匹配，防止 Flurl 误匹配 Flurl.Http。 -->
+      <_ManagedPluginPrivatePackageIds>;@(ManagedPluginPrivatePackage);</_ManagedPluginPrivatePackageIds>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ManagedPluginPrivateManaged Include="@(RuntimeCopyLocalItems)"
+                                    Condition="$([System.String]::Copy('$(_ManagedPluginPrivatePackageIds)').Contains(';%(RuntimeCopyLocalItems.NuGetPackageId);'))" />
+      <_ManagedPluginPrivateNative Include="@(RuntimeTargetsCopyLocalItems)"
+                                   Condition="$([System.String]::Copy('$(_ManagedPluginPrivatePackageIds)').Contains(';%(RuntimeTargetsCopyLocalItems.NuGetPackageId);')) And ('%(RuntimeTargetsCopyLocalItems.RuntimeIdentifier)' == '$(ManagedPluginRuntimeIdentifier)' Or $([System.String]::Copy('%(RuntimeTargetsCopyLocalItems.DestinationSubPath)').Replace('\','/').StartsWith('runtimes/$(ManagedPluginRuntimeIdentifier)/')))" />
+
+      <!--
+        目录资产在 Target 执行期展开。这样干净工作区中即使原生树由 NuGet 构建 Target
+        才写入 TargetDir，也不会因为项目求值过早而得到空文件集。
+      -->
+      <_ManagedPluginDirectoryFile Include="$(TargetDir)$(ManagedPluginAssetDirectoryRelativePath)\**\*"
+                                   Condition="'$(ManagedPluginAssetDirectoryRelativePath)' != ''" />
+
+      <_ManagedPluginDeployAsset Include="$(TargetPath)" TargetPath="$(AssemblyName).dll" />
+      <_ManagedPluginDeployAsset Include="$(TargetDir)$(AssemblyName).deps.json" TargetPath="$(AssemblyName).deps.json" />
+      <_ManagedPluginDeployAsset Include="$(TargetDir)$(AssemblyName).pdb" TargetPath="$(AssemblyName).pdb" />
+      <_ManagedPluginDeployAsset Include="$(TargetDir)plugin.manifest.json" TargetPath="plugin.manifest.json" />
+      <_ManagedPluginDeployAsset Include="@(_ManagedPluginPrivateManaged)" TargetPath="%(_ManagedPluginPrivateManaged.DestinationSubPath)" />
+      <_ManagedPluginDeployAsset Include="@(_ManagedPluginPrivateNative)" TargetPath="%(_ManagedPluginPrivateNative.DestinationSubPath)" />
+      <_ManagedPluginDeployAsset Include="@(ManagedPluginAsset)" TargetPath="%(ManagedPluginAsset.TargetPath)" />
+      <_ManagedPluginDeployAsset Include="@(_ManagedPluginDirectoryFile)"
+                                 TargetPath="$(ManagedPluginAssetDirectoryRelativePath)\%(_ManagedPluginDirectoryFile.RecursiveDir)%(_ManagedPluginDirectoryFile.Filename)%(_ManagedPluginDirectoryFile.Extension)" />
+      <!-- 先统一分隔符，再做重复路径比较，避免 a/b 与 a\b 绕过冲突检查。 -->
+      <_ManagedPluginDeployAsset Update="@(_ManagedPluginDeployAsset)"
+                                 TargetPath="$([System.String]::Copy('%(_ManagedPluginDeployAsset.TargetPath)').Replace('/','\'))" />
+      <_ManagedPluginDeployTargetPath Include="@(_ManagedPluginDeployAsset->'%(TargetPath)')" />
+    </ItemGroup>
+
+    <!-- 仅在显式排障时输出完整映射，普通构建保持简洁。 -->
+    <Message Condition="'$(ManagedPluginTraceAssets)' == 'true'"
+             Importance="high"
+             Text="Managed Plugin 资产：%(_ManagedPluginDeployAsset.Identity) -> %(_ManagedPluginDeployAsset.TargetPath)" />
+
+    <Error Condition="!Exists('%(_ManagedPluginDeployAsset.Identity)')"
+           Text="Managed Plugin 声明的部署资产不存在：%(_ManagedPluginDeployAsset.Identity)" />
+    <Error Condition="'$(ManagedPluginAssetDirectoryRelativePath)' != '' And !Exists('$(TargetDir)$(ManagedPluginAssetDirectoryRelativePath)')"
+           Text="Managed Plugin 声明的目录资产源不存在：$(TargetDir)$(ManagedPluginAssetDirectoryRelativePath)" />
+    <Error Condition="'%(_ManagedPluginDeployAsset.TargetPath)' == ''"
+           Text="Managed Plugin 资产缺少 TargetPath：%(_ManagedPluginDeployAsset.Identity)" />
+    <Error Condition="$([System.IO.Path]::IsPathRooted('%(_ManagedPluginDeployAsset.TargetPath)')) Or $([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '(^|[\\/])\.\.([\\/]|$)'))"
+           Text="Managed Plugin 资产目标路径必须位于插件目录内：%(_ManagedPluginDeployAsset.TargetPath)" />
+    <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '^(?:runtimes|native)[\\/](?!win-x64(?:[\\/]|$))[^\\/]+', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
+           Text="Managed Plugin v1 不得携带非 win-x64 原生资产：%(_ManagedPluginDeployAsset.TargetPath)" />
+    <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '(^|[\\/])(?:MyAvaloniaManagement(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json).*\.dll$', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
+           Text="Managed Plugin 不得携带宿主共享程序集：%(_ManagedPluginDeployAsset.TargetPath)" />
+
+    <RemoveDuplicates Inputs="@(_ManagedPluginDeployTargetPath)">
+      <Output TaskParameter="Filtered" ItemName="_ManagedPluginDistinctTargetPath" />
+    </RemoveDuplicates>
+    <Error Condition="'@(_ManagedPluginDeployTargetPath->Count())' != '@(_ManagedPluginDistinctTargetPath->Count())'"
+           Text="Managed Plugin 存在重复的部署目标路径，请检查私有包或显式资产声明。" />
+
+    <!-- 只删除当前插件目录，绝不清理 Controls 根或兄弟插件。 -->
+    <RemoveDir Directories="$(ManagedPluginDeployDirectory)" />
+    <MakeDir Directories="$(ManagedPluginDeployDirectory)" />
+    <Copy SourceFiles="@(_ManagedPluginDeployAsset)"
+          DestinationFiles="@(_ManagedPluginDeployAsset->'$(ManagedPluginDeployDirectory)\%(TargetPath)')"
+          SkipUnchangedFiles="true" />
+
+    <Message Importance="high"
+             Text="Managed Plugin 已部署：$(ManagedPluginId) -> $(ManagedPluginDeployDirectory)（@(_ManagedPluginDeployAsset->Count()) 个文件）" />
+  </Target>
+</Project>

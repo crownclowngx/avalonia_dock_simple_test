@@ -74,6 +74,12 @@ P1-G10 本机限速门禁：
 dotnet run --project ..\BiliDownloader.ReleaseAcceptance\BiliDownloader.ReleaseAcceptance.csproj -c Release -- bandwidth --sandbox <临时目录> --report <报告.json>
 ```
 
+G12 后的专项入口仍为仓库根目录的 `scripts/Release-BiliDownloaderP0.ps1`。它保留联网、ffmpeg、
+Range 恢复、敏感扫描和宿主候选加载，但最终分发物改为通用单插件包：
+`BiliDownloader-<PluginVersion>-win-x64.zip` 及 ZIP 外同名 `.manifest.json`。ZIP 内只有
+`Controls/BiliDownloader/`，SQLite 原生资产只允许 `runtimes/win-x64`；不再包含
+`bilidownloader.release.json` 或其他插件。
+
 ## 稳定性约束
 
 - 涉及 Flurl、WBI 缓存和 PATH 的测试串行运行并恢复静态状态；ffmpeg 路径已经是实例状态。

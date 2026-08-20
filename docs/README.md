@@ -24,6 +24,10 @@
 | [宿主 DI 保护与插件注册事务](./plan-history/host-v1/g6-host-di-protection.md) | 追加式私有服务契约、宿主描述符保护、事务提交、稳定诊断与回滚边界 | 当前 DI 组合契约，G6 已完成 |
 | [Document 信封 v1](./plan-history/host-v1/g7-document-envelope-v1.md) | 唯一七字段磁盘格式、8 MiB/深度 8 限制、Registry 所有权、插件内容 DTO 与失败原子性 | 当前 Document 磁盘契约，G7 已完成 |
 | [G8 保存契约与内容版本](./plan-history/host-v1/g8-document-content-persistence-contract.md) | 内容快照最终 API、宿主路径/所有权状态、SOLID 取舍、插件矩阵和验收证据 | 当前保存内存契约，G8 已完成 |
+| [G9 SDK 事件总线](./plan-history/host-v1/g9-sdk-event-bus.md) | SDK 自有同步事件、每 HostRuntime 隔离、订阅令牌和并发语义 | 当前进程内事件契约，G9 已完成 |
+| [G10 Host 内部直接协调](./plan-history/host-v1/g10-host-internal-coordination.md) | 文件打开、错误状态和 Tool/Dock 直接协作边界 | 当前 Host 内部协调，G10 已完成 |
+| [G11 低价值 public 面清理](./plan-history/host-v1/g11-low-value-public-surface-cleanup.md) | v1 前最终公共面删除、消费者迁移和重新引入条件 | 当前 SDK 公共面，G11 已完成 |
+| [G12 统一插件构建、部署与独立发布](./plan-history/host-v1/g12-unified-plugin-build-and-deployment.md) | 声明式资产、生成清单、单插件确定性 ZIP、SOLID 取舍和门禁证据 | 当前构建与发布契约，G12 已完成 |
 | [Document 保存 V1](./design/document-persistence-v1-design.md) | 公共脏状态、保存事务、关闭确认、备份和坏文件恢复规则 | 当前契约与设计依据 |
 | [MyAvaloniaManagement 测试说明](./reference/myavalonia-management-tests.md) | 宿主专项测试、覆盖率和 Windows 冒烟门禁 | 当前事实 |
 | [Dock 布局快照 V1](./reference/dock-layout-snapshot-v1.md) | `layout-v1.json` 的稳定 ID、校验、迁移和回退规则 | 当前契约 |
@@ -39,6 +43,14 @@
 - [基于活动理论的需求分解方法论](./theory/activity-theory-requirements-decomposition.md)：说明自然语言需求如何拆分到 Document、Tool 和后台服务。
 - [AI 工作流插件接入可行性探索](./design/ai-workflow-plugin-exploration.md)：候选能力、风险和 PoC 路线；属于探索文档，不是当前宿主契约。
 
+## 封版后候选计划
+
+以下计划只保存封版后的候选方向，不属于当前实现、G12 验收或 Host v1 封板条件。开始实施前必须按
+最终 v1 发布产物重新审核其中的版本、包格式、安装目录和安全边界：
+
+- [外部 Managed Plugin 开发与平台安装候选计划](./design/external-managed-plugin-development-and-installation-plan.md)：
+  `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
+
 ## 历史升级与验收记录
 
 ### Managed Plugin v1 整改记录
@@ -52,6 +64,10 @@
 - [G6：宿主 DI 保护](./plan-history/host-v1/g6-host-di-protection.md)：插件在隔离工作副本追加私有服务，宿主按描述符引用校验并事务提交；删除、替换、重排和覆盖宿主类型会在容器构建前阻断。
 - [G7：Document 信封 v1](./plan-history/host-v1/g7-document-envelope-v1.md)：建立第一个且唯一的严格七字段信封，分离宿主元数据与插件内容，加入资源边界、所有权校验和 322 项宿主绿色证据。
 - [G8：保存契约与内容版本](./plan-history/host-v1/g8-document-content-persistence-contract.md)：删除插件路径与身份所有权，最终收窄为不可变内容快照与恢复契约，保持七字段磁盘信封不变。
+- [G9：SDK 事件总线](./plan-history/host-v1/g9-sdk-event-bus.md)：删除第三方消息器泄漏和进程全局状态，建立每 HostRuntime 隔离的强类型同步事件。
+- [G10：Host 内部直接协调](./plan-history/host-v1/g10-host-internal-coordination.md)：删除 Host 内部广播，用根级状态和 Dock 协调器直接协作。
+- [G11：低价值 public 面清理](./plan-history/host-v1/g11-low-value-public-surface-cleanup.md)：删除无消费者、无生产实现或已有定向替代的候选 SDK 面。
+- [G12：统一插件构建、部署与独立发布](./plan-history/host-v1/g12-unified-plugin-build-and-deployment.md)：四插件共享声明式构建协议，但保持独立版本、ZIP 与回滚节奏。
 
 ### .NET 10 升级记录
 

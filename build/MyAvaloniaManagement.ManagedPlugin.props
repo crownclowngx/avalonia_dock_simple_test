@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      插件只维护 PluginVersion。程序集版本、文件版本和信息版本从同一事实派生，
+      避免项目、清单和最终 DLL 分别保存版本数字后发生漂移。
+    -->
+    <Version>$(PluginVersion)</Version>
+    <FileVersion>$(PluginVersion).0</FileVersion>
+    <InformationalVersion>$(PluginVersion)</InformationalVersion>
+    <AssemblyVersion>$(PluginVersion).0</AssemblyVersion>
+
+    <!-- Managed Plugin v1 的正式支持平台已经冻结为 Windows x64。 -->
+    <ManagedPluginRuntimeIdentifier Condition="'$(ManagedPluginRuntimeIdentifier)' == ''">win-x64</ManagedPluginRuntimeIdentifier>
+    <ManagedPluginTargetFramework Condition="'$(ManagedPluginTargetFramework)' == ''">$(TargetFramework)</ManagedPluginTargetFramework>
+    <ManagedPluginManifestSchemaVersion Condition="'$(ManagedPluginManifestSchemaVersion)' == '' And '$(MyAvaloniaManifestSchemaVersion)' != ''">$(MyAvaloniaManifestSchemaVersion)</ManagedPluginManifestSchemaVersion>
+    <ManagedPluginManifestSchemaVersion Condition="'$(ManagedPluginManifestSchemaVersion)' == ''">1</ManagedPluginManifestSchemaVersion>
+
+    <!--
+      普通 Build 默认部署到 Host 输出的 Controls；打包脚本通过全局属性覆盖 DeployRoot，
+      从而复用同一文件集合但完全不触碰开发者正在运行的 Host 目录。
+    -->
+    <ManagedPluginDeployRoot Condition="'$(ManagedPluginDeployRoot)' == ''">$(MSBuildThisFileDirectory)..\Host\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)\Controls</ManagedPluginDeployRoot>
+    <ManagedPluginDeployDirectory>$(ManagedPluginDeployRoot)\$(ManagedPluginDirectoryName)</ManagedPluginDeployDirectory>
+    <ManagedPluginGeneratedManifest>$(IntermediateOutputPath)plugin.manifest.json</ManagedPluginGeneratedManifest>
+  </PropertyGroup>
+</Project>

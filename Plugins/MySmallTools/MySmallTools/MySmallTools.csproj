@@ -7,33 +7,19 @@
         <PlatformTarget>x64</PlatformTarget>
         <VlcWindowsX64Enabled>true</VlcWindowsX64Enabled>
         <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
-        <!-- 插件只拥有一个发布版本事实，其余程序集元数据必须从这里派生。 -->
+        <!-- 插件只声明自身发布事实；清单、版本映射和部署由统一协议负责。 -->
+        <ManagedPlugin>true</ManagedPlugin>
+        <ManagedPluginId>myavalonia.plugin.my-small-tools</ManagedPluginId>
+        <ManagedPluginDirectoryName>SmallTools</ManagedPluginDirectoryName>
         <PluginVersion>1.0.0</PluginVersion>
-        <Version>$(PluginVersion)</Version>
-        <FileVersion>$(PluginVersion).0</FileVersion>
-        <InformationalVersion>$(PluginVersion)</InformationalVersion>
-        <AssemblyVersion>$(PluginVersion).0</AssemblyVersion>
+        <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
+        <ManagedPluginHostApiMinInclusive>1.0.0</ManagedPluginHostApiMinInclusive>
+        <ManagedPluginHostApiMaxExclusive>2.0.0</ManagedPluginHostApiMaxExclusive>
+        <ManagedPluginCommonContractMinInclusive>1.0.0</ManagedPluginCommonContractMinInclusive>
+        <ManagedPluginCommonContractMaxExclusive>2.0.0</ManagedPluginCommonContractMaxExclusive>
         <!-- 把 NuGet 原生内容重定向到插件私有目录，禁止默认复制到宿主输出根目录。 -->
         <VlcWindowsX64TargetDir>native\win-x64\libvlc</VlcWindowsX64TargetDir>
     </PropertyGroup>
-
-    <!--
-      G4 规定托管部署文件只在这里声明一次。宿主构建复制这组文件，发布脚本再从已经
-      验证过的 Controls/SmallTools 目录生成 Manifest 和 ZIP，避免三套清单逐渐漂移。
-      原生树由 VideoLAN 包在构建输出中生成，保持完整复制，不在 P0 阶段做高风险裁剪。
-    -->
-    <ItemGroup>
-      <SmallToolsManagedDeployment Include="$(TargetPath)" />
-      <SmallToolsManagedDeployment Include="$(TargetDir)$(AssemblyName).deps.json"
-                                   Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
-      <SmallToolsManagedDeployment Include="$(TargetDir)plugin.manifest.json" />
-      <SmallToolsManagedDeployment Include="$(PkgLibVLCSharp)\lib\net8.0\LibVLCSharp.dll" />
-      <SmallToolsManagedDeployment Include="$(PkgLibVLCSharp_Avalonia)\lib\netstandard2.0\LibVLCSharp.Avalonia.dll" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Update="plugin.manifest.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    </ItemGroup>
 
     <ItemGroup>
       <Folder Include="Converters\SecretVideoPlayer\" />
@@ -52,26 +38,17 @@
       <PackageReference Include="VideoLAN.LibVLC.Windows" PrivateAssets="all" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <!-- 部署路径以宿主构建输出为基准；运行时则以 MySmallTools.dll 的实际位置反向定位 native。 -->
-      <HostProjectOutputDir>$(MSBuildThisFileDirectory)..\..\..\Host\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
-      <PluginDeployDir>$(HostProjectOutputDir)\Controls\SmallTools</PluginDeployDir>
-    </PropertyGroup>
+    <ItemGroup>
+      <!-- 两个托管桥接程序集是插件私有依赖，不进入宿主共享程序集集合。 -->
+      <ManagedPluginPrivatePackage Include="LibVLCSharp;LibVLCSharp.Avalonia" />
+    </ItemGroup>
 
-    <Target Name="DeploySmallToolsPlugin"
-            AfterTargets="Build"
-            Condition="'$(SkipPluginDeploy)' != 'true'">
-      <ItemGroup>
-        <!-- 只部署插件本体、两个 LibVLCSharp 托管桥接程序集和 Windows x64 原生树，避免复制宿主已有依赖。 -->
-        <SmallToolsNative Include="$(TargetDir)native\win-x64\libvlc\**\*" />
-      </ItemGroup>
-      <RemoveDir Directories="$(PluginDeployDir)" />
-      <!-- 每次重新创建插件目录，避免升级 LibVLC 后遗留已删除或改名的旧原生模块。 -->
-      <MakeDir Directories="$(PluginDeployDir)" />
-      <Copy SourceFiles="@(SmallToolsManagedDeployment)" DestinationFolder="$(PluginDeployDir)" SkipUnchangedFiles="true" />
-      <Copy SourceFiles="@(SmallToolsNative)"
-            DestinationFiles="@(SmallToolsNative->'$(PluginDeployDir)\native\win-x64\libvlc\%(RecursiveDir)%(Filename)%(Extension)')"
-            SkipUnchangedFiles="true" />
-    </Target>
+    <PropertyGroup>
+      <!--
+        VideoLAN 包在 Build 期间把完整原生树写入 TargetDir，因此使用执行期目录声明。
+        公共 Target 会在构建结束后展开目录，避免干净工作区求值时得到空集合。
+      -->
+      <ManagedPluginAssetDirectoryRelativePath>native\win-x64\libvlc</ManagedPluginAssetDirectoryRelativePath>
+    </PropertyGroup>
 
 </Project>

@@ -106,12 +106,14 @@ public sealed class G8ReleaseAcceptanceTests
     {
         using var sandbox = new AcceptanceSandbox();
         var validPackage = await CreatePackageAsync(sandbox.Root, includeLinuxRid: false);
-        var valid = await new ReleaseGatePipeline([new PackageVerificationGate(validPackage)])
+        var valid = await new ReleaseGatePipeline(
+                [new PackageVerificationGate(validPackage.Package, validPackage.Manifest)])
             .ExecuteAsync(new ReleaseGateContext(Path.Combine(sandbox.Root, "valid-check"), null, null), default);
         Assert.True(valid.Passed);
 
         var invalidPackage = await CreatePackageAsync(sandbox.Root, includeLinuxRid: true);
-        var invalid = await new ReleaseGatePipeline([new PackageVerificationGate(invalidPackage)])
+        var invalid = await new ReleaseGatePipeline(
+                [new PackageVerificationGate(invalidPackage.Package, invalidPackage.Manifest)])
             .ExecuteAsync(new ReleaseGateContext(Path.Combine(sandbox.Root, "invalid-check"), null, null), default);
         Assert.False(invalid.Passed);
     }
@@ -129,7 +131,8 @@ public sealed class G8ReleaseAcceptanceTests
             includeLinuxRid: false,
             mutation: mutation);
 
-        var result = await new ReleaseGatePipeline([new PackageVerificationGate(package)])
+        var result = await new ReleaseGatePipeline(
+                [new PackageVerificationGate(package.Package, package.Manifest)])
             .ExecuteAsync(new ReleaseGateContext(Path.Combine(sandbox.Root, "check"), null, null), default);
 
         Assert.False(result.Passed);
@@ -179,7 +182,7 @@ public sealed class G8ReleaseAcceptanceTests
         }
     }
 
-    private static async Task<string> CreatePackageAsync(
+    private static async Task<(string Package, string Manifest)> CreatePackageAsync(
         string root,
         bool includeLinuxRid,
         string? mutation = null)
@@ -194,13 +197,18 @@ public sealed class G8ReleaseAcceptanceTests
         }
         if (includeLinuxRid)
         {
-            Directory.CreateDirectory(Path.Combine(stage, "runtimes", "linux-x64", "native"));
+            Directory.CreateDirectory(Path.Combine(
+                stage, "Controls", "BiliDownloader", "runtimes", "linux-x64", "native"));
             await File.WriteAllTextAsync(
-                Path.Combine(stage, "runtimes", "linux-x64", "native", "libe_sqlite3.so"),
+                Path.Combine(
+                    stage, "Controls", "BiliDownloader", "runtimes", "linux-x64", "native",
+                    "libe_sqlite3.so"),
                 "linux");
         }
         if (mutation == "shared")
-            await File.WriteAllTextAsync(Path.Combine(stage, "Avalonia.Base.dll"), "host-shared");
+            await File.WriteAllTextAsync(
+                Path.Combine(stage, "Controls", "BiliDownloader", "Avalonia.Base.dll"),
+                "host-shared");
 
         var entries = new List<ReleaseFileEntry>();
         foreach (var path in Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories))
@@ -211,17 +219,15 @@ public sealed class G8ReleaseAcceptanceTests
                 stream.Length,
                 Convert.ToHexString(await SHA256.HashDataAsync(stream))));
         }
-        var manifest = new ReleaseManifest(
-            1, "BiliDownloader", "p0", "net10.0", "win-x64", "test", false, entries);
-        await File.WriteAllTextAsync(
-            Path.Combine(stage, "bilidownloader.release.json"),
-            JsonSerializer.Serialize(manifest));
-
-        // 先冻结清单再注入破坏，分别证明文件集和摘要校验不信任脚本的 staging 结果。
+        // 先冻结文件清单再注入破坏，分别证明验证器不信任打包前的 staging 结果。
         if (mutation == "undeclared")
-            await File.WriteAllTextAsync(Path.Combine(stage, "undeclared.txt"), "surprise");
+            await File.WriteAllTextAsync(
+                Path.Combine(stage, "Controls", "BiliDownloader", "undeclared.txt"),
+                "surprise");
         if (mutation == "hash")
-            await File.AppendAllTextAsync(Path.Combine(stage, "BiliDownloader.dll"), "tampered");
+            await File.AppendAllTextAsync(
+                Path.Combine(stage, "Controls", "BiliDownloader", "BiliDownloader.dll"),
+                "tampered");
 
         var package = Path.Combine(root, $"package-{suffix}.zip");
         ZipFile.CreateFromDirectory(stage, package);
@@ -231,7 +237,26 @@ public sealed class G8ReleaseAcceptanceTests
             await using var writer = archive.CreateEntry("../escape.txt").Open();
             await writer.WriteAsync("escape"u8.ToArray());
         }
-        return package;
+        var packageInfo = new FileInfo(package);
+        await using var packageStream = File.OpenRead(package);
+        var archiveFact = new ReleaseArchive(
+            packageInfo.Name,
+            packageInfo.Length,
+            Convert.ToHexString(await SHA256.HashDataAsync(packageStream)));
+        var manifest = new ManagedPluginPackageManifest(
+            1,
+            "myavalonia.plugin.bili-downloader",
+            "1.0.0",
+            "BiliDownloader.dll",
+            "BiliDownloader",
+            "net10.0",
+            "win-x64",
+            "test",
+            archiveFact,
+            entries);
+        var manifestPath = Path.Combine(root, $"package-{suffix}.manifest.json");
+        await File.WriteAllTextAsync(manifestPath, JsonSerializer.Serialize(manifest));
+        return (package, manifestPath);
     }
 
     private sealed class AcceptanceSandbox : IDisposable

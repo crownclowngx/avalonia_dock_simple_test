@@ -109,6 +109,12 @@ V1 清单格式：
 - Host 与 Common 当前 `AssemblyVersion` 均为 `1.0.0.0`。兼容新增提升次版本，破坏性变更提升主版本；
 - 清单只解决兼容和确定性加载，不提供签名、防篡改、权限沙箱或热卸载。
 
+仓库内 Managed Plugin 的清单不在源码树手写，而由 `ManagedPluginId`、`PluginVersion`、入口程序集名
+和四个显式兼容端点生成。公共构建协议还强制包含入口 DLL、deps、PDB，排除 Host/SDK/UI 共享闭包
+和非 win-x64 原生资产。正式分发物按插件独立生成
+`<AssemblyName>-<PluginVersion>-win-x64.zip`；ZIP 内只有 `Controls/<PluginFolder>/`，外置同名
+`.manifest.json` 记录 ZIP 与全部文件摘要。目录部署是开发产物，ZIP 是正式分发物，两者使用同一资产集合。
+
 ### 3.2 Managed 插件
 
 - 程序集恰好包含一个具体 `IPluginModule`；
@@ -229,7 +235,7 @@ V1 清单格式：
 
 - [ ] Common 临时 API 指纹和 Host 零自有导出门禁通过，或变更已被明确批准；
 - [x] Managed-only 专项通过，Host 中不存在 Legacy 策略激活器和加载 Facade；
-- [ ] 四个真实插件构建与发布目录均包含有效清单、入口 `.deps.json`，版本和唯一模块身份一致；
+- [x] 四个真实插件的最终独立 ZIP 均包含有效清单、入口 `.deps.json`、PDB 和私有资产，版本与唯一模块身份一致；
 - [x] 四个插件及宿主使用显式 Context，生产代码不存在策略/View 隐式扫描与命名回退；
 - [x] manifest 是唯一身份来源，SDK 不再包含模块或生命周期 `PluginId`；
 - [x] 所有生产消费者使用同一个只读 `PluginRegistry`，Registry 在生命周期和 UI 前发布；

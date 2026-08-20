@@ -241,6 +241,27 @@ DI、Opened/Closing、布局保存和退出码，同时无需使用不稳定的�
 过滤后合并，既设置宿主总体门槛，也为四个高风险 ViewModel 设置独立门槛，
 防止用大量简单文件的覆盖率掩盖主流程缺口。
 
+### G12 独立插件包门禁
+
+```powershell
+.\scripts\Test-ManagedPluginPackages.ps1 -Configuration Release
+```
+
+脚本自动发现全部 `ManagedPlugin=true` 项目。它先用临时最小项目验证 16 个声明、必需文件、资产、
+路径、共享依赖与 RID 负例，再验证 `SkipPluginDeploy`、只清理当前插件目录和 Debug/Release 默认部署。
+每个真实插件从空临时部署根构建两次，比较 ZIP SHA-256 与逐文件清单；最后把四个 ZIP 解压到同一
+候选 Host 根，通过真实 `PluginLoadContext` 加载并发现唯一模块。结果写入：
+
+```text
+artifacts/test-results/ManagedPluginPackages/
+├── <AssemblyName>-<PluginVersion>-win-x64.zip
+├── <AssemblyName>-<PluginVersion>-win-x64.manifest.json
+└── summary.json
+```
+
+`summary.json` 不保存固定预期测试数量。G12 专用文档的时间点数字由
+`scripts/Update-G12DocumentationEvidence.ps1` 从本目录 TRX、宿主 summary 和包 summary 重写。
+
 ### G2 当前绿色基线
 
 2026-08-15 先执行锁定还原和解决方案 Release 构建，再执行：

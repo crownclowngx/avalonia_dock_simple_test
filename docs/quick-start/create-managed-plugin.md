@@ -2,7 +2,9 @@
 
 本篇以 `QuickStartPlugin` 为示例。完成后，宿主能够读取清单、加载入口程序集、实例化唯一的 `IPluginModule`，并在根容器构建前完成受控注册。Document、Tool 和 View 贡献将在[下一篇](./add-document-and-tool.md)加入。
 
-完整实现可对照 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj)、[`plugin.manifest.json`](../../Plugins/MyPlugTest/MyPlugTest/plugin.manifest.json) 和 [`MyPlugTestPluginModule`](../../Plugins/MyPlugTest/MyPlugTest/Plugin/MyPlugTestPluginModule.cs)。正式包与样式边界见 [G3 Plugin SDK 与 UI Profile](../plan-history/host-v1/g3-plugin-sdk-and-ui-profile.md)。
+完整实现可对照 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) 和
+[`MyPlugTestPluginModule`](../../Plugins/MyPlugTest/MyPlugTest/Plugin/MyPlugTestPluginModule.cs)。清单由构建生成，
+独立发布规则见 [G12 统一插件构建、部署与独立发布](../plan-history/host-v1/g12-unified-plugin-build-and-deployment.md)。
 
 ## 1. 创建项目
 
@@ -20,35 +22,20 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <!-- 插件只声明自身事实；程序集版本、严格清单与部署动作由公共协议派生。 -->
+    <ManagedPlugin>true</ManagedPlugin>
+    <ManagedPluginId>myavalonia.plugin.quick-start</ManagedPluginId>
+    <ManagedPluginDirectoryName>QuickStartPlugin</ManagedPluginDirectoryName>
+    <PluginVersion>1.0.0</PluginVersion>
+    <ManagedPluginHostApiMinInclusive>1.0.0</ManagedPluginHostApiMinInclusive>
+    <ManagedPluginHostApiMaxExclusive>2.0.0</ManagedPluginHostApiMaxExclusive>
+    <ManagedPluginCommonContractMinInclusive>1.0.0</ManagedPluginCommonContractMinInclusive>
+    <ManagedPluginCommonContractMaxExclusive>2.0.0</ManagedPluginCommonContractMaxExclusive>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="1.0.0" />
-    <None Update="plugin.manifest.json"
-          CopyToOutputDirectory="PreserveNewest"
-          CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <HostProjectOutputDir>$(MSBuildThisFileDirectory)..\..\..\Host\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
-    <PluginDeployDir>$(HostProjectOutputDir)\Controls\QuickStartPlugin</PluginDeployDir>
-  </PropertyGroup>
-
-  <Target Name="DeployPluginToHost"
-          AfterTargets="Build"
-          Condition="'$(SkipPluginDeploy)' != 'true'">
-    <Error Condition="!Exists('$(TargetDir)$(AssemblyName).deps.json')"
-           Text="Managed Plugin v1 requires $(AssemblyName).deps.json." />
-    <ItemGroup>
-      <PluginFiles Include="$(TargetPath)" />
-      <PluginFiles Include="$(TargetDir)$(AssemblyName).deps.json" />
-      <PluginFiles Include="$(TargetDir)plugin.manifest.json" />
-    </ItemGroup>
-    <RemoveDir Directories="$(PluginDeployDir)" />
-    <MakeDir Directories="$(PluginDeployDir)" />
-    <Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(PluginDeployDir)" />
-  </Target>
 </Project>
 ```
 
@@ -56,11 +43,14 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
 `MyAvaloniaManagementCommon.csproj` 的 `ProjectReference`，缩短调试反馈；发布兼容测试必须重新使用
 正式 nupkg。外部插件不要直接复制 Common DLL 作为裸引用。
 
-这个目标只适用于没有私有第三方运行时依赖的最小插件。引入私有包后，还必须像 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) 一样，从 `RuntimeCopyLocalItems` 中显式选择并按 `DestinationSubPath` 部署所需文件；不要把另一个插件目录当作依赖搜索路径。
+不要复制任何现有插件的部署 Target。引入私有第三方运行时包时，用
+`<ManagedPluginPrivatePackage Include="Package.Id" />` 声明资产所有权；显式文件使用
+`ManagedPluginAsset` 的 `TargetPath`，构建期目录树使用 `ManagedPluginAssetDirectoryRelativePath`。
+公共协议会拒绝不存在、越界、重复、非 win-x64 或宿主共享资产。
 
 ## 2. 添加严格清单
 
-在项目根目录创建 `plugin.manifest.json`：
+不在源码树创建 `plugin.manifest.json`。构建根据上一节属性生成以下严格内容到中间目录和输出目录：
 
 ```json
 {
@@ -81,7 +71,7 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
 }
 ```
 
-清单是加载插件代码之前的边界，不是宽松配置。必须同时满足：
+生成清单仍是加载插件代码之前的边界，不是宽松配置。必须同时满足：
 
 - 文件不超过 64 KiB，不能包含注释或尾随逗号；
 - 字段名称区分大小写，未知、重复或缺失字段都会被拒绝；
@@ -91,7 +81,8 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
 - `entryAssembly` 只能是插件根目录里的一个 DLL 文件名，不能包含路径；
 - `pluginVersion` 与入口程序集 `AssemblyVersion` 规范化后必须完全一致。
 
-不要随意复制示例的兼容区间。发布前应以目标 Host 和 Common 的实际 `AssemblyVersion` 为依据，只声明已经验证过的范围。完整规则见[兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md#31-严格插件清单)。
+不要随意复制示例的兼容区间，也不要让区间跟随 Host 当前版本自动漂移。发布前应只声明实际验证过的
+Host/Common 左闭右开范围。完整规则见[兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md#31-严格插件清单)。
 
 ## 3. 定义稳定 ID
 
@@ -228,10 +219,22 @@ Host/MyAvaloniaManagement/bin/Debug/net10.0/
     └── QuickStartPlugin/
         ├── plugin.manifest.json
         ├── QuickStartPlugin.dll
-        └── QuickStartPlugin.deps.json（必需）
+        ├── QuickStartPlugin.deps.json（必需）
+        └── QuickStartPlugin.pdb（必需）
 ```
 
 一个插件独占一个目录，入口只由清单声明；宿主不扫描其他 DLL 猜测入口或依赖。宿主对插件目录的发现结果在单个进程内缓存；替换 DLL、deps 或清单后必须完整退出并重新启动宿主。
+
+独立生成正式候选包：
+
+```powershell
+.\scripts\Build-ManagedPluginPackage.ps1 `
+  -Project Plugins/QuickStartPlugin/QuickStartPlugin/QuickStartPlugin.csproj `
+  -Configuration Release
+```
+
+结果为 `QuickStartPlugin-1.0.0-win-x64.zip` 及同名外置 `.manifest.json`。ZIP 内只有
+`Controls/QuickStartPlugin/`，不会与其他插件合并发布。
 
 ## 外部作者的编译与交付边界
 

@@ -9,6 +9,8 @@
 - [ ] Host 和插件使用相同的配置与目标框架构建；
 - [ ] `Controls/<PluginFolder>/` 是插件独占目录；
 - [ ] 根目录同时存在 `plugin.manifest.json` 和清单声明的入口 DLL；
+- [ ] 入口旁存在同名 `.deps.json` 和 PDB；
+- [ ] 项目声明 `ManagedPlugin=true`，清单来自构建输出而非源码树手写副本；
 - [ ] 清单版本与入口 `AssemblyVersion` 一致；manifest 是唯一插件身份来源；
 - [ ] 模块通过 Context 显式登记全部 Document、Tool、View 和可选 Lifecycle；
 - [ ] 插件目录不包含 `MyAvaloniaManagementCommon.dll` 或其他宿主共享程序集；
@@ -60,6 +62,16 @@ dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTes
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。
 
+发布前运行单插件入口；仓库维护者还应执行全矩阵：
+
+```powershell
+.\scripts\Build-ManagedPluginPackage.ps1 -Project <插件.csproj> -Configuration Release
+.\scripts\Test-ManagedPluginPackages.ps1 -Configuration Release
+```
+
+前者只生成一个独立 ZIP，后者自动发现全部 `ManagedPlugin=true` 项目并做两轮确定性构建、
+契约负例、最终 ZIP 宿主加载和聚合 `summary.json`。两者都使用临时部署根，不触碰真实 `Controls`。
+
 ## 检查本地 Markdown 链接
 
 下面的 PowerShell 片段递归检查 Quick Start 中不含通配符的本地链接。它忽略外部 URL 和纯页内锚点：
@@ -97,7 +109,7 @@ if ($broken) { $broken; throw '发现失效的本地 Markdown 链接。' }
 
 | 错误码 | 常见原因 | 处理方向 |
 | --- | --- | --- |
-| `PLUGIN_MANIFEST_MISSING` | 插件根目录没有清单 | 把 `plugin.manifest.json` 复制到入口 DLL 同级目录 |
+| `PLUGIN_MANIFEST_MISSING` | 插件根目录没有清单 | 确认项目声明 `ManagedPlugin=true` 并使用公共 Target 构建；不要恢复手写清单 |
 | `PLUGIN_MANIFEST_INVALID` | 字段拼写、重复字段、注释、尾逗号、版本或入口格式不合法 | 对照严格清单逐字段检查，不要依赖宽松 JSON 解析器 |
 | `PLUGIN_MANIFEST_SCHEMA_UNSUPPORTED` | `schemaVersion` 不是宿主支持的版本 | 当前使用 `schemaVersion: 1` |
 | `PLUGIN_HOST_API_INCOMPATIBLE` / `PLUGIN_COMMON_CONTRACT_INCOMPATIBLE` | 当前宿主版本不在清单区间 | 针对目标版本重新编译验证，或修正已经验证过的区间 |

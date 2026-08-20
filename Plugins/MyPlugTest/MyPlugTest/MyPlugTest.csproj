@@ -3,12 +3,16 @@
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <!-- 插件只拥有一个发布版本事实，其余程序集元数据必须从这里派生。 -->
+        <!-- 插件只声明自身发布事实；清单、版本映射和部署由统一协议负责。 -->
+        <ManagedPlugin>true</ManagedPlugin>
+        <ManagedPluginId>myavalonia.plugin.my-plug-test</ManagedPluginId>
+        <ManagedPluginDirectoryName>MyPlugTest</ManagedPluginDirectoryName>
         <PluginVersion>1.0.0</PluginVersion>
-        <Version>$(PluginVersion)</Version>
-        <FileVersion>$(PluginVersion).0</FileVersion>
-        <InformationalVersion>$(PluginVersion)</InformationalVersion>
-        <AssemblyVersion>$(PluginVersion).0</AssemblyVersion>
+        <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
+        <ManagedPluginHostApiMinInclusive>1.0.0</ManagedPluginHostApiMinInclusive>
+        <ManagedPluginHostApiMaxExclusive>2.0.0</ManagedPluginHostApiMaxExclusive>
+        <ManagedPluginCommonContractMinInclusive>1.0.0</ManagedPluginCommonContractMinInclusive>
+        <ManagedPluginCommonContractMaxExclusive>2.0.0</ManagedPluginCommonContractMaxExclusive>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -20,10 +24,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="plugin.manifest.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    </ItemGroup>
-
-    <ItemGroup>
       <!-- 插件自身拥有 MVVM 与内部消息 DTO 依赖，基础 SDK 不再传递 Toolkit。 -->
       <PackageReference Include="CommunityToolkit.Mvvm" />
       <PackageReference Include="EPPlus" />
@@ -31,41 +31,8 @@
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     </ItemGroup>
 
-    <!-- 构建后将插件及其私有运行时依赖部署到宿主 Controls/MyPlugTest 目录。 -->
-    <PropertyGroup>
-        <HostProjectOutputDir>$(MSBuildThisFileDirectory)..\..\..\Host\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)</HostProjectOutputDir>
-        <PluginDeployDir>$(HostProjectOutputDir)\Controls\MyPlugTest</PluginDeployDir>
-    </PropertyGroup>
-
-    <Target Name="DeployPluginToHost"
-            AfterTargets="Build"
-            DependsOnTargets="ResolveReferences"
-            Condition="'$(SkipPluginDeploy)' != 'true'">
-        <ItemGroup>
-            <MyPlugTestPluginFiles Include="$(TargetPath)" />
-            <MyPlugTestPluginFiles Include="$(TargetDir)$(AssemblyName).pdb"
-                                   Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
-            <MyPlugTestPluginFiles Include="$(TargetDir)$(AssemblyName).deps.json"
-                                   Condition="Exists('$(TargetDir)$(AssemblyName).deps.json')" />
-            <MyPlugTestPluginFiles Include="$(TargetDir)plugin.manifest.json" />
-            <MyPlugTestPluginManaged Include="@(RuntimeCopyLocalItems)"
-                                     Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'EPPlus' Or
-                                                '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'EPPlus.Interfaces' Or
-                                                '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Microsoft.IO.RecyclableMemoryStream' Or
-                                                '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'System.Security.Cryptography.Pkcs' Or
-                                                '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'System.Security.Cryptography.Xml' Or
-                                                '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Flurl' Or
-                                                '%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Flurl.Http'" />
-        </ItemGroup>
-
-        <RemoveDir Directories="$(PluginDeployDir)" />
-        <MakeDir Directories="$(PluginDeployDir)" />
-        <Copy SourceFiles="@(MyPlugTestPluginFiles)"
-              DestinationFolder="$(PluginDeployDir)"
-              SkipUnchangedFiles="true" />
-        <Copy SourceFiles="@(MyPlugTestPluginManaged)"
-              DestinationFiles="@(MyPlugTestPluginManaged->'$(PluginDeployDir)\%(DestinationSubPath)')"
-              SkipUnchangedFiles="true" />
-    </Target>
+    <ItemGroup>
+      <ManagedPluginPrivatePackage Include="EPPlus;EPPlus.Interfaces;Microsoft.IO.RecyclableMemoryStream;System.Security.Cryptography.Pkcs;System.Security.Cryptography.Xml;Flurl;Flurl.Http" />
+    </ItemGroup>
 
 </Project>

@@ -13,12 +13,12 @@ using MySmallTools.Plugin;
 namespace MyAvaloniaManagement.PluginTests;
 
 /// <summary>
-/// 验证集中版本政策、实际程序集元数据和仓库内插件清单没有发生漂移。
+/// 验证集中版本政策、实际程序集元数据和构建生成的插件清单没有发生漂移。
 /// </summary>
 /// <remarks>
-/// 设计意图：这是仓库发布政策测试，不是运行时插件发现测试。它有意读取源码树中的
-/// MSBuild 属性与清单，再与本次构建的程序集交叉验证，使版本复制错误在发布门禁中给出
-/// 具体字段，而不是等到用户启动宿主后才得到笼统的不兼容诊断。
+/// 设计意图：这是仓库发布政策测试，不是运行时插件发现测试。它读取插件的声明式
+/// MSBuild 属性、公共版本映射与本次构建生成的清单，再与实际程序集交叉验证，使版本
+/// 复制错误在发布门禁中给出具体字段，而不是等到用户启动宿主后才得到笼统诊断。
 /// </remarks>
 public sealed class VersionPolicyTests
 {
@@ -93,6 +93,27 @@ public sealed class VersionPolicyTests
     [Fact]
     public void VersionPolicy_四个插件的项目程序集清单与兼容区间一致()
     {
+        var sharedProps = Path.Combine(
+            RepositoryRoot,
+            "build",
+            "MyAvaloniaManagement.ManagedPlugin.props");
+        AssertVersionFact(
+            "Managed Plugin Version mapping",
+            "$(PluginVersion)",
+            ReadProjectProperty(sharedProps, "Version"));
+        AssertVersionFact(
+            "Managed Plugin FileVersion mapping",
+            "$(PluginVersion).0",
+            ReadProjectProperty(sharedProps, "FileVersion"));
+        AssertVersionFact(
+            "Managed Plugin InformationalVersion mapping",
+            "$(PluginVersion)",
+            ReadProjectProperty(sharedProps, "InformationalVersion"));
+        AssertVersionFact(
+            "Managed Plugin AssemblyVersion mapping",
+            "$(PluginVersion).0",
+            ReadProjectProperty(sharedProps, "AssemblyVersion"));
+
         var hostProfile = HostCompatibilityProfile.Current;
         foreach (var plugin in GetPluginReleases())
         {
@@ -104,21 +125,21 @@ public sealed class VersionPolicyTests
                 $"{plugin.Name} PluginVersion 必须是 major.minor.patch 数字版本，" +
                 $"实际为 '{projectVersion}'。");
             AssertVersionFact(
-                $"{plugin.Name} Version mapping",
-                "$(PluginVersion)",
-                ReadProjectProperty(projectPath, "Version"));
+                $"{plugin.Name} ManagedPlugin",
+                "true",
+                ReadProjectProperty(projectPath, "ManagedPlugin"));
             AssertVersionFact(
-                $"{plugin.Name} FileVersion mapping",
-                "$(PluginVersion).0",
-                ReadProjectProperty(projectPath, "FileVersion"));
+                $"{plugin.Name} stable plugin id",
+                plugin.PluginId,
+                ReadProjectProperty(projectPath, "ManagedPluginId"));
             AssertVersionFact(
-                $"{plugin.Name} InformationalVersion mapping",
-                "$(PluginVersion)",
-                ReadProjectProperty(projectPath, "InformationalVersion"));
+                $"{plugin.Name} directory name",
+                plugin.DirectoryName,
+                ReadProjectProperty(projectPath, "ManagedPluginDirectoryName"));
             AssertVersionFact(
-                $"{plugin.Name} AssemblyVersion mapping",
-                "$(PluginVersion).0",
-                ReadProjectProperty(projectPath, "AssemblyVersion"));
+                $"{plugin.Name} runtime identifier",
+                "win-x64",
+                ReadProjectProperty(projectPath, "ManagedPluginRuntimeIdentifier"));
             AssertVersionFact(
                 $"{plugin.Name} actual FileVersion",
                 projectVersion + ".0",
@@ -128,9 +149,16 @@ public sealed class VersionPolicyTests
                 projectVersion,
                 ReadInformationalVersionCore(plugin.Assembly));
 
-            var manifestDirectory = Path.GetDirectoryName(Path.Combine(
-                RepositoryRoot,
-                plugin.ManifestPath))!;
+            // 测试输出会把四个 ProjectReference 的同名 plugin.manifest.json 覆盖到同一目录，
+            // 因此必须回到各插件自己的 bin/<Configuration>/net10.0 读取生成清单。
+            // 这里仍然读取构建产物，不允许源码树保留第二份手写事实。
+            var configuration = new DirectoryInfo(AppContext.BaseDirectory).Parent?.Name
+                ?? throw new DirectoryNotFoundException("无法从测试输出确定构建配置。");
+            var manifestDirectory = Path.Combine(
+                Path.GetDirectoryName(projectPath)!,
+                "bin",
+                configuration,
+                "net10.0");
             var success = PluginManifestReader.TryRead(
                 manifestDirectory,
                 out var manifest,
@@ -152,12 +180,32 @@ public sealed class VersionPolicyTests
                 projectVersion,
                 manifest.PluginVersion.ToString(3));
             AssertVersionFact(
+                $"{plugin.Name} project/manifest id",
+                plugin.PluginId,
+                manifest.PluginId.Value);
+            AssertVersionFact(
                 $"{plugin.Name} entryAssembly",
                 plugin.Assembly.GetName().Name + ".dll",
                 manifest.EntryAssembly);
             Assert.Equal(
                 PluginManifestReader.CurrentSchemaVersion,
                 manifest.SchemaVersion);
+            AssertVersionFact(
+                $"{plugin.Name} Host API minInclusive",
+                ReadProjectProperty(projectPath, "ManagedPluginHostApiMinInclusive"),
+                manifest.HostApi.MinInclusive.ToString(3));
+            AssertVersionFact(
+                $"{plugin.Name} Host API maxExclusive",
+                ReadProjectProperty(projectPath, "ManagedPluginHostApiMaxExclusive"),
+                manifest.HostApi.MaxExclusive.ToString(3));
+            AssertVersionFact(
+                $"{plugin.Name} Common minInclusive",
+                ReadProjectProperty(projectPath, "ManagedPluginCommonContractMinInclusive"),
+                manifest.CommonContract.MinInclusive.ToString(3));
+            AssertVersionFact(
+                $"{plugin.Name} Common maxExclusive",
+                ReadProjectProperty(projectPath, "ManagedPluginCommonContractMaxExclusive"),
+                manifest.CommonContract.MaxExclusive.ToString(3));
 
             var compatible = PluginCompatibilityEvaluator.TryEvaluate(
                 manifest,
@@ -177,22 +225,26 @@ public sealed class VersionPolicyTests
             "BiliDownloader",
             typeof(BiliDownloaderPluginModule).Assembly,
             Path.Combine("Plugins", "BiliDownloader", "BiliDownloader", "BiliDownloader.csproj"),
-            Path.Combine("Plugins", "BiliDownloader", "BiliDownloader", "plugin.manifest.json")),
+            "myavalonia.plugin.bili-downloader",
+            "BiliDownloader"),
         new(
             "DaTangAccountingHelpPlug",
             typeof(DaTangAccountingHelpPluginModule).Assembly,
             Path.Combine("Plugins", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug.csproj"),
-            Path.Combine("Plugins", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "plugin.manifest.json")),
+            "myavalonia.plugin.datang-accounting-help",
+            "DaTang"),
         new(
             "MyPlugTest",
             typeof(MyPlugTestPluginModule).Assembly,
             Path.Combine("Plugins", "MyPlugTest", "MyPlugTest", "MyPlugTest.csproj"),
-            Path.Combine("Plugins", "MyPlugTest", "MyPlugTest", "plugin.manifest.json")),
+            "myavalonia.plugin.my-plug-test",
+            "MyPlugTest"),
         new(
             "MySmallTools",
             typeof(MySmallToolsPluginModule).Assembly,
             Path.Combine("Plugins", "MySmallTools", "MySmallTools", "MySmallTools.csproj"),
-            Path.Combine("Plugins", "MySmallTools", "MySmallTools", "plugin.manifest.json")),
+            "myavalonia.plugin.my-small-tools",
+            "SmallTools"),
     ];
 
     private static IReadOnlyDictionary<string, string> ReadVersionProperties()
@@ -279,5 +331,6 @@ public sealed class VersionPolicyTests
         string Name,
         Assembly Assembly,
         string ProjectPath,
-        string ManifestPath);
+        string PluginId,
+        string DirectoryName);
 }

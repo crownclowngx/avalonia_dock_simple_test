@@ -20,12 +20,15 @@
 
 ### 2.1 构建后的插件目录
 
-`MySmallTools.csproj` 的 `DeploySmallToolsPlugin` Target 在构建后重新创建宿主输出中的目录：
+根级 Managed Plugin Target 根据 `MySmallTools.csproj` 的声明式资产，在构建后重新创建当前插件目录：
 
 ```text
 Host/MyAvaloniaManagement/bin/<Configuration>/net10.0/
 └─ Controls/SmallTools/
    ├─ MySmallTools.dll
+   ├─ MySmallTools.deps.json
+   ├─ MySmallTools.pdb
+   ├─ plugin.manifest.json
    ├─ LibVLCSharp.dll
    ├─ LibVLCSharp.Avalonia.dll
    └─ native/win-x64/libvlc/
@@ -34,26 +37,30 @@ Host/MyAvaloniaManagement/bin/<Configuration>/net10.0/
       └─ plugins/
 ```
 
-Target 先删除再创建 `Controls/SmallTools/`，防止升级 LibVLC 后遗留旧模块形成混合版本。`VideoLAN.LibVLC.Windows` 设置 `PrivateAssets="all"`，并通过 `VlcWindowsX64TargetDir` 把 NuGet 原生内容重定向到插件私有目录。
+公共 Target 只删除并重建 `Controls/SmallTools/`，防止升级 LibVLC 后遗留旧模块形成混合版本，
+不会修改兄弟插件。`VideoLAN.LibVLC.Windows` 设置 `PrivateAssets="all"`，并通过
+`VlcWindowsX64TargetDir` 把 NuGet 原生内容重定向到插件私有目录。
 
 设置 `SkipPluginDeploy=true` 只会跳过向宿主输出复制，不会产生可直接分发的发布包。测试和辅助工程使用此属性避免彼此争用宿主部署目录。
 
 ### 2.2 正式 ZIP 布局
 
-正式发布脚本在 staging 阶段额外生成 `mysmalltools.release.json`：
+正式发布脚本调用 G12 单插件打包入口，ZIP 内沿用宿主严格清单：
 
 ```text
 Controls/SmallTools/
 ├─ MySmallTools.dll
+├─ MySmallTools.deps.json
+├─ MySmallTools.pdb
 ├─ LibVLCSharp.dll
 ├─ LibVLCSharp.Avalonia.dll
-├─ mysmalltools.release.json
+├─ plugin.manifest.json
 └─ native/win-x64/libvlc/...
 ```
 
-`mysmalltools.release.json` 不由普通 MSBuild 部署 Target 生成。它只存在于正式打包 staging/ZIP 中，记录 schema、插件 ID、源码修订、平台、版本以及除 Manifest 自身外每个 payload 文件的规范化相对路径、长度和 SHA-256。
-
-ZIP 从 `Controls/SmallTools/` 开始，可解压到宿主根目录。发布脚本按稳定路径排序并固定 ZIP 时间戳；随后从最终 ZIP 解压，重新检查所有 Manifest 哈希、额外文件和生产部署探针。
+同名外置 `MySmallTools-<PluginVersion>-win-x64.manifest.json` 记录 ZIP 摘要，以及每个 ZIP 文件的
+完整 `Controls/SmallTools/...` 路径、长度和 SHA-256。ZIP 从 `Controls/SmallTools/` 开始，可解压到
+宿主根目录；通用入口按稳定路径排序并固定时间戳，再从最终 ZIP 复验摘要。专项脚本随后只负责生产部署探针。
 
 ## 3. LibVLC 初始化与部署探针
 
@@ -284,8 +291,8 @@ G7.1 后，顶层 Document ViewModel 是宿主兼容外壳，实际实现按
 4. `MySmallTools.Tests`；
 5. 宿主插件测试；
 6. ReleaseAcceptance 构建；
-7. staging、Manifest、稳定 ZIP；
-8. 解压最终 ZIP 并复验哈希和封闭文件集；
+7. 调用 G12 单插件入口生成严格清单、稳定 ZIP 和外置文件清单；
+8. 解压已由通用入口复验的最终 ZIP；
 9. 对解压目录运行生产部署探针；
 10. 64 MiB/512 MiB 流式内存门禁；
 11. 两轮真实窗口播放与 Dock 门禁；
@@ -295,9 +302,9 @@ G7.1 后，顶层 Document ViewModel 是宿主兼容外壳，实际实现按
 
 ```text
 artifacts/MySmallTools/p0-win-x64/
-├─ MySmallTools-p0-win-x64-<revision>.zip
-├─ MySmallTools-p0-win-x64-<revision>.manifest.json
-├─ MySmallTools-p0-win-x64-<revision>.acceptance.json
+├─ MySmallTools-<PluginVersion>-win-x64.zip
+├─ MySmallTools-<PluginVersion>-win-x64.manifest.json
+├─ MySmallTools-<PluginVersion>-win-x64.acceptance.json
 ├─ deployment-probe.json
 ├─ memory-gate.json
 ├─ playback-run1.json

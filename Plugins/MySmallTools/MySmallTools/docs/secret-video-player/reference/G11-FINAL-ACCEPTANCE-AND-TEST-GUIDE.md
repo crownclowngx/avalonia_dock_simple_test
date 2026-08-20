@@ -140,8 +140,8 @@ dotnet test `
 .\scripts\Release-MySmallToolsP0.ps1 -AllowDirty
 ```
 
-正式门禁包含确定性 ZIP/Manifest、解压后哈希复验、部署探针、64/512 MiB 流式内存门禁和
-两轮真实播放。`publishable` 必须为 `true`。
+正式门禁通过 G12 单插件入口生成确定性 `MySmallTools-<PluginVersion>-win-x64.zip` 与外置文件清单，
+再对最终 ZIP 执行部署探针、64/512 MiB 流式内存门禁和两轮真实播放。`publishable` 必须为 `true`。
 
 ### 5.2 G8/P1
 
