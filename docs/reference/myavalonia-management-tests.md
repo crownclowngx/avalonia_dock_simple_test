@@ -2,11 +2,27 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前 G15 宿主基线：2026-08-20，Unit 173、UI 38、Plugin 150，共 361/361；行覆盖率
-> 81.12%、分支覆盖率 66.85%。G14 的历史两轮 Release 证据见
+> 当前 Managed Plugin v1 基线由 `managed-plugin-v1.0.0` 定位。最新测试数量和覆盖率必须从本轮
+> TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
-> [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)。
-> 数量来自本次命令输出，不是永久固定门槛。
+> [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
+> [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
+
+## G16 文档与非发布基线门禁
+
+修改宿主 v1 当前文档、脚本路径、集中版本、SDK 基线或四插件兼容声明时运行：
+
+```powershell
+.\scripts\Test-DocumentationCore.ps1
+.\scripts\Test-Documentation.ps1
+```
+
+核心测试在系统临时目录验证正常和失败夹具；正式入口检查当前文档与 host-v1 历史记录的本地链接，
+并只对当前事实应用过期措辞规则。它还验证关键源码类型、G11 已删除类型、G13 API baseline，以及四个
+插件项目中的版本与 Host/Common 兼容区间。结果写入
+`artifacts/test-results/Documentation/summary.json`。
+
+G16 不调用 Windows Smoke、G14 总发布门禁或发布验收项目；通过 G16 不能冒充新的 Windows 发布放行。
 
 ## G14 正式发布门禁
 
@@ -253,6 +269,18 @@ BiliDownloader 720/720、DaTangAccountingHelpPlug 64/64、MySmallTools 183/183�
 `HostDiagnostics` 专项 26/26，源码门禁检查 127 个生产 C# 文件并通过。数量和覆盖率来自本轮
 TRX/Cobertura/`summary.json`，完整记录见
 [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)。
+
+### G16 当前绿色基线
+
+2026-08-20 执行文档核心单元测试、文档事实门禁、锁定还原、Release `-warnaserror` 构建、G15
+源码扫描、Host 与三个业务插件单元测试、SDK 包/API 和四插件包矩阵。Host 仍为 Unit 173、UI 38、
+Plugin 150，共 **361/361**；行覆盖率 81.12%、分支覆盖率 66.85%。BiliDownloader 720/720、
+DaTang 64/64、MySmallTools 183/183；SDK API 为 Shipped 243、Unshipped 0；四个最终 ZIP 均完成
+两轮确定性构建和最终 Host 加载。
+
+文档门禁检查 35 份文档、220 个本地链接、65 个脚本路径、35 个真实项目路径和 4 个插件项目。
+本轮没有运行 Windows Smoke、G14 总发布门禁或发布验收项目，不能将该结果解释为新的 Windows 发布放行。完整记录见
+[G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
 ### 事件总线、Host 直接协调与稳定 ID
 

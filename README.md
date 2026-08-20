@@ -4,6 +4,10 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 
 > 当前定位是同一团队维护的内部可信插件平台，主要支持 Windows x64。它不是第三方插件市场或安全沙箱，也不支持运行时热卸载；更新插件需要退出宿主、替换文件并重新启动。
 
+> Managed Plugin v1 已完成 G0–G16 封板，源码基线由本地注解标签
+> `managed-plugin-v1.0.0` 定位。签署内容、非发布门禁证据和回退边界见
+> [G16 文档与 v1 基线](./docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
+
 ## 核心扩展模型
 
 | 概念 | 语义 | 典型用途 |
@@ -44,6 +48,9 @@ v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。插件�
 Host API 与 SDK 的程序集兼容身份均为 `1.0.0.0`；统一事实定义在
 [`Directory.Version.props`](./Directory.Version.props)。普通进程内强类型消息不增加无迁移行为的
 版本字段，发生破坏性语义变化时创建新消息类型或提升 SDK 主版本。
+
+四个当前插件的 `PluginVersion` 均为 `1.0.0`，Host API 与 Common 兼容区间均为
+`[1.0.0, 2.0.0)`；这些值由各插件项目文件拥有，G16 文档门禁直接读取并与集中 SDK 版本交叉验证。
 
 宿主默认把布局、外观和诊断写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v1\`。旧预发布目录
 保持原样，不读取、迁移或删除。`MYAVALONIA_DATA_DIRECTORY` 仍表示完整数据根，不追加 `v1`，
@@ -100,6 +107,15 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [MyAvaloniaManagement 测试说明](./docs/reference/myavalonia-management-tests.md)：查看测试层次、门禁和结果位置。
 
 ## 测试
+
+修改宿主 v1 当前文档、脚本路径、版本事实或关键契约名称时先运行：
+
+```powershell
+.\scripts\Test-DocumentationCore.ps1
+.\scripts\Test-Documentation.ps1
+```
+
+该门禁不启动窗口、不执行发布，也不替代 G14 的历史发布门禁。
 
 在干净 Git 提交上执行完整的 G14 Windows 本地发布门禁：
 

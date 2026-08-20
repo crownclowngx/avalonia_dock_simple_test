@@ -16,6 +16,9 @@ public API 由 `ApiCompatibility/v1/PublicAPI.Shipped.txt` 和 `PublicAPI.Unship
 会在普通构建和 G13 专项脚本中失败。不得使用 `*REMOVED*` 绕过同一主版本门禁。有意破坏必须
 建立新主版本基线，并同步 SDK/AssemblyVersion、插件清单兼容区间、迁移说明和真实插件验证。
 
+G16 使用 `managed-plugin-v1.0.0` 本地注解标签定位 SDK `1.0.0` 的正式源码基线。标签不替代上述
+Shipped/Unshipped 文本，也不表示包已推送到公共 NuGet；成员兼容判断仍只服从 G13 分析器与专项门禁。
+
 每个入口程序集只提供一个 public 无参 `IPluginModule`，并在组合阶段实现
 `Configure(IPluginRegistrationContext)`。manifest 是插件身份唯一事实源，模块通过只读
 `context.PluginId` 取得宿主已验证的身份。`context.Services` 只注册插件私有业务服务；Document、

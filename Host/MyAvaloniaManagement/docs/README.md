@@ -19,12 +19,14 @@
 - [G5 显式贡献与 Plugin Registry](../../../docs/plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)
 - [G7 Document 信封 v1](../../../docs/plan-history/host-v1/g7-document-envelope-v1.md)
 - [G8 保存契约与内容版本](../../../docs/plan-history/host-v1/g8-document-content-persistence-contract.md)
+- [G16 文档与 v1 基线](../../../docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)
 
 ## 文档定位
 
 这些文档描述的是当前实现，不是新功能路线图。当前明确保持以下边界：
 
 - G5 已对封板前候选 Plugin SDK 做一次破坏式重定基线；此后的最终 v1 public 契约进入兼容治理，Host 自有实现不属于插件 API；
+- G16 已完成最终文档签署，`managed-plugin-v1.0.0` 定位 Managed Plugin v1 基线；
 - 插件只支持严格清单、必需 `.deps.json` 和唯一 `IPluginModule` 的 Managed 模型；
 - manifest 是身份唯一事实源，Document、Tool、View 和 Lifecycle 只通过 Context 显式登记；
 - 不改变七字段 Document 信封 v1 与 `layout-v1.json` 格式；插件内容仅通过 `DocumentContentSnapshot` 传递；
@@ -38,10 +40,11 @@
 在仓库根目录运行：
 
 ```powershell
+.\scripts\Test-Documentation.ps1
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke
 ```
 
-2026-08-18 G8 基线为 Host Unit 151、Headless UI 37、Plugin 141，合计 329/329；
-解决方案 Release 构建 0 警告、0 错误，Host 行/分支覆盖率为 80.41% / 65.71%，
-SDK 包新旧契约夹具与 Windows Smoke 通过。测试数量由命令输出动态统计。
+文档门禁验证本地链接、脚本路径、关键类型、集中版本和四插件兼容区间；宿主综合门禁动态统计
+Unit、Headless UI、Plugin 与覆盖率。带日期的具体数量只记录在各 G 阶段专用文档中，不作为永久阈值。
+`-WindowsSmoke` 是独立的 Windows 实窗验证，不属于 G16 文档基线门禁。

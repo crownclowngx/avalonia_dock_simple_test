@@ -1,5 +1,8 @@
 # Plugin SDK API 兼容基线维护指南
 
+> G16 已用本地注解标签 `managed-plugin-v1.0.0` 定位 SDK `1.0.0` 的正式源码基线；标签不是 API
+> 成员清单，也不表示 NuGet 已发布。成员事实仍由 `ApiCompatibility/v1` 下的文本和分析器拥有。
+
 ## 1. 目的与权威源
 
 本文是维护 `MyAvaloniaManagement.PluginSdk` public API 的长期知识入口，供开发者、评审者和 AI

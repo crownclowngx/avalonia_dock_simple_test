@@ -1,16 +1,16 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-15（已同步 G2 Host 实现面收口）<br>
-> 代码基线：主项目核心链路内部重构后的当前工作区<br>
+> 更新日期：2026-08-20（已同步 G16 Managed Plugin v1 封板）<br>
+> 代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系  
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
 > 不在本轮范围：逐项评审插件业务功能、第三方插件市场、运行时热卸载、插件沙箱
 
 ## 1. 先说结论：这是一个什么项目
 
-**[架构判断]** 这不是一个单纯的 Avalonia Dock 示例，也还不是一个完整的通用插件平台。它更准确的定位是：
+**[架构判断]** 这不是一个单纯的 Avalonia Dock 示例，也不是面向不可信第三方代码的通用插件平台。它更准确的定位是：
 
-> 一个基于 .NET 10、Avalonia 12 和 Dock 12 的模块化桌面工作台，已经具备内部可信插件宿主的主要运行骨架，当前重点正从“能接入插件”转向“统一所有权、兼容性和诊断边界”。
+> 一个基于 .NET 10、Avalonia 12 和 Dock 12 的模块化桌面工作台；内部可信 Managed Plugin v1 已完成所有权、兼容性、诊断和发布制品边界封板。
 
 宿主提供统一窗口、四向 Dock 布局、布局持久化、菜单、文件打开/保存、依赖注入、消息通信和可选插件生命周期；业务模块通过插件形式提供 Document、Tool 和后台服务。
 
@@ -371,7 +371,7 @@ public DocumentMetadata GetMetadata() => new(
 
 **[已实现，G5 后现状]** 通过兼容检查后，宿主才建立目录布局并加载清单声明的唯一入口；入口 `AssemblyVersion` 与 `pluginVersion` 在插件配置前核对。模块不再自报身份，Context 只使用清单身份。现有共享程序集身份检查继续作为运行时纵深校验。四个当前插件、私有依赖隔离夹具、构建输出和发布部署目录均已纳入清单规则。
 
-**[验证证据]** 最新 Release 专项门禁通过 `MyAvaloniaManagement.Tests` 105、`MyAvaloniaManagement.PluginTests` 102、`MyAvaloniaManagement.UiTests` 31，合计 **238/238**；Host 行覆盖率 **76.86%**、分支覆盖率 **63.65%**，Windows 真实窗口冒烟与携带四个真实 `Controls` 目录的宿主启动均无诊断错误。回归继续覆盖严格 JSON、大小限制、版本上下界、路径穿越、版本/模块身份二次核对、重复身份预加载阻断，以及“不兼容目录即使携带损坏 DLL 也不进入程序集加载阶段”。
+**[验证证据]** 2026-08-15 G0 当时的 Release 专项门禁通过 `MyAvaloniaManagement.Tests` 105、`MyAvaloniaManagement.PluginTests` 102、`MyAvaloniaManagement.UiTests` 31，合计 **238/238**；Host 行覆盖率 **76.86%**、分支覆盖率 **63.65%**，Windows 真实窗口冒烟与携带四个真实 `Controls` 目录的宿主启动均无诊断错误。该时间点回归覆盖严格 JSON、大小限制、版本上下界、路径穿越、版本/模块身份二次核对、重复身份预加载阻断，以及“不兼容目录即使携带损坏 DLL 也不进入程序集加载阶段”。
 
 ### 6.6 2026-08-15 Managed-only 收口
 
@@ -407,6 +407,18 @@ Host Unit 119、Plugin 127、Headless UI 37，合计 **283/283**。SDK 包门禁
 **[验证证据]** PluginServiceProtection 专项 11/11，Host Unit 120、Plugin 138、Headless UI 37，
 合计 **295/295**；锁定还原、解决方案 Release 0 警告/0 错误构建和 SDK 包门禁通过。四个真实
 插件通过完整 Catalog 保护链形成 Registry。本次未重跑覆盖率和 Windows Smoke。
+
+### 6.9 2026-08-20 Managed Plugin v1 封板
+
+**[已实现]** G7–G8 固定 Document 七字段信封与插件内容快照边界；G9–G10 把跨插件事件收口到
+每 HostRuntime 隔离的 SDK 总线，并删除 Host 内部广播；G11–G13 完成 public 面清理、统一插件包和
+可读 API 基线；G14–G15 建立可重复的历史发布证据与默认诊断脱敏。G16 最终同步当前文档，直接从
+集中版本、API baseline 和四插件项目读取事实，并以 `managed-plugin-v1.0.0` 定位源码基线。
+
+**[验证边界]** G16 执行文档核心单元测试、文档事实门禁、不含 Windows Smoke 的 Release 构建、Host 与插件
+单元测试、SDK 包/API 和四插件包矩阵；没有执行 Windows Smoke、G14 总发布门禁、CI、上传或真实
+网络/媒体验收。完整动态结果和回退说明见
+[G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
 ## 7. 宿主应该给插件多大自由度
 

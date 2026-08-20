@@ -17,7 +17,7 @@
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
 | [宿主—插件架构评审](./design/host-plugin-architecture-review.md) | 解决方案总体结构、插件边界、当前成熟度和演进方向 | 当前事实，已按主项目内部重构更新 |
-| [Managed Plugin v1 封板评审与整改任务书](./design/host-v1-sealing-readiness-plan.md) | 主程序封板差距、版本与兼容策略、删除清单、独立整改包和最终验收标准 | 当前整改计划，完成前不得认定宿主已封板 |
+| [Managed Plugin v1 封板评审与整改任务书](./design/host-v1-sealing-readiness-plan.md) | 主程序封板差距、版本与兼容策略、删除清单、独立整改包和最终验收标准 | G0–G16 已完成，作为最终签署依据保留 |
 | [Plugin SDK 与 UI Profile](./plan-history/host-v1/g3-plugin-sdk-and-ui-profile.md) | 基础 SDK 包、可选 UI 依赖 Profile、宿主语义资源与插件样式兼容规则 | 当前包与样式契约，G3 已完成 |
 | [Managed-only 插件加载](./plan-history/host-v1/g4-managed-only-plugin-loading.md) | 必需 deps、唯一模块、DI 激活、稳定拒绝诊断和数据兼容保留边界 | 当前插件加载契约，G4 已完成 |
 | [显式贡献与 Plugin Registry](./plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md) | 破坏式 v1 重定基线、Context/Builder/Registry、贡献所有权、失败原子性与迁移结果 | 当前显式扩展契约，G5 已完成 |
@@ -32,6 +32,7 @@
 | [G13 Plugin SDK API 兼容基线](./plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md) | v1 文本基线、成员级变异门禁、SOLID 取舍和验收证据 | 当前 SDK public 契约，G13 已完成 |
 | [G14 Windows 本地发布门禁](./plan-history/host-v1/g14-windows-release-gate.md) | 平台无关单入口、两轮隔离、发布证据比较、SOLID 取舍和失败语义 | 当前 Windows 发布门禁，G14 已完成 |
 | [G15 宿主诊断脱敏](./plan-history/host-v1/g15-host-diagnostic-redaction.md) | 诊断白名单、固定错误映射、敏感调试开关、SOLID 取舍和专项门禁 | 当前诊断安全边界，G15 已完成 |
+| [G16 文档与 v1 基线](./plan-history/host-v1/g16-documentation-and-v1-baseline.md) | 当前文档事实、文档门禁、四插件兼容签署、标签和回退边界 | Managed Plugin v1 最终基线，G16 已完成 |
 | [Document 保存 V1](./design/document-persistence-v1-design.md) | 公共脏状态、保存事务、关闭确认、备份和坏文件恢复规则 | 当前契约与设计依据 |
 | [MyAvaloniaManagement 测试说明](./reference/myavalonia-management-tests.md) | 宿主专项测试、覆盖率和 Windows 冒烟门禁 | 当前事实 |
 | [Dock 布局快照 V1](./reference/dock-layout-snapshot-v1.md) | `layout-v1.json` 的稳定 ID、校验、迁移和回退规则 | 当前契约 |
@@ -75,6 +76,7 @@
 - [G13：Plugin SDK API 兼容基线](./plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md)：以可读文本和成员级变异门禁替换临时 SHA256，兼容新增必须显式登记。
 - [G14：Windows 本地发布门禁](./plan-history/host-v1/g14-windows-release-gate.md)：以平台无关 PowerShell 单入口执行两轮隔离 Release 门禁并比较机器可读证据。
 - [G15：宿主诊断脱敏](./plan-history/host-v1/g15-host-diagnostic-redaction.md)：以白名单转换和固定错误映射保护内存、UI、JSONL 与默认 Trace/stderr，并提供显式短期敏感调试通道。
+- [G16：文档与 v1 基线](./plan-history/host-v1/g16-documentation-and-v1-baseline.md)：同步当前事实，以独立文档门禁签署 SDK/API 与四插件兼容边界，并创建 `managed-plugin-v1.0.0` 本地注解标签。
 
 ### .NET 10 升级记录
 
