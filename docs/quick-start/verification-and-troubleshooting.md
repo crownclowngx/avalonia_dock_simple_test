@@ -100,10 +100,25 @@ if ($broken) { $broken; throw '发现失效的本地 Markdown 链接。' }
 诊断日志默认写入：
 
 ```text
-%LocalAppData%\MyAvaloniaManagement\Diagnostics\session-*.jsonl
+%LOCALAPPDATA%\MyAvaloniaManagement\v1\Diagnostics\session-*.jsonl
 ```
 
 设置 `MYAVALONIA_DATA_DIRECTORY` 后，诊断写入该数据根目录下的 `Diagnostics/`。测试或排错时可以使用独立目录，避免读取和覆盖正式用户数据。
+
+诊断默认只显示稳定错误码、阶段、经过校验的插件/程序集/稳定 ID、版本、异常类型和受控耗时。
+插件异常消息、文档正文、凭据、URL、请求响应和完整路径不会进入插件状态、启动失败摘要、剪贴板或
+JSONL。因此排错时应优先使用错误码、异常类型和本页处理方向，不要期待日志包含原始异常正文。
+
+只有在用户明确确认可能暴露本机敏感信息、且能够控制终端和 Trace 监听器时，才可为当前进程精确设置：
+
+```powershell
+$env:MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS = '1'
+```
+
+该开关只把带显著警告的原始异常写入临时 Trace/stderr，不会改变 UI 或 JSONL。它不写入配置，
+`true` 等值不会开启；排错结束后关闭进程，或执行
+`Remove-Item Env:MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS`。不要在 Release 门禁、共享日志收集器或
+普通启动脚本中设置此变量。
 
 ## 常见错误码
 

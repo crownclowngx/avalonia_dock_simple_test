@@ -135,13 +135,12 @@ internal static class AssemblyLoaderHelper
                         pluginDirectory,
                         out var manifest,
                         out var errorCode,
-                        out var errorDetail))
+                        out _))
                 {
                     diagnostics.Add(CreateManifestDiagnostic(
                         pluginDirectory,
                         manifest: null,
-                        errorCode ?? HostDiagnosticCodes.PluginManifestInvalid,
-                        errorDetail ?? "插件清单无效。"));
+                        errorCode ?? HostDiagnosticCodes.PluginManifestInvalid));
                     continue;
                 }
 
@@ -156,17 +155,12 @@ internal static class AssemblyLoaderHelper
             {
                 foreach (var group in duplicateIdentities)
                 {
-                    var directories = string.Join(
-                        "、",
-                        group.Select(candidate => Path.GetFileName(candidate.DirectoryPath))
-                            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase));
                     foreach (var candidate in group)
                     {
                         diagnostics.Add(CreateManifestDiagnostic(
                             candidate.DirectoryPath,
                             candidate.Manifest,
-                            HostDiagnosticCodes.PluginManifestIdentityDuplicate,
-                            $"多个插件目录声明了同一 pluginId：{directories}。"));
+                            HostDiagnosticCodes.PluginManifestIdentityDuplicate));
                     }
                 }
 
@@ -186,13 +180,12 @@ internal static class AssemblyLoaderHelper
                         candidate.Manifest,
                         HostCompatibilityProfile.Current,
                         out var errorCode,
-                        out var errorDetail))
+                        out _))
                 {
                     diagnostics.Add(CreateManifestDiagnostic(
                         candidate.DirectoryPath,
                         candidate.Manifest,
-                        errorCode!,
-                        errorDetail!));
+                        errorCode!));
                     continue;
                 }
 
@@ -212,11 +205,9 @@ internal static class AssemblyLoaderHelper
         {
             diagnostics.Add(new HostDiagnosticDraft(
                 HostDiagnosticCodes.PluginRootScanFailed,
-                HostDiagnosticPhase.PluginRootDiscovery,
-                "无法完成插件根目录扫描，宿主不能确认本次启动的插件集合。")
+                HostDiagnosticPhase.PluginRootDiscovery)
             {
                 Exception = exception,
-                TechnicalDetail = $"root={rootPath}{Environment.NewLine}{exception}",
             });
         }
 
@@ -243,15 +234,13 @@ internal static class AssemblyLoaderHelper
                 manifest,
                 out var layout,
                 out var errorCode,
-                out var errorDetail))
+                out _))
         {
             diagnostics.Add(new HostDiagnosticDraft(
                 errorCode ?? HostDiagnosticCodes.PluginEntryInvalid,
-                HostDiagnosticPhase.PluginRootDiscovery,
-                errorDetail ?? "插件目录不满足入口约定。")
+                HostDiagnosticPhase.PluginRootDiscovery)
             {
                 PluginDirectory = pluginName,
-                TechnicalDetail = $"directory={Path.GetFullPath(pluginDirectory)}",
             });
             return;
         }
@@ -265,7 +254,6 @@ internal static class AssemblyLoaderHelper
         {
             diagnostics.Add(CreateLoadFailure(
                 pluginName,
-                pluginDirectory,
                 assemblyName: null,
                 exception,
                 HostDiagnosticPhase.PluginAssemblyLoad));
@@ -281,7 +269,6 @@ internal static class AssemblyLoaderHelper
         {
             diagnostics.Add(CreateLoadFailure(
                 pluginName,
-                pluginDirectory,
                 Path.GetFileNameWithoutExtension(layout!.EntryAssemblyPath),
                 exception,
                 HostDiagnosticPhase.PluginAssemblyLoad));
@@ -294,14 +281,10 @@ internal static class AssemblyLoaderHelper
             diagnostics.Add(CreateManifestDiagnostic(
                 pluginDirectory,
                 manifest,
-                HostDiagnosticCodes.PluginManifestDescriptionMismatch,
-                "清单 pluginVersion 与入口程序集 AssemblyVersion 不一致。") with
+                HostDiagnosticCodes.PluginManifestDescriptionMismatch) with
             {
                 Phase = HostDiagnosticPhase.PluginAssemblyLoad,
-                AssemblyName = candidateAssembly.GetName().Name,
-                TechnicalDetail =
-                    $"manifestVersion={PluginVersionText.Format(manifest.PluginVersion)}; " +
-                    $"assemblyVersion={PluginVersionText.Format(assemblyVersion ?? new Version(0, 0, 0, 0))}",
+                AssemblyName = candidateAssembly.GetName(),
             });
             return;
         }
@@ -326,13 +309,11 @@ internal static class AssemblyLoaderHelper
                     : exception is FileNotFoundException or FileLoadException or BadImageFormatException
                         ? HostDiagnosticCodes.PluginAssemblyLoadFailed
                         : HostDiagnosticCodes.PluginTypePreflightFailed,
-                HostDiagnosticPhase.PluginTypePreflight,
-                "插件程序集无法完成类型预检，已隔离整个插件目录。")
+                HostDiagnosticPhase.PluginTypePreflight)
             {
                 PluginDirectory = pluginName,
-                AssemblyName = candidateAssembly.GetName().Name,
+                AssemblyName = candidateAssembly.GetName(),
                 Exception = exception,
-                TechnicalDetail = FormatTypePreflightDetail(pluginDirectory, exception),
             });
             return;
         }
@@ -341,18 +322,16 @@ internal static class AssemblyLoaderHelper
                 candidateTypes,
                 out var moduleType,
                 out var moduleErrorCode,
-                out var moduleErrorDetail))
+                out _))
         {
             diagnostics.Add(new HostDiagnosticDraft(
                 moduleErrorCode!,
-                HostDiagnosticPhase.PluginTypePreflight,
-                $"{moduleErrorDetail} 已隔离该插件目录。")
+                HostDiagnosticPhase.PluginTypePreflight)
             {
-                PluginId = manifest.PluginId.Value,
+                PluginId = manifest.PluginId,
                 PluginDirectory = pluginName,
-                AssemblyName = candidateAssembly.GetName().Name,
+                AssemblyName = candidateAssembly.GetName(),
                 StableId = manifest.PluginId.Value,
-                TechnicalDetail = $"directory={Path.GetFullPath(pluginDirectory)}",
             });
             return;
         }
@@ -366,57 +345,35 @@ internal static class AssemblyLoaderHelper
     private static HostDiagnosticDraft CreateManifestDiagnostic(
         string pluginDirectory,
         PluginManifest? manifest,
-        string code,
-        string userMessage)
+        string code)
     {
-        var host = HostCompatibilityProfile.Current;
         return new HostDiagnosticDraft(
             code,
-            HostDiagnosticPhase.PluginManifestPreflight,
-            userMessage)
+            HostDiagnosticPhase.PluginManifestPreflight)
         {
-            PluginId = manifest?.PluginId.Value,
+            PluginId = manifest?.PluginId,
             PluginDirectory = Path.GetFileName(pluginDirectory),
-            AssemblyName = manifest?.EntryAssembly,
-            PluginVersion = manifest is null
+            AssemblyName = manifest is null
                 ? null
-                : PluginVersionText.Format(manifest.PluginVersion),
-            HostApiRange = manifest?.HostApi.ToString(),
-            CommonContractRange = manifest?.CommonContract.ToString(),
-            TechnicalDetail =
-                $"directory={Path.GetFullPath(pluginDirectory)}; " +
-                $"hostApi={PluginVersionText.Format(host.HostApiVersion)}; " +
-                $"commonContract={PluginVersionText.Format(host.CommonContractVersion)}",
+                : new AssemblyName(manifest.EntryAssembly),
+            PluginVersion = manifest?.PluginVersion,
+            HostApiRange = manifest?.HostApi,
+            CommonContractRange = manifest?.CommonContract,
         };
     }
 
     private static HostDiagnosticDraft CreateLoadFailure(
         string pluginName,
-        string pluginDirectory,
         string? assemblyName,
         Exception exception,
         HostDiagnosticPhase phase) =>
         new(
             PluginLoadExceptionMapper.GetCode(exception),
-            phase,
-            "插件入口程序集或其依赖加载失败，已隔离该插件目录。")
+            phase)
         {
             PluginDirectory = pluginName,
-            AssemblyName = assemblyName,
+            AssemblyName = assemblyName is null ? null : new AssemblyName(assemblyName),
             Exception = exception,
-            TechnicalDetail = $"directory={Path.GetFullPath(pluginDirectory)}{Environment.NewLine}{exception}",
         };
-
-    private static string FormatTypePreflightDetail(string pluginDirectory, Exception exception)
-    {
-        var loaderDetails = exception is ReflectionTypeLoadException reflection
-            ? string.Join(
-                Environment.NewLine,
-                reflection.LoaderExceptions
-                    .Where(item => item is not null)
-                    .Select(item => item!.ToString()))
-            : exception.ToString();
-        return $"directory={Path.GetFullPath(pluginDirectory)}{Environment.NewLine}{loaderDetails}";
-    }
 
 }

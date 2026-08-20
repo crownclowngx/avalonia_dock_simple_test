@@ -181,7 +181,7 @@ public sealed class DocumentEnvelopeV1Tests
 
         Assert.Empty(GetDocuments(context));
         Assert.Empty(context.Storage.Writes);
-        Assert.Contains("插件所有者", viewModel.DocumentOperationError);
+        Assert.Contains("文档内容不受支持或已损坏", viewModel.DocumentOperationError);
         Assert.DoesNotContain("secret-payload", viewModel.DocumentOperationError);
     }
 
@@ -241,7 +241,13 @@ public sealed class DocumentEnvelopeV1Tests
     [Fact]
     public async Task 打开_插件内容加载失败时不发布不写入并完整释放Scope()
     {
-        var probe = new DocumentLifecycleProbe { ThrowOnLoad = true };
+        const string exceptionCanary =
+            "password=G15-secret Cookie=G15-cookie https://example.test/?signature=G15 body=G15-document";
+        var probe = new DocumentLifecycleProbe
+        {
+            ThrowOnLoad = true,
+            LoadFailureMessage = exceptionCanary,
+        };
         using var context = new TestHostContext(configureServices: services =>
         {
             services.AddSingleton(probe);
@@ -272,6 +278,10 @@ public sealed class DocumentEnvelopeV1Tests
         Assert.Equal(1, probe.DependencyDisposeCount);
         Assert.True(probe.AllDocumentsObservedClosing);
         Assert.DoesNotContain("secret-payload", viewModel.DocumentOperationError);
+        Assert.DoesNotContain(exceptionCanary, viewModel.DocumentOperationError);
+        Assert.Equal(
+            "无法打开所选文件：文档内容不受支持或已损坏。 原文件未被修改。",
+            viewModel.DocumentOperationError);
     }
 
     public static IEnumerable<object[]> InvalidEnvelopeCases()

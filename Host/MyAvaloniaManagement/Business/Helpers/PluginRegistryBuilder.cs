@@ -283,11 +283,10 @@ internal sealed class PluginRegistryBuilder
         Exception exception) =>
         sink?.Report(new HostDiagnosticDraft(
             HostDiagnosticCodes.ExtensionActivationFailed,
-            HostDiagnosticPhase.ExtensionDiscovery,
-            "显式贡献激活或元数据读取失败。")
+            HostDiagnosticPhase.ExtensionDiscovery)
         {
-            PluginId = declaration.OwnerId.Value,
-            AssemblyName = declaration.ImplementationType.Assembly.GetName().Name,
+            PluginId = declaration.OwnerId,
+            AssemblyName = declaration.ImplementationType.Assembly.GetName(),
             StableId = declaration.ImplementationType.FullName,
             Exception = exception,
         });

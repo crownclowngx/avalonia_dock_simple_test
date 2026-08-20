@@ -36,8 +36,16 @@ internal sealed class PluginModuleCatalog
             assemblies,
             assembly => AssemblyTypeCatalog.GetLoadableTypes(
                 assembly,
-                exception => Console.Error.WriteLine(
-                    $"PluginCatalog errorCode=MODULE_TYPE_SCAN_PARTIAL assembly={assembly.FullName} type={exception.GetType().Name} details={FormatLoaderErrors(exception)}")),
+                exception =>
+                {
+                    Console.Error.WriteLine(
+                        $"PluginCatalog errorCode=MODULE_TYPE_SCAN_PARTIAL " +
+                        $"type={exception.GetType().Name}");
+                    HostSensitiveDiagnosticDebugOutput.Write(
+                        "MODULE_TYPE_SCAN_PARTIAL",
+                        HostDiagnosticPhase.PluginTypePreflight,
+                        exception);
+                }),
             getManifest: _ => null,
             getPreflightModuleType: _ => null,
             diagnosticSink: null);
@@ -104,10 +112,9 @@ internal sealed class PluginModuleCatalog
                     [moduleType!]));
                 diagnosticSink?.Report(new HostDiagnosticDraft(
                     "PLUGIN_MODULE_ACTIVATION_FAILED",
-                    HostDiagnosticPhase.PluginModuleDiscovery,
-                    "插件模块无法通过公共无参构造创建。")
+                    HostDiagnosticPhase.PluginModuleDiscovery)
                 {
-                    AssemblyName = assembly.GetName().Name,
+                    AssemblyName = assembly.GetName(),
                     StableId = moduleType!.FullName,
                     Exception = exception,
                 });
@@ -169,11 +176,10 @@ internal sealed class PluginModuleCatalog
                 context.SealAndGetBypassedContributionTypes();
                 diagnostics.Report(new HostDiagnosticDraft(
                     HostDiagnosticCodes.PluginServiceRegistrationFailed,
-                    HostDiagnosticPhase.PluginServiceRegistration,
-                    "插件显式注册失败，宿主已放弃本次容器构建。")
+                    HostDiagnosticPhase.PluginServiceRegistration)
                 {
-                    PluginId = manifest.PluginId.Value,
-                    AssemblyName = entry.Assembly.GetName().Name,
+                    PluginId = manifest.PluginId,
+                    AssemblyName = entry.Assembly.GetName(),
                     Exception = exception,
                 });
                 if (exception is HostCompositionException)
@@ -194,17 +200,11 @@ internal sealed class PluginModuleCatalog
                 var serviceType = violation!.Descriptor.ServiceType;
                 diagnostics.Report(new HostDiagnosticDraft(
                     HostDiagnosticCodes.PluginHostServiceMutation,
-                    HostDiagnosticPhase.PluginServiceRegistration,
-                    "插件试图修改宿主依赖注入注册，宿主已放弃本次容器构建。")
+                    HostDiagnosticPhase.PluginServiceRegistration)
                 {
-                    PluginId = manifest.PluginId.Value,
-                    AssemblyName = entry.Assembly.GetName().Name,
+                    PluginId = manifest.PluginId,
+                    AssemblyName = entry.Assembly.GetName(),
                     StableId = serviceType.FullName ?? serviceType.Name,
-                    TechnicalDetail =
-                        $"violationKind={violation.Kind}; " +
-                        $"serviceType={serviceType.FullName ?? serviceType.Name}; " +
-                        $"lifetime={violation.Descriptor.Lifetime}; " +
-                        $"keyed={violation.Descriptor.IsKeyedService}",
                 });
 
                 throw new HostCompositionException([
@@ -256,12 +256,6 @@ internal sealed class PluginModuleCatalog
     private static HostCompositionContributor ToContributor(Type type) =>
         new(type.FullName ?? type.Name, type.Assembly.GetName().Name ?? "Unknown");
 
-    private static string FormatLoaderErrors(Exception exception) =>
-        exception is ReflectionTypeLoadException typeLoadException
-            ? string.Join(" | ", typeLoadException.LoaderExceptions
-                .Where(item => item is not null)
-                .Select(item => item!.Message.Replace(Environment.NewLine, " ", StringComparison.Ordinal)))
-            : exception.Message.Replace(Environment.NewLine, " ", StringComparison.Ordinal);
 }
 
 internal sealed record PluginModuleEntry(

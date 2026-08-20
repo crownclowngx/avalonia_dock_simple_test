@@ -19,7 +19,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 - Tool 单例创建、关闭隐藏和状态恢复；
 - Managed Plugin 服务注册、可选初始化与反向关闭生命周期；
 - 严格 `plugin.manifest.json`、插件目录隔离和私有依赖解析；
-- 严格 Document 信封 v1、文件原子保存与恢复备份、插件状态面板和会话诊断日志。
+- 严格 Document 信封 v1、文件原子保存与恢复备份、插件状态面板和默认脱敏的会话诊断日志。
 
 ## 现有插件
 
@@ -48,6 +48,11 @@ Host API 与 SDK 的程序集兼容身份均为 `1.0.0.0`；统一事实定义�
 宿主默认把布局、外观和诊断写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v1\`。旧预发布目录
 保持原样，不读取、迁移或删除。`MYAVALONIA_DATA_DIRECTORY` 仍表示完整数据根，不追加 `v1`，
 以保持自动化和部署隔离语义。
+
+诊断 JSONL 位于上述数据根的 `Diagnostics/session-*.jsonl`。内存记录、插件状态、启动失败摘要、
+剪贴板和默认 Trace/stderr 只保留错误码、阶段、经校验身份、版本、异常类型及受控耗时等白名单信息。
+原始异常只允许在用户明确确认后，通过进程级
+`MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS=1` 临时输出到 Trace/stderr；它永远不进入 UI 或 JSONL。
 
 Document 使用项目第一个且唯一的七字段信封 v1。宿主拥有 schema、插件和 Document 身份、标题、路径与
 UTC 时间，插件只通过不可变 `DocumentContentSnapshot` 提供内容 schema 和字符串 payload。reader 严格拒绝任何非 v1 结构、历史 ID 别名
@@ -102,7 +107,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 .\scripts\Invoke-HostV1ReleaseGate.ps1
 ```
 
-该入口在两个独立克隆中重复执行锁定还原、Release 零警告构建、宿主三套测试、SDK 包/API、
+该入口在两个独立克隆中重复执行锁定还原、Release 零警告构建、G15 诊断脱敏扫描、宿主三套测试、SDK 包/API、
 四插件包矩阵和真实窗口 Smoke，并把日志、TRX、覆盖率、ZIP、清单及两轮比较写入
 `artifacts/release-gate`。它不绑定代码托管平台，也不会创建或推送标签。
 
@@ -110,6 +115,12 @@ TestResults/  需要保留的阶段验收与人工验证记录
 
 ```powershell
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
+```
+
+修改诊断、异常边界、Trace 或 Console 输出时，还必须运行：
+
+```powershell
+.\scripts\Test-HostDiagnosticRedaction.ps1
 ```
 
 需要验证真实 Windows 窗口启动时运行：

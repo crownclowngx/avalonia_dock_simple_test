@@ -42,8 +42,9 @@ internal sealed class DocumentOperationState
     {
         ArgumentNullException.ThrowIfNull(exception);
         SetError("无法打开文件：宿主处理文档时发生意外错误。原文件未被修改。");
-        Console.Error.WriteLine(
-            $"DocumentPersistence errorCode=DOCUMENT_HOST_TOOL_OPEN_FAILED type={exception.GetType().Name}");
+        DocumentPersistenceErrorMapper.Report(
+            "DOCUMENT_HOST_TOOL_OPEN_FAILED",
+            exception);
     }
 
     /// <summary>清除当前提示。若状态已经为空，则不产生重复的界面通知。</summary>

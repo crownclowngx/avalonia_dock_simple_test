@@ -9,7 +9,7 @@
 > SDK、可选 UI Profile 和宿主语义样式契约；G4 已删除 Legacy 二进制激活、无 deps 回退和
 > 历史加载 Facade；G5 已用显式贡献和不可变 Plugin Registry 替换策略/View 隐式发现；G9 已用
 > SDK 自有、每 HostRuntime 隔离的 `IHostEventBus` 收口进程内事件；G13 已用可读文本和成员级
-> 变异门禁冻结正式 Plugin SDK v1 public API。
+> 变异门禁冻结正式 Plugin SDK v1 public API；G15 已固定 schema 1 诊断的白名单语义和默认脱敏边界。
 
 ## 2. public API
 
@@ -81,6 +81,18 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - 插件不得向 `Application.Current.Styles` 注入或替换全局主题；
 - `DockTheme*`、Semi、Ursa 内部资源键不属于基础语义契约；直接使用时必须引用同版本 UI Profile；
 - Host 按 Fluent、Semi、Ursa Semi、Dock Fluent、Host Styles 的固定所有权顺序组合主题。
+
+### 2.5 诊断兼容与安全边界
+
+- `HostDiagnosticRecord` 的 `schemaVersion` 继续为 1，现有 JSON 属性名称和类型保持不变；
+- `TechnicalDetail` 兼容字段只允许受控生命周期阶段和毫秒耗时，其他诊断为 `null`；
+- `UserMessage` 只来自宿主错误码/阶段固定映射；插件、文件和异常不能提供记录文本；
+- 持久记录可保留稳定错误码、阶段、异常类型、经校验的 Plugin ID、程序集简单名、稳定 ID、版本区间、
+  枚举和耗时；不得保留正文、密码、Cookie、Token、签名 URL、请求响应、绝对路径或异常原文；
+- 插件状态、启动失败窗口、剪贴板、默认 Trace/stderr 与 JSONL 必须遵循同一边界；
+- `MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS=1` 只允许当前进程向临时 Trace/stderr 输出带警告的原始异常，
+  不能进入配置、UI、记录或 JSONL，Release 门禁不得设置它；
+- Plugin SDK public API 不增加日志/脱敏接口，`PluginLifecycleState.ErrorMessage` 签名保持不变但失败文本固定。
 
 ## 3. 插件发现与激活
 
@@ -232,7 +244,7 @@ V1 清单格式：
 - Registry、Builder、Navigator、Coordinator、Adapter 的类名和文件组织；
 - 内部字典、集合和缓存实现；
 - 内部构造函数与 `internal` 记录类型；
-- 日志实现细节，但不得记录文档内容、密码或未验证路径数据；
+- 日志实现细节，但不得改变 schema 1 白名单语义，或记录文档内容、凭据、异常正文和未验证路径数据；
 - 测试替身和测试项目内部结构。
 
 ## 9. 变更检查表
@@ -245,6 +257,7 @@ V1 清单格式：
 - [x] 四个插件及宿主使用显式 Context，生产代码不存在策略/View 隐式扫描与命名回退；
 - [x] manifest 是唯一身份来源，SDK 不再包含模块或生命周期 `PluginId`；
 - [x] 所有生产消费者使用同一个只读 `PluginRegistry`，Registry 在生命周期和 UI 前发布；
+- [x] 诊断内存/UI/JSONL/默认镜像使用同一白名单，G15 专项源码门禁已接入 Release 入口；
 - [ ] 清单缺失/损坏/不兼容在程序集加载前隔离，重复身份在任何 DLL 加载前阻断；
 - [ ] 重复 ID 与碰撞诊断按预期阻断启动，局部类型失败和并发扫描行为未变化；
 - [ ] 当前 Document JSON、安全加载与 Save As 行为符合新契约，不存在历史格式兼容分支；

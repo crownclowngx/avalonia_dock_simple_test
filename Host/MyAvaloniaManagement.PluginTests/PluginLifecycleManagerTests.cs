@@ -53,7 +53,35 @@ public sealed class PluginLifecycleManagerTests
             "shutdown:healthy",
         ], calls);
         Assert.Equal(PluginLifecycleStatus.Failed, manager.GetState(new PluginId("broken"))?.Status);
+        Assert.Equal("插件初始化失败。", manager.GetState(new PluginId("broken"))?.ErrorMessage);
         Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState(new PluginId("healthy"))?.Status);
+    }
+
+    [Fact]
+    public async Task 关闭异常使用固定摘要且默认日志不泄漏插件正文()
+    {
+        const string canary = "G15-shutdown-password-token-private-path";
+        var originalError = Console.Error;
+        using var captured = new StringWriter();
+        var manager = new PluginLifecycleManager(Registrations(
+            new SensitiveShutdownFailureLifecycle(canary)));
+        try
+        {
+            Console.SetError(captured);
+            await manager.InitializeAllAsync();
+            await manager.ShutdownAllAsync();
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        var state = manager.GetState(new PluginId("sensitive-shutdown"));
+        Assert.Equal(PluginLifecycleStatus.Failed, state?.Status);
+        Assert.Equal("插件关闭失败。", state?.ErrorMessage);
+        Assert.DoesNotContain(canary, state?.ErrorMessage ?? string.Empty, StringComparison.Ordinal);
+        Assert.DoesNotContain(canary, captured.ToString(), StringComparison.Ordinal);
+        Assert.Contains("InvalidOperationException", captured.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -391,6 +419,18 @@ public sealed class PluginLifecycleManagerTests
             await Task.Delay(10, cancellationToken);
             ShutdownCompleted = true;
         }
+    }
+
+    private sealed class SensitiveShutdownFailureLifecycle(string message) : ITestLifecycle
+    {
+        public PluginId PluginId { get; } = new("sensitive-shutdown");
+
+        public int Order => 0;
+
+        public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task ShutdownAsync(CancellationToken cancellationToken) =>
+            Task.FromException(new InvalidOperationException(message));
     }
 
     private sealed class NonPumpingSynchronizationContext : SynchronizationContext

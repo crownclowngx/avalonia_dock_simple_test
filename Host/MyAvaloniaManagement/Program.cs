@@ -31,8 +31,7 @@ sealed class Program
             {
                 diagnostics.Report(new HostDiagnosticDraft(
                     HostDiagnosticCodes.HostStartupUnexpected,
-                    HostDiagnosticPhase.HostBootstrap,
-                    "宿主启动发生未分类异常，主工作台没有启动。")
+                    HostDiagnosticPhase.HostBootstrap)
                 {
                     Exception = exception,
                 });
@@ -46,8 +45,7 @@ sealed class Program
             {
                 diagnostics.Report(new HostDiagnosticDraft(
                     HostDiagnosticCodes.HostStartupCleanupFailed,
-                    HostDiagnosticPhase.HostBootstrap,
-                    "启动失败后的资源清理发生异常，应用仍将显示已有诊断并退出。")
+                    HostDiagnosticPhase.HostBootstrap)
                 {
                     Exception = cleanupException,
                 });

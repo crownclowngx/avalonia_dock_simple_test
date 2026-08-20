@@ -181,7 +181,7 @@ internal sealed class DockLayoutStore
 
     private static void LogToStandardError(string errorCode, string? stableId) =>
         Console.Error.WriteLine(
-            $"DockLayout errorCode={errorCode} stableId={stableId ?? "-"}");
+            $"DockLayout errorCode={errorCode}");
 
     private static void ReportToDiagnostics(
         IHostDiagnosticSink diagnostics,
@@ -192,8 +192,7 @@ internal sealed class DockLayoutStore
         ArgumentNullException.ThrowIfNull(diagnostics);
         diagnostics.Report(new HostDiagnosticDraft(
             errorCode,
-            HostDiagnosticPhase.Layout,
-            "布局恢复或保存失败，宿主已使用安全回退并保留诊断。")
+            HostDiagnosticPhase.Layout)
         {
             StableId = stableId,
             Exception = exception,

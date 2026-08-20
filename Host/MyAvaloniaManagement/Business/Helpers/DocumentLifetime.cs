@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace MyAvaloniaManagement.Business.Helpers;
@@ -40,8 +41,9 @@ internal sealed class DocumentLifetime : IDocumentLifetime, IDisposable
             // CancellationToken 回调属于插件代码，理论上可能抛出异常。生命周期释放不能
             // 因单个回调失败而中断，否则整个 Scope 及其资源会泄漏；因此记录诊断后继续，
             // 由 DocumentScopeLease 的 finally 保证执行 Scope.Dispose。
-            System.Diagnostics.Trace.TraceError(
-                $"Document close cancellation callback failed: {ex}");
+            DocumentPersistenceErrorMapper.Report(
+                "DOCUMENT_CLOSE_CANCELLATION_CALLBACK_FAILED",
+                ex);
         }
     }
 

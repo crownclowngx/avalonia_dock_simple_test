@@ -8,7 +8,10 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
+using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagementCommon.Plugin;
 
 namespace MyAvaloniaManagement.Business.Diagnostics;
 
@@ -62,26 +65,27 @@ internal enum HostDiagnosticDisposition
 /// </remarks>
 internal sealed record HostDiagnosticDraft(
     string Code,
-    HostDiagnosticPhase Phase,
-    string UserMessage)
+    HostDiagnosticPhase Phase)
 {
-    internal string? PluginId { get; init; }
+    internal PluginId? PluginId { get; init; }
 
     internal string? PluginDirectory { get; init; }
 
-    internal string? AssemblyName { get; init; }
+    internal AssemblyName? AssemblyName { get; init; }
 
     internal string? StableId { get; init; }
 
-    internal string? PluginVersion { get; init; }
+    internal Version? PluginVersion { get; init; }
 
-    internal string? HostApiRange { get; init; }
+    internal PluginVersionRange? HostApiRange { get; init; }
 
-    internal string? CommonContractRange { get; init; }
+    internal PluginVersionRange? CommonContractRange { get; init; }
 
     internal Exception? Exception { get; init; }
 
-    internal string? TechnicalDetail { get; init; }
+    internal PluginLifecycleStage? LifecycleStage { get; init; }
+
+    internal TimeSpan? Duration { get; init; }
 }
 
 /// <summary>
@@ -141,6 +145,7 @@ internal interface IHostDiagnosticSink
 /// </summary>
 internal static class HostDiagnosticCodes
 {
+    internal const string DiagnosticInputRejected = "HOST_DIAGNOSTIC_INPUT_REJECTED";
     internal const string PersistenceUnavailable = "DIAGNOSTIC_PERSISTENCE_UNAVAILABLE";
     internal const string PluginRootScanFailed = "PLUGIN_ROOT_SCAN_FAILED";
     internal const string PluginManifestMissing = "PLUGIN_MANIFEST_MISSING";
@@ -166,6 +171,225 @@ internal static class HostDiagnosticCodes
     internal const string LifecycleFailed = "LIFECYCLE_FAILED";
     internal const string HostStartupCleanupFailed = "HOST_STARTUP_CLEANUP_FAILED";
     internal const string HostStartupUnexpected = "HOST_STARTUP_UNEXPECTED";
+}
+
+/// <summary>
+/// 将内部诊断草稿转换为可长期保存的白名单记录。
+/// </summary>
+/// <remarks>
+/// 设计意图：草稿位于异常捕获边界，可能携带插件异常和未经验证的目录信息；记录则会同时进入
+/// 内存界面、JSON Lines 和默认镜像，必须在两者之间完成一次不可绕过的收窄。这里不做关键词替换，
+/// 因为密码、正文和签名地址没有可靠的通用词法特征；只复制已经具备明确格式的字段更容易审计。
+/// </remarks>
+internal static class HostDiagnosticRedactionPolicy
+{
+    private const int MaximumTokenLength = 128;
+
+    internal static HostDiagnosticRecord Create(
+        Guid sessionId,
+        HostDiagnosticDraft draft,
+        DateTimeOffset timestampUtc)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+
+        var hasValidCode = IsSafeErrorCode(draft.Code);
+        var code = hasValidCode
+            ? draft.Code
+            : HostDiagnosticCodes.DiagnosticInputRejected;
+        var classification = HostDiagnosticFailurePolicy.Classify(code, draft.Phase);
+        return new HostDiagnosticRecord
+        {
+            SessionId = sessionId,
+            Sequence = 0,
+            TimestampUtc = timestampUtc,
+            Code = code,
+            Severity = classification.Severity,
+            Phase = draft.Phase,
+            Disposition = classification.Disposition,
+            PluginId = draft.PluginId?.Value,
+            PluginDirectory = ToSafeLeafToken(draft.PluginDirectory),
+            AssemblyName = ToSafeAssemblySimpleName(draft.AssemblyName),
+            StableId = ToSafeStableId(draft.StableId),
+            PluginVersion = draft.PluginVersion is null
+                ? null
+                : PluginVersionText.Format(draft.PluginVersion),
+            HostApiRange = draft.HostApiRange?.ToString(),
+            CommonContractRange = draft.CommonContractRange?.ToString(),
+            UserMessage = CreateUserMessage(code, draft.Phase),
+            ExceptionType = draft.Exception?.GetType().FullName,
+            TechnicalDetail = CreateControlledDetail(draft),
+        };
+    }
+
+    /// <summary>
+    /// 仅根据宿主拥有的错误码和阶段生成用户说明。
+    /// </summary>
+    /// <remarks>
+    /// 这里故意不接收调用点文本。清单属性名、入口名称、插件类型名等内容即使经过局部校验，
+    /// 仍然可能由插件或文件控制；集中固定映射可以保证 UI 与 JSONL 不会因后续调用点疏忽而泄漏。
+    /// 未知但格式合法的错误码也只得到阶段级固定说明，错误码本身仍保留，便于定位新增分支。
+    /// </remarks>
+    private static string CreateUserMessage(string code, HostDiagnosticPhase phase) => code switch
+    {
+        HostDiagnosticCodes.DiagnosticInputRejected =>
+            "诊断输入未通过白名单校验，原始输入未被保存。",
+        HostDiagnosticCodes.PersistenceUnavailable =>
+            "诊断持久化暂不可用，本次会话仍保留受控内存记录。",
+        HostDiagnosticCodes.PluginRootScanFailed =>
+            "无法完成插件根目录扫描，宿主不能确认本次启动的插件集合。",
+        HostDiagnosticCodes.PluginManifestMissing or
+        HostDiagnosticCodes.PluginManifestInvalid or
+        HostDiagnosticCodes.PluginManifestSchemaUnsupported or
+        HostDiagnosticCodes.PluginHostApiIncompatible or
+        HostDiagnosticCodes.PluginCommonContractIncompatible or
+        HostDiagnosticCodes.PluginManifestIdentityDuplicate or
+        HostDiagnosticCodes.PluginManifestDescriptionMismatch =>
+            "插件清单未通过预检，已隔离对应插件候选。",
+        HostDiagnosticCodes.PluginEntryInvalid or
+        HostDiagnosticCodes.PluginDependencyManifestMissing or
+        HostDiagnosticCodes.PluginAssemblyLoadFailed or
+        HostDiagnosticCodes.PluginSharedAssemblyMismatch or
+        HostDiagnosticCodes.PluginTypePreflightFailed or
+        HostDiagnosticCodes.PluginModuleMissing or
+        HostDiagnosticCodes.PluginModuleMultiple or
+        HostDiagnosticCodes.PluginModuleConstructorInvalid =>
+            "插件入口或类型未通过预检，已隔离对应插件候选。",
+        HostDiagnosticCodes.PluginServiceRegistrationFailed =>
+            "插件显式注册失败，宿主已放弃本次容器构建。",
+        HostDiagnosticCodes.PluginHostServiceMutation =>
+            "插件试图修改宿主依赖注入注册，宿主已放弃本次容器构建。",
+        HostDiagnosticCodes.HostContainerBuildFailed =>
+            "宿主依赖注入容器构建失败，主工作台不能安全启动。",
+        HostDiagnosticCodes.ExtensionDiscoveryFailed or
+        HostDiagnosticCodes.ExtensionActivationFailed =>
+            "扩展贡献激活或校验失败，主工作台不能安全启动。",
+        HostDiagnosticCodes.LifecycleFailed =>
+            "插件生命周期操作失败。",
+        HostDiagnosticCodes.HostStartupCleanupFailed =>
+            "启动失败后的资源清理发生异常，应用将退出。",
+        HostDiagnosticCodes.HostStartupUnexpected =>
+            "宿主启动发生未分类异常，主工作台没有启动。",
+        "VIEW_CREATION_FAILED" =>
+            "已登记的插件视图创建失败。",
+        "PLUGIN_MODULE_ACTIVATION_FAILED" =>
+            "插件模块无法通过公共无参构造创建。",
+        _ when phase == HostDiagnosticPhase.Layout =>
+            "布局恢复或保存失败，宿主已使用安全回退并保留诊断。",
+        _ when phase == HostDiagnosticPhase.PluginLifecycle =>
+            "插件生命周期操作失败。",
+        _ => "宿主操作失败，原始输入未被保存。",
+    };
+
+    private static string? CreateControlledDetail(HostDiagnosticDraft draft)
+    {
+        if (draft.LifecycleStage is null && draft.Duration is null)
+        {
+            return null;
+        }
+
+        var parts = new List<string>(capacity: 2);
+        if (draft.LifecycleStage is { } stage)
+        {
+            parts.Add($"stage={stage}");
+        }
+
+        if (draft.Duration is { } duration)
+        {
+            parts.Add(string.Format(
+                CultureInfo.InvariantCulture,
+                "durationMs={0:0.###}",
+                duration.TotalMilliseconds));
+        }
+
+        return string.Join("; ", parts);
+    }
+
+    private static bool IsSafeErrorCode(string? value) =>
+        IsSafeToken(value, allowLowercase: false);
+
+    private static string? ToSafeStableId(string? value) =>
+        DocumentTypeId.TryParse(value, out var stableId)
+            ? stableId!.Value
+            : null;
+
+    private static string? ToSafeLeafToken(string? value)
+    {
+        if (!IsSafeToken(value, allowLowercase: true) ||
+            Path.IsPathRooted(value!) ||
+            !string.Equals(Path.GetFileName(value), value, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return value;
+    }
+
+    private static string? ToSafeAssemblySimpleName(AssemblyName? value)
+    {
+        var simpleName = value?.Name;
+        return IsSafeToken(simpleName, allowLowercase: true)
+            ? simpleName
+            : null;
+    }
+
+    private static bool IsSafeToken(string? value, bool allowLowercase)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length > MaximumTokenLength)
+        {
+            return false;
+        }
+
+        return value.All(character =>
+            char.IsAsciiLetterUpper(character) ||
+            allowLowercase && char.IsAsciiLetterLower(character) ||
+            char.IsAsciiDigit(character) ||
+            character is '_' or '-' or '.');
+    }
+}
+
+/// <summary>
+/// 在开发者显式承担风险时，把原始异常写入进程级临时输出。
+/// </summary>
+/// <remarks>
+/// 该输出与 <see cref="HostDiagnosticRecord"/> 完全分离，不能写入宿主 JSONL、UI 或剪贴板。
+/// 环境变量只接受精确值 <c>1</c>，避免部署环境中的模糊布尔值意外开启敏感输出。
+/// </remarks>
+internal static class HostSensitiveDiagnosticDebugOutput
+{
+    internal const string EnvironmentVariableName =
+        "MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS";
+
+    internal static bool IsEnabled => string.Equals(
+        Environment.GetEnvironmentVariable(EnvironmentVariableName),
+        "1",
+        StringComparison.Ordinal);
+
+    internal static void Write(
+        string code,
+        HostDiagnosticPhase phase,
+        Exception? exception)
+    {
+        if (!IsEnabled || exception is null)
+        {
+            return;
+        }
+
+        var warning =
+            "[敏感诊断已开启] 以下异常原文可能包含密码、Token、正文和本地路径；" +
+            "宿主不会把它写入诊断 JSONL，请仅在本地短期使用。";
+        var detail = $"{warning}{Environment.NewLine}" +
+                     $"errorCode={code} phase={phase}{Environment.NewLine}{exception}";
+        try
+        {
+            Trace.TraceWarning(detail);
+            Console.Error.WriteLine(detail);
+        }
+        catch (Exception outputException) when (
+            outputException is IOException or ObjectDisposedException)
+        {
+            // 调试旁路不是产品诊断通道，终端或 Trace 监听器不可用时不能反向破坏宿主。
+        }
+    }
 }
 
 /// <summary>
@@ -282,27 +506,10 @@ internal sealed class HostDiagnosticSession : IHostDiagnosticSink, IDisposable
     public HostDiagnosticRecord Report(HostDiagnosticDraft draft)
     {
         ArgumentNullException.ThrowIfNull(draft);
-        var classification = HostDiagnosticFailurePolicy.Classify(draft.Code, draft.Phase);
-        var record = new HostDiagnosticRecord
-        {
-            SessionId = SessionId,
-            Sequence = 0,
-            TimestampUtc = DateTimeOffset.UtcNow,
-            Code = draft.Code,
-            Severity = classification.Severity,
-            Phase = draft.Phase,
-            Disposition = classification.Disposition,
-            PluginId = draft.PluginId,
-            PluginDirectory = draft.PluginDirectory,
-            AssemblyName = draft.AssemblyName,
-            StableId = draft.StableId,
-            PluginVersion = draft.PluginVersion,
-            HostApiRange = draft.HostApiRange,
-            CommonContractRange = draft.CommonContractRange,
-            UserMessage = draft.UserMessage,
-            ExceptionType = draft.Exception?.GetType().FullName,
-            TechnicalDetail = draft.TechnicalDetail ?? draft.Exception?.ToString(),
-        };
+        var record = HostDiagnosticRedactionPolicy.Create(
+            SessionId,
+            draft,
+            DateTimeOffset.UtcNow);
 
         lock (_gate)
         {
@@ -313,6 +520,7 @@ internal sealed class HostDiagnosticSession : IHostDiagnosticSink, IDisposable
         }
 
         Mirror(record);
+        HostSensitiveDiagnosticDebugOutput.Write(record.Code, record.Phase, draft.Exception);
         return record;
     }
 
@@ -373,8 +581,7 @@ internal sealed class HostDiagnosticSession : IHostDiagnosticSink, IDisposable
             {
                 Report(new HostDiagnosticDraft(
                     HostDiagnosticCodes.PersistenceUnavailable,
-                    HostDiagnosticPhase.DiagnosticInfrastructure,
-                    "部分历史诊断日志无法清理，本次会话日志仍可使用。")
+                    HostDiagnosticPhase.DiagnosticInfrastructure)
                 {
                     Exception = cleanupFailure,
                 });
@@ -420,24 +627,22 @@ internal sealed class HostDiagnosticSession : IHostDiagnosticSink, IDisposable
 
     private void AddInfrastructureFailure(Exception exception)
     {
-        var classification = HostDiagnosticFailurePolicy.Classify(
+        var draft = new HostDiagnosticDraft(
             HostDiagnosticCodes.PersistenceUnavailable,
-            HostDiagnosticPhase.DiagnosticInfrastructure);
-        var record = new HostDiagnosticRecord
+            HostDiagnosticPhase.DiagnosticInfrastructure)
         {
-            SessionId = SessionId,
+            Exception = exception,
+        };
+        var record = HostDiagnosticRedactionPolicy.Create(
+            SessionId,
+            draft,
+            DateTimeOffset.UtcNow) with
+        {
             Sequence = ++_sequence,
-            TimestampUtc = DateTimeOffset.UtcNow,
-            Code = HostDiagnosticCodes.PersistenceUnavailable,
-            Severity = classification.Severity,
-            Phase = HostDiagnosticPhase.DiagnosticInfrastructure,
-            Disposition = classification.Disposition,
-            UserMessage = "无法写入本次会话的诊断日志，诊断仍保留在内存中。",
-            ExceptionType = exception.GetType().FullName,
-            TechnicalDetail = exception.ToString(),
         };
         _records.Add(record);
         Mirror(record);
+        HostSensitiveDiagnosticDebugOutput.Write(record.Code, record.Phase, exception);
     }
 
     private static Exception? DeleteExpiredSessions(string directory)

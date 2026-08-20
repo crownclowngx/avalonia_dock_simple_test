@@ -229,10 +229,11 @@ public sealed class MainWindowViewModelTests
     [Fact]
     public async Task SaveFailureDoesNotMutateDocumentState()
     {
+        const string canary = "G15-save-password-token-private-path";
         using var context = CreateContextWithDocumentStrategy();
         var attemptedPath = Path.Combine(context.TempDirectory, "failed-copy.testdoc");
         context.Storage.SavePath = attemptedPath;
-        context.Storage.WriteException = new IOException("simulated");
+        context.Storage.WriteException = new IOException(canary);
         var viewModel = context.CreateMainWindowViewModel();
         viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
         var document = GetDocuments(context).Single();
@@ -247,16 +248,18 @@ public sealed class MainWindowViewModelTests
         Assert.True(document.IsDirty);
         Assert.Equal(0, document.AcceptChangesCount);
         Assert.True(viewModel.HasDocumentOperationError);
+        Assert.DoesNotContain(canary, viewModel.DocumentOperationError);
         Assert.Empty(context.Storage.Writes);
     }
 
     [Fact]
     public async Task 文件树窄服务观察预期读取失败并更新共享错误状态()
     {
+        const string canary = "G15-read-cookie-signed-url-private-path";
         using var context = CreateContextWithDocumentStrategy();
         var path = Path.Combine(context.TempDirectory, "message-failure.testdoc");
         context.Storage.AddFile(path, Serialize("Failure", "content"));
-        context.Storage.ReadException = new IOException("simulated");
+        context.Storage.ReadException = new IOException(canary);
         var viewModel = context.CreateMainWindowViewModel();
 
         await context.Provider
@@ -264,6 +267,7 @@ public sealed class MainWindowViewModelTests
             .OpenPathAsync(path);
 
         Assert.True(viewModel.HasDocumentOperationError);
+        Assert.DoesNotContain(canary, viewModel.DocumentOperationError);
         Assert.Empty(GetDocuments(context));
 
         viewModel.DismissDocumentOperationErrorCommand.Execute(null);
@@ -400,7 +404,7 @@ public sealed class MainWindowViewModelTests
         await viewModel.OpenDocumentByPath(path);
 
         Assert.Contains(
-            "该文档类型不支持从文件恢复",
+            "文档内容不受支持或已损坏",
             viewModel.DocumentOperationError);
         Assert.Empty(GetDocumentDock(context).VisibleDockables!
             .OfType<TrackedScopedNonSavableDocument>());

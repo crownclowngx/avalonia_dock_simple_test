@@ -29,19 +29,6 @@ function Invoke-NativeChecked {
     }
 }
 
-function Invoke-PowerShellChecked {
-    param(
-        [Parameter(Mandatory)] [string]$Name,
-        [Parameter(Mandatory)] [string]$ScriptPath,
-        [string[]]$Arguments = @(),
-        [Parameter(Mandatory)] [string]$WorkingDirectory
-    )
-
-    Invoke-NativeChecked -Name $Name -FilePath 'pwsh' `
-        -Arguments (@('-NoLogo', '-NoProfile', '-File', $ScriptPath) + $Arguments) `
-        -WorkingDirectory $WorkingDirectory
-}
-
 function Copy-EvidenceDirectory {
     param(
         [Parameter(Mandatory)] [string]$Source,
@@ -251,41 +238,60 @@ function Invoke-ReleaseGatePass {
 
         $scripts = Join-Path $CloneRoot 'scripts'
         $solution = Join-Path $CloneRoot 'MyAvaloniaManagement.sln'
+        # 阶段列表使用 GetNewClosure 固定每轮隔离路径。闭包会拥有独立 SessionState，
+        # 因此不能再按名称解析当前脚本中的帮助函数；显式捕获脚本块可保持依赖清晰，
+        # 也避免把 G14 专用进程启动逻辑扩大为 Core 模块 public 命令。
+        $invokeNativeChecked = ${function:Invoke-NativeChecked}
+        $invokePowerShellChecked = {
+            param(
+                [string]$Name,
+                [string]$ScriptPath,
+                [string[]]$Arguments,
+                [string]$WorkingDirectory
+            )
+            & $invokeNativeChecked $Name 'pwsh' `
+                (@('-NoLogo', '-NoProfile', '-File', $ScriptPath) + $Arguments) `
+                $WorkingDirectory
+        }.GetNewClosure()
         $stages = @(
             @{ Name = 'release-gate-core-unit-tests'; Action = {
-                Invoke-PowerShellChecked 'G14 核心单元测试' (Join-Path $scripts 'Test-HostV1ReleaseGateCore.ps1') @() $CloneRoot
+                & $invokePowerShellChecked 'G14 核心单元测试' (Join-Path $scripts 'Test-HostV1ReleaseGateCore.ps1') @() $CloneRoot
             }.GetNewClosure() },
             @{ Name = 'locked-restore'; Action = {
-                Invoke-NativeChecked '解决方案锁定还原' 'dotnet' @(
+                & $invokeNativeChecked '解决方案锁定还原' 'dotnet' @(
                     'restore', $solution, '--locked-mode', '-p:SkipPluginDeploy=true', '--nologo') $CloneRoot
             }.GetNewClosure() },
             @{ Name = 'release-build'; Action = {
-                Invoke-NativeChecked '解决方案 Release 零警告构建' 'dotnet' @(
+                & $invokeNativeChecked '解决方案 Release 零警告构建' 'dotnet' @(
                     'build', $solution, '-c', 'Release', '--no-restore', '--nologo',
                     '-warnaserror', '-p:SkipPluginDeploy=true', '-p:ContinuousIntegrationBuild=true') $CloneRoot
             }.GetNewClosure() },
+            @{ Name = 'host-diagnostic-redaction'; Action = {
+                & $invokePowerShellChecked 'G15 宿主诊断脱敏源码门禁' `
+                    (Join-Path $scripts 'Test-HostDiagnosticRedaction.ps1') @() $CloneRoot
+            }.GetNewClosure() },
             @{ Name = 'host-unit-ui-plugin-tests'; Action = {
-                Invoke-PowerShellChecked '宿主 Unit/UI/Plugin 门禁' `
+                & $invokePowerShellChecked '宿主 Unit/UI/Plugin 门禁' `
                     (Join-Path $scripts 'Invoke-MyAvaloniaManagementTests.ps1') `
                     @('-Configuration', 'Release', '-NoRestore') $CloneRoot
             }.GetNewClosure() },
             @{ Name = 'plugin-sdk-package'; Action = {
-                Invoke-PowerShellChecked 'Plugin SDK 包消费门禁' `
+                & $invokePowerShellChecked 'Plugin SDK 包消费门禁' `
                     (Join-Path $scripts 'Test-PluginSdkPackage.ps1') `
                     @('-Configuration', 'Release') $CloneRoot
             }.GetNewClosure() },
             @{ Name = 'plugin-sdk-api-compatibility'; Action = {
-                Invoke-PowerShellChecked 'Plugin SDK API 兼容门禁' `
+                & $invokePowerShellChecked 'Plugin SDK API 兼容门禁' `
                     (Join-Path $scripts 'Test-PluginSdkCompatibility.ps1') `
                     @('-Baseline', 'v1', '-Configuration', 'Release') $CloneRoot
             }.GetNewClosure() },
             @{ Name = 'managed-plugin-package-matrix'; Action = {
-                Invoke-PowerShellChecked 'Managed Plugin 包矩阵' `
+                & $invokePowerShellChecked 'Managed Plugin 包矩阵' `
                     (Join-Path $scripts 'Test-ManagedPluginPackages.ps1') `
                     @('-Configuration', 'Release') $CloneRoot
             }.GetNewClosure() },
             @{ Name = 'windows-real-window-smoke'; Action = {
-                Invoke-PowerShellChecked 'Windows 真实窗口 Smoke' `
+                & $invokePowerShellChecked 'Windows 真实窗口 Smoke' `
                     (Join-Path $scripts 'Invoke-MyAvaloniaManagementWindowsSmoke.ps1') `
                     @('-Configuration', 'Release', '-NoRestore') $CloneRoot
             }.GetNewClosure() }

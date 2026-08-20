@@ -1,3 +1,4 @@
+using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using MyAvaloniaManagement.Business.Diagnostics;
@@ -42,6 +43,10 @@ public sealed class StartupFailureWindowTests
         Assert.Contains("PLUGIN_ID_DUPLICATE", text);
         Assert.Contains("插件身份重复", text);
         Assert.DoesNotContain("secret-stack-detail", text);
+        var copyText = Assert.IsType<string>(typeof(StartupFailureWindow)
+            .GetField("_copyText", BindingFlags.Instance | BindingFlags.NonPublic)?
+            .GetValue(window));
+        Assert.DoesNotContain("secret-stack-detail", copyText);
         Assert.True(window.FindControl<Button>("OpenLogButton")?.IsEnabled);
     }
 }

@@ -18,14 +18,14 @@ namespace MyAvaloniaManagement.PluginTests;
 /// </summary>
 public sealed class PluginServiceProtectionTests
 {
-    public static TheoryData<Type, string> MutationModules => new()
+    public static TheoryData<Type> MutationModules => new()
     {
-        { typeof(RemoveHostServiceModule), "ExistingDescriptorChanged" },
-        { typeof(ReplaceHostServiceModule), "ExistingDescriptorChanged" },
-        { typeof(ClearHostServicesModule), "ExistingDescriptorChanged" },
-        { typeof(ReorderHostServicesModule), "ExistingDescriptorChanged" },
-        { typeof(AddProtectedServiceModule), "ProtectedServiceAdded" },
-        { typeof(AddKeyedProtectedServiceModule), "ProtectedServiceAdded" },
+        { typeof(RemoveHostServiceModule) },
+        { typeof(ReplaceHostServiceModule) },
+        { typeof(ClearHostServicesModule) },
+        { typeof(ReorderHostServicesModule) },
+        { typeof(AddProtectedServiceModule) },
+        { typeof(AddKeyedProtectedServiceModule) },
     };
 
     [Fact]
@@ -55,9 +55,7 @@ public sealed class PluginServiceProtectionTests
 
     [Theory]
     [MemberData(nameof(MutationModules))]
-    public void 修改既有描述符或追加宿主服务在容器构建前失败(
-        Type moduleType,
-        string expectedKind)
+    public void 修改既有描述符或追加宿主服务在容器构建前失败(Type moduleType)
     {
         WithComposition(
             [(moduleType, "myavalonia.plugin.g6-mutation")],
@@ -81,9 +79,9 @@ public sealed class PluginServiceProtectionTests
                 Assert.Equal(HostDiagnosticPhase.PluginServiceRegistration, diagnostic.Phase);
                 Assert.Equal(HostDiagnosticSeverity.Fatal, diagnostic.Severity);
                 Assert.Equal(HostDiagnosticDisposition.AbortStartup, diagnostic.Disposition);
-                Assert.Contains($"violationKind={expectedKind}", diagnostic.TechnicalDetail);
-                Assert.Contains("serviceType=", diagnostic.TechnicalDetail);
-                Assert.Contains("lifetime=", diagnostic.TechnicalDetail);
+                // G15 将诊断边界前移到记录构造处。服务类型、生命周期和违规描述
+                // 都属于可由插件间接影响的自由文本，不应再进入 schema 1 的兼容字段。
+                Assert.Null(diagnostic.TechnicalDetail);
                 Assert.Null(diagnostic.ExceptionType);
             });
     }

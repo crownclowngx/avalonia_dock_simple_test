@@ -372,6 +372,7 @@ internal sealed class DocumentLifecycleProbe
     private int _documentDisposedBeforeClosing;
 
     public bool ThrowOnLoad { get; set; }
+    public string LoadFailureMessage { get; set; } = "测试文档内容损坏。";
     public int CreatedCount => Volatile.Read(ref _createdCount);
     public int LoadCount => Volatile.Read(ref _loadCount);
     public int CancellationCount => Volatile.Read(ref _cancellationCount);
@@ -437,7 +438,7 @@ internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument,
         _probe.RecordLoad();
         if (_probe.ThrowOnLoad)
         {
-            throw new DocumentLoadException("测试文档内容损坏。");
+            throw new DocumentLoadException(_probe.LoadFailureMessage);
         }
 
         if (snapshot.ContentSchemaVersion != 1)

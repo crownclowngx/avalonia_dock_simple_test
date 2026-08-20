@@ -142,6 +142,24 @@ flowchart TB
 
 [`ViewLocator`](../../ViewLocator.cs) 是 DI 管理的普通实例，只读取当前 `PluginRegistry`。它不读取 AppDomain、插件目录或类型名称，不提供 `ViewModel` → `View` 字符串回退。未登记 Dockable 显示明确占位；View 工厂失败记录 `VIEW_CREATION_FAILED` 并显示占位，不持久化插件异常正文。
 
+### 4.4 诊断白名单边界
+
+所有加载、组合、布局和启动诊断都通过 `IHostDiagnosticSink` 进入 `HostDiagnosticSession`。
+业务边界只创建 `HostDiagnosticDraft`：它只能携带错误码、阶段、强类型身份/版本、异常引用及受控
+生命周期数据，不能提交自由用户说明或技术详情。`HostDiagnosticRedactionPolicy` 在分配序号、写内存、
+JSONL 和镜像之前执行唯一一次白名单转换：
+
+- 用户说明由错误码和阶段固定映射，不使用插件、文件或异常正文；
+- Plugin ID、目录叶名称、程序集简单名、稳定 ID 和版本各自按结构校验，失败就丢弃可选值；
+- `Exception` 只投影运行时类型，不读取 `Message`、`StackTrace` 或 `ToString()`；
+- schema 1 的 `TechnicalDetail` 只允许生命周期枚举与毫秒耗时，否则为 `null`。
+
+因此插件状态 Tool、启动失败窗口和复制摘要只是同一脱敏记录的投影，不再承担二次清洗。
+进程环境变量 `MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS=1` 是与记录完全分离的短期调试旁路：它只把
+带风险警告的原始异常写到 Trace/stderr，不写 UI、剪贴板或 JSONL，也不持久化开关。默认和 Release
+门禁都不启用该旁路。设计与验收证据见
+[G15 宿主诊断脱敏](../../../../docs/plan-history/host-v1/g15-host-diagnostic-redaction.md)。
+
 ## 5. `ManagementFactory` 的 Facade 边界
 
 [`ManagementFactory`](../../ViewModels/ManagementFactory.cs) 必须继承 Dock 的工厂类型并保留现有 public 方法、override 和定位器配置，因此不能简单删除。它现在主要承担协议适配与委托：
@@ -219,7 +237,9 @@ Registry、目标文件名和 `TimeProvider` 取得。v1 是第一个且唯一�
 
 ### 6.3 异常边界
 
-只把预期的文件、权限、路径、JSON 和 `DocumentLoadException` 转换为可恢复失败。空引用、无效程序状态等编程错误继续向上传播，使测试和诊断能够尽早暴露缺陷。
+只把预期的文件、权限、路径、JSON 和 `DocumentLoadException` 转换为可恢复失败。转换由
+`DocumentPersistenceErrorMapper` 返回宿主固定文本，不信任公共异常消息，也不拼接文件路径。
+空引用、无效程序状态等编程错误继续向上传播，使测试和诊断能够尽早暴露缺陷。
 
 批量打开以单文件为错误边界：一个文件失败不阻断后续文件。窗口退出的“保存全部”按 Dock 顺序逐个提交，首个失败或取消即停止。
 
@@ -291,6 +311,7 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | Host 实现面意外导出 | `HostApiBoundaryTests` |
 | 插件并发扫描、可变缓存泄漏 | `InternalRefactorTests` |
 | Managed-only 拒绝、显式贡献所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、`ExplicitContributionAndPluginRegistryTests`、内部注册表测试 |
+| 诊断正文、凭据、URL、路径泄漏与敏感开关误开 | `HostDiagnosticsTests`、生命周期/UI/Document 错误测试、`Test-HostDiagnosticRedaction.ps1` |
 | 插件私有 DI 事务提交、宿主描述符保护与四插件回归 | `PluginServiceProtectionTests` |
 | 严格七字段信封、资源边界、所有权与失败不发布 | `DocumentEnvelopeV1Tests` |
 | 并发打开、保存失败、关闭确认与坏文件恢复 | `MainWindowViewModelTests`、`DocumentPersistenceV1Tests` |

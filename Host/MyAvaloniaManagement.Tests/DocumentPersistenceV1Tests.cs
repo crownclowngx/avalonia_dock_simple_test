@@ -106,7 +106,7 @@ public sealed class DocumentPersistenceV1Tests
 
         Assert.Empty(GetDocuments(context));
         Assert.True(viewModel.HasDocumentOperationError);
-        Assert.Contains("主文件及恢复备份均已损坏", viewModel.DocumentOperationError);
+        Assert.Contains("文档内容不受支持或已损坏", viewModel.DocumentOperationError);
         Assert.Empty(context.Interactions.RecoveryRequests);
     }
 

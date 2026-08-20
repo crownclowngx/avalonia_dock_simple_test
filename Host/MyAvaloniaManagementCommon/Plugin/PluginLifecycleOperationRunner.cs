@@ -110,7 +110,11 @@ internal sealed class PluginLifecycleOperationRunner
             catch (Exception exception)
             {
                 Console.Error.WriteLine(
-                    $"PluginLifecycle errorCode=LIFECYCLE_CANCELLATION_CALLBACK_FAILED type={exception.GetType().Name} message={exception.Message}");
+                    $"PluginLifecycle errorCode=LIFECYCLE_CANCELLATION_CALLBACK_FAILED " +
+                    $"type={exception.GetType().Name}");
+                PluginSensitiveDiagnosticDebugOutput.Write(
+                    "LIFECYCLE_CANCELLATION_CALLBACK_FAILED",
+                    exception);
             }
             finally
             {

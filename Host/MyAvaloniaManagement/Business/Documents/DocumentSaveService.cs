@@ -118,11 +118,10 @@ internal sealed class DocumentSaveService(
         }
         catch (Exception exception) when (IsExpectedPersistenceFailure(exception))
         {
-            Console.Error.WriteLine(
-                $"DocumentPersistence errorCode=DOCUMENT_SAVE_FAILED type={exception.GetType().Name}");
+            DocumentPersistenceErrorMapper.Report("DOCUMENT_SAVE_FAILED", exception);
             return new(
                 DocumentSaveStatus.Failed,
-                "保存文档失败，请检查目标路径是否可写。文档状态未被修改。");
+                DocumentPersistenceErrorMapper.SaveFailureMessage);
         }
 
         // 路径、标题和脏状态只由宿主在主文件成功提交后更新。插件不再拥有路径策略或
@@ -141,11 +140,10 @@ internal sealed class DocumentSaveService(
         }
         catch (Exception exception) when (IsExpectedPersistenceFailure(exception))
         {
-            Console.Error.WriteLine(
-                $"DocumentPersistence errorCode=DOCUMENT_BACKUP_FAILED type={exception.GetType().Name}");
+            DocumentPersistenceErrorMapper.Report("DOCUMENT_BACKUP_FAILED", exception);
             return new(
                 DocumentSaveStatus.SavedWithBackupWarning,
-                "文档已保存，但恢复备份更新失败；下次保存前请妥善保管主文件。");
+                DocumentPersistenceErrorMapper.BackupFailureMessage);
         }
     }
 

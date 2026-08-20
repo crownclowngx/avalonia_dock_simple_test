@@ -1,5 +1,7 @@
+using System.Reflection;
 using System.Text.Json;
 using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.Plugin;
@@ -9,8 +11,20 @@ namespace MyAvaloniaManagement.Tests;
 /// <summary>
 /// 验证统一诊断会话的持久化、失败降级和启动决策。
 /// </summary>
+[Collection("HostDiagnosticsSensitiveOutput")]
 public sealed class HostDiagnosticsTests
 {
+    private static readonly string[] SensitiveCanaries =
+    [
+        "G15-password=CorrectHorseBatteryStaple",
+        "Cookie: session=G15-cookie",
+        "Bearer G15-token",
+        "https://example.test/download?signature=G15-signature",
+        @"C:\Users\secret\G15-private.mamdoc",
+        "/home/secret/G15-private.mamdoc",
+        "G15-document-body",
+    ];
+
     [Fact]
     public void 会话记录写入内存和可逐条解析的JsonLines日志()
     {
@@ -20,8 +34,7 @@ public sealed class HostDiagnosticsTests
         {
             var record = session.Report(new HostDiagnosticDraft(
                 "LAYOUT_JSON_INVALID",
-                HostDiagnosticPhase.Layout,
-                "布局文件无效。")
+                HostDiagnosticPhase.Layout)
             {
                 StableId = "layout",
                 Exception = new InvalidDataException("technical-only"),
@@ -41,7 +54,171 @@ public sealed class HostDiagnosticsTests
         Assert.Equal("LAYOUT_JSON_INVALID", root.GetProperty("code").GetString());
         Assert.Equal("Warning", root.GetProperty("severity").GetString());
         Assert.Equal("Continue", root.GetProperty("disposition").GetString());
-        Assert.Contains("technical-only", root.GetProperty("technicalDetail").GetString());
+        Assert.Equal(
+            typeof(InvalidDataException).FullName,
+            root.GetProperty("exceptionType").GetString());
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("technicalDetail").ValueKind);
+        Assert.DoesNotContain("technical-only", line, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void 默认诊断的内存JsonLines和镜像均不包含异常敏感正文()
+    {
+        using var workspace = new DiagnosticWorkspace();
+        var previous = Environment.GetEnvironmentVariable(
+            HostSensitiveDiagnosticDebugOutput.EnvironmentVariableName);
+        var originalError = Console.Error;
+        using var captured = new StringWriter();
+        string logPath;
+        HostDiagnosticRecord record;
+        try
+        {
+            Environment.SetEnvironmentVariable(
+                HostSensitiveDiagnosticDebugOutput.EnvironmentVariableName,
+                null);
+            Console.SetError(captured);
+            using var session = HostDiagnosticSession.Start(workspace.Root);
+            record = session.Report(new HostDiagnosticDraft(
+                HostDiagnosticCodes.PluginAssemblyLoadFailed,
+                HostDiagnosticPhase.PluginAssemblyLoad)
+            {
+                PluginId = new PluginId("myavalonia.plugin.g15-test"),
+                PluginDirectory = "G15Plugin",
+                AssemblyName = new AssemblyName("G15.Plugin"),
+                StableId = "myavalonia.plugin.g15-test.document.sample",
+                Exception = new InvalidOperationException(
+                    string.Join(" | ", SensitiveCanaries)),
+            });
+            logPath = Assert.IsType<string>(session.LogPath);
+        }
+        finally
+        {
+            Console.SetError(originalError);
+            Environment.SetEnvironmentVariable(
+                HostSensitiveDiagnosticDebugOutput.EnvironmentVariableName,
+                previous);
+        }
+
+        var recordText = JsonSerializer.Serialize(record);
+        var jsonLines = File.ReadAllText(logPath);
+        AssertSensitiveCanariesAbsent(recordText);
+        AssertSensitiveCanariesAbsent(jsonLines);
+        AssertSensitiveCanariesAbsent(captured.ToString());
+        Assert.Equal(typeof(InvalidOperationException).FullName, record.ExceptionType);
+        Assert.Equal("myavalonia.plugin.g15-test", record.PluginId);
+        Assert.Equal("G15.Plugin", record.AssemblyName);
+        Assert.Null(record.TechnicalDetail);
+    }
+
+    [Fact]
+    public void 白名单转换丢弃路径和非法结构字段并保留受控阶段耗时()
+    {
+        var invalid = HostDiagnosticRedactionPolicy.Create(
+            Guid.NewGuid(),
+            new HostDiagnosticDraft(
+                "bad code with spaces",
+                HostDiagnosticPhase.PluginAssemblyLoad)
+            {
+                PluginDirectory = SensitiveCanaries[4],
+                AssemblyName = new AssemblyName("Unsafe Assembly"),
+                StableId = SensitiveCanaries[3],
+            },
+            DateTimeOffset.UtcNow);
+
+        Assert.Equal(HostDiagnosticCodes.DiagnosticInputRejected, invalid.Code);
+        Assert.Equal("诊断输入未通过白名单校验，原始输入未被保存。", invalid.UserMessage);
+        Assert.Null(invalid.PluginDirectory);
+        Assert.Null(invalid.AssemblyName);
+        Assert.Null(invalid.StableId);
+        AssertSensitiveCanariesAbsent(JsonSerializer.Serialize(invalid));
+
+        var controlled = HostDiagnosticRedactionPolicy.Create(
+            Guid.NewGuid(),
+            new HostDiagnosticDraft(
+                "LIFECYCLE_INITIALIZE_FAILED",
+                HostDiagnosticPhase.PluginLifecycle)
+            {
+                PluginId = new PluginId("myavalonia.plugin.g15-test"),
+                PluginDirectory = "G15Plugin",
+                AssemblyName = new AssemblyName("G15.Plugin"),
+                StableId = "myavalonia.plugin.g15-test",
+                PluginVersion = new Version(1, 2, 3),
+                HostApiRange = new PluginVersionRange(
+                    new Version(1, 0),
+                    new Version(2, 0)),
+                CommonContractRange = new PluginVersionRange(
+                    new Version(1, 0),
+                    new Version(2, 0)),
+                LifecycleStage = PluginLifecycleStage.Initialization,
+                Duration = TimeSpan.FromMilliseconds(12.5),
+            },
+            DateTimeOffset.UtcNow);
+
+        Assert.Equal("myavalonia.plugin.g15-test", controlled.PluginId);
+        Assert.Equal("G15Plugin", controlled.PluginDirectory);
+        Assert.Equal("G15.Plugin", controlled.AssemblyName);
+        Assert.Equal("1.2.3.0", controlled.PluginVersion);
+        Assert.Equal("stage=Initialization; durationMs=12.5", controlled.TechnicalDetail);
+    }
+
+    [Fact]
+    public void 显式敏感开关只把异常原文写入临时输出()
+    {
+        using var workspace = new DiagnosticWorkspace();
+        var previous = Environment.GetEnvironmentVariable(
+            HostSensitiveDiagnosticDebugOutput.EnvironmentVariableName);
+        var originalError = Console.Error;
+        using var captured = new StringWriter();
+        string logPath;
+        HostDiagnosticRecord record;
+        try
+        {
+            Environment.SetEnvironmentVariable(
+                HostSensitiveDiagnosticDebugOutput.EnvironmentVariableName,
+                "1");
+            Console.SetError(captured);
+            using var session = HostDiagnosticSession.Start(workspace.Root);
+            record = session.Report(new HostDiagnosticDraft(
+                HostDiagnosticCodes.HostContainerBuildFailed,
+                HostDiagnosticPhase.HostContainerBuild)
+            {
+                Exception = new InvalidOperationException(
+                    string.Join(" | ", SensitiveCanaries)),
+            });
+            logPath = Assert.IsType<string>(session.LogPath);
+        }
+        finally
+        {
+            Console.SetError(originalError);
+            Environment.SetEnvironmentVariable(
+                HostSensitiveDiagnosticDebugOutput.EnvironmentVariableName,
+                previous);
+        }
+
+        Assert.Contains("敏感诊断已开启", captured.ToString(), StringComparison.Ordinal);
+        Assert.Contains(SensitiveCanaries[0], captured.ToString(), StringComparison.Ordinal);
+        AssertSensitiveCanariesAbsent(JsonSerializer.Serialize(record));
+        AssertSensitiveCanariesAbsent(File.ReadAllText(logPath));
+    }
+
+    [Fact]
+    public void 非精确开关值不会开启敏感输出()
+    {
+        var previous = Environment.GetEnvironmentVariable(
+            HostSensitiveDiagnosticDebugOutput.EnvironmentVariableName);
+        try
+        {
+            Environment.SetEnvironmentVariable(
+                HostSensitiveDiagnosticDebugOutput.EnvironmentVariableName,
+                "true");
+            Assert.False(HostSensitiveDiagnosticDebugOutput.IsEnabled);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(
+                HostSensitiveDiagnosticDebugOutput.EnvironmentVariableName,
+                previous);
+        }
     }
 
     [Fact]
@@ -73,8 +250,7 @@ public sealed class HostDiagnosticsTests
         using var session = HostDiagnosticSession.Start(blockingFile);
         session.Report(new HostDiagnosticDraft(
             HostDiagnosticCodes.PluginEntryInvalid,
-            HostDiagnosticPhase.PluginRootDiscovery,
-            "测试插件入口无效。"));
+            HostDiagnosticPhase.PluginRootDiscovery));
 
         Assert.Null(session.LogPath);
         Assert.Contains(
@@ -114,7 +290,7 @@ public sealed class HostDiagnosticsTests
     }
 
     [Fact]
-    public void 组合诊断转换后保留稳定Id和全部贡献来源()
+    public void 组合诊断转换后只保留稳定Id而不保存贡献类型技术详情()
     {
         using var workspace = new DiagnosticWorkspace();
         using var session = HostDiagnosticSession.Start(workspace.Root);
@@ -131,15 +307,60 @@ public sealed class HostDiagnosticsTests
         HostRuntime.ReportCompositionDiagnostics(
             session,
             exception,
-            HostDiagnosticPhase.ExtensionDiscovery,
-            "扩展冲突。");
+            HostDiagnosticPhase.ExtensionDiscovery);
 
         var record = Assert.Single(session.Snapshot);
         Assert.Equal("myavalonia.plugin.sample.document.report", record.PluginId);
         Assert.Equal("myavalonia.plugin.sample.document.report", record.StableId);
-        Assert.Contains("Sample.First (Sample.Plugin)", record.TechnicalDetail);
-        Assert.Contains("Sample.Second (Sample.Plugin)", record.TechnicalDetail);
+        Assert.Null(record.TechnicalDetail);
         Assert.Equal(HostDiagnosticDisposition.AbortStartup, record.Disposition);
+    }
+
+    [Fact]
+    public async Task 生命周期失败状态插件面板和默认日志均不包含插件异常正文()
+    {
+        var originalError = Console.Error;
+        using var captured = new StringWriter();
+        PluginLifecycleManager manager;
+        try
+        {
+            Console.SetError(captured);
+            manager = new PluginLifecycleManager([
+                new PluginLifecycleRegistration(
+                    new PluginId("myavalonia.plugin.g15-lifecycle"),
+                    new SensitiveFailureLifecycle(string.Join(" | ", SensitiveCanaries)))
+            ]);
+            await manager.InitializeAllAsync();
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        var state = Assert.IsType<PluginLifecycleState>(
+            manager.GetState(new PluginId("myavalonia.plugin.g15-lifecycle")));
+        Assert.Equal("插件初始化失败。", state.ErrorMessage);
+        AssertSensitiveCanariesAbsent(state.ErrorMessage!);
+        AssertSensitiveCanariesAbsent(captured.ToString());
+
+        var viewModel = new PluginStatusViewModel(new PluginRegistry([], []), manager);
+        var item = Assert.Single(viewModel.Items);
+        AssertSensitiveCanariesAbsent(item.Detail);
+    }
+
+    [Fact]
+    public void 文档错误映射不信任插件提供的DocumentLoadException正文()
+    {
+        var exception = new MyAvaloniaManagementCommon.Save.DocumentLoadException(
+            string.Join(" | ", SensitiveCanaries),
+            new InvalidOperationException(SensitiveCanaries[0]));
+
+        var message = DocumentPersistenceErrorMapper.ToOpenFailureMessage(exception);
+
+        Assert.Equal(
+            "无法打开所选文件：文档内容不受支持或已损坏。 原文件未被修改。",
+            message);
+        AssertSensitiveCanariesAbsent(message);
     }
 
     [Fact]
@@ -149,8 +370,7 @@ public sealed class HostDiagnosticsTests
         using var session = HostDiagnosticSession.Start(workspace.Root);
         session.Report(new HostDiagnosticDraft(
             HostDiagnosticCodes.PluginEntryInvalid,
-            HostDiagnosticPhase.PluginRootDiscovery,
-            "插件目录没有入口程序集。")
+            HostDiagnosticPhase.PluginRootDiscovery)
         {
             PluginDirectory = "BrokenPlugin",
         });
@@ -227,6 +447,24 @@ public sealed class HostDiagnosticsTests
             UserMessage = code,
         };
 
+    private static void AssertSensitiveCanariesAbsent(string text)
+    {
+        foreach (var canary in SensitiveCanaries)
+        {
+            Assert.DoesNotContain(canary, text, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private sealed class SensitiveFailureLifecycle(string message) : IPluginLifecycle
+    {
+        public int Order => 0;
+
+        public Task InitializeAsync(CancellationToken cancellationToken) =>
+            Task.FromException(new InvalidOperationException(message));
+
+        public Task ShutdownAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
     private sealed class DiagnosticWorkspace : IDisposable
     {
         internal DiagnosticWorkspace()
@@ -249,3 +487,6 @@ public sealed class HostDiagnosticsTests
         }
     }
 }
+
+[CollectionDefinition("HostDiagnosticsSensitiveOutput", DisableParallelization = true)]
+public sealed class HostDiagnosticsSensitiveOutputCollection;

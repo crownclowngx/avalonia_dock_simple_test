@@ -2,9 +2,10 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前 G14 发布基线：2026-08-20，Windows 单入口已在两个独立克隆中重复执行全部正式门禁。
-> 完整 Release 数量、覆盖率、包矩阵与 Windows Smoke 结果见
-> [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)。
+> 当前 G15 宿主基线：2026-08-20，Unit 173、UI 38、Plugin 150，共 361/361；行覆盖率
+> 81.12%、分支覆盖率 66.85%。G14 的历史两轮 Release 证据见
+> [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
+> [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)。
 > 数量来自本次命令输出，不是永久固定门槛。
 
 ## G14 正式发布门禁
@@ -16,13 +17,31 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 ```
 
 脚本要求 Windows x64、PowerShell 7、Git 和 `global.json` 指定的 .NET SDK。它在两个独立本地克隆中
-顺序执行核心单元测试、锁定还原、Release 零警告构建、宿主三套测试、SDK 包/API、四插件包矩阵和
+顺序执行核心单元测试、锁定还原、Release 零警告构建、G15 诊断脱敏扫描、宿主三套测试、SDK 包/API、四插件包矩阵和
 真实窗口 Smoke。每轮使用独立 Temp、dotnet home、NuGet 缓存和 Host 数据根，不读取当前工作目录的
 构建产物或用户 LocalAppData。
 
 结果位于 `artifacts/release-gate/<UTC>-<commit>/pass-1|pass-2`。日志、TRX、Cobertura、四个 ZIP、
 外置清单和 JSON 必须齐全；两轮只忽略时间、耗时和绝对路径，任何测试数、覆盖率、阶段、API、包摘要
 或 Smoke 漂移都会失败。当前入口不绑定托管平台，不自动执行合并、上传或标签操作。
+
+## G15 诊断脱敏门禁
+
+修改异常边界、诊断记录、文档错误提示、Trace 或 Console 输出后运行：
+
+```powershell
+dotnet test Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj `
+  -c Release --filter FullyQualifiedName~HostDiagnostics
+.\scripts\Test-HostDiagnosticRedaction.ps1
+```
+
+第一步用同时含密码、Cookie、Bearer Token、签名 URL、Windows/Unix 绝对路径、请求响应和正文的
+canary 异常验证内存、JSONL、默认镜像、生命周期状态、插件状态和启动失败摘要。第二步扫描 Host 与
+Common 的生产 C#：默认路径不能读取/格式化异常正文、写自由 `TechnicalDetail` 或向 Console 输出路径；
+敏感开关只能位于两个获准的临时输出实现，且草稿不能重新增加自由用户说明。
+
+专项脚本已作为 `Invoke-HostV1ReleaseGate.ps1` 的独立失败即停止阶段，位于 Release 零警告构建之后、
+三套宿主测试之前。Release 门禁不得设置 `MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS`。
 
 ## 一键门禁
 
@@ -226,6 +245,14 @@ BiliDownloader 719/719、DaTangAccountingHelpPlug 64/64、MySmallTools 最终完
 共 **352/352**；Host 行覆盖率 80.62%、分支覆盖率 65.91%，Windows Smoke 通过。
 BiliDownloader 720/720、DaTangAccountingHelpPlug 64/64、MySmallTools 183/183。完整记录见
 [G11 低价值 public 面清理](../plan-history/host-v1/g11-low-value-public-surface-cleanup.md)。
+
+### G15 当前绿色基线
+
+2026-08-20 执行 `HostDiagnostics` 专项、G15 源码扫描、Release 零警告构建和三套宿主测试。
+结果为 Unit 173、UI 38、Plugin 150，共 **361/361**；Host 行覆盖率 81.12%、分支覆盖率 66.85%。
+`HostDiagnostics` 专项 26/26，源码门禁检查 127 个生产 C# 文件并通过。数量和覆盖率来自本轮
+TRX/Cobertura/`summary.json`，完整记录见
+[G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)。
 
 ### 事件总线、Host 直接协调与稳定 ID
 

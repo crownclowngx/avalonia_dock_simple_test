@@ -40,13 +40,12 @@ internal sealed class ViewLocator(
                 // 脱敏，因此本边界绝不把异常对象交给持久化会话，只保留异常类型这一白名单事实。
                 diagnostics?.Report(new HostDiagnosticDraft(
                     "VIEW_CREATION_FAILED",
-                    HostDiagnosticPhase.ExtensionDiscovery,
-                    "已登记的插件视图创建失败。")
+                    HostDiagnosticPhase.ExtensionDiscovery)
                 {
-                    PluginId = registration.OwnerId.Value,
-                    AssemblyName = registration.ViewType.Assembly.GetName().Name,
+                    PluginId = registration.OwnerId,
+                    AssemblyName = registration.ViewType.Assembly.GetName(),
                     StableId = registration.ViewType.FullName,
-                    TechnicalDetail = $"exceptionType={exception.GetType().FullName}",
+                    Exception = exception,
                 });
                 return new TextBlock { Text = $"无法显示 {data.GetType().Name}" };
             }

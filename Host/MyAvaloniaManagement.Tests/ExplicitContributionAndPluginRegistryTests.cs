@@ -113,8 +113,9 @@ public sealed class ExplicitContributionAndPluginRegistryTests
         var record = Assert.Single(diagnostics.Snapshot,
             item => item.Code == "VIEW_CREATION_FAILED");
         Assert.Equal(Owner.Value, record.PluginId);
-        Assert.Equal(typeof(RegisteredView).FullName, record.StableId);
-        Assert.Contains("InvalidOperationException", record.TechnicalDetail);
+        Assert.Null(record.StableId);
+        Assert.Null(record.TechnicalDetail);
+        Assert.Equal(typeof(InvalidOperationException).FullName, record.ExceptionType);
         var persisted = string.Join(
             Environment.NewLine,
             Directory.EnumerateFiles(directory, "*.jsonl").Select(File.ReadAllText));

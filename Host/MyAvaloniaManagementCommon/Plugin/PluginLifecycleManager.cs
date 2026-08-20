@@ -210,7 +210,7 @@ public sealed class PluginLifecycleManager
                         SetState(new PluginLifecycleState(
                             node.PluginId,
                             PluginLifecycleStatus.Failed,
-                            result.Exception?.Message)
+                            "插件初始化失败。")
                         {
                             Stage = PluginLifecycleStage.Initialization,
                             ErrorCode = "LIFECYCLE_INITIALIZE_FAILED",
@@ -295,7 +295,7 @@ public sealed class PluginLifecycleManager
                         SetState(new PluginLifecycleState(
                             node.PluginId,
                             PluginLifecycleStatus.Failed,
-                            result.Exception?.Message)
+                            "插件关闭失败。")
                         {
                             Stage = PluginLifecycleStage.Shutdown,
                             ErrorCode = "LIFECYCLE_SHUTDOWN_FAILED",
@@ -340,9 +340,14 @@ public sealed class PluginLifecycleManager
     private static void ReportFailure(
         PluginId pluginId,
         string stage,
-        Exception? exception) =>
+        Exception? exception)
+    {
+        var errorCode = $"LIFECYCLE_{stage.ToUpperInvariant()}_FAILED";
         Console.Error.WriteLine(
-            $"PluginLifecycle errorCode=LIFECYCLE_{stage.ToUpperInvariant()}_FAILED pluginId={pluginId} type={exception?.GetType().Name ?? "Unknown"} message={exception?.Message ?? "-"}");
+            $"PluginLifecycle errorCode={errorCode} pluginId={pluginId} " +
+            $"type={exception?.GetType().Name ?? "Unknown"}");
+        PluginSensitiveDiagnosticDebugOutput.Write(errorCode, exception);
+    }
 
     private static void ReportTimeout(
         PluginId pluginId,

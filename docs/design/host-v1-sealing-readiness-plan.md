@@ -3,7 +3,7 @@
 > 状态：待整改，不满足封板条件
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`
-> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G9 已于 2026-08-18 完成，G10–G14 已于 2026-08-20 完成；G15–G16 待完成
+> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G9 已于 2026-08-18 完成，G10–G15 已于 2026-08-20 完成；仅 G16 待完成
 > 适用范围：`MyAvaloniaManagement` 宿主、`MyAvaloniaManagementCommon`、插件装载与注册边界、Document/Tool 公共契约和发布门禁
 > 不评审：现有插件的领域业务正确性、第三方插件市场、运行时热卸载和恶意插件隔离
 
@@ -19,7 +19,8 @@ G7 已建立唯一 Document 信封 v1，G8 已将内容契约与宿主路径/所
 改由根级状态与 Dock 协调器直接协作。G12 已建立单插件统一构建、部署、确定性 ZIP 与最终包加载门禁。
 G13 已以 Shipped/Unshipped 可读文本和成员级变异脚本冻结正式 Plugin SDK v1 API。G14 已建立
 平台无关的 Windows 本地发布门禁，以两个独立克隆重复执行并比较全部封板证据。
-剩余主要问题集中在诊断脱敏和最终文档冻结。
+G15 已把诊断记录、UI、默认镜像和文档错误提示收口到白名单转换与固定错误映射，并把专项扫描
+接入发布门禁。剩余工作仅为 G16 的最终文档冻结与 v1 基线签署。
 Legacy 二进制激活已由 G4 删除。
 
 本次封板采用以下一次性定基线策略：
@@ -143,6 +144,12 @@ Unshipped 当前为 0；七个破坏性 API 变异和一组兼容新增登记正
 不进入 nuspec，四插件包矩阵继续完成两轮确定性构建、16 个协议负例和最终 ZIP Host 加载。完整证据见
 [G13 Plugin SDK API 兼容基线](../plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md)。
 
+G15 完成后的当前基线为 Unit 173、UI 38、Plugin 150，共 **361/361 通过**；Host 行覆盖率
+81.12%、分支覆盖率 66.85%，Release 构建 0 警告、0 错误。`HostDiagnostics` 专项 26/26，
+诊断脱敏源码门禁检查 127 个生产 C# 文件并通过。默认内存、UI、JSONL 与 Trace/stderr 均不保留
+canary 原文；精确本地开关只影响临时输出。完整白名单、调试风险、SOLID 取舍、测试矩阵和回滚边界见
+[G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)。
+
 ### 2.3 当前风险清单
 
 | 等级 | 发现 | 影响 |
@@ -154,7 +161,7 @@ Unshipped 当前为 0；七个破坏性 API 变异和一组兼容新增登记正
 | 已解决（G4） | Legacy 无模块激活、公共无参策略和无 `.deps.json` 回退曾同时存在 | 现只接受必需 deps、唯一模块和 DI 策略激活 |
 | 已解决（G6） | 插件曾可直接修改完整 `IServiceCollection` | 现通过每插件工作副本、描述符差异校验和尾部事务提交保护宿主对象图 |
 | 已解决（G5） | ViewLocator 曾通过静态构造、AppDomain 和命名约定重复发现视图 | 现只消费 HostRuntime 私有不可变 Registry；未登记类型不可见，View 失败形成稳定诊断和占位 |
-| 高 | 诊断记录默认使用 `Exception.ToString()` | 可能把路径、URL、插件异常正文或其他敏感上下文写入长期日志 |
+| 已解决（G15） | 诊断记录曾默认使用 `Exception.ToString()`，旁路错误提示也可能携带路径或异常正文 | 现由白名单转换、固定错误说明和源码门禁统一保护内存、UI、JSONL 与默认 Trace/stderr；原文仅在精确本地开关下进入临时输出 |
 | 已解决（G3） | Common 曾直接引用整套字体、主题、Ursa、Semi 与 Dock UI 控件包 | 基础 SDK 现只保留契约依赖；Host 直接拥有主题，可选 UI Profile 固定受支持 UI 版本 |
 | 已解决（G12） | 四个插件曾分别维护部署 Target | 现由一份声明式 Props/Targets 生成严格清单和同一资产集合；四插件保持独立 ZIP 与版本节奏 |
 | 中 | 仓库没有统一 CI 工作流 | 本地曾通过的门禁不能保证每次提交和干净环境都执行 |
@@ -507,6 +514,8 @@ SOLID 取舍、证据 schema、负例测试和回滚边界见
 
 **优先级：高；依赖：无，可与 G0 并行**
 
+> 状态：已完成；完成日期：2026-08-20
+
 - 目标：默认日志不保存完整异常正文和未经验证的技术输入。
 - 修改边界：`HostDiagnosticDraft` 到持久记录的转换、加载/保存错误映射和敏感扫描测试。
 - 白名单字段：异常类型、稳定错误码、阶段、插件 ID、程序集简单名、经过校验的稳定 ID、受控枚举和耗时。
@@ -514,6 +523,13 @@ SOLID 取舍、证据 schema、负例测试和回滚边界见
 - 验收：构造含凭据、URL、路径和正文的异常后，内存展示与 JSON Lines 均不出现敏感值。
 - 验收命令：执行 `dotnet test Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj -c Release --filter FullyQualifiedName~HostDiagnostics`，再运行本任务新增的 `scripts/Test-HostDiagnosticRedaction.ps1`。
 - 完成定义：调试所需原始异常只能通过显式本地开发开关进入短期、受提醒的调试输出，不能成为发布默认值。
+
+G15 已删除 `HostDiagnosticDraft` 的自由用户说明与技术详情入口；`HostDiagnosticRedactionPolicy` 只投影
+合法身份、版本、枚举、耗时和异常类型，`schemaVersion = 1` 及字段结构保持不变。Document 错误、
+插件生命周期、状态 Tool、启动失败摘要和直接 Trace/Console 已同步收口。精确环境变量
+`MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS=1` 只向临时 Trace/stderr 输出带警告的原始异常，记录与文件
+始终脱敏。专项 26/26、三套宿主测试 361/361、源码扫描和 Release 零警告构建通过；详细证据见
+[G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)。
 
 ### G16：同步文档并创建 v1 基线
 
@@ -635,7 +651,7 @@ G0 与 G15 可以并行。G7/G8、G9/G10 和 G11 在 G3 完成后可以分别独
 - [x] Host 内部类型不再被误当作 Plugin SDK（G2 已完成）；
 - [x] 事件总线不泄漏第三方接口或进程全局状态；
 - [x] Release 构建、全部宿主测试、包矩阵和 Windows Smoke 全绿（G14 已完成）；
-- [ ] 诊断日志通过敏感信息扫描；
+- [x] 诊断日志通过敏感信息扫描（G15 已完成）；
 - [ ] 根 README、架构、兼容契约、快速开始和测试说明与代码一致；
 - [ ] 明确延后项没有被误写为已实现能力；
 - [ ] 已创建 Managed Plugin v1 发布标签和回退说明。

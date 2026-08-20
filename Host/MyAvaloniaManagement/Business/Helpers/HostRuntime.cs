@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
@@ -58,8 +59,7 @@ internal sealed class HostRuntime : IDisposable
             ReportCompositionDiagnostics(
                 diagnostics,
                 exception,
-                HostDiagnosticPhase.PluginModuleDiscovery,
-                "插件模块身份或程序集归属不满足宿主契约。");
+                HostDiagnosticPhase.PluginModuleDiscovery);
             throw;
         }
 
@@ -80,8 +80,7 @@ internal sealed class HostRuntime : IDisposable
         {
             diagnostics.Report(new HostDiagnosticDraft(
                 HostDiagnosticCodes.HostContainerBuildFailed,
-                HostDiagnosticPhase.HostContainerBuild,
-                "宿主依赖注入容器构建失败，主工作台不能安全启动。")
+                HostDiagnosticPhase.HostContainerBuild)
             {
                 Exception = exception,
             });
@@ -102,16 +101,14 @@ internal sealed class HostRuntime : IDisposable
                 ReportCompositionDiagnostics(
                     diagnostics,
                     exception,
-                    HostDiagnosticPhase.ExtensionDiscovery,
-                    "Document 或 Tool 扩展无法形成无歧义注册表。");
+                    HostDiagnosticPhase.ExtensionDiscovery);
                 throw;
             }
             catch (Exception exception)
             {
                 diagnostics.Report(new HostDiagnosticDraft(
                     HostDiagnosticCodes.ExtensionDiscoveryFailed,
-                    HostDiagnosticPhase.ExtensionDiscovery,
-                    "扩展策略激活或元数据读取失败，主工作台不能安全启动。")
+                    HostDiagnosticPhase.ExtensionDiscovery)
                 {
                     Exception = exception,
                 });
@@ -190,14 +187,12 @@ internal sealed class HostRuntime : IDisposable
 
             _diagnostics.Report(new HostDiagnosticDraft(
                 state.ErrorCode ?? HostDiagnosticCodes.LifecycleFailed,
-                HostDiagnosticPhase.PluginLifecycle,
-                state.ErrorMessage ?? "插件生命周期操作失败。")
+                HostDiagnosticPhase.PluginLifecycle)
             {
-                PluginId = state.PluginId.Value,
+                PluginId = state.PluginId,
                 StableId = state.BlockingPluginId?.Value,
-                TechnicalDetail = state.Duration is null
-                    ? null
-                    : $"stage={state.Stage}; durationMs={state.Duration.Value.TotalMilliseconds:0.###}",
+                LifecycleStage = state.Stage,
+                Duration = state.Duration,
             });
         }
     }
@@ -214,8 +209,7 @@ internal sealed class HostRuntime : IDisposable
     internal static void ReportCompositionDiagnostics(
         IHostDiagnosticSink sink,
         HostCompositionException exception,
-        HostDiagnosticPhase phase,
-        string userMessage)
+        HostDiagnosticPhase phase)
     {
         foreach (var item in exception.Diagnostics)
         {
@@ -230,22 +224,19 @@ internal sealed class HostRuntime : IDisposable
                 continue;
             }
 
-            sink.Report(new HostDiagnosticDraft(item.Code, phase, userMessage)
+            sink.Report(new HostDiagnosticDraft(item.Code, phase)
             {
-                PluginId = item.StableId?.StartsWith(
-                    "myavalonia.plugin.",
-                    StringComparison.Ordinal) == true
-                    ? item.StableId
+                PluginId = PluginId.TryParse(item.StableId, out var pluginId) &&
+                           pluginId!.Value.StartsWith(
+                               "myavalonia.plugin.",
+                               StringComparison.Ordinal)
+                    ? pluginId
                     : null,
                 StableId = item.StableId,
                 AssemblyName = item.Contributors.Count == 1
-                    ? item.Contributors[0].AssemblyName
+                    ? new AssemblyName(item.Contributors[0].AssemblyName)
                     : null,
                 Exception = exception,
-                TechnicalDetail = string.Join(
-                    Environment.NewLine,
-                    item.Contributors.Select(source =>
-                        $"{source.TypeName} ({source.AssemblyName})")),
             });
         }
     }

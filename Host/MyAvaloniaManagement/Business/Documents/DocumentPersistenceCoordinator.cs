@@ -64,7 +64,7 @@ internal sealed class DocumentPersistenceCoordinator(
         if (string.IsNullOrWhiteSpace(filePath) ||
             !storageService.FileExists(filePath))
         {
-            Console.WriteLine($"文件不存在: {filePath}");
+            DocumentPersistenceErrorMapper.Report("DOCUMENT_OPEN_FILE_NOT_FOUND");
             return DocumentOperationResult.NoChange;
         }
 
@@ -140,17 +140,11 @@ internal sealed class DocumentPersistenceCoordinator(
                     exception is DocumentLoadException ||
                     IsExpectedPersistenceFailure(exception))
                 {
-                    var fileName = Path.GetFileName(path);
-                    var reason = exception switch
-                    {
-                        DocumentLoadException => exception.Message,
-                        JsonException => "文件结构损坏或不是受支持的 Document。",
-                        _ => "读取文件失败，请检查文件是否仍然存在且可访问。"
-                    };
                     result = DocumentOperationResult.Failure(
-                        $"无法打开“{fileName}”：{reason} 原文件未被修改。");
-                    Console.Error.WriteLine(
-                        $"DocumentPersistence errorCode=DOCUMENT_OPEN_FAILED type={exception.GetType().Name}");
+                        DocumentPersistenceErrorMapper.ToOpenFailureMessage(exception));
+                    DocumentPersistenceErrorMapper.Report(
+                        "DOCUMENT_OPEN_FAILED",
+                        exception);
                 }
             }
 
