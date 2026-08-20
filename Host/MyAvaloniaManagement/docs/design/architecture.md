@@ -287,7 +287,8 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 
 | 风险 | 主要保护 |
 | --- | --- |
-| public 签名漂移 | `PublicApiContractTests` |
+| Plugin SDK public 签名漂移 | v1 Shipped/Unshipped 文本、`Test-PluginSdkCompatibility.ps1`、基线政策测试 |
+| Host 实现面意外导出 | `HostApiBoundaryTests` |
 | 插件并发扫描、可变缓存泄漏 | `InternalRefactorTests` |
 | Managed-only 拒绝、显式贡献所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、`ExplicitContributionAndPluginRegistryTests`、内部注册表测试 |
 | 插件私有 DI 事务提交、宿主描述符保护与四插件回归 | `PluginServiceProtectionTests` |

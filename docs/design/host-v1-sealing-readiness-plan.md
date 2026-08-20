@@ -3,7 +3,7 @@
 > 状态：待整改，不满足封板条件
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`
-> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G9 已于 2026-08-18 完成，G10–G12 已于 2026-08-20 完成；G13–G16 待完成
+> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G9 已于 2026-08-18 完成，G10–G13 已于 2026-08-20 完成；G14–G16 待完成
 > 适用范围：`MyAvaloniaManagement` 宿主、`MyAvaloniaManagementCommon`、插件装载与注册边界、Document/Tool 公共契约和发布门禁
 > 不评审：现有插件的领域业务正确性、第三方插件市场、运行时热卸载和恶意插件隔离
 
@@ -17,7 +17,8 @@
 G7 已建立唯一 Document 信封 v1，G8 已将内容契约与宿主路径/所有权分离，G9 已建立 SDK 自有且
 每个 HostRuntime 隔离的同步事件总线，G10 已删除 Host 文件打开、布局刷新和 Tool 显隐广播，
 改由根级状态与 Dock 协调器直接协作。G12 已建立单插件统一构建、部署、确定性 ZIP 与最终包加载门禁。
-剩余主要问题集中在 SDK API 可审阅基线、CI、诊断脱敏和最终文档冻结。
+G13 已以 Shipped/Unshipped 可读文本和成员级变异脚本冻结正式 Plugin SDK v1 API。
+剩余主要问题集中在 CI、诊断脱敏和最终文档冻结。
 Legacy 二进制激活已由 G4 删除。
 
 本次封板采用以下一次性定基线策略：
@@ -135,13 +136,19 @@ win-x64 ZIP，最终 ZIP 均通过宿主真实加载；16 个构建契约负例�
 SHA-256 从本轮 `summary.json` 动态写入
 [G12 统一插件构建、部署与独立发布](../plan-history/host-v1/g12-unified-plugin-build-and-deployment.md)。
 
+G13 完成后的当前基线为 Unit 167、UI 38、Plugin 149，共 **354/354 通过**；Host 行覆盖率
+80.62%、分支覆盖率 65.91%，Windows Smoke 通过。Plugin SDK v1 包含 243 条 Shipped 签名，
+Unshipped 当前为 0；七个破坏性 API 变异和一组兼容新增登记正反例均通过。SDK 包消费确认 Analyzer
+不进入 nuspec，四插件包矩阵继续完成两轮确定性构建、16 个协议负例和最终 ZIP Host 加载。完整证据见
+[G13 Plugin SDK API 兼容基线](../plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md)。
+
 ### 2.3 当前风险清单
 
 | 等级 | 发现 | 影响 |
 | --- | --- | --- |
 | 已解决（G7/G8） | 旧候选保存契约曾混合宿主信封、路径和插件自报身份 | 现由唯一 v1 信封承载宿主字段，`DocumentContentSnapshot` 只保留内容版本和 payload，路径与规范所有权由宿主状态存储持有 |
 | 已解决（G2） | Host 窗口、ViewModel、加载器、工厂和内部模型曾大量为 public，且存在静态服务定位器 | Host 自有导出类型现为 0；生产构造只走 Runtime DI |
-| 高 | Common/Plugin SDK 门禁仍只有一个 SHA256 | G2 已排除 Host 实现噪声，但仍不能审阅删除了哪个类型、改了哪个签名，也不能区分兼容新增 |
+| 已解决（G13） | Common/Plugin SDK 门禁曾只有一个 SHA256 | 现由 243 条 v1 Shipped 签名、显式 Unshipped 新增和成员级变异门禁给出可审阅差异；Host 实现与 UI Profile 不进入基础 SDK 基线 |
 | 已解决（G9） | 旧消息器包装曾暴露 CommunityToolkit 类型并使用进程默认实例 | 现由 SDK 自有 `IHostEventBus` 提供同步强类型发布/订阅，每个 HostRuntime 独享实例并由令牌确定释放 |
 | 已解决（G4） | Legacy 无模块激活、公共无参策略和无 `.deps.json` 回退曾同时存在 | 现只接受必需 deps、唯一模块和 DI 策略激活 |
 | 已解决（G6） | 插件曾可直接修改完整 `IServiceCollection` | 现通过每插件工作副本、描述符差异校验和尾部事务提交保护宿主对象图 |
@@ -462,11 +469,19 @@ View 定向适配，DaTang 发票 Document 删除 XAML 运行时自建 DataConte
 
 **优先级：高；依赖：G3、G11**
 
+> 状态：已完成；完成日期：2026-08-20
+
 - 目标：替换 G2 后只针对 Common、但仍不可读的 SHA256 指纹。
 - 修改边界：只对正式 Plugin SDK 建立 public API 文本或元数据基线；Host 实现程序集不作为插件契约。
 - 验收：兼容新增被标记为可接受；删除类型、收窄可见性、改参数、改返回类型和删除成员给出具体差异并阻断。
 - 验收命令：新增并执行 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v1`；脚本需在测试副本中证明删除一个 public 成员时会失败并打印该成员。
 - 完成定义：有意破坏必须提升 SDK 主版本、更新清单兼容区间、基线、迁移说明和样例插件验证，不能只替换一个哈希。
+
+G13 已建立 243 条、启用 nullable 且按 Ordinal 排序的 v1 Shipped 签名；兼容新增必须显式登记到
+Unshipped。专项脚本已证明删除类型、删除成员、收窄可见性、修改参数和返回类型均以 `RS0017`
+打印具体成员并阻断，未登记新增以 `RS0016` 阻断、登记后通过。完整设计、维护流程和实际门禁证据见
+[长期兼容基线维护指南](../reference/plugin-sdk-api-compatibility.md)与
+[G13 独立验收记录](../plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md)。
 
 ### G14：建立 Windows CI 与发布门禁
 
@@ -603,7 +618,7 @@ G0 与 G15 可以并行。G7/G8、G9/G10 和 G11 在 G3 完成后可以分别独
 ## 9. 封板签署清单
 
 - [ ] G0–G16 均有独立合并记录和验证证据；
-- [ ] Plugin SDK public API 基线已经生成并可读；
+- [x] Plugin SDK public API 基线已经生成并可读（G13 已完成）；
 - [ ] 四个真实插件使用正式 SDK/打包规则构建；
 - [ ] v1 数据根和旧数据保留规则已经验证；
 - [x] Document 信封与插件内容 schema 已分离（G7 已完成）；

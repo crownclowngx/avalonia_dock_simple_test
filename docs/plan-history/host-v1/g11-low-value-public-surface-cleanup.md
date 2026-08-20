@@ -1,5 +1,8 @@
 # G11：删除低价值 public 面和占位代码
 
+> 后续状态：本文记录的 SHA256 是 G11 收口后的临时门禁，已由 G13 的 243 条 v1 Shipped 签名和
+> `Test-PluginSdkCompatibility.ps1` 替代；本文原始验收数据继续作为时间点证据保留。
+
 > 状态：已完成
 > 完成日期：2026-08-20
 > 适用范围：Plugin SDK、Host Document 创建与保存、MySmallTools 播放器交互、DaTang 发票导入、Host/BiliDownloader 单向转换器及对应门禁

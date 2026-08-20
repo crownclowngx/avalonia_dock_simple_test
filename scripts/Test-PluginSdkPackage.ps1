@@ -5,7 +5,7 @@
 
 $ErrorActionPreference = "Stop"
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
-$temporaryRoot = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ("MyAvaloniaPluginSdkG11-" + [Guid]::NewGuid().ToString("N"))))
+$temporaryRoot = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ("MyAvaloniaPluginSdkPackage-" + [Guid]::NewGuid().ToString("N"))))
 $packageOutput = Join-Path $temporaryRoot "packages"
 $isolatedPackageCache = Join-Path $temporaryRoot "global-packages"
 $sdkVersion = ([xml](Get-Content -LiteralPath (Join-Path $repositoryRoot "Directory.Version.props"))).Project.PropertyGroup.MyAvaloniaPluginSdkVersion
@@ -114,7 +114,7 @@ try {
         "Dock.Avalonia", "Dock.Avalonia.Themes.Fluent",
         "Dock.Controls.ProportionalStackPanel", "Dock.Controls.Recycling",
         "Dock.Controls.Recycling.Model", "Irihi.Ursa", "Irihi.Ursa.Themes.Semi", "Semi.Avalonia",
-        "Xaml.Behaviors"
+        "Xaml.Behaviors", "Microsoft.CodeAnalysis.PublicApiAnalyzers"
     )
     foreach ($dependency in $forbiddenBaseDependencies) {
         Assert-True ($baseDependencyIds -notcontains $dependency) "基础 SDK 依赖图错误包含 $dependency。"
@@ -412,7 +412,7 @@ public sealed partial class ProfileView : UserControl
     Invoke-DotNet @("restore", "UiPlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $uiProject
     Invoke-DotNet @("build", "UiPlugin.csproj", "-c", "Release", "--no-restore", "--nologo") $uiProject
 
-    Write-Host "G11 Plugin SDK package acceptance passed. SDK=$sdkVersion; minimal creation/content/event samples compiled; removed G5/G8/G9/G11 contracts rejected."
+    Write-Host "Plugin SDK package acceptance passed. SDK=$sdkVersion; analyzer did not leak into nuspec; minimal creation/content/event samples compiled; removed G5/G8/G9/G11 contracts rejected."
 }
 finally {
     $systemTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())

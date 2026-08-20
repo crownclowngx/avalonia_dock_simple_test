@@ -9,8 +9,8 @@ namespace MyAvaloniaManagement.Tests;
 /// 锁定 G11 删除后的最小 Plugin SDK 表面，并明确保护仍有正式语义的契约。
 /// </summary>
 /// <remarks>
-/// SHA256 在 G13 前仍用于检测任意漂移；本组可读断言则说明本次删除和保留的设计意图，
-/// 避免未来只更新哈希而无意恢复通用对象包、占位初始化字段或无生产实现的路径策略。
+/// G13 文本基线检测任意签名漂移；本组可读断言继续说明 G11 删除和保留的设计意图，
+/// 避免未来仅登记签名就无意恢复通用对象包、占位初始化字段或无生产实现的路径策略。
 /// </remarks>
 public sealed class G11LowValuePublicSurfaceTests
 {

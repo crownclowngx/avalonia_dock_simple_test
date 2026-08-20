@@ -2,10 +2,10 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前 G11 专项基线：2026-08-20，Plugin SDK 低价值 public 面、通用反射 Behavior 和旧无参
-> ViewModel 旁路已经删除。完整 Release 数量、覆盖率与 Windows Smoke 结果见
-> [G11 低价值 public 面清理](../plan-history/host-v1/g11-low-value-public-surface-cleanup.md)。数量来自命令输出，不是
-> 永久固定门槛。
+> 当前 G13 专项基线：2026-08-20，正式 Plugin SDK v1 已建立可读 Shipped/Unshipped API 文本和
+> 成员级变异门禁。完整 Release 数量、覆盖率与 Windows Smoke 结果见
+> [G13 Plugin SDK API 兼容基线](../plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md)。
+> 数量来自本次命令输出，不是永久固定门槛。
 
 ## 一键门禁
 
@@ -30,6 +30,20 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 ```powershell
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Debug
 ```
+
+## Plugin SDK API 兼容门禁
+
+维护基础 SDK public 类型或成员时运行：
+
+```powershell
+.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v1 -Configuration Release
+```
+
+脚本先验证活动基线与 SDK 主版本一致、Shipped/Unshipped 文本稳定排序且没有删除标记，再构建真实
+SDK。随后它在系统 Temp 的完整 SDK 测试副本中依次删除类型、删除成员、收窄可见性、修改参数和
+返回类型，要求 `RS0017` 打印具体成员；未登记的兼容新增必须产生 `RS0016`，登记到测试副本的
+Unshipped 后才允许通过。脚本不会修改仓库源文件。长期维护规则见
+[Plugin SDK API 兼容基线维护指南](./plugin-sdk-api-compatibility.md)。
 
 ## Plugin SDK 包门禁
 
@@ -212,9 +226,10 @@ Dock ID 会被持久化，集中常量可以避免一个字符的差异导致工
 
 ### 契约与内部重构保护
 
-`PublicApiContractTests` 对 Host 与 `MyAvaloniaManagementCommon` 的导出类型、构造函数、
-方法、属性、字段和事件生成稳定指纹。内部类拆分不会改变指纹；任何有意 public 契约
-调整都必须在独立评审中同步更新契约测试。
+G13 的 Shipped/Unshipped 文件声明 `MyAvaloniaManagementCommon` 的完整 public 签名，Roslyn Analyzer
+在普通 SDK build 中比较源符号，专项脚本再用测试副本证明各类破坏均会阻断。内部类拆分不会改变
+文本；兼容新增必须显式登记，有意破坏则必须建立新主版本基线并同步插件兼容区间和迁移证据。
+`PublicApiContractTests` 只保留签名文本无法表达的第三方消息器泄漏等行为断言。
 
 `InternalRefactorTests` 保护策略元数据只读取一次、重复 ID 与元数据碰撞抛出 `HostCompositionException`、插件根目录
 并发加载共享同一不可变快照，以及原子替换后不遗留临时文件。

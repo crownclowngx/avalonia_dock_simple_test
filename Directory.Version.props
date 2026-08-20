@@ -16,6 +16,11 @@
     <MyAvaloniaPluginSdkVersion>1.0.0</MyAvaloniaPluginSdkVersion>
     <MyAvaloniaPluginSdkFileVersion>1.0.0.0</MyAvaloniaPluginSdkFileVersion>
     <MyAvaloniaPluginSdkAssemblyVersion>1.0.0.0</MyAvaloniaPluginSdkAssemblyVersion>
+    <!--
+      public API 文本基线按 SDK 主版本独立保存。有意破坏必须先建立新的 vN 目录，
+      再同步提升包版本、程序集版本和插件清单兼容区间，不能改写旧基线掩盖差异。
+    -->
+    <MyAvaloniaPluginSdkApiBaseline>v1</MyAvaloniaPluginSdkApiBaseline>
 
     <!--
       Plugin SDK UI Profile 与宿主使用同一组 UI 依赖事实。基础 SDK 不引用这些实现包；

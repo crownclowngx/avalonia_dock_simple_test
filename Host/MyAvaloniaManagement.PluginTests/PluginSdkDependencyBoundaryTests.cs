@@ -18,6 +18,11 @@ public sealed class PluginSdkDependencyBoundaryTests
         "Newtonsoft.Json",
     ];
 
+    private static readonly string[] BaseSdkBuildOnlyPackages =
+    [
+        "Microsoft.CodeAnalysis.PublicApiAnalyzers",
+    ];
+
     private static readonly string[] UiProfilePackages =
     [
         "Avalonia.Themes.Fluent",
@@ -36,10 +41,36 @@ public sealed class PluginSdkDependencyBoundaryTests
     {
         var project = LoadProject("Host", "MyAvaloniaManagementCommon", "MyAvaloniaManagementCommon.csproj");
 
-        Assert.Equal(BaseSdkPackages, PackageReferences(project));
+        Assert.Equal(BaseSdkPackages, RuntimePackageReferences(project));
+        Assert.Equal(BaseSdkBuildOnlyPackages, BuildOnlyPackageReferences(project));
         Assert.Equal("MyAvaloniaManagement.PluginSdk", Property(project, "PackageId"));
         Assert.Equal("true", Property(project, "GenerateDocumentationFile"));
         Assert.Contains("CS1591", Property(project, "WarningsAsErrors"), StringComparison.Ordinal);
+        Assert.All(
+            ["RS0016", "RS0017", "RS0024", "RS0025", "RS0036", "RS0037", "RS0041", "RS0048"],
+            diagnostic => Assert.Contains(
+                diagnostic,
+                Property(project, "WarningsAsErrors"),
+                StringComparison.Ordinal));
+
+        var analyzer = Assert.Single(
+            project.Descendants("PackageReference"),
+            item => item.Attribute("Include")?.Value == "Microsoft.CodeAnalysis.PublicApiAnalyzers");
+        Assert.Equal("all", analyzer.Attribute("PrivateAssets")?.Value);
+        Assert.Equal(
+            "runtime; build; native; contentfiles; analyzers",
+            analyzer.Attribute("IncludeAssets")?.Value);
+        Assert.Equal(
+            [
+                @"ApiCompatibility\$(MyAvaloniaPluginSdkApiBaseline)\PublicAPI.Shipped.txt",
+                @"ApiCompatibility\$(MyAvaloniaPluginSdkApiBaseline)\PublicAPI.Unshipped.txt",
+            ],
+            project.Descendants("AdditionalFiles")
+                .Select(item => item.Attribute("Include")?.Value)
+                .Where(item => item is not null)
+                .Cast<string>()
+                .OrderBy(item => item, StringComparer.Ordinal)
+                .ToArray());
         Assert.DoesNotContain(
             project.Descendants("Folder"),
             item => string.Equals(
@@ -52,11 +83,13 @@ public sealed class PluginSdkDependencyBoundaryTests
     public void Host直接拥有全部UiProfile包而不是依赖Common传递()
     {
         var host = LoadProject("Host", "MyAvaloniaManagement", "MyAvaloniaManagement.csproj");
-        var hostPackages = PackageReferences(host).ToHashSet(StringComparer.Ordinal);
+        var hostPackages = RuntimePackageReferences(host).ToHashSet(StringComparer.Ordinal);
 
         Assert.All(UiProfilePackages, package => Assert.Contains(package, hostPackages));
         Assert.Contains("Avalonia.Fonts.Inter", hostPackages);
         Assert.Contains("Avalonia.Desktop", hostPackages);
+        Assert.DoesNotContain("Microsoft.CodeAnalysis.PublicApiAnalyzers", PackageReferences(host));
+        Assert.Empty(host.Descendants("AdditionalFiles"));
     }
 
     [Fact]
@@ -73,6 +106,8 @@ public sealed class PluginSdkDependencyBoundaryTests
         Assert.All(
             profile.Descendants("PackageReference"),
             item => Assert.Matches(@"^\[\$\(MyAvalonia.+UiVersion\)\]$", item.Attribute("VersionOverride")?.Value));
+        Assert.DoesNotContain("Microsoft.CodeAnalysis.PublicApiAnalyzers", PackageReferences(profile));
+        Assert.Empty(profile.Descendants("AdditionalFiles"));
     }
 
     [Theory]
@@ -111,6 +146,24 @@ public sealed class PluginSdkDependencyBoundaryTests
 
     private static string[] PackageReferences(XDocument project) =>
         project.Descendants("PackageReference")
+            .Select(item => item.Attribute("Include")?.Value)
+            .Where(item => item is not null)
+            .Cast<string>()
+            .OrderBy(item => item, StringComparer.Ordinal)
+            .ToArray();
+
+    private static string[] RuntimePackageReferences(XDocument project) =>
+        project.Descendants("PackageReference")
+            .Where(item => item.Attribute("PrivateAssets")?.Value != "all")
+            .Select(item => item.Attribute("Include")?.Value)
+            .Where(item => item is not null)
+            .Cast<string>()
+            .OrderBy(item => item, StringComparer.Ordinal)
+            .ToArray();
+
+    private static string[] BuildOnlyPackageReferences(XDocument project) =>
+        project.Descendants("PackageReference")
+            .Where(item => item.Attribute("PrivateAssets")?.Value == "all")
             .Select(item => item.Attribute("Include")?.Value)
             .Where(item => item is not null)
             .Cast<string>()

@@ -8,7 +8,8 @@
 > 严格清单、退出后替换插件。G2 已将 Host 自有实现全部收口为 internal；G3 已形成正式基础
 > SDK、可选 UI Profile 和宿主语义样式契约；G4 已删除 Legacy 二进制激活、无 deps 回退和
 > 历史加载 Facade；G5 已用显式贡献和不可变 Plugin Registry 替换策略/View 隐式发现；G9 已用
-> SDK 自有、每 HostRuntime 隔离的 `IHostEventBus` 收口进程内事件。
+> SDK 自有、每 HostRuntime 隔离的 `IHostEventBus` 收口进程内事件；G13 已用可读文本和成员级
+> 变异门禁冻结正式 Plugin SDK v1 public API。
 
 ## 2. public API
 
@@ -16,10 +17,15 @@
 注册表、工厂、消息和内建策略均为 internal；静态 `ServiceProvider` 与生产 ViewModel 无参构造
 已经删除。插件不得编译引用 Host 可执行程序集。
 
-[`PublicApiContractTests`](../../../MyAvaloniaManagement.Tests/PublicApiContractTests.cs) 在 G13 前继续
-对 Common 导出元数据生成临时 SHA-256；[`HostApiBoundaryTests`](../../../MyAvaloniaManagement.Tests/HostApiBoundaryTests.cs)
-使用可读断言确保 Host 不导出 `MyAvaloniaManagement.*` 类型。测试和真实窗口 Harness 只能通过
-明确的 `InternalsVisibleTo` 使用 Host 实现，这不构成发布兼容承诺。
+Common 的完整签名由 `ApiCompatibility/v1/PublicAPI.Shipped.txt` 和 `PublicAPI.Unshipped.txt`
+声明，并由 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v1` 验证。未登记新增、删除、可见性
+收窄、参数或返回类型变化都会给出成员级 RS 诊断；[`PublicApiContractTests`](../../../MyAvaloniaManagement.Tests/PublicApiContractTests.cs)
+只保留第三方类型泄漏等行为语义断言。完整维护流程见
+[Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
+
+[`HostApiBoundaryTests`](../../../MyAvaloniaManagement.Tests/HostApiBoundaryTests.cs) 继续确保 Host 不导出
+`MyAvaloniaManagement.*` 类型。测试和真实窗口 Harness 只能通过明确的 `InternalsVisibleTo` 使用
+Host 实现，这不构成发布兼容承诺。
 
 ### 2.1 版本所有权
 
@@ -233,7 +239,7 @@ V1 清单格式：
 
 提交宿主变更前确认：
 
-- [ ] Common 临时 API 指纹和 Host 零自有导出门禁通过，或变更已被明确批准；
+- [x] Plugin SDK v1 文本基线、成员级变异门禁和 Host 零自有导出门禁已建立；
 - [x] Managed-only 专项通过，Host 中不存在 Legacy 策略激活器和加载 Facade；
 - [x] 四个真实插件的最终独立 ZIP 均包含有效清单、入口 `.deps.json`、PDB 和私有资产，版本与唯一模块身份一致；
 - [x] 四个插件及宿主使用显式 Context，生产代码不存在策略/View 隐式扫描与命名回退；

@@ -11,6 +11,11 @@ Semi、Ursa 或 Dock UI 控件的插件应改用同版本的
 当前包仅作为仓库和正式发布流水线的可验证制品，不会自动发布到公共 NuGet 源。
 仓库尚未选择对外许可证；对外分发前必须由项目所有者补充许可证并完成发布评审。
 
+public API 由 `ApiCompatibility/v1/PublicAPI.Shipped.txt` 和 `PublicAPI.Unshipped.txt` 显式声明。
+新增 public 成员必须先经过设计评审并登记到 Unshipped；删除、收窄可见性、修改参数或返回类型
+会在普通构建和 G13 专项脚本中失败。不得使用 `*REMOVED*` 绕过同一主版本门禁。有意破坏必须
+建立新主版本基线，并同步 SDK/AssemblyVersion、插件清单兼容区间、迁移说明和真实插件验证。
+
 每个入口程序集只提供一个 public 无参 `IPluginModule`，并在组合阶段实现
 `Configure(IPluginRegistrationContext)`。manifest 是插件身份唯一事实源，模块通过只读
 `context.PluginId` 取得宿主已验证的身份。`context.Services` 只注册插件私有业务服务；Document、
@@ -41,4 +46,6 @@ v1 是第一个且唯一受支持的信封，不提供旧字段探测或迁移�
 版本占位字段；破坏语义时应创建新事件类型或提升 SDK 主版本。
 
 完整用法见仓库 `docs/quick-start/create-managed-plugin.md` 和
-`Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md`。
+`Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md`；维护 public API 前先阅读
+`docs/reference/plugin-sdk-api-compatibility.md`，并运行
+`scripts/Test-PluginSdkCompatibility.ps1 -Baseline v1`。

@@ -90,6 +90,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [项目文档导航](./docs/README.md)：按用途浏览全部解决方案级文档；
 - [Managed 插件快速开始](./docs/quick-start/README.md)：从零接入包含 Document 和 Tool 的新插件；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
+- [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
 - [主项目兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)：修改 public API、插件契约或稳定 ID 前核对；
 - [MyAvaloniaManagement 测试说明](./docs/reference/myavalonia-management-tests.md)：查看测试层次、门禁和结果位置。
 
@@ -111,6 +112,12 @@ TestResults/  需要保留的阶段验收与人工验证记录
 
 ```powershell
 .\scripts\Test-ManagedPluginPackages.ps1 -Configuration Release
+```
+
+维护 Plugin SDK public API 时，必须额外运行可读基线和成员级变异门禁：
+
+```powershell
+.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v1 -Configuration Release
 ```
 
 每个插件分别生成 `<AssemblyName>-<PluginVersion>-win-x64.zip`，不会生成四插件合集。

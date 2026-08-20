@@ -20,14 +20,32 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <!-- public 契约缺少说明即阻断打包；G9/G11 删除契约时也必须同步清理文档。 -->
-        <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
+        <!--
+          RS0016/RS0017 负责新增和删除，其他规则保护文件存在性、
+          内容有效性、重复条目与 nullable 签名完整性。
+          这些诊断必须在普通 build 中直接失败，不能只依赖发布脚本发现契约漂移。
+        -->
+        <WarningsAsErrors>$(WarningsAsErrors);CS1591;RS0016;RS0017;RS0024;RS0025;RS0036;RS0037;RS0041;RS0048</WarningsAsErrors>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="Avalonia" />
       <PackageReference Include="Dock.Model.Mvvm" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+      <!-- Analyzer 是构建门禁，不是 SDK 的运行时或传递依赖。 -->
+      <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers"
+                        PrivateAssets="all"
+                        IncludeAssets="runtime; build; native; contentfiles; analyzers" />
       <PackageReference Include="Newtonsoft.Json" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!--
+        活动目录只由集中版本事实选择。Shipped 保存已经承诺的 v1 契约，
+        Unshipped 保存同一主版本中已经审阅、但尚未归档到发布基线的兼容新增。
+      -->
+      <AdditionalFiles Include="ApiCompatibility\$(MyAvaloniaPluginSdkApiBaseline)\PublicAPI.Shipped.txt" />
+      <AdditionalFiles Include="ApiCompatibility\$(MyAvaloniaPluginSdkApiBaseline)\PublicAPI.Unshipped.txt" />
     </ItemGroup>
 
     <ItemGroup>

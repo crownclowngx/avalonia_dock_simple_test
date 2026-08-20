@@ -28,6 +28,8 @@
 | [G10 Host 内部直接协调](./plan-history/host-v1/g10-host-internal-coordination.md) | 文件打开、错误状态和 Tool/Dock 直接协作边界 | 当前 Host 内部协调，G10 已完成 |
 | [G11 低价值 public 面清理](./plan-history/host-v1/g11-low-value-public-surface-cleanup.md) | v1 前最终公共面删除、消费者迁移和重新引入条件 | 当前 SDK 公共面，G11 已完成 |
 | [G12 统一插件构建、部署与独立发布](./plan-history/host-v1/g12-unified-plugin-build-and-deployment.md) | 声明式资产、生成清单、单插件确定性 ZIP、SOLID 取舍和门禁证据 | 当前构建与发布契约，G12 已完成 |
+| [Plugin SDK API 兼容基线维护指南](./reference/plugin-sdk-api-compatibility.md) | Shipped/Unshipped 生命周期、兼容新增审阅、主版本升级和排错 | 当前 SDK API 长期知识，G13 已完成 |
+| [G13 Plugin SDK API 兼容基线](./plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md) | v1 文本基线、成员级变异门禁、SOLID 取舍和验收证据 | 当前 SDK public 契约，G13 已完成 |
 | [Document 保存 V1](./design/document-persistence-v1-design.md) | 公共脏状态、保存事务、关闭确认、备份和坏文件恢复规则 | 当前契约与设计依据 |
 | [MyAvaloniaManagement 测试说明](./reference/myavalonia-management-tests.md) | 宿主专项测试、覆盖率和 Windows 冒烟门禁 | 当前事实 |
 | [Dock 布局快照 V1](./reference/dock-layout-snapshot-v1.md) | `layout-v1.json` 的稳定 ID、校验、迁移和回退规则 | 当前契约 |
@@ -68,6 +70,7 @@
 - [G10：Host 内部直接协调](./plan-history/host-v1/g10-host-internal-coordination.md)：删除 Host 内部广播，用根级状态和 Dock 协调器直接协作。
 - [G11：低价值 public 面清理](./plan-history/host-v1/g11-low-value-public-surface-cleanup.md)：删除无消费者、无生产实现或已有定向替代的候选 SDK 面。
 - [G12：统一插件构建、部署与独立发布](./plan-history/host-v1/g12-unified-plugin-build-and-deployment.md)：四插件共享声明式构建协议，但保持独立版本、ZIP 与回滚节奏。
+- [G13：Plugin SDK API 兼容基线](./plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md)：以可读文本和成员级变异门禁替换临时 SHA256，兼容新增必须显式登记。
 
 ### .NET 10 升级记录
 
