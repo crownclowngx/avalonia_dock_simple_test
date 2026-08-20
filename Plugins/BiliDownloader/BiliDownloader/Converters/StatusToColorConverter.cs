@@ -30,6 +30,6 @@ public class StatusToColorConverter : IValueConverter
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        throw new NotSupportedException("状态颜色转换器只支持从状态文本到颜色的单向转换。");
     }
 }

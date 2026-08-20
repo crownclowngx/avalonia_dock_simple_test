@@ -1,6 +1,7 @@
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.ViewModels.SecretVideoPlayer;
+using MySmallTools.Views.SecretVideoPlayer.Playback;
 using Xunit;
 
 namespace MySmallTools.Tests;
@@ -46,6 +47,21 @@ public sealed class G7LibraryActivationTests
         Assert.Equal(0, fixture.Session.LoadAtPositionCalls);
         Assert.Equal(0, fixture.Session.LoadAtPositionAndPlayCalls);
         Assert.Equal("请输入公共密码", fixture.Library.StatusMessage);
+    }
+
+    [Fact]
+    public async Task 播放进度视图适配器把按下与释放转交给既有命令()
+    {
+        using var fixture = new LibraryFixture();
+
+        PlaybackTransportView.ExecuteStartSliderDrag(fixture.Player.Transport);
+
+        Assert.True(fixture.Player.IsSliderBeingDragged);
+
+        PlaybackTransportView.ExecuteEndSliderDrag(fixture.Player.Transport);
+        await (fixture.Player.EndSliderDragCommand.ExecutionTask ?? Task.CompletedTask);
+
+        Assert.False(fixture.Player.IsSliderBeingDragged);
     }
 
     private sealed class LibraryFixture : IDisposable

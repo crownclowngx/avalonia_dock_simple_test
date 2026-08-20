@@ -22,10 +22,11 @@ internal sealed class WelcomeDocumentStrategy(
         })
         {
             Title = string.IsNullOrEmpty(@params.Title) ? "欢迎" : @params.Title,
-            Text = string.IsNullOrEmpty(@params.InitializationData)
-                ? "MyAvaloniaManagement 是基于 Avalonia 与 Dock 构建的插件化桌面框架，" +
-                  "用可停靠布局组织工具，用独立插件扩展业务能力。"
-                : @params.InitializationData
+            // 欢迎正文是宿主拥有的固定产品文案，不再通过无类型、无来源的创建参数覆盖。
+            // 插件若需要多个明确入口，应声明 CreationIntent；业务输入则由插件自己的
+            // 强类型 ViewModel 或服务接收，避免把字符串占位字段演变成隐藏协议。
+            Text = "MyAvaloniaManagement 是基于 Avalonia 与 Dock 构建的插件化桌面框架，" +
+                   "用可停靠布局组织工具，用独立插件扩展业务能力。"
         };
 
         return welcomeDoc;

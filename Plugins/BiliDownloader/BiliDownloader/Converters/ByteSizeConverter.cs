@@ -58,5 +58,5 @@ public class ByteSizeConverter : IValueConverter
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+        => throw new NotSupportedException("字节大小转换器只支持从数值到显示文本的单向转换。");
 }

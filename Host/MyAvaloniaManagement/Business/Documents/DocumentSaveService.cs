@@ -69,13 +69,11 @@ internal sealed class DocumentSaveService(
         }
 
         var registration = persistenceState.Registration;
-        var savePathPolicy = document as IDocumentSavePathPolicy;
         var originalPath = persistenceState.FilePath;
         var isRecovered = recoveryRegistry.TryGet(document, out var recovery);
         string? filePath;
         if (string.IsNullOrWhiteSpace(originalPath) ||
-            isRecovered ||
-            savePathPolicy?.RequiresSaveAs == true)
+            isRecovered)
         {
             filePath = await storageService.PickSaveFileAsync(registration.Metadata);
         }
@@ -97,15 +95,6 @@ internal sealed class DocumentSaveService(
             return new(
                 DocumentSaveStatus.Failed,
                 "恢复出的 Document 必须另存为新文件，不能覆盖损坏原件或恢复备份。");
-        }
-
-        if (savePathPolicy?.RequiresSaveAs == true &&
-            !string.IsNullOrWhiteSpace(originalPath) &&
-            DocumentPathIdentity.Equals(originalPath, filePath))
-        {
-            return new(
-                DocumentSaveStatus.Failed,
-                $"{savePathPolicy.SaveAsReason} 请选择不同的文件路径。");
         }
 
         string fileName;
@@ -136,12 +125,11 @@ internal sealed class DocumentSaveService(
                 "保存文档失败，请检查目标路径是否可写。文档状态未被修改。");
         }
 
-        // 插件回调位于主文件事务之后，回调异常属于契约/编程错误，必须向上传播，不能被
-        // 伪装成“磁盘未修改”的预期失败。否则磁盘已经更新，错误文案却会陈述相反事实。
+        // 路径、标题和脏状态只由宿主在主文件成功提交后更新。插件不再拥有路径策略或
+        // 保存完成回调，因此不会出现“磁盘已写入、插件回调却失败”的第二提交结果。
         document.Title = fileName;
         persistenceStates.CommitFilePath(document, filePath);
         saveState.AcceptChanges();
-        savePathPolicy?.NotifySaveCompleted(filePath);
         recoveryRegistry.Clear(document);
 
         try

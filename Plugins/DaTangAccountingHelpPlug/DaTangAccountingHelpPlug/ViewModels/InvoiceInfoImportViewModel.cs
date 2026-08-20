@@ -17,11 +17,7 @@ public partial class InvoiceInfoImportViewModel : Document, IDisposable
 
     private readonly IInvoiceInfoImportBusiness _business;
     private readonly IInvoiceFileDialogService _fileDialogs;
-    private readonly IDocumentLifetime? _documentLifetime;
-    // 宿主 ClosingToken 是正式运行时的关闭信号；本地 CTS 用于保留无参构造、直接构造测试
-    // 和显式 Dispose 的兼容语义。每次命令都会把两者与命令令牌链接，任何入口发出取消都能
-    // 停止后续 Excel 阶段，但已经进入 EPPlus 同步 SaveAs 的写入不会被强行中断。
-    private readonly CancellationTokenSource _disposeCts = new();
+    private readonly IDocumentLifetime _documentLifetime;
     private int _disposed;
 
     [ObservableProperty] private string _invoiceSummaryFilePath = string.Empty;
@@ -39,23 +35,16 @@ public partial class InvoiceInfoImportViewModel : Document, IDisposable
 
     public ObservableCollection<string> LogEntries { get; } = [];
 
-    public InvoiceInfoImportViewModel()
-        : this(
-            new InvoiceInfoImportBusiness(),
-            new AvaloniaInvoiceFileDialogService(),
-            null)
-    {
-    }
-
     public InvoiceInfoImportViewModel(
         IInvoiceInfoImportBusiness business,
         IInvoiceFileDialogService fileDialogs,
-        IDocumentLifetime? documentLifetime = null)
+        IDocumentLifetime documentLifetime)
     {
         Title = "发票信息导入和计算";
-        _business = business;
-        _fileDialogs = fileDialogs;
-        _documentLifetime = documentLifetime;
+        _business = business ?? throw new ArgumentNullException(nameof(business));
+        _fileDialogs = fileDialogs ?? throw new ArgumentNullException(nameof(fileDialogs));
+        _documentLifetime = documentLifetime ??
+                            throw new ArgumentNullException(nameof(documentLifetime));
         _business.LogEmitted += AddLogLine;
     }
 
@@ -252,22 +241,19 @@ public partial class InvoiceInfoImportViewModel : Document, IDisposable
         }
     }
 
-    private bool IsClosing => Volatile.Read(ref _disposed) != 0 || _documentLifetime?.IsClosing == true;
+    private bool IsClosing => Volatile.Read(ref _disposed) != 0 || _documentLifetime.IsClosing;
 
     private CancellationTokenSource CreateOperationCancellation(CancellationToken commandToken) =>
         CancellationTokenSource.CreateLinkedTokenSource(
             commandToken,
-            _disposeCts.Token,
-            _documentLifetime?.ClosingToken ?? CancellationToken.None);
+            _documentLifetime.ClosingToken);
 
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
-        // 先解绑日志，再发出本地取消。这样即使业务循环或不可取消的系统对话框稍后才返回，
-        // 也无法再经由事件持有或更新已关闭的 Document；Dispose 不同步等待后台收尾，符合
-        // Dock 立即关闭的交互语义。原子 disposed 门禁保证宿主释放与测试显式释放可安全汇合。
+        // 宿主在释放 Document Scope 前已经通过 IDocumentLifetime 发出关闭信号；本对象只需
+        // 幂等失效并解除事件订阅，避免创建第二个生命周期事实源。不可取消的系统对话框稍后
+        // 返回时，IsClosing 仍会阻止结果写回已经关闭的 Document。
         _business.LogEmitted -= AddLogLine;
-        _disposeCts.Cancel();
-        _disposeCts.Dispose();
     }
 }

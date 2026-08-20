@@ -3,7 +3,7 @@
 > 状态：待整改，不满足封板条件
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`
-> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G9 已于 2026-08-18 完成，G10 已于 2026-08-20 完成；G11–G16 待完成
+> 整改进度：G0–G5 已于 2026-08-15 完成，G6 已于 2026-08-16 完成，G7–G9 已于 2026-08-18 完成，G10–G11 已于 2026-08-20 完成；G12–G16 待完成
 > 适用范围：`MyAvaloniaManagement` 宿主、`MyAvaloniaManagementCommon`、插件装载与注册边界、Document/Tool 公共契约和发布门禁
 > 不评审：现有插件的领域业务正确性、第三方插件市场、运行时热卸载和恶意插件隔离
 
@@ -122,6 +122,12 @@ BiliDownloader 719/719、DaTangAccountingHelpPlug 64/64、MySmallTools 最终完
 SDK 包消费正反向门禁和锁定还原均通过。完整调用流、SOLID 取舍、时序复跑记录和门禁证据见
 [G10 Host 内部直接协调](../plan-history/host-v1/g10-host-internal-coordination.md)。
 
+G11 完成后的当前基线为 Unit 168、UI 38、Plugin 146，共 **352/352 通过**；Host 行覆盖率
+80.62%、分支覆盖率 65.91%，Windows Smoke 通过。BiliDownloader 720/720、
+DaTangAccountingHelpPlug 64/64、MySmallTools 183/183 通过；SDK 包的最小正例与 G5/G8/G9/G11
+删除契约反例均通过。完整删除证据、插件迁移、SOLID 取舍和失败修正过程见
+[G11 低价值 public 面清理](../plan-history/host-v1/g11-low-value-public-surface-cleanup.md)。
+
 ### 2.3 当前风险清单
 
 | 等级 | 发现 | 影响 |
@@ -137,7 +143,7 @@ SDK 包消费正反向门禁和锁定还原均通过。完整调用流、SOLID �
 | 已解决（G3） | Common 曾直接引用整套字体、主题、Ursa、Semi 与 Dock UI 控件包 | 基础 SDK 现只保留契约依赖；Host 直接拥有主题，可选 UI Profile 固定受支持 UI 版本 |
 | 中 | 四个插件分别维护部署 Target | 共享依赖排除、入口、清单和原生资产规则可能漂移 |
 | 中 | 仓库没有统一 CI 工作流 | 本地曾通过的门禁不能保证每次提交和干净环境都执行 |
-| 低 | `AdditionalData`、未实际传入的初始化字段、未使用 Behavior 和空 `Chain` 项 | 在 v1 public API 中制造无语义兼容负担 |
+| 已解决（G11） | `AdditionalData`、未实际传入的初始化字段、无生产实现的保存策略和通用反射 Behavior 曾进入 SDK | 占位成员和接口已删除；唯一播放器消费者改为 View 内定向事件适配，基础 SDK 不再直接依赖 `Xaml.Behaviors`；空 `Chain` 项已由 G3 提前删除并由结构门禁保护 |
 
 ## 3. v1 契约和版本模型
 
@@ -233,7 +239,7 @@ SDK 包消费正反向门禁和锁定还原均通过。完整调用流、SOLID �
 - `DocumentCreationParams.AdditionalData`；
 - 没有任何真实输入来源的 `InitializationData`；
 - 没有生产实现且宿主恢复注册表已经覆盖其职责的 `IDocumentSavePathPolicy`；
-- 未被任何 XAML 或代码引用的 `HandledEventsAwareBehavior`；
+- 只有单个插件界面消费者、却扩大整个 SDK 依赖图的 `HandledEventsAwareBehavior`；
 - Common 项目中的空 `Chain` 项目项。
 
 G2 已验证 Avalonia XAML 不要求 Host 自有 App、窗口或 View 对程序集外 public。移除冗余的
@@ -377,7 +383,7 @@ StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 A
 - 已删除插件侧路径、Document 类型、旧快照/恢复方法，不保留 `Obsolete` 转发或兼容适配器。
 - 已新增宿主内部 `DocumentPersistenceStateStore`，只从不可变 Registry 登记规范所有权，并在主文件成功或内容完整恢复后提交路径。
 - BiliDownloader 保持内容 schema 3，MyPlugTest 和银行余额调节保持 schema 1；只读当前版本，未知旧版/未来版与损坏内容稳定脱敏拒绝。
-- MySmallTools 的四个 Document 不声明保存能力，没有虚构内容 schema；`IDocumentSavePathPolicy` 继续留给 G11。
+- MySmallTools 的四个 Document 不声明保存能力，没有虚构内容 schema；G11 随后删除了没有生产实现的 `IDocumentSavePathPolicy`。
 - 公共 API、宿主事务/恢复、三个真实内容实现、非保存插件和 SDK 正反向编译门禁均已覆盖。
 - 完整 API 对照、SOLID 取舍、版本矩阵、真实门禁数量和回滚边界见 [G8 独立记录](../plan-history/host-v1/g8-document-content-persistence-contract.md)。
 
@@ -417,8 +423,13 @@ StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 A
 
 **优先级：高；依赖：G3**
 
+**状态：已完成（2026-08-20）**。创建参数只保留稳定类型身份、标题和创建意图；无生产实现的
+保存路径策略已删除，恢复文件的强制另存继续由宿主内部注册表负责。MySmallTools 的播放器手势迁入
+View 定向适配，DaTang 发票 Document 删除 XAML 运行时自建 DataContext 与无参 ViewModel 构造。
+完整记录见 [G11 独立记录](../plan-history/host-v1/g11-low-value-public-surface-cleanup.md)。
+
 - 目标：在 v1 基线前删除没有语义、没有调用方或已被宿主内部机制替代的契约。
-- 删除清单：`AdditionalData`、无真实输入的 `InitializationData`、`IDocumentSavePathPolicy`、未使用 Behavior、空 `Chain` 项、Legacy 文案和只为旧无参构造存在的适配。
+- 删除清单：`AdditionalData`、无真实输入的 `InitializationData`、`IDocumentSavePathPolicy`、只被一个播放器界面使用的通用反射 Behavior，以及只为 DaTang 旧无参构造存在的适配。空 `Chain` 项已由 G3 删除，本项增加结构门禁防止恢复；历史 ID、布局迁移和插件业务数据兼容继续保留。
 - 保留清单：生命周期依赖、创建意图、Document 关闭令牌、全屏宿主和上游接口强制成员。
 - 验收：全仓引用搜索、编译器和测试共同证明删除项无消费者；单向 Converter 将 `NotImplementedException` 改为语义明确的 `NotSupportedException`，不删除接口方法。
 - 验收命令：执行 `dotnet build MyAvaloniaManagement.sln -c Release`，并用 `rg` 对本节删除清单逐项确认声明和生产引用均已消失。

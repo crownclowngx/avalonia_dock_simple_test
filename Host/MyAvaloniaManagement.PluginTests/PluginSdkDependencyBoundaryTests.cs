@@ -16,7 +16,6 @@ public sealed class PluginSdkDependencyBoundaryTests
         "Dock.Model.Mvvm",
         "Microsoft.Extensions.DependencyInjection.Abstractions",
         "Newtonsoft.Json",
-        "Xaml.Behaviors",
     ];
 
     private static readonly string[] UiProfilePackages =
@@ -41,6 +40,12 @@ public sealed class PluginSdkDependencyBoundaryTests
         Assert.Equal("MyAvaloniaManagement.PluginSdk", Property(project, "PackageId"));
         Assert.Equal("true", Property(project, "GenerateDocumentationFile"));
         Assert.Contains("CS1591", Property(project, "WarningsAsErrors"), StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            project.Descendants("Folder"),
+            item => string.Equals(
+                item.Attribute("Include")?.Value.TrimEnd('\\', '/'),
+                "Chain",
+                StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

@@ -2,9 +2,9 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前 G10 专项基线：2026-08-20，Host 文件打开、布局刷新和 Tool 显隐已经收口为根级状态、
-> 窄服务与 Dock 协调器直接调用。完整 Release 数量、覆盖率与 Windows Smoke 结果见
-> [G10 Host 内部直接协调](../plan-history/host-v1/g10-host-internal-coordination.md)。数量来自命令输出，不是
+> 当前 G11 专项基线：2026-08-20，Plugin SDK 低价值 public 面、通用反射 Behavior 和旧无参
+> ViewModel 旁路已经删除。完整 Release 数量、覆盖率与 Windows Smoke 结果见
+> [G11 低价值 public 面清理](../plan-history/host-v1/g11-low-value-public-surface-cleanup.md)。数量来自命令输出，不是
 > 永久固定门槛。
 
 ## 一键门禁
@@ -43,7 +43,8 @@ G3 新增、G5 扩展的独立包消费门禁：
 `MyAvaloniaManagement.PluginSdk.UI`，检查包内容、nuspec、基础依赖白名单和 UI 精确版本。
 随后编译最终 `Configure(IPluginRegistrationContext)` Managed Plugin，并实际构造
 `DocumentContentSnapshot(contentSchemaVersion, payload)`；确认旧候选 `PluginId + ConfigureServices`、
-`DocumentSaveData`、旧保存方法、`FilePath`、`SaveDocumentTypeId` 及旧消息器 API 夹具必须编译失败，
+`DocumentSaveData`、旧保存方法、`FilePath`、`SaveDocumentTypeId`、旧消息器 API，以及 G11 删除的
+创建占位成员、保存路径策略和通用 Behavior 夹具必须编译失败，
 再编译实际使用 Ursa、Dock UI、宿主
 语义资源的 XAML 插件。还原使用临时隔离 NuGet 缓存，不能误命中开发机中的同版本旧包。
 临时目录在结束时删除，不读取用户数据根，也不发布到公共 NuGet。
@@ -96,8 +97,8 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 
 1. 单元测试可以使用内存文件和预设的选择结果，不会弹出原生窗口；
 2. Avalonia 的窗口生命周期被限制在生产实现中，ViewModel 只编排业务流程；
-3. 保持 `MyAvaloniaManagementCommon` 的 Document、Tool 和保存契约不变，
-   插件不需要因为宿主测试改造而重新编译。
+3. 宿主内部重构通常不改变 Plugin SDK；G11 是正式 v1 API 基线建立前的一次性例外，删除的占位
+   契约没有生产实现，四个仓库插件随同一变更重新编译。
 
 ### 构造函数与依赖注入
 
@@ -180,6 +181,14 @@ Windows Smoke 的综合门禁。结果为 Unit 167、UI 37、Plugin 146，共 **
 80.65%、分支覆盖率 65.98%，Windows Smoke 通过。G10 MainWindow/Tool/结构专项 37/37，
 BiliDownloader 719/719、DaTangAccountingHelpPlug 64/64、MySmallTools 最终完整复跑 182/182。
 完整记录见 [G10 Host 内部直接协调](../plan-history/host-v1/g10-host-internal-coordination.md)。
+
+### G11 当前绿色基线
+
+2026-08-20 执行锁定还原、Release 零警告构建、G11 public 面/依赖/播放器事件专项、三个插件完整
+回归、SDK 包正反向消费和带 Windows Smoke 的综合门禁。结果为 Unit 168、UI 38、Plugin 146，
+共 **352/352**；Host 行覆盖率 80.62%、分支覆盖率 65.91%，Windows Smoke 通过。
+BiliDownloader 720/720、DaTangAccountingHelpPlug 64/64、MySmallTools 183/183。完整记录见
+[G11 低价值 public 面清理](../plan-history/host-v1/g11-low-value-public-surface-cleanup.md)。
 
 ### 事件总线、Host 直接协调与稳定 ID
 

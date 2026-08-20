@@ -200,8 +200,7 @@
           "Avalonia": "[12.1.0, )",
           "Dock.Model.Mvvm": "[12.0.0.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "Newtonsoft.Json": "[13.0.4, )",
-          "Xaml.Behaviors": "[12.0.5, )"
+          "Newtonsoft.Json": "[13.0.4, )"
         }
       },
       "Avalonia": {
@@ -295,15 +294,6 @@
         "dependencies": {
           "SQLitePCLRaw.lib.e_sqlite3": "2.1.12",
           "SQLitePCLRaw.provider.e_sqlite3": "2.1.12"
-        }
-      },
-      "Xaml.Behaviors": {
-        "type": "CentralTransitive",
-        "requested": "[12.0.5, )",
-        "resolved": "12.0.5",
-        "contentHash": "csunRFx964L7+B6/FKXVkEjorMQRKMgbRi89/ux+hSs4btYWxcCHCPYwTFEcJdzJahYUfWP2ecGso7er3Hn+tg==",
-        "dependencies": {
-          "Avalonia": "12.0.5"
         }
       }
     }

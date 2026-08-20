@@ -37,6 +37,6 @@ public class TaskStatusDisplayConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        throw new NotSupportedException();
+        throw new NotSupportedException("任务状态显示转换器只支持从存储状态到显示文本的单向转换。");
     }
 }

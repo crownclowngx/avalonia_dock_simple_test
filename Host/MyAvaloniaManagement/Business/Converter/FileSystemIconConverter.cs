@@ -30,5 +30,5 @@ internal sealed class FileSystemIconConverter : IValueConverter
         Type targetType,
         object? parameter,
         CultureInfo culture) =>
-        throw new NotImplementedException();
+        throw new NotSupportedException("文件系统图标转换器只支持从节点类型到图标的单向转换。");
 }

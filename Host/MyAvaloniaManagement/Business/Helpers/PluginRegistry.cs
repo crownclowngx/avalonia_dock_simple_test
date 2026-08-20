@@ -160,9 +160,7 @@ internal sealed class PluginRegistry
             ? parameters
             : new DocumentCreationParams(canonical)
             {
-                InitializationData = parameters.InitializationData,
                 Title = parameters.Title,
-                AdditionalData = parameters.AdditionalData,
                 CreationIntentId = parameters.CreationIntentId,
             };
         return registration.Strategy.CreateDocument(normalized);

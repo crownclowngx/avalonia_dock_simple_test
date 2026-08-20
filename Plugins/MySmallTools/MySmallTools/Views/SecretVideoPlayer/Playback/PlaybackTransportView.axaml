@@ -1,7 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:i="using:Avalonia.Xaml.Interactivity"
-             xmlns:behaviors="clr-namespace:MyAvaloniaManagementCommon.Behaviors;assembly=MyAvaloniaManagementCommon"
              xmlns:vm="clr-namespace:MySmallTools.ViewModels.SecretVideoPlayer.Playback"
              x:Class="MySmallTools.Views.SecretVideoPlayer.Playback.PlaybackTransportView"
              x:DataType="vm:PlaybackTransportViewModel"
@@ -10,19 +8,10 @@
     <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="4,0" ColumnSpacing="8">
       <TextBlock Grid.Column="0" Text="{Binding Owner.CurrentTime}" VerticalAlignment="Center"
                  FontFamily="Consolas" Classes="Caption" />
-      <Slider Grid.Column="1" Value="{Binding Owner.Position}"
+      <Slider x:Name="PositionSlider" Grid.Column="1" Value="{Binding Owner.Position}"
               Minimum="0" Maximum="100" IsEnabled="{Binding Owner.IsSeekable}"
               TickFrequency="1" IsSnapToTickEnabled="False"
-              AutomationProperties.Name="视频播放进度">
-        <i:Interaction.Behaviors>
-          <behaviors:HandledEventsAwareBehavior EventName="PointerPressed"
-                                                Command="{Binding Owner.StartSliderDragCommand}"
-                                                HandledEventsToo="True" />
-          <behaviors:HandledEventsAwareBehavior EventName="PointerReleased"
-                                                Command="{Binding Owner.EndSliderDragCommand}"
-                                                HandledEventsToo="True" />
-        </i:Interaction.Behaviors>
-      </Slider>
+              AutomationProperties.Name="视频播放进度" />
       <TextBlock Grid.Column="2" Text="{Binding Owner.TotalTime}" VerticalAlignment="Center"
                  FontFamily="Consolas" Classes="Caption" />
     </Grid>

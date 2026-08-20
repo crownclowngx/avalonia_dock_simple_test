@@ -1,10 +1,12 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Avalonia.Styling;
 using MySmallTools.Views.SecretVideoPlayer;
 using MySmallTools.Views.SecretVideoPlayer.Library;
+using MySmallTools.Views.SecretVideoPlayer.Playback;
 using Xunit;
 
 namespace MyAvaloniaManagement.UiTests;
@@ -77,6 +79,17 @@ public sealed class SmallToolsVisualTests
             window.Close();
             player.Dispose();
         }
+    }
+
+    [AvaloniaFact]
+    public void 播放进度视图可加载且提供明确Slider事件边界()
+    {
+        var view = new PlaybackTransportView();
+
+        var slider = view.FindControl<Slider>("PositionSlider");
+
+        Assert.NotNull(slider);
+        Assert.Equal("视频播放进度", AutomationProperties.GetName(slider));
     }
 
     private static UserControl[] CreateViews() =>

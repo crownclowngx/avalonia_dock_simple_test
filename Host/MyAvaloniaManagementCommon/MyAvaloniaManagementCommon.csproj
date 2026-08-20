@@ -28,7 +28,6 @@
       <PackageReference Include="Dock.Model.Mvvm" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Newtonsoft.Json" />
-      <PackageReference Include="Xaml.Behaviors" />
     </ItemGroup>
 
     <ItemGroup>

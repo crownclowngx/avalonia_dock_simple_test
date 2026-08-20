@@ -158,11 +158,9 @@
         "type": "Project",
         "dependencies": {
           "Avalonia": "[12.1.0, )",
-          "CommunityToolkit.Mvvm": "[8.4.2, )",
           "Dock.Model.Mvvm": "[12.0.0.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "Newtonsoft.Json": "[13.0.4, )",
-          "Xaml.Behaviors": "[12.0.5, )"
+          "Newtonsoft.Json": "[13.0.4, )"
         }
       },
       "Avalonia": {
@@ -179,8 +177,8 @@
       "CommunityToolkit.Mvvm": {
         "type": "CentralTransitive",
         "requested": "[8.4.2, )",
-        "resolved": "8.4.2",
-        "contentHash": "WadCzGEc2U+3e20avRLng4qNtt4zoOGWrdUISqJWrHe3/FSnrYjuM5Sb4yQb09LhkBXrrI4Zt3dLKgRMbItsrg=="
+        "resolved": "8.4.0",
+        "contentHash": "tqVU8yc/ADO9oiTRyTnwhFN68hCwvkliMierptWOudIAvWY1mWCh5VFh+guwHJmpMwfg0J0rY+yyd5Oy7ty9Uw=="
       },
       "Dock.Model.Mvvm": {
         "type": "CentralTransitive",
@@ -203,15 +201,6 @@
         "requested": "[13.0.4, )",
         "resolved": "13.0.4",
         "contentHash": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A=="
-      },
-      "Xaml.Behaviors": {
-        "type": "CentralTransitive",
-        "requested": "[12.0.5, )",
-        "resolved": "12.0.5",
-        "contentHash": "csunRFx964L7+B6/FKXVkEjorMQRKMgbRi89/ux+hSs4btYWxcCHCPYwTFEcJdzJahYUfWP2ecGso7er3Hn+tg==",
-        "dependencies": {
-          "Avalonia": "12.0.5"
-        }
       }
     }
   }

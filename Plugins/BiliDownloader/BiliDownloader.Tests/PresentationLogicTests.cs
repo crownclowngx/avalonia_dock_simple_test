@@ -1,4 +1,5 @@
 using System.Globalization;
+using Avalonia.Data.Converters;
 using Avalonia.Media;
 using Dock.Model.Mvvm.Controls;
 using BiliDownloader.Converters;
@@ -69,13 +70,15 @@ public sealed class PresentationLogicTests
         Assert.True((bool)done.Convert("done", typeof(bool), null, culture));
         Assert.False((bool)done.Convert("failed", typeof(bool), null, culture));
         Assert.False((bool)done.Convert(null, typeof(bool), null, culture));
-        Assert.Throws<NotImplementedException>(() =>
+        Assert.Throws<NotSupportedException>(() =>
             done.ConvertBack(true, typeof(string), null, culture));
 
         var failed = new IsFailedStatusConverter();
         Assert.True((bool)failed.Convert("failed", typeof(bool), null, culture));
         Assert.False((bool)failed.Convert("done", typeof(bool), null, culture));
         Assert.False((bool)failed.Convert(null, typeof(bool), null, culture));
+        Assert.Throws<NotSupportedException>(() =>
+            failed.ConvertBack(true, typeof(string), null, culture));
 
         var rename = new RenameDisplayConverter();
         Assert.Equal("原标题 → 新标题", rename.Convert(
@@ -121,8 +124,51 @@ public sealed class PresentationLogicTests
         Assert.Same(
             Brushes.Transparent,
             colors.Convert(null, typeof(IBrush), null, culture));
-        Assert.Throws<NotImplementedException>(() =>
+        Assert.Throws<NotSupportedException>(() =>
             colors.ConvertBack(null, typeof(string), null, culture));
+
+        IValueConverter[] oneWayStateConverters =
+        [
+            new IsRunningStatusConverter(),
+            new IsPausedStatusConverter(),
+            new IsCancelableStatusConverter(),
+            new IsRestartableStatusConverter(),
+        ];
+        Assert.All(oneWayStateConverters, converter =>
+            Assert.Throws<NotSupportedException>(() =>
+                converter.ConvertBack(null, typeof(string), null, culture)));
+    }
+
+    [Fact]
+    public void 所有单向转换器反向调用都给出明确中文原因()
+    {
+        IValueConverter[] converters =
+        [
+            new TaskStatusDisplayConverter(),
+            new IsDoneStatusConverter(),
+            new IsFailedStatusConverter(),
+            new StatusToColorConverter(),
+            new IsRunningStatusConverter(),
+            new IsPausedStatusConverter(),
+            new IsCancelableStatusConverter(),
+            new IsRestartableStatusConverter(),
+            new ByteSizeConverter(),
+        ];
+
+        foreach (var converter in converters)
+        {
+            var exception = Assert.Throws<NotSupportedException>(() =>
+                converter.ConvertBack(
+                    null,
+                    typeof(string),
+                    null,
+                    CultureInfo.InvariantCulture));
+
+            // G11 不仅要求异常类型准确，也要求消息直接说明“不支持反向转换”的原因。
+            // 这里以稳定语义词而不是整句做门禁，允许后续改善文案而不削弱契约。
+            Assert.Contains("转换器", exception.Message, StringComparison.Ordinal);
+            Assert.Contains("单向", exception.Message, StringComparison.Ordinal);
+        }
     }
 
     [Fact]

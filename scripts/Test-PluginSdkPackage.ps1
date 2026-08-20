@@ -5,7 +5,7 @@
 
 $ErrorActionPreference = "Stop"
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
-$temporaryRoot = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ("MyAvaloniaPluginSdkG9-" + [Guid]::NewGuid().ToString("N"))))
+$temporaryRoot = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ("MyAvaloniaPluginSdkG11-" + [Guid]::NewGuid().ToString("N"))))
 $packageOutput = Join-Path $temporaryRoot "packages"
 $isolatedPackageCache = Join-Path $temporaryRoot "global-packages"
 $sdkVersion = ([xml](Get-Content -LiteralPath (Join-Path $repositoryRoot "Directory.Version.props"))).Project.PropertyGroup.MyAvaloniaPluginSdkVersion
@@ -37,7 +37,7 @@ function Assert-DotNetBuildFails {
     try {
         $output = @(& dotnet build $ProjectPath -c Release --no-restore --nologo 2>&1)
         $exitCode = $LASTEXITCODE
-        Assert-True ($exitCode -ne 0) "旧候选 SDK 夹具意外编译成功，破坏式 G5 基线没有生效。"
+        Assert-True ($exitCode -ne 0) "反向兼容夹具意外编译成功，预期删除的 SDK 契约仍然可用。"
         $text = $output -join [Environment]::NewLine
         foreach ($fragment in $ExpectedFragments) {
             Assert-True ($text.IndexOf($fragment, [StringComparison]::Ordinal) -ge 0) "旧候选夹具失败信息缺少 $fragment。"
@@ -113,7 +113,8 @@ try {
         "Avalonia.Desktop", "Avalonia.Fonts.Inter", "Avalonia.Themes.Fluent", "CommunityToolkit.Mvvm",
         "Dock.Avalonia", "Dock.Avalonia.Themes.Fluent",
         "Dock.Controls.ProportionalStackPanel", "Dock.Controls.Recycling",
-        "Dock.Controls.Recycling.Model", "Irihi.Ursa", "Irihi.Ursa.Themes.Semi", "Semi.Avalonia"
+        "Dock.Controls.Recycling.Model", "Irihi.Ursa", "Irihi.Ursa.Themes.Semi", "Semi.Avalonia",
+        "Xaml.Behaviors"
     )
     foreach ($dependency in $forbiddenBaseDependencies) {
         Assert-True ($baseDependencyIds -notcontains $dependency) "基础 SDK 依赖图错误包含 $dependency。"
@@ -162,6 +163,7 @@ try {
     Set-Content -LiteralPath (Join-Path $basicProject "BasicPluginModule.cs") -Encoding UTF8 -Value @'
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.Save;
@@ -176,6 +178,16 @@ public sealed class BasicPluginModule : IPluginModule
 }
 
 public sealed class BasicPluginService;
+
+public static class BasicDocumentCreation
+{
+    public static DocumentCreationParams Create(DocumentTypeId documentTypeId) =>
+        new(documentTypeId)
+        {
+            Title = "示例文档",
+            CreationIntentId = new CreationIntentId("myavalonia.plugin.basic.intent.default"),
+        };
+}
 
 public sealed record BasicPluginEvent(string Value);
 
@@ -303,6 +315,71 @@ public static class LegacyMessengerConsumer
     Assert-DotNetBuildFails "LegacyMessengerContract.csproj" $legacyEventBusProject @(
         "CS0234", "Message")
 
+    # G11 删除无来源初始化文本和 object 参数包。最终 SDK 只允许稳定类型身份、标题和
+    # CreationIntent；旧成员必须在真实 nupkg 消费场景中产生明确编译错误。
+    $removedCreationProject = Join-Path $temporaryRoot "G11RemovedCreationMembers"
+    New-Item -ItemType Directory -Path $removedCreationProject | Out-Null
+    Set-Content -LiteralPath (Join-Path $removedCreationProject "G11RemovedCreationMembers.csproj") -Encoding UTF8 -Value @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup><PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="$sdkVersion" /></ItemGroup>
+</Project>
+"@
+    Set-Content -LiteralPath (Join-Path $removedCreationProject "RemovedCreationMembers.cs") -Encoding UTF8 -Value @'
+using MyAvaloniaManagementCommon.DocumentCreation;
+
+public static class RemovedCreationMembers
+{
+    public static DocumentCreationParams Create(DocumentTypeId id) => new(id)
+    {
+        InitializationData = "removed",
+        AdditionalData = new object(),
+    };
+}
+'@
+    Invoke-DotNet @("restore", "G11RemovedCreationMembers.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $removedCreationProject
+    Assert-DotNetBuildFails "G11RemovedCreationMembers.csproj" $removedCreationProject @(
+        "CS0117", "InitializationData", "AdditionalData")
+
+    # G11 删除无生产实现的保存路径策略，不提供 Obsolete 别名或空接口。
+    $removedTypesProject = Join-Path $temporaryRoot "G11RemovedSavePathPolicy"
+    New-Item -ItemType Directory -Path $removedTypesProject | Out-Null
+    Set-Content -LiteralPath (Join-Path $removedTypesProject "G11RemovedSavePathPolicy.csproj") -Encoding UTF8 -Value @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup><PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="$sdkVersion" /></ItemGroup>
+</Project>
+"@
+    Set-Content -LiteralPath (Join-Path $removedTypesProject "RemovedSavePathPolicy.cs") -Encoding UTF8 -Value @'
+using MyAvaloniaManagementCommon.Save;
+
+public interface RemovedSavePathPolicy : IDocumentSavePathPolicy;
+'@
+    Invoke-DotNet @("restore", "G11RemovedSavePathPolicy.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $removedTypesProject
+    Assert-DotNetBuildFails "G11RemovedSavePathPolicy.csproj" $removedTypesProject @(
+        "CS0246", "IDocumentSavePathPolicy")
+
+    # 反射型公共 Behavior 也必须从最终包消失；播放器已改为插件 View 内的定向事件适配。
+    $removedBehaviorProject = Join-Path $temporaryRoot "G11RemovedBehavior"
+    New-Item -ItemType Directory -Path $removedBehaviorProject | Out-Null
+    Set-Content -LiteralPath (Join-Path $removedBehaviorProject "G11RemovedBehavior.csproj") -Encoding UTF8 -Value @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup><PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="$sdkVersion" /></ItemGroup>
+</Project>
+"@
+    Set-Content -LiteralPath (Join-Path $removedBehaviorProject "RemovedBehavior.cs") -Encoding UTF8 -Value @'
+using MyAvaloniaManagementCommon.Behaviors;
+
+public static class RemovedBehavior
+{
+    public static object Create() => new HandledEventsAwareBehavior();
+}
+'@
+    Invoke-DotNet @("restore", "G11RemovedBehavior.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $removedBehaviorProject
+    Assert-DotNetBuildFails "G11RemovedBehavior.csproj" $removedBehaviorProject @(
+        "CS0234", "Behaviors")
+
     $uiProject = Join-Path $temporaryRoot "UiPlugin"
     New-Item -ItemType Directory -Path $uiProject | Out-Null
     Set-Content -LiteralPath (Join-Path $uiProject "UiPlugin.csproj") -Encoding UTF8 -Value @"
@@ -335,7 +412,7 @@ public sealed partial class ProfileView : UserControl
     Invoke-DotNet @("restore", "UiPlugin.csproj", "--configfile", $nugetConfig, "--packages", $isolatedPackageCache, "--nologo") $uiProject
     Invoke-DotNet @("build", "UiPlugin.csproj", "-c", "Release", "--no-restore", "--nologo") $uiProject
 
-    Write-Host "G9 Plugin SDK package acceptance passed. SDK=$sdkVersion; event bus/content samples compiled; legacy messenger, module, DTO and save members rejected."
+    Write-Host "G11 Plugin SDK package acceptance passed. SDK=$sdkVersion; minimal creation/content/event samples compiled; removed G5/G8/G9/G11 contracts rejected."
 }
 finally {
     $systemTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())

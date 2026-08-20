@@ -1,0 +1,59 @@
+using System.Reflection;
+using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagementCommon.Presentation;
+
+namespace MyAvaloniaManagement.Tests;
+
+/// <summary>
+/// 锁定 G11 删除后的最小 Plugin SDK 表面，并明确保护仍有正式语义的契约。
+/// </summary>
+/// <remarks>
+/// SHA256 在 G13 前仍用于检测任意漂移；本组可读断言则说明本次删除和保留的设计意图，
+/// 避免未来只更新哈希而无意恢复通用对象包、占位初始化字段或无生产实现的路径策略。
+/// </remarks>
+public sealed class G11LowValuePublicSurfaceTests
+{
+    [Fact]
+    public void Document创建参数只保留身份标题和明确入口()
+    {
+        var properties = typeof(DocumentCreationParams)
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(property => property.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(
+            ["CreationIntentId", "DocumentTypeId", "Title"],
+            properties);
+    }
+
+    [Fact]
+    public void 低价值类型和占位成员不会重新进入Sdk()
+    {
+        var assembly = typeof(IPluginModule).Assembly;
+
+        Assert.Null(assembly.GetType(
+            "MyAvaloniaManagementCommon.Save.IDocumentSavePathPolicy"));
+        Assert.Null(assembly.GetType(
+            "MyAvaloniaManagementCommon.Behaviors.HandledEventsAwareBehavior"));
+        Assert.Null(typeof(DocumentCreationParams).GetProperty("InitializationData"));
+        Assert.Null(typeof(DocumentCreationParams).GetProperty("AdditionalData"));
+    }
+
+    [Fact]
+    public void 具有真实所有权和生命周期语义的契约继续保留()
+    {
+        var assembly = typeof(IPluginModule).Assembly;
+
+        Assert.Contains(typeof(IPluginLifecycleDependencies), assembly.ExportedTypes);
+        Assert.Contains(typeof(IDocumentCreationIntentProvider), assembly.ExportedTypes);
+        Assert.Contains(typeof(IWindowContentFullscreenHost), assembly.ExportedTypes);
+        Assert.Equal(
+            typeof(CancellationToken),
+            typeof(IDocumentLifetime).GetProperty(nameof(IDocumentLifetime.ClosingToken))?.PropertyType);
+        Assert.Equal(
+            typeof(bool),
+            typeof(IDocumentLifetime).GetProperty(nameof(IDocumentLifetime.IsClosing))?.PropertyType);
+    }
+}

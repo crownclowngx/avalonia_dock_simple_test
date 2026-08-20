@@ -42,16 +42,20 @@ v1 是第一个且唯一受支持的 `.mamdoc` 信封，没有历史 Document �
 3. 宿主使用同目录 staging 原子写入主文件；
 4. 主文件成功后更新标题与宿主状态存储中的路径；
 5. 调用 `IDocumentSaveState.AcceptChanges()`；
-6. 若存在路径保护，再调用 `IDocumentSavePathPolicy.NotifySaveCompleted()`；
+6. 清理本次 Document 的恢复注册；
 7. 将同一序列化内容原子写入 `<主路径>.recovery.bak`。
 
 信封必须且只能包含 `schemaVersion`、`pluginId`、`documentTypeId`、`contentSchemaVersion`、
 `title`、`savedAtUtc`、`payload`。它拒绝重复、未知、缺失、大小写错误和错误类型字段，以及注释、
 尾随逗号、非 UTC 时间、非规范 ID 和 Document 历史别名。UTF-8 上限为 8 MiB，JSON 最大深度为 8。
 
-主文件是业务提交点。主文件失败时，路径、标题、脏状态和路径保护全部保持原值；备份失败时主文件
+主文件是业务提交点。主文件失败时，路径、标题、脏状态和恢复注册全部保持原值；备份失败时主文件
 已经成功，Document 仍接受新基线，但宿主显示“已保存、备份更新失败”的警告。菜单保存、标签关闭
 保存和窗口退出保存共用 `DocumentSaveService` 与 `DocumentOperationGate`，不会并发覆盖同一路径。
+
+插件不拥有保存路径，也不接收保存完成回调。无当前路径的 Document 由宿主选择目标；已有路径直接
+覆盖；从损坏备份恢复的 Document 由宿主内部 `DocumentRecoveryRegistry` 强制选择新路径，并拒绝
+覆盖损坏原件或恢复备份。这样路径安全只有一个所有者，不需要无生产实现的公共策略接口。
 
 ## 4. 关闭与退出
 

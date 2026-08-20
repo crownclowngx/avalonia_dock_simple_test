@@ -505,7 +505,7 @@ public sealed class TaskCenterG4Tests
         Assert.Equal("2.0 KB", converter.Convert(2048, typeof(string), null, culture));
         Assert.Equal("3.0 KB", converter.Convert(3072d, typeof(string), null, culture));
         Assert.Equal("0 B", converter.Convert("invalid", typeof(string), null, culture));
-        Assert.Throws<NotImplementedException>(() =>
+        Assert.Throws<NotSupportedException>(() =>
             converter.ConvertBack("1 KB", typeof(long), null, culture));
     }
 

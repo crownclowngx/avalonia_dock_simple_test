@@ -17,6 +17,6 @@ public class IsDoneStatusConverter : IValueConverter
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        throw new NotSupportedException("完成状态转换器只支持单向显示绑定。");
     }
 }

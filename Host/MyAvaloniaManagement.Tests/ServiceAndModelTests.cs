@@ -144,7 +144,7 @@ public sealed class ServiceAndModelTests
 
     [Fact]
     public void 文件图标转换器不支持反向转换() =>
-        Assert.Throws<NotImplementedException>(() =>
+        Assert.Throws<NotSupportedException>(() =>
             FileSystemIconConverter.Instance.ConvertBack(
                 "📁",
                 typeof(bool),

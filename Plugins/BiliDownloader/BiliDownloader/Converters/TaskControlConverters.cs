@@ -18,7 +18,7 @@ public class IsRunningStatusConverter : IValueConverter
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+        => throw new NotSupportedException("运行状态转换器只支持单向显示绑定。");
 }
 
 /// <summary>
@@ -35,7 +35,7 @@ public class IsPausedStatusConverter : IValueConverter
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+        => throw new NotSupportedException("暂停状态转换器只支持单向显示绑定。");
 }
 
 /// <summary>
@@ -52,7 +52,7 @@ public class IsCancelableStatusConverter : IValueConverter
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+        => throw new NotSupportedException("可取消状态转换器只支持单向显示绑定。");
 }
 
 /// <summary>
@@ -70,5 +70,5 @@ public class IsRestartableStatusConverter : IValueConverter
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+        => throw new NotSupportedException("可重新开始状态转换器只支持单向显示绑定。");
 }

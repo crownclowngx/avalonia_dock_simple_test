@@ -610,8 +610,7 @@
           "Avalonia": "[12.1.0, )",
           "Dock.Model.Mvvm": "[12.0.0.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "Newtonsoft.Json": "[13.0.4, )",
-          "Xaml.Behaviors": "[12.0.5, )"
+          "Newtonsoft.Json": "[13.0.4, )"
         }
       },
       "Avalonia": {

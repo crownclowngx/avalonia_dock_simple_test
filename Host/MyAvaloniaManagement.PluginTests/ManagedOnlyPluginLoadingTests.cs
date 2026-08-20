@@ -108,9 +108,7 @@ public sealed class ManagedOnlyPluginLoadingTests
     public void Managed策略只提供DI构造仍可创建()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<DocumentScopeManager>();
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
+        services.AddDocumentScopeManagement();
         new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.datang-accounting-help"), services));
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions

@@ -295,14 +295,10 @@ internal sealed class TestHostStorageService : IHostStorageService
 /// <summary>
 /// 用于验证保存、加载和标题路径同步的最小可保存文档。
 /// </summary>
-internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumentSaveState, IDocumentSavePathPolicy
+internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumentSaveState
 {
     public string Content { get; set; } = "initial";
 
-    public bool RequiresSaveAs { get; set; }
-    public string SaveAsReason { get; set; } = "测试文档需要另存。";
-    public int SaveCompletedCount { get; private set; }
-    public string LastNotifiedFilePath { get; private set; } = string.Empty;
     public bool IsDirty => IsModified;
     public int AcceptChangesCount { get; private set; }
 
@@ -317,13 +313,6 @@ internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumen
         }
 
         Content = snapshot.Payload;
-    }
-
-    public void NotifySaveCompleted(string filePath)
-    {
-        LastNotifiedFilePath = filePath;
-        RequiresSaveAs = false;
-        SaveCompletedCount++;
     }
 
     public void AcceptChanges()

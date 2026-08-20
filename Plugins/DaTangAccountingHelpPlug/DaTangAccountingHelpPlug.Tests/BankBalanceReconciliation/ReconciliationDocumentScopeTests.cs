@@ -17,9 +17,7 @@ public sealed class ReconciliationDocumentScopeTests
     public async Task 两个Document的路径选项日志和取消状态完全隔离()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<DocumentScopeManager>();
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
+        services.AddDocumentScopeManagement();
         new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.datang-accounting-help"), services));
 
@@ -62,9 +60,7 @@ public sealed class ReconciliationDocumentScopeTests
     public void 保存Document仅持久化配置路径选项和结果摘要()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<DocumentScopeManager>();
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
+        services.AddDocumentScopeManagement();
         new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.datang-accounting-help"), services));
         using var provider = services.BuildServiceProvider();

@@ -199,6 +199,7 @@ public sealed class PluginCompatibilityTests
     public void DaTang模块注册Scoped文档且禁止从根容器解析()
     {
         var services = new ServiceCollection();
+        services.AddDocumentScopeManagement();
         var module = new DaTangAccountingHelpPluginModule();
 
         module.Configure(new TestPluginRegistrationContext(
@@ -243,6 +244,7 @@ public sealed class PluginCompatibilityTests
             documentStrategies);
         Assert.Null(typeof(BankBalanceReconciliationDocumentStrategy).GetConstructor(Type.EmptyTypes));
         Assert.Null(typeof(InvoiceInfoImportDocumentStrategy).GetConstructor(Type.EmptyTypes));
+        Assert.Null(typeof(InvoiceInfoImportViewModel).GetConstructor(Type.EmptyTypes));
     }
 
     [Fact]
@@ -260,9 +262,7 @@ public sealed class PluginCompatibilityTests
     public void DaTang策略通过统一DI激活且每次返回独立文档()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<DocumentScopeManager>();
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
+        services.AddDocumentScopeManagement();
         new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.datang-accounting-help"), services));
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions

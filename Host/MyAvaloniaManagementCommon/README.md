@@ -21,12 +21,18 @@ Document 策略和 Tool 策略由根容器创建；Lifecycle 为每插件至多�
 无参工厂按需创建，运行依赖应放入 ViewModel。注册只在根容器建立前发生，任何配置、激活或全量
 校验失败都会放弃整个组合结果，不会发布部分 Registry。
 
+`DocumentCreationParams` 只携带稳定 `DocumentTypeId`、可选标题和可选 `CreationIntentId`。
+固定入口差异使用创建意图表达；插件业务输入应进入插件自有的强类型 ViewModel 或服务，不得期待
+SDK 提供自由文本或 `object` 参数包。基础 SDK 也不提供通用 UI Behavior；插件使用第三方 Behavior
+时必须声明自己的直接包依赖，局部手势优先在对应 View 内做定向适配。
+
 可保存 Document 通过 `new DocumentContentSnapshot(contentSchemaVersion, payload)` 只交付不可变业务内容，
 并用 `RestoreContent(snapshot)` 恢复内容。`ISavableDocument` 不暴露路径、Document 类型或宿主元数据；
 这些事实只来自宿主 Registry 和运行期状态存储。
 内容版本必须为正整数，payload 不得为 `null`，其业务有效性由插件校验。磁盘信封中的插件身份、
 Document 类型、标题、UTC 保存时间和宿主 schema 全部由 Host 拥有；插件不得在 payload 中复制并
-依赖这些字段。v1 是第一个且唯一受支持的信封，不提供旧字段探测或迁移。
+依赖这些字段。路径选择、恢复文件保护和成功提交也只由 Host 管理，插件没有保存路径策略或完成回调。
+v1 是第一个且唯一受支持的信封，不提供旧字段探测或迁移。
 
 跨宿主与插件的进程内通知只使用 `MyAvaloniaManagementCommon.Events.IHostEventBus`。发布在调用线程
 同步执行，按订阅顺序只派发精确事件类型；处理器异常原样传播并停止后续派发。`Subscribe` 返回的
