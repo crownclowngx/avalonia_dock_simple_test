@@ -418,20 +418,32 @@ finally {
     $systemTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     if ($temporaryRoot.StartsWith($systemTemp, [StringComparison]::OrdinalIgnoreCase) -and
         (Test-Path -LiteralPath $temporaryRoot)) {
-        # Windows 上 dotnet/MSBuild 偶尔会在子进程退出后短暂持有生成目录句柄。
-        # 这里只对已验证位于系统临时根下的本次唯一目录做有界重试；
-        # 若句柄持续不释放仍让门禁失败，避免静默遗留大量 SDK 消费制品。
-        for ($attempt = 1; $attempt -le 10; $attempt++) {
+        # Windows 上 dotnet/MSBuild 偶尔会在子进程退出后继续持有 NuGet 缓存中的
+        # Avalonia.BuildServices DLL。第一次删除失败时关闭构建服务器，再做总计不超过
+        # 10 秒的有界重试。这里只操作已验证位于系统 Temp 的本次唯一目录；若句柄仍不
+        # 释放就让门禁失败，既不越界清理，也不把残留制品伪装成成功。
+        for ($attempt = 1; $attempt -le 20; $attempt++) {
+            foreach ($item in @(Get-ChildItem -LiteralPath $temporaryRoot -Recurse -Force) +
+                @(Get-Item -LiteralPath $temporaryRoot -Force)) {
+                if (($item.Attributes -band [IO.FileAttributes]::ReadOnly) -ne 0) {
+                    $item.Attributes = $item.Attributes -band (-bnot [IO.FileAttributes]::ReadOnly)
+                }
+            }
             try {
                 Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction Stop
                 break
             }
             catch {
-                if ($attempt -ge 10) {
+                if ($attempt -eq 1) {
+                    # 仅在已确认发生持有竞态时关闭当前用户的 dotnet 构建服务器；正常路径
+                    # 不影响其他开发会话。关闭命令失败不会被吞掉，后续删除仍会给出最终结论。
+                    & dotnet build-server shutdown | Out-Host
+                }
+                if ($attempt -ge 20) {
                     throw
                 }
 
-                Start-Sleep -Milliseconds 250
+                Start-Sleep -Milliseconds 500
             }
         }
     }

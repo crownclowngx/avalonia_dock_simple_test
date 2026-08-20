@@ -115,76 +115,6 @@ function Get-FileLineCoverage {
         2)
 }
 
-function Invoke-WindowsSmoke {
-    if ($env:OS -ne "Windows_NT") {
-        throw "Windows smoke testing is only supported on Windows."
-    }
-
-    $smokeRoot = Join-Path $repoRoot "artifacts\MyAvaloniaManagement\smoke"
-    $dataRoot = Join-Path $repoRoot "artifacts\MyAvaloniaManagement\smoke-data"
-    Assert-ChildPath $smokeRoot $repoRoot
-    Assert-ChildPath $dataRoot $repoRoot
-    foreach ($path in @($smokeRoot, $dataRoot)) {
-        if (Test-Path -LiteralPath $path) {
-            Remove-Item -LiteralPath $path -Recurse -Force
-        }
-        New-Item -ItemType Directory -Path $path | Out-Null
-    }
-
-    $publishArguments = @(
-        "publish",
-        (Join-Path $repoRoot "Host\MyAvaloniaManagement\MyAvaloniaManagement.csproj"),
-        "-c", $Configuration,
-        "-o", $smokeRoot,
-        "-p:SkipPluginDeploy=true"
-    )
-    if ($NoRestore) {
-        $publishArguments += "--no-restore"
-    }
-    Invoke-DotNet $publishArguments
-
-    $executable = Join-Path $smokeRoot "MyAvaloniaManagement.exe"
-    if (-not (Test-Path -LiteralPath $executable)) {
-        throw "Published host executable was not found: $executable"
-    }
-
-    $previousDataDirectory = $env:MYAVALONIA_DATA_DIRECTORY
-    $previousSmokeMode = $env:MYAVALONIA_SMOKE_TEST
-    $process = $null
-    try {
-        $env:MYAVALONIA_DATA_DIRECTORY = $dataRoot
-        $env:MYAVALONIA_SMOKE_TEST = "1"
-        $process = Start-Process `
-            -FilePath $executable `
-            -WorkingDirectory $smokeRoot `
-            -WindowStyle Hidden `
-            -PassThru
-        if (-not $process.WaitForExit(15000)) {
-            throw (
-                "Host did not open and shut down cleanly " +
-                "within 15 seconds.")
-        }
-        if ($process.ExitCode -ne 0) {
-            throw "Host smoke test exited with code $($process.ExitCode)."
-        }
-        if (-not (Test-Path -LiteralPath (
-            Join-Path $dataRoot "layout-v1.json"))) {
-            throw "Host smoke test did not save its isolated layout."
-        }
-    }
-    finally {
-        $env:MYAVALONIA_DATA_DIRECTORY = $previousDataDirectory
-        $env:MYAVALONIA_SMOKE_TEST = $previousSmokeMode
-        if ($process -and -not $process.HasExited) {
-            Stop-Process -Id $process.Id -Force
-            $process.WaitForExit()
-        }
-        if ($process) {
-            $process.Dispose()
-        }
-    }
-}
-
 Assert-ChildPath $artifactRoot $repoRoot
 if (Test-Path -LiteralPath $artifactRoot) {
     Remove-Item -LiteralPath $artifactRoot -Recurse -Force
@@ -195,6 +125,7 @@ Push-Location $repoRoot
 try {
     Invoke-DotNet @("tool", "restore")
     $totalPassed = 0
+    $suiteResults = [ordered]@{}
     foreach ($suite in $projects) {
         $resultDirectory = Join-Path $artifactRoot $suite.Name
         New-Item -ItemType Directory -Path $resultDirectory | Out-Null
@@ -213,7 +144,9 @@ try {
             $arguments += "--no-restore"
         }
         Invoke-DotNet $arguments
-        $totalPassed += Assert-TrxPassed $resultDirectory $suite.Name
+        $passed = Assert-TrxPassed $resultDirectory $suite.Name
+        $suiteResults[$suite.Name] = $passed
+        $totalPassed += $passed
     }
 
     $coverageReports = @(Get-ChildItem -LiteralPath $artifactRoot -Recurse `
@@ -266,10 +199,17 @@ try {
     }
 
     if ($WindowsSmoke) {
-        Invoke-WindowsSmoke
+        # Smoke 已拆成独立叶子脚本，G14 可以把真实窗口验证严格放在全部 API/包门禁之后；
+        # 这里继续委托调用，保持既有 -WindowsSmoke 命令和可观察结果不变。
+        $smokeScript = Join-Path $PSScriptRoot 'Invoke-MyAvaloniaManagementWindowsSmoke.ps1'
+        $smokeParameters = @{ Configuration = $Configuration }
+        if ($NoRestore) { $smokeParameters.NoRestore = $true }
+        & $smokeScript @smokeParameters
     }
 
     $summary = [ordered]@{
+        schemaVersion = 1
+        suites = $suiteResults
         passed = $totalPassed
         lineCoverage = $line
         branchCoverage = $branch

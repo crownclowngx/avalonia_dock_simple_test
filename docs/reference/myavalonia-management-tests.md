@@ -2,10 +2,27 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前 G13 专项基线：2026-08-20，正式 Plugin SDK v1 已建立可读 Shipped/Unshipped API 文本和
-> 成员级变异门禁。完整 Release 数量、覆盖率与 Windows Smoke 结果见
-> [G13 Plugin SDK API 兼容基线](../plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md)。
+> 当前 G14 发布基线：2026-08-20，Windows 单入口已在两个独立克隆中重复执行全部正式门禁。
+> 完整 Release 数量、覆盖率、包矩阵与 Windows Smoke 结果见
+> [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)。
 > 数量来自本次命令输出，不是永久固定门槛。
+
+## G14 正式发布门禁
+
+在干净 Git 提交上运行：
+
+```powershell
+.\scripts\Invoke-HostV1ReleaseGate.ps1
+```
+
+脚本要求 Windows x64、PowerShell 7、Git 和 `global.json` 指定的 .NET SDK。它在两个独立本地克隆中
+顺序执行核心单元测试、锁定还原、Release 零警告构建、宿主三套测试、SDK 包/API、四插件包矩阵和
+真实窗口 Smoke。每轮使用独立 Temp、dotnet home、NuGet 缓存和 Host 数据根，不读取当前工作目录的
+构建产物或用户 LocalAppData。
+
+结果位于 `artifacts/release-gate/<UTC>-<commit>/pass-1|pass-2`。日志、TRX、Cobertura、四个 ZIP、
+外置清单和 JSON 必须齐全；两轮只忽略时间、耗时和绝对路径，任何测试数、覆盖率、阶段、API、包摘要
+或 Smoke 漂移都会失败。当前入口不绑定托管平台，不自动执行合并、上传或标签操作。
 
 ## 一键门禁
 
@@ -85,7 +102,13 @@ Windows 冒烟默认关闭，显式运行：
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -WindowsSmoke
 ```
 
-脚本发布不包含插件的宿主到隔离目录，设置临时
+只运行独立 Smoke 时也可以执行：
+
+```powershell
+.\scripts\Invoke-MyAvaloniaManagementWindowsSmoke.ps1 -Configuration Release
+```
+
+宿主综合脚本会委托同一个独立 Smoke 脚本。它发布不包含插件的宿主到隔离目录，设置临时
 `MYAVALONIA_DATA_DIRECTORY` 和 `MYAVALONIA_SMOKE_TEST=1`。应用仍会创建并
 打开真实主窗口；窗口 `Opened` 后由 UI Dispatcher 排队执行正常关闭，让
 Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内以退出码 0

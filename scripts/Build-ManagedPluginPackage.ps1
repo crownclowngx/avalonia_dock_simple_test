@@ -130,23 +130,42 @@ else {
 }
 New-Item -ItemType Directory -Path $resolvedOutput -Force | Out-Null
 
-# C# PE 的 CodeView 会记录 PDB 输出路径。若每次使用随机目录，即使 PDB 内容相同，DLL 也会
-# 仅因路径不同而改变摘要。这里为“项目 + 配置”使用固定构建槽，并用命名互斥量防止同插件
-# 并发写入；每次仍会先清空槽，因此不会复用任何构建产物。
-$slotIdentity = ($projectPath.ToUpperInvariant() + '|' + $Configuration.ToUpperInvariant())
+# C# PE 的 CodeView 会记录 PDB 输出路径，Avalonia XAML 后处理也会把 ProjectDirectory 写入
+# portable PDB。若固定槽依赖克隆绝对路径，只能保证同一克隆内重复构建一致。这里改用稳定的
+# “仓库相对项目路径 + 配置”作为槽身份，并让构建经由槽内固定 Junction 访问当前克隆。
+# 命名互斥量保证两个克隆不会同时切换同一 Junction；每轮仍先清空槽，不复用任何构建产物。
+$projectRelativePath = Get-StableRelativePath $repositoryRoot $projectPath
+$slotIdentity = ($projectRelativePath.ToUpperInvariant() + '|' + $Configuration.ToUpperInvariant())
 $slotHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData(
         [Text.Encoding]::UTF8.GetBytes($slotIdentity)))
 $slotName = $slotHash.Substring(0, 20)
 $workingRoot = Join-Path ([IO.Path]::GetTempPath()) (
     'MyAvaloniaManagedPluginBuild\' + $slotName)
+$stableBuildParent = if ([string]::IsNullOrWhiteSpace($env:MYAVALONIA_MANAGED_PLUGIN_STABLE_ROOT)) {
+    Join-Path ([IO.Path]::GetTempPath()) 'MyAvaloniaManagedPluginStable'
+}
+else {
+    [IO.Path]::GetFullPath($env:MYAVALONIA_MANAGED_PLUGIN_STABLE_ROOT)
+}
+$stableBuildRoot = Join-Path $stableBuildParent $slotName
+$physicalSourceJunction = Join-Path $workingRoot 'source'
 $buildMutex = [Threading.Mutex]::new($false, "Local\MyAvaloniaManagedPluginBuild-$slotName")
 if (-not $buildMutex.WaitOne([TimeSpan]::FromMinutes(5))) {
     $buildMutex.Dispose()
     throw "等待同一插件构建槽超时：$projectPath"
 }
 
+Assert-PathUnder $stableBuildRoot $stableBuildParent 'Managed Plugin 稳定路径'
+if (Test-Path -LiteralPath $stableBuildRoot) {
+    # stableBuildRoot 自身只能是指向本轮物理工作目录的 Junction；删除重解析点时不使用 Recurse。
+    [IO.Directory]::Delete($stableBuildRoot)
+}
 if (Test-Path -LiteralPath $workingRoot) {
     Assert-PathUnder $workingRoot ([IO.Path]::GetTempPath()) 'Managed Plugin 临时目录'
+    if (Test-Path -LiteralPath $physicalSourceJunction) {
+        # Junction 必须作为单个重解析点删除，绝不能递归进入它指向的真实仓库。
+        [IO.Directory]::Delete($physicalSourceJunction)
+    }
     [IO.Directory]::Delete($workingRoot, $true)
 }
 $dotnetArtifacts = Join-Path $workingRoot 'dotnet'
@@ -154,23 +173,32 @@ $stageRoot = Join-Path $workingRoot 'stage'
 $deployRoot = Join-Path $stageRoot 'Controls'
 $pluginRoot = Join-Path $deployRoot $pluginDirectoryName
 $validationRoot = Join-Path $workingRoot 'validation'
-New-Item -ItemType Directory -Path $workingRoot, $dotnetArtifacts, $deployRoot | Out-Null
+New-Item -ItemType Directory -Path $workingRoot, $dotnetArtifacts, $deployRoot, $stableBuildParent -Force | Out-Null
+New-Item -ItemType Junction -Path $physicalSourceJunction -Target $repositoryRoot | Out-Null
+New-Item -ItemType Junction -Path $stableBuildRoot -Target $workingRoot | Out-Null
+$stableProjectPath = Join-Path (Join-Path $stableBuildRoot 'source') $projectRelativePath.Replace('/', '\')
+$stableDotnetArtifacts = Join-Path $stableBuildRoot 'dotnet'
+$stableDeployRoot = Join-Path $stableBuildRoot 'stage\Controls'
 
 try {
     Invoke-DotNet @(
-        'restore', $projectPath,
+        'restore', $stableProjectPath,
         '--locked-mode', '--nologo',
-        '--artifacts-path', $dotnetArtifacts,
+        '--artifacts-path', $stableDotnetArtifacts,
         '-p:SkipPluginDeploy=true'
     )
     Invoke-DotNet @(
-        'build', $projectPath,
+        'build', $stableProjectPath,
         '-c', $Configuration,
         '--no-restore', '--nologo', '-warnaserror',
-        '--artifacts-path', $dotnetArtifacts,
+        '--artifacts-path', $stableDotnetArtifacts,
         '-p:ContinuousIntegrationBuild=true',
-        "-p:PathMap=$workingRoot=/_/managed-plugin-build",
-        "-p:ManagedPluginDeployRoot=$deployRoot",
+        # Roslyn 仍显式映射真实仓库、稳定 Junction 和物理构建槽；Avalonia 后处理即使
+        # 忽略 PathMap，看到的也是两轮相同的 stableBuildRoot，而不是各自的物理隔离目录。
+        # `%2C` 是 MSBuild 命令行属性值中的转义逗号；若直接写逗号，dotnet 会把第二个
+        # Windows 路径误解析成新的属性名。MSBuild 解码后传给编译器的仍是标准 PathMap 列表。
+        "-p:PathMap=$stableBuildRoot=/_/managed-plugin-build%2C$repositoryRoot=/_/repo%2C$workingRoot=/_/managed-plugin-build",
+        "-p:ManagedPluginDeployRoot=$stableDeployRoot",
         '-p:SkipPluginDeploy=false'
     )
 
@@ -329,9 +357,18 @@ try {
     Write-Host "机器可读清单：$sidecarPath"
 }
 finally {
-    # 工作目录由本脚本在系统 Temp 下以固定前缀和 GUID 创建，删除前再次验证边界。
+    # 工作目录由本脚本在系统 Temp 下以固定前缀和哈希槽创建，删除前再次验证边界。
+    if (Test-Path -LiteralPath $stableBuildRoot) {
+        Assert-PathUnder $stableBuildRoot $stableBuildParent 'Managed Plugin 稳定路径'
+        # 稳定路径只是指向隔离物理目录的 Junction，必须先移除它本身。
+        [IO.Directory]::Delete($stableBuildRoot)
+    }
     if (Test-Path -LiteralPath $workingRoot) {
         Assert-PathUnder $workingRoot ([IO.Path]::GetTempPath()) 'Managed Plugin 临时目录'
+        if (Test-Path -LiteralPath $physicalSourceJunction) {
+            # 先移除 Junction 本身，再递归删除纯临时输出，防止清理边界跨入真实仓库。
+            [IO.Directory]::Delete($physicalSourceJunction)
+        }
         [IO.Directory]::Delete($workingRoot, $true)
     }
     $buildMutex.ReleaseMutex()

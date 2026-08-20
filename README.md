@@ -96,6 +96,16 @@ TestResults/  需要保留的阶段验收与人工验证记录
 
 ## 测试
 
+在干净 Git 提交上执行完整的 G14 Windows 本地发布门禁：
+
+```powershell
+.\scripts\Invoke-HostV1ReleaseGate.ps1
+```
+
+该入口在两个独立克隆中重复执行锁定还原、Release 零警告构建、宿主三套测试、SDK 包/API、
+四插件包矩阵和真实窗口 Smoke，并把日志、TRX、覆盖率、ZIP、清单及两轮比较写入
+`artifacts/release-gate`。它不绑定代码托管平台，也不会创建或推送标签。
+
 运行宿主标准门禁：
 
 ```powershell
