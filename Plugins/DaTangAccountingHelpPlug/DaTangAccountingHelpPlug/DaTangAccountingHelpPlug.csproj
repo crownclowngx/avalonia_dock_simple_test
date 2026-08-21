@@ -7,12 +7,13 @@
         <ManagedPlugin>true</ManagedPlugin>
         <ManagedPluginId>myavalonia.plugin.datang-accounting-help</ManagedPluginId>
         <ManagedPluginDirectoryName>DaTang</ManagedPluginDirectoryName>
-        <PluginVersion>1.0.0</PluginVersion>
+        <PluginVersion>2.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
-        <ManagedPluginHostApiMinInclusive>1.0.0</ManagedPluginHostApiMinInclusive>
-        <ManagedPluginHostApiMaxExclusive>2.0.0</ManagedPluginHostApiMaxExclusive>
-        <ManagedPluginCommonContractMinInclusive>1.0.0</ManagedPluginCommonContractMinInclusive>
-        <ManagedPluginCommonContractMaxExclusive>2.0.0</ManagedPluginCommonContractMaxExclusive>
+        <!-- G3 删除双区间前，两组 V1 字段只投影同一个 SDK V2 兼容事实。 -->
+        <ManagedPluginHostApiMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginHostApiMinInclusive>
+        <ManagedPluginHostApiMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginHostApiMaxExclusive>
+        <ManagedPluginCommonContractMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginCommonContractMinInclusive>
+        <ManagedPluginCommonContractMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginCommonContractMaxExclusive>
     </PropertyGroup>
 
     <ItemGroup>

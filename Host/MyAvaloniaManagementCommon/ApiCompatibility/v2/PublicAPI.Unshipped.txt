@@ -1,0 +1,244 @@
+#nullable enable
+MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId
+MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.<Clone>$() -> MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId!
+MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.CreationIntentId(string! value) -> void
+MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.Equals(MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId? other) -> bool
+MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.IsCanonical.get -> bool
+MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.Value.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationIntentMetadata
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationIntentMetadata.Description.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationIntentMetadata.Description.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationIntentMetadata.DisplayName.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationIntentMetadata.DocumentCreationIntentMetadata(MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId! intentId, string! displayName) -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationIntentMetadata.IconPath.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationIntentMetadata.IconPath.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationIntentMetadata.IntentId.get -> MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.<Clone>$() -> MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.CreationIntentId.get -> MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId?
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.CreationIntentId.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.Deconstruct(out MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId! DocumentTypeId, out MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId? CreationIntentId, out string! DisplayName, out string! Description, out string! IconPath, out string! MenuCategory) -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.Description.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.Description.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.DisplayName.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.DisplayName.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.DocumentCreationMenuEntry(MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId! DocumentTypeId, MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId? CreationIntentId, string! DisplayName, string! Description, string! IconPath, string! MenuCategory) -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.DocumentTypeId.get -> MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.DocumentTypeId.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.Equals(MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry? other) -> bool
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.IconPath.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.IconPath.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.MenuCategory.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.MenuCategory.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationParams
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationParams.CreationIntentId.get -> MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId?
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationParams.CreationIntentId.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationParams.DocumentCreationParams(MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId! documentTypeId) -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationParams.DocumentTypeId.get -> MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationParams.Title.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationParams.Title.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.Description.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.Description.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.DisplayName.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.DocumentMetadata(MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId! documentTypeId, string! displayName, System.Collections.Generic.IEnumerable<MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId!>? legacyIds = null) -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.DocumentTypeId.get -> MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.IconPath.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.IconPath.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.LegacyIds.get -> System.Collections.Generic.IReadOnlyList<MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId!>!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.MenuCategory.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.MenuCategory.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.ShowInMenu.get -> bool
+MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata.ShowInMenu.init -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId
+MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.<Clone>$() -> MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.DocumentTypeId(string! value) -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.Equals(MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId? other) -> bool
+MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.IsCanonical.get -> bool
+MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.Value.get -> string!
+MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeIdNewtonsoftJsonConverter
+MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeIdNewtonsoftJsonConverter.DocumentTypeIdNewtonsoftJsonConverter() -> void
+MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeIdSystemTextJsonConverter
+MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeIdSystemTextJsonConverter.DocumentTypeIdSystemTextJsonConverter() -> void
+MyAvaloniaManagementCommon.DocumentCreation.IDocumentCreationIntentProvider
+MyAvaloniaManagementCommon.DocumentCreation.IDocumentCreationIntentProvider.GetCreationIntents() -> System.Collections.Generic.IReadOnlyList<MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationIntentMetadata!>!
+MyAvaloniaManagementCommon.DocumentCreation.IDocumentCreationStrategy
+MyAvaloniaManagementCommon.DocumentCreation.IDocumentCreationStrategy.CreateDocument(MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationParams! params) -> Dock.Model.Mvvm.Controls.Document!
+MyAvaloniaManagementCommon.DocumentCreation.IDocumentCreationStrategy.GetMetadata() -> MyAvaloniaManagementCommon.DocumentCreation.DocumentMetadata!
+MyAvaloniaManagementCommon.DocumentCreation.IDocumentLifetime
+MyAvaloniaManagementCommon.DocumentCreation.IDocumentLifetime.ClosingToken.get -> System.Threading.CancellationToken
+MyAvaloniaManagementCommon.DocumentCreation.IDocumentLifetime.IsClosing.get -> bool
+MyAvaloniaManagementCommon.DocumentCreation.IDocumentScopeFactory
+MyAvaloniaManagementCommon.DocumentCreation.IDocumentScopeFactory.CreateDocument<TDocument>() -> TDocument!
+MyAvaloniaManagementCommon.Events.IHostEventBus
+MyAvaloniaManagementCommon.Events.IHostEventBus.Publish<TEvent>(TEvent! event) -> void
+MyAvaloniaManagementCommon.Events.IHostEventBus.Subscribe<TEvent>(System.Action<TEvent!>! handler) -> System.IDisposable!
+MyAvaloniaManagementCommon.Plugin.IPluginLifecycle
+MyAvaloniaManagementCommon.Plugin.IPluginLifecycle.InitializeAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+MyAvaloniaManagementCommon.Plugin.IPluginLifecycle.Order.get -> int
+MyAvaloniaManagementCommon.Plugin.IPluginLifecycle.ShutdownAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+MyAvaloniaManagementCommon.Plugin.IPluginLifecycleDependencies
+MyAvaloniaManagementCommon.Plugin.IPluginLifecycleDependencies.RequiredPluginIds.get -> System.Collections.Generic.IReadOnlyCollection<MyAvaloniaManagementCommon.Plugin.PluginId!>!
+MyAvaloniaManagementCommon.Plugin.IPluginModule
+MyAvaloniaManagementCommon.Plugin.IPluginModule.Configure(MyAvaloniaManagementCommon.Plugin.IPluginRegistrationContext! context) -> void
+MyAvaloniaManagementCommon.Plugin.IPluginRegistrationContext
+MyAvaloniaManagementCommon.Plugin.IPluginRegistrationContext.AddDocument<TStrategy>() -> void
+MyAvaloniaManagementCommon.Plugin.IPluginRegistrationContext.AddLifecycle<TLifecycle>() -> void
+MyAvaloniaManagementCommon.Plugin.IPluginRegistrationContext.AddTool<TStrategy>() -> void
+MyAvaloniaManagementCommon.Plugin.IPluginRegistrationContext.AddView<TViewModel, TView>() -> void
+MyAvaloniaManagementCommon.Plugin.IPluginRegistrationContext.PluginId.get -> MyAvaloniaManagementCommon.Plugin.PluginId!
+MyAvaloniaManagementCommon.Plugin.IPluginRegistrationContext.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+MyAvaloniaManagementCommon.Plugin.PluginId
+MyAvaloniaManagementCommon.Plugin.PluginId.<Clone>$() -> MyAvaloniaManagementCommon.Plugin.PluginId!
+MyAvaloniaManagementCommon.Plugin.PluginId.Equals(MyAvaloniaManagementCommon.Plugin.PluginId? other) -> bool
+MyAvaloniaManagementCommon.Plugin.PluginId.IsCanonical.get -> bool
+MyAvaloniaManagementCommon.Plugin.PluginId.PluginId(string! value) -> void
+MyAvaloniaManagementCommon.Plugin.PluginId.Value.get -> string!
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleManager
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleManager.GetState(MyAvaloniaManagementCommon.Plugin.PluginId! pluginId) -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleState?
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleManager.InitializeAllAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleManager.PluginLifecycleManager(System.Collections.Generic.IEnumerable<MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration!>! registrations) -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleManager.PluginLifecycleManager(System.Collections.Generic.IEnumerable<MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration!>! registrations, MyAvaloniaManagementCommon.Plugin.PluginLifecycleOptions! options) -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleManager.ShutdownAllAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleManager.States.get -> System.Collections.Generic.IReadOnlyCollection<MyAvaloniaManagementCommon.Plugin.PluginLifecycleState!>!
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleOptions
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleOptions.InitializationTimeout.get -> System.TimeSpan
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleOptions.InitializationTimeout.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleOptions.PluginLifecycleOptions() -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleOptions.ShutdownTimeout.get -> System.TimeSpan
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleOptions.ShutdownTimeout.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.<Clone>$() -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration!
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.Deconstruct(out MyAvaloniaManagementCommon.Plugin.PluginId! PluginId, out MyAvaloniaManagementCommon.Plugin.IPluginLifecycle! Lifecycle) -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.Equals(MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration? other) -> bool
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.Lifecycle.get -> MyAvaloniaManagementCommon.Plugin.IPluginLifecycle!
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.Lifecycle.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.PluginId.get -> MyAvaloniaManagementCommon.Plugin.PluginId!
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.PluginId.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.PluginLifecycleRegistration(MyAvaloniaManagementCommon.Plugin.PluginId! PluginId, MyAvaloniaManagementCommon.Plugin.IPluginLifecycle! Lifecycle) -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStage
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStage.Initialization = 1 -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStage
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStage.None = 0 -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStage
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStage.Shutdown = 2 -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStage
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.<Clone>$() -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleState!
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.BlockingPluginId.get -> MyAvaloniaManagementCommon.Plugin.PluginId?
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.BlockingPluginId.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.Deconstruct(out MyAvaloniaManagementCommon.Plugin.PluginId! PluginId, out MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus Status, out string? ErrorMessage) -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.Duration.get -> System.TimeSpan?
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.Duration.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.Equals(MyAvaloniaManagementCommon.Plugin.PluginLifecycleState? other) -> bool
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.ErrorCode.get -> string?
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.ErrorCode.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.ErrorMessage.get -> string?
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.ErrorMessage.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.IsAvailable.get -> bool
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.PluginId.get -> MyAvaloniaManagementCommon.Plugin.PluginId!
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.PluginId.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.PluginLifecycleState(MyAvaloniaManagementCommon.Plugin.PluginId! PluginId, MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus Status, string? ErrorMessage = null) -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.RequiredPluginIds.get -> System.Collections.Generic.IReadOnlyList<MyAvaloniaManagementCommon.Plugin.PluginId!>!
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.RequiredPluginIds.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.Stage.get -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStage
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.Stage.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.Status.get -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.Status.init -> void
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus.Blocked = 6 -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus.Failed = 3 -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus.Initializing = 1 -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus.NotStarted = 0 -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus.Ready = 2 -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus.Stopped = 5 -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus.Stopping = 4 -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus
+MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus.TimedOut = 7 -> MyAvaloniaManagementCommon.Plugin.PluginLifecycleStatus
+MyAvaloniaManagementCommon.Presentation.IWindowContentFullscreenHost
+MyAvaloniaManagementCommon.Presentation.IWindowContentFullscreenHost.TryPresent(Avalonia.Controls.Control! content, object! owner) -> bool
+MyAvaloniaManagementCommon.Presentation.IWindowContentFullscreenHost.TryRestore(object! owner) -> bool
+MyAvaloniaManagementCommon.Save.DocumentContentSnapshot
+MyAvaloniaManagementCommon.Save.DocumentContentSnapshot.ContentSchemaVersion.get -> int
+MyAvaloniaManagementCommon.Save.DocumentContentSnapshot.DocumentContentSnapshot(int contentSchemaVersion, string! payload) -> void
+MyAvaloniaManagementCommon.Save.DocumentContentSnapshot.Payload.get -> string!
+MyAvaloniaManagementCommon.Save.DocumentLoadException
+MyAvaloniaManagementCommon.Save.DocumentLoadException.DocumentLoadException(string! message) -> void
+MyAvaloniaManagementCommon.Save.DocumentLoadException.DocumentLoadException(string! message, System.Exception! innerException) -> void
+MyAvaloniaManagementCommon.Save.IDocumentSaveState
+MyAvaloniaManagementCommon.Save.IDocumentSaveState.AcceptChanges() -> void
+MyAvaloniaManagementCommon.Save.IDocumentSaveState.IsDirty.get -> bool
+MyAvaloniaManagementCommon.Save.ISavableDocument
+MyAvaloniaManagementCommon.Save.ISavableDocument.CreateContentSnapshot() -> MyAvaloniaManagementCommon.Save.DocumentContentSnapshot!
+MyAvaloniaManagementCommon.Save.ISavableDocument.RestoreContent(MyAvaloniaManagementCommon.Save.DocumentContentSnapshot! snapshot) -> void
+MyAvaloniaManagementCommon.ToolCreation.IToolCreationStrategy
+MyAvaloniaManagementCommon.ToolCreation.IToolCreationStrategy.CreateTool() -> Dock.Model.Mvvm.Controls.Tool!
+MyAvaloniaManagementCommon.ToolCreation.IToolCreationStrategy.GetMetadata() -> MyAvaloniaManagementCommon.ToolCreation.ToolMetadata!
+MyAvaloniaManagementCommon.ToolCreation.ToolDockSide
+MyAvaloniaManagementCommon.ToolCreation.ToolDockSide.Bottom = 3 -> MyAvaloniaManagementCommon.ToolCreation.ToolDockSide
+MyAvaloniaManagementCommon.ToolCreation.ToolDockSide.Left = 0 -> MyAvaloniaManagementCommon.ToolCreation.ToolDockSide
+MyAvaloniaManagementCommon.ToolCreation.ToolDockSide.Right = 1 -> MyAvaloniaManagementCommon.ToolCreation.ToolDockSide
+MyAvaloniaManagementCommon.ToolCreation.ToolDockSide.Top = 2 -> MyAvaloniaManagementCommon.ToolCreation.ToolDockSide
+MyAvaloniaManagementCommon.ToolCreation.ToolMetadata
+MyAvaloniaManagementCommon.ToolCreation.ToolMetadata.Description.get -> string!
+MyAvaloniaManagementCommon.ToolCreation.ToolMetadata.Description.init -> void
+MyAvaloniaManagementCommon.ToolCreation.ToolMetadata.DisplayName.get -> string!
+MyAvaloniaManagementCommon.ToolCreation.ToolMetadata.DockSide.get -> MyAvaloniaManagementCommon.ToolCreation.ToolDockSide
+MyAvaloniaManagementCommon.ToolCreation.ToolMetadata.IconPath.get -> string!
+MyAvaloniaManagementCommon.ToolCreation.ToolMetadata.IconPath.init -> void
+MyAvaloniaManagementCommon.ToolCreation.ToolMetadata.LegacyIds.get -> System.Collections.Generic.IReadOnlyList<MyAvaloniaManagementCommon.ToolCreation.ToolTypeId!>!
+MyAvaloniaManagementCommon.ToolCreation.ToolMetadata.ToolMetadata(MyAvaloniaManagementCommon.ToolCreation.ToolTypeId! toolTypeId, string! displayName, MyAvaloniaManagementCommon.ToolCreation.ToolDockSide dockSide, System.Collections.Generic.IEnumerable<MyAvaloniaManagementCommon.ToolCreation.ToolTypeId!>? legacyIds = null) -> void
+MyAvaloniaManagementCommon.ToolCreation.ToolMetadata.ToolTypeId.get -> MyAvaloniaManagementCommon.ToolCreation.ToolTypeId!
+MyAvaloniaManagementCommon.ToolCreation.ToolTypeId
+MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.<Clone>$() -> MyAvaloniaManagementCommon.ToolCreation.ToolTypeId!
+MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.Equals(MyAvaloniaManagementCommon.ToolCreation.ToolTypeId? other) -> bool
+MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.IsCanonical.get -> bool
+MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.ToolTypeId(string! value) -> void
+MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.Value.get -> string!
+MyAvaloniaManagementCommon.ToolCreation.ToolTypeIdSystemTextJsonConverter
+MyAvaloniaManagementCommon.ToolCreation.ToolTypeIdSystemTextJsonConverter.ToolTypeIdSystemTextJsonConverter() -> void
+override MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.Equals(object? obj) -> bool
+override MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.GetHashCode() -> int
+override MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.ToString() -> string!
+override MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.Equals(object? obj) -> bool
+override MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.GetHashCode() -> int
+override MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.ToString() -> string!
+override MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.Equals(object? obj) -> bool
+override MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.GetHashCode() -> int
+override MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.ToString() -> string!
+override MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeIdNewtonsoftJsonConverter.ReadJson(Newtonsoft.Json.JsonReader! reader, System.Type! objectType, MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId? existingValue, bool hasExistingValue, Newtonsoft.Json.JsonSerializer! serializer) -> MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId?
+override MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeIdNewtonsoftJsonConverter.WriteJson(Newtonsoft.Json.JsonWriter! writer, MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId? value, Newtonsoft.Json.JsonSerializer! serializer) -> void
+override MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeIdSystemTextJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId!
+override MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeIdSystemTextJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId! value, System.Text.Json.JsonSerializerOptions! options) -> void
+override MyAvaloniaManagementCommon.Plugin.PluginId.Equals(object? obj) -> bool
+override MyAvaloniaManagementCommon.Plugin.PluginId.GetHashCode() -> int
+override MyAvaloniaManagementCommon.Plugin.PluginId.ToString() -> string!
+override MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.Equals(object? obj) -> bool
+override MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.GetHashCode() -> int
+override MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.ToString() -> string!
+override MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.Equals(object? obj) -> bool
+override MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.GetHashCode() -> int
+override MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.ToString() -> string!
+override MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.Equals(object? obj) -> bool
+override MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.GetHashCode() -> int
+override MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.ToString() -> string!
+override MyAvaloniaManagementCommon.ToolCreation.ToolTypeIdSystemTextJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> MyAvaloniaManagementCommon.ToolCreation.ToolTypeId!
+override MyAvaloniaManagementCommon.ToolCreation.ToolTypeIdSystemTextJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, MyAvaloniaManagementCommon.ToolCreation.ToolTypeId! value, System.Text.Json.JsonSerializerOptions! options) -> void
+static MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.Parse(string! value) -> MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId!
+static MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.TryParse(string? value, out MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId? intentId) -> bool
+static MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.operator !=(MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId? left, MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId? right) -> bool
+static MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId.operator ==(MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId? left, MyAvaloniaManagementCommon.DocumentCreation.CreationIntentId? right) -> bool
+static MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.operator !=(MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry? left, MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry? right) -> bool
+static MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry.operator ==(MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry? left, MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry? right) -> bool
+static MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.Parse(string! value) -> MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId!
+static MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.TryParse(string? value, out MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId? documentTypeId) -> bool
+static MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.operator !=(MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId? left, MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId? right) -> bool
+static MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId.operator ==(MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId? left, MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId? right) -> bool
+static MyAvaloniaManagementCommon.Plugin.PluginId.Parse(string! value) -> MyAvaloniaManagementCommon.Plugin.PluginId!
+static MyAvaloniaManagementCommon.Plugin.PluginId.TryParse(string? value, out MyAvaloniaManagementCommon.Plugin.PluginId? pluginId) -> bool
+static MyAvaloniaManagementCommon.Plugin.PluginId.operator !=(MyAvaloniaManagementCommon.Plugin.PluginId? left, MyAvaloniaManagementCommon.Plugin.PluginId? right) -> bool
+static MyAvaloniaManagementCommon.Plugin.PluginId.operator ==(MyAvaloniaManagementCommon.Plugin.PluginId? left, MyAvaloniaManagementCommon.Plugin.PluginId? right) -> bool
+static MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.operator !=(MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration? left, MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration? right) -> bool
+static MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration.operator ==(MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration? left, MyAvaloniaManagementCommon.Plugin.PluginLifecycleRegistration? right) -> bool
+static MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.operator !=(MyAvaloniaManagementCommon.Plugin.PluginLifecycleState? left, MyAvaloniaManagementCommon.Plugin.PluginLifecycleState? right) -> bool
+static MyAvaloniaManagementCommon.Plugin.PluginLifecycleState.operator ==(MyAvaloniaManagementCommon.Plugin.PluginLifecycleState? left, MyAvaloniaManagementCommon.Plugin.PluginLifecycleState? right) -> bool
+static MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.Parse(string! value) -> MyAvaloniaManagementCommon.ToolCreation.ToolTypeId!
+static MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.TryParse(string? value, out MyAvaloniaManagementCommon.ToolCreation.ToolTypeId? toolTypeId) -> bool
+static MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.operator !=(MyAvaloniaManagementCommon.ToolCreation.ToolTypeId? left, MyAvaloniaManagementCommon.ToolCreation.ToolTypeId? right) -> bool
+static MyAvaloniaManagementCommon.ToolCreation.ToolTypeId.operator ==(MyAvaloniaManagementCommon.ToolCreation.ToolTypeId? left, MyAvaloniaManagementCommon.ToolCreation.ToolTypeId? right) -> bool

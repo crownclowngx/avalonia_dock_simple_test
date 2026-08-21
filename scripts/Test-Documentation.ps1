@@ -131,7 +131,7 @@ Assert-DocumentationSourceSymbols `
     -ForbiddenSymbols $forbiddenSymbols `
     -ProductionFiles $productionFiles
 
-$baseline = Get-ManagementV1BaselineFacts `
+$baseline = Get-ManagementBaselineFacts `
     -RepositoryRoot $repositoryRoot -PluginProjects $pluginProjects
 
 $summaryRoot = Join-Path $repositoryRoot 'artifacts\test-results\Documentation'
@@ -151,6 +151,7 @@ $summary = [ordered]@{
     sdkAssemblyVersion = $baseline.SdkAssemblyVersion
     apiBaseline = $baseline.ApiBaseline
     shippedApiEntries = $baseline.ShippedEntries
+    unshippedApiEntries = $baseline.UnshippedEntries
     plugins = $baseline.Plugins
 }
 [IO.File]::WriteAllText(
@@ -159,7 +160,7 @@ $summary = [ordered]@{
     [Text.UTF8Encoding]::new($false))
 
 Write-Host (
-    "[G16] 文档门禁通过：文档 $($linkDocumentPaths.Count) 份，" +
+    "[Documentation] 文档门禁通过：文档 $($linkDocumentPaths.Count) 份，" +
     "本地链接 $checkedLinks 个，脚本路径 $checkedCommands 个，项目路径 $checkedProjects 个，" +
     "SDK $($baseline.SdkVersion) / API $($baseline.ApiBaseline)，" +
     "Managed Plugin $($baseline.Plugins.Count) 个。摘要：$summaryPath")

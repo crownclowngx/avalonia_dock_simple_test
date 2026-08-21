@@ -4,7 +4,7 @@
   "pluginVersion": "1.0.0",
   "entryAssembly": "LegacyNoModule.Plugin.dll",
   "compatibility": {
-    "hostApi": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" },
-    "commonContract": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" }
+    "hostApi": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" },
+    "commonContract": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" }
   }
 }

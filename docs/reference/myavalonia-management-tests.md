@@ -2,27 +2,36 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> 当前 Managed Plugin v1 基线由 `managed-plugin-v1.0.0` 定位。最新测试数量和覆盖率必须从本轮
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G1 的版本与
+> 数据根切换。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
 > [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
-## G16 文档与非发布基线门禁
+## 当前文档与非发布基线门禁
 
-修改宿主 v1 当前文档、脚本路径、集中版本、SDK 基线或四插件兼容声明时运行：
+修改当前文档、脚本路径、集中版本、SDK 基线或四插件兼容声明时运行：
 
 ```powershell
 .\scripts\Test-DocumentationCore.ps1
 .\scripts\Test-Documentation.ps1
 ```
 
-核心测试在系统临时目录验证正常和失败夹具；正式入口检查当前文档与 host-v1 历史记录的本地链接，
+核心测试在系统临时目录验证正常和失败夹具；正式入口检查当前文档与 host-v1/host-v2 历史记录的本地链接，
 并只对当前事实应用过期措辞规则。它还验证关键源码类型、G11 已删除类型、G13 API baseline，以及四个
-插件项目中的版本与 Host/Common 兼容区间。结果写入
+插件项目中的版本与 G3 前临时 Host/Common 投影区间。结果写入
 `artifacts/test-results/Documentation/summary.json`。
 
-G16 不调用 Windows Smoke、G14 总发布门禁或发布验收项目；通过 G16 不能冒充新的 Windows 发布放行。
+当前文档门禁不调用 Windows Smoke、发布总门禁或发布验收项目；通过它不能冒充 Windows 发布放行。
+
+### V2 G1 当前绿色基线
+
+2026-08-21 串行执行锁定还原、Release 零警告构建、G1 版本/API/数据根专项、三套 Host 测试、
+三个业务插件完整单元测试、V2 API 文本变异和文档门禁。Host 为 Unit 173、UI 38、Plugin 151，
+共 **362/362**；行覆盖率 81.12%、分支覆盖率 66.85%。BiliDownloader、DaTang、MySmallTools
+共 **967/967**。本轮没有运行 Windows Smoke、Windows CI、发布门禁或发布验收；完整边界见
+[V2 G1 专项记录](../plan-history/host-v2/g1-version-and-data-boundaries.md)。
 
 ## G14 正式发布门禁
 
@@ -88,7 +97,7 @@ Common 的生产 C#：默认路径不能读取/格式化异常正文、写自由
 维护基础 SDK public 类型或成员时运行：
 
 ```powershell
-.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v1 -Configuration Release
+.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v2 -Configuration Release
 ```
 
 脚本先验证活动基线与 SDK 主版本一致、Shipped/Unshipped 文本稳定排序且没有删除标记，再构建真实
@@ -304,7 +313,8 @@ Dock ID 会被持久化，集中常量可以避免一个字符的差异导致工
 
 ### 契约与内部重构保护
 
-G13 的 Shipped/Unshipped 文件声明 `MyAvaloniaManagementCommon` 的完整 public 签名，Roslyn Analyzer
+V1 Shipped 保存历史正式签名；G1 的 V2 Shipped 为空、Unshipped 暂存尚待 G2 重建的当前表面。
+Roslyn Analyzer
 在普通 SDK build 中比较源符号，专项脚本再用测试副本证明各类破坏均会阻断。内部类拆分不会改变
 文本；兼容新增必须显式登记，有意破坏则必须建立新主版本基线并同步插件兼容区间和迁移证据。
 `PublicApiContractTests` 只保留签名文本无法表达的第三方消息器泄漏等行为断言。
@@ -314,7 +324,8 @@ G13 的 Shipped/Unshipped 文件声明 `MyAvaloniaManagementCommon` 的完整 pu
 
 ### 布局隔离与真实冒烟
 
-生产默认仍把布局写入 LocalAppData。仅当设置
+生产默认把当前阶段数据写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v2\`。旧 `v1` 根不读取、迁移
+或删除。仅当设置
 `MYAVALONIA_DATA_DIRECTORY` 时改用指定目录，使真实进程测试不会读取或覆盖
 用户数据。
 

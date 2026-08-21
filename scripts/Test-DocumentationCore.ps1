@@ -34,40 +34,44 @@ function Write-FixtureText {
 }
 
 function Write-VersionFixture {
-    param([Parameter(Mandatory)] [string]$Root, [string]$SdkVersion = '1.0.0')
+    param([Parameter(Mandatory)] [string]$Root, [string]$SdkVersion = '2.0.0')
     Write-FixtureText (Join-Path $Root 'Directory.Version.props') @"
 <Project><PropertyGroup>
   <MyAvaloniaProductVersion>$SdkVersion</MyAvaloniaProductVersion>
-  <MyAvaloniaHostApiAssemblyVersion>1.0.0.0</MyAvaloniaHostApiAssemblyVersion>
+  <MyAvaloniaProductAssemblyVersion>$SdkVersion.0</MyAvaloniaProductAssemblyVersion>
   <MyAvaloniaPluginSdkVersion>$SdkVersion</MyAvaloniaPluginSdkVersion>
-  <MyAvaloniaPluginSdkAssemblyVersion>1.0.0.0</MyAvaloniaPluginSdkAssemblyVersion>
-  <MyAvaloniaPluginSdkApiBaseline>v1</MyAvaloniaPluginSdkApiBaseline>
+  <MyAvaloniaPluginSdkNextMajorVersion>3.0.0</MyAvaloniaPluginSdkNextMajorVersion>
+  <MyAvaloniaPluginSdkAssemblyVersion>$SdkVersion.0</MyAvaloniaPluginSdkAssemblyVersion>
+  <MyAvaloniaPluginSdkApiBaseline>v2</MyAvaloniaPluginSdkApiBaseline>
 </PropertyGroup></Project>
 "@
     Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagementCommon/ApiCompatibility/v1/PublicAPI.Shipped.txt') "#nullable enable`nFixture.Type`n"
     Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagementCommon/ApiCompatibility/v1/PublicAPI.Unshipped.txt') "#nullable enable`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagementCommon/ApiCompatibility/v2/PublicAPI.Shipped.txt') "#nullable enable`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagementCommon/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`nFixture.Type`n"
 }
 
 function Write-PluginFixture {
     param(
         [Parameter(Mandatory)] [string]$Root,
         [Parameter(Mandatory)] [string]$RelativePath,
-        [string]$Maximum = '2.0.0'
+        [string]$MaximumExpression = '$(MyAvaloniaPluginSdkNextMajorVersion)'
     )
+    $minimumExpression = '$(MyAvaloniaPluginSdkVersion)'
     Write-FixtureText (Join-Path $Root $RelativePath) @"
 <Project><PropertyGroup>
-  <ManagedPlugin>true</ManagedPlugin><PluginVersion>1.0.0</PluginVersion>
-  <ManagedPluginHostApiMinInclusive>1.0.0</ManagedPluginHostApiMinInclusive>
-  <ManagedPluginHostApiMaxExclusive>$Maximum</ManagedPluginHostApiMaxExclusive>
-  <ManagedPluginCommonContractMinInclusive>1.0.0</ManagedPluginCommonContractMinInclusive>
-  <ManagedPluginCommonContractMaxExclusive>$Maximum</ManagedPluginCommonContractMaxExclusive>
+  <ManagedPlugin>true</ManagedPlugin><PluginVersion>2.0.0</PluginVersion>
+  <ManagedPluginHostApiMinInclusive>$minimumExpression</ManagedPluginHostApiMinInclusive>
+  <ManagedPluginHostApiMaxExclusive>$MaximumExpression</ManagedPluginHostApiMaxExclusive>
+  <ManagedPluginCommonContractMinInclusive>$minimumExpression</ManagedPluginCommonContractMinInclusive>
+  <ManagedPluginCommonContractMaxExclusive>$MaximumExpression</ManagedPluginCommonContractMaxExclusive>
 </PropertyGroup></Project>
 "@
 }
 
 $temporaryParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
 $testRoot = Join-Path $temporaryParent ('DocumentationGateCoreTests-' + [Guid]::NewGuid().ToString('N'))
-Assert-DocumentationChildPath -Candidate $testRoot -Parent $temporaryParent -Purpose 'G16 核心测试目录'
+Assert-DocumentationChildPath -Candidate $testRoot -Parent $temporaryParent -Purpose '文档门禁核心测试目录'
 New-Item -ItemType Directory -Path $testRoot | Out-Null
 
 try {
@@ -142,18 +146,18 @@ try {
     $pluginProject = 'Plugins/Fixture/Fixture.csproj'
     Write-VersionFixture -Root $testRoot
     Write-PluginFixture -Root $testRoot -RelativePath $pluginProject
-    $facts = Get-ManagementV1BaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
-    Assert-True ($facts.SdkVersion -ceq '1.0.0' -and $facts.Plugins.Count -eq 1) (
-        'v1 版本与插件事实没有正确读取。')
-    Write-VersionFixture -Root $testRoot -SdkVersion '1.1.0'
+    $facts = Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
+    Assert-True ($facts.SdkVersion -ceq '2.0.0' -and $facts.Plugins.Count -eq 1) (
+        'V2 版本与插件事实没有正确读取。')
+    Write-VersionFixture -Root $testRoot -SdkVersion '2.1.0'
     Assert-ThrowsLike {
-        Get-ManagementV1BaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
+        Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
     } '插件版本'
     Write-VersionFixture -Root $testRoot
-    Write-PluginFixture -Root $testRoot -RelativePath $pluginProject -Maximum '3.0.0'
+    Write-PluginFixture -Root $testRoot -RelativePath $pluginProject -MaximumExpression '4.0.0'
     Assert-ThrowsLike {
-        Get-ManagementV1BaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
-    } '兼容区间不是'
+        Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
+    } '没有投影集中 SDK 区间'
 
     Assert-ThrowsLike {
         Assert-DocumentationChildPath `
@@ -167,7 +171,7 @@ try {
     Remove-DocumentationOwnedTree -Path $readOnlyRoot -AllowedParent $testRoot
     Assert-True (-not (Test-Path -LiteralPath $readOnlyRoot)) '只读临时树没有安全清理。'
 
-    Write-Host '[G16] 文档门禁核心单元测试通过：链接、脚本/项目路径、过期表述、类型、版本、插件区间和路径安全均符合预期。'
+    Write-Host '[Documentation] 核心单元测试通过：链接、脚本/项目路径、过期表述、类型、版本、插件区间和路径安全均符合预期。'
 }
 finally {
     if (Test-Path -LiteralPath $testRoot) {

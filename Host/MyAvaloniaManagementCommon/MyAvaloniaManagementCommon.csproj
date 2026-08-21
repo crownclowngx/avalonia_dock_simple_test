@@ -11,7 +11,7 @@
         <AssemblyVersion>$(MyAvaloniaPluginSdkAssemblyVersion)</AssemblyVersion>
         <PackageId>MyAvaloniaManagement.PluginSdk</PackageId>
         <Title>MyAvaloniaManagement Plugin SDK</Title>
-        <Description>Managed Plugin v1 的基础编译契约。包含插件身份、Document、Tool、生命周期、消息和保存边界，不包含宿主实现或全局主题。</Description>
+        <Description>Managed Plugin V2 G1 的未发布过渡编译契约；最终 Core SDK 形状由 G2 重建。</Description>
         <Authors>MyAvaloniaManagement Contributors</Authors>
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>
@@ -41,8 +41,8 @@
 
     <ItemGroup>
       <!--
-        活动目录只由集中版本事实选择。Shipped 保存已经承诺的 v1 契约，
-        Unshipped 保存同一主版本中已经审阅、但尚未归档到发布基线的兼容新增。
+        活动目录只由集中版本事实选择。G1 的 V2 Shipped 有意为空，现有 V1 形状全部登记为
+        Unshipped，明确表示它们尚待 G2 破坏式重建且从未作为 V2 发布；历史 v1 目录保持原样。
       -->
       <AdditionalFiles Include="ApiCompatibility\$(MyAvaloniaPluginSdkApiBaseline)\PublicAPI.Shipped.txt" />
       <AdditionalFiles Include="ApiCompatibility\$(MyAvaloniaPluginSdkApiBaseline)\PublicAPI.Unshipped.txt" />

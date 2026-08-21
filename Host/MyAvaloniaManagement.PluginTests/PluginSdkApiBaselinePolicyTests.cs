@@ -53,8 +53,33 @@ public sealed class PluginSdkApiBaselinePolicyTests
         var unshipped = ReadAndAssertApiFile(
             Path.Combine(baselineDirectory, "PublicAPI.Unshipped.txt"));
 
-        Assert.NotEmpty(shipped);
+        Assert.NotEmpty(shipped.Concat(unshipped));
         Assert.Empty(shipped.Intersect(unshipped, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void G1_V1历史基线未改写且当前V2表面全部属于未发布过渡事实()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var apiRoot = Path.Combine(
+            repositoryRoot,
+            "Host",
+            "MyAvaloniaManagementCommon",
+            "ApiCompatibility");
+
+        var v1Shipped = ReadAndAssertApiFile(Path.Combine(
+            apiRoot, "v1", "PublicAPI.Shipped.txt"));
+        var v1Unshipped = ReadAndAssertApiFile(Path.Combine(
+            apiRoot, "v1", "PublicAPI.Unshipped.txt"));
+        var v2Shipped = ReadAndAssertApiFile(Path.Combine(
+            apiRoot, "v2", "PublicAPI.Shipped.txt"));
+        var v2Unshipped = ReadAndAssertApiFile(Path.Combine(
+            apiRoot, "v2", "PublicAPI.Unshipped.txt"));
+
+        Assert.NotEmpty(v1Shipped);
+        Assert.Empty(v1Unshipped);
+        Assert.Empty(v2Shipped);
+        Assert.Equal(v1Shipped, v2Unshipped);
     }
 
     [Fact]

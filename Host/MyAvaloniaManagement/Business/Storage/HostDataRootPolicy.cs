@@ -9,11 +9,11 @@ namespace MyAvaloniaManagement.Business.Storage;
 /// <remarks>
 /// <para>
 /// 设计意图：布局、外观和诊断只负责各自文件的读写，不应分别决定数据放在哪里。
-/// 该 Policy 集中保存路径所有权和 v1 隔离规则，但不创建目录、迁移文件或解释任何
+/// 该 Policy 集中保存路径所有权和 V2 代际隔离规则，但不创建目录、迁移文件或解释任何
 /// 持久化 schema，因此不会把路径选择与具体存储生命周期耦合。
 /// </para>
 /// <para>
-/// 自动化环境变量表示调用方已经选定的完整数据根。对它再次追加 <c>v1</c> 会破坏
+/// 自动化环境变量表示调用方已经选定的完整数据根。对它再次追加 <c>v2</c> 会破坏
 /// Windows Smoke 和测试夹具的隔离约定，所以只有未配置覆盖时才追加当前代际目录。
 /// </para>
 /// </remarks>
@@ -21,7 +21,7 @@ internal static class HostDataRootPolicy
 {
     internal const string EnvironmentVariableName = "MYAVALONIA_DATA_DIRECTORY";
     internal const string ProductDirectoryName = "MyAvaloniaManagement";
-    internal const string CurrentGeneration = "v1";
+    internal const string CurrentGeneration = "v2";
 
     /// <summary>
     /// 使用当前进程环境解析生产数据根，不产生任何文件系统副作用。

@@ -12,7 +12,7 @@
     <Version>$(MyAvaloniaPluginSdkVersion)</Version>
     <PackageVersion>$(MyAvaloniaPluginSdkVersion)</PackageVersion>
     <Title>MyAvaloniaManagement Plugin SDK UI Profile</Title>
-    <Description>可选的 Managed Plugin v1 UI 依赖 Profile，为直接使用 Fluent、Semi、Ursa 和 Dock UI 的插件固定宿主验证版本。</Description>
+    <Description>Managed Plugin V2 G1 的未发布 UI 依赖过渡 Profile；G2 将其重建为真实 UI 契约程序集。</Description>
     <Authors>MyAvaloniaManagement Contributors</Authors>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>

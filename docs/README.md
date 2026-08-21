@@ -50,16 +50,17 @@
 
 ## 封版后候选计划
 
-以下计划保存封版后的候选方向，不属于 Host v1 当前实现、G12 验收或 v1 封板条件。V2 仅完成了
-不改生产行为的 G0 证据冻结；开始 G1 及后续生产改造前仍须按最终 v1 事实审核版本、包格式、安装目录
-和安全边界：
+以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0 证据冻结和 G1 版本/数据边界；最终 SDK、manifest、
+Document 与 layout 仍未完成，不能把目标设计写成当前能力：
 
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
-  G0–G14 可执行计划；G0 已完成，G1–G14 尚未实现，不表示 V2 生产能力已经可用。
+  G0–G14 可执行计划；G0–G1 已完成，G2–G14 尚未实现。
 - [Managed Plugin V2 G0 绿色基线](./plan-history/host-v2/g0-green-baseline.md)：
   冻结 361 项 Host 测试、SDK API、包图、四插件包事实以及删除面、依赖白名单和消费者矩阵；
   本阶段未运行 Windows Smoke、CI 或发布门禁。
+- [Managed Plugin V2 G1 版本与数据边界](./plan-history/host-v2/g1-version-and-data-boundaries.md)：
+  集中 V2 版本、未发布 API 基线、默认 `v2` 数据根、V1 数据保留边界和非发布门禁证据。
 - [外部 Managed Plugin 开发与平台安装候选计划](./design/external-managed-plugin-development-and-installation-plan.md)：
   `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
 
@@ -69,6 +70,8 @@
 
 - [G0：冻结绿色基线](./plan-history/host-v2/g0-green-baseline.md)：保存非发布验证证据和后续破坏式重构输入，
   不修改生产行为、公共契约、版本或磁盘格式。
+- [G1：建立 V2 版本与数据边界](./plan-history/host-v2/g1-version-and-data-boundaries.md)：提升产品、SDK 与
+  四插件版本，切换默认数据根，并明确最终格式仍由 G3/G7/G8 负责。
 
 ### Managed Plugin v1 整改记录
 

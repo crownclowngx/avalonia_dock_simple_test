@@ -100,7 +100,7 @@ if ($broken) { $broken; throw '发现失效的本地 Markdown 链接。' }
 诊断日志默认写入：
 
 ```text
-%LOCALAPPDATA%\MyAvaloniaManagement\v1\Diagnostics\session-*.jsonl
+%LOCALAPPDATA%\MyAvaloniaManagement\v2\Diagnostics\session-*.jsonl
 ```
 
 设置 `MYAVALONIA_DATA_DIRECTORY` 后，诊断写入该数据根目录下的 `Diagnostics/`。测试或排错时可以使用独立目录，避免读取和覆盖正式用户数据。

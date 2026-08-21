@@ -290,7 +290,7 @@ function Assert-DocumentationSourceSymbols {
     }
 }
 
-function Get-ManagementV1BaselineFacts {
+function Get-ManagementBaselineFacts {
     param(
         [Parameter(Mandatory)] [string]$RepositoryRoot,
         [Parameter(Mandatory)] [string[]]$PluginProjects
@@ -303,16 +303,26 @@ function Get-ManagementV1BaselineFacts {
     $properties = $versionDocument.Project.PropertyGroup
     $productVersion = [Version]([string]$properties.MyAvaloniaProductVersion)
     $sdkVersion = [Version]([string]$properties.MyAvaloniaPluginSdkVersion)
-    $hostAssemblyVersion = [Version]([string]$properties.MyAvaloniaHostApiAssemblyVersion)
+    $hostAssemblyVersion = [Version]([string]$properties.MyAvaloniaProductAssemblyVersion)
     $sdkAssemblyVersion = [Version]([string]$properties.MyAvaloniaPluginSdkAssemblyVersion)
+    $sdkNextMajorVersion = [Version]([string]$properties.MyAvaloniaPluginSdkNextMajorVersion)
     $apiBaseline = [string]$properties.MyAvaloniaPluginSdkApiBaseline
 
     Assert-DocumentationCondition ($productVersion -eq $sdkVersion) (
-        "v1 签署要求产品版本与 SDK 版本一致，实际为 $productVersion / $sdkVersion。")
-    Assert-DocumentationCondition ($hostAssemblyVersion.Major -eq $sdkVersion.Major) (
-        "Host API AssemblyVersion 主版本与 SDK 不一致。")
+        "当前阶段要求产品版本与 SDK 版本一致，实际为 $productVersion / $sdkVersion。")
+    $legacyHostApiVersionNode = $versionDocument.SelectSingleNode(
+        '/Project/PropertyGroup/MyAvaloniaHostApiAssemblyVersion')
+    Assert-DocumentationCondition ($null -eq $legacyHostApiVersionNode) (
+        'V2 不得继续声明独立 MyAvaloniaHostApiAssemblyVersion。')
+    $expectedHostAssemblyVersion = [Version]::new(
+        $productVersion.Major, $productVersion.Minor, $productVersion.Build, 0)
+    Assert-DocumentationCondition ($hostAssemblyVersion -eq $expectedHostAssemblyVersion) (
+        "Host AssemblyVersion 与产品版本不一致。")
     Assert-DocumentationCondition ($sdkAssemblyVersion.Major -eq $sdkVersion.Major) (
         "SDK AssemblyVersion 主版本与包版本不一致。")
+    Assert-DocumentationCondition (
+        $sdkNextMajorVersion -eq [Version]::new($sdkVersion.Major + 1, 0, 0)) (
+        "SDK 下一主版本 $sdkNextMajorVersion 与当前版本 $sdkVersion 不连续。")
     Assert-DocumentationCondition ($apiBaseline -ceq "v$($sdkVersion.Major)") (
         "活动 API 基线 $apiBaseline 与 SDK 主版本 $($sdkVersion.Major) 不一致。")
 
@@ -329,9 +339,27 @@ function Get-ManagementV1BaselineFacts {
     }
     $shippedEntries = @(Get-Content -LiteralPath $shippedPath | Select-Object -Skip 1 |
             Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-    Assert-DocumentationCondition ($shippedEntries.Count -gt 0) 'v1 Shipped API 基线不能为空。'
+    $unshippedEntries = @(Get-Content -LiteralPath $unshippedPath | Select-Object -Skip 1 |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    Assert-DocumentationCondition (($shippedEntries.Count + $unshippedEntries.Count) -gt 0) (
+        '活动 API 基线不能同时缺少 Shipped 与 Unshipped 成员。')
 
-    $expectedMaximum = [Version]::new($sdkVersion.Major + 1, 0, 0)
+    # G1 必须保留 V1 历史承诺，并把尚待 G2 重建的当前表面明确放在 V2 Unshipped。
+    # 这样既不伪造已经发布的 V2 API，也不会通过改写 V1 Shipped 掩盖破坏式迁移。
+    $v1Root = Join-Path $RepositoryRoot 'Host\MyAvaloniaManagementCommon\ApiCompatibility\v1'
+    $v1Shipped = @(Get-Content -LiteralPath (Join-Path $v1Root 'PublicAPI.Shipped.txt') |
+            Select-Object -Skip 1 | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    $v1Unshipped = @(Get-Content -LiteralPath (Join-Path $v1Root 'PublicAPI.Unshipped.txt') |
+            Select-Object -Skip 1 | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    Assert-DocumentationCondition ($v1Shipped.Count -gt 0 -and $v1Unshipped.Count -eq 0) (
+        'V1 历史 API 基线必须保持 Shipped 非空且 Unshipped 为空。')
+    Assert-DocumentationCondition ($shippedEntries.Count -eq 0) (
+        'G1 尚未封板 V2 public API，活动 V2 Shipped 必须为空。')
+    Assert-DocumentationCondition (
+        [string]::Join("`n", $unshippedEntries) -ceq [string]::Join("`n", $v1Shipped)) (
+        'G1 的 V2 Unshipped 必须与未修改的 V1 Shipped 表面完全一致。')
+
+    $expectedMaximum = $sdkNextMajorVersion
     $plugins = [Collections.Generic.List[object]]::new()
     foreach ($relativePath in $PluginProjects) {
         $projectPath = Join-Path $RepositoryRoot $relativePath
@@ -351,23 +379,25 @@ function Get-ManagementV1BaselineFacts {
             (& $readProjectProperty 'ManagedPlugin') -ceq 'true') (
             "$relativePath 没有声明 ManagedPlugin=true。")
         $pluginVersion = [Version](& $readProjectProperty 'PluginVersion')
-        $hostMin = [Version](& $readProjectProperty 'ManagedPluginHostApiMinInclusive')
-        $hostMax = [Version](& $readProjectProperty 'ManagedPluginHostApiMaxExclusive')
-        $commonMin = [Version](& $readProjectProperty 'ManagedPluginCommonContractMinInclusive')
-        $commonMax = [Version](& $readProjectProperty 'ManagedPluginCommonContractMaxExclusive')
+        $hostMinExpression = & $readProjectProperty 'ManagedPluginHostApiMinInclusive'
+        $hostMaxExpression = & $readProjectProperty 'ManagedPluginHostApiMaxExclusive'
+        $commonMinExpression = & $readProjectProperty 'ManagedPluginCommonContractMinInclusive'
+        $commonMaxExpression = & $readProjectProperty 'ManagedPluginCommonContractMaxExclusive'
         Assert-DocumentationCondition ($pluginVersion -eq $sdkVersion) (
-            "$relativePath 的插件版本 $pluginVersion 与 v1 SDK $sdkVersion 不一致。")
+            "$relativePath 的插件版本 $pluginVersion 与当前 SDK $sdkVersion 不一致。")
         Assert-DocumentationCondition (
-            $hostMin -eq $sdkVersion -and $hostMax -eq $expectedMaximum) (
-            "$relativePath 的 Host API 兼容区间不是 [$sdkVersion, $expectedMaximum)。")
+            $hostMinExpression -ceq '$(MyAvaloniaPluginSdkVersion)' -and
+            $hostMaxExpression -ceq '$(MyAvaloniaPluginSdkNextMajorVersion)') (
+            "$relativePath 的 Host API 兼容字段没有投影集中 SDK 区间。")
         Assert-DocumentationCondition (
-            $commonMin -eq $sdkVersion -and $commonMax -eq $expectedMaximum) (
-            "$relativePath 的 Common 兼容区间不是 [$sdkVersion, $expectedMaximum)。")
+            $commonMinExpression -ceq '$(MyAvaloniaPluginSdkVersion)' -and
+            $commonMaxExpression -ceq '$(MyAvaloniaPluginSdkNextMajorVersion)') (
+            "$relativePath 的 Common 兼容字段没有投影集中 SDK 区间。")
         $plugins.Add([pscustomobject]@{
                 Project = $relativePath.Replace('\', '/')
                 Version = $pluginVersion.ToString(3)
-                HostApi = "[$($hostMin.ToString(3)), $($hostMax.ToString(3)))"
-                Common = "[$($commonMin.ToString(3)), $($commonMax.ToString(3)))"
+                HostApi = "[$($sdkVersion.ToString(3)), $($expectedMaximum.ToString(3)))"
+                Common = "[$($sdkVersion.ToString(3)), $($expectedMaximum.ToString(3)))"
             })
     }
 
@@ -378,6 +408,7 @@ function Get-ManagementV1BaselineFacts {
         SdkAssemblyVersion = $sdkAssemblyVersion.ToString(4)
         ApiBaseline = $apiBaseline
         ShippedEntries = $shippedEntries.Count
+        UnshippedEntries = $unshippedEntries.Count
         Plugins = $plugins.ToArray()
     }
 }
@@ -396,4 +427,4 @@ Export-ModuleMember -Function @(
     'Assert-DocumentationProjectPaths',
     'Assert-DocumentationForbiddenStatements',
     'Assert-DocumentationSourceSymbols',
-    'Get-ManagementV1BaselineFacts')
+    'Get-ManagementBaselineFacts')

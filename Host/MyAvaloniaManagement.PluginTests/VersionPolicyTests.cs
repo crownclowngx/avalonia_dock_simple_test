@@ -4,6 +4,8 @@ using System.Xml.Linq;
 using BiliDownloader.Plugin;
 using DaTangAccountingHelpPlug.Plugin;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Documents;
+using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagementCommon.Plugin;
@@ -16,9 +18,9 @@ namespace MyAvaloniaManagement.PluginTests;
 /// 验证集中版本政策、实际程序集元数据和构建生成的插件清单没有发生漂移。
 /// </summary>
 /// <remarks>
-/// 设计意图：这是仓库发布政策测试，不是运行时插件发现测试。它读取插件的声明式
+/// 设计意图：这是仓库版本政策测试，不是运行时插件发现测试。它读取插件的声明式
 /// MSBuild 属性、公共版本映射与本次构建生成的清单，再与实际程序集交叉验证，使版本
-/// 复制错误在发布门禁中给出具体字段，而不是等到用户启动宿主后才得到笼统诊断。
+/// 复制错误在普通非发布构建中给出具体字段，而不是等到用户启动宿主后才得到笼统诊断。
 /// </remarks>
 public sealed class VersionPolicyTests
 {
@@ -31,6 +33,12 @@ public sealed class VersionPolicyTests
         var hostAssembly = typeof(WelcomeViewModel).Assembly;
         var sdkAssembly = typeof(IPluginModule).Assembly;
 
+        Assert.Equal("2.0.0", properties["MyAvaloniaProductVersion"]);
+        Assert.Equal("2.0.0", properties["MyAvaloniaPluginSdkVersion"]);
+        Assert.False(
+            properties.ContainsKey("MyAvaloniaHostApiAssemblyVersion"),
+            "V2 不得继续维护独立 Host API 版本事实。");
+
         AssertVersionFact(
             "Host Version/InformationalVersion",
             properties["MyAvaloniaProductVersion"],
@@ -41,7 +49,7 @@ public sealed class VersionPolicyTests
             ReadFileVersion(hostAssembly));
         AssertVersionFact(
             "Host AssemblyVersion",
-            properties["MyAvaloniaHostApiAssemblyVersion"],
+            properties["MyAvaloniaProductAssemblyVersion"],
             hostAssembly.GetName().Version?.ToString());
 
         AssertVersionFact(
@@ -62,6 +70,10 @@ public sealed class VersionPolicyTests
             "Version",
             "$(MyAvaloniaProductVersion)");
         AssertProjectMapping(
+            Path.Combine("Host", "MyAvaloniaManagement", "MyAvaloniaManagement.csproj"),
+            "AssemblyVersion",
+            "$(MyAvaloniaProductAssemblyVersion)");
+        AssertProjectMapping(
             Path.Combine("Host", "MyAvaloniaManagementCommon", "MyAvaloniaManagementCommon.csproj"),
             "PackageVersion",
             "$(MyAvaloniaPluginSdkVersion)");
@@ -76,14 +88,24 @@ public sealed class VersionPolicyTests
     }
 
     [Fact]
-    public void VersionPolicy_清单Schema与数据根代际匹配集中政策()
+    public void VersionPolicy_V2目标Schema与当前V1读取器保持明确分界()
     {
         var properties = ReadVersionProperties();
 
         AssertVersionFact(
-            "manifest schema",
+            "V1 manifest bridge schema",
             properties["MyAvaloniaManifestSchemaVersion"],
             PluginManifestReader.CurrentSchemaVersion.ToString());
+        Assert.Equal("2", properties["MyAvaloniaV2ManifestSchemaVersion"]);
+        Assert.Equal("2", properties["MyAvaloniaV2DocumentEnvelopeSchemaVersion"]);
+        Assert.Equal("2", properties["MyAvaloniaV2LayoutSchemaVersion"]);
+        Assert.Equal("layout-v2.json", properties["MyAvaloniaV2LayoutFileName"]);
+
+        // G1 只声明目标代际。格式实现必须由 G3/G7/G8 一次替换，不能先把 V1 结构伪装成 V2。
+        Assert.Equal(1, PluginManifestReader.CurrentSchemaVersion);
+        Assert.Equal(1, DocumentEnvelopeSerializer.CurrentSchemaVersion);
+        Assert.Equal(1, DockLayoutSnapshotV1.CurrentSchemaVersion);
+        Assert.Equal("layout-v1.json", DockLayoutStore.LayoutFileName);
         AssertVersionFact(
             "Host data root generation",
             properties["MyAvaloniaHostDataRootGeneration"],
@@ -115,6 +137,9 @@ public sealed class VersionPolicyTests
             ReadProjectProperty(sharedProps, "AssemblyVersion"));
 
         var hostProfile = HostCompatibilityProfile.Current;
+        var versionProperties = ReadVersionProperties();
+        var sdkVersion = Version.Parse(versionProperties["MyAvaloniaPluginSdkVersion"]);
+        var sdkNextMajor = Version.Parse(versionProperties["MyAvaloniaPluginSdkNextMajorVersion"]);
         foreach (var plugin in GetPluginReleases())
         {
             var projectPath = Path.Combine(RepositoryRoot, plugin.ProjectPath);
@@ -124,6 +149,10 @@ public sealed class VersionPolicyTests
                 Version.TryParse(projectVersion, out _),
                 $"{plugin.Name} PluginVersion 必须是 major.minor.patch 数字版本，" +
                 $"实际为 '{projectVersion}'。");
+            AssertVersionFact(
+                $"{plugin.Name} PluginVersion/SDK V2",
+                sdkVersion.ToString(3),
+                projectVersion);
             AssertVersionFact(
                 $"{plugin.Name} ManagedPlugin",
                 "true",
@@ -191,20 +220,36 @@ public sealed class VersionPolicyTests
                 PluginManifestReader.CurrentSchemaVersion,
                 manifest.SchemaVersion);
             AssertVersionFact(
+                $"{plugin.Name} Host API min expression",
+                "$(MyAvaloniaPluginSdkVersion)",
+                ReadProjectProperty(projectPath, "ManagedPluginHostApiMinInclusive"));
+            AssertVersionFact(
+                $"{plugin.Name} Host API max expression",
+                "$(MyAvaloniaPluginSdkNextMajorVersion)",
+                ReadProjectProperty(projectPath, "ManagedPluginHostApiMaxExclusive"));
+            AssertVersionFact(
                 $"{plugin.Name} Host API minInclusive",
-                ReadProjectProperty(projectPath, "ManagedPluginHostApiMinInclusive"),
+                sdkVersion.ToString(3),
                 manifest.HostApi.MinInclusive.ToString(3));
             AssertVersionFact(
                 $"{plugin.Name} Host API maxExclusive",
-                ReadProjectProperty(projectPath, "ManagedPluginHostApiMaxExclusive"),
+                sdkNextMajor.ToString(3),
                 manifest.HostApi.MaxExclusive.ToString(3));
             AssertVersionFact(
+                $"{plugin.Name} Common min expression",
+                "$(MyAvaloniaPluginSdkVersion)",
+                ReadProjectProperty(projectPath, "ManagedPluginCommonContractMinInclusive"));
+            AssertVersionFact(
+                $"{plugin.Name} Common max expression",
+                "$(MyAvaloniaPluginSdkNextMajorVersion)",
+                ReadProjectProperty(projectPath, "ManagedPluginCommonContractMaxExclusive"));
+            AssertVersionFact(
                 $"{plugin.Name} Common minInclusive",
-                ReadProjectProperty(projectPath, "ManagedPluginCommonContractMinInclusive"),
+                sdkVersion.ToString(3),
                 manifest.CommonContract.MinInclusive.ToString(3));
             AssertVersionFact(
                 $"{plugin.Name} Common maxExclusive",
-                ReadProjectProperty(projectPath, "ManagedPluginCommonContractMaxExclusive"),
+                sdkNextMajor.ToString(3),
                 manifest.CommonContract.MaxExclusive.ToString(3));
 
             var compatible = PluginCompatibilityEvaluator.TryEvaluate(

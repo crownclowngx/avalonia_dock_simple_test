@@ -1,14 +1,15 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0 已完成，G1–G14 尚未实现。
+> 状态：实施中；G0–G1 已完成，G2–G14 尚未实现。
 >
 > 评审日期：2026-08-21。
 >
 > 事实基线：`dev-重构-2026年8月18日` 分支提交 `abb8c26`、Managed Plugin v1 文档与
-> [V2 G0 非发布绿色基线](../plan-history/host-v2/g0-green-baseline.md)。
+> [V2 G0 非发布绿色基线](../plan-history/host-v2/g0-green-baseline.md)与
+> [V2 G1 版本与数据边界](../plan-history/host-v2/g1-version-and-data-boundaries.md)。
 >
-> 重要说明：除 G0 只读证据冻结已经完成外，本文中的 V2 类型、包、文件格式和 G1–G14 均是目标设计，
-> 不得引用为当前能力。
+> 重要说明：G1 只完成版本、API 未发布基线和默认数据根代际；本文中的最终 V2 类型、包、
+> manifest、Document、layout 格式和 G2–G14 仍是目标设计，不得引用为当前能力。
 
 ## 1. 目的与结论
 
@@ -364,13 +365,18 @@ Host 不再向插件提供可引用的 public 实现程序集，因此删除 Hos
   这些排除项不改变 G14 最终封板时的发布验收责任。
 - **回滚**：仅删除新增证据；不得改写 V1 历史基线。
 
-### G1：建立 V2 版本与数据边界
+### G1：建立 V2 版本与数据边界（已完成）
 
 - **目标**：集中声明产品、SDK、四插件和三种 schema 的 V2 初始事实。
-- **删除/新增**：删除 Host API/Common 双版本事实；增加 V2 数据根、文件名和 V1 拒绝测试。
+- **删除/新增**：删除独立 Host API 版本事实；增加 V2 目标 schema/文件名、V2 数据根和 V1 默认根拒绝测试。
 - **插件影响**：四插件版本与兼容属性切换为 V2，但尚不发布产物。
-- **验证**：版本政策测试证明各版本线独立、默认根为 v2、环境覆盖不追加 v2、V1 文件不被读取。
+- **验证**：版本政策测试证明各版本线独立、默认根为 v2、环境覆盖不追加 v2、V1 默认根文件不被读取。
 - **回滚**：整体回到 G0；禁止在同一数据根混写 V1/V2。
+
+G1 没有把现有 V1 结构仅改写 `schemaVersion` 后冒充 V2。manifest、Document envelope 与 layout 的
+格式级 V1 拒绝和最终线格式仍分别由 G3、G7、G8 一次建立；当前 V1 reader 与 `layout-v1.json` 只是
+未发布分支继续编译和回归所需的阶段桥，不属于 V2 最终契约。完整证据见
+[G1 专项记录](../plan-history/host-v2/g1-version-and-data-boundaries.md)。
 
 ### G2：重建 Plugin SDK
 

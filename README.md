@@ -8,8 +8,9 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > `managed-plugin-v1.0.0` 定位。签署内容、非发布门禁证据和回退边界见
 > [G16 文档与 v1 基线](./docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
-> Managed Plugin V2 已完成不改变生产行为的 G0 绿色基线冻结；G1–G14 尚未实现，当前运行契约仍是
-> v1。基线证据、SOLID 约束和迁移输入见 [V2 G0 专项记录](./docs/plan-history/host-v2/g0-green-baseline.md)。
+> Managed Plugin V2 已完成 G0 绿色基线和 G1 版本/数据边界；G2–G14 尚未实现。当前产品、SDK、
+> 四插件版本和默认数据根已进入 V2，但 manifest、Document、layout reader 仍是未发布阶段的 V1
+> 实现，不能视为最终 V2 契约。见 [V2 G1 专项记录](./docs/plan-history/host-v2/g1-version-and-data-boundaries.md)。
 
 ## 核心扩展模型
 
@@ -40,23 +41,23 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 四个当前插件均使用 Managed Plugin 接入。G4 已删除 Legacy 二进制激活路径；无模块程序集、
 缺少入口 `.deps.json` 的目录以及依赖历史加载 Facade 的代码不会进入插件运行链。
 
-## Managed Plugin v1 支持与版本边界
+## V2 G1 当前版本与数据边界
 
-v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。插件必须携带严格清单并位于
+历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。当前 G1 仍沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
 权限系统、第三方市场、跨进程 UI 或用户动态启停插件。
 
 版本按所有者独立演进：产品版本、Plugin SDK 版本、每插件版本、manifest schema、每种宿主
-持久化 schema 和插件内容 schema 不能互相代替。当前产品与 Plugin SDK 基线均为 `1.0.0`，
-Host API 与 SDK 的程序集兼容身份均为 `1.0.0.0`；统一事实定义在
+持久化 schema 和插件内容 schema 不能互相代替。当前产品与 Plugin SDK 均为 `2.0.0`，Host 与
+SDK 程序集版本均为 `2.0.0.0`；V2 已删除独立 Host API 版本事实。统一事实定义在
 [`Directory.Version.props`](./Directory.Version.props)。普通进程内强类型消息不增加无迁移行为的
 版本字段，发生破坏性语义变化时创建新消息类型或提升 SDK 主版本。
 
-四个当前插件的 `PluginVersion` 均为 `1.0.0`，Host API 与 Common 兼容区间均为
-`[1.0.0, 2.0.0)`；这些值由各插件项目文件拥有，G16 文档门禁直接读取并与集中 SDK 版本交叉验证。
+四个当前插件的 `PluginVersion` 均为 `2.0.0`。G3 删除旧清单双区间前，Host API 与 Common 字段
+都只投影集中 SDK 区间 `[2.0.0, 3.0.0)`，不是两套独立兼容事实。
 
-宿主默认把布局、外观和诊断写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v1\`。旧预发布目录
-保持原样，不读取、迁移或删除。`MYAVALONIA_DATA_DIRECTORY` 仍表示完整数据根，不追加 `v1`，
+宿主默认把布局、外观和诊断写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v2\`。旧 `v1` 与预发布目录
+保持原样，不读取、迁移或删除。`MYAVALONIA_DATA_DIRECTORY` 仍表示完整数据根，不追加 `v2`，
 以保持自动化和部署隔离语义。
 
 诊断 JSONL 位于上述数据根的 `Diagnostics/session-*.jsonl`。内存记录、插件状态、启动失败摘要、
@@ -64,7 +65,7 @@ Host API 与 SDK 的程序集兼容身份均为 `1.0.0.0`；统一事实定义�
 原始异常只允许在用户明确确认后，通过进程级
 `MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS=1` 临时输出到 Trace/stderr；它永远不进入 UI 或 JSONL。
 
-Document 使用项目第一个且唯一的七字段信封 v1。宿主拥有 schema、插件和 Document 身份、标题、路径与
+G7 完成前，Document 仍使用历史七字段信封 v1。宿主拥有 schema、插件和 Document 身份、标题、路径与
 UTC 时间，插件只通过不可变 `DocumentContentSnapshot` 提供内容 schema 和字符串 payload。reader 严格拒绝任何非 v1 结构、历史 ID 别名
 和插件所有权冲突；文件 UTF-8 上限为 8 MiB，JSON 最大深度为 8。项目没有旧 Document 信封兼容
 或迁移路径，打开失败不会创建、迁移或覆盖文件。
@@ -106,14 +107,15 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Managed 插件快速开始](./docs/quick-start/README.md)：从零接入包含 Document 和 Tool 的新插件；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0 已完成、G1–G14 尚未实现的破坏式重构路线；
+- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G1 已完成、G2–G14 尚未实现的破坏式重构路线；
 - [V2 G0 绿色基线](./docs/plan-history/host-v2/g0-green-baseline.md)：查看非发布门禁、删除面、依赖白名单和消费者矩阵；
+- [V2 G1 版本与数据边界](./docs/plan-history/host-v2/g1-version-and-data-boundaries.md)：查看 V2 版本事实、数据根隔离和阶段边界；
 - [主项目兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)：修改 public API、插件契约或稳定 ID 前核对；
 - [MyAvaloniaManagement 测试说明](./docs/reference/myavalonia-management-tests.md)：查看测试层次、门禁和结果位置。
 
 ## 测试
 
-修改宿主 v1 当前文档、脚本路径、版本事实或关键契约名称时先运行：
+修改当前文档、脚本路径、版本事实或关键契约名称时先运行：
 
 ```powershell
 .\scripts\Test-DocumentationCore.ps1
@@ -159,7 +161,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 维护 Plugin SDK public API 时，必须额外运行可读基线和成员级变异门禁：
 
 ```powershell
-.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v1 -Configuration Release
+.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v2 -Configuration Release
 ```
 
 每个插件分别生成 `<AssemblyName>-<PluginVersion>-win-x64.zip`，不会生成四插件合集。
@@ -173,6 +175,6 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - 插件目录快照和加载上下文以进程为边界，不支持热更新或运行时卸载；
 - 仓库能生成正式 Plugin SDK/NuGet 制品，但不自动推送公共包源；当前没有插件市场或通用脚手架；
 - G4 已完成：宿主只接受严格清单、入口 `.deps.json` 和唯一 `IPluginModule` 的 Managed Plugin；
-- Host、`MyAvaloniaManagementCommon`、Avalonia、Dock 与插件需要按照兼容区间协同升级。
+- G3 前的 Host/Common 双兼容字段必须同时投影同一个 SDK 区间；不得重新引入独立 Host API 版本事实。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

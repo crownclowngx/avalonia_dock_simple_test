@@ -1,16 +1,17 @@
 # Dock 结构布局快照 V1
 
-> 本文描述稳定的外部布局格式。主项目内部协作者及设计取舍参见
+> 本文描述 G8 前仍在运行的 V1 布局格式，不是最终 layout v2。主项目内部协作者及设计取舍参见
 > [`Host/MyAvaloniaManagement/docs`](../../Host/MyAvaloniaManagement/docs/README.md)。
 
 ## 设计边界
 
 布局文件固定为：
 
-`%LOCALAPPDATA%\MyAvaloniaManagement\v1\layout-v1.json`
+`%LOCALAPPDATA%\MyAvaloniaManagement\v2\layout-v1.json`
 
-旧预发布父目录中的同名文件保持原样，v1 不读取、迁移或删除。设置
-`MYAVALONIA_DATA_DIRECTORY` 时，该值表示完整数据根，文件直接位于该目录下。
+V2 G1 已切换默认数据根，但没有把 V1 字段结构伪装成 schema 2；G8 会一次建立
+`layout-v2.json`。旧 `v1` 根与预发布父目录中的同名文件保持原样，不读取、迁移或删除。设置
+`MYAVALONIA_DATA_DIRECTORY` 时，该值表示完整数据根，文件直接位于该目录下且不追加 `v2`。
 
 它只保存宿主可重建的 Dock 结构：
 

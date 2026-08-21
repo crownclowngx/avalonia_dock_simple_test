@@ -1,7 +1,7 @@
 # MyAvaloniaManagement Plugin SDK
 
-该包是 Managed Plugin v1 的基础编译契约，程序集名称保持为
-`MyAvaloniaManagementCommon`。它提供插件身份、显式贡献注册、Document、Tool、生命周期、事件和保存接口，
+该包当前是 Managed Plugin V2 G1 的未发布编译桥，程序集名称暂时仍为
+`MyAvaloniaManagementCommon`。它保留 v1 形状的插件身份、贡献、Document、Tool、生命周期、事件和保存接口，
 不包含宿主可执行程序集、全局主题或第三方 UI 控件实现。
 
 普通插件只引用本包，并通过宿主提供的 `App*` 语义资源适配浅色与深色主题。需要直接使用
@@ -11,7 +11,8 @@ Semi、Ursa 或 Dock UI 控件的插件应改用同版本的
 当前包仅作为仓库和正式发布流水线的可验证制品，不会自动发布到公共 NuGet 源。
 仓库尚未选择对外许可证；对外分发前必须由项目所有者补充许可证并完成发布评审。
 
-public API 由 `ApiCompatibility/v1/PublicAPI.Shipped.txt` 和 `PublicAPI.Unshipped.txt` 显式声明。
+V1 正式 API 继续由 `ApiCompatibility/v1` 保存；活动 `ApiCompatibility/v2` 的 Shipped 为空，
+当前表面全部位于 Unshipped，等待 G2 重建。
 新增 public 成员必须先经过设计评审并登记到 Unshipped；删除、收窄可见性、修改参数或返回类型
 会在普通构建和 G13 专项脚本中失败。不得使用 `*REMOVED*` 绕过同一主版本门禁。有意破坏必须
 建立新主版本基线，并同步 SDK/AssemblyVersion、插件清单兼容区间、迁移说明和真实插件验证。
@@ -51,4 +52,4 @@ v1 是第一个且唯一受支持的信封，不提供旧字段探测或迁移�
 完整用法见仓库 `docs/quick-start/create-managed-plugin.md` 和
 `Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md`；维护 public API 前先阅读
 `docs/reference/plugin-sdk-api-compatibility.md`，并运行
-`scripts/Test-PluginSdkCompatibility.ps1 -Baseline v1`。
+`scripts/Test-PluginSdkCompatibility.ps1 -Baseline v2`。

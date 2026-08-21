@@ -5,8 +5,9 @@
 > G4 已删除 Legacy 二进制激活。插件必须携带严格清单、入口 `.deps.json` 和唯一
 > `IPluginModule`。G5 已删除策略/View 隐式发现和模块自报身份；manifest 是唯一身份来源，
 > Document、Tool、View 和 Lifecycle 必须通过 `IPluginRegistrationContext` 显式登记。
-> 当前教程对应 `managed-plugin-v1.0.0` 基线：Plugin SDK 为 `1.0.0`，仓库插件的 Host API 与
-> Common 兼容区间均为 `[1.0.0, 2.0.0)`。
+> 当前仓库处于 V2 G1：Plugin SDK 与四插件版本为 `2.0.0`，G3 前的 Host/Common 字段都投影
+> `[2.0.0, 3.0.0)`。最终 SDK 与 manifest v2 尚未完成，因此本教程当前只用于仓库内阶段联调；
+> 外部作者应继续以 `managed-plugin-v1.0.0` 复核历史契约，不得发布或承诺 V2 兼容。
 
 ## 完成后你将得到什么
 

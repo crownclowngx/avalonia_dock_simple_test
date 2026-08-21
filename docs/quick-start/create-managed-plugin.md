@@ -1,5 +1,8 @@
 # 创建 Managed 插件
 
+> 当前仓库处于 V2 G1：版本和数据根已经切换到 2，但最终 SDK 与 manifest v2 要到 G2/G3 才建立。
+> 本页只用于仓库内阶段联调，不应据此发布外部 V2 插件。
+
 本篇以 `QuickStartPlugin` 为示例。完成后，宿主能够读取清单、加载入口程序集、实例化唯一的 `IPluginModule`，并在根容器构建前完成受控注册。Document、Tool 和 View 贡献将在[下一篇](./add-document-and-tool.md)加入。
 
 完整实现可对照 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) 和
@@ -26,15 +29,15 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
     <ManagedPlugin>true</ManagedPlugin>
     <ManagedPluginId>myavalonia.plugin.quick-start</ManagedPluginId>
     <ManagedPluginDirectoryName>QuickStartPlugin</ManagedPluginDirectoryName>
-    <PluginVersion>1.0.0</PluginVersion>
-    <ManagedPluginHostApiMinInclusive>1.0.0</ManagedPluginHostApiMinInclusive>
-    <ManagedPluginHostApiMaxExclusive>2.0.0</ManagedPluginHostApiMaxExclusive>
-    <ManagedPluginCommonContractMinInclusive>1.0.0</ManagedPluginCommonContractMinInclusive>
-    <ManagedPluginCommonContractMaxExclusive>2.0.0</ManagedPluginCommonContractMaxExclusive>
+    <PluginVersion>2.0.0</PluginVersion>
+    <ManagedPluginHostApiMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginHostApiMinInclusive>
+    <ManagedPluginHostApiMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginHostApiMaxExclusive>
+    <ManagedPluginCommonContractMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginCommonContractMinInclusive>
+    <ManagedPluginCommonContractMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginCommonContractMaxExclusive>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="1.0.0" />
+    <PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="2.0.0" />
   </ItemGroup>
 </Project>
 ```
@@ -56,16 +59,16 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
 {
   "schemaVersion": 1,
   "pluginId": "myavalonia.plugin.quick-start",
-  "pluginVersion": "1.0.0",
+  "pluginVersion": "2.0.0",
   "entryAssembly": "QuickStartPlugin.dll",
   "compatibility": {
     "hostApi": {
-      "minInclusive": "1.0.0",
-      "maxExclusive": "2.0.0"
+      "minInclusive": "2.0.0",
+      "maxExclusive": "3.0.0"
     },
     "commonContract": {
-      "minInclusive": "1.0.0",
-      "maxExclusive": "2.0.0"
+      "minInclusive": "2.0.0",
+      "maxExclusive": "3.0.0"
     }
   }
 }
@@ -195,7 +198,7 @@ public sealed record TaskCompletedEvent(string TaskId);
 如果插件需要直接使用 Semi、Ursa 或 Dock UI 控件，把基础包替换为同版本 UI Profile：
 
 ```xml
-<PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="1.0.0" />
+<PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="2.0.0" />
 ```
 
 UI Profile 已传递基础 SDK，并把第三方 UI 包限制为宿主验证版本。第三方主题自己的资源键只在该

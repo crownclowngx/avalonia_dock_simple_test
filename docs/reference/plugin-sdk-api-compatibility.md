@@ -1,7 +1,8 @@
 # Plugin SDK API 兼容基线维护指南
 
-> G16 已用本地注解标签 `managed-plugin-v1.0.0` 定位 SDK `1.0.0` 的正式源码基线；标签不是 API
-> 成员清单，也不表示 NuGet 已发布。成员事实仍由 `ApiCompatibility/v1` 下的文本和分析器拥有。
+> `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G1 已把活动版本切到
+> `2.0.0`/`ApiCompatibility/v2`，但 G2 尚未重建最终 SDK；因此当前 V2 表面全部属于 Unshipped，
+> 不表示 V2 NuGet 或 public API 已发布、冻结或可供外部消费。
 
 ## 1. 目的与权威源
 
@@ -14,9 +15,9 @@ Host/MyAvaloniaManagementCommon/ApiCompatibility/<vN>/
 └── PublicAPI.Unshipped.txt
 ```
 
-基础 NuGet 包名是 `MyAvaloniaManagement.PluginSdk`，包内契约程序集仍名为
-`MyAvaloniaManagementCommon`。只有这个程序集进入 API 基线。Host 可执行程序集是实现细节；
-`MyAvaloniaManagement.PluginSdk.UI` 只声明依赖、不含运行时程序集，因此两者都不进入本基线。
+基础 NuGet 包名仍是 `MyAvaloniaManagement.PluginSdk`。G2 完成前，包内契约程序集仍名为
+`MyAvaloniaManagementCommon`，UI 包仍是 dependency-only Profile；这些是未发布阶段桥，不是最终
+Core/UI 形状。只有当前契约程序集进入 API 基线，Host 可执行程序集始终是实现细节。
 
 活动目录由根级 `Directory.Version.props` 的 `MyAvaloniaPluginSdkApiBaseline` 选择。该值必须与
 `MyAvaloniaPluginSdkVersion`、`MyAvaloniaPluginSdkAssemblyVersion` 的主版本一致。
@@ -42,6 +43,13 @@ Shipped 不是“重新生成后覆盖”的快照。删除或改写其中的条
 并让 Unshipped 恢复为只包含 `#nullable enable`。无论条目暂存在 Shipped 还是 Unshipped，后续删除
 都会触发兼容错误。
 
+### 2.3 G1 的 V2 过渡规则
+
+G1 的 `v2/PublicAPI.Shipped.txt` 只有 nullable 头；`Unshipped` 与未修改的 v1 Shipped 表面一致。
+这是为了在版本线先切到 2 的同时保持普通构建可验证，并明确允许 G2 在发布前重建整个契约。
+不得把这些条目移入 V2 Shipped、发布 V2 包或据此承诺兼容；G2 必须在同一变更中完成新 API、依赖
+边界、消费者夹具和最终 V2 文本基线。
+
 ## 3. 日常变更流程
 
 ### 3.1 内部实现变更
@@ -49,7 +57,7 @@ Shipped 不是“重新生成后覆盖”的快照。删除或改写其中的条
 只修改 internal/private 实现时，不应修改 API 文本。运行：
 
 ```powershell
-.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v1
+.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v2
 ```
 
 脚本应直接通过。若出现 public 差异，先判断是否误扩大了可见性或修改了签名，不要先编辑基线。
@@ -68,7 +76,7 @@ Shipped 不是“重新生成后覆盖”的快照。删除或改写其中的条
 
 ### 3.3 典型破坏性诊断
 
-| 变化 | 常见诊断表现 | v1 处理 |
+| 变化 | 常见诊断表现 | 处理 |
 | --- | --- | --- |
 | 删除类型或成员 | `RS0017` 指向原完整签名 | 拒绝，保留原契约或进入新主版本流程 |
 | public 改为 internal/private | 原类型或成员产生 `RS0017` | 拒绝 |
@@ -92,15 +100,14 @@ Shipped 不是“重新生成后覆盖”的快照。删除或改写其中的条
 
 这些限制使 API 变更必须显式进入评审，而不是让工具替设计者决定兼容性。
 
-## 5. 新主版本流程
+## 5. 后续新主版本流程
 
 确需破坏性变化时，按一个完整变更单元执行：
 
 1. 说明真实用例、替代设计、受影响插件和不能保持兼容的原因。
-2. 在 `ApiCompatibility/v2`（或对应 vN）建立新的 Shipped/Unshipped，不修改 v1 历史文件。
+2. 在新的 `ApiCompatibility/vN` 建立 Shipped/Unshipped，不修改任何历史主版本目录。
 3. 同步提升 SDK PackageVersion、FileVersion、AssemblyVersion，并把活动基线切到新目录。
-4. 更新四个 Managed Plugin 的 `ManagedPluginCommonContractMinInclusive/MaxExclusive`，不得继续声明
-   未验证的旧区间。
+4. 更新 Managed Plugin 的 SDK 兼容区间，不得继续声明未验证的旧区间。
 5. 更新迁移说明、最小 SDK 包消费者和所有仓库插件源码。
 6. 执行锁定还原、Release 零警告构建、G13、SDK 包消费、宿主三层测试、Windows Smoke 和四插件包矩阵。
 7. 由所有者审阅并记录回退边界；旧基线继续留在仓库供历史插件和差异复核。
@@ -112,11 +119,13 @@ Shipped 不是“重新生成后覆盖”的快照。删除或改写其中的条
 ```powershell
 dotnet restore MyAvaloniaManagement.sln --locked-mode -p:SkipPluginDeploy=true --nologo
 dotnet build MyAvaloniaManagement.sln -c Release -p:SkipPluginDeploy=true --no-restore --nologo -warnaserror
-.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v1
+.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v2
 .\scripts\Test-PluginSdkPackage.ps1 -Configuration Release
-.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke
-.\scripts\Test-ManagedPluginPackages.ps1 -Configuration Release
+.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
 ```
+
+以上是当前非发布检查，不包含 Windows Smoke、发布总门禁或上传。实际发布时再按对应发布计划增加
+平台和制品验收，不能用 G1 结果冒充发布放行。
 
 排错顺序：
 
@@ -134,6 +143,6 @@ dotnet build MyAvaloniaManagement.sln -c Release -p:SkipPluginDeploy=true --no-r
 - [ ] 新增签名在 Unshipped 中显式可见，且存在真实消费者或明确使用方式。
 - [ ] Shipped、Unshipped 稳定排序、无重复、无 `*REMOVED*`。
 - [ ] Analyzer 保持私有构建依赖，没有进入 nuspec 或插件还原图。
-- [ ] Host 实现仍无自有 public 导出，UI Profile 仍为 dependency-only package。
+- [ ] Host 实现仍无自有 public 导出；G2 前 UI Profile 仍明确标记为未发布阶段桥。
 - [ ] 破坏性变化已提升主版本并同步清单区间、迁移、样例和真实插件。
 - [ ] G13、包消费、宿主与插件门禁均有本次执行证据。

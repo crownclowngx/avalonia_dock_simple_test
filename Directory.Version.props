@@ -5,22 +5,23 @@
       FileVersion 使用四段数字供 Windows 文件属性读取；InformationalVersion 可以由
       SDK 追加源码修订元数据，欢迎页只显示加号前的产品版本。
     -->
-    <MyAvaloniaProductVersion>1.0.0</MyAvaloniaProductVersion>
-    <MyAvaloniaProductFileVersion>1.0.0.0</MyAvaloniaProductFileVersion>
+    <MyAvaloniaProductVersion>2.0.0</MyAvaloniaProductVersion>
+    <MyAvaloniaProductFileVersion>2.0.0.0</MyAvaloniaProductFileVersion>
+    <MyAvaloniaProductAssemblyVersion>2.0.0.0</MyAvaloniaProductAssemblyVersion>
 
     <!--
-      Host API 与 Plugin SDK 的 AssemblyVersion 是进程内二进制兼容身份。
-      兼容的 1.x 新增不改变该身份；删除、改签名或改变已承诺语义时才提升主版本。
+      V2 不再维护可供插件引用的独立 Host API 版本线。Host AssemblyVersion 跟随产品，
+      Plugin SDK 则继续独立表达进程内契约身份；二者不能互相替代。
     -->
-    <MyAvaloniaHostApiAssemblyVersion>1.0.0.0</MyAvaloniaHostApiAssemblyVersion>
-    <MyAvaloniaPluginSdkVersion>1.0.0</MyAvaloniaPluginSdkVersion>
-    <MyAvaloniaPluginSdkFileVersion>1.0.0.0</MyAvaloniaPluginSdkFileVersion>
-    <MyAvaloniaPluginSdkAssemblyVersion>1.0.0.0</MyAvaloniaPluginSdkAssemblyVersion>
+    <MyAvaloniaPluginSdkVersion>2.0.0</MyAvaloniaPluginSdkVersion>
+    <MyAvaloniaPluginSdkNextMajorVersion>3.0.0</MyAvaloniaPluginSdkNextMajorVersion>
+    <MyAvaloniaPluginSdkFileVersion>2.0.0.0</MyAvaloniaPluginSdkFileVersion>
+    <MyAvaloniaPluginSdkAssemblyVersion>2.0.0.0</MyAvaloniaPluginSdkAssemblyVersion>
     <!--
       public API 文本基线按 SDK 主版本独立保存。有意破坏必须先建立新的 vN 目录，
       再同步提升包版本、程序集版本和插件清单兼容区间，不能改写旧基线掩盖差异。
     -->
-    <MyAvaloniaPluginSdkApiBaseline>v1</MyAvaloniaPluginSdkApiBaseline>
+    <MyAvaloniaPluginSdkApiBaseline>v2</MyAvaloniaPluginSdkApiBaseline>
 
     <!--
       Plugin SDK UI Profile 与宿主使用同一组 UI 依赖事实。基础 SDK 不引用这些实现包；
@@ -33,10 +34,20 @@
     <MyAvaloniaUrsaUiVersion>2.1.0</MyAvaloniaUrsaUiVersion>
 
     <!--
-      manifest schema 与数据根代际是各自所有者解释的整数/目录协议，不是产品版本。
-      代码中的对应常量由 VersionPolicyTests 交叉校验，禁止静默漂移。
+      G1 只建立 V2 目标 schema 和文件名事实，不把它们接入仍在工作的 V1 reader。
+      manifest、Document envelope 与 layout 的最终 V2 线格式分别由 G3、G7、G8 一次建立，
+      避免在同一个 schemaVersion=2 下先后出现两种结构。
+    -->
+    <MyAvaloniaV2ManifestSchemaVersion>2</MyAvaloniaV2ManifestSchemaVersion>
+    <MyAvaloniaV2DocumentEnvelopeSchemaVersion>2</MyAvaloniaV2DocumentEnvelopeSchemaVersion>
+    <MyAvaloniaV2LayoutSchemaVersion>2</MyAvaloniaV2LayoutSchemaVersion>
+    <MyAvaloniaV2LayoutFileName>layout-v2.json</MyAvaloniaV2LayoutFileName>
+
+    <!--
+      下列值是 G3 前的 V1 编译桥，只用于让当前清单生成器和 loader 在阶段间保持绿色。
+      它不是第二套 V2 schema 事实；G3 建立最终 manifest v2 后必须删除。
     -->
     <MyAvaloniaManifestSchemaVersion>1</MyAvaloniaManifestSchemaVersion>
-    <MyAvaloniaHostDataRootGeneration>v1</MyAvaloniaHostDataRootGeneration>
+    <MyAvaloniaHostDataRootGeneration>v2</MyAvaloniaHostDataRootGeneration>
   </PropertyGroup>
 </Project>

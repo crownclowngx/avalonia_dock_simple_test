@@ -12,14 +12,17 @@
 > 变异门禁冻结正式 Plugin SDK v1 public API；G15 已固定 schema 1 诊断的白名单语义和默认脱敏边界；
 > G16 已用 `managed-plugin-v1.0.0` 定位最终文档、SDK API 和四插件兼容基线。
 
+> 当前分支已完成 V2 G1：产品、SDK、四插件版本和默认数据根进入 V2；下述 manifest、Document、
+> layout 与 public API 形状仍是 G2/G3/G7/G8 前的未发布 V1 阶段桥。历史 v1 签署事实保持可追溯。
+
 ## 2. public API
 
 正式 public 插件契约只来自 `MyAvaloniaManagementCommon`。Host 窗口、View、ViewModel、加载器、
 注册表、工厂、消息和内建策略均为 internal；静态 `ServiceProvider` 与生产 ViewModel 无参构造
 已经删除。插件不得编译引用 Host 可执行程序集。
 
-Common 的完整签名由 `ApiCompatibility/v1/PublicAPI.Shipped.txt` 和 `PublicAPI.Unshipped.txt`
-声明，并由 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v1` 验证。未登记新增、删除、可见性
+历史 Common 正式签名由 `ApiCompatibility/v1` 保存；当前 `ApiCompatibility/v2` 的 Shipped 为空，
+现有表面全部登记为 Unshipped，并由 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v2` 验证。未登记新增、删除、可见性
 收窄、参数或返回类型变化都会给出成员级 RS 诊断；[`PublicApiContractTests`](../../../MyAvaloniaManagement.Tests/PublicApiContractTests.cs)
 只保留第三方类型泄漏等行为语义断言。完整维护流程见
 [Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
@@ -30,8 +33,8 @@ Host 实现，这不构成发布兼容承诺。
 
 ### 2.1 版本所有权
 
-- 产品版本、Host API 程序集身份和 Plugin SDK 版本集中定义在根级 `Directory.Version.props`；
-- 当前产品与 SDK 版本为 `1.0.0`，Host API 与 SDK `AssemblyVersion` 为 `1.0.0.0`；
+- 产品、Host 程序集身份和 Plugin SDK 版本集中定义在根级 `Directory.Version.props`；
+- 当前产品与 SDK 版本为 `2.0.0`，Host 与 SDK `AssemblyVersion` 为 `2.0.0.0`；V2 不再维护独立 Host API 版本线；
 - 兼容的 SDK 新增提升次版本但保持同一主版本程序集身份；破坏性契约变化提升主版本；
 - 每个插件只拥有自己的 `PluginVersion`，清单版本必须与入口程序集精确一致；
 - manifest、布局、外观、诊断和未来 Document 信封分别拥有整数 schema，不共享全局数字；
@@ -40,7 +43,7 @@ Host 实现，这不构成发布兼容承诺。
 
 ### 2.2 SDK 包边界
 
-- 正式基础包 ID 为 `MyAvaloniaManagement.PluginSdk`，包内程序集仍为 `MyAvaloniaManagementCommon`；
+- 基础包 ID 为 `MyAvaloniaManagement.PluginSdk`；G2 前包内程序集仍为 `MyAvaloniaManagementCommon`，仅作未发布阶段桥；
 - 基础包不包含 Host，也不直接依赖 Desktop、字体、Fluent/Semi/Ursa/Dock 主题或 Dock 视觉控件；
 - `Dock.Model.Mvvm` 是当前 public 签名的必要依赖，其上游传递的
   `Dock.Controls.Recycling.Model` 和 `CommunityToolkit.Mvvm` 是已知还原图例外，不等于基础 SDK
@@ -110,11 +113,11 @@ V1 清单格式：
 {
   "schemaVersion": 1,
   "pluginId": "myavalonia.plugin.sample",
-  "pluginVersion": "1.0.0",
+  "pluginVersion": "2.0.0",
   "entryAssembly": "SamplePlugin.dll",
   "compatibility": {
-    "hostApi": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" },
-    "commonContract": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" }
+    "hostApi": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" },
+    "commonContract": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" }
   }
 }
 ```
@@ -125,7 +128,7 @@ V1 清单格式：
 - `entryAssembly` 只能是插件根目录中的单个 DLL 文件名；
 - 入口必须携带同名 `.deps.json`，宿主不扫描目录猜测托管或原生依赖；
 - `pluginVersion` 必须与入口 `AssemblyVersion` 精确一致；manifest `pluginId` 是插件身份唯一事实源；
-- Host 与 Common 当前 `AssemblyVersion` 均为 `1.0.0.0`。兼容新增提升次版本，破坏性变更提升主版本；
+- Host 与 Common 当前 `AssemblyVersion` 均为 `2.0.0.0`；G3 前双区间只允许投影同一个 SDK 事实；
 - 清单只解决兼容和确定性加载，不提供签名、防篡改、权限沙箱或热卸载。
 
 仓库内 Managed Plugin 的清单不在源码树手写，而由 `ManagedPluginId`、`PluginVersion`、入口程序集名
@@ -234,8 +237,8 @@ V1 清单格式：
 - 插件在 Avalonia 消息循环前初始化；
 - 只反向关闭成功初始化的生命周期实例；
 - 插件关闭后释放根容器和剩余 Document Scope；
-- 默认宿主数据根为 `%LOCALAPPDATA%\MyAvaloniaManagement\v1\`，旧预发布目录不读取、迁移或删除；
-- `MYAVALONIA_DATA_DIRECTORY` 继续表示完整数据根且不追加 `v1`，避免测试污染用户 LocalAppData；
+- 默认宿主数据根为 `%LOCALAPPDATA%\MyAvaloniaManagement\v2\`，旧 `v1` 和预发布目录不读取、迁移或删除；
+- `MYAVALONIA_DATA_DIRECTORY` 继续表示完整数据根且不追加 `v2`，避免测试污染用户 LocalAppData；
 - `MYAVALONIA_SMOKE_TEST=1` 继续创建真实窗口并通过正常 Closing 路径退出。
 
 ## 8. 内部实现不构成契约
