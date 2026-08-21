@@ -10,8 +10,6 @@
         <PluginVersion>2.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
         <ManagedPluginEntryType>DaTangAccountingHelpPlug.Plugin.DaTangAccountingHelpPluginModule</ManagedPluginEntryType>
-        <!-- G10 起入口由最终 UI SDK 定义，构建探针不得回退到 Legacy 合同。 -->
-        <ManagedPluginUseV2EntryContract>true</ManagedPluginUseV2EntryContract>
         <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
         <ManagedPluginSdkMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginSdkMaxExclusive>
     </PropertyGroup>

@@ -18,11 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj" />
-      <!--
-        manifest v2 的单一 SDK 区间必须取自 Host 实际装载的 Core/UI 程序集。
-        G3 仍以 Legacy IPluginModule 执行当前插件，但版本判断不得再借用 Legacy 或产品版本冒充最终 SDK。
-      -->
+      <!-- manifest v2 的单一 SDK 区间取自 Host 实际装载的 Core/UI 程序集。 -->
       <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" />
       <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk.UI\MyAvaloniaManagement.PluginSdk.UI.csproj" />
     </ItemGroup>
@@ -47,7 +43,6 @@
       <PackageReference Include="Irihi.Ursa.Themes.Semi" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
       <PackageReference Include="Microsoft.Extensions.Hosting" />
-      <PackageReference Include="Newtonsoft.Json" />
       <PackageReference Include="Semi.Avalonia" />
       <PackageReference Include="Xaml.Behaviors" />
     </ItemGroup>

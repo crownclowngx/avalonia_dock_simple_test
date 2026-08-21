@@ -115,14 +115,8 @@ try {
 
     $legacyRoot = Join-Path $repositoryRoot `
         'Host\MyAvaloniaManagement.LegacyPluginContracts'
-    $legacyLifecycleForbidden = `
-        'PluginLifecycleManager|PluginLifecycleState|PluginLifecycleStage|' + `
-        'PluginLifecycleStatus|PluginLifecycleOptions|PluginLifecycleRegistration|' + `
-        'PluginLifecyclePlanBuilder|PluginLifecycleOperationRunner|' + `
-        'IPluginLifecycleDependencies'
-    & rg --quiet $legacyLifecycleForbidden $legacyRoot -g '*.cs'
-    if ($LASTEXITCODE -eq 0) {
-        throw 'G8 Legacy contracts 重新出现已删除的 public 生命周期编排类型。'
+    if (Test-Path -LiteralPath $legacyRoot) {
+        throw 'G13 后 Legacy contracts 项目不得重新出现。'
     }
     if ($LASTEXITCODE -gt 1) {
         throw '无法执行 G8 Legacy 生命周期结构扫描。'

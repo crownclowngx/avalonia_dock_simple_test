@@ -8,11 +8,12 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > `managed-plugin-v1.0.0` 定位。签署内容、非发布门禁证据和回退边界见
 > [G16 文档与 v1 基线](./docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
-> Managed Plugin V2 已完成 G0–G12；G13–G14 尚未实现。最终 Core/UI SDK、严格 manifest v2、
+> Managed Plugin V2 已完成 G0–G13；仅 G14 尚未实现。最终 Core/UI SDK、严格 manifest v2、
 > 每插件独立 Provider、声明式贡献目录、Host internal Dock Adapter、Document V2、Layout V2 与
 > Host internal 生命周期已进入生产路径。MyPlugTest 与 DaTangAccountingHelpPlug 已成为
 > 四个业务插件均已成为真实 V2 插件；BiliDownloader 已在 G12 完成 Document、Tool、Lifecycle、
-> readiness 与原生 JSON 迁移。见 [V2 G12 专项记录](./docs/plan-history/host-v2/g12-bili-downloader-v2.md)。
+> readiness 与原生 JSON 迁移；G13 已删除全部 V1 生产面。见
+> [V2 G13 专项记录](./docs/plan-history/host-v2/g13-remove-v1-production-surface.md)。
 
 ## 核心扩展模型
 
@@ -41,11 +42,11 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 | [MyPlugTest](./Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) | Managed Plugin 的 Document、Tool、消息通信和依赖注入示例 |
 
 四个当前插件均使用 Managed Plugin 构建协议，并已通过最终 V2 入口真实加载。BiliDownloader
-精确声明 1 个可持久化 Document、1 个右侧可隐藏 Tool 与 1 个 Lifecycle；Legacy 阶段桥已没有
-生产插件消费者，项目本身留给 G13 删除。缺少入口 `.deps.json` 或依赖历史加载 Facade 的代码不会
+精确声明 1 个可持久化 Document、1 个右侧可隐藏 Tool 与 1 个 Lifecycle；Legacy 项目、旧入口探针与
+Host/Common 双区间已经删除。缺少入口 `.deps.json` 或依赖历史加载 Facade 的代码不会
 进入运行链。
 
-## V2 G12 当前 SDK、manifest、容器、Dock、Document、Layout 与插件迁移边界
+## V2 G13 当前 SDK、manifest、容器、Dock、Document、Layout 与插件迁移边界
 
 历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。当前 G1 仍沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
@@ -63,9 +64,8 @@ SDK 程序集版本均为 `2.0.0.0`；V2 已删除独立 Host API 版本事实�
 
 G2 已建立真实的 `MyAvaloniaManagement.PluginSdk.dll` 与 `MyAvaloniaManagement.PluginSdk.UI.dll`。
 Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约；两者分别维护空 Shipped 和完整
-Unshipped 的 v2 API 基线。旧 `MyAvaloniaManagementCommon.dll` 只由仓库内部
-`MyAvaloniaManagement.LegacyPluginContracts` 项目生成，不能打包、不能新增生产消费者；G12 后已无
-生产插件消费者，并将在 G13 删除。
+Unshipped 的 v2 API 基线。旧 `MyAvaloniaManagementCommon.dll` 与 Legacy 项目已在 G13 整体删除；
+历史 v1 API 文本仅用于审计，不参与编译、加载或打包。
 
 G4 已把宿主与插件对象图彻底分开：Host Provider 先构建，每个清单入口从新的空
 `ServiceCollection` 建立私有 Provider。插件配置、开放泛型、keyed 与多实现注册都只影响自身；配置或
@@ -163,7 +163,8 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Managed 插件快速开始](./docs/quick-start/README.md)：以已迁移的 MyPlugTest 为可运行 V2 事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G12 已完成、G13–G14 尚未实现的破坏式重构路线；
+- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G13 已完成、仅 G14 尚未实现的破坏式重构路线；
+- [V2 G13 删除 V1 生产面](./docs/plan-history/host-v2/g13-remove-v1-production-surface.md)：查看 SOLID 收口、源码/二进制负例、包矩阵和非发布证据；
 - [V2 G12 BiliDownloader 迁移](./docs/plan-history/host-v2/g12-bili-downloader-v2.md)：查看 SOLID 责任划分、readiness、schema 3、关闭时序和非发布证据；
 - [V2 G10 DaTang 迁移](./docs/plan-history/host-v2/g10-datang-accounting-help-v2.md)：查看窗口端口、内容 schema、所有权、SOLID 取舍和非发布证据；
 - [V2 G0 绿色基线](./docs/plan-history/host-v2/g0-green-baseline.md)：查看非发布门禁、删除面、依赖白名单和消费者矩阵；
@@ -252,6 +253,6 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - G5 已完成：宿主与每个插件拥有独立 Provider，Host 生产贡献只通过最终 UI SDK 声明并发布到唯一 Registry；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
 - Core/UI 包、manifest v2、独立容器、Host 声明式目录、Document v2、Layout v2 和 Host internal
-  生命周期已进入生产路径；四个业务插件已完成 G9–G12 迁移，Legacy 阶段桥留给 G13 删除。
+  生命周期已进入生产路径；四个业务插件已完成 G9–G12 迁移，G13 已删除 Legacy 阶段桥与过渡构建面。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

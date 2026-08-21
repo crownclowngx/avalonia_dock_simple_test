@@ -19,7 +19,7 @@
 
 最终基础契约来自 `MyAvaloniaManagement.PluginSdk`，UI 注册契约来自
 `MyAvaloniaManagement.PluginSdk.UI`；四个业务插件均已只使用最终 SDK。旧
-`MyAvaloniaManagementCommon` 在 G12 后已没有生产插件消费者，只作为不可打包源码桥留给 G13 删除。SDK 不拥有
+`MyAvaloniaManagementCommon` 与 Legacy 项目已在 G13 删除。SDK 不拥有
 字体、桌面后端或全局主题。`App.axaml` 是 Fluent、Semi、Ursa、Dock Theme 和 Host Styles 的唯一
 组合入口；`ApplicationThemeService` 只切换宿主主题状态，不把第三方主题对象暴露成插件服务。
 

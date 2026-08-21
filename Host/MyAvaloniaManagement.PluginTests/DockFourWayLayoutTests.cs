@@ -7,8 +7,9 @@ using System.Runtime.CompilerServices;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -17,23 +18,21 @@ public sealed class DockFourWayLayoutTests
     private static readonly ConditionalWeakTable<ManagementFactory, Dictionary<string, Tool>> ToolMaps = new();
 
     [Theory]
-    [InlineData("Left", Alignment.Left, DockLayoutIds.LeftTools)]
-    [InlineData("RIGHT", Alignment.Right, DockLayoutIds.RightTools)]
-    [InlineData("top", Alignment.Top, DockLayoutIds.TopTools)]
-    [InlineData("Bottom", Alignment.Bottom, DockLayoutIds.BottomTools)]
-    [InlineData("", Alignment.Left, DockLayoutIds.LeftTools)]
-    [InlineData("Diagonal", Alignment.Left, DockLayoutIds.LeftTools)]
-    public void AlignmentMetadataMapsToSupportedDock(
-        string metadataValue,
+    [InlineData(ToolDockSide.Left, Alignment.Left, DockLayoutIds.LeftTools)]
+    [InlineData(ToolDockSide.Right, Alignment.Right, DockLayoutIds.RightTools)]
+    [InlineData(ToolDockSide.Top, Alignment.Top, DockLayoutIds.TopTools)]
+    [InlineData(ToolDockSide.Bottom, Alignment.Bottom, DockLayoutIds.BottomTools)]
+    public void V2Tool方向映射到对应Dock(
+        ToolDockSide dockSide,
         Alignment expectedAlignment,
         string expectedDockId)
     {
         Assert.Equal(
             expectedAlignment,
-            ToolDockPlacement.ParseAlignment(metadataValue));
+            ToolDockPlacement.ToAlignment(dockSide));
         Assert.Equal(
             expectedDockId,
-            ToolDockPlacement.GetDockId(metadataValue));
+            ToolDockPlacement.GetDockId(expectedAlignment));
     }
 
     [Fact]
@@ -568,41 +567,23 @@ public sealed class DockFourWayLayoutTests
                 CanClose = true
             },
             StringComparer.Ordinal);
-        var strategies = toolDefinitions.Select(definition =>
-        {
-            var dockSide = Enum.Parse<ToolDockSide>(definition.Alignment, ignoreCase: true);
-            var typeId = CreateTestToolTypeId(definition.Id);
-            return (IToolCreationStrategy)new StubToolStrategy(
-                tools[definition.Id],
-                new ToolMetadata(typeId, definition.Id, dockSide, [new ToolTypeId(definition.Id)])
-                {
-                    Description = definition.Id
-                });
-        }).ToArray();
         var extensions = new PluginRegistry(
             [],
-            strategies.Select(strategy =>
+            toolDefinitions.Select(definition =>
             {
-                var metadata = strategy.GetMetadata();
+                var dockSide = Enum.Parse<ToolDockSide>(
+                    definition.Alignment,
+                    ignoreCase: true);
+                var typeId = CreateTestToolTypeId(definition.Id);
                 return new PluginToolRegistration(
                     HostExtensionIds.V2Owner,
-                    new MyAvaloniaManagement.PluginSdk.UI.ToolDescriptor(
-                        new MyAvaloniaManagement.PluginSdk.ToolTypeId(
-                            metadata.ToolTypeId.Value),
-                        metadata.DisplayName,
-                        metadata.Description,
-                        metadata.DockSide switch
-                        {
-                            ToolDockSide.Right =>
-                                MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Right,
-                            ToolDockSide.Top =>
-                                MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Top,
-                            ToolDockSide.Bottom =>
-                                MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Bottom,
-                            _ => MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Left,
-                        },
-                        MyAvaloniaManagement.PluginSdk.UI.ToolCloseBehavior.Hide),
-                    tools[metadata.LegacyIds.Single().Value].GetType(),
+                    new ToolDescriptor(
+                        typeId,
+                        definition.Id,
+                        definition.Id,
+                        dockSide,
+                        ToolCloseBehavior.Hide),
+                    tools[definition.Id].GetType(),
                     typeof(Avalonia.Controls.UserControl),
                     static () => new Avalonia.Controls.UserControl());
             }).ToArray());
@@ -613,15 +594,6 @@ public sealed class DockFourWayLayoutTests
 
     private static ToolTypeId CreateTestToolTypeId(string id) =>
         new($"myavalonia.host.tool.test.{id.ToLowerInvariant()}");
-
-    private sealed class StubToolStrategy(
-        Tool tool,
-        ToolMetadata metadata) : IToolCreationStrategy
-    {
-        public Tool CreateTool() => tool;
-
-        public ToolMetadata GetMetadata() => metadata;
-    }
 
     private sealed class FactoryContext(
         Microsoft.Extensions.DependencyInjection.ServiceProvider provider,

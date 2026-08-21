@@ -30,7 +30,6 @@
   <ItemGroup>
     <!-- 独立测试时跳过部署；解决方案构建时复用同一项目实例，避免不同全局属性并发写入 obj。 -->
     <ProjectReference Include="..\MyAvaloniaManagement\MyAvaloniaManagement.csproj" />
-    <ProjectReference Include="..\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj" />
     <ProjectReference Include="..\..\Plugins\BiliDownloader\BiliDownloader\BiliDownloader.csproj">
       <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
     </ProjectReference>
@@ -48,7 +47,7 @@
                       ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestAssets\PluginIsolation\PluginV2\PluginV2.csproj"
                       ReferenceOutputAssembly="false" />
-    <ProjectReference Include="TestAssets\ManagedOnly\LegacyNoModule\LegacyNoModule.csproj"
+    <ProjectReference Include="TestAssets\ManagedOnly\NoModule\NoModule.csproj"
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
 
@@ -66,25 +65,22 @@
       <PluginIsolationV1 Include="$(PluginIsolationAssetRoot)\PluginV1\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.PluginV1.dll" />
       <PluginIsolationV1 Include="$(PluginIsolationAssetRoot)\PluginV1\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.PluginV1.deps.json" />
       <PluginIsolationV1 Include="$(PluginIsolationAssetRoot)\PluginV1\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.Dependency.dll" />
-      <!-- 故意携带一份本地 Common，验证共享策略仍强制返回默认上下文实例。 -->
-      <PluginIsolationV1 Include="$(OutDir)MyAvaloniaManagementCommon.dll" />
       <PluginIsolationV1 Include="$(PluginIsolationAssetRoot)\PluginV1\plugin.manifest.json" />
       <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.PluginV2.dll" />
       <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.PluginV2.deps.json" />
       <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.Dependency.dll" />
-      <PluginIsolationV2 Include="$(OutDir)MyAvaloniaManagementCommon.dll" />
       <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\plugin.manifest.json" />
       <IncompatibleManifestFixture Include="$(MSBuildThisFileDirectory)TestAssets\PluginManifest\Incompatible\plugin.manifest.json" />
       <BrokenPluginFixture Include="$(MSBuildThisFileDirectory)TestAssets\PluginManifest\Incompatible\BrokenPlugin.txt" />
-      <LegacyNoModuleFixture Include="$(ManagedOnlyAssetRoot)\LegacyNoModule\bin\$(Configuration)\$(TargetFramework)\LegacyNoModule.Plugin.dll" />
-      <LegacyNoModuleFixture Include="$(ManagedOnlyAssetRoot)\LegacyNoModule\bin\$(Configuration)\$(TargetFramework)\LegacyNoModule.Plugin.deps.json" />
-      <LegacyNoModuleFixture Include="$(ManagedOnlyAssetRoot)\LegacyNoModule\plugin.manifest.json" />
+      <NoModuleFixture Include="$(ManagedOnlyAssetRoot)\NoModule\bin\$(Configuration)\$(TargetFramework)\NoModule.Plugin.dll" />
+      <NoModuleFixture Include="$(ManagedOnlyAssetRoot)\NoModule\bin\$(Configuration)\$(TargetFramework)\NoModule.Plugin.deps.json" />
+      <NoModuleFixture Include="$(ManagedOnlyAssetRoot)\NoModule\plugin.manifest.json" />
     </ItemGroup>
     <!--
       设计意图：夹具项目没有加入根解决方案配置表，Solution Build 可能把普通 ProjectReference
       映射回 Debug；复制前显式按当前测试配置构建一次，保证干净环境也一定存在对应 Release/Debug 资产。
     -->
-    <MSBuild Projects="$(PluginIsolationAssetRoot)\PluginV1\PluginV1.csproj;$(PluginIsolationAssetRoot)\PluginV2\PluginV2.csproj;$(ManagedOnlyAssetRoot)\LegacyNoModule\LegacyNoModule.csproj"
+    <MSBuild Projects="$(PluginIsolationAssetRoot)\PluginV1\PluginV1.csproj;$(PluginIsolationAssetRoot)\PluginV2\PluginV2.csproj;$(ManagedOnlyAssetRoot)\NoModule\NoModule.csproj"
              Targets="Build"
              Properties="Configuration=$(Configuration)"
              BuildInParallel="true" />
@@ -92,7 +88,7 @@
     <MakeDir Directories="$(PluginIsolationOutputRoot)\PluginV1;$(PluginIsolationOutputRoot)\PluginV2" />
     <MakeDir Directories="$(PluginIsolationMissingOutputRoot)\PluginV1;$(PluginIsolationMissingOutputRoot)\PluginV2" />
     <MakeDir Directories="$(PluginManifestCompatibilityOutputRoot)\Compatible;$(PluginManifestCompatibilityOutputRoot)\Incompatible" />
-    <MakeDir Directories="$(ManagedOnlyOutputRoot)\LegacyNoModule" />
+    <MakeDir Directories="$(ManagedOnlyOutputRoot)\NoModule" />
     <MakeDir Directories="$(ManagedOnlyMissingDepsOutputRoot)\PluginV1;$(ManagedOnlyMissingDepsOutputRoot)\PluginV2" />
     <Copy SourceFiles="@(PluginIsolationV1)" DestinationFolder="$(PluginIsolationOutputRoot)\PluginV1" />
     <Copy SourceFiles="@(PluginIsolationV2)" DestinationFolder="$(PluginIsolationOutputRoot)\PluginV2" />
@@ -104,7 +100,7 @@
     <Copy SourceFiles="@(PluginIsolationV2)" DestinationFolder="$(PluginManifestCompatibilityOutputRoot)\Compatible" />
     <Copy SourceFiles="@(IncompatibleManifestFixture)" DestinationFolder="$(PluginManifestCompatibilityOutputRoot)\Incompatible" />
     <Copy SourceFiles="@(BrokenPluginFixture)" DestinationFiles="$(PluginManifestCompatibilityOutputRoot)\Incompatible\BrokenPlugin.dll" />
-    <Copy SourceFiles="@(LegacyNoModuleFixture)" DestinationFolder="$(ManagedOnlyOutputRoot)\LegacyNoModule" />
+    <Copy SourceFiles="@(NoModuleFixture)" DestinationFolder="$(ManagedOnlyOutputRoot)\NoModule" />
     <!-- V1 故意不携带 deps；V2 保持完整，验证包结构错误只隔离当前目录。 -->
     <Copy SourceFiles="@(PluginIsolationV1)"
           DestinationFolder="$(ManagedOnlyMissingDepsOutputRoot)\PluginV1"

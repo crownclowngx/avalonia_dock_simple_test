@@ -262,7 +262,7 @@ internal sealed class PluginLifecycleCoordinator
             state.ErrorCode,
             HostDiagnosticPhase.PluginLifecycle)
         {
-            PluginId = new MyAvaloniaManagementCommon.Plugin.PluginId(state.PluginId.Value),
+            PluginId = state.PluginId,
             LifecycleStage = state.Stage,
             Duration = state.Duration,
             Exception = exception,
@@ -277,7 +277,7 @@ internal sealed class PluginLifecycleCoordinator
             HostDiagnosticCodes.LifecycleCancellationFailed,
             HostDiagnosticPhase.PluginLifecycle)
         {
-            PluginId = new MyAvaloniaManagementCommon.Plugin.PluginId(pluginId.Value),
+            PluginId = pluginId,
             LifecycleStage = stage,
             Exception = exception,
         });

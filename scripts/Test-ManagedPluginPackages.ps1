@@ -67,34 +67,34 @@ function Test-ManagedPluginBuildContract {
     $assetA = Join-Path $FixtureRoot 'asset-a.bin'
     $assetB = Join-Path $FixtureRoot 'asset-b.bin'
     $fixtureSourceText = @'
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace ContractFixture.Plugin;
 
 public sealed class ValidPluginModule : IPluginModule
 {
-    public void Configure(IPluginRegistrationContext context) { }
+    public void Configure(IPluginRegistration context) { }
 }
 
 internal sealed class InternalPluginModule : IPluginModule
 {
-    public void Configure(IPluginRegistrationContext context) { }
+    public void Configure(IPluginRegistration context) { }
 }
 
 public abstract class AbstractPluginModule : IPluginModule
 {
-    public abstract void Configure(IPluginRegistrationContext context);
+    public abstract void Configure(IPluginRegistration context);
 }
 
 public sealed class GenericPluginModule<T> : IPluginModule
 {
-    public void Configure(IPluginRegistrationContext context) { }
+    public void Configure(IPluginRegistration context) { }
 }
 
 public sealed class PrivateConstructorPluginModule : IPluginModule
 {
     private PrivateConstructorPluginModule() { }
-    public void Configure(IPluginRegistrationContext context) { }
+    public void Configure(IPluginRegistration context) { }
 }
 
 public sealed class WrongContractType { }
@@ -124,18 +124,14 @@ public sealed class WrongContractType { }
     <ManagedPluginEntryType Condition="'`$(ContractMutation)' == 'generic-entry'">ContractFixture.Plugin.GenericPluginModule</ManagedPluginEntryType>
     <ManagedPluginEntryType Condition="'`$(ContractMutation)' == 'private-ctor-entry'">ContractFixture.Plugin.PrivateConstructorPluginModule</ManagedPluginEntryType>
     <ManagedPluginEntryType Condition="'`$(ContractMutation)' == 'wrong-contract-entry'">ContractFixture.Plugin.WrongContractType</ManagedPluginEntryType>
-    <ManagedPluginSdkMinInclusive Condition="'`$(ContractMutation)' != 'missing-range' And '`$(ContractMutation)' != 'legacy-range-only'">1.0.0</ManagedPluginSdkMinInclusive>
-    <ManagedPluginSdkMaxExclusive Condition="'`$(ContractMutation)' != 'missing-range' And '`$(ContractMutation)' != 'legacy-range-only' And '`$(ContractMutation)' != 'reversed-range'">2.0.0</ManagedPluginSdkMaxExclusive>
+    <ManagedPluginSdkMinInclusive Condition="'`$(ContractMutation)' != 'missing-range'">1.0.0</ManagedPluginSdkMinInclusive>
+    <ManagedPluginSdkMaxExclusive Condition="'`$(ContractMutation)' != 'missing-range' And '`$(ContractMutation)' != 'reversed-range'">2.0.0</ManagedPluginSdkMaxExclusive>
     <ManagedPluginSdkMaxExclusive Condition="'`$(ContractMutation)' == 'reversed-range'">1.0.0</ManagedPluginSdkMaxExclusive>
-    <ManagedPluginHostApiMinInclusive Condition="'`$(ContractMutation)' == 'legacy-range-only'">1.0.0</ManagedPluginHostApiMinInclusive>
-    <ManagedPluginHostApiMaxExclusive Condition="'`$(ContractMutation)' == 'legacy-range-only'">2.0.0</ManagedPluginHostApiMaxExclusive>
-    <ManagedPluginCommonContractMinInclusive Condition="'`$(ContractMutation)' == 'legacy-range-only'">1.0.0</ManagedPluginCommonContractMinInclusive>
-    <ManagedPluginCommonContractMaxExclusive Condition="'`$(ContractMutation)' == 'legacy-range-only'">2.0.0</ManagedPluginCommonContractMaxExclusive>
     <ManagedPluginAssetDirectoryRelativePath Condition="'`$(ContractMutation)' == 'missing-directory-asset'">missing-tree</ManagedPluginAssetDirectoryRelativePath>
   </PropertyGroup>
   <Import Project="$propsPath" />
   <ItemGroup>
-    <ProjectReference Include="$repositoryRoot\Host\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj" Private="false" />
+    <ProjectReference Include="$repositoryRoot\Host\MyAvaloniaManagement.PluginSdk.UI\MyAvaloniaManagement.PluginSdk.UI.csproj" Private="false" />
     <ManagedPluginAsset Include="$FixtureRoot\missing.bin" TargetPath="private\missing.bin" Condition="'`$(ContractMutation)' == 'missing-asset'" />
     <ManagedPluginAsset Include="$assetA" TargetPath="..\escape.bin" Condition="'`$(ContractMutation)' == 'escape-path'" />
     <ManagedPluginAsset Include="$assetA" TargetPath="private/same.bin" Condition="'`$(ContractMutation)' == 'duplicate-path'" />
@@ -187,7 +183,6 @@ public sealed class WrongContractType { }
         @{ mutation = 'missing-entry'; message = '缺少 ManagedPluginEntryType' },
         @{ mutation = 'invalid-entry-text'; message = '命名空间限定类型名' },
         @{ mutation = 'missing-range'; message = '单一 Plugin SDK' },
-        @{ mutation = 'legacy-range-only'; message = '单一 Plugin SDK' },
         @{ mutation = 'reversed-range'; message = 'minInclusive 小于 maxExclusive' },
         @{ mutation = 'schema-v1'; message = '只能生成 schemaVersion=2' },
         @{ mutation = 'missing-entry-type'; message = 'error CS' },

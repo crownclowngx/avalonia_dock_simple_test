@@ -8,9 +8,9 @@ using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Models.FileSystem;
 using MyAvaloniaManagement.Models.Tools;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 using MyAvaloniaManagement.ViewModels.Tools;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.Tests;
 
@@ -111,17 +111,15 @@ public sealed class ToolViewModelTests
             Title = "可关闭工具",
             CanClose = true
         };
-        var strategy = new StubToolStrategy(
+        var contribution = new StubToolContribution(
             tool,
-            new ToolMetadata(
+            new ToolDescriptor(
                 new ToolTypeId(tool.Id),
                 tool.Title!,
-                ToolDockSide.Left)
-            {
-                Description = string.Empty,
-                IconPath = string.Empty
-            });
-        using var context = new TestHostContext(toolStrategies: [strategy]);
+                string.Empty,
+                ToolDockSide.Left,
+                ToolCloseBehavior.Hide));
+        using var context = new TestHostContext(toolContributions: [contribution]);
         var mainViewModel = context.CreateMainWindowViewModel();
         var manager = GetManagedToolModel<ToolManagementViewModel>(
             context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
@@ -174,17 +172,15 @@ public sealed class ToolViewModelTests
             Title = "外部显隐工具",
             CanClose = true
         };
-        var strategy = new StubToolStrategy(
+        var contribution = new StubToolContribution(
             tool,
-            new ToolMetadata(
+            new ToolDescriptor(
                 new ToolTypeId(tool.Id),
                 tool.Title!,
-                ToolDockSide.Right)
-            {
-                Description = string.Empty,
-                IconPath = string.Empty
-            });
-        using var context = new TestHostContext(toolStrategies: [strategy]);
+                string.Empty,
+                ToolDockSide.Right,
+                ToolCloseBehavior.Hide));
+        using var context = new TestHostContext(toolContributions: [contribution]);
         var mainViewModel = context.CreateMainWindowViewModel();
         var manager = GetManagedToolModel<ToolManagementViewModel>(
             context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
@@ -198,7 +194,8 @@ public sealed class ToolViewModelTests
             }
         };
 
-        context.Factory.HideDockable(tool);
+        var managedTool = context.Factory.CreatedTools[tool.Id];
+        context.Factory.HideDockable(managedTool);
 
         Assert.False(item.IsVisible);
         Assert.Equal(1, layoutChanges);
@@ -218,43 +215,42 @@ public sealed class ToolViewModelTests
             Title = "Pinned Tool",
             CanClose = true
         };
-        var strategy = new StubToolStrategy(
+        var contribution = new StubToolContribution(
             tool,
-            new ToolMetadata(
+            new ToolDescriptor(
                 new ToolTypeId(tool.Id),
                 tool.Title!,
-                ToolDockSide.Left)
-            {
-                Description = string.Empty,
-                IconPath = string.Empty
-            });
-        using var context = new TestHostContext(toolStrategies: [strategy]);
+                string.Empty,
+                ToolDockSide.Left,
+                ToolCloseBehavior.Hide));
+        using var context = new TestHostContext(toolContributions: [contribution]);
         _ = context.CreateMainWindowViewModel();
         var data = context.Factory.GetToolManagementData()!;
         var manager = GetManagedToolModel<ToolManagementViewModel>(
             context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
         var item = manager.ToolItems.Single(candidate => candidate.ToolId == tool.Id);
 
-        context.Factory.PinDockable(tool);
+        var managedTool = context.Factory.CreatedTools[tool.Id];
+        context.Factory.PinDockable(managedTool);
         manager.SyncToolsVisibility();
 
         Assert.True(item.IsVisible);
-        var owningRoot = context.Factory.FindRoot(tool, _ => true)!;
-        Assert.Contains(tool, owningRoot.LeftPinnedDockables!);
+        var owningRoot = context.Factory.FindRoot(managedTool, _ => true)!;
+        Assert.Contains(managedTool, owningRoot.LeftPinnedDockables!);
 
         manager.ToggleToolVisibility(item);
 
         Assert.False(item.IsVisible);
-        Assert.DoesNotContain(tool, owningRoot.LeftPinnedDockables!);
-        Assert.Contains(tool, owningRoot.HiddenDockables!);
+        Assert.DoesNotContain(managedTool, owningRoot.LeftPinnedDockables!);
+        Assert.Contains(managedTool, owningRoot.HiddenDockables!);
 
         manager.ToggleToolVisibility(item);
 
         Assert.True(item.IsVisible);
-        Assert.DoesNotContain(tool, owningRoot.HiddenDockables!);
+        Assert.DoesNotContain(managedTool, owningRoot.HiddenDockables!);
         Assert.Contains(
             EnumerateDockables(data.RootDock),
-            dockable => ReferenceEquals(dockable, tool));
+            dockable => ReferenceEquals(dockable, managedTool));
     }
 
     private static IEnumerable<IDockable> EnumerateDockables(IDockable root)

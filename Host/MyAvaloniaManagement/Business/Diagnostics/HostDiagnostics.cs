@@ -10,7 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
 using DocumentTypeId = MyAvaloniaManagement.PluginSdk.DocumentTypeId;
 using PluginLifecycleStage = MyAvaloniaManagement.Business.Lifecycle.PluginLifecycleStage;
 

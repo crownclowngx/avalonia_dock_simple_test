@@ -15,8 +15,7 @@ using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagement.Views.Hello;
 using MyAvaloniaManagement.Views.Tools;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Helpers;
@@ -51,8 +50,6 @@ internal static class ServiceCollectionExtensions
         // 事件总线由当前根容器独占；禁止使用进程静态实例，确保多 Runtime 与并行测试互不串扰。
         services.AddSingleton<HostEventBus>();
         services.AddSingleton<IHostEventBus>(provider =>
-            provider.GetRequiredService<HostEventBus>());
-        services.AddSingleton<MyAvaloniaManagement.PluginSdk.IHostEventBus>(provider =>
             provider.GetRequiredService<HostEventBus>());
 
         // 每个由托管插件创建的 Document 都拥有独立 Scope。插件只依赖公共创建接口，

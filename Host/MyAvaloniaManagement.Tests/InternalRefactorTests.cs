@@ -1,8 +1,5 @@
-using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.ToolCreation;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -12,7 +9,7 @@ namespace MyAvaloniaManagement.Tests;
 public sealed class InternalRefactorTests
 {
     [Fact]
-    public void G10Host内部广播类型已删除且消费者不再依赖公共事件总线()
+    public void Host内部直接协作消费者不依赖Sdk事件总线()
     {
         var hostAssembly = typeof(MyAvaloniaManagement.ViewModels.ManagementFactory).Assembly;
         const string removedNamespace = "MyAvaloniaManagement.Message.";
@@ -38,17 +35,13 @@ public sealed class InternalRefactorTests
                 .SelectMany(constructor => constructor.GetParameters())
                 .Select(parameter => parameter.ParameterType);
             Assert.DoesNotContain(
-                typeof(MyAvaloniaManagementCommon.Events.IHostEventBus),
+                typeof(IHostEventBus),
                 constructorParameters);
         }
 
-        var sdkEventTypes = typeof(MyAvaloniaManagementCommon.Events.IHostEventBus)
-            .Assembly.ExportedTypes
-            .Where(type => type.Namespace == "MyAvaloniaManagementCommon.Events")
-            .ToArray();
         Assert.Equal(
-            [typeof(MyAvaloniaManagementCommon.Events.IHostEventBus)],
-            sdkEventTypes);
+            "MyAvaloniaManagement.PluginSdk",
+            typeof(IHostEventBus).Assembly.GetName().Name);
     }
 
     [Fact]

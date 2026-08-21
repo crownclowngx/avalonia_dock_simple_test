@@ -13,7 +13,6 @@
         <PluginVersion>2.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
         <ManagedPluginEntryType>BiliDownloader.Plugin.BiliDownloaderPluginModule</ManagedPluginEntryType>
-        <ManagedPluginUseV2EntryContract>true</ManagedPluginUseV2EntryContract>
         <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
         <ManagedPluginSdkMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginSdkMaxExclusive>
     </PropertyGroup>

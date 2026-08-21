@@ -5,8 +5,7 @@ using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Events;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.UiTests;
 

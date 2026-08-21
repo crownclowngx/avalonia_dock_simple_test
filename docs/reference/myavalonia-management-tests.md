@@ -2,9 +2,9 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G12 的 Core/UI SDK、
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G13 的 Core/UI SDK、
 > manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录、Host Dock Adapter、
-> Document V2、Layout V2、internal 生命周期以及四个业务插件真实 V2 迁移。最新测试数量和覆盖率必须从本轮
+> Document V2、Layout V2、internal 生命周期、四个业务插件迁移及 V1 生产面删除。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -25,6 +25,25 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 `artifacts/test-results/Documentation/summary.json`。
 
 当前文档门禁不调用 Windows Smoke、发布总门禁或发布验收项目；通过它不能冒充 Windows 发布放行。
+
+### V2 G13 唯一生产面门禁
+
+修改 Host/SDK 依赖、插件入口、统一构建 Target、打包脚本或 Legacy 防回流规则时运行：
+
+```powershell
+.\scripts\Test-HostV2ProductionSurface.ps1 -Configuration Release
+```
+
+该入口执行 Release `-warnaserror` 构建、Host 覆盖率、SDK 与三个业务测试项目、旧 API 编译负例、
+源码和依赖闭包扫描、四插件两轮确定性测试 ZIP、真实 Host 加载、诊断脱敏及文档门禁。MyPlugTest
+没有独立业务测试项目，由 Host Plugin/UI 套件覆盖。结果写入
+`artifacts/test-results/HostV2ProductionSurface/summary.json`，并固定记录 AIFLOW、Windows CI/Smoke、
+ReleaseAcceptance、发布门禁和 `publishable` 均为 `false`。
+
+2026-08-22 实测 Host Unit 168、UI 52、Plugin 202，共 **422/422**；行覆盖率 **83.19%**、
+分支覆盖率 **68.81%**。PluginSdk **34/34**，DaTang **62/62**、MySmallTools **184/184**、
+BiliDownloader **718/718**。四插件各两次隔离测试包完全一致，具体文件数和 SHA-256 见
+[V2 G13 专项记录](../plan-history/host-v2/g13-remove-v1-production-surface.md)。
 
 ### V2 G12 BiliDownloader 专项门禁
 

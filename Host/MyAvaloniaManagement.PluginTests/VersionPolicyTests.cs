@@ -8,7 +8,7 @@ using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels.Hello;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
 using MyPlugTest.Plugin;
 using MySmallTools.Plugin;
 using V2PluginModule = MyAvaloniaManagement.PluginSdk.UI.IPluginModule;
@@ -32,9 +32,9 @@ public sealed class VersionPolicyTests
     {
         var properties = ReadVersionProperties();
         var hostAssembly = typeof(WelcomeViewModel).Assembly;
-        // 当前 Host 仍通过 G2 Legacy 阶段桥运行。这里验证它继续投影集中 SDK 的二进制身份，
-        // manifest v2 的单一 SDK 区间直接投影最终 Core/UI SDK 版本线；最终包仍由专项门禁验证。
-        var legacyContractAssembly = typeof(IPluginModule).Assembly;
+        // manifest v2 的单一 SDK 区间直接来自最终 Core 契约程序集；UI 程序集同版本事实
+        // 由 PluginSdkCompatibilityProfile 和 SDK 专项门禁交叉验证。
+        var sdkContractAssembly = typeof(PluginId).Assembly;
 
         Assert.Equal("2.0.0", properties["MyAvaloniaProductVersion"]);
         Assert.Equal("2.0.0", properties["MyAvaloniaPluginSdkVersion"]);
@@ -58,15 +58,15 @@ public sealed class VersionPolicyTests
         AssertVersionFact(
             "Plugin SDK Version/InformationalVersion",
             properties["MyAvaloniaPluginSdkVersion"],
-            ReadInformationalVersionCore(legacyContractAssembly));
+            ReadInformationalVersionCore(sdkContractAssembly));
         AssertVersionFact(
             "Plugin SDK FileVersion",
             properties["MyAvaloniaPluginSdkFileVersion"],
-            ReadFileVersion(legacyContractAssembly));
+            ReadFileVersion(sdkContractAssembly));
         AssertVersionFact(
             "Plugin SDK AssemblyVersion",
             properties["MyAvaloniaPluginSdkAssemblyVersion"],
-            legacyContractAssembly.GetName().Version?.ToString());
+            sdkContractAssembly.GetName().Version?.ToString());
 
         AssertProjectMapping(
             Path.Combine("Host", "MyAvaloniaManagement", "MyAvaloniaManagement.csproj"),
@@ -84,14 +84,6 @@ public sealed class VersionPolicyTests
             Path.Combine("Host", "MyAvaloniaManagement.PluginSdk.UI", "MyAvaloniaManagement.PluginSdk.UI.csproj"),
             "PackageVersion",
             "$(MyAvaloniaPluginSdkVersion)");
-        AssertProjectMapping(
-            Path.Combine("Host", "MyAvaloniaManagement.LegacyPluginContracts", "MyAvaloniaManagement.LegacyPluginContracts.csproj"),
-            "AssemblyVersion",
-            "$(MyAvaloniaPluginSdkAssemblyVersion)");
-        AssertProjectMapping(
-            Path.Combine("Host", "MyAvaloniaManagement.LegacyPluginContracts", "MyAvaloniaManagement.LegacyPluginContracts.csproj"),
-            "IsPackable",
-            "false");
     }
 
     [Fact]
@@ -227,8 +219,7 @@ public sealed class VersionPolicyTests
                 plugin.Assembly.GetName().Name + ".dll",
                 manifest.EntryPoint.Assembly);
             var expectedEntryType = Assert.Single(plugin.Assembly.ExportedTypes, type =>
-                (typeof(IPluginModule).IsAssignableFrom(type) ||
-                 typeof(V2PluginModule).IsAssignableFrom(type)) &&
+                typeof(V2PluginModule).IsAssignableFrom(type) &&
                 !type.IsAbstract).FullName!;
             AssertVersionFact(
                 $"{plugin.Name} entry type expression",

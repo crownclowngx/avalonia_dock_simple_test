@@ -169,8 +169,8 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
     }
 
     /// <summary>
-    /// 把尚待迁移的 Legacy 生命周期和最终 SDK 生命周期适配为相同 internal 回调句柄。
-    /// 适配只发生在 Provider 边界，不向协调器泄漏兼容判断，也不恢复 public Manager。
+    /// 把最终 SDK 生命周期收窄为 Host internal 回调句柄。
+    /// Provider 边界只验证唯一 V2 契约，不再承担版本分派或兼容适配职责。
     /// </summary>
     internal static PluginLifecycleCallbacks CreateLifecycleCallbacks(
         object lifecycle,
@@ -178,18 +178,15 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
     {
         ArgumentNullException.ThrowIfNull(lifecycle);
         ArgumentNullException.ThrowIfNull(implementationType);
-        return lifecycle switch
+        if (lifecycle is not IPluginLifecycle sdk)
         {
-            IPluginLifecycle sdk => new PluginLifecycleCallbacks(
-                sdk.InitializeAsync,
-                sdk.ShutdownAsync),
-            MyAvaloniaManagementCommon.Plugin.IPluginLifecycle legacy =>
-                new PluginLifecycleCallbacks(
-                    legacy.InitializeAsync,
-                    legacy.ShutdownAsync),
-            _ => throw new InvalidOperationException(
-                $"生命周期实现 {implementationType.FullName} 未实现受支持的 SDK 契约。"),
-        };
+            throw new InvalidOperationException(
+                $"生命周期实现 {implementationType.FullName} 未实现 V2 SDK 契约。");
+        }
+
+        return new PluginLifecycleCallbacks(
+            sdk.InitializeAsync,
+            sdk.ShutdownAsync);
     }
 
     internal DocumentScopeManager GetDocumentScopeManager(PluginId pluginId) =>

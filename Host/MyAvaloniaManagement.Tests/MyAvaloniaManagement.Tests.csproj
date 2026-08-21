@@ -21,6 +21,5 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MyAvaloniaManagement\MyAvaloniaManagement.csproj" />
-    <ProjectReference Include="..\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj" />
   </ItemGroup>
 </Project>

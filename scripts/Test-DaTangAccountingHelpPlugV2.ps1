@@ -115,8 +115,10 @@ try {
         & rg --quiet ([Regex]::Escape($requiredReference)) $projectPath
         if ($LASTEXITCODE -ne 0) { throw "G10 DaTang 缺少最终 SDK 引用：$requiredReference。" }
     }
-    & rg --quiet '<ManagedPluginUseV2EntryContract>true</ManagedPluginUseV2EntryContract>' $projectPath
-    if ($LASTEXITCODE -ne 0) { throw 'G10 DaTang 构建入口没有切换到最终 V2 IPluginModule。' }
+    Assert-RgAbsent `
+        'ManagedPluginUseV2EntryContract|ManagedPluginHostApi|ManagedPluginCommonContract' `
+        $projectPath `
+        'G13 后 DaTang 项目不得恢复过渡入口开关或 Host/Common 双区间。'
 
     $firstPackageRoot = Join-Path $resultRoot 'package-first'
     $secondPackageRoot = Join-Path $resultRoot 'package-second'

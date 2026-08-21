@@ -54,14 +54,6 @@
         "resolved": "12.1.0",
         "contentHash": "p6OKt6O7vOub4TS2pAjaeW0Y13oxrPs4uixeVZpJByiSQKKk+LyApN5yRy2JerpfTMtI86Y5pNwugyKTHZJnAw=="
       },
-      "Dock.Model": {
-        "type": "Transitive",
-        "resolved": "12.0.0.2",
-        "contentHash": "yLD28SMkaGMVdv/kVkO1t+GkBbFWRPKlNoXh+KZ/lPjwCJKg8vm0xmdqdgszMZGbpcWPT7T2LZk/JuwECndftA==",
-        "dependencies": {
-          "Dock.Controls.Recycling.Model": "12.0.0.2"
-        }
-      },
       "Flurl": {
         "type": "Transitive",
         "resolved": "4.0.0",
@@ -201,13 +193,6 @@
           "protobuf-net": "[3.2.56, )"
         }
       },
-      "bilidownloader.releaseacceptance": {
-        "type": "Project",
-        "dependencies": {
-          "BiliDownloader": "[2.0.0, )",
-          "Microsoft.Data.Sqlite": "[10.0.10, )"
-        }
-      },
       "myavaloniamanagement.pluginsdk": {
         "type": "Project"
       },
@@ -221,15 +206,6 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, 10.0.10]",
           "MyAvaloniaManagement.PluginSdk": "[2.0.0, )",
           "Semi.Avalonia": "[12.1.0, 12.1.0]"
-        }
-      },
-      "MyAvaloniaManagementCommon": {
-        "type": "Project",
-        "dependencies": {
-          "Avalonia": "[12.1.0, )",
-          "Dock.Model.Mvvm": "[12.0.0.2, )",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "Newtonsoft.Json": "[13.0.4, )"
         }
       },
       "Avalonia": {
@@ -257,22 +233,6 @@
         "requested": "[8.4.2, )",
         "resolved": "8.4.2",
         "contentHash": "WadCzGEc2U+3e20avRLng4qNtt4zoOGWrdUISqJWrHe3/FSnrYjuM5Sb4yQb09LhkBXrrI4Zt3dLKgRMbItsrg=="
-      },
-      "Dock.Controls.Recycling.Model": {
-        "type": "CentralTransitive",
-        "requested": "[12.0.0.2, )",
-        "resolved": "12.0.0.2",
-        "contentHash": "klVsAStNW7SyvIvV6060o3Rx0Rgzo2Dus3MPJD7Td87FJyK0X7djki8m/EOtD6qi3RyZaRZTLOEjskNk12Q/3Q=="
-      },
-      "Dock.Model.Mvvm": {
-        "type": "CentralTransitive",
-        "requested": "[12.0.0.2, )",
-        "resolved": "12.0.0.2",
-        "contentHash": "+lK3PWXjSUiyWB8a++/9y1MwPFCs67zsNANNX9JKB9ZxpoeRzmamGAH5AYam31dLhluW2dul8r7FACGXyJsyYw==",
-        "dependencies": {
-          "CommunityToolkit.Mvvm": "8.4.0",
-          "Dock.Model": "12.0.0.2"
-        }
       },
       "Flurl.Http": {
         "type": "CentralTransitive",
@@ -321,12 +281,6 @@
         "requested": "[10.0.10, )",
         "resolved": "10.0.10",
         "contentHash": "z/2xXlFw2aLGjHyEm6E0tQ+In6VfzQzTrtArbQ2c0TQE16ZbyDCMGPvaUT9I0s8rgy9sRWlU2P9waW37qV04qA=="
-      },
-      "Newtonsoft.Json": {
-        "type": "CentralTransitive",
-        "requested": "[13.0.4, )",
-        "resolved": "13.0.4",
-        "contentHash": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A=="
       },
       "protobuf-net": {
         "type": "CentralTransitive",

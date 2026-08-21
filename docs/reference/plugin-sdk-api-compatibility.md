@@ -16,8 +16,8 @@ Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/ # V2 UI
 
 每个目录均包含 `PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt`。Core 包、程序集和根命名空间统一为
 `MyAvaloniaManagement.PluginSdk`；UI 包、程序集和根命名空间统一为
-`MyAvaloniaManagement.PluginSdk.UI`。Host 可执行程序集与不可打包的
-`MyAvaloniaManagement.LegacyPluginContracts` 内部编译桥都不是活动 SDK API 的事实源。
+`MyAvaloniaManagement.PluginSdk.UI`。Host 可执行程序集不是活动 SDK API 的事实源；
+`MyAvaloniaManagement.LegacyPluginContracts` 已在 V2 G13 删除，不再形成可编译程序集。
 
 活动主版本由根级 `Directory.Version.props` 的 `MyAvaloniaPluginSdkApiBaseline` 选择。该值必须与
 `MyAvaloniaPluginSdkVersion`、`MyAvaloniaPluginSdkAssemblyVersion` 的主版本一致。Core 与 UI 必须使用

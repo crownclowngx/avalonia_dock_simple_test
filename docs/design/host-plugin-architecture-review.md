@@ -1,13 +1,13 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-21（已同步 Managed Plugin V2 G12）<br>
+> 更新日期：2026-08-22（已同步 Managed Plugin V2 G13）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
 > 不在本轮范围：逐项评审插件业务功能、第三方插件市场、运行时热卸载、插件沙箱
 
-> V2 当前状态：G0–G12 已完成。四个业务插件均使用最终 SDK、声明式贡献与普通模型；Legacy
-> 阶段桥已没有生产插件消费者，留给 G13 删除。
+> V2 当前状态：G0–G13 已完成。四个业务插件均使用最终 SDK、声明式贡献与普通模型；Legacy
+> 项目、兼容适配和过渡构建属性已经删除。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -33,7 +33,6 @@
 flowchart TB
     Host["MyAvaloniaManagement<br/>Avalonia 桌面宿主"]
     Sdk["PluginSdk + PluginSdk.UI<br/>Host / 四个业务插件生产契约"]
-    Legacy["LegacyPluginContracts<br/>G13 待删除阶段桥"]
     Dock["Avalonia 12 + Dock 12<br/>UI 与停靠模型"]
 
     Bili["BiliDownloader<br/>下载子系统"]
@@ -61,11 +60,9 @@ BiliDownloader 1 Document + 1 Tool + 1 Lifecycle。不存在双接口回退。
 [`ManagedOnlyPluginLoadingTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/ManagedOnlyPluginLoadingTests.cs)。
 
 **[代码事实]** G2 已把最终 V2 SDK 分成平台无关的 `MyAvaloniaManagement.PluginSdk` 与真实
-`MyAvaloniaManagement.PluginSdk.UI`。Host 已在 G5 迁移，四个业务插件已在 G9–G12 迁移。
-`MyAvaloniaManagement.LegacyPluginContracts` 仍输出旧程序集名以维持 G13 前的仓库测试，但已没有
-生产插件消费者；它不是 SDK，也不得新增生产消费者。参见
-[`MyAvaloniaManagement.LegacyPluginContracts.csproj`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj)
-和 [V2 G2 记录](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)。
+`MyAvaloniaManagement.PluginSdk.UI`。Host 已在 G5 迁移，四个业务插件已在 G9–G12 迁移；G13 又删除
+Legacy 项目、双生命周期适配和入口契约选择开关。活动编译与加载图现在只有 Core/UI V2 契约。
+历史阶段桥的建立原因仍见 [V2 G2 记录](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)。
 
 **[架构判断]** 对内部可信插件，这种强类型、进程内、共享 UI 栈的方式开发效率很高；代价是宿主、公共契约、Avalonia、Dock 和插件需要协同升级，不能把它当成稳定的第三方插件 ABI。
 
@@ -287,24 +284,24 @@ Migrator、浮动字段或历史 ID 归一化。缺失/生命周期不可用插�
 | --- | --- | --- |
 | .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.0、Dock 12.0.0.2；产品/SDK、构建和包版本分别由 `Directory.Version.props`、`Directory.Build.props`、`Directory.Packages.props` 集中管理 |
 | 插件目录扫描 | 已实现 | 按规范化根目录缓存线程安全快照；只加载清单声明且携带 deps 的入口，模块结构错误按目录隔离 |
-| Managed-only V2 | 部分迁移 | Host、MyPlugTest、DaTang 与 MySmallTools 使用最终 UI SDK 精确入口；BiliDownloader 在 G12 前由预检隔离 |
-| 显式扩展贡献 | 已实现并迁移三个插件 | Host、MyPlugTest、DaTang 与 MySmallTools 一次登记模型/View/Descriptor；Builder 全量校验后原子发布不可变 `PluginRegistry` |
+| Managed-only V2 | 已实现 | Host 与四个业务插件只使用最终 UI SDK 精确入口；普通类型冒充模块会在构造前隔离 |
+| 显式扩展贡献 | 已实现 | Host 与四个插件一次登记模型/View/Descriptor；Builder 全量校验后原子发布不可变 `PluginRegistry` |
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient；根容器启用构建和 Scope 验证 |
 | 插件生命周期 | 已实现 V2 | PluginId 正序初始化、成功项反序关闭、幂等、失败隔离、超时和只读可用性投影已有测试；不支持热卸载 |
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
 | 布局持久化 | 已实现 V2 | 唯一严格 schema、原子写入、坏文件隔离、可用性门控和整体回退已有测试；不读取 V1 |
 | Document 保存 | 已实现 V2 | 六字段信封、插件内容 schema、统一保存、关闭/退出确认、备份恢复和原子替换均有回归；MyPlugTest Welcome 与 DaTang 银行对账已真实接入 |
-| 每 Document Scope | 已实现 | Host、MyPlugTest 与 DaTang 经 V2 Activator 创建 scoped 模型；其余两插件等待迁移，关闭与退出释放已有门禁 |
+| 每 Document Scope | 已实现 | Host 与四个插件均经 V2 Activator 创建 scoped 模型，关闭与退出释放已有门禁 |
 | Document 关闭取消 | 已实现 | scoped `IDocumentLifetime` 在 Dock 确认关闭后先发出取消再释放 Scope；局部任务协作退出且不等待，插件级后台任务不受影响 |
 | 加载上下文隔离 | 已实现（托管私有依赖） | 每目录一个不可回收 ALC；共享 SDK 只来自默认上下文，普通私有依赖只由各插件 deps/RID 图解析，同名不同版本回归已覆盖 |
-| 错误处理与诊断 | 已实现 V1 | 插件发现、程序集/依赖加载、模块与扩展组合、DI、生命周期和布局统一进入会话诊断；单插件加载失败隔离后继续，契约错误由独立启动错误窗汇总展示；JSON Lines 日志保留最近 20 次会话，Console/Trace 仅作兼容镜像 |
+| 错误处理与诊断 | 已实现 V2 | 插件发现、程序集/依赖加载、模块与扩展组合、DI、生命周期和布局统一进入会话诊断；单插件加载失败隔离后继续，JSON Lines 日志保持白名单脱敏 |
 | ID 与元数据 | 已实现 V2 | 稳定 ID 是引用型值对象；V2 只接受主 ID，Descriptor 与所有权经原子 Registry 校验，不存在 LegacyIds 或首次胜出 |
-| 构建与部署 | 已实现 V1 | 根级 Props/Targets 统一生成清单、收集声明资产并只清理当前插件目录；四插件保持独立版本和 ZIP |
+| 构建与部署 | 已实现 V2 | 根级 Props/Targets 无条件验证 V2 入口、生成清单、收集声明资产并只清理当前插件目录；四插件保持独立版本和 ZIP |
 | 真实包验证 | 已实现基础矩阵 | 四个最终 win-x64 ZIP 各做两次隔离确定性构建、严格文件复验和宿主真实加载；长期运行仍是独立门禁 |
-| 插件 manifest | 已实现 V1 | 四个清单由项目身份、版本和显式兼容区间生成；源码树不保留手写副本，能力和插件依赖声明仍未纳入 V1 |
-| Host API 兼容检查 | 已实现 V1 | 宿主先完成全部清单解析、显式左闭右开版本区间检查和 `pluginId` 全局去重，再创建 ALC；缺失/损坏/不兼容隔离单目录，重复身份在加载任何插件 DLL 前阻断启动 |
-| 插件启停与依赖图 | 部分实现 | 生命周期支持可选依赖声明、缺失/重复/循环依赖阻断和确定性拓扑排序；仍没有用户启停配置 |
-| 能力权限声明 | 未实现 | 插件可向根容器注册服务并执行任意进程内代码 |
+| 插件 manifest | 已实现 V2 | 四个清单由项目身份、版本、精确入口和单一 SDK 区间生成；源码树不保留手写副本 |
+| SDK 兼容检查 | 已实现 V2 | 宿主先完成严格清单解析、SDK 左闭右开区间检查和 `pluginId` 全局去重，再创建 ALC |
+| 插件启停 | 已实现 V2 | 生命周期按 PluginId 确定性启动、反向停止、失败隔离；不声明跨插件依赖 |
+| 能力权限声明 | 未实现 | 插件只能修改私有容器，但仍可在宿主进程执行可信代码；V2 不是安全沙箱 |
 | 运行时卸载/热更新 | 有意不做 | ALC 不可回收；内部插件采用重启更新 |
 
 ### 6.1 加载隔离需要准确理解
@@ -320,14 +317,16 @@ Migrator、浮动字段或历史 ID 归一化。缺失/生命周期不可用插�
 
 | 请求类型 | 解析位置 | 失败语义 |
 | --- | --- | --- |
-| `MyAvaloniaManagementCommon`、基础 SDK 依赖与显式 UI Profile | `AssemblyLoadContext.Default` | 身份或版本不兼容时拒绝当前插件 |
+| Core/UI SDK 依赖与显式 UI Profile | `AssemblyLoadContext.Default` | 身份或版本不兼容时拒绝当前插件 |
 | 插件 `.deps.json` 声明的托管/卫星依赖 | 当前插件 ALC | 当前插件失败，不借用其他插件程序集 |
 | 缺少入口 `.deps.json` | 不创建插件 ALC | `PLUGIN_DEPENDENCY_MANIFEST_MISSING` 并隔离目录 |
 | RID 原生资产 | 当前插件的 `AssemblyDependencyResolver` | 返回标准原生加载失败，不递归扫描其他插件 |
 
 **[设计意图]** 共享契约优先是为了保证跨边界类型只有一个 CLR 身份；私有依赖按插件 deps 解析是为了允许同名不同版本并存并保持发布闭包可审阅。`PluginLoadContext` 仍未启用 `isCollectible`，因为当前内部可信插件采用“重启更新”。ALC 只提供程序集名称解析隔离，不是安全沙箱，也不能隔离原生崩溃、CLR Module Initializer、进程级全局状态或恶意代码。
 
-**[验证证据]** 插件测试包含两个最小插件：它们引用程序集简单名称和类型全名相同、版本分别为 1.0.0.0 与 2.0.0.0 的私有依赖。测试证明两个版本分别进入不同 `PluginLoadContext`、没有进入默认上下文，同时两个插件看到同一个 `MyAvaloniaManagementCommon` 实例；缺少 V1 私有依赖时，V1 候选在服务注册前整体隔离，V2 插件仍可加载和执行。四个当前 Managed Plugin 也分别从真实 Release 构建目录完成模块发现。
+**[验证证据]** 插件测试包含两个最小 V2 插件：它们引用程序集简单名称和类型全名相同、版本分别为
+1.0.0.0 与 2.0.0.0 的私有依赖。测试证明两个版本分别进入不同 `PluginLoadContext`、没有进入默认上下文；
+缺少任一私有依赖时只隔离对应候选。四个当前 Managed Plugin 也从最终测试 ZIP 完成真实模块发现。
 
 ### 6.2 2026-08-11 宿主专项测试基线
 
@@ -591,7 +590,7 @@ Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. V2 G9–G12 已在上述 Host 链路上迁移四个业务插件，G13 只需删除无生产消费者的 Legacy 阶段桥；
+1. V2 G9–G12 已迁移四个业务插件，G13 已删除 Legacy 阶段桥并建立防回流门禁；
 2. 运行前 manifest v2、Core/UI 兼容检查、声明式 Plugin Registry 和用户可见诊断已经建立；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。

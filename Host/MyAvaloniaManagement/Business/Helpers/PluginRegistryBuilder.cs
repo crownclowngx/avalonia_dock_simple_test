@@ -264,7 +264,7 @@ internal sealed class PluginRegistryBuilder
                     code,
                     HostDiagnosticPhase.ExtensionDiscovery)
                 {
-                    PluginId = new MyAvaloniaManagementCommon.Plugin.PluginId(owner.Value),
+                    PluginId = owner,
                     StableId = group.Key.ToString(),
                     AssemblyName = contributor.Assembly.GetName(),
                 });

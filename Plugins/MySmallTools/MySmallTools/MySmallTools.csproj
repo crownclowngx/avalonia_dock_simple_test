@@ -14,8 +14,6 @@
         <PluginVersion>2.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
         <ManagedPluginEntryType>MySmallTools.Plugin.MySmallToolsPluginModule</ManagedPluginEntryType>
-        <!-- G11 起入口只使用最终版 UI SDK；构建探针不得回退到 Legacy 合同。 -->
-        <ManagedPluginUseV2EntryContract>true</ManagedPluginUseV2EntryContract>
         <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
         <ManagedPluginSdkMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginSdkMaxExclusive>
         <!-- 把 NuGet 原生内容重定向到插件私有目录，禁止默认复制到宿主输出根目录。 -->

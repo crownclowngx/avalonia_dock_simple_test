@@ -182,7 +182,6 @@ $pluginId = $properties['ManagedPluginId']
 $pluginVersion = $properties['PluginVersion']
 $pluginDirectoryName = $properties['ManagedPluginDirectoryName']
 $entryType = $properties['ManagedPluginEntryType']
-$usesV2EntryContract = $properties['ManagedPluginUseV2EntryContract'] -eq 'true'
 $sdkMinInclusive = Resolve-CentralProperty $properties['ManagedPluginSdkMinInclusive']
 $sdkMaxExclusive = Resolve-CentralProperty $properties['ManagedPluginSdkMaxExclusive']
 $runtimeIdentifier = if ($properties['ManagedPluginRuntimeIdentifier']) {
@@ -354,30 +353,21 @@ try {
         throw "入口程序集版本 $assemblyVersion 与插件版本 $pluginVersion 不一致。"
     }
 
+    # 入口预检与 Host Loader 共享同一组 V2 程序集事实。这里不保留契约选择开关，
+    # 避免项目能构建一种入口、打包脚本却按另一种接口反射验证的双轨状态。
     $sharedAssemblyPaths = @{}
-    if ($usesV2EntryContract) {
-        $coreContractPath = Join-Path $stableDotnetArtifacts `
-            'bin/MyAvaloniaManagement.PluginSdk/release/MyAvaloniaManagement.PluginSdk.dll'
-        $entryContractPath = Join-Path $stableDotnetArtifacts `
-            'bin/MyAvaloniaManagement.PluginSdk.UI/release/MyAvaloniaManagement.PluginSdk.UI.dll'
-        foreach ($contractPath in $coreContractPath, $entryContractPath) {
-            if (-not (Test-Path -LiteralPath $contractPath -PathType Leaf)) {
-                throw "隔离构建缺少入口预检所需的 V2 契约成品：$contractPath"
-            }
+    $coreContractPath = Join-Path $stableDotnetArtifacts `
+        'bin/MyAvaloniaManagement.PluginSdk/release/MyAvaloniaManagement.PluginSdk.dll'
+    $entryContractPath = Join-Path $stableDotnetArtifacts `
+        'bin/MyAvaloniaManagement.PluginSdk.UI/release/MyAvaloniaManagement.PluginSdk.UI.dll'
+    foreach ($contractPath in $coreContractPath, $entryContractPath) {
+        if (-not (Test-Path -LiteralPath $contractPath -PathType Leaf)) {
+            throw "隔离构建缺少入口预检所需的 V2 契约成品：$contractPath"
         }
-        $sharedAssemblyPaths['MyAvaloniaManagement.PluginSdk'] = $coreContractPath
-        $sharedAssemblyPaths['MyAvaloniaManagement.PluginSdk.UI'] = $entryContractPath
-        $contractTypeName = 'MyAvaloniaManagement.PluginSdk.UI.IPluginModule'
     }
-    else {
-        $entryContractPath = Join-Path $stableDotnetArtifacts `
-            'bin/MyAvaloniaManagement.LegacyPluginContracts/release/MyAvaloniaManagementCommon.dll'
-        if (-not (Test-Path -LiteralPath $entryContractPath -PathType Leaf)) {
-            throw "隔离构建缺少入口预检所需的 Legacy 契约成品：$entryContractPath"
-        }
-        $sharedAssemblyPaths['MyAvaloniaManagementCommon'] = $entryContractPath
-        $contractTypeName = 'MyAvaloniaManagementCommon.Plugin.IPluginModule'
-    }
+    $sharedAssemblyPaths['MyAvaloniaManagement.PluginSdk'] = $coreContractPath
+    $sharedAssemblyPaths['MyAvaloniaManagement.PluginSdk.UI'] = $entryContractPath
+    $contractTypeName = 'MyAvaloniaManagement.PluginSdk.UI.IPluginModule'
     Assert-PackagedEntryPoint `
         -PluginAssemblyPath (Join-Path $pluginRoot "$assemblyName.dll") `
         -SharedAssemblyPaths $sharedAssemblyPaths `

@@ -4,12 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 using MyAvaloniaManagement.ViewModels.Tools;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.Save;
-using MyAvaloniaManagementCommon.ToolCreation;
 using MyPlugTest.Plugin;
 using MySmallTools.Plugin;
 
@@ -38,7 +35,7 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void Bili已切换最终V2入口且G13前Legacy公共策略接口保持不变()
+    public void 四插件入口只实现最终V2模块契约()
     {
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),
@@ -49,12 +46,10 @@ public sealed class PluginCompatibilityTests
         Assert.Equal(
             ["Configure"],
             typeof(IPluginModule).GetMethods().Select(method => method.Name));
-        Assert.Equal(2, typeof(IDocumentCreationStrategy).GetMethods().Length);
-        Assert.Equal(2, typeof(IToolCreationStrategy).GetMethods().Length);
-
-        Assert.False(typeof(IPluginModule).IsAssignableFrom(typeof(BiliDownloaderPluginModule)));
-        Assert.True(typeof(MyAvaloniaManagement.PluginSdk.UI.IPluginModule)
-            .IsAssignableFrom(typeof(BiliDownloaderPluginModule)));
+        Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(BiliDownloaderPluginModule)));
+        Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(DaTangAccountingHelpPluginModule)));
+        Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(MyPlugTestPluginModule)));
+        Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(MySmallToolsPluginModule)));
     }
 
     [Fact]

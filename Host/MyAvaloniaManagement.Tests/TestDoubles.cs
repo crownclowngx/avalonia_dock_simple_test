@@ -9,9 +9,8 @@ using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.ToolCreation;
 using Avalonia.Controls;
+using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Tests;
@@ -25,7 +24,7 @@ namespace MyAvaloniaManagement.Tests;
 internal sealed class TestHostContext : IDisposable
 {
     public TestHostContext(
-        IEnumerable<IToolCreationStrategy>? toolStrategies = null,
+        IEnumerable<StubToolContribution>? toolContributions = null,
         Action<IServiceCollection>? configureServices = null,
         Action<IServiceCollection, PluginRegistryBuilder>? configureContributions = null)
     {
@@ -53,27 +52,12 @@ internal sealed class TestHostContext : IDisposable
                 TempDirectory,
                 AppearanceSettingsStore.SettingsFileName)));
         services.AddSingleton(PluginModuleCatalog.Discover(PluginDiscoverySnapshot.Empty));
-        foreach (var strategy in toolStrategies ?? [])
+        foreach (var contribution in toolContributions ?? [])
         {
-            RegisterLegacyToolStrategy(services, registryBuilder, strategy);
+            RegisterToolContribution(services, registryBuilder, contribution);
         }
         configureContributions?.Invoke(services, registryBuilder);
-        var customServiceStart = services.Count;
         configureServices?.Invoke(services);
-        // 旧测试通过 DI 工厂创建 scoped 策略。生产模块已禁止这种绕行；测试组合根在构建前
-        // 将新增的接口描述符显式提升为 Builder 声明，以继续验证 Document Scope 行为。
-        for (var index = services.Count - 1; index >= customServiceStart; index--)
-        {
-            var descriptor = services[index];
-            if (descriptor.ServiceType == typeof(IToolCreationStrategy))
-            {
-                services.RemoveAt(index);
-                using var inspectionProvider = services.BuildServiceProvider();
-                var strategy = (IToolCreationStrategy)CreateFromDescriptor(
-                    inspectionProvider, descriptor);
-                RegisterLegacyToolStrategy(services, registryBuilder, strategy);
-            }
-        }
 
         // 纯单元测试没有 Avalonia 平台，使用不构造 Control 的 V2 工厂替身；真实 View
         // 预构建与失败回滚由 Headless UI 测试覆盖。
@@ -128,40 +112,16 @@ internal sealed class TestHostContext : IDisposable
     public MainWindowViewModel CreateMainWindowViewModel() =>
         Provider.GetRequiredService<MainWindowViewModel>();
 
-    private static object CreateFromDescriptor(
-        IServiceProvider provider,
-        ServiceDescriptor descriptor) =>
-        descriptor.ImplementationInstance ??
-        descriptor.ImplementationFactory?.Invoke(provider) ??
-        ActivatorUtilities.CreateInstance(provider, descriptor.ImplementationType!);
-
-    private static void RegisterLegacyToolStrategy(
+    private static void RegisterToolContribution(
         IServiceCollection services,
         PluginRegistryBuilder builder,
-        IToolCreationStrategy strategy)
+        StubToolContribution contribution)
     {
-        var metadata = strategy.GetMetadata();
-        var sample = strategy.CreateTool();
-        var modelType = sample.GetType();
-        services.AddSingleton(modelType, _ => strategy.CreateTool());
+        var modelType = contribution.Model.GetType();
+        services.AddSingleton(modelType, contribution.Model);
         builder.AddTool(
             HostExtensionIds.V2Owner,
-            new ToolDescriptor(
-                new MyAvaloniaManagement.PluginSdk.ToolTypeId(metadata.ToolTypeId.Value),
-                metadata.DisplayName,
-                metadata.Description,
-                metadata.DockSide switch
-                {
-                    MyAvaloniaManagementCommon.ToolCreation.ToolDockSide.Right =>
-                        MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Right,
-                    MyAvaloniaManagementCommon.ToolCreation.ToolDockSide.Top =>
-                        MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Top,
-                    MyAvaloniaManagementCommon.ToolCreation.ToolDockSide.Bottom =>
-                        MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Bottom,
-                    _ => MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Left,
-                },
-                sample.CanClose ? ToolCloseBehavior.Hide : ToolCloseBehavior.Prevent,
-                metadata.IconPath),
+            contribution.Descriptor,
             modelType,
             typeof(TestContributionView),
             static () => new TestContributionView());
@@ -634,11 +594,9 @@ internal sealed class TrackedScopedNonSavableDocument :
 /// <summary>
 /// 返回固定工具和元数据的轻量工具策略。
 /// </summary>
-internal sealed class StubToolStrategy(
-    Tool tool,
-    ToolMetadata metadata) : IToolCreationStrategy
-{
-    public Tool CreateTool() => tool;
-
-    public ToolMetadata GetMetadata() => metadata;
-}
+/// <summary>把一个测试 Tool 模型与最终 V2 描述符绑定为不可变贡献。</summary>
+/// <remarks>
+/// 测试组合根直接消费这一事实，不再模拟已删除的 Strategy 激活协议；这样单元测试与生产
+/// Registry 使用相同的声明式输入，同时仍可注入精确模型实例验证显隐和 Pinned 行为。
+/// </remarks>
+internal sealed record StubToolContribution(Tool Model, ToolDescriptor Descriptor);

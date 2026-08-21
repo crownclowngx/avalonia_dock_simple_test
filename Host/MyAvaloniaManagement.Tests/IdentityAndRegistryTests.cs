@@ -1,24 +1,18 @@
-using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Constants;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.Save;
-using MyAvaloniaManagementCommon.ToolCreation;
-using Newtonsoft.Json;
 using Avalonia.Controls;
+using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Tests;
 
 /// <summary>
-/// 验证强类型身份的词法边界、磁盘表示，以及注册表的原子失败语义。
+/// 验证 V2 强类型身份的词法边界，以及注册表的原子失败语义。
 /// </summary>
 /// <remarks>
-/// 这些测试刻意同时覆盖“值对象能否安全携带历史别名”和“主 ID 能否进入注册表”两层规则：
-/// 历史 GUID、下划线与大写字符仍可被值对象读取，但只能作为 LegacyIds；主 ID 必须通过
-/// 组合根的命名空间、所有权和小写点分层校验。
+/// G13 后值对象本身只接受规范主 ID，不再承担“先接受历史词法、再由 Registry 拒绝”的双层职责。
+/// 所有权与重复检查仍由组合根统一完成，避免把跨贡献规则塞入单个值对象。
 /// </remarks>
 public sealed class IdentityAndRegistryTests
 {
@@ -29,41 +23,16 @@ public sealed class IdentityAndRegistryTests
     [InlineData("trailing ")]
     [InlineData("contains/slash")]
     [InlineData("包含中文")]
+    [InlineData("MyAvalonia.host.document.sample")]
+    [InlineData("myavalonia.host.document.sample_name")]
+    [InlineData("myavalonia..host.document.sample")]
+    [InlineData("myavalonia.host.document.-sample")]
     public void 值对象拒绝空白首尾空格和非法字符(string value)
     {
         Assert.Throws<ArgumentException>(() => new PluginId(value));
         Assert.Throws<ArgumentException>(() => new DocumentTypeId(value));
         Assert.Throws<ArgumentException>(() => new ToolTypeId(value));
         Assert.Throws<ArgumentException>(() => new CreationIntentId(value));
-    }
-
-    [Theory]
-    [InlineData("MyAvalonia.host.document.sample")]
-    [InlineData("myavalonia.host.document.sample_name")]
-    [InlineData("myavalonia..host.document.sample")]
-    [InlineData("myavalonia.host.document.-sample")]
-    public void 历史词法可读取但不能冒充规范主Id(string value)
-    {
-        Assert.False(new DocumentTypeId(value).IsCanonical);
-        Assert.False(new ToolTypeId(value).IsCanonical);
-    }
-
-    [Fact]
-    public void Document与Tool稳定Id在两种Json边界都保持字符串标量()
-    {
-        var documentId = new DocumentTypeId("myavalonia.host.document.sample");
-        var newtonsoftJson = JsonConvert.SerializeObject(documentId);
-        Assert.Equal("\"myavalonia.host.document.sample\"", newtonsoftJson);
-        Assert.Equal(documentId, JsonConvert.DeserializeObject<DocumentTypeId>(newtonsoftJson));
-
-        var systemTextDocumentJson = System.Text.Json.JsonSerializer.Serialize(documentId);
-        var toolId = new ToolTypeId("myavalonia.host.tool.sample");
-        var systemTextToolJson = System.Text.Json.JsonSerializer.Serialize(toolId);
-        Assert.Equal("\"myavalonia.host.document.sample\"", systemTextDocumentJson);
-        Assert.Equal("\"myavalonia.host.tool.sample\"", systemTextToolJson);
-        Assert.Equal(
-            toolId,
-            System.Text.Json.JsonSerializer.Deserialize<ToolTypeId>(systemTextToolJson));
     }
 
     [Fact]
@@ -79,7 +48,7 @@ public sealed class IdentityAndRegistryTests
             HostExtensionIds.V2Owner, services, builder);
         registration.AddDocument<DeclarativeDocument, EmptyView>(
             new DocumentDescriptor(
-                new MyAvaloniaManagement.PluginSdk.DocumentTypeId(primary.Value),
+                primary,
                 "示例",
                 "示例",
                 "测试"));
@@ -98,7 +67,7 @@ public sealed class IdentityAndRegistryTests
         var builder = new PluginRegistryBuilder();
         var registration = new PluginRegistration(
             HostExtensionIds.V2Owner, services, builder);
-        var duplicate = new MyAvaloniaManagement.PluginSdk.DocumentTypeId(
+        var duplicate = new DocumentTypeId(
             "myavalonia.host.document.duplicate");
         registration.AddDocument<DeclarativeDocument, EmptyView>(
             new DocumentDescriptor(duplicate, "第一项", "第一项", "测试"));
@@ -107,9 +76,9 @@ public sealed class IdentityAndRegistryTests
         // PluginRegistration 本身固定 owner；这里直接构造一个不同 owner 的内部声明，
         // 模拟候选快照被错误拼接，以验证提交前的所有者一致性防线。
         builder.AddDocument(
-            new MyAvaloniaManagement.PluginSdk.PluginId("myavalonia.plugin.foreign"),
+            new PluginId("myavalonia.plugin.foreign"),
             new DocumentDescriptor(
-                new MyAvaloniaManagement.PluginSdk.DocumentTypeId(
+                new DocumentTypeId(
                     "myavalonia.plugin.foreign.document.item"),
                 "外部",
                 "外部",

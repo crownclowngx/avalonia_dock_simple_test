@@ -4,8 +4,8 @@
 
 ## 快速开始
 
-> G12 当前事实：MyPlugTest、DaTangAccountingHelpPlug、MySmallTools 与 BiliDownloader 已全部迁移到
-> 最终 Core/UI SDK、声明式贡献和普通模型；Legacy 阶段桥留给 G13 删除。
+> G13 当前事实：四个业务插件均使用最终 Core/UI SDK、声明式贡献和普通模型；Legacy 项目、旧入口
+> 探针与 Host/Common 双区间已经整体删除。
 
 V2 快速开始入口：
 
@@ -52,11 +52,11 @@ V2 快速开始入口：
 
 ## 封版后候选计划
 
-以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G12；Host 最终契约及四个真实 V2 业务插件已建立：
+以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G13；Host 最终契约、四个真实 V2 业务插件及唯一生产面已建立：
 
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
-  G0–G14 可执行计划；G0–G12 已完成，G13–G14 尚未实现。
+  G0–G14 可执行计划；G0–G13 已完成，仅 G14 尚未实现。
 - [Managed Plugin V2 G0 绿色基线](./plan-history/host-v2/g0-green-baseline.md)：
   冻结 361 项 Host 测试、SDK API、包图、四插件包事实以及删除面、依赖白名单和消费者矩阵；
   本阶段未运行 Windows Smoke、CI 或发布门禁。
@@ -84,6 +84,8 @@ V2 快速开始入口：
   记录四 Document、关闭令牌、全屏端口、SECVID03/LibVLC 资源所有权、真实媒体和确定性测试 ZIP 证据。
 - [Managed Plugin V2 G12 BiliDownloader 迁移](./plan-history/host-v2/g12-bili-downloader-v2.md)：
   记录 Document schema 3、readiness、后台关闭、SOLID 责任划分、覆盖率和确定性测试 ZIP 证据。
+- [Managed Plugin V2 G13 删除 V1 生产面](./plan-history/host-v2/g13-remove-v1-production-surface.md)：
+  记录 Legacy 项目删除、唯一 V2 构建协议、编译负例、依赖白名单与非发布包矩阵。
 - [外部 Managed Plugin 开发与平台安装候选计划](./design/external-managed-plugin-development-and-installation-plan.md)：
   `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
 
@@ -117,6 +119,8 @@ V2 快速开始入口：
   迁移四个 Document、全屏端口与原生资源所有权，并通过真实媒体 Harness 验证关闭释放。
 - [G12：迁移 BiliDownloader](./plan-history/host-v2/g12-bili-downloader-v2.md)：
   迁移最后一个业务插件的 Document、Tool、Lifecycle 与 JSON 边界，并通过非发布真实 ZIP 加载验证。
+- [G13：删除 V1 生产面](./plan-history/host-v2/g13-remove-v1-production-surface.md)：
+  删除 Legacy 项目、兼容适配和过渡构建属性，并以源码、编译、依赖和包矩阵证明零生产残留。
 
 ### Managed Plugin v1 整改记录
 

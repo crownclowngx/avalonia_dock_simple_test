@@ -25,7 +25,6 @@ $currentDocumentPaths = @(
     'Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md',
     'Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md',
     'Host/MyAvaloniaManagement.PluginSdk/README.md',
-    'Host/MyAvaloniaManagement.LegacyPluginContracts/README.md',
     'Host/MyAvaloniaManagement.PluginSdk.UI/README.md'
 )
 $currentDocumentPaths += @(Get-ChildItem -LiteralPath (Join-Path $repositoryRoot 'docs\quick-start') `
@@ -39,7 +38,10 @@ $historyDocumentPaths = @($hostHistoryDirectories | ForEach-Object {
     } | ForEach-Object {
         [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/')
     })
-$candidateDocumentPaths = @('docs/design/host-v2-breaking-refactor-plan.md')
+$candidateDocumentPaths = @(
+    'docs/design/host-v2-breaking-refactor-plan.md',
+    'docs/plan-history/host-v2/g13-remove-v1-production-surface.md'
+)
 $linkDocumentPaths = @(
     $currentDocumentPaths + $historyDocumentPaths + $candidateDocumentPaths |
         Sort-Object -Unique)
@@ -78,6 +80,14 @@ $pluginProjects = @(
     'Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj',
     'Plugins/MySmallTools/MySmallTools/MySmallTools.csproj'
 )
+# G13 按设计整体删除了 Legacy 项目，但 V1 封板任务书必须作为当时已签署的历史证据原样保留。
+# 例外同时绑定“历史文档 + 已删除项目”两个精确值，不能掩盖其他文档中的失效项目路径。
+$historicallyDeletedProjectReferences = @(
+    [pscustomobject]@{
+        SourcePath = 'docs/design/host-v1-sealing-readiness-plan.md'
+        ProjectPath = 'Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj'
+    }
+)
 
 # Git 的路径清单用作大小写事实源。Windows 文件系统本身不区分大小写，单靠 Test-Path 会让
 # 在 Linux 克隆中必坏的链接误过门禁；git -c core.quotepath=false 同时保留中文文件名。
@@ -113,7 +123,11 @@ foreach ($relativePath in $linkDocumentPaths) {
     foreach ($project in @(Get-DocumentationProjectPaths `
             -Text $document.Text -SourcePath $relativePath)) {
         # QuickStartPlugin 是教程要求读者新建的示例项目，门禁不能把“尚未执行教程”误判为仓库损坏。
-        if (-not $project.Path.StartsWith('Plugins/QuickStartPlugin/', [StringComparison]::Ordinal)) {
+        $isHistoricalDeletion = @($historicallyDeletedProjectReferences | Where-Object {
+                $_.SourcePath -eq $project.SourcePath -and $_.ProjectPath -eq $project.Path
+            }).Count -gt 0
+        if (-not $isHistoricalDeletion -and
+            -not $project.Path.StartsWith('Plugins/QuickStartPlugin/', [StringComparison]::Ordinal)) {
             $projects.Add($project)
         }
     }

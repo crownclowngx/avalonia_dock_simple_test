@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagementCommon.Events;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Tests;
 

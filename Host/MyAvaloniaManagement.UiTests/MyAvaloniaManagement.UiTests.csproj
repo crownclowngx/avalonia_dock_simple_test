@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MyAvaloniaManagement\MyAvaloniaManagement.csproj" />
-    <ProjectReference Include="..\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj" />
     <ProjectReference Include="..\..\Plugins\BiliDownloader\BiliDownloader\BiliDownloader.csproj" />
     <ProjectReference Include="..\..\Plugins\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj" />
     <ProjectReference Include="..\..\Plugins\MyPlugTest\MyPlugTest\MyPlugTest.csproj" />

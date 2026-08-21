@@ -1,6 +1,6 @@
 # 验证与排错
 
-> 本页按 G12 最终 V2 契约编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
+> 本页按 G13 唯一 V2 生产契约编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
 > 窗口端口和持久化实例，MySmallTools 是原生资源与关闭令牌实例，BiliDownloader 是
 > Document + Tool + Lifecycle + readiness 的大型对象图实例。
 
@@ -17,7 +17,7 @@
 - [ ] 项目声明 `ManagedPlugin=true`，清单来自构建输出而非源码树手写副本；
 - [ ] 清单版本与入口 `AssemblyVersion` 一致；manifest 是唯一插件身份来源；
 - [ ] `entryPoint.type` 与 public、非抽象、非泛型且具有 public 无参构造的最终 UI SDK 模块完整名称完全一致；
-- [ ] 项目声明 `ManagedPluginUseV2EntryContract=true`，构建探针验证最终 `IPluginModule`；
+- [ ] 构建探针直接验证最终 UI SDK `IPluginModule`，项目没有 Legacy 或过渡入口属性；
 - [ ] 模块通过 `IPluginRegistration` 一次登记模型、View、Descriptor 和可选 Lifecycle；
 - [ ] 插件目录不包含 Legacy、Core/UI SDK、Avalonia、Dock、Host 或其他宿主共享程序集；
 - [ ] 宿主“插件状态”Tool 将该插件显示为已加载，没有拒绝原因。

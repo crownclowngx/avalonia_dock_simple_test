@@ -1,11 +1,10 @@
 using System;
 using Dock.Model.Core;
-using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.Business.Layout;
 
 /// <summary>
-/// 将插件元数据中的字符串 Alignment 统一映射为 Dock 的四向布局语义。
+/// 将 V2 插件描述符中的方向统一映射为 Dock 的四向布局语义。
 /// </summary>
 internal static class ToolDockPlacement
 {
@@ -19,14 +18,6 @@ internal static class ToolDockPlacement
         _ => throw new ArgumentOutOfRangeException(nameof(side), side, "未知的 Tool 停靠方向。"),
     };
 
-    public static Alignment ToAlignment(ToolDockSide side) => side switch
-    {
-        ToolDockSide.Right => Alignment.Right,
-        ToolDockSide.Top => Alignment.Top,
-        ToolDockSide.Bottom => Alignment.Bottom,
-        _ => Alignment.Left,
-    };
-
     public static Alignment NormalizeAlignment(Alignment alignment) =>
         alignment is Alignment.Left
             or Alignment.Right
@@ -34,23 +25,6 @@ internal static class ToolDockPlacement
             or Alignment.Bottom
             ? alignment
             : Alignment.Left;
-
-    public static Alignment ParseAlignment(string? value)
-    {
-        if (Enum.TryParse<Alignment>(
-                value?.Trim(),
-                ignoreCase: true,
-                out var alignment) &&
-            alignment is Alignment.Left
-                or Alignment.Right
-                or Alignment.Top
-                or Alignment.Bottom)
-        {
-            return alignment;
-        }
-
-        return Alignment.Left;
-    }
 
     public static string GetDockId(Alignment alignment) =>
         alignment switch
@@ -60,9 +34,6 @@ internal static class ToolDockPlacement
             Alignment.Bottom => DockLayoutIds.BottomTools,
             _ => DockLayoutIds.LeftTools
         };
-
-    public static string GetDockId(string? alignment) =>
-        GetDockId(ParseAlignment(alignment));
 
     public static string GetPaneId(Alignment alignment) =>
         NormalizeAlignment(alignment) switch

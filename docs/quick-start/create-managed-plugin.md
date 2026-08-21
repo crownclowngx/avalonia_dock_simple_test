@@ -19,7 +19,6 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ManagedPlugin>true</ManagedPlugin>
-    <ManagedPluginUseV2EntryContract>true</ManagedPluginUseV2EntryContract>
     <ManagedPluginId>myavalonia.plugin.quick-start</ManagedPluginId>
     <ManagedPluginDirectoryName>QuickStartPlugin</ManagedPluginDirectoryName>
     <PluginVersion>2.0.0</PluginVersion>
@@ -40,7 +39,8 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
 </Project>
 ```
 
-外部项目使用宿主发布方提供的同版本 NuGet 包，并同样排除运行时复制。插件不得引用 `LegacyPluginContracts`、Dock 或 Host 生产项目。
+外部项目使用宿主发布方提供的同版本 NuGet 包，并同样排除运行时复制。G13 后构建探针无条件验证
+最终 UI SDK `IPluginModule`，不存在入口契约选择开关；插件不得引用已删除的 Legacy、Dock 或 Host 生产项目。
 
 ## 2. 理解生成清单
 

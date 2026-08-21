@@ -16,7 +16,6 @@ using MyAvaloniaManagement;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;

@@ -554,8 +554,6 @@
           "Microsoft.Extensions.Hosting": "[10.0.10, )",
           "MyAvaloniaManagement.PluginSdk": "[2.0.0, )",
           "MyAvaloniaManagement.PluginSdk.UI": "[2.0.0, )",
-          "MyAvaloniaManagementCommon": "[2.0.0, )",
-          "Newtonsoft.Json": "[13.0.4, )",
           "Semi.Avalonia": "[12.1.0, )",
           "Xaml.Behaviors": "[12.0.5, )"
         }
@@ -573,15 +571,6 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, 10.0.10]",
           "MyAvaloniaManagement.PluginSdk": "[2.0.0, )",
           "Semi.Avalonia": "[12.1.0, 12.1.0]"
-        }
-      },
-      "MyAvaloniaManagementCommon": {
-        "type": "Project",
-        "dependencies": {
-          "Avalonia": "[12.1.0, )",
-          "Dock.Model.Mvvm": "[12.0.0.2, )",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "Newtonsoft.Json": "[13.0.4, )"
         }
       },
       "Avalonia": {
@@ -759,12 +748,6 @@
           "Microsoft.Extensions.Logging.EventSource": "10.0.10",
           "Microsoft.Extensions.Options": "10.0.10"
         }
-      },
-      "Newtonsoft.Json": {
-        "type": "CentralTransitive",
-        "requested": "[13.0.4, )",
-        "resolved": "13.0.4",
-        "contentHash": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A=="
       },
       "Semi.Avalonia": {
         "type": "CentralTransitive",

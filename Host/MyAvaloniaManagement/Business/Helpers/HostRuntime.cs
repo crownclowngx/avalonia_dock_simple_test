@@ -268,7 +268,7 @@ internal sealed class HostRuntime : IDisposable
 
             sink.Report(new HostDiagnosticDraft(item.Code, phase)
             {
-                PluginId = MyAvaloniaManagementCommon.Plugin.PluginId.TryParse(
+                PluginId = MyAvaloniaManagement.PluginSdk.PluginId.TryParse(
                                item.StableId,
                                out var pluginId) &&
                            pluginId!.Value.StartsWith(

@@ -4,9 +4,7 @@ using DaTangAccountingHelpPlug.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Plugin;
-using V2PluginModule = MyAvaloniaManagement.PluginSdk.UI.IPluginModule;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -98,14 +96,14 @@ public sealed class ManagedOnlyPluginLoadingTests
     }
 
     [Fact]
-    public void 只有无参策略但没有模块的旧式程序集在激活前被隔离()
+    public void 清单入口未实现V2模块时在激活前被隔离()
     {
         var snapshot = AssemblyLoaderHelper.Discover("ManagedOnlyFixtures");
 
         Assert.Empty(snapshot.Assemblies);
         var diagnostic = Assert.Single(snapshot.Diagnostics);
         Assert.Equal(HostDiagnosticCodes.PluginEntryInvalid, diagnostic.Code);
-        Assert.Equal("LegacyNoModule", diagnostic.PluginDirectory);
+        Assert.Equal("NoModule", diagnostic.PluginDirectory);
         Assert.DoesNotContain(
             typeof(PluginRegistry).Assembly.GetTypes(),
             type => type.Name == "PluginStrategyActivator");
@@ -169,7 +167,7 @@ public sealed class ManagedOnlyPluginLoadingTests
     {
         var biliAssembly = typeof(BiliDownloader.Plugin.BiliDownloaderPluginModule).Assembly;
         var biliModule = Assert.Single(biliAssembly.ExportedTypes, type =>
-            typeof(V2PluginModule).IsAssignableFrom(type) && !type.IsAbstract);
+            typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract);
         Assert.True(PluginModulePreflight.TryValidate(
             biliModule, out var validatedBili, out var biliError, out _));
         Assert.Same(biliModule, validatedBili);
@@ -177,7 +175,7 @@ public sealed class ManagedOnlyPluginLoadingTests
 
         var myPlugTestAssembly = typeof(MyPlugTest.Plugin.MyPlugTestPluginModule).Assembly;
         var myPlugTestModule = Assert.Single(myPlugTestAssembly.ExportedTypes, type =>
-            typeof(V2PluginModule).IsAssignableFrom(type) && !type.IsAbstract);
+            typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract);
         Assert.True(PluginModulePreflight.TryValidate(
             myPlugTestModule, out var validatedMyPlugTest, out var myPlugTestError, out _));
         Assert.Same(myPlugTestModule, validatedMyPlugTest);
@@ -185,7 +183,7 @@ public sealed class ManagedOnlyPluginLoadingTests
 
         var daTangAssembly = typeof(DaTangAccountingHelpPluginModule).Assembly;
         var daTangModule = Assert.Single(daTangAssembly.ExportedTypes, type =>
-            typeof(V2PluginModule).IsAssignableFrom(type) && !type.IsAbstract);
+            typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract);
         Assert.True(PluginModulePreflight.TryValidate(
             daTangModule, out var validatedDaTang, out var daTangError, out _));
         Assert.Same(daTangModule, validatedDaTang);
@@ -193,7 +191,7 @@ public sealed class ManagedOnlyPluginLoadingTests
 
         var mySmallToolsAssembly = typeof(MySmallTools.Plugin.MySmallToolsPluginModule).Assembly;
         var mySmallToolsModule = Assert.Single(mySmallToolsAssembly.ExportedTypes, type =>
-            typeof(V2PluginModule).IsAssignableFrom(type) && !type.IsAbstract);
+            typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract);
         Assert.True(PluginModulePreflight.TryValidate(
             mySmallToolsModule, out var validatedMySmallTools, out var mySmallToolsError, out _));
         Assert.Same(mySmallToolsModule, validatedMySmallTools);
@@ -256,7 +254,7 @@ public sealed class ManagedOnlyPluginLoadingTests
             _dependency = dependency;
         }
 
-        public void Configure(IPluginRegistrationContext context)
+        public void Configure(IPluginRegistration context)
         {
             _ = _dependency;
             ArgumentNullException.ThrowIfNull(context);

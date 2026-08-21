@@ -1,22 +1,12 @@
 using System.Reflection;
-using System.Xml.Linq;
 using Avalonia.Controls;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.PluginSdk.Tests;
 
-/// <summary>以反射和项目引用白名单保护 Core/UI 生产入口，以及 G12 后仅由 Host 保留的 Legacy 边界。</summary>
+/// <summary>以反射和项目引用扫描保护唯一的 Core/UI V2 生产入口。</summary>
 public sealed class SdkBoundaryTests
 {
-    private static readonly string[] LegacyReferenceAllowlist =
-    [
-        "Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj",
-        "Host/MyAvaloniaManagement.PluginTests/TestAssets/ManagedOnly/LegacyNoModule/LegacyNoModule.csproj",
-        "Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj",
-        "Host/MyAvaloniaManagement.UiTests/MyAvaloniaManagement.UiTests.csproj",
-        "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
-    ];
-
     [Fact]
     public void Core程序集只引用框架程序集且不存在旧公共面()
     {
@@ -101,15 +91,12 @@ public sealed class SdkBoundaryTests
     }
 
     [Fact]
-    public void Legacy桥不可打包且引用者没有扩散()
+    public void Legacy项目已删除且活动项目没有旧引用()
     {
         var root = FindRepositoryRoot();
-        var legacyProject = XDocument.Load(Path.Combine(
+        Assert.False(File.Exists(Path.Combine(
             root, "Host", "MyAvaloniaManagement.LegacyPluginContracts",
-            "MyAvaloniaManagement.LegacyPluginContracts.csproj"));
-        Assert.Equal("false", legacyProject.Descendants("IsPackable").Single().Value);
-        Assert.Empty(legacyProject.Descendants("PackageId"));
-        Assert.Empty(legacyProject.Descendants("AdditionalFiles"));
+            "MyAvaloniaManagement.LegacyPluginContracts.csproj")));
 
         var actual = Directory.EnumerateFiles(root, "*.csproj", SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) &&
@@ -119,7 +106,7 @@ public sealed class SdkBoundaryTests
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal(LegacyReferenceAllowlist, actual);
+        Assert.Empty(actual);
     }
 
     private static string FindRepositoryRoot()

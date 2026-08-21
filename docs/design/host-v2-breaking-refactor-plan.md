@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G12 已完成，G13–G14 尚未实现。
+> 状态：实施中；G0–G13 已完成，仅 G14 尚未实现。
 >
 > 评审日期：2026-08-21。
 >
@@ -17,7 +17,8 @@
 > [V2 G9 MyPlugTest 迁移](../plan-history/host-v2/g9-my-plug-test-v2.md) 和
 > [V2 G10 DaTang 迁移](../plan-history/host-v2/g10-datang-accounting-help-v2.md)和
 > [V2 G11 MySmallTools 迁移](../plan-history/host-v2/g11-my-small-tools-v2.md)和
-> [V2 G12 BiliDownloader 迁移](../plan-history/host-v2/g12-bili-downloader-v2.md)。
+> [V2 G12 BiliDownloader 迁移](../plan-history/host-v2/g12-bili-downloader-v2.md)和
+> [V2 G13 删除 V1 生产面](../plan-history/host-v2/g13-remove-v1-production-surface.md)。
 >
 > 重要说明：G9–G12 已将 MyPlugTest、DaTangAccountingHelpPlug、MySmallTools 与 BiliDownloader
 > 全部迁移为真实 V2 业务插件。Legacy 阶段桥已没有生产插件消费者，但项目本身留给 G13 删除。
@@ -142,9 +143,8 @@ flowchart TB
 
 G2 已新建 `Host/MyAvaloniaManagement.PluginSdk`，程序集和根命名空间统一为
 `MyAvaloniaManagement.PluginSdk`；`PluginSdk.UI` 也已从依赖元包变成真实契约程序集，Dock 相关包已移除。
-旧 Common 被移至 `Host/MyAvaloniaManagement.LegacyPluginContracts`，只保留旧程序集名和命名空间作为
-不可打包的仓库内部阶段桥。G5 已迁移 Host 模块与贡献目录，G9–G12 已迁移 MyPlugTest、
-DaTangAccountingHelpPlug、MySmallTools 与 BiliDownloader；Legacy 项目的最终删除属于 G13。
+旧 Common 曾在 G2 移至 `Host/MyAvaloniaManagement.LegacyPluginContracts` 作为不可打包阶段桥。
+G5 已迁移 Host 模块与贡献目录，G9–G12 已迁移四个业务插件，G13 已整体删除该阶段桥及其构建分支。
 
 ### 3.2 public API（G2 已建立，G5 已接入 Host 生产路径）
 
@@ -604,13 +604,22 @@ G12 非发布专项门禁实际 **812/812**；BiliDownloader 覆盖率为行 **8
 Preflight、Registry 与私有 Provider 组合。摘要明确记录 AIFLOW、Windows CI/Smoke、
 ReleaseAcceptance、发布门禁和 `publishable` 全部为 `false`；历史发布流程没有执行。
 
-### G13：删除 V1 生产面
+### G13：删除 V1 生产面（已完成）
 
 - **目标**：最终生产代码、项目和脚本中只剩 V2。
 - **删除/新增**：删除旧 API、Converters、LegacyIds、manifest/layout/document reader、旧构建属性、双轨夹具和无消费者转发。
 - **插件影响**：四插件只能引用 V2 Core/UI 包；旧 API 编译负例成为门禁。
 - **验证**：源码/二进制扫描、依赖白名单、V2 API 基线、四插件完整测试和包矩阵。
 - **回滚**：回滚整个 G13 提交；禁止选择性恢复单个兼容类型。
+
+G13 已删除 `MyAvaloniaManagement.LegacyPluginContracts` 项目、旧 Strategy/Scope/保存契约、双生命周期
+适配、入口契约选择开关与 Host/Common 双区间。Host 的 manifest、诊断、Registry、事件总线和生命周期
+直接使用 V2 SDK；四插件项目和包构建入口只保留单一 SDK 区间。历史 v1 API 文本与文档继续保留，
+但不参与活动编译、加载或打包。G13 实测 Host Unit 168、UI 52、Plugin 202，共 **422/422**；
+行覆盖率 **83.19%**、分支覆盖率 **68.81%**。SDK **34/34**，DaTang **62/62**、
+MySmallTools **184/184**、BiliDownloader **718/718**；四插件各两次确定性测试包及真实 Host 加载通过。
+完整 SOLID 取舍、包哈希、失败矩阵与非发布证据见
+[G13 专项记录](../plan-history/host-v2/g13-remove-v1-production-surface.md)。
 
 ### G14：V2 封板
 

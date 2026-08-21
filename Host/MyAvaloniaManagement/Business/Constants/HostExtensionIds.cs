@@ -5,7 +5,7 @@ namespace MyAvaloniaManagement.Business.Constants;
 /// </summary>
 /// <remarks>
 /// static readonly 取代 const string，使调用方无法把 Document、Tool 与 Plugin 标识互换。
-/// 历史值只在各自元数据的 LegacyIds 中出现，禁止继续作为新运行时身份使用。
+/// G13 后只保留 V2 主身份；历史值仅存在于版本历史文档，不能进入运行时目录。
 /// </remarks>
 internal static class HostExtensionIds
 {

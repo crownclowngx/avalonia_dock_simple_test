@@ -6,13 +6,9 @@ $OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()
 Set-StrictMode -Version Latest
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$productionRoots = @(
-    (Join-Path $repositoryRoot 'Host\MyAvaloniaManagement'),
-    (Join-Path $repositoryRoot 'Host\MyAvaloniaManagement.LegacyPluginContracts')
-)
+$productionRoots = @((Join-Path $repositoryRoot 'Host\MyAvaloniaManagement'))
 $approvedSensitiveSources = @(
-    [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'Host\MyAvaloniaManagement\Business\Diagnostics\HostDiagnostics.cs')),
-    [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'Host\MyAvaloniaManagement.LegacyPluginContracts\Plugin\PluginSensitiveDiagnosticDebugOutput.cs'))
+    [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'Host\MyAvaloniaManagement\Business\Diagnostics\HostDiagnostics.cs'))
 )
 
 function Get-ProductionSourceFiles {
@@ -46,7 +42,7 @@ $defaultSources = @($sources | Where-Object {
 })
 $findings = [Collections.Generic.List[object]]::new()
 
-# 默认生产路径不得读取异常正文。这里只允许两个显式调试出口保留原始异常；
+# 默认生产路径不得读取异常正文。这里只允许 Host 的显式调试出口保留原始异常；
 # PluginLoadExceptionMapper 对 current.Message 中稳定错误码的只读识别不属于输出，故不匹配下列规则。
 Add-Matches $findings $defaultSources `
     '(exception|ex)(\?\.)?\.Message|(exception|ex)\.ToString\(\)|\{(exception|ex)\}' `
@@ -77,12 +73,11 @@ foreach ($match in $environmentMatches) {
 }
 
 $hostDiagnosticSource = Get-Content -Raw -LiteralPath $approvedSensitiveSources[0]
-$pluginDiagnosticSource = Get-Content -Raw -LiteralPath $approvedSensitiveSources[1]
-foreach ($source in @($hostDiagnosticSource, $pluginDiagnosticSource)) {
-    if ($source -notmatch '"MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS"' -or
-        $source -notmatch '"1"') {
-        throw '敏感诊断开关必须使用固定名称并只接受精确值 1。'
-    }
+# G13 删除 Legacy 生产面后，敏感诊断只剩 HostDiagnostics 这一个所有者。
+# 这里直接验证唯一出口，不再使用“Host + Legacy”并行数组，避免门禁暗示第二套契约仍然存在。
+if ($hostDiagnosticSource -notmatch '"MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS"' -or
+    $hostDiagnosticSource -notmatch '"1"') {
+    throw '敏感诊断开关必须使用固定名称并只接受精确值 1。'
 }
 if ($hostDiagnosticSource -match 'internal\s+string\?\s+TechnicalDetail') {
     throw 'HostDiagnosticDraft 不得重新暴露自由格式 TechnicalDetail。'

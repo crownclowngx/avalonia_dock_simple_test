@@ -94,8 +94,7 @@ internal sealed class ViewLocator(
             "VIEW_CREATION_FAILED",
             HostDiagnosticPhase.ExtensionDiscovery)
         {
-            PluginId = new MyAvaloniaManagementCommon.Plugin.PluginId(
-                registration.OwnerId.Value),
+            PluginId = registration.OwnerId,
             AssemblyName = registration.ViewType.Assembly.GetName(),
             StableId = registration.ViewType.FullName,
             Exception = exception,

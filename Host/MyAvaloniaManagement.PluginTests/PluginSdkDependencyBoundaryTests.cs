@@ -67,7 +67,7 @@ public sealed class PluginSdkDependencyBoundaryTests
     }
 
     [Fact]
-    public void Host直接拥有全部UiProfile包而不是依赖Common传递()
+    public void Host直接拥有全部UiProfile包且不引用Legacy或Newtonsoft()
     {
         var host = LoadProject("Host", "MyAvaloniaManagement", "MyAvaloniaManagement.csproj");
         var hostPackages = RuntimePackageReferences(host).ToHashSet(StringComparer.Ordinal);
@@ -80,6 +80,11 @@ public sealed class PluginSdkDependencyBoundaryTests
         Assert.Contains("Avalonia.Fonts.Inter", hostPackages);
         Assert.Contains("Avalonia.Desktop", hostPackages);
         Assert.DoesNotContain("Microsoft.CodeAnalysis.PublicApiAnalyzers", PackageReferences(host));
+        Assert.DoesNotContain("Newtonsoft.Json", hostPackages);
+        Assert.DoesNotContain(
+            host.Descendants("ProjectReference"),
+            item => item.Attribute("Include")?.Value?.Contains(
+                "LegacyPluginContracts", StringComparison.Ordinal) == true);
         Assert.Empty(host.Descendants("AdditionalFiles"));
     }
 
@@ -110,19 +115,6 @@ public sealed class PluginSdkDependencyBoundaryTests
             profile.Descendants("PackageReference"),
             item => item.Attribute("Include")?.Value?.StartsWith("Dock.", StringComparison.Ordinal) == true ||
                     item.Attribute("Include")?.Value == "Newtonsoft.Json");
-    }
-
-    [Fact]
-    public void Legacy桥不可打包且不再拥有Sdk基线()
-    {
-        var legacy = LoadProject(
-            "Host", "MyAvaloniaManagement.LegacyPluginContracts",
-            "MyAvaloniaManagement.LegacyPluginContracts.csproj");
-
-        Assert.Equal("false", Property(legacy, "IsPackable"));
-        Assert.Empty(legacy.Descendants("PackageId"));
-        Assert.Empty(legacy.Descendants("AdditionalFiles"));
-        Assert.DoesNotContain("Microsoft.CodeAnalysis.PublicApiAnalyzers", PackageReferences(legacy));
     }
 
     [Theory]

@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -166,7 +166,7 @@ internal static partial class PluginManifestReader
 
             if (!TryReadString(root, "pluginId", out var pluginIdText, out errorDetail) ||
                 !PluginId.TryParse(pluginIdText, out var pluginId) ||
-                !pluginId!.IsCanonical ||
+                pluginId is null ||
                 !pluginId.Value.StartsWith("myavalonia.plugin.", StringComparison.Ordinal))
             {
                 errorCode = HostDiagnosticCodes.PluginManifestInvalid;

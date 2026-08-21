@@ -44,7 +44,7 @@ internal sealed class PluginModuleCatalog
                 assembly,
                     new PluginManifest(
                         PluginManifestReader.CurrentSchemaVersion,
-                        new MyAvaloniaManagementCommon.Plugin.PluginId(item.PluginId.Value),
+                        item.PluginId,
                     new Version(1, 0, 0, 0),
                     new PluginEntryPoint(
                         (assembly.GetName().Name ?? "TestPlugin") + ".dll",
@@ -72,7 +72,7 @@ internal sealed class PluginModuleCatalog
                 assembly,
                     new PluginManifest(
                         PluginManifestReader.CurrentSchemaVersion,
-                        new MyAvaloniaManagementCommon.Plugin.PluginId(item.PluginId.Value),
+                        item.PluginId,
                     new Version(1, 0, 0, 0),
                     new PluginEntryPoint(
                         (assembly.GetName().Name ?? "TestPlugin") + ".dll",

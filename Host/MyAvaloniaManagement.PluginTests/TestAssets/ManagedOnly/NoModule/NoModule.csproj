@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>NoModule.Plugin</AssemblyName>
+    <RootNamespace>NoModule.Plugin</RootNamespace>
+    <GenerateDependencyFile>true</GenerateDependencyFile>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="plugin.manifest.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

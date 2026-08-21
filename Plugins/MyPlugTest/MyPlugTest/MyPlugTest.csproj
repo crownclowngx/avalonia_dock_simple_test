@@ -10,8 +10,6 @@
         <PluginVersion>2.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
         <ManagedPluginEntryType>MyPlugTest.Plugin.MyPlugTestPluginModule</ManagedPluginEntryType>
-        <!-- G9 起本插件入口由最终 UI SDK 定义；其余三个业务插件在各自阶段迁移。 -->
-        <ManagedPluginUseV2EntryContract>true</ManagedPluginUseV2EntryContract>
         <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
         <ManagedPluginSdkMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginSdkMaxExclusive>
     </PropertyGroup>
