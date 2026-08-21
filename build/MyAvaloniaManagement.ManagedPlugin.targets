@@ -13,42 +13,81 @@
            Text="PluginVersion 必须是 major.minor.patch 数字版本，实际为 '$(PluginVersion)'。" />
     <Error Condition="'$(ManagedPluginDirectoryName)' == '' Or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginDirectoryName)', '^[A-Za-z0-9][A-Za-z0-9._-]*$'))"
            Text="ManagedPluginDirectoryName 只能包含字母、数字、点、下划线和连字符，实际为 '$(ManagedPluginDirectoryName)'。" />
-    <Error Condition="'$(ManagedPluginManifestSchemaVersion)' != '1'"
-           Text="Managed Plugin v1 只能生成 schemaVersion=1，实际为 '$(ManagedPluginManifestSchemaVersion)'。" />
+    <Error Condition="'$(ManagedPluginManifestSchemaVersion)' != '2'"
+           Text="Managed Plugin v2 只能生成 schemaVersion=2，实际为 '$(ManagedPluginManifestSchemaVersion)'。" />
     <Error Condition="'$(ManagedPluginRuntimeIdentifier)' != 'win-x64'"
-           Text="Managed Plugin v1 只允许 win-x64，实际为 '$(ManagedPluginRuntimeIdentifier)'。" />
-    <Error Condition="'$(ManagedPluginHostApiMinInclusive)' == '' Or '$(ManagedPluginHostApiMaxExclusive)' == '' Or '$(ManagedPluginCommonContractMinInclusive)' == '' Or '$(ManagedPluginCommonContractMaxExclusive)' == ''"
-           Text="Managed Plugin 必须显式声明 Host API 与 Common Contract 的左闭右开兼容区间。" />
-    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginHostApiMinInclusive)', '^\d+\.\d+\.\d+$')) Or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginHostApiMaxExclusive)', '^\d+\.\d+\.\d+$')) Or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginCommonContractMinInclusive)', '^\d+\.\d+\.\d+$')) Or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginCommonContractMaxExclusive)', '^\d+\.\d+\.\d+$'))"
-           Text="Managed Plugin 兼容区间必须使用 major.minor.patch 数字版本。" />
-    <Error Condition="$([System.Version]::Parse('$(ManagedPluginHostApiMinInclusive)').CompareTo($([System.Version]::Parse('$(ManagedPluginHostApiMaxExclusive)')))) &gt;= 0 Or $([System.Version]::Parse('$(ManagedPluginCommonContractMinInclusive)').CompareTo($([System.Version]::Parse('$(ManagedPluginCommonContractMaxExclusive)')))) &gt;= 0"
-           Text="Managed Plugin 兼容区间必须满足 minInclusive 小于 maxExclusive。" />
+           Text="当前 Managed Plugin v2 构建协议只允许 win-x64，实际为 '$(ManagedPluginRuntimeIdentifier)'。" />
+    <Error Condition="'$(ManagedPluginEntryType)' == ''"
+           Text="Managed Plugin 缺少 ManagedPluginEntryType。" />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginEntryType)', '^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+$'))"
+           Text="ManagedPluginEntryType 必须是非泛型、非嵌套的命名空间限定类型名，实际为 '$(ManagedPluginEntryType)'。" />
+    <Error Condition="'$(ManagedPluginSdkMinInclusive)' == '' Or '$(ManagedPluginSdkMaxExclusive)' == ''"
+           Text="Managed Plugin 必须显式声明单一 Plugin SDK 左闭右开兼容区间。" />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginSdkMinInclusive)', '^\d+\.\d+\.\d+$')) Or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginSdkMaxExclusive)', '^\d+\.\d+\.\d+$'))"
+           Text="Managed Plugin SDK 兼容区间必须使用 major.minor.patch 三段数字版本。" />
+    <Error Condition="$([System.Version]::Parse('$(ManagedPluginSdkMinInclusive)').CompareTo($([System.Version]::Parse('$(ManagedPluginSdkMaxExclusive)')))) &gt;= 0"
+           Text="Managed Plugin SDK 兼容区间必须满足 minInclusive 小于 maxExclusive。" />
+    <Error Condition="'$(ManagedPluginHostApiMinInclusive)' != '' Or '$(ManagedPluginHostApiMaxExclusive)' != '' Or '$(ManagedPluginCommonContractMinInclusive)' != '' Or '$(ManagedPluginCommonContractMaxExclusive)' != ''"
+           Text="Managed Plugin v2 已删除 Host API/Common Contract 双区间，请只使用 ManagedPluginSdkMinInclusive/MaxExclusive。" />
     <Error Condition="'$(ManagedPluginAssetDirectoryRelativePath)' != '' And ($([System.IO.Path]::IsPathRooted('$(ManagedPluginAssetDirectoryRelativePath)')) Or $([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginAssetDirectoryRelativePath)', '(^|[\/])\.\.([\/]|$)')))"
            Text="ManagedPluginAssetDirectoryRelativePath 必须位于插件输出目录内：$(ManagedPluginAssetDirectoryRelativePath)" />
   </Target>
 
+  <Target Name="ValidateManagedPluginEntryPoint"
+          DependsOnTargets="ValidateManagedPluginDeclaration;ResolveReferences">
+    <PropertyGroup>
+      <!-- IntermediateOutputPath 由 SDK 在项目导入完成后确定，必须到 Target 执行期再派生探针路径。 -->
+      <ManagedPluginEntryProbeSource>$(IntermediateOutputPath)ManagedPluginEntryPointProbe.cs</ManagedPluginEntryProbeSource>
+      <ManagedPluginEntryProbeAssembly>$(IntermediateOutputPath)ManagedPluginEntryPointProbe.dll</ManagedPluginEntryProbeAssembly>
+    </PropertyGroup>
+    <ItemGroup>
+      <!--
+        探针作为第二个临时程序集编译，因此 internal 类型或非 public 构造函数无法借助“同程序集可见”绕过检查。
+        这里仍验证 Legacy IPluginModule，是 G3 到业务插件最终迁移之间唯一集中保留的阶段桥。
+      -->
+      <_ManagedPluginEntryProbeLine Include="#nullable enable" />
+      <_ManagedPluginEntryProbeLine Include="internal static class ManagedPluginEntryPointProbe" />
+      <_ManagedPluginEntryProbeLine Include="{" />
+      <_ManagedPluginEntryProbeLine Include="  internal static global::MyAvaloniaManagementCommon.Plugin.IPluginModule Create() =&gt; new global::$(ManagedPluginEntryType)()%3B" />
+      <_ManagedPluginEntryProbeLine Include="}" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(ManagedPluginEntryProbeSource)"
+                      Lines="@(_ManagedPluginEntryProbeLine)"
+                      Overwrite="true"
+                      Encoding="UTF-8" />
+    <Csc Sources="$(ManagedPluginEntryProbeSource)"
+         References="$(TargetPath);@(ReferencePath)"
+         OutputAssembly="$(ManagedPluginEntryProbeAssembly)"
+         TargetType="Library"
+         LangVersion="$(LangVersion)"
+         Nullable="enable"
+         Deterministic="true"
+         TreatWarningsAsErrors="true"
+         NoLogo="true" />
+  </Target>
+
   <Target Name="GenerateManagedPluginManifest"
           AfterTargets="Build"
-          DependsOnTargets="ValidateManagedPluginDeclaration">
+          DependsOnTargets="ValidateManagedPluginEntryPoint">
+    <PropertyGroup>
+      <ManagedPluginGeneratedManifest>$(IntermediateOutputPath)plugin.manifest.json</ManagedPluginGeneratedManifest>
+    </PropertyGroup>
     <ItemGroup>
       <!--
         使用逐行项而不是拼接一整段转义字符串，让生成内容可直接评审；字段集合固定，
-        不允许插件通过额外属性悄悄扩展 schema v1。
+        不允许插件通过额外属性悄悄扩展 schema v2。
       -->
       <_ManagedPluginManifestLine Include="{" />
       <_ManagedPluginManifestLine Include="  &quot;schemaVersion&quot;: $(ManagedPluginManifestSchemaVersion)," />
       <_ManagedPluginManifestLine Include="  &quot;pluginId&quot;: &quot;$(ManagedPluginId)&quot;," />
       <_ManagedPluginManifestLine Include="  &quot;pluginVersion&quot;: &quot;$(PluginVersion)&quot;," />
-      <_ManagedPluginManifestLine Include="  &quot;entryAssembly&quot;: &quot;$(AssemblyName).dll&quot;," />
-      <_ManagedPluginManifestLine Include="  &quot;compatibility&quot;: {" />
-      <_ManagedPluginManifestLine Include="    &quot;hostApi&quot;: {" />
-      <_ManagedPluginManifestLine Include="      &quot;minInclusive&quot;: &quot;$(ManagedPluginHostApiMinInclusive)&quot;," />
-      <_ManagedPluginManifestLine Include="      &quot;maxExclusive&quot;: &quot;$(ManagedPluginHostApiMaxExclusive)&quot;" />
+      <_ManagedPluginManifestLine Include="  &quot;entryPoint&quot;: {" />
+      <_ManagedPluginManifestLine Include="    &quot;assembly&quot;: &quot;$(AssemblyName).dll&quot;," />
+      <_ManagedPluginManifestLine Include="    &quot;type&quot;: &quot;$(ManagedPluginEntryType)&quot;" />
       <_ManagedPluginManifestLine Include="    }," />
-      <_ManagedPluginManifestLine Include="    &quot;commonContract&quot;: {" />
-      <_ManagedPluginManifestLine Include="      &quot;minInclusive&quot;: &quot;$(ManagedPluginCommonContractMinInclusive)&quot;," />
-      <_ManagedPluginManifestLine Include="      &quot;maxExclusive&quot;: &quot;$(ManagedPluginCommonContractMaxExclusive)&quot;" />
-      <_ManagedPluginManifestLine Include="    }" />
+      <_ManagedPluginManifestLine Include="  &quot;sdk&quot;: {" />
+      <_ManagedPluginManifestLine Include="    &quot;minInclusive&quot;: &quot;$(ManagedPluginSdkMinInclusive)&quot;," />
+      <_ManagedPluginManifestLine Include="    &quot;maxExclusive&quot;: &quot;$(ManagedPluginSdkMaxExclusive)&quot;" />
       <_ManagedPluginManifestLine Include="  }" />
       <_ManagedPluginManifestLine Include="}" />
     </ItemGroup>
@@ -112,7 +151,7 @@
     <Error Condition="$([System.IO.Path]::IsPathRooted('%(_ManagedPluginDeployAsset.TargetPath)')) Or $([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '(^|[\\/])\.\.([\\/]|$)'))"
            Text="Managed Plugin 资产目标路径必须位于插件目录内：%(_ManagedPluginDeployAsset.TargetPath)" />
     <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '^(?:runtimes|native)[\\/](?!win-x64(?:[\\/]|$))[^\\/]+', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
-           Text="Managed Plugin v1 不得携带非 win-x64 原生资产：%(_ManagedPluginDeployAsset.TargetPath)" />
+           Text="Managed Plugin v2 不得携带非 win-x64 原生资产：%(_ManagedPluginDeployAsset.TargetPath)" />
     <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '(^|[\\/])(?:MyAvaloniaManagement(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json).*\.dll$', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
            Text="Managed Plugin 不得携带宿主共享程序集：%(_ManagedPluginDeployAsset.TargetPath)" />
 

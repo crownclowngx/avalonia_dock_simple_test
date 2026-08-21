@@ -35,20 +35,14 @@
     <MyAvaloniaDependencyInjectionUiVersion>10.0.10</MyAvaloniaDependencyInjectionUiVersion>
 
     <!--
-      G1 只建立 V2 目标 schema 和文件名事实，不把它们接入仍在工作的 V1 reader。
-      manifest、Document envelope 与 layout 的最终 V2 线格式分别由 G3、G7、G8 一次建立，
-      避免在同一个 schemaVersion=2 下先后出现两种结构。
+      manifest 已由 G3 接入最终 V2 线格式；Document envelope 与 layout 仍分别由 G7、G8 接入。
+      三种格式保持独立版本，不能因为某一个阶段完成就同步提升其他 schema。
     -->
     <MyAvaloniaV2ManifestSchemaVersion>2</MyAvaloniaV2ManifestSchemaVersion>
     <MyAvaloniaV2DocumentEnvelopeSchemaVersion>2</MyAvaloniaV2DocumentEnvelopeSchemaVersion>
     <MyAvaloniaV2LayoutSchemaVersion>2</MyAvaloniaV2LayoutSchemaVersion>
     <MyAvaloniaV2LayoutFileName>layout-v2.json</MyAvaloniaV2LayoutFileName>
 
-    <!--
-      下列值是 G3 前的 V1 编译桥，只用于让当前清单生成器和 loader 在阶段间保持绿色。
-      它不是第二套 V2 schema 事实；G3 建立最终 manifest v2 后必须删除。
-    -->
-    <MyAvaloniaManifestSchemaVersion>1</MyAvaloniaManifestSchemaVersion>
     <MyAvaloniaHostDataRootGeneration>v2</MyAvaloniaHostDataRootGeneration>
   </PropertyGroup>
 </Project>

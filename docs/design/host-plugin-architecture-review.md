@@ -83,7 +83,7 @@ sequenceDiagram
     P->>R: Create
     R->>B: 注册宿主显式贡献
     R->>L: 获取 Controls 插件程序集快照
-    L-->>R: 清单、deps、类型、唯一模块不可变快照
+    L-->>R: manifest v2、deps、精确入口类型不可变快照
     R->>C: 实例化已预检 IPluginModule
     C->>B: Configure(IPluginRegistrationContext)
     C->>DI: 注册插件私有服务
@@ -106,15 +106,15 @@ sequenceDiagram
 
 **[代码事实]** `HostRuntime` 是内部 Composition Root，统一拥有服务注册、插件发现、容器构建、生命周期初始化、Avalonia App 工厂和反向关闭；`Program.Main` 只负责进程编排。App 通过内部桌面 Shell 构造注入，根容器启用了 `ValidateScopes` 与 `ValidateOnBuild`。参见 [`Program.cs`](../../Host/MyAvaloniaManagement/Program.cs)、[`HostRuntime.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/HostRuntime.cs) 和 [`PluginLifecycleManager.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/Plugin/PluginLifecycleManager.cs)。
 
-**[代码事实]** `AssemblyLoaderHelper` 已收口为 Host internal 加载边界，内部按规范化插件根目录使用线程安全快照；同一根目录只扫描一次。清单入口必须携带同名 `.deps.json`，每个插件目录建立独立且不可回收的 `PluginLoadContext`；加载器不注册全局 `AssemblyResolve`、不递归索引 DLL，也没有跨插件简单名称缓存。类型预检后还会在不实例化插件对象的前提下验证唯一模块结构。单个插件目录、依赖、类型或模块结构失败不会终止其他插件。后续贡献只来自模块的显式注册，不复用程序集快照扫描策略或 View。
+**[代码事实]** `AssemblyLoaderHelper` 已收口为 Host internal 加载边界，内部按规范化插件根目录使用线程安全快照；同一根目录只发现一次。manifest v2 的入口必须携带同名 `.deps.json`，每个插件目录建立独立且不可回收的 `PluginLoadContext`；加载器不注册全局 `AssemblyResolve`、不递归索引 DLL，也没有跨插件简单名称缓存。加载器只按大小写敏感完整名称取得 `entryPoint.type`，并在不实例化插件对象的前提下预检可执行结构；程序集中的其他模块不会被扫描或执行。单个插件目录、依赖、类型或入口结构失败不会终止其他插件。后续贡献只来自精确入口的显式注册。
 
 ### 2.2 Managed-only 为唯一模型
 
 | 入口要求 | 策略构造 | 可用能力 | 当前状态 |
 | --- | --- | --- | --- |
-| 严格清单、同名 deps、唯一 `IPluginModule` | Context 显式登记，根 DI 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | 四个现有插件均采用且为唯一支持路径 |
+| 严格 manifest v2、同名 deps、精确 `IPluginModule` 类型 | Context 显式登记，根 DI 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | 四个现有插件均采用且为唯一支持路径 |
 
-**[代码事实]** `PluginModulePreflight` 要求入口恰好存在一个具体模块并具有 public 无参构造；`IPluginModule.Configure(IPluginRegistrationContext)` 随后在根容器构建前执行一次。manifest 是身份唯一事实源，模块和 Lifecycle 不再声明 `PluginId`。私有业务服务通过 `context.Services` 的插件专属工作副本追加，四类宿主贡献使用专用 `Add*` 方法；宿主以描述符引用和顺序校验后只提交新增项。参见 [`IPluginModule.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/Plugin/IPluginModule.cs)、[`IPluginRegistrationContext.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/Plugin/IPluginRegistrationContext.cs)、[`PluginModulePreflight.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModulePreflight.cs) 和 [`PluginModuleCatalog.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModuleCatalog.cs)。
+**[代码事实]** `PluginModulePreflight` 要求清单精确入口 public、非抽象、非泛型、实现当前 Legacy `IPluginModule` 且具有 public 无参构造；`IPluginModule.Configure(IPluginRegistrationContext)` 随后在根容器构建前执行一次。同程序集可存在其他模块，但它们不参与发现。manifest 是身份唯一事实源，模块和 Lifecycle 不再声明 `PluginId`。私有业务服务通过 `context.Services` 的插件专属工作副本追加，四类宿主贡献使用专用 `Add*` 方法；宿主以描述符引用和顺序校验后只提交新增项。参见 [`IPluginModule.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/Plugin/IPluginModule.cs)、[`IPluginRegistrationContext.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/Plugin/IPluginRegistrationContext.cs)、[`PluginModulePreflight.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModulePreflight.cs) 和 [`PluginModuleCatalog.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModuleCatalog.cs)。
 
 **[代码事实]** `IPluginLifecycle` 是可选能力，不是每个 Managed Plugin 的必选空壳。当前只有 BiliDownloader 显式登记生命周期，用它启动、恢复和关闭下载协调器；DaTang 没有常驻后台任务，因此不登记生命周期。生命周期身份来自 Registry 中 manifest 所有权；管理器支持可选 `IPluginLifecycleDependencies`、拓扑排序和统一初始化/关闭超时，未声明依赖时按 `Order`、manifest `PluginId` 串行初始化。失败、超时和依赖阻塞不会影响独立分支，退出时只反向关闭成功初始化的实例。
 

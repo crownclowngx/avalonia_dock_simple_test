@@ -40,7 +40,7 @@ internal sealed class UiTestContext : IDisposable
             Path.Combine(
                 TempDirectory,
                 AppearanceSettingsStore.SettingsFileName)));
-        services.AddSingleton(PluginModuleCatalog.Discover([]));
+        services.AddSingleton(PluginModuleCatalog.Discover(PluginDiscoverySnapshot.Empty));
         Provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateScopes = true,

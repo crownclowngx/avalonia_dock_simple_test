@@ -9,11 +9,10 @@
     <InformationalVersion>$(PluginVersion)</InformationalVersion>
     <AssemblyVersion>$(PluginVersion).0</AssemblyVersion>
 
-    <!-- Managed Plugin v1 的正式支持平台已经冻结为 Windows x64。 -->
+    <!-- G3 只改变 manifest 与入口协议；当前部署平台仍沿用 Windows x64。 -->
     <ManagedPluginRuntimeIdentifier Condition="'$(ManagedPluginRuntimeIdentifier)' == ''">win-x64</ManagedPluginRuntimeIdentifier>
     <ManagedPluginTargetFramework Condition="'$(ManagedPluginTargetFramework)' == ''">$(TargetFramework)</ManagedPluginTargetFramework>
-    <ManagedPluginManifestSchemaVersion Condition="'$(ManagedPluginManifestSchemaVersion)' == '' And '$(MyAvaloniaManifestSchemaVersion)' != ''">$(MyAvaloniaManifestSchemaVersion)</ManagedPluginManifestSchemaVersion>
-    <ManagedPluginManifestSchemaVersion Condition="'$(ManagedPluginManifestSchemaVersion)' == ''">1</ManagedPluginManifestSchemaVersion>
+    <ManagedPluginManifestSchemaVersion>$(MyAvaloniaV2ManifestSchemaVersion)</ManagedPluginManifestSchemaVersion>
 
     <!--
       普通 Build 默认部署到 Host 输出的 Controls；打包脚本通过全局属性覆盖 DeployRoot，
@@ -21,6 +20,5 @@
     -->
     <ManagedPluginDeployRoot Condition="'$(ManagedPluginDeployRoot)' == ''">$(MSBuildThisFileDirectory)..\Host\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)\Controls</ManagedPluginDeployRoot>
     <ManagedPluginDeployDirectory>$(ManagedPluginDeployRoot)\$(ManagedPluginDirectoryName)</ManagedPluginDeployDirectory>
-    <ManagedPluginGeneratedManifest>$(IntermediateOutputPath)plugin.manifest.json</ManagedPluginGeneratedManifest>
   </PropertyGroup>
 </Project>

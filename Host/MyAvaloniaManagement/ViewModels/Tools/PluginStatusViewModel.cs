@@ -117,7 +117,7 @@ internal sealed class PluginStatusViewModel : Tool
             : PluginVersionText.Format(manifest.PluginVersion);
         var compatibility = manifest is null
             ? "未通过清单发现入口"
-            : $"Host API {manifest.HostApi}；Common {manifest.CommonContract}";
+            : $"Plugin SDK {manifest.Sdk}";
         if (state is null)
         {
             return new PluginStatusItem(
@@ -200,13 +200,9 @@ internal sealed class PluginStatusViewModel : Tool
     private static string ToRejectedCompatibilityText(
         IReadOnlyList<HostDiagnosticRecord> records)
     {
-        var hostRange = records.Select(item => item.HostApiRange)
+        var sdkRange = records.Select(item => item.SdkRange)
             .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
-        var commonRange = records.Select(item => item.CommonContractRange)
-            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
-        var current = HostCompatibilityProfile.Current;
-        return
-            $"Host API {hostRange ?? "未声明"}（当前 {PluginVersionText.Format(current.HostApiVersion)}）；" +
-            $"Common {commonRange ?? "未声明"}（当前 {PluginVersionText.Format(current.CommonContractVersion)}）";
+        var current = PluginSdkCompatibilityProfile.Current;
+        return $"Plugin SDK {sdkRange ?? "未声明"}（当前 {PluginVersionText.Format(current.SdkVersion)}）";
     }
 }

@@ -26,6 +26,29 @@ function Assert-ChildPath {
         "路径 $child 不在允许目录 $parent 内。"
 }
 
+function Remove-TemporaryTree {
+    param([Parameter(Mandatory)] [string]$Path)
+
+    # dotnet 结束后，杀毒软件或构建服务可能仍短暂持有隔离 NuGet 缓存中的 DLL。这里仅对已经通过
+    # Assert-ChildPath 证明位于系统临时目录内的本轮目录做有限重试；超过期限仍失败就保留错误，
+    # 既不吞掉真实清理故障，也绝不把重试扩大到仓库、用户目录或其他任务的临时树。
+    $lastError = $null
+    foreach ($attempt in 1..8) {
+        try {
+            Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
+            return
+        }
+        catch {
+            $lastError = $_
+            if ($attempt -lt 8) {
+                Start-Sleep -Milliseconds 250
+            }
+        }
+    }
+
+    throw $lastError
+}
+
 function Invoke-DotNet {
     param([string[]]$Arguments, [string]$WorkingDirectory = $repositoryRoot)
     Push-Location $WorkingDirectory
@@ -296,6 +319,6 @@ public static class Removed
 finally {
     if (Test-Path -LiteralPath $temporaryRoot) {
         Assert-ChildPath $temporaryRoot $temporaryParent
-        Remove-Item -LiteralPath $temporaryRoot -Recurse -Force
+        Remove-TemporaryTree -Path $temporaryRoot
     }
 }

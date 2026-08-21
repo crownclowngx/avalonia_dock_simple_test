@@ -1,10 +1,10 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "pluginId": "myavalonia.plugin.isolation-v2",
   "pluginVersion": "1.0.0",
-  "entryAssembly": "PluginIsolation.PluginV2.dll",
-  "compatibility": {
-    "hostApi": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" },
-    "commonContract": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" }
-  }
+  "entryPoint": {
+    "assembly": "PluginIsolation.PluginV2.dll",
+    "type": "PluginIsolation.Plugin.IsolationPluginModule"
+  },
+  "sdk": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" }
 }

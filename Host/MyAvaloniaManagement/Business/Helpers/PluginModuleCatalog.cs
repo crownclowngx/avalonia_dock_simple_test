@@ -9,11 +9,11 @@ using MyAvaloniaManagementCommon.Plugin;
 namespace MyAvaloniaManagement.Business.Helpers;
 
 /// <summary>
-/// 发现严格清单入口中的唯一 Managed Plugin 模块。
+/// 激活严格 manifest v2 已经精确指定并预检的 Managed Plugin 模块。
 /// </summary>
 /// <remarks>
-/// Catalog 只回答“哪个清单对应哪个模块”，不发现 Document、Tool 或 View。生产入口使用加载阶段
-/// 已经形成的预检类型集合，因此插件程序集只为确定唯一模块扫描一次。
+/// Catalog 只回答“哪个清单对应哪个模块”，不发现入口、Document、Tool 或 View。入口类型完全来自
+/// 加载阶段形成的不可变快照，Catalog 不提供无清单扫描旁路。
 /// </remarks>
 internal sealed class PluginModuleCatalog
 {
@@ -27,95 +27,39 @@ internal sealed class PluginModuleCatalog
 
     internal IReadOnlyList<IPluginModule> Modules { get; }
 
-    /// <summary>测试和预检工具使用的无清单发现入口；结果不能进入生产组合。</summary>
-    internal static PluginModuleCatalog Discover(IEnumerable<Assembly> pluginAssemblies)
-    {
-        ArgumentNullException.ThrowIfNull(pluginAssemblies);
-        var assemblies = pluginAssemblies.Distinct().ToArray();
-        return DiscoverCore(
-            assemblies,
-            assembly => AssemblyTypeCatalog.GetLoadableTypes(
-                assembly,
-                exception =>
-                {
-                    Console.Error.WriteLine(
-                        $"PluginCatalog errorCode=MODULE_TYPE_SCAN_PARTIAL " +
-                        $"type={exception.GetType().Name}");
-                    HostSensitiveDiagnosticDebugOutput.Write(
-                        "MODULE_TYPE_SCAN_PARTIAL",
-                        HostDiagnosticPhase.PluginTypePreflight,
-                        exception);
-                }),
-            getManifest: _ => null,
-            getPreflightModuleType: _ => null,
-            diagnosticSink: null);
-    }
-
-    /// <summary>复用插件目录阶段已经完成的严格类型预检结果发现模块。</summary>
+    /// <summary>复用插件目录阶段已经完成的精确入口预检结果激活模块。</summary>
     internal static PluginModuleCatalog Discover(
         PluginDiscoverySnapshot snapshot,
         IHostDiagnosticSink? diagnosticSink = null)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        return DiscoverCore(
-            snapshot.Assemblies,
-            snapshot.GetPreflightTypes,
-            snapshot.GetManifest,
-            snapshot.GetModuleType,
-            diagnosticSink);
-    }
-
-    private static PluginModuleCatalog DiscoverCore(
-        IReadOnlyList<Assembly> assemblies,
-        Func<Assembly, IReadOnlyList<Type>> getTypes,
-        Func<Assembly, PluginManifest?> getManifest,
-        Func<Assembly, Type?> getPreflightModuleType,
-        IHostDiagnosticSink? diagnosticSink)
-    {
         var entries = new List<PluginModuleEntry>();
         var diagnostics = new List<HostCompositionDiagnostic>();
 
-        foreach (var assembly in assemblies)
+        foreach (var assembly in snapshot.Assemblies)
         {
-            var loadableTypes = getTypes(assembly);
-            var moduleType = getPreflightModuleType(assembly);
-            if (moduleType is null && !PluginModulePreflight.TryValidate(
-                    loadableTypes,
-                    out moduleType,
-                    out var moduleErrorCode,
-                    out _))
-            {
-                diagnostics.Add(Diagnostic(
-                    moduleErrorCode!,
-                    assembly.GetName().Name,
-                    loadableTypes.Where(type =>
-                        typeof(IPluginModule).IsAssignableFrom(type) &&
-                        !type.IsAbstract &&
-                        !type.IsInterface)));
-                continue;
-            }
-
+            var moduleType = snapshot.GetModuleType(assembly);
             try
             {
-                var module = (IPluginModule)Activator.CreateInstance(moduleType!)!;
+                var module = (IPluginModule)Activator.CreateInstance(moduleType)!;
                 entries.Add(new PluginModuleEntry(
                     module,
-                    moduleType!,
+                    moduleType,
                     assembly,
-                    getManifest(assembly)));
+                    snapshot.GetManifest(assembly)));
             }
             catch (Exception exception)
             {
                 diagnostics.Add(Diagnostic(
                     "PLUGIN_MODULE_ACTIVATION_FAILED",
                     assembly.GetName().Name,
-                    [moduleType!]));
+                    [moduleType]));
                 diagnosticSink?.Report(new HostDiagnosticDraft(
                     "PLUGIN_MODULE_ACTIVATION_FAILED",
                     HostDiagnosticPhase.PluginModuleDiscovery)
                 {
                     AssemblyName = assembly.GetName(),
-                    StableId = moduleType!.FullName,
+                    StableId = moduleType.FullName,
                     Exception = exception,
                 });
             }
@@ -127,8 +71,7 @@ internal sealed class PluginModuleCatalog
         }
 
         return new PluginModuleCatalog(entries
-            .OrderBy(entry => entry.Manifest?.PluginId.Value ?? entry.Assembly.FullName,
-                StringComparer.Ordinal)
+            .OrderBy(entry => entry.Manifest!.PluginId.Value, StringComparer.Ordinal)
             .ToArray());
     }
 
@@ -151,7 +94,7 @@ internal sealed class PluginModuleCatalog
         foreach (var entry in Entries)
         {
             var manifest = entry.Manifest ?? throw new InvalidOperationException(
-                "没有 manifest 的测试 Catalog 不能进入生产插件组合。");
+                "manifest v2 是生产插件组合的必需入口事实。");
             var registration = new PluginServiceRegistrationTransaction(services);
             var context = new PluginRegistrationContext(
                 manifest.PluginId,

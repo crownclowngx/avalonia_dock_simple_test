@@ -114,26 +114,6 @@ public sealed class IdentityAndRegistryTests
             }));
     }
 
-    [Fact]
-    public void 同程序集多模块在任何服务注册发生前失败()
-    {
-        FirstModule.ConfigureCount = 0;
-        SecondModule.ConfigureCount = 0;
-
-        var exception = Assert.Throws<HostCompositionException>(() =>
-            PluginModuleCatalog.Discover([typeof(FirstModule).Assembly]));
-
-        var diagnostic = Assert.Single(
-            exception.Diagnostics,
-            item => item.Code == "PLUGIN_MODULE_MULTIPLE");
-        Assert.Contains(diagnostic.Contributors,
-            contributor => contributor.TypeName == typeof(FirstModule).FullName);
-        Assert.Contains(diagnostic.Contributors,
-            contributor => contributor.TypeName == typeof(SecondModule).FullName);
-        Assert.Equal(0, FirstModule.ConfigureCount);
-        Assert.Equal(0, SecondModule.ConfigureCount);
-    }
-
     private sealed class CapturingDocumentStrategy(DocumentMetadata metadata)
         : IDocumentCreationStrategy
     {

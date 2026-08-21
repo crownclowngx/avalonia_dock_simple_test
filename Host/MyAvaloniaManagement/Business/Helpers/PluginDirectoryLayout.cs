@@ -6,7 +6,7 @@ using MyAvaloniaManagement.Business.Diagnostics;
 namespace MyAvaloniaManagement.Business.Helpers;
 
 /// <summary>
-/// 描述一个满足 Managed Plugin v1 发布约定的插件目录。
+/// 描述一个满足 Managed Plugin v2 构建约定的插件目录。
 /// </summary>
 /// <remarks>
 /// 设计意图：目录布局只验证清单声明的入口和标准依赖清单，不扫描或猜测其他 DLL。
@@ -65,21 +65,21 @@ internal sealed class PluginDirectoryLayout
             }
 
             var entryAssemblyPath = Path.GetFullPath(
-                Path.Combine(directoryPath, manifest.EntryAssembly));
+                Path.Combine(directoryPath, manifest.EntryPoint.Assembly));
             if (!File.Exists(entryAssemblyPath))
             {
                 errorCode = "PLUGIN_ENTRY_INVALID";
-                errorDetail = $"清单入口 {manifest.EntryAssembly} 不存在。";
+                errorDetail = $"清单入口 {manifest.EntryPoint.Assembly} 不存在。";
                 return false;
             }
 
-            // Managed Plugin v1 只有标准 deps/RID 图一条依赖解析路径。缺少 deps 时立即拒绝，
+            // Managed Plugin v2 只有标准 deps/RID 图一条依赖解析路径。缺少 deps 时立即拒绝，
             // 不能退回目录索引，否则发布包的真实依赖闭包会再次变成不可审阅的隐式规则。
             var dependencyPath = Path.ChangeExtension(entryAssemblyPath, ".deps.json");
             if (!File.Exists(dependencyPath))
             {
                 errorCode = HostDiagnosticCodes.PluginDependencyManifestMissing;
-                errorDetail = $"清单入口 {manifest.EntryAssembly} 缺少同名 .deps.json。";
+                errorDetail = $"清单入口 {manifest.EntryPoint.Assembly} 缺少同名 .deps.json。";
                 return false;
             }
 
@@ -90,7 +90,7 @@ internal sealed class PluginDirectoryLayout
             catch (BadImageFormatException)
             {
                 errorCode = "PLUGIN_ENTRY_INVALID";
-                errorDetail = $"清单入口 {manifest.EntryAssembly} 不是有效托管程序集。";
+                errorDetail = $"清单入口 {manifest.EntryPoint.Assembly} 不是有效托管程序集。";
                 return false;
             }
 

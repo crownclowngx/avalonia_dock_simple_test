@@ -19,20 +19,16 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// </remarks>
 internal sealed class PluginDiscoverySnapshot
 {
-    private readonly IReadOnlyDictionary<Assembly, IReadOnlyList<Type>> _typesByAssembly;
     private readonly IReadOnlyDictionary<Assembly, PluginManifest> _manifestsByAssembly;
     private readonly IReadOnlyDictionary<Assembly, Type> _moduleTypesByAssembly;
 
     internal PluginDiscoverySnapshot(
         IEnumerable<Assembly> assemblies,
-        IReadOnlyDictionary<Assembly, IReadOnlyList<Type>> typesByAssembly,
         IReadOnlyDictionary<Assembly, PluginManifest> manifestsByAssembly,
         IReadOnlyDictionary<Assembly, Type> moduleTypesByAssembly,
         IEnumerable<HostDiagnosticDraft> diagnostics)
     {
         Assemblies = new ReadOnlyCollection<Assembly>(assemblies.ToArray());
-        _typesByAssembly = new ReadOnlyDictionary<Assembly, IReadOnlyList<Type>>(
-            new Dictionary<Assembly, IReadOnlyList<Type>>(typesByAssembly));
         _manifestsByAssembly = new ReadOnlyDictionary<Assembly, PluginManifest>(
             new Dictionary<Assembly, PluginManifest>(manifestsByAssembly));
         _moduleTypesByAssembly = new ReadOnlyDictionary<Assembly, Type>(
@@ -40,12 +36,16 @@ internal sealed class PluginDiscoverySnapshot
         Diagnostics = new ReadOnlyCollection<HostDiagnosticDraft>(diagnostics.ToArray());
     }
 
+    /// <summary>供无插件 Host 与测试组合根使用的显式空快照。</summary>
+    internal static PluginDiscoverySnapshot Empty { get; } = new(
+        [],
+        new Dictionary<Assembly, PluginManifest>(),
+        new Dictionary<Assembly, Type>(),
+        []);
+
     internal IReadOnlyList<Assembly> Assemblies { get; }
 
     internal IReadOnlyList<HostDiagnosticDraft> Diagnostics { get; }
-
-    internal IReadOnlyList<Type> GetPreflightTypes(Assembly assembly) =>
-        _typesByAssembly[assembly];
 
     /// <summary>
     /// 取得与已加载程序集来自同一次发现快照的已验证清单。
@@ -54,10 +54,10 @@ internal sealed class PluginDiscoverySnapshot
         _manifestsByAssembly[assembly];
 
     /// <summary>
-    /// 取得在目录隔离阶段已经验证为唯一且具备 public 无参构造的模块类型。
+    /// 取得在目录隔离阶段按 manifest 精确名称验证且具备 public 无参构造的模块类型。
     /// </summary>
     /// <remarks>
-    /// 设计意图：Catalog 只实例化这份快照中的结论，不再次扫描类型并产生另一套模块事实。
+    /// 设计意图：Catalog 只实例化这份快照中的结论，不枚举程序集并产生另一套入口事实。
     /// </remarks>
     internal Type GetModuleType(Assembly assembly) =>
         _moduleTypesByAssembly[assembly];
@@ -73,11 +73,11 @@ internal sealed class PluginDiscoverySnapshot
 }
 
 /// <summary>
-/// 从部署目录建立 Managed Plugin v1 不可变发现快照。
+/// 从部署目录建立 Managed Plugin v2 不可变发现快照。
 /// </summary>
 /// <remarks>
-/// 同一规范化根目录只生成一次不可变快照。每个插件目录必须通过清单、deps、入口类型和
-/// 唯一模块结构预检，并使用独立加载上下文；失败目录不会进入后续服务注册或扩展发现。
+/// 同一规范化根目录只生成一次不可变快照。每个插件目录必须通过清单、deps 和精确入口类型预检，
+/// 并使用独立加载上下文；失败目录不会进入后续服务注册或扩展发现。
 /// </remarks>
 internal static class AssemblyLoaderHelper
 {
@@ -107,7 +107,6 @@ internal static class AssemblyLoaderHelper
     private static PluginDiscoverySnapshot LoadRootSnapshot(string rootPath)
     {
         var loaded = new List<Assembly>();
-        var typesByAssembly = new Dictionary<Assembly, IReadOnlyList<Type>>();
         var manifestsByAssembly = new Dictionary<Assembly, PluginManifest>();
         var moduleTypesByAssembly = new Dictionary<Assembly, Type>();
         var diagnostics = new List<HostDiagnosticDraft>();
@@ -119,7 +118,6 @@ internal static class AssemblyLoaderHelper
                 Directory.CreateDirectory(rootPath);
                 return new PluginDiscoverySnapshot(
                     loaded,
-                    typesByAssembly,
                     manifestsByAssembly,
                     moduleTypesByAssembly,
                     diagnostics);
@@ -168,7 +166,6 @@ internal static class AssemblyLoaderHelper
                 // 即使其他插件本身有效，也不能在发现全局歧义后继续执行任何插件代码。
                 return new PluginDiscoverySnapshot(
                     loaded,
-                    typesByAssembly,
                     manifestsByAssembly,
                     moduleTypesByAssembly,
                     diagnostics);
@@ -178,7 +175,7 @@ internal static class AssemblyLoaderHelper
             {
                 if (!PluginCompatibilityEvaluator.TryEvaluate(
                         candidate.Manifest,
-                        HostCompatibilityProfile.Current,
+                        PluginSdkCompatibilityProfile.Current,
                         out var errorCode,
                         out _))
                 {
@@ -193,7 +190,6 @@ internal static class AssemblyLoaderHelper
                     candidate.DirectoryPath,
                     candidate.Manifest,
                     loaded,
-                    typesByAssembly,
                     manifestsByAssembly,
                     moduleTypesByAssembly,
                     diagnostics);
@@ -213,7 +209,6 @@ internal static class AssemblyLoaderHelper
 
         return new PluginDiscoverySnapshot(
             loaded,
-            typesByAssembly,
             manifestsByAssembly,
             moduleTypesByAssembly,
             diagnostics);
@@ -223,7 +218,6 @@ internal static class AssemblyLoaderHelper
         string pluginDirectory,
         PluginManifest manifest,
         ICollection<Assembly> loaded,
-        IDictionary<Assembly, IReadOnlyList<Type>> typesByAssembly,
         IDictionary<Assembly, PluginManifest> manifestsByAssembly,
         IDictionary<Assembly, Type> moduleTypesByAssembly,
         ICollection<HostDiagnosticDraft> diagnostics)
@@ -289,17 +283,20 @@ internal static class AssemblyLoaderHelper
             return;
         }
 
-        IReadOnlyList<Type> candidateTypes;
+        Type? entryType;
         try
         {
-            // GetTypes 不会解析只出现在方法体中的程序集引用。预先解析完整引用表，
-            // 才能在调用插件 Configure 前发现发布包遗漏的私有依赖。
+            // 预先解析完整引用表，才能在调用插件 Configure 前发现发布包遗漏的私有依赖。
+            // 随后只按清单中的完整名称取一个类型；不得重新使用 GetTypes 扫描模块候选。
             foreach (var reference in candidateAssembly.GetReferencedAssemblies())
             {
                 _ = loadContext.LoadFromAssemblyName(reference);
             }
 
-            candidateTypes = candidateAssembly.GetTypes();
+            entryType = candidateAssembly.GetType(
+                manifest.EntryPoint.Type,
+                throwOnError: false,
+                ignoreCase: false);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
@@ -319,7 +316,7 @@ internal static class AssemblyLoaderHelper
         }
 
         if (!PluginModulePreflight.TryValidate(
-                candidateTypes,
+                entryType,
                 out var moduleType,
                 out var moduleErrorCode,
                 out _))
@@ -337,7 +334,6 @@ internal static class AssemblyLoaderHelper
         }
 
         loaded.Add(candidateAssembly);
-        typesByAssembly.Add(candidateAssembly, candidateTypes);
         manifestsByAssembly.Add(candidateAssembly, manifest);
         moduleTypesByAssembly.Add(candidateAssembly, moduleType!);
     }
@@ -355,10 +351,9 @@ internal static class AssemblyLoaderHelper
             PluginDirectory = Path.GetFileName(pluginDirectory),
             AssemblyName = manifest is null
                 ? null
-                : new AssemblyName(manifest.EntryAssembly),
+                : new AssemblyName(manifest.EntryPoint.Assembly),
             PluginVersion = manifest?.PluginVersion,
-            HostApiRange = manifest?.HostApi,
-            CommonContractRange = manifest?.CommonContract,
+            SdkRange = manifest?.Sdk,
         };
     }
 

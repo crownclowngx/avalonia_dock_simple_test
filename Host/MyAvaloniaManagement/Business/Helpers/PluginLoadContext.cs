@@ -117,7 +117,7 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
 
         if (!PluginCompatibilityEvaluator.TryEvaluate(
                 manifest!,
-                HostCompatibilityProfile.Current,
+                PluginSdkCompatibilityProfile.Current,
                 out var compatibilityErrorCode,
                 out var compatibilityErrorDetail))
         {

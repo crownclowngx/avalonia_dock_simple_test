@@ -1,10 +1,10 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "pluginId": "myavalonia.plugin.legacy-no-module",
   "pluginVersion": "1.0.0",
-  "entryAssembly": "LegacyNoModule.Plugin.dll",
-  "compatibility": {
-    "hostApi": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" },
-    "commonContract": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" }
-  }
+  "entryPoint": {
+    "assembly": "LegacyNoModule.Plugin.dll",
+    "type": "LegacyNoModule.Plugin.LegacyPluginModule"
+  },
+  "sdk": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" }
 }

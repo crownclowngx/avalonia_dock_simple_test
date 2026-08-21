@@ -1,16 +1,18 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G2 已完成，G3–G14 尚未实现。
+> 状态：实施中；G0–G3 已完成，G4–G14 尚未实现。
 >
 > 评审日期：2026-08-21。
 >
 > 事实基线：`dev-重构-2026年8月18日` 分支提交 `abb8c26`、Managed Plugin v1 文档与
 > [V2 G0 非发布绿色基线](../plan-history/host-v2/g0-green-baseline.md)与
 > [V2 G1 版本与数据边界](../plan-history/host-v2/g1-version-and-data-boundaries.md)，以及
-> [V2 G2 Plugin SDK 重建](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)。
+> [V2 G2 Plugin SDK 重建](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)与
+> [V2 G3 manifest v2 与构建协议](../plan-history/host-v2/g3-manifest-v2-and-build-protocol.md)。
 >
-> 重要说明：G2 已完成最终 Core/UI SDK；manifest、独立插件容器、Host Registry、Dock Adapter、
-> Document、layout 格式和 G3–G14 仍是目标设计，不得引用为当前能力。
+> 重要说明：G3 已完成最终 Core/UI SDK、严格 manifest v2、精确入口加载和构建/包验证协议；
+> 独立插件容器、Host Registry、Dock Adapter、Document、layout 格式和 G4–G14 仍是目标设计，
+> 不得引用为当前能力。
 
 ## 1. 目的与结论
 
@@ -392,13 +394,18 @@ G2 的实现、API 清单、Legacy 阶段桥、SOLID 取舍和非发布门禁证
 [G2 专项记录](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)。本阶段没有实现 manifest v2、独立插件容器、
 Host Registry、Dock Adapter 或 Document v2，也没有运行 Windows Smoke、Windows CI 或发布门禁。
 
-### G3：建立 manifest v2 与构建协议
+### G3：建立 manifest v2 与构建协议（已完成）
 
 - **目标**：精确入口类型和单一 SDK 区间成为执行插件代码前的唯一事实。
 - **删除/新增**：删除唯一模块扫描和 Host/Common 兼容字段；构建生成五字段严格 manifest v2。
 - **插件影响**：四插件项目声明 `ManagedPluginEntryType` 和 SDK 区间。
 - **验证**：未知字段、入口路径、入口类型、程序集版本、SDK 区间、v1 清单和双模块负例；确定性 ZIP。
 - **回滚**：回到 G2 的 V2 编译包，不保留生产 loader 双 reader。
+
+G3 的严格格式、SOLID 所有权、Legacy 阶段桥、构建探针、失败语义和非发布门禁证据见
+[G3 专项记录](../plan-history/host-v2/g3-manifest-v2-and-build-protocol.md)。本阶段没有迁移独立容器、
+声明式贡献、Dock、Document 或 layout，也没有运行 Windows Smoke、Windows CI、ReleaseAcceptance
+或任何发布门禁。
 
 ### G4：实现每插件独立容器
 

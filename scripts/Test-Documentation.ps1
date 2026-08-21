@@ -7,7 +7,7 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前事实只覆盖宿主、SDK 和 Managed Plugin v1 的公共说明。Host V2 任务书及分阶段记录只参加
+# 当前事实只覆盖宿主、SDK 和 Managed Plugin v2 的公共说明。Host V2 任务书及分阶段记录只参加
 # 链接、命令和项目路径校验，不参加 v1 当前事实的措辞禁令，避免把目标设计误判为已经实现。
 # 插件业务设计、理论文章和 .NET 升级历史仍不属于本门禁范围。
 $currentDocumentPaths = @(

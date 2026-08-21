@@ -217,19 +217,15 @@ public sealed class PluginServiceProtectionTests
                 PluginManifestReader.CurrentSchemaVersion,
                 new PluginId(item.PluginId),
                 new Version(1, 0, 0, 0),
-                item.ModuleType.Assembly.GetName().Name + ".dll",
-                new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0)),
+                new PluginEntryPoint(
+                    item.ModuleType.Assembly.GetName().Name + ".dll",
+                    item.ModuleType.FullName!),
                 new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0))));
         var moduleTypes = modules.ToDictionary(
             item => item.ModuleType.Assembly,
             item => item.ModuleType);
-        var types = modules.ToDictionary(
-            item => item.ModuleType.Assembly,
-            item => (IReadOnlyList<Type>)[item.ModuleType]);
-
         return PluginModuleCatalog.Discover(new PluginDiscoverySnapshot(
             assemblies,
-            types,
             manifests,
             moduleTypes,
             diagnostics: []));

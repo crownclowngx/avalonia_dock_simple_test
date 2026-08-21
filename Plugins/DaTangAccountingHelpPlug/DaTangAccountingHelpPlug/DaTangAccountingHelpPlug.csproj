@@ -9,11 +9,9 @@
         <ManagedPluginDirectoryName>DaTang</ManagedPluginDirectoryName>
         <PluginVersion>2.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
-        <!-- G3 删除双区间前，两组 V1 字段只投影同一个 SDK V2 兼容事实。 -->
-        <ManagedPluginHostApiMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginHostApiMinInclusive>
-        <ManagedPluginHostApiMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginHostApiMaxExclusive>
-        <ManagedPluginCommonContractMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginCommonContractMinInclusive>
-        <ManagedPluginCommonContractMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginCommonContractMaxExclusive>
+        <ManagedPluginEntryType>DaTangAccountingHelpPlug.Plugin.DaTangAccountingHelpPluginModule</ManagedPluginEntryType>
+        <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
+        <ManagedPluginSdkMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginSdkMaxExclusive>
     </PropertyGroup>
 
     <ItemGroup>

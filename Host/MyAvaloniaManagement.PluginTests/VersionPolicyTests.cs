@@ -32,7 +32,7 @@ public sealed class VersionPolicyTests
         var properties = ReadVersionProperties();
         var hostAssembly = typeof(WelcomeViewModel).Assembly;
         // 当前 Host 仍通过 G2 Legacy 阶段桥运行。这里验证它继续投影集中 SDK 的二进制身份，
-        // 防止 manifest v1 在后续迁移前把仓库内插件误判为版本不兼容；最终 Core/UI 包由专项门禁验证。
+        // manifest v2 的单一 SDK 区间直接投影最终 Core/UI SDK 版本线；最终包仍由专项门禁验证。
         var legacyContractAssembly = typeof(IPluginModule).Assembly;
 
         Assert.Equal("2.0.0", properties["MyAvaloniaProductVersion"]);
@@ -102,21 +102,16 @@ public sealed class VersionPolicyTests
     }
 
     [Fact]
-    public void VersionPolicy_V2目标Schema与当前V1读取器保持明确分界()
+    public void VersionPolicy_manifest已接入V2而Document与布局仍保持阶段边界()
     {
         var properties = ReadVersionProperties();
 
-        AssertVersionFact(
-            "V1 manifest bridge schema",
-            properties["MyAvaloniaManifestSchemaVersion"],
-            PluginManifestReader.CurrentSchemaVersion.ToString());
         Assert.Equal("2", properties["MyAvaloniaV2ManifestSchemaVersion"]);
         Assert.Equal("2", properties["MyAvaloniaV2DocumentEnvelopeSchemaVersion"]);
         Assert.Equal("2", properties["MyAvaloniaV2LayoutSchemaVersion"]);
         Assert.Equal("layout-v2.json", properties["MyAvaloniaV2LayoutFileName"]);
 
-        // G1 只声明目标代际。格式实现必须由 G3/G7/G8 一次替换，不能先把 V1 结构伪装成 V2。
-        Assert.Equal(1, PluginManifestReader.CurrentSchemaVersion);
+        Assert.Equal(2, PluginManifestReader.CurrentSchemaVersion);
         Assert.Equal(1, DocumentEnvelopeSerializer.CurrentSchemaVersion);
         Assert.Equal(1, DockLayoutSnapshotV1.CurrentSchemaVersion);
         Assert.Equal("layout-v1.json", DockLayoutStore.LayoutFileName);
@@ -150,7 +145,7 @@ public sealed class VersionPolicyTests
             "$(PluginVersion).0",
             ReadProjectProperty(sharedProps, "AssemblyVersion"));
 
-        var hostProfile = HostCompatibilityProfile.Current;
+        var hostProfile = PluginSdkCompatibilityProfile.Current;
         var versionProperties = ReadVersionProperties();
         var sdkVersion = Version.Parse(versionProperties["MyAvaloniaPluginSdkVersion"]);
         var sdkNextMajor = Version.Parse(versionProperties["MyAvaloniaPluginSdkNextMajorVersion"]);
@@ -227,44 +222,38 @@ public sealed class VersionPolicyTests
                 plugin.PluginId,
                 manifest.PluginId.Value);
             AssertVersionFact(
-                $"{plugin.Name} entryAssembly",
+                $"{plugin.Name} entryPoint.assembly",
                 plugin.Assembly.GetName().Name + ".dll",
-                manifest.EntryAssembly);
+                manifest.EntryPoint.Assembly);
+            var expectedEntryType = Assert.Single(plugin.Assembly.ExportedTypes, type =>
+                typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract).FullName!;
+            AssertVersionFact(
+                $"{plugin.Name} entry type expression",
+                expectedEntryType,
+                ReadProjectProperty(projectPath, "ManagedPluginEntryType"));
+            AssertVersionFact(
+                $"{plugin.Name} manifest entry type",
+                expectedEntryType,
+                manifest.EntryPoint.Type);
             Assert.Equal(
                 PluginManifestReader.CurrentSchemaVersion,
                 manifest.SchemaVersion);
             AssertVersionFact(
-                $"{plugin.Name} Host API min expression",
+                $"{plugin.Name} SDK min expression",
                 "$(MyAvaloniaPluginSdkVersion)",
-                ReadProjectProperty(projectPath, "ManagedPluginHostApiMinInclusive"));
+                ReadProjectProperty(projectPath, "ManagedPluginSdkMinInclusive"));
             AssertVersionFact(
-                $"{plugin.Name} Host API max expression",
+                $"{plugin.Name} SDK max expression",
                 "$(MyAvaloniaPluginSdkNextMajorVersion)",
-                ReadProjectProperty(projectPath, "ManagedPluginHostApiMaxExclusive"));
+                ReadProjectProperty(projectPath, "ManagedPluginSdkMaxExclusive"));
             AssertVersionFact(
-                $"{plugin.Name} Host API minInclusive",
+                $"{plugin.Name} SDK minInclusive",
                 sdkVersion.ToString(3),
-                manifest.HostApi.MinInclusive.ToString(3));
+                manifest.Sdk.MinInclusive.ToString(3));
             AssertVersionFact(
-                $"{plugin.Name} Host API maxExclusive",
+                $"{plugin.Name} SDK maxExclusive",
                 sdkNextMajor.ToString(3),
-                manifest.HostApi.MaxExclusive.ToString(3));
-            AssertVersionFact(
-                $"{plugin.Name} Common min expression",
-                "$(MyAvaloniaPluginSdkVersion)",
-                ReadProjectProperty(projectPath, "ManagedPluginCommonContractMinInclusive"));
-            AssertVersionFact(
-                $"{plugin.Name} Common max expression",
-                "$(MyAvaloniaPluginSdkNextMajorVersion)",
-                ReadProjectProperty(projectPath, "ManagedPluginCommonContractMaxExclusive"));
-            AssertVersionFact(
-                $"{plugin.Name} Common minInclusive",
-                sdkVersion.ToString(3),
-                manifest.CommonContract.MinInclusive.ToString(3));
-            AssertVersionFact(
-                $"{plugin.Name} Common maxExclusive",
-                sdkNextMajor.ToString(3),
-                manifest.CommonContract.MaxExclusive.ToString(3));
+                manifest.Sdk.MaxExclusive.ToString(3));
 
             var compatible = PluginCompatibilityEvaluator.TryEvaluate(
                 manifest,
@@ -273,7 +262,7 @@ public sealed class VersionPolicyTests
                 out var compatibilityDetail);
             Assert.True(
                 compatible,
-                $"{plugin.Name} 不包含当前 Host/SDK 版本：" +
+                $"{plugin.Name} 不包含当前 Plugin SDK 版本：" +
                 $"{compatibilityCode}: {compatibilityDetail}");
         }
     }

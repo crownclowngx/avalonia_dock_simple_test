@@ -50,7 +50,7 @@ internal sealed class TestHostContext : IDisposable
             Path.Combine(
                 TempDirectory,
                 AppearanceSettingsStore.SettingsFileName)));
-        services.AddSingleton(PluginModuleCatalog.Discover([]));
+        services.AddSingleton(PluginModuleCatalog.Discover(PluginDiscoverySnapshot.Empty));
         foreach (var strategy in documentStrategies ?? [])
         {
             registryBuilder.AddDocumentInstance(HostExtensionIds.Owner, strategy);

@@ -1,9 +1,11 @@
 # 创建 Managed 插件
 
-> 当前仓库处于 V2 G2：最终 Core/UI SDK 已建立，但 manifest v2、Host 和四插件运行时迁移尚未完成。
-> 本页以下运行示例仍描述 Legacy 阶段桥，只用于仓库内联调，不应据此发布外部 V2 插件。
+> 当前仓库处于 V2 G3：最终 Core/UI SDK、严格 manifest v2、精确入口加载与构建协议已经建立。
+> Host 和四插件的模块注册仍使用 Legacy 阶段桥；独立插件容器、声明式贡献与业务插件最终 SDK
+> 迁移尚未完成。本页运行示例只用于仓库内联调，不应据此发布外部 V2 插件。
 
-本篇以 `QuickStartPlugin` 为示例。完成后，宿主能够读取清单、加载入口程序集、实例化唯一的 `IPluginModule`，并在根容器构建前完成受控注册。Document、Tool 和 View 贡献将在[下一篇](./add-document-and-tool.md)加入。
+本篇以 `QuickStartPlugin` 为示例。完成后，宿主能够读取严格清单、加载入口程序集，并且只实例化
+`entryPoint.type` 精确声明的 `IPluginModule`。Document、Tool 和 View 贡献将在[下一篇](./add-document-and-tool.md)加入。
 
 完整实现可对照 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) 和
 [`MyPlugTestPluginModule`](../../Plugins/MyPlugTest/MyPlugTest/Plugin/MyPlugTestPluginModule.cs)。清单由构建生成，
@@ -30,22 +32,22 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
     <ManagedPluginId>myavalonia.plugin.quick-start</ManagedPluginId>
     <ManagedPluginDirectoryName>QuickStartPlugin</ManagedPluginDirectoryName>
     <PluginVersion>2.0.0</PluginVersion>
-    <ManagedPluginHostApiMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginHostApiMinInclusive>
-    <ManagedPluginHostApiMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginHostApiMaxExclusive>
-    <ManagedPluginCommonContractMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginCommonContractMinInclusive>
-    <ManagedPluginCommonContractMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginCommonContractMaxExclusive>
+    <ManagedPluginEntryType>QuickStartPlugin.Plugin.QuickStartPluginModule</ManagedPluginEntryType>
+    <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
+    <ManagedPluginSdkMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginSdkMaxExclusive>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="2.0.0" />
+    <!-- G3 仓库内阶段桥；不得随插件打包。后续迁移保持入口类型全名不变。 -->
+    <ProjectReference Include="../../../Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj" />
   </ItemGroup>
 </Project>
 ```
 
 当前 Host 的仓库内插件仍引用
-`Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj`；这是 G2
+`Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj`；这是 G3
 冻结的不可打包编译桥，不是新插件模板。最终 V2 契约开发应引用 Core/UI 的正式项目或临时 nupkg，并等待
-G3–G12 完成运行时迁移后再做发布兼容验证。外部插件不要直接复制 Common DLL 作为裸引用。
+G4–G12 完成运行时迁移后再做发布兼容验证。外部插件不要直接复制 Common DLL 作为裸引用。
 
 不要复制任何现有插件的部署 Target。引入私有第三方运行时包时，用
 `<ManagedPluginPrivatePackage Include="Package.Id" />` 声明资产所有权；显式文件使用
@@ -58,19 +60,16 @@ G3–G12 完成运行时迁移后再做发布兼容验证。外部插件不要�
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "pluginId": "myavalonia.plugin.quick-start",
   "pluginVersion": "2.0.0",
-  "entryAssembly": "QuickStartPlugin.dll",
-  "compatibility": {
-    "hostApi": {
-      "minInclusive": "2.0.0",
-      "maxExclusive": "3.0.0"
-    },
-    "commonContract": {
-      "minInclusive": "2.0.0",
-      "maxExclusive": "3.0.0"
-    }
+  "entryPoint": {
+    "assembly": "QuickStartPlugin.dll",
+    "type": "QuickStartPlugin.Plugin.QuickStartPluginModule"
+  },
+  "sdk": {
+    "minInclusive": "2.0.0",
+    "maxExclusive": "3.0.0"
   }
 }
 ```
@@ -79,14 +78,15 @@ G3–G12 完成运行时迁移后再做发布兼容验证。外部插件不要�
 
 - 文件不超过 64 KiB，不能包含注释或尾随逗号；
 - 字段名称区分大小写，未知、重复或缺失字段都会被拒绝；
-- `schemaVersion` 当前只能为 `1`；
+- `schemaVersion` 当前只能为 `2`，v1 会被明确拒绝；
 - `pluginId` 必须是以 `myavalonia.plugin.` 开头的规范稳定 ID；
-- 版本格式是 `major.minor.patch[.revision]`，区间是左闭右开；
-- `entryAssembly` 只能是插件根目录里的一个 DLL 文件名，不能包含路径；
+- 版本格式只能是 `major.minor.patch` 三段数字，SDK 区间是左闭右开；
+- `entryPoint.assembly` 只能是插件根目录里的一个 DLL 文件名，不能包含路径；
+- `entryPoint.type` 必须是区分大小写的规范完整类型名，不能含空白、程序集限定名、泛型或嵌套符号；
 - `pluginVersion` 与入口程序集 `AssemblyVersion` 规范化后必须完全一致。
 
-不要随意复制示例的兼容区间，也不要让区间跟随 Host 当前版本自动漂移。发布前应只声明实际验证过的
-Host/Common 左闭右开范围。完整规则见[兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md#31-严格插件清单)。
+不要随意复制示例的兼容区间。发布前应只声明对 Core/UI 同版本线实际验证过的单一 SDK 范围。
+完整规则见[兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md#31-加载前清单与版本检查)。
 
 ## 3. 定义稳定 ID
 
@@ -112,7 +112,7 @@ public static class PluginIds
 
 这些 ID 会进入菜单、诊断和布局持久化。一经发布就应保持不变；重命名类、文件夹或显示文字不应改变稳定 ID。旧 ID 只能作为迁移别名输入，不能成为新保存数据的身份。
 
-## 4. 添加唯一模块入口
+## 4. 添加精确模块入口
 
 建立 `Plugin/QuickStartPluginModule.cs`：
 
@@ -130,7 +130,10 @@ public sealed class QuickStartPluginModule : IPluginModule
 }
 ```
 
-入口程序集必须只有一个可实例化的 `IPluginModule`，模块必须具有 public 无参构造。上面的隐式无参构造满足要求。模块不声明 `PluginId`：manifest 是身份唯一事实源，宿主把已验证身份作为只读 `context.PluginId` 注入。`Configure` 在根 `IServiceProvider` 构建前且每个进程只调用一次。
+入口类型必须是 public、非抽象、非泛型的 `IPluginModule`，并具有 public 无参构造。上面的隐式无参构造
+满足要求。程序集可以包含其他模块类型，但 Host 不扫描它们；未由 `entryPoint.type` 声明的模块不会被
+构造或执行。模块不声明 `PluginId`：manifest 是身份唯一事实源，宿主把已验证身份作为只读
+`context.PluginId` 注入。`Configure` 在根 `IServiceProvider` 构建前且每个进程只调用一次。
 
 `context.Services` 只用于追加插件自己的业务服务，可以选择 singleton、scoped、transient、keyed、开放泛型或同一私有接口的多个实现。不要删除、替换、清空或重排已有描述符，也不要为宿主已经注册的 ServiceType 追加实现；宿主会在根容器构建前校验，违规时返回 `PLUGIN_HOST_SERVICE_MUTATION`。模块返回后保存并修改该集合不会产生注册效果。
 

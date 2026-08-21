@@ -78,9 +78,9 @@ flowchart TB
 [`HostRuntime`](../../Business/Helpers/HostRuntime.cs) 按以下顺序启动：
 
 1. 创建 `PluginRegistryBuilder`，注册宿主核心服务、ViewModel 和宿主显式贡献；
-2. 读取全部插件清单并检查 Host API、Common 版本与全局身份；
-3. 验证入口 `.deps.json`，建立 ALC 并生成严格类型与唯一模块快照；
-4. 实例化已预检的 `IPluginModule`；身份只取自已经验证的 manifest；
+2. 读取全部 manifest v2，检查单一 Core/UI SDK 区间与全局身份；
+3. 验证精确入口 `.deps.json`，建立 ALC 并按大小写敏感完整名称取得清单入口类型；
+4. 预检并实例化该 `IPluginModule`；不扫描或执行程序集中的其他模块，身份只取自 manifest；
 5. 按 manifest `pluginId` 顺序执行 `Configure(IPluginRegistrationContext)`，分别收集插件私有服务与显式贡献；
 6. 以 `ValidateScopes`、`ValidateOnBuild` 构建根容器；
 7. 激活贡献、读取一次元数据并完成全量校验，成功后发布不可变 `PluginRegistry`；

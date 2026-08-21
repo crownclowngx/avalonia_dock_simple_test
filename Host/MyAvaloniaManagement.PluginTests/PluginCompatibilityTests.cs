@@ -451,11 +451,12 @@ public sealed class PluginCompatibilityTests
     {
         var assembly = typeof(TModule).Assembly;
         var manifest = new PluginManifest(
-            1,
+            PluginManifestReader.CurrentSchemaVersion,
             new PluginId(pluginId),
             new Version(1, 0, 0, 0),
-            $"{assembly.GetName().Name}.dll",
-            new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0)),
+            new PluginEntryPoint(
+                $"{assembly.GetName().Name}.dll",
+                typeof(TModule).FullName!),
             new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0)));
         return new PluginRegistryPlugin(
             manifest, assembly, typeof(TModule), [], [], [], []);

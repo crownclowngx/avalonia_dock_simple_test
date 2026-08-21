@@ -63,10 +63,9 @@ function Write-PluginFixture {
     Write-FixtureText (Join-Path $Root $RelativePath) @"
 <Project><PropertyGroup>
   <ManagedPlugin>true</ManagedPlugin><PluginVersion>2.0.0</PluginVersion>
-  <ManagedPluginHostApiMinInclusive>$minimumExpression</ManagedPluginHostApiMinInclusive>
-  <ManagedPluginHostApiMaxExclusive>$MaximumExpression</ManagedPluginHostApiMaxExclusive>
-  <ManagedPluginCommonContractMinInclusive>$minimumExpression</ManagedPluginCommonContractMinInclusive>
-  <ManagedPluginCommonContractMaxExclusive>$MaximumExpression</ManagedPluginCommonContractMaxExclusive>
+  <ManagedPluginEntryType>Fixture.Plugin.FixturePluginModule</ManagedPluginEntryType>
+  <ManagedPluginSdkMinInclusive>$minimumExpression</ManagedPluginSdkMinInclusive>
+  <ManagedPluginSdkMaxExclusive>$MaximumExpression</ManagedPluginSdkMaxExclusive>
 </PropertyGroup></Project>
 "@
 }
@@ -173,7 +172,7 @@ try {
     Remove-DocumentationOwnedTree -Path $readOnlyRoot -AllowedParent $testRoot
     Assert-True (-not (Test-Path -LiteralPath $readOnlyRoot)) '只读临时树没有安全清理。'
 
-    Write-Host '[Documentation] 核心单元测试通过：链接、脚本/项目路径、过期表述、类型、版本、插件区间和路径安全均符合预期。'
+    Write-Host '[Documentation] 核心单元测试通过：链接、脚本/项目路径、过期表述、类型、版本、插件入口、SDK 区间和路径安全均符合预期。'
 }
 finally {
     if (Test-Path -LiteralPath $testRoot) {

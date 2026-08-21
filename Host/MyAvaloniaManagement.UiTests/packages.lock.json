@@ -717,7 +717,7 @@
           "Flurl.Http": "[4.0.2, )",
           "Microsoft.Data.Sqlite": "[10.0.10, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "MyAvaloniaManagementCommon": "[1.0.0, )",
+          "MyAvaloniaManagementCommon": "[2.0.0, )",
           "QRCoder": "[1.8.0, )",
           "SQLitePCLRaw.bundle_e_sqlite3": "[2.1.12, )",
           "protobuf-net": "[3.2.56, )"
@@ -741,10 +741,27 @@
           "Irihi.Ursa.Themes.Semi": "[2.1.0, )",
           "Microsoft.Extensions.DependencyInjection": "[10.0.10, )",
           "Microsoft.Extensions.Hosting": "[10.0.10, )",
-          "MyAvaloniaManagementCommon": "[1.0.0, )",
+          "MyAvaloniaManagement.PluginSdk": "[2.0.0, )",
+          "MyAvaloniaManagement.PluginSdk.UI": "[2.0.0, )",
+          "MyAvaloniaManagementCommon": "[2.0.0, )",
           "Newtonsoft.Json": "[13.0.4, )",
           "Semi.Avalonia": "[12.1.0, )",
           "Xaml.Behaviors": "[12.0.5, )"
+        }
+      },
+      "myavaloniamanagement.pluginsdk": {
+        "type": "Project"
+      },
+      "myavaloniamanagement.pluginsdk.ui": {
+        "type": "Project",
+        "dependencies": {
+          "Avalonia": "[12.1.0, 12.1.0]",
+          "Avalonia.Themes.Fluent": "[12.1.0, 12.1.0]",
+          "Irihi.Ursa": "[2.1.0, 2.1.0]",
+          "Irihi.Ursa.Themes.Semi": "[2.1.0, 2.1.0]",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, 10.0.10]",
+          "MyAvaloniaManagement.PluginSdk": "[2.0.0, )",
+          "Semi.Avalonia": "[12.1.0, 12.1.0]"
         }
       },
       "MyAvaloniaManagementCommon": {
@@ -763,7 +780,7 @@
           "EPPlus": "[8.6.3, )",
           "Flurl.Http": "[4.0.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "MyAvaloniaManagementCommon": "[1.0.0, )"
+          "MyAvaloniaManagementCommon": "[2.0.0, )"
         }
       },
       "mysmalltools": {
@@ -772,7 +789,7 @@
           "CommunityToolkit.Mvvm": "[8.4.2, )",
           "LibVLCSharp": "[3.10.0, )",
           "LibVLCSharp.Avalonia": "[3.10.0, )",
-          "MyAvaloniaManagementCommon": "[1.0.0, )"
+          "MyAvaloniaManagementCommon": "[2.0.0, )"
         }
       },
       "Avalonia": {

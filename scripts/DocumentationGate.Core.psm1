@@ -390,25 +390,23 @@ function Get-ManagementBaselineFacts {
             (& $readProjectProperty 'ManagedPlugin') -ceq 'true') (
             "$relativePath 没有声明 ManagedPlugin=true。")
         $pluginVersion = [Version](& $readProjectProperty 'PluginVersion')
-        $hostMinExpression = & $readProjectProperty 'ManagedPluginHostApiMinInclusive'
-        $hostMaxExpression = & $readProjectProperty 'ManagedPluginHostApiMaxExclusive'
-        $commonMinExpression = & $readProjectProperty 'ManagedPluginCommonContractMinInclusive'
-        $commonMaxExpression = & $readProjectProperty 'ManagedPluginCommonContractMaxExclusive'
+        $entryType = & $readProjectProperty 'ManagedPluginEntryType'
+        $sdkMinExpression = & $readProjectProperty 'ManagedPluginSdkMinInclusive'
+        $sdkMaxExpression = & $readProjectProperty 'ManagedPluginSdkMaxExclusive'
         Assert-DocumentationCondition ($pluginVersion -eq $sdkVersion) (
             "$relativePath 的插件版本 $pluginVersion 与当前 SDK $sdkVersion 不一致。")
         Assert-DocumentationCondition (
-            $hostMinExpression -ceq '$(MyAvaloniaPluginSdkVersion)' -and
-            $hostMaxExpression -ceq '$(MyAvaloniaPluginSdkNextMajorVersion)') (
-            "$relativePath 的 Host API 兼容字段没有投影集中 SDK 区间。")
+            $entryType -cmatch '^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$') (
+            "$relativePath 的 ManagedPluginEntryType 不是规范的命名空间限定类型全名。")
         Assert-DocumentationCondition (
-            $commonMinExpression -ceq '$(MyAvaloniaPluginSdkVersion)' -and
-            $commonMaxExpression -ceq '$(MyAvaloniaPluginSdkNextMajorVersion)') (
-            "$relativePath 的 Common 兼容字段没有投影集中 SDK 区间。")
+            $sdkMinExpression -ceq '$(MyAvaloniaPluginSdkVersion)' -and
+            $sdkMaxExpression -ceq '$(MyAvaloniaPluginSdkNextMajorVersion)') (
+            "$relativePath 的 Managed Plugin SDK 兼容字段没有投影集中 SDK 区间。")
         $plugins.Add([pscustomobject]@{
                 Project = $relativePath.Replace('\', '/')
                 Version = $pluginVersion.ToString(3)
-                HostApi = "[$($sdkVersion.ToString(3)), $($expectedMaximum.ToString(3)))"
-                Common = "[$($sdkVersion.ToString(3)), $($expectedMaximum.ToString(3)))"
+                EntryPoint = $entryType
+                SdkRange = "[$($sdkVersion.ToString(3)), $($expectedMaximum.ToString(3)))"
             })
     }
 

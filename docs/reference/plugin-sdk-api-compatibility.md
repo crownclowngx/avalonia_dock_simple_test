@@ -1,7 +1,8 @@
 # Plugin SDK API 兼容基线维护指南
 
-> `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G2 已建立可编译消费的
-> Core/UI 两个真实程序集；它们的 v2 Shipped 均为空，全部 G2 表面登记在 Unshipped，尚未形成发布承诺。
+> `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G3 继续使用 G2 建立的
+> Core/UI 两个真实程序集；G3 没有修改 SDK public API。它们的 v2 Shipped 均为空，全部表面仍登记在
+> Unshipped，尚未形成发布承诺。
 
 ## 1. 权威源与程序集边界
 

@@ -27,34 +27,55 @@ internal sealed record PluginVersionRange(Version MinInclusive, Version MaxExclu
 }
 
 /// <summary>
+/// 保存 manifest v2 明确声明的入口程序集与入口类型。
+/// </summary>
+/// <remarks>
+/// 入口类型使用程序集内完整名称而不是程序集限定名。这样清单只拥有“从哪个插件程序集取哪个类型”
+/// 这一项职责，不允许作者在类型文本中再次嵌入版本、公钥或另一个程序集身份。
+/// </remarks>
+internal sealed record PluginEntryPoint(string Assembly, string Type);
+
+/// <summary>
 /// 描述宿主在加载插件前需要掌握的不可变清单事实。
 /// </summary>
 internal sealed record PluginManifest(
     int SchemaVersion,
     PluginId PluginId,
     Version PluginVersion,
-    string EntryAssembly,
-    PluginVersionRange HostApi,
-    PluginVersionRange CommonContract);
+    PluginEntryPoint EntryPoint,
+    PluginVersionRange Sdk);
 
 /// <summary>
-/// 保存当前宿主 API 与公共契约的实际程序集版本。
+/// 保存当前 Host 实际装载的 Core/UI Plugin SDK 版本。
 /// </summary>
 /// <remarks>
 /// 设计意图：版本事实由真正参与运行的程序集提供，而不是复制到加载器常量中。
 /// 项目文件显式固定 AssemblyVersion 后，清单检查和 CLR 共享程序集检查能够指向同一发布事实。
 /// </remarks>
-internal sealed record HostCompatibilityProfile(
-    Version HostApiVersion,
-    Version CommonContractVersion)
+internal sealed record PluginSdkCompatibilityProfile(Version SdkVersion)
 {
-    internal static HostCompatibilityProfile Current { get; } = new(
-        PluginVersionText.Normalize(
-            typeof(HostCompatibilityProfile).Assembly.GetName().Version
-            ?? throw new InvalidOperationException("宿主程序集没有版本。")),
-        PluginVersionText.Normalize(
-            typeof(IPluginModule).Assembly.GetName().Version
-            ?? throw new InvalidOperationException("公共契约程序集没有版本。")));
+    internal static PluginSdkCompatibilityProfile Current { get; } = CreateCurrent();
+
+    private static PluginSdkCompatibilityProfile CreateCurrent()
+    {
+        var coreVersion = PluginVersionText.Normalize(
+            typeof(global::MyAvaloniaManagement.PluginSdk.PluginId).Assembly.GetName().Version
+            ?? throw new InvalidOperationException("Core Plugin SDK 程序集没有版本。"));
+        var uiVersion = PluginVersionText.Normalize(
+            typeof(global::MyAvaloniaManagement.PluginSdk.UI.IPluginModule).Assembly.GetName().Version
+            ?? throw new InvalidOperationException("UI Plugin SDK 程序集没有版本。"));
+
+        // manifest v2 只有一个 SDK 区间，因此 Host 自身也必须只提供一个 SDK 版本事实。
+        // 若 Core/UI 漂移，继续评估插件会让同一清单产生两种相反结论，必须在执行插件代码前终止。
+        if (coreVersion != uiVersion)
+        {
+            throw new InvalidOperationException(
+                $"Core/UI Plugin SDK 版本不一致：Core={PluginVersionText.Format(coreVersion)}，" +
+                $"UI={PluginVersionText.Format(uiVersion)}。");
+        }
+
+        return new PluginSdkCompatibilityProfile(coreVersion);
+    }
 }
 
 /// <summary>
@@ -67,13 +88,12 @@ internal sealed record HostCompatibilityProfile(
 internal static partial class PluginManifestReader
 {
     internal const string FileName = "plugin.manifest.json";
-    internal const int CurrentSchemaVersion = 1;
+    internal const int CurrentSchemaVersion = 2;
     private const int MaximumManifestBytes = 64 * 1024;
 
     private static readonly string[] RootProperties =
-        ["schemaVersion", "pluginId", "pluginVersion", "entryAssembly", "compatibility"];
-    private static readonly string[] CompatibilityProperties =
-        ["hostApi", "commonContract"];
+        ["schemaVersion", "pluginId", "pluginVersion", "entryPoint", "sdk"];
+    private static readonly string[] EntryPointProperties = ["assembly", "type"];
     private static readonly string[] RangeProperties =
         ["minInclusive", "maxExclusive"];
 
@@ -155,25 +175,20 @@ internal static partial class PluginManifestReader
             }
 
             if (!TryReadVersion(root, "pluginVersion", out var pluginVersion, out errorDetail) ||
-                !TryReadString(root, "entryAssembly", out var entryAssembly, out errorDetail) ||
-                !ValidateEntryAssembly(entryAssembly!, out errorDetail))
+                !root.TryGetProperty("entryPoint", out var entryPoint) ||
+                !ValidateObject(entryPoint, EntryPointProperties, "entryPoint", out errorDetail) ||
+                !TryReadString(entryPoint, "assembly", out var entryAssembly, out errorDetail) ||
+                !ValidateEntryAssembly(entryAssembly!, out errorDetail) ||
+                !TryReadString(entryPoint, "type", out var entryType, out errorDetail) ||
+                !ValidateEntryType(entryType!, out errorDetail))
             {
                 errorCode = HostDiagnosticCodes.PluginManifestInvalid;
                 return false;
             }
 
-            if (!root.TryGetProperty("compatibility", out var compatibility) ||
-                !ValidateObject(
-                    compatibility,
-                    CompatibilityProperties,
-                    "compatibility",
-                    out errorDetail) ||
-                !TryReadRange(compatibility, "hostApi", out var hostApi, out errorDetail) ||
-                !TryReadRange(
-                    compatibility,
-                    "commonContract",
-                    out var commonContract,
-                    out errorDetail))
+            if (!root.TryGetProperty("sdk", out var sdkElement) ||
+                !ValidateObject(sdkElement, RangeProperties, "sdk", out errorDetail) ||
+                !TryReadRange(sdkElement, "sdk", out var sdk, out errorDetail))
             {
                 errorCode = HostDiagnosticCodes.PluginManifestInvalid;
                 return false;
@@ -183,9 +198,8 @@ internal static partial class PluginManifestReader
                 schemaVersion,
                 pluginId,
                 pluginVersion!,
-                entryAssembly!,
-                hostApi!,
-                commonContract!);
+                new PluginEntryPoint(entryAssembly!, entryType!),
+                sdk!);
             return true;
         }
         catch (Exception exception) when (
@@ -199,20 +213,13 @@ internal static partial class PluginManifestReader
     }
 
     private static bool TryReadRange(
-        JsonElement compatibility,
-        string propertyName,
+        JsonElement element,
+        string rangeName,
         out PluginVersionRange? range,
         out string? errorDetail)
     {
         range = null;
-        if (!compatibility.TryGetProperty(propertyName, out var element))
-        {
-            errorDetail = $"compatibility 缺少必填字段 {propertyName}。";
-            return false;
-        }
-
-        if (!ValidateObject(element, RangeProperties, propertyName, out errorDetail) ||
-            !TryReadVersion(element, "minInclusive", out var minimum, out errorDetail) ||
+        if (!TryReadVersion(element, "minInclusive", out var minimum, out errorDetail) ||
             !TryReadVersion(element, "maxExclusive", out var maximum, out errorDetail))
         {
             return false;
@@ -220,7 +227,7 @@ internal static partial class PluginManifestReader
 
         if (minimum! >= maximum!)
         {
-            errorDetail = $"{propertyName} 必须满足 minInclusive < maxExclusive。";
+            errorDetail = $"{rangeName} 必须满足 minInclusive < maxExclusive。";
             return false;
         }
 
@@ -323,7 +330,7 @@ internal static partial class PluginManifestReader
         if (!NumericVersionPattern().IsMatch(text!) ||
             !Version.TryParse(text, out var parsed))
         {
-            errorDetail = $"{propertyName} 必须是 major.minor.patch[.revision] 数字版本。";
+            errorDetail = $"{propertyName} 必须是 major.minor.patch 三段数字版本。";
             return false;
         }
 
@@ -340,7 +347,7 @@ internal static partial class PluginManifestReader
             !entryAssembly.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
             entryAssembly.Length <= ".dll".Length)
         {
-            errorDetail = "entryAssembly 只能是插件根目录中的单个 DLL 文件名。";
+            errorDetail = "entryPoint.assembly 只能是插件根目录中的单个 DLL 文件名。";
             return false;
         }
 
@@ -348,8 +355,26 @@ internal static partial class PluginManifestReader
         return true;
     }
 
-    [GeneratedRegex(@"^\d+\.\d+\.\d+(?:\.\d+)?$", RegexOptions.CultureInvariant)]
+    private static bool ValidateEntryType(string entryType, out string? errorDetail)
+    {
+        if (!EntryTypePattern().IsMatch(entryType))
+        {
+            errorDetail =
+                "entryPoint.type 必须是区分大小写的命名空间限定类型名，不能包含泛型、嵌套类型或程序集限定信息。";
+            return false;
+        }
+
+        errorDetail = null;
+        return true;
+    }
+
+    [GeneratedRegex(@"^\d+\.\d+\.\d+$", RegexOptions.CultureInvariant)]
     private static partial Regex NumericVersionPattern();
+
+    [GeneratedRegex(
+        @"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+$",
+        RegexOptions.CultureInvariant)]
+    private static partial Regex EntryTypePattern();
 }
 
 /// <summary>
@@ -371,26 +396,18 @@ internal static class PluginCompatibilityEvaluator
 
     internal static bool TryEvaluate(
         PluginManifest manifest,
-        HostCompatibilityProfile host,
+        PluginSdkCompatibilityProfile host,
         out string? errorCode,
         out string? errorDetail)
     {
         ArgumentNullException.ThrowIfNull(manifest);
         ArgumentNullException.ThrowIfNull(host);
 
-        if (!manifest.HostApi.Contains(host.HostApiVersion))
+        if (!manifest.Sdk.Contains(host.SdkVersion))
         {
-            errorCode = HostDiagnosticCodes.PluginHostApiIncompatible;
+            errorCode = HostDiagnosticCodes.PluginSdkIncompatible;
             errorDetail =
-                $"插件要求 Host API {manifest.HostApi}，当前为 {PluginVersionText.Format(host.HostApiVersion)}。";
-            return false;
-        }
-
-        if (!manifest.CommonContract.Contains(host.CommonContractVersion))
-        {
-            errorCode = HostDiagnosticCodes.PluginCommonContractIncompatible;
-            errorDetail =
-                $"插件要求公共契约 {manifest.CommonContract}，当前为 {PluginVersionText.Format(host.CommonContractVersion)}。";
+                $"插件要求 Plugin SDK {manifest.Sdk}，当前为 {PluginVersionText.Format(host.SdkVersion)}。";
             return false;
         }
 

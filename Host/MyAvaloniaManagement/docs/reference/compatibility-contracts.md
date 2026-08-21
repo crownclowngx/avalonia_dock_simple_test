@@ -12,8 +12,9 @@
 > 变异门禁冻结正式 Plugin SDK v1 public API；G15 已固定 schema 1 诊断的白名单语义和默认脱敏边界；
 > G16 已用 `managed-plugin-v1.0.0` 定位最终文档、SDK API 和四插件兼容基线。
 
-> 当前分支已完成 V2 G2：最终 Core/UI SDK 已建立；下述 manifest、Document、layout 与当前 Host/四插件
-> 运行形状仍是 G3–G12 前的未发布 Legacy 阶段桥。历史 v1 签署事实保持可追溯。
+> 当前分支已完成 V2 G3：最终 Core/UI SDK、严格 manifest v2、精确入口加载与构建/包协议已建立；
+> Document、layout、独立容器、声明式贡献与当前 Host/四插件模块注册仍是 G4–G12 前的未发布阶段桥。
+> 历史 v1 签署事实保持可追溯。
 
 ## 2. public API
 
@@ -87,7 +88,7 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 
 ### 2.5 诊断兼容与安全边界
 
-- `HostDiagnosticRecord` 的 `schemaVersion` 继续为 1，现有 JSON 属性名称和类型保持不变；
+- `HostDiagnosticRecord` 的独立 `schemaVersion` 已提升为 2，SDK 兼容字段只写 `sdkRange`；不读取或迁移旧诊断日志；
 - `TechnicalDetail` 兼容字段只允许受控生命周期阶段和毫秒耗时，其他诊断为 `null`；
 - `UserMessage` 只来自宿主错误码/阶段固定映射；插件、文件和异常不能提供记录文本；
 - 持久记录可保留稳定错误码、阶段、异常类型、经校验的 Plugin ID、程序集简单名、稳定 ID、版本区间、
@@ -106,40 +107,46 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 清单缺失、损坏、schema 未知或版本不兼容时隔离当前目录；重复 `pluginId` 属于全局组合歧义，
 在加载任何插件 DLL 前阻断宿主启动。
 
-V1 清单格式：
+当前唯一生产清单格式是 manifest v2：
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "pluginId": "myavalonia.plugin.sample",
   "pluginVersion": "2.0.0",
-  "entryAssembly": "SamplePlugin.dll",
-  "compatibility": {
-    "hostApi": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" },
-    "commonContract": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" }
+  "entryPoint": {
+    "assembly": "SamplePlugin.dll",
+    "type": "SamplePlugin.Plugin.SamplePluginModule"
+  },
+  "sdk": {
+    "minInclusive": "2.0.0",
+    "maxExclusive": "3.0.0"
   }
 }
 ```
 
 - 字段名称区分大小写；未知、重复或缺失字段均拒绝，不允许注释或尾随逗号；
-- 版本只接受 `major.minor.patch[.revision]`，内部统一为四段比较；
-- Host API 与 Common 均采用 `minInclusive <= current < maxExclusive`；
-- `entryAssembly` 只能是插件根目录中的单个 DLL 文件名；
+- 版本只接受 `major.minor.patch` 三段数字；SDK 采用 `minInclusive <= current < maxExclusive`；
+- `entryPoint.assembly` 只能是插件根目录中的单个 DLL 文件名；
+- `entryPoint.type` 必须是区分大小写的规范完整类型名，不得含空白、程序集限定名、泛型或嵌套符号；
 - 入口必须携带同名 `.deps.json`，宿主不扫描目录猜测托管或原生依赖；
 - `pluginVersion` 必须与入口 `AssemblyVersion` 精确一致；manifest `pluginId` 是插件身份唯一事实源；
-- Host 与 Common 当前 `AssemblyVersion` 均为 `2.0.0.0`；G3 前双区间只允许投影同一个 SDK 事实；
+- Core 与 UI 当前 SDK 版本均为 `2.0.0`；二者不一致属于宿主配置错误，兼容诊断统一为 `PLUGIN_SDK_INCOMPATIBLE`；
+- reader 不读取 manifest v1，也不存在 v1/v2 双 reader；
 - 清单只解决兼容和确定性加载，不提供签名、防篡改、权限沙箱或热卸载。
 
-仓库内 Managed Plugin 的清单不在源码树手写，而由 `ManagedPluginId`、`PluginVersion`、入口程序集名
-和四个显式兼容端点生成。公共构建协议还强制包含入口 DLL、deps、PDB，排除 Host/SDK/UI 共享闭包
+仓库内 Managed Plugin 的清单不在源码树手写，而由 `ManagedPluginId`、`PluginVersion`、
+`ManagedPluginEntryType` 和两个 SDK 区间端点生成。公共构建协议使用独立 `Csc` 探针引用成品程序集，
+在生成清单前验证精确入口的可见性、接口、抽象/泛型状态与 public 无参构造；它还强制包含入口 DLL、deps、PDB，排除 Host/SDK/UI 共享闭包
 和非 win-x64 原生资产。正式分发物按插件独立生成
 `<AssemblyName>-<PluginVersion>-win-x64.zip`；ZIP 内只有 `Controls/<PluginFolder>/`，外置同名
 `.manifest.json` 记录 ZIP 与全部文件摘要。目录部署是开发产物，ZIP 是正式分发物，两者使用同一资产集合。
 
 ### 3.2 Managed 插件
 
-- 程序集恰好包含一个具体 `IPluginModule`；
-- 模块使用 public 无参构造发现；
+- Host 只按 `entryPoint.type` 的大小写敏感完整名称取得一个入口类型，不调用 `GetTypes()` 扫描模块；
+- 入口必须 public、非抽象、非泛型，实现当前阶段桥 `IPluginModule` 并具有 public 无参构造；
+- 同程序集中的第二个模块不构成错误，但未声明模块绝不被构造、配置或用来劫持入口；
 - `Configure(IPluginRegistrationContext)` 在根容器构建前且每个进程只执行一次；
 - `context.PluginId` 由宿主从已验证 manifest 注入，只读且不能覆盖；
 - `context.Services` 只允许追加插件私有业务服务；插件不得删除、替换、重排既有描述符或追加宿主保护 ServiceType；私有多实现、keyed 和开放泛型注册继续允许；
@@ -149,7 +156,7 @@ V1 清单格式：
 
 ### 3.3 拒绝与共同规则
 
-- 缺少 deps、缺少模块、重复模块或模块缺少 public 无参构造时隔离当前目录；
+- 缺少 deps，或精确入口不存在、不可访问、抽象、泛型、接口错误、缺少 public 无参构造时隔离当前目录；
 - 无模块策略程序集不再获得 public 无参构造激活，也不会生成 `myavalonia.legacy.*` 所有者；
 - 完整类型预检失败会隔离整个插件目录，不能把同一发布物拆成“部分成功”；
 - 模块构造、模块配置、服务注册、贡献激活和扩展所有权错误属于全局组合错误，在根容器投入使用前阻断启动；
@@ -247,7 +254,7 @@ V1 清单格式：
 - Registry、Builder、Navigator、Coordinator、Adapter 的类名和文件组织；
 - 内部字典、集合和缓存实现；
 - 内部构造函数与 `internal` 记录类型；
-- 日志实现细节，但不得改变 schema 1 白名单语义，或记录文档内容、凭据、异常正文和未验证路径数据；
+- 日志实现细节，但不得改变诊断 schema 2 白名单语义，或记录文档内容、凭据、异常正文和未验证路径数据；
 - 测试替身和测试项目内部结构。
 
 ## 9. 变更检查表
@@ -256,7 +263,7 @@ V1 清单格式：
 
 - [x] Plugin SDK v1 文本基线、成员级变异门禁和 Host 零自有导出门禁已建立；
 - [x] Managed-only 专项通过，Host 中不存在 Legacy 策略激活器和加载 Facade；
-- [x] 四个真实插件的最终独立 ZIP 均包含有效清单、入口 `.deps.json`、PDB 和私有资产，版本与唯一模块身份一致；
+- [x] 四个真实插件的最终独立 ZIP 均包含有效 manifest v2、入口 `.deps.json`、PDB 和私有资产，版本与精确入口身份一致；
 - [x] 四个插件及宿主使用显式 Context，生产代码不存在策略/View 隐式扫描与命名回退；
 - [x] manifest 是唯一身份来源，SDK 不再包含模块或生命周期 `PluginId`；
 - [x] 所有生产消费者使用同一个只读 `PluginRegistry`，Registry 在生命周期和 UI 前发布；

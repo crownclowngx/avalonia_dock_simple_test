@@ -50,7 +50,7 @@ public sealed class HostDiagnosticsTests
         var line = Assert.Single(lines);
         using var json = JsonDocument.Parse(line);
         var root = json.RootElement;
-        Assert.Equal(1, root.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(2, root.GetProperty("schemaVersion").GetInt32());
         Assert.Equal("LAYOUT_JSON_INVALID", root.GetProperty("code").GetString());
         Assert.Equal("Warning", root.GetProperty("severity").GetString());
         Assert.Equal("Continue", root.GetProperty("disposition").GetString());
@@ -143,10 +143,7 @@ public sealed class HostDiagnosticsTests
                 AssemblyName = new AssemblyName("G15.Plugin"),
                 StableId = "myavalonia.plugin.g15-test",
                 PluginVersion = new Version(1, 2, 3),
-                HostApiRange = new PluginVersionRange(
-                    new Version(1, 0),
-                    new Version(2, 0)),
-                CommonContractRange = new PluginVersionRange(
+                SdkRange = new PluginVersionRange(
                     new Version(1, 0),
                     new Version(2, 0)),
                 LifecycleStage = PluginLifecycleStage.Initialization,
@@ -158,6 +155,7 @@ public sealed class HostDiagnosticsTests
         Assert.Equal("G15Plugin", controlled.PluginDirectory);
         Assert.Equal("G15.Plugin", controlled.AssemblyName);
         Assert.Equal("1.2.3.0", controlled.PluginVersion);
+        Assert.Equal("[1.0.0.0, 2.0.0.0)", controlled.SdkRange);
         Assert.Equal("stage=Initialization; durationMs=12.5", controlled.TechnicalDetail);
     }
 
@@ -267,7 +265,7 @@ public sealed class HostDiagnosticsTests
     [InlineData(HostDiagnosticCodes.PluginEntryInvalid, "PluginRootDiscovery", "Continue")]
     [InlineData(HostDiagnosticCodes.PluginAssemblyLoadFailed, "PluginAssemblyLoad", "Continue")]
     [InlineData(HostDiagnosticCodes.PluginManifestMissing, "PluginManifestPreflight", "Continue")]
-    [InlineData(HostDiagnosticCodes.PluginHostApiIncompatible, "PluginManifestPreflight", "Continue")]
+    [InlineData(HostDiagnosticCodes.PluginSdkIncompatible, "PluginManifestPreflight", "Continue")]
     [InlineData(HostDiagnosticCodes.PluginManifestIdentityDuplicate, "PluginManifestPreflight", "AbortStartup")]
     [InlineData(HostDiagnosticCodes.PluginManifestDescriptionMismatch, "PluginManifestPreflight", "AbortStartup")]
     [InlineData("LIFECYCLE_INITIALIZE_FAILED", "PluginLifecycle", "Continue")]

@@ -2,8 +2,8 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G2 的 Core/UI SDK
-> 重建与 Legacy 隔离。最新测试数量和覆盖率必须从本轮
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G3 的 Core/UI SDK、
+> manifest v2、精确入口加载与构建协议。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -20,7 +20,7 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 
 核心测试在系统临时目录验证正常和失败夹具；正式入口检查当前文档与 host-v1/host-v2 历史记录的本地链接，
 并只对当前事实应用过期措辞规则。它还验证关键源码类型、G11 已删除类型、G13 API baseline，以及四个
-插件项目中的版本与 G3 前临时 Host/Common 投影区间。结果写入
+插件项目中的版本、精确入口属性与单一 SDK 投影区间。结果写入
 `artifacts/test-results/Documentation/summary.json`。
 
 当前文档门禁不调用 Windows Smoke、发布总门禁或发布验收项目；通过它不能冒充 Windows 发布放行。
@@ -41,6 +41,15 @@ Unit 173、UI 38、Plugin 152，共 **363/363**；行覆盖率 81.12%、分支�
 DaTang、MySmallTools 为 720、64、183，共 **967/967**。这些数字只记录本轮实际结果，不是永久阈值。
 完整命令证据见 [V2 G2 专项记录](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)。本轮明确不运行 Windows
 Smoke、Windows CI、发布总门禁、发布验收、联网/真实媒体、上传、标签或发布操作。
+
+### V2 G3 当前绿色基线
+
+G3 增加严格 manifest v2 reader、精确入口 Loader、单一 SDK 诊断、MSBuild 入口探针与包复核。
+专项覆盖根/嵌套字段、版本与区间、入口语法和结构、v1 拒绝、双模块不扫描、构建属性变异，以及
+四插件两轮确定性 ZIP 和解压后真实 Host Loader 验证。实际测试数量、覆盖率与命令结果记录在
+[V2 G3 专项记录](../plan-history/host-v2/g3-manifest-v2-and-build-protocol.md)，不在这里设置固定数量阈值。
+本阶段只运行非发布构建协议门禁，明确排除 Windows Smoke、Windows CI、G14 发布总门禁、
+ReleaseAcceptance、联网/真实媒体、上传、标签和任何发布操作。
 
 ## G14 正式发布门禁
 
@@ -360,7 +369,7 @@ DI、Opened/Closing、布局保存和退出码，同时无需使用不稳定的�
 脚本自动发现全部 `ManagedPlugin=true` 项目。它先用临时最小项目验证 16 个声明、必需文件、资产、
 路径、共享依赖与 RID 负例，再验证 `SkipPluginDeploy`、只清理当前插件目录和 Debug/Release 默认部署。
 每个真实插件从空临时部署根构建两次，比较 ZIP SHA-256 与逐文件清单；最后把四个 ZIP 解压到同一
-候选 Host 根，通过真实 `PluginLoadContext` 加载并发现唯一模块。结果写入：
+候选 Host 根，通过真实 `PluginLoadContext` 加载并验证 manifest 精确入口。结果写入：
 
 ```text
 artifacts/test-results/ManagedPluginPackages/

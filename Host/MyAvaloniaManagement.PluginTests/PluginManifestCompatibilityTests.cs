@@ -27,8 +27,9 @@ public sealed class PluginManifestCompatibilityTests
                 Assert.True(success, $"{errorCode}: {errorDetail}");
                 Assert.Equal("myavalonia.plugin.manifest-test", manifest!.PluginId.Value);
                 Assert.Equal(new Version(1, 2, 3, 0), manifest.PluginVersion);
-                Assert.Equal("ManifestTest.dll", manifest.EntryAssembly);
-                Assert.Equal("[1.0.0.0, 2.0.0.0)", manifest.HostApi.ToString());
+                Assert.Equal("ManifestTest.dll", manifest.EntryPoint.Assembly);
+                Assert.Equal("ManifestTest.Plugin.ManifestTestModule", manifest.EntryPoint.Type);
+                Assert.Equal("[1.0.0.0, 2.0.0.0)", manifest.Sdk.ToString());
             });
     }
 
@@ -40,15 +41,28 @@ public sealed class PluginManifestCompatibilityTests
             (null, HostDiagnosticCodes.PluginManifestMissing),
             (string.Empty, HostDiagnosticCodes.PluginManifestInvalid),
             ("{", HostDiagnosticCodes.PluginManifestInvalid),
-            (ValidManifest(schemaVersion: 2), HostDiagnosticCodes.PluginManifestSchemaUnsupported),
+            (ValidManifest(schemaVersion: 1), HostDiagnosticCodes.PluginManifestSchemaUnsupported),
             (ValidManifest().Replace(
                 "\"pluginVersion\": \"1.2.3\",",
                 "\"pluginVersion\": \"1.2.3\", \"unknown\": true,",
                 StringComparison.Ordinal), HostDiagnosticCodes.PluginManifestInvalid),
             (ValidManifest().Replace(
-                "\"schemaVersion\": 1,",
-                "\"schemaVersion\": 1, \"schemaVersion\": 1,",
+                "\"schemaVersion\": 2,",
+                "\"schemaVersion\": 2, \"schemaVersion\": 2,",
                 StringComparison.Ordinal), HostDiagnosticCodes.PluginManifestInvalid),
+            (ValidManifest().Replace(
+                "\"type\": \"ManifestTest.Plugin.ManifestTestModule\"",
+                "\"type\": \"ManifestTest.Plugin.ManifestTestModule\", \"unknown\": true",
+                StringComparison.Ordinal), HostDiagnosticCodes.PluginManifestInvalid),
+            (ValidManifest().Replace(
+                "\"type\": \"ManifestTest.Plugin.ManifestTestModule\"",
+                "\"type\": \"ManifestTest.Plugin.ManifestTestModule\", " +
+                "\"type\": \"ManifestTest.Plugin.OtherModule\"",
+                StringComparison.Ordinal), HostDiagnosticCodes.PluginManifestInvalid),
+            (ValidManifest().Replace("{", "{/*comment*/", StringComparison.Ordinal),
+                HostDiagnosticCodes.PluginManifestInvalid),
+            (ValidManifest().Replace("\n}", "\n,}", StringComparison.Ordinal),
+                HostDiagnosticCodes.PluginManifestInvalid),
         };
 
         foreach (var (json, expectedCode) in cases)
@@ -77,8 +91,10 @@ public sealed class PluginManifestCompatibilityTests
             ValidManifest(pluginVersion: "1.0.0-beta"),
             ValidManifest(entryAssembly: "../ManifestTest.dll"),
             ValidManifest(entryAssembly: "sub/ManifestTest.dll"),
-            ValidManifest(hostMinimum: "2.0.0", hostMaximum: "2.0.0"),
-            ValidManifest(commonMinimum: "3.0.0", commonMaximum: "2.0.0"),
+            ValidManifest(entryType: "ManifestTestModule"),
+            ValidManifest(entryType: "ManifestTest.Plugin.Outer+Module"),
+            ValidManifest(entryType: "ManifestTest.Plugin.Module`1"),
+            ValidManifest(sdkMinimum: "2.0.0", sdkMaximum: "2.0.0"),
         };
 
         foreach (var json in invalidDocuments)
@@ -115,45 +131,48 @@ public sealed class PluginManifestCompatibilityTests
     }
 
     [Fact]
-    public void 版本区间遵循左闭右开边界且分别报告Host与Common不兼容()
+    public void 超过JSON深度限制的清单被拒绝且不产生部分模型()
+    {
+        var deepPayload = "{\"schemaVersion\":2,\"pluginId\":\"myavalonia.plugin.deep\"," +
+                          "\"pluginVersion\":\"1.0.0\",\"entryPoint\":{" +
+                          "\"assembly\":\"Deep.dll\",\"type\":\"Deep.Plugin.DeepModule\"}," +
+                          "\"sdk\":{\"minInclusive\":\"1.0.0\",\"maxExclusive\":" +
+                          "[[[[[[[[\"2.0.0\"]]]]]]]]}}";
+
+        WithManifest(deepPayload, directory =>
+        {
+            Assert.False(PluginManifestReader.TryRead(
+                directory, out var manifest, out var code, out _));
+            Assert.Null(manifest);
+            Assert.Equal(HostDiagnosticCodes.PluginManifestInvalid, code);
+        });
+    }
+
+    [Fact]
+    public void SDK版本区间遵循左闭右开边界并返回单一稳定错误码()
     {
         var manifest = CreateManifestModel(
-            new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0)),
-            new PluginVersionRange(new Version(3, 0, 0, 0), new Version(4, 0, 0, 0)));
+            new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0)));
 
         Assert.True(PluginCompatibilityEvaluator.TryEvaluate(
             manifest,
-            new HostCompatibilityProfile(new Version(1, 0, 0, 0), new Version(3, 0, 0, 0)),
+            new PluginSdkCompatibilityProfile(new Version(1, 0, 0, 0)),
             out _,
             out _));
 
         Assert.False(PluginCompatibilityEvaluator.TryEvaluate(
             manifest,
-            new HostCompatibilityProfile(new Version(0, 9, 9, 9), new Version(3, 0, 0, 0)),
-            out var hostBelowCode,
+            new PluginSdkCompatibilityProfile(new Version(0, 9, 9, 9)),
+            out var belowCode,
             out _));
-        Assert.Equal(HostDiagnosticCodes.PluginHostApiIncompatible, hostBelowCode);
+        Assert.Equal(HostDiagnosticCodes.PluginSdkIncompatible, belowCode);
 
         Assert.False(PluginCompatibilityEvaluator.TryEvaluate(
             manifest,
-            new HostCompatibilityProfile(new Version(2, 0, 0, 0), new Version(3, 0, 0, 0)),
-            out var hostCode,
+            new PluginSdkCompatibilityProfile(new Version(2, 0, 0, 0)),
+            out var upperCode,
             out _));
-        Assert.Equal(HostDiagnosticCodes.PluginHostApiIncompatible, hostCode);
-
-        Assert.False(PluginCompatibilityEvaluator.TryEvaluate(
-            manifest,
-            new HostCompatibilityProfile(new Version(1, 5, 0, 0), new Version(2, 9, 9, 9)),
-            out var commonBelowCode,
-            out _));
-        Assert.Equal(HostDiagnosticCodes.PluginCommonContractIncompatible, commonBelowCode);
-
-        Assert.False(PluginCompatibilityEvaluator.TryEvaluate(
-            manifest,
-            new HostCompatibilityProfile(new Version(1, 5, 0, 0), new Version(4, 0, 0, 0)),
-            out var commonCode,
-            out _));
-        Assert.Equal(HostDiagnosticCodes.PluginCommonContractIncompatible, commonCode);
+        Assert.Equal(HostDiagnosticCodes.PluginSdkIncompatible, upperCode);
     }
 
     [Fact]
@@ -166,7 +185,7 @@ public sealed class PluginManifestCompatibilityTests
         Assert.Equal("PluginIsolation.PluginV2", assembly.GetName().Name);
         Assert.Contains(
             snapshot.Diagnostics,
-            item => item.Code == HostDiagnosticCodes.PluginHostApiIncompatible &&
+            item => item.Code == HostDiagnosticCodes.PluginSdkIncompatible &&
                     item.PluginDirectory == "Incompatible");
         Assert.DoesNotContain(
             snapshot.Diagnostics,
@@ -217,7 +236,6 @@ public sealed class PluginManifestCompatibilityTests
     public void 插件版本与程序集版本必须精确一致()
     {
         var manifest = CreateManifestModel(
-            new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0)),
             new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0)));
 
         Assert.True(PluginCompatibilityEvaluator.HasMatchingPluginVersion(
@@ -234,17 +252,12 @@ public sealed class PluginManifestCompatibilityTests
     {
         var assembly = typeof(ManifestMismatchModule).Assembly;
         var manifest = CreateManifestModel(
-            new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0)),
             new PluginVersionRange(new Version(1, 0, 0, 0), new Version(2, 0, 0, 0))) with
         {
             PluginId = new PluginId("myavalonia.plugin.manifest-identity"),
         };
         var snapshot = new PluginDiscoverySnapshot(
             [assembly],
-            new Dictionary<Assembly, IReadOnlyList<Type>>
-            {
-                [assembly] = [typeof(ManifestMismatchModule)],
-            },
             new Dictionary<Assembly, PluginManifest>
             {
                 [assembly] = manifest,
@@ -267,16 +280,15 @@ public sealed class PluginManifestCompatibilityTests
         Assert.Equal(manifest.PluginId, ManifestMismatchModule.ObservedPluginId);
     }
 
-    private static PluginManifest CreateManifestModel(
-        PluginVersionRange hostApi,
-        PluginVersionRange commonContract) =>
+    private static PluginManifest CreateManifestModel(PluginVersionRange sdk) =>
         new(
             PluginManifestReader.CurrentSchemaVersion,
             new PluginId("myavalonia.plugin.manifest-test"),
             new Version(1, 2, 3, 0),
-            "ManifestTest.dll",
-            hostApi,
-            commonContract);
+            new PluginEntryPoint(
+                "ManifestTest.dll",
+                "ManifestTest.Plugin.ManifestTestModule"),
+            sdk);
 
     private static void WithManifest(string? json, Action<string> assertion)
     {
@@ -302,24 +314,23 @@ public sealed class PluginManifestCompatibilityTests
     }
 
     private static string ValidManifest(
-        int schemaVersion = 1,
+        int schemaVersion = 2,
         string pluginId = "myavalonia.plugin.manifest-test",
         string pluginVersion = "1.2.3",
         string entryAssembly = "ManifestTest.dll",
-        string hostMinimum = "1.0.0",
-        string hostMaximum = "2.0.0",
-        string commonMinimum = "1.0.0",
-        string commonMaximum = "2.0.0") =>
+        string entryType = "ManifestTest.Plugin.ManifestTestModule",
+        string sdkMinimum = "1.0.0",
+        string sdkMaximum = "2.0.0") =>
         $$"""
         {
           "schemaVersion": {{schemaVersion}},
           "pluginId": "{{pluginId}}",
           "pluginVersion": "{{pluginVersion}}",
-          "entryAssembly": "{{entryAssembly}}",
-          "compatibility": {
-            "hostApi": { "minInclusive": "{{hostMinimum}}", "maxExclusive": "{{hostMaximum}}" },
-            "commonContract": { "minInclusive": "{{commonMinimum}}", "maxExclusive": "{{commonMaximum}}" }
-          }
+          "entryPoint": {
+            "assembly": "{{entryAssembly}}",
+            "type": "{{entryType}}"
+          },
+          "sdk": { "minInclusive": "{{sdkMinimum}}", "maxExclusive": "{{sdkMaximum}}" }
         }
         """;
 

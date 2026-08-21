@@ -66,7 +66,40 @@ function Test-ManagedPluginBuildContract {
     $fixtureSource = Join-Path $FixtureRoot 'ContractPlugin.cs'
     $assetA = Join-Path $FixtureRoot 'asset-a.bin'
     $assetB = Join-Path $FixtureRoot 'asset-b.bin'
-    [IO.File]::WriteAllText($fixtureSource, 'public sealed class ContractPlugin { }')
+    $fixtureSourceText = @'
+using MyAvaloniaManagementCommon.Plugin;
+
+namespace ContractFixture.Plugin;
+
+public sealed class ValidPluginModule : IPluginModule
+{
+    public void Configure(IPluginRegistrationContext context) { }
+}
+
+internal sealed class InternalPluginModule : IPluginModule
+{
+    public void Configure(IPluginRegistrationContext context) { }
+}
+
+public abstract class AbstractPluginModule : IPluginModule
+{
+    public abstract void Configure(IPluginRegistrationContext context);
+}
+
+public sealed class GenericPluginModule<T> : IPluginModule
+{
+    public void Configure(IPluginRegistrationContext context) { }
+}
+
+public sealed class PrivateConstructorPluginModule : IPluginModule
+{
+    private PrivateConstructorPluginModule() { }
+    public void Configure(IPluginRegistrationContext context) { }
+}
+
+public sealed class WrongContractType { }
+'@
+    [IO.File]::WriteAllText($fixtureSource, $fixtureSourceText)
     [IO.File]::WriteAllText($assetA, 'a')
     [IO.File]::WriteAllText($assetB, 'b')
 
@@ -74,6 +107,8 @@ function Test-ManagedPluginBuildContract {
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <MyAvaloniaV2ManifestSchemaVersion Condition="'`$(ContractMutation)' != 'schema-v1'">2</MyAvaloniaV2ManifestSchemaVersion>
+    <MyAvaloniaV2ManifestSchemaVersion Condition="'`$(ContractMutation)' == 'schema-v1'">1</MyAvaloniaV2ManifestSchemaVersion>
     <ManagedPlugin>true</ManagedPlugin>
     <ManagedPluginId Condition="'`$(ContractMutation)' != 'missing-id'">myavalonia.plugin.contract-fixture</ManagedPluginId>
     <ManagedPluginId Condition="'`$(ContractMutation)' == 'invalid-id'">Contract Fixture</ManagedPluginId>
@@ -81,15 +116,26 @@ function Test-ManagedPluginBuildContract {
     <ManagedPluginDirectoryName Condition="'`$(ContractMutation)' == 'invalid-directory'">..\escape</ManagedPluginDirectoryName>
     <PluginVersion Condition="'`$(ContractMutation)' != 'missing-version'">1.0.0</PluginVersion>
     <ManagedPluginRuntimeIdentifier Condition="'`$(ContractMutation)' == 'invalid-rid'">linux-x64</ManagedPluginRuntimeIdentifier>
-    <ManagedPluginHostApiMinInclusive Condition="'`$(ContractMutation)' != 'missing-range'">1.0.0</ManagedPluginHostApiMinInclusive>
-    <ManagedPluginHostApiMaxExclusive Condition="'`$(ContractMutation)' != 'reversed-range'">2.0.0</ManagedPluginHostApiMaxExclusive>
-    <ManagedPluginHostApiMaxExclusive Condition="'`$(ContractMutation)' == 'reversed-range'">1.0.0</ManagedPluginHostApiMaxExclusive>
-    <ManagedPluginCommonContractMinInclusive>1.0.0</ManagedPluginCommonContractMinInclusive>
-    <ManagedPluginCommonContractMaxExclusive Condition="'`$(ContractMutation)' != 'missing-range'">2.0.0</ManagedPluginCommonContractMaxExclusive>
+    <ManagedPluginEntryType Condition="'`$(ContractMutation)' != 'missing-entry' And '`$(ContractMutation)' != 'invalid-entry-text' And '`$(ContractMutation)' != 'missing-entry-type' And '`$(ContractMutation)' != 'internal-entry' And '`$(ContractMutation)' != 'abstract-entry' And '`$(ContractMutation)' != 'generic-entry' And '`$(ContractMutation)' != 'private-ctor-entry' And '`$(ContractMutation)' != 'wrong-contract-entry'">ContractFixture.Plugin.ValidPluginModule</ManagedPluginEntryType>
+    <ManagedPluginEntryType Condition="'`$(ContractMutation)' == 'invalid-entry-text'">ContractFixture.Plugin.Outer+Module</ManagedPluginEntryType>
+    <ManagedPluginEntryType Condition="'`$(ContractMutation)' == 'missing-entry-type'">ContractFixture.Plugin.DoesNotExist</ManagedPluginEntryType>
+    <ManagedPluginEntryType Condition="'`$(ContractMutation)' == 'internal-entry'">ContractFixture.Plugin.InternalPluginModule</ManagedPluginEntryType>
+    <ManagedPluginEntryType Condition="'`$(ContractMutation)' == 'abstract-entry'">ContractFixture.Plugin.AbstractPluginModule</ManagedPluginEntryType>
+    <ManagedPluginEntryType Condition="'`$(ContractMutation)' == 'generic-entry'">ContractFixture.Plugin.GenericPluginModule</ManagedPluginEntryType>
+    <ManagedPluginEntryType Condition="'`$(ContractMutation)' == 'private-ctor-entry'">ContractFixture.Plugin.PrivateConstructorPluginModule</ManagedPluginEntryType>
+    <ManagedPluginEntryType Condition="'`$(ContractMutation)' == 'wrong-contract-entry'">ContractFixture.Plugin.WrongContractType</ManagedPluginEntryType>
+    <ManagedPluginSdkMinInclusive Condition="'`$(ContractMutation)' != 'missing-range' And '`$(ContractMutation)' != 'legacy-range-only'">1.0.0</ManagedPluginSdkMinInclusive>
+    <ManagedPluginSdkMaxExclusive Condition="'`$(ContractMutation)' != 'missing-range' And '`$(ContractMutation)' != 'legacy-range-only' And '`$(ContractMutation)' != 'reversed-range'">2.0.0</ManagedPluginSdkMaxExclusive>
+    <ManagedPluginSdkMaxExclusive Condition="'`$(ContractMutation)' == 'reversed-range'">1.0.0</ManagedPluginSdkMaxExclusive>
+    <ManagedPluginHostApiMinInclusive Condition="'`$(ContractMutation)' == 'legacy-range-only'">1.0.0</ManagedPluginHostApiMinInclusive>
+    <ManagedPluginHostApiMaxExclusive Condition="'`$(ContractMutation)' == 'legacy-range-only'">2.0.0</ManagedPluginHostApiMaxExclusive>
+    <ManagedPluginCommonContractMinInclusive Condition="'`$(ContractMutation)' == 'legacy-range-only'">1.0.0</ManagedPluginCommonContractMinInclusive>
+    <ManagedPluginCommonContractMaxExclusive Condition="'`$(ContractMutation)' == 'legacy-range-only'">2.0.0</ManagedPluginCommonContractMaxExclusive>
     <ManagedPluginAssetDirectoryRelativePath Condition="'`$(ContractMutation)' == 'missing-directory-asset'">missing-tree</ManagedPluginAssetDirectoryRelativePath>
   </PropertyGroup>
   <Import Project="$propsPath" />
   <ItemGroup>
+    <ProjectReference Include="$repositoryRoot\Host\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj" Private="false" />
     <ManagedPluginAsset Include="$FixtureRoot\missing.bin" TargetPath="private\missing.bin" Condition="'`$(ContractMutation)' == 'missing-asset'" />
     <ManagedPluginAsset Include="$assetA" TargetPath="..\escape.bin" Condition="'`$(ContractMutation)' == 'escape-path'" />
     <ManagedPluginAsset Include="$assetA" TargetPath="private/same.bin" Condition="'`$(ContractMutation)' == 'duplicate-path'" />
@@ -138,8 +184,18 @@ function Test-ManagedPluginBuildContract {
         @{ mutation = 'missing-version'; message = 'PluginVersion 必须' },
         @{ mutation = 'invalid-directory'; message = 'ManagedPluginDirectoryName 只能' },
         @{ mutation = 'invalid-rid'; message = '只允许 win-x64' },
-        @{ mutation = 'missing-range'; message = '必须显式声明 Host API' },
+        @{ mutation = 'missing-entry'; message = '缺少 ManagedPluginEntryType' },
+        @{ mutation = 'invalid-entry-text'; message = '命名空间限定类型名' },
+        @{ mutation = 'missing-range'; message = '单一 Plugin SDK' },
+        @{ mutation = 'legacy-range-only'; message = '单一 Plugin SDK' },
         @{ mutation = 'reversed-range'; message = 'minInclusive 小于 maxExclusive' },
+        @{ mutation = 'schema-v1'; message = '只能生成 schemaVersion=2' },
+        @{ mutation = 'missing-entry-type'; message = 'error CS' },
+        @{ mutation = 'internal-entry'; message = 'error CS' },
+        @{ mutation = 'abstract-entry'; message = 'error CS' },
+        @{ mutation = 'generic-entry'; message = 'error CS' },
+        @{ mutation = 'private-ctor-entry'; message = 'error CS' },
+        @{ mutation = 'wrong-contract-entry'; message = 'error CS' },
         @{ mutation = 'missing-dll'; message = '部署资产不存在' },
         @{ mutation = 'missing-deps'; message = '部署资产不存在' },
         @{ mutation = 'missing-pdb'; message = '部署资产不存在' },
@@ -216,11 +272,11 @@ try {
         }
         $baseName = "$assemblyName-$version-$rid"
 
-        Write-Host "`n[G12] 第一次隔离构建：$($project.FullName)"
+        Write-Host "`n[G3] 第一次隔离构建：$($project.FullName)"
         & $builder -Project $project.FullName -Configuration $Configuration -OutputDirectory $firstRoot
         if ($LASTEXITCODE -ne 0) { throw "第一次插件打包失败：$($project.FullName)" }
 
-        Write-Host "`n[G12] 第二次隔离构建：$($project.FullName)"
+        Write-Host "`n[G3] 第二次隔离构建：$($project.FullName)"
         & $builder -Project $project.FullName -Configuration $Configuration -OutputDirectory $secondRoot
         if ($LASTEXITCODE -ne 0) { throw "第二次插件打包失败：$($project.FullName)" }
 
@@ -284,9 +340,9 @@ try {
     foreach ($archive in Get-ChildItem -LiteralPath $firstRoot -Filter '*.zip' -File) {
         [IO.Compression.ZipFile]::ExtractToDirectory($archive.FullName, $packageLoadRoot)
     }
-    $previousPackageRoot = [Environment]::GetEnvironmentVariable('MYAVALONIA_G12_PACKAGE_ROOT')
+    $previousPackageRoot = [Environment]::GetEnvironmentVariable('MYAVALONIA_G3_PACKAGE_ROOT')
     try {
-        [Environment]::SetEnvironmentVariable('MYAVALONIA_G12_PACKAGE_ROOT', $packageLoadRoot)
+        [Environment]::SetEnvironmentVariable('MYAVALONIA_G3_PACKAGE_ROOT', $packageLoadRoot)
         Invoke-DotNetChecked '最终 ZIP 宿主真实加载门禁' @(
             'test', (Join-Path $repositoryRoot 'Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj'),
             '-c', $Configuration, '--no-restore', '--nologo',
@@ -294,7 +350,7 @@ try {
             '-p:SkipPluginDeploy=true')
     }
     finally {
-        [Environment]::SetEnvironmentVariable('MYAVALONIA_G12_PACKAGE_ROOT', $previousPackageRoot)
+        [Environment]::SetEnvironmentVariable('MYAVALONIA_G3_PACKAGE_ROOT', $previousPackageRoot)
     }
 
     # 结果目录只保存已经复验的第一轮独立包和聚合报告。
@@ -325,7 +381,7 @@ try {
     }
     $summaryPath = Join-Path $resultsRoot 'summary.json'
     Write-JsonUtf8 $summaryPath $summary
-    Write-Host "`nG12 Managed Plugin 包矩阵通过：$($projects.Count) 个独立插件。"
+    Write-Host "`nG3 Managed Plugin 包矩阵通过：$($projects.Count) 个独立插件。"
     Write-Host "机器可读汇总：$summaryPath"
 }
 finally {

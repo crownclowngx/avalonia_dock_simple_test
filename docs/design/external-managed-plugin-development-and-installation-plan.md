@@ -5,6 +5,9 @@
 > 审核时机：Host v1 完成封板并冻结发布产物后
 > 封板关系：不计入当前 G12 验收，不阻塞 Host v1 封版
 > 契约效力：本文选择均为候选决策，重新审核前不得作为正式公共契约或发布承诺
+> G3 勘误：本文示例中的 manifest v1 字段与 Host/Common 四区间属性已经过时；当前生产构建事实是
+> manifest v2 的 `entryPoint`、单一 `sdk` 区间和 `ManagedPluginEntryType`。本文未因此进入实施范围，
+> 候选安装、升级、卸载或发布能力仍未实现。
 
 ## 1. 目的与边界
 
@@ -41,7 +44,8 @@
 | `ManagedPluginId` | 跨运行清单、安装回执和诊断稳定不变的插件身份 |
 | `PluginVersion` | 插件、入口程序集和发布包的唯一版本事实 |
 | `ManagedPluginDirectoryName` | `Controls` 下的插件目录名 |
-| Host API/Common Contract 四个区间属性 | 显式声明左闭右开的兼容范围 |
+| `ManagedPluginEntryType` | 声明大小写敏感的入口完整类型名 |
+| `ManagedPluginSdkMinInclusive` / `ManagedPluginSdkMaxExclusive` | 显式声明单一 SDK 左闭右开兼容范围 |
 | `ManagedPluginRuntimeIdentifier` | v1 固定为 `win-x64` |
 | `ManagedPluginPrivatePackage` | 插件拥有并需要部署的私有 NuGet 运行时资产 |
 | `ManagedPluginAsset` | 显式文件及其插件内目标路径 |

@@ -176,7 +176,7 @@ Tool 的 code-behind 类名改为 `StatusToolView`。不要给 View 注入构造
 
 ## 5. 显式登记全部贡献
 
-把唯一模块更新为完整版本：
+把 manifest 精确声明的模块更新为完整版本：
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;

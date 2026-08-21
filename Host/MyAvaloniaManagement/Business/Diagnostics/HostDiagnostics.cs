@@ -77,9 +77,7 @@ internal sealed record HostDiagnosticDraft(
 
     internal Version? PluginVersion { get; init; }
 
-    internal PluginVersionRange? HostApiRange { get; init; }
-
-    internal PluginVersionRange? CommonContractRange { get; init; }
+    internal PluginVersionRange? SdkRange { get; init; }
 
     internal Exception? Exception { get; init; }
 
@@ -93,7 +91,7 @@ internal sealed record HostDiagnosticDraft(
 /// </summary>
 internal sealed record HostDiagnosticRecord
 {
-    internal const int CurrentSchemaVersion = 1;
+    internal const int CurrentSchemaVersion = 2;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
@@ -121,9 +119,7 @@ internal sealed record HostDiagnosticRecord
 
     public string? PluginVersion { get; init; }
 
-    public string? HostApiRange { get; init; }
-
-    public string? CommonContractRange { get; init; }
+    public string? SdkRange { get; init; }
 
     public required string UserMessage { get; init; }
 
@@ -151,8 +147,7 @@ internal static class HostDiagnosticCodes
     internal const string PluginManifestMissing = "PLUGIN_MANIFEST_MISSING";
     internal const string PluginManifestInvalid = "PLUGIN_MANIFEST_INVALID";
     internal const string PluginManifestSchemaUnsupported = "PLUGIN_MANIFEST_SCHEMA_UNSUPPORTED";
-    internal const string PluginHostApiIncompatible = "PLUGIN_HOST_API_INCOMPATIBLE";
-    internal const string PluginCommonContractIncompatible = "PLUGIN_COMMON_CONTRACT_INCOMPATIBLE";
+    internal const string PluginSdkIncompatible = "PLUGIN_SDK_INCOMPATIBLE";
     internal const string PluginManifestIdentityDuplicate = "PLUGIN_MANIFEST_IDENTITY_DUPLICATE";
     internal const string PluginManifestDescriptionMismatch = "PLUGIN_MANIFEST_DESCRIPTION_MISMATCH";
     internal const string PluginEntryInvalid = "PLUGIN_ENTRY_INVALID";
@@ -160,9 +155,6 @@ internal static class HostDiagnosticCodes
     internal const string PluginAssemblyLoadFailed = "PLUGIN_ASSEMBLY_LOAD_FAILED";
     internal const string PluginSharedAssemblyMismatch = "PLUGIN_SHARED_ASSEMBLY_MISMATCH";
     internal const string PluginTypePreflightFailed = "PLUGIN_TYPE_PREFLIGHT_FAILED";
-    internal const string PluginModuleMissing = "PLUGIN_MODULE_MISSING";
-    internal const string PluginModuleMultiple = "PLUGIN_MODULE_MULTIPLE";
-    internal const string PluginModuleConstructorInvalid = "PLUGIN_MODULE_CONSTRUCTOR_INVALID";
     internal const string PluginServiceRegistrationFailed = "PLUGIN_SERVICE_REGISTRATION_FAILED";
     internal const string PluginHostServiceMutation = "PLUGIN_HOST_SERVICE_MUTATION";
     internal const string HostContainerBuildFailed = "HOST_CONTAINER_BUILD_FAILED";
@@ -213,8 +205,7 @@ internal static class HostDiagnosticRedactionPolicy
             PluginVersion = draft.PluginVersion is null
                 ? null
                 : PluginVersionText.Format(draft.PluginVersion),
-            HostApiRange = draft.HostApiRange?.ToString(),
-            CommonContractRange = draft.CommonContractRange?.ToString(),
+            SdkRange = draft.SdkRange?.ToString(),
             UserMessage = CreateUserMessage(code, draft.Phase),
             ExceptionType = draft.Exception?.GetType().FullName,
             TechnicalDetail = CreateControlledDetail(draft),
@@ -240,8 +231,7 @@ internal static class HostDiagnosticRedactionPolicy
         HostDiagnosticCodes.PluginManifestMissing or
         HostDiagnosticCodes.PluginManifestInvalid or
         HostDiagnosticCodes.PluginManifestSchemaUnsupported or
-        HostDiagnosticCodes.PluginHostApiIncompatible or
-        HostDiagnosticCodes.PluginCommonContractIncompatible or
+        HostDiagnosticCodes.PluginSdkIncompatible or
         HostDiagnosticCodes.PluginManifestIdentityDuplicate or
         HostDiagnosticCodes.PluginManifestDescriptionMismatch =>
             "插件清单未通过预检，已隔离对应插件候选。",
@@ -249,10 +239,7 @@ internal static class HostDiagnosticRedactionPolicy
         HostDiagnosticCodes.PluginDependencyManifestMissing or
         HostDiagnosticCodes.PluginAssemblyLoadFailed or
         HostDiagnosticCodes.PluginSharedAssemblyMismatch or
-        HostDiagnosticCodes.PluginTypePreflightFailed or
-        HostDiagnosticCodes.PluginModuleMissing or
-        HostDiagnosticCodes.PluginModuleMultiple or
-        HostDiagnosticCodes.PluginModuleConstructorInvalid =>
+        HostDiagnosticCodes.PluginTypePreflightFailed =>
             "插件入口或类型未通过预检，已隔离对应插件候选。",
         HostDiagnosticCodes.PluginServiceRegistrationFailed =>
             "插件显式注册失败，宿主已放弃本次容器构建。",
@@ -407,11 +394,7 @@ internal static class HostDiagnosticFailurePolicy
         HostDiagnosticCodes.PluginManifestMissing,
         HostDiagnosticCodes.PluginManifestInvalid,
         HostDiagnosticCodes.PluginManifestSchemaUnsupported,
-        HostDiagnosticCodes.PluginHostApiIncompatible,
-        HostDiagnosticCodes.PluginCommonContractIncompatible,
-        HostDiagnosticCodes.PluginModuleMissing,
-        HostDiagnosticCodes.PluginModuleMultiple,
-        HostDiagnosticCodes.PluginModuleConstructorInvalid,
+        HostDiagnosticCodes.PluginSdkIncompatible,
     };
 
     internal static (HostDiagnosticSeverity Severity, HostDiagnosticDisposition Disposition) Classify(

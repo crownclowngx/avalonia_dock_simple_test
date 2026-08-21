@@ -80,6 +80,99 @@ foreach ($element in $propertyElements) {
     $properties[$element.LocalName] = [string]$element.InnerText.Trim()
 }
 
+# 项目允许把 SDK 端点投影到根级唯一版本事实。打包脚本只解析这种单层、精确的 MSBuild 属性引用，
+# 不实现第二套通用项目求值器；其他复杂表达式仍由真实 dotnet build 决定并由生成清单复核。
+[xml]$versionXml = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'Directory.Version.props')
+$versionProperties = @{}
+foreach ($element in @($versionXml.Project.PropertyGroup.ChildNodes |
+        Where-Object NodeType -eq ([Xml.XmlNodeType]::Element))) {
+    $versionProperties[$element.LocalName] = [string]$element.InnerText.Trim()
+}
+function Resolve-CentralProperty([string]$value) {
+    if ($value -match '^\$\(([A-Za-z0-9_.-]+)\)$' -and $versionProperties.ContainsKey($Matches[1])) {
+        return $versionProperties[$Matches[1]]
+    }
+    return $value
+}
+
+function Assert-StrictManifestObject {
+    param(
+        [Parameter(Mandatory)] [Text.Json.JsonElement]$Element,
+        [Parameter(Mandatory)] [string[]]$ExpectedNames,
+        [Parameter(Mandatory)] [string]$ObjectName
+    )
+
+    if ($Element.ValueKind -ne [Text.Json.JsonValueKind]::Object) {
+        throw "plugin.manifest.json 的 $ObjectName 必须是 JSON 对象。"
+    }
+
+    # JsonDocument 的属性枚举保留重复项；先在这里比较完整集合，再交给 ConvertFrom-Json 做便捷取值，
+    # 避免 PowerShell 对象化时把重复字段覆盖成“最后一个值”而绕过严格 schema。
+    $actualNames = @($Element.EnumerateObject() | ForEach-Object Name | Sort-Object)
+    $expected = @($ExpectedNames | Sort-Object)
+    if (Compare-Object $expected $actualNames) {
+        throw "plugin.manifest.json 的 $ObjectName 字段集合不符合严格 schema v2：$($actualNames -join ', ')"
+    }
+}
+
+function Assert-PackagedEntryPoint {
+    param(
+        [Parameter(Mandatory)] [string]$PluginAssemblyPath,
+        [Parameter(Mandatory)] [string]$DependencyAssemblyPath,
+        [Parameter(Mandatory)] [string]$ExpectedEntryType
+    )
+
+    # 打包阶段不执行入口构造函数或 Configure。独立可回收 ALC 只读取类型结构，并用入口 deps 图解析
+    # 私有依赖；Legacy 契约由本轮隔离构建的成品显式提供，绝不从插件包或进程偶然状态猜测。
+    $loadContext = [Runtime.Loader.AssemblyLoadContext]::new(
+        'ManagedPluginPackagePreflight-' + [Guid]::NewGuid().ToString('N'),
+        $true)
+    $resolver = [Runtime.Loader.AssemblyDependencyResolver]::new($PluginAssemblyPath)
+    $resolvingHandler = [Func[Runtime.Loader.AssemblyLoadContext, Reflection.AssemblyName, Reflection.Assembly]] {
+        param($context, $assemblyName)
+        if ($assemblyName.Name -ceq 'MyAvaloniaManagementCommon') {
+            return $context.LoadFromAssemblyPath($DependencyAssemblyPath)
+        }
+
+        $resolvedPath = $resolver.ResolveAssemblyToPath($assemblyName)
+        if ($null -ne $resolvedPath) {
+            return $context.LoadFromAssemblyPath($resolvedPath)
+        }
+        return $null
+    }
+
+    $loadContext.add_Resolving($resolvingHandler)
+    try {
+        $contractAssembly = $loadContext.LoadFromAssemblyPath($DependencyAssemblyPath)
+        $moduleContract = $contractAssembly.GetType(
+            'MyAvaloniaManagementCommon.Plugin.IPluginModule', $true, $false)
+        $pluginAssembly = $loadContext.LoadFromAssemblyPath($PluginAssemblyPath)
+        $entry = $pluginAssembly.GetType($ExpectedEntryType, $false, $false)
+        if ($null -eq $entry -or -not $entry.IsPublic -or $entry.IsNested -or
+            $entry.IsAbstract -or $entry.IsInterface -or $entry.ContainsGenericParameters -or
+            -not $moduleContract.IsAssignableFrom($entry) -or
+            $null -eq $entry.GetConstructor([Type]::EmptyTypes)) {
+            throw "成品入口类型不满足 public、非抽象、非泛型、Legacy IPluginModule 与 public 无参构造约束：$ExpectedEntryType"
+        }
+    }
+    finally {
+        $loadContext.remove_Resolving($resolvingHandler)
+        $loadContext.Unload()
+        # collectible ALC 的实际卸载由 GC 完成。立即释放这里的反射引用并等待终结，确保 finally 随后
+        # 能删除本轮隔离构建目录；这只影响构建进程，不执行插件终结逻辑或触碰打包输出。
+        $entry = $null
+        $pluginAssembly = $null
+        $moduleContract = $null
+        $contractAssembly = $null
+        $resolvingHandler = $null
+        $resolver = $null
+        $loadContext = $null
+        [GC]::Collect()
+        [GC]::WaitForPendingFinalizers()
+        [GC]::Collect()
+    }
+}
+
 if ($properties['ManagedPlugin'] -ne 'true') {
     throw "项目没有声明 ManagedPlugin=true：$projectPath"
 }
@@ -87,6 +180,9 @@ if ($properties['ManagedPlugin'] -ne 'true') {
 $pluginId = $properties['ManagedPluginId']
 $pluginVersion = $properties['PluginVersion']
 $pluginDirectoryName = $properties['ManagedPluginDirectoryName']
+$entryType = $properties['ManagedPluginEntryType']
+$sdkMinInclusive = Resolve-CentralProperty $properties['ManagedPluginSdkMinInclusive']
+$sdkMaxExclusive = Resolve-CentralProperty $properties['ManagedPluginSdkMaxExclusive']
 $runtimeIdentifier = if ($properties['ManagedPluginRuntimeIdentifier']) {
     $properties['ManagedPluginRuntimeIdentifier']
 }
@@ -110,13 +206,16 @@ foreach ($required in @{
         ManagedPluginId = $pluginId
         PluginVersion = $pluginVersion
         ManagedPluginDirectoryName = $pluginDirectoryName
+        ManagedPluginEntryType = $entryType
+        ManagedPluginSdkMinInclusive = $sdkMinInclusive
+        ManagedPluginSdkMaxExclusive = $sdkMaxExclusive
     }.GetEnumerator()) {
     if ([string]::IsNullOrWhiteSpace([string]$required.Value)) {
         throw "项目缺少 $($required.Key)：$projectPath"
     }
 }
 if ($runtimeIdentifier -ne 'win-x64') {
-    throw "Managed Plugin v1 只允许 win-x64，实际为 $runtimeIdentifier。"
+    throw "当前 Managed Plugin v2 构建协议只允许 win-x64，实际为 $runtimeIdentifier。"
 }
 
 $resolvedOutput = if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
@@ -219,16 +318,31 @@ try {
     }
 
     $manifestPath = Join-Path $pluginRoot 'plugin.manifest.json'
-    $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
-    $actualRootFields = @($manifest.PSObject.Properties.Name | Sort-Object)
-    $expectedRootFields = @('compatibility', 'entryAssembly', 'pluginId', 'pluginVersion', 'schemaVersion')
-    if (Compare-Object $expectedRootFields $actualRootFields) {
-        throw "plugin.manifest.json 的根字段不是严格 schema v1：$($actualRootFields -join ', ')"
+    $manifestText = Get-Content -Raw -LiteralPath $manifestPath
+    $jsonOptions = [Text.Json.JsonDocumentOptions]::new()
+    $jsonOptions.AllowTrailingCommas = $false
+    $jsonOptions.CommentHandling = [Text.Json.JsonCommentHandling]::Disallow
+    $jsonOptions.MaxDepth = 8
+    $manifestDocument = [Text.Json.JsonDocument]::Parse($manifestText, $jsonOptions)
+    try {
+        Assert-StrictManifestObject $manifestDocument.RootElement `
+            @('entryPoint', 'pluginId', 'pluginVersion', 'schemaVersion', 'sdk') '根对象'
+        Assert-StrictManifestObject ($manifestDocument.RootElement.GetProperty('entryPoint')) `
+            @('assembly', 'type') 'entryPoint'
+        Assert-StrictManifestObject ($manifestDocument.RootElement.GetProperty('sdk')) `
+            @('maxExclusive', 'minInclusive') 'sdk'
     }
-    if ($manifest.schemaVersion -ne 1 -or
+    finally {
+        $manifestDocument.Dispose()
+    }
+    $manifest = $manifestText | ConvertFrom-Json
+    if ($manifest.schemaVersion -ne 2 -or
         $manifest.pluginId -ne $pluginId -or
         $manifest.pluginVersion -ne $pluginVersion -or
-        $manifest.entryAssembly -ne "$assemblyName.dll") {
+        $manifest.entryPoint.assembly -ne "$assemblyName.dll" -or
+        $manifest.entryPoint.type -ne $entryType -or
+        $manifest.sdk.minInclusive -ne $sdkMinInclusive -or
+        $manifest.sdk.maxExclusive -ne $sdkMaxExclusive) {
         throw '生成清单与项目声明不一致。'
     }
 
@@ -237,6 +351,16 @@ try {
     if ($assemblyVersion -ne $pluginVersion) {
         throw "入口程序集版本 $assemblyVersion 与插件版本 $pluginVersion 不一致。"
     }
+
+    $legacyContractPath = Join-Path $stableDotnetArtifacts `
+        'bin/MyAvaloniaManagement.LegacyPluginContracts/release/MyAvaloniaManagementCommon.dll'
+    if (-not (Test-Path -LiteralPath $legacyContractPath -PathType Leaf)) {
+        throw "隔离构建缺少入口预检所需的 Legacy 契约成品：$legacyContractPath"
+    }
+    Assert-PackagedEntryPoint `
+        -PluginAssemblyPath (Join-Path $pluginRoot "$assemblyName.dll") `
+        -DependencyAssemblyPath $legacyContractPath `
+        -ExpectedEntryType $entryType
 
     $payloadFiles = @(Get-ChildItem -LiteralPath $pluginRoot -File -Recurse)
     $forbiddenShared = @($payloadFiles | Where-Object {
@@ -336,10 +460,17 @@ try {
 
     $revision = (& git -C $repositoryRoot rev-parse --short=12 HEAD).Trim()
     $packageManifest = [ordered]@{
-        schemaVersion = 1
+        schemaVersion = 2
         pluginId = $pluginId
         pluginVersion = $pluginVersion
-        entryAssembly = "$assemblyName.dll"
+        entryPoint = [ordered]@{
+            assembly = "$assemblyName.dll"
+            type = $entryType
+        }
+        sdk = [ordered]@{
+            minInclusive = $sdkMinInclusive
+            maxExclusive = $sdkMaxExclusive
+        }
         directoryName = $pluginDirectoryName
         targetFramework = $targetFramework
         runtimeIdentifier = $runtimeIdentifier
