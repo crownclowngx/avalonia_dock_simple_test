@@ -1,8 +1,8 @@
 # Managed Plugin V2 G4：每插件独立容器记录
 
-> 状态：已完成（2026-08-21）  
-> 适用范围：Host Provider、每插件 Provider、每 Document Scope、失败隔离与释放顺序  
-> 前置记录：[G3 manifest v2 与构建协议](./g3-manifest-v2-and-build-protocol.md)  
+> 状态：已完成（2026-08-21）
+> 适用范围：Host Provider、每插件 Provider、每 Document Scope、失败隔离与释放顺序
+> 前置记录：[G3 manifest v2 与构建协议](./g3-manifest-v2-and-build-protocol.md)
 > 发布边界：本阶段不运行 Windows Smoke、Windows CI、ReleaseAcceptance 或任何发布门禁
 
 ## 1. 结果摘要

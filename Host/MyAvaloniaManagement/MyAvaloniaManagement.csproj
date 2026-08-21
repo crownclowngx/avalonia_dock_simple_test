@@ -26,7 +26,7 @@
       <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" />
       <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk.UI\MyAvaloniaManagement.PluginSdk.UI.csproj" />
     </ItemGroup>
-    
+
     <ItemGroup>
       <PackageReference Include="Avalonia" />
       <PackageReference Include="Avalonia.Desktop" />

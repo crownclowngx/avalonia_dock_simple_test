@@ -42,11 +42,11 @@ internal sealed class ManagementFactory : Factory, IDisposable
     private DocumentDock? _documentDock;
     private ITool?  _plugGroupMenuTool;
     private bool _acceptingCreations = true;
-    
+
     // 存储文档类型元数据
-    
+
     // 存储Tool类型元数据
-    
+
     // 存储已创建的Tool实例
     private readonly Dictionary<string, Tool> _createdTools;
     private readonly DockDocumentLifetime _documentLifetime;
@@ -126,7 +126,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
         {
             return null;
         }
-        
+
         return new ToolManagementData
         {
             ToolMetadata = GetAvailableToolDescriptors(),
@@ -137,7 +137,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
 
     internal ToolRegistrySnapshot GetToolRegistrySnapshot() =>
         new(GetAvailableToolDescriptors(), _createdTools);
-    
+
     internal IEnumerable<DocumentCreationMenuEntry> GetAllDocumentCreationEntries() =>
         _extensions.GetCreationEntries().Where(entry =>
             _extensions.TryGetDocumentRegistration(entry.DocumentTypeId, out var registration) &&
@@ -340,7 +340,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
             (
                 untitledViewModel
             )
-          
+
         };
         // 创建所有注册的Tool
         CreateAllTools();
@@ -534,7 +534,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
             [HostExtensionIds.V2FileSystemTree.Value] = () => layout,
             [HostExtensionIds.V2ToolManagement.Value] = () => layout,
         };
-        
+
         // 动态注册所有已创建的工具到 ContextLocator（包括插件工具）
         foreach (var tool in _createdTools.Values)
         {
@@ -561,7 +561,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
 
         base.InitLayout(layout);
     }
-    
+
     /// <summary>
     /// 按依赖顺序创建所有已注册的 Tool 实例。
     /// </summary>
@@ -585,7 +585,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
                 _plugGroupMenuTool = tool;
             }
         }
-        
+
         // 再创建工具管理Tool（需要在其他Tool之后创建，因为它需要读取其他Tool的信息）
         if (_extensions.TryGetToolRegistration(
                 HostExtensionIds.V2ToolManagement,
@@ -634,7 +634,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
     public override void OnDockableHidden(IDockable? dockable)
     {
         base.OnDockableHidden(dockable);
-        
+
         if (!_suppressToolHiddenNotification &&
             dockable is Tool &&
             _createdTools.Values.Contains(dockable))

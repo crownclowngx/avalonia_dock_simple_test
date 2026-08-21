@@ -1,8 +1,8 @@
 # Managed Plugin V2 G3：manifest v2 与构建协议记录
 
-> 状态：已完成（2026-08-21）  
-> 适用范围：严格 manifest v2、精确入口发现、单一 SDK 兼容事实、构建期入口探针与确定性插件包  
-> 前置记录：[G0 绿色基线](./g0-green-baseline.md)、[G1 版本与数据边界](./g1-version-and-data-boundaries.md)、[G2 Plugin SDK 重建](./g2-plugin-sdk-rebuild.md)  
+> 状态：已完成（2026-08-21）
+> 适用范围：严格 manifest v2、精确入口发现、单一 SDK 兼容事实、构建期入口探针与确定性插件包
+> 前置记录：[G0 绿色基线](./g0-green-baseline.md)、[G1 版本与数据边界](./g1-version-and-data-boundaries.md)、[G2 Plugin SDK 重建](./g2-plugin-sdk-rebuild.md)
 > 发布边界：本阶段只执行非发布构建协议门禁，不运行 Windows Smoke、Windows CI、ReleaseAcceptance、G14 发布总门禁或任何发布操作
 
 ## 1. 结果摘要
