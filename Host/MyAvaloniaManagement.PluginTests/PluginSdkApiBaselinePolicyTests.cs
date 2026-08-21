@@ -25,14 +25,17 @@ public sealed class PluginSdkApiBaselinePolicyTests
         Assert.Equal(packageVersion.Major, baselineMajor);
         Assert.Equal(assemblyVersion.Major, baselineMajor);
 
-        var baselineDirectory = Path.Combine(
-            repositoryRoot,
-            "Host",
-            "MyAvaloniaManagementCommon",
-            "ApiCompatibility",
-            baseline);
-        Assert.True(File.Exists(Path.Combine(baselineDirectory, "PublicAPI.Shipped.txt")));
-        Assert.True(File.Exists(Path.Combine(baselineDirectory, "PublicAPI.Unshipped.txt")));
+        foreach (var projectDirectory in new[]
+                 {
+                     "MyAvaloniaManagement.PluginSdk",
+                     "MyAvaloniaManagement.PluginSdk.UI",
+                 })
+        {
+            var baselineDirectory = Path.Combine(
+                repositoryRoot, "Host", projectDirectory, "ApiCompatibility", baseline);
+            Assert.True(File.Exists(Path.Combine(baselineDirectory, "PublicAPI.Shipped.txt")));
+            Assert.True(File.Exists(Path.Combine(baselineDirectory, "PublicAPI.Unshipped.txt")));
+        }
     }
 
     [Fact]
@@ -41,30 +44,32 @@ public sealed class PluginSdkApiBaselinePolicyTests
         var repositoryRoot = FindRepositoryRoot();
         var properties = XDocument.Load(Path.Combine(repositoryRoot, "Directory.Version.props"));
         var baseline = Property(properties, "MyAvaloniaPluginSdkApiBaseline");
-        var baselineDirectory = Path.Combine(
-            repositoryRoot,
-            "Host",
-            "MyAvaloniaManagementCommon",
-            "ApiCompatibility",
-            baseline);
+        foreach (var projectDirectory in new[]
+                 {
+                     "MyAvaloniaManagement.PluginSdk",
+                     "MyAvaloniaManagement.PluginSdk.UI",
+                 })
+        {
+            var baselineDirectory = Path.Combine(
+                repositoryRoot, "Host", projectDirectory, "ApiCompatibility", baseline);
+            var shipped = ReadAndAssertApiFile(
+                Path.Combine(baselineDirectory, "PublicAPI.Shipped.txt"));
+            var unshipped = ReadAndAssertApiFile(
+                Path.Combine(baselineDirectory, "PublicAPI.Unshipped.txt"));
 
-        var shipped = ReadAndAssertApiFile(
-            Path.Combine(baselineDirectory, "PublicAPI.Shipped.txt"));
-        var unshipped = ReadAndAssertApiFile(
-            Path.Combine(baselineDirectory, "PublicAPI.Unshipped.txt"));
-
-        Assert.NotEmpty(shipped.Concat(unshipped));
-        Assert.Empty(shipped.Intersect(unshipped, StringComparer.Ordinal));
+            Assert.NotEmpty(shipped.Concat(unshipped));
+            Assert.Empty(shipped.Intersect(unshipped, StringComparer.Ordinal));
+        }
     }
 
     [Fact]
-    public void G1_V1历史基线未改写且当前V2表面全部属于未发布过渡事实()
+    public void G2_V1历史基线未改写且Core与Ui最终表面均未发布()
     {
         var repositoryRoot = FindRepositoryRoot();
         var apiRoot = Path.Combine(
             repositoryRoot,
             "Host",
-            "MyAvaloniaManagementCommon",
+            "MyAvaloniaManagement.PluginSdk",
             "ApiCompatibility");
 
         var v1Shipped = ReadAndAssertApiFile(Path.Combine(
@@ -73,13 +78,23 @@ public sealed class PluginSdkApiBaselinePolicyTests
             apiRoot, "v1", "PublicAPI.Unshipped.txt"));
         var v2Shipped = ReadAndAssertApiFile(Path.Combine(
             apiRoot, "v2", "PublicAPI.Shipped.txt"));
-        var v2Unshipped = ReadAndAssertApiFile(Path.Combine(
+        var coreV2Unshipped = ReadAndAssertApiFile(Path.Combine(
             apiRoot, "v2", "PublicAPI.Unshipped.txt"));
+        var uiApiRoot = Path.Combine(
+            repositoryRoot, "Host", "MyAvaloniaManagement.PluginSdk.UI", "ApiCompatibility");
+        var uiV2Shipped = ReadAndAssertApiFile(Path.Combine(
+            uiApiRoot, "v2", "PublicAPI.Shipped.txt"));
+        var uiV2Unshipped = ReadAndAssertApiFile(Path.Combine(
+            uiApiRoot, "v2", "PublicAPI.Unshipped.txt"));
 
         Assert.NotEmpty(v1Shipped);
         Assert.Empty(v1Unshipped);
         Assert.Empty(v2Shipped);
-        Assert.Equal(v1Shipped, v2Unshipped);
+        Assert.Empty(uiV2Shipped);
+        Assert.NotEmpty(coreV2Unshipped);
+        Assert.NotEmpty(uiV2Unshipped);
+        Assert.DoesNotContain(coreV2Unshipped, entry =>
+            entry.Contains("MyAvaloniaManagementCommon", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -94,15 +109,19 @@ public sealed class PluginSdkApiBaselinePolicyTests
             .Attribute("Version")?.Value;
         Assert.Equal("5.6.0", analyzerVersion);
 
-        var editorConfig = File.ReadAllText(Path.Combine(
-            repositoryRoot,
-            "Host",
-            "MyAvaloniaManagementCommon",
-            ".editorconfig"));
-        Assert.Contains(
-            "dotnet_public_api_analyzer.require_api_files = true",
-            editorConfig,
-            StringComparison.Ordinal);
+        foreach (var projectDirectory in new[]
+                 {
+                     "MyAvaloniaManagement.PluginSdk",
+                     "MyAvaloniaManagement.PluginSdk.UI",
+                 })
+        {
+            var editorConfig = File.ReadAllText(Path.Combine(
+                repositoryRoot, "Host", projectDirectory, ".editorconfig"));
+            Assert.Contains(
+                "dotnet_public_api_analyzer.require_api_files = true",
+                editorConfig,
+                StringComparison.Ordinal);
+        }
     }
 
     private static string[] ReadAndAssertApiFile(string path)

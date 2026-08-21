@@ -12,19 +12,19 @@
 > 变异门禁冻结正式 Plugin SDK v1 public API；G15 已固定 schema 1 诊断的白名单语义和默认脱敏边界；
 > G16 已用 `managed-plugin-v1.0.0` 定位最终文档、SDK API 和四插件兼容基线。
 
-> 当前分支已完成 V2 G1：产品、SDK、四插件版本和默认数据根进入 V2；下述 manifest、Document、
-> layout 与 public API 形状仍是 G2/G3/G7/G8 前的未发布 V1 阶段桥。历史 v1 签署事实保持可追溯。
+> 当前分支已完成 V2 G2：最终 Core/UI SDK 已建立；下述 manifest、Document、layout 与当前 Host/四插件
+> 运行形状仍是 G3–G12 前的未发布 Legacy 阶段桥。历史 v1 签署事实保持可追溯。
 
 ## 2. public API
 
-正式 public 插件契约只来自 `MyAvaloniaManagementCommon`。Host 窗口、View、ViewModel、加载器、
-注册表、工厂、消息和内建策略均为 internal；静态 `ServiceProvider` 与生产 ViewModel 无参构造
-已经删除。插件不得编译引用 Host 可执行程序集。
+最终 V2 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
+`MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
+内建策略均为 internal；插件不得编译引用 Host 可执行程序集。当前 Host 与四插件暂时引用
+`MyAvaloniaManagement.LegacyPluginContracts`，该项目不可打包且不得增加新的生产消费者。
 
-历史 Common 正式签名由 `ApiCompatibility/v1` 保存；当前 `ApiCompatibility/v2` 的 Shipped 为空，
-现有表面全部登记为 Unshipped，并由 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v2` 验证。未登记新增、删除、可见性
-收窄、参数或返回类型变化都会给出成员级 RS 诊断；[`PublicApiContractTests`](../../../MyAvaloniaManagement.Tests/PublicApiContractTests.cs)
-只保留第三方类型泄漏等行为语义断言。完整维护流程见
+历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 分别拥有 v2 基线，Shipped 均为空，
+G2 表面全部登记为 Unshipped，并由 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v2` 验证。未登记
+新增、删除、可见性收窄、参数或返回类型变化都会给出成员级 RS 诊断。完整维护流程见
 [Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
 
 [`HostApiBoundaryTests`](../../../MyAvaloniaManagement.Tests/HostApiBoundaryTests.cs) 继续确保 Host 不导出
@@ -43,14 +43,13 @@ Host 实现，这不构成发布兼容承诺。
 
 ### 2.2 SDK 包边界
 
-- 基础包 ID 为 `MyAvaloniaManagement.PluginSdk`；G2 前包内程序集仍为 `MyAvaloniaManagementCommon`，仅作未发布阶段桥；
-- 基础包不包含 Host，也不直接依赖 Desktop、字体、Fluent/Semi/Ursa/Dock 主题或 Dock 视觉控件；
-- `Dock.Model.Mvvm` 是当前 public 签名的必要依赖，其上游传递的
-  `Dock.Controls.Recycling.Model` 和 `CommunityToolkit.Mvvm` 是已知还原图例外，不等于基础 SDK
-  对这些实现包建立新的 public 事件契约；基础包不得直接声明 Toolkit 依赖；
-- `MyAvaloniaManagement.PluginSdk.UI` 是同版本 dependency-only package，供直接使用 Semi、Ursa、
-  Dock UI 的插件选择；第三方 UI 依赖使用精确 NuGet 版本；
-- UI Profile 的兼容新增可以随 SDK 次版本发布；任何会破坏已编译 UI 插件的变化必须提升 SDK 主版本；
+- 基础包、程序集和根命名空间均为 `MyAvaloniaManagement.PluginSdk`，只依赖 .NET BCL；
+- Core 不包含 Host，也不依赖 Avalonia、DI、Dock、Newtonsoft 或任何主题包；
+- `MyAvaloniaManagement.PluginSdk.UI` 是同版本真实契约程序集，只允许 Core、Avalonia、
+  DI.Abstractions 与宿主明确支持的 Fluent/Semi/Ursa Profile 精确依赖；
+- UI 不包含 Dock 或 Newtonsoft；插件模型不得继承或创建 Dock 类型；
+- Core/UI 的兼容新增可以随 SDK 次版本发布；任何破坏已编译插件的变化必须提升 SDK 主版本；
+- Legacy 项目 `IsPackable=false`，两个 nupkg 均不得包含或依赖 `MyAvaloniaManagementCommon.dll`；
 - 当前不自动发布公共 NuGet。宿主发布制品应同时提供两个 nupkg；对外分发前必须补充项目许可证。
 
 ### 2.3 事件总线

@@ -8,11 +8,11 @@ Set-StrictMode -Version Latest
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $productionRoots = @(
     (Join-Path $repositoryRoot 'Host\MyAvaloniaManagement'),
-    (Join-Path $repositoryRoot 'Host\MyAvaloniaManagementCommon')
+    (Join-Path $repositoryRoot 'Host\MyAvaloniaManagement.LegacyPluginContracts')
 )
 $approvedSensitiveSources = @(
     [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'Host\MyAvaloniaManagement\Business\Diagnostics\HostDiagnostics.cs')),
-    [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'Host\MyAvaloniaManagementCommon\Plugin\PluginSensitiveDiagnosticDebugOutput.cs'))
+    [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'Host\MyAvaloniaManagement.LegacyPluginContracts\Plugin\PluginSensitiveDiagnosticDebugOutput.cs'))
 )
 
 function Get-ProductionSourceFiles {

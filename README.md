@@ -8,9 +8,9 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > `managed-plugin-v1.0.0` 定位。签署内容、非发布门禁证据和回退边界见
 > [G16 文档与 v1 基线](./docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
-> Managed Plugin V2 已完成 G0 绿色基线和 G1 版本/数据边界；G2–G14 尚未实现。当前产品、SDK、
-> 四插件版本和默认数据根已进入 V2，但 manifest、Document、layout reader 仍是未发布阶段的 V1
-> 实现，不能视为最终 V2 契约。见 [V2 G1 专项记录](./docs/plan-history/host-v2/g1-version-and-data-boundaries.md)。
+> Managed Plugin V2 已完成 G0–G2；G3–G14 尚未实现。最终 Core/UI SDK 已建立，但当前 Host、四插件、
+> manifest、Document 和 layout reader 仍通过不可打包的 Legacy 编译桥运行，不能视为完整 V2 运行时迁移。
+> 见 [V2 G2 专项记录](./docs/plan-history/host-v2/g2-plugin-sdk-rebuild.md)。
 
 ## 核心扩展模型
 
@@ -41,7 +41,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 四个当前插件均使用 Managed Plugin 接入。G4 已删除 Legacy 二进制激活路径；无模块程序集、
 缺少入口 `.deps.json` 的目录以及依赖历史加载 Facade 的代码不会进入插件运行链。
 
-## V2 G1 当前版本与数据边界
+## V2 G2 当前 SDK、版本与数据边界
 
 历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。当前 G1 仍沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
@@ -55,6 +55,12 @@ SDK 程序集版本均为 `2.0.0.0`；V2 已删除独立 Host API 版本事实�
 
 四个当前插件的 `PluginVersion` 均为 `2.0.0`。G3 删除旧清单双区间前，Host API 与 Common 字段
 都只投影集中 SDK 区间 `[2.0.0, 3.0.0)`，不是两套独立兼容事实。
+
+G2 已建立真实的 `MyAvaloniaManagement.PluginSdk.dll` 与 `MyAvaloniaManagement.PluginSdk.UI.dll`。
+Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约；两者分别维护空 Shipped 和完整
+Unshipped 的 v2 API 基线。旧 `MyAvaloniaManagementCommon.dll` 只由仓库内部
+`MyAvaloniaManagement.LegacyPluginContracts` 项目生成，不能打包、不能新增生产消费者，并将在 G5–G12
+迁移后删除。
 
 宿主默认把布局、外观和诊断写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v2\`。旧 `v1` 与预发布目录
 保持原样，不读取、迁移或删除。`MYAVALONIA_DATA_DIRECTORY` 仍表示完整数据根，不追加 `v2`，
@@ -107,9 +113,10 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Managed 插件快速开始](./docs/quick-start/README.md)：从零接入包含 Document 和 Tool 的新插件；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G1 已完成、G2–G14 尚未实现的破坏式重构路线；
+- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G2 已完成、G3–G14 尚未实现的破坏式重构路线；
 - [V2 G0 绿色基线](./docs/plan-history/host-v2/g0-green-baseline.md)：查看非发布门禁、删除面、依赖白名单和消费者矩阵；
 - [V2 G1 版本与数据边界](./docs/plan-history/host-v2/g1-version-and-data-boundaries.md)：查看 V2 版本事实、数据根隔离和阶段边界；
+- [V2 G2 Plugin SDK 重建](./docs/plan-history/host-v2/g2-plugin-sdk-rebuild.md)：查看 Core/UI 契约、Legacy 隔离、SOLID 取舍和非发布门禁证据；
 - [主项目兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)：修改 public API、插件契约或稳定 ID 前核对；
 - [MyAvaloniaManagement 测试说明](./docs/reference/myavalonia-management-tests.md)：查看测试层次、门禁和结果位置。
 
@@ -175,6 +182,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - 插件目录快照和加载上下文以进程为边界，不支持热更新或运行时卸载；
 - 仓库能生成正式 Plugin SDK/NuGet 制品，但不自动推送公共包源；当前没有插件市场或通用脚手架；
 - G4 已完成：宿主只接受严格清单、入口 `.deps.json` 和唯一 `IPluginModule` 的 Managed Plugin；
-- G3 前的 Host/Common 双兼容字段必须同时投影同一个 SDK 区间；不得重新引入独立 Host API 版本事实。
+- G3 前的 Host/Common 双兼容字段必须同时投影同一个 SDK 区间；不得重新引入独立 Host API 版本事实；
+- G2 的 Core/UI 包可用于编译验证，但当前 Host 与业务插件仍使用内部 Legacy 编译桥，不能据此宣称 V2 运行时迁移完成。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

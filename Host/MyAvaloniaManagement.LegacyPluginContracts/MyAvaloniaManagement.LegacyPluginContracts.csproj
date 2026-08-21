@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <!--
+          G2 仅为保持尚未迁移的 Host 与四插件可编译而保留本程序集。
+          它不再拥有 Plugin SDK 包身份，也不能成为新代码的依赖目标；后续阶段完成消费者迁移后整体删除。
+        -->
+        <AssemblyName>MyAvaloniaManagementCommon</AssemblyName>
+        <RootNamespace>MyAvaloniaManagementCommon</RootNamespace>
+        <IsPackable>false</IsPackable>
+        <!--
+          当前 manifest v1 loader 仍以该共享程序集的 AssemblyVersion 校验集中 SDK 区间。
+          在 G3–G12 删除阶段桥之前必须继续投影同一版本事实；这只维持运行时类型身份，
+          不恢复 PackageId、打包能力或 public API 基线职责。
+        -->
+        <Version>$(MyAvaloniaPluginSdkVersion)</Version>
+        <FileVersion>$(MyAvaloniaPluginSdkFileVersion)</FileVersion>
+        <InformationalVersion>$(MyAvaloniaPluginSdkVersion)</InformationalVersion>
+        <AssemblyVersion>$(MyAvaloniaPluginSdkAssemblyVersion)</AssemblyVersion>
+        <Title>MyAvaloniaManagement Legacy Plugin Contracts</Title>
+        <Description>Managed Plugin V2 G2 期间仅供仓库内部编译的旧契约桥。</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Avalonia" />
+      <PackageReference Include="Dock.Model.Mvvm" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+      <PackageReference Include="Newtonsoft.Json" />
+    </ItemGroup>
+
+</Project>

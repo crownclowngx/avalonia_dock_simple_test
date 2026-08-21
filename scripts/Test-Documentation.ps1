@@ -24,7 +24,8 @@ $currentDocumentPaths = @(
     'Host/MyAvaloniaManagement/docs/design/architecture.md',
     'Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md',
     'Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md',
-    'Host/MyAvaloniaManagementCommon/README.md',
+    'Host/MyAvaloniaManagement.PluginSdk/README.md',
+    'Host/MyAvaloniaManagement.LegacyPluginContracts/README.md',
     'Host/MyAvaloniaManagement.PluginSdk.UI/README.md'
 )
 $currentDocumentPaths += @(Get-ChildItem -LiteralPath (Join-Path $repositoryRoot 'docs\quick-start') `
@@ -56,10 +57,10 @@ $forbiddenStatementRules = @(
 )
 
 $requiredSymbols = @(
-    [pscustomobject]@{ Symbol = 'IPluginModule'; Path = 'Host/MyAvaloniaManagementCommon/Plugin/IPluginModule.cs' },
-    [pscustomobject]@{ Symbol = 'IPluginRegistrationContext'; Path = 'Host/MyAvaloniaManagementCommon/Plugin/IPluginRegistrationContext.cs' },
-    [pscustomobject]@{ Symbol = 'DocumentContentSnapshot'; Path = 'Host/MyAvaloniaManagementCommon/Save/DocumentContentSnapshot.cs' },
-    [pscustomobject]@{ Symbol = 'IHostEventBus'; Path = 'Host/MyAvaloniaManagementCommon/Events/IHostEventBus.cs' },
+    [pscustomobject]@{ Symbol = 'IPluginModule'; Path = 'Host/MyAvaloniaManagement.PluginSdk.UI/PluginRegistrationContracts.cs' },
+    [pscustomobject]@{ Symbol = 'IPluginRegistration'; Path = 'Host/MyAvaloniaManagement.PluginSdk.UI/PluginRegistrationContracts.cs' },
+    [pscustomobject]@{ Symbol = 'DocumentContent'; Path = 'Host/MyAvaloniaManagement.PluginSdk/DocumentContracts.cs' },
+    [pscustomobject]@{ Symbol = 'IHostEventBus'; Path = 'Host/MyAvaloniaManagement.PluginSdk/PluginContracts.cs' },
     [pscustomobject]@{ Symbol = 'HostDiagnosticRedactionPolicy'; Path = 'Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs' },
     [pscustomobject]@{ Symbol = 'DocumentEnvelopeSerializer'; Path = 'Host/MyAvaloniaManagement/Business/Documents/DocumentEnvelopeSerializer.cs' }
 )
@@ -121,9 +122,11 @@ Assert-DocumentationForbiddenStatements `
     -Documents @($currentDocumentPaths | ForEach-Object { $documentsByPath[$_] }) `
     -Rules $forbiddenStatementRules
 
-$productionFiles = @(& git -C $repositoryRoot -c core.quotepath=false ls-files -- `
-        'Host/MyAvaloniaManagementCommon/*.cs' `
-        'Host/MyAvaloniaManagementCommon/**/*.cs')
+$productionFiles = @(& git -C $repositoryRoot -c core.quotepath=false ls-files --cached --others --exclude-standard -- `
+        'Host/MyAvaloniaManagement.PluginSdk/*.cs' `
+        'Host/MyAvaloniaManagement.PluginSdk/**/*.cs' `
+        'Host/MyAvaloniaManagement.PluginSdk.UI/*.cs' `
+        'Host/MyAvaloniaManagement.PluginSdk.UI/**/*.cs')
 Assert-DocumentationCondition ($LASTEXITCODE -eq 0) '无法枚举 Plugin SDK 生产源码。'
 Assert-DocumentationSourceSymbols `
     -RepositoryRoot $repositoryRoot `
@@ -152,6 +155,7 @@ $summary = [ordered]@{
     apiBaseline = $baseline.ApiBaseline
     shippedApiEntries = $baseline.ShippedEntries
     unshippedApiEntries = $baseline.UnshippedEntries
+    apiProjects = $baseline.ApiProjects
     plugins = $baseline.Plugins
 }
 [IO.File]::WriteAllText(

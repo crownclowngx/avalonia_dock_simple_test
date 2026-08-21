@@ -5,9 +5,9 @@
 > G4 已删除 Legacy 二进制激活。插件必须携带严格清单、入口 `.deps.json` 和唯一
 > `IPluginModule`。G5 已删除策略/View 隐式发现和模块自报身份；manifest 是唯一身份来源，
 > Document、Tool、View 和 Lifecycle 必须通过 `IPluginRegistrationContext` 显式登记。
-> 当前仓库处于 V2 G1：Plugin SDK 与四插件版本为 `2.0.0`，G3 前的 Host/Common 字段都投影
-> `[2.0.0, 3.0.0)`。最终 SDK 与 manifest v2 尚未完成，因此本教程当前只用于仓库内阶段联调；
-> 外部作者应继续以 `managed-plugin-v1.0.0` 复核历史契约，不得发布或承诺 V2 兼容。
+> 当前仓库处于 V2 G2：最终 Core/UI SDK 已可编译消费，但 Host、四插件和本教程的运行示例仍使用
+> 不可打包的 Legacy 编译桥。manifest v2 与运行时迁移尚未完成，因此本教程当前只用于仓库内阶段联调；
+> 外部作者不得据此发布或承诺 V2 运行时兼容。
 
 ## 完成后你将得到什么
 
@@ -47,13 +47,16 @@ dotnet build Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug
 
 ### 仓库内开发
 
-插件项目直接引用 [`MyAvaloniaManagementCommon`](../../Host/MyAvaloniaManagementCommon/MyAvaloniaManagementCommon.csproj)，构建后把入口程序集、清单和私有依赖部署到宿主输出目录下独立的 `Controls/<PluginFolder>/`。这是本文可完整复现的路径。
+当前 Host 的仓库内插件暂时引用不可打包的
+[`MyAvaloniaManagement.LegacyPluginContracts`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj)，
+构建后把入口程序集、清单和私有依赖部署到宿主输出目录下独立的 `Controls/<PluginFolder>/`。这是本文在 G2
+可完整复现的运行路径，新生产项目不得继续增加 Legacy 引用。
 
 ### 外部二进制插件
 
-宿主发布方应提供同版本 `MyAvaloniaManagement.PluginSdk` nupkg；需要直接使用 Semi、Ursa 或 Dock
-UI 时改用同版本 `MyAvaloniaManagement.PluginSdk.UI`。仓库当前只生成可验证制品，尚未自动推送
-公共 NuGet。打包时只交付插件入口、清单和插件私有依赖，**不得**把
+G2 已能生成同版本 `MyAvaloniaManagement.PluginSdk` 与 `MyAvaloniaManagement.PluginSdk.UI` nupkg；UI
+包提供 Avalonia、DI.Abstractions、Fluent/Semi/Ursa 支持，不提供 Dock。两个包当前用于契约编译与消费
+门禁，尚未随可运行的 manifest v2 Host 发布。打包时只交付插件入口、清单和插件私有依赖，**不得**把
 `MyAvaloniaManagementCommon.dll` 或宿主共享依赖闭包放进插件目录。
 
 外部插件必须针对明确的 Host/SDK 版本组合编译和验证，兼容范围由清单如实声明。使用 G5 前候选

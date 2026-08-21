@@ -39,7 +39,11 @@
                     <DataTemplate DataType="tools:ToolManagementItem">
                         <Border Classes="host-tool-list-row">
                             <Grid ColumnDefinitions="Auto,*">
-                                <CheckBox IsChecked="{Binding IsVisible, Mode=TwoWay}"
+                                <!--
+                                  IsVisible 是 Dock 树事实的只读投影，用户意图只允许由命令提交。
+                                  禁止改回 TwoWay：ToggleButton 会先写回投影，命令再取反时便会提交相反状态。
+                                -->
+                                <CheckBox IsChecked="{Binding IsVisible, Mode=OneWay}"
                                           IsEnabled="{Binding CanClose}"
                                           Command="{Binding $parent[ItemsControl].DataContext.ToggleToolVisibilityCommand}"
                                           CommandParameter="{Binding}"

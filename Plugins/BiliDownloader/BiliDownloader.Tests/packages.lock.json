@@ -181,7 +181,7 @@
           "Flurl.Http": "[4.0.2, )",
           "Microsoft.Data.Sqlite": "[10.0.10, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "MyAvaloniaManagement.PluginSdk": "[1.0.0, )",
+          "MyAvaloniaManagementCommon": "[1.0.0, )",
           "QRCoder": "[1.8.0, )",
           "SQLitePCLRaw.bundle_e_sqlite3": "[2.1.12, )",
           "protobuf-net": "[3.2.56, )"
@@ -190,11 +190,11 @@
       "bilidownloader.releaseacceptance": {
         "type": "Project",
         "dependencies": {
-          "BiliDownloader": "[1.0.0, )",
+          "BiliDownloader": "[2.0.0, )",
           "Microsoft.Data.Sqlite": "[10.0.10, )"
         }
       },
-      "MyAvaloniaManagement.PluginSdk": {
+      "MyAvaloniaManagementCommon": {
         "type": "Project",
         "dependencies": {
           "Avalonia": "[12.1.0, )",

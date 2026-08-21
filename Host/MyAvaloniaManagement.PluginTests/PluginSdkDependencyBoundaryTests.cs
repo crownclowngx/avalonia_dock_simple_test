@@ -10,13 +10,7 @@ namespace MyAvaloniaManagement.PluginTests;
 /// </summary>
 public sealed class PluginSdkDependencyBoundaryTests
 {
-    private static readonly string[] BaseSdkPackages =
-    [
-        "Avalonia",
-        "Dock.Model.Mvvm",
-        "Microsoft.Extensions.DependencyInjection.Abstractions",
-        "Newtonsoft.Json",
-    ];
+    private static readonly string[] BaseSdkPackages = [];
 
     private static readonly string[] BaseSdkBuildOnlyPackages =
     [
@@ -25,21 +19,19 @@ public sealed class PluginSdkDependencyBoundaryTests
 
     private static readonly string[] UiProfilePackages =
     [
+        "Avalonia",
         "Avalonia.Themes.Fluent",
-        "Dock.Avalonia",
-        "Dock.Avalonia.Themes.Fluent",
-        "Dock.Controls.ProportionalStackPanel",
-        "Dock.Controls.Recycling",
-        "Dock.Controls.Recycling.Model",
         "Irihi.Ursa",
         "Irihi.Ursa.Themes.Semi",
+        "Microsoft.Extensions.DependencyInjection.Abstractions",
         "Semi.Avalonia",
     ];
 
     [Fact]
     public void 基础Sdk只引用公共契约编译所需包()
     {
-        var project = LoadProject("Host", "MyAvaloniaManagementCommon", "MyAvaloniaManagementCommon.csproj");
+        var project = LoadProject(
+            "Host", "MyAvaloniaManagement.PluginSdk", "MyAvaloniaManagement.PluginSdk.csproj");
 
         Assert.Equal(BaseSdkPackages, RuntimePackageReferences(project));
         Assert.Equal(BaseSdkBuildOnlyPackages, BuildOnlyPackageReferences(project));
@@ -71,12 +63,7 @@ public sealed class PluginSdkDependencyBoundaryTests
                 .Cast<string>()
                 .OrderBy(item => item, StringComparer.Ordinal)
                 .ToArray());
-        Assert.DoesNotContain(
-            project.Descendants("Folder"),
-            item => string.Equals(
-                item.Attribute("Include")?.Value.TrimEnd('\\', '/'),
-                "Chain",
-                StringComparison.OrdinalIgnoreCase));
+        Assert.Equal("MyAvaloniaManagement.PluginSdk", Property(project, "AssemblyName"));
     }
 
     [Fact]
@@ -85,7 +72,11 @@ public sealed class PluginSdkDependencyBoundaryTests
         var host = LoadProject("Host", "MyAvaloniaManagement", "MyAvaloniaManagement.csproj");
         var hostPackages = RuntimePackageReferences(host).ToHashSet(StringComparer.Ordinal);
 
-        Assert.All(UiProfilePackages, package => Assert.Contains(package, hostPackages));
+        Assert.All(
+            UiProfilePackages.Where(package =>
+                package != "Microsoft.Extensions.DependencyInjection.Abstractions"),
+            package => Assert.Contains(package, hostPackages));
+        Assert.Contains("Microsoft.Extensions.DependencyInjection", hostPackages);
         Assert.Contains("Avalonia.Fonts.Inter", hostPackages);
         Assert.Contains("Avalonia.Desktop", hostPackages);
         Assert.DoesNotContain("Microsoft.CodeAnalysis.PublicApiAnalyzers", PackageReferences(host));
@@ -93,21 +84,45 @@ public sealed class PluginSdkDependencyBoundaryTests
     }
 
     [Fact]
-    public void UiProfile是同版本纯依赖包且第三方版本来自集中属性()
+    public void UiSdk是真实契约程序集且第三方版本来自集中属性()
     {
         var profile = LoadProject(
             "Host",
             "MyAvaloniaManagement.PluginSdk.UI",
             "MyAvaloniaManagement.PluginSdk.UI.csproj");
 
-        Assert.Equal(UiProfilePackages, PackageReferences(profile));
-        Assert.Equal("false", Property(profile, "IncludeBuildOutput"));
+        Assert.Equal(UiProfilePackages, RuntimePackageReferences(profile));
+        Assert.Equal(BaseSdkBuildOnlyPackages, BuildOnlyPackageReferences(profile));
         Assert.Equal("$(MyAvaloniaPluginSdkVersion)", Property(profile, "PackageVersion"));
         Assert.All(
-            profile.Descendants("PackageReference"),
+            profile.Descendants("PackageReference")
+                .Where(item => item.Attribute("Include")?.Value is not
+                    ("Microsoft.Extensions.DependencyInjection.Abstractions" or
+                     "Microsoft.CodeAnalysis.PublicApiAnalyzers")),
             item => Assert.Matches(@"^\[\$\(MyAvalonia.+UiVersion\)\]$", item.Attribute("VersionOverride")?.Value));
-        Assert.DoesNotContain("Microsoft.CodeAnalysis.PublicApiAnalyzers", PackageReferences(profile));
-        Assert.Empty(profile.Descendants("AdditionalFiles"));
+        Assert.Contains("Microsoft.CodeAnalysis.PublicApiAnalyzers", PackageReferences(profile));
+        Assert.Equal(2, profile.Descendants("AdditionalFiles").Count());
+        Assert.Contains(
+            profile.Descendants("ProjectReference"),
+            item => item.Attribute("Include")?.Value ==
+                @"..\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj");
+        Assert.DoesNotContain(
+            profile.Descendants("PackageReference"),
+            item => item.Attribute("Include")?.Value?.StartsWith("Dock.", StringComparison.Ordinal) == true ||
+                    item.Attribute("Include")?.Value == "Newtonsoft.Json");
+    }
+
+    [Fact]
+    public void Legacy桥不可打包且不再拥有Sdk基线()
+    {
+        var legacy = LoadProject(
+            "Host", "MyAvaloniaManagement.LegacyPluginContracts",
+            "MyAvaloniaManagement.LegacyPluginContracts.csproj");
+
+        Assert.Equal("false", Property(legacy, "IsPackable"));
+        Assert.Empty(legacy.Descendants("PackageId"));
+        Assert.Empty(legacy.Descendants("AdditionalFiles"));
+        Assert.DoesNotContain("Microsoft.CodeAnalysis.PublicApiAnalyzers", PackageReferences(legacy));
     }
 
     [Theory]

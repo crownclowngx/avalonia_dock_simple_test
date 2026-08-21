@@ -25,7 +25,7 @@
         "resolved": "0.11.6",
         "contentHash": "NdNWGDiZ6eS/Mf/9+QHR91cj1K7Hy+PX9yrHI/zM7xFYuj9IWT2uxtB6sCHjrnxAeLV9fut1R6zHDUGKX6f9lQ=="
       },
-      "MyAvaloniaManagement.PluginSdk": {
+      "MyAvaloniaManagementCommon": {
         "type": "Project",
         "dependencies": {
           "Avalonia": "[12.1.0, )",
@@ -40,7 +40,7 @@
           "CommunityToolkit.Mvvm": "[8.4.2, )",
           "LibVLCSharp": "[3.10.0, )",
           "LibVLCSharp.Avalonia": "[3.10.0, )",
-          "MyAvaloniaManagement.PluginSdk": "[1.0.0, )"
+          "MyAvaloniaManagementCommon": "[1.0.0, )"
         }
       },
       "Avalonia": {

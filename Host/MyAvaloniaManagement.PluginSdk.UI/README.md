@@ -1,15 +1,10 @@
-# MyAvaloniaManagement Plugin SDK UI Profile
+# MyAvaloniaManagement Plugin SDK UI
 
-> V2 G1 期间本包仍是未发布的 dependency-only 阶段桥；G2 才会把它重建为真实 UI 契约程序集。
+本包是 Managed Plugin V2 的真实 UI 契约程序集，提供模块入口、插件私有 DI 注册、不可变
+Document/Tool 描述符、Avalonia View 绑定和全屏展示端口。
 
-该依赖 Profile 面向需要直接使用 Fluent、Semi、Ursa 或 Dock UI 类型和资源的 Managed Plugin。
-它会同时引入同版本的基础 `MyAvaloniaManagement.PluginSdk`，并把第三方 UI 依赖限制为宿主已经
-验证的精确版本。
+本包依赖同版本 Core SDK，并把 Avalonia、Fluent、Semi 和 Ursa 限制为 Host 验证的版本。
+Dock 与 Newtonsoft 不属于插件 UI 契约，插件不得通过本包取得或携带这些程序集。
 
-只使用标准 Avalonia 控件和宿主 `App*` 语义资源的插件不应引用本包。全局主题由宿主统一加载；
-插件可以打包自己的局部 `StyleInclude`，但不得向 `Application.Current.Styles` 注入全局主题。
-
-本包不包含 Host 程序集，也不产生需要随插件部署的运行时 DLL。宿主共享 UI 程序集必须由默认
-加载上下文提供，插件目录不得携带其副本。
-
-当前 V2 包不得发布到公共 NuGet 源。G2 契约重建、后续插件迁移和许可证评审完成前，不构成外部分发物。
+当前仓库处于 V2 G2：包可用于独立编译夹具，Host 与四个业务插件仍使用仓库内部 Legacy 编译桥；
+后续容器、Registry、Dock Adapter 和插件迁移完成前，不构成完整 V2 运行时或公开发布承诺。

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>$(MyAvaloniaPluginSdkVersion)</Version>
+    <PackageVersion>$(MyAvaloniaPluginSdkVersion)</PackageVersion>
+    <FileVersion>$(MyAvaloniaPluginSdkFileVersion)</FileVersion>
+    <InformationalVersion>$(MyAvaloniaPluginSdkVersion)</InformationalVersion>
+    <AssemblyVersion>$(MyAvaloniaPluginSdkAssemblyVersion)</AssemblyVersion>
+    <AssemblyName>MyAvaloniaManagement.PluginSdk</AssemblyName>
+    <RootNamespace>MyAvaloniaManagement.PluginSdk</RootNamespace>
+    <PackageId>MyAvaloniaManagement.PluginSdk</PackageId>
+    <Title>MyAvaloniaManagement Plugin SDK</Title>
+    <Description>Managed Plugin V2 的平台无关 Core 契约。</Description>
+    <Authors>MyAvaloniaManagement Contributors</Authors>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>
+    <PackageTags>plugin;sdk;managed-plugin</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1591;RS0016;RS0017;RS0024;RS0025;RS0036;RS0037;RS0041;RS0048</WarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Analyzer 只参与构建期 API 审阅，不得进入 SDK 包或消费者还原图。 -->
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers"
+                      PrivateAssets="all"
+                      IncludeAssets="runtime; build; native; contentfiles; analyzers" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="ApiCompatibility\$(MyAvaloniaPluginSdkApiBaseline)\PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="ApiCompatibility\$(MyAvaloniaPluginSdkApiBaseline)\PublicAPI.Unshipped.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

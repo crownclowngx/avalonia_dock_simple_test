@@ -552,13 +552,13 @@
           "Irihi.Ursa.Themes.Semi": "[2.1.0, )",
           "Microsoft.Extensions.DependencyInjection": "[10.0.10, )",
           "Microsoft.Extensions.Hosting": "[10.0.10, )",
-          "MyAvaloniaManagement.PluginSdk": "[1.0.0, )",
+          "MyAvaloniaManagementCommon": "[1.0.0, )",
           "Newtonsoft.Json": "[13.0.4, )",
           "Semi.Avalonia": "[12.1.0, )",
           "Xaml.Behaviors": "[12.0.5, )"
         }
       },
-      "MyAvaloniaManagement.PluginSdk": {
+      "MyAvaloniaManagementCommon": {
         "type": "Project",
         "dependencies": {
           "Avalonia": "[12.1.0, )",

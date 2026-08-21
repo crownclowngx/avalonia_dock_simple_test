@@ -1,58 +1,49 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!--
-      这是纯依赖 Profile，不生成需要进入插件目录的运行时程序集。
-      Profile 只回答“宿主正式支持哪一组 UI 包”，全局主题仍由 Host 组合根加载。
-    -->
-    <IsPackable>true</IsPackable>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <SuppressDependenciesWhenPacking>false</SuppressDependenciesWhenPacking>
-    <PackageId>MyAvaloniaManagement.PluginSdk.UI</PackageId>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
     <Version>$(MyAvaloniaPluginSdkVersion)</Version>
     <PackageVersion>$(MyAvaloniaPluginSdkVersion)</PackageVersion>
-    <Title>MyAvaloniaManagement Plugin SDK UI Profile</Title>
-    <Description>Managed Plugin V2 G1 的未发布 UI 依赖过渡 Profile；G2 将其重建为真实 UI 契约程序集。</Description>
+    <FileVersion>$(MyAvaloniaPluginSdkFileVersion)</FileVersion>
+    <InformationalVersion>$(MyAvaloniaPluginSdkVersion)</InformationalVersion>
+    <AssemblyVersion>$(MyAvaloniaPluginSdkAssemblyVersion)</AssemblyVersion>
+    <AssemblyName>MyAvaloniaManagement.PluginSdk.UI</AssemblyName>
+    <RootNamespace>MyAvaloniaManagement.PluginSdk.UI</RootNamespace>
+    <PackageId>MyAvaloniaManagement.PluginSdk.UI</PackageId>
+    <Title>MyAvaloniaManagement Plugin SDK UI</Title>
+    <Description>Managed Plugin V2 的 Avalonia 注册与视图贡献契约。</Description>
     <Authors>MyAvaloniaManagement Contributors</Authors>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>
-    <PackageTags>avalonia;plugin;sdk;ui;semi;ursa;dock</PackageTags>
+    <PackageTags>avalonia;plugin;sdk;ui;semi;ursa</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1591;RS0016;RS0017;RS0024;RS0025;RS0036;RS0037;RS0041;RS0048</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- ProjectReference 在 pack 时转为同版本基础 SDK 依赖；仓库开发无需本地 NuGet 源。 -->
-    <ProjectReference Include="..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
+    <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" />
+    <PackageReference Include="Avalonia" VersionOverride="[$(MyAvaloniaAvaloniaUiVersion)]" />
+    <PackageReference Include="Avalonia.Themes.Fluent" VersionOverride="[$(MyAvaloniaAvaloniaUiVersion)]" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"
+                      VersionOverride="[$(MyAvaloniaDependencyInjectionUiVersion)]" />
+    <PackageReference Include="Irihi.Ursa" VersionOverride="[$(MyAvaloniaUrsaUiVersion)]" />
+    <PackageReference Include="Irihi.Ursa.Themes.Semi" VersionOverride="[$(MyAvaloniaUrsaUiVersion)]" />
+    <PackageReference Include="Semi.Avalonia" VersionOverride="[$(MyAvaloniaSemiUiVersion)]" />
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers"
+                      PrivateAssets="all"
+                      IncludeAssets="runtime; build; native; contentfiles; analyzers" />
+  </ItemGroup>
 
-    <!--
-      闭区间有意禁止 NuGet 自动选择未经过宿主验证的更高版本。
-      版本事实全部来自 Directory.Version.props，不在 Profile 中复制数字。
-    -->
-    <PackageReference Include="Avalonia.Themes.Fluent"
-                      VersionOverride="[$(MyAvaloniaAvaloniaUiVersion)]" />
-    <PackageReference Include="Dock.Avalonia"
-                      VersionOverride="[$(MyAvaloniaDockUiVersion)]" />
-    <PackageReference Include="Dock.Avalonia.Themes.Fluent"
-                      VersionOverride="[$(MyAvaloniaDockUiVersion)]" />
-    <PackageReference Include="Dock.Controls.ProportionalStackPanel"
-                      VersionOverride="[$(MyAvaloniaDockUiVersion)]" />
-    <PackageReference Include="Dock.Controls.Recycling"
-                      VersionOverride="[$(MyAvaloniaDockUiVersion)]" />
-    <PackageReference Include="Dock.Controls.Recycling.Model"
-                      VersionOverride="[$(MyAvaloniaDockUiVersion)]" />
-    <PackageReference Include="Irihi.Ursa"
-                      VersionOverride="[$(MyAvaloniaUrsaUiVersion)]" />
-    <PackageReference Include="Irihi.Ursa.Themes.Semi"
-                      VersionOverride="[$(MyAvaloniaUrsaUiVersion)]" />
-    <PackageReference Include="Semi.Avalonia"
-                      VersionOverride="[$(MyAvaloniaSemiUiVersion)]" />
+  <ItemGroup>
+    <AdditionalFiles Include="ApiCompatibility\$(MyAvaloniaPluginSdkApiBaseline)\PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="ApiCompatibility\$(MyAvaloniaPluginSdkApiBaseline)\PublicAPI.Unshipped.txt" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
-    <!-- NuGet 元包约定：用 _._ 表示该 TFM 有依赖但有意不提供运行时程序集。 -->
-    <None Include="_._" Pack="true" PackagePath="lib\$(TargetFramework)\" />
   </ItemGroup>
 
 </Project>

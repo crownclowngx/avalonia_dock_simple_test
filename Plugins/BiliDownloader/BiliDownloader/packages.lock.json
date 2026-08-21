@@ -134,7 +134,7 @@
           "Microsoft.Win32.SystemEvents": "6.0.0"
         }
       },
-      "MyAvaloniaManagement.PluginSdk": {
+      "MyAvaloniaManagementCommon": {
         "type": "Project",
         "dependencies": {
           "Avalonia": "[12.1.0, )",

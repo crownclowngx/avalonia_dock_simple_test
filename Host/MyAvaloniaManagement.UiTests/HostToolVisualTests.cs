@@ -1,11 +1,18 @@
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Threading;
+using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Converter;
+using MyAvaloniaManagement.Models.Tools;
+using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagement.Views.Tools;
 using Xunit;
 
@@ -76,6 +83,66 @@ public sealed class HostToolVisualTests
     }
 
     [AvaloniaFact]
+    public void 工具管理复选框点击与Dock隐藏集合保持一致()
+    {
+        using var context = new UiTestContext();
+        var manager = Assert.IsType<ToolManagementViewModel>(
+            context.Factory.CreatedTools[HostExtensionIds.ToolManagement.Value]);
+        var closableItem = manager.ToolItems.Single(item =>
+            item.ToolId == HostExtensionIds.PluginStatus.Value);
+        var closableTool = context.Factory.CreatedTools[closableItem.ToolId];
+        var owningRoot = context.Factory.FindRoot(closableTool, _ => true)!;
+        var fixedItem = manager.ToolItems.Single(item =>
+            item.ToolId == HostExtensionIds.FileSystemTree.Value);
+        var view = new ToolManagementView
+        {
+            DataContext = manager
+        };
+        var window = new Window
+        {
+            Width = 320,
+            Height = 500,
+            Content = view
+        };
+
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var closableCheckBox = FindCheckBox(view, closableItem);
+            var fixedCheckBox = FindCheckBox(view, fixedItem);
+            Assert.True(closableCheckBox.IsChecked);
+            Assert.True(closableItem.IsVisible);
+            Assert.False(fixedCheckBox.IsEnabled);
+            Assert.True(fixedCheckBox.IsChecked);
+
+            Click(window, closableCheckBox);
+
+            Assert.False(closableCheckBox.IsChecked);
+            Assert.False(closableItem.IsVisible);
+            Assert.Contains(closableTool, owningRoot.HiddenDockables ?? []);
+            Assert.Null(DockTreeNavigator.FindToolDock(owningRoot, closableTool));
+
+            Click(window, closableCheckBox);
+
+            Assert.True(closableCheckBox.IsChecked);
+            Assert.True(closableItem.IsVisible);
+            Assert.DoesNotContain(closableTool, owningRoot.HiddenDockables ?? []);
+            Assert.NotNull(DockTreeNavigator.FindToolDock(owningRoot, closableTool));
+
+            Click(window, fixedCheckBox);
+
+            Assert.True(fixedCheckBox.IsChecked);
+            Assert.True(fixedItem.IsVisible);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void 浅色和深色主题均提供VsCodeDock与工具选中画刷()
     {
         var application = Assert.IsType<App>(Application.Current);
@@ -105,5 +172,22 @@ public sealed class HostToolVisualTests
             themeVariant,
             out var value));
         Assert.IsType<SolidColorBrush>(value);
+    }
+
+    private static CheckBox FindCheckBox(
+        ToolManagementView view,
+        ToolManagementItem item) =>
+        view.GetLogicalDescendants()
+            .OfType<CheckBox>()
+            .Single(checkBox => ReferenceEquals(checkBox.DataContext, item));
+
+    private static void Click(Window window, Control control)
+    {
+        var point = control.TranslatePoint(
+            new Point(control.Bounds.Width / 2, control.Bounds.Height / 2),
+            window) ?? throw new InvalidOperationException("无法定位工具管理复选框。");
+        window.MouseDown(point, MouseButton.Left, RawInputModifiers.None);
+        window.MouseUp(point, MouseButton.Left, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
     }
 }

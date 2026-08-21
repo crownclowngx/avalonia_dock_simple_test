@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj">
+    <ProjectReference Include="..\..\..\..\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj">
       <!-- 公共契约必须由宿主默认上下文提供，不能随夹具复制。 -->
       <Private>false</Private>
     </ProjectReference>

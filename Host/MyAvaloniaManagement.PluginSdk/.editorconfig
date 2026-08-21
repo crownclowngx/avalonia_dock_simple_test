@@ -1,0 +1,5 @@
+root = false
+
+[*.cs]
+# 缺少 PublicAPI 文件时必须失败，避免错误的目录名或基线选择让分析器静默失效。
+dotnet_public_api_analyzer.require_api_files = true

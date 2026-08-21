@@ -45,10 +45,12 @@ function Write-VersionFixture {
   <MyAvaloniaPluginSdkApiBaseline>v2</MyAvaloniaPluginSdkApiBaseline>
 </PropertyGroup></Project>
 "@
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagementCommon/ApiCompatibility/v1/PublicAPI.Shipped.txt') "#nullable enable`nFixture.Type`n"
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagementCommon/ApiCompatibility/v1/PublicAPI.Unshipped.txt') "#nullable enable`n"
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagementCommon/ApiCompatibility/v2/PublicAPI.Shipped.txt') "#nullable enable`n"
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagementCommon/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`nFixture.Type`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v1/PublicAPI.Shipped.txt') "#nullable enable`nFixture.V1Type`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v1/PublicAPI.Unshipped.txt') "#nullable enable`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Shipped.txt') "#nullable enable`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`nFixture.CoreType`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/PublicAPI.Shipped.txt') "#nullable enable`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`nFixture.UiType`n"
 }
 
 function Write-PluginFixture {

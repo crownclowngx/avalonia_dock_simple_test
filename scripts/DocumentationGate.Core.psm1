@@ -326,38 +326,49 @@ function Get-ManagementBaselineFacts {
     Assert-DocumentationCondition ($apiBaseline -ceq "v$($sdkVersion.Major)") (
         "活动 API 基线 $apiBaseline 与 SDK 主版本 $($sdkVersion.Major) 不一致。")
 
-    $baselineRoot = Join-Path $RepositoryRoot (
-        "Host\MyAvaloniaManagementCommon\ApiCompatibility\$apiBaseline")
-    $shippedPath = Join-Path $baselineRoot 'PublicAPI.Shipped.txt'
-    $unshippedPath = Join-Path $baselineRoot 'PublicAPI.Unshipped.txt'
-    foreach ($path in @($shippedPath, $unshippedPath)) {
-        Assert-DocumentationCondition (Test-Path -LiteralPath $path -PathType Leaf) (
-            "活动 API 基线文件不存在：$path")
-        $firstLine = @(Get-Content -LiteralPath $path)[0]
-        Assert-DocumentationCondition ($firstLine -ceq '#nullable enable') (
-            "API 基线文件缺少 nullable 头：$path")
+    # G2 后 Core 与 UI 都是真实契约程序集，各自维护同一活动主版本下的 API 文本。
+    # 两者尚未发布，因此 Shipped 必须为空；Unshipped 必须非空，防止漏掉整个程序集的审阅事实。
+    $sdkApiRoots = @(
+        Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk\ApiCompatibility\$apiBaseline"
+        Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk.UI\ApiCompatibility\$apiBaseline"
+    )
+    $allShippedEntries = [Collections.Generic.List[string]]::new()
+    $allUnshippedEntries = [Collections.Generic.List[string]]::new()
+    $apiCounts = [Collections.Generic.List[object]]::new()
+    foreach ($baselineRoot in $sdkApiRoots) {
+        $shippedPath = Join-Path $baselineRoot 'PublicAPI.Shipped.txt'
+        $unshippedPath = Join-Path $baselineRoot 'PublicAPI.Unshipped.txt'
+        foreach ($path in @($shippedPath, $unshippedPath)) {
+            Assert-DocumentationCondition (Test-Path -LiteralPath $path -PathType Leaf) (
+                "活动 API 基线文件不存在：$path")
+            Assert-DocumentationCondition (@(Get-Content -LiteralPath $path)[0] -ceq '#nullable enable') (
+                "API 基线文件缺少 nullable 头：$path")
+        }
+        $shippedEntries = @(Get-Content -LiteralPath $shippedPath | Select-Object -Skip 1 |
+                Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        $unshippedEntries = @(Get-Content -LiteralPath $unshippedPath | Select-Object -Skip 1 |
+                Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        Assert-DocumentationCondition ($shippedEntries.Count -eq 0) (
+            "G2 未发布 SDK 的 Shipped 必须为空：$baselineRoot")
+        Assert-DocumentationCondition ($unshippedEntries.Count -gt 0) (
+            "G2 SDK 的 Unshipped 不能为空：$baselineRoot")
+        $allShippedEntries.AddRange([string[]]$shippedEntries)
+        $allUnshippedEntries.AddRange([string[]]$unshippedEntries)
+        $apiCounts.Add([pscustomobject]@{
+                Project = Split-Path (Split-Path (Split-Path $baselineRoot -Parent) -Parent) -Leaf
+                Shipped = $shippedEntries.Count
+                Unshipped = $unshippedEntries.Count
+            })
     }
-    $shippedEntries = @(Get-Content -LiteralPath $shippedPath | Select-Object -Skip 1 |
-            Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-    $unshippedEntries = @(Get-Content -LiteralPath $unshippedPath | Select-Object -Skip 1 |
-            Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-    Assert-DocumentationCondition (($shippedEntries.Count + $unshippedEntries.Count) -gt 0) (
-        '活动 API 基线不能同时缺少 Shipped 与 Unshipped 成员。')
 
-    # G1 必须保留 V1 历史承诺，并把尚待 G2 重建的当前表面明确放在 V2 Unshipped。
-    # 这样既不伪造已经发布的 V2 API，也不会通过改写 V1 Shipped 掩盖破坏式迁移。
-    $v1Root = Join-Path $RepositoryRoot 'Host\MyAvaloniaManagementCommon\ApiCompatibility\v1'
+    # V1 的 243 条历史正式承诺只保存在 Core SDK 历史目录中，不复制到 UI 或 Legacy 桥。
+    $v1Root = Join-Path $RepositoryRoot 'Host\MyAvaloniaManagement.PluginSdk\ApiCompatibility\v1'
     $v1Shipped = @(Get-Content -LiteralPath (Join-Path $v1Root 'PublicAPI.Shipped.txt') |
             Select-Object -Skip 1 | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
     $v1Unshipped = @(Get-Content -LiteralPath (Join-Path $v1Root 'PublicAPI.Unshipped.txt') |
             Select-Object -Skip 1 | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
     Assert-DocumentationCondition ($v1Shipped.Count -gt 0 -and $v1Unshipped.Count -eq 0) (
         'V1 历史 API 基线必须保持 Shipped 非空且 Unshipped 为空。')
-    Assert-DocumentationCondition ($shippedEntries.Count -eq 0) (
-        'G1 尚未封板 V2 public API，活动 V2 Shipped 必须为空。')
-    Assert-DocumentationCondition (
-        [string]::Join("`n", $unshippedEntries) -ceq [string]::Join("`n", $v1Shipped)) (
-        'G1 的 V2 Unshipped 必须与未修改的 V1 Shipped 表面完全一致。')
 
     $expectedMaximum = $sdkNextMajorVersion
     $plugins = [Collections.Generic.List[object]]::new()
@@ -407,8 +418,9 @@ function Get-ManagementBaselineFacts {
         HostAssemblyVersion = $hostAssemblyVersion.ToString(4)
         SdkAssemblyVersion = $sdkAssemblyVersion.ToString(4)
         ApiBaseline = $apiBaseline
-        ShippedEntries = $shippedEntries.Count
-        UnshippedEntries = $unshippedEntries.Count
+        ShippedEntries = $allShippedEntries.Count
+        UnshippedEntries = $allUnshippedEntries.Count
+        ApiProjects = $apiCounts.ToArray()
         Plugins = $plugins.ToArray()
     }
 }

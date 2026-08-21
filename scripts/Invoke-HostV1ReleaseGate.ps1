@@ -117,7 +117,7 @@ function New-PassSummary {
     [xml]$versions = Get-Content -Raw (Join-Path $CloneRoot 'Directory.Version.props')
     $baseline = [string]$versions.Project.PropertyGroup.MyAvaloniaPluginSdkApiBaseline
     $sdkPackageVersion = [string]$versions.Project.PropertyGroup.MyAvaloniaPluginSdkVersion
-    $baselineRoot = Join-Path $CloneRoot "Host\MyAvaloniaManagementCommon\ApiCompatibility\$baseline"
+    $baselineRoot = Join-Path $CloneRoot "Host\MyAvaloniaManagement.PluginSdk\ApiCompatibility\$baseline"
 
     # 从各叶子脚本的机器结果重新组装稳定事实。generatedAt、耗时和绝对路径仍保留在
     # 顶层供排障，但不会进入两轮语义比较。

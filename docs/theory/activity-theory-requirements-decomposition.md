@@ -309,7 +309,7 @@ A1 是四轴中对内部结构约束最强的一轴，给出操作定义：
 
 ### 6.3 分类轴与现有代码的咬合
 
-当前 [`DocumentMetadata`](../../Host/MyAvaloniaManagementCommon/DocumentCreation/DocumentMetadata.cs) 只含 `DocumentTypeId`、`DisplayName`、`MenuCategory` 等展示性字段，尚无分类轴字段。若本方法论经回溯验证后被采纳，可将 A1–A4 以枚举或位标志形式加入元数据，供菜单分组、默认布局与恢复策略消费。**是否落码是后续决定，不属于本文承诺。**
+当前 Legacy 运行链的 [`DocumentMetadata`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/DocumentCreation/DocumentMetadata.cs) 只含 `DocumentTypeId`、`DisplayName`、`MenuCategory` 等展示性字段，尚无分类轴字段。若本方法论经回溯验证后被采纳，可将 A1–A4 以枚举或位标志形式加入元数据，供菜单分组、默认布局与恢复策略消费。**是否落码是后续决定，不属于本文承诺。**
 
 ## 7. 判定问题 C（二）：Tool 的子分类轴
 

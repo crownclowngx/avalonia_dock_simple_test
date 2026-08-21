@@ -29,7 +29,7 @@
     <ProjectReference Include="..\BiliDownloader.ReleaseAcceptance\BiliDownloader.ReleaseAcceptance.csproj">
       <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Host\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj" />
+    <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj" />
   </ItemGroup>
 
 </Project>

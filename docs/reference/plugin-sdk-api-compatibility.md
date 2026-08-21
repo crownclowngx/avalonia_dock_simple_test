@@ -1,148 +1,98 @@
 # Plugin SDK API 兼容基线维护指南
 
-> `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G1 已把活动版本切到
-> `2.0.0`/`ApiCompatibility/v2`，但 G2 尚未重建最终 SDK；因此当前 V2 表面全部属于 Unshipped，
-> 不表示 V2 NuGet 或 public API 已发布、冻结或可供外部消费。
+> `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G2 已建立可编译消费的
+> Core/UI 两个真实程序集；它们的 v2 Shipped 均为空，全部 G2 表面登记在 Unshipped，尚未形成发布承诺。
 
-## 1. 目的与权威源
+## 1. 权威源与程序集边界
 
-本文是维护 `MyAvaloniaManagement.PluginSdk` public API 的长期知识入口，供开发者、评审者和 AI
-共同使用。签名事实的权威源位于：
+当前签名事实由三组只读文本表达：
 
 ```text
-Host/MyAvaloniaManagementCommon/ApiCompatibility/<vN>/
-├── PublicAPI.Shipped.txt
-└── PublicAPI.Unshipped.txt
+Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v1/    # v1 历史事实
+Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/    # V2 Core
+Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/ # V2 UI
 ```
 
-基础 NuGet 包名仍是 `MyAvaloniaManagement.PluginSdk`。G2 完成前，包内契约程序集仍名为
-`MyAvaloniaManagementCommon`，UI 包仍是 dependency-only Profile；这些是未发布阶段桥，不是最终
-Core/UI 形状。只有当前契约程序集进入 API 基线，Host 可执行程序集始终是实现细节。
+每个目录均包含 `PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt`。Core 包、程序集和根命名空间统一为
+`MyAvaloniaManagement.PluginSdk`；UI 包、程序集和根命名空间统一为
+`MyAvaloniaManagement.PluginSdk.UI`。Host 可执行程序集与不可打包的
+`MyAvaloniaManagement.LegacyPluginContracts` 内部编译桥都不是活动 SDK API 的事实源。
 
-活动目录由根级 `Directory.Version.props` 的 `MyAvaloniaPluginSdkApiBaseline` 选择。该值必须与
-`MyAvaloniaPluginSdkVersion`、`MyAvaloniaPluginSdkAssemblyVersion` 的主版本一致。
+活动主版本由根级 `Directory.Version.props` 的 `MyAvaloniaPluginSdkApiBaseline` 选择。该值必须与
+`MyAvaloniaPluginSdkVersion`、`MyAvaloniaPluginSdkAssemblyVersion` 的主版本一致。Core 与 UI 必须使用
+同一个包版本和程序集版本。
 
-## 2. 两类 API 文件
+## 2. Shipped 与 Unshipped
 
-### 2.1 Shipped
+`PublicAPI.Shipped.txt` 保存已经发布或正式冻结的完整签名。删除、改名、改可见性、改参数或改返回类型
+都属于破坏既有承诺，不能通过重写基线掩盖。历史 v1 Shipped 保持原样，只用于复核历史事实。
 
-`PublicAPI.Shipped.txt` 保存已经发布或已经冻结为当前 vN 承诺的完整签名。G13 建立的 v1 文件是
-G11 完成破坏式收口后的第一份正式基线。条目包括类型、构造函数、方法、参数名与类型、返回类型、
-属性访问器、事件、字段、泛型约束和 nullable 标注。
+`PublicAPI.Unshipped.txt` 保存当前主版本已经评审、但尚未发布的 public 表面。新增成员时先由
+PublicApiAnalyzers 报出 `RS0016`，确认所有权、依赖方向、异常与线程语义后，再按 Ordinal 顺序登记。
+未登记删除会产生 `RS0017`，重复项与非法文本也会被门禁拒绝。
 
-Shipped 不是“重新生成后覆盖”的快照。删除或改写其中的条目表示撤回已经建立的承诺，必须按主版本
-升级流程处理。
-
-### 2.2 Unshipped
-
-`PublicAPI.Unshipped.txt` 保存同一主版本内已经完成 API 评审、但尚未归档到下一次正式发布的兼容新增。
-代码新增 public 成员后，构建首先产生 `RS0016`。开发者确认该成员确实应成为 SDK 契约后，才把诊断
-显示的完整签名加入 Unshipped。
-
-正式发布一个 SDK 次版本时，应把该版本实际发布的 Unshipped 条目按 Ordinal 顺序移入 Shipped，
-并让 Unshipped 恢复为只包含 `#nullable enable`。无论条目暂存在 Shipped 还是 Unshipped，后续删除
-都会触发兼容错误。
-
-### 2.3 G1 的 V2 过渡规则
-
-G1 的 `v2/PublicAPI.Shipped.txt` 只有 nullable 头；`Unshipped` 与未修改的 v1 Shipped 表面一致。
-这是为了在版本线先切到 2 的同时保持普通构建可验证，并明确允许 G2 在发布前重建整个契约。
-不得把这些条目移入 V2 Shipped、发布 V2 包或据此承诺兼容；G2 必须在同一变更中完成新 API、依赖
-边界、消费者夹具和最终 V2 文本基线。
+G2 的 V2 状态是：Core Shipped 为空、Unshipped 84 条；UI Shipped 为空、Unshipped 42 条。两份
+Unshipped 分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史表面要求相等。正式发布 V2 时，
+再在发布变更中把实际承诺的条目移入 Shipped；G2 本身不执行发布。
 
 ## 3. 日常变更流程
 
-### 3.1 内部实现变更
+仅修改 internal/private 实现时，不应修改 API 文本。新增 public API 时：
 
-只修改 internal/private 实现时，不应修改 API 文本。运行：
+1. 先以最小契约表达真实插件用例，并补齐详细中文 XML 文档与设计原因；
+2. 确认 `RS0016` 只包含预期新增，且没有 `RS0017`；
+3. 核对 Core 不泄漏 Avalonia、DI、Dock、Newtonsoft 或 Host 类型，UI 不泄漏 Dock、Newtonsoft 或 Host 类型；
+4. 把签名加入对应项目的 v2 Unshipped，保持 Ordinal 排序且无重复；
+5. 运行 API 变异、真实 nupkg 消费、SDK 单元测试及受影响的 Host/插件测试；
+6. 同步契约说明、示例和专项记录。
 
-```powershell
-.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v2
-```
+常见诊断如下：
 
-脚本应直接通过。若出现 public 差异，先判断是否误扩大了可见性或修改了签名，不要先编辑基线。
-
-### 3.2 兼容新增
-
-1. 先用最小 public 类型或成员表达真实插件用例，并补齐中文 XML 文档。
-2. 构建确认 `RS0016` 只列出预期新增，没有旧成员的 `RS0017`。
-3. 审查所有权、命名、错误语义、依赖方向和外部类型泄漏。
-4. 将完整签名登记到活动目录的 `PublicAPI.Unshipped.txt`，保持 Ordinal 排序。
-5. 运行 G13 脚本、SDK 包消费门禁、宿主测试和真实插件构建。
-6. 同步兼容契约、迁移说明或示例；没有使用方式的新增不应仅靠登记签名进入 SDK。
-
-显式登记不是破坏性变化的豁免。一次变更同时出现 `RS0016` 和 `RS0017` 时，通常表示重命名、改参数
-或改返回类型，应先按破坏性变化处理。
-
-### 3.3 典型破坏性诊断
-
-| 变化 | 常见诊断表现 | 处理 |
+| 变化 | 常见诊断 | 处理 |
 | --- | --- | --- |
-| 删除类型或成员 | `RS0017` 指向原完整签名 | 拒绝，保留原契约或进入新主版本流程 |
-| public 改为 internal/private | 原类型或成员产生 `RS0017` | 拒绝 |
-| 修改参数名、类型、顺序或数量 | 旧签名 `RS0017`，新签名 `RS0016` | 拒绝 |
-| 修改返回类型 | 旧返回签名 `RS0017`，新返回签名 `RS0016` | 拒绝 |
-| 改变 nullable 契约 | nullable 相关 RS 诊断或签名增删 | 先评估调用方；不能仅重写文本 |
-| 重复登记 | `RS0025` | 删除重复项并保持单一事实 |
-| 基线文件内容无效 | `RS0024` | 修正签名文本，不得忽略诊断 |
-| Shipped 或 Unshipped 缺失 | `RS0048` | 恢复活动主版本的两份基线文件 |
-
-`PublicApiContractTests` 只保留事件总线等行为语义断言，不再生成第二套反射指纹。Host 零导出面继续由
-`HostApiBoundaryTests` 保护。
+| 删除类型或成员 | `RS0017` | 保留契约，或进入新主版本流程 |
+| public 改为 internal/private | `RS0017` | 拒绝无迁移的可见性收窄 |
+| 修改参数名、类型、顺序、数量或返回类型 | 旧签名 `RS0017`，新签名 `RS0016` | 按破坏性变化处理 |
+| 新增 public 成员 | `RS0016` | 完成评审后登记到对应 Unshipped |
+| 重复或非法基线 | `RS0025` / `RS0024` | 修正文本文本，不关闭分析器 |
+| 缺少 API 文件 | `RS0048` | 恢复对应程序集的活动基线 |
 
 ## 4. 禁止的绕过方式
 
-- 不得删除 Shipped 条目后声称“基线已更新”。
-- 不得在同一主版本的 Unshipped 中使用 `*REMOVED*` 接受删除；专项脚本和政策测试会阻断。
-- 不得把 RS 诊断加入 `NoWarn`、降低为提示或移除 `require_api_files`。
-- 不得把 Host 实现或 UI Profile 加入基础 SDK 基线来掩盖依赖方向问题。
-- 不得只提高哈希、文件名或版本数字而不提供迁移和真实插件消费证据。
+- 不得删除 Shipped 或 Unshipped 条目后声称“基线已更新”。
+- 不得使用 `*REMOVED*`、`NoWarn`、降低诊断级别或移除 `require_api_files` 接受破坏。
+- 不得把 UI/Host/Legacy 类型塞入 Core，也不得把 Dock 或 Newtonsoft 塞入 UI。
+- 不得把 Core 与 UI 合成一份基线，或让 Legacy Common 继续承担活动 SDK 基线职责。
+- 不得只提高版本或替换文本，而没有包消费者、反向编译与真实仓库回归证据。
 
-这些限制使 API 变更必须显式进入评审，而不是让工具替设计者决定兼容性。
+## 5. 非发布门禁
 
-## 5. 后续新主版本流程
-
-确需破坏性变化时，按一个完整变更单元执行：
-
-1. 说明真实用例、替代设计、受影响插件和不能保持兼容的原因。
-2. 在新的 `ApiCompatibility/vN` 建立 Shipped/Unshipped，不修改任何历史主版本目录。
-3. 同步提升 SDK PackageVersion、FileVersion、AssemblyVersion，并把活动基线切到新目录。
-4. 更新 Managed Plugin 的 SDK 兼容区间，不得继续声明未验证的旧区间。
-5. 更新迁移说明、最小 SDK 包消费者和所有仓库插件源码。
-6. 执行锁定还原、Release 零警告构建、G13、SDK 包消费、宿主三层测试、Windows Smoke 和四插件包矩阵。
-7. 由所有者审阅并记录回退边界；旧基线继续留在仓库供历史插件和差异复核。
-
-只创建新基线目录但不完成版本、清单兼容区间和消费者迁移，不构成合法主版本升级。
-
-## 6. 标准门禁与排错
+在仓库根目录执行：
 
 ```powershell
 dotnet restore MyAvaloniaManagement.sln --locked-mode -p:SkipPluginDeploy=true --nologo
 dotnet build MyAvaloniaManagement.sln -c Release -p:SkipPluginDeploy=true --no-restore --nologo -warnaserror
-.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v2
+dotnet test Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.PluginSdk.Tests.csproj -c Release --no-build --no-restore
+.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v2 -Configuration Release
 .\scripts\Test-PluginSdkPackage.ps1 -Configuration Release
-.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
+.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -NoRestore
 ```
 
-以上是当前非发布检查，不包含 Windows Smoke、发布总门禁或上传。实际发布时再按对应发布计划增加
-平台和制品验收，不能用 G1 结果冒充发布放行。
+`Test-PluginSdkCompatibility.ps1` 分别验证 Core/UI 的版本、排序、重复项与成员级变异；
+`Test-PluginSdkPackage.ps1` 从真实 nupkg 验证 DLL/XML/nuspec/精确依赖图、两个正向消费者和旧 API/禁用依赖
+反例。以上均为非发布检查，不运行 Windows Smoke、Windows CI、发布总门禁、上传或标签。只有实际发布时，
+才按发布计划追加 Windows 与发布制品验收。
 
-排错顺序：
+## 6. 新主版本与评审清单
 
-1. 先阅读首个 RS 诊断中的完整成员，不要先改文本。
-2. 若只有 `RS0016`，确认是有意新增还是意外 public。
-3. 若有 `RS0017`，查找同名 `RS0016`；同时存在通常表示签名被修改。
-4. 若提示缺少 API 文件，检查活动基线、目录名和 `.editorconfig`，不要关闭分析器。
-5. 若真实 SDK 通过但测试副本负例未失败，检查脚本唯一替换哨兵和预期成员，不要放宽诊断断言。
+确需破坏性变化时，应在一个完整变更单元中说明用例和迁移，建立新的 Core/UI `ApiCompatibility/vN`，
+同步包、文件和程序集版本、消费者及兼容区间，并保留旧目录作为历史事实。只新建目录或改版本号不构成
+合法升级。
 
-专项脚本只删除自身创建的系统 Temp GUID 子目录，不读写用户数据根，不修改仓库源文件，也不发布 NuGet。
-
-## 7. 评审清单
-
-- [ ] 变化只涉及正式基础 SDK，或已明确说明为什么不影响 public API。
-- [ ] 新增签名在 Unshipped 中显式可见，且存在真实消费者或明确使用方式。
-- [ ] Shipped、Unshipped 稳定排序、无重复、无 `*REMOVED*`。
-- [ ] Analyzer 保持私有构建依赖，没有进入 nuspec 或插件还原图。
-- [ ] Host 实现仍无自有 public 导出；G2 前 UI Profile 仍明确标记为未发布阶段桥。
-- [ ] 破坏性变化已提升主版本并同步清单区间、迁移、样例和真实插件。
-- [ ] G13、包消费、宿主与插件门禁均有本次执行证据。
+- [ ] Core/UI 变化分别登记在正确的 Unshipped，排序稳定、无重复、无 `*REMOVED*`。
+- [ ] 所有 public 类型和成员具有详细中文 XML 文档，异常、线程和所有权边界明确。
+- [ ] Core/UI 依赖白名单与临时 NuGet 正反消费者通过。
+- [ ] Legacy 项目保持不可打包、无活动 API 基线且没有新增生产消费者。
+- [ ] Analyzer 只作为私有构建依赖，没有进入 nuspec 或消费还原图。
+- [ ] API 变异、SDK 单元测试、Host/插件回归与文档门禁有本次执行证据。
+- [ ] 仅在真实发布变更中执行 Windows CI、Smoke、发布总门禁、上传和标签。

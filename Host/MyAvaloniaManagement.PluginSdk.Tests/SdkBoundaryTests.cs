@@ -1,0 +1,115 @@
+using System.Reflection;
+using System.Xml.Linq;
+using Avalonia.Controls;
+using MyAvaloniaManagement.PluginSdk.UI;
+
+namespace MyAvaloniaManagement.PluginSdk.Tests;
+
+/// <summary>以反射和项目引用白名单保护 G2 的 Core/UI/Legacy 三条边界。</summary>
+public sealed class SdkBoundaryTests
+{
+    private static readonly string[] LegacyReferenceAllowlist =
+    [
+        "Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj",
+        "Host/MyAvaloniaManagement.PluginTests/TestAssets/ManagedOnly/LegacyNoModule/LegacyNoModule.csproj",
+        "Host/MyAvaloniaManagement.PluginTests/TestAssets/PluginIsolation/PluginV1/PluginV1.csproj",
+        "Host/MyAvaloniaManagement.PluginTests/TestAssets/PluginIsolation/PluginV2/PluginV2.csproj",
+        "Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj",
+        "Host/MyAvaloniaManagement.UiTests/MyAvaloniaManagement.UiTests.csproj",
+        "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
+        "Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csproj",
+        "Plugins/BiliDownloader/BiliDownloader/BiliDownloader.csproj",
+        "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj",
+        "Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj",
+        "Plugins/MySmallTools/MySmallTools/MySmallTools.csproj",
+    ];
+
+    [Fact]
+    public void Core程序集只引用框架程序集且不存在旧公共面()
+    {
+        var assembly = typeof(PluginId).Assembly;
+        Assert.Equal("MyAvaloniaManagement.PluginSdk", assembly.GetName().Name);
+        Assert.All(assembly.GetReferencedAssemblies(), reference =>
+            Assert.StartsWith("System.", reference.Name, StringComparison.Ordinal));
+
+        var exportedNames = assembly.ExportedTypes.Select(type => type.Name).ToHashSet(StringComparer.Ordinal);
+        Assert.DoesNotContain("IDocumentCreationStrategy", exportedNames);
+        Assert.DoesNotContain("IToolCreationStrategy", exportedNames);
+        Assert.DoesNotContain("PluginLifecycleManager", exportedNames);
+        Assert.DoesNotContain("DocumentContentSnapshot", exportedNames);
+        Assert.DoesNotContain(exportedNames, name => name.EndsWith("JsonConverter", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Ui程序集不引用Dock和Newtonsoft且注册接口没有独立AddView()
+    {
+        var assembly = typeof(IPluginModule).Assembly;
+        Assert.Equal("MyAvaloniaManagement.PluginSdk.UI", assembly.GetName().Name);
+        Assert.DoesNotContain(assembly.GetReferencedAssemblies(), reference =>
+            reference.Name?.StartsWith("Dock.", StringComparison.Ordinal) == true ||
+            reference.Name == "Newtonsoft.Json");
+
+        Assert.Equal(
+            ["AddDocument", "AddPersistableDocument", "AddTool", "UseLifecycle"],
+            typeof(IPluginRegistration).GetMethods()
+                .Where(method => !method.IsSpecialName)
+                .Select(method => method.Name)
+                .OrderBy(name => name)
+                .ToArray());
+    }
+
+    [Fact]
+    public void 注册泛型约束固定模型生命周期和AvaloniaView边界()
+    {
+        var methods = typeof(IPluginRegistration).GetMethods().ToDictionary(method => method.Name);
+        Assert.Contains(typeof(IPluginDocument), methods["AddDocument"].GetGenericArguments()[0].GetGenericParameterConstraints());
+        Assert.Contains(typeof(IPersistablePluginDocument), methods["AddPersistableDocument"].GetGenericArguments()[0].GetGenericParameterConstraints());
+        Assert.Contains(typeof(Control), methods["AddTool"].GetGenericArguments()[1].GetGenericParameterConstraints());
+        Assert.Contains(typeof(IPluginLifecycle), methods["UseLifecycle"].GetGenericArguments()[0].GetGenericParameterConstraints());
+    }
+
+    [Fact]
+    public void 生命周期接口只有启动和停止且不再暴露顺序()
+    {
+        Assert.Equal(
+            ["InitializeAsync", "ShutdownAsync"],
+            typeof(IPluginLifecycle).GetMethods().Select(method => method.Name).OrderBy(name => name).ToArray());
+        Assert.Empty(typeof(IPluginLifecycle).GetProperties());
+    }
+
+    [Fact]
+    public void Legacy桥不可打包且引用者没有扩散()
+    {
+        var root = FindRepositoryRoot();
+        var legacyProject = XDocument.Load(Path.Combine(
+            root, "Host", "MyAvaloniaManagement.LegacyPluginContracts",
+            "MyAvaloniaManagement.LegacyPluginContracts.csproj"));
+        Assert.Equal("false", legacyProject.Descendants("IsPackable").Single().Value);
+        Assert.Empty(legacyProject.Descendants("PackageId"));
+        Assert.Empty(legacyProject.Descendants("AdditionalFiles"));
+
+        var actual = Directory.EnumerateFiles(root, "*.csproj", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) &&
+                           !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            .Where(path => File.ReadAllText(path).Contains("MyAvaloniaManagement.LegacyPluginContracts", StringComparison.Ordinal))
+            .Select(path => Path.GetRelativePath(root, path).Replace('\\', '/'))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(LegacyReferenceAllowlist, actual);
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory);
+             directory is not null;
+             directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "MyAvaloniaManagement.sln")))
+            {
+                return directory.FullName;
+            }
+        }
+        throw new DirectoryNotFoundException("无法从测试输出目录定位仓库根目录。");
+    }
+}

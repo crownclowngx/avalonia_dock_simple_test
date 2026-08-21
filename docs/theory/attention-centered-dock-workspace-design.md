@@ -251,7 +251,7 @@ flowchart TB
 
 ## 7. Document：把复杂工作变成独立、可恢复的上下文
 
-在本项目中，`Document` 不是传统意义上的文本文件，而更接近 IDE 中的编辑器标签或一个独立工作会话。公共扩展入口由 [`IDocumentCreationStrategy`](../../Host/MyAvaloniaManagementCommon/DocumentCreation/IDocumentCreationStrategy.cs) 和 [`DocumentMetadata`](../../Host/MyAvaloniaManagementCommon/DocumentCreation/DocumentMetadata.cs) 提供。宿主按文档类型发现策略，每次创建一个新的工作实例。
+在本项目当前 Legacy 运行链中，`Document` 不是传统意义上的文本文件，而更接近 IDE 中的编辑器标签或一个独立工作会话。扩展入口由 [`IDocumentCreationStrategy`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/DocumentCreation/IDocumentCreationStrategy.cs) 和 [`DocumentMetadata`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/DocumentCreation/DocumentMetadata.cs) 提供。宿主按文档类型发现策略，每次创建一个新的工作实例。
 
 当前项目已经包含多种不同目标的 `Document`：
 
@@ -289,7 +289,7 @@ flowchart TB
 
 `Tool` 对应文件树、插件目录、工具管理、任务中心或调度面板。它通常不是当前工作的主体，却能让用户知道工作台中有哪些能力、后台正在发生什么，以及何时需要干预。
 
-宿主默认将文件树放在左侧，将插件入口和工具管理类面板放在右侧。`ManagementFactory` 启用了 `HideToolsOnClose`，并缓存已创建的 Tool；关闭 Tool 时进入隐藏集合，恢复时仍是同一实例。相关实现可参见 [`ManagementFactory`](../../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs) 和 [`ToolMetadata`](../../Host/MyAvaloniaManagementCommon/ToolCreation/ToolMetadata.cs)。
+宿主默认将文件树放在左侧，将插件入口和工具管理类面板放在右侧。`ManagementFactory` 启用了 `HideToolsOnClose`，并缓存已创建的 Tool；关闭 Tool 时进入隐藏集合，恢复时仍是同一实例。相关实现可参见 [`ManagementFactory`](../../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs) 和 [`ToolMetadata`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/ToolCreation/ToolMetadata.cs)。
 
 Bilibili 插件体现了这种职责分离：
 

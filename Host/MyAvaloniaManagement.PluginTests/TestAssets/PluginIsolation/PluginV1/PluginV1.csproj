@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DependencyV1\DependencyV1.csproj" />
-    <ProjectReference Include="..\..\..\..\MyAvaloniaManagementCommon\MyAvaloniaManagementCommon.csproj">
+    <ProjectReference Include="..\..\..\..\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj">
       <!-- 公共契约必须由宿主提供；测试夹具不把它复制到插件目录。 -->
       <Private>false</Private>
     </ProjectReference>

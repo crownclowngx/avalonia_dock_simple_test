@@ -2,8 +2,8 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G1 的版本与
-> 数据根切换。最新测试数量和覆盖率必须从本轮
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G2 的 Core/UI SDK
+> 重建与 Legacy 隔离。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -32,6 +32,15 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 共 **362/362**；行覆盖率 81.12%、分支覆盖率 66.85%。BiliDownloader、DaTang、MySmallTools
 共 **967/967**。本轮没有运行 Windows Smoke、Windows CI、发布门禁或发布验收；完整边界见
 [V2 G1 专项记录](../plan-history/host-v2/g1-version-and-data-boundaries.md)。
+
+### V2 G2 当前绿色基线
+
+G2 串行执行锁定还原、Release `-warnaserror` 全解决方案构建、32 项 SDK 专用单元测试、Core/UI
+API 变异与真实 nupkg 消费门禁、三套 Host 测试、三个业务插件完整单元测试和文档门禁。Host 为
+Unit 173、UI 38、Plugin 152，共 **363/363**；行覆盖率 81.12%、分支覆盖率 66.85%。BiliDownloader、
+DaTang、MySmallTools 为 720、64、183，共 **967/967**。这些数字只记录本轮实际结果，不是永久阈值。
+完整命令证据见 [V2 G2 专项记录](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)。本轮明确不运行 Windows
+Smoke、Windows CI、发布总门禁、发布验收、联网/真实媒体、上传、标签或发布操作。
 
 ## G14 正式发布门禁
 
@@ -100,28 +109,26 @@ Common 的生产 C#：默认路径不能读取/格式化异常正文、写自由
 .\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v2 -Configuration Release
 ```
 
-脚本先验证活动基线与 SDK 主版本一致、Shipped/Unshipped 文本稳定排序且没有删除标记，再构建真实
-SDK。随后它在系统 Temp 的完整 SDK 测试副本中依次删除类型、删除成员、收窄可见性、修改参数和
-返回类型，要求 `RS0017` 打印具体成员；未登记的兼容新增必须产生 `RS0016`，登记到测试副本的
-Unshipped 后才允许通过。脚本不会修改仓库源文件。长期维护规则见
+脚本分别验证 Core/UI 活动基线与 SDK 主版本一致、Shipped/Unshipped 文本稳定排序且没有删除标记，
+再构建两个真实程序集。随后它在系统 Temp 的完整 SDK 测试副本中执行删除 public 类型/成员、修改参数
+名/类型/数量/返回类型和收窄 UI 可见性等负例，并验证兼容新增必须先登记到对应 Unshipped。脚本不会
+修改仓库源文件。长期维护规则见
 [Plugin SDK API 兼容基线维护指南](./plugin-sdk-api-compatibility.md)。
 
 ## Plugin SDK 包门禁
 
-G3 新增、G5 扩展的独立包消费门禁：
+G2 重建的独立包消费门禁：
 
 ```powershell
 .\scripts\Test-PluginSdkPackage.ps1 -Configuration Release
 ```
 
 脚本在系统临时目录打包并消费 `MyAvaloniaManagement.PluginSdk` 与
-`MyAvaloniaManagement.PluginSdk.UI`，检查包内容、nuspec、基础依赖白名单和 UI 精确版本。
-随后编译最终 `Configure(IPluginRegistrationContext)` Managed Plugin，并实际构造
-`DocumentContentSnapshot(contentSchemaVersion, payload)`；确认旧候选 `PluginId + ConfigureServices`、
-`DocumentSaveData`、旧保存方法、`FilePath`、`SaveDocumentTypeId`、旧消息器 API，以及 G11 删除的
-创建占位成员、保存路径策略和通用 Behavior 夹具必须编译失败，
-再编译实际使用 Ursa、Dock UI、宿主
-语义资源的 XAML 插件。还原使用临时隔离 NuGet 缓存，不能误命中开发机中的同版本旧包。
+`MyAvaloniaManagement.PluginSdk.UI`，检查真实 DLL/XML、程序集名、nuspec、Core 零依赖和 UI 精确依赖图。
+Core 正例覆盖事件、生命周期和普通/可保存 Document；UI 正例覆盖最小模块、私有 DI、Document、
+Persistable Document、Tool 和 View。Core 引用 Avalonia/DI/Dock/Newtonsoft，UI 引用 Dock/Newtonsoft，
+以及旧 Common 命名空间、Strategy、独立 AddView、生命周期 Manager、字符串快照和 Converter 的夹具
+必须编译失败。还原使用临时隔离 NuGet 缓存，不能误命中开发机中的同版本旧包。
 临时目录在结束时删除，不读取用户数据根，也不发布到公共 NuGet。
 
 ## 覆盖率门槛
@@ -313,11 +320,10 @@ Dock ID 会被持久化，集中常量可以避免一个字符的差异导致工
 
 ### 契约与内部重构保护
 
-V1 Shipped 保存历史正式签名；G1 的 V2 Shipped 为空、Unshipped 暂存尚待 G2 重建的当前表面。
-Roslyn Analyzer
-在普通 SDK build 中比较源符号，专项脚本再用测试副本证明各类破坏均会阻断。内部类拆分不会改变
-文本；兼容新增必须显式登记，有意破坏则必须建立新主版本基线并同步插件兼容区间和迁移证据。
-`PublicApiContractTests` 只保留签名文本无法表达的第三方消息器泄漏等行为断言。
+V1 Shipped 保存历史正式签名；G2 的 Core/UI V2 Shipped 均为空，最终表面分别登记在 Unshipped。
+Roslyn Analyzer 在普通 SDK build 中比较源符号，专项脚本再用测试副本证明各类破坏均会阻断。内部类
+拆分不会改变文本；兼容新增必须登记到正确程序集，有意破坏则必须建立新主版本基线并同步插件兼容区间
+和迁移证据。
 
 `InternalRefactorTests` 保护策略元数据只读取一次、重复 ID 与元数据碰撞抛出 `HostCompositionException`、插件根目录
 并发加载共享同一不可变快照，以及原子替换后不遗留临时文件。

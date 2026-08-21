@@ -1,15 +1,16 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G1 已完成，G2–G14 尚未实现。
+> 状态：实施中；G0–G2 已完成，G3–G14 尚未实现。
 >
 > 评审日期：2026-08-21。
 >
 > 事实基线：`dev-重构-2026年8月18日` 分支提交 `abb8c26`、Managed Plugin v1 文档与
 > [V2 G0 非发布绿色基线](../plan-history/host-v2/g0-green-baseline.md)与
-> [V2 G1 版本与数据边界](../plan-history/host-v2/g1-version-and-data-boundaries.md)。
+> [V2 G1 版本与数据边界](../plan-history/host-v2/g1-version-and-data-boundaries.md)，以及
+> [V2 G2 Plugin SDK 重建](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)。
 >
-> 重要说明：G1 只完成版本、API 未发布基线和默认数据根代际；本文中的最终 V2 类型、包、
-> manifest、Document、layout 格式和 G2–G14 仍是目标设计，不得引用为当前能力。
+> 重要说明：G2 已完成最终 Core/UI SDK；manifest、独立插件容器、Host Registry、Dock Adapter、
+> Document、layout 格式和 G3–G14 仍是目标设计，不得引用为当前能力。
 
 ## 1. 目的与结论
 
@@ -129,9 +130,10 @@ flowchart TB
 | `MyAvaloniaManagement.PluginSdk.UI` | 模块入口、私有服务注册、Document/Tool Descriptor、View 约束、全屏 UI Port | Core SDK、Avalonia、DI.Abstractions，以及宿主明确支持的 UI Profile | Dock、Host 实现、Newtonsoft |
 | `MyAvaloniaManagement` | 所有 Dock Adapter、Loader、Registry、Provider、持久化、布局和诊断 | Core/UI SDK、Dock 和宿主实现依赖 | 被插件项目直接引用 |
 
-现有 `Host/MyAvaloniaManagementCommon` 最终重命名为 SDK 项目，程序集和根命名空间统一为
-`MyAvaloniaManagement.PluginSdk`。`PluginSdk.UI` 从“无程序集依赖元包”变成真实契约程序集；
-Dock 相关包从 UI Profile 中移除，只有 Host 直接引用 Dock。
+G2 已新建 `Host/MyAvaloniaManagement.PluginSdk`，程序集和根命名空间统一为
+`MyAvaloniaManagement.PluginSdk`；`PluginSdk.UI` 也已从依赖元包变成真实契约程序集，Dock 相关包已移除。
+旧 Common 被移至 `Host/MyAvaloniaManagement.LegacyPluginContracts`，只保留旧程序集名和命名空间作为
+不可打包的仓库内部阶段桥。当前 Host 与四插件的运行时迁移仍属于 G5–G12。
 
 ### 3.2 public API 目标草案
 
@@ -378,13 +380,17 @@ G1 没有把现有 V1 结构仅改写 `schemaVersion` 后冒充 V2。manifest、
 未发布分支继续编译和回归所需的阶段桥，不属于 V2 最终契约。完整证据见
 [G1 专项记录](../plan-history/host-v2/g1-version-and-data-boundaries.md)。
 
-### G2：重建 Plugin SDK
+### G2：重建 Plugin SDK（已完成）
 
 - **目标**：形成 Core/UI 两层真实程序集和 V2 public API 基线。
 - **删除/新增**：重命名 Common；Core 移除 Avalonia/Dock/Newtonsoft/DI；UI 增加注册与 Descriptor 契约。
 - **插件影响**：先提供编译夹具，不要求业务插件在本 G 完成迁移。
 - **验证**：依赖白名单、API Analyzer、临时 NuGet 消费、旧 API 编译失败和新最小插件编译成功。
 - **回滚**：删除 V2 包项目并回到 G1；不得把 V2 类型塞回 Common 形成混合程序集。
+
+G2 的实现、API 清单、Legacy 阶段桥、SOLID 取舍和非发布门禁证据见
+[G2 专项记录](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)。本阶段没有实现 manifest v2、独立插件容器、
+Host Registry、Dock Adapter 或 Document v2，也没有运行 Windows Smoke、Windows CI 或发布门禁。
 
 ### G3：建立 manifest v2 与构建协议
 

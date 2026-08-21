@@ -110,7 +110,7 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
-      "MyAvaloniaManagement.PluginSdk": {
+      "MyAvaloniaManagementCommon": {
         "type": "Project",
         "dependencies": {
           "Avalonia": "[12.1.0, )",
@@ -125,13 +125,13 @@
           "CommunityToolkit.Mvvm": "[8.4.2, )",
           "LibVLCSharp": "[3.10.0, )",
           "LibVLCSharp.Avalonia": "[3.10.0, )",
-          "MyAvaloniaManagement.PluginSdk": "[1.0.0, )"
+          "MyAvaloniaManagementCommon": "[1.0.0, )"
         }
       },
       "mysmalltools.securitybenchmarks": {
         "type": "Project",
         "dependencies": {
-          "MySmallTools": "[1.0.0, )"
+          "MySmallTools": "[2.0.0, )"
         }
       },
       "Avalonia": {

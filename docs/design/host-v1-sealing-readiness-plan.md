@@ -333,7 +333,9 @@ StaticViewLocator 生成器后，所有自有类型均可 internal；仅保留 A
 - 修改边界：包元数据、XML 文档、依赖闭包和 public API。
 - 删除候选：Common 中未使用的字体、主题、Ursa、Semi、Dock 主题和 Dock 控件包；只保留契约实际编译所需依赖。
 - 验收：从本地产生的 SDK 包可在临时目录中编译最小插件；包依赖图不携带无关主题和宿主实现。
-- 验收命令：`dotnet pack Host/MyAvaloniaManagementCommon/MyAvaloniaManagementCommon.csproj -c Release`，随后运行本任务新增的 `scripts/Test-PluginSdkPackage.ps1`。
+- 历史验收在当时打包 Common 项目，随后运行本任务新增的 `scripts/Test-PluginSdkPackage.ps1`。V2 G2 后该源码已移至
+  `Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj` 并明确设为不可打包，
+  本条只保留 v1 时间点事实，不作为当前可执行命令。
 - 完成定义：仓库插件可以继续在开发期使用统一属性，但发布兼容测试必须针对打包后的 SDK，而不是只靠 ProjectReference。
 
 ### G4：删除 Legacy 二进制插件路径
