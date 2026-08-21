@@ -38,9 +38,12 @@ internal static class ServiceCollectionExtensions
     /// </remarks>
     public static IServiceCollection AddApplicationServices(
         this IServiceCollection services,
-        PluginRegistryBuilder? registryBuilder = null)
+        PluginRegistryBuilder? registryBuilder = null,
+        PluginProviderOwner? pluginProviders = null,
+        DocumentScopeRegistry? documentScopes = null)
     {
         registryBuilder ??= new PluginRegistryBuilder();
+        documentScopes ??= new DocumentScopeRegistry();
         services.AddSingleton(new PluginLifecycleOptions());
         services.AddSingleton(registryBuilder);
 
@@ -49,7 +52,7 @@ internal static class ServiceCollectionExtensions
 
         // 每个由托管插件创建的 Document 都拥有独立 Scope。插件只依赖公共创建接口，
         // Dock 关闭时则由宿主使用具体管理器释放对应 Scope。
-        services.AddDocumentScopeManagement();
+        services.AddDocumentScopeManagement(documentScopes);
 
         services.AddSingleton(provider =>
         {
@@ -78,7 +81,8 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(provider => registryBuilder.Build(
             provider,
             provider.GetService<PluginModuleCatalog>(),
-            provider.GetService<IHostDiagnosticSink>()));
+            provider.GetService<IHostDiagnosticSink>(),
+            pluginProviders));
         services.AddSingleton(provider => new PluginLifecycleManager(
             provider.GetRequiredService<PluginRegistry>().Lifecycles,
             provider.GetRequiredService<PluginLifecycleOptions>()));
@@ -87,7 +91,7 @@ internal static class ServiceCollectionExtensions
         // 注册ManagementFactory为单例
         services.AddSingleton(provider => new ManagementFactory(
             provider.GetRequiredService<PluginRegistry>(),
-            provider.GetRequiredService<DocumentScopeManager>(),
+            documentScopes,
             provider.GetRequiredService<DocumentPersistenceStateStore>(),
             provider.GetRequiredService<DocumentCloseCoordinator>(),
             provider.GetRequiredService<DocumentRecoveryRegistry>()));
@@ -172,12 +176,22 @@ internal static class ServiceCollectionExtensions
     /// scoped 语义，避免测试只注册 ScopeManager 却遗漏 IDocumentLifetime，导致测试通过、
     /// 正式运行时才暴露取消链不完整的问题。
     /// </remarks>
-    public static IServiceCollection AddDocumentScopeManagement(this IServiceCollection services)
+    public static IServiceCollection AddDocumentScopeManagement(
+        this IServiceCollection services,
+        DocumentScopeRegistry? documentScopes = null)
     {
+        documentScopes ??= new DocumentScopeRegistry();
+        services.AddSingleton(documentScopes);
         services.AddScoped<DocumentLifetime>();
         services.AddScoped<IDocumentLifetime>(provider =>
             provider.GetRequiredService<DocumentLifetime>());
-        services.AddSingleton<DocumentScopeManager>();
+        services.AddSingleton(provider =>
+        {
+            var manager = new DocumentScopeManager(
+                provider.GetRequiredService<IServiceScopeFactory>());
+            documentScopes.Register(manager);
+            return manager;
+        });
         services.AddSingleton<IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());
         return services;

@@ -136,10 +136,10 @@ $env:MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS = '1'
 | `PLUGIN_SHARED_ASSEMBLY_MISMATCH` | 插件私带了不兼容的宿主共享程序集 | 从插件包删除 Common 及共享闭包，并用匹配契约重新编译 |
 | `PLUGIN_ID_INVALID` / `PLUGIN_ID_DUPLICATE` | ID 不规范或与其他插件重复 | 使用规范命名空间并保持全局唯一 |
 | `EXTENSION_OWNER_MISMATCH` / `EXTENSION_METADATA_INVALID` | Document/Tool ID 不属于本插件，或主 ID/别名冲突 | 统一使用插件自己的 ID 前缀，检查所有元数据和迁移别名 |
-| `CONTRIBUTION_REGISTRATION_BYPASS` | 通过 `context.Services` 直接注册了贡献接口 | 删除直接接口注册，改用对应 `context.Add*` 方法 |
-| `PLUGIN_HOST_SERVICE_MUTATION` | 插件删除、替换、重排已有 DI 描述符，或追加了宿主保护类型 | 只追加插件私有服务；不要使用 Remove/Replace/Clear 覆盖宿主注册 |
 | `VIEW_MODEL_REGISTRATION_DUPLICATE` | 同一个 ViewModel 显式映射到多个 View | 每个动态 ViewModel 只保留一项 `AddView` |
-| `PLUGIN_SERVICE_REGISTRATION_FAILED` / `EXTENSION_ACTIVATION_FAILED` | 模块配置抛错，或策略/生命周期构造和元数据读取失败 | 检查 DI 注册、贡献声明和构造依赖 |
+| `PLUGIN_SERVICE_REGISTRATION_FAILED` | 模块 `Configure` 抛错 | 检查当前插件注册；失败只隔离当前插件 |
+| `PLUGIN_CONTAINER_BUILD_FAILED` | 当前插件 Provider 构建或宿主可见单例激活失败 | 检查私有依赖、生命周期和 Scope 关系 |
+| `EXTENSION_ACTIVATION_FAILED` | Registry 读取策略/生命周期或元数据失败 | 检查贡献声明和元数据实现 |
 | `VIEW_CREATION_FAILED` | 已登记 View 的无参构造抛出异常 | 检查 `InitializeComponent` 与 XAML 资源；业务依赖应放入 ViewModel |
 
 ## 必须遵守的边界

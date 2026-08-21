@@ -15,7 +15,8 @@
 最终 V2 Core 契约位于
 [`MyAvaloniaManagement.PluginSdk`](../MyAvaloniaManagement.PluginSdk/README.md)，Avalonia 与插件注册契约位于
 [`MyAvaloniaManagement.PluginSdk.UI`](../MyAvaloniaManagement.PluginSdk.UI/README.md)。这两个包已经可以独立编译消费，
-但不代表当前 Host 已经使用 V2 manifest、独立插件容器、声明式 Registry、Dock Adapter 或 Document v2。
+当前 Host 已使用 manifest v2 与每插件独立 Provider；本项目只继续承载 G5–G12 尚待迁移的模块、
+Strategy、Dock 与生命周期旧契约，不代表声明式 Registry、Dock Adapter 或 Document v2 已经完成。
 
 设计上保留该桥是一次明确的阶段切分：G2 只建立干净 SDK 边界，后续整改包再迁移运行时消费者。
 回滚时应把新 Core、真实 UI、两套 v2 API 基线、脚本和本隔离设置作为一个整体处理，不得把新类型重新塞回

@@ -83,17 +83,17 @@ internal sealed class ManagementFactory : Factory
     /// <summary>
     /// 创建宿主管理工厂。
     /// </summary>
-    /// <param name="documentScopeManager">管理插件文档独立依赖注入作用域的服务。</param>
+    /// <param name="documentScopes">把关闭请求路由到宿主或对应插件 Document Scope 的协调器。</param>
     internal ManagementFactory(
         PluginRegistry extensions,
-        DocumentScopeManager documentScopeManager,
+        DocumentScopeRegistry documentScopes,
         DocumentPersistenceStateStore? documentPersistenceStates = null,
         DocumentCloseCoordinator? documentCloseCoordinator = null,
         DocumentRecoveryRegistry? documentRecoveryRegistry = null)
     {
         ArgumentNullException.ThrowIfNull(extensions);
-        ArgumentNullException.ThrowIfNull(documentScopeManager);
-        _documentLifetime = new DockDocumentLifetime(documentScopeManager);
+        ArgumentNullException.ThrowIfNull(documentScopes);
+        _documentLifetime = new DockDocumentLifetime(documentScopes);
         _workspaceBuilder = new DockWorkspaceBuilder(this);
         _documentPersistenceStates = documentPersistenceStates ?? new DocumentPersistenceStateStore();
         _documentCloseCoordinator = documentCloseCoordinator;
@@ -107,6 +107,36 @@ internal sealed class ManagementFactory : Factory
         // 启用 HideToolsOnClose：关闭工具时移入 HiddenDockables 而非真正移除，
         // 这样可以后续通过 RestoreDockable 恢复
         HideToolsOnClose = true;
+    }
+
+    /// <summary>
+    /// 为只验证单个旧 DocumentScopeManager 的仓库测试保留的最小组合入口。
+    /// </summary>
+    /// <remarks>
+    /// 生产组合根始终使用 <see cref="DocumentScopeRegistry"/> 构造函数；此重载不会建立插件容器，
+    /// 仅把测试已经拥有的管理器放入局部路由表，避免测试绕过真实的关闭转发逻辑。
+    /// </remarks>
+    internal ManagementFactory(
+        PluginRegistry extensions,
+        DocumentScopeManager documentScopeManager,
+        DocumentPersistenceStateStore? documentPersistenceStates = null,
+        DocumentCloseCoordinator? documentCloseCoordinator = null,
+        DocumentRecoveryRegistry? documentRecoveryRegistry = null)
+        : this(
+            extensions,
+            CreateScopeRegistry(documentScopeManager),
+            documentPersistenceStates,
+            documentCloseCoordinator,
+            documentRecoveryRegistry)
+    {
+    }
+
+    private static DocumentScopeRegistry CreateScopeRegistry(DocumentScopeManager manager)
+    {
+        ArgumentNullException.ThrowIfNull(manager);
+        var registry = new DocumentScopeRegistry();
+        registry.Register(manager);
+        return registry;
     }
     
     /// <summary>

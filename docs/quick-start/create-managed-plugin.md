@@ -1,7 +1,7 @@
 # 创建 Managed 插件
 
-> 当前仓库处于 V2 G3：最终 Core/UI SDK、严格 manifest v2、精确入口加载与构建协议已经建立。
-> Host 和四插件的模块注册仍使用 Legacy 阶段桥；独立插件容器、声明式贡献与业务插件最终 SDK
+> 当前仓库处于 V2 G4：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议与每插件独立
+> Provider 已经建立。Host 和四插件的模块注册仍使用 Legacy 阶段桥；声明式贡献与业务插件最终 SDK
 > 迁移尚未完成。本页运行示例只用于仓库内联调，不应据此发布外部 V2 插件。
 
 本篇以 `QuickStartPlugin` 为示例。完成后，宿主能够读取严格清单、加载入口程序集，并且只实例化
@@ -133,11 +133,15 @@ public sealed class QuickStartPluginModule : IPluginModule
 入口类型必须是 public、非抽象、非泛型的 `IPluginModule`，并具有 public 无参构造。上面的隐式无参构造
 满足要求。程序集可以包含其他模块类型，但 Host 不扫描它们；未由 `entryPoint.type` 声明的模块不会被
 构造或执行。模块不声明 `PluginId`：manifest 是身份唯一事实源，宿主把已验证身份作为只读
-`context.PluginId` 注入。`Configure` 在根 `IServiceProvider` 构建前且每个进程只调用一次。
+`context.PluginId` 注入。`Configure` 在 Host Provider 构建后、当前插件 Provider 构建前且每个进程只调用一次。
 
-`context.Services` 只用于追加插件自己的业务服务，可以选择 singleton、scoped、transient、keyed、开放泛型或同一私有接口的多个实现。不要删除、替换、清空或重排已有描述符，也不要为宿主已经注册的 ServiceType 追加实现；宿主会在根容器构建前校验，违规时返回 `PLUGIN_HOST_SERVICE_MUTATION`。模块返回后保存并修改该集合不会产生注册效果。
+`context.Services` 是当前插件独占的新集合，可以使用 singleton、scoped、transient、keyed、开放泛型或
+同一私有接口的多个实现。它不包含 Host 或其他插件的普通服务描述符；删除、替换或清空只会让当前插件
+不可用，不会改变 Host。模块返回并建立 Provider 后，再修改保存的集合引用不会产生注册效果。
 
-Document、Tool、动态 View 和 Lifecycle 必须分别通过 `AddDocument`、`AddTool`、`AddView` 和 `AddLifecycle` 登记；直接向 DI 注册贡献接口会被宿主拒绝。未登记类型即使位于入口程序集也不会被发现。只有确实存在插件级后台资源时才登记 `IPluginLifecycle`，且其初始化和关闭必须幂等、不得依赖 Document 或 Tool 的视觉树生命周期。
+Document、Tool、动态 View 和 Lifecycle 必须分别通过 `AddDocument`、`AddTool`、`AddView` 和 `AddLifecycle`
+登记；直接向 DI 注册贡献接口只会留在私有 Provider，不会进入 Registry。未登记类型即使位于入口程序集
+也不会被发现。只有确实存在插件级后台资源时才登记 `IPluginLifecycle`。
 
 ## 5. 使用事件总线
 

@@ -6,11 +6,11 @@ using MyAvaloniaManagementCommon.ToolCreation;
 namespace MyAvaloniaManagementCommon.Plugin;
 
 /// <summary>
-/// 为一个已验证 Managed Plugin 提供组合阶段的受控注册入口。
+/// 为一个已验证 Managed Plugin 提供组合阶段的私有容器注册入口。
 /// </summary>
 /// <remarks>
 /// <para>
-/// 上下文只在宿主构建根级依赖注入容器时有效。插件必须在
+/// 上下文只在宿主构建当前插件独占的依赖注入容器时有效。插件必须在
 /// <see cref="IPluginModule.Configure"/> 返回前完成全部登记；宿主不支持运行期追加、移除、
 /// 热更新或热卸载贡献。
 /// </para>
@@ -29,17 +29,17 @@ public interface IPluginRegistrationContext
     PluginId PluginId { get; }
 
     /// <summary>
-    /// 获取用于注册插件私有业务服务的根级服务集合。
+    /// 获取只属于当前插件的服务集合。
     /// </summary>
     /// <remarks>
     /// <para>
-    /// 该集合只允许追加由当前插件拥有的私有业务服务。插件不得删除、替换、重排既有描述符，
-    /// 也不得为宿主已经注册的服务类型追加实现；宿主会在构建根容器前以事务方式校验并提交增量。
+    /// 该集合从新的空集合建立，只预置宿主明确支持的窄端口和当前插件的 Document Scope 基础设施。
+    /// 它不是宿主集合的副本，也不包含其他插件描述符；修改或清空它最多使当前插件构建失败。
     /// </para>
     /// <para>
     /// 插件可以为自己的接口登记多个 singleton、scoped、transient、keyed 或开放泛型实现。
-    /// 不得通过此集合直接注册 Document/Tool 策略或插件生命周期；这些宿主可见贡献必须使用
-    /// 本接口的专用方法。模块返回后保存并修改该集合不产生任何宿主注册效果。
+    /// 通过此集合直接注册 Document/Tool 策略或插件生命周期不会使其进入宿主 Registry；宿主可见贡献
+    /// 必须使用本接口的专用方法。模块返回后 Provider 已由当前集合建立，继续修改保存的集合引用无效。
     /// </para>
     /// </remarks>
     IServiceCollection Services { get; }

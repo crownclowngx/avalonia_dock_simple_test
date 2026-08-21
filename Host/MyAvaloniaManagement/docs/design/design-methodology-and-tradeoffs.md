@@ -110,9 +110,13 @@ G8 特别把 `ISavableDocument` 收窄为内容创建/恢复能力，而不将�
 
 目的：用受控 Context 表达插件贡献，通过 Builder 分阶段组合，再让元数据、菜单、View、生命周期所有权和创建分派共享同一不可变事实源。
 
-取舍：模块仍能通过 `context.Services` 注册私有服务，但四类宿主贡献只能走专用方法。Builder 以 Collect → Activate → Validate → Commit 原子发布；失败时丢弃整套容器和 Builder。Registry 不提供写 API、覆盖操作或运行期热卸载。
+取舍：模块仍能通过 `context.Services` 注册私有服务，但四类宿主贡献只能走专用方法。每插件先写入
+临时 Builder，Provider 成功后才合并；全局 Builder 再以 Collect → Activate → Validate → Commit 发布。
+Registry 不提供写 API、覆盖操作或运行期热卸载。
 
-G6 在这条私有服务通道上采用 Policy + Transaction：Policy 从宿主现有描述符自动捕获保护类型，Transaction 把当前集合复制为插件工作副本，按引用和顺序检查既有项并只提交尾部增量。职责没有并入 Registry Builder，因为扩展所有权与 DI 描述符完整性是两个独立变化原因。最终仍使用一个 Microsoft DI 根容器，没有引入子容器或动态代理。
+V2 G4 已用所有权替代 v1 G6 的 Policy + Transaction：Host Provider 先建立，每个插件从新的空集合建立
+私有 Provider。插件错误不再需要描述符差异算法回滚，只需丢弃当前 Provider 与临时 Builder。仍使用
+Microsoft DI，没有引入第三方子容器框架或动态代理。
 
 ### 4.4 Builder：`DockWorkspaceBuilder`
 

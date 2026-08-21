@@ -272,10 +272,21 @@ public sealed class PluginManifestCompatibilityTests
         var catalog = PluginModuleCatalog.Discover(snapshot);
         var services = new ServiceCollection();
         var builder = new PluginRegistryBuilder();
+        var pluginProviders = new PluginProviderOwner();
+        var documentScopes = new DocumentScopeRegistry();
+        services.AddApplicationServices(builder, pluginProviders, documentScopes);
+        services.AddSingleton(catalog);
         using var diagnostics = HostDiagnosticSession.Start(
             Path.Combine(Path.GetTempPath(), $"manifest-identity-{Guid.NewGuid():N}"));
+        services.AddSingleton<IHostDiagnosticSink>(diagnostics);
+        using var hostProvider = services.BuildServiceProvider();
 
-        catalog.Configure(services, builder, diagnostics);
+        pluginProviders.Compose(
+            catalog,
+            hostProvider,
+            builder,
+            documentScopes,
+            diagnostics);
 
         Assert.Equal(manifest.PluginId, ManifestMismatchModule.ObservedPluginId);
     }

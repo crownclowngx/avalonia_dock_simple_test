@@ -12,8 +12,8 @@
 > 变异门禁冻结正式 Plugin SDK v1 public API；G15 已固定 schema 1 诊断的白名单语义和默认脱敏边界；
 > G16 已用 `managed-plugin-v1.0.0` 定位最终文档、SDK API 和四插件兼容基线。
 
-> 当前分支已完成 V2 G3：最终 Core/UI SDK、严格 manifest v2、精确入口加载与构建/包协议已建立；
-> Document、layout、独立容器、声明式贡献与当前 Host/四插件模块注册仍是 G4–G12 前的未发布阶段桥。
+> 当前分支已完成 V2 G4：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建/包协议与每插件
+> 独立 Provider 已建立；Document、layout、声明式贡献与 Dock Adapter 仍是 G5–G12 的后续工作。
 > 历史 v1 签署事实保持可追溯。
 
 ## 2. public API
@@ -31,6 +31,10 @@ G2 表面全部登记为 Unshipped，并由 `scripts/Test-PluginSdkCompatibility
 [`HostApiBoundaryTests`](../../../MyAvaloniaManagement.Tests/HostApiBoundaryTests.cs) 继续确保 Host 不导出
 `MyAvaloniaManagement.*` 类型。测试和真实窗口 Harness 只能通过明确的 `InternalsVisibleTo` 使用
 Host 实现，这不构成发布兼容承诺。
+
+当前 Host Provider 不包含插件私有描述符。每个插件从新的空集合建立 Provider，只能通过明确 Host Port
+共享能力；宿主或其他插件的普通服务类型不可解析。Legacy `IPluginRegistrationContext` 仍是 G5–G12
+迁移前的仓库内部模块桥，但其 `Services` 已具有最终的“当前插件私有集合”所有权语义。
 
 ### 2.1 版本所有权
 
@@ -147,10 +151,10 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - Host 只按 `entryPoint.type` 的大小写敏感完整名称取得一个入口类型，不调用 `GetTypes()` 扫描模块；
 - 入口必须 public、非抽象、非泛型，实现当前阶段桥 `IPluginModule` 并具有 public 无参构造；
 - 同程序集中的第二个模块不构成错误，但未声明模块绝不被构造、配置或用来劫持入口；
-- `Configure(IPluginRegistrationContext)` 在根容器构建前且每个进程只执行一次；
+- `Configure(IPluginRegistrationContext)` 在 Host Provider 构建后、当前插件 Provider 构建前且每进程只执行一次；
 - `context.PluginId` 由宿主从已验证 manifest 注入，只读且不能覆盖；
-- `context.Services` 只允许追加插件私有业务服务；插件不得删除、替换、重排既有描述符或追加宿主保护 ServiceType；私有多实现、keyed 和开放泛型注册继续允许；
-- Document/Tool/Lifecycle 使用根容器激活，允许构造注入；View 使用无参工厂按需创建；
+- `context.Services` 只属于当前插件；删除、替换或重排最多破坏当前插件，私有多实现、keyed 和开放泛型注册继续允许；
+- Document/Tool/Lifecycle 使用所属插件 Provider 激活，允许构造注入；View 使用无参工厂按需创建；
 - Lifecycle 的身份取自 Registry，可选依赖引用其他插件 manifest ID，并按计划初始化、反向关闭；
 - 注册只发生在组合阶段，不支持运行期追加、删除、启停或热卸载；未登记类型不会被发现。
 
@@ -159,11 +163,11 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - 缺少 deps，或精确入口不存在、不可访问、抽象、泛型、接口错误、缺少 public 无参构造时隔离当前目录；
 - 无模块策略程序集不再获得 public 无参构造激活，也不会生成 `myavalonia.legacy.*` 所有者；
 - 完整类型预检失败会隔离整个插件目录，不能把同一发布物拆成“部分成功”；
-- 模块构造、模块配置、服务注册、贡献激活和扩展所有权错误属于全局组合错误，在根容器投入使用前阻断启动；
-- 通过 `context.Services` 直接登记三类贡献接口会以 `CONTRIBUTION_REGISTRATION_BYPASS` 拒绝；删除、替换、重排或覆盖宿主服务会以 `PLUGIN_HOST_SERVICE_MUTATION` 在容器构建前拒绝；
+- 模块构造、模块配置和插件 Provider 构建失败只隔离所属插件；Host 与其他成功插件继续组合；
+- 通过 `context.Services` 直接登记贡献接口只留在私有 Provider，不会发布到 Registry；插件无法取得 Host 描述符；
 - 重复 Document/Tool 主 ID 与别名、重复贡献类型、重复 ViewModel 映射、所有权错误、空元数据和重复 Creation Intent 形成结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义；
 - 策略元数据在注册时读取一次；
-- Builder 失败时整个容器和组合结果丢弃，不发布部分 Registry，不运行生命周期或 UI；
+- 单插件临时 Builder 失败时只丢弃该插件；全局 ID/元数据冲突在 G5 前仍按既有 Registry 校验阻断启动；
 - 插件根目录快照在进程内不刷新，更新插件需要重启应用。
 
 基础 SDK 及其 public 签名依赖、受支持 UI Profile 及其依赖均由

@@ -14,8 +14,8 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// 在组合阶段收集贡献声明，并在 DI 容器可用后一次性构建不可变 Registry。
 /// </summary>
 /// <remarks>
-/// Builder 有意不提供删除或覆盖操作。它先收集全部事实，再激活、验证并提交；失败时调用方
-/// 丢弃 Builder 和容器，因此不会出现“前几个插件已生效、后一个插件失败”的半发布状态。
+/// Builder 有意不提供删除或覆盖操作。每个插件先写入自己的临时 Builder，只有对应私有 Provider
+/// 构建成功后才合并到本对象；最终再统一激活、验证并发布不可变 Registry。
 /// </remarks>
 internal sealed class PluginRegistryBuilder
 {
@@ -33,6 +33,31 @@ internal sealed class PluginRegistryBuilder
 
     internal void AddLifecycle(PluginId ownerId, Type lifecycleType) =>
         Add(_lifecycles, ownerId, lifecycleType);
+
+    /// <summary>
+    /// 在一个插件的独立 Provider 已完整构建并通过宿主可见服务激活后，原子合并该插件的贡献声明。
+    /// </summary>
+    /// <remarks>
+    /// 临时 Builder 只保存普通内存声明，不触碰全局 Registry。模块配置或 Provider 构建失败时直接
+    /// 丢弃临时 Builder，成功时才一次追加，从而避免借助 IServiceCollection 事务实现失败回滚。
+    /// </remarks>
+    internal void Import(PluginRegistryBuilder source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        EnsureWritable();
+        _documents.AddRange(source._documents);
+        _tools.AddRange(source._tools);
+        _views.AddRange(source._views);
+        _lifecycles.AddRange(source._lifecycles);
+    }
+
+    /// <summary>返回当前插件在发布前必须能够由其私有 Provider 激活的具体服务类型。</summary>
+    internal IReadOnlyList<Type> GetRequiredServiceTypes() =>
+        _documents.Concat(_tools).Concat(_lifecycles)
+            .Where(item => item.Instance is null && item.Factory is null)
+            .Select(item => item.ImplementationType)
+            .Distinct()
+            .ToArray();
 
     /// <summary>
     /// 允许测试组合根登记已经创建的策略替身；生产模块没有此入口。
@@ -89,16 +114,20 @@ internal sealed class PluginRegistryBuilder
     internal PluginRegistry Build(
         IServiceProvider serviceProvider,
         PluginModuleCatalog? catalog,
-        IHostDiagnosticSink? diagnosticSink = null)
+        IHostDiagnosticSink? diagnosticSink = null,
+        PluginProviderOwner? pluginProviders = null)
     {
         ArgumentNullException.ThrowIfNull(serviceProvider);
         EnsureWritable();
         _built = true;
 
         var diagnostics = ValidateDeclarations();
-        var documents = ActivateDocuments(serviceProvider, diagnostics, diagnosticSink);
-        var tools = ActivateTools(serviceProvider, diagnostics, diagnosticSink);
-        var lifecycles = ActivateLifecycles(serviceProvider, diagnostics, diagnosticSink);
+        var documents = ActivateDocuments(
+            serviceProvider, pluginProviders, diagnostics, diagnosticSink);
+        var tools = ActivateTools(
+            serviceProvider, pluginProviders, diagnostics, diagnosticSink);
+        var lifecycles = ActivateLifecycles(
+            serviceProvider, pluginProviders, diagnostics, diagnosticSink);
 
         if (diagnostics.Count > 0)
         {
@@ -106,7 +135,12 @@ internal sealed class PluginRegistryBuilder
         }
 
         return new PluginRegistry(
-            catalog?.CreatePluginSnapshots(_documents, _tools, _views, _lifecycles) ?? [],
+            catalog?.CreatePluginSnapshots(
+                _documents,
+                _tools,
+                _views,
+                _lifecycles,
+                pluginProviders?.AvailablePluginIds) ?? [],
             documents,
             tools,
             _views.Select(view => new PluginViewRegistration(
@@ -173,7 +207,8 @@ internal sealed class PluginRegistryBuilder
     }
 
     private IReadOnlyList<PluginDocumentRegistration> ActivateDocuments(
-        IServiceProvider provider,
+        IServiceProvider hostProvider,
+        PluginProviderOwner? pluginProviders,
         ICollection<HostCompositionDiagnostic> diagnostics,
         IHostDiagnosticSink? sink) =>
         _documents.Select(declaration =>
@@ -181,9 +216,9 @@ internal sealed class PluginRegistryBuilder
             try
             {
                 var strategy = declaration.Instance as IDocumentCreationStrategy ??
-                    declaration.Factory?.Invoke(provider) as IDocumentCreationStrategy ??
-                    (IDocumentCreationStrategy)provider.GetRequiredService(
-                        declaration.ImplementationType);
+                    declaration.Factory?.Invoke(hostProvider) as IDocumentCreationStrategy ??
+                    (IDocumentCreationStrategy)Resolve(
+                        declaration, hostProvider, pluginProviders);
                 var metadata = strategy.GetMetadata() ??
                     throw new InvalidOperationException("Document 元数据不能为空。");
                 var intents = strategy is IDocumentCreationIntentProvider intentProvider
@@ -208,7 +243,8 @@ internal sealed class PluginRegistryBuilder
         }).Where(item => item is not null).Select(item => item!).ToArray();
 
     private IReadOnlyList<PluginToolRegistration> ActivateTools(
-        IServiceProvider provider,
+        IServiceProvider hostProvider,
+        PluginProviderOwner? pluginProviders,
         ICollection<HostCompositionDiagnostic> diagnostics,
         IHostDiagnosticSink? sink) =>
         _tools.Select(declaration =>
@@ -216,9 +252,9 @@ internal sealed class PluginRegistryBuilder
             try
             {
                 var strategy = declaration.Instance as IToolCreationStrategy ??
-                    declaration.Factory?.Invoke(provider) as IToolCreationStrategy ??
-                    (IToolCreationStrategy)provider.GetRequiredService(
-                        declaration.ImplementationType);
+                    declaration.Factory?.Invoke(hostProvider) as IToolCreationStrategy ??
+                    (IToolCreationStrategy)Resolve(
+                        declaration, hostProvider, pluginProviders);
                 var metadata = strategy.GetMetadata() ??
                     throw new InvalidOperationException("Tool 元数据不能为空。");
                 return new PluginToolRegistration(
@@ -239,7 +275,8 @@ internal sealed class PluginRegistryBuilder
         }).Where(item => item is not null).Select(item => item!).ToArray();
 
     private IReadOnlyList<PluginLifecycleRegistration> ActivateLifecycles(
-        IServiceProvider provider,
+        IServiceProvider hostProvider,
+        PluginProviderOwner? pluginProviders,
         ICollection<HostCompositionDiagnostic> diagnostics,
         IHostDiagnosticSink? sink) =>
         _lifecycles.Select(declaration =>
@@ -248,7 +285,8 @@ internal sealed class PluginRegistryBuilder
             {
                 return new PluginLifecycleRegistration(
                     declaration.OwnerId,
-                    (IPluginLifecycle)provider.GetRequiredService(declaration.ImplementationType));
+                    (IPluginLifecycle)Resolve(
+                        declaration, hostProvider, pluginProviders));
             }
             catch (Exception exception)
             {
@@ -260,6 +298,16 @@ internal sealed class PluginRegistryBuilder
                 return null;
             }
         }).Where(item => item is not null).Select(item => item!).ToArray();
+
+    private static object Resolve(
+        StrategyDeclaration declaration,
+        IServiceProvider hostProvider,
+        PluginProviderOwner? pluginProviders) =>
+        pluginProviders is not null && declaration.OwnerId != Business.Constants.HostExtensionIds.Owner
+            ? pluginProviders.GetRequiredService(
+                declaration.OwnerId,
+                declaration.ImplementationType)
+            : hostProvider.GetRequiredService(declaration.ImplementationType);
 
     private static void AddDuplicateTypeDiagnostics(
         IEnumerable<StrategyDeclaration> declarations,

@@ -155,8 +155,9 @@ internal static class HostDiagnosticCodes
     internal const string PluginAssemblyLoadFailed = "PLUGIN_ASSEMBLY_LOAD_FAILED";
     internal const string PluginSharedAssemblyMismatch = "PLUGIN_SHARED_ASSEMBLY_MISMATCH";
     internal const string PluginTypePreflightFailed = "PLUGIN_TYPE_PREFLIGHT_FAILED";
+    internal const string PluginModuleActivationFailed = "PLUGIN_MODULE_ACTIVATION_FAILED";
     internal const string PluginServiceRegistrationFailed = "PLUGIN_SERVICE_REGISTRATION_FAILED";
-    internal const string PluginHostServiceMutation = "PLUGIN_HOST_SERVICE_MUTATION";
+    internal const string PluginContainerBuildFailed = "PLUGIN_CONTAINER_BUILD_FAILED";
     internal const string HostContainerBuildFailed = "HOST_CONTAINER_BUILD_FAILED";
     internal const string ExtensionDiscoveryFailed = "EXTENSION_DISCOVERY_FAILED";
     internal const string ExtensionActivationFailed = "EXTENSION_ACTIVATION_FAILED";
@@ -242,9 +243,9 @@ internal static class HostDiagnosticRedactionPolicy
         HostDiagnosticCodes.PluginTypePreflightFailed =>
             "插件入口或类型未通过预检，已隔离对应插件候选。",
         HostDiagnosticCodes.PluginServiceRegistrationFailed =>
-            "插件显式注册失败，宿主已放弃本次容器构建。",
-        HostDiagnosticCodes.PluginHostServiceMutation =>
-            "插件试图修改宿主依赖注入注册，宿主已放弃本次容器构建。",
+            "插件显式注册失败，已隔离该插件，宿主与其他插件继续运行。",
+        HostDiagnosticCodes.PluginContainerBuildFailed =>
+            "插件私有依赖注入容器构建失败，已隔离该插件。",
         HostDiagnosticCodes.HostContainerBuildFailed =>
             "宿主依赖注入容器构建失败，主工作台不能安全启动。",
         HostDiagnosticCodes.ExtensionDiscoveryFailed or
@@ -258,7 +259,7 @@ internal static class HostDiagnosticRedactionPolicy
             "宿主启动发生未分类异常，主工作台没有启动。",
         "VIEW_CREATION_FAILED" =>
             "已登记的插件视图创建失败。",
-        "PLUGIN_MODULE_ACTIVATION_FAILED" =>
+        HostDiagnosticCodes.PluginModuleActivationFailed =>
             "插件模块无法通过公共无参构造创建。",
         _ when phase == HostDiagnosticPhase.Layout =>
             "布局恢复或保存失败，宿主已使用安全回退并保留诊断。",
@@ -410,6 +411,9 @@ internal static class HostDiagnosticFailurePolicy
         }
 
         if (RecoverablePluginLoadCodes.Contains(code) ||
+            code == HostDiagnosticCodes.PluginServiceRegistrationFailed ||
+            code == HostDiagnosticCodes.PluginContainerBuildFailed ||
+            code == HostDiagnosticCodes.PluginModuleActivationFailed ||
             phase == HostDiagnosticPhase.PluginLifecycle)
         {
             return (HostDiagnosticSeverity.Error, HostDiagnosticDisposition.Continue);
@@ -418,8 +422,6 @@ internal static class HostDiagnosticFailurePolicy
         if (code == HostDiagnosticCodes.PluginRootScanFailed ||
             code == HostDiagnosticCodes.PluginManifestIdentityDuplicate ||
             code == HostDiagnosticCodes.PluginManifestDescriptionMismatch ||
-            code == HostDiagnosticCodes.PluginServiceRegistrationFailed ||
-            code == HostDiagnosticCodes.PluginHostServiceMutation ||
             code == HostDiagnosticCodes.HostContainerBuildFailed ||
             code == HostDiagnosticCodes.HostStartupUnexpected ||
             phase is HostDiagnosticPhase.PluginModuleDiscovery

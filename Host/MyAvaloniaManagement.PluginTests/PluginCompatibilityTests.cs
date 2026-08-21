@@ -421,7 +421,7 @@ public sealed class PluginCompatibilityTests
         var context = new PluginRegistrationContext(
             new PluginId(pluginId), services, builder);
         module.Configure(context);
-        Assert.Empty(context.SealAndGetBypassedContributionTypes());
+        context.Seal();
     }
 
     private static TestPluginRegistrationContext ConfigureForInspection(

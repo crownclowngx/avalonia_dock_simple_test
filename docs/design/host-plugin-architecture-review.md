@@ -112,9 +112,14 @@ sequenceDiagram
 
 | 入口要求 | 策略构造 | 可用能力 | 当前状态 |
 | --- | --- | --- | --- |
-| 严格 manifest v2、同名 deps、精确 `IPluginModule` 类型 | Context 显式登记，根 DI 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | 四个现有插件均采用且为唯一支持路径 |
+| 严格 manifest v2、同名 deps、精确 `IPluginModule` 类型 | Context 显式登记，插件私有 Provider 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | 四个现有插件均采用且为唯一支持路径 |
 
-**[代码事实]** `PluginModulePreflight` 要求清单精确入口 public、非抽象、非泛型、实现当前 Legacy `IPluginModule` 且具有 public 无参构造；`IPluginModule.Configure(IPluginRegistrationContext)` 随后在根容器构建前执行一次。同程序集可存在其他模块，但它们不参与发现。manifest 是身份唯一事实源，模块和 Lifecycle 不再声明 `PluginId`。私有业务服务通过 `context.Services` 的插件专属工作副本追加，四类宿主贡献使用专用 `Add*` 方法；宿主以描述符引用和顺序校验后只提交新增项。参见 [`IPluginModule.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/Plugin/IPluginModule.cs)、[`IPluginRegistrationContext.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/Plugin/IPluginRegistrationContext.cs)、[`PluginModulePreflight.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModulePreflight.cs) 和 [`PluginModuleCatalog.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginModuleCatalog.cs)。
+**[代码事实]** `PluginModulePreflight` 要求清单精确入口 public、非抽象、非泛型、实现当前 Legacy
+`IPluginModule` 且具有 public 无参构造；`PluginProviderOwner` 在 Host Provider 建立后为每个插件创建
+新的服务集合，调用一次 `Configure`，再建立插件私有 Provider。同程序集其他模块不参与发现。manifest
+是身份唯一事实源；四类宿主贡献使用专用 `Add*` 方法并先写入插件临时 Builder，只有 Provider 成功后
+才合并。Host 描述符从不交给插件，旧保护事务已删除。参见
+[`PluginProviderOwner.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginProviderOwner.cs)。
 
 **[代码事实]** `IPluginLifecycle` 是可选能力，不是每个 Managed Plugin 的必选空壳。当前只有 BiliDownloader 显式登记生命周期，用它启动、恢复和关闭下载协调器；DaTang 没有常驻后台任务，因此不登记生命周期。生命周期身份来自 Registry 中 manifest 所有权；管理器支持可选 `IPluginLifecycleDependencies`、拓扑排序和统一初始化/关闭超时，未声明依赖时按 `Order`、manifest `PluginId` 串行初始化。失败、超时和依赖阻塞不会影响独立分支，退出时只反向关闭成功初始化的实例。
 
@@ -134,7 +139,7 @@ sequenceDiagram
 
 公共主入口仍是 `IDocumentCreationStrategy`。在不破坏旧接口的前提下，新增的 `IDocumentCreationIntentProvider` 允许一个 Document 类型声明多个菜单入口；宿主把 `CreationIntentId` 放入 `DocumentCreationParams` 传给同一策略。BiliDownloader 当前提供“链接下载”和“个人内容来源”两个入口。参见 [`IDocumentCreationStrategy.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/DocumentCreation/IDocumentCreationStrategy.cs)、[`IDocumentCreationIntentProvider.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/DocumentCreation/IDocumentCreationIntentProvider.cs) 和 [`BiliDownloaderDocumentStrategy.cs`](../../Plugins/BiliDownloader/BiliDownloader/Create/BiliDownloaderDocumentStrategy.cs)。
 
-### 3.2 所有 Managed Document 已统一纳入宿主 Scope
+### 3.2 所有 Managed Document 已统一纳入所属插件 Scope
 
 ```mermaid
 flowchart TD
@@ -152,7 +157,9 @@ flowchart TD
     Managed -- "否" --> End["没有统一的 Document 级释放动作"]
 ```
 
-**[代码事实]** `DocumentScopeManager` 建立 `Document` 与 `IServiceScope` 的一一映射。`ManagementFactory.OnDockableClosed` 把关闭后清理委托给 `DockDocumentLifetime`：先移除控件回收缓存对该 Document 的强引用，再释放对应 Scope；根容器释放时还会兜底释放仍打开的 Scope。参见 [`DocumentScopeManager.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/DocumentScopeManager.cs)、[`DockDocumentLifetime.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/DockDocumentLifetime.cs) 和 [`ManagementFactory.cs`](../../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs)。
+**[代码事实]** 每个插件 Provider 都拥有自己的 `DocumentScopeManager`，建立 `Document` 与该插件
+`IServiceScope` 的一一映射。`ManagementFactory.OnDockableClosed` 通过 `DocumentScopeRegistry` 找到实际
+所有者：先移除控件回收缓存强引用，再释放对应 Scope；宿主退出时路由表逆序关闭仍打开 Scope。
 
 当前接入情况：
 
@@ -164,7 +171,9 @@ flowchart TD
 | MyPlugTest 三个 Document | `IDocumentScopeFactory` + scoped ViewModel/局部状态 | 已纳入宿主所有权 |
 | DaTang 发票导入 Document | `IDocumentScopeFactory` + scoped ViewModel | 已纳入宿主所有权，与同插件对账 Document 规则一致 |
 
-**[架构判断]** 当前全部 Managed Document 都由宿主 Scope 托管；Document 注册为 scoped，策略只依赖 `IDocumentScopeFactory`，根容器在 `ValidateScopes` 下不能直接解析这些 ViewModel。未来插件若绕过该工厂自行构造 Document，需要由 G5 的显式贡献契约进一步阻断，而不是恢复 Legacy 激活。
+**[架构判断]** 当前全部 Managed Document 都由所属插件 Scope 托管；Document 注册为 scoped，策略只
+依赖本插件 `IDocumentScopeFactory`，Host 与其他插件不能解析这些 ViewModel。未来插件若绕过该工厂
+自行构造 Document，需要由 G5 的声明式贡献契约进一步阻断。
 
 **[代码事实]** Managed Document Scope 现在同时提供 scoped `IDocumentLifetime`。Dock 确认关闭后，`DocumentScopeManager` 先取消 `ClosingToken`，再释放 ViewModel 与 scoped 依赖；被否决的关闭不会提前取消，宿主退出则对仍打开的 Document 执行同一路径。取消是协作式且不等待：Document 局部的 HTTP、解析、浏览、探测与发票导入停止并禁止迟到 UI 回写；BiliDownloader 已提交到插件级 Coordinator 的下载任务继续运行。原生文件选择器只能丢弃迟到结果，EPPlus 已进入同步 `SaveAs` 后允许完成写入。
 
@@ -239,7 +248,7 @@ flowchart LR
 | 通道 | 当前方式 | 已有价值 | 主要风险 |
 | --- | --- | --- | --- |
 | UI 扩展 | 插件直接返回 Dock `Document` / `Tool` | 简单、强类型、UI 自由度高 | 与 Dock 版本和宿主布局模型强耦合 |
-| 服务接入 | 插件通过 Context 获得用于私有业务服务的事务工作副本 | 可使用 Microsoft DI，多实现/keyed/开放泛型不受影响；宿主注册不可覆盖 | 仍是可信进程内代码，不构成安全沙箱 |
+| 服务接入 | 插件通过 Context 获得独占的新服务集合并建立私有 Provider | 可使用 Microsoft DI，多实现/keyed/开放泛型不受影响；Host/插件对象图分离 | 仍是可信进程内代码，不构成安全沙箱 |
 | 创建入口 | Context 显式登记，`PluginRegistry` 原子发布；Document 可附加 Creation Intent | 未登记类型不可见，元数据只读一次，所有权明确 | 插件作者必须维护完整贡献清单 |
 | 事件通信 | SDK `IHostEventBus`，每 HostRuntime 独立实例；Host 内部使用窄服务和 Dock 协调器 | 插件事件同步强类型、精确类型、令牌式生命周期；Host 依赖可直接追踪 | 只有真实多消费者事件才能进入 SDK，不能把 Host 调用重新包装成广播 |
 | 文件能力 | 宿主包装选择器、打开、保存、路径/所有权状态 | 内容契约与脏状态分离，Document 与布局均原子写入，关闭确认共用同一提交事实 | 当前仅存在单一内容版本分支；真实旧版本出现时需由对应插件显式读取 |
@@ -399,9 +408,9 @@ View 的 AppDomain/目录扫描和命名推断。宿主与四个仓库插件统�
 Host Unit 119、Plugin 127、Headless UI 37，合计 **283/283**。SDK 包门禁证明最终 v1 示例可编译、
 旧候选模块接口以 `CS0535` 被拒绝，且 UI Profile 示例可编译。本次未重跑覆盖率和 Windows Smoke。
 
-### 6.8 2026-08-16 宿主 DI 保护
+### 6.8 2026-08-16 宿主 DI 保护（v1 历史，已由 V2 G4 取代）
 
-**[已实现]** G6 在模块配置前捕获完整宿主 ServiceType 基线，每个插件只接触当前服务集合的工作
+**[v1 历史事实]** G6 在模块配置前捕获完整宿主 ServiceType 基线，每个插件只接触当前服务集合的工作
 副本。既有描述符必须按引用和顺序保持不变，尾部新增项不得使用宿主保护类型；通过校验后才把
 增量提交到最终根容器。私有三种生命周期、多实现、keyed 和开放泛型继续允许。删除、替换、
 重排和覆盖以 `PLUGIN_HOST_SERVICE_MUTATION` 在容器构建前阻断。详细规则见
@@ -553,11 +562,14 @@ public interface IHostContext
 
 ## 10. 最终评价
 
-项目已经明显跨过“把几个 DLL 反射进 Dock”的阶段：四个插件都进入 Managed 模型并具有加载前清单；Host API/Common 兼容预检、根容器验证、插件生命周期、每 Document Scope 基础设施、创建意图、四向 Tool、禁用浮动、文档/布局原子持久化、坏文件隔离、真实窗口测试和插件级 Document V3 都已经落地。宿主内部也已经形成 Composition Root、Registry、Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
+项目已经明显跨过“把几个 DLL 反射进 Dock”的阶段：四个插件都进入 Managed 模型并具有加载前清单；
+manifest v2、每插件独立 Provider、插件生命周期、每 Document Scope 基础设施、创建意图、四向 Tool、
+禁用浮动、文档/布局原子持久化和坏文件隔离都已经落地。宿主内部也已形成 Composition Root、Registry、
+Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. G6 已将插件 DI 写入收口为工作副本和事务提交；G9 已删除全局消息器并建立 SDK 自有事件总线，G10 已将 Host 文件打开、布局刷新和 Tool 显隐改为直接协调；插件仍直接使用 Dock 类型；
+1. V2 G4 已把插件 DI 收口为每插件独立 Provider；事件总线为明确 Host Port，Host 文件打开、布局刷新和 Tool 显隐使用直接协调；插件仍直接使用 Dock 类型；
 2. 运行前 manifest、Host API/Common 兼容检查、显式 Plugin Registry 和用户可见诊断已有 V1；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。

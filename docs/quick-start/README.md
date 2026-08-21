@@ -2,11 +2,11 @@
 
 本组文档面向两类读者：在当前仓库内增加插件的开发者，以及为既有宿主版本交付二进制插件的外部作者。主路径只介绍 **Managed Plugin**，目标是在约 10 分钟内让一个同时包含 Document 和 Tool 的最小插件被宿主发现并显示。
 
-> G3 的当前 V2 Host 要求严格 manifest v2、入口 `.deps.json` 和精确 `IPluginModule` 类型。
+> G4 的当前 V2 Host 要求严格 manifest v2、入口 `.deps.json`、精确 `IPluginModule` 类型与每插件独立 Provider。
 > 未声明的第二个模块不会被扫描或执行；manifest 是唯一身份来源，
 > Document、Tool、View 和 Lifecycle 必须通过 `IPluginRegistrationContext` 显式登记。
-> 当前仓库处于 V2 G3：最终 Core/UI SDK、manifest v2 与构建/包协议已完成，但 Host、四插件和本教程
-> 的模块注册仍使用不可打包的 Legacy 编译桥。独立容器和最终 SDK 迁移尚未完成，因此本教程当前只用于仓库内阶段联调；
+> 当前仓库处于 V2 G4：最终 Core/UI SDK、manifest v2、构建/包协议与独立容器已完成，但 Host、四插件
+> 和本教程的模块注册仍使用不可打包的 Legacy 编译桥。最终 SDK 消费迁移尚未完成，因此本教程当前只用于仓库内阶段联调；
 > 外部作者不得据此发布或承诺 V2 运行时兼容。
 
 ## 完成后你将得到什么

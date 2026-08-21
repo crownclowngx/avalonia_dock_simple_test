@@ -37,9 +37,8 @@ context.Services.AddScoped<WelcomeDocumentViewModel>();
 context.Services.AddSingleton<StatusToolViewModel>();
 ```
 
-这里的 `Services` 是当前模块调用独占的事务工作副本，只能追加插件私有服务。不要调用
-`Remove`、`Replace`、`Clear` 或重排已有描述符，也不要为宿主已经注册的 ServiceType 追加实现；
-违规会在根容器构建前以 `PLUGIN_HOST_SERVICE_MUTATION` 拒绝。
+这里的 `Services` 是当前插件独占的新集合，不是 Host 集合的事务副本。插件可以使用 Microsoft DI 的
+标准注册能力；修改集合只影响当前插件。Host 和其他插件的普通服务描述符不会出现在这里。
 
 Document 表示一次独立工作会话，因此每个标签从新的 DI Scope 解析。Tool 表示宿主级面板，因此注册为 Singleton；隐藏再恢复时仍是同一个对象。
 

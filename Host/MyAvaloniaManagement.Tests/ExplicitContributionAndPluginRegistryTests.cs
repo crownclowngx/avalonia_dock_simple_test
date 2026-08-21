@@ -23,7 +23,7 @@ public sealed class ExplicitContributionAndPluginRegistryTests
         var builder = new PluginRegistryBuilder();
         var context = new PluginRegistrationContext(Owner, services, builder);
         new ExplicitModule().Configure(context);
-        Assert.Empty(context.SealAndGetBypassedContributionTypes());
+        context.Seal();
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -52,7 +52,7 @@ public sealed class ExplicitContributionAndPluginRegistryTests
         var context = new PluginRegistrationContext(Owner, services, builder);
         context.AddView<RegisteredViewModel, RegisteredView>();
         context.AddView<RegisteredViewModel, AlternateRegisteredView>();
-        context.SealAndGetBypassedContributionTypes();
+        context.Seal();
         using var provider = services.BuildServiceProvider();
 
         var exception = Assert.Throws<HostCompositionException>(() =>
@@ -63,16 +63,19 @@ public sealed class ExplicitContributionAndPluginRegistryTests
     }
 
     [Fact]
-    public void 直接DI注册贡献接口会被上下文识别为绕行()
+    public void 直接DI注册贡献接口只留在插件容器且不会发布到Registry()
     {
         var services = new ServiceCollection();
         var context = new PluginRegistrationContext(
             Owner, services, new PluginRegistryBuilder());
         context.Services.AddSingleton<IDocumentCreationStrategy, RegisteredStrategy>();
 
-        var bypasses = context.SealAndGetBypassedContributionTypes();
+        context.Seal();
+        using var provider = services.BuildServiceProvider();
+        var registry = new PluginRegistryBuilder().Build(provider, catalog: null);
 
-        Assert.Equal([typeof(IDocumentCreationStrategy)], bypasses);
+        Assert.Empty(registry.DocumentMetadata);
+        Assert.NotNull(provider.GetService<IDocumentCreationStrategy>());
     }
 
     [Fact]

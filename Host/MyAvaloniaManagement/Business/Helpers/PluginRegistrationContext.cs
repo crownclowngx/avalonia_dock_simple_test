@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -18,7 +17,6 @@ namespace MyAvaloniaManagement.Business.Helpers;
 internal sealed class PluginRegistrationContext : IPluginRegistrationContext
 {
     private readonly PluginRegistryBuilder _builder;
-    private readonly int _initialServiceCount;
     private bool _sealed;
 
     internal PluginRegistrationContext(
@@ -29,7 +27,6 @@ internal sealed class PluginRegistrationContext : IPluginRegistrationContext
         PluginId = pluginId ?? throw new ArgumentNullException(nameof(pluginId));
         Services = services ?? throw new ArgumentNullException(nameof(services));
         _builder = builder ?? throw new ArgumentNullException(nameof(builder));
-        _initialServiceCount = services.Count;
     }
 
     public PluginId PluginId { get; }
@@ -71,28 +68,15 @@ internal sealed class PluginRegistrationContext : IPluginRegistrationContext
     }
 
     /// <summary>
-    /// 结束模块的唯一写入窗口，并检查其是否绕过显式贡献 API。
+    /// 结束模块唯一的写入窗口。
     /// </summary>
     /// <remarks>
-    /// G5 只保护四类贡献入口；任意宿主服务替换属于 G6。检查服务描述符增量而不是整个集合，
-    /// 可以把错误准确归因到当前插件，同时不把宿主自己的注册误判为违规。
+    /// G4 以后 <see cref="Services"/> 只属于当前插件。插件直接登记贡献接口不会使其进入宿主 Registry，
+    /// 删除或替换描述符也只能影响自己的对象图，因此不再扫描描述符或维护旁路黑名单。
     /// </remarks>
-    internal IReadOnlyList<Type> SealAndGetBypassedContributionTypes()
+    internal void Seal()
     {
         _sealed = true;
-        var result = new List<Type>();
-        for (var index = _initialServiceCount; index < Services.Count; index++)
-        {
-            var serviceType = Services[index].ServiceType;
-            if (serviceType == typeof(IDocumentCreationStrategy) ||
-                serviceType == typeof(IToolCreationStrategy) ||
-                serviceType == typeof(IPluginLifecycle))
-            {
-                result.Add(serviceType);
-            }
-        }
-
-        return result;
     }
 
     private void EnsureWritable()

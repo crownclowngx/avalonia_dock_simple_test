@@ -18,6 +18,8 @@ namespace MyAvaloniaManagement.Business.Helpers;
 internal sealed class HostRuntime : IDisposable
 {
     private readonly Microsoft.Extensions.DependencyInjection.ServiceProvider _provider;
+    private readonly PluginProviderOwner _pluginProviders;
+    private readonly DocumentScopeRegistry _documentScopes;
     private readonly PluginLifecycleManager _lifecycleManager;
     private readonly HostDiagnosticSession _diagnostics;
     private readonly HashSet<string> _reportedLifecycleStates = new(StringComparer.Ordinal);
@@ -26,10 +28,14 @@ internal sealed class HostRuntime : IDisposable
 
     private HostRuntime(
         Microsoft.Extensions.DependencyInjection.ServiceProvider provider,
+        PluginProviderOwner pluginProviders,
+        DocumentScopeRegistry documentScopes,
         PluginLifecycleManager lifecycleManager,
         HostDiagnosticSession diagnostics)
     {
         _provider = provider;
+        _pluginProviders = pluginProviders;
+        _documentScopes = documentScopes;
         _lifecycleManager = lifecycleManager;
         _diagnostics = diagnostics;
     }
@@ -39,7 +45,9 @@ internal sealed class HostRuntime : IDisposable
         ArgumentNullException.ThrowIfNull(diagnostics);
         var services = new ServiceCollection();
         var registryBuilder = new PluginRegistryBuilder();
-        services.AddApplicationServices(registryBuilder);
+        var pluginProviders = new PluginProviderOwner();
+        var documentScopes = new DocumentScopeRegistry();
+        services.AddApplicationServices(registryBuilder, pluginProviders, documentScopes);
         services.AddViewModels();
         services.AddSingleton(diagnostics);
         services.AddSingleton<IHostDiagnosticSink>(diagnostics);
@@ -52,7 +60,7 @@ internal sealed class HostRuntime : IDisposable
         PluginModuleCatalog pluginCatalog;
         try
         {
-            pluginCatalog = PluginModuleCatalog.Discover(discovery, diagnostics);
+            pluginCatalog = PluginModuleCatalog.Discover(discovery);
         }
         catch (HostCompositionException exception)
         {
@@ -63,10 +71,9 @@ internal sealed class HostRuntime : IDisposable
             throw;
         }
 
-        // Catalog 本身也是宿主组合基础设施，必须在插件获得注册入口前进入 G6 保护基线。
-        // 若放在 Configure 之后，插件虽然无法引用 internal 类型，却仍可能通过反射追加同类型描述符。
+        // Catalog 与插件 Provider 所有者均是宿主组合基础设施。插件只获得新建的私有集合，
+        // 因而既看不到也无法修改这里的任何宿主描述符。
         services.AddSingleton(pluginCatalog);
-        pluginCatalog.Configure(services, registryBuilder, diagnostics);
         Microsoft.Extensions.DependencyInjection.ServiceProvider provider;
         try
         {
@@ -89,6 +96,13 @@ internal sealed class HostRuntime : IDisposable
 
         try
         {
+            pluginProviders.Compose(
+                pluginCatalog,
+                provider,
+                registryBuilder,
+                documentScopes,
+                diagnostics);
+
             // 显式解析 Registry 会激活并验证全部贡献。必须在生命周期回调和 UI 启动前完成，
             // 防止重复 ID 直到用户打开窗口时才暴露，也保证失败时能立即释放根容器。
             try
@@ -116,11 +130,15 @@ internal sealed class HostRuntime : IDisposable
             }
             return new HostRuntime(
                 provider,
+                pluginProviders,
+                documentScopes,
                 provider.GetRequiredService<PluginLifecycleManager>(),
                 diagnostics);
         }
         catch
         {
+            documentScopes.CloseAll();
+            pluginProviders.Dispose();
             provider.Dispose();
             throw;
         }
@@ -160,6 +178,8 @@ internal sealed class HostRuntime : IDisposable
         _disposed = true;
         try
         {
+            // 先关闭所有 Document，确保 scoped 对象不在生命周期停止或插件根 Provider 之后存活。
+            _documentScopes.CloseAll();
             if (_initialized)
             {
                 Program.ShutdownPlugins(_lifecycleManager);
@@ -168,7 +188,15 @@ internal sealed class HostRuntime : IDisposable
         }
         finally
         {
-            _provider.Dispose();
+            try
+            {
+                // Provider 按规范 PluginId 构建、按相反顺序释放；最后才释放 Host Provider。
+                _pluginProviders.Dispose();
+            }
+            finally
+            {
+                _provider.Dispose();
+            }
         }
     }
 

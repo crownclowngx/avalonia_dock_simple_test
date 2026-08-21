@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagementCommon.Plugin;
 
 namespace MyAvaloniaManagement.Business.Helpers;
@@ -20,54 +18,89 @@ internal sealed class PluginModuleCatalog
     private PluginModuleCatalog(IReadOnlyList<PluginModuleEntry> entries)
     {
         Entries = entries;
-        Modules = entries.Select(entry => entry.Module).ToArray();
     }
 
     internal IReadOnlyList<PluginModuleEntry> Entries { get; }
 
-    internal IReadOnlyList<IPluginModule> Modules { get; }
+    /// <summary>为容器所有权测试建立不经过磁盘加载的精确模块目录。</summary>
+    /// <remarks>
+    /// 测试仍必须显式提供 PluginId 与模块实例；本入口不扫描程序集，也不用于生产启动。
+    /// 它允许多个测试模块位于同一程序集，同时保持生产 Catalog 的排序和 manifest 身份语义。
+    /// </remarks>
+    internal static PluginModuleCatalog CreateForTests(
+        IEnumerable<(PluginId PluginId, IPluginModule Module)> modules)
+    {
+        ArgumentNullException.ThrowIfNull(modules);
+        var entries = modules.Select(item =>
+        {
+            ArgumentNullException.ThrowIfNull(item.PluginId);
+            ArgumentNullException.ThrowIfNull(item.Module);
+            var moduleType = item.Module.GetType();
+            var assembly = moduleType.Assembly;
+            return new PluginModuleEntry(
+                () => item.Module,
+                moduleType,
+                assembly,
+                new PluginManifest(
+                    PluginManifestReader.CurrentSchemaVersion,
+                    item.PluginId,
+                    new Version(1, 0, 0, 0),
+                    new PluginEntryPoint(
+                        (assembly.GetName().Name ?? "TestPlugin") + ".dll",
+                        moduleType.FullName ?? moduleType.Name),
+                    new PluginVersionRange(
+                        new Version(2, 0, 0, 0),
+                        new Version(3, 0, 0, 0))));
+        }).OrderBy(entry => entry.Manifest!.PluginId.Value, StringComparer.Ordinal).ToArray();
+        return new PluginModuleCatalog(entries);
+    }
 
-    /// <summary>复用插件目录阶段已经完成的精确入口预检结果激活模块。</summary>
-    internal static PluginModuleCatalog Discover(
-        PluginDiscoverySnapshot snapshot,
-        IHostDiagnosticSink? diagnosticSink = null)
+    /// <summary>为模块公共构造失败隔离测试建立延迟构造目录。</summary>
+    internal static PluginModuleCatalog CreateForTests(
+        IEnumerable<(PluginId PluginId, Type ModuleType)> modules)
+    {
+        ArgumentNullException.ThrowIfNull(modules);
+        var entries = modules.Select(item =>
+        {
+            ArgumentNullException.ThrowIfNull(item.PluginId);
+            ArgumentNullException.ThrowIfNull(item.ModuleType);
+            var assembly = item.ModuleType.Assembly;
+            return new PluginModuleEntry(
+                () => (IPluginModule)Activator.CreateInstance(item.ModuleType)!,
+                item.ModuleType,
+                assembly,
+                new PluginManifest(
+                    PluginManifestReader.CurrentSchemaVersion,
+                    item.PluginId,
+                    new Version(1, 0, 0, 0),
+                    new PluginEntryPoint(
+                        (assembly.GetName().Name ?? "TestPlugin") + ".dll",
+                        item.ModuleType.FullName ?? item.ModuleType.Name),
+                    new PluginVersionRange(
+                        new Version(2, 0, 0, 0),
+                        new Version(3, 0, 0, 0))));
+        }).OrderBy(entry => entry.Manifest!.PluginId.Value, StringComparer.Ordinal).ToArray();
+        return new PluginModuleCatalog(entries);
+    }
+
+    /// <summary>复用插件目录阶段已经完成的精确入口预检结果建立延迟模块目录。</summary>
+    /// <remarks>
+    /// Catalog 不构造模块、不执行 Configure、也不拥有 Provider。模块构造被延迟到 Host Provider
+    /// 建立之后，由插件 Provider 所有者执行并隔离失败，保持启动顺序和对象图所有权一致。
+    /// </remarks>
+    internal static PluginModuleCatalog Discover(PluginDiscoverySnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         var entries = new List<PluginModuleEntry>();
-        var diagnostics = new List<HostCompositionDiagnostic>();
 
         foreach (var assembly in snapshot.Assemblies)
         {
             var moduleType = snapshot.GetModuleType(assembly);
-            try
-            {
-                var module = (IPluginModule)Activator.CreateInstance(moduleType)!;
-                entries.Add(new PluginModuleEntry(
-                    module,
-                    moduleType,
-                    assembly,
-                    snapshot.GetManifest(assembly)));
-            }
-            catch (Exception exception)
-            {
-                diagnostics.Add(Diagnostic(
-                    "PLUGIN_MODULE_ACTIVATION_FAILED",
-                    assembly.GetName().Name,
-                    [moduleType]));
-                diagnosticSink?.Report(new HostDiagnosticDraft(
-                    "PLUGIN_MODULE_ACTIVATION_FAILED",
-                    HostDiagnosticPhase.PluginModuleDiscovery)
-                {
-                    AssemblyName = assembly.GetName(),
-                    StableId = moduleType.FullName,
-                    Exception = exception,
-                });
-            }
-        }
-
-        if (diagnostics.Count > 0)
-        {
-            throw new HostCompositionException(diagnostics);
+            entries.Add(new PluginModuleEntry(
+                () => (IPluginModule)Activator.CreateInstance(moduleType)!,
+                moduleType,
+                assembly,
+                snapshot.GetManifest(assembly)));
         }
 
         return new PluginModuleCatalog(entries
@@ -75,101 +108,21 @@ internal sealed class PluginModuleCatalog
             .ToArray());
     }
 
-    /// <summary>
-    /// 在每个 manifest 身份下执行唯一一次模块配置，并封闭对应注册上下文。
-    /// </summary>
-    internal void Configure(
-        IServiceCollection services,
-        PluginRegistryBuilder registryBuilder,
-        IHostDiagnosticSink diagnostics)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(registryBuilder);
-        ArgumentNullException.ThrowIfNull(diagnostics);
-
-        // 保护基线只捕获一次宿主服务。每个插件仍会从“宿主 + 已提交的前序插件”建立工作副本，
-        // 因而不能删除或重排前序注册，但可继续为自己的私有接口追加多个实现。
-        var protectionPolicy = HostServiceDescriptorPolicy.Capture(services);
-
-        foreach (var entry in Entries)
-        {
-            var manifest = entry.Manifest ?? throw new InvalidOperationException(
-                "manifest v2 是生产插件组合的必需入口事实。");
-            var registration = new PluginServiceRegistrationTransaction(services);
-            var context = new PluginRegistrationContext(
-                manifest.PluginId,
-                registration.Services,
-                registryBuilder);
-            try
-            {
-                entry.Module.Configure(context);
-                var bypasses = context.SealAndGetBypassedContributionTypes();
-                if (bypasses.Count > 0)
-                {
-                    throw new HostCompositionException(bypasses.Select(type =>
-                        new HostCompositionDiagnostic(
-                            "CONTRIBUTION_REGISTRATION_BYPASS",
-                            manifest.PluginId.Value,
-                            [ToContributor(type)])).ToArray());
-                }
-            }
-            catch (Exception exception)
-            {
-                // IServiceCollection 没有事务能力；异常后由组合根丢弃整个集合，不能发布部分结果。
-                context.SealAndGetBypassedContributionTypes();
-                diagnostics.Report(new HostDiagnosticDraft(
-                    HostDiagnosticCodes.PluginServiceRegistrationFailed,
-                    HostDiagnosticPhase.PluginServiceRegistration)
-                {
-                    PluginId = manifest.PluginId,
-                    AssemblyName = entry.Assembly.GetName(),
-                    Exception = exception,
-                });
-                if (exception is HostCompositionException)
-                {
-                    throw;
-                }
-
-                throw new HostCompositionException([
-                    new HostCompositionDiagnostic(
-                        HostDiagnosticCodes.PluginServiceRegistrationFailed,
-                        manifest.PluginId.Value,
-                        [ToContributor(entry.ModuleType)])
-                ]);
-            }
-
-            if (!registration.TryCommit(protectionPolicy, out var violation))
-            {
-                var serviceType = violation!.Descriptor.ServiceType;
-                diagnostics.Report(new HostDiagnosticDraft(
-                    HostDiagnosticCodes.PluginHostServiceMutation,
-                    HostDiagnosticPhase.PluginServiceRegistration)
-                {
-                    PluginId = manifest.PluginId,
-                    AssemblyName = entry.Assembly.GetName(),
-                    StableId = serviceType.FullName ?? serviceType.Name,
-                });
-
-                throw new HostCompositionException([
-                    new HostCompositionDiagnostic(
-                        HostDiagnosticCodes.PluginHostServiceMutation,
-                        manifest.PluginId.Value,
-                        [ToContributor(serviceType)])
-                ]);
-            }
-        }
-    }
-
     internal IReadOnlyList<PluginRegistryPlugin> CreatePluginSnapshots(
         IEnumerable<PluginRegistryBuilder.StrategyDeclaration> documents,
         IEnumerable<PluginRegistryBuilder.StrategyDeclaration> tools,
         IEnumerable<PluginRegistryBuilder.ViewDeclaration> views,
-        IEnumerable<PluginRegistryBuilder.StrategyDeclaration> lifecycles)
+        IEnumerable<PluginRegistryBuilder.StrategyDeclaration> lifecycles,
+        IReadOnlySet<PluginId>? availablePluginIds = null)
     {
         var result = new List<PluginRegistryPlugin>();
         foreach (var entry in Entries)
         {
             if (entry.Manifest is not { } manifest)
+            {
+                continue;
+            }
+            if (availablePluginIds is not null && !availablePluginIds.Contains(manifest.PluginId))
             {
                 continue;
             }
@@ -190,19 +143,10 @@ internal sealed class PluginModuleCatalog
         return result;
     }
 
-    private static HostCompositionDiagnostic Diagnostic(
-        string code,
-        string? stableId,
-        IEnumerable<Type> types) =>
-        new(code, stableId, types.Select(ToContributor).ToArray());
-
-    private static HostCompositionContributor ToContributor(Type type) =>
-        new(type.FullName ?? type.Name, type.Assembly.GetName().Name ?? "Unknown");
-
 }
 
 internal sealed record PluginModuleEntry(
-    IPluginModule Module,
+    Func<IPluginModule> CreateModule,
     Type ModuleType,
     Assembly Assembly,
     PluginManifest? Manifest);

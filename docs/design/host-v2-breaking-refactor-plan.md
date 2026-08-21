@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G3 已完成，G4–G14 尚未实现。
+> 状态：实施中；G0–G4 已完成，G5–G14 尚未实现。
 >
 > 评审日期：2026-08-21。
 >
@@ -8,10 +8,11 @@
 > [V2 G0 非发布绿色基线](../plan-history/host-v2/g0-green-baseline.md)与
 > [V2 G1 版本与数据边界](../plan-history/host-v2/g1-version-and-data-boundaries.md)，以及
 > [V2 G2 Plugin SDK 重建](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)与
-> [V2 G3 manifest v2 与构建协议](../plan-history/host-v2/g3-manifest-v2-and-build-protocol.md)。
+> [V2 G3 manifest v2 与构建协议](../plan-history/host-v2/g3-manifest-v2-and-build-protocol.md)，以及
+> [V2 G4 每插件独立容器](../plan-history/host-v2/g4-per-plugin-containers.md)。
 >
-> 重要说明：G3 已完成最终 Core/UI SDK、严格 manifest v2、精确入口加载和构建/包验证协议；
-> 独立插件容器、Host Registry、Dock Adapter、Document、layout 格式和 G4–G14 仍是目标设计，
+> 重要说明：G4 已完成最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建/包协议和每插件独立容器；
+> 声明式 Host Registry、Dock Adapter、Document、layout 格式和 G5–G14 仍是目标设计，
 > 不得引用为当前能力。
 
 ## 1. 目的与结论
@@ -407,13 +408,21 @@ G3 的严格格式、SOLID 所有权、Legacy 阶段桥、构建探针、失败�
 声明式贡献、Dock、Document 或 layout，也没有运行 Windows Smoke、Windows CI、ReleaseAcceptance
 或任何发布门禁。
 
-### G4：实现每插件独立容器
+### G4：实现每插件独立容器（已完成）
 
 - **目标**：Host、每个插件和每个 Document 的对象所有权可独立说明与释放。
 - **删除/新增**：增加 plugin provider owner；删除服务描述符 Policy、Transaction 和旁路检测。
 - **插件影响**：插件继续使用完整 Microsoft DI 注册私有服务，但不能解析其他插件私有服务。
 - **验证**：Host 注册不可变、插件间不可解析、开放泛型/keyed/multi-registration 可用、失败隔离、反向 Dispose。
 - **回滚**：整体回到 G3；禁止临时回接 Host 根 `IServiceCollection`。
+
+G4 已由 `PluginProviderOwner` 建立“Host Provider 先构建、每插件从空 `ServiceCollection` 建立私有
+Provider、按规范 PluginId 构建并逆序释放”的唯一生产路径。`DocumentScopeRegistry` 只负责把 Dock
+关闭通知路由到实际拥有 Scope 的插件容器；旧 `HostServiceDescriptorPolicy`、
+`PluginServiceRegistrationTransaction` 和贡献旁路扫描已删除。模块配置、Provider 构建和模块构造失败
+只隔离所属插件。完整 SOLID 取舍、Legacy 阶段桥、专项门禁和非发布回归证据见
+[G4 专项记录](../plan-history/host-v2/g4-per-plugin-containers.md)。本阶段没有实现 G5 声明式贡献、
+G6 Dock Adapter、G7 Document v2 或 G8 layout/lifecycle v2，也没有运行 Windows CI、Smoke 或发布门禁。
 
 ### G5：建立声明式贡献目录
 

@@ -32,12 +32,14 @@ flowchart TB
     Runtime --> Loader["AssemblyLoaderHelper<br/>插件程序集快照"]
     Runtime --> Catalog["PluginModuleCatalog<br/>Managed 模块"]
     Runtime --> RegistryBuilder["PluginRegistryBuilder<br/>收集 / 激活 / 校验"]
-    Runtime --> Container["根 DI 容器"]
+    Runtime --> HostContainer["Host Provider"]
+    Runtime --> PluginProviders["PluginProviderOwner\n每插件 Provider"]
     Runtime --> Lifecycle["PluginLifecycleManager"]
 
-    Container --> Factory["ManagementFactory<br/>Host internal Dock 协调器"]
-    Container --> EventBus["IHostEventBus<br/>每根隔离的同步事件"]
-    Container --> Registry["PluginRegistry<br/>不可变贡献快照"]
+    HostContainer --> Factory["ManagementFactory<br/>Host internal Dock 协调器"]
+    HostContainer --> EventBus["IHostEventBus<br/>每 Runtime 隔离的同步事件"]
+    HostContainer --> Registry["PluginRegistry<br/>不可变贡献快照"]
+    EventBus --> PluginProviders
     RegistryBuilder --> Registry
     Factory --> Registry
     Factory --> Builder["DockWorkspaceBuilder<br/>初始结构"]
@@ -45,9 +47,9 @@ flowchart TB
     Factory --> ToolCoordinator["ToolDockCoordinator<br/>工具状态流程"]
     Factory --> DocumentLifetime["DockDocumentLifetime<br/>关闭后释放"]
 
-    Container --> MainVM["MainWindowViewModel<br/>绑定与定向协调"]
+    HostContainer --> MainVM["MainWindowViewModel<br/>绑定与定向协调"]
     MainVM --> Documents["DocumentPersistenceCoordinator"]
-    Container --> OperationState["DocumentOperationState<br/>根级错误提示状态"]
+    HostContainer --> OperationState["DocumentOperationState<br/>根级错误提示状态"]
     Documents --> OperationState
     MainVM --> OperationState
     Factory --> MainVM
@@ -81,13 +83,15 @@ flowchart TB
 2. 读取全部 manifest v2，检查单一 Core/UI SDK 区间与全局身份；
 3. 验证精确入口 `.deps.json`，建立 ALC 并按大小写敏感完整名称取得清单入口类型；
 4. 预检并实例化该 `IPluginModule`；不扫描或执行程序集中的其他模块，身份只取自 manifest；
-5. 按 manifest `pluginId` 顺序执行 `Configure(IPluginRegistrationContext)`，分别收集插件私有服务与显式贡献；
-6. 以 `ValidateScopes`、`ValidateOnBuild` 构建根容器；
-7. 激活贡献、读取一次元数据并完成全量校验，成功后发布不可变 `PluginRegistry`；
-8. 显式解析 Registry、`ManagementFactory` 与生命周期计划，再初始化 `PluginLifecycleManager`；
-9. 将完全组合成功的容器交给 Avalonia 启动路径。
+5. 以 `ValidateScopes`、`ValidateOnBuild` 构建 Host Provider；
+6. 按 manifest `pluginId` 顺序为每个插件创建空服务集合，执行一次 `Configure` 并构建私有 Provider；
+7. 单插件成功后才合并其声明；失败则释放自身并继续后续插件；
+8. 从贡献所有者 Provider 激活对象、完成全量校验并发布不可变 `PluginRegistry`；
+9. 显式解析 `ManagementFactory` 与生命周期计划，再初始化 `PluginLifecycleManager`；
+10. 将完全组合成功的 Host Provider 交给 Avalonia 启动路径。
 
-关闭时顺序反转：先关闭成功初始化的插件，再释放根容器。这个所有权对称性防止 `Program`、`App` 和插件生命周期管理器分别持有一部分清理责任。
+关闭时先释放全部 Document Scope，再反向停止成功生命周期，随后逆序释放插件 Provider，最后释放
+Host Provider。这个所有权对称性防止 `Program`、`App` 和插件生命周期管理器分别持有清理责任。
 
 [`Program`](../../Program.cs) 只保留进程入口和失败应用编排。`HostRuntime` 通过 internal
 `HostAvaloniaBuilder` 使用 `Func<App>` 创建应用；App 注入 `IHostDesktopShell`，不再存在静态
@@ -107,10 +111,10 @@ flowchart TB
 
 - 用绝对、规范化且不区分大小写的插件根目录作为缓存键；
 - 通过 `Lazy<PluginDiscoverySnapshot>` 保证并发调用只执行一次扫描；
-- 第一阶段只读严格 `plugin.manifest.json`，检查两个版本区间和全局 `pluginId`；
+- 第一阶段只读严格 `plugin.manifest.json`，检查单一 SDK 区间和全局 `pluginId`；
 - 第二阶段只为通过预检的候选创建加载上下文，清单声明是唯一入口来源；
 - 入口必须携带同名 `.deps.json`，托管和原生依赖只按 deps/RID 图解析；
-- 类型预检后要求唯一、具体且具有 public 无参构造的 `IPluginModule`；
+- 类型预检后只要求清单精确指定的类型具体、public、实现 `IPluginModule` 且具有 public 无参构造；
 - 每个插件目录拥有自己的 `PluginLoadContext`；
 - 不注册进程级 `AssemblyResolve`，私有依赖只在当前插件 ALC 内解析；
 - 单个清单、目录、依赖或完整类型预检失败不会阻断其他独立插件；
@@ -120,15 +124,31 @@ flowchart TB
 
 ### 4.2 Managed-only 模块与激活
 
-[`PluginModulePreflight`](../../Business/Helpers/PluginModulePreflight.cs) 在不实例化插件对象的前提下验证唯一 `IPluginModule` 及其 public 无参构造；结构错误只隔离当前目录。随后 [`PluginModuleCatalog`](../../Business/Helpers/PluginModuleCatalog.cs) 只实例化快照中的模块，并把已经验证的 manifest `PluginId` 注入独立 [`PluginRegistrationContext`](../../Business/Helpers/PluginRegistrationContext.cs)。模块不再声明身份，也不能设置或覆盖 Context 的身份。
+[`PluginModulePreflight`](../../Business/Helpers/PluginModulePreflight.cs) 在不实例化插件对象的前提下验证清单精确入口及其 public 无参构造；结构错误只隔离当前目录。随后 [`PluginModuleCatalog`](../../Business/Helpers/PluginModuleCatalog.cs) 只实例化快照中的模块；单个构造失败记录受控诊断并排除该插件，不阻断其他入口。
 
-模块只在组合阶段调用一次 `Configure`。`context.Services` 指向当前插件独占的服务集合工作副本，只允许追加插件私有业务服务；Document、Tool、View 和 Lifecycle 必须调用专用 `Add*` 方法。未登记类型即使存在于入口程序集也不会被宿主发现；通过 `Services` 直接登记贡献接口会以 `CONTRIBUTION_REGISTRATION_BYPASS` 阻断组合。
+[`PluginProviderOwner`](../../Business/Helpers/PluginProviderOwner.cs) 在 Host Provider 建立后，按规范 PluginId
+顺序为每个入口创建新的空 `ServiceCollection`，只预置事件总线、当前插件 Document Scope 基础设施和
+明确记录的阶段桥。`PluginRegistrationContext` 把 manifest `PluginId` 与该私有集合绑定，模块只在组合
+阶段调用一次 `Configure`。Document、Tool、View 和 Lifecycle 仍必须调用专用 `Add*` 方法才能进入当前
+Legacy Registry；直接 DI 注册贡献接口只会留在插件 Provider，不会被宿主发现。
 
-[`HostServiceDescriptorPolicy`](../../Business/Helpers/PluginServiceRegistrationProtection.cs) 从完整宿主注册捕获保护类型，[`PluginServiceRegistrationTransaction`](../../Business/Helpers/PluginServiceRegistrationProtection.cs) 按模块复制当前描述符，以引用和顺序验证既有项，再只提交尾部新增项。插件删除、替换、重排既有描述符或追加宿主 ServiceType 会以 `PLUGIN_HOST_SERVICE_MUTATION` 在根容器构建前阻断；正常私有多实现、keyed 和开放泛型注册不受影响。模块返回后保存的工作副本已经与正式集合脱离。
+宿主服务集合从不交给插件，也不复制到插件集合，因此旧 `HostServiceDescriptorPolicy`、
+`PluginServiceRegistrationTransaction`、描述符增量比较和贡献旁路扫描已经删除。Microsoft DI 原生的
+多实现、keyed 和开放泛型注册完整可用；删除或替换描述符最多使当前插件不可用。模块配置或私有
+Provider 构建失败会产生 `PLUGIN_SERVICE_REGISTRATION_FAILED` 或 `PLUGIN_CONTAINER_BUILD_FAILED`，
+对应插件不发布任何贡献，Host 与成功插件继续运行。
+
+每个插件 Provider 都创建自己的 `DocumentScopeManager`。宿主
+[`DocumentScopeRegistry`](../../Business/Helpers/DocumentScopeRegistry.cs) 只负责把 Dock 关闭通知路由到
+实际所有者，不提供跨插件解析。退出顺序固定为：关闭全部 Document Scope、停止生命周期、按 PluginId
+反序释放插件 Provider、最后释放 Host Provider。
 
 ### 4.3 单一扩展注册表
 
-[`PluginRegistryBuilder`](../../Business/Helpers/PluginRegistryBuilder.cs) 只收集宿主和模块通过受控 Context 提交的贡献声明。根容器建立后，它激活 Document、Tool、Lifecycle，读取一次元数据并执行全量校验；无诊断时才提交 [`PluginRegistry`](../../Business/Helpers/PluginRegistry.cs)。Registry 统一拥有：
+[`PluginRegistryBuilder`](../../Business/Helpers/PluginRegistryBuilder.cs) 为每个插件先使用临时实例收集声明；
+只有私有 Provider 构建并激活宿主可见单例成功后，声明才合并到全局 Builder。随后从贡献所有者的
+Provider 激活 Document、Tool、Lifecycle，读取元数据并执行全量校验；无诊断时才提交
+[`PluginRegistry`](../../Business/Helpers/PluginRegistry.cs)。Registry 统一拥有：
 
 - manifest、入口程序集和模块类型快照；
 - manifest 所属的 Document、Tool、View 和 Lifecycle；
@@ -293,11 +313,12 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 
 | 对象 | 所有者 | 释放时机 |
 | --- | --- | --- |
-| 根 DI 容器 | `HostRuntime` | 插件反向关闭后 |
-| Host 事件总线 | 根 DI 容器 | 根容器释放；订阅者应更早释放自己的令牌 |
+| Host Provider | `HostRuntime` | 全部插件 Provider 释放后 |
+| 插件 Provider | `PluginProviderOwner` | 生命周期停止后按 PluginId 反序释放 |
+| Host 事件总线 | Host Provider | Host Provider 释放；订阅者应更早释放自己的令牌 |
 | Managed 插件生命周期 | `PluginLifecycleManager` | Avalonia 消息循环结束后 |
-| Tool 实例 | `ManagementFactory` | 根容器释放 |
-| 有独立 Scope 的 Document | `DocumentScopeManager` | Dock 确认关闭后；根容器退出时兜底 |
+| Tool 实例 | 所属插件 Provider / `ManagementFactory` | 插件 Provider / Host Provider 释放 |
+| 有独立 Scope 的 Document | 所属插件 `DocumentScopeManager` | Dock 确认关闭后；退出时 `DocumentScopeRegistry` 兜底 |
 | Document 控件缓存 | `DocumentControlRecycling` | 对应 Document 确认关闭后移除 |
 | 布局快照待应用状态 | `DockLayoutLifecycle` | 首次 Apply 时原子取出 |
 

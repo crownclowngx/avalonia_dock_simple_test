@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement;
+using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagementCommon.Plugin;
@@ -14,6 +15,10 @@ namespace MySmallTools.Playback.IntegrationHarness;
 internal static class Program
 {
     private static Microsoft.Extensions.DependencyInjection.ServiceProvider? _provider;
+    private static PluginProviderOwner? _pluginProviders;
+    private static DocumentScopeRegistry? _documentScopes;
+    private static HostDiagnosticSession? _diagnostics;
+    private static string? _diagnosticDirectory;
     private static PluginLifecycleManager? _lifecycleManager;
 
     [STAThread]
@@ -39,23 +44,35 @@ internal static class Program
 
         var services = new ServiceCollection();
         var registryBuilder = new PluginRegistryBuilder();
-        services.AddApplicationServices(registryBuilder);
+        _pluginProviders = new PluginProviderOwner();
+        _documentScopes = new DocumentScopeRegistry();
+        services.AddApplicationServices(registryBuilder, _pluginProviders, _documentScopes);
         services.AddViewModels();
 
-        // 验收进程直接装配生产插件模块，保证 Document Scope 与真实宿主一致；
+        // 验收进程直接装配生产插件模块，但仍严格复用 G4 的 Host Provider → 插件 Provider 顺序；
         // 不从部署目录二次加载程序集，避免同一类型出现两个加载上下文。
-        var registration = new PluginRegistrationContext(
-            new PluginId("myavalonia.plugin.my-small-tools"),
-            services,
-            registryBuilder);
-        new MySmallToolsPluginModule().Configure(registration);
-        registration.SealAndGetBypassedContributionTypes();
+        var pluginId = new PluginId("myavalonia.plugin.my-small-tools");
+        var catalog = PluginModuleCatalog.CreateForTests([
+            (pluginId, new MySmallToolsPluginModule())
+        ]);
+        services.AddSingleton(catalog);
+        _diagnosticDirectory = Path.Combine(
+            Path.GetTempPath(), $"my-small-tools-harness-{Guid.NewGuid():N}");
+        _diagnostics = HostDiagnosticSession.Start(_diagnosticDirectory);
+        services.AddSingleton(_diagnostics);
+        services.AddSingleton<IHostDiagnosticSink>(_diagnostics);
 
         _provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateScopes = true,
             ValidateOnBuild = true
         });
+        _pluginProviders.Compose(
+            catalog,
+            _provider,
+            registryBuilder,
+            _documentScopes,
+            _diagnostics);
         _lifecycleManager = _provider.GetRequiredService<PluginLifecycleManager>();
         _lifecycleManager.InitializeAllAsync().GetAwaiter().GetResult();
 
@@ -87,8 +104,15 @@ internal static class Program
         }
         finally
         {
+            _documentScopes.CloseAll();
             _lifecycleManager.ShutdownAllAsync().GetAwaiter().GetResult();
+            _pluginProviders.Dispose();
             _provider.Dispose();
+            _diagnostics.Dispose();
+            if (_diagnosticDirectory is not null && Directory.Exists(_diagnosticDirectory))
+            {
+                Directory.Delete(_diagnosticDirectory, recursive: true);
+            }
         }
     }
 }

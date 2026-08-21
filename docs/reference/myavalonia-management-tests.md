@@ -2,8 +2,8 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G3 的 Core/UI SDK、
-> manifest v2、精确入口加载与构建协议。最新测试数量和覆盖率必须从本轮
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G4 的 Core/UI SDK、
+> manifest v2、精确入口加载、构建协议和每插件独立容器。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -50,6 +50,23 @@ G3 增加严格 manifest v2 reader、精确入口 Loader、单一 SDK 诊断、M
 [V2 G3 专项记录](../plan-history/host-v2/g3-manifest-v2-and-build-protocol.md)，不在这里设置固定数量阈值。
 本阶段只运行非发布构建协议门禁，明确排除 Windows Smoke、Windows CI、G14 发布总门禁、
 ReleaseAcceptance、联网/真实媒体、上传、标签和任何发布操作。
+
+### V2 G4 当前绿色基线
+
+G4 专项入口为：
+
+```powershell
+.\scripts\Test-PluginContainerIsolation.ps1 -Configuration Release
+```
+
+它验证宿主注册逐项不变、插件间私有服务不可解析、开放泛型/keyed/多实现、配置与 Provider 构建失败
+隔离、四个真实插件分别建容器、每插件 Document Scope 和逆序 Dispose，并扫描已删除的 Policy、
+Transaction 与旁路检测符号。结果写入 `artifacts/test-results/PluginContainerIsolation/`。
+
+本轮 Host 三套回归为 Unit 172、UI 39、Plugin 158，共 **369/369**；Host 行覆盖率 **81.58%**、分支
+覆盖率 **66.99%**，均未降低既有门槛。完整命令、SOLID 设计、阶段桥和回滚边界见
+[V2 G4 专项记录](../plan-history/host-v2/g4-per-plugin-containers.md)。本阶段没有运行 Windows Smoke、
+Windows CI、发布门禁、ReleaseAcceptance、联网/真实媒体、上传或发布操作。
 
 ## G14 正式发布门禁
 
