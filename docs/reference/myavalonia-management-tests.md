@@ -2,8 +2,9 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G7 的 Core/UI SDK、
-> manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录、Host Dock Adapter 和 Document V2。最新测试数量和覆盖率必须从本轮
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G8 的 Core/UI SDK、
+> manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录、Host Dock Adapter、
+> Document V2、Layout V2 和 internal 生命周期。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -138,6 +139,28 @@ ReleaseAcceptance、发布包门禁、上传、标签或发布。
 Core/UI API v2 与隔离包消费，以及 BiliDownloader **720/720**、DaTangAccountingHelpPlug **64/64**、
 MySmallTools **183/183**。文档核心与完整门禁均通过。
 
+### V2 G8 当前绿色基线
+
+G8 非发布专项入口为：
+
+```powershell
+.\scripts\Test-LayoutLifecycleV2.ps1 -Configuration Release -NoRestore
+```
+
+它串行执行 Host Unit、Plugin、Headless UI、Plugin SDK 与 BiliDownloader 受影响测试，扫描生产 Layout
+V1/Migrator/浮动字段/历史 ID、Legacy public 生命周期编排类型和 Bili Host Manager 依赖。摘要位于
+`artifacts/test-results/LayoutLifecycleV2/summary.json`，并明确记录
+`aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseGate=false`。
+
+专项实际为 Host Unit 42、Plugin 65、Headless UI 24、Plugin SDK 5、BiliDownloader 6，共 **142/142**。
+Host 全量为 Unit 172、UI 44、Plugin 173，共 **389/389**；行覆盖率 **83.05%**、分支覆盖率 **68.65%**。
+测试覆盖严格字段、schema 1/V1 文件拒绝、四向状态往返、未安装/生命周期不可用整体隔离；生命周期
+PluginId 正序、成功项反向停止、并发幂等、同步/异步失败、空 Task、超时协作取消、迟到结果、Host 取消、
+退出继续清理、停止 UI 上下文和诊断脱敏。关键 Codec/Validator 为 100%，Coordinator/Runner/StateStore
+分别为 95.93%/94.05%/98.04%。完整证据见
+[G8 专项记录](../plan-history/host-v2/g8-layout-and-lifecycle-v2.md)。本阶段不运行 AIFLOW、Windows CI/Smoke、
+ReleaseAcceptance、发布包或发布门禁。
+
 ## G14 正式发布门禁
 
 在干净 Git 提交上运行：
@@ -239,6 +262,8 @@ Persistable Document、Tool 和 View。Core 引用 Avalonia/DI/Dock/Newtonsoft�
 - `Business/Events/HostEventBus.cs` 行覆盖率不低于 90%。
 - `HostDockAdapterFactory`、两个 Managed Adapter 与 `DocumentScopeManager` 行覆盖率不低于 90%；
 - `ViewLocator` 行覆盖率不低于 85%。
+- Layout V2 严格 JSON Codec 与纯快照 Validator 行覆盖率各不低于 95%。
+- 生命周期 Coordinator、单操作 Runner 与 StateStore 行覆盖率各不低于 90%。
 
 `obj`、XAML/C# 生成代码和测试程序集不参与统计。生产 View 和
 `App.axaml.cs` 不排除，因为 Headless 测试应保护实际加载、绑定和窗口事件。

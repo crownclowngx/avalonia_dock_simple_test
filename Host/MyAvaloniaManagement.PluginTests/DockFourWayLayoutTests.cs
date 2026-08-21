@@ -179,7 +179,7 @@ public sealed class DockFourWayLayoutTests
     [Fact]
     public void HiddenBottomToolCanBeRestoredAfterLayoutRestart()
     {
-        DockLayoutSnapshotV1 snapshot;
+        DockLayoutSnapshotV2 snapshot;
         using (var firstContext = CreateFactory(("restartBottomTool", "Bottom")))
         {
             var firstFactory = firstContext.Factory;
@@ -245,7 +245,7 @@ public sealed class DockFourWayLayoutTests
         string expectedPaneId,
         string expectedDockId)
     {
-        DockLayoutSnapshotV1 snapshot;
+        DockLayoutSnapshotV2 snapshot;
         using (var firstContext = CreateFactory(
                    ("runtimeVerticalTool", "Right"),
                    ("rightSiblingTool", "Right")))
@@ -337,120 +337,6 @@ public sealed class DockFourWayLayoutTests
             FindDock<ProportionalDock>(secondRoot, expectedPaneId).Owner);
     }
 
-    [Fact]
-    public void LegacyTwoWaySnapshotMigratesVerticalToolsAndPreservesHorizontalState()
-    {
-        using var context = CreateFactory(
-            ("legacyLeftTool", "Left"),
-            ("legacyTopTool", "Top"),
-            ("legacyBottomTool", "Bottom"));
-        var factory = context.Factory;
-        var left = RegisterTool(factory, "legacyLeftTool", "Left");
-        var top = RegisterTool(factory, "legacyTopTool", "Top");
-        var bottom = RegisterTool(factory, "legacyBottomTool", "Bottom");
-        var root = factory.CreateWorkspaceLayout(CreateDocumentDock(factory));
-        factory.InitLayout(root);
-
-        var legacy = new DockLayoutSnapshotV1
-        {
-            Panes =
-            [
-                new DockPaneSnapshotV1
-                {
-                    Id = DockLayoutIds.LeftPane,
-                    Proportion = 0.18
-                }
-            ],
-            Tools =
-            [
-                new DockToolSnapshotV1
-                {
-                    Id = left.Id,
-                    DockId = DockLayoutIds.LeftTools,
-                    Order = 0,
-                    IsVisible = false
-                },
-                new DockToolSnapshotV1
-                {
-                    Id = top.Id,
-                    DockId = DockLayoutIds.LeftTools,
-                    Order = 1,
-                    IsVisible = false
-                },
-                new DockToolSnapshotV1
-                {
-                    Id = bottom.Id,
-                    DockId = DockLayoutIds.LeftTools,
-                    Order = 2,
-                    IsVisible = true,
-                    IsFloating = true,
-                    FloatingBounds = new DockFloatingBoundsV1
-                    {
-                        X = 10,
-                        Y = 20,
-                        Width = 600,
-                        Height = 400
-                    }
-                }
-            ]
-        };
-
-        var migrated = DockLayoutLifecycle.NormalizeLegacyTwoWaySnapshot(
-            legacy,
-            factory);
-
-        Assert.False(migrated.Tools.Single(tool => tool.Id == left.Id).IsVisible);
-        var migratedTop = migrated.Tools.Single(tool => tool.Id == top.Id);
-        Assert.Equal(DockLayoutIds.TopTools, migratedTop.DockId);
-        Assert.True(migratedTop.IsVisible);
-        Assert.Equal(0, migratedTop.Order);
-        var migratedBottom = migrated.Tools.Single(tool => tool.Id == bottom.Id);
-        Assert.Equal(DockLayoutIds.BottomTools, migratedBottom.DockId);
-        Assert.True(migratedBottom.IsVisible);
-        Assert.False(migratedBottom.IsFloating);
-        Assert.Null(migratedBottom.FloatingBounds);
-        Assert.Null(DockLayoutSnapshotValidator.Validate(migrated));
-
-        DockLayoutLifecycle.ApplySnapshot(migrated, root, factory);
-
-        Assert.Same(
-            FindDock<ToolDock>(root, DockLayoutIds.TopTools),
-            top.Owner);
-        Assert.Same(
-            FindDock<ToolDock>(root, DockLayoutIds.BottomTools),
-            bottom.Owner);
-        var rows = FindDock<ProportionalDock>(
-            root,
-            DockLayoutIds.WorkspaceRows);
-        Assert.Same(
-            rows,
-            FindDock<ProportionalDock>(
-                root,
-                DockLayoutIds.TopPane).Owner);
-        Assert.Same(
-            rows,
-            FindDock<ProportionalDock>(
-                root,
-                DockLayoutIds.BottomPane).Owner);
-        Assert.Contains(
-            left,
-            factory.FindRoot(left, _ => true)!.HiddenDockables!);
-
-        var captured = DockLayoutLifecycle.Capture(root, factory);
-        Assert.Contains(
-            captured.Panes,
-            pane => pane.Id == DockLayoutIds.TopPane);
-        Assert.Contains(
-            captured.Panes,
-            pane => pane.Id == DockLayoutIds.BottomPane);
-        Assert.Equal(
-            DockLayoutIds.TopTools,
-            captured.Tools.Single(tool => tool.Id == top.Id).DockId);
-        Assert.Equal(
-            DockLayoutIds.BottomTools,
-            captured.Tools.Single(tool => tool.Id == bottom.Id).DockId);
-    }
-
     [Theory]
     [InlineData("Left", Alignment.Left, DockLayoutIds.LeftTools)]
     [InlineData("Right", Alignment.Right, DockLayoutIds.RightTools)]
@@ -461,7 +347,7 @@ public sealed class DockFourWayLayoutTests
         Alignment expectedAlignment,
         string expectedDockId)
     {
-        DockLayoutSnapshotV1 snapshot;
+        DockLayoutSnapshotV2 snapshot;
         using (var firstContext = CreateFactory(
                    ($"pinned{metadataAlignment}Tool", metadataAlignment)))
         {
@@ -485,7 +371,6 @@ public sealed class DockFourWayLayoutTests
             Assert.Equal(expectedDockId, state.DockId);
             Assert.True(state.IsVisible);
             Assert.True(state.IsPinned);
-            Assert.False(state.IsFloating);
         }
 
         using var secondContext = CreateFactory(
@@ -519,7 +404,7 @@ public sealed class DockFourWayLayoutTests
     [Fact]
     public void ExpandedPinnedAndHiddenToolsPreserveDistinctStatesAndPinnedOrder()
     {
-        DockLayoutSnapshotV1 snapshot;
+        DockLayoutSnapshotV2 snapshot;
         using (var firstContext = CreateFactory(
                    ("expandedTool", "Left"),
                    ("pinnedFirstTool", "Left"),
@@ -575,7 +460,7 @@ public sealed class DockFourWayLayoutTests
     }
 
     private static (bool IsVisible, bool IsPinned) GetToolState(
-        DockLayoutSnapshotV1 snapshot,
+        DockLayoutSnapshotV2 snapshot,
         string toolId)
     {
         var state = snapshot.Tools.Single(tool => tool.Id == toolId);

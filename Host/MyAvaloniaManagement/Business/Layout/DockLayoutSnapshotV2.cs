@@ -5,93 +5,80 @@ using System.Linq;
 namespace MyAvaloniaManagement.Business.Layout;
 
 /// <summary>
-/// Dock 结构快照。这里只保存宿主可重建的布局信息，禁止加入 Document 或插件业务状态。
+/// Dock 布局 V2 的唯一内存快照。这里只保存宿主可以重建的结构状态，禁止加入 Document 或插件业务数据。
 /// </summary>
-internal sealed record DockLayoutSnapshotV1
+internal sealed record DockLayoutSnapshotV2
 {
-    public const int CurrentSchemaVersion = 1;
+    internal const int CurrentSchemaVersion = 2;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
-    public List<DockPaneSnapshotV1> Panes { get; init; } = [];
+    public List<DockPaneSnapshotV2> Panes { get; init; } = [];
 
-    public List<DockToolSnapshotV1> Tools { get; init; } = [];
+    public List<DockToolSnapshotV2> Tools { get; init; } = [];
 
     public string? ActiveToolId { get; init; }
 }
 
-internal sealed record DockPaneSnapshotV1
+/// <summary>保存一个稳定 Pane 的比例，不保存运行时 Dock 对象。</summary>
+internal sealed record DockPaneSnapshotV2
 {
     public required string Id { get; init; }
 
     public double Proportion { get; init; }
 }
 
-internal sealed record DockToolSnapshotV1
+/// <summary>保存 Tool 在主窗口稳定 ToolDock 中的顺序和显示状态。</summary>
+internal sealed record DockToolSnapshotV2
 {
     public required string Id { get; init; }
 
-    /// <summary>
-    /// 工具回到主窗口时所属的稳定 ToolDock ID；浮动状态不会改变这个归属。
-    /// </summary>
     public required string DockId { get; init; }
 
     public int Order { get; init; }
 
     public bool IsVisible { get; init; }
 
-    /// <summary>
-    /// 工具是否以自动隐藏的边缘标签形式显示。
-    /// </summary>
     public bool IsPinned { get; init; }
-
-    public bool IsFloating { get; init; }
-
-    public DockFloatingBoundsV1? FloatingBounds { get; init; }
 }
 
-internal sealed record DockFloatingBoundsV1
-{
-    public double X { get; init; }
-
-    public double Y { get; init; }
-
-    public double Width { get; init; }
-
-    public double Height { get; init; }
-}
-
+/// <summary>布局校验只返回稳定错误码和已经通过格式检查的稳定 ID。</summary>
 internal readonly record struct DockLayoutValidationError(
     string Code,
     string? StableId);
 
+/// <summary>
+/// 校验已经完成严格 JSON 读取的 V2 快照；本类型不访问文件系统，也不读取运行时 Dock 树。
+/// </summary>
 internal static class DockLayoutSnapshotValidator
 {
     private const int MaximumStableIdLength = 128;
     private const double MinimumPaneProportion = 0.05;
     private const double MaximumPaneProportion = 0.95;
-    private const double MinimumFloatingSize = 100;
-    private const double MaximumFloatingSize = 20_000;
-    private const double MaximumFloatingCoordinate = 100_000;
 
-    public static DockLayoutValidationError? Validate(DockLayoutSnapshotV1? snapshot)
+    internal static DockLayoutValidationError? Validate(DockLayoutSnapshotV2? snapshot)
     {
         if (snapshot is null)
         {
             return new("LAYOUT_EMPTY", null);
         }
 
-        if (snapshot.SchemaVersion != DockLayoutSnapshotV1.CurrentSchemaVersion)
+        if (snapshot.SchemaVersion != DockLayoutSnapshotV2.CurrentSchemaVersion)
         {
             return new("LAYOUT_SCHEMA_UNSUPPORTED", null);
+        }
+
+        if (snapshot.Panes is null || snapshot.Tools is null)
+        {
+            return new("LAYOUT_COLLECTION_INVALID", null);
         }
 
         var paneIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var pane in snapshot.Panes)
         {
-            if (!IsStableId(pane.Id))
+            if (pane is null || !IsStableId(pane.Id))
             {
-                return new("LAYOUT_PANE_ID_INVALID", NormalizeForLog(pane.Id));
+                return new("LAYOUT_PANE_ID_INVALID", NormalizeForLog(pane?.Id));
             }
 
             if (!paneIds.Add(pane.Id))
@@ -110,9 +97,9 @@ internal static class DockLayoutSnapshotValidator
         var dockOrders = new HashSet<(string DockId, int Order)>();
         foreach (var tool in snapshot.Tools)
         {
-            if (!IsStableId(tool.Id))
+            if (tool is null || !IsStableId(tool.Id))
             {
-                return new("LAYOUT_TOOL_ID_INVALID", NormalizeForLog(tool.Id));
+                return new("LAYOUT_TOOL_ID_INVALID", NormalizeForLog(tool?.Id));
             }
 
             if (!toolIds.Add(tool.Id))
@@ -130,20 +117,9 @@ internal static class DockLayoutSnapshotValidator
                 return new("LAYOUT_TOOL_ORDER_INVALID", tool.Id);
             }
 
-            if (!tool.IsFloating && tool.FloatingBounds is not null)
-            {
-                return new("LAYOUT_FLOATING_STATE_INVALID", tool.Id);
-            }
-
-            if (tool.IsPinned && (!tool.IsVisible || tool.IsFloating))
+            if (tool.IsPinned && !tool.IsVisible)
             {
                 return new("LAYOUT_PINNED_STATE_INVALID", tool.Id);
-            }
-
-            if (tool.IsFloating &&
-                (!tool.IsVisible || !IsValidBounds(tool.FloatingBounds)))
-            {
-                return new("LAYOUT_FLOATING_BOUNDS_INVALID", tool.Id);
             }
         }
 
@@ -155,17 +131,6 @@ internal static class DockLayoutSnapshotValidator
 
         return null;
     }
-
-    private static bool IsValidBounds(DockFloatingBoundsV1? bounds) =>
-        bounds is not null &&
-        double.IsFinite(bounds.X) &&
-        double.IsFinite(bounds.Y) &&
-        double.IsFinite(bounds.Width) &&
-        double.IsFinite(bounds.Height) &&
-        Math.Abs(bounds.X) <= MaximumFloatingCoordinate &&
-        Math.Abs(bounds.Y) <= MaximumFloatingCoordinate &&
-        bounds.Width is >= MinimumFloatingSize and <= MaximumFloatingSize &&
-        bounds.Height is >= MinimumFloatingSize and <= MaximumFloatingSize;
 
     private static bool IsStableId(string? value) =>
         !string.IsNullOrWhiteSpace(value) &&

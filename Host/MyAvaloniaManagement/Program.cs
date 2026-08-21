@@ -1,11 +1,9 @@
 using System;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using Avalonia;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagementCommon.Plugin;
 
 namespace MyAvaloniaManagement;
 
@@ -63,16 +61,6 @@ sealed class Program
         {
             runtime?.Dispose();
         }
-    }
-
-    /// <summary>
-    /// 在 Avalonia 消息循环结束后反向关闭插件。
-    /// 保留该入口是为了兼容既有测试，同时由 HostRuntime 控制调用时机。
-    /// </summary>
-    internal static void ShutdownPlugins(PluginLifecycleManager lifecycleManager)
-    {
-        SynchronizationContext.SetSynchronizationContext(null);
-        lifecycleManager.ShutdownAllAsync().GetAwaiter().GetResult();
     }
 
     /// <summary>

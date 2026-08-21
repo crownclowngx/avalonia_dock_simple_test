@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using Dock.Model.Controls;
 using MyAvaloniaManagement.ViewModels;
@@ -9,11 +8,11 @@ namespace MyAvaloniaManagement.Business.Layout;
 
 /// <summary>
 /// 协调布局持久化与主窗口生命周期，只负责 Prepare、Apply 和 Save 的执行顺序。
-/// 快照映射、兼容迁移和运行时校验委托给专门组件，避免生命周期类理解所有 Dock 细节。
+/// 快照映射、严格 V2 读取和运行时校验委托给专门组件，避免生命周期类理解所有 Dock 细节。
 /// </summary>
 internal sealed class DockLayoutLifecycle(DockLayoutStore store)
 {
-    private DockLayoutSnapshotV1? _pendingSnapshot;
+    private DockLayoutSnapshotV2? _pendingSnapshot;
 
     internal IRootDock Prepare(ManagementFactory factory)
     {
@@ -37,12 +36,16 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
             return defaultRoot;
         }
 
-        snapshot = DockLayoutSnapshotMigrator.Normalize(snapshot, factory);
-        if (DockLayoutSnapshotValidator.Validate(snapshot) is { } migratedError)
+        // Tool 声明与生命周期可用性不依赖 Dock 树，必须在补建任何快照所需 Pane 之前完成。
+        // 否则坏快照虽然最终被拒绝，EnsureSnapshotDocks 仍可能把空 Pane 留在默认布局中。
+        if (DockLayoutSnapshotMapper.ValidateContributions(snapshot, factory) is { } contributionError)
         {
-            store.RejectLoadedSnapshot(migratedError.Code, migratedError.StableId);
+            store.RejectLoadedSnapshot(
+                contributionError.Code,
+                contributionError.StableId);
             return defaultRoot;
         }
+
         DockLayoutSnapshotMapper.EnsureSnapshotDocks(
             snapshot,
             defaultRoot,
@@ -92,48 +95,17 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         }
     }
 
-    // 保留兼容入口供既有宿主集成测试和内部调用使用，实际逻辑委托给职责单一的组件。
-    internal static DockLayoutSnapshotV1 Capture(
+    // 测试与宿主内部调用共用同一映射入口，避免测试复制 Dock 树遍历规则。
+    internal static DockLayoutSnapshotV2 Capture(
         IRootDock root,
         ManagementFactory factory) =>
         DockLayoutSnapshotMapper.Capture(root, factory);
 
-    internal static DockLayoutSnapshotV1 NormalizeLegacyTwoWaySnapshot(
-        DockLayoutSnapshotV1 snapshot,
-        ManagementFactory factory) =>
-        DockLayoutSnapshotMigrator.Normalize(snapshot, factory);
-
     internal static void ApplySnapshot(
-        DockLayoutSnapshotV1 snapshot,
+        DockLayoutSnapshotV2 snapshot,
         IRootDock root,
         ManagementFactory factory) =>
         DockLayoutSnapshotMapper.ApplySnapshot(snapshot, root, factory);
-}
-
-/// <summary>
-/// 仅执行现有布局快照的兼容归一化。
-/// 独立该职责是为了把版本兼容规则与运行时 Dock 校验分开，且明确不引入新版本格式。
-/// </summary>
-internal static class DockLayoutSnapshotMigrator
-{
-    internal static DockLayoutSnapshotV1 Normalize(
-        DockLayoutSnapshotV1 snapshot,
-        ManagementFactory factory)
-    {
-        // 先迁移 Tool 身份，再执行历史停靠方向修复；否则旧 ID 无法查询新元数据的默认方向。
-        var migratedTools = snapshot.Tools
-            .Select(tool => tool with { Id = factory.NormalizePersistedToolId(tool.Id) })
-            .ToList();
-        var activeToolId = snapshot.ActiveToolId is null
-            ? null
-            : factory.NormalizePersistedToolId(snapshot.ActiveToolId);
-        var migrated = snapshot with
-        {
-            Tools = migratedTools,
-            ActiveToolId = activeToolId,
-        };
-        return DockLayoutSnapshotMapper.NormalizeLegacyTwoWaySnapshot(migrated, factory);
-    }
 }
 
 /// <summary>
@@ -143,7 +115,7 @@ internal static class DockLayoutSnapshotMigrator
 internal static class DockLayoutRuntimeValidator
 {
     internal static DockLayoutValidationError? Validate(
-        DockLayoutSnapshotV1 snapshot,
+        DockLayoutSnapshotV2 snapshot,
         IRootDock root,
         ManagementFactory factory) =>
         DockLayoutSnapshotMapper.ValidateAgainstRuntime(

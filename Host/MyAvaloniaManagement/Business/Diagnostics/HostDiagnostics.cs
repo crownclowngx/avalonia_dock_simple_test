@@ -12,6 +12,7 @@ using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagementCommon.Plugin;
 using DocumentTypeId = MyAvaloniaManagement.PluginSdk.DocumentTypeId;
+using PluginLifecycleStage = MyAvaloniaManagement.Business.Lifecycle.PluginLifecycleStage;
 
 namespace MyAvaloniaManagement.Business.Diagnostics;
 
@@ -162,7 +163,12 @@ internal static class HostDiagnosticCodes
     internal const string ExtensionDiscoveryFailed = "EXTENSION_DISCOVERY_FAILED";
     internal const string ExtensionActivationFailed = "EXTENSION_ACTIVATION_FAILED";
     internal const string ToolAdapterActivationFailed = "TOOL_ADAPTER_ACTIVATION_FAILED";
-    internal const string LifecycleFailed = "LIFECYCLE_FAILED";
+    internal const string LifecycleInitializeFailed = "LIFECYCLE_INITIALIZE_FAILED";
+    internal const string LifecycleInitializeTimeout = "LIFECYCLE_INITIALIZE_TIMEOUT";
+    internal const string LifecycleShutdownFailed = "LIFECYCLE_SHUTDOWN_FAILED";
+    internal const string LifecycleShutdownTimeout = "LIFECYCLE_SHUTDOWN_TIMEOUT";
+    internal const string LifecycleHostCancelled = "LIFECYCLE_HOST_CANCELLED";
+    internal const string LifecycleCancellationFailed = "LIFECYCLE_CANCELLATION_FAILED";
     internal const string HostStartupCleanupFailed = "HOST_STARTUP_CLEANUP_FAILED";
     internal const string HostStartupUnexpected = "HOST_STARTUP_UNEXPECTED";
 }
@@ -254,7 +260,15 @@ internal static class HostDiagnosticRedactionPolicy
             "扩展贡献激活或校验失败，主工作台不能安全启动。",
         HostDiagnosticCodes.ToolAdapterActivationFailed =>
             "Tool 适配或视图创建失败，已隔离该 Tool，其他工作区继续运行。",
-        HostDiagnosticCodes.LifecycleFailed =>
+        HostDiagnosticCodes.LifecycleInitializeFailed or
+        HostDiagnosticCodes.LifecycleInitializeTimeout =>
+            "插件初始化失败或超时，已隔离该插件贡献。",
+        HostDiagnosticCodes.LifecycleShutdownFailed or
+        HostDiagnosticCodes.LifecycleShutdownTimeout =>
+            "插件关闭失败或超时，宿主将继续释放其他资源。",
+        HostDiagnosticCodes.LifecycleHostCancelled =>
+            "宿主取消了插件初始化。",
+        HostDiagnosticCodes.LifecycleCancellationFailed =>
             "插件生命周期操作失败。",
         HostDiagnosticCodes.HostStartupCleanupFailed =>
             "启动失败后的资源清理发生异常，应用将退出。",

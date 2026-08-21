@@ -1,14 +1,13 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-21（已同步 Managed Plugin V2 G7）<br>
+> 更新日期：2026-08-21（已同步 Managed Plugin V2 G8）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系  
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
 > 不在本轮范围：逐项评审插件业务功能、第三方插件市场、运行时热卸载、插件沙箱
 
-> V2 当前状态：G0–G7 已完成。Host 生产模块入口、声明式贡献目录、Dock Adapter 与 Document V2 使用最终 Core/UI SDK；四业务插件
-> 仍以不可打包的 `MyAvaloniaManagement.LegacyPluginContracts` 保持源码可编译，但不会由 G7 Host 加载。
-> 本文涉及四业务插件的 Strategy、Document v1 与生命周期 Manager 段落属于 G9–G12 前的阶段事实。
+> V2 当前状态：G0–G8 已完成。Host 生产模块入口、声明式贡献目录、Dock Adapter、Document V2、
+> Layout V2 与 internal 生命周期已建立；四业务插件完整迁移仍属于 G9–G12。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -33,7 +32,7 @@
 ```mermaid
 flowchart TB
     Host["MyAvaloniaManagement<br/>Avalonia 桌面宿主"]
-    Sdk["PluginSdk + PluginSdk.UI<br/>G7 Host 生产契约"]
+    Sdk["PluginSdk + PluginSdk.UI<br/>G8 Host 生产契约"]
     Legacy["LegacyPluginContracts<br/>业务插件源码桥"]
     Dock["Avalonia 12 + Dock 12<br/>UI 与停靠模型"]
 
@@ -82,7 +81,7 @@ sequenceDiagram
     participant DI as 根 IServiceProvider
     participant B as PluginRegistryBuilder
     participant E as PluginRegistry
-    participant LM as PluginLifecycleManager
+    participant LM as PluginLifecycleCoordinator
     participant UI as Avalonia / ManagementFactory
 
     P->>R: Create
@@ -95,7 +94,7 @@ sequenceDiagram
     R->>DI: BuildServiceProvider + ValidateScopes/ValidateOnBuild
     R->>B: 只校验冻结声明并过滤全局冲突
     B-->>E: 原子发布不可变 Registry
-    R->>LM: G5 不执行最终生命周期编排（留给 G8）
+    R->>LM: 按 PluginId 正序初始化并提交可用性
     P->>UI: 启动 Avalonia
     UI->>E: 查询显式 Document / Tool / View 贡献
     E-->>UI: 元数据、View 工厂和所有者索引
@@ -103,10 +102,10 @@ sequenceDiagram
     UI->>UI: 窗口 Opened 后应用待恢复布局
     UI->>UI: 窗口 Closing 时保存布局
     P->>R: Dispose
-    R->>DI: 关闭 Scope，逆序释放插件 Provider 与 Host Provider
+    R->>DI: Adapter/View → Scope → 反向 Lifecycle → Plugin Provider → Host Provider
 ```
 
-**[代码事实]** `HostRuntime` 是内部 Composition Root，统一拥有服务注册、插件发现、容器构建、生命周期初始化、Avalonia App 工厂和反向关闭；`Program.Main` 只负责进程编排。App 通过内部桌面 Shell 构造注入，根容器启用了 `ValidateScopes` 与 `ValidateOnBuild`。参见 [`Program.cs`](../../Host/MyAvaloniaManagement/Program.cs)、[`HostRuntime.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/HostRuntime.cs) 和 [`PluginLifecycleManager.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/Plugin/PluginLifecycleManager.cs)。
+**[代码事实]** `HostRuntime` 是内部 Composition Root，统一拥有服务注册、插件发现、容器构建、生命周期初始化、Avalonia App 工厂和反向关闭；`Program.Main` 只负责进程编排。根容器启用 `ValidateScopes` 与 `ValidateOnBuild`，生命周期实现由 internal Coordinator/Runner/StateStore 分工。参见 [`Program.cs`](../../Host/MyAvaloniaManagement/Program.cs)、[`HostRuntime.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/HostRuntime.cs) 和 [`PluginLifecycleCoordinator.cs`](../../Host/MyAvaloniaManagement/Business/Lifecycle/PluginLifecycleCoordinator.cs)。
 
 **[代码事实]** `AssemblyLoaderHelper` 已收口为 Host internal 加载边界，内部按规范化插件根目录使用线程安全快照；同一根目录只发现一次。manifest v2 的入口必须携带同名 `.deps.json`，每个插件目录建立独立且不可回收的 `PluginLoadContext`；加载器不注册全局 `AssemblyResolve`、不递归索引 DLL，也没有跨插件简单名称缓存。加载器只按大小写敏感完整名称取得 `entryPoint.type`，并在不实例化插件对象的前提下预检可执行结构；程序集中的其他模块不会被扫描或执行。单个插件目录、依赖、类型或入口结构失败不会终止其他插件。后续贡献只来自精确入口的显式注册。
 
@@ -123,17 +122,17 @@ sequenceDiagram
 才合并。Host 描述符从不交给插件，旧保护事务已删除。参见
 [`PluginProviderOwner.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginProviderOwner.cs)。
 
-**[代码事实]** 最终 `IPluginLifecycle` 是可选能力，不是每个插件的必选空壳。G5 只冻结实现类型、注册为
-插件 singleton 并验证可解析性，不执行初始化或关闭；最终状态机、超时、确定性顺序与贡献可用性门控由
-G8 实现。BiliDownloader 的 Legacy 生命周期源码只参与插件自身回归，不进入当前 Host 生产生命周期。
+**[代码事实]** 最终 `IPluginLifecycle` 是可选能力，不是每个插件的必选空壳。G8 按 PluginId 正序启动、
+按实际成功顺序反向停止；30/10 秒超时、失败隔离、状态和可用性均为 Host internal。Registry 不保存
+运行状态。Provider 边界暂时适配 BiliDownloader 的 Legacy 两方法接口，但不恢复 `Order`、依赖图或 Manager。
 
 **[架构判断]** v1 已冻结并实现为 Managed-only；Legacy 只在历史验收记录和持久化数据迁移语境中出现，不是插件接入方式。
 
 ## 3. Document：多实例工作上下文
 
-> G7 当前生产事实：Host Welcome 与 V2 测试 Document 通过最终 `DocumentDescriptor`、Registry、internal
+> G8 当前生产事实：Host Welcome 与 V2 测试 Document 通过最终 `DocumentDescriptor`、Registry、internal
 > Activator、异步初始化与 Dock Adapter 创建；以下四业务插件 Strategy/Document v1 说明是迁移前源码事实，
-> 不代表 G7 Host 会加载这些入口。
+> 不代表 G8 Host 会加载这些入口。
 
 ### 3.1 最终创建入口统一为“类型 + ActivationContext”
 
@@ -148,7 +147,7 @@ G8 实现。BiliDownloader 的 Legacy 生命周期源码只参与插件自身回
 Host 生产入口接收 `DocumentTypeId + DocumentActivationContext` 并异步返回完整 Adapter。Creation Intent
 必须先与冻结 Descriptor 核对；恢复内容只通过 `RestoredContent` 传入。四业务插件源码中的
 `IDocumentCreationStrategy`、`DocumentCreationParams` 与 Intent Provider 是 G9–G12 前的 Legacy 阶段事实，
-不会进入 G7 Host 生产路径。
+不会进入 G8 Host 生产路径。
 
 ### 3.2 所有 V2 Document 统一纳入所属 Provider Scope
 
@@ -258,13 +257,14 @@ flowchart LR
 
 **[架构判断]** BiliDownloader 是当前最清晰的示例：下载协调器是插件级 singleton，由 `IPluginLifecycle` 初始化和关闭；Scheduler Tool 只是后台事实源的展示与控制入口。因此隐藏 Tool 或关闭提交任务的 Document 都不应停止下载。
 
-### 4.3 布局持久化已经从“未实现”变为“可用 V1”
+### 4.3 布局持久化是唯一严格 V2
 
-**[代码事实]** `DockLayoutStore` 把 `layout-v1.json` 写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v1\`（测试可通过 `MYAVALONIA_DATA_DIRECTORY` 提供完整隔离根），采用同目录临时文件和原子替换；读取时校验版本、稳定 ID、重复项、Pane/Tool 状态和边界数据，损坏快照会被隔离为 `.invalid.bak`。旧预发布父目录不会被读取、迁移或删除。参见 [`DockLayoutStore.cs`](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs) 和 [`DockLayoutSnapshotV1.cs`](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotV1.cs)。
+**[代码事实]** `DockLayoutStore` 只查找 `layout-v2.json`，采用同目录临时文件和原子替换；严格 Codec 拒绝未知、重复、缺失、大小写错误、错误类型、注释、尾逗号和 schema 1。损坏快照隔离为 `.invalid.bak`；`layout-v1.json` 原样保留。参见 [`DockLayoutStore.cs`](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs) 和 [Layout V2 参考](../reference/dock-layout-snapshot-v2.md)。
 
-**[代码事实]** `DockLayoutLifecycle` 保存四向 Pane 比例、Tool 顺序、可见/固定状态和活动 Tool；能够迁移旧的两向布局，并把历史浮动 Tool 归一化回主窗口 Dock。若快照引用缺失插件、缺失 Pane 或非法 Dock，则隔离整个快照并回退默认布局。
+**[代码事实]** `DockLayoutLifecycle` 保存四向 Pane 比例、Tool 顺序、可见/固定状态和活动 Tool；不存在
+Migrator、浮动字段或历史 ID 归一化。缺失/生命周期不可用插件、缺失 Pane、非法 Dock 或应用异常会隔离整份快照并重建默认布局。
 
-**[剩余边界]** 当前策略强调“一致回退”，尚未做到插件缺失时保留其余可恢复布局，也没有 V2 迁移框架；这属于下一阶段的韧性改进，而不再是“布局持久化未实现”。
+**[设计边界]** 当前策略有意坚持一致回退，不在插件缺失时猜测性保留部分状态，也不建立未来迁移框架。
 
 ## 5. 宿主与插件的实际交互通道
 
@@ -391,7 +391,7 @@ public DocumentMetadata GetMetadata() => new(
 ```
 
 主 ID 必须采用小写点分层命名，并归属于 manifest 所有者的 `.document.*` 或 `.tool.*` 空间。Tool
-layout-v1 可按独立规则归一化历史短名称；Document V2 只接受规范主 ID，不存在别名或 V1 迁移。
+Layout V2 与 Document V2 都只接受当前主 ID，不存在历史短名称、GUID、别名或 V1 迁移。
 新建与“另存为”统一使用 `.mamdoc`。
 
 ### 6.4 2026-08-12 统一启动诊断 V1
@@ -598,7 +598,7 @@ Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. V2 G7 已把 Host 生产贡献与 Document 持久化收口为最终 SDK Registration、不可变 Registry、独立 Activator、internal Dock Adapter 和唯一 V2 信封；
+1. V2 G8 已把 Host 生产贡献、Document/Layout 持久化和生命周期收口为最终 SDK Registration、不可变 Registry、独立 Activator、internal Dock Adapter、唯一 V2 格式与只读可用性投影；
 2. 运行前 manifest v2、Core/UI 兼容检查、声明式 Plugin Registry 和用户可见诊断已经建立；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。

@@ -66,6 +66,21 @@ internal sealed class PluginRegistry
     /// <summary>获取已经冻结但尚未由 G8 编排执行的最终 SDK 生命周期声明。</summary>
     internal IReadOnlyList<PluginLifecycleDeclaration> Lifecycles { get; }
 
+    /// <summary>
+    /// 返回不可变声明中出现的全部所有者。测试可构造不含 manifest 快照的最小 Registry，
+    /// 因而状态存储不能把 <see cref="Plugins"/> 当作贡献所有权的第二份唯一事实。
+    /// </summary>
+    internal IReadOnlySet<PluginId> DeclaredOwnerIds => Plugins
+        .Select(plugin => new PluginId(plugin.Manifest.PluginId.Value))
+        .Concat(_documents.Values.Select(document => document.OwnerId))
+        .Concat(_tools.Values.Select(tool => tool.OwnerId))
+        .Concat(Lifecycles.Select(lifecycle => lifecycle.OwnerId))
+        .Append(MyAvaloniaManagement.Business.Constants.HostExtensionIds.V2Owner)
+        .ToHashSet();
+
+    /// <summary>供 Host internal 可用性投影筛选的完整 Tool 声明；返回集合不包含运行状态。</summary>
+    internal IReadOnlyCollection<PluginToolRegistration> Tools => _tools.Values.ToArray();
+
     internal IReadOnlyDictionary<DocumentTypeId, DocumentDescriptor> DocumentDescriptors =>
         _documents.ToDictionary(item => item.Key, item => item.Value.Descriptor);
 

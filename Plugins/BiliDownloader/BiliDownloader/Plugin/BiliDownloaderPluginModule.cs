@@ -226,8 +226,6 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
         _globalBandwidthLimit = globalBandwidthLimit;
     }
 
-    public int Order => 100;
-
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

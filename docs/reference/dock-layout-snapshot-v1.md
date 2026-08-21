@@ -1,7 +1,7 @@
-# Dock 结构布局快照 V1
+# Dock 结构布局快照 V1（历史事实）
 
-> 本文描述 G8 前仍在运行的 V1 布局格式，不是最终 layout v2。主项目内部协作者及设计取舍参见
-> [`Host/MyAvaloniaManagement/docs`](../../Host/MyAvaloniaManagement/docs/README.md)。
+> 本文只保留 G8 前的历史实现事实。当前 Host 仅使用
+> [`layout-v2.json`](./dock-layout-snapshot-v2.md)，不会读取、迁移、覆盖或隔离本文的 V1 文件。
 
 ## 设计边界
 

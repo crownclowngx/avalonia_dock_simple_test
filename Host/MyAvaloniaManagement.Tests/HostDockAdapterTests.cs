@@ -5,6 +5,7 @@ using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MyAvaloniaManagement.ViewModels;
@@ -163,6 +164,47 @@ public sealed class HostDockAdapterTests
         Assert.DoesNotContain("插件私有异常正文", record.UserMessage, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void 生命周期失败后的菜单Tool投影和直接Activator均被同一可用性事实阻断()
+    {
+        var owner = new PluginId("myavalonia.plugin.g8-unavailable");
+        var documentId = new DocumentTypeId("myavalonia.plugin.g8-unavailable.document.sample");
+        var toolId = new ToolTypeId("myavalonia.plugin.g8-unavailable.tool.sample");
+        var document = DocumentRegistration(typeof(TrackedDocument)) with
+        {
+            OwnerId = owner,
+            Descriptor = new DocumentDescriptor(documentId, "不可用文档", "测试", "测试"),
+        };
+        var tool = ToolRegistration(toolId) with { OwnerId = owner };
+        var registry = new PluginRegistry(
+            [],
+            [document],
+            [tool],
+            [new PluginLifecycleDeclaration(owner, typeof(UnavailableLifecycle))]);
+        var states = new PluginLifecycleStateStore(registry);
+        states.SetState(new PluginLifecycleState(
+            owner,
+            PluginLifecycleStatus.InitializationFailed));
+        var availability = new PluginAvailabilityReadModel(states);
+        using var hostProvider = new ServiceCollection().BuildServiceProvider();
+        using var pluginProviders = new PluginProviderOwner();
+        var activator = new PluginContributionActivator(
+            hostProvider,
+            registry,
+            pluginProviders,
+            availability);
+        using var factory = new ManagementFactory(
+            registry,
+            new SelectiveToolFactory(new ToolTypeId("myavalonia.host.tool.never")),
+            new DocumentScopeRegistry(),
+            availability: availability);
+
+        Assert.Empty(factory.GetAllDocumentCreationEntries());
+        Assert.Empty(factory.GetToolRegistrySnapshot().ToolMetadata);
+        Assert.Throws<InvalidOperationException>(() => activator.ActivateDocument(documentId));
+        Assert.Throws<InvalidOperationException>(() => activator.ActivateTool(toolId));
+    }
+
     private static PluginDocumentRegistration DocumentRegistration(Type modelType) => new(
         HostExtensionIds.V2Owner,
         new DocumentDescriptor(
@@ -212,6 +254,12 @@ public sealed class HostDockAdapterTests
 
             return new Tool { Id = toolTypeId.Value, Title = toolTypeId.Value };
         }
+    }
+
+    private sealed class UnavailableLifecycle : IPluginLifecycle
+    {
+        public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task ShutdownAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class TrackedDocument(

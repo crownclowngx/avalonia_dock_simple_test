@@ -3,6 +3,7 @@ using System.Text.Json;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagementCommon.Plugin;
 
@@ -315,32 +316,39 @@ public sealed class HostDiagnosticsTests
     }
 
     [Fact]
-    public async Task 生命周期失败状态插件面板和默认日志均不包含插件异常正文()
+    public void 生命周期失败的内存JsonLines和默认日志均不包含插件异常正文()
     {
+        using var workspace = new DiagnosticWorkspace();
         var originalError = Console.Error;
         using var captured = new StringWriter();
-        PluginLifecycleManager manager;
+        HostDiagnosticRecord record;
+        string logPath;
         try
         {
             Console.SetError(captured);
-            manager = new PluginLifecycleManager([
-                new PluginLifecycleRegistration(
-                    new PluginId("myavalonia.plugin.g15-lifecycle"),
-                    new SensitiveFailureLifecycle(string.Join(" | ", SensitiveCanaries)))
-            ]);
-            await manager.InitializeAllAsync();
+            using var session = HostDiagnosticSession.Start(workspace.Root);
+            record = session.Report(new HostDiagnosticDraft(
+                HostDiagnosticCodes.LifecycleInitializeFailed,
+                HostDiagnosticPhase.PluginLifecycle)
+            {
+                PluginId = new PluginId("myavalonia.plugin.g15-lifecycle"),
+                LifecycleStage = PluginLifecycleStage.Initialization,
+                Duration = TimeSpan.FromMilliseconds(12),
+                Exception = new InvalidOperationException(
+                    string.Join(" | ", SensitiveCanaries)),
+            });
+            logPath = Assert.IsType<string>(session.LogPath);
         }
         finally
         {
             Console.SetError(originalError);
         }
 
-        var state = Assert.IsType<PluginLifecycleState>(
-            manager.GetState(new PluginId("myavalonia.plugin.g15-lifecycle")));
-        Assert.Equal("插件初始化失败。", state.ErrorMessage);
-        AssertSensitiveCanariesAbsent(state.ErrorMessage!);
+        Assert.Equal("插件初始化失败或超时，已隔离该插件贡献。", record.UserMessage);
+        Assert.Equal("stage=Initialization; durationMs=12", record.TechnicalDetail);
+        AssertSensitiveCanariesAbsent(JsonSerializer.Serialize(record));
+        AssertSensitiveCanariesAbsent(File.ReadAllText(logPath));
         AssertSensitiveCanariesAbsent(captured.ToString());
-
     }
 
     [Fact]
@@ -447,16 +455,6 @@ public sealed class HostDiagnosticsTests
         {
             Assert.DoesNotContain(canary, text, StringComparison.OrdinalIgnoreCase);
         }
-    }
-
-    private sealed class SensitiveFailureLifecycle(string message) : IPluginLifecycle
-    {
-        public int Order => 0;
-
-        public Task InitializeAsync(CancellationToken cancellationToken) =>
-            Task.FromException(new InvalidOperationException(message));
-
-        public Task ShutdownAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class DiagnosticWorkspace : IDisposable

@@ -88,7 +88,7 @@ public sealed class BiliDownloaderModuleTests
     }
 
     [Fact]
-    public async Task 模块生命周期解析唯一协调器_且初始化关闭均由宿主管理器执行()
+    public async Task 模块生命周期解析唯一协调器_且回调完成初始化与关闭职责()
     {
         var services = new ServiceCollection();
         var pluginId = new PluginId("myavalonia.plugin.bili-downloader");
@@ -109,27 +109,21 @@ public sealed class BiliDownloaderModuleTests
         services.AddSingleton<IFfmpegRuntimeLocator>(new FakeFfmpegService { ReadyOverride = true });
         services.AddSingleton<IBiliCredentialProvider>(new FakeCredentialProvider());
         services.AddSingleton<IDownloadTaskExecutor>(new FakeDownloadTaskExecutor());
+        // 该轻量测试上下文只记录贡献声明，不模拟 Host 的插件 Provider；显式注册实例
+        // 仅用于验证 Bili 生命周期自身，不重新引入已删除的 Host Manager。
         services.AddSingleton<BiliDownloaderPluginLifecycle>();
-        services.AddSingleton(provider => new PluginLifecycleRegistration(
-            pluginId,
-            provider.GetRequiredService<BiliDownloaderPluginLifecycle>()));
-        services.AddSingleton<PluginLifecycleManager>();
 
         using var provider = services.BuildServiceProvider();
         var firstCoordinator = provider.GetRequiredService<BiliDownloadCoordinator>();
         var secondCoordinator = provider.GetRequiredService<BiliDownloadCoordinator>();
-        var manager = provider.GetRequiredService<PluginLifecycleManager>();
+        var lifecycle = provider.GetRequiredService<BiliDownloaderPluginLifecycle>();
 
         Assert.Same(firstCoordinator, secondCoordinator);
-        Assert.Single(manager.States);
-        Assert.Equal(PluginLifecycleStatus.NotStarted, manager.GetState(SaveDocumentTypeIdConstant.PluginId)?.Status);
 
-        await manager.InitializeAllAsync();
+        await lifecycle.InitializeAsync(CancellationToken.None);
         Assert.Equal(1, repository.InitializeCount);
-        Assert.Equal(PluginLifecycleStatus.Ready, manager.GetState(SaveDocumentTypeIdConstant.PluginId)?.Status);
 
-        await manager.ShutdownAllAsync();
-        Assert.Equal(PluginLifecycleStatus.Stopped, manager.GetState(SaveDocumentTypeIdConstant.PluginId)?.Status);
+        await lifecycle.ShutdownAsync(CancellationToken.None);
     }
 
     private static ServiceDescriptor FindDescriptor(IServiceCollection services, Type serviceType)

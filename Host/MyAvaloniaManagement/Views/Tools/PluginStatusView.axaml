@@ -59,7 +59,7 @@
                                            FontSize="11" />
                                 <TextBlock Grid.Row="6"
                                            Margin="0,2,0,0"
-                                           Text="{Binding DependenciesText, StringFormat='依赖：{0}'}"
+                                           Text="{Binding AvailabilityText, StringFormat='可用性：{0}'}"
                                            FontSize="11"
                                            TextWrapping="Wrap" />
                                 <TextBlock Grid.Row="7"

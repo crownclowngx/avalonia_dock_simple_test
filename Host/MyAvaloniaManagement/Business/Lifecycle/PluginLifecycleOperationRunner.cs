@@ -1,6 +1,9 @@
+using System;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace MyAvaloniaManagementCommon.Plugin;
+namespace MyAvaloniaManagement.Business.Lifecycle;
 
 internal enum PluginLifecycleOperationOutcome
 {
@@ -14,24 +17,26 @@ internal sealed record PluginLifecycleOperationResult(
     TimeSpan Duration,
     Exception? Exception = null);
 
-/// <summary>
-/// 执行一个有宿主期限的生命周期操作，并隔离插件异常。
-/// </summary>
+/// <summary>只负责执行一个带期限的插件回调，不决定插件顺序、状态或可用性。</summary>
 internal sealed class PluginLifecycleOperationRunner
 {
     internal async Task<PluginLifecycleOperationResult> RunAsync(
         Func<CancellationToken, Task> operation,
         TimeSpan timeout,
-        CancellationToken cancellationToken)
+        CancellationToken hostCancellationToken,
+        Action<Exception>? cancellationFailure = null)
     {
         ArgumentNullException.ThrowIfNull(operation);
+        if (timeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout));
+        }
 
         var timeoutCancellation = new CancellationTokenSource();
         var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
+            hostCancellationToken,
             timeoutCancellation.Token);
         var stopwatch = Stopwatch.StartNew();
-
         Task operationTask;
         try
         {
@@ -39,7 +44,7 @@ internal sealed class PluginLifecycleOperationRunner
                 ?? Task.FromException(new InvalidOperationException(
                     "插件生命周期操作返回了 null Task。"));
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (hostCancellationToken.IsCancellationRequested)
         {
             linkedCancellation.Dispose();
             timeoutCancellation.Dispose();
@@ -58,7 +63,7 @@ internal sealed class PluginLifecycleOperationRunner
 
         try
         {
-            await operationTask.WaitAsync(timeout, cancellationToken)
+            await operationTask.WaitAsync(timeout, hostCancellationToken)
                 .ConfigureAwait(false);
             stopwatch.Stop();
             linkedCancellation.Dispose();
@@ -70,15 +75,16 @@ internal sealed class PluginLifecycleOperationRunner
         catch (TimeoutException)
         {
             stopwatch.Stop();
+            ObserveLateFault(operationTask);
             RequestCancellationWithoutBlocking(
                 timeoutCancellation,
-                linkedCancellation);
-            ObserveLateFault(operationTask);
+                linkedCancellation,
+                cancellationFailure);
             return new PluginLifecycleOperationResult(
                 PluginLifecycleOperationOutcome.TimedOut,
                 stopwatch.Elapsed);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (hostCancellationToken.IsCancellationRequested)
         {
             ObserveLateFault(operationTask);
             linkedCancellation.Dispose();
@@ -99,7 +105,8 @@ internal sealed class PluginLifecycleOperationRunner
 
     private static void RequestCancellationWithoutBlocking(
         CancellationTokenSource timeoutCancellation,
-        CancellationTokenSource linkedCancellation)
+        CancellationTokenSource linkedCancellation,
+        Action<Exception>? cancellationFailure)
     {
         _ = Task.Run(() =>
         {
@@ -109,12 +116,7 @@ internal sealed class PluginLifecycleOperationRunner
             }
             catch (Exception exception)
             {
-                Console.Error.WriteLine(
-                    $"PluginLifecycle errorCode=LIFECYCLE_CANCELLATION_CALLBACK_FAILED " +
-                    $"type={exception.GetType().Name}");
-                PluginSensitiveDiagnosticDebugOutput.Write(
-                    "LIFECYCLE_CANCELLATION_CALLBACK_FAILED",
-                    exception);
+                cancellationFailure?.Invoke(exception);
             }
             finally
             {

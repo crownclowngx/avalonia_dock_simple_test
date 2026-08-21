@@ -8,7 +8,7 @@
 - 收集显式 Document/Tool/View/Lifecycle 贡献并分派创建请求；
 - 建立和维护四向 Dock 工作区；
 - 严格读写唯一 Document 信封 v2，并编排异步创建、打开、恢复、保存、关闭和资源释放；
-- 读取、迁移、校验和保存布局 V1；
+- 严格读取、校验、整体隔离和原子保存唯一 Layout V2；
 - 提供每个 HostRuntime 独享的同步强类型事件总线；
 - 为 XAML、菜单、主题和宿主 Tool 提供绑定入口。
 
@@ -18,7 +18,7 @@
 
 最终基础契约来自 `MyAvaloniaManagement.PluginSdk`，UI 注册契约来自
 `MyAvaloniaManagement.PluginSdk.UI`；旧 `MyAvaloniaManagementCommon` 只保留为四业务插件在 G9–G12
-迁移前的不可打包源码桥，不进入 G7 Host 模块预检、贡献目录、Dock Adapter 或 Document V2 路径。SDK 不拥有
+迁移前的不可打包源码桥；G8 只在 Provider 解析边界适配其窄启动/关闭回调，不恢复 Legacy 编排面。SDK 不拥有
 字体、桌面后端或全局主题。`App.axaml` 是 Fluent、Semi、Ursa、Dock Theme 和 Host Styles 的唯一
 组合入口；`ApplicationThemeService` 只切换宿主主题状态，不把第三方主题对象暴露成插件服务。
 
@@ -36,7 +36,7 @@ flowchart TB
     Runtime --> RegistryBuilder["PluginRegistryBuilder<br/>收集 / 激活 / 校验"]
     Runtime --> HostContainer["Host Provider"]
     Runtime --> PluginProviders["PluginProviderOwner\n每插件 Provider"]
-    Runtime --> Lifecycle["PluginLifecycleManager"]
+    Runtime --> Lifecycle["PluginLifecycleCoordinator\n+ StateStore / ReadModel"]
 
     HostContainer --> Factory["ManagementFactory<br/>Host internal Dock 协调器"]
     HostContainer --> EventBus["IHostEventBus<br/>每 Runtime 隔离的同步事件"]
@@ -64,7 +64,7 @@ flowchart TB
 
     MainVM --> Layout["DockLayoutLifecycle<br/>Prepare / Apply / Save"]
     Layout --> Mapper["DockLayoutSnapshotMapper"]
-    Layout --> Migrator["DockLayoutSnapshotMigrator"]
+    Layout --> Codec["DockLayoutSnapshotV2Json"]
     Layout --> Validator["DockLayoutRuntimeValidator"]
     Layout --> Store["DockLayoutStore"]
     Store --> Atomic
@@ -318,13 +318,13 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 
 细节分别由以下组件承担：
 
-- `DockLayoutSnapshotMapper`：运行时 Dock 树与 V1 快照互转；
-- `DockLayoutSnapshotMigrator`：仅处理现有两向到四向兼容；
-- `DockLayoutRuntimeValidator`：检查插件、Pane、Tool 和稳定 ID；
-- `DockLayoutStore`：JSON 读写、格式校验和坏文件隔离；
+- `DockLayoutSnapshotMapper`：运行时 Dock 树与 V2 快照互转；
+- `DockLayoutSnapshotV2Json`：严格字段读取与固定顺序写出；
+- `DockLayoutRuntimeValidator`：检查插件声明、生命周期可用性、Pane、Tool 和稳定 ID；
+- `DockLayoutStore`：路径、原子读写和坏文件隔离；
 - `AtomicFileTransaction`：临时写入、提交和清理。
 
-快照整体无效时隔离原文件并回退完整默认布局。当前不做缺失插件下的部分恢复，因为部分应用会制造难以解释的混合状态，也会隐式改变 V1 语义。
+快照整体无效时隔离原文件并回退完整默认布局。贡献可用性检查在补建 Pane 之前完成；V2 不做缺失插件下的部分恢复，也没有 V1 reader 或 Migrator。
 
 ## 8. 原子文件事务
 
@@ -345,7 +345,7 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | Host Provider | `HostRuntime` | 全部插件 Provider 释放后 |
 | 插件 Provider | `PluginProviderOwner` | 生命周期停止后按 PluginId 反序释放 |
 | Host 事件总线 | Host Provider | Host Provider 释放；订阅者应更早释放自己的令牌 |
-| Managed 插件生命周期 | `PluginLifecycleManager` | Avalonia 消息循环结束后 |
+| Managed 插件生命周期 | `PluginLifecycleCoordinator` | Adapter/View 与全部 Document Scope 释放后，插件 Provider 释放前 |
 | Tool 实例 | 所属插件 Provider / `ManagementFactory` | 插件 Provider / Host Provider 释放 |
 | 有独立 Scope 的 Document | 所属插件 `DocumentScopeManager` | Dock 确认关闭后；退出时 `DocumentScopeRegistry` 兜底 |
 | Document 控件缓存 | `DocumentControlRecycling` | 对应 Document 确认关闭后移除 |
@@ -370,7 +370,9 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |
 | 同步顺序、重入、异常、并发、根隔离及订阅释放 | `HostEventBusTests`、Document Scope 测试 |
-| 布局迁移、隔离、回退 | 布局生命周期与存储测试 |
+| 布局严格解析、隔离、回退 | 布局生命周期与存储测试 |
+| Layout V2 严格字段、V1 不读取、生命周期不可用零部分应用 | `DockLayoutStoreTests`、`DockLayoutAvailabilityTests` |
+| 生命周期排序、幂等、失败/超时/取消、反向停止和脱敏 | `PluginLifecycleCoordinatorTests` |
 | XAML、绑定和真实窗口事件 | Headless UI 与 Windows Smoke |
 
 详细命令和门槛参见[测试说明](../../../../docs/reference/myavalonia-management-tests.md)。

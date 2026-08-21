@@ -56,64 +56,6 @@ public sealed class DockFloatingDisabledTests
         Assert.Contains(tool, rightDock.VisibleDockables!);
     }
 
-    [Fact]
-    public void LegacyFloatingToolIsRestoredToItsMainWindowDockAndNormalizedOnSave()
-    {
-        using var context = CreateFactory();
-        var factory = context.Factory;
-        var root = CreateRoot(factory);
-        ManagementFactory.DisableFloating(root);
-
-        var leftDock = CreateToolDock(factory, DockLayoutIds.LeftTools);
-        var rightDock = CreateToolDock(factory, DockLayoutIds.RightTools);
-        var tool = (Tool)factory.CreateTool();
-        tool.Id = "legacyFloatingTool";
-
-        factory.AddDockable(root, leftDock);
-        factory.AddDockable(root, rightDock);
-        factory.AddDockable(leftDock, tool);
-        ((Dictionary<string, Tool>)factory.CreatedTools).Add(tool.Id, tool);
-
-        var snapshot = new DockLayoutSnapshotV1
-        {
-            Tools =
-            [
-                new DockToolSnapshotV1
-                {
-                    Id = tool.Id,
-                    DockId = DockLayoutIds.RightTools,
-                    Order = 0,
-                    IsVisible = true,
-                    IsFloating = true,
-                    FloatingBounds = new DockFloatingBoundsV1
-                    {
-                        X = 100,
-                        Y = 120,
-                        Width = 640,
-                        Height = 480
-                    }
-                }
-            ],
-            ActiveToolId = tool.Id
-        };
-
-        Assert.Null(DockLayoutSnapshotValidator.Validate(snapshot));
-
-        DockLayoutLifecycle.ApplySnapshot(snapshot, root, factory);
-
-        Assert.Same(rightDock, tool.Owner);
-        Assert.Same(tool, rightDock.ActiveDockable);
-        Assert.Empty(root.Windows!);
-
-        var normalized = DockLayoutLifecycle.Capture(root, factory);
-        var toolState = Assert.Single(normalized.Tools);
-        Assert.False(toolState.IsFloating);
-        Assert.Null(toolState.FloatingBounds);
-        Assert.Equal(DockLayoutIds.RightTools, toolState.DockId);
-        Assert.True(toolState.IsVisible);
-        Assert.Equal(tool.Id, normalized.ActiveToolId);
-    }
-
     private static FactoryContext CreateFactory()
     {
         var services = new ServiceCollection();

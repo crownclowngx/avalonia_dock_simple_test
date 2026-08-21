@@ -8,10 +8,11 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > `managed-plugin-v1.0.0` 定位。签署内容、非发布门禁证据和回退边界见
 > [G16 文档与 v1 基线](./docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
-> Managed Plugin V2 已完成 G0–G7；G8–G14 尚未实现。最终 Core/UI SDK、严格 manifest v2、
-> 每插件独立 Provider、声明式贡献目录、Host internal Dock Adapter 与 Document V2 已进入生产路径。
-> 四个业务插件仍保留 Legacy 源码并由 Host 拒绝加载；layout/lifecycle v2 及业务插件迁移尚未完成。
-> 见 [V2 G7 专项记录](./docs/plan-history/host-v2/g7-document-v2.md)。
+> Managed Plugin V2 已完成 G0–G8；G9–G14 尚未实现。最终 Core/UI SDK、严格 manifest v2、
+> 每插件独立 Provider、声明式贡献目录、Host internal Dock Adapter、Document V2、Layout V2 与
+> Host internal 生命周期已进入生产路径。四个业务插件仍保留 Legacy 模型，完整迁移尚未完成；G8
+> 只对 BiliDownloader 与 Harness 做了解除旧 Manager 的最小适配。见
+> [V2 G8 专项记录](./docs/plan-history/host-v2/g8-layout-and-lifecycle-v2.md)。
 
 ## 核心扩展模型
 
@@ -23,7 +24,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 
 宿主当前具备以下基础能力：
 
-- Left、Right、Top、Bottom 四向 Dock 布局，以及经过校验和迁移的布局持久化；
+- Left、Right、Top、Bottom 四向 Dock 布局，以及严格、无迁移的 `layout-v2.json` 持久化；
 - Document 多开、独立 Scope、关闭取消和资源释放；
 - Tool 单例创建、关闭隐藏和状态恢复；
 - Managed Plugin 服务注册、可选初始化与反向关闭生命周期；
@@ -42,7 +43,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 四个当前插件均使用 Managed Plugin 接入。G4 已删除 Legacy 二进制激活路径；无模块程序集、
 缺少入口 `.deps.json` 的目录以及依赖历史加载 Facade 的代码不会进入插件运行链。
 
-## V2 G7 当前 SDK、manifest、容器、Dock 与 Document 边界
+## V2 G8 当前 SDK、manifest、容器、Dock、Document、Layout 与生命周期边界
 
 历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。当前 G1 仍沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
@@ -66,9 +67,7 @@ Unshipped 的 v2 API 基线。旧 `MyAvaloniaManagementCommon.dll` 只由仓库�
 
 G4 已把宿主与插件对象图彻底分开：Host Provider 先构建，每个清单入口从新的空
 `ServiceCollection` 建立私有 Provider。插件配置、开放泛型、keyed 与多实现注册都只影响自身；配置或
-Provider 构建失败只隔离当前插件。宿主退出时先关闭各插件 Document Scope，再停止生命周期，随后按
-PluginId 反序释放插件 Provider，最后释放 Host Provider。当前 Bili Tool 对 Legacy 生命周期 Manager
-仍通过一个精确阶段桥读取，按计划在 G12 由插件内部 readiness 替换；不存在任意父 Provider 回退。
+Provider 构建失败只隔离当前插件。不存在任意父 Provider 回退。
 
 G5 把 Host 生产模块入口切换到最终 UI SDK，并以 `PluginRegistration`、插件局部 Builder、不可变
 `PluginRegistry` 和 internal Activator 形成唯一贡献路径。Document 自动为 scoped，Tool/Lifecycle 为
@@ -83,6 +82,16 @@ G6 进一步把 Welcome 与四个 Host Tool 变为普通模型。只有 internal
 G7 在该 Adapter 基线上建立唯一异步 Document 链：Registry 核对后在独立 Scope 中调用
 `InitializeAsync`，成功后才构造 Adapter、预构建 View 并发布。新建、Creation Intent 与恢复统一使用
 `DocumentActivationContext`；保存与关闭统一读取 Host 状态，不接受 Legacy Strategy 或字符串快照。
+
+G8 把生命周期编排收回 Host internal：Registry 只保存声明；Coordinator 按规范 PluginId 正序初始化，
+失败/30 秒超时只隔离当前插件，只有成功项可用并在退出时按实际成功顺序反向停止，单项关闭期限为
+10 秒。菜单、直接 Activator、Document/Tool 创建和布局恢复都读取同一只读可用性投影。退出先禁止
+新建并释放 Adapter/View 与 Document Scope，再清除停止工作的 UI 同步上下文、反向停止生命周期、
+反向释放插件 Provider，最后释放 Host Provider。
+
+布局只读写 `layout-v2.json`/schema 2，严格字段为根 `schemaVersion/panes/tools/activeToolId`、Pane
+`id/proportion`、Tool `id/dockId/order/isVisible/isPinned`。V1、浮动字段、历史 ID 和 Migrator 不再存在；
+未安装或生命周期不可用的插件会使整份 V2 快照隔离并重建默认布局。历史 `layout-v1.json` 不读取也不改变。
 
 宿主默认把布局、外观和诊断写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v2\`。旧 `v1` 与预发布目录
 保持原样，不读取、迁移或删除。`MYAVALONIA_DATA_DIRECTORY` 仍表示完整数据根，不追加 `v2`，
@@ -135,7 +144,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Managed 插件快速开始（历史示例）](./docs/quick-start/README.md)：G7 已具备最终 Document 契约，但完整业务插件教程仍需等待 G9 迁移首个真实插件；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G7 已完成、G8–G14 尚未实现的破坏式重构路线；
+- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G8 已完成、G9–G14 尚未实现的破坏式重构路线；
 - [V2 G0 绿色基线](./docs/plan-history/host-v2/g0-green-baseline.md)：查看非发布门禁、删除面、依赖白名单和消费者矩阵；
 - [V2 G1 版本与数据边界](./docs/plan-history/host-v2/g1-version-and-data-boundaries.md)：查看 V2 版本事实、数据根隔离和阶段边界；
 - [V2 G2 Plugin SDK 重建](./docs/plan-history/host-v2/g2-plugin-sdk-rebuild.md)：查看 Core/UI 契约、Legacy 隔离、SOLID 取舍和非发布门禁证据；
@@ -221,7 +230,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - G3 已完成：宿主只接受严格 manifest v2、入口 `.deps.json` 和清单精确声明的入口类型；
 - G5 已完成：宿主与每个插件拥有独立 Provider，Host 生产贡献只通过最终 UI SDK 声明并发布到唯一 Registry；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
-- Core/UI 包、manifest v2、独立容器、Host 声明式目录和 Document v2 已进入生产路径；四业务插件仍是
-  Legacy 源码且不会由 G7 Host 加载，不能据此宣称 layout/lifecycle v2 或完整业务插件迁移完成。
+- Core/UI 包、manifest v2、独立容器、Host 声明式目录、Document v2、Layout v2 和 Host internal
+  生命周期已进入生产路径；四业务插件仍未完成 G9–G12 迁移，G8 的最小消费者适配不能视为迁移完成。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

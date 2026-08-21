@@ -15,6 +15,7 @@ using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.ViewModels.Hello;
@@ -35,10 +36,12 @@ internal sealed class ManagementFactory : Factory, IDisposable
     private readonly PluginRegistry _extensions;
     private readonly IHostDockableFactory _dockableFactory;
     private readonly IHostDiagnosticSink? _diagnostics;
+    private readonly PluginAvailabilityReadModel _availability;
     private readonly HashSet<Document> _ownedDocuments = new(ReferenceEqualityComparer.Instance);
     private IRootDock? _rootDock;
     private DocumentDock? _documentDock;
     private ITool?  _plugGroupMenuTool;
+    private bool _acceptingCreations = true;
     
     // 存储文档类型元数据
     
@@ -68,21 +71,12 @@ internal sealed class ManagementFactory : Factory, IDisposable
     /// </remarks>
     internal event EventHandler? LayoutChanged;
 
-    /// <summary>
-    /// 把布局文件中的历史 Tool ID 归一化为当前规范 ID；未知值原样返回，交给运行时校验处理。
-    /// </summary>
-    internal string NormalizePersistedToolId(string toolId) =>
-        _extensions.TryResolveToolTypeId(
-            LegacyContributionIdMap.ResolveTool(toolId),
-            out var typeId) && typeId is not null
-            ? typeId.Value
-            : toolId;
-
     internal Alignment GetToolAlignment(string toolId) =>
         _extensions.TryResolveToolTypeId(toolId, out var typeId) &&
         typeId is not null &&
-        _extensions.ToolDescriptors.TryGetValue(typeId, out var descriptor)
-            ? ToolDockPlacement.ToAlignment(descriptor.DockSide)
+        _extensions.TryGetToolRegistration(typeId, out var registration) &&
+        _availability.IsAvailable(registration.OwnerId)
+            ? ToolDockPlacement.ToAlignment(registration.Descriptor.DockSide)
             : Alignment.Left;
 
     /// <summary>
@@ -96,7 +90,8 @@ internal sealed class ManagementFactory : Factory, IDisposable
         DocumentPersistenceStateStore? documentPersistenceStates = null,
         DocumentCloseCoordinator? documentCloseCoordinator = null,
         DocumentRecoveryRegistry? documentRecoveryRegistry = null,
-        IHostDiagnosticSink? diagnostics = null)
+        IHostDiagnosticSink? diagnostics = null,
+        PluginAvailabilityReadModel? availability = null)
     {
         ArgumentNullException.ThrowIfNull(extensions);
         ArgumentNullException.ThrowIfNull(dockableFactory);
@@ -111,6 +106,8 @@ internal sealed class ManagementFactory : Factory, IDisposable
             _workspaceBuilder,
             GetToolAlignment);
         _extensions = extensions;
+        _availability = availability ?? new PluginAvailabilityReadModel(
+            new PluginLifecycleStateStore(extensions));
         _dockableFactory = dockableFactory;
         _diagnostics = diagnostics;
         _createdTools = [];
@@ -132,22 +129,45 @@ internal sealed class ManagementFactory : Factory, IDisposable
         
         return new ToolManagementData
         {
-            ToolMetadata = _extensions.ToolDescriptors,
+            ToolMetadata = GetAvailableToolDescriptors(),
             CreatedTools = _createdTools,
             RootDock = _rootDock
         };
     }
 
     internal ToolRegistrySnapshot GetToolRegistrySnapshot() =>
-        new(_extensions.ToolDescriptors, _createdTools);
+        new(GetAvailableToolDescriptors(), _createdTools);
     
     internal IEnumerable<DocumentCreationMenuEntry> GetAllDocumentCreationEntries() =>
-        _extensions.GetCreationEntries();
+        _extensions.GetCreationEntries().Where(entry =>
+            _extensions.TryGetDocumentRegistration(entry.DocumentTypeId, out var registration) &&
+            _availability.IsAvailable(registration.OwnerId));
 
     internal bool TryGetDocumentRegistration(
         DocumentTypeId documentTypeId,
-        out PluginDocumentRegistration registration) =>
-        _extensions.TryGetDocumentRegistration(documentTypeId, out registration);
+        out PluginDocumentRegistration registration)
+    {
+        if (_extensions.TryGetDocumentRegistration(documentTypeId, out registration) &&
+            _availability.IsAvailable(registration.OwnerId))
+        {
+            return true;
+        }
+
+        registration = null!;
+        return false;
+    }
+
+    /// <summary>布局恢复先区分“未声明”和“已声明但生命周期不可用”，两者都禁止部分恢复。</summary>
+    internal bool IsRegisteredTool(string toolId) =>
+        MyAvaloniaManagement.PluginSdk.ToolTypeId.TryParse(toolId, out var typeId) &&
+        typeId is not null &&
+        _extensions.TryGetToolRegistration(typeId, out _);
+
+    internal bool IsToolAvailable(string toolId) =>
+        MyAvaloniaManagement.PluginSdk.ToolTypeId.TryParse(toolId, out var typeId) &&
+        typeId is not null &&
+        _extensions.TryGetToolRegistration(typeId, out var registration) &&
+        _availability.IsAvailable(registration.OwnerId);
 
     /// <summary>创建并完全初始化一个尚未发布的 V2 Document Adapter。</summary>
     /// <remarks>
@@ -159,6 +179,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
         DocumentActivationContext context)
     {
         ArgumentNullException.ThrowIfNull(documentTypeId);
+        EnsureAcceptingCreations();
         ArgumentNullException.ThrowIfNull(context);
         if (!_extensions.TryGetDocumentRegistration(documentTypeId, out var registration))
         {
@@ -295,6 +316,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
 
     public override IRootDock CreateLayout()
     {
+        EnsureAcceptingCreations();
         // Welcome 与 Tool 一样必须经声明式目录激活，并在发布前完成 Adapter 与 View 预构建。
         // Welcome 是中央工作区的必需项，因此创建失败由调用方中止整个布局初始化。
         var welcomeCreation = _dockableFactory.CreateDocumentAsync(
@@ -549,7 +571,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
     private void CreateAllTools()
     {
         // 先创建所有非工具管理的Tool
-        foreach (var toolTypeId in _extensions.ToolDescriptors.Keys.Where(
+        foreach (var toolTypeId in GetAvailableToolDescriptors().Keys.Where(
                      id => id != HostExtensionIds.V2ToolManagement))
         {
             if (!TryCreateTool(toolTypeId, out var tool))
@@ -567,7 +589,8 @@ internal sealed class ManagementFactory : Factory, IDisposable
         // 再创建工具管理Tool（需要在其他Tool之后创建，因为它需要读取其他Tool的信息）
         if (_extensions.TryGetToolRegistration(
                 HostExtensionIds.V2ToolManagement,
-                out _))
+                out var managementRegistration) &&
+            _availability.IsAvailable(managementRegistration.OwnerId))
         {
             if (TryCreateTool(HostExtensionIds.V2ToolManagement, out var managementTool))
             {
@@ -669,6 +692,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
     /// </summary>
     public void Dispose()
     {
+        _acceptingCreations = false;
         List<Exception>? releaseFailures = null;
         foreach (var document in _ownedDocuments.ToArray())
         {
@@ -702,4 +726,22 @@ internal sealed class ManagementFactory : Factory, IDisposable
             throw new AggregateException("一个或多个 Host Dock Adapter 释放失败。", releaseFailures);
         }
     }
+
+    /// <summary>由 HostRuntime 在释放任何 Adapter 前调用，阻止退出过程产生新的对象图。</summary>
+    internal void BeginShutdown() => _acceptingCreations = false;
+
+    private void EnsureAcceptingCreations()
+    {
+        if (!_acceptingCreations)
+        {
+            throw new ObjectDisposedException(nameof(ManagementFactory), "宿主正在退出，不能创建新的贡献。");
+        }
+    }
+
+    private IReadOnlyDictionary<
+        MyAvaloniaManagement.PluginSdk.ToolTypeId,
+        MyAvaloniaManagement.PluginSdk.UI.ToolDescriptor> GetAvailableToolDescriptors() =>
+        _extensions.Tools
+            .Where(item => _availability.IsAvailable(item.OwnerId))
+            .ToDictionary(item => item.Descriptor.ToolTypeId, item => item.Descriptor);
 }

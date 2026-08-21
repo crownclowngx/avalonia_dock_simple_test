@@ -102,7 +102,7 @@ public sealed class VersionPolicyTests
     }
 
     [Fact]
-    public void VersionPolicy_manifest与Document已接入V2而布局保持阶段边界()
+    public void VersionPolicy_manifestDocument与布局均接入V2()
     {
         var properties = ReadVersionProperties();
 
@@ -113,8 +113,8 @@ public sealed class VersionPolicyTests
 
         Assert.Equal(2, PluginManifestReader.CurrentSchemaVersion);
         Assert.Equal(2, DocumentEnvelopeSerializer.CurrentSchemaVersion);
-        Assert.Equal(1, DockLayoutSnapshotV1.CurrentSchemaVersion);
-        Assert.Equal("layout-v1.json", DockLayoutStore.LayoutFileName);
+        Assert.Equal(2, DockLayoutSnapshotV2.CurrentSchemaVersion);
+        Assert.Equal("layout-v2.json", DockLayoutStore.LayoutFileName);
         AssertVersionFact(
             "Host data root generation",
             properties["MyAvaloniaHostDataRootGeneration"],

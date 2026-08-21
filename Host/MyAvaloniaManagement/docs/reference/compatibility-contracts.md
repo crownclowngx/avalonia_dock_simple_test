@@ -12,9 +12,9 @@
 > 变异门禁冻结正式 Plugin SDK v1 public API；G15 已固定 schema 1 诊断的白名单语义和默认脱敏边界；
 > G16 已用 `managed-plugin-v1.0.0` 定位最终文档、SDK API 和四插件兼容基线。
 
-> 当前分支已完成 V2 G7：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议、每插件
-> 独立 Provider、Host 声明式贡献目录、internal Dock Adapter 与 Document V2 已建立；layout v2、
-> 生命周期编排与四业务插件迁移仍是 G8–G12 的后续工作。
+> 当前分支已完成 V2 G8：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议、每插件
+> 独立 Provider、Host 声明式贡献目录、internal Dock Adapter、Document V2、Layout V2 与 internal
+> 生命周期已建立；四业务插件完整迁移仍是 G9–G12 的后续工作。
 > 历史 v1 签署事实保持可追溯。
 
 ## 2. public API
@@ -23,12 +23,12 @@
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
 四业务插件暂时引用 `MyAvaloniaManagement.LegacyPluginContracts`，该项目不可打包且不得增加新的生产
-消费者。其旧入口在 G9–G12 迁移前由 G7 Host 明确拒绝，不提供双接口回退。
+消费者。G8 仅在生命周期 Provider 边界适配 Legacy 两方法回调，不提供 public 编排回退。
 
-G7 生产组合中，只有 `ManagedDocumentDockable` 与 `ManagedToolDockable` 可以继承 Dock 类型。普通插件
+G8 生产组合中，只有 `ManagedDocumentDockable` 与 `ManagedToolDockable` 可以继承 Dock 类型。普通插件
 模型不得创建或继承 Dock；Document 每次创建拥有独立 Scope，Tool 是所属 Provider singleton。View 必须
 来自 Registry 冻结工厂并在发布前精确构造，禁止程序集扫描、类型名猜测和反射回退。该内部实现没有改变
-Plugin SDK public API、manifest 或 layout-v1 schema；Document 磁盘契约已切换为唯一 V2。
+Plugin SDK public API 或 manifest；Document 与 Layout 磁盘契约均已切换为唯一 V2。
 
 历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 分别拥有 v2 基线，Shipped 均为空，
 G2 表面全部登记为 Unshipped，并由 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v2` 验证。未登记
@@ -188,7 +188,7 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 
 - Host Welcome 与最终 SDK 测试贡献只通过 Registry、internal Activator 和异步工厂创建；生产不存在
   Legacy Document 命令参数、ID 映射或 Scope 工厂；
-- 四业务插件尚未迁移，G7 Host 不加载其 `IDocumentCreationStrategy` 或 Creation Intent Provider；
+- 四业务插件尚未迁移，G8 Host 不加载其 `IDocumentCreationStrategy` 或 Creation Intent Provider；
 - 唯一磁盘格式是 Document 信封 v2，根必须且只能包含 `schemaVersion`、`pluginId`、`documentTypeId`、
   `title`、`savedAtUtc`、`content`；content 只含 `schemaVersion` 与原生 JSON `payload`；
 - 根 `schemaVersion` 只能为 `2`；UTF-8 文件上限为 8 MiB，JSON 最大深度为 8；注释、尾随逗号、
@@ -236,19 +236,19 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - 主窗口内部拖放与停靠继续可用；
 - `GetToolManagementData()` 在根布局建立前继续返回 `null`；内部只读快照不属于 public 契约。
 
-## 6. 布局 V1 契约
+## 6. 布局 V2 契约
 
-- 文件名保持 `layout-v1.json`；
-- `schemaVersion` 保持 `1`；
-- JSON 字段、稳定 ID、Tool 顺序、Pane 比例、可见/Pinned/活动状态保持兼容；
-- 保留现有两向到四向迁移；
-- 历史浮动 Tool 读取后归一化回主窗口；
+- 文件名固定为 `layout-v2.json`，`schemaVersion` 固定为 `2`；
+- 根、Pane、Tool 精确字段集合严格拒绝未知、重复、缺失、大小写错误和错误类型；
+- Tool 顺序、Pane 比例、可见/Pinned/活动状态与四向 Dock 行为保持；
+- 不存在两向迁移、浮动字段、历史 ID 归一化或 V1 fallback；
 - 快照引用缺失插件、缺失 Pane、未知 Tool 或非法稳定 ID 时，隔离整个文件并回退默认布局；
 - 隔离文件继续使用带 UTC 时间戳的 `.invalid.bak` 命名；
 - 保存继续使用同目录原子替换；
-- 不自动部分恢复、不引入 V2。
+- 不自动部分恢复；生命周期不可用与插件缺失同样隔离整份快照；
+- `layout-v1.json` 原样保留且不会读取、迁移、覆盖或隔离。
 
-完整格式参见 [Dock 布局快照 V1](../../../../docs/reference/dock-layout-snapshot-v1.md)。
+完整格式参见 [Dock 布局快照 V2](../../../../docs/reference/dock-layout-snapshot-v2.md)。
 
 ## 7. 启动和关闭契约
 
@@ -257,7 +257,8 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - 根容器继续启用 `ValidateScopes` 与 `ValidateOnBuild`；
 - 插件在 Avalonia 消息循环前初始化；
 - 只反向关闭成功初始化的生命周期实例；
-- 插件关闭后释放根容器和剩余 Document Scope；
+- 禁止新建后先释放 Adapter/View 和全部 Document Scope，再反向停止成功启动的生命周期；
+- 生命周期停止后反向释放插件 Provider，最后释放 Host Provider；
 - 默认宿主数据根为 `%LOCALAPPDATA%\MyAvaloniaManagement\v2\`，旧 `v1` 和预发布目录不读取、迁移或删除；
 - `MYAVALONIA_DATA_DIRECTORY` 继续表示完整数据根且不追加 `v2`，避免测试污染用户 LocalAppData；
 - `MYAVALONIA_SMOKE_TEST=1` 继续创建真实窗口并通过正常 Closing 路径退出。

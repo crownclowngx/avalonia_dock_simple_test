@@ -70,12 +70,8 @@ public sealed class IdentityAndRegistryTests
     public void Document历史别名不再存在且声明式Registry只发布主Id()
     {
         var primary = new DocumentTypeId("myavalonia.host.document.sample");
-        Assert.DoesNotContain(
-            typeof(LegacyContributionIdMap).GetMethods(
-                System.Reflection.BindingFlags.Static |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic),
-            method => method.Name.Contains("Document", StringComparison.Ordinal));
+        Assert.Null(typeof(PluginRegistry).Assembly.GetType(
+            "MyAvaloniaManagement.Business.Helpers.LegacyContributionIdMap"));
 
         var services = new ServiceCollection();
         var builder = new PluginRegistryBuilder();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 
@@ -16,7 +17,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// 才能判断跨插件稳定 ID 与模型映射冲突；本所有者随后一次提交无冲突租约、释放被排除租约，并只为
 /// 已接受插件登记 Document Scope。该两阶段过程避免为了回滚而复制服务描述符。
 /// </remarks>
-internal sealed class PluginProviderOwner : IDisposable
+internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolver
 {
     private readonly List<PluginProviderLease> _leases = [];
     private DocumentScopeRegistry? _documentScopes;
@@ -157,6 +158,38 @@ internal sealed class PluginProviderOwner : IDisposable
         ArgumentNullException.ThrowIfNull(pluginId);
         ArgumentNullException.ThrowIfNull(serviceType);
         return GetAcceptedLease(pluginId).Provider.GetRequiredService(serviceType);
+    }
+
+    PluginLifecycleCallbacks IPluginLifecycleResolver.GetRequiredLifecycle(
+        PluginId pluginId,
+        Type implementationType)
+    {
+        var lifecycle = GetRequiredService(pluginId, implementationType);
+        return CreateLifecycleCallbacks(lifecycle, implementationType);
+    }
+
+    /// <summary>
+    /// 把尚待迁移的 Legacy 生命周期和最终 SDK 生命周期适配为相同 internal 回调句柄。
+    /// 适配只发生在 Provider 边界，不向协调器泄漏兼容判断，也不恢复 public Manager。
+    /// </summary>
+    internal static PluginLifecycleCallbacks CreateLifecycleCallbacks(
+        object lifecycle,
+        Type implementationType)
+    {
+        ArgumentNullException.ThrowIfNull(lifecycle);
+        ArgumentNullException.ThrowIfNull(implementationType);
+        return lifecycle switch
+        {
+            IPluginLifecycle sdk => new PluginLifecycleCallbacks(
+                sdk.InitializeAsync,
+                sdk.ShutdownAsync),
+            MyAvaloniaManagementCommon.Plugin.IPluginLifecycle legacy =>
+                new PluginLifecycleCallbacks(
+                    legacy.InitializeAsync,
+                    legacy.ShutdownAsync),
+            _ => throw new InvalidOperationException(
+                $"生命周期实现 {implementationType.FullName} 未实现受支持的 SDK 契约。"),
+        };
     }
 
     internal DocumentScopeManager GetDocumentScopeManager(PluginId pluginId) =>

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 
@@ -18,7 +19,8 @@ namespace MyAvaloniaManagement.Business.Helpers;
 internal sealed class PluginContributionActivator(
     IServiceProvider hostProvider,
     PluginRegistry registry,
-    PluginProviderOwner pluginProviders)
+    PluginProviderOwner pluginProviders,
+    PluginAvailabilityReadModel? availability = null)
 {
     private readonly IServiceProvider _hostProvider =
         hostProvider ?? throw new ArgumentNullException(nameof(hostProvider));
@@ -26,6 +28,10 @@ internal sealed class PluginContributionActivator(
         registry ?? throw new ArgumentNullException(nameof(registry));
     private readonly PluginProviderOwner _pluginProviders =
         pluginProviders ?? throw new ArgumentNullException(nameof(pluginProviders));
+    private readonly PluginAvailabilityReadModel _availability =
+        availability ?? new PluginAvailabilityReadModel(
+            new PluginLifecycleStateStore(
+                registry ?? throw new ArgumentNullException(nameof(registry))));
 
     internal ActivatedPluginDocument ActivateDocument(DocumentTypeId documentTypeId)
     {
@@ -34,6 +40,7 @@ internal sealed class PluginContributionActivator(
         {
             throw new NotSupportedException($"不支持的 Document 类型：{documentTypeId.Value}。");
         }
+        EnsureAvailable(registration.OwnerId);
 
         var manager = registration.OwnerId == HostExtensionIds.V2Owner
             ? _hostProvider.GetRequiredService<DocumentScopeManager>()
@@ -49,11 +56,21 @@ internal sealed class PluginContributionActivator(
         {
             throw new NotSupportedException($"不支持的 Tool 类型：{toolTypeId.Value}。");
         }
+        EnsureAvailable(registration.OwnerId);
 
         var instance = registration.OwnerId == HostExtensionIds.V2Owner
             ? _hostProvider.GetRequiredService(registration.ModelType)
             : _pluginProviders.GetRequiredService(registration.OwnerId, registration.ModelType);
         return new ActivatedPluginTool(registration, instance);
+    }
+
+    private void EnsureAvailable(PluginId pluginId)
+    {
+        if (!_availability.IsAvailable(pluginId))
+        {
+            throw new InvalidOperationException(
+                $"插件 {pluginId.Value} 当前不可用，不能激活其贡献。");
+        }
     }
 }
 

@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagement.PluginSdk;
@@ -21,7 +22,7 @@ internal static class Program
     private static DocumentScopeRegistry? _documentScopes;
     private static HostDiagnosticSession? _diagnostics;
     private static string? _diagnosticDirectory;
-    private static PluginLifecycleManager? _lifecycleManager;
+    private static PluginLifecycleCoordinator? _lifecycleCoordinator;
 
     [STAThread]
     public static int Main(string[] args)
@@ -76,8 +77,8 @@ internal static class Program
             registryBuilder,
             _documentScopes,
             _diagnostics);
-        _lifecycleManager = _provider.GetRequiredService<PluginLifecycleManager>();
-        _lifecycleManager.InitializeAllAsync().GetAwaiter().GetResult();
+        _lifecycleCoordinator = _provider.GetRequiredService<PluginLifecycleCoordinator>();
+        _lifecycleCoordinator.InitializeAllAsync().GetAwaiter().GetResult();
 
         IAcceptanceSuite suite = options.Suite switch
         {
@@ -108,7 +109,7 @@ internal static class Program
         finally
         {
             _documentScopes.CloseAll();
-            _lifecycleManager.ShutdownAllAsync().GetAwaiter().GetResult();
+            _lifecycleCoordinator.ShutdownAllAsync().GetAwaiter().GetResult();
             _pluginProviders.Dispose();
             _provider.Dispose();
             _diagnostics.Dispose();

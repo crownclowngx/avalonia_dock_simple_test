@@ -7,7 +7,6 @@ using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.History;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels.BiliScheduler;
-using MyAvaloniaManagementCommon.Plugin;
 using BiliDownloader.Constants;
 
 namespace BiliDownloader.ViewModels;
@@ -19,7 +18,6 @@ namespace BiliDownloader.ViewModels;
 public partial class BiliSchedulerToolViewModel : Tool
 {
     private readonly BiliDownloadCoordinator _coordinator;
-    private readonly PluginLifecycleManager _lifecycleManager;
     private bool _settingsInitialized;
 
     [ObservableProperty]
@@ -49,7 +47,6 @@ public partial class BiliSchedulerToolViewModel : Tool
         BiliDownloadCoordinator coordinator,
         IDownloadTaskRepository taskStore,
         ISettingsRepository settingsStore,
-        PluginLifecycleManager lifecycleManager,
         IFfmpegRuntimeLocator ffmpegService,
         IFfmpegPackageInstaller? ffmpegInstaller = null,
         IConfirmationService? confirmationService = null,
@@ -67,8 +64,6 @@ public partial class BiliSchedulerToolViewModel : Tool
         IGlobalBandwidthLimitService? globalBandwidthLimit = null)
     {
         _coordinator = coordinator;
-        _lifecycleManager = lifecycleManager;
-
         TaskList = new SchedulerTaskListViewModel(coordinator, taskStore,
             onStatusMessage: msg => SchedulerStatus = msg,
             confirmationService: confirmationService,
@@ -130,23 +125,6 @@ public partial class BiliSchedulerToolViewModel : Tool
     {
         try
         {
-            var lifecycleState = _lifecycleManager.GetState(
-                SaveDocumentTypeIdConstant.PluginId);
-            if (lifecycleState?.Status is PluginLifecycleStatus.Failed
-                or PluginLifecycleStatus.Blocked
-                or PluginLifecycleStatus.TimedOut)
-            {
-                SchedulerStatus = lifecycleState.Status switch
-                {
-                    PluginLifecycleStatus.Blocked =>
-                        $"插件初始化被依赖阻塞: {lifecycleState.ErrorMessage}",
-                    PluginLifecycleStatus.TimedOut =>
-                        $"插件初始化超时: {lifecycleState.ErrorMessage}",
-                    _ => $"插件初始化失败: {lifecycleState.ErrorMessage}",
-                };
-                return;
-            }
-
             if (!_settingsInitialized)
             {
                 _settingsInitialized = true;

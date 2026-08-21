@@ -42,11 +42,22 @@ public sealed class G11LowValuePublicSurfaceTests
     }
 
     [Fact]
-    public void 具有真实所有权和生命周期语义的契约继续保留()
+    public void 低价值生命周期编排面已删除_正式文档语义继续保留()
     {
         var assembly = typeof(IPluginModule).Assembly;
 
-        Assert.Contains(typeof(IPluginLifecycleDependencies), assembly.ExportedTypes);
+        Assert.DoesNotContain(
+            assembly.ExportedTypes,
+            type => type.Name is
+                "PluginLifecycleManager" or
+                "PluginLifecycleState" or
+                "PluginLifecycleStage" or
+                "PluginLifecycleStatus" or
+                "PluginLifecycleOptions" or
+                "PluginLifecycleRegistration" or
+                "PluginLifecyclePlanBuilder" or
+                "PluginLifecycleOperationRunner" or
+                "IPluginLifecycleDependencies");
         Assert.Contains(typeof(IDocumentCreationIntentProvider), assembly.ExportedTypes);
         Assert.Contains(typeof(IWindowContentFullscreenHost), assembly.ExportedTypes);
         Assert.Equal(

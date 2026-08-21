@@ -4,7 +4,7 @@
 
 本轮目标不是增加功能，而是在保持外部行为的前提下提高健壮性、可测试性和可理解性。衡量成功的标准不是新增类数量，而是：
 
-- 每个 G 包只改变声明范围内的格式；G7 以唯一 V2 替换 Document V1，不保留双 reader；
+- 每个 G 包只改变声明范围内的格式；G7/G8 分别以唯一 V2 替换 Document/Layout V1，不保留双 reader；
 - 高风险规则具有唯一实现位置；
 - 异常、并发和资源所有权边界明确；
 - `ManagementFactory`、`MainWindowViewModel` 不再同时承担多个变化原因；
@@ -19,9 +19,9 @@
 - Common/Plugin SDK 的 public 类型和成员；Host 自有实现不得导出；
 - 插件必须具有严格清单、入口 `.deps.json` 和唯一 `IPluginModule`，manifest 是身份唯一事实源；
 - Document、Tool、View、Lifecycle 必须显式登记；未登记类型不可见，重复 ID 以结构化诊断阻断启动；
-- `Files` 历史 Locator 与稳定 `Documents` Dock ID；
+- 运行时兼容 Locator 与布局持久化身份分离；Layout V2 不识别 `Files` 或历史 Tool ID；
 - Left/Right/Top/Bottom、隐藏/恢复、Pinned 和禁用浮动；
-- 严格 Document 信封 v2、插件原生 JSON `DocumentContent` 与本阶段保持的 `layout-v1.json`；
+- 严格 Document 信封 v2、插件原生 JSON `DocumentContent` 与严格 `layout-v2.json`；
 - 快照整体无效时隔离并使用默认布局。
 
 只有先固定不变量，内部抽象才不会悄悄变成产品行为变更。
@@ -58,7 +58,8 @@
 | `Program` 注册服务、扫描插件、构建容器、初始化和关闭 | `HostRuntime` 统一组合根和所有权 |
 | `ManagementFactory` 发现策略、读元数据、建树、查询、恢复、释放 | Registry、Builder、Navigator、Coordinator、Lifetime |
 | `MainWindowViewModel` 选择文件、读写 JSON、查重、修改 Dock | Persistence Coordinator + Workspace Adapter |
-| `DockLayoutLifecycle` 映射、迁移、验证、文件事务、窗口编排 | Mapper、Migrator、Validator、Store、Atomic Transaction |
+| `DockLayoutLifecycle` 映射、验证、文件事务、窗口编排 | Mapper、严格 JSON Codec、Validator、Store、Atomic Transaction |
+| public 生命周期 Manager 同时排序、执行、保存状态和投影 UI | internal Coordinator、单操作 Runner、StateStore、只读 Availability ReadModel |
 | 插件 Document 同时自报内容、路径和类型身份 | 内容快照 + 独立脏状态 + 宿主持久化状态存储 |
 
 SRP 在这里指“只有一个变化原因”，不是“每个类只能有一个方法”。Document 打开/恢复由 `DocumentPersistenceCoordinator` 编排，主文件与备份提交由 `DocumentSaveService` 负责，异步关闭确认由 `DocumentCloseCoordinator` 负责；三者共享窄操作门，但不会共享彼此的 UI 或序列化职责。
@@ -85,6 +86,10 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 V2 G7 沿用 Core SDK 的窄契约：`IPluginDocument` 只负责异步初始化，
 `IPersistablePluginDocument` 只负责捕获内容与提交后确认；脏状态、路径、标题和 Host 保存事务仍留在
 宿主内部状态与协调器中。这里没有为兼容 v1 `ISavableDocument` 建立双轨。
+
+V2 G8 同样保持 `IPluginLifecycle` 只有初始化与关闭两个方法。排序、30/10 秒期限、状态和诊断不进入
+SDK；菜单、Activator 与布局只依赖 `PluginAvailabilityReadModel`。Provider 边界对尚待 G12 迁移的
+Legacy 两方法接口做最小回调适配，但不恢复 `Order`、依赖图或 public Manager。
 
 ### 3.5 依赖倒置原则（DIP）
 
@@ -124,7 +129,7 @@ Microsoft DI，没有引入第三方子容器框架或动态代理。
 
 V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型分组：Host 组保留 Host 并排除插件，
 纯插件组排除所有参与者。这里没有优先级规则、覆盖链、规则引擎或回滚事务；冲突 Provider 在发布前释放，
-未冲突插件继续工作。生命周期本阶段只完成 singleton 声明和构造验证，启动/停止状态机留给 G8。
+未冲突插件继续工作。G8 的运行状态保存在独立 StateStore，Registry 仍然只含冻结声明。
 
 ### 4.4 Factory + Adapter + Scope Lease：Host Dock 边界
 
@@ -150,7 +155,7 @@ V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型
 
 ### 4.7 Coordinator：文档、工具和布局协调器
 
-目的：表达跨多个低层对象的用例顺序，例如“恢复工具并激活”“迁移、验证后应用布局”“保存成功后提交文档状态”。
+目的：表达跨多个低层对象的用例顺序，例如“恢复工具并激活”“严格验证后应用布局”“保存成功后提交文档状态”以及“正序启动、反向停止生命周期”。
 
 取舍：Coordinator 可以依赖多个具体内部组件，但不应成为新的万能类。判断标准是它是否只拥有一条业务流程及其事务边界。
 

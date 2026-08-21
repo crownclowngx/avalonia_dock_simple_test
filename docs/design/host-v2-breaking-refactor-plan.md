@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G7 已完成，G8–G14 尚未实现。
+> 状态：实施中；G0–G8 已完成，G9–G14 尚未实现。
 >
 > 评审日期：2026-08-21。
 >
@@ -12,10 +12,11 @@
 > [V2 G4 每插件独立容器](../plan-history/host-v2/g4-per-plugin-containers.md)与
 > [V2 G5 声明式贡献目录](../plan-history/host-v2/g5-declarative-contribution-catalog.md)与
 > [V2 G6 Host Dock Adapter](../plan-history/host-v2/g6-host-dock-adapter.md)与
-> [V2 G7 Document V2](../plan-history/host-v2/g7-document-v2.md)。
+> [V2 G7 Document V2](../plan-history/host-v2/g7-document-v2.md)与
+> [V2 G8 布局与生命周期 V2](../plan-history/host-v2/g8-layout-and-lifecycle-v2.md)。
 >
-> 重要说明：G7 已完成普通模型、Host internal Dock Adapter、唯一 Document V2 创建/恢复/保存/关闭
-> 与 Adapter/Scope 生命周期；layout/lifecycle v2 与四业务插件迁移仍属于 G8–G14，不得引用为当前能力。
+> 重要说明：G8 已完成唯一 Layout V2、Host internal 生命周期、可用性门控与严格退出链；
+> 四业务插件的完整 V2 模型迁移仍属于 G9–G12，G8 的最小消费者适配不得引用为迁移完成。
 
 ## 1. 目的与结论
 
@@ -485,13 +486,30 @@ scoped 依赖释放。本轮专项 83/83，Host 全量 374/374，行覆盖率 82
 [G7 专项记录](../plan-history/host-v2/g7-document-v2.md)。本阶段未修改 layout-v1 或生命周期编排，
 未迁移四业务插件，也未运行 AIFLOW、Windows CI/Smoke 或发布门禁。
 
-### G8：建立布局与生命周期 V2
+### G8：建立布局与生命周期 V2（已完成）
 
 - **目标**：删除 V1 迁移，并把插件可用性和生命周期实现完全移入 Host。
 - **删除/新增**：增加 layout-v2、internal lifecycle coordinator/read model；删除 Migrator、public Manager/状态和顺序接口。
 - **插件影响**：有生命周期的插件只实现 Start/Stop；Tool 不再读取 Host Manager。
 - **验证**：布局严格读写与整体回退、生命周期失败/超时、贡献门控、反向停止、状态 Tool 和脱敏诊断。
 - **回滚**：回到 G7 默认布局和无生命周期激活；不得重新读 layout-v1。
+
+G8 已将生产布局固定为严格 `layout-v2.json`/schema 2，删除 V1 Snapshot、Migrator、浮动字段与
+历史 ID Map。读取、纯值校验、贡献可用性和运行时 Dock 结构全部通过后才应用；任一步失败隔离整份
+V2 快照，`layout-v1.json` 原样保留。生命周期由 internal Coordinator、单操作 Runner、状态存储和
+只读可用性投影分工：PluginId 正序初始化，只有成功项可用并参与反向停止，失败/超时隔离单插件，
+菜单、Activator、Document/Tool 和布局均受相同投影门控。
+
+Legacy public Manager、状态/阶段 DTO、Options、Registration、PlanBuilder、Runner 与依赖图已删除，
+Legacy `IPluginLifecycle.Order` 同步删除；Bili Tool 和 Harness 只作解除旧 Manager 的最小适配，不提前
+完成 G9–G12。专项门禁、SOLID 取舍、状态矩阵、线格式、退出顺序和回滚边界见
+[G8 专项记录](../plan-history/host-v2/g8-layout-and-lifecycle-v2.md)及
+[Layout V2 参考](../reference/dock-layout-snapshot-v2.md)。本阶段未使用 AIFLOW，也未运行 Windows CI、
+Windows Smoke、ReleaseAcceptance、发布包或发布门禁。
+
+最终 G8 专项 **142/142**；Host 全量 **389/389**，行覆盖率 **83.05%**、分支覆盖率 **68.65%**。
+严格 JSON Codec/Validator 均为 **100%**，Coordinator/Runner/StateStore 分别为
+**95.93%/94.05%/98.04%**。SDK 32、三个业务插件 966 项与文档核心/完整门禁全部通过。
 
 ### G9：迁移 MyPlugTest
 

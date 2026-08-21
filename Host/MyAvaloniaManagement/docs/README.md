@@ -14,13 +14,14 @@
 - [Managed 插件快速开始](../../../docs/quick-start/README.md)
 - [宿主—插件架构评审](../../../docs/design/host-plugin-architecture-review.md)
 - [宿主专项测试说明](../../../docs/reference/myavalonia-management-tests.md)
-- [Dock 布局快照 V1](../../../docs/reference/dock-layout-snapshot-v1.md)
+- [Dock 布局快照 V2](../../../docs/reference/dock-layout-snapshot-v2.md)
 - [G4 Managed-only 插件加载记录](../../../docs/plan-history/host-v1/g4-managed-only-plugin-loading.md)
 - [G5 显式贡献与 Plugin Registry](../../../docs/plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)
 - [V2 G5 声明式贡献目录](../../../docs/plan-history/host-v2/g5-declarative-contribution-catalog.md)
 - [V2 G6 Host Dock Adapter](../../../docs/plan-history/host-v2/g6-host-dock-adapter.md)
 - [Document V2 当前设计](../../../docs/design/document-persistence-v2-design.md)
 - [V2 G7 Document V2](../../../docs/plan-history/host-v2/g7-document-v2.md)
+- [V2 G8 布局与生命周期 V2](../../../docs/plan-history/host-v2/g8-layout-and-lifecycle-v2.md)
 - [G16 文档与 v1 基线](../../../docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)
 
 ## 文档定位
@@ -32,8 +33,9 @@
 - 插件只支持严格清单、必需 `.deps.json` 和唯一 `IPluginModule` 的 Managed 模型；
 - manifest 是身份唯一事实源，Document、Tool、View 和 Lifecycle 只通过 Context 显式登记；
 - V2 Host 生产贡献只通过最终 `IPluginRegistration` 一次声明并发布到不可变 Registry；
-- Document 只接受六字段 V2 信封与原生 JSON `DocumentContent`；`layout-v1.json` 留待 G8 修改；
-- 不新增布局版本、插件市场、热加载、沙箱或用户可见诊断功能；
+- Document 只接受六字段 V2 信封与原生 JSON `DocumentContent`；布局只接受严格 `layout-v2.json`；
+- Registry 只保存声明，生命周期状态和贡献可用性由 Host internal 状态存储与只读投影拥有；
+- 不新增插件市场、热加载、沙箱或新的用户可见诊断通道；
 - 不要求插件跟随宿主内部协作者重编写业务逻辑。
 
 主项目内部类型默认可继续演进，但外部可观察行为必须由测试和兼容文档共同保护。
@@ -45,6 +47,7 @@
 ```powershell
 .\scripts\Test-Documentation.ps1
 .\scripts\Test-DocumentV2.ps1 -Configuration Release
+.\scripts\Test-LayoutLifecycleV2.ps1 -Configuration Release
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke
 ```

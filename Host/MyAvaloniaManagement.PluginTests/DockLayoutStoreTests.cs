@@ -6,227 +6,231 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class DockLayoutStoreTests
 {
     [Fact]
-    public void 合法结构快照可以原子往返且不留下临时文件()
+    public void 合法V2快照可以原子往返且不留下临时文件()
     {
         using var workspace = new TemporaryLayoutWorkspace();
         var store = new DockLayoutStore(workspace.LayoutPath);
         var snapshot = CreateValidSnapshot();
-
         store.Save(snapshot);
-        var loaded = store.Load();
 
-        Assert.NotNull(loaded);
-        Assert.Equal(snapshot.SchemaVersion, loaded.SchemaVersion);
+        var loaded = Assert.IsType<DockLayoutSnapshotV2>(store.Load());
+
+        Assert.Equal(2, loaded.SchemaVersion);
         Assert.Equal(snapshot.ActiveToolId, loaded.ActiveToolId);
         Assert.Equal(snapshot.Panes, loaded.Panes);
         Assert.Equal(snapshot.Tools, loaded.Tools);
-        Assert.Empty(Directory.EnumerateFiles(
-            workspace.DirectoryPath,
-            "*.tmp",
-            SearchOption.TopDirectoryOnly));
+        Assert.Empty(Directory.EnumerateFiles(workspace.DirectoryPath, "*.tmp"));
     }
 
     [Fact]
-    public void 已有布局文件会通过原子替换更新()
+    public void 已有V2布局通过原子替换更新()
     {
         using var workspace = new TemporaryLayoutWorkspace();
         var store = new DockLayoutStore(workspace.LayoutPath);
         store.Save(CreateValidSnapshot());
-
         var updated = CreateValidSnapshot() with { ActiveToolId = null };
         updated.Tools[0] = updated.Tools[0] with { IsVisible = false };
+
         store.Save(updated);
 
-        var loaded = store.Load();
-        Assert.NotNull(loaded);
+        var loaded = Assert.IsType<DockLayoutSnapshotV2>(store.Load());
         Assert.Null(loaded.ActiveToolId);
         Assert.False(loaded.Tools[0].IsVisible);
-        Assert.Empty(Directory.EnumerateFiles(
-            workspace.DirectoryPath,
-            "*.tmp",
-            SearchOption.TopDirectoryOnly));
+        Assert.Empty(Directory.EnumerateFiles(workspace.DirectoryPath, "*.tmp"));
     }
 
     [Fact]
-    public void 损坏Json会被隔离且日志不包含原始内容()
+    public void V1文件不读取不迁移也不隔离()
     {
         using var workspace = new TemporaryLayoutWorkspace();
-        const string sensitiveContent = "password=ShouldNeverReachLogs";
-        File.WriteAllText(workspace.LayoutPath, $"{{not-json:{sensitiveContent}");
+        var v1Path = Path.Combine(workspace.DirectoryPath, "layout-v1.json");
+        const string v1 = "{\"schemaVersion\":1,\"panes\":[],\"tools\":[],\"activeToolId\":null}";
+        File.WriteAllText(v1Path, v1);
+
+        Assert.Null(new DockLayoutStore(workspace.LayoutPath).Load());
+        Assert.Equal(v1, File.ReadAllText(v1Path));
+        Assert.Empty(EnumerateInvalidBackups(workspace.DirectoryPath));
+    }
+
+    [Fact]
+    public void V2严格拒绝未知重复缺失浮动字段和V1版本()
+    {
+        var invalidCases = new (string Json, string Code)[]
+        {
+            ("[]", "LAYOUT_FIELD_TYPE_INVALID"),
+            ("{\"schemaVersion\":1,\"panes\":[],\"tools\":[],\"activeToolId\":null}", "LAYOUT_SCHEMA_UNSUPPORTED"),
+            ("{\"schemaVersion\":\"2\",\"panes\":[],\"tools\":[],\"activeToolId\":null}", "LAYOUT_FIELD_TYPE_INVALID"),
+            ("{\"schemaVersion\":2,\"schemaVersion\":2,\"panes\":[],\"tools\":[],\"activeToolId\":null}", "LAYOUT_ROOT_FIELDS_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[],\"tools\":[]}", "LAYOUT_ROOT_FIELDS_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[],\"tools\":[],\"activeToolId\":null,\"unknown\":0}", "LAYOUT_ROOT_FIELDS_INVALID"),
+            ("{\"SchemaVersion\":2,\"panes\":[],\"tools\":[],\"activeToolId\":null}", "LAYOUT_ROOT_FIELDS_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[{\"id\":\"LeftPane\",\"id\":\"LeftPane\",\"proportion\":0.2}],\"tools\":[],\"activeToolId\":null}", "LAYOUT_PANE_FIELDS_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[{\"id\":\"LeftPane\"}],\"tools\":[],\"activeToolId\":null}", "LAYOUT_PANE_FIELDS_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[{\"id\":\"LeftPane\",\"proportion\":0.2,\"extra\":true}],\"tools\":[],\"activeToolId\":null}", "LAYOUT_PANE_FIELDS_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[{\"Id\":\"LeftPane\",\"proportion\":0.2}],\"tools\":[],\"activeToolId\":null}", "LAYOUT_PANE_FIELDS_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[{\"id\":1,\"proportion\":0.2}],\"tools\":[],\"activeToolId\":null}", "LAYOUT_FIELD_TYPE_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[{\"id\":\"LeftPane\",\"proportion\":\"0.2\"}],\"tools\":[],\"activeToolId\":null}", "LAYOUT_FIELD_TYPE_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":{},\"tools\":[],\"activeToolId\":null}", "LAYOUT_FIELD_TYPE_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[],\"tools\":[{\"id\":\"myavalonia.host.tool.sample\",\"dockId\":\"LeftTools\",\"order\":0,\"isVisible\":true}],\"activeToolId\":null}", "LAYOUT_TOOL_FIELDS_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[],\"tools\":[{\"id\":\"myavalonia.host.tool.sample\",\"dockId\":\"LeftTools\",\"order\":0,\"isVisible\":true,\"isPinned\":false,\"isPinned\":false}],\"activeToolId\":null}", "LAYOUT_TOOL_FIELDS_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[],\"tools\":[{\"Id\":\"myavalonia.host.tool.sample\",\"dockId\":\"LeftTools\",\"order\":0,\"isVisible\":true,\"isPinned\":false}],\"activeToolId\":null}", "LAYOUT_TOOL_FIELDS_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[],\"tools\":[{\"id\":\"myavalonia.host.tool.sample\",\"dockId\":\"LeftTools\",\"order\":0.5,\"isVisible\":true,\"isPinned\":false}],\"activeToolId\":null}", "LAYOUT_FIELD_TYPE_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[],\"tools\":[{\"id\":\"myavalonia.host.tool.sample\",\"dockId\":\"LeftTools\",\"order\":0,\"isVisible\":\"true\",\"isPinned\":false}],\"activeToolId\":null}", "LAYOUT_FIELD_TYPE_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[],\"tools\":[{\"id\":\"tool\",\"dockId\":\"LeftTools\",\"order\":0,\"isVisible\":true,\"isPinned\":false,\"isFloating\":true}],\"activeToolId\":null}", "LAYOUT_TOOL_FIELDS_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[],\"tools\":\"bad\",\"activeToolId\":null}", "LAYOUT_FIELD_TYPE_INVALID"),
+            ("{\"schemaVersion\":2,\"panes\":[],\"tools\":[],\"activeToolId\":42}", "LAYOUT_FIELD_TYPE_INVALID"),
+        };
+
+        foreach (var (json, expectedCode) in invalidCases)
+        {
+            using var workspace = new TemporaryLayoutWorkspace();
+            File.WriteAllText(workspace.LayoutPath, json);
+            var codes = new List<string>();
+            var store = new DockLayoutStore(workspace.LayoutPath, (code, _) => codes.Add(code));
+
+            Assert.Null(store.Load());
+            Assert.Contains(expectedCode, codes);
+            Assert.Single(EnumerateInvalidBackups(workspace.DirectoryPath));
+        }
+    }
+
+    [Theory]
+    [InlineData("{\"schemaVersion\":2,//comment\n\"panes\":[],\"tools\":[],\"activeToolId\":null}")]
+    [InlineData("{\"schemaVersion\":2,\"panes\":[],\"tools\":[],\"activeToolId\":null,}")]
+    [InlineData("{not-json:password=ShouldNeverReachLogs}")]
+    public void 损坏Json整体隔离且日志不包含原文(string json)
+    {
+        using var workspace = new TemporaryLayoutWorkspace();
+        File.WriteAllText(workspace.LayoutPath, json);
         var logs = new List<string>();
-        var store = new DockLayoutStore(
-            workspace.LayoutPath,
-            (code, id) => logs.Add($"{code}:{id}"));
+        var store = new DockLayoutStore(workspace.LayoutPath, (code, id) => logs.Add($"{code}:{id}"));
 
-        var loaded = store.Load();
-
-        Assert.Null(loaded);
+        Assert.Null(store.Load());
         Assert.False(File.Exists(workspace.LayoutPath));
         Assert.Single(EnumerateInvalidBackups(workspace.DirectoryPath));
         Assert.Contains(logs, log => log.StartsWith("LAYOUT_JSON_INVALID:", StringComparison.Ordinal));
-        Assert.DoesNotContain(logs, log => log.Contains(sensitiveContent, StringComparison.Ordinal));
-    }
-
-    [Theory]
-    [InlineData(2, "LAYOUT_SCHEMA_UNSUPPORTED")]
-    [InlineData(1, "LAYOUT_TOOL_ID_DUPLICATE")]
-    public void 非法版本或重复工具Id会整体回退(
-        int schemaVersion,
-        string expectedCode)
-    {
-        using var workspace = new TemporaryLayoutWorkspace();
-        var snapshot = CreateValidSnapshot() with { SchemaVersion = schemaVersion };
-        if (expectedCode == "LAYOUT_TOOL_ID_DUPLICATE")
-        {
-            snapshot.Tools.Add(snapshot.Tools[0] with { Order = 1 });
-        }
-
-        File.WriteAllText(
-            workspace.LayoutPath,
-            JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            }));
-        var logs = new List<string>();
-        var store = new DockLayoutStore(
-            workspace.LayoutPath,
-            (code, _) => logs.Add(code));
-
-        Assert.Null(store.Load());
-        Assert.Contains(expectedCode, logs);
-        Assert.Single(EnumerateInvalidBackups(workspace.DirectoryPath));
+        Assert.DoesNotContain(logs, log => log.Contains(json, StringComparison.Ordinal));
     }
 
     [Fact]
-    public void 快照模型只包含Dock结构字段()
+    public void 重复顺序非法比例隐藏Pinned和错误活动项均被拒绝()
     {
-        var json = JsonSerializer.Serialize(CreateValidSnapshot());
+        var duplicateOrder = CreateValidSnapshot();
+        duplicateOrder.Tools.Add(duplicateOrder.Tools[0] with { Id = "myavalonia.host.tool.second" });
+        Assert.Equal("LAYOUT_TOOL_ORDER_INVALID", DockLayoutSnapshotValidator.Validate(duplicateOrder)?.Code);
 
-        Assert.DoesNotContain("password", json, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("mediaPath", json, StringComparison.OrdinalIgnoreCase);
+        var invalidPane = CreateValidSnapshot();
+        invalidPane.Panes[0] = invalidPane.Panes[0] with { Proportion = double.NaN };
+        Assert.Equal("LAYOUT_PANE_PROPORTION_INVALID", DockLayoutSnapshotValidator.Validate(invalidPane)?.Code);
+
+        var invalidPinned = CreateValidSnapshot();
+        invalidPinned.Tools[0] = invalidPinned.Tools[0] with { IsVisible = false, IsPinned = true };
+        Assert.Equal("LAYOUT_PINNED_STATE_INVALID", DockLayoutSnapshotValidator.Validate(invalidPinned)?.Code);
+
+        var invalidActive = CreateValidSnapshot() with { ActiveToolId = "unknown.tool" };
+        Assert.Equal("LAYOUT_ACTIVE_TOOL_INVALID", DockLayoutSnapshotValidator.Validate(invalidActive)?.Code);
+    }
+
+    [Fact]
+    public void V2结构校验覆盖空对象版本集合和全部Id重复边界()
+    {
+        Assert.Equal("LAYOUT_EMPTY", DockLayoutSnapshotValidator.Validate(null)?.Code);
+        Assert.Equal(
+            "LAYOUT_SCHEMA_UNSUPPORTED",
+            DockLayoutSnapshotValidator.Validate(
+                CreateValidSnapshot() with { SchemaVersion = 1 })?.Code);
+        Assert.Equal(
+            "LAYOUT_COLLECTION_INVALID",
+            DockLayoutSnapshotValidator.Validate(
+                CreateValidSnapshot() with { Panes = null! })?.Code);
+
+        var invalidPaneId = CreateValidSnapshot();
+        invalidPaneId.Panes[0] = invalidPaneId.Panes[0] with { Id = " " };
+        Assert.Equal("LAYOUT_PANE_ID_INVALID", DockLayoutSnapshotValidator.Validate(invalidPaneId)?.Code);
+
+        var duplicatePane = CreateValidSnapshot();
+        duplicatePane.Panes.Add(duplicatePane.Panes[0] with { });
+        Assert.Equal("LAYOUT_PANE_ID_DUPLICATE", DockLayoutSnapshotValidator.Validate(duplicatePane)?.Code);
+
+        var invalidToolId = CreateValidSnapshot();
+        invalidToolId.Tools[0] = invalidToolId.Tools[0] with { Id = "包含中文" };
+        Assert.Equal("LAYOUT_TOOL_ID_INVALID", DockLayoutSnapshotValidator.Validate(invalidToolId)?.Code);
+
+        var duplicateTool = CreateValidSnapshot();
+        duplicateTool.Tools.Add(duplicateTool.Tools[0] with { Order = 1 });
+        Assert.Equal("LAYOUT_TOOL_ID_DUPLICATE", DockLayoutSnapshotValidator.Validate(duplicateTool)?.Code);
+
+        var invalidDockId = CreateValidSnapshot();
+        invalidDockId.Tools[0] = invalidDockId.Tools[0] with { DockId = "bad/dock" };
+        Assert.Equal("LAYOUT_TOOL_DOCK_ID_INVALID", DockLayoutSnapshotValidator.Validate(invalidDockId)?.Code);
+    }
+
+    [Fact]
+    public void 快照模型只包含V2结构字段和原生布尔状态()
+    {
+        using var workspace = new TemporaryLayoutWorkspace();
+        new DockLayoutStore(workspace.LayoutPath).Save(CreateValidSnapshot());
+        var json = File.ReadAllText(workspace.LayoutPath);
+        using var document = JsonDocument.Parse(json);
+
+        Assert.Equal(
+            ["schemaVersion", "panes", "tools", "activeToolId"],
+            document.RootElement.EnumerateObject().Select(item => item.Name));
+        Assert.DoesNotContain("floating", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("document", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("title", json, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("playback", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("payload", json, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void PinnedStateRoundTripsAndLegacyJsonDefaultsToExpanded()
+    public void 严格Json编解码器拒绝空流和空快照参数()
     {
-        using var workspace = new TemporaryLayoutWorkspace();
-        var store = new DockLayoutStore(workspace.LayoutPath);
-        var pinned = CreateValidSnapshot();
-        pinned.Tools[0] = pinned.Tools[0] with { IsPinned = true };
-
-        store.Save(pinned);
-
-        var loadedPinned = store.Load();
-        Assert.NotNull(loadedPinned);
-        Assert.True(loadedPinned.Tools[0].IsPinned);
-
-        var serializerOptions = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-        var legacyJson = JsonSerializer.Serialize(
-                CreateValidSnapshot(),
-                serializerOptions)
-            .Replace("\"isPinned\":false,", string.Empty, StringComparison.Ordinal);
-        Assert.DoesNotContain("isPinned", legacyJson, StringComparison.Ordinal);
-        File.WriteAllText(workspace.LayoutPath, legacyJson);
-
-        var loadedLegacy = store.Load();
-        Assert.NotNull(loadedLegacy);
-        Assert.False(loadedLegacy.Tools[0].IsPinned);
-        Assert.True(loadedLegacy.Tools[0].IsVisible);
+        Assert.Throws<ArgumentNullException>(() => DockLayoutSnapshotV2Json.Read(null!));
+        Assert.Throws<ArgumentNullException>(() => DockLayoutSnapshotV2Json.Write(null!, CreateValidSnapshot()));
+        using var stream = new MemoryStream();
+        Assert.Throws<ArgumentNullException>(() => DockLayoutSnapshotV2Json.Write(stream, null!));
     }
 
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, true)]
-    public void InvalidPinnedStateIsRejected(bool isVisible, bool isFloating)
-    {
-        var snapshot = CreateValidSnapshot();
-        snapshot.Tools[0] = snapshot.Tools[0] with
-        {
-            IsVisible = isVisible,
-            IsPinned = true,
-            IsFloating = isFloating,
-            FloatingBounds = isFloating
-                ? new DockFloatingBoundsV1
-                {
-                    X = 10,
-                    Y = 10,
-                    Width = 300,
-                    Height = 300
-                }
-                : null
-        };
-
-        var error = DockLayoutSnapshotValidator.Validate(snapshot);
-
-        Assert.NotNull(error);
-        Assert.Equal("LAYOUT_PINNED_STATE_INVALID", error.Value.Code);
-    }
-
-    private static DockLayoutSnapshotV1 CreateValidSnapshot() =>
+    private static DockLayoutSnapshotV2 CreateValidSnapshot() =>
         new()
         {
-            Panes =
-            [
-                new DockPaneSnapshotV1
-                {
-                    Id = DockLayoutIds.LeftPane,
-                    Proportion = 0.2
-                },
-                new DockPaneSnapshotV1
-                {
-                    Id = DockLayoutIds.RightPane,
-                    Proportion = 0.2
-                }
-            ],
+            Panes = [new DockPaneSnapshotV2 { Id = DockLayoutIds.LeftPane, Proportion = 0.2 }],
             Tools =
             [
-                new DockToolSnapshotV1
+                new DockToolSnapshotV2
                 {
-                    Id = "fileSystemTree",
+                    Id = "myavalonia.host.tool.file-system-tree",
                     DockId = DockLayoutIds.LeftTools,
                     Order = 0,
                     IsVisible = true,
-                    IsFloating = false
-                }
+                    IsPinned = false,
+                },
             ],
-            ActiveToolId = "fileSystemTree"
+            ActiveToolId = "myavalonia.host.tool.file-system-tree",
         };
 
     private static IEnumerable<string> EnumerateInvalidBackups(string directoryPath) =>
-        Directory.EnumerateFiles(directoryPath, "*", SearchOption.TopDirectoryOnly)
-            .Where(path => path.EndsWith(".invalid.bak", StringComparison.Ordinal));
+        Directory.EnumerateFiles(directoryPath, "*.invalid.bak");
 
     private sealed class TemporaryLayoutWorkspace : IDisposable
     {
-        public TemporaryLayoutWorkspace()
+        internal TemporaryLayoutWorkspace()
         {
-            DirectoryPath = Path.Combine(
-                Path.GetTempPath(),
-                $"myavalonia-layout-tests-{Guid.NewGuid():N}");
+            DirectoryPath = Path.Combine(Path.GetTempPath(), $"myavalonia-layout-v2-tests-{Guid.NewGuid():N}");
             Directory.CreateDirectory(DirectoryPath);
             LayoutPath = Path.Combine(DirectoryPath, DockLayoutStore.LayoutFileName);
         }
 
-        public string DirectoryPath { get; }
-
-        public string LayoutPath { get; }
+        internal string DirectoryPath { get; }
+        internal string LayoutPath { get; }
 
         public void Dispose()
         {
             var fullPath = Path.GetFullPath(DirectoryPath);
-            var tempPath = Path.GetFullPath(Path.GetTempPath())
-                .TrimEnd(Path.DirectorySeparatorChar);
-            if (!fullPath.StartsWith(
-                    tempPath + Path.DirectorySeparatorChar + "myavalonia-layout-tests-",
-                    StringComparison.OrdinalIgnoreCase))
+            var tempRoot = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            if (!fullPath.StartsWith(tempRoot + "myavalonia-layout-v2-tests-", StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("拒绝清理测试工作区以外的目录。");
+                throw new InvalidOperationException("拒绝清理布局测试工作区以外的目录。");
             }
 
             if (Directory.Exists(fullPath))

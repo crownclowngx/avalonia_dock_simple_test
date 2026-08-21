@@ -7,6 +7,7 @@ using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels;
@@ -41,8 +42,11 @@ internal static class ServiceCollectionExtensions
         DocumentScopeRegistry? documentScopes = null)
     {
         registryBuilder ??= new PluginRegistryBuilder();
+        pluginProviders ??= new PluginProviderOwner();
         documentScopes ??= new DocumentScopeRegistry();
         services.AddSingleton(registryBuilder);
+        services.AddSingleton(pluginProviders);
+        services.AddSingleton<IPluginLifecycleResolver>(pluginProviders);
 
         // 事件总线由当前根容器独占；禁止使用进程静态实例，确保多 Runtime 与并行测试互不串扰。
         services.AddSingleton<HostEventBus>();
@@ -83,11 +87,23 @@ internal static class ServiceCollectionExtensions
             provider.GetService<PluginModuleCatalog>(),
             provider.GetService<IHostDiagnosticSink>(),
             pluginProviders));
+        // 这些实现是刻意保持 internal 的 Host 编排细节。使用显式工厂既避免为了 DI
+        // 把构造函数扩大为 public，也把组合根需要的依赖完整列出，防止容器约定成为隐式 API。
+        services.AddSingleton(provider => new PluginLifecycleStateStore(
+            provider.GetRequiredService<PluginRegistry>()));
+        services.AddSingleton(provider => new PluginAvailabilityReadModel(
+            provider.GetRequiredService<PluginLifecycleStateStore>()));
+        services.AddSingleton(provider => new PluginLifecycleCoordinator(
+            provider.GetRequiredService<PluginRegistry>(),
+            provider.GetRequiredService<IPluginLifecycleResolver>(),
+            provider.GetRequiredService<PluginLifecycleStateStore>(),
+            provider.GetService<IHostDiagnosticSink>()));
         services.AddSingleton<ViewLocator>();
         services.AddSingleton(provider => new PluginContributionActivator(
             provider,
             provider.GetRequiredService<PluginRegistry>(),
-            pluginProviders ?? new PluginProviderOwner()));
+            pluginProviders,
+            provider.GetRequiredService<PluginAvailabilityReadModel>()));
         services.AddSingleton<IHostDockableFactory, HostDockAdapterFactory>();
 
         // 注册ManagementFactory为单例
@@ -98,7 +114,8 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<DocumentPersistenceStateStore>(),
             provider.GetRequiredService<DocumentCloseCoordinator>(),
             provider.GetRequiredService<DocumentRecoveryRegistry>(),
-            provider.GetService<IHostDiagnosticSink>()));
+            provider.GetService<IHostDiagnosticSink>(),
+            provider.GetRequiredService<PluginAvailabilityReadModel>()));
 
         // 注册PluginMenuService为单例，依赖ManagementFactory
         services.AddSingleton<PluginMenuService>(provider =>

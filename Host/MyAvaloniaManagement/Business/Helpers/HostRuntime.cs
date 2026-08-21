@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.ViewModels;
 
@@ -12,23 +14,29 @@ namespace MyAvaloniaManagement.Business.Helpers;
 
 /// <summary>
 /// 作为宿主组合根，集中完成服务注册、插件发现、容器构建和所有权释放。
-/// G5 只验证生命周期声明可解析，不执行初始化或关闭；最终编排由 G8 增加。
+/// Registry 提交后由 Host internal 协调器完成生命周期启动；退出时按所有权顺序反向释放。
 /// </summary>
 internal sealed class HostRuntime : IDisposable
 {
     private readonly Microsoft.Extensions.DependencyInjection.ServiceProvider _provider;
     private readonly PluginProviderOwner _pluginProviders;
     private readonly DocumentScopeRegistry _documentScopes;
+    private readonly PluginLifecycleCoordinator _lifecycles;
+    private readonly PluginLifecycleStateStore _lifecycleStates;
     private bool _disposed;
 
     private HostRuntime(
         Microsoft.Extensions.DependencyInjection.ServiceProvider provider,
         PluginProviderOwner pluginProviders,
-        DocumentScopeRegistry documentScopes)
+        DocumentScopeRegistry documentScopes,
+        PluginLifecycleCoordinator lifecycles,
+        PluginLifecycleStateStore lifecycleStates)
     {
         _provider = provider;
         _pluginProviders = pluginProviders;
         _documentScopes = documentScopes;
+        _lifecycles = lifecycles;
+        _lifecycleStates = lifecycleStates;
     }
 
     internal static HostRuntime Create(HostDiagnosticSession diagnostics)
@@ -99,6 +107,8 @@ internal sealed class HostRuntime : IDisposable
             try
             {
                 provider.GetRequiredService<PluginRegistry>();
+                var lifecycles = provider.GetRequiredService<PluginLifecycleCoordinator>();
+                lifecycles.InitializeAllAsync().GetAwaiter().GetResult();
                 provider.GetRequiredService<ManagementFactory>();
             }
             catch (HostCompositionException exception)
@@ -122,7 +132,9 @@ internal sealed class HostRuntime : IDisposable
             return new HostRuntime(
                 provider,
                 pluginProviders,
-                documentScopes);
+                documentScopes,
+                provider.GetRequiredService<PluginLifecycleCoordinator>(),
+                provider.GetRequiredService<PluginLifecycleStateStore>());
         }
         catch
         {
@@ -164,32 +176,66 @@ internal sealed class HostRuntime : IDisposable
         }
 
         _disposed = true;
+        var failures = new List<Exception>();
+
+        // 先关闭可用性入口，保证退出清理期间不会再创建新的插件对象图。
+        _lifecycleStates.BeginShutdown();
+        var factory = _provider.GetService<ManagementFactory>();
+        factory?.BeginShutdown();
+
         try
         {
-            try
-            {
-                // Adapter/View 必须先于插件 Provider 释放，否则 View 的 DataContext 会短暂指向
-                // 已经 Dispose 的 Tool singleton，Document 展示事件也可能在 Scope 结束后继续投影。
-                _provider.GetService<ManagementFactory>()?.Dispose();
-            }
-            finally
-            {
-                // Adapter/View 清理异常也不能阻断 Scope 兜底；否则插件 Provider 随后释放时，
-                // 仍打开的 Document 会失去正确的 ClosingToken 顺序。
-                _documentScopes.CloseAll();
-            }
+            // Adapter/View 必须先于插件 Provider 释放，否则 View 的 DataContext 会短暂指向
+            // 已经 Dispose 的 Tool singleton，Document 展示事件也可能在 Scope 结束后继续投影。
+            factory?.Dispose();
         }
-        finally
+        catch (Exception exception)
         {
-            try
-            {
-                // Provider 按规范 PluginId 构建、按相反顺序释放；最后才释放 Host Provider。
-                _pluginProviders.Dispose();
-            }
-            finally
-            {
-                _provider.Dispose();
-            }
+            failures.Add(exception);
+        }
+
+        try
+        {
+            // Adapter/View 清理异常也不能阻断 Scope 兜底。
+            _documentScopes.CloseAll();
+        }
+        catch (Exception exception)
+        {
+            failures.Add(exception);
+        }
+
+        try
+        {
+            // Avalonia 消息循环已经结束，不能捕获一个不再泵送的 UI 同步上下文。
+            SynchronizationContext.SetSynchronizationContext(null);
+            _lifecycles.ShutdownAllAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception exception)
+        {
+            failures.Add(exception);
+        }
+
+        try
+        {
+            _pluginProviders.Dispose();
+        }
+        catch (Exception exception)
+        {
+            failures.Add(exception);
+        }
+
+        try
+        {
+            _provider.Dispose();
+        }
+        catch (Exception exception)
+        {
+            failures.Add(exception);
+        }
+
+        if (failures.Count > 0)
+        {
+            throw new AggregateException("HostRuntime 退出时一个或多个资源释放失败。", failures);
         }
     }
 

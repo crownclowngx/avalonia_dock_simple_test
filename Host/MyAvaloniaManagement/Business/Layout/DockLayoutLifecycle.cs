@@ -9,12 +9,12 @@ using MyAvaloniaManagement.ViewModels;
 namespace MyAvaloniaManagement.Business.Layout;
 
 /// <summary>
-/// 在运行时 Dock 树与持久化 V1 快照之间进行双向映射。
+/// 在运行时 Dock 树与持久化 V2 快照之间进行双向映射。
 /// 映射只描述结构转换，不负责文件读写、版本决策或生命周期编排。
 /// </summary>
 internal static class DockLayoutSnapshotMapper
 {
-    internal static DockLayoutSnapshotV1 Capture(
+    internal static DockLayoutSnapshotV2 Capture(
         IRootDock root,
         ManagementFactory factory)
     {
@@ -22,7 +22,6 @@ internal static class DockLayoutSnapshotMapper
         var allToolDocks = mainDockables
             .OfType<IToolDock>()
             .ToArray();
-        var floatingWindows = root.Windows?.ToArray() ?? [];
         var hidden = mainDockables
             .OfType<IRootDock>()
             .SelectMany(dock => dock.HiddenDockables ?? [])
@@ -34,10 +33,6 @@ internal static class DockLayoutSnapshotMapper
         {
             var tool = pair.Value;
             pinned.TryGetValue(tool, out var pinnedPlacement);
-            var floatingWindow = floatingWindows.FirstOrDefault(window =>
-                window.Layout is not null &&
-                EnumerateDockables(window.Layout).Any(candidate =>
-                    ReferenceEquals(candidate, tool)));
             var currentDock = allToolDocks.FirstOrDefault(dock =>
                 dock.VisibleDockables?.Any(candidate =>
                     ReferenceEquals(candidate, tool)) == true);
@@ -45,9 +40,8 @@ internal static class DockLayoutSnapshotMapper
                          ResolveStableDockId(currentDock) ??
                          ResolveStableDockId(tool.OriginalOwner as IToolDock) ??
                          GetDefaultDockId(factory, tool.Id);
-            var isFloating = floatingWindow is not null;
             var isPinned = pinnedPlacement is not null;
-            var isVisible = isFloating || currentDock is not null || isPinned;
+            var isVisible = currentDock is not null || isPinned;
 
             placements.Add(
                 pair.Key,
@@ -55,12 +49,10 @@ internal static class DockLayoutSnapshotMapper
                     tool,
                     dockId,
                     isVisible && !hidden.Contains(tool),
-                    isPinned,
-                    false,
-                    null));
+                    isPinned));
         }
 
-        var toolSnapshots = new List<DockToolSnapshotV1>(placements.Count);
+        var toolSnapshots = new List<DockToolSnapshotV2>(placements.Count);
         foreach (var dockId in DockLayoutIds.ToolDockIds)
         {
             var placementGroup = placements.Values
@@ -86,15 +78,13 @@ internal static class DockLayoutSnapshotMapper
 
             foreach (var placement in placementGroup)
             {
-                toolSnapshots.Add(new DockToolSnapshotV1
+                toolSnapshots.Add(new DockToolSnapshotV2
                 {
                     Id = placement.Tool.Id,
                     DockId = dockId,
                     Order = order[placement.Tool.Id],
                     IsVisible = placement.IsVisible,
                     IsPinned = placement.IsPinned,
-                    IsFloating = placement.IsFloating,
-                    FloatingBounds = placement.FloatingBounds
                 });
             }
         }
@@ -104,7 +94,7 @@ internal static class DockLayoutSnapshotMapper
             allToolDocks,
             factory);
 
-        return new DockLayoutSnapshotV1
+        return new DockLayoutSnapshotV2
         {
             Panes = panes,
             Tools = toolSnapshots,
@@ -112,87 +102,14 @@ internal static class DockLayoutSnapshotMapper
         };
     }
 
-    /// <summary>
-    /// 修复旧版仅支持 Left/Right 时被错误记录到 LeftTools 的 Top/Bottom 工具。
-    /// </summary>
-    internal static DockLayoutSnapshotV1 NormalizeLegacyTwoWaySnapshot(
-        DockLayoutSnapshotV1 snapshot,
-        ManagementFactory factory)
-    {
-        var hasFourWayMarker =
-            snapshot.Panes.Any(pane =>
-                pane.Id is DockLayoutIds.TopPane or DockLayoutIds.BottomPane) ||
-            snapshot.Tools.Any(tool =>
-                tool.DockId is DockLayoutIds.TopTools or DockLayoutIds.BottomTools);
-        if (hasFourWayMarker)
-        {
-            return snapshot;
-        }
-
-        var indexedTools = snapshot.Tools
-            .Select((tool, index) => (Tool: tool, OriginalIndex: index))
-            .ToArray();
-        var changed = false;
-
-        for (var index = 0; index < indexedTools.Length; index++)
-        {
-            var entry = indexedTools[index];
-            var alignment = factory.GetToolAlignment(entry.Tool.Id);
-            if (alignment is not (Alignment.Top or Alignment.Bottom))
-            {
-                continue;
-            }
-
-            indexedTools[index] =
-            (
-                entry.Tool with
-                {
-                    DockId = ToolDockPlacement.GetDockId(alignment),
-                    IsVisible = true,
-                    IsFloating = false,
-                    FloatingBounds = null
-                },
-                entry.OriginalIndex
-            );
-            changed = true;
-        }
-
-        if (!changed)
-        {
-            return snapshot;
-        }
-
-        var dockIds = DockLayoutIds.ToolDockIds
-            .Concat(indexedTools.Select(entry => entry.Tool.DockId))
-            .Distinct(StringComparer.Ordinal);
-        var normalizedTools = new List<DockToolSnapshotV1>(indexedTools.Length);
-        foreach (var dockId in dockIds)
-        {
-            var order = 0;
-            foreach (var entry in indexedTools
-                         .Where(entry => entry.Tool.DockId == dockId)
-                         .OrderBy(entry => entry.Tool.Order)
-                         .ThenBy(entry => entry.OriginalIndex))
-            {
-                normalizedTools.Add(entry.Tool with { Order = order++ });
-            }
-        }
-
-        return snapshot with { Tools = normalizedTools };
-    }
-
     internal static DockLayoutValidationError? ValidateAgainstRuntime(
-        DockLayoutSnapshotV1 snapshot,
+        DockLayoutSnapshotV2 snapshot,
         IRootDock root,
         ManagementFactory factory)
     {
-        var tools = factory.CreatedTools;
-        foreach (var tool in snapshot.Tools)
+        if (ValidateContributions(snapshot, factory) is { } contributionError)
         {
-            if (!tools.ContainsKey(tool.Id))
-            {
-                return new("LAYOUT_PLUGIN_MISSING", tool.Id);
-            }
+            return contributionError;
         }
 
         var dockables = EnumerateDockables(root).ToArray();
@@ -220,8 +137,37 @@ internal static class DockLayoutSnapshotMapper
         return null;
     }
 
+    /// <summary>
+    /// 在任何 Dock 结构调整前校验 Tool 的声明、可用性和实例完整性，保证失败快照零部分应用。
+    /// </summary>
+    internal static DockLayoutValidationError? ValidateContributions(
+        DockLayoutSnapshotV2 snapshot,
+        ManagementFactory factory)
+    {
+        var tools = factory.CreatedTools;
+        foreach (var tool in snapshot.Tools)
+        {
+            if (!factory.IsRegisteredTool(tool.Id))
+            {
+                return new("LAYOUT_PLUGIN_MISSING", tool.Id);
+            }
+
+            if (!factory.IsToolAvailable(tool.Id))
+            {
+                return new("LAYOUT_PLUGIN_UNAVAILABLE", tool.Id);
+            }
+
+            if (!tools.ContainsKey(tool.Id))
+            {
+                return new("LAYOUT_TOOL_ACTIVATION_MISSING", tool.Id);
+            }
+        }
+
+        return null;
+    }
+
     internal static void ApplySnapshot(
-        DockLayoutSnapshotV1 snapshot,
+        DockLayoutSnapshotV2 snapshot,
         IRootDock root,
         ManagementFactory factory)
     {
@@ -241,8 +187,7 @@ internal static class DockLayoutSnapshotMapper
             paneMap[pane.Id].Proportion = pane.Proportion;
         }
 
-        // V1 快照可能来自仍支持浮动窗口的旧版本。无论旧状态是否浮动，
-        // 都按其稳定 DockId 和顺序放回主窗体；下次保存时会归一化为非浮动状态。
+        // V2 只表达主窗口内的稳定 ToolDock；浮动窗口从线格式和恢复逻辑中完全删除。
         foreach (var group in snapshot.Tools
                      .GroupBy(tool => tool.DockId, StringComparer.Ordinal))
         {
@@ -339,7 +284,7 @@ internal static class DockLayoutSnapshotMapper
         ToolDockPlacement.GetDockId(factory.GetToolAlignment(toolId));
 
     internal static void EnsureSnapshotDocks(
-        DockLayoutSnapshotV1 snapshot,
+        DockLayoutSnapshotV2 snapshot,
         IRootDock root,
         ManagementFactory factory)
     {
@@ -365,14 +310,14 @@ internal static class DockLayoutSnapshotMapper
         }
     }
 
-    private static List<DockPaneSnapshotV1> CapturePaneSnapshots(
+    private static List<DockPaneSnapshotV2> CapturePaneSnapshots(
         IReadOnlyCollection<IDockable> dockables,
         IReadOnlyCollection<IToolDock> toolDocks,
         ManagementFactory factory)
     {
         var createdTools = factory.CreatedTools.Values
             .ToHashSet(ReferenceEqualityComparer.Instance);
-        var panes = new List<DockPaneSnapshotV1>();
+        var panes = new List<DockPaneSnapshotV2>();
 
         foreach (var alignment in new[]
                  {
@@ -399,7 +344,7 @@ internal static class DockLayoutSnapshotMapper
             var proportion = GetPersistableProportion(
                 proportionSource,
                 alignment);
-            panes.Add(new DockPaneSnapshotV1
+            panes.Add(new DockPaneSnapshotV2
             {
                 Id = paneId,
                 Proportion = proportion
@@ -501,9 +446,7 @@ internal static class DockLayoutSnapshotMapper
         Tool Tool,
         string DockId,
         bool IsVisible,
-        bool IsPinned,
-        bool IsFloating,
-        DockFloatingBoundsV1? FloatingBounds);
+        bool IsPinned);
 
     private sealed record PinnedPlacement(
         Tool Tool,

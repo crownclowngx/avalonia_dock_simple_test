@@ -8,7 +8,7 @@ internal sealed record PluginStatusItem(
     string AssemblyName,
     string StatusText,
     string DurationText,
-    string DependenciesText,
+    string AvailabilityText,
     string Detail)
 {
     /// <summary>

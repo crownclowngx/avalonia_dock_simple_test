@@ -11,14 +11,7 @@ namespace MyAvaloniaManagement.Business.Layout;
 /// </summary>
 internal sealed class DockLayoutStore
 {
-    internal const string LayoutFileName = "layout-v1.json";
-
-    private static readonly JsonSerializerOptions SerializerOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true
-    };
-
+    internal const string LayoutFileName = "layout-v2.json";
     private readonly Action<string, string?, Exception?> _log;
 
     public DockLayoutStore()
@@ -62,7 +55,7 @@ internal sealed class DockLayoutStore
 
     internal string LayoutPath { get; }
 
-    internal DockLayoutSnapshotV1? Load()
+    internal DockLayoutSnapshotV2? Load()
     {
         if (!File.Exists(LayoutPath))
         {
@@ -71,16 +64,14 @@ internal sealed class DockLayoutStore
 
         try
         {
-            DockLayoutSnapshotV1? snapshot;
+            DockLayoutSnapshotV2 snapshot;
             using (var stream = new FileStream(
                        LayoutPath,
                        FileMode.Open,
                        FileAccess.Read,
                        FileShare.Read))
             {
-                snapshot = JsonSerializer.Deserialize<DockLayoutSnapshotV1>(
-                    stream,
-                    SerializerOptions);
+                snapshot = DockLayoutSnapshotV2Json.Read(stream);
             }
 
             // 必须先关闭读取句柄再隔离坏文件，否则 Windows 会因共享模式拒绝改名。
@@ -98,6 +89,11 @@ internal sealed class DockLayoutStore
             Quarantine("LAYOUT_JSON_INVALID", null, exception);
             return null;
         }
+        catch (DockLayoutFormatException exception)
+        {
+            Quarantine(exception.Code, exception.StableId, exception);
+            return null;
+        }
         catch (IOException exception)
         {
             // 文件被其他实例占用时保留原文件；启动仍使用默认布局，避免争抢导致数据丢失。
@@ -111,7 +107,7 @@ internal sealed class DockLayoutStore
         }
     }
 
-    internal void Save(DockLayoutSnapshotV1 snapshot)
+    internal void Save(DockLayoutSnapshotV2 snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         if (DockLayoutSnapshotValidator.Validate(snapshot) is { } error)
@@ -122,10 +118,7 @@ internal sealed class DockLayoutStore
 
         AtomicFileTransaction.Write(
             LayoutPath,
-            stream => JsonSerializer.Serialize(
-                stream,
-                snapshot,
-                SerializerOptions));
+            stream => DockLayoutSnapshotV2Json.Write(stream, snapshot));
     }
 
     internal void RejectLoadedSnapshot(string errorCode, string? stableId) =>
@@ -173,8 +166,9 @@ internal sealed class DockLayoutStore
     /// 计算生产布局文件路径，并允许自动化测试覆盖数据目录。
     /// </summary>
     /// <remarks>
-    /// 未设置覆盖时进入新的 v1 数据根，旧预发布布局保持原样；设置覆盖后使用调用方
-    /// 提供的完整隔离目录，确保真实启动冒烟不会污染用户布局。
+    /// 环境变量覆盖值本身就是完整数据根，不再追加版本子目录；布局版本只由固定文件名
+    /// <c>layout-v2.json</c> 表达。这样旧 <c>layout-v1.json</c> 会原样留在同一目录，
+    /// 读取、迁移、覆盖和隔离逻辑都不会接触它。
     /// </remarks>
     private static string GetDefaultPath() =>
         Path.Combine(HostDataRootPolicy.ResolveDefault(), LayoutFileName);

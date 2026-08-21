@@ -5,7 +5,6 @@ using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.ViewModels;
 using BiliDownloader.ViewModels.BiliScheduler;
-using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace BiliDownloader.Tests;
@@ -101,12 +100,10 @@ public sealed class SchedulerViewModelTests
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths);
-        var lifecycle = new PluginLifecycleManager([]);
         var vm = new BiliSchedulerToolViewModel(
             coordinator,
             repository,
             settings,
-            lifecycle,
             new FakeFfmpegService());
 
         await vm.ActivateAsync();
@@ -119,38 +116,6 @@ public sealed class SchedulerViewModelTests
         await vm.ActivateAsync();
         Assert.Equal(2, vm.TaskList.Tasks.Count);
         Assert.Equal(1, settings.InitializeCount);
-        await coordinator.ShutdownAsync();
-    }
-
-    [Fact]
-    public async Task Tool激活在插件生命周期被依赖阻塞时停止业务初始化()
-    {
-        using var paths = new TestDataPaths();
-        var repository = new InMemoryDownloadTaskRepository();
-        var settings = new InMemorySettingsRepository();
-        var coordinator = new BiliDownloadCoordinator(
-            repository,
-            new IsolatedHostEventBus(),
-            new NoOpDownloadProgressTracker(),
-            new FakeDownloadTaskExecutor(),
-            paths);
-        var lifecycle = new PluginLifecycleManager([
-            new PluginLifecycleRegistration(
-                SaveDocumentTypeIdConstant.PluginId,
-                new BlockedBiliLifecycle())
-        ]);
-        await lifecycle.InitializeAllAsync();
-        var vm = new BiliSchedulerToolViewModel(
-            coordinator,
-            repository,
-            settings,
-            lifecycle,
-            new FakeFfmpegService());
-
-        await vm.ActivateAsync();
-
-        Assert.Contains("依赖阻塞", vm.SchedulerStatus, StringComparison.Ordinal);
-        Assert.Equal(0, settings.InitializeCount);
         await coordinator.ShutdownAsync();
     }
 
@@ -169,7 +134,6 @@ public sealed class SchedulerViewModelTests
             coordinator,
             repository,
             new InMemorySettingsRepository(),
-            new PluginLifecycleManager([]),
             new FakeFfmpegService());
         var strategy = new BiliSchedulerToolStrategy(() => vm);
 
@@ -192,19 +156,4 @@ public sealed class SchedulerViewModelTests
             Status = DownloadTaskStatusMapper.ToStorageString(status),
         };
 
-    private sealed class BlockedBiliLifecycle :
-        IPluginLifecycle,
-        IPluginLifecycleDependencies
-    {
-        public int Order => 0;
-
-        public IReadOnlyCollection<PluginId> RequiredPluginIds =>
-            [new PluginId("missing-plugin")];
-
-        public Task InitializeAsync(CancellationToken cancellationToken) =>
-            throw new InvalidOperationException("依赖阻塞时不应执行初始化。");
-
-        public Task ShutdownAsync(CancellationToken cancellationToken) =>
-            Task.CompletedTask;
-    }
 }

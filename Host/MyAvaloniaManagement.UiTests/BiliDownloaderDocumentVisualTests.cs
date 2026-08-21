@@ -220,7 +220,6 @@ public sealed class BiliDownloaderDocumentVisualTests
         services.AddSingleton<IHostEventBus>(ui.EventBus);
         services.AddSingleton<IBiliDataPaths>(new UiBiliDataPaths(
             Path.Combine(ui.TempDirectory, "BiliDownloader")));
-        services.AddSingleton<PluginLifecycleManager>();
         var provider = services.BuildServiceProvider();
         var documentScopes = Enumerable.Range(0, 3)
             .Select(_ => provider.CreateScope())
