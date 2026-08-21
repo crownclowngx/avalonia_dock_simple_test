@@ -53,6 +53,9 @@
 以下计划只保存封版后的候选方向，不属于当前实现、G12 验收或 Host v1 封板条件。开始实施前必须按
 最终 v1 发布产物重新审核其中的版本、包格式、安装目录和安全边界：
 
+- [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
+  以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
+  G0–G14 可执行计划；当前仅为候选任务书，不表示 V2 已实现，也不兼容 V1 插件或本地数据。
 - [外部 Managed Plugin 开发与平台安装候选计划](./design/external-managed-plugin-development-and-installation-plan.md)：
   `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
 
