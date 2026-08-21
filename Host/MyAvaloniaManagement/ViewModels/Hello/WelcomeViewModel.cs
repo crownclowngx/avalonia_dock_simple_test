@@ -1,12 +1,15 @@
 using System;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.ViewModels.Hello;
 
-internal sealed partial class WelcomeViewModel : Document
+internal sealed partial class WelcomeViewModel : Document, IPluginDocument
 {
     private const string DefaultIntroduction =
         "MyAvaloniaManagement 是基于 Avalonia 与 Dock 构建的插件化桌面框架，" +
@@ -19,9 +22,30 @@ internal sealed partial class WelcomeViewModel : Document
     {
     }
 
-    internal WelcomeViewModel(Action<string> showTool)
+    public WelcomeViewModel(Action<string> showTool)
     {
         _showTool = showTool ?? throw new ArgumentNullException(nameof(showTool));
+    }
+
+    /// <summary>获取 G5 声明式贡献使用的只读展示状态。</summary>
+    public DocumentPresentationState Presentation => new(Title ?? string.Empty);
+
+    /// <summary>
+    /// 标题投影变化通知；Welcome 在 G5 只有初始化时的固定标题，因此当前不会主动触发。
+    /// G6 Adapter 接管 Dock 标题投影后会统一连接这一通知。
+    /// </summary>
+    public event EventHandler? PresentationChanged;
+
+    /// <summary>应用宿主已经校验的初始标题；Welcome 没有异步业务初始化。</summary>
+    public ValueTask InitializeAsync(
+        DocumentActivationContext context,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+        Title = context.Title;
+        PresentationChanged?.Invoke(this, EventArgs.Empty);
+        return ValueTask.CompletedTask;
     }
 
     /// <summary>

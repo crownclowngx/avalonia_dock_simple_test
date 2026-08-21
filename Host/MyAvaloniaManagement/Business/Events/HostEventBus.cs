@@ -14,7 +14,10 @@ namespace MyAvaloniaManagement.Business.Events;
 /// 订阅使用强引用，生命周期由返回的令牌显式表达；这比依赖垃圾回收时机的弱引用更容易验证，
 /// 也让 Document Scope 和插件生命周期能够确定地结束各自订阅。
 /// </remarks>
-internal sealed class HostEventBus : IHostEventBus, IDisposable
+internal sealed class HostEventBus :
+    IHostEventBus,
+    MyAvaloniaManagement.PluginSdk.IHostEventBus,
+    IDisposable
 {
     private readonly object _syncRoot = new();
     private readonly Dictionary<Type, List<Subscription>> _subscriptions = [];

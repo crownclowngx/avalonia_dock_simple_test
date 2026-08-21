@@ -2,12 +2,10 @@
 
 本组文档面向两类读者：在当前仓库内增加插件的开发者，以及为既有宿主版本交付二进制插件的外部作者。主路径只介绍 **Managed Plugin**，目标是在约 10 分钟内让一个同时包含 Document 和 Tool 的最小插件被宿主发现并显示。
 
-> G4 的当前 V2 Host 要求严格 manifest v2、入口 `.deps.json`、精确 `IPluginModule` 类型与每插件独立 Provider。
-> 未声明的第二个模块不会被扫描或执行；manifest 是唯一身份来源，
-> Document、Tool、View 和 Lifecycle 必须通过 `IPluginRegistrationContext` 显式登记。
-> 当前仓库处于 V2 G4：最终 Core/UI SDK、manifest v2、构建/包协议与独立容器已完成，但 Host、四插件
-> 和本教程的模块注册仍使用不可打包的 Legacy 编译桥。最终 SDK 消费迁移尚未完成，因此本教程当前只用于仓库内阶段联调；
-> 外部作者不得据此发布或承诺 V2 运行时兼容。
+> 迁移提示：当前仓库已完成 V2 G5，Host 只接受最终 UI SDK `IPluginModule` 和
+> `IPluginRegistration`。本组后续页面仍保存 G4 时期的 Legacy 示例，用于历史对照；这些模块会被 G5
+> Host 拒绝，不能作为可运行教程。最终普通模型、Dock Adapter 和业务插件示例将在 G6/G9 后同步；
+> 在此之前不要据此创建或发布 V2 插件。
 
 ## 完成后你将得到什么
 
@@ -16,7 +14,7 @@
 - 一个在宿主内保持单例、关闭后进入隐藏状态的 Tool；
 - 一套可以定位清单、依赖、模块预检、显式贡献和扩展激活问题的验证方法。
 
-最小实现可以直接复制本文档中的片段；完整的生产示例请对照 [`MyPlugTest`](../../Plugins/MyPlugTest/MyPlugTest/)。
+当前不要直接复制后续 Legacy 片段；`MyPlugTest` 也要到 G9 才迁移为最终 V2 示例。
 
 ## 前置条件
 

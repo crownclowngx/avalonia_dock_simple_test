@@ -1,6 +1,6 @@
 using System;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -9,7 +9,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// </summary>
 /// <remarks>
 /// 设计意图：该验证器只解释类型结构，不构造模块，也不调用
-/// <see cref="IPluginModule.Configure(IPluginRegistrationContext)"/>。它不枚举程序集中的其他模块，
+/// <see cref="IPluginModule.Configure(IPluginRegistration)"/>。它不枚举程序集中的其他模块，
 /// 因而未声明类型既不能劫持入口，也不能因为偶然新增第二个模块而改变加载结果。
 /// </remarks>
 internal static class PluginModulePreflight
@@ -45,7 +45,7 @@ internal static class PluginModulePreflight
         {
             errorCode = HostDiagnosticCodes.PluginEntryInvalid;
             errorDetail =
-                "入口类型必须是入口程序集中的 public、非抽象、非泛型 Legacy IPluginModule 实现。";
+                "入口类型必须是入口程序集中的 public、非抽象、非泛型 V2 IPluginModule 实现。";
             return false;
         }
 

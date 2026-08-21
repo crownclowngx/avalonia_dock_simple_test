@@ -41,7 +41,7 @@ internal sealed partial class ToolManagementViewModel : Tool, IToolVisibilitySta
     private readonly string _currentToolId;
 
     /// <summary>使用显式 Factory 创建工具管理 ViewModel。</summary>
-    internal ToolManagementViewModel(ManagementFactory factory)
+    public ToolManagementViewModel(ManagementFactory factory)
     {
         _factory = factory;
         Id = HostExtensionIds.ToolManagement.Value;

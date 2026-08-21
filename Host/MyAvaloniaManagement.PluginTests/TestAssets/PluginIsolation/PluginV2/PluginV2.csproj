@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DependencyV2\DependencyV2.csproj" />
-    <ProjectReference Include="..\..\..\..\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj">
+    <ProjectReference Include="..\..\..\..\MyAvaloniaManagement.PluginSdk.UI\MyAvaloniaManagement.PluginSdk.UI.csproj">
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>

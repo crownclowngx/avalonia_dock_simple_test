@@ -1,8 +1,7 @@
 # 创建 Managed 插件
 
-> 当前仓库处于 V2 G4：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议与每插件独立
-> Provider 已经建立。Host 和四插件的模块注册仍使用 Legacy 阶段桥；声明式贡献与业务插件最终 SDK
-> 迁移尚未完成。本页运行示例只用于仓库内联调，不应据此发布外部 V2 插件。
+> 历史示例警告：本页仍保存 G4 Legacy 写法，G5 Host 会拒绝该入口，不能按本页完成运行接入。
+> G5 的生产入口已切换到最终 UI SDK；待 G6 Dock Adapter 与 G9 MyPlugTest 迁移后再更新完整教程。
 
 本篇以 `QuickStartPlugin` 为示例。完成后，宿主能够读取严格清单、加载入口程序集，并且只实例化
 `entryPoint.type` 精确声明的 `IPluginModule`。Document、Tool 和 View 贡献将在[下一篇](./add-document-and-tool.md)加入。

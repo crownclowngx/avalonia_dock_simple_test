@@ -5,6 +5,7 @@ using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.CompilerServices;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagementCommon.ToolCreation;
@@ -693,7 +694,33 @@ public sealed class DockFourWayLayoutTests
                     Description = definition.Id
                 });
         }).ToArray();
-        var extensions = new PluginRegistry([], strategies);
+        var extensions = new PluginRegistry(
+            [],
+            strategies.Select(strategy =>
+            {
+                var metadata = strategy.GetMetadata();
+                return new PluginToolRegistration(
+                    HostExtensionIds.V2Owner,
+                    new MyAvaloniaManagement.PluginSdk.UI.ToolDescriptor(
+                        new MyAvaloniaManagement.PluginSdk.ToolTypeId(
+                            metadata.ToolTypeId.Value),
+                        metadata.DisplayName,
+                        metadata.Description,
+                        metadata.DockSide switch
+                        {
+                            ToolDockSide.Right =>
+                                MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Right,
+                            ToolDockSide.Top =>
+                                MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Top,
+                            ToolDockSide.Bottom =>
+                                MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Bottom,
+                            _ => MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Left,
+                        },
+                        MyAvaloniaManagement.PluginSdk.UI.ToolCloseBehavior.Hide),
+                    tools[metadata.LegacyIds.Single().Value].GetType(),
+                    typeof(Avalonia.Controls.UserControl),
+                    static () => new Avalonia.Controls.UserControl());
+            }).ToArray());
         var factory = new ManagementFactory(
             extensions,
             manager);

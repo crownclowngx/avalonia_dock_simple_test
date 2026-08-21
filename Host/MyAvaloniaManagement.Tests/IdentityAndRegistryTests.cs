@@ -1,11 +1,14 @@
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
 using Newtonsoft.Json;
+using Avalonia.Controls;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Tests;
 
@@ -64,48 +67,64 @@ public sealed class IdentityAndRegistryTests
     }
 
     [Fact]
-    public void 历史别名在创建前规范化且注册表只发布主Id()
+    public void 历史别名只在旧格式边界规范化且声明式Registry只发布主Id()
     {
         var primary = new DocumentTypeId("myavalonia.host.document.sample");
-        var legacy = new DocumentTypeId("OLD-DOCUMENT-ID");
-        var strategy = new CapturingDocumentStrategy(
-            new DocumentMetadata(primary, "示例", [legacy]));
-        var registry = new PluginRegistry([strategy], []);
+        var legacyWelcome = new DocumentTypeId("DD7A1E38-07C5-B38C-FB02-1B991896EF49");
+        Assert.Equal(
+            HostExtensionIds.WelcomeDocument,
+            LegacyContributionIdMap.ResolveDocument(legacyWelcome));
 
-        var document = registry.CreateDocument(new DocumentCreationParams(legacy));
+        var services = new ServiceCollection();
+        var builder = new PluginRegistryBuilder();
+        var registration = new PluginRegistration(
+            HostExtensionIds.V2Owner, services, builder);
+        registration.AddDocument<DeclarativeDocument, EmptyView>(
+            new DocumentDescriptor(
+                new MyAvaloniaManagement.PluginSdk.DocumentTypeId(primary.Value),
+                "示例",
+                "示例",
+                "测试"));
+        registration.Seal();
+        using var provider = services.BuildServiceProvider();
+        var registry = builder.Build(catalog: null);
 
-        Assert.NotNull(document);
-        Assert.Equal(primary, strategy.LastParameters!.DocumentTypeId);
-        Assert.Equal(primary, registry.ResolveDocumentTypeId(legacy));
-        Assert.Equal([primary], registry.DocumentMetadata.Keys);
+        Assert.Equal([primary.Value],
+            registry.DocumentDescriptors.Keys.Select(item => item.Value));
     }
 
     [Fact]
-    public void 重复别名所有权错误和空元数据会原子汇总为结构化诊断()
+    public void 重复主Id和所有权错误会在插件候选内原子汇总()
     {
-        var duplicate = new DocumentTypeId("myavalonia.host.document.duplicate");
-        var alias = new DocumentTypeId("OLD-ID");
-        var first = new CapturingDocumentStrategy(
-            new DocumentMetadata(duplicate, "第一项", [alias]));
-        var second = new CapturingDocumentStrategy(
-            new DocumentMetadata(duplicate, "第二项"));
-        var aliasCollision = new CapturingDocumentStrategy(
-            new DocumentMetadata(
-                new DocumentTypeId("myavalonia.host.document.alias-owner"),
-                "别名冲突",
-                [duplicate]));
-        var foreign = new CapturingDocumentStrategy(
-            new DocumentMetadata(
-                new DocumentTypeId("myavalonia.plugin.foreign.document.item"),
-                string.Empty));
+        var services = new ServiceCollection();
+        var builder = new PluginRegistryBuilder();
+        var registration = new PluginRegistration(
+            HostExtensionIds.V2Owner, services, builder);
+        var duplicate = new MyAvaloniaManagement.PluginSdk.DocumentTypeId(
+            "myavalonia.host.document.duplicate");
+        registration.AddDocument<DeclarativeDocument, EmptyView>(
+            new DocumentDescriptor(duplicate, "第一项", "第一项", "测试"));
+        registration.AddDocument<SecondDeclarativeDocument, EmptyView>(
+            new DocumentDescriptor(duplicate, "第二项", "第二项", "测试"));
+        // PluginRegistration 本身固定 owner；这里直接构造一个不同 owner 的内部声明，
+        // 模拟候选快照被错误拼接，以验证提交前的所有者一致性防线。
+        builder.AddDocument(
+            new MyAvaloniaManagement.PluginSdk.PluginId("myavalonia.plugin.foreign"),
+            new DocumentDescriptor(
+                new MyAvaloniaManagement.PluginSdk.DocumentTypeId(
+                    "myavalonia.plugin.foreign.document.item"),
+                "外部",
+                "外部",
+                "测试"),
+            typeof(ForeignDeclarativeDocument),
+            typeof(EmptyView),
+            static () => new EmptyView(),
+            false);
 
-        var exception = Assert.Throws<HostCompositionException>(() =>
-            new PluginRegistry([first, second, aliasCollision, foreign], []));
+        var exception = Assert.Throws<HostCompositionException>(registration.Seal);
 
         Assert.Contains(exception.Diagnostics, item => item.Code == "DOCUMENT_ID_DUPLICATE");
-        Assert.Contains(exception.Diagnostics, item => item.Code == "DOCUMENT_ID_ALIAS_DUPLICATE");
         Assert.Contains(exception.Diagnostics, item => item.Code == "EXTENSION_OWNER_MISMATCH");
-        Assert.Contains(exception.Diagnostics, item => item.Code == "EXTENSION_METADATA_INVALID");
         Assert.All(exception.Diagnostics, diagnostic =>
             Assert.All(diagnostic.Contributors, contributor =>
             {
@@ -114,31 +133,17 @@ public sealed class IdentityAndRegistryTests
             }));
     }
 
-    private sealed class CapturingDocumentStrategy(DocumentMetadata metadata)
-        : IDocumentCreationStrategy
+    private class DeclarativeDocument : MyAvaloniaManagement.PluginSdk.IPluginDocument
     {
-        public DocumentCreationParams? LastParameters { get; private set; }
-
-        public Document CreateDocument(DocumentCreationParams @params)
-        {
-            LastParameters = @params;
-            return new Document();
-        }
-
-        public DocumentMetadata GetMetadata() => metadata;
+        public MyAvaloniaManagement.PluginSdk.DocumentPresentationState Presentation { get; } = new("示例");
+        public event EventHandler? PresentationChanged { add { } remove { } }
+        public ValueTask InitializeAsync(
+            MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+            CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 
-    private sealed class FirstModule : IPluginModule
-    {
-        public FirstModule() { }
-        internal static int ConfigureCount { get; set; }
-        public void Configure(IPluginRegistrationContext context) => ConfigureCount++;
-    }
+    private sealed class SecondDeclarativeDocument : DeclarativeDocument;
+    private sealed class ForeignDeclarativeDocument : DeclarativeDocument;
+    private sealed class EmptyView : UserControl;
 
-    private sealed class SecondModule : IPluginModule
-    {
-        public SecondModule() { }
-        internal static int ConfigureCount { get; set; }
-        public void Configure(IPluginRegistrationContext context) => ConfigureCount++;
-    }
 }

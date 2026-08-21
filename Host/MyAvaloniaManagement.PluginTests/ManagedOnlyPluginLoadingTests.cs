@@ -187,7 +187,7 @@ public sealed class ManagedOnlyPluginLoadingTests
     }
 
     [Fact]
-    public void 四个真实插件入口均满足当前阶段契约且模块不再自报所有者()
+    public void 四个业务插件在G9至G12前保持Legacy源码且不进入G5生产目录()
     {
         Assembly[] assemblies =
         [
@@ -201,9 +201,10 @@ public sealed class ManagedOnlyPluginLoadingTests
         {
             var moduleType = Assert.Single(assembly.ExportedTypes, type =>
                 typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract);
-            Assert.True(PluginModulePreflight.TryValidate(
-                moduleType, out var validated, out _, out _));
-            Assert.Same(moduleType, validated);
+            Assert.False(PluginModulePreflight.TryValidate(
+                moduleType, out var validated, out var errorCode, out _));
+            Assert.Null(validated);
+            Assert.Equal(HostDiagnosticCodes.PluginEntryInvalid, errorCode);
         }
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),

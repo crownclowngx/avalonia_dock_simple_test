@@ -75,7 +75,8 @@ internal sealed class DocumentSaveService(
         if (string.IsNullOrWhiteSpace(originalPath) ||
             isRecovered)
         {
-            filePath = await storageService.PickSaveFileAsync(registration.Metadata);
+            filePath = await storageService.PickSaveFileAsync(
+                LegacyContributionIdMap.ToLegacyMetadata(registration.Descriptor));
         }
         else
         {
@@ -106,8 +107,9 @@ internal sealed class DocumentSaveService(
             // 分离后，同一内存状态保存到不同位置仍会产生同一份插件 payload。
             var saveData = savableDocument.CreateContentSnapshot();
             content = serializer.Serialize(
-                registration.OwnerId,
-                registration.Metadata.DocumentTypeId,
+                new MyAvaloniaManagementCommon.Plugin.PluginId(registration.OwnerId.Value),
+                new MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId(
+                    registration.Descriptor.DocumentTypeId.Value),
                 fileName,
                 timeProvider.GetUtcNow(),
                 saveData);

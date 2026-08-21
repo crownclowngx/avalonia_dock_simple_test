@@ -1,5 +1,5 @@
+using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagementCommon.Plugin;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -10,7 +10,7 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class BiliDownloaderReleasePackageTests
 {
     [Fact]
-    public void Win_x64候选可由宿主上下文加载并发现插件模块()
+    public void Win_x64候选可加载但G5拒绝尚未迁移的Legacy入口()
     {
         var configured = Environment.GetEnvironmentVariable("BILIDOWNLOADER_G8_PLUGIN_ROOT");
         var configuration = new DirectoryInfo(AppContext.BaseDirectory)
@@ -33,12 +33,10 @@ public sealed class BiliDownloaderReleasePackageTests
         Assert.Equal("myavalonia.plugin.bili-downloader", manifest!.PluginId.Value);
         var entryType = assembly.GetType(
             manifest.EntryPoint.Type, throwOnError: false, ignoreCase: false);
-        Assert.True(PluginModulePreflight.TryValidate(
-            entryType, out var validatedType, out var entryCode, out var entryDetail),
-            $"入口类型无效：{entryCode}: {entryDetail}");
-        var module = Assert.IsAssignableFrom<IPluginModule>(
-            Activator.CreateInstance(validatedType!));
-        Assert.True(typeof(IPluginModule).IsAssignableFrom(module.GetType()));
+        Assert.False(PluginModulePreflight.TryValidate(
+            entryType, out var validatedType, out var entryCode, out _));
+        Assert.Null(validatedType);
+        Assert.Equal(HostDiagnosticCodes.PluginEntryInvalid, entryCode);
         // 发布脚本的 staging 只允许 win-x64；普通构建目录仍保留跨平台资产，
         // 且独立项目输出不复制发布目标筛选出的全部私有依赖。因此仅在显式候选模式下
         // 验证私有依赖解析和 RID 封闭性，普通运行仍验证清单、入口和模块身份。

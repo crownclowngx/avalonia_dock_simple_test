@@ -16,51 +16,37 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// </summary>
 internal sealed class PluginStatusViewModel : Tool
 {
-    internal PluginStatusViewModel(
+    public PluginStatusViewModel(
         PluginRegistry pluginRegistry,
-        PluginLifecycleManager lifecycleManager,
         HostDiagnosticSession? diagnostics = null)
     {
         ArgumentNullException.ThrowIfNull(pluginRegistry);
-        ArgumentNullException.ThrowIfNull(lifecycleManager);
 
         Id = HostExtensionIds.PluginStatus.Value;
         Title = "插件状态";
         CanClose = true;
         Items = new ObservableCollection<PluginStatusItem>(
-            CreateItems(pluginRegistry, lifecycleManager, diagnostics));
+            CreateItems(pluginRegistry, diagnostics));
     }
 
     public ObservableCollection<PluginStatusItem> Items { get; }
 
     private static IReadOnlyList<PluginStatusItem> CreateItems(
         PluginRegistry registry,
-        PluginLifecycleManager manager,
         HostDiagnosticSession? diagnostics)
     {
         var items = new List<PluginStatusItem>();
-        var moduleIds = new HashSet<PluginId>();
 
         foreach (var plugin in registry.Plugins
                      .OrderBy(item => item.Manifest.PluginId.Value, StringComparer.Ordinal))
         {
             var pluginId = plugin.Manifest.PluginId;
-            moduleIds.Add(pluginId);
             items.Add(ToItem(
                 pluginId.Value,
                 plugin.EntryAssembly.GetName().Name ?? "未知程序集",
                 plugin.Manifest,
-                manager.GetState(pluginId)));
-        }
-
-        foreach (var state in manager.States
-                     .Where(state => !moduleIds.Contains(state.PluginId)))
-        {
-            items.Add(ToItem(
-                state.PluginId.Value,
-                "未关联托管模块",
-                manifest: null,
-                state: state));
+                registry.Lifecycles.Any(item =>
+                    item.OwnerId.Value == pluginId.Value)));
         }
 
         if (diagnostics is not null)
@@ -110,7 +96,7 @@ internal sealed class PluginStatusViewModel : Tool
         string pluginId,
         string assemblyName,
         PluginManifest? manifest,
-        PluginLifecycleState? state)
+        bool hasLifecycle)
     {
         var version = manifest is null
             ? "未提供"
@@ -118,7 +104,7 @@ internal sealed class PluginStatusViewModel : Tool
         var compatibility = manifest is null
             ? "未通过清单发现入口"
             : $"Plugin SDK {manifest.Sdk}";
-        if (state is null)
+        if (!hasLifecycle)
         {
             return new PluginStatusItem(
                 pluginId,
@@ -133,56 +119,18 @@ internal sealed class PluginStatusViewModel : Tool
             };
         }
 
-        var dependencies = state.RequiredPluginIds.Count == 0
-            ? "无"
-            : string.Join("、", state.RequiredPluginIds);
-        var duration = state.Duration is null
-            ? "—"
-            : $"{state.Duration.Value.TotalMilliseconds:0} ms";
-        var detail = state.ErrorMessage;
-        if (string.IsNullOrWhiteSpace(detail))
-        {
-            detail = state.Status switch
-            {
-                PluginLifecycleStatus.Ready => "插件后台服务已成功初始化。",
-                PluginLifecycleStatus.Stopped => "插件后台服务已正常关闭。",
-                PluginLifecycleStatus.NotStarted => "插件后台服务尚未初始化。",
-                PluginLifecycleStatus.Initializing => "正在初始化插件后台服务。",
-                PluginLifecycleStatus.Stopping => "正在关闭插件后台服务。",
-                _ => "插件生命周期没有提供更多诊断信息。",
-            };
-        }
-
-        if (!string.IsNullOrWhiteSpace(state.ErrorCode))
-        {
-            detail = $"[{state.ErrorCode}] {detail}";
-        }
-
         return new PluginStatusItem(
             pluginId,
             assemblyName,
-            ToStatusText(state.Status),
-            duration,
-            dependencies,
-            detail)
+            "生命周期已声明 · G8 前不执行",
+            "—",
+            "G8 尚未编排",
+            "G5 已验证生命周期 singleton 可解析；初始化、关闭、超时和状态机由 G8 实现。")
         {
             VersionText = version,
             CompatibilityText = compatibility,
         };
     }
-
-    private static string ToStatusText(PluginLifecycleStatus status) => status switch
-    {
-        PluginLifecycleStatus.NotStarted => "未启动",
-        PluginLifecycleStatus.Initializing => "初始化中",
-        PluginLifecycleStatus.Ready => "运行正常",
-        PluginLifecycleStatus.Blocked => "依赖阻塞",
-        PluginLifecycleStatus.Failed => "执行失败",
-        PluginLifecycleStatus.TimedOut => "执行超时 · 建议重启",
-        PluginLifecycleStatus.Stopping => "关闭中",
-        PluginLifecycleStatus.Stopped => "已关闭",
-        _ => status.ToString(),
-    };
 
     private static string ToPhaseText(HostDiagnosticPhase phase) => phase switch
     {

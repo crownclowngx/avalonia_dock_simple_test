@@ -3,6 +3,9 @@ using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.ToolCreation;
+using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Tests;
 
@@ -49,22 +52,34 @@ public sealed class InternalRefactorTests
     }
 
     [Fact]
-    public void StrategyMetadataIsReadOnceAndDuplicateRegistrationFailsAtomically()
+    public void Descriptor不会激活模型且重复注册原子失败()
     {
-        var toolStrategy = new CountingToolStrategy();
-        var first = new StubDocumentStrategy(
-            new DocumentMetadata(
-                new DocumentTypeId("myavalonia.host.document.duplicate-test"),
-                "First"));
-        var second = new StubDocumentStrategy(
-            new DocumentMetadata(
-                new DocumentTypeId("myavalonia.host.document.duplicate-test"),
-                "Second"));
+        CountingToolModel.ConstructionCount = 0;
+        var builder = new PluginRegistryBuilder();
+        var services = new ServiceCollection();
+        var registration = new PluginRegistration(
+            new MyAvaloniaManagement.PluginSdk.PluginId("myavalonia.host"),
+            services,
+            builder);
+        var duplicateId =
+            new MyAvaloniaManagement.PluginSdk.DocumentTypeId(
+                "myavalonia.host.document.duplicate-test");
+        registration.AddDocument<FirstDocumentModel, EmptyView>(
+            new DocumentDescriptor(duplicateId, "First", "First", "测试"));
+        registration.AddDocument<SecondDocumentModel, EmptyView>(
+            new DocumentDescriptor(duplicateId, "Second", "Second", "测试"));
+        registration.AddTool<CountingToolModel, EmptyView>(
+            new ToolDescriptor(
+                new MyAvaloniaManagement.PluginSdk.ToolTypeId(
+                    "myavalonia.host.tool.counting"),
+                "Counting",
+                "Counting",
+                MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Left,
+                ToolCloseBehavior.Hide));
 
-        var exception = Assert.Throws<HostCompositionException>(() =>
-            new PluginRegistry([first, second], [toolStrategy]));
+        var exception = Assert.Throws<HostCompositionException>(registration.Seal);
 
-        Assert.Equal(1, toolStrategy.MetadataReadCount);
+        Assert.Equal(0, CountingToolModel.ConstructionCount);
         Assert.Contains(exception.Diagnostics, item =>
             item.Code == "DOCUMENT_ID_DUPLICATE" &&
             item.StableId == "myavalonia.host.document.duplicate-test");
@@ -124,23 +139,27 @@ public sealed class InternalRefactorTests
         }
     }
 
-    private sealed class CountingToolStrategy : IToolCreationStrategy
+    private sealed class FirstDocumentModel : MyAvaloniaManagement.PluginSdk.IPluginDocument
     {
-        public int MetadataReadCount { get; private set; }
-
-        public Tool CreateTool() => new() { Id = "counting-tool" };
-
-        public ToolMetadata GetMetadata()
-        {
-            MetadataReadCount++;
-            return new ToolMetadata(
-                new ToolTypeId("myavalonia.host.tool.counting"),
-                "Counting",
-                ToolDockSide.Left)
-            {
-                Description = string.Empty,
-                IconPath = string.Empty
-            };
-        }
+        public DocumentPresentationState Presentation { get; } = new("First");
+        public event EventHandler? PresentationChanged { add { } remove { } }
+        public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
     }
+
+    private sealed class SecondDocumentModel : MyAvaloniaManagement.PluginSdk.IPluginDocument
+    {
+        public DocumentPresentationState Presentation { get; } = new("Second");
+        public event EventHandler? PresentationChanged { add { } remove { } }
+        public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
+    }
+
+    private sealed class CountingToolModel
+    {
+        internal static int ConstructionCount { get; set; }
+        public CountingToolModel() => ConstructionCount++;
+    }
+
+    private sealed class EmptyView : Avalonia.Controls.UserControl;
 }

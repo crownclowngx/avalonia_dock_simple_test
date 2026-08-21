@@ -8,6 +8,8 @@ using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 using MySmallTools.Plugin;
 
 namespace MySmallTools.Playback.IntegrationHarness;
@@ -51,10 +53,11 @@ internal static class Program
 
         // 验收进程直接装配生产插件模块，但仍严格复用 G4 的 Host Provider → 插件 Provider 顺序；
         // 不从部署目录二次加载程序集，避免同一类型出现两个加载上下文。
-        var pluginId = new PluginId("myavalonia.plugin.my-small-tools");
-        var catalog = PluginModuleCatalog.CreateForTests([
-            (pluginId, new MySmallToolsPluginModule())
-        ]);
+        // G5 Host 只接受最终 SDK 模块；MySmallTools 按任务书到 G12 才迁移。
+        // Harness 项目继续保持可编译，但本阶段不把 Legacy 模块伪装成 V2 贡献。
+        var catalog = PluginModuleCatalog.CreateForTests(
+            Array.Empty<(MyAvaloniaManagement.PluginSdk.PluginId,
+                MyAvaloniaManagement.PluginSdk.UI.IPluginModule)>());
         services.AddSingleton(catalog);
         _diagnosticDirectory = Path.Combine(
             Path.GetTempPath(), $"my-small-tools-harness-{Guid.NewGuid():N}");

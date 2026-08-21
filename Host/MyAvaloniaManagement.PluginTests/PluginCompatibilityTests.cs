@@ -24,20 +24,11 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class PluginCompatibilityTests
 {
     [Fact]
-    public void 全部历史Document与ToolId经真实四插件注册表迁移到规范Id()
+    public void G5只在旧格式边界保留Host历史Id且不发布业务插件贡献()
     {
         var services = new ServiceCollection();
-        var builder = new PluginRegistryBuilder();
-        services.AddApplicationServices(builder);
+        services.AddApplicationServices();
         services.AddViewModels();
-        ConfigureModule(new BiliDownloaderPluginModule(),
-            "myavalonia.plugin.bili-downloader", services, builder);
-        ConfigureModule(new DaTangAccountingHelpPluginModule(),
-            "myavalonia.plugin.datang-accounting-help", services, builder);
-        ConfigureModule(new MyPlugTestPluginModule(),
-            "myavalonia.plugin.my-plug-test", services, builder);
-        ConfigureModule(new MySmallToolsPluginModule(),
-            "myavalonia.plugin.my-small-tools", services, builder);
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateScopes = true,
@@ -45,38 +36,17 @@ public sealed class PluginCompatibilityTests
         });
         var factory = provider.GetRequiredService<MyAvaloniaManagement.ViewModels.ManagementFactory>();
 
-        var documentMappings = new (string Legacy, string Canonical)[]
-        {
-            ("DD7A1E38-07C5-B38C-FB02-1B991896EF49", "myavalonia.host.document.welcome"),
-            ("A3F7E1B2-9C4D-4E8A-B6F1-2D5E8A7C3B10", "myavalonia.plugin.bili-downloader.document.download"),
-            ("D8525F12-F58B-F95D-1B4B-62EE33CF128D", "myavalonia.plugin.datang-accounting-help.document.invoice-info-import"),
-            ("9D0ACD63-6C35-4CC8-87B1-E9B3C91E1C18", "myavalonia.plugin.datang-accounting-help.document.bank-balance-reconciliation"),
-            ("7DEE4212-DFF1-9923-B527-1B047D1B2918", "myavalonia.plugin.my-plug-test.document.welcome"),
-            ("384D28C4-F6E8-4D49-B0BD-2CE484D4D177", "myavalonia.plugin.my-plug-test.document.message-receiver"),
-            ("C1B13C72-C21A-4C39-9612-77C341DA85B6", "myavalonia.plugin.my-plug-test.document.batch-http-get"),
-            ("A1B2C3D4-E5F6-7890-ABCD-EF1234567890", "myavalonia.plugin.my-small-tools.document.secret-video-player"),
-            ("B2C3D4E5-F6G7-8901-BCDE-F23456789012", "myavalonia.plugin.my-small-tools.document.video-encryptor"),
-            ("C3D4E5F6-A7B8-4901-CDEF-345678901234", "myavalonia.plugin.my-small-tools.document.secret-video-library"),
-            ("D4E5F6A7-B8C9-4A12-DEF0-456789012345", "myavalonia.plugin.my-small-tools.document.video-decryptor")
-        };
-        foreach (var (legacy, canonical) in documentMappings)
-        {
-            var document = factory.CreateManagementNewDocument(
-                new DocumentCreationParams(new DocumentTypeId(legacy)));
-            Assert.Equal(
-                canonical,
-                factory.NormalizePersistedDocumentTypeId(new DocumentTypeId(legacy)).Value);
-            factory.OnDockableClosed(document);
-        }
+        Assert.Equal(
+            "myavalonia.host.document.welcome",
+            factory.NormalizePersistedDocumentTypeId(
+                new DocumentTypeId("DD7A1E38-07C5-B38C-FB02-1B991896EF49")).Value);
 
         var toolMappings = new (string Legacy, string Canonical)[]
         {
             ("fileSystemTree", "myavalonia.host.tool.file-system-tree"),
             ("plugGroupMenu", "myavalonia.host.tool.plugin-menu"),
             ("pluginStatus", "myavalonia.host.tool.plugin-status"),
-            ("toolManagement", "myavalonia.host.tool.management"),
-            ("BiliSchedulerTool", "myavalonia.plugin.bili-downloader.tool.scheduler"),
-            ("MyCustomTool", "myavalonia.plugin.my-plug-test.tool.custom")
+            ("toolManagement", "myavalonia.host.tool.management")
         };
         Assert.All(toolMappings, mapping =>
             Assert.Equal(mapping.Canonical, factory.NormalizePersistedToolId(mapping.Legacy)));
@@ -164,17 +134,15 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public async Task 插件状态模型合并四个托管模块与生命周期结果()
+    public void 插件状态模型投影四个托管模块与G5生命周期声明()
     {
         var registry = new PluginRegistry(
-            CreatePluginSnapshots(), [], [], [], []);
-        var manager = new PluginLifecycleManager([
-            new PluginLifecycleRegistration(
-                new PluginId("myavalonia.plugin.bili-downloader"),
-                new ReadyBiliLifecycle())
-        ]);
-        await manager.InitializeAllAsync();
-        var viewModel = new PluginStatusViewModel(registry, manager);
+            CreatePluginSnapshots(), [], [],
+            [new PluginLifecycleDeclaration(
+                new MyAvaloniaManagement.PluginSdk.PluginId(
+                    "myavalonia.plugin.bili-downloader"),
+                typeof(ReadyBiliLifecycle))]);
+        var viewModel = new PluginStatusViewModel(registry);
 
         Assert.Equal(4, viewModel.Items.Count);
         Assert.Equal(
@@ -186,7 +154,7 @@ public sealed class PluginCompatibilityTests
             ],
             viewModel.Items.Select(item => item.PluginId));
         Assert.Equal(
-            "运行正常",
+            "生命周期已声明 · G8 前不执行",
             viewModel.Items.Single(item =>
                 item.PluginId == "myavalonia.plugin.bili-downloader").StatusText);
         Assert.All(
@@ -410,18 +378,6 @@ public sealed class PluginCompatibilityTests
 
         public Task ShutdownAsync(CancellationToken cancellationToken) =>
             Task.CompletedTask;
-    }
-
-    private static void ConfigureModule(
-        IPluginModule module,
-        string pluginId,
-        IServiceCollection services,
-        PluginRegistryBuilder builder)
-    {
-        var context = new PluginRegistrationContext(
-            new PluginId(pluginId), services, builder);
-        module.Configure(context);
-        context.Seal();
     }
 
     private static TestPluginRegistrationContext ConfigureForInspection(

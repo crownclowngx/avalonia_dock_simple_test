@@ -5,15 +5,13 @@ using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.PluginSdk.Tests;
 
-/// <summary>以反射和项目引用白名单保护 G2 的 Core/UI/Legacy 三条边界。</summary>
+/// <summary>以反射和项目引用白名单保护 G5 的 Core/UI 生产入口与 Legacy 迁移边界。</summary>
 public sealed class SdkBoundaryTests
 {
     private static readonly string[] LegacyReferenceAllowlist =
     [
         "Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj",
         "Host/MyAvaloniaManagement.PluginTests/TestAssets/ManagedOnly/LegacyNoModule/LegacyNoModule.csproj",
-        "Host/MyAvaloniaManagement.PluginTests/TestAssets/PluginIsolation/PluginV1/PluginV1.csproj",
-        "Host/MyAvaloniaManagement.PluginTests/TestAssets/PluginIsolation/PluginV2/PluginV2.csproj",
         "Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj",
         "Host/MyAvaloniaManagement.UiTests/MyAvaloniaManagement.UiTests.csproj",
         "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",

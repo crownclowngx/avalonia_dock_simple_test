@@ -18,7 +18,7 @@ using MyAvaloniaManagement.Views.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.ToolCreation;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -44,11 +44,14 @@ internal static class ServiceCollectionExtensions
     {
         registryBuilder ??= new PluginRegistryBuilder();
         documentScopes ??= new DocumentScopeRegistry();
-        services.AddSingleton(new PluginLifecycleOptions());
         services.AddSingleton(registryBuilder);
 
         // 事件总线由当前根容器独占；禁止使用进程静态实例，确保多 Runtime 与并行测试互不串扰。
-        services.AddSingleton<IHostEventBus, HostEventBus>();
+        services.AddSingleton<HostEventBus>();
+        services.AddSingleton<IHostEventBus>(provider =>
+            provider.GetRequiredService<HostEventBus>());
+        services.AddSingleton<MyAvaloniaManagement.PluginSdk.IHostEventBus>(provider =>
+            provider.GetRequiredService<HostEventBus>());
 
         // 每个由托管插件创建的 Document 都拥有独立 Scope。插件只依赖公共创建接口，
         // Dock 关闭时则由宿主使用具体管理器释放对应 Scope。
@@ -79,18 +82,19 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<DocumentCloseCoordinator>();
         RegisterHostContributions(services, registryBuilder);
         services.AddSingleton(provider => registryBuilder.Build(
-            provider,
             provider.GetService<PluginModuleCatalog>(),
             provider.GetService<IHostDiagnosticSink>(),
             pluginProviders));
-        services.AddSingleton(provider => new PluginLifecycleManager(
-            provider.GetRequiredService<PluginRegistry>().Lifecycles,
-            provider.GetRequiredService<PluginLifecycleOptions>()));
         services.AddSingleton<ViewLocator>();
+        services.AddSingleton(provider => new PluginContributionActivator(
+            provider,
+            provider.GetRequiredService<PluginRegistry>(),
+            pluginProviders ?? new PluginProviderOwner()));
 
         // 注册ManagementFactory为单例
         services.AddSingleton(provider => new ManagementFactory(
             provider.GetRequiredService<PluginRegistry>(),
+            provider.GetRequiredService<PluginContributionActivator>(),
             documentScopes,
             provider.GetRequiredService<DocumentPersistenceStateStore>(),
             provider.GetRequiredService<DocumentCloseCoordinator>(),
@@ -117,55 +121,45 @@ internal static class ServiceCollectionExtensions
         IServiceCollection services,
         PluginRegistryBuilder builder)
     {
-        RegisterHostDocument<WelcomeDocumentStrategy>(services, builder);
-        RegisterHostTool<FileSystemTreeStrategy>(services, builder);
-        RegisterHostTool<PlugGroupMenuStrategy>(services, builder);
-        RegisterHostTool<ToolManagementStrategy>(services, builder);
-        RegisterHostTool<PluginStatusStrategy>(services, builder);
-
-        builder.AddView(
-            HostExtensionIds.Owner,
-            typeof(WelcomeViewModel),
-            typeof(WelcomeView),
-            static () => new WelcomeView());
-        builder.AddView(
-            HostExtensionIds.Owner,
-            typeof(FileSystemTreeViewModel),
-            typeof(FileSystemTreeView),
-            static () => new FileSystemTreeView());
-        builder.AddView(
-            HostExtensionIds.Owner,
-            typeof(PlugGroupMenuViewModel),
-            typeof(PlugGroupMenuView),
-            static () => new PlugGroupMenuView());
-        builder.AddView(
-            HostExtensionIds.Owner,
-            typeof(ToolManagementViewModel),
-            typeof(ToolManagementView),
-            static () => new ToolManagementView());
-        builder.AddView(
-            HostExtensionIds.Owner,
-            typeof(PluginStatusViewModel),
-            typeof(PluginStatusView),
-            static () => new PluginStatusView());
-    }
-
-    private static void RegisterHostDocument<TStrategy>(
-        IServiceCollection services,
-        PluginRegistryBuilder builder)
-        where TStrategy : class, IDocumentCreationStrategy
-    {
-        services.AddSingleton<TStrategy>();
-        builder.AddDocument(HostExtensionIds.Owner, typeof(TStrategy));
-    }
-
-    private static void RegisterHostTool<TStrategy>(
-        IServiceCollection services,
-        PluginRegistryBuilder builder)
-        where TStrategy : class, IToolCreationStrategy
-    {
-        services.AddSingleton<TStrategy>();
-        builder.AddTool(HostExtensionIds.Owner, typeof(TStrategy));
+        var registration = new PluginRegistration(
+            HostExtensionIds.V2Owner,
+            services,
+            builder);
+        registration.AddDocument<WelcomeViewModel, WelcomeView>(
+            new DocumentDescriptor(
+                HostExtensionIds.V2WelcomeDocument,
+                "欢迎主程序",
+                "显示欢迎信息",
+                "帮助"));
+        registration.AddTool<FileSystemTreeViewModel, FileSystemTreeView>(
+            new ToolDescriptor(
+                HostExtensionIds.V2FileSystemTree,
+                "文件系统浏览器",
+                "浏览和管理文件系统",
+                ToolDockSide.Left,
+                ToolCloseBehavior.Prevent));
+        registration.AddTool<PlugGroupMenuViewModel, PlugGroupMenuView>(
+            new ToolDescriptor(
+                HostExtensionIds.V2PluginMenu,
+                "插件分组菜单",
+                "显示按分类组织的插件文档菜单",
+                ToolDockSide.Right,
+                ToolCloseBehavior.Prevent));
+        registration.AddTool<ToolManagementViewModel, ToolManagementView>(
+            new ToolDescriptor(
+                HostExtensionIds.V2ToolManagement,
+                "工具管理",
+                "管理所有工具的显示和隐藏",
+                ToolDockSide.Right,
+                ToolCloseBehavior.Prevent));
+        registration.AddTool<PluginStatusViewModel, PluginStatusView>(
+            new ToolDescriptor(
+                HostExtensionIds.V2PluginStatus,
+                "插件状态",
+                "查看插件加载、依赖和生命周期诊断",
+                ToolDockSide.Right,
+                ToolCloseBehavior.Hide));
+        registration.Seal();
     }
 
     /// <summary>
@@ -184,6 +178,8 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(documentScopes);
         services.AddScoped<DocumentLifetime>();
         services.AddScoped<IDocumentLifetime>(provider =>
+            provider.GetRequiredService<DocumentLifetime>());
+        services.AddScoped<MyAvaloniaManagement.PluginSdk.IDocumentLifetime>(provider =>
             provider.GetRequiredService<DocumentLifetime>());
         services.AddSingleton(provider =>
         {
@@ -208,19 +204,6 @@ internal static class ServiceCollectionExtensions
     /// </remarks>
     public static IServiceCollection AddViewModels(this IServiceCollection services)
     {
-        services.AddTransient(provider => new FileSystemTreeViewModel(
-            provider.GetRequiredService<IHostStorageService>(),
-            provider.GetRequiredService<IHostDocumentOpenService>()));
-        services.AddTransient(provider => new PlugGroupMenuViewModel(
-            provider.GetRequiredService<ManagementFactory>(),
-            provider.GetRequiredService<PluginMenuService>()));
-        services.AddTransient(provider => new ToolManagementViewModel(
-            provider.GetRequiredService<ManagementFactory>()));
-        services.AddTransient(provider => new PluginStatusViewModel(
-            provider.GetRequiredService<PluginRegistry>(),
-            provider.GetRequiredService<PluginLifecycleManager>(),
-            provider.GetService<HostDiagnosticSession>()));
-
         // 注册MainWindowViewModel为瞬态，每次请求都创建新实例
         services.AddTransient(provider => new MainWindowViewModel(
             provider.GetRequiredService<ManagementFactory>(),
@@ -233,15 +216,6 @@ internal static class ServiceCollectionExtensions
 
         // 内置策略只依赖“创建某类对象”的窄工厂，不依赖整个 IServiceProvider。
         // 工厂闭包只存在于组合根，既保持每次创建的新实例语义，也避免策略成为服务定位器。
-        services.AddSingleton<Func<FileSystemTreeViewModel>>(provider =>
-            () => provider.GetRequiredService<FileSystemTreeViewModel>());
-        services.AddSingleton<Func<PlugGroupMenuViewModel>>(provider =>
-            () => provider.GetRequiredService<PlugGroupMenuViewModel>());
-        services.AddSingleton<Func<ToolManagementViewModel>>(provider =>
-            () => provider.GetRequiredService<ToolManagementViewModel>());
-        services.AddSingleton<Func<PluginStatusViewModel>>(provider =>
-            () => provider.GetRequiredService<PluginStatusViewModel>());
-
         // Welcome 策略在 Registry 构建期间已经被创建，而 ManagementFactory 依赖该 Registry。
         // 延迟工厂只在用户点击“显示工具”时解析 ManagementFactory，显式打破构造期循环。
         services.AddSingleton<Func<ManagementFactory>>(provider =>

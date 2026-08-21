@@ -24,6 +24,18 @@ internal sealed class DocumentScopeRegistry
     private readonly List<DocumentScopeManager> _managers = [];
     private bool _closing;
 
+    /// <summary>获取已提交所有者数量，仅供组合测试验证失败候选没有登记 Scope。</summary>
+    internal int ManagerCount
+    {
+        get
+        {
+            lock (_syncRoot)
+            {
+                return _managers.Count;
+            }
+        }
+    }
+
     /// <summary>登记一个刚刚成功建立的容器所拥有的 Document Scope 管理器。</summary>
     internal void Register(DocumentScopeManager manager)
     {

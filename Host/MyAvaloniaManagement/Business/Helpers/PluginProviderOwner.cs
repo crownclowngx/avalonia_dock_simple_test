@@ -3,39 +3,32 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
 /// <summary>
-/// 建立、保存并最终逆序释放每个插件独占的依赖注入 Provider。
+/// 建立、暂存并最终逆序释放每个声明式插件独占的依赖注入 Provider。
 /// </summary>
 /// <remarks>
-/// <para>
-/// 本类型是插件级对象图的唯一所有者。每个模块都从新的空 <see cref="ServiceCollection"/> 开始，
-/// 插件永远拿不到宿主的 <see cref="IServiceCollection"/>，也不会看到前一个插件的描述符。
-/// Microsoft DI 原生支持的开放泛型、keyed service 和多实现注册均不受限制；错误注册最多破坏当前
-/// 插件自己的 Provider，因此不再需要复制、比较和提交描述符的防御事务。
-/// </para>
-/// <para>
-/// 这里使用的模式只有朴素的所有者和顺序组合。插件之间没有父容器回退，也没有任意
-/// <see cref="IServiceProvider"/> 桥；宿主只显式提供事件总线等阶段性窄端口。
-/// </para>
+/// Provider 构建成功只代表“候选可解析”，不代表贡献已经发布。全部插件完成配置后，Registry Builder
+/// 才能判断跨插件稳定 ID 与模型映射冲突；本所有者随后一次提交无冲突租约、释放被排除租约，并只为
+/// 已接受插件登记 Document Scope。该两阶段过程避免为了回滚而复制服务描述符。
 /// </remarks>
 internal sealed class PluginProviderOwner : IDisposable
 {
     private readonly List<PluginProviderLease> _leases = [];
+    private DocumentScopeRegistry? _documentScopes;
     private bool _composed;
+    private bool _registryCommitted;
     private bool _disposed;
 
     internal IReadOnlySet<PluginId> AvailablePluginIds =>
-        _leases.Select(lease => lease.PluginId).ToHashSet();
+        _leases.Where(lease => !_registryCommitted || lease.Accepted)
+            .Select(lease => lease.PluginId)
+            .ToHashSet();
 
-    /// <summary>
-    /// 按规范 PluginId 顺序配置并建立插件 Provider；单个插件失败时记录受控诊断并继续处理后续插件。
-    /// </summary>
     internal void Compose(
         PluginModuleCatalog catalog,
         IServiceProvider hostProvider,
@@ -55,10 +48,12 @@ internal sealed class PluginProviderOwner : IDisposable
         }
 
         _composed = true;
+        _documentScopes = documentScopes;
         foreach (var entry in catalog.Entries)
         {
             var manifest = entry.Manifest ?? throw new InvalidOperationException(
                 "manifest v2 是生产插件组合的必需入口事实。");
+            var pluginId = new PluginId(manifest.PluginId.Value);
             IPluginModule module;
             try
             {
@@ -83,12 +78,12 @@ internal sealed class PluginProviderOwner : IDisposable
             {
                 var pluginServices = CreatePluginServices(hostProvider);
                 var pluginBuilder = new PluginRegistryBuilder();
-                var context = new PluginRegistrationContext(
-                    manifest.PluginId,
+                var registration = new PluginRegistration(
+                    pluginId,
                     pluginServices,
                     pluginBuilder);
-                module.Configure(context);
-                context.Seal();
+                module.Configure(registration);
+                registration.Seal();
 
                 failureCode = HostDiagnosticCodes.PluginContainerBuildFailed;
                 provider = pluginServices.BuildServiceProvider(new ServiceProviderOptions
@@ -97,17 +92,17 @@ internal sealed class PluginProviderOwner : IDisposable
                     ValidateOnBuild = true,
                 });
 
-                // 在发布任何声明前先激活当前插件的宿主可见单例。构造失败只会丢弃本 Provider，
-                // 不会让全局 Registry 进入“发布了一半”的状态。
-                foreach (var serviceType in pluginBuilder.GetRequiredServiceTypes())
+                foreach (var lifecycleType in pluginBuilder.GetLifecycleTypes())
                 {
-                    provider.GetRequiredService(serviceType);
+                    provider.GetRequiredService(lifecycleType);
                 }
 
+                // Scope 管理器不是插件模型；解析它不会创建 Document 或 Tool。
+                // Lifecycle singleton 只验证可解析性，不调用启动/停止，最终编排仍留给 G8。
                 var scopeManager = provider.GetRequiredService<DocumentScopeManager>();
-                documentScopes.Register(scopeManager);
                 registryBuilder.Import(pluginBuilder);
-                _leases.Add(new PluginProviderLease(manifest.PluginId, provider));
+                _leases.Add(new PluginProviderLease(
+                    pluginId, provider, scopeManager));
                 provider = null;
             }
             catch (Exception exception)
@@ -125,16 +120,47 @@ internal sealed class PluginProviderOwner : IDisposable
         }
     }
 
-    /// <summary>由 Registry 激活阶段在对应插件 Provider 中解析已声明的宿主可见对象。</summary>
+    /// <summary>
+    /// 提交 Registry 的冲突判断结果；被排除插件不会留下 Provider、Scope 或部分贡献。
+    /// </summary>
+    internal void CommitRegistryResult(IReadOnlySet<PluginId> rejectedOwners)
+    {
+        ArgumentNullException.ThrowIfNull(rejectedOwners);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_registryCommitted)
+        {
+            throw new InvalidOperationException("插件 Registry 结果已经提交。");
+        }
+
+        _registryCommitted = true;
+        for (var index = _leases.Count - 1; index >= 0; index--)
+        {
+            var lease = _leases[index];
+            if (rejectedOwners.Contains(lease.PluginId))
+            {
+                lease.Provider.Dispose();
+                _leases.RemoveAt(index);
+                continue;
+            }
+
+            lease.Accepted = true;
+        }
+
+        foreach (var lease in _leases)
+        {
+            _documentScopes!.Register(lease.ScopeManager);
+        }
+    }
+
     internal object GetRequiredService(PluginId pluginId, Type serviceType)
     {
         ArgumentNullException.ThrowIfNull(pluginId);
         ArgumentNullException.ThrowIfNull(serviceType);
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        var lease = _leases.SingleOrDefault(item => item.PluginId == pluginId) ??
-            throw new InvalidOperationException($"插件 {pluginId.Value} 没有可用的独立 Provider。");
-        return lease.Provider.GetRequiredService(serviceType);
+        return GetAcceptedLease(pluginId).Provider.GetRequiredService(serviceType);
     }
+
+    internal DocumentScopeManager GetDocumentScopeManager(PluginId pluginId) =>
+        GetAcceptedLease(pluginId).ScopeManager;
 
     public void Dispose()
     {
@@ -152,28 +178,42 @@ internal sealed class PluginProviderOwner : IDisposable
         _leases.Clear();
     }
 
+    private PluginProviderLease GetAcceptedLease(PluginId pluginId)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var lease = _leases.SingleOrDefault(item =>
+            item.Accepted && item.PluginId == pluginId);
+        return lease ?? throw new InvalidOperationException(
+            $"插件 {pluginId.Value} 没有已提交的独立 Provider。");
+    }
+
     private static IServiceCollection CreatePluginServices(IServiceProvider hostProvider)
     {
         var services = new ServiceCollection();
 
-        // 事件总线是 Legacy 阶段仍在使用的明确 Host Port。注册宿主拥有的现有实例，
-        // 插件 Provider 不取得其释放权，跨插件通信也只通过这一强类型端口发生。
+        // 只注入最终 SDK 明确承诺的 Host Port；不存在父 Provider 或任意 IServiceProvider 回退。
         services.AddSingleton(hostProvider.GetRequiredService<IHostEventBus>());
-
-        // G12 才会把 Bili Tool 对 public Legacy Manager 的读取替换为插件内部 readiness。
-        // 此处保留一个精确、只读的阶段桥以维持 G4 可运行基线；没有通用父 Provider 回退。
-        services.AddSingleton(_ => hostProvider.GetRequiredService<PluginLifecycleManager>());
-
-        // 每个插件自己的 ScopeFactory 创建 Document Scope。由此产生的 scoped 业务服务、
-        // IDocumentLifetime 和 Document 都来自同一个插件 Provider，而不是宿主根容器。
         services.AddScoped<DocumentLifetime>();
         services.AddScoped<IDocumentLifetime>(provider =>
             provider.GetRequiredService<DocumentLifetime>());
+
+        // Legacy Scope 接口暂时仅用于 G9-G12 前的业务插件源码测试，不参与声明式贡献事实。
+        services.AddScoped<MyAvaloniaManagementCommon.DocumentCreation.IDocumentLifetime>(provider =>
+            provider.GetRequiredService<DocumentLifetime>());
         services.AddSingleton<DocumentScopeManager>();
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
+        services.AddSingleton<MyAvaloniaManagementCommon.DocumentCreation.IDocumentScopeFactory>(provider =>
             provider.GetRequiredService<DocumentScopeManager>());
         return services;
     }
 
-    private sealed record PluginProviderLease(PluginId PluginId, ServiceProvider Provider);
+    private sealed class PluginProviderLease(
+        PluginId pluginId,
+        ServiceProvider provider,
+        DocumentScopeManager scopeManager)
+    {
+        internal PluginId PluginId { get; } = pluginId;
+        internal ServiceProvider Provider { get; } = provider;
+        internal DocumentScopeManager ScopeManager { get; } = scopeManager;
+        internal bool Accepted { get; set; }
+    }
 }

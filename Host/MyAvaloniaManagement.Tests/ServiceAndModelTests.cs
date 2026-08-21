@@ -29,7 +29,7 @@ public sealed class ServiceAndModelTests
     }
 
     [Fact]
-    public void 插件菜单只分组可见文档()
+    public void G5Descriptor中的文档都形成显式菜单分组()
     {
         var strategies = new IDocumentCreationStrategy[]
         {
@@ -60,7 +60,7 @@ public sealed class ServiceAndModelTests
             .GetDocumentMetadataByCategory();
 
         Assert.Equal(2, groups["分类一"].Count);
-        Assert.DoesNotContain("分类二", groups.Keys);
+        Assert.Single(groups["分类二"]);
         Assert.Contains("未归类插件", groups.Keys);
     }
 

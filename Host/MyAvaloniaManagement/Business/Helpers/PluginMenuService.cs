@@ -36,7 +36,8 @@ internal sealed class PluginMenuService
     /// <summary>
     /// 获取按分类分组的创建入口；一个文档类型可以贡献多个入口。
     /// </summary>
-    public Dictionary<string, List<DocumentCreationMenuEntry>> GetCreationEntriesByCategory() =>
+    public Dictionary<string, List<MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry>>
+        GetCreationEntriesByCategory() =>
         _factory.GetAllDocumentCreationEntries()
             .GroupBy(entry => entry.MenuCategory)
             .ToDictionary(group => group.Key, group => group.ToList());

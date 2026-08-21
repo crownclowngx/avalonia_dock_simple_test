@@ -9,6 +9,16 @@ namespace MyAvaloniaManagement.Business.Layout;
 /// </summary>
 internal static class ToolDockPlacement
 {
+    internal static Alignment ToAlignment(
+        MyAvaloniaManagement.PluginSdk.UI.ToolDockSide side) => side switch
+    {
+        MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Left => Alignment.Left,
+        MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Right => Alignment.Right,
+        MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Top => Alignment.Top,
+        MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Bottom => Alignment.Bottom,
+        _ => throw new ArgumentOutOfRangeException(nameof(side), side, "未知的 Tool 停靠方向。"),
+    };
+
     public static Alignment ToAlignment(ToolDockSide side) => side switch
     {
         ToolDockSide.Right => Alignment.Right,

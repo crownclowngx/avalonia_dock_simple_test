@@ -13,7 +13,10 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// <see cref="RequestClose"/>。先取消、后 Dispose 的顺序让异步操作尽早开始退出，同时
 /// 保证 Document.Dispose 观察到的 <see cref="IsClosing"/> 已为 true。
 /// </remarks>
-internal sealed class DocumentLifetime : IDocumentLifetime, IDisposable
+internal sealed class DocumentLifetime :
+    IDocumentLifetime,
+    MyAvaloniaManagement.PluginSdk.IDocumentLifetime,
+    IDisposable
 {
     private readonly CancellationTokenSource _closing = new();
     private int _isClosing;

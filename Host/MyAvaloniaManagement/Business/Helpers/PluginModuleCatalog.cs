@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -41,9 +42,9 @@ internal sealed class PluginModuleCatalog
                 () => item.Module,
                 moduleType,
                 assembly,
-                new PluginManifest(
-                    PluginManifestReader.CurrentSchemaVersion,
-                    item.PluginId,
+                    new PluginManifest(
+                        PluginManifestReader.CurrentSchemaVersion,
+                        new MyAvaloniaManagementCommon.Plugin.PluginId(item.PluginId.Value),
                     new Version(1, 0, 0, 0),
                     new PluginEntryPoint(
                         (assembly.GetName().Name ?? "TestPlugin") + ".dll",
@@ -69,9 +70,9 @@ internal sealed class PluginModuleCatalog
                 () => (IPluginModule)Activator.CreateInstance(item.ModuleType)!,
                 item.ModuleType,
                 assembly,
-                new PluginManifest(
-                    PluginManifestReader.CurrentSchemaVersion,
-                    item.PluginId,
+                    new PluginManifest(
+                        PluginManifestReader.CurrentSchemaVersion,
+                        new MyAvaloniaManagementCommon.Plugin.PluginId(item.PluginId.Value),
                     new Version(1, 0, 0, 0),
                     new PluginEntryPoint(
                         (assembly.GetName().Name ?? "TestPlugin") + ".dll",
@@ -109,10 +110,9 @@ internal sealed class PluginModuleCatalog
     }
 
     internal IReadOnlyList<PluginRegistryPlugin> CreatePluginSnapshots(
-        IEnumerable<PluginRegistryBuilder.StrategyDeclaration> documents,
-        IEnumerable<PluginRegistryBuilder.StrategyDeclaration> tools,
-        IEnumerable<PluginRegistryBuilder.ViewDeclaration> views,
-        IEnumerable<PluginRegistryBuilder.StrategyDeclaration> lifecycles,
+        IEnumerable<PluginDocumentRegistration> documents,
+        IEnumerable<PluginToolRegistration> tools,
+        IEnumerable<PluginLifecycleDeclaration> lifecycles,
         IReadOnlySet<PluginId>? availablePluginIds = null)
     {
         var result = new List<PluginRegistryPlugin>();
@@ -122,7 +122,8 @@ internal sealed class PluginModuleCatalog
             {
                 continue;
             }
-            if (availablePluginIds is not null && !availablePluginIds.Contains(manifest.PluginId))
+            var ownerId = new PluginId(manifest.PluginId.Value);
+            if (availablePluginIds is not null && !availablePluginIds.Contains(ownerId))
             {
                 continue;
             }
@@ -130,13 +131,16 @@ internal sealed class PluginModuleCatalog
                 manifest,
                 entry.Assembly,
                 entry.ModuleType,
-                documents.Where(item => item.OwnerId == manifest.PluginId)
-                    .Select(item => item.ImplementationType).ToArray(),
-                tools.Where(item => item.OwnerId == manifest.PluginId)
-                    .Select(item => item.ImplementationType).ToArray(),
-                views.Where(item => item.OwnerId == manifest.PluginId)
-                    .Select(item => new PluginViewTypePair(item.ViewModelType, item.ViewType)).ToArray(),
-                lifecycles.Where(item => item.OwnerId == manifest.PluginId)
+                documents.Where(item => item.OwnerId == ownerId)
+                    .Select(item => item.ModelType).ToArray(),
+                tools.Where(item => item.OwnerId == ownerId)
+                    .Select(item => item.ModelType).ToArray(),
+                documents.Where(item => item.OwnerId == ownerId)
+                    .Select(item => new PluginViewTypePair(item.ModelType, item.ViewType))
+                    .Concat(tools.Where(item => item.OwnerId == ownerId)
+                        .Select(item => new PluginViewTypePair(item.ModelType, item.ViewType)))
+                    .ToArray(),
+                lifecycles.Where(item => item.OwnerId == ownerId)
                     .Select(item => item.ImplementationType).ToArray()));
         }
 
@@ -145,6 +149,8 @@ internal sealed class PluginModuleCatalog
 
 }
 
+/// <summary>把已验证 manifest、精确模块类型和延迟构造函数绑定为一个目录项。</summary>
+/// <remarks>延迟函数只构造 manifest 指定的模块；不会扫描程序集中的其他实现。</remarks>
 internal sealed record PluginModuleEntry(
     Func<IPluginModule> CreateModule,
     Type ModuleType,

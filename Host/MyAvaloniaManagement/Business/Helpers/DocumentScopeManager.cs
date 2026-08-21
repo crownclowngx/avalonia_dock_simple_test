@@ -32,8 +32,24 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
 
     /// <inheritdoc />
     public TDocument CreateDocument<TDocument>() where TDocument : Document
+        => (TDocument)CreateDocument(typeof(TDocument));
+
+    /// <summary>
+    /// 按声明式 Registry 已验证的精确模型类型创建并托管 G5 过渡期 Document。
+    /// </summary>
+    /// <remarks>
+    /// G5 的 Host 内建模型仍继承 Dock Document；G6 会由 Adapter 接管这一限制。本入口只把
+    /// 泛型创建改为运行期精确类型解析，不扫描类型、不接受任意服务名，也不改变 Scope 所有权。
+    /// </remarks>
+    internal Document CreateDocument(Type modelType)
     {
+        ArgumentNullException.ThrowIfNull(modelType);
         ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!typeof(Document).IsAssignableFrom(modelType))
+        {
+            throw new InvalidOperationException(
+                $"G5 过渡模型 {modelType.FullName} 尚不是 Dock Document；请由 G6 Adapter 承载。");
+        }
 
         // Scope 在成功登记之前始终由局部变量拥有。解析构造函数失败、重复返回同一 Document，
         // 或宿主正在退出时，finally 都会立即释放已创建的服务，绝不留下半注册作用域。
@@ -46,14 +62,14 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
             // 是为了兼容只注册 DocumentScopeManager 的轻量测试与旧组合入口；回退只影响
             // 未注入 IDocumentLifetime 的旧对象，不会在正式路径中形成第二套生命周期事实源。
             lifetime = scope.ServiceProvider.GetService<DocumentLifetime>() ?? new DocumentLifetime();
-            var document = scope.ServiceProvider.GetRequiredService<TDocument>();
+            var document = (Document)scope.ServiceProvider.GetRequiredService(modelType);
             lock (_syncRoot)
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
                 if (!_scopes.TryAdd(document, new DocumentScopeLease(scope, lifetime)))
                 {
                     throw new InvalidOperationException(
-                        $"Document {typeof(TDocument).FullName} 已经关联到一个依赖注入作用域。");
+                        $"Document {modelType.FullName} 已经关联到一个依赖注入作用域。");
                 }
             }
 

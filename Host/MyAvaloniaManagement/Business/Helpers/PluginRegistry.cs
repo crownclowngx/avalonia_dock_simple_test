@@ -3,341 +3,148 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Avalonia.Controls;
-using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagement.Business.Constants;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.ToolCreation;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
 /// <summary>
-/// 经完整校验后一次性发布的宿主扩展组合快照。
+/// 经完整校验后一次性发布的声明式插件贡献快照。
 /// </summary>
 /// <remarks>
-/// Registry 没有写入 API，也不保存生命周期运行状态或诊断日志。它只表示本次 HostRuntime 已经
-/// 接受的清单和贡献，使菜单、Dock、View、生命周期与状态页读取同一份不可变事实。
+/// Registry 只保存身份、描述符和实现类型，不持有 Provider、Scope、Dock 对象或生命周期运行状态。
+/// 所有集合都在构造时复制为只读索引；模型创建由 <see cref="PluginContributionActivator"/> 根据这些
+/// 事实完成，从而把“声明了什么”和“何时创建实例”保持为两个单一职责。
 /// </remarks>
 internal sealed class PluginRegistry
 {
     private readonly IReadOnlyDictionary<DocumentTypeId, PluginDocumentRegistration> _documents;
     private readonly IReadOnlyDictionary<ToolTypeId, PluginToolRegistration> _tools;
     private readonly IReadOnlyDictionary<Type, PluginViewRegistration> _views;
-    private readonly IReadOnlyDictionary<DocumentTypeId, DocumentTypeId> _documentAliases;
-    private readonly IReadOnlyDictionary<ToolTypeId, ToolTypeId> _toolAliases;
 
     internal PluginRegistry(
         IReadOnlyList<PluginRegistryPlugin> plugins,
         IReadOnlyList<PluginDocumentRegistration> documents,
         IReadOnlyList<PluginToolRegistration> tools,
-        IReadOnlyList<PluginViewRegistration> views,
-        IReadOnlyList<PluginLifecycleRegistration> lifecycles)
+        IReadOnlyList<PluginLifecycleDeclaration> lifecycles)
     {
         ArgumentNullException.ThrowIfNull(plugins);
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(tools);
-        ArgumentNullException.ThrowIfNull(views);
         ArgumentNullException.ThrowIfNull(lifecycles);
 
-        var diagnostics = Validate(documents, tools, views);
-        if (diagnostics.Count > 0)
+        // 插件快照内部也包含集合，必须逐层复制；只包住最外层数组仍允许调用方通过原始数组
+        // 改写 Document/View/Lifecycle 列表，破坏 Registry 的发布后不变性。
+        Plugins = Array.AsReadOnly(plugins.Select(plugin => plugin with
         {
-            throw new HostCompositionException(diagnostics);
-        }
-
-        Plugins = plugins.ToArray();
-        Lifecycles = lifecycles.ToArray();
-        _documents = documents.ToDictionary(item => item.Metadata.DocumentTypeId);
-        _tools = tools.ToDictionary(item => item.Metadata.ToolTypeId);
-        _views = views.ToDictionary(item => item.ViewModelType);
-        _documentAliases = documents
-            .SelectMany(item => item.Metadata.LegacyIds.Select(alias =>
-                (Alias: alias, Canonical: item.Metadata.DocumentTypeId)))
-            .ToDictionary(item => item.Alias, item => item.Canonical);
-        _toolAliases = tools
-            .SelectMany(item => item.Metadata.LegacyIds.Select(alias =>
-                (Alias: alias, Canonical: item.Metadata.ToolTypeId)))
-            .ToDictionary(item => item.Alias, item => item.Canonical);
+            DocumentTypes = Array.AsReadOnly(plugin.DocumentTypes.ToArray()),
+            ToolTypes = Array.AsReadOnly(plugin.ToolTypes.ToArray()),
+            Views = Array.AsReadOnly(plugin.Views.ToArray()),
+            LifecycleTypes = Array.AsReadOnly(plugin.LifecycleTypes.ToArray()),
+        }).ToArray());
+        Lifecycles = Array.AsReadOnly(lifecycles.ToArray());
+        _documents = documents.ToDictionary(item => item.Descriptor.DocumentTypeId);
+        _tools = tools.ToDictionary(item => item.Descriptor.ToolTypeId);
+        _views = documents.Select(item => new PluginViewRegistration(
+                item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory))
+            .Concat(tools.Select(item => new PluginViewRegistration(
+                item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory)))
+            .GroupBy(item => item.ModelType)
+            .ToDictionary(group => group.Key, group => group.First());
     }
 
-    /// <summary>测试使用的最小显式组合入口；所有测试贡献视为宿主所有。</summary>
+    /// <summary>测试使用的空/最小声明式 Registry 构造入口。</summary>
     internal PluginRegistry(
-        IEnumerable<IDocumentCreationStrategy> documentStrategies,
-        IEnumerable<IToolCreationStrategy> toolStrategies)
-        : this(
-            [],
-            documentStrategies.Select(strategy => new PluginDocumentRegistration(
-                HostExtensionIds.Owner,
-                strategy,
-                strategy.GetMetadata(),
-                strategy is IDocumentCreationIntentProvider provider
-                    ? (provider.GetCreationIntents() ?? []).ToArray()
-                    : [],
-                strategy.GetType())).ToArray(),
-            toolStrategies.Select(strategy => new PluginToolRegistration(
-                HostExtensionIds.Owner,
-                strategy,
-                strategy.GetMetadata(),
-                strategy.GetType())).ToArray(),
-            [],
-            [])
+        IReadOnlyList<PluginDocumentRegistration> documents,
+        IReadOnlyList<PluginToolRegistration> tools)
+        : this([], documents, tools, [])
     {
     }
 
     internal IReadOnlyList<PluginRegistryPlugin> Plugins { get; }
 
-    internal IReadOnlyList<PluginLifecycleRegistration> Lifecycles { get; }
+    /// <summary>获取已经冻结但尚未由 G8 编排执行的最终 SDK 生命周期声明。</summary>
+    internal IReadOnlyList<PluginLifecycleDeclaration> Lifecycles { get; }
 
-    internal IReadOnlyDictionary<DocumentTypeId, DocumentMetadata> DocumentMetadata =>
-        _documents.ToDictionary(item => item.Key, item => item.Value.Metadata);
+    internal IReadOnlyDictionary<DocumentTypeId, DocumentDescriptor> DocumentDescriptors =>
+        _documents.ToDictionary(item => item.Key, item => item.Value.Descriptor);
 
-    internal IReadOnlyDictionary<ToolTypeId, ToolMetadata> ToolMetadata =>
-        _tools.ToDictionary(item => item.Key, item => item.Value.Metadata);
+    internal IReadOnlyDictionary<ToolTypeId, ToolDescriptor> ToolDescriptors =>
+        _tools.ToDictionary(item => item.Key, item => item.Value.Descriptor);
 
-    internal bool TryGetView(Type viewModelType, out PluginViewRegistration registration) =>
-        _views.TryGetValue(viewModelType, out registration!);
+    internal bool TryGetView(Type modelType, out PluginViewRegistration registration) =>
+        _views.TryGetValue(modelType, out registration!);
 
-    /// <summary>
-    /// 按规范主 ID 获取 Document 注册项，不应用历史别名。
-    /// </summary>
-    /// <remarks>
-    /// 布局和创建入口仍可在各自边界解析别名；Document 信封 v1 只允许写入主 ID，
-    /// 因而持久化流程必须使用精确查询，避免一次打开悄悄变成未声明的数据迁移。
-    /// </remarks>
     internal bool TryGetDocumentRegistration(
         DocumentTypeId documentTypeId,
         out PluginDocumentRegistration registration) =>
         _documents.TryGetValue(documentTypeId, out registration!);
 
-    internal bool TryGetToolStrategy(ToolTypeId toolTypeId, out IToolCreationStrategy strategy)
-    {
-        var canonical = ResolveToolTypeId(toolTypeId);
-        if (_tools.TryGetValue(canonical, out var registration))
-        {
-            strategy = registration.Strategy;
-            return true;
-        }
-
-        strategy = null!;
-        return false;
-    }
-
-    internal DocumentTypeId ResolveDocumentTypeId(DocumentTypeId documentTypeId) =>
-        _documentAliases.GetValueOrDefault(documentTypeId, documentTypeId);
-
-    internal ToolTypeId ResolveToolTypeId(ToolTypeId toolTypeId) =>
-        _toolAliases.GetValueOrDefault(toolTypeId, toolTypeId);
+    internal bool TryGetToolRegistration(
+        ToolTypeId toolTypeId,
+        out PluginToolRegistration registration) =>
+        _tools.TryGetValue(toolTypeId, out registration!);
 
     internal bool TryResolveToolTypeId(string value, out ToolTypeId? toolTypeId)
     {
-        if (!ToolTypeId.TryParse(value, out var parsed))
+        if (!ToolTypeId.TryParse(value, out var parsed) || !_tools.ContainsKey(parsed!))
         {
             toolTypeId = null;
             return false;
         }
 
-        var canonical = ResolveToolTypeId(parsed!);
-        if (!_tools.ContainsKey(canonical))
-        {
-            toolTypeId = null;
-            return false;
-        }
-
-        toolTypeId = canonical;
+        toolTypeId = parsed;
         return true;
     }
 
-    internal Document CreateDocument(DocumentCreationParams parameters)
-    {
-        ArgumentNullException.ThrowIfNull(parameters);
-        var canonical = ResolveDocumentTypeId(parameters.DocumentTypeId);
-        if (!_documents.TryGetValue(canonical, out var registration))
-        {
-            throw new NotSupportedException($"不支持的 Document 类型: {parameters.DocumentTypeId}");
-        }
-
-        var normalized = canonical == parameters.DocumentTypeId
-            ? parameters
-            : new DocumentCreationParams(canonical)
-            {
-                Title = parameters.Title,
-                CreationIntentId = parameters.CreationIntentId,
-            };
-        return registration.Strategy.CreateDocument(normalized);
-    }
-
+    /// <summary>展开 Descriptor 中已经冻结的菜单入口，不执行模型或插件代码。</summary>
     internal IEnumerable<DocumentCreationMenuEntry> GetCreationEntries()
     {
         foreach (var registration in _documents.Values)
         {
-            var metadata = registration.Metadata;
-            if (!metadata.ShowInMenu) continue;
-            if (registration.Intents.Count == 0)
+            var descriptor = registration.Descriptor;
+            if (descriptor.CreationIntents.Count == 0)
             {
-                yield return ToMenuEntry(
-                    metadata, null, metadata.DisplayName, metadata.Description, metadata.IconPath);
+                yield return new DocumentCreationMenuEntry(
+                    descriptor.DocumentTypeId,
+                    null,
+                    descriptor.DisplayName,
+                    descriptor.Description,
+                    descriptor.IconPath,
+                    descriptor.MenuCategory);
                 continue;
             }
 
-            foreach (var intent in registration.Intents)
+            foreach (var intent in descriptor.CreationIntents)
             {
-                yield return ToMenuEntry(
-                    metadata,
+                yield return new DocumentCreationMenuEntry(
+                    descriptor.DocumentTypeId,
                     intent.IntentId,
                     intent.DisplayName,
                     string.IsNullOrWhiteSpace(intent.Description)
-                        ? metadata.Description
+                        ? descriptor.Description
                         : intent.Description,
                     string.IsNullOrWhiteSpace(intent.IconPath)
-                        ? metadata.IconPath
-                        : intent.IconPath);
+                        ? descriptor.IconPath
+                        : intent.IconPath,
+                    descriptor.MenuCategory);
             }
         }
     }
-
-    private static IReadOnlyList<HostCompositionDiagnostic> Validate(
-        IReadOnlyList<PluginDocumentRegistration> documents,
-        IReadOnlyList<PluginToolRegistration> tools,
-        IReadOnlyList<PluginViewRegistration> views)
-    {
-        var diagnostics = new List<HostCompositionDiagnostic>();
-        foreach (var document in documents)
-        {
-            var metadata = document.Metadata;
-            if (!metadata.DocumentTypeId.IsCanonical ||
-                !IsOwnedCanonical(metadata.DocumentTypeId.Value, document.OwnerId, "document"))
-            {
-                diagnostics.Add(Diagnostic(
-                    "EXTENSION_OWNER_MISMATCH",
-                    metadata.DocumentTypeId.Value,
-                    document.StrategyType));
-            }
-
-            if (string.IsNullOrWhiteSpace(metadata.DisplayName) ||
-                (metadata.ShowInMenu && string.IsNullOrWhiteSpace(metadata.MenuCategory)) ||
-                metadata.LegacyIds.Any(alias => alias == metadata.DocumentTypeId) ||
-                document.Intents.Any(intent =>
-                    !intent.IntentId.IsCanonical || string.IsNullOrWhiteSpace(intent.DisplayName)))
-            {
-                diagnostics.Add(Diagnostic(
-                    "EXTENSION_METADATA_INVALID",
-                    metadata.DocumentTypeId.Value,
-                    document.StrategyType));
-            }
-
-            foreach (var duplicateIntent in document.Intents
-                         .GroupBy(intent => intent.IntentId)
-                         .Where(group => group.Count() > 1))
-            {
-                diagnostics.Add(Diagnostic(
-                    "CREATION_INTENT_ID_DUPLICATE",
-                    $"{metadata.DocumentTypeId.Value}:{duplicateIntent.Key.Value}",
-                    document.StrategyType));
-            }
-        }
-
-        foreach (var tool in tools)
-        {
-            var metadata = tool.Metadata;
-            if (!metadata.ToolTypeId.IsCanonical ||
-                !IsOwnedCanonical(metadata.ToolTypeId.Value, tool.OwnerId, "tool"))
-            {
-                diagnostics.Add(Diagnostic(
-                    "EXTENSION_OWNER_MISMATCH",
-                    metadata.ToolTypeId.Value,
-                    tool.StrategyType));
-            }
-
-            if (string.IsNullOrWhiteSpace(metadata.DisplayName) ||
-                !Enum.IsDefined(metadata.DockSide) ||
-                metadata.LegacyIds.Any(alias => alias == metadata.ToolTypeId))
-            {
-                diagnostics.Add(Diagnostic(
-                    "EXTENSION_METADATA_INVALID",
-                    metadata.ToolTypeId.Value,
-                    tool.StrategyType));
-            }
-        }
-
-        AddCollisionDiagnostics(
-            documents.SelectMany(item =>
-                new[] { (Id: item.Metadata.DocumentTypeId, Item: item, IsAlias: false) }
-                    .Concat(item.Metadata.LegacyIds.Select(id => (id, item, true)))),
-            "DOCUMENT_ID_DUPLICATE",
-            "DOCUMENT_ID_ALIAS_DUPLICATE",
-            item => item.StrategyType,
-            diagnostics);
-        AddCollisionDiagnostics(
-            tools.SelectMany(item =>
-                new[] { (Id: item.Metadata.ToolTypeId, Item: item, IsAlias: false) }
-                    .Concat(item.Metadata.LegacyIds.Select(id => (id, item, true)))),
-            "TOOL_ID_DUPLICATE",
-            "TOOL_ID_ALIAS_DUPLICATE",
-            item => item.StrategyType,
-            diagnostics);
-
-        foreach (var group in views.GroupBy(item => item.ViewModelType).Where(group => group.Count() > 1))
-        {
-            diagnostics.Add(new HostCompositionDiagnostic(
-                "VIEW_MODEL_REGISTRATION_DUPLICATE",
-                group.Key.FullName,
-                group.Select(item => ToContributor(item.ViewType)).Distinct().ToArray()));
-        }
-
-        return diagnostics;
-    }
-
-    private static void AddCollisionDiagnostics<TId, TItem>(
-        IEnumerable<(TId Id, TItem Item, bool IsAlias)> identifiers,
-        string primaryCode,
-        string aliasCode,
-        Func<TItem, Type> getType,
-        ICollection<HostCompositionDiagnostic> diagnostics)
-        where TId : notnull
-    {
-        foreach (var group in identifiers.GroupBy(item => item.Id).Where(group => group.Count() > 1))
-        {
-            var entries = group.ToArray();
-            var primaryEntries = entries.Where(item => !item.IsAlias).ToArray();
-            if (primaryEntries.Length > 1)
-            {
-                diagnostics.Add(new HostCompositionDiagnostic(
-                    primaryCode,
-                    group.Key.ToString(),
-                    primaryEntries.Select(item => ToContributor(getType(item.Item)))
-                        .Distinct().ToArray()));
-            }
-
-            if (entries.Any(item => item.IsAlias))
-            {
-                diagnostics.Add(new HostCompositionDiagnostic(
-                    aliasCode,
-                    group.Key.ToString(),
-                    entries.Select(item => ToContributor(getType(item.Item)))
-                        .Distinct().ToArray()));
-            }
-        }
-    }
-
-    private static bool IsOwnedCanonical(string value, PluginId ownerId, string kind) =>
-        value.StartsWith($"{ownerId.Value}.{kind}.", StringComparison.Ordinal) &&
-        value.All(character => !char.IsAsciiLetterUpper(character));
-
-    private static DocumentCreationMenuEntry ToMenuEntry(
-        DocumentMetadata metadata,
-        CreationIntentId? intentId,
-        string displayName,
-        string description,
-        string iconPath) =>
-        new(metadata.DocumentTypeId, intentId, displayName, description, iconPath, metadata.MenuCategory);
-
-    private static HostCompositionDiagnostic Diagnostic(string code, string? id, Type type) =>
-        new(code, id, [ToContributor(type)]);
-
-    private static HostCompositionContributor ToContributor(Type type) =>
-        new(type.FullName ?? type.Name, type.Assembly.GetName().Name ?? "Unknown");
 }
 
+/// <summary>Host 菜单使用的内部创建项；它不进入 Plugin SDK public API。</summary>
+/// <remarks>该投影只含 Descriptor 数据，不携带模型、Provider 或执行回调。</remarks>
+internal sealed record DocumentCreationMenuEntry(
+    DocumentTypeId DocumentTypeId,
+    CreationIntentId? CreationIntentId,
+    string DisplayName,
+    string Description,
+    string IconPath,
+    string MenuCategory);
+
+/// <summary>描述一个已经通过两阶段提交的插件及其全部贡献类型快照。</summary>
+/// <remarks>嵌套集合由 Registry 构造函数逐层防御性复制，调用者不能在发布后改写。</remarks>
 internal sealed record PluginRegistryPlugin(
     PluginManifest Manifest,
     Assembly EntryAssembly,
@@ -347,23 +154,35 @@ internal sealed record PluginRegistryPlugin(
     IReadOnlyList<PluginViewTypePair> Views,
     IReadOnlyList<Type> LifecycleTypes);
 
-internal sealed record PluginViewTypePair(Type ViewModelType, Type ViewType);
+/// <summary>记录一个模型类型与其显式 Avalonia View 类型的精确映射。</summary>
+internal sealed record PluginViewTypePair(Type ModelType, Type ViewType);
 
+/// <summary>冻结一种 Document 的所有者、描述符、模型、View 工厂和持久化能力。</summary>
+/// <remarks>记录本身不拥有 Scope；创建时由 Activator 路由到所有者的 DocumentScopeManager。</remarks>
 internal sealed record PluginDocumentRegistration(
     PluginId OwnerId,
-    IDocumentCreationStrategy Strategy,
-    DocumentMetadata Metadata,
-    IReadOnlyList<DocumentCreationIntentMetadata> Intents,
-    Type StrategyType);
+    DocumentDescriptor Descriptor,
+    Type ModelType,
+    Type ViewType,
+    Func<Control> ViewFactory,
+    bool IsPersistable);
 
+/// <summary>冻结一种 Tool 的所有者、描述符、singleton 模型类型和 View 工厂。</summary>
 internal sealed record PluginToolRegistration(
     PluginId OwnerId,
-    IToolCreationStrategy Strategy,
-    ToolMetadata Metadata,
-    Type StrategyType);
+    ToolDescriptor Descriptor,
+    Type ModelType,
+    Type ViewType,
+    Func<Control> ViewFactory);
 
+/// <summary>供 ViewLocator 按精确模型类型查询的只读 View 注册事实。</summary>
 internal sealed record PluginViewRegistration(
     PluginId OwnerId,
-    Type ViewModelType,
+    Type ModelType,
     Type ViewType,
     Func<Control> Factory);
+
+/// <summary>记录 G5 已验证可解析、但要到 G8 才执行的生命周期实现类型。</summary>
+internal sealed record PluginLifecycleDeclaration(
+    PluginId OwnerId,
+    Type ImplementationType);

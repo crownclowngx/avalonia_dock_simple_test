@@ -17,6 +17,7 @@
 - [Dock 布局快照 V1](../../../docs/reference/dock-layout-snapshot-v1.md)
 - [G4 Managed-only 插件加载记录](../../../docs/plan-history/host-v1/g4-managed-only-plugin-loading.md)
 - [G5 显式贡献与 Plugin Registry](../../../docs/plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)
+- [V2 G5 声明式贡献目录](../../../docs/plan-history/host-v2/g5-declarative-contribution-catalog.md)
 - [G7 Document 信封 v1](../../../docs/plan-history/host-v1/g7-document-envelope-v1.md)
 - [G8 保存契约与内容版本](../../../docs/plan-history/host-v1/g8-document-content-persistence-contract.md)
 - [G16 文档与 v1 基线](../../../docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)
@@ -29,6 +30,7 @@
 - G16 已完成最终文档签署，`managed-plugin-v1.0.0` 定位 Managed Plugin v1 基线；
 - 插件只支持严格清单、必需 `.deps.json` 和唯一 `IPluginModule` 的 Managed 模型；
 - manifest 是身份唯一事实源，Document、Tool、View 和 Lifecycle 只通过 Context 显式登记；
+- V2 Host 生产贡献只通过最终 `IPluginRegistration` 一次声明并发布到不可变 Registry；
 - 不改变七字段 Document 信封 v1 与 `layout-v1.json` 格式；插件内容仅通过 `DocumentContentSnapshot` 传递；
 - 不新增布局版本、插件市场、热加载、沙箱或用户可见诊断功能；
 - 不要求插件跟随宿主内部协作者重编写业务逻辑。

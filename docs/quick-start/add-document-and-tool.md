@@ -1,5 +1,9 @@
 # 添加 Document 与 Tool
 
+> 历史示例警告：本页的 Strategy、Metadata 和独立 View 注册属于 G4 前路径，G5 Host 不再加载。
+> 当前可参考最终 UI SDK 的 `IPluginRegistration` 签名，但完整可运行的普通模型 + Dock Adapter 示例要到
+> G6/G9 后提供；不要把本页代码复制到新 V2 插件。
+
 本篇在同一个 `QuickStartPlugin` 中加入两个可见扩展：可多开的欢迎 Document 和宿主级单例状态 Tool。代码只保留理解契约所需的最小部分，生产实现请继续对照 [`MyPlugTest`](../../Plugins/MyPlugTest/MyPlugTest/)。
 
 ## 1. 添加两个 ViewModel

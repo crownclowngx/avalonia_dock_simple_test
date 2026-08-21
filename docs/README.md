@@ -4,7 +4,10 @@
 
 ## 快速开始
 
-新插件作者从 [Managed 插件快速开始](./quick-start/README.md)进入：
+> G5 过渡期提示：快速开始正文仍是 G4 Legacy 历史示例，会被当前 Host 拒绝；最终可运行教程要在
+> G6/G9 后更新。当前只应用它理解目录和清单，不要据此创建或发布 V2 插件。
+
+历史快速开始入口：
 
 1. [创建 Managed 插件](./quick-start/create-managed-plugin.md)：建立项目、清单、稳定 ID、模块和部署目录。
 2. [添加 Document 与 Tool](./quick-start/add-document-and-tool.md)：完成两个最小可见扩展并理解生命周期。
@@ -50,12 +53,12 @@
 
 ## 封版后候选计划
 
-以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G4；最终 Core/UI SDK、manifest v2 与独立插件
-Provider 已建立，但声明式 Host Registry、Dock Adapter、Document 与 layout 仍未完成：
+以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G5；最终 Core/UI SDK、manifest v2、独立插件
+Provider 与声明式 Host Registry 已建立，但 Dock Adapter、Document v2 与 layout/lifecycle v2 仍未完成：
 
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
-  G0–G14 可执行计划；G0–G4 已完成，G5–G14 尚未实现。
+  G0–G14 可执行计划；G0–G5 已完成，G6–G14 尚未实现。
 - [Managed Plugin V2 G0 绿色基线](./plan-history/host-v2/g0-green-baseline.md)：
   冻结 361 项 Host 测试、SDK API、包图、四插件包事实以及删除面、依赖白名单和消费者矩阵；
   本阶段未运行 Windows Smoke、CI 或发布门禁。
@@ -67,6 +70,8 @@ Provider 已建立，但声明式 Host Registry、Dock Adapter、Document 与 la
   记录严格 reader、精确入口加载、单 SDK 区间、构建探针、确定性 ZIP 和非发布门禁证据。
 - [Managed Plugin V2 G4 每插件独立容器](./plan-history/host-v2/g4-per-plugin-containers.md)：
   记录 Host/插件/Document 所有权、失败隔离、DI 原生能力、逆序释放、SOLID 取舍和非发布门禁证据。
+- [Managed Plugin V2 G5 声明式贡献目录](./plan-history/host-v2/g5-declarative-contribution-catalog.md)：
+  记录一次声明、注册封闭、两阶段冲突隔离、不可变 Registry、Host 内建贡献和非发布门禁证据。
 - [外部 Managed Plugin 开发与平台安装候选计划](./design/external-managed-plugin-development-and-installation-plan.md)：
   `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
 
@@ -84,6 +89,8 @@ Provider 已建立，但声明式 Host Registry、Dock Adapter、Document 与 la
   以清单精确入口、单一 SDK 区间和构建期契约探针替换 v1 双区间与程序集模块扫描。
 - [G4：实现每插件独立容器](./plan-history/host-v2/g4-per-plugin-containers.md)：
   Host Provider 与每插件 Provider 分离，删除服务描述符保护事务，以所有权边界实现失败隔离和逆序释放。
+- [G5：建立声明式贡献目录](./plan-history/host-v2/g5-declarative-contribution-catalog.md)：
+  Host 使用最终 UI SDK 模块入口，贡献经插件局部 Builder 与全局冲突过滤后发布到唯一不可变 Registry。
 
 ### Managed Plugin v1 整改记录
 

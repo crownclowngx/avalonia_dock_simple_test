@@ -12,6 +12,8 @@ using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
+using Avalonia.Controls;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Tests;
 
@@ -53,11 +55,11 @@ internal sealed class TestHostContext : IDisposable
         services.AddSingleton(PluginModuleCatalog.Discover(PluginDiscoverySnapshot.Empty));
         foreach (var strategy in documentStrategies ?? [])
         {
-            registryBuilder.AddDocumentInstance(HostExtensionIds.Owner, strategy);
+            RegisterLegacyDocumentStrategy(services, registryBuilder, strategy);
         }
         foreach (var strategy in toolStrategies ?? [])
         {
-            registryBuilder.AddToolInstance(HostExtensionIds.Owner, strategy);
+            RegisterLegacyToolStrategy(services, registryBuilder, strategy);
         }
         var customServiceStart = services.Count;
         configureServices?.Invoke(services);
@@ -69,22 +71,19 @@ internal sealed class TestHostContext : IDisposable
             if (descriptor.ServiceType == typeof(IDocumentCreationStrategy))
             {
                 services.RemoveAt(index);
-                registryBuilder.AddDocumentFactoryForTests(
-                    HostExtensionIds.Owner,
-                    descriptor.ImplementationType ??
-                    descriptor.ImplementationInstance?.GetType() ??
-                    typeof(IDocumentCreationStrategy),
-                    provider => (IDocumentCreationStrategy)CreateFromDescriptor(provider, descriptor));
+                using var inspectionProvider = services.BuildServiceProvider();
+                var strategy = (IDocumentCreationStrategy)CreateFromDescriptor(
+                    inspectionProvider, descriptor);
+                RegisterLegacyDocumentStrategy(
+                    services, registryBuilder, strategy);
             }
             else if (descriptor.ServiceType == typeof(IToolCreationStrategy))
             {
                 services.RemoveAt(index);
-                registryBuilder.AddToolFactoryForTests(
-                    HostExtensionIds.Owner,
-                    descriptor.ImplementationType ??
-                    descriptor.ImplementationInstance?.GetType() ??
-                    typeof(IToolCreationStrategy),
-                    provider => (IToolCreationStrategy)CreateFromDescriptor(provider, descriptor));
+                using var inspectionProvider = services.BuildServiceProvider();
+                var strategy = (IToolCreationStrategy)CreateFromDescriptor(
+                    inspectionProvider, descriptor);
+                RegisterLegacyToolStrategy(services, registryBuilder, strategy);
             }
         }
 
@@ -139,6 +138,96 @@ internal sealed class TestHostContext : IDisposable
         descriptor.ImplementationInstance ??
         descriptor.ImplementationFactory?.Invoke(provider) ??
         ActivatorUtilities.CreateInstance(provider, descriptor.ImplementationType!);
+
+    /// <summary>
+    /// 把仍用于 Document v1 回归的测试 Strategy 翻译为声明式测试模型注册。
+    /// </summary>
+    /// <remarks>
+    /// 该适配只存在于测试程序集，不进入 Host Registry。生产代码没有 Strategy、元数据读取或
+    /// 独立 View 映射回退；旧测试由此继续验证 G7 前的保存行为，而不会形成第二条生产事实。
+    /// </remarks>
+    private static void RegisterLegacyDocumentStrategy(
+        IServiceCollection services,
+        PluginRegistryBuilder builder,
+        IDocumentCreationStrategy strategy)
+    {
+        var metadata = strategy.GetMetadata();
+        var modelType = strategy switch
+        {
+            TrackedScopedSavableStrategy => typeof(TrackedScopedSavableDocument),
+            TrackedScopedNonSavableStrategy => typeof(TrackedScopedNonSavableDocument),
+            _ => strategy.CreateDocument(new DocumentCreationParams(
+                metadata.DocumentTypeId)).GetType(),
+        };
+        if (strategy is TrackedScopedSavableStrategy or TrackedScopedNonSavableStrategy)
+        {
+            services.AddScoped(modelType);
+        }
+        else
+        {
+            services.AddScoped(modelType, _ => strategy.CreateDocument(
+                new DocumentCreationParams(metadata.DocumentTypeId)));
+        }
+        var intents = strategy is IDocumentCreationIntentProvider intentProvider
+            ? intentProvider.GetCreationIntents().Select(intent =>
+                new DocumentCreationIntentDescriptor(
+                    new MyAvaloniaManagement.PluginSdk.CreationIntentId(
+                        intent.IntentId.Value),
+                    intent.DisplayName,
+                    intent.Description,
+                    intent.IconPath))
+            : [];
+        builder.AddDocument(
+            HostExtensionIds.V2Owner,
+            new DocumentDescriptor(
+                new MyAvaloniaManagement.PluginSdk.DocumentTypeId(
+                    metadata.DocumentTypeId.Value),
+                metadata.DisplayName,
+                metadata.Description,
+                string.IsNullOrWhiteSpace(metadata.MenuCategory)
+                    ? "测试"
+                    : metadata.MenuCategory,
+                metadata.IconPath,
+                intents),
+            modelType,
+            typeof(TestContributionView),
+            static () => new TestContributionView(),
+            typeof(ISavableDocument).IsAssignableFrom(modelType));
+    }
+
+    private static void RegisterLegacyToolStrategy(
+        IServiceCollection services,
+        PluginRegistryBuilder builder,
+        IToolCreationStrategy strategy)
+    {
+        var metadata = strategy.GetMetadata();
+        var sample = strategy.CreateTool();
+        var modelType = sample.GetType();
+        services.AddSingleton(modelType, _ => strategy.CreateTool());
+        builder.AddTool(
+            HostExtensionIds.V2Owner,
+            new ToolDescriptor(
+                new MyAvaloniaManagement.PluginSdk.ToolTypeId(metadata.ToolTypeId.Value),
+                metadata.DisplayName,
+                metadata.Description,
+                metadata.DockSide switch
+                {
+                    MyAvaloniaManagementCommon.ToolCreation.ToolDockSide.Right =>
+                        MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Right,
+                    MyAvaloniaManagementCommon.ToolCreation.ToolDockSide.Top =>
+                        MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Top,
+                    MyAvaloniaManagementCommon.ToolCreation.ToolDockSide.Bottom =>
+                        MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Bottom,
+                    _ => MyAvaloniaManagement.PluginSdk.UI.ToolDockSide.Left,
+                },
+                sample.CanClose ? ToolCloseBehavior.Hide : ToolCloseBehavior.Prevent,
+                metadata.IconPath),
+            modelType,
+            typeof(TestContributionView),
+            static () => new TestContributionView());
+    }
+
+    private sealed class TestContributionView : UserControl;
 
     /// <summary>
     /// 释放服务容器并删除本测试创建的临时目录。

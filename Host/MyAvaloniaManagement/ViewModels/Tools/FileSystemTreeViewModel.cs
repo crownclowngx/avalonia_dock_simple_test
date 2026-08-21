@@ -51,7 +51,7 @@ internal sealed partial class FileSystemTreeViewModel : Tool, IFileSystemTreeVie
     /// <param name="storageService">文件夹选择和文件存在性服务。</param>
     /// <param name="documentOpenService">直接处理宿主文档打开意图的窄服务。</param>
     /// <param name="initializeTree">是否立即枚举系统驱动器；测试可关闭以避免依赖运行机器。</param>
-    internal FileSystemTreeViewModel(
+    public FileSystemTreeViewModel(
         IHostStorageService storageService,
         IHostDocumentOpenService documentOpenService,
         bool initializeTree = true)

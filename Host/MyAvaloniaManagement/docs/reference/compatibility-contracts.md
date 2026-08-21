@@ -12,16 +12,18 @@
 > 变异门禁冻结正式 Plugin SDK v1 public API；G15 已固定 schema 1 诊断的白名单语义和默认脱敏边界；
 > G16 已用 `managed-plugin-v1.0.0` 定位最终文档、SDK API 和四插件兼容基线。
 
-> 当前分支已完成 V2 G4：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建/包协议与每插件
-> 独立 Provider 已建立；Document、layout、声明式贡献与 Dock Adapter 仍是 G5–G12 的后续工作。
+> 当前分支已完成 V2 G5：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建/包协议、每插件
+> 独立 Provider 与 Host 声明式贡献目录已建立；Dock Adapter、Document/layout v2、生命周期编排与
+> 四业务插件迁移仍是 G6–G12 的后续工作。
 > 历史 v1 签署事实保持可追溯。
 
 ## 2. public API
 
 最终 V2 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
-内建策略均为 internal；插件不得编译引用 Host 可执行程序集。当前 Host 与四插件暂时引用
-`MyAvaloniaManagement.LegacyPluginContracts`，该项目不可打包且不得增加新的生产消费者。
+内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
+四业务插件暂时引用 `MyAvaloniaManagement.LegacyPluginContracts`，该项目不可打包且不得增加新的生产
+消费者。其旧入口在 G9–G12 迁移前由 G5 Host 明确拒绝，不提供双接口回退。
 
 历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 分别拥有 v2 基线，Shipped 均为空，
 G2 表面全部登记为 Unshipped，并由 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v2` 验证。未登记
@@ -33,8 +35,9 @@ G2 表面全部登记为 Unshipped，并由 `scripts/Test-PluginSdkCompatibility
 Host 实现，这不构成发布兼容承诺。
 
 当前 Host Provider 不包含插件私有描述符。每个插件从新的空集合建立 Provider，只能通过明确 Host Port
-共享能力；宿主或其他插件的普通服务类型不可解析。Legacy `IPluginRegistrationContext` 仍是 G5–G12
-迁移前的仓库内部模块桥，但其 `Services` 已具有最终的“当前插件私有集合”所有权语义。
+共享能力；宿主或其他插件的普通服务类型不可解析。最终 `IPluginRegistration.Services` 只表示当前插件
+私有集合，并在模块返回后封闭。Legacy `IPluginRegistrationContext` 仅供未迁移业务插件源码继续编译，
+不是 Host 生产模块桥。
 
 ### 2.1 版本所有权
 
@@ -149,13 +152,13 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 ### 3.2 Managed 插件
 
 - Host 只按 `entryPoint.type` 的大小写敏感完整名称取得一个入口类型，不调用 `GetTypes()` 扫描模块；
-- 入口必须 public、非抽象、非泛型，实现当前阶段桥 `IPluginModule` 并具有 public 无参构造；
+- 入口必须 public、非抽象、非泛型，实现最终 UI SDK `IPluginModule` 并具有 public 无参构造；
 - 同程序集中的第二个模块不构成错误，但未声明模块绝不被构造、配置或用来劫持入口；
-- `Configure(IPluginRegistrationContext)` 在 Host Provider 构建后、当前插件 Provider 构建前且每进程只执行一次；
-- `context.PluginId` 由宿主从已验证 manifest 注入，只读且不能覆盖；
-- `context.Services` 只属于当前插件；删除、替换或重排最多破坏当前插件，私有多实现、keyed 和开放泛型注册继续允许；
+- `Configure(IPluginRegistration)` 在 Host Provider 构建后、当前插件 Provider 构建前且每进程只执行一次；
+- `registration.PluginId` 由宿主从已验证 manifest 注入，只读且不能覆盖；
+- `registration.Services` 只属于当前插件；模块返回后任何写入立即失败，私有多实现、keyed 和开放泛型注册继续允许；
 - Document/Tool/Lifecycle 使用所属插件 Provider 激活，允许构造注入；View 使用无参工厂按需创建；
-- Lifecycle 的身份取自 Registry，可选依赖引用其他插件 manifest ID，并按计划初始化、反向关闭；
+- Lifecycle 的身份和实现类型取自 Registry；G5 只验证 singleton 可解析，不执行初始化、关闭、依赖图或状态机；
 - 注册只发生在组合阶段，不支持运行期追加、删除、启停或热卸载；未登记类型不会被发现。
 
 ### 3.3 拒绝与共同规则
@@ -164,10 +167,11 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - 无模块策略程序集不再获得 public 无参构造激活，也不会生成 `myavalonia.legacy.*` 所有者；
 - 完整类型预检失败会隔离整个插件目录，不能把同一发布物拆成“部分成功”；
 - 模块构造、模块配置和插件 Provider 构建失败只隔离所属插件；Host 与其他成功插件继续组合；
-- 通过 `context.Services` 直接登记贡献接口只留在私有 Provider，不会发布到 Registry；插件无法取得 Host 描述符；
-- 重复 Document/Tool 主 ID 与别名、重复贡献类型、重复 ViewModel 映射、所有权错误、空元数据和重复 Creation Intent 形成结构化诊断，并以 `HostCompositionException` 阻断启动；不再有“首次注册胜出”语义；
-- 策略元数据在注册时读取一次；
-- 单插件临时 Builder 失败时只丢弃该插件；全局 ID/元数据冲突在 G5 前仍按既有 Registry 校验阻断启动；
+- 通过 `registration.Services` 直接登记普通类型只留在私有 Provider，不会发布到 Registry；插件无法取得 Host 描述符；
+- 插件内重复 Document/Tool ID、重复精确模型映射、Document/Tool 共用模型、多生命周期或所有者混入会整体丢弃该候选；
+- Descriptor、模型、View 工厂和生命周期类型在专用注册调用中冻结；读取 Registry 元数据不会构造模型或执行插件回调；
+- 跨插件 Document/Tool ID 或精确模型冲突排除全部冲突插件；与 Host 冲突时保留 Host；无冲突插件继续发布；
+- 配置、Provider 构建、局部校验或全局冲突均不得留下部分 Registry、Provider 租约或 Document Scope；
 - 插件根目录快照在进程内不刷新，更新插件需要重启应用。
 
 基础 SDK 及其 public 签名依赖、受支持 UI Profile 及其依赖均由
@@ -177,8 +181,9 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 
 ## 4. Document 契约
 
-- 创建继续通过 `IDocumentCreationStrategy` 和 `DocumentCreationParams`；
-- 可选多入口继续通过 `IDocumentCreationIntentProvider`；
+- Host Welcome 与最终 SDK 测试贡献通过 Registry 和 internal Activator 创建；G7 前旧文档命令参数与
+  Document v1 ID 只在 `LegacyContributionIdMap` 内部边界显式转换，不回流 Descriptor 或 Registry；
+- 四业务插件尚未迁移，G5 Host 不加载其 `IDocumentCreationStrategy` 或 Creation Intent Provider；
 - 唯一磁盘格式是宿主严格读写的 Document 信封 v1，必须且只能包含七个 camelCase 字段：`schemaVersion`、`pluginId`、`documentTypeId`、`contentSchemaVersion`、`title`、`savedAtUtc`、`payload`；
 - `schemaVersion` 只能为 `1`；UTF-8 文件上限为 8 MiB，JSON 最大深度为 8；注释、尾随逗号、重复、未知、缺失、大小写错误和错误类型字段均拒绝；
 - 插件公共 `DocumentContentSnapshot` 是不可变内容 DTO，只包含正整数 `ContentSchemaVersion` 和非 null `Payload`；

@@ -218,7 +218,10 @@ internal sealed class DocumentPersistenceCoordinator(
             throw new NotSupportedException("当前宿主没有注册该 Document 类型。");
         }
 
-        if (registration.OwnerId != envelope.PluginId)
+        if (!string.Equals(
+                registration.OwnerId.Value,
+                envelope.PluginId.Value,
+                StringComparison.Ordinal))
         {
             throw new DocumentLoadException(
                 "文档声明的插件所有者与当前 Document 注册不匹配。");

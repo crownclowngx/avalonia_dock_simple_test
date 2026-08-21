@@ -6,38 +6,29 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Presentation;
-using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagement.ViewModels;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
 /// <summary>
-/// 作为宿主组合根，集中完成服务注册、插件发现、容器构建和生命周期初始化。
-/// 由同一对象反向关闭插件并释放容器，保证启动与清理具有对称的所有权。
+/// 作为宿主组合根，集中完成服务注册、插件发现、容器构建和所有权释放。
+/// G5 只验证生命周期声明可解析，不执行初始化或关闭；最终编排由 G8 增加。
 /// </summary>
 internal sealed class HostRuntime : IDisposable
 {
     private readonly Microsoft.Extensions.DependencyInjection.ServiceProvider _provider;
     private readonly PluginProviderOwner _pluginProviders;
     private readonly DocumentScopeRegistry _documentScopes;
-    private readonly PluginLifecycleManager _lifecycleManager;
-    private readonly HostDiagnosticSession _diagnostics;
-    private readonly HashSet<string> _reportedLifecycleStates = new(StringComparer.Ordinal);
-    private bool _initialized;
     private bool _disposed;
 
     private HostRuntime(
         Microsoft.Extensions.DependencyInjection.ServiceProvider provider,
         PluginProviderOwner pluginProviders,
-        DocumentScopeRegistry documentScopes,
-        PluginLifecycleManager lifecycleManager,
-        HostDiagnosticSession diagnostics)
+        DocumentScopeRegistry documentScopes)
     {
         _provider = provider;
         _pluginProviders = pluginProviders;
         _documentScopes = documentScopes;
-        _lifecycleManager = lifecycleManager;
-        _diagnostics = diagnostics;
     }
 
     internal static HostRuntime Create(HostDiagnosticSession diagnostics)
@@ -103,8 +94,8 @@ internal sealed class HostRuntime : IDisposable
                 documentScopes,
                 diagnostics);
 
-            // 显式解析 Registry 会激活并验证全部贡献。必须在生命周期回调和 UI 启动前完成，
-            // 防止重复 ID 直到用户打开窗口时才暴露，也保证失败时能立即释放根容器。
+            // 显式解析 Registry 只校验已经冻结的声明并提交冲突结果，不创建 Document/Tool。
+            // 该步骤必须在 UI 启动前完成，以便立即释放冲突 Provider，并保证 UI 只看到最终快照。
             try
             {
                 provider.GetRequiredService<PluginRegistry>();
@@ -131,9 +122,7 @@ internal sealed class HostRuntime : IDisposable
             return new HostRuntime(
                 provider,
                 pluginProviders,
-                documentScopes,
-                provider.GetRequiredService<PluginLifecycleManager>(),
-                diagnostics);
+                documentScopes);
         }
         catch
         {
@@ -142,19 +131,6 @@ internal sealed class HostRuntime : IDisposable
             provider.Dispose();
             throw;
         }
-    }
-
-    internal void InitializePlugins()
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        if (_initialized)
-        {
-            return;
-        }
-
-        _lifecycleManager.InitializeAllAsync().GetAwaiter().GetResult();
-        ReportLifecycleFailures();
-        _initialized = true;
     }
 
     /// <summary>使用当前 Runtime 独占的容器创建生产 Avalonia 应用。</summary>
@@ -180,11 +156,6 @@ internal sealed class HostRuntime : IDisposable
         {
             // 先关闭所有 Document，确保 scoped 对象不在生命周期停止或插件根 Provider 之后存活。
             _documentScopes.CloseAll();
-            if (_initialized)
-            {
-                Program.ShutdownPlugins(_lifecycleManager);
-                ReportLifecycleFailures();
-            }
         }
         finally
         {
@@ -197,31 +168,6 @@ internal sealed class HostRuntime : IDisposable
             {
                 _provider.Dispose();
             }
-        }
-    }
-
-    private void ReportLifecycleFailures()
-    {
-        foreach (var state in _lifecycleManager.States.Where(state =>
-                     state.Status is PluginLifecycleStatus.Failed
-                         or PluginLifecycleStatus.Blocked
-                         or PluginLifecycleStatus.TimedOut))
-        {
-            var fingerprint = $"{state.PluginId.Value}|{state.Stage}|{state.Status}|{state.ErrorCode}";
-            if (!_reportedLifecycleStates.Add(fingerprint))
-            {
-                continue;
-            }
-
-            _diagnostics.Report(new HostDiagnosticDraft(
-                state.ErrorCode ?? HostDiagnosticCodes.LifecycleFailed,
-                HostDiagnosticPhase.PluginLifecycle)
-            {
-                PluginId = state.PluginId,
-                StableId = state.BlockingPluginId?.Value,
-                LifecycleStage = state.Stage,
-                Duration = state.Duration,
-            });
         }
     }
 
@@ -254,7 +200,9 @@ internal sealed class HostRuntime : IDisposable
 
             sink.Report(new HostDiagnosticDraft(item.Code, phase)
             {
-                PluginId = PluginId.TryParse(item.StableId, out var pluginId) &&
+                PluginId = MyAvaloniaManagementCommon.Plugin.PluginId.TryParse(
+                               item.StableId,
+                               out var pluginId) &&
                            pluginId!.Value.StartsWith(
                                "myavalonia.plugin.",
                                StringComparison.Ordinal)

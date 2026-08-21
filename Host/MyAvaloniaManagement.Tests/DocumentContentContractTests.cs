@@ -18,7 +18,9 @@ public sealed class DocumentContentContractTests
             new DocumentCreationParams(TestSavableStrategy.TypeId));
 
         Assert.True(context.PersistenceStates.TryGet(document, out var state));
-        Assert.Equal(TestSavableStrategy.TypeId, state.Registration.Metadata.DocumentTypeId);
+        Assert.Equal(
+            TestSavableStrategy.TypeId.Value,
+            state.Registration.Descriptor.DocumentTypeId.Value);
         Assert.Equal(string.Empty, state.FilePath);
 
         var relativePath = Path.Combine(context.TempDirectory, "folder", "..", "state.mamdoc");

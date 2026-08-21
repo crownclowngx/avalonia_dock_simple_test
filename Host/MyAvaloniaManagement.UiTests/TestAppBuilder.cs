@@ -7,6 +7,8 @@ using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.Views.Hello;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 [assembly: AvaloniaTestApplication(typeof(
     MyAvaloniaManagement.UiTests.TestAppBuilder))]
@@ -38,13 +40,18 @@ public static class TestAppBuilder
     {
         var registry = new PluginRegistry(
             [],
-            [],
-            [],
-            [new PluginViewRegistration(
-                HostExtensionIds.Owner,
+            [new PluginDocumentRegistration(
+                HostExtensionIds.V2Owner,
+                new DocumentDescriptor(
+                    HostExtensionIds.V2WelcomeDocument,
+                    "欢迎",
+                    "欢迎",
+                    "帮助"),
                 typeof(WelcomeViewModel),
                 typeof(WelcomeView),
-                static () => new WelcomeView())],
+                static () => new WelcomeView(),
+                false)],
+            [],
             []);
         return new ViewLocator(registry);
     }

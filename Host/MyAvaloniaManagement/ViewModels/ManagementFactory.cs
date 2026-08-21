@@ -7,6 +7,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
@@ -30,6 +31,7 @@ namespace MyAvaloniaManagement.ViewModels;
 internal sealed class ManagementFactory : Factory
 {
     private readonly PluginRegistry _extensions;
+    private readonly PluginContributionActivator _contributionActivator;
     private IRootDock? _rootDock;
     private DocumentDock? _documentDock;
     private ITool?  _plugGroupMenuTool;
@@ -66,18 +68,20 @@ internal sealed class ManagementFactory : Factory
     /// 把布局文件中的历史 Tool ID 归一化为当前规范 ID；未知值原样返回，交给运行时校验处理。
     /// </summary>
     internal string NormalizePersistedToolId(string toolId) =>
-        _extensions.TryResolveToolTypeId(toolId, out var typeId) && typeId is not null
+        _extensions.TryResolveToolTypeId(
+            LegacyContributionIdMap.ResolveTool(toolId),
+            out var typeId) && typeId is not null
             ? typeId.Value
             : toolId;
 
     internal DocumentTypeId NormalizePersistedDocumentTypeId(DocumentTypeId documentTypeId) =>
-        _extensions.ResolveDocumentTypeId(documentTypeId);
+        LegacyContributionIdMap.ResolveDocument(documentTypeId);
 
     internal Alignment GetToolAlignment(string toolId) =>
         _extensions.TryResolveToolTypeId(toolId, out var typeId) &&
         typeId is not null &&
-        _extensions.ToolMetadata.TryGetValue(typeId, out var metadata)
-            ? ToolDockPlacement.ToAlignment(metadata.DockSide)
+        _extensions.ToolDescriptors.TryGetValue(typeId, out var descriptor)
+            ? ToolDockPlacement.ToAlignment(descriptor.DockSide)
             : Alignment.Left;
 
     /// <summary>
@@ -86,12 +90,14 @@ internal sealed class ManagementFactory : Factory
     /// <param name="documentScopes">把关闭请求路由到宿主或对应插件 Document Scope 的协调器。</param>
     internal ManagementFactory(
         PluginRegistry extensions,
+        PluginContributionActivator contributionActivator,
         DocumentScopeRegistry documentScopes,
         DocumentPersistenceStateStore? documentPersistenceStates = null,
         DocumentCloseCoordinator? documentCloseCoordinator = null,
         DocumentRecoveryRegistry? documentRecoveryRegistry = null)
     {
         ArgumentNullException.ThrowIfNull(extensions);
+        ArgumentNullException.ThrowIfNull(contributionActivator);
         ArgumentNullException.ThrowIfNull(documentScopes);
         _documentLifetime = new DockDocumentLifetime(documentScopes);
         _workspaceBuilder = new DockWorkspaceBuilder(this);
@@ -103,6 +109,7 @@ internal sealed class ManagementFactory : Factory
             _workspaceBuilder,
             GetToolAlignment);
         _extensions = extensions;
+        _contributionActivator = contributionActivator;
         _createdTools = [];
         // 启用 HideToolsOnClose：关闭工具时移入 HiddenDockables 而非真正移除，
         // 这样可以后续通过 RestoreDockable 恢复
@@ -124,11 +131,23 @@ internal sealed class ManagementFactory : Factory
         DocumentRecoveryRegistry? documentRecoveryRegistry = null)
         : this(
             extensions,
+            CreateTestActivator(extensions, documentScopeManager),
             CreateScopeRegistry(documentScopeManager),
             documentPersistenceStates,
             documentCloseCoordinator,
             documentRecoveryRegistry)
     {
+    }
+
+    private static PluginContributionActivator CreateTestActivator(
+        PluginRegistry registry,
+        DocumentScopeManager manager)
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(manager);
+        services.AddSingleton(registry);
+        var provider = services.BuildServiceProvider();
+        return new PluginContributionActivator(provider, registry, new PluginProviderOwner());
     }
 
     private static DocumentScopeRegistry CreateScopeRegistry(DocumentScopeManager manager)
@@ -152,21 +171,21 @@ internal sealed class ManagementFactory : Factory
         
         return new ToolManagementData
         {
-            ToolMetadata = _extensions.ToolMetadata,
+            ToolMetadata = _extensions.ToolDescriptors,
             CreatedTools = _createdTools,
             RootDock = _rootDock
         };
     }
 
     internal ToolRegistrySnapshot GetToolRegistrySnapshot() =>
-        new(_extensions.ToolMetadata, _createdTools);
+        new(_extensions.ToolDescriptors, _createdTools);
     
     /// <summary>
     /// 获取所有文档类型的元数据
     /// </summary>
     /// <returns>所有文档类型的元数据列表</returns>
     public IEnumerable<DocumentMetadata> GetAllDocumentMetadata()
-        => _extensions.DocumentMetadata.Values;
+        => _extensions.DocumentDescriptors.Values.Select(LegacyContributionIdMap.ToLegacyMetadata);
 
     /// <summary>
     /// 获取宿主在创建时绑定到 Document 的完整注册项。
@@ -182,13 +201,16 @@ internal sealed class ManagementFactory : Factory
     internal bool TryGetPersistedDocumentRegistration(
         DocumentTypeId documentTypeId,
         out PluginDocumentRegistration registration) =>
-        _extensions.TryGetDocumentRegistration(documentTypeId, out registration);
+        _extensions.TryGetDocumentRegistration(
+            new MyAvaloniaManagement.PluginSdk.DocumentTypeId(documentTypeId.Value),
+            out registration);
 
     /// <summary>
     /// 展开所有可见文档策略的创建入口。未实现多入口契约的旧策略自动生成一个默认入口。
     /// </summary>
-    public IEnumerable<DocumentCreationMenuEntry> GetAllDocumentCreationEntries()
-        => _extensions.GetCreationEntries();
+    public IEnumerable<MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry>
+        GetAllDocumentCreationEntries()
+        => _extensions.GetCreationEntries().Select(LegacyContributionIdMap.ToLegacyMenuEntry);
     
     /// <summary>
     /// 根据参数创建Document
@@ -197,7 +219,10 @@ internal sealed class ManagementFactory : Factory
     /// <returns>创建的Document实例</returns>
     public Document CreateManagementNewDocument(DocumentCreationParams @params)
     {
-        var document = _extensions.CreateDocument(@params);
+        var document = _contributionActivator.CreateDocument(
+            new MyAvaloniaManagement.PluginSdk.DocumentTypeId(
+                LegacyContributionIdMap.ResolveDocument(@params.DocumentTypeId).Value),
+            @params.Title);
         // 策略违反“每次创建返回新实例”时，可能把已经由 Dock 持有的对象再次返回。
         // 记住它在本次调用前是否已由宿主登记，使后续重复登记失败时只拒绝
         // 新请求，不会误删原标签的路径与所有权，也不会误释放其 Scope。
@@ -210,7 +235,9 @@ internal sealed class ManagementFactory : Factory
                     document.GetType().FullName ?? document.GetType().Name,
                     document.GetType().Assembly.GetName().Name ?? "UnknownAssembly");
                 var canonicalTypeId = NormalizePersistedDocumentTypeId(@params.DocumentTypeId);
-                if (!_extensions.TryGetDocumentRegistration(canonicalTypeId, out var registration))
+                if (!_extensions.TryGetDocumentRegistration(
+                        new MyAvaloniaManagement.PluginSdk.DocumentTypeId(canonicalTypeId.Value),
+                        out var registration))
                 {
                     throw new HostCompositionException([
                         new HostCompositionDiagnostic(
@@ -357,10 +384,11 @@ internal sealed class ManagementFactory : Factory
 
     public override IRootDock CreateLayout()
     {
-        var untitledViewModel = new WelcomeViewModel(toolId => ShowTool(toolId))
-        {
-            Title = "欢迎",
-        };
+        // Welcome 与 Tool 一样必须经声明式目录激活。G5 仍返回 Dock Document，
+        // 但创建与所有权已经统一收口；G6 只需在 Activator 后增加 Adapter。
+        var untitledViewModel = _contributionActivator.CreateDocument(
+            HostExtensionIds.V2WelcomeDocument,
+            "欢迎");
         var documentDock = new DocumentDock
         {
             Id = DockLayoutIds.Documents,
@@ -599,31 +627,27 @@ internal sealed class ManagementFactory : Factory
     private void CreateAllTools()
     {
         // 先创建所有非工具管理的Tool
-        foreach (var toolTypeId in _extensions.ToolMetadata.Keys.Where(
-                     id => id != HostExtensionIds.ToolManagement))
+        foreach (var toolTypeId in _extensions.ToolDescriptors.Keys.Where(
+                     id => id != HostExtensionIds.V2ToolManagement))
         {
-            if (!_extensions.TryGetToolStrategy(toolTypeId, out var strategy))
-            {
-                continue;
-            }
-
-            var tool = strategy.CreateTool();
+            var tool = _contributionActivator.CreateTool(toolTypeId);
             tool.Id = toolTypeId.Value;
             _createdTools[toolTypeId.Value] = tool;
             // 设置特定工具的引用
-            if (toolTypeId == HostExtensionIds.PluginMenu)
+            if (toolTypeId == HostExtensionIds.V2PluginMenu)
             {
                 _plugGroupMenuTool = tool;
             }
         }
         
         // 再创建工具管理Tool（需要在其他Tool之后创建，因为它需要读取其他Tool的信息）
-        if (_extensions.TryGetToolStrategy(
-                HostExtensionIds.ToolManagement,
-                out var managementStrategy))
+        if (_extensions.TryGetToolRegistration(
+                HostExtensionIds.V2ToolManagement,
+                out _))
         {
-            var managementTool = managementStrategy.CreateTool();
-            managementTool.Id = HostExtensionIds.ToolManagement.Value;
+            var managementTool = _contributionActivator.CreateTool(
+                HostExtensionIds.V2ToolManagement);
+            managementTool.Id = HostExtensionIds.V2ToolManagement.Value;
             _createdTools[managementTool.Id] = managementTool;
         }
     }

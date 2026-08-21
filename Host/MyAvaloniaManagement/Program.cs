@@ -21,7 +21,6 @@ sealed class Program
         try
         {
             runtime = HostRuntime.Create(diagnostics);
-            runtime.InitializePlugins();
         }
         catch (Exception exception)
         {

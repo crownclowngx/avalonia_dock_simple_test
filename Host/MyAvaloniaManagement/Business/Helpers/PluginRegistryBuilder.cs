@@ -2,342 +2,293 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Controls;
-using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.ToolCreation;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
 /// <summary>
-/// 在组合阶段收集贡献声明，并在 DI 容器可用后一次性构建不可变 Registry。
+/// 在组合阶段收集声明式贡献，并在完整校验后一次性发布不可变 Registry。
 /// </summary>
 /// <remarks>
-/// Builder 有意不提供删除或覆盖操作。每个插件先写入自己的临时 Builder，只有对应私有 Provider
-/// 构建成功后才合并到本对象；最终再统一激活、验证并发布不可变 Registry。
+/// 每个插件先写入独立的临时 Builder。模块配置、插件内校验或 Provider 构建失败时直接丢弃该
+/// Builder；只有候选成功后才导入全局 Builder。最终构建再以简单分组判重找出跨插件冲突，
+/// 整体排除冲突所有者，不使用可变 Registry、回滚事务或通用规则引擎。
 /// </remarks>
 internal sealed class PluginRegistryBuilder
 {
-    private readonly List<StrategyDeclaration> _documents = [];
-    private readonly List<StrategyDeclaration> _tools = [];
-    private readonly List<ViewDeclaration> _views = [];
-    private readonly List<StrategyDeclaration> _lifecycles = [];
+    private readonly List<DocumentDeclaration> _documents = [];
+    private readonly List<ToolDeclaration> _tools = [];
+    private readonly List<LifecycleDeclaration> _lifecycles = [];
     private bool _built;
 
-    internal void AddDocument(PluginId ownerId, Type strategyType) =>
-        Add(_documents, ownerId, strategyType);
+    internal void AddDocument(
+        PluginId ownerId,
+        DocumentDescriptor descriptor,
+        Type modelType,
+        Type viewType,
+        Func<Control> viewFactory,
+        bool isPersistable)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(ownerId);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(modelType);
+        ArgumentNullException.ThrowIfNull(viewType);
+        ArgumentNullException.ThrowIfNull(viewFactory);
+        _documents.Add(new DocumentDeclaration(
+            ownerId, descriptor, modelType, viewType, viewFactory, isPersistable));
+    }
 
-    internal void AddTool(PluginId ownerId, Type strategyType) =>
-        Add(_tools, ownerId, strategyType);
+    internal void AddTool(
+        PluginId ownerId,
+        ToolDescriptor descriptor,
+        Type modelType,
+        Type viewType,
+        Func<Control> viewFactory)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(ownerId);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(modelType);
+        ArgumentNullException.ThrowIfNull(viewType);
+        ArgumentNullException.ThrowIfNull(viewFactory);
+        _tools.Add(new ToolDeclaration(ownerId, descriptor, modelType, viewType, viewFactory));
+    }
 
-    internal void AddLifecycle(PluginId ownerId, Type lifecycleType) =>
-        Add(_lifecycles, ownerId, lifecycleType);
+    internal void AddLifecycle(PluginId ownerId, Type implementationType)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(ownerId);
+        ArgumentNullException.ThrowIfNull(implementationType);
+        _lifecycles.Add(new LifecycleDeclaration(ownerId, implementationType));
+    }
 
-    /// <summary>
-    /// 在一个插件的独立 Provider 已完整构建并通过宿主可见服务激活后，原子合并该插件的贡献声明。
-    /// </summary>
-    /// <remarks>
-    /// 临时 Builder 只保存普通内存声明，不触碰全局 Registry。模块配置或 Provider 构建失败时直接
-    /// 丢弃临时 Builder，成功时才一次追加，从而避免借助 IServiceCollection 事务实现失败回滚。
-    /// </remarks>
+    /// <summary>把一个已经通过插件内校验和 Provider 构建的候选原子导入全局集合。</summary>
     internal void Import(PluginRegistryBuilder source)
     {
         ArgumentNullException.ThrowIfNull(source);
         EnsureWritable();
+        source.ValidateSingleOwner();
         _documents.AddRange(source._documents);
         _tools.AddRange(source._tools);
-        _views.AddRange(source._views);
         _lifecycles.AddRange(source._lifecycles);
     }
 
-    /// <summary>返回当前插件在发布前必须能够由其私有 Provider 激活的具体服务类型。</summary>
-    internal IReadOnlyList<Type> GetRequiredServiceTypes() =>
-        _documents.Concat(_tools).Concat(_lifecycles)
-            .Where(item => item.Instance is null && item.Factory is null)
-            .Select(item => item.ImplementationType)
-            .Distinct()
-            .ToArray();
+    /// <summary>返回需要在候选发布前验证构造的生命周期 singleton 类型。</summary>
+    internal IReadOnlyList<Type> GetLifecycleTypes() =>
+        _lifecycles.Select(item => item.ImplementationType).Distinct().ToArray();
 
     /// <summary>
-    /// 允许测试组合根登记已经创建的策略替身；生产模块没有此入口。
+    /// 校验当前临时 Builder 只表示一个完整且自洽的所有者。
     /// </summary>
-    internal void AddDocumentInstance(
-        PluginId ownerId,
-        IDocumentCreationStrategy strategy)
+    /// <exception cref="HostCompositionException">存在重复、所有者不匹配或生命周期冲突。</exception>
+    internal void ValidateSingleOwner()
     {
         EnsureWritable();
-        _documents.Add(new StrategyDeclaration(ownerId, strategy.GetType(), strategy, null));
-    }
+        var diagnostics = new List<HostCompositionDiagnostic>();
+        var owners = _documents.Select(item => item.OwnerId)
+            .Concat(_tools.Select(item => item.OwnerId))
+            .Concat(_lifecycles.Select(item => item.OwnerId))
+            .Distinct()
+            .ToArray();
+        if (owners.Length > 1)
+        {
+            diagnostics.Add(new HostCompositionDiagnostic(
+                "EXTENSION_OWNER_MISMATCH",
+                string.Join(",", owners.Select(item => item.Value)),
+                []));
+        }
 
-    /// <summary>允许测试组合根登记已经创建的 Tool 策略替身。</summary>
-    internal void AddToolInstance(PluginId ownerId, IToolCreationStrategy strategy)
-    {
-        EnsureWritable();
-        _tools.Add(new StrategyDeclaration(ownerId, strategy.GetType(), strategy, null));
-    }
+        AddDuplicateDiagnostics(
+            _documents, item => item.Descriptor.DocumentTypeId,
+            item => item.ModelType, "DOCUMENT_ID_DUPLICATE", diagnostics);
+        AddDuplicateDiagnostics(
+            _tools, item => item.Descriptor.ToolTypeId,
+            item => item.ModelType, "TOOL_ID_DUPLICATE", diagnostics);
+        AddDuplicateDiagnostics(
+            _documents, item => item.ModelType,
+            item => item.ModelType, "DOCUMENT_CONTRIBUTION_TYPE_DUPLICATE", diagnostics);
+        AddDuplicateDiagnostics(
+            _tools, item => item.ModelType,
+            item => item.ModelType, "TOOL_CONTRIBUTION_TYPE_DUPLICATE", diagnostics);
 
-    internal void AddDocumentFactoryForTests(
-        PluginId ownerId,
-        Type contributorType,
-        Func<IServiceProvider, IDocumentCreationStrategy> factory)
-    {
-        EnsureWritable();
-        _documents.Add(new StrategyDeclaration(
-            ownerId, contributorType, null, provider => factory(provider)));
-    }
+        var localViews = _documents.Select(item => new ViewDeclaration(
+                item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory))
+            .Concat(_tools.Select(item => new ViewDeclaration(
+                item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory)));
+        AddDuplicateDiagnostics(
+            localViews,
+            item => item.ModelType,
+            item => item.ViewType,
+            "VIEW_MODEL_REGISTRATION_DUPLICATE",
+            diagnostics);
 
-    internal void AddToolFactoryForTests(
-        PluginId ownerId,
-        Type contributorType,
-        Func<IServiceProvider, IToolCreationStrategy> factory)
-    {
-        EnsureWritable();
-        _tools.Add(new StrategyDeclaration(
-            ownerId, contributorType, null, provider => factory(provider)));
-    }
+        foreach (var type in _documents.Select(item => item.ModelType)
+                     .Intersect(_tools.Select(item => item.ModelType)))
+        {
+            diagnostics.Add(Diagnostic(
+                "CONTRIBUTION_MODEL_TYPE_CONFLICT",
+                type.FullName,
+                type));
+        }
 
-    internal void AddView(
-        PluginId ownerId,
-        Type viewModelType,
-        Type viewType,
-        Func<Control> factory)
-    {
-        EnsureWritable();
-        ArgumentNullException.ThrowIfNull(ownerId);
-        ArgumentNullException.ThrowIfNull(viewModelType);
-        ArgumentNullException.ThrowIfNull(viewType);
-        ArgumentNullException.ThrowIfNull(factory);
-        _views.Add(new ViewDeclaration(ownerId, viewModelType, viewType, factory));
-    }
-
-    internal PluginRegistry Build(
-        IServiceProvider serviceProvider,
-        PluginModuleCatalog? catalog,
-        IHostDiagnosticSink? diagnosticSink = null,
-        PluginProviderOwner? pluginProviders = null)
-    {
-        ArgumentNullException.ThrowIfNull(serviceProvider);
-        EnsureWritable();
-        _built = true;
-
-        var diagnostics = ValidateDeclarations();
-        var documents = ActivateDocuments(
-            serviceProvider, pluginProviders, diagnostics, diagnosticSink);
-        var tools = ActivateTools(
-            serviceProvider, pluginProviders, diagnostics, diagnosticSink);
-        var lifecycles = ActivateLifecycles(
-            serviceProvider, pluginProviders, diagnostics, diagnosticSink);
+        if (_lifecycles.Count > 1)
+        {
+            diagnostics.Add(new HostCompositionDiagnostic(
+                "LIFECYCLE_PLUGIN_ID_DUPLICATE",
+                owners.SingleOrDefault()?.Value,
+                _lifecycles.Select(item => ToContributor(item.ImplementationType))
+                    .Distinct().ToArray()));
+        }
 
         if (diagnostics.Count > 0)
         {
             throw new HostCompositionException(diagnostics);
         }
-
-        return new PluginRegistry(
-            catalog?.CreatePluginSnapshots(
-                _documents,
-                _tools,
-                _views,
-                _lifecycles,
-                pluginProviders?.AvailablePluginIds) ?? [],
-            documents,
-            tools,
-            _views.Select(view => new PluginViewRegistration(
-                view.OwnerId,
-                view.ViewModelType,
-                view.ViewType,
-                view.Factory)).ToArray(),
-            lifecycles);
-    }
-
-    private List<HostCompositionDiagnostic> ValidateDeclarations()
-    {
-        var diagnostics = new List<HostCompositionDiagnostic>();
-        AddInvalidTypeDiagnostics(_documents, diagnostics);
-        AddInvalidTypeDiagnostics(_tools, diagnostics);
-        AddInvalidTypeDiagnostics(_lifecycles, diagnostics);
-        AddDuplicateTypeDiagnostics(_documents, "DOCUMENT_CONTRIBUTION_TYPE_DUPLICATE", diagnostics);
-        AddDuplicateTypeDiagnostics(_tools, "TOOL_CONTRIBUTION_TYPE_DUPLICATE", diagnostics);
-        AddDuplicateTypeDiagnostics(_lifecycles, "LIFECYCLE_CONTRIBUTION_TYPE_DUPLICATE", diagnostics);
-
-        foreach (var group in _views.GroupBy(item => item.ViewModelType).Where(group => group.Count() > 1))
-        {
-            diagnostics.Add(new HostCompositionDiagnostic(
-                "VIEW_MODEL_REGISTRATION_DUPLICATE",
-                group.Key.FullName,
-                group.Select(item => ToContributor(item.ViewType)).Distinct().ToArray()));
-        }
-
-        foreach (var group in _lifecycles.GroupBy(item => item.OwnerId).Where(group => group.Count() > 1))
-        {
-            diagnostics.Add(new HostCompositionDiagnostic(
-                "LIFECYCLE_PLUGIN_ID_DUPLICATE",
-                group.Key.Value,
-                group.Select(item => ToContributor(item.ImplementationType)).Distinct().ToArray()));
-        }
-
-        return diagnostics;
     }
 
     /// <summary>
-    /// 在请求 DI 激活前拒绝不能形成实例的声明，避免容器实现的异常文字成为插件契约。
+    /// 完成跨所有者冲突隔离并发布本次 Runtime 唯一的不可变 Registry。
     /// </summary>
-    /// <remarks>
-    /// Generic Context 已在源码编译期排除大部分错误，但反射调用、动态生成程序集和抽象贡献仍可能
-    /// 绕过普通 C# 调用点。这里给它们统一稳定码，确保错误在 Registry 发布前可审阅地失败。
-    /// </remarks>
-    private static void AddInvalidTypeDiagnostics(
-        IEnumerable<StrategyDeclaration> declarations,
-        ICollection<HostCompositionDiagnostic> diagnostics)
+    internal PluginRegistry Build(
+        PluginModuleCatalog? catalog,
+        IHostDiagnosticSink? diagnosticSink = null,
+        PluginProviderOwner? pluginProviders = null)
     {
-        foreach (var declaration in declarations.Where(item =>
-                     item.Instance is null &&
-                     item.Factory is null &&
-                     (item.ImplementationType.IsAbstract ||
-                      item.ImplementationType.IsInterface ||
-                      item.ImplementationType.ContainsGenericParameters ||
-                      item.ImplementationType.GetConstructors().Length == 0)))
+        EnsureWritable();
+        _built = true;
+
+        var rejectedOwners = new HashSet<PluginId>();
+        RejectGlobalConflicts(
+            _documents,
+            item => item.Descriptor.DocumentTypeId,
+            item => item.OwnerId,
+            item => item.ModelType,
+            "DOCUMENT_ID_DUPLICATE",
+            rejectedOwners,
+            diagnosticSink);
+        RejectGlobalConflicts(
+            _tools,
+            item => item.Descriptor.ToolTypeId,
+            item => item.OwnerId,
+            item => item.ModelType,
+            "TOOL_ID_DUPLICATE",
+            rejectedOwners,
+            diagnosticSink);
+
+        var views = _documents.Select(item => new ViewDeclaration(
+                item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory))
+            .Concat(_tools.Select(item => new ViewDeclaration(
+                item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory)))
+            .ToArray();
+        RejectGlobalConflicts(
+            views,
+            item => item.ModelType,
+            item => item.OwnerId,
+            item => item.ViewType,
+            "VIEW_MODEL_REGISTRATION_DUPLICATE",
+            rejectedOwners,
+            diagnosticSink);
+
+        var acceptedDocuments = _documents
+            .Where(item => !rejectedOwners.Contains(item.OwnerId))
+            .Select(item => new PluginDocumentRegistration(
+                item.OwnerId,
+                item.Descriptor,
+                item.ModelType,
+                item.ViewType,
+                item.ViewFactory,
+                item.IsPersistable))
+            .ToArray();
+        var acceptedTools = _tools
+            .Where(item => !rejectedOwners.Contains(item.OwnerId))
+            .Select(item => new PluginToolRegistration(
+                item.OwnerId,
+                item.Descriptor,
+                item.ModelType,
+                item.ViewType,
+                item.ViewFactory))
+            .ToArray();
+        var acceptedLifecycles = _lifecycles
+            .Where(item => !rejectedOwners.Contains(item.OwnerId))
+            .Select(item => new PluginLifecycleDeclaration(
+                item.OwnerId, item.ImplementationType))
+            .ToArray();
+
+        var acceptedPluginIds = pluginProviders?.AvailablePluginIds
+            .Where(owner => !rejectedOwners.Contains(owner))
+            .ToHashSet();
+
+        // 先完成所有只读事实的构造，再提交 Provider 与 Scope 租约。这样即使快照复制或索引
+        // 构造意外失败，也没有任何运行期所有权已经对外可见，失败原子性不依赖事后回滚。
+        var registry = new PluginRegistry(
+            catalog?.CreatePluginSnapshots(
+                acceptedDocuments,
+                acceptedTools,
+                acceptedLifecycles,
+                acceptedPluginIds) ?? [],
+            acceptedDocuments,
+            acceptedTools,
+            acceptedLifecycles);
+        pluginProviders?.CommitRegistryResult(rejectedOwners);
+        return registry;
+    }
+
+    private static void RejectGlobalConflicts<TItem, TKey>(
+        IEnumerable<TItem> source,
+        Func<TItem, TKey> keySelector,
+        Func<TItem, PluginId> ownerSelector,
+        Func<TItem, Type> contributorSelector,
+        string code,
+        ISet<PluginId> rejectedOwners,
+        IHostDiagnosticSink? sink)
+        where TKey : notnull
+    {
+        foreach (var group in source.GroupBy(keySelector).Where(group =>
+                     group.Select(ownerSelector).Distinct().Count() > 1))
         {
-            diagnostics.Add(Diagnostic(
-                "CONTRIBUTION_TYPE_INVALID",
-                declaration.OwnerId.Value,
-                declaration.ImplementationType));
+            var entries = group.ToArray();
+            var pluginOwners = entries.Select(ownerSelector)
+                .Where(owner => owner != HostExtensionIds.V2Owner)
+                .Distinct()
+                .ToArray();
+            foreach (var owner in pluginOwners)
+            {
+                var contributor = contributorSelector(
+                    entries.First(item => ownerSelector(item) == owner));
+                rejectedOwners.Add(owner);
+                sink?.Report(new HostDiagnosticDraft(
+                    code,
+                    HostDiagnosticPhase.ExtensionDiscovery)
+                {
+                    PluginId = new MyAvaloniaManagementCommon.Plugin.PluginId(owner.Value),
+                    StableId = group.Key.ToString(),
+                    AssemblyName = contributor.Assembly.GetName(),
+                });
+            }
         }
     }
 
-    private IReadOnlyList<PluginDocumentRegistration> ActivateDocuments(
-        IServiceProvider hostProvider,
-        PluginProviderOwner? pluginProviders,
-        ICollection<HostCompositionDiagnostic> diagnostics,
-        IHostDiagnosticSink? sink) =>
-        _documents.Select(declaration =>
-        {
-            try
-            {
-                var strategy = declaration.Instance as IDocumentCreationStrategy ??
-                    declaration.Factory?.Invoke(hostProvider) as IDocumentCreationStrategy ??
-                    (IDocumentCreationStrategy)Resolve(
-                        declaration, hostProvider, pluginProviders);
-                var metadata = strategy.GetMetadata() ??
-                    throw new InvalidOperationException("Document 元数据不能为空。");
-                var intents = strategy is IDocumentCreationIntentProvider intentProvider
-                    ? (intentProvider.GetCreationIntents() ?? []).ToArray()
-                    : [];
-                return new PluginDocumentRegistration(
-                    declaration.OwnerId,
-                    strategy,
-                    metadata,
-                    intents,
-                    declaration.ImplementationType);
-            }
-            catch (Exception exception)
-            {
-                ReportActivationFailure(sink, declaration, exception);
-                diagnostics.Add(Diagnostic(
-                    "EXTENSION_ACTIVATION_FAILED",
-                    declaration.OwnerId.Value,
-                    declaration.ImplementationType));
-                return null;
-            }
-        }).Where(item => item is not null).Select(item => item!).ToArray();
-
-    private IReadOnlyList<PluginToolRegistration> ActivateTools(
-        IServiceProvider hostProvider,
-        PluginProviderOwner? pluginProviders,
-        ICollection<HostCompositionDiagnostic> diagnostics,
-        IHostDiagnosticSink? sink) =>
-        _tools.Select(declaration =>
-        {
-            try
-            {
-                var strategy = declaration.Instance as IToolCreationStrategy ??
-                    declaration.Factory?.Invoke(hostProvider) as IToolCreationStrategy ??
-                    (IToolCreationStrategy)Resolve(
-                        declaration, hostProvider, pluginProviders);
-                var metadata = strategy.GetMetadata() ??
-                    throw new InvalidOperationException("Tool 元数据不能为空。");
-                return new PluginToolRegistration(
-                    declaration.OwnerId,
-                    strategy,
-                    metadata,
-                    declaration.ImplementationType);
-            }
-            catch (Exception exception)
-            {
-                ReportActivationFailure(sink, declaration, exception);
-                diagnostics.Add(Diagnostic(
-                    "EXTENSION_ACTIVATION_FAILED",
-                    declaration.OwnerId.Value,
-                    declaration.ImplementationType));
-                return null;
-            }
-        }).Where(item => item is not null).Select(item => item!).ToArray();
-
-    private IReadOnlyList<PluginLifecycleRegistration> ActivateLifecycles(
-        IServiceProvider hostProvider,
-        PluginProviderOwner? pluginProviders,
-        ICollection<HostCompositionDiagnostic> diagnostics,
-        IHostDiagnosticSink? sink) =>
-        _lifecycles.Select(declaration =>
-        {
-            try
-            {
-                return new PluginLifecycleRegistration(
-                    declaration.OwnerId,
-                    (IPluginLifecycle)Resolve(
-                        declaration, hostProvider, pluginProviders));
-            }
-            catch (Exception exception)
-            {
-                ReportActivationFailure(sink, declaration, exception);
-                diagnostics.Add(Diagnostic(
-                    "EXTENSION_ACTIVATION_FAILED",
-                    declaration.OwnerId.Value,
-                    declaration.ImplementationType));
-                return null;
-            }
-        }).Where(item => item is not null).Select(item => item!).ToArray();
-
-    private static object Resolve(
-        StrategyDeclaration declaration,
-        IServiceProvider hostProvider,
-        PluginProviderOwner? pluginProviders) =>
-        pluginProviders is not null && declaration.OwnerId != Business.Constants.HostExtensionIds.Owner
-            ? pluginProviders.GetRequiredService(
-                declaration.OwnerId,
-                declaration.ImplementationType)
-            : hostProvider.GetRequiredService(declaration.ImplementationType);
-
-    private static void AddDuplicateTypeDiagnostics(
-        IEnumerable<StrategyDeclaration> declarations,
+    private static void AddDuplicateDiagnostics<TItem, TKey>(
+        IEnumerable<TItem> source,
+        Func<TItem, TKey> keySelector,
+        Func<TItem, Type> contributorSelector,
         string code,
         ICollection<HostCompositionDiagnostic> diagnostics)
+        where TKey : notnull
     {
-        foreach (var group in declarations.GroupBy(item => item.ImplementationType)
-                     .Where(group => group.Count(item =>
-                         item.Instance is null && item.Factory is null) > 1))
+        foreach (var group in source.GroupBy(keySelector).Where(group => group.Count() > 1))
         {
             diagnostics.Add(new HostCompositionDiagnostic(
                 code,
-                group.Key.FullName,
-                [ToContributor(group.Key)]));
+                group.Key.ToString(),
+                group.Select(item => ToContributor(contributorSelector(item)))
+                    .Distinct().ToArray()));
         }
     }
-
-    private static void ReportActivationFailure(
-        IHostDiagnosticSink? sink,
-        StrategyDeclaration declaration,
-        Exception exception) =>
-        sink?.Report(new HostDiagnosticDraft(
-            HostDiagnosticCodes.ExtensionActivationFailed,
-            HostDiagnosticPhase.ExtensionDiscovery)
-        {
-            PluginId = declaration.OwnerId,
-            AssemblyName = declaration.ImplementationType.Assembly.GetName(),
-            StableId = declaration.ImplementationType.FullName,
-            Exception = exception,
-        });
 
     private static HostCompositionDiagnostic Diagnostic(
         string code,
@@ -347,24 +298,6 @@ internal sealed class PluginRegistryBuilder
     private static HostCompositionContributor ToContributor(Type type) =>
         new(type.FullName ?? type.Name, type.Assembly.GetName().Name ?? "Unknown");
 
-    private void Add(List<StrategyDeclaration> target, PluginId ownerId, Type type)
-    {
-        EnsureWritable();
-        ArgumentNullException.ThrowIfNull(ownerId);
-        ArgumentNullException.ThrowIfNull(type);
-        if (type.IsAbstract ||
-            type.IsInterface ||
-            type.ContainsGenericParameters ||
-            type.GetConstructors().Length == 0)
-        {
-            throw new HostCompositionException([
-                Diagnostic("CONTRIBUTION_TYPE_INVALID", ownerId.Value, type)
-            ]);
-        }
-
-        target.Add(new StrategyDeclaration(ownerId, type, null, null));
-    }
-
     private void EnsureWritable()
     {
         if (_built)
@@ -373,15 +306,30 @@ internal sealed class PluginRegistryBuilder
         }
     }
 
-    internal sealed record StrategyDeclaration(
+    /// <summary>插件局部 Builder 中尚未提交的 Document 候选事实。</summary>
+    internal sealed record DocumentDeclaration(
         PluginId OwnerId,
-        Type ImplementationType,
-        object? Instance,
-        Func<IServiceProvider, object>? Factory);
-
-    internal sealed record ViewDeclaration(
-        PluginId OwnerId,
-        Type ViewModelType,
+        DocumentDescriptor Descriptor,
+        Type ModelType,
         Type ViewType,
-        Func<Control> Factory);
+        Func<Control> ViewFactory,
+        bool IsPersistable);
+
+    /// <summary>插件局部 Builder 中尚未提交的 Tool 候选事实。</summary>
+    internal sealed record ToolDeclaration(
+        PluginId OwnerId,
+        ToolDescriptor Descriptor,
+        Type ModelType,
+        Type ViewType,
+        Func<Control> ViewFactory);
+
+    /// <summary>插件局部 Builder 中尚未提交的生命周期候选事实。</summary>
+    internal sealed record LifecycleDeclaration(PluginId OwnerId, Type ImplementationType);
+
+    /// <summary>全局模型映射冲突检查使用的最小 View 候选投影。</summary>
+    private sealed record ViewDeclaration(
+        PluginId OwnerId,
+        Type ModelType,
+        Type ViewType,
+        Func<Control> ViewFactory);
 }

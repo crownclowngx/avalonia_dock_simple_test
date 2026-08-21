@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Runtime.Loader;
 using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.PluginTests;
 

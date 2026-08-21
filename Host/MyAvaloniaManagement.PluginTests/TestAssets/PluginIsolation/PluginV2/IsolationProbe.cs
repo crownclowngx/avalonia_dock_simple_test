@@ -1,13 +1,12 @@
 using System;
 using System.Reflection;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk.UI;
 using PluginIsolation.Dependency;
 
 namespace PluginIsolation.Plugin;
 
 /// <summary>
-/// V2 插件隔离探针。
-/// 设计意图：保持与 V1 相同的探针类型全名，确保测试结果只由加载上下文和依赖版本决定。
+/// V2 插件隔离探针；类型全名与 V1 相同，以验证私有依赖按加载上下文隔离。
 /// </summary>
 public static class IsolationProbe
 {
@@ -16,11 +15,9 @@ public static class IsolationProbe
     public static Assembly ReadSharedContract() => typeof(IPluginModule).Assembly;
 }
 
-/// <summary>
-/// 将隔离探针声明为完整 Managed Plugin，而不是只依赖加载器偶然扫描到的程序集。
-/// </summary>
+/// <summary>通过最终 UI SDK 声明的 G5 加载隔离测试模块。</summary>
 public sealed class IsolationPluginModule : IPluginModule
 {
-    public void Configure(IPluginRegistrationContext context) =>
+    public void Configure(IPluginRegistration context) =>
         ArgumentNullException.ThrowIfNull(context);
 }

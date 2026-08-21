@@ -104,7 +104,7 @@ public sealed class ToolViewModelTests
     }
 
     [Fact]
-    public void 插件分组工具把创建意图传递给策略()
+    public void G5菜单冻结创建意图但不再回调Legacy策略元数据()
     {
         var strategy = new CapturingIntentStrategy();
         using var context = new TestHostContext(documentStrategies: [strategy]);
@@ -116,7 +116,8 @@ public sealed class ToolViewModelTests
 
         viewModel.CreateDocumentEntry(entry);
 
-        Assert.Equal("personal-source", strategy.LastIntentId?.Value);
+        Assert.Equal("personal-source", entry.CreationIntentId?.Value);
+        Assert.Null(strategy.LastIntentId);
     }
 
     private sealed class CapturingIntentStrategy : IDocumentCreationStrategy, IDocumentCreationIntentProvider

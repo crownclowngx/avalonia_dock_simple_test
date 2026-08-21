@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using Dock.Model.Controls;
 using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagementCommon.ToolCreation;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Models.Tools;
 
@@ -13,7 +14,7 @@ internal sealed class ToolManagementData
     /// <summary>
     /// 工具元数据字典（只读）
     /// </summary>
-    public required IReadOnlyDictionary<ToolTypeId, ToolMetadata> ToolMetadata { get; init; }
+    public required IReadOnlyDictionary<ToolTypeId, ToolDescriptor> ToolMetadata { get; init; }
 
     /// <summary>
     /// 已创建的工具字典（只读）
@@ -31,5 +32,5 @@ internal sealed class ToolManagementData
 /// 该内部契约替代对 ManagementFactory 私有字段的反射，同时不扩大 public API。
 /// </summary>
 internal sealed record ToolRegistrySnapshot(
-    IReadOnlyDictionary<ToolTypeId, ToolMetadata> ToolMetadata,
+    IReadOnlyDictionary<ToolTypeId, ToolDescriptor> ToolMetadata,
     IReadOnlyDictionary<string, Tool> CreatedTools);

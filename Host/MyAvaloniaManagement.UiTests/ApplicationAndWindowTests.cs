@@ -155,13 +155,18 @@ public sealed class ApplicationAndWindowTests
     {
         var registry = new PluginRegistry(
             [],
-            [],
-            [],
-            [new PluginViewRegistration(
-                HostExtensionIds.Owner,
+            [new PluginDocumentRegistration(
+                HostExtensionIds.V2Owner,
+                new MyAvaloniaManagement.PluginSdk.UI.DocumentDescriptor(
+                    HostExtensionIds.V2WelcomeDocument,
+                    "欢迎",
+                    "欢迎",
+                    "帮助"),
                 typeof(WelcomeViewModel),
                 typeof(WelcomeView),
-                static () => new WelcomeView())],
+                static () => new WelcomeView(),
+                false)],
+            [],
             []);
         var locator = new ViewLocator(registry);
         var known = locator.Build(new WelcomeViewModel

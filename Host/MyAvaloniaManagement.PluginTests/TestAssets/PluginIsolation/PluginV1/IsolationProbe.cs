@@ -1,6 +1,6 @@
 using System;
 using System.Reflection;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk.UI;
 using PluginIsolation.Dependency;
 
 namespace PluginIsolation.Plugin;
@@ -16,38 +16,33 @@ public static class IsolationProbe
     public static Assembly ReadSharedContract() => typeof(IPluginModule).Assembly;
 }
 
-/// <summary>
-/// 将隔离探针声明为完整 Managed Plugin，而不是只依赖加载器偶然扫描到的程序集。
-/// </summary>
+/// <summary>通过最终 UI SDK 声明的 G5 加载隔离测试模块。</summary>
 public sealed class IsolationPluginModule : IPluginModule
 {
-    public void Configure(IPluginRegistrationContext context) =>
+    public void Configure(IPluginRegistration context) =>
         ArgumentNullException.ThrowIfNull(context);
 }
 
-/// <summary>
-/// 未在 manifest v2 中声明的第二模块。构造函数故意抛错，用来证明 Loader 不再扫描并激活第二个候选。
-/// </summary>
+/// <summary>未在 manifest 中声明的第二模块，用于证明加载器不扫描其他候选。</summary>
 public sealed class UndeclaredPluginModule : IPluginModule
 {
     public UndeclaredPluginModule() =>
         throw new InvalidOperationException("未声明模块不应被构造。");
 
-    public void Configure(IPluginRegistrationContext context) =>
+    public void Configure(IPluginRegistration context) =>
         throw new InvalidOperationException("未声明模块不应被配置。");
 }
 
-// 以下类型只服务 G3 真实目录 Loader 负例。它们与主入口同处一个程序集，能够证明失败来自精确
-// entryPoint.type 的结构预检，而不是缺少程序集、依赖或测试替身绕过了真实加载链。
+// 以下类型服务精确 entryPoint.type 的结构预检负例；它们不参与贡献注册。
 internal sealed class InternalPluginModule : IPluginModule
 {
-    public void Configure(IPluginRegistrationContext context) =>
+    public void Configure(IPluginRegistration context) =>
         throw new InvalidOperationException("不可访问入口不应被配置。");
 }
 
 public abstract class AbstractPluginModule : IPluginModule
 {
-    public abstract void Configure(IPluginRegistrationContext context);
+    public abstract void Configure(IPluginRegistration context);
 }
 
 public sealed class WrongContractEntry;
@@ -57,12 +52,12 @@ public sealed class PrivateConstructorPluginModule : IPluginModule
     private PrivateConstructorPluginModule() =>
         throw new InvalidOperationException("非 public 构造函数不应被执行。");
 
-    public void Configure(IPluginRegistrationContext context) =>
+    public void Configure(IPluginRegistration context) =>
         throw new InvalidOperationException("无 public 无参构造入口不应被配置。");
 }
 
 public sealed class GenericPluginModule<T> : IPluginModule
 {
-    public void Configure(IPluginRegistrationContext context) =>
+    public void Configure(IPluginRegistration context) =>
         throw new InvalidOperationException("泛型入口不应被配置。");
 }

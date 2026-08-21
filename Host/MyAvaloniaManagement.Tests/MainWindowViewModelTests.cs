@@ -490,7 +490,8 @@ public sealed class MainWindowViewModelTests
         Assert.Throws<InvalidOperationException>(() =>
             pluginMenu.CreateDocument(TrackedScopedSavableStrategy.TypeId.Value));
         Assert.Throws<InvalidOperationException>(() =>
-            pluginMenu.CreateDocumentEntry(new DocumentCreationMenuEntry(
+            pluginMenu.CreateDocumentEntry(
+                new MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry(
                 TrackedScopedSavableStrategy.TypeId,
                 null,
                 "测试入口",

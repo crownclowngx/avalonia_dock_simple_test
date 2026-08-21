@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G4 已完成，G5–G14 尚未实现。
+> 状态：实施中；G0–G5 已完成，G6–G14 尚未实现。
 >
 > 评审日期：2026-08-21。
 >
@@ -9,10 +9,11 @@
 > [V2 G1 版本与数据边界](../plan-history/host-v2/g1-version-and-data-boundaries.md)，以及
 > [V2 G2 Plugin SDK 重建](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)与
 > [V2 G3 manifest v2 与构建协议](../plan-history/host-v2/g3-manifest-v2-and-build-protocol.md)，以及
-> [V2 G4 每插件独立容器](../plan-history/host-v2/g4-per-plugin-containers.md)。
+> [V2 G4 每插件独立容器](../plan-history/host-v2/g4-per-plugin-containers.md)与
+> [V2 G5 声明式贡献目录](../plan-history/host-v2/g5-declarative-contribution-catalog.md)。
 >
-> 重要说明：G4 已完成最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建/包协议和每插件独立容器；
-> 声明式 Host Registry、Dock Adapter、Document、layout 格式和 G5–G14 仍是目标设计，
+> 重要说明：G5 已完成最终 Core/UI 模块生产入口、声明式 Host Registry、内建 Welcome/Tool 声明和
+> 两阶段冲突隔离；Dock Adapter、Document v2、layout/lifecycle v2 与四业务插件迁移仍属于 G6–G14，
 > 不得引用为当前能力。
 
 ## 1. 目的与结论
@@ -136,9 +137,10 @@ flowchart TB
 G2 已新建 `Host/MyAvaloniaManagement.PluginSdk`，程序集和根命名空间统一为
 `MyAvaloniaManagement.PluginSdk`；`PluginSdk.UI` 也已从依赖元包变成真实契约程序集，Dock 相关包已移除。
 旧 Common 被移至 `Host/MyAvaloniaManagement.LegacyPluginContracts`，只保留旧程序集名和命名空间作为
-不可打包的仓库内部阶段桥。当前 Host 与四插件的运行时迁移仍属于 G5–G12。
+不可打包的仓库内部阶段桥。G5 已迁移 Host 模块与贡献目录；四业务插件迁移仍属于 G9–G12，
+Legacy 项目的最终删除属于 G13。
 
-### 3.2 public API 目标草案
+### 3.2 public API（G2 已建立，G5 已接入 Host 生产路径）
 
 以下签名定义 V2 必须表达的能力。实施时可以因 C# nullable 或命名细节调整，但不得改变所有权：
 
@@ -424,13 +426,22 @@ Provider、按规范 PluginId 构建并逆序释放”的唯一生产路径。`D
 [G4 专项记录](../plan-history/host-v2/g4-per-plugin-containers.md)。本阶段没有实现 G5 声明式贡献、
 G6 Dock Adapter、G7 Document v2 或 G8 layout/lifecycle v2，也没有运行 Windows CI、Smoke 或发布门禁。
 
-### G5：建立声明式贡献目录
+### G5：建立声明式贡献目录（已完成）
 
 - **目标**：注册时一次冻结身份、元数据、实现、生命周期和 View。
 - **删除/新增**：增加 Descriptor 和不可变 Registry；删除 Strategy、GetMetadata、Intent Provider 和独立 AddView。
 - **插件影响**：先以测试夹具和 Host 内建 Welcome/Tool 贡献完成新 API 验证。
 - **验证**：元数据无启动副作用、泛型约束、重复 ID、View 冲突、跨插件冲突隔离和失败不发布。
 - **回滚**：回到 G4 的容器骨架；不得恢复反射发现贡献。
+
+G5 的生产模块预检与组合已切换到最终 UI SDK `IPluginModule`。`PluginRegistration` 在模块返回后同时
+封闭贡献方法和私有服务集合；插件局部 Builder 先完成所有者、重复 ID、模型映射和生命周期校验，
+Provider 可构建后才导入全局 Builder。全局冲突按所有者整体排除，Host 内建贡献优先，无冲突插件继续
+发布；未接受 Provider 立即释放且不登记 Document Scope。`PluginRegistry` 只保存不可变事实，模型创建
+由 internal Activator 按所有者路由。Welcome、文件树、插件菜单、工具管理与插件状态均来自该目录。
+完整设计、测试和阶段边界见
+[G5 专项记录](../plan-history/host-v2/g5-declarative-contribution-catalog.md)。G5 未实现 G6 Dock Adapter、
+G7 Document v2、G8 生命周期编排，也未迁移四个业务插件；未运行 Windows CI、Smoke 或发布门禁。
 
 ### G6：实现 Host Dock Adapter
 

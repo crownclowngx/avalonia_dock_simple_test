@@ -2,8 +2,8 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G4 的 Core/UI SDK、
-> manifest v2、精确入口加载、构建协议和每插件独立容器。最新测试数量和覆盖率必须从本轮
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G5 的 Core/UI SDK、
+> manifest v2、精确入口加载、构建协议、每插件独立容器和声明式贡献目录。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -67,6 +67,30 @@ Transaction 与旁路检测符号。结果写入 `artifacts/test-results/PluginC
 覆盖率 **66.99%**，均未降低既有门槛。完整命令、SOLID 设计、阶段桥和回滚边界见
 [V2 G4 专项记录](../plan-history/host-v2/g4-per-plugin-containers.md)。本阶段没有运行 Windows Smoke、
 Windows CI、发布门禁、ReleaseAcceptance、联网/真实媒体、上传或发布操作。
+
+### V2 G5 当前绿色基线
+
+G5 专项入口为：
+
+```powershell
+.\scripts\Test-DeclarativeContributionCatalog.ps1 -Configuration Release
+```
+
+脚本串行执行声明式 Registry 单元、插件两阶段提交和受影响 Headless UI 用例，扫描生产组合路径不得
+引用 Strategy、`GetMetadata`、Intent Provider 或独立 `AddView`，并生成明确包含
+`windowsCi=false`、`releaseGate=false` 的 `summary.json`。结果位于
+`artifacts/test-results/DeclarativeContributionCatalog/`。
+
+测试覆盖 Descriptor 防御性复制与无模型副作用、泛型/生命周期约束、注册与服务集合封闭、Document
+scoped、Tool/Lifecycle singleton、插件内错误、跨插件及 Host 冲突整体隔离、失败 Provider/Scope 不泄漏、
+Registry 隔离、View 按需创建与脱敏占位，以及 Host Welcome/Tool 统一读取目录。完整门禁数字与回滚边界见
+[V2 G5 专项记录](../plan-history/host-v2/g5-declarative-contribution-catalog.md)。本阶段不运行 Windows CI、
+Windows Smoke、`Invoke-HostV1ReleaseGate`、ReleaseAcceptance、真实媒体/联网或任何发布操作。
+
+本轮实际结果为：G5 专项 51/51、SDK 32/32、Host Unit 175 + UI 39 + Plugin 160 = **374/374**；
+Host 行覆盖率 **81.36%**、分支覆盖率 **66.97%**。既有 baseline 没有降低，并新增 Registry、Builder、
+ProviderOwner、Registration 和 Activator 五个 G5 关键文件阈值。BiliDownloader、DaTang、MySmallTools
+分别为 720、64、183，共 **967/967**。
 
 ## G14 正式发布门禁
 

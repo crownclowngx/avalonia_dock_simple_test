@@ -5,6 +5,11 @@
   },
   "criticalFiles": {
     "Business/Events/HostEventBus.cs": 90.0,
+    "Business/Helpers/PluginContributionActivator.cs": 80.0,
+    "Business/Helpers/PluginProviderOwner.cs": 90.0,
+    "Business/Helpers/PluginRegistrationContext.cs": 75.0,
+    "Business/Helpers/PluginRegistry.cs": 85.0,
+    "Business/Helpers/PluginRegistryBuilder.cs": 85.0,
     "ViewModels/MainWindowViewModel.cs": 75.0,
     "ViewModels/Tools/FileSystemTreeViewModel.cs": 70.0,
     "ViewModels/Tools/PlugGroupMenuViewModel.cs": 70.0,

@@ -341,9 +341,6 @@ public sealed class HostDiagnosticsTests
         AssertSensitiveCanariesAbsent(state.ErrorMessage!);
         AssertSensitiveCanariesAbsent(captured.ToString());
 
-        var viewModel = new PluginStatusViewModel(new PluginRegistry([], []), manager);
-        var item = Assert.Single(viewModel.Items);
-        AssertSensitiveCanariesAbsent(item.Detail);
     }
 
     [Fact]
@@ -375,7 +372,6 @@ public sealed class HostDiagnosticsTests
 
         var viewModel = new PluginStatusViewModel(
             new PluginRegistry([], []),
-            new PluginLifecycleManager([]),
             session);
 
         var item = Assert.Single(viewModel.Items);

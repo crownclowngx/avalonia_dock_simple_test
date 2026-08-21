@@ -2,12 +2,13 @@ using BiliDownloader.Plugin;
 using DaTangAccountingHelpPlug.Plugin;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
+using Avalonia.Controls;
 using MyPlugTest.Plugin;
 using MySmallTools.Plugin;
 
@@ -76,6 +77,7 @@ public sealed class PluginContainerIsolationTests
         Assert.Equal(
             [new PluginId("myavalonia.plugin.g4-valid")],
             composition.PluginProviders.AvailablePluginIds);
+        Assert.Equal(1, composition.DocumentScopes.ManagerCount);
         Assert.Single(composition.Registry.Lifecycles);
         Assert.Contains(composition.Diagnostics.Snapshot, item =>
             item.PluginId == "myavalonia.plugin.g4-config-failure" &&
@@ -122,12 +124,14 @@ public sealed class PluginContainerIsolationTests
         using var composition = Compose(
             ("myavalonia.plugin.g4-doc-a", new ScopedDocumentModuleA()),
             ("myavalonia.plugin.g4-doc-b", new ScopedDocumentModuleB()));
-        var first = composition.Registry.CreateDocument(new DocumentCreationParams(
-            new DocumentTypeId("myavalonia.plugin.g4-doc-a.document.sample")));
-        var second = composition.Registry.CreateDocument(new DocumentCreationParams(
-            new DocumentTypeId("myavalonia.plugin.g4-doc-b.document.sample")));
+        Assert.Equal(2, composition.DocumentScopes.ManagerCount);
+        var activator = composition.HostProvider.GetRequiredService<PluginContributionActivator>();
+        var first = activator.CreateDocument(
+            new DocumentTypeId("myavalonia.plugin.g4-doc-a.document.sample"));
+        var second = activator.CreateDocument(
+            new DocumentTypeId("myavalonia.plugin.g4-doc-b.document.sample"));
         var firstDocument = Assert.IsType<ScopedPluginDocument>(first);
-        var secondDocument = Assert.IsType<ScopedPluginDocument>(second);
+        var secondDocument = Assert.IsType<ScopedPluginDocumentB>(second);
 
         Assert.Equal("myavalonia.plugin.g4-doc-a", firstDocument.Marker.PluginId);
         Assert.Equal("myavalonia.plugin.g4-doc-b", secondDocument.Marker.PluginId);
@@ -139,18 +143,62 @@ public sealed class PluginContainerIsolationTests
     }
 
     [Fact]
-    public void 四个真实插件分别构建私有Provider并形成可用Registry()
+    public void 四个最终Sdk测试插件分别构建私有Provider并形成可用Registry()
     {
         using var composition = Compose(
-            ("myavalonia.plugin.bili-downloader", new BiliDownloaderPluginModule()),
-            ("myavalonia.plugin.datang-accounting-help", new DaTangAccountingHelpPluginModule()),
-            ("myavalonia.plugin.my-plug-test", new MyPlugTestPluginModule()),
-            ("myavalonia.plugin.my-small-tools", new MySmallToolsPluginModule()));
+            ("myavalonia.plugin.g4-one", new ValidLifecycleModule()),
+            ("myavalonia.plugin.g4-two", new ValidLifecycleModule()),
+            ("myavalonia.plugin.g4-three", new ValidLifecycleModule()),
+            ("myavalonia.plugin.g4-four", new ValidLifecycleModule()));
 
         Assert.Equal(4, composition.PluginProviders.AvailablePluginIds.Count);
         Assert.Equal(4, composition.Registry.Plugins.Count);
         Assert.DoesNotContain(composition.Diagnostics.Snapshot, item =>
             item.Phase == HostDiagnosticPhase.PluginServiceRegistration);
+    }
+
+    [Fact]
+    public void 跨插件Document与Tool冲突整体隔离且无冲突插件继续发布()
+    {
+        var released = new List<string>();
+        using var composition = Compose(
+            ("myavalonia.plugin.g5-doc-a", new DocumentConflictModuleA(released)),
+            ("myavalonia.plugin.g5-doc-b", new DocumentConflictModuleB(released)),
+            ("myavalonia.plugin.g5-tool-a", new ToolConflictModuleA(released)),
+            ("myavalonia.plugin.g5-tool-b", new ToolConflictModuleB(released)),
+            ("myavalonia.plugin.g5-valid", new ValidLifecycleModule()));
+
+        Assert.Equal(
+            [new PluginId("myavalonia.plugin.g5-valid")],
+            composition.PluginProviders.AvailablePluginIds);
+        Assert.False(composition.Registry.DocumentDescriptors.ContainsKey(
+            new DocumentTypeId("shared.document.collision")));
+        Assert.False(composition.Registry.ToolDescriptors.ContainsKey(
+            new ToolTypeId("shared.tool.collision")));
+        Assert.Equal(4, released.Count);
+        Assert.Equal(1, composition.DocumentScopes.ManagerCount);
+        Assert.Contains(composition.Diagnostics.Snapshot, item =>
+            item.Code == "DOCUMENT_ID_DUPLICATE");
+        Assert.Contains(composition.Diagnostics.Snapshot, item =>
+            item.Code == "TOOL_ID_DUPLICATE");
+    }
+
+    [Fact]
+    public void 插件与Host内建贡献冲突时保留Host并立即释放插件Provider()
+    {
+        var released = new List<string>();
+        using var composition = Compose(
+            ("myavalonia.plugin.g5-host-conflict", new HostConflictModule(released)),
+            ("myavalonia.plugin.g5-host-valid", new ValidLifecycleModule()));
+
+        var welcome = composition.Registry.DocumentDescriptors[
+            HostExtensionIds.V2WelcomeDocument];
+        Assert.Equal("欢迎主程序", welcome.DisplayName);
+        Assert.DoesNotContain(
+            new PluginId("myavalonia.plugin.g5-host-conflict"),
+            composition.PluginProviders.AvailablePluginIds);
+        Assert.Equal(["myavalonia.plugin.g5-host-conflict"], released);
+        Assert.Equal(1, composition.DocumentScopes.ManagerCount);
     }
 
     private static Composition Compose(
@@ -266,7 +314,7 @@ public sealed class PluginContainerIsolationTests
 
     public sealed class ClearAndReplaceOwnServicesModule : IPluginModule
     {
-        public void Configure(IPluginRegistrationContext context)
+        public void Configure(IPluginRegistration context)
         {
             var hostPort = context.Services.Single(descriptor =>
                 descriptor.ServiceType == typeof(IHostEventBus));
@@ -278,19 +326,19 @@ public sealed class PluginContainerIsolationTests
 
     public sealed class FirstPrivateModule : IPluginModule
     {
-        public void Configure(IPluginRegistrationContext context) =>
+        public void Configure(IPluginRegistration context) =>
             context.Services.AddSingleton<FirstPrivateService>();
     }
 
     public sealed class SecondPrivateModule : IPluginModule
     {
-        public void Configure(IPluginRegistrationContext context) =>
+        public void Configure(IPluginRegistration context) =>
             context.Services.AddSingleton<SecondPrivateService>();
     }
 
     public sealed class NativeDiFeaturesModule : IPluginModule
     {
-        public void Configure(IPluginRegistrationContext context)
+        public void Configure(IPluginRegistration context)
         {
             context.Services.AddSingleton<IPrivateFormatter, FirstFormatter>();
             context.Services.AddSingleton<IPrivateFormatter, SecondFormatter>();
@@ -302,7 +350,7 @@ public sealed class PluginContainerIsolationTests
 
     public sealed class ThrowingConfigureModule : IPluginModule
     {
-        public void Configure(IPluginRegistrationContext context) =>
+        public void Configure(IPluginRegistration context) =>
             throw new ApplicationException("测试异常正文不得进入持久诊断。");
     }
 
@@ -311,57 +359,115 @@ public sealed class PluginContainerIsolationTests
         public ThrowingConstructorModule() =>
             throw new ApplicationException("模块构造测试异常正文。");
 
-        public void Configure(IPluginRegistrationContext context) { }
+        public void Configure(IPluginRegistration context) { }
     }
 
     public sealed class BrokenProviderModule : IPluginModule
     {
-        public void Configure(IPluginRegistrationContext context) =>
-            context.AddLifecycle<BrokenLifecycle>();
+        public void Configure(IPluginRegistration context) =>
+            context.UseLifecycle<BrokenLifecycle>();
     }
 
     public sealed class ValidLifecycleModule : IPluginModule
     {
-        public void Configure(IPluginRegistrationContext context) =>
-            context.AddLifecycle<ValidLifecycle>();
+        public void Configure(IPluginRegistration context) =>
+            context.UseLifecycle<ValidLifecycle>();
     }
 
     public sealed class DisposableLifecycleModuleA(List<string> releaseOrder) : IPluginModule
     {
-        public void Configure(IPluginRegistrationContext context)
+        public void Configure(IPluginRegistration context)
         {
             context.Services.AddSingleton(releaseOrder);
-            context.AddLifecycle<DisposableLifecycleA>();
+            context.UseLifecycle<DisposableLifecycleA>();
         }
     }
 
     public sealed class DisposableLifecycleModuleB(List<string> releaseOrder) : IPluginModule
     {
-        public void Configure(IPluginRegistrationContext context)
+        public void Configure(IPluginRegistration context)
         {
             context.Services.AddSingleton(releaseOrder);
-            context.AddLifecycle<DisposableLifecycleB>();
+            context.UseLifecycle<DisposableLifecycleB>();
         }
     }
 
     public sealed class ScopedDocumentModuleA : IPluginModule
     {
-        public void Configure(IPluginRegistrationContext context)
+        public void Configure(IPluginRegistration context)
         {
             context.Services.AddSingleton(new PluginMarker(context.PluginId.Value));
-            context.Services.AddScoped<ScopedPluginDocument>();
-            context.AddDocument<ScopedPluginDocumentStrategyA>();
+            context.AddDocument<ScopedPluginDocument, EmptyView>(
+                Document(context.PluginId));
         }
     }
 
     public sealed class ScopedDocumentModuleB : IPluginModule
     {
-        public void Configure(IPluginRegistrationContext context)
+        public void Configure(IPluginRegistration context)
         {
             context.Services.AddSingleton(new PluginMarker(context.PluginId.Value));
-            context.Services.AddScoped<ScopedPluginDocument>();
-            context.AddDocument<ScopedPluginDocumentStrategyB>();
+            context.AddDocument<ScopedPluginDocumentB, EmptyView>(
+                Document(context.PluginId));
         }
+    }
+
+    public sealed class DocumentConflictModuleA(List<string> released) : IPluginModule
+    {
+        public void Configure(IPluginRegistration context)
+        {
+            AddRejectedLease(context, released);
+            context.AddDocument<ConflictDocumentA, ConflictViewA>(ConflictDocument());
+        }
+    }
+
+    public sealed class DocumentConflictModuleB(List<string> released) : IPluginModule
+    {
+        public void Configure(IPluginRegistration context)
+        {
+            AddRejectedLease(context, released);
+            context.AddDocument<ConflictDocumentB, ConflictViewB>(ConflictDocument());
+        }
+    }
+
+    public sealed class ToolConflictModuleA(List<string> released) : IPluginModule
+    {
+        public void Configure(IPluginRegistration context)
+        {
+            AddRejectedLease(context, released);
+            context.AddTool<ConflictToolA, ConflictViewA>(ConflictTool());
+        }
+    }
+
+    public sealed class ToolConflictModuleB(List<string> released) : IPluginModule
+    {
+        public void Configure(IPluginRegistration context)
+        {
+            AddRejectedLease(context, released);
+            context.AddTool<ConflictToolB, ConflictViewB>(ConflictTool());
+        }
+    }
+
+    public sealed class HostConflictModule(List<string> released) : IPluginModule
+    {
+        public void Configure(IPluginRegistration context)
+        {
+            AddRejectedLease(context, released);
+            context.AddDocument<HostConflictDocument, ConflictViewA>(new DocumentDescriptor(
+                HostExtensionIds.V2WelcomeDocument,
+                "伪造 Welcome",
+                "必须被 Host 内建贡献压制",
+                "测试"));
+        }
+    }
+
+    private static void AddRejectedLease(
+        IPluginRegistration context,
+        List<string> released)
+    {
+        context.Services.AddSingleton(new PluginMarker(context.PluginId.Value));
+        context.Services.AddSingleton(released);
+        context.UseLifecycle<RejectedLeaseLifecycle>();
     }
 
     public interface IPrivateFormatter;
@@ -401,7 +507,6 @@ public sealed class PluginContainerIsolationTests
     public sealed class BrokenLifecycle(IMissingDependency missing) : IPluginLifecycle
     {
         private readonly IMissingDependency _missing = missing;
-        public int Order => 0;
         public Task InitializeAsync(CancellationToken cancellationToken)
         {
             _ = _missing;
@@ -412,14 +517,21 @@ public sealed class PluginContainerIsolationTests
 
     public sealed class ValidLifecycle : IPluginLifecycle
     {
-        public int Order => 0;
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         public Task ShutdownAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
+    public sealed class RejectedLeaseLifecycle(
+        PluginMarker marker,
+        List<string> released) : IPluginLifecycle, IDisposable
+    {
+        public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task ShutdownAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public void Dispose() => released.Add(marker.PluginId);
+    }
+
     public sealed class DisposableLifecycleA(List<string> releaseOrder) : IPluginLifecycle, IDisposable
     {
-        public int Order => 0;
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         public Task ShutdownAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         public void Dispose() => releaseOrder.Add("a");
@@ -427,7 +539,6 @@ public sealed class PluginContainerIsolationTests
 
     public sealed class DisposableLifecycleB(List<string> releaseOrder) : IPluginLifecycle, IDisposable
     {
-        public int Order => 0;
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         public Task ShutdownAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         public void Dispose() => releaseOrder.Add("b");
@@ -440,34 +551,81 @@ public sealed class PluginContainerIsolationTests
         public void Dispose() => releaseOrder.Add("host");
     }
 
-    public sealed class ScopedPluginDocument(PluginMarker marker) : Document, IDisposable
+    public sealed class ScopedPluginDocument(PluginMarker marker) :
+        Document,
+        MyAvaloniaManagement.PluginSdk.IPluginDocument,
+        IDisposable
     {
         internal PluginMarker Marker { get; } = marker;
         internal bool IsDisposed { get; private set; }
+        public DocumentPresentationState Presentation { get; } = new("Scope 测试");
+        public event EventHandler? PresentationChanged
+        {
+            add { }
+            remove { }
+        }
+        public ValueTask InitializeAsync(
+            DocumentActivationContext context,
+            CancellationToken cancellationToken) => ValueTask.CompletedTask;
         public void Dispose() => IsDisposed = true;
     }
 
-    public sealed class ScopedPluginDocumentStrategyA(
-        PluginMarker marker,
-        IDocumentScopeFactory scopeFactory) : IDocumentCreationStrategy
+    /// <summary>第二插件使用独立的精确模型类型，以验证 Scope 而不触发 G5 全局模型冲突。</summary>
+    public sealed class ScopedPluginDocumentB(PluginMarker marker) :
+        Document,
+        MyAvaloniaManagement.PluginSdk.IPluginDocument,
+        IDisposable
     {
-        public Document CreateDocument(DocumentCreationParams @params) =>
-            scopeFactory.CreateDocument<ScopedPluginDocument>();
-
-        public DocumentMetadata GetMetadata() => new(
-            new DocumentTypeId($"{marker.PluginId}.document.sample"),
-            "G4 Scope 测试 Document");
+        internal PluginMarker Marker { get; } = marker;
+        internal bool IsDisposed { get; private set; }
+        public DocumentPresentationState Presentation { get; } = new("Scope 测试 B");
+        public event EventHandler? PresentationChanged
+        {
+            add { }
+            remove { }
+        }
+        public ValueTask InitializeAsync(
+            DocumentActivationContext context,
+            CancellationToken cancellationToken) => ValueTask.CompletedTask;
+        public void Dispose() => IsDisposed = true;
     }
 
-    public sealed class ScopedPluginDocumentStrategyB(
-        PluginMarker marker,
-        IDocumentScopeFactory scopeFactory) : IDocumentCreationStrategy
-    {
-        public Document CreateDocument(DocumentCreationParams @params) =>
-            scopeFactory.CreateDocument<ScopedPluginDocument>();
+    public sealed class ConflictDocumentA : TestPluginDocument;
+    public sealed class ConflictDocumentB : TestPluginDocument;
+    public sealed class HostConflictDocument : TestPluginDocument;
 
-        public DocumentMetadata GetMetadata() => new(
-            new DocumentTypeId($"{marker.PluginId}.document.sample"),
-            "G4 Scope 测试 Document");
+    public class TestPluginDocument : MyAvaloniaManagement.PluginSdk.IPluginDocument
+    {
+        public DocumentPresentationState Presentation { get; } = new("冲突测试");
+        public event EventHandler? PresentationChanged { add { } remove { } }
+        public ValueTask InitializeAsync(
+            DocumentActivationContext context,
+            CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
+
+    public sealed class ConflictToolA;
+    public sealed class ConflictToolB;
+    public sealed class ConflictViewA : UserControl;
+    public sealed class ConflictViewB : UserControl;
+
+    private static DocumentDescriptor ConflictDocument() => new(
+        new DocumentTypeId("shared.document.collision"),
+        "冲突 Document",
+        "验证跨插件 ID 冲突",
+        "测试");
+
+    private static ToolDescriptor ConflictTool() => new(
+        new ToolTypeId("shared.tool.collision"),
+        "冲突 Tool",
+        "验证跨插件 ID 冲突",
+        ToolDockSide.Left,
+        ToolCloseBehavior.Hide);
+
+    private static DocumentDescriptor Document(PluginId ownerId) => new(
+        new DocumentTypeId($"{ownerId.Value}.document.sample"),
+        "G4 Scope 测试 Document",
+        "验证每插件 Document Scope",
+        "测试");
+
+    public sealed class EmptyView : UserControl;
 }

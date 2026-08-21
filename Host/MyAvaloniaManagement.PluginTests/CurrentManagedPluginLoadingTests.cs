@@ -1,5 +1,5 @@
+using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagementCommon.Plugin;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -13,7 +13,7 @@ public sealed class CurrentManagedPluginLoadingTests
     [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "MyPlugTest", "myavalonia.plugin.my-plug-test")]
     [InlineData("DaTangAccountingHelpPlug/DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTang", "myavalonia.plugin.datang-accounting-help")]
     [InlineData("MySmallTools/MySmallTools", "MySmallTools", "SmallTools", "myavalonia.plugin.my-small-tools")]
-    public void 当前Managed插件可从真实构建目录取得精确入口模块(
+    public void 尚未迁移的业务插件从真实构建目录读取后被V2预检隔离(
         string projectPath,
         string assemblyName,
         string directoryName,
@@ -60,15 +60,10 @@ public sealed class CurrentManagedPluginLoadingTests
             pluginAssembly.GetName().Version));
         var entryType = pluginAssembly.GetType(
             manifest.EntryPoint.Type, throwOnError: false, ignoreCase: false);
-        Assert.True(PluginModulePreflight.TryValidate(
-            entryType, out var validatedType, out var entryCode, out var entryDetail),
-            $"入口类型无效：{entryCode}: {entryDetail}");
-        var module = Assert.IsAssignableFrom<IPluginModule>(
-            Activator.CreateInstance(validatedType!));
+        Assert.False(PluginModulePreflight.TryValidate(
+            entryType, out var validatedType, out var entryCode, out _));
+        Assert.Null(validatedType);
+        Assert.Equal(HostDiagnosticCodes.PluginEntryInvalid, entryCode);
         Assert.Equal(pluginId, manifest.PluginId.Value);
-        Assert.Equal(manifest.EntryPoint.Type, module.GetType().FullName);
-        Assert.Same(
-            typeof(IPluginModule).Assembly,
-            context.ResolveAssembly(typeof(IPluginModule).Assembly.FullName!));
     }
 }

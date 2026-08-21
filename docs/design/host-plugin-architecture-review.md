@@ -1,13 +1,14 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-20（已同步 G16 Managed Plugin v1 封板）<br>
-> 代码基线：`managed-plugin-v1.0.0`<br>
+> 更新日期：2026-08-21（已同步 Managed Plugin V2 G5）<br>
+> 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系  
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
 > 不在本轮范围：逐项评审插件业务功能、第三方插件市场、运行时热卸载、插件沙箱
 
-> V2 后续状态：G2 已建立最终 Core/UI SDK；本文描述的 Host 与四插件运行链仍通过不可打包的
-> `MyAvaloniaManagement.LegacyPluginContracts` 编译桥保持绿色，尚未完成 G3–G12 运行时迁移。
+> V2 当前状态：G0–G5 已完成。Host 生产模块入口与声明式贡献目录使用最终 Core/UI SDK；四业务插件
+> 仍以不可打包的 `MyAvaloniaManagement.LegacyPluginContracts` 保持源码可编译，但不会由 G5 Host 加载。
+> 本文涉及四业务插件的 Strategy、Document v1 与生命周期 Manager 段落属于 G9–G12 前的阶段事实。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -32,7 +33,8 @@
 ```mermaid
 flowchart TB
     Host["MyAvaloniaManagement<br/>Avalonia 桌面宿主"]
-    Contract["LegacyPluginContracts<br/>G2 内部编译桥"]
+    Sdk["PluginSdk + PluginSdk.UI<br/>G5 Host 生产契约"]
+    Legacy["LegacyPluginContracts<br/>业务插件源码桥"]
     Dock["Avalonia 12 + Dock 12<br/>UI 与停靠模型"]
 
     Bili["BiliDownloader<br/>下载子系统"]
@@ -40,12 +42,12 @@ flowchart TB
     TestPlug["MyPlugTest<br/>托管插件示例"]
     DaTang["DaTangAccountingHelpPlug<br/>会计辅助插件"]
 
-    Host --> Contract
+    Host --> Sdk
     Host --> Dock
-    Bili --> Contract
-    Small --> Contract
-    TestPlug --> Contract
-    DaTang --> Contract
+    Bili --> Legacy
+    Small --> Legacy
+    TestPlug --> Legacy
+    DaTang --> Legacy
 
     Host -. "运行时扫描 Controls 子目录" .-> Bili
     Host -. "运行时扫描 Controls 子目录" .-> Small
@@ -53,11 +55,14 @@ flowchart TB
     Host -. "运行时扫描 Controls 子目录" .-> DaTang
 ```
 
-**[代码事实]** 当前四个插件程序集都实现了唯一 `IPluginModule`，均属于 Managed Plugin。G4 已删除无模块程序集、策略 public 无参构造和无 deps 目录回退；仓库不再存在第二套二进制插件激活协议。参见 [`ManagedOnlyPluginLoadingTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/ManagedOnlyPluginLoadingTests.cs) 和各插件的 `Plugin/*PluginModule.cs`。
+**[代码事实]** 四业务插件程序集仍各自保留一个 Legacy `IPluginModule` 以维持 G9–G12 前源码回归；
+`PluginModulePreflight` 只接受最终 UI SDK `IPluginModule`，因此这些入口会被稳定隔离，不存在双接口回退。
+最终 SDK 加载链由两个独立依赖测试夹具验证。参见
+[`ManagedOnlyPluginLoadingTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/ManagedOnlyPluginLoadingTests.cs)。
 
 **[代码事实]** G2 已把最终 V2 SDK 分成平台无关的 `MyAvaloniaManagement.PluginSdk` 与真实
-`MyAvaloniaManagement.PluginSdk.UI`。当前 Host 与四插件尚未迁移，暂时共同引用不可打包的
-`MyAvaloniaManagement.LegacyPluginContracts`；它仍输出旧程序集名以维持本节所述运行链，但不是 SDK，
+`MyAvaloniaManagement.PluginSdk.UI`。Host 已在 G5 迁移；四业务插件暂时引用不可打包的
+`MyAvaloniaManagement.LegacyPluginContracts`；它仍输出旧程序集名以维持源码测试，但不是 SDK，
 也不得新增生产消费者。参见
 [`MyAvaloniaManagement.LegacyPluginContracts.csproj`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj)
 和 [V2 G2 记录](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)。
@@ -85,23 +90,20 @@ sequenceDiagram
     R->>L: 获取 Controls 插件程序集快照
     L-->>R: manifest v2、deps、精确入口类型不可变快照
     R->>C: 实例化已预检 IPluginModule
-    C->>B: Configure(IPluginRegistrationContext)
+    C->>B: Configure(IPluginRegistration)
     C->>DI: 注册插件私有服务
     R->>DI: BuildServiceProvider + ValidateScopes/ValidateOnBuild
-    R->>B: 激活并全量校验贡献
+    R->>B: 只校验冻结声明并过滤全局冲突
     B-->>E: 原子发布不可变 Registry
-    R->>LM: InitializeAllAsync
-    LM-->>R: 记录 Ready 或 Failed
+    R->>LM: G5 不执行最终生命周期编排（留给 G8）
     P->>UI: 启动 Avalonia
     UI->>E: 查询显式 Document / Tool / View 贡献
-    E-->>UI: 元数据、View 工厂和创建分派
+    E-->>UI: 元数据、View 工厂和所有者索引
     UI->>UI: 建立四向 Dock
     UI->>UI: 窗口 Opened 后应用待恢复布局
     UI->>UI: 窗口 Closing 时保存布局
     P->>R: Dispose
-    R->>LM: 消息循环退出后 ShutdownAllAsync
-    LM-->>R: 反向关闭成功初始化的插件
-    R->>DI: 释放根容器及剩余 Document Scope
+    R->>DI: 关闭 Scope，逆序释放插件 Provider 与 Host Provider
 ```
 
 **[代码事实]** `HostRuntime` 是内部 Composition Root，统一拥有服务注册、插件发现、容器构建、生命周期初始化、Avalonia App 工厂和反向关闭；`Program.Main` 只负责进程编排。App 通过内部桌面 Shell 构造注入，根容器启用了 `ValidateScopes` 与 `ValidateOnBuild`。参见 [`Program.cs`](../../Host/MyAvaloniaManagement/Program.cs)、[`HostRuntime.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/HostRuntime.cs) 和 [`PluginLifecycleManager.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/Plugin/PluginLifecycleManager.cs)。
@@ -112,20 +114,25 @@ sequenceDiagram
 
 | 入口要求 | 策略构造 | 可用能力 | 当前状态 |
 | --- | --- | --- | --- |
-| 严格 manifest v2、同名 deps、精确 `IPluginModule` 类型 | Context 显式登记，插件私有 Provider 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | 四个现有插件均采用且为唯一支持路径 |
+| 严格 manifest v2、同名 deps、最终 UI SDK 精确 `IPluginModule` 类型 | Registration 显式登记，插件私有 Provider 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | Host 与最终测试夹具采用；业务插件待 G9–G12 |
 
-**[代码事实]** `PluginModulePreflight` 要求清单精确入口 public、非抽象、非泛型、实现当前 Legacy
+**[代码事实]** `PluginModulePreflight` 要求清单精确入口 public、非抽象、非泛型、实现最终 UI SDK
 `IPluginModule` 且具有 public 无参构造；`PluginProviderOwner` 在 Host Provider 建立后为每个插件创建
 新的服务集合，调用一次 `Configure`，再建立插件私有 Provider。同程序集其他模块不参与发现。manifest
 是身份唯一事实源；四类宿主贡献使用专用 `Add*` 方法并先写入插件临时 Builder，只有 Provider 成功后
 才合并。Host 描述符从不交给插件，旧保护事务已删除。参见
 [`PluginProviderOwner.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginProviderOwner.cs)。
 
-**[代码事实]** `IPluginLifecycle` 是可选能力，不是每个 Managed Plugin 的必选空壳。当前只有 BiliDownloader 显式登记生命周期，用它启动、恢复和关闭下载协调器；DaTang 没有常驻后台任务，因此不登记生命周期。生命周期身份来自 Registry 中 manifest 所有权；管理器支持可选 `IPluginLifecycleDependencies`、拓扑排序和统一初始化/关闭超时，未声明依赖时按 `Order`、manifest `PluginId` 串行初始化。失败、超时和依赖阻塞不会影响独立分支，退出时只反向关闭成功初始化的实例。
+**[代码事实]** 最终 `IPluginLifecycle` 是可选能力，不是每个插件的必选空壳。G5 只冻结实现类型、注册为
+插件 singleton 并验证可解析性，不执行初始化或关闭；最终状态机、超时、确定性顺序与贡献可用性门控由
+G8 实现。BiliDownloader 的 Legacy 生命周期源码只参与插件自身回归，不进入当前 Host 生产生命周期。
 
 **[架构判断]** v1 已冻结并实现为 Managed-only；Legacy 只在历史验收记录和持久化数据迁移语境中出现，不是插件接入方式。
 
 ## 3. Document：多实例工作上下文
+
+> G5 当前生产事实：Host Welcome 通过最终 `DocumentDescriptor`、Registry 与 internal Activator 创建；
+> 以下四业务插件 Strategy/Document v1 说明是迁移前源码事实，不代表 G5 Host 会加载这些入口。
 
 ### 3.1 创建入口已经支持“类型 + 意图”
 
@@ -173,7 +180,7 @@ flowchart TD
 
 **[架构判断]** 当前全部 Managed Document 都由所属插件 Scope 托管；Document 注册为 scoped，策略只
 依赖本插件 `IDocumentScopeFactory`，Host 与其他插件不能解析这些 ViewModel。未来插件若绕过该工厂
-自行构造 Document，需要由 G5 的声明式贡献契约进一步阻断。
+自行构造 Document；G5 已在生产模块入口阻断该旧路径，G6/G9–G12 再完成普通模型和 Adapter 迁移。
 
 **[代码事实]** Managed Document Scope 现在同时提供 scoped `IDocumentLifetime`。Dock 确认关闭后，`DocumentScopeManager` 先取消 `ClosingToken`，再释放 ViewModel 与 scoped 依赖；被否决的关闭不会提前取消，宿主退出则对仍打开的 Document 执行同一路径。取消是协作式且不等待：Document 局部的 HTTP、解析、浏览、探测与发票导入停止并禁止迟到 UI 回写；BiliDownloader 已提交到插件级 Coordinator 的下载任务继续运行。原生文件选择器只能丢弃迟到结果，EPPlus 已进入同步 `SaveAs` 后允许完成写入。
 
@@ -477,8 +484,8 @@ flowchart TB
 ```
 
 **[建议]** 不需要立即禁止插件引用 Avalonia/Dock。内部插件的 UI 自由度是该项目的价值之一。
-Host 实现面、静态服务定位、SDK 依赖和 Managed-only 加载已经收口；下一步应在 G5 中把 View 贡献形成正式、
-可打包的 SDK 边界，同时继续减少业务代码直接操作根 Dock。
+Host 实现面、静态服务定位、SDK 依赖、Managed-only 加载和声明式 View 贡献已经收口；下一步由 G6
+在 internal Activator 后引入 Dock Adapter，并继续减少业务代码直接操作 Dock。
 
 ### 7.3 建议的候选契约
 
@@ -569,8 +576,8 @@ Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. V2 G4 已把插件 DI 收口为每插件独立 Provider；事件总线为明确 Host Port，Host 文件打开、布局刷新和 Tool 显隐使用直接协调；插件仍直接使用 Dock 类型；
-2. 运行前 manifest、Host API/Common 兼容检查、显式 Plugin Registry 和用户可见诊断已有 V1；能力声明和 manifest 插件依赖清单仍属于后续版本；
+1. V2 G5 已把 Host 生产贡献收口为最终 SDK Registration、不可变 Registry 和独立 Activator；插件普通模型的 Dock Adapter 仍待 G6；
+2. 运行前 manifest v2、Core/UI 兼容检查、声明式 Plugin Registry 和用户可见诊断已经建立；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。
 

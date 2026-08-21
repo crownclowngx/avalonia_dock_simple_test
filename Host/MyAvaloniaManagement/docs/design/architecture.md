@@ -16,7 +16,9 @@
 
 ### Plugin SDK 与主题所有权
 
-`MyAvaloniaManagementCommon` 通过 `MyAvaloniaManagement.PluginSdk` 提供基础编译契约，不再拥有
+最终基础契约来自 `MyAvaloniaManagement.PluginSdk`，UI 注册契约来自
+`MyAvaloniaManagement.PluginSdk.UI`；旧 `MyAvaloniaManagementCommon` 只保留为四业务插件在 G9–G12
+迁移前的不可打包源码桥，不进入 G5 Host 模块预检与贡献目录。SDK 不拥有
 字体、桌面后端或全局主题。`App.axaml` 是 Fluent、Semi、Ursa、Dock Theme 和 Host Styles 的唯一
 组合入口；`ApplicationThemeService` 只切换宿主主题状态，不把第三方主题对象暴露成插件服务。
 
@@ -86,8 +88,8 @@ flowchart TB
 5. 以 `ValidateScopes`、`ValidateOnBuild` 构建 Host Provider；
 6. 按 manifest `pluginId` 顺序为每个插件创建空服务集合，执行一次 `Configure` 并构建私有 Provider；
 7. 单插件成功后才合并其声明；失败则释放自身并继续后续插件；
-8. 从贡献所有者 Provider 激活对象、完成全量校验并发布不可变 `PluginRegistry`；
-9. 显式解析 `ManagementFactory` 与生命周期计划，再初始化 `PluginLifecycleManager`；
+8. 只读取已冻结声明完成跨所有者冲突过滤，释放冲突 Provider，再发布不可变 `PluginRegistry`；
+9. 显式解析 `ManagementFactory`；G5 只验证生命周期 singleton 可解析，不执行最终启动/停止编排；
 10. 将完全组合成功的 Host Provider 交给 Avalonia 启动路径。
 
 关闭时先释放全部 Document Scope，再反向停止成功生命周期，随后逆序释放插件 Provider，最后释放
@@ -103,7 +105,7 @@ Host Provider。这个所有权对称性防止 `Program`、`App` 和插件生命
 当前应用已有固定的 Avalonia 启动方式。内部 `HostRuntime` 与桌面 Shell 足以集中所有权，而引入
 另一套通用 Host 生命周期会增加双重启动/关闭语义。本轮选择最小可验证边界，不改变进程模型。
 
-## 4. 插件发现和策略注册
+## 4. 插件发现和声明式注册
 
 ### 4.1 程序集快照
 
@@ -128,9 +130,10 @@ Host Provider。这个所有权对称性防止 `Program`、`App` 和插件生命
 
 [`PluginProviderOwner`](../../Business/Helpers/PluginProviderOwner.cs) 在 Host Provider 建立后，按规范 PluginId
 顺序为每个入口创建新的空 `ServiceCollection`，只预置事件总线、当前插件 Document Scope 基础设施和
-明确记录的阶段桥。`PluginRegistrationContext` 把 manifest `PluginId` 与该私有集合绑定，模块只在组合
-阶段调用一次 `Configure`。Document、Tool、View 和 Lifecycle 仍必须调用专用 `Add*` 方法才能进入当前
-Legacy Registry；直接 DI 注册贡献接口只会留在插件 Provider，不会被宿主发现。
+明确记录的阶段桥。`PluginRegistration` 把 manifest `PluginId` 与该私有集合绑定，模块只在组合
+阶段调用一次最终 UI SDK `Configure(IPluginRegistration)`。模块返回后，贡献方法和插件保存的
+`Services` 引用同时封闭。Document、Tool、View 和 Lifecycle 必须调用专用方法才能进入唯一 Registry；
+直接 DI 注册普通类型只会留在插件 Provider，不会被宿主误发现。
 
 宿主服务集合从不交给插件，也不复制到插件集合，因此旧 `HostServiceDescriptorPolicy`、
 `PluginServiceRegistrationTransaction`、描述符增量比较和贡献旁路扫描已经删除。Microsoft DI 原生的
@@ -146,19 +149,25 @@ Provider 构建失败会产生 `PLUGIN_SERVICE_REGISTRATION_FAILED` 或 `PLUGIN_
 ### 4.3 单一扩展注册表
 
 [`PluginRegistryBuilder`](../../Business/Helpers/PluginRegistryBuilder.cs) 为每个插件先使用临时实例收集声明；
-只有私有 Provider 构建并激活宿主可见单例成功后，声明才合并到全局 Builder。随后从贡献所有者的
-Provider 激活 Document、Tool、Lifecycle，读取元数据并执行全量校验；无诊断时才提交
+Descriptor、模型类型、View 类型/工厂和生命周期类型在注册调用中一次冻结。私有 Provider 构建成功且
+生命周期 singleton 可解析后，声明才合并到全局 Builder；此过程不创建 Document/Tool，也不调用插件
+元数据代码。全局 Builder 只对不可变候选做分组判重，再提交
 [`PluginRegistry`](../../Business/Helpers/PluginRegistry.cs)。Registry 统一拥有：
 
 - manifest、入口程序集和模块类型快照；
 - manifest 所属的 Document、Tool、View 和 Lifecycle；
-- 策略 ID 到创建策略的映射；
 - Document/Tool 元数据快照；
 - Document 菜单入口展开；
 - ViewModel 类型到无参 View 工厂的映射；
-- 生命周期实例及其 manifest 所有权。
+- 生命周期实现类型及其 manifest 所有权。
 
-元数据在提交前只读取一次，避免属性访问包含计算或副作用时产生不一致。重复贡献类型、ViewModel 映射、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 均形成结构化诊断，并以 `HostCompositionException` 阻断启动；失败的 Builder 和容器整体丢弃，不发布部分菜单或生命周期。
+插件内重复 Document/Tool ID、重复精确模型映射、同一模型跨 Document/Tool、多生命周期和所有者混入会
+丢弃整个候选。跨插件 Document/Tool ID 或精确模型映射冲突时，所有冲突插件均排除；与 Host 内建贡献
+冲突时保留 Host。无冲突插件继续发布，被排除 Provider 立即释放且从不登记 Document Scope。
+
+Registry 不保存 Provider，也不负责创建模型。[`PluginContributionActivator`](../../Business/Helpers/PluginContributionActivator.cs)
+是唯一 Provider 路由边界，根据注册所有者选择 Host 或插件 Provider；Document 通过所属 Scope 创建，
+Tool 解析插件 singleton。G5 暂时要求结果仍符合 Dock `Document`/`Tool` 形状，G6 再在该边界加入 Adapter。
 
 [`ViewLocator`](../../ViewLocator.cs) 是 DI 管理的普通实例，只读取当前 `PluginRegistry`。它不读取 AppDomain、插件目录或类型名称，不提供 `ViewModel` → `View` 字符串回退。未登记 Dockable 显示明确占位；View 工厂失败记录 `VIEW_CREATION_FAILED` 并显示占位，不持久化插件异常正文。
 
@@ -186,7 +195,8 @@ JSONL 和镜像之前执行唯一一次白名单转换：
 
 | 协作者 | 单一职责 | 不负责 |
 | --- | --- | --- |
-| `PluginRegistry` | 清单所有权、贡献、元数据、View 映射、菜单和创建分派 | 组合写入、Dock 树状态、生命周期运行状态 |
+| `PluginRegistry` | 清单所有权、贡献、元数据、View 映射和菜单索引 | Provider、模型创建、组合写入、Dock 树状态、生命周期运行状态 |
+| `PluginContributionActivator` | 按 Registry 所有者路由 Provider、Scope 与模型创建 | 冲突判断、元数据解释、生命周期编排 |
 | `DockWorkspaceBuilder` | 创建稳定四向初始布局 | 工具恢复和激活 |
 | `DockTreeNavigator` | Dock、Document、Tool、Pinned/Hidden 查询 | 修改业务状态 |
 | `ToolDockCoordinator` | 工具显示、恢复、停靠点重建和纵向区域归一化 | 策略发现 |

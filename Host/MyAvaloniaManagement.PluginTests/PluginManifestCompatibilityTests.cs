@@ -288,7 +288,9 @@ public sealed class PluginManifestCompatibilityTests
             documentScopes,
             diagnostics);
 
-        Assert.Equal(manifest.PluginId, ManifestMismatchModule.ObservedPluginId);
+        Assert.Equal(
+            manifest.PluginId.Value,
+            ManifestMismatchModule.ObservedPluginId?.Value);
     }
 
     private static PluginManifest CreateManifestModel(PluginVersionRange sdk) =>
@@ -345,11 +347,11 @@ public sealed class PluginManifestCompatibilityTests
         }
         """;
 
-    public sealed class ManifestMismatchModule : IPluginModule
+    public sealed class ManifestMismatchModule : MyAvaloniaManagement.PluginSdk.UI.IPluginModule
     {
-        internal static PluginId? ObservedPluginId { get; set; }
+        internal static MyAvaloniaManagement.PluginSdk.PluginId? ObservedPluginId { get; set; }
 
-        public void Configure(IPluginRegistrationContext context) =>
+        public void Configure(MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration context) =>
             ObservedPluginId = context.PluginId;
     }
 }

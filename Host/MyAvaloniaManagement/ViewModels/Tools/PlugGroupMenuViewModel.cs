@@ -37,7 +37,7 @@ internal sealed partial class PlugGroupMenuViewModel : Tool
     /// <summary>
     /// 使用显式工厂和菜单服务创建插件菜单工具。
     /// </summary>
-    internal PlugGroupMenuViewModel(
+    public PlugGroupMenuViewModel(
         ManagementFactory factory,
         PluginMenuService pluginMenuService)
     {
@@ -59,7 +59,8 @@ internal sealed partial class PlugGroupMenuViewModel : Tool
 
     /// <summary>按菜单入口创建文档，并把入口意图作为强类型参数传给策略。</summary>
     [RelayCommand]
-    public void CreateDocumentEntry(DocumentCreationMenuEntry entry)
+    public void CreateDocumentEntry(
+        MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
         _factory?.CreateAndPublishDocument(new DocumentCreationParams(entry.DocumentTypeId)
