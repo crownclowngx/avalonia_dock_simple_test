@@ -7,8 +7,9 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前事实只覆盖宿主、SDK 和 Managed Plugin v1 的公共说明。插件业务设计、理论文章和
-# .NET 升级历史不属于 G16 的语义校验范围，避免宿主封板顺带改写其他所有者的时间点证据。
+# 当前事实只覆盖宿主、SDK 和 Managed Plugin v1 的公共说明。Host V2 任务书及分阶段记录只参加
+# 链接、命令和项目路径校验，不参加 v1 当前事实的措辞禁令，避免把目标设计误判为已经实现。
+# 插件业务设计、理论文章和 .NET 升级历史仍不属于本门禁范围。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
@@ -30,12 +31,17 @@ $currentDocumentPaths += @(Get-ChildItem -LiteralPath (Join-Path $repositoryRoot
         -Filter '*.md' -File | ForEach-Object {
             [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/')
         })
-$historyDocumentPaths = @(Get-ChildItem -LiteralPath (
-        Join-Path $repositoryRoot 'docs\plan-history\host-v1') -Filter '*.md' -File |
-        ForEach-Object {
-            [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/')
-        })
-$linkDocumentPaths = @($currentDocumentPaths + $historyDocumentPaths | Sort-Object -Unique)
+$hostHistoryDirectories = @('host-v1', 'host-v2')
+$historyDocumentPaths = @($hostHistoryDirectories | ForEach-Object {
+        Get-ChildItem -LiteralPath (Join-Path $repositoryRoot "docs\plan-history\$_") `
+            -Filter '*.md' -File
+    } | ForEach-Object {
+        [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/')
+    })
+$candidateDocumentPaths = @('docs/design/host-v2-breaking-refactor-plan.md')
+$linkDocumentPaths = @(
+    $currentDocumentPaths + $historyDocumentPaths + $candidateDocumentPaths |
+        Sort-Object -Unique)
 
 # 规则只拦截仍被写成“当前状态”的旧结论。Legacy、旧类型和固定数量在历史审计段落中仍是
 # 必要事实，因此不能用全仓库关键词禁令粗暴删除。
