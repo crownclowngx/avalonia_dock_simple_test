@@ -7,6 +7,7 @@ using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Events;
@@ -42,6 +43,9 @@ internal sealed class TestHostContext : IDisposable
         var services = new ServiceCollection();
         var registryBuilder = new PluginRegistryBuilder();
         services.AddApplicationServices(registryBuilder);
+        // 仅测试组合根继续提供 G7 前 Legacy Scope 端口；生产 AddApplicationServices 已删除该注册。
+        services.AddSingleton<IDocumentScopeFactory>(provider =>
+            provider.GetRequiredService<DocumentScopeManager>());
         services.AddViewModels();
         services.AddSingleton<IHostStorageService>(Storage);
         services.AddSingleton<IDocumentInteractionService>(Interactions);
@@ -86,6 +90,14 @@ internal sealed class TestHostContext : IDisposable
                 RegisterLegacyToolStrategy(services, registryBuilder, strategy);
             }
         }
+
+        // G6 生产 Factory 会在发布前构造真实 Avalonia View；纯单元测试没有 Avalonia 平台。
+        // 这里通过内部窄端口注入 Legacy Dock 替身，只维持 G7 前保存测试，不进入生产 DI。
+        services.AddSingleton<IHostDockableFactory>(provider =>
+            new LegacyUnitTestDockableFactory(
+                provider.GetRequiredService<PluginRegistry>(),
+                provider.GetRequiredService<DocumentScopeManager>(),
+                provider));
 
         Provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -163,6 +175,7 @@ internal sealed class TestHostContext : IDisposable
         {
             services.AddScoped(modelType);
         }
+
         else
         {
             services.AddScoped(modelType, _ => strategy.CreateDocument(
@@ -239,6 +252,57 @@ internal sealed class TestHostContext : IDisposable
         {
             Directory.Delete(TempDirectory, recursive: true);
         }
+    }
+}
+
+/// <summary>仅供非 Avalonia 单元测试保留 G7 前旧 Document/Tool 形状。</summary>
+internal sealed class LegacyUnitTestDockableFactory(
+    PluginRegistry registry,
+    DocumentScopeManager documentScopes,
+    IServiceProvider provider) : IHostDockableFactory
+{
+    public Document CreateDocument(
+        MyAvaloniaManagement.PluginSdk.DocumentTypeId documentTypeId,
+        string title = "")
+    {
+        if (!registry.TryGetDocumentRegistration(documentTypeId, out var registration))
+        {
+            throw new NotSupportedException($"不支持的 Document 类型：{documentTypeId.Value}。");
+        }
+
+        if (typeof(MyAvaloniaManagement.PluginSdk.IPluginDocument)
+            .IsAssignableFrom(registration.ModelType))
+        {
+            var model = documentScopes.CreatePluginDocument(registration.ModelType);
+            return new ManagedDocumentDockable(
+                new ActivatedPluginDocument(registration, model, documentScopes),
+                title);
+        }
+
+        var legacy = documentScopes.CreateLegacyDocument(registration.ModelType);
+        legacy.Title = string.IsNullOrEmpty(title)
+            ? registration.Descriptor.DisplayName
+            : title;
+        return legacy;
+    }
+
+    public Tool CreateTool(MyAvaloniaManagement.PluginSdk.ToolTypeId toolTypeId)
+    {
+        if (!registry.TryGetToolRegistration(toolTypeId, out var registration))
+        {
+            throw new NotSupportedException($"不支持的 Tool 类型：{toolTypeId.Value}。");
+        }
+
+        var model = provider.GetRequiredService(registration.ModelType);
+        if (model is Tool legacy)
+        {
+            legacy.Id = registration.Descriptor.ToolTypeId.Value;
+            legacy.Title = registration.Descriptor.DisplayName;
+            legacy.CanClose = registration.Descriptor.CloseBehavior == ToolCloseBehavior.Hide;
+            return legacy;
+        }
+
+        return new ManagedToolDockable(new ActivatedPluginTool(registration, model));
     }
 }
 

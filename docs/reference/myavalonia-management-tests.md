@@ -2,8 +2,8 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G5 的 Core/UI SDK、
-> manifest v2、精确入口加载、构建协议、每插件独立容器和声明式贡献目录。最新测试数量和覆盖率必须从本轮
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G6 的 Core/UI SDK、
+> manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录和 Host Dock Adapter。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -91,6 +91,29 @@ Windows Smoke、`Invoke-HostV1ReleaseGate`、ReleaseAcceptance、真实媒体/�
 Host 行覆盖率 **81.36%**、分支覆盖率 **66.97%**。既有 baseline 没有降低，并新增 Registry、Builder、
 ProviderOwner、Registration 和 Activator 五个 G5 关键文件阈值。BiliDownloader、DaTang、MySmallTools
 分别为 720、64、183，共 **967/967**。
+
+### V2 G6 当前绿色基线
+
+G6 专项入口为：
+
+```powershell
+.\scripts\Test-HostDockAdapter.ps1 -Configuration Release
+```
+
+脚本串行执行 Adapter Unit、Plugin 与 Headless UI 过滤集，扫描普通模型 Dock 继承、Adapter
+`internal sealed` 边界、Activator Dock 转换和 ViewLocator 反射回退，并生成包含
+`windowsCi=false`、`windowsSmoke=false`、`releaseGate=false` 的摘要。结果位于
+`artifacts/test-results/HostDockAdapter/`。
+
+本轮 G6 专项为 Unit 16、Plugin 35、Headless UI 23，共 **74/74**。Host 全量为 Unit 182、Headless UI
+44、Plugin 160，共 **386/386**；行覆盖率 **82.41%**、分支覆盖率 **66.85%**。G6 关键文件行覆盖率为
+Adapter Factory **100%**、Document Adapter **95.83%**、Tool Adapter **95.83%**、`ViewLocator` **93.18%**、
+`DocumentScopeManager` **91.57%**。SDK 为 **32/32**，
+Core/UI API v2 兼容门禁通过；三个业务插件为 720、64、183，共 **967/967**。完整所有权、失败原子性、
+回滚和非发布边界见 [V2 G6 专项记录](../plan-history/host-v2/g6-host-dock-adapter.md)。
+
+本阶段未运行 Windows CI、Windows Smoke、ReleaseAcceptance、SDK/业务插件发布包门禁、真实媒体/联网
+Harness、上传、标签或发布。
 
 ## G14 正式发布门禁
 
@@ -191,6 +214,8 @@ Persistable Document、Tool 和 View。Core 引用 Avalonia/DI/Dock/Newtonsoft�
 - `MainWindowViewModel` 行覆盖率不低于 75%；
 - 三个宿主 Tool ViewModel 各自行覆盖率不低于 70%。
 - `Business/Events/HostEventBus.cs` 行覆盖率不低于 90%。
+- `HostDockAdapterFactory`、两个 Managed Adapter 与 `DocumentScopeManager` 行覆盖率不低于 90%；
+- `ViewLocator` 行覆盖率不低于 85%。
 
 `obj`、XAML/C# 生成代码和测试程序集不参与统计。生产 View 和
 `App.axaml.cs` 不排除，因为 Headless 测试应保护实际加载、绑定和窗口事件。

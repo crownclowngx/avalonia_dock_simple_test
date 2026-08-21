@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
@@ -19,7 +18,7 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// 文件夹选择和文件存在性检查通过 <see cref="IHostStorageService"/> 完成，
 /// 打开动作通过消息发布，使该工具不需要知道主窗口或文档创建细节。
 /// </remarks>
-internal sealed partial class FileSystemTreeViewModel : Tool, IFileSystemTreeViewBindings
+internal sealed partial class FileSystemTreeViewModel : ObservableObject, IFileSystemTreeViewBindings
 {
     private readonly IHostStorageService _storageService;
     private readonly IHostDocumentOpenService _documentOpenService;
@@ -58,9 +57,6 @@ internal sealed partial class FileSystemTreeViewModel : Tool, IFileSystemTreeVie
     {
         _storageService = storageService;
         _documentOpenService = documentOpenService;
-        Id = "fileSystemTree";
-        Title = "文件系统";
-        CanClose = true;
         if (initializeTree)
         {
             InitializeTree();

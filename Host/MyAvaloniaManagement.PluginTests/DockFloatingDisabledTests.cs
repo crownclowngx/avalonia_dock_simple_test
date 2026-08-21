@@ -121,9 +121,7 @@ public sealed class DockFloatingDisabledTests
         var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
         var extensions = new PluginRegistry([], []);
-        var factory = new ManagementFactory(
-            extensions,
-            manager);
+        var factory = PluginTestManagementFactory.Create(extensions, manager);
         return new FactoryContext(provider, factory);
     }
 

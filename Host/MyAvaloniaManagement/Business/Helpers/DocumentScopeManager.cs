@@ -21,7 +21,7 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly object _syncRoot = new();
-    private readonly Dictionary<Document, DocumentScopeLease> _scopes =
+    private readonly Dictionary<object, DocumentScopeLease> _scopes =
         new(ReferenceEqualityComparer.Instance);
     private bool _disposed;
 
@@ -32,23 +32,57 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
 
     /// <inheritdoc />
     public TDocument CreateDocument<TDocument>() where TDocument : Document
-        => (TDocument)CreateDocument(typeof(TDocument));
+        => (TDocument)CreateScopedModel(typeof(TDocument), requirePluginDocument: false);
 
     /// <summary>
-    /// 按声明式 Registry 已验证的精确模型类型创建并托管 G5 过渡期 Document。
+    /// 按声明式 Registry 已验证的精确模型类型创建并托管普通插件 Document。
     /// </summary>
     /// <remarks>
-    /// G5 的 Host 内建模型仍继承 Dock Document；G6 会由 Adapter 接管这一限制。本入口只把
-    /// 泛型创建改为运行期精确类型解析，不扫描类型、不接受任意服务名，也不改变 Scope 所有权。
+    /// 本入口不扫描类型、不接受任意服务名，也不要求模型继承 Dock。返回模型随后由 Host internal
+    /// Adapter 承载；插件始终只观察自己的业务对象和 ClosingToken。
     /// </remarks>
-    internal Document CreateDocument(Type modelType)
+    internal MyAvaloniaManagement.PluginSdk.IPluginDocument CreatePluginDocument(Type modelType)
+    {
+        ArgumentNullException.ThrowIfNull(modelType);
+        if (!typeof(MyAvaloniaManagement.PluginSdk.IPluginDocument).IsAssignableFrom(modelType))
+        {
+            throw new InvalidOperationException(
+                $"声明式 Document 模型 {modelType.FullName} 未实现 IPluginDocument。");
+        }
+
+        return (MyAvaloniaManagement.PluginSdk.IPluginDocument)CreateScopedModel(
+            modelType,
+            requirePluginDocument: true);
+    }
+
+    /// <summary>仅供 G7 前仓库内旧持久化测试创建 Dock Document；生产组合不调用。</summary>
+    internal Document CreateLegacyDocument(Type modelType)
+    {
+        ArgumentNullException.ThrowIfNull(modelType);
+        if (!typeof(Document).IsAssignableFrom(modelType))
+        {
+            throw new InvalidOperationException($"旧测试模型 {modelType.FullName} 不是 Dock Document。");
+        }
+
+        return (Document)CreateScopedModel(modelType, requirePluginDocument: false);
+    }
+
+    /// <summary>
+    /// 在独立 DI Scope 中解析精确模型，并在成功返回前登记唯一所有权。
+    /// </summary>
+    /// <remarks>
+    /// G6 的生产入口要求普通 <c>IPluginDocument</c>；旧泛型入口只为 G7 前的仓库回归夹具保留。
+    /// 两条入口最终汇入同一个租约实现，因此关闭取消、异常回滚和宿主退出不会形成两套释放算法。
+    /// </remarks>
+    private object CreateScopedModel(Type modelType, bool requirePluginDocument)
     {
         ArgumentNullException.ThrowIfNull(modelType);
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (!typeof(Document).IsAssignableFrom(modelType))
+        if (requirePluginDocument &&
+            !typeof(MyAvaloniaManagement.PluginSdk.IPluginDocument).IsAssignableFrom(modelType))
         {
             throw new InvalidOperationException(
-                $"G5 过渡模型 {modelType.FullName} 尚不是 Dock Document；请由 G6 Adapter 承载。");
+                $"声明式 Document 模型 {modelType.FullName} 未实现 IPluginDocument。");
         }
 
         // Scope 在成功登记之前始终由局部变量拥有。解析构造函数失败、重复返回同一 Document，
@@ -62,7 +96,7 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
             // 是为了兼容只注册 DocumentScopeManager 的轻量测试与旧组合入口；回退只影响
             // 未注入 IDocumentLifetime 的旧对象，不会在正式路径中形成第二套生命周期事实源。
             lifetime = scope.ServiceProvider.GetService<DocumentLifetime>() ?? new DocumentLifetime();
-            var document = (Document)scope.ServiceProvider.GetRequiredService(modelType);
+            var document = scope.ServiceProvider.GetRequiredService(modelType);
             lock (_syncRoot)
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
@@ -81,9 +115,21 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
         {
             if (scope is not null)
             {
-                lifetime?.RequestClose();
-                scope.Dispose();
-                lifetime?.Dispose();
+                try
+                {
+                    lifetime?.RequestClose();
+                }
+                finally
+                {
+                    try
+                    {
+                        scope.Dispose();
+                    }
+                    finally
+                    {
+                        lifetime?.Dispose();
+                    }
+                }
             }
         }
     }
@@ -91,7 +137,7 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
     /// <summary>
     /// 释放指定 Document 对应的作用域。非托管 Document 和重复释放均安全返回 false。
     /// </summary>
-    public bool Release(Document document)
+    public bool Release(object document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -126,9 +172,24 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
 
         // 正常情况下 Document 会在关闭时逐个释放；这里处理宿主退出时仍保持打开的 Document。
         // 逆序释放更符合“后创建的界面先退出”的直觉，也减少后创建对象引用先创建对象时的风险。
+        List<Exception>? releaseFailures = null;
         for (var index = remainingScopes.Length - 1; index >= 0; index--)
         {
-            remainingScopes[index].Release();
+            try
+            {
+                remainingScopes[index].Release();
+            }
+            catch (Exception exception)
+            {
+                // 一个插件模型释放失败不能阻断其他 Document。完成全部清理后再统一报告，
+                // 既保留异常可见性，也不把后续 Scope 留给已经退出的 Runtime。
+                (releaseFailures ??= []).Add(exception);
+            }
+        }
+
+        if (releaseFailures is not null)
+        {
+            throw new AggregateException("一个或多个 Document Scope 释放失败。", releaseFailures);
         }
     }
 
@@ -143,17 +204,23 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
                 return;
             }
 
-            lifetime.RequestClose();
             try
             {
-                scope.Dispose();
+                lifetime.RequestClose();
             }
             finally
             {
-                // 回退 Lifetime 没有被 DI Scope 捕获，必须由租约显式释放；正式 Lifetime
-                // 会随 Scope 再释放一次。DocumentLifetime.Dispose 保证幂等，因此统一调用
-                // 可以同时覆盖两条构造路径，而不需要把“是否来自容器”泄漏到释放主流程。
-                lifetime.Dispose();
+                try
+                {
+                    scope.Dispose();
+                }
+                finally
+                {
+                    // 回退 Lifetime 没有被 DI Scope 捕获，必须由租约显式释放；正式 Lifetime
+                    // 会随 Scope 再释放一次。DocumentLifetime.Dispose 保证幂等，因此统一调用
+                    // 可以同时覆盖两条构造路径，而不需要把“是否来自容器”泄漏到释放主流程。
+                    lifetime.Dispose();
+                }
             }
         }
     }

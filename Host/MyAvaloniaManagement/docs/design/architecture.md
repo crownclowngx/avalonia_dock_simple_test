@@ -18,7 +18,7 @@
 
 最终基础契约来自 `MyAvaloniaManagement.PluginSdk`，UI 注册契约来自
 `MyAvaloniaManagement.PluginSdk.UI`；旧 `MyAvaloniaManagementCommon` 只保留为四业务插件在 G9–G12
-迁移前的不可打包源码桥，不进入 G5 Host 模块预检与贡献目录。SDK 不拥有
+迁移前的不可打包源码桥，不进入 G6 Host 模块预检、贡献目录或 Dock Adapter 路径。SDK 不拥有
 字体、桌面后端或全局主题。`App.axaml` 是 Fluent、Semi、Ursa、Dock Theme 和 Host Styles 的唯一
 组合入口；`ApplicationThemeService` 只切换宿主主题状态，不把第三方主题对象暴露成插件服务。
 
@@ -167,11 +167,28 @@ Descriptor、模型类型、View 类型/工厂和生命周期类型在注册调�
 
 Registry 不保存 Provider，也不负责创建模型。[`PluginContributionActivator`](../../Business/Helpers/PluginContributionActivator.cs)
 是唯一 Provider 路由边界，根据注册所有者选择 Host 或插件 Provider；Document 通过所属 Scope 创建，
-Tool 解析插件 singleton。G5 暂时要求结果仍符合 Dock `Document`/`Tool` 形状，G6 再在该边界加入 Adapter。
+Tool 解析插件 singleton。G6 起 Activator 只返回普通模型与所有权租约，不转换或验证 Dock 类型；
+[`HostDockAdapterFactory`](../../Business/Docking/HostDockAdapterFactory.cs) 在其后创建唯一允许继承 Dock 的
+internal sealed Adapter。
 
-[`ViewLocator`](../../ViewLocator.cs) 是 DI 管理的普通实例，只读取当前 `PluginRegistry`。它不读取 AppDomain、插件目录或类型名称，不提供 `ViewModel` → `View` 字符串回退。未登记 Dockable 显示明确占位；View 工厂失败记录 `VIEW_CREATION_FAILED` 并显示占位，不持久化插件异常正文。
+[`ViewLocator`](../../ViewLocator.cs) 是 DI 管理的普通实例，只读取当前 `PluginRegistry`。它不读取
+AppDomain、插件目录或类型名称，不提供 `ViewModel` → `View` 字符串回退。发布前由精确注册工厂构造
+一次 View、设置普通模型 `DataContext` 并交给 Adapter View Lease；Dock 渲染只返回同一实例。Document
+View 失败原子回滚 Scope，Tool View 失败只隔离自身；诊断不持久化插件异常正文。
 
-### 4.4 诊断白名单边界
+### 4.4 Host Dock Adapter 与所有权
+
+`ManagedDocumentDockable` 拥有普通 Document 模型、预构建 View 和独立 Scope Lease。标题从模型、请求、
+Descriptor 依次回退，后台 `PresentationChanged` 切回 UI Dispatcher；最终关闭按“解绑事件 → 断开
+DataContext/释放 View → 取消 ClosingToken → 释放模型与 scoped 依赖”执行。`ManagedToolDockable` 只拥有
+View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均禁止浮动，Tool 的 Hide/Prevent、四向位置和
+Pinned 由 Descriptor 与现有布局协调器投影。
+
+`ManagementFactory` 只依赖窄口 `IHostDockableFactory`，跟踪已经发布的 Adapter。关闭失败回滚、正常关闭
+与 Runtime 退出汇入幂等释放入口；`HostRuntime` 在 Document Scope 和插件 Provider 前释放剩余
+Adapter/View。生产 DI 不注册 Legacy `IDocumentScopeFactory`，旧持久化测试 seam 不进入运行时对象图。
+
+### 4.5 诊断白名单边界
 
 所有加载、组合、布局和启动诊断都通过 `IHostDiagnosticSink` 进入 `HostDiagnosticSession`。
 业务边界只创建 `HostDiagnosticDraft`：它只能携带错误码、阶段、强类型身份/版本、异常引用及受控
@@ -197,6 +214,7 @@ JSONL 和镜像之前执行唯一一次白名单转换：
 | --- | --- | --- |
 | `PluginRegistry` | 清单所有权、贡献、元数据、View 映射和菜单索引 | Provider、模型创建、组合写入、Dock 树状态、生命周期运行状态 |
 | `PluginContributionActivator` | 按 Registry 所有者路由 Provider、Scope 与模型创建 | 冲突判断、元数据解释、生命周期编排 |
+| `HostDockAdapterFactory` | 创建内部 Adapter 并在发布前预构建精确 View | Provider 选择、布局协调、模型生命周期策略 |
 | `DockWorkspaceBuilder` | 创建稳定四向初始布局 | 工具恢复和激活 |
 | `DockTreeNavigator` | Dock、Document、Tool、Pinned/Hidden 查询 | 修改业务状态 |
 | `ToolDockCoordinator` | 工具显示、恢复、停靠点重建和纵向区域归一化 | 策略发现 |

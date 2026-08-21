@@ -1,5 +1,5 @@
 using System;
-using Dock.Model.Mvvm.Controls;
+using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.PluginSdk;
@@ -11,9 +11,9 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// 根据不可变 Registry 声明，在正确的 Host 或插件 Provider 中创建贡献模型。
 /// </summary>
 /// <remarks>
-/// 本类型是 G5 唯一接触 Provider 的贡献创建边界。Registry 不保存 Provider，插件也得不到宿主
-/// <see cref="IServiceProvider"/>。G5 暂时要求创建结果仍是 Dock Document/Tool；G6 将只替换这里的
-/// Dock 投影为 Adapter，而不改变声明、冲突判断或 Provider 所有权。
+/// 本类型是唯一接触 Provider 的贡献创建边界。Registry 不保存 Provider，插件也得不到宿主
+/// <see cref="IServiceProvider"/>。返回值只包含普通模型和所有权租约，不引用 Dock；实际投影由
+/// HostDockAdapterFactory 完成。
 /// </remarks>
 internal sealed class PluginContributionActivator(
     IServiceProvider hostProvider,
@@ -27,9 +27,7 @@ internal sealed class PluginContributionActivator(
     private readonly PluginProviderOwner _pluginProviders =
         pluginProviders ?? throw new ArgumentNullException(nameof(pluginProviders));
 
-    internal Document CreateDocument(
-        DocumentTypeId documentTypeId,
-        string title = "")
+    internal ActivatedPluginDocument ActivateDocument(DocumentTypeId documentTypeId)
     {
         ArgumentNullException.ThrowIfNull(documentTypeId);
         if (!_registry.TryGetDocumentRegistration(documentTypeId, out var registration))
@@ -40,14 +38,11 @@ internal sealed class PluginContributionActivator(
         var manager = registration.OwnerId == HostExtensionIds.V2Owner
             ? _hostProvider.GetRequiredService<DocumentScopeManager>()
             : _pluginProviders.GetDocumentScopeManager(registration.OwnerId);
-        var document = manager.CreateDocument(registration.ModelType);
-        document.Title = string.IsNullOrEmpty(title)
-            ? registration.Descriptor.DisplayName
-            : title;
-        return document;
+        var document = manager.CreatePluginDocument(registration.ModelType);
+        return new ActivatedPluginDocument(registration, document, manager);
     }
 
-    internal Tool CreateTool(ToolTypeId toolTypeId)
+    internal ActivatedPluginTool ActivateTool(ToolTypeId toolTypeId)
     {
         ArgumentNullException.ThrowIfNull(toolTypeId);
         if (!_registry.TryGetToolRegistration(toolTypeId, out var registration))
@@ -58,15 +53,31 @@ internal sealed class PluginContributionActivator(
         var instance = registration.OwnerId == HostExtensionIds.V2Owner
             ? _hostProvider.GetRequiredService(registration.ModelType)
             : _pluginProviders.GetRequiredService(registration.OwnerId, registration.ModelType);
-        if (instance is not Tool tool)
-        {
-            throw new InvalidOperationException(
-                $"G5 过渡模型 {registration.ModelType.FullName} 尚不是 Dock Tool；请由 G6 Adapter 承载。");
-        }
-
-        tool.Id = registration.Descriptor.ToolTypeId.Value;
-        tool.Title = registration.Descriptor.DisplayName;
-        tool.CanClose = registration.Descriptor.CloseBehavior == ToolCloseBehavior.Hide;
-        return tool;
+        return new ActivatedPluginTool(registration, instance);
     }
 }
+
+/// <summary>保存一次普通 Document 模型激活及其唯一 Scope 释放权。</summary>
+internal sealed class ActivatedPluginDocument(
+    PluginDocumentRegistration registration,
+    IPluginDocument model,
+    DocumentScopeManager scopeManager) : IDisposable
+{
+    private int _disposed;
+
+    internal PluginDocumentRegistration Registration { get; } = registration;
+    internal IPluginDocument Model { get; } = model;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) == 0)
+        {
+            scopeManager.Release(Model);
+        }
+    }
+}
+
+/// <summary>保存 Tool singleton 模型及其已冻结注册事实；模型释放权仍属于 Provider。</summary>
+internal sealed record ActivatedPluginTool(
+    PluginToolRegistration Registration,
+    object Model);

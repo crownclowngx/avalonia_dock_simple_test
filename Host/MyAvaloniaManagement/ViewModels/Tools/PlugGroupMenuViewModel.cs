@@ -2,7 +2,6 @@
 using System.Linq;
 using System;
 using CommunityToolkit.Mvvm.Input;
-using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagementCommon.DocumentCreation;
@@ -16,7 +15,7 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// 菜单查询与 Dock 文档创建分别委托给 <see cref="PluginMenuService"/>
 /// 和 <see cref="ManagementFactory"/>，从而保持插件契约不变。
 /// </remarks>
-internal sealed partial class PlugGroupMenuViewModel : Tool
+internal sealed partial class PlugGroupMenuViewModel
 {
     private readonly ManagementFactory? _factory;
     private readonly PluginMenuService? _pluginMenuService;
@@ -41,7 +40,6 @@ internal sealed partial class PlugGroupMenuViewModel : Tool
         ManagementFactory factory,
         PluginMenuService pluginMenuService)
     {
-        Title = "插件分组菜单";
         _factory = factory;
         _pluginMenuService = pluginMenuService;
     }

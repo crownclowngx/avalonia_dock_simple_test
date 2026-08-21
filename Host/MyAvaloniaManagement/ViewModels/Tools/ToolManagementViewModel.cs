@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Models.Tools;
@@ -29,7 +30,7 @@ internal interface IToolVisibilityStateSink
 /// 工具可见性始终以 Dock 树为事实来源。用户命令只提交期望状态，Factory 完成 Dock 变更后
 /// 再通过窄接口要求本对象重新投影，因此关闭按钮、欢迎页恢复和管理器切换共用同一提交路径。
 /// </remarks>
-internal sealed partial class ToolManagementViewModel : Tool, IToolVisibilityStateSink
+internal sealed partial class ToolManagementViewModel : ObservableObject, IToolVisibilityStateSink
 {
     private readonly ManagementFactory _factory;
 
@@ -44,10 +45,7 @@ internal sealed partial class ToolManagementViewModel : Tool, IToolVisibilitySta
     public ToolManagementViewModel(ManagementFactory factory)
     {
         _factory = factory;
-        Id = HostExtensionIds.ToolManagement.Value;
-        Title = "工具管理";
-        _currentToolId = Id;
-        CanClose = false;
+        _currentToolId = HostExtensionIds.ToolManagement.Value;
         LoadTools();
     }
 
@@ -85,7 +83,10 @@ internal sealed partial class ToolManagementViewModel : Tool, IToolVisibilitySta
                 ToolId = metadata.ToolTypeId.Value,
                 DisplayName = metadata.DisplayName,
                 IsVisible = isVisible,
-                CanClose = tool.CanClose
+                CanClose = tool is ManagedToolDockable adapter
+                    ? adapter.Registration.Descriptor.CloseBehavior ==
+                      MyAvaloniaManagement.PluginSdk.UI.ToolCloseBehavior.Hide
+                    : tool.CanClose
             });
         }
     }

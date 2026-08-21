@@ -3,13 +3,12 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Storage;
-using MyAvaloniaManagement.Models.DocumentCreation;
-using MyAvaloniaManagement.Models.ToolCreation;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
@@ -90,15 +89,17 @@ internal static class ServiceCollectionExtensions
             provider,
             provider.GetRequiredService<PluginRegistry>(),
             pluginProviders ?? new PluginProviderOwner()));
+        services.AddSingleton<IHostDockableFactory, HostDockAdapterFactory>();
 
         // 注册ManagementFactory为单例
         services.AddSingleton(provider => new ManagementFactory(
             provider.GetRequiredService<PluginRegistry>(),
-            provider.GetRequiredService<PluginContributionActivator>(),
+            provider.GetRequiredService<IHostDockableFactory>(),
             documentScopes,
             provider.GetRequiredService<DocumentPersistenceStateStore>(),
             provider.GetRequiredService<DocumentCloseCoordinator>(),
-            provider.GetRequiredService<DocumentRecoveryRegistry>()));
+            provider.GetRequiredService<DocumentRecoveryRegistry>(),
+            provider.GetService<IHostDiagnosticSink>()));
 
         // 注册PluginMenuService为单例，依赖ManagementFactory
         services.AddSingleton<PluginMenuService>(provider =>
@@ -188,8 +189,6 @@ internal static class ServiceCollectionExtensions
             documentScopes.Register(manager);
             return manager;
         });
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
         return services;
     }
 

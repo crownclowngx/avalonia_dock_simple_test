@@ -170,12 +170,26 @@ internal sealed class PluginProviderOwner : IDisposable
         }
 
         _disposed = true;
+        List<Exception>? disposeFailures = null;
         for (var index = _leases.Count - 1; index >= 0; index--)
         {
-            _leases[index].Provider.Dispose();
+            try
+            {
+                _leases[index].Provider.Dispose();
+            }
+            catch (Exception exception)
+            {
+                // Provider 中包含插件 Tool singleton 与根级依赖；一个插件释放失败时，
+                // 仍按既定逆序尝试其他插件，最后统一把失败交给 Runtime 边界。
+                (disposeFailures ??= []).Add(exception);
+            }
         }
 
         _leases.Clear();
+        if (disposeFailures is not null)
+        {
+            throw new AggregateException("一个或多个插件 Provider 释放失败。", disposeFailures);
+        }
     }
 
     private PluginProviderLease GetAcceptedLease(PluginId pluginId)
@@ -197,12 +211,7 @@ internal sealed class PluginProviderOwner : IDisposable
         services.AddScoped<IDocumentLifetime>(provider =>
             provider.GetRequiredService<DocumentLifetime>());
 
-        // Legacy Scope 接口暂时仅用于 G9-G12 前的业务插件源码测试，不参与声明式贡献事实。
-        services.AddScoped<MyAvaloniaManagementCommon.DocumentCreation.IDocumentLifetime>(provider =>
-            provider.GetRequiredService<DocumentLifetime>());
         services.AddSingleton<DocumentScopeManager>();
-        services.AddSingleton<MyAvaloniaManagementCommon.DocumentCreation.IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
         return services;
     }
 

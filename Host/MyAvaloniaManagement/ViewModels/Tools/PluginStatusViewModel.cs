@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
@@ -14,7 +13,7 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// <summary>
 /// 展示当前启动会话中所有托管插件的加载和生命周期结果。
 /// </summary>
-internal sealed class PluginStatusViewModel : Tool
+internal sealed class PluginStatusViewModel
 {
     public PluginStatusViewModel(
         PluginRegistry pluginRegistry,
@@ -22,9 +21,6 @@ internal sealed class PluginStatusViewModel : Tool
     {
         ArgumentNullException.ThrowIfNull(pluginRegistry);
 
-        Id = HostExtensionIds.PluginStatus.Value;
-        Title = "插件状态";
-        CanClose = true;
         Items = new ObservableCollection<PluginStatusItem>(
             CreateItems(pluginRegistry, diagnostics));
     }

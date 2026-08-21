@@ -153,27 +153,34 @@ public sealed class ApplicationAndWindowTests
     [AvaloniaFact]
     public void ViewLocator创建已知视图并为未知Dockable返回占位视图()
     {
+        var registration = new PluginDocumentRegistration(
+            HostExtensionIds.V2Owner,
+            new MyAvaloniaManagement.PluginSdk.UI.DocumentDescriptor(
+                HostExtensionIds.V2WelcomeDocument,
+                "欢迎",
+                "欢迎",
+                "帮助"),
+            typeof(WelcomeViewModel),
+            typeof(WelcomeView),
+            static () => new WelcomeView(),
+            false);
         var registry = new PluginRegistry(
             [],
-            [new PluginDocumentRegistration(
-                HostExtensionIds.V2Owner,
-                new MyAvaloniaManagement.PluginSdk.UI.DocumentDescriptor(
-                    HostExtensionIds.V2WelcomeDocument,
-                    "欢迎",
-                    "欢迎",
-                    "帮助"),
-                typeof(WelcomeViewModel),
-                typeof(WelcomeView),
-                static () => new WelcomeView(),
-                false)],
+            [registration],
             [],
             []);
         var locator = new ViewLocator(registry);
-        var known = locator.Build(new WelcomeViewModel
-        {
-            Title = "欢迎",
-            Text = "正文"
-        });
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        services.AddScoped<WelcomeViewModel>();
+        services.AddDocumentScopeManagement();
+        using var provider = services.BuildServiceProvider();
+        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        var model = manager.CreatePluginDocument(typeof(WelcomeViewModel));
+        using var adapter = new MyAvaloniaManagement.Business.Docking.ManagedDocumentDockable(
+            new ActivatedPluginDocument(registration, model, manager),
+            "欢迎");
+        locator.Prepare(adapter);
+        var known = locator.Build(adapter);
         var fallback = locator.Build(new Dock.Model.Mvvm.Controls.Tool
         {
             Title = "未知工具"
@@ -181,7 +188,8 @@ public sealed class ApplicationAndWindowTests
 
         Assert.IsType<WelcomeView>(known);
         Assert.IsType<TextBlock>(fallback);
-        Assert.True(locator.Match(new WelcomeViewModel()));
+        Assert.True(locator.Match(adapter));
+        Assert.Same(model, known!.DataContext);
         Assert.False(locator.Match(new object()));
         Assert.Null(locator.Build(null));
         Assert.Throws<InvalidOperationException>(() => locator.Build(new object()));

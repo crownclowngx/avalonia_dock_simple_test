@@ -90,9 +90,24 @@ internal sealed class DocumentScopeRegistry
             snapshot = [.. _managers];
         }
 
+        List<Exception>? closeFailures = null;
         for (var index = snapshot.Length - 1; index >= 0; index--)
         {
-            snapshot[index].Dispose();
+            try
+            {
+                snapshot[index].Dispose();
+            }
+            catch (Exception exception)
+            {
+                // 某个插件的 Scope 释放异常不能阻断其他插件。全部管理器尝试完成后，
+                // 再把异常交给 Runtime 诊断/退出边界处理。
+                (closeFailures ??= []).Add(exception);
+            }
+        }
+
+        if (closeFailures is not null)
+        {
+            throw new AggregateException("一个或多个 Document Scope 所有者关闭失败。", closeFailures);
         }
     }
 }

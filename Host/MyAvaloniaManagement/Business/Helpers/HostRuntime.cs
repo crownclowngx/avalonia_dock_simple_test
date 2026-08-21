@@ -126,9 +126,21 @@ internal sealed class HostRuntime : IDisposable
         }
         catch
         {
-            documentScopes.CloseAll();
-            pluginProviders.Dispose();
-            provider.Dispose();
+            try
+            {
+                documentScopes.CloseAll();
+            }
+            finally
+            {
+                try
+                {
+                    pluginProviders.Dispose();
+                }
+                finally
+                {
+                    provider.Dispose();
+                }
+            }
             throw;
         }
     }
@@ -154,8 +166,18 @@ internal sealed class HostRuntime : IDisposable
         _disposed = true;
         try
         {
-            // 先关闭所有 Document，确保 scoped 对象不在生命周期停止或插件根 Provider 之后存活。
-            _documentScopes.CloseAll();
+            try
+            {
+                // Adapter/View 必须先于插件 Provider 释放，否则 View 的 DataContext 会短暂指向
+                // 已经 Dispose 的 Tool singleton，Document 展示事件也可能在 Scope 结束后继续投影。
+                _provider.GetService<ManagementFactory>()?.Dispose();
+            }
+            finally
+            {
+                // Adapter/View 清理异常也不能阻断 Scope 兜底；否则插件 Provider 随后释放时，
+                // 仍打开的 Document 会失去正确的 ClosingToken 顺序。
+                _documentScopes.CloseAll();
+            }
         }
         finally
         {

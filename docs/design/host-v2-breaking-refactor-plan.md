@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G5 已完成，G6–G14 尚未实现。
+> 状态：实施中；G0–G6 已完成，G7–G14 尚未实现。
 >
 > 评审日期：2026-08-21。
 >
@@ -10,11 +10,11 @@
 > [V2 G2 Plugin SDK 重建](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)与
 > [V2 G3 manifest v2 与构建协议](../plan-history/host-v2/g3-manifest-v2-and-build-protocol.md)，以及
 > [V2 G4 每插件独立容器](../plan-history/host-v2/g4-per-plugin-containers.md)与
-> [V2 G5 声明式贡献目录](../plan-history/host-v2/g5-declarative-contribution-catalog.md)。
+> [V2 G5 声明式贡献目录](../plan-history/host-v2/g5-declarative-contribution-catalog.md)与
+> [V2 G6 Host Dock Adapter](../plan-history/host-v2/g6-host-dock-adapter.md)。
 >
-> 重要说明：G5 已完成最终 Core/UI 模块生产入口、声明式 Host Registry、内建 Welcome/Tool 声明和
-> 两阶段冲突隔离；Dock Adapter、Document v2、layout/lifecycle v2 与四业务插件迁移仍属于 G6–G14，
-> 不得引用为当前能力。
+> 重要说明：G6 已完成普通模型、Host internal Dock Adapter、统一预构建 View 与 Adapter/Scope
+> 生命周期；Document v2、layout/lifecycle v2 与四业务插件迁移仍属于 G7–G14，不得引用为当前能力。
 
 ## 1. 目的与结论
 
@@ -443,13 +443,26 @@ Provider 可构建后才导入全局 Builder。全局冲突按所有者整体排
 [G5 专项记录](../plan-history/host-v2/g5-declarative-contribution-catalog.md)。G5 未实现 G6 Dock Adapter、
 G7 Document v2、G8 生命周期编排，也未迁移四个业务插件；未运行 Windows CI、Smoke 或发布门禁。
 
-### G6：实现 Host Dock Adapter
+### G6：实现 Host Dock Adapter（已完成）
 
 - **目标**：只有 Host internal 类型继承 Dock `Document`/`Tool`。
 - **删除/新增**：增加两个 Adapter 与统一 View Locator；删除插件 Dock 对象创建路径。
 - **插件影响**：测试插件改用普通模型，真实插件留到 G9–G12。
 - **验证**：四向 Dock、Tool 单例、隐藏/恢复、Pinned、禁浮动、标题投影、View 构建失败释放。
 - **回滚**：回到 G5，不允许插件和 Adapter 同时拥有同一 Dock 项。
+
+G6 已将 Welcome 和四个 Host Tool 改为普通模型；`PluginContributionActivator` 只按所有者路由 Provider，
+Document 返回独立 Scope Lease，Tool 返回 Provider singleton。生产 `HostDockAdapterFactory` 在 Dock
+发布前创建 internal sealed Document/Tool Adapter，并由统一 `ViewLocator` 精确预构建一次 View。
+Document View 失败原子释放 ClosingToken、模型与 Scope；Tool 激活/View 失败只隔离自身；Runtime 退出
+先释放残余 Adapter/View，再关闭 Scope 与 Provider。生产组合已移除 Legacy `IDocumentScopeFactory`
+回退，G7 前持久化回归只保留测试 seam。
+
+本轮 G6 专项 74/74、Host 386/386、SDK 32/32、三个业务插件 967/967；Host 行覆盖率 82.41%、
+分支 66.85%，五个 G6
+关键文件均超过计划阈值。完整 SOLID 设计、所有权、失败原子性、测试命令与非发布边界见
+[G6 专项记录](../plan-history/host-v2/g6-host-dock-adapter.md)。本阶段未调用 `InitializeAsync`，未实现
+Document/layout v2，未迁移四个业务插件，也未运行 Windows CI、Smoke 或发布门禁。
 
 ### G7：建立 Document V2
 

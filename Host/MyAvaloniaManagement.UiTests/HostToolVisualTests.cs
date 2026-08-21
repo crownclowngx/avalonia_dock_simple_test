@@ -10,6 +10,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Converter;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.ViewModels.Tools;
@@ -86,8 +87,9 @@ public sealed class HostToolVisualTests
     public void 工具管理复选框点击与Dock隐藏集合保持一致()
     {
         using var context = new UiTestContext();
-        var manager = Assert.IsType<ToolManagementViewModel>(
+        var managerAdapter = Assert.IsType<ManagedToolDockable>(
             context.Factory.CreatedTools[HostExtensionIds.ToolManagement.Value]);
+        var manager = Assert.IsType<ToolManagementViewModel>(managerAdapter.Model);
         var closableItem = manager.ToolItems.Single(item =>
             item.ToolId == HostExtensionIds.PluginStatus.Value);
         var closableTool = context.Factory.CreatedTools[closableItem.ToolId];

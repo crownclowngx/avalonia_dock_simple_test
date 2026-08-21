@@ -170,7 +170,7 @@ public sealed class ExplicitContributionAndPluginRegistryTests
     }
 
     [Fact]
-    public void View构造失败记录稳定脱敏诊断并返回占位控件()
+    public void View构造失败记录稳定脱敏诊断并拒绝发布Adapter()
     {
         var directory = Path.Combine(
             Path.GetTempPath(), "g5-view-diagnostics", Guid.NewGuid().ToString("N"));
@@ -185,10 +185,22 @@ public sealed class ExplicitContributionAndPluginRegistryTests
                 false)],
             []);
         var locator = new ViewLocator(registry, diagnostics);
+        var services = new ServiceCollection();
+        services.AddScoped<RegisteredDocument>();
+        services.AddDocumentScopeManagement();
+        using var provider = services.BuildServiceProvider();
+        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        var model = manager.CreatePluginDocument(typeof(RegisteredDocument));
+        using var adapter = new MyAvaloniaManagement.Business.Docking.ManagedDocumentDockable(
+            new ActivatedPluginDocument(
+                registry.TryGetDocumentRegistration(Document().DocumentTypeId, out var item)
+                    ? item
+                    : throw new InvalidOperationException(),
+                model,
+                manager),
+            "");
 
-        var result = locator.Build(new RegisteredDocument());
-
-        Assert.IsType<TextBlock>(result);
+        Assert.Throws<InvalidOperationException>(() => locator.Prepare(adapter));
         var record = Assert.Single(diagnostics.Snapshot,
             item => item.Code == "VIEW_CREATION_FAILED");
         Assert.Equal(Owner.Value, record.PluginId);

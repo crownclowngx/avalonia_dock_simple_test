@@ -126,12 +126,12 @@ public sealed class PluginContainerIsolationTests
             ("myavalonia.plugin.g4-doc-b", new ScopedDocumentModuleB()));
         Assert.Equal(2, composition.DocumentScopes.ManagerCount);
         var activator = composition.HostProvider.GetRequiredService<PluginContributionActivator>();
-        var first = activator.CreateDocument(
+        using var firstActivation = activator.ActivateDocument(
             new DocumentTypeId("myavalonia.plugin.g4-doc-a.document.sample"));
-        var second = activator.CreateDocument(
+        using var secondActivation = activator.ActivateDocument(
             new DocumentTypeId("myavalonia.plugin.g4-doc-b.document.sample"));
-        var firstDocument = Assert.IsType<ScopedPluginDocument>(first);
-        var secondDocument = Assert.IsType<ScopedPluginDocumentB>(second);
+        var firstDocument = Assert.IsType<ScopedPluginDocument>(firstActivation.Model);
+        var secondDocument = Assert.IsType<ScopedPluginDocumentB>(secondActivation.Model);
 
         Assert.Equal("myavalonia.plugin.g4-doc-a", firstDocument.Marker.PluginId);
         Assert.Equal("myavalonia.plugin.g4-doc-b", secondDocument.Marker.PluginId);

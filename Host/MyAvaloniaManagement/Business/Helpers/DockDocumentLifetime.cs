@@ -1,5 +1,6 @@
 using Avalonia;
 using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Docking;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -11,12 +12,27 @@ internal sealed class DockDocumentLifetime(DocumentScopeRegistry scopeRegistry)
 {
     internal void Release(Document document)
     {
-        if (Application.Current?.Resources["ControlRecyclingKey"]
-            is DocumentControlRecycling recycling)
+        try
         {
-            recycling.Remove(document);
+            if (Application.Current?.Resources["ControlRecyclingKey"]
+                is DocumentControlRecycling recycling)
+            {
+                recycling.Remove(document);
+            }
         }
-
-        scopeRegistry.Release(document);
+        finally
+        {
+            // 控件回收器可能触发插件 View 的自定义清理。无论该步骤是否抛出，
+            // ClosingToken 与 Document Scope 都是更底层的所有权兜底，必须继续释放。
+            if (document is ManagedDocumentDockable adapter)
+            {
+                adapter.Dispose();
+            }
+            else
+            {
+                // G7 前旧持久化测试仍把 Dock Document 本身作为 Scope 键；生产 Adapter 不走此分支。
+                scopeRegistry.Release(document);
+            }
+        }
     }
 }

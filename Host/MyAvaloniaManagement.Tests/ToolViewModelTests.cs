@@ -3,6 +3,7 @@ using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Models.FileSystem;
 using MyAvaloniaManagement.Models.Tools;
@@ -159,7 +160,7 @@ public sealed class ToolViewModelTests
             });
         using var context = new TestHostContext(toolStrategies: [strategy]);
         var mainViewModel = context.CreateMainWindowViewModel();
-        var manager = Assert.IsType<ToolManagementViewModel>(
+        var manager = GetManagedToolModel<ToolManagementViewModel>(
             context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
         var item = manager.ToolItems.Single(candidate =>
             candidate.ToolId == tool.Id);
@@ -189,7 +190,7 @@ public sealed class ToolViewModelTests
     {
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
-        var manager = Assert.IsType<ToolManagementViewModel>(
+        var manager = GetManagedToolModel<ToolManagementViewModel>(
             context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
         var item = manager.ToolItems.First(candidate => !candidate.CanClose);
         var before = item.IsVisible;
@@ -222,7 +223,7 @@ public sealed class ToolViewModelTests
             });
         using var context = new TestHostContext(toolStrategies: [strategy]);
         var mainViewModel = context.CreateMainWindowViewModel();
-        var manager = Assert.IsType<ToolManagementViewModel>(
+        var manager = GetManagedToolModel<ToolManagementViewModel>(
             context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
         var item = manager.ToolItems.Single(candidate => candidate.ToolId == tool.Id);
         var layoutChanges = 0;
@@ -267,7 +268,7 @@ public sealed class ToolViewModelTests
         using var context = new TestHostContext(toolStrategies: [strategy]);
         _ = context.CreateMainWindowViewModel();
         var data = context.Factory.GetToolManagementData()!;
-        var manager = Assert.IsType<ToolManagementViewModel>(
+        var manager = GetManagedToolModel<ToolManagementViewModel>(
             context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
         var item = manager.ToolItems.Single(candidate => candidate.ToolId == tool.Id);
 
@@ -309,6 +310,10 @@ public sealed class ToolViewModelTests
             }
         }
     }
+
+    private static TModel GetManagedToolModel<TModel>(Tool tool)
+        where TModel : class =>
+        Assert.IsType<TModel>(Assert.IsType<ManagedToolDockable>(tool).Model);
 
     /// <summary>只记录文件树提交路径的窄服务替身。</summary>
     private sealed class RecordingDocumentOpenService : IHostDocumentOpenService

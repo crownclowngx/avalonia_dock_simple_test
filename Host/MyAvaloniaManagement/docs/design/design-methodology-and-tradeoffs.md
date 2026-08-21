@@ -124,31 +124,41 @@ V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型
 纯插件组排除所有参与者。这里没有优先级规则、覆盖链、规则引擎或回滚事务；冲突 Provider 在发布前释放，
 未冲突插件继续工作。生命周期本阶段只完成 singleton 声明和构造验证，启动/停止状态机留给 G8。
 
-### 4.4 Builder：`DockWorkspaceBuilder`
+### 4.4 Factory + Adapter + Scope Lease：Host Dock 边界
+
+目的：让模型激活、Dock 投影、View 创建、布局协调和资源释放分别只有一个修改原因。Activator 返回普通
+模型；`IHostDockableFactory` 组合内部 Adapter；ViewLocator 只按冻结注册构造 View；Document Scope Lease
+只表达一次释放权。Tool Adapter 不拥有 Provider singleton，Document Adapter 则完整拥有模型、View 与 Scope。
+
+取舍：没有建立通用 Dockable 泛型层次、策略管线或生命周期规则引擎。Document 与 Tool 的所有权不同，
+保留两个很小的 sealed Adapter 比强行复用基类更清楚。View 在发布前构造会提前占用少量控件资源，但换来
+失败原子性和单实例 DataContext；幂等 View Lease 解决 Adapter 与控件回收器可能重复通知的问题。
+
+### 4.5 Builder：`DockWorkspaceBuilder`
 
 目的：以稳定 ID 构造四向初始布局，避免创建结构与运行时恢复交织。
 
 取舍：Builder 仍调用 Dock Factory 创建集合，这是框架适配所需，不追求完全纯对象构造。
 
-### 4.5 Query Object / Navigator：`DockTreeNavigator`
+### 4.6 Query Object / Navigator：`DockTreeNavigator`
 
 目的：统一 Dock 树遍历、可见性、Pinned/Hidden 和节点定位规则。
 
 取舍：它是静态内部工具，因为查询无状态且没有替代实现；为形式上的依赖注入把它实例化不会增加价值。
 
-### 4.6 Coordinator：文档、工具和布局协调器
+### 4.7 Coordinator：文档、工具和布局协调器
 
 目的：表达跨多个低层对象的用例顺序，例如“恢复工具并激活”“迁移、验证后应用布局”“保存成功后提交文档状态”。
 
 取舍：Coordinator 可以依赖多个具体内部组件，但不应成为新的万能类。判断标准是它是否只拥有一条业务流程及其事务边界。
 
-### 4.7 Adapter：`DocumentWorkspace`
+### 4.8 Adapter：`DocumentWorkspace`
 
 目的：把通用 Dock API 转换为文档领域语言，避免持久化逻辑理解 `IRootDock`、`IDocumentDock` 的遍历细节。
 
 取舍：Adapter 当前只覆盖宿主实际需要的添加、激活、查重和当前文档，不提前抽象关闭、重排等未来能力。
 
-### 4.8 Atomic File Transaction
+### 4.9 Atomic File Transaction
 
 目的：为布局和文档提供相同的“完整写入后一次提交”语义。
 

@@ -231,6 +231,10 @@ public sealed class PluginCompatibilityTests
     {
         var services = new ServiceCollection();
         services.AddDocumentScopeManagement();
+        // G6 生产组合不再暴露 Legacy Dock 文档工厂。此注册仅服务于尚未迁移的
+        // 真实插件源码兼容测试，防止测试 seam 重新进入 Host 生产激活路径。
+        services.AddSingleton<IDocumentScopeFactory>(provider =>
+            provider.GetRequiredService<DocumentScopeManager>());
         new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.datang-accounting-help"), services));
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions

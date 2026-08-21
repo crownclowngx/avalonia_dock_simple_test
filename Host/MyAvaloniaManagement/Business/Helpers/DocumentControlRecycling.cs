@@ -6,6 +6,7 @@ using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Recycling.Model;
 using Avalonia.Controls.Templates;
 using Avalonia.VisualTree;
+using MyAvaloniaManagement.Business.Docking;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -83,7 +84,13 @@ internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycli
 
         // DataContext 可能继续指向已释放的 Document；在移除缓存时主动断开，
         // 使 View 即使被 Avalonia 短暂保留也不会延长业务作用域生命周期。
-        if (cached is Control control)
+        if (data is IManagedDockableViewHost adapter)
+        {
+            // Adapter 的 View 租约负责幂等断开与 Dispose；正常关闭、Runtime 兜底和回收器
+            // 可能重复到达这里，不能让控件自行释放路径形成第二套所有权算法。
+            adapter.ReleasePreparedView();
+        }
+        else if (cached is Control control)
         {
             // 控件离开逻辑树后继承的 DataContext 可能已表现为 null，但子级的显式
             // Binding 仍持有最后一次求值。无条件清空根值，才能让整棵绑定树同步解绑。
@@ -92,7 +99,10 @@ internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycli
 
         // 允许包含原生窗口或显式事件订阅的复合 View 在“最终关闭”边界释放；
         // 普通标签切换只调用 Build，不会触发这里，因此仍保留控件复用。
-        (cached as IDisposable)?.Dispose();
+        if (data is not IManagedDockableViewHost)
+        {
+            (cached as IDisposable)?.Dispose();
+        }
         return true;
     }
 

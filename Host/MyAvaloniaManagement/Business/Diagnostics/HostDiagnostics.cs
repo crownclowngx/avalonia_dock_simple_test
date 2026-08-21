@@ -161,6 +161,7 @@ internal static class HostDiagnosticCodes
     internal const string HostContainerBuildFailed = "HOST_CONTAINER_BUILD_FAILED";
     internal const string ExtensionDiscoveryFailed = "EXTENSION_DISCOVERY_FAILED";
     internal const string ExtensionActivationFailed = "EXTENSION_ACTIVATION_FAILED";
+    internal const string ToolAdapterActivationFailed = "TOOL_ADAPTER_ACTIVATION_FAILED";
     internal const string LifecycleFailed = "LIFECYCLE_FAILED";
     internal const string HostStartupCleanupFailed = "HOST_STARTUP_CLEANUP_FAILED";
     internal const string HostStartupUnexpected = "HOST_STARTUP_UNEXPECTED";
@@ -251,6 +252,8 @@ internal static class HostDiagnosticRedactionPolicy
         HostDiagnosticCodes.ExtensionDiscoveryFailed or
         HostDiagnosticCodes.ExtensionActivationFailed =>
             "扩展贡献激活或校验失败，主工作台不能安全启动。",
+        HostDiagnosticCodes.ToolAdapterActivationFailed =>
+            "Tool 适配或视图创建失败，已隔离该 Tool，其他工作区继续运行。",
         HostDiagnosticCodes.LifecycleFailed =>
             "插件生命周期操作失败。",
         HostDiagnosticCodes.HostStartupCleanupFailed =>

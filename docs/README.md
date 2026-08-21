@@ -4,8 +4,8 @@
 
 ## 快速开始
 
-> G5 过渡期提示：快速开始正文仍是 G4 Legacy 历史示例，会被当前 Host 拒绝；最终可运行教程要在
-> G6/G9 后更新。当前只应用它理解目录和清单，不要据此创建或发布 V2 插件。
+> G6 过渡期提示：Host 已支持普通模型 Dock Adapter，但快速开始正文仍是 Legacy 历史示例，会被当前
+> Host 拒绝；最终可运行教程要等 G9 迁移首个真实插件后更新。当前不要据此创建或发布 V2 插件。
 
 历史快速开始入口：
 
@@ -53,12 +53,12 @@
 
 ## 封版后候选计划
 
-以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G5；最终 Core/UI SDK、manifest v2、独立插件
-Provider 与声明式 Host Registry 已建立，但 Dock Adapter、Document v2 与 layout/lifecycle v2 仍未完成：
+以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G6；最终 Core/UI SDK、manifest v2、独立插件
+Provider、声明式 Host Registry 与 Dock Adapter 已建立，但 Document v2 与 layout/lifecycle v2 仍未完成：
 
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
-  G0–G14 可执行计划；G0–G5 已完成，G6–G14 尚未实现。
+  G0–G14 可执行计划；G0–G6 已完成，G7–G14 尚未实现。
 - [Managed Plugin V2 G0 绿色基线](./plan-history/host-v2/g0-green-baseline.md)：
   冻结 361 项 Host 测试、SDK API、包图、四插件包事实以及删除面、依赖白名单和消费者矩阵；
   本阶段未运行 Windows Smoke、CI 或发布门禁。
@@ -72,6 +72,8 @@ Provider 与声明式 Host Registry 已建立，但 Dock Adapter、Document v2 �
   记录 Host/插件/Document 所有权、失败隔离、DI 原生能力、逆序释放、SOLID 取舍和非发布门禁证据。
 - [Managed Plugin V2 G5 声明式贡献目录](./plan-history/host-v2/g5-declarative-contribution-catalog.md)：
   记录一次声明、注册封闭、两阶段冲突隔离、不可变 Registry、Host 内建贡献和非发布门禁证据。
+- [Managed Plugin V2 G6 Host Dock Adapter](./plan-history/host-v2/g6-host-dock-adapter.md)：
+  记录普通模型、内部 Adapter、View 原子发布、Scope/View 所有权、失败隔离和非发布门禁证据。
 - [外部 Managed Plugin 开发与平台安装候选计划](./design/external-managed-plugin-development-and-installation-plan.md)：
   `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
 
@@ -91,6 +93,8 @@ Provider 与声明式 Host Registry 已建立，但 Dock Adapter、Document v2 �
   Host Provider 与每插件 Provider 分离，删除服务描述符保护事务，以所有权边界实现失败隔离和逆序释放。
 - [G5：建立声明式贡献目录](./plan-history/host-v2/g5-declarative-contribution-catalog.md)：
   Host 使用最终 UI SDK 模块入口，贡献经插件局部 Builder 与全局冲突过滤后发布到唯一不可变 Registry。
+- [G6：实现 Host Dock Adapter](./plan-history/host-v2/g6-host-dock-adapter.md)：
+  只有 Host internal Adapter 继承 Dock；普通模型、预构建 View、Document Scope 与 Tool singleton 各守所有权边界。
 
 ### Managed Plugin v1 整改记录
 

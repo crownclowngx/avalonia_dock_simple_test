@@ -1,13 +1,13 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-21（已同步 Managed Plugin V2 G5）<br>
+> 更新日期：2026-08-21（已同步 Managed Plugin V2 G6）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系  
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
 > 不在本轮范围：逐项评审插件业务功能、第三方插件市场、运行时热卸载、插件沙箱
 
-> V2 当前状态：G0–G5 已完成。Host 生产模块入口与声明式贡献目录使用最终 Core/UI SDK；四业务插件
-> 仍以不可打包的 `MyAvaloniaManagement.LegacyPluginContracts` 保持源码可编译，但不会由 G5 Host 加载。
+> V2 当前状态：G0–G6 已完成。Host 生产模块入口、声明式贡献目录与 Dock Adapter 使用最终 Core/UI SDK；四业务插件
+> 仍以不可打包的 `MyAvaloniaManagement.LegacyPluginContracts` 保持源码可编译，但不会由 G6 Host 加载。
 > 本文涉及四业务插件的 Strategy、Document v1 与生命周期 Manager 段落属于 G9–G12 前的阶段事实。
 
 ## 1. 先说结论：这是一个什么项目
@@ -33,7 +33,7 @@
 ```mermaid
 flowchart TB
     Host["MyAvaloniaManagement<br/>Avalonia 桌面宿主"]
-    Sdk["PluginSdk + PluginSdk.UI<br/>G5 Host 生产契约"]
+    Sdk["PluginSdk + PluginSdk.UI<br/>G6 Host 生产契约"]
     Legacy["LegacyPluginContracts<br/>业务插件源码桥"]
     Dock["Avalonia 12 + Dock 12<br/>UI 与停靠模型"]
 
@@ -131,8 +131,8 @@ G8 实现。BiliDownloader 的 Legacy 生命周期源码只参与插件自身回
 
 ## 3. Document：多实例工作上下文
 
-> G5 当前生产事实：Host Welcome 通过最终 `DocumentDescriptor`、Registry 与 internal Activator 创建；
-> 以下四业务插件 Strategy/Document v1 说明是迁移前源码事实，不代表 G5 Host 会加载这些入口。
+> G6 当前生产事实：Host Welcome 通过最终 `DocumentDescriptor`、Registry、internal Activator 与 Dock
+> Adapter 创建；以下四业务插件 Strategy/Document v1 说明是迁移前源码事实，不代表 G6 Host 会加载这些入口。
 
 ### 3.1 创建入口已经支持“类型 + 意图”
 
@@ -180,7 +180,8 @@ flowchart TD
 
 **[架构判断]** 当前全部 Managed Document 都由所属插件 Scope 托管；Document 注册为 scoped，策略只
 依赖本插件 `IDocumentScopeFactory`，Host 与其他插件不能解析这些 ViewModel。未来插件若绕过该工厂
-自行构造 Document；G5 已在生产模块入口阻断该旧路径，G6/G9–G12 再完成普通模型和 Adapter 迁移。
+自行构造 Document；G5 已在生产模块入口阻断该旧路径，G6 已完成 Host 普通模型和 Adapter，
+G9–G12 再迁移四个真实业务插件。
 
 **[代码事实]** Managed Document Scope 现在同时提供 scoped `IDocumentLifetime`。Dock 确认关闭后，`DocumentScopeManager` 先取消 `ClosingToken`，再释放 ViewModel 与 scoped 依赖；被否决的关闭不会提前取消，宿主退出则对仍打开的 Document 执行同一路径。取消是协作式且不等待：Document 局部的 HTTP、解析、浏览、探测与发票导入停止并禁止迟到 UI 回写；BiliDownloader 已提交到插件级 Coordinator 的下载任务继续运行。原生文件选择器只能丢弃迟到结果，EPPlus 已进入同步 `SaveAs` 后允许完成写入。
 
@@ -484,8 +485,9 @@ flowchart TB
 ```
 
 **[建议]** 不需要立即禁止插件引用 Avalonia/Dock。内部插件的 UI 自由度是该项目的价值之一。
-Host 实现面、静态服务定位、SDK 依赖、Managed-only 加载和声明式 View 贡献已经收口；下一步由 G6
-在 internal Activator 后引入 Dock Adapter，并继续减少业务代码直接操作 Dock。
+Host 实现面、静态服务定位、SDK 依赖、Managed-only 加载、声明式 View 贡献和 Dock 继承边界已经收口。
+G6 在 internal Activator 后引入两个 sealed Adapter，并以预构建 View Lease 和 Document Scope Lease
+明确所有权；下一步由 G7 建立唯一异步 Document v2 创建、恢复与保存链。
 
 ### 7.3 建议的候选契约
 
@@ -576,7 +578,7 @@ Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. V2 G5 已把 Host 生产贡献收口为最终 SDK Registration、不可变 Registry 和独立 Activator；插件普通模型的 Dock Adapter 仍待 G6；
+1. V2 G6 已把 Host 生产贡献收口为最终 SDK Registration、不可变 Registry、独立 Activator 和 internal Dock Adapter；
 2. 运行前 manifest v2、Core/UI 兼容检查、声明式 Plugin Registry 和用户可见诊断已经建立；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。

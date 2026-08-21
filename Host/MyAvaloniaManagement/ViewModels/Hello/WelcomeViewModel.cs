@@ -3,13 +3,13 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
-using Dock.Model.Mvvm.Controls;
+using CommunityToolkit.Mvvm.ComponentModel;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.ViewModels.Hello;
 
-internal sealed partial class WelcomeViewModel : Document, IPluginDocument
+internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocument
 {
     private const string DefaultIntroduction =
         "MyAvaloniaManagement 是基于 Avalonia 与 Dock 构建的插件化桌面框架，" +
@@ -17,6 +17,7 @@ internal sealed partial class WelcomeViewModel : Document, IPluginDocument
 
     private readonly Action<string>? _showTool;
     private string _text = DefaultIntroduction;
+    private string _title = "欢迎";
 
     public WelcomeViewModel()
     {
@@ -28,7 +29,7 @@ internal sealed partial class WelcomeViewModel : Document, IPluginDocument
     }
 
     /// <summary>获取 G5 声明式贡献使用的只读展示状态。</summary>
-    public DocumentPresentationState Presentation => new(Title ?? string.Empty);
+    public DocumentPresentationState Presentation => new(_title);
 
     /// <summary>
     /// 标题投影变化通知；Welcome 在 G5 只有初始化时的固定标题，因此当前不会主动触发。
@@ -43,7 +44,7 @@ internal sealed partial class WelcomeViewModel : Document, IPluginDocument
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        Title = context.Title;
+        _title = context.Title;
         PresentationChanged?.Invoke(this, EventArgs.Empty);
         return ValueTask.CompletedTask;
     }
@@ -61,7 +62,6 @@ internal sealed partial class WelcomeViewModel : Document, IPluginDocument
             if (value != _text)
             {
                 SetProperty(ref _text, value);
-                IsModified = false;
             }
         }
     }

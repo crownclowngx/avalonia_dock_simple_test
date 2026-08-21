@@ -9,6 +9,8 @@ using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Docking;
+using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
@@ -28,10 +30,12 @@ namespace MyAvaloniaManagement.ViewModels;
 /// 工厂是宿主 Dock 状态的唯一协调者。它持有稳定 ID 到策略、元数据和实例的映射，
 /// 使插件扩展、布局恢复及工具显隐都围绕同一份注册结果工作。
 /// </remarks>
-internal sealed class ManagementFactory : Factory
+internal sealed class ManagementFactory : Factory, IDisposable
 {
     private readonly PluginRegistry _extensions;
-    private readonly PluginContributionActivator _contributionActivator;
+    private readonly IHostDockableFactory _dockableFactory;
+    private readonly IHostDiagnosticSink? _diagnostics;
+    private readonly HashSet<Document> _ownedDocuments = new(ReferenceEqualityComparer.Instance);
     private IRootDock? _rootDock;
     private DocumentDock? _documentDock;
     private ITool?  _plugGroupMenuTool;
@@ -90,14 +94,15 @@ internal sealed class ManagementFactory : Factory
     /// <param name="documentScopes">把关闭请求路由到宿主或对应插件 Document Scope 的协调器。</param>
     internal ManagementFactory(
         PluginRegistry extensions,
-        PluginContributionActivator contributionActivator,
+        IHostDockableFactory dockableFactory,
         DocumentScopeRegistry documentScopes,
         DocumentPersistenceStateStore? documentPersistenceStates = null,
         DocumentCloseCoordinator? documentCloseCoordinator = null,
-        DocumentRecoveryRegistry? documentRecoveryRegistry = null)
+        DocumentRecoveryRegistry? documentRecoveryRegistry = null,
+        IHostDiagnosticSink? diagnostics = null)
     {
         ArgumentNullException.ThrowIfNull(extensions);
-        ArgumentNullException.ThrowIfNull(contributionActivator);
+        ArgumentNullException.ThrowIfNull(dockableFactory);
         ArgumentNullException.ThrowIfNull(documentScopes);
         _documentLifetime = new DockDocumentLifetime(documentScopes);
         _workspaceBuilder = new DockWorkspaceBuilder(this);
@@ -109,55 +114,14 @@ internal sealed class ManagementFactory : Factory
             _workspaceBuilder,
             GetToolAlignment);
         _extensions = extensions;
-        _contributionActivator = contributionActivator;
+        _dockableFactory = dockableFactory;
+        _diagnostics = diagnostics;
         _createdTools = [];
         // 启用 HideToolsOnClose：关闭工具时移入 HiddenDockables 而非真正移除，
         // 这样可以后续通过 RestoreDockable 恢复
         HideToolsOnClose = true;
     }
 
-    /// <summary>
-    /// 为只验证单个旧 DocumentScopeManager 的仓库测试保留的最小组合入口。
-    /// </summary>
-    /// <remarks>
-    /// 生产组合根始终使用 <see cref="DocumentScopeRegistry"/> 构造函数；此重载不会建立插件容器，
-    /// 仅把测试已经拥有的管理器放入局部路由表，避免测试绕过真实的关闭转发逻辑。
-    /// </remarks>
-    internal ManagementFactory(
-        PluginRegistry extensions,
-        DocumentScopeManager documentScopeManager,
-        DocumentPersistenceStateStore? documentPersistenceStates = null,
-        DocumentCloseCoordinator? documentCloseCoordinator = null,
-        DocumentRecoveryRegistry? documentRecoveryRegistry = null)
-        : this(
-            extensions,
-            CreateTestActivator(extensions, documentScopeManager),
-            CreateScopeRegistry(documentScopeManager),
-            documentPersistenceStates,
-            documentCloseCoordinator,
-            documentRecoveryRegistry)
-    {
-    }
-
-    private static PluginContributionActivator CreateTestActivator(
-        PluginRegistry registry,
-        DocumentScopeManager manager)
-    {
-        var services = new ServiceCollection();
-        services.AddSingleton(manager);
-        services.AddSingleton(registry);
-        var provider = services.BuildServiceProvider();
-        return new PluginContributionActivator(provider, registry, new PluginProviderOwner());
-    }
-
-    private static DocumentScopeRegistry CreateScopeRegistry(DocumentScopeManager manager)
-    {
-        ArgumentNullException.ThrowIfNull(manager);
-        var registry = new DocumentScopeRegistry();
-        registry.Register(manager);
-        return registry;
-    }
-    
     /// <summary>
     /// 获取工具管理所需的所有数据
     /// </summary>
@@ -219,10 +183,11 @@ internal sealed class ManagementFactory : Factory
     /// <returns>创建的Document实例</returns>
     public Document CreateManagementNewDocument(DocumentCreationParams @params)
     {
-        var document = _contributionActivator.CreateDocument(
+        var document = _dockableFactory.CreateDocument(
             new MyAvaloniaManagement.PluginSdk.DocumentTypeId(
                 LegacyContributionIdMap.ResolveDocument(@params.DocumentTypeId).Value),
             @params.Title);
+        _ownedDocuments.Add(document);
         // 策略违反“每次创建返回新实例”时，可能把已经由 Dock 持有的对象再次返回。
         // 记住它在本次调用前是否已由宿主登记，使后续重复登记失败时只拒绝
         // 新请求，不会误删原标签的路径与所有权，也不会误释放其 Scope。
@@ -365,6 +330,7 @@ internal sealed class ManagementFactory : Factory
         ArgumentNullException.ThrowIfNull(document);
         try
         {
+            _ownedDocuments.Remove(document);
             _documentLifetime.Release(document);
         }
         finally
@@ -384,11 +350,12 @@ internal sealed class ManagementFactory : Factory
 
     public override IRootDock CreateLayout()
     {
-        // Welcome 与 Tool 一样必须经声明式目录激活。G5 仍返回 Dock Document，
-        // 但创建与所有权已经统一收口；G6 只需在 Activator 后增加 Adapter。
-        var untitledViewModel = _contributionActivator.CreateDocument(
+        // Welcome 与 Tool 一样必须经声明式目录激活，并在发布前完成 Adapter 与 View 预构建。
+        // Welcome 是中央工作区的必需项，因此创建失败由调用方中止整个布局初始化。
+        var untitledViewModel = _dockableFactory.CreateDocument(
             HostExtensionIds.V2WelcomeDocument,
             "欢迎");
+        _ownedDocuments.Add(untitledViewModel);
         var documentDock = new DocumentDock
         {
             Id = DockLayoutIds.Documents,
@@ -508,7 +475,10 @@ internal sealed class ManagementFactory : Factory
         if (_createdTools.TryGetValue(
                 HostExtensionIds.ToolManagement.Value,
                 out var managementTool) &&
-            managementTool is IToolVisibilityStateSink visibilityStateSink)
+            managementTool is ManagedToolDockable
+            {
+                Model: IToolVisibilityStateSink visibilityStateSink
+            })
         {
             visibilityStateSink.SyncToolsVisibility();
         }
@@ -630,9 +600,11 @@ internal sealed class ManagementFactory : Factory
         foreach (var toolTypeId in _extensions.ToolDescriptors.Keys.Where(
                      id => id != HostExtensionIds.V2ToolManagement))
         {
-            var tool = _contributionActivator.CreateTool(toolTypeId);
-            tool.Id = toolTypeId.Value;
-            _createdTools[toolTypeId.Value] = tool;
+            if (!TryCreateTool(toolTypeId, out var tool))
+            {
+                continue;
+            }
+            _createdTools[toolTypeId.Value] = tool!;
             // 设置特定工具的引用
             if (toolTypeId == HostExtensionIds.V2PluginMenu)
             {
@@ -645,10 +617,34 @@ internal sealed class ManagementFactory : Factory
                 HostExtensionIds.V2ToolManagement,
                 out _))
         {
-            var managementTool = _contributionActivator.CreateTool(
-                HostExtensionIds.V2ToolManagement);
-            managementTool.Id = HostExtensionIds.V2ToolManagement.Value;
-            _createdTools[managementTool.Id] = managementTool;
+            if (TryCreateTool(HostExtensionIds.V2ToolManagement, out var managementTool))
+            {
+                _createdTools[managementTool!.Id] = managementTool;
+            }
+        }
+    }
+
+    /// <summary>原子创建单个 Tool Adapter；失败项不会进入布局或已创建索引。</summary>
+    private bool TryCreateTool(
+        MyAvaloniaManagement.PluginSdk.ToolTypeId toolTypeId,
+        out Tool? tool)
+    {
+        try
+        {
+            tool = _dockableFactory.CreateTool(toolTypeId);
+            return true;
+        }
+        catch (Exception exception)
+        {
+            tool = null;
+            _diagnostics?.Report(new HostDiagnosticDraft(
+                HostDiagnosticCodes.ToolAdapterActivationFailed,
+                HostDiagnosticPhase.ExtensionDiscovery)
+            {
+                StableId = toolTypeId.Value,
+                Exception = exception,
+            });
+            return false;
         }
     }
 
@@ -713,6 +709,45 @@ internal sealed class ManagementFactory : Factory
                 // 最终关闭时只移除当前项，保留其他标签的控件复用行为。
                 ReleaseDocument(document);
             }
+        }
+    }
+
+    /// <summary>
+    /// 在插件 Provider 释放前结束仍存活的 Adapter、View 和 Document Scope。
+    /// </summary>
+    public void Dispose()
+    {
+        List<Exception>? releaseFailures = null;
+        foreach (var document in _ownedDocuments.ToArray())
+        {
+            try
+            {
+                ReleaseDocument(document);
+            }
+            catch (Exception exception)
+            {
+                (releaseFailures ??= []).Add(exception);
+            }
+        }
+
+        foreach (var tool in _createdTools.Values.OfType<IDisposable>().Reverse())
+        {
+            try
+            {
+                tool.Dispose();
+            }
+            catch (Exception exception)
+            {
+                // Runtime 退出必须尝试释放所有 Adapter/View；最后统一抛出便于诊断，
+                // 不能让一个插件 View 的 Dispose 把其他插件资源留在已结束进程中。
+                (releaseFailures ??= []).Add(exception);
+            }
+        }
+        _createdTools.Clear();
+
+        if (releaseFailures is not null)
+        {
+            throw new AggregateException("一个或多个 Host Dock Adapter 释放失败。", releaseFailures);
         }
     }
 }

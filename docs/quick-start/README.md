@@ -4,7 +4,7 @@
 
 > 迁移提示：当前仓库已完成 V2 G5，Host 只接受最终 UI SDK `IPluginModule` 和
 > `IPluginRegistration`。本组后续页面仍保存 G4 时期的 Legacy 示例，用于历史对照；这些模块会被 G5
-> Host 拒绝，不能作为可运行教程。最终普通模型、Dock Adapter 和业务插件示例将在 G6/G9 后同步；
+> Host 拒绝，不能作为可运行教程。G6 已完成普通模型与 Dock Adapter，业务插件示例仍需等待 G9 同步；
 > 在此之前不要据此创建或发布 V2 插件。
 
 ## 完成后你将得到什么

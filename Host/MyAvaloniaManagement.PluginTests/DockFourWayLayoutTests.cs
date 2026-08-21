@@ -721,9 +721,7 @@ public sealed class DockFourWayLayoutTests
                     typeof(Avalonia.Controls.UserControl),
                     static () => new Avalonia.Controls.UserControl());
             }).ToArray());
-        var factory = new ManagementFactory(
-            extensions,
-            manager);
+        var factory = PluginTestManagementFactory.Create(extensions, manager);
         ToolMaps.Add(factory, tools);
         return new FactoryContext(provider, factory);
     }
