@@ -12,9 +12,9 @@
 > 变异门禁冻结正式 Plugin SDK v1 public API；G15 已固定 schema 1 诊断的白名单语义和默认脱敏边界；
 > G16 已用 `managed-plugin-v1.0.0` 定位最终文档、SDK API 和四插件兼容基线。
 
-> 当前分支已完成 V2 G8：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议、每插件
+> 当前分支已完成 V2 G10：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议、每插件
 > 独立 Provider、Host 声明式贡献目录、internal Dock Adapter、Document V2、Layout V2 与 internal
-> 生命周期已建立；四业务插件完整迁移仍是 G9–G12 的后续工作。
+> 生命周期已建立；MyPlugTest 与 DaTang 已迁移，MySmallTools/BiliDownloader 等待 G11–G12。
 > 历史 v1 签署事实保持可追溯。
 
 ## 2. public API
@@ -22,8 +22,8 @@
 最终 V2 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
-四业务插件暂时引用 `MyAvaloniaManagement.LegacyPluginContracts`，该项目不可打包且不得增加新的生产
-消费者。G8 仅在生命周期 Provider 边界适配 Legacy 两方法回调，不提供 public 编排回退。
+MyPlugTest 与 DaTang 只引用最终 SDK；MySmallTools/BiliDownloader 暂时引用
+`MyAvaloniaManagement.LegacyPluginContracts`，该项目不可打包且不得增加新的生产消费者。
 
 G8 生产组合中，只有 `ManagedDocumentDockable` 与 `ManagedToolDockable` 可以继承 Dock 类型。普通插件
 模型不得创建或继承 Dock；Document 每次创建拥有独立 Scope，Tool 是所属 Provider singleton。View 必须
@@ -44,7 +44,17 @@ Host 实现，这不构成发布兼容承诺。
 私有集合，并在模块返回后封闭。Legacy `IPluginRegistrationContext` 仅供未迁移业务插件源码继续编译，
 不是 Host 生产模块桥。
 
-### 2.1 版本所有权
+### 2.1 窗口交互 Host Port
+
+- `IPluginWindowInteraction` 只位于 UI SDK，只返回本地路径、`null` 或布尔结果；
+- 不得暴露 `Window`、`TopLevel`、`IStorageProvider`、剪贴板实例或 Host 实现类型；
+- Host 必须把同一受控实例注入每个插件私有 Provider，插件不得自行查找主窗口；
+- 调用必须在 Avalonia UI 线程，null 选项/文本抛参数异常；无主窗口时按契约返回空值；
+- 原生选择器返回后必须再次检查取消令牌，Document 关闭期间的迟到结果不得提交。
+
+SDK 与插件版本仍为未发布的 `2.0.0`；本次兼容新增登记在 v2 Unshipped 基线，不单独升版。
+
+### 2.2 版本所有权
 
 - 产品、Host 程序集身份和 Plugin SDK 版本集中定义在根级 `Directory.Version.props`；
 - 当前产品与 SDK 版本为 `2.0.0`，Host 与 SDK `AssemblyVersion` 为 `2.0.0.0`；V2 不再维护独立 Host API 版本线；
@@ -54,7 +64,7 @@ Host 实现，这不构成发布兼容承诺。
 - 插件内容 schema 由内容所有者解释，不能使用插件发布版本替代；
 - 普通进程内消息不添加无迁移或分派行为的版本占位字段。
 
-### 2.2 SDK 包边界
+### 2.3 SDK 包边界
 
 - 基础包、程序集和根命名空间均为 `MyAvaloniaManagement.PluginSdk`，只依赖 .NET BCL；
 - Core 不包含 Host，也不依赖 Avalonia、DI、Dock、Newtonsoft 或任何主题包；
@@ -65,7 +75,7 @@ Host 实现，这不构成发布兼容承诺。
 - Legacy 项目 `IsPackable=false`，两个 nupkg 均不得包含或依赖 `MyAvaloniaManagementCommon.dll`；
 - 当前不自动发布公共 NuGet。宿主发布制品应同时提供两个 nupkg；对外分发前必须补充项目许可证。
 
-### 2.3 事件总线
+### 2.4 事件总线
 
 - 公共契约只有 `IHostEventBus.Publish<TEvent>` 和返回 `IDisposable` 的
   `Subscribe<TEvent>`，事件与处理器均不得为 `null`；
@@ -77,7 +87,7 @@ Host 实现，这不构成发布兼容承诺。
 - 每个 HostRuntime 根容器独占总线实例；不允许静态默认实例、全局 Reset 或底层 messenger 暴露；
 - 总线释放后发布或订阅抛 `ObjectDisposedException`；普通内存事件不增加版本字段。
 
-### 2.4 插件样式与 UI Profile
+### 2.5 插件样式与 UI Profile
 
 Host 在 Light/Dark 下均提供以下 `SolidColorBrush` 语义资源：
 
@@ -98,7 +108,7 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - `DockTheme*`、Semi、Ursa 内部资源键不属于基础语义契约；直接使用时必须引用同版本 UI Profile；
 - Host 按 Fluent、Semi、Ursa Semi、Dock Fluent、Host Styles 的固定所有权顺序组合主题。
 
-### 2.5 诊断兼容与安全边界
+### 2.6 诊断兼容与安全边界
 
 - `HostDiagnosticRecord` 的独立 `schemaVersion` 已提升为 2，SDK 兼容字段只写 `sdkRange`；不读取或迁移旧诊断日志；
 - `TechnicalDetail` 兼容字段只允许受控生命周期阶段和毫秒耗时，其他诊断为 `null`；
@@ -186,9 +196,9 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 
 ## 4. Document 契约
 
-- Host Welcome 与最终 SDK 测试贡献只通过 Registry、internal Activator 和异步工厂创建；生产不存在
-  Legacy Document 命令参数、ID 映射或 Scope 工厂；
-- 四业务插件尚未迁移，G8 Host 不加载其 `IDocumentCreationStrategy` 或 Creation Intent Provider；
+- Host Welcome、MyPlugTest 与 DaTang 只通过 Registry、internal Activator 和异步工厂创建；
+  它们的生产代码不存在 Legacy Document 命令参数、ID 映射或 Scope 工厂；
+- MySmallTools/BiliDownloader 尚未迁移，V2 Host 不加载其 `IDocumentCreationStrategy` 或 Creation Intent Provider；
 - 唯一磁盘格式是 Document 信封 v2，根必须且只能包含 `schemaVersion`、`pluginId`、`documentTypeId`、
   `title`、`savedAtUtc`、`content`；content 只含 `schemaVersion` 与原生 JSON `payload`；
 - 根 `schemaVersion` 只能为 `2`；UTF-8 文件上限为 8 MiB，JSON 最大深度为 8；注释、尾随逗号、

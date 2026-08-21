@@ -70,6 +70,8 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<AppearanceSettingsStore>();
         services.AddSingleton<ApplicationThemeService>();
         services.AddSingleton<IHostStorageService, AvaloniaHostStorageService>();
+        // 插件只能取得窄窗口交互端口；具体 Window、StorageProvider 与 Clipboard 始终留在 Host。
+        services.AddSingleton<IPluginWindowInteraction, AvaloniaPluginWindowInteraction>();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<DocumentEnvelopeSerializer>();
         services.AddSingleton<DocumentOperationGate>();

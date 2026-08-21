@@ -10,6 +10,7 @@
 - 严格读写唯一 Document 信封 v2，并编排异步创建、打开、恢复、保存、关闭和资源释放；
 - 严格读取、校验、整体隔离和原子保存唯一 Layout V2；
 - 提供每个 HostRuntime 独享的同步强类型事件总线；
+- 以窄 UI SDK 端口为插件提供文件选择和剪贴板交互；
 - 为 XAML、菜单、主题和宿主 Tool 提供绑定入口。
 
 宿主不负责插件的领域业务、插件内部 DTO 演进或后台任务实现。当前信任模型是同一团队维护的进程内可信插件，不提供沙箱、热卸载或第三方 ABI。
@@ -17,8 +18,8 @@
 ### Plugin SDK 与主题所有权
 
 最终基础契约来自 `MyAvaloniaManagement.PluginSdk`，UI 注册契约来自
-`MyAvaloniaManagement.PluginSdk.UI`；旧 `MyAvaloniaManagementCommon` 只保留为四业务插件在 G9–G12
-迁移前的不可打包源码桥；G8 只在 Provider 解析边界适配其窄启动/关闭回调，不恢复 Legacy 编排面。SDK 不拥有
+`MyAvaloniaManagement.PluginSdk.UI`；旧 `MyAvaloniaManagementCommon` 只保留为 MySmallTools 与
+BiliDownloader 在 G11–G12 迁移前的不可打包源码桥。MyPlugTest 与 DaTang 已只使用最终 SDK。SDK 不拥有
 字体、桌面后端或全局主题。`App.axaml` 是 Fluent、Semi、Ursa、Dock Theme 和 Host Styles 的唯一
 组合入口；`ApplicationThemeService` 只切换宿主主题状态，不把第三方主题对象暴露成插件服务。
 
@@ -40,8 +41,10 @@ flowchart TB
 
     HostContainer --> Factory["ManagementFactory<br/>Host internal Dock 协调器"]
     HostContainer --> EventBus["IHostEventBus<br/>每 Runtime 隔离的同步事件"]
+    HostContainer --> WindowPort["IPluginWindowInteraction<br/>受控文件 / 剪贴板端口"]
     HostContainer --> Registry["PluginRegistry<br/>不可变贡献快照"]
     EventBus --> PluginProviders
+    WindowPort --> PluginProviders
     RegistryBuilder --> Registry
     Factory --> Registry
     Factory --> Builder["DockWorkspaceBuilder<br/>初始结构"]

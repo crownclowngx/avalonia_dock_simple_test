@@ -1,11 +1,10 @@
 using System.Collections.ObjectModel;
-using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DaTangAccountingHelpPlug.Business;
 using DaTangAccountingHelpPlug.Business.BankBalanceReconciliation;
 using DaTangAccountingHelpPlug.Models.BankBalanceReconciliation;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 
@@ -15,6 +14,8 @@ public partial class ReconciliationRunViewModel : ObservableObject, IDisposable
     private readonly BankBalanceReconciliationService _service;
     private readonly ReconciliationSourceViewModel _source;
     private readonly ReconciliationOptionsViewModel _options;
+    private readonly IReconciliationFileDialogService _fileDialogs;
+    private readonly IDocumentLifetime _documentLifetime;
     private CancellationTokenSource? _cancellation;
     private bool _disposed;
 
@@ -37,19 +38,34 @@ public partial class ReconciliationRunViewModel : ObservableObject, IDisposable
     public ReconciliationRunViewModel(
         BankBalanceReconciliationService service,
         ReconciliationSourceViewModel source,
-        ReconciliationOptionsViewModel options)
+        ReconciliationOptionsViewModel options,
+        IReconciliationFileDialogService fileDialogs,
+        IDocumentLifetime documentLifetime)
     {
-        _service = service;
-        _source = source;
-        _options = options;
+        _service = service ?? throw new ArgumentNullException(nameof(service));
+        _source = source ?? throw new ArgumentNullException(nameof(source));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _fileDialogs = fileDialogs ?? throw new ArgumentNullException(nameof(fileDialogs));
+        _documentLifetime = documentLifetime ?? throw new ArgumentNullException(nameof(documentLifetime));
     }
 
     [RelayCommand(CanExecute = nameof(CanStart))]
-    private async Task StartAsync()
+    private async Task StartAsync(CancellationToken commandToken)
     {
-        var outputPath = await PickOutputPathAsync();
-        if (outputPath is not null)
-            await RunAsync(outputPath);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            commandToken,
+            _documentLifetime.ClosingToken);
+        try
+        {
+            var outputPath = await PickOutputPathAsync(linked.Token);
+            linked.Token.ThrowIfCancellationRequested();
+            if (!string.IsNullOrWhiteSpace(outputPath) && !IsClosing)
+                await RunAsync(outputPath, linked.Token);
+        }
+        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        {
+            // 关闭期间返回的保存路径不会启动报告生成。
+        }
     }
 
     public async Task<ReconciliationRunSummary?> RunAsync(
@@ -80,7 +96,9 @@ public partial class ReconciliationRunViewModel : ObservableObject, IDisposable
             Configuration = _options.Configuration
         };
 
-        var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _documentLifetime.ClosingToken);
         var previous = Interlocked.Exchange(ref _cancellation, linked);
         previous?.Cancel();
         previous?.Dispose();
@@ -127,37 +145,43 @@ public partial class ReconciliationRunViewModel : ObservableObject, IDisposable
         }
         catch (OperationCanceledException) when (linked.IsCancellationRequested)
         {
-            StatusMessage = "已取消，本次没有替换输出文件";
-            LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] 用户取消对账");
+            if (!IsClosing)
+            {
+                StatusMessage = "已取消，本次没有替换输出文件";
+                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] 用户取消对账");
+            }
             return null;
         }
         catch (Exception exception)
         {
-            StatusMessage = $"处理失败：{exception.Message}";
-            LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] 错误：{exception.Message}");
+            if (!IsClosing)
+            {
+                StatusMessage = $"处理失败：{exception.Message}";
+                LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] 错误：{exception.Message}");
+            }
             return null;
         }
         finally
         {
             Interlocked.CompareExchange(ref _cancellation, null, linked);
             linked.Dispose();
-            IsRunning = false;
-            StartCommand.NotifyCanExecuteChanged();
-            CancelCommand.NotifyCanExecuteChanged();
+            if (!IsClosing)
+            {
+                IsRunning = false;
+                StartCommand.NotifyCanExecuteChanged();
+                CancelCommand.NotifyCanExecuteChanged();
+            }
         }
     }
 
     [RelayCommand(CanExecute = nameof(CanCancel))]
     private void Cancel() => _cancellation?.Cancel();
 
-    private bool CanStart() => !_disposed && !IsRunning;
+    private bool CanStart() => !IsClosing && !IsRunning;
     private bool CanCancel() => !_disposed && IsRunning;
 
-    private async Task<string?> PickOutputPathAsync()
+    private Task<string?> PickOutputPathAsync(CancellationToken cancellationToken)
     {
-        var window = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
-        if (window is null)
-            return null;
         var profile = _source.SelectedProfile;
         var suffixLength = Math.Max(profile?.AccountSuffixLength ?? 4, 0);
         var account = profile?.AccountNumber ?? string.Empty;
@@ -165,15 +189,10 @@ public partial class ReconciliationRunViewModel : ObservableObject, IDisposable
             ? string.Empty
             : account[^Math.Min(suffixLength, account.Length)..];
         var suggested = $"银行余额调节表({profile?.UnitShortName}{_source.AsOfDate:yyMMdd}{profile?.BankShortName}{suffix}).xlsx";
-        var file = await window.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            Title = "保存银行余额调节表",
-            SuggestedFileName = suggested,
-            DefaultExtension = "xlsx",
-            FileTypeChoices = [new FilePickerFileType("Excel 工作簿") { Patterns = ["*.xlsx"] }]
-        });
-        return file?.Path.LocalPath;
+        return _fileDialogs.PickReportOutputAsync(suggested, cancellationToken);
     }
+
+    private bool IsClosing => _disposed || _documentLifetime.IsClosing;
 
     public void Dispose()
     {

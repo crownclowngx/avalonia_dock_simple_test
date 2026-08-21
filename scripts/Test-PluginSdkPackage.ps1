@@ -234,6 +234,7 @@ public sealed class EventConsumer(IHostEventBus bus) : IDisposable
 
     New-ConsumerProject 'UiConsumer' 'MyAvaloniaManagement.PluginSdk.UI' @'
 using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -257,6 +258,23 @@ public sealed class SampleLifecycle : IPluginLifecycle
 {
     public Task InitializeAsync(CancellationToken token) => Task.CompletedTask;
     public Task ShutdownAsync(CancellationToken token) => Task.CompletedTask;
+}
+public sealed class SampleWindowInteraction : IPluginWindowInteraction
+{
+    public Task<IReadOnlyList<string>> PickOpenFilesAsync(
+        FilePickerOpenOptions options,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
+
+    public Task<string?> PickSaveFileAsync(
+        FilePickerSaveOptions options,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<string?>(null);
+
+    public Task<bool> TrySetClipboardTextAsync(
+        string text,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
 }
 public sealed class SampleDocument : IPersistablePluginDocument
 {
@@ -314,7 +332,7 @@ public static class Removed
 }
 '@ $false @('DocumentContentSnapshot', 'DocumentTypeIdSystemTextJsonConverter') | Out-Null
 
-    Write-Host '[G2 SDK Package] 通过：Core/UI 内容、依赖白名单、两个正例和十个反向消费夹具符合预期。'
+    Write-Host '[G2 SDK Package] 通过：Core/UI 内容、依赖白名单、包含窗口交互端口的两个正例和十个反向消费夹具符合预期。'
 }
 finally {
     if (Test-Path -LiteralPath $temporaryRoot) {

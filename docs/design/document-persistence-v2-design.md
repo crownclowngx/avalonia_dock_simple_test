@@ -4,7 +4,7 @@
 >
 > 更新日期：2026-08-21
 >
-> 边界：G7 唯一 Document V2 创建、打开、恢复、保存、关闭与 Scope 释放链
+> 边界：G7 唯一 Document V2 创建、打开、恢复、保存、关闭与 Scope 释放链；G10 DaTang 实例
 
 ## 1. 设计结论
 
@@ -14,7 +14,13 @@ Document V2 只有一条生产路径。新建、Creation Intent 和磁盘恢复�
 Scope 释放，插件只解释 `DocumentContent` 中自己的 schema 与原生 JSON payload。
 
 G7 不读取、迁移或写回 Document V1。历史 V1 设计与验收记录仍保留为历史事实，但不是当前运行时
-契约。该段落记录 G7 完成时的阶段边界；G9 已迁移 MyPlugTest，其余三个业务插件留待 G10–G12。
+契约。该段落记录 G7 完成时的阶段边界；G9–G10 已迁移 MyPlugTest 与
+DaTangAccountingHelpPlug，MySmallTools/BiliDownloader 留待 G11–G12。
+
+DaTang 银行余额调节是第二个真实持久化 Document：其 content schema 固定为 1，独立 Codec
+严格拒绝错误 schema、根类型、未知/重复/缺失字段、错误类型和无效配置。恢复必须先完整
+解码和业务验证，再一次提交到模型；损坏内容不得改变标题、路径、选项或原脏状态。
+`CaptureContentAsync` 不是保存提交点，只有 Host 原子主文件成功后调用 `AcceptChanges`。
 
 ## 2. SOLID 与朴素模式
 

@@ -2,9 +2,9 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G9 的 Core/UI SDK、
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G10 的 Core/UI SDK、
 > manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录、Host Dock Adapter、
-> Document V2、Layout V2、internal 生命周期和首个真实 MyPlugTest V2 迁移。最新测试数量和覆盖率必须从本轮
+> Document V2、Layout V2、internal 生命周期以及 MyPlugTest/DaTang 真实 V2 迁移。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -185,6 +185,31 @@ G9 非发布专项入口为：
 完整回归为 Host Unit 172、UI 46、Plugin 195，共 **413/413**；行覆盖率 **83.24%**、分支覆盖率
 **68.83%**。SDK 单元 **32/32**，三个未迁移业务插件 **966/966**，Core/UI API 与包消费、四插件
 两轮非发布包矩阵、locked restore、Release 零警告构建和文档门禁均通过。
+
+### V2 G10 当前绿色基线
+
+G10 非发布专项入口为：
+
+```powershell
+.\scripts\Test-DaTangAccountingHelpPlugV2.ps1 -Configuration Release
+```
+
+脚本串行执行 DaTang 真实 Host 组合与业务测试、受影响 Headless UI、Plugin SDK 窗口
+Host Port 契约、静态依赖扫描，再建立两份隔离测试 ZIP。解压后必须经过真实
+`PluginLoadContext`、模块预检、私有 Provider 组合，并形成 2 Document + 0 Tool Registry。
+
+专项实际为 Plugin 60、Headless UI 15、Plugin SDK 13、DaTang 业务 62、最终 ZIP 加载 1，
+共 **151/151**；ZIP 为 9 个文件。摘要位于
+`artifacts/test-results/DaTangAccountingHelpPlugV2/summary.json`，固定记录 `aiflow=false`、
+`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、`releaseGate=false`、
+`publishable=false`。贡献矩阵、窗口端口、内容 schema、所有权和回滚边界见
+[V2 G10 专项记录](../plan-history/host-v2/g10-datang-accounting-help-v2.md)。
+
+完整回归为 Host Unit 172、UI 50、Plugin 205，共 **427/427**；行覆盖率 **83.15%**、
+分支覆盖率 **68.74%**，既有总量、分支和关键文件下限均满足。SDK 单元 **33/33**；
+BiliDownloader **719/719**、DaTang **62/62**、MySmallTools **183/183**。Core/UI API 与真实
+nupkg 消费门禁通过。本轮不运行 AIFLOW、Windows CI、Windows Smoke、ReleaseAcceptance、
+正式发布门禁、签名、上传、标签或发布；不得用下文的历史 Host V1 G10 Windows 证据替代本轮事实。
 
 ## G14 正式发布门禁
 

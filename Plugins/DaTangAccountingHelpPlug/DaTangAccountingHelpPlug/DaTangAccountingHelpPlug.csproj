@@ -10,12 +10,16 @@
         <PluginVersion>2.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
         <ManagedPluginEntryType>DaTangAccountingHelpPlug.Plugin.DaTangAccountingHelpPluginModule</ManagedPluginEntryType>
+        <!-- G10 起入口由最终 UI SDK 定义，构建探针不得回退到 Legacy 合同。 -->
+        <ManagedPluginUseV2EntryContract>true</ManagedPluginUseV2EntryContract>
         <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
         <ManagedPluginSdkMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginSdkMaxExclusive>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj" />
+      <!-- Core 与 UI 契约由 Host 默认加载上下文提供，不能复制进插件私有目录。 -->
+      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" Private="false" />
+      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk.UI\MyAvaloniaManagement.PluginSdk.UI.csproj" Private="false" />
     </ItemGroup>
 
     <ItemGroup>
@@ -39,7 +43,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <!-- EPPlus 的业务依赖由插件拥有；宿主共享的 DI、Avalonia 和 Dock 不进入目录。 -->
+      <!-- EPPlus 的业务依赖由插件拥有；宿主共享的 DI、Avalonia 和 SDK 不进入目录。 -->
       <ManagedPluginPrivatePackage Include="EPPlus;EPPlus.Interfaces;Microsoft.IO.RecyclableMemoryStream;System.Security.Cryptography.Pkcs;System.Security.Cryptography.Xml" />
     </ItemGroup>
 </Project>

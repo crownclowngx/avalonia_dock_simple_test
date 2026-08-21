@@ -17,7 +17,6 @@ public sealed class SdkBoundaryTests
         "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
         "Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csproj",
         "Plugins/BiliDownloader/BiliDownloader/BiliDownloader.csproj",
-        "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj",
         "Plugins/MySmallTools/MySmallTools/MySmallTools.csproj",
     ];
 
@@ -53,6 +52,23 @@ public sealed class SdkBoundaryTests
                 .Select(method => method.Name)
                 .OrderBy(name => name)
                 .ToArray());
+    }
+
+    [Fact]
+    public void 窗口交互端口只暴露路径选择和剪贴板结果()
+    {
+        Assert.Equal(
+            ["PickOpenFilesAsync", "PickSaveFileAsync", "TrySetClipboardTextAsync"],
+            typeof(IPluginWindowInteraction).GetMethods()
+                .Select(method => method.Name)
+                .OrderBy(name => name)
+                .ToArray());
+        Assert.Empty(typeof(IPluginWindowInteraction).GetProperties());
+        Assert.DoesNotContain(
+            typeof(IPluginWindowInteraction).GetMethods().SelectMany(method =>
+                method.GetParameters().Select(parameter => parameter.ParameterType)
+                    .Append(method.ReturnType)),
+            type => type.Name is "Window" or "TopLevel" or "IStorageProvider" or "IClipboard");
     }
 
     [Fact]

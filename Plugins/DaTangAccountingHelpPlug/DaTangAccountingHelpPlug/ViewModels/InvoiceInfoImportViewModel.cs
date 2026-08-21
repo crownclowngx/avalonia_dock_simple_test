@@ -1,24 +1,27 @@
 using System.Collections.ObjectModel;
-using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DaTangAccountingHelpPlug.Business;
-using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace DaTangAccountingHelpPlug.ViewModels;
 
-public partial class InvoiceInfoImportViewModel : Document, IDisposable
+/// <summary>编排单个发票信息导入标签页的普通 Host V2 Document 模型。</summary>
+/// <remarks>
+/// 模型只拥有当前 Scope 的路径、日期、日志与命令，不继承 Dock，也不寻找宿主窗口。文件选择和
+/// 剪贴板分别通过窄业务端口访问，关闭令牌则由 Host 为当前 Document Scope 独立提供。
+/// </remarks>
+public partial class InvoiceInfoImportViewModel : ObservableObject, IPluginDocument, IDisposable
 {
     private const int MaxLogLines = 10000;
 
     private readonly IInvoiceInfoImportBusiness _business;
     private readonly IInvoiceFileDialogService _fileDialogs;
+    private readonly IPluginClipboardService _clipboard;
     private readonly IDocumentLifetime _documentLifetime;
     private int _disposed;
+    private string _title = "发票信息导入和计算";
 
     [ObservableProperty] private string _invoiceSummaryFilePath = string.Empty;
     [ObservableProperty] private string _currentMonthPaymentFilePath = string.Empty;
@@ -38,14 +41,34 @@ public partial class InvoiceInfoImportViewModel : Document, IDisposable
     public InvoiceInfoImportViewModel(
         IInvoiceInfoImportBusiness business,
         IInvoiceFileDialogService fileDialogs,
+        IPluginClipboardService clipboard,
         IDocumentLifetime documentLifetime)
     {
-        Title = "发票信息导入和计算";
         _business = business ?? throw new ArgumentNullException(nameof(business));
         _fileDialogs = fileDialogs ?? throw new ArgumentNullException(nameof(fileDialogs));
+        _clipboard = clipboard ?? throw new ArgumentNullException(nameof(clipboard));
         _documentLifetime = documentLifetime ??
                             throw new ArgumentNullException(nameof(documentLifetime));
         _business.LogEmitted += AddLogLine;
+    }
+
+    /// <inheritdoc />
+    public DocumentPresentationState Presentation => new(_title);
+
+    /// <inheritdoc />
+    public event EventHandler? PresentationChanged;
+
+    /// <inheritdoc />
+    public ValueTask InitializeAsync(
+        DocumentActivationContext context,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+        SetPresentationTitle(string.IsNullOrWhiteSpace(context.Title)
+            ? "发票信息导入和计算"
+            : context.Title);
+        return ValueTask.CompletedTask;
     }
 
     [RelayCommand]
@@ -216,18 +239,16 @@ public partial class InvoiceInfoImportViewModel : Document, IDisposable
         using var linked = CreateOperationCancellation(commandToken);
         try
         {
-            var mainWindow =
-                (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
-            var clipboard = mainWindow?.Clipboard;
-            if (clipboard is null)
+            linked.Token.ThrowIfCancellationRequested();
+            var copied = await _clipboard.TrySetTextAsync(
+                string.Join(Environment.NewLine, LogEntries),
+                linked.Token);
+            linked.Token.ThrowIfCancellationRequested();
+            if (!copied)
             {
                 AddLogLine("当前窗口不支持剪贴板，无法复制日志");
                 return;
             }
-
-            linked.Token.ThrowIfCancellationRequested();
-            await clipboard.SetTextAsync(string.Join(Environment.NewLine, LogEntries));
-            linked.Token.ThrowIfCancellationRequested();
             AddLogLine("所有日志已复制到剪贴板");
         }
         catch (OperationCanceledException) when (linked.IsCancellationRequested)
@@ -242,6 +263,17 @@ public partial class InvoiceInfoImportViewModel : Document, IDisposable
     }
 
     private bool IsClosing => Volatile.Read(ref _disposed) != 0 || _documentLifetime.IsClosing;
+
+    private void SetPresentationTitle(string title)
+    {
+        if (string.Equals(_title, title, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _title = title;
+        PresentationChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     private CancellationTokenSource CreateOperationCancellation(CancellationToken commandToken) =>
         CancellationTokenSource.CreateLinkedTokenSource(

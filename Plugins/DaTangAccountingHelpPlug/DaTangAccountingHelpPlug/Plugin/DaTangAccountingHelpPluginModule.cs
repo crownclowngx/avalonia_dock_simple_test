@@ -7,32 +7,38 @@ using DaTangAccountingHelpPlug.Business;
 using DaTangAccountingHelpPlug.ViewModels;
 using DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagementCommon.Plugin;
 using DaTangAccountingHelpPlug.Constants;
-using DaTangAccountingHelpPlug.Create;
-using DaTangAccountingHelpPlug.Create.BankBalanceReconciliation;
 using DaTangAccountingHelpPlug.Views;
 using DaTangAccountingHelpPlug.Views.BankBalanceReconciliation;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace DaTangAccountingHelpPlug.Plugin;
 
 /// <summary>
-/// DaTang 会计辅助插件接入宿主依赖注入容器的模块入口。
+/// DaTang 会计辅助插件接入 Host V2 私有 Provider 的唯一组合入口。
 /// </summary>
 /// <remarks>
-/// 仅注册配置、业务服务和 Document Scope 内对象；插件没有常驻后台任务，
-/// 因此不增加没有实际职责的 <see cref="IPluginLifecycle"/>。
+/// 模块只负责组合：业务服务进入当前插件的独立集合，Document、View 与 Descriptor 通过一次声明
+/// 同时冻结。插件没有常驻后台任务，因此不增加没有实际职责的生命周期实现。
 /// </remarks>
 public sealed class DaTangAccountingHelpPluginModule : IPluginModule
 {
     /// <inheritdoc />
-    public void Configure(IPluginRegistrationContext context)
+    public void Configure(IPluginRegistration registration)
     {
-        var services = context.Services;
-        // 发票 Document 由宿主的独立 Scope 托管，避免不同窗口共享路径、日志或计算结果。
-        services.AddScoped<InvoiceInfoImportViewModel>();
+        ArgumentNullException.ThrowIfNull(registration);
+        var services = registration.Services;
+
+        // 三个窄业务端口共享一个无状态适配器；真正的窗口能力由 Host 预置，插件不寻找主窗口。
+        services.AddSingleton<DaTangWindowInteractionService>();
+        services.AddSingleton<IInvoiceFileDialogService>(provider =>
+            provider.GetRequiredService<DaTangWindowInteractionService>());
+        services.AddSingleton<IReconciliationFileDialogService>(provider =>
+            provider.GetRequiredService<DaTangWindowInteractionService>());
+        services.AddSingleton<IPluginClipboardService>(provider =>
+            provider.GetRequiredService<DaTangWindowInteractionService>());
+
         services.AddScoped<IInvoiceInfoImportBusiness, InvoiceInfoImportBusiness>();
-        services.AddSingleton<IInvoiceFileDialogService, AvaloniaInvoiceFileDialogService>();
 
         // 内置配置是不可变的版本化资源，跨 Document 复用加载器不会共享运行状态。
         services.AddSingleton<ReconciliationProfileLoader>();
@@ -50,11 +56,19 @@ public sealed class DaTangAccountingHelpPluginModule : IPluginModule
         services.AddScoped<ReconciliationSourceViewModel>();
         services.AddScoped<ReconciliationOptionsViewModel>();
         services.AddScoped<ReconciliationRunViewModel>();
-        services.AddScoped<BankBalanceReconciliationViewModel>();
 
-        context.AddDocument<InvoiceInfoImportDocumentStrategy>();
-        context.AddDocument<BankBalanceReconciliationDocumentStrategy>();
-        context.AddView<InvoiceInfoImportViewModel, InvoiceInfoImportView>();
-        context.AddView<BankBalanceReconciliationViewModel, BankBalanceReconciliationView>();
+        // 注册 API 自动把两个模型加入 scoped 生命周期；这里不重复注册模型，也不保留 Strategy/AddView。
+        registration.AddDocument<InvoiceInfoImportViewModel, InvoiceInfoImportView>(
+            new DocumentDescriptor(
+                DaTangContributionIds.InvoiceInfoImportDocument,
+                "综合计算发票信息",
+                "依照发票表、当月明细和历史付款汇总计算当月综合表",
+                "大唐-会计"));
+        registration.AddPersistableDocument<BankBalanceReconciliationViewModel, BankBalanceReconciliationView>(
+            new DocumentDescriptor(
+                DaTangContributionIds.BankBalanceReconciliationDocument,
+                "银行余额调节表",
+                "只读分析企业账与银行账，生成调节表、收付款明细和匹配审计",
+                "大唐-会计"));
     }
 }

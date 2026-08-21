@@ -240,6 +240,7 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
 
         // 只注入最终 SDK 明确承诺的 Host Port；不存在父 Provider 或任意 IServiceProvider 回退。
         services.AddSingleton(hostProvider.GetRequiredService<IHostEventBus>());
+        services.AddSingleton(hostProvider.GetRequiredService<IPluginWindowInteraction>());
         services.AddScoped<DocumentLifetime>();
         services.AddScoped<IDocumentLifetime>(provider =>
             provider.GetRequiredService<DocumentLifetime>());

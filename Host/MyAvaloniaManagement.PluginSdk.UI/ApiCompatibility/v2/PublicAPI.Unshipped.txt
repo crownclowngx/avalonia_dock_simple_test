@@ -22,6 +22,10 @@ MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration.AddTool<TTool, TView>(MyAv
 MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration.PluginId.get -> MyAvaloniaManagement.PluginSdk.PluginId!
 MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration.UseLifecycle<TLifecycle>() -> void
+MyAvaloniaManagement.PluginSdk.UI.IPluginWindowInteraction
+MyAvaloniaManagement.PluginSdk.UI.IPluginWindowInteraction.PickOpenFilesAsync(Avalonia.Platform.Storage.FilePickerOpenOptions! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+MyAvaloniaManagement.PluginSdk.UI.IPluginWindowInteraction.PickSaveFileAsync(Avalonia.Platform.Storage.FilePickerSaveOptions! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
+MyAvaloniaManagement.PluginSdk.UI.IPluginWindowInteraction.TrySetClipboardTextAsync(string! text, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
 MyAvaloniaManagement.PluginSdk.UI.IWindowContentFullscreenHost
 MyAvaloniaManagement.PluginSdk.UI.IWindowContentFullscreenHost.TryPresent(Avalonia.Controls.Control! content, object! owner) -> bool
 MyAvaloniaManagement.PluginSdk.UI.IWindowContentFullscreenHost.TryRestore(object! owner) -> bool

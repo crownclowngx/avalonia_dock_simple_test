@@ -1,8 +1,5 @@
 using BiliDownloader.Plugin;
-using DaTangAccountingHelpPlug.Create;
-using DaTangAccountingHelpPlug.Create.BankBalanceReconciliation;
 using DaTangAccountingHelpPlug.Plugin;
-using DaTangAccountingHelpPlug.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
@@ -43,7 +40,7 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void 三个未迁移插件继续显式接入Legacy模块且不改变公共策略接口()
+    public void 两个未迁移插件继续显式接入Legacy模块且不改变公共策略接口()
     {
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),
@@ -62,8 +59,6 @@ public sealed class PluginCompatibilityTests
         {
             ConfigureForInspection(new BiliDownloaderPluginModule(),
                 "myavalonia.plugin.bili-downloader", services),
-            ConfigureForInspection(new DaTangAccountingHelpPluginModule(),
-                "myavalonia.plugin.datang-accounting-help", services),
             ConfigureForInspection(new MySmallToolsPluginModule(),
                 "myavalonia.plugin.my-small-tools", services),
         };
@@ -78,14 +73,6 @@ public sealed class PluginCompatibilityTests
             Describe(contexts[0]));
         Assert.Equal(
             [
-                "Document:InvoiceInfoImportDocumentStrategy",
-                "Document:BankBalanceReconciliationDocumentStrategy",
-                "View:InvoiceInfoImportViewModel->InvoiceInfoImportView",
-                "View:BankBalanceReconciliationViewModel->BankBalanceReconciliationView",
-            ],
-            Describe(contexts[1]));
-        Assert.Equal(
-            [
                 "Document:SecretVideoDocumentStrategy",
                 "Document:SecretVideoLibraryDocumentStrategy",
                 "Document:VideoEncryptorDocumentStrategy",
@@ -95,12 +82,11 @@ public sealed class PluginCompatibilityTests
                 "View:VideoEncryptorViewModel->VideoEncryptorView",
                 "View:VideoDecryptorViewModel->VideoDecryptorView",
             ],
-            Describe(contexts[2]));
+            Describe(contexts[1]));
 
         Assert.Equal(
             [
                 "myavalonia.plugin.bili-downloader",
-                "myavalonia.plugin.datang-accounting-help",
                 "myavalonia.plugin.my-small-tools",
             ],
             contexts.Select(context => context.PluginId.Value));
@@ -199,59 +185,6 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void DaTang模块注册Scoped文档且禁止从根容器解析()
-    {
-        var services = new ServiceCollection();
-        services.AddDocumentScopeManagement();
-        services.AddLegacyPluginDocumentScopesForTests();
-        var module = new DaTangAccountingHelpPluginModule();
-
-        module.Configure(new TestPluginRegistrationContext(
-            new PluginId("myavalonia.plugin.datang-accounting-help"), services));
-
-        var descriptor = Assert.Single(
-            services,
-            item => item.ServiceType == typeof(InvoiceInfoImportViewModel));
-        Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime);
-        Assert.DoesNotContain(
-            services,
-            item => item.ServiceType == typeof(IPluginLifecycle));
-
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateScopes = true,
-            ValidateOnBuild = true,
-        });
-
-        Assert.Throws<InvalidOperationException>(
-            provider.GetRequiredService<InvoiceInfoImportViewModel>);
-    }
-
-    [Fact]
-    public void DaTang托管策略无需无参构造也能按当前规则发现()
-    {
-        var assembly = typeof(DaTangAccountingHelpPluginModule).Assembly;
-        var documentStrategies = assembly
-            .GetTypes()
-            .Where(type => typeof(IDocumentCreationStrategy).IsAssignableFrom(type)
-                           && !type.IsAbstract
-                           && !type.IsInterface)
-            .Select(type => type.FullName!)
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToArray();
-
-        Assert.Equal(
-            [
-                typeof(BankBalanceReconciliationDocumentStrategy).FullName!,
-                typeof(InvoiceInfoImportDocumentStrategy).FullName!
-            ],
-            documentStrategies);
-        Assert.Null(typeof(BankBalanceReconciliationDocumentStrategy).GetConstructor(Type.EmptyTypes));
-        Assert.Null(typeof(InvoiceInfoImportDocumentStrategy).GetConstructor(Type.EmptyTypes));
-        Assert.Null(typeof(InvoiceInfoImportViewModel).GetConstructor(Type.EmptyTypes));
-    }
-
-    [Fact]
     public void 未注册生命周期的托管插件无需运行状态即可用()
     {
         var registry = new PluginRegistry(CreatePluginSnapshots(), [], [], []);
@@ -264,41 +197,6 @@ public sealed class PluginCompatibilityTests
             plugin => Assert.True(availability.IsAvailable(
                 new MyAvaloniaManagement.PluginSdk.PluginId(
                     plugin.Manifest.PluginId.Value))));
-    }
-
-    [Fact]
-    public void DaTang策略通过统一DI激活且每次返回独立文档()
-    {
-        var services = new ServiceCollection();
-        services.AddDocumentScopeManagement();
-        services.AddLegacyPluginDocumentScopesForTests();
-        new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
-            new PluginId("myavalonia.plugin.datang-accounting-help"), services));
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateScopes = true,
-            ValidateOnBuild = true,
-        });
-
-        var strategy = ActivatorUtilities.CreateInstance<InvoiceInfoImportDocumentStrategy>(provider);
-        var firstParams = new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)
-        {
-            Title = "第一份发票计算",
-        };
-        var secondParams = new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId);
-        var first = Assert.IsType<InvoiceInfoImportViewModel>(
-            strategy.CreateDocument(firstParams));
-        var second = Assert.IsType<InvoiceInfoImportViewModel>(
-            strategy.CreateDocument(secondParams));
-
-        Assert.NotSame(first, second);
-        Assert.Equal("第一份发票计算", first.Title);
-        Assert.Equal("发票信息导入和计算", second.Title);
-        Assert.Equal("大唐-会计", strategy.GetMetadata().MenuCategory);
-        var manager = provider.GetRequiredService<LegacyPluginDocumentScopeFactory>();
-        Assert.True(manager.Release(first));
-        Assert.False(manager.Release(first));
-        Assert.True(manager.Release(second));
     }
 
     [Fact]
@@ -374,7 +272,4 @@ public sealed class PluginCompatibilityTests
             manifest, assembly, typeof(TModule), [], [], [], []);
     }
 
-    private static IDocumentCreationStrategy Activate<TStrategy>(
-        IServiceProvider provider) where TStrategy : IDocumentCreationStrategy =>
-        ActivatorUtilities.CreateInstance<TStrategy>(provider);
 }

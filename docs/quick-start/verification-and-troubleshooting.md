@@ -1,7 +1,7 @@
 # 验证与排错
 
-> 本页按 G9 最终 V2 契约编写。MyPlugTest 是当前真实加载样例；其余三个业务插件等待 G10–G12，
-> 它们的 Legacy 源码回归不得作为新插件接入模板。
+> 本页按 G10 最终 V2 契约编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
+> 窗口端口和持久化实例；MySmallTools/BiliDownloader 的 Legacy 源码回归不得作为新插件模板。
 
 验证新插件时应从“目录和清单”开始，再检查模块、扩展元数据和界面行为。这样能够在最接近故障来源的位置停止，而不是从空白界面反推所有可能原因。
 
@@ -62,6 +62,12 @@ dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTes
 
 ```powershell
 .\scripts\Test-MyPlugTestV2.ps1 -Configuration Release
+```
+
+修改 DaTang 或 `IPluginWindowInteraction` 时运行：
+
+```powershell
+.\scripts\Test-DaTangAccountingHelpPlugV2.ps1 -Configuration Release
 ```
 
 该脚本只生成不可发布的确定性测试 ZIP；不运行 Windows CI、真实窗口 Smoke、ReleaseAcceptance 或发布门禁。

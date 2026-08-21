@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.Loader;
-using DaTangAccountingHelpPlug.Create;
 using DaTangAccountingHelpPlug.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
@@ -140,29 +139,6 @@ public sealed class ManagedOnlyPluginLoadingTests
     }
 
     [Fact]
-    public void Managed策略只提供DI构造仍可创建()
-    {
-        var services = new ServiceCollection();
-        services.AddDocumentScopeManagement();
-        services.AddLegacyPluginDocumentScopesForTests();
-        new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
-            new PluginId("myavalonia.plugin.datang-accounting-help"), services));
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateScopes = true,
-            ValidateOnBuild = true,
-        });
-
-        Assert.Null(typeof(InvoiceInfoImportDocumentStrategy).GetConstructor(Type.EmptyTypes));
-        var strategy = ActivatorUtilities.CreateInstance<InvoiceInfoImportDocumentStrategy>(provider);
-        var document = strategy.CreateDocument(
-            new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId));
-
-        Assert.NotNull(document);
-        Assert.True(provider.GetRequiredService<LegacyPluginDocumentScopeFactory>().Release(document));
-    }
-
-    [Fact]
     public void deps声明的同名不同版本私有依赖仍按插件隔离()
     {
         var snapshot = AssemblyLoaderHelper.Discover("PluginIsolationFixtures");
@@ -189,12 +165,11 @@ public sealed class ManagedOnlyPluginLoadingTests
     }
 
     [Fact]
-    public void 仅MyPlugTest进入V2生产目录且其余三个插件保持Legacy隔离()
+    public void MyPlugTest和DaTang进入V2生产目录且其余两个插件保持Legacy隔离()
     {
         Assembly[] legacyAssemblies =
         [
             typeof(BiliDownloader.Plugin.BiliDownloaderPluginModule).Assembly,
-            typeof(DaTangAccountingHelpPluginModule).Assembly,
             typeof(MySmallTools.Plugin.MySmallToolsPluginModule).Assembly,
         ];
 
@@ -215,6 +190,14 @@ public sealed class ManagedOnlyPluginLoadingTests
             myPlugTestModule, out var validatedMyPlugTest, out var myPlugTestError, out _));
         Assert.Same(myPlugTestModule, validatedMyPlugTest);
         Assert.Null(myPlugTestError);
+
+        var daTangAssembly = typeof(DaTangAccountingHelpPluginModule).Assembly;
+        var daTangModule = Assert.Single(daTangAssembly.ExportedTypes, type =>
+            typeof(V2PluginModule).IsAssignableFrom(type) && !type.IsAbstract);
+        Assert.True(PluginModulePreflight.TryValidate(
+            daTangModule, out var validatedDaTang, out var daTangError, out _));
+        Assert.Same(daTangModule, validatedDaTang);
+        Assert.Null(daTangError);
 
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),
