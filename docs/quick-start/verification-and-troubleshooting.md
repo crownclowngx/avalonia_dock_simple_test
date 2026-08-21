@@ -1,7 +1,8 @@
 # 验证与排错
 
-> 本页按 G10 最终 V2 契约编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
-> 窗口端口和持久化实例；MySmallTools/BiliDownloader 的 Legacy 源码回归不得作为新插件模板。
+> 本页按 G11 最终 V2 契约编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
+> 窗口端口和持久化实例，MySmallTools 是原生资源与关闭令牌实例；BiliDownloader 的 Legacy
+> 源码回归不得作为新插件模板。
 
 验证新插件时应从“目录和清单”开始，再检查模块、扩展元数据和界面行为。这样能够在最接近故障来源的位置停止，而不是从空白界面反推所有可能原因。
 
@@ -70,7 +71,14 @@ dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTes
 .\scripts\Test-DaTangAccountingHelpPlugV2.ps1 -Configuration Release
 ```
 
-该脚本只生成不可发布的确定性测试 ZIP；不运行 Windows CI、真实窗口 Smoke、ReleaseAcceptance 或发布门禁。
+修改 MySmallTools、`IDocumentLifetime` 原生取消链或 `IWindowContentFullscreenHost` 时运行：
+
+```powershell
+.\scripts\Test-MySmallToolsV2.ps1 -Configuration Release
+```
+
+这些迁移脚本只生成不可发布的确定性测试 ZIP；G11 会运行真实媒体 Harness，但不运行 Windows CI、
+Windows Smoke、ReleaseAcceptance 或发布门禁。
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。
 

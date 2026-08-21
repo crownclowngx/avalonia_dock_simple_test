@@ -396,6 +396,8 @@ public sealed class G4DeploymentTests
         public bool Play() => true;
         public void Stop() { }
         public void SetPause(bool paused) { }
+        public Task PauseAtAsync(long positionMs, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
         public void SetVolume(int volume) => Volume = volume;
         public bool SetRate(float rate)
         {

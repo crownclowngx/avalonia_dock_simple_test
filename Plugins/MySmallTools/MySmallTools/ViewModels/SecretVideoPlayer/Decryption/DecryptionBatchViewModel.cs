@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.PluginSdk;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Business.SecretVideoPlayer.Operations;
 using MySmallTools.ViewModels.SecretVideoPlayer;
@@ -16,12 +16,13 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer.Decryption;
 /// 候选检查、名称净化和单项解密仍属于 <see cref="IVideoDecryptionService"/>；本类型只拥有
 /// 当前 Document 的队列修订、命令和公共密码。顺序、取消当前与取消全部由公共运行器保证。
 /// </remarks>
-public partial class DecryptionBatchViewModel : Document, IDisposable
+public partial class DecryptionBatchViewModel : ObservableObject, IDisposable
 {
     private readonly IVideoDecryptionService _decryptionService;
     private readonly ISequentialVideoQueueRunner<CandidateDecryptionPreflight> _queueRunner;
     private readonly ObservableCollection<DecryptionQueueItemViewModel> _items = [];
     private readonly ObservableCollection<VideoPreflightIssue> _preflightIssues = [];
+    private readonly IDocumentLifetime _documentLifetime;
 
     // 运行器在后台检查项目是否仍存在，不能直接跨线程枚举 UI 的 ObservableCollection。
     private readonly ConcurrentDictionary<Guid, byte> _queuedItemIds = new();
@@ -39,19 +40,15 @@ public partial class DecryptionBatchViewModel : Document, IDisposable
     /// <summary>生产 DI 使用的完整构造函数。</summary>
     public DecryptionBatchViewModel(
         IVideoDecryptionService decryptionService,
-        ISequentialVideoQueueRunner<CandidateDecryptionPreflight> queueRunner)
+        ISequentialVideoQueueRunner<CandidateDecryptionPreflight> queueRunner,
+        IDocumentLifetime documentLifetime)
     {
         _decryptionService = decryptionService ?? throw new ArgumentNullException(nameof(decryptionService));
         _queueRunner = queueRunner ?? throw new ArgumentNullException(nameof(queueRunner));
+        _documentLifetime = documentLifetime ?? throw new ArgumentNullException(nameof(documentLifetime));
         Items = new ReadOnlyObservableCollection<DecryptionQueueItemViewModel>(_items);
         PreflightIssues = new ReadOnlyObservableCollection<VideoPreflightIssue>(_preflightIssues);
         Queue = new DecryptionQueueViewModel(this);
-    }
-
-    /// <summary>保留给既有测试和独立宿主的兼容构造函数。</summary>
-    public DecryptionBatchViewModel(IVideoDecryptionService decryptionService)
-        : this(decryptionService, new SequentialVideoQueueRunner<CandidateDecryptionPreflight>())
-    {
     }
 
     public ReadOnlyObservableCollection<DecryptionQueueItemViewModel> Items { get; }
@@ -62,7 +59,7 @@ public partial class DecryptionBatchViewModel : Document, IDisposable
     public bool HasPreparedPlan => IsPlanCurrent;
     public bool IsBusy => IsInspecting || IsPreflighting || IsRunning;
     /// <summary>子 View 的统一绑定根；隐藏的 Dock Owner 仍可通过 IDockable 契约访问。</summary>
-    public new DecryptionBatchViewModel Owner => this;
+    public DecryptionBatchViewModel Owner => this;
     public DecryptionQueueViewModel Queue { get; }
     public DecryptionBatchViewModel Batch => this;
 
@@ -457,14 +454,15 @@ public partial class DecryptionBatchViewModel : Document, IDisposable
                     Password,
                     itemProgress,
                     token),
-                progress);
+                progress,
+                _documentLifetime.ClosingToken);
             if (!IsCurrent(generation))
                 return;
 
             // 使已经排队、但晚于 RunAsync 返回的 Progress<T> 回调失效，批次结论才是最后
             // 一次用户可见更新。真实 Avalonia UI 仍由 Progress<T> 保证线程切换。
             Interlocked.Increment(ref _operationGeneration);
-            if (_disposed)
+            if (IsClosing)
                 return;
 
             CurrentFile = string.Empty;
@@ -479,9 +477,9 @@ public partial class DecryptionBatchViewModel : Document, IDisposable
         }
         finally
         {
-            if (!_disposed)
+            if (!IsClosing)
                 IsRunning = false;
-            if (!_disposed)
+            if (!IsClosing)
                 InvalidatePlan(resetReadyItems: false);
         }
     }
@@ -634,7 +632,10 @@ public partial class DecryptionBatchViewModel : Document, IDisposable
 
     private CancellationTokenSource ReplacePreflightCancellation()
     {
-        var cancellation = new CancellationTokenSource();
+        // Inspect 与 Preflight 共用本次计划令牌，并链接 Host 的关闭信号。这样关闭文档时
+        // 不需要依赖 View 主动发命令，输出路径检查和公开信息读取都会协作退出。
+        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            _documentLifetime.ClosingToken);
         var previous = Interlocked.Exchange(ref _preflightCancellation, cancellation);
         previous?.Cancel();
         previous?.Dispose();
@@ -648,7 +649,9 @@ public partial class DecryptionBatchViewModel : Document, IDisposable
     }
 
     private bool IsCurrent(int generation) =>
-        !_disposed && generation == Volatile.Read(ref _operationGeneration);
+        !IsClosing && generation == Volatile.Read(ref _operationGeneration);
+
+    private bool IsClosing => _disposed || _documentLifetime.IsClosing;
 
     /// <summary>
     /// 真实 UI 使用当前 SynchronizationContext 串行更新绑定；无上下文测试同步执行回调，

@@ -1,8 +1,6 @@
-using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagement.PluginSdk;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Business.SecretVideoPlayer.Operations;
-using MySmallTools.Constants;
-using MySmallTools.InitPlug.SecretVideoPlayer;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 using Xunit;
 
@@ -153,7 +151,8 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
     public async Task ViewModel_AddsCandidatesAndKeepsPasswordOutOfItems()
     {
         var service = new StubDecryptionService();
-        using var viewModel = new VideoDecryptorViewModel(service);
+        using var lifetime = new TestDocumentLifetime();
+        using var viewModel = TestViewModelFactory.CreateDecryptor(service, lifetime);
 
         Assert.False(viewModel.HasItems);
         await viewModel.AddFilesAsync(["one.secvid", "one.secvid", "bad.secvid"]);
@@ -174,7 +173,8 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
     public async Task ViewModel_DisposeCancelsRunningBatch()
     {
         var service = new CancellationRecordingService();
-        var viewModel = new VideoDecryptorViewModel(service);
+        using var lifetime = new TestDocumentLifetime();
+        var viewModel = TestViewModelFactory.CreateDecryptor(service, lifetime);
         await viewModel.AddFilesAsync(["one.secvid"]);
         viewModel.SetOutputDirectory(fixture.DirectoryPath);
         viewModel.Password = "password";
@@ -189,29 +189,24 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
     }
 
     [Fact]
-    public void Strategy_ExposesStableDecryptorMetadata()
+    public async Task Document_ExposesDefaultPresentation()
     {
-        var strategy = new VideoDecryptorDocumentStrategy(new ThrowingDocumentScopeFactory());
-        var metadata = strategy.GetMetadata();
-
-        Assert.Equal(DocumentTypeIdConstant.VideoDecryptorDocumentId, metadata.DocumentTypeId);
-        Assert.Equal("批量视频解密器", metadata.DisplayName);
-        Assert.Equal("视频工具", metadata.MenuCategory);
+        using var lifetime = new TestDocumentLifetime();
+        using var document = TestViewModelFactory.CreateDecryptor(
+            new StubDecryptionService(), lifetime);
+        await document.InitializeAsync(new DocumentActivationContext(string.Empty), default);
+        Assert.Equal("批量视频解密器", document.Presentation.Title);
     }
 
     [Fact]
-    public void Strategy_CreatesDefaultAndCustomDocumentTitles()
+    public async Task Document_PreservesCustomTitle()
     {
-        var strategy = new VideoDecryptorDocumentStrategy(new DecryptorDocumentScopeFactory());
-
-        var defaultDocument = strategy.CreateDocument(
-            new DocumentCreationParams(DocumentTypeIdConstant.VideoDecryptorDocumentId));
-        var customDocument = strategy.CreateDocument(
-            new DocumentCreationParams(DocumentTypeIdConstant.VideoDecryptorDocumentId) { Title = "自定义解密任务" });
-
-        Assert.Equal("批量视频解密器", defaultDocument.Title);
-        Assert.Equal("自定义解密任务", customDocument.Title);
-        Assert.IsType<VideoDecryptorViewModel>(defaultDocument);
+        using var lifetime = new TestDocumentLifetime();
+        using var document = TestViewModelFactory.CreateDecryptor(
+            new StubDecryptionService(), lifetime);
+        await document.InitializeAsync(
+            new DocumentActivationContext("自定义解密任务"), default);
+        Assert.Equal("自定义解密任务", document.Presentation.Title);
     }
 
     private static DecryptionCandidate Candidate(string inputName, string originalName, long length) =>
@@ -345,20 +340,4 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
                 Path.Combine(outputDirectory, candidate.OriginalFileName),
                 VideoPreflightResult.Ready(candidate.OriginalFileLength))).ToArray());
 
-    private sealed class DecryptorDocumentScopeFactory : IDocumentScopeFactory
-    {
-        public TDocument CreateDocument<TDocument>() where TDocument : Dock.Model.Mvvm.Controls.Document
-        {
-            if (typeof(TDocument) == typeof(VideoDecryptorViewModel))
-                return (TDocument)(Dock.Model.Mvvm.Controls.Document)new VideoDecryptorViewModel(new StubDecryptionService());
-
-            throw new NotSupportedException();
-        }
-    }
-
-    private sealed class ThrowingDocumentScopeFactory : IDocumentScopeFactory
-    {
-        public TDocument CreateDocument<TDocument>() where TDocument : Dock.Model.Mvvm.Controls.Document =>
-            throw new NotSupportedException();
-    }
 }

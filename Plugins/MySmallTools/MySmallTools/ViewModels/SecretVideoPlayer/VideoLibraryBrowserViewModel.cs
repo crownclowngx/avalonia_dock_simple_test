@@ -1,5 +1,6 @@
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.ViewModels.SecretVideoPlayer.Library;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer;
 
@@ -10,10 +11,11 @@ public sealed class VideoLibraryBrowserViewModel : LibraryBrowserCoordinatorView
 {
     public VideoLibraryBrowserViewModel(
         IVideoLibraryScanner scanner,
+        IDocumentLifetime documentLifetime,
         IVideoLibrarySettingsStore? settingsStore = null,
         IPlaybackHistoryStore? historyStore = null,
         IVideoLibraryCatalogSession? catalog = null)
-        : base(scanner, settingsStore, historyStore, catalog)
+        : base(scanner, documentLifetime, settingsStore, historyStore, catalog)
     {
     }
 }

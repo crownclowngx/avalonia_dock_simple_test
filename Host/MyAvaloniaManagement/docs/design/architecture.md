@@ -18,8 +18,8 @@
 ### Plugin SDK 与主题所有权
 
 最终基础契约来自 `MyAvaloniaManagement.PluginSdk`，UI 注册契约来自
-`MyAvaloniaManagement.PluginSdk.UI`；旧 `MyAvaloniaManagementCommon` 只保留为 MySmallTools 与
-BiliDownloader 在 G11–G12 迁移前的不可打包源码桥。MyPlugTest 与 DaTang 已只使用最终 SDK。SDK 不拥有
+`MyAvaloniaManagement.PluginSdk.UI`；旧 `MyAvaloniaManagementCommon` 只保留为 BiliDownloader
+在 G12 迁移前的不可打包源码桥。MyPlugTest、DaTang 与 MySmallTools 已只使用最终 SDK。SDK 不拥有
 字体、桌面后端或全局主题。`App.axaml` 是 Fluent、Semi、Ursa、Dock Theme 和 Host Styles 的唯一
 组合入口；`ApplicationThemeService` 只切换宿主主题状态，不把第三方主题对象暴露成插件服务。
 

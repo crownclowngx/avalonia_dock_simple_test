@@ -1,7 +1,8 @@
 using System.Reflection;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.Presentation;
+using MyAvaloniaManagement.PluginSdk.UI;
+using LegacyPluginModule = MyAvaloniaManagementCommon.Plugin.IPluginModule;
 
 namespace MyAvaloniaManagement.Tests;
 
@@ -31,7 +32,7 @@ public sealed class G11LowValuePublicSurfaceTests
     [Fact]
     public void 低价值类型和占位成员不会重新进入Sdk()
     {
-        var assembly = typeof(IPluginModule).Assembly;
+        var assembly = typeof(LegacyPluginModule).Assembly;
 
         Assert.Null(assembly.GetType(
             "MyAvaloniaManagementCommon.Save.IDocumentSavePathPolicy"));
@@ -44,7 +45,7 @@ public sealed class G11LowValuePublicSurfaceTests
     [Fact]
     public void 低价值生命周期编排面已删除_正式文档语义继续保留()
     {
-        var assembly = typeof(IPluginModule).Assembly;
+        var assembly = typeof(LegacyPluginModule).Assembly;
 
         Assert.DoesNotContain(
             assembly.ExportedTypes,
@@ -59,7 +60,11 @@ public sealed class G11LowValuePublicSurfaceTests
                 "PluginLifecycleOperationRunner" or
                 "IPluginLifecycleDependencies");
         Assert.Contains(typeof(IDocumentCreationIntentProvider), assembly.ExportedTypes);
-        Assert.Contains(typeof(IWindowContentFullscreenHost), assembly.ExportedTypes);
+        Assert.Contains(
+            typeof(IWindowContentFullscreenHost),
+            typeof(IWindowContentFullscreenHost).Assembly.ExportedTypes);
+        Assert.Null(assembly.GetType(
+            "MyAvaloniaManagementCommon.Presentation.IWindowContentFullscreenHost"));
         Assert.Equal(
             typeof(CancellationToken),
             typeof(IDocumentLifetime).GetProperty(nameof(IDocumentLifetime.ClosingToken))?.PropertyType);

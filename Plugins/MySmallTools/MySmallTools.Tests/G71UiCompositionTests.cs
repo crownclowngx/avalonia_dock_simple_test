@@ -27,13 +27,14 @@ public sealed class G71UiCompositionTests
     [Fact]
     public void BrowserAndLibraryExposeSlicesWithoutCopyingOwnerState()
     {
-        using var browser = new VideoLibraryBrowserViewModel(new EmptyScanner());
+        using var lifetime = new TestDocumentLifetime();
+        using var browser = new VideoLibraryBrowserViewModel(new EmptyScanner(), lifetime);
         Assert.Same(browser, browser.Catalog.Owner);
         Assert.Same(browser, browser.Query.Owner);
 
         var player = Assert.IsType<VideoPlayerControlViewModel>(
             RuntimeHelpers.GetUninitializedObject(typeof(VideoPlayerControlViewModel)));
-        using var library = new SecretVideoLibraryViewModel(browser, player);
+        using var library = new SecretVideoLibraryViewModel(browser, player, lifetime);
 
         Assert.Same(library, library.Playback.Owner);
         Assert.Same(library, library.History.Owner);
@@ -45,7 +46,8 @@ public sealed class G71UiCompositionTests
     {
         var player = Assert.IsType<VideoPlayerControlViewModel>(
             RuntimeHelpers.GetUninitializedObject(typeof(VideoPlayerControlViewModel)));
-        using var document = new SecretVideoPlayerViewModel(player);
+        using var lifetime = new TestDocumentLifetime();
+        using var document = new SecretVideoPlayerViewModel(player, lifetime);
 
         document.Password = "g7.1-sensitive";
         document.FilePath = "missing.secvid";

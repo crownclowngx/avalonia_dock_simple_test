@@ -165,12 +165,11 @@ public sealed class ManagedOnlyPluginLoadingTests
     }
 
     [Fact]
-    public void MyPlugTest和DaTang进入V2生产目录且其余两个插件保持Legacy隔离()
+    public void MyPlugTestDaTang和MySmallTools进入V2且仅Bili保持Legacy隔离()
     {
         Assembly[] legacyAssemblies =
         [
             typeof(BiliDownloader.Plugin.BiliDownloaderPluginModule).Assembly,
-            typeof(MySmallTools.Plugin.MySmallToolsPluginModule).Assembly,
         ];
 
         foreach (var assembly in legacyAssemblies)
@@ -198,6 +197,14 @@ public sealed class ManagedOnlyPluginLoadingTests
             daTangModule, out var validatedDaTang, out var daTangError, out _));
         Assert.Same(daTangModule, validatedDaTang);
         Assert.Null(daTangError);
+
+        var mySmallToolsAssembly = typeof(MySmallTools.Plugin.MySmallToolsPluginModule).Assembly;
+        var mySmallToolsModule = Assert.Single(mySmallToolsAssembly.ExportedTypes, type =>
+            typeof(V2PluginModule).IsAssignableFrom(type) && !type.IsAbstract);
+        Assert.True(PluginModulePreflight.TryValidate(
+            mySmallToolsModule, out var validatedMySmallTools, out var mySmallToolsError, out _));
+        Assert.Same(mySmallToolsModule, validatedMySmallTools);
+        Assert.Null(mySmallToolsError);
 
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),

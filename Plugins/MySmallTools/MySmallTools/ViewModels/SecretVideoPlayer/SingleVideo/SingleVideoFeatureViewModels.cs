@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MySmallTools.Business.SecretVideoPlayer.Container;
+using MyAvaloniaManagement.PluginSdk;
 using System.ComponentModel;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer.SingleVideo;
@@ -16,6 +17,7 @@ public partial class SingleVideoSourceViewModel : ObservableObject, IDisposable
 {
     private readonly VideoPlayerControlViewModel _player;
     private readonly Action<string> _fileChanged;
+    private readonly IDocumentLifetime _documentLifetime;
     private bool _disposed;
 
     [ObservableProperty] private string _filePath = string.Empty;
@@ -29,10 +31,12 @@ public partial class SingleVideoSourceViewModel : ObservableObject, IDisposable
 
     public SingleVideoSourceViewModel(
         VideoPlayerControlViewModel player,
-        Action<string> fileChanged)
+        Action<string> fileChanged,
+        IDocumentLifetime documentLifetime)
     {
         _player = player ?? throw new ArgumentNullException(nameof(player));
         _fileChanged = fileChanged ?? throw new ArgumentNullException(nameof(fileChanged));
+        _documentLifetime = documentLifetime ?? throw new ArgumentNullException(nameof(documentLifetime));
         _player.PropertyChanged += OnPlayerPropertyChanged;
     }
 
@@ -60,11 +64,19 @@ public partial class SingleVideoSourceViewModel : ObservableObject, IDisposable
         StatusMessage = "正在验证密码并打开随机读取流...";
         try
         {
-            var success = await _player.Media.LoadAsync(FilePath, Password);
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+                _documentLifetime.ClosingToken);
+            var success = await _player.Media.LoadAsync(FilePath, Password, linked.Token);
+            if (_documentLifetime.IsClosing)
+                return;
             IsMediaLoaded = success;
             StatusMessage = success
                 ? "视频已加载，可以开始播放"
                 : "加载失败：密码错误、文件已损坏或不是 SECVID03";
+        }
+        catch (OperationCanceledException) when (_documentLifetime.IsClosing)
+        {
+            // Host 已确认关闭；取消属于正常控制流，且关闭后的模型不能再发布错误文本。
         }
         catch (Exception ex)
         {
@@ -73,7 +85,8 @@ public partial class SingleVideoSourceViewModel : ObservableObject, IDisposable
         }
         finally
         {
-            IsLoading = false;
+            if (!_documentLifetime.IsClosing)
+                IsLoading = false;
         }
     }
 
@@ -84,7 +97,11 @@ public partial class SingleVideoSourceViewModel : ObservableObject, IDisposable
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        await _player.Media.CleanupAsync(cancellationToken);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _documentLifetime.ClosingToken);
+        await _player.Media.CleanupAsync(linked.Token);
+        linked.Token.ThrowIfCancellationRequested();
         FilePath = filePath;
     }
 

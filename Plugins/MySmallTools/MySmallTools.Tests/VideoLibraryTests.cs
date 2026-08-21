@@ -1,7 +1,5 @@
 using MySmallTools.Business.SecretVideoPlayer.Container;
 using MySmallTools.Business.SecretVideoPlayer.Library;
-using MySmallTools.Constants;
-using MySmallTools.InitPlug.SecretVideoPlayer;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 using Xunit;
 
@@ -53,12 +51,13 @@ public sealed class VideoLibraryTests(Secvid03Fixture fixture)
     [Fact]
     public async Task Browser_SortsAndSearchesFileNameTitleAndHiddenDescription()
     {
+        using var lifetime = new TestDocumentLifetime();
         using var browser = new VideoLibraryBrowserViewModel(new FixedScanner(
         [
             Ready("unique-file-77.secvid", "unique-file-77", "Third", "ordinary"),
             Ready("a.secvid", "a", "First Alpha", "ordinary"),
             Ready("b.secvid", "b", "Second", "secret Needle text")
-        ]));
+        ]), lifetime);
 
         Assert.False(browser.HasFolder);
         Assert.False(browser.HasVisibleItems);
@@ -97,7 +96,8 @@ public sealed class VideoLibraryTests(Secvid03Fixture fixture)
             Ready("a.secvid", "a", "Alpha", string.Empty),
             Ready("b.secvid", "b", "Beta", string.Empty)
         ]);
-        using var browser = new VideoLibraryBrowserViewModel(scanner);
+        using var lifetime = new TestDocumentLifetime();
+        using var browser = new VideoLibraryBrowserViewModel(scanner, lifetime);
         await browser.LoadFolderAsync("virtual-clear-search");
         Assert.Equal(1, scanner.ScanCalls);
 
@@ -118,7 +118,8 @@ public sealed class VideoLibraryTests(Secvid03Fixture fixture)
     public async Task Browser_RejectsLateResultsFromPreviousFolderAndAfterDispose()
     {
         var scanner = new SwitchingScanner();
-        var browser = new VideoLibraryBrowserViewModel(scanner);
+        using var lifetime = new TestDocumentLifetime();
+        var browser = new VideoLibraryBrowserViewModel(scanner, lifetime);
 
         var oldScan = browser.LoadFolderAsync("old-library");
         await Task.Delay(20);
@@ -127,7 +128,8 @@ public sealed class VideoLibraryTests(Secvid03Fixture fixture)
 
         Assert.Equal("new", Assert.Single(browser.VisibleItems).FileNameWithoutExtension);
 
-        var disposedBrowser = new VideoLibraryBrowserViewModel(scanner);
+        using var disposedLifetime = new TestDocumentLifetime();
+        var disposedBrowser = new VideoLibraryBrowserViewModel(scanner, disposedLifetime);
         var pending = disposedBrowser.LoadFolderAsync("old-library");
         await Task.Delay(20);
         disposedBrowser.Dispose();
@@ -136,14 +138,19 @@ public sealed class VideoLibraryTests(Secvid03Fixture fixture)
     }
 
     [Fact]
-    public void LibraryStrategy_ExposesStableMenuMetadata()
+    public async Task Browser_HostClosingTokenRejectsLateScanResults()
     {
-        var strategy = new SecretVideoLibraryDocumentStrategy(new ThrowingDocumentScopeFactory());
-        var metadata = strategy.GetMetadata();
+        var scanner = new SwitchingScanner();
+        using var lifetime = new TestDocumentLifetime();
+        using var browser = new VideoLibraryBrowserViewModel(scanner, lifetime);
 
-        Assert.Equal(DocumentTypeIdConstant.SecretVideoLibraryDocumentId, metadata.DocumentTypeId);
-        Assert.Equal("加密视频库播放器", metadata.DisplayName);
-        Assert.Equal("视频工具", metadata.MenuCategory);
+        var pending = browser.LoadFolderAsync("old-library");
+        await Task.Delay(20);
+        lifetime.Close();
+        await pending;
+
+        Assert.Empty(browser.VisibleItems);
+        Assert.True(lifetime.IsClosing);
     }
 
     private string CreateTestDirectory()
@@ -207,9 +214,4 @@ public sealed class VideoLibraryTests(Secvid03Fixture fixture)
         }
     }
 
-    private sealed class ThrowingDocumentScopeFactory : MyAvaloniaManagementCommon.DocumentCreation.IDocumentScopeFactory
-    {
-        public TDocument CreateDocument<TDocument>() where TDocument : Dock.Model.Mvvm.Controls.Document =>
-            throw new NotSupportedException();
-    }
 }

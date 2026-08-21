@@ -1,7 +1,7 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Threading;
-using MyAvaloniaManagementCommon.Presentation;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Views;
 

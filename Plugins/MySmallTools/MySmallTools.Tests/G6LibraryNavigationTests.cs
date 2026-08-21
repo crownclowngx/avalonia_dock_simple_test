@@ -15,10 +15,12 @@ public sealed class G6LibraryNavigationTests
             RuntimeHelpers.GetUninitializedObject(typeof(VideoPlayerControlViewModel)));
         var secondPlayer = Assert.IsType<VideoPlayerControlViewModel>(
             RuntimeHelpers.GetUninitializedObject(typeof(VideoPlayerControlViewModel)));
-        using var firstBrowser = new VideoLibraryBrowserViewModel(new FixedScanner([]));
-        using var secondBrowser = new VideoLibraryBrowserViewModel(new FixedScanner([]));
-        using var first = new SecretVideoLibraryViewModel(firstBrowser, firstPlayer);
-        using var second = new SecretVideoLibraryViewModel(secondBrowser, secondPlayer);
+        using var firstLifetime = new TestDocumentLifetime();
+        using var secondLifetime = new TestDocumentLifetime();
+        using var firstBrowser = new VideoLibraryBrowserViewModel(new FixedScanner([]), firstLifetime);
+        using var secondBrowser = new VideoLibraryBrowserViewModel(new FixedScanner([]), secondLifetime);
+        using var first = new SecretVideoLibraryViewModel(firstBrowser, firstPlayer, firstLifetime);
+        using var second = new SecretVideoLibraryViewModel(secondBrowser, secondPlayer, secondLifetime);
 
         Assert.False(first.IsContinuousPlaybackEnabled);
         first.IsContinuousPlaybackEnabled = true;
@@ -33,12 +35,13 @@ public sealed class G6LibraryNavigationTests
         var a = Path.Combine(root, "a.secvid");
         var b = Path.Combine(root, "b.secvid");
         var c = Path.Combine(root, "c.secvid");
+        using var lifetime = new TestDocumentLifetime();
         using var browser = new VideoLibraryBrowserViewModel(new FixedScanner(
         [
             Ready(c, "c", "第三项"),
             Ready(a, "a", "第一项"),
             Ready(b, "b", "第二项")
-        ]));
+        ]), lifetime);
         await browser.LoadFolderAsync(root);
 
         Assert.Equal(a, browser.FindVisibleAdjacent(b, -1)?.FilePath);
@@ -53,11 +56,12 @@ public sealed class G6LibraryNavigationTests
         var root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "g6-filter-order"));
         var a = Path.Combine(root, "a.secvid");
         var b = Path.Combine(root, "b.secvid");
+        using var lifetime = new TestDocumentLifetime();
         using var browser = new VideoLibraryBrowserViewModel(new FixedScanner(
         [
             Ready(a, "a", "保留"),
             Ready(b, "b", "隐藏")
-        ]));
+        ]), lifetime);
         await browser.LoadFolderAsync(root);
 
         browser.SearchText = "保留";

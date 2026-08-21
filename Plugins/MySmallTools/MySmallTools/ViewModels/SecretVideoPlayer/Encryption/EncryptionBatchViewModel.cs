@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.PluginSdk;
 using MySmallTools.Business.SecretVideoPlayer.Container;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
 using MySmallTools.Business.SecretVideoPlayer.Operations;
@@ -18,13 +18,14 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer.Encryption;
 /// <see cref="IVideoBatchEncryptionService"/>，单文件加密属于 <see cref="IVideoEncryptionService"/>，
 /// 严格顺序与取消语义属于 <see cref="ISequentialVideoQueueRunner{TPreparedItem}"/>。
 /// </remarks>
-public partial class EncryptionBatchViewModel : Document, IDisposable
+public partial class EncryptionBatchViewModel : ObservableObject, IDisposable
 {
     private readonly IVideoEncryptionService _singleFileService;
     private readonly IVideoBatchEncryptionService _batchService;
     private readonly ISequentialVideoQueueRunner<PreparedEncryptionItem> _queueRunner;
     private readonly ObservableCollection<EncryptionQueueItemViewModel> _items = [];
     private readonly ObservableCollection<VideoPreflightIssue> _overallIssues = [];
+    private readonly IDocumentLifetime _documentLifetime;
 
     // 运行器会在后台线程开始下一项，而 UI 允许移除尚未开始的项目。并发集合为这两个所有者
     // 提供最小共享事实，避免后台线程直接枚举 ObservableCollection。
@@ -46,25 +47,16 @@ public partial class EncryptionBatchViewModel : Document, IDisposable
     public EncryptionBatchViewModel(
         IVideoEncryptionService singleFileService,
         IVideoBatchEncryptionService batchService,
-        ISequentialVideoQueueRunner<PreparedEncryptionItem> queueRunner)
+        ISequentialVideoQueueRunner<PreparedEncryptionItem> queueRunner,
+        IDocumentLifetime documentLifetime)
     {
         _singleFileService = singleFileService ?? throw new ArgumentNullException(nameof(singleFileService));
         _batchService = batchService ?? throw new ArgumentNullException(nameof(batchService));
         _queueRunner = queueRunner ?? throw new ArgumentNullException(nameof(queueRunner));
+        _documentLifetime = documentLifetime ?? throw new ArgumentNullException(nameof(documentLifetime));
         Items = new ReadOnlyObservableCollection<EncryptionQueueItemViewModel>(_items);
         PreflightIssues = new ReadOnlyObservableCollection<VideoPreflightIssue>(_overallIssues);
         Queue = new EncryptionQueueViewModel(this);
-    }
-
-    /// <summary>
-    /// 保留给既有测试和独立宿主的兼容构造函数；生产 DI 使用完整构造函数。
-    /// </summary>
-    public EncryptionBatchViewModel(IVideoEncryptionService singleFileService)
-        : this(
-            singleFileService,
-            new VideoBatchEncryptionService(singleFileService, new OutputPathConflictResolver()),
-            new SequentialVideoQueueRunner<PreparedEncryptionItem>())
-    {
     }
 
     /// <summary>只读队列，集合修改只能经由 Document 命令完成。</summary>
@@ -84,7 +76,7 @@ public partial class EncryptionBatchViewModel : Document, IDisposable
     public bool HasPreparedPlan => IsPlanCurrent;
     public bool IsBusy => IsPreflighting || IsRunning;
     /// <summary>子 View 的统一绑定根；隐藏的 Dock Owner 仍可通过 IDockable 契约访问。</summary>
-    public new EncryptionBatchViewModel Owner => this;
+    public EncryptionBatchViewModel Owner => this;
     public EncryptionQueueViewModel Queue { get; }
     public EncryptionBatchViewModel Batch => this;
 
@@ -523,7 +515,8 @@ public partial class EncryptionBatchViewModel : Document, IDisposable
                     Password,
                     itemProgress,
                     token),
-                progress);
+                progress,
+                _documentLifetime.ClosingToken);
 
             if (!IsCurrent(generation))
                 return;
@@ -531,7 +524,7 @@ public partial class EncryptionBatchViewModel : Document, IDisposable
             // Progress<T> 在无 UI SynchronizationContext 的测试环境中可能把最后一个回调排到
             // RunAsync 完成之后。先推进代次使这些回调失效，再写入权威批次结论。
             Interlocked.Increment(ref _operationGeneration);
-            if (_disposed)
+            if (IsClosing)
                 return;
 
             CurrentFile = string.Empty;
@@ -550,9 +543,9 @@ public partial class EncryptionBatchViewModel : Document, IDisposable
         }
         finally
         {
-            if (!_disposed)
+            if (!IsClosing)
                 IsRunning = false;
-            if (!_disposed)
+            if (!IsClosing)
                 InvalidatePlan(resetReadyItems: false);
         }
     }
@@ -724,7 +717,10 @@ public partial class EncryptionBatchViewModel : Document, IDisposable
 
     private CancellationTokenSource ReplacePreflightCancellation()
     {
-        var cancellation = new CancellationTokenSource();
+        // 预检有自己的“新计划替换旧计划”取消源，同时链接 Host 的永久关闭令牌。
+        // 这两种取消原因都只终止当前工作，不改变已成功提交的输出文件。
+        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            _documentLifetime.ClosingToken);
         var previous = Interlocked.Exchange(ref _preflightCancellation, cancellation);
         previous?.Cancel();
         previous?.Dispose();
@@ -738,7 +734,9 @@ public partial class EncryptionBatchViewModel : Document, IDisposable
     }
 
     private bool IsCurrent(int generation) =>
-        !_disposed && generation == Volatile.Read(ref _operationGeneration);
+        !IsClosing && generation == Volatile.Read(ref _operationGeneration);
+
+    private bool IsClosing => _disposed || _documentLifetime.IsClosing;
 
     /// <summary>
     /// Avalonia UI 线程具有 SynchronizationContext，使用 Progress 回投界面；纯单元测试没有

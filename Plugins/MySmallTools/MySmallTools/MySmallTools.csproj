@@ -14,6 +14,8 @@
         <PluginVersion>2.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
         <ManagedPluginEntryType>MySmallTools.Plugin.MySmallToolsPluginModule</ManagedPluginEntryType>
+        <!-- G11 起入口只使用最终版 UI SDK；构建探针不得回退到 Legacy 合同。 -->
+        <ManagedPluginUseV2EntryContract>true</ManagedPluginUseV2EntryContract>
         <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
         <ManagedPluginSdkMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginSdkMaxExclusive>
         <!-- 把 NuGet 原生内容重定向到插件私有目录，禁止默认复制到宿主输出根目录。 -->
@@ -26,12 +28,15 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj" />
+      <!-- Core 与 UI 契约由 Host 默认加载上下文提供，不能复制进插件私有目录。 -->
+      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" Private="false" />
+      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk.UI\MyAvaloniaManagement.PluginSdk.UI.csproj" Private="false" />
     </ItemGroup>
 
     <ItemGroup>
       <!-- 插件 ViewModel 的实现依赖显式归属插件，而不是依赖 SDK 的传递引用。 -->
       <PackageReference Include="CommunityToolkit.Mvvm" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="LibVLCSharp" GeneratePathProperty="true" />
       <PackageReference Include="LibVLCSharp.Avalonia" GeneratePathProperty="true" />
       <PackageReference Include="VideoLAN.LibVLC.Windows" PrivateAssets="all" />

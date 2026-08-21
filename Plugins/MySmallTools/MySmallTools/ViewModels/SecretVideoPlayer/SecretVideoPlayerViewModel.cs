@@ -1,6 +1,7 @@
 using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.PluginSdk;
 using MySmallTools.ViewModels.SecretVideoPlayer.SingleVideo;
 
 namespace MySmallTools.ViewModels.SecretVideoPlayer;
@@ -12,21 +13,47 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer;
 /// 新界面分别绑定 <see cref="Source"/> 和 <see cref="PublicInfo"/>；旧公开属性与命令继续
 /// 转发到唯一状态所有者，保证宿主、既有测试和外部绑定在 G8 前无需破坏式迁移。
 /// </remarks>
-public sealed class SecretVideoPlayerViewModel : Document, IDisposable
+public sealed class SecretVideoPlayerViewModel : ObservableObject, IPluginDocument, IDisposable
 {
     private bool _disposed;
+    private string _title = "加密视频播放器";
 
     public VideoPlayerControlViewModel PlayerViewModel { get; }
     public SingleVideoSourceViewModel Source { get; }
     public PublicInfoEditorViewModel PublicInfo { get; }
 
-    public SecretVideoPlayerViewModel(VideoPlayerControlViewModel playerViewModel)
+    public SecretVideoPlayerViewModel(
+        VideoPlayerControlViewModel playerViewModel,
+        IDocumentLifetime documentLifetime)
     {
         PlayerViewModel = playerViewModel ?? throw new ArgumentNullException(nameof(playerViewModel));
-        Source = new SingleVideoSourceViewModel(PlayerViewModel, OnFileChanged);
+        ArgumentNullException.ThrowIfNull(documentLifetime);
+        Source = new SingleVideoSourceViewModel(PlayerViewModel, OnFileChanged, documentLifetime);
         PublicInfo = new PublicInfoEditorViewModel(PlayerViewModel, Source);
         Source.PropertyChanged += OnSourcePropertyChanged;
         PublicInfo.PropertyChanged += OnPublicInfoPropertyChanged;
+    }
+
+    /// <inheritdoc />
+    public DocumentPresentationState Presentation => new(_title);
+
+    /// <inheritdoc />
+    public event EventHandler? PresentationChanged;
+
+    /// <inheritdoc />
+    public ValueTask InitializeAsync(
+        DocumentActivationContext context,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+        var title = string.IsNullOrWhiteSpace(context.Title) ? "加密视频播放器" : context.Title;
+        if (!string.Equals(_title, title, StringComparison.Ordinal))
+        {
+            _title = title;
+            PresentationChanged?.Invoke(this, EventArgs.Empty);
+        }
+        return ValueTask.CompletedTask;
     }
 
     public string FilePath { get => Source.FilePath; set => Source.FilePath = value; }

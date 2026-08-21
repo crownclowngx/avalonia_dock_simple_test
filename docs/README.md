@@ -4,8 +4,8 @@
 
 ## 快速开始
 
-> G10 当前事实：MyPlugTest 与 DaTangAccountingHelpPlug 已迁移到最终 Core/UI SDK、
-> 声明式贡献和普通模型；MySmallTools/BiliDownloader 仍等待 G11–G12。
+> G11 当前事实：MyPlugTest、DaTangAccountingHelpPlug 与 MySmallTools 已迁移到最终 Core/UI SDK、
+> 声明式贡献和普通模型；仅 BiliDownloader 仍等待 G12。
 
 V2 快速开始入口：
 
@@ -52,11 +52,11 @@ V2 快速开始入口：
 
 ## 封版后候选计划
 
-以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G10；Host 最终契约及两个真实 V2 业务插件已建立：
+以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G11；Host 最终契约及三个真实 V2 业务插件已建立：
 
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
-  G0–G14 可执行计划；G0–G10 已完成，G11–G14 尚未实现。
+  G0–G14 可执行计划；G0–G11 已完成，G12–G14 尚未实现。
 - [Managed Plugin V2 G0 绿色基线](./plan-history/host-v2/g0-green-baseline.md)：
   冻结 361 项 Host 测试、SDK API、包图、四插件包事实以及删除面、依赖白名单和消费者矩阵；
   本阶段未运行 Windows Smoke、CI 或发布门禁。
@@ -80,6 +80,8 @@ V2 快速开始入口：
   记录首个真实业务插件的声明式贡献、Document/Tool 所有权、严格内容 Codec、事件释放和确定性测试 ZIP。
 - [Managed Plugin V2 G10 DaTang 迁移](./plan-history/host-v2/g10-datang-accounting-help-v2.md)：
   记录双 Document 贡献、窄窗口 Host Port、严格银行对账 schema、关闭所有权和非发布门禁。
+- [Managed Plugin V2 G11 MySmallTools 迁移](./plan-history/host-v2/g11-my-small-tools-v2.md)：
+  记录四 Document、关闭令牌、全屏端口、SECVID03/LibVLC 资源所有权、真实媒体和确定性测试 ZIP 证据。
 - [外部 Managed Plugin 开发与平台安装候选计划](./design/external-managed-plugin-development-and-installation-plan.md)：
   `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
 

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MyAvaloniaManagement.PluginSdk;
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Models.SecretVideoPlayer;
 
@@ -23,6 +24,7 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
         new(StringComparer.OrdinalIgnoreCase);
     private readonly RangeObservableCollection<VideoLibraryItemViewModel> _visibleItems = [];
     private readonly object _projectionSync = new();
+    private readonly IDocumentLifetime _documentLifetime;
     private CancellationTokenSource? _catalogCancellation;
     private CancellationTokenSource? _filterCancellation;
     private long _catalogGeneration;
@@ -60,11 +62,13 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
 
     public LibraryBrowserCoordinatorViewModel(
         IVideoLibraryScanner scanner,
+        IDocumentLifetime documentLifetime,
         IVideoLibrarySettingsStore? settingsStore = null,
         IPlaybackHistoryStore? historyStore = null,
         IVideoLibraryCatalogSession? catalog = null)
     {
         ArgumentNullException.ThrowIfNull(scanner);
+        _documentLifetime = documentLifetime ?? throw new ArgumentNullException(nameof(documentLifetime));
         _catalog = catalog ?? new VideoLibraryCatalogSession(scanner);
         var fallback = new VolatileUserDataStore();
         _settingsStore = settingsStore ?? fallback;
@@ -235,7 +239,7 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
                                .ObserveAsync(FolderPath, options, cancellation.Token)
                                .WithCancellation(cancellation.Token))
             {
-                if (_disposed || generation != Volatile.Read(ref _catalogGeneration))
+                if (IsClosing || generation != Volatile.Read(ref _catalogGeneration))
                     return;
                 ApplyBatch(batch);
             }
@@ -246,7 +250,7 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
         }
         finally
         {
-            if (!_disposed && generation == Volatile.Read(ref _catalogGeneration))
+            if (!IsClosing && generation == Volatile.Read(ref _catalogGeneration))
                 IsScanning = false;
             if (ReferenceEquals(_catalogCancellation, cancellation))
                 _catalogCancellation = null;
@@ -282,7 +286,7 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
 
     private void ScheduleProjection()
     {
-        if (_disposed)
+        if (IsClosing)
             return;
         ReplaceCancellation(ref _filterCancellation, out var cancellation);
         _ = ApplyProjectionAfterDelayAsync(cancellation);
@@ -293,7 +297,7 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
         try
         {
             await Task.Delay(TimeSpan.FromMilliseconds(150), cancellation.Token);
-            if (!_disposed)
+            if (!IsClosing)
                 ApplyProjection(SelectedItem?.FilePath);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
@@ -395,7 +399,7 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
     {
         void Apply()
         {
-            if (_disposed)
+            if (IsClosing)
                 return;
             lock (_projectionSync)
             {
@@ -424,7 +428,7 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
 
     private void PersistSettings()
     {
-        if (_applyingPersistedSettings || _disposed)
+        if (_applyingPersistedSettings || IsClosing)
             return;
         var current = _settingsStore.CurrentSettings;
         _settingsStore.UpdateSettings(current with
@@ -437,15 +441,20 @@ public partial class LibraryBrowserCoordinatorViewModel : ObservableObject, IDis
         });
     }
 
-    private static void ReplaceCancellation(
+    private void ReplaceCancellation(
         ref CancellationTokenSource? field,
         out CancellationTokenSource replacement)
     {
         var previous = field;
-        replacement = new CancellationTokenSource();
+        // 扫描与筛选仍可彼此替换，但二者共同服从 Host 的 Document 关闭信号。
+        // 关闭后即使目录会话晚到，也只能结束任务，不能再修改可见列表。
+        replacement = CancellationTokenSource.CreateLinkedTokenSource(
+            _documentLifetime.ClosingToken);
         field = replacement;
         previous?.Cancel();
     }
+
+    private bool IsClosing => _disposed || _documentLifetime.IsClosing;
 
     public void Dispose()
     {

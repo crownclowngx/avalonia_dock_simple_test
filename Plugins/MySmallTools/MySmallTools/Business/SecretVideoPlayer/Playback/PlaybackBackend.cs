@@ -121,6 +121,8 @@ internal sealed class LazyPlaybackBackend :
     public bool Play() => RequireHost().Play();
     public void Stop() => _backend?.PlayerHost.Stop();
     public void SetPause(bool paused) => RequireHost().SetPause(paused);
+    public Task PauseAtAsync(long positionMs, CancellationToken cancellationToken) =>
+        RequireHost().PauseAtAsync(positionMs, cancellationToken);
 
     public void SetVolume(int volume)
     {

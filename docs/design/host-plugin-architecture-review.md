@@ -6,8 +6,8 @@
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
 > 不在本轮范围：逐项评审插件业务功能、第三方插件市场、运行时热卸载、插件沙箱
 
-> V2 当前状态：G0–G10 已完成。MyPlugTest 与 DaTang 已使用最终 SDK、声明式贡献与普通模型；
-> MySmallTools/BiliDownloader 仍等待 G11–G12。
+> V2 当前状态：G0–G11 已完成。MyPlugTest、DaTang 与 MySmallTools 已使用最终 SDK、声明式贡献与
+> 普通模型；仅 BiliDownloader 仍等待 G12。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -54,16 +54,16 @@ flowchart TB
     Host -. "运行时扫描 Controls 子目录" .-> DaTang
 ```
 
-**[代码事实]** MyPlugTest 与 DaTang 已只保留最终 UI SDK `IPluginModule`，并通过真实 V2
-加载分别形成 4 Document + 1 Tool 和 2 Document + 0 Tool。MySmallTools/BiliDownloader 仍保留
-Legacy `IPluginModule` 以维持 G11–G12 前源码回归；
+**[代码事实]** MyPlugTest、DaTang 与 MySmallTools 已只保留最终 UI SDK `IPluginModule`，并通过真实
+V2 加载分别形成 4 Document + 1 Tool、2 Document + 0 Tool 和 4 Document + 0 Tool。仅
+BiliDownloader 仍保留 Legacy `IPluginModule` 以维持 G12 前源码回归；
 `PluginModulePreflight` 会稳定隔离它们，不存在双接口回退。
 最终 SDK 加载链由两个独立依赖测试夹具验证。参见
 [`ManagedOnlyPluginLoadingTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/ManagedOnlyPluginLoadingTests.cs)。
 
 **[代码事实]** G2 已把最终 V2 SDK 分成平台无关的 `MyAvaloniaManagement.PluginSdk` 与真实
-`MyAvaloniaManagement.PluginSdk.UI`。Host 已在 G5 迁移，MyPlugTest/DaTang 已在 G9–G10 迁移；
-MySmallTools/BiliDownloader 暂时引用不可打包的
+`MyAvaloniaManagement.PluginSdk.UI`。Host 已在 G5 迁移，MyPlugTest/DaTang/MySmallTools 已在
+G9–G11 迁移；BiliDownloader 暂时引用不可打包的
 `MyAvaloniaManagement.LegacyPluginContracts`。该桥仍输出旧程序集名以维持源码测试，但不是 SDK，
 也不得新增生产消费者。参见
 [`MyAvaloniaManagement.LegacyPluginContracts.csproj`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj)
@@ -116,7 +116,7 @@ sequenceDiagram
 
 | 入口要求 | 策略构造 | 可用能力 | 当前状态 |
 | --- | --- | --- | --- |
-| 严格 manifest v2、同名 deps、最终 UI SDK 精确 `IPluginModule` 类型 | Registration 显式登记，插件私有 Provider 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | Host、MyPlugTest、DaTang 与最终测试夹具采用；其余插件待 G11–G12 |
+| 严格 manifest v2、同名 deps、最终 UI SDK 精确 `IPluginModule` 类型 | Registration 显式登记，插件私有 Provider 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | Host、MyPlugTest、DaTang、MySmallTools 与最终测试夹具采用；BiliDownloader 待 G12 |
 
 **[代码事实]** `PluginModulePreflight` 要求清单精确入口 public、非抽象、非泛型、实现最终 UI SDK
 `IPluginModule` 且具有 public 无参构造；`PluginProviderOwner` 在 Host Provider 建立后为每个插件创建
@@ -184,7 +184,8 @@ flowchart TD
 | MyPlugTest 四个 Document | 最终 Descriptor + V2 Activator + 独立 Scope | G9 已完整迁移；Welcome 可持久化 |
 
 **[架构判断]** Host V2、MyPlugTest 和 DaTang Document 都由所属插件 Scope 托管；声明式注册自动固定
-scoped 生命周期，Host 与其他插件不能解析其模型。G11–G12 将沿用同一所有权链迁移其余两个插件。
+scoped 生命周期，Host 与其他插件不能解析其模型。G11 已沿用同一所有权链迁移 MySmallTools，
+G12 将迁移最后一个 Legacy 插件 BiliDownloader。
 
 **[代码事实]** Managed Document Scope 现在同时提供 scoped `IDocumentLifetime`。Dock 确认关闭后，`DocumentScopeManager` 先取消 `ClosingToken`，再释放 ViewModel 与 scoped 依赖；被否决的关闭不会提前取消，宿主退出则对仍打开的 Document 执行同一路径。取消是协作式且不等待：Document 局部的 HTTP、解析、浏览、探测与发票导入停止并禁止迟到 UI 回写；BiliDownloader 已提交到插件级 Coordinator 的下载任务继续运行。原生文件选择器只能丢弃迟到结果，EPPlus 已进入同步 `SaveAs` 后允许完成写入。
 
@@ -288,8 +289,8 @@ Migrator、浮动字段或历史 ID 归一化。缺失/生命周期不可用插�
 | --- | --- | --- |
 | .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.0、Dock 12.0.0.2；产品/SDK、构建和包版本分别由 `Directory.Version.props`、`Directory.Build.props`、`Directory.Packages.props` 集中管理 |
 | 插件目录扫描 | 已实现 | 按规范化根目录缓存线程安全快照；只加载清单声明且携带 deps 的入口，模块结构错误按目录隔离 |
-| Managed-only V2 | 部分迁移 | Host、MyPlugTest 与 DaTang 使用最终 UI SDK 精确入口；MySmallTools/BiliDownloader 在 G11–G12 前由预检隔离 |
-| 显式扩展贡献 | 已实现并迁移两个插件 | Host、MyPlugTest 与 DaTang 一次登记模型/View/Descriptor；Builder 全量校验后原子发布不可变 `PluginRegistry` |
+| Managed-only V2 | 部分迁移 | Host、MyPlugTest、DaTang 与 MySmallTools 使用最终 UI SDK 精确入口；BiliDownloader 在 G12 前由预检隔离 |
+| 显式扩展贡献 | 已实现并迁移三个插件 | Host、MyPlugTest、DaTang 与 MySmallTools 一次登记模型/View/Descriptor；Builder 全量校验后原子发布不可变 `PluginRegistry` |
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient；根容器启用构建和 Scope 验证 |
 | 插件生命周期 | 已实现 V2 | PluginId 正序初始化、成功项反序关闭、幂等、失败隔离、超时和只读可用性投影已有测试；不支持热卸载 |
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
@@ -548,7 +549,7 @@ public interface IHostContext
 
 ### P0：收口当前已经暴露的所有权和稳定性问题
 
-1. **已完成并迁移两个插件**：Host、MyPlugTest 与 DaTang Document 经最终 Registry/Activator 创建所属插件 Scope，scoped 注册与 `ValidateScopes` 共同禁止从根容器解析 Document；其余插件留待 G11–G12。
+1. **已完成并迁移三个插件**：Host、MyPlugTest、DaTang 与 MySmallTools Document 经最终 Registry/Activator 创建所属插件 Scope，scoped 注册与 `ValidateScopes` 共同禁止从根容器解析 Document；BiliDownloader 留待 G12。
 2. **已完成（G2）**：Host 自有类型全部 internal，构造注入成为唯一生产路径；静态 `ServiceProvider` 与生产无参 ViewModel 构造已删除，设计器使用独立内存样例。
 3. **已完成**：重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 均形成排序稳定的结构化诊断；注册表无诊断时才一次性发布，不再有“首次注册胜出”。
 4. **已完成**：只读插件状态 Tool 已覆盖程序集加载与生命周期结果；模块构造、服务注册、策略发现、DI 和布局均进入同一会话诊断，致命组合错误由独立启动错误窗展示。
@@ -592,7 +593,7 @@ Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. V2 G9–G10 已在上述 Host 链路上迁移 MyPlugTest 与 DaTang，G11–G12 仍需迁移另外两个插件；
+1. V2 G9–G11 已在上述 Host 链路上迁移 MyPlugTest、DaTang 与 MySmallTools，G12 只需迁移 BiliDownloader；
 2. 运行前 manifest v2、Core/UI 兼容检查、声明式 Plugin Registry 和用户可见诊断已经建立；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。

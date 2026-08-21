@@ -12,9 +12,9 @@
 > 变异门禁冻结正式 Plugin SDK v1 public API；G15 已固定 schema 1 诊断的白名单语义和默认脱敏边界；
 > G16 已用 `managed-plugin-v1.0.0` 定位最终文档、SDK API 和四插件兼容基线。
 
-> 当前分支已完成 V2 G10：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议、每插件
+> 当前分支已完成 V2 G11：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议、每插件
 > 独立 Provider、Host 声明式贡献目录、internal Dock Adapter、Document V2、Layout V2 与 internal
-> 生命周期已建立；MyPlugTest 与 DaTang 已迁移，MySmallTools/BiliDownloader 等待 G11–G12。
+> 生命周期已建立；MyPlugTest、DaTang 与 MySmallTools 已迁移，仅 BiliDownloader 等待 G12。
 > 历史 v1 签署事实保持可追溯。
 
 ## 2. public API
@@ -22,7 +22,7 @@
 最终 V2 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
-MyPlugTest 与 DaTang 只引用最终 SDK；MySmallTools/BiliDownloader 暂时引用
+MyPlugTest、DaTang 与 MySmallTools 只引用最终 SDK；BiliDownloader 暂时引用
 `MyAvaloniaManagement.LegacyPluginContracts`，该项目不可打包且不得增加新的生产消费者。
 
 G8 生产组合中，只有 `ManagedDocumentDockable` 与 `ManagedToolDockable` 可以继承 Dock 类型。普通插件
@@ -198,7 +198,7 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 
 - Host Welcome、MyPlugTest 与 DaTang 只通过 Registry、internal Activator 和异步工厂创建；
   它们的生产代码不存在 Legacy Document 命令参数、ID 映射或 Scope 工厂；
-- MySmallTools/BiliDownloader 尚未迁移，V2 Host 不加载其 `IDocumentCreationStrategy` 或 Creation Intent Provider；
+- BiliDownloader 尚未迁移，V2 Host 不加载其 `IDocumentCreationStrategy` 或 Creation Intent Provider；
 - 唯一磁盘格式是 Document 信封 v2，根必须且只能包含 `schemaVersion`、`pluginId`、`documentTypeId`、
   `title`、`savedAtUtc`、`content`；content 只含 `schemaVersion` 与原生 JSON `payload`；
 - 根 `schemaVersion` 只能为 `2`；UTF-8 文件上限为 8 MiB，JSON 最大深度为 8；注释、尾随逗号、

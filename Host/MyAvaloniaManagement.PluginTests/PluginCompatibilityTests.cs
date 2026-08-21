@@ -11,9 +11,7 @@ using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
 using MyPlugTest.Plugin;
-using MySmallTools.InitPlug.SecretVideoPlayer;
 using MySmallTools.Plugin;
-using MySmallTools.ViewModels.SecretVideoPlayer;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -40,7 +38,7 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void 两个未迁移插件继续显式接入Legacy模块且不改变公共策略接口()
+    public void 仅Bili继续显式接入Legacy模块且不改变公共策略接口()
     {
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),
@@ -55,13 +53,8 @@ public sealed class PluginCompatibilityTests
         Assert.Equal(2, typeof(IToolCreationStrategy).GetMethods().Length);
 
         var services = new ServiceCollection();
-        var contexts = new[]
-        {
-            ConfigureForInspection(new BiliDownloaderPluginModule(),
-                "myavalonia.plugin.bili-downloader", services),
-            ConfigureForInspection(new MySmallToolsPluginModule(),
-                "myavalonia.plugin.my-small-tools", services),
-        };
+        var context = ConfigureForInspection(new BiliDownloaderPluginModule(),
+            "myavalonia.plugin.bili-downloader", services);
         Assert.Equal(
             [
                 "Document:BiliDownloaderDocumentStrategy",
@@ -70,26 +63,8 @@ public sealed class PluginCompatibilityTests
                 "View:BiliSchedulerToolViewModel->BiliSchedulerToolView",
                 "Lifecycle:BiliDownloaderPluginLifecycle",
             ],
-            Describe(contexts[0]));
-        Assert.Equal(
-            [
-                "Document:SecretVideoDocumentStrategy",
-                "Document:SecretVideoLibraryDocumentStrategy",
-                "Document:VideoEncryptorDocumentStrategy",
-                "Document:VideoDecryptorDocumentStrategy",
-                "View:SecretVideoPlayerViewModel->SecretVideoPlayerView",
-                "View:SecretVideoLibraryViewModel->SecretVideoLibraryView",
-                "View:VideoEncryptorViewModel->VideoEncryptorView",
-                "View:VideoDecryptorViewModel->VideoDecryptorView",
-            ],
-            Describe(contexts[1]));
-
-        Assert.Equal(
-            [
-                "myavalonia.plugin.bili-downloader",
-                "myavalonia.plugin.my-small-tools",
-            ],
-            contexts.Select(context => context.PluginId.Value));
+            Describe(context));
+        Assert.Equal("myavalonia.plugin.bili-downloader", context.PluginId.Value);
     }
 
     [Fact]
@@ -197,32 +172,6 @@ public sealed class PluginCompatibilityTests
             plugin => Assert.True(availability.IsAvailable(
                 new MyAvaloniaManagement.PluginSdk.PluginId(
                     plugin.Manifest.PluginId.Value))));
-    }
-
-    [Fact]
-    public void MySmallTools模块注册可通过作用域验证且加密Document彼此独立()
-    {
-        var services = new ServiceCollection();
-        services.AddLegacyPluginDocumentScopesForTests();
-        new MySmallToolsPluginModule().Configure(new TestPluginRegistrationContext(
-            new PluginId("myavalonia.plugin.my-small-tools"), services));
-
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateScopes = true,
-            ValidateOnBuild = true,
-        });
-
-        var strategy = ActivatorUtilities.CreateInstance<VideoEncryptorDocumentStrategy>(provider);
-        var first = Assert.IsType<VideoEncryptorViewModel>(strategy.CreateDocument(
-            new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)));
-        var second = Assert.IsType<VideoEncryptorViewModel>(strategy.CreateDocument(
-            new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)));
-
-        Assert.NotSame(first, second);
-        var manager = provider.GetRequiredService<LegacyPluginDocumentScopeFactory>();
-        Assert.True(manager.Release(first));
-        Assert.True(manager.Release(second));
     }
 
     private sealed class ReadyBiliLifecycle : IPluginLifecycle

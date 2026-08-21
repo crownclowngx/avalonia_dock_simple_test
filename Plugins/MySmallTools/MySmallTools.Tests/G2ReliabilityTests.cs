@@ -181,8 +181,10 @@ public sealed class G2ReliabilityTests(Secvid03Fixture fixture)
     {
         var firstService = new BlockingEncryptionService();
         var secondService = new BlockingEncryptionService();
-        var first = CreateEncryptionDocument(firstService, "first");
-        using var second = CreateEncryptionDocument(secondService, "second");
+        using var firstLifetime = new TestDocumentLifetime();
+        using var secondLifetime = new TestDocumentLifetime();
+        var first = CreateEncryptionDocument(firstService, firstLifetime, "first");
+        using var second = CreateEncryptionDocument(secondService, secondLifetime, "second");
 
         var firstRun = first.StartEncryptionCommand.ExecuteAsync(null);
         var secondRun = second.StartEncryptionCommand.ExecuteAsync(null);
@@ -206,14 +208,18 @@ public sealed class G2ReliabilityTests(Secvid03Fixture fixture)
 
     private VideoEncryptorViewModel CreateEncryptionDocument(
         IVideoEncryptionService service,
-        string suffix) =>
-        new(service)
-        {
-            SelectedFilePath = fixture.OriginalPath,
-            OutputFilePath = Path.Combine(fixture.DirectoryPath, $"g2-{suffix}.secvid"),
-            Password = "123456",
-            ConfirmPassword = "123456"
-        };
+        TestDocumentLifetime lifetime,
+        string suffix)
+    {
+        var document = TestViewModelFactory.CreateEncryptor(service, lifetime);
+        document.SelectedFilePath = fixture.OriginalPath;
+        document.OutputFilePath = Path.Combine(
+            fixture.DirectoryPath,
+            $"g2-{suffix}.secvid");
+        document.Password = "123456";
+        document.ConfirmPassword = "123456";
+        return document;
+    }
 
     private static DecryptionCandidate Candidate(string inputName, string originalName, long length) =>
         new(

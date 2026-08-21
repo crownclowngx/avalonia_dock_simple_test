@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MyAvaloniaManagement.PluginSdk;
 using MySmallTools.Business.SecretVideoPlayer.Container;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
@@ -380,6 +381,7 @@ internal static class G10BenchmarkProgram
     {
         using var viewModel = new LibraryBrowserCoordinatorViewModel(
             new VideoLibraryScanner(),
+            NonClosingDocumentLifetime.Instance,
             catalog: new FixedCatalog(results));
         await viewModel.LoadFolderAsync("g10-virtual-library");
 
@@ -457,7 +459,8 @@ internal static class G10BenchmarkProgram
         int initialCount)
     {
         using var viewModel = new LibraryBrowserCoordinatorViewModel(
-            new VideoLibraryScanner());
+            new VideoLibraryScanner(),
+            NonClosingDocumentLifetime.Instance);
         var catalogTask = viewModel.LoadFolderAsync(root);
         var added = Path.Combine(root, "incremental-added.secvid");
         var renamed = Path.Combine(root, "incremental-renamed.secvid");
@@ -1125,8 +1128,7 @@ internal sealed record EnvironmentReport(
             configuration,
             plugin.GetName().Version?.ToString() ?? "unknown",
             typeof(Avalonia.Application).Assembly.GetName().Version?.ToString() ?? "unknown",
-            typeof(Dock.Model.Mvvm.Controls.Document).Assembly.GetName().Version?.ToString() ??
-            "unknown",
+            "not-applicable-host-v2",
             typeof(LibVLCSharp.Shared.Core).Assembly.GetName().Version?.ToString() ?? "unknown",
             File.Exists(runtimeRoot)
                 ? FileVersionInfo.GetVersionInfo(runtimeRoot).FileVersion ?? "unknown"
@@ -1156,3 +1158,11 @@ internal sealed record EnvironmentReport(
 internal sealed record ScanResult(
     double ElapsedMs,
     IReadOnlyList<VideoLibraryScanResult> Results);
+
+/// <summary>基准进程没有 Host 文档，使用永不关闭的显式生命周期作为测量边界。</summary>
+internal sealed class NonClosingDocumentLifetime : IDocumentLifetime
+{
+    public static NonClosingDocumentLifetime Instance { get; } = new();
+    public CancellationToken ClosingToken => CancellationToken.None;
+    public bool IsClosing => false;
+}

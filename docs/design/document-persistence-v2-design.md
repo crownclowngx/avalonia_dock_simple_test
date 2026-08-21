@@ -15,7 +15,7 @@ Scope 释放，插件只解释 `DocumentContent` 中自己的 schema 与原生 J
 
 G7 不读取、迁移或写回 Document V1。历史 V1 设计与验收记录仍保留为历史事实，但不是当前运行时
 契约。该段落记录 G7 完成时的阶段边界；G9–G10 已迁移 MyPlugTest 与
-DaTangAccountingHelpPlug，MySmallTools/BiliDownloader 留待 G11–G12。
+DaTangAccountingHelpPlug 与 MySmallTools，BiliDownloader 留待 G12。
 
 DaTang 银行余额调节是第二个真实持久化 Document：其 content schema 固定为 1，独立 Codec
 严格拒绝错误 schema、根类型、未知/重复/缺失字段、错误类型和无效配置。恢复必须先完整

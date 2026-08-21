@@ -800,7 +800,9 @@
           "CommunityToolkit.Mvvm": "[8.4.2, )",
           "LibVLCSharp": "[3.10.0, )",
           "LibVLCSharp.Avalonia": "[3.10.0, )",
-          "MyAvaloniaManagementCommon": "[2.0.0, )"
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "MyAvaloniaManagement.PluginSdk": "[2.0.0, )",
+          "MyAvaloniaManagement.PluginSdk.UI": "[2.0.0, )"
         }
       },
       "Avalonia": {

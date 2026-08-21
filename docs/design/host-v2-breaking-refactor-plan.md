@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G10 已完成，G11–G14 尚未实现。
+> 状态：实施中；G0–G11 已完成，G12–G14 尚未实现。
 >
 > 评审日期：2026-08-21。
 >
@@ -15,10 +15,11 @@
 > [V2 G7 Document V2](../plan-history/host-v2/g7-document-v2.md)与
 > [V2 G8 布局与生命周期 V2](../plan-history/host-v2/g8-layout-and-lifecycle-v2.md)与
 > [V2 G9 MyPlugTest 迁移](../plan-history/host-v2/g9-my-plug-test-v2.md) 和
-> [V2 G10 DaTang 迁移](../plan-history/host-v2/g10-datang-accounting-help-v2.md)。
+> [V2 G10 DaTang 迁移](../plan-history/host-v2/g10-datang-accounting-help-v2.md)和
+> [V2 G11 MySmallTools 迁移](../plan-history/host-v2/g11-my-small-tools-v2.md)。
 >
-> 重要说明：G9–G10 已将 MyPlugTest 与 DaTangAccountingHelpPlug 完整迁移为真实 V2
-> 业务插件；MySmallTools 与 BiliDownloader 仍通过 Legacy 阶段桥保留源码回归，等待 G11–G12。
+> 重要说明：G9–G11 已将 MyPlugTest、DaTangAccountingHelpPlug 与 MySmallTools 完整迁移为真实
+> V2 业务插件；当前只剩 BiliDownloader 通过 Legacy 阶段桥保留源码回归，等待 G12。
 
 ## 1. 目的与结论
 
@@ -141,8 +142,8 @@ flowchart TB
 G2 已新建 `Host/MyAvaloniaManagement.PluginSdk`，程序集和根命名空间统一为
 `MyAvaloniaManagement.PluginSdk`；`PluginSdk.UI` 也已从依赖元包变成真实契约程序集，Dock 相关包已移除。
 旧 Common 被移至 `Host/MyAvaloniaManagement.LegacyPluginContracts`，只保留旧程序集名和命名空间作为
-不可打包的仓库内部阶段桥。G5 已迁移 Host 模块与贡献目录，G9–G10 已迁移 MyPlugTest 与
-DaTangAccountingHelpPlug；其余两个插件属于 G11–G12，
+不可打包的仓库内部阶段桥。G5 已迁移 Host 模块与贡献目录，G9–G11 已迁移 MyPlugTest、
+DaTangAccountingHelpPlug 与 MySmallTools；只剩 BiliDownloader 属于 G12，
 Legacy 项目的最终删除属于 G13。
 
 ### 3.2 public API（G2 已建立，G5 已接入 Host 生产路径）
@@ -562,13 +563,25 @@ DaTang 业务 62、最终 ZIP 真实加载 1。两次隔离构建的 9 文件 ZI
 `windowsSmoke=false`、`releaseAcceptance=false`、`releaseGate=false`、`publishable=false`。
 本阶段明确未运行历史 Host V1 G10 所用的 Windows Smoke 或发布证据，二者不得混用。
 
-### G11：迁移 MySmallTools
+### G11：迁移 MySmallTools（已完成）
 
 - **目标**：验证原生播放器、Document 关闭令牌、全屏 UI Port 和资源释放。
 - **删除/新增**：播放器/媒体库/加解密 Document 改为普通模型；全屏端口移入 UI SDK。
 - **插件影响**：SECVID03、LibVLC、媒体库和批处理语义保持，不升级业务格式。
 - **验证**：插件完整测试、真实媒体 Harness、原生资源释放、全屏恢复、关闭取消、稳定性和最终包加载。
 - **回滚**：回到 V1 MySmallTools 源码；V2 Host 不加载其 V1 ZIP。
+
+G11 已登记四个非持久化 Document，根模型均为普通 `ObservableObject` 并直接实现很小的
+`IPluginDocument` 展示契约；Host 继续独占 Scope、Dock Adapter、激活和关闭。播放器、批处理与
+媒体库任务显式依赖 `IDocumentLifetime`，关闭令牌贯穿异步和原生操作；最终全屏端口统一为 UI SDK
+的 `IWindowContentFullscreenHost`，Legacy 重复接口已删除。详细责任划分、时序和不变项见
+[G11 专项记录](../plan-history/host-v2/g11-my-small-tools-v2.md)。
+
+G11 非发布专项门禁实际 **275/275**；真实 G3 Harness 完成 20 轮并使全部原生资源计数回零。
+两次隔离构建的 431 文件 ZIP 完全一致，归档 SHA-256 为
+`2B2879D28D92A8251A21674D83F5752814AE2A09D0D01EED999061E168D38126`，最终 ZIP 通过真实
+Loader、Preflight、Registry 与 Provider 组合。摘要明确记录全部发布相关开关为 `false`，历史
+MySmallTools 产品 G11 Accept/Approve 脚本未运行。
 
 ### G12：迁移 BiliDownloader
 
@@ -604,7 +617,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9
 
 - G0–G3 先固定版本、包和加载边界；未完成前不得实现容器或 UI 双轨；
 - G4–G8 先用 Host 内建贡献和测试插件形成完整 V2 Host；
-- G9–G10 已完成 MyPlugTest 与 DaTang 迁移；G11–G12 按复杂度继续迁移其余插件，每个插件独立复跑；
+- G9–G11 已完成 MyPlugTest、DaTang 与 MySmallTools 迁移；G12 继续迁移最后一个 Legacy 插件 BiliDownloader；
 - G13 只负责删除和证明没有残留，不承载新架构设计；
 - G14 只封板已经通过的事实，不在发布门禁阶段追加功能或重写契约。
 

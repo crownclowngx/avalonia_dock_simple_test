@@ -11,6 +11,60 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class CurrentManagedPluginLoadingTests
 {
     [Fact]
+    public void G11最终测试Zip通过真实发现组合并发布四个Document()
+    {
+        var packageRoot = Environment.GetEnvironmentVariable(
+            "MYAVALONIA_MYSMALLTOOLS_V2_PACKAGE_ROOT");
+        if (string.IsNullOrWhiteSpace(packageRoot))
+        {
+            // 普通回归不重复构建大型 LibVLC 包；G11 专项脚本负责设置目录并执行本测试。
+            return;
+        }
+
+        var snapshot = AssemblyLoaderHelper.Discover(Path.GetFullPath(packageRoot));
+        Assert.Empty(snapshot.Diagnostics);
+        var assembly = Assert.Single(snapshot.Assemblies);
+        Assert.Equal("MySmallTools", assembly.GetName().Name);
+        var catalog = PluginModuleCatalog.Discover(snapshot);
+        var diagnosticsRoot = Path.Combine(
+            Path.GetTempPath(), $"mysmalltools-g11-package-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(diagnosticsRoot);
+        using var diagnostics = HostDiagnosticSession.Start(diagnosticsRoot);
+        var registryBuilder = new PluginRegistryBuilder();
+        using var pluginProviders = new PluginProviderOwner();
+        var documentScopes = new DocumentScopeRegistry();
+        var services = new ServiceCollection();
+        services.AddApplicationServices(registryBuilder, pluginProviders, documentScopes);
+        services.AddViewModels();
+        services.AddSingleton(diagnostics);
+        services.AddSingleton<IHostDiagnosticSink>(diagnostics);
+        services.AddSingleton(catalog);
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = true,
+        });
+        try
+        {
+            pluginProviders.Compose(
+                catalog, provider, registryBuilder, documentScopes, diagnostics);
+            var registry = provider.GetRequiredService<PluginRegistry>();
+            var plugin = Assert.Single(registry.Plugins);
+            Assert.Equal("myavalonia.plugin.my-small-tools", plugin.Manifest.PluginId.Value);
+            Assert.Equal(4, plugin.DocumentTypes.Count);
+            Assert.Empty(plugin.ToolTypes);
+            Assert.All(plugin.DocumentTypes, modelType =>
+                Assert.Equal("MySmallTools", modelType.Assembly.GetName().Name));
+        }
+        finally
+        {
+            documentScopes.CloseAll();
+            diagnostics.Dispose();
+            Directory.Delete(diagnosticsRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void G10最终测试Zip通过真实发现组合并发布两个Document()
     {
         var packageRoot = Environment.GetEnvironmentVariable("MYAVALONIA_G10_PACKAGE_ROOT");
@@ -126,7 +180,7 @@ public sealed class CurrentManagedPluginLoadingTests
     [InlineData("BiliDownloader/BiliDownloader", "BiliDownloader", "BiliDownloader", "myavalonia.plugin.bili-downloader", false)]
     [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "MyPlugTest", "myavalonia.plugin.my-plug-test", true)]
     [InlineData("DaTangAccountingHelpPlug/DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTang", "myavalonia.plugin.datang-accounting-help", true)]
-    [InlineData("MySmallTools/MySmallTools", "MySmallTools", "SmallTools", "myavalonia.plugin.my-small-tools", false)]
+    [InlineData("MySmallTools/MySmallTools", "MySmallTools", "SmallTools", "myavalonia.plugin.my-small-tools", true)]
     public void 真实业务插件构建目录只接受已经迁移的V2入口(
         string projectPath,
         string assemblyName,

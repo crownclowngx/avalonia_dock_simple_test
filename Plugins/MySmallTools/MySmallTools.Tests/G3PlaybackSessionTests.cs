@@ -357,12 +357,14 @@ public sealed class G3PlaybackSessionTests
             StopRelease = releaseStop
         };
         using var reaper = new ImmediateResourceReaper();
+        using var lifetime = new TestDocumentLifetime();
         using var session = new SecureVideoPlayer(
             host,
             new FakeSourceFactory(
                 (_, _) => Task.FromResult<IPlaybackMediaSource>(source)),
             dispatcher,
-            reaper);
+            reaper,
+            lifetime);
         Assert.True((await session.LoadAsync("video.secvid", "password")).Success);
 
         var callerThreadId = Environment.CurrentManagedThreadId;
@@ -394,12 +396,14 @@ public sealed class G3PlaybackSessionTests
             StopRelease = releaseStop
         };
         using var reaper = new ImmediateResourceReaper();
+        using var lifetime = new TestDocumentLifetime();
         using var session = new SecureVideoPlayer(
             host,
             new FakeSourceFactory(
                 (_, _) => Task.FromResult<IPlaybackMediaSource>(source)),
             dispatcher,
-            reaper);
+            reaper,
+            lifetime);
         Assert.True((await session.LoadAsync("video.secvid", "password")).Success);
 
         var stopTask = session.StopAsync();
@@ -519,11 +523,12 @@ public sealed class G3PlaybackSessionTests
     {
         private readonly InlineNativeDispatcher _dispatcher = new();
         private readonly ImmediateResourceReaper _reaper = new();
+        private readonly TestDocumentLifetime _lifetime = new();
 
         public TestRig(IPlaybackMediaSourceFactory factory)
         {
             Host = new FakePlayerHost();
-            Session = new SecureVideoPlayer(Host, factory, _dispatcher, _reaper);
+            Session = new SecureVideoPlayer(Host, factory, _dispatcher, _reaper, _lifetime);
         }
 
         public FakePlayerHost Host { get; }
@@ -535,6 +540,7 @@ public sealed class G3PlaybackSessionTests
             _reaper.Dispose();
             _dispatcher.Dispose();
             Host.Dispose();
+            _lifetime.Dispose();
         }
     }
 
@@ -653,14 +659,24 @@ public sealed class G3PlaybackSessionTests
             RaiseState(AttachedSource?.Generation ?? 0, PlaybackState.Stopped);
         }
 
+        public Task PauseAtAsync(long positionMs, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            PauseRequests.Add(true);
+            PositionMs = positionMs;
+            IsPaused = true;
+            IsPlaying = false;
+            RaiseState(
+                AttachedSource?.Generation ?? 0,
+                PlaybackState.Paused);
+            return Task.CompletedTask;
+        }
+
         public void SetPause(bool paused)
         {
             PauseRequests.Add(paused);
             IsPaused = paused;
             IsPlaying = !paused;
-            RaiseState(
-                AttachedSource?.Generation ?? 0,
-                paused ? PlaybackState.Paused : PlaybackState.Playing);
         }
 
         public void SetVolume(int volume) => Volume = Math.Clamp(volume, 0, 100);

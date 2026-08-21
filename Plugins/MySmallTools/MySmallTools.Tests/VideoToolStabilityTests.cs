@@ -1,18 +1,32 @@
 using System.Runtime.CompilerServices;
-using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagement.PluginSdk;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
-using MySmallTools.Constants;
-using MySmallTools.InitPlug.SecretVideoPlayer;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 using Xunit;
-using Dock.Model.Mvvm.Controls;
 
 namespace MySmallTools.Tests;
 
 public sealed class VideoToolStabilityTests
 {
+    [Fact]
+    public async Task PlayerAndLibraryDocuments_UseDefaultAndCustomPresentationTitles()
+    {
+        var player = Assert.IsType<VideoPlayerControlViewModel>(
+            RuntimeHelpers.GetUninitializedObject(typeof(VideoPlayerControlViewModel)));
+        using var lifetime = new TestDocumentLifetime();
+        using var single = new SecretVideoPlayerViewModel(player, lifetime);
+        using var browser = new VideoLibraryBrowserViewModel(new EmptyScanner(), lifetime);
+        using var library = new SecretVideoLibraryViewModel(browser, player, lifetime);
+
+        await single.InitializeAsync(new DocumentActivationContext(string.Empty), default);
+        await library.InitializeAsync(new DocumentActivationContext("媒体库自定义标题"), default);
+
+        Assert.Equal("加密视频播放器", single.Presentation.Title);
+        Assert.Equal("媒体库自定义标题", library.Presentation.Title);
+    }
+
     [Fact]
     public void VideoDocuments_TogglePasswordVisibility()
     {
@@ -20,13 +34,14 @@ public sealed class VideoToolStabilityTests
             as VideoPlayerControlViewModel;
         Assert.NotNull(player);
 
-        var singlePlayer = new SecretVideoPlayerViewModel(player);
+        using var lifetime = new TestDocumentLifetime();
+        var singlePlayer = new SecretVideoPlayerViewModel(player, lifetime);
         Assert.False(singlePlayer.ShowPassword);
         singlePlayer.TogglePasswordVisibilityCommand.Execute(null);
         Assert.True(singlePlayer.ShowPassword);
 
-        using var browser = new VideoLibraryBrowserViewModel(new EmptyScanner());
-        using var library = new SecretVideoLibraryViewModel(browser, player);
+        using var browser = new VideoLibraryBrowserViewModel(new EmptyScanner(), lifetime);
+        using var library = new SecretVideoLibraryViewModel(browser, player, lifetime);
         Assert.False(library.ShowPassword);
         library.TogglePasswordVisibilityCommand.Execute(null);
         Assert.True(library.ShowPassword);
@@ -46,12 +61,15 @@ public sealed class VideoToolStabilityTests
             StatusFilter = VideoLibraryStatusFilter.InProgress
         };
         var settings = new RecordingLibrarySettingsStore(initial);
+        using var lifetime = new TestDocumentLifetime();
         using var browser = new VideoLibraryBrowserViewModel(
             new EmptyScanner(),
+            lifetime,
             settingsStore: settings);
         using var library = new SecretVideoLibraryViewModel(
             browser,
             player,
+            lifetime,
             settingsStore: settings);
 
         Assert.False(library.IsLibrarySettingsExpanded);
@@ -74,36 +92,34 @@ public sealed class VideoToolStabilityTests
     }
 
     [Fact]
-    public void VideoEncryptorDocument_DefaultTitleAndVideoTitle_AreIndependent()
+    public async Task VideoEncryptorDocument_DefaultTitleAndVideoTitle_AreIndependent()
     {
-        var strategy = CreateVideoEncryptorStrategy();
-        var document = strategy.CreateDocument(
-            new DocumentCreationParams(DocumentTypeIdConstant.VideoEncryptorDocumentId));
-        var viewModel = Assert.IsType<VideoEncryptorViewModel>(document);
+        using var lifetime = new TestDocumentLifetime();
+        using var viewModel = TestViewModelFactory.CreateEncryptor(
+            new VideoEncryptorService(new Secvid03Encryptor()), lifetime);
+        await viewModel.InitializeAsync(new DocumentActivationContext(string.Empty), default);
 
-        Assert.Equal("视频文件加密器", document.Title);
+        Assert.Equal("视频文件加密器", viewModel.Presentation.Title);
         Assert.Empty(viewModel.VideoTitle);
 
         viewModel.VideoTitle = "容器内公开标题";
-        Assert.Equal("视频文件加密器", document.Title);
+        Assert.Equal("视频文件加密器", viewModel.Presentation.Title);
 
         viewModel.ClearAllCommand.Execute(null);
         Assert.Empty(viewModel.VideoTitle);
-        Assert.Equal("视频文件加密器", document.Title);
+        Assert.Equal("视频文件加密器", viewModel.Presentation.Title);
     }
 
     [Fact]
-    public void VideoEncryptorDocument_PreservesCustomDocumentTitle()
+    public async Task VideoEncryptorDocument_PreservesCustomDocumentTitle()
     {
-        var strategy = CreateVideoEncryptorStrategy();
-        var document = strategy.CreateDocument(new DocumentCreationParams(
-            DocumentTypeIdConstant.VideoEncryptorDocumentId)
-        {
-            Title = "自定义加密任务"
-        });
-
-        Assert.Equal("自定义加密任务", document.Title);
-        Assert.Empty(Assert.IsType<VideoEncryptorViewModel>(document).VideoTitle);
+        using var lifetime = new TestDocumentLifetime();
+        using var document = TestViewModelFactory.CreateEncryptor(
+            new VideoEncryptorService(new Secvid03Encryptor()), lifetime);
+        await document.InitializeAsync(
+            new DocumentActivationContext("自定义加密任务"), default);
+        Assert.Equal("自定义加密任务", document.Presentation.Title);
+        Assert.Empty(document.VideoTitle);
     }
 
     [Fact]
@@ -254,16 +270,15 @@ public sealed class VideoToolStabilityTests
             }
 
             var service = new VideoEncryptorService(new Secvid03Encryptor());
-            var viewModel = new VideoEncryptorViewModel(service)
-            {
-                SelectedFilePath = inputPath,
-                OutputFilePath = outputPath,
-                Password = "123456",
-                ConfirmPassword = "123456",
-            };
+            using var lifetime = new TestDocumentLifetime();
+            using var viewModel = TestViewModelFactory.CreateEncryptor(service, lifetime);
+            viewModel.SelectedFilePath = inputPath;
+            viewModel.OutputFilePath = outputPath;
+            viewModel.Password = "123456";
+            viewModel.ConfirmPassword = "123456";
 
             var encryption = viewModel.StartEncryptionCommand.ExecuteAsync(null);
-            viewModel.Dispose();
+            lifetime.Close();
             await encryption;
 
             Assert.False(File.Exists(outputPath));
@@ -290,14 +305,13 @@ public sealed class VideoToolStabilityTests
             using (var input = new FileStream(inputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                 input.SetLength(64L * 1024 * 1024);
 
-            using var viewModel = new VideoEncryptorViewModel(
-                new VideoEncryptorService(new Secvid03Encryptor()))
-            {
-                SelectedFilePath = inputPath,
-                OutputFilePath = outputPath,
-                Password = "123456",
-                ConfirmPassword = "123456"
-            };
+            using var lifetime = new TestDocumentLifetime();
+            using var viewModel = TestViewModelFactory.CreateEncryptor(
+                new VideoEncryptorService(new Secvid03Encryptor()), lifetime);
+            viewModel.SelectedFilePath = inputPath;
+            viewModel.OutputFilePath = outputPath;
+            viewModel.Password = "123456";
+            viewModel.ConfirmPassword = "123456";
 
             Assert.False(viewModel.CancelEncryptionCommand.CanExecute(null));
             var encryption = viewModel.StartEncryptionCommand.ExecuteAsync(null);
@@ -352,9 +366,6 @@ public sealed class VideoToolStabilityTests
         }
     }
 
-    private static VideoEncryptorDocumentStrategy CreateVideoEncryptorStrategy() =>
-        new(new VideoToolTestDocumentScopeFactory());
-
     private sealed class EmptyScanner : IVideoLibraryScanner
     {
         public async IAsyncEnumerable<VideoLibraryScanResult> ScanAsync(
@@ -375,21 +386,4 @@ public sealed class VideoToolStabilityTests
             CurrentSettings = settings;
     }
 
-    /// <summary>
-    /// 这些测试只验证策略对 Dock Title 与视频公开标题的映射，不验证宿主 Scope 实现。
-    /// Scope 的创建、独立性和释放由 PluginTests 中的 DocumentScopeManager 测试覆盖。
-    /// </summary>
-    private sealed class VideoToolTestDocumentScopeFactory : IDocumentScopeFactory
-    {
-        public TDocument CreateDocument<TDocument>() where TDocument : Document
-        {
-            if (typeof(TDocument) == typeof(VideoEncryptorViewModel))
-            {
-                var service = new VideoEncryptorService(new Secvid03Encryptor());
-                return (TDocument)(Document)new VideoEncryptorViewModel(service);
-            }
-
-            throw new NotSupportedException($"测试未注册 Document: {typeof(TDocument).FullName}");
-        }
-    }
 }

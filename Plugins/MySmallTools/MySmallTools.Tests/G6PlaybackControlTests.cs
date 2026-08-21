@@ -179,6 +179,7 @@ public sealed class G6PlaybackControlTests
     {
         private readonly InlineDispatcher _dispatcher = new();
         private readonly ImmediateReaper _reaper = new();
+        private readonly TestDocumentLifetime _lifetime = new();
 
         public ControlRig()
         {
@@ -187,7 +188,8 @@ public sealed class G6PlaybackControlTests
                 Host,
                 new SourceFactory(),
                 _dispatcher,
-                _reaper);
+                _reaper,
+                _lifetime);
         }
 
         public ControlHost Host { get; }
@@ -199,6 +201,7 @@ public sealed class G6PlaybackControlTests
             _reaper.Dispose();
             _dispatcher.Dispose();
             Host.Dispose();
+            _lifetime.Dispose();
         }
     }
 
@@ -276,13 +279,21 @@ public sealed class G6PlaybackControlTests
             IsPaused = false;
             StateChanged?.Invoke(_source?.Generation ?? 0, PlaybackState.Stopped);
         }
+        public Task PauseAtAsync(long positionMs, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            PositionMs = positionMs;
+            IsPaused = true;
+            IsPlaying = false;
+            StateChanged?.Invoke(
+                _source?.Generation ?? 0,
+                PlaybackState.Paused);
+            return Task.CompletedTask;
+        }
         public void SetPause(bool paused)
         {
             IsPaused = paused;
             IsPlaying = !paused;
-            StateChanged?.Invoke(
-                _source?.Generation ?? 0,
-                paused ? PlaybackState.Paused : PlaybackState.Playing);
         }
         public void SetVolume(int volume) => Volume = Math.Clamp(volume, 0, 100);
         public bool SetRate(float rate)

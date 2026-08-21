@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.ViewModels;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
@@ -228,42 +229,42 @@ internal sealed class G8P1AcceptanceSuite(
         var encryptorA = CreateDocument<VideoEncryptorViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.VideoEncryptorDocumentId.Value,
+            MySmallToolsContributionIds.VideoEncryptorDocument.Value,
             "G8-ENC-A");
         var encryptorB = CreateDocument<VideoEncryptorViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.VideoEncryptorDocumentId.Value,
+            MySmallToolsContributionIds.VideoEncryptorDocument.Value,
             "G8-ENC-B");
         var decryptorA = CreateDocument<VideoDecryptorViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.VideoDecryptorDocumentId.Value,
+            MySmallToolsContributionIds.VideoDecryptorDocument.Value,
             "G8-DEC-A");
         var decryptorB = CreateDocument<VideoDecryptorViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.VideoDecryptorDocumentId.Value,
+            MySmallToolsContributionIds.VideoDecryptorDocument.Value,
             "G8-DEC-B");
         var playerA = CreateDocument<SecretVideoPlayerViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.SecretVideoDocumentId.Value,
+            MySmallToolsContributionIds.SecretVideoPlayerDocument.Value,
             "G8-PLAYER-A");
         var playerB = CreateDocument<SecretVideoPlayerViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.SecretVideoDocumentId.Value,
+            MySmallToolsContributionIds.SecretVideoPlayerDocument.Value,
             "G8-PLAYER-B");
         var libraryA = CreateDocument<SecretVideoLibraryViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.SecretVideoLibraryDocumentId.Value,
+            MySmallToolsContributionIds.SecretVideoLibraryDocument.Value,
             "G8-LIB-A");
         var libraryB = CreateDocument<SecretVideoLibraryViewModel>(
             mainViewModel,
             documentDock,
-            DocumentTypeIdConstant.SecretVideoLibraryDocumentId.Value,
+            MySmallToolsContributionIds.SecretVideoLibraryDocument.Value,
             "G8-LIB-B");
         await DrainDispatcherAsync();
         return new G8DocumentSet(
@@ -306,13 +307,13 @@ internal sealed class G8P1AcceptanceSuite(
             documents.DecryptorA.Password != documents.DecryptorB.Password,
             "G8-DEC-PASSWORD-ISOLATION");
 
-        foreach (var document in new Dock.Model.Mvvm.Controls.Document[]
+        foreach (var document in new object[]
                  {
                      documents.EncryptorA,
                      documents.DecryptorA
                  })
         {
-            documentDock.ActiveDockable = document;
+            documentDock.ActiveDockable = FindDockable(documentDock, document);
             await DrainDispatcherAsync();
             var list = mainWindow.GetVisualDescendants()
                 .OfType<ListBox>()
@@ -338,7 +339,7 @@ internal sealed class G8P1AcceptanceSuite(
         SecretVideoLibraryViewModel library,
         string libraryRoot)
     {
-        documentDock.ActiveDockable = library;
+        documentDock.ActiveDockable = FindDockable(documentDock, library);
         await DrainDispatcherAsync();
         library.Browser.IncludeSubdirectories = true;
 
@@ -439,7 +440,7 @@ internal sealed class G8P1AcceptanceSuite(
         documents.PlayerB.FilePath = encryptedMedia;
         documents.LibraryA.Password = PlayerPasswordA;
         documents.LibraryB.Password = PlayerPasswordB;
-        documentDock.ActiveDockable = documents.PlayerA;
+        documentDock.ActiveDockable = FindDockable(documentDock, documents.PlayerA);
 
         Require(documents.PlayerA.Password == PlayerPasswordA, "G8-PLAYER-A-PASSWORD");
         Require(documents.PlayerB.Password == PlayerPasswordB, "G8-PLAYER-B-PASSWORD");
@@ -452,7 +453,7 @@ internal sealed class G8P1AcceptanceSuite(
         G8DocumentSet documents,
         string encryptedMedia)
     {
-        documentDock.ActiveDockable = documents.PlayerA;
+        documentDock.ActiveDockable = FindDockable(documentDock, documents.PlayerA);
         await WaitUntilAsync(
             () => documents.PlayerA.PlayerViewModel.IsVideoSurfaceReady,
             TimeSpan.FromSeconds(10),
@@ -470,7 +471,7 @@ internal sealed class G8P1AcceptanceSuite(
             documents.PlayerA.PlayerViewModel.SurfaceSession?.VideoOutput.Generation ?? 0;
         Require(playerAOutputGeneration > 0, "G8-PLAYER-A-NATIVE");
 
-        documentDock.ActiveDockable = documents.PlayerB;
+        documentDock.ActiveDockable = FindDockable(documentDock, documents.PlayerB);
         await WaitUntilAsync(
             () => documents.PlayerB.PlayerViewModel.IsVideoSurfaceReady,
             TimeSpan.FromSeconds(10),
@@ -484,18 +485,19 @@ internal sealed class G8P1AcceptanceSuite(
             documents.PlayerA.PlayerViewModel.PlaybackSnapshot.HasMedia,
             "G8-PLAYER-A-AFFECTED");
 
-        documentDock.ActiveDockable = documents.PlayerA;
+        documentDock.ActiveDockable = FindDockable(documentDock, documents.PlayerA);
         await WaitUntilAsync(
             () => documents.PlayerA.PlayerViewModel.IsVideoSurfaceReady,
             TimeSpan.FromSeconds(8),
             "G8-PLAYER-A-RESTORE");
         for (var index = 0; index < DockSwitches; index++)
         {
-            documentDock.ActiveDockable =
-                index % 2 == 0 ? documents.LibraryB : documents.PlayerA;
+            documentDock.ActiveDockable = FindDockable(
+                documentDock,
+                index % 2 == 0 ? documents.LibraryB : documents.PlayerA);
             await DrainDispatcherAsync();
         }
-        documentDock.ActiveDockable = documents.PlayerA;
+        documentDock.ActiveDockable = FindDockable(documentDock, documents.PlayerA);
         await WaitUntilAsync(
             () => documents.PlayerA.PlayerViewModel.IsVideoSurfaceReady,
             TimeSpan.FromSeconds(8),
@@ -643,19 +645,28 @@ internal sealed class G8P1AcceptanceSuite(
         list.ScrollIntoView(list.Items[0]!);
     }
 
-    private static T CreateDocument<T>(
+    private static HarnessDocument<T> CreateDocument<T>(
         MainWindowViewModel mainViewModel,
         DocumentDock documentDock,
         string documentType,
-        string title) where T : Dock.Model.Mvvm.Controls.Document
+        string title) where T : class
     {
         mainViewModel.CreateDocument(documentType);
-        var document = documentDock.VisibleDockables?
-            .OfType<T>()
-            .LastOrDefault() ?? throw new AcceptanceException("G8-DOCUMENT-CREATE");
-        document.Title = title;
-        return document;
+        var dockable = documentDock.VisibleDockables?
+            .OfType<ManagedDocumentDockable>()
+            .LastOrDefault(item => item.Model is T) ??
+            throw new AcceptanceException("G8-DOCUMENT-CREATE");
+        dockable.Title = title;
+        return new HarnessDocument<T>(dockable, (T)dockable.Model);
     }
+
+    private static ManagedDocumentDockable FindDockable(
+        DocumentDock documentDock,
+        object model) =>
+        documentDock.VisibleDockables?
+            .OfType<ManagedDocumentDockable>()
+            .SingleOrDefault(item => ReferenceEquals(item.Model, model)) ??
+        throw new AcceptanceException("G8-DOCUMENT-ADAPTER-MISSING");
 
     private static async Task WaitUntilAsync(
         Func<bool> condition,
@@ -730,27 +741,56 @@ internal sealed record G8Assets(
     string DecryptionOutputB,
     string LibraryRoot);
 
-internal sealed record G8DocumentSet(
-    VideoEncryptorViewModel EncryptorA,
-    VideoEncryptorViewModel EncryptorB,
-    VideoDecryptorViewModel DecryptorA,
-    VideoDecryptorViewModel DecryptorB,
-    SecretVideoPlayerViewModel PlayerA,
-    SecretVideoPlayerViewModel PlayerB,
-    SecretVideoLibraryViewModel LibraryA,
-    SecretVideoLibraryViewModel LibraryB)
+internal sealed class G8DocumentSet
 {
-    public IReadOnlyList<Dock.Model.Mvvm.Controls.Document> All { get; } =
-    [
-        EncryptorA,
-        EncryptorB,
-        DecryptorA,
-        DecryptorB,
-        PlayerA,
-        PlayerB,
-        LibraryA,
-        LibraryB
-    ];
+    private readonly Dictionary<object, ManagedDocumentDockable> _dockables;
+
+    public G8DocumentSet(
+        HarnessDocument<VideoEncryptorViewModel> encryptorA,
+        HarnessDocument<VideoEncryptorViewModel> encryptorB,
+        HarnessDocument<VideoDecryptorViewModel> decryptorA,
+        HarnessDocument<VideoDecryptorViewModel> decryptorB,
+        HarnessDocument<SecretVideoPlayerViewModel> playerA,
+        HarnessDocument<SecretVideoPlayerViewModel> playerB,
+        HarnessDocument<SecretVideoLibraryViewModel> libraryA,
+        HarnessDocument<SecretVideoLibraryViewModel> libraryB)
+    {
+        EncryptorA = encryptorA.Model;
+        EncryptorB = encryptorB.Model;
+        DecryptorA = decryptorA.Model;
+        DecryptorB = decryptorB.Model;
+        PlayerA = playerA.Model;
+        PlayerB = playerB.Model;
+        LibraryA = libraryA.Model;
+        LibraryB = libraryB.Model;
+        All =
+        [
+            encryptorA.Dockable,
+            encryptorB.Dockable,
+            decryptorA.Dockable,
+            decryptorB.Dockable,
+            playerA.Dockable,
+            playerB.Dockable,
+            libraryA.Dockable,
+            libraryB.Dockable,
+        ];
+        _dockables = All.ToDictionary(item => item.Model);
+    }
+
+    public VideoEncryptorViewModel EncryptorA { get; }
+    public VideoEncryptorViewModel EncryptorB { get; }
+    public VideoDecryptorViewModel DecryptorA { get; }
+    public VideoDecryptorViewModel DecryptorB { get; }
+    public SecretVideoPlayerViewModel PlayerA { get; }
+    public SecretVideoPlayerViewModel PlayerB { get; }
+    public SecretVideoLibraryViewModel LibraryA { get; }
+    public SecretVideoLibraryViewModel LibraryB { get; }
+    public IReadOnlyList<ManagedDocumentDockable> All { get; }
+
+    public ManagedDocumentDockable DockableFor(object model) =>
+        _dockables.TryGetValue(model, out var dockable)
+            ? dockable
+            : throw new InvalidOperationException("G8-DOCUMENT-ADAPTER-MISSING");
 }
 
 internal sealed record G8P1Report(

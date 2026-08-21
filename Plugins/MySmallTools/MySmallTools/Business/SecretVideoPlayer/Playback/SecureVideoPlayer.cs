@@ -1,4 +1,5 @@
 using LibVLCSharp.Shared;
+using MyAvaloniaManagement.PluginSdk;
 using MySmallTools.Business.SecretVideoPlayer.Container;
 
 namespace MySmallTools.Business.SecretVideoPlayer.Playback;
@@ -28,7 +29,8 @@ internal sealed class SecureVideoPlayer :
     private readonly IPlaybackNativeDispatcher _nativeDispatcher;
     private readonly IPlaybackResourceReaper _resourceReaper;
     private readonly SemaphoreSlim _operationGate = new(1, 1);
-    private readonly CancellationTokenSource _lifetimeCancellation = new();
+    private readonly IDocumentLifetime _documentLifetime;
+    private readonly CancellationTokenSource _lifetimeCancellation;
     private readonly object _snapshotSync = new();
     private readonly object _intentSync = new();
 
@@ -63,7 +65,8 @@ internal sealed class SecureVideoPlayer :
         IPlaybackPlayerHost playerHost,
         IPlaybackMediaSourceFactory mediaSourceFactory,
         IPlaybackNativeDispatcher nativeDispatcher,
-        IPlaybackResourceReaper resourceReaper)
+        IPlaybackResourceReaper resourceReaper,
+        IDocumentLifetime documentLifetime)
     {
         _playerHost = playerHost ?? throw new ArgumentNullException(nameof(playerHost));
         _mediaSourceFactory = mediaSourceFactory ??
@@ -72,6 +75,13 @@ internal sealed class SecureVideoPlayer :
                             throw new ArgumentNullException(nameof(nativeDispatcher));
         _resourceReaper = resourceReaper ??
                           throw new ArgumentNullException(nameof(resourceReaper));
+        _documentLifetime = documentLifetime ??
+                            throw new ArgumentNullException(nameof(documentLifetime));
+        // SecureVideoPlayer 是一个文档内所有原生工作的汇合点。把既有本地生命周期与 Host
+        // 关闭令牌链接后，媒体切换、表面恢复、调度器等待和释放操作共享同一个取消边界；
+        // Dispose 仍可独立取消它，从而保证测试宿主和异常关闭路径同样安全。
+        _lifetimeCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            _documentLifetime.ClosingToken);
 
         _playerHost.StateChanged += OnHostStateChanged;
         _playerHost.PositionChanged += OnHostPositionChanged;
@@ -106,7 +116,7 @@ internal sealed class SecureVideoPlayer :
 
     /// <summary>当前 Document 原生视频输出的稳定代次。</summary>
     public long Generation =>
-        Volatile.Read(ref _disposeState) == 0
+        !IsClosing
             ? _playerHost.NativeOutputGeneration
             : 0;
 
@@ -116,7 +126,7 @@ internal sealed class SecureVideoPlayer :
     /// 只有 Windows 原生表面适配器可以取得 MediaPlayer；业务公开接口不暴露该类型。
     /// </summary>
     MediaPlayer? ILibVlcVideoOutputAccessor.NativePlayer =>
-        Volatile.Read(ref _disposeState) == 0 ? _playerHost.NativePlayer : null;
+        !IsClosing ? _playerHost.NativePlayer : null;
 
     public void ApplyInitialPreferences(int volume, float rate)
     {
@@ -555,9 +565,18 @@ internal sealed class SecureVideoPlayer :
                 return PlaybackOperationResult.Succeeded();
             }
 
+            // 先在 NativeDispatcher 之外读取本 Document 独占播放器的位置，再把“等待
+            // 原生暂停并固定位置”作为一个原子原生操作排队。这样既不会让 UI 线程等待
+            // LibVLC 事件，也不会让关闭令牌之后的旧暂停回调覆盖新文档状态。
+            var pausePosition = _playerHost.PositionMs;
             await _nativeDispatcher.InvokeAsync(
                     "pause",
-                    () => _playerHost.SetPause(true),
+                    async token =>
+                    {
+                        await _playerHost.PauseAtAsync(pausePosition, token)
+                            .ConfigureAwait(false);
+                        return true;
+                    },
                     linked.Token)
                 .ConfigureAwait(false);
             PublishCurrent(PlaybackState.Paused, PlaybackActivity.Idle);
@@ -940,7 +959,7 @@ internal sealed class SecureVideoPlayer :
 
     public bool SetVolume(int volume)
     {
-        if (Volatile.Read(ref _disposeState) != 0)
+        if (IsClosing)
         {
             return false;
         }
@@ -976,7 +995,7 @@ internal sealed class SecureVideoPlayer :
 
     public void DetachSurface(VideoSurfaceIdentity surface)
     {
-        if (Volatile.Read(ref _disposeState) != 0 ||
+        if (IsClosing ||
             !surface.IsValid ||
             surface != _surface)
         {
@@ -990,7 +1009,7 @@ internal sealed class SecureVideoPlayer :
         _operationGate.Wait();
         try
         {
-            if (Volatile.Read(ref _disposeState) != 0 || surface != _surface)
+            if (IsClosing || surface != _surface)
             {
                 return;
             }
@@ -1500,7 +1519,7 @@ internal sealed class SecureVideoPlayer :
 
     private void PublishActivity(PlaybackActivity activity)
     {
-        if (Volatile.Read(ref _disposeState) != 0)
+        if (IsClosing)
         {
             return;
         }
@@ -1524,7 +1543,7 @@ internal sealed class SecureVideoPlayer :
         PlaybackFailure? failure = null)
     {
         var source = Volatile.Read(ref _currentSource);
-        if (source is null || Volatile.Read(ref _disposeState) != 0)
+        if (source is null || IsClosing)
         {
             PublishEmpty(_surface.Generation, activity, failure);
             return;
@@ -1559,7 +1578,7 @@ internal sealed class SecureVideoPlayer :
         PlaybackActivity activity = PlaybackActivity.Idle,
         PlaybackFailure? failure = null)
     {
-        if (Volatile.Read(ref _disposeState) != 0)
+        if (IsClosing)
         {
             return;
         }
@@ -1824,8 +1843,11 @@ internal sealed class SecureVideoPlayer :
         }
     }
 
+    private bool IsClosing =>
+        Volatile.Read(ref _disposeState) != 0 || _documentLifetime.IsClosing;
+
     private void ThrowIfDisposed() =>
         ObjectDisposedException.ThrowIf(
-            Volatile.Read(ref _disposeState) != 0,
+            IsClosing,
             this);
 }

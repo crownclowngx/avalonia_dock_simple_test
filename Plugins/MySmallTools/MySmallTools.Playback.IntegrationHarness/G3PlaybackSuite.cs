@@ -14,9 +14,10 @@ using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.Presentation;
+using MyAvaloniaManagement.PluginSdk.UI;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
@@ -118,7 +119,7 @@ internal sealed class G3PlaybackHarnessRunner(
                     assets,
                     placeholderResources));
 
-            factory.CloseDockable(placeholder);
+            factory.CloseDockable(placeholder.Dockable);
             await DrainDispatcherAsync();
             if (options.Suite == HarnessSuite.G10)
             {
@@ -188,14 +189,14 @@ internal sealed class G3PlaybackHarnessRunner(
         MainWindowViewModel mainViewModel,
         ManagementFactory factory,
         DocumentDock documentDock,
-        SecretVideoPlayerViewModel placeholder,
+        HarnessPlayerDocument placeholder,
         IReadOnlyList<HarnessAsset> assets,
         PlaybackResourceSnapshot expectedResources)
     {
         var document = CreateDocument(mainViewModel, documentDock);
         try
         {
-        documentDock.ActiveDockable = document;
+        documentDock.ActiveDockable = document.Dockable;
         await WaitUntilAsync(
             () => document.PlayerViewModel.IsVideoSurfaceReady,
             TimeSpan.FromSeconds(10),
@@ -207,7 +208,7 @@ internal sealed class G3PlaybackHarnessRunner(
             $"真实 MP4 加载播放失败: {document.PlayerViewModel.StatusMessage}");
         await WaitUntilAsync(
             () => document.PlayerViewModel.PlaybackSnapshot.State == PlaybackState.Playing &&
-                  document.PlayerViewModel.PlaybackSnapshot.PositionMs > 100,
+                  document.Model.PlayerViewModel.PlaybackSnapshot.PositionMs > 100,
             TimeSpan.FromSeconds(8),
             "真实 MP4 未进入播放状态或时间未推进。");
         Require(document.PlayerViewModel.PlaybackSnapshot.HasVideo, "MP4 未识别到视频轨。");
@@ -340,30 +341,58 @@ internal sealed class G3PlaybackHarnessRunner(
                 $"固定种子随机 Seek {index + 1} 的位置误差超过 750 ms。");
         }
 
-        await document.PlayerViewModel.PauseCommand.ExecuteAsync(null);
-        var pausedAt = document.PlayerViewModel.PlaybackSnapshot.PositionMs;
-        await Task.Delay(500);
+        // 固定种子最后一次 Seek 对 3.5 秒短片恰好会落到“距结尾 1 秒”的上限。
+        // 若直接在该位置验证暂停，等待原生 Paused 事件与稳定采样的时间足以让媒体自然
+        // 到达结尾并回零，最终会把“媒体结束”误报为“暂停仍在推进”。暂停门禁必须先把
+        // 播放头放回有充足余量的中段，才能只验证 Pause 自身的语义。
+        var pauseVerificationPosition =
+            document.PlayerViewModel.PlaybackSnapshot.DurationMs / 2;
+        var pausePreparationSeek = await document.PlayerViewModel.SeekMediaAsync(
+            pauseVerificationPosition,
+            waitForFrame: true);
+        Require(pausePreparationSeek.Success, "暂停验证前的中段 Seek 失败。");
         Require(
-            Math.Abs(document.PlayerViewModel.PlaybackSnapshot.PositionMs - pausedAt) <= 250,
+            Math.Abs(document.PlayerViewModel.PlaybackSnapshot.PositionMs -
+                     pauseVerificationPosition) <= 750,
+            "暂停验证前的中段 Seek 位置误差超过 750 ms。");
+
+        await document.PlayerViewModel.PauseCommand.ExecuteAsync(null);
+        await WaitUntilAsync(
+            () => document.PlayerViewModel.PlaybackSnapshot.State == PlaybackState.Paused &&
+                  !document.PlayerViewModel.PlaybackSnapshot.IsTransitioning,
+            TimeSpan.FromSeconds(3),
+            "播放器没有稳定进入暂停状态。");
+        // LibVLC 可能在 Pause 返回后补发多条暂停前已排队的位置事件。必须等待位置连续
+        // 三次稳定后再采样；只等待固定时长会把解码器或硬件不同造成的队列延迟误判为继续播放。
+        var pausedAt = await WaitForStablePausedPositionAsync(document.PlayerViewModel);
+        await Task.Delay(500);
+        var pauseDrift = Math.Abs(
+            document.PlayerViewModel.PlaybackSnapshot.PositionMs - pausedAt);
+        _stageDurationsMs["pauseDriftMs"] = pauseDrift;
+        Require(
+            pauseDrift <= 250,
             "暂停后播放时间仍持续推进。");
 
-        var middle = document.PlayerViewModel.PlaybackSnapshot.DurationMs / 2;
-        var seek = await document.PlayerViewModel.SeekMediaAsync(middle, waitForFrame: true);
+        var pausedSeekTarget = document.PlayerViewModel.PlaybackSnapshot.DurationMs / 3;
+        var seek = await document.PlayerViewModel.SeekMediaAsync(
+            pausedSeekTarget,
+            waitForFrame: true);
         Require(seek.Success, $"暂停 Seek 失败: {seek.Failure?.Code}");
         Require(
-            Math.Abs(document.PlayerViewModel.PlaybackSnapshot.PositionMs - middle) <= 750,
+            Math.Abs(document.PlayerViewModel.PlaybackSnapshot.PositionMs -
+                     pausedSeekTarget) <= 750,
             "暂停 Seek 的位置误差超过 750 ms。");
 
         for (var index = 0; index < options.DockSwitches; index++)
         {
             var expectedPosition =
                 document.PlayerViewModel.PlaybackSnapshot.PositionMs;
-            documentDock.ActiveDockable = placeholder;
+            documentDock.ActiveDockable = placeholder.Dockable;
             await WaitUntilAsync(
                 () => !document.PlayerViewModel.IsVideoSurfaceReady,
                 TimeSpan.FromSeconds(5),
                 "暂停态切出 Dock 后旧 HWND 未销毁。");
-            documentDock.ActiveDockable = document;
+            documentDock.ActiveDockable = document.Dockable;
             await WaitUntilAsync(
                 () => document.PlayerViewModel.IsVideoSurfaceReady,
                 TimeSpan.FromSeconds(5),
@@ -394,12 +423,12 @@ internal sealed class G3PlaybackHarnessRunner(
         {
             var expectedPosition =
                 document.PlayerViewModel.PlaybackSnapshot.PositionMs;
-            documentDock.ActiveDockable = placeholder;
+            documentDock.ActiveDockable = placeholder.Dockable;
             await WaitUntilAsync(
                 () => !document.PlayerViewModel.IsVideoSurfaceReady,
                 TimeSpan.FromSeconds(5),
                 "切出 Dock 后旧 HWND 未销毁。");
-            documentDock.ActiveDockable = document;
+            documentDock.ActiveDockable = document.Dockable;
             await WaitUntilAsync(
                 () => document.PlayerViewModel.IsVideoSurfaceReady,
                 TimeSpan.FromSeconds(5),
@@ -521,10 +550,10 @@ internal sealed class G3PlaybackHarnessRunner(
         }
         finally
         {
-            documentDock.ActiveDockable = placeholder;
+            documentDock.ActiveDockable = placeholder.Dockable;
             await DrainDispatcherAsync();
-            factory.CloseDockable(document);
-            _closedDocumentReferences.Add(new WeakReference<SecretVideoPlayerViewModel>(document));
+            factory.CloseDockable(document.Dockable);
+            _closedDocumentReferences.Add(new WeakReference<SecretVideoPlayerViewModel>(document.Model));
             await DrainDispatcherAsync();
         }
 
@@ -539,17 +568,21 @@ internal sealed class G3PlaybackHarnessRunner(
         MainWindowViewModel mainViewModel,
         ManagementFactory factory,
         DocumentDock documentDock,
-        SecretVideoPlayerViewModel placeholder)
+        HarnessPlayerDocument placeholder)
     {
-        await mainViewModel.CreateDocument(DocumentTypeIdConstant.SecretVideoLibraryDocumentId.Value);
-        var library = documentDock.VisibleDockables?
-            .OfType<SecretVideoLibraryViewModel>()
-            .LastOrDefault() ?? throw new InvalidOperationException(
-                "无法创建加密视频库播放器 Document。");
+        await mainViewModel.CreateDocument(
+            MySmallToolsContributionIds.SecretVideoLibraryDocument.Value);
+        var libraryDockable = documentDock.VisibleDockables?
+            .OfType<ManagedDocumentDockable>()
+            .LastOrDefault(item => item.Model is SecretVideoLibraryViewModel) ??
+            throw new InvalidOperationException("无法创建加密视频库播放器 Document。");
+        var library = new HarnessLibraryDocument(
+            libraryDockable,
+            (SecretVideoLibraryViewModel)libraryDockable.Model);
 
         try
         {
-            documentDock.ActiveDockable = library;
+            documentDock.ActiveDockable = library.Dockable;
             await WaitUntilAsync(
                 () => mainWindow.GetVisualDescendants()
                     .OfType<VideoPlayerControl>()
@@ -566,7 +599,7 @@ internal sealed class G3PlaybackHarnessRunner(
                     control.DataContext,
                     library.PlayerViewModel));
             Require(
-                ReferenceEquals(playerControl.NavigationContext, library),
+                ReferenceEquals(playerControl.NavigationContext, library.Model),
                 "媒体库导航上下文没有绑定到媒体库 ViewModel。");
             Require(
                 playerControl.HasNavigationContext,
@@ -577,10 +610,16 @@ internal sealed class G3PlaybackHarnessRunner(
 
             var previous = playerControl.GetVisualDescendants()
                 .OfType<Button>()
-                .SingleOrDefault(button => Equals(button.Content, "⏮ 上一项"));
+                .SingleOrDefault(button => string.Equals(
+                    Avalonia.Automation.AutomationProperties.GetName(button),
+                    "上一项",
+                    StringComparison.Ordinal));
             var next = playerControl.GetVisualDescendants()
                 .OfType<Button>()
-                .SingleOrDefault(button => Equals(button.Content, "下一项 ⏭"));
+                .SingleOrDefault(button => string.Equals(
+                    Avalonia.Automation.AutomationProperties.GetName(button),
+                    "下一项",
+                    StringComparison.Ordinal));
             var continuous = playerControl.GetVisualDescendants()
                 .OfType<CheckBox>()
                 .SingleOrDefault(checkBox => Equals(checkBox.Content, "连续播放"));
@@ -592,9 +631,9 @@ internal sealed class G3PlaybackHarnessRunner(
         }
         finally
         {
-            documentDock.ActiveDockable = placeholder;
+            documentDock.ActiveDockable = placeholder.Dockable;
             await DrainDispatcherAsync();
-            factory.CloseDockable(library);
+            factory.CloseDockable(library.Dockable);
             await DrainDispatcherAsync();
         }
 
@@ -611,7 +650,7 @@ internal sealed class G3PlaybackHarnessRunner(
     }
 
     private async Task VerifyTamperedSeekAsync(
-        SecretVideoPlayerViewModel document,
+        HarnessPlayerDocument document,
         HarnessAsset asset,
         long nearEnd)
     {
@@ -651,7 +690,7 @@ internal sealed class G3PlaybackHarnessRunner(
     }
 
     private async Task VerifyUnavailableInputAsync(
-        SecretVideoPlayerViewModel document,
+        HarnessPlayerDocument document,
         HarnessAsset asset)
     {
         var unavailablePath = $"{asset.EncryptedPath}.unavailable";
@@ -709,14 +748,14 @@ internal sealed class G3PlaybackHarnessRunner(
         MainWindowViewModel mainViewModel,
         ManagementFactory factory,
         DocumentDock documentDock,
-        SecretVideoPlayerViewModel placeholder,
+        HarnessPlayerDocument placeholder,
         IReadOnlyList<HarnessAsset> assets,
         PlaybackResourceSnapshot expectedResources)
     {
         for (var cycle = 0; cycle < options.Cycles; cycle++)
         {
             var document = CreateDocument(mainViewModel, documentDock);
-            documentDock.ActiveDockable = document;
+            documentDock.ActiveDockable = document.Dockable;
             await WaitUntilAsync(
                 () => document.PlayerViewModel.IsVideoSurfaceReady,
                 TimeSpan.FromSeconds(8),
@@ -736,13 +775,13 @@ internal sealed class G3PlaybackHarnessRunner(
                 TimeSpan.FromSeconds(6),
                 $"第 {cycle + 1} 轮没有产生真实读取。");
 
-            documentDock.ActiveDockable = placeholder;
+            documentDock.ActiveDockable = placeholder.Dockable;
             await WaitUntilAsync(
                 () => !document.PlayerViewModel.IsVideoSurfaceReady,
                 TimeSpan.FromSeconds(5),
                 $"第 {cycle + 1} 轮旧 HWND 未销毁。");
-            factory.CloseDockable(document);
-            _closedDocumentReferences.Add(new WeakReference<SecretVideoPlayerViewModel>(document));
+            factory.CloseDockable(document.Dockable);
+            _closedDocumentReferences.Add(new WeakReference<SecretVideoPlayerViewModel>(document.Model));
             _closedViewReferences.Add(new WeakReference<VideoPlayerControl>(playerView));
             await DrainDispatcherAsync();
 
@@ -756,15 +795,18 @@ internal sealed class G3PlaybackHarnessRunner(
         }
     }
 
-    private static SecretVideoPlayerViewModel CreateDocument(
+    private static HarnessPlayerDocument CreateDocument(
         MainWindowViewModel mainViewModel,
         DocumentDock documentDock)
     {
-        mainViewModel.CreateDocument(DocumentTypeIdConstant.SecretVideoDocumentId.Value);
-        var document = documentDock.VisibleDockables?
-            .OfType<SecretVideoPlayerViewModel>()
-            .LastOrDefault();
-        return document ?? throw new InvalidOperationException("无法创建安全视频 Document。");
+        mainViewModel.CreateDocument(MySmallToolsContributionIds.SecretVideoPlayerDocument.Value);
+        var dockable = documentDock.VisibleDockables?
+            .OfType<ManagedDocumentDockable>()
+            .LastOrDefault(item => item.Model is SecretVideoPlayerViewModel) ??
+            throw new InvalidOperationException("无法创建安全视频 Document。");
+        return new HarnessPlayerDocument(
+            dockable,
+            (SecretVideoPlayerViewModel)dockable.Model);
     }
 
     private static async Task<IReadOnlyList<HarnessAsset>> PrepareAssetsAsync(string directory)
@@ -848,6 +890,27 @@ internal sealed class G3PlaybackHarnessRunner(
             }
             await Task.Delay(50);
         }
+    }
+
+    private static async Task<long> WaitForStablePausedPositionAsync(
+        VideoPlayerControlViewModel player)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var previous = player.PlaybackSnapshot.PositionMs;
+        var stableSamples = 0;
+        while (stopwatch.Elapsed < TimeSpan.FromSeconds(3))
+        {
+            await Task.Delay(100);
+            var current = player.PlaybackSnapshot.PositionMs;
+            stableSamples = Math.Abs(current - previous) <= 50
+                ? stableSamples + 1
+                : 0;
+            previous = current;
+            if (stableSamples >= 3)
+                return current;
+        }
+
+        throw new InvalidOperationException("播放器暂停后的位置事件未能在三秒内稳定。");
     }
 
     private static async Task<bool> ObserveUntilAsync(

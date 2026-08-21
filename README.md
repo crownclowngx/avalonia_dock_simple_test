@@ -8,11 +8,11 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > `managed-plugin-v1.0.0` 定位。签署内容、非发布门禁证据和回退边界见
 > [G16 文档与 v1 基线](./docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
-> Managed Plugin V2 已完成 G0–G10；G11–G14 尚未实现。最终 Core/UI SDK、严格 manifest v2、
+> Managed Plugin V2 已完成 G0–G11；G12–G14 尚未实现。最终 Core/UI SDK、严格 manifest v2、
 > 每插件独立 Provider、声明式贡献目录、Host internal Dock Adapter、Document V2、Layout V2 与
 > Host internal 生命周期已进入生产路径。MyPlugTest 与 DaTangAccountingHelpPlug 已成为
-> 真实 V2 插件，MySmallTools/BiliDownloader 等待 G11–G12。见
-> [V2 G10 专项记录](./docs/plan-history/host-v2/g10-datang-accounting-help-v2.md)。
+> 真实 V2 插件，MySmallTools 已在 G11 完成原生播放器与四 Document 迁移；仅 BiliDownloader
+> 等待 G12。见 [V2 G11 专项记录](./docs/plan-history/host-v2/g11-my-small-tools-v2.md)。
 
 ## 核心扩展模型
 
@@ -40,12 +40,12 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 | [DaTangAccountingHelpPlug](./Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj) | 发票信息综合计算和银行余额调节 |
 | [MyPlugTest](./Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) | Managed Plugin 的 Document、Tool、消息通信和依赖注入示例 |
 
-四个当前插件均使用 Managed Plugin 构建协议；MyPlugTest 和 DaTangAccountingHelpPlug 已通过
-最终 V2 入口真实加载。MySmallTools 与 BiliDownloader 仍保留 Legacy 源码以等待迁移，
+四个当前插件均使用 Managed Plugin 构建协议；MyPlugTest、DaTangAccountingHelpPlug 与
+MySmallTools 已通过最终 V2 入口真实加载。仅 BiliDownloader 仍保留 Legacy 源码以等待 G12，
 因此会被 V2 预检隔离。缺少入口 `.deps.json` 或依赖历史加载 Facade
 的代码不会进入运行链。
 
-## V2 G10 当前 SDK、manifest、容器、Dock、Document、Layout 与插件迁移边界
+## V2 G11 当前 SDK、manifest、容器、Dock、Document、Layout 与插件迁移边界
 
 历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。当前 G1 仍沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
@@ -64,7 +64,7 @@ SDK 程序集版本均为 `2.0.0.0`；V2 已删除独立 Host API 版本事实�
 G2 已建立真实的 `MyAvaloniaManagement.PluginSdk.dll` 与 `MyAvaloniaManagement.PluginSdk.UI.dll`。
 Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约；两者分别维护空 Shipped 和完整
 Unshipped 的 v2 API 基线。旧 `MyAvaloniaManagementCommon.dll` 只由仓库内部
-`MyAvaloniaManagement.LegacyPluginContracts` 项目生成，不能打包、不能新增生产消费者，并将在 G11–G13
+`MyAvaloniaManagement.LegacyPluginContracts` 项目生成，不能打包、不能新增生产消费者，并将在 G12–G13
 迁移后删除。
 
 G4 已把宿主与插件对象图彻底分开：Host Provider 先构建，每个清单入口从新的空
@@ -75,8 +75,8 @@ G5 把 Host 生产模块入口切换到最终 UI SDK，并以 `PluginRegistratio
 `PluginRegistry` 和 internal Activator 形成唯一贡献路径。Document 自动为 scoped，Tool/Lifecycle 为
 插件 singleton；Descriptor、模型和 View 在一次声明中冻结。插件内错误丢弃整个候选；跨插件 ID 或精确
 模型映射冲突排除全部冲突插件，Host 冲突保留 Host，未冲突插件继续发布。Registry 不保存 Provider，
-Welcome 与四个 Host Tool 也从相同目录产生。MyPlugTest 与 DaTangAccountingHelpPlug 已在
-G9–G10 使用这条生产路径；MySmallTools/BiliDownloader 留到 G11–G12。
+Welcome 与四个 Host Tool 也从相同目录产生。MyPlugTest、DaTangAccountingHelpPlug 与
+MySmallTools 已在 G9–G11 使用这条生产路径；BiliDownloader 留到 G12。
 
 G6 进一步把 Welcome 与四个 Host Tool 变为普通模型。只有 internal sealed
 `ManagedDocumentDockable`/`ManagedToolDockable` 继承 Dock 类型；View 在发布前由 Registry 精确工厂
@@ -156,7 +156,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Managed 插件快速开始](./docs/quick-start/README.md)：以已迁移的 MyPlugTest 为可运行 V2 事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G10 已完成、G11–G14 尚未实现的破坏式重构路线；
+- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G11 已完成、G12–G14 尚未实现的破坏式重构路线；
 - [V2 G10 DaTang 迁移](./docs/plan-history/host-v2/g10-datang-accounting-help-v2.md)：查看窗口端口、内容 schema、所有权、SOLID 取舍和非发布证据；
 - [V2 G0 绿色基线](./docs/plan-history/host-v2/g0-green-baseline.md)：查看非发布门禁、删除面、依赖白名单和消费者矩阵；
 - [V2 G1 版本与数据边界](./docs/plan-history/host-v2/g1-version-and-data-boundaries.md)：查看 V2 版本事实、数据根隔离和阶段边界；
@@ -244,7 +244,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - G5 已完成：宿主与每个插件拥有独立 Provider，Host 生产贡献只通过最终 UI SDK 声明并发布到唯一 Registry；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
 - Core/UI 包、manifest v2、独立容器、Host 声明式目录、Document v2、Layout v2 和 Host internal
-  生命周期已进入生产路径；MyPlugTest 与 DaTang 已完成 G9–G10 迁移，MySmallTools 和
-  BiliDownloader 等待 G11–G12。
+  生命周期已进入生产路径；MyPlugTest、DaTang 与 MySmallTools 已完成 G9–G11 迁移，仅
+  BiliDownloader 等待 G12。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

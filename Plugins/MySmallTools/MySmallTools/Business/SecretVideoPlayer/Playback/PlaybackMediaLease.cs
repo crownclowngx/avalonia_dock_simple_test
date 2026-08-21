@@ -153,6 +153,7 @@ internal interface IPlaybackPlayerHost : IDisposable
     bool Play();
     void Stop();
     void SetPause(bool paused);
+    Task PauseAtAsync(long positionMs, CancellationToken cancellationToken);
     void SetVolume(int volume);
     bool SetRate(float rate);
     IReadOnlyList<PlaybackTrackOption> GetAudioTracks();
@@ -258,6 +259,19 @@ internal sealed class LibVlcDocumentPlayerHost : IPlaybackPlayerHost
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
         _player.SetPause(paused);
+    }
+
+    public Task PauseAtAsync(long positionMs, CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposeState) != 0, this);
+
+        // SECVID03 通过回调流向 LibVLC 提供数据。部分 demux 在收到暂停后会异步把
+        // MediaPlayer.Time 短暂重置为零，所以“发出 SetPause”并不等于“暂停位置已经
+        // 稳定”。复用表面恢复中经过真实媒体门禁验证的序列：等待原生 Paused 事件，
+        // 再于暂停态重申调用前的位置。原生调用仍由上层 NativeDispatcher 串行化，
+        // 本对象只负责一个 MediaPlayer 的原生语义，不承担文档或 UI 状态发布。
+        return new LibVlcVideoSurfaceRestoreOperations(_player)
+            .PauseAtAsync(positionMs, cancellationToken);
     }
 
     public void SetVolume(int volume)

@@ -69,6 +69,7 @@ public sealed class G7LibraryActivationTests
         private const string FileId = "00112233445566778899AABBCCDDEEFF";
         private const long OriginalLength = 12_345;
         private readonly TestHistoryStore _history;
+        private readonly TestDocumentLifetime _lifetime = new();
 
         public string DirectoryPath { get; } =
             Path.Combine(Path.GetTempPath(), $"mysmalltools-g7-activation-{Guid.NewGuid():N}");
@@ -104,6 +105,7 @@ public sealed class G7LibraryActivationTests
                 FileId);
             Browser = new VideoLibraryBrowserViewModel(
                 new FixedScanner(scanResult),
+                _lifetime,
                 historyStore: _history,
                 catalog: new SnapshotCatalog(scanResult));
             Player = new VideoPlayerControlViewModel(
@@ -114,6 +116,7 @@ public sealed class G7LibraryActivationTests
             Library = new SecretVideoLibraryViewModel(
                 Browser,
                 Player,
+                _lifetime,
                 historyStore: _history);
         }
 
@@ -122,6 +125,7 @@ public sealed class G7LibraryActivationTests
             Library.Dispose();
             Player.Dispose();
             Browser.Dispose();
+            _lifetime.Dispose();
             try
             {
                 Directory.Delete(DirectoryPath, recursive: true);

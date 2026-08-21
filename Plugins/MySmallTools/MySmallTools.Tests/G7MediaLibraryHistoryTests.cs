@@ -199,8 +199,10 @@ public sealed class G7MediaLibraryHistoryTests(Secvid03Fixture fixture)
                 DateTimeOffset.UnixEpoch.AddHours(index),
                 index % 2 == 0));
         }
+        using var lifetime = new TestDocumentLifetime();
         using var browser = new VideoLibraryBrowserViewModel(
             new FixedScanner(results),
+            lifetime,
             userData,
             userData);
 

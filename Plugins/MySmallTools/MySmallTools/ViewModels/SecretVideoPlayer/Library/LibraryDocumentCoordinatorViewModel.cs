@@ -3,7 +3,7 @@ using System.Collections.Specialized;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.PluginSdk;
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 
@@ -13,7 +13,7 @@ namespace MySmallTools.ViewModels.SecretVideoPlayer.Library;
 /// 文件夹视频库 Document：只协调浏览状态、公共密码和现有播放器控件。
 /// </summary>
 public partial class LibraryDocumentCoordinatorViewModel :
-    Document,
+    ObservableObject,
     IPlaybackNavigationContext,
     IDisposable
 {
@@ -27,6 +27,7 @@ public partial class LibraryDocumentCoordinatorViewModel :
     private readonly IVideoLibrarySettingsStore? _settingsStore;
     private readonly PlaybackHistoryCoordinator? _historyCoordinator;
     private readonly ISecretVideoUserDataDiagnostics? _userDataDiagnostics;
+    private readonly IDocumentLifetime _documentLifetime;
     private int _initializeState;
 
     [ObservableProperty] private string _password = string.Empty;
@@ -72,6 +73,7 @@ public partial class LibraryDocumentCoordinatorViewModel :
     public LibraryDocumentCoordinatorViewModel(
         VideoLibraryBrowserViewModel browser,
         VideoPlayerControlViewModel playerViewModel,
+        IDocumentLifetime documentLifetime,
         IPlaybackHistoryStore? historyStore = null,
         IVideoLibrarySettingsStore? settingsStore = null,
         PlaybackHistoryCoordinator? historyCoordinator = null,
@@ -79,6 +81,7 @@ public partial class LibraryDocumentCoordinatorViewModel :
     {
         Browser = browser ?? throw new ArgumentNullException(nameof(browser));
         PlayerViewModel = playerViewModel ?? throw new ArgumentNullException(nameof(playerViewModel));
+        _documentLifetime = documentLifetime ?? throw new ArgumentNullException(nameof(documentLifetime));
         _historyStore = historyStore;
         _settingsStore = settingsStore;
         _historyCoordinator = historyCoordinator;
@@ -138,6 +141,8 @@ public partial class LibraryDocumentCoordinatorViewModel :
     /// <summary>由 View 首次附加时调用一次，恢复最近目录但不加载或播放媒体。</summary>
     public async Task InitializeAsync()
     {
+        if (IsClosing)
+            return;
         if (Interlocked.Exchange(ref _initializeState, 1) != 0)
             return;
         if (!string.IsNullOrWhiteSpace(_userDataDiagnostics?.LoadWarning))
@@ -151,7 +156,7 @@ public partial class LibraryDocumentCoordinatorViewModel :
     public async Task OpenFolderAsync(string folderPath)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (IsOpening || string.IsNullOrWhiteSpace(folderPath))
+        if (IsClosing || IsOpening || string.IsNullOrWhiteSpace(folderPath))
             return;
 
         var fullPath = Path.GetFullPath(folderPath);
@@ -292,7 +297,7 @@ public partial class LibraryDocumentCoordinatorViewModel :
 
     private async void OnMediaEnded(object? sender, PlaybackMediaEndedEventArgs e)
     {
-        if (_disposed ||
+        if (IsClosing ||
             !IsContinuousPlaybackEnabled ||
             e.MediaGeneration == Interlocked.Read(ref _lastHandledEndedGeneration) ||
             e.MediaGeneration != PlayerViewModel.PlaybackSnapshot.MediaGeneration)
@@ -322,6 +327,8 @@ public partial class LibraryDocumentCoordinatorViewModel :
         Models.SecretVideoPlayer.VideoLibraryItemViewModel item,
         PlaybackRequestOrigin origin)
     {
+        if (IsClosing)
+            return;
         if (string.IsNullOrEmpty(Password))
         {
             StatusMessage = "请输入公共密码";
@@ -339,7 +346,10 @@ public partial class LibraryDocumentCoordinatorViewModel :
         Browser.SelectedItem = item;
         _historyCoordinator?.FlushCurrent();
         var generation = Interlocked.Increment(ref _playGeneration);
-        var cancellation = new CancellationTokenSource();
+        // 每次播放仍有自己的“新请求替换旧请求”令牌，但最外层必须链接 Host 关闭令牌。
+        // 这样关闭标签页不依赖 View 是否及时调用 Dispose，也不会让迟到的原生结果写回模型。
+        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            _documentLifetime.ClosingToken);
         var previous = Interlocked.Exchange(ref _playCancellation, cancellation);
         TryCancel(previous);
         if (origin == PlaybackRequestOrigin.AutoAdvance)
@@ -385,7 +395,7 @@ public partial class LibraryDocumentCoordinatorViewModel :
                     Password,
                     cancellation.Token)
             };
-            if (_disposed || generation != Volatile.Read(ref _playGeneration))
+            if (IsClosing || generation != Volatile.Read(ref _playGeneration))
             {
                 return;
             }
@@ -433,7 +443,7 @@ public partial class LibraryDocumentCoordinatorViewModel :
         }
         catch
         {
-            if (!_disposed && generation == Volatile.Read(ref _playGeneration))
+            if (!IsClosing && generation == Volatile.Read(ref _playGeneration))
             {
                 // 未知异常可能携带绝对路径或 LibVLC 原生文本。媒体库只显示稳定的
                 // 可行动提示，详细原生异常不进入 UI、导航状态或日志。
@@ -445,7 +455,7 @@ public partial class LibraryDocumentCoordinatorViewModel :
             Interlocked.CompareExchange(ref _playCancellation, null, cancellation);
             Interlocked.CompareExchange(ref _autoAdvanceCancellation, null, cancellation);
             cancellation.Dispose();
-            if (!_disposed && generation == Volatile.Read(ref _playGeneration))
+            if (!IsClosing && generation == Volatile.Read(ref _playGeneration))
             {
                 IsOpening = false;
             }
@@ -459,6 +469,8 @@ public partial class LibraryDocumentCoordinatorViewModel :
         PreviousCommand.NotifyCanExecuteChanged();
         NextCommand.NotifyCanExecuteChanged();
     }
+
+    private bool IsClosing => _disposed || _documentLifetime.IsClosing;
 
     public void Dispose()
     {

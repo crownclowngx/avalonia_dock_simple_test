@@ -17,7 +17,6 @@ public sealed class SdkBoundaryTests
         "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
         "Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csproj",
         "Plugins/BiliDownloader/BiliDownloader/BiliDownloader.csproj",
-        "Plugins/MySmallTools/MySmallTools/MySmallTools.csproj",
     ];
 
     [Fact]
@@ -69,6 +68,19 @@ public sealed class SdkBoundaryTests
                 method.GetParameters().Select(parameter => parameter.ParameterType)
                     .Append(method.ReturnType)),
             type => type.Name is "Window" or "TopLevel" or "IStorageProvider" or "IClipboard");
+    }
+
+    [Fact]
+    public void 全屏端口只负责内容所有权迁移和恢复()
+    {
+        Assert.Equal(
+            ["TryPresent", "TryRestore"],
+            typeof(IWindowContentFullscreenHost).GetMethods()
+                .Select(method => method.Name)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray());
+        Assert.Empty(typeof(IWindowContentFullscreenHost).GetProperties());
+        Assert.Empty(typeof(IWindowContentFullscreenHost).GetEvents());
     }
 
     [Fact]

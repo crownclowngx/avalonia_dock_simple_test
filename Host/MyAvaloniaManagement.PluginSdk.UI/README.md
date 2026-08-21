@@ -12,10 +12,11 @@ Dock 与 Newtonsoft 不属于插件 UI 契约，插件不得通过本包取得�
 的 `DocumentActivationContext`、`DocumentContent`、`IPluginDocument`、
 `IPersistablePluginDocument` 与 `IDocumentLifetime` 进入唯一异步创建和持久化链。
 
-G8 已完成生命周期编排，G9–G10 已迁移 MyPlugTest 与 DaTangAccountingHelpPlug。
+G8 已完成生命周期编排，G9–G11 已迁移 MyPlugTest、DaTangAccountingHelpPlug 与 MySmallTools。
 G10 新增的 `IPluginWindowInteraction` 由 Host 以同一受控实例注入每个插件私有 Provider：
 它只返回本地路径或操作结果，不向插件暴露主窗口、`StorageProvider` 或剪贴板实现。
 原生选择器返回后会再次检查取消令牌，以丢弃 Document 关闭期间的迟到结果。
 
-MySmallTools 与 BiliDownloader 仍等待 G11–G12；它们的 Legacy 入口不会由 V2 Host 加载。
-当前 `2.0.0` SDK 仍是未发布契约，G10 测试 ZIP 不构成公开发布承诺。
+G11 由同一 UI SDK 的 `IWindowContentFullscreenHost` 承载 MySmallTools 全屏交互，没有重复 Legacy
+接口或 Host 门面。仅 BiliDownloader 仍等待 G12；其 Legacy 入口不会由 V2 Host 加载。
+当前 `2.0.0` SDK 仍是未发布契约，G11 测试 ZIP 不构成公开发布承诺。

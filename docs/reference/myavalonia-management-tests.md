@@ -2,9 +2,9 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G10 的 Core/UI SDK、
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G11 的 Core/UI SDK、
 > manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录、Host Dock Adapter、
-> Document V2、Layout V2、internal 生命周期以及 MyPlugTest/DaTang 真实 V2 迁移。最新测试数量和覆盖率必须从本轮
+> Document V2、Layout V2、internal 生命周期以及 MyPlugTest/DaTang/MySmallTools 真实 V2 迁移。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -25,6 +25,24 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 `artifacts/test-results/Documentation/summary.json`。
 
 当前文档门禁不调用 Windows Smoke、发布总门禁或发布验收项目；通过它不能冒充 Windows 发布放行。
+
+### V2 G11 MySmallTools 专项门禁
+
+修改 MySmallTools V2 入口、四个 Document、关闭令牌、原生播放器、媒体库、批处理或全屏端口时运行：
+
+```powershell
+.\scripts\Test-MySmallToolsV2.ps1 -Configuration Release
+```
+
+脚本输出到 `artifacts/test-results/MySmallToolsV2/`，执行 Plugin/Loader/SDK 边界与 Headless UI
+定向测试、完整 MySmallTools 单元测试、真实 G3 媒体 Harness、两次确定性打包、禁止程序集扫描和
+最终 ZIP 真实加载。本次实际为 **275/275**、真实媒体 20 轮、测试 ZIP 431 个文件；归档 SHA-256 为
+`2B2879D28D92A8251A21674D83F5752814AE2A09D0D01EED999061E168D38126`。数量和摘要只是本次证据，
+脚本不硬编码它们作为未来门槛。完整设计与资源回零证据见
+[V2 G11 专项记录](../plan-history/host-v2/g11-my-small-tools-v2.md)。
+
+该入口明确不使用 AIFLOW，不运行 Windows CI、Windows Smoke、ReleaseAcceptance、发布门禁、签名、
+上传或标签；也不调用历史 MySmallTools 产品 G11 的 Accept/Approve 脚本。
 
 ### V2 G1 当前绿色基线
 
