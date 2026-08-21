@@ -4,9 +4,8 @@ using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels;
 using BiliDownloader.ViewModels.BiliDownloader;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Save;
-using Newtonsoft.Json;
+using MyAvaloniaManagement.PluginSdk;
+using System.Text.Json;
 
 namespace BiliDownloader.Tests;
 
@@ -29,15 +28,21 @@ public class DocumentV2G5Tests
             new StubBiliSessionApi(),
             messenger);
 
+        var api = new BiliApiService();
+        var credentials = new FakeCredentialProvider();
         return new BiliDownloaderViewModel(
             messenger,
             taskRepo,
             settingsRepo,
             loginState,
             new BiliLoginService(),
-            new BiliApiService(),
-            new FakeCredentialProvider(),
-            new FakeFfmpegService());
+            new BiliDownloader.Services.ContentSources.ContentSourceProviderRegistry(
+                [new BiliDownloader.Services.ContentSources.DirectLinkProvider(api, credentials)]),
+            api,
+            credentials,
+            new FakeFfmpegService(),
+            new BiliDownloaderDocumentStateMapper(),
+            new TestDocumentLifetime());
     }
 
     [Fact]
@@ -45,8 +50,8 @@ public class DocumentV2G5Tests
     {
         var saveData = CreateVm().CreateContentSnapshot();
 
-        Assert.Equal(DocumentSaveCodec.CurrentContentSchemaVersion, saveData.ContentSchemaVersion);
-        Assert.False(string.IsNullOrWhiteSpace(saveData.Payload));
+        Assert.Equal(DocumentSaveCodec.CurrentContentSchemaVersion, saveData.SchemaVersion);
+        Assert.Equal(JsonValueKind.Object, saveData.Payload.ValueKind);
     }
 
     [Fact]
@@ -58,7 +63,7 @@ public class DocumentV2G5Tests
 
         var snapshot = vm.CreateContentSnapshot();
 
-        Assert.Equal(DocumentSaveCodec.CurrentContentSchemaVersion, snapshot.ContentSchemaVersion);
+        Assert.Equal(DocumentSaveCodec.CurrentContentSchemaVersion, snapshot.SchemaVersion);
         Assert.Equal("快照前标题", vm.Title);
         Assert.True(vm.IsDirty);
     }
@@ -73,7 +78,7 @@ public class DocumentV2G5Tests
         vm.DownloadConfig.DownloadCover = true;
 
         var saveData = vm.CreateContentSnapshot();
-        var content = JsonConvert.DeserializeObject<DocumentSaveDataV3>(saveData.Payload);
+        var content = saveData.Payload.Deserialize<DocumentSaveDataV3>();
 
         Assert.NotNull(content);
         Assert.Equal("{bv}_{title}", content.NamingTemplate);
@@ -107,9 +112,9 @@ public class DocumentV2G5Tests
     [InlineData(99)]
     public void 非当前内容Schema_明确拒绝(int contentSchemaVersion)
     {
-        var saveData = new DocumentContentSnapshot(contentSchemaVersion, "{}");
+        var saveData = new DocumentContent(contentSchemaVersion, JsonSerializer.SerializeToElement(new { }));
 
-        var exception = Assert.Throws<DocumentLoadException>(() =>
+        var exception = Assert.Throws<InvalidDataException>(() =>
             CreateVm().RestoreContent(saveData));
 
         Assert.Equal("该 BiliDownloader Document 不是当前支持的 V3 格式。", exception.Message);
@@ -122,11 +127,11 @@ public class DocumentV2G5Tests
     [InlineData("{")]
     public void 当前Schema正文损坏_返回稳定脱敏错误(string payload)
     {
-        var saveData = new DocumentContentSnapshot(
+        var saveData = new DocumentContent(
             DocumentSaveCodec.CurrentContentSchemaVersion,
-            payload);
+            JsonSerializer.SerializeToElement(payload));
 
-        var exception = Assert.Throws<DocumentLoadException>(() =>
+        var exception = Assert.Throws<InvalidDataException>(() =>
             CreateVm().RestoreContent(saveData));
 
         if (payload.Length > 0)

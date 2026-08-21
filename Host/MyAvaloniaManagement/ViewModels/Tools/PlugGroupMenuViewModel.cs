@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System;
 using System.Threading.Tasks;
@@ -72,7 +72,7 @@ internal sealed partial class PlugGroupMenuViewModel
                 entry.CreationIntentId));
         }
     }
-    
+
     /// <summary>
     /// 切换指定菜单分类的展开状态。
     /// </summary>

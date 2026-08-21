@@ -2,9 +2,9 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G11 的 Core/UI SDK、
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G12 的 Core/UI SDK、
 > manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录、Host Dock Adapter、
-> Document V2、Layout V2、internal 生命周期以及 MyPlugTest/DaTang/MySmallTools 真实 V2 迁移。最新测试数量和覆盖率必须从本轮
+> Document V2、Layout V2、internal 生命周期以及四个业务插件真实 V2 迁移。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -25,6 +25,26 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 `artifacts/test-results/Documentation/summary.json`。
 
 当前文档门禁不调用 Windows Smoke、发布总门禁或发布验收项目；通过它不能冒充 Windows 发布放行。
+
+### V2 G12 BiliDownloader 专项门禁
+
+修改 BiliDownloader V2 入口、Document schema 3、readiness、Lifecycle、Tool 或 JSON 边界时运行：
+
+```powershell
+.\scripts\Test-BiliDownloaderV2.ps1 -Configuration Release -NoRestore
+```
+
+脚本输出到 `artifacts/test-results/BiliDownloaderV2/`，串行运行 Host Plugin、Headless UI、SDK 边界和
+BiliDownloader 完整单元测试，要求 0 失败、0 跳过；随后完成结构扫描、两次隔离 ZIP 构建、逐文件与
+归档摘要比较、共享程序集/RID 边界扫描，以及解压后的真实 Loader、Preflight、Registry 和私有
+Provider 组合。本次实际为 **812/812**，测试 ZIP 14 个文件，归档 SHA-256 为
+`4F73359B0B1AD8E559391EC254BF892794EFF1FED79973D3E2B8F60C12B331D8`。BiliDownloader 覆盖率门禁
+为行 **83.77%** / 分支 **67.62%**，现有阈值没有降低。完整设计与失败矩阵见
+[V2 G12 专项记录](../plan-history/host-v2/g12-bili-downloader-v2.md)。
+
+该入口固定记录 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、
+`releaseAcceptance=false`、`releaseGate=false`、`publishable=false`，不调用历史
+`Release-BiliDownloaderP0.ps1`，也不访问真实账号、Bilibili 或真实 FFmpeg 媒体。
 
 ### V2 G11 MySmallTools 专项门禁
 

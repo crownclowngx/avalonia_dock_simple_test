@@ -9,8 +9,7 @@ using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.History;
 using BiliDownloader.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace BiliDownloader.Tests;
 
@@ -77,7 +76,7 @@ public sealed class BiliDownloaderModuleTests
             FindDescriptor(services, typeof(ITaskHistoryRedownloadService)).Lifetime);
         Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IPluginLifecycle));
         var lifecycle = Assert.Single(context.Contributions, item => item.Kind == "Lifecycle");
-        Assert.Equal(typeof(BiliDownloaderPluginLifecycle), lifecycle.First);
+        Assert.Equal(typeof(BiliDownloaderPluginLifecycle), lifecycle.ModelType);
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -109,10 +108,6 @@ public sealed class BiliDownloaderModuleTests
         services.AddSingleton<IFfmpegRuntimeLocator>(new FakeFfmpegService { ReadyOverride = true });
         services.AddSingleton<IBiliCredentialProvider>(new FakeCredentialProvider());
         services.AddSingleton<IDownloadTaskExecutor>(new FakeDownloadTaskExecutor());
-        // 该轻量测试上下文只记录贡献声明，不模拟 Host 的插件 Provider；显式注册实例
-        // 仅用于验证 Bili 生命周期自身，不重新引入已删除的 Host Manager。
-        services.AddSingleton<BiliDownloaderPluginLifecycle>();
-
         using var provider = services.BuildServiceProvider();
         var firstCoordinator = provider.GetRequiredService<BiliDownloadCoordinator>();
         var secondCoordinator = provider.GetRequiredService<BiliDownloadCoordinator>();

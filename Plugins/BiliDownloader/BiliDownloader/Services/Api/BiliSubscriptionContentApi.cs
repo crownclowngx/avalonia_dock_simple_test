@@ -1,9 +1,10 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using BiliDownloader.Constants;
 using BiliDownloader.Services.ContentSources;
 using BiliDownloader.Services.Infrastructure;
 using Flurl;
 using Flurl.Http;
-using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.Services.Api;
 
@@ -48,8 +49,8 @@ public sealed class BiliSubscriptionContentApi :
             .SetQueryParam("pn", page)
             .SetQueryParam("ps", pageSize);
         var root = await GetRootAsync(url.ToString(), cookie, Operation.Following, cancellationToken);
-        var data = root["data"] ?? new JObject();
-        var items = (data["list"] as JArray ?? [])
+        var data = root["data"] ?? new JsonObject();
+        var items = (data["list"] as JsonArray ?? new JsonArray()).OfType<JsonNode>()
             .Select(item => new BiliFollowingSeason(
                 item["season_id"]?.Value<long>() ?? 0,
                 item["media_id"]?.Value<long>() ?? 0,
@@ -73,7 +74,7 @@ public sealed class BiliSubscriptionContentApi :
         var url = "https://api.bilibili.com/pgc/view/web/season"
             .SetQueryParam("season_id", seasonId);
         var root = await GetRootAsync(url.ToString(), cookie, Operation.BangumiSeason, cancellationToken);
-        var data = root["result"] ?? root["data"] ?? new JObject();
+        var data = root["result"] ?? root["data"] ?? new JsonObject();
         var actualSeasonId = data["season_id"]?.Value<long>() ?? seasonId;
         var episodes = EnumerateBangumiEpisodes(data)
             .Select(ep => MapBangumiEpisode(ep, actualSeasonId))
@@ -99,8 +100,8 @@ public sealed class BiliSubscriptionContentApi :
             .SetQueryParam("pn", page)
             .SetQueryParam("ps", pageSize);
         var root = await GetRootAsync(url.ToString(), cookie, Operation.CollectedFolders, cancellationToken);
-        var data = root["data"] ?? new JObject();
-        var items = (data["list"] as JArray ?? [])
+        var data = root["data"] ?? new JsonObject();
+        var items = (data["list"] as JsonArray ?? new JsonArray()).OfType<JsonNode>()
             .Select(item => new BiliCollectedFolder(
                 item["id"]?.Value<long>() ?? 0,
                 item["title"]?.Value<string>() ?? "未命名合集",
@@ -152,9 +153,10 @@ public sealed class BiliSubscriptionContentApi :
             .SetQueryParam("pn", page)
             .SetQueryParam("ps", pageSize);
         var root = await GetRootAsync(url.ToString(), cookie, Operation.MyCourses, cancellationToken);
-        var data = root["data"] ?? new JObject();
-        var list = data["data"] as JArray ?? data["list"] as JArray ?? data["items"] as JArray ?? [];
-        var items = list.Select(item => new BiliCourseSummary(
+        var data = root["data"] ?? new JsonObject();
+        var list = data["data"] as JsonArray ?? data["list"] as JsonArray
+            ?? data["items"] as JsonArray ?? new JsonArray();
+        var items = list.OfType<JsonNode>().Select(item => new BiliCourseSummary(
                 item["season_id"]?.Value<long>() ?? item["id"]?.Value<long>() ?? 0,
                 item["title"]?.Value<string>() ?? "未命名课程",
                 item["cover"]?.Value<string>(),
@@ -181,12 +183,12 @@ public sealed class BiliSubscriptionContentApi :
             ? url.SetQueryParam("season_id", seasonId.Value)
             : url.SetQueryParam("ep_id", episodeId!.Value);
         var root = await GetRootAsync(url.ToString(), cookie, Operation.CourseDetail, cancellationToken);
-        var data = root["data"] ?? new JObject();
+        var data = root["data"] ?? new JsonObject();
         var purchasedToken = data["user_status"]?["payed"];
-        bool? purchased = purchasedToken?.Type switch
+        bool? purchased = purchasedToken?.GetValueKind() switch
         {
-            JTokenType.Boolean => purchasedToken.Value<bool>(),
-            JTokenType.Integer => purchasedToken.Value<int>() != 0,
+            JsonValueKind.True or JsonValueKind.False => purchasedToken.Value<bool>(),
+            JsonValueKind.Number => purchasedToken.Value<int>() != 0,
             _ => null,
         };
         return new(
@@ -212,9 +214,9 @@ public sealed class BiliSubscriptionContentApi :
             .SetQueryParam("pn", page)
             .SetQueryParam("ps", pageSize);
         var root = await GetRootAsync(url.ToString(), cookie, Operation.CourseEpisodes, cancellationToken);
-        var data = root["data"] ?? new JObject();
-        var list = data["items"] as JArray ?? [];
-        var items = list.Select(item => new BiliCourseEpisode(
+        var data = root["data"] ?? new JsonObject();
+        var list = data["items"] as JsonArray ?? new JsonArray();
+        var items = list.OfType<JsonNode>().Select(item => new BiliCourseEpisode(
                 item["aid"]?.Value<long>() ?? 0,
                 item["cid"]?.Value<long>() ?? 0,
                 item["id"]?.Value<long>() ?? item["ep_id"]?.Value<long>() ?? 0,
@@ -234,16 +236,16 @@ public sealed class BiliSubscriptionContentApi :
         return new(items, hasMore ? ContinuationTokenCodec.EncodePage(tokenKind, page + 1) : null, hasMore);
     }
 
-    private static IEnumerable<JToken> EnumerateBangumiEpisodes(JToken data)
+    private static IEnumerable<JsonNode> EnumerateBangumiEpisodes(JsonNode data)
     {
-        foreach (var episode in data["episodes"] as JArray ?? [])
-            yield return episode;
-        foreach (var section in data["section"] as JArray ?? [])
-        foreach (var episode in section["episodes"] as JArray ?? [])
-            yield return episode;
+        foreach (var episode in data["episodes"] as JsonArray ?? new JsonArray())
+            if (episode is not null) yield return episode;
+        foreach (var section in data["section"] as JsonArray ?? new JsonArray())
+        foreach (var episode in section?["episodes"] as JsonArray ?? new JsonArray())
+            if (episode is not null) yield return episode;
     }
 
-    private static BiliBangumiEpisode MapBangumiEpisode(JToken ep, long seasonId)
+    private static BiliBangumiEpisode MapBangumiEpisode(JsonNode ep, long seasonId)
     {
         var aid = ep["aid"]?.Value<long>() ?? 0;
         var cid = ep["cid"]?.Value<long>() ?? 0;
@@ -273,27 +275,27 @@ public sealed class BiliSubscriptionContentApi :
             available);
     }
 
-    private static bool? ReadNullableBoolean(JToken? token) => token?.Type switch
+    private static bool? ReadNullableBoolean(JsonNode? token) => token?.GetValueKind() switch
     {
-        JTokenType.Boolean => token.Value<bool>(),
-        JTokenType.Integer => token.Value<int>() != 0,
+        JsonValueKind.True or JsonValueKind.False => token.Value<bool>(),
+        JsonValueKind.Number => token.Value<int>() != 0,
         _ => null,
     };
 
-    private static async Task<JObject> GetRootAsync(
+    private static async Task<JsonObject> GetRootAsync(
         string url,
         string cookie,
         Operation operation,
         CancellationToken cancellationToken)
     {
-        JObject root;
+        JsonObject root;
         try
         {
             var request = url.WithHeader("User-Agent", HttpConstants.UserAgent)
                 .WithHeader("Referer", HttpConstants.Referer);
             if (!string.IsNullOrWhiteSpace(cookie))
                 request = request.WithHeader("Cookie", cookie);
-            root = JObject.Parse(await request.GetStringAsync(cancellationToken: cancellationToken));
+            root = JsonNodeReader.ParseObject(await request.GetStringAsync(cancellationToken: cancellationToken));
         }
         catch (OperationCanceledException)
         {

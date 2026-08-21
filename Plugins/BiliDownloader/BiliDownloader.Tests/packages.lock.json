@@ -67,6 +67,19 @@
         "resolved": "4.0.0",
         "contentHash": "rpts69yYgvJqg6PPgqShBQEZ4aNzWQqWpWppcT0oDWxDCIsBqiod4pj6LQZdhk+1OozLFagemldMRACdHF3CsA=="
       },
+      "Irihi.Avalonia.Shared": {
+        "type": "Transitive",
+        "resolved": "0.4.0",
+        "contentHash": "T6+jezCUjisJNz6zkNcNLVNI2ttWznbyQnW6MS9L45EXhePqRCIxB3xV/5L8gFAJ83JrhiCIokMOxRWdq9/1Zg==",
+        "dependencies": {
+          "Avalonia": "12.0.0"
+        }
+      },
+      "Irihi.Avalonia.Shared.Contracts": {
+        "type": "Transitive",
+        "resolved": "0.4.0",
+        "contentHash": "Du8DY2YqlSmCmywqZtuOhgwLkgklMeE1ajZ4Dd/iqVz6HmAKptjVTqA1oloZX5ihqsdKRiNuUGCdYPe1rekf2Q=="
+      },
       "MicroCom.Runtime": {
         "type": "Transitive",
         "resolved": "0.11.6",
@@ -181,7 +194,8 @@
           "Flurl.Http": "[4.0.2, )",
           "Microsoft.Data.Sqlite": "[10.0.10, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "MyAvaloniaManagementCommon": "[2.0.0, )",
+          "MyAvaloniaManagement.PluginSdk": "[2.0.0, )",
+          "MyAvaloniaManagement.PluginSdk.UI": "[2.0.0, )",
           "QRCoder": "[1.8.0, )",
           "SQLitePCLRaw.bundle_e_sqlite3": "[2.1.12, )",
           "protobuf-net": "[3.2.56, )"
@@ -192,6 +206,21 @@
         "dependencies": {
           "BiliDownloader": "[2.0.0, )",
           "Microsoft.Data.Sqlite": "[10.0.10, )"
+        }
+      },
+      "myavaloniamanagement.pluginsdk": {
+        "type": "Project"
+      },
+      "myavaloniamanagement.pluginsdk.ui": {
+        "type": "Project",
+        "dependencies": {
+          "Avalonia": "[12.1.0, 12.1.0]",
+          "Avalonia.Themes.Fluent": "[12.1.0, 12.1.0]",
+          "Irihi.Ursa": "[2.1.0, 2.1.0]",
+          "Irihi.Ursa.Themes.Semi": "[2.1.0, 2.1.0]",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, 10.0.10]",
+          "MyAvaloniaManagement.PluginSdk": "[2.0.0, )",
+          "Semi.Avalonia": "[12.1.0, 12.1.0]"
         }
       },
       "MyAvaloniaManagementCommon": {
@@ -212,6 +241,15 @@
           "Avalonia.BuildServices": "11.3.2",
           "Avalonia.Remote.Protocol": "12.1.0",
           "MicroCom.Runtime": "0.11.6"
+        }
+      },
+      "Avalonia.Themes.Fluent": {
+        "type": "CentralTransitive",
+        "requested": "[12.1.0, )",
+        "resolved": "12.1.0",
+        "contentHash": "MVi5L9HymnNm+gP2aNXNcyrP2iKGJWFubQ5Bv8/Przflxca1aIT9QBpTUV6c3olA9rLYFY7MJRR/C/BZaUhemQ==",
+        "dependencies": {
+          "Avalonia": "12.1.0"
         }
       },
       "CommunityToolkit.Mvvm": {
@@ -243,6 +281,28 @@
         "contentHash": "9vCqFFyceA11yplkFD8AbCFFTvG1Lrw3tpsgOpL5sLUc28p6zcvGszNleuT6nDymRvtt5eS+rqUX+bRztg1fhA==",
         "dependencies": {
           "Flurl": "4.0.0"
+        }
+      },
+      "Irihi.Ursa": {
+        "type": "CentralTransitive",
+        "requested": "[2.1.0, )",
+        "resolved": "2.1.0",
+        "contentHash": "G2wAmenCgMZkBOqs5MYRtlurhU2tAKKmcNJzjjaA9Mj5v3YIivuv7wyNpIpgYZ602sOZhFtQwYrCaLVUhn9Htw==",
+        "dependencies": {
+          "Avalonia": "12.0.2",
+          "Irihi.Avalonia.Shared": "0.4.0",
+          "Irihi.Avalonia.Shared.Contracts": "0.4.0"
+        }
+      },
+      "Irihi.Ursa.Themes.Semi": {
+        "type": "CentralTransitive",
+        "requested": "[2.1.0, )",
+        "resolved": "2.1.0",
+        "contentHash": "vz7iA6YcAqJ9Z34CXGtapsROERLjZ7vD1CqblO7V5NWQyrJ5igbAYSuFFWnZnPVFKkyKM/c43oGmcWjiDBLoHA==",
+        "dependencies": {
+          "Avalonia": "12.0.2",
+          "Irihi.Ursa": "2.1.0",
+          "Semi.Avalonia": "12.0.1"
         }
       },
       "Microsoft.Data.Sqlite": {
@@ -284,6 +344,16 @@
         "contentHash": "RuvX3PEXU6pbY/I5ItAk800jm62r+YnoPLgyS2WTgwxkOnGkOfU9ORiipHUF0LkLyqM8rlroUCA319JjRYfRFQ==",
         "dependencies": {
           "System.Drawing.Common": "6.0.0"
+        }
+      },
+      "Semi.Avalonia": {
+        "type": "CentralTransitive",
+        "requested": "[12.1.0, )",
+        "resolved": "12.1.0",
+        "contentHash": "me56M9qqcCTdYrsnf2vmd1xNF9gBN33PE3CXc9Gq1NPHO8fieZgFkmeqvaJnLMHg927UQyb7xmRSRf/ORAbv/w==",
+        "dependencies": {
+          "Avalonia": "12.1.0",
+          "Irihi.Avalonia.Shared": "0.4.0"
         }
       },
       "SQLitePCLRaw.bundle_e_sqlite3": {

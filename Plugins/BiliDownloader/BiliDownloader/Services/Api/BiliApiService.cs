@@ -1,11 +1,12 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Web;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
 using Flurl.Http;
-using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.Services.Api;
 
@@ -121,7 +122,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
 
         var json = await BuildRequest(url, paramsDict, cookie)
             .GetStringAsync(cancellationToken: cancellationToken);
-        var resp = JObject.Parse(json);
+        var resp = JsonNodeReader.ParseObject(json);
 
         var responseCode = resp["code"]?.Value<int>() ?? int.MinValue;
         if (responseCode == -101)
@@ -152,10 +153,10 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
             : null;
 
         // 解析分P列表
-        var pages = data["pages"] as JArray;
+        var pages = data["pages"] as JsonArray;
         if (pages != null && pages.Count > 0)
         {
-            foreach (var page in pages)
+            foreach (var page in pages.OfType<JsonNode>())
             {
                 collection.Items.Add(new BiliVideoItem
                 {
@@ -184,21 +185,21 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
 
         // 如果有 ugc_season（合集），解析合集下的所有视频
         var ugcSeason = data["ugc_season"];
-        if (ugcSeason != null && ugcSeason.Type == JTokenType.Object)
+        if (ugcSeason is JsonObject)
         {
             collection.SeriesTitle = ugcSeason["title"]?.Value<string>() ?? title;
-            var sections = ugcSeason["sections"] as JArray;
+            var sections = ugcSeason["sections"] as JsonArray;
             if (sections != null)
             {
                 collection.Items.Clear();
-                foreach (var section in sections)
+                foreach (var section in sections.OfType<JsonNode>())
                 {
-                    var episodes = section["episodes"] as JArray;
+                    var episodes = section?["episodes"] as JsonArray;
                     if (episodes == null) continue;
-                    foreach (var ep in episodes)
+                    foreach (var ep in episodes.OfType<JsonNode>())
                     {
                         var pageToken = ep["page"];
-                        var duration = (pageToken != null && pageToken.Type == JTokenType.Object)
+                        var duration = pageToken is JsonObject
                             ? pageToken["duration"]?.Value<int>() ?? 0
                             : 0;
 
@@ -255,7 +256,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
 
         var json = await BuildRequest("https://api.bilibili.com/pgc/view/web/season", paramsDict, cookie)
             .GetStringAsync(cancellationToken: cancellationToken);
-        var resp = JObject.Parse(json);
+        var resp = JsonNodeReader.ParseObject(json);
 
         var responseCode = resp["code"]?.Value<int>() ?? int.MinValue;
         if (responseCode == -101)
@@ -276,11 +277,11 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
         };
 
         // 解析正片剧集列表
-        var episodes = data["episodes"] as JArray;
+        var episodes = data["episodes"] as JsonArray;
         if (episodes != null)
         {
             int idx = 1;
-            foreach (var ep in episodes)
+            foreach (var ep in episodes.OfType<JsonNode>())
             {
                 collection.Items.Add(new BiliVideoItem
                 {
@@ -298,14 +299,14 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
         }
 
         // 解析 section（附加内容如 PV、SP 等）
-        var sections = data["section"] as JArray;
+        var sections = data["section"] as JsonArray;
         if (sections != null)
         {
-            foreach (var section in sections)
+            foreach (var section in sections.OfType<JsonNode>())
             {
-                var sectionEps = section["episodes"] as JArray;
+                var sectionEps = section?["episodes"] as JsonArray;
                 if (sectionEps == null) continue;
-                foreach (var ep in sectionEps)
+                foreach (var ep in sectionEps.OfType<JsonNode>())
                 {
                     collection.Items.Add(new BiliVideoItem
                     {
@@ -337,7 +338,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
         var json = await BuildRequest("https://api.bilibili.com/pgc/review/user",
             new Dictionary<string, string> { ["media_id"] = mediaId }, cookie)
             .GetStringAsync(cancellationToken: cancellationToken);
-        var resp = JObject.Parse(json);
+        var resp = JsonNodeReader.ParseObject(json);
 
         var seasonId = resp["result"]?["media"]?["season_id"]?.Value<long>();
         if (seasonId == null || seasonId == 0)
@@ -407,16 +408,16 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
         var json = await WithCookie(request, cookie)
             .GetStringAsync(cancellationToken: cancellationToken);
 
-        var resp = JObject.Parse(json);
+        var resp = JsonNodeReader.ParseObject(json);
         if (resp["code"]?.Value<int>() != 0)
             throw new Exception($"获取字幕列表失败: {resp["message"]?.Value<string>()}");
 
         var subtitles = new List<SubtitleListItem>();
-        var subtitleArray = resp["data"]?["subtitle"]?["subtitles"] as JArray;
+        var subtitleArray = resp["data"]?["subtitle"]?["subtitles"] as JsonArray;
         if (subtitleArray == null)
             return subtitles;
 
-        foreach (var sub in subtitleArray)
+        foreach (var sub in subtitleArray.OfType<JsonNode>())
         {
             var subtitleUrl = sub["subtitle_url"]?.Value<string>() ?? "";
             if (string.IsNullOrEmpty(subtitleUrl)) continue;
@@ -460,10 +461,10 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
             .WithHeader("Referer", HttpConstants.Referer);
         var json = await WithCookie(request, cookie)
             .GetStringAsync(cancellationToken: cancellationToken);
-        var body = JObject.Parse(json)["body"] as JArray;
+        var body = JsonNodeReader.ParseObject(json)["body"] as JsonArray;
         if (body is null || body.Count == 0) return Array.Empty<SubtitleCue>();
 
-        return SubtitleCueNormalizer.Normalize(body.Select(item => (
+        return SubtitleCueNormalizer.Normalize(body.OfType<JsonNode>().Select(item => (
             item["from"]?.Value<double>() ?? double.NaN,
             item["to"]?.Value<double>() ?? double.NaN,
             item["content"]?.Value<string>())));
@@ -543,7 +544,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
         var json = await WithCookie(request, cookie)
             .GetStringAsync(cancellationToken: cancellationToken);
 
-        var resp = JObject.Parse(json);
+        var resp = JsonNodeReader.ParseObject(json);
         if (resp["code"]?.Value<int>() != 0)
         {
             var code = resp["code"]?.Value<int>() ?? -1;
@@ -564,8 +565,8 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
         var result = new BiliDashResult();
 
         // 解析可用清晰度
-        var acceptQuality = data["accept_quality"] as JArray;
-        var acceptDesc = data["accept_description"] as JArray;
+        var acceptQuality = data["accept_quality"] as JsonArray;
+        var acceptDesc = data["accept_description"] as JsonArray;
         if (acceptQuality != null)
         {
             for (int i = 0; i < acceptQuality.Count; i++)
@@ -584,16 +585,16 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
 
         // 解析 DASH 流
         var dash = data["dash"];
-        if (dash == null || dash.Type != JTokenType.Object)
+        if (dash is not JsonObject)
             throw new ResourceUnavailableException("该媒体当前没有可用的 DASH 资源。");
 
         var capabilityEvidence = new List<MediaFeatureEvidence>();
 
         // 视频流。125/126 是协议层稳定的高规格标识；普通 HEVC 本身不能证明 HDR 或杜比视界。
-        var videos = dash["video"] as JArray;
+        var videos = dash["video"] as JsonArray;
         if (videos != null)
         {
-            foreach (var v in videos)
+            foreach (var v in videos.OfType<JsonNode>())
             {
                 var feature = v["id"]?.Value<int>() switch
                 {
@@ -608,10 +609,10 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
         AddStreamAvailability(capabilityEvidence, result.VideoStreams, MediaFeatureFlags.DolbyVision, "dash_video_126");
 
         // 音频流
-        var audios = dash["audio"] as JArray;
+        var audios = dash["audio"] as JsonArray;
         if (audios != null)
         {
-            foreach (var a in audios)
+            foreach (var a in audios.OfType<JsonNode>())
             {
                 result.AudioStreams.Add(ParseDashStream(a, BiliAudioFeature.Standard));
             }
@@ -619,13 +620,13 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
 
         // 杜比音频。协议中的 type=1 只表示普通杜比，只有 type=2 且实际流为 E-AC-3 才能证明 Atmos。
         var dolbyToken = dash["dolby"];
-        if (dolbyToken != null && dolbyToken.Type == JTokenType.Object)
+        if (dolbyToken is JsonObject)
         {
             var dolbyType = dolbyToken["type"]?.Value<int>() ?? 0;
-            var dolby = dolbyToken["audio"] as JArray;
+            var dolby = dolbyToken["audio"] as JsonArray;
             if (dolby != null)
             {
-                foreach (var d in dolby)
+                foreach (var d in dolby.OfType<JsonNode>())
                 {
                     var isAtmos = dolbyType == 2 && IsEac3(d);
                     result.AudioStreams.Add(ParseDashStream(
@@ -648,10 +649,10 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
 
         // Hi-Res 无损音频
         var flacToken = dash["flac"];
-        if (flacToken != null && flacToken.Type == JTokenType.Object)
+        if (flacToken is JsonObject)
         {
             var flac = flacToken["audio"];
-            if (flac != null && flac.Type == JTokenType.Object)
+            if (flac is JsonObject)
             {
                 // 仅 flac.audio 节点与 FLAC 编码同时存在时才标记 Hi-Res，禁止根据高码率猜测。
                 var isHiRes = IsFlac(flac);
@@ -732,7 +733,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
         var json = await WithCookie(request, cookie)
             .GetStringAsync(cancellationToken: cancellationToken);
 
-        var resp = JObject.Parse(json);
+        var resp = JsonNodeReader.ParseObject(json);
         var wbiImg = resp["data"]?["wbi_img"];
         var imgUrl = wbiImg?["img_url"]?.Value<string>() ?? "";
         var subUrl = wbiImg?["sub_url"]?.Value<string>() ?? "";
@@ -802,12 +803,12 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
     #region 辅助方法
 
     private static BiliDashStream ParseDashStream(
-        JToken token,
+        JsonNode token,
         BiliAudioFeature audioFeature,
         MediaFeatureFlags features = MediaFeatureFlags.None)
     {
         var backupUrls = new List<string>();
-        var backupUrl = token["backup_url"] as JArray;
+        var backupUrl = token["backup_url"] as JsonArray;
         if (backupUrl != null)
         {
             foreach (var u in backupUrl)
@@ -853,7 +854,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
 
     private static void AddRestrictedOrUnavailableEvidence(
         ICollection<MediaFeatureEvidence> evidence,
-        JToken node,
+        JsonNode node,
         MediaFeatureFlags feature,
         bool available,
         string unavailableCode)
@@ -875,18 +876,18 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
         evidence.Add(new(feature, availability, needPremium ? "need_vip" : needLogin ? "need_login" : unavailableCode));
     }
 
-    private static bool ReadBoolean(JToken node, string name)
+    private static bool ReadBoolean(JsonNode node, string name)
     {
         var value = node[name];
-        return value?.Type switch
+        return value?.GetValueKind() switch
         {
-            JTokenType.Boolean => value.Value<bool>(),
-            JTokenType.Integer => value.Value<int>() != 0,
+            JsonValueKind.True or JsonValueKind.False => value.Value<bool>(),
+            JsonValueKind.Number => value.Value<int>() != 0,
             _ => false,
         };
     }
 
-    private static bool IsFlac(JToken token)
+    private static bool IsFlac(JsonNode token)
     {
         var codecs = token["codecs"]?.Value<string>() ?? string.Empty;
         var mime = token["mime_type"]?.Value<string>() ?? token["mimeType"]?.Value<string>() ?? string.Empty;
@@ -894,7 +895,7 @@ public partial class BiliApiService : IBiliContentSourceApi, IBiliMediaProbe, IB
                || mime.Equals("audio/flac", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool IsEac3(JToken token)
+    private static bool IsEac3(JsonNode token)
     {
         var codecs = token["codecs"]?.Value<string>() ?? string.Empty;
         return codecs.StartsWith("ec-3", StringComparison.OrdinalIgnoreCase)

@@ -1,39 +1,12 @@
 using BiliDownloader.Models;
 using BiliDownloader.Models.ContentSources;
-using BiliDownloader.Create;
-using BiliDownloader.Constants;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.ContentSources;
 using BiliDownloader.ViewModels.BiliDownloader;
 using Flurl.Http.Testing;
-using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace BiliDownloader.Tests;
-
-public sealed class DocumentCreationIntentG1Tests
-{
-    [Fact]
-    public void 两个菜单入口共享同一Document类型且未知意图被拒绝()
-    {
-        var strategy = new BiliDownloaderDocumentStrategy(new ThrowingDocumentScopeFactory());
-
-        Assert.Equal(["quick-url", "personal-source"],
-            strategy.GetCreationIntents().Select(intent => intent.IntentId.Value));
-        Assert.Equal(SaveDocumentTypeIdConstant.BiliDownloaderDocumentId, strategy.GetMetadata().DocumentTypeId);
-        Assert.Throws<ArgumentException>(() => strategy.CreateDocument(
-            new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)
-            {
-                CreationIntentId = new CreationIntentId("unknown")
-            }));
-    }
-
-    private sealed class ThrowingDocumentScopeFactory : IDocumentScopeFactory
-    {
-        public TDocument CreateDocument<TDocument>() where TDocument : Dock.Model.Mvvm.Controls.Document =>
-            throw new InvalidOperationException("非法创建意图不应进入 Document Scope 创建流程。");
-    }
-}
 
 public sealed class PersonalContentProviderG1Tests
 {
@@ -355,15 +328,19 @@ public sealed class PersonalContentApiG1Tests
     public void 投稿请求上下文包含空间Referer和非零紧凑交互参数()
     {
         var context = new BiliUploaderRequestContextFactory().Create(85763781, 2, 20);
-        var interaction = Newtonsoft.Json.Linq.JObject.Parse(context.Query["dm_img_inter"]);
+        using var interaction = System.Text.Json.JsonDocument.Parse(context.Query["dm_img_inter"]);
 
         Assert.Equal("https://space.bilibili.com/85763781/upload/video", context.Referer);
         Assert.Equal("web", context.Query["platform"]);
         Assert.Equal("true", context.Query["order_avoided"]);
         Assert.Equal("1550101", context.Query["web_location"]);
         Assert.DoesNotContain(" ", context.Query["dm_img_inter"], StringComparison.Ordinal);
-        Assert.Contains(interaction["wh"]!.Values<int>(), value => value != 0);
-        Assert.Contains(interaction["of"]!.Values<int>(), value => value != 0);
+        Assert.Contains(
+            interaction.RootElement.GetProperty("wh").EnumerateArray().Select(item => item.GetInt32()),
+            value => value != 0);
+        Assert.Contains(
+            interaction.RootElement.GetProperty("of").EnumerateArray().Select(item => item.GetInt32()),
+            value => value != 0);
     }
 
     [Fact]

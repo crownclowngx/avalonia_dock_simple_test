@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Dock.Model.Mvvm.Controls;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
@@ -8,6 +7,7 @@ using BiliDownloader.Services.History;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels.BiliScheduler;
 using BiliDownloader.Constants;
+using BiliDownloader.Plugin;
 
 namespace BiliDownloader.ViewModels;
 
@@ -15,13 +15,22 @@ namespace BiliDownloader.ViewModels;
 /// BiliSchedulerTool 协调器 ViewModel：组合子 VM，编排初始化，路由全局状态。
 /// 所有具体逻辑委托给子 ViewModel（TaskList、Settings）。
 /// </summary>
-public partial class BiliSchedulerToolViewModel : Tool
+public partial class BiliSchedulerToolViewModel : ObservableObject, IDisposable
 {
     private readonly BiliDownloadCoordinator _coordinator;
+    private readonly IBiliDownloaderPluginReadiness _readiness;
+    private readonly IUiDispatcher _uiDispatcher;
     private bool _settingsInitialized;
+    private int _disposed;
 
     [ObservableProperty]
-    private string _schedulerStatus = "调度器就绪";
+    private string _schedulerStatus = "插件尚未初始化。";
+
+    [ObservableProperty]
+    private bool _isPluginReady;
+
+    [ObservableProperty]
+    private string _pluginReadinessMessage = "插件尚未初始化。";
 
     /// <summary>调度器是否正在处理任务（UI 绑定用）</summary>
     [ObservableProperty]
@@ -48,6 +57,7 @@ public partial class BiliSchedulerToolViewModel : Tool
         IDownloadTaskRepository taskStore,
         ISettingsRepository settingsStore,
         IFfmpegRuntimeLocator ffmpegService,
+        IBiliDownloaderPluginReadiness readiness,
         IFfmpegPackageInstaller? ffmpegInstaller = null,
         IConfirmationService? confirmationService = null,
         IFileRevealService? fileRevealService = null,
@@ -64,6 +74,8 @@ public partial class BiliSchedulerToolViewModel : Tool
         IGlobalBandwidthLimitService? globalBandwidthLimit = null)
     {
         _coordinator = coordinator;
+        _readiness = readiness ?? throw new ArgumentNullException(nameof(readiness));
+        _uiDispatcher = uiDispatcher ?? new AvaloniaUiDispatcher();
         TaskList = new SchedulerTaskListViewModel(coordinator, taskStore,
             onStatusMessage: msg => SchedulerStatus = msg,
             confirmationService: confirmationService,
@@ -74,7 +86,7 @@ public partial class BiliSchedulerToolViewModel : Tool
             activeOnly: true);
 
         Settings = new SchedulerSettingsViewModel(
-            settingsStore, ffmpegService, ffmpegInstaller, globalBandwidthLimit);
+            settingsStore, ffmpegService, ffmpegInstaller, globalBandwidthLimit, userPromptService);
 
         // 旧测试和宿主兼容构造路径可以不提供 G6 服务；生产 DI 会完整注入所有依赖。
         // 使用可空组合而不是在这里临时 new SQLite 或文件选择器，避免破坏依赖倒置。
@@ -104,14 +116,15 @@ public partial class BiliSchedulerToolViewModel : Tool
         }
 
         // 订阅 Coordinator 全局状态事件
-        _coordinator.SchedulerStatusChanged += status => SchedulerStatus = status;
-        _coordinator.IsProcessingChanged += processing => IsProcessing = processing;
-        _coordinator.TaskListChanged += RefreshVisibleHistory;
-        _coordinator.TaskStatusChanged += _ => RefreshVisibleHistory();
+        _coordinator.SchedulerStatusChanged += HandleSchedulerStatusChanged;
+        _coordinator.IsProcessingChanged += HandleIsProcessingChanged;
+        _coordinator.TaskListChanged += OnTaskListChanged;
+        _coordinator.TaskStatusChanged += OnTaskStatusChanged;
 
         // 订阅并发下载数变更事件，同步到 Coordinator
-        Settings.MaxConcurrentDownloadsChanged += count =>
-            _coordinator.SetMaxConcurrentDownloads(count);
+        Settings.MaxConcurrentDownloadsChanged += OnMaxConcurrentDownloadsChanged;
+        _readiness.Changed += OnReadinessChanged;
+        ApplyReadiness(_readiness.Snapshot);
     }
 
     /// <summary>
@@ -123,6 +136,16 @@ public partial class BiliSchedulerToolViewModel : Tool
     /// </summary>
     public async Task ActivateAsync()
     {
+        var readiness = _readiness.Snapshot;
+        ApplyReadiness(readiness);
+        if (!readiness.IsReady)
+        {
+            // readiness 门禁必须位于任何设置、SQLite、FFmpeg 或 Coordinator 读取之前。
+            // 这使 Host 即使因布局恢复提前请求 View，也只能得到安全的不可用投影。
+            SchedulerStatus = readiness.Message;
+            return;
+        }
+
         try
         {
             if (!_settingsInitialized)
@@ -174,5 +197,62 @@ public partial class BiliSchedulerToolViewModel : Tool
     {
         if (IsHistorySelected && History is not null)
             _ = History.ReloadAsync();
+    }
+
+    private void OnReadinessChanged(object? sender, EventArgs args)
+    {
+        var snapshot = _readiness.Snapshot;
+        _uiDispatcher.Post(() =>
+        {
+            if (Volatile.Read(ref _disposed) != 0) return;
+            ApplyReadiness(snapshot);
+            if (snapshot.IsReady)
+                _ = ActivateAsync();
+            else
+                SchedulerStatus = snapshot.Message;
+        });
+    }
+
+    private void ApplyReadiness(BiliDownloaderReadinessSnapshot snapshot)
+    {
+        IsPluginReady = snapshot.IsReady;
+        PluginReadinessMessage = snapshot.Message;
+    }
+
+    private void HandleSchedulerStatusChanged(string status) =>
+        _uiDispatcher.Post(() =>
+        {
+            if (Volatile.Read(ref _disposed) == 0) SchedulerStatus = status;
+        });
+
+    private void HandleIsProcessingChanged(bool processing) =>
+        _uiDispatcher.Post(() =>
+        {
+            if (Volatile.Read(ref _disposed) == 0) IsProcessing = processing;
+        });
+
+    private void OnTaskListChanged() => RefreshVisibleHistory();
+
+    private void OnTaskStatusChanged(DownloadTaskRecord _) => RefreshVisibleHistory();
+
+    private void OnMaxConcurrentDownloadsChanged(int count) =>
+        _coordinator.SetMaxConcurrentDownloads(count);
+
+    /// <summary>
+    /// 解除所有插件级强引用订阅。Tool 隐藏不会释放模型；只有 Host 关闭插件 Provider 时释放，
+    /// 因而恢复隐藏 Tool 仍复用同一模型和 Coordinator。
+    /// </summary>
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        _readiness.Changed -= OnReadinessChanged;
+        _coordinator.SchedulerStatusChanged -= HandleSchedulerStatusChanged;
+        _coordinator.IsProcessingChanged -= HandleIsProcessingChanged;
+        _coordinator.TaskListChanged -= OnTaskListChanged;
+        _coordinator.TaskStatusChanged -= OnTaskStatusChanged;
+        Settings.MaxConcurrentDownloadsChanged -= OnMaxConcurrentDownloadsChanged;
+        (TaskList as IDisposable)?.Dispose();
+        (Settings as IDisposable)?.Dispose();
+        (History as IDisposable)?.Dispose();
     }
 }

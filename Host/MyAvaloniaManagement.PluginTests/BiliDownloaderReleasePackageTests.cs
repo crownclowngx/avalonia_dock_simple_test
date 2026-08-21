@@ -4,15 +4,16 @@ using MyAvaloniaManagement.Business.Helpers;
 namespace MyAvaloniaManagement.PluginTests;
 
 /// <summary>
-/// 使用宿主真实 PluginLoadContext 探测 G8 候选目录。环境变量由发布脚本指向 staging；
+/// 使用宿主真实 PluginLoadContext 探测 G12 非发布测试目录。环境变量由专项脚本指向解压目录；
 /// 普通测试运行则使用当前插件构建目录，从而保持零跳过且持续验证同一加载规则。
 /// </summary>
-public sealed class BiliDownloaderReleasePackageTests
+public sealed class BiliDownloaderV2PackageTests
 {
     [Fact]
-    public void Win_x64候选可加载但G5拒绝尚未迁移的Legacy入口()
+    public void Win_x64测试包通过真实Loader与V2入口预检()
     {
-        var configured = Environment.GetEnvironmentVariable("BILIDOWNLOADER_G8_PLUGIN_ROOT");
+        var configured = Environment.GetEnvironmentVariable("MYAVALONIA_BILIDOWNLOADER_V2_PACKAGE_ROOT")
+            ?? Environment.GetEnvironmentVariable("BILIDOWNLOADER_G8_PLUGIN_ROOT");
         var configuration = new DirectoryInfo(AppContext.BaseDirectory)
             .Parent?.Name
             ?? throw new InvalidOperationException("无法确定测试构建配置。");
@@ -21,7 +22,9 @@ public sealed class BiliDownloaderReleasePackageTests
                 AppContext.BaseDirectory,
                 "..", "..", "..", "..", "..", "Plugins", "BiliDownloader", "BiliDownloader",
                 "bin", configuration, "net10.0"))
-            : Path.GetFullPath(configured);
+            : File.Exists(Path.Combine(Path.GetFullPath(configured), "BiliDownloader.dll"))
+                ? Path.GetFullPath(configured)
+                : Path.Combine(Path.GetFullPath(configured), "BiliDownloader");
         var pluginPath = Path.Combine(pluginRoot, "BiliDownloader.dll");
         Assert.True(File.Exists(pluginPath), $"候选目录缺少插件程序集：{pluginPath}");
 
@@ -33,10 +36,10 @@ public sealed class BiliDownloaderReleasePackageTests
         Assert.Equal("myavalonia.plugin.bili-downloader", manifest!.PluginId.Value);
         var entryType = assembly.GetType(
             manifest.EntryPoint.Type, throwOnError: false, ignoreCase: false);
-        Assert.False(PluginModulePreflight.TryValidate(
+        Assert.True(PluginModulePreflight.TryValidate(
             entryType, out var validatedType, out var entryCode, out _));
-        Assert.Null(validatedType);
-        Assert.Equal(HostDiagnosticCodes.PluginEntryInvalid, entryCode);
+        Assert.NotNull(validatedType);
+        Assert.Null(entryCode);
         // 发布脚本的 staging 只允许 win-x64；普通构建目录仍保留跨平台资产，
         // 且独立项目输出不复制发布目标筛选出的全部私有依赖。因此仅在显式候选模式下
         // 验证私有依赖解析和 RID 封闭性，普通运行仍验证清单、入口和模块身份。

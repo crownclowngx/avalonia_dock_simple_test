@@ -6,10 +6,9 @@ using BiliDownloader.Services.ContentSources;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels;
 using BiliDownloader.ViewModels.BiliDownloader;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Save;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using MyAvaloniaManagement.PluginSdk;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace BiliDownloader.Tests;
 
@@ -92,9 +91,9 @@ public sealed class DocumentV3G4Tests
         var restored = CreateVm();
         restored.RestoreContent(saved);
         var savedAgain = restored.CreateContentSnapshot();
-        var data = JsonConvert.DeserializeObject<DocumentSaveDataV3>(savedAgain.Payload)!;
+        var data = savedAgain.Payload.Deserialize<DocumentSaveDataV3>()!;
 
-        Assert.Equal(DocumentSaveCodec.CurrentContentSchemaVersion, saved.ContentSchemaVersion);
+        Assert.Equal(DocumentSaveCodec.CurrentContentSchemaVersion, saved.SchemaVersion);
         Assert.Equal("uploader:42", data.Source?.StableSourceId);
         Assert.Equal("教程", data.Filters.Keyword);
         Assert.Equal(ContentSourceSortOrder.PublishedNewest, data.Filters.SortOrder);
@@ -135,8 +134,7 @@ public sealed class DocumentV3G4Tests
             new SourceFilterRulesSaveData(),
             new IncrementalBaselineSaveData()), null);
 
-        var data = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateContentSnapshot().Payload)!;
+        var data = vm.CreateContentSnapshot().Payload.Deserialize<DocumentSaveDataV3>()!;
 
         Assert.Equal(kind.ToString(), data.Source?.Kind);
         Assert.Equal(stableId, data.Source?.StableSourceId);
@@ -157,7 +155,7 @@ public sealed class DocumentV3G4Tests
         });
         var vm = CreateVm();
 
-        var exception = Assert.Throws<DocumentLoadException>(() =>
+        var exception = Assert.Throws<InvalidDataException>(() =>
             vm.RestoreContent(saveData));
 
         Assert.Contains("V3", exception.Message);
@@ -175,7 +173,7 @@ public sealed class DocumentV3G4Tests
         });
         var vm = CreateVm();
 
-        var exception = Assert.Throws<DocumentLoadException>(() =>
+        var exception = Assert.Throws<InvalidDataException>(() =>
             vm.RestoreContent(saveData));
 
         Assert.Contains("V3", exception.Message);
@@ -184,22 +182,22 @@ public sealed class DocumentV3G4Tests
     [Fact]
     public void V3未知字段_加载和再次保存均成功()
     {
-        var content = JObject.FromObject(new DocumentSaveDataV3 { DocumentId = "known" });
-        content["FutureMinorField"] = new JObject { ["Any"] = 1 };
-        var saveData = EnvelopeRaw(3, content.ToString(Formatting.None));
+        var content = JsonSerializer.SerializeToNode(new DocumentSaveDataV3 { DocumentId = "known" })!.AsObject();
+        content["FutureMinorField"] = new JsonObject { ["Any"] = 1 };
+        var saveData = EnvelopeRaw(3, content.ToJsonString());
         var vm = CreateVm();
 
         vm.RestoreContent(saveData);
         var savedAgain = vm.CreateContentSnapshot();
 
         Assert.Equal("known", vm.DocumentId);
-        Assert.Null(JObject.Parse(savedAgain.Payload)["FutureMinorField"]);
+        Assert.False(savedAgain.Payload.TryGetProperty("FutureMinorField", out _));
     }
 
     [Fact]
     public void 未知主版本_明确拒绝而不猜测恢复字段()
     {
-        var saveData = EnvelopeRaw(99, JsonConvert.SerializeObject(new
+        var saveData = EnvelopeRaw(99, JsonSerializer.Serialize(new
         {
             DocumentId = "future-doc",
             Url = "BV1abcDEF123",
@@ -209,7 +207,7 @@ public sealed class DocumentV3G4Tests
         }));
         var vm = CreateVm();
 
-        var exception = Assert.Throws<DocumentLoadException>(() =>
+        var exception = Assert.Throws<InvalidDataException>(() =>
             vm.RestoreContent(saveData));
 
         Assert.Contains("V3", exception.Message);
@@ -223,7 +221,7 @@ public sealed class DocumentV3G4Tests
         var vm = CreateVm();
         var saveData = EnvelopeRaw(3, content);
 
-        Assert.Throws<DocumentLoadException>(() => vm.RestoreContent(saveData));
+        Assert.Throws<InvalidDataException>(() => vm.RestoreContent(saveData));
     }
 
     [Fact]
@@ -231,7 +229,7 @@ public sealed class DocumentV3G4Tests
     {
         var saveData = EnvelopeRaw(4, "{}");
 
-        Assert.Throws<DocumentLoadException>(() => CreateVm().RestoreContent(saveData));
+        Assert.Throws<InvalidDataException>(() => CreateVm().RestoreContent(saveData));
     }
 
     [Fact]
@@ -282,8 +280,7 @@ public sealed class DocumentV3G4Tests
         var vm = CreateVm();
 
         vm.RestoreContent(Envelope(3, data));
-        var saved = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateContentSnapshot().Payload)!;
+        var saved = vm.CreateContentSnapshot().Payload.Deserialize<DocumentSaveDataV3>()!;
 
         Assert.True(vm.SourceWorkflow.IsRestoredSourceUnsupported);
         Assert.Equal("FutureCatalog", saved.Source?.Kind);
@@ -305,14 +302,15 @@ public sealed class DocumentV3G4Tests
             new SourceFilterRulesSaveData(),
             new IncrementalBaselineSaveData()), null);
 
-        Assert.Throws<DocumentLoadException>(() => vm.CreateContentSnapshot());
+        Assert.Throws<InvalidDataException>(() => vm.CreateContentSnapshot());
     }
 
     [Fact]
     public void V3快照_不包含页面游标选择或临时媒体字段()
     {
-        var json = CreateVm().CreateContentSnapshot().Payload;
-        var root = JObject.Parse(json);
+        var payload = CreateVm().CreateContentSnapshot().Payload;
+        var json = payload.GetRawText();
+        var root = payload.EnumerateObject();
 
         Assert.Equal(
         [
@@ -322,7 +320,7 @@ public sealed class DocumentV3G4Tests
             "Source", "Filters", "Baseline", "VideoCodecPreference", "OutputContainer",
             "OutputMediaMode", "VideoDynamicRangePreference", "AudioFeaturePreference",
             "SubtitleOptions", "DanmakuOptions", "PerTaskRateLimitBytesPerSecond",
-        ], root.Properties().Select(static property => property.Name).ToArray());
+        ], root.Select(static property => property.Name).ToArray());
         Assert.DoesNotContain("ContinuationToken", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("SelectedKeys", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Cookie", json, StringComparison.OrdinalIgnoreCase);
@@ -588,8 +586,7 @@ public sealed class DocumentV3G4Tests
         };
 
         vm.RestoreContent(Envelope(3, data));
-        var legacyNormalized = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            vm.CreateContentSnapshot().Payload)!;
+        var legacyNormalized = vm.CreateContentSnapshot().Payload.Deserialize<DocumentSaveDataV3>()!;
 
         Assert.Equal(SubtitleSelectionMode.All, legacyNormalized.SubtitleOptions.SelectionMode);
         Assert.Equal([DanmakuOutputFormat.Xml], legacyNormalized.DanmakuOptions.Formats);
@@ -610,8 +607,7 @@ public sealed class DocumentV3G4Tests
                 AssStyleId = "  compact  ",
             },
         }));
-        var structured = JsonConvert.DeserializeObject<DocumentSaveDataV3>(
-            structuredVm.CreateContentSnapshot().Payload)!;
+        var structured = structuredVm.CreateContentSnapshot().Payload.Deserialize<DocumentSaveDataV3>()!;
 
         Assert.Equal(["zh-CN"], structured.SubtitleOptions.LanguageKeys);
         Assert.Equal([DanmakuOutputFormat.Xml, DanmakuOutputFormat.Ass],
@@ -665,7 +661,7 @@ public sealed class DocumentV3G4Tests
         {
             var data = new DocumentSaveDataV3();
             mutate(data);
-            Assert.Throws<DocumentLoadException>(() => CreateVm().RestoreContent(Envelope(3, data)));
+            Assert.Throws<InvalidDataException>(() => CreateVm().RestoreContent(Envelope(3, data)));
         }
     }
 
@@ -682,7 +678,7 @@ public sealed class DocumentV3G4Tests
             Source = ValidSource(stableSourceId: unsafeValue),
         };
 
-        Assert.Throws<DocumentLoadException>(() => CreateVm().RestoreContent(Envelope(3, data)));
+        Assert.Throws<InvalidDataException>(() => CreateVm().RestoreContent(Envelope(3, data)));
     }
 
     [Theory]
@@ -693,8 +689,10 @@ public sealed class DocumentV3G4Tests
     {
         var mapper = new BiliDownloaderDocumentStateMapper();
 
-        Assert.Throws<DocumentLoadException>(() =>
-            mapper.Restore(new DocumentContentSnapshot(contentSchemaVersion, "{}")));
+        Assert.Throws<InvalidDataException>(() =>
+            mapper.Restore(new DocumentContent(
+                contentSchemaVersion,
+                JsonSerializer.SerializeToElement(new { }))));
     }
 
     [Fact]
@@ -1022,10 +1020,17 @@ public sealed class DocumentV3G4Tests
         var repository = new InMemoryDownloadTaskRepository();
         var loginState = new BiliLoginStateService(
             new InMemoryBiliCredentialStore(), new StubBiliSessionApi(), messenger);
+        var api = new BiliApiService();
+        var credentials = new FakeCredentialProvider();
         return new BiliDownloaderViewModel(
             messenger, repository, new InMemorySettingsRepository(), loginState,
-            new BiliLoginService(), new BiliApiService(), new FakeCredentialProvider(),
-            new FakeFfmpegService());
+            new BiliLoginService(),
+            new ContentSourceProviderRegistry([new DirectLinkProvider(api, credentials)]),
+            api,
+            credentials,
+            new FakeFfmpegService(),
+            new BiliDownloaderDocumentStateMapper(),
+            new TestDocumentLifetime());
     }
 
     private static BiliDownloaderViewModel CreateVm(
@@ -1043,14 +1048,27 @@ public sealed class DocumentV3G4Tests
             [new DirectLinkProvider(api, credentials), provider]);
         return new BiliDownloaderViewModel(
             messenger, repository, settings, loginState, new BiliLoginService(),
-            registry, api, credentials, new FakeFfmpegService());
+            registry, api, credentials, new FakeFfmpegService(),
+            new BiliDownloaderDocumentStateMapper(), new TestDocumentLifetime());
     }
 
-    private static DocumentContentSnapshot Envelope(int contentSchemaVersion, object content) =>
-        EnvelopeRaw(contentSchemaVersion, JsonConvert.SerializeObject(content));
+    private static DocumentContent Envelope(int contentSchemaVersion, object content) =>
+        new(contentSchemaVersion, JsonSerializer.SerializeToElement(content));
 
-    private static DocumentContentSnapshot EnvelopeRaw(int contentSchemaVersion, string content) =>
-        new(contentSchemaVersion, content);
+    private static DocumentContent EnvelopeRaw(int contentSchemaVersion, string content)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(content);
+            return new DocumentContent(contentSchemaVersion, document.RootElement);
+        }
+        catch (JsonException)
+        {
+            // 非法 JSON 会在 Host 信封解析阶段被拒绝；这里用合法 JSON 字符串模拟插件收到
+            // 非对象 payload 后的稳定拒绝路径。
+            return new DocumentContent(contentSchemaVersion, JsonSerializer.SerializeToElement(content));
+        }
+    }
 }
 
 /// <summary>用于证明 Document 恢复路径不会调用任何来源 API 的计数 Provider。</summary>

@@ -3,7 +3,7 @@ using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
-using MyAvaloniaManagementCommon.Events;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace BiliDownloader.Services.Download;
 

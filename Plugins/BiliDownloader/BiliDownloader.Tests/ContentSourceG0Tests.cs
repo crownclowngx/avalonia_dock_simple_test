@@ -4,10 +4,10 @@ using BiliDownloader.Plugin;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.ContentSources;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
 using BiliDownloader.ViewModels.BiliDownloader;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace BiliDownloader.Tests;
 
@@ -50,7 +50,7 @@ public sealed class ContentSourceModelTests
     public void 稳定键保持Bvid载荷大小写并支持Json往返与哈希相等()
     {
         var first = new ContentItemKey(ContentSourceKind.DirectLink, "video:bv:1abcDEF123");
-        var same = JsonConvert.DeserializeObject<ContentItemKey>(JsonConvert.SerializeObject(first));
+        var same = JsonSerializer.Deserialize<ContentItemKey>(JsonSerializer.Serialize(first));
         var differentCase = new ContentItemKey(ContentSourceKind.DirectLink, "video:bv:1ABCdef123");
 
         Assert.Equal(first, same);
@@ -64,7 +64,7 @@ public sealed class ContentSourceModelTests
     public void 媒体键只接受正数并支持Json往返()
     {
         var key = new MediaUnitKey(123, 456);
-        var restored = JsonConvert.DeserializeObject<MediaUnitKey>(JsonConvert.SerializeObject(key));
+        var restored = JsonSerializer.Deserialize<MediaUnitKey>(JsonSerializer.Serialize(key));
 
         Assert.Equal(key, restored);
         Assert.Throws<ArgumentOutOfRangeException>(() => new MediaUnitKey(0, 1));
@@ -77,7 +77,7 @@ public sealed class ContentSourceModelTests
         const string token = " opaque token +/% ";
         var min = new ContentPageRequest(1, token);
         var max = new ContentPageRequest(100);
-        var restored = JsonConvert.DeserializeObject<ContentPageRequest>(JsonConvert.SerializeObject(min));
+        var restored = JsonSerializer.Deserialize<ContentPageRequest>(JsonSerializer.Serialize(min));
 
         Assert.Equal(token, min.ContinuationToken);
         Assert.Equal(token, restored!.ContinuationToken);
@@ -93,7 +93,7 @@ public sealed class ContentSourceModelTests
         Assert.Throws<ArgumentException>(() => new ContentPage([], "unexpected", false));
 
         var page = new ContentPage([], "next secret", true, "snapshot secret");
-        var restored = JsonConvert.DeserializeObject<ContentPage>(JsonConvert.SerializeObject(page));
+        var restored = JsonSerializer.Deserialize<ContentPage>(JsonSerializer.Serialize(page));
         Assert.Equal("next secret", restored!.NextContinuationToken);
         Assert.Equal("snapshot secret", restored.SnapshotToken);
     }
@@ -117,9 +117,9 @@ public sealed class ContentSourceModelTests
             cid: 2);
         var page = new ContentPage([item], null, false, "snapshot");
 
-        var restoredDescriptor = JsonConvert.DeserializeObject<ContentSourceDescriptor>(
-            JsonConvert.SerializeObject(descriptor));
-        var restoredPage = JsonConvert.DeserializeObject<ContentPage>(JsonConvert.SerializeObject(page));
+        var restoredDescriptor = JsonSerializer.Deserialize<ContentSourceDescriptor>(
+            JsonSerializer.Serialize(descriptor));
+        var restoredPage = JsonSerializer.Deserialize<ContentPage>(JsonSerializer.Serialize(page));
 
         Assert.Equal(descriptor.StableSourceId, restoredDescriptor!.StableSourceId);
         Assert.Equal(descriptor.CapabilityVersion, restoredDescriptor.CapabilityVersion);
@@ -358,7 +358,7 @@ public sealed class DirectLinkProviderTests
         var provider = new DirectLinkProvider(api, new StubCredentials("SESSDATA=secret"));
 
         var descriptor = await provider.NormalizeAsync("https://b23.tv/secret", CancellationToken.None);
-        var json = JsonConvert.SerializeObject(descriptor);
+        var json = JsonSerializer.Serialize(descriptor);
 
         Assert.Equal("https://b23.tv/secret", api.LastShortLink);
         Assert.Equal("video:bv:1abcDEF123", descriptor.StableSourceId);

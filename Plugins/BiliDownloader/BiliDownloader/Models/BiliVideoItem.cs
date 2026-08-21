@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using BiliDownloader.Models.ContentSources;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace BiliDownloader.Models;
 

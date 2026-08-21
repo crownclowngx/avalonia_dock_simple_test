@@ -6,7 +6,7 @@ using BiliDownloader.Models;
 using BiliDownloader.Models.ContentSources;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace BiliDownloader.Services.ContentSources;
 
@@ -106,7 +106,7 @@ internal static class HierarchyContinuationTokenCodec
 
     public static string Encode(string kind, ContentItemKey parentKey, string snapshotId, int offset)
     {
-        var json = JsonConvert.SerializeObject(new Token("1", kind, parentKey.NativeId, snapshotId, offset));
+        var json = JsonSerializer.Serialize(new Token("1", kind, parentKey.NativeId, snapshotId, offset));
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(json)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     }
 
@@ -120,7 +120,7 @@ internal static class HierarchyContinuationTokenCodec
             if (value.Length > 1024) throw new FormatException();
             var encoded = value.Replace('-', '+').Replace('_', '/');
             encoded = encoded.PadRight(encoded.Length + (4 - encoded.Length % 4) % 4, '=');
-            var token = JsonConvert.DeserializeObject<Token>(Encoding.UTF8.GetString(Convert.FromBase64String(encoded)));
+            var token = JsonSerializer.Deserialize<Token>(Encoding.UTF8.GetString(Convert.FromBase64String(encoded)));
             if (token is not { Version: "1" } || token.Kind != kind || token.ParentId != parentKey.NativeId ||
                 !Guid.TryParseExact(token.SnapshotId, "N", out _) || token.Offset < 0)
                 throw new FormatException();

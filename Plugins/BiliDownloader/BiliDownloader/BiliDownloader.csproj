@@ -13,6 +13,7 @@
         <PluginVersion>2.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
         <ManagedPluginEntryType>BiliDownloader.Plugin.BiliDownloaderPluginModule</ManagedPluginEntryType>
+        <ManagedPluginUseV2EntryContract>true</ManagedPluginUseV2EntryContract>
         <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
         <ManagedPluginSdkMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginSdkMaxExclusive>
     </PropertyGroup>
@@ -22,7 +23,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.LegacyPluginContracts\MyAvaloniaManagement.LegacyPluginContracts.csproj" />
+      <!--
+        Core 只提供事件、生命周期和 Document 契约；UI 只提供 Avalonia 贡献注册契约。
+        两个 SDK 均由 Host 共享，绝不能被复制进插件私有 ZIP。
+      -->
+      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" Private="false" />
+      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk.UI\MyAvaloniaManagement.PluginSdk.UI.csproj" Private="false" />
     </ItemGroup>
 
   <ItemGroup>
@@ -45,7 +51,7 @@
     <ItemGroup>
       <!--
         这里只列插件私有 NuGet 包的资产所有权。公共 Target 根据 NuGetPackageId 收集
-        托管与 RID 资产，并把 SQLite 原生文件限制为 Managed Plugin v1 的 win-x64。
+        托管与 RID 资产，并把 SQLite 原生文件限制为当前 Managed Plugin 的 win-x64。
       -->
       <ManagedPluginPrivatePackage Include="Flurl;Flurl.Http;Microsoft.Data.Sqlite.Core;protobuf-net;protobuf-net.Core;QRCoder;SQLitePCLRaw.bundle_e_sqlite3;SQLitePCLRaw.core;SQLitePCLRaw.provider.e_sqlite3;SQLitePCLRaw.lib.e_sqlite3" />
     </ItemGroup>

@@ -6,11 +6,20 @@
 > 竞品调研日期：2026-07-20  
 > 文档状态：V1.1（G3–G5 闭环重构完成）
 
+> 2026-08-21 Host V2 G12 基线更新：BiliDownloader 已迁移为最终 SDK 的 1 个可持久化 Document、
+> 1 个右侧可隐藏 Tool 与 1 个 Lifecycle；下载、认证、SQLite、FFmpeg、限速和内容来源产品行为不变。
+> 本次只完成开发期非发布验证，没有运行 AIFLOW、Windows CI/Smoke、ReleaseAcceptance、真实账号、
+> 真实媒体或发布门禁。详细证据见
+> [G12 BiliDownloader Host V2 迁移](../../../../../docs/plan-history/host-v2/g12-bili-downloader-v2.md)。
+
 > 2026-08-13 Document 保存基线更新：当前文件冲突策略会随 V3 内容保存；项目没有历史 Document 文件兼容要求，V1/V2 不再迁移或猜测默认值。详细事务与恢复边界见[Document 持久化 V1 设计](../../../../../docs/design/document-persistence-v1-design.md)。
 
 > 2026-08-09 产品基线更新：P1-G9 已完成多语言字幕、SRT/ASS/VTT、MP4/MKV 软字幕、弹幕 XML/ASS/JSON、结构化结果及附加资源独立重试；离线 Release 测试通过，固定版 ffmpeg 与 B 站实网发布验收待执行。详细证据见 [P1-G9 字幕、软字幕与弹幕增强](../plan-history/P1-G9-SUBTITLE-DANMAKU-ENHANCEMENT.md)。
 
 > 2026-08-10 产品基线更新：P1-G10 已完成全局/单任务主媒体限速、运行时热更新、快照 v4、SQLite 迁移和离线门禁；固定版 ffmpeg、实网与桌面发布验收未完成，仍不可宣称 P1 正式发布。详细证据见 [P1-G10 限速与总验收](../plan-history/P1-G10-BANDWIDTH-REGRESSION-RELEASE-ACCEPTANCE.md)。
+
+> 历史 P0/P1 发布与验收记录按当时事实保留；它们不是 Host V2 G12 的执行证据，也不会因为本次迁移
+> 被改写为已经发布。
 
 ## 目录
 

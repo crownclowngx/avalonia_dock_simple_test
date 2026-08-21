@@ -1,23 +1,19 @@
 using System.Globalization;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
-using Dock.Model.Mvvm.Controls;
 using BiliDownloader.Converters;
 using BiliDownloader.Constants;
-using BiliDownloader.Create;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Download.Extras;
 using BiliDownloader.Services.Infrastructure;
+using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels;
 using BiliDownloader.ViewModels.BiliDownloader;
 using BiliDownloader.ViewModels.BiliScheduler;
 using Flurl.Http.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Save;
 
 namespace BiliDownloader.Tests;
 
@@ -415,15 +411,21 @@ public sealed class PresentationLogicTests
             new InMemoryBiliCredentialStore(),
             new StubBiliSessionApi(),
             messenger);
+        var api = new BiliApiService();
+        var credentials = new FakeCredentialProvider();
         var vm = new BiliDownloaderViewModel(
             messenger,
             new InMemoryDownloadTaskRepository(),
             new InMemorySettingsRepository(),
             loginState,
             new BiliLoginService(),
-            new BiliApiService(),
-            new FakeCredentialProvider(),
-            new FakeFfmpegService());
+            new BiliDownloader.Services.ContentSources.ContentSourceProviderRegistry(
+                [new BiliDownloader.Services.ContentSources.DirectLinkProvider(api, credentials)]),
+            api,
+            credentials,
+            new FakeFfmpegService(),
+            new BiliDownloaderDocumentStateMapper(),
+            new TestDocumentLifetime());
         var video = new BiliQualityOption { QualityId = 80, DisplayName = "1080P" };
         var audio = new BiliQualityOption { QualityId = 30232, DisplayName = "192kbps" };
 
@@ -633,15 +635,21 @@ public sealed class PresentationLogicTests
             new StubBiliSessionApi(),
             messenger);
         var ffmpeg = new FakeFfmpegService();
+        var api = new BiliApiService();
+        var credentials = new FakeCredentialProvider();
         var vm = new BiliDownloaderViewModel(
             messenger,
             repository,
             settings,
             loginState,
             new BiliLoginService(),
-            new BiliApiService(),
-            new FakeCredentialProvider(),
-            ffmpeg);
+            new BiliDownloader.Services.ContentSources.ContentSourceProviderRegistry(
+                [new BiliDownloader.Services.ContentSources.DirectLinkProvider(api, credentials)]),
+            api,
+            credentials,
+            ffmpeg,
+            new BiliDownloaderDocumentStateMapper(),
+            new TestDocumentLifetime());
         vm.Title = "测试文档";
         vm.VideoParse.Url = "BV1abcDEF123";
         vm.DownloadInfo = "日志";
@@ -656,9 +664,13 @@ public sealed class PresentationLogicTests
             settings,
             loginState,
             new BiliLoginService(),
-            new BiliApiService(),
-            new FakeCredentialProvider(),
-            ffmpeg);
+            new BiliDownloader.Services.ContentSources.ContentSourceProviderRegistry(
+                [new BiliDownloader.Services.ContentSources.DirectLinkProvider(api, credentials)]),
+            api,
+            credentials,
+            ffmpeg,
+            new BiliDownloaderDocumentStateMapper(),
+            new TestDocumentLifetime());
         restored.RestoreContent(saved);
 
         Assert.Equal(vm.DocumentId, restored.DocumentId);
@@ -692,94 +704,6 @@ public sealed class PresentationLogicTests
         Assert.True(restored.LoginBar.IsLoggedIn);
         Assert.Equal("已保存账号", restored.LoginBar.UserName);
         Assert.Equal("已恢复", restored.LoginBar.StatusMessage);
-    }
-
-    [Fact]
-    public void Document创建策略创建独立文档并提供元数据()
-    {
-        var services = new ServiceCollection();
-        var repository = new InMemoryDownloadTaskRepository();
-        var messenger = new IsolatedHostEventBus();
-        var loginState = new BiliLoginStateService(
-            new InMemoryBiliCredentialStore(),
-            new StubBiliSessionApi(),
-            messenger);
-        var ffmpeg = new FakeFfmpegService();
-        services.AddScoped(_ => new BiliDownloaderViewModel(
-            messenger,
-            repository,
-            new InMemorySettingsRepository(),
-            loginState,
-            new BiliLoginService(),
-            new BiliApiService(),
-            new FakeCredentialProvider(),
-            ffmpeg));
-        using var provider = services.BuildServiceProvider();
-        using var scopeFactory = new TrackingDocumentScopeFactory(
-            provider.GetRequiredService<IServiceScopeFactory>());
-        var strategy = new BiliDownloaderDocumentStrategy(scopeFactory);
-
-        var custom = Assert.IsType<BiliDownloaderViewModel>(strategy.CreateDocument(
-            new DocumentCreationParams(SaveDocumentTypeIdConstant.BiliDownloaderDocumentId)
-            {
-                Title = "自定义",
-                CreationIntentId = new CreationIntentId("quick-url"),
-            }));
-        var fallback = Assert.IsType<BiliDownloaderViewModel>(strategy.CreateDocument(
-            new DocumentCreationParams(SaveDocumentTypeIdConstant.BiliDownloaderDocumentId)
-            {
-                CreationIntentId = new CreationIntentId("personal-source"),
-            }));
-
-        Assert.NotSame(custom, fallback);
-        Assert.Equal("自定义", custom.Title);
-        Assert.Equal("Bilibili下载", fallback.Title);
-        Assert.True(custom.SourceWorkflow.IsQuickUrl);
-        Assert.True(fallback.SourceWorkflow.IsPersonalSource);
-        Assert.True(scopeFactory.Release(custom));
-        Assert.False(scopeFactory.Release(custom));
-        Assert.True(scopeFactory.Release(fallback));
-        var metadata = strategy.GetMetadata();
-        Assert.Equal("下载", metadata.DisplayName);
-        Assert.Equal("Bilibili下载器", metadata.MenuCategory);
-    }
-
-    private sealed class TrackingDocumentScopeFactory(IServiceScopeFactory scopeFactory)
-        : IDocumentScopeFactory, IDisposable
-    {
-        private readonly Dictionary<Document, IServiceScope> _scopes =
-            new(ReferenceEqualityComparer.Instance);
-
-        public TDocument CreateDocument<TDocument>() where TDocument : Document
-        {
-            var scope = scopeFactory.CreateScope();
-            try
-            {
-                var document = scope.ServiceProvider.GetRequiredService<TDocument>();
-                _scopes.Add(document, scope);
-                scope = null!;
-                return document;
-            }
-            finally
-            {
-                scope?.Dispose();
-            }
-        }
-
-        public bool Release(Document document)
-        {
-            if (!_scopes.Remove(document, out var scope))
-                return false;
-            scope.Dispose();
-            return true;
-        }
-
-        public void Dispose()
-        {
-            foreach (var scope in _scopes.Values)
-                scope.Dispose();
-            _scopes.Clear();
-        }
     }
 
     private static void ConfigureWbiNav(HttpTest http)

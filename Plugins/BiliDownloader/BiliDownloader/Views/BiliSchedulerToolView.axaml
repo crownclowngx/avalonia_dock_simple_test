@@ -14,7 +14,12 @@
         <!-- 顶部：状态区域 -->
         <StackPanel DockPanel.Dock="Top" Spacing="4">
             <Label Content="Bilibili 调度工具" FontSize="14" FontWeight="Bold"/>
-            <StackPanel Orientation="Horizontal" Spacing="6">
+            <!-- readiness 是插件内部状态投影；未就绪时整个操作区禁用，并展示脱敏原因。 -->
+            <TextBlock Text="{Binding PluginReadinessMessage}"
+                       IsVisible="{Binding !IsPluginReady}"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}"/>
+            <StackPanel Orientation="Horizontal" Spacing="6" IsEnabled="{Binding IsPluginReady}">
                 <RadioButton Content="活动任务" GroupName="TaskCenterSection"
                              IsChecked="{Binding IsActivitySelected, Mode=OneWay}"
                              Command="{Binding $parent[UserControl].((vm:BiliSchedulerToolViewModel)DataContext).SelectSectionCommand}"
@@ -27,7 +32,8 @@
             <Separator/>
 
             <!-- 状态摘要 -->
-            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto" IsVisible="{Binding IsActivitySelected}">
+            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto" IsVisible="{Binding IsActivitySelected}"
+                  IsEnabled="{Binding IsPluginReady}">
                 <TextBlock Grid.Column="0">
                     <Run Text="排队中: " FontWeight="SemiBold"/>
                     <Run Text="{Binding TaskList.PendingCount}"/>
@@ -50,7 +56,8 @@
                        Margin="0,4"/>
 
             <!-- 启动/暂停控制 + 清除已完成 + G2批量控制 -->
-            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsActivitySelected}">
+            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsActivitySelected}"
+                        IsEnabled="{Binding IsPluginReady}">
                 <Button Content="开始调度"
                         Command="{Binding TaskList.StartCommand}"
                         IsVisible="{Binding !IsProcessing}"
@@ -80,10 +87,11 @@
 
         <!-- 底部：设置折叠面板 -->
         <sub:SchedulerSettingsView DockPanel.Dock="Bottom" DataContext="{Binding Settings}"
+                                   IsEnabled="{Binding $parent[UserControl].((vm:BiliSchedulerToolViewModel)DataContext).IsPluginReady}"
                                    IsVisible="{Binding $parent[UserControl].((vm:BiliSchedulerToolViewModel)DataContext).IsActivitySelected}"/>
 
         <!-- 中央：任务列表 -->
-        <Grid>
+        <Grid IsEnabled="{Binding IsPluginReady}">
             <sub:SchedulerTaskListView DataContext="{Binding TaskList}"
                                        IsVisible="{Binding $parent[UserControl].((vm:BiliSchedulerToolViewModel)DataContext).IsActivitySelected}"/>
             <sub:TaskHistoryView DataContext="{Binding History}"

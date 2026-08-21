@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Flurl;
 using Flurl.Http;
-using Newtonsoft.Json.Linq;
+using BiliDownloader.Services.Api;
 
 namespace BiliDownloader.Services.Auth;
 
@@ -62,7 +62,7 @@ public partial class BiliLoginService : IBiliSessionApi
             .WithHeader("User-Agent", HttpConstants.UserAgent)
             .GetStringAsync();
 
-        var resp = JObject.Parse(json);
+        var resp = JsonNodeReader.ParseObject(json);
         var data = resp["data"];
         var url = data?["url"]?.ToString() ?? throw new Exception("无法获取二维码 URL");
         var key = data?["qrcode_key"]?.ToString() ?? throw new Exception("无法获取 qrcode_key");
@@ -83,7 +83,7 @@ public partial class BiliLoginService : IBiliSessionApi
             .GetAsync();
 
         var jsonStr = await resp.GetStringAsync();
-        var body = JObject.Parse(jsonStr);
+        var body = JsonNodeReader.ParseObject(jsonStr);
         var code = body["data"]?["code"]?.Value<int>() ?? -1;
 
         var cookies = new List<(string Name, string Value)>();
@@ -122,7 +122,7 @@ public partial class BiliLoginService : IBiliSessionApi
                 .WithTimeout(TimeSpan.FromSeconds(5))
                 .GetStringAsync(cancellationToken: cancellationToken);
 
-            var resp = JObject.Parse(json);
+            var resp = JsonNodeReader.ParseObject(json);
 
             var isLogin = resp["data"]?["isLogin"]?.Value<bool>() ?? false;
             if (!isLogin)
@@ -168,7 +168,7 @@ public partial class BiliLoginService : IBiliSessionApi
                     cancellationToken: cancellationToken);
 
             var jsonStr = await resp.GetStringAsync();
-            var body = JObject.Parse(jsonStr);
+            var body = JsonNodeReader.ParseObject(jsonStr);
             var code = body["code"]?.Value<int>() ?? -1;
             return code == 0;
         }

@@ -1,8 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Avalonia.Controls;
-using Avalonia.Platform.Storage;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
@@ -23,6 +21,7 @@ public partial class DownloadConfigViewModel : ObservableObject, IDisposable
 {
     private static readonly IPluginLogger Log = PluginLog.For<DownloadConfigViewModel>();
     private readonly ISettingsRepository _settingsRepository;
+    private readonly IUserPromptService _promptService;
     private readonly IDownloadPresetService? _presetService;
     private readonly Func<string>? _getNamingTemplate;
     private readonly object _initializationLock = new();
@@ -394,12 +393,14 @@ public partial class DownloadConfigViewModel : ObservableObject, IDisposable
         Func<string>? getNamingTemplate = null,
         IDownloadPresetService? presetService = null,
         Func<CancellationToken, Task<IReadOnlyList<SubtitleLanguageAvailability>>>? subtitleDiscovery = null,
+        IUserPromptService? promptService = null,
         CancellationToken documentToken = default)
     {
         _settingsRepository = settingsRepository;
         _presetService = presetService ?? (presetRepository is null ? null : new DownloadPresetService(presetRepository));
         _getNamingTemplate = getNamingTemplate;
         _subtitleDiscovery = subtitleDiscovery;
+        _promptService = promptService ?? new SafeCancellationConfirmationService();
         _documentToken = documentToken;
         SelectFolderCommand = new AsyncRelayCommand(SelectFolderAsync);
         ApplyPresetCommand = new RelayCommand(ApplySelectedPreset);
@@ -782,31 +783,22 @@ public partial class DownloadConfigViewModel : ObservableObject, IDisposable
         try
         {
             linked.Token.ThrowIfCancellationRequested();
-            var parentWindow = GetParentWindow();
-            if (parentWindow is null)
-            {
-                return;
-            }
-
-            var result = await parentWindow.StorageProvider.OpenFolderPickerAsync(
-                new FolderPickerOpenOptions
-                {
-                    Title = "选择下载输出目录",
-                    AllowMultiple = false
-                });
+            var result = await _promptService.PickFolderAsync(
+                "选择下载输出目录",
+                OutputDirectory,
+                linked.Token);
             linked.Token.ThrowIfCancellationRequested();
             if (IsDisposed) return;
-            if (result.Count > 0)
+            if (!string.IsNullOrWhiteSpace(result))
             {
-                OutputDirectory = result[0].Path.LocalPath;
+                OutputDirectory = result;
                 await _settingsRepository.SetSettingAsync("default_output_dir", OutputDirectory);
             }
         }
         catch (OperationCanceledException) when (linked.IsCancellationRequested)
         {
-            // Avalonia 的原生目录选择器没有取消令牌入口，无法保证关闭标签时同步关闭系统窗口。
-            // 因此这里把 Document 令牌作为“结果提交门禁”：对话框可以自然返回，但关闭后的
-            // 路径绝不写回 ViewModel，也不会继续保存为新的默认下载目录。
+            // Prompt 适配器负责平台对话框；Document 令牌仍是结果提交门禁，关闭后的路径
+            // 绝不写回 ViewModel，也不会继续保存为新的默认下载目录。
         }
         catch (OperationCanceledException) when (IsDisposed)
         {
@@ -815,21 +807,6 @@ public partial class DownloadConfigViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             Log.Error("选择文件夹失败。", ex);
-        }
-    }
-
-    private Window? GetParentWindow()
-    {
-        try
-        {
-            var app = Avalonia.Application.Current;
-            return app?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
-                ? desktop.MainWindow
-                : null;
-        }
-        catch
-        {
-            return null;
         }
     }
 

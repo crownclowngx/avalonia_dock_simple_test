@@ -10,6 +10,8 @@ BiliDownloader 的主设计不是套用某一种经典模式，而是围绕四�
 - Document、Tool、插件和任务有不同生命周期。
 
 因此代码组合使用 Strategy、Registry、Facade、Adapter、Repository、Mediator、Snapshot、State Machine 和 Write-behind Queue。
+这些名称描述已经存在的职责，不要求每个对象都套一层模式。G12 的 Host 接入尤其只使用构造注入、
+私有 Provider、Document Scope、窄 Host Port、不可变 readiness 快照与幂等释放。
 
 ## 设计模式映射
 
@@ -154,6 +156,16 @@ Provider 通过注册表的声明校验增强可替换性：同一 `Kind`、正�
 `BiliDownloaderPluginModule` 作为组合根负责把具体实现装配进去。
 
 存在一些向后兼容构造函数会在类内部 `new` 默认具体实现，例如独立构造 `BiliDownloadService` 或 `MultiConnectionDownloader`。生产路径仍走 DI，但这些兼容入口减弱了纯粹的依赖倒置。维护时应避免在新生产代码继续使用兼容构造函数。
+
+G12 进一步明确了 Host/插件的 DIP 边界：Host 只通过最终 SDK 契约激活普通 Document/Tool 模型，插件
+不引用 Host 或 Dock；`BiliDownloaderViewModel` 强制注入 `IDocumentLifetime`，Tool 只依赖
+`IBiliDownloaderPluginReadiness` 的只读投影，目录与 FFmpeg 选择只依赖 `IUserPromptService`。没有
+通过全局窗口、Host 生命周期 Manager 或服务定位器取得隐式依赖。
+
+readiness 刻意不是通用状态机框架。Lifecycle 是唯一写入者，只推进
+`NotStarted → Initializing → Ready → Stopping → Stopped/Faulted`；Tool 是只读观察者。这样既满足
+SRP/ISP，也避免插件复制 Host 的超时、隔离、顺序与诊断职责。具名事件处理器和幂等 `Dispose` 则让
+singleton Tool 的隐藏复用与最终释放都可直接验证。
 
 ## 关键设计为何这样做
 

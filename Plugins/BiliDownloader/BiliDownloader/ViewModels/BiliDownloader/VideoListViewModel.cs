@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MyAvaloniaManagementCommon.Events;
+using MyAvaloniaManagement.PluginSdk;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download.Extras;

@@ -1,4 +1,4 @@
-﻿using Dock.Model.Mvvm.Controls;
+using Dock.Model.Mvvm.Controls;
 
 namespace MyAvaloniaManagementCommon.ToolCreation;
 
@@ -12,7 +12,7 @@ public interface IToolCreationStrategy
     /// </summary>
     /// <returns>创建的Tool实例</returns>
     Tool CreateTool();
-    
+
     /// <summary>
     /// 获取Tool的元数据
     /// </summary>

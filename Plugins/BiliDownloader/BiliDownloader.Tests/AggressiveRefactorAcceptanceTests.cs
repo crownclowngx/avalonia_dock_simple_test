@@ -5,7 +5,8 @@ using BiliDownloader.Services.Naming;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels.BiliDownloader;
 using BiliDownloader.ViewModels.BiliScheduler;
-using MyAvaloniaManagementCommon.Save;
+using MyAvaloniaManagement.PluginSdk;
+using System.Text.Json;
 
 namespace BiliDownloader.Tests;
 
@@ -136,8 +137,8 @@ public sealed class AggressiveRefactorAcceptanceTests
     {
         var mapper = new BiliDownloaderDocumentStateMapper();
 
-        Assert.Throws<DocumentLoadException>(() =>
-            mapper.Restore(new DocumentContentSnapshot(9, "{}")));
+        Assert.Throws<InvalidDataException>(() =>
+            mapper.Restore(new DocumentContent(9, JsonSerializer.SerializeToElement(new { }))));
     }
 
     [Fact]

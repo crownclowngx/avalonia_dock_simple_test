@@ -1,5 +1,3 @@
-using Avalonia.Controls;
-using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BiliDownloader.Services.Infrastructure;
@@ -11,12 +9,14 @@ namespace BiliDownloader.ViewModels.BiliScheduler;
 /// <summary>
 /// 设置子 ViewModel：负责 ffmpeg 管理和默认输出目录配置。
 /// </summary>
-public partial class SchedulerSettingsViewModel : ObservableObject
+public partial class SchedulerSettingsViewModel : ObservableObject, IDisposable
 {
     private readonly ISettingsRepository _settingsStore;
     private readonly IFfmpegRuntimeLocator _ffmpegService;
     private readonly IFfmpegPackageInstaller? _ffmpegInstaller;
     private readonly IGlobalBandwidthLimitService? _globalBandwidthLimit;
+    private readonly IUserPromptService _promptService;
+    private int _disposed;
     private bool _settingsLoaded;
 
     [ObservableProperty]
@@ -71,12 +71,14 @@ public partial class SchedulerSettingsViewModel : ObservableObject
         ISettingsRepository settingsStore,
         IFfmpegRuntimeLocator ffmpegService,
         IFfmpegPackageInstaller? ffmpegInstaller = null,
-        IGlobalBandwidthLimitService? globalBandwidthLimit = null)
+        IGlobalBandwidthLimitService? globalBandwidthLimit = null,
+        IUserPromptService? promptService = null)
     {
         _settingsStore = settingsStore;
         _ffmpegService = ffmpegService;
         _ffmpegInstaller = ffmpegInstaller;
         _globalBandwidthLimit = globalBandwidthLimit;
+        _promptService = promptService ?? new SafeCancellationConfirmationService();
 
         BrowseFfmpegCommand = new AsyncRelayCommand(BrowseFfmpegAsync);
         RedetectFfmpegCommand = new AsyncRelayCommand(CheckFfmpegAsync);
@@ -234,29 +236,12 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     {
         try
         {
-            var parentWindow = GetParentWindow();
-            if (parentWindow is null)
+            var selectedPath = await _promptService.PickFfmpegExecutableAsync();
+            if (string.IsNullOrWhiteSpace(selectedPath))
             {
                 return;
             }
 
-            var result = await parentWindow.StorageProvider.OpenFilePickerAsync(
-                new FilePickerOpenOptions
-                {
-                    Title = "选择 ffmpeg.exe",
-                    AllowMultiple = false,
-                    FileTypeFilter =
-                    [
-                        new FilePickerFileType("可执行文件") { Patterns = ["*.exe"] },
-                        FilePickerFileTypes.All
-                    ]
-                });
-            if (result.Count == 0)
-            {
-                return;
-            }
-
-            var selectedPath = result[0].Path.LocalPath;
             FfmpegStatus = "正在验证 ffmpeg...";
 
             var valid = await _ffmpegService.ValidatePathAsync(selectedPath);
@@ -298,21 +283,12 @@ public partial class SchedulerSettingsViewModel : ObservableObject
     {
         try
         {
-            var parentWindow = GetParentWindow();
-            if (parentWindow is null)
+            var result = await _promptService.PickFolderAsync(
+                "选择默认下载输出目录",
+                DefaultOutputDirectory);
+            if (!string.IsNullOrWhiteSpace(result))
             {
-                return;
-            }
-
-            var result = await parentWindow.StorageProvider.OpenFolderPickerAsync(
-                new FolderPickerOpenOptions
-                {
-                    Title = "选择默认下载输出目录",
-                    AllowMultiple = false
-                });
-            if (result.Count > 0)
-            {
-                DefaultOutputDirectory = result[0].Path.LocalPath;
+                DefaultOutputDirectory = result;
             }
         }
         catch (Exception ex)
@@ -323,18 +299,11 @@ public partial class SchedulerSettingsViewModel : ObservableObject
 
     #endregion
 
-    private Window? GetParentWindow()
+    /// <summary>解除安装进度订阅；重复释放保持幂等。</summary>
+    public void Dispose()
     {
-        try
-        {
-            var app = Avalonia.Application.Current;
-            return app?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
-                ? desktop.MainWindow
-                : null;
-        }
-        catch
-        {
-            return null;
-        }
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        if (_ffmpegInstaller is not null)
+            _ffmpegInstaller.ProgressChanged -= OnInstallProgressChanged;
     }
 }

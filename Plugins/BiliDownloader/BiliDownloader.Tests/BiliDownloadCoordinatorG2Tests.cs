@@ -2,7 +2,7 @@ using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
-using MyAvaloniaManagementCommon.Events;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace BiliDownloader.Tests;
 

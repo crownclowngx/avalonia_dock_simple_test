@@ -1,4 +1,4 @@
-﻿using Dock.Model.Mvvm.Controls;
+using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace MyAvaloniaManagementCommon.DocumentCreation;
@@ -14,7 +14,7 @@ public interface IDocumentCreationStrategy
     /// <param name="params">创建参数</param>
     /// <returns>创建的Document实例</returns>
     Document CreateDocument(DocumentCreationParams @params);
-    
+
     /// <summary>
     /// 获取文档类型的元数据
     /// </summary>

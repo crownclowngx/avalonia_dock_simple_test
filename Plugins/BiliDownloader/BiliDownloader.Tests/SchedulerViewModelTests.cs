@@ -1,11 +1,9 @@
-using BiliDownloader.Create;
-using BiliDownloader.Constants;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.ViewModels;
 using BiliDownloader.ViewModels.BiliScheduler;
-using MyAvaloniaManagementCommon.ToolCreation;
+using BiliDownloader.Plugin;
 
 namespace BiliDownloader.Tests;
 
@@ -100,11 +98,14 @@ public sealed class SchedulerViewModelTests
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths);
+        var readiness = new BiliDownloaderPluginReadiness();
+        readiness.MarkReady();
         var vm = new BiliSchedulerToolViewModel(
             coordinator,
             repository,
             settings,
-            new FakeFfmpegService());
+            new FakeFfmpegService(),
+            readiness);
 
         await vm.ActivateAsync();
         Assert.Single(vm.TaskList.Tasks);
@@ -117,34 +118,6 @@ public sealed class SchedulerViewModelTests
         Assert.Equal(2, vm.TaskList.Tasks.Count);
         Assert.Equal(1, settings.InitializeCount);
         await coordinator.ShutdownAsync();
-    }
-
-    [Fact]
-    public void Tool创建策略复用实例并返回稳定元数据()
-    {
-        using var paths = new TestDataPaths();
-        var repository = new InMemoryDownloadTaskRepository();
-        var coordinator = new BiliDownloadCoordinator(
-            repository,
-            new IsolatedHostEventBus(),
-            new NoOpDownloadProgressTracker(),
-            new FakeDownloadTaskExecutor(),
-            paths);
-        var vm = new BiliSchedulerToolViewModel(
-            coordinator,
-            repository,
-            new InMemorySettingsRepository(),
-            new FakeFfmpegService());
-        var strategy = new BiliSchedulerToolStrategy(() => vm);
-
-        Assert.Same(vm, strategy.CreateTool());
-        // 策略只负责创建实例；Dock 的字符串 ID 由宿主 Factory 根据元数据统一写入。
-        Assert.Equal(string.Empty, vm.Id);
-        Assert.Equal("Bilibili调度工具", vm.Title);
-        Assert.True(vm.CanClose);
-        var metadata = strategy.GetMetadata();
-        Assert.Equal(SaveDocumentTypeIdConstant.SchedulerToolId, metadata.ToolTypeId);
-        Assert.Equal(ToolDockSide.Right, metadata.DockSide);
     }
 
     private static DownloadTaskRecord Record(string id, DownloadTaskStatus status)

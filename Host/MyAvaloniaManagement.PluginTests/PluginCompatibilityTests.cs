@@ -38,7 +38,7 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void 仅Bili继续显式接入Legacy模块且不改变公共策略接口()
+    public void Bili已切换最终V2入口且G13前Legacy公共策略接口保持不变()
     {
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),
@@ -52,19 +52,9 @@ public sealed class PluginCompatibilityTests
         Assert.Equal(2, typeof(IDocumentCreationStrategy).GetMethods().Length);
         Assert.Equal(2, typeof(IToolCreationStrategy).GetMethods().Length);
 
-        var services = new ServiceCollection();
-        var context = ConfigureForInspection(new BiliDownloaderPluginModule(),
-            "myavalonia.plugin.bili-downloader", services);
-        Assert.Equal(
-            [
-                "Document:BiliDownloaderDocumentStrategy",
-                "Tool:BiliSchedulerToolStrategy",
-                "View:BiliDownloaderViewModel->BiliDownloaderView",
-                "View:BiliSchedulerToolViewModel->BiliSchedulerToolView",
-                "Lifecycle:BiliDownloaderPluginLifecycle",
-            ],
-            Describe(context));
-        Assert.Equal("myavalonia.plugin.bili-downloader", context.PluginId.Value);
+        Assert.False(typeof(IPluginModule).IsAssignableFrom(typeof(BiliDownloaderPluginModule)));
+        Assert.True(typeof(MyAvaloniaManagement.PluginSdk.UI.IPluginModule)
+            .IsAssignableFrom(typeof(BiliDownloaderPluginModule)));
     }
 
     [Fact]
@@ -182,21 +172,6 @@ public sealed class PluginCompatibilityTests
         public Task ShutdownAsync(CancellationToken cancellationToken) =>
             Task.CompletedTask;
     }
-
-    private static TestPluginRegistrationContext ConfigureForInspection(
-        IPluginModule module,
-        string pluginId,
-        IServiceCollection services)
-    {
-        var context = new TestPluginRegistrationContext(new PluginId(pluginId), services);
-        module.Configure(context);
-        return context;
-    }
-
-    private static string[] Describe(TestPluginRegistrationContext context) =>
-        context.Contributions.Select(item => item.Second is null
-            ? $"{item.Kind}:{item.First.Name}"
-            : $"{item.Kind}:{item.First.Name}->{item.Second.Name}").ToArray();
 
     private static IReadOnlyList<PluginRegistryPlugin> CreatePluginSnapshots() =>
     [

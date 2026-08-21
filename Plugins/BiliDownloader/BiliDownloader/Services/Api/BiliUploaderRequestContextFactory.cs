@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace BiliDownloader.Services.Api;
 
@@ -63,7 +63,7 @@ internal sealed class BiliUploaderRequestContextFactory
             4 * scrollTop + 2 * offsetRandom,
             offsetRandom,
         };
-        return JsonConvert.SerializeObject(new { ds = Array.Empty<object>(), wh, of = offset }, Formatting.None);
+        return JsonSerializer.Serialize(new { ds = Array.Empty<object>(), wh, of = offset });
     }
 
     private static string CreateClientHint(int minimumLength, int maximumLength)

@@ -31,6 +31,11 @@
     "Services/Download/DownloadProgressTracker.cs",
     "Services/Download/MultiConnectionDownloader.cs",
     "Services/Infrastructure/SensitiveDataSanitizer.cs",
-    "Services/Persistence/DownloadTaskStore.cs"
+    "Services/Persistence/DownloadTaskStore.cs",
+    "Plugin/BiliDownloaderPluginModule.cs",
+    "Plugin/BiliDownloaderPluginReadiness.cs",
+    "Services/Persistence/DocumentSaveCodec.cs",
+    "ViewModels/BiliDownloaderViewModel.cs",
+    "ViewModels/BiliSchedulerToolViewModel.cs"
   ]
 }

@@ -11,6 +11,63 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class CurrentManagedPluginLoadingTests
 {
     [Fact]
+    public void G12最终测试Zip通过真实发现组合并发布DocumentToolLifecycle()
+    {
+        var packageRoot = Environment.GetEnvironmentVariable(
+            "MYAVALONIA_BILIDOWNLOADER_V2_PACKAGE_ROOT");
+        if (string.IsNullOrWhiteSpace(packageRoot))
+        {
+            // 普通回归不重复打包；G12 专项脚本设置目录后必须执行本测试。
+            return;
+        }
+
+        var snapshot = AssemblyLoaderHelper.Discover(Path.GetFullPath(packageRoot));
+        Assert.Empty(snapshot.Diagnostics);
+        var assembly = Assert.Single(snapshot.Assemblies);
+        Assert.Equal("BiliDownloader", assembly.GetName().Name);
+        var catalog = PluginModuleCatalog.Discover(snapshot);
+        var diagnosticsRoot = Path.Combine(
+            Path.GetTempPath(), $"bili-g12-package-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(diagnosticsRoot);
+        using var diagnostics = HostDiagnosticSession.Start(diagnosticsRoot);
+        var registryBuilder = new PluginRegistryBuilder();
+        using var pluginProviders = new PluginProviderOwner();
+        var documentScopes = new DocumentScopeRegistry();
+        var services = new ServiceCollection();
+        services.AddApplicationServices(registryBuilder, pluginProviders, documentScopes);
+        services.AddViewModels();
+        services.AddSingleton(diagnostics);
+        services.AddSingleton<IHostDiagnosticSink>(diagnostics);
+        services.AddSingleton(catalog);
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = true,
+        });
+        try
+        {
+            pluginProviders.Compose(
+                catalog, provider, registryBuilder, documentScopes, diagnostics);
+            var registry = provider.GetRequiredService<PluginRegistry>();
+            var plugin = Assert.Single(registry.Plugins);
+            Assert.Equal("myavalonia.plugin.bili-downloader", plugin.Manifest.PluginId.Value);
+            Assert.Single(plugin.DocumentTypes);
+            Assert.Single(plugin.ToolTypes);
+            var lifecycle = Assert.Single(registry.Lifecycles);
+            Assert.Equal(plugin.Manifest.PluginId.Value, lifecycle.OwnerId.Value);
+            Assert.Equal(
+                [plugin.Manifest.PluginId.Value],
+                pluginProviders.AvailablePluginIds.Select(pluginId => pluginId.Value));
+        }
+        finally
+        {
+            documentScopes.CloseAll();
+            diagnostics.Dispose();
+            Directory.Delete(diagnosticsRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void G11最终测试Zip通过真实发现组合并发布四个Document()
     {
         var packageRoot = Environment.GetEnvironmentVariable(
@@ -177,7 +234,7 @@ public sealed class CurrentManagedPluginLoadingTests
     }
 
     [Theory]
-    [InlineData("BiliDownloader/BiliDownloader", "BiliDownloader", "BiliDownloader", "myavalonia.plugin.bili-downloader", false)]
+    [InlineData("BiliDownloader/BiliDownloader", "BiliDownloader", "BiliDownloader", "myavalonia.plugin.bili-downloader", true)]
     [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "MyPlugTest", "myavalonia.plugin.my-plug-test", true)]
     [InlineData("DaTangAccountingHelpPlug/DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTang", "myavalonia.plugin.datang-accounting-help", true)]
     [InlineData("MySmallTools/MySmallTools", "MySmallTools", "SmallTools", "myavalonia.plugin.my-small-tools", true)]

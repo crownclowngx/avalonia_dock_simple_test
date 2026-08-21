@@ -1,8 +1,6 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Save;
+using MyAvaloniaManagement.PluginSdk;
 using BiliDownloader.Constants;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
@@ -21,7 +19,7 @@ namespace BiliDownloader.ViewModels;
 /// <summary>
 /// BiliDownloader Document ViewModel：负责子 VM 组合、持久化
 /// </summary>
-public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSaveState, IDisposable
+public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocument, IDisposable
 {
     private static readonly IPluginLogger Log = PluginLog.For<BiliDownloaderViewModel>();
 
@@ -41,6 +39,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     private readonly List<IDisposable> _eventSubscriptions = [];
     private readonly IDownloadTaskRepository _taskRepository;
     private readonly IBiliDownloaderDocumentStateMapper _documentStateMapper;
+    private readonly IDocumentLifetime _documentLifetime;
     // 这是 BiliDownloader Document 对象树的唯一关闭令牌源：宿主 ClosingToken 负责正常的
     // Dock 关闭路径，本地 CTS 则保证直接 new ViewModel 的兼容调用和单元测试也能通过
     // Dispose 触发同样的取消语义。该令牌只约束页面拥有的解析、探测、预检和 UI 投影；
@@ -50,7 +49,8 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     private readonly object _initializationLock = new();
     private Task? _initializationTask;
     private bool _isRestoringDocument;
-    private bool _hasLoadedDocument;
+    private bool _isModified;
+    private string _title = "Bilibili下载";
 
     private static readonly HashSet<string> PersistedDownloadConfigProperties =
     [
@@ -81,7 +81,41 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     public DownloadSourceWorkflowViewModel SourceWorkflow { get; }
     public DownloadWorkspaceViewModel Workspace { get; }
 
+    /// <inheritdoc />
     public bool IsDirty => IsModified;
+
+    /// <summary>
+    /// 获取或设置当前标签标题。标题属于 Host 保存信封的展示数据，不进入插件内容 payload。
+    /// </summary>
+    public string Title
+    {
+        get => _title;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (!SetProperty(ref _title, value)) return;
+            PresentationChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>
+    /// 兼容现有页面绑定的脏状态投影；真正的 V2 保存门禁读取 <see cref="IsDirty"/>。
+    /// </summary>
+    public bool IsModified
+    {
+        get => _isModified;
+        set
+        {
+            if (SetProperty(ref _isModified, value))
+                OnPropertyChanged(nameof(IsDirty));
+        }
+    }
+
+    /// <inheritdoc />
+    public DocumentPresentationState Presentation => new(Title);
+
+    /// <inheritdoc />
+    public event EventHandler? PresentationChanged;
 
     // 兼容既有调用方；新 View 统一从 Workspace 绑定，转发属性不再承载展示逻辑。
     public DownloadConfigViewModel DownloadConfig => Workspace.DownloadConfig;
@@ -125,21 +159,22 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
         IBiliMediaProbe mediaProbe,
         IBiliCredentialProvider credentialProvider,
         IFfmpegRuntimeLocator ffmpegService,
+        IBiliDownloaderDocumentStateMapper documentStateMapper,
+        IDocumentLifetime documentLifetime,
         IPresetRepository? presetRepository = null,
         IDownloadSubmissionService? submissionService = null,
         IUserPromptService? promptService = null,
         ILoginDialogService? loginDialogService = null,
         IFfmpegPackageInstaller? ffmpegInstaller = null,
-        IBiliDownloaderDocumentStateMapper? documentStateMapper = null,
         IIncrementalComparisonService? incrementalComparisonService = null,
-        ISubtitleCatalogService? subtitleCatalogService = null,
-        IDocumentLifetime? documentLifetime = null)
+        ISubtitleCatalogService? subtitleCatalogService = null)
     {
         _eventBus = eventBus;
         _taskRepository = taskRepository;
-        _documentStateMapper = documentStateMapper ?? new BiliDownloaderDocumentStateMapper();
+        _documentStateMapper = documentStateMapper ?? throw new ArgumentNullException(nameof(documentStateMapper));
+        _documentLifetime = documentLifetime ?? throw new ArgumentNullException(nameof(documentLifetime));
         _documentCts = CancellationTokenSource.CreateLinkedTokenSource(
-            documentLifetime?.ClosingToken ?? CancellationToken.None);
+            documentLifetime.ClosingToken);
 
         // 初始化子 ViewModel（通过回调通信）
         LoginBar = loginDialogService is null
@@ -212,6 +247,7 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
                         pair.Key, pair.Value.Name, pair.Value.Source, pair.Value.Count, selected.Length))
                     .ToArray();
             },
+            promptService: promptService,
             documentToken: _documentCts.Token);
         downloadConfig.PresetApplied += preset =>
         {
@@ -395,85 +431,71 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     }
 
     /// <summary>创建意图只决定首次展示入口；保存与下载契约始终属于同一个 Document。</summary>
-    public void ApplyCreationIntent(CreationIntentId? intentId) =>
+    private void ApplyCreationIntent(CreationIntentId? intentId) =>
         SourceWorkflow.SetInitialMode(
-            string.Equals(intentId?.Value, "personal-source", StringComparison.Ordinal)
+            intentId == BiliDownloaderContributionIds.PersonalSourceIntent
                 ? DownloadCreationMode.PersonalSource
                 : DownloadCreationMode.QuickUrl);
 
-    /// <summary>
-    /// P0 构造兼容入口。内部仍组装统一 Provider，避免旧调用方绕过 P1-G0 契约。
-    /// </summary>
-    internal BiliDownloaderViewModel(
-        IHostEventBus eventBus,
-        IDownloadTaskRepository taskRepository,
-        ISettingsRepository settingsRepository,
-        BiliLoginStateService loginStateService,
-        BiliLoginService loginService,
-        BiliApiService apiService,
-        IBiliCredentialProvider credentialProvider,
-        IFfmpegRuntimeLocator ffmpegService,
-        IPresetRepository? presetRepository = null,
-        IDownloadSubmissionService? submissionService = null,
-        IUserPromptService? promptService = null,
-        ILoginDialogService? loginDialogService = null,
-        IFfmpegPackageInstaller? ffmpegInstaller = null)
-        : this(
-            eventBus,
-            taskRepository,
-            settingsRepository,
-            loginStateService,
-            loginService,
-            new ContentSourceProviderRegistry(
-                [new DirectLinkProvider(apiService, credentialProvider)]),
-            apiService,
-            credentialProvider,
-            ffmpegService,
-            presetRepository,
-            submissionService,
-            promptService,
-            loginDialogService,
-            ffmpegInstaller)
+    /// <inheritdoc />
+    public ValueTask InitializeAsync(
+        DocumentActivationContext context,
+        CancellationToken cancellationToken)
     {
-    }
-
-    public Task InitializeAsync()
-    {
+        ArgumentNullException.ThrowIfNull(context);
         lock (_initializationLock)
-            return _initializationTask ??= InitializeCoreAsync();
-    }
-
-    private async Task InitializeCoreAsync()
-    {
-        try
         {
-            await InitializeCoreOperationAsync();
-        }
-        catch (OperationCanceledException) when (_documentCts.IsCancellationRequested)
-        {
-            // View 在首次挂载视觉树时以 fire-and-forget 方式触发初始化。标签关闭导致的取消
-            // 是正常生命周期事件，如果继续向外传播，就会形成无人观察的 Task 异常；因此仅
-            // 吸收由本 Document 令牌触发的取消，其他初始化故障仍按原有路径向外暴露。
+            _initializationTask ??= InitializeCoreAsync(context, cancellationToken);
+            return new ValueTask(_initializationTask);
         }
     }
 
-    private async Task InitializeCoreOperationAsync()
+    private async Task InitializeCoreAsync(
+        DocumentActivationContext context,
+        CancellationToken cancellationToken)
     {
-        var cancellationToken = _documentCts.Token;
-        if (IsClosing) return;
-        var suppressInitializationChanges = _hasLoadedDocument;
-        if (suppressInitializationChanges) _isRestoringDocument = true;
+        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _documentCts.Token);
+        var effectiveToken = linkedCancellation.Token;
+        effectiveToken.ThrowIfCancellationRequested();
+
+        // 恢复必须先在独立 DTO 中完成 JSON 解码、安全校验和规范化。任何失败都发生在修改
+        // 当前模型之前；Host 随后丢弃暂存 Scope，因此不会发布半恢复的 Document。
+        var restored = context.RestoredContent is null
+            ? null
+            : _documentStateMapper.Restore(context.RestoredContent);
+        if (restored is null
+            && context.CreationIntentId is not null
+            && context.CreationIntentId != BiliDownloaderContributionIds.QuickUrlIntent
+            && context.CreationIntentId != BiliDownloaderContributionIds.PersonalSourceIntent)
+        {
+            throw new ArgumentException("未知的 BiliDownloader 创建意图。", nameof(context));
+        }
+
+        Title = string.IsNullOrWhiteSpace(context.Title) ? "Bilibili下载" : context.Title;
+        _isRestoringDocument = true;
         try
         {
+            if (restored is not null)
+            {
+                ApplyRestoredState(restored);
+                OnPropertyChanged(nameof(DocumentId));
+            }
+            else
+            {
+                ApplyCreationIntent(context.CreationIntentId);
+            }
+
             await DownloadConfig.InitializeAsync();
-            cancellationToken.ThrowIfCancellationRequested();
+            effectiveToken.ThrowIfCancellationRequested();
+            await RecoverTasksFromStoreAsync(effectiveToken);
+            IsModified = false;
         }
         finally
         {
-            if (suppressInitializationChanges) _isRestoringDocument = false;
+            _isRestoringDocument = false;
         }
-        await RecoverTasksFromStoreAsync(cancellationToken);
-        if (suppressInitializationChanges) IsModified = false;
     }
 
     #region 事件总线注册
@@ -609,13 +631,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
                 VideoList.AddRecoveredItem(item);
             }
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            // SQLite 仓储接口目前没有取消令牌参数，所以正在执行的本地查询可能自然完成。
-            // 查询前后的令牌检查把取消边界放在“结果应用”之前：关闭后丢弃迟到记录，既不
-            // 修改已经释放的 VideoList，也不把正常关闭误报为恢复失败。
-        }
-        catch (Exception ex)
+        // 本地仓储损坏仍降级为 Document 内可见状态；关闭或 Host 取消则不进入此分支，
+        // OperationCanceledException 会自然向初始化调用方传播，使候选 Scope 不被发布。
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             DownloadInfo = $"恢复任务状态失败: {ex.Message}";
         }
@@ -640,8 +658,10 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     /// 这些提交动作由宿主在主文件写入成功后统一完成。
     /// </para>
     /// </summary>
-    public DocumentContentSnapshot CreateContentSnapshot()
+    public ValueTask<DocumentContent> CaptureContentAsync(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        _documentLifetime.ClosingToken.ThrowIfCancellationRequested();
         var configuration = new DownloadConfigViewModelSnapshot(
             DownloadConfig.OutputDirectory,
             DownloadConfig.UseGroupFolder,
@@ -662,36 +682,13 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
             DownloadConfig.DanmakuOptions,
             DownloadConfig.PerTaskRateLimitBytesPerSecond);
         var saveData = _documentStateMapper.Create(
-            Title,
             DocumentId,
             VideoParse.Url,
             _downloadInfo,
             configuration,
             NamingTemplate.Template,
             SourceWorkflow.CapturePersistentState());
-        return saveData;
-    }
-
-    /// <summary>
-    /// 从当前 V3 保存数据加载 Document。项目没有历史文件兼容要求，因此非 V3 内容
-    /// 明确失败，不进行字段猜测、默认补齐或隐式迁移。
-    /// </summary>
-    public void RestoreContent(DocumentContentSnapshot snapshot)
-    {
-        ArgumentNullException.ThrowIfNull(snapshot);
-        _isRestoringDocument = true;
-        try
-        {
-            var restored = _documentStateMapper.Restore(snapshot);
-            ApplyRestoredState(restored);
-            OnPropertyChanged(nameof(DocumentId));
-            _hasLoadedDocument = true;
-            IsModified = false;
-        }
-        finally
-        {
-            _isRestoringDocument = false;
-        }
+        return ValueTask.FromResult(saveData);
     }
 
     private void ApplyRestoredState(BiliDownloaderRestoredState restored)
@@ -713,7 +710,9 @@ public class BiliDownloaderViewModel : Document, ISavableDocument, IDocumentSave
     /// </summary>
     public void AcceptChanges() => IsModified = false;
 
-    private bool IsClosing => Volatile.Read(ref _disposed) != 0 || _documentCts.IsCancellationRequested;
+    private bool IsClosing => Volatile.Read(ref _disposed) != 0
+        || _documentLifetime.IsClosing
+        || _documentCts.IsCancellationRequested;
 
     public void Dispose()
     {

@@ -12,7 +12,7 @@
 - P1-G7 输出控制组：DASH 编码识别、纯选择策略、模式/容器矩阵、动态扩展名、实际编码落库、原子发布与模式化恢复。
 - P1-G8 高规格媒体组：API 能力证据、Auto/显式选择、批量交集、容器矩阵、v2 快照、rf2、历史导出和发布前 ffprobe 验证。
 - P1-G9～G10 收口组：字幕弹幕结构化结果，以及全局/单任务限速、公平队列、分块聚合、热更新、取消、SQLite v4 快照和发布计时门禁。
-- C 级界面逻辑组：ViewModel、消息路由、Document 保存恢复、转换器和创建策略。
+- C 级界面逻辑组：ViewModel、消息路由、V2 模块/readiness、Document 保存恢复和转换器。
 - G6 冲突预检组：四种策略、目录与磁盘检查、续传事实、路径保留、预检过期和 Document 兼容迁移。
 - G7 依赖恢复组：固定 ffmpeg 供应链、安全安装与回滚、运行时探测、媒体检查点、仅合并重试、十类错误行动和目录事务。
 - XAML 像素、真实窗口、真实扫码及真实 Bilibili 网络不属于默认自动化测试。
@@ -74,11 +74,22 @@ P1-G10 本机限速门禁：
 dotnet run --project ..\BiliDownloader.ReleaseAcceptance\BiliDownloader.ReleaseAcceptance.csproj -c Release -- bandwidth --sandbox <临时目录> --report <报告.json>
 ```
 
-G12 后的专项入口仍为仓库根目录的 `scripts/Release-BiliDownloaderP0.ps1`。它保留联网、ffmpeg、
-Range 恢复、敏感扫描和宿主候选加载，但最终分发物改为通用单插件包：
-`BiliDownloader-<PluginVersion>-win-x64.zip` 及 ZIP 外同名 `.manifest.json`。ZIP 内只有
-`Controls/BiliDownloader/`，SQLite 原生资产只允许 `runtimes/win-x64`；不再包含
-`bilidownloader.release.json` 或其他插件。
+Host V2 G12 开发期专项入口为仓库根目录的：
+
+```powershell
+.\scripts\Test-BiliDownloaderV2.ps1 -Configuration Release -NoRestore
+```
+
+它串行执行 Host Plugin、Headless UI、SDK 边界与 BiliDownloader 完整单元测试，随后完成结构扫描、
+两次隔离 ZIP、逐文件/归档摘要比较和解压后的真实 Loader/Preflight/Registry/私有 Provider 组合。
+2026-08-21 实际为 **812/812**、0 失败、0 跳过；测试 ZIP 14 个文件，SHA-256 为
+`4F73359B0B1AD8E559391EC254BF892794EFF1FED79973D3E2B8F60C12B331D8`。覆盖率为总体行
+**83.77%** / 分支 **67.62%**，A/B/C 分组为 **89.09/76.82**、**85.17/69.36**、
+**76.73/56.65**，既有门槛没有降低。
+
+该 ZIP 固定为 `publishable=false`，不使用 AIFLOW，不运行 Windows CI/Smoke、ReleaseAcceptance、真实
+Bilibili/账号、真实 FFmpeg 媒体或发布门禁。`scripts/Release-BiliDownloaderP0.ps1` 只保留为历史
+发布流程，本阶段没有调用；历史 P0/P1 记录不构成 G12 发布事实。
 
 ## 稳定性约束
 

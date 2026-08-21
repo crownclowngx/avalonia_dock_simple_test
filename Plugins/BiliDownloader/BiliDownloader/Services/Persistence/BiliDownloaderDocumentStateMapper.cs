@@ -3,7 +3,7 @@ using BiliDownloader.Models;
 using BiliDownloader.Models.ContentSources;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
-using MyAvaloniaManagementCommon.Save;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace BiliDownloader.Services.Persistence;
 
@@ -25,8 +25,7 @@ public sealed record BiliDownloaderRestoredState(DocumentSaveDataV3 Data);
 /// </remarks>
 public interface IBiliDownloaderDocumentStateMapper
 {
-    DocumentContentSnapshot Create(
-        string title,
+    DocumentContent Create(
         string documentId,
         string url,
         string downloadInfo,
@@ -34,7 +33,7 @@ public interface IBiliDownloaderDocumentStateMapper
         string namingTemplate,
         BiliDownloaderDocumentSourceState sourceState);
 
-    BiliDownloaderRestoredState Restore(DocumentContentSnapshot snapshot);
+    BiliDownloaderRestoredState Restore(DocumentContent content);
 }
 
 /// <summary>
@@ -42,8 +41,7 @@ public interface IBiliDownloaderDocumentStateMapper
 /// </summary>
 public sealed class BiliDownloaderDocumentStateMapper : IBiliDownloaderDocumentStateMapper
 {
-    public DocumentContentSnapshot Create(
-        string title,
+    public DocumentContent Create(
         string documentId,
         string url,
         string downloadInfo,
@@ -86,29 +84,29 @@ public sealed class BiliDownloaderDocumentStateMapper : IBiliDownloaderDocumentS
         return DocumentSaveCodec.EncodeV3(data);
     }
 
-    public BiliDownloaderRestoredState Restore(DocumentContentSnapshot snapshot)
+    public BiliDownloaderRestoredState Restore(DocumentContent content)
     {
-        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(content);
         // 内容 schema 是插件自己维护的整数协议，不读取程序集或 NuGet 版本。当前没有真实
         // 历史内容，因此只接受 V3；未来只有出现受支持旧格式时才在这里显式增加分支。
-        if (snapshot.ContentSchemaVersion != DocumentSaveCodec.CurrentContentSchemaVersion)
+        if (content.SchemaVersion != DocumentSaveCodec.CurrentContentSchemaVersion)
         {
-            throw new DocumentLoadException(
+            throw new InvalidDataException(
                 "该 BiliDownloader Document 不是当前支持的 V3 格式。");
         }
 
-        var data = RestoreV3(snapshot.Payload);
+        var data = RestoreV3(content.Payload);
         DocumentSaveSecurityPolicy.Validate(data);
         return new BiliDownloaderRestoredState(data);
     }
 
-    private static DocumentSaveDataV3 RestoreV3(string content)
+    private static DocumentSaveDataV3 RestoreV3(System.Text.Json.JsonElement content)
     {
-        if (string.IsNullOrWhiteSpace(content))
-            throw new DocumentLoadException("Document V3 内容为空，无法安全打开。");
+        if (content.ValueKind != System.Text.Json.JsonValueKind.Object)
+            throw new InvalidDataException("Document V3 根节点必须是 JSON 对象。");
 
         var data = DocumentSaveCodec.Deserialize<DocumentSaveDataV3>(content)
-            ?? throw new DocumentLoadException("Document V3 内容为空，无法安全打开。");
+            ?? throw new InvalidDataException("Document V3 内容为空，无法安全打开。");
         NormalizeV3(data);
         return data;
     }
@@ -286,13 +284,13 @@ internal static class DocumentSaveSecurityPolicy
                 data.PerTaskRateLimitBytesPerSecond,
                 nameof(data.PerTaskRateLimitBytesPerSecond));
         }
-        catch (DocumentLoadException)
+        catch (InvalidDataException)
         {
             throw;
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
-            throw new DocumentLoadException("Document V3 包含无效或不安全的持久化字段。", ex);
+            throw new InvalidDataException("Document V3 包含无效或不安全的持久化字段。", ex);
         }
     }
 

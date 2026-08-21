@@ -8,9 +8,9 @@ using BiliDownloader.Services.History;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 using BiliDownloader.Constants;
-using BiliDownloader.Create;
 using BiliDownloader.Views;
 
 namespace BiliDownloader.Plugin;
@@ -19,16 +19,17 @@ namespace BiliDownloader.Plugin;
 /// BiliDownloader 选择接入宿主管理生命周期的模块入口。
 /// <para>
 /// 本类型只注册 BiliDownloader 自己的服务和显式贡献，不会扫描、替换或初始化其他插件。
-/// 宿主只消费下方通过 <see cref="IPluginRegistrationContext"/> 声明的贡献；没有唯一模块或没有
+/// 宿主只消费下方通过 <see cref="IPluginRegistration"/> 声明的贡献；没有唯一模块或没有
 /// 显式登记的类型不会进入菜单、Dock、View 映射或生命周期计划。
 /// </para>
 /// </summary>
 public sealed class BiliDownloaderPluginModule : IPluginModule
 {
     /// <inheritdoc />
-    public void Configure(IPluginRegistrationContext context)
+    public void Configure(IPluginRegistration registration)
     {
-        var services = context.Services;
+        ArgumentNullException.ThrowIfNull(registration);
+        var services = registration.Services;
         services.AddSingleton<IBiliDataPaths, BiliDataPaths>();
         services.AddSingleton<IBiliLocalStateInitializer, BiliLocalStateInitializer>();
 
@@ -74,6 +75,12 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
             provider.GetRequiredService<TaskBandwidthLimitManager>());
         services.AddSingleton<IBandwidthLimiter, CompositeBandwidthLimiter>();
         services.AddSingleton<IGlobalBandwidthLimitService, GlobalBandwidthLimitService>();
+
+        // readiness 是插件内部的只读状态端口。Lifecycle 是唯一写入者，Tool 只消费不可变快照，
+        // 因而既不会复制 Host 状态机，也不会为了判断可用性反向依赖 Host 实现。
+        services.AddSingleton<BiliDownloaderPluginReadiness>();
+        services.AddSingleton<IBiliDownloaderPluginReadiness>(provider =>
+            provider.GetRequiredService<BiliDownloaderPluginReadiness>());
 
         // 登录态只依赖凭据存储接口；SQLite 内只保存 AES-GCM 密文信封。
         services.AddSingleton<InstallationKeyStore>();
@@ -182,18 +189,34 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<BiliDownloadCoordinator>();
         services.AddSingleton<IDownloadSubmissionService, DownloadSubmissionService>();
         services.AddSingleton<IDownloadFailureActionService, DownloadFailureActionService>();
-        services.AddSingleton<BiliSchedulerToolViewModel>();
-        services.AddSingleton<Func<BiliSchedulerToolViewModel>>(provider =>
-            () => provider.GetRequiredService<BiliSchedulerToolViewModel>());
-        services.AddScoped<BiliDownloaderViewModel>();
 
-        // 生命周期、创建策略和根级 View 都通过同一个 manifest 绑定上下文声明。类型存在于
-        // 程序集本身不再等同于被宿主公开，新增扩展必须在代码评审中显式出现在这里。
-        context.AddDocument<BiliDownloaderDocumentStrategy>();
-        context.AddTool<BiliSchedulerToolStrategy>();
-        context.AddView<BiliDownloaderViewModel, BiliDownloaderView>();
-        context.AddView<BiliSchedulerToolViewModel, BiliSchedulerToolView>();
-        context.AddLifecycle<BiliDownloaderPluginLifecycle>();
+        // V2 注册一次冻结模型、View 和描述符；注册入口同时建立 Document scoped、Tool singleton
+        // 与 Lifecycle singleton，模块不再手工重复注册根模型，也不创建 Dock Strategy。
+        registration.AddPersistableDocument<BiliDownloaderViewModel, BiliDownloaderView>(
+            new DocumentDescriptor(
+                BiliDownloaderContributionIds.DownloadDocument,
+                "下载",
+                "Bilibili视频下载器",
+                "Bilibili下载器",
+                creationIntents:
+                [
+                    new DocumentCreationIntentDescriptor(
+                        BiliDownloaderContributionIds.QuickUrlIntent,
+                        "链接下载",
+                        "粘贴视频、番剧或短链接并创建下载计划。"),
+                    new DocumentCreationIntentDescriptor(
+                        BiliDownloaderContributionIds.PersonalSourceIntent,
+                        "个人内容来源",
+                        "浏览 UP 主投稿、收藏夹、稍后再看和历史记录。"),
+                ]));
+        registration.AddTool<BiliSchedulerToolViewModel, BiliSchedulerToolView>(
+            new ToolDescriptor(
+                BiliDownloaderContributionIds.SchedulerTool,
+                "Bilibili调度工具",
+                "下载调度与ffmpeg处理管理",
+                ToolDockSide.Right,
+                ToolCloseBehavior.Hide));
+        registration.UseLifecycle<BiliDownloaderPluginLifecycle>();
     }
 }
 
@@ -209,6 +232,7 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
     private readonly ISettingsRepository _settings;
     private readonly IFfmpegRuntimeLocator _ffmpeg;
     private readonly IGlobalBandwidthLimitService _globalBandwidthLimit;
+    private readonly BiliDownloaderPluginReadiness _readiness;
 
     public BiliDownloaderPluginLifecycle(
         IBiliLocalStateInitializer localStateInitializer,
@@ -216,7 +240,8 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
         BiliDownloadCoordinator coordinator,
         ISettingsRepository settings,
         IFfmpegRuntimeLocator ffmpeg,
-        IGlobalBandwidthLimitService globalBandwidthLimit)
+        IGlobalBandwidthLimitService globalBandwidthLimit,
+        BiliDownloaderPluginReadiness readiness)
     {
         _localStateInitializer = localStateInitializer;
         _loginStateService = loginStateService;
@@ -224,27 +249,79 @@ public sealed class BiliDownloaderPluginLifecycle : IPluginLifecycle
         _settings = settings;
         _ffmpeg = ffmpeg;
         _globalBandwidthLimit = globalBandwidthLimit;
+        _readiness = readiness;
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _localStateInitializer.InitializeAsync(cancellationToken);
-        // 仅加载本地配置并执行 -version 探测，不下载任何内容。这样 Document 即使先于 Tool 打开，
-        // 提交预检也能观察到真实 ffmpeg 状态，而不是依赖某个设置视图曾经被激活。
-        await _settings.InitAsync();
-        await _globalBandwidthLimit.InitializeAsync(cancellationToken);
-        _ffmpeg.CustomPath = await _settings.GetSettingAsync("ffmpeg_custom_path");
-        await _ffmpeg.DetectAsync(cancellationToken);
-        await _loginStateService.RestoreSavedSessionAsync(cancellationToken);
-        await _coordinator.InitializeAsync();
-        _loginStateService.StartBackgroundValidation();
+        _readiness.MarkInitializing();
+        var coordinatorMayNeedCleanup = false;
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await _localStateInitializer.InitializeAsync(cancellationToken);
+            // 仅加载本地配置并执行 -version 探测，不下载任何内容。这样 Document 即使先于 Tool 打开，
+            // 提交预检也能观察到真实 ffmpeg 状态，而不是依赖某个设置视图曾经被激活。
+            await _settings.InitAsync();
+            await _globalBandwidthLimit.InitializeAsync(cancellationToken);
+            _ffmpeg.CustomPath = await _settings.GetSettingAsync("ffmpeg_custom_path");
+            await _ffmpeg.DetectAsync(cancellationToken);
+            await _loginStateService.RestoreSavedSessionAsync(cancellationToken);
+
+            // InitializeAsync 可能在部分启动后失败，因此调用前先记录需要补偿；ShutdownAsync 自身幂等。
+            coordinatorMayNeedCleanup = true;
+            await _coordinator.InitializeAsync();
+            _loginStateService.StartBackgroundValidation();
+            _readiness.MarkReady();
+        }
+        catch
+        {
+            _readiness.MarkFaulted();
+
+            // 清理异常不得覆盖原始初始化异常；Host 需要看到真正的失败原因。两个后台组件均执行
+            // 最佳努力停止，避免取消或半初始化留下迟到回调。
+            try
+            {
+                await _loginStateService.StopAsync(CancellationToken.None);
+            }
+            catch
+            {
+                // 原始异常优先，停止失败仍可通过组件日志诊断。
+            }
+
+            if (coordinatorMayNeedCleanup)
+            {
+                try
+                {
+                    await _coordinator.ShutdownAsync();
+                }
+                catch
+                {
+                    // 原始异常优先，Coordinator 的幂等关闭允许 Host 后续继续释放 Provider。
+                }
+            }
+
+            throw;
+        }
     }
 
     public async Task ShutdownAsync(CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await _loginStateService.StopAsync(cancellationToken);
-        await _coordinator.ShutdownAsync();
+        _readiness.MarkStopping();
+
+        // 先请求两个组件停止，再共同等待。即使登录验证停止失败，Coordinator 仍会取消活动下载、
+        // 等待工作循环退出并 Flush 进度；反向失败也不会阻止登录验证收尾。
+        var loginStop = _loginStateService.StopAsync(cancellationToken);
+        var coordinatorStop = _coordinator.ShutdownAsync();
+        try
+        {
+            await Task.WhenAll(loginStop, coordinatorStop);
+            _readiness.MarkStopped();
+        }
+        catch
+        {
+            _readiness.MarkFaulted();
+            throw;
+        }
     }
 }

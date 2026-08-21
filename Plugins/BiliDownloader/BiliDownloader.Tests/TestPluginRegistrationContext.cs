@@ -1,34 +1,57 @@
 using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.ToolCreation;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace BiliDownloader.Tests;
 
 /// <summary>
-/// 测试组合根使用的最小注册上下文。它保留真实服务注册并记录显式贡献类型，
-/// 但不依赖生产 HostRuntime 或磁盘 manifest。
+/// 测试组合根使用的最小 V2 注册入口。它复现注册 API 规定的模型生命周期并记录不可变描述符，
+/// 但不依赖 HostRuntime、Dock 或磁盘 manifest。
 /// </summary>
 internal sealed class TestPluginRegistrationContext(
     PluginId pluginId,
-    IServiceCollection services) : IPluginRegistrationContext
+    IServiceCollection services) : IPluginRegistration
 {
     public PluginId PluginId { get; } = pluginId;
 
     public IServiceCollection Services { get; } = services;
 
-    internal List<(string Kind, Type First, Type? Second)> Contributions { get; } = [];
+    internal List<TestContribution> Contributions { get; } = [];
 
-    public void AddDocument<TStrategy>() where TStrategy : class, IDocumentCreationStrategy =>
-        Contributions.Add(("Document", typeof(TStrategy), null));
+    public void UseLifecycle<TLifecycle>() where TLifecycle : class, IPluginLifecycle
+    {
+        Services.AddSingleton<TLifecycle>();
+        Contributions.Add(new("Lifecycle", typeof(TLifecycle), null, null));
+    }
 
-    public void AddTool<TStrategy>() where TStrategy : class, IToolCreationStrategy =>
-        Contributions.Add(("Tool", typeof(TStrategy), null));
+    public void AddDocument<TDocument, TView>(DocumentDescriptor descriptor)
+        where TDocument : class, IPluginDocument
+        where TView : Control, new()
+    {
+        Services.AddScoped<TDocument>();
+        Contributions.Add(new("Document", typeof(TDocument), typeof(TView), descriptor));
+    }
 
-    public void AddView<TViewModel, TView>() where TView : Control, new() =>
-        Contributions.Add(("View", typeof(TViewModel), typeof(TView)));
+    public void AddPersistableDocument<TDocument, TView>(DocumentDescriptor descriptor)
+        where TDocument : class, IPersistablePluginDocument
+        where TView : Control, new()
+    {
+        Services.AddScoped<TDocument>();
+        Contributions.Add(new("Document", typeof(TDocument), typeof(TView), descriptor));
+    }
 
-    public void AddLifecycle<TLifecycle>() where TLifecycle : class, IPluginLifecycle =>
-        Contributions.Add(("Lifecycle", typeof(TLifecycle), null));
+    public void AddTool<TTool, TView>(ToolDescriptor descriptor)
+        where TTool : class
+        where TView : Control, new()
+    {
+        Services.AddSingleton<TTool>();
+        Contributions.Add(new("Tool", typeof(TTool), typeof(TView), descriptor));
+    }
 }
+
+internal sealed record TestContribution(
+    string Kind,
+    Type ModelType,
+    Type? ViewType,
+    object? Descriptor);

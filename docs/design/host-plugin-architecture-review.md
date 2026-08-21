@@ -1,13 +1,13 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-21（已同步 Managed Plugin V2 G10）<br>
+> 更新日期：2026-08-21（已同步 Managed Plugin V2 G12）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
-> 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系  
-> 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
+> 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
+> 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
 > 不在本轮范围：逐项评审插件业务功能、第三方插件市场、运行时热卸载、插件沙箱
 
-> V2 当前状态：G0–G11 已完成。MyPlugTest、DaTang 与 MySmallTools 已使用最终 SDK、声明式贡献与
-> 普通模型；仅 BiliDownloader 仍等待 G12。
+> V2 当前状态：G0–G12 已完成。四个业务插件均使用最终 SDK、声明式贡献与普通模型；Legacy
+> 阶段桥已没有生产插件消费者，留给 G13 删除。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -32,8 +32,8 @@
 ```mermaid
 flowchart TB
     Host["MyAvaloniaManagement<br/>Avalonia 桌面宿主"]
-    Sdk["PluginSdk + PluginSdk.UI<br/>Host / MyPlugTest / DaTang 生产契约"]
-    Legacy["LegacyPluginContracts<br/>业务插件源码桥"]
+    Sdk["PluginSdk + PluginSdk.UI<br/>Host / 四个业务插件生产契约"]
+    Legacy["LegacyPluginContracts<br/>G13 待删除阶段桥"]
     Dock["Avalonia 12 + Dock 12<br/>UI 与停靠模型"]
 
     Bili["BiliDownloader<br/>下载子系统"]
@@ -43,8 +43,8 @@ flowchart TB
 
     Host --> Sdk
     Host --> Dock
-    Bili --> Legacy
-    Small --> Legacy
+    Bili --> Sdk
+    Small --> Sdk
     TestPlug --> Sdk
     DaTang --> Sdk
 
@@ -54,18 +54,16 @@ flowchart TB
     Host -. "运行时扫描 Controls 子目录" .-> DaTang
 ```
 
-**[代码事实]** MyPlugTest、DaTang 与 MySmallTools 已只保留最终 UI SDK `IPluginModule`，并通过真实
-V2 加载分别形成 4 Document + 1 Tool、2 Document + 0 Tool 和 4 Document + 0 Tool。仅
-BiliDownloader 仍保留 Legacy `IPluginModule` 以维持 G12 前源码回归；
-`PluginModulePreflight` 会稳定隔离它们，不存在双接口回退。
+**[代码事实]** 四个业务插件已只保留最终 UI SDK `IPluginModule`，并通过真实 V2 加载分别形成
+MyPlugTest 4 Document + 1 Tool、DaTang 2 Document、MySmallTools 4 Document，以及
+BiliDownloader 1 Document + 1 Tool + 1 Lifecycle。不存在双接口回退。
 最终 SDK 加载链由两个独立依赖测试夹具验证。参见
 [`ManagedOnlyPluginLoadingTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/ManagedOnlyPluginLoadingTests.cs)。
 
 **[代码事实]** G2 已把最终 V2 SDK 分成平台无关的 `MyAvaloniaManagement.PluginSdk` 与真实
-`MyAvaloniaManagement.PluginSdk.UI`。Host 已在 G5 迁移，MyPlugTest/DaTang/MySmallTools 已在
-G9–G11 迁移；BiliDownloader 暂时引用不可打包的
-`MyAvaloniaManagement.LegacyPluginContracts`。该桥仍输出旧程序集名以维持源码测试，但不是 SDK，
-也不得新增生产消费者。参见
+`MyAvaloniaManagement.PluginSdk.UI`。Host 已在 G5 迁移，四个业务插件已在 G9–G12 迁移。
+`MyAvaloniaManagement.LegacyPluginContracts` 仍输出旧程序集名以维持 G13 前的仓库测试，但已没有
+生产插件消费者；它不是 SDK，也不得新增生产消费者。参见
 [`MyAvaloniaManagement.LegacyPluginContracts.csproj`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj)
 和 [V2 G2 记录](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)。
 
@@ -116,7 +114,7 @@ sequenceDiagram
 
 | 入口要求 | 策略构造 | 可用能力 | 当前状态 |
 | --- | --- | --- | --- |
-| 严格 manifest v2、同名 deps、最终 UI SDK 精确 `IPluginModule` 类型 | Registration 显式登记，插件私有 Provider 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | Host、MyPlugTest、DaTang、MySmallTools 与最终测试夹具采用；BiliDownloader 待 G12 |
+| 严格 manifest v2、同名 deps、最终 UI SDK 精确 `IPluginModule` 类型 | Registration 显式登记，插件私有 Provider 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | Host、四个业务插件与最终测试夹具采用 |
 
 **[代码事实]** `PluginModulePreflight` 要求清单精确入口 public、非抽象、非泛型、实现最终 UI SDK
 `IPluginModule` 且具有 public 无参构造；`PluginProviderOwner` 在 Host Provider 建立后为每个插件创建
@@ -127,14 +125,15 @@ sequenceDiagram
 
 **[代码事实]** 最终 `IPluginLifecycle` 是可选能力，不是每个插件的必选空壳。G8 按 PluginId 正序启动、
 按实际成功顺序反向停止；30/10 秒超时、失败隔离、状态和可用性均为 Host internal。Registry 不保存
-运行状态。Provider 边界暂时适配 BiliDownloader 的 Legacy 两方法接口，但不恢复 `Order`、依赖图或 Manager。
+运行状态。BiliDownloader 的 lifecycle 也直接实现最终接口；插件内 readiness 不复制 Host 的 `Order`、
+依赖图、超时或状态机。
 
 **[架构判断]** v1 已冻结并实现为 Managed-only；Legacy 只在历史验收记录和持久化数据迁移语境中出现，不是插件接入方式。
 
 ## 3. Document：多实例工作上下文
 
-> G10 当前生产事实：MyPlugTest 的 4 个 Document、DaTang 的 2 个 Document 与 Host 内建贡献
-> 都通过最终 `DocumentDescriptor`、Registry、internal Activator、异步初始化与 Dock Adapter 创建。
+> G12 当前生产事实：四个业务插件的全部 Document 与 Host 内建贡献都通过最终
+> `DocumentDescriptor`、Registry、internal Activator、异步初始化与 Dock Adapter 创建。
 
 ### 3.1 最终创建入口统一为“类型 + ActivationContext”
 
@@ -147,8 +146,8 @@ sequenceDiagram
 - 标签页真正关闭后，实例相关资源必须释放。
 
 Host 生产入口接收 `DocumentTypeId + DocumentActivationContext` 并异步返回完整 Adapter。Creation Intent
-必须先与冻结 Descriptor 核对；恢复内容只通过 `RestoredContent` 传入。剩余两个插件源码中的
-`IDocumentCreationStrategy`、`DocumentCreationParams` 与 Intent Provider 是 G11–G12 前的 Legacy 阶段事实，
+必须先与冻结 Descriptor 核对；恢复内容只通过 `RestoredContent` 传入。旧
+`IDocumentCreationStrategy`、`DocumentCreationParams` 与 Intent Provider 已没有生产插件消费者，
 不会进入 Host V2 生产路径。
 
 ### 3.2 所有 V2 Document 统一纳入所属 Provider Scope
@@ -177,15 +176,14 @@ flowchart TD
 
 | 插件 / Document | 当前创建方式 | 判断 |
 | --- | --- | --- |
-| MySmallTools 的播放、库、加密、解密 Document | `IDocumentScopeFactory` + scoped ViewModel/资源 | 已纳入宿主所有权 |
+| MySmallTools 的播放、库、加密、解密 Document | 最终 Descriptor + V2 Activator + 独立 Scope | G11 已完整迁移；原生资源随关闭令牌释放 |
 | DaTang 发票导入 Document | 最终 Descriptor + V2 Activator + 独立 Scope | G10 已完整迁移；不可持久化 |
 | DaTang 银行余额调节 Document | 最终 Descriptor + V2 Activator + 独立 Scope | G10 已完整迁移；严格 content schema 1 |
-| BiliDownloader Document | `IDocumentScopeFactory` + scoped ViewModel | 已纳入宿主所有权；插件级下载任务不随标签关闭 |
+| BiliDownloader Document | 最终 Descriptor + V2 Activator + 独立 Scope | G12 已完整迁移；严格 content schema 3 |
 | MyPlugTest 四个 Document | 最终 Descriptor + V2 Activator + 独立 Scope | G9 已完整迁移；Welcome 可持久化 |
 
-**[架构判断]** Host V2、MyPlugTest 和 DaTang Document 都由所属插件 Scope 托管；声明式注册自动固定
-scoped 生命周期，Host 与其他插件不能解析其模型。G11 已沿用同一所有权链迁移 MySmallTools，
-G12 将迁移最后一个 Legacy 插件 BiliDownloader。
+**[架构判断]** 四个业务插件 Document 都由所属插件 Scope 托管；声明式注册自动固定 scoped 生命周期，
+Host 与其他插件不能解析其模型。BiliDownloader 已提交到插件级 Coordinator 的下载任务仍不随标签关闭。
 
 **[代码事实]** Managed Document Scope 现在同时提供 scoped `IDocumentLifetime`。Dock 确认关闭后，`DocumentScopeManager` 先取消 `ClosingToken`，再释放 ViewModel 与 scoped 依赖；被否决的关闭不会提前取消，宿主退出则对仍打开的 Document 执行同一路径。取消是协作式且不等待：Document 局部的 HTTP、解析、浏览、探测与发票导入停止并禁止迟到 UI 回写；BiliDownloader 已提交到插件级 Coordinator 的下载任务继续运行。原生文件选择器只能丢弃迟到结果，EPPlus 已进入同步 `SaveAs` 后允许完成写入。
 
@@ -586,14 +584,14 @@ public interface IHostContext
 
 ## 10. 最终评价
 
-项目已经明显跨过“把几个 DLL 反射进 Dock”的阶段：Host、MyPlugTest 与 DaTang 已进入最终 V2 模型并具有加载前清单；
+项目已经明显跨过“把几个 DLL 反射进 Dock”的阶段：Host 与四个业务插件均已进入最终 V2 模型并具有加载前清单；
 manifest v2、每插件独立 Provider、插件生命周期、每 Document Scope 基础设施、创建意图、四向 Tool、
 禁用浮动、文档/布局原子持久化和坏文件隔离都已经落地。宿主内部也已形成 Composition Root、Registry、
 Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. V2 G9–G11 已在上述 Host 链路上迁移 MyPlugTest、DaTang 与 MySmallTools，G12 只需迁移 BiliDownloader；
+1. V2 G9–G12 已在上述 Host 链路上迁移四个业务插件，G13 只需删除无生产消费者的 Legacy 阶段桥；
 2. 运行前 manifest v2、Core/UI 兼容检查、声明式 Plugin Registry 和用户可见诊断已经建立；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。

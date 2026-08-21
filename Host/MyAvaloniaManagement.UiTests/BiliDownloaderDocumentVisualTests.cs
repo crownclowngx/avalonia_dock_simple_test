@@ -14,8 +14,7 @@ using BiliDownloader.Views.BiliScheduler;
 using BiliDownloader.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Data.Sqlite;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk;
 using Xunit;
 
 namespace MyAvaloniaManagement.UiTests;
@@ -215,8 +214,11 @@ public sealed class BiliDownloaderDocumentVisualTests
     {
         using var ui = new UiTestContext();
         var services = new ServiceCollection();
-        new BiliDownloaderPluginModule().Configure(new TestPluginRegistrationContext(
-            new PluginId("myavalonia.plugin.bili-downloader"), services));
+        new BiliDownloaderPluginModule().Configure(new TestV2PluginRegistrationContext(
+            new MyAvaloniaManagement.PluginSdk.PluginId("myavalonia.plugin.bili-downloader"), services));
+        services.AddScoped<MyAvaloniaManagement.PluginSdk.IDocumentLifetime, UiTestDocumentLifetime>();
+        services.AddSingleton<BiliDownloader.Plugin.IBiliDownloaderPluginReadiness>(
+            new UiReadyBiliReadiness());
         services.AddSingleton<IHostEventBus>(ui.EventBus);
         services.AddSingleton<IBiliDataPaths>(new UiBiliDataPaths(
             Path.Combine(ui.TempDirectory, "BiliDownloader")));

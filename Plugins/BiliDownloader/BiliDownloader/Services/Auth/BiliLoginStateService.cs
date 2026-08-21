@@ -1,6 +1,6 @@
 using BiliDownloader.Messages;
 using BiliDownloader.Services.Infrastructure;
-using MyAvaloniaManagementCommon.Events;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace BiliDownloader.Services.Auth;
 
@@ -226,14 +226,18 @@ public sealed class BiliLoginStateService
             {
                 await task.WaitAsync(cancellationToken);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                // 后台验证或宿主关闭取消属于预期路径。
+                // 只吸收后台验证自身的取消。Host 的关闭令牌取消必须继续向 Lifecycle 传播，
+                // 否则 Host 会把未完成的协作停止误判为成功。
             }
         }
 
         lock (_backgroundGate)
         {
+            // 若 Host 等待被取消而后台请求尚未真正退出，保留任务与 CTS，下一次幂等 Stop
+            // 仍可继续观察它；绝不把仍在运行的任务伪装成已经清理。
+            if (task is { IsCompleted: false }) return;
             _backgroundValidationCts?.Dispose();
             _backgroundValidationCts = null;
             _backgroundValidationTask = null;

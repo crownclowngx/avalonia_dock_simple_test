@@ -6,7 +6,7 @@ using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.Services.Naming;
 using BiliDownloader.Services.Download.Extras;
-using MyAvaloniaManagementCommon.Events;
+using MyAvaloniaManagement.PluginSdk;
 using System.Threading.Channels;
 
 namespace BiliDownloader.Services.Download;

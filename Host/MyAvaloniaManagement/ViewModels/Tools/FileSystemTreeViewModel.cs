@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -31,7 +31,7 @@ internal sealed partial class FileSystemTreeViewModel : ObservableObject, IFileS
 
     [ObservableProperty]
     private FileSystemNode? _selectedNode;
-    
+
     /// <summary>
     /// 获取或设置用户选择的自定义文件夹绝对路径。
     /// </summary>
@@ -106,7 +106,7 @@ internal sealed partial class FileSystemTreeViewModel : ObservableObject, IFileS
         SelectedNode = node;
         SelectedPath = node.Path;
     }
-    
+
     /// <summary>
     /// 刷新当前选中节点的子项。
     /// </summary>
@@ -125,7 +125,7 @@ internal sealed partial class FileSystemTreeViewModel : ObservableObject, IFileS
         RootNodes.Clear();
         InitializeTree();
     }
-    
+
     /// <summary>
     /// 当选中项是现有文件时，直接调用宿主文档协调入口。
     /// </summary>
@@ -137,7 +137,7 @@ internal sealed partial class FileSystemTreeViewModel : ObservableObject, IFileS
             await _documentOpenService.OpenPathAsync(SelectedNode.Path);
         }
     }
-    
+
     /// <summary>
     /// 选择一个根目录，并根据驱动器根路径或普通目录更新展示模式。
     /// </summary>
@@ -162,10 +162,10 @@ internal sealed partial class FileSystemTreeViewModel : ObservableObject, IFileS
             {
                 SelectedFolderPath = Path.GetFullPath(folderPath);
                 ShowCustomFolder = true;
-            
+
                 // 刷新根节点，添加自定义选择的文件夹
                 RootNodes.Clear();
-            
+
                 // 添加选择的文件夹作为根节点
                 if (Directory.Exists(SelectedFolderPath))
                 {

@@ -4,7 +4,7 @@ using BiliDownloader.Services.Api;
 using BiliDownloader.Services.ContentSources;
 using BiliDownloader.ViewModels.BiliDownloader;
 using Flurl.Http.Testing;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace BiliDownloader.Tests;
 
@@ -24,7 +24,7 @@ public sealed class SubscriptionContentContractG2Tests
             accessState: ContentAccessState.Unknown,
             durationSeconds: 60);
 
-        var copy = JsonConvert.DeserializeObject<ContentSourceItem>(JsonConvert.SerializeObject(item))!;
+        var copy = JsonSerializer.Deserialize<ContentSourceItem>(JsonSerializer.Serialize(item))!;
 
         Assert.Equal(parent, copy.ParentKey);
         Assert.Equal(ContentAccessState.Unknown, copy.AccessState);
@@ -428,7 +428,7 @@ public sealed class SubscriptionContentApiG2Tests
         Assert.Equal("讲师", detail.Author);
         Assert.True(page.HasMore);
         Assert.Equal(3, Assert.Single(page.Items).EpisodeId);
-        Assert.DoesNotContain("price", JsonConvert.SerializeObject(detail), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("price", JsonSerializer.Serialize(detail), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -463,8 +463,8 @@ public sealed class SubscriptionContentApiG2Tests
 
         Assert.True(page.HasMore);
         Assert.Equal(7, Assert.Single(page.Items).SeasonId);
-        Assert.DoesNotContain("order", JsonConvert.SerializeObject(page), StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("price", JsonConvert.SerializeObject(page), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("order", JsonSerializer.Serialize(page), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("price", JsonSerializer.Serialize(page), StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]

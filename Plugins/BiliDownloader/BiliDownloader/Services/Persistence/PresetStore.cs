@@ -1,7 +1,8 @@
 using BiliDownloader.Models;
 using BiliDownloader.Services.Infrastructure;
 using Microsoft.Data.Sqlite;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace BiliDownloader.Services.Persistence;
 
@@ -13,8 +14,8 @@ namespace BiliDownloader.Services.Persistence;
 /// - key 格式："preset:{id}" → value = JSON 序列化的 DownloadPreset。
 /// - 索引 key："preset_index" → value = 所有自定义预设 ID 的 JSON 数组。
 /// - 内置预设始终从代码获取（BuiltInPresets.GetAll()），不写入数据库，避免污染。
-/// - 序列化使用 Newtonsoft.Json（与 Document 保存一致）。
-/// - 反序列化使用 NullValueHandling.Ignore，新增字段自动补默认值（向前兼容）。
+/// - 序列化统一使用 System.Text.Json，与最终插件内容协议保持同一依赖边界。
+/// - null 字段不写入，新增字段仍由 record 定义的默认值承接（向前兼容）。
 /// </para>
 /// </summary>
 public class PresetStore : IPresetRepository
@@ -31,9 +32,11 @@ public class PresetStore : IPresetRepository
     /// JSON 序列化选项：忽略 null 值，减少存储空间。
     /// 设计思考：未来新增字段时，旧数据反序列化自动使用 record 定义的默认值。
     /// </summary>
-    private static readonly JsonSerializerSettings JsonSettings = new()
+    private static readonly JsonSerializerOptions JsonSettings = new()
     {
-        NullValueHandling = NullValueHandling.Ignore
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNameCaseInsensitive = false,
+        MaxDepth = 64,
     };
 
     public PresetStore(IBiliDataPaths paths)
@@ -83,7 +86,7 @@ public class PresetStore : IPresetRepository
         if (preset.IsBuiltIn)
             return;
 
-        var json = JsonConvert.SerializeObject(preset, JsonSettings);
+        var json = JsonSerializer.Serialize(preset, JsonSettings);
 
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
@@ -97,7 +100,7 @@ public class PresetStore : IPresetRepository
         if (!ids.Contains(preset.Id))
         {
             ids.Add(preset.Id);
-            await SetValueAsync(connection, PresetIndexKey, JsonConvert.SerializeObject(ids), transaction);
+            await SetValueAsync(connection, PresetIndexKey, JsonSerializer.Serialize(ids), transaction);
         }
         await transaction.CommitAsync();
     }
@@ -126,7 +129,7 @@ public class PresetStore : IPresetRepository
         var ids = await GetPresetIndexAsync(connection, transaction);
         if (ids.Remove(id))
         {
-            await SetValueAsync(connection, PresetIndexKey, JsonConvert.SerializeObject(ids), transaction);
+            await SetValueAsync(connection, PresetIndexKey, JsonSerializer.Serialize(ids), transaction);
         }
         await transaction.CommitAsync();
     }
@@ -149,7 +152,7 @@ public class PresetStore : IPresetRepository
 
         try
         {
-            return JsonConvert.DeserializeObject<List<string>>(result) ?? new List<string>();
+            return JsonSerializer.Deserialize<List<string>>(result, JsonSettings) ?? new List<string>();
         }
         catch
         {
@@ -186,7 +189,7 @@ public class PresetStore : IPresetRepository
 
         try
         {
-            return JsonConvert.DeserializeObject<DownloadPreset>(json, JsonSettings);
+            return JsonSerializer.Deserialize<DownloadPreset>(json, JsonSettings);
         }
         catch
         {

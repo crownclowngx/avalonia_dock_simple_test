@@ -129,7 +129,7 @@ try {
     $patterns = @{
         A = "Services/Auth/|Services/Persistence/|Services/Download/BiliDownloadCoordinator.cs|Services/Download/DownloadProgressTracker.cs|Services/Infrastructure/SensitiveDataSanitizer.cs|Services/Infrastructure/BiliLocalStateInitializer.cs|Models/DownloadTaskStatus.cs"
         B = "Services/Api/|Services/ContentSources/|Services/Download/"
-        C = "ViewModels/|Converters/|Create/"
+        C = "ViewModels/|Converters/|Plugin/"
     }
 
     $overall = Get-Metric $files

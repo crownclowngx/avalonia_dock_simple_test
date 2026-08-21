@@ -1,11 +1,11 @@
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using BiliDownloader.Constants;
 using BiliDownloader.Services.ContentSources;
 using BiliDownloader.Services.Infrastructure;
 using Flurl;
 using Flurl.Http;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace BiliDownloader.Services.Api;
 
@@ -46,7 +46,7 @@ public sealed class BiliPersonalContentApi :
             $"https://api.bilibili.com/x/space/wbi/arc/search?{signed}",
             cookie, Operation.Uploader, context.Referer, cancellationToken);
         var data = root["data"]!;
-        var items = MapVideoArray(data["list"]?["vlist"] as JArray, "author", "created", "pic");
+        var items = MapVideoArray(data["list"]?["vlist"] as JsonArray, "author", "created", "pic");
         var total = data["page"]?["count"]?.Value<int>() ?? items.Count;
         var hasMore = checked(page * pageSize) < total;
         return new(items, hasMore ? ContinuationTokenCodec.EncodePage("uploader", page + 1) : null, hasMore);
@@ -58,7 +58,7 @@ public sealed class BiliPersonalContentApi :
         var root = await GetRootAsync(
             $"https://api.bilibili.com/x/v3/fav/folder/created/list-all?up_mid={userId}",
             cookie, Operation.FavoriteFolders, null, cancellationToken);
-        return (root["data"]?["list"] as JArray ?? [])
+        return (root["data"]?["list"] as JsonArray ?? new JsonArray()).OfType<JsonNode>()
             .Select(item => new BiliFavoriteFolder(
                 item["id"]?.Value<long>() ?? 0,
                 item["title"]?.Value<string>() ?? "未命名收藏夹",
@@ -77,7 +77,7 @@ public sealed class BiliPersonalContentApi :
             .SetQueryParam("ps", pageSize).SetQueryParam("platform", "web");
         var root = await GetRootAsync(url.ToString(), cookie, Operation.FavoriteItems, null, cancellationToken);
         var data = root["data"]!;
-        var items = MapVideoArray(data["medias"] as JArray, "upper.name", "pubtime", "cover");
+        var items = MapVideoArray(data["medias"] as JsonArray, "upper.name", "pubtime", "cover");
         var hasMore = data["has_more"]?.Value<bool>() == true;
         return new(items, hasMore ? ContinuationTokenCodec.EncodePage("favorite", page + 1) : null, hasMore);
     }
@@ -88,7 +88,7 @@ public sealed class BiliPersonalContentApi :
         var root = await GetRootAsync(
             "https://api.bilibili.com/x/v2/history/toview/web",
             cookie, Operation.WatchLater, null, cancellationToken);
-        return MapVideoArray(root["data"]?["list"] as JArray, "owner.name", "pubdate", "pic");
+        return MapVideoArray(root["data"]?["list"] as JsonArray, "owner.name", "pubdate", "pic");
     }
 
     public async Task<BiliCatalogPage> GetHistoryAsync(
@@ -101,8 +101,8 @@ public sealed class BiliPersonalContentApi :
             .SetQueryParam("view_at", cursor.ViewAt).SetQueryParam("business", cursor.Business);
         var root = await GetRootAsync(url.ToString(), cookie, Operation.History, null, cancellationToken);
         var data = root["data"]!;
-        var list = data["list"] as JArray ?? [];
-        var items = list.Select(item => new BiliCatalogItem(
+        var list = data["list"] as JsonArray ?? new JsonArray();
+        var items = list.OfType<JsonNode>().Select(item => new BiliCatalogItem(
                 item["history"]?["oid"]?.Value<long>() ?? item["aid"]?.Value<long>() ?? 0,
                 item["history"]?["bvid"]?.Value<string>() ?? item["bvid"]?.Value<string>() ?? "",
                 item["title"]?.Value<string>() ?? "未命名视频",
@@ -121,20 +121,20 @@ public sealed class BiliPersonalContentApi :
         return new(items, token, hasMore);
     }
 
-    private static async Task<JObject> GetRootAsync(
+    private static async Task<JsonObject> GetRootAsync(
         string url,
         string cookie,
         Operation operation,
         string? referer,
         CancellationToken cancellationToken)
     {
-        JObject root;
+        JsonObject root;
         try
         {
             var request = url.WithHeader("User-Agent", HttpConstants.UserAgent)
                 .WithHeader("Referer", referer ?? HttpConstants.Referer);
             if (!string.IsNullOrWhiteSpace(cookie)) request = request.WithHeader("Cookie", cookie);
-            root = JObject.Parse(await request.GetStringAsync(cancellationToken: cancellationToken));
+            root = JsonNodeReader.ParseObject(await request.GetStringAsync(cancellationToken: cancellationToken));
         }
         catch (OperationCanceledException) { throw; }
         catch (FlurlHttpException ex) when (ex.Call.Response?.StatusCode == 401)
@@ -178,8 +178,8 @@ public sealed class BiliPersonalContentApi :
     }
 
     private static IReadOnlyList<BiliCatalogItem> MapVideoArray(
-        JArray? array, string authorPath, string publishedField, string coverField) =>
-        (array ?? []).Select(item => new BiliCatalogItem(
+        JsonArray? array, string authorPath, string publishedField, string coverField) =>
+        (array ?? new JsonArray()).OfType<JsonNode>().Select(item => new BiliCatalogItem(
                 item["aid"]?.Value<long>() ?? item["id"]?.Value<long>() ?? 0,
                 item["bvid"]?.Value<string>() ?? "",
                 item["title"]?.Value<string>() ?? "未命名视频",
@@ -188,8 +188,8 @@ public sealed class BiliPersonalContentApi :
                 item[coverField]?.Value<string>()))
             .Where(IsResolvable).ToArray();
 
-    private static JToken? SelectPath(JToken item, string path) =>
-        path.Split('.').Aggregate<string, JToken?>(item, (current, part) => current?[part]);
+    private static JsonNode? SelectPath(JsonNode item, string path) =>
+        path.Split('.').Aggregate<string, JsonNode?>(item, (current, part) => current?[part]);
 
     private static bool IsResolvable(BiliCatalogItem item) => item.Aid > 0 || !string.IsNullOrWhiteSpace(item.Bvid);
 
@@ -235,7 +235,7 @@ internal static class ContinuationTokenCodec
     }
 
     private static string Encode(Token token) =>
-        Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(token)))
+        Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(token)))
             .TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
     private static Token Decode(string value)
@@ -245,7 +245,7 @@ internal static class ContinuationTokenCodec
             if (value.Length > 1024) throw InvalidToken();
             var encoded = value.Replace('-', '+').Replace('_', '/');
             encoded = encoded.PadRight(encoded.Length + (4 - encoded.Length % 4) % 4, '=');
-            var token = JsonConvert.DeserializeObject<Token>(Encoding.UTF8.GetString(Convert.FromBase64String(encoded)));
+            var token = JsonSerializer.Deserialize<Token>(Encoding.UTF8.GetString(Convert.FromBase64String(encoded)));
             return token is { Version: "1" } ? token : throw InvalidToken();
         }
         catch (ContentSourceException) { throw; }

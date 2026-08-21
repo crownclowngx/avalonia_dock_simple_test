@@ -8,7 +8,7 @@ using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
 using Microsoft.Data.Sqlite;
 using BiliDownloader.Services.Persistence;
-using MyAvaloniaManagementCommon.Events;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace BiliDownloader.Tests;
 

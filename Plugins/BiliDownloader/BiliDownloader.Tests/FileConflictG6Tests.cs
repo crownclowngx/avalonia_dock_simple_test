@@ -232,7 +232,7 @@ public sealed class FileConflictG6Tests
     [Fact]
     public void 当前Document缺少可选冲突字段_默认自动序号()
     {
-        var dto = Newtonsoft.Json.JsonConvert.DeserializeObject<DocumentSaveDataV3>("{\"DocumentId\":\"current\"}");
+        var dto = System.Text.Json.JsonSerializer.Deserialize<DocumentSaveDataV3>("{\"DocumentId\":\"current\"}");
         Assert.NotNull(dto);
         Assert.Equal(FileConflictPolicy.AutoNumber, dto!.ConflictPolicy);
     }

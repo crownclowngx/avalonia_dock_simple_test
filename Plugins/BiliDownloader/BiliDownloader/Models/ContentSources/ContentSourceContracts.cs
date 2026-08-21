@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace BiliDownloader.Models.ContentSources;
 
