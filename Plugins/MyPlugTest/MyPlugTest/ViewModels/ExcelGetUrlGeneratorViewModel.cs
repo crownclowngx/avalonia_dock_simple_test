@@ -1,20 +1,25 @@
 using System.Collections.ObjectModel;
 using System.Text;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagement.PluginSdk;
 using MyPlugTest.Models;
 using MyPlugTest.Services;
 
 namespace MyPlugTest.ViewModels;
 
-public sealed class ExcelGetUrlGeneratorViewModel : Document, IDisposable
+/// <summary>根据 Excel 工作表生成 GET 地址的普通插件 Document 模型。</summary>
+/// <remarks>
+/// 文件选择、工作簿读取和地址生成分别通过窄服务注入；本模型只编排当前 Document 的界面状态。
+/// Host 拥有 Dock 与 Scope，关闭令牌会同时取消文件操作、示例刷新和最终生成，避免释放后提交结果。
+/// </remarks>
+public sealed class ExcelGetUrlGeneratorViewModel : ObservableObject, IPluginDocument, IDisposable
 {
     private const int PreviewRowCount = 5;
     private readonly IExcelFileDialogService _fileDialogService;
     private readonly IExcelWorkbookReader _workbookReader;
     private readonly ExcelGetUrlBuilder _urlBuilder;
-    private readonly IDocumentLifetime? _documentLifetime;
+    private readonly IDocumentLifetime _documentLifetime;
     private readonly CancellationTokenSource _disposeCts = new();
     private CancellationTokenSource? _exampleCts;
     private string _baseAddress = string.Empty;
@@ -30,22 +35,47 @@ public sealed class ExcelGetUrlGeneratorViewModel : Document, IDisposable
     private bool _hasGeneratedResult;
     private bool _suppressInputChanged;
     private int _disposed;
+    private string _title = "Excel GET 地址生成器";
 
     public ExcelGetUrlGeneratorViewModel(
         IExcelFileDialogService fileDialogService,
         IExcelWorkbookReader workbookReader,
         ExcelGetUrlBuilder urlBuilder,
-        IDocumentLifetime? documentLifetime = null)
+        IDocumentLifetime documentLifetime)
     {
-        _fileDialogService = fileDialogService;
-        _workbookReader = workbookReader;
-        _urlBuilder = urlBuilder;
-        _documentLifetime = documentLifetime;
+        _fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
+        _workbookReader = workbookReader ?? throw new ArgumentNullException(nameof(workbookReader));
+        _urlBuilder = urlBuilder ?? throw new ArgumentNullException(nameof(urlBuilder));
+        _documentLifetime = documentLifetime ?? throw new ArgumentNullException(nameof(documentLifetime));
         SelectWorkbookCommand = new AsyncRelayCommand(SelectWorkbookAsync);
         GenerateCommand = new AsyncRelayCommand(GenerateAsync);
         AddMappingCommand = new RelayCommand(AddMapping);
         ParameterMappings.Add(CreateMapping());
         UpdateRemoveAvailability();
+    }
+
+    /// <inheritdoc />
+    public DocumentPresentationState Presentation => new(_title);
+
+    /// <inheritdoc />
+    public event EventHandler? PresentationChanged;
+
+    /// <inheritdoc />
+    public ValueTask InitializeAsync(
+        DocumentActivationContext context,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+        var title = string.IsNullOrWhiteSpace(context.Title)
+            ? "Excel GET 地址生成器"
+            : context.Title;
+        if (!string.Equals(_title, title, StringComparison.Ordinal))
+        {
+            _title = title;
+            PresentationChanged?.Invoke(this, EventArgs.Empty);
+        }
+        return ValueTask.CompletedTask;
     }
 
     public ObservableCollection<ExcelWorksheetPreview> Worksheets { get; } = [];
@@ -143,6 +173,7 @@ public sealed class ExcelGetUrlGeneratorViewModel : Document, IDisposable
         var cancellationToken = linked.Token;
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var path = await _fileDialogService.PickWorkbookAsync(cancellationToken);
             if (string.IsNullOrWhiteSpace(path) || IsClosing) return;
 
@@ -279,7 +310,7 @@ public sealed class ExcelGetUrlGeneratorViewModel : Document, IDisposable
         _exampleCts?.Dispose();
         _exampleCts = CancellationTokenSource.CreateLinkedTokenSource(
             _disposeCts.Token,
-            _documentLifetime?.ClosingToken ?? CancellationToken.None);
+            _documentLifetime.ClosingToken);
         _ = RefreshExamplesAsync(_exampleCts.Token);
     }
 
@@ -338,6 +369,8 @@ public sealed class ExcelGetUrlGeneratorViewModel : Document, IDisposable
         var cancellationToken = linked.Token;
         try
         {
+            // 在任何校验提示或文件选择器调用前观察 Host 关闭令牌，避免关闭竞争期间产生迟到 UI 状态。
+            cancellationToken.ThrowIfCancellationRequested();
             var worksheet = SelectedWorksheet;
             var mappings = SnapshotMappings();
             if (WorkbookPath.Length == 0 || worksheet is null)
@@ -434,10 +467,10 @@ public sealed class ExcelGetUrlGeneratorViewModel : Document, IDisposable
         CancellationTokenSource.CreateLinkedTokenSource(
             commandToken,
             _disposeCts.Token,
-            _documentLifetime?.ClosingToken ?? CancellationToken.None);
+            _documentLifetime.ClosingToken);
 
     private bool IsClosing =>
-        Volatile.Read(ref _disposed) != 0 || _documentLifetime?.IsClosing == true;
+        Volatile.Read(ref _disposed) != 0 || _documentLifetime.IsClosing;
 
     public void Dispose()
     {

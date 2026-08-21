@@ -7,6 +7,7 @@ using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Plugin;
+using V2PluginModule = MyAvaloniaManagement.PluginSdk.UI.IPluginModule;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -188,17 +189,16 @@ public sealed class ManagedOnlyPluginLoadingTests
     }
 
     [Fact]
-    public void 四个业务插件在G9至G12前保持Legacy源码且不进入G5生产目录()
+    public void 仅MyPlugTest进入V2生产目录且其余三个插件保持Legacy隔离()
     {
-        Assembly[] assemblies =
+        Assembly[] legacyAssemblies =
         [
             typeof(BiliDownloader.Plugin.BiliDownloaderPluginModule).Assembly,
             typeof(DaTangAccountingHelpPluginModule).Assembly,
-            typeof(MyPlugTest.Plugin.MyPlugTestPluginModule).Assembly,
             typeof(MySmallTools.Plugin.MySmallToolsPluginModule).Assembly,
         ];
 
-        foreach (var assembly in assemblies)
+        foreach (var assembly in legacyAssemblies)
         {
             var moduleType = Assert.Single(assembly.ExportedTypes, type =>
                 typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract);
@@ -207,6 +207,15 @@ public sealed class ManagedOnlyPluginLoadingTests
             Assert.Null(validated);
             Assert.Equal(HostDiagnosticCodes.PluginEntryInvalid, errorCode);
         }
+
+        var myPlugTestAssembly = typeof(MyPlugTest.Plugin.MyPlugTestPluginModule).Assembly;
+        var myPlugTestModule = Assert.Single(myPlugTestAssembly.ExportedTypes, type =>
+            typeof(V2PluginModule).IsAssignableFrom(type) && !type.IsAbstract);
+        Assert.True(PluginModulePreflight.TryValidate(
+            myPlugTestModule, out var validatedMyPlugTest, out var myPlugTestError, out _));
+        Assert.Same(myPlugTestModule, validatedMyPlugTest);
+        Assert.Null(myPlugTestError);
+
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),
             property => property.Name == "PluginId");

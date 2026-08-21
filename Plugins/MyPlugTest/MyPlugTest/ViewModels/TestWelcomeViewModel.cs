@@ -1,256 +1,275 @@
-﻿using CommunityToolkit.Mvvm.Input;
 using System.Collections.Specialized;
-using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Save;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MyAvaloniaManagement.PluginSdk;
 using MyPlugTest.Models;
+using MyPlugTest.Persistence;
 using MyPlugTest.Services;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace MyPlugTest.ViewModels;
 
-public class TestWelcomeViewModel : Document, ISavableDocument, IDocumentSaveState, IDisposable
+/// <summary>
+/// 展示 URL 请求、历史记录与可持久化内容的普通插件 Document 模型。
+/// </summary>
+/// <remarks>
+/// 本类型只拥有当前 Document 的界面状态、命令和事件发布；Dock 标题、路径、信封与原子文件事务均由
+/// Host Adapter/持久化链拥有。每个实例位于独立插件 Scope，关闭信号由 <see cref="IDocumentLifetime"/>
+/// 提供，最终释放会取消进行中的请求并解除集合订阅。
+/// </remarks>
+public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginDocument, IDisposable
 {
-    private const int CurrentContentSchemaVersion = 1;
-    // 本地 CTS 与宿主 ClosingToken 共同组成操作令牌：正式 Scope 关闭由宿主触发，直接构造
-    // 场景则由 Dispose 触发。两条路径统一后，HTTP 结果、历史记录和 Messenger 消息都通过
-    // 同一个 IsClosing 门禁决定是否仍可提交，避免出现“请求已取消但成功消息仍迟到”的分裂状态。
     private readonly CancellationTokenSource _disposeCts = new();
-    private readonly IDocumentLifetime? _documentLifetime;
-    private int _disposed;
-    private bool _isRestoring;
-
-    public bool IsDirty => IsModified;
-    
-    private string _url = "https://example.com";
-    private string _responseContent = "";
-    private bool _isLoading = false;
     private readonly IHostEventBus _eventBus;
     private readonly IUrlContentService _urlContentService;
+    private readonly IDocumentLifetime _documentLifetime;
+    private int _disposed;
+    private bool _isRestoring;
+    private bool _isDirty;
+    private string _title = "Test欢迎";
+    private string _url = "https://example.com";
+    private string _responseContent = string.Empty;
+    private bool _isLoading;
 
-    // 每个 Document 注入自己的瞬态 URL 历史记录 ViewModel，避免多个文档共享可变集合。
+    /// <summary>初始化当前 Document 的全部必需依赖。</summary>
+    public TestWelcomeViewModel(
+        IHostEventBus eventBus,
+        UrlHistoryViewModel urlHistory,
+        IUrlContentService urlContentService,
+        IDocumentLifetime documentLifetime)
+    {
+        _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        UrlHistory = urlHistory ?? throw new ArgumentNullException(nameof(urlHistory));
+        _urlContentService = urlContentService ?? throw new ArgumentNullException(nameof(urlContentService));
+        _documentLifetime = documentLifetime ?? throw new ArgumentNullException(nameof(documentLifetime));
+        UrlHistory.HistoryItems.CollectionChanged += OnHistoryChanged;
+        SendRequestCommand = new AsyncRelayCommand(SendRequestAsync);
+    }
+
+    /// <inheritdoc />
+    public DocumentPresentationState Presentation => new(_title);
+
+    /// <inheritdoc />
+    public event EventHandler? PresentationChanged;
+
+    /// <inheritdoc />
+    public bool IsDirty => _isDirty;
+
+    /// <summary>获取只属于当前 Document Scope 的 URL 历史。</summary>
     public UrlHistoryViewModel UrlHistory { get; }
-    
 
-
+    /// <summary>获取或设置请求地址。</summary>
     public string Url
     {
         get => _url;
         set
         {
-            if (SetProperty(ref _url, value)) MarkDirty();
+            if (SetProperty(ref _url, value))
+            {
+                MarkDirty();
+            }
         }
     }
 
+    /// <summary>获取或设置最近一次响应正文。</summary>
     public string ResponseContent
     {
         get => _responseContent;
         set
         {
-            if (SetProperty(ref _responseContent, value)) MarkDirty();
+            if (SetProperty(ref _responseContent, value))
+            {
+                MarkDirty();
+            }
         }
     }
 
+    /// <summary>获取当前是否正在执行 URL 请求。</summary>
     public bool IsLoading
     {
         get => _isLoading;
-        set => SetProperty(ref _isLoading, value);
+        private set => SetProperty(ref _isLoading, value);
     }
 
+    /// <summary>获取发送当前 URL 请求的异步命令。</summary>
     public IAsyncRelayCommand SendRequestCommand { get; }
-    
-    public DocumentContentSnapshot CreateContentSnapshot()
+
+    /// <inheritdoc />
+    public ValueTask InitializeAsync(
+        DocumentActivationContext context,
+        CancellationToken cancellationToken)
     {
-        var saveDataObject = new
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // Codec 先验证出完整临时状态，再开始修改可观察属性。这样 payload 尾部损坏不会留下
+        // URL 已恢复但历史记录只恢复一半的状态；Host 还会在异常时释放未发布 Scope。
+        var restoredState = context.RestoredContent is null
+            ? null
+            : TestWelcomeDocumentContentCodec.Decode(context.RestoredContent);
+
+        SetPresentationTitle(string.IsNullOrWhiteSpace(context.Title) ? "Test欢迎" : context.Title);
+        if (restoredState is not null)
         {
-            Url = _url,
-            ResponseContent = _responseContent,
-            // 保存UrlHistory的状态
-            HistoryItems = UrlHistory.HistoryItems.Select(item => new
-            {
-                item.Url,
-                item.DisplayTime,
-                item.RequestTime
-            }).ToList()
-        };
-        // 插件只返回自己的内容版本和正文。标题、时间及稳定身份由宿主信封统一填充，
-        // 避免插件与 Registry 各自维护一份可能漂移的所有权事实。
-        return new DocumentContentSnapshot(
-            CurrentContentSchemaVersion,
-            JsonConvert.SerializeObject(saveDataObject));
-    }
-    
-    public void RestoreContent(DocumentContentSnapshot snapshot)
-    {
-        ArgumentNullException.ThrowIfNull(snapshot);
-        // 内容 schema 是该 Document 自己的整数协议，与插件包版本、程序集版本
-        // 或宿主信封 schema 无关。当前没有真实旧内容，因此精确只接受 1；
-        // 未来若出现旧版，应在此显式增加读取分支，而不是默认尝试当前结构。
-        if (snapshot.ContentSchemaVersion != CurrentContentSchemaVersion)
+            ApplyRestoredState(restoredState);
+        }
+        else
         {
-            throw new DocumentLoadException("测试文档内容版本不受支持。");
+            SetDirty(false);
         }
 
+        return ValueTask.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public ValueTask<DocumentContent> CaptureContentAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        _documentLifetime.ClosingToken.ThrowIfCancellationRequested();
+
+        // 先枚举为数组，确保编码看到同一个时刻的历史快照；DocumentContent 随后再次克隆
+        // JsonElement，调用方不需要维持任何 JsonDocument 生命周期。
+        var historyUrls = UrlHistory.HistoryItems.Select(static item => item.Url).ToArray();
+        return ValueTask.FromResult(TestWelcomeDocumentContentCodec.Encode(
+            _url,
+            _responseContent,
+            historyUrls));
+    }
+
+    /// <inheritdoc />
+    public void AcceptChanges() => SetDirty(false);
+
+    private async Task SendRequestAsync(CancellationToken commandToken)
+    {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            commandToken,
+            _disposeCts.Token,
+            _documentLifetime.ClosingToken);
+        var cancellationToken = linked.Token;
+
+        if (string.IsNullOrWhiteSpace(Url))
+        {
+            if (!IsClosing)
+            {
+                ResponseContent = "请输入有效的网址";
+            }
+            return;
+        }
+
+        try
+        {
+            // 命令可能在用户确认关闭与控件解绑之间被触发；先观察联合令牌，再修改任何可观察状态。
+            cancellationToken.ThrowIfCancellationRequested();
+            IsLoading = true;
+            ResponseContent = "正在发送请求...";
+
+            var url = Url;
+            if (!url.StartsWith("http://", StringComparison.Ordinal) &&
+                !url.StartsWith("https://", StringComparison.Ordinal))
+            {
+                url = "https://" + url;
+            }
+
+            var content = await _urlContentService.GetStringAsync(url, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (IsClosing)
+            {
+                return;
+            }
+
+            ResponseContent = content;
+            UrlHistory.AddUrl(url);
+            SetDirty(true);
+            _eventBus.Publish(new RequestResponseMessage(content, url, true));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Document 关闭和命令取消都属于正常协作取消。关闭后不能再更新 UI，也不能发布一个
+            // 伪造的失败事件；Host 只负责发信号，网络 Task 的退出责任仍属于本模型。
+        }
+        catch (UrlContentRequestException exception)
+        {
+            // 某些网络实现会把关闭竞争表现为领域异常而不是 OperationCanceledException。
+            // Scope 一旦进入关闭态，异常详情也不能再回写已经解绑的 View。
+            if (!IsClosing)
+            {
+                ResponseContent = $"请求失败: 状态码 {exception.StatusCode}, 错误信息: {exception.ResponseContent}";
+            }
+        }
+        catch (Exception exception)
+        {
+            if (!IsClosing)
+            {
+                ResponseContent = "请求异常: " + exception.Message;
+            }
+        }
+        finally
+        {
+            if (!IsClosing)
+            {
+                IsLoading = false;
+            }
+        }
+    }
+
+    private void ApplyRestoredState(TestWelcomeDocumentState state)
+    {
         _isRestoring = true;
         try
         {
-            var viewModelData = JsonConvert.DeserializeObject<JObject>(snapshot.Payload);
-            if (viewModelData == null)
-            {
-                throw new DocumentLoadException("测试文档内容为空。");
-            }
-
-            // 三个字段都是当前 schema 1 自己写出的业务必填项。这里不为缺失字段补默认值，
-            // 否则截断文件会被悄悄当成合法空文档，用户下一次保存时反而覆盖原有状态。
-            if (viewModelData["Url"] is not { Type: JTokenType.String } urlToken ||
-                string.IsNullOrWhiteSpace(urlToken.Value<string>()) ||
-                viewModelData["ResponseContent"] is not { Type: JTokenType.String } responseToken ||
-                viewModelData["HistoryItems"] is not JArray historyItems)
-            {
-                throw new DocumentLoadException("测试文档缺少必填业务字段。");
-            }
-
-            // 先把整份数组验证到临时集合，再提交 ViewModel。这样后段记录损坏时不会
-            // 留下“URL 已更新、历史只加载一半”的部分状态。
-            var restoredUrls = new List<string>(historyItems.Count);
-            foreach (var item in historyItems)
-            {
-                if (item is not JObject historyItem ||
-                    historyItem["Url"] is not { Type: JTokenType.String } historyUrlToken ||
-                    string.IsNullOrWhiteSpace(historyUrlToken.Value<string>()))
-                {
-                    throw new DocumentLoadException("测试文档的历史记录字段无效。");
-                }
-
-                restoredUrls.Add(historyUrlToken.Value<string>()!);
-            }
-
-            Url = urlToken.Value<string>()!;
-            ResponseContent = responseToken.Value<string>()!;
+            Url = state.Url;
+            ResponseContent = state.ResponseContent;
             UrlHistory.HistoryItems.Clear();
-            foreach (var restoredUrl in restoredUrls)
+            foreach (var restoredUrl in state.HistoryUrls)
             {
                 UrlHistory.HistoryItems.Add(new UrlHistoryItem(restoredUrl));
             }
-            IsModified = false;
-        }
-        catch (DocumentLoadException)
-        {
-            throw;
-        }
-        catch (JsonException exception)
-        {
-            throw new DocumentLoadException(
-                "测试文档结构损坏或包含无效字段。",
-                exception);
+            SetDirty(false);
         }
         finally
         {
             _isRestoring = false;
         }
     }
-    
-    public TestWelcomeViewModel(
-        IHostEventBus eventBus,
-        UrlHistoryViewModel urlHistory,
-        IUrlContentService urlContentService,
-        IDocumentLifetime? documentLifetime = null)
-    {
-        // 三个依赖均由 MyPlugTestPluginModule 提供；这里不保留手工 new 的回退路径，
-        // 从而保证所有 Document 都使用宿主的共享消息总线和统一的网络服务所有权。
-        _eventBus = eventBus;
-        _urlContentService = urlContentService;
-        _documentLifetime = documentLifetime;
-        UrlHistory = urlHistory;
-        UrlHistory.HistoryItems.CollectionChanged += OnHistoryChanged;
-        SendRequestCommand = new AsyncRelayCommand(SendRequestAsync);
-    }
-    
-    private async Task SendRequestAsync(CancellationToken commandToken)
-    {
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
-            commandToken,
-            _disposeCts.Token,
-            _documentLifetime?.ClosingToken ?? CancellationToken.None);
-        var cancellationToken = linked.Token;
 
-        if (string.IsNullOrWhiteSpace(Url))
+    private void SetPresentationTitle(string title)
+    {
+        if (string.Equals(_title, title, StringComparison.Ordinal))
         {
-            if (!IsClosing) ResponseContent = "请输入有效的网址";
             return;
         }
 
-        try
-        {
-            IsLoading = true;
-            ResponseContent = "正在发送请求...";
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // 确保URL格式正确
-            string url = Url;
-            if (!url.StartsWith("http://") && !url.StartsWith("https://"))
-            {
-                url = "https://" + url;
-            }
-
-            // 网络副作用通过注入服务执行，ViewModel 只负责界面状态和消息通信。
-            string content = await _urlContentService.GetStringAsync(url, cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
-            if (IsClosing) return;
-            ResponseContent = content;
-            // 添加URL到历史记录
-            UrlHistory.AddUrl(url);
-            IsModified = true;
-            // 发送成功消息到消息总线
-            _eventBus.Publish(new RequestResponseMessage(content, url, true));
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            // 关闭 Document 是用户结束当前页面生命周期，不是 HTTP 请求故障。保持静默可以
-            // 避免关闭后覆盖最后一次有效响应，也不会向共享消息总线广播一个伪造的失败结果。
-        }
-        catch (UrlContentRequestException ex)
-        {
-            // 保持迁移前的错误展示格式，同时不让 ViewModel 依赖 Flurl 的异常类型。
-            ResponseContent = $"请求失败: 状态码 {ex.StatusCode}, 错误信息: {ex.ResponseContent}";
-        }
-        catch (Exception ex)
-        {
-            // 处理其他异常
-            ResponseContent = "请求异常: " + ex.Message;
-        }
-        finally
-        {
-            if (!IsClosing) IsLoading = false;
-        }
+        _title = title;
+        PresentationChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private bool IsClosing => Volatile.Read(ref _disposed) != 0 || _documentLifetime?.IsClosing == true;
-
-    public void AcceptChanges() => IsModified = false;
-
-    private void OnHistoryChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
-        MarkDirty();
+    private void OnHistoryChanged(object? sender, NotifyCollectionChangedEventArgs args) => MarkDirty();
 
     private void MarkDirty()
     {
         if (!_isRestoring && !IsClosing)
         {
-            IsModified = true;
+            SetDirty(true);
         }
     }
 
+    private void SetDirty(bool value) => SetProperty(ref _isDirty, value, nameof(IsDirty));
+
+    private bool IsClosing =>
+        Volatile.Read(ref _disposed) != 0 || _documentLifetime.IsClosing;
+
+    /// <summary>
+    /// 取消当前 Scope 拥有的请求并解除集合事件；重复释放保持幂等。
+    /// </summary>
     public void Dispose()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
-        // 先取消命令，再取消本地令牌，使命令基础设施和服务调用都能尽快观察关闭；不在这里
-        // 等待 HTTP Task 完成，迟到结果由 SendRequestAsync 中的关闭检查负责丢弃。
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        {
+            return;
+        }
+
         SendRequestCommand.Cancel();
         UrlHistory.HistoryItems.CollectionChanged -= OnHistoryChanged;
         _disposeCts.Cancel();
         _disposeCts.Dispose();
     }
-
 }

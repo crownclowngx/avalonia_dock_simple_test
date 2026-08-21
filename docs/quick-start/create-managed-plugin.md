@@ -1,14 +1,6 @@
-# 创建 Managed 插件
+# 创建 Managed Plugin V2
 
-> 历史示例警告：本页仍保存 G4 Legacy 写法，G5 Host 会拒绝该入口，不能按本页完成运行接入。
-> G7 的生产入口已具备 Host Dock Adapter 与 Document V2；待 G9 迁移 MyPlugTest 后再更新完整可运行教程。
-
-本篇以 `QuickStartPlugin` 为示例。完成后，宿主能够读取严格清单、加载入口程序集，并且只实例化
-`entryPoint.type` 精确声明的 `IPluginModule`。Document、Tool 和 View 贡献将在[下一篇](./add-document-and-tool.md)加入。
-
-完整实现可对照 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) 和
-[`MyPlugTestPluginModule`](../../Plugins/MyPlugTest/MyPlugTest/Plugin/MyPlugTestPluginModule.cs)。清单由构建生成，
-独立发布规则见 [G12 统一插件构建、部署与独立发布](../plan-history/host-v1/g12-unified-plugin-build-and-deployment.md)。
+本篇创建 `QuickStartPlugin` 的项目、稳定身份与最终 V2 模块入口。可运行事实源是 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) 和 [`MyPlugTestPluginModule`](../../Plugins/MyPlugTest/MyPlugTest/Plugin/MyPlugTestPluginModule.cs)。
 
 ## 1. 创建项目
 
@@ -18,7 +10,7 @@
 dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPlugin -f net10.0
 ```
 
-将生成的项目文件调整为下面的最小形式。这里的路径假设插件与现有插件采用相同目录深度：
+将项目文件调整为：
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -26,8 +18,8 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <!-- 插件只声明自身事实；程序集版本、严格清单与部署动作由公共协议派生。 -->
     <ManagedPlugin>true</ManagedPlugin>
+    <ManagedPluginUseV2EntryContract>true</ManagedPluginUseV2EntryContract>
     <ManagedPluginId>myavalonia.plugin.quick-start</ManagedPluginId>
     <ManagedPluginDirectoryName>QuickStartPlugin</ManagedPluginDirectoryName>
     <PluginVersion>2.0.0</PluginVersion>
@@ -37,25 +29,22 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- G3 仓库内阶段桥；不得随插件打包。后续迁移保持入口类型全名不变。 -->
-    <ProjectReference Include="../../../Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj" />
+    <!-- Core 与 UI SDK 都由 Host 提供；插件包不得复制这些程序集。 -->
+    <ProjectReference Include="../../../Host/MyAvaloniaManagement.PluginSdk/MyAvaloniaManagement.PluginSdk.csproj"
+                      Private="false" />
+    <ProjectReference Include="../../../Host/MyAvaloniaManagement.PluginSdk.UI/MyAvaloniaManagement.PluginSdk.UI.csproj"
+                      Private="false" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 </Project>
 ```
 
-当前 Host 的仓库内插件仍引用
-`Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj`；这是 G3
-冻结的不可打包编译桥，不是新插件模板。最终 V2 契约开发应引用 Core/UI 的正式项目或临时 nupkg，并等待
-G4–G12 完成运行时迁移后再做发布兼容验证。外部插件不要直接复制 Common DLL 作为裸引用。
+外部项目使用宿主发布方提供的同版本 NuGet 包，并同样排除运行时复制。插件不得引用 `LegacyPluginContracts`、Dock 或 Host 生产项目。
 
-不要复制任何现有插件的部署 Target。引入私有第三方运行时包时，用
-`<ManagedPluginPrivatePackage Include="Package.Id" />` 声明资产所有权；显式文件使用
-`ManagedPluginAsset` 的 `TargetPath`，构建期目录树使用 `ManagedPluginAssetDirectoryRelativePath`。
-公共协议会拒绝不存在、越界、重复、非 win-x64 或宿主共享资产。
+## 2. 理解生成清单
 
-## 2. 添加严格清单
-
-不在源码树创建 `plugin.manifest.json`。构建根据上一节属性生成以下严格内容到中间目录和输出目录：
+不要在源码目录手写清单。公共构建协议根据项目属性生成严格 manifest v2：
 
 ```json
 {
@@ -73,35 +62,20 @@ G4–G12 完成运行时迁移后再做发布兼容验证。外部插件不要�
 }
 ```
 
-生成清单仍是加载插件代码之前的边界，不是宽松配置。必须同时满足：
-
-- 文件不超过 64 KiB，不能包含注释或尾随逗号；
-- 字段名称区分大小写，未知、重复或缺失字段都会被拒绝；
-- `schemaVersion` 当前只能为 `2`，v1 会被明确拒绝；
-- `pluginId` 必须是以 `myavalonia.plugin.` 开头的规范稳定 ID；
-- 版本格式只能是 `major.minor.patch` 三段数字，SDK 区间是左闭右开；
-- `entryPoint.assembly` 只能是插件根目录里的一个 DLL 文件名，不能包含路径；
-- `entryPoint.type` 必须是区分大小写的规范完整类型名，不能含空白、程序集限定名、泛型或嵌套符号；
-- `pluginVersion` 与入口程序集 `AssemblyVersion` 规范化后必须完全一致。
-
-不要随意复制示例的兼容区间。发布前应只声明对 Core/UI 同版本线实际验证过的单一 SDK 范围。
-完整规则见[兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md#31-加载前清单与版本检查)。
+字段区分大小写；未知、重复、缺失字段以及 v1 schema 都会被拒绝。入口类型必须 public、非抽象、非泛型，实现最终 UI SDK `IPluginModule`，并具有 public 无参构造。
 
 ## 3. 定义稳定 ID
 
 建立 `Constants/PluginIds.cs`：
 
 ```csharp
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.ToolCreation;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace QuickStartPlugin.Constants;
 
 public static class PluginIds
 {
-    public static readonly PluginId Plugin =
-        new("myavalonia.plugin.quick-start");
+    public static readonly PluginId Plugin = new("myavalonia.plugin.quick-start");
     public static readonly DocumentTypeId WelcomeDocument =
         new("myavalonia.plugin.quick-start.document.welcome");
     public static readonly ToolTypeId StatusTool =
@@ -109,111 +83,32 @@ public static class PluginIds
 }
 ```
 
-这些 ID 会进入菜单、诊断和布局持久化。一经发布就应保持不变；重命名类、文件夹或显示文字不应改变稳定 ID。旧 ID 只能作为迁移别名输入，不能成为新保存数据的身份。
+V2 只接受规范主 ID，不提供 `LegacyIds`。类名和显示文字可以变化，已发布的稳定 ID 不应变化。
 
-## 4. 添加精确模块入口
+## 4. 建立组合根
 
 建立 `Plugin/QuickStartPluginModule.cs`：
 
 ```csharp
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace QuickStartPlugin.Plugin;
 
 public sealed class QuickStartPluginModule : IPluginModule
 {
-    public void Configure(IPluginRegistrationContext context)
+    public void Configure(IPluginRegistration registration)
     {
-        // 本章还没有业务服务或可见贡献；下一章会在这里显式登记。
+        ArgumentNullException.ThrowIfNull(registration);
+        // 下一篇在这里一次声明模型、View 和 Descriptor。
     }
 }
 ```
 
-入口类型必须是 public、非抽象、非泛型的 `IPluginModule`，并具有 public 无参构造。上面的隐式无参构造
-满足要求。程序集可以包含其他模块类型，但 Host 不扫描它们；未由 `entryPoint.type` 声明的模块不会被
-构造或执行。模块不声明 `PluginId`：manifest 是身份唯一事实源，宿主把已验证身份作为只读
-`context.PluginId` 注入。`Configure` 在 Host Provider 构建后、当前插件 Provider 构建前且每个进程只调用一次。
+manifest 是插件身份唯一事实源，模块不重复声明 `PluginId`。`registration.Services` 只属于当前插件；普通业务服务使用标准 DI 注册，宿主可见贡献必须使用 `AddDocument`、`AddPersistableDocument`、`AddTool` 或 `UseLifecycle`。
 
-`context.Services` 是当前插件独占的新集合，可以使用 singleton、scoped、transient、keyed、开放泛型或
-同一私有接口的多个实现。它不包含 Host 或其他插件的普通服务描述符；删除、替换或清空只会让当前插件
-不可用，不会改变 Host。模块返回并建立 Provider 后，再修改保存的集合引用不会产生注册效果。
+## 5. 构建与运行
 
-Document、Tool、动态 View 和 Lifecycle 必须分别通过 `AddDocument`、`AddTool`、`AddView` 和 `AddLifecycle`
-登记；直接向 DI 注册贡献接口只会留在私有 Provider，不会进入 Registry。未登记类型即使位于入口程序集
-也不会被发现。只有确实存在插件级后台资源时才登记 `IPluginLifecycle`。
-
-## 5. 使用事件总线
-
-插件若需要跨 Document、Tool 或根级协调器发送进程内事件，构造注入 `IHostEventBus`。事件使用插件
-自有的强类型 class DTO；不要解析底层 messenger，也不要创建静态总线：
-
-```csharp
-using MyAvaloniaManagementCommon.Events;
-
-public sealed class StatusViewModel : IDisposable
-{
-    private readonly IDisposable _subscription;
-
-    public StatusViewModel(IHostEventBus eventBus)
-    {
-        ArgumentNullException.ThrowIfNull(eventBus);
-        _subscription = eventBus.Subscribe<TaskCompletedEvent>(OnTaskCompleted);
-    }
-
-    private void OnTaskCompleted(TaskCompletedEvent @event)
-    {
-        // Publish 在发布线程同步调用这里；异常会原样返回给发布者。
-    }
-
-    public void Dispose() => _subscription.Dispose();
-}
-
-public sealed record TaskCompletedEvent(string TaskId);
-```
-
-`Subscribe` 返回的令牌由订阅者所有，Document 应让自身 Scope 在关闭时释放它；根级 Coordinator
-应在插件关闭流程释放。令牌可以重复释放。发布只匹配精确事件类型，按订阅顺序同步执行；处理器抛错
-会停止后续处理器。事件不落盘时不要添加无行为的 `Version` 字段，语义破坏时创建新类型。
-
-## 6. 使用宿主样式
-
-普通插件不需要引用 Semi、Ursa 或 Dock Theme。标准 Avalonia 控件会继承宿主主题；主题相关颜色
-使用宿主稳定语义资源，例如：
-
-```xml
-<Border Background="{DynamicResource AppPanelBrush}"
-        BorderBrush="{DynamicResource AppBorderBrush}"
-        BorderThickness="1">
-  <TextBlock Text="任务失败"
-             Foreground="{DynamicResource AppErrorBrush}" />
-</Border>
-```
-
-必须使用 `DynamicResource`，这样用户切换浅色/深色主题后资源会自动更新。当前正式资源键及兼容
-规则见[兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md#23-插件样式与-ui-profile)。
-
-插件可以把自己的局部样式放在 `Styles/QuickStartPluginStyles.axaml`，再从 View 引用：
-
-```xml
-<UserControl.Styles>
-  <StyleInclude Source="avares://QuickStartPlugin/Styles/QuickStartPluginStyles.axaml" />
-</UserControl.Styles>
-```
-
-局部资源键和 Style Class 使用插件 ID 前缀；不要向 `Application.Current.Styles` 注入全局主题。
-
-如果插件需要直接使用 Avalonia、Semi 或 Ursa 控件，把基础包替换为同版本 UI SDK：
-
-```xml
-<PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="2.0.0" />
-```
-
-UI SDK 已传递 Core，并把第三方 UI 包限制为宿主验证版本。Dock 不属于 SDK，插件不得直接依赖或创建
-Dock 类型。第三方主题自己的资源键只在该 UI SDK 版本内受支持，不属于基础 `App*` 语义资源契约。
-
-## 7. 构建、部署并启动
-
-在仓库根目录按以下顺序执行：
+完成[下一篇](./add-document-and-tool.md)的代码后执行：
 
 ```powershell
 dotnet build Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug
@@ -221,21 +116,9 @@ dotnet build Plugins/QuickStartPlugin/QuickStartPlugin/QuickStartPlugin.csproj -
 dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug --no-build
 ```
 
-先构建 Host，再构建插件，最后使用 `--no-build` 启动，可以确保插件构建目标最后写入正确的 Host 输出目录。部署结果应为：
+构建产物位于 `Host/MyAvaloniaManagement/bin/Debug/net10.0/Controls/QuickStartPlugin/`。替换插件文件后必须完整重启 Host，因为发现结果在单个进程内缓存。
 
-```text
-Host/MyAvaloniaManagement/bin/Debug/net10.0/
-└── Controls/
-    └── QuickStartPlugin/
-        ├── plugin.manifest.json
-        ├── QuickStartPlugin.dll
-        ├── QuickStartPlugin.deps.json（必需）
-        └── QuickStartPlugin.pdb（必需）
-```
-
-一个插件独占一个目录，入口只由清单声明；宿主不扫描其他 DLL 猜测入口或依赖。宿主对插件目录的发现结果在单个进程内缓存；替换 DLL、deps 或清单后必须完整退出并重新启动宿主。
-
-独立生成正式候选包：
+生成独立测试 ZIP：
 
 ```powershell
 .\scripts\Build-ManagedPluginPackage.ps1 `
@@ -243,20 +126,4 @@ Host/MyAvaloniaManagement/bin/Debug/net10.0/
   -Configuration Release
 ```
 
-结果为 `QuickStartPlugin-1.0.0-win-x64.zip` 及同名外置 `.manifest.json`。ZIP 内只有
-`Controls/QuickStartPlugin/`，不会与其他插件合并发布。
-
-## 外部作者的编译与交付边界
-
-外部项目最终使用宿主发布方提供的 `MyAvaloniaManagement.PluginSdk`，需要 Avalonia、Semi 或 Ursa
-控件时改用同版本 `MyAvaloniaManagement.PluginSdk.UI`。G2 当前只生成供编译门禁使用的本地制品，尚无
-可与其配套运行的 manifest v2 Host，也不自动推送公共 NuGet。未来交付目录只包含：
-
-- `plugin.manifest.json`；
-- 入口程序集及其 `.deps.json`；
-- 插件自己拥有的托管、卫星和 RID 原生依赖。
-
-不得交付 `MyAvaloniaManagementCommon.dll`，也不得私带 Avalonia、Semi、Ursa、Dock 或其他由宿主
-默认加载上下文拥有的共享依赖；否则类型身份或版本不一致会触发
-`PLUGIN_SHARED_ASSEMBLY_MISMATCH`。外部插件必须针对明确的 Host/SDK 版本组合完成本篇和
-[验证与排错](./verification-and-troubleshooting.md)中的检查。
+ZIP 只应包含清单、入口程序集、deps、PDB 及插件私有资产；不得包含 Core/UI SDK、Avalonia、Semi、Ursa、Dock、Host 或 `Microsoft.Extensions.*` 共享程序集。

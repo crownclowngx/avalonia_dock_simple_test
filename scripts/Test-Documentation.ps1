@@ -51,6 +51,8 @@ $forbiddenStatementRules = @(
     [pscustomobject]@{ Name = 'G16 仍待完成'; Pattern = '仅\s*G16\s*待完成' },
     [pscustomobject]@{ Name = '导航仍声明未封板'; Pattern = '完成前不得认定宿主已封板' },
     [pscustomobject]@{ Name = '主项目仍把 G8 当作当前基线'; Pattern = '2026-08-18\s+G8\s+基线为' },
+    [pscustomobject]@{ Name = 'V2 总任务仍声称只完成 G0-G8'; Pattern = 'V2\s+已完成\s+G0[–-]G8' },
+    [pscustomobject]@{ Name = '快速开始仍等待 G9 迁移'; Pattern = '快速开始.{0,40}(?:等待|等)\s*G9' },
     [pscustomobject]@{ Name = '保存契约仍未统一'; Pattern = '保存契约尚未统一' },
     [pscustomobject]@{ Name = 'Legacy 仍是并列入口'; Pattern = 'Legacy\s*(?:为|作为).*并列.*(?:方式|入口)' },
     [pscustomobject]@{ Name = 'G16 证据尚未回填'; Pattern = '待(?:执行|最终复跑)' }

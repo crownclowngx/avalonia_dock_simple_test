@@ -118,20 +118,22 @@ function Assert-StrictManifestObject {
 function Assert-PackagedEntryPoint {
     param(
         [Parameter(Mandatory)] [string]$PluginAssemblyPath,
-        [Parameter(Mandatory)] [string]$DependencyAssemblyPath,
+        [Parameter(Mandatory)] [hashtable]$SharedAssemblyPaths,
+        [Parameter(Mandatory)] [string]$ContractAssemblyPath,
+        [Parameter(Mandatory)] [string]$ContractTypeName,
         [Parameter(Mandatory)] [string]$ExpectedEntryType
     )
 
     # 打包阶段不执行入口构造函数或 Configure。独立可回收 ALC 只读取类型结构，并用入口 deps 图解析
-    # 私有依赖；Legacy 契约由本轮隔离构建的成品显式提供，绝不从插件包或进程偶然状态猜测。
+    # 私有依赖；当前 V2 或阶段 Legacy 契约均由本轮隔离构建成品显式提供，绝不从进程偶然状态猜测。
     $loadContext = [Runtime.Loader.AssemblyLoadContext]::new(
         'ManagedPluginPackagePreflight-' + [Guid]::NewGuid().ToString('N'),
         $true)
     $resolver = [Runtime.Loader.AssemblyDependencyResolver]::new($PluginAssemblyPath)
     $resolvingHandler = [Func[Runtime.Loader.AssemblyLoadContext, Reflection.AssemblyName, Reflection.Assembly]] {
         param($context, $assemblyName)
-        if ($assemblyName.Name -ceq 'MyAvaloniaManagementCommon') {
-            return $context.LoadFromAssemblyPath($DependencyAssemblyPath)
+        if ($SharedAssemblyPaths.ContainsKey($assemblyName.Name)) {
+            return $context.LoadFromAssemblyPath($SharedAssemblyPaths[$assemblyName.Name])
         }
 
         $resolvedPath = $resolver.ResolveAssemblyToPath($assemblyName)
@@ -143,16 +145,15 @@ function Assert-PackagedEntryPoint {
 
     $loadContext.add_Resolving($resolvingHandler)
     try {
-        $contractAssembly = $loadContext.LoadFromAssemblyPath($DependencyAssemblyPath)
-        $moduleContract = $contractAssembly.GetType(
-            'MyAvaloniaManagementCommon.Plugin.IPluginModule', $true, $false)
+        $contractAssembly = $loadContext.LoadFromAssemblyPath($ContractAssemblyPath)
+        $moduleContract = $contractAssembly.GetType($ContractTypeName, $true, $false)
         $pluginAssembly = $loadContext.LoadFromAssemblyPath($PluginAssemblyPath)
         $entry = $pluginAssembly.GetType($ExpectedEntryType, $false, $false)
         if ($null -eq $entry -or -not $entry.IsPublic -or $entry.IsNested -or
             $entry.IsAbstract -or $entry.IsInterface -or $entry.ContainsGenericParameters -or
             -not $moduleContract.IsAssignableFrom($entry) -or
             $null -eq $entry.GetConstructor([Type]::EmptyTypes)) {
-            throw "成品入口类型不满足 public、非抽象、非泛型、Legacy IPluginModule 与 public 无参构造约束：$ExpectedEntryType"
+            throw "成品入口类型不满足 public、非抽象、非泛型、当前 IPluginModule 与 public 无参构造约束：$ExpectedEntryType"
         }
     }
     finally {
@@ -181,6 +182,7 @@ $pluginId = $properties['ManagedPluginId']
 $pluginVersion = $properties['PluginVersion']
 $pluginDirectoryName = $properties['ManagedPluginDirectoryName']
 $entryType = $properties['ManagedPluginEntryType']
+$usesV2EntryContract = $properties['ManagedPluginUseV2EntryContract'] -eq 'true'
 $sdkMinInclusive = Resolve-CentralProperty $properties['ManagedPluginSdkMinInclusive']
 $sdkMaxExclusive = Resolve-CentralProperty $properties['ManagedPluginSdkMaxExclusive']
 $runtimeIdentifier = if ($properties['ManagedPluginRuntimeIdentifier']) {
@@ -352,14 +354,35 @@ try {
         throw "入口程序集版本 $assemblyVersion 与插件版本 $pluginVersion 不一致。"
     }
 
-    $legacyContractPath = Join-Path $stableDotnetArtifacts `
-        'bin/MyAvaloniaManagement.LegacyPluginContracts/release/MyAvaloniaManagementCommon.dll'
-    if (-not (Test-Path -LiteralPath $legacyContractPath -PathType Leaf)) {
-        throw "隔离构建缺少入口预检所需的 Legacy 契约成品：$legacyContractPath"
+    $sharedAssemblyPaths = @{}
+    if ($usesV2EntryContract) {
+        $coreContractPath = Join-Path $stableDotnetArtifacts `
+            'bin/MyAvaloniaManagement.PluginSdk/release/MyAvaloniaManagement.PluginSdk.dll'
+        $entryContractPath = Join-Path $stableDotnetArtifacts `
+            'bin/MyAvaloniaManagement.PluginSdk.UI/release/MyAvaloniaManagement.PluginSdk.UI.dll'
+        foreach ($contractPath in $coreContractPath, $entryContractPath) {
+            if (-not (Test-Path -LiteralPath $contractPath -PathType Leaf)) {
+                throw "隔离构建缺少入口预检所需的 V2 契约成品：$contractPath"
+            }
+        }
+        $sharedAssemblyPaths['MyAvaloniaManagement.PluginSdk'] = $coreContractPath
+        $sharedAssemblyPaths['MyAvaloniaManagement.PluginSdk.UI'] = $entryContractPath
+        $contractTypeName = 'MyAvaloniaManagement.PluginSdk.UI.IPluginModule'
+    }
+    else {
+        $entryContractPath = Join-Path $stableDotnetArtifacts `
+            'bin/MyAvaloniaManagement.LegacyPluginContracts/release/MyAvaloniaManagementCommon.dll'
+        if (-not (Test-Path -LiteralPath $entryContractPath -PathType Leaf)) {
+            throw "隔离构建缺少入口预检所需的 Legacy 契约成品：$entryContractPath"
+        }
+        $sharedAssemblyPaths['MyAvaloniaManagementCommon'] = $entryContractPath
+        $contractTypeName = 'MyAvaloniaManagementCommon.Plugin.IPluginModule'
     }
     Assert-PackagedEntryPoint `
         -PluginAssemblyPath (Join-Path $pluginRoot "$assemblyName.dll") `
-        -DependencyAssemblyPath $legacyContractPath `
+        -SharedAssemblyPaths $sharedAssemblyPaths `
+        -ContractAssemblyPath $entryContractPath `
+        -ContractTypeName $contractTypeName `
         -ExpectedEntryType $entryType
 
     $payloadFiles = @(Get-ChildItem -LiteralPath $pluginRoot -File -Recurse)

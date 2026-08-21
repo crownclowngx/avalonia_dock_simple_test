@@ -1,5 +1,7 @@
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
+using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -8,16 +10,76 @@ namespace MyAvaloniaManagement.PluginTests;
 /// </summary>
 public sealed class CurrentManagedPluginLoadingTests
 {
+    [Fact]
+    public void G9最终测试Zip通过真实发现组合并发布完整Registry()
+    {
+        var packageRoot = Environment.GetEnvironmentVariable("MYAVALONIA_G9_PACKAGE_ROOT");
+        if (string.IsNullOrWhiteSpace(packageRoot))
+        {
+            // 普通单元回归没有构建测试 ZIP；G9 专项脚本必须设置该环境变量并单独执行本测试。
+            return;
+        }
+
+        var snapshot = AssemblyLoaderHelper.Discover(Path.GetFullPath(packageRoot));
+        Assert.Empty(snapshot.Diagnostics);
+        var assembly = Assert.Single(snapshot.Assemblies);
+        Assert.Equal("MyPlugTest", assembly.GetName().Name);
+        var catalog = PluginModuleCatalog.Discover(snapshot);
+
+        var diagnosticsRoot = Path.Combine(
+            Path.GetTempPath(),
+            $"my-plug-test-g9-package-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(diagnosticsRoot);
+        using var diagnostics = HostDiagnosticSession.Start(diagnosticsRoot);
+        var registryBuilder = new PluginRegistryBuilder();
+        using var pluginProviders = new PluginProviderOwner();
+        var documentScopes = new DocumentScopeRegistry();
+        var services = new ServiceCollection();
+        services.AddApplicationServices(registryBuilder, pluginProviders, documentScopes);
+        services.AddViewModels();
+        services.AddSingleton(diagnostics);
+        services.AddSingleton<IHostDiagnosticSink>(diagnostics);
+        services.AddSingleton(catalog);
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = true,
+        });
+        try
+        {
+            pluginProviders.Compose(
+                catalog,
+                provider,
+                registryBuilder,
+                documentScopes,
+                diagnostics);
+            var registry = provider.GetRequiredService<PluginRegistry>();
+            var plugin = Assert.Single(registry.Plugins);
+            Assert.Equal("myavalonia.plugin.my-plug-test", plugin.Manifest.PluginId.Value);
+            Assert.Equal(4, plugin.DocumentTypes.Count);
+            Assert.Single(plugin.ToolTypes);
+            Assert.All(plugin.DocumentTypes, modelType =>
+                Assert.Equal("MyPlugTest", modelType.Assembly.GetName().Name));
+        }
+        finally
+        {
+            documentScopes.CloseAll();
+            diagnostics.Dispose();
+            Directory.Delete(diagnosticsRoot, recursive: true);
+        }
+    }
+
     [Theory]
-    [InlineData("BiliDownloader/BiliDownloader", "BiliDownloader", "BiliDownloader", "myavalonia.plugin.bili-downloader")]
-    [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "MyPlugTest", "myavalonia.plugin.my-plug-test")]
-    [InlineData("DaTangAccountingHelpPlug/DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTang", "myavalonia.plugin.datang-accounting-help")]
-    [InlineData("MySmallTools/MySmallTools", "MySmallTools", "SmallTools", "myavalonia.plugin.my-small-tools")]
-    public void 尚未迁移的业务插件从真实构建目录读取后被V2预检隔离(
+    [InlineData("BiliDownloader/BiliDownloader", "BiliDownloader", "BiliDownloader", "myavalonia.plugin.bili-downloader", false)]
+    [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "MyPlugTest", "myavalonia.plugin.my-plug-test", true)]
+    [InlineData("DaTangAccountingHelpPlug/DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTang", "myavalonia.plugin.datang-accounting-help", false)]
+    [InlineData("MySmallTools/MySmallTools", "MySmallTools", "SmallTools", "myavalonia.plugin.my-small-tools", false)]
+    public void 真实业务插件构建目录只接受已经迁移的V2入口(
         string projectPath,
         string assemblyName,
         string directoryName,
-        string pluginId)
+        string pluginId,
+        bool expectedV2Entry)
     {
         var configuration = new DirectoryInfo(AppContext.BaseDirectory)
             .Parent?.Name
@@ -60,10 +122,19 @@ public sealed class CurrentManagedPluginLoadingTests
             pluginAssembly.GetName().Version));
         var entryType = pluginAssembly.GetType(
             manifest.EntryPoint.Type, throwOnError: false, ignoreCase: false);
-        Assert.False(PluginModulePreflight.TryValidate(
-            entryType, out var validatedType, out var entryCode, out _));
-        Assert.Null(validatedType);
-        Assert.Equal(HostDiagnosticCodes.PluginEntryInvalid, entryCode);
+        var accepted = PluginModulePreflight.TryValidate(
+            entryType, out var validatedType, out var entryCode, out _);
+        Assert.Equal(expectedV2Entry, accepted);
+        if (expectedV2Entry)
+        {
+            Assert.Same(entryType, validatedType);
+            Assert.Null(entryCode);
+        }
+        else
+        {
+            Assert.Null(validatedType);
+            Assert.Equal(HostDiagnosticCodes.PluginEntryInvalid, entryCode);
+        }
         Assert.Equal(pluginId, manifest.PluginId.Value);
     }
 }

@@ -1,190 +1,101 @@
 # 添加 Document 与 Tool
 
-> 历史示例警告：本页的 Strategy、Metadata 和独立 View 注册属于 G4 前路径，G5 Host 不再加载。
-> 当前可参考最终 UI SDK 的 `IPluginRegistration` 与 Document V2 签名，Host 的普通模型、Dock Adapter、异步初始化和保存链已在 G7 完成；
-> 但完整可运行的真实插件示例要到 G9 才提供，不要把本页历史代码复制到新 V2 插件。
+本篇在 `QuickStartPlugin` 中加入一个普通 Document 和一个普通 Tool。声明式注册是模型、View 与元数据的唯一事实源：不创建 Strategy，也不单独注册 View。
 
-本篇在同一个 `QuickStartPlugin` 中加入两个可见扩展：可多开的欢迎 Document 和宿主级单例状态 Tool。代码只保留理解契约所需的最小部分，生产实现请继续对照 [`MyPlugTest`](../../Plugins/MyPlugTest/MyPlugTest/)。
-
-## 1. 添加两个 ViewModel
+## 1. Document 模型
 
 建立 `ViewModels/WelcomeDocumentViewModel.cs`：
 
 ```csharp
-using Dock.Model.Mvvm.Controls;
+using CommunityToolkit.Mvvm.ComponentModel;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace QuickStartPlugin.ViewModels;
 
-public sealed class WelcomeDocumentViewModel : Document
+public sealed partial class WelcomeDocumentViewModel : ObservableObject, IPluginDocument
 {
-    public string Message => "Quick Start Document 已加载";
+    private const string DefaultTitle = "欢迎";
+    private readonly IDocumentLifetime _lifetime;
+    private string _title = DefaultTitle;
+
+    [ObservableProperty]
+    private string message = "Hello from V2";
+
+    public WelcomeDocumentViewModel(IDocumentLifetime lifetime) =>
+        _lifetime = lifetime ?? throw new ArgumentNullException(nameof(lifetime));
+
+    public DocumentPresentationState Presentation => new(_title);
+
+    public event EventHandler? PresentationChanged;
+
+    public ValueTask InitializeAsync(
+        DocumentActivationContext context,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+        _lifetime.ClosingToken.ThrowIfCancellationRequested();
+
+        _title = string.IsNullOrWhiteSpace(context.Title) ? DefaultTitle : context.Title;
+        PresentationChanged?.Invoke(this, EventArgs.Empty);
+        return ValueTask.CompletedTask;
+    }
 }
 ```
 
-建立 `ViewModels/StatusToolViewModel.cs`：
+`IDocumentLifetime` 是必需构造依赖。模型只能观察关闭令牌并协作取消自身工作，不能关闭自己或其他 Document。每次激活创建独立 Scope，因此可变 Document 状态不能放入 singleton。
 
-```csharp
-using Dock.Model.Mvvm.Controls;
-
-namespace QuickStartPlugin.ViewModels;
-
-public sealed class StatusToolViewModel : Tool
-{
-    public string Message => "Quick Start Tool 已加载";
-}
-```
-
-在模块的 `Configure` 中把 ViewModel 注册为插件私有服务：
-
-```csharp
-context.Services.AddScoped<WelcomeDocumentViewModel>();
-context.Services.AddSingleton<StatusToolViewModel>();
-```
-
-这里的 `Services` 是当前插件独占的新集合，不是 Host 集合的事务副本。插件可以使用 Microsoft DI 的
-标准注册能力；修改集合只影响当前插件。Host 和其他插件的普通服务描述符不会出现在这里。
-
-Document 表示一次独立工作会话，因此每个标签从新的 DI Scope 解析。Tool 表示宿主级面板，因此注册为 Singleton；隐藏再恢复时仍是同一个对象。
-
-## 2. 添加 Document 创建策略
-
-建立 `Create/WelcomeDocumentStrategy.cs`：
-
-```csharp
-using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using QuickStartPlugin.Constants;
-using QuickStartPlugin.ViewModels;
-
-namespace QuickStartPlugin.Create;
-
-public sealed class WelcomeDocumentStrategy : IDocumentCreationStrategy
-{
-    private readonly IDocumentScopeFactory _documentScopeFactory;
-
-    public WelcomeDocumentStrategy(IDocumentScopeFactory documentScopeFactory)
-    {
-        _documentScopeFactory = documentScopeFactory;
-    }
-
-    public Document CreateDocument(DocumentCreationParams @params)
-    {
-        var document =
-            _documentScopeFactory.CreateDocument<WelcomeDocumentViewModel>();
-        document.Title = string.IsNullOrWhiteSpace(@params.Title)
-            ? "Quick Start"
-            : @params.Title;
-        return document;
-    }
-
-    public DocumentMetadata GetMetadata() => new(
-        PluginIds.WelcomeDocument,
-        "Quick Start Document")
-    {
-        Description = "打开一个最小插件工作会话",
-        MenuCategory = "Quick Start"
-    };
-}
-```
-
-关键点不是手动 `new` ViewModel，而是调用 `IDocumentScopeFactory.CreateDocument<TDocument>()`。插件不得保存或释放 `IServiceScope`；宿主会在 Dock 确认关闭后释放作用域及其中的资源。需要响应关闭时，可在 ViewModel 中注入 `IDocumentLifetime` 并观察其 `ClosingToken`。
-
-真实实现参见 [`TestWelcomeDocumentStrategy`](../../Plugins/MyPlugTest/MyPlugTest/Create/TestWelcomeDocumentStrategy.cs) 和 [`TestWelcomeViewModel`](../../Plugins/MyPlugTest/MyPlugTest/ViewModels/TestWelcomeViewModel.cs)。
-
-## 3. 添加 Tool 创建策略
-
-建立 `Create/StatusToolStrategy.cs`：
-
-```csharp
-using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagementCommon.ToolCreation;
-using QuickStartPlugin.Constants;
-using QuickStartPlugin.ViewModels;
-
-namespace QuickStartPlugin.Create;
-
-public sealed class StatusToolStrategy : IToolCreationStrategy
-{
-    private readonly StatusToolViewModel _viewModel;
-
-    public StatusToolStrategy(StatusToolViewModel viewModel)
-    {
-        _viewModel = viewModel;
-    }
-
-    public Tool CreateTool()
-    {
-        _viewModel.Title = "Quick Start Status";
-        _viewModel.CanClose = true;
-        return _viewModel;
-    }
-
-    public ToolMetadata GetMetadata() => new(
-        PluginIds.StatusTool,
-        "Quick Start Status",
-        ToolDockSide.Right)
-    {
-        Description = "显示最小插件状态"
-    };
-}
-```
-
-策略返回模块中注册的 Singleton，不应在每次调用时创建新 Tool。宿主会按元数据放置 Tool，并把关闭操作处理为隐藏；重新显示时仍返回原有实例。真实实现参见 [`MyCustomToolStrategy`](../../Plugins/MyPlugTest/MyPlugTest/Create/MyCustomToolStrategy.cs) 和 [`MyCustomToolViewModel`](../../Plugins/MyPlugTest/MyPlugTest/ViewModels/MyCustomToolViewModel.cs)。
-
-## 4. 添加 View
-
-View 必须是非抽象 Avalonia `Control`，并且能通过 public 无参构造创建。宿主不扫描程序集，也不再把 `ViewModel` 名称替换成 `View` 猜测类型；映射会在第 5 节由模块显式登记。
-
-建立 `Views/WelcomeDocumentView.axaml`：
+建立 `Views/WelcomeDocumentView.axaml` 与 code-behind：
 
 ```xml
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:QuickStartPlugin.ViewModels"
-             x:Class="QuickStartPlugin.Views.WelcomeDocumentView"
-             x:DataType="vm:WelcomeDocumentViewModel">
-  <TextBlock Margin="16" Text="{Binding Message}" />
+             x:Class="QuickStartPlugin.Views.WelcomeDocumentView">
+  <StackPanel Margin="16" Spacing="8">
+    <TextBlock Text="V2 Document" FontWeight="Bold" />
+    <TextBox Text="{Binding Message}" />
+  </StackPanel>
 </UserControl>
 ```
-
-建立 `Views/StatusToolView.axaml`，仅替换类型名：
-
-```xml
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:QuickStartPlugin.ViewModels"
-             x:Class="QuickStartPlugin.Views.StatusToolView"
-             x:DataType="vm:StatusToolViewModel">
-  <TextBlock Margin="12" Text="{Binding Message}" />
-</UserControl>
-```
-
-两个 View 都需要相同形式的 code-behind；下面以 Document 为例：
 
 ```csharp
 using Avalonia.Controls;
 
 namespace QuickStartPlugin.Views;
 
-public partial class WelcomeDocumentView : UserControl
+public sealed partial class WelcomeDocumentView : UserControl
 {
-    public WelcomeDocumentView()
-    {
-        InitializeComponent();
-    }
+    public WelcomeDocumentView() => InitializeComponent();
 }
 ```
 
-Tool 的 code-behind 类名改为 `StatusToolView`。不要给 View 注入构造参数；业务依赖应进入由 DI 创建的 ViewModel。可对照 [`TestWelcomeView.axaml`](../../Plugins/MyPlugTest/MyPlugTest/Views/TestWelcomeView.axaml)、[`TestWelcomeView.axaml.cs`](../../Plugins/MyPlugTest/MyPlugTest/Views/TestWelcomeView.axaml.cs) 和 [`MyCustomToolView.axaml`](../../Plugins/MyPlugTest/MyPlugTest/Views/MyCustomToolView.axaml)。
+View 必须有 public 无参构造。Host 创建 View、设置 `DataContext` 并包装为 internal Dock Adapter；插件不引用 Dock。
 
-## 5. 显式登记全部贡献
+## 2. Tool 模型与 View
 
-把 manifest 精确声明的模块更新为完整版本：
+建立 `ViewModels/StatusToolViewModel.cs`：
 
 ```csharp
-using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagementCommon.Plugin;
-using QuickStartPlugin.Create;
+using CommunityToolkit.Mvvm.ComponentModel;
+
+namespace QuickStartPlugin.ViewModels;
+
+public sealed partial class StatusToolViewModel : ObservableObject
+{
+    [ObservableProperty]
+    private int activationCount;
+}
+```
+
+Tool 不实现 Dock 类型，也不拥有标题、位置、关闭或浮动状态。创建 `StatusToolView` 的方式与 Document View 相同，并绑定 `ActivationCount`。
+
+## 3. 一次声明贡献
+
+补全模块：
+
+```csharp
+using MyAvaloniaManagement.PluginSdk.UI;
+using QuickStartPlugin.Constants;
 using QuickStartPlugin.ViewModels;
 using QuickStartPlugin.Views;
 
@@ -192,81 +103,72 @@ namespace QuickStartPlugin.Plugin;
 
 public sealed class QuickStartPluginModule : IPluginModule
 {
-    public void Configure(IPluginRegistrationContext context)
+    public void Configure(IPluginRegistration registration)
     {
-        // Services 只承载插件的私有业务对象和 ViewModel 生命周期。
-        context.Services.AddScoped<WelcomeDocumentViewModel>();
-        context.Services.AddSingleton<StatusToolViewModel>();
+        ArgumentNullException.ThrowIfNull(registration);
 
-        // 四类宿主可见贡献必须逐项登记；未登记类型不会进入菜单、Dock 或 ViewLocator。
-        context.AddDocument<WelcomeDocumentStrategy>();
-        context.AddTool<StatusToolStrategy>();
-        context.AddView<WelcomeDocumentViewModel, WelcomeDocumentView>();
-        context.AddView<StatusToolViewModel, StatusToolView>();
+        registration.AddDocument<WelcomeDocumentViewModel, WelcomeDocumentView>(
+            new DocumentDescriptor(
+                PluginIds.WelcomeDocument,
+                "欢迎",
+                "演示独立 Document Scope",
+                "快速开始"));
+
+        registration.AddTool<StatusToolViewModel, StatusToolView>(
+            new ToolDescriptor(
+                PluginIds.StatusTool,
+                "状态",
+                "演示插件级 Tool singleton",
+                ToolDockSide.Right,
+                ToolCloseBehavior.Hide));
     }
 }
 ```
 
-`AddDocument`、`AddTool` 会把策略登记为根级单例并在 Registry 发布前激活、读取一次元数据。
-`AddView` 保存 ViewModel 类型到无参 View 工厂的映射，控件只在 DataTemplate 实际请求时创建。
-只有全局 DataTemplate 动态解析的根 View 需要登记；由 XAML 直接嵌套创建的内部控件不进入 Registry。
+注册方法自动把 Document 模型注册为 scoped、Tool 模型注册为插件级 singleton。不要再对这两个模型执行 `AddScoped`/`AddSingleton`，也不要建立独立 View 映射。
 
-## 6. 构建并观察结果
+## 4. 可选：持久化 Document
 
-按上一章的顺序重新构建 Host 和插件，再以 `--no-build` 启动 Host：
+需要保存业务内容时，把模型改为 `IPersistablePluginDocument`，注册改为 `AddPersistableDocument`。插件只拥有 content schema 和 JSON payload；Host 独占文件路径、外层信封、原子写入与成功提交时机。
 
-```powershell
-dotnet build Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug
-dotnet build Plugins/QuickStartPlugin/QuickStartPlugin/QuickStartPlugin.csproj -c Debug
-dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug --no-build
-```
+实现应遵循：
 
-在插件菜单中选择 `Quick Start / Quick Start Document` 应创建新标签；重复选择应得到不同的 Document 实例。右侧应出现 `Quick Start Status`，关闭后可从工具管理入口恢复，内容状态不会因隐藏而重新创建。
+- `CaptureContentAsync` 返回新的 `DocumentContent(schema, payload)`，不直接写文件；
+- 恢复时先严格验证 schema、字段、类型和完整临时状态，再一次提交到模型；
+- `AcceptChanges` 只在 Host 原子保存成功后清除脏状态；
+- 不兼容内容直接失败，不做猜测式修复或 V1 兼容读取。
 
-## 保存和后台生命周期是按需能力
+可直接参考 [`TestWelcomeViewModel`](../../Plugins/MyPlugTest/MyPlugTest/ViewModels/TestWelcomeViewModel.cs) 和独立 [`TestWelcomeDocumentContentCodec`](../../Plugins/MyPlugTest/MyPlugTest/Persistence/TestWelcomeDocumentContentCodec.cs)。
 
-- 只有 Document 需要写入 `.mamdoc` 时才实现 `IPersistablePluginDocument`，并通过 `AddPersistableDocument<TDocument,TView>` 声明。`IsDirty` 只报告业务变化，Host 主文件成功后才调用 `AcceptChanges()`。
-- `CaptureContentAsync()` 只返回 `new DocumentContent(内容版本, JsonElement)`，不得修改标题、路径或脏状态。路径、插件身份、Document 类型、信封标题和保存时间只由 Host 持有。
-- 恢复内容从 `InitializeAsync` 的 `context.RestoredContent` 取得；先精确检查 `SchemaVersion` 与 payload JSON 类型，再恢复业务字段。失败可抛插件异常，Host 会拒绝发布并显示固定脱敏提示。
-- Host 独占信封中的 `schemaVersion`、`pluginId`、`documentTypeId`、`title` 和 `savedAtUtc`；插件不要复制或依赖这些宿主字段。示例实现如下：
+## 5. 可选：进程内事件
+
+构造注入 Core SDK `IHostEventBus`，事件 DTO 使用插件自有普通密封类型。发布方只发布；订阅方保存 `Subscribe<T>` 返回的令牌，并在自身 Scope 释放时解绑。总线按精确类型在发布线程同步投递，因此 UI 订阅者需要自行切回 Dispatcher。
 
 ```csharp
-private const int CurrentContentSchemaVersion = 1;
+public sealed record WorkCompletedEvent(string Message);
 
-public async ValueTask InitializeAsync(
-    DocumentActivationContext context,
-    CancellationToken cancellationToken)
+public sealed class Receiver : IDisposable
 {
-    cancellationToken.ThrowIfCancellationRequested();
-    if (context.RestoredContent is not { } content)
+    private readonly IDisposable _subscription;
+
+    public Receiver(IHostEventBus eventBus) =>
+        _subscription = eventBus.Subscribe<WorkCompletedEvent>(OnCompleted);
+
+    private void OnCompleted(WorkCompletedEvent message)
     {
-        return;
-    }
-    if (content.SchemaVersion != CurrentContentSchemaVersion ||
-        content.Payload.ValueKind != JsonValueKind.Object)
-    {
-        throw new InvalidOperationException("不支持该 Document 内容版本或结构。");
+        // 若修改 Avalonia 状态，应在这里显式切换到 UI Dispatcher。
     }
 
-    var state = content.Payload.Deserialize<WelcomeState>()
-        ?? throw new InvalidOperationException("Document 内容缺少必填字段。");
-    Message = state.Message;
+    public void Dispose() => _subscription.Dispose();
 }
-
-public ValueTask<DocumentContent> CaptureContentAsync(
-    CancellationToken cancellationToken)
-{
-    cancellationToken.ThrowIfCancellationRequested();
-    var payload = JsonSerializer.SerializeToElement(new WelcomeState(Message));
-    return ValueTask.FromResult(
-        new DocumentContent(CurrentContentSchemaVersion, payload));
-}
-
-public void AcceptChanges() => IsDirty = false;
 ```
 
-- V2 是唯一受支持的 Document 信封。插件不添加 V1 字段猜测、默认回退或迁移链；Host 会为成功保存的主文件维护 `.recovery.bak`，插件不应自行操作该文件。
-- 完整事务、关闭与恢复规则参见 [Document V2 持久化设计](../design/document-persistence-v2-design.md)。
-- 只有插件级后台服务确实需要随宿主启动、停止时才实现并注册 `IPluginLifecycle`。初始化必须幂等，关闭返回前必须停止后台工作；不要用它代替 Document Scope 或 Tool 的视觉生命周期。
+## 6. 验收行为
 
-完成首次接入后，继续执行[验证与排错](./verification-and-troubleshooting.md)中的清单。
+- 连续打开两个 Document：模型、Scope 与局部状态彼此独立；
+- 关闭一个 Document：只取消并释放自己的 Scope；
+- 多次显示 Tool：模型引用相同；关闭后恢复不丢状态；
+- View 的 `DataContext` 是对应模型；
+- 插件源码不含 Strategy、Dock 基类、Legacy 契约或独立 View 注册。
+
+下一步按[验证与排错](./verification-and-troubleshooting.md)检查真实加载和独立 ZIP。

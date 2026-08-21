@@ -13,10 +13,7 @@ using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
-using MyPlugTest.Create;
-using MyPlugTest.Models;
 using MyPlugTest.Plugin;
-using MyPlugTest.ViewModels;
 using MySmallTools.InitPlug.SecretVideoPlayer;
 using MySmallTools.Plugin;
 using MySmallTools.ViewModels.SecretVideoPlayer;
@@ -46,7 +43,7 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void 四个插件程序集显式接入模块且不改变公共策略接口()
+    public void 三个未迁移插件继续显式接入Legacy模块且不改变公共策略接口()
     {
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),
@@ -67,8 +64,6 @@ public sealed class PluginCompatibilityTests
                 "myavalonia.plugin.bili-downloader", services),
             ConfigureForInspection(new DaTangAccountingHelpPluginModule(),
                 "myavalonia.plugin.datang-accounting-help", services),
-            ConfigureForInspection(new MyPlugTestPluginModule(),
-                "myavalonia.plugin.my-plug-test", services),
             ConfigureForInspection(new MySmallToolsPluginModule(),
                 "myavalonia.plugin.my-small-tools", services),
         };
@@ -91,20 +86,6 @@ public sealed class PluginCompatibilityTests
             Describe(contexts[1]));
         Assert.Equal(
             [
-                "Document:TestWelcomeDocumentStrategy",
-                "Document:TestMessageReceiveDocumentStrategy",
-                "Document:BatchHttpGetDocumentStrategy",
-                "Document:ExcelGetUrlGeneratorDocumentStrategy",
-                "Tool:MyCustomToolStrategy",
-                "View:TestWelcomeViewModel->TestWelcomeView",
-                "View:TestMessageReceiveViewModel->TestMessageReceiveView",
-                "View:BatchHttpGetViewModel->BatchHttpGetView",
-                "View:ExcelGetUrlGeneratorViewModel->ExcelGetUrlGeneratorView",
-                "View:MyCustomToolViewModel->MyCustomToolView",
-            ],
-            Describe(contexts[2]));
-        Assert.Equal(
-            [
                 "Document:SecretVideoDocumentStrategy",
                 "Document:SecretVideoLibraryDocumentStrategy",
                 "Document:VideoEncryptorDocumentStrategy",
@@ -114,13 +95,12 @@ public sealed class PluginCompatibilityTests
                 "View:VideoEncryptorViewModel->VideoEncryptorView",
                 "View:VideoDecryptorViewModel->VideoDecryptorView",
             ],
-            Describe(contexts[3]));
+            Describe(contexts[2]));
 
         Assert.Equal(
             [
                 "myavalonia.plugin.bili-downloader",
                 "myavalonia.plugin.datang-accounting-help",
-                "myavalonia.plugin.my-plug-test",
                 "myavalonia.plugin.my-small-tools",
             ],
             contexts.Select(context => context.PluginId.Value));
@@ -319,86 +299,6 @@ public sealed class PluginCompatibilityTests
         Assert.True(manager.Release(first));
         Assert.False(manager.Release(first));
         Assert.True(manager.Release(second));
-    }
-
-    [Fact]
-    public void MyPlugTest三个Document策略均由独立Scope托管()
-    {
-        var services = new ServiceCollection();
-        services.AddSingleton<IHostEventBus, MyAvaloniaManagement.Business.Events.HostEventBus>();
-        services.AddLegacyPluginDocumentScopesForTests();
-        new MyPlugTestPluginModule().Configure(new TestPluginRegistrationContext(
-            new PluginId("myavalonia.plugin.my-plug-test"), services));
-
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateScopes = true,
-            ValidateOnBuild = true,
-        });
-
-        Assert.All(
-            new[]
-            {
-                typeof(TestWelcomeViewModel),
-                typeof(TestMessageReceiveViewModel),
-                typeof(BatchHttpGetViewModel),
-                typeof(UrlHistoryViewModel),
-            },
-            serviceType => Assert.Equal(
-                ServiceLifetime.Scoped,
-                Assert.Single(services, item => item.ServiceType == serviceType).Lifetime));
-        Assert.Throws<InvalidOperationException>(provider.GetRequiredService<TestWelcomeViewModel>);
-        Assert.Throws<InvalidOperationException>(provider.GetRequiredService<TestMessageReceiveViewModel>);
-        Assert.Throws<InvalidOperationException>(provider.GetRequiredService<BatchHttpGetViewModel>);
-
-        var welcomeStrategy = Activate<TestWelcomeDocumentStrategy>(provider);
-        var receiveStrategy = Activate<TestMessageReceiveDocumentStrategy>(provider);
-        var batchStrategy = Activate<BatchHttpGetDocumentStrategy>(provider);
-
-        var firstWelcome = Assert.IsType<TestWelcomeViewModel>(welcomeStrategy.CreateDocument(
-            new DocumentCreationParams(welcomeStrategy.GetMetadata().DocumentTypeId) { Title = "欢迎 A" }));
-        var secondWelcome = Assert.IsType<TestWelcomeViewModel>(welcomeStrategy.CreateDocument(
-            new DocumentCreationParams(welcomeStrategy.GetMetadata().DocumentTypeId)));
-        var receiver = Assert.IsType<TestMessageReceiveViewModel>(receiveStrategy.CreateDocument(
-            new DocumentCreationParams(receiveStrategy.GetMetadata().DocumentTypeId)));
-        var batch = Assert.IsType<BatchHttpGetViewModel>(batchStrategy.CreateDocument(
-            new DocumentCreationParams(batchStrategy.GetMetadata().DocumentTypeId)));
-
-        Assert.NotSame(firstWelcome, secondWelcome);
-        Assert.NotSame(firstWelcome.UrlHistory, secondWelcome.UrlHistory);
-        firstWelcome.UrlHistory.AddUrl("https://first.test");
-        Assert.Single(firstWelcome.UrlHistory.HistoryItems);
-        Assert.Empty(secondWelcome.UrlHistory.HistoryItems);
-        Assert.Equal("欢迎 A", firstWelcome.Title);
-        Assert.True(firstWelcome.IsDirty);
-        firstWelcome.Url = "https://roundtrip.test";
-        firstWelcome.ResponseContent = "往返正文";
-        var currentSnapshot = firstWelcome.CreateContentSnapshot();
-        Assert.Equal(1, currentSnapshot.ContentSchemaVersion);
-        Assert.Equal("欢迎 A", firstWelcome.Title);
-        Assert.True(firstWelcome.IsDirty);
-        secondWelcome.RestoreContent(currentSnapshot);
-        Assert.Equal("https://roundtrip.test", secondWelcome.Url);
-        Assert.Equal("往返正文", secondWelcome.ResponseContent);
-        Assert.False(secondWelcome.IsDirty);
-        firstWelcome.AcceptChanges();
-        Assert.False(firstWelcome.IsDirty);
-        Assert.Throws<DocumentLoadException>(() =>
-            firstWelcome.RestoreContent(new DocumentContentSnapshot(1, "{broken")));
-        Assert.Throws<DocumentLoadException>(() =>
-            firstWelcome.RestoreContent(new DocumentContentSnapshot(1, "{}")));
-        Assert.Throws<DocumentLoadException>(() =>
-            firstWelcome.RestoreContent(new DocumentContentSnapshot(1, "   ")));
-        var futureVersion = Assert.Throws<DocumentLoadException>(() =>
-            firstWelcome.RestoreContent(new DocumentContentSnapshot(2, "secret-payload")));
-        Assert.DoesNotContain("secret-payload", futureVersion.Message, StringComparison.Ordinal);
-
-        var manager = provider.GetRequiredService<LegacyPluginDocumentScopeFactory>();
-        Assert.True(manager.Release(firstWelcome));
-        Assert.False(manager.Release(firstWelcome));
-        Assert.True(manager.Release(secondWelcome));
-        Assert.True(manager.Release(receiver));
-        Assert.True(manager.Release(batch));
     }
 
     [Fact]

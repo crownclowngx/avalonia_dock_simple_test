@@ -2,9 +2,9 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G8 的 Core/UI SDK、
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G9 的 Core/UI SDK、
 > manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录、Host Dock Adapter、
-> Document V2、Layout V2 和 internal 生命周期。最新测试数量和覆盖率必须从本轮
+> Document V2、Layout V2、internal 生命周期和首个真实 MyPlugTest V2 迁移。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -160,6 +160,31 @@ PluginId 正序、成功项反向停止、并发幂等、同步/异步失败、�
 分别为 95.93%/94.05%/98.04%。完整证据见
 [G8 专项记录](../plan-history/host-v2/g8-layout-and-lifecycle-v2.md)。本阶段不运行 AIFLOW、Windows CI/Smoke、
 ReleaseAcceptance、发布包或发布门禁。
+
+### V2 G9 当前绿色基线
+
+G9 非发布专项入口为：
+
+```powershell
+.\scripts\Test-MyPlugTestV2.ps1 -Configuration Release
+```
+
+脚本串行执行 MyPlugTest 生产组合与业务测试、受影响 Headless UI、Plugin SDK 边界、静态依赖扫描，
+然后建立两份隔离测试 ZIP。两份 ZIP 的排序清单、文件长度、逐文件摘要和归档摘要必须一致；解压后还要
+经过真实 `PluginLoadContext`、模块预检、插件 Provider 组合以及 4 Document + 1 Tool Registry 验证。
+
+专项实际为 Plugin 59、Headless UI 14、Plugin SDK 12、最终 ZIP 真实加载 1，共 **86/86**；ZIP 为
+11 个文件。摘要位于 `artifacts/test-results/MyPlugTestV2/summary.json`，固定记录
+`aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、
+`releaseGate=false`、`publishable=false`。完整贡献、内容 schema、失败矩阵和回滚边界见
+[G9 专项记录](../plan-history/host-v2/g9-my-plug-test-v2.md)。
+
+本阶段不运行 AIFLOW、Windows CI、真实窗口 Smoke、ReleaseAcceptance、正式发布门禁、签名、上传或发布；
+两份 ZIP 只用于 G9 加载验证。
+
+完整回归为 Host Unit 172、UI 46、Plugin 195，共 **413/413**；行覆盖率 **83.24%**、分支覆盖率
+**68.83%**。SDK 单元 **32/32**，三个未迁移业务插件 **966/966**，Core/UI API 与包消费、四插件
+两轮非发布包矩阵、locked restore、Release 零警告构建和文档门禁均通过。
 
 ## G14 正式发布门禁
 

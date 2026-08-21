@@ -19,6 +19,8 @@
            Text="当前 Managed Plugin v2 构建协议只允许 win-x64，实际为 '$(ManagedPluginRuntimeIdentifier)'。" />
     <Error Condition="'$(ManagedPluginEntryType)' == ''"
            Text="Managed Plugin 缺少 ManagedPluginEntryType。" />
+    <Error Condition="'$(ManagedPluginUseV2EntryContract)' != '' And '$(ManagedPluginUseV2EntryContract)' != 'true' And '$(ManagedPluginUseV2EntryContract)' != 'false'"
+           Text="ManagedPluginUseV2EntryContract 只能为 true 或 false。" />
     <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginEntryType)', '^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+$'))"
            Text="ManagedPluginEntryType 必须是非泛型、非嵌套的命名空间限定类型名，实际为 '$(ManagedPluginEntryType)'。" />
     <Error Condition="'$(ManagedPluginSdkMinInclusive)' == '' Or '$(ManagedPluginSdkMaxExclusive)' == ''"
@@ -43,12 +45,16 @@
     <ItemGroup>
       <!--
         探针作为第二个临时程序集编译，因此 internal 类型或非 public 构造函数无法借助“同程序集可见”绕过检查。
-        这里仍验证 Legacy IPluginModule，是 G3 到业务插件最终迁移之间唯一集中保留的阶段桥。
+        G9 起已迁移插件验证最终 UI SDK IPluginModule；未迁移插件继续验证 Legacy 入口。
+        条件只存在于仓库内阶段桥，两个接口不会同时成为同一插件的合法入口。
       -->
       <_ManagedPluginEntryProbeLine Include="#nullable enable" />
       <_ManagedPluginEntryProbeLine Include="internal static class ManagedPluginEntryPointProbe" />
       <_ManagedPluginEntryProbeLine Include="{" />
-      <_ManagedPluginEntryProbeLine Include="  internal static global::MyAvaloniaManagementCommon.Plugin.IPluginModule Create() =&gt; new global::$(ManagedPluginEntryType)()%3B" />
+      <_ManagedPluginEntryProbeLine Condition="'$(ManagedPluginUseV2EntryContract)' == 'true'"
+                                    Include="  internal static global::MyAvaloniaManagement.PluginSdk.UI.IPluginModule Create() =&gt; new global::$(ManagedPluginEntryType)()%3B" />
+      <_ManagedPluginEntryProbeLine Condition="'$(ManagedPluginUseV2EntryContract)' != 'true'"
+                                    Include="  internal static global::MyAvaloniaManagementCommon.Plugin.IPluginModule Create() =&gt; new global::$(ManagedPluginEntryType)()%3B" />
       <_ManagedPluginEntryProbeLine Include="}" />
     </ItemGroup>
     <WriteLinesToFile File="$(ManagedPluginEntryProbeSource)"

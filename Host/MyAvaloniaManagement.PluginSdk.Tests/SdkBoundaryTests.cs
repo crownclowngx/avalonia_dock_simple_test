@@ -5,7 +5,7 @@ using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.PluginSdk.Tests;
 
-/// <summary>以反射和项目引用白名单保护 G5 的 Core/UI 生产入口与 Legacy 迁移边界。</summary>
+/// <summary>以反射和项目引用白名单保护 Core/UI 生产入口，以及 G9 后仍在迁移期的 Legacy 边界。</summary>
 public sealed class SdkBoundaryTests
 {
     private static readonly string[] LegacyReferenceAllowlist =
@@ -18,7 +18,6 @@ public sealed class SdkBoundaryTests
         "Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csproj",
         "Plugins/BiliDownloader/BiliDownloader/BiliDownloader.csproj",
         "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj",
-        "Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj",
         "Plugins/MySmallTools/MySmallTools/MySmallTools.csproj",
     ];
 

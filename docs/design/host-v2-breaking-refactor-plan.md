@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G8 已完成，G9–G14 尚未实现。
+> 状态：实施中；G0–G9 已完成，G10–G14 尚未实现。
 >
 > 评审日期：2026-08-21。
 >
@@ -13,10 +13,11 @@
 > [V2 G5 声明式贡献目录](../plan-history/host-v2/g5-declarative-contribution-catalog.md)与
 > [V2 G6 Host Dock Adapter](../plan-history/host-v2/g6-host-dock-adapter.md)与
 > [V2 G7 Document V2](../plan-history/host-v2/g7-document-v2.md)与
-> [V2 G8 布局与生命周期 V2](../plan-history/host-v2/g8-layout-and-lifecycle-v2.md)。
+> [V2 G8 布局与生命周期 V2](../plan-history/host-v2/g8-layout-and-lifecycle-v2.md)与
+> [V2 G9 MyPlugTest 迁移](../plan-history/host-v2/g9-my-plug-test-v2.md)。
 >
-> 重要说明：G8 已完成唯一 Layout V2、Host internal 生命周期、可用性门控与严格退出链；
-> 四业务插件的完整 V2 模型迁移仍属于 G9–G12，G8 的最小消费者适配不得引用为迁移完成。
+> 重要说明：G9 已将 MyPlugTest 完整迁移为首个真实 V2 业务插件；DaTangAccountingHelpPlug、
+> MySmallTools 与 BiliDownloader 仍通过 Legacy 阶段桥保留源码回归，分别等待 G10–G12。
 
 ## 1. 目的与结论
 
@@ -139,7 +140,7 @@ flowchart TB
 G2 已新建 `Host/MyAvaloniaManagement.PluginSdk`，程序集和根命名空间统一为
 `MyAvaloniaManagement.PluginSdk`；`PluginSdk.UI` 也已从依赖元包变成真实契约程序集，Dock 相关包已移除。
 旧 Common 被移至 `Host/MyAvaloniaManagement.LegacyPluginContracts`，只保留旧程序集名和命名空间作为
-不可打包的仓库内部阶段桥。G5 已迁移 Host 模块与贡献目录；四业务插件迁移仍属于 G9–G12，
+不可打包的仓库内部阶段桥。G5 已迁移 Host 模块与贡献目录，G9 已迁移 MyPlugTest；其余三个插件属于 G10–G12，
 Legacy 项目的最终删除属于 G13。
 
 ### 3.2 public API（G2 已建立，G5 已接入 Host 生产路径）
@@ -511,13 +512,32 @@ Windows Smoke、ReleaseAcceptance、发布包或发布门禁。
 严格 JSON Codec/Validator 均为 **100%**，Coordinator/Runner/StateStore 分别为
 **95.93%/94.05%/98.04%**。SDK 32、三个业务插件 966 项与文档核心/完整门禁全部通过。
 
-### G9：迁移 MyPlugTest
+### G9：迁移 MyPlugTest（已完成）
 
 - **目标**：用最小插件打通 Document、Tool、View、事件、Scope 和打包全链路。
 - **删除/新增**：删除全部 Strategy/Dock 基类；模块改为声明式贡献。
 - **插件影响**：示例代码成为 V2 快速开始的事实源，不增加示例业务。
 - **验证**：多 Document 隔离、Tool 单例、事件订阅释放、最终 ZIP 加载和 UI 测试。
 - **回滚**：移除 V2 MyPlugTest 包；Host V2 不加载旧包。
+
+G9 已把 4 个 Document、1 个 Tool 及其 View 收口到 `IPluginRegistration` 唯一声明，普通模型不再继承
+Dock，Document scoped 与 Tool singleton 由注册入口统一决定。Welcome 使用独立严格 Codec 保存 schema 1
+内容；事件订阅令牌、关闭取消、View 和 Scope 各有单一所有者。完整贡献矩阵、内容 schema、失败原子性、
+释放顺序、SOLID 取舍与回滚边界见
+[G9 专项记录](../plan-history/host-v2/g9-my-plug-test-v2.md)。
+
+G9 非发布专项门禁实际 **86/86**：Plugin 59、Headless UI 14、Plugin SDK 12、最终 ZIP 真实加载 1。
+两次隔离构建的 11 文件清单、逐文件摘要与归档 SHA-256 完全一致，解压后通过真实
+`PluginLoadContext`、模块预检、插件组合以及 4 Document + 1 Tool Registry 验证。专项摘要固定记录
+`aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、
+`releaseGate=false`、`publishable=false`。本阶段未执行 Windows CI、真实窗口 Smoke、
+ReleaseAcceptance、发布门禁、签名、上传或发布操作。
+
+完整非发布回归实际为 Host Unit 172、UI 46、Plugin 195，共 **413/413**；行覆盖率
+**83.24%**、分支覆盖率 **68.83%**，未降低 G8 的 83.05%/68.65% 下限。SDK 单元 **32/32**，
+Core/UI API 兼容与包消费门禁通过；BiliDownloader 719、DaTangAccountingHelpPlug 64、
+MySmallTools 183，共 **966/966**。四插件两轮非发布包矩阵、locked restore、Release
+`-warnaserror` 全解决方案构建、文档核心/完整门禁和差异检查均通过。
 
 ### G10：迁移 DaTangAccountingHelpPlug
 
@@ -562,14 +582,14 @@ Windows Smoke、ReleaseAcceptance、发布包或发布门禁。
 ## 7. 执行顺序与合并纪律
 
 ```text
-G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
+G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9
                                       ↓
                      G9 → G10 → G11 → G12 → G13 → G14
 ```
 
 - G0–G3 先固定版本、包和加载边界；未完成前不得实现容器或 UI 双轨；
 - G4–G8 先用 Host 内建贡献和测试插件形成完整 V2 Host；
-- G9–G12 按复杂度从低到高迁移真实插件，每个插件独立复跑；
+- G9 已完成首个真实插件迁移；G10–G12 按复杂度从低到高继续迁移，每个插件独立复跑；
 - G13 只负责删除和证明没有残留，不承载新架构设计；
 - G14 只封板已经通过的事实，不在发布门禁阶段追加功能或重写契约。
 

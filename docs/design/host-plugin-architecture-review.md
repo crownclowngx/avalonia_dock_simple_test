@@ -1,13 +1,13 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-21（已同步 Managed Plugin V2 G8）<br>
+> 更新日期：2026-08-21（已同步 Managed Plugin V2 G9）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系  
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
 > 不在本轮范围：逐项评审插件业务功能、第三方插件市场、运行时热卸载、插件沙箱
 
-> V2 当前状态：G0–G8 已完成。Host 生产模块入口、声明式贡献目录、Dock Adapter、Document V2、
-> Layout V2 与 internal 生命周期已建立；四业务插件完整迁移仍属于 G9–G12。
+> V2 当前状态：G0–G9 已完成。MyPlugTest 已使用最终 SDK、声明式贡献与普通模型；
+> DaTangAccountingHelpPlug、MySmallTools、BiliDownloader 仍等待 G10–G12。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -32,7 +32,7 @@
 ```mermaid
 flowchart TB
     Host["MyAvaloniaManagement<br/>Avalonia 桌面宿主"]
-    Sdk["PluginSdk + PluginSdk.UI<br/>G8 Host 生产契约"]
+    Sdk["PluginSdk + PluginSdk.UI<br/>Host 与 MyPlugTest 生产契约"]
     Legacy["LegacyPluginContracts<br/>业务插件源码桥"]
     Dock["Avalonia 12 + Dock 12<br/>UI 与停靠模型"]
 
@@ -45,7 +45,7 @@ flowchart TB
     Host --> Dock
     Bili --> Legacy
     Small --> Legacy
-    TestPlug --> Legacy
+    TestPlug --> Sdk
     DaTang --> Legacy
 
     Host -. "运行时扫描 Controls 子目录" .-> Bili
@@ -54,14 +54,15 @@ flowchart TB
     Host -. "运行时扫描 Controls 子目录" .-> DaTang
 ```
 
-**[代码事实]** 四业务插件程序集仍各自保留一个 Legacy `IPluginModule` 以维持 G9–G12 前源码回归；
-`PluginModulePreflight` 只接受最终 UI SDK `IPluginModule`，因此这些入口会被稳定隔离，不存在双接口回退。
+**[代码事实]** MyPlugTest 已只保留最终 UI SDK `IPluginModule`，并通过真实 V2 加载和组合形成
+4 个 Document 与 1 个 Tool。其余三个业务插件仍保留 Legacy `IPluginModule` 以维持 G10–G12 前源码回归；
+`PluginModulePreflight` 会稳定隔离它们，不存在双接口回退。
 最终 SDK 加载链由两个独立依赖测试夹具验证。参见
 [`ManagedOnlyPluginLoadingTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/ManagedOnlyPluginLoadingTests.cs)。
 
 **[代码事实]** G2 已把最终 V2 SDK 分成平台无关的 `MyAvaloniaManagement.PluginSdk` 与真实
-`MyAvaloniaManagement.PluginSdk.UI`。Host 已在 G5 迁移；四业务插件暂时引用不可打包的
-`MyAvaloniaManagement.LegacyPluginContracts`；它仍输出旧程序集名以维持源码测试，但不是 SDK，
+`MyAvaloniaManagement.PluginSdk.UI`。Host 已在 G5 迁移，MyPlugTest 已在 G9 迁移；其余三个插件暂时引用不可打包的
+`MyAvaloniaManagement.LegacyPluginContracts`。该桥仍输出旧程序集名以维持源码测试，但不是 SDK，
 也不得新增生产消费者。参见
 [`MyAvaloniaManagement.LegacyPluginContracts.csproj`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/MyAvaloniaManagement.LegacyPluginContracts.csproj)
 和 [V2 G2 记录](../plan-history/host-v2/g2-plugin-sdk-rebuild.md)。
@@ -113,7 +114,7 @@ sequenceDiagram
 
 | 入口要求 | 策略构造 | 可用能力 | 当前状态 |
 | --- | --- | --- | --- |
-| 严格 manifest v2、同名 deps、最终 UI SDK 精确 `IPluginModule` 类型 | Registration 显式登记，插件私有 Provider 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | Host 与最终测试夹具采用；业务插件待 G9–G12 |
+| 严格 manifest v2、同名 deps、最终 UI SDK 精确 `IPluginModule` 类型 | Registration 显式登记，插件私有 Provider 激活 | 私有 DI、Document/Tool/View、可选 Lifecycle | Host、MyPlugTest 与最终测试夹具采用；其余插件待 G10–G12 |
 
 **[代码事实]** `PluginModulePreflight` 要求清单精确入口 public、非抽象、非泛型、实现最终 UI SDK
 `IPluginModule` 且具有 public 无参构造；`PluginProviderOwner` 在 Host Provider 建立后为每个插件创建
@@ -130,9 +131,8 @@ sequenceDiagram
 
 ## 3. Document：多实例工作上下文
 
-> G8 当前生产事实：Host Welcome 与 V2 测试 Document 通过最终 `DocumentDescriptor`、Registry、internal
-> Activator、异步初始化与 Dock Adapter 创建；以下四业务插件 Strategy/Document v1 说明是迁移前源码事实，
-> 不代表 G8 Host 会加载这些入口。
+> G9 当前生产事实：MyPlugTest 的 4 个 Document 与 Host 内建贡献都通过最终 `DocumentDescriptor`、
+> Registry、internal Activator、异步初始化与 Dock Adapter 创建。其余三个业务插件仍是迁移输入。
 
 ### 3.1 最终创建入口统一为“类型 + ActivationContext”
 
@@ -145,9 +145,9 @@ sequenceDiagram
 - 标签页真正关闭后，实例相关资源必须释放。
 
 Host 生产入口接收 `DocumentTypeId + DocumentActivationContext` 并异步返回完整 Adapter。Creation Intent
-必须先与冻结 Descriptor 核对；恢复内容只通过 `RestoredContent` 传入。四业务插件源码中的
-`IDocumentCreationStrategy`、`DocumentCreationParams` 与 Intent Provider 是 G9–G12 前的 Legacy 阶段事实，
-不会进入 G8 Host 生产路径。
+必须先与冻结 Descriptor 核对；恢复内容只通过 `RestoredContent` 传入。剩余三个插件源码中的
+`IDocumentCreationStrategy`、`DocumentCreationParams` 与 Intent Provider 是 G10–G12 前的 Legacy 阶段事实，
+不会进入 Host V2 生产路径。
 
 ### 3.2 所有 V2 Document 统一纳入所属 Provider Scope
 
@@ -155,22 +155,16 @@ Host 生产入口接收 `DocumentTypeId + DocumentActivationContext` 并异步�
 关闭令牌和幂等释放入口的窄 Lease。Host 等待 `InitializeAsync` 后才构造 Adapter/View；最终关闭依次
 断开 View、发出令牌并释放模型与 scoped 依赖。生产不注册 `IDocumentScopeFactory`。
 
-> 下图和插件矩阵描述尚待迁移业务插件的旧源码测试方式，只用于说明 G9–G12 输入，不是当前 Host 链路。
-
 ```mermaid
 flowchart TD
-    User["用户从菜单或文件入口创建 Document"] --> Host["ManagementFactory 兼容入口"]
-    Host --> Registry["PluginRegistry 按 DocumentTypeId 分派显式策略"]
-    Registry --> Strategy["IDocumentCreationStrategy.CreateDocument"]
-    Strategy --> Choice["当前 Managed 策略统一调用 IDocumentScopeFactory"]
-    Choice --> Scope["宿主创建独立 IServiceScope"]
-    Scope --> Resolve["从 Scope 解析 Document 与 scoped 依赖"]
-    Resolve --> Dock["加入中央 DocumentDock"]
-    Dock --> Close["Dock 确认标签页已关闭"]
-    Close --> Release["DockDocumentLifetime 移除缓存并释放 Scope"]
-    Release --> Managed{"该 Document 是否登记 Scope?"}
-    Managed -- "是" --> Dispose["释放 Document、Scoped 服务和资源"]
-    Managed -- "否" --> End["没有统一的 Document 级释放动作"]
+    User["用户创建 Document"] --> Registry["Registry 查 Descriptor 与 Owner"]
+    Registry --> Scope["所属 PluginProvider 创建 Document Scope"]
+    Scope --> Init["模型 InitializeAsync"]
+    Init --> View["Host 创建 View 并设置 DataContext"]
+    View --> Adapter["internal Dock Adapter 原子发布"]
+    Adapter --> Close["确认关闭"]
+    Close --> Cancel["先取消 IDocumentLifetime"]
+    Cancel --> Dispose["释放 View / Adapter / Scope"]
 ```
 
 **[代码事实]** 每个插件 Provider 都拥有自己的 `DocumentScopeManager`，建立 `Document` 与该插件
@@ -184,13 +178,12 @@ flowchart TD
 | MySmallTools 的播放、库、加密、解密 Document | `IDocumentScopeFactory` + scoped ViewModel/资源 | 已纳入宿主所有权 |
 | DaTang 银行余额调节 Document | `IDocumentScopeFactory` + scoped 运行状态 | 已纳入宿主所有权 |
 | BiliDownloader Document | `IDocumentScopeFactory` + scoped ViewModel | 已纳入宿主所有权；插件级下载任务不随标签关闭 |
-| MyPlugTest 三个 Document | `IDocumentScopeFactory` + scoped ViewModel/局部状态 | 已纳入宿主所有权 |
+| MyPlugTest 四个 Document | 最终 Descriptor + V2 Activator + 独立 Scope | G9 已完整迁移；Welcome 可持久化 |
 | DaTang 发票导入 Document | `IDocumentScopeFactory` + scoped ViewModel | 已纳入宿主所有权，与同插件对账 Document 规则一致 |
 
-**[架构判断]** 当前全部 Managed Document 都由所属插件 Scope 托管；Document 注册为 scoped，策略只
-依赖本插件 `IDocumentScopeFactory`，Host 与其他插件不能解析这些 ViewModel。未来插件若绕过该工厂
-自行构造 Document；G5 已在生产模块入口阻断该旧路径，G6 已完成 Host 普通模型和 Adapter，
-G9–G12 再迁移四个真实业务插件。
+**[架构判断]** Host V2 和 MyPlugTest Document 都由所属插件 Scope 托管；声明式注册自动固定 scoped
+生命周期，Host 与其他插件不能解析其模型。G5 已阻断程序集扫描与 Strategy 旁路，G10–G12 将沿用
+MyPlugTest 已验证的同一所有权链迁移其余三个插件。
 
 **[代码事实]** Managed Document Scope 现在同时提供 scoped `IDocumentLifetime`。Dock 确认关闭后，`DocumentScopeManager` 先取消 `ClosingToken`，再释放 ViewModel 与 scoped 依赖；被否决的关闭不会提前取消，宿主退出则对仍打开的 Document 执行同一路径。取消是协作式且不等待：Document 局部的 HTTP、解析、浏览、探测与发票导入停止并禁止迟到 UI 回写；BiliDownloader 已提交到插件级 Coordinator 的下载任务继续运行。原生文件选择器只能丢弃迟到结果，EPPlus 已进入同步 `SaveAs` 后允许完成写入。
 
@@ -230,7 +223,7 @@ Host `RequiresSave` 强制另存且永不覆盖损坏原件。
 - 适合展示全局状态、导航和控制命令；
 - 不应拥有必须依赖 Tool 可见性才能存活的后台任务。
 
-**[代码事实]** `ManagementFactory` 启用 `HideToolsOnClose`，创建并缓存 Tool，禁止浮动窗口，同时保留主窗口内部拖放和四向布局。Top/Bottom 横跨 Left/Document/Right 中间行的完整宽度，没有对应 Tool 时不创建空白行。参见 [`ToolMetadata.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/ToolCreation/ToolMetadata.cs)、[`ToolDockPlacement.cs`](../../Host/MyAvaloniaManagement/Business/Layout/ToolDockPlacement.cs)、[`ManagementFactory.cs`](../../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs) 和 [`DockFourWayLayoutTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/DockFourWayLayoutTests.cs)。
+**[代码事实]** `ManagementFactory` 按最终 `ToolDescriptor` 创建并缓存 Tool Adapter，`Hide` 关闭行为只隐藏而不重建模型；同时保留主窗口内部拖放和四向布局。Top/Bottom 横跨 Left/Document/Right 中间行的完整宽度，没有对应 Tool 时不创建空白行。参见 [`ContributionDescriptors.cs`](../../Host/MyAvaloniaManagement.PluginSdk.UI/ContributionDescriptors.cs)、[`ToolDockPlacement.cs`](../../Host/MyAvaloniaManagement/Business/Layout/ToolDockPlacement.cs)、[`ManagementFactory.cs`](../../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs) 和 [`DockFourWayLayoutTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/DockFourWayLayoutTests.cs)。
 
 ### 4.2 Tool、Document 与后台服务的职责流
 
@@ -272,16 +265,16 @@ Migrator、浮动字段或历史 ID 归一化。缺失/生命周期不可用插�
 
 | 通道 | 当前方式 | 已有价值 | 主要风险 |
 | --- | --- | --- | --- |
-| UI 扩展 | 插件直接返回 Dock `Document` / `Tool` | 简单、强类型、UI 自由度高 | 与 Dock 版本和宿主布局模型强耦合 |
+| UI 扩展 | Descriptor 一次声明普通模型与 Avalonia View；Host Adapter 独占 Dock | 强类型、元数据无副作用、插件不依赖 Dock | View 仍与宿主验证过的 Avalonia/UI SDK 版本协同升级 |
 | 服务接入 | 插件通过 Context 获得独占的新服务集合并建立私有 Provider | 可使用 Microsoft DI，多实现/keyed/开放泛型不受影响；Host/插件对象图分离 | 仍是可信进程内代码，不构成安全沙箱 |
 | 创建入口 | Context 显式登记，`PluginRegistry` 原子发布；Document 可附加 Creation Intent | 未登记类型不可见，元数据只读一次，所有权明确 | 插件作者必须维护完整贡献清单 |
 | 事件通信 | SDK `IHostEventBus`，每 HostRuntime 独立实例；Host 内部使用窄服务和 Dock 协调器 | 插件事件同步强类型、精确类型、令牌式生命周期；Host 依赖可直接追踪 | 只有真实多消费者事件才能进入 SDK，不能把 Host 调用重新包装成广播 |
 | 文件能力 | 宿主包装选择器、打开、保存、路径/所有权状态 | 内容契约与脏状态分离，Document 与布局均原子写入，关闭确认共用同一提交事实 | 当前仅存在单一内容版本分支；真实旧版本出现时需由对应插件显式读取 |
-| 布局能力 | 宿主持有 Dock 树和 V1 快照 | 四向、隐藏、固定、恢复已有测试 | 插件缺失时整份布局回退 |
+| 布局能力 | 宿主持有 Dock 树和严格 Layout V2 | 四向、隐藏、固定、恢复已有测试 | 插件缺失时整份布局回退 |
 
 **[代码事实]** SDK 只公开 `IHostEventBus.Publish/Subscribe`，Host internal 实现由每个根容器独占。
 发布在调用线程按登记顺序同步执行，订阅者持有幂等令牌并在自身生命周期结束时释放；不存在静态
-默认实例或全局 Reset。参见 [`IHostEventBus.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/Events/IHostEventBus.cs)
+默认实例或全局 Reset。参见 [`PluginContracts.cs`](../../Host/MyAvaloniaManagement.PluginSdk/PluginContracts.cs)
 和 [`HostEventBus.cs`](../../Host/MyAvaloniaManagement/Business/Events/HostEventBus.cs)。
 
 **[代码事实]** 宿主生产 ViewModel 只使用构造注入，App 通过内部桌面 Shell 创建；内建 Tool 策略使用对应的 `Func<ViewModel>`，Welcome 策略使用延迟 `Func<ManagementFactory>` 打破注册表构造循环。静态 `ServiceProvider` 和生产无参构造已经删除。主窗口与文件树设计器改用无 I/O 的独立样例数据；`ToolManagementViewModel` 在根 Dock 建立前读取 `ManagementFactory` 提供的内部只读注册快照。参见 [`ServiceCollectionExtensions.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/ServiceCollectionExtensions.cs) 和 [`ToolManagementViewModel.cs`](../../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs)。
@@ -294,18 +287,18 @@ Migrator、浮动字段或历史 ID 归一化。缺失/生命周期不可用插�
 | --- | --- | --- |
 | .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.0、Dock 12.0.0.2；产品/SDK、构建和包版本分别由 `Directory.Version.props`、`Directory.Build.props`、`Directory.Packages.props` 集中管理 |
 | 插件目录扫描 | 已实现 | 按规范化根目录缓存线程安全快照；只加载清单声明且携带 deps 的入口，模块结构错误按目录隔离 |
-| Managed-only v1 | 已实现 | 四个现有插件均为 Managed；无模块激活、Legacy 所有者推断和历史加载 Facade 已删除 |
-| 显式扩展贡献 | 已实现 | 宿主与四插件显式登记 Document/Tool/View/Lifecycle；Builder 激活、全量校验后原子发布不可变 `PluginRegistry`；未登记程序集类型不可见 |
+| Managed-only V2 | 部分迁移 | Host 与 MyPlugTest 使用最终 UI SDK 精确入口；其余三个插件在 G10–G12 前由预检隔离 |
+| 显式扩展贡献 | 已实现并迁移首个插件 | Host 与 MyPlugTest 一次登记模型/View/Descriptor；Builder 全量校验后原子发布不可变 `PluginRegistry` |
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient；根容器启用构建和 Scope 验证 |
-| 插件生命周期 | 已实现 V1 | 顺序初始化、反序关闭、幂等、失败隔离、超时、依赖图和只读插件状态 Tool 均已有测试；仍不支持运行时重试、禁用或热卸载 |
+| 插件生命周期 | 已实现 V2 | PluginId 正序初始化、成功项反序关闭、幂等、失败隔离、超时和只读可用性投影已有测试；不支持热卸载 |
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
-| 布局持久化 | 已实现 V1 | 原子写入、校验、坏文件隔离、两向迁移、历史浮动归一化已有测试；插件缺失时整份回退 |
-| Document 保存 | 已实现 V1 | 公共脏状态、无副作用快照、统一保存结果、标签/退出确认、最近成功备份、坏文件恢复副本和原子替换均有回归测试；不兼容历史 Document 文件 |
-| 每 Document Scope | 已实现 | 当前全部 Managed Document 均通过 `IDocumentScopeFactory` 创建 scoped ViewModel；关闭与宿主退出释放路径已有回归门禁 |
+| 布局持久化 | 已实现 V2 | 唯一严格 schema、原子写入、坏文件隔离、可用性门控和整体回退已有测试；不读取 V1 |
+| Document 保存 | 已实现 V2 | 六字段信封、插件内容 schema、统一保存、关闭/退出确认、备份恢复和原子替换均有回归；MyPlugTest Welcome 已真实接入 |
+| 每 Document Scope | 已实现 | Host 与 MyPlugTest 经 V2 Activator 创建 scoped 模型；其余插件等待迁移，关闭与退出释放已有门禁 |
 | Document 关闭取消 | 已实现 | scoped `IDocumentLifetime` 在 Dock 确认关闭后先发出取消再释放 Scope；局部任务协作退出且不等待，插件级后台任务不受影响 |
 | 加载上下文隔离 | 已实现（托管私有依赖） | 每目录一个不可回收 ALC；共享 SDK 只来自默认上下文，普通私有依赖只由各插件 deps/RID 图解析，同名不同版本回归已覆盖 |
 | 错误处理与诊断 | 已实现 V1 | 插件发现、程序集/依赖加载、模块与扩展组合、DI、生命周期和布局统一进入会话诊断；单插件加载失败隔离后继续，契约错误由独立启动错误窗汇总展示；JSON Lines 日志保留最近 20 次会话，Console/Trace 仅作兼容镜像 |
-| ID 与元数据 | 已实现 | `PluginId`、`DocumentTypeId`、`ToolTypeId`、`CreationIntentId` 均为引用型值对象；主 ID、旧别名和所有权经原子注册表统一校验，不再存在 `TryAdd` 首次胜出语义 |
+| ID 与元数据 | 已实现 V2 | 稳定 ID 是引用型值对象；V2 只接受主 ID，Descriptor 与所有权经原子 Registry 校验，不存在 LegacyIds 或首次胜出 |
 | 构建与部署 | 已实现 V1 | 根级 Props/Targets 统一生成清单、收集声明资产并只清理当前插件目录；四插件保持独立版本和 ZIP |
 | 真实包验证 | 已实现基础矩阵 | 四个最终 win-x64 ZIP 各做两次隔离确定性构建、严格文件复验和宿主真实加载；长期运行仍是独立门禁 |
 | 插件 manifest | 已实现 V1 | 四个清单由项目身份、版本和显式兼容区间生成；源码树不保留手写副本，能力和插件依赖声明仍未纳入 V1 |
@@ -554,7 +547,7 @@ public interface IHostContext
 
 ### P0：收口当前已经暴露的所有权和稳定性问题
 
-1. **已完成**：所有当前 Managed Document 都经 `IDocumentScopeFactory` 创建，scoped 注册与 `ValidateScopes` 共同禁止从根容器解析 Document；未来的 `IDocumentService` 可在此基础上扩展激活和查询能力。
+1. **已完成并迁移首个插件**：Host 与 MyPlugTest Document 经最终 Registry/Activator 创建所属插件 Scope，scoped 注册与 `ValidateScopes` 共同禁止从根容器解析 Document；其余插件留待 G10–G12。
 2. **已完成（G2）**：Host 自有类型全部 internal，构造注入成为唯一生产路径；静态 `ServiceProvider` 与生产无参 ViewModel 构造已删除，设计器使用独立内存样例。
 3. **已完成**：重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 均形成排序稳定的结构化诊断；注册表无诊断时才一次性发布，不再有“首次注册胜出”。
 4. **已完成**：只读插件状态 Tool 已覆盖程序集加载与生命周期结果；模块构造、服务注册、策略发现、DI 和布局均进入同一会话诊断，致命组合错误由独立启动错误窗展示。
@@ -591,14 +584,14 @@ public interface IHostContext
 
 ## 10. 最终评价
 
-项目已经明显跨过“把几个 DLL 反射进 Dock”的阶段：四个插件都进入 Managed 模型并具有加载前清单；
+项目已经明显跨过“把几个 DLL 反射进 Dock”的阶段：Host 与 MyPlugTest 已进入最终 V2 模型并具有加载前清单；
 manifest v2、每插件独立 Provider、插件生命周期、每 Document Scope 基础设施、创建意图、四向 Tool、
 禁用浮动、文档/布局原子持久化和坏文件隔离都已经落地。宿主内部也已形成 Composition Root、Registry、
 Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. V2 G8 已把 Host 生产贡献、Document/Layout 持久化和生命周期收口为最终 SDK Registration、不可变 Registry、独立 Activator、internal Dock Adapter、唯一 V2 格式与只读可用性投影；
+1. V2 G9 已在上述 Host 链路上迁移首个真实业务插件，G10–G12 仍需迁移另外三个插件；
 2. 运行前 manifest v2、Core/UI 兼容检查、声明式 Plugin Registry 和用户可见诊断已经建立；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。

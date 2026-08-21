@@ -11,6 +11,7 @@ using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagementCommon.Plugin;
 using MyPlugTest.Plugin;
 using MySmallTools.Plugin;
+using V2PluginModule = MyAvaloniaManagement.PluginSdk.UI.IPluginModule;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -226,7 +227,9 @@ public sealed class VersionPolicyTests
                 plugin.Assembly.GetName().Name + ".dll",
                 manifest.EntryPoint.Assembly);
             var expectedEntryType = Assert.Single(plugin.Assembly.ExportedTypes, type =>
-                typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract).FullName!;
+                (typeof(IPluginModule).IsAssignableFrom(type) ||
+                 typeof(V2PluginModule).IsAssignableFrom(type)) &&
+                !type.IsAbstract).FullName!;
             AssertVersionFact(
                 $"{plugin.Name} entry type expression",
                 expectedEntryType,

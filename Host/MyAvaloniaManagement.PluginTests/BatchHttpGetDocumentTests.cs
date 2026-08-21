@@ -9,7 +9,8 @@ public sealed class BatchHttpGetDocumentTests
     public async Task 请求严格按非空行顺序执行且单行失败不阻断后续行()
     {
         var service = new RecordingUrlContentService();
-        var viewModel = new BatchHttpGetViewModel(service)
+        using var lifetime = new TestPluginDocumentLifetime();
+        using var viewModel = new BatchHttpGetViewModel(service, lifetime)
         {
             RequestLines = "one.test/path\n\nhttps://two.test/fail\r\nhttp://three.test/ok",
         };
@@ -35,7 +36,8 @@ public sealed class BatchHttpGetDocumentTests
     public async Task 非Http协议只记录失败而不调用请求服务()
     {
         var service = new RecordingUrlContentService();
-        var viewModel = new BatchHttpGetViewModel(service)
+        using var lifetime = new TestPluginDocumentLifetime();
+        using var viewModel = new BatchHttpGetViewModel(service, lifetime)
         {
             RequestLines = "ftp://example.com/file",
         };
@@ -51,7 +53,8 @@ public sealed class BatchHttpGetDocumentTests
     public async Task DisposingDocumentCancelsInFlightRequestWithoutRenderingAnError()
     {
         var service = new BlockingUrlContentService();
-        var viewModel = new BatchHttpGetViewModel(service)
+        using var lifetime = new TestPluginDocumentLifetime();
+        using var viewModel = new BatchHttpGetViewModel(service, lifetime)
         {
             RequestLines = "https://slow.test/request\nhttps://never.test/request",
         };

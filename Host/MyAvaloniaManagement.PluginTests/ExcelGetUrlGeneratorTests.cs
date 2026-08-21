@@ -1,12 +1,5 @@
-using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagement.Business.Events;
-using MyPlugTest.Create;
+using MyAvaloniaManagement.PluginSdk;
 using MyPlugTest.Models;
-using MyPlugTest.Plugin;
 using MyPlugTest.Services;
 using MyPlugTest.ViewModels;
 using OfficeOpenXml;
@@ -157,7 +150,8 @@ public sealed class ExcelGetUrlGeneratorTests
         var viewModel = new ExcelGetUrlGeneratorViewModel(
             new StubExcelFileDialogService("input.xlsx"),
             reader,
-            new ExcelGetUrlBuilder());
+            new ExcelGetUrlBuilder(),
+            new TestPluginDocumentLifetime());
 
         await viewModel.SelectWorkbookCommand.ExecuteAsync(null);
         viewModel.ParameterMappings[0].SelectedColumn =
@@ -186,7 +180,8 @@ public sealed class ExcelGetUrlGeneratorTests
         var viewModel = new ExcelGetUrlGeneratorViewModel(
             new StubExcelFileDialogService("input.xlsx", outputPath),
             reader,
-            new ExcelGetUrlBuilder());
+            new ExcelGetUrlBuilder(),
+            new TestPluginDocumentLifetime());
 
         try
         {
@@ -221,34 +216,19 @@ public sealed class ExcelGetUrlGeneratorTests
     }
 
     [Fact]
-    public void 新Document由独立Scope创建并注册为Scoped()
+    public async Task V2初始化采用默认或请求标题()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<IHostEventBus, HostEventBus>();
-        services.AddLegacyPluginDocumentScopesForTests();
-        new MyPlugTestPluginModule().Configure(new TestPluginRegistrationContext(
-            new PluginId("myavalonia.plugin.my-plug-test"), services));
+        using var viewModel = new ExcelGetUrlGeneratorViewModel(
+            new StubExcelFileDialogService("input.xlsx"),
+            new SwitchingWorkbookReader(),
+            new ExcelGetUrlBuilder(),
+            new TestPluginDocumentLifetime());
 
-        Assert.Equal(
-            ServiceLifetime.Scoped,
-            Assert.Single(services, descriptor =>
-                descriptor.ServiceType == typeof(ExcelGetUrlGeneratorViewModel)).Lifetime);
+        await viewModel.InitializeAsync(new DocumentActivationContext(string.Empty), default);
+        Assert.Equal("Excel GET 地址生成器", viewModel.Presentation.Title);
 
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateScopes = true,
-            ValidateOnBuild = true,
-        });
-        var strategy = ActivatorUtilities.CreateInstance<ExcelGetUrlGeneratorDocumentStrategy>(
-            provider);
-        var document = Assert.IsType<ExcelGetUrlGeneratorViewModel>(strategy.CreateDocument(
-            new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)));
-
-        Assert.Equal("Excel GET 地址生成器", document.Title);
-        Assert.Equal(
-            "myavalonia.plugin.my-plug-test.document.excel-get-url-generator",
-            strategy.GetMetadata().DocumentTypeId.Value);
-        Assert.True(provider.GetRequiredService<LegacyPluginDocumentScopeFactory>().Release(document));
+        await viewModel.InitializeAsync(new DocumentActivationContext("自定义 Excel 标题"), default);
+        Assert.Equal("自定义 Excel 标题", viewModel.Presentation.Title);
     }
 
     private static string CreateWorkbook(Action<ExcelPackage> configure)
@@ -348,4 +328,5 @@ public sealed class ExcelGetUrlGeneratorTests
                     .ToArray(),
                 []);
     }
+
 }

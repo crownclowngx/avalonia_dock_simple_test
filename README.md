@@ -8,11 +8,10 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > `managed-plugin-v1.0.0` 定位。签署内容、非发布门禁证据和回退边界见
 > [G16 文档与 v1 基线](./docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
-> Managed Plugin V2 已完成 G0–G8；G9–G14 尚未实现。最终 Core/UI SDK、严格 manifest v2、
+> Managed Plugin V2 已完成 G0–G9；G10–G14 尚未实现。最终 Core/UI SDK、严格 manifest v2、
 > 每插件独立 Provider、声明式贡献目录、Host internal Dock Adapter、Document V2、Layout V2 与
-> Host internal 生命周期已进入生产路径。四个业务插件仍保留 Legacy 模型，完整迁移尚未完成；G8
-> 只对 BiliDownloader 与 Harness 做了解除旧 Manager 的最小适配。见
-> [V2 G8 专项记录](./docs/plan-history/host-v2/g8-layout-and-lifecycle-v2.md)。
+> Host internal 生命周期已进入生产路径。MyPlugTest 已成为首个真实 V2 插件，另外三个业务插件
+> 仍等待 G10–G12。见 [V2 G9 专项记录](./docs/plan-history/host-v2/g9-my-plug-test-v2.md)。
 
 ## 核心扩展模型
 
@@ -40,10 +39,11 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 | [DaTangAccountingHelpPlug](./Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj) | 发票信息综合计算和银行余额调节 |
 | [MyPlugTest](./Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) | Managed Plugin 的 Document、Tool、消息通信和依赖注入示例 |
 
-四个当前插件均使用 Managed Plugin 接入。G4 已删除 Legacy 二进制激活路径；无模块程序集、
-缺少入口 `.deps.json` 的目录以及依赖历史加载 Facade 的代码不会进入插件运行链。
+四个当前插件均使用 Managed Plugin 构建协议；MyPlugTest 已通过最终 V2 入口真实加载，另外三个插件
+仍保留 Legacy 源码以等待迁移，因此会被 V2 预检隔离。缺少入口 `.deps.json` 或依赖历史加载 Facade
+的代码不会进入运行链。
 
-## V2 G8 当前 SDK、manifest、容器、Dock、Document、Layout 与生命周期边界
+## V2 G9 当前 SDK、manifest、容器、Dock、Document、Layout 与插件迁移边界
 
 历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。当前 G1 仍沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
@@ -62,7 +62,7 @@ SDK 程序集版本均为 `2.0.0.0`；V2 已删除独立 Host API 版本事实�
 G2 已建立真实的 `MyAvaloniaManagement.PluginSdk.dll` 与 `MyAvaloniaManagement.PluginSdk.UI.dll`。
 Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约；两者分别维护空 Shipped 和完整
 Unshipped 的 v2 API 基线。旧 `MyAvaloniaManagementCommon.dll` 只由仓库内部
-`MyAvaloniaManagement.LegacyPluginContracts` 项目生成，不能打包、不能新增生产消费者，并将在 G9–G12
+`MyAvaloniaManagement.LegacyPluginContracts` 项目生成，不能打包、不能新增生产消费者，并将在 G10–G12
 迁移后删除。
 
 G4 已把宿主与插件对象图彻底分开：Host Provider 先构建，每个清单入口从新的空
@@ -73,7 +73,7 @@ G5 把 Host 生产模块入口切换到最终 UI SDK，并以 `PluginRegistratio
 `PluginRegistry` 和 internal Activator 形成唯一贡献路径。Document 自动为 scoped，Tool/Lifecycle 为
 插件 singleton；Descriptor、模型和 View 在一次声明中冻结。插件内错误丢弃整个候选；跨插件 ID 或精确
 模型映射冲突排除全部冲突插件，Host 冲突保留 Host，未冲突插件继续发布。Registry 不保存 Provider，
-Welcome 与四个 Host Tool 也从相同目录产生。四业务插件留到 G9–G12，因此当前不会被 V2 Host 加载。
+Welcome 与四个 Host Tool 也从相同目录产生。MyPlugTest 已在 G9 使用这条生产路径；其余插件留到 G10–G12。
 
 G6 进一步把 Welcome 与四个 Host Tool 变为普通模型。只有 internal sealed
 `ManagedDocumentDockable`/`ManagedToolDockable` 继承 Dock 类型；View 在发布前由 Registry 精确工厂
@@ -88,6 +88,10 @@ G8 把生命周期编排收回 Host internal：Registry 只保存声明；Coordi
 10 秒。菜单、直接 Activator、Document/Tool 创建和布局恢复都读取同一只读可用性投影。退出先禁止
 新建并释放 Adapter/View 与 Document Scope，再清除停止工作的 UI 同步上下文、反向停止生命周期、
 反向释放插件 Provider，最后释放 Host Provider。
+
+G9 将 MyPlugTest 的 4 个 Document、1 个 Tool 与全部 View 迁移到最终声明式贡献。Document 是普通
+scoped 模型，Tool 是插件级 singleton；Welcome 使用严格 content schema 1，事件订阅令牌随 Document
+Scope 释放。两次隔离测试 ZIP 的 11 文件事实与归档摘要一致，解压后形成 4 Document + 1 Tool Registry。
 
 布局只读写 `layout-v2.json`/schema 2，严格字段为根 `schemaVersion/panes/tools/activeToolId`、Pane
 `id/proportion`、Tool `id/dockId/order/isVisible/isPinned`。V1、浮动字段、历史 ID 和 Migrator 不再存在；
@@ -231,6 +235,6 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - G5 已完成：宿主与每个插件拥有独立 Provider，Host 生产贡献只通过最终 UI SDK 声明并发布到唯一 Registry；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
 - Core/UI 包、manifest v2、独立容器、Host 声明式目录、Document v2、Layout v2 和 Host internal
-  生命周期已进入生产路径；四业务插件仍未完成 G9–G12 迁移，G8 的最小消费者适配不能视为迁移完成。
+  生命周期已进入生产路径；MyPlugTest 已完成 G9 迁移，其余三个业务插件等待 G10–G12。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

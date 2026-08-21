@@ -780,7 +780,8 @@
           "EPPlus": "[8.6.3, )",
           "Flurl.Http": "[4.0.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "MyAvaloniaManagementCommon": "[2.0.0, )"
+          "MyAvaloniaManagement.PluginSdk": "[2.0.0, )",
+          "MyAvaloniaManagement.PluginSdk.UI": "[2.0.0, )"
         }
       },
       "mysmalltools": {

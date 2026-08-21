@@ -1,58 +1,69 @@
 using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagementCommon.Plugin;
+using MyAvaloniaManagement.PluginSdk.UI;
 using MyPlugTest.Constants;
 using MyPlugTest.Services;
 using MyPlugTest.ViewModels;
-using MyPlugTest.Create;
-using MyPlugTest.Models;
 using MyPlugTest.Views;
 
 namespace MyPlugTest.Plugin;
 
 /// <summary>
-/// MyPlugTest 选择接入宿主依赖注入的模块入口。
-/// <para>
-/// 本插件用于展示最小但完整的 Managed Plugin 组合方式：宿主拥有唯一的 Tool，
-/// 每次用户创建 Document 时得到新的 ViewModel，并直接复用宿主提供的消息总线。
-/// 插件没有数据库、后台队列或其他需要在启动和退出时管理的资源，因此这里只实现
-/// <see cref="IPluginModule"/>，不注册没有实际职责的 <c>IPluginLifecycle</c>。
-/// </para>
+/// 通过 Host V2 声明式注册入口组合 MyPlugTest 的服务与可见贡献。
 /// </summary>
+/// <remarks>
+/// 本模块只承担组合根职责：私有业务服务进入当前插件的独立容器，Document、Tool、View 与元数据则
+/// 通过一次声明同时冻结。注册方法会自动赋予 Document scoped、Tool singleton 生命周期，因此这里
+/// 不重复注册贡献模型，也不保留 Strategy、独立 View 映射或运行期扫描等第二事实源。
+/// </remarks>
 public sealed class MyPlugTestPluginModule : IPluginModule
 {
     /// <inheritdoc />
-    public void Configure(IPluginRegistrationContext context)
+    public void Configure(IPluginRegistration registration)
     {
-        var services = context.Services;
-        // Tool 在宿主中只存在一个实例，因此其 ViewModel 使用 Singleton。
-        // Tool 被隐藏再恢复时仍返回同一对象，不会丢失界面状态或重复创建资源。
-        services.AddSingleton<MyCustomToolViewModel>();
+        ArgumentNullException.ThrowIfNull(registration);
 
-        // Document 及其局部状态由宿主创建的独立 Scope 托管。关闭标签页时宿主释放 Scope，
-        // 不同欢迎 Document 的 URL 历史记录也因此保持隔离。
-        services.AddScoped<TestWelcomeViewModel>();
-        services.AddScoped<TestMessageReceiveViewModel>();
-        services.AddScoped<BatchHttpGetViewModel>();
-        services.AddScoped<ExcelGetUrlGeneratorViewModel>();
-        services.AddScoped<UrlHistoryViewModel>();
+        // 这些对象只服务 MyPlugTest 自身。无状态 I/O 服务与 Builder 可跨 Document 复用；
+        // URL 历史属于单个欢迎 Document，必须随该 Document 的 Scope 创建和释放。
+        registration.Services.AddSingleton<IUrlContentService, FlurlUrlContentService>();
+        registration.Services.AddSingleton<IExcelFileDialogService, AvaloniaExcelFileDialogService>();
+        registration.Services.AddSingleton<IExcelWorkbookReader, EpplusExcelWorkbookReader>();
+        registration.Services.AddSingleton<ExcelGetUrlBuilder>();
+        registration.Services.AddScoped<UrlHistoryViewModel>();
 
-        // URL 请求服务本身不保存单个 Document 的可变状态，可以作为插件级 Singleton 复用。
-        // IHostEventBus 由宿主注册，本模块刻意不重复注册，保证发送方和接收方共享同一运行时事实源。
-        services.AddSingleton<IUrlContentService, FlurlUrlContentService>();
-        services.AddSingleton<IExcelFileDialogService, AvaloniaExcelFileDialogService>();
-        services.AddSingleton<IExcelWorkbookReader, EpplusExcelWorkbookReader>();
-        services.AddSingleton<ExcelGetUrlBuilder>();
+        registration.AddPersistableDocument<TestWelcomeViewModel, TestWelcomeView>(
+            new DocumentDescriptor(
+                MyPlugTestContributionIds.WelcomeDocument,
+                "欢迎",
+                "显示欢迎信息2",
+                "测试插件"));
 
-        // 宿主只消费本区块中的显式贡献；程序集里新增一个策略或 View 不会自动改变界面。
-        context.AddDocument<TestWelcomeDocumentStrategy>();
-        context.AddDocument<TestMessageReceiveDocumentStrategy>();
-        context.AddDocument<BatchHttpGetDocumentStrategy>();
-        context.AddDocument<ExcelGetUrlGeneratorDocumentStrategy>();
-        context.AddTool<MyCustomToolStrategy>();
-        context.AddView<TestWelcomeViewModel, TestWelcomeView>();
-        context.AddView<TestMessageReceiveViewModel, TestMessageReceiveView>();
-        context.AddView<BatchHttpGetViewModel, BatchHttpGetView>();
-        context.AddView<ExcelGetUrlGeneratorViewModel, ExcelGetUrlGeneratorView>();
-        context.AddView<MyCustomToolViewModel, MyCustomToolView>();
+        registration.AddDocument<TestMessageReceiveViewModel, TestMessageReceiveView>(
+            new DocumentDescriptor(
+                MyPlugTestContributionIds.MessageReceiverDocument,
+                "测试消息订阅组件",
+                "消息订阅测试",
+                "测试插件"));
+
+        registration.AddDocument<BatchHttpGetViewModel, BatchHttpGetView>(
+            new DocumentDescriptor(
+                MyPlugTestContributionIds.BatchHttpGetDocument,
+                "逐行 HTTP GET",
+                "将多行网址按输入顺序逐个执行 GET 请求",
+                "测试插件"));
+
+        registration.AddDocument<ExcelGetUrlGeneratorViewModel, ExcelGetUrlGeneratorView>(
+            new DocumentDescriptor(
+                MyPlugTestContributionIds.ExcelGetUrlGeneratorDocument,
+                "Excel GET 地址生成器",
+                "按 Excel 列映射批量生成 GET 请求地址",
+                "测试插件"));
+
+        registration.AddTool<MyCustomToolViewModel, MyCustomToolView>(
+            new ToolDescriptor(
+                MyPlugTestContributionIds.CustomTool,
+                "我的自定义工具",
+                "这是一个通过插件系统加载的自定义工具",
+                ToolDockSide.Right,
+                ToolCloseBehavior.Hide));
     }
 }

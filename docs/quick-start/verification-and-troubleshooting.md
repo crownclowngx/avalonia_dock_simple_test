@@ -1,7 +1,7 @@
 # 验证与排错
 
-> 本页清单仍包含 G4 Legacy 示例术语。G7 Host 只接受最终 UI SDK 模块；四业务插件在 G9–G12 前被
-> 预检隔离。最终教程更新前，本页只用于历史故障对照，不是当前 V2 发布说明。
+> 本页按 G9 最终 V2 契约编写。MyPlugTest 是当前真实加载样例；其余三个业务插件等待 G10–G12，
+> 它们的 Legacy 源码回归不得作为新插件接入模板。
 
 验证新插件时应从“目录和清单”开始，再检查模块、扩展元数据和界面行为。这样能够在最接近故障来源的位置停止，而不是从空白界面反推所有可能原因。
 
@@ -15,9 +15,10 @@
 - [ ] 入口旁存在同名 `.deps.json` 和 PDB；
 - [ ] 项目声明 `ManagedPlugin=true`，清单来自构建输出而非源码树手写副本；
 - [ ] 清单版本与入口 `AssemblyVersion` 一致；manifest 是唯一插件身份来源；
-- [ ] `entryPoint.type` 与 public、非抽象、非泛型且具有 public 无参构造的 Legacy 模块完整名称完全一致；
-- [ ] 模块通过 Context 显式登记全部 Document、Tool、View 和可选 Lifecycle；
-- [ ] 插件目录不包含 `MyAvaloniaManagementCommon.dll` 或其他宿主共享程序集；
+- [ ] `entryPoint.type` 与 public、非抽象、非泛型且具有 public 无参构造的最终 UI SDK 模块完整名称完全一致；
+- [ ] 项目声明 `ManagedPluginUseV2EntryContract=true`，构建探针验证最终 `IPluginModule`；
+- [ ] 模块通过 `IPluginRegistration` 一次登记模型、View、Descriptor 和可选 Lifecycle；
+- [ ] 插件目录不包含 Legacy、Core/UI SDK、Avalonia、Dock、Host 或其他宿主共享程序集；
 - [ ] 宿主“插件状态”Tool 将该插件显示为已加载，没有拒绝原因。
 
 ### Document
@@ -26,11 +27,11 @@
 - [ ] 连续创建两个 Document 会得到两个独立标签；
 - [ ] 两个标签的可变状态互不影响；
 - [ ] 关闭标签后，Scoped ViewModel 及其可释放依赖由宿主释放；
-- [ ] ViewModel 与 View 已通过 `AddView<TViewModel,TView>()` 显式映射。
+- [ ] View 由 `AddDocument<TDocument,TView>()` 或 `AddPersistableDocument<TDocument,TView>()` 同时声明，`DataContext` 为对应模型。
 
 ### Tool
 
-- [ ] Tool 出现在 `ToolMetadata.DockSide` 指定的方向；
+- [ ] Tool 出现在 `ToolDescriptor.DockSide` 指定的方向；
 - [ ] 同一 Tool 只创建一个实例；
 - [ ] 点击关闭后 Tool 被隐藏，而不是销毁；
 - [ ] 从工具管理入口恢复后仍保持隐藏前的实例状态。
@@ -39,7 +40,7 @@
 
 - [ ] 替换 DLL、依赖或清单后完整退出并重启宿主；
 - [ ] 新版本仍保留已经发布的 Plugin、Document 和 Tool 稳定 ID；
-- [ ] 有意迁移旧 ID 时仅把旧值放入元数据别名，新建和保存仍使用主 ID。
+- [ ] V2 只保留规范主 ID，不新增旧 ID 别名或兼容读取器。
 
 ## 推荐命令
 
@@ -57,13 +58,13 @@ dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c De
 dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
 ```
 
-G7 阶段修改 Document 链时只运行下列非发布门禁：
+修改 MyPlugTest V2 链路时运行下列非发布门禁：
 
 ```powershell
-.\scripts\Test-DocumentV2.ps1 -Configuration Release -NoRestore
+.\scripts\Test-MyPlugTestV2.ps1 -Configuration Release
 ```
 
-真实窗口 Smoke 与发布包矩阵仅用于后续发布验收，不属于 G7。
+该脚本只生成不可发布的确定性测试 ZIP；不运行 Windows CI、真实窗口 Smoke、ReleaseAcceptance 或发布门禁。
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。
 
@@ -134,7 +135,7 @@ $env:MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS = '1'
 | `PLUGIN_MANIFEST_SCHEMA_UNSUPPORTED` | `schemaVersion` 不是宿主支持的版本 | 当前只使用 `schemaVersion: 2`；不保留 v1 reader |
 | `PLUGIN_SDK_INCOMPATIBLE` | 当前 Core/UI SDK 版本不在清单的单一区间 | 针对目标 SDK 重新编译验证，或修正已经验证过的左闭右开区间 |
 | `PLUGIN_MANIFEST_DESCRIPTION_MISMATCH` | 清单版本或入口程序集身份不一致 | 对齐 `pluginVersion`、`AssemblyVersion` 和入口名称 |
-| `PLUGIN_ENTRY_INVALID` | 入口程序集/类型不存在或大小写不符，或入口类型不可执行 | 核对精确完整类型名，并保证类型 public、非抽象、非泛型、实现阶段桥接口且有 public 无参构造 |
+| `PLUGIN_ENTRY_INVALID` | 入口程序集/类型不存在或大小写不符，或入口类型不可执行 | 核对精确完整类型名，并保证类型 public、非抽象、非泛型、实现最终 UI SDK 接口且有 public 无参构造 |
 | `PLUGIN_DEPENDENCY_MANIFEST_MISSING` | 入口缺少同名 `.deps.json` | 启用依赖文件生成并把 deps 作为必需发布资产 |
 | `PLUGIN_ASSEMBLY_LOAD_FAILED` / `PLUGIN_TYPE_PREFLIGHT_FAILED` | 私有依赖缺失、RID 资产错误或类型无法完整加载 | 检查 `.deps.json`、私有托管依赖和原生资产是否完整 |
 | `PLUGIN_SHARED_ASSEMBLY_MISMATCH` | 插件私带了不兼容的宿主共享程序集 | 从插件包删除 Common 及共享闭包，并用匹配契约重新编译 |

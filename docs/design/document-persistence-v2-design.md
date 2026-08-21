@@ -14,7 +14,7 @@ Document V2 只有一条生产路径。新建、Creation Intent 和磁盘恢复�
 Scope 释放，插件只解释 `DocumentContent` 中自己的 schema 与原生 JSON payload。
 
 G7 不读取、迁移或写回 Document V1。历史 V1 设计与验收记录仍保留为历史事实，但不是当前运行时
-契约。layout-v1 和插件生命周期编排未在本阶段修改，四个业务插件仍留待 G9–G12 迁移。
+契约。该段落记录 G7 完成时的阶段边界；G9 已迁移 MyPlugTest，其余三个业务插件留待 G10–G12。
 
 ## 2. SOLID 与朴素模式
 

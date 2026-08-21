@@ -4,10 +4,10 @@
 
 ## 快速开始
 
-> G8 过渡期提示：Host 已支持普通模型 Dock Adapter、Document V2、Layout V2 和 internal 生命周期，
-> 但快速开始中的业务插件仍是 Legacy 历史示例；最终可运行教程要等 G9 迁移首个真实插件后更新。
+> G9 当前事实：MyPlugTest 已迁移到最终 Core/UI SDK、声明式贡献和普通模型，快速开始已以该插件
+> 重写为可直接构建的 V2 教程；另外三个业务插件仍等待 G10–G12。
 
-历史快速开始入口：
+V2 快速开始入口：
 
 1. [创建 Managed 插件](./quick-start/create-managed-plugin.md)：建立项目、清单、稳定 ID、模块和部署目录。
 2. [添加 Document 与 Tool](./quick-start/add-document-and-tool.md)：完成两个最小可见扩展并理解生命周期。
@@ -52,12 +52,11 @@
 
 ## 封版后候选计划
 
-以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G8；最终 Core/UI SDK、manifest v2、独立插件
-Provider、声明式 Host Registry、Dock Adapter、Document v2、Layout v2 与 Host internal 生命周期已建立：
+以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G9；Host 最终契约及首个真实 V2 业务插件已建立：
 
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
-  G0–G14 可执行计划；G0–G8 已完成，G9–G14 尚未实现。
+  G0–G14 可执行计划；G0–G9 已完成，G10–G14 尚未实现。
 - [Managed Plugin V2 G0 绿色基线](./plan-history/host-v2/g0-green-baseline.md)：
   冻结 361 项 Host 测试、SDK API、包图、四插件包事实以及删除面、依赖白名单和消费者矩阵；
   本阶段未运行 Windows Smoke、CI 或发布门禁。
@@ -77,6 +76,8 @@ Provider、声明式 Host Registry、Dock Adapter、Document v2、Layout v2 与 
   记录六字段格式、异步创建、保存/恢复/关闭事务、失败矩阵、覆盖率和非发布门禁证据。
 - [Managed Plugin V2 G8 布局与生命周期 V2](./plan-history/host-v2/g8-layout-and-lifecycle-v2.md)：
   记录严格 Layout V2、internal 生命周期、可用性门控、退出顺序、测试证据和非发布边界。
+- [Managed Plugin V2 G9 MyPlugTest 迁移](./plan-history/host-v2/g9-my-plug-test-v2.md)：
+  记录首个真实业务插件的声明式贡献、Document/Tool 所有权、严格内容 Codec、事件释放和确定性测试 ZIP。
 - [外部 Managed Plugin 开发与平台安装候选计划](./design/external-managed-plugin-development-and-installation-plan.md)：
   `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
 
@@ -102,6 +103,8 @@ Provider、声明式 Host Registry、Dock Adapter、Document v2、Layout v2 与 
   建立唯一异步创建、严格六字段信封、原子保存、恢复另存、关闭重入与 Scope 释放链。
 - [G8：建立布局与生命周期 V2](./plan-history/host-v2/g8-layout-and-lifecycle-v2.md)：
   删除布局 V1/Migrator 与 public 生命周期编排面，建立严格快照、Host internal 协调和只读可用性门控。
+- [G9：迁移 MyPlugTest](./plan-history/host-v2/g9-my-plug-test-v2.md)：
+  迁移 4 个 Document 与 1 个 Tool，删除 Strategy/Dock/Legacy 依赖，并以真实 V2 ZIP 验证加载与组合。
 
 ### Managed Plugin v1 整改记录
 

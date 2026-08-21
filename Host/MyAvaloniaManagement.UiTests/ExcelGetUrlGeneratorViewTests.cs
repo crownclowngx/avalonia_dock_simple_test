@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
+using MyAvaloniaManagement.PluginSdk;
 using MyPlugTest.Models;
 using MyPlugTest.Services;
 using MyPlugTest.ViewModels;
@@ -17,7 +18,8 @@ public sealed class ExcelGetUrlGeneratorViewTests
         var viewModel = new ExcelGetUrlGeneratorViewModel(
             new EmptyDialogService(),
             new EmptyWorkbookReader(),
-            new ExcelGetUrlBuilder());
+            new ExcelGetUrlBuilder(),
+            new TestDocumentLifetime());
         var view = new ExcelGetUrlGeneratorView { DataContext = viewModel };
         var window = new Window { Content = view, Width = 1100, Height = 850 };
         window.Show();
@@ -78,5 +80,11 @@ public sealed class ExcelGetUrlGeneratorViewTests
             int? maximumRows,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<ExcelRowData>>([]);
+    }
+
+    private sealed class TestDocumentLifetime : IDocumentLifetime
+    {
+        public CancellationToken ClosingToken => CancellationToken.None;
+        public bool IsClosing => false;
     }
 }
