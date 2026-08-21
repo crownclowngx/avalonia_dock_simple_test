@@ -4,7 +4,7 @@
 
 本轮目标不是增加功能，而是在保持外部行为的前提下提高健壮性、可测试性和可理解性。衡量成功的标准不是新增类数量，而是：
 
-- 持久化格式不变；封板前候选 Plugin SDK 允许一次破坏式重定基线，最终收敛为显式 Managed-only 模型；
+- 每个 G 包只改变声明范围内的格式；G7 以唯一 V2 替换 Document V1，不保留双 reader；
 - 高风险规则具有唯一实现位置；
 - 异常、并发和资源所有权边界明确；
 - `ManagementFactory`、`MainWindowViewModel` 不再同时承担多个变化原因；
@@ -21,7 +21,7 @@
 - Document、Tool、View、Lifecycle 必须显式登记；未登记类型不可见，重复 ID 以结构化诊断阻断启动；
 - `Files` 历史 Locator 与稳定 `Documents` Dock ID；
 - Left/Right/Top/Bottom、隐藏/恢复、Pinned 和禁用浮动；
-- 严格 Document 信封 v1、插件内容 `DocumentContentSnapshot` 与 `layout-v1.json`；
+- 严格 Document 信封 v2、插件原生 JSON `DocumentContent` 与本阶段保持的 `layout-v1.json`；
 - 快照整体无效时隔离并使用默认布局。
 
 只有先固定不变量，内部抽象才不会悄悄变成产品行为变更。
@@ -82,7 +82,9 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 
 没有为每个内部类机械创建接口。只有存在真实替代实现、框架边界或测试边界时才使用接口，避免接口数量超过行为复杂度。
 
-G8 特别把 `ISavableDocument` 收窄为内容创建/恢复能力，而不将脏状态、路径策略或宿主事务塞入同一接口。
+V2 G7 沿用 Core SDK 的窄契约：`IPluginDocument` 只负责异步初始化，
+`IPersistablePluginDocument` 只负责捕获内容与提交后确认；脏状态、路径、标题和 Host 保存事务仍留在
+宿主内部状态与协调器中。这里没有为兼容 v1 `ISavableDocument` 建立双轨。
 
 ### 3.5 依赖倒置原则（DIP）
 

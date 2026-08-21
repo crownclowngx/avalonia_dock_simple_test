@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using MyAvaloniaManagement.Business.Documents;
-using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -13,10 +13,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// <see cref="RequestClose"/>。先取消、后 Dispose 的顺序让异步操作尽早开始退出，同时
 /// 保证 Document.Dispose 观察到的 <see cref="IsClosing"/> 已为 true。
 /// </remarks>
-internal sealed class DocumentLifetime :
-    IDocumentLifetime,
-    MyAvaloniaManagement.PluginSdk.IDocumentLifetime,
-    IDisposable
+internal sealed class DocumentLifetime : IDocumentLifetime, IDisposable
 {
     private readonly CancellationTokenSource _closing = new();
     private int _isClosing;
@@ -52,8 +49,8 @@ internal sealed class DocumentLifetime :
 
     public void Dispose()
     {
-        // 正式 Lifetime 会先由租约 RequestClose，再随 DI Scope Dispose；兼容回退实例则
-        // 由租约显式 Dispose。幂等门禁使两条路径可以安全汇合，不依赖容器释放顺序。
+        // Lifetime 会先由租约 RequestClose，再随 DI Scope Dispose；租约 finally 还会调用
+        // 一次作为容器异常兜底。幂等门禁使两条路径可以安全汇合。
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
             return;

@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Events;
 
 namespace MyAvaloniaManagement.Tests;
@@ -165,8 +164,10 @@ public sealed class HostEventBusTests
         });
         var manager = provider.GetRequiredService<DocumentScopeManager>();
         var eventBus = provider.GetRequiredService<IHostEventBus>();
-        var first = manager.CreateDocument<EventAwareDocument>();
-        var second = manager.CreateDocument<EventAwareDocument>();
+        var firstLease = manager.CreatePluginDocument(typeof(EventAwareDocument));
+        var secondLease = manager.CreatePluginDocument(typeof(EventAwareDocument));
+        var first = Assert.IsType<EventAwareDocument>(firstLease.Model);
+        var second = Assert.IsType<EventAwareDocument>(secondLease.Model);
 
         eventBus.Publish(new TestEvent());
         Assert.True(manager.Release(first));
@@ -202,7 +203,7 @@ public sealed class HostEventBusTests
         var probe = provider.GetRequiredService<EventProbe>();
 
         Assert.Throws<InvalidOperationException>(
-            () => manager.CreateDocument<FailingEventDocument>());
+            () => manager.CreatePluginDocument(typeof(FailingEventDocument)));
         eventBus.Publish(new TestEvent());
 
         Assert.Equal(0, probe.ReceivedCount);
@@ -226,13 +227,15 @@ public sealed class HostEventBusTests
 
     private sealed record TestEvent(int Value = 0);
 
-    private sealed class EventAwareDocument : Dock.Model.Mvvm.Controls.Document, IDisposable
+    private sealed class EventAwareDocument : MyAvaloniaManagement.PluginSdk.IPluginDocument, IDisposable
     {
-        private readonly IDocumentLifetime _lifetime;
+        private readonly MyAvaloniaManagement.PluginSdk.IDocumentLifetime _lifetime;
         private readonly IDisposable _subscription;
         private int _disposed;
 
-        public EventAwareDocument(IHostEventBus eventBus, IDocumentLifetime lifetime)
+        public EventAwareDocument(
+            IHostEventBus eventBus,
+            MyAvaloniaManagement.PluginSdk.IDocumentLifetime lifetime)
         {
             _lifetime = lifetime;
             // 订阅是构造函数最后一个可能失败的动作；成功后令牌由 Document 与 Scope 共同拥有。
@@ -248,6 +251,11 @@ public sealed class HostEventBusTests
         public int ReceivedCount { get; private set; }
 
         public bool WasClosingWhenDisposed { get; private set; }
+        public MyAvaloniaManagement.PluginSdk.DocumentPresentationState Presentation => new("事件测试");
+        public event EventHandler? PresentationChanged { add { } remove { } }
+        public ValueTask InitializeAsync(
+            MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+            CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
         public void Dispose()
         {
@@ -296,12 +304,18 @@ public sealed class HostEventBusTests
         }
     }
 
-    private sealed class FailingEventDocument : Dock.Model.Mvvm.Controls.Document
+    private sealed class FailingEventDocument : MyAvaloniaManagement.PluginSdk.IPluginDocument
     {
         public FailingEventDocument(ScopedEventSubscription subscription)
         {
             _ = subscription;
             throw new InvalidOperationException("模拟 Document 构造失败");
         }
+
+        public MyAvaloniaManagement.PluginSdk.DocumentPresentationState Presentation => new("失败测试");
+        public event EventHandler? PresentationChanged { add { } remove { } }
+        public ValueTask InitializeAsync(
+            MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+            CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.PluginSdk;
@@ -8,7 +9,9 @@ namespace MyAvaloniaManagement.Business.Docking;
 /// <summary>ManagementFactory 创建 Dock 项所依赖的最小内部端口。</summary>
 internal interface IHostDockableFactory
 {
-    Document CreateDocument(DocumentTypeId documentTypeId, string title = "");
+    ValueTask<Document> CreateDocumentAsync(
+        DocumentTypeId documentTypeId,
+        DocumentActivationContext context);
     Tool CreateTool(ToolTypeId toolTypeId);
 }
 
@@ -28,13 +31,20 @@ internal sealed class HostDockAdapterFactory(
     private readonly ViewLocator _viewLocator = viewLocator ??
         throw new ArgumentNullException(nameof(viewLocator));
 
-    public Document CreateDocument(DocumentTypeId documentTypeId, string title = "")
+    public async ValueTask<Document> CreateDocumentAsync(
+        DocumentTypeId documentTypeId,
+        DocumentActivationContext context)
     {
+        ArgumentNullException.ThrowIfNull(documentTypeId);
+        ArgumentNullException.ThrowIfNull(context);
         var activation = _activator.ActivateDocument(documentTypeId);
         ManagedDocumentDockable? adapter = null;
         try
         {
-            adapter = new ManagedDocumentDockable(activation, title);
+            // 初始化发生在 Adapter、View 和 Dock 发布之前。插件只观察 Scope 的关闭令牌，
+            // 任意失败都会由下方唯一回滚入口结束同一个 Scope。
+            await activation.Model.InitializeAsync(context, activation.ClosingToken);
+            adapter = new ManagedDocumentDockable(activation, context.Title);
             _viewLocator.Prepare(adapter);
             return adapter;
         }

@@ -29,7 +29,7 @@ public sealed class HostDockAdapterTests
     }
 
     [Fact]
-    public void DocumentScope入口拒绝非插件模型和非LegacyDock模型()
+    public void DocumentScope入口只接受普通插件模型()
     {
         var services = new ServiceCollection();
         services.AddDocumentScopeManagement();
@@ -38,8 +38,6 @@ public sealed class HostDockAdapterTests
 
         Assert.Throws<InvalidOperationException>(() =>
             manager.CreatePluginDocument(typeof(object)));
-        Assert.Throws<InvalidOperationException>(() =>
-            manager.CreateLegacyDocument(typeof(object)));
     }
 
     [Fact]
@@ -50,11 +48,11 @@ public sealed class HostDockAdapterTests
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var model = Assert.IsType<TrackedDocument>(
-            manager.CreatePluginDocument(typeof(TrackedDocument)));
+        var lease = manager.CreatePluginDocument(typeof(TrackedDocument));
+        var model = Assert.IsType<TrackedDocument>(lease.Model);
         var registration = DocumentRegistration(typeof(TrackedDocument));
         var adapter = new ManagedDocumentDockable(
-            new ActivatedPluginDocument(registration, model, manager),
+            new ActivatedPluginDocument(registration, lease),
             "请求标题");
 
         Assert.Equal("请求标题", adapter.Title);
@@ -81,13 +79,12 @@ public sealed class HostDockAdapterTests
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var model = Assert.IsType<ThrowingRemoveDocument>(
-            manager.CreatePluginDocument(typeof(ThrowingRemoveDocument)));
+        var lease = manager.CreatePluginDocument(typeof(ThrowingRemoveDocument));
+        var model = Assert.IsType<ThrowingRemoveDocument>(lease.Model);
         var adapter = new ManagedDocumentDockable(
             new ActivatedPluginDocument(
                 DocumentRegistration(typeof(ThrowingRemoveDocument)),
-                model,
-                manager),
+                lease),
             "请求标题");
 
         Assert.Throws<InvalidOperationException>(() => adapter.Dispose());
@@ -196,8 +193,14 @@ public sealed class HostDockAdapterTests
     /// </summary>
     private sealed class SelectiveToolFactory(ToolTypeId failedId) : IHostDockableFactory
     {
-        public Document CreateDocument(DocumentTypeId documentTypeId, string title = "") =>
-            new() { Id = documentTypeId.Value, Title = title };
+        public ValueTask<Document> CreateDocumentAsync(
+            DocumentTypeId documentTypeId,
+            DocumentActivationContext context) =>
+            ValueTask.FromResult<Document>(new Document
+            {
+                Id = documentTypeId.Value,
+                Title = context.Title,
+            });
 
         public Tool CreateTool(ToolTypeId toolTypeId)
         {

@@ -143,9 +143,7 @@ public sealed class ManagedOnlyPluginLoadingTests
     {
         var services = new ServiceCollection();
         services.AddDocumentScopeManagement();
-        // G6 仅在测试中保留旧业务插件需要的 Legacy 工厂；生产 Host 不注册该服务。
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
+        services.AddLegacyPluginDocumentScopesForTests();
         new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.datang-accounting-help"), services));
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -160,7 +158,7 @@ public sealed class ManagedOnlyPluginLoadingTests
             new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId));
 
         Assert.NotNull(document);
-        Assert.True(provider.GetRequiredService<DocumentScopeManager>().Release(document));
+        Assert.True(provider.GetRequiredService<LegacyPluginDocumentScopeFactory>().Release(document));
     }
 
     [Fact]

@@ -4,6 +4,11 @@
     "branch": 50.0
   },
   "criticalFiles": {
+    "Business/Documents/DocumentEnvelopeSerializer.cs": 95.0,
+    "Business/Documents/DocumentPersistenceCoordinator.cs": 90.0,
+    "Business/Documents/DocumentSaveService.cs": 90.0,
+    "Business/Documents/DocumentCloseCoordinator.cs": 90.0,
+    "Business/Documents/DocumentPersistenceStateStore.cs": 90.0,
     "Business/Docking/HostDockAdapterFactory.cs": 90.0,
     "Business/Docking/ManagedDocumentDockable.cs": 90.0,
     "Business/Docking/ManagedToolDockable.cs": 90.0,

@@ -1,7 +1,7 @@
 # 添加 Document 与 Tool
 
 > 历史示例警告：本页的 Strategy、Metadata 和独立 View 注册属于 G4 前路径，G5 Host 不再加载。
-> 当前可参考最终 UI SDK 的 `IPluginRegistration` 签名，Host 的普通模型 + Dock Adapter 已在 G6 完成；
+> 当前可参考最终 UI SDK 的 `IPluginRegistration` 与 Document V2 签名，Host 的普通模型、Dock Adapter、异步初始化和保存链已在 G7 完成；
 > 但完整可运行的真实插件示例要到 G9 才提供，不要把本页历史代码复制到新 V2 插件。
 
 本篇在同一个 `QuickStartPlugin` 中加入两个可见扩展：可多开的欢迎 Document 和宿主级单例状态 Tool。代码只保留理解契约所需的最小部分，生产实现请继续对照 [`MyPlugTest`](../../Plugins/MyPlugTest/MyPlugTest/)。
@@ -225,45 +225,48 @@ dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c De
 
 ## 保存和后台生命周期是按需能力
 
-- 只有 Document 需要写入 `.mamdoc` 时才实现保存能力；此时必须同时实现 `ISavableDocument` 和 `IDocumentSaveState`。`IsDirty` 通常映射 Dock 的 `IsModified`，持久字段变化时置为 `true`，宿主主文件写入成功后通过 `AcceptChanges()` 清除。
-- `CreateContentSnapshot()` 必须只生成 `new DocumentContentSnapshot(内容版本, payload)`，不得修改标题或脏状态。路径与 Document 类型不在插件契约中，只由宿主持有。内容版本必须为正整数，payload 不得为 `null`。
-- `RestoreContent(snapshot)` 先精确检查 `ContentSchemaVersion`，再校验 `Payload` 的业务结构。恢复空白、损坏 JSON、缺失必填字段和未知版本时抛出脱敏的 `DocumentLoadException`，不要静默返回或输出原始正文。
+- 只有 Document 需要写入 `.mamdoc` 时才实现 `IPersistablePluginDocument`，并通过 `AddPersistableDocument<TDocument,TView>` 声明。`IsDirty` 只报告业务变化，Host 主文件成功后才调用 `AcceptChanges()`。
+- `CaptureContentAsync()` 只返回 `new DocumentContent(内容版本, JsonElement)`，不得修改标题、路径或脏状态。路径、插件身份、Document 类型、信封标题和保存时间只由 Host 持有。
+- 恢复内容从 `InitializeAsync` 的 `context.RestoredContent` 取得；先精确检查 `SchemaVersion` 与 payload JSON 类型，再恢复业务字段。失败可抛插件异常，Host 会拒绝发布并显示固定脱敏提示。
 - Host 独占信封中的 `schemaVersion`、`pluginId`、`documentTypeId`、`title` 和 `savedAtUtc`；插件不要复制或依赖这些宿主字段。示例实现如下：
 
 ```csharp
 private const int CurrentContentSchemaVersion = 1;
 
-public DocumentContentSnapshot CreateContentSnapshot()
+public async ValueTask InitializeAsync(
+    DocumentActivationContext context,
+    CancellationToken cancellationToken)
 {
-    // 创建快照只读取当前业务状态。路径、身份、标题、时间和保存提交点均由宿主负责。
-    var payload = JsonSerializer.Serialize(new WelcomeState(Message));
-    return new DocumentContentSnapshot(CurrentContentSchemaVersion, payload);
+    cancellationToken.ThrowIfCancellationRequested();
+    if (context.RestoredContent is not { } content)
+    {
+        return;
+    }
+    if (content.SchemaVersion != CurrentContentSchemaVersion ||
+        content.Payload.ValueKind != JsonValueKind.Object)
+    {
+        throw new InvalidOperationException("不支持该 Document 内容版本或结构。");
+    }
+
+    var state = content.Payload.Deserialize<WelcomeState>()
+        ?? throw new InvalidOperationException("Document 内容缺少必填字段。");
+    Message = state.Message;
 }
 
-public void RestoreContent(DocumentContentSnapshot snapshot)
+public ValueTask<DocumentContent> CaptureContentAsync(
+    CancellationToken cancellationToken)
 {
-    // 不猜测未知版本，防止把未来格式误当成当前格式并产生静默数据损坏。
-    if (snapshot.ContentSchemaVersion != CurrentContentSchemaVersion)
-    {
-        throw new DocumentLoadException("不支持该文档内容版本。");
-    }
-
-    try
-    {
-        var state = JsonSerializer.Deserialize<WelcomeState>(snapshot.Payload);
-        Message = state?.Message
-            ?? throw new DocumentLoadException("文档内容缺少必填字段。");
-    }
-    catch (JsonException exception)
-    {
-        // 稳定消息不能包含原始 payload；内部异常只用于保留诊断原因。
-        throw new DocumentLoadException("文档内容已损坏。", exception);
-    }
+    cancellationToken.ThrowIfCancellationRequested();
+    var payload = JsonSerializer.SerializeToElement(new WelcomeState(Message));
+    return ValueTask.FromResult(
+        new DocumentContent(CurrentContentSchemaVersion, payload));
 }
+
+public void AcceptChanges() => IsDirty = false;
 ```
 
-- v1 是项目第一个且唯一受支持的 Document 信封。新插件不添加旧字段猜测、默认回退或迁移链；任何非 v1 结构由宿主直接拒绝。宿主会为成功保存的主文件维护 `.recovery.bak`，插件不应自行操作该文件。
-- 完整事务、关闭与恢复规则参见 [Document 保存 V1 设计](../design/document-persistence-v1-design.md)。
+- V2 是唯一受支持的 Document 信封。插件不添加 V1 字段猜测、默认回退或迁移链；Host 会为成功保存的主文件维护 `.recovery.bak`，插件不应自行操作该文件。
+- 完整事务、关闭与恢复规则参见 [Document V2 持久化设计](../design/document-persistence-v2-design.md)。
 - 只有插件级后台服务确实需要随宿主启动、停止时才实现并注册 `IPluginLifecycle`。初始化必须幂等，关闭返回前必须停止后台工作；不要用它代替 Document Scope 或 Tool 的视觉生命周期。
 
 完成首次接入后，继续执行[验证与排错](./verification-and-troubleshooting.md)中的清单。

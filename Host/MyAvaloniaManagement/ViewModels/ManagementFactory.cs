@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
@@ -15,10 +16,9 @@ using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Models.Tools;
+using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
 
 namespace MyAvaloniaManagement.ViewModels;
@@ -78,9 +78,6 @@ internal sealed class ManagementFactory : Factory, IDisposable
             ? typeId.Value
             : toolId;
 
-    internal DocumentTypeId NormalizePersistedDocumentTypeId(DocumentTypeId documentTypeId) =>
-        LegacyContributionIdMap.ResolveDocument(documentTypeId);
-
     internal Alignment GetToolAlignment(string toolId) =>
         _extensions.TryResolveToolTypeId(toolId, out var typeId) &&
         typeId is not null &&
@@ -104,7 +101,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
         ArgumentNullException.ThrowIfNull(extensions);
         ArgumentNullException.ThrowIfNull(dockableFactory);
         ArgumentNullException.ThrowIfNull(documentScopes);
-        _documentLifetime = new DockDocumentLifetime(documentScopes);
+        _documentLifetime = new DockDocumentLifetime();
         _workspaceBuilder = new DockWorkspaceBuilder(this);
         _documentPersistenceStates = documentPersistenceStates ?? new DocumentPersistenceStateStore();
         _documentCloseCoordinator = documentCloseCoordinator;
@@ -144,134 +141,79 @@ internal sealed class ManagementFactory : Factory, IDisposable
     internal ToolRegistrySnapshot GetToolRegistrySnapshot() =>
         new(_extensions.ToolDescriptors, _createdTools);
     
-    /// <summary>
-    /// 获取所有文档类型的元数据
-    /// </summary>
-    /// <returns>所有文档类型的元数据列表</returns>
-    public IEnumerable<DocumentMetadata> GetAllDocumentMetadata()
-        => _extensions.DocumentDescriptors.Values.Select(LegacyContributionIdMap.ToLegacyMetadata);
+    internal IEnumerable<DocumentCreationMenuEntry> GetAllDocumentCreationEntries() =>
+        _extensions.GetCreationEntries();
 
-    /// <summary>
-    /// 获取宿主在创建时绑定到 Document 的完整注册项。
-    /// </summary>
-    internal PluginDocumentRegistration? GetDocumentRegistration(Document document) =>
-        _documentPersistenceStates.TryGet(document, out var state)
-            ? state.Registration
-            : null;
-
-    /// <summary>
-    /// 按信封中的规范主 ID 查找注册项；此入口不会接受或归一化历史别名。
-    /// </summary>
-    internal bool TryGetPersistedDocumentRegistration(
+    internal bool TryGetDocumentRegistration(
         DocumentTypeId documentTypeId,
         out PluginDocumentRegistration registration) =>
-        _extensions.TryGetDocumentRegistration(
-            new MyAvaloniaManagement.PluginSdk.DocumentTypeId(documentTypeId.Value),
-            out registration);
+        _extensions.TryGetDocumentRegistration(documentTypeId, out registration);
 
-    /// <summary>
-    /// 展开所有可见文档策略的创建入口。未实现多入口契约的旧策略自动生成一个默认入口。
-    /// </summary>
-    public IEnumerable<MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry>
-        GetAllDocumentCreationEntries()
-        => _extensions.GetCreationEntries().Select(LegacyContributionIdMap.ToLegacyMenuEntry);
-    
-    /// <summary>
-    /// 根据参数创建Document
-    /// </summary>
-    /// <param name="params">创建参数</param>
-    /// <returns>创建的Document实例</returns>
-    public Document CreateManagementNewDocument(DocumentCreationParams @params)
+    /// <summary>创建并完全初始化一个尚未发布的 V2 Document Adapter。</summary>
+    /// <remarks>
+    /// Creation Intent 必须先与冻结 Descriptor 核对。工厂返回后模型、Adapter 和 View 已完整就绪，
+    /// 但 Dock 尚未取得所有权；调用者失败时必须通过 <see cref="ReleaseDocument"/> 回滚。
+    /// </remarks>
+    internal async ValueTask<ManagedDocumentDockable> CreateManagementNewDocumentAsync(
+        DocumentTypeId documentTypeId,
+        DocumentActivationContext context)
     {
-        var document = _dockableFactory.CreateDocument(
-            new MyAvaloniaManagement.PluginSdk.DocumentTypeId(
-                LegacyContributionIdMap.ResolveDocument(@params.DocumentTypeId).Value),
-            @params.Title);
-        _ownedDocuments.Add(document);
-        // 策略违反“每次创建返回新实例”时，可能把已经由 Dock 持有的对象再次返回。
-        // 记住它在本次调用前是否已由宿主登记，使后续重复登记失败时只拒绝
-        // 新请求，不会误删原标签的路径与所有权，也不会误释放其 Scope。
-        var wasAlreadyRegistered = _documentPersistenceStates.TryGet(document, out _);
+        ArgumentNullException.ThrowIfNull(documentTypeId);
+        ArgumentNullException.ThrowIfNull(context);
+        if (!_extensions.TryGetDocumentRegistration(documentTypeId, out var registration))
+        {
+            throw new NotSupportedException($"不支持的 Document 类型：{documentTypeId.Value}。");
+        }
+
+        if (context.CreationIntentId is { } intentId &&
+            !registration.Descriptor.CreationIntents.Any(item => item.IntentId == intentId))
+        {
+            throw new ArgumentException(
+                $"Document 创建意图 {intentId.Value} 未在 Descriptor 中声明。",
+                nameof(context));
+        }
+
+        var document = await _dockableFactory.CreateDocumentAsync(documentTypeId, context);
+        var adapter = document as ManagedDocumentDockable ??
+            throw new InvalidOperationException("V2 Document 工厂只能返回 ManagedDocumentDockable。");
+        _ownedDocuments.Add(adapter);
         try
         {
-            if (document is ISavableDocument)
+            if (registration.IsPersistable)
             {
-                var contributor = new HostCompositionContributor(
-                    document.GetType().FullName ?? document.GetType().Name,
-                    document.GetType().Assembly.GetName().Name ?? "UnknownAssembly");
-                var canonicalTypeId = NormalizePersistedDocumentTypeId(@params.DocumentTypeId);
-                if (!_extensions.TryGetDocumentRegistration(
-                        new MyAvaloniaManagement.PluginSdk.DocumentTypeId(canonicalTypeId.Value),
-                        out var registration))
-                {
-                    throw new HostCompositionException([
-                        new HostCompositionDiagnostic(
-                            "DOCUMENT_REGISTRATION_MISSING",
-                            @params.DocumentTypeId.Value,
-                            [contributor])
-                    ]);
-                }
-
-                if (document is not IDocumentSaveState)
-                {
-                    throw new HostCompositionException([
-                        new HostCompositionDiagnostic(
-                            "DOCUMENT_SAVE_STATE_MISSING",
-                            @params.DocumentTypeId.Value,
-                            [contributor])
-                    ]);
-                }
-
-                // G8 后插件不再通过 SaveDocumentTypeId 自报身份。宿主把创建请求已经解析出的
-                // 规范 Registry 注册项绑定到实例，保存、关闭和路径查重只读取这份事实。
-                _documentPersistenceStates.Register(document, registration);
+                var hostTitle = string.IsNullOrWhiteSpace(context.Title)
+                    ? registration.Descriptor.DisplayName
+                    : context.Title;
+                _documentPersistenceStates.Register(adapter, hostTitle);
             }
 
-            return document;
+            return adapter;
         }
         catch
         {
-            // 策略可能已经通过 IDocumentScopeFactory 创建了独立 Scope。契约校验位于创建后，
-            // 因而新实例失败时必须从与正常关闭相同的入口回滚。若策略错误地
-            // 返回已登记实例，该实例仍属于原 Dock，此次失败不得释放它。
-            if (!wasAlreadyRegistered)
-            {
-                ReleaseDocument(document);
-            }
-
+            ReleaseDocument(adapter);
             throw;
         }
     }
 
-    /// <summary>
-    /// 创建 Document，并在同一个所有权边界内将其发布到主文档 Dock。
-    /// </summary>
-    /// <param name="params">传递给文档创建策略的强类型参数。</param>
-    /// <returns>已经成功加入主文档 Dock 的 Document。</returns>
-    /// <remarks>
-    /// 创建策略可能返回由 <see cref="DocumentScopeManager"/> 托管的 scoped Document。
-    /// 在成功发布以前，该对象仍属于本方法；只要 Dock 不存在、拒绝添加，或在激活、聚焦
-    /// 阶段抛出异常，本方法都会撤销可能产生的半提交 Dock 状态，并通过与正常关闭相同的
-    /// 生命周期入口释放对象。只有 <see cref="PublishDocument"/> 完整返回后，所有权才转交
-    /// 给 Dock，后续由 <see cref="OnDockableClosed"/> 负责释放。
-    /// </remarks>
-    internal Document CreateAndPublishDocument(DocumentCreationParams @params)
+    internal async ValueTask<ManagedDocumentDockable> CreateAndPublishDocumentAsync(
+        DocumentTypeId documentTypeId,
+        DocumentActivationContext context)
     {
-        ArgumentNullException.ThrowIfNull(@params);
-
-        Document? pendingDocument = CreateManagementNewDocument(@params);
+        ManagedDocumentDockable? pending =
+            await CreateManagementNewDocumentAsync(documentTypeId, context);
         try
         {
-            PublishDocument(pendingDocument);
-            var publishedDocument = pendingDocument;
-            pendingDocument = null;
-            return publishedDocument;
+            PublishDocument(pending);
+            var published = pending;
+            pending = null;
+            return published;
         }
         finally
         {
-            if (pendingDocument is not null)
+            if (pending is not null)
             {
-                ReleaseDocument(pendingDocument);
+                ReleaseDocument(pending);
             }
         }
     }
@@ -337,8 +279,11 @@ internal sealed class ManagementFactory : Factory, IDisposable
         {
             // 创建失败、加载失败和正常关闭都汇入此入口。即使插件 Dispose 抛出异常，
             // 宿主也必须删除路径与恢复登记，避免已结束对象继续影响重复打开判断。
-            _documentPersistenceStates.Remove(document);
-            _documentRecoveryRegistry?.Clear(document);
+            if (document is ManagedDocumentDockable adapter)
+            {
+                _documentPersistenceStates.Remove(adapter);
+                _documentRecoveryRegistry?.Clear(adapter);
+            }
         }
     }
 
@@ -352,9 +297,16 @@ internal sealed class ManagementFactory : Factory, IDisposable
     {
         // Welcome 与 Tool 一样必须经声明式目录激活，并在发布前完成 Adapter 与 View 预构建。
         // Welcome 是中央工作区的必需项，因此创建失败由调用方中止整个布局初始化。
-        var untitledViewModel = _dockableFactory.CreateDocument(
+        var welcomeCreation = _dockableFactory.CreateDocumentAsync(
             HostExtensionIds.V2WelcomeDocument,
-            "欢迎");
+            new DocumentActivationContext("欢迎"));
+        if (!welcomeCreation.IsCompletedSuccessfully)
+        {
+            throw new InvalidOperationException(
+                "Host 内建 Welcome 必须同步完成初始化；布局创建不会阻塞等待任意插件代码。");
+        }
+
+        var untitledViewModel = welcomeCreation.Result;
         _ownedDocuments.Add(untitledViewModel);
         var documentDock = new DocumentDock
         {
@@ -473,7 +425,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
     internal void NotifyLayoutChanged()
     {
         if (_createdTools.TryGetValue(
-                HostExtensionIds.ToolManagement.Value,
+                HostExtensionIds.V2ToolManagement.Value,
                 out var managementTool) &&
             managementTool is ManagedToolDockable
             {
@@ -556,9 +508,9 @@ internal sealed class ManagementFactory : Factory, IDisposable
     {
         ContextLocator = new Dictionary<string, Func<object?>>
         {
-            [HostExtensionIds.PluginMenu.Value] = ()  => layout,
-            [HostExtensionIds.FileSystemTree.Value] = () => layout,
-            [HostExtensionIds.ToolManagement.Value] = () => layout,
+            [HostExtensionIds.V2PluginMenu.Value] = ()  => layout,
+            [HostExtensionIds.V2FileSystemTree.Value] = () => layout,
+            [HostExtensionIds.V2ToolManagement.Value] = () => layout,
         };
         
         // 动态注册所有已创建的工具到 ContextLocator（包括插件工具）
@@ -673,7 +625,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
     /// </summary>
     public override bool OnDockableClosing(IDockable? dockable)
     {
-        if (dockable is Document document &&
+        if (dockable is ManagedDocumentDockable document &&
             _documentCloseCoordinator is not null &&
             !_documentCloseCoordinator.TryBeginDockClose(
                 document,

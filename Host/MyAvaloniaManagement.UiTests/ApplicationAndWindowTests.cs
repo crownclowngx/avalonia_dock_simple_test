@@ -175,9 +175,10 @@ public sealed class ApplicationAndWindowTests
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var model = manager.CreatePluginDocument(typeof(WelcomeViewModel));
+        var lease = manager.CreatePluginDocument(typeof(WelcomeViewModel));
+        var model = Assert.IsType<WelcomeViewModel>(lease.Model);
         using var adapter = new MyAvaloniaManagement.Business.Docking.ManagedDocumentDockable(
-            new ActivatedPluginDocument(registration, model, manager),
+            new ActivatedPluginDocument(registration, lease),
             "欢迎");
         locator.Prepare(adapter);
         var known = locator.Build(adapter);

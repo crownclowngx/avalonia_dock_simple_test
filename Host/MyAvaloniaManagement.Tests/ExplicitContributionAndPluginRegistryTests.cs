@@ -190,14 +190,13 @@ public sealed class ExplicitContributionAndPluginRegistryTests
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var model = manager.CreatePluginDocument(typeof(RegisteredDocument));
+        var lease = manager.CreatePluginDocument(typeof(RegisteredDocument));
         using var adapter = new MyAvaloniaManagement.Business.Docking.ManagedDocumentDockable(
             new ActivatedPluginDocument(
                 registry.TryGetDocumentRegistration(Document().DocumentTypeId, out var item)
                     ? item
                     : throw new InvalidOperationException(),
-                model,
-                manager),
+                lease),
             "");
 
         Assert.Throws<InvalidOperationException>(() => locator.Prepare(adapter));

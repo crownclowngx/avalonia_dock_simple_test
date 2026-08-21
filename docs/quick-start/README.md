@@ -2,9 +2,10 @@
 
 本组文档面向两类读者：在当前仓库内增加插件的开发者，以及为既有宿主版本交付二进制插件的外部作者。主路径只介绍 **Managed Plugin**，目标是在约 10 分钟内让一个同时包含 Document 和 Tool 的最小插件被宿主发现并显示。
 
-> 迁移提示：当前仓库已完成 V2 G5，Host 只接受最终 UI SDK `IPluginModule` 和
+> 迁移提示：当前仓库已完成 V2 G7，Host 只接受最终 UI SDK `IPluginModule` 和
 > `IPluginRegistration`。本组后续页面仍保存 G4 时期的 Legacy 示例，用于历史对照；这些模块会被 G5
-> Host 拒绝，不能作为可运行教程。G6 已完成普通模型与 Dock Adapter，业务插件示例仍需等待 G9 同步；
+> Host 拒绝，不能作为可运行教程。G7 已完成异步 Document V2 创建、保存、恢复、关闭和 Scope 释放链，
+> 业务插件示例仍需等待 G9 同步；
 > 在此之前不要据此创建或发布 V2 插件。
 
 ## 完成后你将得到什么
@@ -72,5 +73,7 @@ G3 已能生成同版本 `MyAvaloniaManagement.PluginSdk` 与 `MyAvaloniaManagem
 - [主项目兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)
 - [主项目内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)
 - [G5 显式贡献与 Plugin Registry](../plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)
+- [Document V2 当前设计](../design/document-persistence-v2-design.md)
+- [V2 G7 专项记录](../plan-history/host-v2/g7-document-v2.md)
 
 上述契约文档和实际 public 类型是详细规则的事实来源；Quick Start 只保留完成首次接入所需的最短路径。

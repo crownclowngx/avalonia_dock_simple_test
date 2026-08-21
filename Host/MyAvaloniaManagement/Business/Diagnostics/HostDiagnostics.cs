@@ -10,8 +10,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
-using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Plugin;
+using DocumentTypeId = MyAvaloniaManagement.PluginSdk.DocumentTypeId;
 
 namespace MyAvaloniaManagement.Business.Diagnostics;
 

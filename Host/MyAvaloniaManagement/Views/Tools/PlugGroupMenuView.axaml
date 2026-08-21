@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:MyAvaloniaManagement.ViewModels.Tools"
              xmlns:models="using:MyAvaloniaManagement.Models.Tools"
-             xmlns:documentCreation="clr-namespace:MyAvaloniaManagementCommon.DocumentCreation;assembly=MyAvaloniaManagementCommon"
+             xmlns:documentCreation="using:MyAvaloniaManagement.Business.Helpers"
              mc:Ignorable="d"
              d:DesignWidth="260"
              d:DesignHeight="450"

@@ -26,8 +26,6 @@
     <ProjectReference Include="..\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj">
       <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
     </ProjectReference>
-    <!-- Document Scope 测试复用宿主真实的作用域管理器，而不是在测试中复制实现。 -->
-    <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement\MyAvaloniaManagement.csproj" />
   </ItemGroup>
 
 </Project>

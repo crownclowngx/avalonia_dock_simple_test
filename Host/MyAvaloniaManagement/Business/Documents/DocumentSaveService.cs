@@ -1,40 +1,34 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 using System.Threading.Tasks;
-using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Storage;
-using MyAvaloniaManagementCommon.Save;
 
 namespace MyAvaloniaManagement.Business.Documents;
 
 internal enum DocumentSaveStatus
 {
     Saved,
-    SavedWithBackupWarning,
+    SavedWithWarning,
     Canceled,
     Failed,
-    NotSavable,
+    NotPersistable,
 }
 
-/// <summary>
-/// 保存操作的稳定结果。预期磁盘故障在此转换为结果，编程错误继续向上传播。
-/// </summary>
+/// <summary>描述一次保存是否已经完成唯一主文件提交。</summary>
 internal readonly record struct DocumentSaveResult(
     DocumentSaveStatus Status,
     string Message)
 {
     internal bool IsSaved =>
-        Status is DocumentSaveStatus.Saved or DocumentSaveStatus.SavedWithBackupWarning;
+        Status is DocumentSaveStatus.Saved or DocumentSaveStatus.SavedWithWarning;
 }
 
-/// <summary>
-/// 对指定 Document 执行路径决策、主文件原子提交和恢复备份更新。
-/// </summary>
+/// <summary>负责捕获 V2 内容、原子写入主文件并执行提交后的状态更新。</summary>
 /// <remarks>
-/// 本服务不知道哪个 Dock 发起保存，也不负责关闭标签。把提交点集中于此可保证菜单保存、
-/// 标签关闭和窗口退出对失败、取消及状态更新采用完全相同的语义。
+/// 本服务不选择活动标签、不发布 Dock，也不处理关闭确认。主文件原子写入是唯一业务提交点；
+/// `AcceptChanges` 与恢复备份均属于提交后的动作，失败只能产生“已保存但有警告”，不能篡改磁盘事实。
 /// </remarks>
 internal sealed class DocumentSaveService(
     IHostStorageService storageService,
@@ -44,43 +38,31 @@ internal sealed class DocumentSaveService(
     DocumentRecoveryRegistry recoveryRegistry,
     TimeProvider timeProvider)
 {
-    internal Task<DocumentSaveResult> SaveAsync(Document document) =>
+    internal Task<DocumentSaveResult> SaveAsync(ManagedDocumentDockable document) =>
         operationGate.RunAsync(() => SaveCoreAsync(document));
 
-    private async Task<DocumentSaveResult> SaveCoreAsync(Document document)
+    private async Task<DocumentSaveResult> SaveCoreAsync(ManagedDocumentDockable document)
     {
-        if (document is not ISavableDocument savableDocument)
+        ArgumentNullException.ThrowIfNull(document);
+        var persistable = document.PersistableModel;
+        if (persistable is null)
         {
-            return new(DocumentSaveStatus.NotSavable, string.Empty);
+            return new(DocumentSaveStatus.NotPersistable, string.Empty);
         }
 
-        if (document is not IDocumentSaveState saveState)
-        {
-            return new(
-                DocumentSaveStatus.Failed,
-                "该 Document 未实现公共保存状态契约，宿主已拒绝保存。");
-        }
-
-        if (!persistenceStates.TryGet(document, out var persistenceState))
+        if (!persistenceStates.TryGet(document, out var state))
         {
             return new(
                 DocumentSaveStatus.Failed,
-                "该 Document 没有匹配的宿主注册所有权，已拒绝保存。");
+                "该 Document 没有匹配的 Host 持久化状态，已拒绝保存。");
         }
 
-        var registration = persistenceState.Registration;
-        var originalPath = persistenceState.FilePath;
         var isRecovered = recoveryRegistry.TryGet(document, out var recovery);
-        string? filePath;
-        if (string.IsNullOrWhiteSpace(originalPath) ||
-            isRecovered)
+        var filePath = state.FilePath;
+        if (string.IsNullOrWhiteSpace(filePath) || isRecovered)
         {
             filePath = await storageService.PickSaveFileAsync(
-                LegacyContributionIdMap.ToLegacyMetadata(registration.Descriptor));
-        }
-        else
-        {
-            filePath = originalPath;
+                state.Registration.Descriptor.DisplayName);
         }
 
         if (string.IsNullOrWhiteSpace(filePath))
@@ -98,61 +80,76 @@ internal sealed class DocumentSaveService(
                 "恢复出的 Document 必须另存为新文件，不能覆盖损坏原件或恢复备份。");
         }
 
-        string fileName;
-        string content;
+        var hostTitle = Path.GetFileNameWithoutExtension(filePath);
+        if (string.IsNullOrWhiteSpace(hostTitle))
+        {
+            hostTitle = string.IsNullOrWhiteSpace(state.HostTitle)
+                ? state.Registration.Descriptor.DisplayName
+                : state.HostTitle;
+        }
+
+        string envelopeJson;
         try
         {
-            fileName = Path.GetFileNameWithoutExtension(filePath);
-            // 内容快照不接收目标路径，也不能提交标题或脏状态。路径选择与业务序列化完全
-            // 分离后，同一内存状态保存到不同位置仍会产生同一份插件 payload。
-            var saveData = savableDocument.CreateContentSnapshot();
-            content = serializer.Serialize(
-                new MyAvaloniaManagementCommon.Plugin.PluginId(registration.OwnerId.Value),
-                new MyAvaloniaManagementCommon.DocumentCreation.DocumentTypeId(
-                    registration.Descriptor.DocumentTypeId.Value),
-                fileName,
-                timeProvider.GetUtcNow(),
-                saveData);
+            var content = await persistable.CaptureContentAsync(document.ClosingToken);
+            if (content is null)
+            {
+                throw new InvalidOperationException("插件返回了 null DocumentContent。");
+            }
 
-            // 主文件是唯一业务提交点。只有该原子写入完成后，内存 Document 才允许接受
-            // 新基线；备份是恢复能力，不能反过来改变主文件已经成功提交的事实。
-            await storageService.WriteAllTextAsync(filePath, content);
+            envelopeJson = serializer.Serialize(
+                state.Registration.OwnerId,
+                state.Registration.Descriptor.DocumentTypeId,
+                hostTitle,
+                timeProvider.GetUtcNow(),
+                content);
+            await storageService.WriteAllTextAsync(filePath, envelopeJson);
         }
-        catch (Exception exception) when (IsExpectedPersistenceFailure(exception))
+        catch (OperationCanceledException) when (document.ClosingToken.IsCancellationRequested)
         {
+            return new(DocumentSaveStatus.Canceled, string.Empty);
+        }
+        catch (Exception exception)
+        {
+            // 插件边界允许第三方实现抛出自定义异常。保存服务不能把该类型或正文泄漏给 UI，
+            // 也不能让异常越过关闭协调器形成未观察任务；统一记录内部诊断并返回稳定失败。
             DocumentPersistenceErrorMapper.Report("DOCUMENT_SAVE_FAILED", exception);
             return new(
                 DocumentSaveStatus.Failed,
                 DocumentPersistenceErrorMapper.SaveFailureMessage);
         }
 
-        // 路径、标题和脏状态只由宿主在主文件成功提交后更新。插件不再拥有路径策略或
-        // 保存完成回调，因此不会出现“磁盘已写入、插件回调却失败”的第二提交结果。
-        document.Title = fileName;
-        persistenceStates.CommitFilePath(document, filePath);
-        saveState.AcceptChanges();
+        // 从这里开始主文件已经提交。Host 状态先于插件回调更新，确保插件回调缺陷不能让
+        // 路径查重和恢复保护继续停留在旧事实上。
+        persistenceStates.CommitFile(document, filePath, hostTitle);
         recoveryRegistry.Clear(document);
+
+        var warnings = new List<string>();
+        try
+        {
+            persistable.AcceptChanges();
+        }
+        catch (Exception exception)
+        {
+            DocumentPersistenceErrorMapper.Report("DOCUMENT_ACCEPT_CHANGES_FAILED", exception);
+            warnings.Add(DocumentPersistenceErrorMapper.AcceptChangesFailureMessage);
+        }
 
         try
         {
             await storageService.WriteAllTextAsync(
                 DocumentRecoveryRegistry.GetBackupPath(filePath),
-                content);
-            return new(DocumentSaveStatus.Saved, string.Empty);
+                envelopeJson);
         }
-        catch (Exception exception) when (IsExpectedPersistenceFailure(exception))
+        catch (Exception exception)
         {
             DocumentPersistenceErrorMapper.Report("DOCUMENT_BACKUP_FAILED", exception);
-            return new(
-                DocumentSaveStatus.SavedWithBackupWarning,
-                DocumentPersistenceErrorMapper.BackupFailureMessage);
+            warnings.Add(DocumentPersistenceErrorMapper.BackupFailureMessage);
         }
+
+        return warnings.Count == 0
+            ? new(DocumentSaveStatus.Saved, string.Empty)
+            : new(DocumentSaveStatus.SavedWithWarning, string.Join(" ", warnings));
     }
 
-    internal static bool IsExpectedPersistenceFailure(Exception exception) =>
-        exception is IOException or
-            UnauthorizedAccessException or
-            JsonException or
-            ArgumentException or
-            NotSupportedException;
 }

@@ -1,7 +1,7 @@
 # 创建 Managed 插件
 
 > 历史示例警告：本页仍保存 G4 Legacy 写法，G5 Host 会拒绝该入口，不能按本页完成运行接入。
-> G6 的生产入口已具备 Host Dock Adapter；待 G9 迁移 MyPlugTest 后再更新完整可运行教程。
+> G7 的生产入口已具备 Host Dock Adapter 与 Document V2；待 G9 迁移 MyPlugTest 后再更新完整可运行教程。
 
 本篇以 `QuickStartPlugin` 为示例。完成后，宿主能够读取严格清单、加载入口程序集，并且只实例化
 `entryPoint.type` 精确声明的 `IPluginModule`。Document、Tool 和 View 贡献将在[下一篇](./add-document-and-tool.md)加入。

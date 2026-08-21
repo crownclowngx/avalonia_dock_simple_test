@@ -14,7 +14,6 @@ using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagement.Views.Hello;
 using MyAvaloniaManagement.Views.Tools;
-using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Events;
 using MyAvaloniaManagementCommon.Plugin;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -178,8 +177,6 @@ internal static class ServiceCollectionExtensions
         documentScopes ??= new DocumentScopeRegistry();
         services.AddSingleton(documentScopes);
         services.AddScoped<DocumentLifetime>();
-        services.AddScoped<IDocumentLifetime>(provider =>
-            provider.GetRequiredService<DocumentLifetime>());
         services.AddScoped<MyAvaloniaManagement.PluginSdk.IDocumentLifetime>(provider =>
             provider.GetRequiredService<DocumentLifetime>());
         services.AddSingleton(provider =>

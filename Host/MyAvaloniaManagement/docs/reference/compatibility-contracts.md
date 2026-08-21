@@ -12,9 +12,9 @@
 > 变异门禁冻结正式 Plugin SDK v1 public API；G15 已固定 schema 1 诊断的白名单语义和默认脱敏边界；
 > G16 已用 `managed-plugin-v1.0.0` 定位最终文档、SDK API 和四插件兼容基线。
 
-> 当前分支已完成 V2 G6：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议、每插件
-> 独立 Provider、Host 声明式贡献目录与 internal Dock Adapter 已建立；Document/layout v2、生命周期
-> 编排与四业务插件迁移仍是 G7–G12 的后续工作。
+> 当前分支已完成 V2 G7：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议、每插件
+> 独立 Provider、Host 声明式贡献目录、internal Dock Adapter 与 Document V2 已建立；layout v2、
+> 生命周期编排与四业务插件迁移仍是 G8–G12 的后续工作。
 > 历史 v1 签署事实保持可追溯。
 
 ## 2. public API
@@ -23,12 +23,12 @@
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
 四业务插件暂时引用 `MyAvaloniaManagement.LegacyPluginContracts`，该项目不可打包且不得增加新的生产
-消费者。其旧入口在 G9–G12 迁移前由 G6 Host 明确拒绝，不提供双接口回退。
+消费者。其旧入口在 G9–G12 迁移前由 G7 Host 明确拒绝，不提供双接口回退。
 
-G6 生产组合中，只有 `ManagedDocumentDockable` 与 `ManagedToolDockable` 可以继承 Dock 类型。普通插件
+G7 生产组合中，只有 `ManagedDocumentDockable` 与 `ManagedToolDockable` 可以继承 Dock 类型。普通插件
 模型不得创建或继承 Dock；Document 每次创建拥有独立 Scope，Tool 是所属 Provider singleton。View 必须
 来自 Registry 冻结工厂并在发布前精确构造，禁止程序集扫描、类型名猜测和反射回退。该内部实现没有改变
-Plugin SDK public API、manifest、Document v1 信封或 layout-v1 schema。
+Plugin SDK public API、manifest 或 layout-v1 schema；Document 磁盘契约已切换为唯一 V2。
 
 历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 分别拥有 v2 基线，Shipped 均为空，
 G2 表面全部登记为 Unshipped，并由 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v2` 验证。未登记
@@ -186,28 +186,29 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 
 ## 4. Document 契约
 
-- Host Welcome 与最终 SDK 测试贡献通过 Registry 和 internal Activator 创建；G7 前旧文档命令参数与
-  Document v1 ID 只在 `LegacyContributionIdMap` 内部边界显式转换，不回流 Descriptor 或 Registry；
-- 四业务插件尚未迁移，G6 Host 不加载其 `IDocumentCreationStrategy` 或 Creation Intent Provider；
-- 唯一磁盘格式是宿主严格读写的 Document 信封 v1，必须且只能包含七个 camelCase 字段：`schemaVersion`、`pluginId`、`documentTypeId`、`contentSchemaVersion`、`title`、`savedAtUtc`、`payload`；
-- `schemaVersion` 只能为 `1`；UTF-8 文件上限为 8 MiB，JSON 最大深度为 8；注释、尾随逗号、重复、未知、缺失、大小写错误和错误类型字段均拒绝；
-- 插件公共 `DocumentContentSnapshot` 是不可变内容 DTO，只包含正整数 `ContentSchemaVersion` 和非 null `Payload`；
-- `ISavableDocument` 只包含 `CreateContentSnapshot()` 和 `RestoreContent(snapshot)`；插件不拥有路径或 Document 类型成员；
-- `ISavableDocument` 必须同时实现 `IDocumentSaveState`，缺失时以 `DOCUMENT_SAVE_STATE_MISSING` 拒绝发布；
+- Host Welcome 与最终 SDK 测试贡献只通过 Registry、internal Activator 和异步工厂创建；生产不存在
+  Legacy Document 命令参数、ID 映射或 Scope 工厂；
+- 四业务插件尚未迁移，G7 Host 不加载其 `IDocumentCreationStrategy` 或 Creation Intent Provider；
+- 唯一磁盘格式是 Document 信封 v2，根必须且只能包含 `schemaVersion`、`pluginId`、`documentTypeId`、
+  `title`、`savedAtUtc`、`content`；content 只含 `schemaVersion` 与原生 JSON `payload`；
+- 根 `schemaVersion` 只能为 `2`；UTF-8 文件上限为 8 MiB，JSON 最大深度为 8；注释、尾随逗号、
+  重复、未知、缺失、大小写错误和类型错误均拒绝；
+- 插件公共 `DocumentContent` 克隆 `JsonElement`；可保存模型实现 `IPersistablePluginDocument` 的
+  `CaptureContentAsync(ClosingToken)`、`IsDirty` 与 `AcceptChanges`；插件不拥有路径或磁盘身份；
 - 宿主从不可变 Registry 拥有 `PluginId`、`DocumentTypeId`，并由内部状态存储按 Document 引用保存规范注册项与当前主路径；标题来自文件名，UTC 时间来自 `TimeProvider`；插件只解释内容版本和 payload；
 - 信封中的 Document 类型必须是规范主 ID，不接受历史别名；`pluginId` 必须等于注册项所有者；
 - 路径转绝对路径后按 Windows 不区分大小写规则查重；
 - 批量打开以单文件为错误边界；
 - 同一路径已打开时激活原文档，不创建重复实例；
 - 无当前路径时由宿主选择保存目标，已有路径直接覆盖；恢复出的 Document 由宿主内部恢复注册表强制另存，并拒绝覆盖损坏原件或备份；
-- 快照创建不得更新标题、路径或脏状态；主文件写入失败不得调用 `AcceptChanges`；插件没有路径策略或保存完成回调；
+- 内容捕获不得更新标题、路径或脏状态；主文件写入失败不得调用 `AcceptChanges`；插件没有路径策略或保存完成回调；
 - 主文件和 `<主路径>.recovery.bak` 均通过同目录临时文件原子替换；备份失败不得回滚已成功的主文件；
 - 标签关闭和窗口退出必须保护脏 Document；取消确认或保存失败不得提前取消 `ClosingToken`；
-- v1 是第一个且唯一受支持的 Document 信封；不存在旧信封兼容对象，任何非 v1 结构直接作为无效输入拒绝；
+- V2 是唯一受支持的 Document 信封；不存在 V1 兼容对象或迁移链，任何非 V2 结构直接拒绝；
 - 打开失败不发布 Document、不泄漏临时 Scope，也不创建、迁移或覆盖任何文件；
-- `DocumentLoadException`、JSON、I/O、权限和路径故障属于预期持久化失败；编程错误不应被宽泛捕获。
+- Host internal 信封异常、JSON、I/O、权限、路径与插件边界异常统一映射为固定脱敏结果。
 
-拥有独立 DI Scope 的 Document 在 Dock 确认关闭后释放；未采用 `IDocumentScopeFactory` 的历史 Document 维持原有所有权行为。
+所有生产 Document 都拥有独立 DI Scope，并在 Dock 最终确认关闭后通过唯一 Lease 释放。
 
 ## 5. Dock 与 Tool 契约
 

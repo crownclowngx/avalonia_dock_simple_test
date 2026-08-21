@@ -16,9 +16,7 @@ public sealed class G8DocumentScopeIsolationTests
     public void 八个Document拥有独立任务密码扫描会话和播放器()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<DocumentScopeManager>();
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
+        services.AddLegacyPluginDocumentScopesForTests();
         new MySmallToolsPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.my-small-tools"), services));
 
@@ -76,7 +74,7 @@ public sealed class G8DocumentScopeIsolationTests
                 .Distinct(ReferenceEqualityComparer.Instance)
                 .Count());
 
-        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        var manager = provider.GetRequiredService<LegacyPluginDocumentScopeFactory>();
         Assert.True(manager.Release(encryptors[0]));
         Assert.Empty(encryptors[0].Password);
         Assert.Equal("enc-b", encryptors[1].Password);

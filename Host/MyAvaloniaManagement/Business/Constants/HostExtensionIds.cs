@@ -1,7 +1,3 @@
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.ToolCreation;
-
 namespace MyAvaloniaManagement.Business.Constants;
 
 /// <summary>
@@ -27,12 +23,4 @@ internal static class HostExtensionIds
     internal static readonly MyAvaloniaManagement.PluginSdk.ToolTypeId V2ToolManagement =
         new("myavalonia.host.tool.management");
 
-    // 以下 Legacy 强类型值只供 G7/G8 前的 Document v1、layout v1 与尚未迁移插件测试使用。
-    // 它们不得写入声明式 Descriptor，也不得重新成为 Registry 的身份事实。
-    internal static readonly PluginId Owner = new("myavalonia.host");
-    internal static readonly DocumentTypeId WelcomeDocument = new("myavalonia.host.document.welcome");
-    internal static readonly ToolTypeId FileSystemTree = new("myavalonia.host.tool.file-system-tree");
-    internal static readonly ToolTypeId PluginMenu = new("myavalonia.host.tool.plugin-menu");
-    internal static readonly ToolTypeId PluginStatus = new("myavalonia.host.tool.plugin-status");
-    internal static readonly ToolTypeId ToolManagement = new("myavalonia.host.tool.management");
 }

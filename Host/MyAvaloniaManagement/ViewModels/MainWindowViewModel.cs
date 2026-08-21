@@ -10,8 +10,7 @@ using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Save;
+using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.ViewModels.Bindings;
 
 namespace MyAvaloniaManagement.ViewModels;
@@ -40,9 +39,6 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
         get => _layout;
         set => SetProperty(ref _layout, value);
     }
-
-    public Dictionary<string, List<DocumentMetadata>> DocumentMetadataByCategory =>
-        _pluginMenuService?.GetDocumentMetadataByCategory() ?? [];
 
     public bool IsSystemTheme => _themeMode == ApplicationThemeMode.System;
 
@@ -128,9 +124,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     /// </summary>
     internal bool HasDirtyDocuments() =>
         DocumentWorkspace.GetDocuments(Layout)
-            .Any(document =>
-                document is ISavableDocument &&
-                document is IDocumentSaveState { IsDirty: true });
+            .Any(_documentCloseCoordinator.IsDirty);
 
     /// <summary>
     /// 解除当前瞬态窗口对根级协调对象的定向通知。
@@ -157,8 +151,11 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     }
 
     [RelayCommand]
-    public void CreateDocument(string documentType) =>
-        _documents.CreateDocument(documentType);
+    public async Task CreateDocument(string documentType)
+    {
+        _documentOperationState.Apply(await _documents.CreateDocumentAsync(
+            DocumentTypeId.Parse(documentType)));
+    }
 
     [RelayCommand]
     public async Task OpenDocument()

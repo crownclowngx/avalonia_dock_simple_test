@@ -8,10 +8,10 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > `managed-plugin-v1.0.0` 定位。签署内容、非发布门禁证据和回退边界见
 > [G16 文档与 v1 基线](./docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
-> Managed Plugin V2 已完成 G0–G6；G7–G14 尚未实现。最终 Core/UI SDK、严格 manifest v2、
-> 每插件独立 Provider、声明式贡献目录与 Host internal Dock Adapter 已进入生产路径。四个业务插件仍
-> 保留 Legacy 源码并由 Host 拒绝加载；Document v2、layout/lifecycle v2 及业务插件迁移尚未完成。
-> 见 [V2 G6 专项记录](./docs/plan-history/host-v2/g6-host-dock-adapter.md)。
+> Managed Plugin V2 已完成 G0–G7；G8–G14 尚未实现。最终 Core/UI SDK、严格 manifest v2、
+> 每插件独立 Provider、声明式贡献目录、Host internal Dock Adapter 与 Document V2 已进入生产路径。
+> 四个业务插件仍保留 Legacy 源码并由 Host 拒绝加载；layout/lifecycle v2 及业务插件迁移尚未完成。
+> 见 [V2 G7 专项记录](./docs/plan-history/host-v2/g7-document-v2.md)。
 
 ## 核心扩展模型
 
@@ -28,7 +28,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 - Tool 单例创建、关闭隐藏和状态恢复；
 - Managed Plugin 服务注册、可选初始化与反向关闭生命周期；
 - 严格 `plugin.manifest.json`、插件目录隔离和私有依赖解析；
-- 严格 Document 信封 v1、文件原子保存与恢复备份、插件状态面板和默认脱敏的会话诊断日志。
+- 严格 Document 信封 v2、原生 JSON 内容、文件原子保存与恢复备份、插件状态面板和默认脱敏的会话诊断日志。
 
 ## 现有插件
 
@@ -42,7 +42,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 四个当前插件均使用 Managed Plugin 接入。G4 已删除 Legacy 二进制激活路径；无模块程序集、
 缺少入口 `.deps.json` 的目录以及依赖历史加载 Facade 的代码不会进入插件运行链。
 
-## V2 G6 当前 SDK、manifest、容器、贡献目录与 Dock 边界
+## V2 G7 当前 SDK、manifest、容器、Dock 与 Document 边界
 
 历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。当前 G1 仍沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
@@ -74,13 +74,15 @@ G5 把 Host 生产模块入口切换到最终 UI SDK，并以 `PluginRegistratio
 `PluginRegistry` 和 internal Activator 形成唯一贡献路径。Document 自动为 scoped，Tool/Lifecycle 为
 插件 singleton；Descriptor、模型和 View 在一次声明中冻结。插件内错误丢弃整个候选；跨插件 ID 或精确
 模型映射冲突排除全部冲突插件，Host 冲突保留 Host，未冲突插件继续发布。Registry 不保存 Provider，
-Welcome 与四个 Host Tool 也从相同目录产生。四业务插件留到 G9–G12，因此当前不会被 G6 Host 加载。
+Welcome 与四个 Host Tool 也从相同目录产生。四业务插件留到 G9–G12，因此当前不会被 V2 Host 加载。
 
 G6 进一步把 Welcome 与四个 Host Tool 变为普通模型。只有 internal sealed
 `ManagedDocumentDockable`/`ManagedToolDockable` 继承 Dock 类型；View 在发布前由 Registry 精确工厂
 预构建一次。Document Adapter 拥有模型、View 和独立 Scope，Tool Adapter 只拥有 View，Tool singleton
 仍由插件 Provider 释放。单个 Tool 创建失败只隔离自身，Welcome 失败中止布局；所有 Adapter 禁止浮动。
-G6 不调用 `InitializeAsync`，Document v2 创建、恢复与保存仍由 G7 实现。
+G7 在该 Adapter 基线上建立唯一异步 Document 链：Registry 核对后在独立 Scope 中调用
+`InitializeAsync`，成功后才构造 Adapter、预构建 View 并发布。新建、Creation Intent 与恢复统一使用
+`DocumentActivationContext`；保存与关闭统一读取 Host 状态，不接受 Legacy Strategy 或字符串快照。
 
 宿主默认把布局、外观和诊断写入 `%LOCALAPPDATA%\MyAvaloniaManagement\v2\`。旧 `v1` 与预发布目录
 保持原样，不读取、迁移或删除。`MYAVALONIA_DATA_DIRECTORY` 仍表示完整数据根，不追加 `v2`，
@@ -91,10 +93,10 @@ G6 不调用 `InitializeAsync`，Document v2 创建、恢复与保存仍由 G7 �
 原始异常只允许在用户明确确认后，通过进程级
 `MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS=1` 临时输出到 Trace/stderr；它永远不进入 UI 或 JSONL。
 
-G7 完成前，Document 仍使用历史七字段信封 v1。宿主拥有 schema、插件和 Document 身份、标题、路径与
-UTC 时间，插件只通过不可变 `DocumentContentSnapshot` 提供内容 schema 和字符串 payload。reader 严格拒绝任何非 v1 结构、历史 ID 别名
-和插件所有权冲突；文件 UTF-8 上限为 8 MiB，JSON 最大深度为 8。项目没有旧 Document 信封兼容
-或迁移路径，打开失败不会创建、迁移或覆盖文件。
+Document 只使用六字段信封 v2。宿主拥有 schema、插件和 Document 身份、标题、路径与 UTC 时间；
+插件只通过 `DocumentContent` 提供内容 schema 和原生 `JsonElement` payload。reader 严格拒绝 V1、
+未知/重复/缺失字段、历史 ID、非 UTC、注释、尾逗号和所有权冲突；UTF-8 上限为 8 MiB，JSON 最大
+深度为 8。打开失败不会创建、迁移或覆盖文件，恢复副本必须另存且不能覆盖损坏原件或备份。
 
 ## 快速运行
 
@@ -130,10 +132,10 @@ TestResults/  需要保留的阶段验收与人工验证记录
 根 README 只提供项目概览。继续阅读时，从以下入口选择：
 
 - [项目文档导航](./docs/README.md)：按用途浏览全部解决方案级文档；
-- [Managed 插件快速开始（历史示例）](./docs/quick-start/README.md)：G6 已具备普通模型 Adapter，但最终可运行教程仍需等待 G9 迁移首个真实插件；
+- [Managed 插件快速开始（历史示例）](./docs/quick-start/README.md)：G7 已具备最终 Document 契约，但完整业务插件教程仍需等待 G9 迁移首个真实插件；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G6 已完成、G7–G14 尚未实现的破坏式重构路线；
+- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G7 已完成、G8–G14 尚未实现的破坏式重构路线；
 - [V2 G0 绿色基线](./docs/plan-history/host-v2/g0-green-baseline.md)：查看非发布门禁、删除面、依赖白名单和消费者矩阵；
 - [V2 G1 版本与数据边界](./docs/plan-history/host-v2/g1-version-and-data-boundaries.md)：查看 V2 版本事实、数据根隔离和阶段边界；
 - [V2 G2 Plugin SDK 重建](./docs/plan-history/host-v2/g2-plugin-sdk-rebuild.md)：查看 Core/UI 契约、Legacy 隔离、SOLID 取舍和非发布门禁证据；
@@ -141,6 +143,8 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [V2 G4 每插件独立容器](./docs/plan-history/host-v2/g4-per-plugin-containers.md)：查看 Provider 所有权、失败隔离、Document Scope 路由、逆序释放和专项门禁；
 - [V2 G5 声明式贡献目录](./docs/plan-history/host-v2/g5-declarative-contribution-catalog.md)：查看注册封闭、两阶段冲突隔离、不可变 Registry、Host 内建贡献和专项门禁；
 - [V2 G6 Host Dock Adapter](./docs/plan-history/host-v2/g6-host-dock-adapter.md)：查看普通模型投影、View 原子发布、Scope/View 所有权、失败隔离和非发布门禁；
+- [Document V2 当前设计](./docs/design/document-persistence-v2-design.md)：查看六字段线格式、所有权链、保存提交点、恢复与关闭语义；
+- [V2 G7 Document V2](./docs/plan-history/host-v2/g7-document-v2.md)：查看 SOLID 取舍、失败矩阵、实际测试证据和非发布边界；
 - [主项目兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)：修改 public API、插件契约或稳定 ID 前核对；
 - [MyAvaloniaManagement 测试说明](./docs/reference/myavalonia-management-tests.md)：查看测试层次、门禁和结果位置。
 
@@ -154,6 +158,15 @@ TestResults/  需要保留的阶段验收与人工验证记录
 ```
 
 该门禁不启动窗口、不执行发布，也不替代 G14 的历史发布门禁。
+
+修改 Document 创建、持久化、关闭或 Scope 所有权链时，运行 G7 非发布专项：
+
+```powershell
+.\scripts\Test-DocumentV2.ps1 -Configuration Release -NoRestore
+```
+
+该脚本只执行 Unit、Plugin 与 Headless UI 专项测试，并固定记录未运行 Windows CI、Windows Smoke
+及发布门禁；结果写入 `artifacts/test-results/DocumentV2/summary.json`。
 
 在干净 Git 提交上执行完整的 G14 Windows 本地发布门禁：
 
@@ -208,7 +221,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - G3 已完成：宿主只接受严格 manifest v2、入口 `.deps.json` 和清单精确声明的入口类型；
 - G5 已完成：宿主与每个插件拥有独立 Provider，Host 生产贡献只通过最终 UI SDK 声明并发布到唯一 Registry；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
-- Core/UI 包、manifest v2、独立容器和 Host 声明式目录已进入生产路径；四业务插件仍是 Legacy
-  源码且不会由 G6 Host 加载，不能据此宣称 Document/layout v2 或完整 V2 运行时迁移完成。
+- Core/UI 包、manifest v2、独立容器、Host 声明式目录和 Document v2 已进入生产路径；四业务插件仍是
+  Legacy 源码且不会由 G7 Host 加载，不能据此宣称 layout/lifecycle v2 或完整业务插件迁移完成。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

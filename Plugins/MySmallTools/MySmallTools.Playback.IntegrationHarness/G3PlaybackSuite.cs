@@ -541,7 +541,7 @@ internal sealed class G3PlaybackHarnessRunner(
         DocumentDock documentDock,
         SecretVideoPlayerViewModel placeholder)
     {
-        mainViewModel.CreateDocument(DocumentTypeIdConstant.SecretVideoLibraryDocumentId.Value);
+        await mainViewModel.CreateDocument(DocumentTypeIdConstant.SecretVideoLibraryDocumentId.Value);
         var library = documentDock.VisibleDockables?
             .OfType<SecretVideoLibraryViewModel>()
             .LastOrDefault() ?? throw new InvalidOperationException(

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace MyAvaloniaManagement.Business.Storage;
 
@@ -22,9 +21,9 @@ internal interface IHostStorageService
     /// <summary>
     /// 选择文档保存路径。
     /// </summary>
-    /// <param name="metadata">用于计算文件类型名称和默认扩展名的文档元数据。</param>
+    /// <param name="documentDisplayName">用于形成文件选择器类型名称的 Host 已验证展示名称。</param>
     /// <returns>所选本地路径；取消保存时返回 <see langword="null"/>。</returns>
-    Task<string?> PickSaveFileAsync(DocumentMetadata? metadata);
+    Task<string?> PickSaveFileAsync(string documentDisplayName);
 
     /// <summary>
     /// 选择一个文件夹。

@@ -344,9 +344,9 @@ public sealed class HostDiagnosticsTests
     }
 
     [Fact]
-    public void 文档错误映射不信任插件提供的DocumentLoadException正文()
+    public void 文档错误映射不泄漏内部格式异常正文()
     {
-        var exception = new MyAvaloniaManagementCommon.Save.DocumentLoadException(
+        var exception = new DocumentEnvelopeException(
             string.Join(" | ", SensitiveCanaries),
             new InvalidOperationException(SensitiveCanaries[0]));
 

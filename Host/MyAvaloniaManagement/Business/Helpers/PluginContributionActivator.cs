@@ -38,8 +38,8 @@ internal sealed class PluginContributionActivator(
         var manager = registration.OwnerId == HostExtensionIds.V2Owner
             ? _hostProvider.GetRequiredService<DocumentScopeManager>()
             : _pluginProviders.GetDocumentScopeManager(registration.OwnerId);
-        var document = manager.CreatePluginDocument(registration.ModelType);
-        return new ActivatedPluginDocument(registration, document, manager);
+        var lease = manager.CreatePluginDocument(registration.ModelType);
+        return new ActivatedPluginDocument(registration, lease);
     }
 
     internal ActivatedPluginTool ActivateTool(ToolTypeId toolTypeId)
@@ -60,19 +60,19 @@ internal sealed class PluginContributionActivator(
 /// <summary>保存一次普通 Document 模型激活及其唯一 Scope 释放权。</summary>
 internal sealed class ActivatedPluginDocument(
     PluginDocumentRegistration registration,
-    IPluginDocument model,
-    DocumentScopeManager scopeManager) : IDisposable
+    PluginDocumentScopeLease scopeLease) : IDisposable
 {
     private int _disposed;
 
     internal PluginDocumentRegistration Registration { get; } = registration;
-    internal IPluginDocument Model { get; } = model;
+    internal IPluginDocument Model => scopeLease.Model;
+    internal CancellationToken ClosingToken => scopeLease.ClosingToken;
 
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) == 0)
         {
-            scopeManager.Release(Model);
+            scopeLease.Dispose();
         }
     }
 }

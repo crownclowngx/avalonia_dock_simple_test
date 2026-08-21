@@ -1,13 +1,13 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-21（已同步 Managed Plugin V2 G6）<br>
+> 更新日期：2026-08-21（已同步 Managed Plugin V2 G7）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系  
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动  
 > 不在本轮范围：逐项评审插件业务功能、第三方插件市场、运行时热卸载、插件沙箱
 
-> V2 当前状态：G0–G6 已完成。Host 生产模块入口、声明式贡献目录与 Dock Adapter 使用最终 Core/UI SDK；四业务插件
-> 仍以不可打包的 `MyAvaloniaManagement.LegacyPluginContracts` 保持源码可编译，但不会由 G6 Host 加载。
+> V2 当前状态：G0–G7 已完成。Host 生产模块入口、声明式贡献目录、Dock Adapter 与 Document V2 使用最终 Core/UI SDK；四业务插件
+> 仍以不可打包的 `MyAvaloniaManagement.LegacyPluginContracts` 保持源码可编译，但不会由 G7 Host 加载。
 > 本文涉及四业务插件的 Strategy、Document v1 与生命周期 Manager 段落属于 G9–G12 前的阶段事实。
 
 ## 1. 先说结论：这是一个什么项目
@@ -33,7 +33,7 @@
 ```mermaid
 flowchart TB
     Host["MyAvaloniaManagement<br/>Avalonia 桌面宿主"]
-    Sdk["PluginSdk + PluginSdk.UI<br/>G6 Host 生产契约"]
+    Sdk["PluginSdk + PluginSdk.UI<br/>G7 Host 生产契约"]
     Legacy["LegacyPluginContracts<br/>业务插件源码桥"]
     Dock["Avalonia 12 + Dock 12<br/>UI 与停靠模型"]
 
@@ -131,10 +131,11 @@ G8 实现。BiliDownloader 的 Legacy 生命周期源码只参与插件自身回
 
 ## 3. Document：多实例工作上下文
 
-> G6 当前生产事实：Host Welcome 通过最终 `DocumentDescriptor`、Registry、internal Activator 与 Dock
-> Adapter 创建；以下四业务插件 Strategy/Document v1 说明是迁移前源码事实，不代表 G6 Host 会加载这些入口。
+> G7 当前生产事实：Host Welcome 与 V2 测试 Document 通过最终 `DocumentDescriptor`、Registry、internal
+> Activator、异步初始化与 Dock Adapter 创建；以下四业务插件 Strategy/Document v1 说明是迁移前源码事实，
+> 不代表 G7 Host 会加载这些入口。
 
-### 3.1 创建入口已经支持“类型 + 意图”
+### 3.1 最终创建入口统一为“类型 + ActivationContext”
 
 `Document` 在本工程中更接近 IDE 编辑器标签页，而不局限于文本文件：
 
@@ -144,9 +145,18 @@ G8 实现。BiliDownloader 的 Legacy 生命周期源码只参与插件自身回
 - 可以选择实现保存/恢复；
 - 标签页真正关闭后，实例相关资源必须释放。
 
-公共主入口仍是 `IDocumentCreationStrategy`。在不破坏旧接口的前提下，新增的 `IDocumentCreationIntentProvider` 允许一个 Document 类型声明多个菜单入口；宿主把 `CreationIntentId` 放入 `DocumentCreationParams` 传给同一策略。BiliDownloader 当前提供“链接下载”和“个人内容来源”两个入口。参见 [`IDocumentCreationStrategy.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/DocumentCreation/IDocumentCreationStrategy.cs)、[`IDocumentCreationIntentProvider.cs`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/DocumentCreation/IDocumentCreationIntentProvider.cs) 和 [`BiliDownloaderDocumentStrategy.cs`](../../Plugins/BiliDownloader/BiliDownloader/Create/BiliDownloaderDocumentStrategy.cs)。
+Host 生产入口接收 `DocumentTypeId + DocumentActivationContext` 并异步返回完整 Adapter。Creation Intent
+必须先与冻结 Descriptor 核对；恢复内容只通过 `RestoredContent` 传入。四业务插件源码中的
+`IDocumentCreationStrategy`、`DocumentCreationParams` 与 Intent Provider 是 G9–G12 前的 Legacy 阶段事实，
+不会进入 G7 Host 生产路径。
 
-### 3.2 所有 Managed Document 已统一纳入所属插件 Scope
+### 3.2 所有 V2 Document 统一纳入所属 Provider Scope
+
+**[当前生产事实]** Registry 先确定所有者，`DocumentScopeManager` 返回包含普通 `IPluginDocument`、
+关闭令牌和幂等释放入口的窄 Lease。Host 等待 `InitializeAsync` 后才构造 Adapter/View；最终关闭依次
+断开 View、发出令牌并释放模型与 scoped 依赖。生产不注册 `IDocumentScopeFactory`。
+
+> 下图和插件矩阵描述尚待迁移业务插件的旧源码测试方式，只用于说明 G9–G12 输入，不是当前 Host 链路。
 
 ```mermaid
 flowchart TD
@@ -185,17 +195,24 @@ G9–G12 再迁移四个真实业务插件。
 
 **[代码事实]** Managed Document Scope 现在同时提供 scoped `IDocumentLifetime`。Dock 确认关闭后，`DocumentScopeManager` 先取消 `ClosingToken`，再释放 ViewModel 与 scoped 依赖；被否决的关闭不会提前取消，宿主退出则对仍打开的 Document 执行同一路径。取消是协作式且不等待：Document 局部的 HTTP、解析、浏览、探测与发票导入停止并禁止迟到 UI 回写；BiliDownloader 已提交到插件级 Coordinator 的下载任务继续运行。原生文件选择器只能丢弃迟到结果，EPPlus 已进入同步 `SaveAs` 后允许完成写入。
 
-### 3.3 Document 保存、关闭保护与坏文件恢复已形成 V1
+### 3.3 Document V2 保存、关闭保护与坏文件恢复
 
-**[代码事实]** 实现 `ISavableDocument` 的 Document 同时必须实现 `IDocumentSaveState`；插件报告脏状态，宿主只在主文件成功提交后调用 `AcceptChanges`。不完整契约以 `DOCUMENT_SAVE_STATE_MISSING` 拒绝发布并回滚 Document Scope。`DocumentPersistenceCoordinator` 继续负责批量打开、重复激活和单文件错误隔离，菜单保存、关闭保存和退出保存则统一复用 `DocumentSaveService` 与同一串行门。参见 [`document-persistence-v1-design.md`](./document-persistence-v1-design.md)。
+**[代码事实]** 可保存普通模型实现 `IPersistablePluginDocument`。`DocumentPersistenceCoordinator` 负责异步
+新建、批量打开、重复激活和恢复编排；菜单保存、关闭保存和退出保存复用 `DocumentSaveService` 与同一
+串行门。主文件成功后才提交 Host 路径/标题/恢复状态并调用 `AcceptChanges`。参见
+[`document-persistence-v2-design.md`](./document-persistence-v2-design.md)。
 
-**[代码事实]** 主文件与 `<主路径>.recovery.bak` 均使用 `AtomicFileTransaction`。主文件成功是唯一业务提交点：失败时不改变标题、路径、脏状态或另存保护；备份失败不回滚主文件，而是返回明确警告。损坏主文件只有在恢复备份于新 Scope 中完整加载成功后才展示恢复确认，恢复副本强制另存且永不覆盖损坏原件。
+**[代码事实]** 主文件与 `<主路径>.recovery.bak` 均使用 `AtomicFileTransaction`。主文件成功是唯一业务
+提交点：失败时不改变标题、路径、脏状态或另存保护；`AcceptChanges` 或备份失败不回滚主文件，而是
+返回明确警告。损坏主文件只有在严格 V2 备份于新 Scope 中完整初始化后才展示恢复确认，恢复副本由
+Host `RequiresSave` 强制另存且永不覆盖损坏原件。
 
 **[代码事实]** Dock 标签关闭采用“同步否决、异步确认、一次性重入”；被取消的关闭不会提前触发 `ClosingToken`。主窗口退出用一个汇总对话框处理全部脏 Document，保存全部按 Dock 顺序串行执行并在首个失败或取消处停止。BiliDownloader 只接受当前 Document V3，不再保留 V1/V2 或未知主版本的兼容读取分支。
 
-**[验证证据]** 2026-08-13 Release 专项门禁通过 `MyAvaloniaManagement.Tests` 105、`MyAvaloniaManagement.PluginTests` 102、`MyAvaloniaManagement.UiTests` 31，合计 **238/238**；Host 行覆盖率 **76.86%**、分支覆盖率 **63.65%**，Windows 真实窗口冒烟通过。完整解决方案另有 BiliDownloader 720、银行插件 64、MySmallTools 182 项测试通过。
+**[验证证据]** 2026-08-21 G7 Release 专项 **83/83**；Host 全量 **374/374**，行覆盖率 **82.22%**、
+分支覆盖率 **67.22%**。本阶段明确没有运行 Windows CI/Smoke 或发布门禁。
 
-以下能力刻意不纳入 Document 保存 V1：
+以下能力刻意不纳入 Document V2：
 
 - 宿主信封版本迁移框架和历史 Document 内容迁移；
 - 未安装对应插件时的占位页或延迟恢复机制；
@@ -373,7 +390,9 @@ public DocumentMetadata GetMetadata() => new(
 };
 ```
 
-主 ID 必须采用小写点分层命名，并归属于 manifest 所有者的 `.document.*` 或 `.tool.*` 空间；历史大写 GUID、短名称等只能进入 `LegacyIds`。Tool 布局可按其独立兼容规则归一化别名；Document 信封 v1 只接受规范主 ID，别名不会归一化后继续打开。v1 是第一个且唯一的 Document 信封，不存在旧信封迁移。新建与“另存为”统一建议 `.mamdoc`。
+主 ID 必须采用小写点分层命名，并归属于 manifest 所有者的 `.document.*` 或 `.tool.*` 空间。Tool
+layout-v1 可按独立规则归一化历史短名称；Document V2 只接受规范主 ID，不存在别名或 V1 迁移。
+新建与“另存为”统一使用 `.mamdoc`。
 
 ### 6.4 2026-08-12 统一启动诊断 V1
 
@@ -430,7 +449,8 @@ Host Unit 119、Plugin 127、Headless UI 37，合计 **283/283**。SDK 包门禁
 
 ### 6.9 2026-08-20 Managed Plugin v1 封板
 
-**[已实现]** G7–G8 固定 Document 七字段信封与插件内容快照边界；G9–G10 把跨插件事件收口到
+**[v1 历史事实]** v1 G7–G8 固定过七字段信封与字符串内容快照；V2 G7 已由六字段根对象、
+原生 JSON `DocumentContent` 与异步初始化链取代。v1 G9–G10 把跨插件事件收口到
 每 HostRuntime 隔离的 SDK 总线，并删除 Host 内部广播；G11–G13 完成 public 面清理、统一插件包和
 可读 API 基线；G14–G15 建立可重复的历史发布证据与默认诊断脱敏。G16 最终同步当前文档，直接从
 集中版本、API baseline 和四插件项目读取事实，并以 `managed-plugin-v1.0.0` 定位源码基线。
@@ -578,7 +598,7 @@ Builder、Navigator、Coordinator 和 Adapter 的清晰协作边界。
 
 它尚未完全跨过“宿主能力产品化”的门槛，核心问题收敛为：
 
-1. V2 G6 已把 Host 生产贡献收口为最终 SDK Registration、不可变 Registry、独立 Activator 和 internal Dock Adapter；
+1. V2 G7 已把 Host 生产贡献与 Document 持久化收口为最终 SDK Registration、不可变 Registry、独立 Activator、internal Dock Adapter 和唯一 V2 信封；
 2. 运行前 manifest v2、Core/UI 兼容检查、声明式 Plugin Registry 和用户可见诊断已经建立；能力声明和 manifest 插件依赖清单仍属于后续版本；
 3. 公共契约承担了宿主 SDK 的角色，但保存状态、版本演进和错误语义仍主要由单个插件自行补齐；
 4. 宿主专项测试与 Windows 冒烟已全绿，但全插件发布矩阵、媒体集成和长期运行仍是独立验收边界。

@@ -4,7 +4,7 @@
 
 ## 快速开始
 
-> G6 过渡期提示：Host 已支持普通模型 Dock Adapter，但快速开始正文仍是 Legacy 历史示例，会被当前
+> G7 过渡期提示：Host 已支持普通模型 Dock Adapter 与最终 Document V2，但快速开始中的业务插件仍是 Legacy 历史示例，会被当前
 > Host 拒绝；最终可运行教程要等 G9 迁移首个真实插件后更新。当前不要据此创建或发布 V2 插件。
 
 历史快速开始入口：
@@ -25,8 +25,7 @@
 | [Managed-only 插件加载](./plan-history/host-v1/g4-managed-only-plugin-loading.md) | 必需 deps、唯一模块、DI 激活、稳定拒绝诊断和数据兼容保留边界 | 当前插件加载契约，G4 已完成 |
 | [显式贡献与 Plugin Registry](./plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md) | 破坏式 v1 重定基线、Context/Builder/Registry、贡献所有权、失败原子性与迁移结果 | 当前显式扩展契约，G5 已完成 |
 | [宿主 DI 保护与插件注册事务](./plan-history/host-v1/g6-host-di-protection.md) | 追加式私有服务契约、宿主描述符保护、事务提交、稳定诊断与回滚边界 | 当前 DI 组合契约，G6 已完成 |
-| [Document 信封 v1](./plan-history/host-v1/g7-document-envelope-v1.md) | 唯一七字段磁盘格式、8 MiB/深度 8 限制、Registry 所有权、插件内容 DTO 与失败原子性 | 当前 Document 磁盘契约，G7 已完成 |
-| [G8 保存契约与内容版本](./plan-history/host-v1/g8-document-content-persistence-contract.md) | 内容快照最终 API、宿主路径/所有权状态、SOLID 取舍、插件矩阵和验收证据 | 当前保存内存契约，G8 已完成 |
+| [Document V2 持久化设计](./design/document-persistence-v2-design.md) | 六字段格式、异步所有权链、保存提交点、恢复、关闭与 Scope 释放 | 当前 Document 契约，V2 G7 已完成 |
 | [G9 SDK 事件总线](./plan-history/host-v1/g9-sdk-event-bus.md) | SDK 自有同步事件、每 HostRuntime 隔离、订阅令牌和并发语义 | 当前进程内事件契约，G9 已完成 |
 | [G10 Host 内部直接协调](./plan-history/host-v1/g10-host-internal-coordination.md) | 文件打开、错误状态和 Tool/Dock 直接协作边界 | 当前 Host 内部协调，G10 已完成 |
 | [G11 低价值 public 面清理](./plan-history/host-v1/g11-low-value-public-surface-cleanup.md) | v1 前最终公共面删除、消费者迁移和重新引入条件 | 当前 SDK 公共面，G11 已完成 |
@@ -36,7 +35,6 @@
 | [G14 Windows 本地发布门禁](./plan-history/host-v1/g14-windows-release-gate.md) | 平台无关单入口、两轮隔离、发布证据比较、SOLID 取舍和失败语义 | 当前 Windows 发布门禁，G14 已完成 |
 | [G15 宿主诊断脱敏](./plan-history/host-v1/g15-host-diagnostic-redaction.md) | 诊断白名单、固定错误映射、敏感调试开关、SOLID 取舍和专项门禁 | 当前诊断安全边界，G15 已完成 |
 | [G16 文档与 v1 基线](./plan-history/host-v1/g16-documentation-and-v1-baseline.md) | 当前文档事实、文档门禁、四插件兼容签署、标签和回退边界 | Managed Plugin v1 最终基线，G16 已完成 |
-| [Document 保存 V1](./design/document-persistence-v1-design.md) | 公共脏状态、保存事务、关闭确认、备份和坏文件恢复规则 | 当前契约与设计依据 |
 | [MyAvaloniaManagement 测试说明](./reference/myavalonia-management-tests.md) | 宿主专项测试、覆盖率和 Windows 冒烟门禁 | 当前事实 |
 | [Dock 布局快照 V1](./reference/dock-layout-snapshot-v1.md) | `layout-v1.json` 的稳定 ID、校验、迁移和回退规则 | 当前契约 |
 | [主项目内部架构](../Host/MyAvaloniaManagement/docs/design/architecture.md) | `MyAvaloniaManagement` 内部协作者、依赖方向和运行链路 | 当前事实 |
@@ -53,12 +51,12 @@
 
 ## 封版后候选计划
 
-以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G6；最终 Core/UI SDK、manifest v2、独立插件
-Provider、声明式 Host Registry 与 Dock Adapter 已建立，但 Document v2 与 layout/lifecycle v2 仍未完成：
+以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G7；最终 Core/UI SDK、manifest v2、独立插件
+Provider、声明式 Host Registry、Dock Adapter 与 Document v2 已建立，layout/lifecycle v2 仍未完成：
 
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
-  G0–G14 可执行计划；G0–G6 已完成，G7–G14 尚未实现。
+  G0–G14 可执行计划；G0–G7 已完成，G8–G14 尚未实现。
 - [Managed Plugin V2 G0 绿色基线](./plan-history/host-v2/g0-green-baseline.md)：
   冻结 361 项 Host 测试、SDK API、包图、四插件包事实以及删除面、依赖白名单和消费者矩阵；
   本阶段未运行 Windows Smoke、CI 或发布门禁。
@@ -74,6 +72,8 @@ Provider、声明式 Host Registry 与 Dock Adapter 已建立，但 Document v2 
   记录一次声明、注册封闭、两阶段冲突隔离、不可变 Registry、Host 内建贡献和非发布门禁证据。
 - [Managed Plugin V2 G6 Host Dock Adapter](./plan-history/host-v2/g6-host-dock-adapter.md)：
   记录普通模型、内部 Adapter、View 原子发布、Scope/View 所有权、失败隔离和非发布门禁证据。
+- [Managed Plugin V2 G7 Document V2](./plan-history/host-v2/g7-document-v2.md)：
+  记录六字段格式、异步创建、保存/恢复/关闭事务、失败矩阵、覆盖率和非发布门禁证据。
 - [外部 Managed Plugin 开发与平台安装候选计划](./design/external-managed-plugin-development-and-installation-plan.md)：
   `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
 
@@ -95,6 +95,8 @@ Provider、声明式 Host Registry 与 Dock Adapter 已建立，但 Document v2 
   Host 使用最终 UI SDK 模块入口，贡献经插件局部 Builder 与全局冲突过滤后发布到唯一不可变 Registry。
 - [G6：实现 Host Dock Adapter](./plan-history/host-v2/g6-host-dock-adapter.md)：
   只有 Host internal Adapter 继承 Dock；普通模型、预构建 View、Document Scope 与 Tool singleton 各守所有权边界。
+- [G7：建立 Document V2](./plan-history/host-v2/g7-document-v2.md)：
+  建立唯一异步创建、严格六字段信封、原子保存、恢复另存、关闭重入与 Scope 释放链。
 
 ### Managed Plugin v1 整改记录
 

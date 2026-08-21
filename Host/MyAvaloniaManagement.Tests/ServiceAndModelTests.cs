@@ -3,8 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Converter;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Models.FileSystem;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagementCommon.DocumentCreation;
+using Avalonia.Controls;
 
 namespace MyAvaloniaManagement.Tests;
 
@@ -31,44 +33,45 @@ public sealed class ServiceAndModelTests
     [Fact]
     public void G5Descriptor中的文档都形成显式菜单分组()
     {
-        var strategies = new IDocumentCreationStrategy[]
+        using var context = new TestHostContext(configureContributions: (services, builder) =>
         {
-            new StubDocumentStrategy(
-            new DocumentMetadata(new DocumentTypeId("myavalonia.host.document.visible-a"), "A")
-            {
-                MenuCategory = "分类一"
-            }),
-            new StubDocumentStrategy(
-            new DocumentMetadata(new DocumentTypeId("myavalonia.host.document.visible-b"), "B")
-            {
-                MenuCategory = "分类一"
-            }),
-            new StubDocumentStrategy(
-            new DocumentMetadata(new DocumentTypeId("myavalonia.host.document.hidden"), "隐藏")
-            {
-                MenuCategory = "分类二",
-                ShowInMenu = false
-            }),
-            new StubDocumentStrategy(
-                new DocumentMetadata(
-                    new DocumentTypeId("myavalonia.host.document.uncategorized"),
-                    "未分类")),
-        };
-        using var context = new TestHostContext(documentStrategies: strategies);
+            AddDocument<VisibleDocumentA>(services, builder, "visible-a", "A", "分类一");
+            AddDocument<VisibleDocumentB>(services, builder, "visible-b", "B", "分类一");
+            AddDocument<VisibleDocumentC>(services, builder, "visible-c", "C", "分类二");
+            AddDocument<VisibleDocumentD>(services, builder, "uncategorized", "未分类", "其他");
+        });
 
         var groups = new PluginMenuService(context.Factory)
-            .GetDocumentMetadataByCategory();
+            .GetCreationEntriesByCategory();
 
         Assert.Equal(2, groups["分类一"].Count);
         Assert.Single(groups["分类二"]);
-        Assert.Contains("未归类插件", groups.Keys);
+        Assert.Contains("其他", groups.Keys);
     }
 
     [Fact]
     public void 多入口策略展开为同一文档类型的独立菜单项()
     {
-        using var context = new TestHostContext(
-            documentStrategies: [new MultiIntentDocumentStrategy()]);
+        using var context = new TestHostContext(configureContributions: (services, builder) =>
+        {
+            services.AddScoped<MultiIntentDocument>();
+            builder.AddDocument(
+                MyAvaloniaManagement.Business.Constants.HostExtensionIds.V2Owner,
+                new DocumentDescriptor(
+                    new DocumentTypeId("myavalonia.host.document.multi-intent"),
+                    "下载",
+                    "多入口",
+                    "测试",
+                    creationIntents:
+                    [
+                        new DocumentCreationIntentDescriptor(new CreationIntentId("quick-url"), "链接下载"),
+                        new DocumentCreationIntentDescriptor(new CreationIntentId("personal-source"), "个人来源"),
+                    ]),
+                typeof(MultiIntentDocument),
+                typeof(UserControl),
+                static () => new UserControl(),
+                false);
+        });
 
         var entries = new PluginMenuService(context.Factory)
             .GetCreationEntriesByCategory()["测试"];
@@ -82,20 +85,41 @@ public sealed class ServiceAndModelTests
             entries.Select(entry => entry.CreationIntentId?.Value));
     }
 
-    private sealed class MultiIntentDocumentStrategy : IDocumentCreationStrategy, IDocumentCreationIntentProvider
+    private static void AddDocument<TDocument>(
+        IServiceCollection services,
+        PluginRegistryBuilder builder,
+        string idSuffix,
+        string displayName,
+        string category)
+        where TDocument : class, IPluginDocument
     {
-        public Dock.Model.Mvvm.Controls.Document CreateDocument(DocumentCreationParams @params) => new();
-
-        public DocumentMetadata GetMetadata() => new(
-            new DocumentTypeId("myavalonia.host.document.multi-intent"),
-            "下载") { MenuCategory = "测试" };
-
-        public IReadOnlyList<DocumentCreationIntentMetadata> GetCreationIntents() =>
-        [
-            new(new CreationIntentId("quick-url"), "链接下载"),
-            new(new CreationIntentId("personal-source"), "个人来源"),
-        ];
+        services.AddScoped<TDocument>();
+        builder.AddDocument(
+            MyAvaloniaManagement.Business.Constants.HostExtensionIds.V2Owner,
+            new DocumentDescriptor(
+                new DocumentTypeId($"myavalonia.host.document.{idSuffix}"),
+                displayName,
+                "菜单测试",
+                category),
+            typeof(TDocument),
+            typeof(UserControl),
+            static () => new UserControl(),
+            false);
     }
+
+    private abstract class MenuDocument : IPluginDocument
+    {
+        public DocumentPresentationState Presentation => new(string.Empty);
+        public event EventHandler? PresentationChanged { add { } remove { } }
+        public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken token) =>
+            ValueTask.CompletedTask;
+    }
+
+    private sealed class VisibleDocumentA : MenuDocument;
+    private sealed class VisibleDocumentB : MenuDocument;
+    private sealed class VisibleDocumentC : MenuDocument;
+    private sealed class VisibleDocumentD : MenuDocument;
+    private sealed class MultiIntentDocument : MenuDocument;
 
     [Theory]
     [InlineData(@"C:\", true)]

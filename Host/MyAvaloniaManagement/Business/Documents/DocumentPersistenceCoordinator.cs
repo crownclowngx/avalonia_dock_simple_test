@@ -1,21 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.ExceptionServices;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Dock.Model.Controls;
-using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Storage;
+using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Save;
-using Newtonsoft.Json;
 
 namespace MyAvaloniaManagement.Business.Documents;
 
-/// <summary>
-/// 表示文档操作对界面错误状态的更新意图，而不是把异常直接泄漏给 ViewModel。
-/// “不变”“清空”和“失败”三种结果可保留用户取消等既有交互语义。
-/// </summary>
+/// <summary>表示 Document 操作对共享用户提示的更新意图。</summary>
 internal readonly record struct DocumentOperationResult(
     bool ShouldUpdateError,
     string Error)
@@ -25,10 +22,11 @@ internal readonly record struct DocumentOperationResult(
     internal static DocumentOperationResult Failure(string error) => new(true, error);
 }
 
-/// <summary>
-/// 串行编排文档的打开与保存，并将预期的文件系统故障转换为稳定的操作结果。
-/// 这样窗口 ViewModel 只处理绑定和定向协调，且并发请求不会重复打开或互相覆盖状态。
-/// </summary>
+/// <summary>编排 V2 Document 的新建、打开、恢复和活动项保存。</summary>
+/// <remarks>
+/// 本类型只负责编排用例，不解释 JSON、不写原子文件，也不拥有 Scope。所有入口共享同一个串行门，
+/// 因而并发打开同一路径时，后一个请求必定能观察到前一个已经提交的工作区状态。
+/// </remarks>
 internal sealed class DocumentPersistenceCoordinator(
     ManagementFactory factory,
     IHostStorageService storageService,
@@ -45,11 +43,29 @@ internal sealed class DocumentPersistenceCoordinator(
         persistenceStates,
         recoveryRegistry);
 
-    internal void CreateDocument(string documentType)
-    {
-        factory.CreateAndPublishDocument(
-            new DocumentCreationParams(DocumentTypeId.Parse(documentType)));
-    }
+    internal Task<DocumentOperationResult> CreateDocumentAsync(
+        DocumentTypeId documentTypeId,
+        CreationIntentId? creationIntentId = null) =>
+        operationGate.RunAsync(async () =>
+        {
+            try
+            {
+                await factory.CreateAndPublishDocumentAsync(
+                    documentTypeId,
+                    new DocumentActivationContext(
+                        title: string.Empty,
+                        creationIntentId));
+                return DocumentOperationResult.ClearError;
+            }
+            catch (Exception exception)
+            {
+                DocumentPersistenceErrorMapper.Report(
+                    "DOCUMENT_INITIALIZATION_FAILED",
+                    exception);
+                return DocumentOperationResult.Failure(
+                    "无法创建 Document：插件初始化未完成。未发布任何标签。");
+            }
+        });
 
     internal async Task<DocumentOperationResult> OpenSelectedAsync(IRootDock? root)
     {
@@ -61,8 +77,7 @@ internal sealed class DocumentPersistenceCoordinator(
         string filePath,
         IRootDock? root)
     {
-        if (string.IsNullOrWhiteSpace(filePath) ||
-            !storageService.FileExists(filePath))
+        if (string.IsNullOrWhiteSpace(filePath) || !storageService.FileExists(filePath))
         {
             DocumentPersistenceErrorMapper.Report("DOCUMENT_OPEN_FILE_NOT_FOUND");
             return DocumentOperationResult.NoChange;
@@ -71,14 +86,6 @@ internal sealed class DocumentPersistenceCoordinator(
         return await OpenAllAsync([filePath], root);
     }
 
-    /// <summary>
-    /// 处理来自文件树的直接打开请求，并把用户可见结果提交到共享状态。
-    /// </summary>
-    /// <remarks>
-    /// 预期的持久化错误仍由内部打开流程转换为稳定结果；只有编程错误或第三方策略意外异常
-    /// 会进入兜底分支。这个边界替代了原先主窗口对广播消息的 fire-and-forget 处理，因此
-    /// 必须在异步命令内部观察异常，避免产生未观察任务，同时不能向界面泄漏异常正文。
-    /// </remarks>
     async Task IHostDocumentOpenService.OpenPathAsync(string filePath)
     {
         try
@@ -93,8 +100,7 @@ internal sealed class DocumentPersistenceCoordinator(
 
     internal async Task<DocumentOperationResult> SaveActiveAsync()
     {
-        var activeDocument = _workspace.GetActiveDocument();
-        if (activeDocument is not Document document)
+        if (_workspace.GetActiveDocument() is not ManagedDocumentDockable document)
         {
             return DocumentOperationResult.NoChange;
         }
@@ -103,27 +109,25 @@ internal sealed class DocumentPersistenceCoordinator(
         return result.Status switch
         {
             DocumentSaveStatus.Saved => DocumentOperationResult.ClearError,
-            DocumentSaveStatus.SavedWithBackupWarning =>
+            DocumentSaveStatus.SavedWithWarning =>
                 DocumentOperationResult.Failure(result.Message),
-            DocumentSaveStatus.Canceled or DocumentSaveStatus.NotSavable =>
+            DocumentSaveStatus.Canceled or DocumentSaveStatus.NotPersistable =>
                 DocumentOperationResult.NoChange,
             _ => DocumentOperationResult.Failure(result.Message),
         };
     }
 
-    private async Task<DocumentOperationResult> OpenAllAsync(
+    private Task<DocumentOperationResult> OpenAllAsync(
         IReadOnlyList<string> paths,
-        IRootDock? root)
-    {
-        return await operationGate.RunAsync(async () =>
+        IRootDock? root) =>
+        operationGate.RunAsync(async () =>
         {
-            DocumentOperationResult result = DocumentOperationResult.NoChange;
+            var result = DocumentOperationResult.NoChange;
             foreach (var path in paths)
             {
                 try
                 {
-                    if (string.IsNullOrWhiteSpace(path) ||
-                        !storageService.FileExists(path))
+                    if (string.IsNullOrWhiteSpace(path) || !storageService.FileExists(path))
                     {
                         continue;
                     }
@@ -135,171 +139,144 @@ internal sealed class DocumentPersistenceCoordinator(
                     }
 
                     await LoadPrimaryOrRecoveryAsync(normalizedPath);
+                    result = DocumentOperationResult.ClearError;
                 }
-                catch (Exception exception) when (
-                    exception is DocumentLoadException ||
-                    IsExpectedPersistenceFailure(exception))
+                catch (Exception exception) when (IsExpectedPersistenceFailure(exception))
                 {
                     result = DocumentOperationResult.Failure(
                         DocumentPersistenceErrorMapper.ToOpenFailureMessage(exception));
-                    DocumentPersistenceErrorMapper.Report(
-                        "DOCUMENT_OPEN_FAILED",
-                        exception);
+                    DocumentPersistenceErrorMapper.Report("DOCUMENT_OPEN_FAILED", exception);
                 }
             }
 
             return result;
         });
-    }
 
     private async Task LoadPrimaryOrRecoveryAsync(string primaryPath)
     {
+        ExceptionDispatchInfo primaryFailure;
         try
         {
             var primary = await CreateLoadedDocumentAsync(primaryPath);
             PublishLoadedDocument(primary, recoverySourcePath: null);
             return;
         }
-        catch (Exception primaryException) when (
-            primaryException is DocumentLoadException or JsonException)
+        catch (Exception exception) when (IsRecoverableOpenFailure(exception))
         {
-            var backupPath = DocumentRecoveryRegistry.GetBackupPath(primaryPath);
-            if (!storageService.FileExists(backupPath))
-            {
-                throw;
-            }
-
-            Document backup;
-            try
-            {
-                // 先在未发布的新 Scope 中完整加载备份，再询问用户。这样“发现恢复备份”
-                // 明确表示备份已通过宿主信封和插件内容校验，不会先给出一个虚假的恢复入口。
-                backup = await CreateLoadedDocumentAsync(backupPath);
-            }
-            catch (Exception backupException) when (
-                backupException is DocumentLoadException or JsonException)
-            {
-                throw new DocumentLoadException(
-                    "主文件及恢复备份均已损坏，无法安全恢复。",
-                    backupException);
-            }
-
-            if (!await interactionService.ConfirmRecoveryAsync(Path.GetFileName(primaryPath)))
-            {
-                factory.ReleaseDocument(backup);
-                throw;
-            }
-
-            PublishLoadedDocument(backup, primaryPath);
-        }
-    }
-
-    private async Task<Document> CreateLoadedDocumentAsync(string filePath)
-    {
-        // 长度预检发生在整文件读取前；读取后的反序列化仍会按实际 UTF-8 字节复核，
-        // 避免文件在检查与读取之间变化时绕过 8 MiB 门限。
-        serializer.ValidateFileLength(storageService.GetFileLength(filePath));
-        var content = await storageService.ReadAllTextAsync(filePath);
-        var envelope = serializer.Deserialize(content);
-        var canonicalTypeId = factory.NormalizePersistedDocumentTypeId(envelope.DocumentTypeId);
-        if (canonicalTypeId != envelope.DocumentTypeId)
-        {
-            // Document 文件只接受当前契约写出的规范类型 ID。策略注册中的别名仍可服务于
-            // 运行期创建意图，但不能悄悄把历史文件迁移为当前格式，否则插件会在不知情时
-            // 接收到一个宿主改写过身份的文件，违背“无旧文件兼容”的明确产品边界。
-            throw new DocumentLoadException(
-                "文档类型标识不是当前规范值，宿主不会迁移历史 Document 文件。");
+            primaryFailure = ExceptionDispatchInfo.Capture(exception);
         }
 
-        if (!factory.TryGetPersistedDocumentRegistration(
-                envelope.DocumentTypeId,
-                out var registration))
+        var backupPath = DocumentRecoveryRegistry.GetBackupPath(primaryPath);
+        if (!storageService.FileExists(backupPath))
         {
-            throw new NotSupportedException("当前宿主没有注册该 Document 类型。");
+            primaryFailure.Throw();
         }
 
-        if (!string.Equals(
-                registration.OwnerId.Value,
-                envelope.PluginId.Value,
-                StringComparison.Ordinal))
-        {
-            throw new DocumentLoadException(
-                "文档声明的插件所有者与当前 Document 注册不匹配。");
-        }
-
-        Document? pendingDocument = factory.CreateManagementNewDocument(
-            new DocumentCreationParams(envelope.DocumentTypeId)
-            {
-                Title = envelope.Title
-            });
+        ManagedDocumentDockable backup;
         try
         {
-            // 创建策略可以决定新建文档的默认标题，但从磁盘恢复时标题属于已经验证的宿主
-            // 信封。宿主在插件加载正文前再次应用它，确保策略是否消费 Title 参数不会改变
-            // 持久化语义，也避免插件通过 payload 维护第二份标题。
-            pendingDocument.Title = envelope.Title;
-            if (pendingDocument is not ISavableDocument savableDocument)
+            // 只有备份已经通过严格信封、Registry、模型初始化和 View 预构建后才询问用户，
+            // 避免把不可用备份展示成虚假的恢复机会。
+            backup = await CreateLoadedDocumentAsync(backupPath);
+        }
+        catch (Exception exception) when (IsRecoverableOpenFailure(exception))
+        {
+            throw new DocumentEnvelopeException(
+                "主文件及恢复备份均无法安全初始化。",
+                exception);
+        }
+
+        if (!await interactionService.ConfirmRecoveryAsync(Path.GetFileName(primaryPath)))
+        {
+            factory.ReleaseDocument(backup);
+            primaryFailure.Throw();
+        }
+
+        PublishLoadedDocument(backup, primaryPath);
+    }
+
+    private async Task<ManagedDocumentDockable> CreateLoadedDocumentAsync(string filePath)
+    {
+        serializer.ValidateFileLength(storageService.GetFileLength(filePath));
+        var json = await storageService.ReadAllTextAsync(filePath);
+        var envelope = serializer.Deserialize(json);
+        if (!factory.TryGetDocumentRegistration(envelope.DocumentTypeId, out var registration) ||
+            !registration.IsPersistable)
+        {
+            throw new NotSupportedException("当前 Host 没有注册该可持久化 Document 类型。");
+        }
+
+        if (registration.OwnerId != envelope.PluginId)
+        {
+            throw new DocumentEnvelopeException(
+                "Document 声明的插件所有者与当前 Registry 不匹配。");
+        }
+
+        ManagedDocumentDockable? pending = null;
+        try
+        {
+            try
             {
-                throw new DocumentLoadException(
-                    "该文档类型不支持从文件恢复。");
+                pending = await factory.CreateManagementNewDocumentAsync(
+                    envelope.DocumentTypeId,
+                    new DocumentActivationContext(
+                        envelope.Title,
+                        restoredContent: envelope.Content));
+            }
+            catch (Exception exception)
+            {
+                throw new DocumentEnvelopeException(
+                    "插件未能初始化 Document 内容。",
+                    exception);
             }
 
-            if (pendingDocument is not IDocumentSaveState)
-            {
-                throw new DocumentLoadException(
-                    "该文档类型未实现公共保存状态契约。");
-            }
-
-            savableDocument.RestoreContent(envelope.Content);
-            // 只有插件内容完整恢复后才把路径提交到宿主状态。若 RestoreContent 失败，
-            // finally 会释放 Scope 和临时状态，不会留下“已打开但正文无效”的路径登记。
-            persistenceStates.CommitFilePath(pendingDocument, filePath);
-            var loadedDocument = pendingDocument;
-            pendingDocument = null;
-            return loadedDocument;
+            persistenceStates.CommitFile(pending, filePath, envelope.Title);
+            var loaded = pending;
+            pending = null;
+            return loaded;
         }
         finally
         {
-            if (pendingDocument is not null)
+            if (pending is not null)
             {
-                recoveryRegistry.Clear(pendingDocument);
-                factory.ReleaseDocument(pendingDocument);
+                factory.ReleaseDocument(pending);
             }
         }
     }
 
     private void PublishLoadedDocument(
-        Document document,
+        ManagedDocumentDockable document,
         string? recoverySourcePath)
     {
-        var pendingDocument = document;
+        ManagedDocumentDockable? pending = document;
         try
         {
             if (recoverySourcePath is not null)
             {
-                // 备份只用于构造一个脱离损坏原件的新工作副本。清空主路径并在宿主注册
-                // 恢复来源，确保后续普通保存也必须经过另存选择，且不能覆盖原件或备份。
-                persistenceStates.ClearFilePath(pendingDocument);
-                pendingDocument.Title = $"{pendingDocument.Title}（已恢复）";
-                pendingDocument.IsModified = true;
-                recoveryRegistry.Register(pendingDocument, recoverySourcePath);
+                var recoveredTitle = $"{document.HostTitle}（已恢复）";
+                persistenceStates.MarkRecovered(document, recoveredTitle);
+                recoveryRegistry.Register(document, recoverySourcePath);
             }
 
-            factory.PublishDocument(pendingDocument);
-            pendingDocument = null!;
+            factory.PublishDocument(document);
+            pending = null;
         }
         finally
         {
-            if (pendingDocument is not null)
+            if (pending is not null)
             {
-                recoveryRegistry.Clear(pendingDocument);
-                factory.ReleaseDocument(pendingDocument);
+                recoveryRegistry.Clear(pending);
+                factory.ReleaseDocument(pending);
             }
         }
     }
 
+    private static bool IsRecoverableOpenFailure(Exception exception) =>
+        exception is DocumentEnvelopeException or JsonException;
+
     private static bool IsExpectedPersistenceFailure(Exception exception) =>
-        exception is IOException or
+        exception is DocumentEnvelopeException or
+            IOException or
             UnauthorizedAccessException or
             JsonException or
             ArgumentException or

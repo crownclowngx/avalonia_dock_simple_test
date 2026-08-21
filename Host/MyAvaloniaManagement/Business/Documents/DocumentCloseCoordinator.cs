@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagementCommon.Save;
+using MyAvaloniaManagement.Business.Docking;
 
 namespace MyAvaloniaManagement.Business.Documents;
 
@@ -17,14 +16,18 @@ namespace MyAvaloniaManagement.Business.Documents;
 /// </remarks>
 internal sealed class DocumentCloseCoordinator(
     DocumentSaveService saveService,
-    IDocumentInteractionService interactionService)
+    IDocumentInteractionService interactionService,
+    DocumentPersistenceStateStore persistenceStates)
 {
-    private readonly HashSet<Document> _approvedOnce = [];
-    private readonly HashSet<Document> _pending = [];
+    private readonly HashSet<ManagedDocumentDockable> _approvedOnce = [];
+    private readonly HashSet<ManagedDocumentDockable> _pending = [];
     private bool _windowRequestPending;
 
+    internal bool IsDirty(ManagedDocumentDockable document) =>
+        persistenceStates.IsDirty(document);
+
     internal bool TryBeginDockClose(
-        Document document,
+        ManagedDocumentDockable document,
         Action retryClose)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -35,19 +38,12 @@ internal sealed class DocumentCloseCoordinator(
             return true;
         }
 
-        if (document is not ISavableDocument)
+        if (document.PersistableModel is null)
         {
             return true;
         }
 
-        if (document is not IDocumentSaveState state)
-        {
-            _ = interactionService.ShowErrorAsync(
-                "该 Document 未实现公共保存状态契约，宿主已拒绝关闭以避免丢失数据。");
-            return false;
-        }
-
-        if (!state.IsDirty)
+        if (!persistenceStates.IsDirty(document))
         {
             return true;
         }
@@ -61,7 +57,8 @@ internal sealed class DocumentCloseCoordinator(
         return false;
     }
 
-    internal async Task<bool> ConfirmWindowCloseAsync(IReadOnlyList<Document> documents)
+    internal async Task<bool> ConfirmWindowCloseAsync(
+        IReadOnlyList<ManagedDocumentDockable> documents)
     {
         ArgumentNullException.ThrowIfNull(documents);
 
@@ -71,14 +68,7 @@ internal sealed class DocumentCloseCoordinator(
         }
 
         var dirty = documents
-            .Where(document => document is ISavableDocument)
-            .Select(document => new
-            {
-                Document = document,
-                State = document as IDocumentSaveState,
-            })
-            .Where(item => item.State?.IsDirty == true)
-            .Select(item => item.Document)
+            .Where(persistenceStates.IsDirty)
             .ToArray();
         if (dirty.Length == 0)
         {
@@ -108,18 +98,28 @@ internal sealed class DocumentCloseCoordinator(
                 {
                     if (!string.IsNullOrWhiteSpace(result.Message))
                     {
-                        await interactionService.ShowErrorAsync(result.Message);
+                        await ShowErrorSafelyAsync(result.Message);
                     }
                     return false;
                 }
 
-                if (result.Status == DocumentSaveStatus.SavedWithBackupWarning)
+                if (result.Status == DocumentSaveStatus.SavedWithWarning)
                 {
-                    await interactionService.ShowErrorAsync(result.Message);
+                    await ShowErrorSafelyAsync(result.Message);
                 }
             }
 
             return true;
+        }
+        catch (Exception exception)
+        {
+            // 确认窗口和插件保存回调都属于可失败边界。窗口退出时一律选择“保持打开”，
+            // 防止 UI 异常绕过脏文档保护；异常正文只进入内部诊断。
+            DocumentPersistenceErrorMapper.Report(
+                "DOCUMENT_WINDOW_CLOSE_CALLBACK_FAILED",
+                exception);
+            await ShowErrorSafelyAsync("无法完成关闭确认。Document 保持打开。");
+            return false;
         }
         finally
         {
@@ -128,7 +128,7 @@ internal sealed class DocumentCloseCoordinator(
     }
 
     private async Task ConfirmDockCloseAsync(
-        Document document,
+        ManagedDocumentDockable document,
         Action retryClose)
     {
         try
@@ -148,19 +148,29 @@ internal sealed class DocumentCloseCoordinator(
                 {
                     if (!string.IsNullOrWhiteSpace(result.Message))
                     {
-                        await interactionService.ShowErrorAsync(result.Message);
+                        await ShowErrorSafelyAsync(result.Message);
                     }
                     return;
                 }
 
-                if (result.Status == DocumentSaveStatus.SavedWithBackupWarning)
+                if (result.Status == DocumentSaveStatus.SavedWithWarning)
                 {
-                    await interactionService.ShowErrorAsync(result.Message);
+                    await ShowErrorSafelyAsync(result.Message);
                 }
             }
 
             _approvedOnce.Add(document);
             retryClose();
+        }
+        catch (Exception exception)
+        {
+            // 此任务由同步 Dock 回调启动，不能把异常遗留为未观察任务。任何交互或重入失败
+            // 都维持 Document 打开，并清除 pending，允许用户稍后重新尝试。
+            DocumentPersistenceErrorMapper.Report(
+                "DOCUMENT_DOCK_CLOSE_CALLBACK_FAILED",
+                exception);
+            _approvedOnce.Remove(document);
+            await ShowErrorSafelyAsync("无法完成关闭确认。Document 保持打开。");
         }
         finally
         {
@@ -168,6 +178,21 @@ internal sealed class DocumentCloseCoordinator(
         }
     }
 
-    private static string GetDisplayName(Document document) =>
+    private static string GetDisplayName(ManagedDocumentDockable document) =>
         string.IsNullOrWhiteSpace(document.Title) ? "未命名 Document" : document.Title;
+
+    /// <summary>错误提示自身失败时只记录诊断，不改变已经完成的保存或关闭决策。</summary>
+    private async Task ShowErrorSafelyAsync(string message)
+    {
+        try
+        {
+            await interactionService.ShowErrorAsync(message);
+        }
+        catch (Exception exception)
+        {
+            DocumentPersistenceErrorMapper.Report(
+                "DOCUMENT_ERROR_DIALOG_FAILED",
+                exception);
+        }
+    }
 }

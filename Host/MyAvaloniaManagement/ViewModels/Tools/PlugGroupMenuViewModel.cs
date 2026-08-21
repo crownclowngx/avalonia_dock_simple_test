@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Models.Tools;
-using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.ViewModels.Tools;
 
@@ -17,15 +19,13 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// </remarks>
 internal sealed partial class PlugGroupMenuViewModel
 {
-    private readonly ManagementFactory? _factory;
+    private readonly DocumentPersistenceCoordinator? _documents;
+    private readonly DocumentOperationState? _operationState;
     private readonly PluginMenuService? _pluginMenuService;
 
     /// <summary>
     /// 获取按分类分组且允许显示在菜单中的文档元数据。
     /// </summary>
-    public Dictionary<string, List<DocumentMetadata>> DocumentMetadataByCategory =>
-        _pluginMenuService?.GetDocumentMetadataByCategory() ?? new Dictionary<string, List<DocumentMetadata>>();
-
     /// <summary>
     /// 获取供树形菜单绑定的分类节点快照。
     /// </summary>
@@ -37,11 +37,13 @@ internal sealed partial class PlugGroupMenuViewModel
     /// 使用显式工厂和菜单服务创建插件菜单工具。
     /// </summary>
     public PlugGroupMenuViewModel(
-        ManagementFactory factory,
-        PluginMenuService pluginMenuService)
+        PluginMenuService pluginMenuService,
+        DocumentPersistenceCoordinator documents,
+        DocumentOperationState operationState)
     {
-        _factory = factory;
         _pluginMenuService = pluginMenuService;
+        _documents = documents;
+        _operationState = operationState;
     }
 
     /// <summary>
@@ -49,22 +51,26 @@ internal sealed partial class PlugGroupMenuViewModel
     /// </summary>
     /// <param name="documentType">文档类型ID</param>
     [RelayCommand]
-    public void CreateDocument(string documentType)
+    public async Task CreateDocumentAsync(string documentType)
     {
-        _factory?.CreateAndPublishDocument(
-            new DocumentCreationParams(DocumentTypeId.Parse(documentType)));
+        if (_documents is not null && _operationState is not null)
+        {
+            _operationState.Apply(await _documents.CreateDocumentAsync(
+                DocumentTypeId.Parse(documentType)));
+        }
     }
 
     /// <summary>按菜单入口创建文档，并把入口意图作为强类型参数传给策略。</summary>
     [RelayCommand]
-    public void CreateDocumentEntry(
-        MyAvaloniaManagementCommon.DocumentCreation.DocumentCreationMenuEntry entry)
+    public async Task CreateDocumentEntryAsync(DocumentCreationMenuEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        _factory?.CreateAndPublishDocument(new DocumentCreationParams(entry.DocumentTypeId)
+        if (_documents is not null && _operationState is not null)
         {
-            CreationIntentId = entry.CreationIntentId,
-        });
+            _operationState.Apply(await _documents.CreateDocumentAsync(
+                entry.DocumentTypeId,
+                entry.CreationIntentId));
+        }
     }
     
     /// <summary>

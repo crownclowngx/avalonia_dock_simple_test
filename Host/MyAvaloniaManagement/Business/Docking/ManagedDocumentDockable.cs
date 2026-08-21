@@ -19,7 +19,7 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
 {
     private readonly ActivatedPluginDocument _activation;
     private readonly ManagedDockableViewLease _view = new();
-    private readonly string _requestedTitle;
+    private string _hostTitle;
     private int _disposed;
 
     internal ManagedDocumentDockable(
@@ -27,7 +27,7 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
         string requestedTitle)
     {
         _activation = activation ?? throw new ArgumentNullException(nameof(activation));
-        _requestedTitle = requestedTitle ?? throw new ArgumentNullException(nameof(requestedTitle));
+        _hostTitle = requestedTitle ?? throw new ArgumentNullException(nameof(requestedTitle));
         Context = activation.Model;
         CanClose = true;
         CanPin = false;
@@ -38,6 +38,13 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
 
     internal PluginId OwnerId => _activation.Registration.OwnerId;
     internal PluginDocumentRegistration Registration => _activation.Registration;
+    internal CancellationToken ClosingToken => _activation.ClosingToken;
+    internal IPersistablePluginDocument? PersistableModel =>
+        Registration.IsPersistable
+            ? _activation.Model as IPersistablePluginDocument ??
+              throw new InvalidOperationException("声明为可持久化的 Document 模型未实现最终保存契约。")
+            : null;
+    internal string HostTitle => _hostTitle;
     public object Model => _activation.Model;
     public PluginViewRegistration ViewRegistration => new(
         OwnerId,
@@ -47,6 +54,18 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
     public Control? PreparedView => _view.View;
     public void AttachPreparedView(Control view) => _view.Attach(view);
     public void ReleasePreparedView() => _view.Release();
+
+    /// <summary>在主文件成功提交后更新只由 Host 持有的信封标题。</summary>
+    /// <remarks>
+    /// 插件 Presentation 仍可优先决定标签显示，但不能反向修改磁盘标题。保存和恢复流程读取
+    /// <see cref="HostTitle"/>，从而让展示状态与持久化所有权保持清晰分离。
+    /// </remarks>
+    internal void CommitHostTitle(string title)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        _hostTitle = title;
+        ApplyPresentation();
+    }
 
     private void OnPresentationChanged(object? sender, EventArgs args)
     {
@@ -83,8 +102,8 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
             return modelTitle;
         }
 
-        return !string.IsNullOrWhiteSpace(_requestedTitle)
-            ? _requestedTitle
+        return !string.IsNullOrWhiteSpace(_hostTitle)
+            ? _hostTitle
             : Registration.Descriptor.DisplayName;
     }
 

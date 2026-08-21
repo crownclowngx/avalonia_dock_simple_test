@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Docking;
 
 namespace MyAvaloniaManagement.Business.Documents;
 
@@ -15,11 +15,11 @@ internal sealed class DocumentRecoveryRegistry
 {
     internal const string BackupSuffix = ".recovery.bak";
 
-    private readonly Dictionary<Document, RecoveryEntry> _byDocument = [];
-    private readonly Dictionary<string, Document> _bySourcePath =
+    private readonly Dictionary<ManagedDocumentDockable, RecoveryEntry> _byDocument = [];
+    private readonly Dictionary<string, ManagedDocumentDockable> _bySourcePath =
         new(StringComparer.OrdinalIgnoreCase);
 
-    internal void Register(Document document, string sourcePath)
+    internal void Register(ManagedDocumentDockable document, string sourcePath)
     {
         ArgumentNullException.ThrowIfNull(document);
         var normalized = DocumentPathIdentity.Normalize(sourcePath);
@@ -28,15 +28,17 @@ internal sealed class DocumentRecoveryRegistry
         _bySourcePath[normalized] = document;
     }
 
-    internal bool TryGet(Document document, out RecoveryEntry entry) =>
+    internal bool TryGet(ManagedDocumentDockable document, out RecoveryEntry entry) =>
         _byDocument.TryGetValue(document, out entry!);
 
-    internal bool TryGetBySourcePath(string sourcePath, out Document document) =>
+    internal bool TryGetBySourcePath(
+        string sourcePath,
+        out ManagedDocumentDockable document) =>
         _bySourcePath.TryGetValue(
             DocumentPathIdentity.Normalize(sourcePath),
             out document!);
 
-    internal void Clear(Document document)
+    internal void Clear(ManagedDocumentDockable document)
     {
         if (!_byDocument.Remove(document, out var entry))
         {

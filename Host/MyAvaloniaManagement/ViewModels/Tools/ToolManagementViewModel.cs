@@ -45,7 +45,7 @@ internal sealed partial class ToolManagementViewModel : ObservableObject, IToolV
     public ToolManagementViewModel(ManagementFactory factory)
     {
         _factory = factory;
-        _currentToolId = HostExtensionIds.ToolManagement.Value;
+        _currentToolId = HostExtensionIds.V2ToolManagement.Value;
         LoadTools();
     }
 

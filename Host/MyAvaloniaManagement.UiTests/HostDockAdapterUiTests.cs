@@ -26,9 +26,10 @@ public sealed class HostDockAdapterUiTests
         var registry = new PluginRegistry([registration], []);
         using var provider = CreateProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var model = manager.CreatePluginDocument(typeof(MutableDocument));
+        var lease = manager.CreatePluginDocument(typeof(MutableDocument));
+        var model = Assert.IsType<MutableDocument>(lease.Model);
         using var adapter = new ManagedDocumentDockable(
-            new ActivatedPluginDocument(registration, model, manager),
+            new ActivatedPluginDocument(registration, lease),
             "请求标题");
         var locator = new ViewLocator(registry);
 
@@ -48,10 +49,10 @@ public sealed class HostDockAdapterUiTests
         var registry = new PluginRegistry([registration], []);
         using var provider = CreateProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var model = Assert.IsType<MutableDocument>(
-            manager.CreatePluginDocument(typeof(MutableDocument)));
+        var lease = manager.CreatePluginDocument(typeof(MutableDocument));
+        var model = Assert.IsType<MutableDocument>(lease.Model);
         var adapter = new ManagedDocumentDockable(
-            new ActivatedPluginDocument(registration, model, manager),
+            new ActivatedPluginDocument(registration, lease),
             "请求标题");
         var locator = new ViewLocator(registry);
         var view = Assert.IsType<DisposableProbeView>(locator.Prepare(adapter));
@@ -70,7 +71,7 @@ public sealed class HostDockAdapterUiTests
     }
 
     [AvaloniaFact]
-    public void DocumentView创建失败时Factory释放已建立Adapter和Scope()
+    public async Task DocumentView创建失败时Factory释放已建立Adapter和Scope()
     {
         ViewFailureDocument? created = null;
         var services = new ServiceCollection();
@@ -88,8 +89,10 @@ public sealed class HostDockAdapterUiTests
             new PluginContributionActivator(provider, registry, pluginProviders),
             new ViewLocator(registry));
 
-        Assert.Throws<InvalidOperationException>(() =>
-            factory.CreateDocument(registration.Descriptor.DocumentTypeId));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await factory.CreateDocumentAsync(
+                registration.Descriptor.DocumentTypeId,
+                new DocumentActivationContext("View 失败")));
 
         Assert.NotNull(created);
         Assert.True(created.ClosingObservedDuringDispose);
@@ -97,7 +100,7 @@ public sealed class HostDockAdapterUiTests
     }
 
     [AvaloniaFact]
-    public void DocumentAdapter构造失败时Factory仍直接释放暂存Scope()
+    public async Task DocumentAdapter构造失败时Factory仍直接释放暂存Scope()
     {
         ThrowingPresentationDocument? created = null;
         var services = new ServiceCollection();
@@ -114,8 +117,10 @@ public sealed class HostDockAdapterUiTests
             new PluginContributionActivator(provider, registry, pluginProviders),
             new ViewLocator(registry));
 
-        Assert.Throws<InvalidOperationException>(() =>
-            factory.CreateDocument(registration.Descriptor.DocumentTypeId));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await factory.CreateDocumentAsync(
+                registration.Descriptor.DocumentTypeId,
+                new DocumentActivationContext("Adapter 失败")));
 
         Assert.NotNull(created);
         Assert.Equal(1, created.DisposeCount);

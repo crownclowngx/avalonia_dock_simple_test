@@ -7,7 +7,7 @@
 - 组合依赖、发现插件模块并管理插件生命周期；
 - 收集显式 Document/Tool/View/Lifecycle 贡献并分派创建请求；
 - 建立和维护四向 Dock 工作区；
-- 严格读写唯一 Document 信封 v1，并编排打开、保存和关闭后的资源释放；
+- 严格读写唯一 Document 信封 v2，并编排异步创建、打开、恢复、保存、关闭和资源释放；
 - 读取、迁移、校验和保存布局 V1；
 - 提供每个 HostRuntime 独享的同步强类型事件总线；
 - 为 XAML、菜单、主题和宿主 Tool 提供绑定入口。
@@ -18,7 +18,7 @@
 
 最终基础契约来自 `MyAvaloniaManagement.PluginSdk`，UI 注册契约来自
 `MyAvaloniaManagement.PluginSdk.UI`；旧 `MyAvaloniaManagementCommon` 只保留为四业务插件在 G9–G12
-迁移前的不可打包源码桥，不进入 G6 Host 模块预检、贡献目录或 Dock Adapter 路径。SDK 不拥有
+迁移前的不可打包源码桥，不进入 G7 Host 模块预检、贡献目录、Dock Adapter 或 Document V2 路径。SDK 不拥有
 字体、桌面后端或全局主题。`App.axaml` 是 Fluent、Semi、Ursa、Dock Theme 和 Host Styles 的唯一
 组合入口；`ApplicationThemeService` 只切换宿主主题状态，不把第三方主题对象暴露成插件服务。
 
@@ -244,12 +244,11 @@ sequenceDiagram
         W->>W: 激活现有 Document
     else 未打开
         C->>S: 读取前检查 8 MiB 上限并读取文本
-        C->>E: 严格解析唯一七字段 v1
-        E-->>C: 宿主信封 + 内容 DTO
+        C->>E: 严格解析唯一六字段 v2
+        E-->>C: 宿主信封 + 原生 JSON 内容
         C->>R: 精确查找主 ID 与所有者
-        C->>F: 使用宿主标题创建未发布 Document
+        C->>F: 使用 ActivationContext 异步初始化未发布 Adapter/View
         F->>P: 登记规范 Registry 所有权
-        C->>C: 校验保存契约并恢复插件内容
         C->>P: 内容成功后提交主文件路径
         C->>W: 加入 DocumentDock 并激活
     end
@@ -265,8 +264,8 @@ sequenceDiagram
 - `DocumentCloseCoordinator`：标签/窗口关闭确认、批量保存和同步关闭的异步重入；
 - `DocumentWorkspace`：把 Dock 树适配为文档区操作；
 - `DocumentPathIdentity`：绝对路径与 Windows 不区分大小写身份；
-- `DocumentPersistenceStateStore`：按 Document 引用保存规范 Registry 注册项和当前主路径，关闭与失败时幂等清理；
-- `DocumentEnvelopeSerializer`：严格读写 schema 1、七个精确字段、深度 8 和 UTF-8 8 MiB 边界；
+- `DocumentPersistenceStateStore`：按 Adapter 引用保存规范 Registry、路径、Host 标题与 `RequiresSave`，关闭与失败时幂等清理；
+- `DocumentEnvelopeSerializer`：严格读写 schema 2 六字段根对象、两字段 content、深度 8 和 UTF-8 8 MiB 边界；
 - `PluginRegistry`：提供不可变 Document 类型、主 ID 和插件所有权事实；
 - `IHostStorageService`：隔离 Avalonia 选择器、本机文件系统与读前长度检查。
 
@@ -274,18 +273,20 @@ sequenceDiagram
 
 打开和所有保存入口共享 `DocumentOperationGate`。该方案牺牲同一窗口内文档 I/O 的并行度，换取简单、确定的查重和状态提交顺序。文档文件通常较小，稳定性收益高于有限的并行收益。
 
-保存遵循“主文件成功后再提交内存状态”：`CreateContentSnapshot()` 无副作用，原子写入完成后才更新标题、宿主路径并调用 `IDocumentSaveState.AcceptChanges`。随后更新 `.recovery.bak`；备份失败只产生警告，不伪造主文件失败。
+保存遵循“主文件成功后再提交内存状态”：`CaptureContentAsync(ClosingToken)` 返回原生 JSON 内容，
+原子写入完成后才更新 Host 标题、路径与恢复标记并调用 `AcceptChanges`。随后更新 `.recovery.bak`；
+`AcceptChanges` 或备份失败只产生“已保存但有警告”，不伪造主文件失败。
 
-插件快照只包含内容版本和 payload。`pluginId`、`documentTypeId`、标题和 UTC 时间由宿主分别从
-Registry、目标文件名和 `TimeProvider` 取得。v1 是第一个且唯一格式；不设置旧字段探测、别名
-归一化后继续打开或迁移分支。打开任一阶段失败时，未发布 Scope 被释放且不会执行写入。
+插件 `DocumentContent` 只包含内容版本和克隆的 `JsonElement` payload。`pluginId`、`documentTypeId`、
+标题和 UTC 时间由宿主分别从 Registry、目标文件名和 `TimeProvider` 取得。生产只接受 V2，不设置
+V1 探测、别名归一化或迁移分支。打开任一阶段失败时，未发布 Adapter/View/Scope 被释放且不写输入。
 
 事件总线按契约同步派发且不等待异步回调；ViewModel 通过内部异步观察方法捕获预期的文档操作结果，
 避免 `async void` 和未观察任务异常。
 
 ### 6.3 异常边界
 
-只把预期的文件、权限、路径、JSON 和 `DocumentLoadException` 转换为可恢复失败。转换由
+文件、权限、路径、严格信封与插件初始化异常在 Host internal 边界转换为可恢复失败。转换由
 `DocumentPersistenceErrorMapper` 返回宿主固定文本，不信任公共异常消息，也不拼接文件路径。
 空引用、无效程序状态等编程错误继续向上传播，使测试和诊断能够尽早暴露缺陷。
 
@@ -350,7 +351,9 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | Document 控件缓存 | `DocumentControlRecycling` | 对应 Document 确认关闭后移除 |
 | 布局快照待应用状态 | `DockLayoutLifecycle` | 首次 Apply 时原子取出 |
 
-当前仓库 Managed Document 均通过 `IDocumentScopeFactory` 建立独立 Scope。显式注册保证宿主知道策略归属，但策略若绕过该工厂自行创建 Document，宿主仍无法替它拥有该实例的局部依赖；插件作者必须遵守 Document Scope 契约。
+当前 Host Document 只由 Registry 驱动的 `DocumentScopeManager` 建立独立 Scope，并返回不暴露
+`IServiceScope` 的窄 Lease。生产容器不注册 Legacy `IDocumentScopeFactory`；插件既不能创建 Scope，
+也不能主动取消关闭令牌。
 
 ## 10. 测试映射
 
@@ -362,8 +365,8 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | Managed-only 拒绝、显式贡献所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、`ExplicitContributionAndPluginRegistryTests`、内部注册表测试 |
 | 诊断正文、凭据、URL、路径泄漏与敏感开关误开 | `HostDiagnosticsTests`、生命周期/UI/Document 错误测试、`Test-HostDiagnosticRedaction.ps1` |
 | 插件私有 DI 事务提交、宿主描述符保护与四插件回归 | `PluginServiceProtectionTests` |
-| 严格七字段信封、资源边界、所有权与失败不发布 | `DocumentEnvelopeV1Tests` |
-| 并发打开、保存失败、关闭确认与坏文件恢复 | `MainWindowViewModelTests`、`DocumentPersistenceV1Tests` |
+| 严格六字段信封、原生 JSON、资源边界、所有权与失败不发布 | `DocumentEnvelopeV2Tests` |
+| 异步创建、并发打开、保存提交点、关闭重入与坏文件恢复 | `DocumentPersistenceV2Tests`、`DocumentCloseV2Tests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |
 | 同步顺序、重入、异常、并发、根隔离及订阅释放 | `HostEventBusTests`、Document Scope 测试 |

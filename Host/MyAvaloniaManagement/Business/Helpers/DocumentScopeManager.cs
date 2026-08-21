@@ -2,9 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -17,7 +16,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// Dock 真正确认关闭后再释放 Scope。插件不能自行保存或释放 Scope，避免提前释放、重复释放，
 /// 以及从根容器解析可释放 transient 后一直存活到进程退出的问题。
 /// </remarks>
-internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
+internal sealed class DocumentScopeManager : IDisposable
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly object _syncRoot = new();
@@ -31,59 +30,46 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
     }
 
     /// <inheritdoc />
-    public TDocument CreateDocument<TDocument>() where TDocument : Document
-        => (TDocument)CreateScopedModel(typeof(TDocument), requirePluginDocument: false);
-
     /// <summary>
-    /// 按声明式 Registry 已验证的精确模型类型创建并托管普通插件 Document。
+    /// 按声明式 Registry 已验证的精确模型类型创建并托管普通插件 Document Scope Lease。
     /// </summary>
     /// <remarks>
     /// 本入口不扫描类型、不接受任意服务名，也不要求模型继承 Dock。返回模型随后由 Host internal
     /// Adapter 承载；插件始终只观察自己的业务对象和 ClosingToken。
     /// </remarks>
-    internal MyAvaloniaManagement.PluginSdk.IPluginDocument CreatePluginDocument(Type modelType)
+    internal PluginDocumentScopeLease CreatePluginDocument(Type modelType)
     {
         ArgumentNullException.ThrowIfNull(modelType);
-        if (!typeof(MyAvaloniaManagement.PluginSdk.IPluginDocument).IsAssignableFrom(modelType))
+        if (!typeof(IPluginDocument).IsAssignableFrom(modelType))
         {
             throw new InvalidOperationException(
                 $"声明式 Document 模型 {modelType.FullName} 未实现 IPluginDocument。");
         }
 
-        return (MyAvaloniaManagement.PluginSdk.IPluginDocument)CreateScopedModel(
-            modelType,
-            requirePluginDocument: true);
-    }
-
-    /// <summary>仅供 G7 前仓库内旧持久化测试创建 Dock Document；生产组合不调用。</summary>
-    internal Document CreateLegacyDocument(Type modelType)
-    {
-        ArgumentNullException.ThrowIfNull(modelType);
-        if (!typeof(Document).IsAssignableFrom(modelType))
+        var model = CreateScopedModel(modelType);
+        DocumentLifetime lifetime;
+        lock (_syncRoot)
         {
-            throw new InvalidOperationException($"旧测试模型 {modelType.FullName} 不是 Dock Document。");
+            if (!_scopes.TryGetValue(model, out var scopeLease))
+            {
+                throw new InvalidOperationException("Document Scope 在创建完成后丢失了所有权登记。");
+            }
+
+            lifetime = scopeLease.Lifetime;
         }
 
-        return (Document)CreateScopedModel(modelType, requirePluginDocument: false);
+        // 对外只暴露模型、只读令牌和幂等释放入口，调用者既不能取得 IServiceScope，
+        // 也不能主动触发属于 Host 的 CancellationTokenSource。
+        return new PluginDocumentScopeLease(model, lifetime.ClosingToken, this);
     }
 
     /// <summary>
     /// 在独立 DI Scope 中解析精确模型，并在成功返回前登记唯一所有权。
     /// </summary>
-    /// <remarks>
-    /// G6 的生产入口要求普通 <c>IPluginDocument</c>；旧泛型入口只为 G7 前的仓库回归夹具保留。
-    /// 两条入口最终汇入同一个租约实现，因此关闭取消、异常回滚和宿主退出不会形成两套释放算法。
-    /// </remarks>
-    private object CreateScopedModel(Type modelType, bool requirePluginDocument)
+    private IPluginDocument CreateScopedModel(Type modelType)
     {
         ArgumentNullException.ThrowIfNull(modelType);
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (requirePluginDocument &&
-            !typeof(MyAvaloniaManagement.PluginSdk.IPluginDocument).IsAssignableFrom(modelType))
-        {
-            throw new InvalidOperationException(
-                $"声明式 Document 模型 {modelType.FullName} 未实现 IPluginDocument。");
-        }
 
         // Scope 在成功登记之前始终由局部变量拥有。解析构造函数失败、重复返回同一 Document，
         // 或宿主正在退出时，finally 都会立即释放已创建的服务，绝不留下半注册作用域。
@@ -91,12 +77,10 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
         DocumentLifetime? lifetime = null;
         try
         {
-            // 正式运行时，宿主会在每个 Document Scope 中注册唯一的 DocumentLifetime，
-            // 因而 Document 及其 scoped 依赖解析到的是同一个关闭信号。这里保留回退实例，
-            // 是为了兼容只注册 DocumentScopeManager 的轻量测试与旧组合入口；回退只影响
-            // 未注入 IDocumentLifetime 的旧对象，不会在正式路径中形成第二套生命周期事实源。
-            lifetime = scope.ServiceProvider.GetService<DocumentLifetime>() ?? new DocumentLifetime();
-            var document = scope.ServiceProvider.GetRequiredService(modelType);
+            // 生产组合根保证每个 Scope 只有一个 DocumentLifetime。缺失注册属于组合错误，
+            // 必须立即失败，不能创建第二个回退令牌破坏“唯一关闭事实源”。
+            lifetime = scope.ServiceProvider.GetRequiredService<DocumentLifetime>();
+            var document = (IPluginDocument)scope.ServiceProvider.GetRequiredService(modelType);
             lock (_syncRoot)
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
@@ -137,7 +121,7 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
     /// <summary>
     /// 释放指定 Document 对应的作用域。非托管 Document 和重复释放均安全返回 false。
     /// </summary>
-    public bool Release(object document)
+    internal bool Release(object document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -197,6 +181,8 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
     {
         private int _released;
 
+        internal DocumentLifetime Lifetime { get; } = lifetime;
+
         internal void Release()
         {
             if (Interlocked.Exchange(ref _released, 1) != 0)
@@ -206,7 +192,7 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
 
             try
             {
-                lifetime.RequestClose();
+                Lifetime.RequestClose();
             }
             finally
             {
@@ -216,12 +202,36 @@ internal sealed class DocumentScopeManager : IDocumentScopeFactory, IDisposable
                 }
                 finally
                 {
-                    // 回退 Lifetime 没有被 DI Scope 捕获，必须由租约显式释放；正式 Lifetime
-                    // 会随 Scope 再释放一次。DocumentLifetime.Dispose 保证幂等，因此统一调用
-                    // 可以同时覆盖两条构造路径，而不需要把“是否来自容器”泄漏到释放主流程。
-                    lifetime.Dispose();
+                    // Lifetime 会随 Scope 释放一次；这里再次调用只是幂等兜底，确保容器释放
+                    // 某个模型时抛出异常也不会让取消源残留。
+                    Lifetime.Dispose();
                 }
             }
+        }
+    }
+}
+
+/// <summary>保存一个普通插件 Document 模型及其 Scope 的唯一释放权。</summary>
+/// <remarks>
+/// Lease 不暴露 DI Scope 或取消源。异步初始化、内容捕获和插件自身后台任务只观察同一个
+/// <see cref="ClosingToken"/>；最终释放始终回到 <see cref="DocumentScopeManager"/>，从而保持
+/// “先取消、后 Dispose Scope”的固定顺序。
+/// </remarks>
+internal sealed class PluginDocumentScopeLease(
+    IPluginDocument model,
+    CancellationToken closingToken,
+    DocumentScopeManager owner) : IDisposable
+{
+    private int _disposed;
+
+    internal IPluginDocument Model { get; } = model;
+    internal CancellationToken ClosingToken { get; } = closingToken;
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) == 0)
+        {
+            owner.Release(Model);
         }
     }
 }

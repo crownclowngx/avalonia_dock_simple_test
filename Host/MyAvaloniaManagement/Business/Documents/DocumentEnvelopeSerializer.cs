@@ -4,87 +4,67 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
-using MyAvaloniaManagementCommon.DocumentCreation;
-using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagementCommon.Save;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Documents;
 
-/// <summary>
-/// 已完成严格校验的 Document 信封 v1。
-/// </summary>
+/// <summary>表示已经通过 Host 严格校验的 Document V2 信封。</summary>
 /// <remarks>
-/// 该模型留在 Host 内部，因为 PluginId、DocumentTypeId、标题和时间均由宿主拥有。
-/// 插件只能接收其中的 <see cref="Content"/>，不会因此依赖宿主磁盘协议。
+/// 信封身份、标题和保存时间属于 Host；插件只能拥有 <see cref="Content"/> 内部的 schema 与
+/// JSON payload。本类型保持 internal，防止磁盘协议反向扩张 Plugin SDK public API。
 /// </remarks>
-internal sealed record DocumentEnvelopeV1(
+internal sealed record DocumentEnvelopeV2(
     PluginId PluginId,
     DocumentTypeId DocumentTypeId,
     string Title,
     DateTimeOffset SavedAtUtc,
-    DocumentContentSnapshot Content);
+    DocumentContent Content);
 
-/// <summary>
-/// 独占 Document 信封 v1 的磁盘格式、资源限制和结构校验。
-/// </summary>
+/// <summary>表示 Document 信封不满足唯一 V2 线格式。</summary>
 /// <remarks>
-/// 本类型只处理宿主信封，不解释 payload。严格字段集合可以立即暴露拼写错误和协议漂移，
-/// 而不是让默认反序列化器静默忽略未知字段。当前不存在旧信封，因此这里没有格式探测、
-/// 兼容读取或迁移分支。
+/// 该异常只在 Host 持久化边界内传播。异常正文不得携带 payload、路径或插件异常正文，用户提示由
+/// <see cref="DocumentPersistenceErrorMapper"/> 按异常类型映射为固定文本。
+/// </remarks>
+internal sealed class DocumentEnvelopeException : Exception
+{
+    internal DocumentEnvelopeException(string message) : base(message) { }
+    internal DocumentEnvelopeException(string message, Exception innerException)
+        : base(message, innerException) { }
+}
+
+/// <summary>独占 Document V2 线格式、严格字段集合和资源上限。</summary>
+/// <remarks>
+/// Serializer 不解释插件 payload，也不负责文件事务。读取器只接受一个 V2 结构，不探测 V1、
+/// 不迁移历史字段；这样格式判断、业务初始化和磁盘提交分别保持单一职责。
 /// </remarks>
 internal sealed class DocumentEnvelopeSerializer
 {
-    internal const int CurrentSchemaVersion = 1;
+    internal const int CurrentSchemaVersion = 2;
     internal const int MaximumEnvelopeBytes = 8 * 1024 * 1024;
     internal const int MaximumJsonDepth = 8;
 
-    private static readonly string[] RequiredProperties =
+    private static readonly string[] RootProperties =
     [
-        "schemaVersion",
-        "pluginId",
-        "documentTypeId",
-        "contentSchemaVersion",
-        "title",
-        "savedAtUtc",
-        "payload",
+        "schemaVersion", "pluginId", "documentTypeId", "title", "savedAtUtc", "content",
     ];
 
-    private static readonly HashSet<string> RequiredPropertySet =
-        new(RequiredProperties, StringComparer.Ordinal);
+    private static readonly string[] ContentProperties = ["schemaVersion", "payload"];
 
-    /// <summary>
-    /// 使用宿主已经验证的所有权事实和插件内容快照生成唯一 v1 格式。
-    /// </summary>
+    /// <summary>使用 Host 已验证的身份事实和插件内容生成唯一 V2 信封。</summary>
     internal string Serialize(
         PluginId pluginId,
         DocumentTypeId documentTypeId,
         string title,
         DateTimeOffset savedAtUtc,
-        DocumentContentSnapshot content)
+        DocumentContent content)
     {
         ArgumentNullException.ThrowIfNull(pluginId);
         ArgumentNullException.ThrowIfNull(documentTypeId);
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
         ArgumentNullException.ThrowIfNull(content);
-        if (!pluginId.IsCanonical)
-        {
-            // 强类型 ID 仍可能表示 Registry 中用于运行期兼容的历史别名。落盘边界再次
-            // 要求主 ID，避免内部调用者绕过 Registry 后写出 reader 明确拒绝的文件。
-            throw new ArgumentException("Document 信封只能写入规范插件身份。", nameof(pluginId));
-        }
-
-        if (!documentTypeId.IsCanonical)
-        {
-            throw new ArgumentException(
-                "Document 信封只能写入规范 Document 类型身份。",
-                nameof(documentTypeId));
-        }
-
         if (savedAtUtc.Offset != TimeSpan.Zero)
         {
-            throw new ArgumentException(
-                "Document 保存时间必须使用 UTC。",
-                nameof(savedAtUtc));
+            throw new ArgumentException("Document 保存时间必须使用 UTC。", nameof(savedAtUtc));
         }
 
         var buffer = new ArrayBufferWriter<byte>();
@@ -92,17 +72,21 @@ internal sealed class DocumentEnvelopeSerializer
                {
                    Indented = true,
                    SkipValidation = false,
+                   MaxDepth = MaximumJsonDepth,
                }))
         {
-            // 字段顺序属于可读性约定。读取器仍按名称校验，不让顺序成为兼容负担。
+            // 字段顺序仅用于形成确定、可读的输出；reader 仍按名称验证，避免顺序成为兼容承诺。
             writer.WriteStartObject();
             writer.WriteNumber("schemaVersion", CurrentSchemaVersion);
             writer.WriteString("pluginId", pluginId.Value);
             writer.WriteString("documentTypeId", documentTypeId.Value);
-            writer.WriteNumber("contentSchemaVersion", content.ContentSchemaVersion);
             writer.WriteString("title", title);
             writer.WriteString("savedAtUtc", savedAtUtc);
-            writer.WriteString("payload", content.Payload);
+            writer.WriteStartObject("content");
+            writer.WriteNumber("schemaVersion", content.SchemaVersion);
+            writer.WritePropertyName("payload");
+            content.Payload.WriteTo(writer);
+            writer.WriteEndObject();
             writer.WriteEndObject();
         }
 
@@ -110,10 +94,8 @@ internal sealed class DocumentEnvelopeSerializer
         return Encoding.UTF8.GetString(buffer.WrittenSpan);
     }
 
-    /// <summary>
-    /// 严格读取唯一受支持的 v1 信封，并把宿主字段与插件内容重新分离。
-    /// </summary>
-    internal DocumentEnvelopeV1 Deserialize(string json)
+    /// <summary>严格读取唯一受支持的 V2 信封，并克隆插件 JSON 内容。</summary>
+    internal DocumentEnvelopeV2 Deserialize(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
         EnsureByteLength(Encoding.UTF8.GetByteCount(json), isReading: true);
@@ -127,31 +109,24 @@ internal sealed class DocumentEnvelopeSerializer
                 MaxDepth = MaximumJsonDepth,
             });
             var root = document.RootElement;
-            ValidatePropertySet(root);
+            ValidatePropertySet(root, RootProperties, "根对象");
 
-            var schemaVersion = ReadInt32(root, "schemaVersion");
-            if (schemaVersion != CurrentSchemaVersion)
+            if (ReadInt32(root, "schemaVersion") != CurrentSchemaVersion)
             {
-                throw Invalid("文档信封 schemaVersion 不受支持。");
+                throw Invalid("文档信封 schemaVersion 不受支持。只接受 V2，不读取或迁移 V1。");
             }
 
             var pluginIdText = ReadString(root, "pluginId");
-            if (!PluginId.TryParse(pluginIdText, out var pluginId) || !pluginId!.IsCanonical)
+            if (!PluginId.TryParse(pluginIdText, out var pluginId) || pluginId is null)
             {
                 throw Invalid("文档信封中的插件身份格式无效。");
             }
 
             var documentTypeIdText = ReadString(root, "documentTypeId");
             if (!DocumentTypeId.TryParse(documentTypeIdText, out var documentTypeId) ||
-                !documentTypeId!.IsCanonical)
+                documentTypeId is null)
             {
                 throw Invalid("文档信封中的 Document 类型身份格式无效。");
-            }
-
-            var contentSchemaVersion = ReadInt32(root, "contentSchemaVersion");
-            if (contentSchemaVersion <= 0)
-            {
-                throw Invalid("文档内容 schema 必须是正整数。");
             }
 
             var title = ReadString(root, "title");
@@ -168,64 +143,76 @@ internal sealed class DocumentEnvelopeSerializer
                 throw Invalid("文档保存时间必须是有效的 UTC DateTimeOffset。");
             }
 
-            var payload = ReadString(root, "payload");
-            return new DocumentEnvelopeV1(
+            var contentElement = root.GetProperty("content");
+            ValidatePropertySet(contentElement, ContentProperties, "content 对象");
+            var contentSchemaVersion = ReadInt32(contentElement, "schemaVersion");
+            if (contentSchemaVersion <= 0)
+            {
+                throw Invalid("文档内容 schema 必须是正整数。");
+            }
+
+            // DocumentContent 在构造时再次 Clone，使结果不依赖本方法内 JsonDocument 的生命周期。
+            var content = new DocumentContent(
+                contentSchemaVersion,
+                contentElement.GetProperty("payload"));
+            return new DocumentEnvelopeV2(
                 pluginId,
                 documentTypeId,
                 title,
                 savedAtUtc,
-                new DocumentContentSnapshot(contentSchemaVersion, payload));
+                content);
         }
-        catch (DocumentLoadException)
+        catch (DocumentEnvelopeException)
         {
             throw;
         }
         catch (JsonException exception)
         {
-            throw new DocumentLoadException(
+            throw new DocumentEnvelopeException(
                 "文档信封结构损坏或超过允许的 JSON 深度。",
                 exception);
         }
     }
 
-    /// <summary>
-    /// 在读取整份文本前检查文件系统报告的长度，避免明显超限文件先造成大额内存分配。
-    /// </summary>
+    /// <summary>在分配整份文本前拒绝文件系统已经报告为非法大小的文件。</summary>
     internal void ValidateFileLength(long byteLength) =>
         EnsureByteLength(byteLength, isReading: true);
 
-    private static void ValidatePropertySet(JsonElement root)
+    private static void ValidatePropertySet(
+        JsonElement element,
+        IReadOnlyList<string> requiredProperties,
+        string objectName)
     {
-        if (root.ValueKind != JsonValueKind.Object)
+        if (element.ValueKind != JsonValueKind.Object)
         {
-            throw Invalid("文档信封根节点必须是 JSON 对象。");
+            throw Invalid($"文档信封的 {objectName} 必须是 JSON 对象。");
         }
 
+        var required = new HashSet<string>(requiredProperties, StringComparer.Ordinal);
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var property in root.EnumerateObject())
+        foreach (var property in element.EnumerateObject())
         {
             if (!seen.Add(property.Name))
             {
-                throw Invalid("文档信封包含重复字段。");
+                throw Invalid($"文档信封的 {objectName} 包含重复字段。");
             }
 
-            if (!RequiredPropertySet.Contains(property.Name))
+            if (!required.Contains(property.Name))
             {
-                throw Invalid("文档信封包含未知字段或字段大小写错误。");
+                throw Invalid($"文档信封的 {objectName} 包含未知字段或字段大小写错误。");
             }
         }
 
-        if (seen.Count != RequiredProperties.Length ||
-            RequiredProperties.Any(property => !seen.Contains(property)))
+        if (seen.Count != required.Count || required.Any(name => !seen.Contains(name)))
         {
-            throw Invalid("文档信封缺少必填字段。");
+            throw Invalid($"文档信封的 {objectName} 缺少必填字段。");
         }
     }
 
-    private static int ReadInt32(JsonElement root, string propertyName)
+    private static int ReadInt32(JsonElement element, string propertyName)
     {
-        var element = root.GetProperty(propertyName);
-        if (element.ValueKind != JsonValueKind.Number || !element.TryGetInt32(out var value))
+        var property = element.GetProperty(propertyName);
+        if (property.ValueKind != JsonValueKind.Number || !property.TryGetInt32(out var value))
         {
             throw Invalid("文档信封整数栏位类型无效。");
         }
@@ -233,10 +220,10 @@ internal sealed class DocumentEnvelopeSerializer
         return value;
     }
 
-    private static string ReadString(JsonElement root, string propertyName)
+    private static string ReadString(JsonElement element, string propertyName)
     {
-        var element = root.GetProperty(propertyName);
-        if (element.ValueKind != JsonValueKind.String || element.GetString() is not { } value)
+        var property = element.GetProperty(propertyName);
+        if (property.ValueKind != JsonValueKind.String || property.GetString() is not { } value)
         {
             throw Invalid("文档信封字符串栏位类型无效。");
         }
@@ -253,15 +240,14 @@ internal sealed class DocumentEnvelopeSerializer
 
         if (isReading)
         {
-            throw new DocumentLoadException(
+            throw new DocumentEnvelopeException(
                 byteLength <= 0
                     ? "文档信封不能为空。"
                     : $"文档信封超过 {MaximumEnvelopeBytes} 字节限制。");
         }
 
-        throw new JsonException(
-            $"Document 信封超过 {MaximumEnvelopeBytes} 字节限制。");
+        throw new JsonException($"Document 信封超过 {MaximumEnvelopeBytes} 字节限制。");
     }
 
-    private static DocumentLoadException Invalid(string message) => new(message);
+    private static DocumentEnvelopeException Invalid(string message) => new(message);
 }

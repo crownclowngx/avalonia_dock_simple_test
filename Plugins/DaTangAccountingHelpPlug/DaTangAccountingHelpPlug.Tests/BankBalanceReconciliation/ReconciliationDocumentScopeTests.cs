@@ -4,7 +4,6 @@ using DaTangAccountingHelpPlug.Plugin;
 using DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagementCommon.Plugin;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Save;
 using Xunit;
@@ -17,7 +16,7 @@ public sealed class ReconciliationDocumentScopeTests
     public async Task 两个Document的路径选项日志和取消状态完全隔离()
     {
         var services = new ServiceCollection();
-        services.AddDocumentScopeManagement();
+        AddLegacyScopeTestServices(services);
         new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.datang-accounting-help"), services));
 
@@ -26,7 +25,7 @@ public sealed class ReconciliationDocumentScopeTests
             ValidateScopes = true,
             ValidateOnBuild = true
         });
-        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        var manager = provider.GetRequiredService<LegacyTestDocumentScopeFactory>();
         var strategy = new BankBalanceReconciliationDocumentStrategy(manager);
         var first = Assert.IsType<BankBalanceReconciliationViewModel>(
             strategy.CreateDocument(new DocumentCreationParams(
@@ -60,11 +59,11 @@ public sealed class ReconciliationDocumentScopeTests
     public void 保存Document仅持久化配置路径选项和结果摘要()
     {
         var services = new ServiceCollection();
-        services.AddDocumentScopeManagement();
+        AddLegacyScopeTestServices(services);
         new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.datang-accounting-help"), services));
         using var provider = services.BuildServiceProvider();
-        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        var manager = provider.GetRequiredService<LegacyTestDocumentScopeFactory>();
         var document = manager.CreateDocument<BankBalanceReconciliationViewModel>();
         document.Source.EnterpriseLedgerPath = "enterprise.xlsx";
         document.Source.BankStatementPath = "bank.xlsx";
@@ -105,5 +104,85 @@ public sealed class ReconciliationDocumentScopeTests
         Assert.False(document.IsDirty);
         Assert.True(manager.Release(restored));
         Assert.True(manager.Release(document));
+    }
+
+    /// <summary>
+    /// G7 不再由生产 Host 暴露旧 Scope 工厂；本夹具只服务尚待 G10 迁移的插件自身 V1 单测。
+    /// 每个文档仍使用独立 DI Scope，保证业务隔离断言不因阶段切换而弱化。
+    /// </summary>
+    private static void AddLegacyScopeTestServices(IServiceCollection services)
+    {
+        services.AddScoped<LegacyTestDocumentLifetime>();
+        services.AddScoped<IDocumentLifetime>(provider =>
+            provider.GetRequiredService<LegacyTestDocumentLifetime>());
+        services.AddSingleton<LegacyTestDocumentScopeFactory>();
+        services.AddSingleton<IDocumentScopeFactory>(provider =>
+            provider.GetRequiredService<LegacyTestDocumentScopeFactory>());
+    }
+
+    private sealed class LegacyTestDocumentLifetime : IDocumentLifetime, IDisposable
+    {
+        private readonly CancellationTokenSource _closing = new();
+        public CancellationToken ClosingToken => _closing.Token;
+        public bool IsClosing => _closing.IsCancellationRequested;
+        internal void Cancel() => _closing.Cancel();
+        public void Dispose() => _closing.Dispose();
+    }
+
+    private sealed class LegacyTestDocumentScopeFactory(
+        IServiceScopeFactory scopeFactory) : IDocumentScopeFactory, IDisposable
+    {
+        private readonly Dictionary<Dock.Model.Mvvm.Controls.Document, Lease> _leases =
+            new(ReferenceEqualityComparer.Instance);
+
+        public TDocument CreateDocument<TDocument>()
+            where TDocument : Dock.Model.Mvvm.Controls.Document
+        {
+            var scope = scopeFactory.CreateScope();
+            try
+            {
+                var lifetime = scope.ServiceProvider
+                    .GetRequiredService<LegacyTestDocumentLifetime>();
+                var document = scope.ServiceProvider.GetRequiredService<TDocument>();
+                _leases.Add(document, new Lease(scope, lifetime));
+                return document;
+            }
+            catch
+            {
+                scope.Dispose();
+                throw;
+            }
+        }
+
+        internal bool Release(Dock.Model.Mvvm.Controls.Document document)
+        {
+            if (!_leases.Remove(document, out var lease))
+            {
+                return false;
+            }
+
+            lease.Dispose();
+            return true;
+        }
+
+        public void Dispose()
+        {
+            foreach (var lease in _leases.Values)
+            {
+                lease.Dispose();
+            }
+            _leases.Clear();
+        }
+
+        private sealed record Lease(
+            IServiceScope Scope,
+            LegacyTestDocumentLifetime Lifetime) : IDisposable
+        {
+            public void Dispose()
+            {
+                Lifetime.Cancel();
+                Scope.Dispose();
+            }
+        }
     }
 }

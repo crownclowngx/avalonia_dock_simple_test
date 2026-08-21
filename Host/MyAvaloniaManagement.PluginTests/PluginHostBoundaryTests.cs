@@ -7,7 +7,7 @@ using MySmallTools.Plugin;
 
 namespace MyAvaloniaManagement.PluginTests;
 
-/// <summary>锁定生产插件只引用 Common，Host 引用只允许存在于仓库测试和 Harness。</summary>
+/// <summary>锁定生产插件只引用 SDK，Host 引用只允许存在于获准 Harness。</summary>
 public sealed class PluginHostBoundaryTests
 {
     private static readonly string RepositoryRoot = FindRepositoryRoot();
@@ -48,7 +48,6 @@ public sealed class PluginHostBoundaryTests
         Assert.Equal(
             new[]
             {
-                "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.Tests/DaTangAccountingHelpPlug.Tests.csproj",
                 "Plugins/MySmallTools/MySmallTools.Playback.IntegrationHarness/MySmallTools.Playback.IntegrationHarness.csproj",
             },
             consumers);

@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using MyAvaloniaManagementCommon.DocumentCreation;
+using MyAvaloniaManagement.Business.Helpers;
 
 namespace MyAvaloniaManagement.Models.Tools;
 
-internal class CategoryNode : INotifyPropertyChanged
+internal sealed class CategoryNode : INotifyPropertyChanged
 {
     private bool _isExpanded = false;
     
@@ -33,7 +33,7 @@ internal class CategoryNode : INotifyPropertyChanged
     
     public event PropertyChangedEventHandler? PropertyChanged;
     
-    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }

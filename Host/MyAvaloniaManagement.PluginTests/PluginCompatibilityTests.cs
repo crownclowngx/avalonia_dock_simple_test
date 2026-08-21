@@ -24,7 +24,7 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class PluginCompatibilityTests
 {
     [Fact]
-    public void G5只在旧格式边界保留Host历史Id且不发布业务插件贡献()
+    public void LayoutV1只在工具布局边界保留Host历史Id()
     {
         var services = new ServiceCollection();
         services.AddApplicationServices();
@@ -35,11 +35,6 @@ public sealed class PluginCompatibilityTests
             ValidateOnBuild = true
         });
         var factory = provider.GetRequiredService<MyAvaloniaManagement.ViewModels.ManagementFactory>();
-
-        Assert.Equal(
-            "myavalonia.host.document.welcome",
-            factory.NormalizePersistedDocumentTypeId(
-                new DocumentTypeId("DD7A1E38-07C5-B38C-FB02-1B991896EF49")).Value);
 
         var toolMappings = new (string Legacy, string Canonical)[]
         {
@@ -168,6 +163,7 @@ public sealed class PluginCompatibilityTests
     {
         var services = new ServiceCollection();
         services.AddDocumentScopeManagement();
+        services.AddLegacyPluginDocumentScopesForTests();
         var module = new DaTangAccountingHelpPluginModule();
 
         module.Configure(new TestPluginRegistrationContext(
@@ -231,10 +227,7 @@ public sealed class PluginCompatibilityTests
     {
         var services = new ServiceCollection();
         services.AddDocumentScopeManagement();
-        // G6 生产组合不再暴露 Legacy Dock 文档工厂。此注册仅服务于尚未迁移的
-        // 真实插件源码兼容测试，防止测试 seam 重新进入 Host 生产激活路径。
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
+        services.AddLegacyPluginDocumentScopesForTests();
         new DaTangAccountingHelpPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.datang-accounting-help"), services));
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -258,7 +251,7 @@ public sealed class PluginCompatibilityTests
         Assert.Equal("第一份发票计算", first.Title);
         Assert.Equal("发票信息导入和计算", second.Title);
         Assert.Equal("大唐-会计", strategy.GetMetadata().MenuCategory);
-        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        var manager = provider.GetRequiredService<LegacyPluginDocumentScopeFactory>();
         Assert.True(manager.Release(first));
         Assert.False(manager.Release(first));
         Assert.True(manager.Release(second));
@@ -269,9 +262,7 @@ public sealed class PluginCompatibilityTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<IHostEventBus, MyAvaloniaManagement.Business.Events.HostEventBus>();
-        services.AddSingleton<DocumentScopeManager>();
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
+        services.AddLegacyPluginDocumentScopesForTests();
         new MyPlugTestPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.my-plug-test"), services));
 
@@ -338,7 +329,7 @@ public sealed class PluginCompatibilityTests
             firstWelcome.RestoreContent(new DocumentContentSnapshot(2, "secret-payload")));
         Assert.DoesNotContain("secret-payload", futureVersion.Message, StringComparison.Ordinal);
 
-        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        var manager = provider.GetRequiredService<LegacyPluginDocumentScopeFactory>();
         Assert.True(manager.Release(firstWelcome));
         Assert.False(manager.Release(firstWelcome));
         Assert.True(manager.Release(secondWelcome));
@@ -350,9 +341,7 @@ public sealed class PluginCompatibilityTests
     public void MySmallTools模块注册可通过作用域验证且加密Document彼此独立()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<DocumentScopeManager>();
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
+        services.AddLegacyPluginDocumentScopesForTests();
         new MySmallToolsPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.my-small-tools"), services));
 
@@ -369,8 +358,9 @@ public sealed class PluginCompatibilityTests
             new DocumentCreationParams(strategy.GetMetadata().DocumentTypeId)));
 
         Assert.NotSame(first, second);
-        Assert.True(provider.GetRequiredService<DocumentScopeManager>().Release(first));
-        Assert.True(provider.GetRequiredService<DocumentScopeManager>().Release(second));
+        var manager = provider.GetRequiredService<LegacyPluginDocumentScopeFactory>();
+        Assert.True(manager.Release(first));
+        Assert.True(manager.Release(second));
     }
 
     private sealed class ReadyBiliLifecycle : IPluginLifecycle

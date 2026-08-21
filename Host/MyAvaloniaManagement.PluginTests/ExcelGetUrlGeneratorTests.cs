@@ -225,9 +225,7 @@ public sealed class ExcelGetUrlGeneratorTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<IHostEventBus, HostEventBus>();
-        services.AddSingleton<DocumentScopeManager>();
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
+        services.AddLegacyPluginDocumentScopesForTests();
         new MyPlugTestPluginModule().Configure(new TestPluginRegistrationContext(
             new PluginId("myavalonia.plugin.my-plug-test"), services));
 
@@ -250,7 +248,7 @@ public sealed class ExcelGetUrlGeneratorTests
         Assert.Equal(
             "myavalonia.plugin.my-plug-test.document.excel-get-url-generator",
             strategy.GetMetadata().DocumentTypeId.Value);
-        Assert.True(provider.GetRequiredService<DocumentScopeManager>().Release(document));
+        Assert.True(provider.GetRequiredService<LegacyPluginDocumentScopeFactory>().Release(document));
     }
 
     private static string CreateWorkbook(Action<ExcelPackage> configure)

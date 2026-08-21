@@ -19,8 +19,8 @@
 - [G5 显式贡献与 Plugin Registry](../../../docs/plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)
 - [V2 G5 声明式贡献目录](../../../docs/plan-history/host-v2/g5-declarative-contribution-catalog.md)
 - [V2 G6 Host Dock Adapter](../../../docs/plan-history/host-v2/g6-host-dock-adapter.md)
-- [G7 Document 信封 v1](../../../docs/plan-history/host-v1/g7-document-envelope-v1.md)
-- [G8 保存契约与内容版本](../../../docs/plan-history/host-v1/g8-document-content-persistence-contract.md)
+- [Document V2 当前设计](../../../docs/design/document-persistence-v2-design.md)
+- [V2 G7 Document V2](../../../docs/plan-history/host-v2/g7-document-v2.md)
 - [G16 文档与 v1 基线](../../../docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)
 
 ## 文档定位
@@ -32,7 +32,7 @@
 - 插件只支持严格清单、必需 `.deps.json` 和唯一 `IPluginModule` 的 Managed 模型；
 - manifest 是身份唯一事实源，Document、Tool、View 和 Lifecycle 只通过 Context 显式登记；
 - V2 Host 生产贡献只通过最终 `IPluginRegistration` 一次声明并发布到不可变 Registry；
-- 不改变七字段 Document 信封 v1 与 `layout-v1.json` 格式；插件内容仅通过 `DocumentContentSnapshot` 传递；
+- Document 只接受六字段 V2 信封与原生 JSON `DocumentContent`；`layout-v1.json` 留待 G8 修改；
 - 不新增布局版本、插件市场、热加载、沙箱或用户可见诊断功能；
 - 不要求插件跟随宿主内部协作者重编写业务逻辑。
 
@@ -44,6 +44,7 @@
 
 ```powershell
 .\scripts\Test-Documentation.ps1
+.\scripts\Test-DocumentV2.ps1 -Configuration Release
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke
 ```

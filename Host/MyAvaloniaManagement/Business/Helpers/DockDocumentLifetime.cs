@@ -8,7 +8,7 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// 在 Dock 确认文档关闭后释放宿主持有的控件缓存和依赖注入作用域。
 /// 延迟到关闭完成后处理，可避免可取消关闭流程提前销毁文档资源。
 /// </summary>
-internal sealed class DockDocumentLifetime(DocumentScopeRegistry scopeRegistry)
+internal sealed class DockDocumentLifetime
 {
     internal void Release(Document document)
     {
@@ -27,11 +27,6 @@ internal sealed class DockDocumentLifetime(DocumentScopeRegistry scopeRegistry)
             if (document is ManagedDocumentDockable adapter)
             {
                 adapter.Dispose();
-            }
-            else
-            {
-                // G7 前旧持久化测试仍把 Dock Document 本身作为 Scope 键；生产 Adapter 不走此分支。
-                scopeRegistry.Release(document);
             }
         }
     }

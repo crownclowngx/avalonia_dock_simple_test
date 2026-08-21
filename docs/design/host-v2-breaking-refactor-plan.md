@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G6 已完成，G7–G14 尚未实现。
+> 状态：实施中；G0–G7 已完成，G8–G14 尚未实现。
 >
 > 评审日期：2026-08-21。
 >
@@ -11,10 +11,11 @@
 > [V2 G3 manifest v2 与构建协议](../plan-history/host-v2/g3-manifest-v2-and-build-protocol.md)，以及
 > [V2 G4 每插件独立容器](../plan-history/host-v2/g4-per-plugin-containers.md)与
 > [V2 G5 声明式贡献目录](../plan-history/host-v2/g5-declarative-contribution-catalog.md)与
-> [V2 G6 Host Dock Adapter](../plan-history/host-v2/g6-host-dock-adapter.md)。
+> [V2 G6 Host Dock Adapter](../plan-history/host-v2/g6-host-dock-adapter.md)与
+> [V2 G7 Document V2](../plan-history/host-v2/g7-document-v2.md)。
 >
-> 重要说明：G6 已完成普通模型、Host internal Dock Adapter、统一预构建 View 与 Adapter/Scope
-> 生命周期；Document v2、layout/lifecycle v2 与四业务插件迁移仍属于 G7–G14，不得引用为当前能力。
+> 重要说明：G7 已完成普通模型、Host internal Dock Adapter、唯一 Document V2 创建/恢复/保存/关闭
+> 与 Adapter/Scope 生命周期；layout/lifecycle v2 与四业务插件迁移仍属于 G8–G14，不得引用为当前能力。
 
 ## 1. 目的与结论
 
@@ -464,13 +465,25 @@ Document View 失败原子释放 ClosingToken、模型与 Scope；Tool 激活/Vi
 [G6 专项记录](../plan-history/host-v2/g6-host-dock-adapter.md)。本阶段未调用 `InitializeAsync`，未实现
 Document/layout v2，未迁移四个业务插件，也未运行 Windows CI、Smoke 或发布门禁。
 
-### G7：建立 Document V2
+### G7：建立 Document V2（已完成）
 
 - **目标**：创建、恢复、保存、关闭和 Scope 释放只存在一条 V2 流程。
 - **删除/新增**：增加 ActivationContext、异步初始化和 JsonElement 内容；删除 v1 信封与字符串快照生产路径。
 - **插件影响**：可保存插件模型实现 `IPersistablePluginDocument`；文件路径继续只由 Host 拥有。
 - **验证**：新建/打开、8 MiB/深度、严格字段、v1 拒绝、初始化失败、并发查重、原子保存、关闭取消和释放顺序。
 - **回滚**：恢复 G6 无持久化 Adapter；不得对用户文件做降级写回。
+
+G7 已将 Host Document 工厂改为异步初始化，Creation Intent 与恢复内容统一通过
+`DocumentActivationContext`，未发布 Adapter/View/Scope 在任一步失败时原子回滚。磁盘格式只接受
+六字段 V2 根对象及 `content(schemaVersion,payload)`，payload 为原生 `JsonElement`；V1、未知/重复/
+缺失字段、非规范 ID、非 UTC、注释、尾逗号、超 8 MiB 和超深度输入均严格拒绝。
+
+主文件原子写入是唯一提交点；提交后的 `AcceptChanges` 或恢复备份失败只报告“已保存但有警告”。
+恢复副本由 Host `RequiresSave` 强制另存，关闭取消不发出 ClosingToken，最终关闭按 View、令牌、模型、
+scoped 依赖释放。本轮专项 83/83，Host 全量 374/374，行覆盖率 82.22%、分支 67.22%，全部新增关键
+文件阈值通过。完整 SOLID 设计、失败矩阵、实际证据和非发布声明见
+[G7 专项记录](../plan-history/host-v2/g7-document-v2.md)。本阶段未修改 layout-v1 或生命周期编排，
+未迁移四业务插件，也未运行 AIFLOW、Windows CI/Smoke 或发布门禁。
 
 ### G8：建立布局与生命周期 V2
 

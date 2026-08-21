@@ -3,9 +3,9 @@ using System.Linq;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagementCommon.Save;
 
 namespace MyAvaloniaManagement.Business.Documents;
 
@@ -29,7 +29,7 @@ internal sealed class DocumentWorkspace(
 
         foreach (var dockable in DockTreeNavigator.Enumerate(root))
         {
-            if (dockable is not Document document ||
+            if (dockable is not ManagedDocumentDockable document ||
                 !persistenceStates.TryGet(document, out var state) ||
                 !DocumentPathIdentity.Equals(state.FilePath, filePath))
             {
@@ -59,10 +59,10 @@ internal sealed class DocumentWorkspace(
         return false;
     }
 
-    internal static IReadOnlyList<Document> GetDocuments(IRootDock? root) =>
+    internal static IReadOnlyList<ManagedDocumentDockable> GetDocuments(IRootDock? root) =>
         root is null
             ? []
-            : DockTreeNavigator.Enumerate(root).OfType<Document>().ToArray();
+            : DockTreeNavigator.Enumerate(root).OfType<ManagedDocumentDockable>().ToArray();
 
     private DocumentDock? GetDocumentDock() =>
         factory.GetDockable<IDocumentDock>("Files") as DocumentDock;

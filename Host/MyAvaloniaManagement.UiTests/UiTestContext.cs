@@ -93,7 +93,7 @@ internal sealed class UiStorageService : IHostStorageService
     public Task<IReadOnlyList<string>> PickOpenFilesAsync() =>
         Task.FromResult<IReadOnlyList<string>>([]);
 
-    public Task<string?> PickSaveFileAsync(DocumentMetadata? metadata) =>
+    public Task<string?> PickSaveFileAsync(string documentDisplayName) =>
         Task.FromResult<string?>(null);
 
     public Task<string?> PickFolderAsync() =>

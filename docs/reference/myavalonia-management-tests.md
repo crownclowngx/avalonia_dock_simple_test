@@ -2,8 +2,8 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G6 的 Core/UI SDK、
-> manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录和 Host Dock Adapter。最新测试数量和覆盖率必须从本轮
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G7 的 Core/UI SDK、
+> manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录、Host Dock Adapter 和 Document V2。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
 > [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
@@ -92,7 +92,7 @@ Host 行覆盖率 **81.36%**、分支覆盖率 **66.97%**。既有 baseline 没�
 ProviderOwner、Registration 和 Activator 五个 G5 关键文件阈值。BiliDownloader、DaTang、MySmallTools
 分别为 720、64、183，共 **967/967**。
 
-### V2 G6 当前绿色基线
+### V2 G6 阶段绿色基线
 
 G6 专项入口为：
 
@@ -114,6 +114,29 @@ Core/UI API v2 兼容门禁通过；三个业务插件为 720、64、183，共 *
 
 本阶段未运行 Windows CI、Windows Smoke、ReleaseAcceptance、SDK/业务插件发布包门禁、真实媒体/联网
 Harness、上传、标签或发布。
+
+### V2 G7 当前绿色基线
+
+G7 非发布专项入口为：
+
+```powershell
+.\scripts\Test-DocumentV2.ps1 -Configuration Release -NoRestore
+```
+
+脚本串行执行 Unit、Plugin、Headless UI 过滤集与生产结构扫描，并在
+`artifacts/test-results/DocumentV2/summary.json` 固定记录 `windowsCi=false`、
+`windowsSmoke=false`、`releaseGate=false`。本轮专项 Unit 59、Plugin 8、UI 16，共 **83/83**。
+
+Host 全量为 Unit 171、UI 44、Plugin 159，共 **374/374**；行覆盖率 **82.22%**、分支覆盖率
+**67.22%**。Serializer、Persistence Coordinator、Save Service、Close Coordinator、State Store
+行覆盖率分别为 **100%**、**94.51%**、**97.40%**、**97.62%**、**100%**，既有 Adapter 与 Scope
+Manager 阈值继续通过。完整所有权、失败矩阵、回滚和非发布边界见
+[V2 G7 专项记录](../plan-history/host-v2/g7-document-v2.md)。本阶段不运行 AIFLOW、Windows CI/Smoke、
+ReleaseAcceptance、发布包门禁、上传、标签或发布。
+
+其余非发布验收实际通过 locked restore、Release `-warnaserror` 全解决方案构建、SDK **32/32**、
+Core/UI API v2 与隔离包消费，以及 BiliDownloader **720/720**、DaTangAccountingHelpPlug **64/64**、
+MySmallTools **183/183**。文档核心与完整门禁均通过。
 
 ## G14 正式发布门禁
 
@@ -292,20 +315,20 @@ Host 与插件的 Document/Tool 策略都使用 `ActivatorUtilities` 创建，�
 
 - 已打开的文件只激活原标签，然后继续处理后续文件；
 - 不存在、损坏 JSON、未知类型或读取失败只跳过当前文件；
-- 文件读取前检查长度，读取后严格解析一次唯一七字段 v1；插件只收到内容版本和 payload；
-- `DocumentEnvelopeV1Tests` 覆盖精确字段、8 MiB、深度 8、UTC、主 ID、所有权与失败不发布；
+- 文件读取前检查长度，读取后严格解析唯一六字段 v2；插件只收到内容版本和克隆的原生 JSON payload；
+- `DocumentEnvelopeV2Tests` 覆盖精确字段、任意 JSON、8 MiB、深度 8、UTC、主 ID、所有权与失败不发布；
 - Windows 路径先转绝对路径，再按不区分大小写规则比较，避免同一文件重复打开。
 - 并发打开同一路径时，后到请求会看到前一请求创建的文档并只执行激活。
 
 Document 类型身份与文件扩展名已经解耦：新建和“另存为”统一建议 `.mamdoc`，
 打开历史扩展名文件后的普通保存仍覆盖原路径。内容先通过同目录临时文件和原子替换提交；只有写入成功后才
-同步文档路径、标签标题和保存完成状态。I/O、权限、路径、JSON 与
-`DocumentLoadException` 等预期故障会转换为稳定错误结果，编程错误不会被吞掉。
+同步 Host 路径、磁盘标题和恢复状态，再调用 `AcceptChanges`。I/O、权限、路径、严格信封与插件边界
+异常会转换为稳定脱敏结果；主文件成功后的回调/备份异常只产生警告。
 
-v1 是项目第一个且唯一受支持的 Document 信封。任何非 v1 结构直接拒绝，不探测旧字段、不使用
-历史 Document 别名继续打开，也不创建迁移副本。失败打开不会发布 Document、泄漏 Scope 或写入文件。
+V2 是唯一受支持的 Document 信封。任何 V1 或非 V2 结构直接拒绝，不探测旧字段、不使用历史
+Document 别名，也不创建迁移副本。失败打开不会发布 Adapter/View、泄漏 Scope 或写入文件。
 
-### G7 当前绿色基线
+### Managed Plugin v1 G7 历史绿色基线
 
 2026-08-18 执行锁定还原、解决方案 Release 构建、两个实际插件测试、SDK 包消费门禁，以及：
 

@@ -1,5 +1,4 @@
 using MyAvaloniaManagement.Business.Storage;
-using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace MyAvaloniaManagement.Tests;
 
@@ -23,7 +22,7 @@ public sealed class HostStorageServiceTests
     [Fact]
     public void 保存文档缺少元数据时仍使用Mamdoc扩展名()
     {
-        var options = AvaloniaHostStorageService.CreateSaveFilePickerOptions(null);
+        var options = AvaloniaHostStorageService.CreateSaveFilePickerOptions(string.Empty);
 
         var fileType = Assert.Single(options.FileTypeChoices!);
         Assert.Equal("管理文档 (.mamdoc)", fileType.Name);
@@ -34,11 +33,7 @@ public sealed class HostStorageServiceTests
     [Fact]
     public void 保存文档有元数据时保留显示名并使用Mamdoc扩展名()
     {
-        var metadata = new DocumentMetadata(
-            new DocumentTypeId("myavalonia.host.document.storage-test"),
-            "测试文档");
-
-        var options = AvaloniaHostStorageService.CreateSaveFilePickerOptions(metadata);
+        var options = AvaloniaHostStorageService.CreateSaveFilePickerOptions("测试文档");
 
         var fileType = Assert.Single(options.FileTypeChoices!);
         Assert.Equal("测试文档", fileType.Name);

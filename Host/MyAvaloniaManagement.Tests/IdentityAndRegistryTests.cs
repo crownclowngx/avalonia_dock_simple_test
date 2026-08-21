@@ -67,13 +67,15 @@ public sealed class IdentityAndRegistryTests
     }
 
     [Fact]
-    public void 历史别名只在旧格式边界规范化且声明式Registry只发布主Id()
+    public void Document历史别名不再存在且声明式Registry只发布主Id()
     {
         var primary = new DocumentTypeId("myavalonia.host.document.sample");
-        var legacyWelcome = new DocumentTypeId("DD7A1E38-07C5-B38C-FB02-1B991896EF49");
-        Assert.Equal(
-            HostExtensionIds.WelcomeDocument,
-            LegacyContributionIdMap.ResolveDocument(legacyWelcome));
+        Assert.DoesNotContain(
+            typeof(LegacyContributionIdMap).GetMethods(
+                System.Reflection.BindingFlags.Static |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic),
+            method => method.Name.Contains("Document", StringComparison.Ordinal));
 
         var services = new ServiceCollection();
         var builder = new PluginRegistryBuilder();

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
-using MyAvaloniaManagementCommon.DocumentCreation;
 
 namespace MyAvaloniaManagement.Business.Storage;
 
@@ -39,7 +38,7 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
     }
 
     /// <inheritdoc />
-    public async Task<string?> PickSaveFileAsync(DocumentMetadata? metadata)
+    public async Task<string?> PickSaveFileAsync(string documentDisplayName)
     {
         var storageProvider = GetStorageProvider();
         if (storageProvider is null)
@@ -48,7 +47,7 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
         }
 
         var file = await storageProvider.SaveFilePickerAsync(
-            CreateSaveFilePickerOptions(metadata));
+            CreateSaveFilePickerOptions(documentDisplayName));
 
         return file?.TryGetLocalPath();
     }
@@ -100,16 +99,16 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
     /// 宿主管理文档类型，不能回退为纯文本文件。
     /// </summary>
     internal static FilePickerSaveOptions CreateSaveFilePickerOptions(
-        DocumentMetadata? metadata) => new()
+        string documentDisplayName) => new()
     {
         Title = "保存文档",
         DefaultExtension = DocumentExtension,
         FileTypeChoices =
         [
             CreateDocumentFileType(
-                string.IsNullOrWhiteSpace(metadata?.DisplayName)
+                string.IsNullOrWhiteSpace(documentDisplayName)
                     ? DocumentFileTypeName
-                    : metadata.DisplayName)
+                    : documentDisplayName)
         ]
     };
 

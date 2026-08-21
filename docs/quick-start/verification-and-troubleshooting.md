@@ -1,6 +1,6 @@
 # 验证与排错
 
-> 本页清单仍包含 G4 Legacy 示例术语。G5 Host 只接受最终 UI SDK 模块；四业务插件在 G9–G12 前被
+> 本页清单仍包含 G4 Legacy 示例术语。G7 Host 只接受最终 UI SDK 模块；四业务插件在 G9–G12 前被
 > 预检隔离。最终教程更新前，本页只用于历史故障对照，不是当前 V2 发布说明。
 
 验证新插件时应从“目录和清单”开始，再检查模块、扩展元数据和界面行为。这样能够在最接近故障来源的位置停止，而不是从空白界面反推所有可能原因。
@@ -57,12 +57,13 @@ dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c De
 dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
 ```
 
-提交前运行完整宿主门禁；需要真实窗口冒烟时追加第二条：
+G7 阶段修改 Document 链时只运行下列非发布门禁：
 
 ```powershell
-.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
-.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke
+.\scripts\Test-DocumentV2.ps1 -Configuration Release -NoRestore
 ```
+
+真实窗口 Smoke 与发布包矩阵仅用于后续发布验收，不属于 G7。
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。
 

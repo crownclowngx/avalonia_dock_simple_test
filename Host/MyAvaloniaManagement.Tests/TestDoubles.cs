@@ -9,9 +9,7 @@ using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagementCommon.DocumentCreation;
 using MyAvaloniaManagementCommon.Events;
-using MyAvaloniaManagementCommon.Save;
 using MyAvaloniaManagementCommon.ToolCreation;
 using Avalonia.Controls;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -27,9 +25,9 @@ namespace MyAvaloniaManagement.Tests;
 internal sealed class TestHostContext : IDisposable
 {
     public TestHostContext(
-        IEnumerable<IDocumentCreationStrategy>? documentStrategies = null,
         IEnumerable<IToolCreationStrategy>? toolStrategies = null,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        Action<IServiceCollection, PluginRegistryBuilder>? configureContributions = null)
     {
         TempDirectory = Path.Combine(
             Path.GetTempPath(),
@@ -43,13 +41,11 @@ internal sealed class TestHostContext : IDisposable
         var services = new ServiceCollection();
         var registryBuilder = new PluginRegistryBuilder();
         services.AddApplicationServices(registryBuilder);
-        // 仅测试组合根继续提供 G7 前 Legacy Scope 端口；生产 AddApplicationServices 已删除该注册。
-        services.AddSingleton<IDocumentScopeFactory>(provider =>
-            provider.GetRequiredService<DocumentScopeManager>());
         services.AddViewModels();
         services.AddSingleton<IHostStorageService>(Storage);
         services.AddSingleton<IDocumentInteractionService>(Interactions);
         services.AddSingleton<IHostEventBus>(EventBus);
+        services.AddSingleton<DocumentV2TestProbe>();
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
         services.AddSingleton(new AppearanceSettingsStore(
@@ -57,14 +53,11 @@ internal sealed class TestHostContext : IDisposable
                 TempDirectory,
                 AppearanceSettingsStore.SettingsFileName)));
         services.AddSingleton(PluginModuleCatalog.Discover(PluginDiscoverySnapshot.Empty));
-        foreach (var strategy in documentStrategies ?? [])
-        {
-            RegisterLegacyDocumentStrategy(services, registryBuilder, strategy);
-        }
         foreach (var strategy in toolStrategies ?? [])
         {
             RegisterLegacyToolStrategy(services, registryBuilder, strategy);
         }
+        configureContributions?.Invoke(services, registryBuilder);
         var customServiceStart = services.Count;
         configureServices?.Invoke(services);
         // 旧测试通过 DI 工厂创建 scoped 策略。生产模块已禁止这种绕行；测试组合根在构建前
@@ -72,16 +65,7 @@ internal sealed class TestHostContext : IDisposable
         for (var index = services.Count - 1; index >= customServiceStart; index--)
         {
             var descriptor = services[index];
-            if (descriptor.ServiceType == typeof(IDocumentCreationStrategy))
-            {
-                services.RemoveAt(index);
-                using var inspectionProvider = services.BuildServiceProvider();
-                var strategy = (IDocumentCreationStrategy)CreateFromDescriptor(
-                    inspectionProvider, descriptor);
-                RegisterLegacyDocumentStrategy(
-                    services, registryBuilder, strategy);
-            }
-            else if (descriptor.ServiceType == typeof(IToolCreationStrategy))
+            if (descriptor.ServiceType == typeof(IToolCreationStrategy))
             {
                 services.RemoveAt(index);
                 using var inspectionProvider = services.BuildServiceProvider();
@@ -91,10 +75,10 @@ internal sealed class TestHostContext : IDisposable
             }
         }
 
-        // G6 生产 Factory 会在发布前构造真实 Avalonia View；纯单元测试没有 Avalonia 平台。
-        // 这里通过内部窄端口注入 Legacy Dock 替身，只维持 G7 前保存测试，不进入生产 DI。
+        // 纯单元测试没有 Avalonia 平台，使用不构造 Control 的 V2 工厂替身；真实 View
+        // 预构建与失败回滚由 Headless UI 测试覆盖。
         services.AddSingleton<IHostDockableFactory>(provider =>
-            new LegacyUnitTestDockableFactory(
+            new UnitTestDockableFactory(
                 provider.GetRequiredService<PluginRegistry>(),
                 provider.GetRequiredService<DocumentScopeManager>(),
                 provider));
@@ -122,13 +106,13 @@ internal sealed class TestHostContext : IDisposable
     public DocumentPersistenceStateStore PersistenceStates =>
         Provider.GetRequiredService<DocumentPersistenceStateStore>();
 
-    public string GetDocumentFilePath(Document document) =>
+    public string GetDocumentFilePath(ManagedDocumentDockable document) =>
         PersistenceStates.TryGet(document, out var state)
             ? state.FilePath
             : throw new InvalidOperationException("测试 Document 没有宿主持久化状态。");
 
-    public void SetDocumentFilePath(Document document, string filePath) =>
-        PersistenceStates.CommitFilePath(document, filePath);
+    public void SetDocumentFilePath(ManagedDocumentDockable document, string filePath) =>
+        PersistenceStates.CommitFile(document, filePath, document.HostTitle);
 
     public ApplicationThemeService ThemeService =>
         Provider.GetRequiredService<ApplicationThemeService>();
@@ -150,63 +134,6 @@ internal sealed class TestHostContext : IDisposable
         descriptor.ImplementationInstance ??
         descriptor.ImplementationFactory?.Invoke(provider) ??
         ActivatorUtilities.CreateInstance(provider, descriptor.ImplementationType!);
-
-    /// <summary>
-    /// 把仍用于 Document v1 回归的测试 Strategy 翻译为声明式测试模型注册。
-    /// </summary>
-    /// <remarks>
-    /// 该适配只存在于测试程序集，不进入 Host Registry。生产代码没有 Strategy、元数据读取或
-    /// 独立 View 映射回退；旧测试由此继续验证 G7 前的保存行为，而不会形成第二条生产事实。
-    /// </remarks>
-    private static void RegisterLegacyDocumentStrategy(
-        IServiceCollection services,
-        PluginRegistryBuilder builder,
-        IDocumentCreationStrategy strategy)
-    {
-        var metadata = strategy.GetMetadata();
-        var modelType = strategy switch
-        {
-            TrackedScopedSavableStrategy => typeof(TrackedScopedSavableDocument),
-            TrackedScopedNonSavableStrategy => typeof(TrackedScopedNonSavableDocument),
-            _ => strategy.CreateDocument(new DocumentCreationParams(
-                metadata.DocumentTypeId)).GetType(),
-        };
-        if (strategy is TrackedScopedSavableStrategy or TrackedScopedNonSavableStrategy)
-        {
-            services.AddScoped(modelType);
-        }
-
-        else
-        {
-            services.AddScoped(modelType, _ => strategy.CreateDocument(
-                new DocumentCreationParams(metadata.DocumentTypeId)));
-        }
-        var intents = strategy is IDocumentCreationIntentProvider intentProvider
-            ? intentProvider.GetCreationIntents().Select(intent =>
-                new DocumentCreationIntentDescriptor(
-                    new MyAvaloniaManagement.PluginSdk.CreationIntentId(
-                        intent.IntentId.Value),
-                    intent.DisplayName,
-                    intent.Description,
-                    intent.IconPath))
-            : [];
-        builder.AddDocument(
-            HostExtensionIds.V2Owner,
-            new DocumentDescriptor(
-                new MyAvaloniaManagement.PluginSdk.DocumentTypeId(
-                    metadata.DocumentTypeId.Value),
-                metadata.DisplayName,
-                metadata.Description,
-                string.IsNullOrWhiteSpace(metadata.MenuCategory)
-                    ? "测试"
-                    : metadata.MenuCategory,
-                metadata.IconPath,
-                intents),
-            modelType,
-            typeof(TestContributionView),
-            static () => new TestContributionView(),
-            typeof(ISavableDocument).IsAssignableFrom(modelType));
-    }
 
     private static void RegisterLegacyToolStrategy(
         IServiceCollection services,
@@ -255,15 +182,15 @@ internal sealed class TestHostContext : IDisposable
     }
 }
 
-/// <summary>仅供非 Avalonia 单元测试保留 G7 前旧 Document/Tool 形状。</summary>
-internal sealed class LegacyUnitTestDockableFactory(
+/// <summary>仅供非 Avalonia 单元测试使用的 V2 Document 与 Tool 窄工厂。</summary>
+internal sealed class UnitTestDockableFactory(
     PluginRegistry registry,
     DocumentScopeManager documentScopes,
     IServiceProvider provider) : IHostDockableFactory
 {
-    public Document CreateDocument(
+    public async ValueTask<Document> CreateDocumentAsync(
         MyAvaloniaManagement.PluginSdk.DocumentTypeId documentTypeId,
-        string title = "")
+        MyAvaloniaManagement.PluginSdk.DocumentActivationContext context)
     {
         if (!registry.TryGetDocumentRegistration(documentTypeId, out var registration))
         {
@@ -273,17 +200,22 @@ internal sealed class LegacyUnitTestDockableFactory(
         if (typeof(MyAvaloniaManagement.PluginSdk.IPluginDocument)
             .IsAssignableFrom(registration.ModelType))
         {
-            var model = documentScopes.CreatePluginDocument(registration.ModelType);
-            return new ManagedDocumentDockable(
-                new ActivatedPluginDocument(registration, model, documentScopes),
-                title);
+            var lease = documentScopes.CreatePluginDocument(registration.ModelType);
+            try
+            {
+                await lease.Model.InitializeAsync(context, lease.ClosingToken);
+                return new ManagedDocumentDockable(
+                    new ActivatedPluginDocument(registration, lease),
+                    context.Title);
+            }
+            catch
+            {
+                lease.Dispose();
+                throw;
+            }
         }
 
-        var legacy = documentScopes.CreateLegacyDocument(registration.ModelType);
-        legacy.Title = string.IsNullOrEmpty(title)
-            ? registration.Descriptor.DisplayName
-            : title;
-        return legacy;
+        throw new InvalidOperationException("G7 单元测试只允许普通 IPluginDocument 模型。");
     }
 
     public Tool CreateTool(MyAvaloniaManagement.PluginSdk.ToolTypeId toolTypeId)
@@ -317,12 +249,18 @@ internal sealed class TestDocumentInteractionService : IDocumentInteractionServi
     public List<string> RecoveryRequests { get; } = [];
     public List<string> Errors { get; } = [];
     public TaskCompletionSource<DocumentCloseChoice>? PendingCloseChoice { get; set; }
+    public Exception? ConfirmCloseException { get; set; }
+    public Exception? ShowErrorException { get; set; }
 
     public Task<DocumentCloseChoice> ConfirmCloseAsync(
         IReadOnlyList<string> documentNames,
         bool isApplicationExit)
     {
         CloseRequests.Add((documentNames, isApplicationExit));
+        if (ConfirmCloseException is { } confirmCloseException)
+        {
+            return Task.FromException<DocumentCloseChoice>(confirmCloseException);
+        }
         if (PendingCloseChoice is { } pending)
         {
             PendingCloseChoice = null;
@@ -344,7 +282,9 @@ internal sealed class TestDocumentInteractionService : IDocumentInteractionServi
     public Task ShowErrorAsync(string message)
     {
         Errors.Add(message);
-        return Task.CompletedTask;
+        return ShowErrorException is { } showErrorException
+            ? Task.FromException(showErrorException)
+            : Task.CompletedTask;
     }
 }
 
@@ -359,7 +299,7 @@ internal sealed class TestHostStorageService : IHostStorageService
 
     public string? FolderPath { get; set; }
 
-    public DocumentMetadata? LastSaveMetadata { get; private set; }
+    public string? LastSaveDisplayName { get; private set; }
 
     public Exception? ReadException { get; set; }
 
@@ -379,9 +319,9 @@ internal sealed class TestHostStorageService : IHostStorageService
         Task.FromResult(OpenPaths);
 
     /// <inheritdoc />
-    public Task<string?> PickSaveFileAsync(DocumentMetadata? metadata)
+    public Task<string?> PickSaveFileAsync(string documentDisplayName)
     {
-        LastSaveMetadata = metadata;
+        LastSaveDisplayName = documentDisplayName;
         return Task.FromResult(SavePath);
     }
 
@@ -448,68 +388,90 @@ internal sealed class TestHostStorageService : IHostStorageService
 /// <summary>
 /// 用于验证保存、加载和标题路径同步的最小可保存文档。
 /// </summary>
-internal sealed class TestSavableDocument : Document, ISavableDocument, IDocumentSaveState
+internal sealed class TestSavableDocument(
+    DocumentV2TestProbe probe,
+    MyAvaloniaManagement.PluginSdk.IDocumentLifetime lifetime) :
+    MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument,
+    IDisposable
 {
     public string Content { get; set; } = "initial";
+    public string Title { get; private set; } = "未命名";
+    public bool IsModified { get; set; }
 
     public bool IsDirty => IsModified;
     public int AcceptChangesCount { get; private set; }
+    public MyAvaloniaManagement.PluginSdk.DocumentPresentationState Presentation =>
+        new(Title);
+    public event EventHandler? PresentationChanged;
 
-    public DocumentContentSnapshot CreateContentSnapshot() =>
-        new(1, Content);
-
-    public void RestoreContent(DocumentContentSnapshot snapshot)
+    public async ValueTask InitializeAsync(
+        MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+        CancellationToken cancellationToken)
     {
-        if (snapshot.ContentSchemaVersion != 1)
+        probe.ActivationContexts.Add(context);
+        if (probe.InitializeBlocker is { } blocker)
         {
-            throw new DocumentLoadException("测试文档内容版本不受支持。");
+            await blocker.Task.WaitAsync(cancellationToken);
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        if (probe.InitializeException is { } initializeException)
+        {
+            throw initializeException;
+        }
+        Title = string.IsNullOrWhiteSpace(context.Title) ? "未命名" : context.Title;
+        if (context.RestoredContent is not { } content)
+        {
+            return;
         }
 
-        Content = snapshot.Payload;
+        if (content.SchemaVersion != 1 || content.Payload.ValueKind != System.Text.Json.JsonValueKind.String)
+        {
+            throw new InvalidOperationException("测试文档内容版本或 JSON 类型不受支持。");
+        }
+
+        Content = content.Payload.GetString()!;
+        IsModified = false;
+    }
+
+    public ValueTask<MyAvaloniaManagement.PluginSdk.DocumentContent> CaptureContentAsync(
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (probe.CaptureException is { } captureException)
+        {
+            throw captureException;
+        }
+        if (probe.ReturnNullContent)
+        {
+            return ValueTask.FromResult<MyAvaloniaManagement.PluginSdk.DocumentContent>(null!);
+        }
+        using var json = System.Text.Json.JsonDocument.Parse(
+            System.Text.Json.JsonSerializer.Serialize(Content));
+        return ValueTask.FromResult(
+            new MyAvaloniaManagement.PluginSdk.DocumentContent(1, json.RootElement));
     }
 
     public void AcceptChanges()
     {
+        if (probe.AcceptChangesException is { } acceptChangesException)
+        {
+            throw acceptChangesException;
+        }
         IsModified = false;
         AcceptChangesCount++;
     }
-}
 
-/// <summary>
-/// 创建 <see cref="TestSavableDocument"/> 的测试文档策略。
-/// </summary>
-internal sealed class TestSavableStrategy(
-    DocumentMetadata? metadata = null) : IDocumentCreationStrategy
-{
-    internal static readonly DocumentTypeId TypeId =
-        new("myavalonia.host.document.test");
-    private readonly DocumentMetadata _metadata = metadata ??
-        new DocumentMetadata(TypeId, "测试文档")
-        {
-            MenuCategory = "测试"
-        };
+    internal void SetTitle(string title)
+    {
+        Title = title;
+        PresentationChanged?.Invoke(this, EventArgs.Empty);
+    }
 
-    public Document CreateDocument(DocumentCreationParams @params) =>
-        new TestSavableDocument
-        {
-            Title = string.IsNullOrWhiteSpace(@params.Title)
-                ? "未命名"
-                : @params.Title
-        };
-
-    public DocumentMetadata GetMetadata() => _metadata;
-}
-
-/// <summary>
-/// 返回固定元数据的轻量文档策略，用于菜单分组测试。
-/// </summary>
-internal sealed class StubDocumentStrategy(
-    DocumentMetadata metadata) : IDocumentCreationStrategy
-{
-    public Document CreateDocument(DocumentCreationParams @params) =>
-        new() { Title = @params.Title };
-
-    public DocumentMetadata GetMetadata() => metadata;
+    public void Dispose()
+    {
+        probe.ClosingObservedDuringDispose = lifetime.IsClosing;
+        probe.DisposeCount++;
+    }
 }
 
 /// <summary>
@@ -562,16 +524,18 @@ internal sealed class TrackedScopedDependency(DocumentLifecycleProbe probe) : ID
 /// <summary>
 /// 可在元数据加载阶段稳定失败的 scoped Savable Document。
 /// </summary>
-internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument, IDocumentSaveState, IDisposable
+internal sealed class TrackedScopedSavableDocument :
+    MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument,
+    IDisposable
 {
     private readonly DocumentLifecycleProbe _probe;
-    private readonly IDocumentLifetime _lifetime;
+    private readonly MyAvaloniaManagement.PluginSdk.IDocumentLifetime _lifetime;
     private readonly CancellationTokenRegistration _closingRegistration;
 
     public TrackedScopedSavableDocument(
         DocumentLifecycleProbe probe,
         TrackedScopedDependency dependency,
-        IDocumentLifetime lifetime)
+        MyAvaloniaManagement.PluginSdk.IDocumentLifetime lifetime)
     {
         _probe = probe;
         _lifetime = lifetime;
@@ -581,66 +545,63 @@ internal sealed class TrackedScopedSavableDocument : Document, ISavableDocument,
             _probe.RecordCancellation);
     }
 
-    public bool IsDirty => IsModified;
+    public bool IsDirty { get; set; }
+    public MyAvaloniaManagement.PluginSdk.DocumentPresentationState Presentation =>
+        new("Scoped Savable 测试文档");
+    public event EventHandler? PresentationChanged { add { } remove { } }
 
-    public DocumentContentSnapshot CreateContentSnapshot() =>
-        new(1, string.Empty);
-
-    public void RestoreContent(DocumentContentSnapshot snapshot)
+    public ValueTask InitializeAsync(
+        MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+        CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         _probe.RecordLoad();
         if (_probe.ThrowOnLoad)
         {
-            throw new DocumentLoadException(_probe.LoadFailureMessage);
+            throw new InvalidOperationException(_probe.LoadFailureMessage);
         }
 
-        if (snapshot.ContentSchemaVersion != 1)
+        if (context.RestoredContent is { SchemaVersion: not 1 })
         {
-            throw new DocumentLoadException("测试 scoped Document 内容版本不受支持。");
+            throw new InvalidOperationException("测试 scoped Document 内容版本不受支持。");
         }
+
+        return ValueTask.CompletedTask;
     }
 
-    public void AcceptChanges() => IsModified = false;
+    public ValueTask<MyAvaloniaManagement.PluginSdk.DocumentContent> CaptureContentAsync(
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var json = System.Text.Json.JsonDocument.Parse("{}");
+        return ValueTask.FromResult(
+            new MyAvaloniaManagement.PluginSdk.DocumentContent(1, json.RootElement));
+    }
+
+    public void AcceptChanges() => IsDirty = false;
 
     public void Dispose()
     {
         _probe.RecordDocumentDispose(_lifetime.IsClosing);
         _closingRegistration.Dispose();
     }
-}
-
-/// <summary>
-/// 创建测试用 scoped Savable Document，生产代码仍只依赖公共 Scope 工厂。
-/// </summary>
-internal sealed class TrackedScopedSavableStrategy(
-    IDocumentScopeFactory scopeFactory) : IDocumentCreationStrategy
-{
-    internal static readonly DocumentTypeId TypeId =
-        new("myavalonia.host.document.scoped-savable-test");
-
-    public Document CreateDocument(DocumentCreationParams @params) =>
-        scopeFactory.CreateDocument<TrackedScopedSavableDocument>();
-
-    public DocumentMetadata GetMetadata() =>
-        new(TypeId, "Scoped Savable 测试文档")
-        {
-            MenuCategory = "测试",
-        };
 }
 
 /// <summary>
 /// 故意不实现保存契约，用于验证恢复入口拒绝类型后仍释放 Scope。
 /// </summary>
-internal sealed class TrackedScopedNonSavableDocument : Document, IDisposable
+internal sealed class TrackedScopedNonSavableDocument :
+    MyAvaloniaManagement.PluginSdk.IPluginDocument,
+    IDisposable
 {
     private readonly DocumentLifecycleProbe _probe;
-    private readonly IDocumentLifetime _lifetime;
+    private readonly MyAvaloniaManagement.PluginSdk.IDocumentLifetime _lifetime;
     private readonly CancellationTokenRegistration _closingRegistration;
 
     public TrackedScopedNonSavableDocument(
         DocumentLifecycleProbe probe,
         TrackedScopedDependency dependency,
-        IDocumentLifetime lifetime)
+        MyAvaloniaManagement.PluginSdk.IDocumentLifetime lifetime)
     {
         _probe = probe;
         _lifetime = lifetime;
@@ -650,27 +611,24 @@ internal sealed class TrackedScopedNonSavableDocument : Document, IDisposable
             _probe.RecordCancellation);
     }
 
+    public MyAvaloniaManagement.PluginSdk.DocumentPresentationState Presentation =>
+        new("Scoped Non-Savable 测试文档");
+    public event EventHandler? PresentationChanged { add { } remove { } }
+
+    public ValueTask InitializeAsync(
+        MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        _probe.RecordLoad();
+        return ValueTask.CompletedTask;
+    }
+
     public void Dispose()
     {
         _probe.RecordDocumentDispose(_lifetime.IsClosing);
         _closingRegistration.Dispose();
     }
-}
-
-internal sealed class TrackedScopedNonSavableStrategy(
-    IDocumentScopeFactory scopeFactory) : IDocumentCreationStrategy
-{
-    internal static readonly DocumentTypeId TypeId =
-        new("myavalonia.host.document.scoped-non-savable-test");
-
-    public Document CreateDocument(DocumentCreationParams @params) =>
-        scopeFactory.CreateDocument<TrackedScopedNonSavableDocument>();
-
-    public DocumentMetadata GetMetadata() =>
-        new(TypeId, "Scoped Non-Savable 测试文档")
-        {
-            MenuCategory = "测试",
-        };
 }
 
 /// <summary>

@@ -1,6 +1,7 @@
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Docking;
@@ -83,60 +84,22 @@ public sealed class ToolViewModelTests
     }
 
     [Fact]
-    public void 插件分组工具创建文档并切换分类展开()
+    public async Task 插件分组工具创建文档并切换分类展开()
     {
-        using var context = new TestHostContext(
-            documentStrategies: [new TestSavableStrategy()]);
+        using var context = DocumentV2TestContext.Create();
         _ = context.CreateMainWindowViewModel();
-        var viewModel = new PlugGroupMenuViewModel(
-            context.Factory,
-            new PluginMenuService(context.Factory));
+        var viewModel = context.Provider.GetRequiredService<PlugGroupMenuViewModel>();
         var category = viewModel.CategoryNodes.Single(node =>
             node.CategoryName == "测试");
 
         viewModel.ToggleCategoryExpand(category);
-        viewModel.CreateDocument(TestSavableStrategy.TypeId.Value);
+        await viewModel.CreateDocumentAsync(TestDocumentIds.TypeId.Value);
 
         Assert.True(category.IsExpanded);
         var dock = Assert.IsType<DocumentDock>(
             context.Factory.GetDockable<IDocumentDock>("Files"));
         Assert.Contains(dock.VisibleDockables!, item =>
-            item is TestSavableDocument);
-    }
-
-    [Fact]
-    public void G5菜单冻结创建意图但不再回调Legacy策略元数据()
-    {
-        var strategy = new CapturingIntentStrategy();
-        using var context = new TestHostContext(documentStrategies: [strategy]);
-        _ = context.CreateMainWindowViewModel();
-        var viewModel = new PlugGroupMenuViewModel(context.Factory, new PluginMenuService(context.Factory));
-        var entry = viewModel.CategoryNodes
-            .SelectMany(node => node.Documents)
-            .Single(item => item.DocumentTypeId == CapturingIntentStrategy.TypeId);
-
-        viewModel.CreateDocumentEntry(entry);
-
-        Assert.Equal("personal-source", entry.CreationIntentId?.Value);
-        Assert.Null(strategy.LastIntentId);
-    }
-
-    private sealed class CapturingIntentStrategy : IDocumentCreationStrategy, IDocumentCreationIntentProvider
-    {
-        public static readonly DocumentTypeId TypeId =
-            new("myavalonia.host.document.intent-capture");
-        public CreationIntentId? LastIntentId { get; private set; }
-
-        public Document CreateDocument(DocumentCreationParams @params)
-        {
-            LastIntentId = @params.CreationIntentId;
-            return new Document();
-        }
-
-        public DocumentMetadata GetMetadata() => new(TypeId, "个人来源") { MenuCategory = "测试" };
-
-        public IReadOnlyList<DocumentCreationIntentMetadata> GetCreationIntents() =>
-            [new(new CreationIntentId("personal-source"), "个人来源")];
+            item is ManagedDocumentDockable { Model: TestSavableDocument });
     }
 
     [Fact]

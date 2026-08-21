@@ -13,7 +13,7 @@ Import-Module $modulePath -Force
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
-    'docs/design/document-persistence-v1-design.md',
+    'docs/design/document-persistence-v2-design.md',
     'docs/design/host-plugin-architecture-review.md',
     'docs/design/host-v1-sealing-readiness-plan.md',
     'docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md',
