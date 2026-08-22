@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-22（已同步 Managed Plugin V3 G3 互斥 Document 激活）<br>
+> 更新日期：2026-08-22（已同步 Managed Plugin V3 G4 插件注册所有权）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
@@ -9,8 +9,9 @@
 > V2 当前状态：G0–G14 已完成。四个业务插件均使用正式 SDK、声明式贡献与普通模型；Legacy
 > 项目、兼容适配和过渡构建属性已经删除，API Shipped 与两轮隔离发布门禁已经建立。
 
-> V3 当前状态：G0–G3 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
-> 保存已使用修订协议，激活已使用互斥 New/Restore 类型；磁盘 schema 仍为 2，G4–G14 尚未实施。
+> V3 当前状态：G0–G4 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
+> 保存已使用修订协议，激活已使用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属；
+> 磁盘 schema 仍为 2，G5–G14 尚未实施。
 
 ## 1. 先说结论：这是一个什么项目
 

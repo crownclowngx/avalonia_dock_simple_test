@@ -1,8 +1,9 @@
 # MyAvaloniaManagement 内部架构
 
-> 当前源码已完成未发布 V3 G3：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
-> 指定修订确认，激活已采用互斥 New/Restore 类型，其余运行结构仍是 V2 G14 已签署实现。manifest、
-> Document envelope、layout 保持 schema 2，默认数据根保持 `v2`；G4 及后续协议尚未实施。
+> 当前源码已完成未发布 V3 G4：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
+> 指定修订确认，激活已采用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属校验；
+> 其余运行结构仍是 V2 G14 已签署实现。manifest、Document envelope、layout 保持 schema 2，默认
+> 数据根保持 `v2`；G5 及后续协议尚未实施。
 
 ## 1. 目标与边界
 
@@ -136,16 +137,20 @@ Host Provider。这个所有权对称性防止 `Program`、`App` 和插件生命
 [`PluginModulePreflight`](../../Business/Helpers/PluginModulePreflight.cs) 在不实例化插件对象的前提下验证清单精确入口及其 public 无参构造；结构错误只隔离当前目录。随后 [`PluginModuleCatalog`](../../Business/Helpers/PluginModuleCatalog.cs) 只实例化快照中的模块；单个构造失败记录受控诊断并排除该插件，不阻断其他入口。
 
 [`PluginProviderOwner`](../../Business/Helpers/PluginProviderOwner.cs) 在 Host Provider 建立后，按规范 PluginId
-顺序为每个入口创建新的空 `ServiceCollection`，只预置事件总线、当前插件 Document Scope 基础设施和
-明确记录的阶段桥。`PluginRegistration` 把 manifest `PluginId` 与该私有集合绑定，模块只在组合
+顺序为每个入口创建真正为空的 `ServiceCollection`。`PluginRegistration` 把 manifest `PluginId` 与该
+私有集合绑定，模块只在组合
 阶段调用一次最终 UI SDK `Configure(IPluginRegistration)`。模块返回后，贡献方法和插件保存的
 `Services` 引用同时封闭。Document、Tool、View 和 Lifecycle 必须调用专用方法才能进入唯一 Registry；
-直接 DI 注册普通类型只会留在插件 Provider，不会被宿主误发现。
+这些根服务描述符先由 Host 暂存，不进入插件可修改集合。局部 Seal 强制 Document/Tool ID 属于 manifest
+PluginId 的 `.document.*`/`.tool.*` 命名空间；随后 `PluginServiceCommitGuard` 拒绝普通或 keyed 的
+Host Port、Document/Tool/Lifecycle 根影子注册，并最终追加事件总线、窗口交互、`IDocumentLifetime`、
+Document Scope 基础设施与固定生命周期贡献根。直接 DI 注册其他普通类型只会留在插件 Provider。
 
 宿主服务集合从不交给插件，也不复制到插件集合，因此旧 `HostServiceDescriptorPolicy`、
 `PluginServiceRegistrationTransaction`、描述符增量比较和贡献旁路扫描已经删除。Microsoft DI 原生的
 多实现、keyed 和开放泛型注册完整可用；删除或替换描述符最多使当前插件不可用。模块配置或私有
-Provider 构建失败会产生 `PLUGIN_SERVICE_REGISTRATION_FAILED` 或 `PLUGIN_CONTAINER_BUILD_FAILED`，
+Provider 构建失败会产生 `PLUGIN_SERVICE_REGISTRATION_FAILED` 或 `PLUGIN_CONTAINER_BUILD_FAILED`；
+保留端口、贡献根和 ID 归属错误使用 G4 专用稳定码，
 对应插件不发布任何贡献，Host 与成功插件继续运行。
 
 每个插件 Provider 都创建自己的 `DocumentScopeManager`。宿主

@@ -176,6 +176,7 @@ internal static class ServiceCollectionExtensions
                 ToolDockSide.Right,
                 ToolCloseBehavior.Hide));
         registration.Seal();
+        PluginServiceCommitGuard.AppendHostContributions(services, registration);
     }
 
     /// <summary>

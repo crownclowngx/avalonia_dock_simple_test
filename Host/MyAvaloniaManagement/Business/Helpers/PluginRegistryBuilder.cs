@@ -85,7 +85,7 @@ internal sealed class PluginRegistryBuilder
     /// 校验当前临时 Builder 只表示一个完整且自洽的所有者。
     /// </summary>
     /// <exception cref="HostCompositionException">存在重复、所有者不匹配或生命周期冲突。</exception>
-    internal void ValidateSingleOwner()
+    internal void ValidateSingleOwner(PluginId? expectedOwner = null)
     {
         EnsureWritable();
         var diagnostics = new List<HostCompositionDiagnostic>();
@@ -100,6 +100,33 @@ internal sealed class PluginRegistryBuilder
                 "EXTENSION_OWNER_MISMATCH",
                 string.Join(",", owners.Select(item => item.Value)),
                 []));
+        }
+
+        if (expectedOwner is not null)
+        {
+            foreach (var document in _documents.Where(item =>
+                         !BelongsToOwner(
+                             item.Descriptor.DocumentTypeId.Value,
+                             expectedOwner,
+                             "document")))
+            {
+                diagnostics.Add(Diagnostic(
+                    HostDiagnosticCodes.DocumentIdOwnerMismatch,
+                    document.Descriptor.DocumentTypeId.Value,
+                    document.ModelType));
+            }
+
+            foreach (var tool in _tools.Where(item =>
+                         !BelongsToOwner(
+                             item.Descriptor.ToolTypeId.Value,
+                             expectedOwner,
+                             "tool")))
+            {
+                diagnostics.Add(Diagnostic(
+                    HostDiagnosticCodes.ToolIdOwnerMismatch,
+                    tool.Descriptor.ToolTypeId.Value,
+                    tool.ModelType));
+            }
         }
 
         AddDuplicateDiagnostics(
@@ -148,6 +175,19 @@ internal sealed class PluginRegistryBuilder
         {
             throw new HostCompositionException(diagnostics);
         }
+    }
+
+    /// <summary>判断贡献 ID 是否位于指定所有者和贡献种类的精确点分命名空间。</summary>
+    /// <remarks>
+    /// 前缀末尾显式包含点号，避免所有者 <c>a.b</c> 错误接纳 <c>a.bc</c>；同时要求前缀后
+    /// 至少还有一个字符，拒绝只有 <c>{PluginId}.document.</c> 或 <c>.tool.</c> 的空后缀。
+    /// 稳定 ID 的词法合法性仍由 SDK 值对象负责，这里只判断跨对象所有权。
+    /// </remarks>
+    private static bool BelongsToOwner(string stableId, PluginId owner, string contributionKind)
+    {
+        var prefix = $"{owner.Value}.{contributionKind}.";
+        return stableId.Length > prefix.Length &&
+               stableId.StartsWith(prefix, StringComparison.Ordinal);
     }
 
     /// <summary>

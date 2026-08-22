@@ -1,7 +1,7 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G3 已完成，G4–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
-> Document 激活已采用 V3 G3 互斥 New/Restore 类型；
+> 状态：实施中；G0–G4 已完成，G5–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
+> Document 激活已采用 V3 G3 互斥 New/Restore 类型，插件注册已采用 V3 G4 Host 最终提交与 ID 归属校验；
 > 其余生产语义仍由 V2 G14 签署，代码与程序集版本线处于未发布 V3。
 >
 > 评审日期：2026-08-22。
@@ -12,6 +12,7 @@
 > [V3 G1 版本与数据边界](../plan-history/host-v3/g1-version-and-data-boundaries.md)、
 > [V3 G2 修订化 Document 保存](../plan-history/host-v3/g2-revisioned-document-save.md)、
 > [V3 G3 互斥 Document 激活](../plan-history/host-v3/g3-exclusive-document-activation.md)、
+> [V3 G4 插件注册所有权](../plan-history/host-v3/g4-plugin-registration-ownership.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
 >
 > 计划性质：V3 是一次“协议语义纠错 + 宿主工作区解耦”的破坏式重构，不是第三次插件框架扩张。
@@ -486,13 +487,15 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
   非发布边界见 [G3 专项记录](../plan-history/host-v3/g3-exclusive-document-activation.md)。
 - **回滚**：整体回到 G2；不得保留同时接受旧 Context 的 overload。
 
-### G4：收紧插件注册所有权与 ID 归属
+### G4：收紧插件注册所有权与 ID 归属（已完成）
 
 - **目标**：Host Port、贡献生命周期和稳定 ID 从文档约定变为可执行约束。
 - **变更**：插件在空集合登记；Seal 校验保留类型与 ID；Host 最后追加端口及 Document/Tool/Lifecycle 注册。
 - **插件影响**：当前四插件的规范 ID 应保持不变；删除任何手工重复根注册或 Host Port 替换。
 - **验证**：删除/覆盖/多注册保留端口负例，Document 生命周期覆盖负例，越权 ID、Host ID、他插件 ID、
   合法开放泛型/keyed/多实现和 Provider 失败隔离。
+- **实施记录**：最终提交时序、保留类型、四插件 ID 矩阵、58/58 专项门禁、全量覆盖率和非发布边界见
+  [G4 专项记录](../plan-history/host-v3/g4-plugin-registration-ownership.md)。
 - **回滚**：整体回到 G3；不能只放宽某个保留类型来让单个插件通过。
 
 ### G5：把事件通信收回插件内部
@@ -596,7 +599,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
 ```
 
 - G0 只冻结事实，G1 只建立版本和磁盘边界，G2 已完成修订保存；
-- G3 已完成互斥激活；G4–G5 继续修正插件组合所有权与消息边界；
+- G3 已完成互斥激活，G4 已完成插件组合所有权；G5 继续把消息边界收回插件内部；
 - G6–G8 再拆 Host Workspace、Host Catalog 与全屏资源边界；
 - G9–G12 按插件逐个删除阶段帮助代码并完成真实包验收；
 - G13 只删除和证明无残留，不承载新设计；
@@ -674,8 +677,8 @@ V3 只有在以下问题全部回答“是”后才算完成：
 1. [x] 保存确认绑定捕获 Revision，保存期间的新修改不会被错误清除。
 2. [x] Document New/Restore 激活在 public 类型层互斥，不存在旧可空组合入口。
 3. [ ] SDK 和 Host 已删除通用 Host EventBus，插件内部消息由插件独占。
-4. [ ] Host 保留端口和贡献生命周期由 Host 最后提交，插件不能影子覆盖。
-5. [ ] Document/Tool ID 的 PluginId 命名空间归属由自动化强制验证。
+4. [x] Host 保留端口和贡献生命周期由 Host 最后提交，插件不能影子覆盖。
+5. [x] Document/Tool ID 的 PluginId 命名空间归属由自动化强制验证。
 6. [ ] Dock Factory 与 Workspace Session 分离，ViewModel 不依赖 Dock 运行时对象。
 7. [ ] Host 内建贡献不再作为特殊插件进入 Plugin Registry 或 Availability。
 8. [ ] 全屏使用幂等租约，失败、关闭和重复释放都能恢复并释放资源。

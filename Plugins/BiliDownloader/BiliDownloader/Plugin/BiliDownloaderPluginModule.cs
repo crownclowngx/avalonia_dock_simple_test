@@ -190,8 +190,8 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         services.AddSingleton<IDownloadSubmissionService, DownloadSubmissionService>();
         services.AddSingleton<IDownloadFailureActionService, DownloadFailureActionService>();
 
-        // V2 注册一次冻结模型、View 和描述符；注册入口同时建立 Document scoped、Tool singleton
-        // 与 Lifecycle singleton，模块不再手工重复注册根模型，也不创建 Dock Strategy。
+        // V3 注册一次冻结模型、View 和描述符；G4 在模块返回并通过所有权校验后，由 Host 最终追加
+        // Document scoped、Tool/Lifecycle singleton，模块不手工重复注册根模型。
         registration.AddPersistableDocument<BiliDownloaderViewModel, BiliDownloaderView>(
             new DocumentDescriptor(
                 BiliDownloaderContributionIds.DownloadDocument,

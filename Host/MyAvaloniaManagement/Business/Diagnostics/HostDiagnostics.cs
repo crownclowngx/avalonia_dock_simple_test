@@ -158,6 +158,12 @@ internal static class HostDiagnosticCodes
     internal const string PluginTypePreflightFailed = "PLUGIN_TYPE_PREFLIGHT_FAILED";
     internal const string PluginModuleActivationFailed = "PLUGIN_MODULE_ACTIVATION_FAILED";
     internal const string PluginServiceRegistrationFailed = "PLUGIN_SERVICE_REGISTRATION_FAILED";
+    internal const string PluginHostServiceRegistrationForbidden =
+        "PLUGIN_HOST_SERVICE_REGISTRATION_FORBIDDEN";
+    internal const string PluginContributionServiceRegistrationForbidden =
+        "PLUGIN_CONTRIBUTION_SERVICE_REGISTRATION_FORBIDDEN";
+    internal const string DocumentIdOwnerMismatch = "DOCUMENT_ID_OWNER_MISMATCH";
+    internal const string ToolIdOwnerMismatch = "TOOL_ID_OWNER_MISMATCH";
     internal const string PluginContainerBuildFailed = "PLUGIN_CONTAINER_BUILD_FAILED";
     internal const string HostContainerBuildFailed = "HOST_CONTAINER_BUILD_FAILED";
     internal const string ExtensionDiscoveryFailed = "EXTENSION_DISCOVERY_FAILED";
@@ -251,6 +257,12 @@ internal static class HostDiagnosticRedactionPolicy
             "插件入口或类型未通过预检，已隔离对应插件候选。",
         HostDiagnosticCodes.PluginServiceRegistrationFailed =>
             "插件显式注册失败，已隔离该插件，宿主与其他插件继续运行。",
+        HostDiagnosticCodes.PluginHostServiceRegistrationForbidden or
+        HostDiagnosticCodes.PluginContributionServiceRegistrationForbidden =>
+            "插件登记了由宿主保留的服务类型，已在容器构建前隔离该插件。",
+        HostDiagnosticCodes.DocumentIdOwnerMismatch or
+        HostDiagnosticCodes.ToolIdOwnerMismatch =>
+            "插件贡献 ID 不属于清单声明的插件命名空间，已隔离该插件。",
         HostDiagnosticCodes.PluginContainerBuildFailed =>
             "插件私有依赖注入容器构建失败，已隔离该插件。",
         HostDiagnosticCodes.HostContainerBuildFailed =>
@@ -429,6 +441,10 @@ internal static class HostDiagnosticFailurePolicy
 
         if (RecoverablePluginLoadCodes.Contains(code) ||
             code == HostDiagnosticCodes.PluginServiceRegistrationFailed ||
+            code == HostDiagnosticCodes.PluginHostServiceRegistrationForbidden ||
+            code == HostDiagnosticCodes.PluginContributionServiceRegistrationForbidden ||
+            code == HostDiagnosticCodes.DocumentIdOwnerMismatch ||
+            code == HostDiagnosticCodes.ToolIdOwnerMismatch ||
             code == HostDiagnosticCodes.PluginContainerBuildFailed ||
             code == HostDiagnosticCodes.PluginModuleActivationFailed ||
             phase == HostDiagnosticPhase.PluginLifecycle)

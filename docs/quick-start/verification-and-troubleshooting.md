@@ -1,6 +1,6 @@
 # 验证与排错
 
-> 本页按当前未发布 V3 G3 互斥激活、V3 G2 修订保存和 V2 G14 其他已封板生产语义编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
+> 本页按当前未发布 V3 G4 注册所有权、V3 G3 互斥激活、V3 G2 修订保存和 V2 G14 其他已封板生产语义编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
 > 窗口端口和持久化实例，MySmallTools 是原生资源与关闭令牌实例，BiliDownloader 是
 > Document + Tool + Lifecycle + readiness 的大型对象图实例。
 
@@ -19,6 +19,7 @@
 - [ ] `entryPoint.type` 与 public、非抽象、非泛型且具有 public 无参构造的最终 UI SDK 模块完整名称完全一致；
 - [ ] 构建探针直接验证最终 UI SDK `IPluginModule`，项目没有 Legacy 或过渡入口属性；
 - [ ] 模块通过 `IPluginRegistration` 一次登记模型、View、Descriptor 和可选 Lifecycle；
+- [ ] Document/Tool ID 分别使用 `{PluginId}.document.*` / `{PluginId}.tool.*`，且不手工登记 Host Port 或贡献根类型；
 - [ ] 插件目录不包含 Legacy、Core/UI SDK、Avalonia、Dock、Host 或其他宿主共享程序集；
 - [ ] 宿主“插件状态”Tool 将该插件显示为已加载，没有拒绝原因。
 
@@ -59,7 +60,7 @@ dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c De
 dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
 ```
 
-V3 G2 为 MyPlugTest 增加了独立测试项目；V3 G3 增加互斥激活专项入口：
+V3 G2 为 MyPlugTest 增加了独立测试项目；V3 G3 增加互斥激活专项入口，V3 G4 增加注册所有权专项入口：
 
 ```powershell
 dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
@@ -69,9 +70,10 @@ dotnet test Plugins/MySmallTools/MySmallTools.Tests/MySmallTools.Tests.csproj -c
 dotnet test Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csproj -c Release
 .\scripts\Test-RevisionedDocumentSave.ps1 -Configuration Release -NoRestore
 .\scripts\Test-ExclusiveDocumentActivation.ps1 -Configuration Release -NoRestore
+.\scripts\Test-PluginRegistrationOwnership.ps1 -Configuration Release -NoRestore
 ```
 
-历史 V2 分阶段脚本继续保留用于审计，不作为当前 V3 版本门禁。V3 G3 不运行真实账号、真实 Bilibili、
+历史 V2 分阶段脚本继续保留用于审计，不作为当前 V3 版本门禁。V3 G4 不运行真实账号、真实 Bilibili、
 真实 FFmpeg 大媒体、Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。
@@ -149,7 +151,9 @@ $env:MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS = '1'
 | `PLUGIN_ASSEMBLY_LOAD_FAILED` / `PLUGIN_TYPE_PREFLIGHT_FAILED` | 私有依赖缺失、RID 资产错误或类型无法完整加载 | 检查 `.deps.json`、私有托管依赖和原生资产是否完整 |
 | `PLUGIN_SHARED_ASSEMBLY_MISMATCH` | 插件私带了不兼容的宿主共享程序集 | 从插件包删除 Common 及共享闭包，并用匹配契约重新编译 |
 | `PLUGIN_ID_INVALID` / `PLUGIN_ID_DUPLICATE` | ID 不规范或与其他插件重复 | 使用规范命名空间并保持全局唯一 |
-| `EXTENSION_OWNER_MISMATCH` / `EXTENSION_METADATA_INVALID` | Document/Tool ID 不属于本插件，或主 ID/别名冲突 | 统一使用插件自己的 ID 前缀，检查所有元数据和迁移别名 |
+| `DOCUMENT_ID_OWNER_MISMATCH` / `TOOL_ID_OWNER_MISMATCH` | Document/Tool ID 不属于 manifest 插件或使用了错误贡献种类 | 分别使用精确的 `{PluginId}.document.*` / `{PluginId}.tool.*` 命名空间 |
+| `PLUGIN_HOST_SERVICE_REGISTRATION_FORBIDDEN` | 插件用普通或 keyed DI 注册影子覆盖 Host Port | 删除该注册；Host 会在模块 Seal 通过后最终追加端口 |
+| `PLUGIN_CONTRIBUTION_SERVICE_REGISTRATION_FORBIDDEN` | 插件手工登记了已声明的 Document/Tool/Lifecycle 根类型 | 只调用 `AddDocument`、`AddTool` 或 `UseLifecycle`，不要重复登记根类型 |
 | `VIEW_MODEL_REGISTRATION_DUPLICATE` | 同一个 ViewModel 显式映射到多个 View | 每个动态 ViewModel 只保留一项 `AddView` |
 | `PLUGIN_SERVICE_REGISTRATION_FAILED` | 模块 `Configure` 抛错 | 检查当前插件注册；失败只隔离当前插件 |
 | `PLUGIN_CONTAINER_BUILD_FAILED` | 当前插件 Provider 构建或宿主可见单例激活失败 | 检查私有依赖、生命周期和 Scope 关系 |

@@ -12,7 +12,7 @@ using MySmallTools.Views.SecretVideoPlayer;
 
 namespace MySmallTools.Plugin;
 
-/// <summary>MySmallTools 接入 Host V2 私有 Provider 的唯一组合入口。</summary>
+/// <summary>MySmallTools 接入当前 V3 私有 Provider 的唯一组合入口。</summary>
 /// <remarks>
 /// 模块只描述对象关系和四个 UI 贡献，不创建 View、Document 或 LibVLC 实例。Host 为每次
 /// 文档创建建立独立 Scope，因此播放器、队列、密码和媒体库状态不会跨标签页共享；无状态的
@@ -100,7 +100,7 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddTransient<DecryptionOutputPathResolver>();
         services.AddScoped<IVideoDecryptionService, VideoDecryptionService>();
 
-        // 注册 API 自动把根模型加入 scoped 生命周期；这里不重复注册，也不保留 Strategy/AddView。
+        // 注册 API 只冻结根模型声明；G4 校验通过后由 Host 最终追加 scoped 生命周期。
         registration.AddDocument<SecretVideoPlayerViewModel, SecretVideoPlayerView>(
             new DocumentDescriptor(
                 MySmallToolsContributionIds.SecretVideoPlayerDocument,

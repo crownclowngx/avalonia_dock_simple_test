@@ -77,7 +77,9 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
             var failureCode = HostDiagnosticCodes.PluginServiceRegistrationFailed;
             try
             {
-                var pluginServices = CreatePluginServices(hostProvider);
+                // 模块开始配置时看到的是真正空集合；Host Port、Scope 基础设施和贡献根只有在
+                // Configure 返回并通过所有权校验后才由 Commit Guard 最终追加。
+                var pluginServices = new ServiceCollection();
                 var pluginBuilder = new PluginRegistryBuilder();
                 var registration = new PluginRegistration(
                     pluginId,
@@ -85,6 +87,10 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
                     pluginBuilder);
                 module.Configure(registration);
                 registration.Seal();
+                PluginServiceCommitGuard.ValidateAndCommit(
+                    pluginServices,
+                    registration,
+                    hostProvider);
 
                 failureCode = HostDiagnosticCodes.PluginContainerBuildFailed;
                 provider = pluginServices.BuildServiceProvider(new ServiceProviderOptions
@@ -105,6 +111,15 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
                 _leases.Add(new PluginProviderLease(
                     pluginId, provider, scopeManager));
                 provider = null;
+            }
+            catch (HostCompositionException exception)
+            {
+                provider?.Dispose();
+                PluginRegistrationDiagnosticReporter.Report(
+                    exception,
+                    manifest,
+                    entry,
+                    diagnostics);
             }
             catch (Exception exception)
             {
@@ -229,21 +244,6 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
             item.Accepted && item.PluginId == pluginId);
         return lease ?? throw new InvalidOperationException(
             $"插件 {pluginId.Value} 没有已提交的独立 Provider。");
-    }
-
-    private static IServiceCollection CreatePluginServices(IServiceProvider hostProvider)
-    {
-        var services = new ServiceCollection();
-
-        // 只注入最终 SDK 明确承诺的 Host Port；不存在父 Provider 或任意 IServiceProvider 回退。
-        services.AddSingleton(hostProvider.GetRequiredService<IHostEventBus>());
-        services.AddSingleton(hostProvider.GetRequiredService<IPluginWindowInteraction>());
-        services.AddScoped<DocumentLifetime>();
-        services.AddScoped<IDocumentLifetime>(provider =>
-            provider.GetRequiredService<DocumentLifetime>());
-
-        services.AddSingleton<DocumentScopeManager>();
-        return services;
     }
 
     private sealed class PluginProviderLease(

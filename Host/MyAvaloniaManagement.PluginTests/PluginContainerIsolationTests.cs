@@ -20,11 +20,13 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class PluginContainerIsolationTests
 {
     [Fact]
-    public void 插件配置只能修改自己的服务集合且宿主描述符保持逐项不变()
+    public void 插件从空集合开始且清理私有描述符不影响宿主对象图()
     {
+        ClearAndReplaceOwnServicesModule.InitialServiceCount = -1;
         using var composition = Compose(
             ("myavalonia.plugin.g4-mutation", new ClearAndReplaceOwnServicesModule()));
 
+        Assert.Equal(0, ClearAndReplaceOwnServicesModule.InitialServiceCount);
         Assert.Equal(composition.HostBaseline.Length, composition.HostServices.Count);
         Assert.All(composition.HostBaseline, (descriptor, index) =>
             Assert.Same(descriptor, composition.HostServices[index]));
@@ -87,6 +89,30 @@ public sealed class PluginContainerIsolationTests
             item.PluginId == "myavalonia.plugin.g4-provider-failure" &&
             item.Code == HostDiagnosticCodes.PluginContainerBuildFailed &&
             item.Disposition == HostDiagnosticDisposition.Continue);
+    }
+
+    [Fact]
+    public void 保留端口和贡献根违规记录专用脱敏诊断且不构建Provider()
+    {
+        using var composition = Compose(
+            ("myavalonia.plugin.g4-forbidden-port", new ForbiddenHostPortModule()),
+            ("myavalonia.plugin.g4-forbidden-root", new ForbiddenContributionRootModule()),
+            ("myavalonia.plugin.g4-forbidden-valid", new ValidLifecycleModule()));
+
+        Assert.Equal(
+            [new PluginId("myavalonia.plugin.g4-forbidden-valid")],
+            composition.PluginProviders.AvailablePluginIds);
+        Assert.Equal(1, composition.DocumentScopes.ManagerCount);
+        Assert.Equal(2, composition.Diagnostics.Snapshot.Count(item =>
+            item.Code == HostDiagnosticCodes.PluginHostServiceRegistrationForbidden));
+        var rootDiagnostic = Assert.Single(composition.Diagnostics.Snapshot, item =>
+            item.Code == HostDiagnosticCodes.PluginContributionServiceRegistrationForbidden);
+        Assert.Null(rootDiagnostic.StableId);
+        Assert.Null(rootDiagnostic.TechnicalDetail);
+        Assert.DoesNotContain(composition.Diagnostics.Snapshot, item =>
+            (item.PluginId is "myavalonia.plugin.g4-forbidden-port" or
+                "myavalonia.plugin.g4-forbidden-root") &&
+            item.Code == HostDiagnosticCodes.PluginContainerBuildFailed);
     }
 
     [Fact]
@@ -158,7 +184,7 @@ public sealed class PluginContainerIsolationTests
     }
 
     [Fact]
-    public void 跨插件Document与Tool冲突整体隔离且无冲突插件继续发布()
+    public void 越权Document与Tool在局部Seal隔离且无冲突插件继续发布()
     {
         var released = new List<string>();
         using var composition = Compose(
@@ -175,16 +201,17 @@ public sealed class PluginContainerIsolationTests
             new DocumentTypeId("shared.document.collision")));
         Assert.False(composition.Registry.ToolDescriptors.ContainsKey(
             new ToolTypeId("shared.tool.collision")));
-        Assert.Equal(4, released.Count);
+        // 生命周期根尚未由 Host 提交，违规插件不会构造 Provider，也就没有需要事后释放的实例。
+        Assert.Empty(released);
         Assert.Equal(1, composition.DocumentScopes.ManagerCount);
-        Assert.Contains(composition.Diagnostics.Snapshot, item =>
-            item.Code == "DOCUMENT_ID_DUPLICATE");
-        Assert.Contains(composition.Diagnostics.Snapshot, item =>
-            item.Code == "TOOL_ID_DUPLICATE");
+        Assert.Equal(2, composition.Diagnostics.Snapshot.Count(item =>
+            item.Code == HostDiagnosticCodes.DocumentIdOwnerMismatch));
+        Assert.Equal(2, composition.Diagnostics.Snapshot.Count(item =>
+            item.Code == HostDiagnosticCodes.ToolIdOwnerMismatch));
     }
 
     [Fact]
-    public void 插件与Host内建贡献冲突时保留Host并立即释放插件Provider()
+    public void 插件声明Host命名空间时在Provider构建前隔离且Host贡献保持不变()
     {
         var released = new List<string>();
         using var composition = Compose(
@@ -197,8 +224,14 @@ public sealed class PluginContainerIsolationTests
         Assert.DoesNotContain(
             new PluginId("myavalonia.plugin.g5-host-conflict"),
             composition.PluginProviders.AvailablePluginIds);
-        Assert.Equal(["myavalonia.plugin.g5-host-conflict"], released);
+        Assert.Empty(released);
         Assert.Equal(1, composition.DocumentScopes.ManagerCount);
+        var diagnostic = Assert.Single(composition.Diagnostics.Snapshot, item =>
+            item.Code == HostDiagnosticCodes.DocumentIdOwnerMismatch);
+        Assert.Equal(
+            HostExtensionIds.V2WelcomeDocument.Value,
+            diagnostic.StableId);
+        Assert.Null(diagnostic.TechnicalDetail);
     }
 
     private static Composition Compose(
@@ -314,12 +347,13 @@ public sealed class PluginContainerIsolationTests
 
     public sealed class ClearAndReplaceOwnServicesModule : IPluginModule
     {
+        internal static int InitialServiceCount { get; set; }
+
         public void Configure(IPluginRegistration context)
         {
-            var hostPort = context.Services.Single(descriptor =>
-                descriptor.ServiceType == typeof(IHostEventBus));
-            context.Services.Remove(hostPort);
-            context.Services.AddSingleton<IHostEventBus, PrivateEventBus>();
+            InitialServiceCount = context.Services.Count;
+            context.Services.AddSingleton<FirstPrivateService>();
+            context.Services.Clear();
             context.Services.AddSingleton<PrivateSingleton>();
         }
     }
@@ -345,6 +379,25 @@ public sealed class PluginContainerIsolationTests
             context.Services.AddKeyedSingleton<IPrivateFormatter, FirstFormatter>("first");
             context.Services.AddSingleton(typeof(IPrivateBox<>), typeof(PrivateBox<>));
             context.Services.AddTransient<NativeDiProbe>();
+        }
+    }
+
+    public sealed class ForbiddenHostPortModule : IPluginModule
+    {
+        public void Configure(IPluginRegistration context)
+        {
+            context.Services.AddSingleton<IHostEventBus, PrivateEventBus>();
+            context.Services.AddKeyedSingleton<IHostEventBus, PrivateEventBus>("shadow");
+        }
+    }
+
+    public sealed class ForbiddenContributionRootModule : IPluginModule
+    {
+        public void Configure(IPluginRegistration context)
+        {
+            context.Services.AddTransient<ForbiddenRootDocument>();
+            context.AddDocument<ForbiddenRootDocument, EmptyView>(
+                Document(context.PluginId));
         }
     }
 
@@ -593,6 +646,7 @@ public sealed class PluginContainerIsolationTests
     public sealed class ConflictDocumentA : TestPluginDocument;
     public sealed class ConflictDocumentB : TestPluginDocument;
     public sealed class HostConflictDocument : TestPluginDocument;
+    public sealed class ForbiddenRootDocument : TestPluginDocument;
 
     public class TestPluginDocument : MyAvaloniaManagement.PluginSdk.IPluginDocument
     {

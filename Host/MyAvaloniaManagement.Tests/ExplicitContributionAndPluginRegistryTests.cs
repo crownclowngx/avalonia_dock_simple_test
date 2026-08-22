@@ -141,6 +141,7 @@ public sealed class ExplicitContributionAndPluginRegistryTests
             ToolCloseBehavior.Hide));
         registration.UseLifecycle<RegisteredLifecycle>();
         registration.Seal();
+        PluginServiceCommitGuard.AppendHostContributions(services, registration);
 
         Assert.Equal(
             ServiceLifetime.Scoped,

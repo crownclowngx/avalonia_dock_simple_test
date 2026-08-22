@@ -15,7 +15,7 @@ using MyAvaloniaManagement.PluginSdk.UI;
 namespace DaTangAccountingHelpPlug.Plugin;
 
 /// <summary>
-/// DaTang 会计辅助插件接入 Host V2 私有 Provider 的唯一组合入口。
+/// DaTang 会计辅助插件接入当前 V3 私有 Provider 的唯一组合入口。
 /// </summary>
 /// <remarks>
 /// 模块只负责组合：业务服务进入当前插件的独立集合，Document、View 与 Descriptor 通过一次声明
@@ -29,7 +29,8 @@ public sealed class DaTangAccountingHelpPluginModule : IPluginModule
         ArgumentNullException.ThrowIfNull(registration);
         var services = registration.Services;
 
-        // 三个窄业务端口共享一个无状态适配器；真正的窗口能力由 Host 预置，插件不寻找主窗口。
+        // 三个窄业务端口共享一个无状态适配器；真正的窗口能力在本方法返回并通过 G4 校验后
+        // 由 Host 最终追加，插件既不寻找主窗口，也不能影子覆盖该端口。
         services.AddSingleton<DaTangWindowInteractionService>();
         services.AddSingleton<IInvoiceFileDialogService>(provider =>
             provider.GetRequiredService<DaTangWindowInteractionService>());
@@ -57,7 +58,7 @@ public sealed class DaTangAccountingHelpPluginModule : IPluginModule
         services.AddScoped<ReconciliationOptionsViewModel>();
         services.AddScoped<ReconciliationRunViewModel>();
 
-        // 注册 API 自动把两个模型加入 scoped 生命周期；这里不重复注册模型，也不保留 Strategy/AddView。
+        // 注册 API 只冻结声明；G4 校验通过后由 Host 最终追加两个 scoped 模型。这里不重复注册模型。
         registration.AddDocument<InvoiceInfoImportViewModel, InvoiceInfoImportView>(
             new DocumentDescriptor(
                 DaTangContributionIds.InvoiceInfoImportDocument,

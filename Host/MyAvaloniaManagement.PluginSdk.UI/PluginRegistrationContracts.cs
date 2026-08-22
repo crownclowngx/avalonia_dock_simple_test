@@ -16,8 +16,9 @@ public interface IPluginModule
 
 /// <summary>为一个已验证插件提供窄而显式的组合入口。</summary>
 /// <remarks>
-/// <see cref="Services"/> 只属于当前插件，专用方法同时冻结模型、View 和描述符。
-/// 两条路径分离可防止普通 DI 注册被误解释为 UI 贡献，并消除独立 AddView 漏配的状态。
+/// <see cref="Services"/> 只属于当前插件，模块进入时为空；专用方法同时冻结模型、View 和描述符。
+/// 模块返回并通过 Host 校验后，Host 才追加端口及贡献根的固定生命周期注册。两条路径分离可防止
+/// 普通 DI 注册被误解释为 UI 贡献，也使插件无法用 Remove/Replace 改变 Host 拥有的协议底座。
 /// </remarks>
 public interface IPluginRegistration
 {
@@ -25,12 +26,18 @@ public interface IPluginRegistration
     PluginId PluginId { get; }
 
     /// <summary>获取仅用于当前插件私有对象图的服务集合。</summary>
-    /// <remarks>插件可以使用标准 DI 注册能力，但不能从此集合访问或覆盖 Host 与其他插件的服务。</remarks>
+    /// <remarks>
+    /// 插件可以使用标准 DI 的生命周期、开放泛型、keyed 和多实现能力，但不得手工登记 Host Port
+    /// 或已通过专用方法声明的贡献根类型。模块返回后集合永久封闭，保存引用不能用于运行期修改。
+    /// </remarks>
     IServiceCollection Services { get; }
 
     /// <summary>登记一个插件级单例生命周期；同一插件至多登记一个。</summary>
     /// <typeparam name="TLifecycle">由插件容器构造并拥有的生命周期实现类型。</typeparam>
-    /// <remarks>实现约定为插件级 singleton；重复登记由 Host 在构建插件 Provider 前拒绝。</remarks>
+    /// <remarks>
+    /// 实现约定为插件级 singleton；描述符由 Host 在模块返回、所有权校验通过后最终追加，重复声明
+    /// 或通过 <see cref="Services"/> 手工登记根类型都会在构建插件 Provider 前拒绝。
+    /// </remarks>
     void UseLifecycle<TLifecycle>() where TLifecycle : class, IPluginLifecycle;
 
     /// <summary>登记不可保存的 scoped Document 模型及其每次新建的 Avalonia View。</summary>
@@ -38,6 +45,7 @@ public interface IPluginRegistration
     /// <typeparam name="TView">由 Host 为该模型创建的 Avalonia 控件类型。</typeparam>
     /// <param name="descriptor">构造时已冻结的身份与展示元数据。</param>
     /// <exception cref="ArgumentNullException">描述符为 null。</exception>
+    /// <remarks>Host 在 Seal 后验证 ID 归属，并最终追加模型的 scoped 注册。</remarks>
     void AddDocument<TDocument, TView>(DocumentDescriptor descriptor)
         where TDocument : class, IPluginDocument
         where TView : Control, new();
@@ -47,6 +55,7 @@ public interface IPluginRegistration
     /// <typeparam name="TView">由 Host 为该模型创建的 Avalonia 控件类型。</typeparam>
     /// <param name="descriptor">构造时已冻结的身份与展示元数据。</param>
     /// <exception cref="ArgumentNullException">描述符为 null。</exception>
+    /// <remarks>Host 在 Seal 后验证 ID 归属，并最终追加模型的 scoped 注册。</remarks>
     void AddPersistableDocument<TDocument, TView>(DocumentDescriptor descriptor)
         where TDocument : class, IPersistablePluginDocument
         where TView : Control, new();
@@ -56,6 +65,7 @@ public interface IPluginRegistration
     /// <typeparam name="TView">由 Host 创建、但不拥有 Tool 模型生命周期的 Avalonia 控件类型。</typeparam>
     /// <param name="descriptor">构造时已冻结的身份、位置和关闭语义。</param>
     /// <exception cref="ArgumentNullException">描述符为 null。</exception>
+    /// <remarks>Host 在 Seal 后验证 ID 归属，并最终追加模型的 singleton 注册。</remarks>
     void AddTool<TTool, TView>(ToolDescriptor descriptor)
         where TTool : class
         where TView : Control, new();

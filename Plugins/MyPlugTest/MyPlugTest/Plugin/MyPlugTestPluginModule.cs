@@ -8,12 +8,12 @@ using MyPlugTest.Views;
 namespace MyPlugTest.Plugin;
 
 /// <summary>
-/// 通过 Host V2 声明式注册入口组合 MyPlugTest 的服务与可见贡献。
+/// 通过当前 V3 声明式注册入口组合 MyPlugTest 的服务与可见贡献。
 /// </summary>
 /// <remarks>
 /// 本模块只承担组合根职责：私有业务服务进入当前插件的独立容器，Document、Tool、View 与元数据则
-/// 通过一次声明同时冻结。注册方法会自动赋予 Document scoped、Tool singleton 生命周期，因此这里
-/// 不重复注册贡献模型，也不保留 Strategy、独立 View 映射或运行期扫描等第二事实源。
+/// 通过一次声明同时冻结。V3 G4 在模块返回并通过所有权校验后，才由 Host 最终追加 Document scoped、
+/// Tool singleton 生命周期；因此这里不重复注册贡献模型，也不保留第二事实源。
 /// </remarks>
 public sealed class MyPlugTestPluginModule : IPluginModule
 {
