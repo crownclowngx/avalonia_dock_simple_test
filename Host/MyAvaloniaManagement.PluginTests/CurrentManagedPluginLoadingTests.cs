@@ -1,7 +1,9 @@
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Workspace;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.PluginSdk;
+using MyPlugTest.Constants;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -175,9 +177,9 @@ public sealed class CurrentManagedPluginLoadingTests
     }
 
     [Fact]
-    public void G9最终测试Zip通过真实发现组合并发布完整Registry()
+    public void G9最终测试Zip通过真实V3发现组合并进入Workspace目录()
     {
-        var packageRoot = Environment.GetEnvironmentVariable("MYAVALONIA_G9_PACKAGE_ROOT");
+        var packageRoot = Environment.GetEnvironmentVariable("MYAVALONIA_G9_V3_PACKAGE_ROOT");
         if (string.IsNullOrWhiteSpace(packageRoot))
         {
             // 普通单元回归没有构建测试 ZIP；G9 专项脚本必须设置该环境变量并单独执行本测试。
@@ -224,6 +226,18 @@ public sealed class CurrentManagedPluginLoadingTests
             Assert.Single(plugin.ToolTypes);
             Assert.All(plugin.DocumentTypes, modelType =>
                 Assert.Equal("MyPlugTest", modelType.Assembly.GetName().Name));
+
+            // 真实 ZIP 不能只停在 Loader 或 Registry。WorkspaceSession 必须从同一个冻结目录
+            // 取得四个创建入口和插件 Tool 描述符，证明最终 Host 创建链没有使用测试专用注册表。
+            var workspace = provider.GetRequiredService<WorkspaceSession>();
+            Assert.Equal(
+                4,
+                workspace.GetAllDocumentCreationEntries().Count(entry =>
+                    entry.DocumentTypeId.Value.StartsWith(
+                        MyPlugTestContributionIds.Plugin.Value + ".document.",
+                        StringComparison.Ordinal)));
+            Assert.True(workspace.GetAvailableToolDescriptors().ContainsKey(
+                MyPlugTestContributionIds.CustomTool));
         }
         finally
         {
@@ -238,12 +252,12 @@ public sealed class CurrentManagedPluginLoadingTests
     [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "MyPlugTest", "myavalonia.plugin.my-plug-test", true)]
     [InlineData("DaTangAccountingHelpPlug/DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTang", "myavalonia.plugin.datang-accounting-help", true)]
     [InlineData("MySmallTools/MySmallTools", "MySmallTools", "SmallTools", "myavalonia.plugin.my-small-tools", true)]
-    public void 真实业务插件构建目录只接受已经迁移的V2入口(
+    public void 真实业务插件构建目录只接受当前V3入口(
         string projectPath,
         string assemblyName,
         string directoryName,
         string pluginId,
-        bool expectedV2Entry)
+        bool expectedV3Entry)
     {
         var configuration = new DirectoryInfo(AppContext.BaseDirectory)
             .Parent?.Name
@@ -288,8 +302,8 @@ public sealed class CurrentManagedPluginLoadingTests
             manifest.EntryPoint.Type, throwOnError: false, ignoreCase: false);
         var accepted = PluginModulePreflight.TryValidate(
             entryType, out var validatedType, out var entryCode, out _);
-        Assert.Equal(expectedV2Entry, accepted);
-        if (expectedV2Entry)
+        Assert.Equal(expectedV3Entry, accepted);
+        if (expectedV3Entry)
         {
             Assert.Same(entryType, validatedType);
             Assert.Null(entryCode);

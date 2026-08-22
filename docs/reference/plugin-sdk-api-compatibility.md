@@ -2,7 +2,8 @@
 
 > `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G14 已将 Core/UI 的
 > `2.0.0` public 表面正式冻结到 v2 Shipped：Core 85 条、UI 46 条。V3 G8 已删除 Host 通用事件总线并
-> 破坏式收口全屏端口；v3 Unshipped 为 Core 127 条、UI 45 条，两个 v3 Shipped 均为空，当前 `3.0.0` 尚未发布。
+> 破坏式收口全屏端口；V3 G9 只验收 MyPlugTest 的最终运行链，没有新增 public API。v3 Unshipped 为
+> Core 127 条、UI 45 条，两个 v3 Shipped 均为空，当前 `3.0.0` 尚未发布。
 
 ## 1. 权威源与程序集边界
 

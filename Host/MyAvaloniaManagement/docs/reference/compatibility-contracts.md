@@ -18,18 +18,19 @@
 > 过渡构建面已经删除；Core/UI v2 API 已进入 Shipped，两轮隔离门禁与 Windows V2 Smoke 已建立，
 > 历史 v1 签署事实保持可追溯。
 
-> 当前源码已完成未发布 V3 G8：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
+> 当前源码已完成未发布 V3 G9：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
 > `[3.0.0, 4.0.0)`。活动签名位于 v3 Unshipped，Document 保存采用修订快照与指定修订确认，
 > 激活采用互斥的 `NewDocumentActivation` / `RestoreDocumentActivation`，插件注册采用 Host 最终提交
 > 与 ID 归属校验；SDK/Host 通用事件总线已删除，消息实例归对应插件 Provider 所有；Dock Factory、
 > 唯一 Workspace Session 与无 Dock Tool ReadModel 已分离；Host Catalog 与只含真实插件的 Plugin
 > Registry 已分离；全屏端口只保留 `IDisposable? TryPresent(Control content)`，owner 与
-> `TryRestore` 已从活动源码删除；
-> manifest、Document envelope、layout 和默认数据根继续使用 schema/generation 2。
+> `TryRestore` 已从活动源码删除；MyPlugTest 已通过最终 Registry、私有 Provider、Workspace Session、
+> Dock Adapter 与真实 ZIP Loader 验证精确 4 Document + 1 Tool；manifest、Document envelope、
+> layout 和默认数据根继续使用 schema/generation 2。
 
 ## 2. public API
 
-当前 V3 G8 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
+当前 V3 G9 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
 四个业务插件只引用最终 SDK。`MyAvaloniaManagement.LegacyPluginContracts` 已整体删除；活动项目、

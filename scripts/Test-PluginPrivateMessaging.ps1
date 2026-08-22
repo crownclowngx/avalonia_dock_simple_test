@@ -45,13 +45,13 @@ $suites = @(
     [pscustomobject]@{
         Name = 'G5-PluginIsolation'
         Project = 'Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj'
-        Filter = 'FullyQualifiedName~PluginContainerIsolationTests|FullyQualifiedName~MyPlugTestV2MigrationTests'
+        Filter = 'FullyQualifiedName~PluginContainerIsolationTests|FullyQualifiedName~MyPlugTestV3AcceptanceTests'
         CoverageFile = $null
     },
     [pscustomobject]@{
         Name = 'G5-HeadlessUi'
         Project = 'Host\MyAvaloniaManagement.UiTests\MyAvaloniaManagement.UiTests.csproj'
-        Filter = 'FullyQualifiedName~MyPlugTestV2UiTests|FullyQualifiedName~BiliDownloaderDocumentVisualTests'
+        Filter = 'FullyQualifiedName~MyPlugTestV3UiTests|FullyQualifiedName~BiliDownloaderDocumentVisualTests'
         CoverageFile = $null
     },
     [pscustomobject]@{

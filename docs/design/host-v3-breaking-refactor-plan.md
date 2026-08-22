@@ -1,10 +1,10 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G8 已完成，G9–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
+> 状态：实施中；G0–G9 已完成，G10–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
 > Document 激活已采用 V3 G3 互斥 New/Restore 类型，插件注册已采用 V3 G4 Host 最终提交与 ID 归属校验；
 > 插件事件通信已采用 V3 G5 私有消息器；Dock Factory、Workspace Session 与 Tool 只读投影已按 V3 G6
 > 分离；Host Catalog 与 Plugin Registry 已按 V3 G7 分离；全屏租约与 Host V3 骨架已按 V3 G8
-> 完成；其余生产语义仍由 V2 G14 签署，
+> 完成；MyPlugTest 已按 V3 G9 通过最终 Workspace、UI 与真实包验收；其余生产语义仍由 V2 G14 签署，
 > 代码与程序集版本线处于未发布 V3。
 >
 > 评审日期：2026-08-22。
@@ -20,6 +20,7 @@
 > [V3 G6 Workspace Session 与 Dock Factory](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)、
 > [V3 G7 Host Catalog 与 Plugin Registry](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)、
 > [V3 G8 全屏租约与 Host V3 骨架](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)、
+> [V3 G9 MyPlugTest 验收](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
 >
 > 计划性质：V3 是一次“协议语义纠错 + 宿主工作区解耦”的破坏式重构，不是第三次插件框架扩张。
@@ -556,12 +557,15 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
   [G8 专项记录](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)。
 - **回滚**：整体回到 G7；不得同时保留 owner API 和 lease API。
 
-### G9：MyPlugTest V3 验收
+### G9：MyPlugTest V3 验收（已完成）
 
 - **目标**：用最小示例完整验证 V3 保存修订、互斥激活、私有消息和 Workspace 创建链。
 - **变更**：删除 MyPlugTest 阶段帮助代码；快速开始示例切换 V3 最终 API。
 - **验证**：4 Document + 1 Tool、保存期间再编辑仍 Dirty、内容 schema 1、消息订阅释放、多 Scope、UI、
   两次确定性 ZIP 和真实 V3 Host 加载。
+- **实施记录**：最终 Workspace 创建/发布/关闭、Host Revision 保存竞争、严格 schema 1、私有消息订阅、
+  501/501 测试、Host 84.39% / 70.58% 覆盖率、关键插件文件 98.15% / 100.00% 行覆盖率及两次
+  11 文件确定性 ZIP 见 [G9 专项记录](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)。
 - **回滚**：移除 MyPlugTest V3 包；V3 Host 不加载 V2 ZIP，也不增加兼容适配。
 
 ### G10：DaTangAccountingHelpPlug V3 验收
@@ -620,7 +624,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
 - G0 只冻结事实，G1 只建立版本和磁盘边界，G2 已完成修订保存；
 - G3 已完成互斥激活，G4 已完成插件组合所有权，G5 已完成插件私有消息边界；
 - G6 已完成 Host Workspace / Dock Factory 拆分；G7 已拆分 Host Catalog，G8 已建立全屏租约资源边界；
-- G9–G12 按插件逐个删除阶段帮助代码并完成真实包验收；
+- G9 已删除 MyPlugTest 活动 V2 验收入口并完成最终 Workspace/真实包验收；G10–G12 继续按插件逐个收口；
 - G13 只删除和证明无残留，不承载新设计；
 - G14 只封板已通过事实，不在发布门禁阶段调整 API；
 - 每个 G 的生产构建、专项测试和受影响插件测试绿色后才能进入下一个 G；

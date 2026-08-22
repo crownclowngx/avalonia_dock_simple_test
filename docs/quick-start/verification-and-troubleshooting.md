@@ -1,6 +1,7 @@
 # 验证与排错
 
-> 本页按当前未发布 V3 G4 注册所有权、V3 G3 互斥激活、V3 G2 修订保存和 V2 G14 其他已封板生产语义编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
+> 本页按当前未发布 V3 G9 编写。MyPlugTest 已通过最终 Workspace、注册所有权、互斥激活、修订保存、
+> 私有消息、Headless UI 与真实 ZIP 验收；DaTang 是双 Document、
 > 窗口端口和持久化实例，MySmallTools 是原生资源与关闭令牌实例，BiliDownloader 是
 > Document + Tool + Lifecycle + readiness 的大型对象图实例。
 
@@ -42,7 +43,7 @@
 
 - [ ] 替换 DLL、依赖或清单后完整退出并重启宿主；
 - [ ] 新版本仍保留已经发布的 Plugin、Document 和 Tool 稳定 ID；
-- [ ] V2 只保留规范主 ID，不新增旧 ID 别名或兼容读取器。
+- [ ] V3 只保留规范主 ID，不新增旧 ID 别名或兼容读取器。
 
 ## 推荐命令
 
@@ -60,7 +61,7 @@ dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c De
 dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
 ```
 
-V3 G2 为 MyPlugTest 增加了独立测试项目；V3 G3 增加互斥激活专项入口，V3 G4 增加注册所有权专项入口：
+V3 G9 使用以下当前入口完整验收 MyPlugTest；G2–G8 专项继续保护各自的平台语义：
 
 ```powershell
 dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
@@ -71,9 +72,10 @@ dotnet test Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csp
 .\scripts\Test-RevisionedDocumentSave.ps1 -Configuration Release -NoRestore
 .\scripts\Test-ExclusiveDocumentActivation.ps1 -Configuration Release -NoRestore
 .\scripts\Test-PluginRegistrationOwnership.ps1 -Configuration Release -NoRestore
+.\scripts\Test-MyPlugTestV3.ps1 -Configuration Release -NoRestore
 ```
 
-历史 V2 分阶段脚本继续保留用于审计，不作为当前 V3 版本门禁。V3 G4 不运行真实账号、真实 Bilibili、
+V2 历史文档继续用于审计，但已由当前阶段删除的活动脚本不保留兼容包装入口。V3 G9 不运行真实账号、真实 Bilibili、
 真实 FFmpeg 大媒体、Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。

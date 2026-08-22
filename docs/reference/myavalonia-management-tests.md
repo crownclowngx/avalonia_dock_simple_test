@@ -10,12 +10,13 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [V1 G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
 > [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。当前源码已完成未发布
-> V3 G8；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
+> V3 G9；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
 > 修订保存见 [V3 G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)，互斥激活见
 > [V3 G3 专项记录](../plan-history/host-v3/g3-exclusive-document-activation.md)，Workspace/Dock 拆分见
 > [V3 G6 专项记录](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)，Host/插件目录分离见
 > [V3 G7 专项记录](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)，全屏租约与资源边界见
-> [V3 G8 专项记录](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)。
+> [V3 G8 专项记录](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)，MyPlugTest 最终验收见
+> [V3 G9 专项记录](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)。
 
 ## 当前文档与非发布基线门禁
 
@@ -281,30 +282,11 @@ PluginId 正序、成功项反向停止、并发幂等、同步/异步失败、�
 [G8 专项记录](../plan-history/host-v2/g8-layout-and-lifecycle-v2.md)。本阶段不运行 AIFLOW、Windows CI/Smoke、
 ReleaseAcceptance、发布包或发布门禁。
 
-### V2 G9 当前绿色基线
+### V2 G9 历史基线
 
-G9 非发布专项入口为：
-
-```powershell
-.\scripts\Test-MyPlugTestV2.ps1 -Configuration Release
-```
-
-脚本串行执行 MyPlugTest 生产组合与业务测试、受影响 Headless UI、Plugin SDK 边界、静态依赖扫描，
-然后建立两份隔离测试 ZIP。两份 ZIP 的排序清单、文件长度、逐文件摘要和归档摘要必须一致；解压后还要
-经过真实 `PluginLoadContext`、模块预检、插件 Provider 组合以及 4 Document + 1 Tool Registry 验证。
-
-专项实际为 Plugin 59、Headless UI 14、Plugin SDK 12、最终 ZIP 真实加载 1，共 **86/86**；ZIP 为
-11 个文件。摘要位于 `artifacts/test-results/MyPlugTestV2/summary.json`，固定记录
-`aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、
-`releaseGate=false`、`publishable=false`。完整贡献、内容 schema、失败矩阵和回滚边界见
-[G9 专项记录](../plan-history/host-v2/g9-my-plug-test-v2.md)。
-
-本阶段不运行 AIFLOW、Windows CI、真实窗口 Smoke、ReleaseAcceptance、正式发布门禁、签名、上传或发布；
-两份 ZIP 只用于 G9 加载验证。
-
-完整回归为 Host Unit 172、UI 46、Plugin 195，共 **413/413**；行覆盖率 **83.24%**、分支覆盖率
-**68.83%**。SDK 单元 **32/32**，三个未迁移业务插件 **966/966**，Core/UI API 与包消费、四插件
-两轮非发布包矩阵、locked restore、Release 零警告构建和文档门禁均通过。
+V2 G9 的 86 项专项、11 文件测试 ZIP、当时的脚本名称和覆盖率只保存在
+[V2 G9 历史记录](../plan-history/host-v2/g9-my-plug-test-v2.md)中。该入口已经随 V3 G9 收口删除，当前文档
+不再把历史命令写成可执行门禁，也不保留兼容包装脚本。
 
 ### V2 G10 当前绿色基线
 
@@ -663,6 +645,29 @@ Host Cobertura、合并报告、真实媒体 JSON 与 `artifacts/test-results/Fu
 摘要固定记录 AIFLOW、Windows CI/Smoke、ReleaseAcceptance、releaseGate 和 publishable 均为 false；
 本地真实媒体 Harness 是开发期资源门禁，不是发布验收。完整记录见
 [V3 G8 全屏租约与 Host V3 骨架](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)。
+
+### V3 G9 MyPlugTest 最终验收门禁
+
+G9 非发布专项入口为：
+
+```powershell
+.\scripts\Test-MyPlugTestV3.ps1 -Configuration Release
+```
+
+脚本串行执行 Plugin SDK、Host Unit、Headless UI、Plugin/Dock 与 MyPlugTest 全量测试，要求零失败、
+零跳过；随后扫描活动源码的旧入口和越界依赖，建立两份隔离的 `3.0.0` 测试 ZIP，并比较归档及逐文件
+路径、长度和 SHA-256。解压后的包必须通过真实发现、manifest/SDK 预检、加载上下文、模块组合、
+Registry 冻结与 Workspace 创建，精确形成 4 Document + 1 Tool；共享 SDK、Host、Avalonia、Dock 和
+Microsoft DI 程序集不得进入插件包。
+
+实际结果为 Plugin SDK 37、Host Unit 188、Headless UI 60、Plugin/Dock 204、MyPlugTest 11、最终 ZIP 1，
+共 **501/501**。Host 行/分支覆盖率为 **84.39% / 70.58%**；MyPlugTest 私有消息器与内容 Codec 行
+覆盖率分别为 **98.15% / 100%**。两份 11 文件 ZIP 的归档 SHA-256 均为
+`D52C87120D7CE0483771BB9592DB72138415C120160CFD2B497C2836F9C4702C`。摘要位于
+`artifacts/test-results/MyPlugTestV3/summary.json`，固定记录 `aiflow=false`、`windowsCi=false`、
+`windowsSmoke=false`、`releaseAcceptance=false`、`releaseGate=false`、`publishable=false`。
+完整设计、保存竞争、消息隔离和回滚边界见
+[V3 G9 MyPlugTest 最终验收](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)。
 
 ### 插件私有消息、Host 直接协调与稳定 ID
 

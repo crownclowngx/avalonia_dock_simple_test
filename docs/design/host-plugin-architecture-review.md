@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-22（已同步 Managed Plugin V3 G8 全屏租约与 Host V3 骨架）<br>
+> 更新日期：2026-08-22（已同步 Managed Plugin V3 G9 MyPlugTest 最终验收）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
@@ -9,12 +9,13 @@
 > V2 当前状态：G0–G14 已完成。四个业务插件均使用正式 SDK、声明式贡献与普通模型；Legacy
 > 项目、兼容适配和过渡构建属性已经删除，API Shipped 与两轮隔离发布门禁已经建立。
 
-> V3 当前状态：G0–G8 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
+> V3 当前状态：G0–G9 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
 > 保存已使用修订协议，激活已使用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属；
 > MyPlugTest 与 BiliDownloader 的消息器已归各自插件 Provider 所有；唯一 Workspace Session、Dock
 > Factory Adapter 和无 Dock Tool ReadModel 已建立；Host Catalog 与只含真实插件的 Plugin Registry
-> 已分离；全屏已改为单参数展示端口返回幂等租约，Host 具体会话维护唯一活动展示。磁盘 schema
-> 仍为 2，G9–G14 尚未实施。
+> 已分离；全屏已改为单参数展示端口返回幂等租约，Host 具体会话维护唯一活动展示。MyPlugTest 已通过
+> 最终 Registry、私有 Provider、Workspace Session、Dock Adapter 与真实 ZIP Loader 完成验收；磁盘
+> schema 仍为 2，G10–G14 尚未实施。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -512,6 +513,20 @@ ContentHost 销毁会自动失效。MySmallTools 只持有租约，并在退出�
 **96.43%**。20 轮本地 Windows x64 真实媒体均在全屏中直接关闭 Document，所有播放器、原生表面、
 流、缓存、Dispatcher、Reaper、弱引用及意外顶层窗口归零。完整时序、SOLID 取舍、非发布声明和
 回滚边界见 [G8 全屏租约与 Host V3 骨架](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)。
+
+### 6.13 2026-08-22 V3 G9 MyPlugTest 最终验收
+
+**[当前事实]** MyPlugTest 继续以唯一 `MyPlugTestPluginModule` 作为组合根：4 个 Document 各自拥有
+独立 Scope，Tool 与私有消息器由插件 Provider 持有。活动验收不再绕过 Workspace 直接操作 Dock
+工厂；创建、发布、关闭和 Tool 显隐均经过 `WorkspaceSession`，再由 internal Dock Adapter 落到
+停靠树。最终测试 ZIP 经过真实发现、manifest/SDK 预检、隔离加载、模块组合、Registry 冻结和
+Workspace 创建，精确形成 4 Document + 1 Tool。
+
+专项门禁为 **501/501**、零跳过；Host 行/分支覆盖率 **84.39% / 70.58%**，MyPlugTest 私有消息器
+与内容 Codec 行覆盖率分别为 **98.15% / 100%**。两份 11 文件测试 ZIP 的归档 SHA-256 均为
+`D52C87120D7CE0483771BB9592DB72138415C120160CFD2B497C2836F9C4702C`。本阶段没有运行 AIFLOW、
+Windows CI/Smoke 或发布门禁。完整职责、保存竞争、消息隔离、ZIP 证据和回滚边界见
+[G9 MyPlugTest V3 验收](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)。
 
 ## 7. 宿主应该给插件多大自由度
 

@@ -19,7 +19,7 @@ public sealed partial class WelcomeDocumentViewModel : ObservableObject, IPlugin
     private string _title = DefaultTitle;
 
     [ObservableProperty]
-    private string message = "Hello from V3 G3";
+    private string message = "Hello from V3";
 
     public WelcomeDocumentViewModel(IDocumentLifetime lifetime) =>
         _lifetime = lifetime ?? throw new ArgumentNullException(nameof(lifetime));
@@ -59,7 +59,7 @@ Document。每次激活创建独立 Scope，因此可变 Document 状态不能�
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="QuickStartPlugin.Views.WelcomeDocumentView">
   <StackPanel Margin="16" Spacing="8">
-    <TextBlock Text="V3 G3 Document" FontWeight="Bold" />
+    <TextBlock Text="V3 Document" FontWeight="Bold" />
     <TextBox Text="{Binding Message}" />
   </StackPanel>
 </UserControl>

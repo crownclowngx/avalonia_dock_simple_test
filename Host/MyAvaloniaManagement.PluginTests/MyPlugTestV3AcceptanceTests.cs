@@ -15,13 +15,13 @@ using MyPlugTest.Views;
 namespace MyAvaloniaManagement.PluginTests;
 
 /// <summary>
-/// 验证 G9 MyPlugTest 通过最终 V2 组合路径形成声明、Scope、Tool singleton 与内容协议。
+/// 验证 G9 MyPlugTest 通过最终 V3 组合路径形成声明、Scope、Tool singleton 与内容协议。
 /// </summary>
 /// <remarks>
 /// 这些测试不实现第二套注册上下文，而是复用 Host production 的 PluginProviderOwner、Registry 和
 /// Activator。这样测试通过意味着真实所有权链可工作，而不是测试替身恰好接受了迁移后的类型形状。
 /// </remarks>
-public sealed class MyPlugTestV2MigrationTests
+public sealed class MyPlugTestV3AcceptanceTests
 {
     [Fact]
     public void 模块一次声明四个Document一个Tool及精确View元数据()
