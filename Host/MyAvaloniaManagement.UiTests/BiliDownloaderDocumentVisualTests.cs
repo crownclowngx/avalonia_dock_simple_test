@@ -214,7 +214,7 @@ public sealed class BiliDownloaderDocumentVisualTests
     {
         using var ui = new UiTestContext();
         var services = new ServiceCollection();
-        new BiliDownloaderPluginModule().Configure(new TestV2PluginRegistrationContext(
+        new BiliDownloaderPluginModule().Configure(new TestPluginRegistrationContext(
             new MyAvaloniaManagement.PluginSdk.PluginId("myavalonia.plugin.bili-downloader"), services));
         services.AddScoped<MyAvaloniaManagement.PluginSdk.IDocumentLifetime, UiTestDocumentLifetime>();
         services.AddSingleton<BiliDownloader.Plugin.IBiliDownloaderPluginReadiness>(

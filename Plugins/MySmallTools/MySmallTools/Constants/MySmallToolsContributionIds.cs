@@ -2,10 +2,10 @@ using MyAvaloniaManagement.PluginSdk;
 
 namespace MySmallTools.Constants;
 
-/// <summary>集中定义 MySmallTools 对 Host V2 暴露的稳定贡献身份。</summary>
+/// <summary>集中定义 MySmallTools 对 Host V3 暴露的稳定贡献身份。</summary>
 /// <remarks>
 /// 这些 ID 已经进入用户配置和插件清单，迁移只改变承载模型，不能改变业务身份。
-/// Legacy GUID 不再属于 V2 输入，因此不在生产程序集保留双写或别名兼容路径。
+/// Legacy GUID 不属于当前 V3 输入，因此不在生产程序集保留双写或别名兼容路径。
 /// </remarks>
 public static class MySmallToolsContributionIds
 {

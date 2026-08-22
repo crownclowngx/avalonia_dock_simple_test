@@ -15,8 +15,8 @@ using Xunit;
 
 namespace MyAvaloniaManagement.UiTests;
 
-/// <summary>在 Headless Avalonia 中验证 MySmallTools 四类 V2 Document 的真实 View 组合。</summary>
-public sealed class MySmallToolsV2UiTests
+/// <summary>在 Headless Avalonia 中验收 MySmallTools 四类 V3 Document 的真实 View 组合。</summary>
+public sealed class MySmallToolsV3UiTests
 {
     [AvaloniaFact]
     public async Task 四类Document通过HostAdapter创建View并绑定普通模型()

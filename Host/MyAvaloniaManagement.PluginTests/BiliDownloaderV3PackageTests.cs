@@ -7,12 +7,12 @@ namespace MyAvaloniaManagement.PluginTests;
 /// 使用宿主真实 PluginLoadContext 探测 G12 非发布测试目录。环境变量由专项脚本指向解压目录；
 /// 普通测试运行则使用当前插件构建目录，从而保持零跳过且持续验证同一加载规则。
 /// </summary>
-public sealed class BiliDownloaderV2PackageTests
+public sealed class BiliDownloaderV3PackageTests
 {
     [Fact]
-    public void Win_x64测试包通过真实Loader与V2入口预检()
+    public void Win_x64测试包通过真实Loader与V3入口预检()
     {
-        var configured = Environment.GetEnvironmentVariable("MYAVALONIA_BILIDOWNLOADER_V2_PACKAGE_ROOT")
+        var configured = Environment.GetEnvironmentVariable("MYAVALONIA_G12_V3_PACKAGE_ROOT")
             ?? Environment.GetEnvironmentVariable("BILIDOWNLOADER_G8_PLUGIN_ROOT");
         var configuration = new DirectoryInfo(AppContext.BaseDirectory)
             .Parent?.Name

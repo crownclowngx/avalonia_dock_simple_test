@@ -1,9 +1,8 @@
 # 验证与排错
 
-> 本页按当前未发布 V3 G9 编写。MyPlugTest 已通过最终 Workspace、注册所有权、互斥激活、修订保存、
-> 私有消息、Headless UI 与真实 ZIP 验收；DaTang 是双 Document、
-> 窗口端口和持久化实例，MySmallTools 是原生资源与关闭令牌实例，BiliDownloader 是
-> Document + Tool + Lifecycle + readiness 的大型对象图实例。
+> 本页按当前未发布 V3 G12 编写。四插件已依次通过最终 Workspace、注册所有权、互斥激活、修订保存、
+> 私有消息、Headless UI 与真实 ZIP 验收；DaTang 覆盖双 Document 与窗口端口，MySmallTools 覆盖
+> 原生资源与关闭令牌，BiliDownloader 覆盖 Document + Tool + Lifecycle + readiness 大型对象图。
 
 验证新插件时应从“目录和清单”开始，再检查模块、扩展元数据和界面行为。这样能够在最接近故障来源的位置停止，而不是从空白界面反推所有可能原因。
 
@@ -61,7 +60,7 @@ dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c De
 dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
 ```
 
-V3 G9 使用以下当前入口完整验收 MyPlugTest；G2–G8 专项继续保护各自的平台语义：
+V3 G9–G12 使用以下当前入口分别验收四插件；G2–G8 专项继续保护各自的平台语义：
 
 ```powershell
 dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
@@ -73,10 +72,14 @@ dotnet test Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csp
 .\scripts\Test-ExclusiveDocumentActivation.ps1 -Configuration Release -NoRestore
 .\scripts\Test-PluginRegistrationOwnership.ps1 -Configuration Release -NoRestore
 .\scripts\Test-MyPlugTestV3.ps1 -Configuration Release -NoRestore
+.\scripts\Test-DaTangAccountingHelpPlugV3.ps1 -Configuration Release -NoRestore
+.\scripts\Test-MySmallToolsV3.ps1 -Configuration Release -NoRestore
+.\scripts\Test-BiliDownloaderV3.ps1 -Configuration Release -NoRestore
 ```
 
-V2 历史文档继续用于审计，但已由当前阶段删除的活动脚本不保留兼容包装入口。V3 G9 不运行真实账号、真实 Bilibili、
-真实 FFmpeg 大媒体、Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
+V2 历史文档继续用于审计，但已由当前阶段删除的活动脚本不保留兼容包装入口。V3 G9–G12 不运行真实账号、
+真实 Bilibili、Windows CI/Smoke、ReleaseAcceptance 或发布门禁；G11 的本地真实媒体 Harness 是资源门禁，
+不联网，也不是发布验收。
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。
 

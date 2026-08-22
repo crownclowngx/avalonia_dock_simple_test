@@ -29,13 +29,16 @@
 - [V3 G7 Host Catalog 与 Plugin Registry](../../../docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)
 - [V3 G8 全屏租约与 Host V3 骨架](../../../docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)
 - [V3 G9 MyPlugTest 最终验收](../../../docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)
+- [V3 G10 DaTangAccountingHelpPlug 最终验收](../../../docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)
+- [V3 G11 MySmallTools 最终验收](../../../docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)
+- [V3 G12 BiliDownloader 最终验收](../../../docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)
 - [G16 文档与 v1 基线（历史）](../../../docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)
 
 ## 文档定位
 
 这些文档描述的是当前实现，不是新功能路线图。当前明确保持以下边界：
 
-- V2 G14 已将 Core/UI public API 冻结到 v2 Shipped；V3 G9 的活动表面仍位于 v3 Unshipped，Host 自有实现不属于插件 API；
+- V2 G14 已将 Core/UI public API 冻结到 v2 Shipped；V3 G12 的活动表面仍位于 v3 Unshipped，Host 自有实现不属于插件 API；
 - `managed-plugin-v1.0.0` 只定位 Managed Plugin v1 历史基线；当前版本以 V3 G1、Document 保存以 V3 G2、其他运行语义以 V2 G14 为准；
 - 插件只支持严格清单、必需 `.deps.json` 和唯一 `IPluginModule` 的 Managed 模型；
 - manifest 是插件身份唯一事实源，插件 Document、Tool、View 和 Lifecycle 只通过 Context 显式登记；
@@ -44,7 +47,7 @@
 - Plugin Registry 只保存真实插件声明，生命周期状态和插件贡献可用性由 Host internal 状态存储与只读投影拥有；
 - 每个 HostRuntime 只有一个 WorkspaceSession；HostDockFactory 只适配 Dock 协议，Tool 管理只消费无 Dock 类型的只读投影；
 - 全屏端口只接受一个 Control 并返回 `IDisposable` 租约；MainWindow 委托具体会话维护唯一活动租约，插件不接触 Window 或 Dock；
-- MyPlugTest 的创建、发布、关闭和 Tool 显隐只经 Workspace Session；最终测试 ZIP 使用真实 Loader 形成精确的 4 Document + 1 Tool；
+- 四插件的创建、发布、关闭和 Tool 显隐只经 Workspace Session；最终测试 ZIP 分别使用真实 Loader 重放各自声明的 Document、Tool 与 Lifecycle；
 - 不新增插件市场、热加载、沙箱或新的用户可见诊断通道；
 - 不要求插件跟随宿主内部协作者重编写业务逻辑。
 
@@ -61,6 +64,9 @@
 .\scripts\Test-WorkspaceSessionDockFactory.ps1 -Configuration Release -NoRestore
 .\scripts\Test-HostCatalogPluginRegistry.ps1 -Configuration Release -NoRestore
 .\scripts\Test-MyPlugTestV3.ps1 -Configuration Release
+.\scripts\Test-DaTangAccountingHelpPlugV3.ps1 -Configuration Release -NoRestore
+.\scripts\Test-MySmallToolsV3.ps1 -Configuration Release -NoRestore
+.\scripts\Test-BiliDownloaderV3.ps1 -Configuration Release -NoRestore
 .\scripts\Test-LayoutLifecycleV2.ps1 -Configuration Release
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
 .\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v3 -Configuration Release
@@ -68,4 +74,4 @@
 
 文档门禁验证本地链接、脚本路径、关键类型、集中版本和四插件兼容区间；宿主综合门禁动态统计
 Unit、Headless UI、Plugin 与覆盖率。带日期的具体数量只记录在各 G 阶段专用文档中，不作为永久阈值。
-V3 G9 只运行上述非发布验证；AIFLOW、Windows CI/Smoke、ReleaseAcceptance 和发布总门禁均未运行，并留到明确的发布阶段。
+V3 G9–G12 只运行上述非发布验证；AIFLOW、Windows CI/Smoke、ReleaseAcceptance 和发布总门禁均未运行，并留到明确的发布阶段。

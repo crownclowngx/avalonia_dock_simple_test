@@ -37,12 +37,12 @@ $suites = @(
     [pscustomobject]@{
         Name = 'G3-HeadlessUi'
         Project = 'Host\MyAvaloniaManagement.UiTests\MyAvaloniaManagement.UiTests.csproj'
-        Filter = 'FullyQualifiedName~HostDockAdapterUiTests|FullyQualifiedName~MyPlugTestV3UiTests|FullyQualifiedName~DaTangAccountingHelpPlugV2UiTests|FullyQualifiedName~MySmallToolsV2UiTests'
+        Filter = 'FullyQualifiedName~HostDockAdapterUiTests|FullyQualifiedName~MyPlugTestV3UiTests|FullyQualifiedName~DaTangAccountingHelpPlugV3UiTests|FullyQualifiedName~MySmallToolsV3UiTests'
     },
     [pscustomobject]@{
         Name = 'G3-PluginIntegration'
         Project = 'Host\MyAvaloniaManagement.PluginTests\MyAvaloniaManagement.PluginTests.csproj'
-        Filter = 'FullyQualifiedName~MyPlugTestV3AcceptanceTests|FullyQualifiedName~DaTangAccountingHelpPlugV2MigrationTests|FullyQualifiedName~MySmallToolsV2MigrationTests'
+        Filter = 'FullyQualifiedName~MyPlugTestV3AcceptanceTests|FullyQualifiedName~DaTangAccountingHelpPlugV3AcceptanceTests|FullyQualifiedName~MySmallToolsV3AcceptanceTests'
     },
     [pscustomobject]@{
         Name = 'G3-MyPlugTest'
@@ -57,7 +57,7 @@ $suites = @(
     [pscustomobject]@{
         Name = 'G3-BiliDownloader'
         Project = 'Plugins\BiliDownloader\BiliDownloader.Tests\BiliDownloader.Tests.csproj'
-        Filter = 'FullyQualifiedName~G12V2MigrationTests'
+        Filter = 'FullyQualifiedName~BiliDownloaderV3AcceptanceTests'
     }
 )
 

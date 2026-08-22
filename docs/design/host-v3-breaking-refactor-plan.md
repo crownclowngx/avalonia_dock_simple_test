@@ -1,11 +1,11 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G9 已完成，G10–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
+> 状态：实施中；G0–G12 已完成，G13–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
 > Document 激活已采用 V3 G3 互斥 New/Restore 类型，插件注册已采用 V3 G4 Host 最终提交与 ID 归属校验；
 > 插件事件通信已采用 V3 G5 私有消息器；Dock Factory、Workspace Session 与 Tool 只读投影已按 V3 G6
 > 分离；Host Catalog 与 Plugin Registry 已按 V3 G7 分离；全屏租约与 Host V3 骨架已按 V3 G8
-> 完成；MyPlugTest 已按 V3 G9 通过最终 Workspace、UI 与真实包验收；其余生产语义仍由 V2 G14 签署，
-> 代码与程序集版本线处于未发布 V3。
+> 完成；四插件已按 V3 G9–G12 依次通过最终 Workspace、UI、资源与真实包验收；G13–G14 尚未实施，
+> 代码与程序集版本线仍处于未发布 V3。
 >
 > 评审日期：2026-08-22。
 >
@@ -21,6 +21,9 @@
 > [V3 G7 Host Catalog 与 Plugin Registry](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)、
 > [V3 G8 全屏租约与 Host V3 骨架](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)、
 > [V3 G9 MyPlugTest 验收](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)、
+> [V3 G10 DaTangAccountingHelpPlug 验收](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
+> [V3 G11 MySmallTools 验收](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)、
+> [V3 G12 BiliDownloader 验收](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
 >
 > 计划性质：V3 是一次“协议语义纠错 + 宿主工作区解耦”的破坏式重构，不是第三次插件框架扩张。
@@ -568,29 +571,39 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
   11 文件确定性 ZIP 见 [G9 专项记录](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)。
 - **回滚**：移除 MyPlugTest V3 包；V3 Host 不加载 V2 ZIP，也不增加兼容适配。
 
-### G10：DaTangAccountingHelpPlug V3 验收
+### G10：DaTangAccountingHelpPlug V3 验收（已完成）
 
 - **目标**：验证多 Document、修订保存、文件交互和 scoped 业务对象图。
 - **变更**：删除 DaTang 阶段帮助代码；银行对账使用最终 Revision 协议，发票 Document 使用最终激活类型。
 - **不变项**：Excel 读取、匹配、报告、业务 DTO 和内容 schema 不重构。
 - **验证**：插件业务测试、保存竞争、恢复、窗口选择取消、关闭令牌、两个 Document UI、确定性 ZIP 和加载。
+- **实施记录**：真实 Workspace/Dock/DocumentSaveService 链、Revision 保存竞争、文件选择取消与迟到结果隔离、
+  554/554 测试、Host 84.39% / 70.58%、插件 70.09% / 49.31% 覆盖率，以及两次 9 文件确定性 ZIP
+  见 [G10 专项记录](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)。
 - **回滚**：整体回到 G9 基线；不得制作 V2/V3 双协议插件包。
 
-### G11：MySmallTools V3 验收
+### G11：MySmallTools V3 验收（已完成）
 
 - **目标**：验证四个非持久化 Document、激活类型、关闭令牌和全屏租约的真实原生资源边界。
 - **变更**：删除 MySmallTools 阶段帮助代码和 owner 式全屏调用。
 - **不变项**：SECVID03、LibVLC、加解密格式、媒体库和批处理业务不升级。
 - **验证**：完整插件测试、真实媒体 Harness、重复全屏、关闭取消、原生句柄/流/播放器归零、确定性 ZIP。
+- **实施记录**：四个非持久化 Document 的最终 Workspace 链、全屏租约排他/幂等释放、20 轮真实媒体资源与
+  Document/View 弱引用归零、676/676 测试、Host 84.39% / 70.58%、插件 72.59% / 48.12% 覆盖率，
+  以及两次 431 文件确定性 ZIP 见 [G11 专项记录](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)。
 - **回滚**：整体回到 G10 基线；不得恢复 UI SDK 旧全屏接口。
 
-### G12：BiliDownloader V3 验收
+### G12：BiliDownloader V3 验收（已完成）
 
 - **目标**：验证大型对象图在 Revision、私有消息器、生命周期和 Tool readiness 下的最终行为。
 - **变更**：删除 Bili 阶段帮助代码；全部内部事件使用插件私有总线；Document 使用最终保存/激活协议。
 - **不变项**：下载、认证、SQLite、FFmpeg、限速、任务恢复、内容来源和 Document 内容 schema 不升级。
 - **验证**：保存期间修改、消息并发、任务提交/进度/删除、Lifecycle 失败/恢复、Tool readiness、关闭、覆盖率、
   两次确定性 ZIP 和真实加载。
+- **实施记录**：真实 Host 保存竞争、插件私有消息全行为、Lifecycle/readiness/全新对象图恢复、最终
+  Workspace 的 1 Document + 1 Tool + 1 Lifecycle、1219/1219 测试、Host 84.39% / 70.58%、插件
+  83.80% / 67.54% 覆盖率及两次 14 文件 win-x64 确定性 ZIP 见
+  [G12 专项记录](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)。
 - **回滚**：整体回到 G11 基线；不得为旧 Host EventBus 增加插件 Facade。
 
 ### G13：删除 V2 生产面
@@ -624,7 +637,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
 - G0 只冻结事实，G1 只建立版本和磁盘边界，G2 已完成修订保存；
 - G3 已完成互斥激活，G4 已完成插件组合所有权，G5 已完成插件私有消息边界；
 - G6 已完成 Host Workspace / Dock Factory 拆分；G7 已拆分 Host Catalog，G8 已建立全屏租约资源边界；
-- G9 已删除 MyPlugTest 活动 V2 验收入口并完成最终 Workspace/真实包验收；G10–G12 继续按插件逐个收口；
+- G9–G12 已依次删除四插件活动 V2 验收入口，并完成各自独立的最终 Workspace、资源和真实包验收；
 - G13 只删除和证明无残留，不承载新设计；
 - G14 只封板已通过事实，不在发布门禁阶段调整 API；
 - 每个 G 的生产构建、专项测试和受影响插件测试绿色后才能进入下一个 G；
@@ -706,9 +719,9 @@ V3 只有在以下问题全部回答“是”后才算完成：
 7. [x] Host 内建贡献不再作为特殊插件进入 Plugin Registry 或 Availability。
 8. [x] 全屏使用幂等租约，失败、关闭和重复释放都能恢复并释放资源。
 9. [ ] `Files`、`Plug` 和全部 V2 public 生产入口已删除且有负例防回流。
-10. [ ] manifest/envelope/layout/data root 只在有真实格式理由时变化；本轮保持的 V2 数据可由 V3 使用。
+10. [x] manifest/envelope/layout/data root 只在有真实格式理由时变化；本轮保持的 V2 数据可由 V3 使用。
 11. [ ] 四插件完整回归、确定性 ZIP、真实 Host 加载、Windows Smoke 和发布矩阵通过。
-12. [ ] 覆盖率未降低，诊断脱敏、失败原子性和资源释放没有退化。
+12. [x] 覆盖率未降低，诊断脱敏、失败原子性和资源释放没有退化。
 13. [ ] V3 API 已进入 Shipped，V2 历史 API/文档可追溯但不参与生产。
 14. [ ] 根 README、文档导航、快速开始、架构、兼容约束和测试说明均与最终代码一致。
 15. [ ] 两轮隔离发布门禁可重复，且未在无授权情况下上传、打标签或执行外部发布。

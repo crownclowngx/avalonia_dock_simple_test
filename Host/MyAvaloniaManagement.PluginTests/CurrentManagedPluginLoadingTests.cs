@@ -1,5 +1,6 @@
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Workspace;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.PluginSdk;
@@ -13,10 +14,10 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class CurrentManagedPluginLoadingTests
 {
     [Fact]
-    public void G12最终测试Zip通过真实发现组合并发布DocumentToolLifecycle()
+    public void G12最终测试Zip通过真实V3发现组合并进入Workspace目录()
     {
         var packageRoot = Environment.GetEnvironmentVariable(
-            "MYAVALONIA_BILIDOWNLOADER_V2_PACKAGE_ROOT");
+            "MYAVALONIA_G12_V3_PACKAGE_ROOT");
         if (string.IsNullOrWhiteSpace(packageRoot))
         {
             // 普通回归不重复打包；G12 专项脚本设置目录后必须执行本测试。
@@ -60,6 +61,25 @@ public sealed class CurrentManagedPluginLoadingTests
             Assert.Equal(
                 [plugin.Manifest.PluginId.Value],
                 pluginProviders.AvailablePluginIds.Select(pluginId => pluginId.Value));
+
+            // 最终包不能只证明 Registry 中存在描述符。这里不启动会读写用户 SQLite/设置的
+            // Lifecycle；其执行行为由 G12 插件测试在隔离数据路径上覆盖。确认 Lifecycle 已进入
+            // 真实 Registry 后，只推进 Host 自己的可用性投影，再验证 Workspace 消费同一冻结目录。
+            provider.GetRequiredService<PluginLifecycleStateStore>().SetState(
+                new PluginLifecycleState(
+                    new PluginId("myavalonia.plugin.bili-downloader"),
+                    PluginLifecycleStatus.Ready));
+            var workspace = provider.GetRequiredService<WorkspaceSession>();
+            var documentEntries = workspace.GetAllDocumentCreationEntries().Where(entry =>
+                entry.DocumentTypeId.Value.StartsWith(
+                    "myavalonia.plugin.bili-downloader.document.",
+                    StringComparison.Ordinal)).ToArray();
+            Assert.Equal(2, documentEntries.Length);
+            Assert.Equal(
+                ["personal-source", "quick-url"],
+                documentEntries.Select(entry => entry.CreationIntentId!.Value).Order().ToArray());
+            Assert.True(workspace.GetAvailableToolDescriptors().ContainsKey(
+                new ToolTypeId("myavalonia.plugin.bili-downloader.tool.scheduler")));
         }
         finally
         {
@@ -70,10 +90,10 @@ public sealed class CurrentManagedPluginLoadingTests
     }
 
     [Fact]
-    public void G11最终测试Zip通过真实发现组合并发布四个Document()
+    public void G11最终测试Zip通过真实V3发现组合并进入Workspace目录()
     {
         var packageRoot = Environment.GetEnvironmentVariable(
-            "MYAVALONIA_MYSMALLTOOLS_V2_PACKAGE_ROOT");
+            "MYAVALONIA_G11_V3_PACKAGE_ROOT");
         if (string.IsNullOrWhiteSpace(packageRoot))
         {
             // 普通回归不重复构建大型 LibVLC 包；G11 专项脚本负责设置目录并执行本测试。
@@ -114,6 +134,11 @@ public sealed class CurrentManagedPluginLoadingTests
             Assert.Empty(plugin.ToolTypes);
             Assert.All(plugin.DocumentTypes, modelType =>
                 Assert.Equal("MySmallTools", modelType.Assembly.GetName().Name));
+            var workspace = provider.GetRequiredService<WorkspaceSession>();
+            Assert.Equal(4, workspace.GetAllDocumentCreationEntries().Count(entry =>
+                entry.DocumentTypeId.Value.StartsWith(
+                    "myavalonia.plugin.my-small-tools.document.",
+                    StringComparison.Ordinal)));
         }
         finally
         {
@@ -124,9 +149,9 @@ public sealed class CurrentManagedPluginLoadingTests
     }
 
     [Fact]
-    public void G10最终测试Zip通过真实发现组合并发布两个Document()
+    public void G10最终测试Zip通过真实V3发现组合并进入Workspace目录()
     {
-        var packageRoot = Environment.GetEnvironmentVariable("MYAVALONIA_G10_PACKAGE_ROOT");
+        var packageRoot = Environment.GetEnvironmentVariable("MYAVALONIA_G10_V3_PACKAGE_ROOT");
         if (string.IsNullOrWhiteSpace(packageRoot))
         {
             // 普通回归不构建 G10 测试 ZIP；专项脚本会设置变量并单独执行本测试。
@@ -167,6 +192,11 @@ public sealed class CurrentManagedPluginLoadingTests
             Assert.Empty(plugin.ToolTypes);
             Assert.All(plugin.DocumentTypes, modelType =>
                 Assert.Equal("DaTangAccountingHelpPlug", modelType.Assembly.GetName().Name));
+            var workspace = provider.GetRequiredService<WorkspaceSession>();
+            Assert.Equal(2, workspace.GetAllDocumentCreationEntries().Count(entry =>
+                entry.DocumentTypeId.Value.StartsWith(
+                    "myavalonia.plugin.datang-accounting-help.document.",
+                    StringComparison.Ordinal)));
         }
         finally
         {

@@ -6,7 +6,7 @@ using MySmallTools.ViewModels.SecretVideoPlayer;
 
 namespace MySmallTools.Tests;
 
-/// <summary>由测试显式拥有的 Host V2 文档关闭信号。</summary>
+/// <summary>由测试显式拥有的 Host Document 关闭信号。</summary>
 /// <remarks>
 /// 测试必须决定何时关闭文档，生产模型不得在构造失败时悄悄创建一个永不取消的替代令牌。
 /// 该类型因此既可作为普通非关闭依赖，也可主动触发关闭竞争测试。

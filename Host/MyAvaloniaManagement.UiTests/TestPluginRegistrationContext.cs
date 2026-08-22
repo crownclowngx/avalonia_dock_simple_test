@@ -6,8 +6,11 @@ using BiliDownloader.Plugin;
 
 namespace MyAvaloniaManagement.UiTests;
 
-/// <summary>Headless UI 测试使用的最小 V2 私有 Provider 注册入口。</summary>
-internal sealed class TestV2PluginRegistrationContext(
+/// <summary>
+/// Headless UI 测试使用的最小插件注册入口。它只复现贡献根类型的生命周期，
+/// 不复制 Host 的注册所有权校验或 Provider 构建逻辑，避免测试替身演变成第二套容器实现。
+/// </summary>
+internal sealed class TestPluginRegistrationContext(
     PluginId pluginId,
     IServiceCollection services) : IPluginRegistration
 {

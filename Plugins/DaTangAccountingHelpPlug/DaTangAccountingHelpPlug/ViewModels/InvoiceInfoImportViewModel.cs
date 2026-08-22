@@ -7,7 +7,7 @@ using MyAvaloniaManagement.PluginSdk;
 
 namespace DaTangAccountingHelpPlug.ViewModels;
 
-/// <summary>编排单个发票信息导入标签页的普通 Host V2 Document 模型。</summary>
+/// <summary>编排单个发票信息导入标签页的普通 Host V3 Document 模型。</summary>
 /// <remarks>
 /// 模型只拥有当前 Scope 的路径、日期、日志与命令，不继承 Dock，也不寻找宿主窗口。文件选择和
 /// 剪贴板分别通过窄业务端口访问，关闭令牌则由 Host 为当前 Document Scope 独立提供。

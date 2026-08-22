@@ -1,13 +1,13 @@
 # MyAvaloniaManagement 内部架构
 
-> 当前源码已完成未发布 V3 G9：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
+> 当前源码已完成未发布 V3 G12：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
 > 指定修订确认，激活已采用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属校验；
 > MyPlugTest 与 BiliDownloader 消息器已归各自插件 Provider 所有；Workspace Session、Dock Factory 和
 > Tool 只读投影已经分离；Host Catalog 与只含真实插件的 Plugin Registry 已分离；全屏端口已改为
-> 单参数 `TryPresent` 返回幂等租约，并由 Host 具体会话维护唯一活动展示。MyPlugTest 已从最终
-> Registry、私有 Provider 经 Workspace Session 与 Dock Adapter 完成 4 Document + 1 Tool 验收，
-> 并由真实 ZIP Loader 重放同一组合链。manifest、Document envelope、layout 保持 schema 2，默认
-> 数据根保持 `v2`；G10–G14 尚未实施。
+> 单参数 `TryPresent` 返回幂等租约，并由 Host 具体会话维护唯一活动展示。四插件已从最终 Registry、
+> 私有 Provider 经 Workspace Session 与 Dock Adapter 完成各自贡献验收，并由真实 ZIP Loader 重放
+> 同一组合链。manifest、Document envelope、layout 保持 schema 2，默认数据根保持 `v2`；
+> G13–G14 尚未实施。
 
 ## 1. 目标与边界
 

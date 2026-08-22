@@ -15,8 +15,8 @@ using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.PluginTests;
 
-/// <summary>通过真实 Host V2 组合链验证 DaTang 的声明、Scope、窗口端口和内容协议。</summary>
-public sealed class DaTangAccountingHelpPlugV2MigrationTests
+/// <summary>通过真实 Host V3 组合链验收 DaTang 的声明、Scope、窗口端口和内容协议。</summary>
+public sealed class DaTangAccountingHelpPlugV3AcceptanceTests
 {
     [Fact]
     public void 模块一次声明两个Document及精确View元数据()

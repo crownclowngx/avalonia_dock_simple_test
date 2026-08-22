@@ -163,7 +163,7 @@ public sealed class ManagedOnlyPluginLoadingTests
     }
 
     [Fact]
-    public void 四个真实业务插件全部进入最终V2入口()
+    public void 四个真实业务插件全部进入最终V3入口()
     {
         var biliAssembly = typeof(BiliDownloader.Plugin.BiliDownloaderPluginModule).Assembly;
         var biliModule = Assert.Single(biliAssembly.ExportedTypes, type =>

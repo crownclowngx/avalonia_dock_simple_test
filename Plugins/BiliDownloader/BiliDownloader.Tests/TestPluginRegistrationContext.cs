@@ -6,7 +6,7 @@ using MyAvaloniaManagement.PluginSdk.UI;
 namespace BiliDownloader.Tests;
 
 /// <summary>
-/// 测试组合根使用的最小 V2 注册入口。它复现注册 API 规定的模型生命周期并记录不可变描述符，
+/// 测试组合根使用的最小插件注册入口。它复现当前注册 API 规定的模型生命周期并记录不可变描述符，
 /// 但不依赖 HostRuntime、Dock 或磁盘 manifest。
 /// </summary>
 internal sealed class TestPluginRegistrationContext(

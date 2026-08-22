@@ -10,13 +10,16 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [V1 G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
 > [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。当前源码已完成未发布
-> V3 G9；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
+> V3 G12；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
 > 修订保存见 [V3 G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)，互斥激活见
 > [V3 G3 专项记录](../plan-history/host-v3/g3-exclusive-document-activation.md)，Workspace/Dock 拆分见
 > [V3 G6 专项记录](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)，Host/插件目录分离见
 > [V3 G7 专项记录](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)，全屏租约与资源边界见
-> [V3 G8 专项记录](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)，MyPlugTest 最终验收见
-> [V3 G9 专项记录](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)。
+> [V3 G8 专项记录](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)，四插件最终验收见
+> [V3 G9](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)、
+> [G10](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
+> [G11](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)与
+> [G12](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)专项记录。
 
 ## 当前文档与非发布基线门禁
 
@@ -68,7 +71,7 @@ G2 专项入口为：
 ```
 
 脚本串行运行 SDK、Host 保存/关闭、真实插件集成、MyPlugTest 和 BiliDownloader 定向测试，并扫描生产
-源码不得出现旧 `CaptureContentAsync`、无参 `AcceptChanges()` 或新旧双轨。实际通过 **157/157**；
+源码不得出现旧 `CaptureContentAsync`、无参 `AcceptChanges()` 或新旧双轨。当前过滤器复跑通过 **159/159**；
 完整 Host 为 Unit 173、UI 53、Plugin 202，共 **428/428**，行覆盖率 **83.28%**、分支覆盖率
 **69.02%**。SDK、MyPlugTest、DaTang、BiliDownloader、MySmallTools 全量分别为 36、3、62、718、184，
 全部通过。结果与回滚边界见 [V3 G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)。
@@ -86,7 +89,7 @@ G3 专项入口为：
 
 该入口串行验证 SDK、Host、Headless UI、三插件 Host 集成及 MyPlugTest、MySmallTools、BiliDownloader
 插件测试，并扫描六个生产源码根，禁止旧 `DocumentActivationContext` 回流。它还建立独立消费项目，
-证明旧类型产生 `CS0246`，避免只删除文本基线却在程序集保留兼容入口。当前专项为 **143/143**。
+证明旧类型产生 `CS0246`，避免只删除文本基线却在程序集保留兼容入口。当前专项为 **145/145**。
 摘要写入 `artifacts/test-results/ExclusiveDocumentActivation/summary.json`，明确记录未调用 AIFLOW、
 Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
 
@@ -109,40 +112,41 @@ ReleaseAcceptance、发布门禁和 `publishable` 均为 `false`。
 BiliDownloader **718/718**。四插件各两次隔离测试包完全一致，具体文件数和 SHA-256 见
 [V2 G13 专项记录](../plan-history/host-v2/g13-remove-v1-production-surface.md)。
 
-### V2 G12 BiliDownloader 专项门禁
+### V3 G12 BiliDownloader 专项门禁
 
-修改 BiliDownloader V2 入口、Document schema 3、readiness、Lifecycle、Tool 或 JSON 边界时运行：
+修改 BiliDownloader V3 入口、Document schema 3、readiness、Lifecycle、Tool 或 JSON 边界时运行：
 
 ```powershell
-.\scripts\Test-BiliDownloaderV2.ps1 -Configuration Release -NoRestore
+.\scripts\Test-BiliDownloaderV3.ps1 -Configuration Release -NoRestore
 ```
 
-脚本输出到 `artifacts/test-results/BiliDownloaderV2/`，串行运行 Host Plugin、Headless UI、SDK 边界和
-BiliDownloader 完整单元测试，要求 0 失败、0 跳过；随后完成结构扫描、两次隔离 ZIP 构建、逐文件与
-归档摘要比较、共享程序集/RID 边界扫描，以及解压后的真实 Loader、Preflight、Registry 和私有
-Provider 组合。本次实际为 **812/812**，测试 ZIP 14 个文件，归档 SHA-256 为
-`4F73359B0B1AD8E559391EC254BF892794EFF1FED79973D3E2B8F60C12B331D8`。BiliDownloader 覆盖率门禁
-为行 **83.77%** / 分支 **67.62%**，现有阈值没有降低。完整设计与失败矩阵见
-[V2 G12 专项记录](../plan-history/host-v2/g12-bili-downloader-v2.md)。
+脚本输出到 `artifacts/test-results/BiliDownloaderV3/`，串行运行 SDK、Host Unit、Headless UI、
+Plugin/Dock 和 BiliDownloader 完整测试，要求 0 失败、0 跳过；随后完成消息/边界扫描、两次隔离 ZIP、
+共享程序集与 win-x64 RID 闭包扫描，以及解压后的真实 Loader、Provider、Registry 和 Workspace 组合。
+本次实际为 **1219/1219**；Host 为 **84.39% / 70.58%**，插件总体为 **83.80% / 67.54%**，
+A/B/C 组分别为 **89.09/76.82**、**85.12/69.22**、**76.80/56.55**。两份 14 文件 ZIP 的
+SHA-256 均为 `54A396939080E2E93C84B621E4BC86528A9F2BE8993FC42FF8732637C212D8F5`。完整设计与失败矩阵见
+[V3 G12 专项记录](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)。
 
 该入口固定记录 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、
 `releaseAcceptance=false`、`releaseGate=false`、`publishable=false`，不调用历史
 `Release-BiliDownloaderP0.ps1`，也不访问真实账号、Bilibili 或真实 FFmpeg 媒体。
 
-### V2 G11 MySmallTools 专项门禁
+### V3 G11 MySmallTools 专项门禁
 
-修改 MySmallTools V2 入口、四个 Document、关闭令牌、原生播放器、媒体库、批处理或全屏端口时运行：
+修改 MySmallTools V3 入口、四个 Document、关闭令牌、原生播放器、媒体库、批处理或全屏端口时运行：
 
 ```powershell
-.\scripts\Test-MySmallToolsV2.ps1 -Configuration Release
+.\scripts\Test-MySmallToolsV3.ps1 -Configuration Release -NoRestore
 ```
 
-脚本输出到 `artifacts/test-results/MySmallToolsV2/`，执行 Plugin/Loader/SDK 边界与 Headless UI
-定向测试、完整 MySmallTools 单元测试、真实 G3 媒体 Harness、两次确定性打包、禁止程序集扫描和
-最终 ZIP 真实加载。本次实际为 **275/275**、真实媒体 20 轮、测试 ZIP 431 个文件；归档 SHA-256 为
-`2B2879D28D92A8251A21674D83F5752814AE2A09D0D01EED999061E168D38126`。数量和摘要只是本次证据，
-脚本不硬编码它们作为未来门槛。完整设计与资源回零证据见
-[V2 G11 专项记录](../plan-history/host-v2/g11-my-small-tools-v2.md)。
+脚本输出到 `artifacts/test-results/MySmallToolsV3/`，执行 SDK、Host Unit、Headless UI、Plugin/Dock、
+完整 MySmallTools 单元测试、20 轮本地真实媒体 Harness、两次确定性打包和最终 Workspace 加载。
+本次实际为 **676/676**；Host 为 **84.39% / 70.58%**，插件为 **72.59% / 48.12%**；播放器、
+媒体输入、加密流、Surface Restore、Native Dispatcher、缓存及关闭后的 Document/View 弱引用均归零。
+两份 431 文件 ZIP 的 SHA-256 均为
+`8C017E7059FFFB62156E19AAC18E86BF5170184FA0E9DABB048019B668CC13BF`。完整设计与资源证据见
+[V3 G11 专项记录](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)。
 
 该入口明确不使用 AIFLOW，不运行 Windows CI、Windows Smoke、ReleaseAcceptance、发布门禁、签名、
 上传或标签；也不调用历史 MySmallTools 产品 G11 的 Accept/Approve 脚本。
@@ -288,30 +292,24 @@ V2 G9 的 86 项专项、11 文件测试 ZIP、当时的脚本名称和覆盖率
 [V2 G9 历史记录](../plan-history/host-v2/g9-my-plug-test-v2.md)中。该入口已经随 V3 G9 收口删除，当前文档
 不再把历史命令写成可执行门禁，也不保留兼容包装脚本。
 
-### V2 G10 当前绿色基线
+### V3 G10 DaTangAccountingHelpPlug 专项门禁
 
-G10 非发布专项入口为：
+修改 DaTang 双 Document、Revision 保存、窗口交互或严格内容协议时运行：
 
 ```powershell
-.\scripts\Test-DaTangAccountingHelpPlugV2.ps1 -Configuration Release
+.\scripts\Test-DaTangAccountingHelpPlugV3.ps1 -Configuration Release -NoRestore
 ```
 
-脚本串行执行 DaTang 真实 Host 组合与业务测试、受影响 Headless UI、Plugin SDK 窗口
-Host Port 契约、静态依赖扫描，再建立两份隔离测试 ZIP。解压后必须经过真实
-`PluginLoadContext`、模块预检、私有 Provider 组合，并形成 2 Document + 0 Tool Registry。
+脚本串行执行 SDK、Host Unit、Headless UI、Plugin/Dock 与 DaTang 完整测试，扫描旧阶段入口和越界依赖，
+再建立两份隔离测试 ZIP。解压后必须经过真实 Loader、私有 Provider、Registry 与 Workspace，形成
+2 Document + 0 Tool。专项实际为 **554/554**；Host 为 **84.39% / 70.58%**，插件为
+**70.09% / 49.31%**，关键 Document/Codec 行覆盖率为 **97.10% / 97.14%**。两份 9 文件 ZIP 的
+SHA-256 均为 `1ADFA975BB9B3A04F58FA0948E05C13178067BD51CF8721B83061435B17465BD`。摘要位于
+`artifacts/test-results/DaTangAccountingHelpPlugV3/summary.json`；职责、时序与回滚边界见
+[V3 G10 专项记录](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)。
 
-专项实际为 Plugin 60、Headless UI 15、Plugin SDK 13、DaTang 业务 62、最终 ZIP 加载 1，
-共 **151/151**；ZIP 为 9 个文件。摘要位于
-`artifacts/test-results/DaTangAccountingHelpPlugV2/summary.json`，固定记录 `aiflow=false`、
-`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、`releaseGate=false`、
-`publishable=false`。贡献矩阵、窗口端口、内容 schema、所有权和回滚边界见
-[V2 G10 专项记录](../plan-history/host-v2/g10-datang-accounting-help-v2.md)。
-
-完整回归为 Host Unit 172、UI 50、Plugin 205，共 **427/427**；行覆盖率 **83.15%**、
-分支覆盖率 **68.74%**，既有总量、分支和关键文件下限均满足。SDK 单元 **33/33**；
-BiliDownloader **719/719**、DaTang **62/62**、MySmallTools **183/183**。Core/UI API 与真实
-nupkg 消费门禁通过。本轮不运行 AIFLOW、Windows CI、Windows Smoke、ReleaseAcceptance、
-正式发布门禁、签名、上传、标签或发布；不得用下文的历史 Host V1 G10 Windows 证据替代本轮事实。
+三项 V3 插件摘要均固定记录 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、
+`releaseAcceptance=false`、`releaseGate=false`、`publishable=false`，不调用 Windows 或发布入口。
 
 ## G14 V2 正式发布门禁
 

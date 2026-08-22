@@ -19,10 +19,10 @@ using MyAvaloniaManagement.PluginSdk.UI;
 namespace BiliDownloader.Tests;
 
 /// <summary>
-/// G12 最终 Host V2 边界测试。业务算法由既有分组覆盖，本类专门证明贡献、Scope、
+/// G12 最终 Host V3 边界测试。业务算法由既有分组覆盖，本类专门证明贡献、Scope、
 /// 原子恢复、readiness 与程序集依赖不再回退到 Legacy/Dock。
 /// </summary>
-public sealed class G12V2MigrationTests
+public sealed class BiliDownloaderV3AcceptanceTests
 {
     [Fact]
     public void 模块精确声明一个Document一个Tool一个Lifecycle和两个创建意图()

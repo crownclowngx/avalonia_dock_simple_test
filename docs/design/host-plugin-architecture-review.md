@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-22（已同步 Managed Plugin V3 G9 MyPlugTest 最终验收）<br>
+> 更新日期：2026-08-22（已同步 Managed Plugin V3 G10–G12 三插件最终验收）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
@@ -9,13 +9,13 @@
 > V2 当前状态：G0–G14 已完成。四个业务插件均使用正式 SDK、声明式贡献与普通模型；Legacy
 > 项目、兼容适配和过渡构建属性已经删除，API Shipped 与两轮隔离发布门禁已经建立。
 
-> V3 当前状态：G0–G9 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
+> V3 当前状态：G0–G12 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
 > 保存已使用修订协议，激活已使用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属；
 > MyPlugTest 与 BiliDownloader 的消息器已归各自插件 Provider 所有；唯一 Workspace Session、Dock
 > Factory Adapter 和无 Dock Tool ReadModel 已建立；Host Catalog 与只含真实插件的 Plugin Registry
-> 已分离；全屏已改为单参数展示端口返回幂等租约，Host 具体会话维护唯一活动展示。MyPlugTest 已通过
-> 最终 Registry、私有 Provider、Workspace Session、Dock Adapter 与真实 ZIP Loader 完成验收；磁盘
-> schema 仍为 2，G10–G14 尚未实施。
+> 已分离；全屏已改为单参数展示端口返回幂等租约，Host 具体会话维护唯一活动展示。四插件已通过最终
+> Registry、私有 Provider、Workspace Session、Dock Adapter 与真实 ZIP Loader 完成验收；磁盘
+> schema 仍为 2，G13–G14 尚未实施。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -528,6 +528,20 @@ Workspace 创建，精确形成 4 Document + 1 Tool。
 Windows CI/Smoke 或发布门禁。完整职责、保存竞争、消息隔离、ZIP 证据和回滚边界见
 [G9 MyPlugTest V3 验收](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)。
 
+### 6.14 2026-08-22 V3 G10–G12 三个业务插件最终验收
+
+**[当前事实]** DaTang 以两个独立 Document Scope 验证 Revision 保存竞争、严格内容读取与窗口交互取消；
+MySmallTools 以四个非持久化 Document 验证关闭令牌、全屏租约和 20 轮真实媒体资源归零；BiliDownloader
+以 1 Document + 1 Tool + 1 Lifecycle 验证插件私有消息、readiness 与全新对象图恢复。三者都从真实
+Loader/Provider 进入同一 `WorkspaceSession`，Host 没有增加任何插件类型特判。
+
+三项门禁分别为 **554/554**、**676/676**、**1219/1219**，Host 行/分支覆盖率均为
+**84.39% / 70.58%**；插件覆盖率分别为 **70.09% / 49.31%**、**72.59% / 48.12%**、
+**83.80% / 67.54%**。所有测试 ZIP 均经两次隔离构建和逐文件比较，仅作为非发布证据。详细职责、
+兼容边界与回滚单位见 [G10](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
+[G11](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) 和
+[G12](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) 专项记录。
+
 ## 7. 宿主应该给插件多大自由度
 
 ### 7.1 当前可信模型下的责任边界
@@ -553,7 +567,7 @@ flowchart TB
     Registry --> Workspace
     Provider --> Models["Document / Tool / Lifecycle 普通模型"]
     Workspace --> Adapters["Host internal Dock Adapter"]
-    Ports["窄 Host Ports<br/>Event / Window / Fullscreen"] --> Provider
+    Ports["窄 Host Ports<br/>Window / Document / Fullscreen"] --> Provider
     Adapters --> Dock["Host 独占 Dock 树"]
     Views["插件 Avalonia View"] --> Adapters
 ```

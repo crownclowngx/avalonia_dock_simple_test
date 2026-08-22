@@ -3,7 +3,7 @@ using MyAvaloniaManagement.PluginSdk;
 namespace BiliDownloader.Constants;
 
 /// <summary>
-/// 集中保存 BiliDownloader 在 Host V2 中公开的稳定身份。
+/// 集中保存 BiliDownloader 在 Host V3 中公开的稳定身份。
 /// </summary>
 /// <remarks>
 /// 本类型只描述当前契约，不保留 GUID 或字符串 Tool 别名。旧信封与旧别名属于

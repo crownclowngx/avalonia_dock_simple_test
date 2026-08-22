@@ -14,14 +14,16 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > 生产面，G14 已冻结 2.0.0 API、建立两轮隔离发布门禁并完成文档签署。见
 > [V2 G14 封板记录](./docs/plan-history/host-v2/g14-v2-sealing.md)。
 
-> 当前源码已完成未发布的 V3 G9：产品、Core/UI SDK 与四插件版本为 `3.0.0`；Document 保存使用
+> 当前源码已完成未发布的 V3 G12：产品、Core/UI SDK 与四插件版本为 `3.0.0`；Document 保存使用
 > 修订快照和指定修订确认，激活输入使用互斥的 New/Restore 类型，插件注册改为 Host 最终提交端口与
 > 贡献生命周期并强制 ID 归属；事件通信由 MyPlugTest、BiliDownloader 各自的插件 Provider 私有持有；
 > Workspace/Dock 已拆分，Host Catalog 与只含真实插件的 Plugin Registry 已分离；UI SDK 全屏契约已
 > 收口为 `TryPresent(Control)` 返回幂等 `IDisposable` 租约，Host 由具体会话维护唯一活动租约；
-> MyPlugTest 已通过最终 Workspace、Host 保存竞争、Headless UI 和真实 3.0.0 ZIP 验收。
+> 四个插件均已通过最终 Workspace、Host 保存竞争或资源边界、Headless UI 和真实 3.0.0 ZIP 验收。
 > manifest、Document envelope、layout 仍为 schema 2，默认数据根仍为 `v2`。实施证据见
-> [V3 G9 MyPlugTest 验收](./docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)。
+> [V3 G10 DaTang 验收](./docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
+> [V3 G11 MySmallTools 验收](./docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)和
+> [V3 G12 BiliDownloader 验收](./docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)。
 
 ## 核心扩展模型
 
@@ -51,14 +53,13 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 
 四个当前插件均已按 V3 G1 重新标记版本并继续使用 Managed Plugin 构建协议；三个持久化插件已在
 V3 G2 接入修订保存，全部 11 个插件 Document 已在 V3 G3 接入互斥激活，四插件已在 V3 G4 通过
-Host 最终提交与 ID 归属门禁，并在 V3 G5 把插件事件通信收回插件内部；MyPlugTest 已在 V3 G9
-完成最终 Workspace、UI 与真实包验收，其余业务语义仍由 V2 G14 签署，G10–G12 再完成另外三个插件
-的最终 V3 验收。BiliDownloader
+Host 最终提交与 ID 归属门禁，并在 V3 G5 把插件事件通信收回插件内部；四插件已在 V3 G9–G12
+依次完成最终 Workspace、UI、资源边界与真实包验收。BiliDownloader
 精确声明 1 个可持久化 Document、1 个右侧可隐藏 Tool 与 1 个 Lifecycle；Legacy 项目、旧入口探针与
 Host/Common 双区间已经删除。缺少入口 `.deps.json` 或依赖历史加载 Facade 的代码不会
 进入运行链。
 
-## V3 G9 MyPlugTest 验收与既有 V3 语义
+## V3 G12 四插件验收与既有 V3 语义
 
 历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。V2 沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
@@ -195,10 +196,13 @@ TestResults/  需要保留的阶段验收与人工验证记录
 根 README 只提供项目概览。继续阅读时，从以下入口选择：
 
 - [项目文档导航](./docs/README.md)：按用途浏览全部解决方案级文档；
-- [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G9 MyPlugTest 验收及 G2–G8 平台语义为事实源；
+- [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G9–G12 四插件验收及 G2–G8 平台语义为事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G9 已完成事实与 G10–G14 后续边界；
+- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G12 已完成事实与 G13–G14 后续边界；
+- [V3 G12 BiliDownloader 验收](./docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)：查看保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合及 1219 项非发布证据；
+- [V3 G11 MySmallTools 验收](./docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)：查看全屏租约、20 轮真实媒体资源归零、真实 Host 组合及 676 项非发布证据；
+- [V3 G10 DaTang 验收](./docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)：查看双 Document、保存竞争、文件交互、真实 Host 组合及 554 项非发布证据；
 - [V3 G9 MyPlugTest 验收](./docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)：查看最终 Workspace 创建链、保存竞争、消息释放、UI、SOLID 和 501 项非发布证据；
 - [V3 G8 全屏租约与 Host V3 骨架](./docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)：查看租约状态机、原生表面迁移、SOLID 取舍、672 项测试和 20 轮资源证据；
 - [V3 G7 Host Catalog 与 Plugin Registry](./docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)：查看目录职责、激活/失败时序、SOLID 取舍、448 项测试和非发布边界；
@@ -299,12 +303,12 @@ V2 封板时曾在干净 Git 提交上执行以下 Windows 本地发布门禁；
 - G5/G7 已完成：每个 manifest 插件拥有独立 Provider 并只通过最终 UI SDK 发布到 Plugin Registry；
   Host Welcome/Tool 由独立 Host Catalog 声明；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
-- 当前代码版本线为未发布 V3 G9；Core/UI 包、manifest schema 2、独立容器、Host 独立目录、
+- 当前代码版本线为未发布 V3 G12；Core/UI 包、manifest schema 2、独立容器、Host 独立目录、
   Document envelope v2、Layout v2 和 Host internal 生命周期继续使用既有边界，Document 保存已采用
   修订快照与指定修订确认，Document 激活已采用互斥 New/Restore 类型，插件端口和贡献根已改为 Host
   最终提交并强制 ID 归属，插件消息由对应插件 Provider 私有持有；Workspace Session、Dock Factory 和
-  Tool 只读投影以及 Host Catalog / Plugin Registry 已经分离，全屏已使用单参数租约端口；MyPlugTest 已
-  通过最终 Workspace 与真实 ZIP 验收。V3 G10–G14 尚未实施，
+  Tool 只读投影以及 Host Catalog / Plugin Registry 已经分离，全屏已使用单参数租约端口；四插件已
+  依次通过最终 Workspace、专项资源边界与真实 ZIP 验收。V3 G13–G14 尚未实施，
   不得把 v3 Unshipped 或本地测试包描述为正式发布承诺。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

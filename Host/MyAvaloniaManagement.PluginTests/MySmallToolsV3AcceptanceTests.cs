@@ -11,8 +11,8 @@ using MySmallTools.Views.SecretVideoPlayer;
 
 namespace MyAvaloniaManagement.PluginTests;
 
-/// <summary>通过真实 Host V2 组合链验证 MySmallTools 的贡献、Scope 和关闭所有权。</summary>
-public sealed class MySmallToolsV2MigrationTests
+/// <summary>通过真实 Host V3 组合链验收 MySmallTools 的贡献、Scope 和关闭所有权。</summary>
+public sealed class MySmallToolsV3AcceptanceTests
 {
     [Fact]
     public void 模块一次声明四个非持久化Document及精确View元数据()

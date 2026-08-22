@@ -11,16 +11,19 @@ using DaTangAccountingHelpPlug.Views;
 using DaTangAccountingHelpPlug.Views.BankBalanceReconciliation;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Storage;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using Xunit;
 
 namespace MyAvaloniaManagement.UiTests;
 
-/// <summary>在 Headless Avalonia 中验证 DaTang 两类 V2 Document 的真实 View 组合和绑定。</summary>
-public sealed class DaTangAccountingHelpPlugV2UiTests
+/// <summary>在 Headless Avalonia 中验收 DaTang 两类 V3 Document 的真实 View 组合和绑定。</summary>
+public sealed class DaTangAccountingHelpPlugV3UiTests
 {
     [AvaloniaFact]
     public async Task Host窗口端口拒绝空参数取消调用和后台线程调用()
@@ -138,6 +141,39 @@ public sealed class DaTangAccountingHelpPlugV2UiTests
             new RestoreDocumentActivation("错误恢复", content)).AsTask());
     }
 
+    [AvaloniaFact]
+    public async Task Host保存旧修订后保留期间新编辑并由第二次保存清脏()
+    {
+        using var composition = DaTangUiComposition.Create();
+        var document = await composition.Workspace.CreateAndPublishDocumentAsync(
+            DaTangContributionIds.BankBalanceReconciliationDocument,
+            new NewDocumentActivation("银行对账保存竞争"));
+        var model = Assert.IsType<BankBalanceReconciliationViewModel>(document.Model);
+        model.Source.EnterpriseLedgerPath = "captured.xlsx";
+        composition.Storage.SavePath = Path.Combine(composition.DirectoryPath, "reconciliation.mydoc");
+
+        var saveService = composition.Provider.GetRequiredService<DocumentSaveService>();
+        var firstSave = saveService.SaveAsync(document);
+        await composition.Storage.PrimaryWriteStarted.WaitAsync(TimeSpan.FromSeconds(5));
+
+        // 第一次保存已经捕获旧修订但尚未提交。这里推进业务 Revision，随后 Host 只能确认
+        // 已写入磁盘的旧版本，不能把保存期间产生的新输入错误地标记为已保存。
+        model.Source.BankStatementPath = "edited-during-save.xlsx";
+        composition.Storage.ReleasePrimaryWrite();
+        var firstResult = await firstSave;
+
+        Assert.Equal(DocumentSaveStatus.Saved, firstResult.Status);
+        Assert.True(firstResult.HasPendingChanges);
+        Assert.True(model.IsDirty);
+        Assert.True(document.IsModified);
+
+        var secondResult = await saveService.SaveAsync(document);
+        Assert.Equal(DocumentSaveStatus.Saved, secondResult.Status);
+        Assert.False(secondResult.HasPendingChanges);
+        Assert.False(model.IsDirty);
+        Assert.False(document.IsModified);
+    }
+
     private sealed class DaTangUiComposition : IDisposable
     {
         private readonly string _directory;
@@ -151,16 +187,23 @@ public sealed class DaTangAccountingHelpPlugV2UiTests
             HostDiagnosticSession diagnostics,
             ServiceProvider provider,
             PluginProviderOwner pluginProviders,
-            DocumentScopeRegistry documentScopes)
+            DocumentScopeRegistry documentScopes,
+            WorkspaceSession workspace,
+            ControlledHostStorageService storage)
         {
             _directory = directory;
             _diagnostics = diagnostics;
             Provider = provider;
             _pluginProviders = pluginProviders;
             _documentScopes = documentScopes;
+            Workspace = workspace;
+            Storage = storage;
         }
 
         internal ServiceProvider Provider { get; }
+        internal WorkspaceSession Workspace { get; }
+        internal ControlledHostStorageService Storage { get; }
+        internal string DirectoryPath => _directory;
 
         internal static DaTangUiComposition Create()
         {
@@ -170,9 +213,11 @@ public sealed class DaTangAccountingHelpPlugV2UiTests
             var registryBuilder = new PluginRegistryBuilder();
             var pluginProviders = new PluginProviderOwner();
             var documentScopes = new DocumentScopeRegistry();
+            var storage = new ControlledHostStorageService();
             var services = new ServiceCollection();
             services.AddApplicationServices(registryBuilder, pluginProviders, documentScopes);
             services.AddViewModels();
+            services.AddSingleton<IHostStorageService>(storage);
             services.AddSingleton(diagnostics);
             services.AddSingleton<IHostDiagnosticSink>(diagnostics);
             services.AddSingleton(PluginModuleCatalog.CreateForTests(
@@ -191,14 +236,24 @@ public sealed class DaTangAccountingHelpPlugV2UiTests
                 documentScopes,
                 diagnostics);
             _ = provider.GetRequiredService<PluginRegistry>();
+            var workspace = provider.GetRequiredService<WorkspaceSession>();
+            var layout = workspace.CreateLayout();
+            workspace.DockFactory.InitLayout(layout);
             return new DaTangUiComposition(
-                directory, diagnostics, provider, pluginProviders, documentScopes);
+                directory,
+                diagnostics,
+                provider,
+                pluginProviders,
+                documentScopes,
+                workspace,
+                storage);
         }
 
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
+            Workspace.Dispose();
             _documentScopes.CloseAll();
             _pluginProviders.Dispose();
             Provider.Dispose();
