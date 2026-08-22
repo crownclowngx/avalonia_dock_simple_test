@@ -1,4 +1,5 @@
 using BiliDownloader.Plugin;
+using BiliDownloader.Messaging;
 using DaTangAccountingHelpPlug.Plugin;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,7 @@ using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using Avalonia.Controls;
 using MyPlugTest.Plugin;
+using MyPlugTest.Messaging;
 using MySmallTools.Plugin;
 
 namespace MyAvaloniaManagement.PluginTests;
@@ -19,6 +21,36 @@ namespace MyAvaloniaManagement.PluginTests;
 /// </summary>
 public sealed class PluginContainerIsolationTests
 {
+    [Fact]
+    public void Host与插件Provider只解析各自拥有的消息器()
+    {
+        var myPlugId = new PluginId("myavalonia.plugin.my-plug-test");
+        var biliId = new PluginId("myavalonia.plugin.bili-downloader");
+        using var composition = Compose(
+            (myPlugId.Value, new MyPlugTestPluginModule()),
+            (biliId.Value, new BiliDownloaderPluginModule()));
+
+        var myPlugBus = composition.PluginProviders.GetRequiredService(
+            myPlugId,
+            typeof(IMyPlugTestEventBus));
+        var biliBus = composition.PluginProviders.GetRequiredService(
+            biliId,
+            typeof(IBiliDownloaderEventBus));
+
+        Assert.IsAssignableFrom<IMyPlugTestEventBus>(myPlugBus);
+        Assert.IsAssignableFrom<IBiliDownloaderEventBus>(biliBus);
+        Assert.Null(composition.HostProvider.GetService<IMyPlugTestEventBus>());
+        Assert.Null(composition.HostProvider.GetService<IBiliDownloaderEventBus>());
+        Assert.Throws<InvalidOperationException>(() =>
+            composition.PluginProviders.GetRequiredService(
+                myPlugId,
+                typeof(IBiliDownloaderEventBus)));
+        Assert.Throws<InvalidOperationException>(() =>
+            composition.PluginProviders.GetRequiredService(
+                biliId,
+                typeof(IMyPlugTestEventBus)));
+    }
+
     [Fact]
     public void 插件从空集合开始且清理私有描述符不影响宿主对象图()
     {
@@ -386,8 +418,8 @@ public sealed class PluginContainerIsolationTests
     {
         public void Configure(IPluginRegistration context)
         {
-            context.Services.AddSingleton<IHostEventBus, PrivateEventBus>();
-            context.Services.AddKeyedSingleton<IHostEventBus, PrivateEventBus>("shadow");
+            context.Services.AddSingleton<IDocumentLifetime, PrivateDocumentLifetime>();
+            context.Services.AddKeyedSingleton<IDocumentLifetime, PrivateDocumentLifetime>("shadow");
         }
     }
 
@@ -532,17 +564,10 @@ public sealed class PluginContainerIsolationTests
     public sealed class FirstPrivateService;
     public sealed class SecondPrivateService;
 
-    public sealed class PrivateEventBus : IHostEventBus
+    public sealed class PrivateDocumentLifetime : IDocumentLifetime
     {
-        public IDisposable Subscribe<TEvent>(Action<TEvent> handler) where TEvent : class =>
-            new EmptySubscription();
-
-        public void Publish<TEvent>(TEvent message) where TEvent : class { }
-
-        private sealed class EmptySubscription : IDisposable
-        {
-            public void Dispose() { }
-        }
+        public CancellationToken ClosingToken => CancellationToken.None;
+        public bool IsClosing => false;
     }
 
     public sealed class NativeDiProbe(

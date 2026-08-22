@@ -1,4 +1,5 @@
 using BiliDownloader.Messages;
+using BiliDownloader.Messaging;
 using BiliDownloader.Models;
 using BiliDownloader.Models.ContentSources;
 using BiliDownloader.Services.Auth;
@@ -6,7 +7,6 @@ using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Persistence;
 using BiliDownloader.Services.Naming;
 using BiliDownloader.Services.Download.Extras;
-using MyAvaloniaManagement.PluginSdk;
 using System.Threading.Channels;
 
 namespace BiliDownloader.Services.Download;
@@ -26,7 +26,7 @@ public sealed class BiliDownloadCoordinator
     private static string ToStorage(DownloadTaskStatus s) => DownloadTaskStatusMapper.ToStorageString(s);
 
     private readonly IDownloadTaskRepository _repository;
-    private readonly IHostEventBus _eventBus;
+    private readonly IBiliDownloaderEventBus _eventBus;
     private readonly IDisposable _submitSubscription;
     private readonly IDownloadProgressTracker _tracker;
     private readonly IDownloadTaskExecutor _executor;
@@ -87,7 +87,7 @@ public sealed class BiliDownloadCoordinator
 
     public BiliDownloadCoordinator(
         IDownloadTaskRepository repository,
-        IHostEventBus eventBus,
+        IBiliDownloaderEventBus eventBus,
         IDownloadProgressTracker tracker,
         IDownloadTaskExecutor executor,
         IBiliDataPaths paths,

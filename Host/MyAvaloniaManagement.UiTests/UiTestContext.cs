@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Appearance;
-using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels;
@@ -26,13 +25,10 @@ internal sealed class UiTestContext : IDisposable
             Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(TempDirectory);
         Storage = new UiStorageService();
-        EventBus = new HostEventBus();
-
         var services = new ServiceCollection();
         services.AddApplicationServices();
         services.AddViewModels();
         services.AddSingleton<IHostStorageService>(Storage);
-        services.AddSingleton<IHostEventBus>(EventBus);
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
         services.AddSingleton(new AppearanceSettingsStore(
@@ -52,8 +48,6 @@ internal sealed class UiTestContext : IDisposable
     public string TempDirectory { get; }
 
     public UiStorageService Storage { get; }
-
-    public HostEventBus EventBus { get; }
 
     public Microsoft.Extensions.DependencyInjection.ServiceProvider Provider { get; }
 

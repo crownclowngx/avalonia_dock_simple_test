@@ -241,7 +241,7 @@ public sealed class BiliLoginStateServiceTests
     {
         var api = new ScriptedSessionApi();
         api.EnqueueResult(new LoginValidationResult(LoginValidationStatus.Invalid));
-        var messenger = new RecordingHostEventBus { ThrowOnPublish = true };
+        var messenger = new RecordingBiliDownloaderEventBus { ThrowOnPublish = true };
         var state = new BiliLoginStateService(new FaultingCredentialStore(), api, messenger);
 
         var result = await state.LoginAsync([("SESSDATA", "invalid")]);
@@ -260,7 +260,7 @@ public sealed class BiliLoginStateServiceTests
     private static BiliLoginStateService CreateState(
         IBiliCredentialStore store,
         IBiliSessionApi api)
-        => new(store, api, new IsolatedHostEventBus());
+        => new(store, api, new IsolatedBiliDownloaderEventBus());
 
     private sealed class ScriptedSessionApi : IBiliSessionApi
     {

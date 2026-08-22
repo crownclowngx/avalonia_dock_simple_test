@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MyAvaloniaManagement.PluginSdk;
+using BiliDownloader.Messaging;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download.Extras;
@@ -68,7 +68,7 @@ public class SubmitContext
 public partial class VideoListViewModel : ObservableObject, IDisposable
 {
     private readonly Func<SubmitContext> _getSubmitContext;
-    private readonly IHostEventBus? _eventBus;
+    private readonly IBiliDownloaderEventBus? _eventBus;
     private readonly Action<string> _onStatusMessage;
     private readonly IFfmpegRuntimeLocator _ffmpegService;
     private readonly Action? _onConfigurationBlocked;
@@ -128,7 +128,7 @@ public partial class VideoListViewModel : ObservableObject, IDisposable
     /// <param name="onStatusMessage">状态消息回调（传回主 VM 显示日志）</param>
     public VideoListViewModel(
         Func<SubmitContext> getSubmitContext,
-        IHostEventBus? eventBus,
+        IBiliDownloaderEventBus? eventBus,
         Action<string> onStatusMessage,
         IFfmpegRuntimeLocator ffmpegService,
         Action? onConfigurationBlocked = null,

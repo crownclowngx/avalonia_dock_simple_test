@@ -1,8 +1,8 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G4 已完成，G5–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
+> 状态：实施中；G0–G5 已完成，G6–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
 > Document 激活已采用 V3 G3 互斥 New/Restore 类型，插件注册已采用 V3 G4 Host 最终提交与 ID 归属校验；
-> 其余生产语义仍由 V2 G14 签署，代码与程序集版本线处于未发布 V3。
+> 插件事件通信已采用 V3 G5 私有消息器；其余生产语义仍由 V2 G14 签署，代码与程序集版本线处于未发布 V3。
 >
 > 评审日期：2026-08-22。
 >
@@ -13,6 +13,7 @@
 > [V3 G2 修订化 Document 保存](../plan-history/host-v3/g2-revisioned-document-save.md)、
 > [V3 G3 互斥 Document 激活](../plan-history/host-v3/g3-exclusive-document-activation.md)、
 > [V3 G4 插件注册所有权](../plan-history/host-v3/g4-plugin-registration-ownership.md)、
+> [V3 G5 插件私有消息](../plan-history/host-v3/g5-plugin-private-messaging.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
 >
 > 计划性质：V3 是一次“协议语义纠错 + 宿主工作区解耦”的破坏式重构，不是第三次插件框架扩张。
@@ -498,13 +499,16 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
   [G4 专项记录](../plan-history/host-v3/g4-plugin-registration-ownership.md)。
 - **回滚**：整体回到 G3；不能只放宽某个保留类型来让单个插件通过。
 
-### G5：把事件通信收回插件内部
+### G5：把事件通信收回插件内部（已完成）
 
 - **目标**：公共 Host 能力与插件内部消息分开。
 - **变更**：删除 SDK `IHostEventBus`、Host 实现和注入；MyPlugTest/BiliDownloader 注册独占消息器。
 - **插件影响**：消息业务语义不变；订阅令牌继续随 Document Scope 或插件 Provider 释放。
 - **验证**：多 Document 消息、Bili 提交/进度/登录/删除、处理器异常、订阅中再订阅、Dispose、并行 Runtime
   与插件间不可见性。
+- **实施记录**：最终接口、消息拓扑、SOLID 取舍、删除面、165/165 专项测试、两个重点文件 97.72%
+  行覆盖率、四插件确定性包和非发布边界见
+  [G5 专项记录](../plan-history/host-v3/g5-plugin-private-messaging.md)。
 - **回滚**：整体回到 G4；不得保留一个未被 Host 使用的 V3 `IHostEventBus` 转发接口。
 
 ### G6：拆分 Workspace Session 与 Dock Factory
@@ -599,7 +603,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
 ```
 
 - G0 只冻结事实，G1 只建立版本和磁盘边界，G2 已完成修订保存；
-- G3 已完成互斥激活，G4 已完成插件组合所有权；G5 继续把消息边界收回插件内部；
+- G3 已完成互斥激活，G4 已完成插件组合所有权，G5 已完成插件私有消息边界；
 - G6–G8 再拆 Host Workspace、Host Catalog 与全屏资源边界；
 - G9–G12 按插件逐个删除阶段帮助代码并完成真实包验收；
 - G13 只删除和证明无残留，不承载新设计；
@@ -676,7 +680,7 @@ V3 只有在以下问题全部回答“是”后才算完成：
 
 1. [x] 保存确认绑定捕获 Revision，保存期间的新修改不会被错误清除。
 2. [x] Document New/Restore 激活在 public 类型层互斥，不存在旧可空组合入口。
-3. [ ] SDK 和 Host 已删除通用 Host EventBus，插件内部消息由插件独占。
+3. [x] SDK 和 Host 已删除通用 Host EventBus，插件内部消息由插件独占。
 4. [x] Host 保留端口和贡献生命周期由 Host 最后提交，插件不能影子覆盖。
 5. [x] Document/Tool ID 的 PluginId 命名空间归属由自动化强制验证。
 6. [ ] Dock Factory 与 Workspace Session 分离，ViewModel 不依赖 Dock 运行时对象。

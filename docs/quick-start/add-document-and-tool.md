@@ -150,18 +150,27 @@ public sealed class QuickStartPluginModule : IPluginModule
 
 可直接参考 [`TestWelcomeViewModel`](../../Plugins/MyPlugTest/MyPlugTest/ViewModels/TestWelcomeViewModel.cs) 和独立 [`TestWelcomeDocumentContentCodec`](../../Plugins/MyPlugTest/MyPlugTest/Persistence/TestWelcomeDocumentContentCodec.cs)。
 
-## 5. 可选：进程内事件
+## 5. 可选：插件内部事件
 
-构造注入 Core SDK `IHostEventBus`，事件 DTO 使用插件自有普通密封类型。发布方只发布；订阅方保存 `Subscribe<T>` 返回的令牌，并在自身 Scope 释放时解绑。总线按精确类型在发布线程同步投递，因此 UI 订阅者需要自行切回 Dispatcher。
+V3 SDK 不提供通用事件总线。确有一个插件内多消费者需求时，在插件程序集声明只包含
+`Publish<TEvent>` / `Subscribe<TEvent>` 的最小接口，并把 internal sealed 实现注册为该插件 Provider 的
+singleton。不要抽取跨插件公共总线，也不要使用静态 Messenger。发布方只发布；订阅方保存令牌并在自身
+Scope 释放时解绑。同步实现按精确类型在发布线程投递，因此 UI 订阅者需要自行切回 Dispatcher。
 
 ```csharp
 public sealed record WorkCompletedEvent(string Message);
+
+public interface IQuickStartEventBus
+{
+    void Publish<TEvent>(TEvent message) where TEvent : class;
+    IDisposable Subscribe<TEvent>(Action<TEvent> handler) where TEvent : class;
+}
 
 public sealed class Receiver : IDisposable
 {
     private readonly IDisposable _subscription;
 
-    public Receiver(IHostEventBus eventBus) =>
+    public Receiver(IQuickStartEventBus eventBus) =>
         _subscription = eventBus.Subscribe<WorkCompletedEvent>(OnCompleted);
 
     private void OnCompleted(WorkCompletedEvent message)
@@ -172,6 +181,10 @@ public sealed class Receiver : IDisposable
     public void Dispose() => _subscription.Dispose();
 }
 ```
+
+模块只向自己的 `registration.Services` 登记
+`AddSingleton<IQuickStartEventBus, QuickStartEventBus>()`。实现应在锁内维护订阅和创建发布快照，在锁外
+执行用户处理器，并让插件 Provider 释放消息器；可直接参考 MyPlugTest 的私有消息器实现。
 
 ## 6. 验收行为
 

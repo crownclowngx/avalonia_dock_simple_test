@@ -207,7 +207,7 @@ public sealed class PresentationLogicTests
         var statuses = new List<string>();
         var vm = new VideoListViewModel(
             () => new SubmitContext(),
-            new RecordingHostEventBus(),
+            new RecordingBiliDownloaderEventBus(),
             statuses.Add,
             new FakeFfmpegService());
         var first = new BiliVideoItem { ItemId = "one", Title = "A", IsSelected = true };
@@ -265,7 +265,7 @@ public sealed class PresentationLogicTests
         var context = new SubmitContext();
         var vm = new VideoListViewModel(
             () => context,
-            new RecordingHostEventBus(),
+            new RecordingBiliDownloaderEventBus(),
             value => status = value,
             new FakeFfmpegService(),
             () => configurationBlockedCount++);
@@ -309,7 +309,7 @@ public sealed class PresentationLogicTests
         var fakeFfmpeg = Path.Combine(paths.RootDirectory, "ffmpeg.exe");
         await File.WriteAllTextAsync(fakeFfmpeg, "test marker");
         var ffmpeg = new FakeFfmpegService { CustomPath = fakeFfmpeg };
-        var messenger = new RecordingHostEventBus();
+        var messenger = new RecordingBiliDownloaderEventBus();
         var status = "";
         var context = new SubmitContext
         {
@@ -406,7 +406,7 @@ public sealed class PresentationLogicTests
     [Fact]
     public void 下载文档摘要实时更新且异常配置自动展开设置()
     {
-        var messenger = new RecordingHostEventBus();
+        var messenger = new RecordingBiliDownloaderEventBus();
         var loginState = new BiliLoginStateService(
             new InMemoryBiliCredentialStore(),
             new StubBiliSessionApi(),
@@ -512,7 +512,7 @@ public sealed class PresentationLogicTests
         var state = new BiliLoginStateService(
             store,
             api,
-            new IsolatedHostEventBus());
+            new IsolatedBiliDownloaderEventBus());
         await state.RestoreSavedSessionAsync();
         var vm = new LoginBarViewModel(state, new BiliLoginService());
 
@@ -539,7 +539,7 @@ public sealed class PresentationLogicTests
             QualityId = 80,
             OutputDirectory = Path.Combine(paths.RootDirectory, "missing"),
         };
-        var messenger = new RecordingHostEventBus();
+        var messenger = new RecordingBiliDownloaderEventBus();
         var status = "";
         var configurationBlockedCount = 0;
         var ffmpeg = new FakeFfmpegService();
@@ -628,7 +628,7 @@ public sealed class PresentationLogicTests
     public async Task Document保存恢复任务及消息按Document隔离()
     {
         var repository = new InMemoryDownloadTaskRepository();
-        var messenger = new RecordingHostEventBus();
+        var messenger = new RecordingBiliDownloaderEventBus();
         var settings = new InMemorySettingsRepository();
         var loginState = new BiliLoginStateService(
             new InMemoryBiliCredentialStore(),

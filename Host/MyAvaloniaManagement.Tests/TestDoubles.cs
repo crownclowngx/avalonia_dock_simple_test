@@ -2,7 +2,6 @@ using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Documents;
-using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
@@ -36,14 +35,12 @@ internal sealed class TestHostContext : IDisposable
 
         Storage = new TestHostStorageService();
         Interactions = new TestDocumentInteractionService();
-        EventBus = new HostEventBus();
         var services = new ServiceCollection();
         var registryBuilder = new PluginRegistryBuilder();
         services.AddApplicationServices(registryBuilder);
         services.AddViewModels();
         services.AddSingleton<IHostStorageService>(Storage);
         services.AddSingleton<IDocumentInteractionService>(Interactions);
-        services.AddSingleton<IHostEventBus>(EventBus);
         services.AddSingleton<DocumentV2TestProbe>();
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
@@ -80,8 +77,6 @@ internal sealed class TestHostContext : IDisposable
     public TestHostStorageService Storage { get; }
 
     public TestDocumentInteractionService Interactions { get; }
-
-    public HostEventBus EventBus { get; }
 
     public Microsoft.Extensions.DependencyInjection.ServiceProvider Provider { get; }
 

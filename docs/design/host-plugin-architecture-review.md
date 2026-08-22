@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-22（已同步 Managed Plugin V3 G4 插件注册所有权）<br>
+> 更新日期：2026-08-22（已同步 Managed Plugin V3 G5 插件私有消息）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
@@ -9,9 +9,9 @@
 > V2 当前状态：G0–G14 已完成。四个业务插件均使用正式 SDK、声明式贡献与普通模型；Legacy
 > 项目、兼容适配和过渡构建属性已经删除，API Shipped 与两轮隔离发布门禁已经建立。
 
-> V3 当前状态：G0–G4 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
+> V3 当前状态：G0–G5 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
 > 保存已使用修订协议，激活已使用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属；
-> 磁盘 schema 仍为 2，G5–G14 尚未实施。
+> MyPlugTest 与 BiliDownloader 的消息器已归各自插件 Provider 所有。磁盘 schema 仍为 2，G6–G14 尚未实施。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -270,14 +270,15 @@ Migrator、浮动字段或历史 ID 归一化。缺失/生命周期不可用插�
 | UI 扩展 | Descriptor 一次声明普通模型与 Avalonia View；Host Adapter 独占 Dock | 强类型、元数据无副作用、插件不依赖 Dock | View 仍与宿主验证过的 Avalonia/UI SDK 版本协同升级 |
 | 服务接入 | 插件通过 Context 获得独占的新服务集合并建立私有 Provider | 可使用 Microsoft DI，多实现/keyed/开放泛型不受影响；Host/插件对象图分离 | 仍是可信进程内代码，不构成安全沙箱 |
 | 创建入口 | Context 显式登记，`PluginRegistry` 原子发布；Document 可附加 Creation Intent | 未登记类型不可见，元数据只读一次，所有权明确 | 插件作者必须维护完整贡献清单 |
-| 事件通信 | SDK `IHostEventBus`，每 HostRuntime 独立实例；Host 内部使用窄服务和 Dock 协调器 | 插件事件同步强类型、精确类型、令牌式生命周期；Host 依赖可直接追踪 | 只有真实多消费者事件才能进入 SDK，不能把 Host 调用重新包装成广播 |
+| 事件通信 | MyPlugTest、BiliDownloader 分别由自身 Provider 持有私有 singleton 消息器；Host 内部使用窄服务和 Dock 协调器 | 同步强类型、精确类型、令牌式生命周期；插件间和 Runtime 间隔离 | 事件接口只属于对应插件，不能回流 SDK 或伪装成跨插件通道 |
 | 文件能力 | 宿主包装选择器、打开、保存、路径/所有权状态 | 内容契约与脏状态分离，Document 与布局均原子写入，关闭确认共用同一提交事实 | 当前仅存在单一内容版本分支；真实旧版本出现时需由对应插件显式读取 |
 | 布局能力 | 宿主持有 Dock 树和严格 Layout V2 | 四向、隐藏、固定、恢复已有测试 | 插件缺失时整份布局回退 |
 
-**[代码事实]** SDK 只公开 `IHostEventBus.Publish/Subscribe`，Host internal 实现由每个根容器独占。
-发布在调用线程按登记顺序同步执行，订阅者持有幂等令牌并在自身生命周期结束时释放；不存在静态
-默认实例或全局 Reset。参见 [`PluginContracts.cs`](../../Host/MyAvaloniaManagement.PluginSdk/PluginContracts.cs)
-和 [`HostEventBus.cs`](../../Host/MyAvaloniaManagement/Business/Events/HostEventBus.cs)。
+**[代码事实]** V3 SDK 与 Host 已没有事件总线。两个插件各自只公开最小的 `Publish/Subscribe` 接口，
+internal sealed 实现在调用线程按登记顺序同步执行，订阅者持有幂等令牌并在自身生命周期结束时释放；
+不存在静态默认实例、全局 Reset 或共享公共基类。参见
+[`IMyPlugTestEventBus.cs`](../../Plugins/MyPlugTest/MyPlugTest/Messaging/IMyPlugTestEventBus.cs) 和
+[`IBiliDownloaderEventBus.cs`](../../Plugins/BiliDownloader/BiliDownloader/Messaging/IBiliDownloaderEventBus.cs)。
 
 **[代码事实]** 宿主生产 ViewModel 只使用构造注入，App 通过内部桌面 Shell 创建；内建 Tool 策略使用对应的 `Func<ViewModel>`，Welcome 策略使用延迟 `Func<ManagementFactory>` 打破注册表构造循环。静态 `ServiceProvider` 和生产无参构造已经删除。主窗口与文件树设计器改用无 I/O 的独立样例数据；`ToolManagementViewModel` 在根 Dock 建立前读取 `ManagementFactory` 提供的内部只读注册快照。参见 [`ServiceCollectionExtensions.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/ServiceCollectionExtensions.cs) 和 [`ToolManagementViewModel.cs`](../../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs)。
 

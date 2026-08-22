@@ -20,7 +20,6 @@ internal static class PluginServiceCommitGuard
 {
     private static readonly IReadOnlySet<Type> ReservedHostServiceTypes = new HashSet<Type>
     {
-        typeof(IHostEventBus),
         typeof(IPluginWindowInteraction),
         typeof(IDocumentLifetime),
         typeof(DocumentLifetime),
@@ -66,7 +65,6 @@ internal static class PluginServiceCommitGuard
 
         // 以下描述符全部在模块返回并通过校验后才进入原始集合。插件保存的是已 Seal 的包装器，
         // 因此 Clear/Remove/Replace 无法观察或改变这些条目，正确性不依赖“最后注册胜出”。
-        pluginServices.AddSingleton(hostProvider.GetRequiredService<IHostEventBus>());
         pluginServices.AddSingleton(hostProvider.GetRequiredService<IPluginWindowInteraction>());
         pluginServices.AddScoped<DocumentLifetime>();
         pluginServices.AddScoped<IDocumentLifetime>(provider =>

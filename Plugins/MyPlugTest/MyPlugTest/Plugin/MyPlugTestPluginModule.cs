@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MyPlugTest.Constants;
+using MyPlugTest.Messaging;
 using MyPlugTest.Services;
 using MyPlugTest.ViewModels;
 using MyPlugTest.Views;
@@ -28,6 +29,9 @@ public sealed class MyPlugTestPluginModule : IPluginModule
         registration.Services.AddSingleton<IExcelFileDialogService, AvaloniaExcelFileDialogService>();
         registration.Services.AddSingleton<IExcelWorkbookReader, EpplusExcelWorkbookReader>();
         registration.Services.AddSingleton<ExcelGetUrlBuilder>();
+        // 消息器由当前插件 Provider 独占。Singleton 允许多个 MyPlugTest Document Scope 通信，
+        // 但不会把插件消息提升为 Host 能力，也不会与其他插件或并行 Runtime 共享实例。
+        registration.Services.AddSingleton<IMyPlugTestEventBus, MyPlugTestEventBus>();
         registration.Services.AddScoped<UrlHistoryViewModel>();
 
         registration.AddPersistableDocument<TestWelcomeViewModel, TestWelcomeView>(

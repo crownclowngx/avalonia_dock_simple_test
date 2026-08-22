@@ -23,7 +23,7 @@
 
     <ItemGroup>
       <!--
-        Core 只提供事件、生命周期和 Document 契约；UI 只提供 Avalonia 贡献注册契约。
+        Core 只提供生命周期和 Document 契约；UI 只提供 Avalonia 贡献注册契约。
         两个 SDK 均由 Host 共享，绝不能被复制进插件私有 ZIP。
       -->
       <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" Private="false" />

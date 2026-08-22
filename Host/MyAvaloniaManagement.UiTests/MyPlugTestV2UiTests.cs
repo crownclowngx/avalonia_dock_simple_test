@@ -11,6 +11,7 @@ using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MyPlugTest.Constants;
 using MyPlugTest.Models;
+using MyPlugTest.Messaging;
 using MyPlugTest.Plugin;
 using MyPlugTest.ViewModels;
 using MyPlugTest.Views;
@@ -63,7 +64,7 @@ public sealed class MyPlugTestV2UiTests
     {
         using var composition = MyPlugTestUiComposition.Create();
         var factory = composition.Provider.GetRequiredService<IHostDockableFactory>();
-        var bus = composition.Provider.GetRequiredService<IHostEventBus>();
+        var bus = composition.EventBus;
         var broadTypeDeliveries = 0;
         using var broadTypeSubscription = bus.Subscribe<object>(_ => broadTypeDeliveries++);
         var firstAdapter = Assert.IsType<ManagedDocumentDockable>(await factory.CreateDocumentAsync(
@@ -210,6 +211,11 @@ public sealed class MyPlugTestV2UiTests
         }
 
         internal ServiceProvider Provider { get; }
+
+        internal IMyPlugTestEventBus EventBus =>
+            (IMyPlugTestEventBus)_pluginProviders.GetRequiredService(
+                MyPlugTestContributionIds.Plugin,
+                typeof(IMyPlugTestEventBus));
 
         internal static MyPlugTestUiComposition Create()
         {

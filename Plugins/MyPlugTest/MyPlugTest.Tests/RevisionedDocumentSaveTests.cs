@@ -1,4 +1,5 @@
 using MyAvaloniaManagement.PluginSdk;
+using MyPlugTest.Messaging;
 using MyPlugTest.Services;
 using MyPlugTest.ViewModels;
 using Xunit;
@@ -88,7 +89,7 @@ public sealed class RevisionedDocumentSaveTests
             Task.FromResult(string.Empty);
     }
 
-    private sealed class TestEventBus : IHostEventBus
+    private sealed class TestEventBus : IMyPlugTestEventBus
     {
         public void Publish<TEvent>(TEvent @event) where TEvent : class
         {

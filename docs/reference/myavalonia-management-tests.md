@@ -426,7 +426,7 @@ Persistable Document、Tool 和 View。Core 引用 Avalonia/DI/Dock/Newtonsoft�
 - 分支覆盖率不低于 50%；
 - `MainWindowViewModel` 行覆盖率不低于 75%；
 - 三个宿主 Tool ViewModel 各自行覆盖率不低于 70%。
-- `Business/Events/HostEventBus.cs` 行覆盖率不低于 90%。
+- `MyPlugTestEventBus.cs` 与 `BiliDownloaderEventBus.cs` 由 G5 专项门禁分别保证行覆盖率不低于 90%。
 - `HostDockAdapterFactory`、两个 Managed Adapter 与 `DocumentScopeManager` 行覆盖率不低于 90%；
 - `ViewLocator` 行覆盖率不低于 85%。
 - Layout V2 严格 JSON Codec 与纯快照 Validator 行覆盖率各不低于 95%。
@@ -457,7 +457,7 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 
 ## 测试边界
 
-- 单元层覆盖 DI、ViewModel、文件模型、文档保存、直接协调、插件事件总线和 Tool 行为。
+- 单元层覆盖 DI、ViewModel、文件模型、文档保存、直接协调、插件私有消息器和 Tool 行为。
 - Headless 层覆盖生产 XAML、主题资源、绑定、DockControl、ViewLocator、
   主窗口事件、内容全屏、14 个插件语义画刷和主题动态切换。
 - PluginTests 继续覆盖 Managed-only 拒绝、Dock 布局、Document Scope、插件生命周期、宿主 DI 保护、SDK 依赖边界和 UI 共享程序集。
@@ -486,8 +486,8 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 
 核心行为只存在一套实现，避免“测试构造路径”和“生产构造路径”逐渐分叉。
 生产 ViewModel 注册为瞬态，防止多个窗口或 Headless 测试共享绑定状态；
-Dock 工厂、事件总线、布局存储等协调服务保持单例，保证一个 HostRuntime 内只有一份布局和事件事实；
-另一个 HostRuntime 会建立自己的根容器与总线，不共享进程全局状态。
+Dock 工厂、布局存储等 Host 协调服务保持单例，保证一个 HostRuntime 内只有一份布局事实。插件消息器则是
+对应插件 Provider 的 singleton；另一个插件 Provider 或 HostRuntime 会建立自己的实例，不共享进程全局状态。
 
 Host 与插件的 Document/Tool 策略都使用 `ActivatorUtilities` 创建，因此策略只需声明真实依赖，
 不再为了另一套二进制加载协议保留无参构造。模块仍用 public 无参构造，因为它发生在根容器
@@ -543,7 +543,7 @@ Host 行覆盖率 80.41%、分支覆盖率 65.71%，Windows Smoke 通过。G8 Ho
 MySmallTools 182/182。完整记录见
 [G8 保存契约与内容版本](../plan-history/host-v1/g8-document-content-persistence-contract.md)。
 
-### G9 当前绿色基线
+### G9 历史绿色基线
 
 2026-08-18 执行锁定还原、Release 零警告构建、事件总线与 Document Scope 专项、三个插件完整
 测试、SDK 包消费和带 Windows Smoke 的综合门禁。结果为 Unit 162、UI 37、Plugin 146，共
@@ -588,14 +588,28 @@ DaTang 64/64、MySmallTools 183/183；SDK API 为 Shipped 243、Unshipped 0；�
 本轮没有运行 Windows Smoke、G14 总发布门禁或发布验收项目，不能将该结果解释为新的 Windows 发布放行。完整记录见
 [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
-### 事件总线、Host 直接协调与稳定 ID
+### V3 G5 当前绿色基线
 
-插件与存在真实多消费者需求的 Document 继续注入 SDK `IHostEventBus`。发布在调用线程同步执行，
-订阅者保存独立 `IDisposable` 令牌并随自身生命周期释放；不同 HostRuntime 不共享总线。
+2026-08-22 执行 Release 零警告构建、插件私有消息专项、Host Unit/UI/Plugin、四插件与 SDK 全量测试、
+G2/G3/G4 回归、v3 API/SDK 包消费、诊断脱敏、两次确定性插件 ZIP 和本地 Host 加载。G5 专项
+**165/165**；两个消息器实现文件行覆盖率均为 **97.72%**。Host 为 Unit 169、UI 56、Plugin 204，
+共 **429/429**；行覆盖率 **83.28%**、分支覆盖率 **69.19%**，均不低于 G0。
 
-Host 自身的文件打开、布局刷新和 Tool 显隐不再使用该总线。文件树直接调用窄文档打开服务；
+独立项目为 PluginSdk 37、MyPlugTest 11、DaTang 62、BiliDownloader 726、MySmallTools 184，全部通过；
+G2/G3/G4 分别 159/143/59。v3 API 为 Core 127、UI 46；四插件均完成两次确定性 ZIP 和本地加载。
+本轮没有运行 AIFLOW、Windows CI/Smoke、ReleaseAcceptance、Host 发布门禁或发布脚本。完整记录见
+[V3 G5 插件私有消息](../plan-history/host-v3/g5-plugin-private-messaging.md)。
+
+### 插件私有消息、Host 直接协调与稳定 ID
+
+V3 SDK 与 Host 已删除通用事件总线。MyPlugTest 与 BiliDownloader 分别注入自身插件程序集中的最小消息
+接口；消息器由对应插件 Provider singleton 持有。发布在调用线程同步执行，订阅者保存独立
+`IDisposable` 令牌并随自身生命周期释放；不同插件 Provider 和不同 HostRuntime 不共享消息实例。
+
+Host 自身的文件打开、布局刷新和 Tool 显隐继续使用直接协调。文件树直接调用窄文档打开服务；
 `ManagementFactory` 在 Dock 变化完整提交后先同步 Tool 管理器，再通知当前主窗口刷新布局绑定。
-主窗口显式解除根级通知，结构门禁同时证明三个旧消息类型不存在且相关构造函数不再依赖公共总线。
+主窗口显式解除根级通知；结构门禁同时证明旧 Host 消息类型和总线不存在，插件私有消息也不能从 Host
+根或其他插件 Provider 解析。
 
 插件菜单的策略元数据、创建实例、`ContextLocator` 和
 `DockableLocator["Plug"]` 共用 `DockNameConstant.PlugGroupMenu`。

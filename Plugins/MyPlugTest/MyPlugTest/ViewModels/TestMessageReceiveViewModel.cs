@@ -2,14 +2,15 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MyAvaloniaManagement.PluginSdk;
+using MyPlugTest.Messaging;
 using MyPlugTest.Models;
 
 namespace MyPlugTest.ViewModels;
 
-/// <summary>接收当前 HostRuntime 中 MyPlugTest 请求结果的普通插件 Document 模型。</summary>
+/// <summary>接收当前 MyPlugTest 插件 Provider 中请求结果的普通插件 Document 模型。</summary>
 /// <remarks>
 /// 每个 Document Scope 持有一枚独立订阅令牌。Scope 关闭只释放本实例的令牌；其他接收 Document
-/// 继续订阅同一个 Host 事件总线。事件总线同步调用处理器，而集合属于 UI，因此后台发布在模型边界
+/// 继续订阅同一个插件私有事件总线。事件总线同步调用处理器，而集合属于 UI，因此后台发布在模型边界
 /// 切回 Avalonia Dispatcher，已经排队的回调还会用关闭状态进行第二次门控。
 /// </remarks>
 public sealed class TestMessageReceiveViewModel : ObservableObject, IPluginDocument, IDisposable
@@ -22,7 +23,7 @@ public sealed class TestMessageReceiveViewModel : ObservableObject, IPluginDocum
 
     /// <summary>创建并立即取得当前 Document Scope 所拥有的事件订阅。</summary>
     public TestMessageReceiveViewModel(
-        IHostEventBus eventBus,
+        IMyPlugTestEventBus eventBus,
         IDocumentLifetime documentLifetime)
     {
         ArgumentNullException.ThrowIfNull(eventBus);

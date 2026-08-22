@@ -12,7 +12,6 @@
     "Business/Docking/HostDockAdapterFactory.cs": 90.0,
     "Business/Docking/ManagedDocumentDockable.cs": 90.0,
     "Business/Docking/ManagedToolDockable.cs": 90.0,
-    "Business/Events/HostEventBus.cs": 90.0,
     "Business/Helpers/DocumentScopeManager.cs": 90.0,
     "Business/Helpers/PluginContributionActivator.cs": 80.0,
     "Business/Helpers/PluginProviderOwner.cs": 90.0,

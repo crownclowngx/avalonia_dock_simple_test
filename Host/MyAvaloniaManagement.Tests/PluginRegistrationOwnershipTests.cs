@@ -23,10 +23,8 @@ public sealed class PluginRegistrationOwnershipTests
     [Fact]
     public void Host在Seal后唯一提交端口Scope基础设施和贡献固定生命周期()
     {
-        var hostBus = new TestHostEventBus();
         var windowInteraction = new TestWindowInteraction();
         var hostServices = new ServiceCollection();
-        hostServices.AddSingleton<IHostEventBus>(hostBus);
         hostServices.AddSingleton<IPluginWindowInteraction>(windowInteraction);
         using var hostProvider = hostServices.BuildServiceProvider();
 
@@ -49,8 +47,7 @@ public sealed class PluginRegistrationOwnershipTests
             item.ServiceType == typeof(OwnedDocument) ||
             item.ServiceType == typeof(OwnedTool) ||
             item.ServiceType == typeof(OwnedLifecycle) ||
-            item.ServiceType == typeof(IDocumentLifetime) ||
-            item.ServiceType == typeof(IHostEventBus));
+            item.ServiceType == typeof(IDocumentLifetime));
 
         PluginServiceCommitGuard.ValidateAndCommit(
             pluginServices,
@@ -63,8 +60,6 @@ public sealed class PluginRegistrationOwnershipTests
         AssertDescriptor(pluginServices, typeof(DocumentLifetime), ServiceLifetime.Scoped);
         AssertDescriptor(pluginServices, typeof(IDocumentLifetime), ServiceLifetime.Scoped);
         AssertDescriptor(pluginServices, typeof(DocumentScopeManager), ServiceLifetime.Singleton);
-        Assert.Same(hostBus, Assert.Single(pluginServices, item =>
-            item.ServiceType == typeof(IHostEventBus)).ImplementationInstance);
         Assert.Same(windowInteraction, Assert.Single(pluginServices, item =>
             item.ServiceType == typeof(IPluginWindowInteraction)).ImplementationInstance);
         Assert.Throws<InvalidOperationException>(() =>
@@ -80,7 +75,6 @@ public sealed class PluginRegistrationOwnershipTests
             pluginProvider.GetRequiredKeyedService<IPrivateService>("first"));
         Assert.IsType<PrivateBox<string>>(
             pluginProvider.GetRequiredService<IPrivateBox<string>>());
-        Assert.Same(hostBus, pluginProvider.GetRequiredService<IHostEventBus>());
         Assert.Same(windowInteraction, pluginProvider.GetRequiredService<IPluginWindowInteraction>());
         Assert.Same(
             pluginProvider.GetRequiredService<OwnedTool>(),
@@ -99,7 +93,7 @@ public sealed class PluginRegistrationOwnershipTests
     }
 
     [Fact]
-    public void 普通Keyed和多注册Host端口均在Provider构建前拒绝()
+    public void 普通和Keyed注册Host端口均在Provider构建前拒绝()
     {
         using var hostProvider = CreateHostProvider();
         var pluginServices = new ServiceCollection();
@@ -107,16 +101,17 @@ public sealed class PluginRegistrationOwnershipTests
             Owner,
             pluginServices,
             new PluginRegistryBuilder());
-        registration.Services.AddSingleton<IHostEventBus, TestHostEventBus>();
-        registration.Services.AddSingleton<IHostEventBus, TestHostEventBus>();
-        registration.Services.AddKeyedSingleton<IHostEventBus, TestHostEventBus>("shadow");
-        registration.Services.AddSingleton<IHostEventBus>(_ => new TestHostEventBus());
-        registration.Services.AddKeyedSingleton<IHostEventBus>(
-            "factory",
-            (_, _) => new TestHostEventBus());
         registration.Services.AddSingleton<IDocumentLifetime, TestDocumentLifetime>();
         registration.Services.AddKeyedSingleton<IPluginWindowInteraction, TestWindowInteraction>("shadow");
         registration.Services.AddSingleton<IPluginWindowInteraction>(new TestWindowInteraction());
+        registration.Services.AddSingleton<IPluginWindowInteraction>(
+            _ => new TestWindowInteraction());
+        registration.Services.AddKeyedSingleton<IPluginWindowInteraction>(
+            "factory",
+            (_, _) => new TestWindowInteraction());
+        registration.Services.AddKeyedSingleton<IPluginWindowInteraction>(
+            "instance",
+            new TestWindowInteraction());
         registration.Seal();
 
         var exception = Assert.Throws<HostCompositionException>(() =>
@@ -125,7 +120,7 @@ public sealed class PluginRegistrationOwnershipTests
                 registration,
                 hostProvider));
 
-        Assert.Equal(8, exception.Diagnostics.Count(item =>
+        Assert.Equal(6, exception.Diagnostics.Count(item =>
             item.Code == HostDiagnosticCodes.PluginHostServiceRegistrationForbidden));
         Assert.DoesNotContain(pluginServices, item =>
             item.ServiceType == typeof(DocumentScopeManager));
@@ -228,7 +223,6 @@ public sealed class PluginRegistrationOwnershipTests
     private static ServiceProvider CreateHostProvider()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IHostEventBus, TestHostEventBus>();
         services.AddSingleton<IPluginWindowInteraction, TestWindowInteraction>();
         return services.BuildServiceProvider();
     }
@@ -283,13 +277,6 @@ public sealed class PluginRegistrationOwnershipTests
     private sealed class EmptyView : UserControl;
     private sealed class SecondEmptyView : UserControl;
 
-    private sealed class TestHostEventBus : IHostEventBus
-    {
-        public void Publish<TEvent>(TEvent @event) where TEvent : class { }
-        public IDisposable Subscribe<TEvent>(Action<TEvent> handler) where TEvent : class =>
-            EmptyDisposable.Instance;
-    }
-
     private sealed class TestDocumentLifetime : IDocumentLifetime
     {
         public CancellationToken ClosingToken => CancellationToken.None;
@@ -314,9 +301,4 @@ public sealed class PluginRegistrationOwnershipTests
             Task.FromResult(false);
     }
 
-    private sealed class EmptyDisposable : IDisposable
-    {
-        internal static EmptyDisposable Instance { get; } = new();
-        public void Dispose() { }
-    }
 }

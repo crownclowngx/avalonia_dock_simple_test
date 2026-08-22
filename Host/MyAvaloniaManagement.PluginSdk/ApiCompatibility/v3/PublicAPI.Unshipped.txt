@@ -35,9 +35,6 @@ MyAvaloniaManagement.PluginSdk.DocumentTypeId.Value.get -> string!
 MyAvaloniaManagement.PluginSdk.IDocumentLifetime
 MyAvaloniaManagement.PluginSdk.IDocumentLifetime.ClosingToken.get -> System.Threading.CancellationToken
 MyAvaloniaManagement.PluginSdk.IDocumentLifetime.IsClosing.get -> bool
-MyAvaloniaManagement.PluginSdk.IHostEventBus
-MyAvaloniaManagement.PluginSdk.IHostEventBus.Publish<TEvent>(TEvent! event) -> void
-MyAvaloniaManagement.PluginSdk.IHostEventBus.Subscribe<TEvent>(System.Action<TEvent!>! handler) -> System.IDisposable!
 MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument
 MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.AcceptChanges(MyAvaloniaManagement.PluginSdk.DocumentRevision savedRevision) -> void
 MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.CaptureSaveSnapshotAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<MyAvaloniaManagement.PluginSdk.DocumentSaveSnapshot!>

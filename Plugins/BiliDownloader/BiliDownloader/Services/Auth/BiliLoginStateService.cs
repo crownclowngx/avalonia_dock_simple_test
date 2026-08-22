@@ -1,6 +1,6 @@
 using BiliDownloader.Messages;
+using BiliDownloader.Messaging;
 using BiliDownloader.Services.Infrastructure;
-using MyAvaloniaManagement.PluginSdk;
 
 namespace BiliDownloader.Services.Auth;
 
@@ -12,7 +12,7 @@ public sealed class BiliLoginStateService
     private static readonly IPluginLogger Log = PluginLog.For<BiliLoginStateService>();
     private readonly IBiliCredentialStore _credentialStore;
     private readonly IBiliSessionApi _sessionApi;
-    private readonly IHostEventBus _eventBus;
+    private readonly IBiliDownloaderEventBus _eventBus;
     private readonly SemaphoreSlim _stateLock = new(1, 1);
     private readonly object _backgroundGate = new();
     private CancellationTokenSource? _backgroundValidationCts;
@@ -33,7 +33,7 @@ public sealed class BiliLoginStateService
     public BiliLoginStateService(
         IBiliCredentialStore credentialStore,
         IBiliSessionApi sessionApi,
-        IHostEventBus eventBus)
+        IBiliDownloaderEventBus eventBus)
     {
         _credentialStore = credentialStore;
         _sessionApi = sessionApi;

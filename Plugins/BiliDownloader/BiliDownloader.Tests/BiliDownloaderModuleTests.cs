@@ -1,4 +1,5 @@
 using BiliDownloader.Constants;
+using BiliDownloader.Messaging;
 using BiliDownloader.Plugin;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Api;
@@ -16,7 +17,7 @@ namespace BiliDownloader.Tests;
 public sealed class BiliDownloaderModuleTests
 {
     [Fact]
-    public void 模块只注册自身服务_并复用宿主消息服务()
+    public void 模块注册自身消息器且不依赖宿主消息服务()
     {
         var services = new ServiceCollection();
         var module = new BiliDownloaderPluginModule();
@@ -25,7 +26,9 @@ public sealed class BiliDownloaderModuleTests
 
         module.Configure(context);
 
-        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IHostEventBus));
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            FindDescriptor(services, typeof(IBiliDownloaderEventBus)).Lifetime);
         Assert.Equal(
             ServiceLifetime.Singleton,
             FindDescriptor(services, typeof(BiliDownloadCoordinator)).Lifetime);
@@ -99,7 +102,7 @@ public sealed class BiliDownloaderModuleTests
         // Microsoft DI 对单服务解析采用最后一次注册，因此这里不会创建真实 SQLite 仓储、
         // 不会读取登录 Cookie，也不会构造会访问网络、媒体目录或 ffmpeg 的生产执行器。
         var repository = new InMemoryDownloadTaskRepository();
-        services.AddSingleton<IHostEventBus>(new IsolatedHostEventBus());
+        services.AddSingleton<IBiliDownloaderEventBus>(new IsolatedBiliDownloaderEventBus());
         services.AddSingleton<IBiliLocalStateInitializer>(new NoOpLocalStateInitializer());
         services.AddSingleton<IBiliCredentialStore>(new InMemoryBiliCredentialStore());
         services.AddSingleton<IBiliSessionApi>(new StubBiliSessionApi());

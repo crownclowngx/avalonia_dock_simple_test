@@ -219,7 +219,6 @@ public sealed class BiliDownloaderDocumentVisualTests
         services.AddScoped<MyAvaloniaManagement.PluginSdk.IDocumentLifetime, UiTestDocumentLifetime>();
         services.AddSingleton<BiliDownloader.Plugin.IBiliDownloaderPluginReadiness>(
             new UiReadyBiliReadiness());
-        services.AddSingleton<IHostEventBus>(ui.EventBus);
         services.AddSingleton<IBiliDataPaths>(new UiBiliDataPaths(
             Path.Combine(ui.TempDirectory, "BiliDownloader")));
         var provider = services.BuildServiceProvider();

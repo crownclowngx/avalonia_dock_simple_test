@@ -1,12 +1,12 @@
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MyPlugTest.Constants;
 using MyPlugTest.Models;
+using MyPlugTest.Messaging;
 using MyPlugTest.Plugin;
 using MyPlugTest.Services;
 using MyPlugTest.ViewModels;
@@ -238,7 +238,7 @@ public sealed class MyPlugTestV2MigrationTests
     [Fact]
     public async Task Welcome关闭后领域异常不得迟到回写或发布事件()
     {
-        var eventBus = new HostEventBus();
+        var eventBus = new TestMyPlugTestEventBus();
         var published = 0;
         using var subscription = eventBus.Subscribe<RequestResponseMessage>(_ => published++);
         var service = new DeferredFailureUrlContentService();
@@ -279,7 +279,7 @@ public sealed class MyPlugTestV2MigrationTests
     }
 
     private static TestWelcomeViewModel CreateWelcome(IDocumentLifetime lifetime) => new(
-        new HostEventBus(),
+        new TestMyPlugTestEventBus(),
         new UrlHistoryViewModel(),
         new StubUrlContentService(),
         lifetime);
@@ -331,6 +331,50 @@ public sealed class MyPlugTestV2MigrationTests
 
         internal void Fail() => _result.TrySetException(
             new UrlContentRequestException(503, "迟到错误", new InvalidOperationException("late")));
+    }
+
+    /// <summary>只服务本测试类直接构造路径的最小插件事件替身。</summary>
+    private sealed class TestMyPlugTestEventBus : IMyPlugTestEventBus
+    {
+        private readonly Dictionary<Type, List<Delegate>> _handlers = [];
+
+        public void Publish<TEvent>(TEvent @event) where TEvent : class
+        {
+            ArgumentNullException.ThrowIfNull(@event);
+            if (_handlers.TryGetValue(typeof(TEvent), out var handlers))
+            {
+                foreach (var handler in handlers.Cast<Action<TEvent>>().ToArray())
+                {
+                    handler(@event);
+                }
+            }
+        }
+
+        public IDisposable Subscribe<TEvent>(Action<TEvent> handler) where TEvent : class
+        {
+            ArgumentNullException.ThrowIfNull(handler);
+            if (!_handlers.TryGetValue(typeof(TEvent), out var handlers))
+            {
+                handlers = [];
+                _handlers.Add(typeof(TEvent), handlers);
+            }
+
+            handlers.Add(handler);
+            return new Subscription(() => handlers.Remove(handler));
+        }
+
+        private sealed class Subscription(Action release) : IDisposable
+        {
+            private int _disposed;
+
+            public void Dispose()
+            {
+                if (Interlocked.Exchange(ref _disposed, 1) == 0)
+                {
+                    release();
+                }
+            }
+        }
     }
 
     private sealed class MyPlugTestComposition : IDisposable

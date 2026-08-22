@@ -102,7 +102,6 @@ try {
     Assert-True (Test-Path -LiteralPath $guardPath -PathType Leaf) 'G4 Commit Guard 文件缺失。'
     $guardSource = Get-Content -Raw $guardPath
     foreach ($symbol in @(
-        'IHostEventBus',
         'IPluginWindowInteraction',
         'IDocumentLifetime',
         'PluginHostServiceRegistrationForbidden',

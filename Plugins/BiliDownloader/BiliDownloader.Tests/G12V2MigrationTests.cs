@@ -181,7 +181,7 @@ public sealed class G12V2MigrationTests
         var settings = new InMemorySettingsRepository();
         var coordinator = new BiliDownloadCoordinator(
             repository,
-            new IsolatedHostEventBus(),
+            new IsolatedBiliDownloaderEventBus(),
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths);
@@ -212,7 +212,7 @@ public sealed class G12V2MigrationTests
         var dispatcher = new DeferredUiDispatcher();
         var coordinator = new BiliDownloadCoordinator(
             repository,
-            new IsolatedHostEventBus(),
+            new IsolatedBiliDownloaderEventBus(),
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths);
@@ -365,7 +365,7 @@ public sealed class G12V2MigrationTests
 
     private static BiliDownloaderViewModel CreateDocument(IDocumentLifetime? documentLifetime = null)
     {
-        var events = new IsolatedHostEventBus();
+        var events = new IsolatedBiliDownloaderEventBus();
         var repository = new InMemoryDownloadTaskRepository();
         var login = new BiliLoginStateService(
             new InMemoryBiliCredentialStore(),
@@ -393,11 +393,11 @@ public sealed class G12V2MigrationTests
         var repository = new InMemoryDownloadTaskRepository();
         var coordinator = new BiliDownloadCoordinator(
             repository,
-            new IsolatedHostEventBus(),
+            new IsolatedBiliDownloaderEventBus(),
             new NoOpDownloadProgressTracker(),
             new FakeDownloadTaskExecutor(),
             paths);
-        var events = new IsolatedHostEventBus();
+        var events = new IsolatedBiliDownloaderEventBus();
         var login = new BiliLoginStateService(
             new InMemoryBiliCredentialStore(),
             new StubBiliSessionApi(),

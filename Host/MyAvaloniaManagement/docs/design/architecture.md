@@ -1,9 +1,9 @@
 # MyAvaloniaManagement 内部架构
 
-> 当前源码已完成未发布 V3 G4：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
+> 当前源码已完成未发布 V3 G5：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
 > 指定修订确认，激活已采用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属校验；
-> 其余运行结构仍是 V2 G14 已签署实现。manifest、Document envelope、layout 保持 schema 2，默认
-> 数据根保持 `v2`；G5 及后续协议尚未实施。
+> MyPlugTest 与 BiliDownloader 消息器已归各自插件 Provider 所有。其余运行结构仍是 V2 G14 已签署实现。
+> manifest、Document envelope、layout 保持 schema 2，默认数据根保持 `v2`；G6 及后续协议尚未实施。
 
 ## 1. 目标与边界
 
@@ -14,7 +14,7 @@
 - 建立和维护四向 Dock 工作区；
 - 严格读写唯一 Document 信封 v2，并编排异步创建、打开、恢复、保存、关闭和资源释放；
 - 严格读取、校验、整体隔离和原子保存唯一 Layout V2；
-- 提供每个 HostRuntime 独享的同步强类型事件总线；
+- 只向插件提交窗口交互与 Document 生命周期等真实 Host 端口，不拥有插件内部消息；
 - 以窄 UI SDK 端口为插件提供文件选择和剪贴板交互；
 - 为 XAML、菜单、主题和宿主 Tool 提供绑定入口。
 
@@ -45,11 +45,10 @@ flowchart TB
     Runtime --> Lifecycle["PluginLifecycleCoordinator\n+ StateStore / ReadModel"]
 
     HostContainer --> Factory["ManagementFactory<br/>Host internal Dock 协调器"]
-    HostContainer --> EventBus["IHostEventBus<br/>每 Runtime 隔离的同步事件"]
     HostContainer --> WindowPort["IPluginWindowInteraction<br/>受控文件 / 剪贴板端口"]
     HostContainer --> Registry["PluginRegistry<br/>不可变贡献快照"]
-    EventBus --> PluginProviders
     WindowPort --> PluginProviders
+    PluginProviders --> PrivateEvents["插件私有消息器<br/>每 Provider 隔离"]
     RegistryBuilder --> Registry
     Factory --> Registry
     Factory --> Builder["DockWorkspaceBuilder<br/>初始结构"]
@@ -143,7 +142,7 @@ Host Provider。这个所有权对称性防止 `Program`、`App` 和插件生命
 `Services` 引用同时封闭。Document、Tool、View 和 Lifecycle 必须调用专用方法才能进入唯一 Registry；
 这些根服务描述符先由 Host 暂存，不进入插件可修改集合。局部 Seal 强制 Document/Tool ID 属于 manifest
 PluginId 的 `.document.*`/`.tool.*` 命名空间；随后 `PluginServiceCommitGuard` 拒绝普通或 keyed 的
-Host Port、Document/Tool/Lifecycle 根影子注册，并最终追加事件总线、窗口交互、`IDocumentLifetime`、
+Host Port、Document/Tool/Lifecycle 根影子注册，并最终追加窗口交互、`IDocumentLifetime`、
 Document Scope 基础设施与固定生命周期贡献根。直接 DI 注册其他普通类型只会留在插件 Provider。
 
 宿主服务集合从不交给插件，也不复制到插件集合，因此旧 `HostServiceDescriptorPolicy`、
@@ -294,8 +293,8 @@ sequenceDiagram
 标题和 UTC 时间由宿主分别从 Registry、目标文件名和 `TimeProvider` 取得。生产只接受 V2，不设置
 V1 探测、别名归一化或迁移分支。打开任一阶段失败时，未发布 Adapter/View/Scope 被释放且不写输入。
 
-事件总线按契约同步派发且不等待异步回调；ViewModel 通过内部异步观察方法捕获预期的文档操作结果，
-避免 `async void` 和未观察任务异常。
+文档操作结果由 ViewModel 通过内部异步观察方法捕获，避免 `async void` 和未观察任务异常；Host 不用
+事件广播替代这条直接协调路径。
 
 ### 6.3 异常边界
 
@@ -305,18 +304,19 @@ V1 探测、别名归一化或迁移分支。打开任一阶段失败时，未�
 
 批量打开以单文件为错误边界：一个文件失败不阻断后续文件。窗口退出的“保存全部”按 Dock 顺序逐个提交，首个失败或取消即停止。
 
-### 6.4 事件总线
+### 6.4 插件私有消息器
 
-SDK 的 `IHostEventBus` 是唯一公共进程内事件契约。Host 的 internal `HostEventBus` 由根容器注册为
-singleton，所以一个 HostRuntime 内共享、不同 HostRuntime 互相隔离。实现只在锁内维护订阅并创建
-发布快照，在锁外按登记顺序、发布线程同步调用用户代码；这允许处理器自释放或重入发布而不死锁。
+V3 SDK 和 Host 不再拥有通用事件总线。MyPlugTest 与 BiliDownloader 分别在自己的程序集声明最小接口，
+由自己的 Provider 注册 internal sealed singleton 实现。消息不能跨插件 Provider 或 HostRuntime 解析。
+两个实现只在锁内维护订阅并创建发布快照，在锁外按登记顺序、发布线程同步调用用户代码；这允许处理器
+自释放、重入发布或新增订阅而不死锁，并确保本次发布只看到快照中的处理器。
 
 处理器异常原样传播并停止后续派发。订阅者保存独立、幂等的 `IDisposable` 令牌：Document 随自身
-Scope 释放，插件 Coordinator 在关闭流程释放，根级窗口和 Tool 由自身 `Dispose` 及根容器兜底。
-进入发布快照的处理器可能最后执行一次，因此 Document 仍以 `IDocumentLifetime.IsClosing` 阻止迟到
-副作用。总线只负责插件或 Document 中存在真实多消费者需求的派发，不承担订阅者生命周期。
+Scope 释放，插件 Coordinator 在关闭流程释放，插件 Provider 最后释放消息器。进入发布快照的处理器
+可能最后执行一次，因此 Document 仍以 `IDocumentLifetime.IsClosing` 阻止迟到副作用。消息器只负责
+对应插件中真实多消费者需求的派发，不承担订阅者生命周期。
 
-G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到公共总线。文件树只依赖单方法
+G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到事件广播。文件树只依赖单方法
 `IHostDocumentOpenService`，生产实现复用文档持久化协调器；`ManagementFactory` 作为 Dock 状态所有者，
 在显隐完整提交后直接同步 Tool 管理器并定向通知主窗口。两类根级通知都由瞬态主窗口在 `Dispose`
 时解除，不存在任意事件类型路由、静态订阅或跨 HostRuntime 状态。
@@ -357,7 +357,7 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | --- | --- | --- |
 | Host Provider | `HostRuntime` | 全部插件 Provider 释放后 |
 | 插件 Provider | `PluginProviderOwner` | 生命周期停止后按 PluginId 反序释放 |
-| Host 事件总线 | Host Provider | Host Provider 释放；订阅者应更早释放自己的令牌 |
+| 插件私有消息器 | 对应插件 Provider | 订阅者先释放令牌；插件 Provider 最后释放消息器 |
 | Managed 插件生命周期 | `PluginLifecycleCoordinator` | Adapter/View 与全部 Document Scope 释放后，插件 Provider 释放前 |
 | Tool 实例 | 所属插件 Provider / `ManagementFactory` | 插件 Provider / Host Provider 释放 |
 | 有独立 Scope 的 Document | 所属插件 `DocumentScopeManager` | Dock 确认关闭后；退出时 `DocumentScopeRegistry` 兜底 |
@@ -382,7 +382,7 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | 异步创建、并发打开、保存提交点、关闭重入与坏文件恢复 | `DocumentPersistenceV2Tests`、`DocumentCloseV2Tests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |
-| 同步顺序、重入、异常、并发、根隔离及订阅释放 | `HostEventBusTests`、Document Scope 测试 |
+| 同步顺序、重入、异常、并发、Provider/Runtime 隔离及订阅释放 | 两插件 `*EventBusTests`、Document Scope 测试、`Test-PluginPrivateMessaging.ps1` |
 | 布局严格解析、隔离、回退 | 布局生命周期与存储测试 |
 | Layout V2 严格字段、V1 不读取、生命周期不可用零部分应用 | `DockLayoutStoreTests`、`DockLayoutAvailabilityTests` |
 | 生命周期排序、幂等、失败/超时/取消、反向停止和脱敏 | `PluginLifecycleCoordinatorTests` |

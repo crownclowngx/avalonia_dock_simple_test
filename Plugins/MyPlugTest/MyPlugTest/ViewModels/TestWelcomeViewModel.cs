@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MyAvaloniaManagement.PluginSdk;
 using MyPlugTest.Models;
+using MyPlugTest.Messaging;
 using MyPlugTest.Persistence;
 using MyPlugTest.Services;
 
@@ -20,7 +21,7 @@ public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginD
 {
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly object _revisionLock = new();
-    private readonly IHostEventBus _eventBus;
+    private readonly IMyPlugTestEventBus _eventBus;
     private readonly IUrlContentService _urlContentService;
     private readonly IDocumentLifetime _documentLifetime;
     private int _disposed;
@@ -34,7 +35,7 @@ public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginD
 
     /// <summary>初始化当前 Document 的全部必需依赖。</summary>
     public TestWelcomeViewModel(
-        IHostEventBus eventBus,
+        IMyPlugTestEventBus eventBus,
         UrlHistoryViewModel urlHistory,
         IUrlContentService urlContentService,
         IDocumentLifetime documentLifetime)

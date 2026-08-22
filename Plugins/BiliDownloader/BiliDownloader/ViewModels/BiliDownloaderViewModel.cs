@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MyAvaloniaManagement.PluginSdk;
 using BiliDownloader.Constants;
+using BiliDownloader.Messaging;
 using BiliDownloader.Messages;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Auth;
@@ -35,7 +36,7 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
     /// </summary>
     public string DocumentId { get; private set; } = Guid.NewGuid().ToString("N");
 
-    private readonly IHostEventBus _eventBus;
+    private readonly IBiliDownloaderEventBus _eventBus;
     private readonly List<IDisposable> _eventSubscriptions = [];
     private readonly IDownloadTaskRepository _taskRepository;
     private readonly IBiliDownloaderDocumentStateMapper _documentStateMapper;
@@ -162,7 +163,7 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
     #endregion
 
     public BiliDownloaderViewModel(
-        IHostEventBus eventBus,
+        IBiliDownloaderEventBus eventBus,
         IDownloadTaskRepository taskRepository,
         ISettingsRepository settingsRepository,
         BiliLoginStateService loginStateService,

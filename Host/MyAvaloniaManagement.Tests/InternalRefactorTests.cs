@@ -33,15 +33,16 @@ public sealed class InternalRefactorTests
                     System.Reflection.BindingFlags.Public |
                     System.Reflection.BindingFlags.NonPublic)
                 .SelectMany(constructor => constructor.GetParameters())
-                .Select(parameter => parameter.ParameterType);
+                .Select(parameter => parameter.ParameterType.FullName);
             Assert.DoesNotContain(
-                typeof(IHostEventBus),
+                "MyAvaloniaManagement.PluginSdk.IHostEventBus",
                 constructorParameters);
         }
 
-        Assert.Equal(
-            "MyAvaloniaManagement.PluginSdk",
-            typeof(IHostEventBus).Assembly.GetName().Name);
+        Assert.Null(typeof(IPluginLifecycle).Assembly.GetType(
+            "MyAvaloniaManagement.PluginSdk.IHostEventBus"));
+        Assert.Null(hostAssembly.GetType(
+            "MyAvaloniaManagement.Business.Events.HostEventBus"));
     }
 
     [Fact]

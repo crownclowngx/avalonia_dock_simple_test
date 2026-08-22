@@ -20,12 +20,17 @@
 
     <ItemGroup>
       <!--
-        MyPlugTest 直接使用 Core 的 Document/事件契约与 UI 的声明式贡献契约，
+        MyPlugTest 直接使用 Core 的 Document/生命周期契约与 UI 的声明式贡献契约，
         因而显式引用两个层次，避免依赖 UI 项目的传递引用表达自己的业务依赖。
         公共契约由 Host 默认加载上下文提供，不能复制到插件私有目录。
       -->
       <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" Private="false" />
       <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk.UI\MyAvaloniaManagement.PluginSdk.UI.csproj" Private="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- 只向插件自己的测试开放 internal 消息实现，用真实实现验证并发与释放语义。 -->
+      <InternalsVisibleTo Include="MyPlugTest.Tests" />
     </ItemGroup>
 
     <ItemGroup>

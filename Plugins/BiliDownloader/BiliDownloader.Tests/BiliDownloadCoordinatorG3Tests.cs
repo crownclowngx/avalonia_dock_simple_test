@@ -1,4 +1,5 @@
 using BiliDownloader.Models;
+using BiliDownloader.Messaging;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
 using MyAvaloniaManagement.PluginSdk;
@@ -15,11 +16,11 @@ public sealed class BiliDownloadCoordinatorG3Tests
         InMemoryDownloadTaskRepository repository,
         FakeDownloadTaskExecutor executor,
         FakeCredentialProvider? credentialProvider = null,
-        IHostEventBus? eventBus = null,
+        IBiliDownloaderEventBus? eventBus = null,
         IDownloadProgressTracker? tracker = null)
         => new(
             repository,
-            eventBus ?? new IsolatedHostEventBus(),
+            eventBus ?? new IsolatedBiliDownloaderEventBus(),
             tracker ?? new NoOpDownloadProgressTracker(),
             executor,
             new TestDataPaths(),

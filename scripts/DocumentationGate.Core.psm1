@@ -365,22 +365,22 @@ function Get-ManagementBaselineFacts {
         if ($isG3Core) {
             Assert-DocumentationCondition ($v2Shipped.Count -eq 85) (
                 "G3 不得改写 V2 Core Shipped 数量：$baselineRoot")
-            Assert-DocumentationCondition ($unshippedEntries.Count -eq 130) (
-                "G3 Core v3 Unshipped 必须为已评审的 130 条：$baselineRoot")
+            Assert-DocumentationCondition ($unshippedEntries.Count -eq 127) (
+                "G5 Core v3 Unshipped 必须为删除通用事件总线后的 127 条：$baselineRoot")
             Assert-DocumentationCondition (
                 $unshippedEntries -contains (
                     'MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.AcceptChanges(MyAvaloniaManagement.PluginSdk.DocumentRevision savedRevision) -> void')) (
-                "G3 Core v3 缺少既有指定修订确认：$baselineRoot")
+                "G5 Core v3 缺少既有指定修订确认：$baselineRoot")
             Assert-DocumentationCondition (
                 -not ($unshippedEntries -match 'CaptureContentAsync|AcceptChanges\(\)')) (
-                "G3 Core v3 不得保留旧保存协议：$baselineRoot")
+                "G5 Core v3 不得保留旧保存协议：$baselineRoot")
             Assert-DocumentationCondition (
                 $unshippedEntries -contains (
                     'MyAvaloniaManagement.PluginSdk.RestoreDocumentActivation')) (
-                "G3 Core v3 缺少 RestoreDocumentActivation：$baselineRoot")
+                "G5 Core v3 缺少 RestoreDocumentActivation：$baselineRoot")
             Assert-DocumentationCondition (
                 -not ($unshippedEntries -match 'DocumentActivationContext')) (
-                "G3 Core v3 不得保留旧可空组合激活类型：$baselineRoot")
+                "G5 Core v3 不得保留旧可空组合激活类型：$baselineRoot")
         }
         else {
             # UI 在 G2/G3 没有 public 变化；最小测试夹具也走此分支，以继续验证 G1 的逐条投影规则。

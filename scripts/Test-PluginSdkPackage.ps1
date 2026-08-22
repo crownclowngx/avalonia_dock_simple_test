@@ -225,13 +225,6 @@ public sealed class SampleLifecycle : IPluginLifecycle
     public Task ShutdownAsync(CancellationToken token) => Task.CompletedTask;
 }
 
-public sealed record SampleEvent(string Value);
-public sealed class EventConsumer(IHostEventBus bus) : IDisposable
-{
-    private readonly IDisposable subscription = bus.Subscribe<SampleEvent>(_ => { });
-    public void Publish() => bus.Publish(new SampleEvent("ok"));
-    public void Dispose() => subscription.Dispose();
-}
 '@ $true
     $coreAssets = Get-Content -Raw -LiteralPath (Join-Path $coreConsumer 'obj/project.assets.json')
     foreach ($forbidden in @('Avalonia', 'Dock.', 'Newtonsoft.Json', 'Microsoft.Extensions.DependencyInjection')) {

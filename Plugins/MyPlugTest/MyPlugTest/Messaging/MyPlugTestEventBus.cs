@@ -1,20 +1,16 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using MyAvaloniaManagement.PluginSdk;
 
-namespace MyAvaloniaManagement.Business.Events;
+namespace MyPlugTest.Messaging;
 
-/// <summary>
-/// 当前宿主运行时独享的同步事件总线。
-/// </summary>
+/// <summary>MyPlugTest 插件 Provider 独占的同步事件总线。</summary>
 /// <remarks>
-/// 本类只负责保存订阅和执行同步派发，不承担 UI 调度、异步任务、重试或诊断策略。
-/// 订阅使用强引用，生命周期由返回的令牌显式表达；这比依赖垃圾回收时机的弱引用更容易验证，
-/// 也让 Document Scope 和插件生命周期能够确定地结束各自订阅。
+/// 本类只保存订阅并完成同步派发。插件 Provider 以 Singleton 生命周期持有本实例，因此多个
+/// MyPlugTest Document Scope 可以通信，而不同插件 Provider、不同 HostRuntime 之间不会共享消息。
+/// 订阅采用强引用和显式令牌；这让 Document Scope 的关闭可以确定地结束订阅，而不依赖垃圾回收。
 /// </remarks>
-internal sealed class HostEventBus : IHostEventBus, IDisposable
+internal sealed class MyPlugTestEventBus : IMyPlugTestEventBus, IDisposable
 {
     private readonly object _syncRoot = new();
     private readonly Dictionary<Type, List<Subscription>> _subscriptions = [];
@@ -33,8 +29,8 @@ internal sealed class HostEventBus : IHostEventBus, IDisposable
                 : [];
         }
 
-        // 用户代码绝不能在总线锁内执行。处理器可以安全地再次发布、订阅或释放自身令牌；
-        // 同时，快照固定了本次发布的顺序，发布期间新增的订阅只会从下一次事件开始生效。
+        // 处理器属于插件业务代码，绝不能在总线锁内执行。快照同时保证本轮顺序稳定，并让
+        // 处理器可以安全地发布、订阅或释放令牌；本轮新增订阅从下一次发布开始生效。
         foreach (var subscription in snapshot)
         {
             subscription.Invoke(@event);
@@ -79,8 +75,8 @@ internal sealed class HostEventBus : IHostEventBus, IDisposable
             _subscriptions.Clear();
         }
 
-        // 清空字典已经切断总线对处理器的强引用。逐个标记令牌可让调用方随后重复 Dispose
-        // 安全返回；这里不执行任何用户代码，也不需要维持订阅顺序。
+        // 字典清空后总线已不再强持有处理器。逐个标记令牌只同步释放状态，不执行用户代码；
+        // 调用方稍后重复 Dispose 仍会安全返回，也不会重新访问已释放的 Provider。
         foreach (var subscription in subscriptions)
         {
             subscription.MarkReleasedByOwner();
@@ -106,7 +102,7 @@ internal sealed class HostEventBus : IHostEventBus, IDisposable
     }
 
     private sealed class Subscription(
-        HostEventBus owner,
+        MyPlugTestEventBus owner,
         Type eventType,
         Action<object> handler) : IDisposable
     {

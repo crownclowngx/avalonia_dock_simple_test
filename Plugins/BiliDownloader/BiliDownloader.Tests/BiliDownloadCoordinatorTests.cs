@@ -322,7 +322,7 @@ public sealed class BiliDownloadCoordinatorTests
     {
         using var paths = new TestDataPaths();
         var repository = new InMemoryDownloadTaskRepository();
-        var messenger = new RecordingHostEventBus();
+        var messenger = new RecordingBiliDownloaderEventBus();
         var task = CreateRecord("delete-me", DownloadTaskStatus.Completed);
         task.TempDirectory = Path.Combine(paths.TempDirectory, task.TaskId);
         Directory.CreateDirectory(task.TempDirectory);
@@ -424,7 +424,7 @@ public sealed class BiliDownloadCoordinatorTests
         FakeDownloadTaskExecutor executor)
         => new(
             repository,
-            new IsolatedHostEventBus(),
+            new IsolatedBiliDownloaderEventBus(),
             new NoOpDownloadProgressTracker(),
             executor,
             new TestDataPaths());

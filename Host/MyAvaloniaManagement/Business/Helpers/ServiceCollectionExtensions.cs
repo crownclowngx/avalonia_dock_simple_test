@@ -5,7 +5,6 @@ using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Documents;
-using MyAvaloniaManagement.Business.Events;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation;
@@ -31,7 +30,7 @@ internal static class ServiceCollectionExtensions
     /// <param name="services">服务集合</param>
     /// <returns>服务集合</returns>
     /// <remarks>
-    /// 状态协调器采用单例，保证全应用共享同一 Dock、消息和布局状态；
+    /// 状态协调器采用单例，保证全应用共享同一 Dock 和布局状态；
     /// 存储服务也作为无状态单例注册，便于 ViewModel 通过接口替换测试实现。
     /// </remarks>
     public static IServiceCollection AddApplicationServices(
@@ -46,11 +45,6 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(registryBuilder);
         services.AddSingleton(pluginProviders);
         services.AddSingleton<IPluginLifecycleResolver>(pluginProviders);
-
-        // 事件总线由当前根容器独占；禁止使用进程静态实例，确保多 Runtime 与并行测试互不串扰。
-        services.AddSingleton<HostEventBus>();
-        services.AddSingleton<IHostEventBus>(provider =>
-            provider.GetRequiredService<HostEventBus>());
 
         // 每个由托管插件创建的 Document 都拥有独立 Scope。插件只依赖公共创建接口，
         // Dock 关闭时则由宿主使用具体管理器释放对应 Scope。

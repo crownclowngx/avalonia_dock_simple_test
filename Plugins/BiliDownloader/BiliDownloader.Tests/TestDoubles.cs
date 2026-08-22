@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using BiliDownloader;
 using BiliDownloader.Models;
+using BiliDownloader.Messaging;
 using BiliDownloader.Services;
 using BiliDownloader.Services.Auth;
 using BiliDownloader.Services.Download;
@@ -577,7 +578,7 @@ internal sealed class RecordingProgressTracker : IDownloadProgressTracker
 /// <summary>
 /// 每个测试实例独享的同步事件总线，用于验证插件逻辑且不在并行测试间共享状态。
 /// </summary>
-internal sealed class IsolatedHostEventBus : IHostEventBus, IDisposable
+internal sealed class IsolatedBiliDownloaderEventBus : IBiliDownloaderEventBus, IDisposable
 {
     private readonly object _syncRoot = new();
     private readonly Dictionary<Type, List<Subscription>> _subscriptions = [];
@@ -642,7 +643,7 @@ internal sealed class IsolatedHostEventBus : IHostEventBus, IDisposable
     }
 
     private sealed class Subscription(
-        IsolatedHostEventBus owner,
+        IsolatedBiliDownloaderEventBus owner,
         Type eventType,
         Action<object> handler) : IDisposable
     {
@@ -856,9 +857,9 @@ internal sealed class FakeFfmpegProcess : IFfmpegProcess
     }
 }
 
-internal sealed class RecordingHostEventBus : IHostEventBus, IDisposable
+internal sealed class RecordingBiliDownloaderEventBus : IBiliDownloaderEventBus, IDisposable
 {
-    private readonly IsolatedHostEventBus _inner = new();
+    private readonly IsolatedBiliDownloaderEventBus _inner = new();
 
     public List<object> SentMessages { get; } = [];
     public bool ThrowOnPublish { get; set; }

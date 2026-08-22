@@ -1016,7 +1016,7 @@ public sealed class DocumentV3G4Tests
 
     private static BiliDownloaderViewModel CreateVm()
     {
-        var messenger = new RecordingHostEventBus();
+        var messenger = new RecordingBiliDownloaderEventBus();
         var repository = new InMemoryDownloadTaskRepository();
         var loginState = new BiliLoginStateService(
             new InMemoryBiliCredentialStore(), new StubBiliSessionApi(), messenger);
@@ -1037,7 +1037,7 @@ public sealed class DocumentV3G4Tests
         CountingDocumentProvider provider,
         out InMemoryDownloadTaskRepository repository)
     {
-        var messenger = new RecordingHostEventBus();
+        var messenger = new RecordingBiliDownloaderEventBus();
         repository = new InMemoryDownloadTaskRepository();
         var settings = new InMemorySettingsRepository();
         var loginState = new BiliLoginStateService(

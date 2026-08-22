@@ -21,12 +21,13 @@ V2 快速开始入口：
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
 | [宿主—插件架构评审](./design/host-plugin-architecture-review.md) | 解决方案总体结构、插件边界、当前成熟度和演进方向 | 当前事实，已按主项目内部重构更新 |
-| [Managed Plugin V3 破坏式重构任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 实施中；G0–G4 已完成，G5–G14 尚未实施 |
+| [Managed Plugin V3 破坏式重构任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 实施中；G0–G5 已完成，G6–G14 尚未实施 |
 | [V3 G0 非发布绿色基线](./plan-history/host-v3/g0-green-baseline.md) | V2 当前测试、覆盖率、API、包图与保存竞争复现 | 已完成；不改变生产行为 |
 | [V3 G1 版本与数据边界](./plan-history/host-v3/g1-version-and-data-boundaries.md) | 未发布 3.0.0 版本线、v3 Unshipped API、V2 磁盘兼容和非发布门禁 | 已完成；不改变 public API 形状或磁盘格式 |
 | [V3 G2 修订化 Document 保存](./plan-history/host-v3/g2-revisioned-document-save.md) | 修订快照、指定修订确认、关闭竞争保护、三插件策略和非发布专项门禁 | 已完成；envelope v2 与插件内容 schema 不变 |
 | [V3 G3 互斥 Document 激活](./plan-history/host-v3/g3-exclusive-document-activation.md) | New/Restore 互斥输入、11 个 Document 支持矩阵、失败回滚和非发布专项门禁 | 已完成；线格式与业务 Codec 不变 |
 | [V3 G4 插件注册所有权](./plan-history/host-v3/g4-plugin-registration-ownership.md) | 空集合登记、Host 最终提交、ID 归属、稳定诊断和非发布专项门禁 | 已完成；public API 与磁盘格式不变 |
+| [V3 G5 插件私有消息](./plan-history/host-v3/g5-plugin-private-messaging.md) | SDK/Host 总线删除面、插件内消息器、隔离、覆盖率和非发布门禁 | 已完成；Core 127 / UI 46，磁盘格式与业务 DTO 不变 |
 | [Managed Plugin V2 封板任务书](./design/host-v2-breaking-refactor-plan.md) | V2 所有权、删除清单、阶段实施和最终签署矩阵 | G0–G14 已完成，当前签署依据 |
 | [V2 G14 封板记录](./plan-history/host-v2/g14-v2-sealing.md) | API Shipped、两轮隔离门禁、制品、SOLID 和回滚边界 | 当前 V2 正式基线 |
 | [Managed Plugin v1 封板评审与整改任务书](./design/host-v1-sealing-readiness-plan.md) | V1 封板差距、版本与兼容策略、整改包和验收标准 | V1 历史签署，已由 V2 取代 |
@@ -36,7 +37,7 @@ V2 快速开始入口：
 | [宿主 DI 保护与插件注册事务](./plan-history/host-v1/g6-host-di-protection.md) | V1 共享 Host DI 的保护事务 | V1 历史，已由 V2 独立 Provider 取代 |
 | [Document V2 持久化设计](./design/document-persistence-v2-design.md) | 六字段格式、异步所有权链、保存提交点、恢复、关闭与 Scope 释放 | 当前 Document 契约，V2 G7 已完成 |
 | [Dock 布局快照 V2](./reference/dock-layout-snapshot-v2.md) | 唯一严格字段、四向状态、生命周期可用性门控、整体隔离与 V1 保留边界 | 当前 Layout 契约，V2 G8 已完成 |
-| [G9 SDK 事件总线](./plan-history/host-v1/g9-sdk-event-bus.md) | V1 同步事件、订阅令牌和并发语义 | V1 历史；事件核心语义由 V2 SDK 延续 |
+| [G9 SDK 事件总线](./plan-history/host-v1/g9-sdk-event-bus.md) | V1 同步事件、订阅令牌和并发语义 | V1 历史；当前已由 V3 G5 的插件私有消息取代 |
 | [G10 Host 内部直接协调](./plan-history/host-v1/g10-host-internal-coordination.md) | V1 文件打开、错误状态和 Tool/Dock 协调 | V1 历史，已由 V2 当前架构取代 |
 | [G11 低价值 public 面清理](./plan-history/host-v1/g11-low-value-public-surface-cleanup.md) | V1 public 面删除与消费者迁移 | V1 历史，已由 V2 API 基线取代 |
 | [G12 统一插件构建、部署与独立发布](./plan-history/host-v1/g12-unified-plugin-build-and-deployment.md) | V1 插件构建、确定性 ZIP 和门禁证据 | V1 历史，已由 V2 构建协议取代 |
@@ -65,7 +66,7 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
 
 - [Managed Plugin V3 破坏式架构重构任务书](./design/host-v3-breaking-refactor-plan.md)：
   以修订化 Document 保存、互斥激活、插件私有消息、注册所有权、Workspace/Dock 解耦和 Host Catalog
-  分离为目标的 G0–G14 计划；当前完成 G0–G4，Document 保存使用 V3 G2，激活使用 V3 G3，注册所有权使用 V3 G4，其他生产语义仍由 V2 G14 签署。
+  分离为目标的 G0–G14 计划；当前完成 G0–G5，Document 保存使用 V3 G2，激活使用 V3 G3，注册所有权使用 V3 G4，插件私有消息使用 V3 G5，其他生产语义仍由 V2 G14 签署。
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
   G0–G14 已完成的实施与最终签署任务书。

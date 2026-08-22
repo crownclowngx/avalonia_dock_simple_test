@@ -18,15 +18,15 @@
 > 过渡构建面已经删除；Core/UI v2 API 已进入 Shipped，两轮隔离门禁与 Windows V2 Smoke 已建立，
 > 历史 v1 签署事实保持可追溯。
 
-> 当前源码已完成未发布 V3 G4：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
+> 当前源码已完成未发布 V3 G5：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
 > `[3.0.0, 4.0.0)`。活动签名位于 v3 Unshipped，Document 保存采用修订快照与指定修订确认，
 > 激活采用互斥的 `NewDocumentActivation` / `RestoreDocumentActivation`，插件注册采用 Host 最终提交
-> 与 ID 归属校验；
+> 与 ID 归属校验；SDK/Host 通用事件总线已删除，消息实例归对应插件 Provider 所有；
 > manifest、Document envelope、layout 和默认数据根继续使用 schema/generation 2。
 
 ## 2. public API
 
-当前 V3 G4 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
+当前 V3 G5 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
 四个业务插件只引用最终 SDK。`MyAvaloniaManagement.LegacyPluginContracts` 已整体删除；活动项目、
@@ -83,17 +83,18 @@ G14 冻结的 v2 Shipped，并在 G1 原样进入 v3 Unshipped。
 - Legacy 项目不存在，两个 nupkg 均不得包含或依赖 `MyAvaloniaManagementCommon.dll`；
 - 当前不自动发布公共 NuGet。宿主发布制品应同时提供两个 nupkg；对外分发前必须补充项目许可证。
 
-### 2.4 事件总线
+### 2.4 插件私有事件
 
-- 公共契约只有 `IHostEventBus.Publish<TEvent>` 和返回 `IDisposable` 的
-  `Subscribe<TEvent>`，事件与处理器均不得为 `null`；
+- V3 SDK 与 Host 不提供事件总线、转发层或兼容接口；需要消息的插件在自身程序集声明最小接口；
+- MyPlugTest 与 BiliDownloader 的消息器分别由对应插件 Provider singleton 持有，事件与处理器均不得为 `null`；
 - 发布在调用线程同步执行，只匹配精确泛型事件类型，并按订阅顺序派发；
 - 处理器异常原样传播并停止后续派发，不包装、吞掉、重试或切换线程；
 - 订阅令牌只移除自身且可重复释放；进入发布快照的处理器可能最后执行一次；
 - Document 必须持有令牌，并在自身 Scope 释放时退订；关闭竞态仍用
   `IDocumentLifetime.IsClosing` 抑制迟到副作用；
-- 每个 HostRuntime 根容器独占总线实例；不允许静态默认实例、全局 Reset 或底层 messenger 暴露；
-- 总线释放后发布或订阅抛 `ObjectDisposedException`；普通内存事件不增加版本字段。
+- 不同插件 Provider 和不同 HostRuntime 的消息实例不可见；不允许静态默认实例、全局 Reset 或底层
+  messenger 暴露；
+- 插件 Provider 释放消息器，释放后发布或订阅抛 `ObjectDisposedException`；普通内存事件不增加版本字段。
 
 ### 2.5 插件样式与 UI Profile
 

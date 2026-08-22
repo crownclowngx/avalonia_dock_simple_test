@@ -63,7 +63,7 @@ public sealed class PluginSdkApiBaselinePolicyTests
     }
 
     [Fact]
-    public void G3_V1V2历史基线未改写且V3互斥激活表面全部处于Unshipped()
+    public void G5_V1V2历史基线未改写且V3当前表面全部处于Unshipped()
     {
         var repositoryRoot = FindRepositoryRoot();
         var apiRoot = Path.Combine(
@@ -104,11 +104,11 @@ public sealed class PluginSdkApiBaselinePolicyTests
         Assert.Equal(46, uiV2Shipped.Length);
         Assert.Empty(coreV2Unshipped);
         Assert.Empty(uiV2Unshipped);
-        // G3 在尚未发布的 V3 线内继续破坏式替换 Document 激活入口。V1/V2 历史文本必须
-        // 原样保留，V3 新表面继续全部处于 Unshipped，直到 G14 才允许签署发布承诺。
+        // G5 在尚未发布的 V3 线内删除无真实 Host 所有权的事件总线。V1/V2 历史文本必须
+        // 原样保留，V3 当前表面继续全部处于 Unshipped，直到 G14 才允许签署发布承诺。
         Assert.Empty(v3Shipped);
         Assert.Empty(uiV3Shipped);
-        Assert.Equal(130, coreV3Unshipped.Length);
+        Assert.Equal(127, coreV3Unshipped.Length);
         Assert.Equal(uiV2Shipped, uiV3Unshipped);
         Assert.Contains(coreV3Unshipped, entry =>
             entry.Contains("DocumentSaveSnapshot", StringComparison.Ordinal));
@@ -122,6 +122,8 @@ public sealed class PluginSdkApiBaselinePolicyTests
             entry.Contains("RestoreDocumentActivation", StringComparison.Ordinal));
         Assert.DoesNotContain(coreV3Unshipped, entry =>
             entry.Contains("DocumentActivationContext", StringComparison.Ordinal));
+        Assert.DoesNotContain(coreV3Unshipped, entry =>
+            entry.Contains("IHostEventBus", StringComparison.Ordinal));
         Assert.Contains(v2Shipped, entry =>
             entry.Contains("CaptureContentAsync", StringComparison.Ordinal));
         Assert.DoesNotContain(v2Shipped, entry =>

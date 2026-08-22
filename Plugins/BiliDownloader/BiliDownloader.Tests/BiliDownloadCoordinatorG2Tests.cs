@@ -1,4 +1,5 @@
 using BiliDownloader.Messages;
+using BiliDownloader.Messaging;
 using BiliDownloader.Models;
 using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
@@ -15,10 +16,10 @@ public sealed class BiliDownloadCoordinatorG2Tests
         InMemoryDownloadTaskRepository repository,
         FakeDownloadTaskExecutor executor,
         FakeCredentialProvider? credentialProvider = null,
-        IHostEventBus? eventBus = null)
+        IBiliDownloaderEventBus? eventBus = null)
         => new(
             repository,
-            eventBus ?? new IsolatedHostEventBus(),
+            eventBus ?? new IsolatedBiliDownloaderEventBus(),
             new NoOpDownloadProgressTracker(),
             executor,
             new TestDataPaths(),
@@ -281,7 +282,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
         executor.Handler = (task, ct) => Task.Delay(Timeout.Infinite, ct)
             .ContinueWith(_ => new DownloadExecutionResult(null, null), TaskContinuationOptions.OnlyOnRanToCompletion);
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(),
+            repository, new IsolatedBiliDownloaderEventBus(), new NoOpDownloadProgressTracker(),
             executor, paths, new FakeCredentialProvider());
         var task = Record("t1", DownloadTaskStatus.Ready);
         task.TempDirectory = tempDir;
@@ -362,7 +363,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
         var repository = new InMemoryDownloadTaskRepository();
         var executor = new FakeDownloadTaskExecutor();
         var coordinator = new BiliDownloadCoordinator(
-            repository, new IsolatedHostEventBus(), new NoOpDownloadProgressTracker(),
+            repository, new IsolatedBiliDownloaderEventBus(), new NoOpDownloadProgressTracker(),
             executor, paths, new FakeCredentialProvider());
         var task = Record("t1", DownloadTaskStatus.Failed);
         task.TempDirectory = tempDir;
@@ -529,7 +530,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
         executor.Handler = (_, _) => credential.IsLoggedIn
             ? Task.FromResult(new DownloadExecutionResult(null, null))
             : throw new MediaAuthorizationException("需要登录");
-        var messenger = new IsolatedHostEventBus();
+        var messenger = new IsolatedBiliDownloaderEventBus();
         var coordinator = CreateCoordinator(repository, executor, credential, messenger);
         repository.Seed(Record("t1", DownloadTaskStatus.Ready));
 
@@ -594,7 +595,7 @@ public sealed class BiliDownloadCoordinatorG2Tests
             Handler = (_, _) => throw new MediaAuthorizationException("需要登录"),
         };
         var credential = new FakeCredentialProvider { IsLoggedIn = false };
-        var messenger = new IsolatedHostEventBus();
+        var messenger = new IsolatedBiliDownloaderEventBus();
         var coordinator = CreateCoordinator(repository, executor, credential, messenger);
         repository.Seed(Record("t1", DownloadTaskStatus.Ready));
 

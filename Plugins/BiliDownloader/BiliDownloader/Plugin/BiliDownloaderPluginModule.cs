@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using BiliDownloader.Constants;
+using BiliDownloader.Messaging;
 using BiliDownloader.Views;
 
 namespace BiliDownloader.Plugin;
@@ -32,6 +33,9 @@ public sealed class BiliDownloaderPluginModule : IPluginModule
         var services = registration.Services;
         services.AddSingleton<IBiliDataPaths, BiliDataPaths>();
         services.AddSingleton<IBiliLocalStateInitializer, BiliLocalStateInitializer>();
+        // 插件消息器是 BiliDownloader 自身的组合基础设施，不再由 Host SDK 提供。一个插件 Provider
+        // 只有一个实例，使 Lifecycle、Tool 与多个 Document 共享业务事件，同时保持 Runtime 隔离。
+        services.AddSingleton<IBiliDownloaderEventBus, BiliDownloaderEventBus>();
 
         // SQLite 仓储在插件进程生命周期内保持唯一，确保 Tool、Document 和 Coordinator
         // 观察同一任务事实源，而不是各自创建数据库访问对象。

@@ -1,6 +1,6 @@
 # BiliDownloader 插件架构 Review
 
-> 评审日期：2026-07-22；更新日期：2026-08-11<br>
+> 评审日期：2026-07-22；更新日期：2026-08-22（已同步 V3 G5 插件私有消息）<br>
 > 评审对象：BiliDownloader 插件自身，以及它与 MyAvaloniaManagement 宿主的交互  
 > 默认边界：Windows x64、内部可信插件、关闭宿主后替换插件，不要求运行时卸载  
 > 关联文档：[产品定义](../reference/PRODUCT.md) · [架构改进建议](ARCHITECTURE_IMPROVEMENT.md) · [实施路线图](../plan-history/ROADMAP.md) · [G0 验证记录](../plan-history/G0-BASELINE-TEST-LIFECYCLE.md) · [宿主—插件架构评审](../../../../../docs/design/host-plugin-architecture-review.md)
@@ -93,8 +93,8 @@ sequenceDiagram
 
 **[代码事实]** `BiliDownloaderPluginLifecycle` 只代理 Coordinator 的初始化和关闭，避免启动时创建 Tool/Document 或依赖视觉树。参见 [`BiliDownloaderPluginModule.cs`](../../Plugin/BiliDownloaderPluginModule.cs#L53)。
 
-**[代码事实]** Coordinator 的初始化和关闭是幂等的；关闭时取消处理队列、等待活动任务并释放宿主
-事件总线的订阅令牌。参见 [`BiliDownloadCoordinator.cs`](../../Services/Download/BiliDownloadCoordinator.cs)。
+**[代码事实]** Coordinator 的初始化和关闭是幂等的；关闭时取消处理队列、等待活动任务并释放
+BiliDownloader 私有消息器的订阅令牌。参见 [`BiliDownloadCoordinator.cs`](../../Services/Download/BiliDownloadCoordinator.cs)。
 
 **[架构判断]** 这是当前插件最成熟、最有价值的一次结构调整：下载任务的存活不再等价于某个 Tool 或 Document 是否打开。
 
@@ -103,8 +103,8 @@ sequenceDiagram
 | 内容 | 所有者 | 当前方式 |
 | --- | --- | --- |
 | Dock、窗口和应用退出 | 宿主 | 插件只贡献 Document/Tool |
-| 根 DI 容器 | 宿主 | 插件通过 `IPluginModule` 注册自身服务 |
-| 事件总线 | 宿主 | 插件构造注入 `IHostEventBus`，持有并按自身生命周期释放订阅令牌 |
+| Host Provider / 插件 Provider | 各自所有者 | Host 最终提交窄端口；插件模块只登记自身服务 |
+| BiliDownloader 消息器 | BiliDownloader Provider | 构造注入 `IBiliDownloaderEventBus`，订阅者按自身生命周期释放令牌 |
 | 下载任务、设置、登录状态 | BiliDownloader | 插件级 singleton 与 SQLite |
 | Document 实例 | 宿主创建，插件实现 | `IDocumentScopeFactory` 创建 scoped ViewModel，关闭后由宿主释放 |
 | Tool 实例 | 宿主创建一次，插件实现 | singleton ViewModel，隐藏后恢复同一实例 |
@@ -161,7 +161,7 @@ Coordinator 面向“任务如何可靠地从提交走到完成”：
 ```mermaid
 flowchart LR
     User["用户"] --> Doc["Document<br/>解析与配置"]
-    Doc -->|"SubmitDownloadTaskMessage"| Bus["宿主事件总线"]
+    Doc -->|"SubmitDownloadTaskMessage"| Bus["BiliDownloader<br/>私有消息器"]
     Bus --> Coordinator["Coordinator"]
     Coordinator -->|"先写入"| DB[("SQLite")]
     Coordinator -->|"再执行"| Executor["下载执行器"]
@@ -326,8 +326,8 @@ flowchart TB
 
 1. 插件 `.csproj` 自己 publish 宿主并按文件名做差集，构建慢且与其他插件部署规则重复。
 2. 插件与宿主共享公共程序集版本依赖部署约定，缺少 manifest 和 Host API 兼容检查。
-3. G9 已把进程默认消息器改为每 HostRuntime 隔离的 SDK 事件总线；插件事件仍应保留插件命名空间，
-   普通内存事件不添加无行为的版本字段，语义破坏时创建新事件类型。
+3. V3 G5 已把 BiliDownloader 消息器收回插件 Provider；事件和最小接口保留插件命名空间，普通内存事件
+   不添加无行为的版本字段，语义破坏时创建新事件类型。
 4. SQLite 迁移是逐列兼容脚本，缺少明确 schema version 和事务化迁移历史。
 5. 部分静态基础设施难以替换，扩大了测试盲区。
 

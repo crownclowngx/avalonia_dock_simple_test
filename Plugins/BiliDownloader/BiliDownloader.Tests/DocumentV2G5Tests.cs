@@ -20,7 +20,7 @@ public class DocumentV2G5Tests
 {
     private static BiliDownloaderViewModel CreateVm(ISettingsRepository? settings = null)
     {
-        var messenger = new RecordingHostEventBus();
+        var messenger = new RecordingBiliDownloaderEventBus();
         var taskRepo = new InMemoryDownloadTaskRepository();
         var settingsRepo = settings ?? new InMemorySettingsRepository();
         var loginState = new BiliLoginStateService(

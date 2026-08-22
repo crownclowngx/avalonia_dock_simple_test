@@ -5,7 +5,7 @@ namespace MyPlugTest.Models;
 /// </summary>
 /// <remarks>
 /// 事件是 MyPlugTest 自有的普通不可变 DTO，不继承任何消息框架类型。这样发送方和接收方只依赖
-/// Host SDK 的 <c>IHostEventBus</c> 语义，CommunityToolkit 仍只承担 MVVM 通知和命令职责。
+/// MyPlugTest 自有同步事件端口，CommunityToolkit 仍只承担 MVVM 通知和命令职责。
 /// </remarks>
 public sealed record RequestResponseMessage
 {
