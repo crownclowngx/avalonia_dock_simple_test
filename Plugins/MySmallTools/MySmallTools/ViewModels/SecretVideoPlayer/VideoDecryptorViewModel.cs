@@ -26,12 +26,18 @@ public sealed class VideoDecryptorViewModel : DecryptionBatchViewModel, IPluginD
     public event EventHandler? PresentationChanged;
 
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
-        var title = string.IsNullOrWhiteSpace(context.Title) ? "批量视频解密器" : context.Title;
+        if (activation is not NewDocumentActivation)
+        {
+            // 解密候选与执行队列不进入 Document envelope，恢复输入不能被当作空队列新建。
+            throw new NotSupportedException("批量视频解密器只支持新建激活。");
+        }
+
+        var title = string.IsNullOrWhiteSpace(activation.Title) ? "批量视频解密器" : activation.Title;
         if (!string.Equals(_title, title, StringComparison.Ordinal))
         {
             _title = title;

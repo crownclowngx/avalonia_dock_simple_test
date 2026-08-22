@@ -293,7 +293,7 @@ public sealed class ExplicitContributionAndPluginRegistryTests
         public DocumentPresentationState Presentation { get; } = new("已登记");
         public event EventHandler? PresentationChanged { add { } remove { } }
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 
@@ -302,7 +302,7 @@ public sealed class ExplicitContributionAndPluginRegistryTests
         public DocumentPresentationState Presentation { get; } = new("未登记");
         public event EventHandler? PresentationChanged { add { } remove { } }
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 

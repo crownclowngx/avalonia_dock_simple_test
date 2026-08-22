@@ -360,26 +360,33 @@ function Get-ManagementBaselineFacts {
                 Select-Object -Skip 1 | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         Assert-DocumentationCondition ($v2Shipped.Count -gt 0 -and $v2Unshipped.Count -eq 0) (
             "V2 历史 API 必须保持 Shipped 非空且 Unshipped 为空：$v2Root")
-        $isG2RevisionedCore = $unshippedEntries -contains (
-            'MyAvaloniaManagement.PluginSdk.DocumentRevision')
-        if ($isG2RevisionedCore) {
+        $isG3Core = $unshippedEntries -contains (
+            'MyAvaloniaManagement.PluginSdk.NewDocumentActivation')
+        if ($isG3Core) {
             Assert-DocumentationCondition ($v2Shipped.Count -eq 85) (
-                "G2 不得改写 V2 Core Shipped 数量：$baselineRoot")
-            Assert-DocumentationCondition ($unshippedEntries.Count -eq 101) (
-                "G2 Core v3 Unshipped 必须为已评审的 101 条：$baselineRoot")
+                "G3 不得改写 V2 Core Shipped 数量：$baselineRoot")
+            Assert-DocumentationCondition ($unshippedEntries.Count -eq 130) (
+                "G3 Core v3 Unshipped 必须为已评审的 130 条：$baselineRoot")
             Assert-DocumentationCondition (
                 $unshippedEntries -contains (
                     'MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.AcceptChanges(MyAvaloniaManagement.PluginSdk.DocumentRevision savedRevision) -> void')) (
-                "G2 Core v3 缺少指定修订确认：$baselineRoot")
+                "G3 Core v3 缺少既有指定修订确认：$baselineRoot")
             Assert-DocumentationCondition (
                 -not ($unshippedEntries -match 'CaptureContentAsync|AcceptChanges\(\)')) (
-                "G2 Core v3 不得保留旧保存协议：$baselineRoot")
+                "G3 Core v3 不得保留旧保存协议：$baselineRoot")
+            Assert-DocumentationCondition (
+                $unshippedEntries -contains (
+                    'MyAvaloniaManagement.PluginSdk.RestoreDocumentActivation')) (
+                "G3 Core v3 缺少 RestoreDocumentActivation：$baselineRoot")
+            Assert-DocumentationCondition (
+                -not ($unshippedEntries -match 'DocumentActivationContext')) (
+                "G3 Core v3 不得保留旧可空组合激活类型：$baselineRoot")
         }
         else {
-            # UI 在 G2 没有 public 变化；最小测试夹具也走此分支，以继续验证 G1 的逐条投影规则。
+            # UI 在 G2/G3 没有 public 变化；最小测试夹具也走此分支，以继续验证 G1 的逐条投影规则。
             Assert-DocumentationCondition (
                 ($v2Shipped -join "`n") -ceq ($unshippedEntries -join "`n")) (
-                "未发生 G2 Core 修订变更的 V3 Unshipped 必须与 V2 Shipped 完全一致：$baselineRoot")
+                "未发生 G3 Core 协议变更的 V3 Unshipped 必须与 V2 Shipped 完全一致：$baselineRoot")
         }
         $allShippedEntries.AddRange([string[]]$shippedEntries)
         $allUnshippedEntries.AddRange([string[]]$unshippedEntries)

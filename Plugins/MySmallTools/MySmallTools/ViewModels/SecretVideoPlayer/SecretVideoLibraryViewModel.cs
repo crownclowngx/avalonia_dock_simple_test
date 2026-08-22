@@ -35,12 +35,18 @@ public sealed class SecretVideoLibraryViewModel : LibraryDocumentCoordinatorView
     public event EventHandler? PresentationChanged;
 
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
-        var title = string.IsNullOrWhiteSpace(context.Title) ? "加密视频库播放器" : context.Title;
+        if (activation is not NewDocumentActivation)
+        {
+            // 媒体库的历史和设置由插件私有存储拥有，不是 Document envelope 内容。
+            throw new NotSupportedException("加密视频库播放器只支持新建激活。");
+        }
+
+        var title = string.IsNullOrWhiteSpace(activation.Title) ? "加密视频库播放器" : activation.Title;
         if (!string.Equals(_title, title, StringComparison.Ordinal))
         {
             _title = title;

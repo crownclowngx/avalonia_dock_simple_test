@@ -38,7 +38,7 @@ internal static class PluginTestManagementFactory
     {
         public ValueTask<Document> CreateDocumentAsync(
             DocumentTypeId documentTypeId,
-            DocumentActivationContext context)
+            DocumentActivation context)
         {
             ArgumentNullException.ThrowIfNull(documentTypeId);
             ArgumentNullException.ThrowIfNull(context);

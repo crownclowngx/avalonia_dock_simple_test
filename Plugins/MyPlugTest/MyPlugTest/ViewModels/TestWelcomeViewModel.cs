@@ -109,19 +109,23 @@ public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginD
 
     /// <inheritdoc />
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
 
         // Codec 先验证出完整临时状态，再开始修改可观察属性。这样 payload 尾部损坏不会留下
         // URL 已恢复但历史记录只恢复一半的状态；Host 还会在异常时释放未发布 Scope。
-        var restoredState = context.RestoredContent is null
-            ? null
-            : TestWelcomeDocumentContentCodec.Decode(context.RestoredContent);
+        var restoredState = activation switch
+        {
+            NewDocumentActivation => null,
+            RestoreDocumentActivation restore =>
+                TestWelcomeDocumentContentCodec.Decode(restore.RestoredContent),
+            _ => throw new NotSupportedException("Test Welcome 收到未知 Document 激活类型。"),
+        };
 
-        SetPresentationTitle(string.IsNullOrWhiteSpace(context.Title) ? "Test欢迎" : context.Title);
+        SetPresentationTitle(string.IsNullOrWhiteSpace(activation.Title) ? "Test欢迎" : activation.Title);
         if (restoredState is not null)
         {
             ApplyRestoredState(restoredState);

@@ -19,7 +19,7 @@ public sealed partial class WelcomeDocumentViewModel : ObservableObject, IPlugin
     private string _title = DefaultTitle;
 
     [ObservableProperty]
-    private string message = "Hello from V3 G1";
+    private string message = "Hello from V3 G3";
 
     public WelcomeDocumentViewModel(IDocumentLifetime lifetime) =>
         _lifetime = lifetime ?? throw new ArgumentNullException(nameof(lifetime));
@@ -29,21 +29,28 @@ public sealed partial class WelcomeDocumentViewModel : ObservableObject, IPlugin
     public event EventHandler? PresentationChanged;
 
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
         _lifetime.ClosingToken.ThrowIfCancellationRequested();
+        if (activation is not NewDocumentActivation)
+        {
+            throw new NotSupportedException("示例 Document 没有内容 Codec，只支持新建激活。");
+        }
 
-        _title = string.IsNullOrWhiteSpace(context.Title) ? DefaultTitle : context.Title;
+        _title = string.IsNullOrWhiteSpace(activation.Title) ? DefaultTitle : activation.Title;
         PresentationChanged?.Invoke(this, EventArgs.Empty);
         return ValueTask.CompletedTask;
     }
 }
 ```
 
-`IDocumentLifetime` 是必需构造依赖。模型只能观察关闭令牌并协作取消自身工作，不能关闭自己或其他 Document。每次激活创建独立 Scope，因此可变 Document 状态不能放入 singleton。
+`IDocumentLifetime` 是必需构造依赖。模型只能观察关闭令牌并协作取消自身工作，不能关闭自己或其他
+Document。每次激活创建独立 Scope，因此可变 Document 状态不能放入 singleton。非持久化 Document
+应像示例一样只接受 `NewDocumentActivation`；声明为可持久化后，再显式处理
+`RestoreDocumentActivation.RestoredContent`，不能把恢复输入当作空白新建。
 
 建立 `Views/WelcomeDocumentView.axaml` 与 code-behind：
 
@@ -52,7 +59,7 @@ public sealed partial class WelcomeDocumentViewModel : ObservableObject, IPlugin
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="QuickStartPlugin.Views.WelcomeDocumentView">
   <StackPanel Margin="16" Spacing="8">
-    <TextBlock Text="V3 G1 Document" FontWeight="Bold" />
+    <TextBlock Text="V3 G3 Document" FontWeight="Bold" />
     <TextBox Text="{Binding Message}" />
   </StackPanel>
 </UserControl>

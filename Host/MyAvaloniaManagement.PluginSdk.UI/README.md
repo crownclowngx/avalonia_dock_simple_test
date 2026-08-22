@@ -6,11 +6,12 @@ Document/Tool 描述符、Avalonia View 绑定、窗口交互端口和全屏展�
 本包依赖同版本 Core SDK，并把 Avalonia、Fluent、Semi 和 Ursa 限制为 Host 验证的版本。
 Dock 与 Newtonsoft 不属于插件 UI 契约，插件不得通过本包取得或携带这些程序集。
 
-当前仓库已完成 V3 G1 的未发布版本切换，但 UI public 形状仍是 V2 G14 已签署语义：Host 生产模块入口
+当前仓库已完成 V3 G3；UI public 形状仍沿用 V2 G14 已签署语义，Core 激活协议已破坏式更新：Host 生产模块入口
 和声明式贡献目录使用本程序集，注册时一次绑定 Descriptor、
 模型与 View，Document 为 scoped，Tool/Lifecycle 为插件 singleton。模块返回后注册入口及私有服务集合
 均被封闭；Registry 只保存不可变事实，模型创建留在 Host internal Activator。Document 通过 Core SDK
-的 `DocumentActivationContext`、`DocumentContent`、`IPluginDocument`、
+的 `DocumentActivation`、`NewDocumentActivation`、`RestoreDocumentActivation`、
+`DocumentContent`、`IPluginDocument`、
 `IPersistablePluginDocument` 与 `IDocumentLifetime` 进入唯一异步创建和持久化链。
 
 G8 已完成生命周期编排，G9–G11 已迁移 MyPlugTest、DaTangAccountingHelpPlug 与 MySmallTools。

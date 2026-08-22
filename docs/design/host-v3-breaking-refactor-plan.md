@@ -1,6 +1,7 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G2 已完成，G3–G14 尚未实施。Document 保存已采用 V3 G2 修订协议；
+> 状态：实施中；G0–G3 已完成，G4–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
+> Document 激活已采用 V3 G3 互斥 New/Restore 类型；
 > 其余生产语义仍由 V2 G14 签署，代码与程序集版本线处于未发布 V3。
 >
 > 评审日期：2026-08-22。
@@ -10,6 +11,7 @@
 > [V3 G0 非发布绿色基线](../plan-history/host-v3/g0-green-baseline.md)、
 > [V3 G1 版本与数据边界](../plan-history/host-v3/g1-version-and-data-boundaries.md)、
 > [V3 G2 修订化 Document 保存](../plan-history/host-v3/g2-revisioned-document-save.md)、
+> [V3 G3 互斥 Document 激活](../plan-history/host-v3/g3-exclusive-document-activation.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
 >
 > 计划性质：V3 是一次“协议语义纠错 + 宿主工作区解耦”的破坏式重构，不是第三次插件框架扩张。
@@ -23,7 +25,7 @@ Managed Plugin V2 已经解决了插件独立 Provider、声明式贡献、Host 
 具有高收益的语义缺口：
 
 - G2 前可持久化 Document 使用无版本确认；G2 已以指定修订确认消除捕获后编辑被错误清脏的竞争；
-- `DocumentActivationContext` 可以同时携带创建意图和恢复内容，协议允许本不应存在的组合状态；
+- G3 前的 `DocumentActivationContext` 可以同时携带创建意图和恢复内容；G3 已以两个密封输入类型删除该非法组合；
 - 根级 `IHostEventBus` 的生产消费者实际都在插件内部，公共名称与真实所有权不一致；
 - 插件可通过原始 `IServiceCollection` 影子注册 Host 保留端口或贡献模型，Host 无法保证最终解析语义；
 - Contribution ID 虽然实际遵循插件命名空间，但 Registry 没有强制验证其归属；
@@ -128,7 +130,7 @@ V3 可以改变 public C# 契约与 Host internal 协作者，但不得降低上
 | 发现 | 当前证据 | V3 判断 |
 | --- | --- | --- |
 | 保存确认不绑定快照版本 | `DocumentSaveService` 写入后调用无参数 `AcceptChanges()`；现有插件直接清除脏状态 | 引入修订化 `DocumentSaveSnapshot`，只确认已写入修订 |
-| 激活输入允许非法组合 | `DocumentActivationContext` 同时有可空 Intent 与 RestoredContent | 改为 New/Restore 两种互斥输入 |
+| 激活输入允许非法组合 | G3 前的 `DocumentActivationContext` 同时有可空 Intent 与 RestoredContent | 已改为 New/Restore 两种互斥输入 |
 | Host 总线实际承载插件内部事件 | Host 无生产业务订阅；MyPlugTest/BiliDownloader 使用私有消息类型 | 从 SDK/Host 删除，插件注册自己的内部消息器 |
 | 插件可影子注册 Host Port | Host 先预置服务，再暴露原始 `IServiceCollection` 给模块 | 插件先登记；Host 校验保留类型并最后提交端口/贡献生命周期 |
 | ID 归属只是约定 | Registry 校验重复 ID，但不强制 `{PluginId}.document/tool.*` | 在插件局部 Seal 阶段拒绝越权 ID |
@@ -473,13 +475,15 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
   [G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)。
 - **回滚**：整体回到 G1；不得保留有参/无参两个 Accept 分支。
 
-### G3：建立互斥 Document 激活
+### G3：建立互斥 Document 激活（已完成）
 
 - **目标**：用类型结构消除 Intent/Restore 非法组合。
 - **变更**：以 `NewDocumentActivation`、`RestoreDocumentActivation` 替换旧 Context；Host 创建、打开、恢复、
   Adapter Factory 和测试夹具改用穷尽分支。
 - **插件影响**：四插件全部 Document 的 `InitializeAsync` 显式处理支持的激活类型；恢复 Codec 不改变。
 - **验证**：无 Intent 新建、有 Intent 新建、恢复、错误分支、初始化取消、View 失败和 Scope 原子回滚。
+- **实施记录**：最终 API、Host 与 11 个插件 Document 的支持矩阵、143/143 专项门禁、全量覆盖率和
+  非发布边界见 [G3 专项记录](../plan-history/host-v3/g3-exclusive-document-activation.md)。
 - **回滚**：整体回到 G2；不得保留同时接受旧 Context 的 overload。
 
 ### G4：收紧插件注册所有权与 ID 归属
@@ -592,7 +596,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
 ```
 
 - G0 只冻结事实，G1 只建立版本和磁盘边界，G2 已完成修订保存；
-- G3–G5 继续修正 public 协议与插件组合所有权；
+- G3 已完成互斥激活；G4–G5 继续修正插件组合所有权与消息边界；
 - G6–G8 再拆 Host Workspace、Host Catalog 与全屏资源边界；
 - G9–G12 按插件逐个删除阶段帮助代码并完成真实包验收；
 - G13 只删除和证明无残留，不承载新设计；
@@ -668,7 +672,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
 V3 只有在以下问题全部回答“是”后才算完成：
 
 1. [x] 保存确认绑定捕获 Revision，保存期间的新修改不会被错误清除。
-2. [ ] Document New/Restore 激活在 public 类型层互斥，不存在旧可空组合入口。
+2. [x] Document New/Restore 激活在 public 类型层互斥，不存在旧可空组合入口。
 3. [ ] SDK 和 Host 已删除通用 Host EventBus，插件内部消息由插件独占。
 4. [ ] Host 保留端口和贡献生命周期由 Host 最后提交，插件不能影子覆盖。
 5. [ ] Document/Tool ID 的 PluginId 命名空间归属由自动化强制验证。

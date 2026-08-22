@@ -49,7 +49,7 @@ internal sealed class DocumentV2TestProbe
     internal Exception? AcceptChangesException { get; set; }
     internal TaskCompletionSource? InitializeBlocker { get; set; }
     internal bool ReturnNullContent { get; set; }
-    internal List<DocumentActivationContext> ActivationContexts { get; } = [];
+    internal List<DocumentActivation> ActivationContexts { get; } = [];
     internal int DisposeCount { get; set; }
     internal bool ClosingObservedDuringDispose { get; set; }
 }

@@ -224,10 +224,10 @@ public sealed class ExcelGetUrlGeneratorTests
             new ExcelGetUrlBuilder(),
             new TestPluginDocumentLifetime());
 
-        await viewModel.InitializeAsync(new DocumentActivationContext(string.Empty), default);
+        await viewModel.InitializeAsync(new NewDocumentActivation(string.Empty), default);
         Assert.Equal("Excel GET 地址生成器", viewModel.Presentation.Title);
 
-        await viewModel.InitializeAsync(new DocumentActivationContext("自定义 Excel 标题"), default);
+        await viewModel.InitializeAsync(new NewDocumentActivation("自定义 Excel 标题"), default);
         Assert.Equal("自定义 Excel 标题", viewModel.Presentation.Title);
     }
 

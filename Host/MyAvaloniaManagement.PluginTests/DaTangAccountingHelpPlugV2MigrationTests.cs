@@ -66,8 +66,8 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
             DaTangContributionIds.BankBalanceReconciliationDocument);
         var first = Assert.IsType<BankBalanceReconciliationViewModel>(firstActivation.Model);
         var second = Assert.IsType<BankBalanceReconciliationViewModel>(secondActivation.Model);
-        await first.InitializeAsync(new DocumentActivationContext("对账 A"), default);
-        await second.InitializeAsync(new DocumentActivationContext(string.Empty), default);
+        await first.InitializeAsync(new NewDocumentActivation("对账 A"), default);
+        await second.InitializeAsync(new NewDocumentActivation(string.Empty), default);
 
         first.Source.EnterpriseLedgerPath = "first.xlsx";
         first.Options.UseLegacyMode = true;
@@ -98,7 +98,7 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
         using var sourceActivation = activator.ActivateDocument(
             DaTangContributionIds.BankBalanceReconciliationDocument);
         var source = Assert.IsType<BankBalanceReconciliationViewModel>(sourceActivation.Model);
-        await source.InitializeAsync(new DocumentActivationContext("来源标题"), default);
+        await source.InitializeAsync(new NewDocumentActivation("来源标题"), default);
         var dirtyChanges = 0;
         source.IsDirtyChanged += (_, _) => dirtyChanges++;
         source.Source.EnterpriseLedgerPath = "enterprise.xlsx";
@@ -124,7 +124,7 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
             DaTangContributionIds.BankBalanceReconciliationDocument);
         var target = Assert.IsType<BankBalanceReconciliationViewModel>(targetActivation.Model);
         await target.InitializeAsync(
-            new DocumentActivationContext("恢复标题", restoredContent: content),
+            new RestoreDocumentActivation("恢复标题", content),
             default);
 
         Assert.Equal("恢复标题", target.Presentation.Title);
@@ -156,7 +156,7 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
         using var activation = activator.ActivateDocument(
             DaTangContributionIds.BankBalanceReconciliationDocument);
         var model = Assert.IsType<BankBalanceReconciliationViewModel>(activation.Model);
-        await model.InitializeAsync(new DocumentActivationContext("原始标题"), default);
+        await model.InitializeAsync(new NewDocumentActivation("原始标题"), default);
         model.Source.EnterpriseLedgerPath = "before.xlsx";
 
         using var document = JsonDocument.Parse(json);
@@ -164,7 +164,7 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
         var exception = Assert.Throws<InvalidDataException>(() =>
         {
             _ = model.InitializeAsync(
-                new DocumentActivationContext("不应提交", restoredContent: content),
+                new RestoreDocumentActivation("不应提交", content),
                 default);
         });
 
@@ -184,7 +184,7 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
         using var sourceActivation = activator.ActivateDocument(
             DaTangContributionIds.BankBalanceReconciliationDocument);
         var source = Assert.IsType<BankBalanceReconciliationViewModel>(sourceActivation.Model);
-        await source.InitializeAsync(new DocumentActivationContext("source"), default);
+        await source.InitializeAsync(new NewDocumentActivation("source"), default);
         var captured = await source.CaptureSaveSnapshotAsync(default);
         var payload = JsonNode.Parse(captured.Content.Payload.GetRawText())!.AsObject();
         if (mutation == "wrongType")
@@ -201,13 +201,13 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
         using var targetActivation = activator.ActivateDocument(
             DaTangContributionIds.BankBalanceReconciliationDocument);
         var target = Assert.IsType<BankBalanceReconciliationViewModel>(targetActivation.Model);
-        await target.InitializeAsync(new DocumentActivationContext("原标题"), default);
+        await target.InitializeAsync(new NewDocumentActivation("原标题"), default);
         target.Source.EnterpriseLedgerPath = "before.xlsx";
 
         Assert.Throws<InvalidDataException>(() =>
         {
             _ = target.InitializeAsync(
-                new DocumentActivationContext("不应提交", restoredContent: corrupted),
+                new RestoreDocumentActivation("不应提交", corrupted),
                 default);
         });
         Assert.Equal("原标题", target.Presentation.Title);
@@ -223,7 +223,7 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
         var activator = composition.HostProvider.GetRequiredService<PluginContributionActivator>();
         var activation = activator.ActivateDocument(DaTangContributionIds.InvoiceInfoImportDocument);
         var model = Assert.IsType<InvoiceInfoImportViewModel>(activation.Model);
-        await model.InitializeAsync(new DocumentActivationContext("关闭竞争"), default);
+        await model.InitializeAsync(new NewDocumentActivation("关闭竞争"), default);
 
         var selection = model.SelectFolder("InvoiceSummaryFile");
         await window.Started;

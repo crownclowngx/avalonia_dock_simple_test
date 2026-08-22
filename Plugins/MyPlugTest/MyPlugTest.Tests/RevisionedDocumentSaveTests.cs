@@ -13,7 +13,7 @@ public sealed class RevisionedDocumentSaveTests
     {
         using var lifetime = new TestDocumentLifetime();
         using var model = CreateModel(lifetime);
-        await model.InitializeAsync(new DocumentActivationContext("修订测试"), default);
+        await model.InitializeAsync(new NewDocumentActivation("修订测试"), default);
         var dirtyChanges = 0;
         model.IsDirtyChanged += (_, _) => dirtyChanges++;
 
@@ -38,7 +38,7 @@ public sealed class RevisionedDocumentSaveTests
     {
         using var sourceLifetime = new TestDocumentLifetime();
         using var source = CreateModel(sourceLifetime);
-        await source.InitializeAsync(new DocumentActivationContext("来源"), default);
+        await source.InitializeAsync(new NewDocumentActivation("来源"), default);
         source.Url = "https://restore.test";
         source.ResponseContent = "恢复正文";
         source.UrlHistory.AddUrl("https://history.test");
@@ -47,7 +47,7 @@ public sealed class RevisionedDocumentSaveTests
         using var targetLifetime = new TestDocumentLifetime();
         using var target = CreateModel(targetLifetime);
         await target.InitializeAsync(
-            new DocumentActivationContext("恢复目标", restoredContent: snapshot.Content),
+            new RestoreDocumentActivation("恢复目标", snapshot.Content),
             default);
 
         Assert.Equal("https://restore.test", target.Url);
@@ -61,7 +61,7 @@ public sealed class RevisionedDocumentSaveTests
     {
         using var lifetime = new TestDocumentLifetime();
         using var model = CreateModel(lifetime);
-        await model.InitializeAsync(new DocumentActivationContext("取消测试"), default);
+        await model.InitializeAsync(new NewDocumentActivation("取消测试"), default);
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
 

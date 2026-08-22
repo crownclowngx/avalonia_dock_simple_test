@@ -52,7 +52,7 @@ internal sealed class DocumentPersistenceCoordinator(
             {
                 await factory.CreateAndPublishDocumentAsync(
                     documentTypeId,
-                    new DocumentActivationContext(
+                    new NewDocumentActivation(
                         title: string.Empty,
                         creationIntentId));
                 return DocumentOperationResult.ClearError;
@@ -219,9 +219,9 @@ internal sealed class DocumentPersistenceCoordinator(
             {
                 pending = await factory.CreateManagementNewDocumentAsync(
                     envelope.DocumentTypeId,
-                    new DocumentActivationContext(
+                    new RestoreDocumentActivation(
                         envelope.Title,
-                        restoredContent: envelope.Content));
+                        envelope.Content));
             }
             catch (Exception exception)
             {

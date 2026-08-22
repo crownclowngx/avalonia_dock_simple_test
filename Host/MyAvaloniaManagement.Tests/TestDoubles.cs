@@ -150,7 +150,7 @@ internal sealed class UnitTestDockableFactory(
 {
     public async ValueTask<Document> CreateDocumentAsync(
         MyAvaloniaManagement.PluginSdk.DocumentTypeId documentTypeId,
-        MyAvaloniaManagement.PluginSdk.DocumentActivationContext context)
+        MyAvaloniaManagement.PluginSdk.DocumentActivation context)
     {
         if (!registry.TryGetDocumentRegistration(documentTypeId, out var registration))
         {
@@ -422,7 +422,7 @@ internal sealed class TestSavableDocument(
     public event EventHandler? PresentationChanged;
 
     public async ValueTask InitializeAsync(
-        MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+        MyAvaloniaManagement.PluginSdk.DocumentActivation context,
         CancellationToken cancellationToken)
     {
         probe.ActivationContexts.Add(context);
@@ -436,10 +436,17 @@ internal sealed class TestSavableDocument(
             throw initializeException;
         }
         Title = string.IsNullOrWhiteSpace(context.Title) ? "未命名" : context.Title;
-        if (context.RestoredContent is not { } content)
+        if (context is NewDocumentActivation)
         {
             return;
         }
+
+        if (context is not RestoreDocumentActivation restore)
+        {
+            throw new NotSupportedException("测试 Document 收到未知激活类型。");
+        }
+
+        var content = restore.RestoredContent;
 
         if (content.SchemaVersion != 1 || content.Payload.ValueKind != System.Text.Json.JsonValueKind.String)
         {
@@ -596,7 +603,7 @@ internal sealed class TrackedScopedSavableDocument :
     public event EventHandler? PresentationChanged { add { } remove { } }
 
     public ValueTask InitializeAsync(
-        MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+        MyAvaloniaManagement.PluginSdk.DocumentActivation context,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -606,7 +613,7 @@ internal sealed class TrackedScopedSavableDocument :
             throw new InvalidOperationException(_probe.LoadFailureMessage);
         }
 
-        if (context.RestoredContent is { SchemaVersion: not 1 })
+        if (context is RestoreDocumentActivation { RestoredContent.SchemaVersion: not 1 })
         {
             throw new InvalidOperationException("测试 scoped Document 内容版本不受支持。");
         }
@@ -669,10 +676,14 @@ internal sealed class TrackedScopedNonSavableDocument :
     public event EventHandler? PresentationChanged { add { } remove { } }
 
     public ValueTask InitializeAsync(
-        MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+        MyAvaloniaManagement.PluginSdk.DocumentActivation context,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (context is not NewDocumentActivation)
+        {
+            throw new NotSupportedException("非持久化测试 Document 只支持新建激活。");
+        }
         _probe.RecordLoad();
         return ValueTask.CompletedTask;
     }

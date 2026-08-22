@@ -1,15 +1,16 @@
-# Document envelope v2 与 V3 G2 修订保存设计
+# Document envelope v2、V3 G2 修订保存与 G3 互斥激活设计
 
 > 状态：当前实现
 >
 > 更新日期：2026-08-22
 >
-> 边界：V2 G14 的唯一创建/打开/恢复/Scope 链，加上 V3 G2 的修订化保存与关闭保护
+> 边界：V2 G14 的唯一创建/打开/恢复/Scope 链，加上 V3 G2 的修订化保存和 V3 G3 的互斥激活
 
 ## 1. 设计结论
 
-Document 只有一条生产路径。新建、Creation Intent 和磁盘恢复仍构造 V2 G14 建立的
-`DocumentActivationContext`；插件实现普通 `IPluginDocument`，可保存模型额外实现
+Document 只有一条生产路径。新建和 Creation Intent 构造 `NewDocumentActivation`，严格信封读取与
+恢复备份构造 `RestoreDocumentActivation`；两个密封类型共同继承 `DocumentActivation`，不再通过
+多个可空字段推断当前分支。插件实现普通 `IPluginDocument`，可保存模型额外实现
 `IPersistablePluginDocument`。Host 独占 Registry 身份、路径、磁盘标题、恢复标记、Dock 发布和
 Scope 释放，插件只解释 `DocumentContent` 中自己的 schema 与原生 JSON payload。
 

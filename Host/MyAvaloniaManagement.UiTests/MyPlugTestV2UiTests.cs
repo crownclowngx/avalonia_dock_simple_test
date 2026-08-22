@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Docking;
@@ -67,10 +68,10 @@ public sealed class MyPlugTestV2UiTests
         using var broadTypeSubscription = bus.Subscribe<object>(_ => broadTypeDeliveries++);
         var firstAdapter = Assert.IsType<ManagedDocumentDockable>(await factory.CreateDocumentAsync(
             MyPlugTestContributionIds.MessageReceiverDocument,
-            new DocumentActivationContext("接收 A")));
+            new NewDocumentActivation("接收 A")));
         using var secondAdapter = Assert.IsType<ManagedDocumentDockable>(await factory.CreateDocumentAsync(
             MyPlugTestContributionIds.MessageReceiverDocument,
-            new DocumentActivationContext("接收 B")));
+            new NewDocumentActivation("接收 B")));
         var first = Assert.IsType<TestMessageReceiveViewModel>(firstAdapter.Model);
         var second = Assert.IsType<TestMessageReceiveViewModel>(secondAdapter.Model);
 
@@ -94,6 +95,27 @@ public sealed class MyPlugTestV2UiTests
         Assert.Contains("https://second.test", second.Messages[1].Content, StringComparison.Ordinal);
     }
 
+    [AvaloniaFact]
+    public async Task 三个非持久化Document显式拒绝Restore激活()
+    {
+        using var composition = MyPlugTestUiComposition.Create();
+        var factory = composition.Provider.GetRequiredService<IHostDockableFactory>();
+        using var json = JsonDocument.Parse("{}");
+        var content = new DocumentContent(1, json.RootElement);
+
+        foreach (var documentTypeId in new[]
+                 {
+                     MyPlugTestContributionIds.MessageReceiverDocument,
+                     MyPlugTestContributionIds.BatchHttpGetDocument,
+                     MyPlugTestContributionIds.ExcelGetUrlGeneratorDocument,
+                 })
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => factory.CreateDocumentAsync(
+                documentTypeId,
+                new RestoreDocumentActivation("错误恢复", content)).AsTask());
+        }
+    }
+
     private static async Task AssertDocument<TModel, TView>(
         IHostDockableFactory factory,
         DocumentTypeId documentTypeId,
@@ -103,7 +125,7 @@ public sealed class MyPlugTestV2UiTests
     {
         using var adapter = Assert.IsType<ManagedDocumentDockable>(await factory.CreateDocumentAsync(
             documentTypeId,
-            new DocumentActivationContext(title)));
+            new NewDocumentActivation(title)));
         var model = Assert.IsType<TModel>(adapter.Model);
         var view = Assert.IsType<TView>(adapter.PreparedView);
         Assert.Same(model, view.DataContext);

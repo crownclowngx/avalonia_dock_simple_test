@@ -45,12 +45,18 @@ public sealed class BatchHttpGetViewModel : ObservableObject, IPluginDocument, I
 
     /// <inheritdoc />
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
-        var title = string.IsNullOrWhiteSpace(context.Title) ? "逐行 HTTP GET" : context.Title;
+        if (activation is not NewDocumentActivation)
+        {
+            // 批量请求结果不属于 Document envelope；恢复输入不能被静默解释为空白任务。
+            throw new NotSupportedException("逐行 HTTP GET 只支持新建激活。");
+        }
+
+        var title = string.IsNullOrWhiteSpace(activation.Title) ? "逐行 HTTP GET" : activation.Title;
         if (!string.Equals(_title, title, StringComparison.Ordinal))
         {
             _title = title;

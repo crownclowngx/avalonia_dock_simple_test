@@ -68,9 +68,9 @@ public sealed class MySmallToolsV2MigrationTests
             Assert.False(defaultActivation.Model is Document);
 
             await defaultActivation.Model.InitializeAsync(
-                new DocumentActivationContext(string.Empty), default);
+                new NewDocumentActivation(string.Empty), default);
             await customActivation.Model.InitializeAsync(
-                new DocumentActivationContext(item.CustomTitle), default);
+                new NewDocumentActivation(item.CustomTitle), default);
 
             Assert.Equal(item.DefaultTitle, defaultActivation.Model.Presentation.Title);
             Assert.Equal(item.CustomTitle, customActivation.Model.Presentation.Title);

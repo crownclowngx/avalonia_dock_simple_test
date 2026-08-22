@@ -122,7 +122,7 @@ public sealed class DocumentScopeManagerTests
         public DocumentPresentationState Presentation => new("Scope 测试");
         public event EventHandler? PresentationChanged { add { } remove { } }
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
         public void Dispose() => IsDisposed = true;
     }
@@ -138,7 +138,7 @@ public sealed class DocumentScopeManagerTests
         public DocumentPresentationState Presentation => new("不可达");
         public event EventHandler? PresentationChanged { add { } remove { } }
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 
@@ -151,7 +151,7 @@ public sealed class DocumentScopeManagerTests
         public DocumentPresentationState Presentation => new("关闭顺序测试");
         public event EventHandler? PresentationChanged { add { } remove { } }
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
         public void Dispose()

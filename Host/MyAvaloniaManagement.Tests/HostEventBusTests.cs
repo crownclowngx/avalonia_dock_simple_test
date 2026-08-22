@@ -254,7 +254,7 @@ public sealed class HostEventBusTests
         public MyAvaloniaManagement.PluginSdk.DocumentPresentationState Presentation => new("事件测试");
         public event EventHandler? PresentationChanged { add { } remove { } }
         public ValueTask InitializeAsync(
-            MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+            MyAvaloniaManagement.PluginSdk.DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
         public void Dispose()
@@ -315,7 +315,7 @@ public sealed class HostEventBusTests
         public MyAvaloniaManagement.PluginSdk.DocumentPresentationState Presentation => new("失败测试");
         public event EventHandler? PresentationChanged { add { } remove { } }
         public ValueTask InitializeAsync(
-            MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+            MyAvaloniaManagement.PluginSdk.DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 }

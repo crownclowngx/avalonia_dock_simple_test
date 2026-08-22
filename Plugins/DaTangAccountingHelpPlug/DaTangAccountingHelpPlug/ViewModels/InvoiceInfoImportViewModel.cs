@@ -60,14 +60,20 @@ public partial class InvoiceInfoImportViewModel : ObservableObject, IPluginDocum
 
     /// <inheritdoc />
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
-        SetPresentationTitle(string.IsNullOrWhiteSpace(context.Title)
+        if (activation is not NewDocumentActivation)
+        {
+            // 发票计算会话没有 Document 内容 Codec，恢复输入不能被降级成空白导入页。
+            throw new NotSupportedException("发票信息导入只支持新建激活。");
+        }
+
+        SetPresentationTitle(string.IsNullOrWhiteSpace(activation.Title)
             ? "发票信息导入和计算"
-            : context.Title);
+            : activation.Title);
         return ValueTask.CompletedTask;
     }
 

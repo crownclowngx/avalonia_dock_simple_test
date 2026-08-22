@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using System.Text.Json;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
@@ -41,7 +42,7 @@ public sealed class MySmallToolsV2UiTests
         var adapter = Assert.IsType<ManagedDocumentDockable>(
             await factory.CreateDocumentAsync(
                 MySmallToolsContributionIds.SecretVideoPlayerDocument,
-                new DocumentActivationContext("关闭测试")));
+                new NewDocumentActivation("关闭测试")));
         var view = Assert.IsType<SecretVideoPlayerView>(adapter.PreparedView);
         var model = Assert.IsType<SecretVideoPlayerViewModel>(adapter.Model);
         var closingToken = adapter.ClosingToken;
@@ -54,6 +55,28 @@ public sealed class MySmallToolsV2UiTests
         Assert.Null(view.DataContext);
     }
 
+    [AvaloniaFact]
+    public async Task 四个非持久化Document全部显式拒绝Restore激活()
+    {
+        using var composition = MySmallToolsUiComposition.Create();
+        var factory = composition.Provider.GetRequiredService<IHostDockableFactory>();
+        using var json = JsonDocument.Parse("{}");
+        var content = new DocumentContent(1, json.RootElement);
+
+        foreach (var documentTypeId in new[]
+                 {
+                     MySmallToolsContributionIds.SecretVideoPlayerDocument,
+                     MySmallToolsContributionIds.SecretVideoLibraryDocument,
+                     MySmallToolsContributionIds.VideoEncryptorDocument,
+                     MySmallToolsContributionIds.VideoDecryptorDocument,
+                 })
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => factory.CreateDocumentAsync(
+                documentTypeId,
+                new RestoreDocumentActivation("错误恢复", content)).AsTask());
+        }
+    }
+
     private static async Task AssertDocumentAsync<TModel, TView>(
         IHostDockableFactory factory,
         DocumentTypeId id,
@@ -62,7 +85,7 @@ public sealed class MySmallToolsV2UiTests
         where TView : Avalonia.Controls.Control
     {
         using var adapter = Assert.IsType<ManagedDocumentDockable>(
-            await factory.CreateDocumentAsync(id, new DocumentActivationContext(title)));
+            await factory.CreateDocumentAsync(id, new NewDocumentActivation(title)));
         var model = Assert.IsType<TModel>(adapter.Model);
         var view = Assert.IsType<TView>(adapter.PreparedView);
 

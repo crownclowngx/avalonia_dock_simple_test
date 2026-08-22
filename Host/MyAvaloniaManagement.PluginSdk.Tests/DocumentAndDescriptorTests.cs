@@ -45,15 +45,41 @@ public sealed class DocumentAndDescriptorTests
     }
 
     [Fact]
-    public void Activation和Presentation拒绝Null但允许由插件决定的空标题()
+    public void 互斥Activation验证必需输入并允许由插件决定空标题()
     {
-        Assert.Throws<ArgumentNullException>(() => new DocumentActivationContext(null!));
+        Assert.Throws<ArgumentNullException>(() => new NewDocumentActivation(null!));
+        using var document = JsonDocument.Parse("{}");
+        var content = new DocumentContent(1, document.RootElement);
+        Assert.Throws<ArgumentNullException>(() => new RestoreDocumentActivation(null!, content));
+        Assert.Throws<ArgumentNullException>(() => new RestoreDocumentActivation("恢复", null!));
         Assert.Throws<ArgumentNullException>(() => new DocumentPresentationState(null!));
-        Assert.Equal(string.Empty, new DocumentActivationContext(string.Empty).Title);
+        var created = new NewDocumentActivation(string.Empty);
+        var intent = new CreationIntentId("sample");
+        var createdWithIntent = new NewDocumentActivation("新建", intent);
+        var restored = new RestoreDocumentActivation(string.Empty, content);
+
+        Assert.Equal(string.Empty, created.Title);
+        Assert.Null(created.CreationIntentId);
+        Assert.Equal(intent, createdWithIntent.CreationIntentId);
+        Assert.Equal(string.Empty, restored.Title);
+        Assert.Same(content, restored.RestoredContent);
         Assert.Equal(string.Empty, new DocumentPresentationState(string.Empty).Title);
-        var defaults = new DocumentActivationContext("默认");
-        Assert.Null(defaults.CreationIntentId);
-        Assert.Null(defaults.RestoredContent);
+    }
+
+    [Fact]
+    public void Activation层次只开放两个密封具体类型()
+    {
+        Assert.True(typeof(DocumentActivation).IsAbstract);
+        Assert.True(typeof(NewDocumentActivation).IsSealed);
+        Assert.True(typeof(RestoreDocumentActivation).IsSealed);
+        Assert.Equal(
+            [typeof(NewDocumentActivation), typeof(RestoreDocumentActivation)],
+            typeof(DocumentActivation).Assembly.GetTypes()
+                .Where(type => type.BaseType == typeof(DocumentActivation))
+                .OrderBy(type => type.Name)
+                .ToArray());
+        Assert.Null(typeof(DocumentActivation).Assembly.GetType(
+            "MyAvaloniaManagement.PluginSdk.DocumentActivationContext"));
     }
 
     [Fact]

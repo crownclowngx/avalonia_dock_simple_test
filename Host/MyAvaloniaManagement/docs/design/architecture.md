@@ -1,8 +1,8 @@
 # MyAvaloniaManagement 内部架构
 
-> 当前源码已完成未发布 V3 G2：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
-> 指定修订确认，其余运行结构仍是 V2 G14 已签署实现。manifest、Document envelope、layout 保持
-> schema 2，默认数据根保持 `v2`；G3 及后续 Workspace、激活或事件协议尚未实施。
+> 当前源码已完成未发布 V3 G3：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
+> 指定修订确认，激活已采用互斥 New/Restore 类型，其余运行结构仍是 V2 G14 已签署实现。manifest、
+> Document envelope、layout 保持 schema 2，默认数据根保持 `v2`；G4 及后续协议尚未实施。
 
 ## 1. 目标与边界
 

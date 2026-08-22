@@ -451,19 +451,19 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
 
     /// <inheritdoc />
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         lock (_initializationLock)
         {
-            _initializationTask ??= InitializeCoreAsync(context, cancellationToken);
+            _initializationTask ??= InitializeCoreAsync(activation, cancellationToken);
             return new ValueTask(_initializationTask);
         }
     }
 
     private async Task InitializeCoreAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
         using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
@@ -472,31 +472,35 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
         var effectiveToken = linkedCancellation.Token;
         effectiveToken.ThrowIfCancellationRequested();
 
-        // 恢复必须先在独立 DTO 中完成 JSON 解码、安全校验和规范化。任何失败都发生在修改
-        // 当前模型之前；Host 随后丢弃暂存 Scope，因此不会发布半恢复的 Document。
-        var restored = context.RestoredContent is null
-            ? null
-            : _documentStateMapper.Restore(context.RestoredContent);
-        if (restored is null
-            && context.CreationIntentId is not null
-            && context.CreationIntentId != BiliDownloaderContributionIds.QuickUrlIntent
-            && context.CreationIntentId != BiliDownloaderContributionIds.PersonalSourceIntent)
+        // 类型分支先把互斥输入解包为局部事实。恢复必须在独立 DTO 中完成 JSON 解码、安全校验和
+        // 规范化；任何失败都发生在修改当前模型之前。Creation Intent 则只可能来自 New 分支。
+        (BiliDownloaderRestoredState? Restored, CreationIntentId? CreationIntentId) input =
+            activation switch
+            {
+                NewDocumentActivation created => (null, created.CreationIntentId),
+                RestoreDocumentActivation restore =>
+                    (_documentStateMapper.Restore(restore.RestoredContent), null),
+                _ => throw new NotSupportedException("BiliDownloader 收到未知 Document 激活类型。"),
+            };
+        if (input.CreationIntentId is not null
+            && input.CreationIntentId != BiliDownloaderContributionIds.QuickUrlIntent
+            && input.CreationIntentId != BiliDownloaderContributionIds.PersonalSourceIntent)
         {
-            throw new ArgumentException("未知的 BiliDownloader 创建意图。", nameof(context));
+            throw new ArgumentException("未知的 BiliDownloader 创建意图。", nameof(activation));
         }
 
-        Title = string.IsNullOrWhiteSpace(context.Title) ? "Bilibili下载" : context.Title;
+        Title = string.IsNullOrWhiteSpace(activation.Title) ? "Bilibili下载" : activation.Title;
         _isRestoringDocument = true;
         try
         {
-            if (restored is not null)
+            if (input.Restored is not null)
             {
-                ApplyRestoredState(restored);
+                ApplyRestoredState(input.Restored);
                 OnPropertyChanged(nameof(DocumentId));
             }
             else
             {
-                ApplyCreationIntent(context.CreationIntentId);
+                ApplyCreationIntent(input.CreationIntentId);
             }
 
             await DownloadConfig.InitializeAsync();

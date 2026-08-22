@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.ViewModels;
 
 namespace MyAvaloniaManagement.Tests;
 
@@ -23,10 +24,12 @@ public sealed class DocumentPersistenceV2Tests
         var adapter = Assert.Single(GetDocuments(context));
         var model = Assert.IsType<TestSavableDocument>(adapter.Model);
         Assert.Equal("未命名", model.Title);
+        var activation = Assert.IsType<NewDocumentActivation>(
+            Assert.Single(context.Provider.GetRequiredService<DocumentV2TestProbe>()
+                .ActivationContexts));
         Assert.Equal(
             new CreationIntentId("sample-intent"),
-            Assert.Single(context.Provider.GetRequiredService<DocumentV2TestProbe>()
-                .ActivationContexts).CreationIntentId);
+            activation.CreationIntentId);
     }
 
     [Fact]
@@ -59,6 +62,27 @@ public sealed class DocumentPersistenceV2Tests
             .CreateDocumentAsync(TestDocumentIds.TypeId, new CreationIntentId("unknown-intent"));
 
         Assert.True(result.ShouldUpdateError);
+        Assert.Empty(GetDocuments(context));
+    }
+
+    [Fact]
+    public async Task 非持久化Document在创建Scope前拒绝Restore激活()
+    {
+        using var context = DocumentV2TestContext.Create(persistable: false);
+        _ = context.CreateMainWindowViewModel();
+        using var json = JsonDocument.Parse("{}");
+        var content = new DocumentContent(1, json.RootElement);
+        var factory = context.Provider.GetRequiredService<ManagementFactory>();
+        var probe = context.Provider.GetRequiredService<DocumentV2TestProbe>();
+
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            factory.CreateManagementNewDocumentAsync(
+                TestDocumentIds.TypeId,
+                new RestoreDocumentActivation("错误恢复", content)).AsTask());
+
+        // Registry 的持久化声明在 Activator 之前判定，因此插件模型没有被构造或初始化，
+        // 工作区也没有取得任何候选 Adapter。这比“创建后再回滚”更早封闭错误入口。
+        Assert.Empty(probe.ActivationContexts);
         Assert.Empty(GetDocuments(context));
     }
 

@@ -11,7 +11,7 @@ internal interface IHostDockableFactory
 {
     ValueTask<Document> CreateDocumentAsync(
         DocumentTypeId documentTypeId,
-        DocumentActivationContext context);
+        DocumentActivation activation);
     Tool CreateTool(ToolTypeId toolTypeId);
 }
 
@@ -33,18 +33,20 @@ internal sealed class HostDockAdapterFactory(
 
     public async ValueTask<Document> CreateDocumentAsync(
         DocumentTypeId documentTypeId,
-        DocumentActivationContext context)
+        DocumentActivation activation)
     {
         ArgumentNullException.ThrowIfNull(documentTypeId);
-        ArgumentNullException.ThrowIfNull(context);
-        var activation = _activator.ActivateDocument(documentTypeId);
+        ArgumentNullException.ThrowIfNull(activation);
+        var activatedDocument = _activator.ActivateDocument(documentTypeId);
         ManagedDocumentDockable? adapter = null;
         try
         {
             // 初始化发生在 Adapter、View 和 Dock 发布之前。插件只观察 Scope 的关闭令牌，
             // 任意失败都会由下方唯一回滚入口结束同一个 Scope。
-            await activation.Model.InitializeAsync(context, activation.ClosingToken);
-            adapter = new ManagedDocumentDockable(activation, context.Title);
+            await activatedDocument.Model.InitializeAsync(
+                activation,
+                activatedDocument.ClosingToken);
+            adapter = new ManagedDocumentDockable(activatedDocument, activation.Title);
             _viewLocator.Prepare(adapter);
             return adapter;
         }
@@ -56,7 +58,7 @@ internal sealed class HostDockAdapterFactory(
             }
             else
             {
-                activation.Dispose();
+                activatedDocument.Dispose();
             }
             throw;
         }

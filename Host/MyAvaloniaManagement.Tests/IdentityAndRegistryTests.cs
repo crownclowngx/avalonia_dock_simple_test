@@ -105,7 +105,7 @@ public sealed class IdentityAndRegistryTests
         public MyAvaloniaManagement.PluginSdk.DocumentPresentationState Presentation { get; } = new("示例");
         public event EventHandler? PresentationChanged { add { } remove { } }
         public ValueTask InitializeAsync(
-            MyAvaloniaManagement.PluginSdk.DocumentActivationContext context,
+            MyAvaloniaManagement.PluginSdk.DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 

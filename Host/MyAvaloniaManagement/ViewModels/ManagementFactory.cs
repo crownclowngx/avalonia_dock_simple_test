@@ -175,25 +175,44 @@ internal sealed class ManagementFactory : Factory, IDisposable
     /// </remarks>
     internal async ValueTask<ManagedDocumentDockable> CreateManagementNewDocumentAsync(
         DocumentTypeId documentTypeId,
-        DocumentActivationContext context)
+        DocumentActivation activation)
     {
         ArgumentNullException.ThrowIfNull(documentTypeId);
         EnsureAcceptingCreations();
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         if (!_extensions.TryGetDocumentRegistration(documentTypeId, out var registration))
         {
             throw new NotSupportedException($"不支持的 Document 类型：{documentTypeId.Value}。");
         }
 
-        if (context.CreationIntentId is { } intentId &&
-            !registration.Descriptor.CreationIntents.Any(item => item.IntentId == intentId))
+        // 激活类型在创建插件 Scope 前完成入口校验。New 才能携带 Creation Intent；Restore
+        // 则必须指向声明为可持久化的 Document。失败不会调用插件构造函数，更不会留下候选 Scope。
+        switch (activation)
         {
-            throw new ArgumentException(
-                $"Document 创建意图 {intentId.Value} 未在 Descriptor 中声明。",
-                nameof(context));
+            case NewDocumentActivation { CreationIntentId: { } intentId }
+                when !registration.Descriptor.CreationIntents.Any(item => item.IntentId == intentId):
+                throw new ArgumentException(
+                    $"Document 创建意图 {intentId.Value} 未在 Descriptor 中声明。",
+                    nameof(activation));
+
+            case NewDocumentActivation:
+                break;
+
+            case RestoreDocumentActivation when !registration.IsPersistable:
+                throw new NotSupportedException(
+                    $"Document 类型 {documentTypeId.Value} 未声明持久化能力，不能使用恢复激活。");
+
+            case RestoreDocumentActivation:
+                break;
+
+            default:
+                // SDK 已从语言层面封闭官方类型层次；此分支仍作为纵深防御，避免反射、损坏程序集
+                // 或未来 SDK 误加类型时被静默当作 New 继续创建插件 Scope。
+                throw new NotSupportedException(
+                    $"不支持的 Document 激活类型：{activation.GetType().FullName}。");
         }
 
-        var document = await _dockableFactory.CreateDocumentAsync(documentTypeId, context);
+        var document = await _dockableFactory.CreateDocumentAsync(documentTypeId, activation);
         var adapter = document as ManagedDocumentDockable ??
             throw new InvalidOperationException("V2 Document 工厂只能返回 ManagedDocumentDockable。");
         _ownedDocuments.Add(adapter);
@@ -201,9 +220,9 @@ internal sealed class ManagementFactory : Factory, IDisposable
         {
             if (registration.IsPersistable)
             {
-                var hostTitle = string.IsNullOrWhiteSpace(context.Title)
+                var hostTitle = string.IsNullOrWhiteSpace(activation.Title)
                     ? registration.Descriptor.DisplayName
-                    : context.Title;
+                    : activation.Title;
                 _documentPersistenceStates.Register(adapter, hostTitle);
             }
 
@@ -218,10 +237,10 @@ internal sealed class ManagementFactory : Factory, IDisposable
 
     internal async ValueTask<ManagedDocumentDockable> CreateAndPublishDocumentAsync(
         DocumentTypeId documentTypeId,
-        DocumentActivationContext context)
+        DocumentActivation activation)
     {
         ManagedDocumentDockable? pending =
-            await CreateManagementNewDocumentAsync(documentTypeId, context);
+            await CreateManagementNewDocumentAsync(documentTypeId, activation);
         try
         {
             PublishDocument(pending);
@@ -320,7 +339,7 @@ internal sealed class ManagementFactory : Factory, IDisposable
         // Welcome 是中央工作区的必需项，因此创建失败由调用方中止整个布局初始化。
         var welcomeCreation = _dockableFactory.CreateDocumentAsync(
             HostExtensionIds.V2WelcomeDocument,
-            new DocumentActivationContext("欢迎"));
+            new NewDocumentActivation("欢迎"));
         if (!welcomeCreation.IsCompletedSuccessfully)
         {
             throw new InvalidOperationException(

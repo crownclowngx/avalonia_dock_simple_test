@@ -1,6 +1,6 @@
 # 验证与排错
 
-> 本页按当前未发布 V3 G2 修订保存和 V2 G14 其他已封板生产语义编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
+> 本页按当前未发布 V3 G3 互斥激活、V3 G2 修订保存和 V2 G14 其他已封板生产语义编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
 > 窗口端口和持久化实例，MySmallTools 是原生资源与关闭令牌实例，BiliDownloader 是
 > Document + Tool + Lifecycle + readiness 的大型对象图实例。
 
@@ -59,7 +59,7 @@ dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c De
 dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
 ```
 
-V3 G2 为 MyPlugTest 增加了独立测试项目，并提供修订保存专项入口：
+V3 G2 为 MyPlugTest 增加了独立测试项目；V3 G3 增加互斥激活专项入口：
 
 ```powershell
 dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
@@ -68,9 +68,10 @@ dotnet test Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.Tests/DaTa
 dotnet test Plugins/MySmallTools/MySmallTools.Tests/MySmallTools.Tests.csproj -c Release
 dotnet test Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csproj -c Release
 .\scripts\Test-RevisionedDocumentSave.ps1 -Configuration Release -NoRestore
+.\scripts\Test-ExclusiveDocumentActivation.ps1 -Configuration Release -NoRestore
 ```
 
-历史 V2 分阶段脚本继续保留用于审计，不作为当前 V3 版本门禁。V3 G2 不运行真实账号、真实 Bilibili、
+历史 V2 分阶段脚本继续保留用于审计，不作为当前 V3 版本门禁。V3 G3 不运行真实账号、真实 Bilibili、
 真实 FFmpeg 大媒体、Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。

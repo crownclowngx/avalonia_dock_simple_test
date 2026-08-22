@@ -126,7 +126,7 @@ public sealed class HostDockAdapterUiTests
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await factory.CreateDocumentAsync(
                 registration.Descriptor.DocumentTypeId,
-                new DocumentActivationContext("View 失败")));
+                new NewDocumentActivation("View 失败")));
 
         Assert.NotNull(created);
         Assert.True(created.ClosingObservedDuringDispose);
@@ -154,7 +154,7 @@ public sealed class HostDockAdapterUiTests
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await factory.CreateDocumentAsync(
                 registration.Descriptor.DocumentTypeId,
-                new DocumentActivationContext("Adapter 失败")));
+                new NewDocumentActivation("Adapter 失败")));
 
         Assert.NotNull(created);
         Assert.Equal(1, created.DisposeCount);
@@ -242,7 +242,7 @@ public sealed class HostDockAdapterUiTests
         public DocumentPresentationState Presentation => new(_title);
         public event EventHandler? PresentationChanged;
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
         internal void SetTitle(string title)
@@ -265,7 +265,7 @@ public sealed class HostDockAdapterUiTests
             remove { }
         }
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
         public void Dispose()
@@ -286,7 +286,7 @@ public sealed class HostDockAdapterUiTests
         public event EventHandler? PresentationChanged;
 
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
         public ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(
@@ -323,7 +323,7 @@ public sealed class HostDockAdapterUiTests
             remove { }
         }
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
         public void Dispose() => DisposeCount++;
     }

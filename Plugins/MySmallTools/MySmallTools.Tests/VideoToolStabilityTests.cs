@@ -20,8 +20,8 @@ public sealed class VideoToolStabilityTests
         using var browser = new VideoLibraryBrowserViewModel(new EmptyScanner(), lifetime);
         using var library = new SecretVideoLibraryViewModel(browser, player, lifetime);
 
-        await single.InitializeAsync(new DocumentActivationContext(string.Empty), default);
-        await library.InitializeAsync(new DocumentActivationContext("媒体库自定义标题"), default);
+        await single.InitializeAsync(new NewDocumentActivation(string.Empty), default);
+        await library.InitializeAsync(new NewDocumentActivation("媒体库自定义标题"), default);
 
         Assert.Equal("加密视频播放器", single.Presentation.Title);
         Assert.Equal("媒体库自定义标题", library.Presentation.Title);
@@ -97,7 +97,7 @@ public sealed class VideoToolStabilityTests
         using var lifetime = new TestDocumentLifetime();
         using var viewModel = TestViewModelFactory.CreateEncryptor(
             new VideoEncryptorService(new Secvid03Encryptor()), lifetime);
-        await viewModel.InitializeAsync(new DocumentActivationContext(string.Empty), default);
+        await viewModel.InitializeAsync(new NewDocumentActivation(string.Empty), default);
 
         Assert.Equal("视频文件加密器", viewModel.Presentation.Title);
         Assert.Empty(viewModel.VideoTitle);
@@ -117,7 +117,7 @@ public sealed class VideoToolStabilityTests
         using var document = TestViewModelFactory.CreateEncryptor(
             new VideoEncryptorService(new Secvid03Encryptor()), lifetime);
         await document.InitializeAsync(
-            new DocumentActivationContext("自定义加密任务"), default);
+            new NewDocumentActivation("自定义加密任务"), default);
         Assert.Equal("自定义加密任务", document.Presentation.Title);
         Assert.Empty(document.VideoTitle);
     }

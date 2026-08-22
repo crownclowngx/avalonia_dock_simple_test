@@ -42,12 +42,18 @@ public sealed class SecretVideoPlayerViewModel : ObservableObject, IPluginDocume
 
     /// <inheritdoc />
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
-        var title = string.IsNullOrWhiteSpace(context.Title) ? "加密视频播放器" : context.Title;
+        if (activation is not NewDocumentActivation)
+        {
+            // 播放器不声明持久化 Codec；恢复文件只能由可持久化 Document 接收，不能在这里降级为新建。
+            throw new NotSupportedException("加密视频播放器只支持新建激活。");
+        }
+
+        var title = string.IsNullOrWhiteSpace(activation.Title) ? "加密视频播放器" : activation.Title;
         if (!string.Equals(_title, title, StringComparison.Ordinal))
         {
             _title = title;

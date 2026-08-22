@@ -23,7 +23,7 @@ internal static class BiliDownloaderDocumentTestExtensions
         this BiliDownloaderViewModel viewModel,
         DocumentContent content) =>
         viewModel.InitializeAsync(
-                new DocumentActivationContext(viewModel.Title, restoredContent: content),
+                new RestoreDocumentActivation(viewModel.Title, content),
                 CancellationToken.None)
             .AsTask()
             .GetAwaiter()
@@ -31,7 +31,7 @@ internal static class BiliDownloaderDocumentTestExtensions
 
     internal static Task InitializeAsync(this BiliDownloaderViewModel viewModel) =>
         viewModel.InitializeAsync(
-                new DocumentActivationContext(viewModel.Title),
+                new NewDocumentActivation(viewModel.Title),
                 CancellationToken.None)
             .AsTask();
 }

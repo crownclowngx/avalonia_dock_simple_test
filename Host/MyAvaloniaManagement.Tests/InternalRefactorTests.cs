@@ -136,7 +136,7 @@ public sealed class InternalRefactorTests
     {
         public DocumentPresentationState Presentation { get; } = new("First");
         public event EventHandler? PresentationChanged { add { } remove { } }
-        public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken cancellationToken) =>
+        public ValueTask InitializeAsync(DocumentActivation context, CancellationToken cancellationToken) =>
             ValueTask.CompletedTask;
     }
 
@@ -144,7 +144,7 @@ public sealed class InternalRefactorTests
     {
         public DocumentPresentationState Presentation { get; } = new("Second");
         public event EventHandler? PresentationChanged { add { } remove { } }
-        public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken cancellationToken) =>
+        public ValueTask InitializeAsync(DocumentActivation context, CancellationToken cancellationToken) =>
             ValueTask.CompletedTask;
     }
 

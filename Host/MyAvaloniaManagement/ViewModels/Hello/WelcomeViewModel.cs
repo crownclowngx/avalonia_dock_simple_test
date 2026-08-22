@@ -39,12 +39,19 @@ internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocume
 
     /// <summary>应用宿主已经校验的初始标题；Welcome 没有异步业务初始化。</summary>
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
-        _title = context.Title;
+        if (activation is not NewDocumentActivation)
+        {
+            // Host Welcome 没有内容 Codec，也不会进入文件恢复链。显式拒绝 Restore 可以避免测试或
+            // 后续内部调用绕过 Registry 的持久化声明，把恢复输入静默当成普通新建。
+            throw new NotSupportedException("Host Welcome 只支持新建激活。");
+        }
+
+        _title = activation.Title;
         PresentationChanged?.Invoke(this, EventArgs.Empty);
         return ValueTask.CompletedTask;
     }

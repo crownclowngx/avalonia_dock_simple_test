@@ -565,7 +565,7 @@ public sealed class PluginContainerIsolationTests
             remove { }
         }
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
         public void Dispose() => IsDisposed = true;
     }
@@ -585,7 +585,7 @@ public sealed class PluginContainerIsolationTests
             remove { }
         }
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
         public void Dispose() => IsDisposed = true;
     }
@@ -599,7 +599,7 @@ public sealed class PluginContainerIsolationTests
         public DocumentPresentationState Presentation { get; } = new("冲突测试");
         public event EventHandler? PresentationChanged { add { } remove { } }
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 

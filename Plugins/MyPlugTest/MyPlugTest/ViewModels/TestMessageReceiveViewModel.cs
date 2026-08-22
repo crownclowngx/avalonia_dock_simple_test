@@ -41,14 +41,20 @@ public sealed class TestMessageReceiveViewModel : ObservableObject, IPluginDocum
 
     /// <inheritdoc />
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
-        SetPresentationTitle(string.IsNullOrWhiteSpace(context.Title)
+        if (activation is not NewDocumentActivation)
+        {
+            // 消息集合只属于当前 Scope 的瞬态状态，不从 Document envelope 恢复。
+            throw new NotSupportedException("消息接收测试只支持新建激活。");
+        }
+
+        SetPresentationTitle(string.IsNullOrWhiteSpace(activation.Title)
             ? "消息接收测试"
-            : context.Title);
+            : activation.Title);
         return ValueTask.CompletedTask;
     }
 

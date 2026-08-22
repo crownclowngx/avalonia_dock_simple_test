@@ -14,9 +14,10 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > 生产面，G14 已冻结 2.0.0 API、建立两轮隔离发布门禁并完成文档签署。见
 > [V2 G14 封板记录](./docs/plan-history/host-v2/g14-v2-sealing.md)。
 
-> 当前源码已完成未发布的 V3 G2：产品、Core/UI SDK 与四插件版本为 `3.0.0`，Document 保存已使用
-> 修订快照和指定修订确认。manifest、Document envelope、layout 仍为 schema 2，默认数据根仍为
-> `v2`。实施证据见 [V3 G2 修订化 Document 保存](./docs/plan-history/host-v3/g2-revisioned-document-save.md)。
+> 当前源码已完成未发布的 V3 G3：产品、Core/UI SDK 与四插件版本为 `3.0.0`；Document 保存使用
+> 修订快照和指定修订确认，激活输入使用互斥的 New/Restore 类型。manifest、Document envelope、
+> layout 仍为 schema 2，默认数据根仍为 `v2`。实施证据见
+> [V3 G3 互斥 Document 激活](./docs/plan-history/host-v3/g3-exclusive-document-activation.md)。
 
 ## 核心扩展模型
 
@@ -45,12 +46,13 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 | [MyPlugTest](./Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) | Managed Plugin 的 Document、Tool、消息通信和依赖注入示例 |
 
 四个当前插件均已按 V3 G1 重新标记版本并继续使用 Managed Plugin 构建协议；三个持久化插件已在
-V3 G2 接入修订保存，其余业务语义仍由 V2 G14 签署，后续 G9–G12 再完成最终 V3 迁移。BiliDownloader
+V3 G2 接入修订保存，全部 11 个插件 Document 已在 V3 G3 接入互斥激活，其余业务语义仍由 V2 G14
+签署，后续 G9–G12 再完成最终 V3 迁移。BiliDownloader
 精确声明 1 个可持久化 Document、1 个右侧可隐藏 Tool 与 1 个 Lifecycle；Legacy 项目、旧入口探针与
 Host/Common 双区间已经删除。缺少入口 `.deps.json` 或依赖历史加载 Facade 的代码不会
 进入运行链。
 
-## V3 G2 修订保存与 V2 线格式/其他语义
+## V3 G3 互斥激活、G2 修订保存与 V2 线格式
 
 历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。V2 沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
@@ -68,7 +70,7 @@ SDK 程序集版本均为 `3.0.0.0`；V3 不重新引入独立 Host API 版本�
 
 V2 G2 已建立真实的 `MyAvaloniaManagement.PluginSdk.dll` 与 `MyAvaloniaManagement.PluginSdk.UI.dll`。
 Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约。当前 v3 Unshipped 为 Core
-101 条、UI 46 条 public 签名，两个 v3 Shipped 均为空，直到 V3 G14 才允许签署。对应的历史签名
+130 条、UI 46 条 public 签名，两个 v3 Shipped 均为空，直到 V3 G14 才允许签署。对应的历史签名
 继续保存在 v2 Shipped。旧 `MyAvaloniaManagementCommon.dll` 与 Legacy 项目已在 V2 G13 整体删除；
 历史 v1 API 文本仅用于审计，不参与编译、加载或打包。
 
@@ -87,8 +89,9 @@ G6 进一步把 Welcome 与四个 Host Tool 变为普通模型。只有 internal
 预构建一次。Document Adapter 拥有模型、View 和独立 Scope，Tool Adapter 只拥有 View，Tool singleton
 仍由插件 Provider 释放。单个 Tool 创建失败只隔离自身，Welcome 失败中止布局；所有 Adapter 禁止浮动。
 G7 在该 Adapter 基线上建立唯一异步 Document 链：Registry 核对后在独立 Scope 中调用
-`InitializeAsync`，成功后才构造 Adapter、预构建 View 并发布。新建、Creation Intent 与恢复统一使用
-`DocumentActivationContext`；保存与关闭统一读取 Host 状态，不接受 Legacy Strategy 或字符串快照。
+`InitializeAsync`，成功后才构造 Adapter、预构建 View 并发布。V3 G3 把旧的可空组合上下文破坏式
+替换为 `NewDocumentActivation` 与 `RestoreDocumentActivation`；保存与关闭统一读取 Host 状态，
+不接受 Legacy Strategy、旧激活重载或字符串快照。
 
 G8 把生命周期编排收回 Host internal：Registry 只保存声明；Coordinator 按规范 PluginId 正序初始化，
 失败/30 秒超时只隔离当前插件，只有成功项可用并在退出时按实际成功顺序反向停止，单项关闭期限为
@@ -165,10 +168,11 @@ TestResults/  需要保留的阶段验收与人工验证记录
 根 README 只提供项目概览。继续阅读时，从以下入口选择：
 
 - [项目文档导航](./docs/README.md)：按用途浏览全部解决方案级文档；
-- [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G2 保存协议和 V2 G14 其他语义为事实源；
+- [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G3 激活、V3 G2 保存和 V2 G14 其他语义为事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G2 已完成事实与 G3–G14 后续边界；
+- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G3 已完成事实与 G4–G14 后续边界；
+- [V3 G3 互斥 Document 激活](./docs/plan-history/host-v3/g3-exclusive-document-activation.md)：查看最终 API、激活矩阵、测试和回滚边界；
 - [V3 G2 修订化 Document 保存](./docs/plan-history/host-v3/g2-revisioned-document-save.md)：查看最终 API、保存/关闭竞争语义、测试和回滚边界；
 - [V3 G1 版本与数据边界](./docs/plan-history/host-v3/g1-version-and-data-boundaries.md)：查看版本、API、磁盘兼容和非发布证据；
 - [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看历史 G0–G14 破坏式重构与最终签署矩阵；
@@ -261,9 +265,9 @@ V2 封板时曾在干净 Git 提交上执行以下 Windows 本地发布门禁；
 - G3 已完成：宿主只接受严格 manifest v2、入口 `.deps.json` 和清单精确声明的入口类型；
 - G5 已完成：宿主与每个插件拥有独立 Provider，Host 生产贡献只通过最终 UI SDK 声明并发布到唯一 Registry；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
-- 当前代码版本线为未发布 V3 G2；Core/UI 包、manifest schema 2、独立容器、Host 声明式目录、
+- 当前代码版本线为未发布 V3 G3；Core/UI 包、manifest schema 2、独立容器、Host 声明式目录、
   Document envelope v2、Layout v2 和 Host internal 生命周期继续使用既有边界，Document 保存已采用
-  修订快照与指定修订确认。V3 G3–G14 尚未实施，
+  修订快照与指定修订确认，Document 激活已采用互斥 New/Restore 类型。V3 G4–G14 尚未实施，
   不得把 v3 Unshipped 或本地测试包描述为正式发布承诺。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

@@ -69,36 +69,83 @@ public sealed class DocumentSaveSnapshot
     public DocumentContent Content { get; }
 }
 
-/// <summary>表示 Host 启动或恢复一个插件 Document 时传入的已验证上下文。</summary>
+/// <summary>表示 Host 启动一个插件 Document 时传入的互斥激活输入。</summary>
 /// <remarks>
-/// 本对象刻意不携带路径、PluginId、DocumentTypeId、Dock 对象或服务集合，防止插件获得不属于
-/// 自身的宿主状态所有权。空标题允许插件采用自己的默认标题，但标题本身不能为 null。
+/// 基类型只保存两种激活方式共同拥有的标题。创建意图只存在于
+/// <see cref="NewDocumentActivation"/>，恢复内容只存在于
+/// <see cref="RestoreDocumentActivation"/>，调用方因此不能再构造“既新建又恢复”或
+/// “没有明确分支”的非法组合。
+///
+/// 构造函数使用 <c>private protected</c>，使类型层次只能由当前 SDK 程序集扩展。Host 和插件可以
+/// 穷尽处理两个密封子类型，但不能在外部程序集私自增加第三种激活语义。路径、PluginId、
+/// DocumentTypeId、Dock 对象和服务集合仍不进入本协议。
 /// </remarks>
-public sealed class DocumentActivationContext
+public abstract record DocumentActivation
 {
-    /// <summary>创建 Document 激活上下文。</summary>
+    /// <summary>初始化两种激活方式共享的标题。</summary>
     /// <param name="title">Host 已验证的非 null 初始标题；允许空字符串。</param>
-    /// <param name="creationIntentId">新建时选择的可选入口；恢复内容时通常为 null。</param>
-    /// <param name="restoredContent">Host 从信封读取并验证后的可选内容快照。</param>
-    /// <exception cref="ArgumentNullException">标题为 null。</exception>
-    public DocumentActivationContext(
-        string title,
-        CreationIntentId? creationIntentId = null,
-        DocumentContent? restoredContent = null)
-    {
+    /// <exception cref="ArgumentNullException"><paramref name="title"/> 为 null。</exception>
+    private protected DocumentActivation(string title) =>
         Title = title ?? throw new ArgumentNullException(nameof(title));
-        CreationIntentId = creationIntentId;
-        RestoredContent = restoredContent;
-    }
+
+    /// <summary>由 SDK 内建具体类型实现的封闭层次标记。</summary>
+    /// <remarks>
+    /// C# 会为 record 自动生成受保护的复制构造函数；仅限制普通构造函数仍可能让外部程序集
+    /// 借助该复制构造函数派生第三种 record。本抽象成员只在 SDK 程序集内可见，外部程序集既
+    /// 无法实现它，也就无法声明可实例化的第三种激活类型。该标记不承载运行时分支或业务状态，
+    /// Host 与插件仍直接按照两个公开密封类型进行朴素分支。
+    /// </remarks>
+    internal abstract bool IsSdkDefinedActivation { get; }
 
     /// <summary>获取 Host 已验证的初始标题；空字符串表示由插件决定默认标题。</summary>
     public string Title { get; }
+}
 
-    /// <summary>获取可选的创建入口；恢复已有内容时通常为空。</summary>
+/// <summary>表示创建一个全新插件 Document。</summary>
+/// <remarks>
+/// Creation Intent 只是新建入口的可选细分，由 Host 先按 Descriptor 验证，再由拥有该语义的插件解释。
+/// 本类型不含恢复内容，因此插件无需再通过可空字段推断当前是否为新建流程。
+/// </remarks>
+public sealed record NewDocumentActivation : DocumentActivation
+{
+    /// <summary>创建一个新建激活输入。</summary>
+    /// <param name="title">Host 已验证的非 null 初始标题；允许空字符串。</param>
+    /// <param name="creationIntentId">可选创建入口；null 表示该 Document 的默认新建方式。</param>
+    public NewDocumentActivation(
+        string title,
+        CreationIntentId? creationIntentId = null)
+        : base(title) =>
+        CreationIntentId = creationIntentId;
+
+    /// <summary>获取可选创建入口；该属性只存在于新建分支。</summary>
     public CreationIntentId? CreationIntentId { get; }
 
-    /// <summary>获取可选的恢复内容；新建 Document 时为空。</summary>
-    public DocumentContent? RestoredContent { get; }
+    /// <inheritdoc />
+    internal override bool IsSdkDefinedActivation => true;
+}
+
+/// <summary>表示使用 Host 已严格读取的业务内容恢复一个插件 Document。</summary>
+/// <remarks>
+/// 恢复内容在构造边界即为必需值，不能再与 Creation Intent 同时出现。Host 仍拥有文件路径、信封身份、
+/// 标题提交和恢复副本策略；插件只负责解释自己的 <see cref="DocumentContent"/>。
+/// </remarks>
+public sealed record RestoreDocumentActivation : DocumentActivation
+{
+    /// <summary>创建一个恢复激活输入。</summary>
+    /// <param name="title">Host 从严格信封取得的非 null 标题；允许空字符串。</param>
+    /// <param name="restoredContent">Host 已验证并冻结的非 null 插件业务内容。</param>
+    /// <exception cref="ArgumentNullException"><paramref name="restoredContent"/> 为 null。</exception>
+    public RestoreDocumentActivation(
+        string title,
+        DocumentContent restoredContent)
+        : base(title) =>
+        RestoredContent = restoredContent ?? throw new ArgumentNullException(nameof(restoredContent));
+
+    /// <summary>获取必须由插件解释的恢复内容；该属性只存在于恢复分支。</summary>
+    public DocumentContent RestoredContent { get; }
+
+    /// <inheritdoc />
+    internal override bool IsSdkDefinedActivation => true;
 }
 
 /// <summary>表示插件希望 Host 投影到 Document 标签的当前展示状态。</summary>
@@ -125,11 +172,11 @@ public interface IPluginDocument
     event EventHandler? PresentationChanged;
 
     /// <summary>使用 Host 已验证的输入异步初始化当前 Document。</summary>
-    /// <param name="context">非 null 的激活输入，其路径、所有权和信封身份已由 Host 剥离。</param>
+    /// <param name="activation">非 null 且类型互斥的激活输入，其路径、所有权和信封身份已由 Host 剥离。</param>
     /// <param name="cancellationToken">初始化失败、超时或关闭时由 Host 触发的协作取消令牌。</param>
     /// <returns>表示模型完全可发布的初始化操作。</returns>
     /// <remarks>实现不得捕获 UI View 或 Dock 对象；失败时 Host 不发布标签，并释放暂存 Scope。</remarks>
-    ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken cancellationToken);
+    ValueTask InitializeAsync(DocumentActivation activation, CancellationToken cancellationToken);
 }
 
 /// <summary>定义可以由 Host 捕获和恢复业务内容的插件 Document。</summary>

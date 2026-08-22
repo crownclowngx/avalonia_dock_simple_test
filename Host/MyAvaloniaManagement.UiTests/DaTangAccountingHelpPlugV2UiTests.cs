@@ -55,7 +55,7 @@ public sealed class DaTangAccountingHelpPlugV2UiTests
         using var invoiceAdapter = Assert.IsType<ManagedDocumentDockable>(
             await factory.CreateDocumentAsync(
                 DaTangContributionIds.InvoiceInfoImportDocument,
-                new DocumentActivationContext("发票 UI")));
+                new NewDocumentActivation("发票 UI")));
         var invoiceModel = Assert.IsType<InvoiceInfoImportViewModel>(invoiceAdapter.Model);
         var invoiceView = Assert.IsType<InvoiceInfoImportView>(invoiceAdapter.PreparedView);
         Assert.Same(invoiceModel, invoiceView.DataContext);
@@ -65,7 +65,7 @@ public sealed class DaTangAccountingHelpPlugV2UiTests
         using var reconciliationAdapter = Assert.IsType<ManagedDocumentDockable>(
             await factory.CreateDocumentAsync(
                 DaTangContributionIds.BankBalanceReconciliationDocument,
-                new DocumentActivationContext("对账 UI")));
+                new NewDocumentActivation("对账 UI")));
         var reconciliationModel = Assert.IsType<BankBalanceReconciliationViewModel>(
             reconciliationAdapter.Model);
         var reconciliationView = Assert.IsType<BankBalanceReconciliationView>(
@@ -83,7 +83,7 @@ public sealed class DaTangAccountingHelpPlugV2UiTests
         using var adapter = Assert.IsType<ManagedDocumentDockable>(
             await factory.CreateDocumentAsync(
                 DaTangContributionIds.BankBalanceReconciliationDocument,
-                new DocumentActivationContext(string.Empty)));
+                new NewDocumentActivation(string.Empty)));
         var model = Assert.IsType<BankBalanceReconciliationViewModel>(adapter.Model);
         var view = Assert.IsType<BankBalanceReconciliationView>(adapter.PreparedView);
 
@@ -114,15 +114,28 @@ public sealed class DaTangAccountingHelpPlugV2UiTests
 
         await Assert.ThrowsAsync<InvalidDataException>(() => factory.CreateDocumentAsync(
             DaTangContributionIds.BankBalanceReconciliationDocument,
-            new DocumentActivationContext("损坏恢复", restoredContent: invalidContent)).AsTask());
+            new RestoreDocumentActivation("损坏恢复", invalidContent)).AsTask());
 
         // 失败的银行模型、View 和 Scope 由工厂局部释放；同一插件 Provider
         // 仍能创建完整发票 Adapter，证明失败没有发布或毒化后续激活。
         using var valid = Assert.IsType<ManagedDocumentDockable>(await factory.CreateDocumentAsync(
             DaTangContributionIds.InvoiceInfoImportDocument,
-            new DocumentActivationContext("恢复后续")));
+            new NewDocumentActivation("恢复后续")));
         Assert.Equal("恢复后续", valid.Title);
         Assert.IsType<InvoiceInfoImportView>(valid.PreparedView);
+    }
+
+    [AvaloniaFact]
+    public async Task 非持久化发票Document显式拒绝Restore激活()
+    {
+        using var composition = DaTangUiComposition.Create();
+        var factory = composition.Provider.GetRequiredService<IHostDockableFactory>();
+        using var json = JsonDocument.Parse("{}");
+        var content = new DocumentContent(1, json.RootElement);
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => factory.CreateDocumentAsync(
+            DaTangContributionIds.InvoiceInfoImportDocument,
+            new RestoreDocumentActivation("错误恢复", content)).AsTask());
     }
 
     private sealed class DaTangUiComposition : IDisposable

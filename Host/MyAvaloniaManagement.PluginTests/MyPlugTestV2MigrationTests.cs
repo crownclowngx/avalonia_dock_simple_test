@@ -81,8 +81,8 @@ public sealed class MyPlugTestV2MigrationTests
         var first = Assert.IsType<TestWelcomeViewModel>(firstActivation.Model);
         var second = Assert.IsType<TestWelcomeViewModel>(secondActivation.Model);
 
-        await first.InitializeAsync(new DocumentActivationContext("欢迎 A"), default);
-        await second.InitializeAsync(new DocumentActivationContext(string.Empty), default);
+        await first.InitializeAsync(new NewDocumentActivation("欢迎 A"), default);
+        await second.InitializeAsync(new NewDocumentActivation(string.Empty), default);
         first.UrlHistory.AddUrl("https://first.test");
 
         Assert.NotSame(first, second);
@@ -103,7 +103,7 @@ public sealed class MyPlugTestV2MigrationTests
     {
         using var sourceLifetime = new TestPluginDocumentLifetime();
         using var source = CreateWelcome(sourceLifetime);
-        await source.InitializeAsync(new DocumentActivationContext("持久化欢迎"), default);
+        await source.InitializeAsync(new NewDocumentActivation("持久化欢迎"), default);
         var dirtyChanges = 0;
         source.IsDirtyChanged += (_, _) => dirtyChanges++;
         source.Url = "https://roundtrip.test";
@@ -126,7 +126,7 @@ public sealed class MyPlugTestV2MigrationTests
         using var targetLifetime = new TestPluginDocumentLifetime();
         using var target = CreateWelcome(targetLifetime);
         await target.InitializeAsync(
-            new DocumentActivationContext("恢复欢迎", restoredContent: content),
+            new RestoreDocumentActivation("恢复欢迎", content),
             default);
 
         Assert.Equal("恢复欢迎", target.Presentation.Title);
@@ -168,7 +168,7 @@ public sealed class MyPlugTestV2MigrationTests
     {
         using var lifetime = new TestPluginDocumentLifetime();
         using var model = CreateWelcome(lifetime);
-        await model.InitializeAsync(new DocumentActivationContext("原始标题"), default);
+        await model.InitializeAsync(new NewDocumentActivation("原始标题"), default);
         model.Url = "https://before.test";
         model.ResponseContent = "原始正文";
         model.UrlHistory.AddUrl("https://before-history.test");
@@ -178,7 +178,7 @@ public sealed class MyPlugTestV2MigrationTests
         var exception = Assert.Throws<InvalidDataException>(() =>
         {
             _ = model.InitializeAsync(
-                new DocumentActivationContext("不应提交", restoredContent: content),
+                new RestoreDocumentActivation("不应提交", content),
                 default);
         });
 
@@ -203,10 +203,10 @@ public sealed class MyPlugTestV2MigrationTests
         Assert.Throws<OperationCanceledException>(() =>
         {
             _ = model.InitializeAsync(
-                new DocumentActivationContext("取消"),
+                new NewDocumentActivation("取消"),
                 cancelled.Token);
         });
-        await model.InitializeAsync(new DocumentActivationContext("可用"), default);
+        await model.InitializeAsync(new NewDocumentActivation("可用"), default);
 
         lifetime.Close();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
@@ -226,7 +226,7 @@ public sealed class MyPlugTestV2MigrationTests
         using var lifetime = new TestPluginDocumentLifetime();
         using var model = CreateWelcome(lifetime);
         await model.InitializeAsync(
-            new DocumentActivationContext("克隆恢复", restoredContent: content),
+            new RestoreDocumentActivation("克隆恢复", content),
             default);
 
         Assert.Equal("https://clone.test", model.Url);
@@ -248,7 +248,7 @@ public sealed class MyPlugTestV2MigrationTests
             new UrlHistoryViewModel(),
             service,
             lifetime);
-        await model.InitializeAsync(new DocumentActivationContext("关闭竞争"), default);
+        await model.InitializeAsync(new NewDocumentActivation("关闭竞争"), default);
 
         var execution = model.SendRequestCommand.ExecuteAsync(null);
         await service.Started;

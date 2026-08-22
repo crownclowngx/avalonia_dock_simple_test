@@ -7,7 +7,7 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码已经完成 V3 G2 修订保存；其余生产语义仍由 V2 G14 签署，G3–G14 的协议设计不能写成
+# 当前源码已经完成 V3 G3 互斥激活；其余生产语义仍由 V2 G14 签署，G4–G14 的协议设计不能写成
 # 已实现。V1/V2/V3 阶段记录继续参加链接、命令和项目路径检查。
 $currentDocumentPaths = @(
     'README.md',
@@ -20,6 +20,7 @@ $currentDocumentPaths = @(
     'docs/plan-history/host-v3/g0-green-baseline.md',
     'docs/plan-history/host-v3/g1-version-and-data-boundaries.md',
     'docs/plan-history/host-v3/g2-revisioned-document-save.md',
+    'docs/plan-history/host-v3/g3-exclusive-document-activation.md',
     'docs/reference/dock-layout-snapshot-v2.md',
     'docs/reference/myavalonia-management-tests.md',
     'docs/reference/plugin-sdk-api-compatibility.md',
@@ -82,6 +83,9 @@ $requiredSymbols = @(
     [pscustomobject]@{ Symbol = 'DocumentRevision'; Path = 'Host/MyAvaloniaManagement.PluginSdk/DocumentContracts.cs' },
     [pscustomobject]@{ Symbol = 'DocumentSaveSnapshot'; Path = 'Host/MyAvaloniaManagement.PluginSdk/DocumentContracts.cs' },
     [pscustomobject]@{ Symbol = 'CaptureSaveSnapshotAsync'; Path = 'Host/MyAvaloniaManagement.PluginSdk/DocumentContracts.cs' },
+    [pscustomobject]@{ Symbol = 'DocumentActivation'; Path = 'Host/MyAvaloniaManagement.PluginSdk/DocumentContracts.cs' },
+    [pscustomobject]@{ Symbol = 'NewDocumentActivation'; Path = 'Host/MyAvaloniaManagement.PluginSdk/DocumentContracts.cs' },
+    [pscustomobject]@{ Symbol = 'RestoreDocumentActivation'; Path = 'Host/MyAvaloniaManagement.PluginSdk/DocumentContracts.cs' },
     [pscustomobject]@{ Symbol = 'IHostEventBus'; Path = 'Host/MyAvaloniaManagement.PluginSdk/PluginContracts.cs' },
     [pscustomobject]@{ Symbol = 'HostDiagnosticRedactionPolicy'; Path = 'Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs' },
     [pscustomobject]@{ Symbol = 'DocumentEnvelopeSerializer'; Path = 'Host/MyAvaloniaManagement/Business/Documents/DocumentEnvelopeSerializer.cs' }
@@ -93,6 +97,7 @@ $forbiddenSymbols = @(
     'MyAvaloniaManagementCommon',
     'LegacyPluginContracts',
     'CaptureContentAsync'
+    'DocumentActivationContext'
 )
 $pluginProjects = @(
     'Plugins/BiliDownloader/BiliDownloader/BiliDownloader.csproj',
@@ -128,13 +133,13 @@ foreach ($relativePath in $linkDocumentPaths) {
 }
 
 # 最终签署和阶段进度不能只靠“没有旧句子”间接成立。以下正向哨兵把 V2 G14、
-# V3 G2 的活动版本/API 状态和非发布边界绑定到权威文档。
+# V3 G3 的活动版本/API 状态和非发布边界绑定到权威文档。
 $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'README.md'; Fragment = 'Managed Plugin V2 已完成 G0–G14 并正式封板' },
     [pscustomobject]@{ Path = 'docs/design/host-v2-breaking-refactor-plan.md'; Fragment = '状态：已完成；G0–G14 已全部封板' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v2/g14-v2-sealing.md'; Fragment = 'scripts/Invoke-HostV2ReleaseGate.ps1' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v2/g14-v2-sealing.md'; Fragment = 'aiflow=false' },
-    [pscustomobject]@{ Path = 'docs/design/host-v3-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0–G2 已完成，G3–G14 尚未实施' },
+    [pscustomobject]@{ Path = 'docs/design/host-v3-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0–G3 已完成，G4–G14 尚未实施' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'windowsCi=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'windowsSmoke=false' },
@@ -151,7 +156,13 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g2-revisioned-document-save.md'; Fragment = 'releaseAcceptance=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g2-revisioned-document-save.md'; Fragment = 'releaseGate=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g2-revisioned-document-save.md'; Fragment = 'publishable=false' },
-    [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'Core 101 条、UI 46 条' }
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g3-exclusive-document-activation.md'; Fragment = 'aiflow=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g3-exclusive-document-activation.md'; Fragment = 'windowsCi=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g3-exclusive-document-activation.md'; Fragment = 'windowsSmoke=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g3-exclusive-document-activation.md'; Fragment = 'releaseAcceptance=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g3-exclusive-document-activation.md'; Fragment = 'releaseGate=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g3-exclusive-document-activation.md'; Fragment = 'publishable=false' },
+    [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'Core 130 条、UI 46 条' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

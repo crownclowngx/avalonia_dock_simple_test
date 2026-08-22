@@ -111,7 +111,7 @@ public sealed class ServiceAndModelTests
     {
         public DocumentPresentationState Presentation => new(string.Empty);
         public event EventHandler? PresentationChanged { add { } remove { } }
-        public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken token) =>
+        public ValueTask InitializeAsync(DocumentActivation context, CancellationToken token) =>
             ValueTask.CompletedTask;
     }
 

@@ -208,7 +208,7 @@ public sealed class SampleDocument : IPersistablePluginDocument
     public event EventHandler? PresentationChanged { add { } remove { } }
     public bool IsDirty => false;
     public event EventHandler? IsDirtyChanged { add { } remove { } }
-    public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken token) => ValueTask.CompletedTask;
+    public ValueTask InitializeAsync(DocumentActivation context, CancellationToken token) => ValueTask.CompletedTask;
     public ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(CancellationToken token)
     {
         using var json = JsonDocument.Parse("{\"value\":1}");
@@ -289,7 +289,7 @@ public sealed class SampleDocument : IPersistablePluginDocument
     public event EventHandler? PresentationChanged { add { } remove { } }
     public bool IsDirty => false;
     public event EventHandler? IsDirtyChanged { add { } remove { } }
-    public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken token) => ValueTask.CompletedTask;
+    public ValueTask InitializeAsync(DocumentActivation context, CancellationToken token) => ValueTask.CompletedTask;
     public ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(CancellationToken token) => throw new NotSupportedException();
     public void AcceptChanges(DocumentRevision savedRevision) { }
 }

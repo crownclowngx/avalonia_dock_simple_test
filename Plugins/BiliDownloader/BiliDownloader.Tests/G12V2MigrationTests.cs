@@ -70,12 +70,12 @@ public sealed class G12V2MigrationTests
         first.PresentationChanged += (_, _) => titleChanges++;
 
         await first.InitializeAsync(
-            new DocumentActivationContext(
+            new NewDocumentActivation(
                 "个人来源",
                 BiliDownloaderContributionIds.PersonalSourceIntent),
             CancellationToken.None);
         await second.InitializeAsync(
-            new DocumentActivationContext("", BiliDownloaderContributionIds.QuickUrlIntent),
+            new NewDocumentActivation("", BiliDownloaderContributionIds.QuickUrlIntent),
             CancellationToken.None);
         first.VideoParse.Url = "BV1-first";
 
@@ -94,7 +94,7 @@ public sealed class G12V2MigrationTests
     {
         using var unknown = CreateDocument();
         await Assert.ThrowsAsync<ArgumentException>(() => unknown.InitializeAsync(
-                new DocumentActivationContext("未知", new CreationIntentId("unknown")),
+                new NewDocumentActivation("未知", new CreationIntentId("unknown")),
                 CancellationToken.None)
             .AsTask());
 
@@ -105,7 +105,7 @@ public sealed class G12V2MigrationTests
             JsonSerializer.SerializeToElement(new { DocumentId = "changed", Url = 42 }));
 
         await Assert.ThrowsAsync<InvalidDataException>(() => damaged.InitializeAsync(
-                new DocumentActivationContext("不应应用", restoredContent: invalid),
+                new RestoreDocumentActivation("不应应用", invalid),
                 CancellationToken.None)
             .AsTask());
         Assert.Equal("before", damaged.VideoParse.Url);
@@ -120,7 +120,7 @@ public sealed class G12V2MigrationTests
         lifetime.Close();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => document.InitializeAsync(
-                new DocumentActivationContext("不应发布"),
+                new NewDocumentActivation("不应发布"),
                 CancellationToken.None)
             .AsTask());
 
@@ -133,7 +133,7 @@ public sealed class G12V2MigrationTests
     {
         using var document = CreateDocument();
         await document.InitializeAsync(
-            new DocumentActivationContext("保存测试"),
+            new NewDocumentActivation("保存测试"),
             CancellationToken.None);
         var dirtyChanges = 0;
         document.IsDirtyChanged += (_, _) => dirtyChanges++;

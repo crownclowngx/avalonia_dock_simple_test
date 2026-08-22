@@ -27,12 +27,18 @@ public sealed class VideoEncryptorViewModel : EncryptionBatchViewModel, IPluginD
     public event EventHandler? PresentationChanged;
 
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
-        var title = string.IsNullOrWhiteSpace(context.Title) ? "视频文件加密器" : context.Title;
+        if (activation is not NewDocumentActivation)
+        {
+            // 批处理队列不是 Document 持久化内容；未知恢复输入必须显式失败。
+            throw new NotSupportedException("视频文件加密器只支持新建激活。");
+        }
+
+        var title = string.IsNullOrWhiteSpace(activation.Title) ? "视频文件加密器" : activation.Title;
         if (!string.Equals(_title, title, StringComparison.Ordinal))
         {
             _title = title;

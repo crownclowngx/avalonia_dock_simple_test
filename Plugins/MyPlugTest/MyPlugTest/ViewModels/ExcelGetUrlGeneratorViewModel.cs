@@ -62,14 +62,20 @@ public sealed class ExcelGetUrlGeneratorViewModel : ObservableObject, IPluginDoc
 
     /// <inheritdoc />
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
-        var title = string.IsNullOrWhiteSpace(context.Title)
+        if (activation is not NewDocumentActivation)
+        {
+            // Excel 预览与映射尚未声明持久化 Codec，不能接受来自信封的恢复内容。
+            throw new NotSupportedException("Excel GET 地址生成器只支持新建激活。");
+        }
+
+        var title = string.IsNullOrWhiteSpace(activation.Title)
             ? "Excel GET 地址生成器"
-            : context.Title;
+            : activation.Title;
         if (!string.Equals(_title, title, StringComparison.Ordinal))
         {
             _title = title;

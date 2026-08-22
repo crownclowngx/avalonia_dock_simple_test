@@ -76,17 +76,21 @@ public sealed class BankBalanceReconciliationViewModel :
 
     /// <inheritdoc />
     public ValueTask InitializeAsync(
-        DocumentActivationContext context,
+        DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(activation);
         cancellationToken.ThrowIfCancellationRequested();
         _documentLifetime.ClosingToken.ThrowIfCancellationRequested();
 
         // 先把全部 payload 解码到独立临时状态；结构或业务校验失败发生在修改模型之前。
-        var restoredState = context.RestoredContent is null
-            ? null
-            : ReconciliationDocumentContentCodec.Decode(context.RestoredContent, _profileLoader);
+        var restoredState = activation switch
+        {
+            NewDocumentActivation => null,
+            RestoreDocumentActivation restore =>
+                ReconciliationDocumentContentCodec.Decode(restore.RestoredContent, _profileLoader),
+            _ => throw new NotSupportedException("银行余额调节表收到未知 Document 激活类型。"),
+        };
 
         if (restoredState is not null)
         {
@@ -97,9 +101,9 @@ public sealed class BankBalanceReconciliationViewModel :
             ResetRevisionState();
         }
 
-        SetPresentationTitle(string.IsNullOrWhiteSpace(context.Title)
+        SetPresentationTitle(string.IsNullOrWhiteSpace(activation.Title)
             ? "银行余额调节表"
-            : context.Title);
+            : activation.Title);
         return ValueTask.CompletedTask;
     }
 

@@ -194,7 +194,7 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
         using var lifetime = new TestDocumentLifetime();
         using var document = TestViewModelFactory.CreateDecryptor(
             new StubDecryptionService(), lifetime);
-        await document.InitializeAsync(new DocumentActivationContext(string.Empty), default);
+        await document.InitializeAsync(new NewDocumentActivation(string.Empty), default);
         Assert.Equal("批量视频解密器", document.Presentation.Title);
     }
 
@@ -205,7 +205,7 @@ public sealed class VideoDecryptionTests(Secvid03Fixture fixture)
         using var document = TestViewModelFactory.CreateDecryptor(
             new StubDecryptionService(), lifetime);
         await document.InitializeAsync(
-            new DocumentActivationContext("自定义解密任务"), default);
+            new NewDocumentActivation("自定义解密任务"), default);
         Assert.Equal("自定义解密任务", document.Presentation.Title);
     }
 

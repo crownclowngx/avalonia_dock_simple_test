@@ -265,7 +265,7 @@ public sealed class HostDockAdapterTests
     {
         public ValueTask<Document> CreateDocumentAsync(
             DocumentTypeId documentTypeId,
-            DocumentActivationContext context) =>
+            DocumentActivation context) =>
             ValueTask.FromResult<Document>(new Document
             {
                 Id = documentTypeId.Value,
@@ -301,7 +301,7 @@ public sealed class HostDockAdapterTests
         public DocumentPresentationState Presentation => new(_title);
         public event EventHandler? PresentationChanged;
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
         internal void SetTitle(string title)
@@ -331,7 +331,7 @@ public sealed class HostDockAdapterTests
             remove { throw new InvalidOperationException("插件事件退订失败"); }
         }
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
         public void Dispose()
@@ -358,7 +358,7 @@ public sealed class HostDockAdapterTests
         public event EventHandler? PresentationChanged { add { } remove { } }
 
         public ValueTask InitializeAsync(
-            DocumentActivationContext context,
+            DocumentActivation context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
         public ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(

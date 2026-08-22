@@ -18,13 +18,14 @@
 > 过渡构建面已经删除；Core/UI v2 API 已进入 Shipped，两轮隔离门禁与 Windows V2 Smoke 已建立，
 > 历史 v1 签署事实保持可追溯。
 
-> 当前源码已完成未发布 V3 G2：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
-> `[3.0.0, 4.0.0)`。活动签名位于 v3 Unshipped，Document 保存采用修订快照与指定修订确认；
+> 当前源码已完成未发布 V3 G3：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
+> `[3.0.0, 4.0.0)`。活动签名位于 v3 Unshipped，Document 保存采用修订快照与指定修订确认，
+> 激活采用互斥的 `NewDocumentActivation` / `RestoreDocumentActivation`；
 > manifest、Document envelope、layout 和默认数据根继续使用 schema/generation 2。
 
 ## 2. public API
 
-当前 V3 G2 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
+当前 V3 G3 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
 四个业务插件只引用最终 SDK。`MyAvaloniaManagement.LegacyPluginContracts` 已整体删除；活动项目、
@@ -36,7 +37,7 @@ G8 生产组合中，只有 `ManagedDocumentDockable` 与 `ManagedToolDockable` 
 Plugin SDK public API 或 manifest；Document 与 Layout 磁盘契约均已切换为唯一 V2。
 
 历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 的 v2 基线由 G14 冻结为
-Shipped 85/46 条且 Unshipped 均为空。活动 v3 Shipped 为空、Unshipped 为 85/46，并由
+Shipped 85/46 条且 Unshipped 均为空。活动 v3 Shipped 为空、Unshipped 为 130/46，并由
 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v3` 验证。未登记
 新增、删除、可见性收窄、参数或返回类型变化都会给出成员级 RS 诊断。完整维护流程见
 [Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
