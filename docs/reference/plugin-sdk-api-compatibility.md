@@ -1,8 +1,8 @@
 # Plugin SDK API 兼容基线维护指南
 
 > `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G14 已将 Core/UI 的
-> `2.0.0` public 表面正式冻结到 v2 Shipped：Core 85 条、UI 46 条。V3 G5 删除 Host 通用事件总线后，
-> v3 Unshipped 为 Core 127 条、UI 46 条，两个 v3 Shipped 均为空；当前 `3.0.0` 尚未发布。
+> `2.0.0` public 表面正式冻结到 v2 Shipped：Core 85 条、UI 46 条。V3 G8 已删除 Host 通用事件总线并
+> 破坏式收口全屏端口；v3 Unshipped 为 Core 127 条、UI 45 条，两个 v3 Shipped 均为空，当前 `3.0.0` 尚未发布。
 
 ## 1. 权威源与程序集边界
 
@@ -36,7 +36,7 @@ PublicApiAnalyzers 报出 `RS0016`，确认所有权、依赖方向、异常与�
 
 G14 的 V2 正式状态是：Core Shipped 85 条、UI Shipped 46 条，两个 Unshipped 均为 0。V3 G1 的
 两个 Shipped 均为 0，Core/UI Unshipped 为 85/46；G2 以破坏式替换保存方法并新增值对象后，当前
-Core/UI Unshipped 为 101/46。两份基线分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史
+Core/UI Unshipped 为 101/46；G8 当前为 127/45。两份基线分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史
 表面要求相等。各阶段数量只保留在对应记录中，不能用当前 147 条倒写 G1 或 V2 历史。
 
 ## 3. 日常变更流程

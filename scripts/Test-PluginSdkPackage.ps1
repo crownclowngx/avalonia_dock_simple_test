@@ -276,6 +276,15 @@ public sealed class SampleWindowInteraction : IPluginWindowInteraction
         CancellationToken cancellationToken = default) =>
         Task.FromResult(false);
 }
+public sealed class SampleFullscreenHost : IWindowContentFullscreenHost
+{
+    public IDisposable? TryPresent(Control content) => new SampleLease();
+
+    private sealed class SampleLease : IDisposable
+    {
+        public void Dispose() { }
+    }
+}
 public sealed class SampleDocument : IPersistablePluginDocument
 {
     public DocumentPresentationState Presentation { get; } = new("示例");
@@ -333,7 +342,20 @@ public static class Removed
 }
 '@ $false @('DocumentContentSnapshot', 'DocumentTypeIdSystemTextJsonConverter') | Out-Null
 
-    Write-Host '[SDK Package] 通过：Core/UI 内容、依赖白名单、包含窗口交互端口的两个正例和十个反向消费夹具符合预期。'
+    New-ConsumerProject 'RemovedFullscreenOwnerNegative' 'MyAvaloniaManagement.PluginSdk.UI' @'
+using Avalonia.Controls;
+using MyAvaloniaManagement.PluginSdk.UI;
+public static class Removed
+{
+    public static void Use(IWindowContentFullscreenHost host, Control content)
+    {
+        _ = host.TryPresent(content, new object());
+        _ = host.TryRestore(new object());
+    }
+}
+'@ $false @('TryPresent', 'TryRestore') | Out-Null
+
+    Write-Host '[SDK Package] 通过：Core/UI 内容、依赖白名单、包含窗口与全屏租约端口的两个正例和十一个反向消费夹具符合预期。'
 }
 finally {
     if (Test-Path -LiteralPath $temporaryRoot) {

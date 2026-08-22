@@ -17,6 +17,7 @@ using MyAvaloniaManagement.ViewModels.Design;
 using MyAvaloniaManagement.Views;
 using MyAvaloniaManagement.Views.Hello;
 using MyAvaloniaManagement.Views.Tools;
+using MyAvaloniaManagement.PluginSdk.UI;
 using Xunit;
 
 namespace MyAvaloniaManagement.UiTests;
@@ -115,40 +116,120 @@ public sealed class ApplicationAndWindowTests
     }
 
     [AvaloniaFact]
-    public void 主窗体内容全屏遵守所有者和内容互斥规则()
+    public void 主窗体内容全屏租约排他且重复释放安全()
     {
         var window = new MainWindow();
-        var firstOwner = new object();
-        var secondOwner = new object();
+        var fullscreen = (IWindowContentFullscreenHost)window;
         var firstContent = new Border();
         var secondContent = new Border();
         var layer = window.FindControl<Border>("ContentFullscreenLayer")!;
         var host = window.FindControl<ContentControl>("ContentFullscreenHost")!;
 
-        Assert.True(window.TryPresent(firstContent, firstOwner));
-        Assert.True(window.TryPresent(firstContent, firstOwner));
-        Assert.False(window.TryPresent(secondContent, firstOwner));
-        Assert.False(window.TryPresent(firstContent, secondOwner));
+        var firstLease = Assert.IsAssignableFrom<IDisposable>(
+            fullscreen.TryPresent(firstContent));
+        Assert.Null(fullscreen.TryPresent(firstContent));
+        Assert.Null(fullscreen.TryPresent(secondContent));
         Assert.True(layer.IsVisible);
         Assert.Same(firstContent, host.Content);
-        Assert.False(window.TryRestore(secondOwner));
-        Assert.True(window.TryRestore(firstOwner));
+
+        firstLease.Dispose();
+        firstLease.Dispose();
         Assert.False(layer.IsVisible);
         Assert.Null(host.Content);
-        Assert.False(window.TryRestore(firstOwner));
+
+        var secondLease = Assert.IsAssignableFrom<IDisposable>(
+            fullscreen.TryPresent(secondContent));
+        firstLease.Dispose();
+        Assert.True(layer.IsVisible);
+        Assert.Same(secondContent, host.Content);
+
+        secondLease.Dispose();
+        Assert.False(layer.IsVisible);
+        Assert.Null(host.Content);
     }
 
     [AvaloniaFact]
-    public void 全屏接口拒绝空参数()
+    public void 全屏接口拒绝空内容且挂载失败后仍可再次展示()
     {
-        var window = new MainWindow();
+        using var context = new UiTestContext();
+        var window = new MainWindow { DataContext = context.ViewModel };
+        var fullscreen = (IWindowContentFullscreenHost)window;
+        var failingContent = new Border();
+        failingContent.AttachedToLogicalTree += static (_, _) =>
+            throw new InvalidOperationException("测试注入的挂载失败。");
+        var layer = window.FindControl<Border>("ContentFullscreenLayer")!;
+        var host = window.FindControl<ContentControl>("ContentFullscreenHost")!;
+        window.Show();
 
         Assert.Throws<ArgumentNullException>(() =>
-            window.TryPresent(null!, new object()));
-        Assert.Throws<ArgumentNullException>(() =>
-            window.TryPresent(new Border(), null!));
-        Assert.Throws<ArgumentNullException>(() =>
-            window.TryRestore(null!));
+            fullscreen.TryPresent(null!));
+        Assert.Throws<InvalidOperationException>(() =>
+            fullscreen.TryPresent(failingContent));
+        Assert.False(layer.IsVisible);
+        Assert.Null(host.Content);
+
+        var lease = Assert.IsAssignableFrom<IDisposable>(
+            fullscreen.TryPresent(new Border()));
+        lease.Dispose();
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task 有效全屏租约拒绝工作线程首次释放且不会被消耗()
+    {
+        var window = new MainWindow();
+        var fullscreen = (IWindowContentFullscreenHost)window;
+        var layer = window.FindControl<Border>("ContentFullscreenLayer")!;
+        var lease = Assert.IsAssignableFrom<IDisposable>(
+            fullscreen.TryPresent(new Border()));
+
+        var exception = await Task.Run(() => Record.Exception(lease.Dispose));
+
+        Assert.IsType<InvalidOperationException>(exception);
+        Assert.True(layer.IsVisible);
+        lease.Dispose();
+        Assert.False(layer.IsVisible);
+    }
+
+    [AvaloniaFact]
+    public void 窗口关闭自动失效租约且旧令牌保持幂等()
+    {
+        using var context = new UiTestContext();
+        var window = new MainWindow { DataContext = context.ViewModel };
+        var fullscreen = (IWindowContentFullscreenHost)window;
+        var layer = window.FindControl<Border>("ContentFullscreenLayer")!;
+        var host = window.FindControl<ContentControl>("ContentFullscreenHost")!;
+        window.Show();
+        var lease = Assert.IsAssignableFrom<IDisposable>(
+            fullscreen.TryPresent(new Border()));
+
+        window.Close();
+
+        Assert.False(layer.IsVisible);
+        Assert.Null(host.Content);
+        Assert.Null(fullscreen.TryPresent(new Border()));
+        lease.Dispose();
+    }
+
+    [AvaloniaFact]
+    public void 内容宿主脱离视觉树后自动恢复并永久拒绝新展示()
+    {
+        using var context = new UiTestContext();
+        var window = new MainWindow { DataContext = context.ViewModel };
+        var fullscreen = (IWindowContentFullscreenHost)window;
+        var layer = window.FindControl<Border>("ContentFullscreenLayer")!;
+        var host = window.FindControl<ContentControl>("ContentFullscreenHost")!;
+        window.Show();
+        var lease = Assert.IsAssignableFrom<IDisposable>(
+            fullscreen.TryPresent(new Border()));
+
+        window.Content = null;
+
+        Assert.False(layer.IsVisible);
+        Assert.Null(host.Content);
+        Assert.Null(fullscreen.TryPresent(new Border()));
+        lease.Dispose();
+        window.Close();
     }
 
     [AvaloniaFact]

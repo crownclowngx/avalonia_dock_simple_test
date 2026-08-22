@@ -27,8 +27,7 @@ MyAvaloniaManagement.PluginSdk.UI.IPluginWindowInteraction.PickOpenFilesAsync(Av
 MyAvaloniaManagement.PluginSdk.UI.IPluginWindowInteraction.PickSaveFileAsync(Avalonia.Platform.Storage.FilePickerSaveOptions! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string?>!
 MyAvaloniaManagement.PluginSdk.UI.IPluginWindowInteraction.TrySetClipboardTextAsync(string! text, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
 MyAvaloniaManagement.PluginSdk.UI.IWindowContentFullscreenHost
-MyAvaloniaManagement.PluginSdk.UI.IWindowContentFullscreenHost.TryPresent(Avalonia.Controls.Control! content, object! owner) -> bool
-MyAvaloniaManagement.PluginSdk.UI.IWindowContentFullscreenHost.TryRestore(object! owner) -> bool
+MyAvaloniaManagement.PluginSdk.UI.IWindowContentFullscreenHost.TryPresent(Avalonia.Controls.Control! content) -> System.IDisposable?
 MyAvaloniaManagement.PluginSdk.UI.ToolCloseBehavior
 MyAvaloniaManagement.PluginSdk.UI.ToolCloseBehavior.Hide = 0 -> MyAvaloniaManagement.PluginSdk.UI.ToolCloseBehavior
 MyAvaloniaManagement.PluginSdk.UI.ToolCloseBehavior.Prevent = 1 -> MyAvaloniaManagement.PluginSdk.UI.ToolCloseBehavior

@@ -18,17 +18,18 @@
 > 过渡构建面已经删除；Core/UI v2 API 已进入 Shipped，两轮隔离门禁与 Windows V2 Smoke 已建立，
 > 历史 v1 签署事实保持可追溯。
 
-> 当前源码已完成未发布 V3 G7：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
+> 当前源码已完成未发布 V3 G8：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
 > `[3.0.0, 4.0.0)`。活动签名位于 v3 Unshipped，Document 保存采用修订快照与指定修订确认，
 > 激活采用互斥的 `NewDocumentActivation` / `RestoreDocumentActivation`，插件注册采用 Host 最终提交
 > 与 ID 归属校验；SDK/Host 通用事件总线已删除，消息实例归对应插件 Provider 所有；Dock Factory、
 > 唯一 Workspace Session 与无 Dock Tool ReadModel 已分离；Host Catalog 与只含真实插件的 Plugin
-> Registry 已分离；
+> Registry 已分离；全屏端口只保留 `IDisposable? TryPresent(Control content)`，owner 与
+> `TryRestore` 已从活动源码删除；
 > manifest、Document envelope、layout 和默认数据根继续使用 schema/generation 2。
 
 ## 2. public API
 
-当前 V3 G7 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
+当前 V3 G8 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
 四个业务插件只引用最终 SDK。`MyAvaloniaManagement.LegacyPluginContracts` 已整体删除；活动项目、
@@ -40,7 +41,7 @@
 Plugin SDK public API 或 manifest；Document 与 Layout 磁盘契约均已切换为唯一 V2。
 
 历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 的 v2 基线由 G14 冻结为
-Shipped 85/46 条且 Unshipped 均为空。活动 v3 Shipped 为空、Unshipped 为 127/46，并由
+Shipped 85/46 条且 Unshipped 均为空。活动 v3 Shipped 为空、Unshipped 为 127/45，并由
 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v3` 验证。未登记
 新增、删除、可见性收窄、参数或返回类型变化都会给出成员级 RS 诊断。完整维护流程见
 [Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
@@ -63,6 +64,15 @@ Host 实现，这不构成发布兼容承诺。
 
 SDK 与插件的 V2 正式基线为 `2.0.0`；当前未发布版本线为 `3.0.0`。本窗口端口已包含在
 G14 冻结的 v2 Shipped，并在 G1 原样进入 v3 Unshipped。
+
+### 2.1.1 全屏租约 Host Port
+
+- V3 活动接口只有 `IDisposable? TryPresent(Control content)`；不得恢复 owner 参数、`TryRestore` 或双接口；
+- `null` 只表示已有活动租约或宿主不可用；成功租约排他、引用身份唯一且重复释放无副作用；
+- `TryPresent` 与有效租约首次释放必须在 Avalonia UI 线程；错误线程不得消耗租约；
+- Host 只暂借 Control，不 Dispose 插件控件；挂载失败必须回滚 Content、覆盖层和活动状态；
+- 窗口真正关闭或 ContentHost 销毁可自动失效，取消关闭不得提前释放；旧令牌不能影响后续新租约；
+- v2 Shipped 中的 owner API 是历史事实，不参与 V3 编译、包消费或运行时 fallback。
 
 ### 2.2 版本所有权
 

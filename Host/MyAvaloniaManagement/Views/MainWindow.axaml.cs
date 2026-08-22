@@ -1,21 +1,33 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Threading;
+using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Views;
 
 internal sealed partial class MainWindow : Window, IWindowContentFullscreenHost
 {
-    private object? _fullscreenOwner;
+    private readonly WindowContentFullscreenSession _fullscreenSession;
     private bool _windowCloseApproved;
     private bool _windowClosePending;
 
     public MainWindow()
     {
         InitializeComponent();
+        _fullscreenSession = new WindowContentFullscreenSession(
+            ContentFullscreenLayer,
+            ContentFullscreenHost);
         Opened += OnWindowOpened;
         Closing += OnWindowClosing;
+        Closed += OnWindowClosed;
+    }
+
+    private void OnWindowClosed(object? sender, EventArgs e)
+    {
+        // Closing 可能被 Document 保存确认取消，只有真正 Closed 才使全屏宿主永久失效。
+        // ContentHost 的视觉树卸载也会触发同一幂等入口，两条框架时序不形成双重释放。
+        _fullscreenSession.Dispose();
     }
 
     private void OnWindowOpened(object? sender, EventArgs e)
@@ -70,52 +82,6 @@ internal sealed partial class MainWindow : Window, IWindowContentFullscreenHost
         }
     }
 
-    public bool TryPresent(Control content, object owner)
-    {
-        EnsureUiThread();
-        ArgumentNullException.ThrowIfNull(content);
-        ArgumentNullException.ThrowIfNull(owner);
-
-        if (_fullscreenOwner is not null &&
-            !ReferenceEquals(_fullscreenOwner, owner))
-        {
-            return false;
-        }
-
-        if (ContentFullscreenHost.Content is Control current &&
-            !ReferenceEquals(current, content))
-        {
-            return false;
-        }
-
-        _fullscreenOwner = owner;
-        ContentFullscreenHost.Content = content;
-        ContentFullscreenLayer.IsVisible = true;
-        return true;
-    }
-
-    public bool TryRestore(object owner)
-    {
-        EnsureUiThread();
-        ArgumentNullException.ThrowIfNull(owner);
-
-        if (!ReferenceEquals(_fullscreenOwner, owner))
-        {
-            return false;
-        }
-
-        ContentFullscreenHost.Content = null;
-        ContentFullscreenLayer.IsVisible = false;
-        _fullscreenOwner = null;
-        return true;
-    }
-
-    private void EnsureUiThread()
-    {
-        if (!Dispatcher.CheckAccess())
-        {
-            throw new InvalidOperationException(
-                "窗口内容区全屏接口只能在 Avalonia UI 线程调用。");
-        }
-    }
+    IDisposable? IWindowContentFullscreenHost.TryPresent(Control content) =>
+        _fullscreenSession.TryPresent(content);
 }

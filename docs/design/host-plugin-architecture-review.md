@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-22（已同步 Managed Plugin V3 G7 Host Catalog / Plugin Registry 分离）<br>
+> 更新日期：2026-08-22（已同步 Managed Plugin V3 G8 全屏租约与 Host V3 骨架）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
@@ -9,11 +9,12 @@
 > V2 当前状态：G0–G14 已完成。四个业务插件均使用正式 SDK、声明式贡献与普通模型；Legacy
 > 项目、兼容适配和过渡构建属性已经删除，API Shipped 与两轮隔离发布门禁已经建立。
 
-> V3 当前状态：G0–G7 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
+> V3 当前状态：G0–G8 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
 > 保存已使用修订协议，激活已使用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属；
 > MyPlugTest 与 BiliDownloader 的消息器已归各自插件 Provider 所有；唯一 Workspace Session、Dock
 > Factory Adapter 和无 Dock Tool ReadModel 已建立；Host Catalog 与只含真实插件的 Plugin Registry
-> 已分离。磁盘 schema 仍为 2，G8–G14 尚未实施。
+> 已分离；全屏已改为单参数展示端口返回幂等租约，Host 具体会话维护唯一活动展示。磁盘 schema
+> 仍为 2，G9–G14 尚未实施。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -312,6 +313,7 @@ Factory 或容器；`ToolManagementViewModel` 只依赖 `ToolWorkspaceReadModel`
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
 | Workspace / Dock 边界 | 已实现 V3 G6 | Factory 只适配框架，Session 独占 Root/Document/Tool；多窗口共享、回调顺序、退出释放和无 Dock Tool 投影通过 441 项专项门禁 |
 | Host / 插件目录边界 | 已实现 V3 G7 | Host 无伪 PluginId/Provider/Availability；双激活器、精确 View 映射、规范 Locator 和失败回滚通过 448 项专项门禁 |
+| 全屏租约边界 | 已实现 V3 G8 | UI SDK 只暴露 `TryPresent(Control)` 和标准租约；Host 会话排他、幂等、自动失效，20 轮全屏 Document 直接关闭资源归零 |
 | 布局持久化 | 已实现 V2 | 唯一严格 schema、原子写入、坏文件隔离、可用性门控和整体回退已有测试；不读取 V1 |
 | Document 保存 | 已实现 V3 G2 | 六字段 envelope v2、插件内容 schema、修订快照、指定修订确认、关闭竞争保护、备份恢复和原子替换均有回归；MyPlugTest、DaTang 与 BiliDownloader 已真实接入 |
 | Document 激活 | 已实现 V3 G3 | New/Restore 在 public 类型层互斥；Host、四插件 11 个 Document、取消与 Scope/View 回滚均有专项测试 |
@@ -497,6 +499,19 @@ Host Unit 188、Headless UI 56、Plugin/Dock 204，共 **448/448**；行覆盖�
 **70.26%**，四个目录/激活关键文件行覆盖率均不低于 96.23%。完整职责、SOLID 取舍、失败时序、
 非发布声明与回滚边界见
 [G7 Host Catalog 与 Plugin Registry](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)。
+
+### 6.12 2026-08-22 V3 G8 全屏租约与 Host V3 骨架
+
+**[当前事实]** UI SDK 已删除 owner 参数和 `TryRestore`，只保留
+`IDisposable? TryPresent(Control content)`。`MainWindow` 把覆盖层状态委托给具体的
+`WindowContentFullscreenSession`；成功令牌以引用身份排他，错误线程不会消耗首次释放，窗口关闭或
+ContentHost 销毁会自动失效。MySmallTools 只持有租约，并在退出、失败、卸载、Dispose 和 Document
+关闭时释放；ViewModel 不持有 Window、Dock 或 Host 实现。
+
+专项门禁为 **672/672**，Host 行/分支覆盖率 **84.15% / 70.30%**，会话关键文件行覆盖率
+**96.43%**。20 轮本地 Windows x64 真实媒体均在全屏中直接关闭 Document，所有播放器、原生表面、
+流、缓存、Dispatcher、Reaper、弱引用及意外顶层窗口归零。完整时序、SOLID 取舍、非发布声明和
+回滚边界见 [G8 全屏租约与 Host V3 骨架](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)。
 
 ## 7. 宿主应该给插件多大自由度
 

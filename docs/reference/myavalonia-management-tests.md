@@ -10,11 +10,12 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [V1 G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
 > [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。当前源码已完成未发布
-> V3 G7；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
+> V3 G8；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
 > 修订保存见 [V3 G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)，互斥激活见
 > [V3 G3 专项记录](../plan-history/host-v3/g3-exclusive-document-activation.md)，Workspace/Dock 拆分见
 > [V3 G6 专项记录](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)，Host/插件目录分离见
-> [V3 G7 专项记录](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)。
+> [V3 G7 专项记录](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)，全屏租约与资源边界见
+> [V3 G8 专项记录](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)。
 
 ## 当前文档与非发布基线门禁
 
@@ -642,6 +643,26 @@ Catalog 服务容器依赖和公共 Workspace Context 回流。专项摘要固�
 `windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、`releaseGate=false`、
 `publishable=false`；该入口不运行 Windows CI/Smoke、发布验收或发布门禁。完整设计与回滚边界见
 [V3 G7 Host Catalog 与 Plugin Registry](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)。
+
+### V3 G8 全屏租约非发布门禁
+
+G8 专项入口为：
+
+```powershell
+.\scripts\Test-FullscreenLeaseHostV3.ps1 -Configuration Release -NoRestore
+```
+
+脚本串行运行 Plugin SDK、Host Unit、Headless UI、Plugin/Dock 和 MySmallTools Unit，生成 TRX、三份
+Host Cobertura、合并报告、真实媒体 JSON 与 `artifacts/test-results/FullscreenLeaseHostV3/summary.json`。
+2026-08-22 实际结果为 **37 + 188 + 59 + 204 + 184 = 672/672**；Host 行覆盖率 **84.15%**、
+分支覆盖率 **70.30%**，`WindowContentFullscreenSession.cs` 行覆盖率 **96.43%**。
+
+真实 Windows x64 Harness 固定执行 **20/20** 轮“真实播放 -> 进入全屏 -> 直接关闭 Document”，最终
+八项播放资源计数、关闭 Document/View/加密流弱引用及意外顶层窗口全部为 0。源码/API 扫描禁止 owner
+参数、`TryRestore`、双接口及 Host 实现泄漏；SDK 包消费同时验证新租约正例和旧 API 编译失败负例。
+摘要固定记录 AIFLOW、Windows CI/Smoke、ReleaseAcceptance、releaseGate 和 publishable 均为 false；
+本地真实媒体 Harness 是开发期资源门禁，不是发布验收。完整记录见
+[V3 G8 全屏租约与 Host V3 骨架](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)。
 
 ### 插件私有消息、Host 直接协调与稳定 ID
 

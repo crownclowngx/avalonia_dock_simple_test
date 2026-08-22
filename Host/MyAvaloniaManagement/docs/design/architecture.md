@@ -1,11 +1,12 @@
 # MyAvaloniaManagement 内部架构
 
-> 当前源码已完成未发布 V3 G7：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
+> 当前源码已完成未发布 V3 G8：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
 > 指定修订确认，激活已采用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属校验；
 > MyPlugTest 与 BiliDownloader 消息器已归各自插件 Provider 所有；Workspace Session、Dock Factory 和
-> Tool 只读投影已经分离；Host Catalog 与只含真实插件的 Plugin Registry 已分离。其余运行结构仍是
+> Tool 只读投影已经分离；Host Catalog 与只含真实插件的 Plugin Registry 已分离；全屏端口已改为
+> 单参数 `TryPresent` 返回幂等租约，并由 Host 具体会话维护唯一活动展示。其余运行结构仍是
 > V2 G14 已签署实现。manifest、Document envelope、layout 保持 schema 2，默认数据根保持 `v2`；
-> G8 及后续协议尚未实施。
+> G9 及后续协议尚未实施。
 
 ## 1. 目标与边界
 
@@ -252,6 +253,17 @@ Factory 的 Docked/Hidden 在基类行为后通知 Session；Closing 只有 Sess
 Closed 把基类通知放在 `try`、Session 最终释放放在 `finally`。多个 MainWindow 共享同一 Session/Root，
 各自订阅和解除定向通知。Tool 管理在布局前后都读取 `ToolWorkspaceReadModel` 的纯数据快照，Pinned Tool
 视为可见，不获得 Root Dock、Dock Tool、Factory 字典或服务容器。
+
+### 5.1 G8 全屏会话
+
+`MainWindow` 显式实现 UI SDK 的 `IWindowContentFullscreenHost`，但不直接保存插件 owner 或内容状态；
+它把 `TryPresent(Control)` 委托给窗口私有的 `WindowContentFullscreenSession`。该具体会话只维护覆盖层、
+ContentHost、宿主有效性和一个活动租约。租约按引用身份释放，重复释放无操作，旧租约不能清理新展示；
+错误线程调用不会消耗首次释放。内容挂载失败会在传播原异常前清空内容并隐藏覆盖层。
+
+窗口可取消的 `Closing` 不触碰租约，真正 `Closed` 或 ContentHost 脱离视觉树才自动失效。释放时先让
+租约失效，再清空视觉内容，防止卸载回调重入。插件只看到标准 `IDisposable`，不获得 MainWindow、
+Dock 或内部会话；MySmallTools 在原生表面迁移前后持有/释放租约，Document 直接关闭也走同一清理路径。
 
 ## 6. 文档工作流
 

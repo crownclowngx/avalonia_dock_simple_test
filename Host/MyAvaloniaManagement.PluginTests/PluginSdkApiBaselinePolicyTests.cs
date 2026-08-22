@@ -63,7 +63,7 @@ public sealed class PluginSdkApiBaselinePolicyTests
     }
 
     [Fact]
-    public void G5_V1V2历史基线未改写且V3当前表面全部处于Unshipped()
+    public void G8_V1V2历史基线未改写且V3当前表面全部处于Unshipped()
     {
         var repositoryRoot = FindRepositoryRoot();
         var apiRoot = Path.Combine(
@@ -104,12 +104,18 @@ public sealed class PluginSdkApiBaselinePolicyTests
         Assert.Equal(46, uiV2Shipped.Length);
         Assert.Empty(coreV2Unshipped);
         Assert.Empty(uiV2Unshipped);
-        // G5 在尚未发布的 V3 线内删除无真实 Host 所有权的事件总线。V1/V2 历史文本必须
-        // 原样保留，V3 当前表面继续全部处于 Unshipped，直到 G14 才允许签署发布承诺。
+        // G5 删除无真实 Host 所有权的事件总线，G8 又把两个 owner 式全屏方法收口为一个租约方法。
+        // V1/V2 历史文本必须原样保留，V3 当前表面继续全部处于 Unshipped，直到 G14 才允许签署。
         Assert.Empty(v3Shipped);
         Assert.Empty(uiV3Shipped);
         Assert.Equal(127, coreV3Unshipped.Length);
-        Assert.Equal(uiV2Shipped, uiV3Unshipped);
+        Assert.Equal(45, uiV3Unshipped.Length);
+        Assert.Contains(uiV3Unshipped, entry => entry.Contains(
+            "IWindowContentFullscreenHost.TryPresent(Avalonia.Controls.Control! content) -> System.IDisposable?",
+            StringComparison.Ordinal));
+        Assert.DoesNotContain(uiV3Unshipped, entry =>
+            entry.Contains("TryRestore", StringComparison.Ordinal) ||
+            entry.Contains("object! owner", StringComparison.Ordinal));
         Assert.Contains(coreV3Unshipped, entry =>
             entry.Contains("DocumentSaveSnapshot", StringComparison.Ordinal));
         Assert.Contains(coreV3Unshipped, entry =>

@@ -80,12 +80,13 @@ public sealed class SdkBoundaryTests
     [Fact]
     public void 全屏端口只负责内容所有权迁移和恢复()
     {
-        Assert.Equal(
-            ["TryPresent", "TryRestore"],
-            typeof(IWindowContentFullscreenHost).GetMethods()
-                .Select(method => method.Name)
-                .OrderBy(name => name, StringComparer.Ordinal)
-                .ToArray());
+        var method = Assert.Single(typeof(IWindowContentFullscreenHost).GetMethods());
+
+        Assert.Equal("TryPresent", method.Name);
+        Assert.Equal(typeof(IDisposable), method.ReturnType);
+        var parameter = Assert.Single(method.GetParameters());
+        Assert.Equal("content", parameter.Name);
+        Assert.Equal(typeof(Avalonia.Controls.Control), parameter.ParameterType);
         Assert.Empty(typeof(IWindowContentFullscreenHost).GetProperties());
         Assert.Empty(typeof(IWindowContentFullscreenHost).GetEvents());
     }

@@ -7,8 +7,8 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码已经完成 V3 G7 Host Catalog / Plugin Registry 分离；其余生产语义仍由 V2 G14
-# 签署，G8–G14 的协议设计不能写成已实现。V1/V2/V3 阶段记录继续参加链接、命令和项目路径检查。
+# 当前源码已经完成 V3 G8 全屏租约与 Host V3 骨架；其余生产语义仍由 V2 G14
+# 签署，G9–G14 的协议设计不能写成已实现。V1/V2/V3 阶段记录继续参加链接、命令和项目路径检查。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
@@ -25,6 +25,7 @@ $currentDocumentPaths = @(
     'docs/plan-history/host-v3/g5-plugin-private-messaging.md',
     'docs/plan-history/host-v3/g6-workspace-session-and-dock-factory.md',
     'docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md',
+    'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md',
     'docs/reference/dock-layout-snapshot-v2.md',
     'docs/reference/myavalonia-management-tests.md',
     'docs/reference/plugin-sdk-api-compatibility.md',
@@ -71,6 +72,7 @@ $forbiddenStatementRules = @(
     [pscustomobject]@{ Name = 'V3 状态仍停留在 G0'; Pattern = '状态：实施中；G0 已完成，G1[–-]G14 尚未实施' },
     [pscustomobject]@{ Name = 'V3 当前状态仍停留在 G5'; Pattern = '状态：实施中；G0[–-]G5 已完成，G6[–-]G14 尚未实施' },
     [pscustomobject]@{ Name = 'V3 当前状态仍停留在 G6'; Pattern = '状态：实施中；G0[–-]G6 已完成，G7[–-]G14 尚未实施' },
+    [pscustomobject]@{ Name = 'V3 当前状态仍停留在 G7'; Pattern = '状态：实施中；G0[–-]G7 已完成，G8[–-]G14 尚未实施' },
     [pscustomobject]@{ Name = 'V2 SDK 仍标记未发布'; Pattern = 'V2.{0,80}(?:SDK|契约).{0,40}(?:仍是|尚未).{0,20}未发布' },
     [pscustomobject]@{ Name = 'V2 API 仍为空 Shipped'; Pattern = '(?:v2|V2).{0,50}Shipped\s*(?:均|为)?\s*为空' },
     [pscustomobject]@{ Name = 'BiliDownloader 仍等待 G12'; Pattern = 'BiliDownloader.{0,30}(?:等待|留待)\s*G12' },
@@ -103,6 +105,7 @@ $requiredSymbols = @(
     [pscustomobject]@{ Symbol = 'HostWorkspaceCatalog'; Path = 'Host/MyAvaloniaManagement/Business/Workspace/HostWorkspaceCatalog.cs' }
     [pscustomobject]@{ Symbol = 'WorkspaceCatalog'; Path = 'Host/MyAvaloniaManagement/Business/Workspace/WorkspaceCatalog.cs' }
     [pscustomobject]@{ Symbol = 'HostWorkspaceActivator'; Path = 'Host/MyAvaloniaManagement/Business/Workspace/HostWorkspaceActivator.cs' }
+    [pscustomobject]@{ Symbol = 'WindowContentFullscreenSession'; Path = 'Host/MyAvaloniaManagement/Business/Presentation/WindowContentFullscreenSession.cs' }
 )
 $forbiddenSymbols = @(
     'IDocumentSavePathPolicy',
@@ -115,7 +118,8 @@ $forbiddenSymbols = @(
     'HostEventBus',
     'DocumentActivationContext',
     'V2Owner',
-    'AppendHostContributions'
+    'AppendHostContributions',
+    'TryRestore'
 )
 $pluginProjects = @(
     'Plugins/BiliDownloader/BiliDownloader/BiliDownloader.csproj',
@@ -151,13 +155,13 @@ foreach ($relativePath in $linkDocumentPaths) {
 }
 
 # 最终签署和阶段进度不能只靠“没有旧句子”间接成立。以下正向哨兵把 V2 G14、
-# V3 G7 的活动版本/API 状态和非发布边界绑定到权威文档。
+# V3 G8 的活动版本/API 状态和非发布边界绑定到权威文档。
 $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'README.md'; Fragment = 'Managed Plugin V2 已完成 G0–G14 并正式封板' },
     [pscustomobject]@{ Path = 'docs/design/host-v2-breaking-refactor-plan.md'; Fragment = '状态：已完成；G0–G14 已全部封板' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v2/g14-v2-sealing.md'; Fragment = 'scripts/Invoke-HostV2ReleaseGate.ps1' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v2/g14-v2-sealing.md'; Fragment = 'aiflow=false' },
-    [pscustomobject]@{ Path = 'docs/design/host-v3-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0–G7 已完成，G8–G14 尚未实施' },
+    [pscustomobject]@{ Path = 'docs/design/host-v3-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0–G8 已完成，G9–G14 尚未实施' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'windowsCi=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'windowsSmoke=false' },
@@ -204,7 +208,14 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md'; Fragment = 'releaseAcceptance=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md'; Fragment = 'releaseGate=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md'; Fragment = 'publishable=false' },
-    [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'Core 127 条、UI 46 条' }
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'aiflow=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'windowsCi=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'windowsSmoke=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'releaseAcceptance=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'releaseGate=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'publishable=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'IDisposable? TryPresent(Control content)' },
+    [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'Core 127 条、UI 45 条' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

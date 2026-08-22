@@ -14,12 +14,13 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > 生产面，G14 已冻结 2.0.0 API、建立两轮隔离发布门禁并完成文档签署。见
 > [V2 G14 封板记录](./docs/plan-history/host-v2/g14-v2-sealing.md)。
 
-> 当前源码已完成未发布的 V3 G7：产品、Core/UI SDK 与四插件版本为 `3.0.0`；Document 保存使用
+> 当前源码已完成未发布的 V3 G8：产品、Core/UI SDK 与四插件版本为 `3.0.0`；Document 保存使用
 > 修订快照和指定修订确认，激活输入使用互斥的 New/Restore 类型，插件注册改为 Host 最终提交端口与
 > 贡献生命周期并强制 ID 归属；事件通信由 MyPlugTest、BiliDownloader 各自的插件 Provider 私有持有；
-> Workspace/Dock 已拆分，Host Catalog 与只含真实插件的 Plugin Registry 已分离。
+> Workspace/Dock 已拆分，Host Catalog 与只含真实插件的 Plugin Registry 已分离；UI SDK 全屏契约已
+> 收口为 `TryPresent(Control)` 返回幂等 `IDisposable` 租约，Host 由具体会话维护唯一活动租约。
 > manifest、Document envelope、layout 仍为 schema 2，默认数据根仍为 `v2`。实施证据见
-> [V3 G7 Host Catalog 与 Plugin Registry](./docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)。
+> [V3 G8 全屏租约与 Host V3 骨架](./docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)。
 
 ## 核心扩展模型
 
@@ -55,7 +56,7 @@ Host 最终提交与 ID 归属门禁，并在 V3 G5 把插件事件通信收回�
 Host/Common 双区间已经删除。缺少入口 `.deps.json` 或依赖历史加载 Facade 的代码不会
 进入运行链。
 
-## V3 G7 Host Catalog、G6 Workspace 与既有 V3 语义
+## V3 G8 全屏租约、G7 Catalog 与既有 V3 语义
 
 历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。V2 沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
@@ -73,7 +74,7 @@ SDK 程序集版本均为 `3.0.0.0`；V3 不重新引入独立 Host API 版本�
 
 V2 G2 已建立真实的 `MyAvaloniaManagement.PluginSdk.dll` 与 `MyAvaloniaManagement.PluginSdk.UI.dll`。
 Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约。当前 v3 Unshipped 为 Core
-127 条、UI 46 条 public 签名，两个 v3 Shipped 均为空，直到 V3 G14 才允许签署。对应的历史签名
+127 条、UI 45 条 public 签名，两个 v3 Shipped 均为空，直到 V3 G14 才允许签署。对应的历史签名
 继续保存在 v2 Shipped。旧 `MyAvaloniaManagementCommon.dll` 与 Legacy 项目已在 V2 G13 整体删除；
 历史 v1 API 文本仅用于审计，不参与编译、加载或打包。
 
@@ -110,6 +111,12 @@ G7 在该 Adapter 基线上建立两个明确激活边界：Host Welcome 由精�
 并发布。V3 G3 把旧的可空组合上下文破坏式
 替换为 `NewDocumentActivation` 与 `RestoreDocumentActivation`；保存与关闭统一读取 Host 状态，
 不接受 Legacy Strategy、旧激活重载或字符串快照。
+
+V3 G8 将全屏端口收口为 `IDisposable? TryPresent(Control content)`。`MainWindow` 只委托给具体的
+`WindowContentFullscreenSession`；会话维护覆盖层、ContentHost、宿主有效性和唯一租约。MySmallTools
+只持有租约，退出、Esc、失败、卸载、Dispose 或 Document 关闭时释放，不再保存 owner 或调用
+`TryRestore`。20 轮真实媒体在全屏中直接关闭 Document 后，播放器、HWND/vout、流、缓存、Dispatcher、
+Reaper 与关闭对象弱引用全部归零。
 
 G8 把生命周期编排收回 Host internal：Registry 只保存声明；Coordinator 按规范 PluginId 正序初始化，
 失败/30 秒超时只隔离当前插件，只有成功项可用并在退出时按实际成功顺序反向停止，单项关闭期限为
@@ -186,10 +193,11 @@ TestResults/  需要保留的阶段验收与人工验证记录
 根 README 只提供项目概览。继续阅读时，从以下入口选择：
 
 - [项目文档导航](./docs/README.md)：按用途浏览全部解决方案级文档；
-- [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G7 Catalog、V3 G6 Workspace、V3 G5 私有消息、V3 G4 注册、V3 G3 激活、V3 G2 保存和 V2 G14 其他语义为事实源；
+- [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G8 全屏租约、V3 G7 Catalog、V3 G6 Workspace、V3 G5 私有消息、V3 G4 注册、V3 G3 激活、V3 G2 保存和 V2 G14 其他语义为事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G7 已完成事实与 G8–G14 后续边界；
+- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G8 已完成事实与 G9–G14 后续边界；
+- [V3 G8 全屏租约与 Host V3 骨架](./docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)：查看租约状态机、原生表面迁移、SOLID 取舍、672 项测试和 20 轮资源证据；
 - [V3 G7 Host Catalog 与 Plugin Registry](./docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)：查看目录职责、激活/失败时序、SOLID 取舍、448 项测试和非发布边界；
 - [V3 G6 Workspace Session 与 Dock Factory](./docs/plan-history/host-v3/g6-workspace-session-and-dock-factory.md)：查看职责图、所有权、关闭/退出时序、SOLID 取舍、测试实数和整体回滚边界；
 - [V3 G5 插件私有消息](./docs/plan-history/host-v3/g5-plugin-private-messaging.md)：查看最终接口、消息拓扑、SOLID 取舍、测试实数和整体回滚边界；
@@ -288,11 +296,11 @@ V2 封板时曾在干净 Git 提交上执行以下 Windows 本地发布门禁；
 - G5/G7 已完成：每个 manifest 插件拥有独立 Provider 并只通过最终 UI SDK 发布到 Plugin Registry；
   Host Welcome/Tool 由独立 Host Catalog 声明；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
-- 当前代码版本线为未发布 V3 G7；Core/UI 包、manifest schema 2、独立容器、Host 独立目录、
+- 当前代码版本线为未发布 V3 G8；Core/UI 包、manifest schema 2、独立容器、Host 独立目录、
   Document envelope v2、Layout v2 和 Host internal 生命周期继续使用既有边界，Document 保存已采用
   修订快照与指定修订确认，Document 激活已采用互斥 New/Restore 类型，插件端口和贡献根已改为 Host
   最终提交并强制 ID 归属，插件消息由对应插件 Provider 私有持有；Workspace Session、Dock Factory 和
-  Tool 只读投影以及 Host Catalog / Plugin Registry 已经分离。V3 G8–G14 尚未实施，
+  Tool 只读投影以及 Host Catalog / Plugin Registry 已经分离，全屏已使用单参数租约端口。V3 G9–G14 尚未实施，
   不得把 v3 Unshipped 或本地测试包描述为正式发布承诺。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

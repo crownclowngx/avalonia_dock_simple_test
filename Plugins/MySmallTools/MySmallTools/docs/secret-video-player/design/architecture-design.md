@@ -109,7 +109,7 @@ flowchart TB
 | UI 功能包 | `Playback`、`Library`、`Encryption`、`Decryption`、`SingleVideo` | 按功能拥有状态、命令、取消和子 View，顶层 AXAML 只组合 |
 | 文件夹浏览 | `LibraryBrowserCoordinatorViewModel`、`VideoLibraryScanner` | 异步扫描 `.secvid`、隔离单文件错误、过滤公开信息 |
 | 播放展示 | `PlaybackCoordinatorViewModel` 及五个功能入口 | 消费播放会话和平台能力，不暴露 HWND 或 `MediaPlayer` |
-| 全屏与快捷键 | `FullscreenPlaybackPresenter`、`PlaybackShortcutRouter` | 处理 Avalonia 焦点、唯一 PlayerShell 迁移和播放器作用域按键 |
+| 全屏与快捷键 | `FullscreenPlaybackPresenter`、`PlaybackShortcutRouter` | 只持有 UI SDK `IDisposable` 租约，处理唯一 PlayerShell/原生表面迁移和播放器作用域按键 |
 | 播放列表导航 | `IPlaybackNavigationContext`、`SecretVideoLibraryViewModel` | 以可选端口提供当前筛选列表的相邻项和连续播放 |
 | 平台能力 | `IPlaybackPlatformStatus`、`PlaybackPlatformCapabilities` | 显式声明 Windows x64、原生输出、全屏、轨道和自带运行时能力 |
 | 运行时布局 | `IPlaybackRuntimeLayoutProvider` | 只以插件程序集实际位置解析私有 LibVLC 绝对目录 |
@@ -147,9 +147,12 @@ flowchart LR
 刷新，不随位置轮询重复构造。原生控制失败映射为稳定 `ControlUnavailable`，不把媒体置为
 `Faulted`，也不向 UI 泄漏原生异常。
 
-全屏属于呈现边界：ViewModel 只发布带修订号的进入/退出请求，View 迁移唯一
-`PlayerShell`，等待匹配的新 HWND 表面恢复后再回报结果。倍速和轨道仍由播放会话恢复，
-OverlayLayer 不持有业务状态。
+全屏属于呈现边界：ViewModel 只发布带修订号的进入/退出请求，View 先释放普通 HWND/vout，再通过
+`IWindowContentFullscreenHost.TryPresent(PlayerShell)` 取得唯一 `IDisposable` 租约。Presenter 只保存
+该租约，不保存 Host、Window、Dock 或 owner；退出、Esc、失败、DataContext 切换、视觉树卸载、Dispose
+和 Document 关闭都会交换并释放租约，再把唯一 `PlayerShell` 移回普通占位区并恢复表面。Host 自动失效
+后旧令牌重复释放仍是安全无操作，迟到完成继续由 ViewModel 修订号拒绝。倍速和轨道仍由播放会话恢复，
+Host 覆盖层不持有业务状态。
 
 媒体库导航属于列表协调边界：`IPlaybackNavigationContext` 只暴露命令和能力；
 单文件播放器不提供该端口。媒体库使用规范化绝对路径保存当前播放身份，相邻项始终从

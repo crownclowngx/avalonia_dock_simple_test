@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Recycling.Model;
 using Avalonia.Controls.Templates;
+using Avalonia.Input;
 using Avalonia.VisualTree;
 using MyAvaloniaManagement.Business.Docking;
 
@@ -82,6 +84,16 @@ internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycli
         if (key is null || !_cache.Remove(key, out var cached))
             return false;
 
+        // 最终关闭当前活动 Document 时，Dock 可能先发出 Closed 回调、稍后才刷新 Presenter。
+        // 若这里只删除字典项，缓存 View 仍会作为 ContentPresenter 的当前内容保活；插件资源虽已
+        // Dispose，弱引用却无法归零。先主动从视觉父级摘除，既立即触发 Detached 清理，也保证
+        // 后续 Presenter 再次刷新只是幂等地清空旧内容。
+        if (cached is Visual visual)
+        {
+            ClearKeyboardNavigationReference(visual);
+            RemoveFromVisualParent(visual);
+        }
+
         // DataContext 可能继续指向已释放的 Document；在移除缓存时主动断开，
         // 使 View 即使被 Avalonia 短暂保留也不会延长业务作用域生命周期。
         if (data is IManagedDockableViewHost adapter)
@@ -140,6 +152,27 @@ internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycli
             case Decorator decorator:
                 decorator.Child = null;
                 break;
+        }
+    }
+
+    /// <summary>清除视觉祖先对待关闭控件树中“上次 Tab 焦点”的强引用。</summary>
+    private static void ClearKeyboardNavigationReference(Visual root)
+    {
+        // Avalonia 的 ItemsControl 会通过 TabOnceActiveElement 记住其最近聚焦的后代。直接关闭
+        // 当前活动 Document 时，Dock 来不及先把焦点移到其他标签；即使 View 已脱离视觉树并
+        // Dispose，这个附加属性仍会从 ItemsControl 强引用旧播放器。只清除指向本次关闭子树的
+        // 值，不碰其他 Dock 或工具区的焦点记忆，避免扩大回收器的行为范围。
+        foreach (var ancestor in root.GetVisualAncestors().OfType<InputElement>())
+        {
+            var active = KeyboardNavigation.GetTabOnceActiveElement(ancestor);
+            if (active is not Visual activeVisual ||
+                (!ReferenceEquals(activeVisual, root) &&
+                 !activeVisual.GetVisualAncestors().Contains(root)))
+            {
+                continue;
+            }
+
+            KeyboardNavigation.SetTabOnceActiveElement(ancestor, null);
         }
     }
 }

@@ -41,7 +41,7 @@ internal sealed class G3PlaybackHarnessRunner(
     private readonly Dictionary<string, long> _stageDurationsMs = [];
     private readonly List<WeakReference<SecretVideoPlayerViewModel>>
         _closedDocumentReferences = [];
-    private readonly List<WeakReference<VideoPlayerControl>> _closedViewReferences = [];
+    private readonly List<WeakReference<SecretVideoPlayerView>> _closedViewReferences = [];
     private readonly Stopwatch _elapsed = Stopwatch.StartNew();
     private long _uiHeartbeatMaxIntervalMs;
     private long _nativeOutputGeneration;
@@ -123,9 +123,12 @@ internal sealed class G3PlaybackHarnessRunner(
 
             workspace.DockFactory.CloseDockable(placeholder.Dockable);
             await DrainDispatcherAsync();
+            // G8 会把每轮已关闭的 Document 与 View 记录为弱引用。这里在生成最终报告前执行一次
+            // 可控的完整回收，使“弱引用仍存活”只表示视觉树、Dock 或异步回调仍持有对象，而不是
+            // 单纯因为 GC 尚未自然发生。该稳定化也会等待终结器和 Dispatcher 尾部工作完成。
+            await StabilizeProcessAsync();
             if (options.Suite == HarnessSuite.G10)
             {
-                await StabilizeProcessAsync();
                 _processFinal = ProcessResourceSnapshot.Capture();
             }
 
@@ -302,8 +305,8 @@ internal sealed class G3PlaybackHarnessRunner(
         }
         Require(
             mainWindow is IWindowContentFullscreenHost host &&
-            !host.TryRestore(new object()),
-            "非占用者错误地释放了窗口内容区全屏。");
+            host.TryPresent(new Border()) is null,
+            "第二个展示者错误地取得了窗口内容区全屏租约。");
         document.PlayerViewModel.ToggleFullscreenCommand.Execute(null);
         await WaitUntilAsync(
             () => !document.PlayerViewModel.IsFullscreen &&
@@ -754,6 +757,10 @@ internal sealed class G3PlaybackHarnessRunner(
         IReadOnlyList<HarnessAsset> assets,
         PlaybackResourceSnapshot expectedResources)
     {
+        var fullscreenLayer = mainWindow.GetVisualDescendants()
+            .OfType<Border>()
+            .Single(control => control.Name == "ContentFullscreenLayer");
+
         for (var cycle = 0; cycle < options.Cycles; cycle++)
         {
             var document = CreateDocument(mainViewModel, documentDock);
@@ -762,11 +769,14 @@ internal sealed class G3PlaybackHarnessRunner(
                 () => document.PlayerViewModel.IsVideoSurfaceReady,
                 TimeSpan.FromSeconds(8),
                 $"第 {cycle + 1} 轮 HWND 未创建。");
-            var playerView = mainWindow.GetVisualDescendants()
-                .OfType<VideoPlayerControl>()
-                .First(control => ReferenceEquals(
-                    control.DataContext,
-                    document.PlayerViewModel));
+            // 立即降级为弱引用，避免 async 状态机把最后一轮 View 作为局部变量保活到报告生成。
+            // 该引用只用于证明关闭后对象可回收，不参与关闭动作本身。
+            var playerViewReference = new WeakReference<SecretVideoPlayerView>(
+                mainWindow.GetVisualDescendants()
+                    .OfType<SecretVideoPlayerView>()
+                    .First(control => ReferenceEquals(
+                        control.DataContext,
+                        document.Model)));
 
             var asset = assets[cycle % assets.Count];
             Require(
@@ -777,14 +787,30 @@ internal sealed class G3PlaybackHarnessRunner(
                 TimeSpan.FromSeconds(6),
                 $"第 {cycle + 1} 轮没有产生真实读取。");
 
-            documentDock.ActiveDockable = placeholder.Dockable;
+            // V3 G8 要验证的是“全屏租约仍有效时直接关闭 Document”，而不是先手工退出全屏后
+            // 再关闭。View 的 Detached/Dispose 必须释放租约、移回唯一 PlayerShell、销毁 HWND，
+            // 最后才由 Document Scope 释放播放器和加密流。
+            document.PlayerViewModel.ToggleFullscreenCommand.Execute(null);
             await WaitUntilAsync(
-                () => !document.PlayerViewModel.IsVideoSurfaceReady,
-                TimeSpan.FromSeconds(5),
-                $"第 {cycle + 1} 轮旧 HWND 未销毁。");
+                () => document.PlayerViewModel.IsFullscreen &&
+                      !document.PlayerViewModel.IsFullscreenTransitioning &&
+                      fullscreenLayer.IsVisible,
+                TimeSpan.FromSeconds(8),
+                $"第 {cycle + 1} 轮未能进入全屏。");
+
             workspace.DockFactory.CloseDockable(document.Dockable);
             _closedDocumentReferences.Add(new WeakReference<SecretVideoPlayerViewModel>(document.Model));
-            _closedViewReferences.Add(new WeakReference<VideoPlayerControl>(playerView));
+            _closedViewReferences.Add(playerViewReference);
+            // 关闭动作本身已经在全屏租约有效时完成；随后显式选回占位标签，仅用于让 Dock 的
+            // Presenter 丢弃最后一个已关闭 View 的缓存引用。若省略这一步，业务资源虽已归零，
+            // 最后一轮 View 仍可能被展示层缓存到下一次选择，弱引用证据会产生假阳性。
+            documentDock.ActiveDockable = placeholder.Dockable;
+            await WaitUntilAsync(
+                () => !fullscreenLayer.IsVisible &&
+                      !document.PlayerViewModel.IsFullscreen &&
+                      !document.PlayerViewModel.IsVideoSurfaceReady,
+                TimeSpan.FromSeconds(8),
+                $"第 {cycle + 1} 轮全屏 Document 关闭后视觉或 HWND 未恢复。");
             await DrainDispatcherAsync();
 
             var cycleResources = SecurePlaybackDiagnostics.CaptureResources();
@@ -1081,6 +1107,10 @@ internal sealed class G3PlaybackHarnessRunner(
         GC.WaitForPendingFinalizers();
         GC.Collect();
         await Task.Delay(250);
+        // Avalonia 合成器会在前两次回收之后的下一帧才丢弃已经呈现过的控件树；等待这一帧后
+        // 再回收一次，弱引用统计才不会把合成器的短暂帧引用误判为 Dock/View 泄漏。
+        await DrainDispatcherAsync();
+        GC.Collect();
     }
 
     private static string GetNativeLibVlcVersion()

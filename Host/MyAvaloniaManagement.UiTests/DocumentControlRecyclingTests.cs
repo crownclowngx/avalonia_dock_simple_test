@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Controls.Recycling.Model;
+using Avalonia.Input;
 using MyAvaloniaManagement.Business.Helpers;
 using Xunit;
 
@@ -40,10 +41,14 @@ public sealed class DocumentControlRecyclingTests
         {
             DataContext = key
         };
+        var parent = new StackPanel { Children = { control } };
+        KeyboardNavigation.SetTabOnceActiveElement(parent, control);
         recycling.Add(key, control);
 
         Assert.True(recycling.Remove(key));
 
+        Assert.DoesNotContain(control, parent.Children);
+        Assert.Null(KeyboardNavigation.GetTabOnceActiveElement(parent));
         Assert.Null(control.DataContext);
         Assert.True(control.IsDisposed);
         Assert.False(recycling.Remove(key));

@@ -327,7 +327,8 @@ function Get-ManagementBaselineFacts {
         "活动 API 基线 $apiBaseline 与 SDK 主版本 $($sdkVersion.Major) 不一致。")
 
     # V3 尚未发布，因此活动 Shipped 必须为空，全部当前签名进入 Unshipped。V2 Shipped 继续作为
-    # 历史正式承诺保留；G2 只允许 Core 的修订保存契约按已评审形状发生破坏式变化，UI 仍须逐条相等。
+    # 历史正式承诺保留；Core 允许 G2–G5 已评审的破坏式变化，UI 只允许 G8 把两个 owner 方法
+    # 原子替换为一个返回 IDisposable 租约的方法。除此之外仍逐条相等，避免借阶段更新改写历史表面。
     $sdkApiRoots = @(
         Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk\ApiCompatibility\$apiBaseline"
         Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk.UI\ApiCompatibility\$apiBaseline"
@@ -382,11 +383,31 @@ function Get-ManagementBaselineFacts {
                 -not ($unshippedEntries -match 'DocumentActivationContext')) (
                 "G5 Core v3 不得保留旧可空组合激活类型：$baselineRoot")
         }
+        elseif ($unshippedEntries -contains (
+                'MyAvaloniaManagement.PluginSdk.UI.IWindowContentFullscreenHost.TryPresent(Avalonia.Controls.Control! content) -> System.IDisposable?')) {
+            Assert-DocumentationCondition ($v2Shipped.Count -eq 46) (
+                "G8 不得改写 V2 UI Shipped 数量：$baselineRoot")
+            Assert-DocumentationCondition ($unshippedEntries.Count -eq 45) (
+                "G8 UI v3 Unshipped 必须为全屏租约收口后的 45 条：$baselineRoot")
+            Assert-DocumentationCondition (
+                -not ($unshippedEntries -match 'TryRestore|TryPresent\(Avalonia\.Controls\.Control! content, System\.Object! owner\)')) (
+                "G8 UI v3 不得保留 owner 全屏 API：$baselineRoot")
+
+            $v2WithoutFullscreenOwner = @($v2Shipped | Where-Object {
+                    $_ -notmatch 'IWindowContentFullscreenHost\.(TryPresent|TryRestore)'
+                })
+            $v3WithoutFullscreenLease = @($unshippedEntries | Where-Object {
+                    $_ -notmatch 'IWindowContentFullscreenHost\.TryPresent'
+                })
+            Assert-DocumentationCondition (
+                ($v2WithoutFullscreenOwner -join "`n") -ceq ($v3WithoutFullscreenLease -join "`n")) (
+                "G8 UI 除全屏租约替换外必须与 V2 Shipped 逐条一致：$baselineRoot")
+        }
         else {
-            # UI 在 G2/G3 没有 public 变化；最小测试夹具也走此分支，以继续验证 G1 的逐条投影规则。
+            # 最小测试夹具仍走此分支，以继续验证没有阶段变化时的逐条投影规则。
             Assert-DocumentationCondition (
                 ($v2Shipped -join "`n") -ceq ($unshippedEntries -join "`n")) (
-                "未发生 G3 Core 协议变更的 V3 Unshipped 必须与 V2 Shipped 完全一致：$baselineRoot")
+                "未发生已评审协议变更的 V3 Unshipped 必须与 V2 Shipped 完全一致：$baselineRoot")
         }
         $allShippedEntries.AddRange([string[]]$shippedEntries)
         $allUnshippedEntries.AddRange([string[]]$unshippedEntries)

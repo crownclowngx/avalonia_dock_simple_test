@@ -23,7 +23,7 @@ internal sealed class FullscreenPlaybackPresenter
     private readonly PlaybackSurfaceCoordinator _surfaceCoordinator;
     private readonly Func<VideoPlayerControlViewModel?> _viewModel;
     private readonly SemaphoreSlim _transitionGate = new(1, 1);
-    private IWindowContentFullscreenHost? _fullscreenHost;
+    private IDisposable? _fullscreenLease;
     private TopLevel? _fullscreenTopLevel;
     private bool _forcingVisualReset;
 
@@ -58,7 +58,7 @@ internal sealed class FullscreenPlaybackPresenter
 
     private async Task<PlaybackFailure?> EnterAsync()
     {
-        if (_fullscreenHost is not null)
+        if (_fullscreenLease is not null)
             return null;
 
         var topLevel = TopLevel.GetTopLevel(_owner);
@@ -74,7 +74,23 @@ internal sealed class FullscreenPlaybackPresenter
         _normalPlaceholder.Content = null;
         await WaitForNativeSurfaceReleaseAsync();
 
-        if (!fullscreenHost.TryPresent(_playerShell, _owner))
+        IDisposable? lease;
+        try
+        {
+            lease = fullscreenHost.TryPresent(_playerShell);
+        }
+        catch
+        {
+            // Host 挂载内容失败时不能把唯一 PlayerShell 留在无父级状态。先恢复普通占位区并等待
+            // 新 HWND 表面重新连接，再向 ViewModel 返回不包含异常正文的稳定失败。
+            _normalPlaceholder.Content = _playerShell;
+            var restoreFailure = await attachment;
+            return restoreFailure ?? new PlaybackFailure(
+                PlaybackFailureCode.ControlUnavailable,
+                "宿主无法挂载全屏播放器。");
+        }
+
+        if (lease is null)
         {
             _normalPlaceholder.Content = _playerShell;
             var restoreFailure = await attachment;
@@ -83,7 +99,7 @@ internal sealed class FullscreenPlaybackPresenter
                 "当前窗口已有播放器处于全屏状态。");
         }
 
-        _fullscreenHost = fullscreenHost;
+        _fullscreenLease = lease;
         _fullscreenTopLevel = topLevel;
         _fullscreenTopLevel.AddHandler(
             InputElement.KeyDownEvent,
@@ -93,7 +109,7 @@ internal sealed class FullscreenPlaybackPresenter
         var failure = await attachment;
         if (failure is not null)
         {
-            await RollBackFailedEntryAsync(fullscreenHost);
+            await RollBackFailedEntryAsync();
             return failure;
         }
 
@@ -103,20 +119,14 @@ internal sealed class FullscreenPlaybackPresenter
 
     private async Task<PlaybackFailure?> ExitAsync()
     {
-        if (_fullscreenHost is null)
+        if (_fullscreenLease is null)
             return null;
 
         var previousGeneration = _surfaceCoordinator.CurrentSurface?.Generation ?? 0;
         var attachment = WaitForNewSurfaceAttachmentAsync(previousGeneration);
-        var host = _fullscreenHost;
-        if (!host.TryRestore(_owner))
-        {
-            return new PlaybackFailure(
-                PlaybackFailureCode.ControlUnavailable,
-                "宿主窗口拒绝归还全屏播放器。");
-        }
-
-        _fullscreenHost = null;
+        var lease = _fullscreenLease;
+        _fullscreenLease = null;
+        lease.Dispose();
         await WaitForNativeSurfaceReleaseAsync();
         _normalPlaceholder.Content = _playerShell;
         RemoveTopLevelHandler();
@@ -125,17 +135,13 @@ internal sealed class FullscreenPlaybackPresenter
         return failure;
     }
 
-    private async Task RollBackFailedEntryAsync(IWindowContentFullscreenHost fullscreenHost)
+    private async Task RollBackFailedEntryAsync()
     {
         var previousGeneration = _surfaceCoordinator.CurrentSurface?.Generation ?? 0;
-        if (!fullscreenHost.TryRestore(_owner))
-        {
-            ForceReset();
-            return;
-        }
-
         var attachment = WaitForNewSurfaceAttachmentAsync(previousGeneration);
-        _fullscreenHost = null;
+        var lease = _fullscreenLease;
+        _fullscreenLease = null;
+        lease?.Dispose();
         RemoveTopLevelHandler();
         await WaitForNativeSurfaceReleaseAsync();
         _normalPlaceholder.Content = _playerShell;
@@ -200,11 +206,9 @@ internal sealed class FullscreenPlaybackPresenter
         try
         {
             RemoveTopLevelHandler();
-            if (_fullscreenHost is not null)
-            {
-                _fullscreenHost.TryRestore(_owner);
-                _fullscreenHost = null;
-            }
+            var lease = _fullscreenLease;
+            _fullscreenLease = null;
+            lease?.Dispose();
 
             if (_normalPlaceholder.Content is null && _playerShell.Parent is null)
                 _normalPlaceholder.Content = _playerShell;
