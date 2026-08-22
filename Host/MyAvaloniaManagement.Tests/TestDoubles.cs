@@ -253,6 +253,8 @@ internal sealed class TestDocumentInteractionService : IDocumentInteractionServi
 /// </summary>
 internal sealed class TestHostStorageService : IHostStorageService
 {
+    private (TaskCompletionSource Started, TaskCompletionSource Release)? _nextWritePause;
+
     public IReadOnlyList<string> OpenPaths { get; set; } = [];
 
     public string? SavePath { get; set; }
@@ -273,6 +275,27 @@ internal sealed class TestHostStorageService : IHostStorageService
         new(StringComparer.OrdinalIgnoreCase);
 
     public List<(string Path, string Content)> Writes { get; } = [];
+
+    /// <summary>
+    /// 让下一次写入在真正提交到内存文件集合前暂停，并把“已经到达写入点”的事实通知测试。
+    /// </summary>
+    /// <remarks>
+    /// 这是一次性的测试同步点，只用于稳定复现“内容已经捕获，但主文件尚未提交”的时间窗口。
+    /// 两个信号必须由调用方成对创建和释放；本替身不会把这种测试编排能力扩散到生产存储接口。
+    /// </remarks>
+    public void PauseNextWrite(
+        TaskCompletionSource started,
+        TaskCompletionSource release)
+    {
+        ArgumentNullException.ThrowIfNull(started);
+        ArgumentNullException.ThrowIfNull(release);
+        if (_nextWritePause is not null)
+        {
+            throw new InvalidOperationException("下一次写入已经设置了暂停点。");
+        }
+
+        _nextWritePause = (started, release);
+    }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<string>> PickOpenFilesAsync() =>
@@ -320,22 +343,31 @@ internal sealed class TestHostStorageService : IHostStorageService
     }
 
     /// <inheritdoc />
-    public Task WriteAllTextAsync(string path, string content)
+    public async Task WriteAllTextAsync(string path, string content)
     {
         if (WriteOutcomes.Count != 0 && WriteOutcomes.Dequeue() is { } outcome)
         {
-            return Task.FromException(outcome);
+            throw outcome;
         }
 
         if (WriteException is not null)
         {
-            return Task.FromException(WriteException);
+            throw WriteException;
+        }
+
+        var pause = _nextWritePause;
+        _nextWritePause = null;
+        if (pause is not null)
+        {
+            // 先通知测试捕获已经完成，再等待测试制造第二次编辑。暂停点在读取后立即清空，
+            // 因而同一次保存随后写恢复备份时不会再次阻塞，也不会意外影响其他测试。
+            pause.Value.Started.TrySetResult();
+            await pause.Value.Release.Task;
         }
 
         var normalized = Path.GetFullPath(path);
         Files[normalized] = content;
         Writes.Add((normalized, content));
-        return Task.CompletedTask;
     }
 
     /// <summary>

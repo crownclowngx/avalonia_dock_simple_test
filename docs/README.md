@@ -20,7 +20,8 @@ V2 快速开始入口：
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
 | [宿主—插件架构评审](./design/host-plugin-architecture-review.md) | 解决方案总体结构、插件边界、当前成熟度和演进方向 | 当前事实，已按主项目内部重构更新 |
-| [Managed Plugin V3 破坏式重构候选任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 候选计划，尚未实施 |
+| [Managed Plugin V3 破坏式重构任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 实施中；G0 已完成，G1–G14 尚未实施 |
+| [V3 G0 非发布绿色基线](./plan-history/host-v3/g0-green-baseline.md) | V2 当前测试、覆盖率、API、包图与保存竞争复现 | 已完成；不改变生产行为 |
 | [Managed Plugin V2 封板任务书](./design/host-v2-breaking-refactor-plan.md) | V2 所有权、删除清单、阶段实施和最终签署矩阵 | G0–G14 已完成，当前签署依据 |
 | [V2 G14 封板记录](./plan-history/host-v2/g14-v2-sealing.md) | API Shipped、两轮隔离门禁、制品、SOLID 和回滚边界 | 当前 V2 正式基线 |
 | [Managed Plugin v1 封板评审与整改任务书](./design/host-v1-sealing-readiness-plan.md) | V1 封板差距、版本与兼容策略、整改包和验收标准 | V1 历史签署，已由 V2 取代 |
@@ -57,9 +58,9 @@ V2 快速开始入口：
 
 V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯一生产面与发布门禁已经建立：
 
-- [Managed Plugin V3 破坏式架构重构候选任务书](./design/host-v3-breaking-refactor-plan.md)：
+- [Managed Plugin V3 破坏式架构重构任务书](./design/host-v3-breaking-refactor-plan.md)：
   以修订化 Document 保存、互斥激活、插件私有消息、注册所有权、Workspace/Dock 解耦和 Host Catalog
-  分离为目标的 G0–G14 候选计划；当前尚未实施，不代表生产事实。
+  分离为目标的 G0–G14 计划；当前只完成 G0 基线冻结，生产事实仍由 V2 G14 签署。
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
   G0–G14 已完成的实施与最终签署任务书。
@@ -98,6 +99,11 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
   `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
 
 ## 历史升级与验收记录
+
+### Managed Plugin V3 整改记录
+
+- [G0：冻结 V2 绿色基线](./plan-history/host-v3/g0-green-baseline.md)：以真实保存链复现无修订
+  `AcceptChanges()` 的竞争，并冻结 Host/SDK/四插件的非发布测试、覆盖率、API 与确定性包证据。
 
 ### Managed Plugin V2 整改记录
 

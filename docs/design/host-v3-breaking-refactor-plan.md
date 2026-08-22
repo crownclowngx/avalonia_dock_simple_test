@@ -1,11 +1,12 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
-> 状态：候选计划；尚未开始实施，任何章节均不得表述为当前生产事实。
+> 状态：实施中；G0 已完成，G1–G14 尚未实施。当前生产事实仍由 V2 G14 签署。
 >
 > 评审日期：2026-08-22。
 >
 > 事实基线：[Managed Plugin V2 破坏式架构重构任务书](./host-v2-breaking-refactor-plan.md)、
 > [V2 G14 封板记录](../plan-history/host-v2/g14-v2-sealing.md)、
+> [V3 G0 非发布绿色基线](../plan-history/host-v3/g0-green-baseline.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
 >
 > 计划性质：V3 是一次“协议语义纠错 + 宿主工作区解耦”的破坏式重构，不是第三次插件框架扩张。
@@ -81,9 +82,9 @@ V3 仍然是同一进程内、同一团队维护、可信 Managed Plugin 模型�
 
 ## 2. 当前基线与代码审查
 
-### 2.1 G0 前验证要求
+### 2.1 G0 基线冻结结果
 
-本文编写阶段只进行了只读代码审查，没有重新执行测试或发布门禁。V3 G0 必须在干净提交上执行并保存：
+V3 G0 已在一次性本地干净提交 `c5d65a61772350a01d5bb63515e07e3068ba75c8` 上执行并保存：
 
 ```powershell
 ./scripts/Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
@@ -94,14 +95,16 @@ V3 仍然是同一进程内、同一团队维护、可信 Managed Plugin 模型�
 ./scripts/Test-Documentation.ps1
 ```
 
-还必须记录：
+完整结果见 [G0 专项记录](../plan-history/host-v3/g0-green-baseline.md)。本轮 Host Unit/UI/Plugin 为
+170/53/202，共 425/425；行覆盖率 83.24%、分支覆盖率 68.98%；Core/UI v2 Shipped 为 85/46，
+Unshipped 均为 0；四插件两轮确定性包和最终 Host 加载 4/4 通过。以下证据均已记录：
 
 - Host Unit/UI/Plugin 实际测试数量、失败、跳过和耗时；
 - Host 行/分支覆盖率及 V3 重点文件基线；
 - Core/UI SDK v2 Shipped/Unshipped API 数量；
 - 四插件版本、SDK 区间、ZIP 文件清单和确定性摘要；
 - 当前解决方案包图、共享程序集白名单和源码敏感信息扫描结果；
-- Windows Smoke 与完整发布门禁是否执行。没有执行的门禁必须明确写为 `false`，不能用历史结果代替。
+- Windows Smoke 与完整发布门禁是否执行。本轮固定记录 `false`，没有使用历史结果代替。
 
 ### 2.2 必须保留的 V2 成果
 
@@ -433,13 +436,15 @@ layout v2 的唯一线格式。
 功能分支可以保留短生命周期、internal、不可打包的插件局部迁移帮助代码，但每个 G 验收点不得存在
 Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件的阶段帮助代码，G13 证明零残留。
 
-### G0：冻结 V2 绿色基线
+### G0：冻结 V2 绿色基线（已完成）
 
 - **目标**：把 V2 G14 之后的真实代码、测试、覆盖率、API、包和数据行为冻结为 V3 输入。
-- **生产变化**：无。
-- **证据**：执行 2.1 的全部命令，记录动态测试数、覆盖率、SDK API、四插件包图和 Git 状态。
-- **新增负例**：先以测试或最小复现证明无修订 `AcceptChanges()` 的保存竞争，不修改生产实现。
-- **本阶段排除**：V3 版本提升、API 修改、数据写入、Windows 发布操作和任何插件发布。
+- **生产变化**：无；只增加测试、文档门禁和 [G0 专项记录](../plan-history/host-v3/g0-green-baseline.md)。
+- **证据**：实际测试数、覆盖率、SDK API、四插件包图、Git 状态和摘要均以 G0 专项记录为准，
+  不沿用 V2 G14 数字。
+- **新增负例**：真实保存链已确定性证明无修订 `AcceptChanges()` 会在捕获后再次编辑时错误清除 Dirty；
+  测试只刻画 V2 缺陷，没有修改生产实现。
+- **本阶段排除**：V3 版本提升、API 修改、数据写入、AIFLOW、Windows CI/Smoke、发布门禁和任何插件发布。
 - **回滚**：只删除 G0 新增证据和复现测试；不得改写 V2 G14 历史记录。
 
 ### G1：建立 V3 版本与数据边界

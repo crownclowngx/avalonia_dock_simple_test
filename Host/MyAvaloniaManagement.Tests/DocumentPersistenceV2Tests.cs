@@ -113,6 +113,61 @@ public sealed class DocumentPersistenceV2Tests
     }
 
     [Fact]
+    public async Task G0特征基线_捕获后再次编辑会被无修订AcceptChanges错误清除()
+    {
+        using var context = DocumentV2TestContext.Create();
+        var path = Path.Combine(context.TempDirectory, "v2-save-race.mamdoc");
+        context.Storage.SavePath = path;
+        var viewModel = context.CreateMainWindowViewModel();
+        await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
+        var adapter = Assert.Single(GetDocuments(context));
+        var model = Assert.IsType<TestSavableDocument>(adapter.Model);
+        model.Content = "捕获时的内容";
+        model.IsModified = true;
+        GetDocumentDock(context).ActiveDockable = adapter;
+
+        // 真实 SaveService 会先捕获并序列化内容，再调用存储端口写主文件。把第一次写入暂停在
+        // 存储端口内部，可以确定地把第二次编辑放进这两个动作之间，而不依赖 Sleep 或线程调度运气。
+        var writeStarted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWrite = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        context.Storage.PauseNextWrite(writeStarted, releaseWrite);
+        var saveTask = viewModel.SaveDocument();
+
+        try
+        {
+            await writeStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            // Document 在保存开始前已经是 Dirty；这里表示用户在保存期间又提交了一次内容修改。
+            // V2 没有修订号，稍后的无参 AcceptChanges 无法知道这次修改发生在捕获之后。
+            model.Content = "捕获后的新内容";
+            model.IsModified = true;
+        }
+        finally
+        {
+            // 即使等待或编辑断言失败，也必须放行在途保存，避免测试进程遗留永不完成的任务。
+            releaseWrite.TrySetResult();
+        }
+
+        await saveTask.WaitAsync(TimeSpan.FromSeconds(10));
+
+        var primary = Assert.Single(context.Storage.Writes, item =>
+            DocumentPathIdentity.Equals(item.Path, path));
+        using var json = JsonDocument.Parse(primary.Content);
+        Assert.Equal(
+            "捕获时的内容",
+            json.RootElement.GetProperty("content").GetProperty("payload").GetString());
+        Assert.Equal("捕获后的新内容", model.Content);
+
+        // 这是 G0 对当前缺陷的特征断言，不是期望语义：磁盘只保存了旧快照，但无参
+        // AcceptChanges 仍把包含新修改的模型标记为干净。G2 应让该断言反转为保持 Dirty。
+        Assert.False(model.IsDirty);
+        Assert.False(adapter.IsModified);
+        Assert.Equal(1, model.AcceptChangesCount);
+    }
+
+    [Fact]
     public async Task 主文件失败不提交_备份失败只产生已保存警告()
     {
         using var context = DocumentV2TestContext.Create();

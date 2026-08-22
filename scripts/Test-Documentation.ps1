@@ -7,15 +7,17 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前事实只覆盖宿主、SDK、Managed Plugin V2 公共说明和 G14 最终签署。V1 与 G0–G13 阶段记录
-# 只参加链接、命令、项目路径及历史页首检查，不能用今天的实现倒写当时证据。
+# 当前生产事实仍由 Managed Plugin V2 G14 签署；V3 候选任务书和 G0 记录只表达后续重构输入，
+# 不能把 G1–G14 的设计写成已实现。V1/V2/V3 阶段记录继续参加链接、命令和项目路径检查。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
     'docs/design/document-persistence-v2-design.md',
     'docs/design/host-plugin-architecture-review.md',
     'docs/design/host-v2-breaking-refactor-plan.md',
+    'docs/design/host-v3-breaking-refactor-plan.md',
     'docs/plan-history/host-v2/g14-v2-sealing.md',
+    'docs/plan-history/host-v3/g0-green-baseline.md',
     'docs/reference/dock-layout-snapshot-v2.md',
     'docs/reference/myavalonia-management-tests.md',
     'docs/reference/plugin-sdk-api-compatibility.md',
@@ -30,7 +32,7 @@ $currentDocumentPaths += @(Get-ChildItem -LiteralPath (Join-Path $repositoryRoot
         -Filter '*.md' -File | ForEach-Object {
             [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/')
         })
-$hostHistoryDirectories = @('host-v1', 'host-v2')
+$hostHistoryDirectories = @('host-v1', 'host-v2', 'host-v3')
 $historyDocumentPaths = @($hostHistoryDirectories | ForEach-Object {
         Get-ChildItem -LiteralPath (Join-Path $repositoryRoot "docs\plan-history\$_") `
             -Filter '*.md' -File
@@ -118,13 +120,19 @@ foreach ($relativePath in $linkDocumentPaths) {
     }
 }
 
-# 最终签署不能只靠“没有旧句子”间接成立。以下少量正向哨兵把 G14 状态、正式入口、API
-# Shipped 和不使用 AIFLOW 绑定到权威文档；文案可以扩展，但这些事实不能被悄悄删掉。
+# 最终签署和新的 G0 基线不能只靠“没有旧句子”间接成立。以下少量正向哨兵把 V2 G14、
+# V3 G0 的阶段状态、API Shipped 和非发布边界绑定到权威文档。
 $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'README.md'; Fragment = 'Managed Plugin V2 已完成 G0–G14 并正式封板' },
     [pscustomobject]@{ Path = 'docs/design/host-v2-breaking-refactor-plan.md'; Fragment = '状态：已完成；G0–G14 已全部封板' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v2/g14-v2-sealing.md'; Fragment = 'scripts/Invoke-HostV2ReleaseGate.ps1' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v2/g14-v2-sealing.md'; Fragment = 'aiflow=false' },
+    [pscustomobject]@{ Path = 'docs/design/host-v3-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0 已完成，G1–G14 尚未实施' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'aiflow=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'windowsCi=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'windowsSmoke=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'releaseGate=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'publishable=false' },
     [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'Core 85 条、UI 46 条' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
@@ -132,7 +140,7 @@ foreach ($requirement in $requiredCurrentStatements) {
         $documentsByPath[$requirement.Path].Text.Contains(
             $requirement.Fragment,
             [StringComparison]::Ordinal)) (
-        "$($requirement.Path) 缺少 G14 当前事实：$($requirement.Fragment)")
+        "$($requirement.Path) 缺少当前阶段正向事实：$($requirement.Fragment)")
 }
 
 # V1 正文必须保持原始证据，所以门禁只要求页首有清晰的取代说明，不对历史数量或命令做替换。

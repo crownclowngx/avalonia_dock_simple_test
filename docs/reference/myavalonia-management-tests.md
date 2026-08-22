@@ -27,6 +27,18 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 
 当前文档门禁不调用 Windows Smoke、发布总门禁或发布验收项目；通过它不能冒充 Windows 发布放行。
 
+### V3 G0 非发布绿色基线
+
+V3 G0 仍验证完整的 V2 生产事实，只新增一个保存竞争特征测试和文档门禁。该测试通过真实
+`DocumentSaveService` 把第一次主文件写入暂停在“内容已捕获、磁盘尚未提交”的位置，再提交第二次编辑，
+证明磁盘得到旧快照时无参 `AcceptChanges()` 会错误清除新修改的 Dirty。它是 G2 修复前的缺陷证据，
+不是期望行为或兼容承诺。
+
+G0 执行 Release 零警告构建、Host/SDK/三个业务测试项目、SDK API/包消费、四插件确定性包矩阵、
+诊断脱敏和文档门禁。实际动态数量、覆盖率、包摘要及回滚边界见
+[V3 G0 专项记录](../plan-history/host-v3/g0-green-baseline.md)。本阶段固定记录 AIFLOW、Windows CI/Smoke、
+ReleaseAcceptance、发布门禁和 `publishable` 均为 `false`，不调用任何发布入口。
+
 ### V2 G13 唯一生产面门禁
 
 修改 Host/SDK 依赖、插件入口、统一构建 Target、打包脚本或 Legacy 防回流规则时运行：
