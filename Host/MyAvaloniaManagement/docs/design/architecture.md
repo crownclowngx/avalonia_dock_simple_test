@@ -92,7 +92,7 @@ flowchart TB
 6. 按 manifest `pluginId` 顺序为每个插件创建空服务集合，执行一次 `Configure` 并构建私有 Provider；
 7. 单插件成功后才合并其声明；失败则释放自身并继续后续插件；
 8. 只读取已冻结声明完成跨所有者冲突过滤，释放冲突 Provider，再发布不可变 `PluginRegistry`；
-9. 显式解析 `ManagementFactory`；G5 只验证生命周期 singleton 可解析，不执行最终启动/停止编排；
+9. 由 internal `PluginLifecycleCoordinator` 按 PluginId 启动可用插件，再显式解析 `ManagementFactory`；
 10. 将完全组合成功的 Host Provider 交给 Avalonia 启动路径。
 
 关闭时先释放全部 Document Scope，再反向停止成功生命周期，随后逆序释放插件 Provider，最后释放
@@ -362,12 +362,12 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 
 | 风险 | 主要保护 |
 | --- | --- |
-| Plugin SDK public 签名漂移 | v1 Shipped/Unshipped 文本、`Test-PluginSdkCompatibility.ps1`、基线政策测试 |
+| Plugin SDK public 签名漂移 | Core/UI v2 Shipped 文本、`Test-PluginSdkCompatibility.ps1`、基线政策测试 |
 | Host 实现面意外导出 | `HostApiBoundaryTests` |
 | 插件并发扫描、可变缓存泄漏 | `InternalRefactorTests` |
 | Managed-only 拒绝、显式贡献所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、`ExplicitContributionAndPluginRegistryTests`、内部注册表测试 |
 | 诊断正文、凭据、URL、路径泄漏与敏感开关误开 | `HostDiagnosticsTests`、生命周期/UI/Document 错误测试、`Test-HostDiagnosticRedaction.ps1` |
-| 插件私有 DI 事务提交、宿主描述符保护与四插件回归 | `PluginServiceProtectionTests` |
+| 插件私有 Provider、Host Port、失败隔离与四插件回归 | `PluginContainerIsolationTests`、`PluginProviderOwnerTests` |
 | 严格六字段信封、原生 JSON、资源边界、所有权与失败不发布 | `DocumentEnvelopeV2Tests` |
 | 异步创建、并发打开、保存提交点、关闭重入与坏文件恢复 | `DocumentPersistenceV2Tests`、`DocumentCloseV2Tests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |

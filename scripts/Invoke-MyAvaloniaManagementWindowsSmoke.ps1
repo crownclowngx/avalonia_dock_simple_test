@@ -43,6 +43,8 @@ function Write-Summary {
         [Parameter(Mandatory)] [bool]$Passed,
         [AllowNull()] [Nullable[int]]$ExitCode,
         [Parameter(Mandatory)] [bool]$LayoutSaved,
+        [AllowNull()] [Nullable[int]]$LayoutSchemaVersion,
+        [Parameter(Mandatory)] [bool]$LegacyLayoutAbsent,
         [AllowNull()] [string]$ErrorMessage,
         [Parameter(Mandatory)] [Diagnostics.Stopwatch]$Stopwatch
     )
@@ -54,6 +56,9 @@ function Write-Summary {
         passed = $Passed
         exitCode = $ExitCode
         layoutSaved = $LayoutSaved
+        layoutFileName = 'layout-v2.json'
+        layoutSchemaVersion = $LayoutSchemaVersion
+        legacyLayoutAbsent = $LegacyLayoutAbsent
         isolatedDataDirectory = $true
         generatedAtUtc = [DateTime]::UtcNow.ToString('O')
         durationMilliseconds = $Stopwatch.ElapsedMilliseconds
@@ -83,6 +88,8 @@ $process = $null
 $stopwatch = [Diagnostics.Stopwatch]::StartNew()
 $exitCode = $null
 $layoutSaved = $false
+$layoutSchemaVersion = $null
+$legacyLayoutAbsent = $false
 try {
     $publishArguments = @(
         'publish',
@@ -121,19 +128,35 @@ try {
         throw "Windows Smoke 宿主退出码为 $exitCode。"
     }
 
-    $layoutPath = Join-Path $dataRoot 'layout-v1.json'
+    # G14 的真实窗口门禁验证的是当前唯一生产格式，而不是只检查“某个布局文件存在”。
+    # 这里同时检查文件名、schema 和 V1 文件缺失，防止 Host 误回退到历史 writer 后仍被 Smoke 放行。
+    $layoutPath = Join-Path $dataRoot 'layout-v2.json'
     $layoutSaved = Test-Path -LiteralPath $layoutPath -PathType Leaf
     if (-not $layoutSaved) {
-        throw 'Windows Smoke 没有在隔离数据目录保存 layout-v1.json。'
+        throw 'Windows Smoke 没有在隔离数据目录保存 layout-v2.json。'
+    }
+    $layout = Get-Content -LiteralPath $layoutPath -Raw | ConvertFrom-Json
+    $layoutSchemaVersion = [int]$layout.schemaVersion
+    if ($layoutSchemaVersion -ne 2) {
+        throw "Windows Smoke 保存的布局 schema 不是 2：$($layout.schemaVersion)。"
+    }
+    $legacyLayoutPath = Join-Path $dataRoot 'layout-v1.json'
+    $legacyLayoutAbsent = -not (Test-Path -LiteralPath $legacyLayoutPath -PathType Leaf)
+    if (-not $legacyLayoutAbsent) {
+        throw 'Windows Smoke 隔离数据目录意外生成 layout-v1.json。'
     }
 
     $stopwatch.Stop()
-    Write-Summary -Passed $true -ExitCode $exitCode -LayoutSaved $layoutSaved -ErrorMessage $null -Stopwatch $stopwatch
+    Write-Summary -Passed $true -ExitCode $exitCode -LayoutSaved $layoutSaved `
+        -LayoutSchemaVersion $layoutSchemaVersion -LegacyLayoutAbsent $legacyLayoutAbsent `
+        -ErrorMessage $null -Stopwatch $stopwatch
     Write-Host "Windows Smoke 通过；机器可读结果：$(Join-Path $resultsRoot 'summary.json')"
 }
 catch {
     $stopwatch.Stop()
-    Write-Summary -Passed $false -ExitCode $exitCode -LayoutSaved $layoutSaved -ErrorMessage $_.Exception.Message -Stopwatch $stopwatch
+    Write-Summary -Passed $false -ExitCode $exitCode -LayoutSaved $layoutSaved `
+        -LayoutSchemaVersion $layoutSchemaVersion -LegacyLayoutAbsent $legacyLayoutAbsent `
+        -ErrorMessage $_.Exception.Message -Stopwatch $stopwatch
     throw
 }
 finally {

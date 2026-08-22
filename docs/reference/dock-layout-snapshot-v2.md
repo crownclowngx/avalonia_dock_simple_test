@@ -1,6 +1,7 @@
 # Dock 布局快照 V2
 
-> 当前生产契约，建立于 Managed Plugin V2 G8。历史 `layout-v1.json` 只保留为文件事实，Host 不读取、迁移、覆盖或隔离它。
+> 当前正式生产契约，建立于 Managed Plugin V2 G8，并由 G14 Windows 真实窗口门禁签署。历史
+> `layout-v1.json` 只保留为文件事实，Host 不读取、迁移、覆盖或隔离它。
 
 ## 文件与所有权
 

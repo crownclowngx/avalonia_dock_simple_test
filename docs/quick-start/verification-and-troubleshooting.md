@@ -1,6 +1,6 @@
 # 验证与排错
 
-> 本页按 G13 唯一 V2 生产契约编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
+> 本页按 G14 已封板的唯一 V2 生产契约编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
 > 窗口端口和持久化实例，MySmallTools 是原生资源与关闭令牌实例，BiliDownloader 是
 > Document + Tool + Lifecycle + readiness 的大型对象图实例。
 
@@ -83,9 +83,8 @@ dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTes
 .\scripts\Test-BiliDownloaderV2.ps1 -Configuration Release -NoRestore
 ```
 
-这些迁移脚本只生成不可发布的确定性测试 ZIP；G11 会运行真实媒体 Harness。G12 BiliDownloader
-入口不运行真实账号、真实 Bilibili 或真实 FFmpeg 媒体，也不运行 Windows CI、Windows Smoke、
-ReleaseAcceptance 或发布门禁。
+这些迁移脚本是分领域回归，不等同于正式发布放行。G14 总门禁不运行真实账号、真实 Bilibili、
+真实 FFmpeg 大媒体或 ReleaseAcceptance；它追加两轮隔离、API/文档/诊断和 Windows 真实窗口验证。
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。
 
@@ -94,10 +93,12 @@ ReleaseAcceptance 或发布门禁。
 ```powershell
 .\scripts\Build-ManagedPluginPackage.ps1 -Project <插件.csproj> -Configuration Release
 .\scripts\Test-ManagedPluginPackages.ps1 -Configuration Release
+.\scripts\Invoke-HostV2ReleaseGate.ps1
 ```
 
-前者只生成一个独立 ZIP，后者自动发现全部 `ManagedPlugin=true` 项目并做两轮确定性构建、
-契约负例、最终 ZIP 宿主加载和聚合 `summary.json`。两者都使用临时部署根，不触碰真实 `Controls`。
+第一个命令只生成一个独立 ZIP，第二个自动发现全部 `ManagedPlugin=true` 项目并做两轮确定性构建、
+契约负例、最终 ZIP 宿主加载和聚合 `summary.json`；最后一个是在干净修订上运行的 V2 正式两轮门禁。
+它们都使用隔离部署根，不触碰真实 `Controls` 或用户数据。
 
 ## 检查本地 Markdown 链接
 

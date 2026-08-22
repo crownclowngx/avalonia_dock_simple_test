@@ -4,8 +4,8 @@
 
 ## 快速开始
 
-> G13 当前事实：四个业务插件均使用最终 Core/UI SDK、声明式贡献和普通模型；Legacy 项目、旧入口
-> 探针与 Host/Common 双区间已经整体删除。
+> G14 当前事实：Managed Plugin V2 已封板。四个业务插件均使用正式 Core/UI SDK、声明式贡献和
+> 普通模型；Legacy 项目、旧入口探针与 Host/Common 双区间已经整体删除。
 
 V2 快速开始入口：
 
@@ -20,20 +20,22 @@ V2 快速开始入口：
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
 | [宿主—插件架构评审](./design/host-plugin-architecture-review.md) | 解决方案总体结构、插件边界、当前成熟度和演进方向 | 当前事实，已按主项目内部重构更新 |
-| [Managed Plugin v1 封板评审与整改任务书](./design/host-v1-sealing-readiness-plan.md) | 主程序封板差距、版本与兼容策略、删除清单、独立整改包和最终验收标准 | G0–G16 已完成，作为最终签署依据保留 |
-| [Plugin SDK 与 UI Profile](./plan-history/host-v1/g3-plugin-sdk-and-ui-profile.md) | 基础 SDK 包、可选 UI 依赖 Profile、宿主语义资源与插件样式兼容规则 | 当前包与样式契约，G3 已完成 |
-| [Managed-only 插件加载](./plan-history/host-v1/g4-managed-only-plugin-loading.md) | 必需 deps、唯一模块、DI 激活、稳定拒绝诊断和数据兼容保留边界 | 当前插件加载契约，G4 已完成 |
-| [显式贡献与 Plugin Registry](./plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md) | 破坏式 v1 重定基线、Context/Builder/Registry、贡献所有权、失败原子性与迁移结果 | 当前显式扩展契约，G5 已完成 |
-| [宿主 DI 保护与插件注册事务](./plan-history/host-v1/g6-host-di-protection.md) | 追加式私有服务契约、宿主描述符保护、事务提交、稳定诊断与回滚边界 | 当前 DI 组合契约，G6 已完成 |
+| [Managed Plugin V2 封板任务书](./design/host-v2-breaking-refactor-plan.md) | V2 所有权、删除清单、阶段实施和最终签署矩阵 | G0–G14 已完成，当前签署依据 |
+| [V2 G14 封板记录](./plan-history/host-v2/g14-v2-sealing.md) | API Shipped、两轮隔离门禁、制品、SOLID 和回滚边界 | 当前 V2 正式基线 |
+| [Managed Plugin v1 封板评审与整改任务书](./design/host-v1-sealing-readiness-plan.md) | V1 封板差距、版本与兼容策略、整改包和验收标准 | V1 历史签署，已由 V2 取代 |
+| [Plugin SDK 与 UI Profile](./plan-history/host-v1/g3-plugin-sdk-and-ui-profile.md) | V1 基础 SDK、UI Profile、语义资源与样式兼容规则 | V1 历史，已由 V2 取代 |
+| [Managed-only 插件加载](./plan-history/host-v1/g4-managed-only-plugin-loading.md) | V1 deps、唯一模块、DI 激活和拒绝诊断 | V1 历史，已由 V2 取代 |
+| [显式贡献与 Plugin Registry](./plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md) | V1 Context/Builder/Registry、贡献所有权和失败原子性 | V1 历史，已由 V2 取代 |
+| [宿主 DI 保护与插件注册事务](./plan-history/host-v1/g6-host-di-protection.md) | V1 共享 Host DI 的保护事务 | V1 历史，已由 V2 独立 Provider 取代 |
 | [Document V2 持久化设计](./design/document-persistence-v2-design.md) | 六字段格式、异步所有权链、保存提交点、恢复、关闭与 Scope 释放 | 当前 Document 契约，V2 G7 已完成 |
 | [Dock 布局快照 V2](./reference/dock-layout-snapshot-v2.md) | 唯一严格字段、四向状态、生命周期可用性门控、整体隔离与 V1 保留边界 | 当前 Layout 契约，V2 G8 已完成 |
-| [G9 SDK 事件总线](./plan-history/host-v1/g9-sdk-event-bus.md) | SDK 自有同步事件、每 HostRuntime 隔离、订阅令牌和并发语义 | 当前进程内事件契约，G9 已完成 |
-| [G10 Host 内部直接协调](./plan-history/host-v1/g10-host-internal-coordination.md) | 文件打开、错误状态和 Tool/Dock 直接协作边界 | 当前 Host 内部协调，G10 已完成 |
-| [G11 低价值 public 面清理](./plan-history/host-v1/g11-low-value-public-surface-cleanup.md) | v1 前最终公共面删除、消费者迁移和重新引入条件 | 当前 SDK 公共面，G11 已完成 |
-| [G12 统一插件构建、部署与独立发布](./plan-history/host-v1/g12-unified-plugin-build-and-deployment.md) | 声明式资产、生成清单、单插件确定性 ZIP、SOLID 取舍和门禁证据 | 当前构建与发布契约，G12 已完成 |
+| [G9 SDK 事件总线](./plan-history/host-v1/g9-sdk-event-bus.md) | V1 同步事件、订阅令牌和并发语义 | V1 历史；事件核心语义由 V2 SDK 延续 |
+| [G10 Host 内部直接协调](./plan-history/host-v1/g10-host-internal-coordination.md) | V1 文件打开、错误状态和 Tool/Dock 协调 | V1 历史，已由 V2 当前架构取代 |
+| [G11 低价值 public 面清理](./plan-history/host-v1/g11-low-value-public-surface-cleanup.md) | V1 public 面删除与消费者迁移 | V1 历史，已由 V2 API 基线取代 |
+| [G12 统一插件构建、部署与独立发布](./plan-history/host-v1/g12-unified-plugin-build-and-deployment.md) | V1 插件构建、确定性 ZIP 和门禁证据 | V1 历史，已由 V2 构建协议取代 |
 | [Plugin SDK API 兼容基线维护指南](./reference/plugin-sdk-api-compatibility.md) | Shipped/Unshipped 生命周期、兼容新增审阅、主版本升级和排错 | 当前 SDK API 长期知识，G13 已完成 |
-| [G13 Plugin SDK API 兼容基线](./plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md) | v1 文本基线、成员级变异门禁、SOLID 取舍和验收证据 | 当前 SDK public 契约，G13 已完成 |
-| [G14 Windows 本地发布门禁](./plan-history/host-v1/g14-windows-release-gate.md) | 平台无关单入口、两轮隔离、发布证据比较、SOLID 取舍和失败语义 | 当前 Windows 发布门禁，G14 已完成 |
+| [G13 Plugin SDK API 兼容基线](./plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md) | v1 文本基线、成员级变异门禁和验收证据 | V1 历史 API 基线 |
+| [G14 Windows 本地发布门禁](./plan-history/host-v1/g14-windows-release-gate.md) | V1 两轮隔离、发布证据比较和失败语义 | V1 历史门禁，当前使用 V2 入口 |
 | [G15 宿主诊断脱敏](./plan-history/host-v1/g15-host-diagnostic-redaction.md) | 诊断白名单、固定错误映射、敏感调试开关、SOLID 取舍和专项门禁 | 当前诊断安全边界，G15 已完成 |
 | [G16 文档与 v1 基线](./plan-history/host-v1/g16-documentation-and-v1-baseline.md) | 当前文档事实、文档门禁、四插件兼容签署、标签和回退边界 | Managed Plugin v1 最终基线，G16 已完成 |
 | [MyAvaloniaManagement 测试说明](./reference/myavalonia-management-tests.md) | 宿主专项测试、覆盖率和 Windows 冒烟门禁 | 当前事实 |
@@ -50,13 +52,13 @@ V2 快速开始入口：
 - [基于活动理论的需求分解方法论](./theory/activity-theory-requirements-decomposition.md)：说明自然语言需求如何拆分到 Document、Tool 和后台服务。
 - [AI 工作流插件接入可行性探索](./design/ai-workflow-plugin-exploration.md)：候选能力、风险和 PoC 路线；属于探索文档，不是当前宿主契约。
 
-## 封版后候选计划
+## V2 已封板基线与后续候选计划
 
-以下计划保存 v1 封板后的 V2 方向。V2 已完成 G0–G13；Host 最终契约、四个真实 V2 业务插件及唯一生产面已建立：
+V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯一生产面与发布门禁已经建立：
 
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
-  G0–G14 可执行计划；G0–G13 已完成，仅 G14 尚未实现。
+  G0–G14 已完成的实施与最终签署任务书。
 - [Managed Plugin V2 G0 绿色基线](./plan-history/host-v2/g0-green-baseline.md)：
   冻结 361 项 Host 测试、SDK API、包图、四插件包事实以及删除面、依赖白名单和消费者矩阵；
   本阶段未运行 Windows Smoke、CI 或发布门禁。
@@ -86,6 +88,8 @@ V2 快速开始入口：
   记录 Document schema 3、readiness、后台关闭、SOLID 责任划分、覆盖率和确定性测试 ZIP 证据。
 - [Managed Plugin V2 G13 删除 V1 生产面](./plan-history/host-v2/g13-remove-v1-production-surface.md)：
   记录 Legacy 项目删除、唯一 V2 构建协议、编译负例、依赖白名单与非发布包矩阵。
+- [Managed Plugin V2 G14 封板](./plan-history/host-v2/g14-v2-sealing.md)：
+  记录正式 API Shipped、两轮隔离 Release 门禁、Windows V2 Smoke、文档签署和回滚边界。
 - [外部 Managed Plugin 开发与平台安装候选计划](./design/external-managed-plugin-development-and-installation-plan.md)：
   `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
 

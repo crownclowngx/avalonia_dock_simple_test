@@ -22,14 +22,15 @@
 - [Document V2 当前设计](../../../docs/design/document-persistence-v2-design.md)
 - [V2 G7 Document V2](../../../docs/plan-history/host-v2/g7-document-v2.md)
 - [V2 G8 布局与生命周期 V2](../../../docs/plan-history/host-v2/g8-layout-and-lifecycle-v2.md)
-- [G16 文档与 v1 基线](../../../docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)
+- [V2 G14 封板](../../../docs/plan-history/host-v2/g14-v2-sealing.md)
+- [G16 文档与 v1 基线（历史）](../../../docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)
 
 ## 文档定位
 
 这些文档描述的是当前实现，不是新功能路线图。当前明确保持以下边界：
 
-- G5 已对封板前候选 Plugin SDK 做一次破坏式重定基线；此后的最终 v1 public 契约进入兼容治理，Host 自有实现不属于插件 API；
-- G16 已完成最终文档签署，`managed-plugin-v1.0.0` 定位 Managed Plugin v1 基线；
+- G14 已将最终 V2 Core/UI public API 冻结到 Shipped，Host 自有实现不属于插件 API；
+- `managed-plugin-v1.0.0` 只定位 Managed Plugin v1 历史基线，当前实现以 V2 G14 文档和门禁为准；
 - 插件只支持严格清单、必需 `.deps.json` 和唯一 `IPluginModule` 的 Managed 模型；
 - manifest 是身份唯一事实源，Document、Tool、View 和 Lifecycle 只通过 Context 显式登记；
 - V2 Host 生产贡献只通过最终 `IPluginRegistration` 一次声明并发布到不可变 Registry；
@@ -50,8 +51,9 @@
 .\scripts\Test-LayoutLifecycleV2.ps1 -Configuration Release
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke
+.\scripts\Invoke-HostV2ReleaseGate.ps1
 ```
 
 文档门禁验证本地链接、脚本路径、关键类型、集中版本和四插件兼容区间；宿主综合门禁动态统计
 Unit、Headless UI、Plugin 与覆盖率。带日期的具体数量只记录在各 G 阶段专用文档中，不作为永久阈值。
-`-WindowsSmoke` 是独立的 Windows 实窗验证，不属于 G16 文档基线门禁。
+`-WindowsSmoke` 是独立的 Windows 实窗验证；正式 V2 放行以两轮隔离总门禁为准。

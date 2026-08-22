@@ -2,9 +2,9 @@
 
 > 状态：当前实现
 >
-> 更新日期：2026-08-21
+> 更新日期：2026-08-22
 >
-> 边界：G7 唯一 Document V2 创建、打开、恢复、保存、关闭与 Scope 释放链；G10 DaTang 实例
+> 边界：G14 已封板的唯一 Document V2 创建、打开、恢复、保存、关闭与 Scope 释放链
 
 ## 1. 设计结论
 
@@ -13,9 +13,9 @@ Document V2 只有一条生产路径。新建、Creation Intent 和磁盘恢复�
 `IPersistablePluginDocument`。Host 独占 Registry 身份、路径、磁盘标题、恢复标记、Dock 发布和
 Scope 释放，插件只解释 `DocumentContent` 中自己的 schema 与原生 JSON payload。
 
-G7 不读取、迁移或写回 Document V1。历史 V1 设计与验收记录仍保留为历史事实，但不是当前运行时
-契约。该段落记录 G7 完成时的阶段边界；G9–G10 已迁移 MyPlugTest 与
-DaTangAccountingHelpPlug 与 MySmallTools，BiliDownloader 留待 G12。
+V2 不读取、迁移或写回 Document V1。历史 V1 设计与验收记录仍保留为历史事实，但不是当前运行时
+契约。MyPlugTest、DaTangAccountingHelpPlug、MySmallTools 与 BiliDownloader 已在 G9–G12 全部迁移，
+G13 已删除 V1 生产面，G14 已完成正式测试与文档签署。
 
 DaTang 银行余额调节是第二个真实持久化 Document：其 content schema 固定为 1，独立 Codec
 严格拒绝错误 schema、根类型、未知/重复/缺失字段、错误类型和无效配置。恢复必须先完整
@@ -108,12 +108,14 @@ internal `DocumentEnvelopeException`，用户只看到固定脱敏提示。
 关闭取消、保存取消或保存失败不触发 `ClosingToken`。最终批准关闭后，Dock 完成移除，再由 Adapter
 依次断开事件/View、发出令牌、释放模型和依赖；所有步骤幂等。同步 Dock 回调通过“首次否决、异步
 确认、一次性重入许可”适配异步 UI，重复请求不会弹出第二个确认。Runtime 退出先释放全部 Adapter、
-View 和 Document Scope，再进入 G8 尚未实现的插件生命周期/Provider 释放阶段。
+View 和 Document Scope，再由 Host internal Coordinator 反向停止生命周期、逆序释放插件 Provider，
+最后释放 Host Provider。
 
 ## 7. 测试与阶段边界
 
 专项入口为 `scripts/Test-DocumentV2.ps1`，串行运行 Unit、Plugin 与 Headless UI，并执行生产结构扫描。
-机器摘要固定声明 `windowsCi=false`、`windowsSmoke=false`、`releaseGate=false`。覆盖率门禁要求
+该专项机器摘要固定声明 `windowsCi=false`、`windowsSmoke=false`、`releaseGate=false`；正式放行由
+`scripts/Invoke-HostV2ReleaseGate.ps1` 追加两轮隔离与真实窗口验证。覆盖率门禁要求
 Serializer ≥95%，Persistence Coordinator、Save Service、Close Coordinator、State Store ≥90%，
 同时保留 Adapter、Scope Manager ≥90% 和既有整体阈值。
 

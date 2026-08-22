@@ -12,10 +12,11 @@
 > 变异门禁冻结正式 Plugin SDK v1 public API；G15 已固定 schema 1 诊断的白名单语义和默认脱敏边界；
 > G16 已用 `managed-plugin-v1.0.0` 定位最终文档、SDK API 和四插件兼容基线。
 
-> 当前分支已完成 V2 G13：最终 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议、每插件
+> 当前分支已完成 V2 G14 封板：正式 Core/UI SDK、严格 manifest v2、精确入口加载、构建协议、每插件
 > 独立 Provider、Host 声明式贡献目录、internal Dock Adapter、Document V2、Layout V2 与 internal
 > 生命周期已建立；MyPlugTest、DaTang、MySmallTools 与 BiliDownloader 已全部迁移。Legacy 项目和
-> 过渡构建面已经删除，历史 v1 签署事实保持可追溯。
+> 过渡构建面已经删除；Core/UI v2 API 已进入 Shipped，两轮隔离门禁与 Windows V2 Smoke 已建立，
+> 历史 v1 签署事实保持可追溯。
 
 ## 2. public API
 
@@ -30,8 +31,8 @@ G8 生产组合中，只有 `ManagedDocumentDockable` 与 `ManagedToolDockable` 
 来自 Registry 冻结工厂并在发布前精确构造，禁止程序集扫描、类型名猜测和反射回退。该内部实现没有改变
 Plugin SDK public API 或 manifest；Document 与 Layout 磁盘契约均已切换为唯一 V2。
 
-历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 分别拥有 v2 基线，Shipped 均为空，
-G2 表面全部登记为 Unshipped，并由 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v2` 验证。未登记
+历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 分别拥有 v2 基线，G14 已冻结
+Shipped 85/46 条且 Unshipped 均为空，并由 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v2` 验证。未登记
 新增、删除、可见性收窄、参数或返回类型变化都会给出成员级 RS 诊断。完整维护流程见
 [Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
 
@@ -41,8 +42,7 @@ Host 实现，这不构成发布兼容承诺。
 
 当前 Host Provider 不包含插件私有描述符。每个插件从新的空集合建立 Provider，只能通过明确 Host Port
 共享能力；宿主或其他插件的普通服务类型不可解析。最终 `IPluginRegistration.Services` 只表示当前插件
-私有集合，并在模块返回后封闭。Legacy `IPluginRegistrationContext` 仅供未迁移业务插件源码继续编译，
-不是 Host 生产模块桥。
+私有集合，并在模块返回后封闭。`IPluginRegistrationContext` 已随 Legacy 项目整体删除，不属于活动源码。
 
 ### 2.1 窗口交互 Host Port
 
@@ -52,7 +52,7 @@ Host 实现，这不构成发布兼容承诺。
 - 调用必须在 Avalonia UI 线程，null 选项/文本抛参数异常；无主窗口时按契约返回空值；
 - 原生选择器返回后必须再次检查取消令牌，Document 关闭期间的迟到结果不得提交。
 
-SDK 与插件版本仍为未发布的 `2.0.0`；本次兼容新增登记在 v2 Unshipped 基线，不单独升版。
+SDK 与插件正式基线为 `2.0.0`；本窗口端口已包含在 G14 冻结的 v2 Shipped 基线中。
 
 ### 2.2 版本所有权
 

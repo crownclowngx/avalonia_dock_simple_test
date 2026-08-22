@@ -1,8 +1,7 @@
 # Plugin SDK API 兼容基线维护指南
 
-> `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G3 继续使用 G2 建立的
-> Core/UI 两个真实程序集；G3 没有修改 SDK public API。它们的 v2 Shipped 均为空，全部表面仍登记在
-> Unshipped，尚未形成发布承诺。
+> `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G14 已将 Core/UI 的
+> `2.0.0` public 表面正式冻结到 v2 Shipped：Core 85 条、UI 46 条，两个 Unshipped 均为空。
 
 ## 1. 权威源与程序集边界
 
@@ -32,9 +31,9 @@ Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/ # V2 UI
 PublicApiAnalyzers 报出 `RS0016`，确认所有权、依赖方向、异常与线程语义后，再按 Ordinal 顺序登记。
 未登记删除会产生 `RS0017`，重复项与非法文本也会被门禁拒绝。
 
-G2 的 V2 状态是：Core Shipped 为空、Unshipped 84 条；UI Shipped 为空、Unshipped 42 条。两份
-Unshipped 分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史表面要求相等。正式发布 V2 时，
-再在发布变更中把实际承诺的条目移入 Shipped；G2 本身不执行发布。
+G14 的 V2 正式状态是：Core Shipped 85 条、UI Shipped 46 条，两个 Unshipped 均为 0。两份
+Shipped 分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史表面要求相等。G2–G13 的
+Unshipped 数量仍保留在各阶段记录中，不能用今天的 131 条倒写历史。
 
 ## 3. 日常变更流程
 
@@ -66,7 +65,7 @@ Unshipped 分别描述各自程序集，不能合并，也不能与 v1 的 243 �
 - 不得把 Core 与 UI 合成一份基线，或让 Legacy Common 继续承担活动 SDK 基线职责。
 - 不得只提高版本或替换文本，而没有包消费者、反向编译与真实仓库回归证据。
 
-## 5. 非发布门禁
+## 5. 当前兼容与发布门禁
 
 在仓库根目录执行：
 
@@ -81,8 +80,15 @@ dotnet test Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.Plugi
 
 `Test-PluginSdkCompatibility.ps1` 分别验证 Core/UI 的版本、排序、重复项与成员级变异；
 `Test-PluginSdkPackage.ps1` 从真实 nupkg 验证 DLL/XML/nuspec/精确依赖图、两个正向消费者和旧 API/禁用依赖
-反例。以上均为非发布检查，不运行 Windows Smoke、Windows CI、发布总门禁、上传或标签。只有实际发布时，
-才按发布计划追加 Windows 与发布制品验收。
+反例。以上命令适合日常兼容检查，不运行 Windows Smoke、上传或标签。正式 V2 发布资格还必须在
+干净修订上运行：
+
+```powershell
+.\scripts\Invoke-HostV2ReleaseGate.ps1
+```
+
+该入口在两个隔离克隆中重复执行全量测试、包、API、诊断、文档和真实窗口 V2 Smoke；它不调用
+AIFLOW、真实账号或网络，也不会自动上传或创建标签。
 
 ## 6. 新主版本与评审清单
 
@@ -90,7 +96,7 @@ dotnet test Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.Plugi
 同步包、文件和程序集版本、消费者及兼容区间，并保留旧目录作为历史事实。只新建目录或改版本号不构成
 合法升级。
 
-- [ ] Core/UI 变化分别登记在正确的 Unshipped，排序稳定、无重复、无 `*REMOVED*`。
+- [ ] 兼容新增分别登记在正确的 Unshipped，排序稳定、无重复、无 `*REMOVED*`；既有 Shipped 不改写。
 - [ ] 所有 public 类型和成员具有详细中文 XML 文档，异常、线程和所有权边界明确。
 - [ ] Core/UI 依赖白名单与临时 NuGet 正反消费者通过。
 - [ ] Legacy 项目保持不可打包、无活动 API 基线且没有新增生产消费者。

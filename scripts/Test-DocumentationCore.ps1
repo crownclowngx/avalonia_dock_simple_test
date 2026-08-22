@@ -47,10 +47,10 @@ function Write-VersionFixture {
 "@
     Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v1/PublicAPI.Shipped.txt') "#nullable enable`nFixture.V1Type`n"
     Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v1/PublicAPI.Unshipped.txt') "#nullable enable`n"
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Shipped.txt') "#nullable enable`n"
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`nFixture.CoreType`n"
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/PublicAPI.Shipped.txt') "#nullable enable`n"
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`nFixture.UiType`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Shipped.txt') "#nullable enable`nFixture.CoreType`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/PublicAPI.Shipped.txt') "#nullable enable`nFixture.UiType`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`n"
 }
 
 function Write-PluginFixture {
@@ -148,8 +148,23 @@ try {
     Write-VersionFixture -Root $testRoot
     Write-PluginFixture -Root $testRoot -RelativePath $pluginProject
     $facts = Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
-    Assert-True ($facts.SdkVersion -ceq '2.0.0' -and $facts.Plugins.Count -eq 1) (
-        'V2 版本与插件事实没有正确读取。')
+    Assert-True ($facts.SdkVersion -ceq '2.0.0' -and $facts.Plugins.Count -eq 1 -and
+        $facts.ShippedEntries -eq 2 -and $facts.UnshippedEntries -eq 0) (
+        'V2 版本、插件或 G14 Shipped 事实没有正确读取。')
+    Write-FixtureText `
+        (Join-Path $testRoot 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Unshipped.txt') `
+        "#nullable enable`nFixture.LateAddition`n"
+    Assert-ThrowsLike {
+        Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
+    } 'Unshipped 必须为空'
+    Write-VersionFixture -Root $testRoot
+    Write-FixtureText `
+        (Join-Path $testRoot 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Shipped.txt') `
+        "#nullable enable`n"
+    Assert-ThrowsLike {
+        Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
+    } 'Shipped 不能为空'
+    Write-VersionFixture -Root $testRoot
     Write-VersionFixture -Root $testRoot -SdkVersion '2.1.0'
     Assert-ThrowsLike {
         Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)

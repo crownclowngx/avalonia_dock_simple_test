@@ -42,7 +42,7 @@ public sealed class HostDockAdapterTests
     }
 
     [Fact]
-    public void DocumentAdapter投影标题禁用浮动并按顺序释放Scope()
+    public void DocumentAdapter初始投影标题禁用浮动并按顺序释放Scope()
     {
         var services = new ServiceCollection();
         services.AddScoped<TrackedDocument>();
@@ -51,19 +51,22 @@ public sealed class HostDockAdapterTests
         var manager = provider.GetRequiredService<DocumentScopeManager>();
         var lease = manager.CreatePluginDocument(typeof(TrackedDocument));
         var model = Assert.IsType<TrackedDocument>(lease.Model);
+        model.SetTitle("模型标题");
         var registration = DocumentRegistration(typeof(TrackedDocument));
         var adapter = new ManagedDocumentDockable(
             new ActivatedPluginDocument(registration, lease),
             "请求标题");
 
-        Assert.Equal("请求标题", adapter.Title);
+        // 这里只验证纯对象构造时的标题选择：模型标题应优先于请求标题。
+        // 构造后的 PresentationChanged 会按生产规则切回 UI 线程，不应由未启动
+        // Avalonia Dispatcher 消息循环的纯单测做“立即同步”假设。该线程切换与迟到通知
+        // 行为已由 HostDockAdapterUiTests 的 Headless UI 用例覆盖。
+        Assert.Equal("模型标题", adapter.Title);
         Assert.False(adapter.CanFloat);
         Assert.True(adapter.CanClose);
         Assert.False(adapter.CanPin);
         Assert.Same(model, adapter.Model);
 
-        model.SetTitle("模型标题");
-        Assert.Equal("模型标题", adapter.Title);
         adapter.Dispose();
 
         Assert.True(model.ClosingObservedDuringDispose);

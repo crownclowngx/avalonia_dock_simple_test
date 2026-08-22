@@ -1,5 +1,7 @@
 # MyAvaloniaManagement Managed Plugin v1 封板评审与整改任务书
 
+> **历史说明：本 V1 基线已由 Managed Plugin V2 G14 取代。以下内容保留当时证据，不是当前生产契约。**
+
 > 状态：已完成，Managed Plugin v1 已封板
 > 审计日期：2026-08-15
 > 审计基线：`dev-重构-2026年8月13日` 分支，提交 `8beaab2`

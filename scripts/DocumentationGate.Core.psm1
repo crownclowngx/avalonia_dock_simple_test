@@ -326,8 +326,8 @@ function Get-ManagementBaselineFacts {
     Assert-DocumentationCondition ($apiBaseline -ceq "v$($sdkVersion.Major)") (
         "活动 API 基线 $apiBaseline 与 SDK 主版本 $($sdkVersion.Major) 不一致。")
 
-    # G2 后 Core 与 UI 都是真实契约程序集，各自维护同一活动主版本下的 API 文本。
-    # 两者尚未发布，因此 Shipped 必须为空；Unshipped 必须非空，防止漏掉整个程序集的审阅事实。
+    # G14 已把 Core/UI 的 2.0.0 public 表面签署为正式兼容承诺。两个程序集各自维护
+    # Shipped 文本；Unshipped 只留给封板后的兼容新增，封板快照本身必须为空。
     $sdkApiRoots = @(
         Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk\ApiCompatibility\$apiBaseline"
         Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk.UI\ApiCompatibility\$apiBaseline"
@@ -348,10 +348,10 @@ function Get-ManagementBaselineFacts {
                 Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         $unshippedEntries = @(Get-Content -LiteralPath $unshippedPath | Select-Object -Skip 1 |
                 Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-        Assert-DocumentationCondition ($shippedEntries.Count -eq 0) (
-            "G2 未发布 SDK 的 Shipped 必须为空：$baselineRoot")
-        Assert-DocumentationCondition ($unshippedEntries.Count -gt 0) (
-            "G2 SDK 的 Unshipped 不能为空：$baselineRoot")
+        Assert-DocumentationCondition ($shippedEntries.Count -gt 0) (
+            "G14 已封板 SDK 的 Shipped 不能为空：$baselineRoot")
+        Assert-DocumentationCondition ($unshippedEntries.Count -eq 0) (
+            "G14 封板快照的 Unshipped 必须为空：$baselineRoot")
         $allShippedEntries.AddRange([string[]]$shippedEntries)
         $allUnshippedEntries.AddRange([string[]]$unshippedEntries)
         $apiCounts.Add([pscustomobject]@{

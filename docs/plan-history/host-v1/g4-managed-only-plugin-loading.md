@@ -1,5 +1,7 @@
 # Managed Plugin v1 G4：Managed-only 插件加载
 
+> **历史说明：本 V1 阶段已由 Managed Plugin V2 G14 取代；以下日期、数量和结论保持原样。**
+
 > 状态：已完成
 >
 > 完成日期：2026-08-15

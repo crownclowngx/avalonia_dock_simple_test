@@ -1,5 +1,7 @@
 # G11：删除低价值 public 面和占位代码
 
+> **历史说明：本 V1 阶段已由 Managed Plugin V2 G14 取代；以下日期、数量和结论保持原样。**
+
 > 后续状态：本文记录的 SHA256 是 G11 收口后的临时门禁，已由 G13 的 243 条 v1 Shipped 签名和
 > `Test-PluginSdkCompatibility.ps1` 替代；本文原始验收数据继续作为时间点证据保留。
 

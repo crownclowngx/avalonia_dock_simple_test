@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V2 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G13 已完成，仅 G14 尚未实现。
+> 状态：已完成；G0–G14 已全部封板。
 >
 > 评审日期：2026-08-21。
 >
@@ -18,7 +18,8 @@
 > [V2 G10 DaTang 迁移](../plan-history/host-v2/g10-datang-accounting-help-v2.md)和
 > [V2 G11 MySmallTools 迁移](../plan-history/host-v2/g11-my-small-tools-v2.md)和
 > [V2 G12 BiliDownloader 迁移](../plan-history/host-v2/g12-bili-downloader-v2.md)和
-> [V2 G13 删除 V1 生产面](../plan-history/host-v2/g13-remove-v1-production-surface.md)。
+> [V2 G13 删除 V1 生产面](../plan-history/host-v2/g13-remove-v1-production-surface.md)与
+> [V2 G14 封板](../plan-history/host-v2/g14-v2-sealing.md)。
 >
 > 重要说明：G9–G12 已将 MyPlugTest、DaTangAccountingHelpPlug、MySmallTools 与 BiliDownloader
 > 全部迁移为真实 V2 业务插件。Legacy 阶段桥已没有生产插件消费者，但项目本身留给 G13 删除。
@@ -629,6 +630,15 @@ MySmallTools **184/184**、BiliDownloader **718/718**；四插件各两次确定
 - **验证**：两轮隔离 Release 门禁、零警告、全部测试、覆盖率、诊断扫描、API/包、Windows Smoke 和文档门禁。
 - **回滚**：以 V2 基线提交为整体回滚单位；不读取或恢复用户 V1 数据。
 
+G14 已将 Core **85** 条、UI **46** 条 V2 public API 从 Unshipped 正式移入 Shipped；没有修改
+C# public 签名。独立 `Invoke-HostV2ReleaseGate.ps1` 在两个无硬链接克隆中隔离还原、构建、测试、
+包和数据根，并比较动态测试数、覆盖率、文档事实、API 条目、四插件 ZIP/manifest 摘要与
+`layout-v2.json` 真实窗口 Smoke。门禁不调用 AIFLOW、外部账号、真实网络/媒体、上传或标签。
+最终两轮审计证据为
+`artifacts/release-gate/v2/20260822-015143-2808ade2e7b6/`；顶层摘要确认
+`passed=true`、`repeatabilityVerified=true`、`releaseEligible=true`、`aiflow=false`。
+完整设计、SOLID 取舍、失败矩阵和实际证据见 [G14 专项记录](../plan-history/host-v2/g14-v2-sealing.md)。
+
 ## 7. 执行顺序与合并纪律
 
 ```text
@@ -682,7 +692,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9
 
 ### 8.5 文档与发布
 
-- 根 README 和文档导航区分“当前实现”“V2 候选任务书”“V1 历史记录”；
+- 根 README 和文档导航区分“当前 V2 基线”“后续候选计划”“V1 历史记录”；
 - 快速开始可从空项目构建一个 V2 Document、Tool 和最终 ZIP；
 - manifest、Document、layout 和版本参考与最终代码逐字段一致；
 - 两轮隔离发布产物在忽略时间、耗时和绝对路径后完全一致；
@@ -702,15 +712,15 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9
 
 V2 只有在以下问题全部回答“是”后才算完成：
 
-1. 是否只有 Host 类型依赖 Dock，四个插件生产代码均已解耦？
-2. 是否每个插件有独立 Provider，且没有 Host 根服务保护事务？
-3. 是否所有贡献通过 Descriptor 一次声明，没有 Strategy/GetMetadata/AddView 三轨？
-4. 是否 Core/UI SDK 依赖边界和 public API 基线已由门禁保护？
-5. 是否 manifest、Document、layout 和默认数据根只支持 V2？
-6. 是否 public 生命周期实现已移回 Host，Bili Tool 不再依赖 Host Manager？
-7. 是否四插件完整回归、确定性 ZIP、最终加载和 Windows Smoke 全部通过？
-8. 是否覆盖率门槛未降低，诊断脱敏和失败原子性未退化？
-9. 是否历史 V1 文档仍可追溯，但不会被误读为当前 V2 契约？
-10. 是否生产代码和发布包中不存在 V1/V2 双栈、兼容 shim 或隐藏 fallback？
+1. [x] 只有 Host 类型依赖 Dock，四个插件生产代码均已解耦。
+2. [x] 每个插件有独立 Provider，且没有 Host 根服务保护事务。
+3. [x] 所有贡献通过 Descriptor 一次声明，没有 Strategy/GetMetadata/AddView 三轨。
+4. [x] Core/UI SDK 依赖边界和 public API Shipped 基线已由门禁保护。
+5. [x] manifest、Document、layout 和默认数据根只支持 V2。
+6. [x] public 生命周期实现已移回 Host，Bili Tool 不再依赖 Host Manager。
+7. [x] 四插件完整回归、确定性 ZIP、最终加载和 Windows Smoke 全部通过。
+8. [x] 覆盖率门槛未降低，诊断脱敏和失败原子性未退化。
+9. [x] 历史 V1 文档仍可追溯，但不会被误读为当前 V2 契约。
+10. [x] 生产代码和发布包中不存在 V1/V2 双栈、兼容 shim 或隐藏 fallback。
 
-任何一项为“否”，本文都只能保持候选任务书状态，不能宣称 V2 已封板。
+以上签署项由 G14 V2 发布门禁和专项记录共同给出可重复证据，V2 自此进入正式维护基线。

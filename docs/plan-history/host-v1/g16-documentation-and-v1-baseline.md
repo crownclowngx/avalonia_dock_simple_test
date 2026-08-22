@@ -1,5 +1,7 @@
 # G16：同步文档并建立 Managed Plugin v1 基线
 
+> **历史说明：本 V1 基线已由 Managed Plugin V2 G14 取代；以下日期、数量和结论保持原样。**
+
 > 完成日期：2026-08-20
 > 状态：已完成
 > v1 基线标签：`managed-plugin-v1.0.0`（本地 annotated tag，不自动推送）

@@ -66,9 +66,9 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 
 ### 3.2 开闭原则（OCP）
 
-新增 Document/Tool/View/Lifecycle 通过 `IPluginRegistrationContext` 扩展，宿主核心不需要为每个插件类型增加分支。Registry 将变化集中在显式登记、校验与分派，不把扩展判断散落到 Dock 操作中。
+新增 Document/Tool/View/Lifecycle 通过 `IPluginRegistration` 扩展，宿主核心不需要为每个插件类型增加分支。Registry 将变化集中在显式登记、校验与分派，不把扩展判断散落到 Dock 操作中。
 
-本次有意破坏封板前候选 SDK，删除重复身份和隐式发现入口；完成后再以 v1 契约作为后续兼容基线。没有引入通用模块框架或运行期可变注册表。
+V2 有意破坏历史 v1 SDK，删除重复身份和隐式发现入口；G14 已将收敛后的 Core/UI 表面冻结为 v2 Shipped。没有引入通用模块框架或运行期可变注册表。
 
 ### 3.3 里氏替换原则（LSP）
 
@@ -88,14 +88,14 @@ V2 G7 沿用 Core SDK 的窄契约：`IPluginDocument` 只负责异步初始化�
 宿主内部状态与协调器中。这里没有为兼容 v1 `ISavableDocument` 建立双轨。
 
 V2 G8 同样保持 `IPluginLifecycle` 只有初始化与关闭两个方法。排序、30/10 秒期限、状态和诊断不进入
-SDK；菜单、Activator 与布局只依赖 `PluginAvailabilityReadModel`。Provider 边界对尚待 G12 迁移的
-Legacy 两方法接口做最小回调适配，但不恢复 `Order`、依赖图或 public Manager。
+SDK；菜单、Activator 与布局只依赖 `PluginAvailabilityReadModel`。四插件已在 G9–G12 全部迁移，
+G13 已删除 Legacy 回调适配、`Order`、依赖图和 public Manager。
 
 ### 3.5 依赖倒置原则（DIP）
 
-主窗口依赖文档用例协调器与存储边界，插件 Managed 策略依赖 DI。App 依赖内部桌面 Shell，
+主窗口依赖文档用例协调器与存储边界，插件模型依赖私有 Provider 中的窄服务。App 依赖内部桌面 Shell，
 内建策略依赖窄 `Func<T>` 工厂；静态 `ServiceProvider` 与生产无参构造已删除。模块依赖 SDK
-抽象 `IPluginRegistrationContext`，具体 Context、Builder 和 Registry 均留在 Host 内部。服务解析只允许
+抽象 `IPluginRegistration`，具体 Registration、Builder 和 Registry 均留在 Host 内部。服务解析只允许
 出现在 `HostRuntime`、显式贡献激活和 Document Scope 等明确组合边界。
 
 ## 4. 采用的设计模式
@@ -175,7 +175,7 @@ V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型
 
 | 决策 | 获得的价值 | 接受的代价 |
 | --- | --- | --- |
-| 封板前一次性破坏升级 SDK | 删除重复身份与隐式发现，形成可长期维护的 v1 基线 | 使用旧候选 SDK 编译的插件必须重新编译 |
+| V2 一次性破坏升级 SDK | 删除重复身份与隐式发现，形成可长期维护的 v2 基线 | 使用 v1 SDK 编译的插件必须重新编译 |
 | 插件根目录扫描一次并缓存 | 并发安全、启动确定、减少 I/O | 进程内无法感知替换后的插件 |
 | 单个插件/类型失败隔离 | 一个坏插件不阻断其他插件 | 诊断呈现限于插件状态 Tool 与启动错误窗，尚无运行时用户级诊断入口 |
 | Managed-only 加载与统一 DI 激活 | 所有权、依赖和错误语义只有一套 | 无模块 Legacy 二进制插件不再加载 |
@@ -186,7 +186,7 @@ V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型
 | 保存成功后才更新内存状态 | 失败不会产生“假保存” | 需要暂存标题和路径，流程更显式 |
 | 只捕获预期持久化异常 | 用户故障可恢复，编程缺陷不被吞掉 | 调用方仍需承担非预期异常终止风险 |
 | 布局整体校验、整体回退 | 不产生半恢复混合状态 | 缺失一个插件会丢弃其余布局恢复结果 |
-| 只保留 V1 两向到四向迁移 | 格式和行为稳定 | 不提供通用版本迁移框架 |
+| Layout 只接受严格 V2 | 格式和行为唯一、失败可预测 | 不提供 V1 迁移或通用版本迁移框架 |
 | 模块结构使用独立 Validator | 在插件对象实例化前按目录隔离 | 仍需加载程序集并读取类型元数据 |
 
 ## 6. 明确没有采用的方案
@@ -230,7 +230,7 @@ V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型
 内部重构完成至少需要：
 
 - Plugin SDK API 门禁通过，Host 不重新导出自有实现类型；
-- Managed-only 拒绝、Dock 稳定 ID、文档 JSON 和布局 V1 回归通过；
+- Managed-only 拒绝、Dock 稳定 ID、文档 JSON 和严格布局 V2 回归通过；
 - 预期失败不会留下错误内存状态或临时文件；
 - Scope、缓存和根容器的释放时机有测试；
 - Release 测试、覆盖率门禁和必要的 Windows 冒烟通过；

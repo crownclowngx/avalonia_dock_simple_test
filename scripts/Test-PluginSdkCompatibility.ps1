@@ -8,7 +8,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $temporaryParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
-$workingRoot = Join-Path $temporaryParent ('MyAvaloniaPluginSdkCompatibility-' + [Guid]::NewGuid().ToString('N'))
+# 兼容性变异项目会复制完整 SDK 目录并生成 bin/obj，因此使用短随机根避免
+# 在 G14 已隔离 TEMP 下再次叠加长路径。随机性与安全清理的父路径校验保持不变。
+$workingRoot = Join-Path $temporaryParent (
+    'MSA-' + [Guid]::NewGuid().ToString('N').Substring(0, 12))
 $projectDefinitions = @(
     [pscustomobject]@{
         Name = 'Core'
@@ -214,7 +217,7 @@ try {
     }
 
     Write-Host (
-        "[G2 SDK API] 通过：Core Shipped=$($counts.Core[0])、Unshipped=$($counts.Core[1])；" +
+        "[SDK API] 通过：Core Shipped=$($counts.Core[0])、Unshipped=$($counts.Core[1])；" +
         "UI Shipped=$($counts.UI[0])、Unshipped=$($counts.UI[1])；" +
         '7 个破坏性负例和 1 组兼容新增审阅流程符合预期。')
 }

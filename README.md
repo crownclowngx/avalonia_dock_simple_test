@@ -8,12 +8,11 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > `managed-plugin-v1.0.0` 定位。签署内容、非发布门禁证据和回退边界见
 > [G16 文档与 v1 基线](./docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
-> Managed Plugin V2 已完成 G0–G13；仅 G14 尚未实现。最终 Core/UI SDK、严格 manifest v2、
+> Managed Plugin V2 已完成 G0–G14 并正式封板。最终 Core/UI SDK、严格 manifest v2、
 > 每插件独立 Provider、声明式贡献目录、Host internal Dock Adapter、Document V2、Layout V2 与
-> Host internal 生命周期已进入生产路径。MyPlugTest 与 DaTangAccountingHelpPlug 已成为
-> 四个业务插件均已成为真实 V2 插件；BiliDownloader 已在 G12 完成 Document、Tool、Lifecycle、
-> readiness 与原生 JSON 迁移；G13 已删除全部 V1 生产面。见
-> [V2 G13 专项记录](./docs/plan-history/host-v2/g13-remove-v1-production-surface.md)。
+> Host internal 生命周期已进入生产路径，四个业务插件均为真实 V2 插件；G13 已删除全部 V1
+> 生产面，G14 已冻结 2.0.0 API、建立两轮隔离发布门禁并完成文档签署。见
+> [V2 G14 封板记录](./docs/plan-history/host-v2/g14-v2-sealing.md)。
 
 ## 核心扩展模型
 
@@ -46,9 +45,9 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 Host/Common 双区间已经删除。缺少入口 `.deps.json` 或依赖历史加载 Facade 的代码不会
 进入运行链。
 
-## V2 G13 当前 SDK、manifest、容器、Dock、Document、Layout 与插件迁移边界
+## V2 G14 正式 SDK、manifest、容器、Dock、Document、Layout 与插件边界
 
-历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。当前 G1 仍沿用这一运行模型：插件必须携带严格清单并位于
+历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。V2 沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
 权限系统、第三方市场、跨进程 UI 或用户动态启停插件。
 
@@ -63,8 +62,8 @@ SDK 程序集版本均为 `2.0.0.0`；V2 已删除独立 Host API 版本事实�
 也不会扫描或执行未声明的第二个模块。
 
 G2 已建立真实的 `MyAvaloniaManagement.PluginSdk.dll` 与 `MyAvaloniaManagement.PluginSdk.UI.dll`。
-Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约；两者分别维护空 Shipped 和完整
-Unshipped 的 v2 API 基线。旧 `MyAvaloniaManagementCommon.dll` 与 Legacy 项目已在 G13 整体删除；
+Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约；G14 已将 Core 85 条、UI 46 条
+public 签名冻结到 v2 Shipped，两个 Unshipped 均为空。旧 `MyAvaloniaManagementCommon.dll` 与 Legacy 项目已在 G13 整体删除；
 历史 v1 API 文本仅用于审计，不参与编译、加载或打包。
 
 G4 已把宿主与插件对象图彻底分开：Host Provider 先构建，每个清单入口从新的空
@@ -163,7 +162,8 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Managed 插件快速开始](./docs/quick-start/README.md)：以已迁移的 MyPlugTest 为可运行 V2 事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G13 已完成、仅 G14 尚未实现的破坏式重构路线；
+- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G14 已完成的破坏式重构与最终签署矩阵；
+- [V2 G14 封板](./docs/plan-history/host-v2/g14-v2-sealing.md)：查看 API Shipped 基线、两轮隔离门禁、SOLID 取舍和发布证据；
 - [V2 G13 删除 V1 生产面](./docs/plan-history/host-v2/g13-remove-v1-production-surface.md)：查看 SOLID 收口、源码/二进制负例、包矩阵和非发布证据；
 - [V2 G12 BiliDownloader 迁移](./docs/plan-history/host-v2/g12-bili-downloader-v2.md)：查看 SOLID 责任划分、readiness、schema 3、关闭时序和非发布证据；
 - [V2 G10 DaTang 迁移](./docs/plan-history/host-v2/g10-datang-accounting-help-v2.md)：查看窗口端口、内容 schema、所有权、SOLID 取舍和非发布证据；
@@ -188,7 +188,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 .\scripts\Test-Documentation.ps1
 ```
 
-该门禁不启动窗口、不执行发布，也不替代 G14 的历史发布门禁。
+该门禁不启动窗口、不执行发布，也不替代当前 V2 总发布门禁。
 
 修改 Document 创建、持久化、关闭或 Scope 所有权链时，运行 G7 非发布专项：
 
@@ -202,12 +202,12 @@ TestResults/  需要保留的阶段验收与人工验证记录
 在干净 Git 提交上执行完整的 G14 Windows 本地发布门禁：
 
 ```powershell
-.\scripts\Invoke-HostV1ReleaseGate.ps1
+.\scripts\Invoke-HostV2ReleaseGate.ps1
 ```
 
-该入口在两个独立克隆中重复执行锁定还原、Release 零警告构建、G15 诊断脱敏扫描、宿主三套测试、SDK 包/API、
-四插件包矩阵和真实窗口 Smoke，并把日志、TRX、覆盖率、ZIP、清单及两轮比较写入
-`artifacts/release-gate`。它不绑定代码托管平台，也不会创建或推送标签。
+该入口在两个独立克隆中重复执行锁定还原、Release CI 零警告构建、V2 生产面全量门禁、SDK v2 API、
+四插件包矩阵和真实窗口 `layout-v2.json` Smoke，并把日志、TRX、覆盖率、ZIP、清单及两轮比较写入
+`artifacts/release-gate/v2`。它不使用 AIFLOW，不绑定代码托管平台，也不会创建或推送标签。
 
 运行宿主标准门禁：
 
@@ -253,6 +253,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - G5 已完成：宿主与每个插件拥有独立 Provider，Host 生产贡献只通过最终 UI SDK 声明并发布到唯一 Registry；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
 - Core/UI 包、manifest v2、独立容器、Host 声明式目录、Document v2、Layout v2 和 Host internal
-  生命周期已进入生产路径；四个业务插件已完成 G9–G12 迁移，G13 已删除 Legacy 阶段桥与过渡构建面。
+  生命周期已进入生产路径；四个业务插件已完成 G9–G12 迁移，G13 已删除 Legacy 阶段桥与过渡构建面，
+  G14 已冻结 API 并建立 V2 正式发布门禁。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

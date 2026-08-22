@@ -1,5 +1,7 @@
 # Dock 结构布局快照 V1（历史事实）
 
+> **历史说明：本 V1 格式已由 Layout V2 取代。以下内容保留当时证据，当前 Host 不读取 V1。**
+
 > 本文只保留 G8 前的历史实现事实。当前 Host 仅使用
 > [`layout-v2.json`](./dock-layout-snapshot-v2.md)，不会读取、迁移、覆盖或隔离本文的 V1 文件。
 

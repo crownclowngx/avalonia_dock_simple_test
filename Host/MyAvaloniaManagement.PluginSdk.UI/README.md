@@ -6,7 +6,7 @@ Document/Tool 描述符、Avalonia View 绑定、窗口交互端口和全屏展�
 本包依赖同版本 Core SDK，并把 Avalonia、Fluent、Semi 和 Ursa 限制为 Host 验证的版本。
 Dock 与 Newtonsoft 不属于插件 UI 契约，插件不得通过本包取得或携带这些程序集。
 
-当前仓库已完成 V2 G7：Host 生产模块入口和声明式贡献目录使用本程序集，注册时一次绑定 Descriptor、
+当前仓库已完成 V2 G14 封板：Host 生产模块入口和声明式贡献目录使用本程序集，注册时一次绑定 Descriptor、
 模型与 View，Document 为 scoped，Tool/Lifecycle 为插件 singleton。模块返回后注册入口及私有服务集合
 均被封闭；Registry 只保存不可变事实，模型创建留在 Host internal Activator。Document 通过 Core SDK
 的 `DocumentActivationContext`、`DocumentContent`、`IPluginDocument`、
@@ -18,5 +18,5 @@ G10 新增的 `IPluginWindowInteraction` 由 Host 以同一受控实例注入每
 原生选择器返回后会再次检查取消令牌，以丢弃 Document 关闭期间的迟到结果。
 
 G11 由同一 UI SDK 的 `IWindowContentFullscreenHost` 承载 MySmallTools 全屏交互，没有重复 Legacy
-接口或 Host 门面。仅 BiliDownloader 仍等待 G12；其 Legacy 入口不会由 V2 Host 加载。
-当前 `2.0.0` SDK 仍是未发布契约，G11 测试 ZIP 不构成公开发布承诺。
+接口或 Host 门面。BiliDownloader 已在 G12 完成迁移，G13 已删除 Legacy 项目和过渡入口。
+当前 `2.0.0` UI SDK 的 46 条 public 签名已进入 v2 Shipped，并由 G14 两轮发布门禁保护。

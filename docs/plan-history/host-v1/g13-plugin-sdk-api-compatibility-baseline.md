@@ -1,5 +1,7 @@
 # G13：Plugin SDK API 兼容基线
 
+> **历史说明：本 V1 阶段已由 Managed Plugin V2 G14 取代；以下日期、数量和结论保持原样。**
+
 > 完成日期：2026-08-20
 > 状态：已完成
 > 适用范围：`MyAvaloniaManagement.PluginSdk` / `MyAvaloniaManagementCommon`

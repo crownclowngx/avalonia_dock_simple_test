@@ -1,19 +1,19 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-22（已同步 Managed Plugin V2 G13）<br>
+> 更新日期：2026-08-22（已同步 Managed Plugin V2 G14 封板）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
 > 不在本轮范围：逐项评审插件业务功能、第三方插件市场、运行时热卸载、插件沙箱
 
-> V2 当前状态：G0–G13 已完成。四个业务插件均使用最终 SDK、声明式贡献与普通模型；Legacy
-> 项目、兼容适配和过渡构建属性已经删除。
+> V2 当前状态：G0–G14 已完成。四个业务插件均使用正式 SDK、声明式贡献与普通模型；Legacy
+> 项目、兼容适配和过渡构建属性已经删除，API Shipped 与两轮隔离发布门禁已经建立。
 
 ## 1. 先说结论：这是一个什么项目
 
 **[架构判断]** 这不是一个单纯的 Avalonia Dock 示例，也不是面向不可信第三方代码的通用插件平台。它更准确的定位是：
 
-> 一个基于 .NET 10、Avalonia 12 和 Dock 12 的模块化桌面工作台；内部可信 Managed Plugin v1 已完成所有权、兼容性、诊断和发布制品边界封板。
+> 一个基于 .NET 10、Avalonia 12 和 Dock 12 的模块化桌面工作台；内部可信 Managed Plugin V2 已完成所有权、兼容性、诊断和发布制品边界封板。
 
 宿主提供统一窗口、四向 Dock 布局、布局持久化、菜单、文件打开/保存、依赖注入、消息通信和可选插件生命周期；业务模块通过插件形式提供 Document、Tool 和后台服务。
 
@@ -23,7 +23,7 @@
 | --- | --- | --- |
 | `Document` | 中央工作区里的多实例工作上下文；每次创建拥有独立状态，可选择保存和恢复 | 下载方案、视频播放/加解密、发票导入、银行余额调节 |
 | `Tool` | 宿主级单例状态投影；可以隐藏、固定和恢复 | 插件目录、文件树、工具管理、下载任务中心 |
-| 插件服务 | 与页面可见性无关的业务能力；由根 DI 和可选生命周期共同管理 | 仓储、下载协调器、凭据、媒体运行时 |
+| 插件服务 | 与页面可见性无关的业务能力；由插件私有 Provider 和可选生命周期共同管理 | 仓储、下载协调器、凭据、媒体运行时 |
 
 这三个概念比“DLL 是否叫插件”更重要。平台是否成熟，最终取决于宿主能否一致地拥有对象创建、资源释放、兼容检查和诊断入口。
 
@@ -417,7 +417,7 @@ Document/Tool 策略统一使用 DI。详细设计和诊断语义见
 
 ### 6.7 2026-08-16 显式贡献与 Plugin Registry
 
-**[已实现]** G5 破坏式重定基线删除了模块/生命周期重复 `PluginId`、`ConfigureServices`、策略扫描、
+**[v1 历史事实]** G5 破坏式重定基线删除了模块/生命周期重复 `PluginId`、`ConfigureServices`、策略扫描、
 View 的 AppDomain/目录扫描和命名推断。宿主与四个仓库插件统一使用
 `Configure(IPluginRegistrationContext)`；所有消费者读取同一不可变 `PluginRegistry`，其发布发生在
 生命周期初始化和窗口启动之前。详细契约、SOLID 依据、错误码和验收证据见
@@ -452,6 +452,14 @@ Host Unit 119、Plugin 127、Headless UI 37，合计 **283/283**。SDK 包门禁
 网络/媒体验收。完整动态结果和回退说明见
 [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
+### 6.10 2026-08-22 Managed Plugin V2 封板
+
+**[当前事实]** G14 将 Core 85 条、UI 46 条 public 签名移入 v2 Shipped，两个 Unshipped 清空；
+新增独立 V2 发布入口，在两个隔离克隆中重复执行零警告构建、Host/SDK/四插件测试、覆盖率、
+包/API、诊断、文档和 Windows 真实窗口 `layout-v2.json` Smoke。V1 门禁与阶段记录保持历史原样，
+当前发布资格只由 V2 门禁判定。完整证据和 SOLID 取舍见
+[G14 V2 封板记录](../plan-history/host-v2/g14-v2-sealing.md)。
+
 ## 7. 宿主应该给插件多大自由度
 
 ### 7.1 当前可信模型下的责任边界
@@ -466,67 +474,30 @@ Host Unit 119、Plugin 127、Headless UI 37，合计 **283/283**。SDK 包门禁
 | 文件选择和统一保存外壳 | 插件序列化内容 | 全局更新、权限和诊断策略 |
 | 应用启动、退出和插件状态 | 插件内部消息 | 直接修改其他插件状态 |
 
-### 7.2 目标能力边界
+### 7.2 当前正式能力边界
 
 ```mermaid
 flowchart TB
-    Plugin["内部可信插件"]
-    Descriptor["PluginDescriptor<br/>身份、版本、能力、依赖"]
-    Context["IHostContext<br/>受控宿主能力入口"]
-
-    Plugin --> Descriptor
-    Plugin --> Context
-
-    Context --> Docs["IDocumentService<br/>创建、激活、关闭、查询"]
-    Context --> Tools["IToolService<br/>注册、显示、隐藏、查询"]
-    Context --> Events["IHostEventBus<br/>命名空间、作用域、可诊断"]
-    Context --> Storage["宿主文件/设置能力"]
-    Context --> Diagnostics["日志与插件状态"]
-
-    Host["宿主内核"] --> Registry["Plugin Registry"]
-    Registry --> Descriptor
-    Host --> Docs
-    Host --> Tools
-    Host --> Events
-    Host --> Storage
-    Host --> Diagnostics
-
-    Plugin -. "业务实现仍可使用 Avalonia/Dock" .-> UI["Document / Tool ViewModel"]
-    Docs --> UI
-    Tools --> UI
+    Module["IPluginModule"] --> Registration["IPluginRegistration<br/>私有服务与一次性贡献"]
+    Registration --> Provider["插件私有 Provider"]
+    Registration --> Registry["不可变 PluginRegistry"]
+    Provider --> Models["Document / Tool / Lifecycle 普通模型"]
+    Registry --> Adapters["Host internal Dock Adapter"]
+    Ports["窄 Host Ports<br/>Event / Window / Fullscreen"] --> Provider
+    Adapters --> Dock["Host 独占 Dock 树"]
+    Views["插件 Avalonia View"] --> Adapters
 ```
 
-**[建议]** 不需要立即禁止插件引用 Avalonia/Dock。内部插件的 UI 自由度是该项目的价值之一。
-Host 实现面、静态服务定位、SDK 依赖、Managed-only 加载、声明式 View 贡献和 Dock 继承边界已经收口。
-G6 在 internal Activator 后引入两个 sealed Adapter，并以预构建 View Lease 和 Document Scope Lease
-明确所有权；下一步由 G7 建立唯一异步 Document v2 创建、恢复与保存链。
+**[当前事实]** 插件 UI 可以依赖 G14 已签署的 UI SDK 与 Avalonia，但不能引用 Dock、Host 实现或
+Legacy 程序集。模块通过 `IPluginRegistration` 一次声明私有服务、Descriptor、模型和 View；Host
+只向插件 Provider 注入经过评审的窄端口。插件没有通用 `IHostContext`、服务定位器或修改 Dock 树的
+入口，Document/Tool 创建、布局、保存、关闭和生命周期状态都由 Host internal 协作者拥有。
 
-### 7.3 建议的候选契约
+### 7.3 延后能力
 
-以下是下一阶段设计方向，不是当前已实现接口：
-
-```csharp
-public sealed record PluginDescriptor(
-    PluginId PluginId,
-    Version PluginVersion,
-    Version RequiredHostApiVersion,
-    IReadOnlyList<string> Capabilities,
-    IReadOnlyList<PluginId> Dependencies);
-
-public interface IHostContext
-{
-    IDocumentService Documents { get; }
-    IToolService Tools { get; }
-    IHostEventBus Events { get; }
-    IHostDiagnostics Diagnostics { get; }
-}
-```
-
-- `IDocumentService`：创建、激活、关闭、按 ID 查询，并统一建立/释放 Document Scope。
-- `IToolService`：注册、显示、隐藏、固定和查询 Tool，不向插件暴露根 Dock 树。
-- `IHostEventBus`：不再暴露底层 `IMessenger`，要求消息归属、作用域和错误诊断。
-- `IDocumentSaveState`：已经统一公共脏状态与成功提交；关闭确认和磁盘事务由宿主协调器负责，当前版本不提供历史 Document 格式迁移。
-- `PluginDescriptor`：加载代码前即可完成身份、兼容性和依赖检查。
+依赖图、动态启停、在线安装、第三方市场、通用 Document/Tool 控制端口和进程外协议都需要独立的
+所有权与兼容评审。G14 没有为这些尚无当前消费者的能力预留 `Capabilities`、`Dependencies` 或
+通用 Host Facade 字段，避免占位 API 在正式 Shipped 后形成无行为承诺。
 
 ## 8. 哪些场景适合做插件
 
@@ -546,7 +517,7 @@ public interface IHostContext
 
 ### P0：收口当前已经暴露的所有权和稳定性问题
 
-1. **已完成并迁移三个插件**：Host、MyPlugTest、DaTang 与 MySmallTools Document 经最终 Registry/Activator 创建所属插件 Scope，scoped 注册与 `ValidateScopes` 共同禁止从根容器解析 Document；BiliDownloader 留待 G12。
+1. **已完成并迁移四个插件**：Host、MyPlugTest、DaTang、MySmallTools 与 BiliDownloader Document 经最终 Registry/Activator 创建所属插件 Scope，scoped 注册与 `ValidateScopes` 共同禁止从根容器解析 Document。
 2. **已完成（G2）**：Host 自有类型全部 internal，构造注入成为唯一生产路径；静态 `ServiceProvider` 与生产无参 ViewModel 构造已删除，设计器使用独立内存样例。
 3. **已完成**：重复 `PluginId`、Document/Tool 主 ID 与别名、所有权错误、空元数据和重复 Creation Intent 均形成排序稳定的结构化诊断；注册表无诊断时才一次性发布，不再有“首次注册胜出”。
 4. **已完成**：只读插件状态 Tool 已覆盖程序集加载与生命周期结果；模块构造、服务注册、策略发现、DI 和布局均进入同一会话诊断，致命组合错误由独立启动错误窗展示。

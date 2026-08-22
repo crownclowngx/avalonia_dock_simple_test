@@ -1,5 +1,7 @@
 # Managed Plugin v1 G2：Host 实现面收口记录
 
+> **历史说明：本 V1 阶段已由 Managed Plugin V2 G14 取代；以下日期、数量和结论保持原样。**
+
 > 后续状态：本文记录的 Common SHA256 是 G2 时间点门禁，已由 G13 的 v1 Shipped/Unshipped
 > 可读文本和成员级变异脚本替代；历史命令与结果保留不改写。
 

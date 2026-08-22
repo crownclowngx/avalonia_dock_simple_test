@@ -2,11 +2,12 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G13 的 Core/UI SDK、
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G14 封板：Core/UI SDK、
 > manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录、Host Dock Adapter、
 > Document V2、Layout V2、internal 生命周期、四个业务插件迁移及 V1 生产面删除。最新测试数量和覆盖率必须从本轮
-> TRX/Cobertura 动态读取，不以文档数字作为永久门槛。G14 的历史两轮 Release 证据见
-> [G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
+> TRX/Cobertura 动态读取，不以文档数字作为永久门槛。当前两轮 Release 证据见
+> [V2 G14 封板](../plan-history/host-v2/g14-v2-sealing.md)；V1 历史门禁见
+> [V1 G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
 > [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
 
@@ -20,7 +21,7 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 ```
 
 核心测试在系统临时目录验证正常和失败夹具；正式入口检查当前文档与 host-v1/host-v2 历史记录的本地链接，
-并只对当前事实应用过期措辞规则。它还验证关键源码类型、G11 已删除类型、G13 API baseline，以及四个
+并只对当前事实应用过期措辞规则。它还验证 G14 正向哨兵、V1 历史页首、关键源码类型、V2 Shipped，以及四个
 插件项目中的版本、精确入口属性与单一 SDK 投影区间。结果写入
 `artifacts/test-results/Documentation/summary.json`。
 
@@ -268,22 +269,22 @@ BiliDownloader **719/719**、DaTang **62/62**、MySmallTools **183/183**。Core/
 nupkg 消费门禁通过。本轮不运行 AIFLOW、Windows CI、Windows Smoke、ReleaseAcceptance、
 正式发布门禁、签名、上传、标签或发布；不得用下文的历史 Host V1 G10 Windows 证据替代本轮事实。
 
-## G14 正式发布门禁
+## G14 V2 正式发布门禁
 
 在干净 Git 提交上运行：
 
 ```powershell
-.\scripts\Invoke-HostV1ReleaseGate.ps1
+.\scripts\Invoke-HostV2ReleaseGate.ps1
 ```
 
 脚本要求 Windows x64、PowerShell 7、Git 和 `global.json` 指定的 .NET SDK。它在两个独立本地克隆中
-顺序执行核心单元测试、锁定还原、Release 零警告构建、G15 诊断脱敏扫描、宿主三套测试、SDK 包/API、四插件包矩阵和
-真实窗口 Smoke。每轮使用独立 Temp、dotnet home、NuGet 缓存和 Host 数据根，不读取当前工作目录的
+顺序执行 V2/Core 与文档核心单元测试、锁定还原、Release CI 零警告构建、V2 生产面、SDK v2 API、
+四插件包矩阵和真实窗口 `layout-v2.json` Smoke。每轮使用独立 Temp、dotnet home、NuGet 缓存和 Host 数据根，不读取当前工作目录的
 构建产物或用户 LocalAppData。
 
-结果位于 `artifacts/release-gate/<UTC>-<commit>/pass-1|pass-2`。日志、TRX、Cobertura、四个 ZIP、
+结果位于 `artifacts/release-gate/v2/<UTC>-<commit>/pass-1|pass-2`。日志、TRX、Cobertura、四个 ZIP、
 外置清单和 JSON 必须齐全；两轮只忽略时间、耗时和绝对路径，任何测试数、覆盖率、阶段、API、包摘要
-或 Smoke 漂移都会失败。当前入口不绑定托管平台，不自动执行合并、上传或标签操作。
+或 Smoke 漂移都会失败。当前入口不调用 AIFLOW，不绑定托管平台，也不自动执行合并、上传或标签操作。
 
 ## G15 诊断脱敏门禁
 
@@ -300,8 +301,8 @@ canary 异常验证内存、JSONL、默认镜像、生命周期状态、插件�
 Common 的生产 C#：默认路径不能读取/格式化异常正文、写自由 `TechnicalDetail` 或向 Console 输出路径；
 敏感开关只能位于两个获准的临时输出实现，且草稿不能重新增加自由用户说明。
 
-专项脚本已作为 `Invoke-HostV1ReleaseGate.ps1` 的独立失败即停止阶段，位于 Release 零警告构建之后、
-三套宿主测试之前。Release 门禁不得设置 `MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS`。
+专项脚本由 V2 生产面门禁执行，并随 `Invoke-HostV2ReleaseGate.ps1` 在两轮隔离环境中复验。
+Release 门禁不得设置 `MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS`。
 
 ## 一键门禁
 
@@ -550,7 +551,7 @@ Dock ID 会被持久化，集中常量可以避免一个字符的差异导致工
 
 ### 契约与内部重构保护
 
-V1 Shipped 保存历史正式签名；G2 的 Core/UI V2 Shipped 均为空，最终表面分别登记在 Unshipped。
+V1 Shipped 保存历史正式签名；G14 的 Core/UI V2 Shipped 分别为 85/46，Unshipped 均为空。
 Roslyn Analyzer 在普通 SDK build 中比较源符号，专项脚本再用测试副本证明各类破坏均会阻断。内部类
 拆分不会改变文本；兼容新增必须登记到正确程序集，有意破坏则必须建立新主版本基线并同步插件兼容区间
 和迁移证据。

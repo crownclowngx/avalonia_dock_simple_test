@@ -1,5 +1,7 @@
 # G14：平台无关的 Windows 本地发布门禁
 
+> **历史说明：本 V1 门禁已由 `Invoke-HostV2ReleaseGate.ps1` 取代；以下日期、数量和结论保持原样。**
+
 > 完成日期：2026-08-20
 > 状态：已完成
 > 支持平台：Windows x64 / PowerShell 7 / .NET SDK 10.0.302

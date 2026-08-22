@@ -226,8 +226,11 @@ if ($projects.Count -eq 0) {
     throw '没有发现声明 ManagedPlugin=true 的插件项目。'
 }
 
+# 包矩阵的物理构建仍由 Build-ManagedPluginPackage 的稳定槽隔离；这个目录只拥有
+# 契约夹具和两轮输出。使用短随机名可防止在发布门禁的嵌套 TEMP 中越过
+# Windows 传统路径上限，不改变两轮独立与确定性比较语义。
 $workingRoot = Join-Path ([IO.Path]::GetTempPath()) (
-    'MyAvaloniaManagedPluginMatrix-' + [Guid]::NewGuid().ToString('N'))
+    'MPM-' + [Guid]::NewGuid().ToString('N').Substring(0, 12))
 $firstRoot = Join-Path $workingRoot 'first'
 $secondRoot = Join-Path $workingRoot 'second'
 New-Item -ItemType Directory -Path $firstRoot, $secondRoot | Out-Null

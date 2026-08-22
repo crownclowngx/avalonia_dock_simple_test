@@ -6,7 +6,11 @@ param(
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $temporaryParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
-$temporaryRoot = Join-Path $temporaryParent ('MyAvaloniaPluginSdkPackage-' + [Guid]::NewGuid().ToString('N'))
+# 此夹具还会在根目录下创建 global-packages 和多个消费项目。当调用方已经把
+# TEMP 隔离到较深的发布目录时，可读长前缀会使 NuGet DLL 超过 Windows 传统
+# 260 字符边界。短前缀加 12 位随机后缀仍保持每轮独立，不牺牲路径所有权。
+$temporaryRoot = Join-Path $temporaryParent (
+    'MSP-' + [Guid]::NewGuid().ToString('N').Substring(0, 12))
 $packageOutput = Join-Path $temporaryRoot 'packages'
 $isolatedPackageCache = Join-Path $temporaryRoot 'global-packages'
 [xml]$versionDocument = Get-Content -LiteralPath (Join-Path $repositoryRoot 'Directory.Version.props')

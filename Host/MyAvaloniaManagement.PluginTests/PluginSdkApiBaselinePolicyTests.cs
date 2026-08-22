@@ -63,7 +63,7 @@ public sealed class PluginSdkApiBaselinePolicyTests
     }
 
     [Fact]
-    public void G2_V1历史基线未改写且Core与Ui最终表面均未发布()
+    public void G14_V1历史基线未改写且Core与Ui的V2表面已封板()
     {
         var repositoryRoot = FindRepositoryRoot();
         var apiRoot = Path.Combine(
@@ -89,11 +89,14 @@ public sealed class PluginSdkApiBaselinePolicyTests
 
         Assert.NotEmpty(v1Shipped);
         Assert.Empty(v1Unshipped);
-        Assert.Empty(v2Shipped);
-        Assert.Empty(uiV2Shipped);
-        Assert.NotEmpty(coreV2Unshipped);
-        Assert.NotEmpty(uiV2Unshipped);
-        Assert.DoesNotContain(coreV2Unshipped, entry =>
+        // G14 只把已经审核的 V2 符号从 Unshipped 原样转入 Shipped，
+        // 不修改 V1 历史证据，也不借封板增删任何 public 符号。因此此处
+        // 同时固定条目数和归属文件，避免仅判断“非空”而放过意外漂移。
+        Assert.Equal(85, v2Shipped.Length);
+        Assert.Equal(46, uiV2Shipped.Length);
+        Assert.Empty(coreV2Unshipped);
+        Assert.Empty(uiV2Unshipped);
+        Assert.DoesNotContain(v2Shipped, entry =>
             entry.Contains("MyAvaloniaManagementCommon", StringComparison.Ordinal));
     }
 
