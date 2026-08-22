@@ -1,457 +1,752 @@
-# AI 工作流插件接入可行性探索
+# AI 工作流插件与动态 Agent Tool 架构规划
 
-> **文档状态：探索文档（Exploration）** —— 本文只进行方案设计与可行性论证，不代表任何已实现功能，具体实施另行立项。
+> **文档状态：架构探索 / 实施前规划**
+> 本文只定义目标架构、边界、风险与验证路径，不表示相关功能已经实现。正式编码需要另行建立实施门禁和验收记录。
 >
-> 探索日期：2026-08-07
-> 探索范围：在 MyAvaloniaManagement 宿主上接入「AI 驱动的工作流插件」，让 AI 理解自然语言需求、编排并调用现有插件能力
-> 相关文档：[`host-plugin-architecture-review.md`](./host-plugin-architecture-review.md)（宿主—插件架构评审）
+> 初始探索：2026-08-07
+> 结合 V2 架构重整：2026-08-22
+> 适用基线：当前 `HostRuntime`、manifest v2、每插件独立 Provider、每插件独立 `PluginLoadContext`、不可变 `PluginRegistry`
+
+相关文档：
+
+- [`host-plugin-architecture-review.md`](./host-plugin-architecture-review.md)
+- [`Host V2 architecture.md`](../../Host/MyAvaloniaManagement/docs/design/architecture.md)
+- [`compatibility-contracts.md`](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)
 
 ---
 
-## 1. 探索目标
+## 1. 目标与结论
 
-验证以下需求在本项目架构下是否可行，以及怎么做：
+目标是让一个 AI 工作流插件（首个模型接入可使用 DeepSeek）能够：
 
-> 用户输入一句自然语言，例如：
-> 「从 a 网址调用 biliDownloader 下载内部的全部视频，使用最高画质只下载视频，下载好后使用视频加密插件将视频加密，加密后删掉原视频，加密密码是 123456」
->
-> AI 自动：找到可用能力 → 生成结构化执行计划 → 经校验确认后由工作流引擎逐步调用各插件能力完成任务。
+1. 动态发现当前 Host 中已经安装且处于可用状态的插件工具；
+2. 把用户自然语言转换成结构化、可验证的执行计划；
+3. 经参数校验、权限检查和用户确认后调用工具；
+4. 执行下载、加密、文件处理等跨插件工作流；
+5. 支持取消、诊断、状态投影，并为后续持久化和恢复保留演进空间。
 
-技术选型（本轮已确定）：
+典型用例：
 
-| 层 | 选型 | 说明 |
+> 从指定网址下载全部视频，使用最高画质且只下载视频；下载完成后逐个加密，成功后删除原视频，密码由用户提供。
+
+### 1.1 核心架构结论
+
+本场景不应实现为“DeepSeek 插件依赖所有其他插件”，而应实现为：
+
+> **其他插件向 Host 声明式注册经过筛选的 Agent Tool；AI 插件只依赖 Host 提供的工具目录与调用网关。**
+
+因此本规划区分两种机制：
+
+| 机制 | 解决的问题 | 是否形成本轮插件依赖图 |
 | --- | --- | --- |
-| 工作流引擎 | **Elsa Workflows 3.x** | MIT 协议，纯 .NET 库可嵌入，Activity 模型，支持长运行/暂停恢复/持久化 |
-| AI 模型 | **DeepSeek `deepseek-chat`** | OpenAI 兼容 API，支持 function calling（注意：`deepseek-reasoner` 不支持工具调用） |
-| AI 调用层 | Microsoft.Extensions.AI（MEAI）或裸 HTTP | 指向 `https://api.deepseek.com` 即可 |
-| 运行框架 | .NET 10 + Avalonia + Dock.Avalonia | 与宿主现有技术栈一致 |
+| **Agent Tool Contribution + Host Gateway** | AI 动态发现和调用未知插件提供的工具 | 否；工具提供者是运行期动态可选项 |
+| **Typed Cross-Plugin Capability Exchange** | 普通插件必须调用另一个插件的强类型服务 | Required 依赖需要 Host 管理的 DAG；不属于本轮主线 |
 
-**总体结论：可行。** 宿主已具备全部扩展点，真正的需求缺口不是工作流组件，而是「插件能力契约」这一层。
+本轮只规划第一种机制。不得为了 AI 调用而开放父容器回退、共享根 Provider、任意 `IServiceProvider` 或通用跨插件 Service Locator。
 
----
+### 1.2 执行引擎结论
 
-## 2. 架构映射：工作流插件如何套用现有扩展概念
-
-宿主的三个核心扩展概念与工作流插件的角色对应如下（与 BiliDownloader 的模式一致）：
-
-| 现有概念 | 工作流插件中的角色 |
-| --- | --- |
-| **Managed Plugin**（`IPluginModule` + `IPluginLifecycle`） | 工作流引擎作为插件级 singleton 后台服务，由宿主生命周期管理初始化/关闭 |
-| **Document**（多实例） | 工作流编辑画布 / AI 对话入口 / 单次运行详情，支持保存（`ISavableDocument`） |
-| **Tool**（单例侧边栏） | 工作流运行状态面板、任务队列投影（套用 BiliScheduler Tool 模式） |
-
-接入形式上没有任何障碍，走 Managed Plugin 通道即可。
+计划格式、验证器和 Agent Tool Gateway 必须与具体工作流引擎解耦。第一阶段优先使用轻量顺序执行器验证产品价值；Elsa Workflows 作为长运行、书签、暂停恢复和持久化需求出现后的候选适配器，而不是前置架构依赖。
 
 ---
 
-## 3. 总体链路：三段式流水线
+## 2. 当前 V2 架构事实
+
+以下事实是本规划的硬约束。
+
+### 2.1 Provider 与所有权
+
+- `PluginProviderOwner` 为每个插件创建新的私有 `ServiceCollection` 和独立 Provider；
+- 插件 Provider 只预置明确承诺的 Host Port，不存在父 Provider 或 Host 服务回退；
+- 普通 DI 注册只留在所属插件 Provider；
+- `PluginRegistry` 不保存 Provider；
+- `PluginContributionActivator` 只负责 Document/Tool 贡献激活，不应扩张为通用跨插件调用入口；
+- Host 关闭时先撤回贡献、释放 View/Document Scope，再停止生命周期、释放插件 Provider，最后释放 Host Provider。
+
+### 2.2 Registry 与组合
+
+- `IPluginModule.Configure(IPluginRegistration)` 只在组合期同步执行一次；
+- Document、Tool、View、Lifecycle 必须通过专用注册方法进入临时 Builder；
+- Provider 构建成功后，声明才进入全局冲突校验；
+- Registry 最终发布不可变快照；
+- 单插件失败只隔离所属插件，无关插件继续组合。
+
+Agent Tool 应复用这套模式，成为一种新的显式贡献，而不是被伪装成普通 DI 服务或 Document/Tool。
+
+### 2.3 ALC 与类型身份
+
+- 每个插件目录拥有独立、不可回收的 `PluginLoadContext`；
+- 普通业务依赖只从当前插件 `.deps.json` / RID 图解析；
+- 只有 Host 明确认可的 SDK、UI Profile 和框架闭包由默认 ALC 共享；
+- 当前产品采用“更新后重启”，不支持运行期安装、热卸载或 ALC 回收。
+
+因此，两个插件各自携带一份同名契约 DLL 并不能形成可靠的公共接口。Agent Tool 的通用框架契约必须由 Host 提供并通过共享程序集策略加载。
+
+### 2.4 生命周期与可用性
+
+- 当前生命周期按规范 PluginId 确定性启动，成功启动项反向停止；
+- 生命周期失败或超时后，`PluginAvailabilityReadModel` 撤回该插件贡献；
+- 当前没有插件依赖图；
+- `IHostEventBus` 是 HostRuntime 内同步、精确类型、无返回值的通知总线，不是请求—响应 RPC。
+
+Agent Tool Gateway 必须在每次调用前检查工具所有者是否可用；状态广播仍可使用事件总线，但工具请求—响应不得经事件总线实现。
+
+---
+
+## 3. 对历史方案的修正
+
+历史文档建立在早期架构假设上，其中几项已经不适用于当前代码。
+
+| 历史假设 | 当前事实 | 本规划修正 |
+| --- | --- | --- |
+| 所有插件向同一个根容器注册，AI 插件注入 `IEnumerable<IPluginCapability>` | 每个插件拥有独立 Provider，私有服务不能被另一个插件解析 | Host Registry 收集 Agent Tool 声明，Host Gateway 按所有者路由调用 |
+| 工作流插件可直接从 DI 取得其他插件能力实例 | 跨插件私有解析是明确禁止并有测试保护的边界 | AI 插件只能取得 `IAgentToolGateway`，不能取得提供者 Provider 或私有 Service |
+| 公共契约可依赖默认 ALC 的自然回退 | 当前共享策略是显式白名单/闭包，普通依赖仍在插件 ALC | Agent Tool SDK 必须成为 Host 明确共享的契约程序集 |
+| 能力统一注册为根容器 singleton | 当前不存在跨插件共享根容器 | Handler 注册在所有者 Provider；Host 只保存 Handler 类型和所有权元数据 |
+| Elsa 是已确定的第一阶段执行基础设施 | 当前尚无真实兼容性、部署、持久化和敏感信息验证 | 先定义引擎无关计划和轻量执行器，再通过 PoC 决定是否接入 Elsa |
+| `ISavableDocument` 表示可保存 Document | 当前 V2 使用 `IPersistablePluginDocument` | 工作流定义/对话 Document 如需保存，遵守 V2 Document 信封与持久化契约 |
+
+历史文档中关于“插件私有能力实现、AI 只规划、确定性校验、风险确认、事件总线只做通知”的方向仍然保留。
+
+---
+
+## 4. 目标架构
 
 ```mermaid
 flowchart LR
-    subgraph Discovery["① 发现 Discovery"]
-        Plugins["各插件 IPluginCapability"] --> Registry["能力注册表"]
+    subgraph Providers["工具提供插件"]
+        Bili["BiliDownloader\nAddAgentTool"]
+        Small["MySmallTools\nAddAgentTool"]
+        Future["未来插件\nAddAgentTool"]
     end
-    subgraph Planning["② 规划 Planning"]
-        Registry -->|"能力清单注入提示词"| LLM["DeepSeek-chat"]
-        User["用户自然语言"] --> LLM
-        LLM -->|"tool_call: submit_plan"| Plan["计划 JSON"]
-    end
-    subgraph Execution["③ 分析执行 Execution"]
-        Plan --> Validator["计划校验管线（五关）"]
-        Validator -->|"校验失败回传AI修复"| LLM
-        Validator -->|"校验通过"| Confirm["风险确认（用户）"]
-        Confirm --> Elsa["Elsa 引擎执行"]
-    end
-    Elsa -->|"状态事件"| Bus["宿主消息总线"]
-    Bus --> ToolPanel["运行状态 Tool 面板"]
+
+    Bili --> Registry["Host PluginRegistry\n不可变 Agent Tool 元数据"]
+    Small --> Registry
+    Future --> Registry
+
+    Agent["AI 工作流插件\nDeepSeek/其他模型适配器"] --> Gateway["IAgentToolGateway\n按调用者身份创建的 Host Port"]
+    Gateway --> Registry
+    Gateway --> Policy["参数 / 权限 / 确认 / 配额 / 诊断"]
+    Gateway --> Owner["PluginProviderOwner\n按 OwnerId 解析 Handler"]
+    Owner --> Providers
+
+    Agent --> Planner["计划生成与确定性验证"]
+    Planner --> Executor["IWorkflowExecutionEngine"]
+    Executor --> Gateway
 ```
 
-三个环节的核心原则：
+### 4.1 责任划分
 
-| 环节 | 原则 |
-| --- | --- |
-| 发现 | 能力描述是**数据不是代码**——注册表只是"菜单"，随插件启动自动收集 |
-| 规划 | AI **只产出计划不执行**，输出被收敛到唯一一个工具 `submit_plan` |
-| 执行 | 计划必须过**确定性校验**才能进引擎，AI 的错误在进引擎前被拦截或修复 |
-
-### 3.1 两层分工（AI 规划 → Elsa 执行）
-
-不让 AI 在工具调用循环里一步步手动执行业务（无持久化、中断即丢、易失控），而是：
-
-- **AI 层**：只负责"理解意图 → 生成结构化计划"
-- **Elsa 层**：负责持久化执行、失败停止、暂停恢复、状态投影
+| 组件 | 责任 | 明确不负责 |
+| --- | --- | --- |
+| 工具提供插件 | 选择可暴露的业务动作，提供描述、Schema 和薄 Handler | 不暴露整个私有服务图，不决定全局权限 |
+| `PluginRegistryBuilder` | 收集声明、校验稳定 ID/类型/Schema/冲突 | 不创建 Handler，不执行插件代码 |
+| `PluginRegistry` | 保存不可变 Agent Tool 元数据快照 | 不保存 Provider 或 Handler 实例 |
+| `IAgentToolGateway` | 列举当前可用工具，提交受控调用 | 不把任意服务解析能力交给插件 |
+| Host Tool Executor | 可用性、参数、权限、确认、超时、调用、结果清理、诊断 | 不负责 LLM 提示词和计划生成 |
+| AI 工作流插件 | 模型接入、对话、计划生成/修复、执行编排和结果总结 | 不直接解析其他插件 Provider，不替代 Host 授权 |
+| 工作流执行引擎 | 执行已批准计划，管理步骤状态和变量 | 不解释自然语言，不绕过 Gateway |
 
 ---
 
-## 4. 环节①：发现（Discovery）
+## 5. Agent Tool 公共契约草案
 
-### 4.1 发现机制
+### 5.1 SDK 放置
 
-不做动态反射扫描，走 DI 收集——每个插件在 `IPluginModule.Configure` 中通过 `context.Services` 注册自己的私有能力实现，工作流插件注入 `IEnumerable<IPluginCapability>` 即自动汇总。这复用现有 Managed Plugin 的私有服务通道；如果未来能力需要由宿主治理，则应新增有明确语义的 Context 贡献方法，而不是把它伪装成 Document/Tool。
+第一版建议把最小 Agent Tool 契约放入现有 Core Plugin SDK。它们只依赖 BCL，符合 Core SDK 的依赖边界；`IPluginRegistration` 所在 UI SDK 已经依赖 Core，因此不需要新增第三套 SDK 版本事实或改变 manifest v2 的单一 SDK 区间。
 
-### 4.2 能力契约（定义在 MyAvaloniaManagementCommon）
+如果以后 AI 契约明显增长，可以再拆出与 Core/UI 同版本的 `MyAvaloniaManagement.PluginSdk.AI`，由 Host 显式加入共享程序集根。拆包前必须同步扩展 SDK 兼容性检查和插件发布排除规则。不建议恢复旧的 `MyAvaloniaManagementCommon` 万能程序集。
+
+### 5.2 稳定标识与描述符
 
 ```csharp
-public enum CapabilityRisk { Safe, Destructive }
+public sealed record AgentToolId;
 
-public sealed record CapabilityDescriptor(
-    string Name,                  // 稳定 ID，如 "bili.download_videos"
-    string Description,           // 写给 LLM 读的语义说明
-    string ParametersJsonSchema,  // OpenAI tools 格式的 JSON Schema
-    string ReturnsDescription,    // 返回结构说明（写给 AI，也供引用校验）
-    CapabilityRisk Risk);         // 供执行前确认环节使用
-
-public interface IPluginCapability
+public enum AgentToolRiskLevel
 {
-    CapabilityDescriptor Descriptor { get; }
-    Task<JsonElement> InvokeAsync(JsonElement parameters, CancellationToken ct);
+    ReadOnly,
+    Mutating,
+    Destructive,
+    Sensitive,
+}
+
+public enum AgentToolConfirmationPolicy
+{
+    Never,
+    OncePerWorkflow,
+    EveryInvocation,
+}
+
+public sealed record AgentToolDescriptor(
+    AgentToolId ToolId,
+    string Name,
+    string DisplayName,
+    string Description,
+    JsonElement InputSchema,
+    JsonElement? OutputSchema,
+    AgentToolRiskLevel RiskLevel,
+    AgentToolConfirmationPolicy ConfirmationPolicy);
+```
+
+约束：
+
+- `ToolId` 是 Registry 的规范稳定身份，建议使用插件命名空间，例如 `myavalonia.plugin.bilidownloader.agent.submit-download`；
+- `Name` 是模型传输层名称，需要满足目标模型 API 的字符和长度限制，但不能代替稳定 ID；
+- Schema 在注册时克隆并冻结，拒绝空对象、过深结构、重复/未知关键字策略另行确定；
+- 描述必须说明副作用、前置条件、返回结构和失败语义；
+- 不允许描述符在运行期执行插件回调或动态变化。
+
+### 5.3 强类型 Handler，JSON 跨边界
+
+```csharp
+public interface IAgentToolHandler<TArguments, TResult>
+    where TArguments : class
+{
+    Task<TResult> InvokeAsync(
+        TArguments arguments,
+        AgentToolContext context,
+        CancellationToken cancellationToken);
 }
 ```
 
-### 4.3 描述符质量规范（决定方案上限）
+`TArguments` 和 `TResult` 可以是工具提供插件的私有 DTO。DeepSeek 插件不引用这些类型；Host 根据 Registry 中冻结的类型完成：
 
-1. **Description 写给"聪明但零背景的新人"看**：说清做什么、关键枚举值含义、返回什么、副作用（尤其删除/加密类）
-2. **参数枚举必须显式列出**：如 `quality: highest|medium|low`，让"最高画质"这种自然语言有确定映射目标
-3. **返回值结构要写进描述**：下一步要引用它（如"返回 files 路径数组"）
-4. **副作用标注**：`Risk = Destructive` 的步骤进入人工确认清单
+```text
+JsonElement arguments
+→ Schema 校验
+→ 反序列化成插件私有 TArguments
+→ 在所有者 Provider 中调用 Handler
+→ TResult 序列化成克隆后的 JsonElement
+→ 返回 AI 插件或工作流引擎
+```
 
-### 4.4 探索期最小能力清单
+这样既保留插件内部强类型体验，也避免把业务 DTO 变成跨 ALC 公共 ABI。
 
-| 能力 | 所属插件 | 风险级 |
-| --- | --- | --- |
-| `bili.download_videos` | BiliDownloader | Safe（写文件） |
-| `crypto.encrypt_video` | MySmallTools | Safe |
-| `host.delete_file` | 工作流插件代持 | **Destructive** |
-| `host.open_folder` | 工作流插件代持 | Safe |
+### 5.4 注册入口
+
+```csharp
+public interface IPluginRegistration
+{
+    void AddAgentTool<TArguments, TResult, THandler>(
+        AgentToolDescriptor descriptor)
+        where TArguments : class
+        where THandler : class, IAgentToolHandler<TArguments, TResult>;
+}
+```
+
+注册语义：
+
+- Handler 由所属插件 Provider 作为 singleton 拥有；
+- Handler 可以构造注入本插件私有服务；
+- Handler 必须无会话可变状态并保证并发安全，不能直接依赖 scoped 服务；需要调用级资源时，由插件内部显式创建并在本次调用结束前释放；
+- Tool 注册不会把 Handler 或私有服务放进 Host Provider；
+- 同一插件重复 ToolId、跨插件 ToolId 冲突、Handler 契约不匹配均按“整插件候选失败/冲突所有者隔离”的现有 Registry 纪律处理；
+- 第一版一个 ToolId 只允许一个提供者，不引入优先级、多实现或随机选择。
+
+### 5.5 AI 插件使用的 Host Port
+
+```csharp
+public interface IAgentToolGateway
+{
+    IReadOnlyList<AgentToolDescriptor> GetAvailableTools(
+        AgentToolQuery? query = null);
+
+    Task<AgentToolInvocationResult> InvokeAsync(
+        AgentToolInvocationRequest request,
+        CancellationToken cancellationToken);
+}
+```
+
+Host 为每个消费插件创建带调用者 `PluginId` 的 facade，而不是向所有插件注入同一个无身份实例。调用者身份用于诊断、配额和未来权限策略；这不是安全沙箱，插件代码仍处于同一进程信任边界。
 
 ---
 
-## 5. 环节②：AI 规划层（DeepSeek）
+## 6. 组合、提交与运行期路由
 
-### 5.1 模型与调用参数
+### 6.1 组合流程
 
-| 项 | 选择 | 理由 |
-| --- | --- | --- |
-| 模型 | `deepseek-chat` | 唯一支持 function calling 的 DeepSeek 模型 |
-| 调用方式 | OpenAI 兼容端点 `https://api.deepseek.com` | MEAI 或裸 HTTP 均可，探索期裸 HTTP 也行 |
-| temperature | 0.2~0.4 | 规划任务要确定性，不要创造力 |
-| ToolMode | **强制调用** `submit_plan`（tool_choice） | 保证输出一定是结构化计划，不会闲聊 |
-| 上下文 | 系统提示词 + 能力清单 + 最近 N 轮对话 + 用户输入 | 支持"刚才那个流程换个密码"这类追问 |
-
-### 5.2 系统提示词模板（核心资产）
+建议扩展现有两阶段组合：
 
 ```text
-# 角色
-你是桌面工作台的工作流规划器。你唯一的职责是：把用户的自然语言需求，
-转换为一份调用给定能力（capabilities）的结构化执行计划。
-
-# 能力清单（本次会话可用，禁止使用清单之外的任何能力）
-{capabilities_catalog}   ← 程序从注册表自动渲染注入，见 5.3
-
-# 计划格式
-你必须通过调用 submit_plan 工具输出计划，规则如下：
-1. steps 是有序数组，按执行顺序排列；
-2. 每个 step 的 capability 必须是能力清单中的 name；
-3. params 只能包含该能力 Schema 中定义的参数，值必须符合类型与枚举；
-4. 需要引用前序步骤的输出时，使用 "${步骤output名.字段}"；
-   在 forEach 中用 "${item}" 指代当前元素；
-5. 用户没有提供的可选参数不要编造，缺省即可；
-6. 如果用户意图缺少必要信息（如没给网址、没给密码），不要猜测，
-   改为输出 clarifying_question，向用户提出一个明确问题。
-
-# 示例
-用户：下载 https://www.bilibili.com/video/BV1xx 的全部视频，最高画质只要视频，
-然后用密码 abc123 加密，加密完删掉原文件。
-→ submit_plan:
-{
-  "summary": "下载BV1xx全部视频(最高画质/仅视频) → 逐个加密(密码abc123) → 删除原文件",
-  "steps": [
-    { "output": "dl", "capability": "bili.download_videos",
-      "params": { "url": "https://www.bilibili.com/video/BV1xx",
-                  "quality": "highest", "media": "video_only" } },
-    { "forEach": "${dl.files}", "capability": "crypto.encrypt_video",
-      "params": { "file_path": "${item}", "password": "abc123", "delete_source": true } }
-  ]
-}
-
-# 约束
-- 你不直接执行任何操作，只产出计划；
-- 破坏性操作（删除文件等）必须如实体现在 summary 中，不得省略；
-- 一次只处理一个需求，不要合并用户没提到的任务。
+1. manifest / 目录 / deps / 入口预检
+2. 为每个插件创建私有 ServiceCollection
+3. Configure 收集 Document / Tool / Lifecycle / Agent Tool 声明
+4. 构建并验证插件 Provider
+5. 全局 Registry 冲突校验
+6. 校验 Agent Tool 描述符、Schema、Handler 类型和稳定 ID
+7. 排除失败或冲突所有者，立即释放其 Provider
+8. 发布不可变 PluginRegistry
+9. 向 AgentToolCatalogStore 提交一次不可变路由快照
+10. 执行插件生命周期，按可用性动态过滤工具
 ```
 
-**提示词设计要点：**
+### 6.2 为什么需要 Catalog Store
 
-- 能力清单**不手写进提示词**，由注册表运行时渲染——插件增删能力，提示词自动跟随
-- 强制"缺信息就提问"（clarifying_question），防止 AI 脑补密码、网址
-- 一个 few-shot 示例对 JSON 结构稳定性的提升远大于十条规则描述
-- summary 要求如实描述破坏性操作——这是给"用户确认"界面服务的
+插件 Provider 在 Registry 构建前创建，而 `IAgentToolGateway` 需要作为 Host Port 注入 AI 插件。Gateway 不能在构造时强制解析尚未建立的 Registry，否则会提前触发组合。
 
-### 5.3 能力清单的渲染格式
+建议增加 Host internal `AgentToolCatalogStore`：
+
+- Host Provider 建立时可安全构造，但初始状态是 `NotCommitted`；
+- Registry Build 成功后只允许 `Commit(snapshot)` 一次；
+- 提交前列举或调用返回受控的 `AGENT_TOOL_CATALOG_NOT_READY`；
+- 提交后只读取不可变快照；
+- 开始关闭后拒绝新调用。
+
+### 6.3 调用路由
+
+Registry 记录：
+
+```csharp
+internal sealed record AgentToolRegistration(
+    PluginId OwnerId,
+    AgentToolDescriptor Descriptor,
+    Type HandlerType,
+    Type ArgumentsType,
+    Type ResultType);
+```
+
+Gateway 调用步骤：
+
+1. 验证请求、调用 ID 和调用者身份；
+2. 从冻结快照按 ToolId 精确查找；
+3. 检查工具所有者当前是否 Ready；
+4. 对照冻结 Schema 校验参数；
+5. 应用 Host 权限、风险和确认策略；
+6. 通过 `PluginProviderOwner.GetRequiredService(ownerId, handlerType)` 解析 Handler；
+7. 在调用者线程/异步上下文执行，应用取消和 Host 超时；
+8. 限制并克隆输出，清理异常并写入诊断；
+9. 返回结构化结果。
+
+不得通过 `PluginContributionActivator` 或 `IHostEventBus` 执行以上请求—响应调用。
+
+---
+
+## 7. AI 规划模式与直接工具模式
+
+Agent Tool Gateway 同时支持两种上层使用方式，但首个产品版本应优先计划模式。
+
+### 7.1 计划优先模式（本项目推荐）
 
 ```text
-## bili.download_videos
-描述：从 B 站页面地址下载其中全部视频。quality: highest=最高画质...
-参数 Schema：{...JSON Schema...}
-返回：{ files: string[]（本地路径）, count: number }
+用户自然语言
+→ AI 读取工具目录
+→ AI 只调用 submit_plan
+→ 确定性验证器
+→ 风险摘要与用户确认
+→ 工作流执行器逐步调用 IAgentToolGateway
+→ 结构化结果回流 AI 总结
 ```
 
-### 5.4 `submit_plan` 工具定义（收敛 AI 输出的关键）
+适用于：
+
+- 多步骤；
+- 有变量引用或循环；
+- 长时间执行；
+- 写文件、删除、加密等有副作用操作；
+- 需要暂停、恢复、审计的任务。
+
+### 7.2 直接工具模式（后续可选）
+
+```text
+用户问题
+→ 向模型暴露筛选后的 ReadOnly 工具
+→ 模型产生 tool_call
+→ Host Gateway 调用
+→ 结果回填模型
+```
+
+第一版不允许 Destructive/Sensitive 工具走无需计划的直接调用。即便模型 API 支持强制 Tool Call 或严格 Schema，模型输出仍然是不可信输入，Host 参数验证和授权不得省略。DeepSeek 官方当前 Tool Calls 文档也明确要求调用方验证模型产生的参数，具体模型名称、严格模式和限制应在实施时从官方文档重新确认：<https://api-docs.deepseek.com/guides/tool_calls/>。
+
+### 7.3 工具数量增长
+
+工具较少时可以把全部可用 Descriptor 渲染给模型。规模增长后按以下顺序演进：
+
+1. Host 根据风险、分类、当前文档和用户意图过滤；
+2. 限制每轮候选工具数量；
+3. 增加 `search_tools` 元工具，先检索再暴露精确 Schema；
+4. 缓存不可变 Registry 版本对应的模型工具清单。
+
+AI 插件不能自己维护一份静态工具名单，否则会重新引入“新增插件必须修改 AI 插件”的耦合。
+
+---
+
+## 8. 工作流计划、验证与执行
+
+### 8.1 引擎无关计划
+
+计划是 Host/AI 工作流插件拥有的版本化数据模型，不使用 Elsa 类型作为持久化格式。
+
+最小结构：
 
 ```json
 {
-  "name": "submit_plan",
-  "description": "提交根据用户需求生成的执行计划",
-  "parameters": {
-    "type": "object",
-    "properties": {
-      "summary": { "type": "string" },
-      "clarifying_question": { "type": "string" },
-      "steps": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "output":     { "type": "string" },
-            "capability": { "type": "string" },
-            "params":     { "type": "object" },
-            "forEach":    { "type": "string" }
-          },
-          "required": ["capability", "params"]
-        }
+  "schemaVersion": 1,
+  "summary": "下载视频后逐个加密并删除成功加密的源文件",
+  "catalogRevision": "runtime-snapshot-id",
+  "steps": [
+    {
+      "id": "download",
+      "toolId": "myavalonia.plugin.bilidownloader.agent.submit-download",
+      "arguments": {
+        "url": "https://example.invalid/video",
+        "quality": "highest",
+        "media": "video_only"
+      }
+    },
+    {
+      "id": "encrypt",
+      "forEach": "${download.result.files}",
+      "toolId": "myavalonia.plugin.mysmalltools.agent.encrypt-video",
+      "arguments": {
+        "path": "${item}",
+        "password": "${secret.encryptionPassword}",
+        "deleteSourceAfterSuccess": true
       }
     }
-  }
+  ]
 }
 ```
 
-AI 的每次响应只有两种合法形态：**带 steps 的计划**，或**带 clarifying_question 的反问**。
+密码等敏感值不应直接持久化在计划正文中。上例的 `${secret.encryptionPassword}` 表示执行时从会话级短期 Secret Store 取得，工作流日志、Document 信封和 AI 对话记录只保存引用或脱敏投影。
 
-规划阶段**只暴露 `submit_plan` 一个工具**，能力清单作为"参考资料"写进系统提示词——AI 的输出结构完全可控，能力真正被调用发生在 Elsa 执行期。
+### 8.2 确定性验证管线
 
----
+AI 输出不能直接进入执行器，至少经过：
 
-## 6. 环节③：计划的分析与调用
+1. **结构验证**：JSON、schemaVersion、步骤数量、字符串/对象上限；
+2. **目录版本验证**：计划使用的 catalog revision 是否仍与当前 Runtime 一致；
+3. **工具存在与可用性验证**：ToolId 精确存在，所有者当前 Ready；
+4. **参数验证**：对照工具 InputSchema，不允许未知字段、类型漂移或非法枚举；
+5. **引用与计划图验证**：只能引用前序输出；拒绝未定义变量、自引用和计划环；
+6. **风险与权限验证**：汇总 Mutating/Destructive/Sensitive 步骤，生成确定性确认清单；
+7. **资源预算验证**：步骤、循环项、调用深度、超时、输出和并发上限；
+8. **敏感信息验证**：阻止凭据进入日志、提示词回显和持久化字段。
 
-### 6.1 校验管线（AI 产出 ≠ 可执行，必须过五关）
+校验失败可以把受控、非敏感的错误回填模型修复，但重试次数必须有上限；最终是否执行只由确定性验证器和用户授权决定。
 
-```mermaid
-flowchart TD
-    Raw["AI tool_call 参数"] --> G1["关1: JSON/结构校验<br/>是否符合 submit_plan Schema"]
-    G1 --> G2["关2: 能力存在性<br/>capability 是否在注册表"]
-    G2 --> G3["关3: 参数合法性<br/>params 逐个对照能力 JsonSchema"]
-    G3 --> G4["关4: 引用解析<br/>${x.y} 引用的 output 必须来自前序步骤且字段存在"]
-    G4 --> G5["关5: 风险标注<br/>汇总所有 Destructive 步骤"]
-    G5 -->|"任一失败"| Repair["把错误信息回传 AI 重新生成<br/>最多 2 次，仍失败则报错给用户"]
-    G5 -->|"通过"| Show["展示 summary + 步骤 + 风险项 → 用户确认"]
-```
-
-关键设计决策：
-
-- **校验失败自动修复**：把具体错误（如 "`bili.downloads` 不存在，你是否想用 `bili.download_videos`？"）回填给 AI 重试——大模型自我纠错成功率很高，这关能拦掉大部分幻觉
-- **关 4 是最重要的安全阀**：变量引用只能前向、只能引用已声明的返回字段，杜绝执行期才爆炸
-- 校验全部是**确定性代码**，不依赖任何 AI 判断
-
-### 6.2 计划 → Elsa 调用的映射规则
-
-| 计划结构 | Elsa 映射 |
-| --- | --- |
-| 线性 steps | `Sequence` 内依次放 `CapabilityActivity` |
-| `forEach` 步骤 | `ForEach` Activity，集合来自变量引用 |
-| `${dl.files}` | Activity 执行前从 Elsa 变量容器解析（`dl` 是前一步的 output 变量名） |
-| `${item}` | ForEach 当前迭代值 |
-| 每个 step 的返回 | 写入以 `output` 命名的 Elsa 变量 |
-
-执行语义（探索期先定三条）：
-
-1. **失败即停**：某能力抛错 → 工作流停止 → 状态推给 Tool 面板 + AI 汇总失败原因
-2. **Destructive 步骤前检查点**：删除类步骤执行前可设二次确认（可选开关）
-3. **不做自动重试**（探索期简化；Elsa 本身有 retry 策略，后续再开）
-
-执行引擎 Activity 骨架：
+### 8.3 轻量执行器接口
 
 ```csharp
-public sealed class CapabilityActivity : CodeActivity<JsonElement>
+internal interface IWorkflowExecutionEngine
 {
-    public string CapabilityName { get; set; } = "";
-    public JsonElement Parameters { get; set; }   // 已解析 ${...} 引用
-
-    protected override async ValueTask ExecuteAsync(ActivityExecutionContext context)
-    {
-        var registry = context.GetRequiredService<CapabilityRegistry>();
-        var result = await registry.Resolve(CapabilityName)
-                                     .InvokeAsync(Parameters, context.CancellationToken);
-        context.SetResult(result);
-    }
+    Task<WorkflowExecutionResult> ExecuteAsync(
+        ValidatedWorkflowPlan plan,
+        WorkflowExecutionContext context,
+        CancellationToken cancellationToken);
 }
 ```
 
-### 6.3 结果回流
+第一版支持：
 
-工作流终态事件 → 消息总线 → ① Tool 面板更新状态；② AI Agent 收到结构化结果，生成一句人话总结（"已下载 8 个视频并全部加密，原文件已删除"）回给用户。
+- `Sequence`；
+- 有上限的 `ForEach`；
+- 前序 JSON 输出引用；
+- 失败即停；
+- 用户取消；
+- 步骤状态事件；
+- Mutating 调用的 InvocationId / 幂等键。
+
+第一版不支持任意表达式、脚本、无限循环、并行写操作、自动补偿或模型在执行过程中随意改写计划。
+
+### 8.4 Elsa 适配条件
+
+只有出现以下真实需求时再评估 Elsa：
+
+- 跨进程重启恢复；
+- 等待数小时/数天的外部事件；
+- 人工审批书签；
+- 工作流实例、活动记录和恢复点持久化；
+- 复杂分支、定时器或成熟运维能力。
+
+Elsa 3 官方文档描述了 Activity、Bookmark 和多种持久化存储能力，可作为 PoC 依据：
+
+- <https://docs.elsaworkflows.io/getting-started/concepts>
+- <https://docs.elsaworkflows.io/guides/persistence>
+- <https://docs.elsaworkflows.io/extensibility/custom-activities>
+
+接入时必须特别验证：
+
+- .NET 10 与当前锁定包版本；
+- 插件独立 ALC、`.deps.json` 和 win-x64 发布物；
+- 数据库迁移与宿主退出顺序；
+- Activity 输入/输出是否会把密码、路径或模型上下文写入持久化日志。Elsa 支持控制 Activity 输入/输出日志持久化，但默认和具体版本必须在实施时验证：<https://docs.elsaworkflows.io/optimize/log-persistence>。
+
+Elsa 依赖应保留在 AI 工作流插件目录，不应为了方便而加入 Host 普通共享依赖闭包。
 
 ---
 
-## 7. 调用通道选型：DI 契约调用，不走消息总线
+## 9. 依赖图与循环问题
 
-### 7.1 为什么消息总线不能用于能力调用
+### 9.1 DeepSeek 与工具提供者不形成强启动依赖
 
-现有 `IHostEventBus` 是每个 HostRuntime 独享的同步事件总线，`Publish` 是 **void、无返回值、无人订阅时
-正常返回** 的。它解决了旧进程默认实例和第三方接口泄漏，但仍不是请求-响应通道：
+AI 插件只依赖 Host 保证存在的 `IAgentToolGateway`。某个工具插件缺失或初始化失败时：
 
-| 需求 | 消息总线现状 |
+- AI 插件仍可启动；
+- 该插件工具从可用列表中消失；
+- 已引用该工具的旧计划在执行前验证失败；
+- 无关工具继续可用。
+
+因此不需要建立：
+
+```text
+DeepSeek → BiliDownloader → MySmallTools → 所有未来插件
+```
+
+### 9.2 真正的强类型插件依赖另行设计
+
+如果插件 A 自身的正确运行必须调用插件 B 的强类型服务，应使用未来的 Typed Capability Exchange：
+
+- A 显式声明 Required/Optional Import；
+- Host 建立全局依赖图；
+- Required 图必须是 DAG；
+- 强连通分量中的环整体隔离，并向强依赖下游传播不可用；
+- 初始化按拓扑顺序，停止和 Provider 释放按反拓扑顺序。
+
+这类依赖不能由 Agent Tool Gateway 暗中代替，也不能通过运行期字符串查找隐藏。
+
+### 9.3 运行期递归与工作流环
+
+即使没有启动依赖图，仍需防止：
+
+```text
+AI → Tool A → 再次调用 AI → Tool A → ...
+```
+
+第一版规则：
+
+- Agent Tool Handler 不得重新发起模型推理；
+- Handler 不得递归调用 Agent Tool Gateway；
+- `AgentToolContext` 携带 CorrelationId、InvocationId 和调用深度；
+- 最大工具嵌套深度为 1；
+- 工作流变量引用只能前向，计划图必须无环；
+- 同一 Mutating InvocationId 的重复请求必须返回已有结果或受控冲突，不能重复产生副作用。
+
+---
+
+## 10. 权限、安全与可靠性边界
+
+### 10.1 信任模型
+
+插件运行在同一进程，当前 ALC 和 Provider 隔离不是安全沙箱。Agent Tool 机制的目标是最小化可调用面、提供治理和审计，不是防御恶意本地插件突破进程权限。
+
+模型输出、工具描述、工具参数和外部内容都应视为不可信数据。
+
+### 10.2 Host 必须拥有的政策
+
+| 政策 | 最低要求 |
 | --- | --- |
-| 执行 `encrypt_video` 必须拿到加密后的文件路径 | ❌ `Publish<TEvent>` 无返回值，只表达通知 |
-| 必须确认"对方真的处理了" | ❌ 无订阅者时正常返回，不能作为能力存在证明 |
-| 参数校验、超时、结构化结果 | ❌ 总线只同步传播处理器异常，不提供返回值或超时协议 |
+| 参数 | Schema 后再次做业务校验；路径规范化；拒绝越界路径和未知字段 |
+| 风险 | ReadOnly / Mutating / Destructive / Sensitive 分级 |
+| 确认 | Destructive/Sensitive 每次调用确认；模型不能代替用户授权 |
+| 超时 | Host 为每个工具设置上限；超时触发协作取消，但不宣称能强杀进程内代码 |
+| 输出 | 限制 JSON 深度、字节数和集合数量；`JsonElement` 必须克隆后跨边界 |
+| 并发 | 每工具/插件/工作流限流；Mutating 工具默认串行 |
+| 幂等 | 写操作携带 InvocationId；工具声明是否支持重试 |
+| 诊断 | Host 记录 OwnerId、ToolId、阶段、耗时和稳定错误码；不持久化插件异常正文和秘密 |
+| 关闭 | `HostRuntime.BeginShutdown` 后拒绝新工具调用；等待或取消在途调用，再停止插件生命周期 |
 
-**广播总线适合"一对多通知"，不适合"一对一请求-响应"。**
+### 10.3 删除与加密用例的事务语义
 
-### 7.2 正确通道：DI + 公共契约
+“加密后删除源文件”不应拆成不受约束的两个模型决定。优先提供一个业务原子工具：
 
-所有 Managed Plugin 的 `Configure` 都可通过 `context.Services` 注册进**同一个根容器**，调用链是纯 DI 的：
-
-```mermaid
-flowchart LR
-    Act["CapabilityActivity (Elsa)"] --> Reg["CapabilityRegistry"]
-    Reg -->|"按名称解析"| Cap["IPluginCapability 实例"]
-    Cap -->|"插件内部直接调自己的服务"| Svc["BiliDownloader 协调器 / 加密服务"]
+```text
+encrypt_video(deleteSourceAfterSuccess = true)
 ```
 
-依赖方向的关键点——**工作流插件绝不引用 BiliDownloader 的程序集**，双方只共同依赖 `MyAvaloniaManagementCommon`：
+由工具实现保证：
 
-```mermaid
-flowchart TB
-    Common["MyAvaloniaManagementCommon<br/>定义 IPluginCapability 契约"]
-    WF["工作流插件<br/>消费 IEnumerable&lt;IPluginCapability&gt;"]
-    Bili["BiliDownloader 插件<br/>实现并注册 IPluginCapability"]
-    Small["MySmallTools 插件<br/>实现并注册 IPluginCapability"]
-    WF --> Common
-    Bili --> Common
-    Small --> Common
-```
+1. 输出写入临时文件；
+2. 完整性校验成功；
+3. 原子提交加密文件；
+4. 只有提交成功后才删除源文件；
+5. 删除失败返回可恢复的部分成功结果，不谎报全成功。
 
-通道职责分工：
+AI 只选择显式业务选项，不自行拼接“加密工具 + 任意文件删除工具”制造脆弱事务。
 
-| 通道 | 职责 | 例子 |
-| --- | --- | --- |
-| **DI 契约调用**（新增） | 请求-响应式的能力执行 | 下载、加密、删除 |
-| **消息总线**（现有，不动） | 状态/事件广播，发完不关心谁收 | `WorkflowStepProgress`、`WorkflowCompleted` → Tool 面板、AI 汇报各自订阅 |
+### 10.4 密码与凭据
 
-### 7.3 返回值设计：跨边界只用"共享类型"
+- API Key 使用插件私有安全存储，不进入 Document、Registry、提示词日志或诊断；
+- 工作流密码使用短期 Secret Store，计划只保存 secret reference；
+- UI 展示和模型结果总结必须脱敏；
+- Tool Handler 只在调用期间取得所需秘密，不把秘密写入结果；
+- 任何工作流持久化引擎接入前，必须通过“无秘密落盘”专项测试。
 
-规则：**跨越插件边界的参数和返回值，只能使用 BCL 类型或定义在 MyAvaloniaManagementCommon 里的类型**，绝不能用某个插件私有的类型（调用方看不见该类型，无法 cast）。
+---
 
-因此契约出入参统一用 `JsonElement`，三重好处：
+## 11. UI、Document、Tool 与事件映射
 
-| 好处 | 说明 |
+| 当前扩展概念 | AI 工作流插件中的角色 |
 | --- | --- |
-| 跨 ALC 安全 | `JsonElement` 是 BCL 类型，永远来自同一份运行时程序集，没有类型身份问题 |
-| 与 AI 无缝衔接 | DeepSeek tool_call 的 arguments 本来就是 JSON，执行结果直接回填模型，全程零转换 |
-| 与 Elsa 无缝衔接 | 工作流变量存 JSON 即可持久化 |
+| `IPluginModule` | 注册 AI 客户端、计划器、执行器、Agent Tool 消费端和 UI 贡献 |
+| `IPluginLifecycle` | 启动/停止工作流后台队列、恢复服务和模型客户端资源；不依赖视觉树 |
+| `IPersistablePluginDocument` | 可选：保存脱敏后的工作流定义、对话或运行查看状态，遵守 Document 信封 v2 |
+| Tool singleton | 工作流队列、运行状态、失败诊断和人工确认入口 |
+| `IHostEventBus` | 工作流进度、步骤完成、终态通知；不承担工具请求—响应 |
 
-能力实现内部的处理模式——**进了插件大门再换强类型，出门前序列化回 JSON**：
+建议将“工作流运行真相”保留在工作流插件自己的状态存储/执行引擎中，Tool 只消费投影。Document 和 Tool 不直接持有其他插件 Handler。
 
-```csharp
-public async Task<JsonElement> InvokeAsync(JsonElement p, CancellationToken ct)
-{
-    var req = p.Deserialize<DownloadRequest>();          // 插件内部私有类型，随便用
-    var result = await _coordinator.DownloadAllAsync(req, ct);
-    return JsonSerializer.SerializeToElement(new
-    {
-        files = result.FilePaths,
-        count = result.FilePaths.Count
-    });
-}
-```
+事件类型若只由 AI 工作流插件内部 Document/Tool 使用，可以留在同一插件程序集；若需要跨插件订阅，事件契约必须进入 Host 共享 SDK，并接受公共 API 兼容约束。
 
 ---
 
-## 8. 跨插件调用的安全性分析（基于现有加载器代码）
+## 12. 对当前代码的预期影响
 
-结合 [`PluginLoadContext.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginLoadContext.cs) 与 [`AssemblyLoaderHelper.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs) 的实际实现：
+本表只描述未来实施落点，不表示已经修改。
 
-### 8.1 没有问题的部分
+| 现有区域 | 预期变化 |
+| --- | --- |
+| `MyAvaloniaManagement.PluginSdk` | 第一版增加最小 Agent Tool 通用契约、稳定 ID、描述符、调用结果和 Gateway Port；规模增长后再评审拆包 |
+| `PluginRegistrationContracts.cs` | 增加 `AddAgentTool<TArguments,TResult,THandler>` |
+| `PluginRegistrationContext.cs` | 注册 Handler 到当前插件私有集合，并把声明写入临时 Builder |
+| `PluginRegistryBuilder.cs` | 本地/全局 ToolId、Handler、Schema、共享类型与冲突校验 |
+| `PluginRegistry.cs` | 冻结 Agent Tool 注册元数据和目录 revision |
+| `PluginProviderOwner.cs` | 为消费插件注入带 CallerId 的 Gateway facade；按 OwnerId 解析 Agent Tool Handler |
+| `PluginLifecycleStateStore.cs` | Gateway 复用现有 Owner 可用性门控 |
+| `HostRuntime.cs` | Registry 提交目录快照；关闭时先撤回调用入口并处理在途调用 |
+| `PluginSharedAssemblyPolicy.cs` | 第一版沿用 Core SDK 共享闭包；若以后拆出 AI SDK，再将其作为明确共享根。普通 AI/Elsa/业务依赖始终保持私有 |
+| Diagnostics / Plugin Status Tool | 增加工具注册、不可用、参数、确认、超时、执行失败等稳定错误码和投影 |
+| PluginTests | 保持私有服务不可跨插件解析，新增 Agent Tool 路由与失败隔离测试 |
 
-1. **契约类型身份安全**。`PluginLoadContext.Load` 找不到程序集时返回 `null`，ALC 规则回退到默认上下文解析。只要插件部署目录里不带 `MyAvaloniaManagementCommon.dll`，所有插件拿到的 `IPluginCapability` 就是默认上下文的同一份类型，cast 与 DI 注册/解析完全正常。
-2. **对象传递、异常、线程无障碍**。ALC 隔离的是"程序集从哪加载"，不是对象。所有插件共享同一个 GC 堆、同一个 DI 容器、同一个线程池；能力实现内部 async 跑在自己的线程上，`await` 天然处理。
-3. **DI 解析顺序天然正确**。所有插件的 `Configure` 执行完才 `BuildServiceProvider`，`IEnumerable<IPluginCapability>` 一定能收全。
+不应发生的变化：
 
-### 8.2 必须防住的三个坑
-
-| # | 坑 | 后果 | 对策 |
-| --- | --- | --- | --- |
-| 1 | **插件目录混入共享契约 DLL**（最危险） | `PluginLoadContext.Load` 优先从插件目录加载，出现两份 Common → 两个不同身份的 `IPluginCapability` → DI 集合注入**静默收空**，不报错 | publish 部署 Target 排除 Common 及宿主共享依赖（沿用现有"按文件名排除"机制） |
-| 2 | 第三方库版本冲突"先到先得" | `CurrentDomain_AssemblyResolve` 遍历所有插件上下文解析，谁先命中用谁，可能串版本 | 能力方案不加剧此问题；但 Elsa 传递依赖多，应纳入"共享依赖清单"统一管理 |
-| 3 | 能力的生命周期归属错 | 能力注册成 scoped/transient，工作流插件解析不到其内部依赖 | 能力统一注册为**根容器 singleton**；若内部需 scoped 资源，由能力实现自己 `CreateScope()` 用完即弃，对调用方透明 |
-
----
-
-## 9. 用例句完整走一遍
-
-输入："从 a 网址下载全部视频，最高画质只下载视频，下载好后加密，加密后删掉原视频，密码 123456"
-
-1. **发现**：注册表有 4 个能力，渲染进系统提示词
-2. **规划**：DeepSeek 返回 `submit_plan` tool_call——两个 step（download 输出 `dl`；forEach `${dl.files}` 执行 encrypt，`delete_source=true`、`password=123456`）
-3. **分析**：五关校验全过；风险扫描发现 encrypt 带 `delete_source=true` → 标注"将删除原文件"
-4. **确认**：UI 展示 summary + 风险项，用户点执行
-5. **调用**：Elsa 执行 Sequence → ForEach，Activity 经注册表调用插件真实服务（DI 直接方法调用）
-6. **回流**：状态实时投影到 Tool 面板，完成后 AI 汇总回复
+- 不把所有插件 ServiceCollection 合并；
+- 不让 Registry 保存 Provider/Handler；
+- 不允许 AI 插件取得任意 Provider；
+- 不增加进程级 AssemblyResolve；
+- 不把 Elsa、DeepSeek SDK 或插件业务依赖加入 Host 共享闭包；
+- 不改变事件总线为请求—响应总线。
 
 ---
 
-## 10. 未知点与风险清单（探索需要验证的内容）
+## 13. 分阶段实施建议
 
-| # | 未知点 | 验证方式 | 影响 |
-| --- | --- | --- | --- |
-| 1 | DeepSeek-chat 对中文长能力清单的 tool_call 参数准确率 | 固定 10 条测试语料跑通过率 | 决定提示词要打磨到什么程度 |
-| 2 | Elsa 3.x 在 net10 运行时 + PluginLoadContext 部署模式下是否正常 | 最小 console 跑一个动态构建的工作流 | 若不行，降级为自研轻量顺序执行器（计划格式不变） |
-| 3 | `${var.field}` 解析遇到嵌套结构是否够用 | 用例覆盖 | 不够则引入 JSONPath，但要控制复杂度 |
-| 4 | 能力清单变大后提示词膨胀（token 成本/注意力稀释） | 20 个能力规模测试 | 未来需要能力分组或 embedding 检索，探索期不做 |
-| 5 | 校验修复循环是否收敛（AI 反复改不对） | 故障注入测试 | 上限 2 次重试是经验值，需实测 |
-| 6 | **现有下载/加密入口是否可被封装成无 UI 依赖的能力调用** | 读现有服务接口 | 若能力入口耦合在 Document ViewModel 上，需先抽服务层（最大隐患） |
+### 阶段 A：契约与假工具门禁
 
-其中 #6 是现有代码侧最大的隐患：如果下载/加密的入口目前挂在 Document ViewModel 上而不是独立服务上，封装能力前要先做一轮服务抽取。
+- 冻结 Agent Tool ID、Descriptor、Handler 和 Gateway 最小 API；
+- 使用两个测试插件注册假 ReadOnly/Mutating 工具；
+- 完成 Registry 冲突、可用性、JSON Schema、结果上限和 Provider 所有权测试；
+- 不接模型、不接 Elsa、不改真实业务插件。
 
-**安全红线（探索期即确立）**：
+退出条件：AI 插件无需引用提供者程序集即可列举并调用假工具，私有服务隔离测试保持通过。
 
-- Destructive 操作（删除文件等）执行前必须经用户确认，AI 不得全自动直达
-- 密码等敏感参数在 UI 展示计划时按需脱敏；凭据不写入日志
-- 能力注册表未来应支持白名单（对应架构评审中"能力权限声明"缺失项）
+### 阶段 B：真实业务适配器
+
+- 为 BiliDownloader 选择一个无 UI 依赖的查询能力和一个受控下载提交能力；
+- 为 MySmallTools 选择一个加密能力；
+- Handler 只包装已有应用服务，不从 ViewModel 抽取临时状态；
+- 建立加密成功后删除源文件的事务与恢复语义。
+
+退出条件：不接 AI 时，可通过 Gateway 完成确定性端到端用例。
+
+### 阶段 C：DeepSeek 规划 PoC
+
+- 模型适配器与 Agent Tool 目录解耦；
+- 工具清单运行时渲染，不在提示词硬编码；
+- 强制结构化 `submit_plan`；
+- 建立固定中文语料集、缺参追问、幻觉工具、非法枚举和恶意参数测试；
+- 实施时重新核对 DeepSeek 官方模型、Tool Calls、Schema 限制、配额和数据政策。
+
+退出条件：模型只生成候选计划；任何模型输出都不能绕过验证器调用真实工具。
+
+### 阶段 D：轻量工作流执行器
+
+- Sequence、ForEach、变量引用、取消、失败停止、步骤事件；
+- 风险确认、Secret Store、InvocationId 和输出上限；
+- Tool 状态面板与结果总结。
+
+退出条件：典型“下载 → 加密 → 成功后删除源文件”用例两轮完整通过，故障注入不造成误删或重复提交。
+
+### 阶段 E：持久化引擎决策
+
+- 评估是否已有长运行、书签、审批、重启恢复的真实需求；
+- 若有，执行 Elsa 独立 ALC、发布物、数据库、迁移、日志脱敏和退出恢复 PoC；
+- 若无，继续保持轻量执行器，避免提前承担框架复杂度。
+
+### 阶段 F：产品化
+
+- 可保存工作流定义；
+- 运行历史、恢复和审计；
+- 工具搜索/筛选；
+- 权限管理 UI；
+- 其他模型提供者适配；
+- 对外 SDK 文档和兼容基线。
 
 ---
 
-## 11. .NET 10 工程注意事项
+## 14. 验收矩阵
 
-1. **Elsa 包 TFM**：Elsa 3.x 目标框架为 net8/net9，在 net10 项目中引用可正常运行（高版本运行时向下兼容），无阻断性警告；锁定最新稳定版后先跑 PluginTests 验证。
-2. **中央包管理**：项目使用 `Directory.Packages.props` + `packages.lock.json`，Elsa、`Microsoft.Extensions.AI`、`OpenAI` 包版本需加进 props，lock 模式记得 `dotnet restore --force-evaluate`。
-3. **插件部署**：工作流插件独立目录部署时，Elsa 大量传递依赖 DLL 会随 publish 进入其 Controls 目录；若未来多插件共享 Elsa，应放进宿主共享依赖（按"按文件名排除"部署规则处理）。
-4. **DeepSeek 模型选择**：Agent 用 `deepseek-chat`；若未来想用 reasoner 做复杂规划，只能采用"reasoner 输出文本计划 → 程序解析"的退化方案。
+### 14.1 架构与隔离
+
+- 插件私有服务仍不能由 Host 或另一个插件直接解析；
+- AI 插件不引用 BiliDownloader/MySmallTools 程序集；
+- Registry 不保存 Provider 或 Handler 实例；
+- Agent Tool 契约随 Core SDK 只从默认 ALC 共享，插件私带不兼容副本时受控隔离；
+- 未声明的普通 DI 服务不会自动成为 AI Tool；
+- 新增工具插件不需要修改或重新编译 AI 插件。
+
+### 14.2 Registry 与运行期
+
+- 单插件重复 ToolId、跨插件冲突、非法 Schema、错误 Handler 类型均有稳定诊断；
+- 工具所有者未 Ready、失败、超时或开始停止时不可调用；
+- 一个工具插件失败不影响 AI 插件和无关工具；
+- Gateway 调用可归因到 CallerId、OwnerId、ToolId 和 InvocationId；
+- Host 关闭后拒绝新调用，Provider 不会在 Handler 执行中被提前释放。
+
+### 14.3 AI 与计划安全
+
+- 幻觉 ToolId、未知参数、非法枚举、后向/循环引用全部在执行前拒绝；
+- 缺少网址、密码等必需信息时只追问，不猜测；
+- Destructive/Sensitive 操作未经用户确认不能执行；
+- 模型参数即使符合 Tool Calls 格式仍需 Host Schema 和业务校验；
+- 修复循环有次数上限，不把插件异常正文回填模型。
+
+### 14.4 数据与故障
+
+- 密码、API Key、Cookie 不进入日志、计划正文、Document 信封和工作流持久化；
+- 下载失败不会进入加密步骤；
+- 加密校验失败不会删除源文件；
+- 删除失败返回部分成功而不是全成功；
+- 重复 InvocationId 不重复执行 Mutating 操作；
+- 超时、取消和应用退出均有可诊断的终态。
 
 ---
 
-## 12. PoC 验证步骤（不做产品，只打桩验证）
+## 15. 实施前仍需决定的问题
 
-| 步骤 | 内容 | 耗时 | 对应未知点 |
-| --- | --- | --- | --- |
-| 1 | 裸 HTTP 调 DeepSeek，塞 2 个假能力清单 + 本文系统提示词，验证 10 条语料的计划生成准确率 | 半天 | #1 |
-| 2 | net10 控制台引用 Elsa，代码动态构建 Sequence + ForEach 跑通假 Activity | 半天 | #2 |
-| 3 | 写校验管线五关 + 修复循环，用步骤 1 的真实 AI 输出喂进去 | 半天 | #3 #5 |
-| 4 | 翻一遍 BiliDownloader / MySmallTools 现有服务层，确认能力封装点是否干净 | 检查 | #6 |
-
-四步全绿即可进入正式实施排期；任何一步红了对应调整（例如 #2 失败则自研执行器，方案其余部分完全不受影响——**这正是把"计划格式"设计成与执行引擎解耦的价值**）。
-
-## 13. 实施路径建议（供后续立项参考）
-
-1. **P0**：在 Common 定义 `IPluginCapability`，让 1~2 个现有插件注册能力，建能力注册表
-2. **P1**：接 DeepSeek，实现"对话 → AI 出计划 → 校验 → 直接顺序执行"（先不上 Elsa，验证价值）
-3. **P2**：引入 Elsa，能力包装成 Activity，支持工作流持久化、暂停恢复
-4. **P3**：Avalonia 工作流画布、运行状态 Tool、AI 自动生成工作流定义
-
-> 注：Elsa 官方可视化设计器是 Blazor/Web 版，不能直接嵌入 Avalonia。图形化编辑器需自研（或先不做图形化，用 JSON 定义 + AI 生成工作流——与本方案天然契合）。
+1. Agent Tool 契约何时需要从 Core SDK 拆出独立 `PluginSdk.AI`；本文建议第一版不拆，出现明确的独立版本或包体边界需求后再评审。
+2. 第一版 JSON Schema 是插件显式提供，还是由 `TArguments` 生成后允许补充；推荐显式/生成混合，但先用少量真实工具验证。
+3. Host 的确认 UI 由现有窗口交互端口扩展，还是增加专门的 Agent Authorization Port；推荐专门端口，避免通用窗口接口承担安全语义。
+4. 第一版工作流是否只支持严格线性 + ForEach；本文建议是。
+5. Mutating 工具的幂等结果保存位置和保留周期。
+6. Workflow Secret Store 是否只支持当前进程，还是需要凭据保护后的恢复；第一版建议只支持当前会话并禁止秘密随工作流恢复。
+7. DeepSeek 只是首个模型适配器，还是产品契约直接绑定 DeepSeek；本文建议模型无关，DeepSeek 仅是实现。
+8. 哪些 BiliDownloader / MySmallTools 服务已满足“无视觉树依赖、可取消、结果结构化、失败不泄漏敏感信息”的工具封装条件。
 
 ---
 
-## 14. 一句话总结
+## 16. 非目标
 
-**DI 负责"调用"，消息总线负责"通知"，AI 负责"规划"，Elsa 负责"执行"。** 架构上完全可行，缺的不是工作流组件，而是"插件能力契约"这一层。先把能力描述/调用契约补上，Elsa + DeepSeek 就能顺畅接进来。
+本规划不包含：
+
+- 恶意插件进程隔离或权限沙箱；
+- 插件热安装、热卸载或 ALC 回收；
+- 让模型反射调用任意 public 方法；
+- 自动把所有 DI 服务暴露为工具；
+- 通用跨插件 Service Locator；
+- Required 插件依赖图的完整实现；
+- 第一阶段的任意脚本、无限循环或自动补偿；
+- 将 Elsa Studio/Web Designer 直接视为 Avalonia 内嵌设计器。
+
+---
+
+## 17. 最终建议
+
+当前架构下最稳妥的实施路线是：
+
+> **插件通过 `AddAgentTool` 声明经过安全包装的工具；Host 用不可变 Registry、所有者 Provider 路由、可用性门控和统一授权执行工具；AI 插件只依赖 `IAgentToolGateway`，动态读取工具目录并生成经过确定性验证的计划。**
+
+这条路线保留了 V2 最重要的结构性成果：每插件私有 Provider、独立 ALC、显式贡献、不可变 Registry、Host 单一编排权、失败隔离和确定性释放；同时解决了“新增一个插件能力就必须修改 DeepSeek 插件”的扩展性问题。
+
+一句话职责划分：
+
+> **Registry 负责声明，Gateway 负责治理与调用，AI 负责规划，执行器负责状态推进，事件总线只负责通知。**
