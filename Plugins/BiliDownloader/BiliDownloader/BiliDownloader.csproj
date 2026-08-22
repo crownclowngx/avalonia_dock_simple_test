@@ -10,7 +10,7 @@
         <ManagedPlugin>true</ManagedPlugin>
         <ManagedPluginId>myavalonia.plugin.bili-downloader</ManagedPluginId>
         <ManagedPluginDirectoryName>BiliDownloader</ManagedPluginDirectoryName>
-        <PluginVersion>2.0.0</PluginVersion>
+        <PluginVersion>3.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
         <ManagedPluginEntryType>BiliDownloader.Plugin.BiliDownloaderPluginModule</ManagedPluginEntryType>
         <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>

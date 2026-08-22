@@ -176,7 +176,7 @@ public sealed class PluginManifestCompatibilityTests
     }
 
     [Fact]
-    public void 不兼容损坏入口不会被读取且不阻断兼容插件()
+    public void V2插件在执行入口前被拒绝且不阻断V3插件()
     {
         var snapshot = AssemblyLoaderHelper.Discover(
             "PluginManifestCompatibilityFixtures");
@@ -187,6 +187,8 @@ public sealed class PluginManifestCompatibilityTests
             snapshot.Diagnostics,
             item => item.Code == HostDiagnosticCodes.PluginSdkIncompatible &&
                     item.PluginDirectory == "Incompatible");
+        // Incompatible 目录故意只放置一个无法加载的伪 DLL。若宿主先执行入口再判断 SDK，
+        // 这里会出现入口或程序集诊断；只出现版本不兼容证明 V2 在代码执行前被稳定拒绝。
         Assert.DoesNotContain(
             snapshot.Diagnostics,
             item => item.PluginDirectory == "Incompatible" &&

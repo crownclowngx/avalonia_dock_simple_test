@@ -6,5 +6,5 @@
     "assembly": "PluginIsolation.PluginV2.dll",
     "type": "PluginIsolation.Plugin.IsolationPluginModule"
   },
-  "sdk": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" }
+  "sdk": { "minInclusive": "3.0.0", "maxExclusive": "4.0.0" }
 }

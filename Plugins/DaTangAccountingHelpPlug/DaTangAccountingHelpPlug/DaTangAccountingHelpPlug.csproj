@@ -7,7 +7,7 @@
         <ManagedPlugin>true</ManagedPlugin>
         <ManagedPluginId>myavalonia.plugin.datang-accounting-help</ManagedPluginId>
         <ManagedPluginDirectoryName>DaTang</ManagedPluginDirectoryName>
-        <PluginVersion>2.0.0</PluginVersion>
+        <PluginVersion>3.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
         <ManagedPluginEntryType>DaTangAccountingHelpPlug.Plugin.DaTangAccountingHelpPluginModule</ManagedPluginEntryType>
         <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>

@@ -338,7 +338,7 @@ public static class Removed
 }
 '@ $false @('DocumentContentSnapshot', 'DocumentTypeIdSystemTextJsonConverter') | Out-Null
 
-    Write-Host '[G2 SDK Package] 通过：Core/UI 内容、依赖白名单、包含窗口交互端口的两个正例和十个反向消费夹具符合预期。'
+    Write-Host '[SDK Package] 通过：Core/UI 内容、依赖白名单、包含窗口交互端口的两个正例和十个反向消费夹具符合预期。'
 }
 finally {
     if (Test-Path -LiteralPath $temporaryRoot) {

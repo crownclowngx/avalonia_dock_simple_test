@@ -34,15 +34,15 @@ function Write-FixtureText {
 }
 
 function Write-VersionFixture {
-    param([Parameter(Mandatory)] [string]$Root, [string]$SdkVersion = '2.0.0')
+    param([Parameter(Mandatory)] [string]$Root, [string]$SdkVersion = '3.0.0')
     Write-FixtureText (Join-Path $Root 'Directory.Version.props') @"
 <Project><PropertyGroup>
   <MyAvaloniaProductVersion>$SdkVersion</MyAvaloniaProductVersion>
   <MyAvaloniaProductAssemblyVersion>$SdkVersion.0</MyAvaloniaProductAssemblyVersion>
   <MyAvaloniaPluginSdkVersion>$SdkVersion</MyAvaloniaPluginSdkVersion>
-  <MyAvaloniaPluginSdkNextMajorVersion>3.0.0</MyAvaloniaPluginSdkNextMajorVersion>
+  <MyAvaloniaPluginSdkNextMajorVersion>4.0.0</MyAvaloniaPluginSdkNextMajorVersion>
   <MyAvaloniaPluginSdkAssemblyVersion>$SdkVersion.0</MyAvaloniaPluginSdkAssemblyVersion>
-  <MyAvaloniaPluginSdkApiBaseline>v2</MyAvaloniaPluginSdkApiBaseline>
+  <MyAvaloniaPluginSdkApiBaseline>v3</MyAvaloniaPluginSdkApiBaseline>
 </PropertyGroup></Project>
 "@
     Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v1/PublicAPI.Shipped.txt') "#nullable enable`nFixture.V1Type`n"
@@ -51,6 +51,10 @@ function Write-VersionFixture {
     Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`n"
     Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/PublicAPI.Shipped.txt') "#nullable enable`nFixture.UiType`n"
     Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Shipped.txt') "#nullable enable`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Unshipped.txt') "#nullable enable`nFixture.CoreType`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v3/PublicAPI.Shipped.txt') "#nullable enable`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v3/PublicAPI.Unshipped.txt') "#nullable enable`nFixture.UiType`n"
 }
 
 function Write-PluginFixture {
@@ -62,7 +66,7 @@ function Write-PluginFixture {
     $minimumExpression = '$(MyAvaloniaPluginSdkVersion)'
     Write-FixtureText (Join-Path $Root $RelativePath) @"
 <Project><PropertyGroup>
-  <ManagedPlugin>true</ManagedPlugin><PluginVersion>2.0.0</PluginVersion>
+  <ManagedPlugin>true</ManagedPlugin><PluginVersion>3.0.0</PluginVersion>
   <ManagedPluginEntryType>Fixture.Plugin.FixturePluginModule</ManagedPluginEntryType>
   <ManagedPluginSdkMinInclusive>$minimumExpression</ManagedPluginSdkMinInclusive>
   <ManagedPluginSdkMaxExclusive>$MaximumExpression</ManagedPluginSdkMaxExclusive>
@@ -148,29 +152,36 @@ try {
     Write-VersionFixture -Root $testRoot
     Write-PluginFixture -Root $testRoot -RelativePath $pluginProject
     $facts = Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
-    Assert-True ($facts.SdkVersion -ceq '2.0.0' -and $facts.Plugins.Count -eq 1 -and
-        $facts.ShippedEntries -eq 2 -and $facts.UnshippedEntries -eq 0) (
-        'V2 版本、插件或 G14 Shipped 事实没有正确读取。')
+    Assert-True ($facts.SdkVersion -ceq '3.0.0' -and $facts.Plugins.Count -eq 1 -and
+        $facts.ShippedEntries -eq 0 -and $facts.UnshippedEntries -eq 2) (
+        'V3 版本、插件或 G1 Unshipped 事实没有正确读取。')
     Write-FixtureText `
-        (Join-Path $testRoot 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Unshipped.txt') `
-        "#nullable enable`nFixture.LateAddition`n"
+        (Join-Path $testRoot 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Shipped.txt') `
+        "#nullable enable`nFixture.PublishedTooEarly`n"
     Assert-ThrowsLike {
         Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
-    } 'Unshipped 必须为空'
+    } 'Shipped 必须为空'
     Write-VersionFixture -Root $testRoot
     Write-FixtureText `
-        (Join-Path $testRoot 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Shipped.txt') `
+        (Join-Path $testRoot 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Unshipped.txt') `
         "#nullable enable`n"
     Assert-ThrowsLike {
         Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
-    } 'Shipped 不能为空'
+    } 'Unshipped 不能为空'
     Write-VersionFixture -Root $testRoot
-    Write-VersionFixture -Root $testRoot -SdkVersion '2.1.0'
+    Write-FixtureText `
+        (Join-Path $testRoot 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Unshipped.txt') `
+        "#nullable enable`nFixture.ChangedType`n"
+    Assert-ThrowsLike {
+        Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
+    } '必须与 V2 Shipped 完全一致'
+    Write-VersionFixture -Root $testRoot
+    Write-VersionFixture -Root $testRoot -SdkVersion '3.1.0'
     Assert-ThrowsLike {
         Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
     } '插件版本'
     Write-VersionFixture -Root $testRoot
-    Write-PluginFixture -Root $testRoot -RelativePath $pluginProject -MaximumExpression '4.0.0'
+    Write-PluginFixture -Root $testRoot -RelativePath $pluginProject -MaximumExpression '5.0.0'
     Assert-ThrowsLike {
         Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
     } '没有投影集中 SDK 区间'

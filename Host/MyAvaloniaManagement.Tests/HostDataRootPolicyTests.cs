@@ -1,12 +1,13 @@
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 
 namespace MyAvaloniaManagement.Tests;
 
 /// <summary>
-/// 验证 Managed Plugin V2 数据根的选择、覆盖和 V1 数据保留边界。
+/// 验证 V3 代码线继续使用 V2 数据根，并保护既有 V2/V1 磁盘事实。
 /// </summary>
 /// <remarks>
 /// 这些测试只向纯 Policy 传入路径，不修改进程环境变量，避免并行测试互相污染。
@@ -117,6 +118,38 @@ public sealed class HostDataRootPolicyTests
             v2Root,
             AppearanceSettingsStore.SettingsFileName)));
         Assert.True(File.Exists(newDiagnosticPath));
+    }
+
+    [Fact]
+    public void V3可以读取既有V2文档与布局且不会改写源文件()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var dataRoot = HostDataRootPolicy.Resolve(null, workspace.Root);
+        Directory.CreateDirectory(dataRoot);
+        var documentPath = Path.Combine(dataRoot, "existing-v2.mamdoc");
+        var layoutPath = Path.Combine(dataRoot, DockLayoutStore.LayoutFileName);
+        const string documentJson =
+            "{\"schemaVersion\":2,\"pluginId\":\"myavalonia.plugin.g1-boundary\"," +
+            "\"documentTypeId\":\"myavalonia.plugin.g1-boundary.document.sample\"," +
+            "\"title\":\"V2 existing\",\"savedAtUtc\":\"2026-08-22T00:00:00+00:00\"," +
+            "\"content\":{\"schemaVersion\":1,\"payload\":{\"value\":\"kept\"}}}";
+        const string layoutJson =
+            "{\"schemaVersion\":2,\"panes\":[],\"tools\":[],\"activeToolId\":null}";
+        File.WriteAllText(documentPath, documentJson);
+        File.WriteAllText(layoutPath, layoutJson);
+
+        // G1 只允许读取既有格式，不允许用“升级主版本”为理由触发保存、迁移或隔离。
+        var envelope = new DocumentEnvelopeSerializer().Deserialize(
+            File.ReadAllText(documentPath));
+        var layout = new DockLayoutStore(layoutPath).Load();
+
+        Assert.Equal("myavalonia.plugin.g1-boundary", envelope.PluginId.Value);
+        Assert.Equal("kept", envelope.Content.Payload.GetProperty("value").GetString());
+        Assert.NotNull(layout);
+        Assert.Equal(2, layout.SchemaVersion);
+        Assert.Equal(documentJson, File.ReadAllText(documentPath));
+        Assert.Equal(layoutJson, File.ReadAllText(layoutPath));
+        Assert.Empty(Directory.GetFiles(dataRoot, "*.invalid.bak"));
     }
 
     private sealed class TemporaryWorkspace : IDisposable

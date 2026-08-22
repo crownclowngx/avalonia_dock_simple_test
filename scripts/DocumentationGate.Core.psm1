@@ -313,7 +313,7 @@ function Get-ManagementBaselineFacts {
     $legacyHostApiVersionNode = $versionDocument.SelectSingleNode(
         '/Project/PropertyGroup/MyAvaloniaHostApiAssemblyVersion')
     Assert-DocumentationCondition ($null -eq $legacyHostApiVersionNode) (
-        'V2 不得继续声明独立 MyAvaloniaHostApiAssemblyVersion。')
+        'V3 不得重新声明独立 MyAvaloniaHostApiAssemblyVersion。')
     $expectedHostAssemblyVersion = [Version]::new(
         $productVersion.Major, $productVersion.Minor, $productVersion.Build, 0)
     Assert-DocumentationCondition ($hostAssemblyVersion -eq $expectedHostAssemblyVersion) (
@@ -326,8 +326,8 @@ function Get-ManagementBaselineFacts {
     Assert-DocumentationCondition ($apiBaseline -ceq "v$($sdkVersion.Major)") (
         "活动 API 基线 $apiBaseline 与 SDK 主版本 $($sdkVersion.Major) 不一致。")
 
-    # G14 已把 Core/UI 的 2.0.0 public 表面签署为正式兼容承诺。两个程序集各自维护
-    # Shipped 文本；Unshipped 只留给封板后的兼容新增，封板快照本身必须为空。
+    # V3 G1 只切换活动主版本，没有发布或改变 C# public 形状。活动 Shipped 必须为空，
+    # 全部现有签名进入 Unshipped；V2 Shipped 则继续作为历史正式承诺保留。
     $sdkApiRoots = @(
         Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk\ApiCompatibility\$apiBaseline"
         Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk.UI\ApiCompatibility\$apiBaseline"
@@ -348,10 +348,21 @@ function Get-ManagementBaselineFacts {
                 Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         $unshippedEntries = @(Get-Content -LiteralPath $unshippedPath | Select-Object -Skip 1 |
                 Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-        Assert-DocumentationCondition ($shippedEntries.Count -gt 0) (
-            "G14 已封板 SDK 的 Shipped 不能为空：$baselineRoot")
-        Assert-DocumentationCondition ($unshippedEntries.Count -eq 0) (
-            "G14 封板快照的 Unshipped 必须为空：$baselineRoot")
+        Assert-DocumentationCondition ($shippedEntries.Count -eq 0) (
+            "G1 未发布 V3 SDK 的 Shipped 必须为空：$baselineRoot")
+        Assert-DocumentationCondition ($unshippedEntries.Count -gt 0) (
+            "G1 未发布 V3 SDK 的 Unshipped 不能为空：$baselineRoot")
+
+        $v2Root = Join-Path (Split-Path $baselineRoot -Parent) 'v2'
+        $v2Shipped = @(Get-Content -LiteralPath (Join-Path $v2Root 'PublicAPI.Shipped.txt') |
+                Select-Object -Skip 1 | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        $v2Unshipped = @(Get-Content -LiteralPath (Join-Path $v2Root 'PublicAPI.Unshipped.txt') |
+                Select-Object -Skip 1 | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        Assert-DocumentationCondition ($v2Shipped.Count -gt 0 -and $v2Unshipped.Count -eq 0) (
+            "V2 历史 API 必须保持 Shipped 非空且 Unshipped 为空：$v2Root")
+        Assert-DocumentationCondition (
+            ($v2Shipped -join "`n") -ceq ($unshippedEntries -join "`n")) (
+            "V3 Unshipped 必须与 V2 Shipped 完全一致：$baselineRoot")
         $allShippedEntries.AddRange([string[]]$shippedEntries)
         $allUnshippedEntries.AddRange([string[]]$unshippedEntries)
         $apiCounts.Add([pscustomobject]@{

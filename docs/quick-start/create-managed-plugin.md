@@ -1,6 +1,7 @@
-# 创建 Managed Plugin V2
+# 创建 Managed Plugin
 
-本篇创建 `QuickStartPlugin` 的项目、稳定身份与最终 V2 模块入口。可运行事实源是 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) 和 [`MyPlugTestPluginModule`](../../Plugins/MyPlugTest/MyPlugTest/Plugin/MyPlugTestPluginModule.cs)。
+本篇按当前未发布 V3 G1 创建 `QuickStartPlugin` 的项目、稳定身份与模块入口。API 形状仍沿用 V2 G14；
+可运行事实源是 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) 和 [`MyPlugTestPluginModule`](../../Plugins/MyPlugTest/MyPlugTest/Plugin/MyPlugTestPluginModule.cs)。
 
 ## 1. 创建项目
 
@@ -21,7 +22,7 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
     <ManagedPlugin>true</ManagedPlugin>
     <ManagedPluginId>myavalonia.plugin.quick-start</ManagedPluginId>
     <ManagedPluginDirectoryName>QuickStartPlugin</ManagedPluginDirectoryName>
-    <PluginVersion>2.0.0</PluginVersion>
+    <PluginVersion>3.0.0</PluginVersion>
     <ManagedPluginEntryType>QuickStartPlugin.Plugin.QuickStartPluginModule</ManagedPluginEntryType>
     <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
     <ManagedPluginSdkMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginSdkMaxExclusive>
@@ -50,14 +51,14 @@ dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPl
 {
   "schemaVersion": 2,
   "pluginId": "myavalonia.plugin.quick-start",
-  "pluginVersion": "2.0.0",
+  "pluginVersion": "3.0.0",
   "entryPoint": {
     "assembly": "QuickStartPlugin.dll",
     "type": "QuickStartPlugin.Plugin.QuickStartPluginModule"
   },
   "sdk": {
-    "minInclusive": "2.0.0",
-    "maxExclusive": "3.0.0"
+    "minInclusive": "3.0.0",
+    "maxExclusive": "4.0.0"
   }
 }
 ```
@@ -83,7 +84,7 @@ public static class PluginIds
 }
 ```
 
-V2 只接受规范主 ID，不提供 `LegacyIds`。类名和显示文字可以变化，已发布的稳定 ID 不应变化。
+当前生产语义只接受规范主 ID，不提供 `LegacyIds`。类名和显示文字可以变化，已发布的稳定 ID 不应变化。
 
 ## 4. 建立组合根
 

@@ -73,7 +73,7 @@ internal sealed class PluginDiscoverySnapshot
 }
 
 /// <summary>
-/// 从部署目录建立 Managed Plugin v2 不可变发现快照。
+/// 从部署目录建立使用 manifest schema 2 的 Managed Plugin 不可变发现快照。
 /// </summary>
 /// <remarks>
 /// 同一规范化根目录只生成一次不可变快照。每个插件目录必须通过清单、deps 和精确入口类型预检，

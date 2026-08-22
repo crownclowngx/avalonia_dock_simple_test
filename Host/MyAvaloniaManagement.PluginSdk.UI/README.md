@@ -1,12 +1,13 @@
 # MyAvaloniaManagement Plugin SDK UI
 
-本包是 Managed Plugin V2 的真实 UI 契约程序集，提供模块入口、插件私有 DI 注册、不可变
+本包是 Managed Plugin 的 UI 契约程序集，提供模块入口、插件私有 DI 注册、不可变
 Document/Tool 描述符、Avalonia View 绑定、窗口交互端口和全屏展示端口。
 
 本包依赖同版本 Core SDK，并把 Avalonia、Fluent、Semi 和 Ursa 限制为 Host 验证的版本。
 Dock 与 Newtonsoft 不属于插件 UI 契约，插件不得通过本包取得或携带这些程序集。
 
-当前仓库已完成 V2 G14 封板：Host 生产模块入口和声明式贡献目录使用本程序集，注册时一次绑定 Descriptor、
+当前仓库已完成 V3 G1 的未发布版本切换，但 UI public 形状仍是 V2 G14 已签署语义：Host 生产模块入口
+和声明式贡献目录使用本程序集，注册时一次绑定 Descriptor、
 模型与 View，Document 为 scoped，Tool/Lifecycle 为插件 singleton。模块返回后注册入口及私有服务集合
 均被封闭；Registry 只保存不可变事实，模型创建留在 Host internal Activator。Document 通过 Core SDK
 的 `DocumentActivationContext`、`DocumentContent`、`IPluginDocument`、
@@ -19,4 +20,5 @@ G10 新增的 `IPluginWindowInteraction` 由 Host 以同一受控实例注入每
 
 G11 由同一 UI SDK 的 `IWindowContentFullscreenHost` 承载 MySmallTools 全屏交互，没有重复 Legacy
 接口或 Host 门面。BiliDownloader 已在 G12 完成迁移，G13 已删除 Legacy 项目和过渡入口。
-当前 `2.0.0` UI SDK 的 46 条 public 签名已进入 v2 Shipped，并由 G14 两轮发布门禁保护。
+当前未发布 `3.0.0` UI SDK 的 46 条现有 public 签名位于 v3 Unshipped，v3 Shipped 为空；v2 Shipped
+继续保存 V2 G14 历史承诺。本阶段不运行 Windows Smoke、ReleaseAcceptance 或任何发布门禁。

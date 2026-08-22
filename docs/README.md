@@ -4,8 +4,9 @@
 
 ## 快速开始
 
-> G14 当前事实：Managed Plugin V2 已封板。四个业务插件均使用正式 Core/UI SDK、声明式贡献和
-> 普通模型；Legacy 项目、旧入口探针与 Host/Common 双区间已经整体删除。
+> V3 G1 当前事实：源码已进入未发布的产品/SDK/四插件 `3.0.0` 版本线；public API 仍为
+> Unshipped，磁盘格式和生产语义继续沿用 V2 G14。Legacy 项目、旧入口探针与 Host/Common
+> 双区间仍保持删除状态。
 
 V2 快速开始入口：
 
@@ -20,8 +21,9 @@ V2 快速开始入口：
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
 | [宿主—插件架构评审](./design/host-plugin-architecture-review.md) | 解决方案总体结构、插件边界、当前成熟度和演进方向 | 当前事实，已按主项目内部重构更新 |
-| [Managed Plugin V3 破坏式重构任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 实施中；G0 已完成，G1–G14 尚未实施 |
+| [Managed Plugin V3 破坏式重构任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 实施中；G0–G1 已完成，G2–G14 尚未实施 |
 | [V3 G0 非发布绿色基线](./plan-history/host-v3/g0-green-baseline.md) | V2 当前测试、覆盖率、API、包图与保存竞争复现 | 已完成；不改变生产行为 |
+| [V3 G1 版本与数据边界](./plan-history/host-v3/g1-version-and-data-boundaries.md) | 未发布 3.0.0 版本线、v3 Unshipped API、V2 磁盘兼容和非发布门禁 | 已完成；不改变 public API 形状或磁盘格式 |
 | [Managed Plugin V2 封板任务书](./design/host-v2-breaking-refactor-plan.md) | V2 所有权、删除清单、阶段实施和最终签署矩阵 | G0–G14 已完成，当前签署依据 |
 | [V2 G14 封板记录](./plan-history/host-v2/g14-v2-sealing.md) | API Shipped、两轮隔离门禁、制品、SOLID 和回滚边界 | 当前 V2 正式基线 |
 | [Managed Plugin v1 封板评审与整改任务书](./design/host-v1-sealing-readiness-plan.md) | V1 封板差距、版本与兼容策略、整改包和验收标准 | V1 历史签署，已由 V2 取代 |
@@ -37,7 +39,7 @@ V2 快速开始入口：
 | [G12 统一插件构建、部署与独立发布](./plan-history/host-v1/g12-unified-plugin-build-and-deployment.md) | V1 插件构建、确定性 ZIP 和门禁证据 | V1 历史，已由 V2 构建协议取代 |
 | [Plugin SDK API 兼容基线维护指南](./reference/plugin-sdk-api-compatibility.md) | Shipped/Unshipped 生命周期、兼容新增审阅、主版本升级和排错 | 当前 SDK API 长期知识，G13 已完成 |
 | [G13 Plugin SDK API 兼容基线](./plan-history/host-v1/g13-plugin-sdk-api-compatibility-baseline.md) | v1 文本基线、成员级变异门禁和验收证据 | V1 历史 API 基线 |
-| [G14 Windows 本地发布门禁](./plan-history/host-v1/g14-windows-release-gate.md) | V1 两轮隔离、发布证据比较和失败语义 | V1 历史门禁，当前使用 V2 入口 |
+| [G14 Windows 本地发布门禁](./plan-history/host-v1/g14-windows-release-gate.md) | V1 两轮隔离、发布证据比较和失败语义 | V1 历史门禁；V3 G1 不运行发布入口 |
 | [G15 宿主诊断脱敏](./plan-history/host-v1/g15-host-diagnostic-redaction.md) | 诊断白名单、固定错误映射、敏感调试开关、SOLID 取舍和专项门禁 | 当前诊断安全边界，G15 已完成 |
 | [G16 文档与 v1 基线](./plan-history/host-v1/g16-documentation-and-v1-baseline.md) | 当前文档事实、文档门禁、四插件兼容签署、标签和回退边界 | Managed Plugin v1 最终基线，G16 已完成 |
 | [MyAvaloniaManagement 测试说明](./reference/myavalonia-management-tests.md) | 宿主专项测试、覆盖率和 Windows 冒烟门禁 | 当前事实 |
@@ -60,7 +62,7 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
 
 - [Managed Plugin V3 破坏式架构重构任务书](./design/host-v3-breaking-refactor-plan.md)：
   以修订化 Document 保存、互斥激活、插件私有消息、注册所有权、Workspace/Dock 解耦和 Host Catalog
-  分离为目标的 G0–G14 计划；当前只完成 G0 基线冻结，生产事实仍由 V2 G14 签署。
+  分离为目标的 G0–G14 计划；当前完成 G0–G1，生产语义仍由 V2 G14 签署。
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
   G0–G14 已完成的实施与最终签署任务书。
@@ -104,6 +106,8 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
 
 - [G0：冻结 V2 绿色基线](./plan-history/host-v3/g0-green-baseline.md)：以真实保存链复现无修订
   `AcceptChanges()` 的竞争，并冻结 Host/SDK/四插件的非发布测试、覆盖率、API 与确定性包证据。
+- [G1：建立 V3 版本与数据边界](./plan-history/host-v3/g1-version-and-data-boundaries.md)：统一产品、SDK
+  与四插件 3.0.0 版本线，建立 v3 Unshipped API，同时保留 manifest/Document/layout schema 2 和数据根 v2。
 
 ### Managed Plugin V2 整改记录
 

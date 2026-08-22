@@ -63,7 +63,7 @@ public sealed class PluginSdkApiBaselinePolicyTests
     }
 
     [Fact]
-    public void G14_V1历史基线未改写且Core与Ui的V2表面已封板()
+    public void G1_V1V2历史基线未改写且V3表面全部处于Unshipped()
     {
         var repositoryRoot = FindRepositoryRoot();
         var apiRoot = Path.Combine(
@@ -86,6 +86,14 @@ public sealed class PluginSdkApiBaselinePolicyTests
             uiApiRoot, "v2", "PublicAPI.Shipped.txt"));
         var uiV2Unshipped = ReadAndAssertApiFile(Path.Combine(
             uiApiRoot, "v2", "PublicAPI.Unshipped.txt"));
+        var v3Shipped = ReadAndAssertApiFile(Path.Combine(
+            apiRoot, "v3", "PublicAPI.Shipped.txt"));
+        var coreV3Unshipped = ReadAndAssertApiFile(Path.Combine(
+            apiRoot, "v3", "PublicAPI.Unshipped.txt"));
+        var uiV3Shipped = ReadAndAssertApiFile(Path.Combine(
+            uiApiRoot, "v3", "PublicAPI.Shipped.txt"));
+        var uiV3Unshipped = ReadAndAssertApiFile(Path.Combine(
+            uiApiRoot, "v3", "PublicAPI.Unshipped.txt"));
 
         Assert.NotEmpty(v1Shipped);
         Assert.Empty(v1Unshipped);
@@ -96,6 +104,12 @@ public sealed class PluginSdkApiBaselinePolicyTests
         Assert.Equal(46, uiV2Shipped.Length);
         Assert.Empty(coreV2Unshipped);
         Assert.Empty(uiV2Unshipped);
+        // G1 只建立未发布的 V3 版本线，不改变 public C# 形状。把 V2 Shipped 原样投影到
+        // V3 Unshipped，既让 Analyzer 继续保护全部签名，也避免提前制造发布承诺。
+        Assert.Empty(v3Shipped);
+        Assert.Empty(uiV3Shipped);
+        Assert.Equal(v2Shipped, coreV3Unshipped);
+        Assert.Equal(uiV2Shipped, uiV3Unshipped);
         Assert.DoesNotContain(v2Shipped, entry =>
             entry.Contains("MyAvaloniaManagementCommon", StringComparison.Ordinal));
     }

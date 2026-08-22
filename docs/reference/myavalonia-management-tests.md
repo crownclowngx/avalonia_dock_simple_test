@@ -2,14 +2,15 @@
 
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
-> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；当前分支已完成 V2 G14 封板：Core/UI SDK、
+> Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；V2 G14 已完成封板：Core/UI SDK、
 > manifest v2、精确入口加载、构建协议、每插件独立容器、声明式贡献目录、Host Dock Adapter、
 > Document V2、Layout V2、internal 生命周期、四个业务插件迁移及 V1 生产面删除。最新测试数量和覆盖率必须从本轮
 > TRX/Cobertura 动态读取，不以文档数字作为永久门槛。当前两轮 Release 证据见
 > [V2 G14 封板](../plan-history/host-v2/g14-v2-sealing.md)；V1 历史门禁见
 > [V1 G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
-> [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。
+> [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。当前源码已完成未发布
+> V3 G1，版本/API 与数据边界证据见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)。
 
 ## 当前文档与非发布基线门禁
 
@@ -21,8 +22,8 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 ```
 
 核心测试在系统临时目录验证正常和失败夹具；正式入口检查当前文档与 host-v1/host-v2 历史记录的本地链接，
-并只对当前事实应用过期措辞规则。它还验证 G14 正向哨兵、V1 历史页首、关键源码类型、V2 Shipped，以及四个
-插件项目中的版本、精确入口属性与单一 SDK 投影区间。结果写入
+并只对当前事实应用过期措辞规则。它还验证 V3 G1 正向哨兵、V1/V2 历史 API、关键源码类型、
+v3 Unshipped 与 v2 Shipped 等价，以及四个插件项目中的版本、精确入口属性与单一 SDK 投影区间。结果写入
 `artifacts/test-results/Documentation/summary.json`。
 
 当前文档门禁不调用 Windows Smoke、发布总门禁或发布验收项目；通过它不能冒充 Windows 发布放行。
@@ -38,6 +39,19 @@ G0 执行 Release 零警告构建、Host/SDK/三个业务测试项目、SDK API/
 诊断脱敏和文档门禁。实际动态数量、覆盖率、包摘要及回滚边界见
 [V3 G0 专项记录](../plan-history/host-v3/g0-green-baseline.md)。本阶段固定记录 AIFLOW、Windows CI/Smoke、
 ReleaseAcceptance、发布门禁和 `publishable` 均为 `false`，不调用任何发布入口。
+
+### V3 G1 版本与数据边界门禁
+
+G1 将产品、Core/UI SDK 和四插件切换到 `3.0.0`，但不改变 public C# 形状和磁盘协议。专项测试验证
+实际程序集版本、四插件生成 manifest schema 2 与 `[3.0.0, 4.0.0)`、V2 插件在入口执行前拒绝、
+最小 V3 插件接受，以及既有 Document envelope v2、`layout-v2.json` 和数据根 `v2` 保持可读且不改写。
+
+活动 v3 Core/UI Shipped 均为空，Unshipped 分别为 85/46 并逐条等于 V2 Shipped。验证使用
+`Test-PluginSdkCompatibility.ps1 -Baseline v3`、SDK nupkg 消费、四插件本地确定性测试包、三套 Host
+及三个业务插件单元测试、诊断和文档门禁。阶段结果见
+[V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)。本阶段固定记录
+`aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、
+`releaseGate=false`、`publishable=false`。
 
 ### V2 G13 唯一生产面门禁
 

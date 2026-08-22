@@ -1,10 +1,12 @@
-# Managed Plugin V2 快速开始
+# Managed Plugin 快速开始
 
-本组文档以已经迁移完成的 `MyPlugTest` 为可运行事实源，介绍 manifest v2、最终 Core/UI SDK、声明式贡献、普通模型与 Host Dock Adapter。教程不使用 Legacy、Strategy、独立 View 注册或 Dock 类型。
+本组文档以 `MyPlugTest` 为可运行事实源，介绍 manifest schema 2、Core/UI SDK、声明式贡献、普通模型与
+Host Dock Adapter。当前仓库处于未发布 V3 G1：版本为 3.0.0，但 API 形状和运行语义仍沿用 V2 G14；
+教程不使用 Legacy、Strategy、独立 View 注册或 Dock 类型。
 
 ## 完成后你将得到什么
 
-- 一个由严格 `plugin.manifest.json` 精确加载的 V2 插件；
+- 一个由严格 `plugin.manifest.json` 精确加载的 V3 G1 插件；
 - 一个每次激活都创建独立 DI Scope 的 Document；
 - 一个插件级 singleton、关闭时隐藏的 Tool；
 - 一个由 Host 创建 View 并设置 `DataContext` 的完整 UI 链路；

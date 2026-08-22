@@ -19,7 +19,7 @@ public sealed partial class WelcomeDocumentViewModel : ObservableObject, IPlugin
     private string _title = DefaultTitle;
 
     [ObservableProperty]
-    private string message = "Hello from V2";
+    private string message = "Hello from V3 G1";
 
     public WelcomeDocumentViewModel(IDocumentLifetime lifetime) =>
         _lifetime = lifetime ?? throw new ArgumentNullException(nameof(lifetime));
@@ -52,7 +52,7 @@ public sealed partial class WelcomeDocumentViewModel : ObservableObject, IPlugin
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="QuickStartPlugin.Views.WelcomeDocumentView">
   <StackPanel Margin="16" Spacing="8">
-    <TextBlock Text="V2 Document" FontWeight="Bold" />
+    <TextBlock Text="V3 G1 Document" FontWeight="Bold" />
     <TextBox Text="{Binding Message}" />
   </StackPanel>
 </UserControl>

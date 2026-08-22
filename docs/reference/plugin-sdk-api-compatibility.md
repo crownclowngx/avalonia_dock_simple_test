@@ -1,16 +1,19 @@
 # Plugin SDK API 兼容基线维护指南
 
 > `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G14 已将 Core/UI 的
-> `2.0.0` public 表面正式冻结到 v2 Shipped：Core 85 条、UI 46 条，两个 Unshipped 均为空。
+> `2.0.0` public 表面正式冻结到 v2 Shipped：Core 85 条、UI 46 条。V3 G1 将相同表面投影到
+> v3 Unshipped，两个 v3 Shipped 均为空；当前 `3.0.0` 尚未发布。
 
 ## 1. 权威源与程序集边界
 
-当前签名事实由三组只读文本表达：
+当前签名事实由五组只读文本表达：
 
 ```text
 Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v1/    # v1 历史事实
 Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/    # V2 Core
 Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/ # V2 UI
+Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/    # 未发布 V3 Core
+Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v3/ # 未发布 V3 UI
 ```
 
 每个目录均包含 `PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt`。Core 包、程序集和根命名空间统一为
@@ -25,14 +28,15 @@ Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/ # V2 UI
 ## 2. Shipped 与 Unshipped
 
 `PublicAPI.Shipped.txt` 保存已经发布或正式冻结的完整签名。删除、改名、改可见性、改参数或改返回类型
-都属于破坏既有承诺，不能通过重写基线掩盖。历史 v1 Shipped 保持原样，只用于复核历史事实。
+都属于破坏既有承诺，不能通过重写基线掩盖。历史 v1/v2 Shipped 保持原样，只用于复核历史事实。
 
 `PublicAPI.Unshipped.txt` 保存当前主版本已经评审、但尚未发布的 public 表面。新增成员时先由
 PublicApiAnalyzers 报出 `RS0016`，确认所有权、依赖方向、异常与线程语义后，再按 Ordinal 顺序登记。
 未登记删除会产生 `RS0017`，重复项与非法文本也会被门禁拒绝。
 
-G14 的 V2 正式状态是：Core Shipped 85 条、UI Shipped 46 条，两个 Unshipped 均为 0。两份
-Shipped 分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史表面要求相等。G2–G13 的
+G14 的 V2 正式状态是：Core Shipped 85 条、UI Shipped 46 条，两个 Unshipped 均为 0。V3 G1
+状态是两个 Shipped 均为 0，Core/UI Unshipped 分别为 85/46，且逐条等于对应 v2 Shipped。两份
+基线分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史表面要求相等。G2–G13 的
 Unshipped 数量仍保留在各阶段记录中，不能用今天的 131 条倒写历史。
 
 ## 3. 日常变更流程
@@ -42,7 +46,7 @@ Unshipped 数量仍保留在各阶段记录中，不能用今天的 131 条倒�
 1. 先以最小契约表达真实插件用例，并补齐详细中文 XML 文档与设计原因；
 2. 确认 `RS0016` 只包含预期新增，且没有 `RS0017`；
 3. 核对 Core 不泄漏 Avalonia、DI、Dock、Newtonsoft 或 Host 类型，UI 不泄漏 Dock、Newtonsoft 或 Host 类型；
-4. 把签名加入对应项目的 v2 Unshipped，保持 Ordinal 排序且无重复；
+4. 把签名加入对应项目的 v3 Unshipped，保持 Ordinal 排序且无重复；
 5. 运行 API 变异、真实 nupkg 消费、SDK 单元测试及受影响的 Host/插件测试；
 6. 同步契约说明、示例和专项记录。
 
@@ -65,7 +69,7 @@ Unshipped 数量仍保留在各阶段记录中，不能用今天的 131 条倒�
 - 不得把 Core 与 UI 合成一份基线，或让 Legacy Common 继续承担活动 SDK 基线职责。
 - 不得只提高版本或替换文本，而没有包消费者、反向编译与真实仓库回归证据。
 
-## 5. 当前兼容与发布门禁
+## 5. 当前非发布兼容门禁与历史发布入口
 
 在仓库根目录执行：
 
@@ -73,22 +77,21 @@ Unshipped 数量仍保留在各阶段记录中，不能用今天的 131 条倒�
 dotnet restore MyAvaloniaManagement.sln --locked-mode -p:SkipPluginDeploy=true --nologo
 dotnet build MyAvaloniaManagement.sln -c Release -p:SkipPluginDeploy=true --no-restore --nologo -warnaserror
 dotnet test Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.PluginSdk.Tests.csproj -c Release --no-build --no-restore
-.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v2 -Configuration Release
+.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v3 -Configuration Release
 .\scripts\Test-PluginSdkPackage.ps1 -Configuration Release
 .\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -NoRestore
 ```
 
 `Test-PluginSdkCompatibility.ps1` 分别验证 Core/UI 的版本、排序、重复项与成员级变异；
 `Test-PluginSdkPackage.ps1` 从真实 nupkg 验证 DLL/XML/nuspec/精确依赖图、两个正向消费者和旧 API/禁用依赖
-反例。以上命令适合日常兼容检查，不运行 Windows Smoke、上传或标签。正式 V2 发布资格还必须在
-干净修订上运行：
+反例。以上命令适合 V3 G1 非发布兼容检查，不运行 Windows Smoke、上传或标签。以下 V2 发布入口
+只用于复核历史 G14 证据，V3 G1 不运行也不把它改造成 V3 门禁：
 
 ```powershell
 .\scripts\Invoke-HostV2ReleaseGate.ps1
 ```
 
-该入口在两个隔离克隆中重复执行全量测试、包、API、诊断、文档和真实窗口 V2 Smoke；它不调用
-AIFLOW、真实账号或网络，也不会自动上传或创建标签。
+V3 发布门禁只允许在 G14 单独建立；当前阶段不得运行 Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
 
 ## 6. 新主版本与评审清单
 

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
   "pluginId": "myavalonia.plugin.incompatible-broken",
-  "pluginVersion": "1.0.0",
+  "pluginVersion": "2.0.0",
   "entryPoint": {
     "assembly": "BrokenPlugin.dll",
     "type": "BrokenPlugin.Plugin.BrokenPluginModule"
   },
-  "sdk": { "minInclusive": "9.0.0", "maxExclusive": "10.0.0" }
+  "sdk": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" }
 }

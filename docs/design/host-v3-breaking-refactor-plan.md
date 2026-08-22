@@ -1,12 +1,14 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0 已完成，G1–G14 尚未实施。当前生产事实仍由 V2 G14 签署。
+> 状态：实施中；G0–G1 已完成，G2–G14 尚未实施。当前生产语义仍由 V2 G14 签署，
+> 代码与程序集版本线已进入未发布 V3。
 >
 > 评审日期：2026-08-22。
 >
 > 事实基线：[Managed Plugin V2 破坏式架构重构任务书](./host-v2-breaking-refactor-plan.md)、
 > [V2 G14 封板记录](../plan-history/host-v2/g14-v2-sealing.md)、
 > [V3 G0 非发布绿色基线](../plan-history/host-v3/g0-green-baseline.md)、
+> [V3 G1 版本与数据边界](../plan-history/host-v3/g1-version-and-data-boundaries.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
 >
 > 计划性质：V3 是一次“协议语义纠错 + 宿主工作区解耦”的破坏式重构，不是第三次插件框架扩张。
@@ -447,13 +449,15 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
 - **本阶段排除**：V3 版本提升、API 修改、数据写入、AIFLOW、Windows CI/Smoke、发布门禁和任何插件发布。
 - **回滚**：只删除 G0 新增证据和复现测试；不得改写 V2 G14 历史记录。
 
-### G1：建立 V3 版本与数据边界
+### G1：建立 V3 版本与数据边界（已完成）
 
 - **目标**：产品、SDK、四插件切换到未发布 V3 线，同时明确四种磁盘事实保持 V2。
 - **变更**：集中设置产品/SDK/插件 3.0.0、SDK `[3.0.0, 4.0.0)` 和 API baseline v3；保留 manifest/
   envelope/layout schema 2 与数据根 v2。
 - **插件影响**：四插件只改变版本和构建兼容区间，尚不宣称完成 V3 语义迁移。
 - **验证**：版本政策、manifest 生成、V2 插件拒绝、V3 最小插件接受、数据根与现有 V2 文件读取测试。
+- **实施记录**：版本、API 文本、磁盘兼容、SOLID 取舍与非发布门禁结果见
+  [G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)。
 - **回滚**：整体回到 G0；不得出现产品 3、SDK 2 或数据根被无理由复制为 v3 的混合事实。
 
 ### G2：建立修订化 Document 保存

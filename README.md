@@ -14,6 +14,11 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > 生产面，G14 已冻结 2.0.0 API、建立两轮隔离发布门禁并完成文档签署。见
 > [V2 G14 封板记录](./docs/plan-history/host-v2/g14-v2-sealing.md)。
 
+> 当前源码已完成未发布的 V3 G1：产品、Core/UI SDK 与四插件版本统一为 `3.0.0`，活动 API
+> 基线切换到 v3 Unshipped。G1 没有改变 public C# 形状或磁盘协议；manifest、Document、layout
+> 仍为 schema 2，默认数据根仍为 `v2`。实施证据见
+> [V3 G1 版本与数据边界](./docs/plan-history/host-v3/g1-version-and-data-boundaries.md)。
+
 ## 核心扩展模型
 
 | 概念 | 语义 | 典型用途 |
@@ -40,30 +45,32 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 | [DaTangAccountingHelpPlug](./Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj) | 发票信息综合计算和银行余额调节 |
 | [MyPlugTest](./Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) | Managed Plugin 的 Document、Tool、消息通信和依赖注入示例 |
 
-四个当前插件均使用 Managed Plugin 构建协议，并已通过最终 V2 入口真实加载。BiliDownloader
+四个当前插件均已按 V3 G1 重新标记版本并继续使用 Managed Plugin 构建协议；它们仍运行 V2 G14
+已经签署的业务语义，后续 G9–G12 才分别完成 V3 最终迁移。BiliDownloader
 精确声明 1 个可持久化 Document、1 个右侧可隐藏 Tool 与 1 个 Lifecycle；Legacy 项目、旧入口探针与
 Host/Common 双区间已经删除。缺少入口 `.deps.json` 或依赖历史加载 Facade 的代码不会
 进入运行链。
 
-## V2 G14 正式 SDK、manifest、容器、Dock、Document、Layout 与插件边界
+## V3 G1 版本线与 V2 G14 生产语义
 
 历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。V2 沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
 权限系统、第三方市场、跨进程 UI 或用户动态启停插件。
 
 版本按所有者独立演进：产品版本、Plugin SDK 版本、每插件版本、manifest schema、每种宿主
-持久化 schema 和插件内容 schema 不能互相代替。当前产品与 Plugin SDK 均为 `2.0.0`，Host 与
-SDK 程序集版本均为 `2.0.0.0`；V2 已删除独立 Host API 版本事实。统一事实定义在
+持久化 schema 和插件内容 schema 不能互相代替。当前未发布产品与 Plugin SDK 均为 `3.0.0`，Host 与
+SDK 程序集版本均为 `3.0.0.0`；V3 不重新引入独立 Host API 版本事实。统一事实定义在
 [`Directory.Version.props`](./Directory.Version.props)。普通进程内强类型消息不增加无迁移行为的
 版本字段，发生破坏性语义变化时创建新消息类型或提升 SDK 主版本。
 
-四个当前插件的 `PluginVersion` 均为 `2.0.0`。严格 manifest v2 只表达一个 SDK 左闭右开区间
-`[2.0.0, 3.0.0)`，并以 `entryPoint.assembly` 与 `entryPoint.type` 精确指定入口；Host 不读取 v1，
+四个当前插件的 `PluginVersion` 均为 `3.0.0`。严格 manifest schema 2 只表达一个 SDK 左闭右开区间
+`[3.0.0, 4.0.0)`，并以 `entryPoint.assembly` 与 `entryPoint.type` 精确指定入口；Host 不读取 v1，
 也不会扫描或执行未声明的第二个模块。
 
-G2 已建立真实的 `MyAvaloniaManagement.PluginSdk.dll` 与 `MyAvaloniaManagement.PluginSdk.UI.dll`。
-Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约；G14 已将 Core 85 条、UI 46 条
-public 签名冻结到 v2 Shipped，两个 Unshipped 均为空。旧 `MyAvaloniaManagementCommon.dll` 与 Legacy 项目已在 G13 整体删除；
+V2 G2 已建立真实的 `MyAvaloniaManagement.PluginSdk.dll` 与 `MyAvaloniaManagement.PluginSdk.UI.dll`。
+Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约。当前 v3 Unshipped 承接 Core
+85 条、UI 46 条 public 签名，两个 v3 Shipped 均为空，直到 V3 G14 才允许签署。对应的历史签名
+继续保存在 v2 Shipped。旧 `MyAvaloniaManagementCommon.dll` 与 Legacy 项目已在 V2 G13 整体删除；
 历史 v1 API 文本仅用于审计，不参与编译、加载或打包。
 
 G4 已把宿主与插件对象图彻底分开：Host Provider 先构建，每个清单入口从新的空
@@ -159,10 +166,12 @@ TestResults/  需要保留的阶段验收与人工验证记录
 根 README 只提供项目概览。继续阅读时，从以下入口选择：
 
 - [项目文档导航](./docs/README.md)：按用途浏览全部解决方案级文档；
-- [Managed 插件快速开始](./docs/quick-start/README.md)：以已迁移的 MyPlugTest 为可运行 V2 事实源；
+- [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G1 版本线和 V2 G14 语义为事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看 G0–G14 已完成的破坏式重构与最终签署矩阵；
+- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G1 已完成事实与 G2–G14 后续边界；
+- [V3 G1 版本与数据边界](./docs/plan-history/host-v3/g1-version-and-data-boundaries.md)：查看版本、API、磁盘兼容和非发布证据；
+- [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看历史 G0–G14 破坏式重构与最终签署矩阵；
 - [V2 G14 封板](./docs/plan-history/host-v2/g14-v2-sealing.md)：查看 API Shipped 基线、两轮隔离门禁、SOLID 取舍和发布证据；
 - [V2 G13 删除 V1 生产面](./docs/plan-history/host-v2/g13-remove-v1-production-surface.md)：查看 SOLID 收口、源码/二进制负例、包矩阵和非发布证据；
 - [V2 G12 BiliDownloader 迁移](./docs/plan-history/host-v2/g12-bili-downloader-v2.md)：查看 SOLID 责任划分、readiness、schema 3、关闭时序和非发布证据；
@@ -188,7 +197,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 .\scripts\Test-Documentation.ps1
 ```
 
-该门禁不启动窗口、不执行发布，也不替代当前 V2 总发布门禁。
+该门禁不启动窗口、不执行发布；V3 G1 没有当前发布门禁，V2 发布入口只保留历史审计用途。
 
 修改 Document 创建、持久化、关闭或 Scope 所有权链时，运行 G7 非发布专项：
 
@@ -199,7 +208,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 该脚本只执行 Unit、Plugin 与 Headless UI 专项测试，并固定记录未运行 Windows CI、Windows Smoke
 及发布门禁；结果写入 `artifacts/test-results/DocumentV2/summary.json`。
 
-在干净 Git 提交上执行完整的 G14 Windows 本地发布门禁：
+V2 封板时曾在干净 Git 提交上执行以下 Windows 本地发布门禁；V3 G1 不运行它：
 
 ```powershell
 .\scripts\Invoke-HostV2ReleaseGate.ps1
@@ -233,10 +242,10 @@ TestResults/  需要保留的阶段验收与人工验证记录
 .\scripts\Test-ManagedPluginPackages.ps1 -Configuration Release
 ```
 
-维护 Plugin SDK public API 时，必须额外运行可读基线和成员级变异门禁：
+维护 Plugin SDK public API 时，必须额外运行当前 v3 可读基线和成员级变异门禁：
 
 ```powershell
-.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v2 -Configuration Release
+.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v3 -Configuration Release
 ```
 
 每个插件分别生成 `<AssemblyName>-<PluginVersion>-win-x64.zip`，不会生成四插件合集。
@@ -252,8 +261,8 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - G3 已完成：宿主只接受严格 manifest v2、入口 `.deps.json` 和清单精确声明的入口类型；
 - G5 已完成：宿主与每个插件拥有独立 Provider，Host 生产贡献只通过最终 UI SDK 声明并发布到唯一 Registry；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
-- Core/UI 包、manifest v2、独立容器、Host 声明式目录、Document v2、Layout v2 和 Host internal
-  生命周期已进入生产路径；四个业务插件已完成 G9–G12 迁移，G13 已删除 Legacy 阶段桥与过渡构建面，
-  G14 已冻结 API 并建立 V2 正式发布门禁。
+- 当前代码版本线为未发布 V3 G1；Core/UI 包、manifest schema 2、独立容器、Host 声明式目录、
+  Document v2、Layout v2 和 Host internal 生命周期仍沿用 V2 G14 已签署语义。V3 G2–G14 尚未实施，
+  不得把 v3 Unshipped 或本地测试包描述为正式发布承诺。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

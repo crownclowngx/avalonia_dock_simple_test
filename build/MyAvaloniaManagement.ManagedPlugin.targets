@@ -14,9 +14,9 @@
     <Error Condition="'$(ManagedPluginDirectoryName)' == '' Or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginDirectoryName)', '^[A-Za-z0-9][A-Za-z0-9._-]*$'))"
            Text="ManagedPluginDirectoryName 只能包含字母、数字、点、下划线和连字符，实际为 '$(ManagedPluginDirectoryName)'。" />
     <Error Condition="'$(ManagedPluginManifestSchemaVersion)' != '2'"
-           Text="Managed Plugin v2 只能生成 schemaVersion=2，实际为 '$(ManagedPluginManifestSchemaVersion)'。" />
+           Text="当前 Managed Plugin 构建协议只生成 manifest schemaVersion=2，实际为 '$(ManagedPluginManifestSchemaVersion)'。" />
     <Error Condition="'$(ManagedPluginRuntimeIdentifier)' != 'win-x64'"
-           Text="当前 Managed Plugin v2 构建协议只允许 win-x64，实际为 '$(ManagedPluginRuntimeIdentifier)'。" />
+           Text="当前 Managed Plugin 构建协议只允许 win-x64，实际为 '$(ManagedPluginRuntimeIdentifier)'。" />
     <Error Condition="'$(ManagedPluginEntryType)' == ''"
            Text="Managed Plugin 缺少 ManagedPluginEntryType。" />
     <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginEntryType)', '^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+$'))"
@@ -150,7 +150,7 @@
     <Error Condition="$([System.IO.Path]::IsPathRooted('%(_ManagedPluginDeployAsset.TargetPath)')) Or $([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '(^|[\\/])\.\.([\\/]|$)'))"
            Text="Managed Plugin 资产目标路径必须位于插件目录内：%(_ManagedPluginDeployAsset.TargetPath)" />
     <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '^(?:runtimes|native)[\\/](?!win-x64(?:[\\/]|$))[^\\/]+', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
-           Text="Managed Plugin v2 不得携带非 win-x64 原生资产：%(_ManagedPluginDeployAsset.TargetPath)" />
+           Text="当前 Managed Plugin 构建协议不得携带非 win-x64 原生资产：%(_ManagedPluginDeployAsset.TargetPath)" />
     <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '(^|[\\/])(?:MyAvaloniaManagement(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json).*\.dll$', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
            Text="Managed Plugin 不得携带宿主共享程序集：%(_ManagedPluginDeployAsset.TargetPath)" />
 

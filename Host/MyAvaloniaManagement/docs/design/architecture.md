@@ -1,5 +1,9 @@
 # MyAvaloniaManagement 内部架构
 
+> 当前源码已完成未发布 V3 G1：产品、SDK 与四插件版本为 `3.0.0`，但本文件中的运行结构仍是
+> V2 G14 已签署实现。manifest、Document、layout 保持 schema 2，默认数据根保持 `v2`；
+> G1 没有提前实施后续 Workspace、保存或事件协议重构。
+
 ## 1. 目标与边界
 
 `MyAvaloniaManagement` 是 Avalonia 桌面宿主，负责：

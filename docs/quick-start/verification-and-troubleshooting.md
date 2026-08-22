@@ -1,6 +1,6 @@
 # 验证与排错
 
-> 本页按 G14 已封板的唯一 V2 生产契约编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
+> 本页按当前未发布 V3 G1 版本线和 V2 G14 已封板生产语义编写。MyPlugTest 是快速开始样例，DaTang 是双 Document、
 > 窗口端口和持久化实例，MySmallTools 是原生资源与关闭令牌实例，BiliDownloader 是
 > Document + Tool + Lifecycle + readiness 的大型对象图实例。
 
@@ -59,46 +59,30 @@ dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c De
 dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
 ```
 
-修改 MyPlugTest V2 链路时运行下列非发布门禁：
+V3 G1 阶段直接运行 Host 与三个业务插件的单元测试；MyPlugTest 没有独立测试项目，由 Host Plugin/UI 覆盖：
 
 ```powershell
-.\scripts\Test-MyPlugTestV2.ps1 -Configuration Release
+dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release
+dotnet test Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.Tests/DaTangAccountingHelpPlug.Tests.csproj -c Release
+dotnet test Plugins/MySmallTools/MySmallTools.Tests/MySmallTools.Tests.csproj -c Release
+dotnet test Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csproj -c Release
 ```
 
-修改 DaTang 或 `IPluginWindowInteraction` 时运行：
-
-```powershell
-.\scripts\Test-DaTangAccountingHelpPlugV2.ps1 -Configuration Release
-```
-
-修改 MySmallTools、`IDocumentLifetime` 原生取消链或 `IWindowContentFullscreenHost` 时运行：
-
-```powershell
-.\scripts\Test-MySmallToolsV2.ps1 -Configuration Release
-```
-
-修改 BiliDownloader 的 V2 入口、schema 3、readiness、后台关闭或 Tool 时运行：
-
-```powershell
-.\scripts\Test-BiliDownloaderV2.ps1 -Configuration Release -NoRestore
-```
-
-这些迁移脚本是分领域回归，不等同于正式发布放行。G14 总门禁不运行真实账号、真实 Bilibili、
-真实 FFmpeg 大媒体或 ReleaseAcceptance；它追加两轮隔离、API/文档/诊断和 Windows 真实窗口验证。
+历史 V2 分阶段脚本继续保留用于审计，不作为当前 V3 版本门禁。V3 G1 不运行真实账号、真实 Bilibili、
+真实 FFmpeg 大媒体、Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。
 
-发布前运行单插件入口；仓库维护者还应执行全矩阵：
+本地验证单插件构建与全矩阵时运行：
 
 ```powershell
 .\scripts\Build-ManagedPluginPackage.ps1 -Project <插件.csproj> -Configuration Release
 .\scripts\Test-ManagedPluginPackages.ps1 -Configuration Release
-.\scripts\Invoke-HostV2ReleaseGate.ps1
 ```
 
 第一个命令只生成一个独立 ZIP，第二个自动发现全部 `ManagedPlugin=true` 项目并做两轮确定性构建、
-契约负例、最终 ZIP 宿主加载和聚合 `summary.json`；最后一个是在干净修订上运行的 V2 正式两轮门禁。
-它们都使用隔离部署根，不触碰真实 `Controls` 或用户数据。
+契约负例、最终 ZIP 宿主加载和聚合 `summary.json`。它们都使用隔离部署根，不触碰真实 `Controls`
+或用户数据；这些本地测试包不构成发布制品。
 
 ## 检查本地 Markdown 链接
 

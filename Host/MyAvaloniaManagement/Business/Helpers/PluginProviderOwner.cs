@@ -170,7 +170,7 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
 
     /// <summary>
     /// 把最终 SDK 生命周期收窄为 Host internal 回调句柄。
-    /// Provider 边界只验证唯一 V2 契约，不再承担版本分派或兼容适配职责。
+    /// Provider 边界只验证当前唯一 Core/UI 契约，不承担版本分派或兼容适配职责。
     /// </summary>
     internal static PluginLifecycleCallbacks CreateLifecycleCallbacks(
         object lifecycle,

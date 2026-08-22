@@ -7,7 +7,7 @@
         <ManagedPlugin>true</ManagedPlugin>
         <ManagedPluginId>myavalonia.plugin.my-plug-test</ManagedPluginId>
         <ManagedPluginDirectoryName>MyPlugTest</ManagedPluginDirectoryName>
-        <PluginVersion>2.0.0</PluginVersion>
+        <PluginVersion>3.0.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
         <ManagedPluginEntryType>MyPlugTest.Plugin.MyPlugTestPluginModule</ManagedPluginEntryType>
         <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>

@@ -11,7 +11,7 @@ using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.PluginSdk;
 using MyPlugTest.Plugin;
 using MySmallTools.Plugin;
-using V2PluginModule = MyAvaloniaManagement.PluginSdk.UI.IPluginModule;
+using PluginModuleContract = MyAvaloniaManagement.PluginSdk.UI.IPluginModule;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -36,11 +36,11 @@ public sealed class VersionPolicyTests
         // 由 PluginSdkCompatibilityProfile 和 SDK 专项门禁交叉验证。
         var sdkContractAssembly = typeof(PluginId).Assembly;
 
-        Assert.Equal("2.0.0", properties["MyAvaloniaProductVersion"]);
-        Assert.Equal("2.0.0", properties["MyAvaloniaPluginSdkVersion"]);
+        Assert.Equal("3.0.0", properties["MyAvaloniaProductVersion"]);
+        Assert.Equal("3.0.0", properties["MyAvaloniaPluginSdkVersion"]);
         Assert.False(
             properties.ContainsKey("MyAvaloniaHostApiAssemblyVersion"),
-            "V2 不得继续维护独立 Host API 版本事实。");
+            "V3 不得重新引入独立 Host API 版本事实。");
 
         AssertVersionFact(
             "Host Version/InformationalVersion",
@@ -95,7 +95,7 @@ public sealed class VersionPolicyTests
     }
 
     [Fact]
-    public void VersionPolicy_manifestDocument与布局均接入V2()
+    public void VersionPolicy_V3代码线继续使用V2磁盘协议与数据根()
     {
         var properties = ReadVersionProperties();
 
@@ -152,7 +152,7 @@ public sealed class VersionPolicyTests
                 $"{plugin.Name} PluginVersion 必须是 major.minor.patch 数字版本，" +
                 $"实际为 '{projectVersion}'。");
             AssertVersionFact(
-                $"{plugin.Name} PluginVersion/SDK V2",
+                $"{plugin.Name} PluginVersion/SDK V3",
                 sdkVersion.ToString(3),
                 projectVersion);
             AssertVersionFact(
@@ -219,7 +219,7 @@ public sealed class VersionPolicyTests
                 plugin.Assembly.GetName().Name + ".dll",
                 manifest.EntryPoint.Assembly);
             var expectedEntryType = Assert.Single(plugin.Assembly.ExportedTypes, type =>
-                typeof(V2PluginModule).IsAssignableFrom(type) &&
+                typeof(PluginModuleContract).IsAssignableFrom(type) &&
                 !type.IsAbstract).FullName!;
             AssertVersionFact(
                 $"{plugin.Name} entry type expression",

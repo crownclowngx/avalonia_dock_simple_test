@@ -184,7 +184,7 @@ public sealed class WrongContractType { }
         @{ mutation = 'invalid-entry-text'; message = '命名空间限定类型名' },
         @{ mutation = 'missing-range'; message = '单一 Plugin SDK' },
         @{ mutation = 'reversed-range'; message = 'minInclusive 小于 maxExclusive' },
-        @{ mutation = 'schema-v1'; message = '只能生成 schemaVersion=2' },
+        @{ mutation = 'schema-v1'; message = '只生成 manifest schemaVersion=2' },
         @{ mutation = 'missing-entry-type'; message = 'error CS' },
         @{ mutation = 'internal-entry'; message = 'error CS' },
         @{ mutation = 'abstract-entry'; message = 'error CS' },

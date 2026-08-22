@@ -5,23 +5,23 @@
       FileVersion 使用四段数字供 Windows 文件属性读取；InformationalVersion 可以由
       SDK 追加源码修订元数据，欢迎页只显示加号前的产品版本。
     -->
-    <MyAvaloniaProductVersion>2.0.0</MyAvaloniaProductVersion>
-    <MyAvaloniaProductFileVersion>2.0.0.0</MyAvaloniaProductFileVersion>
-    <MyAvaloniaProductAssemblyVersion>2.0.0.0</MyAvaloniaProductAssemblyVersion>
+    <MyAvaloniaProductVersion>3.0.0</MyAvaloniaProductVersion>
+    <MyAvaloniaProductFileVersion>3.0.0.0</MyAvaloniaProductFileVersion>
+    <MyAvaloniaProductAssemblyVersion>3.0.0.0</MyAvaloniaProductAssemblyVersion>
 
     <!--
-      V2 不再维护可供插件引用的独立 Host API 版本线。Host AssemblyVersion 跟随产品，
+      V3 继续不维护可供插件引用的独立 Host API 版本线。Host AssemblyVersion 跟随产品，
       Plugin SDK 则继续独立表达进程内契约身份；二者不能互相替代。
     -->
-    <MyAvaloniaPluginSdkVersion>2.0.0</MyAvaloniaPluginSdkVersion>
-    <MyAvaloniaPluginSdkNextMajorVersion>3.0.0</MyAvaloniaPluginSdkNextMajorVersion>
-    <MyAvaloniaPluginSdkFileVersion>2.0.0.0</MyAvaloniaPluginSdkFileVersion>
-    <MyAvaloniaPluginSdkAssemblyVersion>2.0.0.0</MyAvaloniaPluginSdkAssemblyVersion>
+    <MyAvaloniaPluginSdkVersion>3.0.0</MyAvaloniaPluginSdkVersion>
+    <MyAvaloniaPluginSdkNextMajorVersion>4.0.0</MyAvaloniaPluginSdkNextMajorVersion>
+    <MyAvaloniaPluginSdkFileVersion>3.0.0.0</MyAvaloniaPluginSdkFileVersion>
+    <MyAvaloniaPluginSdkAssemblyVersion>3.0.0.0</MyAvaloniaPluginSdkAssemblyVersion>
     <!--
       public API 文本基线按 SDK 主版本独立保存。有意破坏必须先建立新的 vN 目录，
       再同步提升包版本、程序集版本和插件清单兼容区间，不能改写旧基线掩盖差异。
     -->
-    <MyAvaloniaPluginSdkApiBaseline>v2</MyAvaloniaPluginSdkApiBaseline>
+    <MyAvaloniaPluginSdkApiBaseline>v3</MyAvaloniaPluginSdkApiBaseline>
 
     <!--
       Plugin SDK UI Profile 与宿主使用同一组 UI 依赖事实。基础 SDK 不引用这些实现包；
@@ -35,8 +35,8 @@
     <MyAvaloniaDependencyInjectionUiVersion>10.0.10</MyAvaloniaDependencyInjectionUiVersion>
 
     <!--
-      manifest 已由 G3 接入最终 V2 线格式；Document envelope 与 layout 仍分别由 G7、G8 接入。
-      三种格式保持独立版本，不能因为某一个阶段完成就同步提升其他 schema。
+      V3 G1 只切换代码与程序集版本线，不改变已经稳定的磁盘协议。manifest、Document
+      envelope 与 layout 继续使用 schema 2；产品主版本不能反向拥有这些独立格式版本。
     -->
     <MyAvaloniaV2ManifestSchemaVersion>2</MyAvaloniaV2ManifestSchemaVersion>
     <MyAvaloniaV2DocumentEnvelopeSchemaVersion>2</MyAvaloniaV2DocumentEnvelopeSchemaVersion>

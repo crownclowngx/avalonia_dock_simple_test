@@ -125,7 +125,7 @@ function Assert-PackagedEntryPoint {
     )
 
     # 打包阶段不执行入口构造函数或 Configure。独立可回收 ALC 只读取类型结构，并用入口 deps 图解析
-    # 私有依赖；当前 V2 或阶段 Legacy 契约均由本轮隔离构建成品显式提供，绝不从进程偶然状态猜测。
+    # 私有依赖；当前 Core/UI 契约由本轮隔离构建成品显式提供，绝不从进程偶然状态猜测。
     $loadContext = [Runtime.Loader.AssemblyLoadContext]::new(
         'ManagedPluginPackagePreflight-' + [Guid]::NewGuid().ToString('N'),
         $true)
@@ -216,7 +216,7 @@ foreach ($required in @{
     }
 }
 if ($runtimeIdentifier -ne 'win-x64') {
-    throw "当前 Managed Plugin v2 构建协议只允许 win-x64，实际为 $runtimeIdentifier。"
+    throw "当前 Managed Plugin 构建协议只允许 win-x64，实际为 $runtimeIdentifier。"
 }
 
 $resolvedOutput = if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
@@ -353,7 +353,7 @@ try {
         throw "入口程序集版本 $assemblyVersion 与插件版本 $pluginVersion 不一致。"
     }
 
-    # 入口预检与 Host Loader 共享同一组 V2 程序集事实。这里不保留契约选择开关，
+    # 入口预检与 Host Loader 共享同一组当前 Core/UI 程序集事实。这里不保留契约选择开关，
     # 避免项目能构建一种入口、打包脚本却按另一种接口反射验证的双轨状态。
     $sharedAssemblyPaths = @{}
     $coreContractPath = Join-Path $stableDotnetArtifacts `
@@ -362,7 +362,7 @@ try {
         'bin/MyAvaloniaManagement.PluginSdk.UI/release/MyAvaloniaManagement.PluginSdk.UI.dll'
     foreach ($contractPath in $coreContractPath, $entryContractPath) {
         if (-not (Test-Path -LiteralPath $contractPath -PathType Leaf)) {
-            throw "隔离构建缺少入口预检所需的 V2 契约成品：$contractPath"
+            throw "隔离构建缺少入口预检所需的当前契约成品：$contractPath"
         }
     }
     $sharedAssemblyPaths['MyAvaloniaManagement.PluginSdk'] = $coreContractPath

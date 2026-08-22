@@ -6,5 +6,5 @@
     "assembly": "NoModule.Plugin.dll",
     "type": "NoModule.Plugin.NotAPluginModule"
   },
-  "sdk": { "minInclusive": "2.0.0", "maxExclusive": "3.0.0" }
+  "sdk": { "minInclusive": "3.0.0", "maxExclusive": "4.0.0" }
 }
