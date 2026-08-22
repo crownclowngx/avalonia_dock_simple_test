@@ -10,9 +10,10 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [V1 G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
 > [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。当前源码已完成未发布
-> V3 G3；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
+> V3 G6；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
 > 修订保存见 [V3 G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)，互斥激活见
-> [V3 G3 专项记录](../plan-history/host-v3/g3-exclusive-document-activation.md)。
+> [V3 G3 专项记录](../plan-history/host-v3/g3-exclusive-document-activation.md)，Workspace/Dock 拆分见
+> [V3 G6 专项记录](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)。
 
 ## 当前文档与非发布基线门禁
 
@@ -486,7 +487,7 @@ Closing、布局保存和宿主退出完整执行。主程序必须在 15 秒内
 
 核心行为只存在一套实现，避免“测试构造路径”和“生产构造路径”逐渐分叉。
 生产 ViewModel 注册为瞬态，防止多个窗口或 Headless 测试共享绑定状态；
-Dock 工厂、布局存储等 Host 协调服务保持单例，保证一个 HostRuntime 内只有一份布局事实。插件消息器则是
+`WorkspaceSession`、Dock Factory Adapter、布局存储等 Host 协调服务保持单例，保证一个 HostRuntime 内只有一份布局事实。插件消息器则是
 对应插件 Provider 的 singleton；另一个插件 Provider 或 HostRuntime 会建立自己的实例，不共享进程全局状态。
 
 Host 与插件的 Document/Tool 策略都使用 `ActivatorUtilities` 创建，因此策略只需声明真实依赖，
@@ -502,8 +503,8 @@ Host 与插件的 Document/Tool 策略都使用 `ActivatorUtilities` 创建，�
 
 ### 文档打开与保存
 
-`MainWindowViewModel` 把文件流程委托给 `DocumentPersistenceCoordinator`，后者通过
-`DocumentWorkspace` 适配 Dock 文档区，并串行化打开和保存操作。批量打开以单个文件为错误边界：
+`MainWindowViewModel` 把文件流程委托给 `DocumentPersistenceCoordinator`，后者通过唯一
+`WorkspaceSession` 操作文档区，并串行化打开和保存操作。批量打开以单个文件为错误边界：
 
 - 已打开的文件只激活原标签，然后继续处理后续文件；
 - 不存在、损坏 JSON、未知类型或读取失败只跳过当前文件；
@@ -600,6 +601,27 @@ G2/G3/G4 分别 159/143/59。v3 API 为 Core 127、UI 46；四插件均完成两
 本轮没有运行 AIFLOW、Windows CI/Smoke、ReleaseAcceptance、Host 发布门禁或发布脚本。完整记录见
 [V3 G5 插件私有消息](../plan-history/host-v3/g5-plugin-private-messaging.md)。
 
+### V3 G6 当前绿色基线
+
+G6 专项入口为：
+
+```powershell
+.\scripts\Test-WorkspaceSessionDockFactory.ps1 -Configuration Release -NoRestore
+```
+
+脚本串行运行完整 Host Unit、Headless UI 与 Plugin/Dock 三组测试，合并 Cobertura，并执行 Factory 继承面、
+Session 所有权、ViewModel Dock 泄漏、旧 Facade、`Files` Locator 和可空正确性依赖结构扫描。2026-08-22
+实际结果为 Unit **181**、UI **56**、Plugin **204**，共 **441/441**，零失败、零跳过；Host 行覆盖率
+**83.78%**、分支覆盖率 **70.32%**。`WorkspaceSession`、`HostDockFactory`、
+`ToolWorkspaceReadModel` 行覆盖率分别为 **92.39%**、**97.96%**、**100.00%**。
+
+G2/G3/G4/G5 分别通过 159/143/59/165；PluginSdk、MyPlugTest、DaTang、BiliDownloader、MySmallTools
+全量分别通过 37/11/62/726/184。v3 API 为 Core 127 / UI 46，SDK 包消费、诊断脱敏、四插件两次确定性
+ZIP 与本地 Host 加载均通过。专项摘要固定记录 `aiflow=false`、`windowsCi=false`、
+`windowsSmoke=false`、`releaseAcceptance=false`、`releaseGate=false`、`publishable=false`；本轮没有
+运行 Windows CI/Smoke、ReleaseAcceptance 或发布门禁。完整记录见
+[V3 G6 Workspace Session 与 Dock Factory](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)。
+
 ### 插件私有消息、Host 直接协调与稳定 ID
 
 V3 SDK 与 Host 已删除通用事件总线。MyPlugTest 与 BiliDownloader 分别注入自身插件程序集中的最小消息
@@ -607,8 +629,8 @@ V3 SDK 与 Host 已删除通用事件总线。MyPlugTest 与 BiliDownloader 分�
 `IDisposable` 令牌并随自身生命周期释放；不同插件 Provider 和不同 HostRuntime 不共享消息实例。
 
 Host 自身的文件打开、布局刷新和 Tool 显隐继续使用直接协调。文件树直接调用窄文档打开服务；
-`ManagementFactory` 在 Dock 变化完整提交后先同步 Tool 管理器，再通知当前主窗口刷新布局绑定。
-主窗口显式解除根级通知；结构门禁同时证明旧 Host 消息类型和总线不存在，插件私有消息也不能从 Host
+`WorkspaceSession` 在 Dock 变化完整提交后发布定向通知，Tool 管理器从无 Dock ReadModel 重新投影，
+主窗口刷新只读 Layout 绑定。瞬态消费者各自幂等解除通知；结构门禁同时证明旧 Host 消息类型和总线不存在，插件私有消息也不能从 Host
 根或其他插件 Provider 解析。
 
 插件菜单的策略元数据、创建实例、`ContextLocator` 和
@@ -619,8 +641,9 @@ Dock ID 会被持久化，集中常量可以避免一个字符的差异导致工
 `HiddenDockables`。因此无论工具由管理界面切换、用户点击关闭按钮还是布局恢复
 产生变化，状态都可以重新收敛到真实布局。
 
-根布局尚未建立时，工具管理界面使用 `ManagementFactory` 提供的内部只读注册快照，
-不再通过反射读取私有字段；布局建立后仍以真实 Dock 树为事实来源。
+根布局尚未建立时，工具管理界面使用 `ToolWorkspaceReadModel` 从冻结 Registry 生成纯数据快照；布局建立
+后由同一 ReadModel 通过 Session 读取可见、Hidden、Pinned 与 Prevent 状态。ViewModel 不接触 Dock 类型、
+Root Dock、内部 Tool 字典或服务定位器。
 
 ### 契约与内部重构保护
 

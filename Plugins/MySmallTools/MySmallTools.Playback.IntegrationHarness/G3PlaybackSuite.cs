@@ -15,6 +15,8 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Docking;
+using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
@@ -71,9 +73,10 @@ internal sealed class G3PlaybackHarnessRunner(
             var mainWindow = (Application.Current!.ApplicationLifetime as
                 IClassicDesktopStyleApplicationLifetime)!.MainWindow!;
             var mainViewModel = (MainWindowViewModel)mainWindow.DataContext!;
-            var factory = services.GetRequiredService<ManagementFactory>();
-            var documentDock = factory.GetDockable<Dock.Model.Controls.IDocumentDock>("Files")
-                as DocumentDock ?? throw new InvalidOperationException("宿主没有 Files DocumentDock。");
+            var workspace = services.GetRequiredService<WorkspaceSession>();
+            var documentDock = workspace.DockFactory
+                .GetDockable<Dock.Model.Controls.IDocumentDock>(DockLayoutIds.Documents)
+                as DocumentDock ?? throw new InvalidOperationException("宿主没有规范 Documents Dock。");
 
             var placeholder = CreateDocument(mainViewModel, documentDock);
             placeholder.Title = "G3 占位标签";
@@ -92,7 +95,7 @@ internal sealed class G3PlaybackHarnessRunner(
                 () => RunFunctionalMatrixAsync(
                     mainWindow,
                     mainViewModel,
-                    factory,
+                    workspace,
                     documentDock,
                     placeholder,
                     assets,
@@ -103,7 +106,7 @@ internal sealed class G3PlaybackHarnessRunner(
                 () => VerifyLibraryPresentationAsync(
                     mainWindow,
                     mainViewModel,
-                    factory,
+                    workspace,
                     documentDock,
                     placeholder));
 
@@ -112,13 +115,13 @@ internal sealed class G3PlaybackHarnessRunner(
                 () => RunLifecycleStressAsync(
                     mainWindow,
                     mainViewModel,
-                    factory,
+                    workspace,
                     documentDock,
                     placeholder,
                     assets,
                     placeholderResources));
 
-            factory.CloseDockable(placeholder.Dockable);
+            workspace.DockFactory.CloseDockable(placeholder.Dockable);
             await DrainDispatcherAsync();
             if (options.Suite == HarnessSuite.G10)
             {
@@ -186,7 +189,7 @@ internal sealed class G3PlaybackHarnessRunner(
     private async Task RunFunctionalMatrixAsync(
         Window mainWindow,
         MainWindowViewModel mainViewModel,
-        ManagementFactory factory,
+        WorkspaceSession workspace,
         DocumentDock documentDock,
         HarnessPlayerDocument placeholder,
         IReadOnlyList<HarnessAsset> assets,
@@ -551,7 +554,7 @@ internal sealed class G3PlaybackHarnessRunner(
         {
             documentDock.ActiveDockable = placeholder.Dockable;
             await DrainDispatcherAsync();
-            factory.CloseDockable(document.Dockable);
+            workspace.DockFactory.CloseDockable(document.Dockable);
             _closedDocumentReferences.Add(new WeakReference<SecretVideoPlayerViewModel>(document.Model));
             await DrainDispatcherAsync();
         }
@@ -565,7 +568,7 @@ internal sealed class G3PlaybackHarnessRunner(
     private async Task VerifyLibraryPresentationAsync(
         Window mainWindow,
         MainWindowViewModel mainViewModel,
-        ManagementFactory factory,
+        WorkspaceSession workspace,
         DocumentDock documentDock,
         HarnessPlayerDocument placeholder)
     {
@@ -632,7 +635,7 @@ internal sealed class G3PlaybackHarnessRunner(
         {
             documentDock.ActiveDockable = placeholder.Dockable;
             await DrainDispatcherAsync();
-            factory.CloseDockable(library.Dockable);
+            workspace.DockFactory.CloseDockable(library.Dockable);
             await DrainDispatcherAsync();
         }
 
@@ -745,7 +748,7 @@ internal sealed class G3PlaybackHarnessRunner(
     private async Task RunLifecycleStressAsync(
         Window mainWindow,
         MainWindowViewModel mainViewModel,
-        ManagementFactory factory,
+        WorkspaceSession workspace,
         DocumentDock documentDock,
         HarnessPlayerDocument placeholder,
         IReadOnlyList<HarnessAsset> assets,
@@ -779,7 +782,7 @@ internal sealed class G3PlaybackHarnessRunner(
                 () => !document.PlayerViewModel.IsVideoSurfaceReady,
                 TimeSpan.FromSeconds(5),
                 $"第 {cycle + 1} 轮旧 HWND 未销毁。");
-            factory.CloseDockable(document.Dockable);
+            workspace.DockFactory.CloseDockable(document.Dockable);
             _closedDocumentReferences.Add(new WeakReference<SecretVideoPlayerViewModel>(document.Model));
             _closedViewReferences.Add(new WeakReference<VideoPlayerControl>(playerView));
             await DrainDispatcherAsync();

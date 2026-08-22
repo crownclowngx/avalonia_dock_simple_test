@@ -231,5 +231,6 @@ public sealed class DocumentCloseV2Tests
     }
 
     private static DocumentDock GetDock(TestHostContext context) =>
-        Assert.IsType<DocumentDock>(context.Factory.GetDockable<IDocumentDock>("Files"));
+        Assert.IsType<DocumentDock>(context.Workspace.DockFactory.GetDockable<IDocumentDock>(
+            MyAvaloniaManagement.Business.Layout.DockLayoutIds.Documents));
 }

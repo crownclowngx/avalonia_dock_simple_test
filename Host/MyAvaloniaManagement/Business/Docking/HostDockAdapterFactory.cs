@@ -6,7 +6,7 @@ using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Docking;
 
-/// <summary>ManagementFactory 创建 Dock 项所依赖的最小内部端口。</summary>
+/// <summary>WorkspaceSession 创建 Dock Adapter 所依赖的最小内部端口。</summary>
 internal interface IHostDockableFactory
 {
     ValueTask<Document> CreateDocumentAsync(

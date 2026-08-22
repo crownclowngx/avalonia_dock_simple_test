@@ -289,7 +289,11 @@ flowchart TB
 
 `Tool` 对应文件树、插件目录、工具管理、任务中心或调度面板。它通常不是当前工作的主体，却能让用户知道工作台中有哪些能力、后台正在发生什么，以及何时需要干预。
 
-宿主默认将文件树放在左侧，将插件入口和工具管理类面板放在右侧。`ManagementFactory` 启用了 `HideToolsOnClose`，并缓存已创建的 Tool；关闭 Tool 时进入隐藏集合，恢复时仍是同一实例。相关实现可参见 [`ManagementFactory`](../../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs) 和 [`ToolMetadata`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/ToolCreation/ToolMetadata.cs)。
+宿主默认将文件树放在左侧，将插件入口和工具管理类面板放在右侧。`WorkspaceSession` 独占已创建 Tool，
+`HostDockFactory` 保持 Dock 的隐藏回调和禁浮动协议；关闭可隐藏 Tool 时进入隐藏集合，恢复时仍是同一实例。
+工具管理只读取无 Dock 类型的状态投影。相关实现可参见
+[`WorkspaceSession`](../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.cs) 和
+[`ToolWorkspaceReadModel`](../../Host/MyAvaloniaManagement/Business/Workspace/ToolWorkspaceReadModel.cs)。
 
 Bilibili 插件体现了这种职责分离：
 

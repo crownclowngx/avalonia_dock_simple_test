@@ -25,8 +25,8 @@ public sealed class ServiceAndModelTests
 
         Assert.NotSame(first, second);
         Assert.Same(
-            context.Factory,
-            context.Provider.GetRequiredService<ManagementFactory>());
+            context.Workspace,
+            context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.WorkspaceSession>());
         Assert.NotNull(first.Layout);
     }
 
@@ -41,7 +41,7 @@ public sealed class ServiceAndModelTests
             AddDocument<VisibleDocumentD>(services, builder, "uncategorized", "未分类", "其他");
         });
 
-        var groups = new PluginMenuService(context.Factory)
+        var groups = new PluginMenuService(context.Workspace)
             .GetCreationEntriesByCategory();
 
         Assert.Equal(2, groups["分类一"].Count);
@@ -73,7 +73,7 @@ public sealed class ServiceAndModelTests
                 false);
         });
 
-        var entries = new PluginMenuService(context.Factory)
+        var entries = new PluginMenuService(context.Workspace)
             .GetCreationEntriesByCategory()["测试"];
 
         Assert.Equal(2, entries.Count);

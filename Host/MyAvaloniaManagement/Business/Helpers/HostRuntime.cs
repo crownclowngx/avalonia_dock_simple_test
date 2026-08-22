@@ -8,6 +8,7 @@ using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels;
 
 namespace MyAvaloniaManagement.Business.Helpers;
@@ -109,7 +110,7 @@ internal sealed class HostRuntime : IDisposable
                 provider.GetRequiredService<PluginRegistry>();
                 var lifecycles = provider.GetRequiredService<PluginLifecycleCoordinator>();
                 lifecycles.InitializeAllAsync().GetAwaiter().GetResult();
-                provider.GetRequiredService<ManagementFactory>();
+                provider.GetRequiredService<WorkspaceSession>();
             }
             catch (HostCompositionException exception)
             {
@@ -180,14 +181,14 @@ internal sealed class HostRuntime : IDisposable
 
         // 先关闭可用性入口，保证退出清理期间不会再创建新的插件对象图。
         _lifecycleStates.BeginShutdown();
-        var factory = _provider.GetService<ManagementFactory>();
-        factory?.BeginShutdown();
+        var workspace = _provider.GetService<WorkspaceSession>();
+        workspace?.BeginShutdown();
 
         try
         {
             // Adapter/View 必须先于插件 Provider 释放，否则 View 的 DataContext 会短暂指向
             // 已经 Dispose 的 Tool singleton，Document 展示事件也可能在 Scope 结束后继续投影。
-            factory?.Dispose();
+            workspace?.Dispose();
         }
         catch (Exception exception)
         {

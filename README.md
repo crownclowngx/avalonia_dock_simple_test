@@ -94,6 +94,12 @@ V3 G4 在这条独立 Provider 路径上进一步收紧提交所有权：模块�
 Provider 构建前隔离当前插件。V3 G5 已从 SDK 与 Host 删除通用事件总线；MyPlugTest 和
 BiliDownloader 分别在自身插件 Provider 注册私有 singleton 消息器，消息不能跨插件或 Runtime 解析。
 
+V3 G6 已删除万能型 `ManagementFactory` 和 `DocumentWorkspace`，由唯一 `WorkspaceSession` 拥有 Root、
+Document、Tool 及退出释放；`HostDockFactory` 只适配 Dock override、Locator 和禁浮动协议，二者通过一次性
+internal 回调接缝绑定。Tool 管理使用无 Dock 类型的 `ToolWorkspaceReadModel`/`ToolWorkspaceState`，主窗口
+和 Tool ViewModel 不再依赖 Factory 或 Root Dock。生产与 Harness 的 `Files` Locator 查询已删除；`Plug`
+别名与 Host 内建 Registry 路径分别留待 V3 G9/G7。
+
 G6 进一步把 Welcome 与四个 Host Tool 变为普通模型。只有 internal sealed
 `ManagedDocumentDockable`/`ManagedToolDockable` 继承 Dock 类型；View 在发布前由 Registry 精确工厂
 预构建一次。Document Adapter 拥有模型、View 和独立 Scope，Tool Adapter 只拥有 View，Tool singleton
@@ -178,10 +184,11 @@ TestResults/  需要保留的阶段验收与人工验证记录
 根 README 只提供项目概览。继续阅读时，从以下入口选择：
 
 - [项目文档导航](./docs/README.md)：按用途浏览全部解决方案级文档；
-- [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G5 私有消息、V3 G4 注册、V3 G3 激活、V3 G2 保存和 V2 G14 其他语义为事实源；
+- [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G6 Workspace、V3 G5 私有消息、V3 G4 注册、V3 G3 激活、V3 G2 保存和 V2 G14 其他语义为事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G5 已完成事实与 G6–G14 后续边界；
+- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G6 已完成事实与 G7–G14 后续边界；
+- [V3 G6 Workspace Session 与 Dock Factory](./docs/plan-history/host-v3/g6-workspace-session-and-dock-factory.md)：查看职责图、所有权、关闭/退出时序、SOLID 取舍、测试实数和整体回滚边界；
 - [V3 G5 插件私有消息](./docs/plan-history/host-v3/g5-plugin-private-messaging.md)：查看最终接口、消息拓扑、SOLID 取舍、测试实数和整体回滚边界；
 - [V3 G4 插件注册所有权](./docs/plan-history/host-v3/g4-plugin-registration-ownership.md)：查看 Host 最终提交、ID 归属、诊断、测试和回滚边界；
 - [V3 G3 互斥 Document 激活](./docs/plan-history/host-v3/g3-exclusive-document-activation.md)：查看最终 API、激活矩阵、测试和回滚边界；
@@ -277,10 +284,11 @@ V2 封板时曾在干净 Git 提交上执行以下 Windows 本地发布门禁；
 - G3 已完成：宿主只接受严格 manifest v2、入口 `.deps.json` 和清单精确声明的入口类型；
 - G5 已完成：宿主与每个插件拥有独立 Provider，Host 生产贡献只通过最终 UI SDK 声明并发布到唯一 Registry；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
-- 当前代码版本线为未发布 V3 G5；Core/UI 包、manifest schema 2、独立容器、Host 声明式目录、
+- 当前代码版本线为未发布 V3 G6；Core/UI 包、manifest schema 2、独立容器、Host 声明式目录、
   Document envelope v2、Layout v2 和 Host internal 生命周期继续使用既有边界，Document 保存已采用
   修订快照与指定修订确认，Document 激活已采用互斥 New/Restore 类型，插件端口和贡献根已改为 Host
-  最终提交并强制 ID 归属，插件消息由对应插件 Provider 私有持有。V3 G6–G14 尚未实施，
+  最终提交并强制 ID 归属，插件消息由对应插件 Provider 私有持有；Workspace Session、Dock Factory 和
+  Tool 只读投影已经分离。V3 G7–G14 尚未实施，
   不得把 v3 Unshipped 或本地测试包描述为正式发布承诺。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

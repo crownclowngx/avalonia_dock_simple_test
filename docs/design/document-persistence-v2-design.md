@@ -1,10 +1,10 @@
-# Document envelope v2、V3 G2 修订保存与 G3 互斥激活设计
+# Document envelope v2、V3 修订保存、互斥激活与 Workspace 所有权设计
 
 > 状态：当前实现
 >
 > 更新日期：2026-08-22
 >
-> 边界：V2 G14 的唯一创建/打开/恢复/Scope 链，加上 V3 G2 的修订化保存和 V3 G3 的互斥激活
+> 边界：V2 G14 的唯一创建/打开/恢复/Scope 链，加上 V3 G2 修订保存、G3 互斥激活和 G6 唯一 Workspace 所有权
 
 ## 1. 设计结论
 
@@ -35,6 +35,7 @@ V3 G2 的 `CaptureSaveSnapshotAsync` 不是保存提交点；它返回同一稳�
 | `DocumentSaveService` | 捕获修订快照、原子主文件提交、指定修订确认和提交后警告 | 修订排序/解释、关闭决策、活动标签选择 |
 | `DocumentPersistenceStateStore` | 保存 Registry、规范路径、Host 标题和 `RequiresSave` | 插件展示状态和文件 I/O |
 | `HostDockAdapterFactory` | 异步初始化并组合 Adapter/View | Registry 发现、磁盘格式 |
+| `WorkspaceSession` | 拥有 Document Dock、活动项、路径激活、原子发布、失败回滚和最终释放 | 信封解析、文件事务、插件业务 |
 | `ManagedDocumentDockable` | 投影 Dock/View 并拥有唯一 Scope Lease | 保存事务、用户确认 |
 | `DocumentCloseCoordinator` | 关闭选择和一次性重入许可 | JSON、路径、Scope 创建 |
 | `DocumentScopeManager` | 创建独立 Scope，提供窄 Lease，固定释放顺序 | Dock 发布、插件业务 |
@@ -47,12 +48,12 @@ V3 G2 的 `CaptureSaveSnapshotAsync` 不是保存提交点；它返回同一稳�
 
 创建顺序固定如下：
 
-1. `ManagementFactory` 使用冻结 Registry 核对 `DocumentTypeId` 和 Creation Intent；
+1. `WorkspaceSession` 使用冻结 Registry 核对 `DocumentTypeId` 和 Creation Intent；
 2. `PluginContributionActivator` 在所属 Provider 的 `DocumentScopeManager` 中创建独立 Scope；
 3. Scope Manager 返回只含模型、`ClosingToken` 和幂等释放入口的 `PluginDocumentScopeLease`；
 4. `HostDockAdapterFactory` 以该令牌等待 `InitializeAsync`；
 5. 初始化成功后才构造 `ManagedDocumentDockable`，预构建并绑定唯一 View；
-6. 创建方登记 Host 持久化状态，最后把完整 Adapter 原子发布到 Document Dock。
+6. Session 登记 Host 持久化状态，最后把完整 Adapter 原子发布到自己拥有的 Document Dock。
 
 初始化、Presentation、Adapter、View、状态登记或发布任一步失败，待发布引用仍由调用者持有，并汇入
 同一个释放入口：断开 View 和 `DataContext`，发出 `ClosingToken`，释放模型与 scoped 依赖。失败不会

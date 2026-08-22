@@ -4,11 +4,10 @@ using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Dock.Model.Controls;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Storage;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
-using MyAvaloniaManagement.ViewModels;
 
 namespace MyAvaloniaManagement.Business.Documents;
 
@@ -28,7 +27,7 @@ internal readonly record struct DocumentOperationResult(
 /// 因而并发打开同一路径时，后一个请求必定能观察到前一个已经提交的工作区状态。
 /// </remarks>
 internal sealed class DocumentPersistenceCoordinator(
-    ManagementFactory factory,
+    WorkspaceSession workspace,
     IHostStorageService storageService,
     DocumentSaveService saveService,
     DocumentOperationGate operationGate,
@@ -38,11 +37,6 @@ internal sealed class DocumentPersistenceCoordinator(
     DocumentEnvelopeSerializer serializer,
     DocumentOperationState operationState) : IHostDocumentOpenService
 {
-    private readonly DocumentWorkspace _workspace = new(
-        factory,
-        persistenceStates,
-        recoveryRegistry);
-
     internal Task<DocumentOperationResult> CreateDocumentAsync(
         DocumentTypeId documentTypeId,
         CreationIntentId? creationIntentId = null) =>
@@ -50,7 +44,7 @@ internal sealed class DocumentPersistenceCoordinator(
         {
             try
             {
-                await factory.CreateAndPublishDocumentAsync(
+                await workspace.CreateAndPublishDocumentAsync(
                     documentTypeId,
                     new NewDocumentActivation(
                         title: string.Empty,
@@ -67,15 +61,14 @@ internal sealed class DocumentPersistenceCoordinator(
             }
         });
 
-    internal async Task<DocumentOperationResult> OpenSelectedAsync(IRootDock? root)
+    internal async Task<DocumentOperationResult> OpenSelectedAsync()
     {
         var paths = await storageService.PickOpenFilesAsync();
-        return await OpenAllAsync(paths, root);
+        return await OpenAllAsync(paths);
     }
 
     internal async Task<DocumentOperationResult> OpenPathAsync(
-        string filePath,
-        IRootDock? root)
+        string filePath)
     {
         if (string.IsNullOrWhiteSpace(filePath) || !storageService.FileExists(filePath))
         {
@@ -83,14 +76,14 @@ internal sealed class DocumentPersistenceCoordinator(
             return DocumentOperationResult.NoChange;
         }
 
-        return await OpenAllAsync([filePath], root);
+        return await OpenAllAsync([filePath]);
     }
 
     async Task IHostDocumentOpenService.OpenPathAsync(string filePath)
     {
         try
         {
-            operationState.Apply(await OpenPathAsync(filePath, factory.RootDock));
+            operationState.Apply(await OpenPathAsync(filePath));
         }
         catch (Exception exception)
         {
@@ -100,7 +93,7 @@ internal sealed class DocumentPersistenceCoordinator(
 
     internal async Task<DocumentOperationResult> SaveActiveAsync()
     {
-        if (_workspace.GetActiveDocument() is not ManagedDocumentDockable document)
+        if (workspace.GetActiveDocument() is not ManagedDocumentDockable document)
         {
             return DocumentOperationResult.NoChange;
         }
@@ -118,8 +111,7 @@ internal sealed class DocumentPersistenceCoordinator(
     }
 
     private Task<DocumentOperationResult> OpenAllAsync(
-        IReadOnlyList<string> paths,
-        IRootDock? root) =>
+        IReadOnlyList<string> paths) =>
         operationGate.RunAsync(async () =>
         {
             var result = DocumentOperationResult.NoChange;
@@ -133,7 +125,7 @@ internal sealed class DocumentPersistenceCoordinator(
                     }
 
                     var normalizedPath = DocumentPathIdentity.Normalize(path);
-                    if (_workspace.TryActivate(root, normalizedPath))
+                    if (workspace.TryActivateDocument(normalizedPath))
                     {
                         continue;
                     }
@@ -188,7 +180,7 @@ internal sealed class DocumentPersistenceCoordinator(
 
         if (!await interactionService.ConfirmRecoveryAsync(Path.GetFileName(primaryPath)))
         {
-            factory.ReleaseDocument(backup);
+            workspace.ReleaseDocument(backup);
             primaryFailure.Throw();
         }
 
@@ -200,7 +192,7 @@ internal sealed class DocumentPersistenceCoordinator(
         serializer.ValidateFileLength(storageService.GetFileLength(filePath));
         var json = await storageService.ReadAllTextAsync(filePath);
         var envelope = serializer.Deserialize(json);
-        if (!factory.TryGetDocumentRegistration(envelope.DocumentTypeId, out var registration) ||
+        if (!workspace.TryGetDocumentRegistration(envelope.DocumentTypeId, out var registration) ||
             !registration.IsPersistable)
         {
             throw new NotSupportedException("当前 Host 没有注册该可持久化 Document 类型。");
@@ -217,7 +209,7 @@ internal sealed class DocumentPersistenceCoordinator(
         {
             try
             {
-                pending = await factory.CreateManagementNewDocumentAsync(
+                pending = await workspace.CreateDocumentAsync(
                     envelope.DocumentTypeId,
                     new RestoreDocumentActivation(
                         envelope.Title,
@@ -239,7 +231,7 @@ internal sealed class DocumentPersistenceCoordinator(
         {
             if (pending is not null)
             {
-                factory.ReleaseDocument(pending);
+                workspace.ReleaseDocument(pending);
             }
         }
     }
@@ -258,7 +250,7 @@ internal sealed class DocumentPersistenceCoordinator(
                 recoveryRegistry.Register(document, recoverySourcePath);
             }
 
-            factory.PublishDocument(document);
+            workspace.PublishDocument(document);
             pending = null;
         }
         finally
@@ -266,7 +258,7 @@ internal sealed class DocumentPersistenceCoordinator(
             if (pending is not null)
             {
                 recoveryRegistry.Clear(pending);
-                factory.ReleaseDocument(pending);
+                workspace.ReleaseDocument(pending);
             }
         }
     }

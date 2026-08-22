@@ -6,6 +6,7 @@ using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MyAvaloniaManagement.ViewModels;
@@ -172,17 +173,16 @@ public sealed class HostDockAdapterTests
         var dockableFactory = new SelectiveToolFactory(failedId);
         using var diagnostics = HostDiagnosticSession.Start(
             Path.Combine(Path.GetTempPath(), "g6-tool-isolation", Guid.NewGuid().ToString("N")));
-        using var factory = new ManagementFactory(
+        using var workspace = WorkspaceSessionTestFactory.Create(
             registry,
             dockableFactory,
-            new DocumentScopeRegistry(),
             diagnostics: diagnostics);
 
-        var root = factory.CreateLayout();
+        var root = workspace.DockFactory.CreateLayout();
 
         Assert.NotNull(root);
-        Assert.Contains(healthyId.Value, factory.CreatedTools.Keys);
-        Assert.DoesNotContain(failedId.Value, factory.CreatedTools.Keys);
+        Assert.Contains(healthyId.Value, workspace.CreatedTools.Keys);
+        Assert.DoesNotContain(failedId.Value, workspace.CreatedTools.Keys);
         var record = Assert.Single(
             diagnostics.Snapshot,
             item => item.Code == HostDiagnosticCodes.ToolAdapterActivationFailed);
@@ -221,14 +221,13 @@ public sealed class HostDockAdapterTests
             registry,
             pluginProviders,
             availability);
-        using var factory = new ManagementFactory(
+        using var workspace = WorkspaceSessionTestFactory.Create(
             registry,
             new SelectiveToolFactory(new ToolTypeId("myavalonia.host.tool.never")),
-            new DocumentScopeRegistry(),
             availability: availability);
 
-        Assert.Empty(factory.GetAllDocumentCreationEntries());
-        Assert.Empty(factory.GetToolRegistrySnapshot().ToolMetadata);
+        Assert.Empty(workspace.GetAllDocumentCreationEntries());
+        Assert.Empty(workspace.GetAvailableToolDescriptors());
         Assert.Throws<InvalidOperationException>(() => activator.ActivateDocument(documentId));
         Assert.Throws<InvalidOperationException>(() => activator.ActivateTool(toolId));
     }
@@ -259,7 +258,7 @@ public sealed class HostDockAdapterTests
 
     /// <summary>
     /// 只模拟 Adapter 发布边界：一个 Tool 失败，另一个成功。它不创建 Avalonia View，
-    /// 使本测试只验证 ManagementFactory 的隔离与原子发布职责。
+    /// 使本测试只验证 WorkspaceSession 的隔离与原子发布职责。
     /// </summary>
     private sealed class SelectiveToolFactory(ToolTypeId failedId) : IHostDockableFactory
     {

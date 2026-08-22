@@ -1,8 +1,9 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G5 已完成，G6–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
+> 状态：实施中；G0–G6 已完成，G7–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
 > Document 激活已采用 V3 G3 互斥 New/Restore 类型，插件注册已采用 V3 G4 Host 最终提交与 ID 归属校验；
-> 插件事件通信已采用 V3 G5 私有消息器；其余生产语义仍由 V2 G14 签署，代码与程序集版本线处于未发布 V3。
+> 插件事件通信已采用 V3 G5 私有消息器；Dock Factory、Workspace Session 与 Tool 只读投影已按 V3 G6
+> 分离；其余生产语义仍由 V2 G14 签署，代码与程序集版本线处于未发布 V3。
 >
 > 评审日期：2026-08-22。
 >
@@ -14,6 +15,7 @@
 > [V3 G3 互斥 Document 激活](../plan-history/host-v3/g3-exclusive-document-activation.md)、
 > [V3 G4 插件注册所有权](../plan-history/host-v3/g4-plugin-registration-ownership.md)、
 > [V3 G5 插件私有消息](../plan-history/host-v3/g5-plugin-private-messaging.md)、
+> [V3 G6 Workspace Session 与 Dock Factory](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
 >
 > 计划性质：V3 是一次“协议语义纠错 + 宿主工作区解耦”的破坏式重构，不是第三次插件框架扩张。
@@ -511,7 +513,7 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
   [G5 专项记录](../plan-history/host-v3/g5-plugin-private-messaging.md)。
 - **回滚**：整体回到 G4；不得保留一个未被 Host 使用的 V3 `IHostEventBus` 转发接口。
 
-### G6：拆分 Workspace Session 与 Dock Factory
+### G6：拆分 Workspace Session 与 Dock Factory（已完成）
 
 - **目标**：Dock 框架继承面不再同时作为应用工作区服务。
 - **变更**：建立 `HostDockFactory`、`WorkspaceSession` 和无 Dock Tool ReadModel；迁移 DocumentWorkspace、
@@ -520,6 +522,9 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
 - **验证**：Document 创建/发布/关闭/退出、Tool 四向/隐藏/恢复/Pinned、Layout 捕获/应用、Factory 回调、
   Window 多实例测试和所有资源释放顺序。
 - **删除**：`ManagementFactory` 转发 Facade、`ToolManagementData` Dock 泄漏、生产 `Files` 查询。
+- **实施记录**：最终职责图、对象所有权、回调与退出时序、SOLID 取舍、441/441 专项测试、Host
+  83.78% / 70.32% 覆盖率、三个重点类型 92.39% / 97.96% / 100.00% 行覆盖率和非发布边界见
+  [G6 专项记录](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)。
 - **回滚**：整体回到 G5；不得让两个对象同时拥有同一 Document/Tool 集合。
 
 ### G7：分离 Host Catalog 与 Plugin Registry
@@ -604,7 +609,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
 
 - G0 只冻结事实，G1 只建立版本和磁盘边界，G2 已完成修订保存；
 - G3 已完成互斥激活，G4 已完成插件组合所有权，G5 已完成插件私有消息边界；
-- G6–G8 再拆 Host Workspace、Host Catalog 与全屏资源边界；
+- G6 已完成 Host Workspace / Dock Factory 拆分；G7–G8 再拆 Host Catalog 与全屏资源边界；
 - G9–G12 按插件逐个删除阶段帮助代码并完成真实包验收；
 - G13 只删除和证明无残留，不承载新设计；
 - G14 只封板已通过事实，不在发布门禁阶段调整 API；
@@ -683,7 +688,7 @@ V3 只有在以下问题全部回答“是”后才算完成：
 3. [x] SDK 和 Host 已删除通用 Host EventBus，插件内部消息由插件独占。
 4. [x] Host 保留端口和贡献生命周期由 Host 最后提交，插件不能影子覆盖。
 5. [x] Document/Tool ID 的 PluginId 命名空间归属由自动化强制验证。
-6. [ ] Dock Factory 与 Workspace Session 分离，ViewModel 不依赖 Dock 运行时对象。
+6. [x] Dock Factory 与 Workspace Session 分离，ViewModel 不依赖 Dock 运行时对象。
 7. [ ] Host 内建贡献不再作为特殊插件进入 Plugin Registry 或 Availability。
 8. [ ] 全屏使用幂等租约，失败、关闭和重复释放都能恢复并释放资源。
 9. [ ] `Files`、`Plug` 和全部 V2 public 生产入口已删除且有负例防回流。

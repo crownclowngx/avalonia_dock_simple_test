@@ -72,11 +72,11 @@ public sealed class DocumentPersistenceV2Tests
         _ = context.CreateMainWindowViewModel();
         using var json = JsonDocument.Parse("{}");
         var content = new DocumentContent(1, json.RootElement);
-        var factory = context.Provider.GetRequiredService<ManagementFactory>();
+        var workspace = context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.WorkspaceSession>();
         var probe = context.Provider.GetRequiredService<DocumentV2TestProbe>();
 
         await Assert.ThrowsAsync<NotSupportedException>(() =>
-            factory.CreateManagementNewDocumentAsync(
+            workspace.CreateDocumentAsync(
                 TestDocumentIds.TypeId,
                 new RestoreDocumentActivation("错误恢复", content)).AsTask());
 
@@ -509,5 +509,6 @@ public sealed class DocumentPersistenceV2Tests
             .ToList();
 
     private static DocumentDock GetDocumentDock(TestHostContext context) =>
-        Assert.IsType<DocumentDock>(context.Factory.GetDockable<IDocumentDock>("Files"));
+        Assert.IsType<DocumentDock>(context.Workspace.DockFactory.GetDockable<IDocumentDock>(
+            MyAvaloniaManagement.Business.Layout.DockLayoutIds.Documents));
 }

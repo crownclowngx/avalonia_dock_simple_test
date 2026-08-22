@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-22（已同步 Managed Plugin V3 G5 插件私有消息）<br>
+> 更新日期：2026-08-22（已同步 Managed Plugin V3 G6 Workspace / Dock Factory 拆分）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
@@ -9,9 +9,10 @@
 > V2 当前状态：G0–G14 已完成。四个业务插件均使用正式 SDK、声明式贡献与普通模型；Legacy
 > 项目、兼容适配和过渡构建属性已经删除，API Shipped 与两轮隔离发布门禁已经建立。
 
-> V3 当前状态：G0–G5 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
+> V3 当前状态：G0–G6 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
 > 保存已使用修订协议，激活已使用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属；
-> MyPlugTest 与 BiliDownloader 的消息器已归各自插件 Provider 所有。磁盘 schema 仍为 2，G6–G14 尚未实施。
+> MyPlugTest 与 BiliDownloader 的消息器已归各自插件 Provider 所有；唯一 Workspace Session、Dock
+> Factory Adapter 和无 Dock Tool ReadModel 已建立。磁盘 schema 仍为 2，G7–G14 尚未实施。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -84,7 +85,7 @@ sequenceDiagram
     participant B as PluginRegistryBuilder
     participant E as PluginRegistry
     participant LM as PluginLifecycleCoordinator
-    participant UI as Avalonia / ManagementFactory
+    participant UI as Avalonia / WorkspaceSession
 
     P->>R: Create
     R->>B: 注册宿主显式贡献
@@ -171,8 +172,9 @@ flowchart TD
 ```
 
 **[代码事实]** 每个插件 Provider 都拥有自己的 `DocumentScopeManager`，建立 `Document` 与该插件
-`IServiceScope` 的一一映射。`ManagementFactory.OnDockableClosed` 通过 `DocumentScopeRegistry` 找到实际
-所有者：先移除控件回收缓存强引用，再释放对应 Scope；宿主退出时路由表逆序关闭仍打开 Scope。
+`IServiceScope` 的一一映射。`HostDockFactory.OnDockableClosed` 在 `finally` 把关闭交回唯一
+`WorkspaceSession`：先移除控件回收缓存强引用，再释放对应 Scope；宿主退出时 Session 先释放全部
+Document，再逆序释放 Tool Adapter。
 
 当前接入情况：
 
@@ -225,7 +227,13 @@ Host `RequiresSave` 强制另存且永不覆盖损坏原件。
 - 适合展示全局状态、导航和控制命令；
 - 不应拥有必须依赖 Tool 可见性才能存活的后台任务。
 
-**[代码事实]** `ManagementFactory` 按最终 `ToolDescriptor` 创建并缓存 Tool Adapter，`Hide` 关闭行为只隐藏而不重建模型；同时保留主窗口内部拖放和四向布局。Top/Bottom 横跨 Left/Document/Right 中间行的完整宽度，没有对应 Tool 时不创建空白行。参见 [`ContributionDescriptors.cs`](../../Host/MyAvaloniaManagement.PluginSdk.UI/ContributionDescriptors.cs)、[`ToolDockPlacement.cs`](../../Host/MyAvaloniaManagement/Business/Layout/ToolDockPlacement.cs)、[`ManagementFactory.cs`](../../Host/MyAvaloniaManagement/ViewModels/ManagementFactory.cs) 和 [`DockFourWayLayoutTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/DockFourWayLayoutTests.cs)。
+**[代码事实]** `WorkspaceSession` 按最终 `ToolDescriptor` 创建并缓存 Tool Adapter，`Hide` 关闭行为只隐藏
+而不重建模型；同时保留主窗口内部拖放和四向布局。`HostDockFactory` 只提供框架 Dock 操作和禁浮动，
+`ToolWorkspaceReadModel` 把可见/Pinned/Prevent 状态投影为无 Dock DTO。Top/Bottom 横跨
+Left/Document/Right 中间行的完整宽度，没有对应 Tool 时不创建空白行。参见
+[`WorkspaceSession.cs`](../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.cs)、
+[`ToolWorkspaceReadModel.cs`](../../Host/MyAvaloniaManagement/Business/Workspace/ToolWorkspaceReadModel.cs) 和
+[`DockFourWayLayoutTests.cs`](../../Host/MyAvaloniaManagement.PluginTests/DockFourWayLayoutTests.cs)。
 
 ### 4.2 Tool、Document 与后台服务的职责流
 
@@ -235,7 +243,7 @@ flowchart LR
     Tool["Tool<br/>全局状态投影、筛选、控制"]
     Service["插件后台服务 / Coordinator<br/>事实源与长任务"]
     Store["仓储 / 外部 API / 文件系统"]
-    Bus["宿主消息总线"]
+    Bus["插件私有消息器"]
     Life["IPluginLifecycle"]
 
     Doc -->|"命令或提交"| Service
@@ -280,7 +288,12 @@ internal sealed 实现在调用线程按登记顺序同步执行，订阅者持�
 [`IMyPlugTestEventBus.cs`](../../Plugins/MyPlugTest/MyPlugTest/Messaging/IMyPlugTestEventBus.cs) 和
 [`IBiliDownloaderEventBus.cs`](../../Plugins/BiliDownloader/BiliDownloader/Messaging/IBiliDownloaderEventBus.cs)。
 
-**[代码事实]** 宿主生产 ViewModel 只使用构造注入，App 通过内部桌面 Shell 创建；内建 Tool 策略使用对应的 `Func<ViewModel>`，Welcome 策略使用延迟 `Func<ManagementFactory>` 打破注册表构造循环。静态 `ServiceProvider` 和生产无参构造已经删除。主窗口与文件树设计器改用无 I/O 的独立样例数据；`ToolManagementViewModel` 在根 Dock 建立前读取 `ManagementFactory` 提供的内部只读注册快照。参见 [`ServiceCollectionExtensions.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/ServiceCollectionExtensions.cs) 和 [`ToolManagementViewModel.cs`](../../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs)。
+**[代码事实]** 宿主生产 ViewModel 只使用构造注入，App 通过内部桌面 Shell 创建；组合根显式构造
+`HostDockFactory` 与 `WorkspaceSession` 并执行一次绑定。Welcome 只取得窄 Tool 显示动作，不持有 Session、
+Factory 或容器；`ToolManagementViewModel` 只依赖 `ToolWorkspaceReadModel` 和 Session 显隐命令。静态
+`ServiceProvider` 和生产无参构造已经删除。参见
+[`ServiceCollectionExtensions.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/ServiceCollectionExtensions.cs) 和
+[`ToolManagementViewModel.cs`](../../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs)。
 
 **[架构判断]** 当前模型仍可概括为：**高自由度、强信任、约束正在形成**。它适合内部插件，但下一步应把已经出现的宿主能力收束成稳定接口，而不是继续让插件或宿主 ViewModel 依赖内部字段和全局对象。
 
@@ -295,6 +308,7 @@ internal sealed 实现在调用线程按登记顺序同步执行，订阅者持�
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient；根容器启用构建和 Scope 验证 |
 | 插件生命周期 | 已实现 V2 | PluginId 正序初始化、成功项反序关闭、幂等、失败隔离、超时和只读可用性投影已有测试；不支持热卸载 |
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
+| Workspace / Dock 边界 | 已实现 V3 G6 | Factory 只适配框架，Session 独占 Root/Document/Tool；多窗口共享、回调顺序、退出释放和无 Dock Tool 投影通过 441 项专项门禁 |
 | 布局持久化 | 已实现 V2 | 唯一严格 schema、原子写入、坏文件隔离、可用性门控和整体回退已有测试；不读取 V1 |
 | Document 保存 | 已实现 V3 G2 | 六字段 envelope v2、插件内容 schema、修订快照、指定修订确认、关闭竞争保护、备份恢复和原子替换均有回归；MyPlugTest、DaTang 与 BiliDownloader 已真实接入 |
 | Document 激活 | 已实现 V3 G3 | New/Restore 在 public 类型层互斥；Host、四插件 11 个 Document、取消与 Scope/View 回滚均有专项测试 |

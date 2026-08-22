@@ -11,7 +11,7 @@ public sealed class InternalRefactorTests
     [Fact]
     public void Host内部直接协作消费者不依赖Sdk事件总线()
     {
-        var hostAssembly = typeof(MyAvaloniaManagement.ViewModels.ManagementFactory).Assembly;
+        var hostAssembly = typeof(MyAvaloniaManagement.Business.Workspace.WorkspaceSession).Assembly;
         const string removedNamespace = "MyAvaloniaManagement.Message.";
         Assert.Null(hostAssembly.GetType(removedNamespace + "OpenFile" + "Message"));
         Assert.Null(hostAssembly.GetType(removedNamespace + "UpdateLayout" + "Message"));
@@ -20,7 +20,9 @@ public sealed class InternalRefactorTests
         Type[] directCoordinationConsumers =
         [
             typeof(MyAvaloniaManagement.ViewModels.MainWindowViewModel),
-            typeof(MyAvaloniaManagement.ViewModels.ManagementFactory),
+            typeof(MyAvaloniaManagement.Business.Workspace.WorkspaceSession),
+            typeof(MyAvaloniaManagement.Business.Docking.HostDockFactory),
+            typeof(MyAvaloniaManagement.Business.Workspace.ToolWorkspaceReadModel),
             typeof(MyAvaloniaManagement.Business.Layout.ToolDockCoordinator),
             typeof(MyAvaloniaManagement.ViewModels.Tools.FileSystemTreeViewModel),
             typeof(MyAvaloniaManagement.ViewModels.Tools.ToolManagementViewModel)

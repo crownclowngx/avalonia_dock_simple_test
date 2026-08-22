@@ -42,7 +42,7 @@ public sealed class DockLayoutAvailabilityTests
             [registration],
             [new PluginLifecycleDeclaration(pluginId, typeof(TestLifecycle))]);
         var states = new PluginLifecycleStateStore(registry);
-        var factory = PluginTestManagementFactory.Create(
+        var factory = PluginTestWorkspaceSession.Create(
             registry,
             services.GetRequiredService<DocumentScopeManager>(),
             new PluginAvailabilityReadModel(states));
@@ -55,7 +55,7 @@ public sealed class DockLayoutAvailabilityTests
         var defaultRoot = lifecycle.Prepare(factory);
         var leftPane = FindDock<ProportionalDock>(defaultRoot, DockLayoutIds.LeftPane);
         var defaultProportion = leftPane.Proportion;
-        var applied = lifecycle.ApplyPending(defaultRoot, factory);
+        var applied = lifecycle.ApplyPending(factory);
 
         Assert.Same(defaultRoot, applied);
         Assert.Equal(defaultProportion, leftPane.Proportion);
@@ -72,7 +72,7 @@ public sealed class DockLayoutAvailabilityTests
             .AddSingleton<DocumentScopeManager>()
             .BuildServiceProvider();
         var registry = new PluginRegistry([], []);
-        var factory = PluginTestManagementFactory.Create(
+        var factory = PluginTestWorkspaceSession.Create(
             registry,
             services.GetRequiredService<DocumentScopeManager>());
         var store = new DockLayoutStore(workspace.LayoutPath);
@@ -84,7 +84,7 @@ public sealed class DockLayoutAvailabilityTests
         var defaultRoot = lifecycle.Prepare(factory);
         var leftPane = FindDock<ProportionalDock>(defaultRoot, DockLayoutIds.LeftPane);
         var defaultProportion = leftPane.Proportion;
-        lifecycle.ApplyPending(defaultRoot, factory);
+        lifecycle.ApplyPending(factory);
 
         Assert.Equal(defaultProportion, leftPane.Proportion);
         Assert.False(File.Exists(workspace.LayoutPath));

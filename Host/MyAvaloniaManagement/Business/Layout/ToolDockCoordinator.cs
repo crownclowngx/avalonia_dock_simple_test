@@ -5,16 +5,16 @@ using Avalonia;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagement.Business.Docking;
 
 namespace MyAvaloniaManagement.Business.Layout;
 
 /// <summary>
 /// 协调工具恢复、稳定停靠点重建以及 Top/Bottom 临时结构归一化。
-/// 状态流程集中在此处，ManagementFactory 继续作为 Dock 库的兼容适配入口。
+/// 状态流程集中在此处，HostDockFactory 只提供 Dock 库操作，不拥有工作区状态。
 /// </summary>
 internal sealed class ToolDockCoordinator(
-    ManagementFactory factory,
+    HostDockFactory factory,
     DockWorkspaceBuilder workspaceBuilder,
     Func<string, Alignment> getAlignment)
 {
@@ -110,7 +110,6 @@ internal sealed class ToolDockCoordinator(
             factory.SetActiveDockable(tool);
         }
 
-        factory.NotifyLayoutChanged();
         return true;
     }
 

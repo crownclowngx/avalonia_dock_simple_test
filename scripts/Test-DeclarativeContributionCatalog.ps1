@@ -87,7 +87,7 @@ try {
         'Host\MyAvaloniaManagement\Business\Helpers\PluginProviderOwner.cs',
         'Host\MyAvaloniaManagement\Business\Helpers\PluginRegistrationContext.cs',
         'Host\MyAvaloniaManagement\Business\Helpers\ServiceCollectionExtensions.cs',
-        'Host\MyAvaloniaManagement\ViewModels\ManagementFactory.cs',
+        'Host\MyAvaloniaManagement\Business\Workspace\WorkspaceSession.cs',
         'Host\MyAvaloniaManagement\ViewLocator.cs'
     ) | ForEach-Object { Join-Path $repositoryRoot $_ }
     $forbidden = @(

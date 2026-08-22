@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MyAvaloniaManagement.ViewModels;
@@ -15,7 +16,7 @@ namespace MyAvaloniaManagement.PluginTests;
 
 public sealed class DockFourWayLayoutTests
 {
-    private static readonly ConditionalWeakTable<ManagementFactory, Dictionary<string, Tool>> ToolMaps = new();
+    private static readonly ConditionalWeakTable<WorkspaceSession, Dictionary<string, Tool>> ToolMaps = new();
 
     [Theory]
     [InlineData(ToolDockSide.Left, Alignment.Left, DockLayoutIds.LeftTools)]
@@ -478,7 +479,7 @@ public sealed class DockFourWayLayoutTests
         };
 
     private static Tool RegisterTool(
-        ManagementFactory factory,
+        WorkspaceSession factory,
         string id,
         string alignment)
     {
@@ -496,7 +497,7 @@ public sealed class DockFourWayLayoutTests
     }
 
     private static DocumentDock CreateDocumentDock(
-        ManagementFactory factory) =>
+        WorkspaceSession factory) =>
         new()
         {
             Id = DockLayoutIds.Documents,
@@ -587,7 +588,7 @@ public sealed class DockFourWayLayoutTests
                     typeof(Avalonia.Controls.UserControl),
                     static () => new Avalonia.Controls.UserControl());
             }).ToArray());
-        var factory = PluginTestManagementFactory.Create(extensions, manager);
+        var factory = PluginTestWorkspaceSession.Create(extensions, manager);
         ToolMaps.Add(factory, tools);
         return new FactoryContext(provider, factory);
     }
@@ -597,9 +598,9 @@ public sealed class DockFourWayLayoutTests
 
     private sealed class FactoryContext(
         Microsoft.Extensions.DependencyInjection.ServiceProvider provider,
-        ManagementFactory factory) : IDisposable
+        WorkspaceSession factory) : IDisposable
     {
-        public ManagementFactory Factory { get; } = factory;
+        public WorkspaceSession Factory { get; } = factory;
 
         public void Dispose() => provider.Dispose();
     }

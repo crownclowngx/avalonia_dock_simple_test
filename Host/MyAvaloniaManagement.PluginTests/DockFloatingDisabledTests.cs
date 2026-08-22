@@ -4,7 +4,8 @@ using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
-using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagement.Business.Docking;
+using MyAvaloniaManagement.Business.Workspace;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MyAvaloniaManagement.PluginTests;
@@ -17,7 +18,7 @@ public sealed class DockFloatingDisabledTests
         using var context = CreateFactory();
         var factory = context.Factory;
         var root = CreateRoot(factory);
-        ManagementFactory.DisableFloating(root);
+        HostDockFactory.DisableFloating(root);
 
         var leftDock = CreateToolDock(factory, DockLayoutIds.LeftTools);
         var rightDock = CreateToolDock(factory, DockLayoutIds.RightTools);
@@ -63,11 +64,11 @@ public sealed class DockFloatingDisabledTests
         var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
         var extensions = new PluginRegistry([], []);
-        var factory = PluginTestManagementFactory.Create(extensions, manager);
+        var factory = PluginTestWorkspaceSession.Create(extensions, manager);
         return new FactoryContext(provider, factory);
     }
 
-    private static IRootDock CreateRoot(ManagementFactory factory)
+    private static IRootDock CreateRoot(WorkspaceSession factory)
     {
         var root = factory.CreateRootDock();
         root.Id = DockLayoutIds.Root;
@@ -78,7 +79,7 @@ public sealed class DockFloatingDisabledTests
     }
 
     private static ToolDock CreateToolDock(
-        ManagementFactory factory,
+        WorkspaceSession factory,
         string id) =>
         new()
         {
@@ -87,7 +88,7 @@ public sealed class DockFloatingDisabledTests
         };
 
     private static DocumentDock CreateDocumentDock(
-        ManagementFactory factory) =>
+        WorkspaceSession factory) =>
         new()
         {
             Id = DockLayoutIds.Documents,
@@ -96,9 +97,9 @@ public sealed class DockFloatingDisabledTests
 
     private sealed class FactoryContext(
         Microsoft.Extensions.DependencyInjection.ServiceProvider provider,
-        ManagementFactory factory) : IDisposable
+        WorkspaceSession factory) : IDisposable
     {
-        public ManagementFactory Factory { get; } = factory;
+        public WorkspaceSession Factory { get; } = factory;
 
         public void Dispose() => provider.Dispose();
     }

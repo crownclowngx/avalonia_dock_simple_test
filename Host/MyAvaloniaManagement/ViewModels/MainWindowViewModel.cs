@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -10,6 +8,7 @@ using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.ViewModels.Bindings;
 
@@ -21,7 +20,7 @@ namespace MyAvaloniaManagement.ViewModels;
 /// </summary>
 internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarget, IMainWindowViewBindings, IDisposable
 {
-    private readonly ManagementFactory _factory;
+    private readonly WorkspaceSession _workspace;
     private readonly PluginMenuService _pluginMenuService;
     private readonly DockLayoutLifecycle _layoutLifecycle;
     private readonly ApplicationThemeService _themeService;
@@ -47,15 +46,14 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     public bool IsDarkTheme => _themeMode == ApplicationThemeMode.Dark;
 
     internal MainWindowViewModel(
-        ManagementFactory factory,
+        WorkspaceSession workspace,
         PluginMenuService pluginMenuService,
         DockLayoutLifecycle layoutLifecycle,
         ApplicationThemeService themeService,
         DocumentPersistenceCoordinator documents,
-        DocumentOperationState documentOperationState,
-        DocumentCloseCoordinator documentCloseCoordinator)
+        DocumentOperationState documentOperationState)
     {
-        _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+        _workspace = workspace ?? throw new ArgumentNullException(nameof(workspace));
         _pluginMenuService = pluginMenuService ??
             throw new ArgumentNullException(nameof(pluginMenuService));
         _layoutLifecycle = layoutLifecycle ??
@@ -65,16 +63,15 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
         _documents = documents ?? throw new ArgumentNullException(nameof(documents));
         _documentOperationState = documentOperationState ??
             throw new ArgumentNullException(nameof(documentOperationState));
-        _documentCloseCoordinator = documentCloseCoordinator;
         _themeMode = _themeService.CurrentMode;
 
         // Factory 和文档状态都由根容器持有，而主窗口是瞬态对象。先登记定向通知，
         // Dispose 时再成对解除，避免单例服务通过委托延长窗口生命周期。
-        _factory.LayoutChanged += OnLayoutChanged;
+        _workspace.LayoutChanged += OnLayoutChanged;
         _documentOperationState.Changed += OnDocumentOperationStateChanged;
         try
         {
-            Layout = _layoutLifecycle.Prepare(_factory);
+            Layout = _layoutLifecycle.Prepare(_workspace);
         }
         catch
         {
@@ -85,8 +82,6 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
         }
     }
 
-    private readonly DocumentCloseCoordinator _documentCloseCoordinator;
-
     internal void ApplyPendingLayout()
     {
         if (Layout is not { } current)
@@ -94,7 +89,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
             return;
         }
 
-        var applied = _layoutLifecycle.ApplyPending(current, _factory);
+        var applied = _layoutLifecycle.ApplyPending(_workspace);
         if (!ReferenceEquals(applied, current))
         {
             Layout = applied;
@@ -105,7 +100,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     {
         if (Layout is { } root)
         {
-            _layoutLifecycle.Save(root, _factory);
+            _layoutLifecycle.Save(_workspace);
         }
     }
 
@@ -114,8 +109,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     /// </summary>
     internal Task<bool> ConfirmWindowCloseAsync()
     {
-        var documents = DocumentWorkspace.GetDocuments(Layout);
-        return _documentCloseCoordinator.ConfirmWindowCloseAsync(documents);
+        return _workspace.ConfirmWindowCloseAsync();
     }
 
     /// <summary>
@@ -123,8 +117,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     /// 避免无意义地取消后重入，也让布局保存和自动化退出保持同步可观察。
     /// </summary>
     internal bool HasDirtyDocuments() =>
-        DocumentWorkspace.GetDocuments(Layout)
-            .Any(_documentCloseCoordinator.IsDirty);
+        _workspace.HasDirtyDocuments();
 
     /// <summary>
     /// 解除当前瞬态窗口对根级协调对象的定向通知。
@@ -137,7 +130,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     private void ReleaseCoordinationSubscriptions()
     {
         // .NET 事件解除不存在匹配委托时是安全的，因此该入口天然支持重复 Dispose。
-        _factory.LayoutChanged -= OnLayoutChanged;
+        _workspace.LayoutChanged -= OnLayoutChanged;
         _documentOperationState.Changed -= OnDocumentOperationStateChanged;
     }
 
@@ -160,12 +153,12 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     [RelayCommand]
     public async Task OpenDocument()
     {
-        _documentOperationState.Apply(await _documents.OpenSelectedAsync(Layout));
+        _documentOperationState.Apply(await _documents.OpenSelectedAsync());
     }
 
     public async Task OpenDocumentByPath(string filePath)
     {
-        _documentOperationState.Apply(await _documents.OpenPathAsync(filePath, Layout));
+        _documentOperationState.Apply(await _documents.OpenPathAsync(filePath));
     }
 
     [RelayCommand]

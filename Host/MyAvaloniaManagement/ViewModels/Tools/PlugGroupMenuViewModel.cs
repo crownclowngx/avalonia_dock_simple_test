@@ -14,8 +14,8 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// 将插件文档元数据组织成分类菜单，并负责创建所选类型的文档。
 /// </summary>
 /// <remarks>
-/// 菜单查询与 Dock 文档创建分别委托给 <see cref="PluginMenuService"/>
-/// 和 <see cref="ManagementFactory"/>，从而保持插件契约不变。
+/// 菜单查询与 Document 创建分别委托给 <see cref="PluginMenuService"/>
+/// 和 <see cref="DocumentPersistenceCoordinator"/>，ViewModel 不接触 Dock 工作区对象。
 /// </remarks>
 internal sealed partial class PlugGroupMenuViewModel
 {

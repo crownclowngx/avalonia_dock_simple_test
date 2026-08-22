@@ -3,6 +3,7 @@ using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.PluginSdk;
 
@@ -41,7 +42,7 @@ internal sealed class UiTestContext : IDisposable
             ValidateScopes = true,
             ValidateOnBuild = true
         });
-        Factory = Provider.GetRequiredService<ManagementFactory>();
+        Workspace = Provider.GetRequiredService<WorkspaceSession>();
         ViewModel = Provider.GetRequiredService<MainWindowViewModel>();
     }
 
@@ -51,7 +52,7 @@ internal sealed class UiTestContext : IDisposable
 
     public Microsoft.Extensions.DependencyInjection.ServiceProvider Provider { get; }
 
-    public ManagementFactory Factory { get; }
+    public WorkspaceSession Workspace { get; }
 
     public MainWindowViewModel ViewModel { get; }
 

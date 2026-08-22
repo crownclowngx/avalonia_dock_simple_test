@@ -7,6 +7,7 @@ using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MyAvaloniaManagement.ViewModels.Tools;
+using MyAvaloniaManagement.Business.Workspace;
 using MyPlugTest.Plugin;
 using MySmallTools.Plugin;
 
@@ -25,9 +26,9 @@ public sealed class PluginCompatibilityTests
             ValidateScopes = true,
             ValidateOnBuild = true
         });
-        _ = provider.GetRequiredService<MyAvaloniaManagement.ViewModels.ManagementFactory>();
+        _ = provider.GetRequiredService<WorkspaceSession>();
 
-        Assert.Null(typeof(MyAvaloniaManagement.ViewModels.ManagementFactory).GetMethod(
+        Assert.Null(typeof(WorkspaceSession).GetMethod(
             "NormalizePersistedToolId",
             System.Reflection.BindingFlags.Instance |
             System.Reflection.BindingFlags.Public |

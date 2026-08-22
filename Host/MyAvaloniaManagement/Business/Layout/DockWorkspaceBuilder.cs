@@ -5,7 +5,7 @@ using Avalonia;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagement.Business.Docking;
 
 namespace MyAvaloniaManagement.Business.Layout;
 
@@ -13,7 +13,7 @@ namespace MyAvaloniaManagement.Business.Layout;
 /// 只负责构建具有稳定 ID 的四向宿主工作区，不持有运行期行为。
 /// 将结构创建与工具恢复、激活等状态操作分离，便于单独验证初始布局契约。
 /// </summary>
-internal sealed class DockWorkspaceBuilder(ManagementFactory factory)
+internal sealed class DockWorkspaceBuilder(HostDockFactory factory)
 {
     internal IRootDock CreateWorkspaceLayout(
         DocumentDock documentDock,
@@ -98,7 +98,7 @@ internal sealed class DockWorkspaceBuilder(ManagementFactory factory)
         windowLayout.IsCollapsable = false;
         windowLayout.VisibleDockables = factory.CreateList<IDockable>(workspaceRows);
         windowLayout.ActiveDockable = workspaceRows;
-        ManagementFactory.DisableFloating(windowLayout);
+        HostDockFactory.DisableFloating(windowLayout);
 
         var root = factory.CreateRootDock();
         root.Id = DockLayoutIds.Root;
@@ -106,7 +106,7 @@ internal sealed class DockWorkspaceBuilder(ManagementFactory factory)
         root.VisibleDockables = factory.CreateList<IDockable>(windowLayout);
         root.ActiveDockable = windowLayout;
         root.DefaultDockable = windowLayout;
-        ManagementFactory.DisableFloating(root);
+        HostDockFactory.DisableFloating(root);
         return root;
     }
 

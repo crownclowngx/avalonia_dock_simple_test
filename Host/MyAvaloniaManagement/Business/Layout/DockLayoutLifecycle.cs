@@ -4,7 +4,7 @@ using System.Linq;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagement.Business.Workspace;
 
 namespace MyAvaloniaManagement.Business.Layout;
 
@@ -16,7 +16,7 @@ internal static class DockLayoutSnapshotMapper
 {
     internal static DockLayoutSnapshotV2 Capture(
         IRootDock root,
-        ManagementFactory factory)
+        WorkspaceSession session)
     {
         var mainDockables = EnumerateDockables(root).ToArray();
         var allToolDocks = mainDockables
@@ -29,7 +29,7 @@ internal static class DockLayoutSnapshotMapper
         var pinned = CapturePinnedPlacements(mainDockables);
 
         var placements = new Dictionary<string, ToolPlacement>(StringComparer.Ordinal);
-        foreach (var pair in factory.CreatedTools)
+        foreach (var pair in session.CreatedTools)
         {
             var tool = pair.Value;
             pinned.TryGetValue(tool, out var pinnedPlacement);
@@ -39,7 +39,7 @@ internal static class DockLayoutSnapshotMapper
             var dockId = pinnedPlacement?.DockId ??
                          ResolveStableDockId(currentDock) ??
                          ResolveStableDockId(tool.OriginalOwner as IToolDock) ??
-                         GetDefaultDockId(factory, tool.Id);
+                         GetDefaultDockId(session, tool.Id);
             var isPinned = pinnedPlacement is not null;
             var isVisible = currentDock is not null || isPinned;
 
@@ -92,7 +92,7 @@ internal static class DockLayoutSnapshotMapper
         var panes = CapturePaneSnapshots(
             mainDockables,
             allToolDocks,
-            factory);
+            session);
 
         return new DockLayoutSnapshotV2
         {
@@ -105,9 +105,9 @@ internal static class DockLayoutSnapshotMapper
     internal static DockLayoutValidationError? ValidateAgainstRuntime(
         DockLayoutSnapshotV2 snapshot,
         IRootDock root,
-        ManagementFactory factory)
+        WorkspaceSession session)
     {
-        if (ValidateContributions(snapshot, factory) is { } contributionError)
+        if (ValidateContributions(snapshot, session) is { } contributionError)
         {
             return contributionError;
         }
@@ -142,17 +142,17 @@ internal static class DockLayoutSnapshotMapper
     /// </summary>
     internal static DockLayoutValidationError? ValidateContributions(
         DockLayoutSnapshotV2 snapshot,
-        ManagementFactory factory)
+        WorkspaceSession session)
     {
-        var tools = factory.CreatedTools;
+        var tools = session.CreatedTools;
         foreach (var tool in snapshot.Tools)
         {
-            if (!factory.IsRegisteredTool(tool.Id))
+            if (!session.IsRegisteredTool(tool.Id))
             {
                 return new("LAYOUT_PLUGIN_MISSING", tool.Id);
             }
 
-            if (!factory.IsToolAvailable(tool.Id))
+            if (!session.IsToolAvailable(tool.Id))
             {
                 return new("LAYOUT_PLUGIN_UNAVAILABLE", tool.Id);
             }
@@ -169,9 +169,9 @@ internal static class DockLayoutSnapshotMapper
     internal static void ApplySnapshot(
         DockLayoutSnapshotV2 snapshot,
         IRootDock root,
-        ManagementFactory factory)
+        WorkspaceSession session)
     {
-        EnsureSnapshotDocks(snapshot, root, factory);
+        EnsureSnapshotDocks(snapshot, root, session);
 
         var dockables = EnumerateDockables(root).ToArray();
         var paneMap = dockables
@@ -194,19 +194,19 @@ internal static class DockLayoutSnapshotMapper
             var targetDock = toolDocks[group.Key];
             var orderedTools = group
                 .OrderBy(tool => tool.Order)
-                .Select(tool => factory.CreatedTools[tool.Id])
+                .Select(tool => session.CreatedTools[tool.Id])
                 .ToArray();
             for (var index = 0; index < orderedTools.Length; index++)
             {
                 var tool = orderedTools[index];
-                factory.RemoveDockable(tool, collapse: false);
-                factory.InsertDockable(targetDock, tool, index);
+                session.DockFactory.RemoveDockable(tool, collapse: false);
+                session.DockFactory.InsertDockable(targetDock, tool, index);
             }
         }
 
         foreach (var toolState in snapshot.Tools.Where(tool => !tool.IsVisible))
         {
-            factory.HideDockable(factory.CreatedTools[toolState.Id]);
+            session.DockFactory.HideDockable(session.CreatedTools[toolState.Id]);
         }
 
         foreach (var toolState in snapshot.Tools
@@ -214,7 +214,7 @@ internal static class DockLayoutSnapshotMapper
                      .OrderBy(tool => tool.DockId, StringComparer.Ordinal)
                      .ThenBy(tool => tool.Order))
         {
-            factory.PinDockable(factory.CreatedTools[toolState.Id]);
+            session.DockFactory.PinDockable(session.CreatedTools[toolState.Id]);
         }
 
         if (snapshot.ActiveToolId is { } activeToolId)
@@ -222,7 +222,7 @@ internal static class DockLayoutSnapshotMapper
             var activeState = snapshot.Tools.Single(tool => tool.Id == activeToolId);
             if (activeState.IsVisible && !activeState.IsPinned)
             {
-                factory.SetActiveDockable(factory.CreatedTools[activeToolId]);
+                session.DockFactory.SetActiveDockable(session.CreatedTools[activeToolId]);
             }
         }
     }
@@ -279,14 +279,14 @@ internal static class DockLayoutSnapshotMapper
     }
 
     private static string GetDefaultDockId(
-        ManagementFactory factory,
+        WorkspaceSession session,
         string toolId) =>
-        ToolDockPlacement.GetDockId(factory.GetToolAlignment(toolId));
+        ToolDockPlacement.GetDockId(session.GetToolAlignment(toolId));
 
     internal static void EnsureSnapshotDocks(
         DockLayoutSnapshotV2 snapshot,
         IRootDock root,
-        ManagementFactory factory)
+        WorkspaceSession session)
     {
         var alignments = snapshot.Tools
             .Select(tool => tool.DockId)
@@ -306,16 +306,16 @@ internal static class DockLayoutSnapshotMapper
 
         foreach (var alignment in alignments)
         {
-            factory.EnsureToolDock(root, alignment);
+            session.EnsureToolDock(root, alignment);
         }
     }
 
     private static List<DockPaneSnapshotV2> CapturePaneSnapshots(
         IReadOnlyCollection<IDockable> dockables,
         IReadOnlyCollection<IToolDock> toolDocks,
-        ManagementFactory factory)
+        WorkspaceSession session)
     {
-        var createdTools = factory.CreatedTools.Values
+        var createdTools = session.CreatedTools.Values
             .ToHashSet(ReferenceEqualityComparer.Instance);
         var panes = new List<DockPaneSnapshotV2>();
 

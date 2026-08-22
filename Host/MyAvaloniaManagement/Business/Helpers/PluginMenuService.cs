@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
-using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagement.Business.Workspace;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -9,11 +9,11 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// </summary>
 internal sealed class PluginMenuService
 {
-    private readonly ManagementFactory _factory;
+    private readonly WorkspaceSession _workspace;
 
-    public PluginMenuService(ManagementFactory factory)
+    public PluginMenuService(WorkspaceSession workspace)
     {
-        _factory = factory;
+        _workspace = workspace;
     }
 
     /// <summary>
@@ -21,7 +21,7 @@ internal sealed class PluginMenuService
     /// </summary>
     public Dictionary<string, List<DocumentCreationMenuEntry>>
         GetCreationEntriesByCategory() =>
-        _factory.GetAllDocumentCreationEntries()
+        _workspace.GetAllDocumentCreationEntries()
             .GroupBy(entry => entry.MenuCategory)
             .ToDictionary(group => group.Key, group => group.ToList());
 }

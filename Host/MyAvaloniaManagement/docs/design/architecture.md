@@ -1,9 +1,10 @@
 # MyAvaloniaManagement 内部架构
 
-> 当前源码已完成未发布 V3 G5：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
+> 当前源码已完成未发布 V3 G6：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
 > 指定修订确认，激活已采用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属校验；
-> MyPlugTest 与 BiliDownloader 消息器已归各自插件 Provider 所有。其余运行结构仍是 V2 G14 已签署实现。
-> manifest、Document envelope、layout 保持 schema 2，默认数据根保持 `v2`；G6 及后续协议尚未实施。
+> MyPlugTest 与 BiliDownloader 消息器已归各自插件 Provider 所有；Workspace Session、Dock Factory 和
+> Tool 只读投影已经分离。其余运行结构仍是 V2 G14 已签署实现。manifest、Document envelope、layout
+> 保持 schema 2，默认数据根保持 `v2`；G7 及后续协议尚未实施。
 
 ## 1. 目标与边界
 
@@ -44,26 +45,29 @@ flowchart TB
     Runtime --> PluginProviders["PluginProviderOwner\n每插件 Provider"]
     Runtime --> Lifecycle["PluginLifecycleCoordinator\n+ StateStore / ReadModel"]
 
-    HostContainer --> Factory["ManagementFactory<br/>Host internal Dock 协调器"]
+    HostContainer --> Factory["HostDockFactory<br/>Dock Framework Adapter"]
+    HostContainer --> Session["WorkspaceSession<br/>唯一工作区所有者"]
+    Factory -->|"一次性 IWorkspaceDockCallbacks"| Session
     HostContainer --> WindowPort["IPluginWindowInteraction<br/>受控文件 / 剪贴板端口"]
     HostContainer --> Registry["PluginRegistry<br/>不可变贡献快照"]
     WindowPort --> PluginProviders
     PluginProviders --> PrivateEvents["插件私有消息器<br/>每 Provider 隔离"]
     RegistryBuilder --> Registry
-    Factory --> Registry
-    Factory --> Builder["DockWorkspaceBuilder<br/>初始结构"]
-    Factory --> Navigator["DockTreeNavigator<br/>统一查询"]
-    Factory --> ToolCoordinator["ToolDockCoordinator<br/>工具状态流程"]
-    Factory --> DocumentLifetime["DockDocumentLifetime<br/>关闭后释放"]
+    Session --> Registry
+    Session --> Builder["DockWorkspaceBuilder<br/>初始结构"]
+    Session --> Navigator["DockTreeNavigator<br/>统一查询"]
+    Session --> ToolCoordinator["ToolDockCoordinator<br/>工具状态流程"]
+    Session --> DocumentLifetime["DockDocumentLifetime<br/>关闭后释放"]
+    Session --> ToolReadModel["ToolWorkspaceReadModel<br/>无 Dock 只读投影"]
 
     HostContainer --> MainVM["MainWindowViewModel<br/>绑定与定向协调"]
     MainVM --> Documents["DocumentPersistenceCoordinator"]
     HostContainer --> OperationState["DocumentOperationState<br/>根级错误提示状态"]
     Documents --> OperationState
     MainVM --> OperationState
-    Factory --> MainVM
+    Session --> MainVM
     MainVM --> Close["DocumentCloseCoordinator"]
-    Documents --> Workspace["DocumentWorkspace<br/>Dock Adapter"]
+    Documents --> Session
     Documents --> Save["DocumentSaveService"]
     Close --> Save
     Documents --> Storage["IHostStorageService"]
@@ -80,7 +84,7 @@ flowchart TB
 依赖方向有两个核心约束：
 
 1. ViewModel 依赖面向用例的协调器，不直接实现文件事务或重复 Dock 遍历。
-2. `ManagementFactory` 保留 Dock 库要求的继承与 public 契约，但业务规则尽量委托给内部协作者。
+2. `HostDockFactory` 只保留 Dock 库要求的继承协议；`WorkspaceSession` 独占工作区状态，ViewModel 只依赖窄用例入口。
 
 ## 3. 启动和关闭
 
@@ -96,10 +100,10 @@ flowchart TB
 6. 按 manifest `pluginId` 顺序为每个插件创建空服务集合，执行一次 `Configure` 并构建私有 Provider；
 7. 单插件成功后才合并其声明；失败则释放自身并继续后续插件；
 8. 只读取已冻结声明完成跨所有者冲突过滤，释放冲突 Provider，再发布不可变 `PluginRegistry`；
-9. 由 internal `PluginLifecycleCoordinator` 按 PluginId 启动可用插件，再显式解析 `ManagementFactory`；
+9. 由 internal `PluginLifecycleCoordinator` 按 PluginId 启动可用插件，再显式解析唯一 `WorkspaceSession`；
 10. 将完全组合成功的 Host Provider 交给 Avalonia 启动路径。
 
-关闭时先释放全部 Document Scope，再反向停止成功生命周期，随后逆序释放插件 Provider，最后释放
+关闭时先由 Session 停止新建并按 Document 在前、Tool 逆序在后的顺序释放工作区，再反向停止成功生命周期，随后逆序释放插件 Provider，最后释放
 Host Provider。这个所有权对称性防止 `Program`、`App` 和插件生命周期管理器分别持有清理责任。
 
 [`Program`](../../Program.cs) 只保留进程入口和失败应用编排。`HostRuntime` 通过 internal
@@ -195,9 +199,9 @@ DataContext/释放 View → 取消 ClosingToken → 释放模型与 scoped 依�
 View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均禁止浮动，Tool 的 Hide/Prevent、四向位置和
 Pinned 由 Descriptor 与现有布局协调器投影。
 
-`ManagementFactory` 只依赖窄口 `IHostDockableFactory`，跟踪已经发布的 Adapter。关闭失败回滚、正常关闭
-与 Runtime 退出汇入幂等释放入口；`HostRuntime` 在 Document Scope 和插件 Provider 前释放剩余
-Adapter/View。生产 DI 不注册 Legacy `IDocumentScopeFactory`，旧持久化测试 seam 不进入运行时对象图。
+`WorkspaceSession` 依赖窄口 `IHostDockableFactory` 并独占已经发布的 Adapter。关闭失败回滚、正常关闭
+与 Runtime 退出汇入幂等释放入口；`HostDockFactory` 不保存 Adapter 集合，只按 Dock 基类时序转发回调。
+生产 DI 不注册 Legacy `IDocumentScopeFactory`，旧持久化测试 seam 不进入运行时对象图。
 
 ### 4.5 诊断白名单边界
 
@@ -217,21 +221,31 @@ JSONL 和镜像之前执行唯一一次白名单转换：
 门禁都不启用该旁路。设计与验收证据见
 [G15 宿主诊断脱敏](../../../../docs/plan-history/host-v1/g15-host-diagnostic-redaction.md)。
 
-## 5. `ManagementFactory` 的 Facade 边界
+## 5. Workspace Session 与 Dock Factory 边界
 
-[`ManagementFactory`](../../ViewModels/ManagementFactory.cs) 必须继承 Dock 的工厂类型并保留现有 public 方法、override 和定位器配置，因此不能简单删除。它现在主要承担协议适配与委托：
+V3 G6 已删除 `ManagementFactory` Facade。生产代码只有
+[`HostDockFactory`](../../Business/Docking/HostDockFactory.cs) 继承 Dock `Factory`；它与
+[`WorkspaceSession`](../../Business/Workspace/WorkspaceSession.cs) 在组合根执行一次性绑定，未绑定使用和
+重复绑定均快速失败。唯一 internal `IWorkspaceDockCallbacks` 只表达 Dock Framework 的真实回调接缝，
+不进入 ViewModel、Plugin SDK 或通用消息基础设施。
 
 | 协作者 | 单一职责 | 不负责 |
 | --- | --- | --- |
 | `PluginRegistry` | 清单所有权、贡献、元数据、View 映射和菜单索引 | Provider、模型创建、组合写入、Dock 树状态、生命周期运行状态 |
 | `PluginContributionActivator` | 按 Registry 所有者路由 Provider、Scope 与模型创建 | 冲突判断、元数据解释、生命周期编排 |
 | `HostDockAdapterFactory` | 创建内部 Adapter 并在发布前预构建精确 View | Provider 选择、布局协调、模型生命周期策略 |
+| `HostDockFactory` | Dock override、规范 Locator、禁浮动和回调顺序 | Root、Document、Tool 集合与业务状态 |
+| `WorkspaceSession` | Root/Document Dock、Document/Tool 所有权、发布/显隐/关闭/退出提交点 | 磁盘序列化、任意事件路由、服务定位 |
+| `ToolWorkspaceReadModel` | 从 Session/Registry 生成无 Dock 的不可变 Tool 状态 | Tool 创建、显隐命令和 Dock 树写入 |
 | `DockWorkspaceBuilder` | 创建稳定四向初始布局 | 工具恢复和激活 |
 | `DockTreeNavigator` | Dock、Document、Tool、Pinned/Hidden 查询 | 修改业务状态 |
 | `ToolDockCoordinator` | 工具显示、恢复、停靠点重建和纵向区域归一化 | 策略发现 |
 | `DockDocumentLifetime` | 文档关闭后的缓存移除和 Scope 释放 | 关闭是否允许 |
 
-这种拆分保留 Dock 框架所需的 Facade，同时让每项内部规则可以独立测试。`GetToolManagementData()` 在布局尚未建立时继续返回 `null`；内部 `ToolRegistrySnapshot` 仅供宿主提前构造工具管理列表，不扩大 public API。
+Factory 的 Docked/Hidden 在基类行为后通知 Session；Closing 只有 Session 脏文档保护通过后才进入基类；
+Closed 把基类通知放在 `try`、Session 最终释放放在 `finally`。多个 MainWindow 共享同一 Session/Root，
+各自订阅和解除定向通知。Tool 管理在布局前后都读取 `ToolWorkspaceReadModel` 的纯数据快照，Pinned Tool
+视为可见，不获得 Root Dock、Dock Tool、Factory 字典或服务容器。
 
 ## 6. 文档工作流
 
@@ -241,12 +255,12 @@ JSONL 和镜像之前执行唯一一次白名单转换：
 sequenceDiagram
     participant VM as MainWindowViewModel
     participant C as DocumentPersistenceCoordinator
-    participant W as DocumentWorkspace
+    participant W as WorkspaceSession
     participant S as IHostStorageService
     participant E as DocumentEnvelopeSerializer
     participant R as PluginRegistry
     participant P as DocumentPersistenceStateStore
-    participant F as ManagementFactory
+    participant F as WorkspaceSession
 
     VM->>C: OpenPathAsync / SaveActiveAsync
     C->>C: 进入串行操作门
@@ -258,7 +272,7 @@ sequenceDiagram
         C->>E: 严格解析唯一六字段 v2
         E-->>C: 宿主信封 + 原生 JSON 内容
         C->>R: 精确查找主 ID 与所有者
-        C->>F: 使用 ActivationContext 异步初始化未发布 Adapter/View
+        C->>F: 使用互斥 Activation 异步初始化未发布 Adapter/View
         F->>P: 登记规范 Registry 所有权
         C->>P: 内容成功后提交主文件路径
         C->>W: 加入 DocumentDock 并激活
@@ -273,7 +287,7 @@ sequenceDiagram
 - `DocumentOperationState`：保存当前 HostRuntime 唯一的文档错误条状态；文件菜单与文件树共享；
 - `DocumentSaveService`：指定 Document 的路径决策、主文件提交、状态接受和恢复备份；
 - `DocumentCloseCoordinator`：标签/窗口关闭确认、批量保存和同步关闭的异步重入；
-- `DocumentWorkspace`：把 Dock 树适配为文档区操作；
+- `WorkspaceSession`：拥有文档区、同路径激活、活动文档、原子发布、失败回滚与最终释放；
 - `DocumentPathIdentity`：绝对路径与 Windows 不区分大小写身份；
 - `DocumentPersistenceStateStore`：按 Adapter 引用保存规范 Registry、路径、Host 标题与 `RequiresSave`，关闭与失败时幂等清理；
 - `DocumentEnvelopeSerializer`：严格读写 schema 2 六字段根对象、两字段 content、深度 8 和 UTF-8 8 MiB 边界；
@@ -317,8 +331,8 @@ Scope 释放，插件 Coordinator 在关闭流程释放，插件 Provider 最后
 对应插件中真实多消费者需求的派发，不承担订阅者生命周期。
 
 G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到事件广播。文件树只依赖单方法
-`IHostDocumentOpenService`，生产实现复用文档持久化协调器；`ManagementFactory` 作为 Dock 状态所有者，
-在显隐完整提交后直接同步 Tool 管理器并定向通知主窗口。两类根级通知都由瞬态主窗口在 `Dispose`
+`IHostDocumentOpenService`，生产实现复用文档持久化协调器；`WorkspaceSession` 作为唯一 Dock 状态所有者，
+在显隐完整提交后发布定向通知，Tool 管理器再从 ReadModel 重建纯数据投影。两类根级通知都由瞬态消费者在 `Dispose`
 时解除，不存在任意事件类型路由、静态订阅或跨 HostRuntime 状态。
 
 ## 7. 布局生命周期
@@ -359,7 +373,8 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | 插件 Provider | `PluginProviderOwner` | 生命周期停止后按 PluginId 反序释放 |
 | 插件私有消息器 | 对应插件 Provider | 订阅者先释放令牌；插件 Provider 最后释放消息器 |
 | Managed 插件生命周期 | `PluginLifecycleCoordinator` | Adapter/View 与全部 Document Scope 释放后，插件 Provider 释放前 |
-| Tool 实例 | 所属插件 Provider / `ManagementFactory` | 插件 Provider / Host Provider 释放 |
+| Tool Adapter 实例 | `WorkspaceSession`；普通模型仍属对应插件 Provider | Session 先释放 Adapter/View，插件 Provider 后释放模型 |
+| Root / Document Dock | `WorkspaceSession` | HostRuntime 退出时随 Session 释放 |
 | 有独立 Scope 的 Document | 所属插件 `DocumentScopeManager` | Dock 确认关闭后；退出时 `DocumentScopeRegistry` 兜底 |
 | Document 控件缓存 | `DocumentControlRecycling` | 对应 Document 确认关闭后移除 |
 | 布局快照待应用状态 | `DockLayoutLifecycle` | 首次 Apply 时原子取出 |

@@ -7,7 +7,7 @@
 - 每个 G 包只改变声明范围内的格式；G7/G8 分别以唯一 V2 替换 Document/Layout V1，不保留双 reader；
 - 高风险规则具有唯一实现位置；
 - 异常、并发和资源所有权边界明确；
-- `ManagementFactory`、`MainWindowViewModel` 不再同时承担多个变化原因；
+- Dock Factory、Workspace Session、Tool 只读投影和 `MainWindowViewModel` 分别只有明确变化原因；
 - 完整回归和覆盖率门禁能够证明行为仍然成立。
 
 ## 2. 方法论：契约优先的小步重构
@@ -33,7 +33,7 @@
 1. 运行现有测试，并从 TRX 动态记录基线；
 2. 增加 Plugin SDK 反射指纹和 Host 零自有导出门禁；
 3. 找到重复扫描、重复遍历、私有字段反射和分散文件写入等接缝；
-4. 先抽取内部协作者，再让旧 public 类型转为委托；
+4. 先抽取内部协作者；若旧类型只是 internal 万能 Facade，则整体迁移消费者后直接删除，不保留转发层；
 5. 每完成一条链路立即运行对应测试；
 6. 最后执行 Release 覆盖率门禁和真实窗口冒烟。
 
@@ -56,8 +56,8 @@
 | 原职责聚合 | 拆分后 |
 | --- | --- |
 | `Program` 注册服务、扫描插件、构建容器、初始化和关闭 | `HostRuntime` 统一组合根和所有权 |
-| `ManagementFactory` 发现策略、读元数据、建树、查询、恢复、释放 | Registry、Builder、Navigator、Coordinator、Lifetime |
-| `MainWindowViewModel` 选择文件、读写 JSON、查重、修改 Dock | Persistence Coordinator + Workspace Adapter |
+| `ManagementFactory` 同时适配 Dock、拥有 Root/Document/Tool 并协调退出 | `HostDockFactory` + `WorkspaceSession` + ReadModel + 既有 Coordinator |
+| `MainWindowViewModel` 选择文件、读写 JSON、查重、修改 Dock | Persistence Coordinator + Workspace Session |
 | `DockLayoutLifecycle` 映射、验证、文件事务、窗口编排 | Mapper、严格 JSON Codec、Validator、Store、Atomic Transaction |
 | public 生命周期 Manager 同时排序、执行、保存状态和投影 UI | internal Coordinator、单操作 Runner、StateStore、只读 Availability ReadModel |
 | 插件 Document 同时自报内容、路径和类型身份 | 内容快照 + 独立脏状态 + 宿主持久化状态存储 |
@@ -72,7 +72,8 @@ V2 有意破坏历史 v1 SDK，删除重复身份和隐式发现入口；G14 已
 
 ### 3.3 里氏替换原则（LSP）
 
-`ManagementFactory` 仍满足 Dock 基类的 override 行为；禁用浮动、关闭通知和 Docked 后归一化没有绕过框架回调。Host 与 Managed Plugin 策略都通过显式贡献声明和统一 DI 创建，并返回契约要求的 Document/Tool。
+`HostDockFactory` 满足 Dock 基类的 override 行为；Docked/Hidden 先调用基类，Closing 先通过 Session
+保护再调用基类，Closed 在 `finally` 释放 Session 所有权。全部浮动 overload 保持同一拒绝语义。
 
 三个可保存 Document 实现遵守同一内容快照语义：创建快照无副作用，恢复前精确验版，
 任何成功保存都输出该插件当前内容 schema。宿主因此可以用同一提交流程替换它们，无需插件类型分支。
@@ -94,7 +95,7 @@ G13 已删除 Legacy 回调适配、`Order`、依赖图和 public Manager。
 
 ### 3.5 依赖倒置原则（DIP）
 
-主窗口依赖文档用例协调器与存储边界，插件模型依赖私有 Provider 中的窄服务。App 依赖内部桌面 Shell，
+主窗口依赖文档用例协调器与唯一 Workspace Session，Tool 管理依赖无 Dock ReadModel；插件模型依赖私有 Provider 中的窄服务。App 依赖内部桌面 Shell，
 内建策略依赖窄 `Func<T>` 工厂；静态 `ServiceProvider` 与生产无参构造已删除。模块依赖 SDK
 抽象 `IPluginRegistration`，具体 Registration、Builder 和 Registry 均留在 Host 内部。服务解析只允许
 出现在 `HostRuntime`、显式贡献激活和 Document Scope 等明确组合边界。
@@ -107,12 +108,13 @@ G13 已删除 Legacy 回调适配、`Order`、依赖图和 public Manager。
 
 取舍：没有把 `HostRuntime` 暴露为 public，也没有引入新的宿主上下文契约。它只解决内部启动职责分散问题。
 
-### 4.2 Facade 与不可变快照
+### 4.2 Factory Adapter、一次性绑定与只读投影
 
-`ManagementFactory` 作为 Dock Facade 保留框架要求的调用面；`AssemblyLoaderHelper` 不再提供历史
-程序集列表 Facade，只发布包含清单、类型、模块和诊断的不可变发现快照。
+`HostDockFactory` 只把 Dock Framework override/Locator 适配为窄 `IWorkspaceDockCallbacks`；
+`WorkspaceSession` 是唯一工作区所有者；`ToolWorkspaceReadModel` 发布不含 Dock 类型的不可变状态。
 
-取舍：Dock Facade 仍然看起来“能力较多”，但插件加载不再为兼容旧调用而丢失预检事实。
+取舍：Factory 与 Session 因互相组合需要一次显式绑定。绑定只能发生一次，未绑定使用立即失败；相比把
+`IServiceProvider` 塞入 Factory 或建立通用事件总线，这个小接缝更容易审阅，也让错误在组合时暴露。
 
 ### 4.3 Context、Builder 与不可变 `PluginRegistry`
 
@@ -160,11 +162,13 @@ V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型
 
 取舍：Coordinator 可以依赖多个具体内部组件，但不应成为新的万能类。判断标准是它是否只拥有一条业务流程及其事务边界。
 
-### 4.8 Adapter：`DocumentWorkspace`
+### 4.8 Session：`WorkspaceSession`
 
-目的：把通用 Dock API 转换为文档领域语言，避免持久化逻辑理解 `IRootDock`、`IDocumentDock` 的遍历细节。
+目的：让 Root/Document Dock、已拥有 Document 和已创建 Tool 只有一个所有者，并把创建、发布、失败回滚、
+关闭和退出收敛到同一提交点。持久化与布局协调器只向 Session 请求领域操作，不传递 `IRootDock`。
 
-取舍：Adapter 当前只覆盖宿主实际需要的添加、激活、查重和当前文档，不提前抽象关闭、重排等未来能力。
+取舍：Session 是有状态的 HostRuntime singleton，但不负责文件格式、插件发现或任意消息。多个窗口共享
+同一 Session/Root，并各自解除订阅；这比为每个窗口复制工作区集合更符合真实产品所有权。
 
 ### 4.9 Atomic File Transaction
 
@@ -189,6 +193,8 @@ V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型
 | 布局整体校验、整体回退 | 不产生半恢复混合状态 | 缺失一个插件会丢弃其余布局恢复结果 |
 | Layout 只接受严格 V2 | 格式和行为唯一、失败可预测 | 不提供 V1 迁移或通用版本迁移框架 |
 | 模块结构使用独立 Validator | 在插件对象实例化前按目录隔离 | 仍需加载程序集并读取类型元数据 |
+| Factory 与 Session 一次性绑定 | Dock 继承面与应用状态彻底分开，无服务定位 | 组合根必须按固定顺序建立两个对象 |
+| Tool 状态使用无 Dock ReadModel | ViewModel 只看稳定纯数据，Pinned/Hidden 规则集中 | 状态变化后需要重建小型快照 |
 
 ## 6. 明确没有采用的方案
 
@@ -234,5 +240,5 @@ V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型
 - Managed-only 拒绝、Dock 稳定 ID、文档 JSON 和严格布局 V2 回归通过；
 - 预期失败不会留下错误内存状态或临时文件；
 - Scope、缓存和根容器的释放时机有测试；
-- Release 测试、覆盖率门禁和必要的 Windows 冒烟通过；
+- 当前阶段 Release 配置测试与覆盖率门禁通过；Windows 冒烟只在发布阶段按任务书执行；
 - 当前架构文档和兼容清单同步更新。

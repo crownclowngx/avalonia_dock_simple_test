@@ -87,7 +87,7 @@ try {
         (Join-Path $productionRoot 'Business\Documents'),
         (Join-Path $productionRoot 'Business\Docking'),
         (Join-Path $productionRoot 'Business\Helpers\DocumentScopeManager.cs'),
-        (Join-Path $productionRoot 'ViewModels\ManagementFactory.cs'),
+        (Join-Path $productionRoot 'Business\Workspace\WorkspaceSession.cs'),
         (Join-Path $productionRoot 'ViewModels\MainWindowViewModel.cs')
     )
     $forbiddenPattern = 'DocumentEnvelopeV1|DocumentContentSnapshot|ISavableDocument|IDocumentSaveState|DocumentLoadException|IDocumentScopeFactory|CreateLegacyDocument|Newtonsoft\.Json'

@@ -118,18 +118,8 @@ try {
     if (Test-Path -LiteralPath $legacyRoot) {
         throw 'G13 后 Legacy contracts 项目不得重新出现。'
     }
-    if ($LASTEXITCODE -gt 1) {
-        throw '无法执行 G8 Legacy 生命周期结构扫描。'
-    }
-
-    $legacyLifecycleContract = Join-Path $legacyRoot 'Plugin\IPluginLifecycle.cs'
-    & rg --quiet '\bOrder\b' $legacyLifecycleContract
-    if ($LASTEXITCODE -eq 0) {
-        throw 'G8 Legacy IPluginLifecycle 重新出现 Order。'
-    }
-    if ($LASTEXITCODE -gt 1) {
-        throw '无法检查 G8 Legacy IPluginLifecycle。'
-    }
+    # G13 已把整个 Legacy 项目作为一个删除单位移除。项目不存在本身就是当前结构事实，
+    # 不能再向已删除路径执行 rg；否则 rg 的“路径不存在”会被误报为生命周期契约回归。
 
     $biliProduction = Join-Path $repositoryRoot 'Plugins\BiliDownloader\BiliDownloader'
     & rg --quiet 'PluginLifecycleManager|IPluginLifecycleDependencies' `
@@ -150,7 +140,9 @@ try {
         aiflow = $false
         windowsCi = $false
         windowsSmoke = $false
+        releaseAcceptance = $false
         releaseGate = $false
+        publishable = $false
         generatedAtUtc = [DateTime]::UtcNow.ToString('O')
     }
     [IO.File]::WriteAllText(

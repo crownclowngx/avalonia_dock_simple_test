@@ -65,8 +65,9 @@ internal sealed class G8P1AcceptanceSuite(
             var mainWindow = (Application.Current!.ApplicationLifetime as
                 IClassicDesktopStyleApplicationLifetime)!.MainWindow!;
             var mainViewModel = (MainWindowViewModel)mainWindow.DataContext!;
-            var factory = services.GetRequiredService<ManagementFactory>();
-            var documentDock = factory.GetDockable<Dock.Model.Controls.IDocumentDock>("Files")
+            var hostWorkspace = services.GetRequiredService<MyAvaloniaManagement.Business.Workspace.WorkspaceSession>();
+            var documentDock = hostWorkspace.DockFactory.GetDockable<Dock.Model.Controls.IDocumentDock>(
+                    MyAvaloniaManagement.Business.Layout.DockLayoutIds.Documents)
                 as DocumentDock ?? throw new AcceptanceException("G8-HOST-DOCK");
 
             var documents = await MeasureAsync(
@@ -106,7 +107,7 @@ internal sealed class G8P1AcceptanceSuite(
                 foreach (var document in documents.All.Reverse())
                 {
                     Console.WriteLine($"G8 stage: close-{document.Title}");
-                    factory.CloseDockable(document);
+                    hostWorkspace.DockFactory.CloseDockable(document);
                     await DrainDispatcherAsync();
                 }
             }

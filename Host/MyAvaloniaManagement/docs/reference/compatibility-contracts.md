@@ -18,15 +18,16 @@
 > 过渡构建面已经删除；Core/UI v2 API 已进入 Shipped，两轮隔离门禁与 Windows V2 Smoke 已建立，
 > 历史 v1 签署事实保持可追溯。
 
-> 当前源码已完成未发布 V3 G5：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
+> 当前源码已完成未发布 V3 G6：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
 > `[3.0.0, 4.0.0)`。活动签名位于 v3 Unshipped，Document 保存采用修订快照与指定修订确认，
 > 激活采用互斥的 `NewDocumentActivation` / `RestoreDocumentActivation`，插件注册采用 Host 最终提交
-> 与 ID 归属校验；SDK/Host 通用事件总线已删除，消息实例归对应插件 Provider 所有；
+> 与 ID 归属校验；SDK/Host 通用事件总线已删除，消息实例归对应插件 Provider 所有；Dock Factory、
+> 唯一 Workspace Session 与无 Dock Tool ReadModel 已分离；
 > manifest、Document envelope、layout 和默认数据根继续使用 schema/generation 2。
 
 ## 2. public API
 
-当前 V3 G5 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
+当前 V3 G6 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
 四个业务插件只引用最终 SDK。`MyAvaloniaManagement.LegacyPluginContracts` 已整体删除；活动项目、
@@ -38,7 +39,7 @@ G8 生产组合中，只有 `ManagedDocumentDockable` 与 `ManagedToolDockable` 
 Plugin SDK public API 或 manifest；Document 与 Layout 磁盘契约均已切换为唯一 V2。
 
 历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 的 v2 基线由 G14 冻结为
-Shipped 85/46 条且 Unshipped 均为空。活动 v3 Shipped 为空、Unshipped 为 130/46，并由
+Shipped 85/46 条且 Unshipped 均为空。活动 v3 Shipped 为空、Unshipped 为 127/46，并由
 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v3` 验证。未登记
 新增、删除、可见性收窄、参数或返回类型变化都会给出成员级 RS 诊断。完整维护流程见
 [Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
@@ -247,7 +248,8 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 
 兼容行为：
 
-- 历史调用仍可通过 `Files` Locator 找到 DocumentDock；持久化 ID 固定为 `Documents`；
+- 生产与 Harness 只通过规范 `Documents` Locator 或 Workspace Session 取得 Document Dock；`Files` 查询不存在；
+- `Plug` 仍是 G9 删除的临时兼容别名，不得扩散到新消费者；
 - Tool 支持 Left、Right、Top、Bottom；
 - Top/Bottom 使用工作区全宽稳定停靠点；
 - 关闭 Tool 表示隐藏，之后恢复同一实例；
@@ -255,7 +257,9 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - 最后一个 Tool 隐藏后停靠点被移除时，恢复必须重建同一稳定节点；
 - 禁止 Document、Tool 或整个 Dock 浮动为独立窗口；
 - 主窗口内部拖放与停靠继续可用；
-- `GetToolManagementData()` 在根布局建立前继续返回 `null`；内部只读快照不属于 public 契约。
+- 每个 HostRuntime 只有一个 `WorkspaceSession` 和一棵 Root；多个窗口只作为独立绑定消费者；
+- `HostDockFactory` 不拥有 Root、Document 或 Tool 集合；未绑定和重复绑定都必须快速失败；
+- Tool 管理只消费不含 Dock 类型的 `ToolWorkspaceState` 快照；布局前、Hidden、Pinned 与 Prevent 均有稳定投影。
 
 ## 6. 布局 V2 契约
 
@@ -312,6 +316,7 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - [ ] 脏标签与窗口退出的保存、放弃、取消路径均通过；
 - [ ] 损坏主文件只从有效 `.recovery.bak` 创建强制另存副本，原件保持不变；
 - [ ] 四向 Dock、Pinned/Hidden、恢复和禁用浮动通过；
+- [x] Factory / Session 所有权分离、无 Dock Tool 投影、`Files` 删除和多窗口共享通过 G6 专项门禁；
 - [ ] 布局 V1 迁移、隔离和默认回退通过；
 - [ ] Document Scope 与控件缓存关闭后释放；
 - [ ] Release 覆盖率门禁通过；

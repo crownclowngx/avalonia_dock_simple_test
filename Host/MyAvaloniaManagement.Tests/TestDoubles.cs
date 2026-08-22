@@ -7,6 +7,7 @@ using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Docking;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels;
 using Avalonia.Controls;
 using MyAvaloniaManagement.PluginSdk;
@@ -69,7 +70,7 @@ internal sealed class TestHostContext : IDisposable
             ValidateScopes = true,
             ValidateOnBuild = true
         });
-        Factory = Provider.GetRequiredService<ManagementFactory>();
+        Workspace = Provider.GetRequiredService<WorkspaceSession>();
     }
 
     public string TempDirectory { get; }
@@ -80,7 +81,7 @@ internal sealed class TestHostContext : IDisposable
 
     public Microsoft.Extensions.DependencyInjection.ServiceProvider Provider { get; }
 
-    public ManagementFactory Factory { get; }
+    public WorkspaceSession Workspace { get; }
 
     public DocumentPersistenceStateStore PersistenceStates =>
         Provider.GetRequiredService<DocumentPersistenceStateStore>();

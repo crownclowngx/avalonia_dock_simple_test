@@ -28,12 +28,12 @@ internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocume
         _showTool = showTool ?? throw new ArgumentNullException(nameof(showTool));
     }
 
-    /// <summary>获取 G5 声明式贡献使用的只读展示状态。</summary>
+    /// <summary>获取声明式贡献使用的只读展示状态。</summary>
     public DocumentPresentationState Presentation => new(_title);
 
     /// <summary>
-    /// 标题投影变化通知；Welcome 在 G5 只有初始化时的固定标题，因此当前不会主动触发。
-    /// G6 Adapter 接管 Dock 标题投影后会统一连接这一通知。
+    /// 标题投影变化通知；Dock Adapter 在 G6 后仍只通过普通模型契约连接该通知，
+    /// Welcome 不知道 Session、Factory 或 Dock 类型。
     /// </summary>
     public event EventHandler? PresentationChanged;
 

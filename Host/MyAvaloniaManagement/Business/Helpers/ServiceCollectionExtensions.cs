@@ -9,6 +9,7 @@ using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Storage;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Tools;
@@ -99,23 +100,27 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<PluginAvailabilityReadModel>()));
         services.AddSingleton<IHostDockableFactory, HostDockAdapterFactory>();
 
-        // 注册ManagementFactory为单例
-        services.AddSingleton(provider => new ManagementFactory(
-            provider.GetRequiredService<PluginRegistry>(),
-            provider.GetRequiredService<IHostDockableFactory>(),
-            documentScopes,
-            provider.GetRequiredService<DocumentPersistenceStateStore>(),
-            provider.GetRequiredService<DocumentCloseCoordinator>(),
-            provider.GetRequiredService<DocumentRecoveryRegistry>(),
-            provider.GetService<IHostDiagnosticSink>(),
-            provider.GetRequiredService<PluginAvailabilityReadModel>()));
-
-        // 注册PluginMenuService为单例，依赖ManagementFactory
-        services.AddSingleton<PluginMenuService>(provider =>
+        // Session 是工作区状态的唯一所有者；Factory 只作为 Session 内部创建并一次性绑定的
+        // Dock Framework Adapter 注册。显式工厂避免构造期循环，也没有使用 IServiceProvider 定位器。
+        services.AddSingleton(provider =>
         {
-            var factory = provider.GetRequiredService<ManagementFactory>();
-            return new PluginMenuService(factory);
+            var dockFactory = new HostDockFactory();
+            var session = new WorkspaceSession(
+                dockFactory,
+                provider.GetRequiredService<PluginRegistry>(),
+                provider.GetRequiredService<IHostDockableFactory>(),
+                provider.GetRequiredService<DocumentPersistenceStateStore>(),
+                provider.GetRequiredService<DocumentCloseCoordinator>(),
+                provider.GetRequiredService<DocumentRecoveryRegistry>(),
+                provider.GetRequiredService<PluginAvailabilityReadModel>(),
+                provider.GetService<IHostDiagnosticSink>());
+            dockFactory.AttachCallbacks(session);
+            return session;
         });
+        services.AddSingleton(provider =>
+            provider.GetRequiredService<WorkspaceSession>().DockFactory);
+        services.AddSingleton<ToolWorkspaceReadModel>();
+        services.AddSingleton<PluginMenuService>();
 
         return services;
     }
@@ -213,20 +218,19 @@ internal static class ServiceCollectionExtensions
     {
         // 注册MainWindowViewModel为瞬态，每次请求都创建新实例
         services.AddTransient(provider => new MainWindowViewModel(
-            provider.GetRequiredService<ManagementFactory>(),
+            provider.GetRequiredService<WorkspaceSession>(),
             provider.GetRequiredService<PluginMenuService>(),
             provider.GetRequiredService<DockLayoutLifecycle>(),
             provider.GetRequiredService<ApplicationThemeService>(),
             provider.GetRequiredService<DocumentPersistenceCoordinator>(),
-            provider.GetRequiredService<DocumentOperationState>(),
-            provider.GetRequiredService<DocumentCloseCoordinator>()));
+            provider.GetRequiredService<DocumentOperationState>()));
 
         // 内置策略只依赖“创建某类对象”的窄工厂，不依赖整个 IServiceProvider。
         // 工厂闭包只存在于组合根，既保持每次创建的新实例语义，也避免策略成为服务定位器。
-        // Welcome 策略在 Registry 构建期间已经被创建，而 ManagementFactory 依赖该 Registry。
-        // 延迟工厂只在用户点击“显示工具”时解析 ManagementFactory，显式打破构造期循环。
-        services.AddSingleton<Func<ManagementFactory>>(provider =>
-            () => provider.GetRequiredService<ManagementFactory>());
+        // Welcome 只获得“显示某个 Tool”这一窄动作，不接收 Session、Dock Factory 或服务容器。
+        // 委托在命令执行时解析已构造的唯一 Session，不参与 Session 创建阶段。
+        services.AddSingleton<Action<string>>(provider => toolId =>
+            provider.GetRequiredService<WorkspaceSession>().ShowTool(toolId));
 
         services.AddTransient<IHostDesktopShell, HostDesktopShell>();
         services.AddTransient(provider => new App(

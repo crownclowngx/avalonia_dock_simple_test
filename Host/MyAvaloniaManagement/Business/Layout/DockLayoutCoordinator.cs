@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Threading;
 using Dock.Model.Controls;
-using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagement.Business.Workspace;
 
 namespace MyAvaloniaManagement.Business.Layout;
 
@@ -14,21 +14,24 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
 {
     private DockLayoutSnapshotV2? _pendingSnapshot;
 
-    internal IRootDock Prepare(ManagementFactory factory)
+    internal IRootDock Prepare(WorkspaceSession session)
     {
-        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentNullException.ThrowIfNull(session);
+        if (session.RootDock is { } existing)
+        {
+            return existing;
+        }
         _pendingSnapshot = store.Load();
-        var root = factory.CreateLayout();
-        factory.InitLayout(root);
+        var root = session.DockFactory.CreateLayout();
+        session.DockFactory.InitLayout(root);
         return root;
     }
 
-    internal IRootDock ApplyPending(
-        IRootDock defaultRoot,
-        ManagementFactory factory)
+    internal IRootDock ApplyPending(WorkspaceSession session)
     {
-        ArgumentNullException.ThrowIfNull(defaultRoot);
-        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentNullException.ThrowIfNull(session);
+        var defaultRoot = session.RootDock ??
+            throw new InvalidOperationException("Workspace 尚未准备根布局。");
 
         var snapshot = Interlocked.Exchange(ref _pendingSnapshot, null);
         if (snapshot is null)
@@ -38,7 +41,7 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
 
         // Tool 声明与生命周期可用性不依赖 Dock 树，必须在补建任何快照所需 Pane 之前完成。
         // 否则坏快照虽然最终被拒绝，EnsureSnapshotDocks 仍可能把空 Pane 留在默认布局中。
-        if (DockLayoutSnapshotMapper.ValidateContributions(snapshot, factory) is { } contributionError)
+        if (DockLayoutSnapshotMapper.ValidateContributions(snapshot, session) is { } contributionError)
         {
             store.RejectLoadedSnapshot(
                 contributionError.Code,
@@ -49,11 +52,11 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         DockLayoutSnapshotMapper.EnsureSnapshotDocks(
             snapshot,
             defaultRoot,
-            factory);
+            session);
         if (DockLayoutRuntimeValidator.Validate(
                 snapshot,
                 defaultRoot,
-                factory) is { } error)
+                session) is { } error)
         {
             store.RejectLoadedSnapshot(error.Code, error.StableId);
             return defaultRoot;
@@ -64,27 +67,30 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
             DockLayoutSnapshotMapper.ApplySnapshot(
                 snapshot,
                 defaultRoot,
-                factory);
+                session);
             return defaultRoot;
         }
         catch (Exception exception) when (
             exception is InvalidOperationException or ArgumentException)
         {
             store.RejectLoadedSnapshot("LAYOUT_APPLY_FAILED", null);
-            var replacement = factory.CreateLayout();
-            factory.InitLayout(replacement);
+            var replacement = session.RecreateLayoutAfterFailedRestore();
+            session.DockFactory.InitLayout(replacement);
             return replacement;
         }
     }
 
-    internal void Save(IRootDock root, ManagementFactory factory)
+    internal void Save(WorkspaceSession session)
     {
-        ArgumentNullException.ThrowIfNull(root);
-        ArgumentNullException.ThrowIfNull(factory);
+        ArgumentNullException.ThrowIfNull(session);
+        if (session.RootDock is not { } root)
+        {
+            return;
+        }
 
         try
         {
-            store.Save(DockLayoutSnapshotMapper.Capture(root, factory));
+            store.Save(DockLayoutSnapshotMapper.Capture(root, session));
         }
         catch (Exception exception) when (
             exception is IOException or
@@ -98,14 +104,14 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
     // 测试与宿主内部调用共用同一映射入口，避免测试复制 Dock 树遍历规则。
     internal static DockLayoutSnapshotV2 Capture(
         IRootDock root,
-        ManagementFactory factory) =>
-        DockLayoutSnapshotMapper.Capture(root, factory);
+        WorkspaceSession session) =>
+        DockLayoutSnapshotMapper.Capture(root, session);
 
     internal static void ApplySnapshot(
         DockLayoutSnapshotV2 snapshot,
         IRootDock root,
-        ManagementFactory factory) =>
-        DockLayoutSnapshotMapper.ApplySnapshot(snapshot, root, factory);
+        WorkspaceSession session) =>
+        DockLayoutSnapshotMapper.ApplySnapshot(snapshot, root, session);
 }
 
 /// <summary>
@@ -117,9 +123,9 @@ internal static class DockLayoutRuntimeValidator
     internal static DockLayoutValidationError? Validate(
         DockLayoutSnapshotV2 snapshot,
         IRootDock root,
-        ManagementFactory factory) =>
+        WorkspaceSession session) =>
         DockLayoutSnapshotMapper.ValidateAgainstRuntime(
             snapshot,
             root,
-            factory);
+            session);
 }

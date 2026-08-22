@@ -6,6 +6,7 @@ using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Models.FileSystem;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.PluginSdk;
@@ -97,7 +98,7 @@ public sealed class ToolViewModelTests
 
         Assert.True(category.IsExpanded);
         var dock = Assert.IsType<DocumentDock>(
-            context.Factory.GetDockable<IDocumentDock>("Files"));
+            context.Workspace.DockFactory.GetDockable<IDocumentDock>(DockLayoutIds.Documents));
         Assert.Contains(dock.VisibleDockables!, item =>
             item is ManagedDocumentDockable { Model: TestSavableDocument });
     }
@@ -122,7 +123,7 @@ public sealed class ToolViewModelTests
         using var context = new TestHostContext(toolContributions: [contribution]);
         var mainViewModel = context.CreateMainWindowViewModel();
         var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
+            context.Workspace.CreatedTools[DockNameConstant.ToolManagement]);
         var item = manager.ToolItems.Single(candidate =>
             candidate.ToolId == tool.Id);
         var updateCount = 0;
@@ -138,7 +139,7 @@ public sealed class ToolViewModelTests
         Assert.False(item.IsVisible);
         Assert.DoesNotContain(
             EnumerateDockables(
-                context.Factory.GetToolManagementData()!.RootDock),
+                context.Workspace.RootDock!),
             dockable => ReferenceEquals(dockable, tool));
 
         manager.ToggleToolVisibility(item);
@@ -152,14 +153,14 @@ public sealed class ToolViewModelTests
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
         var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
+            context.Workspace.CreatedTools[DockNameConstant.ToolManagement]);
         var item = manager.ToolItems.First(candidate => !candidate.CanClose);
         var before = item.IsVisible;
 
         manager.ToggleToolVisibility(item);
 
         Assert.Equal(before, item.IsVisible);
-        Assert.False(context.Factory.TrySetToolVisibility(item.ToolId, !before));
+        Assert.False(context.Workspace.TrySetToolVisibility(item.ToolId, !before));
         Assert.Equal(before, item.IsVisible);
     }
 
@@ -183,7 +184,7 @@ public sealed class ToolViewModelTests
         using var context = new TestHostContext(toolContributions: [contribution]);
         var mainViewModel = context.CreateMainWindowViewModel();
         var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
+            context.Workspace.CreatedTools[DockNameConstant.ToolManagement]);
         var item = manager.ToolItems.Single(candidate => candidate.ToolId == tool.Id);
         var layoutChanges = 0;
         mainViewModel.PropertyChanged += (_, args) =>
@@ -194,13 +195,13 @@ public sealed class ToolViewModelTests
             }
         };
 
-        var managedTool = context.Factory.CreatedTools[tool.Id];
-        context.Factory.HideDockable(managedTool);
+        var managedTool = context.Workspace.CreatedTools[tool.Id];
+        context.Workspace.DockFactory.HideDockable(managedTool);
 
         Assert.False(item.IsVisible);
         Assert.Equal(1, layoutChanges);
 
-        Assert.True(context.Factory.ShowTool(tool.Id));
+        Assert.True(context.Workspace.ShowTool(tool.Id));
 
         Assert.True(item.IsVisible);
         Assert.Equal(2, layoutChanges);
@@ -225,17 +226,16 @@ public sealed class ToolViewModelTests
                 ToolCloseBehavior.Hide));
         using var context = new TestHostContext(toolContributions: [contribution]);
         _ = context.CreateMainWindowViewModel();
-        var data = context.Factory.GetToolManagementData()!;
         var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Factory.CreatedTools[DockNameConstant.ToolManagement]);
+            context.Workspace.CreatedTools[DockNameConstant.ToolManagement]);
         var item = manager.ToolItems.Single(candidate => candidate.ToolId == tool.Id);
 
-        var managedTool = context.Factory.CreatedTools[tool.Id];
-        context.Factory.PinDockable(managedTool);
-        manager.SyncToolsVisibility();
+        var managedTool = context.Workspace.CreatedTools[tool.Id];
+        context.Workspace.DockFactory.PinDockable(managedTool);
+        Assert.True(context.Workspace.ShowTool(tool.Id));
 
         Assert.True(item.IsVisible);
-        var owningRoot = context.Factory.FindRoot(managedTool, _ => true)!;
+        var owningRoot = context.Workspace.DockFactory.FindRoot(managedTool, _ => true)!;
         Assert.Contains(managedTool, owningRoot.LeftPinnedDockables!);
 
         manager.ToggleToolVisibility(item);
@@ -249,7 +249,7 @@ public sealed class ToolViewModelTests
         Assert.True(item.IsVisible);
         Assert.DoesNotContain(managedTool, owningRoot.HiddenDockables!);
         Assert.Contains(
-            EnumerateDockables(data.RootDock),
+            EnumerateDockables(context.Workspace.RootDock!),
             dockable => ReferenceEquals(dockable, managedTool));
     }
 

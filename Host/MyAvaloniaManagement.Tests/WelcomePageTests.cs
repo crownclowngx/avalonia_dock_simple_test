@@ -37,22 +37,22 @@ public sealed class WelcomePageTests
     {
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
-        var factory = context.Factory;
+        var workspace = context.Workspace;
         var pluginMenu = Assert.IsAssignableFrom<Tool>(
-            factory.CreatedTools[DockNameConstant.PlugGroupMenu]);
+            workspace.CreatedTools[DockNameConstant.PlugGroupMenu]);
 
-        Assert.True(factory.ShowTool(pluginMenu.Id));
+        Assert.True(workspace.ShowTool(pluginMenu.Id));
         Assert.Same(pluginMenu, Assert.IsAssignableFrom<IDock>(pluginMenu.Owner).ActiveDockable);
 
-        factory.HideDockable(pluginMenu);
-        Assert.True(factory.ShowTool(pluginMenu.Id));
+        workspace.DockFactory.HideDockable(pluginMenu);
+        Assert.True(workspace.ShowTool(pluginMenu.Id));
         Assert.Same(pluginMenu, Assert.IsAssignableFrom<IDock>(pluginMenu.Owner).ActiveDockable);
 
-        factory.PinDockable(pluginMenu);
-        var owningRoot = factory.FindRoot(pluginMenu, _ => true)!;
+        workspace.DockFactory.PinDockable(pluginMenu);
+        var owningRoot = workspace.DockFactory.FindRoot(pluginMenu, _ => true)!;
         Assert.Contains(pluginMenu, owningRoot.RightPinnedDockables!);
 
-        Assert.True(factory.ShowTool(pluginMenu.Id));
+        Assert.True(workspace.ShowTool(pluginMenu.Id));
         Assert.Contains(pluginMenu, owningRoot.RightPinnedDockables!);
     }
 
@@ -62,7 +62,7 @@ public sealed class WelcomePageTests
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
 
-        Assert.False(context.Factory.ShowTool("missing-tool"));
-        Assert.False(context.Factory.ShowTool(string.Empty));
+        Assert.False(context.Workspace.ShowTool("missing-tool"));
+        Assert.False(context.Workspace.ShowTool(string.Empty));
     }
 }
