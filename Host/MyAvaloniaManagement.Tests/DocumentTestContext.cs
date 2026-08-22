@@ -7,8 +7,10 @@ using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Tests;
 
-/// <summary>集中登记 G7 普通测试模型，避免单元测试重新建立 Legacy Strategy 适配层。</summary>
-internal static class DocumentV2TestContext
+/// <summary>
+/// 集中登记当前 Document 生产链使用的普通测试模型，避免单元测试为旧阶段契约保留第二套组合入口。
+/// </summary>
+internal static class DocumentTestContext
 {
     internal static TestHostContext Create(
         Action<IServiceCollection>? configureServices = null,
@@ -26,7 +28,7 @@ internal static class DocumentV2TestContext
                     new DocumentDescriptor(
                         TestDocumentIds.TypeId,
                         "测试文档",
-                        "G7 Document V2 测试",
+                        "当前 Document 生产链测试",
                         "测试",
                         creationIntents:
                         [
@@ -41,8 +43,8 @@ internal static class DocumentV2TestContext
             });
 }
 
-/// <summary>为 G7 专项测试编排插件边界失败，不向生产类型加入测试开关。</summary>
-internal sealed class DocumentV2TestProbe
+/// <summary>为 Document 专项测试编排插件边界失败，不向生产类型加入测试开关。</summary>
+internal sealed class DocumentTestProbe
 {
     internal Exception? InitializeException { get; set; }
     internal Exception? CaptureException { get; set; }

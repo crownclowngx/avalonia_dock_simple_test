@@ -13,6 +13,22 @@ namespace MyAvaloniaManagement.Tests;
 public sealed class PublicApiContractTests
 {
     [Fact]
+    public void Host程序集不再包含V2Facade总线或伪插件所有者()
+    {
+        var hostAssembly = typeof(MyAvaloniaManagement.Business.Workspace.WorkspaceSession).Assembly;
+        foreach (var removedType in new[]
+                 {
+                     "MyAvaloniaManagement.ViewModels.ManagementFactory",
+                     "MyAvaloniaManagement.ViewModels.Tools.ToolManagementData",
+                     "MyAvaloniaManagement.Business.Events.HostEventBus",
+                     "MyAvaloniaManagement.Business.Helpers.V2Owner",
+                 })
+        {
+            Assert.Null(hostAssembly.GetType(removedType));
+        }
+    }
+
+    [Fact]
     public void PluginSdk不再公开通用事件总线或旧消息包装器()
     {
         var coreAssembly = typeof(IPluginLifecycle).Assembly;

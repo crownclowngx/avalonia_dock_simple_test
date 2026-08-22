@@ -1,10 +1,11 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G12 已完成，G13–G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
+> 状态：实施中；G0–G13 已完成，G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
 > Document 激活已采用 V3 G3 互斥 New/Restore 类型，插件注册已采用 V3 G4 Host 最终提交与 ID 归属校验；
 > 插件事件通信已采用 V3 G5 私有消息器；Dock Factory、Workspace Session 与 Tool 只读投影已按 V3 G6
 > 分离；Host Catalog 与 Plugin Registry 已按 V3 G7 分离；全屏租约与 Host V3 骨架已按 V3 G8
-> 完成；四插件已按 V3 G9–G12 依次通过最终 Workspace、UI、资源与真实包验收；G13–G14 尚未实施，
+> 完成；四插件已按 V3 G9–G12 依次通过最终 Workspace、UI、资源与真实包验收；G13 已删除并证明
+> V2 生产面零残留，G14 尚未实施，
 > 代码与程序集版本线仍处于未发布 V3。
 >
 > 评审日期：2026-08-22。
@@ -24,6 +25,7 @@
 > [V3 G10 DaTangAccountingHelpPlug 验收](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
 > [V3 G11 MySmallTools 验收](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)、
 > [V3 G12 BiliDownloader 验收](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)、
+> [V3 G13 删除 V2 生产面](../plan-history/host-v3/g13-remove-v2-production-surface.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
 >
 > 计划性质：V3 是一次“协议语义纠错 + 宿主工作区解耦”的破坏式重构，不是第三次插件框架扩张。
@@ -606,13 +608,16 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
   [G12 专项记录](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)。
 - **回滚**：整体回到 G11 基线；不得为旧 Host EventBus 增加插件 Facade。
 
-### G13：删除 V2 生产面
+### G13：删除 V2 生产面（已完成）
 
 - **目标**：生产代码、SDK、测试夹具、脚本和包中只剩最终 V3 语义。
 - **删除**：第 5 节全部项目、四插件阶段帮助代码、旧 API 测试双、旧全屏 owner、Host 总线、Host 伪插件
   分支、`Files`/`Plug` Locator 和任何 V2/V3 条件编译。
 - **保留**：v2 API 文本、V2 计划和验收记录作为历史；manifest/envelope/layout schema 2 作为当前兼容线格式。
 - **验证**：源码/二进制负例、API v3、包依赖白名单、四插件全量、真实包矩阵、数据兼容和文档门禁。
+- **实施记录**：版本无关测试夹具、活动源码与二进制零残留、真实 NuGet 十四个反向消费者、Host
+  455/455 与 84.39% / 70.58% 覆盖率、四插件两轮确定性 ZIP 和完整非发布边界见
+  [G13 专项记录](../plan-history/host-v3/g13-remove-v2-production-surface.md)。
 - **回滚**：回滚整个 G13，不得选择性恢复单个 V2 类型或隐藏 fallback。
 
 ### G14：V3 封板
@@ -718,7 +723,7 @@ V3 只有在以下问题全部回答“是”后才算完成：
 6. [x] Dock Factory 与 Workspace Session 分离，ViewModel 不依赖 Dock 运行时对象。
 7. [x] Host 内建贡献不再作为特殊插件进入 Plugin Registry 或 Availability。
 8. [x] 全屏使用幂等租约，失败、关闭和重复释放都能恢复并释放资源。
-9. [ ] `Files`、`Plug` 和全部 V2 public 生产入口已删除且有负例防回流。
+9. [x] `Files`、`Plug` 和全部 V2 public 生产入口已删除且有负例防回流。
 10. [x] manifest/envelope/layout/data root 只在有真实格式理由时变化；本轮保持的 V2 数据可由 V3 使用。
 11. [ ] 四插件完整回归、确定性 ZIP、真实 Host 加载、Windows Smoke 和发布矩阵通过。
 12. [x] 覆盖率未降低，诊断脱敏、失败原子性和资源释放没有退化。

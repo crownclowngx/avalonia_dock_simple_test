@@ -2,7 +2,8 @@
 
 > `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G14 已将 Core/UI 的
 > `2.0.0` public 表面正式冻结到 v2 Shipped：Core 85 条、UI 46 条。V3 G8 已删除 Host 通用事件总线并
-> 破坏式收口全屏端口；V3 G9–G12 依次验收四插件最终运行链，均未新增 public API。v3 Unshipped 为
+> 破坏式收口全屏端口；V3 G9–G12 依次验收四插件最终运行链，G13 又完成旧生产面零残留和真实包负例，
+> 这些阶段均未新增 public API。v3 Unshipped 为
 > Core 127 条、UI 45 条，两个 v3 Shipped 均为空，当前 `3.0.0` 尚未发布。
 
 ## 1. 权威源与程序集边界
@@ -92,7 +93,8 @@ dotnet test Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.Plugi
 .\scripts\Invoke-HostV2ReleaseGate.ps1
 ```
 
-V3 发布门禁只允许在 G14 单独建立；当前阶段不得运行 Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
+V3 G13 当前非发布聚合入口为 `Test-HostV3ProductionSurface.ps1`。V3 发布门禁只允许在 G14 单独建立；
+当前阶段不得运行 Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
 
 ## 6. 新主版本与评审清单
 

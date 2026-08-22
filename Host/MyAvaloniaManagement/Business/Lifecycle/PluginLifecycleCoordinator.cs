@@ -16,8 +16,8 @@ internal interface IPluginLifecycleResolver
 }
 
 /// <summary>
-/// Host 执行生命周期所需的最小回调句柄。解析端口在组合边界兼容最终 SDK 与尚待 G12
-/// 迁移的 Legacy 插件；协调器本身不依赖任一 public 编排模型。
+/// Host 执行生命周期所需的最小回调句柄。解析端口只接受最终 V3 SDK 生命周期，
+/// 不承担旧版本分派；协调器本身也不依赖任何 public 编排模型。
 /// </summary>
 internal sealed record PluginLifecycleCallbacks(
     Func<CancellationToken, Task> InitializeAsync,

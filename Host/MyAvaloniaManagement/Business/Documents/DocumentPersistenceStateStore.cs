@@ -5,7 +5,7 @@ using MyAvaloniaManagement.Business.Helpers;
 
 namespace MyAvaloniaManagement.Business.Documents;
 
-/// <summary>保存 Host 对每个 V2 Document 的最小运行期持久化事实。</summary>
+/// <summary>保存 Host 对每个当前可持久化 Document 的最小运行期事实。</summary>
 /// <remarks>
 /// 插件只报告内容与脏状态，不能持有路径、磁盘标题或恢复决策。本存储按 Adapter 引用绑定冻结的
 /// Registry 注册项，并让打开、保存、关闭和路径查重读取同一事实源。
@@ -22,7 +22,7 @@ internal sealed class DocumentPersistenceStateStore
         if (document.PluginRegistration is not { IsPersistable: true } pluginRegistration ||
             document.PersistableModel is null)
         {
-            throw new InvalidOperationException("只有声明为可持久化的 V2 Document 才能登记磁盘状态。");
+            throw new InvalidOperationException("只有声明为可持久化的 V3 Document 才能登记磁盘状态。");
         }
 
         if (!_states.TryAdd(

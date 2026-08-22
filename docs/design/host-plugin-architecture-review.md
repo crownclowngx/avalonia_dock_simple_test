@@ -9,13 +9,13 @@
 > V2 当前状态：G0–G14 已完成。四个业务插件均使用正式 SDK、声明式贡献与普通模型；Legacy
 > 项目、兼容适配和过渡构建属性已经删除，API Shipped 与两轮隔离发布门禁已经建立。
 
-> V3 当前状态：G0–G12 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
+> V3 当前状态：G0–G13 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
 > 保存已使用修订协议，激活已使用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属；
 > MyPlugTest 与 BiliDownloader 的消息器已归各自插件 Provider 所有；唯一 Workspace Session、Dock
 > Factory Adapter 和无 Dock Tool ReadModel 已建立；Host Catalog 与只含真实插件的 Plugin Registry
 > 已分离；全屏已改为单参数展示端口返回幂等租约，Host 具体会话维护唯一活动展示。四插件已通过最终
 > Registry、私有 Provider、Workspace Session、Dock Adapter 与真实 ZIP Loader 完成验收；磁盘
-> schema 仍为 2，G13–G14 尚未实施。
+> schema 仍为 2；G13 已完成 V2 生产面零残留证明，G14 尚未实施。
 
 ## 1. 先说结论：这是一个什么项目
 

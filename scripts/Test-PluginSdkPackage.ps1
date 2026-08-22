@@ -342,6 +342,35 @@ public static class Removed
 }
 '@ $false @('DocumentContentSnapshot', 'DocumentTypeIdSystemTextJsonConverter') | Out-Null
 
+    # 以下三个夹具直接消费打出的 V3 nupkg，而不是项目引用或 API 文本。这样可以证明旧 V2
+    # 源码在真实交付包上编译失败，避免“源码已删但包中仍留转发类型”的假阴性。
+    New-ConsumerProject 'RemovedRevisionlessSaveNegative' 'MyAvaloniaManagement.PluginSdk' @'
+using MyAvaloniaManagement.PluginSdk;
+public sealed class Removed : IPersistablePluginDocument
+{
+    public DocumentPresentationState Presentation { get; } = new("旧保存");
+    public event EventHandler? PresentationChanged { add { } remove { } }
+    public bool IsDirty => false;
+    public event EventHandler? IsDirtyChanged { add { } remove { } }
+    public ValueTask InitializeAsync(DocumentActivation context, CancellationToken token) => ValueTask.CompletedTask;
+    public ValueTask<DocumentContent> CaptureContentAsync(CancellationToken token) => throw new NotSupportedException();
+    public void AcceptChanges() { }
+}
+'@ $false @('CaptureSaveSnapshotAsync', 'AcceptChanges') | Out-Null
+
+    New-ConsumerProject 'RemovedActivationContextNegative' 'MyAvaloniaManagement.PluginSdk' @'
+using MyAvaloniaManagement.PluginSdk;
+public static class Removed
+{
+    public static object Create() => new DocumentActivationContext("旧入口");
+}
+'@ $false @('DocumentActivationContext') | Out-Null
+
+    New-ConsumerProject 'RemovedHostEventBusNegative' 'MyAvaloniaManagement.PluginSdk' @'
+using MyAvaloniaManagement.PluginSdk;
+public sealed class Removed(IHostEventBus eventBus);
+'@ $false @('IHostEventBus') | Out-Null
+
     New-ConsumerProject 'RemovedFullscreenOwnerNegative' 'MyAvaloniaManagement.PluginSdk.UI' @'
 using Avalonia.Controls;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -355,7 +384,7 @@ public static class Removed
 }
 '@ $false @('TryPresent', 'TryRestore') | Out-Null
 
-    Write-Host '[SDK Package] 通过：Core/UI 内容、依赖白名单、包含窗口与全屏租约端口的两个正例和十一个反向消费夹具符合预期。'
+    Write-Host '[SDK Package] 通过：Core/UI 内容、依赖白名单、包含窗口与全屏租约端口的两个正例和十四个反向消费夹具符合预期。'
 }
 finally {
     if (Test-Path -LiteralPath $temporaryRoot) {

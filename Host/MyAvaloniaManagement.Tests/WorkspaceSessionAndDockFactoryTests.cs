@@ -147,7 +147,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
     [Fact]
     public async Task Session统一处理Document发布回滚关闭与退出拒绝()
     {
-        using var unpublishedContext = DocumentV2TestContext.Create();
+        using var unpublishedContext = DocumentTestContext.Create();
         var unpublished = unpublishedContext.Workspace;
         Assert.False(unpublished.TryActivateDocument("missing.mamdoc"));
         Assert.False(unpublished.TryGetPersistablePluginDocumentRegistration(
@@ -166,10 +166,10 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         Assert.Equal(
             1,
             unpublishedContext.Provider
-                .GetRequiredService<DocumentV2TestProbe>()
+                .GetRequiredService<DocumentTestProbe>()
                 .DisposeCount);
 
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
         var session = context.Workspace;
         var root = session.CreateLayout();

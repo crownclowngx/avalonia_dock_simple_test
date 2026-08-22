@@ -6,13 +6,13 @@ using MyAvaloniaManagement.Business.Documents;
 
 namespace MyAvaloniaManagement.Tests;
 
-/// <summary>验证 G7 关闭协调器的取消、保存、重入许可和异常兜底。</summary>
-public sealed class DocumentCloseV2Tests
+/// <summary>验证当前关闭协调器的取消、修订保存、重入许可和异常兜底。</summary>
+public sealed class DocumentCloseTests
 {
     [Fact]
     public async Task 非持久化或干净Document无需确认且参数防御有效()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
         var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
         var welcome = Assert.IsType<ManagedDocumentDockable>(GetDock(context).VisibleDockables![0]);
@@ -29,7 +29,7 @@ public sealed class DocumentCloseV2Tests
     [Fact]
     public async Task Dock关闭取消保持打开_放弃授予一次性重入许可()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
         var document = await CreateDirtyDocumentAsync(context);
         var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
@@ -49,7 +49,7 @@ public sealed class DocumentCloseV2Tests
     [Fact]
     public async Task Dock重复请求只保留一个确认任务()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
         var document = await CreateDirtyDocumentAsync(context);
         var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
@@ -70,7 +70,7 @@ public sealed class DocumentCloseV2Tests
     [Fact]
     public async Task Dock保存取消不重试_提交后警告仍重试且提示失败不改变事实()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
         var document = await CreateDirtyDocumentAsync(context);
         var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
@@ -81,7 +81,7 @@ public sealed class DocumentCloseV2Tests
         Assert.Equal(0, retryCount);
 
         context.Storage.SavePath = Path.Combine(context.TempDirectory, "dock-warning.mamdoc");
-        context.Provider.GetRequiredService<DocumentV2TestProbe>().AcceptChangesException =
+        context.Provider.GetRequiredService<DocumentTestProbe>().AcceptChangesException =
             new InvalidOperationException("accept-secret");
         context.Interactions.ShowErrorException = new InvalidOperationException("dialog-secret");
         context.Interactions.CloseChoices.Enqueue(DocumentCloseChoice.Save);
@@ -93,7 +93,7 @@ public sealed class DocumentCloseV2Tests
     [Fact]
     public async Task Dock确认或重入回调异常被兜底且不会遗留许可()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
         var document = await CreateDirtyDocumentAsync(context);
         var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
@@ -115,7 +115,7 @@ public sealed class DocumentCloseV2Tests
     [Fact]
     public async Task 窗口关闭覆盖干净_放弃_保存取消和重复请求()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
         var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
         Assert.True(await coordinator.ConfirmWindowCloseAsync([]));
@@ -139,7 +139,7 @@ public sealed class DocumentCloseV2Tests
     [Fact]
     public async Task 窗口确认异常保持打开且固定提示脱敏()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
         var document = await CreateDirtyDocumentAsync(context);
         context.Interactions.ConfirmCloseException = new InvalidOperationException("window-secret");
@@ -157,7 +157,7 @@ public sealed class DocumentCloseV2Tests
     [Fact]
     public async Task 窗口保存期间出现新修订_保持打开且再次保存后允许关闭()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
         var document = await CreateDirtyDocumentAsync(context);
         var model = Assert.IsType<TestSavableDocument>(document.Model);
@@ -188,7 +188,7 @@ public sealed class DocumentCloseV2Tests
     [Fact]
     public async Task Dock保存期间出现新修订_不授予重入许可并保持Document打开()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
         var document = await CreateDirtyDocumentAsync(context);
         var model = Assert.IsType<TestSavableDocument>(document.Model);

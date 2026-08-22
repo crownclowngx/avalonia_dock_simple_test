@@ -3,11 +3,11 @@ using MyAvaloniaManagement.PluginSdk;
 namespace MyPlugTest.Constants;
 
 /// <summary>
-/// 集中保存 MyPlugTest 对 Host V2 声明的稳定身份。
+/// 集中保存 MyPlugTest 对 Host V3 声明的稳定身份。
 /// </summary>
 /// <remarks>
 /// 这些值属于贡献协议而不是保存实现。类名刻意不再包含 Save，避免把 Document、Tool 和插件身份
-/// 错误归入持久化职责。V2 没有历史 ID 别名，旧 GUID 与旧 Tool 名称不会进入 Registry 或布局恢复。
+/// 错误归入持久化职责。当前生产面没有历史 ID 别名，旧 GUID 与旧 Tool 名称不会进入 Registry 或布局恢复。
 /// </remarks>
 public static class MyPlugTestContributionIds
 {

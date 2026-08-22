@@ -9,13 +9,13 @@ using MyAvaloniaManagement.ViewModels;
 
 namespace MyAvaloniaManagement.Tests;
 
-/// <summary>验证 V2 新建、恢复、保存、关闭和 Scope 回滚共用一条生产链。</summary>
-public sealed class DocumentPersistenceV2Tests
+/// <summary>验证当前 V3 新建、恢复、修订保存、关闭和 Scope 回滚共用一条生产链。</summary>
+public sealed class DocumentPersistenceTests
 {
     [Fact]
     public async Task 新建初始化后发布并把合法CreationIntent交给模型()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var viewModel = context.CreateMainWindowViewModel();
 
         await context.Provider.GetRequiredService<DocumentPersistenceCoordinator>()
@@ -25,7 +25,7 @@ public sealed class DocumentPersistenceV2Tests
         var model = Assert.IsType<TestSavableDocument>(adapter.Model);
         Assert.Equal("未命名", model.Title);
         var activation = Assert.IsType<NewDocumentActivation>(
-            Assert.Single(context.Provider.GetRequiredService<DocumentV2TestProbe>()
+            Assert.Single(context.Provider.GetRequiredService<DocumentTestProbe>()
                 .ActivationContexts));
         Assert.Equal(
             new CreationIntentId("sample-intent"),
@@ -35,9 +35,9 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 异步初始化完成之前不会发布标签()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
-        var probe = context.Provider.GetRequiredService<DocumentV2TestProbe>();
+        var probe = context.Provider.GetRequiredService<DocumentTestProbe>();
         probe.InitializeBlocker = new TaskCompletionSource(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -55,7 +55,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 非法CreationIntent不发布并释放暂存Scope()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
 
         var result = await context.Provider.GetRequiredService<DocumentPersistenceCoordinator>()
@@ -68,12 +68,12 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 非持久化Document在创建Scope前拒绝Restore激活()
     {
-        using var context = DocumentV2TestContext.Create(persistable: false);
+        using var context = DocumentTestContext.Create(persistable: false);
         _ = context.CreateMainWindowViewModel();
         using var json = JsonDocument.Parse("{}");
         var content = new DocumentContent(1, json.RootElement);
         var workspace = context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.WorkspaceSession>();
-        var probe = context.Provider.GetRequiredService<DocumentV2TestProbe>();
+        var probe = context.Provider.GetRequiredService<DocumentTestProbe>();
 
         await Assert.ThrowsAsync<NotSupportedException>(() =>
             workspace.CreateDocumentAsync(
@@ -89,9 +89,9 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 初始化异常会取消ClosingToken并释放暂存模型()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
-        var probe = context.Provider.GetRequiredService<DocumentV2TestProbe>();
+        var probe = context.Provider.GetRequiredService<DocumentTestProbe>();
         probe.InitializeException = new PluginBoundaryException("secret-initialize");
 
         var result = await context.Provider.GetRequiredService<DocumentPersistenceCoordinator>()
@@ -107,7 +107,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 保存写入嵌套Json并在主文件成功后提交路径与脏状态()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var path = Path.Combine(context.TempDirectory, "saved.mamdoc");
         context.Storage.SavePath = path;
         var viewModel = context.CreateMainWindowViewModel();
@@ -139,7 +139,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 捕获后再次编辑_主文件提交旧快照但新修订继续保持Dirty()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var path = Path.Combine(context.TempDirectory, "v2-save-race.mamdoc");
         context.Storage.SavePath = path;
         var viewModel = context.CreateMainWindowViewModel();
@@ -194,7 +194,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 主文件失败不提交_备份失败只产生已保存警告()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var path = Path.Combine(context.TempDirectory, "warning.mamdoc");
         context.Storage.SavePath = path;
         var viewModel = context.CreateMainWindowViewModel();
@@ -224,14 +224,14 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 捕获自定义异常或Null内容都不写文件也不提交路径()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var path = Path.Combine(context.TempDirectory, "capture-failure.mamdoc");
         context.Storage.SavePath = path;
         var viewModel = context.CreateMainWindowViewModel();
         await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
         var adapter = Assert.Single(GetDocuments(context));
         GetDocumentDock(context).ActiveDockable = adapter;
-        var probe = context.Provider.GetRequiredService<DocumentV2TestProbe>();
+        var probe = context.Provider.GetRequiredService<DocumentTestProbe>();
 
         probe.CaptureException = new PluginBoundaryException("secret-capture");
         await viewModel.SaveDocument();
@@ -249,7 +249,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 保存取消_非持久化和缺失Host状态都返回稳定结果()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var viewModel = context.CreateMainWindowViewModel();
         await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
         var adapter = Assert.Single(GetDocuments(context));
@@ -272,7 +272,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 空文件名使用Host标题回退且StateStore拒绝非法登记()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var viewModel = context.CreateMainWindowViewModel();
         await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
         var adapter = Assert.Single(GetDocuments(context));
@@ -292,14 +292,14 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task AcceptChanges异常不回滚主文件且关闭保存可继续()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var path = Path.Combine(context.TempDirectory, "accept-warning.mamdoc");
         context.Storage.SavePath = path;
         var viewModel = context.CreateMainWindowViewModel();
         await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
         var adapter = Assert.Single(GetDocuments(context));
         Assert.IsType<TestSavableDocument>(adapter.Model).IsModified = true;
-        context.Provider.GetRequiredService<DocumentV2TestProbe>().AcceptChangesException =
+        context.Provider.GetRequiredService<DocumentTestProbe>().AcceptChangesException =
             new PluginBoundaryException("secret-accept");
         context.Interactions.CloseChoices.Enqueue(DocumentCloseChoice.Save);
 
@@ -315,7 +315,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 打开V2恢复内容且并发同路径只发布一个Scope()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var path = Path.Combine(context.TempDirectory, "opened.mamdoc");
         context.Storage.AddFile(path, Serialize("打开标题", "恢复正文"));
         var viewModel = context.CreateMainWindowViewModel();
@@ -335,7 +335,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task V1文件严格拒绝且不会创建或写回()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var path = Path.Combine(context.TempDirectory, "legacy.mamdoc");
         context.Storage.AddFile(path, "{\"schemaVersion\":1,\"payload\":\"legacy\"}");
         var viewModel = context.CreateMainWindowViewModel();
@@ -350,7 +350,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 所有者或Registry持久化能力不匹配都在初始化前拒绝()
     {
-        using var ownerContext = DocumentV2TestContext.Create();
+        using var ownerContext = DocumentTestContext.Create();
         var ownerPath = Path.Combine(ownerContext.TempDirectory, "wrong-owner.mamdoc");
         ownerContext.Storage.AddFile(
             ownerPath,
@@ -361,21 +361,21 @@ public sealed class DocumentPersistenceV2Tests
         var ownerViewModel = ownerContext.CreateMainWindowViewModel();
         await ownerViewModel.OpenDocumentByPath(ownerPath);
         Assert.Empty(GetDocuments(ownerContext));
-        Assert.Empty(ownerContext.Provider.GetRequiredService<DocumentV2TestProbe>().ActivationContexts);
+        Assert.Empty(ownerContext.Provider.GetRequiredService<DocumentTestProbe>().ActivationContexts);
 
-        using var capabilityContext = DocumentV2TestContext.Create(persistable: false);
+        using var capabilityContext = DocumentTestContext.Create(persistable: false);
         var capabilityPath = Path.Combine(capabilityContext.TempDirectory, "not-persistable.mamdoc");
         capabilityContext.Storage.AddFile(capabilityPath, Serialize("能力", "正文"));
         var capabilityViewModel = capabilityContext.CreateMainWindowViewModel();
         await capabilityViewModel.OpenDocumentByPath(capabilityPath);
         Assert.Empty(GetDocuments(capabilityContext));
-        Assert.Empty(capabilityContext.Provider.GetRequiredService<DocumentV2TestProbe>().ActivationContexts);
+        Assert.Empty(capabilityContext.Provider.GetRequiredService<DocumentTestProbe>().ActivationContexts);
     }
 
     [Fact]
     public async Task 批量打开隔离坏文件并继续发布后续合法文件()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var bad = Path.Combine(context.TempDirectory, "a-bad.mamdoc");
         var good = Path.Combine(context.TempDirectory, "b-good.mamdoc");
         context.Storage.AddFile(bad, "{broken");
@@ -392,7 +392,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 坏备份或备份初始化失败都不询问恢复并释放暂存Scope()
     {
-        using var badContext = DocumentV2TestContext.Create();
+        using var badContext = DocumentTestContext.Create();
         var badPrimary = Path.Combine(badContext.TempDirectory, "bad-primary.mamdoc");
         badContext.Storage.AddFile(badPrimary, "{broken");
         badContext.Storage.AddFile(badPrimary + DocumentRecoveryRegistry.BackupSuffix, "{also-broken");
@@ -401,25 +401,25 @@ public sealed class DocumentPersistenceV2Tests
         Assert.Empty(GetDocuments(badContext));
         Assert.Empty(badContext.Interactions.RecoveryRequests);
 
-        using var initContext = DocumentV2TestContext.Create();
+        using var initContext = DocumentTestContext.Create();
         var initPrimary = Path.Combine(initContext.TempDirectory, "init-primary.mamdoc");
         initContext.Storage.AddFile(initPrimary, "{broken");
         initContext.Storage.AddFile(
             initPrimary + DocumentRecoveryRegistry.BackupSuffix,
             Serialize("备份", "初始化失败"));
-        initContext.Provider.GetRequiredService<DocumentV2TestProbe>().InitializeException =
+        initContext.Provider.GetRequiredService<DocumentTestProbe>().InitializeException =
             new InvalidOperationException("init-secret");
         var initViewModel = initContext.CreateMainWindowViewModel();
         await initViewModel.OpenDocumentByPath(initPrimary);
         Assert.Empty(GetDocuments(initContext));
         Assert.Empty(initContext.Interactions.RecoveryRequests);
-        Assert.Equal(1, initContext.Provider.GetRequiredService<DocumentV2TestProbe>().DisposeCount);
+        Assert.Equal(1, initContext.Provider.GetRequiredService<DocumentTestProbe>().DisposeCount);
     }
 
     [Fact]
     public async Task 不存在路径和无活动Document不会改变现有提示()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var viewModel = context.CreateMainWindowViewModel();
         await viewModel.OpenDocumentByPath(Path.Combine(context.TempDirectory, "missing.mamdoc"));
         Assert.False(viewModel.HasDocumentOperationError);
@@ -433,7 +433,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 主文件损坏时恢复副本即使模型干净也强制另存并参与关闭确认()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var primary = Path.Combine(context.TempDirectory, "broken.mamdoc");
         context.Storage.AddFile(primary, "{broken");
         context.Storage.AddFile(
@@ -468,7 +468,7 @@ public sealed class DocumentPersistenceV2Tests
     [Fact]
     public async Task 拒绝恢复立即释放暂存Scope且不修改输入文件()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         var primary = Path.Combine(context.TempDirectory, "declined.mamdoc");
         var backup = primary + DocumentRecoveryRegistry.BackupSuffix;
         context.Storage.AddFile(primary, "{broken");
@@ -481,7 +481,7 @@ public sealed class DocumentPersistenceV2Tests
         await viewModel.OpenDocumentByPath(primary);
 
         Assert.Empty(GetDocuments(context));
-        var probe = context.Provider.GetRequiredService<DocumentV2TestProbe>();
+        var probe = context.Provider.GetRequiredService<DocumentTestProbe>();
         Assert.Equal(1, probe.DisposeCount);
         Assert.True(probe.ClosingObservedDuringDispose);
         Assert.Equal(originalPrimary, context.Storage.Files[Path.GetFullPath(primary)]);

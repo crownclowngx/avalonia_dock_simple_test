@@ -87,7 +87,7 @@ public sealed class ToolViewModelTests
     [Fact]
     public async Task 插件分组工具创建文档并切换分类展开()
     {
-        using var context = DocumentV2TestContext.Create();
+        using var context = DocumentTestContext.Create();
         _ = context.CreateMainWindowViewModel();
         var viewModel = context.Provider.GetRequiredService<PlugGroupMenuViewModel>();
         var category = viewModel.CategoryNodes.Single(node =>

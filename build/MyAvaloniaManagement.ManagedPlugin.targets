@@ -41,8 +41,8 @@
     <ItemGroup>
       <!--
         探针作为第二个临时程序集编译，因此 internal 类型或非 public 构造函数无法借助“同程序集可见”绕过检查。
-        G13 后只有 UI SDK IPluginModule 是合法入口。探针不再接受选择契约的开关，
-        因而项目文件、构建目标和最终包只能表达同一份 V2 类型身份。
+        V3 只有 UI SDK IPluginModule 是合法入口。探针不接受选择契约的开关，
+        因而项目文件、构建目标和最终包只能表达同一份当前 SDK 类型身份。
       -->
       <_ManagedPluginEntryProbeLine Include="#nullable enable" />
       <_ManagedPluginEntryProbeLine Include="internal static class ManagedPluginEntryPointProbe" />

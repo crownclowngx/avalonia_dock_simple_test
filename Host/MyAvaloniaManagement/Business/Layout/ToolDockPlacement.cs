@@ -4,7 +4,7 @@ using Dock.Model.Core;
 namespace MyAvaloniaManagement.Business.Layout;
 
 /// <summary>
-/// 将 V2 插件描述符中的方向统一映射为 Dock 的四向布局语义。
+/// 将当前插件描述符中的方向统一映射为 Dock 的四向布局语义。
 /// </summary>
 internal static class ToolDockPlacement
 {

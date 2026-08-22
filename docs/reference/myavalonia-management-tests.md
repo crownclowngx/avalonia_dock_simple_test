@@ -10,7 +10,7 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [V1 G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
 > [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。当前源码已完成未发布
-> V3 G12；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
+> V3 G13；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
 > 修订保存见 [V3 G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)，互斥激活见
 > [V3 G3 专项记录](../plan-history/host-v3/g3-exclusive-document-activation.md)，Workspace/Dock 拆分见
 > [V3 G6 专项记录](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)，Host/插件目录分离见
@@ -19,7 +19,8 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [V3 G9](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)、
 > [G10](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
 > [G11](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)与
-> [G12](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)专项记录。
+> [G12](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)专项记录；唯一 V3 生产面见
+> [G13](../plan-history/host-v3/g13-remove-v2-production-surface.md)专项记录。
 
 ## 当前文档与非发布基线门禁
 
@@ -93,9 +94,26 @@ G3 专项入口为：
 摘要写入 `artifacts/test-results/ExclusiveDocumentActivation/summary.json`，明确记录未调用 AIFLOW、
 Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
 
-### V2 G13 唯一生产面门禁
+### V3 G13 唯一生产面非发布门禁
 
-修改 Host/SDK 依赖、插件入口、统一构建 Target、打包脚本或 Legacy 防回流规则时运行：
+修改 Host/SDK 依赖、插件入口、统一构建 Target、V3 API、打包脚本或防回流规则时运行：
+
+```powershell
+.\scripts\Test-HostV3ProductionSurface.ps1 -Configuration Release
+```
+
+该入口执行 locked restore、Release 零警告构建、Host 覆盖率、SDK 与四个插件完整测试、V3 API
+成员变异、十四个真实 NuGet 反向消费者、源码/二进制闭包扫描、四插件两轮确定性 ZIP、真实 Host 加载、
+诊断脱敏和文档门禁。结果写入 `artifacts/test-results/HostV3ProductionSurface/summary.json`，固定记录
+`aiflow/windowsCi/windowsSmoke/releaseAcceptance/releaseGate/publishable` 均为 `false`。
+
+2026-08-22 实测 Host Unit 189、UI 62、Plugin 204，Host 合计 **455/455**，行/分支覆盖率
+**84.39% / 70.58%**；连同 SDK、四插件和最终包组合共 **1483/1483**。包摘要和删除/保留边界见
+[V3 G13 专项记录](../plan-history/host-v3/g13-remove-v2-production-surface.md)。
+
+### V2 G13 历史唯一生产面门禁
+
+以下入口只用于复核 V2 G13 历史事实，不是当前 V3 门禁：
 
 ```powershell
 .\scripts\Test-HostV2ProductionSurface.ps1 -Configuration Release

@@ -9,7 +9,7 @@ namespace MyPlugTest.Persistence;
 /// <remarks>
 /// Host 只验证外层 Document V2 信封，不解释插件 payload。本 Codec 把 JSON 规则从 ViewModel 中分离，
 /// 使 ViewModel 只负责界面状态和提交时机。读取时先把完整 payload 验证到不可变临时状态，再由调用方
-/// 一次提交，避免后段字段损坏时留下半恢复状态。V2 不读取旧字符串快照，也不接受宽松字段别名。
+/// 一次提交，避免后段字段损坏时留下半恢复状态。当前 schema 1 不读取旧字符串快照，也不接受宽松字段别名。
 /// </remarks>
 internal static class TestWelcomeDocumentContentCodec
 {
@@ -40,7 +40,7 @@ internal static class TestWelcomeDocumentContentCodec
     }
 
     /// <summary>严格读取 schema 1，并返回尚未影响 ViewModel 的完整临时状态。</summary>
-    /// <exception cref="InvalidDataException">schema 或 payload 不符合 MyPlugTest V2 内容协议。</exception>
+    /// <exception cref="InvalidDataException">schema 或 payload 不符合 MyPlugTest 当前内容协议。</exception>
     internal static TestWelcomeDocumentState Decode(DocumentContent content)
     {
         ArgumentNullException.ThrowIfNull(content);

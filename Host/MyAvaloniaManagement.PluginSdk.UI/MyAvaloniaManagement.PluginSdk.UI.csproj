@@ -12,7 +12,7 @@
     <RootNamespace>MyAvaloniaManagement.PluginSdk.UI</RootNamespace>
     <PackageId>MyAvaloniaManagement.PluginSdk.UI</PackageId>
     <Title>MyAvaloniaManagement Plugin SDK UI</Title>
-    <Description>Managed Plugin V2 的 Avalonia 注册与视图贡献契约。</Description>
+    <Description>Managed Plugin V3 的 Avalonia 注册与视图贡献契约。</Description>
     <Authors>MyAvaloniaManagement Contributors</Authors>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>

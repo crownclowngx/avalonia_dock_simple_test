@@ -4,7 +4,7 @@
 
 ## 快速开始
 
-> V3 G12 当前事实：源码处于未发布的产品/SDK/四插件 `3.0.0` 版本线；public API 仍为 Unshipped，
+> V3 G13 当前事实：源码处于未发布的产品/SDK/四插件 `3.0.0` 版本线；public API 仍为 Unshipped，
 > G2–G8 已分别完成修订保存、互斥激活、注册所有权、插件私有消息、Workspace/Dock 拆分、
 > Host Catalog / Plugin Registry 分离和全屏租约；四插件已通过最终 Workspace、UI、资源与真实包验收；
 > manifest、Document、layout 与数据根仍保持 V2 线格式。Legacy 项目、旧入口探针与 Host/Common
@@ -23,7 +23,7 @@ V3 快速开始入口：
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
 | [宿主—插件架构评审](./design/host-plugin-architecture-review.md) | 解决方案总体结构、插件边界、当前成熟度和演进方向 | 当前事实，已按主项目内部重构更新 |
-| [Managed Plugin V3 破坏式重构任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 实施中；G0–G12 已完成，G13–G14 尚未实施 |
+| [Managed Plugin V3 破坏式重构任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 实施中；G0–G13 已完成，G14 尚未实施 |
 | [V3 G0 非发布绿色基线](./plan-history/host-v3/g0-green-baseline.md) | V2 当前测试、覆盖率、API、包图与保存竞争复现 | 已完成；不改变生产行为 |
 | [V3 G1 版本与数据边界](./plan-history/host-v3/g1-version-and-data-boundaries.md) | 未发布 3.0.0 版本线、v3 Unshipped API、V2 磁盘兼容和非发布门禁 | 已完成；不改变 public API 形状或磁盘格式 |
 | [V3 G2 修订化 Document 保存](./plan-history/host-v3/g2-revisioned-document-save.md) | 修订快照、指定修订确认、关闭竞争保护、三插件策略和非发布专项门禁 | 已完成；envelope v2 与插件内容 schema 不变 |
@@ -37,6 +37,7 @@ V3 快速开始入口：
 | [V3 G10 DaTangAccountingHelpPlug 验收](./plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md) | 双 Document、Revision 保存竞争、文件交互、真实 Host 组合与 SOLID | 已完成；554/554，Host 84.39% / 70.58%，插件 70.09% / 49.31%，非发布 |
 | [V3 G11 MySmallTools 验收](./plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) | 四 Document、全屏租约、20 轮真实媒体资源归零、真实 Host 组合与 SOLID | 已完成；676/676，Host 84.39% / 70.58%，插件 72.59% / 48.12%，非发布 |
 | [V3 G12 BiliDownloader 验收](./plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) | 保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合与 SOLID | 已完成；1219/1219，Host 84.39% / 70.58%，插件 83.80% / 67.54%，非发布 |
+| [V3 G13 删除 V2 生产面](./plan-history/host-v3/g13-remove-v2-production-surface.md) | 活动零残留、API/包负例、四插件矩阵、SOLID 与回滚边界 | 已完成；1483/1483，Host 84.39% / 70.58%，非发布 |
 | [Managed Plugin V2 封板任务书](./design/host-v2-breaking-refactor-plan.md) | V2 所有权、删除清单、阶段实施和最终签署矩阵 | G0–G14 已完成，当前签署依据 |
 | [V2 G14 封板记录](./plan-history/host-v2/g14-v2-sealing.md) | API Shipped、两轮隔离门禁、制品、SOLID 和回滚边界 | 当前 V2 正式基线 |
 | [Managed Plugin v1 封板评审与整改任务书](./design/host-v1-sealing-readiness-plan.md) | V1 封板差距、版本与兼容策略、整改包和验收标准 | V1 历史签署，已由 V2 取代 |
@@ -75,7 +76,7 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
 
 - [Managed Plugin V3 破坏式架构重构任务书](./design/host-v3-breaking-refactor-plan.md)：
   以修订化 Document 保存、互斥激活、插件私有消息、注册所有权、Workspace/Dock 解耦和 Host Catalog
-  分离和全屏租约为目标的 G0–G14 计划；当前完成 G0–G12，Document 保存使用 V3 G2，激活使用 V3 G3，注册所有权使用 V3 G4，插件私有消息使用 V3 G5，Workspace/Dock 使用 V3 G6，Host/插件目录使用 V3 G7，全屏租约使用 V3 G8，四插件使用 V3 G9–G12 最终验收链；G13–G14 尚未实施。
+  分离和全屏租约为目标的 G0–G14 计划；当前完成 G0–G13，Document 保存使用 V3 G2，激活使用 V3 G3，注册所有权使用 V3 G4，插件私有消息使用 V3 G5，Workspace/Dock 使用 V3 G6，Host/插件目录使用 V3 G7，全屏租约使用 V3 G8，四插件使用 V3 G9–G12 最终验收链，G13 已删除并证明 V2 生产面零残留；G14 尚未实施。
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
   G0–G14 已完成的实施与最终签署任务书。

@@ -326,7 +326,7 @@ function Get-ManagementBaselineFacts {
     Assert-DocumentationCondition ($apiBaseline -ceq "v$($sdkVersion.Major)") (
         "活动 API 基线 $apiBaseline 与 SDK 主版本 $($sdkVersion.Major) 不一致。")
 
-    # V3 尚未发布，因此活动 Shipped 必须为空，全部当前签名进入 Unshipped。V2 Shipped 继续作为
+    # V3 G13 尚未发布，因此活动 Shipped 必须为空，全部当前签名进入 Unshipped。V2 Shipped 继续作为
     # 历史正式承诺保留；Core 允许 G2–G5 已评审的破坏式变化，UI 只允许 G8 把两个 owner 方法
     # 原子替换为一个返回 IDisposable 租约的方法。除此之外仍逐条相等，避免借阶段更新改写历史表面。
     $sdkApiRoots = @(
@@ -350,9 +350,9 @@ function Get-ManagementBaselineFacts {
         $unshippedEntries = @(Get-Content -LiteralPath $unshippedPath | Select-Object -Skip 1 |
                 Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         Assert-DocumentationCondition ($shippedEntries.Count -eq 0) (
-            "G1 未发布 V3 SDK 的 Shipped 必须为空：$baselineRoot")
+            "G13 未发布 V3 SDK 的 Shipped 必须为空：$baselineRoot")
         Assert-DocumentationCondition ($unshippedEntries.Count -gt 0) (
-            "G1 未发布 V3 SDK 的 Unshipped 不能为空：$baselineRoot")
+            "G13 未发布 V3 SDK 的 Unshipped 不能为空：$baselineRoot")
 
         $v2Root = Join-Path (Split-Path $baselineRoot -Parent) 'v2'
         $v2Shipped = @(Get-Content -LiteralPath (Join-Path $v2Root 'PublicAPI.Shipped.txt') |
@@ -367,7 +367,7 @@ function Get-ManagementBaselineFacts {
             Assert-DocumentationCondition ($v2Shipped.Count -eq 85) (
                 "G3 不得改写 V2 Core Shipped 数量：$baselineRoot")
             Assert-DocumentationCondition ($unshippedEntries.Count -eq 127) (
-                "G5 Core v3 Unshipped 必须为删除通用事件总线后的 127 条：$baselineRoot")
+                "G13 Core v3 Unshipped 必须保持删除通用事件总线后的 127 条：$baselineRoot")
             Assert-DocumentationCondition (
                 $unshippedEntries -contains (
                     'MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.AcceptChanges(MyAvaloniaManagement.PluginSdk.DocumentRevision savedRevision) -> void')) (
@@ -388,7 +388,7 @@ function Get-ManagementBaselineFacts {
             Assert-DocumentationCondition ($v2Shipped.Count -eq 46) (
                 "G8 不得改写 V2 UI Shipped 数量：$baselineRoot")
             Assert-DocumentationCondition ($unshippedEntries.Count -eq 45) (
-                "G8 UI v3 Unshipped 必须为全屏租约收口后的 45 条：$baselineRoot")
+                "G13 UI v3 Unshipped 必须保持全屏租约收口后的 45 条：$baselineRoot")
             Assert-DocumentationCondition (
                 -not ($unshippedEntries -match 'TryRestore|TryPresent\(Avalonia\.Controls\.Control! content, System\.Object! owner\)')) (
                 "G8 UI v3 不得保留 owner 全屏 API：$baselineRoot")

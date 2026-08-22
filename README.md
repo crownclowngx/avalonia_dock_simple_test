@@ -14,7 +14,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > 生产面，G14 已冻结 2.0.0 API、建立两轮隔离发布门禁并完成文档签署。见
 > [V2 G14 封板记录](./docs/plan-history/host-v2/g14-v2-sealing.md)。
 
-> 当前源码已完成未发布的 V3 G12：产品、Core/UI SDK 与四插件版本为 `3.0.0`；Document 保存使用
+> 当前源码已完成未发布的 V3 G13：产品、Core/UI SDK 与四插件版本为 `3.0.0`；Document 保存使用
 > 修订快照和指定修订确认，激活输入使用互斥的 New/Restore 类型，插件注册改为 Host 最终提交端口与
 > 贡献生命周期并强制 ID 归属；事件通信由 MyPlugTest、BiliDownloader 各自的插件 Provider 私有持有；
 > Workspace/Dock 已拆分，Host Catalog 与只含真实插件的 Plugin Registry 已分离；UI SDK 全屏契约已
@@ -23,7 +23,8 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > manifest、Document envelope、layout 仍为 schema 2，默认数据根仍为 `v2`。实施证据见
 > [V3 G10 DaTang 验收](./docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
 > [V3 G11 MySmallTools 验收](./docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)和
-> [V3 G12 BiliDownloader 验收](./docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)。
+> [V3 G12 BiliDownloader 验收](./docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)以及
+> [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)。
 
 ## 核心扩展模型
 
@@ -199,7 +200,8 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G9–G12 四插件验收及 G2–G8 平台语义为事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G12 已完成事实与 G13–G14 后续边界；
+- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G13 已完成事实与 G14 后续边界；
+- [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)：查看零残留、真实包负例、四插件矩阵和非发布证据；
 - [V3 G12 BiliDownloader 验收](./docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)：查看保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合及 1219 项非发布证据；
 - [V3 G11 MySmallTools 验收](./docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)：查看全屏租约、20 轮真实媒体资源归零、真实 Host 组合及 676 项非发布证据；
 - [V3 G10 DaTang 验收](./docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)：查看双 Document、保存竞争、文件交互、真实 Host 组合及 554 项非发布证据；
@@ -238,7 +240,16 @@ TestResults/  需要保留的阶段验收与人工验证记录
 .\scripts\Test-Documentation.ps1
 ```
 
-该门禁不启动窗口、不执行发布；V3 G1 没有当前发布门禁，V2 发布入口只保留历史审计用途。
+该门禁不启动窗口、不执行发布；V3 G13 没有当前发布门禁，V2 发布入口只保留历史审计用途。
+
+修改 Host/SDK 生产边界、插件入口、构建 Target、打包或兼容规则时运行 G13 非发布聚合门禁：
+
+```powershell
+.\scripts\Test-HostV3ProductionSurface.ps1 -Configuration Release
+```
+
+该入口验证当前 V3 API、源码与二进制零残留、Host/四插件完整测试、覆盖率、真实 NuGet 反例、
+两轮确定性测试 ZIP、真实加载、诊断脱敏和文档；不会调用 Windows CI/Smoke 或发布门禁。
 
 修改 Document 创建、持久化、关闭或 Scope 所有权链时，运行 G7 非发布专项：
 
@@ -249,7 +260,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 该脚本只执行 Unit、Plugin 与 Headless UI 专项测试，并固定记录未运行 Windows CI、Windows Smoke
 及发布门禁；结果写入 `artifacts/test-results/DocumentV2/summary.json`。
 
-V2 封板时曾在干净 Git 提交上执行以下 Windows 本地发布门禁；V3 G1 不运行它：
+V2 封板时曾在干净 Git 提交上执行以下 Windows 本地发布门禁；V3 G13 不运行它：
 
 ```powershell
 .\scripts\Invoke-HostV2ReleaseGate.ps1
@@ -308,7 +319,8 @@ V2 封板时曾在干净 Git 提交上执行以下 Windows 本地发布门禁；
   修订快照与指定修订确认，Document 激活已采用互斥 New/Restore 类型，插件端口和贡献根已改为 Host
   最终提交并强制 ID 归属，插件消息由对应插件 Provider 私有持有；Workspace Session、Dock Factory 和
   Tool 只读投影以及 Host Catalog / Plugin Registry 已经分离，全屏已使用单参数租约端口；四插件已
-  依次通过最终 Workspace、专项资源边界与真实 ZIP 验收。V3 G13–G14 尚未实施，
+  依次通过最终 Workspace、专项资源边界与真实 ZIP 验收。V3 G13 已证明活动生产面只剩最终 V3 语义，
+  G14 尚未实施，
   不得把 v3 Unshipped 或本地测试包描述为正式发布承诺。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

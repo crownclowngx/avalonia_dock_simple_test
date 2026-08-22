@@ -27,7 +27,7 @@ $suites = @(
     [pscustomobject]@{
         Name = 'G7-Unit'
         Project = 'Host\MyAvaloniaManagement.Tests\MyAvaloniaManagement.Tests.csproj'
-        Filter = 'FullyQualifiedName~DocumentEnvelopeV2Tests|FullyQualifiedName~DocumentPersistenceV2Tests|FullyQualifiedName~DocumentCloseV2Tests|FullyQualifiedName~HostDockAdapterTests'
+        Filter = 'FullyQualifiedName~DocumentEnvelopeV2Tests|FullyQualifiedName~DocumentPersistenceTests|FullyQualifiedName~DocumentCloseTests|FullyQualifiedName~HostDockAdapterTests'
     },
     [pscustomobject]@{
         Name = 'G7-Plugin'

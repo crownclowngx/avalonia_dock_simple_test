@@ -42,7 +42,7 @@ internal sealed class TestHostContext : IDisposable
         services.AddViewModels();
         services.AddSingleton<IHostStorageService>(Storage);
         services.AddSingleton<IDocumentInteractionService>(Interactions);
-        services.AddSingleton<DocumentV2TestProbe>();
+        services.AddSingleton<DocumentTestProbe>();
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
         services.AddSingleton(new AppearanceSettingsStore(
@@ -411,7 +411,7 @@ internal sealed class TestHostStorageService : IHostStorageService
 /// 用于验证保存、加载和标题路径同步的最小可保存文档。
 /// </summary>
 internal sealed class TestSavableDocument(
-    DocumentV2TestProbe probe,
+    DocumentTestProbe probe,
     MyAvaloniaManagement.PluginSdk.IDocumentLifetime lifetime) :
     MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument,
     IDisposable

@@ -15,13 +15,13 @@ namespace MyAvaloniaManagement.Business.Helpers;
 internal static class PluginModulePreflight
 {
     /// <summary>
-    /// 验证清单指定类型是否可按当前 G3 阶段的模块引导契约创建。
+    /// 验证清单指定类型是否可按当前 V3 模块引导契约创建。
     /// </summary>
     /// <param name="entryType">从清单指定入口程序集按完整名称精确取得的类型。</param>
     /// <param name="moduleType">清单精确声明且已经由加载器按大小写敏感全名解析的入口类型。</param>
     /// <param name="errorCode">失败时返回可用于自动化判定的稳定错误码。</param>
     /// <param name="errorDetail">失败时返回不执行插件代码即可形成的简短原因。</param>
-    /// <returns>入口类型是否满足 G3 阶段的 Managed Plugin 约定。</returns>
+    /// <returns>入口类型是否满足当前 V3 Managed Plugin 约定。</returns>
     internal static bool TryValidate(
         Type? entryType,
         out Type? moduleType,
@@ -45,7 +45,7 @@ internal static class PluginModulePreflight
         {
             errorCode = HostDiagnosticCodes.PluginEntryInvalid;
             errorDetail =
-                "入口类型必须是入口程序集中的 public、非抽象、非泛型 V2 IPluginModule 实现。";
+                "入口类型必须是入口程序集中的 public、非抽象、非泛型 V3 IPluginModule 实现。";
             return false;
         }
 

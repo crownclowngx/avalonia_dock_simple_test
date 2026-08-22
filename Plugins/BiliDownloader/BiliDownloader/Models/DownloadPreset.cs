@@ -130,7 +130,7 @@ public sealed record DownloadPreset
 /// </summary>
 public static class BuiltInPresets
 {
-    /// <summary>内置预设 ID 常量（持久化到 Document V2 和 last_preset_id）</summary>
+    /// <summary>内置预设 ID 常量（持久化到当前 Document schema 3 和 last_preset_id）</summary>
     public const string CompatId = "builtin_compat";
     public const string QualityId = "builtin_quality";
     public const string ArchiveId = "builtin_archive";

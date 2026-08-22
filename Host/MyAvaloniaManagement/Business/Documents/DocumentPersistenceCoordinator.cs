@@ -21,7 +21,7 @@ internal readonly record struct DocumentOperationResult(
     internal static DocumentOperationResult Failure(string error) => new(true, error);
 }
 
-/// <summary>编排 V2 Document 的新建、打开、恢复和活动项保存。</summary>
+/// <summary>编排当前 V3 Document 的新建、打开、恢复和活动项保存。</summary>
 /// <remarks>
 /// 本类型只负责编排用例，不解释 JSON、不写原子文件，也不拥有 Scope。所有入口共享同一个串行门，
 /// 因而并发打开同一路径时，后一个请求必定能观察到前一个已经提交的工作区状态。

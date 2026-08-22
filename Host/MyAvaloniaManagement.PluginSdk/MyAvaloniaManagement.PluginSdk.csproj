@@ -12,7 +12,7 @@
     <RootNamespace>MyAvaloniaManagement.PluginSdk</RootNamespace>
     <PackageId>MyAvaloniaManagement.PluginSdk</PackageId>
     <Title>MyAvaloniaManagement Plugin SDK</Title>
-    <Description>Managed Plugin V2 的平台无关 Core 契约。</Description>
+    <Description>Managed Plugin V3 的平台无关 Core 契约。</Description>
     <Authors>MyAvaloniaManagement Contributors</Authors>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>

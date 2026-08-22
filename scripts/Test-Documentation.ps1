@@ -7,7 +7,7 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码已经完成 V3 G9–G12 四插件最终验收；G13 删除面与 G14 发布能力仍由后续阶段负责，
+# 当前源码已经完成 V3 G9–G12 四插件最终验收和 G13 唯一生产面收口；G14 发布能力仍由后续阶段负责，
 # 不得提前写成已实现。V1/V2/V3 阶段记录继续参加链接、命令和项目路径检查。
 $currentDocumentPaths = @(
     'README.md',
@@ -30,6 +30,7 @@ $currentDocumentPaths = @(
     'docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md',
     'docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md',
     'docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md',
+    'docs/plan-history/host-v3/g13-remove-v2-production-surface.md',
     'docs/reference/dock-layout-snapshot-v2.md',
     'docs/reference/myavalonia-management-tests.md',
     'docs/reference/plugin-sdk-api-compatibility.md',
@@ -73,7 +74,7 @@ $forbiddenStatementRules = @(
     [pscustomobject]@{ Name = 'V2 当前事实仍声称只完成 G0-G9'; Pattern = '当前.{0,80}V2\s+已完成\s+G0[–-]G9' },
     [pscustomobject]@{ Name = 'V2 当前事实仍声称只完成 G0-G10'; Pattern = '当前.{0,80}V2\s+已完成\s+G0[–-]G10' },
     [pscustomobject]@{ Name = '当前事实仍称 MySmallTools 等待 G11'; Pattern = 'MySmallTools(?:/BiliDownloader|\s*(?:与|和)\s*BiliDownloader).{0,40}(?:等待|留到)\s*G11' },
-    [pscustomobject]@{ Name = 'V2 仍停留在 G13'; Pattern = '(?:当前|状态).{0,80}G0[–-]G13' },
+    [pscustomobject]@{ Name = 'V2 仍停留在 G13'; Pattern = '(?:当前|状态).{0,80}V2.{0,80}G0[–-]G13|V2.{0,80}(?:当前|状态).{0,80}G0[–-]G13' },
     [pscustomobject]@{ Name = 'G14 仍未完成'; Pattern = '仅\s*G14\s*(?:尚未实现|待完成)|G14\s+尚未实现' },
     [pscustomobject]@{ Name = 'V3 状态仍停留在 G0'; Pattern = '状态：实施中；G0 已完成，G1[–-]G14 尚未实施' },
     [pscustomobject]@{ Name = 'V3 当前状态仍停留在 G5'; Pattern = '状态：实施中；G0[–-]G5 已完成，G6[–-]G14 尚未实施' },
@@ -81,6 +82,8 @@ $forbiddenStatementRules = @(
     [pscustomobject]@{ Name = 'V3 当前状态仍停留在 G7'; Pattern = '状态：实施中；G0[–-]G7 已完成，G8[–-]G14 尚未实施' },
     [pscustomobject]@{ Name = 'V3 当前状态仍停留在 G8'; Pattern = '状态：实施中；G0[–-]G8 已完成，G9[–-]G14 尚未实施' },
     [pscustomobject]@{ Name = 'V3 当前状态仍停留在 G9'; Pattern = '状态：实施中；G0[–-]G9 已完成，G10[–-]G14 尚未实施' },
+    [pscustomobject]@{ Name = 'V3 当前状态仍停留在 G12'; Pattern = '状态：实施中；G0[–-]G12 已完成，G13[–-]G14 尚未实施' },
+    [pscustomobject]@{ Name = 'G13 仍被声明为未实施'; Pattern = 'G13[–-]G14 尚未实施|G13 删除面.{0,30}仍由后续阶段负责' },
     [pscustomobject]@{ Name = '当前文档仍引用已删除的 MyPlugTest V2 门禁'; Pattern = 'Test-MyPlugTestV2\.ps1' },
     [pscustomobject]@{ Name = '当前文档仍引用已删除的 DaTang V2 门禁'; Pattern = 'Test-DaTangAccountingHelpPlugV2\.ps1' },
     [pscustomobject]@{ Name = '当前文档仍引用已删除的 MySmallTools V2 门禁'; Pattern = 'Test-MySmallToolsV2\.ps1' },
@@ -187,13 +190,13 @@ foreach ($relativePath in $linkDocumentPaths) {
 }
 
 # 最终签署和阶段进度不能只靠“没有旧句子”间接成立。以下正向哨兵把 V2 G14、
-# V3 G12 的活动版本/API 状态和非发布边界绑定到权威文档。
+# V3 G13 的活动版本/API 状态和非发布边界绑定到权威文档。
 $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'README.md'; Fragment = 'Managed Plugin V2 已完成 G0–G14 并正式封板' },
     [pscustomobject]@{ Path = 'docs/design/host-v2-breaking-refactor-plan.md'; Fragment = '状态：已完成；G0–G14 已全部封板' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v2/g14-v2-sealing.md'; Fragment = 'scripts/Invoke-HostV2ReleaseGate.ps1' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v2/g14-v2-sealing.md'; Fragment = 'aiflow=false' },
-    [pscustomobject]@{ Path = 'docs/design/host-v3-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0–G12 已完成，G13–G14 尚未实施' },
+    [pscustomobject]@{ Path = 'docs/design/host-v3-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0–G13 已完成，G14 尚未实施' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md'; Fragment = 'Test-MyPlugTestV3.ps1' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md'; Fragment = 'windowsCi=false' },
@@ -222,6 +225,13 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md'; Fragment = 'releaseAcceptance=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md'; Fragment = 'releaseGate=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md'; Fragment = 'publishable=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g13-remove-v2-production-surface.md'; Fragment = 'Test-HostV3ProductionSurface.ps1' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g13-remove-v2-production-surface.md'; Fragment = 'aiflow=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g13-remove-v2-production-surface.md'; Fragment = 'windowsCi=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g13-remove-v2-production-surface.md'; Fragment = 'windowsSmoke=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g13-remove-v2-production-surface.md'; Fragment = 'releaseAcceptance=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g13-remove-v2-production-surface.md'; Fragment = 'releaseGate=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g13-remove-v2-production-surface.md'; Fragment = 'publishable=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'windowsCi=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g0-green-baseline.md'; Fragment = 'windowsSmoke=false' },

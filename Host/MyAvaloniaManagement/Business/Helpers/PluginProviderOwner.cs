@@ -196,7 +196,7 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
         if (lifecycle is not IPluginLifecycle sdk)
         {
             throw new InvalidOperationException(
-                $"生命周期实现 {implementationType.FullName} 未实现 V2 SDK 契约。");
+                $"生命周期实现 {implementationType.FullName} 未实现当前 V3 SDK 契约。");
         }
 
         return new PluginLifecycleCallbacks(

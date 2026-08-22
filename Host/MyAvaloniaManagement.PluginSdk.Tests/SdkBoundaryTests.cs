@@ -4,7 +4,7 @@ using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.PluginSdk.Tests;
 
-/// <summary>以反射和项目引用扫描保护唯一的 Core/UI V2 生产入口。</summary>
+/// <summary>以反射和项目引用扫描保护唯一的 Core/UI V3 生产入口。</summary>
 public sealed class SdkBoundaryTests
 {
     [Fact]
@@ -12,10 +12,13 @@ public sealed class SdkBoundaryTests
     {
         var assembly = typeof(PluginId).Assembly;
         Assert.Equal("MyAvaloniaManagement.PluginSdk", assembly.GetName().Name);
+        Assert.Equal(new Version(3, 0, 0, 0), assembly.GetName().Version);
         Assert.All(assembly.GetReferencedAssemblies(), reference =>
             Assert.StartsWith("System.", reference.Name, StringComparison.Ordinal));
 
         var exportedNames = assembly.ExportedTypes.Select(type => type.Name).ToHashSet(StringComparer.Ordinal);
+        Assert.DoesNotContain("DocumentActivationContext", exportedNames);
+        Assert.DoesNotContain("IHostEventBus", exportedNames);
         Assert.DoesNotContain("IDocumentCreationStrategy", exportedNames);
         Assert.DoesNotContain("IToolCreationStrategy", exportedNames);
         Assert.DoesNotContain("PluginLifecycleManager", exportedNames);
@@ -47,6 +50,7 @@ public sealed class SdkBoundaryTests
     {
         var assembly = typeof(IPluginModule).Assembly;
         Assert.Equal("MyAvaloniaManagement.PluginSdk.UI", assembly.GetName().Name);
+        Assert.Equal(new Version(3, 0, 0, 0), assembly.GetName().Version);
         Assert.DoesNotContain(assembly.GetReferencedAssemblies(), reference =>
             reference.Name?.StartsWith("Dock.", StringComparison.Ordinal) == true ||
             reference.Name == "Newtonsoft.Json");

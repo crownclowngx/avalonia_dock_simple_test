@@ -32,7 +32,7 @@ $suites = @(
     [pscustomobject]@{
         Name = 'G2-Host'
         Project = 'Host\MyAvaloniaManagement.Tests\MyAvaloniaManagement.Tests.csproj'
-        Filter = 'FullyQualifiedName~DocumentPersistenceV2Tests|FullyQualifiedName~DocumentCloseV2Tests'
+        Filter = 'FullyQualifiedName~DocumentPersistenceTests|FullyQualifiedName~DocumentCloseTests'
     },
     [pscustomobject]@{
         Name = 'G2-PluginIntegration'

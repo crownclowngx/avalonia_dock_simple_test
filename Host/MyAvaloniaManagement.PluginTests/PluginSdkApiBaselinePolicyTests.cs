@@ -63,7 +63,7 @@ public sealed class PluginSdkApiBaselinePolicyTests
     }
 
     [Fact]
-    public void G8_V1V2历史基线未改写且V3当前表面全部处于Unshipped()
+    public void G13_V1V2历史基线未改写且V3当前表面全部处于Unshipped()
     {
         var repositoryRoot = FindRepositoryRoot();
         var apiRoot = Path.Combine(

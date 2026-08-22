@@ -6,7 +6,7 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <PlatformTarget>x64</PlatformTarget>
-        <!-- V2 不再维护独立 Host API 版本线；产品与 Host 程序集身份均来自根级产品事实。 -->
+        <!-- V3 继续不维护独立 Host API 版本线；产品与 Host 程序集身份均来自根级产品事实。 -->
         <Version>$(MyAvaloniaProductVersion)</Version>
         <FileVersion>$(MyAvaloniaProductFileVersion)</FileVersion>
         <InformationalVersion>$(MyAvaloniaProductVersion)</InformationalVersion>

@@ -48,7 +48,7 @@ public partial class BiliVideoItem : ObservableObject
     public long Cid { get; set; }
 
     /// <summary>
-    /// 解析后的稳定媒体身份，不参与 Document V2 和任务数据库持久化。
+    /// 解析后的稳定媒体身份，不参与当前 Document schema 3 和任务数据库持久化。
     /// 设计意图：来源身份与媒体身份分离，后续可安全执行跨来源聚合。
     /// </summary>
     [JsonIgnore]

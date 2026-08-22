@@ -1,13 +1,13 @@
 # MyAvaloniaManagement 内部架构
 
-> 当前源码已完成未发布 V3 G12：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
+> 当前源码已完成未发布 V3 G13：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
 > 指定修订确认，激活已采用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属校验；
 > MyPlugTest 与 BiliDownloader 消息器已归各自插件 Provider 所有；Workspace Session、Dock Factory 和
 > Tool 只读投影已经分离；Host Catalog 与只含真实插件的 Plugin Registry 已分离；全屏端口已改为
 > 单参数 `TryPresent` 返回幂等租约，并由 Host 具体会话维护唯一活动展示。四插件已从最终 Registry、
 > 私有 Provider 经 Workspace Session 与 Dock Adapter 完成各自贡献验收，并由真实 ZIP Loader 重放
 > 同一组合链。manifest、Document envelope、layout 保持 schema 2，默认数据根保持 `v2`；
-> G13–G14 尚未实施。
+> G13 已完成 V2 生产面删除与零残留证明；G14 尚未实施。
 
 ## 1. 目标与边界
 
@@ -417,7 +417,7 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 | 诊断正文、凭据、URL、路径泄漏与敏感开关误开 | `HostDiagnosticsTests`、生命周期/UI/Document 错误测试、`Test-HostDiagnosticRedaction.ps1` |
 | 插件私有 Provider、Host Port、失败隔离与四插件回归 | `PluginContainerIsolationTests`、`PluginProviderOwnerTests` |
 | 严格六字段信封、原生 JSON、资源边界、所有权与失败不发布 | `DocumentEnvelopeV2Tests` |
-| 异步创建、并发打开、保存提交点、关闭重入与坏文件恢复 | `DocumentPersistenceV2Tests`、`DocumentCloseV2Tests` |
+| 异步创建、并发打开、保存提交点、关闭重入与坏文件恢复 | `DocumentPersistenceTests`、`DocumentCloseTests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |
 | 同步顺序、重入、异常、并发、Provider/Runtime 隔离及订阅释放 | 两插件 `*EventBusTests`、Document Scope 测试、`Test-PluginPrivateMessaging.ps1` |
