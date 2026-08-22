@@ -49,6 +49,7 @@ internal sealed class DocumentPersistenceStateStore
         state.HostTitle = hostTitle;
         state.RequiresSave = false;
         document.CommitHostTitle(hostTitle);
+        document.SetHostRequiresSave(false);
     }
 
     /// <summary>把恢复副本标记为必须另存，避免依赖插件是否把恢复内容报告为脏。</summary>
@@ -60,6 +61,7 @@ internal sealed class DocumentPersistenceStateStore
         state.HostTitle = hostTitle;
         state.RequiresSave = true;
         document.CommitHostTitle(hostTitle);
+        document.SetHostRequiresSave(true);
     }
 
     internal bool IsDirty(ManagedDocumentDockable document) =>

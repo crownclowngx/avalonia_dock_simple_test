@@ -134,6 +134,12 @@ internal sealed class DocumentSaveService(
             DocumentPersistenceErrorMapper.Report("DOCUMENT_ACCEPT_CHANGES_FAILED", exception);
             warnings.Add(DocumentPersistenceErrorMapper.AcceptChangesFailureMessage);
         }
+        finally
+        {
+            // 插件事件实现可能选择异步投递。保存返回前直接重读最终事实，避免标签短暂或
+            // 永久保留旧的修改标记；保存命令与关闭保存都从 Host UI 协调入口调用本服务。
+            document.RefreshModifiedState();
+        }
 
         try
         {

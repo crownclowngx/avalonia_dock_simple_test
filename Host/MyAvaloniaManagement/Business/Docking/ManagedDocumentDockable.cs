@@ -20,6 +20,8 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
     private readonly ActivatedPluginDocument _activation;
     private readonly ManagedDockableViewLease _view = new();
     private string _hostTitle;
+    private bool _hasCommittedHostTitle;
+    private bool _hostRequiresSave;
     private int _disposed;
 
     internal ManagedDocumentDockable(
@@ -34,6 +36,11 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
         CanFloat = false;
         Title = SelectTitle();
         activation.Model.PresentationChanged += OnPresentationChanged;
+        if (PersistableModel is { } persistable)
+        {
+            persistable.IsDirtyChanged += OnIsDirtyChanged;
+            IsModified = persistable.IsDirty;
+        }
     }
 
     internal PluginId OwnerId => _activation.Registration.OwnerId;
@@ -57,15 +64,26 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
 
     /// <summary>在主文件成功提交后更新只由 Host 持有的信封标题。</summary>
     /// <remarks>
-    /// 插件 Presentation 仍可优先决定标签显示，但不能反向修改磁盘标题。保存和恢复流程读取
-    /// <see cref="HostTitle"/>，从而让展示状态与持久化所有权保持清晰分离。
+    /// 未保存时插件 Presentation 可以决定标签显示；一旦 Host 提交磁盘标题，该标题也成为
+    /// 当前标签的权威标题，插件后续展示通知不能把文件名覆盖回旧值。
     /// </remarks>
     internal void CommitHostTitle(string title)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
         _hostTitle = title;
+        _hasCommittedHostTitle = true;
         ApplyPresentation();
     }
+
+    /// <summary>同步只由 Host 持有的强制保存状态到 Dock 修改标记。</summary>
+    internal void SetHostRequiresSave(bool requiresSave)
+    {
+        _hostRequiresSave = requiresSave;
+        ApplyModifiedState();
+    }
+
+    /// <summary>在 Host 保存提交回调结束后立即重读最终脏状态。</summary>
+    internal void RefreshModifiedState() => ApplyModifiedState();
 
     private void OnPresentationChanged(object? sender, EventArgs args)
     {
@@ -86,6 +104,23 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
         }
     }
 
+    private void OnIsDirtyChanged(object? sender, EventArgs args)
+    {
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            return;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            ApplyModifiedState();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(ApplyModifiedState);
+        }
+    }
+
     private void ApplyPresentation()
     {
         if (Volatile.Read(ref _disposed) == 0)
@@ -94,8 +129,21 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
         }
     }
 
+    private void ApplyModifiedState()
+    {
+        if (Volatile.Read(ref _disposed) == 0)
+        {
+            IsModified = _hostRequiresSave || PersistableModel?.IsDirty == true;
+        }
+    }
+
     private string SelectTitle()
     {
+        if (_hasCommittedHostTitle)
+        {
+            return _hostTitle;
+        }
+
         var modelTitle = _activation.Model.Presentation.Title;
         if (!string.IsNullOrWhiteSpace(modelTitle))
         {
@@ -118,7 +166,17 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
         {
             try
             {
-                _activation.Model.PresentationChanged -= OnPresentationChanged;
+                try
+                {
+                    _activation.Model.PresentationChanged -= OnPresentationChanged;
+                }
+                finally
+                {
+                    if (PersistableModel is { } persistable)
+                    {
+                        persistable.IsDirtyChanged -= OnIsDirtyChanged;
+                    }
+                }
             }
             finally
             {

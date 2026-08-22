@@ -20,7 +20,8 @@ DaTangAccountingHelpPlug 与 MySmallTools，BiliDownloader 留待 G12。
 DaTang 银行余额调节是第二个真实持久化 Document：其 content schema 固定为 1，独立 Codec
 严格拒绝错误 schema、根类型、未知/重复/缺失字段、错误类型和无效配置。恢复必须先完整
 解码和业务验证，再一次提交到模型；损坏内容不得改变标题、路径、选项或原脏状态。
-`CaptureContentAsync` 不是保存提交点，只有 Host 原子主文件成功后调用 `AcceptChanges`。
+`CaptureContentAsync` 不是保存提交点，只有 Host 原子主文件成功后调用 `AcceptChanges`。插件在
+`IsDirty` 实际变化时发出 `IsDirtyChanged`，Adapter 将最终脏状态投影到 Dock 的 `IsModified`。
 
 ## 2. SOLID 与朴素模式
 
@@ -97,7 +98,8 @@ internal `DocumentEnvelopeException`，用户只看到固定脱敏提示。
 
 保存只接受 Registry 声明为 `IsPersistable` 的 Adapter。服务使用该 Scope 的 `ClosingToken` 调用
 `CaptureContentAsync`，严格序列化并通过同目录 staging 原子提交主文件。只有主文件成功后才提交 Host
-路径、磁盘标题和恢复状态，再调用 `AcceptChanges` 并更新恢复备份。
+路径、磁盘标题和恢复状态，再调用 `AcceptChanges` 并更新恢复备份。已提交的 Host 标题成为 Tab 的
+权威标题；恢复副本的 `RequiresSave` 与插件 `IsDirty` 共同决定 Dock `IsModified` 和主题的 `*`。
 
 主文件失败时不改变路径、标题、恢复状态或脏状态。主文件已成功而 `AcceptChanges` 或备份更新失败时，
 结果是“已保存但有警告”；磁盘事实不能被回报为保存失败，关闭流程可以继续。插件自定义异常与对话框

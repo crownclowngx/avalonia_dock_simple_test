@@ -99,6 +99,8 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
             DaTangContributionIds.BankBalanceReconciliationDocument);
         var source = Assert.IsType<BankBalanceReconciliationViewModel>(sourceActivation.Model);
         await source.InitializeAsync(new DocumentActivationContext("来源标题"), default);
+        var dirtyChanges = 0;
+        source.IsDirtyChanged += (_, _) => dirtyChanges++;
         source.Source.EnterpriseLedgerPath = "enterprise.xlsx";
         source.Source.BankStatementPath = "bank.xlsx";
         source.Options.PreviousUnreconciledDifference = 12.34m;
@@ -132,6 +134,8 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
         Assert.False(target.IsDirty);
         source.AcceptChanges();
         Assert.False(source.IsDirty);
+        source.AcceptChanges();
+        Assert.Equal(2, dirtyChanges);
     }
 
     [Theory]

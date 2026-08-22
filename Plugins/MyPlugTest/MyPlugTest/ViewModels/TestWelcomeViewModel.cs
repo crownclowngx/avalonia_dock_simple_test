@@ -54,6 +54,9 @@ public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginD
     /// <inheritdoc />
     public bool IsDirty => _isDirty;
 
+    /// <inheritdoc />
+    public event EventHandler? IsDirtyChanged;
+
     /// <summary>获取只属于当前 Document Scope 的 URL 历史。</summary>
     public UrlHistoryViewModel UrlHistory { get; }
 
@@ -252,7 +255,15 @@ public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginD
         }
     }
 
-    private void SetDirty(bool value) => SetProperty(ref _isDirty, value, nameof(IsDirty));
+    private void SetDirty(bool value)
+    {
+        if (!SetProperty(ref _isDirty, value, nameof(IsDirty)))
+        {
+            return;
+        }
+
+        IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     private bool IsClosing =>
         Volatile.Read(ref _disposed) != 0 || _documentLifetime.IsClosing;

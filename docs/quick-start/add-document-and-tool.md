@@ -135,6 +135,7 @@ public sealed class QuickStartPluginModule : IPluginModule
 
 - `CaptureContentAsync` 返回新的 `DocumentContent(schema, payload)`，不直接写文件；
 - 恢复时先严格验证 schema、字段、类型和完整临时状态，再一次提交到模型；
+- `IsDirty` 实际变化时发出 `IsDirtyChanged`，让 Host 同步 Tab 的修改标记；
 - `AcceptChanges` 只在 Host 原子保存成功后清除脏状态；
 - 不兼容内容直接失败，不做猜测式修复或 V1 兼容读取。
 

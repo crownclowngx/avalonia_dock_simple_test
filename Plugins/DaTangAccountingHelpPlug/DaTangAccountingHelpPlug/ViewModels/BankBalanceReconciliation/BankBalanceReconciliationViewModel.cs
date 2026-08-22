@@ -61,6 +61,9 @@ public sealed class BankBalanceReconciliationViewModel :
     public bool IsDirty => _isDirty;
 
     /// <inheritdoc />
+    public event EventHandler? IsDirtyChanged;
+
+    /// <inheritdoc />
     public ValueTask InitializeAsync(
         DocumentActivationContext context,
         CancellationToken cancellationToken)
@@ -173,7 +176,15 @@ public sealed class BankBalanceReconciliationViewModel :
         }
     }
 
-    private void SetDirty(bool value) => SetProperty(ref _isDirty, value, nameof(IsDirty));
+    private void SetDirty(bool value)
+    {
+        if (!SetProperty(ref _isDirty, value, nameof(IsDirty)))
+        {
+            return;
+        }
+
+        IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     private void SetPresentationTitle(string title)
     {

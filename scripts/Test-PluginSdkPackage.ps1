@@ -203,6 +203,7 @@ public sealed class SampleDocument : IPersistablePluginDocument
     public DocumentPresentationState Presentation { get; } = new("示例");
     public event EventHandler? PresentationChanged { add { } remove { } }
     public bool IsDirty => false;
+    public event EventHandler? IsDirtyChanged { add { } remove { } }
     public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken token) => ValueTask.CompletedTask;
     public ValueTask<DocumentContent> CaptureContentAsync(CancellationToken token)
     {
@@ -281,6 +282,7 @@ public sealed class SampleDocument : IPersistablePluginDocument
     public DocumentPresentationState Presentation { get; } = new("示例");
     public event EventHandler? PresentationChanged { add { } remove { } }
     public bool IsDirty => false;
+    public event EventHandler? IsDirtyChanged { add { } remove { } }
     public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken token) => ValueTask.CompletedTask;
     public ValueTask<DocumentContent> CaptureContentAsync(CancellationToken token) => throw new NotSupportedException();
     public void AcceptChanges() { }

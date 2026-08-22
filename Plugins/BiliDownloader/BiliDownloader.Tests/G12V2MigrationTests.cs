@@ -135,6 +135,8 @@ public sealed class G12V2MigrationTests
         await document.InitializeAsync(
             new DocumentActivationContext("保存测试"),
             CancellationToken.None);
+        var dirtyChanges = 0;
+        document.IsDirtyChanged += (_, _) => dirtyChanges++;
         document.VideoParse.Url = "BV1dirty";
         Assert.True(document.IsDirty);
 
@@ -146,6 +148,7 @@ public sealed class G12V2MigrationTests
         document.AcceptChanges();
         document.AcceptChanges();
         Assert.False(document.IsDirty);
+        Assert.Equal(2, dirtyChanges);
     }
 
     [Fact]

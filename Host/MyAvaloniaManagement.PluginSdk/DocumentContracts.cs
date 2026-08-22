@@ -106,6 +106,13 @@ public interface IPersistablePluginDocument : IPluginDocument
     /// <summary>获取当前业务内容是否包含尚未成功提交的修改。</summary>
     bool IsDirty { get; }
 
+    /// <summary>当 <see cref="IsDirty"/> 的值实际发生变化时通知 Host。</summary>
+    /// <remarks>
+    /// 事件可以从插件工作线程发出；Host 负责切换到 UI 线程并把状态投影到 Dock。
+    /// 重复设置相同值时不应发出通知。
+    /// </remarks>
+    event EventHandler? IsDirtyChanged;
+
     /// <summary>捕获当前不可变业务内容；路径和信封元数据仍由 Host 独占。</summary>
     /// <param name="cancellationToken">保存被取消或 Document 关闭时由 Host 触发的协作取消令牌。</param>
     /// <returns>由插件拥有 schema、由 Host 克隆并写入信封的内容快照。</returns>

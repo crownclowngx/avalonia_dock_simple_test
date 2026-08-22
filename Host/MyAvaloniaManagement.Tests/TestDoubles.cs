@@ -354,11 +354,27 @@ internal sealed class TestSavableDocument(
     MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument,
     IDisposable
 {
+    private bool _isModified;
+
     public string Content { get; set; } = "initial";
     public string Title { get; private set; } = "未命名";
-    public bool IsModified { get; set; }
+    public bool IsModified
+    {
+        get => _isModified;
+        set
+        {
+            if (_isModified == value)
+            {
+                return;
+            }
+
+            _isModified = value;
+            IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
 
     public bool IsDirty => IsModified;
+    public event EventHandler? IsDirtyChanged;
     public int AcceptChangesCount { get; private set; }
     public MyAvaloniaManagement.PluginSdk.DocumentPresentationState Presentation =>
         new(Title);
@@ -505,7 +521,23 @@ internal sealed class TrackedScopedSavableDocument :
             _probe.RecordCancellation);
     }
 
-    public bool IsDirty { get; set; }
+    private bool _isDirty;
+
+    public bool IsDirty
+    {
+        get => _isDirty;
+        set
+        {
+            if (_isDirty == value)
+            {
+                return;
+            }
+
+            _isDirty = value;
+            IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+    public event EventHandler? IsDirtyChanged;
     public MyAvaloniaManagement.PluginSdk.DocumentPresentationState Presentation =>
         new("Scoped Savable 测试文档");
     public event EventHandler? PresentationChanged { add { } remove { } }

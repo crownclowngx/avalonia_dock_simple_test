@@ -71,6 +71,40 @@ public sealed class HostDockAdapterUiTests
     }
 
     [AvaloniaFact]
+    public async Task 可持久化Document后台脏状态投影到Dock且Host标题提交后保持权威()
+    {
+        var services = new ServiceCollection();
+        services.AddScoped<MutablePersistableDocument>();
+        services.AddDocumentScopeManagement();
+        using var provider = services.BuildServiceProvider();
+        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        var lease = manager.CreatePluginDocument(typeof(MutablePersistableDocument));
+        var model = Assert.IsType<MutablePersistableDocument>(lease.Model);
+        var registration = PersistableRegistration();
+        var adapter = new ManagedDocumentDockable(
+            new ActivatedPluginDocument(registration, lease),
+            "请求标题");
+
+        Assert.False(adapter.IsModified);
+        await Task.Run(() => model.SetDirty(true));
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(adapter.IsModified);
+
+        adapter.CommitHostTitle("saved-file");
+        model.SetTitle("插件覆盖标题");
+        Assert.Equal("saved-file", adapter.Title);
+
+        await Task.Run(() => model.SetDirty(false));
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(adapter.IsModified);
+
+        adapter.Dispose();
+        model.SetDirty(true);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(adapter.IsModified);
+    }
+
+    [AvaloniaFact]
     public async Task DocumentView创建失败时Factory释放已建立Adapter和Scope()
     {
         ViewFailureDocument? created = null;
@@ -190,6 +224,18 @@ public sealed class HostDockAdapterUiTests
         viewFactory,
         false);
 
+    private static PluginDocumentRegistration PersistableRegistration() => new(
+        HostExtensionIds.V2Owner,
+        new DocumentDescriptor(
+            new DocumentTypeId("myavalonia.host.document.mutable-persistable"),
+            "可持久化测试",
+            "脏状态投影测试",
+            "测试"),
+        typeof(MutablePersistableDocument),
+        typeof(UserControl),
+        static () => new UserControl(),
+        true);
+
     private sealed class MutableDocument : IPluginDocument
     {
         private string _title = string.Empty;
@@ -226,6 +272,43 @@ public sealed class HostDockAdapterUiTests
         {
             ClosingObservedDuringDispose = lifetime.IsClosing;
             DisposeCount++;
+        }
+    }
+
+    private sealed class MutablePersistableDocument : IPersistablePluginDocument
+    {
+        private bool _isDirty;
+        private string _title = "未保存标题";
+
+        public bool IsDirty => _isDirty;
+        public event EventHandler? IsDirtyChanged;
+        public DocumentPresentationState Presentation => new(_title);
+        public event EventHandler? PresentationChanged;
+
+        public ValueTask InitializeAsync(
+            DocumentActivationContext context,
+            CancellationToken cancellationToken) => ValueTask.CompletedTask;
+
+        public ValueTask<DocumentContent> CaptureContentAsync(
+            CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public void AcceptChanges() => SetDirty(false);
+
+        internal void SetDirty(bool value)
+        {
+            if (_isDirty == value)
+            {
+                return;
+            }
+
+            _isDirty = value;
+            IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        internal void SetTitle(string title)
+        {
+            _title = title;
+            PresentationChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

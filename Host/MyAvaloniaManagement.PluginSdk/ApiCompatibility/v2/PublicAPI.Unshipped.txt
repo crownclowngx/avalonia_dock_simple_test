@@ -33,6 +33,7 @@ MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument
 MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.AcceptChanges() -> void
 MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.CaptureContentAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<MyAvaloniaManagement.PluginSdk.DocumentContent!>
 MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.IsDirty.get -> bool
+MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.IsDirtyChanged -> System.EventHandler?
 MyAvaloniaManagement.PluginSdk.IPluginDocument
 MyAvaloniaManagement.PluginSdk.IPluginDocument.InitializeAsync(MyAvaloniaManagement.PluginSdk.DocumentActivationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 MyAvaloniaManagement.PluginSdk.IPluginDocument.Presentation.get -> MyAvaloniaManagement.PluginSdk.DocumentPresentationState!

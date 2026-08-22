@@ -104,6 +104,8 @@ public sealed class MyPlugTestV2MigrationTests
         using var sourceLifetime = new TestPluginDocumentLifetime();
         using var source = CreateWelcome(sourceLifetime);
         await source.InitializeAsync(new DocumentActivationContext("持久化欢迎"), default);
+        var dirtyChanges = 0;
+        source.IsDirtyChanged += (_, _) => dirtyChanges++;
         source.Url = "https://roundtrip.test";
         source.ResponseContent = "往返正文";
         source.UrlHistory.AddUrl("https://history-a.test");
@@ -138,6 +140,7 @@ public sealed class MyPlugTestV2MigrationTests
         Assert.False(source.IsDirty);
         source.AcceptChanges();
         Assert.False(source.IsDirty);
+        Assert.Equal(2, dirtyChanges);
     }
 
     [Theory]

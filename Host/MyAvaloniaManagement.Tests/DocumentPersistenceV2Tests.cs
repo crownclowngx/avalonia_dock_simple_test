@@ -97,8 +97,12 @@ public sealed class DocumentPersistenceV2Tests
         await viewModel.SaveDocument();
 
         Assert.False(model.IsDirty);
+        Assert.False(adapter.IsModified);
         Assert.Equal(1, model.AcceptChangesCount);
         Assert.Equal(Path.GetFullPath(path), context.GetDocumentFilePath(adapter));
+        Assert.Equal("saved", adapter.Title);
+        model.SetTitle("插件旧标题");
+        Assert.Equal("saved", adapter.Title);
         var primary = Assert.Single(context.Storage.Writes, item =>
             DocumentPathIdentity.Equals(item.Path, path));
         using var json = JsonDocument.Parse(primary.Content);
@@ -125,6 +129,7 @@ public sealed class DocumentPersistenceV2Tests
         await viewModel.SaveDocument();
 
         Assert.True(model.IsDirty);
+        Assert.Equal("未命名", adapter.Title);
         Assert.Equal(0, model.AcceptChangesCount);
         Assert.True(viewModel.HasDocumentOperationError);
 
@@ -132,6 +137,8 @@ public sealed class DocumentPersistenceV2Tests
         context.Storage.WriteOutcomes.Enqueue(new IOException("备份失败"));
         await viewModel.SaveDocument();
         Assert.False(model.IsDirty);
+        Assert.False(adapter.IsModified);
+        Assert.Equal("warning", adapter.Title);
         Assert.Contains("已保存", viewModel.DocumentOperationError);
     }
 
@@ -241,6 +248,9 @@ public sealed class DocumentPersistenceV2Tests
         var adapter = Assert.Single(GetDocuments(context));
         Assert.Equal("恢复正文", Assert.IsType<TestSavableDocument>(adapter.Model).Content);
         Assert.Equal(Path.GetFullPath(path), context.GetDocumentFilePath(adapter));
+        Assert.Equal("打开标题", adapter.Title);
+        Assert.IsType<TestSavableDocument>(adapter.Model).SetTitle("插件覆盖标题");
+        Assert.Equal("打开标题", adapter.Title);
     }
 
     [Fact]
@@ -357,6 +367,8 @@ public sealed class DocumentPersistenceV2Tests
 
         var recovered = Assert.Single(GetDocuments(context));
         Assert.False(Assert.IsType<TestSavableDocument>(recovered.Model).IsDirty);
+        Assert.True(recovered.IsModified);
+        Assert.Equal("备份（已恢复）", recovered.Title);
         Assert.True(viewModel.HasDirtyDocuments());
         context.Interactions.CloseChoices.Enqueue(DocumentCloseChoice.Cancel);
         Assert.False(await viewModel.ConfirmWindowCloseAsync());
@@ -365,6 +377,13 @@ public sealed class DocumentPersistenceV2Tests
         context.Storage.SavePath = primary;
         await viewModel.SaveDocument();
         Assert.Contains("不能覆盖损坏原件", viewModel.DocumentOperationError);
+        Assert.True(recovered.IsModified);
+
+        var recoveredCopy = Path.Combine(context.TempDirectory, "recovered-copy.mamdoc");
+        context.Storage.SavePath = recoveredCopy;
+        await viewModel.SaveDocument();
+        Assert.False(recovered.IsModified);
+        Assert.Equal("recovered-copy", recovered.Title);
     }
 
     [Fact]

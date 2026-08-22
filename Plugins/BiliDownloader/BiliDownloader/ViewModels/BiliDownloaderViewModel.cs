@@ -84,6 +84,9 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
     /// <inheritdoc />
     public bool IsDirty => IsModified;
 
+    /// <inheritdoc />
+    public event EventHandler? IsDirtyChanged;
+
     /// <summary>
     /// 获取或设置当前标签标题。标题属于 Host 保存信封的展示数据，不进入插件内容 payload。
     /// </summary>
@@ -107,7 +110,10 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
         set
         {
             if (SetProperty(ref _isModified, value))
+            {
                 OnPropertyChanged(nameof(IsDirty));
+                IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
     }
 

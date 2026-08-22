@@ -95,6 +95,31 @@ public sealed class HostDockAdapterTests
         Assert.False(manager.Release(model));
     }
 
+    [Fact]
+    public void 脏状态事件退订抛出时仍取消ClosingToken并释放Scope()
+    {
+        var services = new ServiceCollection();
+        services.AddScoped<ThrowingDirtyRemoveDocument>();
+        services.AddDocumentScopeManagement();
+        using var provider = services.BuildServiceProvider();
+        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        var lease = manager.CreatePluginDocument(typeof(ThrowingDirtyRemoveDocument));
+        var model = Assert.IsType<ThrowingDirtyRemoveDocument>(lease.Model);
+        var registration = DocumentRegistration(typeof(ThrowingDirtyRemoveDocument)) with
+        {
+            IsPersistable = true,
+        };
+        var adapter = new ManagedDocumentDockable(
+            new ActivatedPluginDocument(registration, lease),
+            "请求标题");
+
+        Assert.Throws<InvalidOperationException>(() => adapter.Dispose());
+
+        Assert.True(model.ClosingObservedDuringDispose);
+        Assert.Equal(1, model.DisposeCount);
+        Assert.False(manager.Release(model));
+    }
+
     [Theory]
     [InlineData(ToolCloseBehavior.Hide, true)]
     [InlineData(ToolCloseBehavior.Prevent, false)]
@@ -305,6 +330,40 @@ public sealed class HostDockAdapterTests
         public ValueTask InitializeAsync(
             DocumentActivationContext context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
+
+        public void Dispose()
+        {
+            ClosingObservedDuringDispose = lifetime.IsClosing;
+            DisposeCount++;
+        }
+    }
+
+    private sealed class ThrowingDirtyRemoveDocument(
+        MyAvaloniaManagement.PluginSdk.IDocumentLifetime lifetime) :
+        IPersistablePluginDocument,
+        IDisposable
+    {
+        public int DisposeCount { get; private set; }
+        public bool ClosingObservedDuringDispose { get; private set; }
+        public bool IsDirty => false;
+        public event EventHandler? IsDirtyChanged
+        {
+            add { }
+            remove { throw new InvalidOperationException("脏状态事件退订失败"); }
+        }
+        public DocumentPresentationState Presentation => new("脏状态事件异常测试");
+        public event EventHandler? PresentationChanged { add { } remove { } }
+
+        public ValueTask InitializeAsync(
+            DocumentActivationContext context,
+            CancellationToken cancellationToken) => ValueTask.CompletedTask;
+
+        public ValueTask<DocumentContent> CaptureContentAsync(
+            CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public void AcceptChanges()
+        {
+        }
 
         public void Dispose()
         {
