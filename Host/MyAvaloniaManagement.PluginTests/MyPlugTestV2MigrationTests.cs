@@ -112,7 +112,8 @@ public sealed class MyPlugTestV2MigrationTests
         source.UrlHistory.AddUrl("https://history-b.test");
 
         Assert.True(source.IsDirty);
-        var content = await source.CaptureContentAsync(default);
+        var snapshot = await source.CaptureSaveSnapshotAsync(default);
+        var content = snapshot.Content;
         Assert.Equal(1, content.SchemaVersion);
         Assert.Equal(JsonValueKind.Object, content.Payload.ValueKind);
         Assert.Equal(
@@ -136,9 +137,13 @@ public sealed class MyPlugTestV2MigrationTests
             target.UrlHistory.HistoryItems.Select(item => item.Url));
         Assert.False(target.IsDirty);
 
-        source.AcceptChanges();
+        source.Url = "https://captured-later.test";
+        source.AcceptChanges(snapshot.Revision);
+        Assert.True(source.IsDirty);
+        var current = await source.CaptureSaveSnapshotAsync(default);
+        source.AcceptChanges(current.Revision);
         Assert.False(source.IsDirty);
-        source.AcceptChanges();
+        source.AcceptChanges(current.Revision);
         Assert.False(source.IsDirty);
         Assert.Equal(2, dirtyChanges);
     }
@@ -205,7 +210,7 @@ public sealed class MyPlugTestV2MigrationTests
 
         lifetime.Close();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
-            await model.CaptureContentAsync(default));
+            await model.CaptureSaveSnapshotAsync(default));
     }
 
     [Fact]

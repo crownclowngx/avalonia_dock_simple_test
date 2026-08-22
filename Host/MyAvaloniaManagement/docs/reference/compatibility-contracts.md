@@ -18,13 +18,13 @@
 > 过渡构建面已经删除；Core/UI v2 API 已进入 Shipped，两轮隔离门禁与 Windows V2 Smoke 已建立，
 > 历史 v1 签署事实保持可追溯。
 
-> 当前源码已完成未发布 V3 G1：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
-> `[3.0.0, 4.0.0)`。public C# 形状仍沿用 V2 G14，活动签名位于 v3 Unshipped；manifest、
-> Document、layout 和默认数据根继续使用 schema/generation 2。
+> 当前源码已完成未发布 V3 G2：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
+> `[3.0.0, 4.0.0)`。活动签名位于 v3 Unshipped，Document 保存采用修订快照与指定修订确认；
+> manifest、Document envelope、layout 和默认数据根继续使用 schema/generation 2。
 
 ## 2. public API
 
-当前 V3 G1 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
+当前 V3 G2 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
 四个业务插件只引用最终 SDK。`MyAvaloniaManagement.LegacyPluginContracts` 已整体删除；活动项目、
@@ -210,14 +210,16 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - 根 `schemaVersion` 只能为 `2`；UTF-8 文件上限为 8 MiB，JSON 最大深度为 8；注释、尾随逗号、
   重复、未知、缺失、大小写错误和类型错误均拒绝；
 - 插件公共 `DocumentContent` 克隆 `JsonElement`；可保存模型实现 `IPersistablePluginDocument` 的
-  `CaptureContentAsync(ClosingToken)`、`IsDirty` 与 `AcceptChanges`；插件不拥有路径或磁盘身份；
+  `CaptureSaveSnapshotAsync(ClosingToken)`、`IsDirty` 与 `AcceptChanges(savedRevision)`；插件拥有
+  修订含义但不拥有路径或磁盘身份，Host 只原样回传修订；
 - 宿主从不可变 Registry 拥有 `PluginId`、`DocumentTypeId`，并由内部状态存储按 Document 引用保存规范注册项与当前主路径；标题来自文件名，UTC 时间来自 `TimeProvider`；插件只解释内容版本和 payload；
 - 信封中的 Document 类型必须是规范主 ID，不接受历史别名；`pluginId` 必须等于注册项所有者；
 - 路径转绝对路径后按 Windows 不区分大小写规则查重；
 - 批量打开以单文件为错误边界；
 - 同一路径已打开时激活原文档，不创建重复实例；
 - 无当前路径时由宿主选择保存目标，已有路径直接覆盖；恢复出的 Document 由宿主内部恢复注册表强制另存，并拒绝覆盖损坏原件或备份；
-- 内容捕获不得更新标题、路径或脏状态；主文件写入失败不得调用 `AcceptChanges`；插件没有路径策略或保存完成回调；
+- 内容捕获不得更新标题、路径或脏状态；主文件写入失败不得确认；捕获后编辑必须使旧修订确认保持
+  Dirty，关闭也必须保持打开；插件没有路径策略或通用保存完成回调；
 - 主文件和 `<主路径>.recovery.bak` 均通过同目录临时文件原子替换；备份失败不得回滚已成功的主文件；
 - 标签关闭和窗口退出必须保护脏 Document；取消确认或保存失败不得提前取消 `ClosingToken`；
 - V2 是唯一受支持的 Document 信封；不存在 V1 兼容对象或迁移链，任何非 V2 结构直接拒绝；

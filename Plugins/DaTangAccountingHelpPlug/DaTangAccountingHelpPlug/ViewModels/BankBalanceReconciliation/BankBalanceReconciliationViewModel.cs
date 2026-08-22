@@ -5,7 +5,7 @@ using MyAvaloniaManagement.PluginSdk;
 
 namespace DaTangAccountingHelpPlug.ViewModels.BankBalanceReconciliation;
 
-/// <summary>组合银行余额调节界面状态并实现 Host V2 可持久化 Document 契约。</summary>
+/// <summary>组合银行余额调节界面状态并实现带修订确认的可持久化 Document 契约。</summary>
 /// <remarks>
 /// 本模型不继承 Dock，也不拥有文件路径或原子保存事务。它只聚合当前 Document Scope 的三个子模型，
 /// 观察确实会进入内容 payload 的字段，并把严格编解码委托给独立 Codec。Host 在保存主文件成功后
@@ -18,9 +18,11 @@ public sealed class BankBalanceReconciliationViewModel :
 {
     private readonly IDocumentLifetime _documentLifetime;
     private readonly ReconciliationProfileLoader _profileLoader;
+    private readonly object _revisionLock = new();
     private bool _disposed;
     private bool _isRestoring;
-    private bool _isDirty;
+    private long _contentRevision;
+    private long _acceptedRevision;
     private string _title = "银行余额调节表";
 
     /// <summary>创建一个由当前插件 Document Scope 独占的组合模型。</summary>
@@ -58,7 +60,16 @@ public sealed class BankBalanceReconciliationViewModel :
     public event EventHandler? PresentationChanged;
 
     /// <inheritdoc />
-    public bool IsDirty => _isDirty;
+    public bool IsDirty
+    {
+        get
+        {
+            lock (_revisionLock)
+            {
+                return _contentRevision != _acceptedRevision;
+            }
+        }
+    }
 
     /// <inheritdoc />
     public event EventHandler? IsDirtyChanged;
@@ -83,7 +94,7 @@ public sealed class BankBalanceReconciliationViewModel :
         }
         else
         {
-            SetDirty(false);
+            ResetRevisionState();
         }
 
         SetPresentationTitle(string.IsNullOrWhiteSpace(context.Title)
@@ -93,27 +104,59 @@ public sealed class BankBalanceReconciliationViewModel :
     }
 
     /// <inheritdoc />
-    public ValueTask<DocumentContent> CaptureContentAsync(CancellationToken cancellationToken)
+    public ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(
+        CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        _documentLifetime.ClosingToken.ThrowIfCancellationRequested();
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            _documentLifetime.ClosingToken.ThrowIfCancellationRequested();
+            var revisionBeforeCapture = ReadCurrentRevision();
 
-        var state = new ReconciliationDocumentState(
-            Options.Configuration,
-            Source.SelectedProfile?.Id ?? string.Empty,
-            Source.EnterpriseLedgerPath,
-            Source.BankStatementPath,
-            Source.ReceiptEnrichmentPath,
-            Source.AsOfDate,
-            Options.UseLegacyMode,
-            Options.EnableLooseAmountAlignment,
-            Options.PreviousUnreconciledDifference,
-            Run.LastOutputPath);
-        return ValueTask.FromResult(ReconciliationDocumentContentCodec.Encode(state));
+            var state = new ReconciliationDocumentState(
+                Options.Configuration,
+                Source.SelectedProfile?.Id ?? string.Empty,
+                Source.EnterpriseLedgerPath,
+                Source.BankStatementPath,
+                Source.ReceiptEnrichmentPath,
+                Source.AsOfDate,
+                Options.UseLegacyMode,
+                Options.EnableLooseAmountAlignment,
+                Options.PreviousUnreconciledDifference,
+                Run.LastOutputPath);
+            var content = ReconciliationDocumentContentCodec.Encode(state);
+            var revisionAfterCapture = ReadCurrentRevision();
+            if (revisionBeforeCapture == revisionAfterCapture)
+            {
+                return ValueTask.FromResult(
+                    new DocumentSaveSnapshot(revisionAfterCapture, content));
+            }
+
+            // 子模型可能从后台完成 Excel 或文件选择操作。只要持久字段在编码期间推进过
+            // Revision，就放弃本轮 DTO 并重试，避免把不同观察时刻的字段错误拼成可确认快照。
+        }
     }
 
     /// <inheritdoc />
-    public void AcceptChanges() => SetDirty(false);
+    public void AcceptChanges(DocumentRevision savedRevision)
+    {
+        var dirtyChanged = false;
+        lock (_revisionLock)
+        {
+            if (_contentRevision != savedRevision.Value)
+            {
+                return;
+            }
+
+            dirtyChanged = _acceptedRevision != _contentRevision;
+            _acceptedRevision = _contentRevision;
+        }
+
+        if (dirtyChanged)
+        {
+            RaiseDirtyChanged();
+        }
+    }
 
     private void ApplyRestoredState(ReconciliationDocumentState state)
     {
@@ -129,7 +172,7 @@ public sealed class BankBalanceReconciliationViewModel :
             Options.EnableLooseAmountAlignment = state.EnableLooseAmountAlignment;
             Options.PreviousUnreconciledDifference = state.PreviousUnreconciledDifference;
             Run.LastOutputPath = state.LastOutputPath;
-            SetDirty(false);
+            ResetRevisionState();
         }
         finally
         {
@@ -172,17 +215,47 @@ public sealed class BankBalanceReconciliationViewModel :
     {
         if (!_isRestoring && !_disposed && !_documentLifetime.IsClosing)
         {
-            SetDirty(true);
+            var dirtyChanged = false;
+            lock (_revisionLock)
+            {
+                var wasDirty = _contentRevision != _acceptedRevision;
+                _contentRevision = checked(_contentRevision + 1);
+                dirtyChanged = !wasDirty;
+            }
+
+            if (dirtyChanged)
+            {
+                RaiseDirtyChanged();
+            }
         }
     }
 
-    private void SetDirty(bool value)
+    private DocumentRevision ReadCurrentRevision()
     {
-        if (!SetProperty(ref _isDirty, value, nameof(IsDirty)))
+        lock (_revisionLock)
         {
-            return;
+            return new DocumentRevision(_contentRevision);
+        }
+    }
+
+    private void ResetRevisionState()
+    {
+        var dirtyChanged = false;
+        lock (_revisionLock)
+        {
+            dirtyChanged = _contentRevision != _acceptedRevision;
+            _acceptedRevision = _contentRevision;
         }
 
+        if (dirtyChanged)
+        {
+            RaiseDirtyChanged();
+        }
+    }
+
+    private void RaiseDirtyChanged()
+    {
+        OnPropertyChanged(nameof(IsDirty));
         IsDirtyChanged?.Invoke(this, EventArgs.Empty);
     }
 

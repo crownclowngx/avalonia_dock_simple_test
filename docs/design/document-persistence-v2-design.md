@@ -1,14 +1,14 @@
-# Document V2 持久化设计
+# Document envelope v2 与 V3 G2 修订保存设计
 
 > 状态：当前实现
 >
 > 更新日期：2026-08-22
 >
-> 边界：G14 已封板的唯一 Document V2 创建、打开、恢复、保存、关闭与 Scope 释放链
+> 边界：V2 G14 的唯一创建/打开/恢复/Scope 链，加上 V3 G2 的修订化保存与关闭保护
 
 ## 1. 设计结论
 
-Document V2 只有一条生产路径。新建、Creation Intent 和磁盘恢复都构造 SDK 2.0.0 已冻结的
+Document 只有一条生产路径。新建、Creation Intent 和磁盘恢复仍构造 V2 G14 建立的
 `DocumentActivationContext`；插件实现普通 `IPluginDocument`，可保存模型额外实现
 `IPersistablePluginDocument`。Host 独占 Registry 身份、路径、磁盘标题、恢复标记、Dock 发布和
 Scope 释放，插件只解释 `DocumentContent` 中自己的 schema 与原生 JSON payload。
@@ -20,8 +20,10 @@ G13 已删除 V1 生产面，G14 已完成正式测试与文档签署。
 DaTang 银行余额调节是第二个真实持久化 Document：其 content schema 固定为 1，独立 Codec
 严格拒绝错误 schema、根类型、未知/重复/缺失字段、错误类型和无效配置。恢复必须先完整
 解码和业务验证，再一次提交到模型；损坏内容不得改变标题、路径、选项或原脏状态。
-`CaptureContentAsync` 不是保存提交点，只有 Host 原子主文件成功后调用 `AcceptChanges`。插件在
-`IsDirty` 实际变化时发出 `IsDirtyChanged`，Adapter 将最终脏状态投影到 Dock 的 `IsModified`。
+V3 G2 的 `CaptureSaveSnapshotAsync` 不是保存提交点；它返回同一稳定观察区间内的
+`DocumentRevision` 与不可变 `DocumentContent`。只有 Host 原子主文件成功后才调用
+`AcceptChanges(savedRevision)`。插件仅在该修订仍是当前修订时接受基线；旧修订和重复确认都是幂等
+无操作。插件在 `IsDirty` 布尔值实际变化时发出 `IsDirtyChanged`，Adapter 将最终状态投影到 Dock。
 
 ## 2. SOLID 与朴素模式
 
@@ -29,7 +31,7 @@ DaTang 银行余额调节是第二个真实持久化 Document：其 content sche
 | --- | --- | --- |
 | `DocumentEnvelopeSerializer` | 唯一 V2 线格式、严格字段与资源约束 | 文件选择、Dock、插件 payload 解释 |
 | `DocumentPersistenceCoordinator` | 新建、打开、恢复和活动项保存用例编排 | JSON 细节、Scope 释放算法 |
-| `DocumentSaveService` | 捕获内容、原子主文件提交和提交后警告 | 关闭决策、活动标签选择 |
+| `DocumentSaveService` | 捕获修订快照、原子主文件提交、指定修订确认和提交后警告 | 修订排序/解释、关闭决策、活动标签选择 |
 | `DocumentPersistenceStateStore` | 保存 Registry、规范路径、Host 标题和 `RequiresSave` | 插件展示状态和文件 I/O |
 | `HostDockAdapterFactory` | 异步初始化并组合 Adapter/View | Registry 发现、磁盘格式 |
 | `ManagedDocumentDockable` | 投影 Dock/View 并拥有唯一 Scope Lease | 保存事务、用户确认 |
@@ -97,13 +99,15 @@ internal `DocumentEnvelopeException`，用户只看到固定脱敏提示。
 ## 6. 保存提交点与关闭
 
 保存只接受 Registry 声明为 `IsPersistable` 的 Adapter。服务使用该 Scope 的 `ClosingToken` 调用
-`CaptureContentAsync`，严格序列化并通过同目录 staging 原子提交主文件。只有主文件成功后才提交 Host
-路径、磁盘标题和恢复状态，再调用 `AcceptChanges` 并更新恢复备份。已提交的 Host 标题成为 Tab 的
-权威标题；恢复副本的 `RequiresSave` 与插件 `IsDirty` 共同决定 Dock `IsModified` 和主题的 `*`。
+`CaptureSaveSnapshotAsync`，只序列化 Snapshot 的 `Content`，并通过同目录 staging 原子提交主文件。
+只有主文件成功后才提交 Host 路径、磁盘标题和恢复状态，再把同一 Snapshot 的 `Revision` 原样传给
+`AcceptChanges(savedRevision)`，最后更新恢复备份。Revision 不进入 envelope。已提交的 Host 标题成为
+Tab 的权威标题；恢复副本的 `RequiresSave` 与插件 `IsDirty` 共同决定 Dock `IsModified` 和主题的 `*`。
 
-主文件失败时不改变路径、标题、恢复状态或脏状态。主文件已成功而 `AcceptChanges` 或备份更新失败时，
-结果是“已保存但有警告”；磁盘事实不能被回报为保存失败，关闭流程可以继续。插件自定义异常与对话框
-异常都只进入内部脱敏诊断。
+捕获取消、空 Snapshot、捕获异常或主文件失败时，不确认修订，也不改变路径、标题、恢复状态或脏状态。
+主文件已成功而确认或备份更新失败时，结果是“已保存但有警告”，磁盘事实不能被回报为保存失败。
+确认成功后若插件仍 Dirty，说明捕获后已有较新修改：普通保存仍成功，但关闭流程必须保持 Document
+打开并提示再次保存；再次捕获和确认当前修订后才能关闭。插件自定义异常与对话框异常只进入内部脱敏诊断。
 
 关闭取消、保存取消或保存失败不触发 `ClosingToken`。最终批准关闭后，Dock 完成移除，再由 Adapter
 依次断开事件/View、发出令牌、释放模型和依赖；所有步骤幂等。同步 Dock 回调通过“首次否决、异步
@@ -113,11 +117,14 @@ View 和 Document Scope，再由 Host internal Coordinator 反向停止生命周
 
 ## 7. 测试与阶段边界
 
-专项入口为 `scripts/Test-DocumentV2.ps1`，串行运行 Unit、Plugin 与 Headless UI，并执行生产结构扫描。
-该专项机器摘要固定声明 `windowsCi=false`、`windowsSmoke=false`、`releaseGate=false`；正式放行由
-`scripts/Invoke-HostV2ReleaseGate.ps1` 追加两轮隔离与真实窗口验证。覆盖率门禁要求
+envelope v2 历史专项入口仍为 `scripts/Test-DocumentV2.ps1`。当前修订保存专项入口是
+`scripts/Test-RevisionedDocumentSave.ps1`，串行运行 SDK、Host 保存/关闭和三个持久化插件测试，并扫描
+旧 API 回流。其机器摘要固定声明 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、
+`releaseAcceptance=false`、`releaseGate=false`、`publishable=false`。G2 不调用 V2/V3 发布门禁。
+覆盖率门禁继续要求
 Serializer ≥95%，Persistence Coordinator、Save Service、Close Coordinator、State Store ≥90%，
 同时保留 Adapter、Scope Manager ≥90% 和既有整体阈值。
 
-G7 的完整回滚单位是代码、测试、门禁与文档整体，回到 G6 无持久化 Adapter 基线。回滚不得恢复
-V1 双栈，也不得读取、迁移、覆盖、删除或降级写回任何用户 `.mamdoc` 文件。
+G2 的完整回滚单位是 SDK、Host、三个插件、测试、门禁与文档整体，回到 G1 的无修订保存协议；不得
+保留有参/无参确认双轨。回滚不得恢复 V1 双栈，也不得读取、迁移、覆盖、删除或降级写回任何用户
+`.mamdoc` 文件。

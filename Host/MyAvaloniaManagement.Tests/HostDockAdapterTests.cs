@@ -361,10 +361,10 @@ public sealed class HostDockAdapterTests
             DocumentActivationContext context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
-        public ValueTask<DocumentContent> CaptureContentAsync(
+        public ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(
             CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public void AcceptChanges()
+        public void AcceptChanges(DocumentRevision savedRevision)
         {
         }
 

@@ -113,7 +113,7 @@ public sealed class DocumentPersistenceV2Tests
     }
 
     [Fact]
-    public async Task G0特征基线_捕获后再次编辑会被无修订AcceptChanges错误清除()
+    public async Task 捕获后再次编辑_主文件提交旧快照但新修订继续保持Dirty()
     {
         using var context = DocumentV2TestContext.Create();
         var path = Path.Combine(context.TempDirectory, "v2-save-race.mamdoc");
@@ -140,7 +140,7 @@ public sealed class DocumentPersistenceV2Tests
             await writeStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
             // Document 在保存开始前已经是 Dirty；这里表示用户在保存期间又提交了一次内容修改。
-            // V2 没有修订号，稍后的无参 AcceptChanges 无法知道这次修改发生在捕获之后。
+            // 真实模型即使已经 Dirty 也必须继续推进 Revision，稍后的旧修订确认因而不能清除它。
             model.Content = "捕获后的新内容";
             model.IsModified = true;
         }
@@ -160,10 +160,10 @@ public sealed class DocumentPersistenceV2Tests
             json.RootElement.GetProperty("content").GetProperty("payload").GetString());
         Assert.Equal("捕获后的新内容", model.Content);
 
-        // 这是 G0 对当前缺陷的特征断言，不是期望语义：磁盘只保存了旧快照，但无参
-        // AcceptChanges 仍把包含新修改的模型标记为干净。G2 应让该断言反转为保持 Dirty。
-        Assert.False(model.IsDirty);
-        Assert.False(adapter.IsModified);
+        // 主文件提交事实与当前模型事实可以不同：保存操作成功写入捕获时内容，但当前模型
+        // 已经进入更新的 Revision，所以模型与 Dock 都必须继续提示用户再次保存。
+        Assert.True(model.IsDirty);
+        Assert.True(adapter.IsModified);
         Assert.Equal(1, model.AcceptChangesCount);
     }
 

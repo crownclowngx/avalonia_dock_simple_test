@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Storage;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Documents;
 
@@ -19,13 +20,14 @@ internal enum DocumentSaveStatus
 /// <summary>描述一次保存是否已经完成唯一主文件提交。</summary>
 internal readonly record struct DocumentSaveResult(
     DocumentSaveStatus Status,
-    string Message)
+    string Message,
+    bool HasPendingChanges = false)
 {
     internal bool IsSaved =>
         Status is DocumentSaveStatus.Saved or DocumentSaveStatus.SavedWithWarning;
 }
 
-/// <summary>负责捕获 V2 内容、原子写入主文件并执行提交后的状态更新。</summary>
+/// <summary>负责捕获带修订号的内容、原子写入主文件并执行提交后的状态更新。</summary>
 /// <remarks>
 /// 本服务不选择活动标签、不发布 Dock，也不处理关闭确认。主文件原子写入是唯一业务提交点；
 /// `AcceptChanges` 与恢复备份均属于提交后的动作，失败只能产生“已保存但有警告”，不能篡改磁盘事实。
@@ -89,12 +91,13 @@ internal sealed class DocumentSaveService(
         }
 
         string envelopeJson;
+        DocumentSaveSnapshot snapshot;
         try
         {
-            var content = await persistable.CaptureContentAsync(document.ClosingToken);
-            if (content is null)
+            snapshot = await persistable.CaptureSaveSnapshotAsync(document.ClosingToken);
+            if (snapshot is null)
             {
-                throw new InvalidOperationException("插件返回了 null DocumentContent。");
+                throw new InvalidOperationException("插件返回了 null DocumentSaveSnapshot。");
             }
 
             envelopeJson = serializer.Serialize(
@@ -102,7 +105,7 @@ internal sealed class DocumentSaveService(
                 state.Registration.Descriptor.DocumentTypeId,
                 hostTitle,
                 timeProvider.GetUtcNow(),
-                content);
+                snapshot.Content);
             await storageService.WriteAllTextAsync(filePath, envelopeJson);
         }
         catch (OperationCanceledException) when (document.ClosingToken.IsCancellationRequested)
@@ -125,9 +128,13 @@ internal sealed class DocumentSaveService(
         recoveryRegistry.Clear(document);
 
         var warnings = new List<string>();
+        var hasPendingChanges = false;
         try
         {
-            persistable.AcceptChanges();
+            persistable.AcceptChanges(snapshot.Revision);
+            // AcceptChanges 正常返回后仍为 Dirty，表示插件明确拒绝了旧修订确认：保存期间已经
+            // 产生了较新的内容。主文件提交仍然成功，但关闭协调器必须保持 Document 打开。
+            hasPendingChanges = persistable.IsDirty;
         }
         catch (Exception exception)
         {
@@ -154,8 +161,11 @@ internal sealed class DocumentSaveService(
         }
 
         return warnings.Count == 0
-            ? new(DocumentSaveStatus.Saved, string.Empty)
-            : new(DocumentSaveStatus.SavedWithWarning, string.Join(" ", warnings));
+            ? new(DocumentSaveStatus.Saved, string.Empty, hasPendingChanges)
+            : new(
+                DocumentSaveStatus.SavedWithWarning,
+                string.Join(" ", warnings),
+                hasPendingChanges);
     }
 
 }

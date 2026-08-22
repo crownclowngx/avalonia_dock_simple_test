@@ -1,8 +1,8 @@
 # Plugin SDK API 兼容基线维护指南
 
 > `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G14 已将 Core/UI 的
-> `2.0.0` public 表面正式冻结到 v2 Shipped：Core 85 条、UI 46 条。V3 G1 将相同表面投影到
-> v3 Unshipped，两个 v3 Shipped 均为空；当前 `3.0.0` 尚未发布。
+> `2.0.0` public 表面正式冻结到 v2 Shipped：Core 85 条、UI 46 条。V3 G2 完成修订保存后，
+> v3 Unshipped 为 Core 101 条、UI 46 条，两个 v3 Shipped 均为空；当前 `3.0.0` 尚未发布。
 
 ## 1. 权威源与程序集边界
 
@@ -34,10 +34,10 @@ Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v3/ # 未发布 V3 UI
 PublicApiAnalyzers 报出 `RS0016`，确认所有权、依赖方向、异常与线程语义后，再按 Ordinal 顺序登记。
 未登记删除会产生 `RS0017`，重复项与非法文本也会被门禁拒绝。
 
-G14 的 V2 正式状态是：Core Shipped 85 条、UI Shipped 46 条，两个 Unshipped 均为 0。V3 G1
-状态是两个 Shipped 均为 0，Core/UI Unshipped 分别为 85/46，且逐条等于对应 v2 Shipped。两份
-基线分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史表面要求相等。G2–G13 的
-Unshipped 数量仍保留在各阶段记录中，不能用今天的 131 条倒写历史。
+G14 的 V2 正式状态是：Core Shipped 85 条、UI Shipped 46 条，两个 Unshipped 均为 0。V3 G1 的
+两个 Shipped 均为 0，Core/UI Unshipped 为 85/46；G2 以破坏式替换保存方法并新增值对象后，当前
+Core/UI Unshipped 为 101/46。两份基线分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史
+表面要求相等。各阶段数量只保留在对应记录中，不能用当前 147 条倒写 G1 或 V2 历史。
 
 ## 3. 日常变更流程
 

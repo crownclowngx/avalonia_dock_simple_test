@@ -209,6 +209,7 @@ internal sealed class TestDocumentInteractionService : IDocumentInteractionServi
     public List<string> RecoveryRequests { get; } = [];
     public List<string> Errors { get; } = [];
     public TaskCompletionSource<DocumentCloseChoice>? PendingCloseChoice { get; set; }
+    public TaskCompletionSource<string>? ErrorShown { get; set; }
     public Exception? ConfirmCloseException { get; set; }
     public Exception? ShowErrorException { get; set; }
 
@@ -242,6 +243,7 @@ internal sealed class TestDocumentInteractionService : IDocumentInteractionServi
     public Task ShowErrorAsync(string message)
     {
         Errors.Add(message);
+        ErrorShown?.TrySetResult(message);
         return ShowErrorException is { } showErrorException
             ? Task.FromException(showErrorException)
             : Task.CompletedTask;
@@ -386,22 +388,29 @@ internal sealed class TestSavableDocument(
     MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument,
     IDisposable
 {
-    private bool _isModified;
+    private long _revision;
+    private long _acceptedRevision;
 
     public string Content { get; set; } = "initial";
     public string Title { get; private set; } = "未命名";
     public bool IsModified
     {
-        get => _isModified;
+        get => _revision != _acceptedRevision;
         set
         {
-            if (_isModified == value)
+            var wasDirty = IsModified;
+            if (value)
             {
-                return;
+                _revision = checked(_revision + 1);
             }
-
-            _isModified = value;
-            IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+            else
+            {
+                _acceptedRevision = _revision;
+            }
+            if (wasDirty != IsModified)
+            {
+                IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
     }
 
@@ -441,7 +450,7 @@ internal sealed class TestSavableDocument(
         IsModified = false;
     }
 
-    public ValueTask<MyAvaloniaManagement.PluginSdk.DocumentContent> CaptureContentAsync(
+    public ValueTask<MyAvaloniaManagement.PluginSdk.DocumentSaveSnapshot> CaptureSaveSnapshotAsync(
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -451,21 +460,26 @@ internal sealed class TestSavableDocument(
         }
         if (probe.ReturnNullContent)
         {
-            return ValueTask.FromResult<MyAvaloniaManagement.PluginSdk.DocumentContent>(null!);
+            return ValueTask.FromResult<MyAvaloniaManagement.PluginSdk.DocumentSaveSnapshot>(null!);
         }
         using var json = System.Text.Json.JsonDocument.Parse(
             System.Text.Json.JsonSerializer.Serialize(Content));
-        return ValueTask.FromResult(
-            new MyAvaloniaManagement.PluginSdk.DocumentContent(1, json.RootElement));
+        var content = new MyAvaloniaManagement.PluginSdk.DocumentContent(1, json.RootElement);
+        return ValueTask.FromResult(new MyAvaloniaManagement.PluginSdk.DocumentSaveSnapshot(
+            new MyAvaloniaManagement.PluginSdk.DocumentRevision(_revision),
+            content));
     }
 
-    public void AcceptChanges()
+    public void AcceptChanges(MyAvaloniaManagement.PluginSdk.DocumentRevision savedRevision)
     {
         if (probe.AcceptChangesException is { } acceptChangesException)
         {
             throw acceptChangesException;
         }
-        IsModified = false;
+        if (_revision == savedRevision.Value)
+        {
+            IsModified = false;
+        }
         AcceptChangesCount++;
     }
 
@@ -553,20 +567,27 @@ internal sealed class TrackedScopedSavableDocument :
             _probe.RecordCancellation);
     }
 
-    private bool _isDirty;
+    private long _revision;
+    private long _acceptedRevision;
 
     public bool IsDirty
     {
-        get => _isDirty;
+        get => _revision != _acceptedRevision;
         set
         {
-            if (_isDirty == value)
+            var wasDirty = IsDirty;
+            if (value)
             {
-                return;
+                _revision = checked(_revision + 1);
             }
-
-            _isDirty = value;
-            IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+            else
+            {
+                _acceptedRevision = _revision;
+            }
+            if (wasDirty != IsDirty)
+            {
+                IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
     }
     public event EventHandler? IsDirtyChanged;
@@ -593,16 +614,24 @@ internal sealed class TrackedScopedSavableDocument :
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask<MyAvaloniaManagement.PluginSdk.DocumentContent> CaptureContentAsync(
+    public ValueTask<MyAvaloniaManagement.PluginSdk.DocumentSaveSnapshot> CaptureSaveSnapshotAsync(
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var json = System.Text.Json.JsonDocument.Parse("{}");
-        return ValueTask.FromResult(
-            new MyAvaloniaManagement.PluginSdk.DocumentContent(1, json.RootElement));
+        var content = new MyAvaloniaManagement.PluginSdk.DocumentContent(1, json.RootElement);
+        return ValueTask.FromResult(new MyAvaloniaManagement.PluginSdk.DocumentSaveSnapshot(
+            new MyAvaloniaManagement.PluginSdk.DocumentRevision(_revision),
+            content));
     }
 
-    public void AcceptChanges() => IsDirty = false;
+    public void AcceptChanges(MyAvaloniaManagement.PluginSdk.DocumentRevision savedRevision)
+    {
+        if (_revision == savedRevision.Value)
+        {
+            IsDirty = false;
+        }
+    }
 
     public void Dispose()
     {

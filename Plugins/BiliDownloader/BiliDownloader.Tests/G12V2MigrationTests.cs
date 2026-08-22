@@ -140,13 +140,18 @@ public sealed class G12V2MigrationTests
         document.VideoParse.Url = "BV1dirty";
         Assert.True(document.IsDirty);
 
-        var content = await document.CaptureContentAsync(CancellationToken.None);
+        var snapshot = await document.CaptureSaveSnapshotAsync(CancellationToken.None);
+        var content = snapshot.Content;
 
         Assert.Equal(3, content.SchemaVersion);
         Assert.Equal(JsonValueKind.Object, content.Payload.ValueKind);
         Assert.True(document.IsDirty);
-        document.AcceptChanges();
-        document.AcceptChanges();
+        document.NamingTemplate.Template = "{title}-captured-later";
+        document.AcceptChanges(snapshot.Revision);
+        Assert.True(document.IsDirty);
+        var current = await document.CaptureSaveSnapshotAsync(CancellationToken.None);
+        document.AcceptChanges(current.Revision);
+        document.AcceptChanges(current.Revision);
         Assert.False(document.IsDirty);
         Assert.Equal(2, dirtyChanges);
     }

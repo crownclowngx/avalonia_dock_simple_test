@@ -63,7 +63,7 @@ public sealed class PluginSdkApiBaselinePolicyTests
     }
 
     [Fact]
-    public void G1_V1V2历史基线未改写且V3表面全部处于Unshipped()
+    public void G2_V1V2历史基线未改写且V3修订保存表面全部处于Unshipped()
     {
         var repositoryRoot = FindRepositoryRoot();
         var apiRoot = Path.Combine(
@@ -104,12 +104,20 @@ public sealed class PluginSdkApiBaselinePolicyTests
         Assert.Equal(46, uiV2Shipped.Length);
         Assert.Empty(coreV2Unshipped);
         Assert.Empty(uiV2Unshipped);
-        // G1 只建立未发布的 V3 版本线，不改变 public C# 形状。把 V2 Shipped 原样投影到
-        // V3 Unshipped，既让 Analyzer 继续保护全部签名，也避免提前制造发布承诺。
+        // G2 在尚未发布的 V3 线内破坏式替换 Document 保存入口。V1/V2 历史文本必须原样
+        // 保留，V3 新表面继续全部处于 Unshipped，直到 G14 才允许签署发布承诺。
         Assert.Empty(v3Shipped);
         Assert.Empty(uiV3Shipped);
-        Assert.Equal(v2Shipped, coreV3Unshipped);
+        Assert.Equal(101, coreV3Unshipped.Length);
         Assert.Equal(uiV2Shipped, uiV3Unshipped);
+        Assert.Contains(coreV3Unshipped, entry =>
+            entry.Contains("DocumentSaveSnapshot", StringComparison.Ordinal));
+        Assert.Contains(coreV3Unshipped, entry =>
+            entry.Contains("AcceptChanges(MyAvaloniaManagement.PluginSdk.DocumentRevision", StringComparison.Ordinal));
+        Assert.DoesNotContain(coreV3Unshipped, entry =>
+            entry.Contains("CaptureContentAsync", StringComparison.Ordinal));
+        Assert.Contains(v2Shipped, entry =>
+            entry.Contains("CaptureContentAsync", StringComparison.Ordinal));
         Assert.DoesNotContain(v2Shipped, entry =>
             entry.Contains("MyAvaloniaManagementCommon", StringComparison.Ordinal));
     }

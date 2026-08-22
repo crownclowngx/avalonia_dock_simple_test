@@ -331,15 +331,15 @@ public sealed class DocumentV3G4Tests
     public void 持久配置变化_完整置脏且磁盘保存通知后清除()
     {
         var vm = CreateVm();
-        vm.AcceptChanges();
+        vm.AcceptCurrentRevision();
         Assert.False(vm.IsModified);
 
         vm.NamingTemplate.Template = "{title}";
         Assert.True(vm.IsModified);
-        vm.AcceptChanges();
+        vm.AcceptCurrentRevision();
         vm.DownloadConfig.OutputContainer = OutputContainer.Mkv;
         Assert.True(vm.IsModified);
-        vm.AcceptChanges();
+        vm.AcceptCurrentRevision();
         vm.SourceWorkflow.SetIncrementalBaseline(new IncrementalBaselineSaveData
         {
             SnapshotToken = "snapshot-2",
@@ -363,7 +363,7 @@ public sealed class DocumentV3G4Tests
             },
             Filters = new SourceFilterRulesSaveData(),
         }));
-        vm.AcceptChanges();
+        vm.AcceptCurrentRevision();
         Assert.Equal(0, provider.GetPageCount);
 
         vm.SourceWorkflow.Browser.SearchText = "新筛选";
@@ -1005,11 +1005,11 @@ public sealed class DocumentV3G4Tests
     /// </summary>
     private static void AssertPersistentChangeIsIdempotent(BiliDownloaderViewModel vm, Action change)
     {
-        vm.AcceptChanges();
+        vm.AcceptCurrentRevision();
         change();
         Assert.True(vm.IsModified);
 
-        vm.AcceptChanges();
+        vm.AcceptCurrentRevision();
         change();
         Assert.False(vm.IsModified);
     }

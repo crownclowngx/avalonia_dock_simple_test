@@ -1,6 +1,7 @@
 # 创建 Managed Plugin
 
-本篇按当前未发布 V3 G1 创建 `QuickStartPlugin` 的项目、稳定身份与模块入口。API 形状仍沿用 V2 G14；
+本篇按当前未发布 V3 G2 创建 `QuickStartPlugin` 的项目、稳定身份与模块入口。Document 保存契约已采用
+修订快照，其他 API 仍沿用 V2 G14；
 可运行事实源是 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) 和 [`MyPlugTestPluginModule`](../../Plugins/MyPlugTest/MyPlugTest/Plugin/MyPlugTestPluginModule.cs)。
 
 ## 1. 创建项目

@@ -37,6 +37,38 @@ public sealed class DocumentContent
     public JsonElement Payload { get; }
 }
 
+/// <summary>表示插件某一份持久化内容所对应的不透明修订号。</summary>
+/// <param name="Value">由插件拥有并在持久化内容发生实际变化后单调推进的值。</param>
+/// <remarks>
+/// 默认值零表示 Document 初始化完成后的首个干净修订。Host 不比较、不排序也不把该值写入
+/// Document 信封；它只在主文件原子提交成功后，把捕获时的原值交还给同一个插件模型。
+/// </remarks>
+public readonly record struct DocumentRevision(long Value);
+
+/// <summary>表示插件在同一个稳定观察区间捕获的修订号与不可变业务内容。</summary>
+/// <remarks>
+/// 本对象只解决“写入了哪一版内容”的确认问题，不携带路径、标题、插件身份或文件事务信息。
+/// <see cref="DocumentContent"/> 已拥有并克隆 JSON；本类型只保存该不可变内容引用。
+/// </remarks>
+public sealed class DocumentSaveSnapshot
+{
+    /// <summary>创建一份由指定内容修订拥有的保存快照。</summary>
+    /// <param name="revision">捕获内容时对应的插件修订号。</param>
+    /// <param name="content">非 null 的不可变业务内容。</param>
+    /// <exception cref="ArgumentNullException"><paramref name="content"/> 为 null。</exception>
+    public DocumentSaveSnapshot(DocumentRevision revision, DocumentContent content)
+    {
+        Revision = revision;
+        Content = content ?? throw new ArgumentNullException(nameof(content));
+    }
+
+    /// <summary>获取捕获内容时的插件修订号。</summary>
+    public DocumentRevision Revision { get; }
+
+    /// <summary>获取要由 Host 写入信封的不可变业务内容。</summary>
+    public DocumentContent Content { get; }
+}
+
 /// <summary>表示 Host 启动或恢复一个插件 Document 时传入的已验证上下文。</summary>
 /// <remarks>
 /// 本对象刻意不携带路径、PluginId、DocumentTypeId、Dock 对象或服务集合，防止插件获得不属于
@@ -113,15 +145,23 @@ public interface IPersistablePluginDocument : IPluginDocument
     /// </remarks>
     event EventHandler? IsDirtyChanged;
 
-    /// <summary>捕获当前不可变业务内容；路径和信封元数据仍由 Host 独占。</summary>
+    /// <summary>捕获同一个稳定观察区间内的内容与修订号；路径和信封元数据仍由 Host 独占。</summary>
     /// <param name="cancellationToken">保存被取消或 Document 关闭时由 Host 触发的协作取消令牌。</param>
-    /// <returns>由插件拥有 schema、由 Host 克隆并写入信封的内容快照。</returns>
-    /// <remarks>方法不得自行写文件；只有 Host 完成原子保存后才会调用 <see cref="AcceptChanges"/>。</remarks>
-    ValueTask<DocumentContent> CaptureContentAsync(CancellationToken cancellationToken);
+    /// <returns>由插件拥有 Revision 和内容 schema、由 Host 原样提交的不可变快照。</returns>
+    /// <remarks>
+    /// 方法不得自行写文件或提前清除脏状态。若捕获期间持久化内容发生变化，实现必须重新捕获或
+    /// 以其他方式保证返回的 Revision 与 Content 对应；只有 Host 完成主文件原子提交后才会调用
+    /// <see cref="AcceptChanges"/>。
+    /// </remarks>
+    ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(CancellationToken cancellationToken);
 
-    /// <summary>在 Host 完成原子保存后提交当前状态为已保存。</summary>
-    /// <remarks>调用只提交脏状态，不取得路径或事务所有权；重复调用应保持幂等。</remarks>
-    void AcceptChanges();
+    /// <summary>确认 Host 已经原子写入指定修订；只有当前修订仍匹配时才可清除脏状态。</summary>
+    /// <param name="savedRevision">此前由同一模型捕获、现已写入主文件的修订号。</param>
+    /// <remarks>
+    /// 调用只确认内容修订，不取得路径或事务所有权。旧修订表示捕获后又发生了修改，必须保持
+    /// <see cref="IsDirty"/>；重复确认同一修订应保持幂等。
+    /// </remarks>
+    void AcceptChanges(DocumentRevision savedRevision);
 }
 
 /// <summary>提供当前 Document 由 Host 管理的只读关闭信号。</summary>

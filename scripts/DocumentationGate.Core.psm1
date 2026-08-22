@@ -326,8 +326,8 @@ function Get-ManagementBaselineFacts {
     Assert-DocumentationCondition ($apiBaseline -ceq "v$($sdkVersion.Major)") (
         "活动 API 基线 $apiBaseline 与 SDK 主版本 $($sdkVersion.Major) 不一致。")
 
-    # V3 G1 只切换活动主版本，没有发布或改变 C# public 形状。活动 Shipped 必须为空，
-    # 全部现有签名进入 Unshipped；V2 Shipped 则继续作为历史正式承诺保留。
+    # V3 尚未发布，因此活动 Shipped 必须为空，全部当前签名进入 Unshipped。V2 Shipped 继续作为
+    # 历史正式承诺保留；G2 只允许 Core 的修订保存契约按已评审形状发生破坏式变化，UI 仍须逐条相等。
     $sdkApiRoots = @(
         Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk\ApiCompatibility\$apiBaseline"
         Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk.UI\ApiCompatibility\$apiBaseline"
@@ -360,9 +360,27 @@ function Get-ManagementBaselineFacts {
                 Select-Object -Skip 1 | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         Assert-DocumentationCondition ($v2Shipped.Count -gt 0 -and $v2Unshipped.Count -eq 0) (
             "V2 历史 API 必须保持 Shipped 非空且 Unshipped 为空：$v2Root")
-        Assert-DocumentationCondition (
-            ($v2Shipped -join "`n") -ceq ($unshippedEntries -join "`n")) (
-            "V3 Unshipped 必须与 V2 Shipped 完全一致：$baselineRoot")
+        $isG2RevisionedCore = $unshippedEntries -contains (
+            'MyAvaloniaManagement.PluginSdk.DocumentRevision')
+        if ($isG2RevisionedCore) {
+            Assert-DocumentationCondition ($v2Shipped.Count -eq 85) (
+                "G2 不得改写 V2 Core Shipped 数量：$baselineRoot")
+            Assert-DocumentationCondition ($unshippedEntries.Count -eq 101) (
+                "G2 Core v3 Unshipped 必须为已评审的 101 条：$baselineRoot")
+            Assert-DocumentationCondition (
+                $unshippedEntries -contains (
+                    'MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.AcceptChanges(MyAvaloniaManagement.PluginSdk.DocumentRevision savedRevision) -> void')) (
+                "G2 Core v3 缺少指定修订确认：$baselineRoot")
+            Assert-DocumentationCondition (
+                -not ($unshippedEntries -match 'CaptureContentAsync|AcceptChanges\(\)')) (
+                "G2 Core v3 不得保留旧保存协议：$baselineRoot")
+        }
+        else {
+            # UI 在 G2 没有 public 变化；最小测试夹具也走此分支，以继续验证 G1 的逐条投影规则。
+            Assert-DocumentationCondition (
+                ($v2Shipped -join "`n") -ceq ($unshippedEntries -join "`n")) (
+                "未发生 G2 Core 修订变更的 V3 Unshipped 必须与 V2 Shipped 完全一致：$baselineRoot")
+        }
         $allShippedEntries.AddRange([string[]]$shippedEntries)
         $allUnshippedEntries.AddRange([string[]]$unshippedEntries)
         $apiCounts.Add([pscustomobject]@{

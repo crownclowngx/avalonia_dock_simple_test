@@ -107,7 +107,8 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
         source.Run.LastOutputPath = "result.xlsx";
 
         Assert.True(source.IsDirty);
-        var content = await source.CaptureContentAsync(default);
+        var snapshot = await source.CaptureSaveSnapshotAsync(default);
+        var content = snapshot.Content;
         Assert.Equal(1, content.SchemaVersion);
         Assert.Equal(JsonValueKind.Object, content.Payload.ValueKind);
         Assert.Equal(
@@ -132,9 +133,13 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
         Assert.Equal(12.34m, target.Options.PreviousUnreconciledDifference);
         Assert.Equal("result.xlsx", target.Run.LastOutputPath);
         Assert.False(target.IsDirty);
-        source.AcceptChanges();
+        source.Source.EnterpriseLedgerPath = "captured-later.xlsx";
+        source.AcceptChanges(snapshot.Revision);
+        Assert.True(source.IsDirty);
+        var current = await source.CaptureSaveSnapshotAsync(default);
+        source.AcceptChanges(current.Revision);
         Assert.False(source.IsDirty);
-        source.AcceptChanges();
+        source.AcceptChanges(current.Revision);
         Assert.Equal(2, dirtyChanges);
     }
 
@@ -180,8 +185,8 @@ public sealed class DaTangAccountingHelpPlugV2MigrationTests
             DaTangContributionIds.BankBalanceReconciliationDocument);
         var source = Assert.IsType<BankBalanceReconciliationViewModel>(sourceActivation.Model);
         await source.InitializeAsync(new DocumentActivationContext("source"), default);
-        var captured = await source.CaptureContentAsync(default);
-        var payload = JsonNode.Parse(captured.Payload.GetRawText())!.AsObject();
+        var captured = await source.CaptureSaveSnapshotAsync(default);
+        var payload = JsonNode.Parse(captured.Content.Payload.GetRawText())!.AsObject();
         if (mutation == "wrongType")
         {
             payload["previousUnreconciledDifference"] = "bad-number";

@@ -289,10 +289,10 @@ public sealed class HostDockAdapterUiTests
             DocumentActivationContext context,
             CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
-        public ValueTask<DocumentContent> CaptureContentAsync(
+        public ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(
             CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public void AcceptChanges() => SetDirty(false);
+        public void AcceptChanges(DocumentRevision savedRevision) => SetDirty(false);
 
         internal void SetDirty(bool value)
         {

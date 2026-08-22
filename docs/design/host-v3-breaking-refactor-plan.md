@@ -1,7 +1,7 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G1 已完成，G2–G14 尚未实施。当前生产语义仍由 V2 G14 签署，
-> 代码与程序集版本线已进入未发布 V3。
+> 状态：实施中；G0–G2 已完成，G3–G14 尚未实施。Document 保存已采用 V3 G2 修订协议；
+> 其余生产语义仍由 V2 G14 签署，代码与程序集版本线处于未发布 V3。
 >
 > 评审日期：2026-08-22。
 >
@@ -9,6 +9,7 @@
 > [V2 G14 封板记录](../plan-history/host-v2/g14-v2-sealing.md)、
 > [V3 G0 非发布绿色基线](../plan-history/host-v3/g0-green-baseline.md)、
 > [V3 G1 版本与数据边界](../plan-history/host-v3/g1-version-and-data-boundaries.md)、
+> [V3 G2 修订化 Document 保存](../plan-history/host-v3/g2-revisioned-document-save.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
 >
 > 计划性质：V3 是一次“协议语义纠错 + 宿主工作区解耦”的破坏式重构，不是第三次插件框架扩张。
@@ -21,7 +22,7 @@ Managed Plugin V2 已经解决了插件独立 Provider、声明式贡献、Host 
 生命周期、诊断和发布制品的主要所有权问题。V3 不再重做这些已经成立的基础，而只处理当前代码中仍然
 具有高收益的语义缺口：
 
-- 可持久化 Document 使用无版本 `AcceptChanges()`，保存期间发生的新修改可能被错误标记为已保存；
+- G2 前可持久化 Document 使用无版本确认；G2 已以指定修订确认消除捕获后编辑被错误清脏的竞争；
 - `DocumentActivationContext` 可以同时携带创建意图和恢复内容，协议允许本不应存在的组合状态；
 - 根级 `IHostEventBus` 的生产消费者实际都在插件内部，公共名称与真实所有权不一致；
 - 插件可通过原始 `IServiceCollection` 影子注册 Host 保留端口或贡献模型，Host 无法保证最终解析语义；
@@ -460,7 +461,7 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
   [G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)。
 - **回滚**：整体回到 G0；不得出现产品 3、SDK 2 或数据根被无理由复制为 v3 的混合事实。
 
-### G2：建立修订化 Document 保存
+### G2：建立修订化 Document 保存（已完成）
 
 - **目标**：消除捕获后编辑被无参数确认清除的竞争。
 - **变更**：新增 `DocumentRevision`、`DocumentSaveSnapshot`；替换保存接口与 Host SaveService 提交回调。
@@ -468,6 +469,8 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
   Document 不受影响。
 - **验证**：捕获后修改、写入失败、写入成功无并发修改、Accept 回调异常、关闭保存、恢复另存、备份警告。
 - **不变项**：envelope schema 2、内容 schema、路径/标题所有权、原子提交点和恢复保护不变。
+- **实施记录**：最终 API、保存/关闭时序、三插件策略、157/157 专项测试、全量覆盖率和非发布边界见
+  [G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)。
 - **回滚**：整体回到 G1；不得保留有参/无参两个 Accept 分支。
 
 ### G3：建立互斥 Document 激活
@@ -588,8 +591,8 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
                     G9 → G10 → G11 → G12 → G13 → G14
 ```
 
-- G0 只冻结事实，G1 只建立版本和磁盘边界；
-- G2–G5 先修正 public 协议与插件组合所有权；
+- G0 只冻结事实，G1 只建立版本和磁盘边界，G2 已完成修订保存；
+- G3–G5 继续修正 public 协议与插件组合所有权；
 - G6–G8 再拆 Host Workspace、Host Catalog 与全屏资源边界；
 - G9–G12 按插件逐个删除阶段帮助代码并完成真实包验收；
 - G13 只删除和证明无残留，不承载新设计；
@@ -664,7 +667,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
 
 V3 只有在以下问题全部回答“是”后才算完成：
 
-1. [ ] 保存确认绑定捕获 Revision，保存期间的新修改不会被错误清除。
+1. [x] 保存确认绑定捕获 Revision，保存期间的新修改不会被错误清除。
 2. [ ] Document New/Restore 激活在 public 类型层互斥，不存在旧可空组合入口。
 3. [ ] SDK 和 Host 已删除通用 Host EventBus，插件内部消息由插件独占。
 4. [ ] Host 保留端口和贡献生命周期由 Host 最后提交，插件不能影子覆盖。

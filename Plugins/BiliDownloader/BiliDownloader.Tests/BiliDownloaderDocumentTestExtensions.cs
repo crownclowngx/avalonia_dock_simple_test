@@ -4,12 +4,20 @@ using MyAvaloniaManagement.PluginSdk;
 namespace BiliDownloader.Tests;
 
 /// <summary>
-/// 让既有业务测试通过 V2 激活与捕获入口表达意图，避免为了测试重新给生产模型增加旧保存 API。
+/// 让既有业务测试通过当前激活与修订快照入口表达意图，避免为了测试给生产模型增加旁路保存 API。
 /// </summary>
 internal static class BiliDownloaderDocumentTestExtensions
 {
     internal static DocumentContent CreateContentSnapshot(this BiliDownloaderViewModel viewModel) =>
-        viewModel.CaptureContentAsync(CancellationToken.None).AsTask().GetAwaiter().GetResult();
+        viewModel.CaptureSaveSnapshotAsync(CancellationToken.None)
+            .AsTask().GetAwaiter().GetResult().Content;
+
+    internal static void AcceptCurrentRevision(this BiliDownloaderViewModel viewModel)
+    {
+        var snapshot = viewModel.CaptureSaveSnapshotAsync(CancellationToken.None)
+            .AsTask().GetAwaiter().GetResult();
+        viewModel.AcceptChanges(snapshot.Revision);
+    }
 
     internal static void RestoreContent(
         this BiliDownloaderViewModel viewModel,

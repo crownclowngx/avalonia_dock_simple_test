@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-22（已同步 Managed Plugin V3 G1 版本与数据边界）<br>
+> 更新日期：2026-08-22（已同步 Managed Plugin V3 G2 修订化 Document 保存）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
@@ -9,8 +9,8 @@
 > V2 当前状态：G0–G14 已完成。四个业务插件均使用正式 SDK、声明式贡献与普通模型；Legacy
 > 项目、兼容适配和过渡构建属性已经删除，API Shipped 与两轮隔离发布门禁已经建立。
 
-> V3 当前状态：G0–G1 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；
-> 本文描述的运行语义和 manifest/Document/layout schema 仍是 V2 G14 已签署事实，G2–G14 尚未实施。
+> V3 当前状态：G0–G2 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
+> 保存已使用修订协议，manifest/Document envelope/layout schema 仍为 2，G3–G14 尚未实施。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -293,7 +293,7 @@ Migrator、浮动字段或历史 ID 归一化。缺失/生命周期不可用插�
 | 插件生命周期 | 已实现 V2 | PluginId 正序初始化、成功项反序关闭、幂等、失败隔离、超时和只读可用性投影已有测试；不支持热卸载 |
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
 | 布局持久化 | 已实现 V2 | 唯一严格 schema、原子写入、坏文件隔离、可用性门控和整体回退已有测试；不读取 V1 |
-| Document 保存 | 已实现 V2 | 六字段信封、插件内容 schema、统一保存、关闭/退出确认、备份恢复和原子替换均有回归；MyPlugTest Welcome 与 DaTang 银行对账已真实接入 |
+| Document 保存 | 已实现 V3 G2 | 六字段 envelope v2、插件内容 schema、修订快照、指定修订确认、关闭竞争保护、备份恢复和原子替换均有回归；MyPlugTest、DaTang 与 BiliDownloader 已真实接入 |
 | 每 Document Scope | 已实现 | Host 与四个插件均经 V2 Activator 创建 scoped 模型，关闭与退出释放已有门禁 |
 | Document 关闭取消 | 已实现 | scoped `IDocumentLifetime` 在 Dock 确认关闭后先发出取消再释放 Scope；局部任务协作退出且不等待，插件级后台任务不受影响 |
 | 加载上下文隔离 | 已实现（托管私有依赖） | 每目录一个不可回收 ALC；共享 SDK 只来自默认上下文，普通私有依赖只由各插件 deps/RID 图解析，同名不同版本回归已覆盖 |

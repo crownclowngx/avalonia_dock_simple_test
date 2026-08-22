@@ -59,7 +59,7 @@ public class DocumentV2G5Tests
     {
         var vm = CreateVm();
         vm.Title = "快照前标题";
-        vm.IsModified = true;
+        vm.VideoParse.Url = "BV1snapshot";
 
         var snapshot = vm.CreateContentSnapshot();
 

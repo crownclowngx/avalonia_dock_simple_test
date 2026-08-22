@@ -19,12 +19,14 @@ namespace MyPlugTest.ViewModels;
 public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginDocument, IDisposable
 {
     private readonly CancellationTokenSource _disposeCts = new();
+    private readonly object _revisionLock = new();
     private readonly IHostEventBus _eventBus;
     private readonly IUrlContentService _urlContentService;
     private readonly IDocumentLifetime _documentLifetime;
     private int _disposed;
     private bool _isRestoring;
-    private bool _isDirty;
+    private long _contentRevision;
+    private long _acceptedRevision;
     private string _title = "Test欢迎";
     private string _url = "https://example.com";
     private string _responseContent = string.Empty;
@@ -52,7 +54,16 @@ public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginD
     public event EventHandler? PresentationChanged;
 
     /// <inheritdoc />
-    public bool IsDirty => _isDirty;
+    public bool IsDirty
+    {
+        get
+        {
+            lock (_revisionLock)
+            {
+                return _contentRevision != _acceptedRevision;
+            }
+        }
+    }
 
     /// <inheritdoc />
     public event EventHandler? IsDirtyChanged;
@@ -117,29 +128,61 @@ public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginD
         }
         else
         {
-            SetDirty(false);
+            ResetRevisionState();
         }
 
         return ValueTask.CompletedTask;
     }
 
     /// <inheritdoc />
-    public ValueTask<DocumentContent> CaptureContentAsync(CancellationToken cancellationToken)
+    public ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(
+        CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        _documentLifetime.ClosingToken.ThrowIfCancellationRequested();
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            _documentLifetime.ClosingToken.ThrowIfCancellationRequested();
+            var revisionBeforeCapture = ReadCurrentRevision();
 
-        // 先枚举为数组，确保编码看到同一个时刻的历史快照；DocumentContent 随后再次克隆
-        // JsonElement，调用方不需要维持任何 JsonDocument 生命周期。
-        var historyUrls = UrlHistory.HistoryItems.Select(static item => item.Url).ToArray();
-        return ValueTask.FromResult(TestWelcomeDocumentContentCodec.Encode(
-            _url,
-            _responseContent,
-            historyUrls));
+            // 先枚举为数组，确保编码不依赖后续集合变化；DocumentContent 随后再次克隆
+            // JsonElement。若捕获期间任一持久字段又发生变化，下面的修订复核会丢弃本轮内容
+            // 并重新捕获，Host 因而永远不会拿到“旧修订号 + 不稳定内容”的确认令牌。
+            var historyUrls = UrlHistory.HistoryItems.Select(static item => item.Url).ToArray();
+            var content = TestWelcomeDocumentContentCodec.Encode(
+                _url,
+                _responseContent,
+                historyUrls);
+            var revisionAfterCapture = ReadCurrentRevision();
+            if (revisionBeforeCapture == revisionAfterCapture)
+            {
+                return ValueTask.FromResult(
+                    new DocumentSaveSnapshot(revisionAfterCapture, content));
+            }
+        }
     }
 
     /// <inheritdoc />
-    public void AcceptChanges() => SetDirty(false);
+    public void AcceptChanges(DocumentRevision savedRevision)
+    {
+        var dirtyChanged = false;
+        lock (_revisionLock)
+        {
+            // Host 只允许确认自己实际写入的修订。当前值更大时说明保存期间又发生了编辑，
+            // 此时不能为了“保存成功”而清除新的 Dirty；重复确认当前修订则保持幂等。
+            if (_contentRevision != savedRevision.Value)
+            {
+                return;
+            }
+
+            dirtyChanged = _acceptedRevision != _contentRevision;
+            _acceptedRevision = _contentRevision;
+        }
+
+        if (dirtyChanged)
+        {
+            RaiseDirtyChanged();
+        }
+    }
 
     private async Task SendRequestAsync(CancellationToken commandToken)
     {
@@ -181,7 +224,6 @@ public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginD
 
             ResponseContent = content;
             UrlHistory.AddUrl(url);
-            SetDirty(true);
             _eventBus.Publish(new RequestResponseMessage(content, url, true));
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -226,7 +268,7 @@ public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginD
             {
                 UrlHistory.HistoryItems.Add(new UrlHistoryItem(restoredUrl));
             }
-            SetDirty(false);
+            ResetRevisionState();
         }
         finally
         {
@@ -251,17 +293,47 @@ public sealed class TestWelcomeViewModel : ObservableObject, IPersistablePluginD
     {
         if (!_isRestoring && !IsClosing)
         {
-            SetDirty(true);
+            var dirtyChanged = false;
+            lock (_revisionLock)
+            {
+                var wasDirty = _contentRevision != _acceptedRevision;
+                _contentRevision = checked(_contentRevision + 1);
+                dirtyChanged = !wasDirty;
+            }
+
+            if (dirtyChanged)
+            {
+                RaiseDirtyChanged();
+            }
         }
     }
 
-    private void SetDirty(bool value)
+    private DocumentRevision ReadCurrentRevision()
     {
-        if (!SetProperty(ref _isDirty, value, nameof(IsDirty)))
+        lock (_revisionLock)
         {
-            return;
+            return new DocumentRevision(_contentRevision);
+        }
+    }
+
+    private void ResetRevisionState()
+    {
+        var dirtyChanged = false;
+        lock (_revisionLock)
+        {
+            dirtyChanged = _contentRevision != _acceptedRevision;
+            _acceptedRevision = _contentRevision;
         }
 
+        if (dirtyChanged)
+        {
+            RaiseDirtyChanged();
+        }
+    }
+
+    private void RaiseDirtyChanged()
+    {
+        OnPropertyChanged(nameof(IsDirty));
         IsDirtyChanged?.Invoke(this, EventArgs.Empty);
     }
 

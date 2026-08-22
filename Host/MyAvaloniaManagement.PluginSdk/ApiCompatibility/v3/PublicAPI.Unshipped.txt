@@ -18,6 +18,17 @@ MyAvaloniaManagement.PluginSdk.DocumentPresentationState.<Clone>$() -> MyAvaloni
 MyAvaloniaManagement.PluginSdk.DocumentPresentationState.DocumentPresentationState(string! title) -> void
 MyAvaloniaManagement.PluginSdk.DocumentPresentationState.Equals(MyAvaloniaManagement.PluginSdk.DocumentPresentationState? other) -> bool
 MyAvaloniaManagement.PluginSdk.DocumentPresentationState.Title.get -> string!
+MyAvaloniaManagement.PluginSdk.DocumentRevision
+MyAvaloniaManagement.PluginSdk.DocumentRevision.Deconstruct(out long Value) -> void
+MyAvaloniaManagement.PluginSdk.DocumentRevision.DocumentRevision() -> void
+MyAvaloniaManagement.PluginSdk.DocumentRevision.DocumentRevision(long Value) -> void
+MyAvaloniaManagement.PluginSdk.DocumentRevision.Equals(MyAvaloniaManagement.PluginSdk.DocumentRevision other) -> bool
+MyAvaloniaManagement.PluginSdk.DocumentRevision.Value.get -> long
+MyAvaloniaManagement.PluginSdk.DocumentRevision.Value.init -> void
+MyAvaloniaManagement.PluginSdk.DocumentSaveSnapshot
+MyAvaloniaManagement.PluginSdk.DocumentSaveSnapshot.Content.get -> MyAvaloniaManagement.PluginSdk.DocumentContent!
+MyAvaloniaManagement.PluginSdk.DocumentSaveSnapshot.DocumentSaveSnapshot(MyAvaloniaManagement.PluginSdk.DocumentRevision revision, MyAvaloniaManagement.PluginSdk.DocumentContent! content) -> void
+MyAvaloniaManagement.PluginSdk.DocumentSaveSnapshot.Revision.get -> MyAvaloniaManagement.PluginSdk.DocumentRevision
 MyAvaloniaManagement.PluginSdk.DocumentTypeId
 MyAvaloniaManagement.PluginSdk.DocumentTypeId.<Clone>$() -> MyAvaloniaManagement.PluginSdk.DocumentTypeId!
 MyAvaloniaManagement.PluginSdk.DocumentTypeId.DocumentTypeId(string! value) -> void
@@ -30,8 +41,8 @@ MyAvaloniaManagement.PluginSdk.IHostEventBus
 MyAvaloniaManagement.PluginSdk.IHostEventBus.Publish<TEvent>(TEvent! event) -> void
 MyAvaloniaManagement.PluginSdk.IHostEventBus.Subscribe<TEvent>(System.Action<TEvent!>! handler) -> System.IDisposable!
 MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument
-MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.AcceptChanges() -> void
-MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.CaptureContentAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<MyAvaloniaManagement.PluginSdk.DocumentContent!>
+MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.AcceptChanges(MyAvaloniaManagement.PluginSdk.DocumentRevision savedRevision) -> void
+MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.CaptureSaveSnapshotAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<MyAvaloniaManagement.PluginSdk.DocumentSaveSnapshot!>
 MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.IsDirty.get -> bool
 MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.IsDirtyChanged -> System.EventHandler?
 MyAvaloniaManagement.PluginSdk.IPluginDocument
@@ -57,6 +68,7 @@ override MyAvaloniaManagement.PluginSdk.CreationIntentId.ToString() -> string!
 override MyAvaloniaManagement.PluginSdk.DocumentPresentationState.Equals(object? obj) -> bool
 override MyAvaloniaManagement.PluginSdk.DocumentPresentationState.GetHashCode() -> int
 override MyAvaloniaManagement.PluginSdk.DocumentPresentationState.ToString() -> string!
+override MyAvaloniaManagement.PluginSdk.DocumentRevision.GetHashCode() -> int
 override MyAvaloniaManagement.PluginSdk.DocumentTypeId.Equals(object? obj) -> bool
 override MyAvaloniaManagement.PluginSdk.DocumentTypeId.GetHashCode() -> int
 override MyAvaloniaManagement.PluginSdk.DocumentTypeId.ToString() -> string!
@@ -72,6 +84,8 @@ static MyAvaloniaManagement.PluginSdk.CreationIntentId.operator !=(MyAvaloniaMan
 static MyAvaloniaManagement.PluginSdk.CreationIntentId.operator ==(MyAvaloniaManagement.PluginSdk.CreationIntentId? left, MyAvaloniaManagement.PluginSdk.CreationIntentId? right) -> bool
 static MyAvaloniaManagement.PluginSdk.DocumentPresentationState.operator !=(MyAvaloniaManagement.PluginSdk.DocumentPresentationState? left, MyAvaloniaManagement.PluginSdk.DocumentPresentationState? right) -> bool
 static MyAvaloniaManagement.PluginSdk.DocumentPresentationState.operator ==(MyAvaloniaManagement.PluginSdk.DocumentPresentationState? left, MyAvaloniaManagement.PluginSdk.DocumentPresentationState? right) -> bool
+static MyAvaloniaManagement.PluginSdk.DocumentRevision.operator !=(MyAvaloniaManagement.PluginSdk.DocumentRevision left, MyAvaloniaManagement.PluginSdk.DocumentRevision right) -> bool
+static MyAvaloniaManagement.PluginSdk.DocumentRevision.operator ==(MyAvaloniaManagement.PluginSdk.DocumentRevision left, MyAvaloniaManagement.PluginSdk.DocumentRevision right) -> bool
 static MyAvaloniaManagement.PluginSdk.DocumentTypeId.Parse(string! value) -> MyAvaloniaManagement.PluginSdk.DocumentTypeId!
 static MyAvaloniaManagement.PluginSdk.DocumentTypeId.TryParse(string? value, out MyAvaloniaManagement.PluginSdk.DocumentTypeId? documentTypeId) -> bool
 static MyAvaloniaManagement.PluginSdk.DocumentTypeId.operator !=(MyAvaloniaManagement.PluginSdk.DocumentTypeId? left, MyAvaloniaManagement.PluginSdk.DocumentTypeId? right) -> bool
@@ -84,3 +98,5 @@ static MyAvaloniaManagement.PluginSdk.ToolTypeId.Parse(string! value) -> MyAvalo
 static MyAvaloniaManagement.PluginSdk.ToolTypeId.TryParse(string? value, out MyAvaloniaManagement.PluginSdk.ToolTypeId? toolTypeId) -> bool
 static MyAvaloniaManagement.PluginSdk.ToolTypeId.operator !=(MyAvaloniaManagement.PluginSdk.ToolTypeId? left, MyAvaloniaManagement.PluginSdk.ToolTypeId? right) -> bool
 static MyAvaloniaManagement.PluginSdk.ToolTypeId.operator ==(MyAvaloniaManagement.PluginSdk.ToolTypeId? left, MyAvaloniaManagement.PluginSdk.ToolTypeId? right) -> bool
+~override MyAvaloniaManagement.PluginSdk.DocumentRevision.Equals(object obj) -> bool
+~override MyAvaloniaManagement.PluginSdk.DocumentRevision.ToString() -> string

@@ -24,6 +24,25 @@ public sealed class SdkBoundaryTests
     }
 
     [Fact]
+    public void 可持久化Document只暴露修订快照与有参确认()
+    {
+        var methods = typeof(IPersistablePluginDocument).GetMethods()
+            .Where(method => !method.IsSpecialName)
+            .ToDictionary(method => method.Name, StringComparer.Ordinal);
+
+        Assert.Equal(
+            ["AcceptChanges", "CaptureSaveSnapshotAsync"],
+            methods.Keys.OrderBy(name => name, StringComparer.Ordinal).ToArray());
+        Assert.Equal(
+            typeof(DocumentRevision),
+            Assert.Single(methods["AcceptChanges"].GetParameters()).ParameterType);
+        Assert.Equal(
+            typeof(ValueTask<DocumentSaveSnapshot>),
+            methods["CaptureSaveSnapshotAsync"].ReturnType);
+        Assert.DoesNotContain("CaptureContentAsync", methods.Keys);
+    }
+
+    [Fact]
     public void Ui程序集不引用Dock和Newtonsoft且注册接口没有独立AddView()
     {
         var assembly = typeof(IPluginModule).Assembly;

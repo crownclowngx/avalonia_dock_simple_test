@@ -19,6 +19,8 @@ internal sealed class DocumentCloseCoordinator(
     IDocumentInteractionService interactionService,
     DocumentPersistenceStateStore persistenceStates)
 {
+    private const string PendingChangesMessage =
+        "保存期间 Document 又发生了修改，请再次保存后再关闭。";
     private readonly HashSet<ManagedDocumentDockable> _approvedOnce = [];
     private readonly HashSet<ManagedDocumentDockable> _pending = [];
     private bool _windowRequestPending;
@@ -103,6 +105,14 @@ internal sealed class DocumentCloseCoordinator(
                     return false;
                 }
 
+                if (result.HasPendingChanges)
+                {
+                    await ShowErrorSafelyAsync(CombineMessages(
+                        result.Message,
+                        PendingChangesMessage));
+                    return false;
+                }
+
                 if (result.Status == DocumentSaveStatus.SavedWithWarning)
                 {
                     await ShowErrorSafelyAsync(result.Message);
@@ -153,6 +163,14 @@ internal sealed class DocumentCloseCoordinator(
                     return;
                 }
 
+                if (result.HasPendingChanges)
+                {
+                    await ShowErrorSafelyAsync(CombineMessages(
+                        result.Message,
+                        PendingChangesMessage));
+                    return;
+                }
+
                 if (result.Status == DocumentSaveStatus.SavedWithWarning)
                 {
                     await ShowErrorSafelyAsync(result.Message);
@@ -180,6 +198,9 @@ internal sealed class DocumentCloseCoordinator(
 
     private static string GetDisplayName(ManagedDocumentDockable document) =>
         string.IsNullOrWhiteSpace(document.Title) ? "未命名 Document" : document.Title;
+
+    private static string CombineMessages(string first, string second) =>
+        string.IsNullOrWhiteSpace(first) ? second : $"{first} {second}";
 
     /// <summary>错误提示自身失败时只记录诊断，不改变已经完成的保存或关闭决策。</summary>
     private async Task ShowErrorSafelyAsync(string message)

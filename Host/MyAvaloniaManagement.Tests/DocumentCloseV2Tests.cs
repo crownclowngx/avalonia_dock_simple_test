@@ -154,6 +154,68 @@ public sealed class DocumentCloseV2Tests
             message => message.Contains("window-secret", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public async Task 窗口保存期间出现新修订_保持打开且再次保存后允许关闭()
+    {
+        using var context = DocumentV2TestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        var document = await CreateDirtyDocumentAsync(context);
+        var model = Assert.IsType<TestSavableDocument>(document.Model);
+        context.Storage.SavePath = Path.Combine(context.TempDirectory, "window-revision.mamdoc");
+        context.Interactions.CloseChoices.Enqueue(DocumentCloseChoice.Save);
+        var writeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWrite = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.Storage.PauseNextWrite(writeStarted, releaseWrite);
+
+        var firstClose = context.Provider.GetRequiredService<DocumentCloseCoordinator>()
+            .ConfirmWindowCloseAsync([document]);
+        await writeStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        model.Content = "保存期间的新内容";
+        model.IsModified = true;
+        releaseWrite.SetResult();
+
+        Assert.False(await firstClose.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.True(model.IsDirty);
+        Assert.Contains(context.Interactions.Errors, message =>
+            message.Contains("再次保存", StringComparison.Ordinal));
+
+        context.Interactions.CloseChoices.Enqueue(DocumentCloseChoice.Save);
+        Assert.True(await context.Provider.GetRequiredService<DocumentCloseCoordinator>()
+            .ConfirmWindowCloseAsync([document]));
+        Assert.False(model.IsDirty);
+    }
+
+    [Fact]
+    public async Task Dock保存期间出现新修订_不授予重入许可并保持Document打开()
+    {
+        using var context = DocumentV2TestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        var document = await CreateDirtyDocumentAsync(context);
+        var model = Assert.IsType<TestSavableDocument>(document.Model);
+        var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
+        context.Storage.SavePath = Path.Combine(context.TempDirectory, "dock-revision.mamdoc");
+        context.Interactions.CloseChoices.Enqueue(DocumentCloseChoice.Save);
+        context.Interactions.ErrorShown = new TaskCompletionSource<string>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var writeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWrite = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.Storage.PauseNextWrite(writeStarted, releaseWrite);
+        var retryCount = 0;
+
+        Assert.False(coordinator.TryBeginDockClose(document, () => retryCount++));
+        await writeStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        model.Content = "Dock 保存期间的新内容";
+        model.IsModified = true;
+        releaseWrite.SetResult();
+        var message = await context.Interactions.ErrorShown.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Contains("再次保存", message, StringComparison.Ordinal);
+        Assert.Equal(0, retryCount);
+        Assert.True(model.IsDirty);
+        Assert.False(coordinator.TryBeginDockClose(document, () => retryCount++));
+        Assert.Equal(2, context.Interactions.CloseRequests.Count);
+    }
+
     private static async Task<ManagedDocumentDockable> CreateDirtyDocumentAsync(
         TestHostContext context,
         bool dirty = true)

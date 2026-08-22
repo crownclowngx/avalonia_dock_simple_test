@@ -83,9 +83,10 @@ V2 有意破坏历史 v1 SDK，删除重复身份和隐式发现入口；G14 已
 
 没有为每个内部类机械创建接口。只有存在真实替代实现、框架边界或测试边界时才使用接口，避免接口数量超过行为复杂度。
 
-V2 G7 沿用 Core SDK 的窄契约：`IPluginDocument` 只负责异步初始化，
-`IPersistablePluginDocument` 只负责捕获内容与提交后确认；脏状态、路径、标题和 Host 保存事务仍留在
-宿主内部状态与协调器中。这里没有为兼容 v1 `ISavableDocument` 建立双轨。
+V3 G2 继续保持 Core SDK 的窄契约：`IPluginDocument` 只负责异步初始化，
+`IPersistablePluginDocument` 只负责捕获不可变修订快照与指定修订的提交后确认；修订含义和持久字段
+归插件，路径、标题和文件事务仍留在宿主内部状态与协调器中。三个插件用少量局部状态实现，没有建立
+共享 Revision Tracker，也没有为旧无参确认建立双轨。
 
 V2 G8 同样保持 `IPluginLifecycle` 只有初始化与关闭两个方法。排序、30/10 秒期限、状态和诊断不进入
 SDK；菜单、Activator 与布局只依赖 `PluginAvailabilityReadModel`。四插件已在 G9–G12 全部迁移，

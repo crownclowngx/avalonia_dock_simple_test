@@ -209,12 +209,14 @@ public sealed class SampleDocument : IPersistablePluginDocument
     public bool IsDirty => false;
     public event EventHandler? IsDirtyChanged { add { } remove { } }
     public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken token) => ValueTask.CompletedTask;
-    public ValueTask<DocumentContent> CaptureContentAsync(CancellationToken token)
+    public ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(CancellationToken token)
     {
         using var json = JsonDocument.Parse("{\"value\":1}");
-        return ValueTask.FromResult(new DocumentContent(1, json.RootElement));
+        return ValueTask.FromResult(new DocumentSaveSnapshot(
+            new DocumentRevision(0),
+            new DocumentContent(1, json.RootElement)));
     }
-    public void AcceptChanges() { }
+    public void AcceptChanges(DocumentRevision savedRevision) { }
 }
 
 public sealed class SampleLifecycle : IPluginLifecycle
@@ -288,8 +290,8 @@ public sealed class SampleDocument : IPersistablePluginDocument
     public bool IsDirty => false;
     public event EventHandler? IsDirtyChanged { add { } remove { } }
     public ValueTask InitializeAsync(DocumentActivationContext context, CancellationToken token) => ValueTask.CompletedTask;
-    public ValueTask<DocumentContent> CaptureContentAsync(CancellationToken token) => throw new NotSupportedException();
-    public void AcceptChanges() { }
+    public ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(CancellationToken token) => throw new NotSupportedException();
+    public void AcceptChanges(DocumentRevision savedRevision) { }
 }
 '@ $true | Out-Null
 

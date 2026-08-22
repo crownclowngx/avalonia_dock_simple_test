@@ -10,7 +10,8 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [V1 G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
 > [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。当前源码已完成未发布
-> V3 G1，版本/API 与数据边界证据见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)。
+> V3 G2；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
+> 修订保存见 [V3 G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)。
 
 ## 当前文档与非发布基线门禁
 
@@ -22,8 +23,8 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 ```
 
 核心测试在系统临时目录验证正常和失败夹具；正式入口检查当前文档与 host-v1/host-v2 历史记录的本地链接，
-并只对当前事实应用过期措辞规则。它还验证 V3 G1 正向哨兵、V1/V2 历史 API、关键源码类型、
-v3 Unshipped 与 v2 Shipped 等价，以及四个插件项目中的版本、精确入口属性与单一 SDK 投影区间。结果写入
+并只对当前事实应用过期措辞规则。它还验证 V3 G2 正向哨兵、V1/V2 历史 API、新保存类型与旧 API
+负例，以及四个插件项目中的版本、精确入口属性与单一 SDK 投影区间。结果写入
 `artifacts/test-results/Documentation/summary.json`。
 
 当前文档门禁不调用 Windows Smoke、发布总门禁或发布验收项目；通过它不能冒充 Windows 发布放行。
@@ -52,6 +53,23 @@ G1 将产品、Core/UI SDK 和四插件切换到 `3.0.0`，但不改变 public C
 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)。本阶段固定记录
 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、
 `releaseGate=false`、`publishable=false`。
+
+### V3 G2 修订化 Document 保存门禁
+
+G2 专项入口为：
+
+```powershell
+.\scripts\Test-RevisionedDocumentSave.ps1 -Configuration Release -NoRestore
+```
+
+脚本串行运行 SDK、Host 保存/关闭、真实插件集成、MyPlugTest 和 BiliDownloader 定向测试，并扫描生产
+源码不得出现旧 `CaptureContentAsync`、无参 `AcceptChanges()` 或新旧双轨。实际通过 **157/157**；
+完整 Host 为 Unit 173、UI 53、Plugin 202，共 **428/428**，行覆盖率 **83.28%**、分支覆盖率
+**69.02%**。SDK、MyPlugTest、DaTang、BiliDownloader、MySmallTools 全量分别为 36、3、62、718、184，
+全部通过。结果与回滚边界见 [V3 G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)。
+
+专项摘要固定记录 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、
+`releaseAcceptance=false`、`releaseGate=false`、`publishable=false`；Release 只作为编译配置。
 
 ### V2 G13 唯一生产面门禁
 

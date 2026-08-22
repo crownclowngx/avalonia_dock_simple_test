@@ -1,8 +1,8 @@
 # MyAvaloniaManagement 内部架构
 
-> 当前源码已完成未发布 V3 G1：产品、SDK 与四插件版本为 `3.0.0`，但本文件中的运行结构仍是
-> V2 G14 已签署实现。manifest、Document、layout 保持 schema 2，默认数据根保持 `v2`；
-> G1 没有提前实施后续 Workspace、保存或事件协议重构。
+> 当前源码已完成未发布 V3 G2：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
+> 指定修订确认，其余运行结构仍是 V2 G14 已签署实现。manifest、Document envelope、layout 保持
+> schema 2，默认数据根保持 `v2`；G3 及后续 Workspace、激活或事件协议尚未实施。
 
 ## 1. 目标与边界
 
@@ -280,9 +280,10 @@ sequenceDiagram
 
 打开和所有保存入口共享 `DocumentOperationGate`。该方案牺牲同一窗口内文档 I/O 的并行度，换取简单、确定的查重和状态提交顺序。文档文件通常较小，稳定性收益高于有限的并行收益。
 
-保存遵循“主文件成功后再提交内存状态”：`CaptureContentAsync(ClosingToken)` 返回原生 JSON 内容，
-原子写入完成后才更新 Host 标题、路径与恢复标记并调用 `AcceptChanges`。随后更新 `.recovery.bak`；
-`AcceptChanges` 或备份失败只产生“已保存但有警告”，不伪造主文件失败。
+保存遵循“主文件成功后再提交内存状态”：`CaptureSaveSnapshotAsync(ClosingToken)` 返回同一稳定观察
+区间中的插件修订与原生 JSON 内容；原子写入完成后才更新 Host 标题、路径与恢复标记，并调用
+`AcceptChanges(savedRevision)`。Host 不解释或持久化 Revision。随后更新 `.recovery.bak`；确认或备份
+失败只产生“已保存但有警告”，不伪造主文件失败。若确认后仍有较新修改，普通保存成功，关闭保持打开。
 
 插件 `DocumentContent` 只包含内容版本和克隆的 `JsonElement` payload。`pluginId`、`documentTypeId`、
 标题和 UTC 时间由宿主分别从 Registry、目标文件名和 `TimeProvider` 取得。生产只接受 V2，不设置

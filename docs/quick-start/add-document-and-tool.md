@@ -133,10 +133,12 @@ public sealed class QuickStartPluginModule : IPluginModule
 
 实现应遵循：
 
-- `CaptureContentAsync` 返回新的 `DocumentContent(schema, payload)`，不直接写文件；
+- 每次持久内容真正变化都推进插件自己的 `DocumentRevision`，即使模型已经 Dirty 也不能停止计数；
+- `CaptureSaveSnapshotAsync` 返回不可变的 `DocumentSaveSnapshot(revision, content)`，不直接写文件；
 - 恢复时先严格验证 schema、字段、类型和完整临时状态，再一次提交到模型；
 - `IsDirty` 实际变化时发出 `IsDirtyChanged`，让 Host 同步 Tab 的修改标记；
-- `AcceptChanges` 只在 Host 原子保存成功后清除脏状态；
+- Host 原子保存成功后只把捕获修订传给 `AcceptChanges(savedRevision)`；捕获后若又有编辑，旧修订确认
+  必须是幂等无操作，模型继续保持 Dirty；
 - 不兼容内容直接失败，不做猜测式修复或 V1 兼容读取。
 
 可直接参考 [`TestWelcomeViewModel`](../../Plugins/MyPlugTest/MyPlugTest/ViewModels/TestWelcomeViewModel.cs) 和独立 [`TestWelcomeDocumentContentCodec`](../../Plugins/MyPlugTest/MyPlugTest/Persistence/TestWelcomeDocumentContentCodec.cs)。

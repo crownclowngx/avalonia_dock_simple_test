@@ -47,9 +47,11 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
     private readonly CancellationTokenSource _documentCts;
     private int _disposed;
     private readonly object _initializationLock = new();
+    private readonly object _revisionLock = new();
     private Task? _initializationTask;
     private bool _isRestoringDocument;
-    private bool _isModified;
+    private long _contentRevision;
+    private long _acceptedRevision;
     private string _title = "Bilibili下载";
 
     private static readonly HashSet<string> PersistedDownloadConfigProperties =
@@ -82,7 +84,16 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
     public DownloadWorkspaceViewModel Workspace { get; }
 
     /// <inheritdoc />
-    public bool IsDirty => IsModified;
+    public bool IsDirty
+    {
+        get
+        {
+            lock (_revisionLock)
+            {
+                return _contentRevision != _acceptedRevision;
+            }
+        }
+    }
 
     /// <inheritdoc />
     public event EventHandler? IsDirtyChanged;
@@ -102,20 +113,9 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
     }
 
     /// <summary>
-    /// 兼容现有页面绑定的脏状态投影；真正的 V2 保存门禁读取 <see cref="IsDirty"/>。
+    /// 兼容现有页面绑定的只读脏状态投影；真正的保存契约读取 <see cref="IsDirty"/>。
     /// </summary>
-    public bool IsModified
-    {
-        get => _isModified;
-        set
-        {
-            if (SetProperty(ref _isModified, value))
-            {
-                OnPropertyChanged(nameof(IsDirty));
-                IsDirtyChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
-    }
+    public bool IsModified => IsDirty;
 
     /// <inheritdoc />
     public DocumentPresentationState Presentation => new(Title);
@@ -142,7 +142,13 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
     public string DownloadInfo
     {
         get => _downloadInfo;
-        set => SetProperty(ref _downloadInfo, value);
+        set
+        {
+            if (SetProperty(ref _downloadInfo, value))
+            {
+                MarkDocumentModified();
+            }
+        }
     }
 
     public bool IsDownloadSettingsExpanded
@@ -496,7 +502,7 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
             await DownloadConfig.InitializeAsync();
             effectiveToken.ThrowIfCancellationRequested();
             await RecoverTasksFromStoreAsync(effectiveToken);
-            IsModified = false;
+            ResetRevisionState();
         }
         finally
         {
@@ -574,7 +580,7 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
     {
         if (IsClosing) return;
         Workspace.ApplyParseResult(result);
-        IsModified = true;
+        MarkDocumentModified();
 
         // 同步解析状态到 VideoParse 子 VM
         VideoParse.IsParsed = true;
@@ -583,7 +589,19 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
     private void MarkDocumentModified()
     {
         if (_isRestoringDocument || IsClosing) return;
-        IsModified = true;
+
+        var dirtyChanged = false;
+        lock (_revisionLock)
+        {
+            var wasDirty = _contentRevision != _acceptedRevision;
+            _contentRevision = checked(_contentRevision + 1);
+            dirtyChanged = !wasDirty;
+        }
+
+        if (dirtyChanged)
+        {
+            RaiseDirtyChanged();
+        }
     }
 
     #endregion
@@ -664,37 +682,50 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
     /// 这些提交动作由宿主在主文件写入成功后统一完成。
     /// </para>
     /// </summary>
-    public ValueTask<DocumentContent> CaptureContentAsync(CancellationToken cancellationToken)
+    public ValueTask<DocumentSaveSnapshot> CaptureSaveSnapshotAsync(
+        CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        _documentLifetime.ClosingToken.ThrowIfCancellationRequested();
-        var configuration = new DownloadConfigViewModelSnapshot(
-            DownloadConfig.OutputDirectory,
-            DownloadConfig.UseGroupFolder,
-            DownloadConfig.AddIndexToTitle,
-            DownloadConfig.SelectedPreset?.Id ?? BuiltInPresets.CompatId,
-            DownloadConfig.SelectedQuality?.QualityId ?? 0,
-            DownloadConfig.SelectedAudioQuality?.QualityId ?? 0,
-            DownloadConfig.DownloadDanmaku,
-            DownloadConfig.DownloadSubtitle,
-            DownloadConfig.DownloadCover,
-            DownloadConfig.SelectedConflictPolicy.Value,
-            DownloadConfig.VideoCodecPreference,
-            DownloadConfig.OutputContainer,
-            DownloadConfig.OutputMediaMode,
-            DownloadConfig.VideoDynamicRangePreference,
-            DownloadConfig.AudioFeaturePreference,
-            DownloadConfig.SubtitleOptions,
-            DownloadConfig.DanmakuOptions,
-            DownloadConfig.PerTaskRateLimitBytesPerSecond);
-        var saveData = _documentStateMapper.Create(
-            DocumentId,
-            VideoParse.Url,
-            _downloadInfo,
-            configuration,
-            NamingTemplate.Template,
-            SourceWorkflow.CapturePersistentState());
-        return ValueTask.FromResult(saveData);
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            _documentLifetime.ClosingToken.ThrowIfCancellationRequested();
+            var revisionBeforeCapture = ReadCurrentRevision();
+            var configuration = new DownloadConfigViewModelSnapshot(
+                DownloadConfig.OutputDirectory,
+                DownloadConfig.UseGroupFolder,
+                DownloadConfig.AddIndexToTitle,
+                DownloadConfig.SelectedPreset?.Id ?? BuiltInPresets.CompatId,
+                DownloadConfig.SelectedQuality?.QualityId ?? 0,
+                DownloadConfig.SelectedAudioQuality?.QualityId ?? 0,
+                DownloadConfig.DownloadDanmaku,
+                DownloadConfig.DownloadSubtitle,
+                DownloadConfig.DownloadCover,
+                DownloadConfig.SelectedConflictPolicy.Value,
+                DownloadConfig.VideoCodecPreference,
+                DownloadConfig.OutputContainer,
+                DownloadConfig.OutputMediaMode,
+                DownloadConfig.VideoDynamicRangePreference,
+                DownloadConfig.AudioFeaturePreference,
+                DownloadConfig.SubtitleOptions,
+                DownloadConfig.DanmakuOptions,
+                DownloadConfig.PerTaskRateLimitBytesPerSecond);
+            var content = _documentStateMapper.Create(
+                DocumentId,
+                VideoParse.Url,
+                _downloadInfo,
+                configuration,
+                NamingTemplate.Template,
+                SourceWorkflow.CapturePersistentState());
+            var revisionAfterCapture = ReadCurrentRevision();
+            if (revisionBeforeCapture == revisionAfterCapture)
+            {
+                return ValueTask.FromResult(
+                    new DocumentSaveSnapshot(revisionAfterCapture, content));
+            }
+
+            // BiliDownloader 的对象图较大，子模型通知可能在捕获 DTO 时到达。前后 Revision
+            // 不一致时直接重建 DTO，比给全部子模型增加共享锁更朴素，也不扩大它们的职责。
+        }
     }
 
     private void ApplyRestoredState(BiliDownloaderRestoredState restored)
@@ -711,10 +742,58 @@ public class BiliDownloaderViewModel : ObservableObject, IPersistablePluginDocum
     }
 
     /// <summary>
-    /// 接受宿主已经原子写入主文件的当前状态。生成保存快照时不能提前清除脏状态，
-    /// 否则磁盘写入失败会让关闭保护误以为数据已经安全保存。
+    /// 接受宿主已经原子写入主文件的指定修订。生成保存快照时不能提前清除脏状态，
+    /// 且保存期间产生的新 Revision 不能被旧确认覆盖。
     /// </summary>
-    public void AcceptChanges() => IsModified = false;
+    public void AcceptChanges(DocumentRevision savedRevision)
+    {
+        var dirtyChanged = false;
+        lock (_revisionLock)
+        {
+            if (_contentRevision != savedRevision.Value)
+            {
+                return;
+            }
+
+            dirtyChanged = _acceptedRevision != _contentRevision;
+            _acceptedRevision = _contentRevision;
+        }
+
+        if (dirtyChanged)
+        {
+            RaiseDirtyChanged();
+        }
+    }
+
+    private DocumentRevision ReadCurrentRevision()
+    {
+        lock (_revisionLock)
+        {
+            return new DocumentRevision(_contentRevision);
+        }
+    }
+
+    private void ResetRevisionState()
+    {
+        var dirtyChanged = false;
+        lock (_revisionLock)
+        {
+            dirtyChanged = _contentRevision != _acceptedRevision;
+            _acceptedRevision = _contentRevision;
+        }
+
+        if (dirtyChanged)
+        {
+            RaiseDirtyChanged();
+        }
+    }
+
+    private void RaiseDirtyChanged()
+    {
+        OnPropertyChanged(nameof(IsDirty));
+        OnPropertyChanged(nameof(IsModified));
+        IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     private bool IsClosing => Volatile.Read(ref _disposed) != 0
         || _documentLifetime.IsClosing

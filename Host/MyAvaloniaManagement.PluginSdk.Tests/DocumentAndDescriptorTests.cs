@@ -29,6 +29,22 @@ public sealed class DocumentAndDescriptorTests
     }
 
     [Fact]
+    public void 保存快照保留修订值并拒绝Null内容()
+    {
+        using var document = JsonDocument.Parse("{\"value\":42}");
+        var content = new DocumentContent(1, document.RootElement);
+        var revision = new DocumentRevision(7);
+
+        var snapshot = new DocumentSaveSnapshot(revision, content);
+
+        Assert.Equal(7, snapshot.Revision.Value);
+        Assert.Equal(revision, snapshot.Revision);
+        Assert.Same(content, snapshot.Content);
+        Assert.Equal(42, snapshot.Content.Payload.GetProperty("value").GetInt32());
+        Assert.Throws<ArgumentNullException>(() => new DocumentSaveSnapshot(revision, null!));
+    }
+
+    [Fact]
     public void Activation和Presentation拒绝Null但允许由插件决定的空标题()
     {
         Assert.Throws<ArgumentNullException>(() => new DocumentActivationContext(null!));
