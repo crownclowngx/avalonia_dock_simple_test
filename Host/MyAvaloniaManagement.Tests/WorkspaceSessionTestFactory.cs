@@ -32,15 +32,19 @@ internal static class WorkspaceSessionTestFactory
             new TestDocumentInteractionService(),
             states);
         var factory = new HostDockFactory();
+        var pluginAvailability = availability ?? new PluginAvailabilityReadModel(
+            new PluginLifecycleStateStore(registry));
+        var catalog = new WorkspaceCatalog(
+            new HostWorkspaceCatalog([], []),
+            registry,
+            pluginAvailability);
         var session = new WorkspaceSession(
             factory,
-            registry,
+            catalog,
             dockableFactory,
             states,
             close,
             recovery,
-            availability ?? new PluginAvailabilityReadModel(
-                new PluginLifecycleStateStore(registry)),
             diagnostics);
         factory.AttachCallbacks(session);
         return session;

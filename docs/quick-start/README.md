@@ -1,10 +1,13 @@
 # Managed Plugin 快速开始
 
 本组文档以 `MyPlugTest` 为可运行事实源，介绍 manifest schema 2、Core/UI SDK、声明式贡献、普通模型与
-Host Dock Adapter。当前仓库处于未发布 V3 G4：版本为 3.0.0，Document 使用互斥 New/Restore 激活，
+Host Dock Adapter。当前仓库处于未发布 V3 G7：版本为 3.0.0，Document 使用互斥 New/Restore 激活，
 持久化 Document 使用修订快照和指定修订确认，插件注册使用 Host 最终提交与 ID 归属校验，其他 API
-与运行语义仍沿用 V2 G14；
+Host Catalog 与只含真实插件的 Plugin Registry 已分离，其他运行语义仍沿用 V2 G14；
 教程不使用 Legacy、Strategy、独立 View 注册或 Dock 类型。
+
+插件作者只声明自己命名空间内的 Document/Tool。Welcome 与四个 Host Tool 由 Host internal
+`HostWorkspaceCatalog` 声明，插件不注册 Host 伪插件、Host Tool 别名或公共 Workspace Context。
 
 ## 完成后你将得到什么
 

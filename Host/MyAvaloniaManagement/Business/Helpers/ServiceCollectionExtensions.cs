@@ -76,7 +76,7 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<DocumentPersistenceCoordinator>());
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
         services.AddSingleton<DocumentCloseCoordinator>();
-        RegisterHostContributions(services, registryBuilder);
+        RegisterHostWorkspace(services);
         services.AddSingleton(provider => registryBuilder.Build(
             provider.GetService<PluginModuleCatalog>(),
             provider.GetService<IHostDiagnosticSink>(),
@@ -87,14 +87,18 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<PluginRegistry>()));
         services.AddSingleton(provider => new PluginAvailabilityReadModel(
             provider.GetRequiredService<PluginLifecycleStateStore>()));
+        services.AddSingleton(provider => new WorkspaceCatalog(
+            provider.GetRequiredService<HostWorkspaceCatalog>(),
+            provider.GetRequiredService<PluginRegistry>(),
+            provider.GetRequiredService<PluginAvailabilityReadModel>()));
         services.AddSingleton(provider => new PluginLifecycleCoordinator(
             provider.GetRequiredService<PluginRegistry>(),
             provider.GetRequiredService<IPluginLifecycleResolver>(),
             provider.GetRequiredService<PluginLifecycleStateStore>(),
             provider.GetService<IHostDiagnosticSink>()));
         services.AddSingleton<ViewLocator>();
+        services.AddSingleton<HostWorkspaceActivator>();
         services.AddSingleton(provider => new PluginContributionActivator(
-            provider,
             provider.GetRequiredService<PluginRegistry>(),
             pluginProviders,
             provider.GetRequiredService<PluginAvailabilityReadModel>()));
@@ -107,12 +111,11 @@ internal static class ServiceCollectionExtensions
             var dockFactory = new HostDockFactory();
             var session = new WorkspaceSession(
                 dockFactory,
-                provider.GetRequiredService<PluginRegistry>(),
+                provider.GetRequiredService<WorkspaceCatalog>(),
                 provider.GetRequiredService<IHostDockableFactory>(),
                 provider.GetRequiredService<DocumentPersistenceStateStore>(),
                 provider.GetRequiredService<DocumentCloseCoordinator>(),
                 provider.GetRequiredService<DocumentRecoveryRegistry>(),
-                provider.GetRequiredService<PluginAvailabilityReadModel>(),
                 provider.GetService<IHostDiagnosticSink>());
             dockFactory.AttachCallbacks(session);
             return session;
@@ -126,57 +129,83 @@ internal static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 将宿主内置扩展写入与插件完全相同的 Builder，而不是依赖宿主程序集扫描。
+    /// 注册 Host 内建模型，并建立与 Plugin Registry 完全分离的不可变工作区目录。
     /// </summary>
     /// <remarks>
-    /// 这些声明集中在组合根，新增宿主 Tool 或根级 DataTemplate 时必须显式修改此处；这是一项
-    /// 有意的可审阅成本，可防止仅因类型名称碰巧匹配就改变最终用户界面。
+    /// 这些声明集中在组合根，新增 Host Tool 或根级 DataTemplate 时必须显式修改此处。目录中的
+    /// 模型工厂均绑定精确类型，不接受任意 Type 或服务名；Catalog 因此无需接触 IServiceProvider。
     /// </remarks>
-    private static void RegisterHostContributions(
-        IServiceCollection services,
-        PluginRegistryBuilder builder)
+    private static void RegisterHostWorkspace(IServiceCollection services)
     {
-        var registration = new PluginRegistration(
-            HostExtensionIds.V2Owner,
-            services,
-            builder);
-        registration.AddDocument<WelcomeViewModel, WelcomeView>(
-            new DocumentDescriptor(
-                HostExtensionIds.V2WelcomeDocument,
-                "欢迎主程序",
-                "显示欢迎信息",
-                "帮助"));
-        registration.AddTool<FileSystemTreeViewModel, FileSystemTreeView>(
-            new ToolDescriptor(
-                HostExtensionIds.V2FileSystemTree,
-                "文件系统浏览器",
-                "浏览和管理文件系统",
-                ToolDockSide.Left,
-                ToolCloseBehavior.Prevent));
-        registration.AddTool<PlugGroupMenuViewModel, PlugGroupMenuView>(
-            new ToolDescriptor(
-                HostExtensionIds.V2PluginMenu,
-                "插件分组菜单",
-                "显示按分类组织的插件文档菜单",
-                ToolDockSide.Right,
-                ToolCloseBehavior.Prevent));
-        registration.AddTool<ToolManagementViewModel, ToolManagementView>(
-            new ToolDescriptor(
-                HostExtensionIds.V2ToolManagement,
-                "工具管理",
-                "管理所有工具的显示和隐藏",
-                ToolDockSide.Right,
-                ToolCloseBehavior.Prevent));
-        registration.AddTool<PluginStatusViewModel, PluginStatusView>(
-            new ToolDescriptor(
-                HostExtensionIds.V2PluginStatus,
-                "插件状态",
-                "查看插件加载、依赖和生命周期诊断",
-                ToolDockSide.Right,
-                ToolCloseBehavior.Hide));
-        registration.Seal();
-        PluginServiceCommitGuard.AppendHostContributions(services, registration);
+        services.AddScoped<WelcomeViewModel>();
+        services.AddSingleton<FileSystemTreeViewModel>();
+        services.AddSingleton<PlugGroupMenuViewModel>();
+        services.AddSingleton<ToolManagementViewModel>();
+        services.AddSingleton<PluginStatusViewModel>();
+        services.AddSingleton(provider => new HostWorkspaceCatalog(
+            [
+                new HostWorkspaceDocumentRegistration(
+                    new DocumentDescriptor(
+                        HostExtensionIds.WelcomeDocument,
+                        "欢迎主程序",
+                        "显示欢迎信息",
+                        "帮助"),
+                    typeof(WelcomeViewModel),
+                    typeof(WelcomeView),
+                    static () => new WelcomeView(),
+                    () => provider.GetRequiredService<DocumentScopeManager>()
+                        .CreateDocument(typeof(WelcomeViewModel)),
+                    static (model, activation, cancellationToken) =>
+                        ((WelcomeViewModel)model).InitializeHost(
+                            activation,
+                            cancellationToken))
+            ],
+            [
+                HostTool<FileSystemTreeViewModel, FileSystemTreeView>(
+                    provider,
+                    new ToolDescriptor(
+                        HostExtensionIds.FileSystemTree,
+                        "文件系统浏览器",
+                        "浏览和管理文件系统",
+                        ToolDockSide.Left,
+                        ToolCloseBehavior.Prevent)),
+                HostTool<PlugGroupMenuViewModel, PlugGroupMenuView>(
+                    provider,
+                    new ToolDescriptor(
+                        HostExtensionIds.PluginMenu,
+                        "插件分组菜单",
+                        "显示按分类组织的插件文档菜单",
+                        ToolDockSide.Right,
+                        ToolCloseBehavior.Prevent)),
+                HostTool<ToolManagementViewModel, ToolManagementView>(
+                    provider,
+                    new ToolDescriptor(
+                        HostExtensionIds.ToolManagement,
+                        "工具管理",
+                        "管理所有工具的显示和隐藏",
+                        ToolDockSide.Right,
+                        ToolCloseBehavior.Prevent)),
+                HostTool<PluginStatusViewModel, PluginStatusView>(
+                    provider,
+                    new ToolDescriptor(
+                        HostExtensionIds.PluginStatus,
+                        "插件状态",
+                        "查看插件加载、依赖和生命周期诊断",
+                        ToolDockSide.Right,
+                        ToolCloseBehavior.Hide))
+            ]));
     }
+
+    private static HostWorkspaceToolRegistration HostTool<TModel, TView>(
+        IServiceProvider provider,
+        ToolDescriptor descriptor)
+        where TModel : class
+        where TView : Avalonia.Controls.Control, new() => new(
+            descriptor,
+            typeof(TModel),
+            typeof(TView),
+            static () => new TView(),
+            () => provider.GetRequiredService<TModel>());
 
     /// <summary>
     /// 注册由宿主统一持有的每 Document Scope 与关闭取消信号。

@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.ViewModels.Bindings;
 using MyAvaloniaManagement.ViewModels.Design;
@@ -153,32 +154,32 @@ public sealed class ApplicationAndWindowTests
     [AvaloniaFact]
     public void ViewLocator创建已知视图并为未知Dockable返回占位视图()
     {
-        var registration = new PluginDocumentRegistration(
-            HostExtensionIds.V2Owner,
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        services.AddScoped<WelcomeViewModel>();
+        services.AddDocumentScopeManagement();
+        using var provider = services.BuildServiceProvider();
+        var registration = new HostWorkspaceDocumentRegistration(
             new MyAvaloniaManagement.PluginSdk.UI.DocumentDescriptor(
-                HostExtensionIds.V2WelcomeDocument,
+                HostExtensionIds.WelcomeDocument,
                 "欢迎",
                 "欢迎",
                 "帮助"),
             typeof(WelcomeViewModel),
             typeof(WelcomeView),
             static () => new WelcomeView(),
-            false);
-        var registry = new PluginRegistry(
-            [],
-            [registration],
-            [],
-            []);
-        var locator = new ViewLocator(registry);
-        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
-        services.AddScoped<WelcomeViewModel>();
-        services.AddDocumentScopeManagement();
-        using var provider = services.BuildServiceProvider();
+            () => provider.GetRequiredService<DocumentScopeManager>()
+                .CreateDocument(typeof(WelcomeViewModel)),
+            static (model, activation, token) =>
+                ((WelcomeViewModel)model).InitializeHost(activation, token));
+        var hostCatalog = new HostWorkspaceCatalog([registration], []);
+        var locator = new ViewLocator(UiWorkspaceCatalogFactory.Create(
+            new PluginRegistry([], []),
+            hostCatalog));
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var lease = manager.CreatePluginDocument(typeof(WelcomeViewModel));
+        var lease = manager.CreateDocument(typeof(WelcomeViewModel));
         var model = Assert.IsType<WelcomeViewModel>(lease.Model);
         using var adapter = new MyAvaloniaManagement.Business.Docking.ManagedDocumentDockable(
-            new ActivatedPluginDocument(registration, lease),
+            new ActivatedWorkspaceDocument(registration, lease),
             "欢迎");
         locator.Prepare(adapter);
         var known = locator.Build(adapter);

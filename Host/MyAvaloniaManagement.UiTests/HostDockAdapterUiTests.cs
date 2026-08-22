@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using Xunit;
@@ -26,12 +27,12 @@ public sealed class HostDockAdapterUiTests
         var registry = new PluginRegistry([registration], []);
         using var provider = CreateProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var lease = manager.CreatePluginDocument(typeof(MutableDocument));
+        var lease = manager.CreateDocument(typeof(MutableDocument));
         var model = Assert.IsType<MutableDocument>(lease.Model);
         using var adapter = new ManagedDocumentDockable(
-            new ActivatedPluginDocument(registration, lease),
+            new ActivatedWorkspaceDocument(registration, lease),
             "请求标题");
-        var locator = new ViewLocator(registry);
+        var locator = new ViewLocator(UiWorkspaceCatalogFactory.Create(registry));
 
         var prepared = locator.Prepare(adapter);
 
@@ -49,12 +50,12 @@ public sealed class HostDockAdapterUiTests
         var registry = new PluginRegistry([registration], []);
         using var provider = CreateProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var lease = manager.CreatePluginDocument(typeof(MutableDocument));
+        var lease = manager.CreateDocument(typeof(MutableDocument));
         var model = Assert.IsType<MutableDocument>(lease.Model);
         var adapter = new ManagedDocumentDockable(
-            new ActivatedPluginDocument(registration, lease),
+            new ActivatedWorkspaceDocument(registration, lease),
             "请求标题");
-        var locator = new ViewLocator(registry);
+        var locator = new ViewLocator(UiWorkspaceCatalogFactory.Create(registry));
         var view = Assert.IsType<DisposableProbeView>(locator.Prepare(adapter));
 
         await Task.Run(() => model.SetTitle("后台标题"));
@@ -78,11 +79,11 @@ public sealed class HostDockAdapterUiTests
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var lease = manager.CreatePluginDocument(typeof(MutablePersistableDocument));
+        var lease = manager.CreateDocument(typeof(MutablePersistableDocument));
         var model = Assert.IsType<MutablePersistableDocument>(lease.Model);
         var registration = PersistableRegistration();
         var adapter = new ManagedDocumentDockable(
-            new ActivatedPluginDocument(registration, lease),
+            new ActivatedWorkspaceDocument(registration, lease),
             "请求标题");
 
         Assert.False(adapter.IsModified);
@@ -114,14 +115,11 @@ public sealed class HostDockAdapterUiTests
                 provider.GetRequiredService<IDocumentLifetime>()));
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
-        var registration = DocumentRegistration(
+        var registration = HostDocumentRegistration(
+            provider,
             typeof(ViewFailureDocument),
             static () => throw new InvalidOperationException("View 创建失败"));
-        var registry = new PluginRegistry([registration], []);
-        using var pluginProviders = new PluginProviderOwner();
-        var factory = new HostDockAdapterFactory(
-            new PluginContributionActivator(provider, registry, pluginProviders),
-            new ViewLocator(registry));
+        var factory = CreateHostFactory(new HostWorkspaceCatalog([registration], []));
 
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await factory.CreateDocumentAsync(
@@ -142,14 +140,11 @@ public sealed class HostDockAdapterUiTests
             created = new ThrowingPresentationDocument());
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
-        var registration = DocumentRegistration(
+        var registration = HostDocumentRegistration(
+            provider,
             typeof(ThrowingPresentationDocument),
             static () => new UserControl());
-        var registry = new PluginRegistry([registration], []);
-        using var pluginProviders = new PluginProviderOwner();
-        var factory = new HostDockAdapterFactory(
-            new PluginContributionActivator(provider, registry, pluginProviders),
-            new ViewLocator(registry));
+        var factory = CreateHostFactory(new HostWorkspaceCatalog([registration], []));
 
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await factory.CreateDocumentAsync(
@@ -167,9 +162,8 @@ public sealed class HostDockAdapterUiTests
         services.AddSingleton<DisposableToolModel>();
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
-        var toolTypeId = new ToolTypeId("myavalonia.host.tool.g6-view-failure");
-        var registration = new PluginToolRegistration(
-            HostExtensionIds.V2Owner,
+        var toolTypeId = new ToolTypeId("myavalonia.host.tool.g7-view-failure");
+        var registration = new HostWorkspaceToolRegistration(
             new ToolDescriptor(
                 toolTypeId,
                 "失败 Tool",
@@ -178,12 +172,9 @@ public sealed class HostDockAdapterUiTests
                 ToolCloseBehavior.Hide),
             typeof(DisposableToolModel),
             typeof(UserControl),
-            static () => throw new InvalidOperationException("View 创建失败"));
-        var registry = new PluginRegistry([], [registration]);
-        using var pluginProviders = new PluginProviderOwner();
-        var factory = new HostDockAdapterFactory(
-            new PluginContributionActivator(provider, registry, pluginProviders),
-            new ViewLocator(registry));
+            static () => throw new InvalidOperationException("View 创建失败"),
+            () => provider.GetRequiredService<DisposableToolModel>());
+        var factory = CreateHostFactory(new HostWorkspaceCatalog([], [registration]));
 
         Assert.Throws<InvalidOperationException>(() => factory.CreateTool(toolTypeId));
 
@@ -210,10 +201,10 @@ public sealed class HostDockAdapterUiTests
         viewFactory,
         false);
 
-    private static PluginDocumentRegistration DocumentRegistration(
+    private static HostWorkspaceDocumentRegistration HostDocumentRegistration(
+        IServiceProvider provider,
         Type modelType,
         Func<Control> viewFactory) => new(
-        HostExtensionIds.V2Owner,
         new DocumentDescriptor(
             new DocumentTypeId($"myavalonia.host.document.{modelType.Name.ToLowerInvariant()}"),
             "Factory 回滚测试",
@@ -222,12 +213,14 @@ public sealed class HostDockAdapterUiTests
         modelType,
         typeof(UserControl),
         viewFactory,
-        false);
+        () => provider.GetRequiredService<DocumentScopeManager>().CreateDocument(modelType),
+        static (model, activation, token) =>
+            model.InitializeAsync(activation, token).GetAwaiter().GetResult());
 
     private static PluginDocumentRegistration PersistableRegistration() => new(
-        HostExtensionIds.V2Owner,
+        UiWorkspaceCatalogFactory.PluginOwner,
         new DocumentDescriptor(
-            new DocumentTypeId("myavalonia.host.document.mutable-persistable"),
+            new DocumentTypeId("myavalonia.plugin.g7-ui-tests.document.mutable-persistable"),
             "可持久化测试",
             "脏状态投影测试",
             "测试"),
@@ -235,6 +228,18 @@ public sealed class HostDockAdapterUiTests
         typeof(UserControl),
         static () => new UserControl(),
         true);
+
+    private static HostDockAdapterFactory CreateHostFactory(HostWorkspaceCatalog hostCatalog)
+    {
+        var registry = new PluginRegistry([], []);
+        var catalog = UiWorkspaceCatalogFactory.Create(registry, hostCatalog);
+        var pluginProviders = new PluginProviderOwner();
+        return new HostDockAdapterFactory(
+            catalog,
+            new HostWorkspaceActivator(hostCatalog),
+            new PluginContributionActivator(registry, pluginProviders),
+            new ViewLocator(catalog));
+    }
 
     private sealed class MutableDocument : IPluginDocument
     {

@@ -39,7 +39,7 @@ public sealed class HostDockAdapterTests
         var manager = provider.GetRequiredService<DocumentScopeManager>();
 
         Assert.Throws<InvalidOperationException>(() =>
-            manager.CreatePluginDocument(typeof(object)));
+            manager.CreateDocument(typeof(object)));
     }
 
     [Fact]
@@ -50,12 +50,12 @@ public sealed class HostDockAdapterTests
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var lease = manager.CreatePluginDocument(typeof(TrackedDocument));
+        var lease = manager.CreateDocument(typeof(TrackedDocument));
         var model = Assert.IsType<TrackedDocument>(lease.Model);
         model.SetTitle("模型标题");
         var registration = DocumentRegistration(typeof(TrackedDocument));
         var adapter = new ManagedDocumentDockable(
-            new ActivatedPluginDocument(registration, lease),
+            new ActivatedWorkspaceDocument(registration, lease),
             "请求标题");
 
         // 这里只验证纯对象构造时的标题选择：模型标题应优先于请求标题。
@@ -84,10 +84,10 @@ public sealed class HostDockAdapterTests
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var lease = manager.CreatePluginDocument(typeof(ThrowingRemoveDocument));
+        var lease = manager.CreateDocument(typeof(ThrowingRemoveDocument));
         var model = Assert.IsType<ThrowingRemoveDocument>(lease.Model);
         var adapter = new ManagedDocumentDockable(
-            new ActivatedPluginDocument(
+            new ActivatedWorkspaceDocument(
                 DocumentRegistration(typeof(ThrowingRemoveDocument)),
                 lease),
             "请求标题");
@@ -107,14 +107,14 @@ public sealed class HostDockAdapterTests
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var lease = manager.CreatePluginDocument(typeof(ThrowingDirtyRemoveDocument));
+        var lease = manager.CreateDocument(typeof(ThrowingDirtyRemoveDocument));
         var model = Assert.IsType<ThrowingDirtyRemoveDocument>(lease.Model);
         var registration = DocumentRegistration(typeof(ThrowingDirtyRemoveDocument)) with
         {
             IsPersistable = true,
         };
         var adapter = new ManagedDocumentDockable(
-            new ActivatedPluginDocument(registration, lease),
+            new ActivatedWorkspaceDocument(registration, lease),
             "请求标题");
 
         Assert.Throws<InvalidOperationException>(() => adapter.Dispose());
@@ -145,7 +145,7 @@ public sealed class HostDockAdapterTests
             static () => new UserControl());
         var model = new object();
         using var adapter = new ManagedToolDockable(
-            new ActivatedPluginTool(registration, model));
+            new ActivatedWorkspaceTool(registration, model));
 
         Assert.Equal(descriptor.ToolTypeId.Value, adapter.Id);
         Assert.Equal(descriptor.DisplayName, adapter.Title);
@@ -161,15 +161,11 @@ public sealed class HostDockAdapterTests
         var healthyId = new ToolTypeId("myavalonia.plugin.g6.tool.healthy");
         var failedId = new ToolTypeId("myavalonia.plugin.g6.tool.failed");
         var registry = new PluginRegistry(
-            [DocumentRegistration(typeof(TrackedDocument)) with
-            {
-                Descriptor = new DocumentDescriptor(
-                    HostExtensionIds.V2WelcomeDocument,
-                    "欢迎",
-                    "Host Welcome",
-                    "Host"),
-            }],
-            [ToolRegistration(healthyId), ToolRegistration(failedId)]);
+            [],
+            [
+                ToolRegistration(healthyId) with { ModelType = typeof(HealthyToolModel) },
+                ToolRegistration(failedId) with { ModelType = typeof(FailedToolModel) },
+            ]);
         var dockableFactory = new SelectiveToolFactory(failedId);
         using var diagnostics = HostDiagnosticSession.Start(
             Path.Combine(Path.GetTempPath(), "g6-tool-isolation", Guid.NewGuid().ToString("N")));
@@ -214,10 +210,8 @@ public sealed class HostDockAdapterTests
             owner,
             PluginLifecycleStatus.InitializationFailed));
         var availability = new PluginAvailabilityReadModel(states);
-        using var hostProvider = new ServiceCollection().BuildServiceProvider();
         using var pluginProviders = new PluginProviderOwner();
         var activator = new PluginContributionActivator(
-            hostProvider,
             registry,
             pluginProviders,
             availability);
@@ -233,9 +227,9 @@ public sealed class HostDockAdapterTests
     }
 
     private static PluginDocumentRegistration DocumentRegistration(Type modelType) => new(
-        HostExtensionIds.V2Owner,
+        TestPluginIds.Owner,
         new DocumentDescriptor(
-            new DocumentTypeId("myavalonia.host.document.g6-test"),
+            new DocumentTypeId("myavalonia.plugin.host-tests.document.g6-test"),
             "回退标题",
             "G6 测试",
             "测试"),
@@ -262,6 +256,14 @@ public sealed class HostDockAdapterTests
     /// </summary>
     private sealed class SelectiveToolFactory(ToolTypeId failedId) : IHostDockableFactory
     {
+        public Document CreateHostDocument(
+            DocumentTypeId documentTypeId,
+            NewDocumentActivation activation) => new()
+        {
+            Id = documentTypeId.Value,
+            Title = activation.Title,
+        };
+
         public ValueTask<Document> CreateDocumentAsync(
             DocumentTypeId documentTypeId,
             DocumentActivation context) =>
@@ -288,6 +290,9 @@ public sealed class HostDockAdapterTests
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         public Task ShutdownAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
+
+    private sealed class HealthyToolModel;
+    private sealed class FailedToolModel;
 
     private sealed class TrackedDocument(
         MyAvaloniaManagement.PluginSdk.IDocumentLifetime lifetime) :

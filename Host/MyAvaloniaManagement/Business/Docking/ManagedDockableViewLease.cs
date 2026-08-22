@@ -1,5 +1,6 @@
 using System;
 using Avalonia.Controls;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.Business.Helpers;
 
 namespace MyAvaloniaManagement.Business.Docking;
@@ -67,7 +68,7 @@ internal sealed class ManagedDockableViewLease
 internal interface IManagedDockableViewHost
 {
     object Model { get; }
-    PluginViewRegistration ViewRegistration { get; }
+    IWorkspaceViewRegistration ViewRegistration { get; }
     Control? PreparedView { get; }
     void AttachPreparedView(Control view);
     void ReleasePreparedView();

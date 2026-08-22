@@ -56,9 +56,9 @@ public sealed class ServiceAndModelTests
         {
             services.AddScoped<MultiIntentDocument>();
             builder.AddDocument(
-                MyAvaloniaManagement.Business.Constants.HostExtensionIds.V2Owner,
+                TestPluginIds.Owner,
                 new DocumentDescriptor(
-                    new DocumentTypeId("myavalonia.host.document.multi-intent"),
+                    new DocumentTypeId("myavalonia.plugin.host-tests.document.multi-intent"),
                     "下载",
                     "多入口",
                     "测试",
@@ -78,7 +78,7 @@ public sealed class ServiceAndModelTests
 
         Assert.Equal(2, entries.Count);
         Assert.All(entries, entry => Assert.Equal(
-            "myavalonia.host.document.multi-intent",
+            "myavalonia.plugin.host-tests.document.multi-intent",
             entry.DocumentTypeId.Value));
         Assert.Equal(
             ["quick-url", "personal-source"],
@@ -95,9 +95,9 @@ public sealed class ServiceAndModelTests
     {
         services.AddScoped<TDocument>();
         builder.AddDocument(
-            MyAvaloniaManagement.Business.Constants.HostExtensionIds.V2Owner,
+            TestPluginIds.Owner,
             new DocumentDescriptor(
-                new DocumentTypeId($"myavalonia.host.document.{idSuffix}"),
+                new DocumentTypeId($"myavalonia.plugin.host-tests.document.{idSuffix}"),
                 displayName,
                 "菜单测试",
                 category),

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Controls;
-using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -291,11 +290,7 @@ internal sealed class PluginRegistryBuilder
                      group.Select(ownerSelector).Distinct().Count() > 1))
         {
             var entries = group.ToArray();
-            var pluginOwners = entries.Select(ownerSelector)
-                .Where(owner => owner != HostExtensionIds.V2Owner)
-                .Distinct()
-                .ToArray();
-            foreach (var owner in pluginOwners)
+            foreach (var owner in entries.Select(ownerSelector).Distinct())
             {
                 var contributor = contributorSelector(
                     entries.First(item => ownerSelector(item) == owner));

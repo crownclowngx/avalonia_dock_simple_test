@@ -43,7 +43,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         Assert.Same(callbacks.Root, factory.GetDockable<IRootDock>(DockLayoutIds.Root));
         Assert.Same(callbacks.Workspace, factory.GetDockable<IDock>(DockLayoutIds.Workspace));
         Assert.Same(callbacks.Documents, factory.GetDockable<IDocumentDock>(DockLayoutIds.Documents));
-        Assert.Same(callbacks.Plug, factory.GetDockable<ITool>("Plug"));
+        Assert.Null(factory.GetDockable<ITool>("Plug"));
         Assert.Same(callbacks.Root, factory.GetContext(callbacks.Tool.Id!));
         Assert.NotNull(factory.HostWindowLocator);
         Assert.Contains("IDockWindow", factory.HostWindowLocator.Keys);
@@ -102,23 +102,24 @@ public sealed class WorkspaceSessionAndDockFactoryTests
             secondChanges += args.PropertyName == nameof(MainWindowViewModel.Layout) ? 1 : 0;
         first.Dispose();
 
-        Assert.True(context.Workspace.ShowTool(HostExtensionIds.V2PluginMenu.Value));
+        Assert.True(context.Workspace.ShowTool(HostExtensionIds.PluginMenu.Value));
         Assert.Equal(0, firstChanges);
         Assert.Equal(1, secondChanges);
     }
 
     [Fact]
-    public void DockLocator只提供规范Documents且不再提供Files()
+    public void DockLocator只提供规范Documents与ToolId且不再提供Files和Plug()
     {
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
-        var pluginMenu = context.Workspace.CreatedTools[HostExtensionIds.V2PluginMenu.Value];
+        var pluginMenu = context.Workspace.CreatedTools[HostExtensionIds.PluginMenu.Value];
 
         Assert.IsType<DocumentDock>(context.Workspace.DockFactory.GetDockable<
             Dock.Model.Controls.IDocumentDock>(DockLayoutIds.Documents));
         Assert.Same(
             pluginMenu,
-            context.Workspace.DockFactory.GetDockable<ITool>("Plug"));
+            context.Workspace.DockFactory.GetDockable<ITool>(HostExtensionIds.PluginMenu.Value));
+        Assert.Null(context.Workspace.DockFactory.GetDockable<ITool>("Plug"));
         Assert.Null(context.Workspace.DockFactory.GetDockable<
             Dock.Model.Controls.IDocumentDock>("Files"));
     }
@@ -128,7 +129,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
     {
         using var context = new TestHostContext();
         _ = context.Workspace.CreateLayout();
-        var pluginMenuId = HostExtensionIds.V2PluginMenu.Value;
+        var pluginMenuId = HostExtensionIds.PluginMenu.Value;
 
         Assert.True(context.Workspace.IsRegisteredTool(pluginMenuId));
         Assert.True(context.Workspace.IsToolAvailable(pluginMenuId));
@@ -149,7 +150,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         using var unpublishedContext = DocumentV2TestContext.Create();
         var unpublished = unpublishedContext.Workspace;
         Assert.False(unpublished.TryActivateDocument("missing.mamdoc"));
-        Assert.False(unpublished.TryGetDocumentRegistration(
+        Assert.False(unpublished.TryGetPersistablePluginDocumentRegistration(
             new DocumentTypeId("myavalonia.unknown.document"),
             out _));
         await Assert.ThrowsAsync<NotSupportedException>(() => unpublished
@@ -224,7 +225,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
                 services.AddScoped<ThrowingSessionDocument>();
             },
             configureContributions: (_, builder) => builder.AddDocument(
-                HostExtensionIds.V2Owner,
+                TestPluginIds.Owner,
                 new DocumentDescriptor(
                     documentId,
                     "释放顺序 Document",
@@ -277,7 +278,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         _ = context.CreateMainWindowViewModel();
         var welcome = Assert.IsType<MyAvaloniaManagement.ViewModels.Hello.WelcomeViewModel>(
             context.Workspace.GetDocuments().Single().Model);
-        var pluginMenu = context.Workspace.CreatedTools[HostExtensionIds.V2PluginMenu.Value];
+        var pluginMenu = context.Workspace.CreatedTools[HostExtensionIds.PluginMenu.Value];
         context.Workspace.DockFactory.HideDockable(pluginMenu);
 
         welcome.OpenPluginMenuCommand.Execute(null);
@@ -296,7 +297,6 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         internal RecordingWorkspaceCallbacks(HostDockFactory factory)
         {
             Tool = new Tool { Id = "myavalonia.test.tool", Title = "测试 Tool" };
-            Plug = new Tool { Id = "Plug", Title = "插件菜单" };
             Documents = new DocumentDock { Id = DockLayoutIds.Documents };
             Workspace = new ProportionalDock
             {
@@ -315,7 +315,6 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         internal RootDock Root { get; }
         internal ProportionalDock Workspace { get; }
         internal DocumentDock Documents { get; }
-        internal Tool Plug { get; }
         internal Tool Tool { get; }
         internal bool AllowClose { get; set; } = true;
         internal int DockedCount { get; private set; }
@@ -329,7 +328,6 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         IDockable? IWorkspaceDockCallbacks.ResolveDockable(string dockableId) => dockableId switch
         {
             DockLayoutIds.Documents => Documents,
-            "Plug" => Plug,
             _ when dockableId == Tool.Id => Tool,
             _ => null,
         };

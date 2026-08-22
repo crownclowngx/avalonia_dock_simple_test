@@ -22,7 +22,7 @@ internal static class DocumentV2TestContext
             configureContributions: (services, builder) =>
             {
                 builder.AddDocument(
-                    HostExtensionIds.V2Owner,
+                    TestPluginIds.Owner,
                     new DocumentDescriptor(
                         TestDocumentIds.TypeId,
                         "测试文档",
@@ -57,5 +57,5 @@ internal sealed class DocumentV2TestProbe
 internal static class TestDocumentIds
 {
     internal static readonly DocumentTypeId TypeId =
-        new("myavalonia.host.document.test");
+        new("myavalonia.plugin.host-tests.document.test");
 }

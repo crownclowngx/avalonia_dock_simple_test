@@ -19,14 +19,15 @@ internal sealed class DocumentPersistenceStateStore
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentException.ThrowIfNullOrWhiteSpace(hostTitle);
-        if (!document.Registration.IsPersistable || document.PersistableModel is null)
+        if (document.PluginRegistration is not { IsPersistable: true } pluginRegistration ||
+            document.PersistableModel is null)
         {
             throw new InvalidOperationException("只有声明为可持久化的 V2 Document 才能登记磁盘状态。");
         }
 
         if (!_states.TryAdd(
                 document,
-                new DocumentPersistenceState(document.Registration, hostTitle)))
+                new DocumentPersistenceState(pluginRegistration, hostTitle)))
         {
             throw new InvalidOperationException("同一个 Document Adapter 不能重复登记持久化状态。");
         }

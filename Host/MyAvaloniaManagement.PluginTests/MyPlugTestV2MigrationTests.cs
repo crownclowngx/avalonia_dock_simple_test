@@ -35,8 +35,8 @@ public sealed class MyPlugTestV2MigrationTests
             plugin.Manifest.PluginId.Value);
         Assert.Equal(4, plugin.DocumentTypes.Count);
         Assert.Single(plugin.ToolTypes);
-        Assert.Equal(5, registry.DocumentDescriptors.Count);
-        Assert.Equal(5, registry.ToolDescriptors.Count);
+        Assert.Equal(4, registry.DocumentDescriptors.Count);
+        Assert.Single(registry.ToolDescriptors);
         Assert.Empty(registry.Lifecycles);
 
         AssertDocument<TestWelcomeViewModel, TestWelcomeView>(

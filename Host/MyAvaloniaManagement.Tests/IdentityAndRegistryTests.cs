@@ -38,14 +38,15 @@ public sealed class IdentityAndRegistryTests
     [Fact]
     public void Document历史别名不再存在且声明式Registry只发布主Id()
     {
-        var primary = new DocumentTypeId("myavalonia.host.document.sample");
+        var primary = new DocumentTypeId(
+            "myavalonia.plugin.host-tests.document.sample");
         Assert.Null(typeof(PluginRegistry).Assembly.GetType(
             "MyAvaloniaManagement.Business.Helpers.LegacyContributionIdMap"));
 
         var services = new ServiceCollection();
         var builder = new PluginRegistryBuilder();
         var registration = new PluginRegistration(
-            HostExtensionIds.V2Owner, services, builder);
+            TestPluginIds.Owner, services, builder);
         registration.AddDocument<DeclarativeDocument, EmptyView>(
             new DocumentDescriptor(
                 primary,
@@ -66,9 +67,9 @@ public sealed class IdentityAndRegistryTests
         var services = new ServiceCollection();
         var builder = new PluginRegistryBuilder();
         var registration = new PluginRegistration(
-            HostExtensionIds.V2Owner, services, builder);
+            TestPluginIds.Owner, services, builder);
         var duplicate = new DocumentTypeId(
-            "myavalonia.host.document.duplicate");
+            "myavalonia.plugin.host-tests.document.duplicate");
         registration.AddDocument<DeclarativeDocument, EmptyView>(
             new DocumentDescriptor(duplicate, "第一项", "第一项", "测试"));
         registration.AddDocument<SecondDeclarativeDocument, EmptyView>(

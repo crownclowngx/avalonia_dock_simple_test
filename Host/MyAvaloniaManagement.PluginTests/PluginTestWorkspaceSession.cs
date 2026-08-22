@@ -31,21 +31,29 @@ internal static class PluginTestWorkspaceSession
             TimeProvider.System);
         var close = new DocumentCloseCoordinator(save, new NullInteraction(), states);
         var dockFactory = new HostDockFactory();
+        var pluginAvailability = availability ?? new PluginAvailabilityReadModel(
+            new PluginLifecycleStateStore(registry));
+        var catalog = new WorkspaceCatalog(
+            new HostWorkspaceCatalog([], []),
+            registry,
+            pluginAvailability);
         var session = new WorkspaceSession(
             dockFactory,
-            registry,
+            catalog,
             new LayoutOnlyDockableFactory(),
             states,
             close,
-            recovery,
-            availability ?? new PluginAvailabilityReadModel(
-                new PluginLifecycleStateStore(registry)));
+            recovery);
         dockFactory.AttachCallbacks(session);
         return session;
     }
 
     private sealed class LayoutOnlyDockableFactory : IHostDockableFactory
     {
+        public Document CreateHostDocument(
+            DocumentTypeId documentTypeId,
+            NewDocumentActivation activation) => new() { Title = activation.Title };
+
         public ValueTask<Document> CreateDocumentAsync(
             DocumentTypeId documentTypeId,
             DocumentActivation context)

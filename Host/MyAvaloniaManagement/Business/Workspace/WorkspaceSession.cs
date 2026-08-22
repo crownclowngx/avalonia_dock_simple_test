@@ -27,12 +27,11 @@ namespace MyAvaloniaManagement.Business.Workspace;
 /// </remarks>
 internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
 {
-    private readonly PluginRegistry _extensions;
+    private readonly WorkspaceCatalog _catalog;
     private readonly IHostDockableFactory _dockableFactory;
     private readonly DocumentPersistenceStateStore _documentPersistenceStates;
     private readonly DocumentCloseCoordinator _documentCloseCoordinator;
     private readonly DocumentRecoveryRegistry _documentRecoveryRegistry;
-    private readonly PluginAvailabilityReadModel _availability;
     private readonly IHostDiagnosticSink? _diagnostics;
     private readonly DockDocumentLifetime _documentLifetime = new();
     private readonly HashSet<Document> _ownedDocuments =
@@ -42,7 +41,6 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     private readonly ToolDockCoordinator _toolDockCoordinator;
     private IRootDock? _rootDock;
     private DocumentDock? _documentDock;
-    private ITool? _plugGroupMenuTool;
     private bool _acceptingCreations = true;
     private bool _suppressToolHiddenNotification;
     private bool _disposed;
@@ -50,16 +48,15 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     /// <summary>创建具备完整正确性依赖的工作区会话。</summary>
     internal WorkspaceSession(
         HostDockFactory dockFactory,
-        PluginRegistry extensions,
+        WorkspaceCatalog catalog,
         IHostDockableFactory dockableFactory,
         DocumentPersistenceStateStore documentPersistenceStates,
         DocumentCloseCoordinator documentCloseCoordinator,
         DocumentRecoveryRegistry documentRecoveryRegistry,
-        PluginAvailabilityReadModel availability,
         IHostDiagnosticSink? diagnostics = null)
     {
         DockFactory = dockFactory ?? throw new ArgumentNullException(nameof(dockFactory));
-        _extensions = extensions ?? throw new ArgumentNullException(nameof(extensions));
+        _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         _dockableFactory = dockableFactory ?? throw new ArgumentNullException(nameof(dockableFactory));
         _documentPersistenceStates = documentPersistenceStates ??
             throw new ArgumentNullException(nameof(documentPersistenceStates));
@@ -67,7 +64,6 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
             throw new ArgumentNullException(nameof(documentCloseCoordinator));
         _documentRecoveryRegistry = documentRecoveryRegistry ??
             throw new ArgumentNullException(nameof(documentRecoveryRegistry));
-        _availability = availability ?? throw new ArgumentNullException(nameof(availability));
         _diagnostics = diagnostics;
         _workspaceBuilder = new DockWorkspaceBuilder(DockFactory);
         _toolDockCoordinator = new ToolDockCoordinator(
@@ -146,50 +142,33 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
 
     /// <summary>取得当前可用的全部 Document 创建菜单入口。</summary>
     internal IEnumerable<DocumentCreationMenuEntry> GetAllDocumentCreationEntries() =>
-        _extensions.GetCreationEntries().Where(entry =>
-            _extensions.TryGetDocumentRegistration(entry.DocumentTypeId, out var registration) &&
-            _availability.IsAvailable(registration.OwnerId));
+        _catalog.GetCreationEntries();
 
     /// <summary>解析当前可用且所有权已经冻结的 Document 注册。</summary>
-    internal bool TryGetDocumentRegistration(
+    internal bool TryGetPersistablePluginDocumentRegistration(
         DocumentTypeId documentTypeId,
         out PluginDocumentRegistration registration)
-    {
-        if (_extensions.TryGetDocumentRegistration(documentTypeId, out registration) &&
-            _availability.IsAvailable(registration.OwnerId))
-        {
-            return true;
-        }
-
-        registration = null!;
-        return false;
-    }
+        => _catalog.TryGetPersistablePluginDocument(documentTypeId, out registration);
 
     /// <summary>判断 Tool 是否存在于冻结 Registry，不把生命周期不可用误报为未声明。</summary>
     internal bool IsRegisteredTool(string toolId) =>
         ToolTypeId.TryParse(toolId, out var typeId) &&
         typeId is not null &&
-        _extensions.TryGetToolRegistration(typeId, out _);
+        _catalog.IsRegisteredTool(toolId);
 
     /// <summary>判断 Tool 的所有者生命周期当前是否允许使用。</summary>
     internal bool IsToolAvailable(string toolId) =>
-        ToolTypeId.TryParse(toolId, out var typeId) &&
-        typeId is not null &&
-        _extensions.TryGetToolRegistration(typeId, out var registration) &&
-        _availability.IsAvailable(registration.OwnerId);
+        _catalog.IsToolAvailable(toolId);
 
     /// <summary>取得可用 Tool 的冻结描述符，不创建任何模型。</summary>
     internal IReadOnlyDictionary<ToolTypeId, ToolDescriptor> GetAvailableToolDescriptors() =>
-        _extensions.Tools
-            .Where(item => _availability.IsAvailable(item.OwnerId))
-            .ToDictionary(item => item.Descriptor.ToolTypeId, item => item.Descriptor);
+        _catalog.GetAvailableToolDescriptors();
 
     /// <summary>取得 Tool 的声明方向；不可用或未知 Tool 使用稳定 Left 防御值。</summary>
     internal Alignment GetToolAlignment(string toolId) =>
-        _extensions.TryResolveToolTypeId(toolId, out var typeId) &&
+        _catalog.TryResolveToolTypeId(toolId, out var typeId) &&
         typeId is not null &&
-        _extensions.TryGetToolRegistration(typeId, out var registration) &&
-        _availability.IsAvailable(registration.OwnerId)
+        _catalog.TryGetTool(typeId, out var registration)
             ? ToolDockPlacement.ToAlignment(registration.Descriptor.DockSide)
             : Alignment.Left;
 
@@ -201,7 +180,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         ArgumentNullException.ThrowIfNull(documentTypeId);
         ArgumentNullException.ThrowIfNull(activation);
         EnsureAcceptingCreations();
-        if (!_extensions.TryGetDocumentRegistration(documentTypeId, out var registration))
+        if (!_catalog.TryGetDocument(documentTypeId, out var registration))
         {
             throw new NotSupportedException($"不支持的 Document 类型：{documentTypeId.Value}。");
         }
@@ -311,16 +290,9 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
             return _rootDock;
         }
 
-        var welcomeCreation = _dockableFactory.CreateDocumentAsync(
-            HostExtensionIds.V2WelcomeDocument,
+        var welcome = _dockableFactory.CreateHostDocument(
+            HostExtensionIds.WelcomeDocument,
             new NewDocumentActivation("欢迎"));
-        if (!welcomeCreation.IsCompletedSuccessfully)
-        {
-            throw new InvalidOperationException(
-                "Host 内建 Welcome 必须同步完成初始化；布局创建不会阻塞等待任意插件代码。");
-        }
-
-        var welcome = welcomeCreation.Result;
         _ownedDocuments.Add(welcome);
         try
         {
@@ -465,7 +437,6 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     IDockable? IWorkspaceDockCallbacks.ResolveDockable(string dockableId) => dockableId switch
     {
         DockLayoutIds.Documents => _documentDock,
-        "Plug" => _plugGroupMenuTool,
         _ when _createdTools.TryGetValue(dockableId, out var tool) => tool,
         _ => null,
     };
@@ -505,7 +476,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
 
     private static void ValidateActivation(
         DocumentTypeId documentTypeId,
-        PluginDocumentRegistration registration,
+        IWorkspaceDocumentRegistration registration,
         DocumentActivation activation)
     {
         switch (activation)
@@ -535,24 +506,17 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
             return;
         }
         foreach (var toolTypeId in GetAvailableToolDescriptors().Keys.Where(
-                     id => id != HostExtensionIds.V2ToolManagement))
+                     id => id != HostExtensionIds.ToolManagement))
         {
             if (!TryCreateTool(toolTypeId, out var tool))
             {
                 continue;
             }
             _createdTools[toolTypeId.Value] = tool!;
-            if (toolTypeId == HostExtensionIds.V2PluginMenu)
-            {
-                _plugGroupMenuTool = tool;
-            }
         }
 
-        if (_extensions.TryGetToolRegistration(
-                HostExtensionIds.V2ToolManagement,
-                out var registration) &&
-            _availability.IsAvailable(registration.OwnerId) &&
-            TryCreateTool(HostExtensionIds.V2ToolManagement, out var managementTool))
+        if (_catalog.TryGetTool(HostExtensionIds.ToolManagement, out _) &&
+            TryCreateTool(HostExtensionIds.ToolManagement, out var managementTool))
         {
             _createdTools[managementTool!.Id] = managementTool;
         }

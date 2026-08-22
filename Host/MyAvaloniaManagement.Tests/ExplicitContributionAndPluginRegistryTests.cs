@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Lifecycle;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 
@@ -141,7 +143,10 @@ public sealed class ExplicitContributionAndPluginRegistryTests
             ToolCloseBehavior.Hide));
         registration.UseLifecycle<RegisteredLifecycle>();
         registration.Seal();
-        PluginServiceCommitGuard.AppendHostContributions(services, registration);
+        foreach (var descriptor in registration.GetHostOwnedServiceDescriptors())
+        {
+            ((IServiceCollection)services).Add(descriptor);
+        }
 
         Assert.Equal(
             ServiceLifetime.Scoped,
@@ -185,15 +190,19 @@ public sealed class ExplicitContributionAndPluginRegistryTests
                 () => throw new InvalidOperationException("插件私有异常正文"),
                 false)],
             []);
-        var locator = new ViewLocator(registry, diagnostics);
+        var availability = new PluginAvailabilityReadModel(
+            new PluginLifecycleStateStore(registry));
+        var locator = new ViewLocator(
+            new WorkspaceCatalog(new HostWorkspaceCatalog([], []), registry, availability),
+            diagnostics);
         var services = new ServiceCollection();
         services.AddScoped<RegisteredDocument>();
         services.AddDocumentScopeManagement();
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var lease = manager.CreatePluginDocument(typeof(RegisteredDocument));
+        var lease = manager.CreateDocument(typeof(RegisteredDocument));
         using var adapter = new MyAvaloniaManagement.Business.Docking.ManagedDocumentDockable(
-            new ActivatedPluginDocument(
+            new ActivatedWorkspaceDocument(
                 registry.TryGetDocumentRegistration(Document().DocumentTypeId, out var item)
                     ? item
                     : throw new InvalidOperationException(),
@@ -237,39 +246,38 @@ public sealed class ExplicitContributionAndPluginRegistryTests
                 typeof(RegisteredView),
                 static () => new RegisteredView(),
                 false));
-        Assert.Single(second.DocumentDescriptors);
+        Assert.Empty(second.DocumentDescriptors);
     }
 
     [Fact]
-    public void Host内建Welcome与四个Tool全部来自声明式目录()
+    public void Host内建Welcome与四个Tool只存在于HostCatalog()
     {
         var services = new ServiceCollection();
         services.AddApplicationServices().AddViewModels();
         using var provider = services.BuildServiceProvider();
         var registry = provider.GetRequiredService<PluginRegistry>();
+        var hostCatalog = provider.GetRequiredService<HostWorkspaceCatalog>();
 
-        Assert.Equal(
-            [HostExtensionIds.V2WelcomeDocument],
-            registry.DocumentDescriptors.Keys);
+        Assert.Empty(registry.Plugins);
+        Assert.Empty(registry.DocumentDescriptors);
+        Assert.Empty(registry.ToolDescriptors);
         Assert.Equal(
             [
-                HostExtensionIds.V2FileSystemTree,
-                HostExtensionIds.V2ToolManagement,
-                HostExtensionIds.V2PluginMenu,
-                HostExtensionIds.V2PluginStatus,
+                HostExtensionIds.FileSystemTree,
+                HostExtensionIds.ToolManagement,
+                HostExtensionIds.PluginMenu,
+                HostExtensionIds.PluginStatus,
             ],
-            registry.ToolDescriptors.Keys.OrderBy(item => item.Value));
-        Assert.True(registry.TryGetDocumentRegistration(
-            HostExtensionIds.V2WelcomeDocument,
+            hostCatalog.Tools.Select(item => item.Descriptor.ToolTypeId)
+                .OrderBy(item => item.Value));
+        Assert.True(hostCatalog.TryGetDocument(
+            HostExtensionIds.WelcomeDocument,
             out var welcome));
         Assert.Equal(
             typeof(MyAvaloniaManagement.ViewModels.Hello.WelcomeViewModel),
             welcome.ModelType);
-        Assert.All(registry.ToolDescriptors.Keys, toolId =>
-        {
-            Assert.True(registry.TryGetToolRegistration(toolId, out var tool));
-            Assert.Equal(HostExtensionIds.V2Owner, tool.OwnerId);
-        });
+        Assert.All(hostCatalog.Tools, tool =>
+            Assert.StartsWith("myavalonia.host.tool.", tool.Descriptor.ToolTypeId.Value));
     }
 
     private static DocumentDescriptor Document() => new(

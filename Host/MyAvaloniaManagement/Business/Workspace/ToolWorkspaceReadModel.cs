@@ -28,7 +28,7 @@ internal sealed class ToolWorkspaceReadModel(WorkspaceSession session)
         var tools = _session.CreatedTools;
         var states = new List<ToolWorkspaceState>();
         foreach (var descriptor in _session.GetAvailableToolDescriptors().Values
-                     .Where(item => item.ToolTypeId != HostExtensionIds.V2ToolManagement)
+                     .Where(item => item.ToolTypeId != HostExtensionIds.ToolManagement)
                      .OrderBy(item => item.ToolTypeId.Value, StringComparer.Ordinal))
         {
             if (!tools.TryGetValue(descriptor.ToolTypeId.Value, out var tool))

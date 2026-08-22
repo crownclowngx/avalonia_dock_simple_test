@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.PluginSdk;
 

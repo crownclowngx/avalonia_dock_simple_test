@@ -21,8 +21,8 @@ public sealed class DocumentScopeManagerTests
             ValidateOnBuild = true,
         });
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var firstLease = manager.CreatePluginDocument(typeof(TrackedDocument));
-        var secondLease = manager.CreatePluginDocument(typeof(TrackedDocument));
+        var firstLease = manager.CreateDocument(typeof(TrackedDocument));
+        var secondLease = manager.CreateDocument(typeof(TrackedDocument));
         var first = Assert.IsType<TrackedDocument>(firstLease.Model);
         var second = Assert.IsType<TrackedDocument>(secondLease.Model);
 
@@ -53,7 +53,7 @@ public sealed class DocumentScopeManagerTests
         var manager = provider.GetRequiredService<DocumentScopeManager>();
 
         Assert.Throws<InvalidOperationException>(() =>
-            manager.CreatePluginDocument(typeof(FailingDocument)));
+            manager.CreateDocument(typeof(FailingDocument)));
         Assert.True(dependency.IsDisposed);
     }
 
@@ -68,9 +68,9 @@ public sealed class DocumentScopeManagerTests
         using var provider = services.BuildServiceProvider();
         var manager = provider.GetRequiredService<DocumentScopeManager>();
         var first = Assert.IsType<TrackedDocument>(
-            manager.CreatePluginDocument(typeof(TrackedDocument)).Model);
+            manager.CreateDocument(typeof(TrackedDocument)).Model);
         var second = Assert.IsType<TrackedDocument>(
-            manager.CreatePluginDocument(typeof(TrackedDocument)).Model);
+            manager.CreateDocument(typeof(TrackedDocument)).Model);
 
         manager.Dispose();
 
@@ -93,7 +93,7 @@ public sealed class DocumentScopeManagerTests
             ValidateOnBuild = true,
         });
         var manager = provider.GetRequiredService<DocumentScopeManager>();
-        var lease = manager.CreatePluginDocument(typeof(CancellationAwareDocument));
+        var lease = manager.CreateDocument(typeof(CancellationAwareDocument));
         var document = Assert.IsType<CancellationAwareDocument>(lease.Model);
 
         Assert.False(lease.ClosingToken.IsCancellationRequested);

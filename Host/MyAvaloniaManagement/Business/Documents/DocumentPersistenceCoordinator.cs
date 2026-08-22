@@ -192,8 +192,9 @@ internal sealed class DocumentPersistenceCoordinator(
         serializer.ValidateFileLength(storageService.GetFileLength(filePath));
         var json = await storageService.ReadAllTextAsync(filePath);
         var envelope = serializer.Deserialize(json);
-        if (!workspace.TryGetDocumentRegistration(envelope.DocumentTypeId, out var registration) ||
-            !registration.IsPersistable)
+        if (!workspace.TryGetPersistablePluginDocumentRegistration(
+                envelope.DocumentTypeId,
+                out var registration))
         {
             throw new NotSupportedException("当前 Host 没有注册该可持久化 Document 类型。");
         }

@@ -38,8 +38,8 @@ HostRuntime（唯一组合与释放入口）
 | 持久化与布局文件 | 既有 Coordinator/Store | Session 提供状态和操作，不改变现有磁盘协议 |
 
 已删除 `ManagementFactory` Facade、`DocumentWorkspace` 双重工作区所有权、`ToolManagementData`、
-`ToolRegistrySnapshot` 和 `IToolVisibilityStateSink`。生产与 Harness 已删除 `Files` Locator 查询；`Plug`
-兼容别名按任务书留到 G9，Host 内建贡献仍暂留 Plugin Registry，按 G7 再处理。
+`ToolRegistrySnapshot` 和 `IToolVisibilityStateSink`。G6 验收当时只删除了生产与 Harness 的 `Files`
+Locator 查询；`Plug` 与 Host 内建 Registry 路径属于尚未实施的 G7 删除面。后续完成状态见本页末注记。
 
 ## 3. 回调、关闭与退出时序
 
@@ -77,7 +77,10 @@ Welcome 的两个入口通过组合根注入窄 `Action<string>` 显示 Tool，�
 - Core/UI V3 public API 无变化，实数仍为 Core **127**、UI **46**，两个 Shipped 文件仍为空。
 - manifest schema 2、Document envelope schema 2、`layout-v2.json`、默认数据根 `v2` 均未变化。
 - 四插件业务、Descriptor、View、内容 schema 和 SDK 引用未变化，也没有新增 NuGet 包。
-- `Plug` 与 Host 特殊 Registry 路径分别留给 G9/G7，避免在 G6 越阶段修改。
+- `Plug` 与 Host 特殊 Registry 路径在本阶段暂未处理。
+
+> 后续状态（V3 G7，2026-08-22）：`Plug` Locator 与 Host 特殊 Registry 路径已一并删除；当前事实见
+> [G7 Host Catalog 与 Plugin Registry](./g7-host-catalog-and-plugin-registry.md)。本注记不改写 G6 当时边界。
 
 ## 6. 测试、覆盖率与门禁实数
 

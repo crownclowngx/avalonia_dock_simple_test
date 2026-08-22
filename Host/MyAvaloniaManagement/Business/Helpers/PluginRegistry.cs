@@ -5,6 +5,7 @@ using System.Reflection;
 using Avalonia.Controls;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
+using MyAvaloniaManagement.Business.Workspace;
 
 namespace MyAvaloniaManagement.Business.Helpers;
 
@@ -75,8 +76,11 @@ internal sealed class PluginRegistry
         .Concat(_documents.Values.Select(document => document.OwnerId))
         .Concat(_tools.Values.Select(tool => tool.OwnerId))
         .Concat(Lifecycles.Select(lifecycle => lifecycle.OwnerId))
-        .Append(MyAvaloniaManagement.Business.Constants.HostExtensionIds.V2Owner)
         .ToHashSet();
+
+    /// <summary>完整插件 Document 注册；集合不包含 Host 内建 Document。</summary>
+    internal IReadOnlyCollection<PluginDocumentRegistration> Documents =>
+        _documents.Values.ToArray();
 
     /// <summary>供 Host internal 可用性投影筛选的完整 Tool 声明；返回集合不包含运行状态。</summary>
     internal IReadOnlyCollection<PluginToolRegistration> Tools => _tools.Values.ToArray();
@@ -112,51 +116,7 @@ internal sealed class PluginRegistry
         return true;
     }
 
-    /// <summary>展开 Descriptor 中已经冻结的菜单入口，不执行模型或插件代码。</summary>
-    internal IEnumerable<DocumentCreationMenuEntry> GetCreationEntries()
-    {
-        foreach (var registration in _documents.Values)
-        {
-            var descriptor = registration.Descriptor;
-            if (descriptor.CreationIntents.Count == 0)
-            {
-                yield return new DocumentCreationMenuEntry(
-                    descriptor.DocumentTypeId,
-                    null,
-                    descriptor.DisplayName,
-                    descriptor.Description,
-                    descriptor.IconPath,
-                    descriptor.MenuCategory);
-                continue;
-            }
-
-            foreach (var intent in descriptor.CreationIntents)
-            {
-                yield return new DocumentCreationMenuEntry(
-                    descriptor.DocumentTypeId,
-                    intent.IntentId,
-                    intent.DisplayName,
-                    string.IsNullOrWhiteSpace(intent.Description)
-                        ? descriptor.Description
-                        : intent.Description,
-                    string.IsNullOrWhiteSpace(intent.IconPath)
-                        ? descriptor.IconPath
-                        : intent.IconPath,
-                    descriptor.MenuCategory);
-            }
-        }
-    }
 }
-
-/// <summary>Host 菜单使用的内部创建项；它不进入 Plugin SDK public API。</summary>
-/// <remarks>该投影只含 Descriptor 数据，不携带模型、Provider 或执行回调。</remarks>
-internal sealed record DocumentCreationMenuEntry(
-    DocumentTypeId DocumentTypeId,
-    CreationIntentId? CreationIntentId,
-    string DisplayName,
-    string Description,
-    string IconPath,
-    string MenuCategory);
 
 /// <summary>描述一个已经通过两阶段提交的插件及其全部贡献类型快照。</summary>
 /// <remarks>嵌套集合由 Registry 构造函数逐层防御性复制，调用者不能在发布后改写。</remarks>
@@ -180,7 +140,7 @@ internal sealed record PluginDocumentRegistration(
     Type ModelType,
     Type ViewType,
     Func<Control> ViewFactory,
-    bool IsPersistable);
+    bool IsPersistable) : IWorkspaceDocumentRegistration;
 
 /// <summary>冻结一种 Tool 的所有者、描述符、singleton 模型类型和 View 工厂。</summary>
 internal sealed record PluginToolRegistration(
@@ -188,7 +148,7 @@ internal sealed record PluginToolRegistration(
     ToolDescriptor Descriptor,
     Type ModelType,
     Type ViewType,
-    Func<Control> ViewFactory);
+    Func<Control> ViewFactory) : IWorkspaceToolRegistration;
 
 /// <summary>供 ViewLocator 按精确模型类型查询的只读 View 注册事实。</summary>
 internal sealed record PluginViewRegistration(

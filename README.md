@@ -14,11 +14,12 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > 生产面，G14 已冻结 2.0.0 API、建立两轮隔离发布门禁并完成文档签署。见
 > [V2 G14 封板记录](./docs/plan-history/host-v2/g14-v2-sealing.md)。
 
-> 当前源码已完成未发布的 V3 G5：产品、Core/UI SDK 与四插件版本为 `3.0.0`；Document 保存使用
+> 当前源码已完成未发布的 V3 G7：产品、Core/UI SDK 与四插件版本为 `3.0.0`；Document 保存使用
 > 修订快照和指定修订确认，激活输入使用互斥的 New/Restore 类型，插件注册改为 Host 最终提交端口与
-> 贡献生命周期并强制 ID 归属；事件通信由 MyPlugTest、BiliDownloader 各自的插件 Provider 私有持有。
+> 贡献生命周期并强制 ID 归属；事件通信由 MyPlugTest、BiliDownloader 各自的插件 Provider 私有持有；
+> Workspace/Dock 已拆分，Host Catalog 与只含真实插件的 Plugin Registry 已分离。
 > manifest、Document envelope、layout 仍为 schema 2，默认数据根仍为 `v2`。实施证据见
-> [V3 G5 插件私有消息](./docs/plan-history/host-v3/g5-plugin-private-messaging.md)。
+> [V3 G7 Host Catalog 与 Plugin Registry](./docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)。
 
 ## 核心扩展模型
 
@@ -54,7 +55,7 @@ Host 最终提交与 ID 归属门禁，并在 V3 G5 把插件事件通信收回�
 Host/Common 双区间已经删除。缺少入口 `.deps.json` 或依赖历史加载 Facade 的代码不会
 进入运行链。
 
-## V3 G5 私有消息、G4 注册所有权、G3 互斥激活、G2 修订保存与 V2 线格式
+## V3 G7 Host Catalog、G6 Workspace 与既有 V3 语义
 
 历史 v1 正式支持 Windows x64 上同一进程内的可信 Managed Plugin。V2 沿用这一运行模型：插件必须携带严格清单并位于
 独立目录；更新时退出宿主、替换插件文件后重新启动。不支持运行时热卸载、恶意代码沙箱、
@@ -80,11 +81,11 @@ G4 已把宿主与插件对象图彻底分开：Host Provider 先构建，每个
 `ServiceCollection` 建立私有 Provider。插件配置、开放泛型、keyed 与多实现注册都只影响自身；配置或
 Provider 构建失败只隔离当前插件。不存在任意父 Provider 回退。
 
-G5 把 Host 生产模块入口切换到最终 UI SDK，并以 `PluginRegistration`、插件局部 Builder、不可变
-`PluginRegistry` 和 internal Activator 形成唯一贡献路径。Document 自动为 scoped，Tool/Lifecycle 为
-插件 singleton；Descriptor、模型和 View 在一次声明中冻结。插件内错误丢弃整个候选；跨插件 ID 或精确
-模型映射冲突排除全部冲突插件，Host 冲突保留 Host，未冲突插件继续发布。Registry 不保存 Provider，
-Welcome 与四个 Host Tool 也从相同目录产生。四个业务插件已在 G9–G12 全部使用这条生产路径。
+V2 G5 把插件生产模块入口切换到最终 UI SDK，并以 `PluginRegistration`、插件局部 Builder、不可变
+`PluginRegistry` 和 internal Activator 形成插件贡献路径。V3 G7 已从该 Registry 完整移出 Welcome 与
+四个 Host Tool：Registry 只含 manifest 插件，跨插件冲突隔离全部冲突插件；Host 内建项由不可变
+`HostWorkspaceCatalog` 声明。`WorkspaceCatalog` 只读合并两类 Descriptor、菜单和精确 View 映射，
+自身不保存或解析任何 Provider。
 
 V3 G4 在这条独立 Provider 路径上进一步收紧提交所有权：模块进入 `Configure` 时看到真正空的
 `ServiceCollection`，只能修改自己的私有描述符；Document/Tool/Lifecycle 根先作为 Host 拥有的冻结事实
@@ -97,15 +98,16 @@ BiliDownloader 分别在自身插件 Provider 注册私有 singleton 消息器�
 V3 G6 已删除万能型 `ManagementFactory` 和 `DocumentWorkspace`，由唯一 `WorkspaceSession` 拥有 Root、
 Document、Tool 及退出释放；`HostDockFactory` 只适配 Dock override、Locator 和禁浮动协议，二者通过一次性
 internal 回调接缝绑定。Tool 管理使用无 Dock 类型的 `ToolWorkspaceReadModel`/`ToolWorkspaceState`，主窗口
-和 Tool ViewModel 不再依赖 Factory 或 Root Dock。生产与 Harness 的 `Files` Locator 查询已删除；`Plug`
-别名与 Host 内建 Registry 路径分别留待 V3 G9/G7。
+和 Tool ViewModel 不再依赖 Factory 或 Root Dock。V3 G7 又删除了生产与 Harness 中剩余的 `Plug`
+Locator；现在只保留规范 Documents 与 Tool ID。
 
-G6 进一步把 Welcome 与四个 Host Tool 变为普通模型。只有 internal sealed
+Welcome 与四个 Host Tool 仍是普通模型。只有 internal sealed
 `ManagedDocumentDockable`/`ManagedToolDockable` 继承 Dock 类型；View 在发布前由 Registry 精确工厂
 预构建一次。Document Adapter 拥有模型、View 和独立 Scope，Tool Adapter 只拥有 View，Tool singleton
 仍由插件 Provider 释放。单个 Tool 创建失败只隔离自身，Welcome 失败中止布局；所有 Adapter 禁止浮动。
-G7 在该 Adapter 基线上建立唯一异步 Document 链：Registry 核对后在独立 Scope 中调用
-`InitializeAsync`，成功后才构造 Adapter、预构建 View 并发布。V3 G3 把旧的可空组合上下文破坏式
+G7 在该 Adapter 基线上建立两个明确激活边界：Host Welcome 由精确 Host 工厂同步创建，插件 Document
+仍由所属插件 Provider 在独立 Scope 中调用 `InitializeAsync`；两者成功后才构造 Adapter、预构建 View
+并发布。V3 G3 把旧的可空组合上下文破坏式
 替换为 `NewDocumentActivation` 与 `RestoreDocumentActivation`；保存与关闭统一读取 Host 状态，
 不接受 Legacy Strategy、旧激活重载或字符串快照。
 
@@ -184,10 +186,11 @@ TestResults/  需要保留的阶段验收与人工验证记录
 根 README 只提供项目概览。继续阅读时，从以下入口选择：
 
 - [项目文档导航](./docs/README.md)：按用途浏览全部解决方案级文档；
-- [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G6 Workspace、V3 G5 私有消息、V3 G4 注册、V3 G3 激活、V3 G2 保存和 V2 G14 其他语义为事实源；
+- [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G7 Catalog、V3 G6 Workspace、V3 G5 私有消息、V3 G4 注册、V3 G3 激活、V3 G2 保存和 V2 G14 其他语义为事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G6 已完成事实与 G7–G14 后续边界；
+- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G7 已完成事实与 G8–G14 后续边界；
+- [V3 G7 Host Catalog 与 Plugin Registry](./docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)：查看目录职责、激活/失败时序、SOLID 取舍、448 项测试和非发布边界；
 - [V3 G6 Workspace Session 与 Dock Factory](./docs/plan-history/host-v3/g6-workspace-session-and-dock-factory.md)：查看职责图、所有权、关闭/退出时序、SOLID 取舍、测试实数和整体回滚边界；
 - [V3 G5 插件私有消息](./docs/plan-history/host-v3/g5-plugin-private-messaging.md)：查看最终接口、消息拓扑、SOLID 取舍、测试实数和整体回滚边界；
 - [V3 G4 插件注册所有权](./docs/plan-history/host-v3/g4-plugin-registration-ownership.md)：查看 Host 最终提交、ID 归属、诊断、测试和回滚边界；
@@ -282,13 +285,14 @@ V2 封板时曾在干净 Git 提交上执行以下 Windows 本地发布门禁；
 - 插件目录快照和加载上下文以进程为边界，不支持热更新或运行时卸载；
 - 仓库能生成正式 Plugin SDK/NuGet 制品，但不自动推送公共包源；当前没有插件市场或通用脚手架；
 - G3 已完成：宿主只接受严格 manifest v2、入口 `.deps.json` 和清单精确声明的入口类型；
-- G5 已完成：宿主与每个插件拥有独立 Provider，Host 生产贡献只通过最终 UI SDK 声明并发布到唯一 Registry；
+- G5/G7 已完成：每个 manifest 插件拥有独立 Provider 并只通过最终 UI SDK 发布到 Plugin Registry；
+  Host Welcome/Tool 由独立 Host Catalog 声明；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
-- 当前代码版本线为未发布 V3 G6；Core/UI 包、manifest schema 2、独立容器、Host 声明式目录、
+- 当前代码版本线为未发布 V3 G7；Core/UI 包、manifest schema 2、独立容器、Host 独立目录、
   Document envelope v2、Layout v2 和 Host internal 生命周期继续使用既有边界，Document 保存已采用
   修订快照与指定修订确认，Document 激活已采用互斥 New/Restore 类型，插件端口和贡献根已改为 Host
   最终提交并强制 ID 归属，插件消息由对应插件 Provider 私有持有；Workspace Session、Dock Factory 和
-  Tool 只读投影已经分离。V3 G7–G14 尚未实施，
+  Tool 只读投影以及 Host Catalog / Plugin Registry 已经分离。V3 G8–G14 尚未实施，
   不得把 v3 Unshipped 或本地测试包描述为正式发布承诺。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

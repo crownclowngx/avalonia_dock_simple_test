@@ -9,6 +9,7 @@ using MyAvaloniaManagement.ViewModels.Hello;
 using MyAvaloniaManagement.Views.Hello;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
+using MyAvaloniaManagement.Business.Workspace;
 
 [assembly: AvaloniaTestApplication(typeof(
     MyAvaloniaManagement.UiTests.TestAppBuilder))]
@@ -38,22 +39,22 @@ public static class TestAppBuilder
 
     private static ViewLocator CreateViewLocator()
     {
-        var registry = new PluginRegistry(
-            [],
-            [new PluginDocumentRegistration(
-                HostExtensionIds.V2Owner,
+        var hostCatalog = new HostWorkspaceCatalog(
+            [new HostWorkspaceDocumentRegistration(
                 new DocumentDescriptor(
-                    HostExtensionIds.V2WelcomeDocument,
+                    HostExtensionIds.WelcomeDocument,
                     "欢迎",
                     "欢迎",
                     "帮助"),
                 typeof(WelcomeViewModel),
                 typeof(WelcomeView),
                 static () => new WelcomeView(),
-                false)],
-            [],
+                static () => throw new NotSupportedException("App 资源测试不激活模型。"),
+                static (_, _, _) => { })],
             []);
-        return new ViewLocator(registry);
+        return new ViewLocator(UiWorkspaceCatalogFactory.Create(
+            new PluginRegistry([], []),
+            hostCatalog));
     }
 
     /// <summary>

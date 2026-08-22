@@ -128,7 +128,12 @@ try {
         -Project $projectPath -Configuration $Configuration -OutputDirectory $secondPackageRoot
     if ($LASTEXITCODE -ne 0) { throw 'G12 第二次隔离测试 ZIP 构建失败。' }
 
-    $baseName = 'BiliDownloader-2.0.0-win-x64'
+    $sidecars = @(Get-ChildItem -LiteralPath $firstPackageRoot `
+        -Filter 'BiliDownloader-*-win-x64.manifest.json')
+    if ($sidecars.Count -ne 1) {
+        throw "G12 预期唯一机器清单，实际为 $($sidecars.Count) 份。"
+    }
+    $baseName = $sidecars[0].Name -replace '\.manifest\.json$', ''
     $firstSidecar = Get-Content -Raw -LiteralPath `
         (Join-Path $firstPackageRoot "$baseName.manifest.json") | ConvertFrom-Json
     $secondSidecar = Get-Content -Raw -LiteralPath `

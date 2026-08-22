@@ -5,6 +5,7 @@ using Dock.Model.Core;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Workspace;
 
 namespace MyAvaloniaManagement;
 
@@ -17,11 +18,11 @@ namespace MyAvaloniaManagement;
 /// 永远不会伪装成 Dock 对象。
 /// </remarks>
 internal sealed class ViewLocator(
-    PluginRegistry registry,
+    WorkspaceCatalog catalog,
     IHostDiagnosticSink? diagnostics = null) : IDataTemplate
 {
-    private readonly PluginRegistry _registry = registry ??
-        throw new ArgumentNullException(nameof(registry));
+    private readonly WorkspaceCatalog _catalog = catalog ??
+        throw new ArgumentNullException(nameof(catalog));
 
     /// <summary>在 Adapter 发布前精确构造一次 View，并把普通模型设置为 DataContext。</summary>
     /// <remarks>
@@ -37,8 +38,8 @@ internal sealed class ViewLocator(
         }
 
         var registration = adapter.ViewRegistration;
-        if (!_registry.TryGetView(adapter.Model.GetType(), out var registered) ||
-            registered.OwnerId != registration.OwnerId ||
+        if (!_catalog.TryGetView(adapter.Model.GetType(), out var registered) ||
+            registered.GetType() != registration.GetType() ||
             registered.ViewType != registration.ViewType)
         {
             throw new InvalidOperationException(
@@ -86,7 +87,7 @@ internal sealed class ViewLocator(
         (data is IManagedDockableViewHost || data is IDockable);
 
     private void ReportViewFailure(
-        PluginViewRegistration registration,
+        IWorkspaceViewRegistration registration,
         Exception exception)
     {
         // 诊断草稿可以携带异常供白名单层提取类型，但持久化记录不会保存异常正文。
@@ -94,7 +95,9 @@ internal sealed class ViewLocator(
             "VIEW_CREATION_FAILED",
             HostDiagnosticPhase.ExtensionDiscovery)
         {
-            PluginId = registration.OwnerId,
+            PluginId = registration is PluginWorkspaceViewRegistration plugin
+                ? plugin.OwnerId
+                : null,
             AssemblyName = registration.ViewType.Assembly.GetName(),
             StableId = registration.ViewType.FullName,
             Exception = exception,

@@ -88,14 +88,14 @@ public sealed class HostToolVisualTests
     {
         using var context = new UiTestContext();
         var managerAdapter = Assert.IsType<ManagedToolDockable>(
-            context.Workspace.CreatedTools[HostExtensionIds.V2ToolManagement.Value]);
+            context.Workspace.CreatedTools[HostExtensionIds.ToolManagement.Value]);
         var manager = Assert.IsType<ToolManagementViewModel>(managerAdapter.Model);
         var closableItem = manager.ToolItems.Single(item =>
-            item.ToolId == HostExtensionIds.V2PluginStatus.Value);
+            item.ToolId == HostExtensionIds.PluginStatus.Value);
         var closableTool = context.Workspace.CreatedTools[closableItem.ToolId];
         var owningRoot = context.Workspace.DockFactory.FindRoot(closableTool, _ => true)!;
         var fixedItem = manager.ToolItems.Single(item =>
-            item.ToolId == HostExtensionIds.V2FileSystemTree.Value);
+            item.ToolId == HostExtensionIds.FileSystemTree.Value);
         var view = new ToolManagementView
         {
             DataContext = manager

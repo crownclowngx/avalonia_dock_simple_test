@@ -18,24 +18,25 @@
 > 过渡构建面已经删除；Core/UI v2 API 已进入 Shipped，两轮隔离门禁与 Windows V2 Smoke 已建立，
 > 历史 v1 签署事实保持可追溯。
 
-> 当前源码已完成未发布 V3 G6：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
+> 当前源码已完成未发布 V3 G7：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
 > `[3.0.0, 4.0.0)`。活动签名位于 v3 Unshipped，Document 保存采用修订快照与指定修订确认，
 > 激活采用互斥的 `NewDocumentActivation` / `RestoreDocumentActivation`，插件注册采用 Host 最终提交
 > 与 ID 归属校验；SDK/Host 通用事件总线已删除，消息实例归对应插件 Provider 所有；Dock Factory、
-> 唯一 Workspace Session 与无 Dock Tool ReadModel 已分离；
+> 唯一 Workspace Session 与无 Dock Tool ReadModel 已分离；Host Catalog 与只含真实插件的 Plugin
+> Registry 已分离；
 > manifest、Document envelope、layout 和默认数据根继续使用 schema/generation 2。
 
 ## 2. public API
 
-当前 V3 G6 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
+当前 V3 G7 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
 四个业务插件只引用最终 SDK。`MyAvaloniaManagement.LegacyPluginContracts` 已整体删除；活动项目、
 构建探针、Loader 与包均不再包含 `MyAvaloniaManagementCommon.dll`。
 
-G8 生产组合中，只有 `ManagedDocumentDockable` 与 `ManagedToolDockable` 可以继承 Dock 类型。普通插件
+当前生产组合中，只有 `ManagedDocumentDockable` 与 `ManagedToolDockable` 可以继承 Dock 类型。普通插件
 模型不得创建或继承 Dock；Document 每次创建拥有独立 Scope，Tool 是所属 Provider singleton。View 必须
-来自 Registry 冻结工厂并在发布前精确构造，禁止程序集扫描、类型名猜测和反射回退。该内部实现没有改变
+来自 Workspace Catalog 的精确冻结工厂并在发布前构造，禁止程序集扫描、类型名猜测和反射回退。该内部实现没有改变
 Plugin SDK public API 或 manifest；Document 与 Layout 磁盘契约均已切换为唯一 V2。
 
 历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 的 v2 基线由 G14 冻结为
@@ -195,7 +196,8 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - 通过 `registration.Services` 直接登记普通类型只留在私有 Provider，不会发布到 Registry；插件无法取得 Host 描述符；
 - 插件内重复 Document/Tool ID、重复精确模型映射、Document/Tool 共用模型、多生命周期或所有者混入会整体丢弃该候选；
 - Descriptor、模型、View 工厂和生命周期类型在专用注册调用中冻结；读取 Registry 元数据不会构造模型或执行插件回调；
-- 跨插件 Document/Tool ID 或精确模型冲突排除全部冲突插件；与 Host 冲突时保留 Host；无冲突插件继续发布；
+- 跨插件 Document/Tool ID 或精确模型冲突排除全部冲突插件；Host 命名空间在插件局部校验时拒绝，
+  Host Catalog 与 Plugin Registry 的合并事实若碰撞则立即失败；无冲突插件继续发布；
 - 配置、Provider 构建、局部校验或全局冲突均不得留下部分 Registry、Provider 租约或 Document Scope；
 - 插件根目录快照在进程内不刷新，更新插件需要重启应用。
 
@@ -206,9 +208,8 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 
 ## 4. Document 契约
 
-- Host Welcome、MyPlugTest 与 DaTang 只通过 Registry、internal Activator 和异步工厂创建；
-  它们的生产代码不存在 Legacy Document 命令参数、ID 映射或 Scope 工厂；
-- BiliDownloader 尚未迁移，V2 Host 不加载其 `IDocumentCreationStrategy` 或 Creation Intent Provider；
+- Host Welcome 通过 Host Catalog 与同步 Host Activator 创建；四插件 Document 通过 Plugin Registry、
+  所属插件 Activator 和异步工厂创建。生产代码不存在 Legacy Document 命令参数、ID 映射或 Scope 工厂；
 - 唯一磁盘格式是 Document 信封 v2，根必须且只能包含 `schemaVersion`、`pluginId`、`documentTypeId`、
   `title`、`savedAtUtc`、`content`；content 只含 `schemaVersion` 与原生 JSON `payload`；
 - 根 `schemaVersion` 只能为 `2`；UTF-8 文件上限为 8 MiB，JSON 最大深度为 8；注释、尾随逗号、
@@ -216,7 +217,7 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - 插件公共 `DocumentContent` 克隆 `JsonElement`；可保存模型实现 `IPersistablePluginDocument` 的
   `CaptureSaveSnapshotAsync(ClosingToken)`、`IsDirty` 与 `AcceptChanges(savedRevision)`；插件拥有
   修订含义但不拥有路径或磁盘身份，Host 只原样回传修订；
-- 宿主从不可变 Registry 拥有 `PluginId`、`DocumentTypeId`，并由内部状态存储按 Document 引用保存规范注册项与当前主路径；标题来自文件名，UTC 时间来自 `TimeProvider`；插件只解释内容版本和 payload；
+- 宿主从不可变 Plugin Registry 取得可持久化插件的 `PluginId`、`DocumentTypeId`，并由内部状态存储按 Document 引用保存规范插件注册项与当前主路径；Host Welcome 不进入此路径；标题来自文件名，UTC 时间来自 `TimeProvider`；插件只解释内容版本和 payload；
 - 信封中的 Document 类型必须是规范主 ID，不接受历史别名；`pluginId` 必须等于注册项所有者；
 - 路径转绝对路径后按 Windows 不区分大小写规则查重；
 - 批量打开以单文件为错误边界；

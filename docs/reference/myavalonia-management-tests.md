@@ -10,10 +10,11 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [V1 G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
 > [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。当前源码已完成未发布
-> V3 G6；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
+> V3 G7；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
 > 修订保存见 [V3 G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)，互斥激活见
 > [V3 G3 专项记录](../plan-history/host-v3/g3-exclusive-document-activation.md)，Workspace/Dock 拆分见
-> [V3 G6 专项记录](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)。
+> [V3 G6 专项记录](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)，Host/插件目录分离见
+> [V3 G7 专项记录](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)。
 
 ## 当前文档与非发布基线门禁
 
@@ -622,6 +623,26 @@ ZIP 与本地 Host 加载均通过。专项摘要固定记录 `aiflow=false`、`
 运行 Windows CI/Smoke、ReleaseAcceptance 或发布门禁。完整记录见
 [V3 G6 Workspace Session 与 Dock Factory](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)。
 
+### V3 G7 Host Catalog / Plugin Registry 非发布门禁
+
+G7 专项入口为：
+
+```powershell
+.\scripts\Test-HostCatalogPluginRegistry.ps1 -Configuration Release -NoRestore
+```
+
+脚本串行运行完整 Host Unit、Headless UI、Plugin/Dock 三组测试，生成 TRX、三份 Cobertura、合并报告和
+`artifacts/test-results/HostCatalogPluginRegistry/summary.json`。2026-08-22 实际结果为 Unit **188**、
+UI **56**、Plugin **204**，共 **448/448**；Host 行覆盖率 **84.04%**、分支覆盖率 **70.26%**。
+`HostWorkspaceCatalog`、`WorkspaceCatalog`、`HostWorkspaceActivator`、`PluginContributionActivator`
+行覆盖率分别为 **100.00%**、**96.23%**、**100.00%**、**100.00%**。
+
+结构扫描禁止 `V2Owner`、Host `PluginRegistration`、Host Registry/Availability 特判、`Plug` Locator、
+Catalog 服务容器依赖和公共 Workspace Context 回流。专项摘要固定记录 `aiflow=false`、
+`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、`releaseGate=false`、
+`publishable=false`；该入口不运行 Windows CI/Smoke、发布验收或发布门禁。完整设计与回滚边界见
+[V3 G7 Host Catalog 与 Plugin Registry](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)。
+
 ### 插件私有消息、Host 直接协调与稳定 ID
 
 V3 SDK 与 Host 已删除通用事件总线。MyPlugTest 与 BiliDownloader 分别注入自身插件程序集中的最小消息
@@ -633,9 +654,9 @@ Host 自身的文件打开、布局刷新和 Tool 显隐继续使用直接协调
 主窗口刷新只读 Layout 绑定。瞬态消费者各自幂等解除通知；结构门禁同时证明旧 Host 消息类型和总线不存在，插件私有消息也不能从 Host
 根或其他插件 Provider 解析。
 
-插件菜单的策略元数据、创建实例、`ContextLocator` 和
-`DockableLocator["Plug"]` 共用 `DockNameConstant.PlugGroupMenu`。
-Dock ID 会被持久化，集中常量可以避免一个字符的差异导致工具已经创建却无法定位。
+插件菜单的策略元数据、创建实例和 `ContextLocator` 使用规范
+`myavalonia.host.tool.plugin-menu`。G7 已删除 `DockableLocator["Plug"]`；Dock 定位只接受规范 Tool ID，
+避免同一 Tool 同时存在两个运行时身份。
 
 工具管理界面不把 CheckBox 状态当作事实来源，而是重新检查 Dock 树和
 `HiddenDockables`。因此无论工具由管理界面切换、用户点击关闭按钮还是布局恢复

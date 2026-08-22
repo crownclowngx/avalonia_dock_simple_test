@@ -355,7 +355,7 @@ public sealed class DocumentPersistenceV2Tests
         ownerContext.Storage.AddFile(
             ownerPath,
             Serialize("所有者", "正文").Replace(
-                "myavalonia.host\"",
+                "myavalonia.plugin.host-tests\"",
                 "myavalonia.plugin.other\"",
                 StringComparison.Ordinal));
         var ownerViewModel = ownerContext.CreateMainWindowViewModel();
@@ -495,7 +495,7 @@ public sealed class DocumentPersistenceV2Tests
     {
         using var payload = JsonDocument.Parse(JsonSerializer.Serialize(content));
         return new DocumentEnvelopeSerializer().Serialize(
-            MyAvaloniaManagement.Business.Constants.HostExtensionIds.V2Owner,
+            TestPluginIds.Owner,
             TestDocumentIds.TypeId,
             title,
             new DateTimeOffset(2026, 8, 21, 1, 2, 3, TimeSpan.Zero),

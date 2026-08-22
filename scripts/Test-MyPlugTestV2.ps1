@@ -132,8 +132,14 @@ try {
         -Project $projectPath -Configuration $Configuration -OutputDirectory $secondPackageRoot
     if ($LASTEXITCODE -ne 0) { throw 'G9 第二次隔离测试 ZIP 构建失败。' }
 
-    $firstSidecarPath = Join-Path $firstPackageRoot 'MyPlugTest-2.0.0-win-x64.manifest.json'
-    $secondSidecarPath = Join-Path $secondPackageRoot 'MyPlugTest-2.0.0-win-x64.manifest.json'
+    $firstSidecars = @(Get-ChildItem -LiteralPath $firstPackageRoot `
+        -Filter 'MyPlugTest-*-win-x64.manifest.json')
+    if ($firstSidecars.Count -ne 1) {
+        throw "G9 预期唯一机器清单，实际为 $($firstSidecars.Count) 份。"
+    }
+    $firstSidecarPath = $firstSidecars[0].FullName
+    $packageBaseName = $firstSidecars[0].Name -replace '\.manifest\.json$', ''
+    $secondSidecarPath = Join-Path $secondPackageRoot "$packageBaseName.manifest.json"
     $firstSidecar = Get-Content -Raw -LiteralPath $firstSidecarPath | ConvertFrom-Json
     $secondSidecar = Get-Content -Raw -LiteralPath $secondSidecarPath | ConvertFrom-Json
     if ($firstSidecar.archive.sha256 -ne $secondSidecar.archive.sha256) {
@@ -157,7 +163,7 @@ try {
 
     $packageLoadRoot = Join-Path $resultRoot 'package-load'
     Expand-Archive `
-        -LiteralPath (Join-Path $firstPackageRoot 'MyPlugTest-2.0.0-win-x64.zip') `
+        -LiteralPath (Join-Path $firstPackageRoot "$packageBaseName.zip") `
         -DestinationPath $packageLoadRoot
     $previousPackageRoot = [Environment]::GetEnvironmentVariable('MYAVALONIA_G9_PACKAGE_ROOT')
     try {

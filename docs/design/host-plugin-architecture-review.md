@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-22（已同步 Managed Plugin V3 G6 Workspace / Dock Factory 拆分）<br>
+> 更新日期：2026-08-22（已同步 Managed Plugin V3 G7 Host Catalog / Plugin Registry 分离）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
@@ -9,10 +9,11 @@
 > V2 当前状态：G0–G14 已完成。四个业务插件均使用正式 SDK、声明式贡献与普通模型；Legacy
 > 项目、兼容适配和过渡构建属性已经删除，API Shipped 与两轮隔离发布门禁已经建立。
 
-> V3 当前状态：G0–G6 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
+> V3 当前状态：G0–G7 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
 > 保存已使用修订协议，激活已使用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属；
 > MyPlugTest 与 BiliDownloader 的消息器已归各自插件 Provider 所有；唯一 Workspace Session、Dock
-> Factory Adapter 和无 Dock Tool ReadModel 已建立。磁盘 schema 仍为 2，G7–G14 尚未实施。
+> Factory Adapter 和无 Dock Tool ReadModel 已建立；Host Catalog 与只含真实插件的 Plugin Registry
+> 已分离。磁盘 schema 仍为 2，G8–G14 尚未实施。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -134,8 +135,9 @@ sequenceDiagram
 
 ## 3. Document：多实例工作上下文
 
-> G12 当前生产事实：四个业务插件的全部 Document 与 Host 内建贡献都通过最终
-> `DocumentDescriptor`、Registry、internal Activator、异步初始化与 Dock Adapter 创建。
+> 当前生产事实：四个业务插件的全部 Document 通过最终 `DocumentDescriptor`、Plugin Registry、
+> 插件 Activator、异步初始化与 Dock Adapter 创建；Host Welcome 通过 Host Catalog 与同步 Host
+> Activator 创建，两类来源只在 Workspace Catalog 的只读投影相交。
 
 ### 3.1 最终创建入口统一为“类型 + ActivationContext”
 
@@ -155,7 +157,7 @@ Host 生产入口接收 `DocumentTypeId + DocumentActivation` 并异步返回完
 
 ### 3.2 所有 V2 Document 统一纳入所属 Provider Scope
 
-**[当前生产事实]** Registry 先确定所有者，`DocumentScopeManager` 返回包含普通 `IPluginDocument`、
+**[当前生产事实]** 插件路径由 Registry 先确定所有者，`DocumentScopeManager` 返回包含普通 `IPluginDocument`、
 关闭令牌和幂等释放入口的窄 Lease。Host 等待 `InitializeAsync` 后才构造 Adapter/View；最终关闭依次
 断开 View、发出令牌并释放模型与 scoped 依赖。生产不注册 `IDocumentScopeFactory`。
 
@@ -304,11 +306,12 @@ Factory 或容器；`ToolManagementViewModel` 只依赖 `ToolWorkspaceReadModel`
 | .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.0、Dock 12.0.0.2；产品/SDK、构建和包版本分别由 `Directory.Version.props`、`Directory.Build.props`、`Directory.Packages.props` 集中管理 |
 | 插件目录扫描 | 已实现 | 按规范化根目录缓存线程安全快照；只加载清单声明且携带 deps 的入口，模块结构错误按目录隔离 |
 | Managed-only V2 | 已实现 | Host 与四个业务插件只使用最终 UI SDK 精确入口；普通类型冒充模块会在构造前隔离 |
-| 显式扩展贡献 | 已实现 | Host 与四个插件一次登记模型/View/Descriptor；Builder 全量校验后原子发布不可变 `PluginRegistry` |
+| 显式扩展贡献 | 已实现 V3 G7 | Host 由不可变 `HostWorkspaceCatalog` 声明；四插件经 Builder 校验后发布到只含真实插件的不可变 `PluginRegistry`；`WorkspaceCatalog` 只读合并 |
 | 插件级 DI | 已实现 | Managed Plugin 可注册 singleton/scoped/transient；根容器启用构建和 Scope 验证 |
 | 插件生命周期 | 已实现 V2 | PluginId 正序初始化、成功项反序关闭、幂等、失败隔离、超时和只读可用性投影已有测试；不支持热卸载 |
 | Tool 四向布局 | 已实现 | Left/Right/Top/Bottom、空 Pane 折叠、隐藏恢复、固定状态和禁用浮动均有测试 |
 | Workspace / Dock 边界 | 已实现 V3 G6 | Factory 只适配框架，Session 独占 Root/Document/Tool；多窗口共享、回调顺序、退出释放和无 Dock Tool 投影通过 441 项专项门禁 |
+| Host / 插件目录边界 | 已实现 V3 G7 | Host 无伪 PluginId/Provider/Availability；双激活器、精确 View 映射、规范 Locator 和失败回滚通过 448 项专项门禁 |
 | 布局持久化 | 已实现 V2 | 唯一严格 schema、原子写入、坏文件隔离、可用性门控和整体回退已有测试；不读取 V1 |
 | Document 保存 | 已实现 V3 G2 | 六字段 envelope v2、插件内容 schema、修订快照、指定修订确认、关闭竞争保护、备份恢复和原子替换均有回归；MyPlugTest、DaTang 与 BiliDownloader 已真实接入 |
 | Document 激活 | 已实现 V3 G3 | New/Restore 在 public 类型层互斥；Host、四插件 11 个 Document、取消与 Scope/View 回滚均有专项测试 |
@@ -481,6 +484,20 @@ Host Unit 119、Plugin 127、Headless UI 37，合计 **283/283**。SDK 包门禁
 当前发布资格只由 V2 门禁判定。完整证据和 SOLID 取舍见
 [G14 V2 封板记录](../plan-history/host-v2/g14-v2-sealing.md)。
 
+### 6.11 2026-08-22 V3 G7 Host Catalog 与 Plugin Registry
+
+**[当前事实]** Welcome 与四个 Host Tool 已从 `PluginRegistry`、插件 Provider、Lifecycle State 和
+Availability 完整移出。组合根按精确类型构造不可变 `HostWorkspaceCatalog`；只含 manifest 插件的
+`PluginRegistry` 与 Host 目录由 `WorkspaceCatalog` 合并 Descriptor、菜单及模型到 View 映射。
+合并层不持有 Provider，也不创建对象。Host Welcome 使用同步精确工厂；插件贡献只由
+`PluginContributionActivator` 进入所属插件 Provider/Scope。
+
+`V2Owner`、Host `PluginRegistration` 临时入口、Host 优先冲突分支及 `Plug` Locator 已删除。专项门禁
+Host Unit 188、Headless UI 56、Plugin/Dock 204，共 **448/448**；行覆盖率 **84.04%**、分支覆盖率
+**70.26%**，四个目录/激活关键文件行覆盖率均不低于 96.23%。完整职责、SOLID 取舍、失败时序、
+非发布声明与回滚边界见
+[G7 Host Catalog 与 Plugin Registry](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)。
+
 ## 7. 宿主应该给插件多大自由度
 
 ### 7.1 当前可信模型下的责任边界
@@ -501,9 +518,11 @@ Host Unit 119、Plugin 127、Headless UI 37，合计 **283/283**。SDK 包门禁
 flowchart TB
     Module["IPluginModule"] --> Registration["IPluginRegistration<br/>私有服务与一次性贡献"]
     Registration --> Provider["插件私有 Provider"]
-    Registration --> Registry["不可变 PluginRegistry"]
+    Registration --> Registry["不可变 PluginRegistry\n仅真实插件"]
+    HostCatalog["HostWorkspaceCatalog\nWelcome + Host Tools"] --> Workspace["WorkspaceCatalog\n只读合并"]
+    Registry --> Workspace
     Provider --> Models["Document / Tool / Lifecycle 普通模型"]
-    Registry --> Adapters["Host internal Dock Adapter"]
+    Workspace --> Adapters["Host internal Dock Adapter"]
     Ports["窄 Host Ports<br/>Event / Window / Fullscreen"] --> Provider
     Adapters --> Dock["Host 独占 Dock 树"]
     Views["插件 Avalonia View"] --> Adapters

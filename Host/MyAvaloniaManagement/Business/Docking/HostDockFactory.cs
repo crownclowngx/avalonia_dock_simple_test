@@ -27,7 +27,7 @@ internal interface IWorkspaceDockCallbacks
     /// <summary>由 Dock Framework 请求创建当前会话的唯一布局。</summary>
     IRootDock CreateLayout();
 
-    /// <summary>按规范或暂时保留的兼容 ID 解析当前会话拥有的 Dockable。</summary>
+    /// <summary>按规范 ID 解析当前会话拥有的 Dockable。</summary>
     IDockable? ResolveDockable(string dockableId);
 
     /// <summary>Docked 基类行为完成后，归一化宿主要求的稳定结构。</summary>
@@ -80,19 +80,18 @@ internal sealed class HostDockFactory : Factory
         ArgumentNullException.ThrowIfNull(layout);
         var callbacks = GetCallbacks();
         ContextLocator = new Dictionary<string, Func<object?>>();
-        foreach (var toolId in callbacks.CreatedToolIds)
-        {
-            ContextLocator[toolId] = () => layout;
-        }
-
         DockableLocator = new Dictionary<string, Func<IDockable?>>
         {
             [DockLayoutIds.Root] = () => callbacks.RootDock,
             [DockLayoutIds.Workspace] = () => callbacks.RootDock?.ActiveDockable,
             [DockLayoutIds.Documents] = () => callbacks.ResolveDockable(DockLayoutIds.Documents),
-            // Plug 属于 G9 才删除的兼容别名；G6 只删除历史 Files 查询。
-            ["Plug"] = () => callbacks.ResolveDockable("Plug"),
         };
+        foreach (var toolId in callbacks.CreatedToolIds)
+        {
+            ContextLocator[toolId] = () => layout;
+            var stableToolId = toolId;
+            DockableLocator[stableToolId] = () => callbacks.ResolveDockable(stableToolId);
+        }
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>
         {
             [nameof(IDockWindow)] = static () => new HostWindow()

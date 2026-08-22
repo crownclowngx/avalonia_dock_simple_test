@@ -3,6 +3,7 @@ using System.Threading;
 using Avalonia.Controls;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Docking;
@@ -14,11 +15,11 @@ namespace MyAvaloniaManagement.Business.Docking;
 /// </remarks>
 internal sealed class ManagedToolDockable : Tool, IManagedDockableViewHost, IDisposable
 {
-    private readonly ActivatedPluginTool _activation;
+    private readonly ActivatedWorkspaceTool _activation;
     private readonly ManagedDockableViewLease _view = new();
     private int _disposed;
 
-    internal ManagedToolDockable(ActivatedPluginTool activation)
+    internal ManagedToolDockable(ActivatedWorkspaceTool activation)
     {
         _activation = activation ?? throw new ArgumentNullException(nameof(activation));
         var descriptor = activation.Registration.Descriptor;
@@ -30,13 +31,19 @@ internal sealed class ManagedToolDockable : Tool, IManagedDockableViewHost, IDis
         CanFloat = false;
     }
 
-    internal PluginToolRegistration Registration => _activation.Registration;
+    internal IWorkspaceToolRegistration Registration => _activation.Registration;
     public object Model => _activation.Model;
-    public PluginViewRegistration ViewRegistration => new(
-        Registration.OwnerId,
-        Registration.ModelType,
-        Registration.ViewType,
-        Registration.ViewFactory);
+    public IWorkspaceViewRegistration ViewRegistration =>
+        Registration is PluginToolRegistration plugin
+            ? new PluginWorkspaceViewRegistration(
+                plugin.OwnerId,
+                plugin.ModelType,
+                plugin.ViewType,
+                plugin.ViewFactory)
+            : new HostWorkspaceViewRegistration(
+                Registration.ModelType,
+                Registration.ViewType,
+                Registration.ViewFactory);
     public Control? PreparedView => _view.View;
     public void AttachPreparedView(Control view) => _view.Attach(view);
     public void ReleasePreparedView() => _view.Release();

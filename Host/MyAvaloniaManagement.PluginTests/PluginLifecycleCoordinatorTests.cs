@@ -3,6 +3,7 @@ using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -242,17 +243,31 @@ public sealed class PluginLifecycleCoordinatorTests
     }
 
     [Fact]
-    public void 无生命周期插件与Host内建贡献立即可用_停止阶段统一禁止新激活()
+    public void 无生命周期插件立即可用且Availability不认识Host身份_停止阶段禁止新激活()
     {
-        var registry = new PluginRegistry([], [], [], []);
+        var owner = new PluginId("myavalonia.plugin.lifecycle-ready");
+        var registry = new PluginRegistry(
+            [],
+            [new PluginToolRegistration(
+                owner,
+                new ToolDescriptor(
+                    new ToolTypeId("myavalonia.plugin.lifecycle-ready.tool.sample"),
+                    "示例",
+                    "示例",
+                    ToolDockSide.Left,
+                    ToolCloseBehavior.Hide),
+                typeof(object),
+                typeof(Avalonia.Controls.UserControl),
+                static () => new Avalonia.Controls.UserControl())]);
         var states = new PluginLifecycleStateStore(registry);
         var availability = new PluginAvailabilityReadModel(states);
 
-        Assert.True(availability.IsAvailable(HostExtensionIds.V2Owner));
+        Assert.True(availability.IsAvailable(owner));
+        Assert.False(availability.IsAvailable(new PluginId("myavalonia.host")));
 
         states.BeginShutdown();
 
-        Assert.False(availability.IsAvailable(HostExtensionIds.V2Owner));
+        Assert.False(availability.IsAvailable(owner));
     }
 
     [Fact]

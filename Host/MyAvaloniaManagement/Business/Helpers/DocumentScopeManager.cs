@@ -37,7 +37,7 @@ internal sealed class DocumentScopeManager : IDisposable
     /// 本入口不扫描类型、不接受任意服务名，也不要求模型继承 Dock。返回模型随后由 Host internal
     /// Adapter 承载；插件始终只观察自己的业务对象和 ClosingToken。
     /// </remarks>
-    internal PluginDocumentScopeLease CreatePluginDocument(Type modelType)
+    internal ManagedDocumentScopeLease CreateDocument(Type modelType)
     {
         ArgumentNullException.ThrowIfNull(modelType);
         if (!typeof(IPluginDocument).IsAssignableFrom(modelType))
@@ -60,7 +60,7 @@ internal sealed class DocumentScopeManager : IDisposable
 
         // 对外只暴露模型、只读令牌和幂等释放入口，调用者既不能取得 IServiceScope，
         // 也不能主动触发属于 Host 的 CancellationTokenSource。
-        return new PluginDocumentScopeLease(model, lifetime.ClosingToken, this);
+        return new ManagedDocumentScopeLease(model, lifetime.ClosingToken, this);
     }
 
     /// <summary>
@@ -217,7 +217,7 @@ internal sealed class DocumentScopeManager : IDisposable
 /// <see cref="ClosingToken"/>；最终释放始终回到 <see cref="DocumentScopeManager"/>，从而保持
 /// “先取消、后 Dispose Scope”的固定顺序。
 /// </remarks>
-internal sealed class PluginDocumentScopeLease(
+internal sealed class ManagedDocumentScopeLease(
     IPluginDocument model,
     CancellationToken closingToken,
     DocumentScopeManager owner) : IDisposable

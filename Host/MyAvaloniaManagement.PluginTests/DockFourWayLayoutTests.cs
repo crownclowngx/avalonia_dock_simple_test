@@ -577,7 +577,7 @@ public sealed class DockFourWayLayoutTests
                     ignoreCase: true);
                 var typeId = CreateTestToolTypeId(definition.Id);
                 return new PluginToolRegistration(
-                    HostExtensionIds.V2Owner,
+                    new PluginId("myavalonia.plugin.layout-tests"),
                     new ToolDescriptor(
                         typeId,
                         definition.Id,
@@ -594,7 +594,7 @@ public sealed class DockFourWayLayoutTests
     }
 
     private static ToolTypeId CreateTestToolTypeId(string id) =>
-        new($"myavalonia.host.tool.test.{id.ToLowerInvariant()}");
+        new($"myavalonia.plugin.layout-tests.tool.{id.ToLowerInvariant()}");
 
     private sealed class FactoryContext(
         Microsoft.Extensions.DependencyInjection.ServiceProvider provider,

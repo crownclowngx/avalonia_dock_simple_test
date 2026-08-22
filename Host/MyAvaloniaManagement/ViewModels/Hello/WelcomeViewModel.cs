@@ -42,18 +42,30 @@ internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocume
         DocumentActivation activation,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(activation);
-        cancellationToken.ThrowIfCancellationRequested();
-        if (activation is not NewDocumentActivation)
+        if (activation is not NewDocumentActivation newActivation)
         {
-            // Host Welcome 没有内容 Codec，也不会进入文件恢复链。显式拒绝 Restore 可以避免测试或
-            // 后续内部调用绕过 Registry 的持久化声明，把恢复输入静默当成普通新建。
             throw new NotSupportedException("Host Welcome 只支持新建激活。");
         }
+        InitializeHost(newActivation, cancellationToken);
+        return ValueTask.CompletedTask;
+    }
 
+    /// <summary>
+    /// 由 Host Workspace 激活路径同步应用 Welcome 的初始展示状态。
+    /// </summary>
+    /// <remarks>
+    /// Host 默认布局本身是同步 Dock 协议，且 Welcome 没有外部 I/O。把真实逻辑集中在此方法，
+    /// 可让 Host 直接完成初始化，同时保留 IPluginDocument 的契约实现供统一 Adapter 使用，避免
+    /// 维护两套标题规则。
+    /// </remarks>
+    internal void InitializeHost(
+        NewDocumentActivation activation,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(activation);
+        cancellationToken.ThrowIfCancellationRequested();
         _title = activation.Title;
         PresentationChanged?.Invoke(this, EventArgs.Empty);
-        return ValueTask.CompletedTask;
     }
 
     /// <summary>

@@ -74,20 +74,6 @@ internal static class PluginServiceCommitGuard
         pluginServices.AddSingleton<DocumentScopeManager>();
     }
 
-    /// <summary>把 Host 内建贡献的固定生命周期描述符追加到 Host 组合根。</summary>
-    /// <remarks>
-    /// G7 前 Host 内建 UI 仍暂时使用同一声明模型；这里复用同一份冻结描述符，但不执行插件
-    /// 保留端口检查，因为目标集合本身就是 Host 所有。G7 将整体移除这条临时 Host 贡献路径。
-    /// </remarks>
-    internal static void AppendHostContributions(
-        IServiceCollection hostServices,
-        PluginRegistration registration)
-    {
-        ArgumentNullException.ThrowIfNull(hostServices);
-        ArgumentNullException.ThrowIfNull(registration);
-        AppendContributionDescriptors(hostServices, registration);
-    }
-
     private static void AppendContributionDescriptors(
         IServiceCollection services,
         PluginRegistration registration)

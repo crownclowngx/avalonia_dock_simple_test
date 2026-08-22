@@ -1,10 +1,11 @@
 # MyAvaloniaManagement 内部架构
 
-> 当前源码已完成未发布 V3 G6：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
+> 当前源码已完成未发布 V3 G7：产品、SDK 与四插件版本为 `3.0.0`，Document 保存已采用修订快照与
 > 指定修订确认，激活已采用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属校验；
 > MyPlugTest 与 BiliDownloader 消息器已归各自插件 Provider 所有；Workspace Session、Dock Factory 和
-> Tool 只读投影已经分离。其余运行结构仍是 V2 G14 已签署实现。manifest、Document envelope、layout
-> 保持 schema 2，默认数据根保持 `v2`；G7 及后续协议尚未实施。
+> Tool 只读投影已经分离；Host Catalog 与只含真实插件的 Plugin Registry 已分离。其余运行结构仍是
+> V2 G14 已签署实现。manifest、Document envelope、layout 保持 schema 2，默认数据根保持 `v2`；
+> G8 及后续协议尚未实施。
 
 ## 1. 目标与边界
 
@@ -49,11 +50,14 @@ flowchart TB
     HostContainer --> Session["WorkspaceSession<br/>唯一工作区所有者"]
     Factory -->|"一次性 IWorkspaceDockCallbacks"| Session
     HostContainer --> WindowPort["IPluginWindowInteraction<br/>受控文件 / 剪贴板端口"]
-    HostContainer --> Registry["PluginRegistry<br/>不可变贡献快照"]
+    HostContainer --> HostCatalog["HostWorkspaceCatalog<br/>Welcome + Host Tools"]
+    HostContainer --> Registry["PluginRegistry<br/>真实插件不可变快照"]
+    HostCatalog --> WorkspaceCatalog["WorkspaceCatalog<br/>只读合并"]
+    Registry --> WorkspaceCatalog
     WindowPort --> PluginProviders
     PluginProviders --> PrivateEvents["插件私有消息器<br/>每 Provider 隔离"]
     RegistryBuilder --> Registry
-    Session --> Registry
+    Session --> WorkspaceCatalog
     Session --> Builder["DockWorkspaceBuilder<br/>初始结构"]
     Session --> Navigator["DockTreeNavigator<br/>统一查询"]
     Session --> ToolCoordinator["ToolDockCoordinator<br/>工具状态流程"]
@@ -231,12 +235,14 @@ V3 G6 已删除 `ManagementFactory` Facade。生产代码只有
 
 | 协作者 | 单一职责 | 不负责 |
 | --- | --- | --- |
-| `PluginRegistry` | 清单所有权、贡献、元数据、View 映射和菜单索引 | Provider、模型创建、组合写入、Dock 树状态、生命周期运行状态 |
+| `HostWorkspaceCatalog` | Host Descriptor、模型/View 精确工厂 | manifest、插件 Provider、可用性和 Dock 状态 |
+| `PluginRegistry` | 真实插件清单所有权、贡献、元数据和 View 映射 | Host 项、Provider、模型创建、Dock 树状态、生命周期运行状态 |
+| `WorkspaceCatalog` | 合并 Host 与可用插件的 Descriptor、菜单和精确 View 查询 | Provider 解析、模型创建和状态修改 |
 | `PluginContributionActivator` | 按 Registry 所有者路由 Provider、Scope 与模型创建 | 冲突判断、元数据解释、生命周期编排 |
 | `HostDockAdapterFactory` | 创建内部 Adapter 并在发布前预构建精确 View | Provider 选择、布局协调、模型生命周期策略 |
 | `HostDockFactory` | Dock override、规范 Locator、禁浮动和回调顺序 | Root、Document、Tool 集合与业务状态 |
 | `WorkspaceSession` | Root/Document Dock、Document/Tool 所有权、发布/显隐/关闭/退出提交点 | 磁盘序列化、任意事件路由、服务定位 |
-| `ToolWorkspaceReadModel` | 从 Session/Registry 生成无 Dock 的不可变 Tool 状态 | Tool 创建、显隐命令和 Dock 树写入 |
+| `ToolWorkspaceReadModel` | 从 Session/Workspace Catalog 生成无 Dock 的不可变 Tool 状态 | Tool 创建、显隐命令和 Dock 树写入 |
 | `DockWorkspaceBuilder` | 创建稳定四向初始布局 | 工具恢复和激活 |
 | `DockTreeNavigator` | Dock、Document、Tool、Pinned/Hidden 查询 | 修改业务状态 |
 | `ToolDockCoordinator` | 工具显示、恢复、停靠点重建和纵向区域归一化 | 策略发现 |
@@ -258,7 +264,7 @@ sequenceDiagram
     participant W as WorkspaceSession
     participant S as IHostStorageService
     participant E as DocumentEnvelopeSerializer
-    participant R as PluginRegistry
+    participant R as WorkspaceCatalog / PluginRegistry
     participant P as DocumentPersistenceStateStore
     participant F as WorkspaceSession
 
@@ -271,7 +277,7 @@ sequenceDiagram
         C->>S: 读取前检查 8 MiB 上限并读取文本
         C->>E: 严格解析唯一六字段 v2
         E-->>C: 宿主信封 + 原生 JSON 内容
-        C->>R: 精确查找主 ID 与所有者
+        C->>R: Workspace 查类型；Plugin Registry 核对持久化所有者
         C->>F: 使用互斥 Activation 异步初始化未发布 Adapter/View
         F->>P: 登记规范 Registry 所有权
         C->>P: 内容成功后提交主文件路径
@@ -291,7 +297,8 @@ sequenceDiagram
 - `DocumentPathIdentity`：绝对路径与 Windows 不区分大小写身份；
 - `DocumentPersistenceStateStore`：按 Adapter 引用保存规范 Registry、路径、Host 标题与 `RequiresSave`，关闭与失败时幂等清理；
 - `DocumentEnvelopeSerializer`：严格读写 schema 2 六字段根对象、两字段 content、深度 8 和 UTF-8 8 MiB 边界；
-- `PluginRegistry`：提供不可变 Document 类型、主 ID 和插件所有权事实；
+- `WorkspaceCatalog`：提供 Host 与当前可用插件的 Document 类型查询；
+- `PluginRegistry`：仅为可持久化插件 Document 提供主 ID 和插件所有权事实；
 - `IHostStorageService`：隔离 Avalonia 选择器、本机文件系统与读前长度检查。
 
 ### 6.2 并发与状态提交
@@ -375,11 +382,13 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | Managed 插件生命周期 | `PluginLifecycleCoordinator` | Adapter/View 与全部 Document Scope 释放后，插件 Provider 释放前 |
 | Tool Adapter 实例 | `WorkspaceSession`；普通模型仍属对应插件 Provider | Session 先释放 Adapter/View，插件 Provider 后释放模型 |
 | Root / Document Dock | `WorkspaceSession` | HostRuntime 退出时随 Session 释放 |
-| 有独立 Scope 的 Document | 所属插件 `DocumentScopeManager` | Dock 确认关闭后；退出时 `DocumentScopeRegistry` 兜底 |
+| Host Welcome Scope | Host `DocumentScopeManager` | Dock 确认关闭后；退出时 Session 兜底 |
+| 插件 Document Scope | 所属插件 `DocumentScopeManager` | Dock 确认关闭后；退出时插件 Scope Manager 兜底 |
 | Document 控件缓存 | `DocumentControlRecycling` | 对应 Document 确认关闭后移除 |
 | 布局快照待应用状态 | `DockLayoutLifecycle` | 首次 Apply 时原子取出 |
 
-当前 Host Document 只由 Registry 驱动的 `DocumentScopeManager` 建立独立 Scope，并返回不暴露
+当前 Host Welcome 由 Host Catalog 的精确工厂请求 Host `DocumentScopeManager` 建立独立 Scope；插件
+Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Manager。两条路径都只返回不暴露
 `IServiceScope` 的窄 Lease。生产容器不注册 Legacy `IDocumentScopeFactory`；插件既不能创建 Scope，
 也不能主动取消关闭令牌。
 
@@ -391,6 +400,7 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | Host 实现面意外导出 | `HostApiBoundaryTests` |
 | 插件并发扫描、可变缓存泄漏 | `InternalRefactorTests` |
 | Managed-only 拒绝、显式贡献所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、`ExplicitContributionAndPluginRegistryTests`、内部注册表测试 |
+| Host Catalog / Plugin Registry 分离、双激活边界与规范 Locator | `HostCatalogPluginRegistryTests`、`Test-HostCatalogPluginRegistry.ps1` |
 | 诊断正文、凭据、URL、路径泄漏与敏感开关误开 | `HostDiagnosticsTests`、生命周期/UI/Document 错误测试、`Test-HostDiagnosticRedaction.ps1` |
 | 插件私有 Provider、Host Port、失败隔离与四插件回归 | `PluginContainerIsolationTests`、`PluginProviderOwnerTests` |
 | 严格六字段信封、原生 JSON、资源边界、所有权与失败不发布 | `DocumentEnvelopeV2Tests` |

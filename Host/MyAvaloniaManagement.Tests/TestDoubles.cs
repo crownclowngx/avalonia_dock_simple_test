@@ -116,7 +116,7 @@ internal sealed class TestHostContext : IDisposable
         var modelType = contribution.Model.GetType();
         services.AddSingleton(modelType, contribution.Model);
         builder.AddTool(
-            HostExtensionIds.V2Owner,
+            TestPluginIds.Owner,
             contribution.Descriptor,
             modelType,
             typeof(TestContributionView),
@@ -144,6 +144,31 @@ internal sealed class UnitTestDockableFactory(
     DocumentScopeManager documentScopes,
     IServiceProvider provider) : IHostDockableFactory
 {
+    public Document CreateHostDocument(
+        MyAvaloniaManagement.PluginSdk.DocumentTypeId documentTypeId,
+        MyAvaloniaManagement.PluginSdk.NewDocumentActivation activation)
+    {
+        var hostCatalog = provider.GetRequiredService<HostWorkspaceCatalog>();
+        if (!hostCatalog.TryGetDocument(documentTypeId, out var registration))
+        {
+            throw new NotSupportedException(
+                $"不支持的 Host Document 类型：{documentTypeId.Value}。");
+        }
+        var lease = registration.ModelFactory();
+        try
+        {
+            registration.Initialize(lease.Model, activation, lease.ClosingToken);
+            return new ManagedDocumentDockable(
+                new ActivatedWorkspaceDocument(registration, lease),
+                activation.Title);
+        }
+        catch
+        {
+            lease.Dispose();
+            throw;
+        }
+    }
+
     public async ValueTask<Document> CreateDocumentAsync(
         MyAvaloniaManagement.PluginSdk.DocumentTypeId documentTypeId,
         MyAvaloniaManagement.PluginSdk.DocumentActivation context)
@@ -156,12 +181,12 @@ internal sealed class UnitTestDockableFactory(
         if (typeof(MyAvaloniaManagement.PluginSdk.IPluginDocument)
             .IsAssignableFrom(registration.ModelType))
         {
-            var lease = documentScopes.CreatePluginDocument(registration.ModelType);
+            var lease = documentScopes.CreateDocument(registration.ModelType);
             try
             {
                 await lease.Model.InitializeAsync(context, lease.ClosingToken);
                 return new ManagedDocumentDockable(
-                    new ActivatedPluginDocument(registration, lease),
+                    new ActivatedWorkspaceDocument(registration, lease),
                     context.Title);
             }
             catch
@@ -176,6 +201,13 @@ internal sealed class UnitTestDockableFactory(
 
     public Tool CreateTool(MyAvaloniaManagement.PluginSdk.ToolTypeId toolTypeId)
     {
+        var hostCatalog = provider.GetRequiredService<HostWorkspaceCatalog>();
+        if (hostCatalog.TryGetTool(toolTypeId, out var hostRegistration))
+        {
+            return new ManagedToolDockable(new ActivatedWorkspaceTool(
+                hostRegistration,
+                hostRegistration.ModelFactory()));
+        }
         if (!registry.TryGetToolRegistration(toolTypeId, out var registration))
         {
             throw new NotSupportedException($"不支持的 Tool 类型：{toolTypeId.Value}。");
@@ -190,7 +222,7 @@ internal sealed class UnitTestDockableFactory(
             return legacy;
         }
 
-        return new ManagedToolDockable(new ActivatedPluginTool(registration, model));
+        return new ManagedToolDockable(new ActivatedWorkspaceTool(registration, model));
     }
 }
 
@@ -700,3 +732,9 @@ internal sealed class TrackedScopedNonSavableDocument :
 /// Registry 使用相同的声明式输入，同时仍可注入精确模型实例验证显隐和 Pinned 行为。
 /// </remarks>
 internal sealed record StubToolContribution(Tool Model, ToolDescriptor Descriptor);
+
+/// <summary>单元测试声明式贡献使用的真实插件命名空间；不得借用 Host 伪插件身份。</summary>
+internal static class TestPluginIds
+{
+    internal static readonly PluginId Owner = new("myavalonia.plugin.host-tests");
+}

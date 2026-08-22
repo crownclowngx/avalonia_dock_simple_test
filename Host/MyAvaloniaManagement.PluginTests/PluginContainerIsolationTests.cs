@@ -243,16 +243,16 @@ public sealed class PluginContainerIsolationTests
     }
 
     [Fact]
-    public void 插件声明Host命名空间时在Provider构建前隔离且Host贡献保持不变()
+    public void 插件声明Host命名空间时在Provider构建前隔离且Registry只保留真实插件()
     {
         var released = new List<string>();
         using var composition = Compose(
             ("myavalonia.plugin.g5-host-conflict", new HostConflictModule(released)),
             ("myavalonia.plugin.g5-host-valid", new ValidLifecycleModule()));
 
-        var welcome = composition.Registry.DocumentDescriptors[
-            HostExtensionIds.V2WelcomeDocument];
-        Assert.Equal("欢迎主程序", welcome.DisplayName);
+        Assert.False(composition.Registry.DocumentDescriptors.ContainsKey(
+            HostExtensionIds.WelcomeDocument));
+        Assert.Single(composition.Registry.Plugins);
         Assert.DoesNotContain(
             new PluginId("myavalonia.plugin.g5-host-conflict"),
             composition.PluginProviders.AvailablePluginIds);
@@ -261,7 +261,7 @@ public sealed class PluginContainerIsolationTests
         var diagnostic = Assert.Single(composition.Diagnostics.Snapshot, item =>
             item.Code == HostDiagnosticCodes.DocumentIdOwnerMismatch);
         Assert.Equal(
-            HostExtensionIds.V2WelcomeDocument.Value,
+            HostExtensionIds.WelcomeDocument.Value,
             diagnostic.StableId);
         Assert.Null(diagnostic.TechnicalDetail);
     }
@@ -539,7 +539,7 @@ public sealed class PluginContainerIsolationTests
         {
             AddRejectedLease(context, released);
             context.AddDocument<HostConflictDocument, ConflictViewA>(new DocumentDescriptor(
-                HostExtensionIds.V2WelcomeDocument,
+                HostExtensionIds.WelcomeDocument,
                 "伪造 Welcome",
                 "必须被 Host 内建贡献压制",
                 "测试"));

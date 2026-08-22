@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Threading;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Docking;
@@ -17,7 +18,7 @@ namespace MyAvaloniaManagement.Business.Docking;
 /// </remarks>
 internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHost, IDisposable
 {
-    private readonly ActivatedPluginDocument _activation;
+    private readonly ActivatedWorkspaceDocument _activation;
     private readonly ManagedDockableViewLease _view = new();
     private string _hostTitle;
     private bool _hasCommittedHostTitle;
@@ -25,7 +26,7 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
     private int _disposed;
 
     internal ManagedDocumentDockable(
-        ActivatedPluginDocument activation,
+        ActivatedWorkspaceDocument activation,
         string requestedTitle)
     {
         _activation = activation ?? throw new ArgumentNullException(nameof(activation));
@@ -43,8 +44,9 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
         }
     }
 
-    internal PluginId OwnerId => _activation.Registration.OwnerId;
-    internal PluginDocumentRegistration Registration => _activation.Registration;
+    internal IWorkspaceDocumentRegistration Registration => _activation.Registration;
+    internal PluginDocumentRegistration? PluginRegistration =>
+        _activation.Registration as PluginDocumentRegistration;
     internal CancellationToken ClosingToken => _activation.ClosingToken;
     internal IPersistablePluginDocument? PersistableModel =>
         Registration.IsPersistable
@@ -53,11 +55,16 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
             : null;
     internal string HostTitle => _hostTitle;
     public object Model => _activation.Model;
-    public PluginViewRegistration ViewRegistration => new(
-        OwnerId,
-        Registration.ModelType,
-        Registration.ViewType,
-        Registration.ViewFactory);
+    public IWorkspaceViewRegistration ViewRegistration => PluginRegistration is { } plugin
+        ? new PluginWorkspaceViewRegistration(
+            plugin.OwnerId,
+            plugin.ModelType,
+            plugin.ViewType,
+            plugin.ViewFactory)
+        : new HostWorkspaceViewRegistration(
+            Registration.ModelType,
+            Registration.ViewType,
+            Registration.ViewFactory);
     public Control? PreparedView => _view.View;
     public void AttachPreparedView(Control view) => _view.Attach(view);
     public void ReleasePreparedView() => _view.Release();
