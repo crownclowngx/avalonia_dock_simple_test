@@ -32,14 +32,16 @@
 - [V3 G10 DaTangAccountingHelpPlug 最终验收](../../../docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)
 - [V3 G11 MySmallTools 最终验收](../../../docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)
 - [V3 G12 BiliDownloader 最终验收](../../../docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)
+- [V3 G13 删除 V2 生产面](../../../docs/plan-history/host-v3/g13-remove-v2-production-surface.md)
+- [V3 G14 封板](../../../docs/plan-history/host-v3/g14-v3-sealing.md)
 - [G16 文档与 v1 基线（历史）](../../../docs/plan-history/host-v1/g16-documentation-and-v1-baseline.md)
 
 ## 文档定位
 
 这些文档描述的是当前实现，不是新功能路线图。当前明确保持以下边界：
 
-- V2 G14 已将 Core/UI public API 冻结到 v2 Shipped；V3 G13 的活动表面仍位于 v3 Unshipped，Host 自有实现不属于插件 API；
-- `managed-plugin-v1.0.0` 只定位 Managed Plugin v1 历史基线；当前版本以 V3 G1、Document 保存以 V3 G2、其他运行语义以 V2 G14 为准；
+- V2 G14 已将 Core/UI public API 冻结到 v2 Shipped；V3 G14 已将最终表面冻结到 v3 Shipped 127/45，Host 自有实现不属于插件 API；
+- `managed-plugin-v1.0.0` 只定位 Managed Plugin v1 历史基线；当前版本与运行语义以 V3 G14、Document 保存细节以 V3 G2 为准；
 - 插件只支持严格清单、必需 `.deps.json` 和唯一 `IPluginModule` 的 Managed 模型；
 - manifest 是插件身份唯一事实源，插件 Document、Tool、View 和 Lifecycle 只通过 Context 显式登记；
 - Host Welcome/Tool 由 `HostWorkspaceCatalog` 声明；插件贡献才通过 `IPluginRegistration` 发布到不可变 `PluginRegistry`；
@@ -75,4 +77,5 @@
 
 文档门禁验证本地链接、脚本路径、关键类型、集中版本和四插件兼容区间；宿主综合门禁动态统计
 Unit、Headless UI、Plugin 与覆盖率。带日期的具体数量只记录在各 G 阶段专用文档中，不作为永久阈值。
-V3 G9–G13 只运行上述非发布验证；AIFLOW、Windows CI/Smoke、ReleaseAcceptance 和发布总门禁均未运行，并留到明确的发布阶段。
+以上是日常非发布验证。V3 G14 正式本地复验使用 `scripts/Invoke-HostV3ReleaseGate.ps1` 执行两轮隔离
+矩阵和 Windows Smoke；它不运行 AIFLOW、历史 ReleaseAcceptance、上传或标签。

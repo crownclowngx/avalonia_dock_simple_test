@@ -3,8 +3,9 @@
 > `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G14 已将 Core/UI 的
 > `2.0.0` public 表面正式冻结到 v2 Shipped：Core 85 条、UI 46 条。V3 G8 已删除 Host 通用事件总线并
 > 破坏式收口全屏端口；V3 G9–G12 依次验收四插件最终运行链，G13 又完成旧生产面零残留和真实包负例，
-> 这些阶段均未新增 public API。v3 Unshipped 为
-> Core 127 条、UI 45 条，两个 v3 Shipped 均为空，当前 `3.0.0` 尚未发布。
+> 这些阶段均未新增 public API。V3 G14 已将最终签名原样移入 Shipped：Core 127 条、UI 45 条，
+> 两个 v3 Unshipped 均为空；`3.0.0` 已建立本地发布资格但没有上传或对外发布。
+> 当前 v3 Shipped 为 Core 127 条、UI 45 条，这是后续兼容审阅的正式基线。
 
 ## 1. 权威源与程序集边界
 
@@ -14,8 +15,8 @@
 Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v1/    # v1 历史事实
 Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/    # V2 Core
 Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/ # V2 UI
-Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/    # 未发布 V3 Core
-Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v3/ # 未发布 V3 UI
+Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/    # V3 Core 正式事实
+Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v3/ # V3 UI 正式事实
 ```
 
 每个目录均包含 `PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt`。Core 包、程序集和根命名空间统一为
@@ -36,10 +37,11 @@ Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v3/ # 未发布 V3 UI
 PublicApiAnalyzers 报出 `RS0016`，确认所有权、依赖方向、异常与线程语义后，再按 Ordinal 顺序登记。
 未登记删除会产生 `RS0017`，重复项与非法文本也会被门禁拒绝。
 
-G14 的 V2 正式状态是：Core Shipped 85 条、UI Shipped 46 条，两个 Unshipped 均为 0。V3 G1 的
+V2 G14 的正式状态是：Core Shipped 85 条、UI Shipped 46 条，两个 Unshipped 均为 0。V3 G1 的
 两个 Shipped 均为 0，Core/UI Unshipped 为 85/46；G2 以破坏式替换保存方法并新增值对象后，当前
-Core/UI Unshipped 为 101/46；G8 当前为 127/45。两份基线分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史
-表面要求相等。各阶段数量只保留在对应记录中，不能用当前 147 条倒写 G1 或 V2 历史。
+Core/UI Unshipped 为 101/46；G8–G13 收口为 Unshipped 127/45；G14 的正式状态为 Shipped 127/45、
+Unshipped 0/0。两份基线分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史表面要求相等。
+各阶段数量只保留在对应记录中，不能用 G14 状态倒写 G1 或 V2 历史。
 
 ## 3. 日常变更流程
 
@@ -48,7 +50,7 @@ Core/UI Unshipped 为 101/46；G8 当前为 127/45。两份基线分别描述各
 1. 先以最小契约表达真实插件用例，并补齐详细中文 XML 文档与设计原因；
 2. 确认 `RS0016` 只包含预期新增，且没有 `RS0017`；
 3. 核对 Core 不泄漏 Avalonia、DI、Dock、Newtonsoft 或 Host 类型，UI 不泄漏 Dock、Newtonsoft 或 Host 类型；
-4. 把签名加入对应项目的 v3 Unshipped，保持 Ordinal 排序且无重复；
+4. 把兼容新增签名加入对应项目的 v3 Unshipped，保持 Ordinal 排序且无重复；不得改写既有 v3 Shipped；
 5. 运行 API 变异、真实 nupkg 消费、SDK 单元测试及受影响的 Host/插件测试；
 6. 同步契约说明、示例和专项记录。
 
@@ -71,7 +73,7 @@ Core/UI Unshipped 为 101/46；G8 当前为 127/45。两份基线分别描述各
 - 不得把 Core 与 UI 合成一份基线，或让 Legacy Common 继续承担活动 SDK 基线职责。
 - 不得只提高版本或替换文本，而没有包消费者、反向编译与真实仓库回归证据。
 
-## 5. 当前非发布兼容门禁与历史发布入口
+## 5. 当前兼容门禁与发布入口
 
 在仓库根目录执行：
 
@@ -86,15 +88,21 @@ dotnet test Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.Plugi
 
 `Test-PluginSdkCompatibility.ps1` 分别验证 Core/UI 的版本、排序、重复项与成员级变异；
 `Test-PluginSdkPackage.ps1` 从真实 nupkg 验证 DLL/XML/nuspec/精确依赖图、两个正向消费者和旧 API/禁用依赖
-反例。以上命令适合 V3 G1 非发布兼容检查，不运行 Windows Smoke、上传或标签。以下 V2 发布入口
-只用于复核历史 G14 证据，V3 G1 不运行也不把它改造成 V3 门禁：
+反例。以上命令适合日常兼容检查，不运行 Windows Smoke、上传或标签。V3 G14 的正式本地入口为：
+
+```powershell
+.\scripts\Invoke-HostV3ReleaseGate.ps1
+```
+
+它在两个无硬链接隔离克隆中执行完整生产面、G9–G12 专项、20 轮资源 Harness、API/包、文档和
+Windows Smoke，并明确记录未上传、未打标签和 `aiflow=false`。以下 V2 入口只用于复核历史 G14 证据：
 
 ```powershell
 .\scripts\Invoke-HostV2ReleaseGate.ps1
 ```
 
-V3 G13 当前非发布聚合入口为 `Test-HostV3ProductionSurface.ps1`。V3 发布门禁只允许在 G14 单独建立；
-当前阶段不得运行 Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
+`Test-HostV3ProductionSurface.ps1` 继续作为不启动窗口的日常聚合入口；历史 ReleaseAcceptance、
+外部账号、上传和标签不属于 G14 本地门禁。
 
 ## 6. 新主版本与评审清单
 

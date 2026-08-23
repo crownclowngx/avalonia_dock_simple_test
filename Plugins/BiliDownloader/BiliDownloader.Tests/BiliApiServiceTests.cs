@@ -248,6 +248,12 @@ public sealed class BiliApiServiceTests
             120,
             "SESSDATA=secret");
 
+        // 同一服务实例的第二次签名必须复用尚未过期的 WBI mixin key。显式调用两次既验证
+        // 缓存职责，也让缓存命中分支不再依赖其他测试的执行顺序或静态状态残留。
+        var cachedApi = new BiliApiService();
+        await cachedApi.GetDashResultAsync(1, 2, 120, "SESSDATA=secret");
+        await cachedApi.GetDashResultAsync(1, 2, 120, "SESSDATA=secret");
+
         Assert.Equal([(120, "4K"), (80, "1080P")],
             result.AcceptQualities.Select(x => (x.QualityId, x.DisplayName)));
         var video = Assert.Single(result.VideoStreams);
@@ -268,6 +274,8 @@ public sealed class BiliApiServiceTests
             .WithQueryParam("w_rid")
             .WithQueryParam("wts")
             .WithHeader("Cookie", "SESSDATA=secret")
+            .Times(3);
+        http.ShouldHaveCalled("*x/web-interface/nav*")
             .Times(1);
     }
 

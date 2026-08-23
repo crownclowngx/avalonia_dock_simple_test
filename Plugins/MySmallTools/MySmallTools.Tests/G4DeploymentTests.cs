@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Avalonia.Input;
 using LibVLCSharp.Avalonia;
 using LibVLCSharp.Shared;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
 using MySmallTools.ViewModels.SecretVideoPlayer;
+using MySmallTools.Views.SecretVideoPlayer.Playback;
 using Xunit;
 
 namespace MySmallTools.Tests;
@@ -170,6 +172,57 @@ public sealed class G4DeploymentTests
         Assert.Empty(viewModel.DeploymentIssueText);
         Assert.Equal(0, session.LoadCalls);
         Assert.Equal(1, initializer.Calls);
+    }
+
+    [Theory]
+    [InlineData(Key.Space, false)]
+    [InlineData(Key.Left, false)]
+    [InlineData(Key.Right, false)]
+    [InlineData(Key.Up, true)]
+    [InlineData(Key.Down, true)]
+    public void 播放快捷键只执行当前状态允许的命令(Key key, bool expectedHandled)
+    {
+        // G14 的两轮覆盖率证据不能依赖 Headless UI 测试是否恰好经过路由器。
+        // 这里直接验证路由职责：策略负责按键映射，路由器只选择并执行现有命令。
+        using var session = new EmptySession();
+        using var viewModel = new VideoPlayerControlViewModel(
+            session,
+            session,
+            new MutableProbe(ReadyResult()),
+            new CountingInitializer());
+        var keyEvent = new KeyEventArgs
+        {
+            RoutedEvent = InputElement.KeyDownEvent,
+            Key = key,
+            KeyModifiers = KeyModifiers.None
+        };
+
+        Assert.Equal(
+            expectedHandled,
+            PlaybackShortcutRouter.TryHandle(keyEvent, viewModel));
+    }
+
+    [Fact]
+    public void 未映射快捷键与空参数不会被路由器静默接受()
+    {
+        using var session = new EmptySession();
+        using var viewModel = new VideoPlayerControlViewModel(
+            session,
+            session,
+            new MutableProbe(ReadyResult()),
+            new CountingInitializer());
+        var keyEvent = new KeyEventArgs
+        {
+            RoutedEvent = InputElement.KeyDownEvent,
+            Key = Key.F1,
+            KeyModifiers = KeyModifiers.None
+        };
+
+        Assert.False(PlaybackShortcutRouter.TryHandle(keyEvent, viewModel));
+        Assert.Throws<ArgumentNullException>(() =>
+            PlaybackShortcutRouter.TryHandle(null!, viewModel));
+        Assert.Throws<ArgumentNullException>(() =>
+            PlaybackShortcutRouter.TryHandle(keyEvent, null!));
     }
 
     [Fact]

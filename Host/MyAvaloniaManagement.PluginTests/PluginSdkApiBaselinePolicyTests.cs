@@ -63,7 +63,7 @@ public sealed class PluginSdkApiBaselinePolicyTests
     }
 
     [Fact]
-    public void G13_V1V2历史基线未改写且V3当前表面全部处于Unshipped()
+    public void G14_V1V2历史基线未改写且V3最终表面全部进入Shipped()
     {
         var repositoryRoot = FindRepositoryRoot();
         var apiRoot = Path.Combine(
@@ -104,31 +104,31 @@ public sealed class PluginSdkApiBaselinePolicyTests
         Assert.Equal(46, uiV2Shipped.Length);
         Assert.Empty(coreV2Unshipped);
         Assert.Empty(uiV2Unshipped);
-        // G5 删除无真实 Host 所有权的事件总线，G8 又把两个 owner 式全屏方法收口为一个租约方法。
-        // V1/V2 历史文本必须原样保留，V3 当前表面继续全部处于 Unshipped，直到 G14 才允许签署。
-        Assert.Empty(v3Shipped);
-        Assert.Empty(uiV3Shipped);
-        Assert.Equal(127, coreV3Unshipped.Length);
-        Assert.Equal(45, uiV3Unshipped.Length);
-        Assert.Contains(uiV3Unshipped, entry => entry.Contains(
+        // G14 只改变最终签名所属的文本文件，不借封板修改任何 public 形状。固定数量与
+        // Unshipped 为空可以同时防止漏移、重复登记以及把未来新增误写进本次正式承诺。
+        Assert.Equal(127, v3Shipped.Length);
+        Assert.Equal(45, uiV3Shipped.Length);
+        Assert.Empty(coreV3Unshipped);
+        Assert.Empty(uiV3Unshipped);
+        Assert.Contains(uiV3Shipped, entry => entry.Contains(
             "IWindowContentFullscreenHost.TryPresent(Avalonia.Controls.Control! content) -> System.IDisposable?",
             StringComparison.Ordinal));
-        Assert.DoesNotContain(uiV3Unshipped, entry =>
+        Assert.DoesNotContain(uiV3Shipped, entry =>
             entry.Contains("TryRestore", StringComparison.Ordinal) ||
             entry.Contains("object! owner", StringComparison.Ordinal));
-        Assert.Contains(coreV3Unshipped, entry =>
+        Assert.Contains(v3Shipped, entry =>
             entry.Contains("DocumentSaveSnapshot", StringComparison.Ordinal));
-        Assert.Contains(coreV3Unshipped, entry =>
+        Assert.Contains(v3Shipped, entry =>
             entry.Contains("AcceptChanges(MyAvaloniaManagement.PluginSdk.DocumentRevision", StringComparison.Ordinal));
-        Assert.DoesNotContain(coreV3Unshipped, entry =>
+        Assert.DoesNotContain(v3Shipped, entry =>
             entry.Contains("CaptureContentAsync", StringComparison.Ordinal));
-        Assert.Contains(coreV3Unshipped, entry =>
+        Assert.Contains(v3Shipped, entry =>
             entry.Contains("NewDocumentActivation", StringComparison.Ordinal));
-        Assert.Contains(coreV3Unshipped, entry =>
+        Assert.Contains(v3Shipped, entry =>
             entry.Contains("RestoreDocumentActivation", StringComparison.Ordinal));
-        Assert.DoesNotContain(coreV3Unshipped, entry =>
+        Assert.DoesNotContain(v3Shipped, entry =>
             entry.Contains("DocumentActivationContext", StringComparison.Ordinal));
-        Assert.DoesNotContain(coreV3Unshipped, entry =>
+        Assert.DoesNotContain(v3Shipped, entry =>
             entry.Contains("IHostEventBus", StringComparison.Ordinal));
         Assert.Contains(v2Shipped, entry =>
             entry.Contains("CaptureContentAsync", StringComparison.Ordinal));

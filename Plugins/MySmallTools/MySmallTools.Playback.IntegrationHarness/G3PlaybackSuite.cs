@@ -779,8 +779,24 @@ internal sealed class G3PlaybackHarnessRunner(
                         document.Model)));
 
             var asset = assets[cycle % assets.Count];
+            bool loaded;
+            try
+            {
+                // 单轮真实播放可能阻塞在显卡驱动或 LibVLC 原生调用。Harness 的职责是把
+                // 这种事实报告为失败，而不是让发布门禁永久等待；20 秒明显高于正常的
+                // 本地短媒体启动时间，并且只约束测试等待，不改变产品播放器的超时策略。
+                loaded = await document.PlayerViewModel
+                    .LoadAndPlayMediaAsync(asset.EncryptedPath, Password)
+                    .WaitAsync(TimeSpan.FromSeconds(20));
+            }
+            catch (TimeoutException ex)
+            {
+                throw new TimeoutException(
+                    $"第 {cycle + 1} 轮加载播放在 20 秒内未返回。",
+                    ex);
+            }
             Require(
-                await document.PlayerViewModel.LoadAndPlayMediaAsync(asset.EncryptedPath, Password),
+                loaded,
                 $"第 {cycle + 1} 轮加载播放失败。");
             await WaitUntilAsync(
                 () => document.PlayerViewModel.PlaybackSnapshot.PositionMs > 50,

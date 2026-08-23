@@ -1,11 +1,13 @@
 # Managed Plugin 快速开始
 
 本组文档以 `MyPlugTest` 为可运行事实源，介绍 manifest schema 2、Core/UI SDK、声明式贡献、普通模型与
-Host Dock Adapter。当前仓库处于未发布 V3 G13：版本为 3.0.0，Document 使用互斥 New/Restore 激活，
+Host Dock Adapter。当前仓库已完成 V3 G14 封板：版本为 3.0.0，Core/UI API 已进入 Shipped 127/45，
+Document 使用互斥 New/Restore 激活，
 持久化 Document 使用修订快照和指定修订确认，插件注册使用 Host 最终提交与 ID 归属校验，其他 API
 Host Catalog 与只含真实插件的 Plugin Registry 已分离；可选全屏能力只通过单参数 `TryPresent` 返回
 标准 `IDisposable` 租约，插件不保存 owner 或 Host 实现。四插件已通过最终 Workspace 创建/关闭、
-Revision 保存竞争或资源边界、Headless UI 与真实 ZIP 加载；G13 已完成唯一 V3 生产面收口，G14 尚未实施；
+Revision 保存竞争或资源边界、Headless UI 与真实 ZIP 加载；G13 已完成唯一 V3 生产面收口，G14 已完成
+两轮隔离门禁和 Windows Smoke；
 教程不使用 Legacy、Strategy、独立 View 注册或 Dock 类型。
 
 插件作者只声明自己命名空间内的 Document/Tool。Welcome 与四个 Host Tool 由 Host internal
@@ -41,4 +43,4 @@ Revision 保存竞争或资源边界、Headless UI 与真实 ZIP 加载；G13 �
 2. [添加 Document 与 Tool](./add-document-and-tool.md)
 3. [验证与排错](./verification-and-troubleshooting.md)
 
-最小实现见 [`MyPlugTest`](../../Plugins/MyPlugTest/MyPlugTest/)；四插件最终验收链见 [V3 G9](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)、[G10](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、[G11](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) 与 [G12](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) 专项记录。
+最小实现见 [`MyPlugTest`](../../Plugins/MyPlugTest/MyPlugTest/)；四插件最终验收链见 [V3 G9](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)、[G10](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、[G11](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) 与 [G12](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) 专项记录，最终签署见 [G14](../plan-history/host-v3/g14-v3-sealing.md)。

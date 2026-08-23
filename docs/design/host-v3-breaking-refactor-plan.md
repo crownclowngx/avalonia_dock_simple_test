@@ -1,12 +1,11 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
-> 状态：实施中；G0–G13 已完成，G14 尚未实施。Document 保存已采用 V3 G2 修订协议，
+> 状态：已完成；G0–G14 已全部封板。Document 保存已采用 V3 G2 修订协议，
 > Document 激活已采用 V3 G3 互斥 New/Restore 类型，插件注册已采用 V3 G4 Host 最终提交与 ID 归属校验；
 > 插件事件通信已采用 V3 G5 私有消息器；Dock Factory、Workspace Session 与 Tool 只读投影已按 V3 G6
 > 分离；Host Catalog 与 Plugin Registry 已按 V3 G7 分离；全屏租约与 Host V3 骨架已按 V3 G8
 > 完成；四插件已按 V3 G9–G12 依次通过最终 Workspace、UI、资源与真实包验收；G13 已删除并证明
-> V2 生产面零残留，G14 尚未实施，
-> 代码与程序集版本线仍处于未发布 V3。
+> V2 生产面零残留；G14 已将 Core/UI 127/45 条 API 移入 Shipped，并建立两轮隔离发布门禁。
 >
 > 评审日期：2026-08-22。
 >
@@ -26,6 +25,7 @@
 > [V3 G11 MySmallTools 验收](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)、
 > [V3 G12 BiliDownloader 验收](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)、
 > [V3 G13 删除 V2 生产面](../plan-history/host-v3/g13-remove-v2-production-surface.md)、
+> [V3 G14 封板](../plan-history/host-v3/g14-v3-sealing.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
 >
 > 计划性质：V3 是一次“协议语义纠错 + 宿主工作区解耦”的破坏式重构，不是第三次插件框架扩张。
@@ -620,7 +620,7 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
   [G13 专项记录](../plan-history/host-v3/g13-remove-v2-production-surface.md)。
 - **回滚**：回滚整个 G13，不得选择性恢复单个 V2 类型或隐藏 fallback。
 
-### G14：V3 封板
+### G14：V3 封板（已完成）
 
 - **目标**：把代码、API、文档、测试和可复现制品签署为同一 V3 基线。
 - **变更**：最终 V3 API 从 Unshipped 移入 Shipped；更新根 README、文档导航、架构、兼容约束、快速开始、
@@ -629,6 +629,14 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
 - **验证**：两个无硬链接隔离克隆中的锁定还原、Release 零警告、全部测试、覆盖率、API/包、诊断脱敏、
   V2 磁盘兼容、Windows Smoke、四插件 Harness、文档和两轮摘要比较。
 - **发布限制**：门禁默认不上传、不推送标签、不访问外部账号；实际发布必须另行明确授权。
+- **实施记录**：Core/UI v3 Shipped 已固定为 127/45，Unshipped 均为 0；独立 V3 Core、单元测试和
+  `Invoke-HostV3ReleaseGate.ps1` 已建立，两轮无硬链接隔离、四插件专项、20 轮资源 Harness、真实窗口
+  Smoke、机器摘要和无外部发布边界见 [G14 专项记录](../plan-history/host-v3/g14-v3-sealing.md)。
+- **实际证据**：一次性审计提交 `5de82ce4ba3c9c41de9f7b85053f32c7914dc14d` 的两轮 12 阶段全部通过；
+  生产面 **1493/1493**，Host 覆盖率 **84.39% / 70.58%**，G9–G12 分别为
+  **504/504、555/555、685/685、1222/1222**，证据位于
+  `artifacts/release-gate/v3/20260823-033330-5de82ce4ba3c/`。顶层结论明确为本地可发布、未上传、
+  未打标签、未实际发布且 `aiflow=false`。
 - **回滚**：以 V3 基线提交为整体回滚单位；已经由 V3 保存且线格式仍为 v2 的用户文件不得被删除或降级。
 
 ## 7. 执行顺序与合并纪律
@@ -696,7 +704,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
 - Host Unit/UI/Plugin、四插件完整测试、专项 Harness 和 Windows Smoke 全部通过；
 - G0 覆盖率下限不得降低，G14 记录新的实际数字和重点类型覆盖；
 - 两轮隔离发布结果在忽略时间、耗时和绝对路径后完全一致；
-- 只有全部矩阵通过后，才允许把本文状态改为“G0–G14 已完成”并建立 V3 源码基线。
+- 全部矩阵已通过，本文状态已改为“G0–G14 已完成”并建立 V3 源码基线。
 
 ## 9. 明确延后
 
@@ -725,11 +733,11 @@ V3 只有在以下问题全部回答“是”后才算完成：
 8. [x] 全屏使用幂等租约，失败、关闭和重复释放都能恢复并释放资源。
 9. [x] `Files`、`Plug` 和全部 V2 public 生产入口已删除且有负例防回流。
 10. [x] manifest/envelope/layout/data root 只在有真实格式理由时变化；本轮保持的 V2 数据可由 V3 使用。
-11. [ ] 四插件完整回归、确定性 ZIP、真实 Host 加载、Windows Smoke 和发布矩阵通过。
+11. [x] 四插件完整回归、确定性 ZIP、真实 Host 加载、Windows Smoke 和发布矩阵通过。
 12. [x] 覆盖率未降低，诊断脱敏、失败原子性和资源释放没有退化。
-13. [ ] V3 API 已进入 Shipped，V2 历史 API/文档可追溯但不参与生产。
-14. [ ] 根 README、文档导航、快速开始、架构、兼容约束和测试说明均与最终代码一致。
-15. [ ] 两轮隔离发布门禁可重复，且未在无授权情况下上传、打标签或执行外部发布。
+13. [x] V3 API 已进入 Shipped，V2 历史 API/文档可追溯但不参与生产。
+14. [x] 根 README、文档导航、快速开始、架构、兼容约束和测试说明均与最终代码一致。
+15. [x] 两轮隔离发布门禁可重复，且未在无授权情况下上传、打标签或执行外部发布。
 
 任一项未完成时，V3 都只能保持候选或开发状态，不得通过降低门禁、修改历史证据或保留隐藏兼容路径
 宣称封板。

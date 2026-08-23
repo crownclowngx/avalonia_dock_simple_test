@@ -51,10 +51,10 @@ function Write-VersionFixture {
     Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`n"
     Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/PublicAPI.Shipped.txt') "#nullable enable`nFixture.UiType`n"
     Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v2/PublicAPI.Unshipped.txt') "#nullable enable`n"
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Shipped.txt') "#nullable enable`n"
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Unshipped.txt') "#nullable enable`nFixture.CoreType`n"
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v3/PublicAPI.Shipped.txt') "#nullable enable`n"
-    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v3/PublicAPI.Unshipped.txt') "#nullable enable`nFixture.UiType`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Shipped.txt') "#nullable enable`nFixture.CoreType`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Unshipped.txt') "#nullable enable`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v3/PublicAPI.Shipped.txt') "#nullable enable`nFixture.UiType`n"
+    Write-FixtureText (Join-Path $Root 'Host/MyAvaloniaManagement.PluginSdk.UI/ApiCompatibility/v3/PublicAPI.Unshipped.txt') "#nullable enable`n"
 }
 
 function Write-PluginFixture {
@@ -153,24 +153,24 @@ try {
     Write-PluginFixture -Root $testRoot -RelativePath $pluginProject
     $facts = Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
     Assert-True ($facts.SdkVersion -ceq '3.0.0' -and $facts.Plugins.Count -eq 1 -and
-        $facts.ShippedEntries -eq 0 -and $facts.UnshippedEntries -eq 2) (
-        'V3 版本、插件或 G1 Unshipped 事实没有正确读取。')
+        $facts.ShippedEntries -eq 2 -and $facts.UnshippedEntries -eq 0) (
+        'V3 版本、插件或 G14 Shipped 事实没有正确读取。')
     Write-FixtureText `
         (Join-Path $testRoot 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Shipped.txt') `
-        "#nullable enable`nFixture.PublishedTooEarly`n"
-    Assert-ThrowsLike {
-        Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
-    } 'Shipped 必须为空'
-    Write-VersionFixture -Root $testRoot
-    Write-FixtureText `
-        (Join-Path $testRoot 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Unshipped.txt') `
         "#nullable enable`n"
     Assert-ThrowsLike {
         Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
-    } 'Unshipped 不能为空'
+    } 'Shipped 不能为空'
     Write-VersionFixture -Root $testRoot
     Write-FixtureText `
         (Join-Path $testRoot 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Unshipped.txt') `
+        "#nullable enable`nFixture.UnreviewedType`n"
+    Assert-ThrowsLike {
+        Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)
+    } 'Unshipped 必须为空'
+    Write-VersionFixture -Root $testRoot
+    Write-FixtureText `
+        (Join-Path $testRoot 'Host/MyAvaloniaManagement.PluginSdk/ApiCompatibility/v3/PublicAPI.Shipped.txt') `
         "#nullable enable`nFixture.ChangedType`n"
     Assert-ThrowsLike {
         Get-ManagementBaselineFacts -RepositoryRoot $testRoot -PluginProjects @($pluginProject)

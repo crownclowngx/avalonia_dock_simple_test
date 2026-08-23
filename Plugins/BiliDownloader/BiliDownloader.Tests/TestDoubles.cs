@@ -152,6 +152,13 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
     public int MaxConcurrentCalls { get; private set; }
     public Exception? InitializeException { get; set; }
     public Exception? InsertException { get; set; }
+    /// <summary>
+    /// 在阶段进度真正写入前建立可选同步点。默认值为空，不改变普通测试替身的行为；
+    /// G14 仅用它精确排列“后台合并、Flush、再次上报”的顺序，避免用 Sleep 猜测线程时序。
+    /// 参数是本仓储实例收到的阶段写入序号。
+    /// </summary>
+    public Func<int, Task>? BeforeStageProgressUpdateAsync { get; set; }
+    private int _stageProgressUpdateCount;
     /// <summary>控制合并重试的输出路径所有权结果，用于验证保留失效分支。</summary>
     public bool OwnsOutputReservation { get; set; } = true;
 
@@ -252,7 +259,7 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
         return Task.CompletedTask;
     }
 
-    public Task UpdateStageProgressAsync(
+    public async Task UpdateStageProgressAsync(
         string taskId,
         double progress,
         string status,
@@ -261,6 +268,12 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
         double mergeProgress,
         string speedText)
     {
+        var updateNumber = Interlocked.Increment(ref _stageProgressUpdateCount);
+        if (BeforeStageProgressUpdateAsync is not null)
+        {
+            await BeforeStageProgressUpdateAsync(updateNumber);
+        }
+
         lock (_gate)
         {
             var task = Find(taskId);
@@ -274,7 +287,6 @@ internal sealed class InMemoryDownloadTaskRepository : IDownloadTaskRepository
             CallLog.Add($"repository:stage:{status}");
         }
 
-        return Task.CompletedTask;
     }
 
     public Task UpdateBytesAsync(string taskId, long videoBytes, long audioBytes)

@@ -1,6 +1,6 @@
 # 验证与排错
 
-> 本页按当前未发布 V3 G12 编写。四插件已依次通过最终 Workspace、注册所有权、互斥激活、修订保存、
+> 本页按 V3 G14 已封板基线编写。四插件已依次通过最终 Workspace、注册所有权、互斥激活、修订保存、
 > 私有消息、Headless UI 与真实 ZIP 验收；DaTang 覆盖双 Document 与窗口端口，MySmallTools 覆盖
 > 原生资源与关闭令牌，BiliDownloader 覆盖 Document + Tool + Lifecycle + readiness 大型对象图。
 
@@ -77,9 +77,17 @@ dotnet test Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csp
 .\scripts\Test-BiliDownloaderV3.ps1 -Configuration Release -NoRestore
 ```
 
-V2 历史文档继续用于审计，但已由当前阶段删除的活动脚本不保留兼容包装入口。V3 G9–G12 不运行真实账号、
+V2 历史文档继续用于审计，但已由当前阶段删除的活动脚本不保留兼容包装入口。V3 G9–G12 单独运行时不访问真实账号、
 真实 Bilibili、Windows CI/Smoke、ReleaseAcceptance 或发布门禁；G11 的本地真实媒体 Harness 是资源门禁，
 不联网，也不是发布验收。
+
+正式封板复验仅从 Windows x64 干净提交运行：
+
+```powershell
+.\scripts\Invoke-HostV3ReleaseGate.ps1
+```
+
+该入口会执行两轮隔离完整矩阵和真实窗口 Smoke，但不会上传、打标签或访问外部账号。
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。
 

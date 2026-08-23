@@ -4,6 +4,7 @@ using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
+using System.Collections.Concurrent;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -195,15 +196,14 @@ public sealed class PluginLifecycleCoordinatorTests
             ("throwing-cancel", new ThrowingCancellationLifecycle()));
 
         await fixture.Coordinator.InitializeAllAsync();
-        await WaitUntilAsync(() => sink.Records.Any(record =>
-            record.Code == HostDiagnosticCodes.LifecycleCancellationFailed));
+        var cancellationFailure = await sink.WaitForAsync(
+            record => record.Code == HostDiagnosticCodes.LifecycleCancellationFailed,
+            TimeSpan.FromSeconds(10));
 
         Assert.Equal(
             PluginLifecycleStatus.InitializationTimedOut,
             fixture.States.GetState(new PluginId("throwing-cancel"))?.Status);
-        Assert.Contains(sink.Records, record =>
-            record.Code == HostDiagnosticCodes.LifecycleCancellationFailed &&
-            record.TechnicalDetail == "stage=Initialization");
+        Assert.Equal("stage=Initialization", cancellationFailure.TechnicalDetail);
     }
 
     [Fact]
@@ -324,7 +324,10 @@ public sealed class PluginLifecycleCoordinatorTests
 
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        // 覆盖率采集和两轮隔离门禁会显著增加同机 I/O 与线程调度压力。
+        // 这里等待的是已经提交的异步诊断，而不是业务超时本身；放宽观察窗口不会
+        // 改变生命周期的短超时配置或最终状态断言，只避免机器负载造成测试假阴性。
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (!condition())
         {
             await Task.Delay(10, timeout.Token);
@@ -473,7 +476,37 @@ public sealed class PluginLifecycleCoordinatorTests
 
     private sealed class RecordingDiagnosticSink : IHostDiagnosticSink
     {
-        internal List<HostDiagnosticRecord> Records { get; } = [];
+        private readonly ConcurrentQueue<HostDiagnosticRecord> _records = new();
+        private readonly SemaphoreSlim _recordAvailable = new(0);
+
+        /// <summary>
+        /// 返回当前记录的稳定快照。取消回调由后台线程报告，普通 List 在一边追加、一边
+        /// 枚举时既没有跨线程可见性保证，也可能破坏枚举器；快照让普通断言只读取已发布事实。
+        /// </summary>
+        internal IReadOnlyList<HostDiagnosticRecord> Records => _records.ToArray();
+
+        /// <summary>
+        /// 等待一条满足条件的诊断，而不是按固定间隔轮询共享集合。
+        /// SemaphoreSlim 同时承担唤醒和内存屏障职责：每次报告后唤醒观察方，观察方再对完整
+        /// 快照做条件判断。这样仍保留明确的测试截止时间，但不会把调度速度误当成业务结果。
+        /// </summary>
+        internal async Task<HostDiagnosticRecord> WaitForAsync(
+            Func<HostDiagnosticRecord, bool> predicate,
+            TimeSpan timeout)
+        {
+            ArgumentNullException.ThrowIfNull(predicate);
+            using var cancellation = new CancellationTokenSource(timeout);
+            while (true)
+            {
+                var matched = _records.FirstOrDefault(predicate);
+                if (matched is not null)
+                {
+                    return matched;
+                }
+
+                await _recordAvailable.WaitAsync(cancellation.Token);
+            }
+        }
 
         public HostDiagnosticRecord Report(HostDiagnosticDraft diagnostic)
         {
@@ -481,7 +514,8 @@ public sealed class PluginLifecycleCoordinatorTests
                 Guid.NewGuid(),
                 diagnostic,
                 DateTimeOffset.UtcNow);
-            Records.Add(record);
+            _records.Enqueue(record);
+            _recordAvailable.Release();
             return record;
         }
     }

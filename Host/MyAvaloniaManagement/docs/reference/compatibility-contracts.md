@@ -18,8 +18,8 @@
 > 过渡构建面已经删除；Core/UI v2 API 已进入 Shipped，两轮隔离门禁与 Windows V2 Smoke 已建立，
 > 历史 v1 签署事实保持可追溯。
 
-> 当前源码已完成未发布 V3 G13：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
-> `[3.0.0, 4.0.0)`。活动签名位于 v3 Unshipped，Document 保存采用修订快照与指定修订确认，
+> 当前源码已完成 V3 G14 封板：产品、Core/UI SDK 和四插件版本为 `3.0.0`，SDK 区间为
+> `[3.0.0, 4.0.0)`。活动签名位于 v3 Shipped 127/45，Document 保存采用修订快照与指定修订确认，
 > 激活采用互斥的 `NewDocumentActivation` / `RestoreDocumentActivation`，插件注册采用 Host 最终提交
 > 与 ID 归属校验；SDK/Host 通用事件总线已删除，消息实例归对应插件 Provider 所有；Dock Factory、
 > 唯一 Workspace Session 与无 Dock Tool ReadModel 已分离；Host Catalog 与只含真实插件的 Plugin
@@ -30,7 +30,7 @@
 
 ## 2. public API
 
-当前 V3 G12 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
+当前 V3 G14 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
 四个业务插件只引用最终 SDK。`MyAvaloniaManagement.LegacyPluginContracts` 已整体删除；活动项目、
@@ -41,8 +41,8 @@
 来自 Workspace Catalog 的精确冻结工厂并在发布前构造，禁止程序集扫描、类型名猜测和反射回退。该内部实现没有改变
 Plugin SDK public API 或 manifest；Document 与 Layout 磁盘契约均已切换为唯一 V2。
 
-历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 的 v2 基线由 G14 冻结为
-Shipped 85/46 条且 Unshipped 均为空。活动 v3 Shipped 为空、Unshipped 为 127/45，并由
+历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 的 v2 基线由 V2 G14 冻结为
+Shipped 85/46 条且 Unshipped 均为空。活动 v3 Shipped 为 127/45、Unshipped 均为空，并由
 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v3` 验证。未登记
 新增、删除、可见性收窄、参数或返回类型变化都会给出成员级 RS 诊断。完整维护流程见
 [Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
@@ -63,8 +63,8 @@ Host 实现，这不构成发布兼容承诺。
 - 调用必须在 Avalonia UI 线程，null 选项/文本抛参数异常；无主窗口时按契约返回空值；
 - 原生选择器返回后必须再次检查取消令牌，Document 关闭期间的迟到结果不得提交。
 
-SDK 与插件的 V2 正式基线为 `2.0.0`；当前未发布版本线为 `3.0.0`。本窗口端口已包含在
-G14 冻结的 v2 Shipped，并在 G1 原样进入 v3 Unshipped。
+SDK 与插件的 V2 历史正式基线为 `2.0.0`；当前 V3 正式版本线为 `3.0.0`。本窗口端口已包含在
+V2 G14 冻结的 v2 Shipped，并在 V3 G14 随最终表面进入 v3 Shipped。
 
 ### 2.1.1 全屏租约 Host Port
 
@@ -78,7 +78,7 @@ G14 冻结的 v2 Shipped，并在 G1 原样进入 v3 Unshipped。
 ### 2.2 版本所有权
 
 - 产品、Host 程序集身份和 Plugin SDK 版本集中定义在根级 `Directory.Version.props`；
-- 当前未发布产品与 SDK 版本为 `3.0.0`，Host 与 SDK `AssemblyVersion` 为 `3.0.0.0`；V3 不重新引入独立 Host API 版本线；
+- 当前已封板产品与 SDK 版本为 `3.0.0`，Host 与 SDK `AssemblyVersion` 为 `3.0.0.0`；V3 不重新引入独立 Host API 版本线；
 - 兼容的 SDK 新增提升次版本但保持同一主版本程序集身份；破坏性契约变化提升主版本；
 - 每个插件只拥有自己的 `PluginVersion`，清单版本必须与入口程序集精确一致；
 - manifest、布局、外观、诊断和未来 Document 信封分别拥有整数 schema，不共享全局数字；

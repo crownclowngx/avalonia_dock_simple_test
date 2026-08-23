@@ -7,8 +7,8 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码已经完成 V3 G9–G12 四插件最终验收和 G13 唯一生产面收口；G14 发布能力仍由后续阶段负责，
-# 不得提前写成已实现。V1/V2/V3 阶段记录继续参加链接、命令和项目路径检查。
+# 当前源码已经完成 V3 G14 封板；G9–G13 的非发布摘要仍是对应阶段的历史事实，
+# G14 专用记录与当前文档共同声明正式 API 和两轮本地门禁。V1/V2/V3 阶段记录继续参加检查。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
@@ -31,6 +31,7 @@ $currentDocumentPaths = @(
     'docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md',
     'docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md',
     'docs/plan-history/host-v3/g13-remove-v2-production-surface.md',
+    'docs/plan-history/host-v3/g14-v3-sealing.md',
     'docs/reference/dock-layout-snapshot-v2.md',
     'docs/reference/myavalonia-management-tests.md',
     'docs/reference/plugin-sdk-api-compatibility.md',
@@ -189,14 +190,19 @@ foreach ($relativePath in $linkDocumentPaths) {
     }
 }
 
-# 最终签署和阶段进度不能只靠“没有旧句子”间接成立。以下正向哨兵把 V2 G14、
-# V3 G13 的活动版本/API 状态和非发布边界绑定到权威文档。
+# 最终签署和阶段进度不能只靠“没有旧句子”间接成立。以下正向哨兵把 V2/V3 G14、
+# 正式 API 状态、两轮发布资格和无外部发布边界绑定到权威文档。
 $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'README.md'; Fragment = 'Managed Plugin V2 已完成 G0–G14 并正式封板' },
     [pscustomobject]@{ Path = 'docs/design/host-v2-breaking-refactor-plan.md'; Fragment = '状态：已完成；G0–G14 已全部封板' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v2/g14-v2-sealing.md'; Fragment = 'scripts/Invoke-HostV2ReleaseGate.ps1' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v2/g14-v2-sealing.md'; Fragment = 'aiflow=false' },
-    [pscustomobject]@{ Path = 'docs/design/host-v3-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0–G13 已完成，G14 尚未实施' },
+    [pscustomobject]@{ Path = 'docs/design/host-v3-breaking-refactor-plan.md'; Fragment = '状态：已完成；G0–G14 已全部封板' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g14-v3-sealing.md'; Fragment = 'scripts/Invoke-HostV3ReleaseGate.ps1' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g14-v3-sealing.md'; Fragment = 'Core 127、UI 45' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g14-v3-sealing.md'; Fragment = 'repeatabilityVerified=true' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g14-v3-sealing.md'; Fragment = 'aiflow=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g14-v3-sealing.md'; Fragment = 'published=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md'; Fragment = 'Test-MyPlugTestV3.ps1' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md'; Fragment = 'windowsCi=false' },
@@ -285,7 +291,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'releaseGate=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'publishable=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'IDisposable? TryPresent(Control content)' },
-    [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'Core 127 条、UI 45 条' }
+    [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'v3 Shipped 为 Core 127 条、UI 45 条' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

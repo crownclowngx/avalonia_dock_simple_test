@@ -14,7 +14,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > 生产面，G14 已冻结 2.0.0 API、建立两轮隔离发布门禁并完成文档签署。见
 > [V2 G14 封板记录](./docs/plan-history/host-v2/g14-v2-sealing.md)。
 
-> 当前源码已完成未发布的 V3 G13：产品、Core/UI SDK 与四插件版本为 `3.0.0`；Document 保存使用
+> Managed Plugin V3 已完成 G0–G14 并正式封板：产品、Core/UI SDK 与四插件版本为 `3.0.0`；Document 保存使用
 > 修订快照和指定修订确认，激活输入使用互斥的 New/Restore 类型，插件注册改为 Host 最终提交端口与
 > 贡献生命周期并强制 ID 归属；事件通信由 MyPlugTest、BiliDownloader 各自的插件 Provider 私有持有；
 > Workspace/Dock 已拆分，Host Catalog 与只含真实插件的 Plugin Registry 已分离；UI SDK 全屏契约已
@@ -24,7 +24,9 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > [V3 G10 DaTang 验收](./docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
 > [V3 G11 MySmallTools 验收](./docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)和
 > [V3 G12 BiliDownloader 验收](./docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)以及
-> [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)。
+> [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)和
+> [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)。V3 Core/UI API 已冻结为 Shipped
+> 127/45 条，并由两轮隔离门禁签署；这表示本地可发布，不表示已经上传或对外发布。
 
 ## 核心扩展模型
 
@@ -67,7 +69,7 @@ Host/Common 双区间已经删除。缺少入口 `.deps.json` 或依赖历史加
 权限系统、第三方市场、跨进程 UI 或用户动态启停插件。
 
 版本按所有者独立演进：产品版本、Plugin SDK 版本、每插件版本、manifest schema、每种宿主
-持久化 schema 和插件内容 schema 不能互相代替。当前未发布产品与 Plugin SDK 均为 `3.0.0`，Host 与
+持久化 schema 和插件内容 schema 不能互相代替。当前正式产品与 Plugin SDK 均为 `3.0.0`，Host 与
 SDK 程序集版本均为 `3.0.0.0`；V3 不重新引入独立 Host API 版本事实。统一事实定义在
 [`Directory.Version.props`](./Directory.Version.props)。普通进程内强类型消息不增加无迁移行为的
 版本字段，发生破坏性语义变化时创建新消息类型或提升 SDK 主版本。
@@ -77,8 +79,8 @@ SDK 程序集版本均为 `3.0.0.0`；V3 不重新引入独立 Host API 版本�
 也不会扫描或执行未声明的第二个模块。
 
 V2 G2 已建立真实的 `MyAvaloniaManagement.PluginSdk.dll` 与 `MyAvaloniaManagement.PluginSdk.UI.dll`。
-Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约。当前 v3 Unshipped 为 Core
-127 条、UI 45 条 public 签名，两个 v3 Shipped 均为空，直到 V3 G14 才允许签署。对应的历史签名
+Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约。G14 已将 v3 Shipped 固定为 Core
+127 条、UI 45 条 public 签名，两个 v3 Unshipped 均为空。对应的历史签名
 继续保存在 v2 Shipped。旧 `MyAvaloniaManagementCommon.dll` 与 Legacy 项目已在 V2 G13 整体删除；
 历史 v1 API 文本仅用于审计，不参与编译、加载或打包。
 
@@ -200,7 +202,8 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G9–G12 四插件验收及 G2–G8 平台语义为事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
-- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G13 已完成事实与 G14 后续边界；
+- [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G14 最终目标、阶段和签署矩阵；
+- [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)：查看正式 API、SOLID、两轮隔离门禁、制品和回滚边界；
 - [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)：查看零残留、真实包负例、四插件矩阵和非发布证据；
 - [V3 G12 BiliDownloader 验收](./docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)：查看保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合及 1219 项非发布证据；
 - [V3 G11 MySmallTools 验收](./docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)：查看全屏租约、20 轮真实媒体资源归零、真实 Host 组合及 676 项非发布证据；
@@ -240,7 +243,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 .\scripts\Test-Documentation.ps1
 ```
 
-该门禁不启动窗口、不执行发布；V3 G13 没有当前发布门禁，V2 发布入口只保留历史审计用途。
+该门禁不启动窗口、不执行发布；正式封板证据由下述 V3 G14 入口建立。
 
 修改 Host/SDK 生产边界、插件入口、构建 Target、打包或兼容规则时运行 G13 非发布聚合门禁：
 
@@ -260,7 +263,16 @@ TestResults/  需要保留的阶段验收与人工验证记录
 该脚本只执行 Unit、Plugin 与 Headless UI 专项测试，并固定记录未运行 Windows CI、Windows Smoke
 及发布门禁；结果写入 `artifacts/test-results/DocumentV2/summary.json`。
 
-V2 封板时曾在干净 Git 提交上执行以下 Windows 本地发布门禁；V3 G13 不运行它：
+V3 封板在干净 Git 提交上执行以下 Windows 本地发布门禁：
+
+```powershell
+.\scripts\Invoke-HostV3ReleaseGate.ps1
+```
+
+该入口在两个无硬链接隔离克隆中执行完整 V3 生产面、G9–G12 专项、20 轮资源 Harness、API/包、
+文档和真实窗口 Smoke；只建立本地发布资格，不上传、不打标签且固定记录 `aiflow=false`。
+
+V2 封板时曾执行以下历史 Windows 本地发布门禁：
 
 ```powershell
 .\scripts\Invoke-HostV2ReleaseGate.ps1
@@ -314,13 +326,12 @@ V2 封板时曾在干净 Git 提交上执行以下 Windows 本地发布门禁；
 - G5/G7 已完成：每个 manifest 插件拥有独立 Provider 并只通过最终 UI SDK 发布到 Plugin Registry；
   Host Welcome/Tool 由独立 Host Catalog 声明；
 - 兼容事实只有一个 Core/UI 共用的 SDK 区间；不得重新引入 Host/Common 双区间或独立 Host API 版本事实；
-- 当前代码版本线为未发布 V3 G12；Core/UI 包、manifest schema 2、独立容器、Host 独立目录、
+- 当前代码版本线为已封板 V3 G14；Core/UI 包、manifest schema 2、独立容器、Host 独立目录、
   Document envelope v2、Layout v2 和 Host internal 生命周期继续使用既有边界，Document 保存已采用
   修订快照与指定修订确认，Document 激活已采用互斥 New/Restore 类型，插件端口和贡献根已改为 Host
   最终提交并强制 ID 归属，插件消息由对应插件 Provider 私有持有；Workspace Session、Dock Factory 和
   Tool 只读投影以及 Host Catalog / Plugin Registry 已经分离，全屏已使用单参数租约端口；四插件已
   依次通过最终 Workspace、专项资源边界与真实 ZIP 验收。V3 G13 已证明活动生产面只剩最终 V3 语义，
-  G14 尚未实施，
-  不得把 v3 Unshipped 或本地测试包描述为正式发布承诺。
+  G14 已冻结 v3 Shipped 127/45 并完成两轮隔离签署；仓库仍不会在无授权时自动上传或对外发布。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。

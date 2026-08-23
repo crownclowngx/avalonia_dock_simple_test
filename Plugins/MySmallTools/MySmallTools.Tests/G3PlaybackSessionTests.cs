@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 using LibVLCSharp.Shared;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
@@ -384,6 +385,55 @@ public sealed class G3PlaybackSessionTests
     }
 
     [Fact]
+    public async Task NativeDispatcher_PreCancelledWorkNeverInvokesNativeAction()
+    {
+        using var dispatcher = new PlaybackNativeDispatcher();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var actionInvoked = false;
+
+        // 取消必须在消费者读取工作项之前就生效。这个用例不依赖线程调度先后，
+        // 因而稳定覆盖 WorkItem 的“拒绝启动并完成为 Canceled”分支；同时证明
+        // 已取消的 Document 不会再进入 LibVLC 原生调用。
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            dispatcher.InvokeAsync(
+                "pre-cancelled",
+                () =>
+                {
+                    actionInvoked = true;
+                    return true;
+                },
+                cancellation.Token));
+
+        Assert.False(actionInvoked);
+    }
+
+    [Fact]
+    public async Task PlayingControlRefresh_WhenDocumentAlreadyClosing_ConvergesAsCancellation()
+    {
+        var source = new FakeSource(1);
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(source)));
+        Assert.True((await rig.Session.LoadAsync("video.secvid", "password")).Success);
+        rig.CloseDocument();
+
+        // Playing 后的轨道刷新是既有的私有 fire-and-forget 增强路径，公开契约不应为了
+        // 单测增加等待接口。这里仅在测试内反射取得它返回的 Task，并显式等待已经取消的
+        // Document 生命周期，从而确定性验证 OperationCanceledException 被本层收敛。
+        // 如果该私有职责被重构或删除，本测试会给出清晰失败，而不会静默漏掉关闭语义。
+        var refreshMethod = typeof(SecureVideoPlayer).GetMethod(
+            "RefreshControlsAfterPlayingAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("找不到播放后控制刷新方法。");
+        var refreshTask = refreshMethod.Invoke(rig.Session, [source]) as Task
+            ?? throw new InvalidOperationException("播放后控制刷新方法没有返回 Task。");
+
+        await refreshTask.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.True(rig.Session.Snapshot.State is PlaybackState.Ready or PlaybackState.Stopped);
+    }
+
+    [Fact]
     public async Task StopThenPlay_ReusesSameSourceAndWaitsForStop()
     {
         var source = new FakeSource(1);
@@ -533,6 +583,8 @@ public sealed class G3PlaybackSessionTests
 
         public FakePlayerHost Host { get; }
         public SecureVideoPlayer Session { get; }
+
+        public void CloseDocument() => _lifetime.Close();
 
         public void Dispose()
         {

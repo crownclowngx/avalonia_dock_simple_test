@@ -4,11 +4,11 @@
 
 ## 快速开始
 
-> V3 G13 当前事实：源码处于未发布的产品/SDK/四插件 `3.0.0` 版本线；public API 仍为 Unshipped，
+> V3 G14 当前事实：产品/SDK/四插件 `3.0.0` 已封板；Core/UI public API 已进入 Shipped 127/45，
 > G2–G8 已分别完成修订保存、互斥激活、注册所有权、插件私有消息、Workspace/Dock 拆分、
 > Host Catalog / Plugin Registry 分离和全屏租约；四插件已通过最终 Workspace、UI、资源与真实包验收；
 > manifest、Document、layout 与数据根仍保持 V2 线格式。Legacy 项目、旧入口探针与 Host/Common
-> 双区间继续保持删除状态。
+> 双区间继续保持删除状态；两轮隔离门禁已建立本地发布资格，但没有上传或打标签。
 
 V3 快速开始入口：
 
@@ -23,7 +23,7 @@ V3 快速开始入口：
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
 | [宿主—插件架构评审](./design/host-plugin-architecture-review.md) | 解决方案总体结构、插件边界、当前成熟度和演进方向 | 当前事实，已按主项目内部重构更新 |
-| [Managed Plugin V3 破坏式重构任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 实施中；G0–G13 已完成，G14 尚未实施 |
+| [Managed Plugin V3 破坏式重构任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 已完成；G0–G14 已全部封板 |
 | [V3 G0 非发布绿色基线](./plan-history/host-v3/g0-green-baseline.md) | V2 当前测试、覆盖率、API、包图与保存竞争复现 | 已完成；不改变生产行为 |
 | [V3 G1 版本与数据边界](./plan-history/host-v3/g1-version-and-data-boundaries.md) | 未发布 3.0.0 版本线、v3 Unshipped API、V2 磁盘兼容和非发布门禁 | 已完成；不改变 public API 形状或磁盘格式 |
 | [V3 G2 修订化 Document 保存](./plan-history/host-v3/g2-revisioned-document-save.md) | 修订快照、指定修订确认、关闭竞争保护、三插件策略和非发布专项门禁 | 已完成；envelope v2 与插件内容 schema 不变 |
@@ -38,6 +38,7 @@ V3 快速开始入口：
 | [V3 G11 MySmallTools 验收](./plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) | 四 Document、全屏租约、20 轮真实媒体资源归零、真实 Host 组合与 SOLID | 已完成；676/676，Host 84.39% / 70.58%，插件 72.59% / 48.12%，非发布 |
 | [V3 G12 BiliDownloader 验收](./plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) | 保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合与 SOLID | 已完成；1219/1219，Host 84.39% / 70.58%，插件 83.80% / 67.54%，非发布 |
 | [V3 G13 删除 V2 生产面](./plan-history/host-v3/g13-remove-v2-production-surface.md) | 活动零残留、API/包负例、四插件矩阵、SOLID 与回滚边界 | 已完成；1483/1483，Host 84.39% / 70.58%，非发布 |
+| [V3 G14 封板](./plan-history/host-v3/g14-v3-sealing.md) | API Shipped、两轮隔离门禁、四插件专项、Windows Smoke、SOLID 和回滚 | 已完成；Core/UI 127/45，本地可发布且未外部发布 |
 | [Managed Plugin V2 封板任务书](./design/host-v2-breaking-refactor-plan.md) | V2 所有权、删除清单、阶段实施和最终签署矩阵 | G0–G14 已完成，当前签署依据 |
 | [V2 G14 封板记录](./plan-history/host-v2/g14-v2-sealing.md) | API Shipped、两轮隔离门禁、制品、SOLID 和回滚边界 | 当前 V2 正式基线 |
 | [Managed Plugin v1 封板评审与整改任务书](./design/host-v1-sealing-readiness-plan.md) | V1 封板差距、版本与兼容策略、整改包和验收标准 | V1 历史签署，已由 V2 取代 |
@@ -70,13 +71,14 @@ V3 快速开始入口：
 - [基于活动理论的需求分解方法论](./theory/activity-theory-requirements-decomposition.md)：说明自然语言需求如何拆分到 Document、Tool 和后台服务。
 - [AI 工作流插件接入可行性探索](./design/ai-workflow-plugin-exploration.md)：候选能力、风险和 PoC 路线；属于探索文档，不是当前宿主契约。
 
-## V2 已封板基线与后续候选计划
+## V3/V2 已封板基线与后续候选计划
 
 V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯一生产面与发布门禁已经建立：
 
 - [Managed Plugin V3 破坏式架构重构任务书](./design/host-v3-breaking-refactor-plan.md)：
   以修订化 Document 保存、互斥激活、插件私有消息、注册所有权、Workspace/Dock 解耦和 Host Catalog
-  分离和全屏租约为目标的 G0–G14 计划；当前完成 G0–G13，Document 保存使用 V3 G2，激活使用 V3 G3，注册所有权使用 V3 G4，插件私有消息使用 V3 G5，Workspace/Dock 使用 V3 G6，Host/插件目录使用 V3 G7，全屏租约使用 V3 G8，四插件使用 V3 G9–G12 最终验收链，G13 已删除并证明 V2 生产面零残留；G14 尚未实施。
+  分离和全屏租约为目标的 G0–G14 计划；G0–G14 已全部完成，G13 已删除并证明 V2 生产面零残留，
+  G14 已冻结 Core/UI 127/45 条 API 并完成两轮隔离发布签署。
 - [Managed Plugin V2 破坏式架构重构任务书](./design/host-v2-breaking-refactor-plan.md)：
   以每插件独立 DI、Host Dock Adapter、声明式 Document/Tool 贡献和全新 V2 数据契约为目标的
   G0–G14 已完成的实施与最终签署任务书。
@@ -127,6 +129,8 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
   记录不可变目录、Host/插件激活边界、Provider/Scope/View 所有权、失败回滚、SOLID 与 448 项非发布证据。
 - [G8：建立全屏租约与 Host V3 骨架](./plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)：
   记录租约状态机、窗口/Document/原生表面时序、owner API 删除面、672 项测试和 20 轮资源归零证据。
+- [G14：V3 封板](./plan-history/host-v3/g14-v3-sealing.md)：记录最终 API Shipped、两轮隔离 Release
+  门禁、四插件专项与确定性制品、Windows Smoke、无外部发布边界和整体回滚方式。
 
 ### Managed Plugin V2 整改记录
 

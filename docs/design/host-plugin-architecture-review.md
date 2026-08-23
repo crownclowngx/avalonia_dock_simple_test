@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-22（已同步 Managed Plugin V3 G10–G12 三插件最终验收）<br>
+> 更新日期：2026-08-23（已同步 Managed Plugin V3 G14 封板）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
@@ -9,19 +9,19 @@
 > V2 当前状态：G0–G14 已完成。四个业务插件均使用正式 SDK、声明式贡献与普通模型；Legacy
 > 项目、兼容适配和过渡构建属性已经删除，API Shipped 与两轮隔离发布门禁已经建立。
 
-> V3 当前状态：G0–G13 已完成。源码版本线为未发布 `3.0.0`，活动 API 位于 v3 Unshipped；Document
+> V3 当前状态：G0–G14 已完成。源码版本线为已封板 `3.0.0`，Core/UI API 位于 v3 Shipped 127/45；Document
 > 保存已使用修订协议，激活已使用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属；
 > MyPlugTest 与 BiliDownloader 的消息器已归各自插件 Provider 所有；唯一 Workspace Session、Dock
 > Factory Adapter 和无 Dock Tool ReadModel 已建立；Host Catalog 与只含真实插件的 Plugin Registry
 > 已分离；全屏已改为单参数展示端口返回幂等租约，Host 具体会话维护唯一活动展示。四插件已通过最终
 > Registry、私有 Provider、Workspace Session、Dock Adapter 与真实 ZIP Loader 完成验收；磁盘
-> schema 仍为 2；G13 已完成 V2 生产面零残留证明，G14 尚未实施。
+> schema 仍为 2；G13 已完成 V2 生产面零残留证明，G14 已完成两轮隔离门禁和文档签署。
 
 ## 1. 先说结论：这是一个什么项目
 
 **[架构判断]** 这不是一个单纯的 Avalonia Dock 示例，也不是面向不可信第三方代码的通用插件平台。它更准确的定位是：
 
-> 一个基于 .NET 10、Avalonia 12 和 Dock 12 的模块化桌面工作台；内部可信 Managed Plugin V2 已完成所有权、兼容性、诊断和发布制品边界封板。
+> 一个基于 .NET 10、Avalonia 12 和 Dock 12 的模块化桌面工作台；内部可信 Managed Plugin V3 已完成语义、所有权、兼容性、诊断和发布制品边界封板。
 
 宿主提供统一窗口、四向 Dock 布局、布局持久化、菜单、文件打开/保存、依赖注入、消息通信和可选插件生命周期；业务模块通过插件形式提供 Document、Tool 和后台服务。
 

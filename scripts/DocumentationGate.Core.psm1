@@ -326,9 +326,10 @@ function Get-ManagementBaselineFacts {
     Assert-DocumentationCondition ($apiBaseline -ceq "v$($sdkVersion.Major)") (
         "活动 API 基线 $apiBaseline 与 SDK 主版本 $($sdkVersion.Major) 不一致。")
 
-    # V3 G13 尚未发布，因此活动 Shipped 必须为空，全部当前签名进入 Unshipped。V2 Shipped 继续作为
-    # 历史正式承诺保留；Core 允许 G2–G5 已评审的破坏式变化，UI 只允许 G8 把两个 owner 方法
-    # 原子替换为一个返回 IDisposable 租约的方法。除此之外仍逐条相等，避免借阶段更新改写历史表面。
+    # G14 只把已经完成评审的 V3 签名原样移入 Shipped，不允许借封板修改 public 形状。
+    # V2 Shipped 继续作为历史正式承诺保留；Core 允许 G2–G5 已评审的破坏式变化，UI 只允许
+    # G8 把两个 owner 方法原子替换为一个返回 IDisposable 租约的方法。除此之外仍逐条相等，
+    # 这样文档门禁既能证明 V3 已正式签署，也能防止历史文本被顺手改写。
     $sdkApiRoots = @(
         Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk\ApiCompatibility\$apiBaseline"
         Join-Path $RepositoryRoot "Host\MyAvaloniaManagement.PluginSdk.UI\ApiCompatibility\$apiBaseline"
@@ -349,10 +350,10 @@ function Get-ManagementBaselineFacts {
                 Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         $unshippedEntries = @(Get-Content -LiteralPath $unshippedPath | Select-Object -Skip 1 |
                 Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-        Assert-DocumentationCondition ($shippedEntries.Count -eq 0) (
-            "G13 未发布 V3 SDK 的 Shipped 必须为空：$baselineRoot")
-        Assert-DocumentationCondition ($unshippedEntries.Count -gt 0) (
-            "G13 未发布 V3 SDK 的 Unshipped 不能为空：$baselineRoot")
+        Assert-DocumentationCondition ($shippedEntries.Count -gt 0) (
+            "G14 正式 V3 SDK 的 Shipped 不能为空：$baselineRoot")
+        Assert-DocumentationCondition ($unshippedEntries.Count -eq 0) (
+            "G14 正式 V3 SDK 的 Unshipped 必须为空：$baselineRoot")
 
         $v2Root = Join-Path (Split-Path $baselineRoot -Parent) 'v2'
         $v2Shipped = @(Get-Content -LiteralPath (Join-Path $v2Root 'PublicAPI.Shipped.txt') |
@@ -361,42 +362,42 @@ function Get-ManagementBaselineFacts {
                 Select-Object -Skip 1 | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         Assert-DocumentationCondition ($v2Shipped.Count -gt 0 -and $v2Unshipped.Count -eq 0) (
             "V2 历史 API 必须保持 Shipped 非空且 Unshipped 为空：$v2Root")
-        $isG3Core = $unshippedEntries -contains (
+        $isG3Core = $shippedEntries -contains (
             'MyAvaloniaManagement.PluginSdk.NewDocumentActivation')
         if ($isG3Core) {
             Assert-DocumentationCondition ($v2Shipped.Count -eq 85) (
                 "G3 不得改写 V2 Core Shipped 数量：$baselineRoot")
-            Assert-DocumentationCondition ($unshippedEntries.Count -eq 127) (
-                "G13 Core v3 Unshipped 必须保持删除通用事件总线后的 127 条：$baselineRoot")
+            Assert-DocumentationCondition ($shippedEntries.Count -eq 127) (
+                "G14 Core v3 Shipped 必须固定为最终 127 条：$baselineRoot")
             Assert-DocumentationCondition (
-                $unshippedEntries -contains (
+                $shippedEntries -contains (
                     'MyAvaloniaManagement.PluginSdk.IPersistablePluginDocument.AcceptChanges(MyAvaloniaManagement.PluginSdk.DocumentRevision savedRevision) -> void')) (
-                "G5 Core v3 缺少既有指定修订确认：$baselineRoot")
+                "G14 Core v3 缺少既有指定修订确认：$baselineRoot")
             Assert-DocumentationCondition (
-                -not ($unshippedEntries -match 'CaptureContentAsync|AcceptChanges\(\)')) (
-                "G5 Core v3 不得保留旧保存协议：$baselineRoot")
+                -not ($shippedEntries -match 'CaptureContentAsync|AcceptChanges\(\)')) (
+                "G14 Core v3 不得保留旧保存协议：$baselineRoot")
             Assert-DocumentationCondition (
-                $unshippedEntries -contains (
+                $shippedEntries -contains (
                     'MyAvaloniaManagement.PluginSdk.RestoreDocumentActivation')) (
-                "G5 Core v3 缺少 RestoreDocumentActivation：$baselineRoot")
+                "G14 Core v3 缺少 RestoreDocumentActivation：$baselineRoot")
             Assert-DocumentationCondition (
-                -not ($unshippedEntries -match 'DocumentActivationContext')) (
-                "G5 Core v3 不得保留旧可空组合激活类型：$baselineRoot")
+                -not ($shippedEntries -match 'DocumentActivationContext')) (
+                "G14 Core v3 不得保留旧可空组合激活类型：$baselineRoot")
         }
-        elseif ($unshippedEntries -contains (
+        elseif ($shippedEntries -contains (
                 'MyAvaloniaManagement.PluginSdk.UI.IWindowContentFullscreenHost.TryPresent(Avalonia.Controls.Control! content) -> System.IDisposable?')) {
             Assert-DocumentationCondition ($v2Shipped.Count -eq 46) (
                 "G8 不得改写 V2 UI Shipped 数量：$baselineRoot")
-            Assert-DocumentationCondition ($unshippedEntries.Count -eq 45) (
-                "G13 UI v3 Unshipped 必须保持全屏租约收口后的 45 条：$baselineRoot")
+            Assert-DocumentationCondition ($shippedEntries.Count -eq 45) (
+                "G14 UI v3 Shipped 必须固定为最终 45 条：$baselineRoot")
             Assert-DocumentationCondition (
-                -not ($unshippedEntries -match 'TryRestore|TryPresent\(Avalonia\.Controls\.Control! content, System\.Object! owner\)')) (
-                "G8 UI v3 不得保留 owner 全屏 API：$baselineRoot")
+                -not ($shippedEntries -match 'TryRestore|TryPresent\(Avalonia\.Controls\.Control! content, System\.Object! owner\)')) (
+                "G14 UI v3 不得保留 owner 全屏 API：$baselineRoot")
 
             $v2WithoutFullscreenOwner = @($v2Shipped | Where-Object {
                     $_ -notmatch 'IWindowContentFullscreenHost\.(TryPresent|TryRestore)'
                 })
-            $v3WithoutFullscreenLease = @($unshippedEntries | Where-Object {
+            $v3WithoutFullscreenLease = @($shippedEntries | Where-Object {
                     $_ -notmatch 'IWindowContentFullscreenHost\.TryPresent'
                 })
             Assert-DocumentationCondition (
@@ -406,8 +407,8 @@ function Get-ManagementBaselineFacts {
         else {
             # 最小测试夹具仍走此分支，以继续验证没有阶段变化时的逐条投影规则。
             Assert-DocumentationCondition (
-                ($v2Shipped -join "`n") -ceq ($unshippedEntries -join "`n")) (
-                "未发生已评审协议变更的 V3 Unshipped 必须与 V2 Shipped 完全一致：$baselineRoot")
+                ($v2Shipped -join "`n") -ceq ($shippedEntries -join "`n")) (
+                "未发生已评审协议变更的 V3 Shipped 必须与 V2 Shipped 完全一致：$baselineRoot")
         }
         $allShippedEntries.AddRange([string[]]$shippedEntries)
         $allUnshippedEntries.AddRange([string[]]$unshippedEntries)

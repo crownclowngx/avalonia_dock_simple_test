@@ -9,8 +9,8 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [V2 G14 封板](../plan-history/host-v2/g14-v2-sealing.md)；V1 历史门禁见
 > [V1 G14 Windows 本地发布门禁](../plan-history/host-v1/g14-windows-release-gate.md)，G15 的脱敏边界见
 > [G15 宿主诊断脱敏](../plan-history/host-v1/g15-host-diagnostic-redaction.md)，最终文档签署见
-> [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。当前源码已完成未发布
-> V3 G13；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
+> [G16 文档与 v1 基线](../plan-history/host-v1/g16-documentation-and-v1-baseline.md)。当前源码已完成
+> V3 G14 封板；版本/数据边界见 [V3 G1 专项记录](../plan-history/host-v3/g1-version-and-data-boundaries.md)，
 > 修订保存见 [V3 G2 专项记录](../plan-history/host-v3/g2-revisioned-document-save.md)，互斥激活见
 > [V3 G3 专项记录](../plan-history/host-v3/g3-exclusive-document-activation.md)，Workspace/Dock 拆分见
 > [V3 G6 专项记录](../plan-history/host-v3/g6-workspace-session-and-dock-factory.md)，Host/插件目录分离见
@@ -20,9 +20,10 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [G10](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
 > [G11](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)与
 > [G12](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)专项记录；唯一 V3 生产面见
-> [G13](../plan-history/host-v3/g13-remove-v2-production-surface.md)专项记录。
+> [G13](../plan-history/host-v3/g13-remove-v2-production-surface.md)专项记录；最终两轮签署见
+> [G14](../plan-history/host-v3/g14-v3-sealing.md)封板记录。
 
-## 当前文档与非发布基线门禁
+## 当前文档与基线门禁
 
 修改当前文档、脚本路径、集中版本、SDK 基线或四插件兼容声明时运行：
 
@@ -110,6 +111,23 @@ Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
 2026-08-22 实测 Host Unit 189、UI 62、Plugin 204，Host 合计 **455/455**，行/分支覆盖率
 **84.39% / 70.58%**；连同 SDK、四插件和最终包组合共 **1483/1483**。包摘要和删除/保留边界见
 [V3 G13 专项记录](../plan-history/host-v3/g13-remove-v2-production-surface.md)。
+
+### V3 G14 正式本地发布门禁
+
+从 Windows x64 干净提交执行：
+
+```powershell
+.\scripts\Invoke-HostV3ReleaseGate.ps1
+```
+
+入口在两个无硬链接隔离克隆中依次运行 Core 单元测试、文档 Core、锁定还原、Release 零警告构建、
+V3 生产面、API/SDK 包、G9–G12 四插件专项、MySmallTools 20 轮真实媒体资源 Harness 和 Windows
+真实窗口 Smoke。两轮只忽略时间、耗时和绝对路径，测试数、覆盖率、API、文档、ZIP/manifest 与
+Smoke 逐字段相等；实体证据还会重新计算长度与 SHA-256。
+
+成功摘要固定为 `repeatabilityVerified=true`、`releaseEligible=true`、`publishable=true`，同时记录
+`published=false`、`uploaded=false`、`tagCreated=false`、`aiflow=false`。完整失败矩阵、制品摘要和
+回滚边界见 [V3 G14 封板记录](../plan-history/host-v3/g14-v3-sealing.md)。
 
 ### V2 G13 历史唯一生产面门禁
 

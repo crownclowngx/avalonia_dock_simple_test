@@ -2,9 +2,9 @@
 
 > 状态：当前实现
 >
-> 更新日期：2026-08-22
+> 更新日期：2026-08-23
 >
-> 边界：V2 G14 的唯一创建/打开/恢复/Scope 链，加上 V3 G2 修订保存、G3 互斥激活和 G6 唯一 Workspace 所有权
+> 边界：V3 G14 已签署的唯一创建/打开/恢复/Scope 链、G2 修订保存、G3 互斥激活和 G6 唯一 Workspace 所有权
 
 ## 1. 设计结论
 
@@ -17,6 +17,9 @@ Scope 释放，插件只解释 `DocumentContent` 中自己的 schema 与原生 J
 V2 不读取、迁移或写回 Document V1。历史 V1 设计与验收记录仍保留为历史事实，但不是当前运行时
 契约。MyPlugTest、DaTangAccountingHelpPlug、MySmallTools 与 BiliDownloader 已在 G9–G12 全部迁移，
 G13 已删除 V1 生产面，G14 已完成正式测试与文档签署。
+
+V3 G14 没有改变本设计的线格式或运行语义，只把最终 Core/UI 签名移入 Shipped，并用两轮隔离
+发布门禁复验 envelope schema 2、`layout-v2.json`、数据根 `v2`、保存竞争和失败原子性。
 
 DaTang 银行余额调节是第二个真实持久化 Document：其 content schema 固定为 1，独立 Codec
 严格拒绝错误 schema、根类型、未知/重复/缺失字段、错误类型和无效配置。恢复必须先完整
