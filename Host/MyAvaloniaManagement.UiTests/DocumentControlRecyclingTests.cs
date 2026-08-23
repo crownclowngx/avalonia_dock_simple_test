@@ -74,6 +74,24 @@ public sealed class DocumentControlRecyclingTests
         Assert.False(recycling.Remove(null));
     }
 
+    [AvaloniaFact]
+    public void 移除单个Document不影响其他Document的缓存()
+    {
+        var recycling = new DocumentControlRecycling();
+        var first = new object();
+        var second = new object();
+        var firstControl = new Border();
+        var secondControl = new Border();
+        recycling.Add(first, firstControl);
+        recycling.Add(second, secondControl);
+
+        Assert.True(recycling.Remove(first));
+
+        Assert.False(recycling.TryGetValue(first, out _));
+        Assert.True(recycling.TryGetValue(second, out var remaining));
+        Assert.Same(secondControl, remaining);
+    }
+
     private sealed class DisposableContentControl
         : ContentControl, IDisposable
     {

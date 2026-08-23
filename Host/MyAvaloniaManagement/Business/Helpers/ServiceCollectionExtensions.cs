@@ -76,6 +76,10 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<DocumentPersistenceCoordinator>());
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
         services.AddSingleton<DocumentCloseCoordinator>();
+        // 每个 Host 容器只有一个回收器。App 资源、Dock Style 与关闭链均使用此实例，
+        // Lifetime 不通过 Application.Current 或 IServiceProvider 反向定位依赖。
+        services.AddSingleton<DocumentControlRecycling>();
+        services.AddSingleton<DockDocumentLifetime>();
         RegisterHostWorkspace(services);
         services.AddSingleton(provider => registryBuilder.Build(
             provider.GetService<PluginModuleCatalog>(),
@@ -116,6 +120,7 @@ internal static class ServiceCollectionExtensions
                 provider.GetRequiredService<DocumentPersistenceStateStore>(),
                 provider.GetRequiredService<DocumentCloseCoordinator>(),
                 provider.GetRequiredService<DocumentRecoveryRegistry>(),
+                provider.GetRequiredService<DockDocumentLifetime>(),
                 provider.GetService<IHostDiagnosticSink>());
             dockFactory.AttachCallbacks(session);
             return session;
@@ -263,7 +268,8 @@ internal static class ServiceCollectionExtensions
         services.AddTransient<IHostDesktopShell, HostDesktopShell>();
         services.AddTransient(provider => new App(
             provider.GetRequiredService<IHostDesktopShell>(),
-            provider.GetRequiredService<ViewLocator>()));
+            provider.GetRequiredService<ViewLocator>(),
+            provider.GetRequiredService<DocumentControlRecycling>()));
 
         return services;
     }

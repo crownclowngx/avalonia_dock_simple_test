@@ -124,6 +124,38 @@ public sealed class HostDockAdapterTests
         Assert.False(manager.Release(model));
     }
 
+    [Fact]
+    public void 回收器中的View清理抛出时Lifetime仍取消ClosingToken并释放Scope()
+    {
+        var services = new ServiceCollection();
+        services.AddScoped<TrackedDocument>();
+        services.AddDocumentScopeManagement();
+        using var provider = services.BuildServiceProvider();
+        var manager = provider.GetRequiredService<DocumentScopeManager>();
+        var lease = manager.CreateDocument(typeof(TrackedDocument));
+        var model = Assert.IsType<TrackedDocument>(lease.Model);
+        var adapter = new ManagedDocumentDockable(
+            new ActivatedWorkspaceDocument(
+                DocumentRegistration(typeof(TrackedDocument)),
+                lease),
+            "回收异常测试");
+        var view = new ThrowingDisposeControl { DataContext = model };
+        adapter.AttachPreparedView(view);
+        var recycling = new DocumentControlRecycling();
+        recycling.Add(adapter, view);
+        var lifetime = new DockDocumentLifetime(recycling);
+
+        Assert.Throws<InvalidOperationException>(() => lifetime.Release(adapter));
+
+        Assert.False(recycling.TryGetValue(adapter, out _));
+        Assert.Null(view.DataContext);
+        Assert.True(model.ClosingObservedDuringDispose);
+        Assert.Equal(1, model.DisposeCount);
+        Assert.False(manager.Release(model));
+        lifetime.Release(adapter);
+        Assert.Equal(1, model.DisposeCount);
+    }
+
     [Theory]
     [InlineData(ToolCloseBehavior.Hide, true)]
     [InlineData(ToolCloseBehavior.Prevent, false)]
@@ -293,6 +325,12 @@ public sealed class HostDockAdapterTests
 
     private sealed class HealthyToolModel;
     private sealed class FailedToolModel;
+
+    private sealed class ThrowingDisposeControl : ContentControl, IDisposable
+    {
+        public void Dispose() =>
+            throw new InvalidOperationException("测试注入的 View 释放失败。");
+    }
 
     private sealed class TrackedDocument(
         MyAvaloniaManagement.PluginSdk.IDocumentLifetime lifetime) :

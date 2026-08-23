@@ -25,13 +25,17 @@ namespace MyAvaloniaManagement.UiTests;
 /// </remarks>
 public static class TestAppBuilder
 {
+    /// <summary>Headless App 本轮唯一的回收器，供资源所有权断言使用。</summary>
+    internal static DocumentControlRecycling ControlRecycling { get; } = new();
+
     /// <summary>
     /// 创建供 AvaloniaTest 使用的无界面应用构建器。
     /// </summary>
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure(() => new App(
                 NoOpDesktopShell.Instance,
-                CreateViewLocator()))
+                CreateViewLocator(),
+                ControlRecycling))
             .UseHeadless(new AvaloniaHeadlessPlatformOptions
             {
                 UseHeadlessDrawing = true

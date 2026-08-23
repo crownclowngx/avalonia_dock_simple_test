@@ -22,6 +22,12 @@ namespace MyAvaloniaManagement.Business.Helpers;
 /// </remarks>
 internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycling
 {
+    /// <summary>
+    /// App Resource 与 DockControl Style 共用的稳定键。键名是 XAML 资源协议，
+    /// 而实例所有权属于当前 Host DI 容器。
+    /// </summary>
+    internal const string ResourceKey = "ControlRecyclingKey";
+
     private readonly Dictionary<object, object> _cache = [];
     private bool _tryToUseIdAsKey;
 

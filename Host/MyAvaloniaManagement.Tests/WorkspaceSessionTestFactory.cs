@@ -45,6 +45,7 @@ internal static class WorkspaceSessionTestFactory
             states,
             close,
             recovery,
+            new DockDocumentLifetime(new DocumentControlRecycling()),
             diagnostics);
         factory.AttachCallbacks(session);
         return session;

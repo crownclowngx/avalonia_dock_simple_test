@@ -1,9 +1,11 @@
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
+using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -247,6 +249,40 @@ public sealed class ExplicitContributionAndPluginRegistryTests
                 static () => new RegisteredView(),
                 false));
         Assert.Empty(second.DocumentDescriptors);
+    }
+
+    [Fact]
+    public void 同容器的多App共享回收器且不同容器完全隔离()
+    {
+        var firstServices = new ServiceCollection();
+        firstServices.AddApplicationServices().AddViewModels();
+        firstServices.AddTransient<IHostDesktopShell, NoOpDesktopShell>();
+        using var firstProvider = firstServices.BuildServiceProvider();
+        var secondServices = new ServiceCollection();
+        secondServices.AddApplicationServices().AddViewModels();
+        secondServices.AddTransient<IHostDesktopShell, NoOpDesktopShell>();
+        using var secondProvider = secondServices.BuildServiceProvider();
+
+        var firstRecycling = firstProvider.GetRequiredService<DocumentControlRecycling>();
+        var firstApp = firstProvider.GetRequiredService<App>();
+        var anotherFirstApp = firstProvider.GetRequiredService<App>();
+        var secondRecycling = secondProvider.GetRequiredService<DocumentControlRecycling>();
+        var secondApp = secondProvider.GetRequiredService<App>();
+
+        Assert.NotSame(firstApp, anotherFirstApp);
+        Assert.Same(firstRecycling, firstApp.ControlRecycling);
+        Assert.Same(firstRecycling, anotherFirstApp.ControlRecycling);
+        Assert.Same(secondRecycling, secondApp.ControlRecycling);
+        Assert.NotSame(firstRecycling, secondRecycling);
+    }
+
+    private sealed class NoOpDesktopShell : IHostDesktopShell
+    {
+        public void Attach(
+            App application,
+            IClassicDesktopStyleApplicationLifetime desktop)
+        {
+        }
     }
 
     [Fact]

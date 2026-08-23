@@ -43,7 +43,8 @@ internal static class PluginTestWorkspaceSession
             new LayoutOnlyDockableFactory(),
             states,
             close,
-            recovery);
+            recovery,
+            new DockDocumentLifetime(new DocumentControlRecycling()));
         dockFactory.AttachCallbacks(session);
         return session;
     }

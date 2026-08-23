@@ -398,8 +398,12 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | Root / Document Dock | `WorkspaceSession` | HostRuntime 退出时随 Session 释放 |
 | Host Welcome Scope | Host `DocumentScopeManager` | Dock 确认关闭后；退出时 Session 兜底 |
 | 插件 Document Scope | 所属插件 `DocumentScopeManager` | Dock 确认关闭后；退出时插件 Scope Manager 兜底 |
-| Document 控件缓存 | `DocumentControlRecycling` | 对应 Document 确认关闭后移除 |
+| Document 控件缓存 | Host DI 容器中唯一的 `DocumentControlRecycling` | App Resource、DockControl Style 与关闭链共用；对应 Document 确认关闭后移除 |
 | 布局快照待应用状态 | `DockLayoutLifecycle` | 首次 Apply 时原子取出 |
+
+`App.axaml` 只通过 `DynamicResource ControlRecyclingKey` 声明 Dock Style 契约，不创建实例。
+`App.Initialize` 在 XAML 加载后安装当前容器的单例；`DockDocumentLifetime` 从构造函数取得同一
+实例。关闭链不读取 `Application.Current.Resources`，因此不同 HostRuntime 不会跨容器回收对方控件。
 
 当前 Host Welcome 由 Host Catalog 的精确工厂请求 Host `DocumentScopeManager` 建立独立 Scope；插件
 Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Manager。两条路径都只返回不暴露

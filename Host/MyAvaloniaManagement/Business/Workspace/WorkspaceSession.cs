@@ -33,7 +33,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     private readonly DocumentCloseCoordinator _documentCloseCoordinator;
     private readonly DocumentRecoveryRegistry _documentRecoveryRegistry;
     private readonly IHostDiagnosticSink? _diagnostics;
-    private readonly DockDocumentLifetime _documentLifetime = new();
+    private readonly DockDocumentLifetime _documentLifetime;
     private readonly HashSet<Document> _ownedDocuments =
         new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<string, Tool> _createdTools = [];
@@ -53,6 +53,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         DocumentPersistenceStateStore documentPersistenceStates,
         DocumentCloseCoordinator documentCloseCoordinator,
         DocumentRecoveryRegistry documentRecoveryRegistry,
+        DockDocumentLifetime documentLifetime,
         IHostDiagnosticSink? diagnostics = null)
     {
         DockFactory = dockFactory ?? throw new ArgumentNullException(nameof(dockFactory));
@@ -64,6 +65,8 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
             throw new ArgumentNullException(nameof(documentCloseCoordinator));
         _documentRecoveryRegistry = documentRecoveryRegistry ??
             throw new ArgumentNullException(nameof(documentRecoveryRegistry));
+        _documentLifetime = documentLifetime ??
+            throw new ArgumentNullException(nameof(documentLifetime));
         _diagnostics = diagnostics;
         _workspaceBuilder = new DockWorkspaceBuilder(DockFactory);
         _toolDockCoordinator = new ToolDockCoordinator(

@@ -7,13 +7,11 @@
              xmlns:local="using:MyAvaloniaManagement"
              xmlns:behaviors="using:MyAvaloniaManagement.Behaviors"
              xmlns:dock="clr-namespace:Dock.Avalonia.Controls;assembly=Dock.Avalonia"
-             xmlns:helpers="using:MyAvaloniaManagement.Business.Helpers"
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
              <Application.Resources>
                  <ResourceDictionary>
-                     <helpers:DocumentControlRecycling x:Key="ControlRecyclingKey" />
                      <ResourceDictionary.ThemeDictionaries>
                          <ResourceDictionary x:Key="Light">
                              <ResourceDictionary.MergedDictionaries>
@@ -69,7 +67,7 @@
                  <StyleInclude Source="avares://MyAvaloniaManagement/Styles/HostToolStyles.axaml" />
 
                  <Style Selector="DockControl">
-                     <Setter Property="(ControlRecyclingDataTemplate.ControlRecycling)" Value="{StaticResource ControlRecyclingKey}" />
+                     <Setter Property="(ControlRecyclingDataTemplate.ControlRecycling)" Value="{DynamicResource ControlRecyclingKey}" />
                  </Style>
 
                  <!--

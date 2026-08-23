@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Recycling;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
@@ -30,11 +31,22 @@ public sealed class ApplicationAndWindowTests
     [AvaloniaFact]
     public void 生产应用资源和主题可以在无头平台加载()
     {
-        Assert.IsType<App>(Application.Current);
-        Assert.True(
-            Application.Current!.Resources.ContainsKey(
-                "ControlRecyclingKey"));
-        Assert.NotEmpty(Application.Current.Styles);
+        var application = Assert.IsType<App>(Application.Current);
+        Assert.True(application.Resources.TryGetResource(
+            DocumentControlRecycling.ResourceKey,
+            null,
+            out var resource));
+        Assert.Same(TestAppBuilder.ControlRecycling, resource);
+        Assert.Same(application.ControlRecycling, resource);
+        Assert.NotEmpty(application.Styles);
+
+        var dock = new DockControl();
+        var window = new Window { Content = dock };
+        window.Show();
+        Assert.Same(
+            resource,
+            ControlRecyclingDataTemplate.GetControlRecycling(dock));
+        window.Close();
     }
 
     [AvaloniaFact]
