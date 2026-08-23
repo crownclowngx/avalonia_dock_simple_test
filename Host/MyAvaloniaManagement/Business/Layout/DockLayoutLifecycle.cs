@@ -1,455 +1,106 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
+using System.Threading;
 using Dock.Model.Controls;
-using Dock.Model.Core;
-using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Workspace;
 
 namespace MyAvaloniaManagement.Business.Layout;
 
 /// <summary>
-/// 在运行时 Dock 树与持久化 V2 快照之间进行双向映射。
-/// 映射只描述结构转换，不负责文件读写、版本决策或生命周期编排。
+/// 协调布局持久化与主窗口生命周期，只负责 Prepare、Apply 和 Save 的执行顺序。
+/// 快照映射、严格 V2 读取和运行时校验委托给专门组件，避免生命周期类理解所有 Dock 细节。
 /// </summary>
-internal static class DockLayoutSnapshotMapper
+internal sealed class DockLayoutLifecycle(DockLayoutStore store)
 {
-    internal static DockLayoutSnapshotV2 Capture(
-        IRootDock root,
-        WorkspaceSession session)
+    private DockLayoutSnapshotV2? _pendingSnapshot;
+
+    internal IRootDock Prepare(WorkspaceSession session)
     {
-        var mainDockables = EnumerateDockables(root).ToArray();
-        var allToolDocks = mainDockables
-            .OfType<IToolDock>()
-            .ToArray();
-        var hidden = mainDockables
-            .OfType<IRootDock>()
-            .SelectMany(dock => dock.HiddenDockables ?? [])
-            .ToHashSet(ReferenceEqualityComparer.Instance);
-        var pinned = CapturePinnedPlacements(mainDockables);
-
-        var placements = new Dictionary<string, ToolPlacement>(StringComparer.Ordinal);
-        foreach (var pair in session.CreatedTools)
+        ArgumentNullException.ThrowIfNull(session);
+        if (session.RootDock is { } existing)
         {
-            var tool = pair.Value;
-            pinned.TryGetValue(tool, out var pinnedPlacement);
-            var currentDock = allToolDocks.FirstOrDefault(dock =>
-                dock.VisibleDockables?.Any(candidate =>
-                    ReferenceEquals(candidate, tool)) == true);
-            var dockId = pinnedPlacement?.DockId ??
-                         ResolveStableDockId(currentDock) ??
-                         ResolveStableDockId(tool.OriginalOwner as IToolDock) ??
-                         GetDefaultDockId(session, tool.Id);
-            var isPinned = pinnedPlacement is not null;
-            var isVisible = currentDock is not null || isPinned;
+            return existing;
+        }
+        _pendingSnapshot = store.Load();
+        var root = session.DockFactory.CreateLayout();
+        session.DockFactory.InitLayout(root);
+        return root;
+    }
 
-            placements.Add(
-                pair.Key,
-                new ToolPlacement(
-                    tool,
-                    dockId,
-                    isVisible && !hidden.Contains(tool),
-                    isPinned));
+    internal IRootDock ApplyPending(WorkspaceSession session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        var defaultRoot = session.RootDock ??
+            throw new InvalidOperationException("Workspace 尚未准备根布局。");
+
+        var snapshot = Interlocked.Exchange(ref _pendingSnapshot, null);
+        if (snapshot is null)
+        {
+            return defaultRoot;
         }
 
-        var toolSnapshots = new List<DockToolSnapshotV2>(placements.Count);
-        foreach (var dockId in DockLayoutIds.ToolDockIds)
+        // Tool 声明与生命周期可用性不依赖 Dock 树，必须在补建任何快照所需 Pane 之前完成。
+        // 否则坏快照虽然最终被拒绝，EnsureSnapshotDocks 仍可能把空 Pane 留在默认布局中。
+        if (DockLayoutRuntimeValidator.ValidateContributions(
+                snapshot,
+                session) is { } contributionError)
         {
-            var placementGroup = placements.Values
-                .Where(placement => placement.DockId == dockId)
-                .ToArray();
-            var visibleOrder = allToolDocks
-                .Where(dock => ResolveStableDockId(dock) == dockId)
-                .SelectMany(dock => dock.VisibleDockables ?? [])
-                .OfType<Tool>()
-                .Select(tool => tool.Id)
-                .ToArray();
-            var pinnedOrder = pinned.Values
-                .Where(placement => placement.DockId == dockId)
-                .OrderBy(placement => placement.Order)
-                .Select(placement => placement.Tool.Id)
-                .ToArray();
-            var order = visibleOrder
-                .Concat(pinnedOrder)
-                .Concat(placementGroup.Select(placement => placement.Tool.Id))
-                .Distinct(StringComparer.Ordinal)
-                .Select((id, index) => (id, index))
-                .ToDictionary(pair => pair.id, pair => pair.index, StringComparer.Ordinal);
-
-            foreach (var placement in placementGroup)
-            {
-                toolSnapshots.Add(new DockToolSnapshotV2
-                {
-                    Id = placement.Tool.Id,
-                    DockId = dockId,
-                    Order = order[placement.Tool.Id],
-                    IsVisible = placement.IsVisible,
-                    IsPinned = placement.IsPinned,
-                });
-            }
+            store.RejectLoadedSnapshot(
+                contributionError.Code,
+                contributionError.StableId);
+            return defaultRoot;
         }
 
-        var panes = CapturePaneSnapshots(
-            mainDockables,
-            allToolDocks,
+        DockLayoutSnapshotMapper.EnsureSnapshotDocks(
+            snapshot,
+            defaultRoot,
             session);
-
-        return new DockLayoutSnapshotV2
+        if (DockLayoutRuntimeValidator.Validate(
+                snapshot,
+                defaultRoot,
+                session) is { } error)
         {
-            Panes = panes,
-            Tools = toolSnapshots,
-            ActiveToolId = FindActiveToolId(root)
-        };
-    }
-
-    internal static DockLayoutValidationError? ValidateAgainstRuntime(
-        DockLayoutSnapshotV2 snapshot,
-        IRootDock root,
-        WorkspaceSession session)
-    {
-        if (ValidateContributions(snapshot, session) is { } contributionError)
-        {
-            return contributionError;
+            store.RejectLoadedSnapshot(error.Code, error.StableId);
+            return defaultRoot;
         }
 
-        var dockables = EnumerateDockables(root).ToArray();
-        var runtimeIds = dockables
-            .Where(dockable => !string.IsNullOrWhiteSpace(dockable.Id))
-            .Select(dockable => dockable.Id)
-            .ToHashSet(StringComparer.Ordinal);
-        foreach (var pane in snapshot.Panes)
+        try
         {
-            if (!runtimeIds.Contains(pane.Id))
-            {
-                return new("LAYOUT_PANE_MISSING", pane.Id);
-            }
+            DockLayoutSnapshotMapper.ApplySnapshot(
+                snapshot,
+                defaultRoot,
+                session);
+            return defaultRoot;
         }
-
-        foreach (var tool in snapshot.Tools)
+        catch (Exception exception) when (
+            exception is InvalidOperationException or ArgumentException)
         {
-            if (!runtimeIds.Contains(tool.DockId) ||
-                !DockLayoutIds.IsToolDockId(tool.DockId))
-            {
-                return new("LAYOUT_TOOL_DOCK_MISSING", tool.Id);
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// 在任何 Dock 结构调整前校验 Tool 的声明、可用性和实例完整性，保证失败快照零部分应用。
-    /// </summary>
-    internal static DockLayoutValidationError? ValidateContributions(
-        DockLayoutSnapshotV2 snapshot,
-        WorkspaceSession session)
-    {
-        var tools = session.CreatedTools;
-        foreach (var tool in snapshot.Tools)
-        {
-            if (!session.IsRegisteredTool(tool.Id))
-            {
-                return new("LAYOUT_PLUGIN_MISSING", tool.Id);
-            }
-
-            if (!session.IsToolAvailable(tool.Id))
-            {
-                return new("LAYOUT_PLUGIN_UNAVAILABLE", tool.Id);
-            }
-
-            if (!tools.ContainsKey(tool.Id))
-            {
-                return new("LAYOUT_TOOL_ACTIVATION_MISSING", tool.Id);
-            }
-        }
-
-        return null;
-    }
-
-    internal static void ApplySnapshot(
-        DockLayoutSnapshotV2 snapshot,
-        IRootDock root,
-        WorkspaceSession session)
-    {
-        EnsureSnapshotDocks(snapshot, root, session);
-
-        var dockables = EnumerateDockables(root).ToArray();
-        var paneMap = dockables
-            .Where(dockable => !string.IsNullOrWhiteSpace(dockable.Id))
-            .ToDictionary(dockable => dockable.Id, StringComparer.Ordinal);
-        var toolDocks = dockables
-            .OfType<IToolDock>()
-            .Where(dock => DockLayoutIds.IsToolDockId(dock.Id))
-            .ToDictionary(dock => dock.Id, StringComparer.Ordinal);
-
-        foreach (var pane in snapshot.Panes)
-        {
-            paneMap[pane.Id].Proportion = pane.Proportion;
-        }
-
-        // V2 只表达主窗口内的稳定 ToolDock；浮动窗口从线格式和恢复逻辑中完全删除。
-        foreach (var group in snapshot.Tools
-                     .GroupBy(tool => tool.DockId, StringComparer.Ordinal))
-        {
-            var targetDock = toolDocks[group.Key];
-            var orderedTools = group
-                .OrderBy(tool => tool.Order)
-                .Select(tool => session.CreatedTools[tool.Id])
-                .ToArray();
-            for (var index = 0; index < orderedTools.Length; index++)
-            {
-                var tool = orderedTools[index];
-                session.DockFactory.RemoveDockable(tool, collapse: false);
-                session.DockFactory.InsertDockable(targetDock, tool, index);
-            }
-        }
-
-        foreach (var toolState in snapshot.Tools.Where(tool => !tool.IsVisible))
-        {
-            session.DockFactory.HideDockable(session.CreatedTools[toolState.Id]);
-        }
-
-        foreach (var toolState in snapshot.Tools
-                     .Where(tool => tool.IsPinned)
-                     .OrderBy(tool => tool.DockId, StringComparer.Ordinal)
-                     .ThenBy(tool => tool.Order))
-        {
-            session.DockFactory.PinDockable(session.CreatedTools[toolState.Id]);
-        }
-
-        if (snapshot.ActiveToolId is { } activeToolId)
-        {
-            var activeState = snapshot.Tools.Single(tool => tool.Id == activeToolId);
-            if (activeState.IsVisible && !activeState.IsPinned)
-            {
-                session.DockFactory.SetActiveDockable(session.CreatedTools[activeToolId]);
-            }
+            store.RejectLoadedSnapshot("LAYOUT_APPLY_FAILED", null);
+            var replacement = session.RecreateLayoutAfterFailedRestore();
+            session.DockFactory.InitLayout(replacement);
+            return replacement;
         }
     }
 
-    private static IEnumerable<IDockable> EnumerateDockables(IDockable root)
+    internal void Save(WorkspaceSession session)
     {
-        yield return root;
-        if (root is not IDock { VisibleDockables: { } children })
-        {
-            yield break;
-        }
-
-        foreach (var child in children)
-        {
-            foreach (var descendant in EnumerateDockables(child))
-            {
-                yield return descendant;
-            }
-        }
-    }
-
-    private static string? FindActiveToolId(IRootDock root)
-    {
-        foreach (var dock in EnumerateDockables(root).OfType<IDock>())
-        {
-            if (dock.ActiveDockable is Tool tool)
-            {
-                return tool.Id;
-            }
-        }
-
-        if (root.Windows is null)
-        {
-            return null;
-        }
-
-        foreach (var window in root.Windows)
-        {
-            if (window.Layout is null)
-            {
-                continue;
-            }
-
-            foreach (var dock in EnumerateDockables(window.Layout).OfType<IDock>())
-            {
-                if (dock.ActiveDockable is Tool tool)
-                {
-                    return tool.Id;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private static string GetDefaultDockId(
-        WorkspaceSession session,
-        string toolId) =>
-        ToolDockPlacement.GetDockId(session.GetToolAlignment(toolId));
-
-    internal static void EnsureSnapshotDocks(
-        DockLayoutSnapshotV2 snapshot,
-        IRootDock root,
-        WorkspaceSession session)
-    {
-        var alignments = snapshot.Tools
-            .Select(tool => tool.DockId)
-            .Select(id => ToolDockPlacement.TryGetAlignmentFromDockId(
-                id,
-                out var alignment)
-                ? alignment
-                : Alignment.Unset)
-            .Concat(snapshot.Panes.Select(pane =>
-                ToolDockPlacement.TryGetAlignmentFromPaneId(
-                    pane.Id,
-                    out var alignment)
-                    ? alignment
-                    : Alignment.Unset))
-            .Where(alignment => alignment != Alignment.Unset)
-            .Distinct();
-
-        foreach (var alignment in alignments)
-        {
-            session.EnsureToolDock(root, alignment);
-        }
-    }
-
-    private static List<DockPaneSnapshotV2> CapturePaneSnapshots(
-        IReadOnlyCollection<IDockable> dockables,
-        IReadOnlyCollection<IToolDock> toolDocks,
-        WorkspaceSession session)
-    {
-        var createdTools = session.CreatedTools.Values
-            .ToHashSet(ReferenceEqualityComparer.Instance);
-        var panes = new List<DockPaneSnapshotV2>();
-
-        foreach (var alignment in new[]
-                 {
-                     Alignment.Left,
-                     Alignment.Top,
-                     Alignment.Bottom,
-                     Alignment.Right
-                 })
-        {
-            var paneId = ToolDockPlacement.GetPaneId(alignment);
-            var stablePane = dockables.FirstOrDefault(
-                dockable => dockable.Id == paneId);
-            var dynamicToolDock = toolDocks.FirstOrDefault(dock =>
-                !DockLayoutIds.IsToolDockId(dock.Id) &&
-                ResolveStableDockId(dock) ==
-                ToolDockPlacement.GetDockId(alignment) &&
-                dock.VisibleDockables?.Any(createdTools.Contains) == true);
-            if (stablePane is null && dynamicToolDock is null)
-            {
-                continue;
-            }
-
-            var proportionSource = (IDockable?)dynamicToolDock ?? stablePane;
-            var proportion = GetPersistableProportion(
-                proportionSource,
-                alignment);
-            panes.Add(new DockPaneSnapshotV2
-            {
-                Id = paneId,
-                Proportion = proportion
-            });
-        }
-
-        return panes;
-    }
-
-    private static double GetPersistableProportion(
-        IDockable? dockable,
-        Alignment alignment)
-    {
-        var proportion = dockable?.Proportion ?? double.NaN;
-        if (!double.IsFinite(proportion) || proportion <= 0)
-        {
-            proportion = dockable?.CollapsedProportion ?? double.NaN;
-        }
-
-        if (!double.IsFinite(proportion) || proportion <= 0)
-        {
-            proportion = ToolDockPlacement.GetDefaultProportion(alignment);
-        }
-
-        return Math.Clamp(proportion, 0.05, 0.95);
-    }
-
-    private static string? ResolveStableDockId(IToolDock? dock)
-    {
-        if (dock is null)
-        {
-            return null;
-        }
-
-        if (IsKnownToolDockId(dock.Id))
-        {
-            return dock.Id;
-        }
-
-        return dock.Alignment is Alignment.Left
-            or Alignment.Right
-            or Alignment.Top
-            or Alignment.Bottom
-            ? ToolDockPlacement.GetDockId(dock.Alignment)
-            : null;
-    }
-
-    private static bool IsKnownToolDockId(string? id) =>
-        DockLayoutIds.IsToolDockId(id);
-
-    private static Dictionary<Tool, PinnedPlacement> CapturePinnedPlacements(
-        IEnumerable<IDockable> dockables)
-    {
-        var result = new Dictionary<Tool, PinnedPlacement>(
-            ReferenceEqualityComparer.Instance);
-
-        foreach (var rootDock in dockables.OfType<IRootDock>())
-        {
-            AddPinnedPlacements(
-                result,
-                rootDock.LeftPinnedDockables,
-                DockLayoutIds.LeftTools);
-            AddPinnedPlacements(
-                result,
-                rootDock.TopPinnedDockables,
-                DockLayoutIds.TopTools);
-            AddPinnedPlacements(
-                result,
-                rootDock.BottomPinnedDockables,
-                DockLayoutIds.BottomTools);
-            AddPinnedPlacements(
-                result,
-                rootDock.RightPinnedDockables,
-                DockLayoutIds.RightTools);
-        }
-
-        return result;
-    }
-
-    private static void AddPinnedPlacements(
-        IDictionary<Tool, PinnedPlacement> placements,
-        IEnumerable<IDockable>? dockables,
-        string dockId)
-    {
-        if (dockables is null)
+        ArgumentNullException.ThrowIfNull(session);
+        if (session.RootDock is not { } root)
         {
             return;
         }
 
-        var order = 0;
-        foreach (var tool in dockables.OfType<Tool>())
+        try
         {
-            placements.TryAdd(tool, new PinnedPlacement(tool, dockId, order));
-            order++;
+            store.Save(DockLayoutSnapshotMapper.Capture(root, session));
+        }
+        catch (Exception exception) when (
+            exception is IOException or
+                UnauthorizedAccessException or
+                InvalidDataException)
+        {
+            store.Report("LAYOUT_SAVE_FAILED", null, exception);
         }
     }
 
-    private sealed record ToolPlacement(
-        Tool Tool,
-        string DockId,
-        bool IsVisible,
-        bool IsPinned);
-
-    private sealed record PinnedPlacement(
-        Tool Tool,
-        string DockId,
-        int Order);
 }

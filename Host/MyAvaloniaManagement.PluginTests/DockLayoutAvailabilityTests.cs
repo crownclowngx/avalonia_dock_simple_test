@@ -48,7 +48,10 @@ public sealed class DockLayoutAvailabilityTests
             new PluginAvailabilityReadModel(states));
         var tool = new Tool { Id = toolTypeId.Value, Title = "不可用测试 Tool" };
         ((Dictionary<string, Tool>)factory.CreatedTools).Add(tool.Id, tool);
-        var store = new DockLayoutStore(workspace.LayoutPath);
+        var diagnostics = new List<string>();
+        var store = new DockLayoutStore(
+            workspace.LayoutPath,
+            (code, stableId) => diagnostics.Add($"{code}:{stableId}"));
         store.Save(CreateSnapshot(toolTypeId.Value, proportion: 0.73));
         var lifecycle = new DockLayoutLifecycle(store);
 
@@ -59,6 +62,9 @@ public sealed class DockLayoutAvailabilityTests
 
         Assert.Same(defaultRoot, applied);
         Assert.Equal(defaultProportion, leftPane.Proportion);
+        Assert.Contains(
+            $"LAYOUT_PLUGIN_UNAVAILABLE:{toolTypeId.Value}",
+            diagnostics);
         Assert.False(File.Exists(workspace.LayoutPath));
         Assert.Single(Directory.EnumerateFiles(workspace.DirectoryPath, "*.invalid.bak"));
         factory.Dispose();
@@ -75,7 +81,10 @@ public sealed class DockLayoutAvailabilityTests
         var factory = PluginTestWorkspaceSession.Create(
             registry,
             services.GetRequiredService<DocumentScopeManager>());
-        var store = new DockLayoutStore(workspace.LayoutPath);
+        var diagnostics = new List<string>();
+        var store = new DockLayoutStore(
+            workspace.LayoutPath,
+            (code, stableId) => diagnostics.Add($"{code}:{stableId}"));
         store.Save(CreateSnapshot(
             "myavalonia.plugin.not-installed.tool.sample",
             proportion: 0.73));
@@ -87,6 +96,9 @@ public sealed class DockLayoutAvailabilityTests
         lifecycle.ApplyPending(factory);
 
         Assert.Equal(defaultProportion, leftPane.Proportion);
+        Assert.Contains(
+            "LAYOUT_PLUGIN_MISSING:myavalonia.plugin.not-installed.tool.sample",
+            diagnostics);
         Assert.False(File.Exists(workspace.LayoutPath));
         Assert.Single(Directory.EnumerateFiles(workspace.DirectoryPath, "*.invalid.bak"));
         factory.Dispose();

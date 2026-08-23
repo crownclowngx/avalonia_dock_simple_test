@@ -358,17 +358,17 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 
 ## 7. 布局生命周期
 
-[`DockLayoutLifecycle`](../../Business/Layout/DockLayoutCoordinator.cs) 只保留三个阶段：
+[`DockLayoutLifecycle`](../../Business/Layout/DockLayoutLifecycle.cs) 只保留三个阶段：
 
 1. `Prepare`：读取快照并创建、初始化默认 Dock 树；
-2. `ApplyPending`：迁移、补齐稳定节点、校验并应用快照；
+2. `ApplyPending`：验证贡献可用性、补齐稳定节点、校验运行时结构并应用快照；
 3. `Save`：捕获运行时状态并交给存储层。
 
 细节分别由以下组件承担：
 
-- `DockLayoutSnapshotMapper`：运行时 Dock 树与 V2 快照互转；
+- [`DockLayoutSnapshotMapper`](../../Business/Layout/DockLayoutSnapshotMapper.cs)：只负责 `Capture`、`EnsureSnapshotDocks`和 `ApplySnapshot`；
 - `DockLayoutSnapshotV2Json`：严格字段读取与固定顺序写出；
-- `DockLayoutRuntimeValidator`：检查插件声明、生命周期可用性、Pane、Tool 和稳定 ID；
+- [`DockLayoutRuntimeValidator`](../../Business/Layout/DockLayoutRuntimeValidator.cs)：只读检查插件声明、生命周期可用性、Pane、Tool 和稳定 ID；
 - `DockLayoutStore`：路径、原子读写和坏文件隔离；
 - `AtomicFileTransaction`：临时写入、提交和清理。
 

@@ -18,6 +18,43 @@ public sealed class DockFourWayLayoutTests
 {
     private static readonly ConditionalWeakTable<WorkspaceSession, Dictionary<string, Tool>> ToolMaps = new();
 
+    [Fact]
+    public void 运行时校验器稳定返回激活Pane和ToolDock错误码()
+    {
+        using var context = CreateFactory(("validatorTool", "Left"));
+        var session = context.Factory;
+        var toolId = CreateTestToolTypeId("validatorTool").Value;
+        var root = session.CreateWorkspaceLayout(CreateDocumentDock(session));
+        session.InitLayout(root);
+
+        var activationMissing = CreateRuntimeSnapshot(
+            toolId,
+            DockLayoutIds.LeftPane,
+            DockLayoutIds.LeftTools);
+        Assert.Equal(
+            "LAYOUT_TOOL_ACTIVATION_MISSING",
+            DockLayoutRuntimeValidator.ValidateContributions(
+                activationMissing,
+                session)?.Code);
+
+        RegisterTool(session, "validatorTool", "Left");
+        var paneMissing = CreateRuntimeSnapshot(
+            toolId,
+            "MissingStablePane",
+            DockLayoutIds.LeftTools);
+        Assert.Equal(
+            "LAYOUT_PANE_MISSING",
+            DockLayoutRuntimeValidator.Validate(paneMissing, root, session)?.Code);
+
+        var dockMissing = CreateRuntimeSnapshot(
+            toolId,
+            DockLayoutIds.LeftPane,
+            "MissingStableToolDock");
+        Assert.Equal(
+            "LAYOUT_TOOL_DOCK_MISSING",
+            DockLayoutRuntimeValidator.Validate(dockMissing, root, session)?.Code);
+    }
+
     [Theory]
     [InlineData(ToolDockSide.Left, Alignment.Left, DockLayoutIds.LeftTools)]
     [InlineData(ToolDockSide.Right, Alignment.Right, DockLayoutIds.RightTools)]
@@ -192,7 +229,7 @@ public sealed class DockFourWayLayoutTests
             firstFactory.InitLayout(firstRoot);
 
             firstFactory.HideDockable(firstBottom);
-            snapshot = DockLayoutLifecycle.Capture(
+            snapshot = DockLayoutSnapshotMapper.Capture(
                 firstRoot,
                 firstFactory);
         }
@@ -207,7 +244,7 @@ public sealed class DockFourWayLayoutTests
             CreateDocumentDock(secondFactory));
         secondFactory.InitLayout(secondRoot);
 
-        DockLayoutLifecycle.ApplySnapshot(
+        DockLayoutSnapshotMapper.ApplySnapshot(
             snapshot,
             secondRoot,
             secondFactory);
@@ -292,7 +329,7 @@ public sealed class DockFourWayLayoutTests
                 dock => !DockLayoutIds.IsToolDockId(dock.Id) &&
                         dock.Alignment == expectedAlignment);
 
-            snapshot = DockLayoutLifecycle.Capture(
+            snapshot = DockLayoutSnapshotMapper.Capture(
                 firstRoot,
                 firstFactory);
             Assert.Equal(
@@ -319,7 +356,7 @@ public sealed class DockFourWayLayoutTests
             secondRoot,
             expectedDockId));
 
-        DockLayoutLifecycle.ApplySnapshot(
+        DockLayoutSnapshotMapper.ApplySnapshot(
             snapshot,
             secondRoot,
             secondFactory);
@@ -366,7 +403,7 @@ public sealed class DockFourWayLayoutTests
             Assert.Contains(
                 firstTool,
                 GetPinnedDockables(owningRoot, expectedAlignment)!);
-            snapshot = DockLayoutLifecycle.Capture(firstRoot, firstFactory);
+            snapshot = DockLayoutSnapshotMapper.Capture(firstRoot, firstFactory);
             var state = Assert.Single(snapshot.Tools);
             Assert.Equal(expectedDockId, state.DockId);
             Assert.True(state.IsVisible);
@@ -384,7 +421,7 @@ public sealed class DockFourWayLayoutTests
             CreateDocumentDock(secondFactory));
         secondFactory.InitLayout(secondRoot);
 
-        DockLayoutLifecycle.ApplySnapshot(snapshot, secondRoot, secondFactory);
+        DockLayoutSnapshotMapper.ApplySnapshot(snapshot, secondRoot, secondFactory);
 
         var restoredRoot = secondFactory.FindRoot(restoredTool, _ => true)!;
         Assert.Contains(
@@ -394,7 +431,7 @@ public sealed class DockFourWayLayoutTests
         Assert.DoesNotContain(
             restoredTool,
             FindDock<ToolDock>(secondRoot, expectedDockId).VisibleDockables!);
-        var recaptured = DockLayoutLifecycle.Capture(secondRoot, secondFactory);
+        var recaptured = DockLayoutSnapshotMapper.Capture(secondRoot, secondFactory);
         var recapturedState = Assert.Single(recaptured.Tools);
         Assert.True(recapturedState.IsVisible);
         Assert.True(recapturedState.IsPinned);
@@ -423,7 +460,7 @@ public sealed class DockFourWayLayoutTests
             firstFactory.PinDockable(pinnedFirst);
             firstFactory.PinDockable(pinnedSecond);
             firstFactory.HideDockable(hidden);
-            snapshot = DockLayoutLifecycle.Capture(firstRoot, firstFactory);
+            snapshot = DockLayoutSnapshotMapper.Capture(firstRoot, firstFactory);
 
             Assert.Equal((true, false), GetToolState(snapshot, expanded.Id));
             Assert.Equal((true, true), GetToolState(snapshot, pinnedFirst.Id));
@@ -448,7 +485,7 @@ public sealed class DockFourWayLayoutTests
             CreateDocumentDock(secondFactory));
         secondFactory.InitLayout(secondRoot);
 
-        DockLayoutLifecycle.ApplySnapshot(snapshot, secondRoot, secondFactory);
+        DockLayoutSnapshotMapper.ApplySnapshot(snapshot, secondRoot, secondFactory);
 
         var leftDock = FindDock<ToolDock>(secondRoot, DockLayoutIds.LeftTools);
         Assert.Contains(restoredExpanded, leftDock.VisibleDockables!);
@@ -466,6 +503,34 @@ public sealed class DockFourWayLayoutTests
         var state = snapshot.Tools.Single(tool => tool.Id == toolId);
         return (state.IsVisible, state.IsPinned);
     }
+
+    private static DockLayoutSnapshotV2 CreateRuntimeSnapshot(
+        string toolId,
+        string paneId,
+        string dockId) =>
+        new()
+        {
+            Panes =
+            [
+                new DockPaneSnapshotV2
+                {
+                    Id = paneId,
+                    Proportion = 0.25,
+                },
+            ],
+            Tools =
+            [
+                new DockToolSnapshotV2
+                {
+                    Id = toolId,
+                    DockId = dockId,
+                    Order = 0,
+                    IsVisible = true,
+                    IsPinned = false,
+                },
+            ],
+            ActiveToolId = toolId,
+        };
 
     private static IList<IDockable>? GetPinnedDockables(
         IRootDock root,
