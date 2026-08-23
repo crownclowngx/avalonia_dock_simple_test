@@ -16,6 +16,29 @@ namespace MyAvaloniaManagement.Tests;
 /// </remarks>
 public sealed class IdentityAndRegistryTests
 {
+    [Fact]
+    public void Host内建身份只有强类型事实源且Welcome动作不接受裸字符串()
+    {
+        var hostAssembly = typeof(HostExtensionIds).Assembly;
+        Assert.Null(hostAssembly.GetType(
+            "MyAvaloniaManagement.Business.Constants.DockNameConstant"));
+
+        Assert.Equal(
+            "myavalonia.host.tool.plugin-menu",
+            HostExtensionIds.PluginMenu.Value);
+        Assert.Equal(
+            "myavalonia.host.tool.management",
+            HostExtensionIds.ToolManagement.Value);
+
+        var injectedConstructor = typeof(
+                MyAvaloniaManagement.ViewModels.Hello.WelcomeViewModel)
+            .GetConstructors()
+            .Single(constructor => constructor.GetParameters().Length == 1);
+        Assert.Equal(
+            typeof(Action<ToolTypeId>),
+            Assert.Single(injectedConstructor.GetParameters()).ParameterType);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData(" ")]

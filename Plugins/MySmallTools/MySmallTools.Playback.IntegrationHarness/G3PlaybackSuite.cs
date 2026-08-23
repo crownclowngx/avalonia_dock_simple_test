@@ -13,11 +13,11 @@ using Avalonia.VisualTree;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Workspace;
-using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
@@ -72,13 +72,16 @@ internal sealed class G3PlaybackHarnessRunner(
 
             var mainWindow = (Application.Current!.ApplicationLifetime as
                 IClassicDesktopStyleApplicationLifetime)!.MainWindow!;
-            var mainViewModel = (MainWindowViewModel)mainWindow.DataContext!;
+            var documentCoordinator = services
+                .GetRequiredService<DocumentPersistenceCoordinator>();
             var workspace = services.GetRequiredService<WorkspaceSession>();
             var documentDock = workspace.DockFactory
                 .GetDockable<Dock.Model.Controls.IDocumentDock>(DockLayoutIds.Documents)
                 as DocumentDock ?? throw new InvalidOperationException("宿主没有规范 Documents Dock。");
 
-            var placeholder = CreateDocument(mainViewModel, documentDock);
+            var placeholder = await CreateDocumentAsync(
+                documentCoordinator,
+                documentDock);
             placeholder.Title = "G3 占位标签";
             // 占位标签本身也是一个真实 Document Scope。G3.1 的 PlayerHost、
             // Dispatcher 和 Reaper 在 Scope 创建时即存在，所以中途资源检查应回到
@@ -94,7 +97,7 @@ internal sealed class G3PlaybackHarnessRunner(
                 "functionalMatrix",
                 () => RunFunctionalMatrixAsync(
                     mainWindow,
-                    mainViewModel,
+                    documentCoordinator,
                     workspace,
                     documentDock,
                     placeholder,
@@ -105,7 +108,7 @@ internal sealed class G3PlaybackHarnessRunner(
                 "libraryPresentation",
                 () => VerifyLibraryPresentationAsync(
                     mainWindow,
-                    mainViewModel,
+                    documentCoordinator,
                     workspace,
                     documentDock,
                     placeholder));
@@ -114,7 +117,7 @@ internal sealed class G3PlaybackHarnessRunner(
                 "lifecycleStress",
                 () => RunLifecycleStressAsync(
                     mainWindow,
-                    mainViewModel,
+                    documentCoordinator,
                     workspace,
                     documentDock,
                     placeholder,
@@ -191,14 +194,14 @@ internal sealed class G3PlaybackHarnessRunner(
 
     private async Task RunFunctionalMatrixAsync(
         Window mainWindow,
-        MainWindowViewModel mainViewModel,
+        DocumentPersistenceCoordinator documentCoordinator,
         WorkspaceSession workspace,
         DocumentDock documentDock,
         HarnessPlayerDocument placeholder,
         IReadOnlyList<HarnessAsset> assets,
         PlaybackResourceSnapshot expectedResources)
     {
-        var document = CreateDocument(mainViewModel, documentDock);
+        var document = await CreateDocumentAsync(documentCoordinator, documentDock);
         try
         {
         documentDock.ActiveDockable = document.Dockable;
@@ -570,13 +573,16 @@ internal sealed class G3PlaybackHarnessRunner(
 
     private async Task VerifyLibraryPresentationAsync(
         Window mainWindow,
-        MainWindowViewModel mainViewModel,
+        DocumentPersistenceCoordinator documentCoordinator,
         WorkspaceSession workspace,
         DocumentDock documentDock,
         HarnessPlayerDocument placeholder)
     {
-        await mainViewModel.CreateDocument(
-            MySmallToolsContributionIds.SecretVideoLibraryDocument.Value);
+        var creation = await documentCoordinator.CreateDocumentAsync(
+            MySmallToolsContributionIds.SecretVideoLibraryDocument);
+        Require(
+            !creation.ShouldUpdateError || string.IsNullOrEmpty(creation.Error),
+            "媒体库 Document 创建协调器返回失败。");
         var libraryDockable = documentDock.VisibleDockables?
             .OfType<ManagedDocumentDockable>()
             .LastOrDefault(item => item.Model is SecretVideoLibraryViewModel) ??
@@ -750,7 +756,7 @@ internal sealed class G3PlaybackHarnessRunner(
 
     private async Task RunLifecycleStressAsync(
         Window mainWindow,
-        MainWindowViewModel mainViewModel,
+        DocumentPersistenceCoordinator documentCoordinator,
         WorkspaceSession workspace,
         DocumentDock documentDock,
         HarnessPlayerDocument placeholder,
@@ -763,7 +769,7 @@ internal sealed class G3PlaybackHarnessRunner(
 
         for (var cycle = 0; cycle < options.Cycles; cycle++)
         {
-            var document = CreateDocument(mainViewModel, documentDock);
+            var document = await CreateDocumentAsync(documentCoordinator, documentDock);
             documentDock.ActiveDockable = document.Dockable;
             await WaitUntilAsync(
                 () => document.PlayerViewModel.IsVideoSurfaceReady,
@@ -839,11 +845,16 @@ internal sealed class G3PlaybackHarnessRunner(
         }
     }
 
-    private static HarnessPlayerDocument CreateDocument(
-        MainWindowViewModel mainViewModel,
+    private static async Task<HarnessPlayerDocument> CreateDocumentAsync(
+        DocumentPersistenceCoordinator documentCoordinator,
         DocumentDock documentDock)
     {
-        mainViewModel.CreateDocument(MySmallToolsContributionIds.SecretVideoPlayerDocument.Value);
+        var creation = await documentCoordinator.CreateDocumentAsync(
+            MySmallToolsContributionIds.SecretVideoPlayerDocument);
+        if (creation.ShouldUpdateError && !string.IsNullOrEmpty(creation.Error))
+        {
+            throw new InvalidOperationException("安全视频 Document 创建协调器返回失败。");
+        }
         var dockable = documentDock.VisibleDockables?
             .OfType<ManagedDocumentDockable>()
             .LastOrDefault(item => item.Model is SecretVideoPlayerViewModel) ??

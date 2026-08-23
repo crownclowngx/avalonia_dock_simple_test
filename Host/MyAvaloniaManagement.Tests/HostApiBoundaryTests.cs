@@ -56,4 +56,12 @@ public sealed class HostApiBoundaryTests
             "MyAvaloniaManagement.Business.Helpers.ServiceProvider",
             throwOnError: false));
     }
+
+    [Fact]
+    public void MainWindow不再暴露仅供测试调用的Document转发入口()
+    {
+        Assert.Null(typeof(MainWindowViewModel).GetMethod("CreateDocument"));
+        Assert.Null(typeof(MainWindowViewModel).GetMethod("OpenDocumentByPath"));
+        Assert.Null(typeof(PlugGroupMenuViewModel).GetMethod("CreateDocumentAsync"));
+    }
 }

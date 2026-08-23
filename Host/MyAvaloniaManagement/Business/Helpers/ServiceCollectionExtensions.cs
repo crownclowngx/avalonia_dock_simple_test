@@ -257,8 +257,8 @@ internal static class ServiceCollectionExtensions
         // 工厂闭包只存在于组合根，既保持每次创建的新实例语义，也避免策略成为服务定位器。
         // Welcome 只获得“显示某个 Tool”这一窄动作，不接收 Session、Dock Factory 或服务容器。
         // 委托在命令执行时解析已构造的唯一 Session，不参与 Session 创建阶段。
-        services.AddSingleton<Action<string>>(provider => toolId =>
-            provider.GetRequiredService<WorkspaceSession>().ShowTool(toolId));
+        services.AddSingleton<Action<ToolTypeId>>(provider => toolTypeId =>
+            provider.GetRequiredService<WorkspaceSession>().ShowTool(toolTypeId));
 
         services.AddTransient<IHostDesktopShell, HostDesktopShell>();
         services.AddTransient(provider => new App(

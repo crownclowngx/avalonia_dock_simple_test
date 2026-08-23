@@ -8,8 +8,8 @@ using Avalonia.VisualTree;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Docking;
+using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
-using MyAvaloniaManagement.ViewModels;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
@@ -64,7 +64,8 @@ internal sealed class G8P1AcceptanceSuite(
 
             var mainWindow = (Application.Current!.ApplicationLifetime as
                 IClassicDesktopStyleApplicationLifetime)!.MainWindow!;
-            var mainViewModel = (MainWindowViewModel)mainWindow.DataContext!;
+            var documentCoordinator = services
+                .GetRequiredService<DocumentPersistenceCoordinator>();
             var hostWorkspace = services.GetRequiredService<MyAvaloniaManagement.Business.Workspace.WorkspaceSession>();
             var documentDock = hostWorkspace.DockFactory.GetDockable<Dock.Model.Controls.IDocumentDock>(
                     MyAvaloniaManagement.Business.Layout.DockLayoutIds.Documents)
@@ -72,7 +73,7 @@ internal sealed class G8P1AcceptanceSuite(
 
             var documents = await MeasureAsync(
                 "documentComposition",
-                () => CreateDocumentSetAsync(mainViewModel, documentDock));
+                () => CreateDocumentSetAsync(documentCoordinator, documentDock));
             try
             {
                 await MeasureAsync(
@@ -224,48 +225,48 @@ internal sealed class G8P1AcceptanceSuite(
     }
 
     private static async Task<G8DocumentSet> CreateDocumentSetAsync(
-        MainWindowViewModel mainViewModel,
+        DocumentPersistenceCoordinator documentCoordinator,
         DocumentDock documentDock)
     {
-        var encryptorA = CreateDocument<VideoEncryptorViewModel>(
-            mainViewModel,
+        var encryptorA = await CreateDocumentAsync<VideoEncryptorViewModel>(
+            documentCoordinator,
             documentDock,
-            MySmallToolsContributionIds.VideoEncryptorDocument.Value,
+            MySmallToolsContributionIds.VideoEncryptorDocument,
             "G8-ENC-A");
-        var encryptorB = CreateDocument<VideoEncryptorViewModel>(
-            mainViewModel,
+        var encryptorB = await CreateDocumentAsync<VideoEncryptorViewModel>(
+            documentCoordinator,
             documentDock,
-            MySmallToolsContributionIds.VideoEncryptorDocument.Value,
+            MySmallToolsContributionIds.VideoEncryptorDocument,
             "G8-ENC-B");
-        var decryptorA = CreateDocument<VideoDecryptorViewModel>(
-            mainViewModel,
+        var decryptorA = await CreateDocumentAsync<VideoDecryptorViewModel>(
+            documentCoordinator,
             documentDock,
-            MySmallToolsContributionIds.VideoDecryptorDocument.Value,
+            MySmallToolsContributionIds.VideoDecryptorDocument,
             "G8-DEC-A");
-        var decryptorB = CreateDocument<VideoDecryptorViewModel>(
-            mainViewModel,
+        var decryptorB = await CreateDocumentAsync<VideoDecryptorViewModel>(
+            documentCoordinator,
             documentDock,
-            MySmallToolsContributionIds.VideoDecryptorDocument.Value,
+            MySmallToolsContributionIds.VideoDecryptorDocument,
             "G8-DEC-B");
-        var playerA = CreateDocument<SecretVideoPlayerViewModel>(
-            mainViewModel,
+        var playerA = await CreateDocumentAsync<SecretVideoPlayerViewModel>(
+            documentCoordinator,
             documentDock,
-            MySmallToolsContributionIds.SecretVideoPlayerDocument.Value,
+            MySmallToolsContributionIds.SecretVideoPlayerDocument,
             "G8-PLAYER-A");
-        var playerB = CreateDocument<SecretVideoPlayerViewModel>(
-            mainViewModel,
+        var playerB = await CreateDocumentAsync<SecretVideoPlayerViewModel>(
+            documentCoordinator,
             documentDock,
-            MySmallToolsContributionIds.SecretVideoPlayerDocument.Value,
+            MySmallToolsContributionIds.SecretVideoPlayerDocument,
             "G8-PLAYER-B");
-        var libraryA = CreateDocument<SecretVideoLibraryViewModel>(
-            mainViewModel,
+        var libraryA = await CreateDocumentAsync<SecretVideoLibraryViewModel>(
+            documentCoordinator,
             documentDock,
-            MySmallToolsContributionIds.SecretVideoLibraryDocument.Value,
+            MySmallToolsContributionIds.SecretVideoLibraryDocument,
             "G8-LIB-A");
-        var libraryB = CreateDocument<SecretVideoLibraryViewModel>(
-            mainViewModel,
+        var libraryB = await CreateDocumentAsync<SecretVideoLibraryViewModel>(
+            documentCoordinator,
             documentDock,
-            MySmallToolsContributionIds.SecretVideoLibraryDocument.Value,
+            MySmallToolsContributionIds.SecretVideoLibraryDocument,
             "G8-LIB-B");
         await DrainDispatcherAsync();
         return new G8DocumentSet(
@@ -646,13 +647,17 @@ internal sealed class G8P1AcceptanceSuite(
         list.ScrollIntoView(list.Items[0]!);
     }
 
-    private static HarnessDocument<T> CreateDocument<T>(
-        MainWindowViewModel mainViewModel,
+    private static async Task<HarnessDocument<T>> CreateDocumentAsync<T>(
+        DocumentPersistenceCoordinator documentCoordinator,
         DocumentDock documentDock,
-        string documentType,
+        MyAvaloniaManagement.PluginSdk.DocumentTypeId documentType,
         string title) where T : class
     {
-        mainViewModel.CreateDocument(documentType);
+        var creation = await documentCoordinator.CreateDocumentAsync(documentType);
+        if (creation.ShouldUpdateError && !string.IsNullOrEmpty(creation.Error))
+        {
+            throw new AcceptanceException("G8-DOCUMENT-CREATE");
+        }
         var dockable = documentDock.VisibleDockables?
             .OfType<ManagedDocumentDockable>()
             .LastOrDefault(item => item.Model is T) ??

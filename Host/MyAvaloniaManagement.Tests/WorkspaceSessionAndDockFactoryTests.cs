@@ -102,7 +102,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
             secondChanges += args.PropertyName == nameof(MainWindowViewModel.Layout) ? 1 : 0;
         first.Dispose();
 
-        Assert.True(context.Workspace.ShowTool(HostExtensionIds.PluginMenu.Value));
+        Assert.True(context.Workspace.ShowTool(HostExtensionIds.PluginMenu));
         Assert.Equal(0, firstChanges);
         Assert.Equal(1, secondChanges);
     }

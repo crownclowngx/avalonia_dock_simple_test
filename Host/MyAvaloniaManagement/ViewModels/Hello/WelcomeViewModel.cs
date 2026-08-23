@@ -15,7 +15,7 @@ internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocume
         "MyAvaloniaManagement 是基于 Avalonia 与 Dock 构建的插件化桌面框架，" +
         "用可停靠布局组织工具，用独立插件扩展业务能力。";
 
-    private readonly Action<string>? _showTool;
+    private readonly Action<ToolTypeId>? _showTool;
     private string _text = DefaultIntroduction;
     private string _title = "欢迎";
 
@@ -23,7 +23,7 @@ internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocume
     {
     }
 
-    public WelcomeViewModel(Action<string> showTool)
+    public WelcomeViewModel(Action<ToolTypeId> showTool)
     {
         _showTool = showTool ?? throw new ArgumentNullException(nameof(showTool));
     }
@@ -87,11 +87,11 @@ internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocume
 
     [RelayCommand]
     private void OpenPluginMenu() =>
-        _showTool?.Invoke(DockNameConstant.PlugGroupMenu);
+        _showTool?.Invoke(HostExtensionIds.PluginMenu);
 
     [RelayCommand]
     private void OpenToolManagement() =>
-        _showTool?.Invoke(DockNameConstant.ToolManagement);
+        _showTool?.Invoke(HostExtensionIds.ToolManagement);
 
     private static string GetVersion()
     {

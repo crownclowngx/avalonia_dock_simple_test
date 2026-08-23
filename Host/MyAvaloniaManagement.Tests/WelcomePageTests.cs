@@ -11,14 +11,14 @@ public sealed class WelcomePageTests
     [Fact]
     public void WelcomeCommandsRequestTheExpectedHostTools()
     {
-        var requestedToolIds = new List<string>();
+        var requestedToolIds = new List<MyAvaloniaManagement.PluginSdk.ToolTypeId>();
         var viewModel = new WelcomeViewModel(requestedToolIds.Add);
 
         viewModel.OpenPluginMenuCommand.Execute(null);
         viewModel.OpenToolManagementCommand.Execute(null);
 
         Assert.Equal(
-            [DockNameConstant.PlugGroupMenu, DockNameConstant.ToolManagement],
+            [HostExtensionIds.PluginMenu, HostExtensionIds.ToolManagement],
             requestedToolIds);
     }
 
@@ -39,30 +39,31 @@ public sealed class WelcomePageTests
         _ = context.CreateMainWindowViewModel();
         var workspace = context.Workspace;
         var pluginMenu = Assert.IsAssignableFrom<Tool>(
-            workspace.CreatedTools[DockNameConstant.PlugGroupMenu]);
+            workspace.CreatedTools[HostExtensionIds.PluginMenu.Value]);
 
-        Assert.True(workspace.ShowTool(pluginMenu.Id));
+        Assert.True(workspace.ShowTool(HostExtensionIds.PluginMenu));
         Assert.Same(pluginMenu, Assert.IsAssignableFrom<IDock>(pluginMenu.Owner).ActiveDockable);
 
         workspace.DockFactory.HideDockable(pluginMenu);
-        Assert.True(workspace.ShowTool(pluginMenu.Id));
+        Assert.True(workspace.ShowTool(HostExtensionIds.PluginMenu));
         Assert.Same(pluginMenu, Assert.IsAssignableFrom<IDock>(pluginMenu.Owner).ActiveDockable);
 
         workspace.DockFactory.PinDockable(pluginMenu);
         var owningRoot = workspace.DockFactory.FindRoot(pluginMenu, _ => true)!;
         Assert.Contains(pluginMenu, owningRoot.RightPinnedDockables!);
 
-        Assert.True(workspace.ShowTool(pluginMenu.Id));
+        Assert.True(workspace.ShowTool(HostExtensionIds.PluginMenu));
         Assert.Contains(pluginMenu, owningRoot.RightPinnedDockables!);
     }
 
     [Fact]
-    public void ShowToolRejectsUnknownToolId()
+    public void ShowToolRejectsUnknownStronglyTypedToolId()
     {
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
 
-        Assert.False(context.Workspace.ShowTool("missing-tool"));
-        Assert.False(context.Workspace.ShowTool(string.Empty));
+        Assert.False(context.Workspace.ShowTool(
+            new MyAvaloniaManagement.PluginSdk.ToolTypeId(
+                "myavalonia.host.tool.missing")));
     }
 }

@@ -48,20 +48,7 @@ internal sealed partial class PlugGroupMenuViewModel
     }
 
     /// <summary>
-    /// 创建指定插件类型的文档并加入主文档区域。
-    /// </summary>
-    /// <param name="documentType">文档类型ID</param>
-    [RelayCommand]
-    public async Task CreateDocumentAsync(string documentType)
-    {
-        if (_documents is not null && _operationState is not null)
-        {
-            _operationState.Apply(await _documents.CreateDocumentAsync(
-                DocumentTypeId.Parse(documentType)));
-        }
-    }
-
-    /// <summary>按菜单入口创建文档，并把入口意图作为强类型参数传给策略。</summary>
+    /// <summary>按菜单入口创建文档，并把入口意图作为强类型参数传给协调器。</summary>
     [RelayCommand]
     public async Task CreateDocumentEntryAsync(DocumentCreationMenuEntry entry)
     {

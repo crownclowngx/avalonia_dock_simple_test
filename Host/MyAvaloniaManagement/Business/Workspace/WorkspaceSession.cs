@@ -348,9 +348,13 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         _toolDockCoordinator.RestoreTool(root, tool);
 
     /// <summary>显示并激活 Tool；只有完整成功后才发布一次布局变化。</summary>
-    internal bool ShowTool(string toolId)
+    internal bool ShowTool(ToolTypeId toolTypeId)
     {
-        var changed = _toolDockCoordinator.ShowTool(_rootDock, _createdTools, toolId);
+        ArgumentNullException.ThrowIfNull(toolTypeId);
+        var changed = _toolDockCoordinator.ShowTool(
+            _rootDock,
+            _createdTools,
+            toolTypeId.Value);
         if (changed)
         {
             NotifyLayoutChanged();

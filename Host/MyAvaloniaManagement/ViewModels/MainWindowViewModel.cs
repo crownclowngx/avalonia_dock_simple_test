@@ -8,7 +8,6 @@ using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Workspace;
-using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.ViewModels.Bindings;
 
 namespace MyAvaloniaManagement.ViewModels;
@@ -139,21 +138,9 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
     }
 
     [RelayCommand]
-    public async Task CreateDocument(string documentType)
-    {
-        _documentOperationState.Apply(await _documents.CreateDocumentAsync(
-            DocumentTypeId.Parse(documentType)));
-    }
-
-    [RelayCommand]
     public async Task OpenDocument()
     {
         _documentOperationState.Apply(await _documents.OpenSelectedAsync());
-    }
-
-    public async Task OpenDocumentByPath(string filePath)
-    {
-        _documentOperationState.Apply(await _documents.OpenPathAsync(filePath));
     }
 
     [RelayCommand]

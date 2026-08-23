@@ -111,7 +111,7 @@ public sealed class DocumentPersistenceTests
         var path = Path.Combine(context.TempDirectory, "saved.mamdoc");
         context.Storage.SavePath = path;
         var viewModel = context.CreateMainWindowViewModel();
-        await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
+        await CreateDocumentAsync(context);
         var adapter = Assert.Single(GetDocuments(context));
         var model = Assert.IsType<TestSavableDocument>(adapter.Model);
         model.Content = "保存内容";
@@ -143,7 +143,7 @@ public sealed class DocumentPersistenceTests
         var path = Path.Combine(context.TempDirectory, "v2-save-race.mamdoc");
         context.Storage.SavePath = path;
         var viewModel = context.CreateMainWindowViewModel();
-        await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
+        await CreateDocumentAsync(context);
         var adapter = Assert.Single(GetDocuments(context));
         var model = Assert.IsType<TestSavableDocument>(adapter.Model);
         model.Content = "捕获时的内容";
@@ -198,7 +198,7 @@ public sealed class DocumentPersistenceTests
         var path = Path.Combine(context.TempDirectory, "warning.mamdoc");
         context.Storage.SavePath = path;
         var viewModel = context.CreateMainWindowViewModel();
-        await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
+        await CreateDocumentAsync(context);
         var adapter = Assert.Single(GetDocuments(context));
         var model = Assert.IsType<TestSavableDocument>(adapter.Model);
         model.IsModified = true;
@@ -228,7 +228,7 @@ public sealed class DocumentPersistenceTests
         var path = Path.Combine(context.TempDirectory, "capture-failure.mamdoc");
         context.Storage.SavePath = path;
         var viewModel = context.CreateMainWindowViewModel();
-        await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
+        await CreateDocumentAsync(context);
         var adapter = Assert.Single(GetDocuments(context));
         GetDocumentDock(context).ActiveDockable = adapter;
         var probe = context.Provider.GetRequiredService<DocumentTestProbe>();
@@ -251,7 +251,7 @@ public sealed class DocumentPersistenceTests
     {
         using var context = DocumentTestContext.Create();
         var viewModel = context.CreateMainWindowViewModel();
-        await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
+        await CreateDocumentAsync(context);
         var adapter = Assert.Single(GetDocuments(context));
         GetDocumentDock(context).ActiveDockable = adapter;
 
@@ -274,7 +274,7 @@ public sealed class DocumentPersistenceTests
     {
         using var context = DocumentTestContext.Create();
         var viewModel = context.CreateMainWindowViewModel();
-        await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
+        await CreateDocumentAsync(context);
         var adapter = Assert.Single(GetDocuments(context));
         var store = context.PersistenceStates;
         Assert.Throws<InvalidOperationException>(() =>
@@ -296,7 +296,7 @@ public sealed class DocumentPersistenceTests
         var path = Path.Combine(context.TempDirectory, "accept-warning.mamdoc");
         context.Storage.SavePath = path;
         var viewModel = context.CreateMainWindowViewModel();
-        await viewModel.CreateDocument(TestDocumentIds.TypeId.Value);
+        await CreateDocumentAsync(context);
         var adapter = Assert.Single(GetDocuments(context));
         Assert.IsType<TestSavableDocument>(adapter.Model).IsModified = true;
         context.Provider.GetRequiredService<DocumentTestProbe>().AcceptChangesException =
@@ -321,8 +321,8 @@ public sealed class DocumentPersistenceTests
         var viewModel = context.CreateMainWindowViewModel();
 
         await Task.WhenAll(
-            viewModel.OpenDocumentByPath(path),
-            viewModel.OpenDocumentByPath(path));
+            OpenPathAsync(context, path),
+            OpenPathAsync(context, path));
 
         var adapter = Assert.Single(GetDocuments(context));
         Assert.Equal("恢复正文", Assert.IsType<TestSavableDocument>(adapter.Model).Content);
@@ -340,7 +340,7 @@ public sealed class DocumentPersistenceTests
         context.Storage.AddFile(path, "{\"schemaVersion\":1,\"payload\":\"legacy\"}");
         var viewModel = context.CreateMainWindowViewModel();
 
-        await viewModel.OpenDocumentByPath(path);
+        await OpenPathAsync(context, path);
 
         Assert.Empty(GetDocuments(context));
         Assert.Empty(context.Storage.Writes);
@@ -358,16 +358,16 @@ public sealed class DocumentPersistenceTests
                 "myavalonia.plugin.host-tests\"",
                 "myavalonia.plugin.other\"",
                 StringComparison.Ordinal));
-        var ownerViewModel = ownerContext.CreateMainWindowViewModel();
-        await ownerViewModel.OpenDocumentByPath(ownerPath);
+        _ = ownerContext.CreateMainWindowViewModel();
+        await OpenPathAsync(ownerContext, ownerPath);
         Assert.Empty(GetDocuments(ownerContext));
         Assert.Empty(ownerContext.Provider.GetRequiredService<DocumentTestProbe>().ActivationContexts);
 
         using var capabilityContext = DocumentTestContext.Create(persistable: false);
         var capabilityPath = Path.Combine(capabilityContext.TempDirectory, "not-persistable.mamdoc");
         capabilityContext.Storage.AddFile(capabilityPath, Serialize("能力", "正文"));
-        var capabilityViewModel = capabilityContext.CreateMainWindowViewModel();
-        await capabilityViewModel.OpenDocumentByPath(capabilityPath);
+        _ = capabilityContext.CreateMainWindowViewModel();
+        await OpenPathAsync(capabilityContext, capabilityPath);
         Assert.Empty(GetDocuments(capabilityContext));
         Assert.Empty(capabilityContext.Provider.GetRequiredService<DocumentTestProbe>().ActivationContexts);
     }
@@ -396,8 +396,8 @@ public sealed class DocumentPersistenceTests
         var badPrimary = Path.Combine(badContext.TempDirectory, "bad-primary.mamdoc");
         badContext.Storage.AddFile(badPrimary, "{broken");
         badContext.Storage.AddFile(badPrimary + DocumentRecoveryRegistry.BackupSuffix, "{also-broken");
-        var badViewModel = badContext.CreateMainWindowViewModel();
-        await badViewModel.OpenDocumentByPath(badPrimary);
+        _ = badContext.CreateMainWindowViewModel();
+        await OpenPathAsync(badContext, badPrimary);
         Assert.Empty(GetDocuments(badContext));
         Assert.Empty(badContext.Interactions.RecoveryRequests);
 
@@ -409,8 +409,8 @@ public sealed class DocumentPersistenceTests
             Serialize("备份", "初始化失败"));
         initContext.Provider.GetRequiredService<DocumentTestProbe>().InitializeException =
             new InvalidOperationException("init-secret");
-        var initViewModel = initContext.CreateMainWindowViewModel();
-        await initViewModel.OpenDocumentByPath(initPrimary);
+        _ = initContext.CreateMainWindowViewModel();
+        await OpenPathAsync(initContext, initPrimary);
         Assert.Empty(GetDocuments(initContext));
         Assert.Empty(initContext.Interactions.RecoveryRequests);
         Assert.Equal(1, initContext.Provider.GetRequiredService<DocumentTestProbe>().DisposeCount);
@@ -421,7 +421,9 @@ public sealed class DocumentPersistenceTests
     {
         using var context = DocumentTestContext.Create();
         var viewModel = context.CreateMainWindowViewModel();
-        await viewModel.OpenDocumentByPath(Path.Combine(context.TempDirectory, "missing.mamdoc"));
+        await OpenPathAsync(
+            context,
+            Path.Combine(context.TempDirectory, "missing.mamdoc"));
         Assert.False(viewModel.HasDocumentOperationError);
 
         GetDocumentDock(context).ActiveDockable = null;
@@ -442,7 +444,7 @@ public sealed class DocumentPersistenceTests
         context.Interactions.RecoveryChoices.Enqueue(true);
         var viewModel = context.CreateMainWindowViewModel();
 
-        await viewModel.OpenDocumentByPath(primary);
+        await OpenPathAsync(context, primary);
 
         var recovered = Assert.Single(GetDocuments(context));
         Assert.False(Assert.IsType<TestSavableDocument>(recovered.Model).IsDirty);
@@ -478,7 +480,7 @@ public sealed class DocumentPersistenceTests
         context.Interactions.RecoveryChoices.Enqueue(false);
         var viewModel = context.CreateMainWindowViewModel();
 
-        await viewModel.OpenDocumentByPath(primary);
+        await OpenPathAsync(context, primary);
 
         Assert.Empty(GetDocuments(context));
         var probe = context.Provider.GetRequiredService<DocumentTestProbe>();
@@ -490,6 +492,29 @@ public sealed class DocumentPersistenceTests
     }
 
     private sealed class PluginBoundaryException(string message) : Exception(message);
+
+    /// <summary>
+    /// 测试直接调用 Document 用例所有者，并把结果交给生产错误状态对象。
+    /// 这样既覆盖用户可见提示，又不会要求 MainWindowViewModel 保留测试转发命令。
+    /// </summary>
+    private static async Task CreateDocumentAsync(TestHostContext context)
+    {
+        var result = await context.Provider
+            .GetRequiredService<DocumentPersistenceCoordinator>()
+            .CreateDocumentAsync(TestDocumentIds.TypeId);
+        context.Provider.GetRequiredService<DocumentOperationState>().Apply(result);
+    }
+
+    /// <summary>
+    /// 按明确路径执行真实打开用例；调用方必须等待协调器完成，不能依赖 Dock 随后遍历的竞态时序。
+    /// </summary>
+    private static async Task OpenPathAsync(TestHostContext context, string path)
+    {
+        var result = await context.Provider
+            .GetRequiredService<DocumentPersistenceCoordinator>()
+            .OpenPathAsync(path);
+        context.Provider.GetRequiredService<DocumentOperationState>().Apply(result);
+    }
 
     private static string Serialize(string title, string content)
     {

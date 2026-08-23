@@ -94,7 +94,8 @@ public sealed class ToolViewModelTests
             node.CategoryName == "测试");
 
         viewModel.ToggleCategoryExpand(category);
-        await viewModel.CreateDocumentAsync(TestDocumentIds.TypeId.Value);
+        await viewModel.CreateDocumentEntryAsync(
+            Assert.Single(category.Documents));
 
         Assert.True(category.IsExpanded);
         var dock = Assert.IsType<DocumentDock>(
@@ -123,7 +124,7 @@ public sealed class ToolViewModelTests
         using var context = new TestHostContext(toolContributions: [contribution]);
         var mainViewModel = context.CreateMainWindowViewModel();
         var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Workspace.CreatedTools[DockNameConstant.ToolManagement]);
+            context.Workspace.CreatedTools[HostExtensionIds.ToolManagement.Value]);
         var item = manager.ToolItems.Single(candidate =>
             candidate.ToolId == tool.Id);
         var updateCount = 0;
@@ -153,7 +154,7 @@ public sealed class ToolViewModelTests
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
         var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Workspace.CreatedTools[DockNameConstant.ToolManagement]);
+            context.Workspace.CreatedTools[HostExtensionIds.ToolManagement.Value]);
         var item = manager.ToolItems.First(candidate => !candidate.CanClose);
         var before = item.IsVisible;
 
@@ -184,7 +185,7 @@ public sealed class ToolViewModelTests
         using var context = new TestHostContext(toolContributions: [contribution]);
         var mainViewModel = context.CreateMainWindowViewModel();
         var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Workspace.CreatedTools[DockNameConstant.ToolManagement]);
+            context.Workspace.CreatedTools[HostExtensionIds.ToolManagement.Value]);
         var item = manager.ToolItems.Single(candidate => candidate.ToolId == tool.Id);
         var layoutChanges = 0;
         mainViewModel.PropertyChanged += (_, args) =>
@@ -201,7 +202,7 @@ public sealed class ToolViewModelTests
         Assert.False(item.IsVisible);
         Assert.Equal(1, layoutChanges);
 
-        Assert.True(context.Workspace.ShowTool(tool.Id));
+        Assert.True(context.Workspace.ShowTool(contribution.Descriptor.ToolTypeId));
 
         Assert.True(item.IsVisible);
         Assert.Equal(2, layoutChanges);
@@ -227,12 +228,12 @@ public sealed class ToolViewModelTests
         using var context = new TestHostContext(toolContributions: [contribution]);
         _ = context.CreateMainWindowViewModel();
         var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Workspace.CreatedTools[DockNameConstant.ToolManagement]);
+            context.Workspace.CreatedTools[HostExtensionIds.ToolManagement.Value]);
         var item = manager.ToolItems.Single(candidate => candidate.ToolId == tool.Id);
 
         var managedTool = context.Workspace.CreatedTools[tool.Id];
         context.Workspace.DockFactory.PinDockable(managedTool);
-        Assert.True(context.Workspace.ShowTool(tool.Id));
+        Assert.True(context.Workspace.ShowTool(contribution.Descriptor.ToolTypeId));
 
         Assert.True(item.IsVisible);
         var owningRoot = context.Workspace.DockFactory.FindRoot(managedTool, _ => true)!;
