@@ -331,6 +331,17 @@ public sealed class BiliApiServiceTests
         {
             ConfigureWbiNav(http);
             http.ForCallsTo("*x/player/wbi/playurl*")
+                .RespondWith("""{"code":-101,"message":"not login"}""");
+            var ex = await Assert.ThrowsAsync<MediaAuthorizationException>(() =>
+                new BiliApiService().GetDashResultAsync(1, 2, 80, ""));
+            Assert.Contains("登录状态无效", ex.Message, StringComparison.Ordinal);
+        }
+
+        StaticStateScope.ResetWbiCache();
+        using (var http = new HttpTest())
+        {
+            ConfigureWbiNav(http);
+            http.ForCallsTo("*x/player/wbi/playurl*")
                 .RespondWith("""{"code":0,"data":{}}""");
             var ex = await Assert.ThrowsAsync<ResourceUnavailableException>(() =>
                 new BiliApiService().GetDashResultAsync(1, 2, 80, ""));

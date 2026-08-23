@@ -490,6 +490,42 @@ public sealed class G3PlaybackSessionTests
     }
 
     [Fact]
+    public void SnapshotPublishingWithoutMedia_HonorsDocumentClosingBoundary()
+    {
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                (_, _) => throw new InvalidOperationException("本用例不应创建媒体源。")));
+        var changedCount = 0;
+        rig.Session.Changed += (_, _) => changedCount++;
+
+        // PublishCurrent 是播放器内部所有状态回调最终汇合的单一出口。这里通过反射只调用
+        // 这一个私有职责，是为了精确固定两个并发边界，而不是给生产类型增加仅供测试使用的
+        // public API：当前媒体为空时必须降级发布 Empty；Document 关闭后同一尾部回调必须静默。
+        var publishCurrent = typeof(SecureVideoPlayer).GetMethod(
+            "PublishCurrent",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("找不到当前播放快照发布方法。");
+
+        publishCurrent.Invoke(
+            rig.Session,
+            [PlaybackState.Stopped, PlaybackActivity.StoppingCurrent, null]);
+
+        Assert.Equal(1, changedCount);
+        Assert.Equal(PlaybackState.Empty, rig.Session.Snapshot.State);
+        Assert.Equal(PlaybackActivity.StoppingCurrent, rig.Session.Snapshot.Activity);
+
+        // 先显式关闭生命周期，再重复完全相同的同步调用，避免依赖线程池、原生播放器事件
+        // 或 Dispose 的调度先后。若关闭保护被删除，事件计数会立刻变成 2，失败路径清晰可见。
+        rig.CloseDocument();
+        publishCurrent.Invoke(
+            rig.Session,
+            [PlaybackState.Stopped, PlaybackActivity.Idle, null]);
+
+        Assert.Equal(1, changedCount);
+        Assert.Equal(PlaybackActivity.StoppingCurrent, rig.Session.Snapshot.Activity);
+    }
+
+    [Fact]
     public async Task StopThenPlay_ReusesSameSourceAndWaitsForStop()
     {
         var source = new FakeSource(1);
