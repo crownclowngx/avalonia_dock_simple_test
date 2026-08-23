@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-23（已同步 Managed Plugin V3 G14 与 Host V4 G0–G7）<br>
+> 更新日期：2026-08-23（已同步 Managed Plugin V3 G14 与 Host V4 G0–G8）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
@@ -17,10 +17,11 @@
 > Registry、私有 Provider、Workspace Session、Dock Adapter 与真实 ZIP Loader 完成验收；磁盘
 > schema 仍为 2；G13 已完成 V2 生产面零残留证明，G14 已完成两轮隔离门禁和文档签署。
 
-> Host V4 当前状态：G0–G7 已完成，G8 待实施。Host internal 已删除死面、统一强类型身份，
+> Host V4 当前状态：G0–G8 已完成并封板。Host internal 已删除死面、统一强类型身份，
 > 对齐 Layout 三类职责并建立 Document 控件回收器显式所有权；Helpers 已按领域迁移，文件树已固定
 > 驱动器根、UNC 共享根/子目录语义和只读展示快照。G7 已完成 SDK、四插件真实测试包、诊断、文档与
-> MySmallTools 20 轮资源回归。Plugin SDK 与磁盘格式未变化；V4 尚未封板、尚不可发布。
+> MySmallTools 20 轮资源回归；G8 已通过两轮隔离、实体制品复核和 Windows Smoke 建立本地发布资格。
+> Plugin SDK 与磁盘格式未变化；未上传、未打 tag、未对外发布且未使用 AIFLOW。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -556,8 +557,23 @@ UI 线程原生 Stop 回归只在既有播放器职责内复用原生调度器�
 
 Host Unit/UI/Plugin 为 **478/478**，覆盖率 **85.06% / 71.41%**；四插件专项分别为 **527/527**、
 **578/578**、**709/709**、**1245/1245**。MySmallTools 20 轮真实媒体在全屏仍有效时关闭 Document，
-Runtime 退出后原生资源和弱引用归零。G7 未运行 AIFLOW、Windows CI/Smoke 或发布门禁，V4 仍不可发布。
+Runtime 退出后原生资源和弱引用归零。G7 当时未运行 AIFLOW、Windows CI/Smoke 或发布门禁，因此该阶段
+仍是非发布输入；后续发布资格只由 G8 独立签署。
 完整证据见 [G7 四插件、Harness 与文档回归](../plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)。
+
+### 6.16 2026-08-23 Host V4 G8 封板
+
+**[当前事实]** G8 没有复制 G7 或插件专项的业务规则，而是在两个固定到同一 revision/tree 的
+`git clone --no-hardlinks` 中按显式阶段列表运行 Core、文档 Core、G7 和 Windows Smoke。外层只负责
+安全路径、隔离环境、失败状态、稳定投影与实体复核；叶子脚本继续拥有各自测试、覆盖率和包规则，保持
+SRP 与 DIP，同时避免工作流框架、反射发现、DI 容器和策略工厂。
+
+Host 为 **478/478**、覆盖率 **85.06% / 71.41%**，SDK v3 Shipped 为 Core/UI **127/45**、
+Unshipped **0/0**；四插件专项为 **527/527**、**578/578**、**713/713**、**1246/1246**，
+MySmallTools 20 轮资源归零，Windows Smoke 保存 `layout-v2.json` schema 2。门禁重新计算四插件
+ZIP/manifest 长度和 SHA-256，并固定 `releaseEligible=true`、`publishable=true`，同时保持
+`published=false`、`uploaded=false`、`tagCreated=false`、`aiflow=false`。完整边界见
+[G8 V4 封板记录](../plan-history/host-v4/g8-v4-sealing.md)。
 
 ## 7. 宿主应该给插件多大自由度
 

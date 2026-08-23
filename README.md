@@ -28,12 +28,14 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)。V3 Core/UI API 已冻结为 Shipped
 > 127/45 条，并由两轮隔离门禁签署；这表示本地可发布，不表示已经上传或对外发布。
 
-> Host V4 当前完成 G0–G7：已冻结 V3 源码输入，删除 Host 死面与 Hosting 依赖，收口强类型身份、
+> Host V4 已完成 G0–G8 并封板：已冻结 V3 源码输入，删除 Host 死面与 Hosting 依赖，收口强类型身份、
 > Layout 职责和 Document 控件回收所有权，按领域消除 `Business/Helpers`，并修复驱动器根、UNC 根与
 > UNC 子目录语义。G7 又完成四插件真实包、SDK、诊断、文档和 MySmallTools 20 轮资源回归；Host 为
-> 478/478，覆盖率 85.06% / 71.41%。G8 尚未实施，因此 V4 尚未封板、尚不可发布；详情见
+> 478/478，覆盖率 85.06% / 71.41%，两轮隔离门禁与 Windows Smoke 已建立本地发布资格；未上传、
+> 未创建 tag、未对外发布且未使用 AIFLOW。详情见
 > [V4 任务书](./docs/design/host-v4-breaking-refactor-plan.md)和
-> [G7 四插件、Harness 与文档回归](./docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)。
+> [G7 四插件、Harness 与文档回归](./docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)，
+> 最终签署见 [G8 V4 封板记录](./docs/plan-history/host-v4/g8-v4-sealing.md)。
 
 ## 核心扩展模型
 
@@ -207,6 +209,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 
 - [项目文档导航](./docs/README.md)：按用途浏览全部解决方案级文档；
 - [Host V4 G7 四插件、Harness 与文档回归](./docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)：查看 478 项 Host、四插件真实测试包、20 轮资源归零、SOLID 和非发布边界；
+- [Host V4 G8 封板](./docs/plan-history/host-v4/g8-v4-sealing.md)：查看两轮无硬链接隔离、实体 ZIP/manifest 复核、Windows Smoke、SOLID 取舍与本地发布边界；
 - [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G9–G12 四插件验收及 G2–G8 平台语义为事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
@@ -271,14 +274,15 @@ TestResults/  需要保留的阶段验收与人工验证记录
 该脚本只执行 Unit、Plugin 与 Headless UI 专项测试，并固定记录未运行 Windows CI、Windows Smoke
 及发布门禁；结果写入 `artifacts/test-results/DocumentV2/summary.json`。
 
-V3 封板在干净 Git 提交上执行以下 Windows 本地发布门禁：
+当前 Host V4 封板在干净 Git 提交上执行以下 Windows 本地发布门禁：
 
 ```powershell
-.\scripts\Invoke-HostV3ReleaseGate.ps1
+.\scripts\Invoke-HostV4ReleaseGate.ps1
 ```
 
-该入口在两个无硬链接隔离克隆中执行完整 V3 生产面、G9–G12 专项、20 轮资源 Harness、API/包、
-文档和真实窗口 Smoke；只建立本地发布资格，不上传、不打标签且固定记录 `aiflow=false`。
+该入口在两个无硬链接隔离克隆中复用完整 G7 开发门禁、四插件专项、20 轮资源 Harness、API/包、
+文档和真实窗口 Smoke，并复核实体 ZIP/manifest；只建立本地发布资格，不上传、不打标签且固定记录
+`aiflow=false`。V3 G14 入口仅保留历史复核。
 
 V2 封板时曾执行以下历史 Windows 本地发布门禁：
 

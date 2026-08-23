@@ -23,7 +23,26 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [G13](../plan-history/host-v3/g13-remove-v2-production-surface.md)专项记录；最终两轮签署见
 > [G14](../plan-history/host-v3/g14-v3-sealing.md)封板记录。
 
-### Host V4 G7 当前非发布开发基线
+### Host V4 G8 当前正式本地封板门禁
+
+从 Windows x64、PowerShell 7 和干净提交执行：
+
+```powershell
+.\scripts\Invoke-HostV4ReleaseGate.ps1
+```
+
+入口创建两个固定到同一 revision/tree 的无硬链接克隆，隔离 NuGet、TEMP、Host 数据根和构建环境；
+每轮依次运行 G8 Core、文档 Core、G7 完整开发门禁与 Windows 真实窗口 Smoke。它复制 transcript、
+阶段状态、TRX、Cobertura、摘要、四插件 ZIP/manifest 和 MySmallTools 资源报告，再从实体重新计算长度与
+SHA-256。两轮只忽略时间、耗时和绝对证据路径，测试数、覆盖率、API、文档、插件、哈希、Harness、
+数据格式、Smoke 与发布标记必须完全相同。
+
+成功摘要固定为 `repeatabilityVerified=true`、`releaseEligible=true`、`publishable=true`、
+`published=false`、`uploaded=false`、`tagCreated=false`、`aiflow=false`。`publishable` 只表示本地具备
+发布资格；入口不 push、不打 tag、不上传、不调用外部发布或历史 ReleaseAcceptance。完整事实见
+[V4 G8 封板记录](../plan-history/host-v4/g8-v4-sealing.md)。
+
+### Host V4 G7 非发布开发输入
 
 ```powershell
 pwsh -NoProfile -File .\scripts\Test-HostV4DevelopmentGate.ps1 -Stage G7
@@ -37,10 +56,10 @@ pwsh -NoProfile -File .\scripts\Test-HostV4DevelopmentGate.ps1 -Stage G7
 `FileSystemPath` 行/分支覆盖率均为 100%，真实分类决策分支全部有用例。
 
 Core/UI V3 Shipped 为 **127/45**、Unshipped 为 **0/0**，独立 NuGet 正反消费通过。四插件专项分别为
-MyPlugTest **527/527**、DaTang **578/578**、MySmallTools **709/709**、BiliDownloader
-**1245/1245**；每个插件都完成两次确定性测试 ZIP、manifest 与真实 Host Loader。MySmallTools 20 轮
+MyPlugTest **527/527**、DaTang **578/578**、MySmallTools **713/713**、BiliDownloader
+**1246/1246**；每个插件都完成两次确定性测试 ZIP、manifest 与真实 Host Loader。MySmallTools 20 轮
 真实媒体 Harness 已证明全屏关闭、Runtime 退出后 Document/View/加密流弱引用和原生资源归零。
-当前不运行 Windows CI、Windows Smoke、ReleaseAcceptance 或发布门禁；详见
+G7 自身不运行 Windows CI、Windows Smoke、ReleaseAcceptance 或发布门禁；详见
 [V4 G7 专项记录](../plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)。
 
 ## 当前文档与基线门禁
@@ -132,9 +151,9 @@ Windows CI/Smoke、ReleaseAcceptance 或发布门禁。
 **84.39% / 70.58%**；连同 SDK、四插件和最终包组合共 **1483/1483**。包摘要和删除/保留边界见
 [V3 G13 专项记录](../plan-history/host-v3/g13-remove-v2-production-surface.md)。
 
-### V3 G14 正式本地发布门禁
+### V3 G14 历史正式本地发布门禁
 
-从 Windows x64 干净提交执行：
+复核 V3 G14 历史封板时，从 Windows x64 干净提交执行：
 
 ```powershell
 .\scripts\Invoke-HostV3ReleaseGate.ps1

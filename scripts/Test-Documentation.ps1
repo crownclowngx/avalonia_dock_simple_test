@@ -7,8 +7,8 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码已完成 V3 G14 封板，并完成 V4 G0–G7 的非发布内部收口；V4 G8 仍待实施。
-# V3 正式 API 事实与 V4 非发布事实必须同时保留，V1–V4 阶段记录继续参加检查。
+# 当前源码已完成 V3 G14 与 Host V4 G8 封板。V4 只签署 Host internal 收口，产品与 SDK 仍为 3.0.0；
+# V3 正式 API、V4 本地发布资格及“未实际发布”边界必须同时保留，V1–V4 阶段记录继续参加检查。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
@@ -17,6 +17,7 @@ $currentDocumentPaths = @(
     'docs/design/host-v2-breaking-refactor-plan.md',
     'docs/design/host-v3-breaking-refactor-plan.md',
     'docs/design/host-v4-breaking-refactor-plan.md',
+    'docs/plan-history/host-v4/g8-v4-sealing.md',
     'docs/plan-history/host-v2/g14-v2-sealing.md',
     'docs/plan-history/host-v3/g0-green-baseline.md',
     'docs/plan-history/host-v3/g1-version-and-data-boundaries.md',
@@ -97,7 +98,9 @@ $forbiddenStatementRules = @(
     [pscustomobject]@{ Name = '保存契约仍未统一'; Pattern = '保存契约尚未统一' },
     [pscustomobject]@{ Name = 'Legacy 仍是并列入口'; Pattern = 'Legacy\s*(?:为|作为).*并列.*(?:方式|入口)' },
     [pscustomobject]@{ Name = 'G16 证据尚未回填'; Pattern = 'G16.{0,80}待(?:执行|最终复跑)|待最终复跑' },
-    [pscustomobject]@{ Name = 'V4 当前状态仍停留在 G6'; Pattern = 'Host V4 当前状态：G0[–-]G6 已完成，G7[–-]G8 待实施' }
+    [pscustomobject]@{ Name = 'V4 当前状态仍停留在 G6'; Pattern = 'Host V4 当前状态：G0[–-]G6 已完成，G7[–-]G8 待实施' },
+    [pscustomobject]@{ Name = 'V4 当前状态仍停留在 G7'; Pattern = '(?:状态：实施中；G0[–-]G7 已完成，G8 待实施|Host V4 当前状态：G0[–-]G7 已完成，G8 待实施)' },
+    [pscustomobject]@{ Name = 'V4 当前文档仍声明 G8 未实施'; Pattern = 'V4 G8 尚未实施|G8 尚未实施，因此 V4' }
 )
 
 $requiredSymbols = @(
@@ -197,7 +200,7 @@ foreach ($relativePath in $linkDocumentPaths) {
 }
 
 # 最终签署和阶段进度不能只靠“没有旧句子”间接成立。以下正向哨兵把 V2/V3 G14、
-# V4 G0–G7 非发布进度、正式 API 状态和无外部发布边界绑定到权威文档。
+# V4 G7 历史非发布事实、V4 G8 本地发布资格、正式 API 状态和无外部发布边界绑定到权威文档。
 $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'README.md'; Fragment = 'Managed Plugin V2 已完成 G0–G14 并正式封板' },
     [pscustomobject]@{ Path = 'docs/design/host-v2-breaking-refactor-plan.md'; Fragment = '状态：已完成；G0–G14 已全部封板' },
@@ -297,13 +300,24 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'releaseGate=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'publishable=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'IDisposable? TryPresent(Control content)' },
-    [pscustomobject]@{ Path = 'docs/design/host-v4-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0–G7 已完成，G8 待实施' },
+    [pscustomobject]@{ Path = 'docs/design/host-v4-breaking-refactor-plan.md'; Fragment = '状态：已完成；G0–G8 已全部封板' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'Host 合计 | **478/478**' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'MySmallTools | **709/709**' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'windowsSmoke=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'releaseGate=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'V4 尚未封板、尚不可发布' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'scripts/Invoke-HostV4ReleaseGate.ps1' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'Core 127 / UI 45，Unshipped 0 / 0' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'Host 合计 | **478/478**' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'MySmallTools 专项 | **713/713** | 73.20% | 49.28%' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'BiliDownloader 专项 | **1246/1246** | 83.87% | 67.86%' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'releaseEligible=true' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'publishable=true' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'published=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'uploaded=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'tagCreated=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'v3 Shipped 为 Core 127 条、UI 45 条' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
