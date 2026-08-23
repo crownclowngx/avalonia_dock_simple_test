@@ -7,8 +7,8 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码已经完成 V3 G14 封板；G9–G13 的非发布摘要仍是对应阶段的历史事实，
-# G14 专用记录与当前文档共同声明正式 API 和两轮本地门禁。V1/V2/V3 阶段记录继续参加检查。
+# 当前源码已完成 V3 G14 封板，并完成 V4 G0–G6 的非发布内部收口；V4 G7–G8 仍待实施。
+# V3 正式 API 事实与 V4 非发布事实必须同时保留，V1–V4 阶段记录继续参加检查。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
@@ -16,6 +16,7 @@ $currentDocumentPaths = @(
     'docs/design/host-plugin-architecture-review.md',
     'docs/design/host-v2-breaking-refactor-plan.md',
     'docs/design/host-v3-breaking-refactor-plan.md',
+    'docs/design/host-v4-breaking-refactor-plan.md',
     'docs/plan-history/host-v2/g14-v2-sealing.md',
     'docs/plan-history/host-v3/g0-green-baseline.md',
     'docs/plan-history/host-v3/g1-version-and-data-boundaries.md',
@@ -48,7 +49,7 @@ $currentDocumentPaths += @(Get-ChildItem -LiteralPath (Join-Path $repositoryRoot
         -Filter '*.md' -File | ForEach-Object {
             [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/')
         })
-$hostHistoryDirectories = @('host-v1', 'host-v2', 'host-v3')
+$hostHistoryDirectories = @('host-v1', 'host-v2', 'host-v3', 'host-v4')
 $historyDocumentPaths = @($hostHistoryDirectories | ForEach-Object {
         Get-ChildItem -LiteralPath (Join-Path $repositoryRoot "docs\plan-history\$_") `
             -Filter '*.md' -File
@@ -122,6 +123,10 @@ $requiredSymbols = @(
     [pscustomobject]@{ Symbol = 'WorkspaceCatalog'; Path = 'Host/MyAvaloniaManagement/Business/Workspace/WorkspaceCatalog.cs' }
     [pscustomobject]@{ Symbol = 'HostWorkspaceActivator'; Path = 'Host/MyAvaloniaManagement/Business/Workspace/HostWorkspaceActivator.cs' }
     [pscustomobject]@{ Symbol = 'WindowContentFullscreenSession'; Path = 'Host/MyAvaloniaManagement/Business/Presentation/WindowContentFullscreenSession.cs' }
+    [pscustomobject]@{ Symbol = 'FileSystemPath'; Path = 'Host/MyAvaloniaManagement/Models/FileSystem/FileSystemPath.cs' }
+    [pscustomobject]@{ Symbol = 'DirectoryExists'; Path = 'Host/MyAvaloniaManagement/Business/Storage/IHostStorageService.cs' }
+    [pscustomobject]@{ Symbol = 'PluginDeploymentConstants'; Path = 'Host/MyAvaloniaManagement/Business/Constants/PluginDeploymentConstants.cs' }
+    [pscustomobject]@{ Symbol = 'CategoryNode'; Path = 'Host/MyAvaloniaManagement/Models/Tools/CategoryNode.cs' }
 )
 $forbiddenSymbols = @(
     'IDocumentSavePathPolicy',
@@ -191,7 +196,7 @@ foreach ($relativePath in $linkDocumentPaths) {
 }
 
 # 最终签署和阶段进度不能只靠“没有旧句子”间接成立。以下正向哨兵把 V2/V3 G14、
-# 正式 API 状态、两轮发布资格和无外部发布边界绑定到权威文档。
+# V4 G0–G6 非发布进度、正式 API 状态和无外部发布边界绑定到权威文档。
 $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'README.md'; Fragment = 'Managed Plugin V2 已完成 G0–G14 并正式封板' },
     [pscustomobject]@{ Path = 'docs/design/host-v2-breaking-refactor-plan.md'; Fragment = '状态：已完成；G0–G14 已全部封板' },
@@ -291,6 +296,10 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'releaseGate=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'publishable=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'IDisposable? TryPresent(Control content)' },
+    [pscustomobject]@{ Path = 'docs/design/host-v4-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0–G6 已完成，G7–G8 待实施' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g6-file-system-path-and-presentation-model.md'; Fragment = '478/478' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g6-file-system-path-and-presentation-model.md'; Fragment = 'aiflow/windowsCi/windowsSmoke/releaseAcceptance/releaseGate/publishable=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g6-file-system-path-and-presentation-model.md'; Fragment = 'V4 尚未封板、尚不可发布' },
     [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'v3 Shipped 为 Core 127 条、UI 45 条' }
 )
 foreach ($requirement in $requiredCurrentStatements) {

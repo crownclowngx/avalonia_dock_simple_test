@@ -56,7 +56,7 @@ internal sealed class HostRuntime : IDisposable
         services.AddSingleton<IHostDiagnosticSink>(diagnostics);
 
         var discovery = AssemblyLoaderHelper.Discover(
-            AssemblyLoadConstant.PLUGINS_SUBDIRECTORY);
+            PluginDeploymentConstants.PluginsSubdirectory);
         discovery.PublishDiagnostics(diagnostics);
         ThrowIfStartupMustAbort(diagnostics);
 

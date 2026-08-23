@@ -14,6 +14,8 @@
 - [Managed 插件快速开始](../../../docs/quick-start/README.md)
 - [宿主—插件架构评审](../../../docs/design/host-plugin-architecture-review.md)
 - [宿主专项测试说明](../../../docs/reference/myavalonia-management-tests.md)
+- [Host V4 G0–G6 任务书](../../../docs/design/host-v4-breaking-refactor-plan.md)
+- [V4 G6 路径语义与展示模型](../../../docs/plan-history/host-v4/g6-file-system-path-and-presentation-model.md)
 - [Dock 布局快照 V2](../../../docs/reference/dock-layout-snapshot-v2.md)
 - [G4 Managed-only 插件加载记录](../../../docs/plan-history/host-v1/g4-managed-only-plugin-loading.md)
 - [G5 显式贡献与 Plugin Registry](../../../docs/plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)
@@ -50,6 +52,9 @@
 - 每个 HostRuntime 只有一个 WorkspaceSession；HostDockFactory 只适配 Dock 协议，Tool 管理只消费无 Dock 类型的只读投影；
 - 全屏端口只接受一个 Control 并返回 `IDisposable` 租约；MainWindow 委托具体会话维护唯一活动租约，插件不接触 Window 或 Dock；
 - 四插件的创建、发布、关闭和 Tool 显隐只经 Workspace Session；最终测试 ZIP 分别使用真实 Loader 重放各自声明的 Document、Tool 与 Lifecycle；
+- Host V4 G6 的文件树先由 `FileSystemPath` 规范化并分类，再由 `IHostStorageService.DirectoryExists`
+  判断存在性；UNC 共享根可作为唯一自定义根展示，失败选择不会提交半成品 UI 状态；
+- 分类菜单是构造期只读快照，只有展开状态可变；Document 创建仍直接进入真实 Coordinator；
 - 不新增插件市场、热加载、沙箱或新的用户可见诊断通道；
 - 不要求插件跟随宿主内部协作者重编写业务逻辑。
 
@@ -61,6 +66,7 @@
 
 ```powershell
 .\scripts\Test-Documentation.ps1
+.\scripts\Test-HostV4DevelopmentGate.ps1 -Stage G6
 .\scripts\Test-HostV3ProductionSurface.ps1 -Configuration Release
 .\scripts\Test-DocumentV2.ps1 -Configuration Release
 .\scripts\Test-RevisionedDocumentSave.ps1 -Configuration Release -NoRestore

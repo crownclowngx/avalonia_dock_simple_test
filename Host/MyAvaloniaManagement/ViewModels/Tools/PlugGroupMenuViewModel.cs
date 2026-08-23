@@ -19,9 +19,8 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// </remarks>
 internal sealed partial class PlugGroupMenuViewModel
 {
-    private readonly DocumentPersistenceCoordinator? _documents;
-    private readonly DocumentOperationState? _operationState;
-    private readonly DocumentCreationMenuQuery? _pluginMenuService;
+    private readonly DocumentPersistenceCoordinator _documents;
+    private readonly DocumentOperationState _operationState;
 
     /// <summary>
     /// 获取按分类分组且允许显示在菜单中的文档元数据。
@@ -29,9 +28,7 @@ internal sealed partial class PlugGroupMenuViewModel
     /// <summary>
     /// 获取供树形菜单绑定的分类节点快照。
     /// </summary>
-    public List<CategoryNode> CategoryNodes =>
-        (_pluginMenuService?.GetCreationEntriesByCategory() ?? [])
-        .Select(kv => new CategoryNode(kv.Key, kv.Value)).ToList();
+    public IReadOnlyList<CategoryNode> CategoryNodes { get; }
 
     /// <summary>
     /// 使用显式工厂和菜单服务创建插件菜单工具。
@@ -41,9 +38,14 @@ internal sealed partial class PlugGroupMenuViewModel
         DocumentPersistenceCoordinator documents,
         DocumentOperationState operationState)
     {
-        _pluginMenuService = pluginMenuService;
-        _documents = documents;
-        _operationState = operationState;
+        ArgumentNullException.ThrowIfNull(pluginMenuService);
+        _documents = documents ?? throw new ArgumentNullException(nameof(documents));
+        _operationState = operationState ??
+            throw new ArgumentNullException(nameof(operationState));
+        CategoryNodes = Array.AsReadOnly(pluginMenuService
+            .GetCreationEntriesByCategory()
+            .Select(group => new CategoryNode(group.Key, group.Value))
+            .ToArray());
     }
 
     /// <summary>
@@ -52,12 +54,9 @@ internal sealed partial class PlugGroupMenuViewModel
     public async Task CreateDocumentEntryAsync(DocumentCreationMenuEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        if (_documents is not null && _operationState is not null)
-        {
-            _operationState.Apply(await _documents.CreateDocumentAsync(
-                entry.DocumentTypeId,
-                entry.CreationIntentId));
-        }
+        _operationState.Apply(await _documents.CreateDocumentAsync(
+            entry.DocumentTypeId,
+            entry.CreationIntentId));
     }
 
     /// <summary>
@@ -67,9 +66,7 @@ internal sealed partial class PlugGroupMenuViewModel
     [RelayCommand]
     public void ToggleCategoryExpand(CategoryNode node)
     {
-        if (node != null)
-        {
-            node.IsExpanded = !node.IsExpanded;
-        }
+        ArgumentNullException.ThrowIfNull(node);
+        node.IsExpanded = !node.IsExpanded;
     }
 }

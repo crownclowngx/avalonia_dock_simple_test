@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Converter;
+using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Models.FileSystem;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -121,12 +122,41 @@ public sealed class ServiceAndModelTests
     private sealed class MultiIntentDocument : MenuDocument;
 
     [Theory]
-    [InlineData(@"C:\", true)]
-    [InlineData(@"\\server\share", true)]
-    [InlineData(@"C:\folder\file.txt", false)]
-    [InlineData("", false)]
-    public void 驱动器路径识别稳定(string path, bool expected) =>
-        Assert.Equal(expected, FileSystemPath.IsDrivePath(path));
+    [InlineData(@"C:", @"C:\", "LocalDriveRoot")]
+    [InlineData(@"C:\", @"C:\", "LocalDriveRoot")]
+    [InlineData(@"c:\", @"c:\", "LocalDriveRoot")]
+    [InlineData(@"\\server\share", @"\\server\share", "UncShareRoot")]
+    [InlineData(@"\\server\share\", @"\\server\share", "UncShareRoot")]
+    [InlineData(@"\\server\share\folder\", @"\\server\share\folder", "Directory")]
+    [InlineData(@"C:\folder\", @"C:\folder", "Directory")]
+    public void 绝对目录驱动器根和UNC根规范化并分类(
+        string input,
+        string expectedPath,
+        string expectedKind)
+    {
+        Assert.True(FileSystemPath.TryNormalize(input, out var result));
+        Assert.Equal(expectedPath, result.NormalizedPath);
+        Assert.Equal(expectedKind, result.Kind.ToString());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("relative")]
+    [InlineData(@"C:folder")]
+    [InlineData(@"\\server")]
+    [InlineData(@"\\?\C:\private")]
+    public void 空白相对设备和不完整UNC路径均拒绝(string? input) =>
+        Assert.False(FileSystemPath.TryNormalize(input, out _));
+
+    [Fact]
+    public void 含空字符的非法路径返回失败而不抛出() =>
+        Assert.False(FileSystemPath.TryNormalize("C:\\bad\0name", out _));
+
+    [Fact]
+    public void ManagedPlugin部署子目录保持Controls() =>
+        Assert.Equal("Controls", PluginDeploymentConstants.PluginsSubdirectory);
 
     [Fact]
     public void 文件系统节点延迟加载并可刷新()

@@ -303,6 +303,12 @@ internal sealed class TestHostStorageService : IHostStorageService
     public Dictionary<string, string> Files { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// 测试可显式声明不能访问的 UNC 或虚拟目录，避免单测依赖网络。
+    /// </summary>
+    public HashSet<string> Directories { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
     public List<(string Path, string Content)> Writes { get; } = [];
 
     /// <summary>
@@ -343,6 +349,10 @@ internal sealed class TestHostStorageService : IHostStorageService
     /// <inheritdoc />
     public bool FileExists(string path) =>
         Files.ContainsKey(Path.GetFullPath(path)) || File.Exists(path);
+
+    /// <inheritdoc />
+    public bool DirectoryExists(string path) =>
+        Directories.Contains(path) || Directory.Exists(path);
 
     /// <inheritdoc />
     public long GetFileLength(string path)

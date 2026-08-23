@@ -334,3 +334,13 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - [ ] Release 覆盖率门禁通过；
 - [ ] 涉及启动、XAML 或窗口生命周期时执行 Windows Smoke；
 - [ ] 根级和主项目文档与实现一致。
+
+## 10. V4 G6 路径与展示兼容边界
+
+- `C:` 与 `C:\` 均规范化为本地驱动器根 `C:\`，继续使用既有驱动器集合展示；
+- `\\server\share` 及尾分隔符形式是 UNC 共享根，作为唯一自定义根展示；其子目录是普通目录；
+- 空白、相对、设备、非法或已经消失的路径不得改变当前文件树、标题或模式；
+- 路径存在性只经 internal `IHostStorageService.DirectoryExists`，不构成 Plugin SDK public API；
+- `CategoryNode.CategoryName` 和 `Documents` 是构造期只读快照，仅 `IsExpanded` 可变；
+- 插件部署目录仍为 `Controls`，只把内部符号改名为 `PluginDeploymentConstants.PluginsSubdirectory`；
+- Core/UI Shipped 仍为 127/45，manifest、Document envelope、layout schema、数据根 `v2` 和四插件版本区间不变。

@@ -37,6 +37,14 @@ internal interface IHostStorageService
     bool FileExists(string path);
 
     /// <summary>
+    /// 判断指定绝对路径是否对应已存在的目录。
+    /// </summary>
+    /// <remarks>
+    /// UNC 检查也必须经过此端口，ViewModel 不直接访问真实网络共享。
+    /// </remarks>
+    bool DirectoryExists(string path);
+
+    /// <summary>
     /// 获取指定文件当前占用的字节数。
     /// </summary>
     /// <remarks>

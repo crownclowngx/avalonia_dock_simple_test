@@ -27,6 +27,7 @@
     "ViewModels/MainWindowViewModel.cs": 75.0,
     "ViewModels/Tools/FileSystemTreeViewModel.cs": 70.0,
     "ViewModels/Tools/PlugGroupMenuViewModel.cs": 70.0,
+    "Models/FileSystem/FileSystemPath.cs": 100.0,
     "Models/Tools/ToolWorkspaceState.cs": 70.0
   }
 }

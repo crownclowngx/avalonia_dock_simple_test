@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
-using MyAvaloniaManagement.Business.Workspace;
+using System;
 
 namespace MyAvaloniaManagement.Business.Workspace;
 
 /// <summary>
-/// 插件菜单服务，用于处理插件菜单的生成和管理
+/// 提供当前 Workspace 可创建 Document 的分类菜单只读查询。
 /// </summary>
 internal sealed class DocumentCreationMenuQuery
 {
@@ -13,7 +13,7 @@ internal sealed class DocumentCreationMenuQuery
 
     public DocumentCreationMenuQuery(WorkspaceSession workspace)
     {
-        _workspace = workspace;
+        _workspace = workspace ?? throw new ArgumentNullException(nameof(workspace));
     }
 
     /// <summary>

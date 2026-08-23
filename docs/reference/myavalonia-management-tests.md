@@ -23,6 +23,23 @@ Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭�
 > [G13](../plan-history/host-v3/g13-remove-v2-production-surface.md)专项记录；最终两轮签署见
 > [G14](../plan-history/host-v3/g14-v3-sealing.md)封板记录。
 
+### Host V4 G6 当前非发布开发基线
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-HostV4DevelopmentGate.ps1 -Stage G6
+```
+
+该累积入口执行锁定还原、Release `-warnaserror`、Host Unit/UI/Plugin、覆盖率、API/格式/结构与文档检查。
+当前结果为 Unit **210**、Headless UI **63**、Plugin **205**，共 **478/478**；行覆盖率
+**85.06%**、分支覆盖率 **71.41%**，不低于 V4 G0 的 84.39% / 70.58%。G6 额外固定
+驱动器根、裸盘符、UNC 共享根/子目录、消失路径、只读分类快照和 Document 创建行为；
+`FileSystemPath` 行/分支覆盖率均为 100%，真实分类决策分支全部有用例。
+
+SDK 与四插件最终非发布回归分别为 **37、11、62、192、728** 项全部通过。G4 的 MySmallTools
+20 轮真实媒体 Harness 已证明 Document/View/加密流弱引用和原生资源归零。当前不运行 Windows CI、
+Windows Smoke、ReleaseAcceptance 或发布门禁；详见
+[V4 G6 专项记录](../plan-history/host-v4/g6-file-system-path-and-presentation-model.md)。
+
 ## 当前文档与基线门禁
 
 修改当前文档、脚本路径、集中版本、SDK 基线或四插件兼容声明时运行：

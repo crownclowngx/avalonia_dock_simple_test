@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
+using System;
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -10,8 +11,12 @@ internal sealed partial class FileSystemNode : ObservableObject
     public FileSystemNode(string path)
     {
         Path = path;
-        // 对于驱动器路径，直接使用完整路径作为名称
-        Name = FileSystemPath.IsDrivePath(path) ? path : (System.IO.Path.GetFileName(path) ?? path);
+        // 本地驱动器根和 UNC 共享根没有可用的末级目录名，直接展示规范路径。
+        Name = FileSystemPath.TryNormalize(path, out var normalized) &&
+               normalized.Kind is FileSystemPathKind.LocalDriveRoot or
+                   FileSystemPathKind.UncShareRoot
+            ? normalized.NormalizedPath
+            : (System.IO.Path.GetFileName(path) ?? path);
         if (string.IsNullOrEmpty(Name))
         {
             Name = path;
@@ -39,6 +44,33 @@ internal sealed partial class FileSystemNode : ObservableObject
         var node = new FileSystemNode(path, name, isDirectory);
         node._children = new ObservableCollection<FileSystemNode>(children);
         node._areChildrenLoaded = true;
+        return node;
+    }
+
+    /// <summary>
+    /// 使用已由存储端口确认存在的规范路径创建目录根节点。
+    /// </summary>
+    /// <remarks>
+    /// 该入口不重复访问真实 UNC 共享，使 ViewModel 的“校验后一次提交”保持可测。
+    /// 子节点仍只在用户展开时延迟枚举。
+    /// </remarks>
+    internal static FileSystemNode CreateDirectoryRoot(string normalizedPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(normalizedPath);
+        var name = FileSystemPath.TryNormalize(normalizedPath, out var path) &&
+                   path.Kind is FileSystemPathKind.LocalDriveRoot or
+                       FileSystemPathKind.UncShareRoot
+            ? path.NormalizedPath
+            : (System.IO.Path.GetFileName(normalizedPath) ?? normalizedPath);
+        if (string.IsNullOrEmpty(name))
+        {
+            name = normalizedPath;
+        }
+
+        var node = new FileSystemNode(normalizedPath, name, isDirectory: true)
+        {
+            _areChildrenLoaded = false,
+        };
         return node;
     }
 

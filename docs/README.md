@@ -22,6 +22,14 @@ V3 快速开始入口：
 
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
+| [Host V4 内部收口任务书](./design/host-v4-breaking-refactor-plan.md) | Host 死面、身份、Layout、回收所有权、领域目录与路径语义 | 实施中；G0–G6 已完成，G7–G8 待实施，非发布 |
+| [V4 G0 V3 源码基线](./plan-history/host-v4/g0-v3-source-baseline.md) | V3 源码输入、锁定还原、测试与非发布事实 | 已完成；不修改生产源码 |
+| [V4 G1 删除 Host 死面](./plan-history/host-v4/g1-remove-dead-host-surface.md) | 空协议、菜单尾项、Hosting 依赖和开发门禁 | 已完成；非发布 |
+| [V4 G2 强类型身份与用例入口](./plan-history/host-v4/g2-strongly-typed-identity-and-use-case-entry.md) | ToolTypeId 单一源、真实 Coordinator 与异步 Harness | 已完成；非发布 |
+| [V4 G3 Layout 职责对齐](./plan-history/host-v4/g3-layout-responsibility-alignment.md) | Lifecycle、Mapper、Validator 的文件与变化原因 | 已完成；非发布 |
+| [V4 G4 Document 控件回收所有权](./plan-history/host-v4/g4-document-control-recycling-ownership.md) | DI 唯一实例、Style/关闭链同一引用与 20 轮资源归零 | 已完成；非发布 |
+| [V4 G5 领域迁移](./plan-history/host-v4/g5-domain-helper-migration.md) | Helpers 消除、Welcome/Tool 命名和领域 namespace | 已完成；非发布 |
+| [V4 G6 路径语义与展示模型](./plan-history/host-v4/g6-file-system-path-and-presentation-model.md) | 驱动器/UNC 分类、存在性端口、只读展示快照与最终非发布回归 | 已完成；478/478，85.06% / 71.41%，非发布 |
 | [宿主—插件架构评审](./design/host-plugin-architecture-review.md) | 解决方案总体结构、插件边界、当前成熟度和演进方向 | 当前事实，已按主项目内部重构更新 |
 | [Managed Plugin V3 破坏式重构任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 已完成；G0–G14 已全部封板 |
 | [V3 G0 非发布绿色基线](./plan-history/host-v3/g0-green-baseline.md) | V2 当前测试、覆盖率、API、包图与保存竞争复现 | 已完成；不改变生产行为 |

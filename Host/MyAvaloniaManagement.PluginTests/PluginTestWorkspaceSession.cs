@@ -75,6 +75,7 @@ internal static class PluginTestWorkspaceSession
             Task.FromResult<string?>(null);
         public Task<string?> PickFolderAsync() => Task.FromResult<string?>(null);
         public bool FileExists(string path) => false;
+        public bool DirectoryExists(string path) => false;
         public long GetFileLength(string path) => 0;
         public Task<string> ReadAllTextAsync(string path) => Task.FromResult(string.Empty);
         public Task WriteAllTextAsync(string path, string content) => Task.CompletedTask;

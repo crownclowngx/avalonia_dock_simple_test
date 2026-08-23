@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V4 宿主内部破坏式收口评审与整改任务书
 
-> 状态：待实施；本文是 V4 计划，不代表任何阶段已经完成、封板或发布。
+> 状态：实施中；G0–G6 已完成，G7–G8 待实施。V4 尚未封板、尚不可发布。
 > 评审日期：2026-08-23。
 > 事实基线：[Managed Plugin V2 破坏式架构重构任务书](./host-v2-breaking-refactor-plan.md)、
 > [Managed Plugin V3 破坏式架构重构任务书](./host-v3-breaking-refactor-plan.md)、
@@ -92,12 +92,9 @@ V4 的固定结论为：
 
 ### 2.1 V4 G0 前置事实
 
-2026-08-23 评审时，当前分支 HEAD 仍指向 G13 提交 `b327668`，V3 G14 的 API Shipped、文档、测试和
-发布门禁文件仍位于未提交工作树；当前没有指向该 HEAD 的 V3 tag。V3 G14 记录已经证明本地发布资格，
-但 V4 不能直接在混合工作树上开始，否则 V3 封板差异与 V4 修改无法审计。
-
-因此 V4 G0 的第一职责不是改代码，而是取得一个由仓库所有者确认的、包含完整 V3 G14 事实的干净
-源码提交。是否创建 tag 或执行外部发布仍需独立授权；V4 不把 tag、上传或发布当作默认动作。
+以下是计划评审时的历史观察：当时 V3 G14 差异尚未形成独立源码提交，V4 不能直接从混合工作树开始。
+G0 实施后已确认 V3 源码基线为 `16ce75e`，V4 计划提交为 `6585b9a`，并在干净工作树上开始分阶段提交；
+实际证据见 [G0 V3 源码基线](../plan-history/host-v4/g0-v3-source-baseline.md)。未创建 V3 tag，且未上传或发布。
 
 G0 必须重新读取并记录实际事实，不能把本文写作时观察到的数量当作封板输入：
 
@@ -122,6 +119,8 @@ G0 必须重新读取并记录实际事实，不能把本文写作时观察到�
 - 四插件独立构建、确定性包、真实 Host 加载、资源 Harness 和 Windows Smoke。
 
 ### 2.3 已确认问题与处置
+
+下表保留 G0 评审输入；所列处置已分别在 G1–G6 完成，当前事实以各阶段专用记录和源码为准。
 
 | 问题 | 当前证据 | V4 处置 |
 | --- | --- | --- |
@@ -396,6 +395,8 @@ V4 是计划代号和 Host internal 收口边界，不自动创建 SDK v4：
 
 ### G0：冻结 V3 源码基线
 
+> 实施状态：已完成；证据见 [G0 V3 源码基线](../plan-history/host-v4/g0-v3-source-baseline.md)。
+
 - **目标**：取得包含完整 G14 事实的干净、不可混淆 V3 源码提交，作为 V4 唯一输入。
 - **生产变化**：无；不得在此阶段顺手删除死代码或改目录。
 - **前置**：由仓库所有者确认当前 G14 未提交内容完整；形成源码提交。tag/外部发布另行授权。
@@ -405,6 +406,8 @@ V4 是计划代号和 Host internal 收口边界，不自动创建 SDK v4：
 - **回滚**：删除 V4 G0 记录；不得改写 V3 G14 历史证据或把未提交工作树宣称为 V4 基线。
 
 ### G1：删除无行为价值的 Host 死面与依赖
+
+> 实施状态：已完成；证据见 [G1 删除 Host 死面与依赖](../plan-history/host-v4/g1-remove-dead-host-surface.md)。
 
 - **目标**：删除已经证明没有生产语义的空协议、无用依赖和 UI 残留。
 - **变更**：删除拖放三处残留、MainWindow 未使用菜单服务注入、悬空 Separator、Hosting 直接依赖及集中版本；
@@ -416,6 +419,8 @@ V4 是计划代号和 Host internal 收口边界，不自动创建 SDK v4：
 - **回滚**：整体回到 G0；不得恢复空接口而只删 XAML，或保留 Hosting 集中版本形成假依赖事实。
 
 ### G2：收口强类型身份与测试用例入口
+
+> 实施状态：已完成；证据见 [G2 强类型身份与用例入口](../plan-history/host-v4/g2-strongly-typed-identity-and-use-case-entry.md)。
 
 - **目标**：Host ID 与 Document 创建意图只有一个强类型事实源，生产 ViewModel 不再为测试转发用例。
 - **变更**：删除 `DockNameConstant`；Welcome/Workspace 使用 `ToolTypeId`；删除插件菜单字符串创建命令；
@@ -429,6 +434,8 @@ V4 是计划代号和 Host internal 收口边界，不自动创建 SDK v4：
 
 ### G3：对齐 Layout 文件与职责
 
+> 实施状态：已完成；证据见 [G3 Layout 职责对齐](../plan-history/host-v4/g3-layout-responsibility-alignment.md)。
+
 - **目标**：Lifecycle、Mapper、Validator 的文件名、代码和架构说明一致。
 - **变更**：成对改名两个错位文件；迁移运行时/贡献验证逻辑到 Validator；删除零价值 static 测试转发；
   tests 直接调用 Mapper 或 Validator 的真实入口。
@@ -439,6 +446,8 @@ V4 是计划代号和 Host internal 收口边界，不自动创建 SDK v4：
 - **回滚**：整体回到 G2；不得只改文件名不迁职责，也不得删除 Validator 后扩大 Mapper。
 
 ### G4：建立 Document 控件回收器显式所有权
+
+> 实施状态：已完成；证据见 [G4 Document 控件回收器所有权](../plan-history/host-v4/g4-document-control-recycling-ownership.md)。
 
 - **目标**：XAML Style 与 Document 关闭链使用同一个显式实例，删除 Application.Current 魔法键查找。
 - **前置实验**：Headless App 初始化测试证明资源安装时机、Static/Dynamic Resource 选择和 Setter 引用身份。
@@ -452,6 +461,8 @@ V4 是计划代号和 Host internal 收口边界，不自动创建 SDK v4：
 
 ### G5：按领域迁移 Helpers
 
+> 实施状态：已完成；证据见 [G5 领域迁移](../plan-history/host-v4/g5-domain-helper-migration.md)。
+
 - **目标**：删除无语义的 `Business/Helpers` 默认落点，让目录表达真实领域和依赖方向。
 - **变更**：按 3.2 移动 Composition、Plugins、Document Ownership、Docking 和菜单查询文件；更新 namespace、
   using、XAML、friend tests 和文档链接。
@@ -461,6 +472,8 @@ V4 是计划代号和 Host internal 收口边界，不自动创建 SDK v4：
 - **回滚**：整体回到 G4；不得保留旧命名空间转发类型或 type-forwarder。
 
 ### G6：修复 FileSystem 路径语义并收口展示模型
+
+> 实施状态：已完成；证据见 [G6 路径语义与展示模型](../plan-history/host-v4/g6-file-system-path-and-presentation-model.md)。
 
 - **目标**：解决 UNC 子目录误判，并完成不影响核心契约的低价值风格收口。
 - **变更**：以规范路径根比较替代宽泛 UNC 判断；修复 FileSystemTree 注释/格式；`CategoryNode` 的名称和
@@ -579,21 +592,21 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
 
 V4 只有在以下问题全部回答“是”后才算完成：
 
-1. [ ] V4 从完整、干净、可追溯的 V3 G14 源码提交开始。
-2. [ ] 空拖放、未使用注入、悬空菜单项和 Hosting 死依赖已删除且没有兼容残留。
-3. [ ] Host 稳定 ID 只有强类型单一源，既有字符串值和 layout 身份未变化。
-4. [ ] MainWindow 与插件菜单不再为测试保留 Document 用例转发，Harness 正确等待真实 Coordinator。
-5. [ ] Layout Lifecycle、Mapper、Validator 的文件、职责、测试和架构文档一致。
-6. [ ] DocumentControlRecycling 具有显式唯一实例，Style 和关闭链引用身份已自动化证明。
-7. [ ] Document 缓存移除失败不会阻断 Adapter、ClosingToken、Scope 和插件资源释放。
-8. [ ] `Business/Helpers` 已按真实领域消失，没有用新的杂物目录或转发类型替代。
-9. [ ] Hello/Welcome、ToolWorkspaceState、Layout 和部署目录常量等命名完成概念对齐。
-10. [ ] UNC 根、UNC 子目录、驱动器根和普通目录行为被定义并通过回归测试。
-11. [ ] `Models/Plugins`、V3 正确架构和诊断脱敏边界没有被误删或机械拆分。
-12. [ ] V3 Core/UI Shipped 未改写；manifest/envelope/layout/data root 与四插件 SDK 区间保持兼容。
+1. [x] V4 从完整、干净、可追溯的 V3 G14 源码提交开始。
+2. [x] 空拖放、未使用注入、悬空菜单项和 Hosting 死依赖已删除且没有兼容残留。
+3. [x] Host 稳定 ID 只有强类型单一源，既有字符串值和 layout 身份未变化。
+4. [x] MainWindow 与插件菜单不再为测试保留 Document 用例转发，Harness 正确等待真实 Coordinator。
+5. [x] Layout Lifecycle、Mapper、Validator 的文件、职责、测试和架构文档一致。
+6. [x] DocumentControlRecycling 具有显式唯一实例，Style 和关闭链引用身份已自动化证明。
+7. [x] Document 缓存移除失败不会阻断 Adapter、ClosingToken、Scope 和插件资源释放。
+8. [x] `Business/Helpers` 已按真实领域消失，没有用新的杂物目录或转发类型替代。
+9. [x] Hello/Welcome、ToolWorkspaceState、Layout 和部署目录常量等命名完成概念对齐。
+10. [x] UNC 根、UNC 子目录、驱动器根和普通目录行为被定义并通过回归测试。
+11. [x] `Models/Plugins`、V3 正确架构和诊断脱敏边界没有被误删或机械拆分。
+12. [x] V3 Core/UI Shipped 未改写；manifest/envelope/layout/data root 与四插件 SDK 区间保持兼容。
 13. [ ] Host、SDK、四插件、真实包、资源 Harness、诊断、文档和 Windows Smoke 全部通过。
-14. [ ] 覆盖率没有通过降低门槛或跳过高价值测试获得绿色。
-15. [ ] 根 README、文档导航、Host 架构、兼容约束和测试说明与最终代码一致。
+14. [x] G0–G6 覆盖率没有通过降低门槛或跳过高价值测试获得绿色。
+15. [x] G0–G6 的根 README、文档导航、Host 架构、兼容约束和测试说明与当前代码一致。
 16. [ ] 两轮隔离封板可重复，并明确记录未获授权时没有上传、tag 或外部发布。
 
 任一项未完成时，V4 只能保持候选或开发状态。不得通过改写 V3 历史证据、保留隐藏兼容入口、

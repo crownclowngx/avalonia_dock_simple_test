@@ -28,6 +28,12 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)。V3 Core/UI API 已冻结为 Shipped
 > 127/45 条，并由两轮隔离门禁签署；这表示本地可发布，不表示已经上传或对外发布。
 
+> Host V4 当前完成 G0–G6：已冻结 V3 源码输入，删除 Host 死面与 Hosting 依赖，收口强类型身份、
+> Layout 职责和 Document 控件回收所有权，按领域消除 `Business/Helpers`，并修复驱动器根、UNC 根与
+> UNC 子目录语义。当前 Host 非发布门禁为 478/478，覆盖率 85.06% / 71.41%。G7–G8 尚未实施，
+> 因此 V4 尚未封板、尚不可发布；详情见 [V4 G0–G6 任务书](./docs/design/host-v4-breaking-refactor-plan.md)
+> 和 [G6 路径语义记录](./docs/plan-history/host-v4/g6-file-system-path-and-presentation-model.md)。
+
 ## 核心扩展模型
 
 | 概念 | 语义 | 典型用途 |

@@ -373,6 +373,8 @@ public sealed class MyPlugTestV3UiTests
 
         public bool FileExists(string path) => _files.ContainsKey(Path.GetFullPath(path));
 
+        public bool DirectoryExists(string path) => Directory.Exists(path);
+
         public long GetFileLength(string path) =>
             System.Text.Encoding.UTF8.GetByteCount(_files[Path.GetFullPath(path)]);
 

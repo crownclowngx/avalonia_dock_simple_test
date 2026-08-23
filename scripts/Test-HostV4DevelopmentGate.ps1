@@ -110,10 +110,22 @@ try {
     }
 
     if ($stageNumber -ge 6) {
+        foreach ($file in @(
+                'Models\FileSystem\FileSystemPath.cs',
+                'Business\Constants\PluginDeploymentConstants.cs')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $hostRoot $file) -PathType Leaf)) {
+                throw "G6 路径或部署常量文件缺失：$file。"
+            }
+        }
         Assert-PatternAbsent `
             'AssemblyLoadConstant|PLUGINS_SUBDIRECTORY|class\s+FileHelper' `
             @($hostRoot) @('*.cs') `
             'G6 完成后旧部署常量或 FileHelper 不得存在。'
+        $storageContract = Get-Content -Raw -LiteralPath (
+            Join-Path $hostRoot 'Business\Storage\IHostStorageService.cs')
+        if ($storageContract -notmatch 'bool\s+DirectoryExists\s*\(string\s+path\)') {
+            throw 'G6 完成后 IHostStorageService 必须提供 DirectoryExists 存在性端口。'
+        }
     }
 
     & (Join-Path $PSScriptRoot 'Test-Documentation.ps1')

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -54,8 +55,10 @@ internal sealed partial class FileSystemTreeViewModel : ObservableObject, IFileS
         IHostDocumentOpenService documentOpenService,
         bool initializeTree = true)
     {
-        _storageService = storageService;
-        _documentOpenService = documentOpenService;
+        _storageService = storageService ??
+            throw new ArgumentNullException(nameof(storageService));
+        _documentOpenService = documentOpenService ??
+            throw new ArgumentNullException(nameof(documentOpenService));
         if (initializeTree)
         {
             InitializeTree();
@@ -67,15 +70,30 @@ internal sealed partial class FileSystemTreeViewModel : ObservableObject, IFileS
     /// </summary>
     private void InitializeTree(string folderPath = "")
     {
-        // 添加系统驱动器作为根节点
-        var drives = System.IO.Directory.GetLogicalDrives();
+        foreach (var node in CreateDriveNodes(folderPath))
+        {
+            RootNodes.Add(node);
+        }
+    }
+
+    /// <summary>
+    /// 在修改展示状态前先完整获取本地驱动器快照，避免枚举失败留下半成品集合。
+    /// </summary>
+    private static ObservableCollection<FileSystemNode> CreateDriveNodes(
+        string folderPath = "")
+    {
+        var nodes = new ObservableCollection<FileSystemNode>();
+        var drives = Directory.GetLogicalDrives();
         foreach (var drive in drives)
         {
-            if(string.IsNullOrEmpty(folderPath) || drive == folderPath)
+            if (string.IsNullOrEmpty(folderPath) ||
+                string.Equals(drive, folderPath, StringComparison.OrdinalIgnoreCase))
             {
-                RootNodes.Add(new FileSystemNode(drive));
+                nodes.Add(FileSystemNode.CreateDirectoryRoot(drive));
             }
         }
+
+        return nodes;
     }
 
     /// <summary>
@@ -121,8 +139,9 @@ internal sealed partial class FileSystemTreeViewModel : ObservableObject, IFileS
     [RelayCommand]
     public void RefreshAll()
     {
-        RootNodes.Clear();
-        InitializeTree();
+        RootNodes = CreateDriveNodes();
+        SelectedFolderPath = string.Empty;
+        ShowCustomFolder = false;
     }
 
     /// <summary>
@@ -148,30 +167,32 @@ internal sealed partial class FileSystemTreeViewModel : ObservableObject, IFileS
     public async Task SelectFolder()
     {
         var folderPath = await _storageService.PickFolderAsync();
-        if (!string.IsNullOrWhiteSpace(folderPath))
+        if (!FileSystemPath.TryNormalize(folderPath, out var path) ||
+            !_storageService.DirectoryExists(path.NormalizedPath))
         {
-            if (FileSystemPath.IsDrivePath(folderPath))
-            {
-                SelectedFolderPath = string.Empty;
-                ShowCustomFolder = false;
-                RootNodes.Clear();
-                InitializeTree(folderPath);
-            }
-            else
-            {
-                SelectedFolderPath = Path.GetFullPath(folderPath);
-                ShowCustomFolder = true;
-
-                // 刷新根节点，添加自定义选择的文件夹
-                RootNodes.Clear();
-
-                // 添加选择的文件夹作为根节点
-                if (Directory.Exists(SelectedFolderPath))
-                {
-                    RootNodes.Add(new FileSystemNode(SelectedFolderPath));
-                }
-            }
-
+            return;
         }
+
+        // 在修改任何可绑定状态前先建立完整的新根节点快照。
+        // 选择器返回后目录若已消失，上面的端口检查会直接返回，
+        // 不会先清空旧树或切换展示模式。
+        if (path.Kind == FileSystemPathKind.LocalDriveRoot)
+        {
+            var driveNodes = CreateDriveNodes(path.NormalizedPath);
+            if (driveNodes.Count == 0)
+            {
+                return;
+            }
+
+            RootNodes = driveNodes;
+            SelectedFolderPath = string.Empty;
+            ShowCustomFolder = false;
+            return;
+        }
+
+        var customRoot = FileSystemNode.CreateDirectoryRoot(path.NormalizedPath);
+        RootNodes = [customRoot];
+        SelectedFolderPath = path.NormalizedPath;
+        ShowCustomFolder = true;
     }
 }

@@ -432,3 +432,14 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 | XAML、绑定和真实窗口事件 | Headless UI 与 Windows Smoke |
 
 详细命令和门槛参见[测试说明](../../../../docs/reference/myavalonia-management-tests.md)。
+
+## 11. V4 文件系统展示边界
+
+文件树选择按三个明确步骤执行：`FileSystemPath` 只规范化并分类字符串，
+`IHostStorageService.DirectoryExists` 只回答路径是否仍存在，`FileSystemTreeViewModel` 最后一次性提交
+根节点、标题与驱动器模式。空白、相对、设备、非法或已经消失的路径在提交前失败，旧 UI 状态保持不变。
+
+本地驱动器根（包括裸盘符 `C:` 规范化得到的 `C:\`）继续显示驱动器集合；UNC 共享根
+`\\server\share` 作为唯一自定义根；共享下子目录按普通目录处理。测试替身通过存储端口模拟 UNC，
+不访问真实网络。`CategoryNode` 的名称和 Document 集合是构造期只读快照，只有展开状态可变；
+`PlugGroupMenuViewModel` 直接调用强类型 Document 创建入口，不持有可变外部集合。

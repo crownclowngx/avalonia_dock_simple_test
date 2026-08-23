@@ -84,6 +84,75 @@ public sealed class ToolViewModelTests
     }
 
     [Fact]
+    public async Task UNC共享根不访问真实网络且作为唯一自定义根显示()
+    {
+        using var context = new TestHostContext();
+        const string selected = @"\\Server\Share\";
+        const string normalized = @"\\Server\Share";
+        context.Storage.FolderPath = selected;
+        context.Storage.Directories.Add(normalized);
+        var viewModel = new FileSystemTreeViewModel(
+            context.Storage,
+            new RecordingDocumentOpenService(),
+            initializeTree: false);
+
+        await viewModel.SelectFolder();
+
+        Assert.True(viewModel.ShowCustomFolder);
+        Assert.Equal(normalized, viewModel.SelectedFolderPath);
+        Assert.Equal(normalized, Assert.Single(viewModel.RootNodes).Path);
+
+        viewModel.RefreshAll();
+
+        Assert.False(viewModel.ShowCustomFolder);
+        Assert.Equal(string.Empty, viewModel.SelectedFolderPath);
+        Assert.NotEmpty(viewModel.RootNodes);
+    }
+
+    [Fact]
+    public async Task 裸盘符规范化为驱动器根并保持本地驱动器模式()
+    {
+        using var context = new TestHostContext();
+        context.Storage.FolderPath = "C:";
+        context.Storage.Directories.Add(@"C:\");
+        var viewModel = new FileSystemTreeViewModel(
+            context.Storage,
+            new RecordingDocumentOpenService(),
+            initializeTree: false);
+
+        await viewModel.SelectFolder();
+
+        Assert.False(viewModel.ShowCustomFolder);
+        Assert.Equal(string.Empty, viewModel.SelectedFolderPath);
+        Assert.Equal(@"C:\", Assert.Single(viewModel.RootNodes).Path);
+    }
+
+    [Fact]
+    public async Task 选择过程中消失或非法的路径不提交半成品状态()
+    {
+        using var context = new TestHostContext();
+        var existing = Path.Combine(context.TempDirectory, "existing");
+        Directory.CreateDirectory(existing);
+        context.Storage.FolderPath = existing;
+        var viewModel = new FileSystemTreeViewModel(
+            context.Storage,
+            new RecordingDocumentOpenService(),
+            initializeTree: false);
+        await viewModel.SelectFolder();
+        var originalRoot = Assert.Single(viewModel.RootNodes);
+
+        context.Storage.FolderPath = Path.Combine(context.TempDirectory, "disappeared");
+        await viewModel.SelectFolder();
+        Assert.Same(originalRoot, Assert.Single(viewModel.RootNodes));
+        Assert.Equal(Path.GetFullPath(existing), viewModel.SelectedFolderPath);
+        Assert.True(viewModel.ShowCustomFolder);
+
+        context.Storage.FolderPath = "relative";
+        await viewModel.SelectFolder();
+        Assert.Same(originalRoot, Assert.Single(viewModel.RootNodes));
+    }
+
+    [Fact]
     public async Task 插件分组工具创建文档并切换分类展开()
     {
         using var context = DocumentTestContext.Create();
@@ -101,6 +170,49 @@ public sealed class ToolViewModelTests
             context.Workspace.DockFactory.GetDockable<IDocumentDock>(DockLayoutIds.Documents));
         Assert.Contains(dock.VisibleDockables!, item =>
             item is ManagedDocumentDockable { Model: TestSavableDocument });
+    }
+
+    [Fact]
+    public void 分类名和Document集合是构造期只读快照()
+    {
+        var source = new List<DocumentCreationMenuEntry>
+        {
+            CreateMenuEntry("first"),
+        };
+        var node = new CategoryNode("测试", source);
+
+        source.Add(CreateMenuEntry("second"));
+
+        Assert.Equal("测试", node.CategoryName);
+        Assert.Single(node.Documents);
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<DocumentCreationMenuEntry>)node.Documents).Add(
+                CreateMenuEntry("third")));
+        Assert.Null(typeof(CategoryNode).GetProperty(nameof(node.CategoryName))!.SetMethod);
+        Assert.Null(typeof(CategoryNode).GetProperty(nameof(node.Documents))!.SetMethod);
+        Assert.NotNull(typeof(CategoryNode).GetProperty(nameof(node.IsExpanded))!.SetMethod);
+        Assert.Throws<ArgumentException>(() => new CategoryNode(" ", source));
+        Assert.Throws<ArgumentNullException>(() => new CategoryNode("测试", null!));
+    }
+
+    [Fact]
+    public async Task 插件分组工具对空构造依赖和空命令参数明确失败()
+    {
+        using var context = DocumentTestContext.Create();
+        var query = context.Provider.GetRequiredService<DocumentCreationMenuQuery>();
+        var documents = context.Provider.GetRequiredService<DocumentPersistenceCoordinator>();
+        var state = context.Provider.GetRequiredService<DocumentOperationState>();
+
+        Assert.Throws<ArgumentNullException>(() =>
+            new PlugGroupMenuViewModel(null!, documents, state));
+        Assert.Throws<ArgumentNullException>(() =>
+            new PlugGroupMenuViewModel(query, null!, state));
+        Assert.Throws<ArgumentNullException>(() =>
+            new PlugGroupMenuViewModel(query, documents, null!));
+        var viewModel = new PlugGroupMenuViewModel(query, documents, state);
+        Assert.Throws<ArgumentNullException>(() => viewModel.ToggleCategoryExpand(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            viewModel.CreateDocumentEntryAsync(null!));
     }
 
     [Fact]
@@ -269,6 +381,15 @@ public sealed class ToolViewModelTests
             }
         }
     }
+
+    private static DocumentCreationMenuEntry CreateMenuEntry(string suffix) =>
+        new(
+            new DocumentTypeId($"myavalonia.plugin.host-tests.document.{suffix}"),
+            null,
+            suffix,
+            suffix,
+            string.Empty,
+            "测试");
 
     private static TModel GetManagedToolModel<TModel>(Tool tool)
         where TModel : class =>
