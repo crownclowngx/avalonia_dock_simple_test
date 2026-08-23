@@ -10,10 +10,10 @@ namespace MySmallTools.Business.SecretVideoPlayer.Playback;
 /// 每个视频独占的文件、密钥和缓存则由 <see cref="IPlaybackMediaSource"/> 持有。
 /// </summary>
 /// <remarks>
-/// G3.1 的核心约束是：普通播放命令不得在 Avalonia UI 线程执行可能阻塞的
-/// LibVLC 操作。所有 MediaPlayer 控制都提交给单消费者原生调度器。
-/// Dock 销毁 HWND 前的 Stop 是唯一保留的同步安全屏障，因为异步返回会让
-/// 原生 vout 在窗口销毁后继续访问失效句柄。
+/// G3.1 的核心约束是：Avalonia UI 线程不得执行可能阻塞的 LibVLC 操作。
+/// 所有 MediaPlayer 控制都提交给单消费者原生调度器；表面丢失回调只同步保存恢复快照并
+/// 请求输入停止，实际 Stop 在后台串行执行。VideoView 随后先把 HWND 清零再销毁窗口，
+/// 新表面的恢复又必须等待该 Stop，因而同时避免 UI 死锁、原生命令并发和失效句柄访问。
 /// </remarks>
 internal sealed class SecureVideoPlayer :
     ISecureVideoPlaybackSession,
@@ -38,6 +38,7 @@ internal sealed class SecureVideoPlayer :
     private SurfaceRecoverySnapshot? _pendingSurfaceRecovery;
     private CancellationTokenSource? _surfaceRestoreCancellation;
     private CancellationTokenSource? _mediaSwitchCancellation;
+    private Task _surfaceDetachStopTask = Task.CompletedTask;
     private VideoSurfaceIdentity _surface;
     private PlaybackSnapshot _snapshot = PlaybackSnapshot.Empty;
     private PlaybackControlSnapshot _controls = PlaybackControlSnapshot.Empty;
@@ -1004,8 +1005,10 @@ internal sealed class SecureVideoPlayer :
 
         CancelSurfaceRestore();
 
-        // NativeControlHost 的销毁回调不能 await。这里保留 G3 的同步屏障：
-        // 只有 Stop 返回后才能让 Avalonia 销毁 HWND，否则旧 vout 可能访问失效句柄。
+        // NativeControlHost 的销毁回调不能 await。这里同步完成的只有恢复快照和输入停止请求；
+        // 真正可能等待显卡驱动/vout 的 Stop 必须交给单消费者调度器。回调返回后 VideoView 会先
+        // 把 MediaPlayer.Hwnd 清零再销毁窗口，因此后台 Stop 不会继续持有失效 HWND；后续恢复则
+        // 在同一调度器队列中等待 Stop，保持原生命令严格顺序。
         _operationGate.Wait();
         try
         {
@@ -1027,7 +1030,12 @@ internal sealed class SecureVideoPlayer :
                     _controls.SelectedAudioTrackId,
                     _controls.SelectedSubtitleTrackId);
                 source.RequestStop();
-                _playerHost.Stop();
+                Volatile.Write(
+                    ref _surfaceDetachStopTask,
+                    _nativeDispatcher.InvokeAsync(
+                        "detach-surface-stop",
+                        () => _playerHost.Stop(),
+                        CancellationToken.None));
             }
             else
             {
@@ -1076,6 +1084,9 @@ internal sealed class SecureVideoPlayer :
         try
         {
             ThrowIfDisposed();
+            // DetachSurface 不能阻塞 UI，但恢复必须等旧 vout 完整停止。同一 Task 既把这一顺序
+            // 明确留在会话所有者内，也避免 View/Coordinator 了解 NativeDispatcher。
+            await Volatile.Read(ref _surfaceDetachStopTask).ConfigureAwait(false);
             _surface = surface;
             var source = _currentSource;
             if (source is null)
@@ -1199,7 +1210,16 @@ internal sealed class SecureVideoPlayer :
                 source.RequestStop();
                 try
                 {
-                    _playerHost.Stop();
+                    // View 释放已让 VideoView 把 HWND 清零；这里仍通过同一个调度器串行等待此前的
+                    // 表面 Stop，再执行最终 Stop。这样不会并发进入 MediaPlayer，也不把原生调用
+                    // 重新放回 UI 线程。CancellationToken.None 保证清理不被刚取消的文档令牌跳过。
+                    Volatile.Read(ref _surfaceDetachStopTask).GetAwaiter().GetResult();
+                    _nativeDispatcher.InvokeAsync(
+                            "dispose-stop",
+                            () => _playerHost.Stop(),
+                            CancellationToken.None)
+                        .GetAwaiter()
+                        .GetResult();
                 }
                 catch
                 {

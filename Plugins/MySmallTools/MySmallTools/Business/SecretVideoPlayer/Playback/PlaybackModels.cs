@@ -347,7 +347,8 @@ public interface IPlaybackSurfaceSession
     IPlaybackVideoOutput VideoOutput { get; }
 
     /// <summary>
-    /// 在 NativeControlHost 销毁原生表面前同步停止旧 vout 并保存一次性恢复快照。
+    /// 在 NativeControlHost 销毁原生表面前同步保存一次性恢复快照并请求输入停止。
+    /// 可能阻塞的原生 Stop 由会话内部串行调度；新表面恢复必须等待它完成。
     /// </summary>
     void DetachSurface(VideoSurfaceIdentity surface);
 

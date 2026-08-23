@@ -9,6 +9,10 @@
 > 私有 Provider 经 Workspace Session 与 Dock Adapter 完成各自贡献验收，并由真实 ZIP Loader 重放
 > 同一组合链。manifest、Document envelope、layout 保持 schema 2，默认数据根保持 `v2`；
 > G13 已完成 V2 生产面删除与零残留证明；G14 已完成两轮隔离门禁和本地发布资格签署。
+>
+> Host V4 当前已完成 G0–G7：internal 死面、身份、Layout 职责、Document 控件回收所有权、领域目录、
+> 路径语义和展示快照已经收口；G7 又以既有 SDK、诊断、四插件真实包和 MySmallTools 20 轮 Harness
+> 证明这些内部变化没有破坏 V3 契约或资源边界。V4 G8 尚未实施，因此本轮尚未封板、尚不可发布。
 
 ## 1. 目标与边界
 

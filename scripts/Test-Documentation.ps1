@@ -7,7 +7,7 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码已完成 V3 G14 封板，并完成 V4 G0–G6 的非发布内部收口；V4 G7–G8 仍待实施。
+# 当前源码已完成 V3 G14 封板，并完成 V4 G0–G7 的非发布内部收口；V4 G8 仍待实施。
 # V3 正式 API 事实与 V4 非发布事实必须同时保留，V1–V4 阶段记录继续参加检查。
 $currentDocumentPaths = @(
     'README.md',
@@ -96,7 +96,8 @@ $forbiddenStatementRules = @(
     [pscustomobject]@{ Name = '快速开始仍等待 G9 迁移'; Pattern = '快速开始.{0,40}(?:等待|等)\s*G9' },
     [pscustomobject]@{ Name = '保存契约仍未统一'; Pattern = '保存契约尚未统一' },
     [pscustomobject]@{ Name = 'Legacy 仍是并列入口'; Pattern = 'Legacy\s*(?:为|作为).*并列.*(?:方式|入口)' },
-    [pscustomobject]@{ Name = 'G16 证据尚未回填'; Pattern = 'G16.{0,80}待(?:执行|最终复跑)|待最终复跑' }
+    [pscustomobject]@{ Name = 'G16 证据尚未回填'; Pattern = 'G16.{0,80}待(?:执行|最终复跑)|待最终复跑' },
+    [pscustomobject]@{ Name = 'V4 当前状态仍停留在 G6'; Pattern = 'Host V4 当前状态：G0[–-]G6 已完成，G7[–-]G8 待实施' }
 )
 
 $requiredSymbols = @(
@@ -196,7 +197,7 @@ foreach ($relativePath in $linkDocumentPaths) {
 }
 
 # 最终签署和阶段进度不能只靠“没有旧句子”间接成立。以下正向哨兵把 V2/V3 G14、
-# V4 G0–G6 非发布进度、正式 API 状态和无外部发布边界绑定到权威文档。
+# V4 G0–G7 非发布进度、正式 API 状态和无外部发布边界绑定到权威文档。
 $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'README.md'; Fragment = 'Managed Plugin V2 已完成 G0–G14 并正式封板' },
     [pscustomobject]@{ Path = 'docs/design/host-v2-breaking-refactor-plan.md'; Fragment = '状态：已完成；G0–G14 已全部封板' },
@@ -296,10 +297,13 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'releaseGate=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'publishable=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md'; Fragment = 'IDisposable? TryPresent(Control content)' },
-    [pscustomobject]@{ Path = 'docs/design/host-v4-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0–G6 已完成，G7–G8 待实施' },
-    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g6-file-system-path-and-presentation-model.md'; Fragment = '478/478' },
-    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g6-file-system-path-and-presentation-model.md'; Fragment = 'aiflow/windowsCi/windowsSmoke/releaseAcceptance/releaseGate/publishable=false' },
-    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g6-file-system-path-and-presentation-model.md'; Fragment = 'V4 尚未封板、尚不可发布' },
+    [pscustomobject]@{ Path = 'docs/design/host-v4-breaking-refactor-plan.md'; Fragment = '状态：实施中；G0–G7 已完成，G8 待实施' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'Host 合计 | **478/478**' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'MySmallTools | **709/709**' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'aiflow=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'windowsSmoke=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'releaseGate=false' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md'; Fragment = 'V4 尚未封板、尚不可发布' },
     [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'v3 Shipped 为 Core 127 条、UI 45 条' }
 )
 foreach ($requirement in $requiredCurrentStatements) {

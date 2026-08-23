@@ -8,7 +8,7 @@ namespace MySmallTools.Views.SecretVideoPlayer.Playback;
 /// </summary>
 /// <remarks>
 /// 本类型只拥有事件订阅和恢复取消源，不保存媒体、播放位置或全屏状态。它把严格的
-/// “旧会话同步分离、清空输出、绑定新输出、恢复当前表面”顺序从 View 代码中集中出来。
+/// “旧会话记录分离、清空输出、绑定新输出、等待旧 Stop 后恢复当前表面”顺序从 View 代码中集中出来。
 /// </remarks>
 internal sealed class PlaybackSurfaceCoordinator : IDisposable
 {
@@ -44,8 +44,9 @@ internal sealed class PlaybackSurfaceCoordinator : IDisposable
             _session.DetachSurface(current.Value);
         }
 
-        // 清除旧输出必须发生在保存旧会话恢复快照之后，避免 VideoView 先让旧播放器
-        // 失去 HWND，而同步 Stop 仍尝试访问已经解绑的 vout。
+        // 清除旧输出必须发生在旧会话保存恢复快照、请求输入停止并排入 Stop 之后。
+        // VideoView 会在这里把 HWND 清零；可能阻塞的 Stop 留在后台串行队列中，
+        // 因而既不会占住 UI，也不会在窗口销毁后继续引用旧 HWND。
         if (_surface.Output is not null)
         {
             _surface.Output = null;

@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
-> 更新日期：2026-08-23（已同步 Managed Plugin V3 G14 与 Host V4 G0–G6）<br>
+> 更新日期：2026-08-23（已同步 Managed Plugin V3 G14 与 Host V4 G0–G7）<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动
@@ -17,10 +17,10 @@
 > Registry、私有 Provider、Workspace Session、Dock Adapter 与真实 ZIP Loader 完成验收；磁盘
 > schema 仍为 2；G13 已完成 V2 生产面零残留证明，G14 已完成两轮隔离门禁和文档签署。
 
-> Host V4 当前状态：G0–G6 已完成，G7–G8 待实施。Host internal 已删除死面、统一强类型身份，
+> Host V4 当前状态：G0–G7 已完成，G8 待实施。Host internal 已删除死面、统一强类型身份，
 > 对齐 Layout 三类职责并建立 Document 控件回收器显式所有权；Helpers 已按领域迁移，文件树已固定
-> 驱动器根、UNC 共享根/子目录语义和只读展示快照。Plugin SDK 与磁盘格式未变化；V4 尚未封板、
-> 尚不可发布。
+> 驱动器根、UNC 共享根/子目录语义和只读展示快照。G7 已完成 SDK、四插件真实测试包、诊断、文档与
+> MySmallTools 20 轮资源回归。Plugin SDK 与磁盘格式未变化；V4 尚未封板、尚不可发布。
 
 ## 1. 先说结论：这是一个什么项目
 
@@ -546,6 +546,18 @@ Loader/Provider 进入同一 `WorkspaceSession`，Host 没有增加任何插件�
 兼容边界与回滚单位见 [G10](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
 [G11](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) 和
 [G12](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) 专项记录。
+
+### 6.15 2026-08-23 Host V4 G7 集成回归
+
+**[当前事实]** V4 G7 没有另建验收框架，而是以一个开发期入口串行复用 SDK API/包、Host 诊断和
+四插件 V3 专项。聚合层只验证机器摘要的必需套件、manifest、两次确定性测试包、真实 Host Loader、
+覆盖率和非发布标记；插件专项仍各自拥有业务与包规则，符合 SRP 与 DIP。门禁暴露的 MySmallTools
+UI 线程原生 Stop 回归只在既有播放器职责内复用原生调度器修复，并由一个时序单元测试保护。
+
+Host Unit/UI/Plugin 为 **478/478**，覆盖率 **85.06% / 71.41%**；四插件专项分别为 **527/527**、
+**578/578**、**709/709**、**1245/1245**。MySmallTools 20 轮真实媒体在全屏仍有效时关闭 Document，
+Runtime 退出后原生资源和弱引用归零。G7 未运行 AIFLOW、Windows CI/Smoke 或发布门禁，V4 仍不可发布。
+完整证据见 [G7 四插件、Harness 与文档回归](../plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)。
 
 ## 7. 宿主应该给插件多大自由度
 

@@ -110,8 +110,9 @@ public sealed class EmbeddedVideoSurface : VideoView, IPlaybackVideoSurface
         var identity = CurrentSurface;
         if (identity is not null)
         {
-            // 必须同步通知。订阅方只有在 Stop 返回后才允许本方法继续销毁 HWND，
-            // 否则活动 vout 可能访问已经失效的窗口并产生进程级原生崩溃。
+            // 必须同步通知订阅方保存恢复快照并请求输入停止；通知返回后基类 VideoView 会先把
+            // MediaPlayer.Hwnd 清零，再销毁真实窗口。可能阻塞的 Stop 已由会话排入后台串行队列，
+            // 新表面恢复会等待它完成，因此这里既不阻塞 UI，也不留下失效 HWND。
             SurfaceLosing?.Invoke(this, new VideoSurfaceChangedEventArgs(identity.Value));
             Interlocked.Increment(ref _destroyedSurfaceCount);
             Interlocked.Decrement(ref _activeSurfaceCount);

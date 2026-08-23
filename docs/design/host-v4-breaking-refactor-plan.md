@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V4 宿主内部破坏式收口评审与整改任务书
 
-> 状态：实施中；G0–G6 已完成，G7–G8 待实施。V4 尚未封板、尚不可发布。
+> 状态：实施中；G0–G7 已完成，G8 待实施。V4 尚未封板、尚不可发布。
 > 评审日期：2026-08-23。
 > 事实基线：[Managed Plugin V2 破坏式架构重构任务书](./host-v2-breaking-refactor-plan.md)、
 > [Managed Plugin V3 破坏式架构重构任务书](./host-v3-breaking-refactor-plan.md)、
@@ -487,13 +487,19 @@ V4 是计划代号和 Host internal 收口边界，不自动创建 SDK v4：
 
 ### G7：完成四插件、Harness 与文档回归
 
+> 实施状态：已完成；证据见 [G7 四插件、Harness 与文档回归](../plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)。
+
 - **目标**：证明 Host internal 收口没有破坏 V3 插件契约、资源所有权、发布包或用户数据。
 - **生产变化**：原则上无；只允许修复 G1–G6 暴露的真实回归，不增加新功能。
+- **实际例外**：门禁暴露 MySmallTools Surface 分离在 UI 线程同步执行原生 Stop 的回归；修复仅复用
+  既有原生调度器并增加一个时序单元测试，没有增加 SDK API、业务功能或磁盘格式。
 - **验证**：Host Unit/UI/Plugin、Plugin SDK、MyPlugTest、DaTang、MySmallTools、BiliDownloader 全部测试；
-  四插件专项 V3 验收、确定性 ZIP/manifest、真实 Host 加载、诊断脱敏、文档门禁、Windows Smoke。
+  四插件专项 V3 验收、确定性 ZIP/manifest、真实 Host 加载、诊断脱敏与文档门禁。
 - **Harness**：MySmallTools 实时/本地媒体资源循环、全屏、Document 关闭和 Runtime 退出保持资源归零。
 - **数据**：现有 V2 线格式 Document/layout 可读取、应用和再次保存；不得产生 v4 数据根或 schema。
 - **文档**：更新根 README、docs 导航、Host 架构、测试说明、兼容约束与本任务书实际状态。
+- **非发布边界**：G7 不运行 Windows CI、Windows Smoke、ReleaseAcceptance 或 Host Release Gate；
+  Windows Smoke 与两轮隔离签署留到 G8/正式发布阶段，不能由真实媒体 Harness 冒充。
 - **回滚**：回到最后一个绿色 G；不得通过跳过插件、降低覆盖率或放宽严格 reader 获得通过。
 
 ### G8：V4 封板
@@ -519,7 +525,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8
 - G4 是本轮唯一涉及运行时所有权的高风险阶段，必须先证明同实例和失败释放；
 - G5 只做领域目录机械迁移，行为变化不得夹带；
 - G6 处理有测试保护的文件系统行为和低价值展示收口；
-- G7 只集成、回归和同步文档，不新增设计；
+- G7 只集成、回归和同步文档；若暴露真实回归，只在既有职责中最小修复，不新增架构设计；
 - G8 只封板已通过事实，不在发布门禁阶段修改代码、API 或格式；
 - 每个 G 必须从前一绿色提交开始，生产构建、专项测试和受影响插件测试绿色后才能提交下一 G；
 - 不得使用 `--no-restore` 掩盖锁文件错误，不得降低覆盖率门槛，不得跳过真实包或 Windows Smoke；
@@ -604,9 +610,9 @@ V4 只有在以下问题全部回答“是”后才算完成：
 10. [x] UNC 根、UNC 子目录、驱动器根和普通目录行为被定义并通过回归测试。
 11. [x] `Models/Plugins`、V3 正确架构和诊断脱敏边界没有被误删或机械拆分。
 12. [x] V3 Core/UI Shipped 未改写；manifest/envelope/layout/data root 与四插件 SDK 区间保持兼容。
-13. [ ] Host、SDK、四插件、真实包、资源 Harness、诊断、文档和 Windows Smoke 全部通过。
-14. [x] G0–G6 覆盖率没有通过降低门槛或跳过高价值测试获得绿色。
-15. [x] G0–G6 的根 README、文档导航、Host 架构、兼容约束和测试说明与当前代码一致。
+13. [ ] Host、SDK、四插件、真实包、资源 Harness、诊断、文档和 Windows Smoke 全部通过；G7 已完成除 Windows Smoke 外的开发期部分。
+14. [x] G0–G7 覆盖率没有通过降低门槛或跳过高价值测试获得绿色。
+15. [x] G0–G7 的根 README、文档导航、Host 架构、兼容约束和测试说明与当前代码一致。
 16. [ ] 两轮隔离封板可重复，并明确记录未获授权时没有上传、tag 或外部发布。
 
 任一项未完成时，V4 只能保持候选或开发状态。不得通过改写 V3 历史证据、保留隐藏兼容入口、

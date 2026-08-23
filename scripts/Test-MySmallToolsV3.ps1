@@ -194,6 +194,7 @@ try {
         suites = $suiteSummary
         passed = $totalPassed
         failed = 0
+        skipped = 0
         hostCoverage = [ordered]@{
             line = $hostCoverage.Line
             branch = $hostCoverage.Branch

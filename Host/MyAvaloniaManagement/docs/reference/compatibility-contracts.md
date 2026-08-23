@@ -344,3 +344,14 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - `CategoryNode.CategoryName` 和 `Documents` 是构造期只读快照，仅 `IsExpanded` 可变；
 - 插件部署目录仍为 `Controls`，只把内部符号改名为 `PluginDeploymentConstants.PluginsSubdirectory`；
 - Core/UI Shipped 仍为 127/45，manifest、Document envelope、layout schema、数据根 `v2` 和四插件版本区间不变。
+
+## 11. V4 G7 集成回归兼容边界
+
+- G7 原则上不修改生产源码；门禁暴露的 MySmallTools UI 线程原生 Stop 回归只在既有播放器职责内完成
+  最小修复，并增加对应时序单元测试；Core/UI public API、四插件业务契约和 Host 数据格式均未修改；
+- Core/UI V3 Shipped 保持 127/45，Unshipped 保持 0/0，独立 NuGet 正反消费继续通过；
+- 四插件 manifest 均保持 schema 2、版本 3.0.0 和 SDK `[3.0.0,4.0.0)`，测试 ZIP 从真实
+  `Controls` 目录进入 Loader、Provider、Registry 与 Workspace；
+- Document envelope 与 layout 保持 schema 2，布局文件保持 `layout-v2.json`，默认数据根保持 `v2`；
+- MySmallTools 20 轮真实媒体、全屏关闭和 Runtime 退出后原生资源及弱引用必须归零；
+- G7 测试包、Harness 和 Release 编译配置都不是发布资格；Windows Smoke 与发布门禁留到 G8/正式发布阶段。

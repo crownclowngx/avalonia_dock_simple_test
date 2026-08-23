@@ -14,8 +14,8 @@
 - [Managed 插件快速开始](../../../docs/quick-start/README.md)
 - [宿主—插件架构评审](../../../docs/design/host-plugin-architecture-review.md)
 - [宿主专项测试说明](../../../docs/reference/myavalonia-management-tests.md)
-- [Host V4 G0–G6 任务书](../../../docs/design/host-v4-breaking-refactor-plan.md)
-- [V4 G6 路径语义与展示模型](../../../docs/plan-history/host-v4/g6-file-system-path-and-presentation-model.md)
+- [Host V4 G0–G7 任务书](../../../docs/design/host-v4-breaking-refactor-plan.md)
+- [V4 G7 四插件、Harness 与文档回归](../../../docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)
 - [Dock 布局快照 V2](../../../docs/reference/dock-layout-snapshot-v2.md)
 - [G4 Managed-only 插件加载记录](../../../docs/plan-history/host-v1/g4-managed-only-plugin-loading.md)
 - [G5 显式贡献与 Plugin Registry](../../../docs/plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)
@@ -55,6 +55,8 @@
 - Host V4 G6 的文件树先由 `FileSystemPath` 规范化并分类，再由 `IHostStorageService.DirectoryExists`
   判断存在性；UNC 共享根可作为唯一自定义根展示，失败选择不会提交半成品 UI 状态；
 - 分类菜单是构造期只读快照，只有展开状态可变；Document 创建仍直接进入真实 Coordinator；
+- Host V4 G7 只复用 SDK、诊断、四插件和真实媒体既有开发门禁，不增加生产接口；测试 ZIP、
+  Harness 与 Release 编译配置均不代表发布资格；
 - 不新增插件市场、热加载、沙箱或新的用户可见诊断通道；
 - 不要求插件跟随宿主内部协作者重编写业务逻辑。
 
@@ -66,7 +68,7 @@
 
 ```powershell
 .\scripts\Test-Documentation.ps1
-.\scripts\Test-HostV4DevelopmentGate.ps1 -Stage G6
+.\scripts\Test-HostV4DevelopmentGate.ps1 -Stage G7
 .\scripts\Test-HostV3ProductionSurface.ps1 -Configuration Release
 .\scripts\Test-DocumentV2.ps1 -Configuration Release
 .\scripts\Test-RevisionedDocumentSave.ps1 -Configuration Release -NoRestore

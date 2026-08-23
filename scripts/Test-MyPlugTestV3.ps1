@@ -333,6 +333,7 @@ try {
         suites = $suiteSummary
         passed = $totalPassed
         failed = 0
+        skipped = 0
         hostCoverage = [ordered]@{ line = $hostLineCoverage; branch = $hostBranchCoverage }
         myPlugTestCoverage = [ordered]@{
             eventBusLine = $eventBusCoverage

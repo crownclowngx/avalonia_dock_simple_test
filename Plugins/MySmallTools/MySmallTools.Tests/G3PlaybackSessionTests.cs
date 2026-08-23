@@ -385,6 +385,62 @@ public sealed class G3PlaybackSessionTests
     }
 
     [Fact]
+    public async Task SurfaceDetachBlockedInNativeStop_DoesNotBlockCallingThread()
+    {
+        var source = new FakeSource(1);
+        using var enteredStop = new ManualResetEventSlim();
+        using var releaseStop = new ManualResetEventSlim();
+        using var dispatcher = new PlaybackNativeDispatcher();
+        var host = new FakePlayerHost
+        {
+            StopEntered = enteredStop,
+            StopRelease = releaseStop
+        };
+        using var reaper = new ImmediateResourceReaper();
+        using var lifetime = new TestDocumentLifetime();
+        using var session = new SecureVideoPlayer(
+            host,
+            new FakeSourceFactory(
+                (_, _) => Task.FromResult<IPlaybackMediaSource>(source)),
+            dispatcher,
+            reaper,
+            lifetime);
+        Assert.True((await session.LoadAsync("video.secvid", "password")).Success);
+        var firstSurface = new VideoSurfaceIdentity(1);
+        Assert.True((await session.AttachAndRestoreSurfaceAsync(firstSurface)).Success);
+        Assert.True((await session.PlayAsync()).Success);
+
+        var detachCallerThreadId = 0;
+        var detachTask = Task.Run(() =>
+        {
+            detachCallerThreadId = Environment.CurrentManagedThreadId;
+            session.DetachSurface(firstSurface);
+        });
+        try
+        {
+            Assert.True(enteredStop.Wait(TimeSpan.FromSeconds(2)));
+
+            // 原生替身仍卡在 Stop，但表面回调必须已经返回；否则真实 Avalonia UI 线程会像
+            // G7 转储中那样停在 LibVLCMediaPlayerStop，无法继续把 HWND 清零并关闭 Document。
+            await detachTask.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.False(releaseStop.IsSet);
+            Assert.NotEqual(0, detachCallerThreadId);
+
+            // 新表面恢复必须排在旧 Stop 之后，不能为了让 UI 返回而牺牲原生命令顺序。
+            var restoreTask = session.AttachAndRestoreSurfaceAsync(
+                new VideoSurfaceIdentity(2));
+            Assert.False(restoreTask.IsCompleted);
+            releaseStop.Set();
+            Assert.True((await restoreTask.WaitAsync(TimeSpan.FromSeconds(2))).Success);
+            Assert.Equal(1, host.RestoreCalls);
+        }
+        finally
+        {
+            releaseStop.Set();
+        }
+    }
+
+    [Fact]
     public async Task NativeDispatcher_PreCancelledWorkNeverInvokesNativeAction()
     {
         using var dispatcher = new PlaybackNativeDispatcher();
