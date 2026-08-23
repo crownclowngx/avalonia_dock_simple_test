@@ -9,6 +9,9 @@
 > Host Catalog / Plugin Registry 分离和全屏租约；四插件已通过最终 Workspace、UI、资源与真实包验收；
 > manifest、Document、layout 与数据根仍保持 V2 线格式。Legacy 项目、旧入口探针与 Host/Common
 > 双区间继续保持删除状态；两轮隔离门禁已建立本地发布资格，但没有上传或打标签。
+>
+> Host V4 G8 当前事实：Host internal G0–G8 已封板，产品、SDK、四插件与 v3 API/磁盘格式保持不变；
+> 当前正式入口为 `scripts/Invoke-HostV4ReleaseGate.ps1`，只建立本地发布资格，不执行外部发布或 AIFLOW。
 
 V3 快速开始入口：
 
@@ -22,7 +25,7 @@ V3 快速开始入口：
 
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
-| [Host V4 内部收口任务书](./design/host-v4-breaking-refactor-plan.md) | Host 死面、身份、Layout、回收所有权、领域目录、路径语义与集成回归 | 实施中；G0–G7 已完成，G8 待实施，非发布 |
+| [Host V4 内部收口任务书](./design/host-v4-breaking-refactor-plan.md) | Host 死面、身份、Layout、回收所有权、领域目录、路径语义、集成回归与封板 | 已完成；G0–G8 已封板，本地可发布但未对外发布 |
 | [V4 G0 V3 源码基线](./plan-history/host-v4/g0-v3-source-baseline.md) | V3 源码输入、锁定还原、测试与非发布事实 | 已完成；不修改生产源码 |
 | [V4 G1 删除 Host 死面](./plan-history/host-v4/g1-remove-dead-host-surface.md) | 空协议、菜单尾项、Hosting 依赖和开发门禁 | 已完成；非发布 |
 | [V4 G2 强类型身份与用例入口](./plan-history/host-v4/g2-strongly-typed-identity-and-use-case-entry.md) | ToolTypeId 单一源、真实 Coordinator 与异步 Harness | 已完成；非发布 |
@@ -31,6 +34,7 @@ V3 快速开始入口：
 | [V4 G5 领域迁移](./plan-history/host-v4/g5-domain-helper-migration.md) | Helpers 消除、Welcome/Tool 命名和领域 namespace | 已完成；非发布 |
 | [V4 G6 路径语义与展示模型](./plan-history/host-v4/g6-file-system-path-and-presentation-model.md) | 驱动器/UNC 分类、存在性端口、只读展示快照与最终非发布回归 | 已完成；478/478，85.06% / 71.41%，非发布 |
 | [V4 G7 四插件、Harness 与文档回归](./plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md) | SDK、四插件真实包、20 轮资源 Harness、诊断与文档统一回归 | 已完成；Host 478/478，四插件专项全绿，非发布 |
+| [V4 G8 封板](./plan-history/host-v4/g8-v4-sealing.md) | 两轮隔离、实体证据复核、Windows Smoke、SOLID 与发布边界 | 已完成；本地具备发布资格，未上传、未打 tag、未对外发布 |
 | [宿主—插件架构评审](./design/host-plugin-architecture-review.md) | 解决方案总体结构、插件边界、当前成熟度和演进方向 | 当前事实，已按主项目内部重构更新 |
 | [Managed Plugin V3 破坏式重构任务书](./design/host-v3-breaking-refactor-plan.md) | V3 保存修订、激活语义、注册所有权、消息边界和 Workspace 解耦的 G0–G14 计划 | 已完成；G0–G14 已全部封板 |
 | [V3 G0 非发布绿色基线](./plan-history/host-v3/g0-green-baseline.md) | V2 当前测试、覆盖率、API、包图与保存竞争复现 | 已完成；不改变生产行为 |

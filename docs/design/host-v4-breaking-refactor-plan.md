@@ -1,10 +1,11 @@
 # MyAvaloniaManagement V4 宿主内部破坏式收口评审与整改任务书
 
-> 状态：实施中；G0–G7 已完成，G8 待实施。V4 尚未封板、尚不可发布。
+> 状态：已完成；G0–G8 已全部封板并建立本地发布资格，未上传、未打 tag、未对外发布。
 > 评审日期：2026-08-23。
 > 事实基线：[Managed Plugin V2 破坏式架构重构任务书](./host-v2-breaking-refactor-plan.md)、
 > [Managed Plugin V3 破坏式架构重构任务书](./host-v3-breaking-refactor-plan.md)、
 > [V3 G14 封板记录](../plan-history/host-v3/g14-v3-sealing.md)、
+> [V4 G8 封板记录](../plan-history/host-v4/g8-v4-sealing.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及 2026-08-23 当前工作树代码。
 > 计划性质：V4 是一次“Host internal 死面删除 + 概念单一源 + 显式所有权 + 目录语义收口”，
 > 不是第四次 Plugin SDK 扩张，也不以文件数量、抽象数量或设计模式数量作为成果。
@@ -512,6 +513,10 @@ V4 是计划代号和 Host internal 收口边界，不自动创建 SDK v4：
 - **版本结论**：明确记录 Host 产品版本决策；在没有 SDK public 破坏时继续签署 SDK v3，不伪造 v4 API baseline。
 - **发布边界**：默认只建立本地可发布资格，不上传、不打 tag、不发布；外部动作需独立授权。
 - **回滚**：以 V4 基线提交为整体回滚单位；不得删除或降级既有用户数据。
+- **实际结果**：正式入口为 `scripts/Invoke-HostV4ReleaseGate.ps1`；Host 478/478、覆盖率
+  85.06% / 71.41%，Core/UI v3 Shipped 127/45、Unshipped 0/0，四插件专项、20 轮资源 Harness、
+  Windows Smoke 与两轮实体复核均纳入签署。最终发布标记见
+  [G8 专用记录](../plan-history/host-v4/g8-v4-sealing.md)。
 
 ## 7. 执行顺序与合并纪律
 
@@ -610,10 +615,10 @@ V4 只有在以下问题全部回答“是”后才算完成：
 10. [x] UNC 根、UNC 子目录、驱动器根和普通目录行为被定义并通过回归测试。
 11. [x] `Models/Plugins`、V3 正确架构和诊断脱敏边界没有被误删或机械拆分。
 12. [x] V3 Core/UI Shipped 未改写；manifest/envelope/layout/data root 与四插件 SDK 区间保持兼容。
-13. [ ] Host、SDK、四插件、真实包、资源 Harness、诊断、文档和 Windows Smoke 全部通过；G7 已完成除 Windows Smoke 外的开发期部分。
+13. [x] Host、SDK、四插件、真实包、资源 Harness、诊断、文档和 Windows Smoke 全部通过。
 14. [x] G0–G7 覆盖率没有通过降低门槛或跳过高价值测试获得绿色。
-15. [x] G0–G7 的根 README、文档导航、Host 架构、兼容约束和测试说明与当前代码一致。
-16. [ ] 两轮隔离封板可重复，并明确记录未获授权时没有上传、tag 或外部发布。
+15. [x] G0–G8 的根 README、文档导航、Host 架构、兼容约束和测试说明与当前代码一致。
+16. [x] 两轮隔离封板可重复，并明确记录未上传、未创建 tag、未对外发布且未使用 AIFLOW。
 
 任一项未完成时，V4 只能保持候选或开发状态。不得通过改写 V3 历史证据、保留隐藏兼容入口、
 降低覆盖率、跳过真实插件/Harness 或无理由提升 SDK/磁盘版本来宣称封板。

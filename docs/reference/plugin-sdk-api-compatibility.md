@@ -6,6 +6,8 @@
 > 这些阶段均未新增 public API。V3 G14 已将最终签名原样移入 Shipped：Core 127 条、UI 45 条，
 > 两个 v3 Unshipped 均为空；`3.0.0` 已建立本地发布资格但没有上传或对外发布。
 > 当前 v3 Shipped 为 Core 127 条、UI 45 条，这是后续兼容审阅的正式基线。
+> Host V4 G8 已签署 Host internal 收口，但没有产生 SDK 4.0.0：产品、SDK 与四插件仍为 `3.0.0`，
+> v3 Shipped/Unshipped 仍为 Core 127/0、UI 45/0，manifest 区间仍为 `[3.0.0, 4.0.0)`。
 
 ## 1. 权威源与程序集边界
 
@@ -88,14 +90,15 @@ dotnet test Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.Plugi
 
 `Test-PluginSdkCompatibility.ps1` 分别验证 Core/UI 的版本、排序、重复项与成员级变异；
 `Test-PluginSdkPackage.ps1` 从真实 nupkg 验证 DLL/XML/nuspec/精确依赖图、两个正向消费者和旧 API/禁用依赖
-反例。以上命令适合日常兼容检查，不运行 Windows Smoke、上传或标签。V3 G14 的正式本地入口为：
+反例。以上命令适合日常兼容检查，不运行 Windows Smoke、上传或标签。当前 Host V4 G8 正式本地入口为：
 
 ```powershell
-.\scripts\Invoke-HostV3ReleaseGate.ps1
+.\scripts\Invoke-HostV4ReleaseGate.ps1
 ```
 
-它在两个无硬链接隔离克隆中执行完整生产面、G9–G12 专项、20 轮资源 Harness、API/包、文档和
-Windows Smoke，并明确记录未上传、未打标签和 `aiflow=false`。以下 V2 入口只用于复核历史 G14 证据：
+它在两个无硬链接隔离克隆中复用 G7 的完整生产事实、四插件专项、20 轮资源 Harness、API/包和文档，
+再执行 Windows Smoke 与实体制品复核，并明确记录未上传、未打标签和 `aiflow=false`。V3 G14 的
+`scripts/Invoke-HostV3ReleaseGate.ps1` 与以下 V2 入口只用于复核历史封板证据：
 
 ```powershell
 .\scripts\Invoke-HostV2ReleaseGate.ps1

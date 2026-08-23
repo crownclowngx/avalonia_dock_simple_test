@@ -126,11 +126,20 @@ try {
             -RepositoryRoot $testRoot -Projects $missingProject -TrackedPaths $tracked
     } '引用的项目不存在'
 
-    $documents = @([pscustomobject]@{ Path = 'README.md'; Text = '状态：待整改，不满足封板条件' })
-    $rules = @([pscustomobject]@{ Name = '旧状态'; Pattern = '状态：待整改' })
+    # 夹具同时覆盖早期总门禁旧状态和 V4 G7 的过期状态。这里直接给规则函数最小输入，
+    # 避免核心测试依赖正式入口的整个文档清单，同时证明“G8 待实施”不能重新成为当前事实。
+    $documents = @(
+        [pscustomobject]@{ Path = 'README.md'; Text = '状态：待整改，不满足封板条件' },
+        [pscustomobject]@{ Path = 'docs/README.md'; Text = '状态：实施中；G0–G7 已完成，G8 待实施' })
+    $rules = @(
+        [pscustomobject]@{ Name = '旧状态'; Pattern = '状态：待整改' },
+        [pscustomobject]@{ Name = 'V4 G8 待实施'; Pattern = '状态：实施中；G0[–-]G7 已完成，G8 待实施' })
     Assert-ThrowsLike {
         Assert-DocumentationForbiddenStatements -Documents $documents -Rules $rules
     } '旧状态'
+    Assert-ThrowsLike {
+        Assert-DocumentationForbiddenStatements -Documents @($documents[1]) -Rules @($rules[1])
+    } 'V4 G8 待实施'
 
     Write-FixtureText (Join-Path $testRoot 'src/CurrentType.cs') 'public interface ICurrentType { }'
     Write-FixtureText (Join-Path $testRoot 'src/Production.cs') 'internal sealed class Production { }'
