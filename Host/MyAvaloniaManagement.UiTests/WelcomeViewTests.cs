@@ -4,8 +4,8 @@ using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Styling;
-using MyAvaloniaManagement.ViewModels.Hello;
-using MyAvaloniaManagement.Views.Hello;
+using MyAvaloniaManagement.ViewModels.Welcome;
+using MyAvaloniaManagement.Views.Welcome;
 using Xunit;
 
 namespace MyAvaloniaManagement.UiTests;

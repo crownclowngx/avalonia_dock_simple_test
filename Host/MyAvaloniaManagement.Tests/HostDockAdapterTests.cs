@@ -4,13 +4,12 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MyAvaloniaManagement.ViewModels;
-using MyAvaloniaManagement.ViewModels.Hello;
+using MyAvaloniaManagement.ViewModels.Welcome;
 using MyAvaloniaManagement.ViewModels.Tools;
 
 namespace MyAvaloniaManagement.Tests;

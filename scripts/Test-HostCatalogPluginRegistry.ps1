@@ -164,7 +164,7 @@ try {
         'Business/Workspace/HostWorkspaceCatalog.cs',
         'Business/Workspace/WorkspaceCatalog.cs',
         'Business/Workspace/HostWorkspaceActivator.cs',
-        'Business/Helpers/PluginContributionActivator.cs')) {
+        'Business/Plugins/Registration/PluginContributionActivator.cs')) {
         $actual = Get-FileLineCoverage $classes $relativePath
         Assert-True ($actual -ge 90.0) `
             "$relativePath 行覆盖率 $actual% 低于 90%。"
@@ -190,8 +190,8 @@ try {
         '组合根重新把 Host 贡献包装成 PluginRegistration。'
     Assert-PatternAbsent 'HostExtensionIds|myavalonia\.host' `
         @(
-            (Join-Path $productionRoot 'Business\Helpers\PluginRegistryBuilder.cs'),
-            (Join-Path $productionRoot 'Business\Helpers\PluginContributionActivator.cs'),
+            (Join-Path $productionRoot 'Business\Plugins\Registration\PluginRegistryBuilder.cs'),
+            (Join-Path $productionRoot 'Business\Plugins\Registration\PluginContributionActivator.cs'),
             (Join-Path $productionRoot 'Business\Lifecycle\PluginLifecycleStateStore.cs')) `
         @('*.cs') `
         'Plugin Registry/Activator/Availability 重新出现 Host 特判。'

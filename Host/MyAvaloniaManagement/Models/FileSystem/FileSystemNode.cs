@@ -2,7 +2,6 @@
 using System.IO;
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
-using MyAvaloniaManagement.Business.Helpers;
 
 namespace MyAvaloniaManagement.Models.FileSystem;
 
@@ -12,7 +11,7 @@ internal sealed partial class FileSystemNode : ObservableObject
     {
         Path = path;
         // 对于驱动器路径，直接使用完整路径作为名称
-        Name = FileHelper.IsDrivePath(path) ? path : (System.IO.Path.GetFileName(path) ?? path);
+        Name = FileSystemPath.IsDrivePath(path) ? path : (System.IO.Path.GetFileName(path) ?? path);
         if (string.IsNullOrEmpty(Name))
         {
             Name = path;

@@ -276,7 +276,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
     {
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
-        var welcome = Assert.IsType<MyAvaloniaManagement.ViewModels.Hello.WelcomeViewModel>(
+        var welcome = Assert.IsType<MyAvaloniaManagement.ViewModels.Welcome.WelcomeViewModel>(
             context.Workspace.GetDocuments().Single().Model);
         var pluginMenu = context.Workspace.CreatedTools[HostExtensionIds.PluginMenu.Value];
         context.Workspace.DockFactory.HideDockable(pluginMenu);

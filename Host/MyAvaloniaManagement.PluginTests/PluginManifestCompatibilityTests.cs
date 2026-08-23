@@ -1,7 +1,6 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.PluginTests;

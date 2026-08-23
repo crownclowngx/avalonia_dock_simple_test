@@ -2,8 +2,8 @@ using System;
 using System.Linq;
 using System.Text;
 using Avalonia;
+using MyAvaloniaManagement.Business.Composition;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Helpers;
 
 namespace MyAvaloniaManagement;
 

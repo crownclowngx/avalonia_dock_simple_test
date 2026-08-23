@@ -5,7 +5,6 @@ using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Documents;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels.Bindings;

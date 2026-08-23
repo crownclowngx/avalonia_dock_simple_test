@@ -1,0 +1,510 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MyAvaloniaManagement.ViewModels.Welcome"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1100"
+             d:DesignHeight="720"
+             x:Class="MyAvaloniaManagement.Views.Welcome.WelcomeView"
+             x:DataType="vm:WelcomeViewModel"
+             ClipToBounds="True">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <LinearGradientBrush x:Key="WelcomePageBackgroundBrush"
+                                         StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Offset="0" Color="#FFF7F9FF" />
+                        <GradientStop Offset="0.55" Color="#FFF9F7FF" />
+                        <GradientStop Offset="1" Color="#FFF2FAFF" />
+                    </LinearGradientBrush>
+                    <SolidColorBrush x:Key="WelcomeCardBrush" Color="#EFFFFFFF" />
+                    <SolidColorBrush x:Key="WelcomeCardHoverBrush" Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="WelcomeCardBorderBrush" Color="#1E5365C7" />
+                    <SolidColorBrush x:Key="WelcomeCardHoverBorderBrush" Color="#786C7CFF" />
+                    <SolidColorBrush x:Key="WelcomeTitleBrush" Color="#FF17213A" />
+                    <SolidColorBrush x:Key="WelcomeBodyBrush" Color="#FF59647A" />
+                    <SolidColorBrush x:Key="WelcomeMutedBrush" Color="#FF7B8498" />
+                    <SolidColorBrush x:Key="WelcomeChipBrush" Color="#11586BDE" />
+                    <SolidColorBrush x:Key="WelcomeChipBorderBrush" Color="#2C6576E8" />
+                    <SolidColorBrush x:Key="WelcomeVisualPanelBrush" Color="#E9FFFFFF" />
+                    <SolidColorBrush x:Key="WelcomeVisualInnerBrush" Color="#FFF3F5FC" />
+                    <SolidColorBrush x:Key="WelcomeOrbitBrush" Color="#476C7CFF" />
+                    <SolidColorBrush x:Key="WelcomeLineBrush" Color="#596C7CFF" />
+                    <SolidColorBrush x:Key="WelcomeGlowBrush" Color="#286C7CFF" />
+                    <SolidColorBrush x:Key="WelcomeSecondaryButtonBrush" Color="#DFFFFFFF" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <LinearGradientBrush x:Key="WelcomePageBackgroundBrush"
+                                         StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Offset="0" Color="#FF101426" />
+                        <GradientStop Offset="0.52" Color="#FF171329" />
+                        <GradientStop Offset="1" Color="#FF0D1D28" />
+                    </LinearGradientBrush>
+                    <SolidColorBrush x:Key="WelcomeCardBrush" Color="#B91E253A" />
+                    <SolidColorBrush x:Key="WelcomeCardHoverBrush" Color="#E4262E47" />
+                    <SolidColorBrush x:Key="WelcomeCardBorderBrush" Color="#386F7FE3" />
+                    <SolidColorBrush x:Key="WelcomeCardHoverBorderBrush" Color="#9A8290FF" />
+                    <SolidColorBrush x:Key="WelcomeTitleBrush" Color="#FFF5F7FF" />
+                    <SolidColorBrush x:Key="WelcomeBodyBrush" Color="#FFC1C8DA" />
+                    <SolidColorBrush x:Key="WelcomeMutedBrush" Color="#FF929CB5" />
+                    <SolidColorBrush x:Key="WelcomeChipBrush" Color="#205D72E8" />
+                    <SolidColorBrush x:Key="WelcomeChipBorderBrush" Color="#516F7FF0" />
+                    <SolidColorBrush x:Key="WelcomeVisualPanelBrush" Color="#D91D2438" />
+                    <SolidColorBrush x:Key="WelcomeVisualInnerBrush" Color="#FF11182A" />
+                    <SolidColorBrush x:Key="WelcomeOrbitBrush" Color="#647C8BFF" />
+                    <SolidColorBrush x:Key="WelcomeLineBrush" Color="#8B8795FF" />
+                    <SolidColorBrush x:Key="WelcomeGlowBrush" Color="#3B756BFF" />
+                    <SolidColorBrush x:Key="WelcomeSecondaryButtonBrush" Color="#A8262D42" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
+            <LinearGradientBrush x:Key="WelcomeAccentBrush"
+                                 StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Offset="0" Color="#FF5577FF" />
+                <GradientStop Offset="0.52" Color="#FF7566F5" />
+                <GradientStop Offset="1" Color="#FF9D58EC" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="WelcomeAccentSoftBrush"
+                                 StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Offset="0" Color="#3B4CDAFF" />
+                <GradientStop Offset="1" Color="#3BA85CF1" />
+            </LinearGradientBrush>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <Style Selector="Button.welcome-primary">
+            <Setter Property="Background" Value="{StaticResource WelcomeAccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="20,11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.16" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.welcome-primary:pointerover">
+            <Setter Property="Opacity" Value="0.88" />
+        </Style>
+        <Style Selector="Button.welcome-secondary">
+            <Setter Property="Background" Value="{DynamicResource WelcomeSecondaryButtonBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource WelcomeTitleBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WelcomeCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="20,10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.16" />
+                    <BrushTransition Property="Background" Duration="0:0:0.16" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.welcome-secondary:pointerover">
+            <Setter Property="Background" Value="{DynamicResource WelcomeCardHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WelcomeCardHoverBorderBrush}" />
+        </Style>
+        <Style Selector="Border.feature-card">
+            <Setter Property="Background" Value="{DynamicResource WelcomeCardBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WelcomeCardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="MinHeight" Value="142" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.16" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.16" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.feature-card:pointerover">
+            <Setter Property="Background" Value="{DynamicResource WelcomeCardHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WelcomeCardHoverBorderBrush}" />
+        </Style>
+        <Style Selector="Border.motion-enter-1">
+            <Style.Animations>
+                <Animation Duration="0:0:0.46" FillMode="Forward" Easing="CubicEaseOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="TranslateTransform.Y" Value="16" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1" />
+                        <Setter Property="TranslateTransform.Y" Value="0" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.motion-enter-2">
+            <Style.Animations>
+                <Animation Duration="0:0:0.52" Delay="0:0:0.08" FillMode="Both" Easing="CubicEaseOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="TranslateTransform.Y" Value="18" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1" />
+                        <Setter Property="TranslateTransform.Y" Value="0" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.motion-enter-3">
+            <Style.Animations>
+                <Animation Duration="0:0:0.58" Delay="0:0:0.14" FillMode="Both" Easing="CubicEaseOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="TranslateTransform.Y" Value="20" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1" />
+                        <Setter Property="TranslateTransform.Y" Value="0" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Ellipse.motion-orbit">
+            <Style.Animations>
+                <Animation Duration="0:0:14" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.motion-core">
+            <Style.Animations>
+                <Animation Duration="0:0:5" IterationCount="INFINITE"
+                           PlaybackDirection="Alternate" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="TranslateTransform.Y" Value="-3" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="TranslateTransform.Y" Value="3" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.motion-node-a">
+            <Style.Animations>
+                <Animation Duration="0:0:3.2" IterationCount="INFINITE"
+                           PlaybackDirection="Alternate" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.62" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.motion-node-b">
+            <Style.Animations>
+                <Animation Duration="0:0:3.8" Delay="0:0:0.45" IterationCount="INFINITE"
+                           PlaybackDirection="Alternate" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.55" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="{DynamicResource WelcomePageBackgroundBrush}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <Grid x:Name="PageLayout"
+                  MaxWidth="1120"
+                  HorizontalAlignment="Center"
+                  Margin="40,34,40,24"
+                  RowDefinitions="Auto,Auto,Auto">
+                <Grid x:Name="HeroGrid"
+                      Grid.Row="0"
+                      ColumnDefinitions="1.08*,0.92*"
+                      MinHeight="410">
+                    <Border x:Name="IntroBlock"
+                            VerticalAlignment="Center"
+                            Opacity="0">
+                        <Border.RenderTransform>
+                            <TranslateTransform />
+                        </Border.RenderTransform>
+                        <StackPanel Spacing="18">
+                            <Border HorizontalAlignment="Left"
+                                    Padding="11,6"
+                                    Background="{DynamicResource WelcomeChipBrush}"
+                                    BorderBrush="{DynamicResource WelcomeChipBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="20">
+                                <TextBlock Text="MODULAR DESKTOP WORKSPACE"
+                                           Foreground="#FF7484FF"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           LetterSpacing="1.2" />
+                            </Border>
+
+                            <TextBlock Text="构建属于你的&#x0a;桌面工作空间"
+                                       Foreground="{DynamicResource WelcomeTitleBrush}"
+                                       FontSize="42"
+                                       FontWeight="Bold"
+                                       LineHeight="52"
+                                       TextWrapping="Wrap" />
+
+                            <TextBlock Text="{Binding Text}"
+                                       MaxWidth="570"
+                                       Foreground="{DynamicResource WelcomeBodyBrush}"
+                                       FontSize="15"
+                                       LineHeight="25"
+                                       TextWrapping="Wrap" />
+
+                            <WrapPanel Orientation="Horizontal">
+                                <Border Margin="0,0,8,8" Padding="11,6"
+                                        Background="{DynamicResource WelcomeChipBrush}"
+                                        BorderBrush="{DynamicResource WelcomeChipBorderBrush}"
+                                        BorderThickness="1" CornerRadius="12">
+                                    <TextBlock Text="跨平台 UI" Foreground="{DynamicResource WelcomeBodyBrush}" FontSize="12" />
+                                </Border>
+                                <Border Margin="0,0,8,8" Padding="11,6"
+                                        Background="{DynamicResource WelcomeChipBrush}"
+                                        BorderBrush="{DynamicResource WelcomeChipBorderBrush}"
+                                        BorderThickness="1" CornerRadius="12">
+                                    <TextBlock Text="Dock 布局" Foreground="{DynamicResource WelcomeBodyBrush}" FontSize="12" />
+                                </Border>
+                                <Border Margin="0,0,8,8" Padding="11,6"
+                                        Background="{DynamicResource WelcomeChipBrush}"
+                                        BorderBrush="{DynamicResource WelcomeChipBorderBrush}"
+                                        BorderThickness="1" CornerRadius="12">
+                                    <TextBlock Text="插件扩展" Foreground="{DynamicResource WelcomeBodyBrush}" FontSize="12" />
+                                </Border>
+                            </WrapPanel>
+
+                            <WrapPanel Orientation="Horizontal">
+                                <Button Classes="welcome-primary"
+                                        Margin="0,0,10,10"
+                                        Command="{Binding OpenPluginMenuCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <PathIcon Width="16" Height="16"
+                                                  Data="M3,3 H9 V9 H3 Z M11,3 H17 V9 H11 Z M3,11 H9 V17 H3 Z M11,11 H17 V17 H11 Z" />
+                                        <TextBlock Text="浏览插件" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="welcome-secondary"
+                                        Margin="0,0,10,10"
+                                        Command="{Binding OpenToolManagementCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <PathIcon Width="16" Height="16"
+                                                  Data="M10,2 A2,2 0 0 1 12,4 V5.1 A6,6 0 0 1 14,6.25 L14.95,5.7 A2,2 0 0 1 17.68,6.43 L18,7 A2,2 0 0 1 17.27,9.73 L16.3,10.3 A6,6 0 0 1 16.3,12.6 L17.27,13.17 A2,2 0 0 1 18,15.9 L17.68,16.47 A2,2 0 0 1 14.95,17.2 L14,16.65 A6,6 0 0 1 12,17.8 V19 A2,2 0 0 1 10,21 H9 A2,2 0 0 1 7,19 V17.8 A6,6 0 0 1 5,16.65 L4.05,17.2 A2,2 0 0 1 1.32,16.47 L1,15.9 A2,2 0 0 1 1.73,13.17 L2.7,12.6 A6,6 0 0 1 2.7,10.3 L1.73,9.73 A2,2 0 0 1 1,7 L1.32,6.43 A2,2 0 0 1 4.05,5.7 L5,6.25 A6,6 0 0 1 7,5.1 V4 A2,2 0 0 1 9,2 Z M9.5,8 A3.5,3.5 0 1 0 9.5,15 A3.5,3.5 0 1 0 9.5,8" />
+                                        <TextBlock Text="工具管理" />
+                                    </StackPanel>
+                                </Button>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="HeroVisual"
+                            Grid.Column="1"
+                            Height="360"
+                            Margin="48,0,0,0"
+                            Opacity="0"
+                            VerticalAlignment="Center">
+                        <Border.RenderTransform>
+                            <TranslateTransform />
+                        </Border.RenderTransform>
+                        <Canvas Width="390" Height="360"
+                                HorizontalAlignment="Center">
+                            <Ellipse Width="250" Height="250"
+                                     Canvas.Left="70" Canvas.Top="56"
+                                     Fill="{StaticResource WelcomeAccentSoftBrush}"
+                                     Opacity="0.62" />
+                            <Ellipse x:Name="Orbit"
+                                     Width="338" Height="248"
+                                     Canvas.Left="26" Canvas.Top="56"
+                                     Stroke="{DynamicResource WelcomeOrbitBrush}"
+                                     StrokeThickness="1.3"
+                                     StrokeDashArray="3,7"
+                                     RenderTransformOrigin="50%,50%">
+                                <Ellipse.RenderTransform>
+                                    <RotateTransform />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+
+                            <Path Data="M68,112 C115,76 143,91 174,132"
+                                  Stroke="{DynamicResource WelcomeLineBrush}"
+                                  StrokeThickness="1.4" />
+                            <Path Data="M318,92 C279,89 251,105 226,134"
+                                  Stroke="{DynamicResource WelcomeLineBrush}"
+                                  StrokeThickness="1.4" />
+                            <Path Data="M64,274 C111,287 144,260 169,230"
+                                  Stroke="{DynamicResource WelcomeLineBrush}"
+                                  StrokeThickness="1.4" />
+                            <Path Data="M326,266 C282,290 254,263 229,231"
+                                  Stroke="{DynamicResource WelcomeLineBrush}"
+                                  StrokeThickness="1.4" />
+
+                            <Border x:Name="DockCore"
+                                    Width="236" Height="166"
+                                    Canvas.Left="77" Canvas.Top="102"
+                                    Background="{DynamicResource WelcomeVisualPanelBrush}"
+                                    BorderBrush="{DynamicResource WelcomeCardHoverBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="17"
+                                    BoxShadow="0 18 42 0 #32000000"
+                                    RenderTransformOrigin="50%,50%">
+                                <Border.RenderTransform>
+                                    <TranslateTransform />
+                                </Border.RenderTransform>
+                                <Grid RowDefinitions="29,*">
+                                    <Border Grid.Row="0"
+                                            Background="{DynamicResource WelcomeChipBrush}"
+                                            CornerRadius="16,16,0,0">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,0">
+                                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                <Ellipse Width="6" Height="6" Fill="#FFFF6680" />
+                                                <Ellipse Width="6" Height="6" Fill="#FFFFC45C" />
+                                                <Ellipse Width="6" Height="6" Fill="#FF53D5A5" />
+                                            </StackPanel>
+                                            <Border Grid.Column="2" Width="34" Height="5"
+                                                    Background="{DynamicResource WelcomeCardBorderBrush}"
+                                                    CornerRadius="3" />
+                                        </Grid>
+                                    </Border>
+                                    <Grid Grid.Row="1" Margin="10"
+                                          ColumnDefinitions="48,6,*,6,42"
+                                          RowDefinitions="34,6,*,6,30">
+                                        <Border Grid.Column="0" Grid.RowSpan="5"
+                                                Background="{StaticResource WelcomeAccentBrush}"
+                                                CornerRadius="8" Opacity="0.82" />
+                                        <Border Grid.Column="2" Grid.Row="0"
+                                                Background="{DynamicResource WelcomeChipBrush}"
+                                                CornerRadius="7" />
+                                        <Border Grid.Column="2" Grid.Row="2"
+                                                Background="{DynamicResource WelcomeVisualInnerBrush}"
+                                                BorderBrush="{DynamicResource WelcomeCardBorderBrush}"
+                                                BorderThickness="1" CornerRadius="9">
+                                            <Canvas>
+                                                <Path Data="M15,44 C35,18 60,55 81,29 C98,10 116,22 128,14"
+                                                      Stroke="#FF7386FF" StrokeThickness="2" />
+                                                <Ellipse Width="7" Height="7" Fill="#FF9F62F0"
+                                                         Canvas.Left="77" Canvas.Top="25" />
+                                            </Canvas>
+                                        </Border>
+                                        <Border Grid.Column="2" Grid.Row="4"
+                                                Background="{DynamicResource WelcomeChipBrush}"
+                                                CornerRadius="7" />
+                                        <Border Grid.Column="4" Grid.RowSpan="5"
+                                                Background="{DynamicResource WelcomeChipBrush}"
+                                                CornerRadius="8" />
+                                    </Grid>
+                                </Grid>
+                            </Border>
+
+                            <Border x:Name="NodeA" Width="48" Height="48"
+                                    Canvas.Left="36" Canvas.Top="83"
+                                    Background="{StaticResource WelcomeAccentBrush}"
+                                    CornerRadius="24" BoxShadow="0 8 20 0 #425577FF">
+                                <PathIcon Width="21" Height="21" Foreground="White"
+                                          Data="M4,4 H10 V10 H4 Z M12,4 H18 V10 H12 Z M4,12 H10 V18 H4 Z M12,12 H18 V18 H12 Z" />
+                            </Border>
+                            <Border x:Name="NodeB" Width="44" Height="44"
+                                    Canvas.Left="306" Canvas.Top="68"
+                                    Background="#FF28BFC8"
+                                    CornerRadius="22" BoxShadow="0 8 20 0 #3628BFC8">
+                                <PathIcon Width="20" Height="20" Foreground="White"
+                                          Data="M3,5 H17 V15 H3 Z M6,8 H14 M6,11 H11" />
+                            </Border>
+                            <Border x:Name="NodeC" Width="42" Height="42"
+                                    Canvas.Left="37" Canvas.Top="251"
+                                    Background="#FF9B61ED"
+                                    CornerRadius="21" BoxShadow="0 8 20 0 #369B61ED">
+                                <PathIcon Width="19" Height="19" Foreground="White"
+                                          Data="M10,2 L18,6 V14 L10,18 L2,14 V6 Z M10,6 V14 M6,8 L14,12 M14,8 L6,12" />
+                            </Border>
+                            <Border x:Name="NodeD" Width="46" Height="46"
+                                    Canvas.Left="308" Canvas.Top="244"
+                                    Background="#FF5B78F5"
+                                    CornerRadius="23" BoxShadow="0 8 20 0 #365B78F5">
+                                <PathIcon Width="20" Height="20" Foreground="White"
+                                          Data="M4,4 H16 V16 H4 Z M7,7 H13 V13 H7 Z M1,7 H4 M1,11 H4 M16,7 H19 M16,11 H19 M7,1 V4 M11,1 V4 M7,16 V19 M11,16 V19" />
+                            </Border>
+                        </Canvas>
+                    </Border>
+                </Grid>
+
+                <Grid x:Name="FeatureGrid"
+                      Grid.Row="1"
+                      Margin="0,28,0,0"
+                      ColumnDefinitions="*,*,*">
+                    <Border x:Name="FeatureCardOne"
+                            Classes="feature-card"
+                            Margin="0,0,10,0"
+                            Opacity="0">
+                        <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+                        <StackPanel Spacing="12">
+                            <Border Width="38" Height="38" HorizontalAlignment="Left"
+                                    Background="{DynamicResource WelcomeChipBrush}" CornerRadius="10">
+                                <PathIcon Width="20" Height="20" Foreground="#FF687CFF"
+                                          Data="M3,3 H17 V8 H3 Z M3,10 H9 V17 H3 Z M11,10 H17 V17 H11 Z" />
+                            </Border>
+                            <TextBlock Text="自由停靠" FontSize="17" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource WelcomeTitleBrush}" />
+                            <TextBlock Text="灵活拆分与排列多面板，并可靠恢复你的工作区布局。"
+                                       FontSize="13" LineHeight="21" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource WelcomeBodyBrush}" />
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="FeatureCardTwo"
+                            Grid.Column="1"
+                            Classes="feature-card"
+                            Margin="5,0"
+                            Opacity="0">
+                        <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+                        <StackPanel Spacing="12">
+                            <Border Width="38" Height="38" HorizontalAlignment="Left"
+                                    Background="{DynamicResource WelcomeChipBrush}" CornerRadius="10">
+                                <PathIcon Width="20" Height="20" Foreground="#FF9864EC"
+                                          Data="M10,2 L18,6 V14 L10,18 L2,14 V6 Z M10,6 V14 M6,8 L14,12 M14,8 L6,12" />
+                            </Border>
+                            <TextBlock Text="插件扩展" FontSize="17" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource WelcomeTitleBrush}" />
+                            <TextBlock Text="把独立业务能力装配到宿主中，保持核心轻量而可扩展。"
+                                       FontSize="13" LineHeight="21" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource WelcomeBodyBrush}" />
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="FeatureCardThree"
+                            Grid.Column="2"
+                            Classes="feature-card"
+                            Margin="10,0,0,0"
+                            Opacity="0">
+                        <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
+                        <StackPanel Spacing="12">
+                            <Border Width="38" Height="38" HorizontalAlignment="Left"
+                                    Background="{DynamicResource WelcomeChipBrush}" CornerRadius="10">
+                                <PathIcon Width="20" Height="20" Foreground="#FF28B7C4"
+                                          Data="M10,2 A8,8 0 1 0 18,10 A6,6 0 0 1 10,2" />
+                            </Border>
+                            <TextBlock Text="主题适配" FontSize="17" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource WelcomeTitleBrush}" />
+                            <TextBlock Text="跟随系统外观，也可在浅色与深色主题之间即时切换。"
+                                       FontSize="13" LineHeight="21" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource WelcomeBodyBrush}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Grid.Row="2" Margin="0,22,0,0"
+                        BorderBrush="{DynamicResource WelcomeCardBorderBrush}"
+                        BorderThickness="0,1,0,0"
+                        Padding="0,17,0,0">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="MY AVALONIA MANAGEMENT"
+                                   Foreground="{DynamicResource WelcomeMutedBrush}"
+                                   FontSize="10" FontWeight="SemiBold" LetterSpacing="1.4" />
+                        <TextBlock Grid.Column="1" Text="{Binding VersionText}"
+                                   Foreground="{DynamicResource WelcomeMutedBrush}"
+                                   FontSize="11" />
+                    </Grid>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+    </Border>
+</UserControl>

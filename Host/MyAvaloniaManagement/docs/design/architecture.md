@@ -97,7 +97,7 @@ flowchart TB
 
 ### 3.1 `HostRuntime` 是唯一实际组合根
 
-[`HostRuntime`](../../Business/Helpers/HostRuntime.cs) 按以下顺序启动：
+[`HostRuntime`](../../Business/Composition/HostRuntime.cs) 按以下顺序启动：
 
 1. 创建 `PluginRegistryBuilder`，注册宿主核心服务、ViewModel 和宿主显式贡献；
 2. 读取全部 manifest v2，检查单一 Core/UI SDK 区间与全局身份；
@@ -127,7 +127,7 @@ Host Provider。这个所有权对称性防止 `Program`、`App` 和插件生命
 
 ### 4.1 程序集快照
 
-[`AssemblyLoaderHelper`](../../Business/Helpers/AssemblyLoaderHelper.cs) 是 Host internal 加载边界，其行为是：
+[`AssemblyLoaderHelper`](../../Business/Plugins/Discovery/AssemblyLoaderHelper.cs) 是 Host internal 加载边界，其行为是：
 
 - 用绝对、规范化且不区分大小写的插件根目录作为缓存键；
 - 通过 `Lazy<PluginDiscoverySnapshot>` 保证并发调用只执行一次扫描；
@@ -144,9 +144,9 @@ Host Provider。这个所有权对称性防止 `Program`、`App` 和插件生命
 
 ### 4.2 Managed-only 模块与激活
 
-[`PluginModulePreflight`](../../Business/Helpers/PluginModulePreflight.cs) 在不实例化插件对象的前提下验证清单精确入口及其 public 无参构造；结构错误只隔离当前目录。随后 [`PluginModuleCatalog`](../../Business/Helpers/PluginModuleCatalog.cs) 只实例化快照中的模块；单个构造失败记录受控诊断并排除该插件，不阻断其他入口。
+[`PluginModulePreflight`](../../Business/Plugins/Discovery/PluginModulePreflight.cs) 在不实例化插件对象的前提下验证清单精确入口及其 public 无参构造；结构错误只隔离当前目录。随后 [`PluginModuleCatalog`](../../Business/Plugins/Discovery/PluginModuleCatalog.cs) 只实例化快照中的模块；单个构造失败记录受控诊断并排除该插件，不阻断其他入口。
 
-[`PluginProviderOwner`](../../Business/Helpers/PluginProviderOwner.cs) 在 Host Provider 建立后，按规范 PluginId
+[`PluginProviderOwner`](../../Business/Plugins/Registration/PluginProviderOwner.cs) 在 Host Provider 建立后，按规范 PluginId
 顺序为每个入口创建真正为空的 `ServiceCollection`。`PluginRegistration` 把 manifest `PluginId` 与该
 私有集合绑定，模块只在组合
 阶段调用一次最终 UI SDK `Configure(IPluginRegistration)`。模块返回后，贡献方法和插件保存的
@@ -164,17 +164,17 @@ Provider 构建失败会产生 `PLUGIN_SERVICE_REGISTRATION_FAILED` 或 `PLUGIN_
 对应插件不发布任何贡献，Host 与成功插件继续运行。
 
 每个插件 Provider 都创建自己的 `DocumentScopeManager`。宿主
-[`DocumentScopeRegistry`](../../Business/Helpers/DocumentScopeRegistry.cs) 只负责把 Dock 关闭通知路由到
+[`DocumentScopeRegistry`](../../Business/Documents/Ownership/DocumentScopeRegistry.cs) 只负责把 Dock 关闭通知路由到
 实际所有者，不提供跨插件解析。退出顺序固定为：关闭全部 Document Scope、停止生命周期、按 PluginId
 反序释放插件 Provider、最后释放 Host Provider。
 
 ### 4.3 单一扩展注册表
 
-[`PluginRegistryBuilder`](../../Business/Helpers/PluginRegistryBuilder.cs) 为每个插件先使用临时实例收集声明；
+[`PluginRegistryBuilder`](../../Business/Plugins/Registration/PluginRegistryBuilder.cs) 为每个插件先使用临时实例收集声明；
 Descriptor、模型类型、View 类型/工厂和生命周期类型在注册调用中一次冻结。私有 Provider 构建成功且
 生命周期 singleton 可解析后，声明才合并到全局 Builder；此过程不创建 Document/Tool，也不调用插件
 元数据代码。全局 Builder 只对不可变候选做分组判重，再提交
-[`PluginRegistry`](../../Business/Helpers/PluginRegistry.cs)。Registry 统一拥有：
+[`PluginRegistry`](../../Business/Plugins/Registration/PluginRegistry.cs)。Registry 统一拥有：
 
 - manifest、入口程序集和模块类型快照；
 - manifest 所属的 Document、Tool、View 和 Lifecycle；
@@ -187,7 +187,7 @@ Descriptor、模型类型、View 类型/工厂和生命周期类型在注册调�
 丢弃整个候选。跨插件 Document/Tool ID 或精确模型映射冲突时，所有冲突插件均排除；与 Host 内建贡献
 冲突时保留 Host。无冲突插件继续发布，被排除 Provider 立即释放且从不登记 Document Scope。
 
-Registry 不保存 Provider，也不负责创建模型。[`PluginContributionActivator`](../../Business/Helpers/PluginContributionActivator.cs)
+Registry 不保存 Provider，也不负责创建模型。[`PluginContributionActivator`](../../Business/Plugins/Registration/PluginContributionActivator.cs)
 是唯一 Provider 路由边界，根据注册所有者选择 Host 或插件 Provider；Document 通过所属 Scope 创建，
 Tool 解析插件 singleton。G6 起 Activator 只返回普通模型与所有权租约，不转换或验证 Dock 类型；
 [`HostDockAdapterFactory`](../../Business/Docking/HostDockAdapterFactory.cs) 在其后创建唯一允许继承 Dock 的

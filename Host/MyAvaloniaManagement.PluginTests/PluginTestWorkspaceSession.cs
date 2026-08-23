@@ -1,7 +1,6 @@
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Documents;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Workspace;

@@ -82,11 +82,11 @@ try {
     # 结构门禁只扫描生产目录的声明、组合与查询路径。Legacy 阶段插件源码允许继续包含旧符号，
     # 但它们不能重新进入 G5 的生产 Registry 或 Host 消费者。
     $productionFiles = @(
-        'Host\MyAvaloniaManagement\Business\Helpers\PluginRegistry.cs',
-        'Host\MyAvaloniaManagement\Business\Helpers\PluginRegistryBuilder.cs',
-        'Host\MyAvaloniaManagement\Business\Helpers\PluginProviderOwner.cs',
-        'Host\MyAvaloniaManagement\Business\Helpers\PluginRegistrationContext.cs',
-        'Host\MyAvaloniaManagement\Business\Helpers\ServiceCollectionExtensions.cs',
+        'Host\MyAvaloniaManagement\Business\Plugins\Registration\PluginRegistry.cs',
+        'Host\MyAvaloniaManagement\Business\Plugins\Registration\PluginRegistryBuilder.cs',
+        'Host\MyAvaloniaManagement\Business\Plugins\Registration\PluginProviderOwner.cs',
+        'Host\MyAvaloniaManagement\Business\Plugins\Registration\PluginRegistrationContext.cs',
+        'Host\MyAvaloniaManagement\Business\Composition\ServiceCollectionExtensions.cs',
         'Host\MyAvaloniaManagement\Business\Workspace\WorkspaceSession.cs',
         'Host\MyAvaloniaManagement\ViewLocator.cs'
     ) | ForEach-Object { Join-Path $repositoryRoot $_ }

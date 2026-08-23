@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Docking;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Models.FileSystem;
 using MyAvaloniaManagement.Models.Tools;

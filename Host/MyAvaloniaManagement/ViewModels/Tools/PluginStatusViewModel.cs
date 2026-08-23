@@ -4,8 +4,9 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
+using MyAvaloniaManagement.Business.Plugins.Discovery;
+using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.Models.Plugins;
 using MyAvaloniaManagement.PluginSdk;
 

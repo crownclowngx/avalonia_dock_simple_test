@@ -3,7 +3,6 @@ using System.Runtime.Loader;
 using DaTangAccountingHelpPlug.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.PluginTests;

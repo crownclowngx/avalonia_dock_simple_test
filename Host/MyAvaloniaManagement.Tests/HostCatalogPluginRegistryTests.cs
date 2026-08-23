@@ -1,14 +1,13 @@
 using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
-using MyAvaloniaManagement.ViewModels.Hello;
+using MyAvaloniaManagement.ViewModels.Welcome;
 using MyAvaloniaManagement.ViewModels.Tools;
-using MyAvaloniaManagement.Views.Hello;
+using MyAvaloniaManagement.Views.Welcome;
 
 namespace MyAvaloniaManagement.Tests;
 

@@ -112,7 +112,7 @@ $requiredSymbols = @(
     [pscustomobject]@{ Symbol = 'RestoreDocumentActivation'; Path = 'Host/MyAvaloniaManagement.PluginSdk/DocumentContracts.cs' },
     [pscustomobject]@{ Symbol = 'IMyPlugTestEventBus'; Path = 'Plugins/MyPlugTest/MyPlugTest/Messaging/IMyPlugTestEventBus.cs' },
     [pscustomobject]@{ Symbol = 'IBiliDownloaderEventBus'; Path = 'Plugins/BiliDownloader/BiliDownloader/Messaging/IBiliDownloaderEventBus.cs' },
-    [pscustomobject]@{ Symbol = 'PluginServiceCommitGuard'; Path = 'Host/MyAvaloniaManagement/Business/Helpers/PluginServiceCommitGuard.cs' },
+    [pscustomobject]@{ Symbol = 'PluginServiceCommitGuard'; Path = 'Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginServiceCommitGuard.cs' },
     [pscustomobject]@{ Symbol = 'HostDiagnosticRedactionPolicy'; Path = 'Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs' },
     [pscustomobject]@{ Symbol = 'DocumentEnvelopeSerializer'; Path = 'Host/MyAvaloniaManagement/Business/Documents/DocumentEnvelopeSerializer.cs' }
     [pscustomobject]@{ Symbol = 'HostDockFactory'; Path = 'Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs' }

@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Constants;
 using Avalonia.Controls;
 using MyAvaloniaManagement.PluginSdk;
@@ -31,7 +30,7 @@ public sealed class IdentityAndRegistryTests
             HostExtensionIds.ToolManagement.Value);
 
         var injectedConstructor = typeof(
-                MyAvaloniaManagement.ViewModels.Hello.WelcomeViewModel)
+                MyAvaloniaManagement.ViewModels.Welcome.WelcomeViewModel)
             .GetConstructors()
             .Single(constructor => constructor.GetParameters().Length == 1);
         Assert.Equal(

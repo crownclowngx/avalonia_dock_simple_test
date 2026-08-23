@@ -4,7 +4,6 @@ using System;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using MyAvaloniaManagement.Business.Documents;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.Models.Tools;
 using MyAvaloniaManagement.PluginSdk;
@@ -15,14 +14,14 @@ namespace MyAvaloniaManagement.ViewModels.Tools;
 /// 将插件文档元数据组织成分类菜单，并负责创建所选类型的文档。
 /// </summary>
 /// <remarks>
-/// 菜单查询与 Document 创建分别委托给 <see cref="PluginMenuService"/>
+/// 菜单查询与 Document 创建分别委托给 <see cref="DocumentCreationMenuQuery"/>
 /// 和 <see cref="DocumentPersistenceCoordinator"/>，ViewModel 不接触 Dock 工作区对象。
 /// </remarks>
 internal sealed partial class PlugGroupMenuViewModel
 {
     private readonly DocumentPersistenceCoordinator? _documents;
     private readonly DocumentOperationState? _operationState;
-    private readonly PluginMenuService? _pluginMenuService;
+    private readonly DocumentCreationMenuQuery? _pluginMenuService;
 
     /// <summary>
     /// 获取按分类分组且允许显示在菜单中的文档元数据。
@@ -38,7 +37,7 @@ internal sealed partial class PlugGroupMenuViewModel
     /// 使用显式工厂和菜单服务创建插件菜单工具。
     /// </summary>
     public PlugGroupMenuViewModel(
-        PluginMenuService pluginMenuService,
+        DocumentCreationMenuQuery pluginMenuService,
         DocumentPersistenceCoordinator documents,
         DocumentOperationState operationState)
     {

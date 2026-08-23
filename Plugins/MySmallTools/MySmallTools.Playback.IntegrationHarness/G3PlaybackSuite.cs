@@ -14,7 +14,6 @@ using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement;
 using MyAvaloniaManagement.Business.Documents;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Workspace;

@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 

@@ -2,7 +2,7 @@ using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.Business.Constants;
-using MyAvaloniaManagement.ViewModels.Hello;
+using MyAvaloniaManagement.ViewModels.Welcome;
 
 namespace MyAvaloniaManagement.Tests;
 

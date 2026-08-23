@@ -2,7 +2,6 @@ using System.Reflection;
 using System.Text.Json;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Documents;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagement.PluginSdk;

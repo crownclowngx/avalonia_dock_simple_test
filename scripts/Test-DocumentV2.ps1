@@ -86,7 +86,7 @@ try {
     $documentPaths = @(
         (Join-Path $productionRoot 'Business\Documents'),
         (Join-Path $productionRoot 'Business\Docking'),
-        (Join-Path $productionRoot 'Business\Helpers\DocumentScopeManager.cs'),
+        (Join-Path $productionRoot 'Business\Documents\Ownership\DocumentScopeManager.cs'),
         (Join-Path $productionRoot 'Business\Workspace\WorkspaceSession.cs'),
         (Join-Path $productionRoot 'ViewModels\MainWindowViewModel.cs')
     )

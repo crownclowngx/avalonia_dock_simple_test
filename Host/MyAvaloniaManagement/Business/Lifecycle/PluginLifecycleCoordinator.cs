@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Lifecycle;

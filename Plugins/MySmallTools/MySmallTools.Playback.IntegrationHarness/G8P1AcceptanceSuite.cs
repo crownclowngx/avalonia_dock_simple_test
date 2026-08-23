@@ -9,7 +9,6 @@ using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Documents;
-using MyAvaloniaManagement.Business.Helpers;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Business.SecretVideoPlayer.Playback;

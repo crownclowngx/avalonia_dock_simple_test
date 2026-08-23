@@ -83,11 +83,11 @@ try {
     # 普通模型不能重新继承 Dock 类型。ToolManagementViewModel 仍需读取布局协调器提供的
     # Dock 状态以呈现管理列表，但它本身不再是 Dock Tool，也不拥有 Dock 生命周期。
     $ordinaryModels = @(
-        'Host\MyAvaloniaManagement\ViewModels\Hello\WelcomeViewModel.cs',
+        'Host\MyAvaloniaManagement\ViewModels\Welcome\WelcomeViewModel.cs',
         'Host\MyAvaloniaManagement\ViewModels\Tools\FileSystemTreeViewModel.cs',
         'Host\MyAvaloniaManagement\ViewModels\Tools\PlugGroupMenuViewModel.cs',
         'Host\MyAvaloniaManagement\ViewModels\Tools\PluginStatusViewModel.cs',
-        'Host\MyAvaloniaManagement\ViewModels\Tools\ToolManagementViewModel.cs'
+        'Host\MyAvaloniaManagement\Models\Tools\ToolWorkspaceState.cs'
     ) | ForEach-Object { Join-Path $repositoryRoot $_ }
     & rg --quiet 'class\s+\w+[^\r\n{]*:\s*(Document|Tool)\b' @ordinaryModels
     if ($LASTEXITCODE -eq 0) {
@@ -126,7 +126,7 @@ try {
 
     # 激活器只激活普通模型；ViewLocator 只能消费精确注册的预构建 Adapter View。
     $activatorPath = Join-Path $productionRoot `
-        'Business\Helpers\PluginContributionActivator.cs'
+        'Business\Plugins\Registration\PluginContributionActivator.cs'
     & rg --quiet 'Dock\.Model|IsAssignableFrom\(|\bis\s+(Document|Tool)\b' $activatorPath
     if ($LASTEXITCODE -eq 0) {
         throw 'G6 PluginContributionActivator 重新承担了 Dock 类型转换或验证。'

@@ -1,5 +1,6 @@
 using System;
-using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Documents.Ownership;
+using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Workspace;

@@ -1,7 +1,6 @@
 using System;
 using Avalonia.Controls;
 using MyAvaloniaManagement.Business.Workspace;
-using MyAvaloniaManagement.Business.Helpers;
 
 namespace MyAvaloniaManagement.Business.Docking;
 

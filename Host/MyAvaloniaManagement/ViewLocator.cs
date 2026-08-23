@@ -4,8 +4,8 @@ using Avalonia.Controls.Templates;
 using Dock.Model.Core;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Workspace;
+using MyAvaloniaManagement.Business.Plugins.Registration;
 
 namespace MyAvaloniaManagement;
 

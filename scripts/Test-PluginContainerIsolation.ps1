@@ -68,8 +68,8 @@ try {
     }
 
     $requiredFiles = @(
-        'Host\MyAvaloniaManagement\Business\Helpers\PluginProviderOwner.cs',
-        'Host\MyAvaloniaManagement\Business\Helpers\DocumentScopeRegistry.cs'
+        'Host\MyAvaloniaManagement\Business\Plugins\Registration\PluginProviderOwner.cs',
+        'Host\MyAvaloniaManagement\Business\Documents\Ownership\DocumentScopeRegistry.cs'
     )
     foreach ($relativePath in $requiredFiles) {
         if (-not (Test-Path -LiteralPath (Join-Path $repositoryRoot $relativePath) -PathType Leaf)) {

@@ -100,10 +100,13 @@ try {
         if (Test-Path -LiteralPath (Join-Path $hostRoot 'Business\Helpers')) {
             throw 'G5 完成后 Business/Helpers 必须不存在。'
         }
+        if (Test-Path -LiteralPath (Join-Path $hostRoot 'Common\Utils\Misc')) {
+            throw 'G5 完成后 Common/Utils/Misc 必须不存在。'
+        }
         Assert-PatternAbsent `
-            'MyAvaloniaManagement\.(ViewModels|Views)\.Hello' `
+            'MyAvaloniaManagement\.Business\.Helpers|MyAvaloniaManagement\.(ViewModels|Views)\.Hello' `
             @($hostRoot) @('*.cs', '*.axaml') `
-            'G5 完成后旧 Hello 命名空间不得存在。'
+            'G5 完成后旧 Helpers 或 Hello 命名空间不得存在。'
     }
 
     if ($stageNumber -ge 6) {

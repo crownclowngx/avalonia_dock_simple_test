@@ -1,4 +1,3 @@
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.PluginTests;

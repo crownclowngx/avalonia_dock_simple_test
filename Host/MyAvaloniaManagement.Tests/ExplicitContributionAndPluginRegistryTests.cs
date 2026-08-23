@@ -3,7 +3,6 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Workspace;
@@ -310,7 +309,7 @@ public sealed class ExplicitContributionAndPluginRegistryTests
             HostExtensionIds.WelcomeDocument,
             out var welcome));
         Assert.Equal(
-            typeof(MyAvaloniaManagement.ViewModels.Hello.WelcomeViewModel),
+            typeof(MyAvaloniaManagement.ViewModels.Welcome.WelcomeViewModel),
             welcome.ModelType);
         Assert.All(hostCatalog.Tools, tool =>
             Assert.StartsWith("myavalonia.host.tool.", tool.Descriptor.ToolTypeId.Value));

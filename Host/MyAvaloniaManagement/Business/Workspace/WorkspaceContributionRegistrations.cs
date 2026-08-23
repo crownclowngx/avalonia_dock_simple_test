@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using Avalonia.Controls;
-using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Documents.Ownership;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 

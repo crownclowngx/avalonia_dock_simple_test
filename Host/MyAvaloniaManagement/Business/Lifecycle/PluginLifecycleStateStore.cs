@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Lifecycle;

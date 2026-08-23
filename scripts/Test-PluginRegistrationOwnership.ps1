@@ -81,7 +81,7 @@ try {
     }
 
     $registrationSource = Get-Content -Raw `
-        'Host\MyAvaloniaManagement\Business\Helpers\PluginRegistrationContext.cs'
+        'Host\MyAvaloniaManagement\Business\Plugins\Registration\PluginRegistrationContext.cs'
     Assert-True (-not $registrationSource.Contains(
         'Services.AddScoped<TDocument>()', [StringComparison]::Ordinal)) `
         'G4 注册入口重新把 Document 根写入插件可修改集合。'
@@ -90,7 +90,7 @@ try {
         'G4 注册入口重新把 Tool 根写入插件可修改集合。'
 
     $providerOwnerSource = Get-Content -Raw `
-        'Host\MyAvaloniaManagement\Business\Helpers\PluginProviderOwner.cs'
+        'Host\MyAvaloniaManagement\Business\Plugins\Registration\PluginProviderOwner.cs'
     Assert-True ($providerOwnerSource.Contains(
         'var pluginServices = new ServiceCollection();', [StringComparison]::Ordinal)) `
         '插件 Configure 前没有建立空 ServiceCollection。'
@@ -98,7 +98,7 @@ try {
         'PluginServiceCommitGuard.ValidateAndCommit', [StringComparison]::Ordinal)) `
         '插件 Provider 构建前没有执行 G4 Commit Guard。'
 
-    $guardPath = 'Host\MyAvaloniaManagement\Business\Helpers\PluginServiceCommitGuard.cs'
+    $guardPath = 'Host\MyAvaloniaManagement\Business\Plugins\Registration\PluginServiceCommitGuard.cs'
     Assert-True (Test-Path -LiteralPath $guardPath -PathType Leaf) 'G4 Commit Guard 文件缺失。'
     $guardSource = Get-Content -Raw $guardPath
     foreach ($symbol in @(

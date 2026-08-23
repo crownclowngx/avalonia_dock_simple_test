@@ -111,7 +111,7 @@ sequenceDiagram
     R->>DI: Adapter/View → Scope → 反向 Lifecycle → Plugin Provider → Host Provider
 ```
 
-**[代码事实]** `HostRuntime` 是内部 Composition Root，统一拥有服务注册、插件发现、容器构建、生命周期初始化、Avalonia App 工厂和反向关闭；`Program.Main` 只负责进程编排。根容器启用 `ValidateScopes` 与 `ValidateOnBuild`，生命周期实现由 internal Coordinator/Runner/StateStore 分工。参见 [`Program.cs`](../../Host/MyAvaloniaManagement/Program.cs)、[`HostRuntime.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/HostRuntime.cs) 和 [`PluginLifecycleCoordinator.cs`](../../Host/MyAvaloniaManagement/Business/Lifecycle/PluginLifecycleCoordinator.cs)。
+**[代码事实]** `HostRuntime` 是内部 Composition Root，统一拥有服务注册、插件发现、容器构建、生命周期初始化、Avalonia App 工厂和反向关闭；`Program.Main` 只负责进程编排。根容器启用 `ValidateScopes` 与 `ValidateOnBuild`，生命周期实现由 internal Coordinator/Runner/StateStore 分工。参见 [`Program.cs`](../../Host/MyAvaloniaManagement/Program.cs)、[`HostRuntime.cs`](../../Host/MyAvaloniaManagement/Business/Composition/HostRuntime.cs) 和 [`PluginLifecycleCoordinator.cs`](../../Host/MyAvaloniaManagement/Business/Lifecycle/PluginLifecycleCoordinator.cs)。
 
 **[代码事实]** `AssemblyLoaderHelper` 已收口为 Host internal 加载边界，内部按规范化插件根目录使用线程安全快照；同一根目录只发现一次。manifest v2 的入口必须携带同名 `.deps.json`，每个插件目录建立独立且不可回收的 `PluginLoadContext`；加载器不注册全局 `AssemblyResolve`、不递归索引 DLL，也没有跨插件简单名称缓存。加载器只按大小写敏感完整名称取得 `entryPoint.type`，并在不实例化插件对象的前提下预检可执行结构；程序集中的其他模块不会被扫描或执行。单个插件目录、依赖、类型或入口结构失败不会终止其他插件。后续贡献只来自精确入口的显式注册。
 
@@ -126,7 +126,7 @@ sequenceDiagram
 新的服务集合，调用一次 `Configure`，再建立插件私有 Provider。同程序集其他模块不参与发现。manifest
 是身份唯一事实源；四类宿主贡献使用专用 `Add*` 方法并先写入插件临时 Builder，只有 Provider 成功后
 才合并。Host 描述符从不交给插件，旧保护事务已删除。参见
-[`PluginProviderOwner.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginProviderOwner.cs)。
+[`PluginProviderOwner.cs`](../../Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginProviderOwner.cs)。
 
 **[代码事实]** 最终 `IPluginLifecycle` 是可选能力，不是每个插件的必选空壳。G8 按 PluginId 正序启动、
 按实际成功顺序反向停止；30/10 秒超时、失败隔离、状态和可用性均为 Host internal。Registry 不保存
@@ -296,8 +296,8 @@ internal sealed 实现在调用线程按登记顺序同步执行，订阅者持�
 `HostDockFactory` 与 `WorkspaceSession` 并执行一次绑定。Welcome 只取得窄 Tool 显示动作，不持有 Session、
 Factory 或容器；`ToolManagementViewModel` 只依赖 `ToolWorkspaceReadModel` 和 Session 显隐命令。静态
 `ServiceProvider` 和生产无参构造已经删除。参见
-[`ServiceCollectionExtensions.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/ServiceCollectionExtensions.cs) 和
-[`ToolManagementViewModel.cs`](../../Host/MyAvaloniaManagement/ViewModels/Tools/ToolManagementViewModel.cs)。
+[`ServiceCollectionExtensions.cs`](../../Host/MyAvaloniaManagement/Business/Composition/ServiceCollectionExtensions.cs) 和
+[`ToolWorkspaceState.cs`](../../Host/MyAvaloniaManagement/Models/Tools/ToolWorkspaceState.cs)。
 
 **[架构判断]** 当前模型仍可概括为：**高自由度、强信任、约束正在形成**。它适合内部插件，但下一步应把已经出现的宿主能力收束成稳定接口，而不是继续让插件或宿主 ViewModel 依赖内部字段和全局对象。
 
@@ -333,7 +333,7 @@ Factory 或容器；`ToolManagementViewModel` 只依赖 `ToolWorkspaceReadModel`
 
 ### 6.1 加载隔离需要准确理解
 
-**[已实现]** `PluginDirectoryLayout` 只验证清单声明的入口 DLL 和必需的同名 `.deps.json`，不建立物理 DLL 索引。`AssemblyLoaderHelper` 缓存包含入口程序集、清单、类型和模块类型的同一次不可变快照，不持有跨插件程序集名称表，也不注册 `AppDomain.AssemblyResolve`。参见 [`PluginDirectoryLayout.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/PluginDirectoryLayout.cs) 和 [`AssemblyLoaderHelper.cs`](../../Host/MyAvaloniaManagement/Business/Helpers/AssemblyLoaderHelper.cs)。
+**[已实现]** `PluginDirectoryLayout` 只验证清单声明的入口 DLL 和必需的同名 `.deps.json`，不建立物理 DLL 索引。`AssemblyLoaderHelper` 缓存包含入口程序集、清单、类型和模块类型的同一次不可变快照，不持有跨插件程序集名称表，也不注册 `AppDomain.AssemblyResolve`。参见 [`PluginDirectoryLayout.cs`](../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/PluginDirectoryLayout.cs) 和 [`AssemblyLoaderHelper.cs`](../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/AssemblyLoaderHelper.cs)。
 
 **[已实现]** `PluginLoadContext` 使用 `AssemblyDependencyResolver` 处理托管、卫星和 RID 原生资产。
 共享策略以基础 SDK 与显式 UI Profile 两组根建立默认上下文依赖闭包；共享程序集版本或身份不兼容

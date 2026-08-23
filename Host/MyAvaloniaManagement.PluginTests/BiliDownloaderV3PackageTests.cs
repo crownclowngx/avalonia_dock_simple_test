@@ -1,5 +1,4 @@
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Helpers;
 
 namespace MyAvaloniaManagement.PluginTests;
 

@@ -1,7 +1,6 @@
 using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Converter;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Models.FileSystem;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -41,7 +40,7 @@ public sealed class ServiceAndModelTests
             AddDocument<VisibleDocumentD>(services, builder, "uncategorized", "未分类", "其他");
         });
 
-        var groups = new PluginMenuService(context.Workspace)
+        var groups = new DocumentCreationMenuQuery(context.Workspace)
             .GetCreationEntriesByCategory();
 
         Assert.Equal(2, groups["分类一"].Count);
@@ -73,7 +72,7 @@ public sealed class ServiceAndModelTests
                 false);
         });
 
-        var entries = new PluginMenuService(context.Workspace)
+        var entries = new DocumentCreationMenuQuery(context.Workspace)
             .GetCreationEntriesByCategory()["测试"];
 
         Assert.Equal(2, entries.Count);
@@ -127,7 +126,7 @@ public sealed class ServiceAndModelTests
     [InlineData(@"C:\folder\file.txt", false)]
     [InlineData("", false)]
     public void 驱动器路径识别稳定(string path, bool expected) =>
-        Assert.Equal(expected, FileHelper.IsDrivePath(path));
+        Assert.Equal(expected, FileSystemPath.IsDrivePath(path));
 
     [Fact]
     public void 文件系统节点延迟加载并可刷新()

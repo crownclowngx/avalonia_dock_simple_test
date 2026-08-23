@@ -2,7 +2,6 @@ using Dock.Model;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Workspace;

@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.Loader;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.PluginTests;

@@ -4,7 +4,6 @@ using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Docking;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MySmallTools.Constants;

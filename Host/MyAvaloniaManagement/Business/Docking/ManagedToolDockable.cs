@@ -2,8 +2,8 @@ using System;
 using System.Threading;
 using Avalonia.Controls;
 using Dock.Model.Mvvm.Controls;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Workspace;
+using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Docking;

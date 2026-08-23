@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using MyAvaloniaManagement.Business.Docking;
-using MyAvaloniaManagement.Business.Helpers;
+using MyAvaloniaManagement.Business.Plugins.Registration;
 
 namespace MyAvaloniaManagement.Business.Documents;
 

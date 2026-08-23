@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Controls.Recycling.Model;
 using Avalonia.Input;
-using MyAvaloniaManagement.Business.Helpers;
 using Xunit;
 
 namespace MyAvaloniaManagement.UiTests;

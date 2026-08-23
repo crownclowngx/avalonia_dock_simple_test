@@ -191,12 +191,12 @@ try {
         'WorkspaceSession 的正确性依赖不得恢复为可空构造参数。'
 
     $toolViewModelPath = Join-Path $productionRoot `
-        'ViewModels\Tools\ToolManagementViewModel.cs'
+        'Models\Tools\ToolWorkspaceState.cs'
     Assert-PatternAbsent `
         'using\s+Dock\.|Dock\.Model|IRootDock|IServiceProvider|HostDockFactory|CreatedTools|Dictionary<' `
         @($toolViewModelPath) `
         'ToolManagementViewModel 重新接触 Dock、Factory 字典或服务定位器。'
-    $toolStatePath = Join-Path $productionRoot 'Models\Tools\ToolManagementViewModel.cs'
+    $toolStatePath = Join-Path $productionRoot 'Models\Tools\ToolWorkspaceState.cs'
     Assert-PatternAbsent `
         'using\s+Dock\.|Dock\.Model|IRootDock|IDockable|ITool' `
         @($toolStatePath) `

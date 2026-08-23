@@ -13,7 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Docking;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;

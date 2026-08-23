@@ -5,7 +5,6 @@ using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.PluginSdk;

@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.PluginSdk;

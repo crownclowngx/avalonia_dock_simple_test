@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MyAvaloniaManagement.Business.Documents;
-using MyAvaloniaManagement.Business.Helpers;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Models.FileSystem;
 using MyAvaloniaManagement.ViewModels.Bindings;
@@ -151,7 +150,7 @@ internal sealed partial class FileSystemTreeViewModel : ObservableObject, IFileS
         var folderPath = await _storageService.PickFolderAsync();
         if (!string.IsNullOrWhiteSpace(folderPath))
         {
-            if (FileHelper.IsDrivePath(folderPath))
+            if (FileSystemPath.IsDrivePath(folderPath))
             {
                 SelectedFolderPath = string.Empty;
                 ShowCustomFolder = false;
