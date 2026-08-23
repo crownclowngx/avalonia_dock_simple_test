@@ -84,10 +84,11 @@ V2 历史文档继续用于审计，但已由当前阶段删除的活动脚本�
 正式封板复验仅从 Windows x64 干净提交运行：
 
 ```powershell
-.\scripts\Invoke-HostV3ReleaseGate.ps1
+.\scripts\Invoke-HostV4ReleaseGate.ps1
 ```
 
-该入口会执行两轮隔离完整矩阵和真实窗口 Smoke，但不会上传、打标签或访问外部账号。
+该入口会执行两轮隔离完整 G7 矩阵、实体 ZIP/manifest 复核和真实窗口 Smoke，但不会上传、打标签、
+访问外部账号或调用 AIFLOW。V3 G14 的入口只保留历史封板复核用途。
 
 现有测试范围与输出位置见 [MyAvaloniaManagement 测试说明](../reference/myavalonia-management-tests.md)。新增真实插件时，还应更新 [`CurrentManagedPluginLoadingTests`](../../Host/MyAvaloniaManagement.PluginTests/CurrentManagedPluginLoadingTests.cs) 的预期插件集合，而不是仅靠手工打开界面验收。
 

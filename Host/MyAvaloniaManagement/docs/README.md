@@ -14,8 +14,9 @@
 - [Managed 插件快速开始](../../../docs/quick-start/README.md)
 - [宿主—插件架构评审](../../../docs/design/host-plugin-architecture-review.md)
 - [宿主专项测试说明](../../../docs/reference/myavalonia-management-tests.md)
-- [Host V4 G0–G7 任务书](../../../docs/design/host-v4-breaking-refactor-plan.md)
+- [Host V4 G0–G8 任务书](../../../docs/design/host-v4-breaking-refactor-plan.md)
 - [V4 G7 四插件、Harness 与文档回归](../../../docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)
+- [V4 G8 封板](../../../docs/plan-history/host-v4/g8-v4-sealing.md)
 - [Dock 布局快照 V2](../../../docs/reference/dock-layout-snapshot-v2.md)
 - [G4 Managed-only 插件加载记录](../../../docs/plan-history/host-v1/g4-managed-only-plugin-loading.md)
 - [G5 显式贡献与 Plugin Registry](../../../docs/plan-history/host-v1/g5-explicit-contributions-and-plugin-registry.md)
@@ -57,6 +58,8 @@
 - 分类菜单是构造期只读快照，只有展开状态可变；Document 创建仍直接进入真实 Coordinator；
 - Host V4 G7 只复用 SDK、诊断、四插件和真实媒体既有开发门禁，不增加生产接口；测试 ZIP、
   Harness 与 Release 编译配置均不代表发布资格；
+- Host V4 G8 通过两轮无硬链接隔离、实体 ZIP/manifest 复核和 Windows Smoke 建立本地发布资格；
+  产品与 SDK 保持 3.0.0，未上传、未打 tag、未对外发布且未使用 AIFLOW；
 - 不新增插件市场、热加载、沙箱或新的用户可见诊断通道；
 - 不要求插件跟随宿主内部协作者重编写业务逻辑。
 
@@ -68,6 +71,7 @@
 
 ```powershell
 .\scripts\Test-Documentation.ps1
+.\scripts\Invoke-HostV4ReleaseGate.ps1
 .\scripts\Test-HostV4DevelopmentGate.ps1 -Stage G7
 .\scripts\Test-HostV3ProductionSurface.ps1 -Configuration Release
 .\scripts\Test-DocumentV2.ps1 -Configuration Release
@@ -85,5 +89,6 @@
 
 文档门禁验证本地链接、脚本路径、关键类型、集中版本和四插件兼容区间；宿主综合门禁动态统计
 Unit、Headless UI、Plugin 与覆盖率。带日期的具体数量只记录在各 G 阶段专用文档中，不作为永久阈值。
-以上是日常非发布验证。V3 G14 正式本地复验使用 `scripts/Invoke-HostV3ReleaseGate.ps1` 执行两轮隔离
-矩阵和 Windows Smoke；它不运行 AIFLOW、历史 ReleaseAcceptance、上传或标签。
+除 `Invoke-HostV4ReleaseGate.ps1` 外，以上均是日常非发布验证。当前正式本地复验由 V4 G8 入口执行
+两轮隔离矩阵和 Windows Smoke；V3 G14 入口仅保留历史复核。两者都不运行 AIFLOW、历史
+ReleaseAcceptance、上传或标签。
