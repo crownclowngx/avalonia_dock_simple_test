@@ -11,7 +11,6 @@
         <MenuItem Header="文件">
             <MenuItem Header="打开" Command="{Binding OpenDocumentCommand}"/>
             <MenuItem Header="保存 (ctrl+s)" Command="{Binding SaveDocumentCommand}"/>
-            <Separator/>
         </MenuItem>
         <MenuItem Header="视图">
             <MenuItem Header="主题">

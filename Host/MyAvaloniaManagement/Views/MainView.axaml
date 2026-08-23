@@ -11,7 +11,7 @@
     <Design.DataContext>
         <design:MainWindowDesignData />
     </Design.DataContext>
-    <Grid RowDefinitions="Auto,Auto,*" Background="Transparent" DragDrop.AllowDrop="True">
+    <Grid RowDefinitions="Auto,Auto,*" Background="Transparent">
         <views:MenuView Grid.Row="0" />
         <Border x:Name="DocumentOperationErrorBanner"
                 Grid.Row="1"

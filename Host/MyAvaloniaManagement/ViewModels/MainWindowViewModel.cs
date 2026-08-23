@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Avalonia.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
@@ -18,10 +17,9 @@ namespace MyAvaloniaManagement.ViewModels;
 /// 负责主窗口绑定状态、命令和定向协调，并把 Dock 布局及文档持久化委托给内部服务。
 /// 该边界让 ViewModel 保持 UI 协调职责，不直接承担文件事务和 Dock 树遍历。
 /// </summary>
-internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarget, IMainWindowViewBindings, IDisposable
+internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindowViewBindings, IDisposable
 {
     private readonly WorkspaceSession _workspace;
-    private readonly PluginMenuService _pluginMenuService;
     private readonly DockLayoutLifecycle _layoutLifecycle;
     private readonly ApplicationThemeService _themeService;
     private readonly DocumentPersistenceCoordinator _documents;
@@ -47,15 +45,12 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
 
     internal MainWindowViewModel(
         WorkspaceSession workspace,
-        PluginMenuService pluginMenuService,
         DockLayoutLifecycle layoutLifecycle,
         ApplicationThemeService themeService,
         DocumentPersistenceCoordinator documents,
         DocumentOperationState documentOperationState)
     {
         _workspace = workspace ?? throw new ArgumentNullException(nameof(workspace));
-        _pluginMenuService = pluginMenuService ??
-            throw new ArgumentNullException(nameof(pluginMenuService));
         _layoutLifecycle = layoutLifecycle ??
             throw new ArgumentNullException(nameof(layoutLifecycle));
         _themeService = themeService ??
@@ -190,11 +185,4 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDropTarge
     private void DismissDocumentOperationError() =>
         _documentOperationState.Clear();
 
-    public void DragOver(object? sender, DragEventArgs e)
-    {
-    }
-
-    public void Drop(object? sender, DragEventArgs e)
-    {
-    }
 }

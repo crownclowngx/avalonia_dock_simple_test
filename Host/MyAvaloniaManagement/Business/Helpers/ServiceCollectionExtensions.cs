@@ -248,7 +248,6 @@ internal static class ServiceCollectionExtensions
         // 注册MainWindowViewModel为瞬态，每次请求都创建新实例
         services.AddTransient(provider => new MainWindowViewModel(
             provider.GetRequiredService<WorkspaceSession>(),
-            provider.GetRequiredService<PluginMenuService>(),
             provider.GetRequiredService<DockLayoutLifecycle>(),
             provider.GetRequiredService<ApplicationThemeService>(),
             provider.GetRequiredService<DocumentPersistenceCoordinator>(),
