@@ -310,7 +310,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'scripts/Invoke-HostV4ReleaseGate.ps1' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'Core 127 / UI 45，Unshipped 0 / 0' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'Host 合计 | **478/478**' },
-    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'MySmallTools 专项 | **712/712** | 73.20% | 49.28%' },
+    [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'MySmallTools 专项 | **713/713** | 73.20% | 49.28%' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'BiliDownloader 专项 | **1246/1246** | 83.87% | 67.86%' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'releaseEligible=true' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'publishable=true' },

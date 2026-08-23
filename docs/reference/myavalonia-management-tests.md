@@ -56,7 +56,7 @@ pwsh -NoProfile -File .\scripts\Test-HostV4DevelopmentGate.ps1 -Stage G7
 `FileSystemPath` 行/分支覆盖率均为 100%，真实分类决策分支全部有用例。
 
 Core/UI V3 Shipped 为 **127/45**、Unshipped 为 **0/0**，独立 NuGet 正反消费通过。四插件专项分别为
-MyPlugTest **527/527**、DaTang **578/578**、MySmallTools **712/712**、BiliDownloader
+MyPlugTest **527/527**、DaTang **578/578**、MySmallTools **713/713**、BiliDownloader
 **1246/1246**；每个插件都完成两次确定性测试 ZIP、manifest 与真实 Host Loader。MySmallTools 20 轮
 真实媒体 Harness 已证明全屏关闭、Runtime 退出后 Document/View/加密流弱引用和原生资源归零。
 G7 自身不运行 Windows CI、Windows Smoke、ReleaseAcceptance 或发布门禁；详见

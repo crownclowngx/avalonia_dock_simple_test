@@ -569,7 +569,7 @@ Runtime 退出后原生资源和弱引用归零。G7 当时未运行 AIFLOW、Wi
 SRP 与 DIP，同时避免工作流框架、反射发现、DI 容器和策略工厂。
 
 Host 为 **478/478**、覆盖率 **85.06% / 71.41%**，SDK v3 Shipped 为 Core/UI **127/45**、
-Unshipped **0/0**；四插件专项为 **527/527**、**578/578**、**712/712**、**1246/1246**，
+Unshipped **0/0**；四插件专项为 **527/527**、**578/578**、**713/713**、**1246/1246**，
 MySmallTools 20 轮资源归零，Windows Smoke 保存 `layout-v2.json` schema 2。门禁重新计算四插件
 ZIP/manifest 长度和 SHA-256，并固定 `releaseEligible=true`、`publishable=true`，同时保持
 `published=false`、`uploaded=false`、`tagCreated=false`、`aiflow=false`。完整边界见
