@@ -3,6 +3,7 @@ using BiliDownloader.Services.Download;
 using BiliDownloader.Services.Infrastructure;
 using BiliDownloader.Services.Api;
 using BiliDownloader.Services.Auth;
+using BiliDownloader.ViewModels.BiliDownloader;
 
 namespace BiliDownloader.Tests;
 
@@ -339,6 +340,39 @@ public sealed class P1G8HighSpecificationMediaTests
     }
 
     [Fact]
+    public async Task 工作区能力探测失败会稳定收口检查状态()
+    {
+        // 这里直接组合工作区的三个子 ViewModel，避免通过整个 Document
+        // 间接触发能力探测。这样每个依赖的责任边界都是可见的：配置只保存
+        // UI 状态，视频列表只发出选择变化，可控检查器只提供失败事实。
+        var config = new DownloadConfigViewModel(new InMemorySettingsRepository());
+        var naming = new NamingTemplateViewModel();
+        var videoList = new VideoListViewModel(
+            () => null!,
+            eventBus: null,
+            onStatusMessage: _ => { },
+            new FakeFfmpegService());
+        var inspector = new ThrowingCapabilityInspector();
+        using var workspace = new DownloadWorkspaceViewModel(config, naming, videoList, inspector);
+        videoList.SetItems([new BiliVideoItem { Aid = 1, Cid = 2, Title = "test" }]);
+
+        videoList.VideoItems[0].IsSelected = true;
+
+        // 生产逻辑有 250 ms 防抖，因此测试等待可观测状态，不使用猜测性的
+        // 固定长延时。同时等待错误文本和 finally 收口标志，确保后台任务
+        // 在用例结束前真正完成，从根本上消除覆盖率采集的调度漂移。
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (config.MediaCapabilityStatusText != "高规格能力探测失败；提交时仍会重新预检。"
+               || config.IsMediaCapabilityInspecting)
+        {
+            await Task.Delay(10, timeout.Token);
+        }
+
+        Assert.Equal(1, inspector.CallCount);
+        Assert.False(config.IsMediaCapabilityInspecting);
+    }
+
+    [Fact]
     public async Task 安全默认验证器只允许已知标准规格()
     {
         var verifier = new UnavailableMediaOutputVerifier();
@@ -486,6 +520,29 @@ public sealed class P1G8HighSpecificationMediaTests
                 throw new HttpRequestException("offline test");
             }
             return Task.FromResult(new BiliDashResult { Capabilities = snapshots[aid] });
+        }
+    }
+
+    /// <summary>
+    /// 只表达“检查失败”的最小测试依赖。工作区依赖接口而不是真实 API，
+    /// 使异常分支可以离线、确定性地验证，也体现依赖倒置的设计边界。
+    /// </summary>
+    private sealed class ThrowingCapabilityInspector : IMediaCapabilityInspectionService
+    {
+        public int CallCount { get; private set; }
+
+        public Task<BatchMediaCapabilitySnapshot> InspectAsync(
+            IReadOnlyCollection<BiliVideoItem> items,
+            int qualityId,
+            CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new HttpRequestException("offline test");
+        }
+
+        public void Clear()
+        {
         }
     }
 }

@@ -34,18 +34,31 @@ function Remove-TemporaryTree {
     param([Parameter(Mandatory)] [string]$Path)
 
     # dotnet 结束后，杀毒软件或构建服务可能仍短暂持有隔离 NuGet 缓存中的 DLL。这里仅对已经通过
-    # Assert-ChildPath 证明位于系统临时目录内的本轮目录做有限重试；超过期限仍失败就保留错误，
+    # Assert-ChildPath 证明位于系统临时目录内的本轮目录做有限重试；两轮 G8 会使用
+    # 完全隔离的 NuGet 缓存，第一次下载后 Avalonia BuildServices 可能被 Windows 扫描器占用数十秒。
+    # 因此这里给予最长两分钟的有界等待，而不是把“业务门禁已通过、临时 DLL 尚被扫描”
+    # 误判为 API 回归。超过期限仍失败就保留最后一个原始错误，
     # 既不吞掉真实清理故障，也绝不把重试扩大到仓库、用户目录或其他任务的临时树。
+    $maximumAttempts = 120
+    $retryDelayMilliseconds = 1000
     $lastError = $null
-    foreach ($attempt in 1..8) {
+    foreach ($attempt in 1..$maximumAttempts) {
+        # NuGet 包有时携带只读属性。先在已经通过边界校验的本轮临时树内清除该属性，
+        # 再尝试删除；这里不接受通配符，也不会枚举临时父目录中的其他任务。
+        foreach ($item in @(Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue) +
+            @(Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue)) {
+            if (($item.Attributes -band [IO.FileAttributes]::ReadOnly) -ne 0) {
+                $item.Attributes = $item.Attributes -band (-bnot [IO.FileAttributes]::ReadOnly)
+            }
+        }
         try {
             Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
             return
         }
         catch {
             $lastError = $_
-            if ($attempt -lt 8) {
-                Start-Sleep -Milliseconds 250
+            if ($attempt -lt $maximumAttempts) {
+                Start-Sleep -Milliseconds $retryDelayMilliseconds
             }
         }
     }
@@ -389,6 +402,9 @@ public static class Removed
 finally {
     if (Test-Path -LiteralPath $temporaryRoot) {
         Assert-ChildPath $temporaryRoot $temporaryParent
+        # 先关闭本脚本启动的 MSBuild/VBCS 服务，减少 Windows 在包消费结束后继续占用 DLL 的窗口。
+        # 关闭失败不会掩盖随后 Remove-TemporaryTree 给出的精确清理错误。
+        & dotnet build-server shutdown | Out-Host
         Remove-TemporaryTree -Path $temporaryRoot
     }
 }
