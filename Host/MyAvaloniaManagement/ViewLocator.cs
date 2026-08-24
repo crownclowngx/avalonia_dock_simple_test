@@ -67,10 +67,18 @@ internal sealed class ViewLocator(
             return null;
         }
 
-        if (data is IManagedDockableViewHost adapter)
+        if (data is IManagedDockableViewHost)
         {
-            return adapter.PreparedView ?? throw new InvalidOperationException(
-                "Dock Adapter 尚未完成 View 预构建，不能发布到界面。");
+            // Dock 标签的图标、标题、修改标记和关闭按钮 Presenter 都以 Dockable
+            // 作为 Content。它们的专用模板在标签脱离旧 Dock 的短暂窗口内可能失效，
+            // 此时会回退到应用级 DataTemplate。这里绝不能发布 Adapter 唯一拥有的
+            // 正文 View，否则多个辅助 Presenter 会争用同一个视觉父级。
+            // 真实正文 View 只允许由 DocumentControlRecycling 取得。
+            return new Border
+            {
+                IsVisible = false,
+                IsHitTestVisible = false
+            };
         }
 
         if (data is IDockable dockable)

@@ -8,6 +8,7 @@ using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Docking;
@@ -142,6 +143,23 @@ public sealed class HostToolVisualTests
         {
             window.Close();
         }
+    }
+
+    [AvaloniaFact]
+    public void 工具隐藏恢复继续由正文回收器复用唯一PreparedView()
+    {
+        using var context = new UiTestContext();
+        var tool = Assert.IsType<ManagedToolDockable>(
+            context.Workspace.CreatedTools[HostExtensionIds.PluginStatus.Value]);
+        var prepared = Assert.IsAssignableFrom<Control>(tool.PreparedView);
+        var recycling = context.Provider.GetRequiredService<DocumentControlRecycling>();
+
+        Assert.Same(prepared, recycling.Build(tool, null, null));
+        Assert.True(context.Workspace.TrySetToolVisibility(tool.Id, false));
+        Assert.Same(prepared, tool.PreparedView);
+        Assert.True(context.Workspace.TrySetToolVisibility(tool.Id, true));
+        Assert.Same(prepared, recycling.Build(tool, null, null));
+        Assert.Same(prepared, tool.PreparedView);
     }
 
     [AvaloniaFact]

@@ -1,6 +1,8 @@
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Docking;
@@ -15,7 +17,7 @@ namespace MyAvaloniaManagement.UiTests;
 public sealed class HostDockAdapterUiTests
 {
     [AvaloniaFact]
-    public void View预构建只执行一次并把普通模型设置为DataContext()
+    public void View预构建只执行一次且只有正文回收器取得真实控件()
     {
         var created = 0;
         var registration = Registration(() =>
@@ -34,8 +36,37 @@ public sealed class HostDockAdapterUiTests
         var locator = new ViewLocator(UiWorkspaceCatalogFactory.Create(registry));
 
         var prepared = locator.Prepare(adapter);
+        var firstFallback = Assert.IsType<Border>(locator.Build(adapter));
+        var secondFallback = Assert.IsType<Border>(locator.Build(adapter));
+        var recycling = new DocumentControlRecycling();
+        var content = Assert.IsType<DisposableProbeView>(
+            recycling.Build(adapter, null, null));
+        var presenter = new ContentPresenter { Content = content };
+        var window = new Window { Content = presenter };
+        DisposableProbeView reused;
+        try
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            Assert.Same(presenter, prepared.GetVisualParent());
 
-        Assert.Same(prepared, locator.Build(adapter));
+            reused = Assert.IsType<DisposableProbeView>(
+                recycling.Build(adapter, null, null));
+        }
+        finally
+        {
+            window.Close();
+        }
+
+        Assert.NotSame(firstFallback, secondFallback);
+        Assert.False(firstFallback.IsVisible);
+        Assert.False(secondFallback.IsVisible);
+        Assert.Null(firstFallback.DataContext);
+        Assert.Null(secondFallback.DataContext);
+        Assert.Same(prepared, content);
+        Assert.Same(prepared, reused);
+        Assert.Null(presenter.Content);
+        Assert.Null(prepared.GetVisualParent());
         Assert.Same(model, prepared.DataContext);
         Assert.Equal(1, created);
         Assert.False(locator.Match(model));

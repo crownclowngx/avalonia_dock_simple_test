@@ -74,8 +74,23 @@ internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycli
             return cached;
         }
 
-        var dataTemplate = (parent as Control)?.FindDataTemplate(data);
-        var control = dataTemplate?.Build(data);
+        object? control;
+        if (data is IManagedDockableViewHost adapter)
+        {
+            // 只有 Dock 正文使用的 ControlRecyclingDataTemplate 才会进入本路径。
+            // 标签头及关闭按钮等辅助 Presenter 仍经过应用级 ViewLocator，并只能
+            // 得到独立占位控件，从而保证 Adapter 的真实 View 始终只有一个宿主。
+            control = adapter.PreparedView ?? throw new InvalidOperationException(
+                "Dock Adapter 尚未完成 View 预构建，不能发布到正文回收器。");
+            if (control is Visual visual)
+                RemoveFromVisualParent(visual);
+        }
+        else
+        {
+            var dataTemplate = (parent as Control)?.FindDataTemplate(data);
+            control = dataTemplate?.Build(data);
+        }
+
         if (control is not null)
             Add(key, control);
         return control;

@@ -244,7 +244,7 @@ public sealed class ApplicationAndWindowTests
     }
 
     [AvaloniaFact]
-    public void ViewLocator创建已知视图并为未知Dockable返回占位视图()
+    public void ViewLocator隔离Managed正文并为未知Dockable返回占位视图()
     {
         var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
         services.AddScoped<WelcomeViewModel>();
@@ -273,17 +273,25 @@ public sealed class ApplicationAndWindowTests
         using var adapter = new MyAvaloniaManagement.Business.Docking.ManagedDocumentDockable(
             new ActivatedWorkspaceDocument(registration, lease),
             "欢迎");
-        locator.Prepare(adapter);
-        var known = locator.Build(adapter);
+        var prepared = locator.Prepare(adapter);
+        var firstManagedFallback = locator.Build(adapter);
+        var secondManagedFallback = locator.Build(adapter);
         var fallback = locator.Build(new Dock.Model.Mvvm.Controls.Tool
         {
             Title = "未知工具"
         });
 
-        Assert.IsType<WelcomeView>(known);
+        Assert.IsType<WelcomeView>(prepared);
+        Assert.IsType<Border>(firstManagedFallback);
+        Assert.IsType<Border>(secondManagedFallback);
+        Assert.NotSame(firstManagedFallback, secondManagedFallback);
+        Assert.False(firstManagedFallback!.IsVisible);
+        Assert.False(secondManagedFallback!.IsVisible);
+        Assert.Null(firstManagedFallback.DataContext);
+        Assert.Null(secondManagedFallback.DataContext);
         Assert.IsType<TextBlock>(fallback);
         Assert.True(locator.Match(adapter));
-        Assert.Same(model, known!.DataContext);
+        Assert.Same(model, prepared.DataContext);
         Assert.False(locator.Match(new object()));
         Assert.Null(locator.Build(null));
         Assert.Throws<InvalidOperationException>(() => locator.Build(new object()));
