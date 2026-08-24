@@ -82,6 +82,21 @@ Controls/ExamplePlugin/
 Build 包会自动做共享程序集检查、入口探针、manifest 校验和最终 ZIP 哈希复核；不要绕过它手工压缩
 `bin` 目录。
 
+新增运行时 NuGet 包后，逐项确认：根 `Directory.Packages.props` 有 `PackageVersion`、Plugin `.csproj` 有
+`PackageReference`，且同一 Plugin `.csproj` 有准确包 ID 的 `ManagedPluginPrivatePackage`。对带传递运行时
+依赖的包执行：
+
+```powershell
+dotnet list src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj package --include-transitive
+dotnet msbuild src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj `
+  -t:BuildManagedPluginPackage `
+  -p:Configuration=Release `
+  -p:ManagedPluginTraceAssets=true
+```
+
+将所有实际提供私有运行时 DLL/原生文件的传递包也声明为 `ManagedPluginPrivatePackage`，再解压 ZIP 核对。
+不要把 Host 共享包加入该列表。
+
 ## 4. 部署到真实 Host
 
 已知 Host 的 `Controls` 根目录时：
@@ -158,7 +173,7 @@ Rider。Preview 不是运行时调试；交互、键盘输入和完整资源行�
 模板搜索索引可能晚于普通 NuGet 包索引。直接安装精确 ID：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.1
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.4
 ```
 
 ### NuGet 还原失败
@@ -180,6 +195,14 @@ dotnet restore --source https://api.nuget.org/v3/index.json
 4. 私有依赖是否声明为 `ManagedPluginPrivatePackage`；
 5. Document/Tool ID 是否属于 manifest Plugin ID；
 6. Host SDK 版本是否位于 `[3.0.0, 4.0.0)`。
+
+### Host 报 `FileNotFoundException` 或提示缺少 DLL
+
+1. 不要复制 `bin/Release`，重新使用 `BuildManagedPluginPackage` 生成正式 ZIP；
+2. 检查缺失 DLL 所属 NuGet 包是否已在 Plugin `.csproj` 声明为 `ManagedPluginPrivatePackage`；
+3. 执行 `dotnet list ... package --include-transitive`，检查缺失 DLL 是否来自未声明的传递包；
+4. 用 `-p:ManagedPluginTraceAssets=true` 重新打包并核对 ZIP 文件列表；
+5. 整体替换旧插件目录并完整重启 Host，避免旧文件残留掩盖问题。
 
 ## 7. 常见 Host 错误方向
 

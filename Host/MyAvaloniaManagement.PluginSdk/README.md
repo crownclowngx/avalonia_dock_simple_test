@@ -26,5 +26,5 @@ Unshipped 为空，v2 Shipped 历史文本保持不变。
 ```xml
 <PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.0.0]" />
 <PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.0.0]" />
-<PackageReference Include="MyAvaloniaManagement.Plugin.Build" Version="[1.0.0]" PrivateAssets="all" />
+<PackageReference Include="MyAvaloniaManagement.Plugin.Build" Version="[1.1.2]" PrivateAssets="all" />
 ```

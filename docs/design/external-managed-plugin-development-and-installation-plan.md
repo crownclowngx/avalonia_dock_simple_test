@@ -13,14 +13,14 @@
 | --- | --- | --- | --- |
 | `MyAvaloniaManagement.PluginSdk` | `3.0.0` | 平台无关身份、Document、内容、关闭与生命周期契约 | 否，Host 提供 |
 | `MyAvaloniaManagement.PluginSdk.UI` | `3.0.0` | Avalonia 模块入口、DI、Document/Tool/View 和窗口端口 | 否，Host 提供 |
-| `MyAvaloniaManagement.Plugin.Build` | `1.0.0` | 声明校验、manifest、资产部署和确定性 ZIP | 否，仅开发期 |
-| `MyAvaloniaManagement.Plugin.Templates` | `1.0.1` | `dotnet new myavalonia-plugin` 解决方案模板与项目内置文档 | 否，仅创建时 |
+| `MyAvaloniaManagement.Plugin.Build` | `1.1.2` | 声明校验、manifest、资产部署和确定性 ZIP | 否，仅开发期 |
+| `MyAvaloniaManagement.Plugin.Templates` | `1.0.4` | `dotnet new myavalonia-plugin` 解决方案模板与项目内置文档 | 否，仅创建时 |
 
 以上四个版本已于 2026-08-24 发布到 NuGet.org：
 [Core SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk/3.0.0)、
 [UI SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.UI/3.0.0)、
-[Build](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Build/1.0.0) 和
-[Templates](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Templates/1.0.1)。
+[Build](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Build/1.1.2) 和
+[Templates](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Templates/1.0.4)。
 
 Core/UI SDK 同版本发布。Build 与 Templates 独立演进；模板固定一组经过端到端验证的精确版本，避免
 外部插件还原到当前 Host 未验证的共享程序集组合。
@@ -51,7 +51,7 @@ ExamplePlugin/
 从 NuGet.org 安装：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.1
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.4
 dotnet new list myavalonia
 dotnet new myavalonia-plugin --help
 ```
@@ -103,7 +103,7 @@ Document Scope、Dock、Tool、Host Port 和生命周期必须通过真实 Host 
   <PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.0.0]" />
   <PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.0.0]" />
   <PackageReference Include="MyAvaloniaManagement.Plugin.Build"
-                    Version="[1.0.0]"
+                    Version="[1.1.2]"
                     PrivateAssets="all" />
 </ItemGroup>
 ```
@@ -119,6 +119,12 @@ Build 包是开发依赖。Plugin SDK、Avalonia、Dock、Semi、Ursa、Communit
   <ManagedPluginPrivatePackage Include="Some.Private.Runtime" />
 </ItemGroup>
 ```
+
+模板使用中央版本管理时，版本放在解决方案根 `Directory.Packages.props`，`PackageReference` 与
+`ManagedPluginPrivatePackage` 放在 `src/<插件名>.Plugin/<插件名>.Plugin.csproj`。后者决定正式部署目录和
+ZIP 中实际收集哪些 NuGet 运行时资产；只有 `PackageReference` 时普通 CopyLocal 输出可能完整，正式 ZIP
+仍会缺少 DLL。直接包的传递依赖若也提供运行时 DLL 或 RID 资产，必须把对应 NuGet 包 ID 一并列入，可用
+`dotnet list <Plugin.csproj> package --include-transitive` 查找。Host 共享包不得列入。
 
 原生目录或其他文件分别使用 `ManagedPluginAssetDirectoryRelativePath` 和 `ManagedPluginAsset`；目标必须
 位于插件目录内。当前只接受 `win-x64`。
@@ -191,7 +197,7 @@ Packaging/MyAvaloniaManagement.Plugin.Templates/
 dotnet pack Packaging/MyAvaloniaManagement.Plugin.Templates/MyAvaloniaManagement.Plugin.Templates.csproj `
   -c Release -o artifacts/nuget
 dotnet new uninstall MyAvaloniaManagement.Plugin.Templates
-dotnet new install .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.0.1.nupkg
+dotnet new install .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.0.4.nupkg
 ```
 
 每次模板变更至少验证：本地四包 → 安装模板 → 系统临时目录创建插件 → 隔离还原 → Plugin、Standalone、
@@ -246,9 +252,9 @@ dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.PluginSdk.3.0.0.nupkg `
   --source https://api.nuget.org/v3/index.json
 dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.PluginSdk.UI.3.0.0.nupkg `
   --source https://api.nuget.org/v3/index.json
-dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.Plugin.Build.1.0.0.nupkg `
+dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.Plugin.Build.1.1.2.nupkg `
   --source https://api.nuget.org/v3/index.json
-dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.0.1.nupkg `
+dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.0.4.nupkg `
   --source https://api.nuget.org/v3/index.json
 Remove-Item Env:NUGET_API_KEY
 ```
@@ -281,7 +287,7 @@ NuGet 包搜索、包页面和模板目录使用不同索引，刚发布时 `dot
 公共源最终验收：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.1
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.4
 dotnet new myavalonia-plugin -n PublicFeedProbe --plugin-id myavalonia.plugin.public-feed-probe
 cd PublicFeedProbe
 dotnet restore

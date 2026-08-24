@@ -4,7 +4,7 @@
 随项目生成的开发部署文档的解决方案：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.1
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.4
 dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
 ```
 

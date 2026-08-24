@@ -6,7 +6,7 @@
 ## 最短路径
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.1
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.4
 dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
 cd ExamplePlugin
 dotnet restore
@@ -44,7 +44,7 @@ Standalone 是快速开发工作台，真实 Host 是最终验收环境。二者
 | 真实 Dock、布局恢复、保存与关闭语义 | 不验证 | 必须验证 |
 | Host Port、生命周期和卸载 | 只使用显式 Stub | 必须验证 |
 
-模板 `1.0.1` 自带的 Standalone 直接预览一个 `MainDocument + MainView`。当插件有多个 Document 或 Tool
+模板 `1.0.4` 自带的 Standalone 直接预览一个 `MainDocument + MainView`。当插件有多个 Document 或 Tool
 时，应把它扩展为“贡献浏览器”：调用同一个 Module 收集注册结果，左侧列出贡献，中间打开 Document
 标签，右侧或底部显示 Tool。不要复制完整 Host，也不要维护第二份贡献清单。
 

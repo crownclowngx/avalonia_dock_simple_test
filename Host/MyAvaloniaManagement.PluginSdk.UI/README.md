@@ -33,6 +33,6 @@ API 分类和两轮隔离签署。v2 Shipped 继续保存 V2 G14 历史承诺。
 推荐通过解决方案模板开始外部插件开发：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.1
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.4
 dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
 ```

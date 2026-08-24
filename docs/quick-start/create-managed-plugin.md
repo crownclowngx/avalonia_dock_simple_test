@@ -49,7 +49,7 @@ Avalonia 12 包，不需要另外安装 `Avalonia.Templates` 才能创建本插�
 在准备存放源码的目录打开 PowerShell：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.1
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.4
 dotnet new list myavalonia
 dotnet new myavalonia-plugin --help
 ```
@@ -127,7 +127,7 @@ dotnet test -c Debug --no-build
 
 - `MyAvaloniaManagement.PluginSdk` `3.0.0`；
 - `MyAvaloniaManagement.PluginSdk.UI` `3.0.0`；
-- `MyAvaloniaManagement.Plugin.Build` `1.0.0`；
+- `MyAvaloniaManagement.Plugin.Build` `1.1.2`；
 - Avalonia `12.x` 模板锁定版本。
 
 首次还原需要下载 Avalonia 和测试依赖，可能比后续构建慢。公司代理或自定义 NuGet 源下失败时，先用：
@@ -136,6 +136,31 @@ dotnet test -c Debug --no-build
 dotnet nuget list source
 dotnet restore --source https://api.nuget.org/v3/index.json
 ```
+
+### 新增 NuGet 运行时包时同步三个位置
+
+模板启用了中央包版本管理。假设 Plugin 业务新增 `Some.Private.Runtime`，必须同时修改：
+
+```xml
+<!-- 1. 解决方案根 Directory.Packages.props -->
+<PackageVersion Include="Some.Private.Runtime" Version="[1.2.3]" />
+
+<!-- 2、3. src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj -->
+<PackageReference Include="Some.Private.Runtime" />
+<ManagedPluginPrivatePackage Include="Some.Private.Runtime" />
+```
+
+第三行声明该包的运行时 DLL/当前 win-x64 原生资产属于插件并必须进入正式 ZIP。只写前两处时，普通构建或
+Standalone 可能因为 `bin` 中有 CopyLocal 文件而正常，但正式 ZIP 会缺少 DLL。若 NuGet 包还有提供运行时
+文件的传递依赖，用下面的命令查看，并把相应传递包 ID 也逐一加入 `ManagedPluginPrivatePackage`：
+
+```powershell
+dotnet list src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj package --include-transitive
+```
+
+不要把 Host 共享的 Plugin SDK、Avalonia、Dock、Semi、Ursa、CommunityToolkit、
+`Microsoft.Extensions.*` 或 Newtonsoft.Json 标为私有。只给 Standalone/Tests 使用的依赖应加在相应项目，
+不放进 Plugin ZIP。原生目录和额外文件的声明方式见模板生成的 `docs/deployment-and-release.md`。
 
 ## 6. 在 Rider 打开与调试
 
@@ -159,7 +184,7 @@ AXAML 后先重新 Build，再在编辑器中选择 **Editor and Preview**；Ava
 
 ## 7. 当前 Standalone 能验证什么
 
-模板 `1.0.1` 默认直接创建 `MainDocument` 并显示 `MainView`，适合验证：
+模板 `1.0.4` 默认直接创建 `MainDocument` 并显示 `MainView`，适合验证：
 
 - AXAML 布局和主题资源；
 - 编译绑定；

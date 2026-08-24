@@ -3,6 +3,42 @@
 部署分为开发期临时联调和正式 ZIP 发布。两者都必须使用 Build 包筛选出的干净插件目录，不能直接复制
 普通 `bin/Debug` 或 `bin/Release`，因为普通输出可能包含 Host 应当统一提供的共享程序集。
 
+## 新增 NuGet 包后必须同步的三个位置
+
+插件业务代码新增运行时 NuGet 依赖时，以 `Some.Private.Runtime` 为例，同时修改以下位置：
+
+```xml
+<!-- 1. 解决方案根 Directory.Packages.props：统一锁定版本 -->
+<ItemGroup>
+  <PackageVersion Include="Some.Private.Runtime" Version="[1.2.3]" />
+</ItemGroup>
+
+<!-- 2、3. src/DemoPlugin.Plugin/DemoPlugin.Plugin.csproj：引用并声明由插件携带 -->
+<ItemGroup>
+  <PackageReference Include="Some.Private.Runtime" />
+</ItemGroup>
+<ItemGroup>
+  <ManagedPluginPrivatePackage Include="Some.Private.Runtime" />
+</ItemGroup>
+```
+
+`ManagedPluginPrivatePackage` 是正式交付资产所有权声明，不是重复的 `PackageReference`。Build 只从这里列出的
+NuGet 包收集托管 DLL 和当前 `win-x64` RID 资产；漏写时 Standalone 或普通 `bin` 可能正常，正式 ZIP 却会
+缺少 DLL，真实 Host 最终报 `FileNotFoundException`、`FileLoadException` 或类型初始化失败。
+
+还要注意：
+
+- `Include` 使用准确的 NuGet 包 ID；若直接包依赖其他提供运行时文件的包，也要逐一列出这些传递包 ID；
+- 用 `dotnet list src/DemoPlugin.Plugin/DemoPlugin.Plugin.csproj package --include-transitive` 查看传递依赖；
+- SDK、Avalonia、Dock、Semi、Ursa、CommunityToolkit、`Microsoft.Extensions.*` 和 Newtonsoft.Json 是当前
+  Host 共享边界，不添加到 `ManagedPluginPrivatePackage`，也不应出现在 ZIP；
+- 只给 Standalone 或 Tests 使用的包只添加到对应项目，不添加到 Plugin 项目；
+- NuGet 包若通过构建 Target 生成完整原生目录，使用 `ManagedPluginAssetDirectoryRelativePath`；其他额外
+  文件使用带 `TargetPath` 的 `ManagedPluginAsset`。
+
+发布前用 `-p:ManagedPluginTraceAssets=true` 输出最终资产映射，并解压 ZIP 确认插件私有 DLL 与原生文件都在
+`Controls/DemoPlugin/` 内。
+
 ## 临时部署到真实 Host
 
 部署或替换前先完整退出 Host。当前插件发现和加载上下文以进程为边界，不支持热替换。

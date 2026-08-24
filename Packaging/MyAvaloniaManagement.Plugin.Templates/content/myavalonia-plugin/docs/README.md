@@ -44,4 +44,6 @@ Standalone 适合快速检查 AXAML、编译绑定、命令和插件自身对象
 - `myavalonia.plugin.demo` 是持久身份，发布后不要因为显示名、项目名或文件夹改名而改变它。
 - manifest 由 Build 包生成，不要手写或复制一份长期维护。
 - 插件只通过公开 Plugin SDK 接入 Host，不引用 Host 内部项目。
+- 新增插件运行时 NuGet 包时，要同时更新根目录 `Directory.Packages.props`、Plugin 项目的
+  `PackageReference` 和 `ManagedPluginPrivatePackage`；完整示例见部署文档。
 - 当前交付目标是 Windows x64；插件替换后必须完整重启 Host，不支持热更新。
