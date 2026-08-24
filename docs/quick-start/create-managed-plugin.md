@@ -49,7 +49,7 @@ Avalonia 12 包，不需要另外安装 `Avalonia.Templates` 才能创建本插�
 在准备存放源码的目录打开 PowerShell：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.1
 dotnet new list myavalonia
 dotnet new myavalonia-plugin --help
 ```
@@ -95,8 +95,12 @@ ExamplePlugin/
 │  │  ├─ Features/Main/
 │  │  └─ Plugin/ExamplePluginModule.cs
 │  └─ ExamplePlugin.Standalone/
-└─ tests/
-   └─ ExamplePlugin.Tests/
+├─ tests/
+│  └─ ExamplePlugin.Tests/
+└─ docs/
+   ├─ README.md
+   ├─ project-and-window-responsibilities.md
+   └─ deployment-and-release.md
 ```
 
 三个项目的职责：
@@ -155,7 +159,7 @@ AXAML 后先重新 Build，再在编辑器中选择 **Editor and Preview**；Ava
 
 ## 7. 当前 Standalone 能验证什么
 
-模板 `1.0.0` 默认直接创建 `MainDocument` 并显示 `MainView`，适合验证：
+模板 `1.0.1` 默认直接创建 `MainDocument` 并显示 `MainView`，适合验证：
 
 - AXAML 布局和主题资源；
 - 编译绑定；

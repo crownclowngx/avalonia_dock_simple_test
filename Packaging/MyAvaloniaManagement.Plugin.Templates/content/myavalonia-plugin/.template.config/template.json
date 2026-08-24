@@ -34,6 +34,9 @@
     },
     {
       "path": "src/DemoPlugin.Standalone/DemoPlugin.Standalone.csproj"
+    },
+    {
+      "path": "docs/README.md"
     }
   ]
 }

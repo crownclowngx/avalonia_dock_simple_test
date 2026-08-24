@@ -3,6 +3,9 @@
 这是由 `myavalonia-plugin` 创建的 Managed Plugin 解决方案。真实交付物是
 `src/DemoPlugin.Plugin`；`Standalone` 只负责快速预览同一份 View、ViewModel 与业务代码。
 
+> 第一次开始开发前，请先阅读 [项目文档与快速开始](docs/README.md)。其中说明了三个子项目和
+> Standalone 窗口的职责、接入真实 Host 的边界，以及临时部署和正式 ZIP 发布流程。
+
 ```powershell
 dotnet restore
 dotnet build

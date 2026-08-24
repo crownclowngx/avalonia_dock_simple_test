@@ -14,13 +14,13 @@
 | `MyAvaloniaManagement.PluginSdk` | `3.0.0` | 平台无关身份、Document、内容、关闭与生命周期契约 | 否，Host 提供 |
 | `MyAvaloniaManagement.PluginSdk.UI` | `3.0.0` | Avalonia 模块入口、DI、Document/Tool/View 和窗口端口 | 否，Host 提供 |
 | `MyAvaloniaManagement.Plugin.Build` | `1.0.0` | 声明校验、manifest、资产部署和确定性 ZIP | 否，仅开发期 |
-| `MyAvaloniaManagement.Plugin.Templates` | `1.0.0` | `dotnet new myavalonia-plugin` 解决方案模板 | 否，仅创建时 |
+| `MyAvaloniaManagement.Plugin.Templates` | `1.0.1` | `dotnet new myavalonia-plugin` 解决方案模板与项目内置文档 | 否，仅创建时 |
 
 以上四个版本已于 2026-08-24 发布到 NuGet.org：
 [Core SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk/3.0.0)、
 [UI SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.UI/3.0.0)、
 [Build](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Build/1.0.0) 和
-[Templates](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Templates/1.0.0)。
+[Templates](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Templates/1.0.1)。
 
 Core/UI SDK 同版本发布。Build 与 Templates 独立演进；模板固定一组经过端到端验证的精确版本，避免
 外部插件还原到当前 Host 未验证的共享程序集组合。
@@ -51,7 +51,7 @@ ExamplePlugin/
 从 NuGet.org 安装：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.1
 dotnet new list myavalonia
 dotnet new myavalonia-plugin --help
 ```
@@ -177,6 +177,7 @@ Packaging/MyAvaloniaManagement.Plugin.Templates/
    ├─ DemoPlugin.slnx
    ├─ Directory.Build.props
    ├─ Directory.Packages.props
+   ├─ docs/
    ├─ src/
    └─ tests/
 ```
@@ -190,7 +191,7 @@ Packaging/MyAvaloniaManagement.Plugin.Templates/
 dotnet pack Packaging/MyAvaloniaManagement.Plugin.Templates/MyAvaloniaManagement.Plugin.Templates.csproj `
   -c Release -o artifacts/nuget
 dotnet new uninstall MyAvaloniaManagement.Plugin.Templates
-dotnet new install .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.0.0.nupkg
+dotnet new install .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.0.1.nupkg
 ```
 
 每次模板变更至少验证：本地四包 → 安装模板 → 系统临时目录创建插件 → 隔离还原 → Plugin、Standalone、
@@ -247,7 +248,7 @@ dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.PluginSdk.UI.3.0.0.nupk
   --source https://api.nuget.org/v3/index.json
 dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.Plugin.Build.1.0.0.nupkg `
   --source https://api.nuget.org/v3/index.json
-dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.0.0.nupkg `
+dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.0.1.nupkg `
   --source https://api.nuget.org/v3/index.json
 Remove-Item Env:NUGET_API_KEY
 ```
@@ -280,7 +281,7 @@ NuGet 包搜索、包页面和模板目录使用不同索引，刚发布时 `dot
 公共源最终验收：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.1
 dotnet new myavalonia-plugin -n PublicFeedProbe --plugin-id myavalonia.plugin.public-feed-probe
 cd PublicFeedProbe
 dotnet restore

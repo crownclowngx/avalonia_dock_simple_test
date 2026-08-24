@@ -158,7 +158,7 @@ Rider。Preview 不是运行时调试；交互、键盘输入和完整资源行�
 模板搜索索引可能晚于普通 NuGet 包索引。直接安装精确 ID：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.1
 ```
 
 ### NuGet 还原失败

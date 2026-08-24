@@ -4,7 +4,7 @@
 
 ## 快速开始
 
-> 当前外部开发基线：Core/UI SDK `3.0.0`、Build `1.0.0` 与 Templates `1.0.0` 已发布到 NuGet.org；
+> 当前外部开发基线：Core/UI SDK `3.0.0`、Build `1.0.0` 与 Templates `1.0.1` 已发布到 NuGet.org；
 > 外部作者可以在不克隆 Host 源码的情况下使用 `dotnet new myavalonia-plugin` 创建、独立调试、测试和
 > 打包插件。manifest schema 仍为 2，当前交付平台为 Windows x64。
 >
