@@ -1,132 +1,204 @@
-# 创建 Managed Plugin
+# 从只有 Rider 和 Avalonia 的机器创建插件
 
-本篇按 V3 G14 已封板 API 创建 `QuickStartPlugin` 项目、稳定身份与模块入口。Document 激活使用
-互斥 New/Restore 类型，保存契约使用修订快照；模块从空私有集合登记，Host 在 Seal 与 ID 归属校验
-通过后最终追加端口及贡献根；Core/UI v3 Shipped 已固定为 127/45；
-可运行事实源是 [`MyPlugTest.csproj`](../../Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) 和 [`MyPlugTestPluginModule`](../../Plugins/MyPlugTest/MyPlugTest/Plugin/MyPlugTestPluginModule.cs)。
+本篇假设一台 Windows x64 开发机只安装了 JetBrains Rider，以及 Rider 中的 Avalonia/AvaloniaRider
+插件。目标是不克隆 Host 源码，直接从 NuGet.org 安装模板并创建一个能独立运行、调试、测试和打包的
+真实插件项目。
 
-## 1. 创建项目
+## 1. 先确认 .NET 10 SDK
 
-在仓库根目录执行：
+Rider 是 IDE，AvaloniaRider 是 XAML 编辑/预览扩展；它们都不能代替 .NET SDK。当前模板目标框架是
+`net10.0`，所以必须安装 **.NET 10 SDK**，只有 Runtime 不够。
 
-```powershell
-dotnet new classlib -n QuickStartPlugin -o Plugins/QuickStartPlugin/QuickStartPlugin -f net10.0
-```
-
-将项目文件调整为：
-
-```xml
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <ManagedPlugin>true</ManagedPlugin>
-    <ManagedPluginId>myavalonia.plugin.quick-start</ManagedPluginId>
-    <ManagedPluginDirectoryName>QuickStartPlugin</ManagedPluginDirectoryName>
-    <PluginVersion>3.0.0</PluginVersion>
-    <ManagedPluginEntryType>QuickStartPlugin.Plugin.QuickStartPluginModule</ManagedPluginEntryType>
-    <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
-    <ManagedPluginSdkMaxExclusive>$(MyAvaloniaPluginSdkNextMajorVersion)</ManagedPluginSdkMaxExclusive>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <!-- Core 与 UI SDK 都由 Host 提供；插件包不得复制这些程序集。 -->
-    <ProjectReference Include="../../../Host/MyAvaloniaManagement.PluginSdk/MyAvaloniaManagement.PluginSdk.csproj"
-                      Private="false" />
-    <ProjectReference Include="../../../Host/MyAvaloniaManagement.PluginSdk.UI/MyAvaloniaManagement.PluginSdk.UI.csproj"
-                      Private="false" />
-    <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-  </ItemGroup>
-</Project>
-```
-
-外部项目使用宿主发布方提供的同版本 NuGet 包，并同样排除运行时复制。G14 正式基线的构建探针无条件验证
-最终 UI SDK `IPluginModule`，不存在入口契约选择开关；插件不得引用已删除的 Legacy、Dock 或 Host 生产项目。
-
-## 2. 理解生成清单
-
-不要在源码目录手写清单。公共构建协议根据项目属性生成严格 manifest v2：
-
-```json
-{
-  "schemaVersion": 2,
-  "pluginId": "myavalonia.plugin.quick-start",
-  "pluginVersion": "3.0.0",
-  "entryPoint": {
-    "assembly": "QuickStartPlugin.dll",
-    "type": "QuickStartPlugin.Plugin.QuickStartPluginModule"
-  },
-  "sdk": {
-    "minInclusive": "3.0.0",
-    "maxExclusive": "4.0.0"
-  }
-}
-```
-
-字段区分大小写；未知、重复、缺失字段以及 v1 schema 都会被拒绝。入口类型必须 public、非抽象、非泛型，实现最终 UI SDK `IPluginModule`，并具有 public 无参构造。
-
-## 3. 定义稳定 ID
-
-建立 `Constants/PluginIds.cs`：
-
-```csharp
-using MyAvaloniaManagement.PluginSdk;
-
-namespace QuickStartPlugin.Constants;
-
-public static class PluginIds
-{
-    public static readonly PluginId Plugin = new("myavalonia.plugin.quick-start");
-    public static readonly DocumentTypeId WelcomeDocument =
-        new("myavalonia.plugin.quick-start.document.welcome");
-    public static readonly ToolTypeId StatusTool =
-        new("myavalonia.plugin.quick-start.tool.status");
-}
-```
-
-当前生产语义只接受规范主 ID，不提供 `LegacyIds`。类名和显示文字可以变化，已发布的稳定 ID 不应变化。
-
-## 4. 建立组合根
-
-建立 `Plugin/QuickStartPluginModule.cs`：
-
-```csharp
-using MyAvaloniaManagement.PluginSdk.UI;
-
-namespace QuickStartPlugin.Plugin;
-
-public sealed class QuickStartPluginModule : IPluginModule
-{
-    public void Configure(IPluginRegistration registration)
-    {
-        ArgumentNullException.ThrowIfNull(registration);
-        // 下一篇在这里一次声明模型、View 和 Descriptor。
-    }
-}
-```
-
-manifest 是插件身份唯一事实源，模块不重复声明 `PluginId`。`registration.Services` 只属于当前插件；普通业务服务使用标准 DI 注册，宿主可见贡献必须使用 `AddDocument`、`AddPersistableDocument`、`AddTool` 或 `UseLifecycle`。
-
-## 5. 构建与运行
-
-完成[下一篇](./add-document-and-tool.md)的代码后执行：
+在 PowerShell 或 Rider Terminal 中执行：
 
 ```powershell
-dotnet build Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug
-dotnet build Plugins/QuickStartPlugin/QuickStartPlugin/QuickStartPlugin.csproj -c Debug
-dotnet run --project Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug --no-build
+dotnet --version
+dotnet --list-sdks
 ```
 
-构建产物位于 `Host/MyAvaloniaManagement/bin/Debug/net10.0/Controls/QuickStartPlugin/`。替换插件文件后必须完整重启 Host，因为发现结果在单个进程内缓存。
-
-生成独立测试 ZIP：
+输出中必须有 `10.0.x`。如果 `dotnet` 不存在，或者列表中没有 10.0 SDK，在管理员 PowerShell 中安装：
 
 ```powershell
-.\scripts\Build-ManagedPluginPackage.ps1 `
-  -Project Plugins/QuickStartPlugin/QuickStartPlugin/QuickStartPlugin.csproj `
-  -Configuration Release
+winget install Microsoft.DotNet.SDK.10
 ```
 
-ZIP 只应包含清单、入口程序集、deps、PDB 及插件私有资产；不得包含 Core/UI SDK、Avalonia、Semi、Ursa、Dock、Host 或 `Microsoft.Extensions.*` 共享程序集。
+安装后完全退出并重新启动 Rider，再次执行检查。也可以按
+[Microsoft 的 Windows 安装说明](https://learn.microsoft.com/dotnet/core/install/windows)下载安装器。
+
+> 安装 SDK 会同时提供对应 Runtime，不需要再单独安装 `.NET Desktop Runtime 10`。
+
+## 2. Rider 与 Avalonia 插件
+
+建议更新到当前 Rider。Rider 从 2024.3 开始支持 `.slnx`；当前版本可以直接打开模板生成的
+`ExamplePlugin.slnx`。相关操作见
+[Rider 的 SLNX 说明](https://www.jetbrains.com/help/rider/Extending_Your_Solution.html#slnx)。如果旧版 Rider
+不能识别 `.slnx`，优先更新 Rider；临时也可以直接打开项目根目录或 Standalone `.csproj`。
+
+AvaloniaRider 只改善 AXAML 编辑和预览，不负责安装本模板或 NuGet 依赖。在 Rider 中可检查：
+
+```text
+Settings → Plugins → Marketplace → AvaloniaRider
+```
+
+安装或更新后重启 Rider。官方步骤见
+[Avalonia IDE 配置](https://docs.avaloniaui.net/docs/get-started/set-up-your-ide)。模板已经引用经过验证的
+Avalonia 12 包，不需要另外安装 `Avalonia.Templates` 才能创建本插件。
+
+## 3. 安装 Managed Plugin 模板
+
+在准备存放源码的目录打开 PowerShell：
+
+```powershell
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.0
+dotnet new list myavalonia
+dotnet new myavalonia-plugin --help
+```
+
+应能看到短名称 `myavalonia-plugin`。若想搜索公开包：
+
+```powershell
+dotnet package search MyAvaloniaManagement `
+  --source https://api.nuget.org/v3/index.json
+```
+
+NuGet 的普通包索引和模板搜索索引不是同一个索引。刚发布时 `dotnet new search myavalonia-plugin` 可能
+暂时查不到，但按精确包 ID 安装仍然有效。
+
+## 4. 创建真实插件解决方案
+
+选择一个发布后不会再改变的插件身份：
+
+```powershell
+dotnet new myavalonia-plugin `
+  -n ExamplePlugin `
+  --plugin-id myavalonia.plugin.example
+```
+
+规则：
+
+- 项目名 `ExamplePlugin` 可以以后重构或更换显示名称；
+- `myavalonia.plugin.example` 是持久身份，发布后不要随意改变；
+- 只使用小写字母、数字、点和连字符；
+- Document ID 使用 `{PluginId}.document.*`；
+- Tool ID 使用 `{PluginId}.tool.*`。
+
+生成结果：
+
+```text
+ExamplePlugin/
+├─ ExamplePlugin.slnx
+├─ Directory.Build.props
+├─ Directory.Packages.props
+├─ src/
+│  ├─ ExamplePlugin.Plugin/
+│  │  ├─ Constants/PluginIds.cs
+│  │  ├─ Features/Main/
+│  │  └─ Plugin/ExamplePluginModule.cs
+│  └─ ExamplePlugin.Standalone/
+└─ tests/
+   └─ ExamplePlugin.Tests/
+```
+
+三个项目的职责：
+
+| 项目 | 职责 | 是否进入插件 ZIP |
+| --- | --- | --- |
+| `ExamplePlugin.Plugin` | View、ViewModel、Module、业务服务 | 是 |
+| `ExamplePlugin.Standalone` | 独立 Avalonia 调试窗口 | 否 |
+| `ExamplePlugin.Tests` | 插件业务和注册测试 | 否 |
+
+默认不要创建只有转发作用的 Core。只有同一业务必须被多个插件、命令行或服务共同复用时才提取 Core，
+并把 Core 明确声明为插件私有运行时资产。
+
+## 5. 第一次命令行构建
+
+```powershell
+cd ExamplePlugin
+dotnet restore
+dotnet build -c Debug -warnaserror
+dotnet test -c Debug --no-build
+```
+
+模板使用 NuGet.org 上的精确版本：
+
+- `MyAvaloniaManagement.PluginSdk` `3.0.0`；
+- `MyAvaloniaManagement.PluginSdk.UI` `3.0.0`；
+- `MyAvaloniaManagement.Plugin.Build` `1.0.0`；
+- Avalonia `12.x` 模板锁定版本。
+
+首次还原需要下载 Avalonia 和测试依赖，可能比后续构建慢。公司代理或自定义 NuGet 源下失败时，先用：
+
+```powershell
+dotnet nuget list source
+dotnet restore --source https://api.nuget.org/v3/index.json
+```
+
+## 6. 在 Rider 打开与调试
+
+1. Rider 欢迎页选择 **Open**。
+2. 打开 `ExamplePlugin/ExamplePlugin.slnx`。
+3. 等待右下角 NuGet Restore 和项目索引完成。
+4. 打开 **Run → Edit Configurations**，新增 **.NET Project** 配置。
+5. Project 选择 `src/ExamplePlugin.Standalone/ExamplePlugin.Standalone.csproj`。
+6. 在 `MainDocument.InitializeAsync`、命令或业务服务中设置断点。
+7. 选择刚建立的配置并点击 Debug。
+
+也可以在 Rider Terminal 中启动：
+
+```powershell
+dotnet run --project src/ExamplePlugin.Standalone
+```
+
+Standalone 通过 `ProjectReference` 直接使用同一个 Plugin 项目，因此 Plugin 中的断点会正常命中。修改
+AXAML 后先重新 Build，再在编辑器中选择 **Editor and Preview**；Avalonia 官方也要求预览器先有一个
+成功构建的可执行目标。
+
+## 7. 当前 Standalone 能验证什么
+
+模板 `1.0.0` 默认直接创建 `MainDocument` 并显示 `MainView`，适合验证：
+
+- AXAML 布局和主题资源；
+- 编译绑定；
+- ViewModel 命令和状态；
+- 插件自己的业务服务；
+- Rider 断点与异常。
+
+它不会加载 ZIP、读取 manifest、创建真实 Dock 或模拟全部 Host Port。新增多个 Document/Tool 后如何扩展
+Standalone，见[添加多个 Document、Tool 和独立预览工作台](./add-document-and-tool.md)。
+
+## 8. 生成真实插件 ZIP
+
+```powershell
+dotnet msbuild src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj `
+  -t:BuildManagedPluginPackage `
+  -p:Configuration=Release
+```
+
+默认输出：
+
+```text
+src/ExamplePlugin.Plugin/artifacts/managed-plugin-packages/
+├─ ExamplePlugin.Plugin-1.0.0-win-x64.zip
+└─ ExamplePlugin.Plugin-1.0.0-win-x64.manifest.json
+```
+
+Build 包会在隔离目录执行锁定还原、Release 构建、manifest/程序集/资产校验、确定性 ZIP 和重新解压哈希
+验证。不要手写或复制 `plugin.manifest.json`。
+
+## 9. 部署到真实 Host
+
+在只有 Rider 的机器上可以完成创建、独立调试、测试和 ZIP 打包；要验证真实插件加载，仍然必须取得
+Host 可执行程序或由 Host 维护者提供的测试安装目录。无需取得 Host 源码。
+
+已知 Host `Controls` 目录时可以显式部署：
+
+```powershell
+dotnet msbuild src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj `
+  -t:DeployManagedPlugin `
+  -p:Configuration=Debug `
+  -p:ManagedPluginDeployRoot=C:\Path\To\Host\Controls
+```
+
+也可以把 Release ZIP 交给 Host 的安装流程。替换插件文件后必须完整退出并重启 Host；当前不支持热更新。
+
+下一步：[添加多个 Document、Tool 和独立预览工作台](./add-document-and-tool.md)。

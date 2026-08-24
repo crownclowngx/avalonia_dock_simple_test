@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DemoPlugin.Plugin/DemoPlugin.Plugin.csproj" />
+    <Project Path="src/DemoPlugin.Standalone/DemoPlugin.Standalone.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DemoPlugin.Tests/DemoPlugin.Tests.csproj" />
+  </Folder>
+</Solution>

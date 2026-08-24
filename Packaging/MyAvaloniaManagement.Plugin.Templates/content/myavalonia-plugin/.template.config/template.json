@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json.schemastore.org/template",
+  "author": "MyAvaloniaManagement Contributors",
+  "classifications": [
+    "Desktop",
+    "Avalonia",
+    "Plugin"
+  ],
+  "identity": "MyAvaloniaManagement.Plugin.Template.CSharp",
+  "name": "MyAvaloniaManagement Managed Plugin",
+  "shortName": "myavalonia-plugin",
+  "sourceName": "DemoPlugin",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  },
+  "symbols": {
+    "plugin-id": {
+      "type": "parameter",
+      "datatype": "text",
+      "displayName": "Plugin ID",
+      "description": "以 myavalonia.plugin. 开头的规范小写稳定身份。",
+      "defaultValue": "myavalonia.plugin.demo",
+      "replaces": "myavalonia.plugin.demo"
+    }
+  },
+  "primaryOutputs": [
+    {
+      "path": "DemoPlugin.slnx"
+    },
+    {
+      "path": "src/DemoPlugin.Plugin/DemoPlugin.Plugin.csproj"
+    },
+    {
+      "path": "src/DemoPlugin.Standalone/DemoPlugin.Standalone.csproj"
+    }
+  ]
+}

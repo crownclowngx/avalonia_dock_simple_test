@@ -1,46 +1,67 @@
 # Managed Plugin 快速开始
 
-本组文档以 `MyPlugTest` 为可运行事实源，介绍 manifest schema 2、Core/UI SDK、声明式贡献、普通模型与
-Host Dock Adapter。当前仓库已完成 V3 G14 封板：版本为 3.0.0，Core/UI API 已进入 Shipped 127/45，
-Document 使用互斥 New/Restore 激活，
-持久化 Document 使用修订快照和指定修订确认，插件注册使用 Host 最终提交与 ID 归属校验，其他 API
-Host Catalog 与只含真实插件的 Plugin Registry 已分离；可选全屏能力只通过单参数 `TryPresent` 返回
-标准 `IDisposable` 租约，插件不保存 owner 或 Host 实现。四插件已通过最终 Workspace 创建/关闭、
-Revision 保存竞争或资源边界、Headless UI 与真实 ZIP 加载；G13 已完成唯一 V3 生产面收口，G14 已完成
-两轮隔离门禁和 Windows Smoke；
-教程不使用 Legacy、Strategy、独立 View 注册或 Dock 类型。
+本组文档面向外部插件作者：不需要克隆 Host 仓库，只需要 .NET 10 SDK、Rider 或其他 .NET IDE，以及
+能够访问 NuGet.org。当前公开基线是 Plugin SDK `3.0.0`、manifest schema 2、Avalonia 12、Windows x64。
 
-插件作者只声明自己命名空间内的 Document/Tool。Welcome 与四个 Host Tool 由 Host internal
-`HostWorkspaceCatalog` 声明，插件不注册 Host 伪插件、Host Tool 别名或公共 Workspace Context。
+## 最短路径
 
-## 完成后你将得到什么
+```powershell
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.0
+dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
+cd ExamplePlugin
+dotnet restore
+dotnet build -c Debug -warnaserror
+dotnet test -c Debug --no-build
+dotnet run --project src/ExamplePlugin.Standalone
+```
 
-- 一个由严格 `plugin.manifest.json` 精确加载并通过 G4 所有权校验的 V3 插件；
-- 一个每次激活都创建独立 DI Scope 的 Document；
-- 一个插件级 singleton、关闭时隐藏的 Tool；
-- 一个由 Host 创建 View 并设置 `DataContext` 的完整 UI 链路；
-- 一个不携带 SDK、Avalonia、Dock 或 Host 共享程序集的独立 ZIP。
+模板生成：
 
-## 前置条件
+```text
+ExamplePlugin/
+├─ ExamplePlugin.slnx
+├─ src/
+│  ├─ ExamplePlugin.Plugin/       # 唯一真实插件程序集
+│  └─ ExamplePlugin.Standalone/   # Avalonia 独立预览程序
+└─ tests/
+   └─ ExamplePlugin.Tests/
+```
 
-- Windows、PowerShell 7；
-- 仓库 [`global.json`](../../global.json) 指定的 .NET 10 SDK；
-- 能够构建 `Host/MyAvaloniaManagement`。
+View、ViewModel、`IPluginModule` 和插件业务默认放在同一个 Plugin 项目。只有业务需要被多个插件、命令行
+或服务共同消费时才提取 Core；Standalone 与 Tests 都直接引用同一个 Plugin 项目。
+
+## 两层验证
+
+Standalone 是快速开发工作台，真实 Host 是最终验收环境。二者职责不能混为一谈：
+
+| 能力 | Standalone | 真实 Host |
+| --- | --- | --- |
+| View、绑定、命令和插件私有 DI | 可以 | 可以 |
+| 多 Document 页面和 Tool 的快速查看 | 可由极简工作台模拟 | 可以 |
+| Document Scope、Tool singleton | 可模拟并做单元测试 | 最终事实 |
+| manifest、插件发现、程序集隔离 | 不验证 | 必须验证 |
+| 真实 Dock、布局恢复、保存与关闭语义 | 不验证 | 必须验证 |
+| Host Port、生命周期和卸载 | 只使用显式 Stub | 必须验证 |
+
+模板 `1.0.0` 自带的 Standalone 直接预览一个 `MainDocument + MainView`。当插件有多个 Document 或 Tool
+时，应把它扩展为“贡献浏览器”：调用同一个 Module 收集注册结果，左侧列出贡献，中间打开 Document
+标签，右侧或底部显示 Tool。不要复制完整 Host，也不要维护第二份贡献清单。
 
 ## 生命周期速查
 
-| 能力 | 所有者 | 生命周期 |
-| --- | --- | --- |
-| Document 模型与局部服务 | Document Scope | 每个标签独立；关闭时取消后释放 |
-| Tool 模型 | 插件 Provider | 每个插件一个实例；隐藏/恢复不重建 |
-| View | Host Adapter | 激活时创建，模型由插件容器拥有 |
-| 插件私有 singleton | 插件 Provider | 插件关闭时释放 |
-| `IPluginLifecycle` | 插件 Provider + Host 协调器 | 仅后台资源确有启停需求时使用 |
+| 对象 | 生命周期 |
+| --- | --- |
+| Document Model 与局部服务 | 每打开一个实例创建一个 DI Scope；关闭标签时释放 |
+| Document View | 每个打开实例一个，由工作台或 Host 设置 `DataContext` |
+| Tool Model | 每种 Tool 在插件 Provider 中一个 singleton |
+| Tool View | 展示层对象；不能拥有 Tool Model 生命周期 |
+| 插件私有 singleton | 插件 Provider 释放时结束 |
 
-推荐阅读顺序：
+## 阅读顺序
 
-1. [创建 Managed 插件](./create-managed-plugin.md)
-2. [添加 Document 与 Tool](./add-document-and-tool.md)
-3. [验证与排错](./verification-and-troubleshooting.md)
+1. [从只有 Rider 和 Avalonia 的机器创建插件](./create-managed-plugin.md)
+2. [添加多个 Document、Tool 和独立预览工作台](./add-document-and-tool.md)
+3. [编译、打包、真实 Host 验收与排错](./verification-and-troubleshooting.md)
 
-最小实现见 [`MyPlugTest`](../../Plugins/MyPlugTest/MyPlugTest/)；四插件最终验收链见 [V3 G9](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)、[G10](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、[G11](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) 与 [G12](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) 专项记录，最终签署见 [G14](../plan-history/host-v3/g14-v3-sealing.md)。
+SDK、Build 和模板包的发布方式见
+[外部 Managed Plugin 开发、模板与 NuGet 发布指南](../design/external-managed-plugin-development-and-installation-plan.md)。

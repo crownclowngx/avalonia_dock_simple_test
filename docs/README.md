@@ -4,20 +4,21 @@
 
 ## 快速开始
 
-> V3 G14 当前事实：产品/SDK/四插件 `3.0.0` 已封板；Core/UI public API 已进入 Shipped 127/45，
-> G2–G8 已分别完成修订保存、互斥激活、注册所有权、插件私有消息、Workspace/Dock 拆分、
-> Host Catalog / Plugin Registry 分离和全屏租约；四插件已通过最终 Workspace、UI、资源与真实包验收；
-> manifest、Document、layout 与数据根仍保持 V2 线格式。Legacy 项目、旧入口探针与 Host/Common
-> 双区间继续保持删除状态；两轮隔离门禁已建立本地发布资格，但没有上传或打标签。
+> 当前外部开发基线：Core/UI SDK `3.0.0`、Build `1.0.0` 与 Templates `1.0.0` 已发布到 NuGet.org；
+> 外部作者可以在不克隆 Host 源码的情况下使用 `dotnet new myavalonia-plugin` 创建、独立调试、测试和
+> 打包插件。manifest schema 仍为 2，当前交付平台为 Windows x64。
 >
 > Host V4 G8 当前事实：Host internal G0–G8 已封板，产品、SDK、四插件与 v3 API/磁盘格式保持不变；
 > 当前正式入口为 `scripts/Invoke-HostV4ReleaseGate.ps1`，只建立本地发布资格，不执行外部发布或 AIFLOW。
 
-V3 快速开始入口：
+Managed Plugin 快速开始入口：
 
-1. [创建 Managed 插件](./quick-start/create-managed-plugin.md)：建立项目、清单、稳定 ID、模块和部署目录。
-2. [添加 Document 与 Tool](./quick-start/add-document-and-tool.md)：完成两个最小可见扩展并理解生命周期。
-3. [验证与排错](./quick-start/verification-and-troubleshooting.md)：验证加载、界面行为、测试、日志和常见错误码。
+1. [从只有 Rider 和 Avalonia 的机器创建插件](./quick-start/create-managed-plugin.md)：安装 .NET 10 SDK、
+   NuGet 模板，创建项目并完成第一次独立调试。
+2. [添加多个 Document、Tool 和独立预览工作台](./quick-start/add-document-and-tool.md)：使用唯一 Module
+   注册贡献，并说明多 Scope Document 与 singleton Tool 的预览方法。
+3. [编译、打包、真实 Host 验收与排错](./quick-start/verification-and-troubleshooting.md)：验证 Standalone、
+   确定性 ZIP、真实加载和新机器常见问题。
 
 该路径同时说明仓库内开发和外部二进制交付边界，只推荐 Managed Plugin；详细契约仍以当前实现与兼容文档为准。
 
@@ -126,8 +127,8 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
   记录 Legacy 项目删除、唯一 V2 构建协议、编译负例、依赖白名单与非发布包矩阵。
 - [Managed Plugin V2 G14 封板](./plan-history/host-v2/g14-v2-sealing.md)：
   记录正式 API Shipped、两轮隔离 Release 门禁、Windows V2 Smoke、文档签署和回滚边界。
-- [外部 Managed Plugin 开发与平台安装候选计划](./design/external-managed-plugin-development-and-installation-plan.md)：
-  `MyAvaloniaManagement.Plugin.Build`、`dotnet new` 模板、单 ZIP 导入、安装事务、手工插件纳管与单版本回滚。
+- [外部 Managed Plugin 开发、模板与 NuGet 发布指南](./design/external-managed-plugin-development-and-installation-plan.md)：
+  已发布的 Core/UI SDK、Build、Templates，外部项目结构、单 ZIP 打包与 NuGet 维护流程。
 
 ## 历史升级与验收记录
 

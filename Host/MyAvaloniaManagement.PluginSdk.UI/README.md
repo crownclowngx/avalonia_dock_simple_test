@@ -28,5 +28,11 @@ V3 G8 由同一 UI SDK 的 `IWindowContentFullscreenHost` 承载 MySmallTools �
 插件不取得 Window、Dock、owner 或 `TryRestore`。`3.0.0` UI SDK 的 45 条 public 签名已进入
 v3 Shipped，v3 Unshipped 为空。V3 G9–G12 只用既有声明和 Host internal Workspace/Dock Adapter
 验证四插件，G13 又以真实 nupkg 负例证明旧 owner API 不可消费；G14 未增加公共类型、接口或成员，只完成
-API 分类和两轮隔离签署。v2 Shipped 继续保存 V2 G14 历史承诺；G14 未运行历史 ReleaseAcceptance，
-也没有上传或打标签。
+API 分类和两轮隔离签署。v2 Shipped 继续保存 V2 G14 历史承诺。
+
+推荐通过解决方案模板开始外部插件开发：
+
+```powershell
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.0
+dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
+```

@@ -12,13 +12,17 @@
     <!-- G3 只改变 manifest 与入口协议；当前部署平台仍沿用 Windows x64。 -->
     <ManagedPluginRuntimeIdentifier Condition="'$(ManagedPluginRuntimeIdentifier)' == ''">win-x64</ManagedPluginRuntimeIdentifier>
     <ManagedPluginTargetFramework Condition="'$(ManagedPluginTargetFramework)' == ''">$(TargetFramework)</ManagedPluginTargetFramework>
-    <ManagedPluginManifestSchemaVersion>$(MyAvaloniaV2ManifestSchemaVersion)</ManagedPluginManifestSchemaVersion>
+    <ManagedPluginManifestSchemaVersion Condition="'$(ManagedPluginManifestSchemaVersion)' == '' And '$(MyAvaloniaV2ManifestSchemaVersion)' != ''">$(MyAvaloniaV2ManifestSchemaVersion)</ManagedPluginManifestSchemaVersion>
+    <ManagedPluginManifestSchemaVersion Condition="'$(ManagedPluginManifestSchemaVersion)' == ''">2</ManagedPluginManifestSchemaVersion>
 
     <!--
       普通 Build 默认部署到 Host 输出的 Controls；打包脚本通过全局属性覆盖 DeployRoot，
       从而复用同一文件集合但完全不触碰开发者正在运行的 Host 目录。
     -->
-    <ManagedPluginDeployRoot Condition="'$(ManagedPluginDeployRoot)' == ''">$(MSBuildThisFileDirectory)..\Host\MyAvaloniaManagement\bin\$(Configuration)\$(TargetFramework)\Controls</ManagedPluginDeployRoot>
-    <ManagedPluginDeployDirectory>$(ManagedPluginDeployRoot)\$(ManagedPluginDirectoryName)</ManagedPluginDeployDirectory>
+    <!--
+      外部插件项目不能猜测 Host 安装位置。仓库根构建入口会显式提供开发部署根；
+      NuGet 消费者默认只生成和校验插件输出，只有调用方给出 DeployRoot 时才执行部署。
+    -->
+    <ManagedPluginDeployDirectory Condition="'$(ManagedPluginDeployRoot)' != ''">$(ManagedPluginDeployRoot)\$(ManagedPluginDirectoryName)</ManagedPluginDeployDirectory>
   </PropertyGroup>
 </Project>

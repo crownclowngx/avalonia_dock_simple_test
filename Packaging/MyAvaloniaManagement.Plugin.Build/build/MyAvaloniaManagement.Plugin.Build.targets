@@ -1,0 +1,14 @@
+<Project>
+  <!-- NuGet Targets 位于项目求值末尾，此时插件自身声明已经可用。 -->
+  <Import Project="$(MSBuildThisFileDirectory)..\tools\MyAvaloniaManagement.ManagedPlugin.props" />
+  <Import Project="$(MSBuildThisFileDirectory)..\tools\MyAvaloniaManagement.ManagedPlugin.targets" />
+
+  <PropertyGroup>
+    <ManagedPluginPackageOutput Condition="'$(ManagedPluginPackageOutput)' == ''">$(MSBuildProjectDirectory)\artifacts\managed-plugin-packages</ManagedPluginPackageOutput>
+  </PropertyGroup>
+
+  <Target Name="BuildManagedPluginPackage">
+    <Exec UseUtf8Encoding="Always"
+          Command="pwsh -NoProfile -File &quot;$(MSBuildThisFileDirectory)..\tools\Build-ManagedPluginPackage.ps1&quot; -Project &quot;$(MSBuildProjectFullPath)&quot; -Configuration &quot;$(Configuration)&quot; -OutputDirectory &quot;$(ManagedPluginPackageOutput)&quot;" />
+  </Target>
+</Project>

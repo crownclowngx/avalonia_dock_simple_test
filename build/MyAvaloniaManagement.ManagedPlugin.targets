@@ -102,7 +102,7 @@
   <Target Name="DeployManagedPlugin"
           AfterTargets="GenerateManagedPluginManifest"
           DependsOnTargets="ResolveReferences"
-          Condition="'$(SkipPluginDeploy)' != 'true'">
+          Condition="'$(SkipPluginDeploy)' != 'true' And '$(ManagedPluginDeployRoot)' != ''">
     <PropertyGroup>
       <!-- 前后分号用于做完整包 ID 匹配，防止 Flurl 误匹配 Flurl.Http。 -->
       <_ManagedPluginPrivatePackageIds>;@(ManagedPluginPrivatePackage);</_ManagedPluginPrivatePackageIds>

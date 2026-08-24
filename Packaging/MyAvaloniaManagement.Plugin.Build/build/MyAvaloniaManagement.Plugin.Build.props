@@ -1,0 +1,6 @@
+<Project>
+  <!--
+    NuGet props 在插件项目自身 PropertyGroup 之前导入，不能在这里读取 PluginVersion。
+    真实协议 Props 改由包 Targets 在项目求值末尾导入。
+  -->
+</Project>

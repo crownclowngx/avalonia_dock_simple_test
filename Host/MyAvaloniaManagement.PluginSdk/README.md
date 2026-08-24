@@ -19,5 +19,12 @@ Revision 保存竞争、严格内容读取、关闭令牌与 Lifecycle/readiness
 Dock Adapter 链工作；G13 已证明旧 public 入口和运行闭包零残留，没有新增 SDK public API。
 
 SDK 版本为已封板的 3.0.0；Core 的 127 条 public 签名与 UI 的 45 条均位于 v3 Shipped，两个 v3
-Unshipped 为空，v2 Shipped 历史文本保持不变。两轮隔离门禁只建立本地发布资格；仓库不会自动推送
-公共包源，也没有在 G14 上传、打标签或对外发布。
+Unshipped 为空，v2 Shipped 历史文本保持不变。
+
+外部插件项目使用精确版本引用，并同时引用 UI SDK 与开发期 Build 包：
+
+```xml
+<PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.0.0]" />
+<PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.0.0]" />
+<PackageReference Include="MyAvaloniaManagement.Plugin.Build" Version="[1.0.0]" PrivateAssets="all" />
+```

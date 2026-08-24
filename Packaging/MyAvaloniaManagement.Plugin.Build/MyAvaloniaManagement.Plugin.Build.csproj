@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageId>MyAvaloniaManagement.Plugin.Build</PackageId>
+    <Version>1.0.0</Version>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Title>MyAvaloniaManagement Managed Plugin Build</Title>
+    <Description>为仓库外 Managed Plugin 提供声明校验、严格 manifest、资产部署与确定性 ZIP 打包协议。</Description>
+    <Authors>MyAvaloniaManagement Contributors</Authors>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>
+    <PackageProjectUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test</PackageProjectUrl>
+    <PackageTags>avalonia;plugin;msbuild;template;managed-plugin</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <IsPackable>true</IsPackable>
+    <!-- 脚本由本包 Targets 显式调用，不是 NuGet 安装脚本。 -->
+    <NoWarn>$(NoWarn);NU5111</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="build\MyAvaloniaManagement.Plugin.Build.props" Pack="true" PackagePath="build\" />
+    <None Include="build\MyAvaloniaManagement.Plugin.Build.targets" Pack="true" PackagePath="build\" />
+    <None Include="..\..\build\MyAvaloniaManagement.ManagedPlugin.props"
+          Pack="true"
+          PackagePath="tools\" />
+    <None Include="..\..\build\MyAvaloniaManagement.ManagedPlugin.targets"
+          Pack="true"
+          PackagePath="tools\" />
+    <None Include="tools\Build-ManagedPluginPackage.ps1" Pack="true" PackagePath="tools\" />
+  </ItemGroup>
+
+</Project>

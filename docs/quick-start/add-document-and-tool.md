@@ -1,197 +1,305 @@
-# 添加 Document 与 Tool
+# 添加多个 Document、Tool 和独立预览工作台
 
-本篇在 `QuickStartPlugin` 中加入一个普通 Document 和一个普通 Tool。声明式注册是模型、View 与元数据的唯一事实源：不创建 Strategy，也不单独注册 View。
+本篇从模板生成的 `ExamplePlugin` 出发，说明如何登记多个贡献，以及怎样在 Standalone 小窗口中查看
+它们。核心原则只有一个：`ExamplePluginModule.Configure()` 是唯一注册事实源，Standalone 不再维护另一
+份页面类型清单。
 
-## 1. Document 模型
+## 1. 先区分“多种”和“多实例”
 
-建立 `ViewModels/WelcomeDocumentViewModel.cs`：
+- 多种 Document：订单列表、订单编辑、设置等，每种调用一次 `AddDocument`。
+- 同一种 Document 多实例：同一种订单编辑页可以打开多个，每次创建独立 DI Scope。
+- 多种 Tool：日志、属性、任务队列等，每种调用一次 `AddTool`。
+- 同一种 Tool 重复显示：模型仍然是插件级 singleton，只隐藏和恢复，不重建业务状态。
+
+## 2. 定义稳定身份
+
+更新 `src/ExamplePlugin.Plugin/Constants/PluginIds.cs`：
 
 ```csharp
-using CommunityToolkit.Mvvm.ComponentModel;
 using MyAvaloniaManagement.PluginSdk;
 
-namespace QuickStartPlugin.ViewModels;
+namespace ExamplePlugin.Constants;
 
-public sealed partial class WelcomeDocumentViewModel : ObservableObject, IPluginDocument
+public static class PluginIds
 {
-    private const string DefaultTitle = "欢迎";
-    private readonly IDocumentLifetime _lifetime;
-    private string _title = DefaultTitle;
+    public static readonly PluginId Plugin =
+        new("myavalonia.plugin.example");
 
-    [ObservableProperty]
-    private string message = "Hello from V3";
+    public static readonly DocumentTypeId OrderListDocument =
+        new("myavalonia.plugin.example.document.order-list");
 
-    public WelcomeDocumentViewModel(IDocumentLifetime lifetime) =>
-        _lifetime = lifetime ?? throw new ArgumentNullException(nameof(lifetime));
+    public static readonly DocumentTypeId OrderEditorDocument =
+        new("myavalonia.plugin.example.document.order-editor");
 
-    public DocumentPresentationState Presentation => new(_title);
+    public static readonly DocumentTypeId SettingsDocument =
+        new("myavalonia.plugin.example.document.settings");
 
-    public event EventHandler? PresentationChanged;
+    public static readonly ToolTypeId LogTool =
+        new("myavalonia.plugin.example.tool.log");
 
-    public ValueTask InitializeAsync(
-        DocumentActivation activation,
-        CancellationToken cancellationToken)
+    public static readonly ToolTypeId PropertiesTool =
+        new("myavalonia.plugin.example.tool.properties");
+}
+```
+
+类名、文件夹和显示文字可以改变，已发布的稳定 ID 不应改变。
+
+## 3. 每个功能放在自己的 Feature 目录
+
+推荐按功能垂直组织，而不是建立全局 `Views/` 与 `ViewModels/` 大目录：
+
+```text
+src/ExamplePlugin.Plugin/
+├─ Constants/PluginIds.cs
+├─ Features/
+│  ├─ OrderList/
+│  │  ├─ OrderListDocument.cs
+│  │  ├─ OrderListView.axaml
+│  │  └─ OrderListView.axaml.cs
+│  ├─ OrderEditor/
+│  ├─ Settings/
+│  ├─ Log/
+│  └─ Properties/
+└─ Plugin/
+   ├─ ExamplePluginModule.cs
+   └─ ExamplePluginServices.cs
+```
+
+Document Model 实现 `IPluginDocument`；需要 Host 保存和恢复业务内容时实现
+`IPersistablePluginDocument`。View 必须继承 `Control` 并具有 public 无参构造。Tool Model 不需要实现
+Dock 类型或特定接口。
+
+## 4. 在唯一 Module 中登记全部贡献
+
+```csharp
+public void Configure(IPluginRegistration registration)
+{
+    ArgumentNullException.ThrowIfNull(registration);
+
+    registration.Services.AddExamplePluginServices();
+
+    registration.AddDocument<OrderListDocument, OrderListView>(
+        new DocumentDescriptor(
+            PluginIds.OrderListDocument,
+            "订单列表",
+            "查询和管理订单",
+            "订单"));
+
+    registration.AddPersistableDocument<OrderEditorDocument, OrderEditorView>(
+        new DocumentDescriptor(
+            PluginIds.OrderEditorDocument,
+            "订单编辑",
+            "创建或编辑订单",
+            "订单"));
+
+    registration.AddDocument<SettingsDocument, SettingsView>(
+        new DocumentDescriptor(
+            PluginIds.SettingsDocument,
+            "插件设置",
+            "配置插件选项",
+            "设置"));
+
+    registration.AddTool<LogToolViewModel, LogToolView>(
+        new ToolDescriptor(
+            PluginIds.LogTool,
+            "运行日志",
+            "显示插件运行日志",
+            ToolDockSide.Bottom,
+            ToolCloseBehavior.Hide));
+
+    registration.AddTool<PropertiesToolViewModel, PropertiesToolView>(
+        new ToolDescriptor(
+            PluginIds.PropertiesTool,
+            "属性",
+            "显示当前对象属性",
+            ToolDockSide.Right,
+            ToolCloseBehavior.Hide));
+}
+```
+
+注意：
+
+- `AddDocument` 会让真实 Host 最终登记 scoped Model；
+- `AddTool` 会让真实 Host 最终登记 singleton Model；
+- 不要再对贡献根调用 `registration.Services.AddScoped/AddSingleton`；
+- 插件内部 Repository、Client、Codec 等普通服务仍放入 `registration.Services`；
+- View 不单独登记，Model、View 和 Descriptor 在同一个泛型调用中冻结。
+
+## 5. 当前模板 Standalone 的限制
+
+Templates `1.0.0` 的 `MainWindow` 直接实例化一个 `MainDocument`，XAML 也直接放置一个 `MainView`。新增
+注册不会自动出现在这个窗口，因为 Standalone 没有执行 Module，也没有贡献目录。
+
+这对第一个页面很方便，但多贡献时不应继续写：
+
+```csharp
+new OrderListDocument();
+new OrderEditorDocument();
+new LogToolViewModel();
+```
+
+这种写法绕过 DI、Document Scope、Tool singleton 和 Module 注册，很容易让 Standalone 与真实 Host
+表现不同。
+
+## 6. 推荐的极简预览工作台
+
+Standalone 应扩展为贡献浏览器，而不是缩小版完整 Host：
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│ ExamplePlugin Standalone                                 │
+├──────────────┬──────────────────────────┬────────────────┤
+│ Documents    │ Open Documents           │ Tools          │
+│              │                          │                │
+│ 订单列表     │ [订单列表] [订单编辑 #1] │ 运行日志       │
+│ 订单编辑     │ [订单编辑 #2]            │ 属性           │
+│ 设置         │                          │                │
+│              │      ContentControl      │ ContentControl │
+│ [打开新实例] │                          │                │
+└──────────────┴──────────────────────────┴────────────────┘
+```
+
+建议文件：
+
+```text
+src/ExamplePlugin.Standalone/Preview/
+├─ PreviewPluginRegistration.cs
+├─ PreviewDocumentRegistration.cs
+├─ PreviewToolRegistration.cs
+├─ PreviewDocumentLifetime.cs
+├─ PreviewWorkspaceViewModel.cs
+└─ PreviewHostPorts.cs
+```
+
+它只负责以下闭环：
+
+1. 建立一个空 `ServiceCollection`；
+2. 建立 preview `IPluginRegistration`；
+3. 调用 `new ExamplePluginModule().Configure(registration)` 一次；
+4. 追加 Standalone 专用 `IDocumentLifetime` 和必要 Host Port Stub；
+5. 构建 preview `ServiceProvider`；
+6. 从捕获的 Descriptor/工厂创建 Document 或 Tool View；
+7. 关闭 Document 标签时取消 lifetime 并释放对应 Scope。
+
+如果 Standalone 要构建真实 DI Provider，需要只在 Standalone 项目添加
+`Microsoft.Extensions.DependencyInjection`；它不会进入插件 ZIP。
+
+## 7. PreviewRegistration 如何收集泛型注册
+
+下面是职责骨架，不是新的 SDK 契约：
+
+```csharp
+internal sealed class PreviewPluginRegistration : IPluginRegistration
+{
+    public PreviewPluginRegistration(PluginId pluginId)
     {
-        ArgumentNullException.ThrowIfNull(activation);
-        cancellationToken.ThrowIfCancellationRequested();
-        _lifetime.ClosingToken.ThrowIfCancellationRequested();
-        if (activation is not NewDocumentActivation)
-        {
-            throw new NotSupportedException("示例 Document 没有内容 Codec，只支持新建激活。");
-        }
-
-        _title = string.IsNullOrWhiteSpace(activation.Title) ? DefaultTitle : activation.Title;
-        PresentationChanged?.Invoke(this, EventArgs.Empty);
-        return ValueTask.CompletedTask;
+        PluginId = pluginId;
     }
-}
-```
 
-`IDocumentLifetime` 是必需构造依赖。模型只能观察关闭令牌并协作取消自身工作，不能关闭自己或其他
-Document。每次激活创建独立 Scope，因此可变 Document 状态不能放入 singleton。非持久化 Document
-应像示例一样只接受 `NewDocumentActivation`；声明为可持久化后，再显式处理
-`RestoreDocumentActivation.RestoredContent`，不能把恢复输入当作空白新建。
+    public PluginId PluginId { get; }
+    public IServiceCollection Services { get; } = new ServiceCollection();
+    public List<PreviewDocumentRegistration> Documents { get; } = [];
+    public List<PreviewToolRegistration> Tools { get; } = [];
 
-建立 `Views/WelcomeDocumentView.axaml` 与 code-behind：
-
-```xml
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="QuickStartPlugin.Views.WelcomeDocumentView">
-  <StackPanel Margin="16" Spacing="8">
-    <TextBlock Text="V3 Document" FontWeight="Bold" />
-    <TextBox Text="{Binding Message}" />
-  </StackPanel>
-</UserControl>
-```
-
-```csharp
-using Avalonia.Controls;
-
-namespace QuickStartPlugin.Views;
-
-public sealed partial class WelcomeDocumentView : UserControl
-{
-    public WelcomeDocumentView() => InitializeComponent();
-}
-```
-
-View 必须有 public 无参构造。Host 创建 View、设置 `DataContext` 并包装为 internal Dock Adapter；插件不引用 Dock。
-
-## 2. Tool 模型与 View
-
-建立 `ViewModels/StatusToolViewModel.cs`：
-
-```csharp
-using CommunityToolkit.Mvvm.ComponentModel;
-
-namespace QuickStartPlugin.ViewModels;
-
-public sealed partial class StatusToolViewModel : ObservableObject
-{
-    [ObservableProperty]
-    private int activationCount;
-}
-```
-
-Tool 不实现 Dock 类型，也不拥有标题、位置、关闭或浮动状态。创建 `StatusToolView` 的方式与 Document View 相同，并绑定 `ActivationCount`。
-
-## 3. 一次声明贡献
-
-补全模块：
-
-```csharp
-using MyAvaloniaManagement.PluginSdk.UI;
-using QuickStartPlugin.Constants;
-using QuickStartPlugin.ViewModels;
-using QuickStartPlugin.Views;
-
-namespace QuickStartPlugin.Plugin;
-
-public sealed class QuickStartPluginModule : IPluginModule
-{
-    public void Configure(IPluginRegistration registration)
+    public void AddDocument<TDocument, TView>(DocumentDescriptor descriptor)
+        where TDocument : class, IPluginDocument
+        where TView : Control, new()
     {
-        ArgumentNullException.ThrowIfNull(registration);
-
-        registration.AddDocument<WelcomeDocumentViewModel, WelcomeDocumentView>(
-            new DocumentDescriptor(
-                PluginIds.WelcomeDocument,
-                "欢迎",
-                "演示独立 Document Scope",
-                "快速开始"));
-
-        registration.AddTool<StatusToolViewModel, StatusToolView>(
-            new ToolDescriptor(
-                PluginIds.StatusTool,
-                "状态",
-                "演示插件级 Tool singleton",
-                ToolDockSide.Right,
-                ToolCloseBehavior.Hide));
+        Services.AddScoped<TDocument>();
+        Documents.Add(new(
+            descriptor,
+            provider => provider.GetRequiredService<TDocument>(),
+            () => new TView()));
     }
+
+    public void AddTool<TTool, TView>(ToolDescriptor descriptor)
+        where TTool : class
+        where TView : Control, new()
+    {
+        Services.AddSingleton<TTool>();
+        Tools.Add(new(
+            descriptor,
+            provider => provider.GetRequiredService<TTool>(),
+            () => new TView()));
+    }
+
+    // AddPersistableDocument 与 AddDocument 使用同一 preview 生命周期；
+    // UseLifecycle 可以显式记录为“不在 Standalone 自动启动”。
 }
 ```
 
-注册方法自动把 Document 模型注册为 scoped、Tool 模型注册为插件级 singleton。不要再对这两个模型执行 `AddScoped`/`AddSingleton`，也不要建立独立 View 映射。
+这里的 `AddScoped/AddSingleton` 只属于 Standalone 的 preview 容器。真实 Host 仍使用自己的注册事务和
+所有权校验，插件 Module 不应手工登记贡献根。
 
-## 4. 可选：持久化 Document
+`PreviewDocumentRegistration` 和 `PreviewToolRegistration` 只需保存 Descriptor、Model 工厂和 View 工厂。
+不要保存已经创建的 scoped Document Model。
 
-需要保存业务内容时，把模型改为 `IPersistablePluginDocument`，注册改为 `AddPersistableDocument`。插件只拥有 content schema 和 JSON payload；Host 独占文件路径、外层信封、原子写入与成功提交时机。
+## 8. 打开和关闭 Document
 
-实现应遵循：
-
-- 每次持久内容真正变化都推进插件自己的 `DocumentRevision`，即使模型已经 Dirty 也不能停止计数；
-- `CaptureSaveSnapshotAsync` 返回不可变的 `DocumentSaveSnapshot(revision, content)`，不直接写文件；
-- 恢复时先严格验证 schema、字段、类型和完整临时状态，再一次提交到模型；
-- `IsDirty` 实际变化时发出 `IsDirtyChanged`，让 Host 同步 Tab 的修改标记；
-- Host 原子保存成功后只把捕获修订传给 `AcceptChanges(savedRevision)`；捕获后若又有编辑，旧修订确认
-  必须是幂等无操作，模型继续保持 Dirty；
-- 不兼容内容直接失败，不做猜测式修复或 V1 兼容读取。
-
-可直接参考 [`TestWelcomeViewModel`](../../Plugins/MyPlugTest/MyPlugTest/ViewModels/TestWelcomeViewModel.cs) 和独立 [`TestWelcomeDocumentContentCodec`](../../Plugins/MyPlugTest/MyPlugTest/Persistence/TestWelcomeDocumentContentCodec.cs)。
-
-## 5. 可选：插件内部事件
-
-V3 SDK 不提供通用事件总线。确有一个插件内多消费者需求时，在插件程序集声明只包含
-`Publish<TEvent>` / `Subscribe<TEvent>` 的最小接口，并把 internal sealed 实现注册为该插件 Provider 的
-singleton。不要抽取跨插件公共总线，也不要使用静态 Messenger。发布方只发布；订阅方保存令牌并在自身
-Scope 释放时解绑。同步实现按精确类型在发布线程投递，因此 UI 订阅者需要自行切回 Dispatcher。
+点击左侧 Document 时：
 
 ```csharp
-public sealed record WorkCompletedEvent(string Message);
+var scope = rootProvider.CreateAsyncScope();
+var model = registration.CreateModel(scope.ServiceProvider);
 
-public interface IQuickStartEventBus
-{
-    void Publish<TEvent>(TEvent message) where TEvent : class;
-    IDisposable Subscribe<TEvent>(Action<TEvent> handler) where TEvent : class;
-}
+await model.InitializeAsync(
+    new NewDocumentActivation(registration.Descriptor.DisplayName),
+    cancellationToken);
 
-public sealed class Receiver : IDisposable
-{
-    private readonly IDisposable _subscription;
-
-    public Receiver(IQuickStartEventBus eventBus) =>
-        _subscription = eventBus.Subscribe<WorkCompletedEvent>(OnCompleted);
-
-    private void OnCompleted(WorkCompletedEvent message)
-    {
-        // 若修改 Avalonia 状态，应在这里显式切换到 UI Dispatcher。
-    }
-
-    public void Dispose() => _subscription.Dispose();
-}
+var view = registration.CreateView();
+view.DataContext = model;
 ```
 
-模块只向自己的 `registration.Services` 登记
-`AddSingleton<IQuickStartEventBus, QuickStartEventBus>()`。实现应在锁内维护订阅和创建发布快照，在锁外
-执行用户处理器，并让插件 Provider 释放消息器；可直接参考 MyPlugTest 的私有消息器实现。
+然后把 `view + model + scope` 放入一个 OpenDocument 项。关闭 Tab 时按顺序：
 
-## 6. 验收行为
+1. 取消该 Scope 中 `PreviewDocumentLifetime` 的关闭令牌；
+2. 从 UI 移除 View；
+3. 异步释放 Scope。
 
-- 连续打开两个 Document：模型、Scope 与局部状态彼此独立；
-- 关闭一个 Document：只取消并释放自己的 Scope；
-- 多次显示 Tool：模型引用相同；关闭后恢复不丢状态；
-- View 的 `DataContext` 是对应模型；
-- 插件源码不含 Strategy、Dock 基类、Legacy 契约或独立 View 注册。
+再次点击同一种 Document 必须创建新 Scope，这样才能发现意外 singleton 状态泄漏。
 
-下一步按[验证与排错](./verification-and-troubleshooting.md)检查真实加载和独立 ZIP。
+## 9. 显示 Tool
+
+Tool 从根 Provider 获取 Model：
+
+```csharp
+var model = registration.CreateModel(rootProvider);
+var view = registration.CreateView();
+view.DataContext = model;
+```
+
+工作台可以按 `ToolDockSide` 把 Tool 粗略放在左、右、上、下区域，但这只是布局提示，不需要引入 Dock
+库。`ToolCloseBehavior.Hide` 在 Standalone 中只切换可见性；再次显示时必须复用同一个 Model。
+
+## 10. Host Port Stub
+
+如果 Document 构造函数依赖 `IDocumentLifetime`、窗口交互或全屏 Host Port，Standalone 必须显式提供
+preview 实现：
+
+- `IDocumentLifetime`：每个 Document Scope 一份，可在关闭 Tab 时取消；
+- 文件选择/窗口交互：可以使用 Standalone 自己的 Avalonia Window 实现；
+- 全屏或只属于真实 Host 的能力：返回“不支持”并在工作台显示说明；
+- 不要为了让预览运行而把依赖改成可空，也不要绕过 DI 直接 `new` Model。
+
+Stub 只能存在于 Standalone，不得进入 Plugin 项目或插件 ZIP。
+
+## 11. Standalone 与真实 Host 的验收边界
+
+Standalone 可以验证：
+
+- 多个 View、绑定、命令和插件私有对象图；
+- 同一种 Document 多 Scope 隔离；
+- Tool Model singleton；
+- Document 初始化、关闭取消和 Scope 释放；
+- 插件内部消息和多个贡献之间的协作。
+
+它不能证明：
+
+- manifest/入口和 AssemblyLoadContext 正确；
+- 共享程序集没有误打包；
+- 真实 Dock、布局保存恢复和 Tool 关闭策略正确；
+- Host 文件信封、Host Port、生命周期或插件卸载正确。
+
+因此开发顺序应是：Standalone 快速迭代 → 单元测试 → Release ZIP → 真实 Host 最终验收。
+
+下一步：[编译、打包、真实 Host 验收与排错](./verification-and-troubleshooting.md)。

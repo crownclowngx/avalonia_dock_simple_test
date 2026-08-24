@@ -16,10 +16,14 @@
     <Authors>MyAvaloniaManagement Contributors</Authors>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>
+    <PackageProjectUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test</PackageProjectUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageTags>avalonia;plugin;sdk;ui;semi;ursa</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <WarningsAsErrors>$(WarningsAsErrors);CS1591;RS0016;RS0017;RS0024;RS0025;RS0036;RS0037;RS0041;RS0048</WarningsAsErrors>
   </PropertyGroup>
 
