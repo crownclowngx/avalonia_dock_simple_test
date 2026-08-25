@@ -83,7 +83,7 @@ Managed Plugin 快速开始入口：
 
 - [以注意力为中心的可停靠工作台](./theory/attention-centered-dock-workspace-design.md)：解释 Document、Tool 和 Dock 的产品设计意图。
 - [基于活动理论的需求分解方法论](./theory/activity-theory-requirements-decomposition.md)：说明自然语言需求如何拆分到 Document、Tool 和后台服务。
-- [AI 工作流插件接入可行性探索](./design/ai-workflow-plugin-exploration.md)：候选能力、风险和 PoC 路线；属于探索文档，不是当前宿主契约。
+- [工作流执行与可选 AI 规划方案](./design/ai-workflow-plugin-exploration.md)：以临时手工编辑为 MVP 主路径，给出 Workflow Action、外部模板/独立项目边界、风险和 G0–G10 可行性路线；属于候选任务书，不是当前宿主契约。
 
 ## V3/V2 已封板基线与后续候选计划
 
