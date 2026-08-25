@@ -7,8 +7,9 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码在 V3 G14 与 Host V4 G8 封板后完成并发布 Workflow Action G1–G2。产品仍为 3.0.0，SDK 为
-# 3.1.0、模板为 1.1.0；V3 Shipped、G1 Unshipped、Build 1.1.2 不升版、历史非发布证据和正式上传记录必须同时保留。
+# 当前源码在 V3 G14 与 Host V4 G8 封板后完成 Workflow Action G1–G3。G2 已发布 SDK 3.1.0 与模板
+# 1.1.0；G3 只在外部仓库完成本地非发布闭环。V3 Shipped、G1 Unshipped、Build 1.1.2 不升版、
+# 历史非发布证据、G2 正式上传记录和 G3 非发布边界必须同时保留。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
@@ -42,6 +43,7 @@ $currentDocumentPaths = @(
     'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md',
     'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md',
     'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md',
+    'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md',
     'Host/MyAvaloniaManagement/docs/README.md',
     'Host/MyAvaloniaManagement/docs/design/architecture.md',
     'Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md',
@@ -105,7 +107,8 @@ $forbiddenStatementRules = @(
     [pscustomobject]@{ Name = 'G16 证据尚未回填'; Pattern = 'G16.{0,80}待(?:执行|最终复跑)|待最终复跑' },
     [pscustomobject]@{ Name = 'V4 当前状态仍停留在 G6'; Pattern = 'Host V4 当前状态：G0[–-]G6 已完成，G7[–-]G8 待实施' },
     [pscustomobject]@{ Name = 'V4 当前状态仍停留在 G7'; Pattern = '(?:状态：实施中；G0[–-]G7 已完成，G8 待实施|Host V4 当前状态：G0[–-]G7 已完成，G8 待实施)' },
-    [pscustomobject]@{ Name = 'V4 当前文档仍声明 G8 未实施'; Pattern = 'V4 G8 尚未实施|G8 尚未实施，因此 V4' }
+    [pscustomobject]@{ Name = 'V4 当前文档仍声明 G8 未实施'; Pattern = 'V4 G8 尚未实施|G8 尚未实施，因此 V4' },
+    [pscustomobject]@{ Name = 'Workflow Action 当前状态仍停留在 G2'; Pattern = '文档状态：G0 已重新签署、G1[–-]G2 已完成；G3[–-]G10 尚未实施' }
 )
 
 $requiredSymbols = @(
@@ -328,7 +331,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'tagCreated=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'v3 Shipped 为 Core 127 条、UI 45 条' }
-    [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = '文档状态：G0 已重新签署、G1–G2 已完成；G3–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = '文档状态：G0 已重新签署、G1–G3 已完成；G4–G10 尚未实施' }
     [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = 'sdkRoute=3.1-compatible-addition' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = '输入提交：`030a4fca408f72aed75500c105dc51af855d9af7`' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'sdkRoute=3.1-compatible-addition' }
@@ -374,6 +377,16 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'published=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'uploaded=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'tagCreated=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = '外部提交：`e651665fb75f241b8b26f5680e2fcac7ff921024`' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = '单元测试 | **43/43**；失败 0，跳过 0' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = '57B0627D8B30887C6D7BF032E9C549F97FC2672D0EAC021F23D48D1190CE663B' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = 'releaseAcceptance=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = 'publishable=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = 'published=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = 'uploaded=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = 'tagCreated=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

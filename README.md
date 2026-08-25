@@ -37,13 +37,14 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > [G7 四插件、Harness 与文档回归](./docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)，
 > 最终签署见 [G8 V4 封板记录](./docs/plan-history/host-v4/g8-v4-sealing.md)。
 
-> Workflow Action G0 已重新签署，G1 Host 内核与 G2 SDK/Build/外部模板传播门禁已完成：产品保持 `3.0.0`，Core/UI SDK 已发布 `3.1.0`；
-> `3.1.0`；新增 caller-bound Gateway/Run、不可变目录、Schema、授权、invocation scope、资源治理、
-> 脱敏诊断和关闭门控。v3 Shipped 仍为 Core 127/UI 45，新增 72/6 条只进入 Unshipped。G2 把模板提升为
-> `1.1.0` 并已发布，继续精确使用 Build `1.1.2`，并以真实 NuGet、lock file、双 ALC Provider/Consumer
-> 和点号名称完成外部传播验证。当前公开基线是 SDK `3.1.0` / Templates `1.1.0`；没有创建 Workflow
-> Studio。见 [G1 专用记录](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)
-> 和 [G2 专用记录](./docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)。
+> Workflow Action G0 已重新签署，G1 Host 内核、G2 SDK/Build/外部模板传播和 G3 外部 Workflow Studio
+> 已完成：产品保持 `3.0.0`，Core/UI SDK 已发布 `3.1.0`；新增 caller-bound Gateway/Run、不可变目录、
+> Schema、授权、invocation scope、资源治理、脱敏诊断和关闭门控。G2 已发布 Templates `1.1.0` 并继续
+> 精确使用 Build `1.1.2`；G3 在独立 `myavalonia-workflow-studio` 仓库完成非持久化 Studio Document、
+> 定义 v1、验证器、会话 Secret、轻量 Runner 与 Standalone Fake Action 闭环。G4–G10 尚未实施，真实
+> MySmallTools/BiliDownloader Action 和跨插件业务闭环仍不可用。见 [G1 专用记录](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)、
+> [G2 专用记录](./docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)和
+> [G3 跨仓库签署记录](./docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md)。
 
 ## 核心扩展模型
 
@@ -224,6 +225,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
 - [Workflow Action G1 Host 内核](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)：查看 Run、Schema、授权、Scope、关闭门控、测试矩阵与非发布边界；
 - [Workflow Action G2 SDK/Build/模板传播](./docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)：查看包、lock file、点号名称、双 ALC 外部调用、制品哈希、非发布门禁历史与正式上传记录；
+- [Workflow Action G3 外部 Studio](./docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md)：查看外部仓库 revision、SOLID 边界、Standalone Fake 闭环、候选 Host 组合和非发布证据；
 - [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G14 最终目标、阶段和签署矩阵；
 - [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)：查看正式 API、SOLID、两轮隔离门禁、制品和回滚边界；
 - [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)：查看零残留、真实包负例、四插件矩阵和非发布证据；
