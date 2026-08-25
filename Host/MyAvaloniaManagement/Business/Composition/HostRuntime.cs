@@ -13,6 +13,7 @@ using MyAvaloniaManagement.Business.Plugins.Discovery;
 using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagement.Business.WorkflowActions;
 
 namespace MyAvaloniaManagement.Business.Composition;
 
@@ -27,6 +28,7 @@ internal sealed class HostRuntime : IDisposable
     private readonly DocumentScopeRegistry _documentScopes;
     private readonly PluginLifecycleCoordinator _lifecycles;
     private readonly PluginLifecycleStateStore _lifecycleStates;
+    private readonly WorkflowActionShutdownGate _workflowActionShutdown;
     private bool _disposed;
 
     private HostRuntime(
@@ -34,13 +36,15 @@ internal sealed class HostRuntime : IDisposable
         PluginProviderOwner pluginProviders,
         DocumentScopeRegistry documentScopes,
         PluginLifecycleCoordinator lifecycles,
-        PluginLifecycleStateStore lifecycleStates)
+        PluginLifecycleStateStore lifecycleStates,
+        WorkflowActionShutdownGate workflowActionShutdown)
     {
         _provider = provider;
         _pluginProviders = pluginProviders;
         _documentScopes = documentScopes;
         _lifecycles = lifecycles;
         _lifecycleStates = lifecycleStates;
+        _workflowActionShutdown = workflowActionShutdown;
     }
 
     internal static HostRuntime Create(HostDiagnosticSession diagnostics)
@@ -110,7 +114,10 @@ internal sealed class HostRuntime : IDisposable
             // 该步骤必须在 UI 启动前完成，以便立即释放冲突 Provider，并保证 UI 只看到最终快照。
             try
             {
-                provider.GetRequiredService<PluginRegistry>();
+                var registry = provider.GetRequiredService<PluginRegistry>();
+                provider.GetRequiredService<WorkflowActionCatalogStore>().Commit(
+                    registry,
+                    provider.GetRequiredService<PluginAvailabilityReadModel>());
                 var lifecycles = provider.GetRequiredService<PluginLifecycleCoordinator>();
                 lifecycles.InitializeAllAsync().GetAwaiter().GetResult();
                 provider.GetRequiredService<WorkspaceSession>();
@@ -138,7 +145,8 @@ internal sealed class HostRuntime : IDisposable
                 pluginProviders,
                 documentScopes,
                 provider.GetRequiredService<PluginLifecycleCoordinator>(),
-                provider.GetRequiredService<PluginLifecycleStateStore>());
+                provider.GetRequiredService<PluginLifecycleStateStore>(),
+                provider.GetRequiredService<WorkflowActionShutdownGate>());
         }
         catch
         {
@@ -182,7 +190,11 @@ internal sealed class HostRuntime : IDisposable
         _disposed = true;
         var failures = new List<Exception>();
 
-        // 先关闭可用性入口，保证退出清理期间不会再创建新的插件对象图。
+        // Workflow Action 必须先于所有插件对象图关闭：先拒绝新 Run/调用并取消在途，
+        // 后续只有在真实 Handler 全部退出后才允许停止 Lifecycle 和释放 Provider。
+        _workflowActionShutdown.BeginShutdown();
+
+        // 关闭其他可用性入口，保证退出清理期间不会再创建新的插件对象图。
         _lifecycleStates.BeginShutdown();
         var workspace = _provider.GetService<WorkspaceSession>();
         workspace?.BeginShutdown();
@@ -208,33 +220,42 @@ internal sealed class HostRuntime : IDisposable
             failures.Add(exception);
         }
 
-        try
+        var workflowActionsDrained = _workflowActionShutdown.TryDrain(out var workflowActionFailure);
+        if (workflowActionFailure is not null)
         {
-            // Avalonia 消息循环已经结束，不能捕获一个不再泵送的 UI 同步上下文。
-            SynchronizationContext.SetSynchronizationContext(null);
-            _lifecycles.ShutdownAllAsync().GetAwaiter().GetResult();
-        }
-        catch (Exception exception)
-        {
-            failures.Add(exception);
+            failures.Add(workflowActionFailure);
         }
 
-        try
+        if (workflowActionsDrained)
         {
-            _pluginProviders.Dispose();
-        }
-        catch (Exception exception)
-        {
-            failures.Add(exception);
-        }
+            try
+            {
+                // Avalonia 消息循环已经结束，不能捕获一个不再泵送的 UI 同步上下文。
+                SynchronizationContext.SetSynchronizationContext(null);
+                _lifecycles.ShutdownAllAsync().GetAwaiter().GetResult();
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
 
-        try
-        {
-            _provider.Dispose();
-        }
-        catch (Exception exception)
-        {
-            failures.Add(exception);
+            try
+            {
+                _pluginProviders.Dispose();
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
+
+            try
+            {
+                _provider.Dispose();
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
         }
 
         if (failures.Count > 0)

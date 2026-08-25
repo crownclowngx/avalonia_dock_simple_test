@@ -36,7 +36,7 @@ public sealed class VersionPolicyTests
         var sdkContractAssembly = typeof(PluginId).Assembly;
 
         Assert.Equal("3.0.0", properties["MyAvaloniaProductVersion"]);
-        Assert.Equal("3.0.0", properties["MyAvaloniaPluginSdkVersion"]);
+        Assert.Equal("3.1.0", properties["MyAvaloniaPluginSdkVersion"]);
         Assert.False(
             properties.ContainsKey("MyAvaloniaHostApiAssemblyVersion"),
             "V3 不得重新引入独立 Host API 版本事实。");
@@ -150,9 +150,11 @@ public sealed class VersionPolicyTests
                 Version.TryParse(projectVersion, out _),
                 $"{plugin.Name} PluginVersion 必须是 major.minor.patch 数字版本，" +
                 $"实际为 '{projectVersion}'。");
+            // G1 只提升 SDK 候选版本，不替四个既有业务插件发布新版本。插件继续以 3.0.0
+            // 构建，同时其 manifest 上界保持 4.0.0；这也是新 Host 加载真实 3.0 插件的兼容证据。
             AssertVersionFact(
-                $"{plugin.Name} PluginVersion/SDK V3",
-                sdkVersion.ToString(3),
+                $"{plugin.Name} PluginVersion/G1 非发布边界",
+                "3.0.0",
                 projectVersion);
             AssertVersionFact(
                 $"{plugin.Name} ManagedPlugin",

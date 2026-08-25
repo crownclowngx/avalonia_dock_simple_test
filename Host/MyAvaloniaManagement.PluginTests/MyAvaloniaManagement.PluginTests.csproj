@@ -11,6 +11,9 @@
     <!-- 测试资产由各自项目编译，不能再次并入主测试程序集。 -->
     <Compile Remove="TestAssets\PluginIsolation\**\*.cs" />
     <Compile Remove="TestAssets\ManagedOnly\**\*.cs" />
+    <!-- Workflow Action G0 候选源码只由隔离专项复制到临时 3.0/3.1 副本中编译。 -->
+    <Compile Remove="TestAssets\WorkflowActionG0\**\*.cs" />
+    <Compile Remove="TestAssets\WorkflowActionG1\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,7 +52,38 @@
                       ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestAssets\ManagedOnly\NoModule\NoModule.csproj"
                       ReferenceOutputAssembly="false" />
+    <ProjectReference Include="TestAssets\WorkflowActionG1\Provider\WorkflowActionG1.Provider.csproj"
+                      Condition="Exists('TestAssets\WorkflowActionG1\Provider\WorkflowActionG1.Provider.csproj')"
+                      ReferenceOutputAssembly="false" />
+    <ProjectReference Include="TestAssets\WorkflowActionG1\Consumer\WorkflowActionG1.Consumer.csproj"
+                      Condition="Exists('TestAssets\WorkflowActionG1\Consumer\WorkflowActionG1.Consumer.csproj')"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <Target Name="CopyWorkflowActionG1Fixtures"
+          AfterTargets="Build"
+          Condition="Exists('$(MSBuildThisFileDirectory)TestAssets\WorkflowActionG1\Provider\WorkflowActionG1.Provider.csproj')">
+    <PropertyGroup>
+      <WorkflowActionG1AssetRoot>$(MSBuildThisFileDirectory)TestAssets\WorkflowActionG1</WorkflowActionG1AssetRoot>
+      <WorkflowActionG1OutputRoot>$(OutDir)WorkflowActionG1Fixtures</WorkflowActionG1OutputRoot>
+    </PropertyGroup>
+    <MSBuild Projects="$(WorkflowActionG1AssetRoot)\Provider\WorkflowActionG1.Provider.csproj;$(WorkflowActionG1AssetRoot)\Consumer\WorkflowActionG1.Consumer.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)"
+             BuildInParallel="true" />
+    <RemoveDir Directories="$(WorkflowActionG1OutputRoot)" />
+    <MakeDir Directories="$(WorkflowActionG1OutputRoot)\Provider;$(WorkflowActionG1OutputRoot)\Consumer" />
+    <ItemGroup>
+      <WorkflowActionG1Provider Include="$(WorkflowActionG1AssetRoot)\Provider\bin\$(Configuration)\$(TargetFramework)\WorkflowActionG1.Provider.dll" />
+      <WorkflowActionG1Provider Include="$(WorkflowActionG1AssetRoot)\Provider\bin\$(Configuration)\$(TargetFramework)\WorkflowActionG1.Provider.deps.json" />
+      <WorkflowActionG1Provider Include="$(WorkflowActionG1AssetRoot)\Provider\plugin.manifest.json" />
+      <WorkflowActionG1Consumer Include="$(WorkflowActionG1AssetRoot)\Consumer\bin\$(Configuration)\$(TargetFramework)\WorkflowActionG1.Consumer.dll" />
+      <WorkflowActionG1Consumer Include="$(WorkflowActionG1AssetRoot)\Consumer\bin\$(Configuration)\$(TargetFramework)\WorkflowActionG1.Consumer.deps.json" />
+      <WorkflowActionG1Consumer Include="$(WorkflowActionG1AssetRoot)\Consumer\plugin.manifest.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WorkflowActionG1Provider)" DestinationFolder="$(WorkflowActionG1OutputRoot)\Provider" />
+    <Copy SourceFiles="@(WorkflowActionG1Consumer)" DestinationFolder="$(WorkflowActionG1OutputRoot)\Consumer" />
+  </Target>
 
   <Target Name="CopyPluginIsolationFixtures" AfterTargets="Build">
     <PropertyGroup>

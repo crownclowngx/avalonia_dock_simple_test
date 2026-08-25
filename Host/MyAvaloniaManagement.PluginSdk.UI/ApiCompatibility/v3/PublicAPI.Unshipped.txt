@@ -1,1 +1,7 @@
 #nullable enable
+MyAvaloniaManagement.PluginSdk.UI.IWorkflowActionRegistration
+MyAvaloniaManagement.PluginSdk.UI.IWorkflowActionRegistration.AddWorkflowAction<THandler>(MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor! descriptor) -> void
+MyAvaloniaManagement.PluginSdk.UI.IWorkflowActionRegistration.UseWorkflowActionGateway() -> void
+MyAvaloniaManagement.PluginSdk.UI.WorkflowActionRegistrationExtensions
+static MyAvaloniaManagement.PluginSdk.UI.WorkflowActionRegistrationExtensions.AddWorkflowAction<THandler>(this MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration! registration, MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor! descriptor) -> void
+static MyAvaloniaManagement.PluginSdk.UI.WorkflowActionRegistrationExtensions.UseWorkflowActionGateway(this MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration! registration) -> void

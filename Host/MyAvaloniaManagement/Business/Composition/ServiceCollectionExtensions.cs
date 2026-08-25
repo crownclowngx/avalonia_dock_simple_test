@@ -20,6 +20,7 @@ using MyAvaloniaManagement.Views.Welcome;
 using MyAvaloniaManagement.Views.Tools;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
+using MyAvaloniaManagement.Business.WorkflowActions;
 
 namespace MyAvaloniaManagement.Business.Composition;
 
@@ -49,6 +50,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(registryBuilder);
         services.AddSingleton(pluginProviders);
         services.AddSingleton<IPluginLifecycleResolver>(pluginProviders);
+        services.AddSingleton<IWorkflowActionScopeFactory>(pluginProviders);
 
         // 每个由托管插件创建的 Document 都拥有独立 Scope。插件只依赖公共创建接口，
         // Dock 关闭时则由宿主使用具体管理器释放对应 Scope。
@@ -68,6 +70,19 @@ internal static class ServiceCollectionExtensions
         // 插件只能取得窄窗口交互端口；具体 Window、StorageProvider 与 Clipboard 始终留在 Host。
         services.AddSingleton<IPluginWindowInteraction, AvaloniaPluginWindowInteraction>();
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<WorkflowActionCatalogStore>();
+        services.AddSingleton(WorkflowActionExecutionLimits.Default);
+        services.AddSingleton<IWorkflowActionAuthorizer, AvaloniaWorkflowActionAuthorizer>();
+        services.AddSingleton(provider => new WorkflowActionRunManager(
+            provider.GetRequiredService<WorkflowActionCatalogStore>(),
+            provider.GetRequiredService<IWorkflowActionScopeFactory>(),
+            provider.GetRequiredService<IWorkflowActionAuthorizer>(),
+            provider.GetRequiredService<WorkflowActionExecutionLimits>(),
+            provider.GetRequiredService<TimeProvider>(),
+            provider.GetService<IHostDiagnosticSink>()));
+        services.AddSingleton<IWorkflowActionShutdownParticipant>(provider =>
+            provider.GetRequiredService<WorkflowActionRunManager>());
+        services.AddSingleton<WorkflowActionShutdownGate>();
         services.AddSingleton<DocumentEnvelopeSerializer>();
         services.AddSingleton<DocumentOperationGate>();
         services.AddSingleton<DocumentPersistenceStateStore>();

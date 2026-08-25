@@ -63,7 +63,7 @@ public sealed class PluginSdkApiBaselinePolicyTests
     }
 
     [Fact]
-    public void G14_V1V2历史基线未改写且V3最终表面全部进入Shipped()
+    public void G1_V1V2历史基线和V3Shipped未改写且新增表面进入Unshipped()
     {
         var repositoryRoot = FindRepositoryRoot();
         var apiRoot = Path.Combine(
@@ -104,12 +104,18 @@ public sealed class PluginSdkApiBaselinePolicyTests
         Assert.Equal(46, uiV2Shipped.Length);
         Assert.Empty(coreV2Unshipped);
         Assert.Empty(uiV2Unshipped);
-        // G14 只改变最终签名所属的文本文件，不借封板修改任何 public 形状。固定数量与
-        // Unshipped 为空可以同时防止漏移、重复登记以及把未来新增误写进本次正式承诺。
+        // G1 保持既有 V3 Shipped 正式承诺不变；Workflow Action 3.1 兼容新增只进入
+        // Unshipped。固定数量和代表性签名可防止误写 Shipped 或遗漏本次重新签署的 Run 边界。
         Assert.Equal(127, v3Shipped.Length);
         Assert.Equal(45, uiV3Shipped.Length);
-        Assert.Empty(coreV3Unshipped);
-        Assert.Empty(uiV3Unshipped);
+        Assert.Equal(72, coreV3Unshipped.Length);
+        Assert.Equal(6, uiV3Unshipped.Length);
+        Assert.Contains(coreV3Unshipped, entry => entry.Contains(
+            "IWorkflowActionGateway.CreateRun()", StringComparison.Ordinal));
+        Assert.Contains(coreV3Unshipped, entry => entry.Contains(
+            "IWorkflowActionRun.InvokeAsync", StringComparison.Ordinal));
+        Assert.Contains(uiV3Unshipped, entry => entry.Contains(
+            "UseWorkflowActionGateway", StringComparison.Ordinal));
         Assert.Contains(uiV3Shipped, entry => entry.Contains(
             "IWindowContentFullscreenHost.TryPresent(Avalonia.Controls.Control! content) -> System.IDisposable?",
             StringComparison.Ordinal));

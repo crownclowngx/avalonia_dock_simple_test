@@ -1,7 +1,7 @@
 {
   "overall": {
-    "line": 65.0,
-    "branch": 50.0
+    "line": 84.39,
+    "branch": 70.58
   },
   "criticalFiles": {
     "Business/Documents/DocumentEnvelopeSerializer.cs": 95.0,
@@ -23,6 +23,10 @@
     "Business/Lifecycle/PluginLifecycleCoordinator.cs": 90.0,
     "Business/Lifecycle/PluginLifecycleOperationRunner.cs": 90.0,
     "Business/Lifecycle/PluginLifecycleStateStore.cs": 90.0,
+    "Business/WorkflowActions/WorkflowActionSchemaValidator.cs": 90.0,
+    "Business/WorkflowActions/WorkflowActionCatalogStore.cs": 90.0,
+    "Business/WorkflowActions/WorkflowActionRuntime.cs": 90.0,
+    "Business/WorkflowActions/WorkflowActionShutdownGate.cs": 90.0,
     "ViewLocator.cs": 85.0,
     "ViewModels/MainWindowViewModel.cs": 75.0,
     "ViewModels/Tools/FileSystemTreeViewModel.cs": 70.0,

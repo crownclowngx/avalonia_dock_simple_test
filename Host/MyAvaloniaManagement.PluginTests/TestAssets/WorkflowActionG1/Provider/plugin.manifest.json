@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 2,
+  "pluginId": "myavalonia.plugin.workflow-g1-provider",
+  "pluginVersion": "1.0.0",
+  "entryPoint": {
+    "assembly": "WorkflowActionG1.Provider.dll",
+    "type": "WorkflowActionG1.Provider.ProviderModule"
+  },
+  "sdk": { "minInclusive": "3.1.0", "maxExclusive": "4.0.0" }
+}

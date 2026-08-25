@@ -13,7 +13,9 @@
 > Host V4 已完成 G0–G8 并封板：internal 死面、身份、Layout 职责、Document 控件回收所有权、领域目录、
 > 路径语义和展示快照已经收口；G7 又以既有 SDK、诊断、四插件真实包和 MySmallTools 20 轮 Harness
 > 证明这些内部变化没有破坏 V3 契约或资源边界；G8 又以两轮隔离、实体制品复核和 Windows Smoke
-> 建立本地发布资格。产品与 SDK 仍为 3.0.0，未上传、未打 tag、未对外发布且未使用 AIFLOW。
+> 建立本地发布资格。Workflow Action G1 随后保持产品 3.0.0、把仓库内 SDK 候选提升到 3.1.0，并新增
+> caller-bound Run、目录、Schema、授权、Scope、资源治理和关闭门控；该阶段未上传、未打 tag、未对外
+> 发布且未使用 AIFLOW。
 
 ## 1. 目标与边界
 
@@ -26,6 +28,7 @@
 - 严格读取、校验、整体隔离和原子保存唯一 Layout V2；
 - 只向插件提交窗口交互与 Document 生命周期等真实 Host 端口，不拥有插件内部消息；
 - 以窄 UI SDK 端口为插件提供文件选择和剪贴板交互；
+- 为显式 Consumer 注入 caller-bound Workflow Action Gateway，并在 Provider 私有 Scope 内治理调用；
 - 为 XAML、菜单、主题和宿主 Tool 提供绑定入口。
 
 宿主不负责插件的领域业务、插件内部 DTO 演进或后台任务实现。当前信任模型是同一团队维护的进程内可信插件，不提供沙箱、热卸载或第三方 ABI。
@@ -112,11 +115,12 @@ flowchart TB
 6. 按 manifest `pluginId` 顺序为每个插件创建空服务集合，执行一次 `Configure` 并构建私有 Provider；
 7. 单插件成功后才合并其声明；失败则释放自身并继续后续插件；
 8. 只读取已冻结声明完成跨所有者冲突过滤，释放冲突 Provider，再发布不可变 `PluginRegistry`；
-9. 由 internal `PluginLifecycleCoordinator` 按 PluginId 启动可用插件，再显式解析唯一 `WorkspaceSession`；
+9. 一次提交 `WorkflowActionCatalogStore`，再由 internal `PluginLifecycleCoordinator` 按 PluginId 启动可用插件并显式解析唯一 `WorkspaceSession`；
 10. 将完全组合成功的 Host Provider 交给 Avalonia 启动路径。
 
-关闭时先由 Session 停止新建并按 Document 在前、Tool 逆序在后的顺序释放工作区，再反向停止成功生命周期，随后逆序释放插件 Provider，最后释放
-Host Provider。这个所有权对称性防止 `Program`、`App` 和插件生命周期管理器分别持有清理责任。
+关闭时先由 Workflow Action 门控拒绝新 Run/调用并取消在途，再由 Session 停止新建并释放工作区，
+随后等待 Handler 排空；只有排空成功才反向停止生命周期、逆序释放插件 Provider 并释放 Host Provider。
+这个所有权对称性防止仍在运行的 Handler 访问已释放对象图。
 
 [`Program`](../../Program.cs) 只保留进程入口和失败应用编排。`HostRuntime` 通过 internal
 `HostAvaloniaBuilder` 使用 `Func<App>` 创建应用；App 注入 `IHostDesktopShell`，不再存在静态

@@ -1,5 +1,21 @@
 # MyAvaloniaManagement 测试说明
 
+## Workflow Action G1 非发布门禁
+
+修改 SDK Action 契约、注册、Catalog、Schema、授权、Run/Executor、进度代理、Provider Scope 或关闭顺序时运行：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkflowActionG1.ps1 -Configuration Release
+```
+
+该入口执行 G0 重新签署兼容专项、锁定还原、Release 零警告构建、Host 三层测试与覆盖率、SDK API 和
+真实 nupkg 消费、真实 3.0 插件 ZIP、G1 Provider/Consumer 双 ALC 夹具、四个业务插件单元回归和文档
+门禁。摘要位于 `artifacts/test-results/WorkflowActionG1/summary.json`。Host 保护线为行 84.39%、分支
+70.58%；Schema、Catalog、Run/Executor 和关闭门控关键文件行覆盖率均不低于 90%。
+
+该入口不调用 AIFLOW、Windows CI、Windows Smoke、ReleaseAcceptance、Host Release Gate、签名、上传、
+标签或发布脚本；Release 只表示本地编译配置。
+
 Document 生命周期回归除 Scope 隔离外，还必须覆盖：确认关闭后 `IDocumentLifetime` 先取消再 Dispose、重复释放幂等、在途 HTTP/Excel/内容浏览停止、迟到 UI 回调被抑制，以及 BiliDownloader 已提交后台任务不随标签关闭而取消。原生文件选择器与已经进入 EPPlus 同步 `SaveAs` 的写入属于显式不可强制中断边界。
 
 > Managed Plugin v1 历史基线由 `managed-plugin-v1.0.0` 定位；V2 G14 已完成封板：Core/UI SDK、

@@ -37,6 +37,12 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > [G7 四插件、Harness 与文档回归](./docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)，
 > 最终签署见 [G8 V4 封板记录](./docs/plan-history/host-v4/g8-v4-sealing.md)。
 
+> Workflow Action G0 已重新签署，G1 Host 内核已完成：产品保持 `3.0.0`，仓库内 Core/UI SDK 候选为
+> `3.1.0`；新增 caller-bound Gateway/Run、不可变目录、Schema、授权、invocation scope、资源治理、
+> 脱敏诊断和关闭门控。v3 Shipped 仍为 Core 127/UI 45，新增 72/6 条只进入 Unshipped。G1 是非发布
+> 开发阶段，没有修改模板或创建 Workflow Studio。见
+> [G1 专用记录](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)。
+
 ## 核心扩展模型
 
 | 概念 | 语义 | 典型用途 |
@@ -78,18 +84,19 @@ Host/Common 双区间已经删除。缺少入口 `.deps.json` 或依赖历史加
 权限系统、第三方市场、跨进程 UI 或用户动态启停插件。
 
 版本按所有者独立演进：产品版本、Plugin SDK 版本、每插件版本、manifest schema、每种宿主
-持久化 schema 和插件内容 schema 不能互相代替。当前正式产品与 Plugin SDK 均为 `3.0.0`，Host 与
-SDK 程序集版本均为 `3.0.0.0`；V3 不重新引入独立 Host API 版本事实。统一事实定义在
+持久化 schema 和插件内容 schema 不能互相代替。当前产品为 `3.0.0`，仓库内 Plugin SDK 候选为
+`3.1.0`；Host 程序集为 `3.0.0.0`，SDK 程序集为 `3.1.0.0`。V3 不重新引入独立 Host API 版本事实。统一事实定义在
 [`Directory.Version.props`](./Directory.Version.props)。普通进程内强类型消息不增加无迁移行为的
 版本字段，发生破坏性语义变化时创建新消息类型或提升 SDK 主版本。
 
-四个当前插件的 `PluginVersion` 均为 `3.0.0`。严格 manifest schema 2 只表达一个 SDK 左闭右开区间
-`[3.0.0, 4.0.0)`，并以 `entryPoint.assembly` 与 `entryPoint.type` 精确指定入口；Host 不读取 v1，
+四个当前插件的 `PluginVersion` 均为 `3.0.0`。仓库内构建生成的严格 manifest schema 2 表达 SDK 区间
+`[3.1.0, 4.0.0)`，并以 `entryPoint.assembly` 与 `entryPoint.type` 精确指定入口；固定历史树构建的真实
+`[3.0.0, 4.0.0)` 插件 ZIP 仍可由 3.1 Host 加载。Host 不读取 v1，
 也不会扫描或执行未声明的第二个模块。
 
 V2 G2 已建立真实的 `MyAvaloniaManagement.PluginSdk.dll` 与 `MyAvaloniaManagement.PluginSdk.UI.dll`。
 Core 只依赖 .NET BCL，UI 只承载 Avalonia、插件注册与视图贡献契约。G14 已将 v3 Shipped 固定为 Core
-127 条、UI 45 条 public 签名，两个 v3 Unshipped 均为空。对应的历史签名
+127 条、UI 45 条 public 签名；Workflow Action G1 的兼容新增进入 v3 Unshipped 72/6。对应的历史签名
 继续保存在 v2 Shipped。旧 `MyAvaloniaManagementCommon.dll` 与 Legacy 项目已在 V2 G13 整体删除；
 历史 v1 API 文本仅用于审计，不参与编译、加载或打包。
 
@@ -213,6 +220,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Managed 插件快速开始](./docs/quick-start/README.md)：以当前 V3 G9–G12 四插件验收及 G2–G8 平台语义为事实源；
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
+- [Workflow Action G1 Host 内核](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)：查看 Run、Schema、授权、Scope、关闭门控、测试矩阵与非发布边界；
 - [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G14 最终目标、阶段和签署矩阵；
 - [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)：查看正式 API、SOLID、两轮隔离门禁、制品和回滚边界；
 - [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)：查看零残留、真实包负例、四插件矩阵和非发布证据；

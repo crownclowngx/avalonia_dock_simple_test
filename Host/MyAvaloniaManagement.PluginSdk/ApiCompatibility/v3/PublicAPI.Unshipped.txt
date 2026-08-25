@@ -1,1 +1,73 @@
 #nullable enable
+MyAvaloniaManagement.PluginSdk.IWorkflowActionGateway
+MyAvaloniaManagement.PluginSdk.IWorkflowActionGateway.CreateRun() -> MyAvaloniaManagement.PluginSdk.IWorkflowActionRun!
+MyAvaloniaManagement.PluginSdk.IWorkflowActionGateway.GetAvailableActions() -> System.Collections.Generic.IReadOnlyList<MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor!>!
+MyAvaloniaManagement.PluginSdk.IWorkflowActionHandler
+MyAvaloniaManagement.PluginSdk.IWorkflowActionHandler.InvokeAsync(System.Text.Json.JsonElement arguments, MyAvaloniaManagement.PluginSdk.WorkflowActionContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Text.Json.JsonElement>
+MyAvaloniaManagement.PluginSdk.IWorkflowActionRun
+MyAvaloniaManagement.PluginSdk.IWorkflowActionRun.InvokeAsync(MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationRequest! request, System.IProgress<MyAvaloniaManagement.PluginSdk.WorkflowActionProgress!>? progress, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationResult!>!
+MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
+MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy.EveryInvocation = 2 -> MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
+MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy.Never = 0 -> MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
+MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy.OncePerRun = 1 -> MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
+MyAvaloniaManagement.PluginSdk.WorkflowActionContext
+MyAvaloniaManagement.PluginSdk.WorkflowActionContext.CallerId.get -> MyAvaloniaManagement.PluginSdk.PluginId!
+MyAvaloniaManagement.PluginSdk.WorkflowActionContext.InvocationId.get -> System.Guid
+MyAvaloniaManagement.PluginSdk.WorkflowActionContext.Progress.get -> System.IProgress<MyAvaloniaManagement.PluginSdk.WorkflowActionProgress!>!
+MyAvaloniaManagement.PluginSdk.WorkflowActionContext.WorkflowActionContext(System.Guid invocationId, MyAvaloniaManagement.PluginSdk.PluginId! callerId, System.IProgress<MyAvaloniaManagement.PluginSdk.WorkflowActionProgress!>! progress) -> void
+MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor
+MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor.ConfirmationPolicy.get -> MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
+MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor.Description.get -> string!
+MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor.DisplayName.get -> string!
+MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor.Id.get -> MyAvaloniaManagement.PluginSdk.WorkflowActionId!
+MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor.InputSchema.get -> System.Text.Json.JsonElement
+MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor.OutputSchema.get -> System.Text.Json.JsonElement
+MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor.Risks.get -> MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
+MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor.SensitiveInputPointers.get -> System.Collections.Generic.IReadOnlyList<string!>!
+MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor.WorkflowActionDescriptor(MyAvaloniaManagement.PluginSdk.WorkflowActionId! id, string! displayName, string! description, System.Text.Json.JsonElement inputSchema, System.Text.Json.JsonElement outputSchema, MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags risks, MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy confirmationPolicy, System.Collections.Generic.IReadOnlyList<string!>? sensitiveInputPointers = null) -> void
+MyAvaloniaManagement.PluginSdk.WorkflowActionFailure
+MyAvaloniaManagement.PluginSdk.WorkflowActionFailure.Code.get -> string!
+MyAvaloniaManagement.PluginSdk.WorkflowActionFailure.Message.get -> string!
+MyAvaloniaManagement.PluginSdk.WorkflowActionFailure.WorkflowActionFailure(string! code, string! message) -> void
+MyAvaloniaManagement.PluginSdk.WorkflowActionId
+MyAvaloniaManagement.PluginSdk.WorkflowActionId.<Clone>$() -> MyAvaloniaManagement.PluginSdk.WorkflowActionId!
+MyAvaloniaManagement.PluginSdk.WorkflowActionId.Equals(MyAvaloniaManagement.PluginSdk.WorkflowActionId? other) -> bool
+MyAvaloniaManagement.PluginSdk.WorkflowActionId.Value.get -> string!
+MyAvaloniaManagement.PluginSdk.WorkflowActionId.WorkflowActionId(string! value) -> void
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationRequest
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationRequest.ActionId.get -> MyAvaloniaManagement.PluginSdk.WorkflowActionId!
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationRequest.Arguments.get -> System.Text.Json.JsonElement
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationRequest.WorkflowActionInvocationRequest(MyAvaloniaManagement.PluginSdk.WorkflowActionId! actionId, System.Text.Json.JsonElement arguments) -> void
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationResult
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationResult.Failure.get -> MyAvaloniaManagement.PluginSdk.WorkflowActionFailure?
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationResult.InvocationId.get -> System.Guid
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationResult.Output.get -> System.Text.Json.JsonElement?
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationResult.Status.get -> MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationResult.WorkflowActionInvocationResult(System.Guid invocationId, MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus status, System.Text.Json.JsonElement? output, MyAvaloniaManagement.PluginSdk.WorkflowActionFailure? failure) -> void
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus.Cancelled = 2 -> MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus.Failed = 1 -> MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus.Rejected = 4 -> MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus.Succeeded = 0 -> MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus.TimedOut = 3 -> MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus
+MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus.Unavailable = 5 -> MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationStatus
+MyAvaloniaManagement.PluginSdk.WorkflowActionProgress
+MyAvaloniaManagement.PluginSdk.WorkflowActionProgress.Message.get -> string?
+MyAvaloniaManagement.PluginSdk.WorkflowActionProgress.Percent.get -> int?
+MyAvaloniaManagement.PluginSdk.WorkflowActionProgress.Stage.get -> string!
+MyAvaloniaManagement.PluginSdk.WorkflowActionProgress.WorkflowActionProgress(string! stage, int? percent, string? message) -> void
+MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
+MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags.DeletesLocalFiles = 8 -> MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
+MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags.HandlesSecret = 16 -> MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
+MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags.LongRunning = 32 -> MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
+MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags.None = 0 -> MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
+MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags.ReadsLocalFiles = 2 -> MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
+MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags.UsesNetwork = 1 -> MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
+MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags.WritesLocalFiles = 4 -> MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
+override MyAvaloniaManagement.PluginSdk.WorkflowActionId.Equals(object? obj) -> bool
+override MyAvaloniaManagement.PluginSdk.WorkflowActionId.GetHashCode() -> int
+override MyAvaloniaManagement.PluginSdk.WorkflowActionId.ToString() -> string!
+static MyAvaloniaManagement.PluginSdk.WorkflowActionId.Parse(string! value) -> MyAvaloniaManagement.PluginSdk.WorkflowActionId!
+static MyAvaloniaManagement.PluginSdk.WorkflowActionId.TryParse(string? value, out MyAvaloniaManagement.PluginSdk.WorkflowActionId? actionId) -> bool
+static MyAvaloniaManagement.PluginSdk.WorkflowActionId.operator !=(MyAvaloniaManagement.PluginSdk.WorkflowActionId? left, MyAvaloniaManagement.PluginSdk.WorkflowActionId? right) -> bool
+static MyAvaloniaManagement.PluginSdk.WorkflowActionId.operator ==(MyAvaloniaManagement.PluginSdk.WorkflowActionId? left, MyAvaloniaManagement.PluginSdk.WorkflowActionId? right) -> bool

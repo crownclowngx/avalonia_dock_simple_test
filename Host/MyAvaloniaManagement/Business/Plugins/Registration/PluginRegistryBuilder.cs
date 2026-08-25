@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using MyAvaloniaManagement.Business.Composition;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Plugins.Discovery;
+using MyAvaloniaManagement.Business.WorkflowActions;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 
@@ -23,6 +24,8 @@ internal sealed class PluginRegistryBuilder
     private readonly List<DocumentDeclaration> _documents = [];
     private readonly List<ToolDeclaration> _tools = [];
     private readonly List<LifecycleDeclaration> _lifecycles = [];
+    private readonly List<WorkflowActionDeclaration> _workflowActions = [];
+    private readonly HashSet<PluginId> _workflowConsumers = [];
     private bool _built;
 
     internal void AddDocument(
@@ -67,6 +70,35 @@ internal sealed class PluginRegistryBuilder
         _lifecycles.Add(new LifecycleDeclaration(ownerId, implementationType));
     }
 
+    /// <summary>收集一个尚未提交的 Workflow Action 声明。</summary>
+    internal void AddWorkflowAction(
+        PluginId ownerId,
+        WorkflowActionDescriptor descriptor,
+        Type handlerType)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(ownerId);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(handlerType);
+        WorkflowActionSchemaValidator.ValidateDescriptor(descriptor);
+        _workflowActions.Add(new WorkflowActionDeclaration(ownerId, descriptor, handlerType));
+    }
+
+    /// <summary>记录当前插件显式请求 caller-bound Gateway。</summary>
+    internal void AddWorkflowActionConsumer(PluginId ownerId)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(ownerId);
+        if (!_workflowConsumers.Add(ownerId))
+        {
+            throw new HostCompositionException([
+                new HostCompositionDiagnostic(
+                    "WORKFLOW_ACTION_CONSUMER_DUPLICATE",
+                    ownerId.Value,
+                    [])]);
+        }
+    }
+
     /// <summary>把一个已经通过插件内校验和 Provider 构建的候选原子导入全局集合。</summary>
     internal void Import(PluginRegistryBuilder source)
     {
@@ -76,11 +108,20 @@ internal sealed class PluginRegistryBuilder
         _documents.AddRange(source._documents);
         _tools.AddRange(source._tools);
         _lifecycles.AddRange(source._lifecycles);
+        _workflowActions.AddRange(source._workflowActions);
+        _workflowConsumers.UnionWith(source._workflowConsumers);
     }
 
     /// <summary>返回需要在候选发布前验证构造的生命周期 singleton 类型。</summary>
     internal IReadOnlyList<Type> GetLifecycleTypes() =>
         _lifecycles.Select(item => item.ImplementationType).Distinct().ToArray();
+
+    /// <summary>返回需要在候选发布前由独立 Scope 验证解析的 Handler 类型。</summary>
+    internal IReadOnlyList<Type> GetWorkflowActionHandlerTypes() =>
+        _workflowActions.Select(item => item.HandlerType).Distinct().ToArray();
+
+    internal bool IsWorkflowActionConsumer(PluginId ownerId) =>
+        _workflowConsumers.Contains(ownerId);
 
     /// <summary>
     /// 校验当前临时 Builder 只表示一个完整且自洽的所有者。
@@ -93,6 +134,8 @@ internal sealed class PluginRegistryBuilder
         var owners = _documents.Select(item => item.OwnerId)
             .Concat(_tools.Select(item => item.OwnerId))
             .Concat(_lifecycles.Select(item => item.OwnerId))
+            .Concat(_workflowActions.Select(item => item.OwnerId))
+            .Concat(_workflowConsumers)
             .Distinct()
             .ToArray();
         if (owners.Length > 1)
@@ -128,6 +171,18 @@ internal sealed class PluginRegistryBuilder
                     tool.Descriptor.ToolTypeId.Value,
                     tool.ModelType));
             }
+
+            foreach (var action in _workflowActions.Where(item =>
+                         !BelongsToOwner(
+                             item.Descriptor.Id.Value,
+                             expectedOwner,
+                             "workflow")))
+            {
+                diagnostics.Add(Diagnostic(
+                    "WORKFLOW_ACTION_ID_OWNER_MISMATCH",
+                    action.Descriptor.Id.Value,
+                    action.HandlerType));
+            }
         }
 
         AddDuplicateDiagnostics(
@@ -142,6 +197,21 @@ internal sealed class PluginRegistryBuilder
         AddDuplicateDiagnostics(
             _tools, item => item.ModelType,
             item => item.ModelType, "TOOL_CONTRIBUTION_TYPE_DUPLICATE", diagnostics);
+        AddDuplicateDiagnostics(
+            _workflowActions, item => item.Descriptor.Id,
+            item => item.HandlerType, "WORKFLOW_ACTION_ID_DUPLICATE", diagnostics);
+        AddDuplicateDiagnostics(
+            _workflowActions, item => item.HandlerType,
+            item => item.HandlerType, "WORKFLOW_ACTION_HANDLER_TYPE_DUPLICATE", diagnostics);
+
+        if (_workflowActions.Count > 0 && _workflowConsumers.Count > 0)
+        {
+            diagnostics.Add(new HostCompositionDiagnostic(
+                "WORKFLOW_ACTION_PROVIDER_CONSUMER_CONFLICT",
+                expectedOwner?.Value ?? owners.SingleOrDefault()?.Value,
+                _workflowActions.Select(item => ToContributor(item.HandlerType))
+                    .Distinct().ToArray()));
+        }
 
         var localViews = _documents.Select(item => new ViewDeclaration(
                 item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory))
@@ -219,6 +289,14 @@ internal sealed class PluginRegistryBuilder
             "TOOL_ID_DUPLICATE",
             rejectedOwners,
             diagnosticSink);
+        RejectGlobalConflicts(
+            _workflowActions,
+            item => item.Descriptor.Id,
+            item => item.OwnerId,
+            item => item.HandlerType,
+            "WORKFLOW_ACTION_ID_DUPLICATE",
+            rejectedOwners,
+            diagnosticSink);
 
         var views = _documents.Select(item => new ViewDeclaration(
                 item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory))
@@ -258,6 +336,16 @@ internal sealed class PluginRegistryBuilder
             .Select(item => new PluginLifecycleDeclaration(
                 item.OwnerId, item.ImplementationType))
             .ToArray();
+        var acceptedActions = _workflowActions
+            .Where(item => !rejectedOwners.Contains(item.OwnerId))
+            .Select(item => new PluginWorkflowActionRegistration(
+                item.OwnerId,
+                item.Descriptor,
+                item.HandlerType))
+            .ToArray();
+        var acceptedConsumers = _workflowConsumers
+            .Where(owner => !rejectedOwners.Contains(owner))
+            .ToHashSet();
 
         var acceptedPluginIds = pluginProviders?.AvailablePluginIds
             .Where(owner => !rejectedOwners.Contains(owner))
@@ -273,7 +361,9 @@ internal sealed class PluginRegistryBuilder
                 acceptedPluginIds) ?? [],
             acceptedDocuments,
             acceptedTools,
-            acceptedLifecycles);
+            acceptedLifecycles,
+            acceptedActions,
+            acceptedConsumers);
         pluginProviders?.CommitRegistryResult(rejectedOwners);
         return registry;
     }
@@ -362,6 +452,12 @@ internal sealed class PluginRegistryBuilder
 
     /// <summary>插件局部 Builder 中尚未提交的生命周期候选事实。</summary>
     internal sealed record LifecycleDeclaration(PluginId OwnerId, Type ImplementationType);
+
+    /// <summary>插件局部 Builder 中尚未提交的 Workflow Action 候选事实。</summary>
+    internal sealed record WorkflowActionDeclaration(
+        PluginId OwnerId,
+        WorkflowActionDescriptor Descriptor,
+        Type HandlerType);
 
     /// <summary>全局模型映射冲突检查使用的最小 View 候选投影。</summary>
     private sealed record ViewDeclaration(

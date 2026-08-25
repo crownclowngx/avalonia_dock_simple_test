@@ -7,12 +7,13 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码已完成 V3 G14 与 Host V4 G8 封板。V4 只签署 Host internal 收口，产品与 SDK 仍为 3.0.0；
-# V3 正式 API、V4 本地发布资格及“未实际发布”边界必须同时保留，V1–V4 阶段记录继续参加检查。
+# 当前源码在 V3 G14 与 Host V4 G8 封板后完成 Workflow Action G1。产品仍为 3.0.0，SDK 候选为
+# 3.1.0；V3 Shipped、G1 Unshipped 和“未实际发布”边界必须同时保留。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
     'docs/design/document-persistence-v2-design.md',
+    'docs/design/ai-workflow-plugin-exploration.md',
     'docs/design/host-plugin-architecture-review.md',
     'docs/design/host-v2-breaking-refactor-plan.md',
     'docs/design/host-v3-breaking-refactor-plan.md',
@@ -37,6 +38,8 @@ $currentDocumentPaths = @(
     'docs/reference/dock-layout-snapshot-v2.md',
     'docs/reference/myavalonia-management-tests.md',
     'docs/reference/plugin-sdk-api-compatibility.md',
+    'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md',
+    'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md',
     'Host/MyAvaloniaManagement/docs/README.md',
     'Host/MyAvaloniaManagement/docs/design/architecture.md',
     'Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md',
@@ -50,7 +53,7 @@ $currentDocumentPaths += @(Get-ChildItem -LiteralPath (Join-Path $repositoryRoot
         -Filter '*.md' -File | ForEach-Object {
             [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/')
         })
-$hostHistoryDirectories = @('host-v1', 'host-v2', 'host-v3', 'host-v4')
+$hostHistoryDirectories = @('host-v1', 'host-v2', 'host-v3', 'host-v4', 'workflow-action')
 $historyDocumentPaths = @($hostHistoryDirectories | ForEach-Object {
         Get-ChildItem -LiteralPath (Join-Path $repositoryRoot "docs\plan-history\$_") `
             -Filter '*.md' -File
@@ -120,6 +123,10 @@ $requiredSymbols = @(
     [pscustomobject]@{ Symbol = 'PluginServiceCommitGuard'; Path = 'Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginServiceCommitGuard.cs' },
     [pscustomobject]@{ Symbol = 'HostDiagnosticRedactionPolicy'; Path = 'Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs' },
     [pscustomobject]@{ Symbol = 'DocumentEnvelopeSerializer'; Path = 'Host/MyAvaloniaManagement/Business/Documents/DocumentEnvelopeSerializer.cs' }
+    [pscustomobject]@{ Symbol = 'IWorkflowActionRun'; Path = 'Host/MyAvaloniaManagement.PluginSdk/WorkflowActionContracts.cs' }
+    [pscustomobject]@{ Symbol = 'IWorkflowActionRegistration'; Path = 'Host/MyAvaloniaManagement.PluginSdk.UI/WorkflowActionRegistrationContracts.cs' }
+    [pscustomobject]@{ Symbol = 'WorkflowActionCatalogStore'; Path = 'Host/MyAvaloniaManagement/Business/WorkflowActions/WorkflowActionCatalogStore.cs' }
+    [pscustomobject]@{ Symbol = 'WorkflowActionShutdownGate'; Path = 'Host/MyAvaloniaManagement/Business/WorkflowActions/WorkflowActionShutdownGate.cs' }
     [pscustomobject]@{ Symbol = 'HostDockFactory'; Path = 'Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs' }
     [pscustomobject]@{ Symbol = 'WorkspaceSession'; Path = 'Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.cs' }
     [pscustomobject]@{ Symbol = 'ToolWorkspaceReadModel'; Path = 'Host/MyAvaloniaManagement/Business/Workspace/ToolWorkspaceReadModel.cs' }
@@ -319,6 +326,35 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'tagCreated=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'v3 Shipped 为 Core 127 条、UI 45 条' }
+    [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = '文档状态：G0 已重新签署、G1 已完成；G2–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = 'sdkRoute=3.1-compatible-addition' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = '输入提交：`030a4fca408f72aed75500c105dc51af855d9af7`' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'sdkRoute=3.1-compatible-addition' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = '`myavalonia-workflow-studio`' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'aiflow=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'windowsSmoke=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'releaseAcceptance=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'publishable=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'published=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'uploaded=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'tagCreated=false' }
+    [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'v3 Unshipped 为 Core 72、UI 6' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'Test-WorkflowActionG1.ps1' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'IWorkflowActionRun' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = '状态：已完成（2026-08-25；完整非发布门禁通过）' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = '85.7%' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = '78417BF2B32DE8810175E8439F26264D6FA7C8FF6639664BBD81C7BCF02ACE3F' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'aiflow=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'windowsSmoke=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'releaseAcceptance=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'publishable=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'published=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'uploaded=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'tagCreated=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

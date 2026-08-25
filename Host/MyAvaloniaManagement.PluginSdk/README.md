@@ -18,10 +18,14 @@ keyed DI 注册影子覆盖。G5 已删除 SDK 通用事件总线；需要消息
 Revision 保存竞争、严格内容读取、关闭令牌与 Lifecycle/readiness 可沿最终 Registry、Workspace 和
 Dock Adapter 链工作；G13 已证明旧 public 入口和运行闭包零残留，没有新增 SDK public API。
 
-SDK 版本为已封板的 3.0.0；Core 的 127 条 public 签名与 UI 的 45 条均位于 v3 Shipped，两个 v3
-Unshipped 为空，v2 Shipped 历史文本保持不变。
+仓库内 SDK 候选版本为 3.1.0；既有 Core 127/UI 45 条仍位于 v3 Shipped，Workflow Action 兼容新增
+进入 Core/UI v3 Unshipped 72/6，v2 Shipped 历史文本保持不变。Core 新增 JSON 边界的 Handler、
+caller-bound Gateway、显式 Run、结构化请求/终态与受限进度；不包含 Host、工作流定义或 AI 类型。
 
-外部插件项目使用精确版本引用，并同时引用 UI SDK 与开发期 Build 包：
+Provider 的私有 DTO 不穿越公共边界。Consumer 通过 Gateway 创建绑定可信 CallerId 的 Run，不能提交
+CallerId、OwnerId、RunId 或授权结果；Run 的 Dispose 会取消并等待本 Run 的在途调用。
+
+下面仍是当前已发布的外部开发基线；G1 不更新模板或宣称 3.1 已发布：
 
 ```xml
 <PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.0.0]" />

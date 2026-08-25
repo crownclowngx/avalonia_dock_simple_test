@@ -308,8 +308,9 @@ function Get-ManagementBaselineFacts {
     $sdkNextMajorVersion = [Version]([string]$properties.MyAvaloniaPluginSdkNextMajorVersion)
     $apiBaseline = [string]$properties.MyAvaloniaPluginSdkApiBaseline
 
-    Assert-DocumentationCondition ($productVersion -eq $sdkVersion) (
-        "当前阶段要求产品版本与 SDK 版本一致，实际为 $productVersion / $sdkVersion。")
+    Assert-DocumentationCondition (
+        $productVersion.Major -eq $sdkVersion.Major -and $sdkVersion -ge $productVersion) (
+        "产品与 SDK 必须保持同一主版本，且 SDK 兼容候选不能落后于产品：$productVersion / $sdkVersion。")
     $legacyHostApiVersionNode = $versionDocument.SelectSingleNode(
         '/Project/PropertyGroup/MyAvaloniaHostApiAssemblyVersion')
     Assert-DocumentationCondition ($null -eq $legacyHostApiVersionNode) (
@@ -352,8 +353,10 @@ function Get-ManagementBaselineFacts {
                 Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         Assert-DocumentationCondition ($shippedEntries.Count -gt 0) (
             "G14 正式 V3 SDK 的 Shipped 不能为空：$baselineRoot")
-        Assert-DocumentationCondition ($unshippedEntries.Count -eq 0) (
-            "G14 正式 V3 SDK 的 Unshipped 必须为空：$baselineRoot")
+        $expectedG1Unshipped = if ($baselineRoot.Contains(
+                'MyAvaloniaManagement.PluginSdk.UI', [StringComparison]::OrdinalIgnoreCase)) { 6 } else { 72 }
+        Assert-DocumentationCondition ($unshippedEntries.Count -eq $expectedG1Unshipped) (
+            "Workflow Action G1 的 V3 Unshipped 数量不正确：$baselineRoot，实际 $($unshippedEntries.Count)。")
 
         $v2Root = Join-Path (Split-Path $baselineRoot -Parent) 'v2'
         $v2Shipped = @(Get-Content -LiteralPath (Join-Path $v2Root 'PublicAPI.Shipped.txt') |
@@ -451,8 +454,8 @@ function Get-ManagementBaselineFacts {
         $entryType = & $readProjectProperty 'ManagedPluginEntryType'
         $sdkMinExpression = & $readProjectProperty 'ManagedPluginSdkMinInclusive'
         $sdkMaxExpression = & $readProjectProperty 'ManagedPluginSdkMaxExclusive'
-        Assert-DocumentationCondition ($pluginVersion -eq $sdkVersion) (
-            "$relativePath 的插件版本 $pluginVersion 与当前 SDK $sdkVersion 不一致。")
+        Assert-DocumentationCondition ($pluginVersion -eq $productVersion) (
+            "$relativePath 的插件版本 $pluginVersion 与 G1 保持的产品版本 $productVersion 不一致。")
         Assert-DocumentationCondition (
             $entryType -cmatch '^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$') (
             "$relativePath 的 ManagedPluginEntryType 不是规范的命名空间限定类型全名。")

@@ -32,6 +32,7 @@ internal enum HostDiagnosticPhase
     HostContainerBuild,
     ExtensionDiscovery,
     PluginLifecycle,
+    WorkflowAction,
     Layout,
     HostBootstrap,
 }
@@ -177,6 +178,8 @@ internal static class HostDiagnosticCodes
     internal const string LifecycleCancellationFailed = "LIFECYCLE_CANCELLATION_FAILED";
     internal const string HostStartupCleanupFailed = "HOST_STARTUP_CLEANUP_FAILED";
     internal const string HostStartupUnexpected = "HOST_STARTUP_UNEXPECTED";
+    internal const string WorkflowActionShutdownTimeout =
+        "WORKFLOW_ACTION_SHUTDOWN_TIMEOUT";
 }
 
 /// <summary>
@@ -282,6 +285,8 @@ internal static class HostDiagnosticRedactionPolicy
             "宿主取消了插件初始化。",
         HostDiagnosticCodes.LifecycleCancellationFailed =>
             "插件生命周期操作失败。",
+        HostDiagnosticCodes.WorkflowActionShutdownTimeout =>
+            "Workflow Action 在关闭宽限内没有退出，宿主已阻止不安全的 Provider 释放。",
         HostDiagnosticCodes.HostStartupCleanupFailed =>
             "启动失败后的资源清理发生异常，应用将退出。",
         HostDiagnosticCodes.HostStartupUnexpected =>
@@ -294,6 +299,8 @@ internal static class HostDiagnosticRedactionPolicy
             "布局恢复或保存失败，宿主已使用安全回退并保留诊断。",
         _ when phase == HostDiagnosticPhase.PluginLifecycle =>
             "插件生命周期操作失败。",
+        _ when phase == HostDiagnosticPhase.WorkflowAction =>
+            "Workflow Action 调用失败；参数正文和插件异常未写入诊断。",
         _ => "宿主操作失败，原始输入未被保存。",
     };
 

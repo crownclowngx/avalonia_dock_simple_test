@@ -10,6 +10,9 @@
 >
 > Host V4 G8 当前事实：Host internal G0–G8 已封板，产品、SDK、四插件与 v3 API/磁盘格式保持不变；
 > 当前正式入口为 `scripts/Invoke-HostV4ReleaseGate.ps1`，只建立本地发布资格，不执行外部发布或 AIFLOW。
+>
+> 当前仓库开发基线另含 Workflow Action G1：产品保持 `3.0.0`，Core/UI SDK 候选为 `3.1.0`；该候选
+> 尚未发布，模板传播留给 G2。G1 只能运行 `scripts/Test-WorkflowActionG1.ps1` 非发布门禁。
 
 Managed Plugin 快速开始入口：
 
@@ -27,6 +30,9 @@ Managed Plugin 快速开始入口：
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
 | [Host V4 内部收口任务书](./design/host-v4-breaking-refactor-plan.md) | Host 死面、身份、Layout、回收所有权、领域目录、路径语义、集成回归与封板 | 已完成；G0–G8 已封板，本地可发布但未对外发布 |
+| [Workflow Action 总设计](./design/ai-workflow-plugin-exploration.md) | 手工工作流优先、Action 内核与后续 G2–G10 边界 | G0 已重新签署、G1 已完成，G2–G10 未实施 |
+| [Workflow Action G0 重新签署](./plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md) | Run/进度出口、SDK 3.1 兼容路线与真实 3.0 插件证据 | 已完成；非发布 |
+| [Workflow Action G1 Host 内核](./plan-history/workflow-action/g1-host-workflow-action-kernel.md) | SOLID、公共 API、调用/关闭时序、测试与回滚 | 已完成；完整非发布门禁通过 |
 | [V4 G0 V3 源码基线](./plan-history/host-v4/g0-v3-source-baseline.md) | V3 源码输入、锁定还原、测试与非发布事实 | 已完成；不修改生产源码 |
 | [V4 G1 删除 Host 死面](./plan-history/host-v4/g1-remove-dead-host-surface.md) | 空协议、菜单尾项、Hosting 依赖和开发门禁 | 已完成；非发布 |
 | [V4 G2 强类型身份与用例入口](./plan-history/host-v4/g2-strongly-typed-identity-and-use-case-entry.md) | ToolTypeId 单一源、真实 Coordinator 与异步 Harness | 已完成；非发布 |
@@ -84,6 +90,7 @@ Managed Plugin 快速开始入口：
 - [以注意力为中心的可停靠工作台](./theory/attention-centered-dock-workspace-design.md)：解释 Document、Tool 和 Dock 的产品设计意图。
 - [基于活动理论的需求分解方法论](./theory/activity-theory-requirements-decomposition.md)：说明自然语言需求如何拆分到 Document、Tool 和后台服务。
 - [工作流执行与可选 AI 规划方案](./design/ai-workflow-plugin-exploration.md)：以临时手工编辑为 MVP 主路径，给出 Workflow Action、外部模板/独立项目边界、风险和 G0–G10 可行性路线；属于候选任务书，不是当前宿主契约。
+- [Workflow Action G0 冻结记录](./plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md)：冻结 3.0 输入事实、WorkflowStudio 命名、Schema/预算和独立仓库边界，并以真实旧插件包和跨 ALC 夹具签署 SDK 3.1 兼容新增路线；不表示生产 API 已实现。
 
 ## V3/V2 已封板基线与后续候选计划
 

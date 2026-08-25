@@ -25,8 +25,10 @@ Workspace/Dock 和 Host/插件目录边界。`IPluginWindowInteraction` 由 Host
 
 V3 G8 由同一 UI SDK 的 `IWindowContentFullscreenHost` 承载 MySmallTools 全屏交互，唯一 public 方法为
 `IDisposable? TryPresent(Control content)`。成功租约排他且幂等，Host 自动失效后再次释放为无操作；
-插件不取得 Window、Dock、owner 或 `TryRestore`。`3.0.0` UI SDK 的 45 条 public 签名已进入
-v3 Shipped，v3 Unshipped 为空。V3 G9–G12 只用既有声明和 Host internal Workspace/Dock Adapter
+插件不取得 Window、Dock、owner 或 `TryRestore`。既有 UI SDK 45 条签名仍在 v3 Shipped；G1 候选
+`3.1.0` 以 6 条 v3 Unshipped 新增独立 `IWorkflowActionRegistration` 和朴素扩展方法。Provider 只用
+`AddWorkflowAction<THandler>` 声明 scoped Handler，Consumer 只用 `UseWorkflowActionGateway` 声明身份；
+同一插件不能兼任两者。V3 G9–G12 只用既有声明和 Host internal Workspace/Dock Adapter
 验证四插件，G13 又以真实 nupkg 负例证明旧 owner API 不可消费；G14 未增加公共类型、接口或成员，只完成
 API 分类和两轮隔离签署。v2 Shipped 继续保存 V2 G14 历史承诺。
 

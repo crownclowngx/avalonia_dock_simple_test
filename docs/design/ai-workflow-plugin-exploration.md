@@ -1,14 +1,14 @@
 # 基于 Plugin SDK V3 / Host V4 的工作流执行与可选 AI 规划方案
 
-> **文档状态：重新评估后的可行性与实施任务书，尚未编码**
+> **文档状态：G0 已重新签署、G1 已完成；G2–G10 尚未实施**
 >
 > 初始探索：2026-08-07
 >
 > 本次复核：2026-08-25
 >
-> 代码基线：产品/Plugin SDK `3.0.0`、已封板 Host V4 internal、.NET 10、Avalonia 12.1、manifest schema v2、每插件独立 Provider 与 `PluginLoadContext`
+> 代码基线：产品 `3.0.0`、Core/UI SDK 候选 `3.1.0`、已封板 Host V4 internal + G1 Action 内核、.NET 10、Avalonia 12.1、manifest schema v2、每插件独立 Provider 与 `PluginLoadContext`
 >
-> 本文描述建议架构、G 划分和验收门禁，不表示 Workflow Action、工作流插件、AI 客户端或执行器已经存在。
+> 本文同时记录已实现的 G0/G1 与后续建议；Workflow Studio、工作流定义/执行器和 AI 客户端仍不存在。
 
 相关事实源：
 
@@ -18,6 +18,7 @@
 - [`Host architecture.md`](../../Host/MyAvaloniaManagement/docs/design/architecture.md)
 - [`compatibility-contracts.md`](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)
 - [`plugin-sdk-api-compatibility.md`](../reference/plugin-sdk-api-compatibility.md)
+- [`Workflow Action G0 冻结记录`](../plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md)
 
 ---
 
@@ -100,7 +101,7 @@ MVP 明确不要求：
 
 ### 2.1 版本事实
 
-当前源码的产品和 Plugin SDK 仍为 **V3 / 3.0.0**；Host V4 是已经封板的宿主内部收口代际，没有把产品或 SDK 提升到 4.0.0。以下磁盘协议仍为 schema v2：
+当前源码的产品仍为 **3.0.0**，Core/UI SDK 候选已兼容提升为 **3.1.0**；Host V4 是已经封板的宿主内部收口代际，没有把产品或 SDK 提升到 4.0.0。以下磁盘协议仍为 schema v2：
 
 - `plugin.manifest.json`；
 - Document envelope；
@@ -124,11 +125,11 @@ MVP 明确不要求：
 | BiliDownloader 有无 UI 的提交边界 | `IDownloadSubmissionService` | 已有预检与提交基础，但输入仍是完整 `DownloadSubmission` |
 | MySmallTools 有流式加密与原子输出提交 | `IVideoEncryptionService`、`OutputFileTransaction` | 非破坏性加密 Action 有可靠基础，但当前没有删除源文件事务 |
 
-### 2.3 当前不存在的能力
+### 2.3 G1 已实现与仍不存在的能力
 
-仓库中目前没有：
+仓库已经具备 Workflow Action 公共契约、声明注册、不可变目录、caller-bound Gateway/Run、Host internal
+Schema/授权/资源治理、invocation scope、诊断和关闭门控。仓库中仍没有：
 
-- Workflow Action 公共契约、Registry 条目、Gateway 或 Host authorizer；
 - 工作流定义、临时编辑器、验证器、执行器或运行状态模型；
 - AI/LLM 客户端插件；
 - Host 级 Secret Store；
@@ -176,7 +177,7 @@ flowchart LR
     Import["导入定义"] --> Studio
     AI["可选 AI Planner\n只生成候选定义"] --> Studio
 
-    Studio --> Gateway["Caller-bound\nIWorkflowActionGateway"]
+    Studio --> Gateway["Caller-bound\nIWorkflowActionGateway / Run"]
     Gateway --> Catalog["WorkflowActionCatalogStore\nRegistry 后一次提交"]
     Gateway --> Policy["Schema / Availability / Authorization\nLimits / Diagnostics / Shutdown"]
     Gateway --> Owner["PluginProviderOwner\n每次调用创建所有者 Scope"]
@@ -198,7 +199,7 @@ flowchart LR
 | `PluginRegistryBuilder` | 收集、校验、判重并冻结 Action 声明 | 不解析 Handler，不运行插件代码 |
 | `PluginRegistry` | 保存 Owner、Descriptor、Handler 类型和目录 revision | 不保存 Provider、Scope 或实例 |
 | `WorkflowActionCatalogStore` | 解决 Host Provider 先构建、Registry 后发布的时序 | 不允许二次提交或运行期追加 Action |
-| `IWorkflowActionGateway` | 列举可用 Action 并提交受控调用 | 不提供服务定位，不解释自然语言，不保存工作流 |
+| `IWorkflowActionGateway` / `IWorkflowActionRun` | 列举可用 Action、创建绑定 Caller 的 Run 并提交受控调用 | 不提供服务定位，不接受 CallerId，不解释或保存工作流 |
 | Host Action Executor | 可用性、Schema、授权、Scope、超时、输出限制和诊断 | 不保存提示词，不生成或解释工作流 |
 | Workflow Studio | 临时编辑、引用检查、风险摘要、执行状态和 UI | 不直接解析其他插件 Provider |
 | 轻量执行器 | 顺序、有限 `ForEach`、引用、取消和失败停止 | 不运行任意表达式或脚本 |
@@ -224,7 +225,7 @@ AI 候选 ──┘
 
 G0 必须先用最小消费者和旧插件包证明这条路线确实满足源码/二进制兼容；若失败，停止 3.1 路线并建立 SDK V4，不能改写 v3 Shipped 基线。
 
-建议公共形态：
+G0 重新签署并由 G1 实现的公共形态：
 
 ```csharp
 // Core SDK：只依赖 BCL / System.Text.Json
@@ -240,8 +241,14 @@ public interface IWorkflowActionGateway
 {
     IReadOnlyList<WorkflowActionDescriptor> GetAvailableActions();
 
+    IWorkflowActionRun CreateRun();
+}
+
+public interface IWorkflowActionRun : IAsyncDisposable
+{
     Task<WorkflowActionInvocationResult> InvokeAsync(
         WorkflowActionInvocationRequest request,
+        IProgress<WorkflowActionProgress>? progress,
         CancellationToken cancellationToken);
 }
 
@@ -299,6 +306,7 @@ Core SDK 第一版只增加：
 - `WorkflowActionContext` 与受限进度 DTO；
 - `IWorkflowActionHandler`；
 - `IWorkflowActionGateway`；
+- `IWorkflowActionRun`；
 - 调用请求与结构化结果 DTO。
 
 不放入公共 SDK：
@@ -333,6 +341,23 @@ Descriptor 同时携带输入和输出 Schema。第一版不声称支持完整 J
 - 敏感字段由 Descriptor 的规范 JSON Pointer 列表标记，不依赖自由文本猜测。
 
 Schema 由插件显式提供。首版不做任意 DTO 反射生成。
+
+G0 已把首版 Profile 和资源预算冻结为可执行测试事实：
+
+| 项目 | 冻结值 |
+| --- | ---: |
+| 每份输入/输出 Schema UTF-8 大小 | 64 KiB |
+| 输入实例 UTF-8 大小 | 256 KiB |
+| 输出实例 UTF-8 大小 | 1 MiB |
+| Schema 与实例最大深度 | 16 |
+| Schema 累计属性数 | 128 |
+| 数组最大项数 | 1024 |
+| 单字符串 UTF-8 大小 | 64 KiB |
+
+Profile 只允许单一字符串 `type`；根必须为 `object`。对象必须显式提供 `properties` 和
+`additionalProperties: false`；数组必须提供 `items` 与不超过 1024 的 `maxItems`。允许
+`required`、标量 `enum`、`minLength`/`maxLength`、`minimum`/`maximum` 和数组项数边界。
+组合 Schema、类型联合、未知关键字、远程 `$ref` 与非规范绝对 JSON Pointer 均拒绝。
 
 ### 5.4 Handler 生命周期
 
@@ -416,6 +441,9 @@ Gateway 每次调用执行：
 - `Never`：只允许无副作用且不读取敏感数据的 Action；
 - `OncePerRun`：对确定的 Action、目标和参数摘要授权一次；
 - `EveryInvocation`：删除等不可恢复操作逐次授权。
+
+G0 冻结的组合下限是：`Never` 只允许 `None`；任一非删除风险至少 `OncePerRun`；包含
+`DeletesLocalFiles` 时必须 `EveryInvocation`。插件声明的是最低确认频率，Host 可以提升但不能降低。
 
 Authorizer 是 Host internal 服务，生产实现使用 Avalonia UI，测试使用可控替身。编辑器、导入文件、模型文本和 Handler 都不能伪造授权结果。
 
@@ -704,7 +732,7 @@ Handler 在 invocation scope 中解析 `IVideoEncryptionService`，不依赖 Doc
 
 ### G0：冻结事实、命名、仓库与 SDK 兼容路线
 
-> **可行性：高；生产功能变化：无。**
+> **状态：已完成（2026-08-25）；生产功能变化：无。**
 
 - **目标**：冻结 `WorkflowAction` 命名、稳定 ID、风险标志、确认语义、Schema Profile、输入/输出预算、非泛型 JSON Handler 契约，以及“平台仓库/外部插件仓库”边界。
 - **前置**：以当前干净、可追溯的 Plugin SDK V3 / Host V4 internal 基线为唯一输入；记录实际 revision、测试数和 API 基线哈希。
@@ -712,9 +740,26 @@ Handler 在 invocation scope 中解析 `IVideoEncryptionService`，不依赖 Doc
 - **退出条件**：形成 SDK 3.1 可兼容或必须转 SDK V4 的明确结论；不能用“预计兼容”进入 G1。
 - **回滚**：删除全部候选 API 和试验夹具，回到原 3.0.0 基线；不得改写 v3 Shipped、预建外部正式项目或保留半套命名。
 
+实测结论为 **`sdkRoute=3.1-compatible-addition`**。G0 以提交
+`030a4fca408f72aed75500c105dc51af855d9af7`、Git tree
+`d961e506357fbb6cc7f160f18b65acec0e3b72f5` 为输入，在隔离副本中生成 SDK 3.1 候选：
+
+- 生产 Core/UI v3 Shipped 仍为 127/45，SHA-256 分别为
+  `063BCB5852827612B0501C135D23FECD015069A6F7DDB409547157E4FA00F80F` /
+  `B11FBE768C3AD04CA65CBF5128BF6FCE8C00058EBB24052D51FE5464A65AD803`，G1 生产 Unshipped 为 72/6；
+- 重新签署 API 已登记为 Core 72、UI 6 条 Unshipped，`IPluginRegistration` 原成员集合不变；
+- 3.0 Host 在加载伪入口 DLL 前拒绝 `sdk.minInclusive=3.1.0`，候选 3.1 Host 可发现并组合真实 3.0
+  MyPlugTest ZIP；Provider 与 Consumer 分处两个 `PluginLoadContext`，只经默认 ALC 的共享 SDK、
+  caller-bound Gateway 和 JSON 完成非泛型 Handler 调用；
+- 专项旧 Host 1/1、候选协议 14/14 通过；详细命令、包摘要、SOLID 取舍和非发布边界见
+  [G0 专用记录](../plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md)。
+
+G1 已按重新签署的 Run/进度边界把候选形状写入 v3 `PublicAPI.Unshipped.txt` 并实现 Host 内核；
+若后续必须改变这些边界，应退回 G0 再次签署。
+
 ### G1：Host Workflow Action 内核
 
-> **可行性：中高；风险集中在组合时序、Scope 与关闭竞态。**
+> **状态：已完成（2026-08-25）；实现与非发布证据见 [G1 专用记录](../plan-history/workflow-action/g1-host-workflow-action-kernel.md)。**
 
 - **目标**：完成 Action Provider/Consumer 声明、不可变目录、caller-bound Gateway、invocation scope、Schema、授权、预算、取消、并发限制和关闭门控。
 - **前置**：G0 兼容路线已签署；Schema Profile 和 public API 不再漂移。

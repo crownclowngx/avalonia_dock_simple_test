@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Composition;
@@ -20,7 +21,8 @@ namespace MyAvaloniaManagement.Business.Plugins.Registration;
 /// 才能判断跨插件稳定 ID 与模型映射冲突；本所有者随后一次提交无冲突租约、释放被排除租约，并只为
 /// 已接受插件登记 Document Scope。该两阶段过程避免为了回滚而复制服务描述符。
 /// </remarks>
-internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolver
+internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolver,
+    IWorkflowActionScopeFactory
 {
     private readonly List<PluginProviderLease> _leases = [];
     private DocumentScopeRegistry? _documentScopes;
@@ -105,6 +107,21 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
                 foreach (var lifecycleType in pluginBuilder.GetLifecycleTypes())
                 {
                     provider.GetRequiredService(lifecycleType);
+                }
+
+                // ValidateOnBuild 只验证 DI 调用图，不一定实际构造 scoped 根。使用一个短命验证
+                // Scope 精确解析全部 Handler，并在导入全局 Builder 前完成同步/异步释放。
+                var validationScope = provider.CreateAsyncScope();
+                try
+                {
+                    foreach (var handlerType in pluginBuilder.GetWorkflowActionHandlerTypes())
+                    {
+                        _ = validationScope.ServiceProvider.GetRequiredService(handlerType);
+                    }
+                }
+                finally
+                {
+                    validationScope.DisposeAsync().AsTask().GetAwaiter().GetResult();
                 }
 
                 // Scope 管理器不是插件模型；解析它不会创建 Document 或 Tool。
@@ -210,6 +227,31 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
     internal DocumentScopeManager GetDocumentScopeManager(PluginId pluginId) =>
         GetAcceptedLease(pluginId).ScopeManager;
 
+    /// <summary>在动作所有者 Provider 内创建一次独立调用 Scope 并解析冻结 Handler。</summary>
+    /// <remarks>
+    /// 返回的租约只暴露共享 SDK Handler，不暴露 Provider 或 IServiceProvider。调用方必须在
+    /// Handler 真正结束后异步释放租约，Host 关闭也不得越过这一所有权边界强行释放 Provider。
+    /// </remarks>
+    public IWorkflowActionInvocationScope CreateWorkflowActionScope(
+        PluginId pluginId,
+        Type handlerType)
+    {
+        ArgumentNullException.ThrowIfNull(handlerType);
+        var scope = GetAcceptedLease(pluginId).Provider.CreateAsyncScope();
+        try
+        {
+            var handler = scope.ServiceProvider.GetRequiredService(handlerType)
+                as IWorkflowActionHandler ?? throw new InvalidOperationException(
+                    $"Workflow Action Handler {handlerType.FullName} 未实现当前 SDK 契约。");
+            return new PluginWorkflowActionScope(scope, handler);
+        }
+        catch
+        {
+            scope.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            throw;
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -259,4 +301,27 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
         internal DocumentScopeManager ScopeManager { get; } = scopeManager;
         internal bool Accepted { get; set; }
     }
+}
+
+/// <summary>封装一次 Workflow Action invocation scope 的唯一释放权。</summary>
+internal interface IWorkflowActionScopeFactory
+{
+    IWorkflowActionInvocationScope CreateWorkflowActionScope(
+        PluginId pluginId,
+        Type handlerType);
+}
+
+/// <summary>Executor 可见的最小 invocation scope；不暴露 Provider 或服务定位能力。</summary>
+internal interface IWorkflowActionInvocationScope : IAsyncDisposable
+{
+    IWorkflowActionHandler Handler { get; }
+}
+
+internal sealed class PluginWorkflowActionScope(
+    AsyncServiceScope scope,
+    IWorkflowActionHandler handler) : IWorkflowActionInvocationScope
+{
+    public IWorkflowActionHandler Handler { get; } = handler;
+
+    public ValueTask DisposeAsync() => scope.DisposeAsync();
 }

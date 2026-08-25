@@ -6,8 +6,10 @@
 > 这些阶段均未新增 public API。V3 G14 已将最终签名原样移入 Shipped：Core 127 条、UI 45 条，
 > 两个 v3 Unshipped 均为空；`3.0.0` 已建立本地发布资格但没有上传或对外发布。
 > 当前 v3 Shipped 为 Core 127 条、UI 45 条，这是后续兼容审阅的正式基线。
-> Host V4 G8 已签署 Host internal 收口，但没有产生 SDK 4.0.0：产品、SDK 与四插件仍为 `3.0.0`，
-> v3 Shipped/Unshipped 仍为 Core 127/0、UI 45/0，manifest 区间仍为 `[3.0.0, 4.0.0)`。
+> Host V4 G8 已签署 Host internal 收口，但没有产生 SDK 4.0.0。Workflow Action G0 已重新签署 Run 与
+> Consumer 进度出口，G1 已把兼容新增实现为 Core/UI SDK 候选 `3.1.0`：v3 Shipped 仍为 Core 127、
+> UI 45，v3 Unshipped 为 Core 72、UI 6；manifest、Document、Layout 和数据根协议不变。结论仍为
+> `sdkRoute=3.1-compatible-addition`，当前候选不表示已经上传或发布。
 
 ## 1. 权威源与程序集边界
 
@@ -44,6 +46,10 @@ V2 G14 的正式状态是：Core Shipped 85 条、UI Shipped 46 条，两个 Uns
 Core/UI Unshipped 为 101/46；G8–G13 收口为 Unshipped 127/45；G14 的正式状态为 Shipped 127/45、
 Unshipped 0/0。两份基线分别描述各自程序集，不能合并，也不能与 v1 的 243 条历史表面要求相等。
 各阶段数量只保留在对应记录中，不能用 G14 状态倒写 G1 或 V2 历史。
+
+Workflow Action G1 的当前状态是 v3 Shipped 127/45、Unshipped 72/6。新增含 caller-bound
+`IWorkflowActionGateway.CreateRun()`、`IWorkflowActionRun.InvokeAsync` 与 UI 注册扩展；旧 Shipped 没有
+改写。维护与验证入口为 `scripts/Test-WorkflowActionG1.ps1`。
 
 ## 3. 日常变更流程
 
@@ -90,7 +96,18 @@ dotnet test Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.Plugi
 
 `Test-PluginSdkCompatibility.ps1` 分别验证 Core/UI 的版本、排序、重复项与成员级变异；
 `Test-PluginSdkPackage.ps1` 从真实 nupkg 验证 DLL/XML/nuspec/精确依赖图、两个正向消费者和旧 API/禁用依赖
-反例。以上命令适合日常兼容检查，不运行 Windows Smoke、上传或标签。当前 Host V4 G8 正式本地入口为：
+反例。以上命令适合日常兼容检查，不运行 Windows Smoke、上传或标签。
+
+Workflow Action G0 另有一个只建立兼容证据、不授予发布资格的入口：
+
+```powershell
+.\scripts\Test-WorkflowActionG0.ps1 -Configuration Release
+```
+
+它在固定 Git 输入的临时副本中登记并删除候选 API，生产 v3 API 文本始终保持 127/0、45/0；默认还会
+复用 Host、四插件、SDK 包/API 和文档日常门禁。它不调用 AIFLOW、Windows CI/Smoke 或发布入口。
+
+当前 Host V4 G8 正式本地入口为：
 
 ```powershell
 .\scripts\Invoke-HostV4ReleaseGate.ps1

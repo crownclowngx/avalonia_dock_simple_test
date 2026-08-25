@@ -16,7 +16,7 @@ namespace MyAvaloniaManagement.Business.Plugins.Registration;
 /// 拥有的列表。它不执行模型构造、不读取运行期元数据，也不决定跨插件冲突。模块返回后由宿主
 /// 立即封闭窗口，避免插件保存 <see cref="IPluginRegistration"/> 并在运行期改变对象图或 Registry。
 /// </remarks>
-internal sealed class PluginRegistration : IPluginRegistration
+internal sealed class PluginRegistration : IPluginRegistration, IWorkflowActionRegistration
 {
     private readonly PluginRegistryBuilder _builder;
     private readonly SealableServiceCollection _services;
@@ -97,6 +97,34 @@ internal sealed class PluginRegistration : IPluginRegistration
             typeof(TTool),
             typeof(TView),
             static () => new TView());
+    }
+
+    /// <inheritdoc />
+    public void AddWorkflowAction<THandler>(WorkflowActionDescriptor descriptor)
+        where THandler : class, IWorkflowActionHandler
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(descriptor);
+        _hostOwnedServiceDescriptors.Add(
+            ServiceDescriptor.Scoped(typeof(THandler), typeof(THandler)));
+        _builder.AddWorkflowAction(PluginId, descriptor, typeof(THandler));
+    }
+
+    /// <inheritdoc />
+    public void UseWorkflowActionGateway()
+    {
+        EnsureWritable();
+        _builder.AddWorkflowActionConsumer(PluginId);
+    }
+
+    /// <summary>指示当前声明是否显式请求 Workflow Action Gateway。</summary>
+    internal bool UsesWorkflowActionGateway
+    {
+        get
+        {
+            EnsureSealed();
+            return _builder.IsWorkflowActionConsumer(PluginId);
+        }
     }
 
     /// <summary>

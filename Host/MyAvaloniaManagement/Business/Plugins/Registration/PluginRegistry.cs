@@ -23,17 +23,23 @@ internal sealed class PluginRegistry
     private readonly IReadOnlyDictionary<DocumentTypeId, PluginDocumentRegistration> _documents;
     private readonly IReadOnlyDictionary<ToolTypeId, PluginToolRegistration> _tools;
     private readonly IReadOnlyDictionary<Type, PluginViewRegistration> _views;
+    private readonly IReadOnlyDictionary<WorkflowActionId, PluginWorkflowActionRegistration>
+        _workflowActions;
 
     internal PluginRegistry(
         IReadOnlyList<PluginRegistryPlugin> plugins,
         IReadOnlyList<PluginDocumentRegistration> documents,
         IReadOnlyList<PluginToolRegistration> tools,
-        IReadOnlyList<PluginLifecycleDeclaration> lifecycles)
+        IReadOnlyList<PluginLifecycleDeclaration> lifecycles,
+        IReadOnlyList<PluginWorkflowActionRegistration>? workflowActions = null,
+        IReadOnlySet<PluginId>? workflowConsumers = null)
     {
         ArgumentNullException.ThrowIfNull(plugins);
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(lifecycles);
+        workflowActions ??= [];
+        workflowConsumers ??= new HashSet<PluginId>();
 
         // 插件快照内部也包含集合，必须逐层复制；只包住最外层数组仍允许调用方通过原始数组
         // 改写 Document/View/Lifecycle 列表，破坏 Registry 的发布后不变性。
@@ -47,6 +53,8 @@ internal sealed class PluginRegistry
         Lifecycles = Array.AsReadOnly(lifecycles.ToArray());
         _documents = documents.ToDictionary(item => item.Descriptor.DocumentTypeId);
         _tools = tools.ToDictionary(item => item.Descriptor.ToolTypeId);
+        _workflowActions = workflowActions.ToDictionary(item => item.Descriptor.Id);
+        WorkflowActionConsumerIds = workflowConsumers.ToHashSet();
         _views = documents.Select(item => new PluginViewRegistration(
                 item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory))
             .Concat(tools.Select(item => new PluginViewRegistration(
@@ -77,7 +85,21 @@ internal sealed class PluginRegistry
         .Concat(_documents.Values.Select(document => document.OwnerId))
         .Concat(_tools.Values.Select(tool => tool.OwnerId))
         .Concat(Lifecycles.Select(lifecycle => lifecycle.OwnerId))
+        .Concat(_workflowActions.Values.Select(action => action.OwnerId))
+        .Concat(WorkflowActionConsumerIds)
         .ToHashSet();
+
+    /// <summary>获取不可变 Workflow Action 注册集合，不包含可用性运行状态。</summary>
+    internal IReadOnlyCollection<PluginWorkflowActionRegistration> WorkflowActions =>
+        _workflowActions.Values.ToArray();
+
+    /// <summary>获取显式请求 caller-bound Gateway 的 Consumer 身份快照。</summary>
+    internal IReadOnlySet<PluginId> WorkflowActionConsumerIds { get; }
+
+    internal bool TryGetWorkflowAction(
+        WorkflowActionId actionId,
+        out PluginWorkflowActionRegistration registration) =>
+        _workflowActions.TryGetValue(actionId, out registration!);
 
     /// <summary>完整插件 Document 注册；集合不包含 Host 内建 Document。</summary>
     internal IReadOnlyCollection<PluginDocumentRegistration> Documents =>
@@ -162,3 +184,10 @@ internal sealed record PluginViewRegistration(
 internal sealed record PluginLifecycleDeclaration(
     PluginId OwnerId,
     Type ImplementationType);
+
+/// <summary>冻结动作所有者、不可变描述符和所有者 Provider 内的 scoped Handler 类型。</summary>
+/// <remarks>本记录不持有 Provider、Scope、Handler 实例、授权结果或运行状态。</remarks>
+internal sealed record PluginWorkflowActionRegistration(
+    PluginId OwnerId,
+    WorkflowActionDescriptor Descriptor,
+    Type HandlerType);

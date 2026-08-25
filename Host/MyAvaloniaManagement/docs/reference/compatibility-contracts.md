@@ -27,10 +27,14 @@
 > `TryRestore` 已从活动源码删除；四插件已通过最终 Registry、私有 Provider、Workspace Session、
 > Dock Adapter 与真实 ZIP Loader 验证各自的 Document、Tool 与 Lifecycle；manifest、Document envelope、
 > layout 和默认数据根继续使用 schema/generation 2。
+>
+> Workflow Action G0 已重新签署、G1 已完成：产品与既有插件版本保持 `3.0.0`，仓库内 Core/UI SDK
+> 候选为 `3.1.0`。v3 Shipped 继续为 127/45，Action 兼容新增只进入 Unshipped 72/6；manifest、
+> Document、Layout 和数据根协议没有变化。
 
 ## 2. public API
 
-当前 V3 G14 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
+当前 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk` 与
 `MyAvaloniaManagement.PluginSdk.UI`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；
 四个业务插件只引用最终 SDK。`MyAvaloniaManagement.LegacyPluginContracts` 已整体删除；活动项目、
@@ -42,7 +46,7 @@
 Plugin SDK public API 或 manifest；Document 与 Layout 磁盘契约均已切换为唯一 V2。
 
 历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 的 v2 基线由 V2 G14 冻结为
-Shipped 85/46 条且 Unshipped 均为空。活动 v3 Shipped 为 127/45、Unshipped 均为空，并由
+Shipped 85/46 条且 Unshipped 均为空。活动 v3 Shipped 为 127/45、Unshipped 为 72/6，并由
 `scripts/Test-PluginSdkCompatibility.ps1 -Baseline v3` 验证。未登记
 新增、删除、可见性收窄、参数或返回类型变化都会给出成员级 RS 诊断。完整维护流程见
 [Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
@@ -78,7 +82,7 @@ V2 G14 冻结的 v2 Shipped，并在 V3 G14 随最终表面进入 v3 Shipped。
 ### 2.2 版本所有权
 
 - 产品、Host 程序集身份和 Plugin SDK 版本集中定义在根级 `Directory.Version.props`；
-- 当前已封板产品与 SDK 版本为 `3.0.0`，Host 与 SDK `AssemblyVersion` 为 `3.0.0.0`；V3 不重新引入独立 Host API 版本线；
+- 当前产品为 `3.0.0`、仓库内 SDK 候选为 `3.1.0`；Host/SDK `AssemblyVersion` 分别为 `3.0.0.0` / `3.1.0.0`，V3 不重新引入独立 Host API 版本线；
 - 兼容的 SDK 新增提升次版本但保持同一主版本程序集身份；破坏性契约变化提升主版本；
 - 每个插件只拥有自己的 `PluginVersion`，清单版本必须与入口程序集精确一致；
 - manifest、布局、外观、诊断和未来 Document 信封分别拥有整数 schema，不共享全局数字；
@@ -163,7 +167,7 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
     "type": "SamplePlugin.Plugin.SamplePluginModule"
   },
   "sdk": {
-    "minInclusive": "3.0.0",
+    "minInclusive": "3.1.0",
     "maxExclusive": "4.0.0"
   }
 }
@@ -175,7 +179,19 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - `entryPoint.type` 必须是区分大小写的规范完整类型名，不得含空白、程序集限定名、泛型或嵌套符号；
 - 入口必须携带同名 `.deps.json`，宿主不扫描目录猜测托管或原生依赖；
 - `pluginVersion` 必须与入口 `AssemblyVersion` 精确一致；manifest `pluginId` 是插件身份唯一事实源；
-- Core 与 UI 当前 SDK 版本均为 `3.0.0`；二者不一致属于宿主配置错误，兼容诊断统一为 `PLUGIN_SDK_INCOMPATIBLE`；
+- Core 与 UI 当前仓库候选版本均为 `3.1.0`；二者不一致属于宿主配置错误，兼容诊断统一为 `PLUGIN_SDK_INCOMPATIBLE`；
+
+### 3.1.1 Workflow Action 调用边界
+
+- Provider 通过独立 `IWorkflowActionRegistration` 声明 Descriptor 与 scoped Handler；Consumer 必须显式
+  调用 `UseWorkflowActionGateway`，同一插件不能兼任 Provider/Consumer；
+- Gateway 绑定 manifest CallerId，只列举当前可用目录并创建 `IWorkflowActionRun`；请求不能提交 CallerId、
+  OwnerId、RunId 或授权结果；
+- Run 独占取消、并发、OncePerRun 授权缓存和 catalog revision；Dispose 停止接收、取消并等待本 Run 调用；
+- 跨 ALC 只允许 SDK/BCL/JSON；Host 每次在已提交 Owner Provider 创建独立 invocation scope；
+- 输入和成功输出均通过冻结 Schema/预算；满并发快速拒绝，不建立无界队列；
+- 结构化结果和诊断不包含插件异常原文、参数正文、路径、Secret 或进度消息；
+- Host 关闭先取消并排空 Handler，未排空时不得停止 Lifecycle 或释放任何相关 Provider。
 - reader 不读取 manifest v1，也不存在 v1/v2 双 reader；
 - 清单只解决兼容和确定性加载，不提供签名、防篡改、权限沙箱或热卸载。
 

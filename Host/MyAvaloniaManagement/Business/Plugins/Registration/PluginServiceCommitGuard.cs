@@ -7,6 +7,7 @@ using MyAvaloniaManagement.Business.Documents.Ownership;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
+using MyAvaloniaManagement.Business.WorkflowActions;
 
 namespace MyAvaloniaManagement.Business.Plugins.Registration;
 
@@ -26,6 +27,8 @@ internal static class PluginServiceCommitGuard
         typeof(IDocumentLifetime),
         typeof(DocumentLifetime),
         typeof(DocumentScopeManager),
+        typeof(IWorkflowActionGateway),
+        typeof(IWorkflowActionRun),
     };
 
     /// <summary>校验当前插件的私有描述符，并在成功后追加 Host 拥有的全部服务。</summary>
@@ -71,6 +74,16 @@ internal static class PluginServiceCommitGuard
         pluginServices.AddScoped<DocumentLifetime>();
         pluginServices.AddScoped<IDocumentLifetime>(provider =>
             provider.GetRequiredService<DocumentLifetime>());
+
+        if (registration.UsesWorkflowActionGateway)
+        {
+            // Gateway 实例只捕获可信 manifest 身份和 Host internal Run 管理器；请求 DTO 没有
+            // CallerId 写入口，因此插件不能通过 JSON 或自行注册的服务伪造调用者。
+            pluginServices.AddSingleton<IWorkflowActionGateway>(
+                new CallerBoundWorkflowActionGateway(
+                    registration.PluginId,
+                    hostProvider.GetRequiredService<WorkflowActionRunManager>()));
+        }
 
         AppendContributionDescriptors(pluginServices, registration);
         pluginServices.AddSingleton<DocumentScopeManager>();
