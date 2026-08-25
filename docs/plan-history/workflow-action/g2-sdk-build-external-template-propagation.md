@@ -1,12 +1,12 @@
 # Workflow Action G2：SDK、Build 与外部模板传播门禁实施记录
 
-> 状态：已完成（2026-08-25；完整非发布门禁通过）
+> 状态：已完成并发布（2026-08-25；完整非发布门禁与发布阶段 Windows Smoke 通过）
 >
-> 最终机器摘要时间：`2026-08-25T05:32:22.0101341Z`（北京时间 2026-08-25 13:32:22）
+> 最终 G2 机器摘要时间：`2026-08-25T05:53:03.5432595Z`（北京时间 2026-08-25 13:53:03）
 >
-> 产品：`3.0.0`；Core/UI SDK 本地候选：`3.1.0`
+> 产品：`3.0.0`；Core/UI SDK 已发布：`3.1.0`
 >
-> Templates 本地候选：`1.1.0`；Build 已发布基线：`1.1.2`
+> Templates 已发布：`1.1.0`；Build 已发布基线：`1.1.2`
 >
 > manifest schema：`2`；SDK 区间：`[3.1.0, 4.0.0)`
 >
@@ -18,8 +18,8 @@ G2 已把 G1 的 Workflow Action 能力传播到真实 Core/UI nupkg、通用外
 模板仍只生成中性的 Document 示例；Provider 和 Consumer 的代码放在生成文档中，避免把 Workflow Studio
 业务实现塞进平台模板。同一插件首版不能同时承担 Provider 与 Consumer，两种角色必须分别建包。
 
-公开基线仍是 SDK `3.0.0`、Templates `1.0.4`；G2 的 SDK `3.1.0` 和 Templates `1.1.0` 只在隔离的
-本地候选源中验证，**没有上传或发布**。Build 协议没有变化，因此继续从 NuGet.org 精确还原已经发布的
+G2 先在隔离的本地候选源中完成非发布验证；用户随后明确授权正式发布。当前公开基线已提升为 SDK
+`3.1.0`、Templates `1.1.0`。Build 协议没有变化，因此继续从 NuGet.org 精确还原已经发布的
 `MyAvaloniaManagement.Plugin.Build 1.1.2`，没有用相同版本重打包制造另一个 Build 制品。
 
 本阶段没有新增、删除或修改生产 public API。v3 Shipped 仍为 Core 127/UI 45，Unshipped 仍为 72/6；
@@ -33,7 +33,7 @@ G2 已把 G1 的 Workflow Action 能力传播到真实 Core/UI nupkg、通用外
 | --- | --- |
 | SRP | 模板负责创建时快照；Build 负责 manifest/资产/ZIP；外部消费门禁负责 NuGet 与 lock；Host 测试只负责真实加载和调用 |
 | OCP | 只把既有 G1 API 传播到候选包和模板，不改写 v3 Shipped 或 `IPluginRegistration` |
-| LSP | 公开 1.0.4 + SDK 3.0 仍可还原；使用 3.1 Action API 时以缺失符号失败，候选 3.1 则编译并运行 |
+| LSP | 公开 1.0.4 + SDK 3.0 仍可还原；使用 3.1 Action API 时以缺失符号失败，3.1 则编译并运行 |
 | ISP | Provider 只编译 `IWorkflowActionHandler`/`AddWorkflowAction`；Consumer 只编译 `UseWorkflowActionGateway` |
 | DIP | 外部项目只指向 SDK/Build NuGet 契约，Consumer 不引用 Provider，Host 也不引用生成项目源码 |
 
@@ -104,11 +104,11 @@ Provider；caller-bound Gateway 完成一次结构化回显，Handler 活动数�
 
 | 制品 | SHA-256 |
 | --- | --- |
-| Core SDK 3.1.0 候选 nupkg | `1D9C08DE3B8805EAA3D1CB1C7C0290D4A4050C42C388C33D102B16CD05EB86AA` |
-| UI SDK 3.1.0 候选 nupkg | `75EB8264B369A04DEA892DA173206401424345A6A309DA3B9536FAD1A4A12AE5` |
-| Templates 1.1.0 候选 nupkg | `CCC3FB160C12BB9D3F4918DCC280CBB059C7CC9C3CC35BC54F61846983F4F355` |
-| Provider ZIP / manifest | `9BBA4D9E4A03D573D68D15AEB08019A43EC747070AD3DC4F9369EC50842CDB64` / `5642C2C65F95C1D022F1A9171833804DFE2DA0B3B3A3790CC1A101BD16839E4B` |
-| Consumer ZIP / manifest | `F8EFFDE4B1C0F1750DBDE8E75492FD072646F7C9D1CB60240E82030375ABA62C` / `592137823EBD3915B236BCC1D24E3AEF838CD70C92DBA88056F66ADA9C78A4E1` |
+| Core SDK 3.1.0 正式 nupkg | `7B698D5E3E9A1877C2DF7F90701149C4FE347C6EAF072D9098CE2C36E5C4C834` |
+| UI SDK 3.1.0 正式 nupkg | `2BDE36E305F3799986FD4394BE25AE7C14938C524938605FFDCF13F8C6012A54` |
+| Templates 1.1.0 正式 nupkg | `F43D2FC058E3326BEABCA218A160E7C62F2AADCDA2BB942A0538F4DF98C52FA0` |
+| Provider ZIP / manifest | `453CDDBD7E4960764626731747CCDE087769DF5DAA50A04484CBF2F602338D06` / `2EF4432D3957BA570A56CD87F53F0EFA6A821FED269680577C5B6A1ABC1F563A` |
+| Consumer ZIP / manifest | `BCC63A32E6E9BEAC7EA61CF978179DB598F5BDBCA341754D3A3126196D5D4F2B` / `93DCE89A1484018A16A55FC21CEF6514325EEEF75845CE6BE076EC72A8F2B9AB` |
 
 两轮 Provider、Consumer ZIP 和外置 manifest 分别字节一致。权威机器摘要位于 Git 忽略的
 `artifacts/test-results/WorkflowActionG2/summary.json`；门禁只在全部阶段成功后写入该文件。
@@ -127,6 +127,37 @@ uploaded=false
 tagCreated=false
 ```
 
-G2 没有使用上传密钥，没有执行 Windows CI、Windows Smoke、ReleaseAcceptance 或发布门禁。Release
-只表示本地编译配置。回滚单位是 Templates `1.1.0`、G2 外部包测试、聚合门禁和本文档整体回到 G1；
+以上布尔值是 `Test-WorkflowActionG2.ps1` 非发布门禁当时写入的历史事实；该脚本没有使用上传密钥，
+没有执行 Windows CI、Windows Smoke、ReleaseAcceptance 或发布门禁。Release 只表示本地编译配置。
+回滚单位是 Templates `1.1.0`、G2 外部包测试、聚合门禁和本文档整体回到 G1；
 Core/UI 的 G1 内核和已经发布的 Build `1.1.2` 不回滚、不改写。
+
+## 7. 正式发布补记
+
+用户在 G2 完成后另行授权正式发布。本次先重新执行 G2 全量门禁，再执行 Windows Release Smoke；
+Windows 摘要时间为 `2026-08-25T05:55:30.3072476Z`，`passed=true`、退出码 0、`layout-v2.json`
+schema 2 成功保存。随后冻结 SDK 源码提交 `d97329699b09f25bbd858a61690d9b1e287501c8`，把正式 SDK
+SHA-512 写回三个模板 lock file，并冻结模板提交 `ad0a613e838b16ed4a7868befff4318376728f0f`。
+
+正式 feed 再以 `MyAvalonia.WorkflowStudio` 生成点号名称探针，完成 `--locked-mode` 还原、零警告构建和
+1/1 测试。NuGet.org 接受 Core/UI `3.1.0`、对应 `.snupkg` 与 Templates `1.1.0`；Build `1.1.2`
+没有重新上传。一次性密钥只通过当前发布进程的隐藏标准输入使用，没有写入仓库、脚本、制品或摘要。
+上传返回一个既有元数据警告：三个主包没有 license 元数据；NuGet.org 仍成功接收，后续版本应补充
+`PackageLicenseExpression` 或打包 license 文件，不能覆盖本次已发布版本。
+
+NuGet V3 flat-container 索引随后确认三个目标版本均为最新版本。最终又从纯公开源、全新模板 hive 与
+全新 NuGet 缓存精确安装 Templates `1.1.0`，生成 `PublicFeedProbe`；三个 lock file 在
+`--locked-mode` 下还原成功，Release 构建 0 警告、0 错误，测试 1/1。该公开源验收完成于
+`2026-08-25T06:11:19.2139755Z`。NuGet registration 的正式列出时间（北京时间）分别为 Core
+`2026-08-25 14:00:49.990`、UI `2026-08-25 14:00:52.177`、Templates `2026-08-25 14:00:54.520`。
+
+```text
+aiflow=false
+windowsSmoke=true
+releaseGate=true
+publishable=true
+published=true
+uploaded=true
+buildReuploaded=false
+tagCreated=false
+```

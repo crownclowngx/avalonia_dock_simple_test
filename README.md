@@ -37,12 +37,12 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > [G7 四插件、Harness 与文档回归](./docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)，
 > 最终签署见 [G8 V4 封板记录](./docs/plan-history/host-v4/g8-v4-sealing.md)。
 
-> Workflow Action G0 已重新签署，G1 Host 内核与 G2 SDK/Build/外部模板传播门禁已完成：产品保持 `3.0.0`，仓库内 Core/UI SDK 候选为
+> Workflow Action G0 已重新签署，G1 Host 内核与 G2 SDK/Build/外部模板传播门禁已完成：产品保持 `3.0.0`，Core/UI SDK 已发布 `3.1.0`；
 > `3.1.0`；新增 caller-bound Gateway/Run、不可变目录、Schema、授权、invocation scope、资源治理、
 > 脱敏诊断和关闭门控。v3 Shipped 仍为 Core 127/UI 45，新增 72/6 条只进入 Unshipped。G2 把模板提升为
-> 仅供本地验证的 `1.1.0`，继续精确使用已发布 Build `1.1.2`，并以真实候选 NuGet、lock file、双 ALC
-> Provider/Consumer 和点号名称完成外部传播验证。公开基线仍是 SDK `3.0.0` / Templates `1.0.4`；G2
-> 未上传、未发布，也没有创建 Workflow Studio。见 [G1 专用记录](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)
+> `1.1.0` 并已发布，继续精确使用 Build `1.1.2`，并以真实 NuGet、lock file、双 ALC Provider/Consumer
+> 和点号名称完成外部传播验证。当前公开基线是 SDK `3.1.0` / Templates `1.1.0`；没有创建 Workflow
+> Studio。见 [G1 专用记录](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)
 > 和 [G2 专用记录](./docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)。
 
 ## 核心扩展模型
@@ -86,7 +86,7 @@ Host/Common 双区间已经删除。缺少入口 `.deps.json` 或依赖历史加
 权限系统、第三方市场、跨进程 UI 或用户动态启停插件。
 
 版本按所有者独立演进：产品版本、Plugin SDK 版本、每插件版本、manifest schema、每种宿主
-持久化 schema 和插件内容 schema 不能互相代替。当前产品为 `3.0.0`，仓库内 Plugin SDK 候选为
+持久化 schema 和插件内容 schema 不能互相代替。当前产品为 `3.0.0`，Plugin SDK 当前版本为
 `3.1.0`；Host 程序集为 `3.0.0.0`，SDK 程序集为 `3.1.0.0`。V3 不重新引入独立 Host API 版本事实。统一事实定义在
 [`Directory.Version.props`](./Directory.Version.props)。普通进程内强类型消息不增加无迁移行为的
 版本字段，发生破坏性语义变化时创建新消息类型或提升 SDK 主版本。
@@ -223,7 +223,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
 - [Workflow Action G1 Host 内核](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)：查看 Run、Schema、授权、Scope、关闭门控、测试矩阵与非发布边界；
-- [Workflow Action G2 SDK/Build/模板传播](./docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)：查看候选包、lock file、点号名称、双 ALC 外部调用、制品哈希与非发布边界；
+- [Workflow Action G2 SDK/Build/模板传播](./docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)：查看包、lock file、点号名称、双 ALC 外部调用、制品哈希、非发布门禁历史与正式上传记录；
 - [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G14 最终目标、阶段和签署矩阵；
 - [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)：查看正式 API、SOLID、两轮隔离门禁、制品和回滚边界；
 - [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)：查看零残留、真实包负例、四插件矩阵和非发布证据；

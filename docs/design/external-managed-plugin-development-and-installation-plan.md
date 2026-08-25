@@ -1,7 +1,7 @@
 # 外部 Managed Plugin 开发、模板与 NuGet 发布指南
 
 > 当前基线：Plugin SDK V3、manifest schema 2、.NET 10、Avalonia 12、Windows x64
-> 更新时间：2026-08-24
+> 更新时间：2026-08-25
 > 本文替代旧的 Host v1 候选计划。旧文档中的 manifest v1、Legacy 入口、双 Host/Common 区间和
 > `Package::Version` 模板安装语法均已失效。
 
@@ -11,29 +11,29 @@
 
 | 包 | 版本 | 职责 | 进入插件 ZIP |
 | --- | --- | --- | --- |
-| `MyAvaloniaManagement.PluginSdk` | `3.0.0` | 平台无关身份、Document、内容、关闭与生命周期契约 | 否，Host 提供 |
-| `MyAvaloniaManagement.PluginSdk.UI` | `3.0.0` | Avalonia 模块入口、DI、Document/Tool/View 和窗口端口 | 否，Host 提供 |
+| `MyAvaloniaManagement.PluginSdk` | `3.1.0` | 平台无关身份、Document、内容、关闭、生命周期与 Workflow Action 契约 | 否，Host 提供 |
+| `MyAvaloniaManagement.PluginSdk.UI` | `3.1.0` | Avalonia 模块入口、DI、Document/Tool/View、窗口端口与 Action 注册扩展 | 否，Host 提供 |
 | `MyAvaloniaManagement.Plugin.Build` | `1.1.2` | 声明校验、manifest、资产部署和确定性 ZIP | 否，仅开发期 |
-| `MyAvaloniaManagement.Plugin.Templates` | `1.0.4` | `dotnet new myavalonia-plugin` 解决方案模板与项目内置文档 | 否，仅创建时 |
+| `MyAvaloniaManagement.Plugin.Templates` | `1.1.0` | `dotnet new myavalonia-plugin` 解决方案模板、lock file 与项目内置文档 | 否，仅创建时 |
 
-以上四个版本已于 2026-08-24 发布到 NuGet.org：
-[Core SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk/3.0.0)、
-[UI SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.UI/3.0.0)、
+以上四个当前版本已发布到 NuGet.org；Build `1.1.2` 发布于 2026-08-24，SDK `3.1.0` 与 Templates
+`1.1.0` 发布于 2026-08-25：
+[Core SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk/3.1.0)、
+[UI SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.UI/3.1.0)、
 [Build](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Build/1.1.2) 和
-[Templates](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Templates/1.0.4)。
+[Templates](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Templates/1.1.0)。
 
 Core/UI SDK 同版本发布。Build 与 Templates 独立演进；模板固定一组经过端到端验证的精确版本，避免
 外部插件还原到当前 Host 未验证的共享程序集组合。
 
-### 1.1 Workflow Action G2 本地候选
+### 1.1 Workflow Action G2
 
-G2 已在隔离的本地 feed 验证 Core/UI SDK `3.1.0` 与 Templates `1.1.0`。候选模板精确锁定
+G2 已在隔离 feed 验证并正式发布 Core/UI SDK `3.1.0` 与 Templates `1.1.0`。模板精确锁定
 SDK `[3.1.0]`，三个生成项目均提交 `packages.lock.json`，manifest SDK 区间为
 `[3.1.0, 4.0.0)`。Build 协议没有变化，因此仍从 NuGet.org 精确使用 `1.1.2`，没有重打包同版本。
 
-这两个候选没有上传或发布，不能把上表的公开 `3.0.0` / `1.0.4` 改写成 3.1/1.1。需要复核候选时，
-使用本地 nupkg 路径安装模板并运行 `scripts/Test-WorkflowActionG2.ps1`；不要把开发机 feed 绝对路径、
-Host `ProjectReference` 或源码链接提交到外部项目。
+需要复核传播链时，运行 `scripts/Test-WorkflowActionG2.ps1`；外部项目直接从 NuGet.org 使用正式版本，
+不要提交开发机 feed 绝对路径、Host `ProjectReference` 或源码链接。
 
 ## 2. 模板生成的结构
 
@@ -61,7 +61,7 @@ ExamplePlugin/
 从 NuGet.org 安装：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.4
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.1.0
 dotnet new list myavalonia
 dotnet new myavalonia-plugin --help
 ```
@@ -105,13 +105,13 @@ Document Scope、Dock、Tool、Host Port 和生命周期必须通过真实 Host 
   <PluginVersion>1.0.0</PluginVersion>
   <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
   <ManagedPluginEntryType>ExamplePlugin.Plugin.ExamplePluginModule</ManagedPluginEntryType>
-  <ManagedPluginSdkMinInclusive>3.0.0</ManagedPluginSdkMinInclusive>
+  <ManagedPluginSdkMinInclusive>3.1.0</ManagedPluginSdkMinInclusive>
   <ManagedPluginSdkMaxExclusive>4.0.0</ManagedPluginSdkMaxExclusive>
 </PropertyGroup>
 
 <ItemGroup>
-  <PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.0.0]" />
-  <PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.0.0]" />
+  <PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.1.0]" />
+  <PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.1.0]" />
   <PackageReference Include="MyAvaloniaManagement.Plugin.Build"
                     Version="[1.1.2]"
                     PrivateAssets="all" />
@@ -207,7 +207,7 @@ Packaging/MyAvaloniaManagement.Plugin.Templates/
 dotnet pack Packaging/MyAvaloniaManagement.Plugin.Templates/MyAvaloniaManagement.Plugin.Templates.csproj `
   -c Release -o artifacts/nuget
 dotnet new uninstall MyAvaloniaManagement.Plugin.Templates
-dotnet new install .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.0.4.nupkg
+dotnet new install .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.1.0.nupkg
 ```
 
 每次模板变更至少验证：本地四包 → 安装模板 → 系统临时目录创建插件 → 隔离还原 → Plugin、Standalone、
@@ -258,13 +258,13 @@ dotnet pack Packaging/MyAvaloniaManagement.Plugin.Templates/MyAvaloniaManagement
 按 Core SDK、UI SDK、Build、Templates 的顺序推送：
 
 ```powershell
-dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.PluginSdk.3.0.0.nupkg `
+dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.PluginSdk.3.1.0.nupkg `
   --source https://api.nuget.org/v3/index.json
-dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.PluginSdk.UI.3.0.0.nupkg `
+dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.PluginSdk.UI.3.1.0.nupkg `
   --source https://api.nuget.org/v3/index.json
 dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.Plugin.Build.1.1.2.nupkg `
   --source https://api.nuget.org/v3/index.json
-dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.0.4.nupkg `
+dotnet nuget push .\artifacts\nuget\MyAvaloniaManagement.Plugin.Templates.1.1.0.nupkg `
   --source https://api.nuget.org/v3/index.json
 Remove-Item Env:NUGET_API_KEY
 ```
@@ -297,7 +297,7 @@ NuGet 包搜索、包页面和模板目录使用不同索引，刚发布时 `dot
 公共源最终验收：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.4
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.1.0
 dotnet new myavalonia-plugin -n PublicFeedProbe --plugin-id myavalonia.plugin.public-feed-probe
 cd PublicFeedProbe
 dotnet restore

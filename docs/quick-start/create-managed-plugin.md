@@ -49,13 +49,12 @@ Avalonia 12 包，不需要另外安装 `Avalonia.Templates` 才能创建本插�
 在准备存放源码的目录打开 PowerShell：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.4
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.1.0
 dotnet new list myavalonia
 dotnet new myavalonia-plugin --help
 ```
 
-这里的 `1.0.4` 是公开版本。Workflow Action G2 的 `1.1.0` 只从本地候选 nupkg 安装，精确使用
-Core/UI `3.1.0` 与已发布 Build `1.1.2`；候选未上传，不能直接把上述命令改成 NuGet.org 的 1.1.0。
+公开模板 `1.1.0` 精确使用 Core/UI `3.1.0` 与 Build `1.1.2`，并为三个生成项目携带 lock file。
 
 应能看到短名称 `myavalonia-plugin`。若想搜索公开包：
 
@@ -128,8 +127,8 @@ dotnet test -c Debug --no-build
 
 模板使用 NuGet.org 上的精确版本：
 
-- `MyAvaloniaManagement.PluginSdk` `3.0.0`；
-- `MyAvaloniaManagement.PluginSdk.UI` `3.0.0`；
+- `MyAvaloniaManagement.PluginSdk` `3.1.0`；
+- `MyAvaloniaManagement.PluginSdk.UI` `3.1.0`；
 - `MyAvaloniaManagement.Plugin.Build` `1.1.2`；
 - Avalonia `12.x` 模板锁定版本。
 
@@ -187,7 +186,7 @@ AXAML 后先重新 Build，再在编辑器中选择 **Editor and Preview**；Ava
 
 ## 7. 当前 Standalone 能验证什么
 
-模板 `1.0.4` 默认直接创建 `MainDocument` 并显示 `MainView`，适合验证：
+模板 `1.1.0` 默认直接创建 `MainDocument` 并显示 `MainView`，适合验证：
 
 - AXAML 布局和主题资源；
 - 编译绑定；

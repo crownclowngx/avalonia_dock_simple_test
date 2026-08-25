@@ -4,16 +4,15 @@
 
 ## 快速开始
 
-> 当前外部开发基线：Core/UI SDK `3.0.0`、Build `1.1.2` 与 Templates `1.0.4` 已发布到 NuGet.org；
+> 当前外部开发基线：Core/UI SDK `3.1.0`、Build `1.1.2` 与 Templates `1.1.0` 已发布到 NuGet.org；
 > 外部作者可以在不克隆 Host 源码的情况下使用 `dotnet new myavalonia-plugin` 创建、独立调试、测试和
 > 打包插件。manifest schema 仍为 2，当前交付平台为 Windows x64。
 >
 > Host V4 G8 当前事实：Host internal G0–G8 已封板，产品、SDK、四插件与 v3 API/磁盘格式保持不变；
 > 当前正式入口为 `scripts/Invoke-HostV4ReleaseGate.ps1`，只建立本地发布资格，不执行外部发布或 AIFLOW。
 >
-> 当前仓库开发基线另含 Workflow Action G1–G2：产品保持 `3.0.0`，Core/UI SDK 候选为 `3.1.0`，
-> Templates 本地候选为 `1.1.0`，Build 继续使用已发布 `1.1.2`。两个候选均未上传或发布；G2 只运行
-> `scripts/Test-WorkflowActionG2.ps1` 非发布门禁。公开外部基线仍为 SDK `3.0.0` / Templates `1.0.4`。
+> Workflow Action G1–G2 保持产品 `3.0.0`，并已发布 Core/UI SDK `3.1.0` 与 Templates `1.1.0`；Build
+> 协议未变化，继续使用已发布 `1.1.2`。`scripts/Test-WorkflowActionG2.ps1` 仍是可重复执行的非发布门禁。
 
 Managed Plugin 快速开始入口：
 
@@ -34,7 +33,7 @@ Managed Plugin 快速开始入口：
 | [Workflow Action 总设计](./design/ai-workflow-plugin-exploration.md) | 手工工作流优先、Action 内核与后续 G3–G10 边界 | G0 已重新签署、G1–G2 已完成，G3–G10 未实施 |
 | [Workflow Action G0 重新签署](./plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md) | Run/进度出口、SDK 3.1 兼容路线与真实 3.0 插件证据 | 已完成；非发布 |
 | [Workflow Action G1 Host 内核](./plan-history/workflow-action/g1-host-workflow-action-kernel.md) | SOLID、公共 API、调用/关闭时序、测试与回滚 | 已完成；完整非发布门禁通过 |
-| [Workflow Action G2 SDK/Build/外部模板传播](./plan-history/workflow-action/g2-sdk-build-external-template-propagation.md) | 候选 NuGet、lock file、点号名称、双 ALC 实调、哈希和回滚 | 已完成；Build 不升版，未上传或发布 |
+| [Workflow Action G2 SDK/Build/外部模板传播](./plan-history/workflow-action/g2-sdk-build-external-template-propagation.md) | NuGet、lock file、点号名称、双 ALC 实调、哈希和回滚 | 已完成并发布；Build 保持 1.1.2 |
 | [V4 G0 V3 源码基线](./plan-history/host-v4/g0-v3-source-baseline.md) | V3 源码输入、锁定还原、测试与非发布事实 | 已完成；不修改生产源码 |
 | [V4 G1 删除 Host 死面](./plan-history/host-v4/g1-remove-dead-host-surface.md) | 空协议、菜单尾项、Hosting 依赖和开发门禁 | 已完成；非发布 |
 | [V4 G2 强类型身份与用例入口](./plan-history/host-v4/g2-strongly-typed-identity-and-use-case-entry.md) | ToolTypeId 单一源、真实 Coordinator 与异步 Harness | 已完成；非发布 |
@@ -93,7 +92,7 @@ Managed Plugin 快速开始入口：
 - [基于活动理论的需求分解方法论](./theory/activity-theory-requirements-decomposition.md)：说明自然语言需求如何拆分到 Document、Tool 和后台服务。
 - [工作流执行与可选 AI 规划方案](./design/ai-workflow-plugin-exploration.md)：以临时手工编辑为 MVP 主路径，记录已完成 G0–G2，并给出外部独立项目、风险和 G3–G10 可行性路线；后续阶段仍是候选任务，不是当前宿主契约。
 - [Workflow Action G0 冻结记录](./plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md)：冻结 3.0 输入事实、WorkflowStudio 命名、Schema/预算和独立仓库边界，并以真实旧插件包和跨 ALC 夹具签署 SDK 3.1 兼容新增路线；不表示生产 API 已实现。
-- [Workflow Action G2 传播记录](./plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)：记录模板 1.1.0 本地候选、Build 1.1.2 不升版、真实 NuGet/lock、外部双 ALC 和完整非发布事实。
+- [Workflow Action G2 传播记录](./plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)：记录模板 1.1.0、Build 1.1.2 不升版、真实 NuGet/lock、外部双 ALC、非发布门禁历史和正式上传结果。
 
 ## V3/V2 已封板基线与后续候选计划
 

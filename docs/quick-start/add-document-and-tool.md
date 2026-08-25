@@ -127,7 +127,7 @@ public void Configure(IPluginRegistration registration)
 
 ## 5. 当前模板 Standalone 的限制
 
-Templates `1.0.4` 的 `MainWindow` 直接实例化一个 `MainDocument`，XAML 也直接放置一个 `MainView`。新增
+Templates `1.1.0` 的 `MainWindow` 直接实例化一个 `MainDocument`，XAML 也直接放置一个 `MainView`。新增
 注册不会自动出现在这个窗口，因为 Standalone 没有执行 Module，也没有贡献目录。
 
 这对第一个页面很方便，但多贡献时不应继续写：

@@ -7,8 +7,8 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码在 V3 G14 与 Host V4 G8 封板后完成 Workflow Action G1–G2。产品仍为 3.0.0，SDK 候选为
-# 3.1.0、模板候选为 1.1.0；V3 Shipped、G1 Unshipped、Build 1.1.2 不升版和“未实际发布”必须同时保留。
+# 当前源码在 V3 G14 与 Host V4 G8 封板后完成并发布 Workflow Action G1–G2。产品仍为 3.0.0，SDK 为
+# 3.1.0、模板为 1.1.0；V3 Shipped、G1 Unshipped、Build 1.1.2 不升版、历史非发布证据和正式上传记录必须同时保留。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
@@ -358,11 +358,13 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'uploaded=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'tagCreated=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'Test-WorkflowActionG2.ps1' }
-    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'Templates 本地候选：`1.1.0`；Build 已发布基线：`1.1.2`' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'Templates 已发布：`1.1.0`；Build 已发布基线：`1.1.2`' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'Core 127/UI 45，Unshipped 仍为 72/6' }
-    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = '状态：已完成（2026-08-25；完整非发布门禁通过）' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = '状态：已完成并发布（2026-08-25；完整非发布门禁与发布阶段 Windows Smoke 通过）' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'Build 协议负例 / 既有真实插件包 | **25 / 4**' }
-    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = '1D9C08DE3B8805EAA3D1CB1C7C0290D4A4050C42C388C33D102B16CD05EB86AA' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = '7B698D5E3E9A1877C2DF7F90701149C4FE347C6EAF072D9098CE2C36E5C4C834' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'uploaded=true' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'buildReuploaded=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'aiflow=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'windowsCi=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'windowsSmoke=false' }

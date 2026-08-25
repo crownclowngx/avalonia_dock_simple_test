@@ -6,7 +6,7 @@
 >
 > 本次复核：2026-08-25
 >
-> 代码基线：产品 `3.0.0`、Core/UI SDK 候选 `3.1.0`、已封板 Host V4 internal + G1 Action 内核、.NET 10、Avalonia 12.1、manifest schema v2、每插件独立 Provider 与 `PluginLoadContext`
+> 代码基线：产品 `3.0.0`、已发布 Core/UI SDK `3.1.0`、已封板 Host V4 internal + G1 Action 内核、.NET 10、Avalonia 12.1、manifest schema v2、每插件独立 Provider 与 `PluginLoadContext`
 >
 > 本文同时记录已实现的 G0–G2 与后续建议；Workflow Studio、工作流定义/执行器和 AI 客户端仍不存在。
 
@@ -101,7 +101,7 @@ MVP 明确不要求：
 
 ### 2.1 版本事实
 
-当前源码的产品仍为 **3.0.0**，Core/UI SDK 候选已兼容提升为 **3.1.0**；Host V4 是已经封板的宿主内部收口代际，没有把产品或 SDK 提升到 4.0.0。以下磁盘协议仍为 schema v2：
+当前源码的产品仍为 **3.0.0**，Core/UI SDK 已兼容提升并发布 **3.1.0**；Host V4 是已经封板的宿主内部收口代际，没有把产品或 SDK 提升到 4.0.0。以下磁盘协议仍为 schema v2：
 
 - `plugin.manifest.json`；
 - Document envelope；
@@ -121,7 +121,7 @@ MVP 明确不要求：
 | 生命周期状态与可用性投影 | `PluginLifecycleStateStore`、`PluginAvailabilityReadModel` | 每次调用前可检查 Action 所有者是否仍可用 |
 | Provider 反向释放和 Runtime 关闭顺序 | `HostRuntime.Dispose` | Gateway 可在关闭开始时拒绝新调用，再等待/取消在途调用 |
 | 严格诊断白名单 | `HostDiagnostics` | 诊断只记录稳定 ID、阶段、耗时和错误码，不记录参数正文、路径或 Secret |
-| 外部插件模板与 Build 包已发布 | `MyAvaloniaManagement.Plugin.Templates` `1.0.4`、`MyAvaloniaManagement.Plugin.Build` `1.1.2` | Studio 可以在独立 `.slnx` 中开发；模板需要在新 SDK 完成后再提升候选版本 |
+| 外部 SDK、模板与 Build 包已发布 | Core/UI `3.1.0`、Templates `1.1.0`、Build `1.1.2` | Studio 可以从 NuGet.org 在独立 `.slnx` 中开发；Build 协议没有随 G2 升版 |
 | BiliDownloader 有无 UI 的提交边界 | `IDownloadSubmissionService` | 已有预检与提交基础，但输入仍是完整 `DownloadSubmission` |
 | MySmallTools 有流式加密与原子输出提交 | `IVideoEncryptionService`、`OutputFileTransaction` | 非破坏性加密 Action 有可靠基础，但当前没有删除源文件事务 |
 
@@ -488,16 +488,16 @@ Workflow Studio 是普通 Managed Plugin，使用自身私有 Provider 和 ALC�
 
 名称不包含 AI，因为手工编排是永久主能力，AI 只是后续可选入口。`PluginId` 是持久身份，发布后不随显示名称、仓库名或 AI Provider 改变。
 
-候选 SDK 和模板通过门禁后，在 Host 仓库之外执行：
+SDK 和模板通过门禁并发布后，在 Host 仓库之外执行：
 
 ```powershell
-dotnet new install D:\Path\To\LocalFeed\MyAvaloniaManagement.Plugin.Templates.1.1.0.nupkg
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.1.0
 dotnet new myavalonia-plugin `
   -n WorkflowStudio `
   --plugin-id myavalonia.plugin.workflow-studio
 ```
 
-模板 `1.1.0` 是本方案建议的下一候选版本，不表示当前公开的 `1.0.4` 已经升级。生成结果必须是独立仓库/解决方案：
+模板 `1.1.0` 是当前公开版本。生成结果必须是独立仓库/解决方案：
 
 ```text
 WorkflowStudio/
@@ -516,12 +516,10 @@ WorkflowStudio/
 
 - 不把该项目加入 `MyAvaloniaManagement.sln`，也不复制进 Host 仓库的 `Plugins/`；
 - 外部项目只通过精确版本 NuGet 包引用 Core SDK、UI SDK 和 Build 包，禁止 `ProjectReference` 到 Host 源码；
-- 候选 `3.1.0` 尚未发布时，从机器本地或私有临时 NuGet feed 还原；feed 路径通过命令、用户级配置或 CI Secret/变量提供，不把开发机绝对路径提交进项目；
-- SDK 正式发布后切换到正式 NuGet 源并重新生成 lock file，不能继续依赖 Host 的 `artifacts` 目录；
+- 从 NuGet.org 精确还原 SDK `3.1.0` 与 Build `1.1.2`；不能依赖 Host 的 `artifacts` 目录，也不提交开发机 feed 绝对路径；
 - Standalone 只注入受控 Fake Gateway 预览 UI；真实目录、授权、跨 ALC 调用和关闭顺序必须把插件 ZIP 部署到候选 Host 验收。
 
-当前公开模板 `1.0.4` 已实测支持 `-n WorkflowStudio` 并能零警告构建，但不支持直接使用带点号的名称。
-G2 本地候选 `1.1.0` 已使用模板引擎内置 `name` 的普通正则派生合法类型名，实测
+当前公开模板 `1.1.0` 使用模板引擎内置 `name` 的普通正则派生合法类型名，实测
 `-n MyAvalonia.WorkflowStudio` 可锁定还原、零警告编译和测试；命名空间仍保留点分名称。
 
 ### 7.2 插件内部模块
@@ -776,14 +774,14 @@ G1 已按重新签署的 Run/进度边界把候选形状写入 v3 `PublicAPI.Uns
 
 > **可行性：高；这是平台能力对外可消费的必要门禁。**
 
-- **目标**：把 G1 能力通过真实 NuGet 包交给外部项目；更新通用模板的精确 SDK 版本、SDK 最低区间、lock file、示例和文档，并把模板从当前公开 `1.0.4` 提升为候选 `1.1.0`。
+- **目标**：把 G1 能力通过真实 NuGet 包交给外部项目；更新通用模板的精确 SDK 版本、SDK 最低区间、lock file、示例和文档，并把模板从 `1.0.4` 提升为 `1.1.0`。
 - **前置**：G1 API、包依赖图和 Host 行为已经稳定；确认 manifest schema 没有变化。若 Build 协议未变化，`MyAvaloniaManagement.Plugin.Build` 可保持 `1.1.2`；只有构建校验/打包协议确有变化时才提升它。
-- **生产变化**：更新 `Packaging/MyAvaloniaManagement.Plugin.Templates`；模板精确引用候选 SDK `3.1.0`，生成项目的 `ManagedPluginSdkMinInclusive` 同步为 `3.1.0`。不在模板中硬编码 Workflow Studio 业务代码。
+- **生产变化**：更新 `Packaging/MyAvaloniaManagement.Plugin.Templates`；模板精确引用 SDK `3.1.0`，生成项目的 `ManagedPluginSdkMinInclusive` 同步为 `3.1.0`。不在模板中硬编码 Workflow Studio 业务代码。
 - **验证**：在机器本地临时 NuGet feed 中放入 Core/UI、必要时的 Build 和 Template 包；卸载旧模板，安装候选模板，在系统临时目录生成通用探针项目，执行隔离还原、零警告构建、测试、Standalone 启动检查、确定性 ZIP/manifest 和候选 Host 加载；另以带点号名称做负例，模板必须明确拒绝或正确生成，不能直到 C# 编译才暴露非法标识符。
 - **退出条件**：新生成项目不引用任何 Host 源码即可使用 `IWorkflowActionHandler`、`AddWorkflowAction` 和 `UseWorkflowActionGateway` 编译打包；旧模板/SDK 组合不能误编译新 API。
 - **回滚**：整体回到 G1 的候选 SDK/Host；不得发布或覆盖同版本模板包。模板是创建时快照，不能把更新后的模板再次覆盖应用到已有项目。
 
-实测结论：Core/UI `3.1.0` 与 Templates `1.1.0` 只作为本地候选，Build 协议未变化并继续精确消费
+实测结论：Core/UI `3.1.0` 与 Templates `1.1.0` 已通过本地候选门禁并发布，Build 协议未变化并继续精确消费
 NuGet.org 的 `1.1.2`。模板三个项目均提交 lock file；普通名称、点号名称、Provider 和 Consumer 四套
 生成结果都以 `--locked-mode` 通过。两个外部插件分别打包两次并由候选 Host 在独立 ALC 中完成一次
 caller-bound 结构化调用。公开 SDK `3.0.0` 的负例在还原成功后因缺少 Workflow Action 符号而失败。
@@ -793,7 +791,7 @@ caller-bound 结构化调用。公开 SDK `3.0.0` 的负例在还原成功后因
 > **可行性：高；这是独立解决方案边界和产品概念的共同证明。**
 
 - **目标**：使用 G2 模板在 Host 仓库之外创建 `WorkflowStudio.slnx`，实现非持久化 Studio Document、结构化步骤编辑器、定义 v1、确定性验证器、会话 Secret Store、风险摘要和轻量 Runner。
-- **前置**：G2 的候选包和模板门禁通过；外部项目从本地/私有 feed 还原候选包，不使用跨仓库 `ProjectReference`。
+- **前置**：G2 的包和模板门禁通过；外部项目从 NuGet.org 精确还原正式包，不使用跨仓库 `ProjectReference`。
 - **生产变化**：新增独立仓库 `myavalonia-workflow-studio`，解决方案名为 `WorkflowStudio`；当前 Host 的 `MyAvaloniaManagement.sln` 不增加项目。Standalone 注入 Fake Gateway，真实 Host 使用 caller-bound Gateway。
 - **验证**：手工添加/排序步骤、常量与引用、顺序 `ForEach`、取消、失败停止、目录 revision 失效、关闭丢弃、Secret 不进入定义/日志；覆盖恶意 JSON、循环引用、未知 Action、越界数组和超预算运行；同时验证独立 restore/build/test/package。
 - **退出条件**：用户能在无模型、无 API Key、无规划网络条件下，在独立项目产出的插件中临时编辑并执行 Fake Action 工作流；ZIP 可由候选 Host 加载。
