@@ -54,6 +54,9 @@ dotnet new list myavalonia
 dotnet new myavalonia-plugin --help
 ```
 
+这里的 `1.0.4` 是公开版本。Workflow Action G2 的 `1.1.0` 只从本地候选 nupkg 安装，精确使用
+Core/UI `3.1.0` 与已发布 Build `1.1.2`；候选未上传，不能直接把上述命令改成 NuGet.org 的 1.1.0。
+
 应能看到短名称 `myavalonia-plugin`。若想搜索公开包：
 
 ```powershell

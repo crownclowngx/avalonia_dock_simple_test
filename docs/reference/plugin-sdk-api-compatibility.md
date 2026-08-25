@@ -10,6 +10,9 @@
 > Consumer 进度出口，G1 已把兼容新增实现为 Core/UI SDK 候选 `3.1.0`：v3 Shipped 仍为 Core 127、
 > UI 45，v3 Unshipped 为 Core 72、UI 6；manifest、Document、Layout 和数据根协议不变。结论仍为
 > `sdkRoute=3.1-compatible-addition`，当前候选不表示已经上传或发布。
+> Workflow Action G2 已进一步证明候选 Core/UI `3.1.0` nupkg、Templates `1.1.0`、三个生成项目 lock
+> file 和外部双 ALC 调用能够闭合；Build 协议不变并继续精确消费已发布 `1.1.2`。公开基线仍是 SDK
+> `3.0.0` / Templates `1.0.4`，G2 没有把 Unshipped 移入 Shipped。
 
 ## 1. 权威源与程序集边界
 
@@ -49,7 +52,8 @@ Unshipped 0/0。两份基线分别描述各自程序集，不能合并，也不�
 
 Workflow Action G1 的当前状态是 v3 Shipped 127/45、Unshipped 72/6。新增含 caller-bound
 `IWorkflowActionGateway.CreateRun()`、`IWorkflowActionRun.InvokeAsync` 与 UI 注册扩展；旧 Shipped 没有
-改写。维护与验证入口为 `scripts/Test-WorkflowActionG1.ps1`。
+改写。内核维护入口为 `scripts/Test-WorkflowActionG1.ps1`；候选包、模板和外部传播入口为
+`scripts/Test-WorkflowActionG2.ps1`。
 
 ## 3. 日常变更流程
 

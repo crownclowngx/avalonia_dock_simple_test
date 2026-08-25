@@ -6,8 +6,8 @@
     <ManagedPluginDirectoryName>DemoPlugin</ManagedPluginDirectoryName>
     <PluginVersion>1.0.0</PluginVersion>
     <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
-    <ManagedPluginEntryType>DemoPlugin.Plugin.DemoPluginModule</ManagedPluginEntryType>
-    <ManagedPluginSdkMinInclusive>3.0.0</ManagedPluginSdkMinInclusive>
+    <ManagedPluginEntryType>DemoPlugin.Plugin.TemplateProjectIdentifierModule</ManagedPluginEntryType>
+    <ManagedPluginSdkMinInclusive>3.1.0</ManagedPluginSdkMinInclusive>
     <ManagedPluginSdkMaxExclusive>4.0.0</ManagedPluginSdkMaxExclusive>
   </PropertyGroup>
 

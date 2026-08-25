@@ -25,6 +25,16 @@
 Core/UI SDK 同版本发布。Build 与 Templates 独立演进；模板固定一组经过端到端验证的精确版本，避免
 外部插件还原到当前 Host 未验证的共享程序集组合。
 
+### 1.1 Workflow Action G2 本地候选
+
+G2 已在隔离的本地 feed 验证 Core/UI SDK `3.1.0` 与 Templates `1.1.0`。候选模板精确锁定
+SDK `[3.1.0]`，三个生成项目均提交 `packages.lock.json`，manifest SDK 区间为
+`[3.1.0, 4.0.0)`。Build 协议没有变化，因此仍从 NuGet.org 精确使用 `1.1.2`，没有重打包同版本。
+
+这两个候选没有上传或发布，不能把上表的公开 `3.0.0` / `1.0.4` 改写成 3.1/1.1。需要复核候选时，
+使用本地 nupkg 路径安装模板并运行 `scripts/Test-WorkflowActionG2.ps1`；不要把开发机 feed 绝对路径、
+Host `ProjectReference` 或源码链接提交到外部项目。
+
 ## 2. 模板生成的结构
 
 现有四个真实插件都把 View、ViewModel、PluginModule 与业务实现放在一个插件项目中。模板沿用这一

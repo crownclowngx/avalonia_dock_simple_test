@@ -1,5 +1,23 @@
 # MyAvaloniaManagement 测试说明
 
+## Workflow Action G2 SDK、Build 与外部模板非发布门禁
+
+修改候选 SDK 包、通用模板、Build 消费边界、生成项目 lock file、点号名称派生或外部插件真实加载时运行：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkflowActionG2.ps1 -Configuration Release
+```
+
+该入口累积复用 G1、SDK API/包消费、Build 协议和文档门禁；另在系统临时目录隔离 NuGet 缓存与模板
+hive，打包 Core/UI `3.1.0` 和 Templates `1.1.0`，从 NuGet.org 精确还原 Build `1.1.2`。普通名称、
+点号名称、Provider、Consumer 四套生成结果都执行锁定还原、零警告构建和测试；Provider/Consumer 各
+打包两次并由真实候选 Host 完成双 ALC 调用。摘要位于
+`artifacts/test-results/WorkflowActionG2/summary.json`，且只在全部步骤成功后写入。
+
+当前实测 Host 为 498/498，行/分支覆盖率 85.7% / 71.76%；Build 包含 25 个协议负例，外部 Host
+专项 1/1。该门禁固定 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、
+`releaseAcceptance=false`、`releaseGate=false`、`uploaded=false`，不形成发布资格。
+
 ## Workflow Action G1 非发布门禁
 
 修改 SDK Action 契约、注册、Catalog、Schema、授权、Run/Executor、进度代理、Provider Scope 或关闭顺序时运行：

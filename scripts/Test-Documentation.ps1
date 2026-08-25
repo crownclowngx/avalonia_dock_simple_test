@@ -7,13 +7,14 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码在 V3 G14 与 Host V4 G8 封板后完成 Workflow Action G1。产品仍为 3.0.0，SDK 候选为
-# 3.1.0；V3 Shipped、G1 Unshipped 和“未实际发布”边界必须同时保留。
+# 当前源码在 V3 G14 与 Host V4 G8 封板后完成 Workflow Action G1–G2。产品仍为 3.0.0，SDK 候选为
+# 3.1.0、模板候选为 1.1.0；V3 Shipped、G1 Unshipped、Build 1.1.2 不升版和“未实际发布”必须同时保留。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
     'docs/design/document-persistence-v2-design.md',
     'docs/design/ai-workflow-plugin-exploration.md',
+    'docs/design/external-managed-plugin-development-and-installation-plan.md',
     'docs/design/host-plugin-architecture-review.md',
     'docs/design/host-v2-breaking-refactor-plan.md',
     'docs/design/host-v3-breaking-refactor-plan.md',
@@ -40,6 +41,7 @@ $currentDocumentPaths = @(
     'docs/reference/plugin-sdk-api-compatibility.md',
     'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md',
     'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md',
+    'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md',
     'Host/MyAvaloniaManagement/docs/README.md',
     'Host/MyAvaloniaManagement/docs/design/architecture.md',
     'Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md',
@@ -326,7 +328,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'tagCreated=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'v3 Shipped 为 Core 127 条、UI 45 条' }
-    [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = '文档状态：G0 已重新签署、G1 已完成；G2–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = '文档状态：G0 已重新签署、G1–G2 已完成；G3–G10 尚未实施' }
     [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = 'sdkRoute=3.1-compatible-addition' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = '输入提交：`030a4fca408f72aed75500c105dc51af855d9af7`' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'sdkRoute=3.1-compatible-addition' }
@@ -355,6 +357,21 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'published=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'uploaded=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md'; Fragment = 'tagCreated=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'Test-WorkflowActionG2.ps1' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'Templates 本地候选：`1.1.0`；Build 已发布基线：`1.1.2`' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'Core 127/UI 45，Unshipped 仍为 72/6' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = '状态：已完成（2026-08-25；完整非发布门禁通过）' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'Build 协议负例 / 既有真实插件包 | **25 / 4**' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = '1D9C08DE3B8805EAA3D1CB1C7C0290D4A4050C42C388C33D102B16CD05EB86AA' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'aiflow=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'windowsSmoke=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'releaseAcceptance=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'publishable=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'published=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'uploaded=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md'; Fragment = 'tagCreated=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

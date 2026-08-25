@@ -4,13 +4,13 @@ using DemoPlugin.Features.Main;
 
 namespace DemoPlugin.Plugin;
 
-public sealed class DemoPluginModule : IPluginModule
+public sealed class TemplateProjectIdentifierModule : IPluginModule
 {
     public void Configure(IPluginRegistration registration)
     {
         ArgumentNullException.ThrowIfNull(registration);
 
-        registration.Services.AddDemoPluginServices();
+        registration.Services.AddTemplateProjectIdentifierServices();
         registration.AddDocument<MainDocument, MainView>(
             new DocumentDescriptor(
                 PluginIds.MainDocument,

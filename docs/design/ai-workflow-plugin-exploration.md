@@ -1,6 +1,6 @@
 # 基于 Plugin SDK V3 / Host V4 的工作流执行与可选 AI 规划方案
 
-> **文档状态：G0 已重新签署、G1 已完成；G2–G10 尚未实施**
+> **文档状态：G0 已重新签署、G1–G2 已完成；G3–G10 尚未实施**
 >
 > 初始探索：2026-08-07
 >
@@ -8,7 +8,7 @@
 >
 > 代码基线：产品 `3.0.0`、Core/UI SDK 候选 `3.1.0`、已封板 Host V4 internal + G1 Action 内核、.NET 10、Avalonia 12.1、manifest schema v2、每插件独立 Provider 与 `PluginLoadContext`
 >
-> 本文同时记录已实现的 G0/G1 与后续建议；Workflow Studio、工作流定义/执行器和 AI 客户端仍不存在。
+> 本文同时记录已实现的 G0–G2 与后续建议；Workflow Studio、工作流定义/执行器和 AI 客户端仍不存在。
 
 相关事实源：
 
@@ -520,7 +520,9 @@ WorkflowStudio/
 - SDK 正式发布后切换到正式 NuGet 源并重新生成 lock file，不能继续依赖 Host 的 `artifacts` 目录；
 - Standalone 只注入受控 Fake Gateway 预览 UI；真实目录、授权、跨 ALC 调用和关闭顺序必须把插件 ZIP 部署到候选 Host 验收。
 
-当前公开模板 `1.0.4` 已实测支持 `-n WorkflowStudio` 并能零警告构建。它不支持直接使用带点号的 `-n MyAvalonia.WorkflowStudio`：`sourceName` 会进入 Module/Services 的 C# 标识符并导致编译失败。G2 更新模板时必须加入该负例；本方案不依赖扩大命名能力，继续采用已经验证的无点号项目名 `WorkflowStudio`。
+当前公开模板 `1.0.4` 已实测支持 `-n WorkflowStudio` 并能零警告构建，但不支持直接使用带点号的名称。
+G2 本地候选 `1.1.0` 已使用模板引擎内置 `name` 的普通正则派生合法类型名，实测
+`-n MyAvalonia.WorkflowStudio` 可锁定还原、零警告编译和测试；命名空间仍保留点分名称。
 
 ### 7.2 插件内部模块
 
@@ -770,6 +772,8 @@ G1 已按重新签署的 Run/进度边界把候选形状写入 v3 `PublicAPI.Uns
 
 ### G2：SDK 包、Build 包与外部模板传播门禁
 
+> **状态：已完成（2026-08-25）；实现与非发布证据见 [G2 专用记录](../plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)。**
+
 > **可行性：高；这是平台能力对外可消费的必要门禁。**
 
 - **目标**：把 G1 能力通过真实 NuGet 包交给外部项目；更新通用模板的精确 SDK 版本、SDK 最低区间、lock file、示例和文档，并把模板从当前公开 `1.0.4` 提升为候选 `1.1.0`。
@@ -778,6 +782,11 @@ G1 已按重新签署的 Run/进度边界把候选形状写入 v3 `PublicAPI.Uns
 - **验证**：在机器本地临时 NuGet feed 中放入 Core/UI、必要时的 Build 和 Template 包；卸载旧模板，安装候选模板，在系统临时目录生成通用探针项目，执行隔离还原、零警告构建、测试、Standalone 启动检查、确定性 ZIP/manifest 和候选 Host 加载；另以带点号名称做负例，模板必须明确拒绝或正确生成，不能直到 C# 编译才暴露非法标识符。
 - **退出条件**：新生成项目不引用任何 Host 源码即可使用 `IWorkflowActionHandler`、`AddWorkflowAction` 和 `UseWorkflowActionGateway` 编译打包；旧模板/SDK 组合不能误编译新 API。
 - **回滚**：整体回到 G1 的候选 SDK/Host；不得发布或覆盖同版本模板包。模板是创建时快照，不能把更新后的模板再次覆盖应用到已有项目。
+
+实测结论：Core/UI `3.1.0` 与 Templates `1.1.0` 只作为本地候选，Build 协议未变化并继续精确消费
+NuGet.org 的 `1.1.2`。模板三个项目均提交 lock file；普通名称、点号名称、Provider 和 Consumer 四套
+生成结果都以 `--locked-mode` 通过。两个外部插件分别打包两次并由候选 Host 在独立 ALC 中完成一次
+caller-bound 结构化调用。公开 SDK `3.0.0` 的负例在还原成功后因缺少 Workflow Action 符号而失败。
 
 ### G3：用新模板创建外部 Workflow Studio 与 Fake Action 闭环
 

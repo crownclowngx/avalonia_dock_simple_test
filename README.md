@@ -37,11 +37,13 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > [G7 四插件、Harness 与文档回归](./docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)，
 > 最终签署见 [G8 V4 封板记录](./docs/plan-history/host-v4/g8-v4-sealing.md)。
 
-> Workflow Action G0 已重新签署，G1 Host 内核已完成：产品保持 `3.0.0`，仓库内 Core/UI SDK 候选为
+> Workflow Action G0 已重新签署，G1 Host 内核与 G2 SDK/Build/外部模板传播门禁已完成：产品保持 `3.0.0`，仓库内 Core/UI SDK 候选为
 > `3.1.0`；新增 caller-bound Gateway/Run、不可变目录、Schema、授权、invocation scope、资源治理、
-> 脱敏诊断和关闭门控。v3 Shipped 仍为 Core 127/UI 45，新增 72/6 条只进入 Unshipped。G1 是非发布
-> 开发阶段，没有修改模板或创建 Workflow Studio。见
-> [G1 专用记录](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)。
+> 脱敏诊断和关闭门控。v3 Shipped 仍为 Core 127/UI 45，新增 72/6 条只进入 Unshipped。G2 把模板提升为
+> 仅供本地验证的 `1.1.0`，继续精确使用已发布 Build `1.1.2`，并以真实候选 NuGet、lock file、双 ALC
+> Provider/Consumer 和点号名称完成外部传播验证。公开基线仍是 SDK `3.0.0` / Templates `1.0.4`；G2
+> 未上传、未发布，也没有创建 Workflow Studio。见 [G1 专用记录](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)
+> 和 [G2 专用记录](./docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)。
 
 ## 核心扩展模型
 
@@ -221,6 +223,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [宿主—插件架构评审](./docs/design/host-plugin-architecture-review.md)：理解当前架构、成熟度和边界；
 - [Plugin SDK API 兼容基线维护指南](./docs/reference/plugin-sdk-api-compatibility.md)：新增或修改 SDK public API 前阅读；
 - [Workflow Action G1 Host 内核](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)：查看 Run、Schema、授权、Scope、关闭门控、测试矩阵与非发布边界；
+- [Workflow Action G2 SDK/Build/模板传播](./docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)：查看候选包、lock file、点号名称、双 ALC 外部调用、制品哈希与非发布边界；
 - [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G14 最终目标、阶段和签署矩阵；
 - [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)：查看正式 API、SOLID、两轮隔离门禁、制品和回滚边界；
 - [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)：查看零残留、真实包负例、四插件矩阵和非发布证据；
@@ -263,6 +266,15 @@ TestResults/  需要保留的阶段验收与人工验证记录
 ```
 
 该门禁不启动窗口、不执行发布；正式封板证据由下述 V3 G14 入口建立。
+
+修改 Workflow Action SDK 包、模板、Build 消费边界或外部包装载链时运行 G2 非发布聚合门禁：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkflowActionG2.ps1 -Configuration Release
+```
+
+该入口只在本地候选源打包 SDK `3.1.0` 与 Templates `1.1.0`，Build `1.1.2` 从 NuGet.org 精确还原；
+不运行 AIFLOW、Windows CI/Smoke、ReleaseAcceptance 或发布门禁，也不上传 NuGet。
 
 修改 Host/SDK 生产边界、插件入口、构建 Target、打包或兼容规则时运行 G13 非发布聚合门禁：
 

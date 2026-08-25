@@ -11,11 +11,48 @@
   "shortName": "myavalonia-plugin",
   "sourceName": "DemoPlugin",
   "preferNameDirectory": true,
+  "sources": [
+    {
+      "source": "./",
+      "target": "./",
+      "exclude": [
+        "**/[Bb]in/**",
+        "**/[Oo]bj/**",
+        ".template.config/**/*",
+        "**/*.filelist",
+        "**/*.user"
+      ]
+    }
+  ],
   "tags": {
     "language": "C#",
     "type": "solution"
   },
   "symbols": {
+    "project-type-name": {
+      "type": "generated",
+      "generator": "regex",
+      "datatype": "string",
+      "description": "从项目名末段生成合法的 C# 类型名前缀，避免点分项目名进入类型标识符。",
+      "replaces": "TemplateProjectIdentifier",
+      "parameters": {
+        "source": "name",
+        "steps": [
+          {
+            "regex": "^.*\\.",
+            "replacement": ""
+          },
+          {
+            "regex": "[^A-Za-z0-9_]",
+            "replacement": "_"
+          },
+          {
+            "regex": "^[0-9]",
+            "replacement": "_$0"
+          }
+        ]
+      }
+    },
     "plugin-id": {
       "type": "parameter",
       "datatype": "text",

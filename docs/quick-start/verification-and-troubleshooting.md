@@ -176,6 +176,9 @@ Rider。Preview 不是运行时调试；交互、键盘输入和完整资源行�
 dotnet new install MyAvaloniaManagement.Plugin.Templates@1.0.4
 ```
 
+该命令验证公开模板。G2 本地候选 Templates `1.1.0` / SDK `3.1.0` 的锁定还原、点号名称和外部双
+ALC 调用由 `scripts/Test-WorkflowActionG2.ps1` 负责；它不运行 Windows Smoke 或任何发布门禁。
+
 ### NuGet 还原失败
 
 ```powershell

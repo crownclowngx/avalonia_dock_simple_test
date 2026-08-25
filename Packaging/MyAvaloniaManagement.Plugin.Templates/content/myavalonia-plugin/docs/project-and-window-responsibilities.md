@@ -12,7 +12,7 @@
 
 ## 插件如何融入主项目
 
-`DemoPluginModule.Configure` 是组合入口。它通过 `IPluginRegistration`：
+`TemplateProjectIdentifierModule.Configure` 是组合入口。它通过 `IPluginRegistration`：
 
 1. 登记插件私有服务；
 2. 用稳定 Descriptor 声明 Document、Tool 等贡献；

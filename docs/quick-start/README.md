@@ -3,6 +3,9 @@
 本组文档面向外部插件作者：不需要克隆 Host 仓库，只需要 .NET 10 SDK、Rider 或其他 .NET IDE，以及
 能够访问 NuGet.org。当前公开基线是 Plugin SDK `3.0.0`、manifest schema 2、Avalonia 12、Windows x64。
 
+Workflow Action G2 已验证本地候选 SDK `3.1.0` / Templates `1.1.0`，但它们尚未上传或发布；Build
+协议未变化，仍为已发布 `1.1.2`。本快速开始的 NuGet.org 命令继续使用公开 Templates `1.0.4`。
+
 ## 最短路径
 
 ```powershell
