@@ -20,6 +20,7 @@
     <ItemGroup>
       <!-- manifest v2 的单一 SDK 区间取自 Host 实际装载的 Core/UI 程序集。 -->
       <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" />
+      <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk.Workflow\MyAvaloniaManagement.PluginSdk.Workflow.csproj" />
       <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk.UI\MyAvaloniaManagement.PluginSdk.UI.csproj" />
     </ItemGroup>
 

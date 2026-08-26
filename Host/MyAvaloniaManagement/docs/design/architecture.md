@@ -16,7 +16,9 @@
 > 建立本地发布资格。Workflow Action G1 随后保持产品 3.0.0、把仓库内 SDK 候选提升到 3.1.0，并新增
 > caller-bound Run、目录、Schema、授权、Scope、资源治理和关闭门控。G2 又以本地候选 SDK 3.1.0 /
 > Templates 1.1.0、已发布 Build 1.1.2 和两个外部插件 ZIP 验证真实传播；没有新增生产入口。这两个阶段
-> 均未上传、未打 tag、未对外发布且未使用 AIFLOW。
+> 均未上传、未打 tag、未对外发布且未使用 AIFLOW。G3.1 进一步把 Core/UI 候选提升到 3.2.0，新增
+> `MyAvaloniaManagement.PluginSdk.Workflow 1.0.0`，统一 Schema/引用路径/双 revision，并把该程序集
+> 纳入默认 ALC 共享根；Host 产品版本仍为 3.0.0。
 
 ## 1. 目标与边界
 
@@ -37,7 +39,8 @@
 ### Plugin SDK 与主题所有权
 
 最终基础契约来自 `MyAvaloniaManagement.PluginSdk`，UI 注册契约来自
-`MyAvaloniaManagement.PluginSdk.UI`；四个业务插件均已只使用最终 SDK。旧
+`MyAvaloniaManagement.PluginSdk.UI`；Workflow Schema、引用与目录修订契约来自窄包
+`MyAvaloniaManagement.PluginSdk.Workflow`。四个业务插件均已只使用最终 SDK。旧
 `MyAvaloniaManagementCommon` 与 Legacy 项目已在 G13 删除。SDK 不拥有
 字体、桌面后端或全局主题。`App.axaml` 是 Fluent、Semi、Ursa、Dock Theme 和 Host Styles 的唯一
 组合入口；`ApplicationThemeService` 只切换宿主主题状态，不把第三方主题对象暴露成插件服务。

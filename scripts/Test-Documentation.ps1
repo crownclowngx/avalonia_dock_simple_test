@@ -7,9 +7,8 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码在 V3 G14 与 Host V4 G8 封板后完成 Workflow Action G1–G3。G2 已发布 SDK 3.1.0 与模板
-# 1.1.0；G3 只在外部仓库完成本地非发布闭环。V3 Shipped、G1 Unshipped、Build 1.1.2 不升版、
-# 历史非发布证据、G2 正式上传记录和 G3 非发布边界必须同时保留。
+# 当前源码在 V3 G14 与 Host V4 G8 封板后完成 Workflow Action G1–G3.1。G3.1 新增 Workflow SDK、
+# Studio v2 和静态引用安全，但仍须保留 G2 已发布事实、G3 历史证据及当前未上传边界。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
@@ -44,6 +43,7 @@ $currentDocumentPaths = @(
     'docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md',
     'docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md',
     'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md',
+    'docs/plan-history/workflow-action/g3.1-workflow-protocol-consistency.md',
     'Host/MyAvaloniaManagement/docs/README.md',
     'Host/MyAvaloniaManagement/docs/design/architecture.md',
     'Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md',
@@ -331,7 +331,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'tagCreated=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'v3 Shipped 为 Core 127 条、UI 45 条' }
-    [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = '文档状态：G0 已重新签署、G1–G3 已完成；G4–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = '文档状态：G0 已重新签署、G1–G3.1 已完成实现；G4–G10 尚未实施' }
     [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = 'sdkRoute=3.1-compatible-addition' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = '输入提交：`030a4fca408f72aed75500c105dc51af855d9af7`' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'sdkRoute=3.1-compatible-addition' }
@@ -387,6 +387,16 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = 'published=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = 'uploaded=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md'; Fragment = 'tagCreated=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-workflow-protocol-consistency.md'; Fragment = '64 / 227 / 65 / 210' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-workflow-protocol-consistency.md'; Fragment = '89.14% / 77.77%' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-workflow-protocol-consistency.md'; Fragment = '49/49' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-workflow-protocol-consistency.md'; Fragment = '34F516F0005B579E37398C3C71173C29961C37CA35D53C69207B70F4AB61F08A' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-workflow-protocol-consistency.md'; Fragment = 'published=true' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-workflow-protocol-consistency.md'; Fragment = 'uploaded=true' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-workflow-protocol-consistency.md'; Fragment = 'publicOnlyVerification=true' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-template-1.2-publication.md'; Fragment = 'templateVersion=1.2.0' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-template-1.2-publication.md'; Fragment = '4D9357D5F482E1F69BDF0767BD57F827027A1173A815F24653307A13BAA79101' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-template-1.2-publication.md'; Fragment = 'publicOnlyVerification=true' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

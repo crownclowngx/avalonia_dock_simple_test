@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
@@ -17,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" />
+    <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk.Workflow\MyAvaloniaManagement.PluginSdk.Workflow.csproj" />
     <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk.UI\MyAvaloniaManagement.PluginSdk.UI.csproj" />
   </ItemGroup>
 </Project>

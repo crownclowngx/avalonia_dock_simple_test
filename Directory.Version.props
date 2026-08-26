@@ -13,10 +13,13 @@
       V3 继续不维护可供插件引用的独立 Host API 版本线。Host AssemblyVersion 跟随产品，
       Plugin SDK 则继续独立表达进程内契约身份；二者不能互相替代。
     -->
-    <MyAvaloniaPluginSdkVersion>3.1.0</MyAvaloniaPluginSdkVersion>
+    <MyAvaloniaPluginSdkVersion>3.2.0</MyAvaloniaPluginSdkVersion>
     <MyAvaloniaPluginSdkNextMajorVersion>4.0.0</MyAvaloniaPluginSdkNextMajorVersion>
-    <MyAvaloniaPluginSdkFileVersion>3.1.0.0</MyAvaloniaPluginSdkFileVersion>
-    <MyAvaloniaPluginSdkAssemblyVersion>3.1.0.0</MyAvaloniaPluginSdkAssemblyVersion>
+    <MyAvaloniaPluginSdkFileVersion>3.2.0.0</MyAvaloniaPluginSdkFileVersion>
+    <MyAvaloniaPluginSdkAssemblyVersion>3.2.0.0</MyAvaloniaPluginSdkAssemblyVersion>
+    <MyAvaloniaPluginSdkWorkflowVersion>1.0.0</MyAvaloniaPluginSdkWorkflowVersion>
+    <MyAvaloniaPluginSdkWorkflowFileVersion>1.0.0.0</MyAvaloniaPluginSdkWorkflowFileVersion>
+    <MyAvaloniaPluginSdkWorkflowAssemblyVersion>1.0.0.0</MyAvaloniaPluginSdkWorkflowAssemblyVersion>
     <!--
       public API 文本基线按 SDK 主版本独立保存。有意破坏必须先建立新的 vN 目录，
       再同步提升包版本、程序集版本和插件清单兼容区间，不能改写旧基线掩盖差异。

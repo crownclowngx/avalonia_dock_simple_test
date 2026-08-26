@@ -66,6 +66,25 @@ public sealed class PluginSdkDependencyBoundaryTests
     }
 
     [Fact]
+    public void WorkflowSdk只依赖基础契约并启用公共Api门禁()
+    {
+        var project = LoadProject(
+            "Host", "MyAvaloniaManagement.PluginSdk.Workflow", "MyAvaloniaManagement.PluginSdk.Workflow.csproj");
+
+        Assert.Empty(RuntimePackageReferences(project));
+        Assert.Equal(BaseSdkBuildOnlyPackages, BuildOnlyPackageReferences(project));
+        Assert.Equal("MyAvaloniaManagement.PluginSdk.Workflow", Property(project, "PackageId"));
+        Assert.Equal("$(MyAvaloniaPluginSdkWorkflowVersion)", Property(project, "PackageVersion"));
+        Assert.Equal("true", Property(project, "GenerateDocumentationFile"));
+        Assert.Contains("CS1591", Property(project, "WarningsAsErrors"), StringComparison.Ordinal);
+        Assert.Contains(
+            project.Descendants("ProjectReference"),
+            item => item.Attribute("Include")?.Value ==
+                @"..\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj");
+        Assert.Equal(2, project.Descendants("AdditionalFiles").Count());
+    }
+
+    [Fact]
     public void Host直接拥有全部UiProfile包且不引用Legacy或Newtonsoft()
     {
         var host = LoadProject("Host", "MyAvaloniaManagement", "MyAvaloniaManagement.csproj");
@@ -122,6 +141,7 @@ public sealed class PluginSdkDependencyBoundaryTests
     [InlineData("Ursa")]
     [InlineData("Dock.Avalonia")]
     [InlineData("Dock.Controls.Recycling.Model")]
+    [InlineData("MyAvaloniaManagement.PluginSdk.Workflow")]
     public void 宿主支持的共享程序集由默认上下文提供(string assemblyName)
     {
         var policy = new HostContractAssemblyPolicy();
@@ -133,6 +153,19 @@ public sealed class PluginSdkDependencyBoundaryTests
         var resolved = policy.ResolveSharedAssembly(requested);
 
         Assert.Same(AssemblyLoadContext.Default, AssemblyLoadContext.GetLoadContext(resolved));
+    }
+
+    [Fact]
+    public void Workflow共享程序集拒绝高于Host提供版本的请求()
+    {
+        var policy = new HostContractAssemblyPolicy();
+        var requested = new AssemblyName(
+            "MyAvaloniaManagement.PluginSdk.Workflow, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null");
+
+        Assert.True(policy.IsShared(requested));
+        var exception = Assert.Throws<FileLoadException>(() => policy.ResolveSharedAssembly(requested));
+
+        Assert.Contains("PLUGIN_SHARED_ASSEMBLY_MISMATCH", exception.Message, StringComparison.Ordinal);
     }
 
     [Theory]

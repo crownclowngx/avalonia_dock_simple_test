@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.Workflow;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Plugins.Discovery;
@@ -75,6 +76,7 @@ internal sealed class HostContractAssemblyPolicy : IPluginSharedAssemblyPolicy
         var roots = new List<Assembly>
         {
             typeof(PluginId).Assembly,
+            typeof(WorkflowSchemaProfile).Assembly,
             typeof(IPluginModule).Assembly,
         };
 

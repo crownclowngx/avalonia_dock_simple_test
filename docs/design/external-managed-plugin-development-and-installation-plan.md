@@ -1,27 +1,29 @@
 # 外部 Managed Plugin 开发、模板与 NuGet 发布指南
 
 > 当前基线：Plugin SDK V3、manifest schema 2、.NET 10、Avalonia 12、Windows x64
-> 更新时间：2026-08-25
+> 更新时间：2026-08-26
 > 本文替代旧的 Host v1 候选计划。旧文档中的 manifest v1、Legacy 入口、双 Host/Common 区间和
 > `Package::Version` 模板安装语法均已失效。
 
 ## 1. 当前交付物
 
-外部插件开发由四个 NuGet 包组成：
+外部插件开发由五个 NuGet 包组成：
 
 | 包 | 版本 | 职责 | 进入插件 ZIP |
 | --- | --- | --- | --- |
-| `MyAvaloniaManagement.PluginSdk` | `3.1.0` | 平台无关身份、Document、内容、关闭、生命周期与 Workflow Action 契约 | 否，Host 提供 |
-| `MyAvaloniaManagement.PluginSdk.UI` | `3.1.0` | Avalonia 模块入口、DI、Document/Tool/View、窗口端口与 Action 注册扩展 | 否，Host 提供 |
+| `MyAvaloniaManagement.PluginSdk` | `3.2.0` | 平台无关身份、Document、内容、关闭、生命周期与 Workflow Action 契约 | 否，Host 提供 |
+| `MyAvaloniaManagement.PluginSdk.UI` | `3.2.0` | Avalonia 模块入口、DI、Document/Tool/View、窗口端口与 Action 注册扩展 | 否，Host 提供 |
+| `MyAvaloniaManagement.PluginSdk.Workflow` | `1.0.0` | 共享 Schema、引用路径、保守可赋值与 Catalog revision | 否，Host 提供 |
 | `MyAvaloniaManagement.Plugin.Build` | `1.1.2` | 声明校验、manifest、资产部署和确定性 ZIP | 否，仅开发期 |
-| `MyAvaloniaManagement.Plugin.Templates` | `1.1.0` | `dotnet new myavalonia-plugin` 解决方案模板、lock file 与项目内置文档 | 否，仅创建时 |
+| `MyAvaloniaManagement.Plugin.Templates` | `1.2.0` | `dotnet new myavalonia-plugin` 解决方案模板、lock file 与项目内置文档 | 否，仅创建时 |
 
-以上四个当前版本已发布到 NuGet.org；Build `1.1.2` 发布于 2026-08-24，SDK `3.1.0` 与 Templates
-`1.1.0` 发布于 2026-08-25：
-[Core SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk/3.1.0)、
-[UI SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.UI/3.1.0)、
+以上五个当前版本已发布到 NuGet.org；Build `1.1.2` 发布于 2026-08-24，Core/UI `3.2.0`、Workflow
+`1.0.0` 与 Templates `1.2.0` 发布于 2026-08-26：
+[Core SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk/3.2.0)、
+[UI SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.UI/3.2.0)、
+[Workflow SDK](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.Workflow/1.0.0)、
 [Build](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Build/1.1.2) 和
-[Templates](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Templates/1.1.0)。
+[Templates](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Templates/1.2.0)。
 
 Core/UI SDK 同版本发布。Build 与 Templates 独立演进；模板固定一组经过端到端验证的精确版本，避免
 外部插件还原到当前 Host 未验证的共享程序集组合。
@@ -61,7 +63,7 @@ ExamplePlugin/
 从 NuGet.org 安装：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.1.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.2.0
 dotnet new list myavalonia
 dotnet new myavalonia-plugin --help
 ```
@@ -297,7 +299,7 @@ NuGet 包搜索、包页面和模板目录使用不同索引，刚发布时 `dot
 公共源最终验收：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.1.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.2.0
 dotnet new myavalonia-plugin -n PublicFeedProbe --plugin-id myavalonia.plugin.public-feed-probe
 cd PublicFeedProbe
 dotnet restore

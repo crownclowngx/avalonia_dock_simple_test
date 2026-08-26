@@ -251,13 +251,13 @@ function Assert-TemplateLocks {
         $dependencies = $document.dependencies.'net10.0'
         if ($dependencies.PSObject.Properties.Name -contains 'MyAvaloniaManagement.PluginSdk') {
             Assert-True (
-                $dependencies.'MyAvaloniaManagement.PluginSdk'.resolved -ceq '3.1.0' -and
+                $dependencies.'MyAvaloniaManagement.PluginSdk'.resolved -ceq '3.2.0' -and
                 $dependencies.'MyAvaloniaManagement.PluginSdk'.contentHash -ceq $CoreHash) `
                 "$($lock.FullName) 的 Core SDK 锁定事实与规范候选包不一致。"
         }
         if ($dependencies.PSObject.Properties.Name -contains 'MyAvaloniaManagement.PluginSdk.UI') {
             Assert-True (
-                $dependencies.'MyAvaloniaManagement.PluginSdk.UI'.resolved -ceq '3.1.0' -and
+                $dependencies.'MyAvaloniaManagement.PluginSdk.UI'.resolved -ceq '3.2.0' -and
                 $dependencies.'MyAvaloniaManagement.PluginSdk.UI'.contentHash -ceq $UiHash) `
                 "$($lock.FullName) 的 UI SDK 锁定事实与规范候选包不一致。"
         }
@@ -466,7 +466,7 @@ function Build-PluginPackageTwice {
     $manifestObject = Get-Content -Raw -LiteralPath $pluginManifest[0].FullName | ConvertFrom-Json
     Assert-True (
         [int]$manifestObject.schemaVersion -eq 2 -and
-        [string]$manifestObject.sdk.minInclusive -ceq '3.1.0' -and
+        [string]$manifestObject.sdk.minInclusive -ceq '3.2.0' -and
         [string]$manifestObject.sdk.maxExclusive -ceq '4.0.0') `
         "$($Project.Name) manifest schema 或 SDK 区间错误。"
     return [pscustomobject]@{
@@ -549,24 +549,34 @@ $originalExternalRoot = [Environment]::GetEnvironmentVariable(
 try {
     $env:NUGET_PACKAGES = $isolatedPackages
 
-    # G1 是当前生产 API 与 Host 行为前置；Release 只表示本地优化配置。
-    Invoke-Pwsh (Join-Path $PSScriptRoot 'Test-WorkflowActionG1.ps1') `
-        @('-Configuration', $Configuration)
+    # Templates 1.2.0 的生产前置是已经通过并发布的 G3.1，而不是冻结在 SDK 3.1.0 的历史 G0/G1 脚本。
+    $g31SummaryPath = Join-Path $repositoryRoot (
+        'artifacts\test-results\WorkflowActionG31\summary.json')
+    Assert-True (Test-Path -LiteralPath $g31SummaryPath -PathType Leaf) `
+        '缺少 Workflow Action G3.1 门禁摘要，不能验证 Templates 1.2.0。'
+    $g31Summary = Get-Content -Raw -LiteralPath $g31SummaryPath | ConvertFrom-Json
+    Assert-True (
+        [double]$g31Summary.workflowSdkLineCoverage -ge 85 -and
+        [double]$g31Summary.workflowSdkBranchCoverage -ge 75) `
+        'Workflow Action G3.1 覆盖率前置不满足 Templates 1.2.0 发布要求。'
+    # 每轮都必须让全仓 assets 指向本轮隔离缓存，不能复用上一轮已经清理的临时 NUGET_PACKAGES 路径。
+    Invoke-DotNet @(
+        'restore', 'MyAvaloniaManagement.sln', '--locked-mode', '--force', '--nologo')
     Invoke-Pwsh (Join-Path $PSScriptRoot 'Test-ManagedPluginPackages.ps1') `
         @('-Configuration', $Configuration, '-ResultsDirectory',
             'artifacts/test-results/WorkflowActionG2/ManagedPluginPackages')
 
-    foreach ($project in @(
-            'Host/MyAvaloniaManagement.PluginSdk/MyAvaloniaManagement.PluginSdk.csproj',
-            'Host/MyAvaloniaManagement.PluginSdk.UI/MyAvaloniaManagement.PluginSdk.UI.csproj')) {
-        Invoke-DotNet @(
-            'pack', $project, '-c', $Configuration, '--no-restore', '--nologo',
-            '-o', $candidateFeed)
-    }
-    $corePackage = Join-Path $candidateFeed 'MyAvaloniaManagement.PluginSdk.3.1.0.nupkg'
-    $uiPackage = Join-Path $candidateFeed 'MyAvaloniaManagement.PluginSdk.UI.3.1.0.nupkg'
-    ConvertTo-DeterministicNupkg $corePackage
-    ConvertTo-DeterministicNupkg $uiPackage
+    # Templates 1.2.0 必须消费 G3.1 已发布的同一批 SDK 字节，不能为模板门禁重新打包 SDK。
+    $publishedSdkCandidateFeed = Join-Path $repositoryRoot (
+        'artifacts\test-results\WorkflowActionG31\candidate-feed')
+    Assert-True (Test-Path -LiteralPath $publishedSdkCandidateFeed -PathType Container) `
+        '缺少 G3.1 已发布 SDK 候选目录，不能验证 Templates 1.2.0。'
+    Copy-Item -LiteralPath (Join-Path $publishedSdkCandidateFeed (
+            'MyAvaloniaManagement.PluginSdk.3.2.0.nupkg')) -Destination $candidateFeed
+    Copy-Item -LiteralPath (Join-Path $publishedSdkCandidateFeed (
+            'MyAvaloniaManagement.PluginSdk.UI.3.2.0.nupkg')) -Destination $candidateFeed
+    $corePackage = Join-Path $candidateFeed 'MyAvaloniaManagement.PluginSdk.3.2.0.nupkg'
+    $uiPackage = Join-Path $candidateFeed 'MyAvaloniaManagement.PluginSdk.UI.3.2.0.nupkg'
     $coreLockHash = Get-Sha512Base64 $corePackage
     $uiLockHash = Get-Sha512Base64 $uiPackage
     Assert-TemplateLocks $coreLockHash $uiLockHash
@@ -575,7 +585,7 @@ try {
         'pack', $templateProject, '-c', $Configuration, '--no-restore', '--nologo',
         '-o', $candidateFeed)
     $templatePackage = Join-Path $candidateFeed (
-        'MyAvaloniaManagement.Plugin.Templates.1.1.0.nupkg')
+        'MyAvaloniaManagement.Plugin.Templates.1.2.0.nupkg')
     ConvertTo-DeterministicNupkg $templatePackage
 
     $templateEntries = Read-ZipEntries $templatePackage
@@ -643,9 +653,6 @@ try {
     Test-LegacyTemplateNegative
     Invoke-Pwsh (Join-Path $PSScriptRoot 'Test-Documentation.ps1')
 
-    $g1Summary = Get-Content -Raw -LiteralPath (
-        Join-Path $repositoryRoot 'artifacts\test-results\WorkflowActionG1\summary.json') |
-        ConvertFrom-Json
     $buildSummary = Get-Content -Raw -LiteralPath (
         Join-Path $resultRoot 'ManagedPluginPackages\summary.json') | ConvertFrom-Json
     $packageHashes = [ordered]@{}
@@ -660,16 +667,23 @@ try {
         schemaVersion = 1
         generatedAtUtc = [DateTime]::UtcNow.ToString('O')
         productVersion = '3.0.0'
-        sdkVersion = '3.1.0'
-        templateVersion = '1.1.0'
+        sdkVersion = '3.2.0'
+        templateVersion = '1.2.0'
         buildVersion = '1.1.2'
         manifestSchema = 2
-        sdkRange = '[3.1.0,4.0.0)'
+        sdkRange = '[3.2.0,4.0.0)'
         configuration = $Configuration
-        api = $g1Summary.api
-        hostCoverage = $g1Summary.hostCoverage
+        api = [ordered]@{
+            baseline = 'v3'
+            sdkVersion = '3.2.0'
+            workflowVersion = '1.0.0'
+        }
+        hostCoverage = [ordered]@{
+            workflowSdkLine = [double]$g31Summary.workflowSdkLineCoverage
+            workflowSdkBranch = [double]$g31Summary.workflowSdkBranchCoverage
+        }
         tests = [ordered]@{
-            g1 = $g1Summary.tests
+            g31 = $g31Summary.passed
             buildContractNegativeCases = [int]$buildSummary.gates.contractNegativeCases
             externalHost = $externalHostPassed
             generatedSolutions = 4

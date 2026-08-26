@@ -20,6 +20,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageTags>plugin;sdk;managed-plugin</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IncludeSymbols>true</IncludeSymbols>

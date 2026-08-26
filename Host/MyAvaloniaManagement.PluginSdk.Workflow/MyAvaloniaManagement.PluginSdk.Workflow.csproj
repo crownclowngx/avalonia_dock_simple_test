@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>$(MyAvaloniaPluginSdkWorkflowVersion)</Version>
+    <PackageVersion>$(MyAvaloniaPluginSdkWorkflowVersion)</PackageVersion>
+    <FileVersion>$(MyAvaloniaPluginSdkWorkflowFileVersion)</FileVersion>
+    <InformationalVersion>$(MyAvaloniaPluginSdkWorkflowVersion)</InformationalVersion>
+    <AssemblyVersion>$(MyAvaloniaPluginSdkWorkflowAssemblyVersion)</AssemblyVersion>
+    <AssemblyName>MyAvaloniaManagement.PluginSdk.Workflow</AssemblyName>
+    <RootNamespace>MyAvaloniaManagement.PluginSdk.Workflow</RootNamespace>
+    <PackageId>MyAvaloniaManagement.PluginSdk.Workflow</PackageId>
+    <Title>MyAvaloniaManagement Workflow SDK</Title>
+    <Description>Workflow Action 冻结 Schema、引用路径、类型系统与目录修订语义。</Description>
+    <Authors>MyAvaloniaManagement Contributors</Authors>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>
+    <PackageProjectUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test</PackageProjectUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageTags>plugin;sdk;workflow;json-schema</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1591;RS0016;RS0017;RS0024;RS0025;RS0036;RS0037;RS0041;RS0048</WarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 分析器只参与公共协议审阅，不进入消费者的运行时依赖图。 -->
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers"
+                      PrivateAssets="all"
+                      IncludeAssets="runtime; build; native; contentfiles; analyzers" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="ApiCompatibility\v1\PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="ApiCompatibility\v1\PublicAPI.Unshipped.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

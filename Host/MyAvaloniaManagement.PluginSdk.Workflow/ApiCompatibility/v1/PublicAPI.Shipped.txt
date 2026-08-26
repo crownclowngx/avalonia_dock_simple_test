@@ -1,0 +1,69 @@
+#nullable enable
+const MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaProfile.MaximumArrayItems = 1024 -> int
+const MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaProfile.MaximumDepth = 16 -> int
+const MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaProfile.MaximumInputBytes = 262144 -> int
+const MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaProfile.MaximumOutputBytes = 1048576 -> int
+const MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaProfile.MaximumProperties = 128 -> int
+const MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaProfile.MaximumSchemaBytes = 65536 -> int
+const MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaProfile.MaximumStringBytes = 65536 -> int
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisionCalculator
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.<Clone>$() -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.ContractRevision.get -> string!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.ContractRevision.init -> void
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.Deconstruct(out string! ContractRevision, out string! PresentationRevision) -> void
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.Equals(MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions? other) -> bool
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.PresentationRevision.get -> string!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.PresentationRevision.init -> void
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.WorkflowCatalogRevisions(string! ContractRevision, string! PresentationRevision) -> void
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePath
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure.ArrayIndexNotGuaranteed = 4 -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure.ArrayIndexOutOfRange = 5 -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure.InvalidArrayIndex = 3 -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure.MissingProperty = 1 -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure.NonContainer = 6 -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure.None = 0 -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure.OptionalProperty = 2 -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathResult
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathResult.Failure.get -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathFailure
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathResult.SegmentIndex.get -> int
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathResult.Succeeded.get -> bool
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathResult.Value.get -> System.Text.Json.JsonElement?
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferenceTypeSystem
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferenceTypeSystem.ValidateAssignable(System.Text.Json.JsonElement sourceSchema, System.Text.Json.JsonElement targetSchema, string! path = "$") -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidationResult!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferenceTypeSystem.WorkflowReferenceTypeSystem() -> void
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.<Clone>$() -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.Code.get -> string!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.Code.init -> void
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.Deconstruct(out string! Code, out string! Path, out string! Message) -> void
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.Equals(MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue? other) -> bool
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.Message.get -> string!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.Message.init -> void
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.Path.get -> string!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.Path.init -> void
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.WorkflowSchemaIssue(string! Code, string! Path, string! Message) -> void
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaProfile
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidationResult
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidationResult.Issues.get -> System.Collections.Generic.IReadOnlyList<MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue!>!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidationResult.IsValid.get -> bool
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidationResult.WorkflowSchemaValidationResult(System.Collections.Generic.IReadOnlyList<MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue!>! issues) -> void
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidator
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidator.ValidateDescriptor(MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor! descriptor) -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidationResult!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidator.ValidateInstance(System.Text.Json.JsonElement schema, System.Text.Json.JsonElement instance, int maximumBytes, string! path = "$") -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidationResult!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidator.ValidateSchema(System.Text.Json.JsonElement schema) -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidationResult!
+MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaValidator.WorkflowSchemaValidator() -> void
+override MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.Equals(object? obj) -> bool
+override MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.GetHashCode() -> int
+override MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.ToString() -> string!
+override MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.Equals(object? obj) -> bool
+override MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.GetHashCode() -> int
+override MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.ToString() -> string!
+static MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisionCalculator.Calculate(System.Collections.Generic.IReadOnlyList<MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor!>! actions) -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions!
+static MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.operator !=(MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions? left, MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions? right) -> bool
+static MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions.operator ==(MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions? left, MyAvaloniaManagement.PluginSdk.Workflow.WorkflowCatalogRevisions? right) -> bool
+static MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePath.ResolveGuaranteedSchemaPath(System.Text.Json.JsonElement schema, System.Collections.Generic.IReadOnlyList<string!>! segments) -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathResult!
+static MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePath.ResolveValuePath(System.Text.Json.JsonElement value, System.Collections.Generic.IReadOnlyList<string!>! segments) -> MyAvaloniaManagement.PluginSdk.Workflow.WorkflowReferencePathResult!
+static MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.operator !=(MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue? left, MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue? right) -> bool
+static MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue.operator ==(MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue? left, MyAvaloniaManagement.PluginSdk.Workflow.WorkflowSchemaIssue? right) -> bool

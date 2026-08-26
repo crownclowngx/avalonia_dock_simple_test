@@ -1,14 +1,18 @@
 # Managed Plugin 快速开始
 
-本组文档面向外部插件作者：不需要克隆 Host 仓库，只需要 .NET 10 SDK、Rider 或其他 .NET IDE，以及
-能够访问 NuGet.org。当前公开基线是 Plugin SDK `3.1.0`、manifest schema 2、Avalonia 12、Windows x64。
+Workflow Action Provider/Consumer 另见 [Workflow Action 开发说明](workflow-action-development.md)；G3.1 SDK
+维护者发布流程见 [G3.1 SDK 候选打包与发布](workflow-sdk-publication.md)。
 
-Workflow Action G2 已验证并发布 SDK `3.1.0` / Templates `1.1.0`；Build 协议未变化，仍为 `1.1.2`。
+本组文档面向外部插件作者：不需要克隆 Host 仓库，只需要 .NET 10 SDK、Rider 或其他 .NET IDE，以及
+能够访问 NuGet.org。当前公开基线是 Plugin SDK `3.2.0`、manifest schema 2、Avalonia 12、Windows x64。
+
+Workflow Action G3.1 已发布 SDK `3.2.0` / Workflow SDK `1.0.0` / Templates `1.2.0`；Build 协议未变化，
+仍为 `1.1.2`。
 
 ## 最短路径
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.1.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.2.0
 dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
 cd ExamplePlugin
 dotnet restore

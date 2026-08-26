@@ -173,10 +173,10 @@ Rider。Preview 不是运行时调试；交互、键盘输入和完整资源行�
 模板搜索索引可能晚于普通 NuGet 包索引。直接安装精确 ID：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.1.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.2.0
 ```
 
-该命令安装公开模板。Templates `1.1.0` / SDK `3.1.0` 的锁定还原、点号名称和外部双 ALC 调用由
+该命令安装公开模板。Templates `1.2.0` / SDK `3.2.0` 的锁定还原、点号名称和外部双 ALC 调用由
 `scripts/Test-WorkflowActionG2.ps1` 负责；该维护门禁本身仍不执行上传。
 
 ### NuGet 还原失败
@@ -197,7 +197,7 @@ dotnet restore --source https://api.nuget.org/v3/index.json
 3. ZIP 是否误带 SDK/Avalonia/Host 共享程序集；
 4. 私有依赖是否声明为 `ManagedPluginPrivatePackage`；
 5. Document/Tool ID 是否属于 manifest Plugin ID；
-6. Host SDK 版本是否位于 `[3.1.0, 4.0.0)`。
+6. Host SDK 版本是否位于 `[3.2.0, 4.0.0)`。
 
 ### Host 报 `FileNotFoundException` 或提示缺少 DLL
 

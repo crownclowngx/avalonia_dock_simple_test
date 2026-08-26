@@ -1,6 +1,7 @@
 # Workflow Action Provider 与 Consumer 接入
 
-Plugin SDK `3.1.0` 提供 Workflow Action 契约。通用模板仍只生成一个普通 Document，不会替开发者选择
+Plugin SDK `3.2.0` 提供 Workflow Action 契约，独立的 Workflow SDK `1.0.0` 提供 Schema、引用路径、
+保守可赋值与 Catalog revision。通用模板仍只生成一个普通 Document，不会替开发者选择
 Provider 或 Consumer 角色。这样创建出来的插件保持最小职责，也不会因为示例代码意外取得跨插件调用能力。
 
 ## 角色和所有权

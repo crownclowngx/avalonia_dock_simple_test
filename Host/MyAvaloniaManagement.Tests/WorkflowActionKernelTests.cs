@@ -160,9 +160,34 @@ public sealed class WorkflowActionKernelTests
 
         catalog.Commit(registry, availability);
 
-        Assert.Equal(64, catalog.Revision.Length);
+        Assert.Equal(71, catalog.ContractRevision.Length);
+        Assert.Equal(71, catalog.PresentationRevision.Length);
         Assert.Single(catalog.GetAvailableDescriptors());
         Assert.Throws<InvalidOperationException>(() => catalog.Commit(registry, availability));
+    }
+
+    [Fact]
+    public void Catalog展示变化只改变Presentation而Schema变化改变Contract()
+    {
+        var original = Descriptor();
+        var renamed = new WorkflowActionDescriptor(
+            original.Id, "新回显名称", "新展示说明", original.InputSchema, original.OutputSchema,
+            original.Risks, original.ConfirmationPolicy, original.SensitiveInputPointers);
+        using var changedOutput = JsonDocument.Parse("""
+            {"type":"object","properties":{"echoed":{"type":"integer"}},"required":["echoed"],"additionalProperties":false}
+            """);
+        var changed = new WorkflowActionDescriptor(
+            original.Id, renamed.DisplayName, renamed.Description, original.InputSchema,
+            changedOutput.RootElement, original.Risks, original.ConfirmationPolicy,
+            original.SensitiveInputPointers);
+
+        var first = CaptureRevisions(original);
+        var presentation = CaptureRevisions(renamed);
+        var contract = CaptureRevisions(changed);
+
+        Assert.Equal(first.ContractRevision, presentation.ContractRevision);
+        Assert.NotEqual(first.PresentationRevision, presentation.PresentationRevision);
+        Assert.NotEqual(first.ContractRevision, contract.ContractRevision);
     }
 
     [Fact]
@@ -474,6 +499,16 @@ public sealed class WorkflowActionKernelTests
             risks, policy, pointers);
         WorkflowActionSchemaValidator.ValidateDescriptor(descriptor);
         return descriptor;
+    }
+
+    private static (string ContractRevision, string PresentationRevision) CaptureRevisions(
+        WorkflowActionDescriptor descriptor)
+    {
+        var registry = Registry(descriptor);
+        var availability = new PluginAvailabilityReadModel(new PluginLifecycleStateStore(registry));
+        var catalog = new WorkflowActionCatalogStore();
+        catalog.Commit(registry, availability);
+        return (catalog.ContractRevision, catalog.PresentationRevision);
     }
 
     private static WorkflowActionInvocationRequest Request(string value, string? password = null)

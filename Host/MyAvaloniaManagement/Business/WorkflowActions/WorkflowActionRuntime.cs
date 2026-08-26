@@ -119,7 +119,7 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
             {
                 throw new InvalidOperationException("Workflow Action 目录尚未提交。");
             }
-            var run = new WorkflowActionRun(this, callerId, _catalog.Revision);
+            var run = new WorkflowActionRun(this, callerId, _catalog.ContractRevision);
             _runs.Add(run);
             return run;
         }
@@ -183,7 +183,7 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
         PluginWorkflowActionRegistration? registration = null;
         try
         {
-            if (run.Revision != _catalog.Revision ||
+            if (run.Revision != _catalog.ContractRevision ||
                 !_catalog.TryGet(request.ActionId, out registration))
             {
                 return Failure(invocationId, WorkflowActionInvocationStatus.Rejected,

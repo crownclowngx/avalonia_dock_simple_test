@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.Workflow;
 
 namespace MyAvaloniaManagement.Business.WorkflowActions;
 
@@ -23,7 +20,9 @@ internal sealed class WorkflowActionCatalogStore
     private IReadOnlyDictionary<WorkflowActionId, PluginWorkflowActionRegistration>? _entries;
     private PluginAvailabilityReadModel? _availability;
 
-    internal string Revision { get; private set; } = string.Empty;
+    internal string ContractRevision { get; private set; } = string.Empty;
+
+    internal string PresentationRevision { get; private set; } = string.Empty;
 
     internal bool IsCommitted
     {
@@ -44,7 +43,8 @@ internal sealed class WorkflowActionCatalogStore
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(availability);
         var entries = registry.WorkflowActions.ToDictionary(item => item.Descriptor.Id);
-        var revision = ComputeRevision(entries.Values);
+        var revisions = WorkflowCatalogRevisionCalculator.Calculate(
+            entries.Values.Select(item => item.Descriptor).ToArray());
         lock (_gate)
         {
             if (_entries is not null)
@@ -53,7 +53,8 @@ internal sealed class WorkflowActionCatalogStore
             }
             _entries = entries;
             _availability = availability;
-            Revision = revision;
+            ContractRevision = revisions.ContractRevision;
+            PresentationRevision = revisions.PresentationRevision;
         }
     }
 
@@ -97,43 +98,6 @@ internal sealed class WorkflowActionCatalogStore
         {
             throw new InvalidOperationException("Workflow Action 目录尚未提交。");
         }
-    }
-
-    private static string ComputeRevision(
-        IEnumerable<PluginWorkflowActionRegistration> registrations)
-    {
-        using var stream = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(stream))
-        {
-            writer.WriteStartArray();
-            foreach (var item in registrations.OrderBy(
-                         item => item.Descriptor.Id.Value,
-                         StringComparer.Ordinal))
-            {
-                var descriptor = item.Descriptor;
-                writer.WriteStartObject();
-                writer.WriteString("owner", item.OwnerId.Value);
-                writer.WriteString("id", descriptor.Id.Value);
-                writer.WriteString("displayName", descriptor.DisplayName);
-                writer.WriteString("description", descriptor.Description);
-                writer.WriteNumber("risks", (int)descriptor.Risks);
-                writer.WriteNumber("confirmation", (int)descriptor.ConfirmationPolicy);
-                writer.WritePropertyName("sensitive");
-                writer.WriteStartArray();
-                foreach (var pointer in descriptor.SensitiveInputPointers.Order(StringComparer.Ordinal))
-                {
-                    writer.WriteStringValue(pointer);
-                }
-                writer.WriteEndArray();
-                writer.WritePropertyName("input");
-                WorkflowActionJsonCanonicalizer.Write(writer, descriptor.InputSchema);
-                writer.WritePropertyName("output");
-                WorkflowActionJsonCanonicalizer.Write(writer, descriptor.OutputSchema);
-                writer.WriteEndObject();
-            }
-            writer.WriteEndArray();
-        }
-        return Convert.ToHexString(SHA256.HashData(stream.ToArray()));
     }
 
 }

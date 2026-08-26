@@ -16,22 +16,22 @@
       },
       "MyAvaloniaManagement.PluginSdk": {
         "type": "Direct",
-        "requested": "[3.1.0, 3.1.0]",
-        "resolved": "3.1.0",
-        "contentHash": "v0hu649Y5Yjrqawvk8ivhkL7nzqczsRLAsrJxzKmzj1iIYfF+hHCPvhb79Qh00HJRkHM+QRHK6lUIdlL9Vfdjg=="
+        "requested": "[3.2.0, 3.2.0]",
+        "resolved": "3.2.0",
+        "contentHash": "sN9Muc0jsl0xxBnbcr+rlVl/VMsNzpsuKoEiCpDfdfawjLkf2SOKjTcjCQvpq6ORl1wkPDDnljj0qGSR+gxsDA=="
       },
       "MyAvaloniaManagement.PluginSdk.UI": {
         "type": "Direct",
-        "requested": "[3.1.0, 3.1.0]",
-        "resolved": "3.1.0",
-        "contentHash": "uh09tEtgRAc8PrBFSYFVh0eYQXWjQfpUEtoW+uKPaHhWEC89IlRXRs/MxOWdeMsJkhkffWekcErEd/NPeRFDoA==",
+        "requested": "[3.2.0, 3.2.0]",
+        "resolved": "3.2.0",
+        "contentHash": "V1mPjlXD/2B7D9UE7VMS+RYUCshvC4KjNWD2xFPpeIRrC9QV8sTr+eW2BfcnG4TX3ZeAdKkkHCRDrm6/MHgXEQ==",
         "dependencies": {
           "Avalonia": "[12.1.0]",
           "Avalonia.Themes.Fluent": "[12.1.0]",
           "Irihi.Ursa": "[2.1.0]",
           "Irihi.Ursa.Themes.Semi": "[2.1.0]",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10]",
-          "MyAvaloniaManagement.PluginSdk": "3.1.0",
+          "MyAvaloniaManagement.PluginSdk": "3.2.0",
           "Semi.Avalonia": "[12.1.0]"
         }
       },
