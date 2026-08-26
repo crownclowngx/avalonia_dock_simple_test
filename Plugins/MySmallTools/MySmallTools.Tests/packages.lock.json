@@ -136,6 +136,12 @@
           "Semi.Avalonia": "[12.1.0, 12.1.0]"
         }
       },
+      "myavaloniamanagement.pluginsdk.workflow": {
+        "type": "Project",
+        "dependencies": {
+          "MyAvaloniaManagement.PluginSdk": "[3.2.0, )"
+        }
+      },
       "mysmalltools": {
         "type": "Project",
         "dependencies": {
@@ -150,7 +156,7 @@
       "mysmalltools.securitybenchmarks": {
         "type": "Project",
         "dependencies": {
-          "MySmallTools": "[3.0.0, )"
+          "MySmallTools": "[3.1.0, )"
         }
       },
       "Avalonia": {

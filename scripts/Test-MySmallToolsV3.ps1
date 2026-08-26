@@ -101,6 +101,12 @@ try {
         "MySmallTools 行覆盖率 $($pluginCoverage.Line)% 低于 G11 基线 $($pluginBaseline.line)% 。"
     Assert-PluginV3True ($pluginCoverage.Branch -ge [double]$pluginBaseline.branch) `
         "MySmallTools 分支覆盖率 $($pluginCoverage.Branch)% 低于 G11 基线 $($pluginBaseline.branch)% 。"
+    $pluginClasses = @($pluginCoverage.Xml.coverage.packages.package.classes.class)
+    $g4ActionCoverage = Get-PluginV3FileLineCoverage `
+        $pluginClasses `
+        'Business/SecretVideoPlayer/Workflow/EncryptVideoWorkflowAction.cs'
+    Assert-PluginV3True ($g4ActionCoverage -ge 90) `
+        "G4 加密 Action 关键文件行覆盖率 $g4ActionCoverage% 低于 90%。"
 
     $pluginRoot = Join-Path $repositoryRoot 'Plugins\MySmallTools\MySmallTools'
     Assert-PluginV3RgAbsent `
@@ -166,7 +172,11 @@ try {
         'MySmallTools' $Configuration
     $manifestPath = Join-Path $package.LoadRoot 'Controls\SmallTools\plugin.manifest.json'
     $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
-    Assert-PluginV3Manifest $manifest 'myavalonia.plugin.my-small-tools'
+    Assert-PluginV3Manifest `
+        $manifest `
+        'myavalonia.plugin.my-small-tools' `
+        '3.1.0' `
+        '3.2.0'
 
     $variableName = 'MYAVALONIA_G11_V3_PACKAGE_ROOT'
     $previousPackageRoot = [Environment]::GetEnvironmentVariable($variableName)
@@ -202,6 +212,7 @@ try {
         pluginCoverage = [ordered]@{
             line = $pluginCoverage.Line
             branch = $pluginCoverage.Branch
+            g4ActionLine = $g4ActionCoverage
         }
         harness = [ordered]@{
             suite = 'g3'

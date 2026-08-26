@@ -6,6 +6,7 @@ using MySmallTools.Business.SecretVideoPlayer.Encryption;
 using MySmallTools.Business.SecretVideoPlayer.Library;
 using MySmallTools.Business.SecretVideoPlayer.Operations;
 using MySmallTools.Business.SecretVideoPlayer.Playback;
+using MySmallTools.Business.SecretVideoPlayer.Workflow;
 using MySmallTools.Constants;
 using MySmallTools.ViewModels.SecretVideoPlayer;
 using MySmallTools.Views.SecretVideoPlayer;
@@ -100,7 +101,13 @@ public sealed class MySmallToolsPluginModule : IPluginModule
         services.AddTransient<DecryptionOutputPathResolver>();
         services.AddScoped<IVideoDecryptionService, VideoDecryptionService>();
 
-        // 注册 API 只冻结根模型声明；G4 校验通过后由 Host 最终追加 scoped 生命周期。
+        // Workflow Action 只声明经过筛选的无 UI 应用入口。AddWorkflowAction 会由 Host 在插件
+        // 私有 Provider 中追加 scoped Handler，因此这里不能再手工注册第二份生命周期，也不能
+        // 让现有 ViewModel 改走 Action 后形成 UI/自动化两套业务语义。
+        registration.AddWorkflowAction<EncryptVideoWorkflowActionHandler>(
+            EncryptVideoWorkflowAction.CreateDescriptor());
+
+        // 注册 API 只冻结根模型声明；Document 和 Action 的 scoped 生命周期都由 Host 最终追加。
         registration.AddDocument<SecretVideoPlayerViewModel, SecretVideoPlayerView>(
             new DocumentDescriptor(
                 MySmallToolsContributionIds.SecretVideoPlayerDocument,

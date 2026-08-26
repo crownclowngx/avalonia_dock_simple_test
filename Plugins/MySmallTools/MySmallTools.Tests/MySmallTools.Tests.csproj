@@ -26,6 +26,8 @@
                       ReferenceOutputAssembly="true">
       <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
     </ProjectReference>
+    <!-- G4 只在测试侧使用共享 Schema 校验器复核生产 Descriptor；生产插件仍只依赖 Core/UI SDK。 -->
+    <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk.Workflow\MyAvaloniaManagement.PluginSdk.Workflow.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="TestAssets\RealMedia\**\*">

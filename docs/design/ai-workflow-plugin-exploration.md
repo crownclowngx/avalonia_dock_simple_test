@@ -1,6 +1,6 @@
 # 基于 Plugin SDK V3 / Host V4 的工作流执行与可选 AI 规划方案
 
-> **文档状态：G0 已重新签署、G1–G3.1 已完成实现；G4–G10 尚未实施**
+> **文档状态：G0 已重新签署、G1–G4 已完成实现；G5–G10 尚未实施**
 >
 > 初始探索：2026-08-07
 >
@@ -8,8 +8,8 @@
 >
 > 代码基线：产品 `3.0.0`、候选 Core/UI SDK `3.2.0`、Workflow SDK `1.0.0`、已封板 Host V4 internal + G1 Action 内核、.NET 10、Avalonia 12.1、manifest schema v2、每插件独立 Provider 与 `PluginLoadContext`
 >
-> 本文同时记录已实现的 G0–G3.1 与后续建议；外部 Workflow Studio v2、共享验证语义与 Runner 已存在，
-> AI 客户端与真实业务 Action 仍不存在。
+> 本文同时记录已实现的 G0–G4 与后续建议；外部 Workflow Studio v2、共享验证语义、Runner 与
+> MySmallTools 非破坏性加密 Action 已存在，AI 客户端和 BiliDownloader 真实业务 Action 仍不存在。
 
 相关事实源：
 
@@ -24,6 +24,7 @@
 - [`Workflow Action G2 SDK/Build/模板传播记录`](../plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)
 - [`Workflow Action G3 外部 Studio 记录`](../plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md)
 - [`Workflow Action G3.1 协议一致性记录`](../plan-history/workflow-action/g3.1-workflow-protocol-consistency.md)
+- [`Workflow Action G4 MySmallTools 非破坏性加密记录`](../plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md)
 
 ---
 
@@ -130,9 +131,9 @@ Templates 为 **1.2.0**；Host V4 是已经封板的宿主内部收口代际，�
 | 严格诊断白名单 | `HostDiagnostics` | 诊断只记录稳定 ID、阶段、耗时和错误码，不记录参数正文、路径或 Secret |
 | 外部 SDK、模板与 Build 包已发布 | Core/UI `3.2.0`、Workflow `1.0.0`、Templates `1.2.0`、Build `1.1.2` | Studio 可以从 NuGet.org 在独立 `.slnx` 中开发；Build 协议没有随 G3.1 升版 |
 | BiliDownloader 有无 UI 的提交边界 | `IDownloadSubmissionService` | 已有预检与提交基础，但输入仍是完整 `DownloadSubmission` |
-| MySmallTools 有流式加密与原子输出提交 | `IVideoEncryptionService`、`OutputFileTransaction` | 非破坏性加密 Action 有可靠基础，但当前没有删除源文件事务 |
+| MySmallTools 有流式加密、原子输出与正式 Action | `IVideoEncryptionService`、`OutputFileTransaction`、`EncryptVideoWorkflowActionHandler` | `encrypt-video` 已保持非破坏性语义；删除源文件仍没有事务用例 |
 
-### 2.3 G1–G3.1 已实现与仍不存在的能力
+### 2.3 G1–G4 已实现与仍不存在的能力
 
 平台仓库已经具备 Workflow Action 公共契约、声明注册、不可变目录、caller-bound Gateway/Run、Host internal
 Schema/授权/资源治理、invocation scope、诊断和关闭门控。外部 `myavalonia-workflow-studio` 仓库已经具备
@@ -144,7 +145,7 @@ Schema/授权/资源治理、invocation scope、诊断和关闭门控。外部 `
 - Host 公共事件总线；V3 已删除公共事件总线，现有消息器均为插件私有；
 - 第三方通用 JSON Schema 引擎；G3.1 的共享 Workflow SDK 只实现冻结 Profile 所需的窄校验；
 - BiliDownloader 的“URL → 选择条目 → 下载提交 → 等待输出文件”无 UI Facade；
-- MySmallTools 的非破坏性加密 Action，以及后续“加密、验证成功、删除源文件”原子应用服务。
+- MySmallTools 后续“加密、验证成功、删除源文件”的原子应用服务；现有 `encrypt-video` 永久保持非破坏性。
 
 这些剩余能力不能在 UI 或说明中宣称已经可用。尤其是 G3 候选 Host 验收只证明 Studio ZIP 的发现、入口、
 容器、Document 与 Gateway 组合；Fake Action 只属于 Standalone，不进入正式 ZIP，也不代表真实业务闭环完成。
@@ -831,12 +832,24 @@ Core/UI SDK `3.1.0` 与 Build `1.1.2`，没有 Host 源码引用或跨仓库 `Pr
 
 > **可行性：高；可最早验证真实文件副作用。**
 
+> **状态：已完成（2026-08-26）；MySmallTools `3.1.0` 本地候选与 Workflow Studio `1.1.0`
+> 真实双 ZIP 开发门禁通过，未执行发布流程。**
+
 - **目标**：用 scoped Handler 包装 `IVideoEncryptionService`，保持“成功生成加密文件、始终保留源文件”的单一语义。
 - **前置**：G1 调用、授权、Secret 遮蔽和输出预算已通过；准备小型合法测试媒体。
 - **生产变化**：MySmallTools 注册一个 Action 与私有 Handler；不改现有 UI 用例语义，不增加删除能力。
 - **验证**：预检、密码下限、目标冲突、取消、磁盘不足、临时文件清理、正式输出认证、invocation scope 释放、重复 InvocationId 行为和真实插件包组合。
 - **退出条件**：不接 AI，通过外部 Studio 插件的手工工作流可确定性加密测试媒体，失败时源文件保留且不留下正式损坏文件。
 - **回滚**：整体移除 Action 声明和 Handler，保留原加密服务；不得让 UI 改走专用 Action 形成双入口回归。
+
+实装合同固定为路径与密码必填、公开标题/描述可选，风险为读取/写入本地文件、处理 Secret 和长任务，
+确认频率为 `OncePerRun`，敏感指针为 `/password`。Handler 只适配现有 scoped 应用服务；Studio 没有增加
+MySmallTools 预设或程序集引用。重复相同参数会获得新的 Host InvocationId，并由既有不覆盖预检以
+`OutputConflict` 失败；Caller 从来不能指定或重复 InvocationId。
+
+完整本地开发门禁实测 **820/820**、失败 0、跳过 0；MySmallTools 总覆盖率为 **73.49% / 49.25%**，
+G4 Action 文件行覆盖率 **94.12%**，Studio 为 **87.69% / 81.93%**。两侧候选 ZIP 均通过两次确定性
+比对与真实独立 ALC 闭环；本轮 `windowsCi/windowsSmoke/releaseGate/publishable` 均为 `false`。
 
 ### G5：BiliDownloader headless 下载 Action
 
@@ -992,8 +1005,8 @@ G8、G9、G10 互不作为前置，也都不能反向改变 G7 的非 AI 可用�
 
 - [ ] 下载预检阻止时不提交任务；
 - [ ] 下载失败项不进入加密；
-- [ ] 加密失败或取消时源文件保留；
-- [ ] 正式加密输出只在完整提交后出现；
+- [x] 加密失败或取消时源文件保留；
+- [x] 正式加密输出只在完整提交后出现；
 - [ ] 删除功能上线后，输出验证失败绝不删除源文件；
 - [ ] 删除失败返回部分成功且明确源文件仍存在；
 - [ ] 重复 InvocationId 不重复产生不可恢复副作用。
@@ -1006,10 +1019,12 @@ G8、G9、G10 互不作为前置，也都不能反向改变 G7 的非 AI 可用�
 
 > **Plugin 声明业务 Action，Registry 冻结事实，Gateway 治理并路由，用户可以临时编辑并直接执行，AI 只负责可选地生成同一种候选定义。**
 
-G0–G3.1 已证明公共 Action 内核、真实 NuGet/模板传播、外部 Studio/Fake 闭环和静态协议安全。继续按 G4 → G7 实施即可
-得到不依赖 AI 的“下载 → 加密并保留源文件”MVP。这个主线与当前 Plugin SDK V3 的独立 ALC/Provider、
+G0–G4 已证明公共 Action 内核、真实 NuGet/模板传播、外部 Studio/Fake 闭环、静态协议安全和第一个
+真实业务 Action。继续按 G5 → G7 实施即可得到不依赖 AI 的“下载 → 加密并保留源文件”MVP。
+这个主线与当前 Plugin SDK V3 的独立 ALC/Provider、
 Host V4 internal 所有权和释放纪律兼容；G2/G3 已证明平台能力先经过真实 NuGet 和模板传播，再进入独立的
-`WorkflowStudio`，没有因为同解决方案源码引用而得到假绿色。剩余主要工程风险集中在 MySmallTools 真实
-Action、BiliDownloader headless Facade 以及二者的跨插件业务闭环。
+`WorkflowStudio`，没有因为同解决方案源码引用而得到假绿色；G4 进一步证明 Studio 无 Provider 引用也能
+通过目录、Secret 与 Runner 调用 MySmallTools。剩余主要工程风险集中在 BiliDownloader headless Facade
+以及两个业务 Action 的跨插件闭环。
 
 G8 的 AI、G9 的删除和 G10 的持久化互相独立，均不应成为基础工作流可用性的前置条件。这样既允许用户快速临时编排，也避免为了尚未验证的智能规划或恢复需求，把模型和重型工作流引擎变成系统核心依赖。

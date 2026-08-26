@@ -293,7 +293,8 @@ function Assert-DocumentationSourceSymbols {
 function Get-ManagementBaselineFacts {
     param(
         [Parameter(Mandatory)] [string]$RepositoryRoot,
-        [Parameter(Mandatory)] [string[]]$PluginProjects
+        [Parameter(Mandatory)] [string[]]$PluginProjects,
+        [Collections.IDictionary]$PluginVersionOverrides = @{}
     )
 
     $versionPath = Join-Path $RepositoryRoot 'Directory.Version.props'
@@ -454,8 +455,17 @@ function Get-ManagementBaselineFacts {
         $entryType = & $readProjectProperty 'ManagedPluginEntryType'
         $sdkMinExpression = & $readProjectProperty 'ManagedPluginSdkMinInclusive'
         $sdkMaxExpression = & $readProjectProperty 'ManagedPluginSdkMaxExclusive'
-        Assert-DocumentationCondition ($pluginVersion -eq $productVersion) (
-            "$relativePath 的插件版本 $pluginVersion 与 G1 保持的产品版本 $productVersion 不一致。")
+        # 插件默认跟随产品版本；只有已经在阶段文档中显式提升的独立插件才允许按项目路径覆盖。
+        # 这保留默认约束，同时避免把 MySmallTools 的 G4 候选版本误当成 Host 产品升版。
+        $normalizedProjectPath = $relativePath.Replace('\', '/')
+        $expectedPluginVersion = if ($PluginVersionOverrides.Contains($normalizedProjectPath)) {
+            [Version]$PluginVersionOverrides[$normalizedProjectPath]
+        }
+        else {
+            $productVersion
+        }
+        Assert-DocumentationCondition ($pluginVersion -eq $expectedPluginVersion) (
+            "$relativePath 的插件版本 $pluginVersion 与当前预期 $expectedPluginVersion 不一致。")
         Assert-DocumentationCondition (
             $entryType -cmatch '^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$') (
             "$relativePath 的 ManagedPluginEntryType 不是规范的命名空间限定类型全名。")
@@ -464,7 +474,7 @@ function Get-ManagementBaselineFacts {
             $sdkMaxExpression -ceq '$(MyAvaloniaPluginSdkNextMajorVersion)') (
             "$relativePath 的 Managed Plugin SDK 兼容字段没有投影集中 SDK 区间。")
         $plugins.Add([pscustomobject]@{
-                Project = $relativePath.Replace('\', '/')
+                Project = $normalizedProjectPath
                 Version = $pluginVersion.ToString(3)
                 EntryPoint = $entryType
                 SdkRange = "[$($sdkVersion.ToString(3)), $($expectedMaximum.ToString(3)))"

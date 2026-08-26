@@ -38,6 +38,7 @@ Business/SecretVideoPlayer/
 ├─ Container/   SECVID03 布局、认证、公开区和随机读取流
 ├─ Operations/  加解密共用状态、预检、失败分类和输出事务
 ├─ Encryption/  单文件流式加密
+├─ Workflow/    非破坏性加密 Action 的 JSON 合同和无 UI 适配
 ├─ Decryption/  单文件/批量解密和安全输出命名
 ├─ Playback/    部署探针、LibVLC backend、播放会话和表面恢复
 └─ Library/     SECVID 文件夹扫描
@@ -48,11 +49,16 @@ Business/SecretVideoPlayer/
 ```text
 Container  ← Encryption / Decryption / Playback / Library
 Operations ← Encryption / Decryption
+Encryption ← Workflow
 Playback   ← ViewModels / Views
 Business   ← Plugin composition root
 ```
 
 `Container` 不依赖 UI、LibVLC 或具体用例；`Operations` 不依赖加密器和解密器的具体实现。跨子域协作由应用服务、ViewModel 和 `MySmallToolsPluginModule` 完成，禁止形成反向依赖或环。
+
+`Workflow` 只依赖共享 Core SDK 与 `IVideoEncryptionService`，不依赖 Workflow Studio、Host 实现、
+ViewModel 或具体加密器。它把 JSON 参数映射到同一个应用服务，因此 UI 与自动化共享预检、密码学和
+输出事务，但各自保留独立入口责任。
 
 ## 4. 运行时组件
 
@@ -104,6 +110,7 @@ flowchart TB
 | 边界 | 当前类型 | 主要职责 |
 | --- | --- | --- |
 | 插件组合根 | `MySmallToolsPluginModule` | 只注册依赖关系和生命周期，不创建 View、Document、任务或原生对象 |
+| Workflow Action | `EncryptVideoWorkflowAction`、`EncryptVideoWorkflowActionHandler` | 冻结非破坏性 JSON 合同，在调用 Scope 内适配现有加密应用服务，不解释工作流 |
 | Document 创建 | 4 个 `DocumentStrategy`、`DocumentScopeManager` | 每次创建一个独立 Scope，并在 Dock 确认关闭后释放 |
 | 顶层兼容外壳 | 四个 Document ViewModel、`VideoPlayerControlViewModel` | 保持宿主类型名、构造函数和既有公开绑定，不复制功能状态 |
 | UI 功能包 | `Playback`、`Library`、`Encryption`、`Decryption`、`SingleVideo` | 按功能拥有状态、命令、取消和子 View，顶层 AXAML 只组合 |
@@ -375,7 +382,7 @@ flowchart LR
 | 生命周期 | 服务 |
 | --- | --- |
 | Singleton | `IPlaybackDeploymentProbe`、`LibVlcRuntime`、三个窄用户数据接口共用的 `SecretVideoUserDataStore` |
-| Scoped | backend factory/代理/初始化端口、PlayerHost/SourceFactory 端口、NativeDispatcher、ResourceReaper、播放会话、诊断状态/导出器、目录会话、历史协调器、播放器和媒体库 ViewModel、顺序队列运行器、加密/解密应用服务及任务 ViewModel |
+| Scoped | backend factory/代理/初始化端口、PlayerHost/SourceFactory 端口、NativeDispatcher、ResourceReaper、播放会话、诊断状态/导出器、目录会话、历史协调器、播放器和媒体库 ViewModel、顺序队列运行器、加密/解密应用服务、任务 ViewModel，以及由 Host 按调用追加的 `EncryptVideoWorkflowActionHandler` |
 | Transient | `IVideoLibraryScanner`、`IStoragePreflightProbe`、`IOutputFileTransactionFactory`、输出冲突解析器、`ISecvid03Encryptor`、`ISecvid03Decryptor`、`DecryptionOutputPathResolver` |
 
 四个 Document Strategy 分别创建单文件播放器、文件夹媒体库、视频加密器和批量解密器。所有策略都通过 `IDocumentScopeFactory.CreateDocument<TDocument>()` 创建 Document；宿主维护 `Document → IServiceScope` 映射，并在 Dock 确认关闭或宿主退出时释放。
@@ -383,6 +390,7 @@ flowchart LR
 所有权规则：
 
 - 插件模块不保存 Scope，不预创建 Document 或原生对象。
+- Workflow Handler 不属于 Document Scope；Host 为每次 invocation 创建并异步释放独立调用 Scope。
 - ViewModel 取消自己发起的工作、退订事件并使迟到回调失效，但不重复释放由 Scope 管理的注入服务。
 - `SecureVideoPlayer` 负责当前 Source 的解绑和会话收尾；`LazyPlaybackBackend` 最终释放 Document 级 PlayerHost。
 - 宿主 `DocumentControlRecycling` 保留标签切换复用，但在 Dock 确认最终关闭后逐项移除缓存并释放复合 View；播放器的无限进度动画只在真实忙碌期间启用，防止全局媒体时钟保留已关闭控件树。

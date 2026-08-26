@@ -37,6 +37,10 @@
 - **加密视频播放器**：无需密码读取公开标题和描述；输入密码后验证固定头，并把 SECVID03 暴露为可随机读取的原视频视图供 LibVLC 解码。
 - **加密视频库播放器**：异步扫描当前目录或递归子目录，监听文件变化，支持搜索、排序、状态筛选和播放历史，并用当前 Document 的公共密码在同一页面切换播放。
 
+此外，插件从 `3.1.0` 起声明一个无 UI Workflow Action：`encrypt-video` 复用相同的单文件应用服务，
+成功生成新 SECVID03 文件并始终保留源文件。它不提供删除源文件开关，密码只从 Workflow Studio 的
+当前会话 Secret 进入一次调用。
+
 核心链路如下：
 
 ```mermaid
@@ -144,12 +148,13 @@ LocalAppData。路径与位置是明文隐私数据；密码、密钥、公开�
 ## 源码入口
 
 - 插件与服务注册：[MySmallToolsPluginModule.cs](../../Plugin/MySmallToolsPluginModule.cs)
+- 非破坏性 Workflow Action：[EncryptVideoWorkflowAction.cs](../../Business/SecretVideoPlayer/Workflow/EncryptVideoWorkflowAction.cs)、[G4 实施记录](../../../../../docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md)
 - 加密与格式：[Secvid03Encryptor.cs](../../Business/SecretVideoPlayer/Encryption/Secvid03Encryptor.cs)、[Secvid03Format.cs](../../Business/SecretVideoPlayer/Container/Secvid03Format.cs)
 - 随机读取播放：[SeekableEncryptedVideoStream.cs](../../Business/SecretVideoPlayer/Container/SeekableEncryptedVideoStream.cs)、[SecureVideoPlayer.cs](../../Business/SecretVideoPlayer/Playback/SecureVideoPlayer.cs)、[PlaybackMediaLease.cs](../../Business/SecretVideoPlayer/Playback/PlaybackMediaLease.cs)、[PlaybackNativeDispatcher.cs](../../Business/SecretVideoPlayer/Playback/PlaybackNativeDispatcher.cs)、[PlaybackResourceReaper.cs](../../Business/SecretVideoPlayer/Playback/PlaybackResourceReaper.cs)
 - 批量明文导出：[Secvid03Decryptor.cs](../../Business/SecretVideoPlayer/Decryption/Secvid03Decryptor.cs)、[VideoDecryptionService.cs](../../Business/SecretVideoPlayer/Decryption/VideoDecryptionService.cs)
 - 平台与 Dock 视频表面：[PlaybackPlatform.cs](../../Business/SecretVideoPlayer/Playback/PlaybackPlatform.cs)、[EmbeddedVideoSurface.cs](../../Views/SecretVideoPlayer/EmbeddedVideoSurface.cs)、[PlaybackSurfaceCoordinator.cs](../../Views/SecretVideoPlayer/Playback/PlaybackSurfaceCoordinator.cs)
 - 文件夹视频库：[VideoLibraryScanner.cs](../../Business/SecretVideoPlayer/Library/VideoLibraryScanner.cs)、[SecretVideoLibraryViewModel.cs](../../ViewModels/SecretVideoPlayer/SecretVideoLibraryViewModel.cs)
-- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[G2ReliabilityTests.cs](../../../MySmallTools.Tests/G2ReliabilityTests.cs)、[G5BatchQueueTests.cs](../../../MySmallTools.Tests/G5BatchQueueTests.cs)、[G8P1IntegrationAcceptanceTests.cs](../../../MySmallTools.Tests/G8P1IntegrationAcceptanceTests.cs)、[G9PlatformAbstractionTests.cs](../../../MySmallTools.Tests/G9PlatformAbstractionTests.cs)
+- 自动化测试：[Secvid03Tests.cs](../../../MySmallTools.Tests/Secvid03Tests.cs)、[Secvid03SecurityTests.cs](../../../MySmallTools.Tests/Secvid03SecurityTests.cs)、[G2ReliabilityTests.cs](../../../MySmallTools.Tests/G2ReliabilityTests.cs)、[G4WorkflowActionTests.cs](../../../MySmallTools.Tests/G4WorkflowActionTests.cs)、[G5BatchQueueTests.cs](../../../MySmallTools.Tests/G5BatchQueueTests.cs)、[G8P1IntegrationAcceptanceTests.cs](../../../MySmallTools.Tests/G8P1IntegrationAcceptanceTests.cs)、[G9PlatformAbstractionTests.cs](../../../MySmallTools.Tests/G9PlatformAbstractionTests.cs)
 - 真实窗口门禁：[MySmallTools.Playback.IntegrationHarness](../../../MySmallTools.Playback.IntegrationHarness/)
 - 发布门禁：[MySmallTools.ReleaseAcceptance](../../../MySmallTools.ReleaseAcceptance/)、[Release-MySmallToolsP0.ps1](../../../../../scripts/Release-MySmallToolsP0.ps1)
 - P1 集成验收：[G8-P1-INTEGRATION-ACCEPTANCE.md](plan-history/G8-P1-INTEGRATION-ACCEPTANCE.md)、[Accept-MySmallToolsP1.ps1](../../../../../scripts/Accept-MySmallToolsP1.ps1)

@@ -1,5 +1,20 @@
 # MyAvaloniaManagement 测试说明
 
+## Workflow Action G4 MySmallTools 非破坏性加密开发门禁
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkflowActionG4.ps1 -Configuration Release
+```
+
+该入口组合 MySmallTools 既有开发回归、外部 Workflow Studio `1.1.0` 公开源门禁、两份确定性真实
+插件 ZIP，以及 Studio 的手工编辑、会话 Secret、共享校验和 Runner 路径。它验证
+`myavalonia.plugin.my-small-tools.workflow.encrypt-video` 只生成新的 SECVID03 输出并保留源文件，
+重复执行因目标冲突失败且不覆盖首次输出。
+
+该脚本明确不调用 AIFLOW、Windows CI/Smoke、Release Acceptance 或发布门禁；不会上传、打标签或
+产生发布资格。详细边界与实测证据见
+[Workflow Action G4 专用记录](../plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md)。
+
 ## Workflow Action G2 SDK、Build 与外部模板非发布门禁
 
 修改 SDK 包、通用模板、Build 消费边界、生成项目 lock file、点号名称派生或外部插件真实加载时运行：

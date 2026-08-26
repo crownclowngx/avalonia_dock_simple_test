@@ -10,6 +10,15 @@ namespace MySmallTools.Constants;
 public static class MySmallToolsContributionIds
 {
     public static readonly PluginId Plugin = new("myavalonia.plugin.my-small-tools");
+    /// <summary>
+    /// 获取“加密视频并保留源文件”工作流动作的稳定身份。
+    /// </summary>
+    /// <remarks>
+    /// 该身份永久表达非破坏性语义。后续即使增加“验证后删除源文件”的独立能力，
+    /// 也不得给本动作追加删除开关或改变此 ID 的含义。
+    /// </remarks>
+    internal static readonly WorkflowActionId EncryptVideoAction =
+        new("myavalonia.plugin.my-small-tools.workflow.encrypt-video");
     public static readonly DocumentTypeId SecretVideoPlayerDocument =
         new("myavalonia.plugin.my-small-tools.document.secret-video-player");
     public static readonly DocumentTypeId VideoEncryptorDocument =

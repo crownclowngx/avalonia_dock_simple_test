@@ -14,7 +14,7 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class MySmallToolsV3AcceptanceTests
 {
     [Fact]
-    public void 模块一次声明四个非持久化Document及精确View元数据()
+    public void 模块一次声明四个非持久化Document和一个非破坏性加密Action()
     {
         using var composition = MySmallToolsComposition.Create();
         var plugin = Assert.Single(composition.Registry.Plugins);
@@ -23,6 +23,17 @@ public sealed class MySmallToolsV3AcceptanceTests
         Assert.Equal(4, plugin.DocumentTypes.Count);
         Assert.Empty(plugin.ToolTypes);
         Assert.Empty(composition.Registry.Lifecycles);
+        Assert.Empty(composition.Registry.WorkflowActionConsumerIds);
+
+        var action = Assert.Single(composition.Registry.WorkflowActions);
+        Assert.Equal(MySmallToolsContributionIds.Plugin, action.OwnerId);
+        Assert.Equal(
+            "myavalonia.plugin.my-small-tools.workflow.encrypt-video",
+            action.Descriptor.Id.Value);
+        Assert.Equal("EncryptVideoWorkflowActionHandler", action.HandlerType.Name);
+        Assert.Equal(WorkflowActionConfirmationPolicy.OncePerRun,
+            action.Descriptor.ConfirmationPolicy);
+        Assert.Equal(["/password"], action.Descriptor.SensitiveInputPointers);
 
         AssertDocument<SecretVideoPlayerViewModel, SecretVideoPlayerView>(
             composition.Registry,

@@ -155,11 +155,15 @@ public sealed class VersionPolicyTests
                 Version.TryParse(projectVersion, out _),
                 $"{plugin.Name} PluginVersion 必须是 major.minor.patch 数字版本，" +
                 $"实际为 '{projectVersion}'。");
-            // G1 只提升 SDK 候选版本，不替四个既有业务插件发布新版本。插件继续以 3.0.0
-            // 构建，同时其 manifest 上界保持 4.0.0；这也是新 Host 加载真实 3.0 插件的兼容证据。
+            // 插件默认继续跟随 Host 产品 3.0.0。G4 只把 MySmallTools 提升为独立的 3.1.0
+            // 本地候选，用于承载首个真实业务 Action；这不是 Host 或其他插件的联动升版。
+            var expectedPluginVersion = plugin.PluginId ==
+                "myavalonia.plugin.my-small-tools"
+                    ? "3.1.0"
+                    : "3.0.0";
             AssertVersionFact(
-                $"{plugin.Name} PluginVersion/G1 非发布边界",
-                "3.0.0",
+                $"{plugin.Name} PluginVersion/当前候选边界",
+                expectedPluginVersion,
                 projectVersion);
             AssertVersionFact(
                 $"{plugin.Name} ManagedPlugin",

@@ -7,8 +7,8 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $modulePath = Join-Path $PSScriptRoot 'DocumentationGate.Core.psm1'
 Import-Module $modulePath -Force
 
-# 当前源码在 V3 G14 与 Host V4 G8 封板后完成 Workflow Action G1–G3.1。G3.1 新增 Workflow SDK、
-# Studio v2 和静态引用安全，但仍须保留 G2 已发布事实、G3 历史证据及当前未上传边界。
+# 当前源码在 V3 G14 与 Host V4 G8 封板后完成 Workflow Action G1–G4。G3.1 新增 Workflow SDK、
+# Studio v2 和静态引用安全，G4 增加首个真实非破坏性业务 Action；历史发布事实继续独立保留。
 $currentDocumentPaths = @(
     'README.md',
     'docs/README.md',
@@ -331,7 +331,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'tagCreated=false' },
     [pscustomobject]@{ Path = 'docs/plan-history/host-v4/g8-v4-sealing.md'; Fragment = 'aiflow=false' },
     [pscustomobject]@{ Path = 'docs/reference/plugin-sdk-api-compatibility.md'; Fragment = 'v3 Shipped 为 Core 127 条、UI 45 条' }
-    [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = '文档状态：G0 已重新签署、G1–G3.1 已完成实现；G4–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = '文档状态：G0 已重新签署、G1–G4 已完成实现；G5–G10 尚未实施' }
     [pscustomobject]@{ Path = 'docs/design/ai-workflow-plugin-exploration.md'; Fragment = 'sdkRoute=3.1-compatible-addition' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = '输入提交：`030a4fca408f72aed75500c105dc51af855d9af7`' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md'; Fragment = 'sdkRoute=3.1-compatible-addition' }
@@ -397,6 +397,11 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-template-1.2-publication.md'; Fragment = 'templateVersion=1.2.0' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-template-1.2-publication.md'; Fragment = '4D9357D5F482E1F69BDF0767BD57F827027A1173A815F24653307A13BAA79101' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g3.1-template-1.2-publication.md'; Fragment = 'publicOnlyVerification=true' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'Test-WorkflowActionG4.ps1' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'myavalonia.plugin.my-small-tools.workflow.encrypt-video' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'publishable=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (
@@ -472,7 +477,11 @@ Assert-DocumentationSourceSymbols `
     -ProductionFiles $productionFiles
 
 $baseline = Get-ManagementBaselineFacts `
-    -RepositoryRoot $repositoryRoot -PluginProjects $pluginProjects
+    -RepositoryRoot $repositoryRoot `
+    -PluginProjects $pluginProjects `
+    -PluginVersionOverrides @{
+        'Plugins/MySmallTools/MySmallTools/MySmallTools.csproj' = '3.1.0'
+    }
 
 $summaryRoot = Join-Path $repositoryRoot 'artifacts\test-results\Documentation'
 New-Item -ItemType Directory -Path $summaryRoot -Force | Out-Null

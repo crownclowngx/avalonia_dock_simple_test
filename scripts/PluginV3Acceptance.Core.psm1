@@ -241,14 +241,16 @@ function New-PluginV3PackageEvidence {
 function Assert-PluginV3Manifest {
     param(
         [Parameter(Mandatory)] $Manifest,
-        [Parameter(Mandatory)] [string] $PluginId
+        [Parameter(Mandatory)] [string] $PluginId,
+        [string] $PluginVersion = '3.0.0',
+        [string] $SdkMinInclusive = '3.2.0'
     )
 
     Assert-PluginV3True (
         [int]$Manifest.schemaVersion -eq 2 -and
         $Manifest.pluginId -ceq $PluginId -and
-        $Manifest.pluginVersion -ceq '3.0.0' -and
-        $Manifest.sdk.minInclusive -ceq '3.0.0' -and
+        $Manifest.pluginVersion -ceq $PluginVersion -and
+        $Manifest.sdk.minInclusive -ceq $SdkMinInclusive -and
         $Manifest.sdk.maxExclusive -ceq '4.0.0') `
         '测试 ZIP 的 manifest schema、身份、版本或 V3 SDK 区间不正确。'
 }

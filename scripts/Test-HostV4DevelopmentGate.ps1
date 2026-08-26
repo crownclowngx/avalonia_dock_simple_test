@@ -179,6 +179,8 @@ try {
                 Script = 'Test-MyPlugTestV3.ps1'
                 ResultDirectory = 'MyPlugTestV3'
                 PluginId = 'myavalonia.plugin.my-plug-test'
+                ExpectedPluginVersion = '3.0.0'
+                ExpectedSdkMinInclusive = '3.2.0'
                 ExpectedSuites = @(
                     'G9-PluginSdk', 'G9-HostUnit', 'G9-HeadlessUi',
                     'G9-PluginDock', 'G9-MyPlugTest', 'G9-FinalZip')
@@ -189,6 +191,8 @@ try {
                 Script = 'Test-DaTangAccountingHelpPlugV3.ps1'
                 ResultDirectory = 'DaTangAccountingHelpPlugV3'
                 PluginId = 'myavalonia.plugin.datang-accounting-help'
+                ExpectedPluginVersion = '3.0.0'
+                ExpectedSdkMinInclusive = '3.2.0'
                 ExpectedSuites = @(
                     'G10-PluginSdk', 'G10-HostUnit', 'G10-HeadlessUi',
                     'G10-PluginDock', 'G10-DaTang', 'G10-FinalZip')
@@ -199,6 +203,8 @@ try {
                 Script = 'Test-MySmallToolsV3.ps1'
                 ResultDirectory = 'MySmallToolsV3'
                 PluginId = 'myavalonia.plugin.my-small-tools'
+                ExpectedPluginVersion = '3.1.0'
+                ExpectedSdkMinInclusive = '3.2.0'
                 ExpectedSuites = @(
                     'G11-PluginSdk', 'G11-HostUnit', 'G11-HeadlessUi',
                     'G11-PluginDock', 'G11-MySmallTools', 'G11-FinalZip')
@@ -209,6 +215,8 @@ try {
                 Script = 'Test-BiliDownloaderV3.ps1'
                 ResultDirectory = 'BiliDownloaderV3'
                 PluginId = 'myavalonia.plugin.bili-downloader'
+                ExpectedPluginVersion = '3.0.0'
+                ExpectedSdkMinInclusive = '3.2.0'
                 ExpectedSuites = @(
                     'G12-PluginSdk', 'G12-HostUnit', 'G12-HeadlessUi',
                     'G12-PluginDock', 'G12-BiliDownloader', 'G12-FinalZip')
@@ -264,8 +272,8 @@ try {
             Assert-True (
                 [int]$manifest.schemaVersion -eq 2 -and
                 $manifest.pluginId -ceq $pluginGate.PluginId -and
-                $manifest.pluginVersion -ceq '3.0.0' -and
-                $manifest.sdkMinInclusive -ceq '3.0.0' -and
+                $manifest.pluginVersion -ceq $pluginGate.ExpectedPluginVersion -and
+                $manifest.sdkMinInclusive -ceq $pluginGate.ExpectedSdkMinInclusive -and
                 $manifest.sdkMaxExclusive -ceq '4.0.0') (
                 "$description manifest 身份、版本、schema 或 SDK 区间不正确。")
             Assert-True (

@@ -11,7 +11,8 @@
         <ManagedPlugin>true</ManagedPlugin>
         <ManagedPluginId>myavalonia.plugin.my-small-tools</ManagedPluginId>
         <ManagedPluginDirectoryName>SmallTools</ManagedPluginDirectoryName>
-        <PluginVersion>3.0.0</PluginVersion>
+        <!-- G4 新增兼容的非破坏性加密 Action；这里只形成 3.1.0 本地候选，不代表发布。 -->
+        <PluginVersion>3.1.0</PluginVersion>
         <ManagedPluginRuntimeIdentifier>win-x64</ManagedPluginRuntimeIdentifier>
         <ManagedPluginEntryType>MySmallTools.Plugin.MySmallToolsPluginModule</ManagedPluginEntryType>
         <ManagedPluginSdkMinInclusive>$(MyAvaloniaPluginSdkVersion)</ManagedPluginSdkMinInclusive>
