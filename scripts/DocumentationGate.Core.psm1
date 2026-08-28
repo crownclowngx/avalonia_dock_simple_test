@@ -354,10 +354,10 @@ function Get-ManagementBaselineFacts {
                 Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         Assert-DocumentationCondition ($shippedEntries.Count -gt 0) (
             "G14 正式 V3 SDK 的 Shipped 不能为空：$baselineRoot")
-        $expectedG1Unshipped = if ($baselineRoot.Contains(
-                'MyAvaloniaManagement.PluginSdk.UI', [StringComparison]::OrdinalIgnoreCase)) { 6 } else { 72 }
-        Assert-DocumentationCondition ($unshippedEntries.Count -eq $expectedG1Unshipped) (
-            "Workflow Action G1 的 V3 Unshipped 数量不正确：$baselineRoot，实际 $($unshippedEntries.Count)。")
+        $expectedWorkbenchG1Unshipped = if ($baselineRoot.Contains(
+                'MyAvaloniaManagement.PluginSdk.UI', [StringComparison]::OrdinalIgnoreCase)) { 66 } else { 91 }
+        Assert-DocumentationCondition ($unshippedEntries.Count -eq $expectedWorkbenchG1Unshipped) (
+            "Workbench Command G1 的 V3 Unshipped 数量不正确：$baselineRoot，实际 $($unshippedEntries.Count)。")
 
         $v2Root = Join-Path (Split-Path $baselineRoot -Parent) 'v2'
         $v2Shipped = @(Get-Content -LiteralPath (Join-Path $v2Root 'PublicAPI.Shipped.txt') |

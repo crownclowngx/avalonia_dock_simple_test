@@ -26,6 +26,9 @@ internal sealed class PluginRegistryBuilder
     private readonly List<LifecycleDeclaration> _lifecycles = [];
     private readonly List<WorkflowActionDeclaration> _workflowActions = [];
     private readonly HashSet<PluginId> _workflowConsumers = [];
+    private readonly List<WorkbenchCommandDeclaration> _workbenchCommands = [];
+    private readonly List<MenuCommandContributionDeclaration> _menuCommandContributions = [];
+    private readonly List<KeyBindingContributionDeclaration> _keyBindingContributions = [];
     private bool _built;
 
     internal void AddDocument(
@@ -70,6 +73,44 @@ internal sealed class PluginRegistryBuilder
         _lifecycles.Add(new LifecycleDeclaration(ownerId, implementationType));
     }
 
+    /// <summary>收集一条尚未提交的 Document Command 声明。</summary>
+    internal void AddDocumentCommand(
+        PluginId ownerId,
+        CommandDescriptor descriptor,
+        DocumentTypeId targetDocumentTypeId)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(ownerId);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(targetDocumentTypeId);
+        _workbenchCommands.Add(new WorkbenchCommandDeclaration(
+            ownerId,
+            descriptor,
+            targetDocumentTypeId));
+    }
+
+    /// <summary>收集一条尚未提交的菜单命令展示声明。</summary>
+    internal void AddMenuCommandContribution(
+        PluginId ownerId,
+        MenuCommandContributionDescriptor descriptor)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(ownerId);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        _menuCommandContributions.Add(new MenuCommandContributionDeclaration(ownerId, descriptor));
+    }
+
+    /// <summary>收集一条尚未提交的快捷键展示声明。</summary>
+    internal void AddKeyBindingContribution(
+        PluginId ownerId,
+        KeyBindingContributionDescriptor descriptor)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(ownerId);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        _keyBindingContributions.Add(new KeyBindingContributionDeclaration(ownerId, descriptor));
+    }
+
     /// <summary>收集一个尚未提交的 Workflow Action 声明。</summary>
     internal void AddWorkflowAction(
         PluginId ownerId,
@@ -110,6 +151,9 @@ internal sealed class PluginRegistryBuilder
         _lifecycles.AddRange(source._lifecycles);
         _workflowActions.AddRange(source._workflowActions);
         _workflowConsumers.UnionWith(source._workflowConsumers);
+        _workbenchCommands.AddRange(source._workbenchCommands);
+        _menuCommandContributions.AddRange(source._menuCommandContributions);
+        _keyBindingContributions.AddRange(source._keyBindingContributions);
     }
 
     /// <summary>返回需要在候选发布前验证构造的生命周期 singleton 类型。</summary>
@@ -136,6 +180,9 @@ internal sealed class PluginRegistryBuilder
             .Concat(_lifecycles.Select(item => item.OwnerId))
             .Concat(_workflowActions.Select(item => item.OwnerId))
             .Concat(_workflowConsumers)
+            .Concat(_workbenchCommands.Select(item => item.OwnerId))
+            .Concat(_menuCommandContributions.Select(item => item.OwnerId))
+            .Concat(_keyBindingContributions.Select(item => item.OwnerId))
             .Distinct()
             .ToArray();
         if (owners.Length > 1)
@@ -183,6 +230,8 @@ internal sealed class PluginRegistryBuilder
                     action.Descriptor.Id.Value,
                     action.HandlerType));
             }
+
+            ValidateWorkbenchCommandOwnership(expectedOwner, diagnostics);
         }
 
         AddDuplicateDiagnostics(
@@ -203,6 +252,32 @@ internal sealed class PluginRegistryBuilder
         AddDuplicateDiagnostics(
             _workflowActions, item => item.HandlerType,
             item => item.HandlerType, "WORKFLOW_ACTION_HANDLER_TYPE_DUPLICATE", diagnostics);
+        AddIdentityDuplicateDiagnostics(
+            _workbenchCommands,
+            item => item.Descriptor.CommandId,
+            HostDiagnosticCodes.WorkbenchCommandIdDuplicate,
+            diagnostics);
+
+        var placements = _menuCommandContributions
+            .Select(item => new WorkbenchPlacementDeclaration(
+                item.OwnerId,
+                item.Descriptor.PlacementId,
+                item.Descriptor.CommandId))
+            .Concat(_keyBindingContributions.Select(item => new WorkbenchPlacementDeclaration(
+                item.OwnerId,
+                item.Descriptor.PlacementId,
+                item.Descriptor.CommandId)))
+            .ToArray();
+        AddIdentityDuplicateDiagnostics(
+            placements,
+            item => item.PlacementId,
+            HostDiagnosticCodes.WorkbenchCommandPlacementIdDuplicate,
+            diagnostics);
+        AddIdentityDuplicateDiagnostics(
+            _keyBindingContributions,
+            item => (item.Descriptor.Key, item.Descriptor.Modifiers),
+            HostDiagnosticCodes.WorkbenchKeyGestureDuplicate,
+            diagnostics);
 
         if (_workflowActions.Count > 0 && _workflowConsumers.Count > 0)
         {
@@ -247,6 +322,100 @@ internal sealed class PluginRegistryBuilder
             throw new HostCompositionException(diagnostics);
         }
     }
+
+    /// <summary>校验 Command 声明与当前插件的 Document/Placement 关系。</summary>
+    /// <remarks>
+    /// 关系校验统一在 Seal 时执行，因此插件可以按适合自身代码组织的顺序声明 Document、Command
+    /// 和 Placement。这里仅比较冻结身份，不解析模型或调用插件代码。
+    /// </remarks>
+    private void ValidateWorkbenchCommandOwnership(
+        PluginId expectedOwner,
+        ICollection<HostCompositionDiagnostic> diagnostics)
+    {
+        foreach (var command in _workbenchCommands)
+        {
+            if (!BelongsToOwner(command.Descriptor.CommandId.Value, expectedOwner, "command"))
+            {
+                diagnostics.Add(IdentityDiagnostic(
+                    HostDiagnosticCodes.WorkbenchCommandIdOwnerMismatch,
+                    command.Descriptor.CommandId.Value));
+            }
+
+            if (!BelongsToOwner(command.TargetDocumentTypeId.Value, expectedOwner, "document"))
+            {
+                diagnostics.Add(IdentityDiagnostic(
+                    HostDiagnosticCodes.WorkbenchCommandTargetDocumentOwnerMismatch,
+                    command.TargetDocumentTypeId.Value));
+            }
+            else if (!_documents.Any(document =>
+                         document.OwnerId == expectedOwner &&
+                         document.Descriptor.DocumentTypeId == command.TargetDocumentTypeId))
+            {
+                diagnostics.Add(IdentityDiagnostic(
+                    HostDiagnosticCodes.WorkbenchCommandTargetDocumentNotRegistered,
+                    command.TargetDocumentTypeId.Value));
+            }
+        }
+
+        var commandIds = _workbenchCommands
+            .Where(command => command.OwnerId == expectedOwner)
+            .Select(command => command.Descriptor.CommandId)
+            .ToHashSet();
+        foreach (var placement in _menuCommandContributions
+                     .Select(item => new WorkbenchPlacementDeclaration(
+                         item.OwnerId,
+                         item.Descriptor.PlacementId,
+                         item.Descriptor.CommandId))
+                     .Concat(_keyBindingContributions.Select(item =>
+                         new WorkbenchPlacementDeclaration(
+                             item.OwnerId,
+                             item.Descriptor.PlacementId,
+                             item.Descriptor.CommandId))))
+        {
+            ValidatePlacement(expectedOwner, placement, commandIds, diagnostics);
+        }
+
+        foreach (var menu in _menuCommandContributions.Where(item =>
+                     !IsSupportedMenuLocation(item.Descriptor.LocationId)))
+        {
+            diagnostics.Add(IdentityDiagnostic(
+                HostDiagnosticCodes.WorkbenchMenuLocationUnsupported,
+                menu.Descriptor.LocationId.Value));
+        }
+    }
+
+    private static void ValidatePlacement(
+        PluginId expectedOwner,
+        WorkbenchPlacementDeclaration placement,
+        IReadOnlySet<CommandId> commandIds,
+        ICollection<HostCompositionDiagnostic> diagnostics)
+    {
+        if (!BelongsToOwner(placement.PlacementId.Value, expectedOwner, "command-placement"))
+        {
+            diagnostics.Add(IdentityDiagnostic(
+                HostDiagnosticCodes.WorkbenchCommandPlacementIdOwnerMismatch,
+                placement.PlacementId.Value));
+        }
+
+        if (!BelongsToOwner(placement.CommandId.Value, expectedOwner, "command"))
+        {
+            diagnostics.Add(IdentityDiagnostic(
+                HostDiagnosticCodes.WorkbenchCommandPlacementCommandOwnerMismatch,
+                placement.CommandId.Value));
+        }
+        else if (!commandIds.Contains(placement.CommandId))
+        {
+            diagnostics.Add(IdentityDiagnostic(
+                HostDiagnosticCodes.WorkbenchCommandPlacementCommandNotRegistered,
+                placement.CommandId.Value));
+        }
+    }
+
+    private static bool IsSupportedMenuLocation(MenuLocationId locationId) =>
+        locationId == WorkbenchMenuLocations.FileShared ||
+        locationId == WorkbenchMenuLocations.ViewShared ||
+        locationId == WorkbenchMenuLocations.ToolsShared ||
+        locationId == WorkbenchMenuLocations.HelpShared;
 
     /// <summary>判断贡献 ID 是否位于指定所有者和贡献种类的精确点分命名空间。</summary>
     /// <remarks>
@@ -295,6 +464,34 @@ internal sealed class PluginRegistryBuilder
             item => item.OwnerId,
             item => item.HandlerType,
             "WORKFLOW_ACTION_ID_DUPLICATE",
+            rejectedOwners,
+            diagnosticSink);
+        RejectGlobalConflicts(
+            _workbenchCommands,
+            item => item.Descriptor.CommandId,
+            item => item.OwnerId,
+            ResolveWorkbenchCommandContributor,
+            HostDiagnosticCodes.WorkbenchCommandIdDuplicate,
+            rejectedOwners,
+            diagnosticSink);
+
+        var workbenchPlacements = _menuCommandContributions
+            .Select(item => new GlobalWorkbenchPlacementDeclaration(
+                item.OwnerId,
+                item.Descriptor.PlacementId,
+                item.Descriptor.CommandId))
+            .Concat(_keyBindingContributions.Select(item =>
+                new GlobalWorkbenchPlacementDeclaration(
+                    item.OwnerId,
+                    item.Descriptor.PlacementId,
+                    item.Descriptor.CommandId)))
+            .ToArray();
+        RejectGlobalConflicts(
+            workbenchPlacements,
+            item => item.PlacementId,
+            item => item.OwnerId,
+            ResolveWorkbenchPlacementContributor,
+            HostDiagnosticCodes.WorkbenchCommandPlacementIdDuplicate,
             rejectedOwners,
             diagnosticSink);
 
@@ -346,6 +543,25 @@ internal sealed class PluginRegistryBuilder
         var acceptedConsumers = _workflowConsumers
             .Where(owner => !rejectedOwners.Contains(owner))
             .ToHashSet();
+        var acceptedWorkbenchCommands = _workbenchCommands
+            .Where(item => !rejectedOwners.Contains(item.OwnerId))
+            .Select(item => new PluginWorkbenchCommandRegistration(
+                item.OwnerId,
+                item.Descriptor,
+                item.TargetDocumentTypeId))
+            .ToArray();
+        var acceptedMenuCommandContributions = _menuCommandContributions
+            .Where(item => !rejectedOwners.Contains(item.OwnerId))
+            .Select(item => new PluginMenuCommandContribution(
+                item.OwnerId,
+                item.Descriptor))
+            .ToArray();
+        var acceptedKeyBindingContributions = _keyBindingContributions
+            .Where(item => !rejectedOwners.Contains(item.OwnerId))
+            .Select(item => new PluginKeyBindingContribution(
+                item.OwnerId,
+                item.Descriptor))
+            .ToArray();
 
         var acceptedPluginIds = pluginProviders?.AvailablePluginIds
             .Where(owner => !rejectedOwners.Contains(owner))
@@ -363,9 +579,28 @@ internal sealed class PluginRegistryBuilder
             acceptedTools,
             acceptedLifecycles,
             acceptedActions,
-            acceptedConsumers);
+            acceptedConsumers,
+            acceptedWorkbenchCommands,
+            acceptedMenuCommandContributions,
+            acceptedKeyBindingContributions);
         pluginProviders?.CommitRegistryResult(rejectedOwners);
         return registry;
+    }
+
+    private Type ResolveWorkbenchCommandContributor(WorkbenchCommandDeclaration command) =>
+        _documents.FirstOrDefault(document =>
+            document.OwnerId == command.OwnerId &&
+            document.Descriptor.DocumentTypeId == command.TargetDocumentTypeId)?.ModelType ??
+        typeof(PluginRegistryBuilder);
+
+    private Type ResolveWorkbenchPlacementContributor(GlobalWorkbenchPlacementDeclaration placement)
+    {
+        var command = _workbenchCommands.FirstOrDefault(item =>
+            item.OwnerId == placement.OwnerId &&
+            item.Descriptor.CommandId == placement.CommandId);
+        return command is null
+            ? typeof(PluginRegistryBuilder)
+            : ResolveWorkbenchCommandContributor(command);
     }
 
     private static void RejectGlobalConflicts<TItem, TKey>(
@@ -417,10 +652,27 @@ internal sealed class PluginRegistryBuilder
         }
     }
 
+    private static void AddIdentityDuplicateDiagnostics<TItem, TKey>(
+        IEnumerable<TItem> source,
+        Func<TItem, TKey> keySelector,
+        string code,
+        ICollection<HostCompositionDiagnostic> diagnostics)
+        where TKey : notnull
+    {
+        foreach (var group in source.GroupBy(keySelector).Where(group => group.Count() > 1))
+        {
+            diagnostics.Add(new HostCompositionDiagnostic(code, group.Key.ToString(), []));
+        }
+    }
+
     private static HostCompositionDiagnostic Diagnostic(
         string code,
         string? stableId,
         Type type) => new(code, stableId, [ToContributor(type)]);
+
+    private static HostCompositionDiagnostic IdentityDiagnostic(
+        string code,
+        string stableId) => new(code, stableId, []);
 
     private static HostCompositionContributor ToContributor(Type type) =>
         new(type.FullName ?? type.Name, type.Assembly.GetName().Name ?? "Unknown");
@@ -458,6 +710,32 @@ internal sealed class PluginRegistryBuilder
         PluginId OwnerId,
         WorkflowActionDescriptor Descriptor,
         Type HandlerType);
+
+    /// <summary>插件局部 Builder 中尚未提交的 Document Command 候选事实。</summary>
+    internal sealed record WorkbenchCommandDeclaration(
+        PluginId OwnerId,
+        CommandDescriptor Descriptor,
+        DocumentTypeId TargetDocumentTypeId);
+
+    /// <summary>插件局部 Builder 中尚未提交的菜单命令候选事实。</summary>
+    internal sealed record MenuCommandContributionDeclaration(
+        PluginId OwnerId,
+        MenuCommandContributionDescriptor Descriptor);
+
+    /// <summary>插件局部 Builder 中尚未提交的快捷键候选事实。</summary>
+    internal sealed record KeyBindingContributionDeclaration(
+        PluginId OwnerId,
+        KeyBindingContributionDescriptor Descriptor);
+
+    private sealed record WorkbenchPlacementDeclaration(
+        PluginId OwnerId,
+        CommandPlacementId PlacementId,
+        CommandId CommandId);
+
+    private sealed record GlobalWorkbenchPlacementDeclaration(
+        PluginId OwnerId,
+        CommandPlacementId PlacementId,
+        CommandId CommandId);
 
     /// <summary>全局模型映射冲突检查使用的最小 View 候选投影。</summary>
     private sealed record ViewDeclaration(

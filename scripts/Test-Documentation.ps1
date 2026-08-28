@@ -409,6 +409,24 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'windowsCi=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'releaseGate=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'publishable=false' }
+    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G1 已完成，G2–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = '状态：已完成（2026-08-28；完整非发布门禁通过）' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'Test-WorkbenchCommandG1.ps1' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'IWorkbenchDocumentCommandTarget' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'Host 覆盖率 | 行 85.88%，分支 71.23%' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'evidenceTrxFiles=27' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'evidenceCoverageFiles=46' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'Core v3 Unshipped | 91' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'UI v3 Unshipped | 66' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'aiflow=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'windowsSmoke=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'releaseAcceptance=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'publishable=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'published=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'uploaded=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'tagCreated=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

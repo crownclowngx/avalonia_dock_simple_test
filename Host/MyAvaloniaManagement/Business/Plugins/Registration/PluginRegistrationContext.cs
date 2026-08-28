@@ -16,7 +16,10 @@ namespace MyAvaloniaManagement.Business.Plugins.Registration;
 /// 拥有的列表。它不执行模型构造、不读取运行期元数据，也不决定跨插件冲突。模块返回后由宿主
 /// 立即封闭窗口，避免插件保存 <see cref="IPluginRegistration"/> 并在运行期改变对象图或 Registry。
 /// </remarks>
-internal sealed class PluginRegistration : IPluginRegistration, IWorkflowActionRegistration
+internal sealed class PluginRegistration :
+    IPluginRegistration,
+    IWorkflowActionRegistration,
+    IWorkbenchCommandRegistration
 {
     private readonly PluginRegistryBuilder _builder;
     private readonly SealableServiceCollection _services;
@@ -115,6 +118,35 @@ internal sealed class PluginRegistration : IPluginRegistration, IWorkflowActionR
     {
         EnsureWritable();
         _builder.AddWorkflowActionConsumer(PluginId);
+    }
+
+    /// <inheritdoc />
+    public void AddDocumentCommand(
+        CommandDescriptor descriptor,
+        DocumentTypeId targetDocumentTypeId)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(targetDocumentTypeId);
+        // Command 声明只冻结身份与目标 Document 类型。Target 就是运行期的 Document
+        // 模型实例，不能在组合阶段把模型、Handler 或 Scope 注册进插件容器。
+        _builder.AddDocumentCommand(PluginId, descriptor, targetDocumentTypeId);
+    }
+
+    /// <inheritdoc />
+    public void AddMenuCommandContribution(MenuCommandContributionDescriptor descriptor)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(descriptor);
+        _builder.AddMenuCommandContribution(PluginId, descriptor);
+    }
+
+    /// <inheritdoc />
+    public void AddKeyBindingContribution(KeyBindingContributionDescriptor descriptor)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(descriptor);
+        _builder.AddKeyBindingContribution(PluginId, descriptor);
     }
 
     /// <summary>指示当前声明是否显式请求 Workflow Action Gateway。</summary>

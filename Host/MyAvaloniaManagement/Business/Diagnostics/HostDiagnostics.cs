@@ -165,6 +165,26 @@ internal static class HostDiagnosticCodes
         "PLUGIN_CONTRIBUTION_SERVICE_REGISTRATION_FORBIDDEN";
     internal const string DocumentIdOwnerMismatch = "DOCUMENT_ID_OWNER_MISMATCH";
     internal const string ToolIdOwnerMismatch = "TOOL_ID_OWNER_MISMATCH";
+    internal const string WorkbenchCommandIdOwnerMismatch =
+        "WORKBENCH_COMMAND_ID_OWNER_MISMATCH";
+    internal const string WorkbenchCommandTargetDocumentOwnerMismatch =
+        "WORKBENCH_COMMAND_TARGET_DOCUMENT_OWNER_MISMATCH";
+    internal const string WorkbenchCommandTargetDocumentNotRegistered =
+        "WORKBENCH_COMMAND_TARGET_DOCUMENT_NOT_REGISTERED";
+    internal const string WorkbenchCommandPlacementIdOwnerMismatch =
+        "WORKBENCH_COMMAND_PLACEMENT_ID_OWNER_MISMATCH";
+    internal const string WorkbenchCommandPlacementCommandOwnerMismatch =
+        "WORKBENCH_COMMAND_PLACEMENT_COMMAND_OWNER_MISMATCH";
+    internal const string WorkbenchCommandPlacementCommandNotRegistered =
+        "WORKBENCH_COMMAND_PLACEMENT_COMMAND_NOT_REGISTERED";
+    internal const string WorkbenchMenuLocationUnsupported =
+        "WORKBENCH_MENU_LOCATION_UNSUPPORTED";
+    internal const string WorkbenchCommandIdDuplicate =
+        "WORKBENCH_COMMAND_ID_DUPLICATE";
+    internal const string WorkbenchCommandPlacementIdDuplicate =
+        "WORKBENCH_COMMAND_PLACEMENT_ID_DUPLICATE";
+    internal const string WorkbenchKeyGestureDuplicate =
+        "WORKBENCH_KEY_GESTURE_DUPLICATE";
     internal const string PluginContainerBuildFailed = "PLUGIN_CONTAINER_BUILD_FAILED";
     internal const string HostContainerBuildFailed = "HOST_CONTAINER_BUILD_FAILED";
     internal const string ExtensionDiscoveryFailed = "EXTENSION_DISCOVERY_FAILED";

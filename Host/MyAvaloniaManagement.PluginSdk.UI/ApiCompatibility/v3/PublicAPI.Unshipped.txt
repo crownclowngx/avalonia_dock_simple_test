@@ -1,7 +1,67 @@
 #nullable enable
+MyAvaloniaManagement.PluginSdk.UI.CommandDescriptor
+MyAvaloniaManagement.PluginSdk.UI.CommandDescriptor.CommandDescriptor(MyAvaloniaManagement.PluginSdk.CommandId! commandId, string! displayName, string! description, string! iconPath = "") -> void
+MyAvaloniaManagement.PluginSdk.UI.CommandDescriptor.CommandId.get -> MyAvaloniaManagement.PluginSdk.CommandId!
+MyAvaloniaManagement.PluginSdk.UI.CommandDescriptor.Description.get -> string!
+MyAvaloniaManagement.PluginSdk.UI.CommandDescriptor.DisplayName.get -> string!
+MyAvaloniaManagement.PluginSdk.UI.CommandDescriptor.IconPath.get -> string!
+MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId
+MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.<Clone>$() -> MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId!
+MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.CommandPlacementId(string! value) -> void
+MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.Equals(MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? other) -> bool
+MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.Value.get -> string!
+MyAvaloniaManagement.PluginSdk.UI.IWorkbenchCommandRegistration
+MyAvaloniaManagement.PluginSdk.UI.IWorkbenchCommandRegistration.AddDocumentCommand(MyAvaloniaManagement.PluginSdk.UI.CommandDescriptor! descriptor, MyAvaloniaManagement.PluginSdk.DocumentTypeId! targetDocumentTypeId) -> void
+MyAvaloniaManagement.PluginSdk.UI.IWorkbenchCommandRegistration.AddKeyBindingContribution(MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor! descriptor) -> void
+MyAvaloniaManagement.PluginSdk.UI.IWorkbenchCommandRegistration.AddMenuCommandContribution(MyAvaloniaManagement.PluginSdk.UI.MenuCommandContributionDescriptor! descriptor) -> void
 MyAvaloniaManagement.PluginSdk.UI.IWorkflowActionRegistration
 MyAvaloniaManagement.PluginSdk.UI.IWorkflowActionRegistration.AddWorkflowAction<THandler>(MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor! descriptor) -> void
 MyAvaloniaManagement.PluginSdk.UI.IWorkflowActionRegistration.UseWorkflowActionGateway() -> void
+MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor
+MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor.CommandId.get -> MyAvaloniaManagement.PluginSdk.CommandId!
+MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor.Key.get -> Avalonia.Input.Key
+MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor.KeyBindingContributionDescriptor(MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId! placementId, MyAvaloniaManagement.PluginSdk.CommandId! commandId, Avalonia.Input.Key key, Avalonia.Input.KeyModifiers modifiers) -> void
+MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor.Modifiers.get -> Avalonia.Input.KeyModifiers
+MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor.PlacementId.get -> MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId!
+MyAvaloniaManagement.PluginSdk.UI.MenuCommandContributionDescriptor
+MyAvaloniaManagement.PluginSdk.UI.MenuCommandContributionDescriptor.CommandId.get -> MyAvaloniaManagement.PluginSdk.CommandId!
+MyAvaloniaManagement.PluginSdk.UI.MenuCommandContributionDescriptor.Group.get -> string!
+MyAvaloniaManagement.PluginSdk.UI.MenuCommandContributionDescriptor.LocationId.get -> MyAvaloniaManagement.PluginSdk.UI.MenuLocationId!
+MyAvaloniaManagement.PluginSdk.UI.MenuCommandContributionDescriptor.MenuCommandContributionDescriptor(MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId! placementId, MyAvaloniaManagement.PluginSdk.CommandId! commandId, MyAvaloniaManagement.PluginSdk.UI.MenuLocationId! locationId, string! group, int order, MyAvaloniaManagement.PluginSdk.UI.MenuCommandTargetUnavailableBehavior targetUnavailableBehavior = MyAvaloniaManagement.PluginSdk.UI.MenuCommandTargetUnavailableBehavior.Hide) -> void
+MyAvaloniaManagement.PluginSdk.UI.MenuCommandContributionDescriptor.Order.get -> int
+MyAvaloniaManagement.PluginSdk.UI.MenuCommandContributionDescriptor.PlacementId.get -> MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId!
+MyAvaloniaManagement.PluginSdk.UI.MenuCommandContributionDescriptor.TargetUnavailableBehavior.get -> MyAvaloniaManagement.PluginSdk.UI.MenuCommandTargetUnavailableBehavior
+MyAvaloniaManagement.PluginSdk.UI.MenuCommandTargetUnavailableBehavior
+MyAvaloniaManagement.PluginSdk.UI.MenuCommandTargetUnavailableBehavior.Disable = 1 -> MyAvaloniaManagement.PluginSdk.UI.MenuCommandTargetUnavailableBehavior
+MyAvaloniaManagement.PluginSdk.UI.MenuCommandTargetUnavailableBehavior.Hide = 0 -> MyAvaloniaManagement.PluginSdk.UI.MenuCommandTargetUnavailableBehavior
+MyAvaloniaManagement.PluginSdk.UI.MenuLocationId
+MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.<Clone>$() -> MyAvaloniaManagement.PluginSdk.UI.MenuLocationId!
+MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.Equals(MyAvaloniaManagement.PluginSdk.UI.MenuLocationId? other) -> bool
+MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.MenuLocationId(string! value) -> void
+MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.Value.get -> string!
+MyAvaloniaManagement.PluginSdk.UI.WorkbenchCommandRegistrationExtensions
+MyAvaloniaManagement.PluginSdk.UI.WorkbenchMenuLocations
 MyAvaloniaManagement.PluginSdk.UI.WorkflowActionRegistrationExtensions
+override MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.Equals(object? obj) -> bool
+override MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.GetHashCode() -> int
+override MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.ToString() -> string!
+override MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.Equals(object? obj) -> bool
+override MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.GetHashCode() -> int
+override MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.ToString() -> string!
+static MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.Parse(string! value) -> MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId!
+static MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.TryParse(string? value, out MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? placementId) -> bool
+static MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.operator !=(MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? left, MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? right) -> bool
+static MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.operator ==(MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? left, MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? right) -> bool
+static MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.Parse(string! value) -> MyAvaloniaManagement.PluginSdk.UI.MenuLocationId!
+static MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.TryParse(string? value, out MyAvaloniaManagement.PluginSdk.UI.MenuLocationId? locationId) -> bool
+static MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.operator !=(MyAvaloniaManagement.PluginSdk.UI.MenuLocationId? left, MyAvaloniaManagement.PluginSdk.UI.MenuLocationId? right) -> bool
+static MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.operator ==(MyAvaloniaManagement.PluginSdk.UI.MenuLocationId? left, MyAvaloniaManagement.PluginSdk.UI.MenuLocationId? right) -> bool
+static MyAvaloniaManagement.PluginSdk.UI.WorkbenchCommandRegistrationExtensions.AddDocumentCommand(this MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration! registration, MyAvaloniaManagement.PluginSdk.UI.CommandDescriptor! descriptor, MyAvaloniaManagement.PluginSdk.DocumentTypeId! targetDocumentTypeId) -> void
+static MyAvaloniaManagement.PluginSdk.UI.WorkbenchCommandRegistrationExtensions.AddKeyBindingContribution(this MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration! registration, MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor! descriptor) -> void
+static MyAvaloniaManagement.PluginSdk.UI.WorkbenchCommandRegistrationExtensions.AddMenuCommandContribution(this MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration! registration, MyAvaloniaManagement.PluginSdk.UI.MenuCommandContributionDescriptor! descriptor) -> void
+static MyAvaloniaManagement.PluginSdk.UI.WorkbenchMenuLocations.FileShared.get -> MyAvaloniaManagement.PluginSdk.UI.MenuLocationId!
+static MyAvaloniaManagement.PluginSdk.UI.WorkbenchMenuLocations.HelpShared.get -> MyAvaloniaManagement.PluginSdk.UI.MenuLocationId!
+static MyAvaloniaManagement.PluginSdk.UI.WorkbenchMenuLocations.ToolsShared.get -> MyAvaloniaManagement.PluginSdk.UI.MenuLocationId!
+static MyAvaloniaManagement.PluginSdk.UI.WorkbenchMenuLocations.ViewShared.get -> MyAvaloniaManagement.PluginSdk.UI.MenuLocationId!
 static MyAvaloniaManagement.PluginSdk.UI.WorkflowActionRegistrationExtensions.AddWorkflowAction<THandler>(this MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration! registration, MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor! descriptor) -> void
 static MyAvaloniaManagement.PluginSdk.UI.WorkflowActionRegistrationExtensions.UseWorkflowActionGateway(this MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration! registration) -> void

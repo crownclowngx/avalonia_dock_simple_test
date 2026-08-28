@@ -108,14 +108,22 @@ public sealed class PluginSdkApiBaselinePolicyTests
         // Unshipped。固定数量和代表性签名可防止误写 Shipped 或遗漏本次重新签署的 Run 边界。
         Assert.Equal(127, v3Shipped.Length);
         Assert.Equal(45, uiV3Shipped.Length);
-        Assert.Equal(72, coreV3Unshipped.Length);
-        Assert.Equal(6, uiV3Unshipped.Length);
+        Assert.Equal(91, coreV3Unshipped.Length);
+        Assert.Equal(66, uiV3Unshipped.Length);
         Assert.Contains(coreV3Unshipped, entry => entry.Contains(
             "IWorkflowActionGateway.CreateRun()", StringComparison.Ordinal));
         Assert.Contains(coreV3Unshipped, entry => entry.Contains(
             "IWorkflowActionRun.InvokeAsync", StringComparison.Ordinal));
         Assert.Contains(uiV3Unshipped, entry => entry.Contains(
             "UseWorkflowActionGateway", StringComparison.Ordinal));
+        Assert.Contains(coreV3Unshipped, entry => entry.Contains(
+            "IWorkbenchDocumentCommandTarget.ExecuteAsync", StringComparison.Ordinal));
+        Assert.Contains(coreV3Unshipped, entry => entry.Contains(
+            "WorkbenchCommandStateChangedEventArgs.CommandId.get", StringComparison.Ordinal));
+        Assert.Contains(uiV3Unshipped, entry => entry.Contains(
+            "IWorkbenchCommandRegistration.AddDocumentCommand", StringComparison.Ordinal));
+        Assert.Contains(uiV3Unshipped, entry => entry.Contains(
+            "KeyBindingContributionDescriptor", StringComparison.Ordinal));
         Assert.Contains(uiV3Shipped, entry => entry.Contains(
             "IWindowContentFullscreenHost.TryPresent(Avalonia.Controls.Control! content) -> System.IDisposable?",
             StringComparison.Ordinal));

@@ -29,7 +29,14 @@ internal static class PluginRegistrationDiagnosticReporter
             item.Code == HostDiagnosticCodes.PluginHostServiceRegistrationForbidden ||
             item.Code == HostDiagnosticCodes.PluginContributionServiceRegistrationForbidden ||
             item.Code == HostDiagnosticCodes.DocumentIdOwnerMismatch ||
-            item.Code == HostDiagnosticCodes.ToolIdOwnerMismatch).ToArray();
+            item.Code == HostDiagnosticCodes.ToolIdOwnerMismatch ||
+            item.Code == HostDiagnosticCodes.WorkbenchCommandIdOwnerMismatch ||
+            item.Code == HostDiagnosticCodes.WorkbenchCommandTargetDocumentOwnerMismatch ||
+            item.Code == HostDiagnosticCodes.WorkbenchCommandTargetDocumentNotRegistered ||
+            item.Code == HostDiagnosticCodes.WorkbenchCommandPlacementIdOwnerMismatch ||
+            item.Code == HostDiagnosticCodes.WorkbenchCommandPlacementCommandOwnerMismatch ||
+            item.Code == HostDiagnosticCodes.WorkbenchCommandPlacementCommandNotRegistered ||
+            item.Code == HostDiagnosticCodes.WorkbenchMenuLocationUnsupported).ToArray();
 
         if (reportable.Length == 0)
         {
@@ -55,7 +62,14 @@ internal static class PluginRegistrationDiagnosticReporter
                 AssemblyName = entry.Assembly.GetName(),
                 StableId = diagnostic.Code is
                     HostDiagnosticCodes.DocumentIdOwnerMismatch or
-                    HostDiagnosticCodes.ToolIdOwnerMismatch
+                    HostDiagnosticCodes.ToolIdOwnerMismatch or
+                    HostDiagnosticCodes.WorkbenchCommandIdOwnerMismatch or
+                    HostDiagnosticCodes.WorkbenchCommandTargetDocumentOwnerMismatch or
+                    HostDiagnosticCodes.WorkbenchCommandTargetDocumentNotRegistered or
+                    HostDiagnosticCodes.WorkbenchCommandPlacementIdOwnerMismatch or
+                    HostDiagnosticCodes.WorkbenchCommandPlacementCommandOwnerMismatch or
+                    HostDiagnosticCodes.WorkbenchCommandPlacementCommandNotRegistered or
+                    HostDiagnosticCodes.WorkbenchMenuLocationUnsupported
                         ? diagnostic.StableId
                         : null,
             });

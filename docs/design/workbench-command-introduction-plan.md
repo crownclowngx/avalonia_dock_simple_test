@@ -1,6 +1,6 @@
 # MyAvaloniaManagement Workbench Command 引入评审与实施任务书
 
-> 状态：实施中；G0 已冻结基线、语义和 public API 决策，G1–G10 尚未实施。本文不表示 Command、Context、菜单贡献、快捷键贡献或
+> 状态：实施中；G0–G1 已完成，G2–G10 尚未实施。当前只有 Command 候选契约、注册声明与冻结事实；本文不表示 Context、菜单贡献、快捷键贡献或
 > Command Palette 已进入生产。
 > 评审日期：2026-08-27。
 > 事实基线：[主项目内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、
@@ -749,6 +749,8 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 
 ### G1：建立兼容新增的 Command 契约与注册声明
 
+- **状态**：已完成（2026-08-28）；实际证据见
+  [G1 兼容契约与注册声明实施记录](../plan-history/workbench-command/g1-command-contracts-registration-declarations.md)。
 - **目标**：加入最小 Core/UI public 候选和 Host 注册收集能力，但不创建 Menu、KeyBinding 或执行插件命令。
 - **Core 变化**：`CommandId`、Document Target 和状态变更契约；保持 BCL-only。
 - **UI 变化**：Command/Menu/KeyBinding Descriptor、可选注册接口和扩展方法；不修改 `IPluginRegistration` 签名。
@@ -892,13 +894,13 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 
 ### 10.1 身份、SDK 与注册
 
-- [ ] `CommandId` 遵守稳定 ID 规则，Host/插件所有权和碰撞政策有正负例；
-- [ ] Core SDK 保持 BCL-only，UI 描述符不创建 Host 控件；
+- [x] `CommandId` 遵守稳定 ID 规则，Host/插件所有权和碰撞政策有正负例；
+- [x] Core SDK 保持 BCL-only，UI 描述符不创建 Host 控件；
 - [ ] v3 Shipped 未改写，新 API 按现有政策进入并最终签署；
-- [ ] `IPluginRegistration` 原签名不变，可选扩展在旧 Host 上明确失败；
-- [ ] 旧插件在新 Host 上正常加载且命令贡献为空；
-- [ ] 插件不能为 Host/其他插件 Document 注册命令或 Placement；
-- [ ] Registry 只保存不可变事实，不持有 Target、Provider、Scope、Control 或 `ICommand`。
+- [x] `IPluginRegistration` 原签名不变，可选扩展在旧 Host 上明确失败；
+- [x] 旧插件在新 Host 上正常加载且命令贡献为空；
+- [x] 插件不能为 Host/其他插件 Document 注册命令或 Placement；
+- [x] Registry 只保存不可变事实，不持有 Target、Provider、Scope、Control 或 `ICommand`。
 
 ### 10.2 Context、状态与执行
 
@@ -963,9 +965,9 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 Workbench Command v1 只有在以下问题全部回答“是”后才算完成：
 
 1. [x] G0 从干净、可追溯的 Host 与 WorkflowStudio revision 开始；ClassicGame 明确未签署并留到 G8。
-2. [ ] Command、Context、Target、UI Contribution 与 Workflow Action 的语义边界已经冻结。
-3. [ ] Core/UI SDK 新 API 是兼容新增，旧 Shipped 未改写，旧插件继续正常加载。
-4. [ ] Command/Placement 身份、owner、目标 Document 和冲突政策有完整正负例。
+2. [x] Command、Context、Target、UI Contribution 与 Workflow Action 的语义边界已经冻结。
+3. [x] Core/UI SDK 新 API 是兼容新增，旧 Shipped 未改写，旧插件继续正常加载。
+4. [x] Command/Placement 身份、owner、目标 Document 和冲突政策有完整正负例。
 5. [ ] Context v1 只包含 Host 可信活动 Document 事实，没有对象世界或服务定位器泄漏。
 6. [ ] 活动 Document 切换、同类型多实例和 Target 状态变化都路由到正确当前实例。
 7. [ ] Document Scope 隐藏、ClosingToken、Adapter/View/模型释放顺序保持不变。

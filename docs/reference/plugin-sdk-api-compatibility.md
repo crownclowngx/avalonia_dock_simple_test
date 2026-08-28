@@ -8,11 +8,13 @@
 > 当前 v3 Shipped 为 Core 127 条、UI 45 条，这是后续兼容审阅的正式基线。
 > Host V4 G8 已签署 Host internal 收口，但没有产生 SDK 4.0.0。Workflow Action G0 已重新签署 Run 与
 > Consumer 进度出口，G1 已把兼容新增实现并发布为 Core/UI SDK `3.1.0`：v3 Shipped 仍为 Core 127、
-> UI 45，v3 Unshipped 为 Core 72、UI 6；manifest、Document、Layout 和数据根协议不变。结论仍为
+> UI 45，当时 v3 Unshipped 为 Core 72、UI 6；manifest、Document、Layout 和数据根协议不变。结论仍为
 > `sdkRoute=3.1-compatible-addition`。
 > Workflow Action G2 已进一步证明 Core/UI `3.1.0` nupkg、Templates `1.1.0`、三个生成项目 lock file
 > 和外部双 ALC 调用能够闭合；两者现已发布到 NuGet.org。Build 协议不变并继续精确消费 `1.1.2`。
-> 本次兼容次版本发布没有改写 G2 已签署的 v3 基线分类，仍为 Shipped 127/45、Unshipped 72/6。
+> 本次兼容次版本发布没有改写 G2 已签署的 v3 基线分类，当时仍为 Shipped 127/45、Unshipped 72/6。
+> Workbench Command G1 随后只在源码中加入兼容候选：Shipped 仍为 127/45，当前 Unshipped 为
+> Core 91、UI 66；源码版本仍为 3.2.0，3.3.0 打包和外部传播留到 G6。
 
 ## 1. 权威源与程序集边界
 
@@ -54,6 +56,10 @@ Workflow Action G1 的当前状态是 v3 Shipped 127/45、Unshipped 72/6。新�
 `IWorkflowActionGateway.CreateRun()`、`IWorkflowActionRun.InvokeAsync` 与 UI 注册扩展；旧 Shipped 没有
 改写。内核维护入口为 `scripts/Test-WorkflowActionG1.ps1`；包、模板和外部传播入口为
 `scripts/Test-WorkflowActionG2.ps1`。
+
+Workbench Command G1 在该历史基础上新增 `CommandId`、Document Target、Command/Menu/KeyBinding
+Descriptor 和可选注册扩展，当前状态为 v3 Shipped 127/45、Unshipped 91/66。G1 只建立 Host Registry
+冻结事实，不建立 Executor 或 Avalonia 投影；统一非发布入口为 `scripts/Test-WorkbenchCommandG1.ps1`。
 
 ## 3. 日常变更流程
 

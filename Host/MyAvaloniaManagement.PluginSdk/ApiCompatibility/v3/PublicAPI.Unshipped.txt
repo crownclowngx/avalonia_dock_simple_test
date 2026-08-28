@@ -1,4 +1,13 @@
 #nullable enable
+MyAvaloniaManagement.PluginSdk.CommandId
+MyAvaloniaManagement.PluginSdk.CommandId.<Clone>$() -> MyAvaloniaManagement.PluginSdk.CommandId!
+MyAvaloniaManagement.PluginSdk.CommandId.CommandId(string! value) -> void
+MyAvaloniaManagement.PluginSdk.CommandId.Equals(MyAvaloniaManagement.PluginSdk.CommandId? other) -> bool
+MyAvaloniaManagement.PluginSdk.CommandId.Value.get -> string!
+MyAvaloniaManagement.PluginSdk.IWorkbenchDocumentCommandTarget
+MyAvaloniaManagement.PluginSdk.IWorkbenchDocumentCommandTarget.CanExecute(MyAvaloniaManagement.PluginSdk.CommandId! commandId) -> bool
+MyAvaloniaManagement.PluginSdk.IWorkbenchDocumentCommandTarget.CommandStateChanged -> System.EventHandler<MyAvaloniaManagement.PluginSdk.WorkbenchCommandStateChangedEventArgs!>?
+MyAvaloniaManagement.PluginSdk.IWorkbenchDocumentCommandTarget.ExecuteAsync(MyAvaloniaManagement.PluginSdk.CommandId! commandId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 MyAvaloniaManagement.PluginSdk.IWorkflowActionGateway
 MyAvaloniaManagement.PluginSdk.IWorkflowActionGateway.CreateRun() -> MyAvaloniaManagement.PluginSdk.IWorkflowActionRun!
 MyAvaloniaManagement.PluginSdk.IWorkflowActionGateway.GetAvailableActions() -> System.Collections.Generic.IReadOnlyList<MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor!>!
@@ -6,6 +15,9 @@ MyAvaloniaManagement.PluginSdk.IWorkflowActionHandler
 MyAvaloniaManagement.PluginSdk.IWorkflowActionHandler.InvokeAsync(System.Text.Json.JsonElement arguments, MyAvaloniaManagement.PluginSdk.WorkflowActionContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Text.Json.JsonElement>
 MyAvaloniaManagement.PluginSdk.IWorkflowActionRun
 MyAvaloniaManagement.PluginSdk.IWorkflowActionRun.InvokeAsync(MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationRequest! request, System.IProgress<MyAvaloniaManagement.PluginSdk.WorkflowActionProgress!>? progress, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<MyAvaloniaManagement.PluginSdk.WorkflowActionInvocationResult!>!
+MyAvaloniaManagement.PluginSdk.WorkbenchCommandStateChangedEventArgs
+MyAvaloniaManagement.PluginSdk.WorkbenchCommandStateChangedEventArgs.CommandId.get -> MyAvaloniaManagement.PluginSdk.CommandId!
+MyAvaloniaManagement.PluginSdk.WorkbenchCommandStateChangedEventArgs.WorkbenchCommandStateChangedEventArgs(MyAvaloniaManagement.PluginSdk.CommandId! commandId) -> void
 MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
 MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy.EveryInvocation = 2 -> MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
 MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy.Never = 0 -> MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
@@ -64,9 +76,16 @@ MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags.None = 0 -> MyAvaloniaMan
 MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags.ReadsLocalFiles = 2 -> MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
 MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags.UsesNetwork = 1 -> MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
 MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags.WritesLocalFiles = 4 -> MyAvaloniaManagement.PluginSdk.WorkflowActionRiskFlags
+override MyAvaloniaManagement.PluginSdk.CommandId.Equals(object? obj) -> bool
+override MyAvaloniaManagement.PluginSdk.CommandId.GetHashCode() -> int
+override MyAvaloniaManagement.PluginSdk.CommandId.ToString() -> string!
 override MyAvaloniaManagement.PluginSdk.WorkflowActionId.Equals(object? obj) -> bool
 override MyAvaloniaManagement.PluginSdk.WorkflowActionId.GetHashCode() -> int
 override MyAvaloniaManagement.PluginSdk.WorkflowActionId.ToString() -> string!
+static MyAvaloniaManagement.PluginSdk.CommandId.Parse(string! value) -> MyAvaloniaManagement.PluginSdk.CommandId!
+static MyAvaloniaManagement.PluginSdk.CommandId.TryParse(string? value, out MyAvaloniaManagement.PluginSdk.CommandId? commandId) -> bool
+static MyAvaloniaManagement.PluginSdk.CommandId.operator !=(MyAvaloniaManagement.PluginSdk.CommandId? left, MyAvaloniaManagement.PluginSdk.CommandId? right) -> bool
+static MyAvaloniaManagement.PluginSdk.CommandId.operator ==(MyAvaloniaManagement.PluginSdk.CommandId? left, MyAvaloniaManagement.PluginSdk.CommandId? right) -> bool
 static MyAvaloniaManagement.PluginSdk.WorkflowActionId.Parse(string! value) -> MyAvaloniaManagement.PluginSdk.WorkflowActionId!
 static MyAvaloniaManagement.PluginSdk.WorkflowActionId.TryParse(string? value, out MyAvaloniaManagement.PluginSdk.WorkflowActionId? actionId) -> bool
 static MyAvaloniaManagement.PluginSdk.WorkflowActionId.operator !=(MyAvaloniaManagement.PluginSdk.WorkflowActionId? left, MyAvaloniaManagement.PluginSdk.WorkflowActionId? right) -> bool

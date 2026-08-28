@@ -1,7 +1,8 @@
 # MyAvaloniaManagement Plugin SDK
 
 本包是 Managed Plugin 的平台无关 Core 契约程序集。它只依赖 .NET BCL，并提供稳定身份、
-Document 模型、原生 JSON 内容、关闭观察和插件生命周期。
+Document 模型、原生 JSON 内容、关闭观察、插件生命周期，以及 Workbench Command 的平台无关身份与
+Document Target 候选契约。
 
 Core 不引用 Avalonia、Dock、Newtonsoft、Microsoft DI 或 Host 实现。需要声明模块、私有服务以及
 Document/Tool 与 Avalonia View 映射的插件，应引用同版本 `MyAvaloniaManagement.PluginSdk.UI`。
@@ -18,18 +19,24 @@ keyed DI 注册影子覆盖。G5 已删除 SDK 通用事件总线；需要消息
 Revision 保存竞争、严格内容读取、关闭令牌与 Lifecycle/readiness 可沿最终 Registry、Workspace 和
 Dock Adapter 链工作；G13 已证明旧 public 入口和运行闭包零残留，没有新增 SDK public API。
 
-当前 SDK 版本为 3.1.0；既有 Core 127/UI 45 条仍位于 v3 Shipped，Workflow Action 兼容新增
-进入 Core/UI v3 Unshipped 72/6，v2 Shipped 历史文本保持不变。Core 新增 JSON 边界的 Handler、
+当前 SDK 源码版本仍为 3.2.0；既有 Core 127/UI 45 条仍位于 v3 Shipped，Workflow Action 与
+Workbench Command G1 兼容新增进入 Core/UI v3 Unshipped 91/66，v2 Shipped 历史文本保持不变。
+Workflow Action 的 Core 契约提供 JSON 边界的 Handler、
 caller-bound Gateway、显式 Run、结构化请求/终态与受限进度；不包含 Host、工作流定义或 AI 类型。
+
+Workbench Command G1 新增 `CommandId`、单命令状态事件和窄
+`IWorkbenchDocumentCommandTarget`。Target 由当前 Document 模型实例可选实现，只接收稳定身份和取消令牌，
+不取得 Context、Provider、Control 或 Dock。G1 只冻结候选契约与注册事实，尚没有 Catalog、Executor、
+菜单、快捷键或 Palette 生产入口，也尚未形成 3.3.0 候选包。
 
 Provider 的私有 DTO 不穿越公共边界。Consumer 通过 Gateway 创建绑定可信 CallerId 的 Run，不能提交
 CallerId、OwnerId、RunId 或授权结果；Run 的 Dispose 会取消并等待本 Run 的在途调用。
 
-G2 已把该能力传播到 Templates `1.1.0`，并以真实 nupkg、三个 lock file、外部 Provider/Consumer
+Workflow Action G2 已把该能力传播到模板，并以真实 nupkg、三个 lock file、外部 Provider/Consumer
 和 Host 实调通过门禁。SDK 与模板本次同步提升，Build 协议未变化并继续精确使用 `1.1.2`：
 
 ```xml
-<PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.1.0]" />
-<PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.1.0]" />
+<PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.2.0]" />
+<PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.2.0]" />
 <PackageReference Include="MyAvaloniaManagement.Plugin.Build" Version="[1.1.2]" PrivateAssets="all" />
 ```
