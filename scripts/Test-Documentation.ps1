@@ -409,7 +409,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'windowsCi=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'releaseGate=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'publishable=false' }
-    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G6 已完成，G7–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G7 已完成，G8–G10 尚未实施' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = '状态：已完成（2026-08-28；完整非发布门禁通过）' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'Test-WorkbenchCommandG1.ps1' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'IWorkbenchDocumentCommandTarget' }
@@ -483,6 +483,22 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md'; Fragment = 'windowsSmoke=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md'; Fragment = 'hostReleaseGate=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md'; Fragment = 'tagCreated=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'Test-WorkbenchCommandG7.ps1' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'WorkflowStudio 输入提交：`0b3a3f55f43e66a914099f011dd344e7f556b56e`' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = '单元测试 **54/54**' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'PluginTests **2/2**' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'Headless UI **1/1**' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = '86.98% / 72.39%' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'aiflow=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'windowsSmoke=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'releaseAcceptance=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'publishable=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'published=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'uploaded=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'signed=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'tagCreated=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

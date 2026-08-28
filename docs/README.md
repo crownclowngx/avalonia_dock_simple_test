@@ -4,7 +4,8 @@
 
 ## 快速开始
 
-> 当前 G6 基线：Core/UI SDK `3.3.0`、Workflow SDK `1.0.0`、Build `1.1.2` 与 Templates `1.3.0`。
+> 当前 Workbench Command G7 基线：Core/UI SDK `3.3.0`、Workflow SDK `1.0.0`、Build `1.1.2`、
+> Templates `1.3.0` 与外部 WorkflowStudio `1.2.0`。
 > 外部作者可以在不克隆 Host 源码的情况下使用 `dotnet new myavalonia-plugin` 创建、独立调试、测试和
 > 打包插件。manifest schema 仍为 2，当前交付平台为 Windows x64。
 >
@@ -41,7 +42,8 @@ Managed Plugin 快速开始入口：
 | [Workflow Action G3.1 协议一致性](./plan-history/workflow-action/g3.1-workflow-protocol-consistency.md) | Workflow SDK、双 revision、共享 Schema/路径与静态引用安全 | 已完成并发布；纯公开源复验通过 |
 | [G3.1 Templates 1.2.0 发布补充](./plan-history/workflow-action/g3.1-template-1.2-publication.md) | SDK 3.2 模板传播、lock file、候选/公开源探针与不可变制品哈希 | 已发布；公开安装、构建、测试与打包通过 |
 | [Workflow Action G4 MySmallTools 加密](./plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md) | 非破坏性 Action 合同、SOLID、真实双 ZIP、文件安全与非发布证据 | 已完成；本地开发门禁 |
-| [Workbench Command 引入任务书](./design/workbench-command-introduction-plan.md) | CommandId、活动 Document Target、Context v1、菜单/快捷键贡献、外部插件与 Palette 的 G0–G10 计划 | 实施中；G0–G6 已完成，G7–G10 尚未实施 |
+| [Workbench Command 引入任务书](./design/workbench-command-introduction-plan.md) | CommandId、活动 Document Target、Context v1、菜单/快捷键贡献、外部插件与 Palette 的 G0–G10 计划 | 实施中；G0–G7 已完成，G8–G10 尚未实施 |
+| [Workbench Command G7 WorkflowStudio 三命令](./plan-history/workbench-command/g7-workflow-studio-three-real-commands.md) | 外部 Studio Validate/Run/Cancel、真实 ZIP、双 ALC、业务 Action 与 Headless UI | 已完成；本地非发布门禁通过 |
 | [Workbench Command G6 SDK 3.3/模板/独立消费](./plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md) | SDK 3.3、Templates 1.3、真实 lock file、生成项目、双 ALC 与新旧兼容矩阵 | 已完成；本地门禁与公开源复验结果见专项记录 |
 | [Workbench Command G0 基线与语义](./plan-history/workbench-command/g0-facts-semantics-public-api.md) | Host/SDK/外部 Studio 基线、语义、候选 API 与非发布边界 | 已完成；不修改生产源码 |
 | [Workbench Command G1 契约与注册声明](./plan-history/workbench-command/g1-command-contracts-registration-declarations.md) | Core/UI 候选契约、可选注册、所有权与不可变 Registry | 已完成；完整非发布门禁通过 |

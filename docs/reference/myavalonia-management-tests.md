@@ -1,5 +1,30 @@
 # MyAvaloniaManagement 测试说明
 
+## Workbench Command G7 WorkflowStudio 三条真实命令非发布门禁
+
+跨仓库聚合入口为：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG7.ps1 -Configuration Release
+```
+
+入口先复用 Host V4 G7 本地开发门禁，再调用外部 Studio 的 G7 独立门禁。Studio 使用
+纯 NuGet.org、精确 `3.3.0` Core/UI 与 locked restore，执行 Release 零警告构建、格式、**54/54** 单测、
+**89.78% / 83.95%** 总覆盖率、`MainDocument.cs` **91.39%** 行覆盖率、Standalone 4 次 Fake 调用、两轮
+确定性 4 文件 ZIP、manifest/共享 SDK/Secret/文档检查。
+
+Host 侧把同一真实 `1.2.0` ZIP 交给生产 Loader、独立 ALC、Plugin Provider、Registry 和 Document Scope，
+并与第二个独立 ALC 中的 WorkflowActionG1 Provider 组合。定向 PluginTests 为 **2/2**，证明三条声明、两个
+Studio Document 隔离以及 Run 进入 caller-bound Gateway 并完成真实跨 ALC echo Action；Headless UI 为
+**1/1**，证明 Host-owned Tools 菜单与 `F6`/`F5`/`Shift+F5` 共用命令投影、当前实例切换、非目标隐藏和释放。
+
+当前 Host 基础门禁为 **573/573**，行/分支覆盖率 **86.98% / 72.39%**。机器摘要位于
+`artifacts/test-results/WorkbenchCommandG7/summary.json`，Studio 摘要位于其仓库的
+`artifacts/test-results/WorkflowStudioG7/summary.json`。两个入口都固定 `aiflow=false`、`windowsCi=false`、
+`windowsSmoke=false`、`releaseAcceptance=false`、`releaseGate=false`、`publishable=false`、
+`published=false`、`uploaded=false`、`signed=false`、`tagCreated=false`。完整设计与回滚见
+[G7 专项记录](../plan-history/workbench-command/g7-workflow-studio-three-real-commands.md)。
+
 ## Workbench Command G6 SDK 3.3、模板发布与独立消费门禁
 
 本地候选与兼容矩阵入口为：

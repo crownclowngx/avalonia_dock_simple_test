@@ -1,8 +1,9 @@
 # MyAvaloniaManagement Workbench Command 引入评审与实施任务书
 
-> 状态：实施中；G0–G6 已完成，G7–G10 尚未实施。当前已有 Command 候选契约、注册声明、
+> 状态：实施中；G0–G7 已完成，G8–G10 尚未实施。当前已有 Command 候选契约、注册声明、
 > Catalog/Executor、Context v1、活动 Document Target 路由、关闭门控、Host 打开/保存 Presentation，
-> 以及 Host-owned 声明式菜单/快捷键投影闭环；本文不表示 SDK 候选包、外部插件命令或 Command Palette 已进入生产。
+> Host-owned 声明式菜单/快捷键投影闭环，以及 WorkflowStudio 三条本地非发布真实命令；ClassicGame 与
+> Command Palette 尚未实施，G7 也不表示外部 Studio 已上传或发布。
 > 评审日期：2026-08-27。
 > 事实基线：[主项目内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、
 > [主项目设计方法论与取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、
@@ -836,6 +837,8 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 
 ### G7：迁移外部 WorkflowStudio 三条真实命令
 
+- **状态**：已完成（2026-08-28）；实际证据见
+  [G7 WorkflowStudio 三条真实命令实施记录](../plan-history/workbench-command/g7-workflow-studio-three-real-commands.md)。
 - **目标**：在独立 WorkflowStudio 仓库提升 Validate/Run/Cancel，并保持 Runner/Workflow Action 分层不变。
 - **变更**：`MainDocument` 实现 Document Target；声明三条 Command、指向 Host 末端共享位置的 Menu Placement
   和经 G0 确认的快捷键；内部继续复用现有编辑协调器、RunSession 和状态通知。
@@ -940,9 +943,9 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 
 ### 10.4 WorkflowStudio 与 ClassicGame
 
-- [ ] Workflow Validate/Run/Cancel 的 idle/running 状态与现有业务一致；
-- [ ] Run 继续进入 WorkflowRunSession/WorkflowAction Gateway，没有绕过治理；
-- [ ] 两个 Studio Document 的运行/取消状态彼此独立；
+- [x] Workflow Validate/Run/Cancel 的 idle/running 状态与现有业务一致；
+- [x] Run 继续进入 WorkflowRunSession/WorkflowAction Gateway，没有绕过治理；
+- [x] 两个 Studio Document 的运行/取消状态彼此独立；
 - [ ] ClassicGame 首样本的 Restart/Undo 只作用当前游戏实例；
 - [ ] 两个同类型游戏 Document 可形成不同 CanUndo 并在切换后立即更新；
 - [ ] 未提升的十一个游戏局部命令和 WorkflowStudio 编辑命令保持原 UI 行为；
@@ -990,7 +993,7 @@ Workbench Command v1 只有在以下问题全部回答“是”后才算完成�
 8. [x] MainWindow 打开/保存旧命令已删除，菜单与 `Ctrl+S` 统一进入 Executor。
 9. [x] Host 与插件菜单/快捷键均由不可变 Contribution 投影，插件不拥有 Avalonia UI 对象。
 10. [x] Host 快捷键和插件冲突采用明确失败关闭政策，不依赖加载顺序。
-11. [ ] WorkflowStudio Validate/Run/Cancel 保持 Workflow Action 治理和多实例隔离。
+11. [x] WorkflowStudio Validate/Run/Cancel 保持 Workflow Action 治理和多实例隔离。
 12. [ ] ClassicGame Restart/Undo 证明当前实例路由和动态 CanUndo，没有全局静态状态。
 13. [ ] Command Palette 复用同一 Catalog/State/Executor，移除 Palette 不影响基础 Command 系统。
 14. [ ] 主题、Document Creation、Tool Toggle、Toolbar、ContextMenu 和用户快捷键设置没有被偷偷提前实现。

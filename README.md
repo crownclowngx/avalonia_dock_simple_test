@@ -226,6 +226,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Workflow Action G1 Host 内核](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)：查看 Run、Schema、授权、Scope、关闭门控、测试矩阵与非发布边界；
 - [Workflow Action G2 SDK/Build/模板传播](./docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)：查看包、lock file、点号名称、双 ALC 外部调用、制品哈希、非发布门禁历史与正式上传记录；
 - [Workflow Action G3 外部 Studio](./docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md)：查看外部仓库 revision、SOLID 边界、Standalone Fake 闭环、候选 Host 组合和非发布证据；
+- [Workbench Command G7 外部 WorkflowStudio 三命令](./docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md)：查看 Validate/Run/Cancel 状态、真实 ZIP/双 ALC、跨 ALC Action、Headless UI 与非发布证据；
 - [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G14 最终目标、阶段和签署矩阵；
 - [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)：查看正式 API、SOLID、两轮隔离门禁、制品和回滚边界；
 - [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)：查看零残留、真实包负例、四插件矩阵和非发布证据；
@@ -277,6 +278,15 @@ pwsh -NoProfile -File .\scripts\Test-WorkflowActionG2.ps1 -Configuration Release
 
 该入口只在本地候选源打包 SDK `3.1.0` 与 Templates `1.1.0`，Build `1.1.2` 从 NuGet.org 精确还原；
 不运行 AIFLOW、Windows CI/Smoke、ReleaseAcceptance 或发布门禁，也不上传 NuGet。
+
+修改外部 WorkflowStudio 的 Validate/Run/Cancel、菜单/快捷键声明或 Host 当前实例路由时运行 G7 非发布门禁：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG7.ps1 -Configuration Release
+```
+
+该入口组合现有 Host 本地开发门禁、Studio 公开源独立门禁、真实 ZIP/双 ALC/caller-bound Action 和 Headless
+UI；固定记录 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseGate=false`，不执行发布动作。
 
 修改 Host/SDK 生产边界、插件入口、构建 Target、打包或兼容规则时运行 G13 非发布聚合门禁：
 
