@@ -30,5 +30,14 @@
                             HorizontalContentAlignment="Stretch"
                             VerticalContentAlignment="Stretch" />
         </Border>
+        <Border x:Name="CommandPaletteLayer"
+                IsVisible="False"
+                Background="#99000000"
+                ZIndex="20000">
+            <views:CommandPaletteView x:Name="CommandPaletteHost"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Top"
+                                      Margin="24,72,24,24" />
+        </Border>
     </Grid>
 </Window>

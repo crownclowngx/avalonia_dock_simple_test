@@ -24,6 +24,9 @@ internal interface IWorkbenchCommandPresentationBindings
 
     /// <summary>获取已经完成 Host 保留项和插件冲突治理的快捷键投影。</summary>
     IWorkbenchKeyBindingProjection KeyBindings { get; }
+
+    /// <summary>获取可搜索、并复用同一命令 Adapter 的最小 Command Palette 投影。</summary>
+    IWorkbenchCommandPaletteProjection Palette { get; }
 }
 
 /// <summary>为 XAML 同时提供执行入口和显式 Enabled 投影的窄命令端口。</summary>

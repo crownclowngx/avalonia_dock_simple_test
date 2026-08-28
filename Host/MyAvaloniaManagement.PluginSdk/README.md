@@ -30,7 +30,7 @@ Workbench Command G1 新增 `CommandId`、单命令状态事件和窄
 Handler、统一 Executor、脱敏诊断和 10 秒关闭门控；SDK public API 与 G1 完全相同。活动 Document Context、
 G3 已完成活动 Document Context 与插件 Target 路由，G4/G5 已把 Host 打开、保存及声明式菜单/快捷键统一到
 同一个 Executor。G6 冻结 3.3.0 候选包并用独立模板、真实插件 ZIP、双 ALC 及新旧 Host 负例验证外部消费；
-Command Palette 仍未进入生产。
+G9 又在 Host internal 层实现最小 Command Palette；它没有增加或修改 Plugin SDK public API。
 
 Provider 的私有 DTO 不穿越公共边界。Consumer 通过 Gateway 创建绑定可信 CallerId 的 Run，不能提交
 CallerId、OwnerId、RunId 或授权结果；Run 的 Dispose 会取消并等待本 Run 的在途调用。

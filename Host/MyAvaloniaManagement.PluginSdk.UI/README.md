@@ -38,7 +38,8 @@ Workbench Command G1 继续使用同一兼容模式：`IPluginRegistration` 原�
 都不保存 Target、Provider、Control、`MenuItem`、`KeyBinding`、`ICommand` 或回调。G2 已在 Host internal
 建立无 UI 合并 Catalog 和 Executor；G3–G5 已完成活动 Document Target 路由、Host 打开/保存迁移，以及
 Host-owned Menu/KeyBinding Projection。当前候选版本为 3.3.0，public API 保持 v3 Shipped 127/45、
-Unshipped 91/66；G6 使用真实 nupkg、模板生成项目和独立 ALC 验证外部传播。Palette 仍不在本阶段范围内。
+Unshipped 91/66；G6 使用真实 nupkg、模板生成项目和独立 ALC 验证外部传播。G9 的最小 Palette 完全位于
+Host internal Presentation 层，没有增加 UI SDK public API。
 
 推荐通过解决方案模板开始外部插件开发：
 

@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:commands="using:MyAvaloniaManagement.Business.Presentation.Commands"
+             x:Class="MyAvaloniaManagement.Views.CommandPaletteView"
+             Focusable="False">
+    <Border Width="640"
+            MaxHeight="520"
+            Padding="16"
+            CornerRadius="10"
+            BorderThickness="1"
+            BorderBrush="{DynamicResource DockThemeBorderLowBrush}"
+            Background="{DynamicResource DockThemeBackgroundBrush}"
+            BoxShadow="0 12 32 0 #66000000">
+        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+            <TextBlock Text="命令面板"
+                       FontSize="18"
+                       FontWeight="SemiBold" />
+            <TextBox x:Name="SearchBox"
+                     Grid.Row="1"
+                     PlaceholderText="搜索命令名称或说明"
+                     AutomationProperties.Name="命令面板搜索" />
+            <Grid Grid.Row="2" MinHeight="80">
+                <ListBox x:Name="PaletteItems"
+                         MaxHeight="400"
+                         AutomationProperties.Name="命令面板结果">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="commands:WorkbenchCommandPaletteProjectionEntry">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Margin="4,6">
+                                <StackPanel Spacing="2">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   FontWeight="SemiBold" />
+                                        <TextBlock Text="不可用"
+                                                   IsVisible="{Binding !IsEnabled}"
+                                                   Opacity="0.65" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Description}"
+                                               TextWrapping="Wrap"
+                                               Opacity="0.72" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding ShortcutText}"
+                                           VerticalAlignment="Center"
+                                           Opacity="0.75" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock x:Name="EmptyState"
+                           Text="没有匹配的命令"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           IsVisible="False"
+                           Opacity="0.7" />
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

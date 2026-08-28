@@ -1,9 +1,9 @@
 # MyAvaloniaManagement Workbench Command 引入评审与实施任务书
 
-> 状态：实施中；G0–G8 已完成，G9–G10 尚未实施。当前已有 Command 候选契约、注册声明、
+> 状态：实施中；G0–G9 已完成，仅 G10 尚未实施。当前已有 Command 候选契约、注册声明、
 > Catalog/Executor、Context v1、活动 Document Target 路由、关闭门控、Host 打开/保存 Presentation，
 > Host-owned 声明式菜单/快捷键投影闭环、WorkflowStudio 三条真实命令，以及 ClassicGame 13 个游戏的
-> 22 条实例命令；Command Palette 尚未实施，G7/G8 也不表示外部插件已上传或发布。
+> 22 条实例命令，以及复用同一状态与执行路径的最小 Command Palette；G9 不表示外部插件已上传或发布。
 > 评审日期：2026-08-27。
 > 事实基线：[主项目内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、
 > [主项目设计方法论与取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、
@@ -866,6 +866,8 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 
 ### G9：实现最小 Command Palette
 
+- **状态**：已完成；实施、测试、SOLID 取舍与整体回滚证据见
+  [G9 专项记录](../plan-history/workbench-command/g9-minimal-command-palette.md)。
 - **目标**：把同一 Catalog/Context/State 投影为可搜索、可键盘执行的最小 Palette，不增加第二套执行逻辑。
 - **功能**：按 canonical DisplayName/Description 搜索、确定性排序、显示快捷键、区分 Disabled、执行当前结果、
   Escape 关闭和打开时聚焦搜索框；Palette 自身使用 Host 保留快捷键。
@@ -954,9 +956,9 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 
 ### 10.5 Palette、资源、包与发布
 
-- [ ] Palette 只消费 Catalog/Context/State/Executor，不建立第二套命令列表；
-- [ ] 搜索、排序、Disabled、目标切换、键盘执行和焦点恢复有 Headless UI 证据；
-- [ ] Document/Target/Menu/KeyBinding 订阅已在关闭后归零；Palette 订阅等待 G9 验证；
+- [x] Palette 只消费 Catalog/Context/State/Executor，不建立第二套命令列表；
+- [x] 搜索、排序、Disabled、目标切换、键盘执行和焦点恢复有 Headless UI 证据；
+- [x] Document/Target/Menu/KeyBinding/Palette 订阅已在关闭后归零；
 - [ ] Host、SDK、四插件和两个外部插件全部测试与覆盖率门槛通过；
 - [ ] SDK/模板候选、lock file、独立生成项目、真实双 ALC 和确定性 ZIP/manifest 通过；
 - [ ] manifest/envelope/layout/data root 未变化；
@@ -996,7 +998,7 @@ Workbench Command v1 只有在以下问题全部回答“是”后才算完成�
 10. [x] Host 快捷键和插件冲突采用明确失败关闭政策，不依赖加载顺序。
 11. [x] WorkflowStudio Validate/Run/Cancel 保持 Workflow Action 治理和多实例隔离。
 12. [x] ClassicGame Restart/Undo 证明当前实例路由和动态 CanUndo，没有全局静态状态。
-13. [ ] Command Palette 复用同一 Catalog/State/Executor，移除 Palette 不影响基础 Command 系统。
+13. [x] Command Palette 复用同一 Catalog/State/Executor，移除 Palette 不影响基础 Command 系统。
 14. [ ] 主题、Document Creation、Tool Toggle、Toolbar、ContextMenu 和用户快捷键设置没有被偷偷提前实现。
 15. [ ] SDK/模板/外部包、locked restore、双 ALC、确定性制品和版本区间全部一致。
 16. [ ] Host、SDK、四插件、两个外部插件、资源、Windows Smoke、诊断和文档门禁全部通过。

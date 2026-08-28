@@ -36,6 +36,8 @@ public sealed class WorkbenchCommandPresentationUiTests
         new("myavalonia.plugin.g4-ui-tests.command.primary");
     private static readonly CommandId PluginConflictCommand =
         new("myavalonia.plugin.g4-ui-tests.command.conflict");
+    private static readonly CommandId PaletteConflictCommand =
+        new("myavalonia.plugin.g4-ui-tests.command.palette-conflict");
 
     [AvaloniaFact]
     public void 文件菜单和CtrlS绑定同一稳定保存命令且设计数据保持纯内存()
@@ -70,6 +72,10 @@ public sealed class WorkbenchCommandPresentationUiTests
         Assert.All(designCommands, item =>
             Assert.IsNotType<WorkbenchPresentationCommand>(item.Command));
         Assert.Single(design.WorkbenchCommands.KeyBindings.Items);
+        var designPalette = design.WorkbenchCommands.Palette.GetItems(string.Empty);
+        Assert.Equal(2, designPalette.Count);
+        Assert.All(designPalette, item =>
+            Assert.IsNotType<WorkbenchPresentationCommand>(item.Command));
 
         menuHost.Close();
     }
@@ -386,6 +392,197 @@ public sealed class WorkbenchCommandPresentationUiTests
         Assert.IsType<G4UiPersistableDocument>(document.Model).MarkCleanForCleanup();
     }
 
+    [AvaloniaFact]
+    public async Task CtrlShiftP打开聚焦且重复打开保留查询Escape恢复焦点和快捷键()
+    {
+        using var context = CreateContext();
+        var window = new MainWindow { DataContext = context.ViewModel };
+        window.Show();
+        try
+        {
+            var root = Assert.IsType<Grid>(window.Content);
+            var focusProbe = new Button { Content = "G9 焦点恢复探针" };
+            root.Children.Add(focusProbe);
+            Assert.True(focusProbe.Focus());
+            var initialKeyCount = window.KeyBindings.Count;
+
+            window.KeyPressQwerty(
+                PhysicalKey.P,
+                RawInputModifiers.Control | RawInputModifiers.Shift);
+            await FlushUiAsync();
+
+            var layer = FindNamed<Border>(window, "CommandPaletteLayer");
+            var search = FindNamed<TextBox>(window, "SearchBox");
+            var list = FindNamed<ListBox>(window, "PaletteItems");
+            Assert.True(layer.IsVisible);
+            Assert.True(search.IsFocused);
+            Assert.Empty(window.KeyBindings);
+            Assert.Equal(2, list.ItemCount);
+
+            search.Text = "保存";
+            await FlushUiAsync();
+            Assert.Single(list.Items.Cast<object>());
+            window.KeyPressQwerty(
+                PhysicalKey.P,
+                RawInputModifiers.Control | RawInputModifiers.Shift);
+            await FlushUiAsync();
+            Assert.Equal("保存", search.Text);
+            Assert.True(search.IsFocused);
+            Assert.Single(list.Items.Cast<object>());
+
+            window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+            await FlushUiAsync();
+            Assert.False(layer.IsVisible);
+            Assert.Equal(initialKeyCount, window.KeyBindings.Count);
+            Assert.True(focusProbe.IsFocused);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Palette中英文过滤键盘选择并只执行当前Document实例()
+    {
+        using var context = CreateContext();
+        var window = new MainWindow { DataContext = context.ViewModel };
+        window.Show();
+        try
+        {
+            var first = await CreateDocumentAsync(context);
+            var second = await CreateDocumentAsync(context);
+            var dock = GetDocumentDock(context);
+            dock.ActiveDockable = first;
+            await FlushUiAsync();
+
+            OpenPalette(window);
+            await FlushUiAsync();
+            var search = FindNamed<TextBox>(window, "SearchBox");
+            var list = FindNamed<ListBox>(window, "PaletteItems");
+            search.Text = "projection";
+            await FlushUiAsync();
+            var english = Assert.Single(
+                list.Items.Cast<WorkbenchCommandPaletteProjectionEntry>());
+            Assert.Equal(PluginCommand, english.CommandId);
+
+            search.Text = "插件";
+            await FlushUiAsync();
+            var chinese = Assert.Single(
+                list.Items.Cast<WorkbenchCommandPaletteProjectionEntry>());
+            Assert.Equal(PluginCommand, chinese.CommandId);
+            Assert.Equal(0, list.SelectedIndex);
+
+            window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+            await FlushUiAsync();
+            Assert.False(FindNamed<Border>(window, "CommandPaletteLayer").IsVisible);
+            Assert.Equal(1, Assert.IsType<G4UiPersistableDocument>(first.Model).PluginExecutions);
+            Assert.Equal(0, Assert.IsType<G4UiPersistableDocument>(second.Model).PluginExecutions);
+
+            dock.ActiveDockable = second;
+            await FlushUiAsync();
+            OpenPalette(window);
+            await FlushUiAsync();
+            list = FindNamed<ListBox>(window, "PaletteItems");
+            Assert.Equal(0, list.SelectedIndex);
+            window.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None);
+            Assert.Equal(1, list.SelectedIndex);
+            window.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.None);
+            Assert.Equal(0, list.SelectedIndex);
+            window.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.None);
+            Assert.Equal(0, list.SelectedIndex);
+            window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Palette实时隐藏目标并保留Disabled且异常执行只产生脱敏诊断()
+    {
+        var diagnostics = new G4UiDiagnosticSink();
+        using var context = CreateContext(diagnostics);
+        var window = new MainWindow { DataContext = context.ViewModel };
+        window.Show();
+        try
+        {
+            OpenPalette(window);
+            await FlushUiAsync();
+            var search = FindNamed<TextBox>(window, "SearchBox");
+            var list = FindNamed<ListBox>(window, "PaletteItems");
+            search.Text = "插件";
+            await FlushUiAsync();
+            Assert.Empty(list.Items.Cast<object>());
+            Assert.True(FindNamed<TextBlock>(window, "EmptyState").IsVisible);
+
+            var document = await CreateDocumentAsync(context);
+            GetDocumentDock(context).ActiveDockable = document;
+            await FlushUiAsync();
+            var target = Assert.IsType<G4UiPersistableDocument>(document.Model);
+            var active = Assert.Single(
+                list.Items.Cast<WorkbenchCommandPaletteProjectionEntry>());
+            Assert.True(active.IsEnabled);
+
+            var survivingPaletteRefreshes = 0;
+            context.ViewModel.WorkbenchCommands.Palette.Changed += (_, _) =>
+                throw new InvalidOperationException("测试 Palette 观察者失败");
+            context.ViewModel.WorkbenchCommands.Palette.Changed += (_, _) =>
+                survivingPaletteRefreshes++;
+            target.AllowPluginExecution = false;
+            target.RaisePluginStateChanged();
+            target.RaisePluginStateChanged();
+            // 同一 UI 事务内的连续失效先合并到 Dispatcher 队列，不能同步重复刷新列表。
+            Assert.Equal(0, survivingPaletteRefreshes);
+            await FlushUiAsync();
+            var disabled = Assert.Single(
+                list.Items.Cast<WorkbenchCommandPaletteProjectionEntry>());
+            Assert.False(disabled.IsEnabled);
+            Assert.Equal(1, survivingPaletteRefreshes);
+            Assert.Contains(diagnostics.Drafts, item =>
+                item.Code == HostDiagnosticCodes.WorkbenchCommandStateObserverFailed &&
+                item.Exception is InvalidOperationException);
+            window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+            Assert.True(FindNamed<Border>(window, "CommandPaletteLayer").IsVisible);
+            Assert.Equal(0, target.PluginExecutions);
+
+            target.AllowPluginExecution = true;
+            target.ExecutionException = new InvalidOperationException(
+                "不得进入 Palette UI 的插件异常正文 C:\\secret.txt");
+            target.RaisePluginStateChanged();
+            await FlushUiAsync();
+            window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+            await FlushUiAsync();
+            Assert.False(FindNamed<Border>(window, "CommandPaletteLayer").IsVisible);
+            Assert.Contains(diagnostics.Drafts, item =>
+                item.Code == HostDiagnosticCodes.WorkbenchCommandExecutionFailed &&
+                item.StableId == PluginCommand.Value);
+        }
+        finally
+        {
+            window.Close();
+        }
+
+        Assert.Empty(window.KeyBindings);
+        window.OpenCommandPalette();
+        await FlushUiAsync();
+        Assert.False(FindNamed<Border>(window, "CommandPaletteLayer").IsVisible);
+    }
+
+    private static void OpenPalette(MainWindow window) => window.KeyPressQwerty(
+        PhysicalKey.P,
+        RawInputModifiers.Control | RawInputModifiers.Shift);
+
+    private static T FindNamed<T>(Control root, string name)
+        where T : Control => Assert.Single(
+        root.GetLogicalDescendants().OfType<T>(),
+        control => control.Name == name);
+
+    private static Task FlushUiAsync() => Dispatcher.UIThread.InvokeAsync(
+        () => { },
+        DispatcherPriority.Background).GetTask();
+
     private static void AssertPresentationDiagnostic(HostDiagnosticDraft diagnostic)
     {
         Assert.Equal(HostDiagnosticCodes.WorkbenchCommandExecutionFailed, diagnostic.Code);
@@ -443,6 +640,7 @@ public sealed class WorkbenchCommandPresentationUiTests
                  {
                      (PluginCommand, "插件操作"),
                      (PluginConflictCommand, "插件冲突操作"),
+                     (PaletteConflictCommand, "Palette 保留快捷键冲突"),
                  })
         {
             builder.AddDocumentCommand(
@@ -476,6 +674,14 @@ public sealed class WorkbenchCommandPresentationUiTests
                 PluginConflictCommand,
                 Key.S,
                 KeyModifiers.Control));
+        builder.AddKeyBindingContribution(
+            Owner,
+            new KeyBindingContributionDescriptor(
+                new CommandPlacementId(
+                    "myavalonia.plugin.g4-ui-tests.command-placement.key-palette-conflict"),
+                PaletteConflictCommand,
+                Key.P,
+                KeyModifiers.Control | KeyModifiers.Shift));
     });
 
     /// <summary>记录 Presentation 边界产生的稳定诊断草稿，避免测试读取用户目录 JSONL。</summary>
@@ -670,6 +876,10 @@ public sealed class WorkbenchCommandPresentationUiTests
 
         internal int PluginExecutions { get; private set; }
 
+        internal bool AllowPluginExecution { get; set; } = true;
+
+        internal Exception? ExecutionException { get; set; }
+
         public DocumentPresentationState Presentation => new("G4 UI 文档");
 
         public event EventHandler? PresentationChanged
@@ -711,8 +921,10 @@ public sealed class WorkbenchCommandPresentationUiTests
         }
 
         public bool CanExecute(CommandId commandId) =>
-            commandId == PluginCommand ||
-            commandId == PluginConflictCommand;
+            AllowPluginExecution &&
+            (commandId == PluginCommand ||
+             commandId == PluginConflictCommand ||
+             commandId == PaletteConflictCommand);
 
         public ValueTask ExecuteAsync(
             CommandId commandId,
@@ -723,12 +935,21 @@ public sealed class WorkbenchCommandPresentationUiTests
             {
                 throw new InvalidOperationException("未声明的 G5 UI 命令。");
             }
+            if (ExecutionException is { } exception)
+            {
+                throw exception;
+            }
             PluginExecutions++;
             CommandStateChanged?.Invoke(
                 this,
                 new WorkbenchCommandStateChangedEventArgs(commandId));
             return ValueTask.CompletedTask;
         }
+
+        internal void RaisePluginStateChanged() =>
+            CommandStateChanged?.Invoke(
+                this,
+                new WorkbenchCommandStateChangedEventArgs(PluginCommand));
 
         internal void Edit(string content)
         {

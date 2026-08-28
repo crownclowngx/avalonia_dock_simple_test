@@ -14,7 +14,7 @@ using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Tests;
 
-/// <summary>验证 G5 菜单排序、状态政策、快捷键冲突与 owner 可用性投影。</summary>
+/// <summary>验证菜单、快捷键和 G9 Command Palette 共享的状态与冲突投影。</summary>
 public sealed class WorkbenchCommandProjectionTests
 {
     private static readonly PluginId Alpha = new("myavalonia.plugin.g5-alpha");
@@ -141,6 +141,111 @@ public sealed class WorkbenchCommandProjectionTests
     }
 
     [Fact]
+    public void Palette空查询只收录菜单命令且Host保存以Disabled显示()
+    {
+        using var context = CreateCatalogContext(reverseRegistrationOrder: false);
+        var palette = context.Provider
+            .GetRequiredService<WorkbenchCommandPresentation>()
+            .Palette;
+
+        var items = palette.GetItems(null);
+
+        Assert.Collection(
+            items,
+            save =>
+            {
+                Assert.Equal(HostWorkbenchCommandIds.SaveDocument, save.CommandId);
+                Assert.Equal("保存", save.DisplayName);
+                Assert.False(save.IsEnabled);
+                Assert.Equal("Ctrl+S", save.ShortcutText);
+            },
+            open =>
+            {
+                Assert.Equal(HostWorkbenchCommandIds.OpenDocument, open.CommandId);
+                Assert.Equal("打开…", open.DisplayName);
+                Assert.True(open.IsEnabled);
+                Assert.Equal(string.Empty, open.ShortcutText);
+            });
+        Assert.DoesNotContain(items, item => item.CommandId.Value.Contains(
+            "shortcut-active",
+            StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("  打开  ", "打开…")]
+    [InlineData("一个或多个", "打开…")]
+    [InlineData("可持久化", "保存")]
+    public void Palette按中英文名称说明做OrdinalIgnoreCase普通子串查询(
+        string query,
+        string expectedName)
+    {
+        using var context = CreateCatalogContext(reverseRegistrationOrder: false);
+        var palette = context.Provider
+            .GetRequiredService<WorkbenchCommandPresentation>()
+            .Palette;
+
+        var item = Assert.Single(palette.GetItems(query));
+
+        Assert.Equal(expectedName, item.DisplayName);
+    }
+
+    [Fact]
+    public async Task Palette目标成立后按CommandId去重并实时保留业务Disabled()
+    {
+        using var context = CreateTargetContext();
+        var presentation = context.Provider.GetRequiredService<WorkbenchCommandPresentation>();
+        _ = context.CreateMainWindowViewModel();
+        Assert.DoesNotContain(
+            presentation.Palette.GetItems(string.Empty),
+            item => item.CommandId == WorkbenchCommandG3TestContext.Command);
+
+        var adapter = await context.Workspace.CreateAndPublishDocumentAsync(
+            WorkbenchCommandG3TestContext.DocumentType,
+            new NewDocumentActivation("G9 Palette Target"));
+        GetDocumentDock(context).ActiveDockable = adapter;
+
+        var active = Assert.Single(presentation.Palette.GetItems("tArGeT"));
+        Assert.Equal(WorkbenchCommandG3TestContext.Command, active.CommandId);
+        Assert.True(active.IsEnabled);
+
+        var target = Assert.IsType<WorkbenchCommandG3Document>(adapter.Model);
+        target.AllowExecute = false;
+        target.RaiseStateChanged(WorkbenchCommandG3TestContext.Command);
+
+        var disabled = Assert.Single(presentation.Palette.GetItems("状态"));
+        Assert.Equal(active.CommandId, disabled.CommandId);
+        Assert.False(disabled.IsEnabled);
+        Assert.Same(active.Command, disabled.Command);
+    }
+
+    [Fact]
+    public async Task Palette重复名称以稳定Id排序且只显示冲突治理后的快捷键()
+    {
+        var diagnostics = new RecordingWorkbenchCommandDiagnosticSink();
+        using var context = CreatePaletteOrderingContext(diagnostics);
+        _ = context.CreateMainWindowViewModel();
+        var adapter = await context.Workspace.CreateAndPublishDocumentAsync(
+            AlphaDocument,
+            new NewDocumentActivation("G9 排序"));
+        GetDocumentDock(context).ActiveDockable = adapter;
+        var palette = context.Provider
+            .GetRequiredService<WorkbenchCommandPresentation>()
+            .Palette;
+
+        var duplicates = palette.GetItems("重复");
+
+        Assert.Equal(2, duplicates.Count);
+        Assert.True(string.CompareOrdinal(
+            duplicates[0].CommandId.Value,
+            duplicates[1].CommandId.Value) < 0);
+        Assert.Equal("Ctrl+J", duplicates[0].ShortcutText);
+        Assert.Equal(string.Empty, duplicates[1].ShortcutText);
+        Assert.Contains(diagnostics.Drafts, item =>
+            item.Code == HostDiagnosticCodes.WorkbenchKeyGestureConflict &&
+            item.StableId!.EndsWith("key-reserved", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Owner不可用时菜单和快捷键同步移除并在恢复后重建()
     {
         using var context = CreateCatalogContext(reverseRegistrationOrder: false);
@@ -225,14 +330,17 @@ public sealed class WorkbenchCommandProjectionTests
     }
 
     [Fact]
-    public void Menu和KeyProjection重复释放后拒绝读取且迟到可用性通知安全()
+    public void 三种Projection重复释放后拒绝读取且迟到可用性通知安全()
     {
         using var context = CreateCatalogContext(reverseRegistrationOrder: false);
         var presentation = context.Provider.GetRequiredService<WorkbenchCommandPresentation>();
         var menu = Assert.IsType<WorkbenchMenuProjection>(presentation.Menu);
         var keys = Assert.IsType<WorkbenchKeyBindingProjection>(presentation.KeyBindings);
+        var palette = Assert.IsType<WorkbenchCommandPaletteProjection>(presentation.Palette);
         var states = context.Provider.GetRequiredService<PluginLifecycleStateStore>();
 
+        palette.Dispose();
+        palette.Dispose();
         menu.Dispose();
         menu.Dispose();
         keys.Dispose();
@@ -242,13 +350,19 @@ public sealed class WorkbenchCommandProjectionTests
         Assert.Throws<ObjectDisposedException>(() =>
             menu.GetItems(WorkbenchMenuLocations.ToolsShared));
         Assert.Throws<ObjectDisposedException>(() => _ = keys.Items);
+        Assert.Throws<ObjectDisposedException>(() => palette.GetItems(string.Empty));
     }
 
-    private static TestHostContext CreateTargetContext() => new(
+    private static TestHostContext CreateTargetContext(
+        RecordingWorkbenchCommandDiagnosticSink? diagnostics = null) => new(
         configureServices: services =>
         {
             services.AddSingleton<WorkbenchCommandG3Probe>();
             services.AddScoped<WorkbenchCommandG3Document>();
+            if (diagnostics is not null)
+            {
+                services.AddSingleton<IHostDiagnosticSink>(diagnostics);
+            }
         },
         configureContributions: (_, builder) =>
         {
@@ -317,6 +431,56 @@ public sealed class WorkbenchCommandProjectionTests
                 alpha();
                 beta();
             }
+        },
+        useProductionWorkbenchPresentation: true);
+
+    private static TestHostContext CreatePaletteOrderingContext(
+        RecordingWorkbenchCommandDiagnosticSink diagnostics) => new(
+        configureServices: services =>
+        {
+            services.AddScoped<ProjectionAlphaDocument>();
+            services.AddSingleton<IHostDiagnosticSink>(diagnostics);
+        },
+        configureContributions: (_, builder) =>
+        {
+            builder.AddDocument(
+                Alpha,
+                new DocumentDescriptor(AlphaDocument, "Alpha", "G9 Palette", "测试"),
+                typeof(ProjectionAlphaDocument),
+                typeof(UserControl),
+                static () => new UserControl(),
+                isPersistable: false);
+            var first = new CommandId($"{Alpha.Value}.command.duplicate-a");
+            var second = new CommandId($"{Alpha.Value}.command.duplicate-b");
+            foreach (var commandId in new[] { first, second })
+            {
+                builder.AddDocumentCommand(
+                    Alpha,
+                    new CommandDescriptor(commandId, "重复名称", "G9 稳定排序"),
+                    AlphaDocument);
+                builder.AddMenuCommandContribution(
+                    Alpha,
+                    new MenuCommandContributionDescriptor(
+                        Placement(Alpha, $"menu-{commandId.Value.Split('.').Last()}"),
+                        commandId,
+                        WorkbenchMenuLocations.ToolsShared,
+                        "palette",
+                        0));
+            }
+            builder.AddKeyBindingContribution(
+                Alpha,
+                new KeyBindingContributionDescriptor(
+                    Placement(Alpha, "key-active"),
+                    first,
+                    Key.J,
+                    KeyModifiers.Control));
+            builder.AddKeyBindingContribution(
+                Alpha,
+                new KeyBindingContributionDescriptor(
+                    Placement(Alpha, "key-reserved"),
+                    second,
+                    Key.P,
+                    KeyModifiers.Control | KeyModifiers.Shift));
         },
         useProductionWorkbenchPresentation: true);
 
@@ -433,7 +597,31 @@ public sealed class WorkbenchCommandProjectionTests
         Assert.IsType<DocumentDock>(context.Workspace.DockFactory.GetDockable<IDocumentDock>(
             Business.Layout.DockLayoutIds.Documents));
 
-    private sealed class ProjectionAlphaDocument : ProjectionDocument;
+    private sealed class ProjectionAlphaDocument :
+        ProjectionDocument,
+        IWorkbenchDocumentCommandTarget
+    {
+        public event EventHandler<WorkbenchCommandStateChangedEventArgs>? CommandStateChanged
+        {
+            add { }
+            remove { }
+        }
+
+        public bool CanExecute(CommandId commandId) =>
+            commandId.Value.StartsWith($"{Alpha.Value}.command.", StringComparison.Ordinal);
+
+        public ValueTask ExecuteAsync(
+            CommandId commandId,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!CanExecute(commandId))
+            {
+                throw new InvalidOperationException("未声明的 G9 Palette 测试命令。");
+            }
+            return ValueTask.CompletedTask;
+        }
+    }
 
     private sealed class ProjectionBetaDocument : ProjectionDocument;
 

@@ -1,5 +1,29 @@
 # MyAvaloniaManagement 测试说明
 
+## Workbench Command G9 最小 Command Palette 本地非发布门禁
+
+入口为：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG9.ps1 -Configuration Release
+```
+
+入口执行或显式复用 Host V4 G7 本地开发门禁，再执行 G9 定向 Unit、Headless UI、关键文件覆盖率、
+SDK/API/版本/Schema 冻结断言和文档门禁。当前实测 Host 三层 **584/584**，行覆盖率 **87.32%**、
+分支覆盖率 **72.58%**；Palette 定向 Unit **13/13**、Headless UI **10/10**，
+`WorkbenchCommandPaletteProjection.cs` 行覆盖率 **98.41%**，高于 90% 关键文件门槛。
+
+`Ctrl+Shift+P` 只打开 MainWindow 内的模态遮罩。测试覆盖菜单候选去重、中文/英文及说明匹配、稳定排序、
+Disabled、目标切换、有效快捷键、Host/插件冲突、Dispatcher 合并、观察者隔离、释放后零通知、上下键、
+Enter 共享执行路径、Escape、重复打开、焦点恢复、窗口关闭和脱敏失败。机器结果见
+`artifacts/test-results/WorkbenchCommandG9/summary.json` 及
+[G9 专项记录](../plan-history/workbench-command/g9-minimal-command-palette.md)。
+
+摘要固定记录 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、
+`releaseGate=false`、`publishable=false`、`published=false`、`uploaded=false`、`signed=false`、
+`tagCreated=false`。该入口不运行 AIFLOW、Windows CI/Smoke、Release Acceptance、Host Release Gate，
+也不上传、签名、打 tag 或发布；`Release` 仅是本地编译配置。
+
 ## Workbench Command G8 ClassicGame 全游戏命令非发布门禁
 
 跨仓库聚合入口为：
@@ -14,8 +38,8 @@ ClassicGame 使用 NuGet.org、SDK `3.3.0`、locked restore、零警告构建、
 构造 13 个游戏，验证 22 条 Catalog/Menu 命令、13 条 Restart、9 条 Undo 和五子棋双实例隔离。
 
 Headless MainWindow 逐个切换 13 个真实 Document，验证 Tools 菜单 Hide/Enabled；五子棋继续验证
-`Ctrl+Shift+R` / `Ctrl+Z` 与菜单共享 Adapter、A/B 状态切换和窗口关闭后 KeyBinding/订阅归零。Command
-Palette 尚未实现；22 条 Catalog 命令已可供 G9 投影。最终结果为 ClassicGame **526/526**、覆盖率
+`Ctrl+Shift+R` / `Ctrl+Z` 与菜单共享 Adapter、A/B 状态切换和窗口关闭后 KeyBinding/订阅归零。该阶段的
+22 条 Catalog 命令后来由 G9 Palette 通过既有菜单声明自然发现。最终结果为 ClassicGame **526/526**、覆盖率
 **71.75% / 58.36%**，Host **575/575**、覆盖率 **86.98% / 72.42%**，真实包 PluginTests **1/1**、
 Headless UI **1/1**；四文件 ZIP SHA-256 为
 `4A1C7358BEEC84361C123E1B60ABEE2F372190DAD930FE0FE10F4CFE31F77EB9`。机器结果见

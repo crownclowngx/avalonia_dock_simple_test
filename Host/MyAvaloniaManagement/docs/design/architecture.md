@@ -18,11 +18,11 @@
 > Templates 1.1.0、已发布 Build 1.1.2 和两个外部插件 ZIP 验证真实传播；没有新增生产入口。这两个阶段
 > 均未上传、未打 tag、未对外发布且未使用 AIFLOW。G3.1 进一步把 Core/UI 候选提升到 3.2.0，新增
 > `MyAvaloniaManagement.PluginSdk.Workflow 1.0.0`，统一 Schema/引用路径/双 revision，并把该程序集
-> 纳入默认 ALC 共享根；Host 产品版本仍为 3.0.0。Workbench Command G1–G3 又在不改变版本和
+> 纳入默认 ALC 共享根；Host 产品版本仍为 3.0.0。Workbench Command G1–G9 又在不改变版本和
 > public API 基线的前提下冻结 Command 注册事实，并建立 Host internal Catalog、打开/保存 Handler、
-> Context v1、活动 Document Target 路由、Executor、单 Document 租约、脱敏诊断和 10 秒关闭门控；G4 又以
-> Host-only Presentation 把 File 菜单与 `Ctrl+S` 统一到相同 CommandId/Executor，并删除 MainWindow 旧命令。
-> 插件菜单/快捷键贡献与 Palette 仍未实施。
+> Context v1、活动 Document Target 路由、Executor、单 Document 租约、脱敏诊断和 10 秒关闭门控；G4–G5
+> 以 Host-only Presentation 把 File/插件菜单和有效快捷键统一到相同 CommandId/Executor；G7/G8 接入两个
+> 外部插件的真实命令，G9 再以窗口遮罩实现复用同一状态与执行路径的最小 Command Palette。
 
 ## 1. 目标与边界
 
@@ -261,7 +261,7 @@ JSONL 和镜像之前执行唯一一次白名单转换：
 门禁都不启用该旁路。设计与验收证据见
 [G15 宿主诊断脱敏](../../../../docs/plan-history/host-v1/g15-host-diagnostic-redaction.md)。
 
-### 4.6 Workbench Command G2–G4 内核、活动实例路由与 Host Presentation
+### 4.6 Workbench Command G2–G9 内核、活动实例路由与 Host Presentation
 
 `HostWorkbenchCommandCatalog` 只冻结 `myavalonia.host.command.document.open/save` 及其显式 Handler；
 `WorkbenchCommandCatalog` 把该目录与 `PluginRegistry.WorkbenchCommands` 合并，并在启动期拒绝最终身份
@@ -283,12 +283,20 @@ CanExecute，不缓存状态。插件执行链接调用者、单 Document 关闭
 再允许 Dock 重试和既有 View/Adapter/Scope 释放；没有强制释放超时。全局退出仍由独立 10 秒门控负责，
 超时保留对象图。
 
-打开/保存 Handler 继续复用 `DocumentPersistenceCoordinator` 和唯一 `DocumentOperationState`。G4 的
-`HostWorkbenchCommandPresentation` 只拥有 Open/Save 两个 `WorkbenchPresentationCommand`；File 菜单与
-`Ctrl+S` 引用同一个 Save 实例。Adapter 的 `CanExecute`/`IsEnabled` 实时查询 State Query，执行始终进入
-Executor 重查；工作线程状态通知切回显式 Dispatcher，Dispose 成对退订。`MainWindowViewModel` 已删除
-打开/保存方法、生成命令和持久化协调器依赖，只保留窄 Presentation 绑定属性。通用插件菜单、快捷键投影
-和 Palette 尚未进入生产。
+打开/保存 Handler 继续复用 `DocumentPersistenceCoordinator` 和唯一 `DocumentOperationState`。G4–G5 的
+`HostWorkbenchCommandPresentation` 拥有共享 `WorkbenchPresentationCommand`、声明式菜单与经过 Host 优先、
+插件冲突治理后的有效快捷键；File 菜单与 `Ctrl+S` 引用同一个 Save 实例。Adapter 的
+`CanExecute`/`IsEnabled` 实时查询 State Query，执行始终进入 Executor 重查；工作线程状态通知切回显式
+Dispatcher，Dispose 成对退订。`MainWindowViewModel` 已删除打开/保存方法、生成命令和持久化协调器依赖，
+只保留窄 Presentation 绑定属性。
+
+G9 的 `WorkbenchCommandPaletteProjection` 只从至少一个菜单声明收集候选 CommandId，去重后查询同一
+State Query，并从同一快捷键投影读取真正生效的 Gesture。Owner/目标不可用项隐藏，真实 Disabled 项保留；
+名称和说明使用普通忽略大小写子串搜索，结果按展示名及 CommandId ordinal 排序。`CommandPaletteView`
+只负责打开、查询、选择、键盘和焦点会话；Enter 再次调用共享绑定的 `CanExecute`，成功时先关闭恢复焦点，
+再进入同一 Executor。`Ctrl+Shift+P` 是 Host 保留 Gesture，遮罩打开期间窗口暂停其他生成 KeyBinding，
+关闭或窗口释放时成对恢复/退订。Palette 不进入 Catalog，也不获得 Provider、Document、Dock、Control
+或插件对象；整体删除 Palette 不改变菜单、快捷键、状态与执行语义。
 
 ## 5. Workspace Session 与 Dock Factory 边界
 
@@ -314,6 +322,7 @@ V3 G6 已删除 `ManagementFactory` Facade。生产代码只有
 | `WorkbenchCommandStateQuery` | Catalog/owner/当前 Target 的即时状态与定向失效通知 | 缓存 CanExecute、执行 Target、UI 调度 |
 | `WorkbenchCommandExecutor` | 当前实例重查、执行、取消链接和全局排空 | 菜单投影、Document 释放、业务重试 |
 | `WorkbenchDocumentCommandLeaseStore` | 单 Adapter 在途计数、关闭拒绝/取消/排空 | 强制超时、释放 Scope、全局任务运行时 |
+| `WorkbenchCommandPaletteProjection` | 菜单候选去重、状态过滤、搜索排序与有效快捷键文本 | 执行命令、缓存业务状态、焦点和插件对象 |
 | `ToolDockCoordinator` | 工具显示、恢复、停靠点重建和纵向区域归一化 | 策略发现 |
 | `DockDocumentLifetime` | 文档关闭后的缓存移除和 Scope 释放 | 关闭是否允许 |
 

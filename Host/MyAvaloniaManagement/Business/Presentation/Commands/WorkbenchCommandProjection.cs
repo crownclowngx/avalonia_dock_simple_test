@@ -411,6 +411,7 @@ internal sealed class WorkbenchKeyBindingProjection : IWorkbenchKeyBindingProjec
         var inactive = new HashSet<CommandPlacementId>();
         var hostGestures = _host.KeyBindingContributions
             .Select(item => new WorkbenchKeyGesture(item.Key, item.Modifiers))
+            .Concat(_host.ReservedKeyGestures)
             .ToHashSet();
         foreach (var group in _plugins.KeyBindingContributions.GroupBy(item =>
                      new WorkbenchKeyGesture(item.Descriptor.Key, item.Descriptor.Modifiers)))
@@ -515,10 +516,9 @@ internal sealed class WorkbenchKeyBindingProjection : IWorkbenchKeyBindingProjec
         _availability.AvailabilityChanged -= OnAvailabilityChanged;
     }
 
-    private readonly record struct WorkbenchKeyGesture(Key Key, KeyModifiers Modifiers);
 }
 
-/// <summary>组合并拥有 G5 菜单、快捷键和共享命令 Adapter 的根级展示模型。</summary>
+/// <summary>组合并拥有菜单、快捷键、Palette 和共享命令 Adapter 的根级展示模型。</summary>
 internal sealed class WorkbenchCommandPresentation :
     IWorkbenchCommandPresentationBindings,
     IDisposable
@@ -526,6 +526,7 @@ internal sealed class WorkbenchCommandPresentation :
     private readonly WorkbenchPresentationCommandStore _commands;
     private readonly WorkbenchMenuProjection _menu;
     private readonly WorkbenchKeyBindingProjection _keyBindings;
+    private readonly WorkbenchCommandPaletteProjection _palette;
     private bool _disposed;
 
     internal WorkbenchCommandPresentation(
@@ -560,11 +561,22 @@ internal sealed class WorkbenchCommandPresentation :
             _commands,
             dispatcher,
             diagnostics);
+        _palette = new WorkbenchCommandPaletteProjection(
+            host,
+            plugins,
+            catalog,
+            states,
+            _keyBindings,
+            _commands,
+            dispatcher,
+            diagnostics);
     }
 
     public IWorkbenchMenuProjection Menu => _menu;
 
     public IWorkbenchKeyBindingProjection KeyBindings => _keyBindings;
+
+    public IWorkbenchCommandPaletteProjection Palette => _palette;
 
     /// <summary>按“观察者 → Adapter”顺序解除订阅，防止释放过程中产生新的 View 刷新。</summary>
     public void Dispose()
@@ -574,6 +586,7 @@ internal sealed class WorkbenchCommandPresentation :
             return;
         }
         _disposed = true;
+        _palette.Dispose();
         _menu.Dispose();
         _keyBindings.Dispose();
         _commands.Dispose();

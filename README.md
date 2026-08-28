@@ -228,6 +228,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Workflow Action G3 外部 Studio](./docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md)：查看外部仓库 revision、SOLID 边界、Standalone Fake 闭环、候选 Host 组合和非发布证据；
 - [Workbench Command G7 外部 WorkflowStudio 三命令](./docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md)：查看 Validate/Run/Cancel 状态、真实 ZIP/双 ALC、跨 ALC Action、Headless UI 与非发布证据；
 - [Workbench Command G8 ClassicGame 全游戏命令](./docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md)：查看 13 个游戏、22 条 Restart/Undo、真实 ZIP、多实例路由、SOLID 与非发布证据；
+- [Workbench Command G9 最小 Command Palette](./docs/plan-history/workbench-command/g9-minimal-command-palette.md)：查看窗口级遮罩、可搜索投影、共享执行路径、焦点恢复、覆盖率与非发布证据；
 - [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G14 最终目标、阶段和签署矩阵；
 - [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)：查看正式 API、SOLID、两轮隔离门禁、制品和回滚边界；
 - [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)：查看零残留、真实包负例、四插件矩阵和非发布证据；
@@ -293,6 +294,12 @@ UI；固定记录 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`r
 
 ```powershell
 pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG8.ps1 -Configuration Release
+```
+
+修改 Host Command Palette 投影、窗口键盘/焦点行为或保留快捷键治理时，运行 G9 本地非发布门禁：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG9.ps1 -Configuration Release
 ```
 
 该入口复用 Host 本地开发门禁，消费 ClassicGame 公开源独立门禁生成的确定性真实 ZIP，并验证 13 个游戏

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using Avalonia.Input;
 using MyAvaloniaManagement.Business.Commands.Catalog;
 using MyAvaloniaManagement.Business.Presentation.Commands;
@@ -23,6 +24,7 @@ internal sealed class WorkbenchCommandPresentationDesignData :
         var save = new NoOperationPresentationCommand();
         Menu = new DesignMenuProjection(open, save);
         KeyBindings = new DesignKeyBindingProjection(save);
+        Palette = new DesignPaletteProjection(open, save);
     }
 
     /// <summary>获取设计器使用的纯内存菜单快照。</summary>
@@ -30,6 +32,9 @@ internal sealed class WorkbenchCommandPresentationDesignData :
 
     /// <summary>获取设计器使用的纯内存快捷键快照。</summary>
     public IWorkbenchKeyBindingProjection KeyBindings { get; }
+
+    /// <summary>获取设计器使用的纯内存 Command Palette 快照。</summary>
+    public IWorkbenchCommandPaletteProjection Palette { get; }
 
     private sealed class DesignMenuProjection(
         IWorkbenchPresentationCommandBinding open,
@@ -83,6 +88,47 @@ internal sealed class WorkbenchCommandPresentationDesignData :
                 KeyModifiers.Control,
                 save),
         ];
+    }
+
+    /// <summary>让设计器能够预览 Palette 布局，但不构造生产查询和执行对象图。</summary>
+    private sealed class DesignPaletteProjection(
+        IWorkbenchPresentationCommandBinding open,
+        IWorkbenchPresentationCommandBinding save) : IWorkbenchCommandPaletteProjection
+    {
+        private readonly IReadOnlyList<WorkbenchCommandPaletteProjectionEntry> _items =
+        [
+            new WorkbenchCommandPaletteProjectionEntry(
+                HostWorkbenchCommandIds.OpenDocument,
+                "打开…",
+                "打开一个已保存的文档",
+                string.Empty,
+                true,
+                open),
+            new WorkbenchCommandPaletteProjectionEntry(
+                HostWorkbenchCommandIds.SaveDocument,
+                "保存",
+                "保存当前文档",
+                "Ctrl+S",
+                true,
+                save),
+        ];
+
+        public event EventHandler? Changed
+        {
+            add { }
+            remove { }
+        }
+
+        public IReadOnlyList<WorkbenchCommandPaletteProjectionEntry> GetItems(string? query)
+        {
+            var normalized = query?.Trim() ?? string.Empty;
+            return normalized.Length == 0
+                ? _items
+                : _items.Where(item =>
+                        item.DisplayName.Contains(normalized, StringComparison.OrdinalIgnoreCase) ||
+                        item.Description.Contains(normalized, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+        }
     }
 
     /// <summary>设计器专用的恒 Enabled、无副作用命令。</summary>

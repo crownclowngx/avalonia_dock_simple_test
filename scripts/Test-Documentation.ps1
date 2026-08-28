@@ -409,7 +409,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'windowsCi=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'releaseGate=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'publishable=false' }
-    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G8 已完成，G9–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G9 已完成，仅 G10 尚未实施' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = '状态：已完成（2026-08-28；完整非发布门禁通过）' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'Test-WorkbenchCommandG1.ps1' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'IWorkbenchDocumentCommandTarget' }
@@ -517,6 +517,19 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'uploaded=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'signed=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'tagCreated=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'Test-WorkbenchCommandG9.ps1' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = '`Ctrl+Shift+P`' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'WorkbenchCommandPaletteProjection.cs` 行覆盖率 | **98.41%**' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'aiflow=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'windowsSmoke=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'releaseAcceptance=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'publishable=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'published=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'uploaded=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'signed=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g9-minimal-command-palette.md'; Fragment = 'tagCreated=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

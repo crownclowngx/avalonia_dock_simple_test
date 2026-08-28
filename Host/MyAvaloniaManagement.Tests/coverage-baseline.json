@@ -35,6 +35,7 @@
     "Business/Commands/Execution/WorkbenchDocumentCommandLeaseStore.cs": 90.0,
     "Business/Presentation/Commands/HostWorkbenchCommandPresentation.cs": 90.0,
     "Business/Presentation/Commands/WorkbenchCommandProjection.cs": 90.0,
+    "Business/Presentation/Commands/WorkbenchCommandPaletteProjection.cs": 90.0,
     "Business/WorkflowActions/WorkflowActionSchemaValidator.cs": 90.0,
     "Business/WorkflowActions/WorkflowActionCatalogStore.cs": 90.0,
     "Business/WorkflowActions/WorkflowActionRuntime.cs": 90.0,
