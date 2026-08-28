@@ -12,7 +12,7 @@ public sealed class SdkBoundaryTests
     {
         var assembly = typeof(PluginId).Assembly;
         Assert.Equal("MyAvaloniaManagement.PluginSdk", assembly.GetName().Name);
-        Assert.Equal(new Version(3, 2, 0, 0), assembly.GetName().Version);
+        Assert.Equal(new Version(3, 3, 0, 0), assembly.GetName().Version);
         Assert.All(assembly.GetReferencedAssemblies(), reference =>
             Assert.StartsWith("System.", reference.Name, StringComparison.Ordinal));
 
@@ -50,7 +50,7 @@ public sealed class SdkBoundaryTests
     {
         var assembly = typeof(IPluginModule).Assembly;
         Assert.Equal("MyAvaloniaManagement.PluginSdk.UI", assembly.GetName().Name);
-        Assert.Equal(new Version(3, 2, 0, 0), assembly.GetName().Version);
+        Assert.Equal(new Version(3, 3, 0, 0), assembly.GetName().Version);
         Assert.DoesNotContain(assembly.GetReferencedAssemblies(), reference =>
             reference.Name?.StartsWith("Dock.", StringComparison.Ordinal) == true ||
             reference.Name == "Newtonsoft.Json");

@@ -180,7 +180,7 @@ try {
                 ResultDirectory = 'MyPlugTestV3'
                 PluginId = 'myavalonia.plugin.my-plug-test'
                 ExpectedPluginVersion = '3.0.0'
-                ExpectedSdkMinInclusive = '3.2.0'
+                ExpectedSdkMinInclusive = '3.3.0'
                 ExpectedSuites = @(
                     'G9-PluginSdk', 'G9-HostUnit', 'G9-HeadlessUi',
                     'G9-PluginDock', 'G9-MyPlugTest', 'G9-FinalZip')
@@ -192,7 +192,7 @@ try {
                 ResultDirectory = 'DaTangAccountingHelpPlugV3'
                 PluginId = 'myavalonia.plugin.datang-accounting-help'
                 ExpectedPluginVersion = '3.0.0'
-                ExpectedSdkMinInclusive = '3.2.0'
+                ExpectedSdkMinInclusive = '3.3.0'
                 ExpectedSuites = @(
                     'G10-PluginSdk', 'G10-HostUnit', 'G10-HeadlessUi',
                     'G10-PluginDock', 'G10-DaTang', 'G10-FinalZip')
@@ -204,7 +204,7 @@ try {
                 ResultDirectory = 'MySmallToolsV3'
                 PluginId = 'myavalonia.plugin.my-small-tools'
                 ExpectedPluginVersion = '3.1.0'
-                ExpectedSdkMinInclusive = '3.2.0'
+                ExpectedSdkMinInclusive = '3.3.0'
                 ExpectedSuites = @(
                     'G11-PluginSdk', 'G11-HostUnit', 'G11-HeadlessUi',
                     'G11-PluginDock', 'G11-MySmallTools', 'G11-FinalZip')
@@ -216,7 +216,7 @@ try {
                 ResultDirectory = 'BiliDownloaderV3'
                 PluginId = 'myavalonia.plugin.bili-downloader'
                 ExpectedPluginVersion = '3.0.0'
-                ExpectedSdkMinInclusive = '3.2.0'
+                ExpectedSdkMinInclusive = '3.3.0'
                 ExpectedSuites = @(
                     'G12-PluginSdk', 'G12-HostUnit', 'G12-HeadlessUi',
                     'G12-PluginDock', 'G12-BiliDownloader', 'G12-FinalZip')

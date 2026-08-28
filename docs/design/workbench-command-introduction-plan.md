@@ -1,6 +1,6 @@
 # MyAvaloniaManagement Workbench Command 引入评审与实施任务书
 
-> 状态：实施中；G0–G5 已完成，G6–G10 尚未实施。当前已有 Command 候选契约、注册声明、
+> 状态：实施中；G0–G6 已完成，G7–G10 尚未实施。当前已有 Command 候选契约、注册声明、
 > Catalog/Executor、Context v1、活动 Document Target 路由、关闭门控、Host 打开/保存 Presentation，
 > 以及 Host-owned 声明式菜单/快捷键投影闭环；本文不表示 SDK 候选包、外部插件命令或 Command Palette 已进入生产。
 > 评审日期：2026-08-27。
@@ -818,6 +818,8 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 
 ### G6：完成 SDK 3.3 候选包、模板和独立消费门禁
 
+- **状态**：已完成（2026-08-28）；实际证据见
+  [G6 SDK 3.3、模板与独立消费实施记录](../plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md)。
 - **目标**：把 G1–G5 已压测的 public 契约形成可供外部插件独立消费的候选 Core/UI 包和模板。
 - **版本**：按 G0 最终签署值提升 Core/UI；若仍采用本文建议则为 `3.3.0`，Templates 为 `1.3.0`，
   Workflow SDK/Build 默认不变；更新集中版本、Assembly/FileVersion、lock file 和 v3 Unshipped。
@@ -826,7 +828,10 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 - **验证**：隔离临时 feed、locked restore、Release `warnaserror`、API package、模板安装/生成、带点号项目、
   Standalone、确定性 ZIP、manifest 最低版本和候选 Host 真实双 ALC 加载。
 - **兼容**：用真实旧 3.0/3.1/3.2 插件包验证新 Host；用旧 Host/新扩展建立明确负例。
-- **发布边界**：默认只生成候选，不上传、不覆盖同版本、不打 tag；外部发布需独立授权并记录不可变哈希。
+- **发布结果**：操作者随后明确授权上传同一批冻结内容；Core/UI `3.3.0`、Templates `1.3.0` 与两个 SDK
+  符号包已由 NuGet.org 接收，Repository 签名、非签名内容一致性、纯公共源安装、locked restore、零警告构建、
+  4/4 测试和两轮确定性插件 ZIP 已通过。发布后只允许提升修订版本修复，不能覆盖同版本；未运行 Windows CI、
+  Windows Smoke、Host Release Gate，也未发布 Host 产品或创建 tag。
 - **回滚**：回到 G5 源码候选；删除本地候选 feed/模板安装，不能发布后覆盖同版本包。
 
 ### G7：迁移外部 WorkflowStudio 三条真实命令

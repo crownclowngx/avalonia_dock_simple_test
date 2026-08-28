@@ -23,3 +23,6 @@ dotnet msbuild src/DemoPlugin.Plugin/DemoPlugin.Plugin.csproj `
 
 Standalone 只能验证界面和插件自身对象图；manifest、加载上下文、Document Scope、Dock、Tool 和
 生命周期必须使用真实 Host 做最终验收。
+
+模板包含一条不注册快捷键的最小 Document Command 示例。设计边界、Target 适配和测试清单见
+[Workbench Command 开发说明](docs/workbench-commands.md)。

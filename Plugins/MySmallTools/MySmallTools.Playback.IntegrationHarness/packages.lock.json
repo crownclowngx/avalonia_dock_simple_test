@@ -218,8 +218,8 @@
           "Irihi.Ursa": "[2.1.0, )",
           "Irihi.Ursa.Themes.Semi": "[2.1.0, )",
           "Microsoft.Extensions.DependencyInjection": "[10.0.10, )",
-          "MyAvaloniaManagement.PluginSdk": "[3.2.0, )",
-          "MyAvaloniaManagement.PluginSdk.UI": "[3.2.0, )",
+          "MyAvaloniaManagement.PluginSdk": "[3.3.0, )",
+          "MyAvaloniaManagement.PluginSdk.UI": "[3.3.0, )",
           "MyAvaloniaManagement.PluginSdk.Workflow": "[1.0.0, )",
           "Semi.Avalonia": "[12.1.0, )",
           "Xaml.Behaviors": "[12.0.5, )"
@@ -236,14 +236,14 @@
           "Irihi.Ursa": "[2.1.0, 2.1.0]",
           "Irihi.Ursa.Themes.Semi": "[2.1.0, 2.1.0]",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, 10.0.10]",
-          "MyAvaloniaManagement.PluginSdk": "[3.2.0, )",
+          "MyAvaloniaManagement.PluginSdk": "[3.3.0, )",
           "Semi.Avalonia": "[12.1.0, 12.1.0]"
         }
       },
       "myavaloniamanagement.pluginsdk.workflow": {
         "type": "Project",
         "dependencies": {
-          "MyAvaloniaManagement.PluginSdk": "[3.2.0, )"
+          "MyAvaloniaManagement.PluginSdk": "[3.3.0, )"
         }
       },
       "mysmalltools": {
@@ -253,8 +253,8 @@
           "LibVLCSharp": "[3.10.0, )",
           "LibVLCSharp.Avalonia": "[3.10.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "MyAvaloniaManagement.PluginSdk": "[3.2.0, )",
-          "MyAvaloniaManagement.PluginSdk.UI": "[3.2.0, )"
+          "MyAvaloniaManagement.PluginSdk": "[3.3.0, )",
+          "MyAvaloniaManagement.PluginSdk.UI": "[3.3.0, )"
         }
       },
       "Avalonia": {

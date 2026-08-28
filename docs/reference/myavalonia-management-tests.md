@@ -1,5 +1,32 @@
 # MyAvaloniaManagement 测试说明
 
+## Workbench Command G6 SDK 3.3、模板发布与独立消费门禁
+
+本地候选与兼容矩阵入口为：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG6.ps1 -Configuration Release
+```
+
+公开发布后的纯 NuGet.org 复验入口为：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG6PublicFeed.ps1 -Configuration Release
+```
+
+完整本地入口从冻结输入执行 Host V4 G7 与四插件专项门禁，再验证 Core/UI `3.3.0`、Templates `1.3.0`、
+API/包边界、普通/点号模板、每个生成解决方案 4/4 测试、Standalone、确定性 ZIP、双 ALC、3.0/3.1/3.2
+旧模板兼容和 3.2 Host 负例。SDK 为 **81/81**；四插件分别为 **663/663、714/714、854/854、
+1382/1382**；Host 行/分支覆盖率为 **86.98% / 72.39%–72.42%**。
+
+Core/UI 与 Templates 已发布。公开源入口验证三个 NuGet Repository 签名，排除 `.signature.p7s` 后确认内容与
+冻结候选一致，并在全新缓存、只含 NuGet.org 的环境中完成模板安装、locked restore、Release 零警告构建、
+**4/4** 测试和两轮确定性插件 ZIP。两入口分别写入
+`artifacts/test-results/WorkbenchCommandG6/summary.json` 与
+`artifacts/test-results/WorkbenchCommandG6PublicFeed/summary.json`。完整 SOLID、版本、哈希、发布和回滚证据见
+[G6 专项记录](../plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md)。两个入口均固定
+`aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`hostReleaseGate=false`；未发布 Host 产品或创建 tag。
+
 ## Workbench Command G5 声明式 Menu/KeyBinding Projection 非发布门禁
 
 G5 专项入口为：

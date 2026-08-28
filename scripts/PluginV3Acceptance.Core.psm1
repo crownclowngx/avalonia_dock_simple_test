@@ -243,7 +243,7 @@ function Assert-PluginV3Manifest {
         [Parameter(Mandatory)] $Manifest,
         [Parameter(Mandatory)] [string] $PluginId,
         [string] $PluginVersion = '3.0.0',
-        [string] $SdkMinInclusive = '3.2.0'
+        [string] $SdkMinInclusive = '3.3.0'
     )
 
     Assert-PluginV3True (

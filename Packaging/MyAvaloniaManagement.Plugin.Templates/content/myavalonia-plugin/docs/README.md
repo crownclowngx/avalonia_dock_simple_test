@@ -39,6 +39,7 @@ Standalone 适合快速检查 AXAML、编译绑定、命令和插件自身对象
 1. [项目、Host 与 Standalone 窗口职责](project-and-window-responsibilities.md)
 2. [临时部署、正式发布与验收](deployment-and-release.md)
 3. [Workflow Action Provider 与 Consumer 接入](workflow-actions.md)
+4. [Workbench Command 开发说明](workbench-commands.md)
 
 ## 开发前记住
 
@@ -49,3 +50,4 @@ Standalone 适合快速检查 AXAML、编译绑定、命令和插件自身对象
   `PackageReference` 和 `ManagedPluginPrivatePackage`；完整示例见部署文档。
 - 当前交付目标是 Windows x64；插件替换后必须完整重启 Host，不支持热更新。
 - Workflow Action Provider 与 Consumer 是两种互斥角色，选择前先阅读专项文档，不要在同一插件中同时注册。
+- Workbench Command 只提升跨工作台有价值的用户意图；模板示例默认不占用快捷键。

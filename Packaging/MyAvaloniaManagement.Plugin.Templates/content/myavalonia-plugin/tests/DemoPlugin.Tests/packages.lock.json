@@ -171,8 +171,8 @@
         "type": "Project",
         "dependencies": {
           "CommunityToolkit.Mvvm": "[8.4.2, 8.4.2]",
-          "MyAvaloniaManagement.PluginSdk": "[3.2.0, 3.2.0]",
-          "MyAvaloniaManagement.PluginSdk.UI": "[3.2.0, 3.2.0]"
+          "MyAvaloniaManagement.PluginSdk": "[3.3.0, 3.3.0]",
+          "MyAvaloniaManagement.PluginSdk.UI": "[3.3.0, 3.3.0]"
         }
       },
       "CommunityToolkit.Mvvm": {
@@ -183,22 +183,22 @@
       },
       "MyAvaloniaManagement.PluginSdk": {
         "type": "CentralTransitive",
-        "requested": "[3.2.0, 3.2.0]",
-        "resolved": "3.2.0",
-        "contentHash": "sN9Muc0jsl0xxBnbcr+rlVl/VMsNzpsuKoEiCpDfdfawjLkf2SOKjTcjCQvpq6ORl1wkPDDnljj0qGSR+gxsDA=="
+        "requested": "[3.3.0, 3.3.0]",
+        "resolved": "3.3.0",
+        "contentHash": "O8xzVypKP+ClPbn374SrHjT/5R5Xc1wPGGjY7HfKOegGwlQ++24fRy18C/UmwBzecBcMsAZHZzepZWHFm05i/Q=="
       },
       "MyAvaloniaManagement.PluginSdk.UI": {
         "type": "CentralTransitive",
-        "requested": "[3.2.0, 3.2.0]",
-        "resolved": "3.2.0",
-        "contentHash": "V1mPjlXD/2B7D9UE7VMS+RYUCshvC4KjNWD2xFPpeIRrC9QV8sTr+eW2BfcnG4TX3ZeAdKkkHCRDrm6/MHgXEQ==",
+        "requested": "[3.3.0, 3.3.0]",
+        "resolved": "3.3.0",
+        "contentHash": "QnkATmnoYcftRsc24wd/wJzUltqW8ENpYZunLAPZnmwdfETeisZS5XCwxfbnFU/sbgp30kC8Jkdo/m0hUCaWAA==",
         "dependencies": {
           "Avalonia": "[12.1.0]",
           "Avalonia.Themes.Fluent": "[12.1.0]",
           "Irihi.Ursa": "[2.1.0]",
           "Irihi.Ursa.Themes.Semi": "[2.1.0]",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10]",
-          "MyAvaloniaManagement.PluginSdk": "3.2.0",
+          "MyAvaloniaManagement.PluginSdk": "3.3.0",
           "Semi.Avalonia": "[12.1.0]"
         }
       }

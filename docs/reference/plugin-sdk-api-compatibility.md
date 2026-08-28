@@ -14,7 +14,8 @@
 > 和外部双 ALC 调用能够闭合；两者现已发布到 NuGet.org。Build 协议不变并继续精确消费 `1.1.2`。
 > 本次兼容次版本发布没有改写 G2 已签署的 v3 基线分类，当时仍为 Shipped 127/45、Unshipped 72/6。
 > Workbench Command G1 随后只在源码中加入兼容候选：Shipped 仍为 127/45，当前 Unshipped 为
-> Core 91、UI 66；源码版本仍为 3.2.0，3.3.0 打包和外部传播留到 G6。
+> Core 91、UI 66。G6 已把源码和候选包提升到 `3.3.0`，并以 Templates `1.3.0`、真实外部插件和
+> 新旧 Host 兼容矩阵验证传播；历史 Shipped 文本不倒写。
 
 ## 1. 权威源与程序集边界
 
@@ -60,6 +61,8 @@ Workflow Action G1 的当前状态是 v3 Shipped 127/45、Unshipped 72/6。新�
 Workbench Command G1 在该历史基础上新增 `CommandId`、Document Target、Command/Menu/KeyBinding
 Descriptor 和可选注册扩展，当前状态为 v3 Shipped 127/45、Unshipped 91/66。G1 只建立 Host Registry
 冻结事实，不建立 Executor 或 Avalonia 投影；统一非发布入口为 `scripts/Test-WorkbenchCommandG1.ps1`。
+G6 的包与模板传播入口为 `scripts/Test-WorkbenchCommandG6.ps1`；它在隔离 NuGet 缓存中校验 3.3.0
+候选包、1.3.0 模板、lock file、生成项目、双 ALC、新 Host/旧插件和旧 Host/新插件负例。
 
 ## 3. 日常变更流程
 

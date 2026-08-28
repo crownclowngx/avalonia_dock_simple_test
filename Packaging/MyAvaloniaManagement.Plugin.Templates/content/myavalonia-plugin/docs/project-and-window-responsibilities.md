@@ -16,7 +16,8 @@
 
 1. 登记插件私有服务；
 2. 用稳定 Descriptor 声明 Document、Tool 等贡献；
-3. 把 Model 与 View 的对应关系交给 Host。
+3. 可选声明 Workbench Command 及其菜单位置，但不保存 Document 实例或执行回调；
+4. 把 Model 与 View 的对应关系交给 Host。
 
 Host 读取构建生成的 `plugin.manifest.json`，检查 Plugin SDK 兼容区间，加载唯一的 `IPluginModule`，再按
 登记结果创建 Document Scope、Tool singleton、View 和 Dock 适配对象。插件不应扫描 Host、直接操作

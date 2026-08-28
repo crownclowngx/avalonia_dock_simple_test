@@ -176,7 +176,7 @@ try {
         $manifest `
         'myavalonia.plugin.my-small-tools' `
         '3.1.0' `
-        '3.2.0'
+        '3.3.0'
 
     $variableName = 'MYAVALONIA_G11_V3_PACKAGE_ROOT'
     $previousPackageRoot = [Environment]::GetEnvironmentVariable($variableName)

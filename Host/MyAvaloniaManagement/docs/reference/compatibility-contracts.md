@@ -86,7 +86,7 @@ V2 G14 冻结的 v2 Shipped，并在 V3 G14 随最终表面进入 v3 Shipped。
 ### 2.2 版本所有权
 
 - 产品、Host 程序集身份和 Plugin SDK 版本集中定义在根级 `Directory.Version.props`；
-- 当前产品为 `3.0.0`、仓库内 Core/UI SDK 候选为 `3.2.0`、Workflow SDK 为 `1.0.0`；Host/Core/UI `AssemblyVersion` 分别为 `3.0.0.0` / `3.2.0.0`，V3 不重新引入独立 Host API 版本线；
+- 当前产品为 `3.0.0`、仓库内 Core/UI SDK 候选为 `3.3.0`、Workflow SDK 为 `1.0.0`；Host/Core/UI `AssemblyVersion` 分别为 `3.0.0.0` / `3.3.0.0`，V3 不重新引入独立 Host API 版本线；
 - 兼容的 SDK 新增提升次版本但保持同一主版本程序集身份；破坏性契约变化提升主版本；
 - 每个插件只拥有自己的 `PluginVersion`，清单版本必须与入口程序集精确一致；
 - manifest、布局、外观、诊断和未来 Document 信封分别拥有整数 schema，不共享全局数字；
@@ -185,7 +185,7 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - `entryPoint.type` 必须是区分大小写的规范完整类型名，不得含空白、程序集限定名、泛型或嵌套符号；
 - 入口必须携带同名 `.deps.json`，宿主不扫描目录猜测托管或原生依赖；
 - `pluginVersion` 必须与入口 `AssemblyVersion` 精确一致；manifest `pluginId` 是插件身份唯一事实源；
-- Core 与 UI 当前仓库候选版本均为 `3.2.0`；二者不一致属于宿主配置错误，兼容诊断统一为 `PLUGIN_SDK_INCOMPATIBLE`；
+- Core 与 UI 当前仓库候选版本均为 `3.3.0`；二者不一致属于宿主配置错误，兼容诊断统一为 `PLUGIN_SDK_INCOMPATIBLE`；
 
 ### 3.1.1 Workflow Action 调用边界
 

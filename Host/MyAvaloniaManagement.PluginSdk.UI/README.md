@@ -36,16 +36,17 @@ Workbench Command G1 继续使用同一兼容模式：`IPluginRegistration` 原�
 `IWorkbenchCommandRegistration` 由 Host internal 注册对象可选实现。插件通过扩展方法声明
 `CommandDescriptor`、目标 Document、菜单共享末端位置和 Avalonia Key/KeyModifiers；Descriptor 与 Registry
 都不保存 Target、Provider、Control、`MenuItem`、`KeyBinding`、`ICommand` 或回调。G2 已在 Host internal
-建立无 UI 合并 Catalog 和 Executor，但插件声明在活动 Document Target 路由完成前只返回 TargetUnavailable；
-现有 XAML、菜单和 `Ctrl+S` 仍走 G1 前路径，没有创建 UI 投影。当前源码版本仍为 3.2.0，public API
-保持 G1 的 v3 Unshipped 91/66，Workbench Command 的 3.3.0 候选打包与外部传播留到 G6。
+建立无 UI 合并 Catalog 和 Executor；G3–G5 已完成活动 Document Target 路由、Host 打开/保存迁移，以及
+Host-owned Menu/KeyBinding Projection。当前候选版本为 3.3.0，public API 保持 v3 Shipped 127/45、
+Unshipped 91/66；G6 使用真实 nupkg、模板生成项目和独立 ALC 验证外部传播。Palette 仍不在本阶段范围内。
 
 推荐通过解决方案模板开始外部插件开发：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.2.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.3.0
 dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
 ```
 
-Templates `1.2.0` 把三个生成项目精确锁定到 Core/UI SDK `3.2.0`；Build 协议没有变化，仍精确
-使用 NuGet.org 的 `1.1.2`。模板只生成中性的 Document 示例，Provider 与 Consumer 接法见生成文档。
+Templates `1.3.0` 把三个生成项目精确锁定到 Core/UI SDK `3.3.0`；Build 协议没有变化，仍精确
+使用 NuGet.org 的 `1.1.2`。模板生成中性的 Document 与单次执行 Command 示例，不注册默认快捷键；
+Provider、Consumer 与 Command Target 的设计边界见生成文档。

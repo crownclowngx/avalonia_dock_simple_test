@@ -36,7 +36,7 @@ public sealed class VersionPolicyTests
         var sdkContractAssembly = typeof(PluginId).Assembly;
 
         Assert.Equal("3.0.0", properties["MyAvaloniaProductVersion"]);
-        Assert.Equal("3.2.0", properties["MyAvaloniaPluginSdkVersion"]);
+        Assert.Equal("3.3.0", properties["MyAvaloniaPluginSdkVersion"]);
         Assert.Equal("1.0.0", properties["MyAvaloniaPluginSdkWorkflowVersion"]);
         Assert.False(
             properties.ContainsKey("MyAvaloniaHostApiAssemblyVersion"),

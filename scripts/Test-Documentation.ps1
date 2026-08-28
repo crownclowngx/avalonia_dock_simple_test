@@ -409,7 +409,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'windowsCi=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'releaseGate=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'publishable=false' }
-    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G5 已完成，G6–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G6 已完成，G7–G10 尚未实施' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = '状态：已完成（2026-08-28；完整非发布门禁通过）' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'Test-WorkbenchCommandG1.ps1' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'IWorkbenchDocumentCommandTarget' }
@@ -475,6 +475,14 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g5-declarative-menu-keybinding-projection.md'; Fragment = 'uploaded=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g5-declarative-menu-keybinding-projection.md'; Fragment = 'signed=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g5-declarative-menu-keybinding-projection.md'; Fragment = 'tagCreated=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md'; Fragment = 'Test-WorkbenchCommandG6.ps1' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md'; Fragment = 'Core/UI SDK 同步提升到 `3.3.0`' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md'; Fragment = 'Templates 提升到 `1.3.0`' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md'; Fragment = 'aiflow=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md'; Fragment = 'windowsSmoke=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md'; Fragment = 'hostReleaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g6-sdk-candidate-template-independent-consumption.md'; Fragment = 'tagCreated=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

@@ -49,12 +49,13 @@ Avalonia 12 包，不需要另外安装 `Avalonia.Templates` 才能创建本插�
 在准备存放源码的目录打开 PowerShell：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.2.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.3.0
 dotnet new list myavalonia
 dotnet new myavalonia-plugin --help
 ```
 
-公开模板 `1.2.0` 精确使用 Core/UI `3.2.0` 与 Build `1.1.2`，并为三个生成项目携带 lock file。
+公开模板 `1.3.0` 精确使用 Core/UI `3.3.0` 与 Build `1.1.2`，并为三个生成项目携带 lock file。
+它还生成一个不占用默认快捷键的 Document Command 示例，便于验证活动文档实例路由。
 
 应能看到短名称 `myavalonia-plugin`。若想搜索公开包：
 
