@@ -1,8 +1,11 @@
+using Dock.Model.Controls;
+using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Commands.Context;
 using MyAvaloniaManagement.Business.Commands.State;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Layout;
 
 namespace MyAvaloniaManagement.Tests;
 
@@ -164,6 +167,9 @@ public sealed class WorkbenchCommandContextStateTests
         using var context = WorkbenchCommandG3TestContext.Create(diagnostics);
         var adapter = await WorkbenchCommandG3TestContext.CreateDocumentAsync(context, "event-failure");
         var target = Assert.IsType<WorkbenchCommandG3Document>(adapter.Model);
+        var documentDock = Assert.IsType<DocumentDock>(
+            context.Workspace.DockFactory.GetDockable<IDocumentDock>(DockLayoutIds.Documents));
+        documentDock.ActiveDockable = null;
         target.ThrowOnEventAdd = true;
         context.Workspace.DockFactory.SetActiveDockable(adapter);
 

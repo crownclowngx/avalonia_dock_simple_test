@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
+using MyAvaloniaManagement.Business.Presentation.Commands;
 
 namespace MyAvaloniaManagement.ViewModels.Bindings;
 
@@ -23,9 +24,7 @@ internal interface IMainWindowViewBindings
 
     bool IsDarkTheme { get; }
 
-    IAsyncRelayCommand OpenDocumentCommand { get; }
-
-    IAsyncRelayCommand SaveDocumentCommand { get; }
+    IWorkbenchCommandPresentationBindings WorkbenchCommands { get; }
 
     IRelayCommand DismissDocumentOperationErrorCommand { get; }
 

@@ -19,9 +19,10 @@
 > 均未上传、未打 tag、未对外发布且未使用 AIFLOW。G3.1 进一步把 Core/UI 候选提升到 3.2.0，新增
 > `MyAvaloniaManagement.PluginSdk.Workflow 1.0.0`，统一 Schema/引用路径/双 revision，并把该程序集
 > 纳入默认 ALC 共享根；Host 产品版本仍为 3.0.0。Workbench Command G1–G3 又在不改变版本和
-> public API 基线的前提下冻结 Command 注册事实，并建立 Host internal 无 UI Catalog、打开/保存 Handler、
-> Context v1、活动 Document Target 路由、Executor、单 Document 租约、脱敏诊断和 10 秒关闭门控；
-> 菜单、`Ctrl+S` 与 Palette 的 UI 投影仍未实施。
+> public API 基线的前提下冻结 Command 注册事实，并建立 Host internal Catalog、打开/保存 Handler、
+> Context v1、活动 Document Target 路由、Executor、单 Document 租约、脱敏诊断和 10 秒关闭门控；G4 又以
+> Host-only Presentation 把 File 菜单与 `Ctrl+S` 统一到相同 CommandId/Executor，并删除 MainWindow 旧命令。
+> 插件菜单/快捷键贡献与 Palette 仍未实施。
 
 ## 1. 目标与边界
 
@@ -260,7 +261,7 @@ JSONL 和镜像之前执行唯一一次白名单转换：
 门禁都不启用该旁路。设计与验收证据见
 [G15 宿主诊断脱敏](../../../../docs/plan-history/host-v1/g15-host-diagnostic-redaction.md)。
 
-### 4.6 Workbench Command G2–G3 无 UI 内核与活动实例路由
+### 4.6 Workbench Command G2–G4 内核、活动实例路由与 Host Presentation
 
 `HostWorkbenchCommandCatalog` 只冻结 `myavalonia.host.command.document.open/save` 及其显式 Handler；
 `WorkbenchCommandCatalog` 把该目录与 `PluginRegistry.WorkbenchCommands` 合并，并在启动期拒绝最终身份
@@ -282,8 +283,12 @@ CanExecute，不缓存状态。插件执行链接调用者、单 Document 关闭
 再允许 Dock 重试和既有 View/Adapter/Scope 释放；没有强制释放超时。全局退出仍由独立 10 秒门控负责，
 超时保留对象图。
 
-打开/保存 Handler 继续复用 `DocumentPersistenceCoordinator` 和唯一 `DocumentOperationState`。现有菜单、
-`Ctrl+S` 与 `MainWindowViewModel` 命令在 G4 前保持旧 UI 路径；当前不存在第二套 UI 投影。
+打开/保存 Handler 继续复用 `DocumentPersistenceCoordinator` 和唯一 `DocumentOperationState`。G4 的
+`HostWorkbenchCommandPresentation` 只拥有 Open/Save 两个 `WorkbenchPresentationCommand`；File 菜单与
+`Ctrl+S` 引用同一个 Save 实例。Adapter 的 `CanExecute`/`IsEnabled` 实时查询 State Query，执行始终进入
+Executor 重查；工作线程状态通知切回显式 Dispatcher，Dispose 成对退订。`MainWindowViewModel` 已删除
+打开/保存方法、生成命令和持久化协调器依赖，只保留窄 Presentation 绑定属性。通用插件菜单、快捷键投影
+和 Palette 尚未进入生产。
 
 ## 5. Workspace Session 与 Dock Factory 边界
 

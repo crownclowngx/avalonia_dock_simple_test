@@ -9,8 +9,12 @@
              x:CompileBindings="True" x:DataType="bindings:IMainWindowViewBindings">
     <Menu>
         <MenuItem Header="文件">
-            <MenuItem Header="打开" Command="{Binding OpenDocumentCommand}"/>
-            <MenuItem Header="保存 (ctrl+s)" Command="{Binding SaveDocumentCommand}"/>
+            <MenuItem Header="打开"
+                      IsEnabled="{Binding WorkbenchCommands.Open.IsEnabled}"
+                      Command="{Binding WorkbenchCommands.Open}"/>
+            <MenuItem Header="保存 (ctrl+s)"
+                      IsEnabled="{Binding WorkbenchCommands.Save.IsEnabled}"
+                      Command="{Binding WorkbenchCommands.Save}"/>
         </MenuItem>
         <MenuItem Header="视图">
             <MenuItem Header="主题">

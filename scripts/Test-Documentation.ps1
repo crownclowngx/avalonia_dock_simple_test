@@ -409,7 +409,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'windowsCi=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'releaseGate=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'publishable=false' }
-    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G3 已完成，G4–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G4 已完成，G5–G10 尚未实施' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = '状态：已完成（2026-08-28；完整非发布门禁通过）' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'Test-WorkbenchCommandG1.ps1' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'IWorkbenchDocumentCommandTarget' }
@@ -450,6 +450,17 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'published=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'uploaded=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'tagCreated=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g4-host-open-save-presentation-loop.md'; Fragment = 'Test-WorkbenchCommandG4.ps1' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g4-host-open-save-presentation-loop.md'; Fragment = 'HostWorkbenchCommandPresentation' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g4-host-open-save-presentation-loop.md'; Fragment = 'aiflow=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g4-host-open-save-presentation-loop.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g4-host-open-save-presentation-loop.md'; Fragment = 'windowsSmoke=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g4-host-open-save-presentation-loop.md'; Fragment = 'releaseAcceptance=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g4-host-open-save-presentation-loop.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g4-host-open-save-presentation-loop.md'; Fragment = 'publishable=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g4-host-open-save-presentation-loop.md'; Fragment = 'published=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g4-host-open-save-presentation-loop.md'; Fragment = 'uploaded=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g4-host-open-save-presentation-loop.md'; Fragment = 'tagCreated=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

@@ -1,4 +1,5 @@
 using System;
+using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Commands.Catalog;
@@ -13,6 +14,7 @@ using MyAvaloniaManagement.Business.Documents.Ownership;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation;
+using MyAvaloniaManagement.Business.Presentation.Commands;
 using MyAvaloniaManagement.Business.Plugins.Discovery;
 using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.Business.Storage;
@@ -137,6 +139,13 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IWorkbenchCommandShutdownParticipant>(provider =>
             provider.GetRequiredService<WorkbenchCommandExecutor>());
         services.AddSingleton<WorkbenchCommandShutdownGate>();
+        services.AddSingleton(provider => new HostWorkbenchCommandPresentation(
+            provider.GetRequiredService<WorkbenchCommandStateQuery>(),
+            provider.GetRequiredService<WorkbenchCommandExecutor>(),
+            Dispatcher.UIThread,
+            provider.GetService<IHostDiagnosticSink>()));
+        services.AddSingleton<IWorkbenchCommandPresentationBindings>(provider =>
+            provider.GetRequiredService<HostWorkbenchCommandPresentation>());
         services.AddSingleton(provider => new WorkspaceCatalog(
             provider.GetRequiredService<HostWorkspaceCatalog>(),
             provider.GetRequiredService<PluginRegistry>(),
@@ -301,7 +310,7 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<WorkspaceSession>(),
             provider.GetRequiredService<DockLayoutLifecycle>(),
             provider.GetRequiredService<ApplicationThemeService>(),
-            provider.GetRequiredService<DocumentPersistenceCoordinator>(),
+            provider.GetRequiredService<IWorkbenchCommandPresentationBindings>(),
             provider.GetRequiredService<DocumentOperationState>()));
 
         // 内置策略只依赖“创建某类对象”的窄工厂，不依赖整个 IServiceProvider。

@@ -13,7 +13,8 @@ internal static class DocumentTestContext
 {
     internal static TestHostContext Create(
         Action<IServiceCollection>? configureServices = null,
-        bool persistable = true) =>
+        bool persistable = true,
+        bool useProductionWorkbenchPresentation = false) =>
         new(
             configureServices: services =>
             {
@@ -39,7 +40,8 @@ internal static class DocumentTestContext
                     typeof(UserControl),
                     static () => new UserControl(),
                     persistable);
-            });
+            },
+            useProductionWorkbenchPresentation: useProductionWorkbenchPresentation);
 }
 
 /// <summary>为 Document 专项测试编排插件边界失败，不向生产类型加入测试开关。</summary>

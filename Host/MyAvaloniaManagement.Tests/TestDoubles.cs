@@ -8,6 +8,8 @@ using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels;
+using MyAvaloniaManagement.ViewModels.Design;
+using MyAvaloniaManagement.Business.Presentation.Commands;
 using Avalonia.Controls;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -25,7 +27,8 @@ internal sealed class TestHostContext : IDisposable
     public TestHostContext(
         IEnumerable<StubToolContribution>? toolContributions = null,
         Action<IServiceCollection>? configureServices = null,
-        Action<IServiceCollection, PluginRegistryBuilder>? configureContributions = null)
+        Action<IServiceCollection, PluginRegistryBuilder>? configureContributions = null,
+        bool useProductionWorkbenchPresentation = false)
     {
         TempDirectory = Path.Combine(
             Path.GetTempPath(),
@@ -55,6 +58,14 @@ internal sealed class TestHostContext : IDisposable
         }
         configureContributions?.Invoke(services, registryBuilder);
         configureServices?.Invoke(services);
+        if (!useProductionWorkbenchPresentation)
+        {
+            // 普通领域单测没有 Avalonia UI 线程，不应因创建 MainWindowViewModel 而把进程全局
+            // Dispatcher 绑定到任意 xUnit 工作线程。G4 生产 Presentation 由专项 Unit/Headless
+            // 测试显式启用；其余测试使用与设计器相同的纯内存窄端口。
+            services.AddSingleton<IWorkbenchCommandPresentationBindings>(
+                new WorkbenchCommandPresentationDesignData());
+        }
 
         // 纯单元测试没有 Avalonia 平台，使用不构造 Control 的 V2 工厂替身；真实 View
         // 预构建与失败回滚由 Headless UI 测试覆盖。

@@ -3,6 +3,7 @@ using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Workspace;
+using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.PluginSdk;
 
@@ -17,7 +18,8 @@ namespace MyAvaloniaManagement.UiTests;
 /// </remarks>
 internal sealed class UiTestContext : IDisposable
 {
-    public UiTestContext()
+    public UiTestContext(
+        Action<IServiceCollection, PluginRegistryBuilder>? configureContributions = null)
     {
         TempDirectory = Path.Combine(
             Path.GetTempPath(),
@@ -26,7 +28,8 @@ internal sealed class UiTestContext : IDisposable
         Directory.CreateDirectory(TempDirectory);
         Storage = new UiStorageService();
         var services = new ServiceCollection();
-        services.AddApplicationServices();
+        var registryBuilder = new PluginRegistryBuilder();
+        services.AddApplicationServices(registryBuilder);
         services.AddViewModels();
         services.AddSingleton<IHostStorageService>(Storage);
         services.AddSingleton(new DockLayoutStore(
@@ -36,6 +39,7 @@ internal sealed class UiTestContext : IDisposable
                 TempDirectory,
                 AppearanceSettingsStore.SettingsFileName)));
         services.AddSingleton(PluginModuleCatalog.Discover(PluginDiscoverySnapshot.Empty));
+        configureContributions?.Invoke(services, registryBuilder);
         Provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateScopes = true,
@@ -83,11 +87,21 @@ internal sealed class UiTestContext : IDisposable
 /// </remarks>
 internal sealed class UiStorageService : IHostStorageService
 {
+    public IReadOnlyList<string> OpenPaths { get; set; } = [];
+
+    public string? SavePath { get; set; }
+
+    public Exception? WriteException { get; set; }
+
+    public TaskCompletionSource? WriteObserved { get; set; }
+
+    public List<(string Path, string Content)> Writes { get; } = [];
+
     public Task<IReadOnlyList<string>> PickOpenFilesAsync() =>
-        Task.FromResult<IReadOnlyList<string>>([]);
+        Task.FromResult(OpenPaths);
 
     public Task<string?> PickSaveFileAsync(string documentDisplayName) =>
-        Task.FromResult<string?>(null);
+        Task.FromResult(SavePath);
 
     public Task<string?> PickFolderAsync() =>
         Task.FromResult<string?>(null);
@@ -101,6 +115,14 @@ internal sealed class UiStorageService : IHostStorageService
     public Task<string> ReadAllTextAsync(string path) =>
         File.ReadAllTextAsync(path);
 
-    public Task WriteAllTextAsync(string path, string content) =>
-        File.WriteAllTextAsync(path, content);
+    public Task WriteAllTextAsync(string path, string content)
+    {
+        WriteObserved?.TrySetResult();
+        if (WriteException is { } exception)
+        {
+            return Task.FromException(exception);
+        }
+        Writes.Add((Path.GetFullPath(path), content));
+        return File.WriteAllTextAsync(path, content);
+    }
 }

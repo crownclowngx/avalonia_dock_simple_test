@@ -2,6 +2,8 @@ using System.Text.Json;
 using Dock.Model.Controls;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Commands.Catalog;
+using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.PluginSdk;
@@ -118,7 +120,7 @@ public sealed class DocumentPersistenceTests
         model.IsModified = true;
         GetDocumentDock(context).ActiveDockable = adapter;
 
-        await viewModel.SaveDocument();
+        await ExecuteHostCommandAsync(context, HostWorkbenchCommandIds.SaveDocument);
 
         Assert.False(model.IsDirty);
         Assert.False(adapter.IsModified);
@@ -157,7 +159,9 @@ public sealed class DocumentPersistenceTests
         var releaseWrite = new TaskCompletionSource(
             TaskCreationOptions.RunContinuationsAsynchronously);
         context.Storage.PauseNextWrite(writeStarted, releaseWrite);
-        var saveTask = viewModel.SaveDocument();
+        var saveTask = ExecuteHostCommandAsync(
+            context,
+            HostWorkbenchCommandIds.SaveDocument);
 
         try
         {
@@ -205,7 +209,7 @@ public sealed class DocumentPersistenceTests
         GetDocumentDock(context).ActiveDockable = adapter;
         context.Storage.WriteOutcomes.Enqueue(new IOException("主文件失败"));
 
-        await viewModel.SaveDocument();
+        await ExecuteHostCommandAsync(context, HostWorkbenchCommandIds.SaveDocument);
 
         Assert.True(model.IsDirty);
         Assert.Equal("未命名", adapter.Title);
@@ -214,7 +218,7 @@ public sealed class DocumentPersistenceTests
 
         context.Storage.WriteOutcomes.Enqueue(null);
         context.Storage.WriteOutcomes.Enqueue(new IOException("备份失败"));
-        await viewModel.SaveDocument();
+        await ExecuteHostCommandAsync(context, HostWorkbenchCommandIds.SaveDocument);
         Assert.False(model.IsDirty);
         Assert.False(adapter.IsModified);
         Assert.Equal("warning", adapter.Title);
@@ -234,14 +238,14 @@ public sealed class DocumentPersistenceTests
         var probe = context.Provider.GetRequiredService<DocumentTestProbe>();
 
         probe.CaptureException = new PluginBoundaryException("secret-capture");
-        await viewModel.SaveDocument();
+        await ExecuteHostCommandAsync(context, HostWorkbenchCommandIds.SaveDocument);
         Assert.Empty(context.Storage.Writes);
         Assert.Equal(string.Empty, context.GetDocumentFilePath(adapter));
         Assert.DoesNotContain("secret-capture", viewModel.DocumentOperationError, StringComparison.Ordinal);
 
         probe.CaptureException = null;
         probe.ReturnNullContent = true;
-        await viewModel.SaveDocument();
+        await ExecuteHostCommandAsync(context, HostWorkbenchCommandIds.SaveDocument);
         Assert.Empty(context.Storage.Writes);
         Assert.Equal(string.Empty, context.GetDocumentFilePath(adapter));
     }
@@ -255,7 +259,7 @@ public sealed class DocumentPersistenceTests
         var adapter = Assert.Single(GetDocuments(context));
         GetDocumentDock(context).ActiveDockable = adapter;
 
-        await viewModel.SaveDocument();
+        await ExecuteHostCommandAsync(context, HostWorkbenchCommandIds.SaveDocument);
         Assert.Empty(context.Storage.Writes);
         Assert.False(viewModel.HasDocumentOperationError);
 
@@ -285,7 +289,7 @@ public sealed class DocumentPersistenceTests
 
         context.Storage.SavePath = Path.GetPathRoot(context.TempDirectory)!;
         GetDocumentDock(context).ActiveDockable = adapter;
-        await viewModel.SaveDocument();
+        await ExecuteHostCommandAsync(context, HostWorkbenchCommandIds.SaveDocument);
         Assert.Equal("测试文档", adapter.HostTitle);
     }
 
@@ -383,7 +387,7 @@ public sealed class DocumentPersistenceTests
         context.Storage.OpenPaths = [string.Empty, Path.Combine(context.TempDirectory, "missing.mamdoc"), bad, good];
         var viewModel = context.CreateMainWindowViewModel();
 
-        await viewModel.OpenDocument();
+        await ExecuteHostCommandAsync(context, HostWorkbenchCommandIds.OpenDocument);
 
         var adapter = Assert.Single(GetDocuments(context));
         Assert.Equal("继续打开", Assert.IsType<TestSavableDocument>(adapter.Model).Content);
@@ -427,7 +431,10 @@ public sealed class DocumentPersistenceTests
         Assert.False(viewModel.HasDocumentOperationError);
 
         GetDocumentDock(context).ActiveDockable = null;
-        await viewModel.SaveDocument();
+        var saveResult = await context.Provider
+            .GetRequiredService<WorkbenchCommandExecutor>()
+            .ExecuteAsync(HostWorkbenchCommandIds.SaveDocument);
+        Assert.Equal(WorkbenchCommandExecutionStatus.CommandDisabled, saveResult.Status);
         Assert.False(viewModel.HasDocumentOperationError);
         Assert.Empty(context.Storage.Writes);
     }
@@ -456,13 +463,13 @@ public sealed class DocumentPersistenceTests
 
         GetDocumentDock(context).ActiveDockable = recovered;
         context.Storage.SavePath = primary;
-        await viewModel.SaveDocument();
+        await ExecuteHostCommandAsync(context, HostWorkbenchCommandIds.SaveDocument);
         Assert.Contains("不能覆盖损坏原件", viewModel.DocumentOperationError);
         Assert.True(recovered.IsModified);
 
         var recoveredCopy = Path.Combine(context.TempDirectory, "recovered-copy.mamdoc");
         context.Storage.SavePath = recoveredCopy;
-        await viewModel.SaveDocument();
+        await ExecuteHostCommandAsync(context, HostWorkbenchCommandIds.SaveDocument);
         Assert.False(recovered.IsModified);
         Assert.Equal("recovered-copy", recovered.Title);
     }
@@ -492,6 +499,19 @@ public sealed class DocumentPersistenceTests
     }
 
     private sealed class PluginBoundaryException(string message) : Exception(message);
+
+    /// <summary>
+    /// 通过 G4 唯一工作台执行入口运行 Host 打开或保存命令，并确认 Handler 已完成真实用例。
+    /// </summary>
+    private static async Task ExecuteHostCommandAsync(
+        TestHostContext context,
+        MyAvaloniaManagement.PluginSdk.CommandId commandId)
+    {
+        var result = await context.Provider
+            .GetRequiredService<WorkbenchCommandExecutor>()
+            .ExecuteAsync(commandId);
+        Assert.Equal(WorkbenchCommandExecutionStatus.Succeeded, result.Status);
+    }
 
     /// <summary>
     /// 测试直接调用 Document 用例所有者，并把结果交给生产错误状态对象。

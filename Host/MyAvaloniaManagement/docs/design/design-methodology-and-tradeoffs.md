@@ -190,15 +190,16 @@ V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型
 
 取舍：只保证单文件替换，不实现跨文件事务、备份版本链或崩溃恢复日志。当前两个文件格式都以单文件为一致性边界。
 
-### 4.10 Snapshot + State Query + Executor + Lease：Workbench Command G2–G3
+### 4.10 Snapshot + State Query + Executor + Lease + Presentation：Workbench Command G2–G4
 
 目的：Catalog 冻结“有什么命令”，Context Snapshot 表达“当前有哪些 Host 可确认事实”，State Query 判定
 “此刻是否可用”，Executor 负责当前实例执行，Host Handler 只适配既有打开/保存用例，Adapter Lease 只保护
 同步 Dock 关闭与在途插件调用的先后关系。
 
 取舍：Context v1 只有五个字段；Target 只来自当前 Adapter.Model 的可选 SDK 能力；租约按 Adapter 引用计数，
-不设置强制释放超时。现有菜单和 `Ctrl+S` 在 G4 前暂不迁移。Executor 不增加单飞、重试、队列、业务超时、
-授权、Run Manager 或 invocation scope，避免把用户意图命令扩张成第二套 Workflow Action Runtime。
+不设置强制释放超时。G4 只增加 Host-only Presentation Adapter，把 File 菜单和 `Ctrl+S` 统一到同一个
+Save CommandId/实例；显式 `IsEnabled` 每次查询 State Query，不缓存第二份状态。Executor 不增加单飞、重试、
+队列、业务超时、授权、Run Manager 或 invocation scope，避免把用户意图命令扩张成第二套 Workflow Action Runtime。
 
 ## 5. 关键设计决策与取舍
 

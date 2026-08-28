@@ -99,8 +99,8 @@ public sealed class ApplicationAndWindowTests
 
         Assert.NotNull(main.Layout);
         Assert.True(main.HasDocumentOperationError);
-        Assert.NotNull(main.OpenDocumentCommand);
-        Assert.NotNull(main.SaveDocumentCommand);
+        Assert.NotNull(main.WorkbenchCommands.Open);
+        Assert.NotNull(main.WorkbenchCommands.Save);
         Assert.NotEmpty(files.RootNodes);
         Assert.NotEmpty(files.RootNodes[0].Children);
         Assert.NotNull(files.SelectFolderCommand);

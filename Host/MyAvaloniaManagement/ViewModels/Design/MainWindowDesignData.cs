@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using MyAvaloniaManagement.ViewModels.Bindings;
+using MyAvaloniaManagement.Business.Presentation.Commands;
 
 namespace MyAvaloniaManagement.ViewModels.Design;
 
@@ -18,8 +18,7 @@ internal sealed class MainWindowDesignData : IMainWindowViewBindings
     public MainWindowDesignData()
     {
         Layout = CreateLayout();
-        OpenDocumentCommand = new AsyncRelayCommand(NoOperationAsync);
-        SaveDocumentCommand = new AsyncRelayCommand(NoOperationAsync);
+        WorkbenchCommands = new WorkbenchCommandPresentationDesignData();
         DismissDocumentOperationErrorCommand = new RelayCommand(NoOperation);
         SetThemeCommand = new RelayCommand<string?>(_ => { });
     }
@@ -36,9 +35,7 @@ internal sealed class MainWindowDesignData : IMainWindowViewBindings
 
     public bool IsDarkTheme => false;
 
-    public IAsyncRelayCommand OpenDocumentCommand { get; }
-
-    public IAsyncRelayCommand SaveDocumentCommand { get; }
+    public IWorkbenchCommandPresentationBindings WorkbenchCommands { get; }
 
     public IRelayCommand DismissDocumentOperationErrorCommand { get; }
 
@@ -91,8 +88,6 @@ internal sealed class MainWindowDesignData : IMainWindowViewBindings
             DefaultDockable = workspace,
         };
     }
-
-    private static Task NoOperationAsync() => Task.CompletedTask;
 
     private static void NoOperation()
     {

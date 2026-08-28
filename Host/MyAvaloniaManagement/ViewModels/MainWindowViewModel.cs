@@ -6,6 +6,7 @@ using Dock.Model.Controls;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Presentation.Commands;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels.Bindings;
 
@@ -20,7 +21,6 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
     private readonly WorkspaceSession _workspace;
     private readonly DockLayoutLifecycle _layoutLifecycle;
     private readonly ApplicationThemeService _themeService;
-    private readonly DocumentPersistenceCoordinator _documents;
     private readonly DocumentOperationState _documentOperationState;
     private ApplicationThemeMode _themeMode;
     private IRootDock? _layout;
@@ -41,11 +41,14 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
 
     public bool IsDarkTheme => _themeMode == ApplicationThemeMode.Dark;
 
+    /// <summary>获取主窗口菜单和快捷键共享的 Host 工作台命令展示模型。</summary>
+    public IWorkbenchCommandPresentationBindings WorkbenchCommands { get; }
+
     internal MainWindowViewModel(
         WorkspaceSession workspace,
         DockLayoutLifecycle layoutLifecycle,
         ApplicationThemeService themeService,
-        DocumentPersistenceCoordinator documents,
+        IWorkbenchCommandPresentationBindings workbenchCommands,
         DocumentOperationState documentOperationState)
     {
         _workspace = workspace ?? throw new ArgumentNullException(nameof(workspace));
@@ -53,7 +56,8 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
             throw new ArgumentNullException(nameof(layoutLifecycle));
         _themeService = themeService ??
             throw new ArgumentNullException(nameof(themeService));
-        _documents = documents ?? throw new ArgumentNullException(nameof(documents));
+        WorkbenchCommands = workbenchCommands ??
+            throw new ArgumentNullException(nameof(workbenchCommands));
         _documentOperationState = documentOperationState ??
             throw new ArgumentNullException(nameof(documentOperationState));
         _themeMode = _themeService.CurrentMode;
@@ -134,18 +138,6 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
     {
         OnPropertyChanged(nameof(DocumentOperationError));
         OnPropertyChanged(nameof(HasDocumentOperationError));
-    }
-
-    [RelayCommand]
-    public async Task OpenDocument()
-    {
-        _documentOperationState.Apply(await _documents.OpenSelectedAsync());
-    }
-
-    [RelayCommand]
-    public async Task SaveDocument()
-    {
-        _documentOperationState.Apply(await _documents.SaveActiveAsync());
     }
 
     [RelayCommand]

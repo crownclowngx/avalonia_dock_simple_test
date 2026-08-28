@@ -1,5 +1,30 @@
 # MyAvaloniaManagement 测试说明
 
+## Workbench Command G4 Host 打开/保存 Presentation 非发布门禁
+
+G4 专项入口为：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG4.ps1 -Configuration Release
+```
+
+门禁执行 locked restore、Release 零警告构建、Host Unit/UI/Plugin 三层、SDK/API、四个仓内插件、
+Workbench Command Unit 与 Headless UI 定向测试、覆盖率、单一路径结构扫描和文档验证。新增 Headless 测试
+真实发送 `Ctrl+S`，并验证菜单与 KeyBinding 共享 Save 实例、无/可持久化目标的 Enabled 状态、打开取消、
+保存失败错误条、工作线程状态切换和纯内存设计数据。
+
+实际结果为 Workbench Command Unit 定向 **50/50**、G4 Headless UI **5/5**；Host Unit/UI/Plugin 为
+**277/70/212**，合计 **559/559**；四插件门禁聚合 **3569/3569**。Host 行/分支覆盖率为
+**86.55% / 72.03%**，新增 `WorkbenchPresentationCommand` 与 `HostWorkbenchCommandPresentation` 行覆盖率为
+**90.53% / 100.00%**，G3 既有关键文件也全部不低于 90%。
+
+专项摘要与原始证据写入 `artifacts/test-results/WorkbenchCommandG4/`，包含 27 份 TRX 和 46 份覆盖率 XML。
+门禁固定记录 `aiflow=false`、
+`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、`releaseGate=false`、
+`publishable=false`、`published=false`、`uploaded=false`、`tagCreated=false`；不调用 Windows CI/Smoke 或
+发布门禁。完整设计、SOLID 对照、逐文件覆盖率和回滚信息见
+[G4 专项记录](../plan-history/workbench-command/g4-host-open-save-presentation-loop.md)。
+
 ## Workbench Command G3 Context 与活动 Document Target 非发布门禁
 
 G3 专项入口为：
@@ -14,7 +39,7 @@ Unit 274、UI 65、Plugin 212，共 551/551；四插件聚合 3537 项；Host �
 86.51% / 71.76%。`WorkbenchContextSnapshot`、Context Store、状态查询、Executor、Document 命令租约和
 关闭协调关键文件行覆盖率均不低于 90%。
 
-G3 仍保留 `MainWindowViewModel`、菜单和 `Ctrl+S` 的旧 UI 路径；这些投影只会在 G4 迁移。
+G3 的历史门禁仍要求保留 `MainWindowViewModel`、菜单和 `Ctrl+S` 的旧 UI 路径；这些投影现已由 G4 迁移。
 专项摘要与原始证据位于 `artifacts/test-results/WorkbenchCommandG3/`。本门禁显式记录
 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseGate=false`、`publishable=false`，
 不调用任何 Windows CI/Smoke 或发布门禁。设计、SOLID 对照与回滚边界见

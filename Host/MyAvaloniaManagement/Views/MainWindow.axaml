@@ -22,7 +22,7 @@
     </Design.DataContext>
     <!-- 添加快捷键绑定 -->
     <Window.KeyBindings>
-        <KeyBinding Gesture="Control+S" Command="{Binding SaveDocumentCommand}" />
+        <KeyBinding Gesture="Control+S" Command="{Binding WorkbenchCommands.Save}" />
     </Window.KeyBindings>
     <Grid>
         <views:MainView />

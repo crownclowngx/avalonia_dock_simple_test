@@ -1,7 +1,7 @@
 # MyAvaloniaManagement Workbench Command 引入评审与实施任务书
 
-> 状态：实施中；G0–G3 已完成，G4–G10 尚未实施。当前已有 Command 候选契约、注册声明、
-> 无 UI Catalog/Executor、Context v1、活动 Document Target 路由与关闭门控；本文不表示菜单贡献、
+> 状态：实施中；G0–G4 已完成，G5–G10 尚未实施。当前已有 Command 候选契约、注册声明、
+> Catalog/Executor、Context v1、活动 Document Target 路由、关闭门控及 Host 打开/保存 Presentation 闭环；本文不表示插件菜单贡献、
 > 快捷键贡献或 Command Palette 已进入生产。
 > 评审日期：2026-08-27。
 > 事实基线：[主项目内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、
@@ -792,6 +792,8 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 
 ### G4：迁移 Host 打开/保存，完成第一个真实闭环
 
+- **状态**：已完成（2026-08-28）；实际证据见
+  [G4 Host 打开/保存 Presentation 真实闭环实施记录](../plan-history/workbench-command/g4-host-open-save-presentation-loop.md)。
 - **目标**：同一 `CommandId` 同时服务 File 菜单和 `Ctrl+S`，删除 MainWindow 的旧打开/保存命令。
 - **变更**：建立 Host Presentation Command；Menu/KeyBinding 通过 Executor Adapter 调用；删除 7.1 列出的旧绑定面；
   保存状态由 Context/Executor 投影，无可保存 Document 时菜单 Disabled、快捷键无操作。
@@ -921,9 +923,9 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 
 ### 10.3 Host、菜单与快捷键
 
-- [ ] 打开/保存只有一条生产执行路径，MainWindow 旧转发命令已删除；
-- [ ] File 菜单和 `Ctrl+S` 使用同一 CommandId/Executor；
-- [ ] Save 在无可保存活动 Document 时 Disabled，执行前仍会重查；
+- [x] 打开/保存只有一条生产执行路径，MainWindow 旧转发命令已删除；
+- [x] File 菜单和 `Ctrl+S` 使用同一 CommandId/Executor；
+- [x] Save 在无可保存活动 Document 时 Disabled，执行前仍会重查；
 - [ ] Host 末端共享位置中的 Command Placement 按 Group、Order 和稳定 ID 确定性投影；
 - [ ] 插件不贡献 Avalonia `MenuItem`/`KeyBinding` 实例；
 - [ ] Host 快捷键优先，插件冲突双禁用且不删除 Command；
@@ -978,7 +980,7 @@ Workbench Command v1 只有在以下问题全部回答“是”后才算完成�
 5. [ ] Context v1 只包含 Host 可信活动 Document 事实，没有对象世界或服务定位器泄漏。
 6. [ ] 活动 Document 切换、同类型多实例和 Target 状态变化都路由到正确当前实例。
 7. [ ] Document Scope 隐藏、ClosingToken、Adapter/View/模型释放顺序保持不变。
-8. [ ] MainWindow 打开/保存旧命令已删除，菜单与 `Ctrl+S` 统一进入 Executor。
+8. [x] MainWindow 打开/保存旧命令已删除，菜单与 `Ctrl+S` 统一进入 Executor。
 9. [ ] Host 与插件菜单/快捷键均由不可变 Contribution 投影，插件不拥有 Avalonia UI 对象。
 10. [ ] Host 快捷键和插件冲突采用明确失败关闭政策，不依赖加载顺序。
 11. [ ] WorkflowStudio Validate/Run/Cancel 保持 Workflow Action 治理和多实例隔离。
