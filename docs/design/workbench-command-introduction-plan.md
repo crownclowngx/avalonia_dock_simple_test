@@ -1,6 +1,6 @@
 # MyAvaloniaManagement Workbench Command 引入评审与实施任务书
 
-> 状态：计划；G0–G10 均未实施，本文不表示 Command、Context、菜单贡献、快捷键贡献或
+> 状态：实施中；G0 已冻结基线、语义和 public API 决策，G1–G10 尚未实施。本文不表示 Command、Context、菜单贡献、快捷键贡献或
 > Command Palette 已进入生产。
 > 评审日期：2026-08-27。
 > 事实基线：[主项目内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、
@@ -48,7 +48,7 @@
 - Host internal Command Catalog、Context Store、State Query、Executor、诊断和关闭门控；
 - `WorkspaceSession` 的准确活动 Document 变化事实；
 - Host 内建打开/保存命令及菜单、`Ctrl+S` 的统一执行路径；
-- 声明式 Menu Container、Menu Command 与 Key Binding Contribution；
+- 声明式 Host Menu 末端共享位置、Menu Command 与 Key Binding Contribution；
 - 当前插件注册 Seal、所有权验证、局部 Builder、全局冲突隔离和不可变 Registry 的扩展；
 - 外部 WorkflowStudio 的验证/运行/取消工作台命令；
 - 外部 ClassicGame 中一个真实游戏的重新开始/撤销工作台命令及多实例验收；
@@ -69,6 +69,9 @@
 - Command Target 可以在插件内部适配既有 `RelayCommand` 或业务服务，但平台公共身份仍不是 `ICommand`；
 - 没有第二个生产实现或真实替换边界时，Host internal 默认使用具体类型，不为每个小协作者增加接口；
 - 每个 G 只建立一项可验收事实，SDK、Runtime、UI、外部插件和封板不能压成一个不可回滚提交；
+- SOLID 是每个阶段的首要评审纪律：先证明职责、扩展、替换、接口隔离和依赖方向成立，再评审实现便利性；
+- 只朴素使用值对象、Descriptor、Adapter、Catalog/Registry 等已经有真实职责的模式；没有第二个生产实现或真实替换边界时不增加接口；
+- 新增 public 成员必须提供详细中文 XML 注释；所有权、线程切换、取消、兼容和资源释放等非显然取舍必须用中文设计注释说明原因；
 - 真实结果来自命令、TRX、覆盖率和制品，不把计划数字写成完成证据；
 - 不使用 AIFLOW、MediatR、事件溯源、CQRS、脚本解释器或反射自动暴露作为本计划捷径。
 
@@ -129,7 +132,8 @@ CanExecute
 `RunCommand` 与 `CancelCommand` 的状态互斥，并且运行最终进入已有 Workflow Action Gateway。Command 引入后
 不应重写 Runner 或 Gateway；只需把少量全局有价值的用户意图投影到当前 `MainDocument` 实例。
 
-ClassicGame 同样是独立解决方案，当前包含十一个普通 Document。每个 Document 持有独立 ViewModel，
+ClassicGame 同样是独立解决方案，但不参与 G0 基线签署；其 revision、版本、Document 数量、测试和包事实
+统一留到 G8 开始时从干净输入独立冻结。已知其 Document 采用实例级 ViewModel，
 多个游戏已经有 `RestartCommand`、`UndoCommand`、`HintCommand` 和 `NotifyCanExecuteChanged`。这证明：
 
 - 命令状态属于当前游戏实例，不属于插件单例；
@@ -145,7 +149,7 @@ ClassicGame 同样是独立解决方案，当前包含十一个普通 Document�
 | 活动目标通知缺失 | 只有布局提交通知 | 新增准确活动 Document 事实源 |
 | Scope 解析不开放 | `DocumentScopeManager` 只返回模型和 ClosingToken | Document 模型实现窄 Target，不开放 Provider |
 | 保存状态只在执行时判断 | 现有 Save 命令没有统一状态投影 | Context v1 提供 active/persistable，执行前重查 |
-| 插件菜单不可贡献 | XAML 静态菜单；Document 创建另有专用 Tool | 建立数据化 Menu Container/Command Placement |
+| 插件菜单不可贡献 | XAML 静态菜单；Document 创建另有专用 Tool | 只向 Host 冻结的末端共享位置建立数据化 Command Placement |
 | 快捷键无冲突政策 | 当前只有 Host `Ctrl+S` | Host 保留优先，插件冲突只禁用绑定并诊断 |
 | 插件动态业务状态 | Workflow `IsRunning`、游戏 `CanUndo` | 由当前实例 Target 查询和定向变更事件提供 |
 | Command/WorkflowAction 易混 | 二者都叫“动作” | 固定用户意图与跨插件业务能力分层 |
@@ -404,7 +408,10 @@ public interface IWorkbenchDocumentCommandTarget
 }
 ```
 
-确切成员名和 EventArgs 形状由 G1 API 审阅冻结。必须满足：
+G0 已冻结确切成员名和 EventArgs 形状：`CommandStateChanged` 每次只携带一个非空 `CommandId`。
+多条命令因同一业务状态变化而失效时，Target 逐条发送事件；不接受集合、`null`、空值或“刷新全部”特殊值。
+Host Presentation 可以在切换到 UI Dispatcher 时按 `CommandId` 去重，但不能把去重语义推回 public API。
+此外必须满足：
 
 - Target 不接收 Workbench Context、Provider、Control 或 Dock；
 - 状态变化能指出受影响 CommandId，不要求 Host 每次刷新全部插件命令；
@@ -465,23 +472,30 @@ v1 固定只实现：
 
 ### 4.7 Menu Contribution
 
-Menu v1 包含两种不可变贡献：
+Menu v1 只包含一种插件可声明的不可变贡献：
 
 ```text
-MenuContainerContribution
 MenuCommandContribution
 ```
 
-Host 继续拥有 File/View/Tools/Help 等保留位置。插件可以：
+Host 继续拥有 File/View/Tools/Help 等保留位置，并只开放以下四个末端共享位置：
+
+```text
+myavalonia.host.menu.file.shared
+myavalonia.host.menu.view.shared
+myavalonia.host.menu.tools.shared
+myavalonia.host.menu.help.shared
+```
+
+Host 内建项始终位于对应共享位置之前。共享位置只接收 Command Placement，不接收插件 Container、
+嵌套菜单或 Host 项重排声明。插件只能：
 
 - 向 Host 明确开放的共享位置贡献命令；
-- 在 Workbench Menu Root 下声明一个自己拥有的顶级 Container；
-- 向自己拥有的 Container 放置 Command。
 
 插件不能：
 
+- 声明、接管或嵌套任何菜单 Container；
 - 覆盖、删除或重排 Host 保留菜单；
-- 向另一个插件私有 Container 插入项目；
 - 贡献 `MenuItem`、DataTemplate、Control 或任意 ViewModel；
 - 通过字符串路径如 `"文件/保存"` 绕过稳定位置 ID；
 - 读取另一个插件的命令状态或模型。
@@ -497,8 +511,9 @@ LocationId → Group → Order → PlacementId
 
 ### 4.8 KeyBinding Contribution 与冲突政策
 
-KeyBinding Descriptor 保存规范 Key 与 Modifiers 数据，不保存已经绑定 Command 的 Avalonia `KeyBinding`。
-Host 最终验证并创建 UI 对象。
+KeyBinding Descriptor 直接保存 UI SDK 已依赖的 `Avalonia.Input.Key` 与
+`Avalonia.Input.KeyModifiers` 值，不复制第二套键枚举，也不解析字符串 Gesture；Descriptor 不保存已经绑定
+Command 的 Avalonia `KeyBinding`、Control 或回调。Host 最终验证枚举值、保留项和冲突后创建 UI 对象。
 
 冲突政策固定为：
 
@@ -513,11 +528,13 @@ Host 最终验证并创建 UI 对象。
 
 - UI 触发统一进入可等待 Executor Adapter，未观察异常不能回到 Avalonia Dispatcher；
 - Host 打开/保存继续复用 `DocumentOperationState` 的既有用户提示，不增加第二条错误条；
-- 插件 Command 未处理异常由 Host 映射为固定用户文本并写稳定脱敏诊断，不展示异常正文、路径或 Payload；
+- 插件 Command 未处理异常固定映射为“插件命令执行失败；插件异常正文未写入诊断。”，并写稳定脱敏诊断，
+  不展示异常正文、路径或 Payload；
 - `CanExecute` 或事件访问器抛出异常时，该 Command 当前投影 Disabled，其他插件命令继续可用；
 - Document 关闭触发 ClosingToken，Executor 等待协作取消；Host 不越过 Target 强制释放其资源；
 - Host `BeginShutdown` 后拒绝新命令，已在途 Command 必须在 Runtime 释放插件 Provider 前完成或协作退出；
-- G3 必须明确 shutdown wait 的有限边界，但不得复制 Workflow Action 的六小时 long-running 策略；
+- shutdown wait 固定为独立的 10 秒协作退出宽限，不复制 Workflow Action 的六小时 long-running 策略；
+  超时不得强杀同进程插件代码、伪装成功或继续不安全释放其 Provider，必须记录脱敏诊断；
 - 状态查询默认在 UI 状态投影线程执行，插件实现必须短小无阻塞；耗时检查属于业务预检，不属于 `CanExecute`。
 
 ## 5. Public API 与 Host internal 落点
@@ -543,7 +560,6 @@ Host 最终验证并创建 UI 对象。
 建议在 `MyAvaloniaManagement.PluginSdk.UI` 新增：
 
 - `CommandDescriptor`；
-- `MenuContainerContributionDescriptor`；
 - `MenuCommandContributionDescriptor`；
 - `KeyBindingContributionDescriptor`；
 - 必要的稳定 Placement/Location 值对象和小型枚举；
@@ -625,16 +641,16 @@ Menu 容器可以保留 XAML 根外壳，但命令项必须来自 Host 投影；
 
 ### 6.1 SDK 版本计划
 
-当前 Core/UI SDK 为 `3.2.0`，API baseline 为 `v3`。Command 是兼容新增，候选版本建议为：
+当前 Core/UI SDK 为 `3.2.0`，API baseline 为 `v3`。G0 已冻结 Command 兼容新增的候选版本：
 
 | 包/产品 | 候选处理 |
 | --- | --- |
 | Core SDK | `3.3.0`，新增 BCL-only Command 身份/Target |
 | UI SDK | `3.3.0`，新增描述符和可选注册扩展 |
 | Workflow SDK | 保持 `1.0.0`，Command 不改变 Workflow 协议 |
-| Plugin Build | 默认保持 `1.1.2`；只有包校验协议变化才升版 |
+| Plugin Build | 保持 `1.1.2`；只有后续独立包校验协议评审才允许升版 |
 | Templates | 候选 `1.3.0`，精确引用 Core/UI `3.3.0` |
-| Host 产品 | 默认保持 `3.0.0`，是否提升属于最终发布决策 |
+| Host 产品 | G0 保持 `3.0.0`，是否提升属于最终发布决策 |
 
 使用 Command 的插件必须把 manifest 最低 SDK 提升到实际发布的 Command SDK 版本；不使用 Command 的旧插件
 继续处于既有 `[3.0.0, 4.0.0)` 兼容线。G6 前所有新 API 保持 Unshipped 候选，不得上传或覆盖同版本包。
@@ -719,14 +735,16 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 
 ### G0：冻结基线、语义和 public API 决策
 
-- **目标**：从干净可追溯提交冻结 Host/SDK/模板/四插件及两个外部插件的真实输入，签署本文 3–6 节语义。
-- **生产变化**：无；只允许新增 G0 事实记录和经评审修正本文，不添加 Command 类型。
+- **目标**：从干净可追溯提交冻结 Host/SDK/模板/四个仓内插件和 WorkflowStudio 的真实输入，签署本文 3–6 节语义。
+- **生产变化**：无；只允许新增 G0 事实记录、经评审修正本文、G0 专项门禁和专项测试，不添加 Command 类型。
 - **基线事实**：记录产品/SDK/Build/Templates 版本、Core/UI Shipped/Unshipped、Host 测试和覆盖率、
-  四插件 ZIP/manifest、WorkflowStudio/ClassicGame revision、当前菜单/快捷键和外部包引用。
-- **必须决定**：Target 接口最终名称和事件形状、Menu Container 所有权、Host 共享菜单位置、Gesture 数据结构、
-  插件命令失败的固定用户文本、shutdown wait 上限和 SDK 候选版本。
-- **验证**：当前正式 Host V4 开发/发布入口、SDK/API、四插件专项、两个外部仓库独立 restore/build/test/package。
-- **排除**：AIFLOW、Command 实现、包上传、tag、产品版本提升和外部插件业务修改。
+  四插件 ZIP/manifest、WorkflowStudio revision、当前菜单/快捷键和外部包引用；ClassicGame 明确记为未签署。
+- **已决定**：Target 接口和单 `CommandId` 事件、四个 Host 共享菜单末端位置、Avalonia Key/Modifiers、
+  固定脱敏失败文本、10 秒 shutdown wait、Core/UI `3.3.0` 与 Templates `1.3.0` 候选版本。
+- **验证**：Host V4 G7 开发入口、SDK/API、四插件专项、WorkflowStudio 独立 locked restore/build/test/package、
+  双 ZIP 确定性和真实 Host Loader/注册组合；不得调用发布入口或 Windows Smoke。
+- **排除**：AIFLOW、ClassicGame 读取或门禁、Command 实现、Windows CI/Smoke、Release Acceptance、发布门禁、
+  包上传、签名、tag、产品版本提升和外部插件业务修改。
 - **回滚**：删除 G0 记录并回到输入提交；不得改写既有 V4/Workflow Action 历史数字。
 
 ### G1：建立兼容新增的 Command 契约与注册声明
@@ -779,9 +797,9 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 ### G5：建立声明式 Menu 与 KeyBinding Projection
 
 - **目标**：从不可变 Command/Placement Catalog 确定性生成 Host 和插件菜单/快捷键对象。
-- **变更**：Menu Container/Command Projection、KeyBinding Projection、排序、Group Separator、状态绑定、
+- **变更**：Host 末端共享位置的 Command Projection、KeyBinding Projection、排序、Group Separator、状态绑定、
   owner availability 和 4.7/4.8 冲突政策；Host File 菜单也改由内建 Contribution 提供打开/保存。
-- **验证**：Host 保留菜单、插件顶级 Container、共享位置、同 owner/跨 owner 目标、顺序稳定、空组、冲突 ID、
+- **验证**：Host 保留菜单、四个共享位置、插件 Container/嵌套菜单拒绝、同 owner/跨 owner 目标、顺序稳定、空组、冲突 ID、
   Host 快捷键优先、插件 Gesture 冲突双禁用、Command 仍可经菜单执行和插件不可用时移除投影。
 - **UI 所有权**：插件停用/Host 退出时只有 Host 释放 MenuItem/KeyBinding；Descriptor 不持有控件或 DataContext。
 - **负例**：生产 SDK/Registry 不出现 Avalonia `MenuItem`/`KeyBinding`；不解析字符串菜单路径或 when 表达式。
@@ -803,8 +821,8 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 ### G7：迁移外部 WorkflowStudio 三条真实命令
 
 - **目标**：在独立 WorkflowStudio 仓库提升 Validate/Run/Cancel，并保持 Runner/Workflow Action 分层不变。
-- **变更**：`MainDocument` 实现 Document Target；声明三条 Command、一个 Workflow 顶级菜单 Container、
-  Menu Placement 和经 G0 确认的快捷键；内部继续复用现有编辑协调器、RunSession 和状态通知。
+- **变更**：`MainDocument` 实现 Document Target；声明三条 Command、指向 Host 末端共享位置的 Menu Placement
+  和经 G0 确认的快捷键；内部继续复用现有编辑协调器、RunSession 和状态通知。
 - **状态**：非 Studio Document 时 Hidden；Studio idle 时 Validate/Run 按现有状态启用、Cancel disabled；
   运行时 Validate/Run disabled、Cancel enabled；状态切换刷新全部投影。
 - **验证**：Standalone 单元测试、Host Headless UI、真实 Workflow Action Fake/业务 Action、Run/Cancel、关闭取消、
@@ -815,9 +833,11 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 ### G8：迁移外部 ClassicGame 多实例命令
 
 - **目标**：用一个真实游戏证明 Restart/Undo 路由到当前实例，而不是插件单例或仅按 DocumentType 路由。
-- **首选样本**：Gomoku；若 G0 发现其异步 AI 状态使首样本不稳定，可改用同样具备动态 Undo 的一个游戏，
+- **前置冻结**：G0 未读取或签署 ClassicGame。G8 修改前必须从干净提交独立记录 revision/tree、版本、
+  精确 SDK 引用、Document 数量、测试、包、真实 Host 加载和实际游戏状态；任一事实不清楚时不得修改源码。
+- **首选样本**：Gomoku；若 G8 基线证明其异步 AI 状态使首样本不稳定，可改用同样具备动态 Undo 的一个游戏，
   但必须在 G8 记录理由，不能选择永远 enabled 的假样本规避状态验证。
-- **变更**：目标 Document 窄适配 Target；声明两条 Command、Classic Game 菜单 Container 和 Placement；
+- **变更**：目标 Document 窄适配 Target；声明两条 Command 和指向 Host 末端共享位置的 Placement；
   View 内原按钮可继续使用现有命令/业务用例。
 - **关键验收**：同时打开两个同类型 Document，使 A 可撤销、B 不可撤销；切换标签后 Menu/Palette/KeyBinding
   状态立即对应当前实例；Restart 只影响当前棋局；关闭 A 不影响 B，也不留下订阅。
@@ -855,7 +875,7 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 ```
 
-- G0 只冻结事实和决策；没有干净输入与外部 revision 不进入 G1；
+- G0 只冻结 Host、仓内四插件和 WorkflowStudio 事实与决策；ClassicGame 在 G8 自行冻结，不构成进入 G1 的前提；
 - G1 public API 保持候选 Unshipped，必须经过 G2/G3 Runtime 压测后才允许 G6 打包；
 - G2 先建立无 UI 内核，G3 再加入活动实例路由，避免通过 UI 偶然行为验证 Executor；
 - G4 是首个用户可见闭环，必须删除旧打开/保存双路径；
@@ -865,7 +885,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 - G9 Palette 只能消费已有 Catalog/State/Executor，不能自建命令列表或直接调用插件；
 - G10 只封板已完成事实，不在发布门禁阶段设计新 API；
 - 每个 G 从前一绿色提交开始，专项与受影响外部插件绿色后才能进入下一 G；
-- 不使用 `--no-restore` 掩盖锁文件错误，不跳过真实包、双 ALC、Windows Smoke 或资源回归；
+- 不使用 `--no-restore` 掩盖锁文件错误；开发阶段不调用 Windows CI/Smoke 或发布门禁，G10 发布封板范围另行执行；
 - 所有阶段记录显式写 `aiflow=false`，AIFLOW 文件、命令和状态不参与本计划。
 
 ## 10. 最终验收矩阵
@@ -895,7 +915,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 - [ ] 打开/保存只有一条生产执行路径，MainWindow 旧转发命令已删除；
 - [ ] File 菜单和 `Ctrl+S` 使用同一 CommandId/Executor；
 - [ ] Save 在无可保存活动 Document 时 Disabled，执行前仍会重查；
-- [ ] Menu Container/Command 的位置、Group、Order 和稳定 ID 确定性投影；
+- [ ] Host 末端共享位置中的 Command Placement 按 Group、Order 和稳定 ID 确定性投影；
 - [ ] 插件不贡献 Avalonia `MenuItem`/`KeyBinding` 实例；
 - [ ] Host 快捷键优先，插件冲突双禁用且不删除 Command；
 - [ ] 插件不可用、Target 切换和状态事件会同步刷新全部投影。
@@ -942,7 +962,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 
 Workbench Command v1 只有在以下问题全部回答“是”后才算完成：
 
-1. [ ] G0 从干净、可追溯的 Host 和两个外部插件 revision 开始，真实基线已记录。
+1. [x] G0 从干净、可追溯的 Host 与 WorkflowStudio revision 开始；ClassicGame 明确未签署并留到 G8。
 2. [ ] Command、Context、Target、UI Contribution 与 Workflow Action 的语义边界已经冻结。
 3. [ ] Core/UI SDK 新 API 是兼容新增，旧 Shipped 未改写，旧插件继续正常加载。
 4. [ ] Command/Placement 身份、owner、目标 Document 和冲突政策有完整正负例。

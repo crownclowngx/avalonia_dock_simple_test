@@ -19,6 +19,7 @@ $currentDocumentPaths = @(
     'docs/design/host-v2-breaking-refactor-plan.md',
     'docs/design/host-v3-breaking-refactor-plan.md',
     'docs/design/host-v4-breaking-refactor-plan.md',
+    'docs/design/workbench-command-introduction-plan.md',
     'docs/plan-history/host-v4/g8-v4-sealing.md',
     'docs/plan-history/host-v2/g14-v2-sealing.md',
     'docs/plan-history/host-v3/g0-green-baseline.md',
@@ -57,7 +58,13 @@ $currentDocumentPaths += @(Get-ChildItem -LiteralPath (Join-Path $repositoryRoot
         -Filter '*.md' -File | ForEach-Object {
             [IO.Path]::GetRelativePath($repositoryRoot, $_.FullName).Replace('\', '/')
         })
-$hostHistoryDirectories = @('host-v1', 'host-v2', 'host-v3', 'host-v4', 'workflow-action')
+$hostHistoryDirectories = @(
+    'host-v1',
+    'host-v2',
+    'host-v3',
+    'host-v4',
+    'workflow-action',
+    'workbench-command')
 $historyDocumentPaths = @($hostHistoryDirectories | ForEach-Object {
         Get-ChildItem -LiteralPath (Join-Path $repositoryRoot "docs\plan-history\$_") `
             -Filter '*.md' -File

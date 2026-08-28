@@ -303,7 +303,7 @@ try {
         [int]$manifest.schemaVersion -eq 2 -and
         $manifest.pluginId -ceq 'myavalonia.plugin.my-plug-test' -and
         $manifest.pluginVersion -ceq '3.0.0' -and
-        $manifest.sdk.minInclusive -ceq '3.0.0' -and
+        $manifest.sdk.minInclusive -ceq '3.2.0' -and
         $manifest.sdk.maxExclusive -ceq '4.0.0') `
         'G9 测试 ZIP 的 manifest schema、身份、版本或 V3 SDK 区间不正确。'
 
