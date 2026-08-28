@@ -2,7 +2,9 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Commands.Catalog;
+using MyAvaloniaManagement.Business.Commands.Context;
 using MyAvaloniaManagement.Business.Commands.Execution;
+using MyAvaloniaManagement.Business.Commands.State;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Docking;
@@ -100,6 +102,8 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IHostDocumentOpenService>(provider =>
             provider.GetRequiredService<DocumentPersistenceCoordinator>());
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
+        services.AddSingleton(provider => new WorkbenchDocumentCommandLeaseStore(
+            provider.GetService<IHostDiagnosticSink>()));
         services.AddSingleton<DocumentCloseCoordinator>();
         // 每个 Host 容器只有一个回收器。App 资源、Dock Style 与关闭链均使用此实例，
         // Lifetime 不通过 Application.Current 或 IServiceProvider 反向定位依赖。
@@ -119,9 +123,16 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(provider => new WorkbenchCommandCatalog(
             provider.GetRequiredService<HostWorkbenchCommandCatalog>(),
             provider.GetRequiredService<PluginRegistry>()));
-        services.AddSingleton(provider => new WorkbenchCommandExecutor(
+        services.AddSingleton(provider => new WorkbenchContextStore(
+            provider.GetRequiredService<WorkspaceSession>()));
+        services.AddSingleton(provider => new WorkbenchCommandStateQuery(
             provider.GetRequiredService<WorkbenchCommandCatalog>(),
             provider.GetRequiredService<PluginAvailabilityReadModel>(),
+            provider.GetRequiredService<WorkbenchContextStore>(),
+            provider.GetService<IHostDiagnosticSink>()));
+        services.AddSingleton(provider => new WorkbenchCommandExecutor(
+            provider.GetRequiredService<WorkbenchCommandStateQuery>(),
+            provider.GetRequiredService<WorkbenchDocumentCommandLeaseStore>(),
             provider.GetService<IHostDiagnosticSink>()));
         services.AddSingleton<IWorkbenchCommandShutdownParticipant>(provider =>
             provider.GetRequiredService<WorkbenchCommandExecutor>());

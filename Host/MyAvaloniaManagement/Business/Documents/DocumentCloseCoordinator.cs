@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Docking;
 
 namespace MyAvaloniaManagement.Business.Documents;
@@ -17,13 +18,16 @@ namespace MyAvaloniaManagement.Business.Documents;
 internal sealed class DocumentCloseCoordinator(
     DocumentSaveService saveService,
     IDocumentInteractionService interactionService,
-    DocumentPersistenceStateStore persistenceStates)
+    DocumentPersistenceStateStore persistenceStates,
+    WorkbenchDocumentCommandLeaseStore commandLeases)
 {
     private const string PendingChangesMessage =
         "保存期间 Document 又发生了修改，请再次保存后再关闭。";
     private readonly HashSet<ManagedDocumentDockable> _approvedOnce = [];
     private readonly HashSet<ManagedDocumentDockable> _pending = [];
     private bool _windowRequestPending;
+    private readonly WorkbenchDocumentCommandLeaseStore _commandLeases =
+        commandLeases ?? throw new ArgumentNullException(nameof(commandLeases));
 
     internal bool IsDirty(ManagedDocumentDockable document) =>
         persistenceStates.IsDirty(document);
@@ -40,23 +44,48 @@ internal sealed class DocumentCloseCoordinator(
             return true;
         }
 
-        if (document.PersistableModel is null)
-        {
-            return true;
-        }
-
-        if (!persistenceStates.IsDirty(document))
-        {
-            return true;
-        }
-
-        if (!_pending.Add(document))
+        if (_pending.Contains(document))
         {
             return false;
         }
 
-        _ = ConfirmDockCloseAsync(document, retryClose);
+        if (document.PersistableModel is not null && persistenceStates.IsDirty(document))
+        {
+            _pending.Add(document);
+            _ = ConfirmDockCloseAsync(document, retryClose);
+            return false;
+        }
+
+        var drain = _commandLeases.BeginClose(document);
+        if (drain.IsCompletedSuccessfully)
+        {
+            return true;
+        }
+
+        _pending.Add(document);
+        _ = RetryAfterCommandDrainAsync(document, retryClose, drain);
         return false;
+    }
+
+    /// <summary>Dock 基类最终拒绝关闭时恢复该 Document 的命令入口。</summary>
+    internal void ReopenAfterDockRejection(ManagedDocumentDockable document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        _approvedOnce.Remove(document);
+        _pending.Remove(document);
+        _commandLeases.Reopen(document);
+    }
+
+    /// <summary>Document 最终关闭或创建回滚后清除命令租约和关闭协调状态。</summary>
+    internal void CompleteDockClose(ManagedDocumentDockable? document)
+    {
+        if (document is null)
+        {
+            return;
+        }
+        _approvedOnce.Remove(document);
+        _pending.Remove(document);
+        _commandLeases.CompleteClose(document);
     }
 
     internal async Task<bool> ConfirmWindowCloseAsync(
@@ -177,6 +206,8 @@ internal sealed class DocumentCloseCoordinator(
                 }
             }
 
+            var drain = _commandLeases.BeginClose(document);
+            await drain;
             _approvedOnce.Add(document);
             retryClose();
         }
@@ -188,11 +219,53 @@ internal sealed class DocumentCloseCoordinator(
                 "DOCUMENT_DOCK_CLOSE_CALLBACK_FAILED",
                 exception);
             _approvedOnce.Remove(document);
+            TryReopenCommands(document);
             await ShowErrorSafelyAsync("无法完成关闭确认。Document 保持打开。");
         }
         finally
         {
             _pending.Remove(document);
+        }
+    }
+
+    /// <summary>等待干净 Document 的在途命令退出，再授予一次性关闭许可并重试。</summary>
+    private async Task RetryAfterCommandDrainAsync(
+        ManagedDocumentDockable document,
+        Action retryClose,
+        Task drain)
+    {
+        try
+        {
+            await drain;
+            _approvedOnce.Add(document);
+            retryClose();
+        }
+        catch (Exception exception)
+        {
+            DocumentPersistenceErrorMapper.Report(
+                "DOCUMENT_COMMAND_DRAIN_CALLBACK_FAILED",
+                exception);
+            _approvedOnce.Remove(document);
+            TryReopenCommands(document);
+            await ShowErrorSafelyAsync("无法安全排空 Document 命令。Document 保持打开。");
+        }
+        finally
+        {
+            _pending.Remove(document);
+        }
+    }
+
+    private void TryReopenCommands(ManagedDocumentDockable document)
+    {
+        try
+        {
+            _commandLeases.Reopen(document);
+        }
+        catch (Exception exception)
+        {
+            DocumentPersistenceErrorMapper.Report(
+                "DOCUMENT_COMMAND_REOPEN_FAILED",
+                exception);
         }
     }
 

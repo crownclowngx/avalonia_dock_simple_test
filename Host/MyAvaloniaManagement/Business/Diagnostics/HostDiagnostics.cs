@@ -203,6 +203,14 @@ internal static class HostDiagnosticCodes
         "WORKFLOW_ACTION_SHUTDOWN_TIMEOUT";
     internal const string WorkbenchCommandExecutionFailed =
         "WORKBENCH_COMMAND_EXECUTION_FAILED";
+    internal const string WorkbenchCommandTargetStateFailed =
+        "WORKBENCH_COMMAND_TARGET_STATE_FAILED";
+    internal const string WorkbenchCommandTargetSubscriptionFailed =
+        "WORKBENCH_COMMAND_TARGET_SUBSCRIPTION_FAILED";
+    internal const string WorkbenchCommandStateObserverFailed =
+        "WORKBENCH_COMMAND_STATE_OBSERVER_FAILED";
+    internal const string WorkbenchCommandDocumentCloseCancellationFailed =
+        "WORKBENCH_COMMAND_DOCUMENT_CLOSE_CANCELLATION_FAILED";
     internal const string WorkbenchCommandShutdownTimeout =
         "WORKBENCH_COMMAND_SHUTDOWN_TIMEOUT";
 }
@@ -314,6 +322,14 @@ internal static class HostDiagnosticRedactionPolicy
             "Workflow Action 在关闭宽限内没有退出，宿主已阻止不安全的 Provider 释放。",
         HostDiagnosticCodes.WorkbenchCommandExecutionFailed =>
             "工作台命令执行失败；异常正文未写入诊断。",
+        HostDiagnosticCodes.WorkbenchCommandTargetStateFailed =>
+            "工作台命令目标状态查询失败；插件异常正文未写入诊断。",
+        HostDiagnosticCodes.WorkbenchCommandTargetSubscriptionFailed =>
+            "工作台命令目标状态订阅失败；插件异常正文未写入诊断。",
+        HostDiagnosticCodes.WorkbenchCommandStateObserverFailed =>
+            "工作台命令状态观察者失败；异常正文未写入诊断。",
+        HostDiagnosticCodes.WorkbenchCommandDocumentCloseCancellationFailed =>
+            "Document 命令关闭取消回调失败；异常正文未写入诊断。",
         HostDiagnosticCodes.WorkbenchCommandShutdownTimeout =>
             "工作台命令在关闭宽限内没有退出，宿主已阻止不安全的工作区和 Provider 释放。",
         HostDiagnosticCodes.HostStartupCleanupFailed =>

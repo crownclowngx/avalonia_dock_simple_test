@@ -2,8 +2,8 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MyAvaloniaManagement.Business.Commands.Catalog;
+using MyAvaloniaManagement.Business.Commands.State;
 using MyAvaloniaManagement.Business.Diagnostics;
-using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Commands.Execution;
@@ -20,9 +20,8 @@ internal interface IWorkbenchCommandShutdownParticipant
 
 /// <summary>统一查询并执行 Host 或插件工作台命令的无 UI 执行器。</summary>
 /// <remarks>
-/// G2 只执行 Host Handler；插件 Target 路由在 G3 加入。Executor 不提供并发预算、重试、队列、
-/// 超时、授权或独立 Scope，因此不会复制 Workflow Action Runtime。锁内只维护接受状态和在途计数，
-/// 绝不执行 Handler、诊断写入或取消回调。
+/// Executor 不提供并发预算、重试、队列、业务超时、授权或独立 Scope，因此不会复制 Workflow Action Runtime。
+/// 插件路由只使用状态查询返回的当前 Adapter/Target 捕获；锁内只维护接受状态和全局在途计数，绝不执行插件代码。
 /// </remarks>
 internal sealed class WorkbenchCommandExecutor :
     IWorkbenchCommandShutdownParticipant,
@@ -30,8 +29,8 @@ internal sealed class WorkbenchCommandExecutor :
 {
     private static readonly TimeSpan Grace = TimeSpan.FromSeconds(10);
     private readonly object _gate = new();
-    private readonly WorkbenchCommandCatalog _catalog;
-    private readonly PluginAvailabilityReadModel _availability;
+    private readonly WorkbenchCommandStateQuery _states;
+    private readonly WorkbenchDocumentCommandLeaseStore _documentLeases;
     private readonly IHostDiagnosticSink? _diagnostics;
     private readonly CancellationTokenSource _shutdown = new();
     private TaskCompletionSource _drained = CompletedDrainSource();
@@ -40,12 +39,12 @@ internal sealed class WorkbenchCommandExecutor :
     private bool _disposed;
 
     internal WorkbenchCommandExecutor(
-        WorkbenchCommandCatalog catalog,
-        PluginAvailabilityReadModel availability,
+        WorkbenchCommandStateQuery states,
+        WorkbenchDocumentCommandLeaseStore documentLeases,
         IHostDiagnosticSink? diagnostics = null)
     {
-        _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
-        _availability = availability ?? throw new ArgumentNullException(nameof(availability));
+        _states = states ?? throw new ArgumentNullException(nameof(states));
+        _documentLeases = documentLeases ?? throw new ArgumentNullException(nameof(documentLeases));
         _diagnostics = diagnostics;
     }
 
@@ -65,52 +64,94 @@ internal sealed class WorkbenchCommandExecutor :
 
         try
         {
-            if (!_catalog.TryGet(commandId, out var entry))
+            var route = _states.Resolve(commandId);
+            if (route.StructuralStatus != WorkbenchCommandStateStatus.Enabled || route.Entry is null)
             {
-                return WorkbenchCommandExecutionResult.FromStatus(
-                    WorkbenchCommandExecutionStatus.CommandNotFound);
+                return FromState(route.StructuralStatus);
             }
 
-            if (entry is PluginWorkbenchCommandCatalogEntry plugin)
+            WorkbenchDocumentCommandLease? documentLease = null;
+            if (route.Entry is PluginWorkbenchCommandCatalogEntry)
             {
-                if (!_availability.IsAvailable(plugin.OwnerId))
+                if (route.Capture.Document is null ||
+                    !_documentLeases.TryAcquire(route.Capture.Document, out documentLease))
                 {
                     return WorkbenchCommandExecutionResult.FromStatus(
-                        WorkbenchCommandExecutionStatus.OwnerUnavailable);
+                        WorkbenchCommandExecutionStatus.TargetUnavailable);
                 }
-
-                // G2 刻意不读取 WorkspaceSession 或 Document 模型。已知且 owner 可用的插件命令
-                // 只有在 G3 建立活动实例 Target 后才能执行。
-                return WorkbenchCommandExecutionResult.FromStatus(
-                    WorkbenchCommandExecutionStatus.TargetUnavailable);
             }
 
-            var host = (HostWorkbenchCommandCatalogEntry)entry;
-            using var linked = CancellationTokenSource.CreateLinkedTokenSource(
-                cancellationToken,
-                _shutdown.Token);
             try
             {
-                await host.Handler.ExecuteAsync(linked.Token);
-                return WorkbenchCommandExecutionResult.FromStatus(
-                    WorkbenchCommandExecutionStatus.Succeeded);
-            }
-            catch (OperationCanceledException) when (linked.IsCancellationRequested)
-            {
-                return WorkbenchCommandExecutionResult.FromStatus(
-                    WorkbenchCommandExecutionStatus.Canceled);
-            }
-            catch (Exception exception)
-            {
-                // 诊断只接收稳定 ID 和异常类型；白名单策略不会保存异常正文、路径或 Payload。
-                _diagnostics?.Report(new HostDiagnosticDraft(
-                    HostDiagnosticCodes.WorkbenchCommandExecutionFailed,
-                    HostDiagnosticPhase.WorkbenchCommand)
+                // Lease 取得后再次验证 revision/实例和 owner，阻止关闭或标签切换竞态把调用送到旧 Target。
+                if (!_states.IsCurrent(route))
                 {
-                    StableId = commandId.Value,
-                    Exception = exception,
-                });
-                return WorkbenchCommandExecutionResult.Failure;
+                    return WorkbenchCommandExecutionResult.FromStatus(
+                        WorkbenchCommandExecutionStatus.TargetUnavailable);
+                }
+
+                var state = _states.Evaluate(route);
+                if (state.Status != WorkbenchCommandStateStatus.Enabled)
+                {
+                    return FromState(state.Status);
+                }
+                if (!_states.IsCurrent(route))
+                {
+                    return WorkbenchCommandExecutionResult.FromStatus(
+                        WorkbenchCommandExecutionStatus.TargetUnavailable);
+                }
+
+                using var linked = documentLease is null
+                    ? CancellationTokenSource.CreateLinkedTokenSource(
+                        cancellationToken,
+                        _shutdown.Token)
+                    : CancellationTokenSource.CreateLinkedTokenSource(
+                        cancellationToken,
+                        documentLease.ClosingToken,
+                        route.Capture.ClosingToken,
+                        _shutdown.Token);
+                try
+                {
+                    if (route.Entry is HostWorkbenchCommandCatalogEntry host)
+                    {
+                        await host.Handler.ExecuteAsync(linked.Token);
+                    }
+                    else
+                    {
+                        await route.Capture.Target!.ExecuteAsync(commandId, linked.Token);
+                    }
+                    return WorkbenchCommandExecutionResult.FromStatus(
+                        WorkbenchCommandExecutionStatus.Succeeded);
+                }
+                catch (OperationCanceledException) when (linked.IsCancellationRequested)
+                {
+                    return WorkbenchCommandExecutionResult.FromStatus(
+                        WorkbenchCommandExecutionStatus.Canceled);
+                }
+                catch (Exception exception)
+                {
+                    // 诊断只接收稳定身份和异常类型；白名单策略不会保存异常正文、路径或 Payload。
+                    _diagnostics?.Report(new HostDiagnosticDraft(
+                        HostDiagnosticCodes.WorkbenchCommandExecutionFailed,
+                        HostDiagnosticPhase.WorkbenchCommand)
+                    {
+                        PluginId = (route.Entry as PluginWorkbenchCommandCatalogEntry)?.OwnerId,
+                        StableId = commandId.Value,
+                        Exception = exception,
+                    });
+                    return route.Entry is PluginWorkbenchCommandCatalogEntry
+                        ? WorkbenchCommandExecutionResult.PluginFailure
+                        : WorkbenchCommandExecutionResult.Failure;
+                }
+                finally
+                {
+                    _states.NotifyExecuted(route);
+                }
+            }
+            finally
+            {
+                // 定向刷新先于 Lease 释放，防止关闭 continuation 先释放 Target 再被状态层访问。
+                documentLease?.Dispose();
             }
         }
         finally
@@ -214,4 +255,22 @@ internal sealed class WorkbenchCommandExecutor :
         source.SetResult();
         return source;
     }
+
+    private static WorkbenchCommandExecutionResult FromState(
+        WorkbenchCommandStateStatus status) => status switch
+    {
+        WorkbenchCommandStateStatus.CommandNotFound =>
+            WorkbenchCommandExecutionResult.FromStatus(
+                WorkbenchCommandExecutionStatus.CommandNotFound),
+        WorkbenchCommandStateStatus.OwnerUnavailable =>
+            WorkbenchCommandExecutionResult.FromStatus(
+                WorkbenchCommandExecutionStatus.OwnerUnavailable),
+        WorkbenchCommandStateStatus.TargetUnavailable =>
+            WorkbenchCommandExecutionResult.FromStatus(
+                WorkbenchCommandExecutionStatus.TargetUnavailable),
+        WorkbenchCommandStateStatus.Disabled =>
+            WorkbenchCommandExecutionResult.FromStatus(
+                WorkbenchCommandExecutionStatus.CommandDisabled),
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, "命令状态不能直接映射为执行结果。"),
+    };
 }

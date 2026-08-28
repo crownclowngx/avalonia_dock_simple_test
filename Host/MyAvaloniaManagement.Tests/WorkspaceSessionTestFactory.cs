@@ -1,4 +1,5 @@
 using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Lifecycle;
@@ -29,7 +30,8 @@ internal static class WorkspaceSessionTestFactory
         var close = new DocumentCloseCoordinator(
             save,
             new TestDocumentInteractionService(),
-            states);
+            states,
+            new WorkbenchDocumentCommandLeaseStore(diagnostics));
         var factory = new HostDockFactory();
         var pluginAvailability = availability ?? new PluginAvailabilityReadModel(
             new PluginLifecycleStateStore(registry));

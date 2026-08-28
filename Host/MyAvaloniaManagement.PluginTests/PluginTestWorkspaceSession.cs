@@ -1,4 +1,5 @@
 using Dock.Model.Mvvm.Controls;
+using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Lifecycle;
@@ -28,7 +29,11 @@ internal static class PluginTestWorkspaceSession
             states,
             recovery,
             TimeProvider.System);
-        var close = new DocumentCloseCoordinator(save, new NullInteraction(), states);
+        var close = new DocumentCloseCoordinator(
+            save,
+            new NullInteraction(),
+            states,
+            new WorkbenchDocumentCommandLeaseStore());
         var dockFactory = new HostDockFactory();
         var pluginAvailability = availability ?? new PluginAvailabilityReadModel(
             new PluginLifecycleStateStore(registry));

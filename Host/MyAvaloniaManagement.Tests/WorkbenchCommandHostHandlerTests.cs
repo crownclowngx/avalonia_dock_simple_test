@@ -28,7 +28,7 @@ public sealed class WorkbenchCommandHostHandlerTests
     }
 
     [Fact]
-    public async Task 无活动Document保存成功完成且不建立第二套错误状态()
+    public async Task 无活动Document保存被状态查询禁用且不建立第二套错误状态()
     {
         using var context = DocumentTestContext.Create();
         var operationState = context.Provider.GetRequiredService<DocumentOperationState>();
@@ -38,7 +38,7 @@ public sealed class WorkbenchCommandHostHandlerTests
             .GetRequiredService<WorkbenchCommandExecutor>()
             .ExecuteAsync(HostWorkbenchCommandIds.SaveDocument);
 
-        Assert.Equal(WorkbenchCommandExecutionStatus.Succeeded, result.Status);
+        Assert.Equal(WorkbenchCommandExecutionStatus.CommandDisabled, result.Status);
         Assert.Equal("已有错误", operationState.Error);
         Assert.Empty(context.Storage.Writes);
     }

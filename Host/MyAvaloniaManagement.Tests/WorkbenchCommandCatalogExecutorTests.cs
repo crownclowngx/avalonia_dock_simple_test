@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Commands.Catalog;
+using MyAvaloniaManagement.Business.Commands.Context;
 using MyAvaloniaManagement.Business.Commands.Execution;
+using MyAvaloniaManagement.Business.Commands.State;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.PluginSdk;
@@ -257,17 +259,26 @@ public sealed class WorkbenchCommandCatalogExecutorTests
     {
         plugins ??= new PluginRegistry([], []);
         var states = new PluginLifecycleStateStore(plugins);
-        return new WorkbenchCommandExecutor(
+        var availability = new PluginAvailabilityReadModel(states);
+        var context = new WorkbenchContextStore();
+        var stateQuery = new WorkbenchCommandStateQuery(
             new WorkbenchCommandCatalog(
                 new HostWorkbenchCommandCatalog(hostRegistrations),
                 plugins),
-            new PluginAvailabilityReadModel(states),
+            availability,
+            context,
+            diagnostics);
+        return new WorkbenchCommandExecutor(
+            stateQuery,
+            new WorkbenchDocumentCommandLeaseStore(diagnostics),
             diagnostics);
     }
 
     private sealed class DelegateHostCommandHandler(
         Func<CancellationToken, ValueTask> execute) : IHostWorkbenchCommandHandler
     {
+        public bool CanExecute(WorkbenchContextSnapshot context) => true;
+
         public ValueTask ExecuteAsync(CancellationToken cancellationToken) =>
             execute(cancellationToken);
 

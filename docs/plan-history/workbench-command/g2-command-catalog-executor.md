@@ -13,8 +13,9 @@
 ## 1. 实施边界
 
 G2 只建立 Host internal 无 UI 内核：Host/Plugin 合并 Catalog、打开/保存 Handler、统一 Executor、稳定结果、
-诊断和 10 秒关闭门控。插件 Command 已可通过稳定身份查询，但在 G3 建立活动 Document Context 与实例 Target
-前返回 `TargetUnavailable`，不会解析插件 Provider 或模型。
+诊断和 10 秒关闭门控。本段记录 G2 输入当时的边界；当前生产状态已由
+[G3 Context v1 与活动 Document Target 路由](./g3-context-active-document-target-routing.md)接续，插件命令现在会
+核对活动实例并路由 SDK Target，仍不会解析插件 Provider 或任意 Scope 服务。
 
 本阶段没有修改 `MainWindowViewModel.OpenDocument/SaveDocument`、`MenuView.axaml` 或 `MainWindow.axaml`
 的 `Ctrl+S`，也没有创建 `MenuItem`、`KeyBinding`、Palette 或 Avalonia Command Adapter。Core/UI SDK public
@@ -30,7 +31,7 @@ CommandId
     → WorkbenchCommandExecutor
     → WorkbenchCommandCatalog
         ├─ HostWorkbenchCommandCatalog → Host Handler
-        └─ PluginRegistry → owner availability → TargetUnavailable（G3 前）
+        └─ PluginRegistry → owner availability → 暂不路由实例（G2 历史输入）
 ```
 
 `HostWorkbenchCommandCatalog` 显式冻结打开、保存描述符和 Handler，不取得根 Provider。

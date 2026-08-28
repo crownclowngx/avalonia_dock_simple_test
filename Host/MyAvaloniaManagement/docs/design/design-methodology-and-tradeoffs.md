@@ -62,6 +62,7 @@
 | public 生命周期 Manager 同时排序、执行、保存状态和投影 UI | internal Coordinator、单操作 Runner、StateStore、只读 Availability ReadModel |
 | 插件 Document 同时自报内容、路径和类型身份 | 内容快照 + 独立脏状态 + 宿主持久化状态存储 |
 | 菜单/ViewModel 同时承担命令身份、查询和执行 | 不可变 Catalog + Executor + 打开/保存 Handler；UI 投影后移 |
+| 活动 Document、命令状态、执行与关闭安全混合 | Workspace 活动事实 + Context Store + State Query + Executor + Adapter Lease |
 
 SRP 在这里指“只有一个变化原因”，不是“每个类只能有一个方法”。Document 打开/恢复由 `DocumentPersistenceCoordinator` 编排，主文件与备份提交由 `DocumentSaveService` 负责，异步关闭确认由 `DocumentCloseCoordinator` 负责；三者共享窄操作门，但不会共享彼此的 UI 或序列化职责。
 
@@ -69,9 +70,9 @@ SRP 在这里指“只有一个变化原因”，不是“每个类只能有一�
 
 新增 Document/Tool/View/Lifecycle 通过 `IPluginRegistration` 扩展，宿主核心不需要为每个插件类型增加分支。Registry 将变化集中在显式登记、校验与分派，不把扩展判断散落到 Dock 操作中。
 
-Workbench Command G2 将 Host 内建命令和 G1 插件声明合并到同一查询面。新增 Host Command 只需在
+Workbench Command G2–G3 将 Host 内建命令和 G1 插件声明合并到同一查询面。新增 Host Command 只需在
 `HostWorkbenchCommandCatalog` 显式登记 Handler；插件命令仍来自不可变 Registry。Catalog 不承担运行状态，
-因此 G3 可以增加活动 Document Target 路由而不改写 G2 的描述符和所有权事实。
+G3 的 Context/State 因此可以增加活动 Document Target 路由而不改写描述符和所有权事实。
 
 V2 有意破坏历史 v1 SDK，删除重复身份和隐式发现入口；G14 已将收敛后的 Core/UI 表面冻结为 v2 Shipped。没有引入通用模块框架或运行期可变注册表。
 
@@ -109,9 +110,9 @@ G13 已删除 Legacy 回调适配、`Order`、依赖图和 public Manager。
 抽象 `IPluginRegistration`，具体 Registration、Builder 和 Registry 均留在 Host 内部。服务解析只允许
 出现在 `HostRuntime`、显式贡献激活和 Document Scope 等明确组合边界。
 
-G2 的 Host Handler 依赖现有 `DocumentPersistenceCoordinator` 与 `DocumentOperationState`，Catalog 只依赖
-Descriptor/Registry，Executor 只依赖 Catalog、可用性 ReadModel 和诊断端口。任何 Command 类型都不接收
-根 Provider、插件 Scope 或 Dock 对象。
+G3 的 Host Handler 依赖现有 `DocumentPersistenceCoordinator` 与 `DocumentOperationState`；Catalog 只依赖
+Descriptor/Registry；State Query 只依赖 Catalog、可用性 ReadModel 与 Context；Executor 只依赖状态查询、
+租约和诊断端口。任何 Command 类型都不接收根 Provider、插件 Scope 或 Dock 对象。
 
 ## 4. 采用的设计模式
 
@@ -189,14 +190,15 @@ V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型
 
 取舍：只保证单文件替换，不实现跨文件事务、备份版本链或崩溃恢复日志。当前两个文件格式都以单文件为一致性边界。
 
-### 4.10 Catalog + Executor + Adapter：Workbench Command G2
+### 4.10 Snapshot + State Query + Executor + Lease：Workbench Command G2–G3
 
-目的：Catalog 冻结“有什么命令”，Executor 负责“本次调用能否安全执行”，Host Handler 只把稳定身份适配到
-既有打开/保存用例。关闭门控只判断入口和排空，不释放 Workspace 或 Provider。
+目的：Catalog 冻结“有什么命令”，Context Snapshot 表达“当前有哪些 Host 可确认事实”，State Query 判定
+“此刻是否可用”，Executor 负责当前实例执行，Host Handler 只适配既有打开/保存用例，Adapter Lease 只保护
+同步 Dock 关闭与在途插件调用的先后关系。
 
-取舍：G2 插件命令已可查询，但在没有活动 Document Context 时稳定返回 `TargetUnavailable`；现有菜单和
-`Ctrl+S` 暂不迁移。Executor 不增加单飞、重试、队列、业务超时、授权、Run Manager 或 invocation scope，
-避免把用户意图命令扩张成第二套 Workflow Action Runtime。
+取舍：Context v1 只有五个字段；Target 只来自当前 Adapter.Model 的可选 SDK 能力；租约按 Adapter 引用计数，
+不设置强制释放超时。现有菜单和 `Ctrl+S` 在 G4 前暂不迁移。Executor 不增加单飞、重试、队列、业务超时、
+授权、Run Manager 或 invocation scope，避免把用户意图命令扩张成第二套 Workflow Action Runtime。
 
 ## 5. 关键设计决策与取舍
 
@@ -218,6 +220,7 @@ V2 G5 的全局冲突算法只是按 Document ID、Tool ID 和精确模型类型
 | Factory 与 Session 一次性绑定 | Dock 继承面与应用状态彻底分开，无服务定位 | 组合根必须按固定顺序建立两个对象 |
 | Tool 状态使用无 Dock ReadModel | ViewModel 只看稳定纯数据，Pinned/Hidden 规则集中 | 状态变化后需要重建小型快照 |
 | Command Catalog 与 Executor 分离 | 身份、owner、执行和关闭各有唯一变化原因 | G2 到 G4 之间旧 UI 路径暂时保留 |
+| Context/State/Executor/Lease 分离 | 活动事实、状态、执行与关闭安全可独立验证 | 增加少量 internal 协作者和成对订阅纪律 |
 
 ## 6. 明确没有采用的方案
 

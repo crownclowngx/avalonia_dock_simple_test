@@ -7,6 +7,7 @@ internal enum WorkbenchCommandExecutionStatus
     CommandNotFound,
     OwnerUnavailable,
     TargetUnavailable,
+    CommandDisabled,
     RejectedDuringShutdown,
     Canceled,
     Failed,
@@ -27,4 +28,8 @@ internal readonly record struct WorkbenchCommandExecutionResult(
     internal static WorkbenchCommandExecutionResult Failure => new(
         WorkbenchCommandExecutionStatus.Failed,
         "工作台命令执行失败；异常正文未写入诊断。");
+
+    internal static WorkbenchCommandExecutionResult PluginFailure => new(
+        WorkbenchCommandExecutionStatus.Failed,
+        "插件命令执行失败；插件异常正文未写入诊断。");
 }

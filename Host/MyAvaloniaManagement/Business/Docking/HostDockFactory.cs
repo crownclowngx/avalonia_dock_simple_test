@@ -36,11 +36,17 @@ internal interface IWorkspaceDockCallbacks
     /// <summary>Tool 已隐藏后，提交只读状态与布局变化通知。</summary>
     void OnDockableHidden(IDockable? dockable);
 
+    /// <summary>Dock 的活动对象变化后，重新计算语义上的活动 Document。</summary>
+    void OnActiveDockableChanged(IDockable? dockable);
+
     /// <summary>在 Dock 执行可取消关闭前完成脏 Document 保护。</summary>
     bool OnDockableClosing(IDockable? dockable);
 
     /// <summary>Dock 最终关闭后结束工作区对 Document 的所有权。</summary>
     void OnDockableClosed(IDockable? dockable);
+
+    /// <summary>Session 已允许关闭但 Dock 基类最终拒绝时，撤销命令关闭状态。</summary>
+    void OnDockableCloseRejected(IDockable? dockable);
 }
 
 /// <summary>
@@ -114,9 +120,40 @@ internal sealed class HostDockFactory : Factory
         GetCallbacks().OnDockableHidden(dockable);
     }
 
+    /// <summary>保留框架通知后，让 Session 只发布真正改变的活动 Document 事实。</summary>
+    public override void OnActiveDockableChanged(IDockable? dockable)
+    {
+        base.OnActiveDockableChanged(dockable);
+        GetCallbacks().OnActiveDockableChanged(dockable);
+    }
+
     /// <summary>只有 Session 的关闭保护允许后，才继续执行 Dock 基类关闭协议。</summary>
-    public override bool OnDockableClosing(IDockable? dockable) =>
-        GetCallbacks().OnDockableClosing(dockable) && base.OnDockableClosing(dockable);
+    public override bool OnDockableClosing(IDockable? dockable)
+    {
+        var callbacks = GetCallbacks();
+        if (!callbacks.OnDockableClosing(dockable))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (base.OnDockableClosing(dockable))
+            {
+                return true;
+            }
+        }
+        catch
+        {
+            callbacks.OnDockableCloseRejected(dockable);
+            throw;
+        }
+
+        // Session 可能已经把 Document 标记为 closing。若 Dock 的其他框架规则最终否决，
+        // 必须显式恢复命令入口，不能让仍可见的标签永久处于不可执行状态。
+        callbacks.OnDockableCloseRejected(dockable);
+        return false;
+    }
 
     /// <summary>无论其他关闭通知是否失败，最终都把资源释放交还唯一 Session。</summary>
     public override void OnDockableClosed(IDockable? dockable)

@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using MyAvaloniaManagement.Business.Commands.Context;
 using MyAvaloniaManagement.Business.Documents;
 
 namespace MyAvaloniaManagement.Business.Commands.Execution;
@@ -12,6 +13,9 @@ namespace MyAvaloniaManagement.Business.Commands.Execution;
 /// </remarks>
 internal interface IHostWorkbenchCommandHandler
 {
+    /// <summary>依据不可变 Context 快照判断本次 Host 用例是否可执行。</summary>
+    bool CanExecute(WorkbenchContextSnapshot context);
+
     ValueTask ExecuteAsync(CancellationToken cancellationToken);
 }
 
@@ -24,6 +28,13 @@ internal sealed class HostOpenDocumentCommandHandler(
         documents ?? throw new ArgumentNullException(nameof(documents));
     private readonly DocumentOperationState _operationState =
         operationState ?? throw new ArgumentNullException(nameof(operationState));
+
+    /// <summary>打开文件不依赖活动 Document，Host 接受命令时始终可执行。</summary>
+    public bool CanExecute(WorkbenchContextSnapshot context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return true;
+    }
 
     public async ValueTask ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -43,6 +54,13 @@ internal sealed class HostSaveDocumentCommandHandler(
         documents ?? throw new ArgumentNullException(nameof(documents));
     private readonly DocumentOperationState _operationState =
         operationState ?? throw new ArgumentNullException(nameof(operationState));
+
+    /// <summary>只有存在声明了 Host 持久化能力的活动 Document 时才允许保存。</summary>
+    public bool CanExecute(WorkbenchContextSnapshot context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return context.IsActiveDocumentPersistable;
+    }
 
     public async ValueTask ExecuteAsync(CancellationToken cancellationToken)
     {

@@ -1,5 +1,25 @@
 # MyAvaloniaManagement 测试说明
 
+## Workbench Command G3 Context 与活动 Document Target 非发布门禁
+
+G3 专项入口为：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG3.ps1 -Configuration Release
+```
+
+门禁执行 locked restore、Release 零警告构建、Host Unit/UI/Plugin 三层、SDK/API、四个仓内插件、
+47 项 Workbench Command 定向测试、覆盖率、Context/Scope 结构扫描和文档验证。实际结果为 Host
+Unit 274、UI 65、Plugin 212，共 551/551；四插件聚合 3537 项；Host 行/分支覆盖率为
+86.51% / 71.76%。`WorkbenchContextSnapshot`、Context Store、状态查询、Executor、Document 命令租约和
+关闭协调关键文件行覆盖率均不低于 90%。
+
+G3 仍保留 `MainWindowViewModel`、菜单和 `Ctrl+S` 的旧 UI 路径；这些投影只会在 G4 迁移。
+专项摘要与原始证据位于 `artifacts/test-results/WorkbenchCommandG3/`。本门禁显式记录
+`aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseGate=false`、`publishable=false`，
+不调用任何 Windows CI/Smoke 或发布门禁。设计、SOLID 对照与回滚边界见
+[G3 专项记录](../plan-history/workbench-command/g3-context-active-document-target-routing.md)。
+
 ## Workbench Command G2 无 UI Catalog/Executor 非发布门禁
 
 ```powershell

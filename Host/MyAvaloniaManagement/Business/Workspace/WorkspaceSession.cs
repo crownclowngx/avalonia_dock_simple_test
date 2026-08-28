@@ -17,6 +17,14 @@ using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Workspace;
 
+/// <summary>携带 Workspace 已经提交的新活动 Document Adapter。</summary>
+internal sealed class ActiveDocumentChangedEventArgs(
+    ManagedDocumentDockable? document) : EventArgs
+{
+    /// <summary>获取新的活动实例；当前没有活动 Document 时为 null。</summary>
+    internal ManagedDocumentDockable? Document { get; } = document;
+}
+
 /// <summary>
 /// 拥有一个 HostRuntime 内唯一的工作区会话及其全部运行时对象。
 /// </summary>
@@ -41,6 +49,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     private readonly ToolDockCoordinator _toolDockCoordinator;
     private IRootDock? _rootDock;
     private DocumentDock? _documentDock;
+    private ManagedDocumentDockable? _publishedActiveDocument;
     private bool _acceptingCreations = true;
     private bool _suppressToolHiddenNotification;
     private bool _disposed;
@@ -88,6 +97,13 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     /// <remarks>订阅者必须按自身生命周期解除订阅；该事件不承载任意消息，也不进入 SDK。</remarks>
     internal event EventHandler? LayoutChanged;
 
+    /// <summary>当前活动 Document 实例真正变化后触发的独立语义通知。</summary>
+    /// <remarks>
+    /// 该通知只比较 Session 所拥有的 Adapter 引用，不复用布局变化，也不因 Tool 激活而误报。
+    /// 消费者必须成对退订；事件只在 Host internal 边界使用。
+    /// </remarks>
+    internal event EventHandler<ActiveDocumentChangedEventArgs>? ActiveDocumentChanged;
+
     IRootDock? IWorkspaceDockCallbacks.RootDock => _rootDock;
 
     IReadOnlyCollection<string> IWorkspaceDockCallbacks.CreatedToolIds =>
@@ -128,7 +144,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
             var dock = DockTreeNavigator.FindDocumentDock(_rootDock, document);
             if (dock is not null)
             {
-                dock.ActiveDockable = document;
+                DockFactory.SetActiveDockable(document);
                 return true;
             }
         }
@@ -136,7 +152,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         if (_documentRecoveryRegistry.TryGetBySourcePath(filePath, out var recovered) &&
             DockTreeNavigator.FindDocumentDock(_rootDock, recovered) is { } recoveredDock)
         {
-            recoveredDock.ActiveDockable = recovered;
+            DockFactory.SetActiveDockable(recovered);
             return true;
         }
 
@@ -252,6 +268,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
             {
                 throw new InvalidOperationException("主文档 Dock 未接受待发布的 Document。");
             }
+            PublishActiveDocumentIfChanged();
         }
         catch
         {
@@ -267,6 +284,16 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     internal void ReleaseDocument(Document document)
     {
         ArgumentNullException.ThrowIfNull(document);
+        if (ReferenceEquals(_documentDock?.ActiveDockable, document))
+        {
+            // 某些 Dock 关闭路径会先回调 OnDockableClosed，稍后才整理 ActiveDockable。
+            // Host 必须在释放 Adapter/Scope 前先撤回 Context，确保状态层有机会退订旧 Target。
+            _documentDock.ActiveDockable = _documentDock.VisibleDockables?
+                .OfType<ManagedDocumentDockable>()
+                .FirstOrDefault(candidate => !ReferenceEquals(candidate, document));
+            PublishActiveDocumentIfChanged();
+        }
+        _documentCloseCoordinator.CompleteDockClose(document as ManagedDocumentDockable);
         try
         {
             _ownedDocuments.Remove(document);
@@ -320,12 +347,13 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     /// <summary>仅供布局恢复失败时丢弃受污染的启动布局并重建完整默认布局。</summary>
     internal IRootDock RecreateLayoutAfterFailedRestore()
     {
+        _documentDock = null;
+        PublishActiveDocumentIfChanged();
         foreach (var document in _ownedDocuments.ToArray())
         {
             ReleaseDocument(document);
         }
         _rootDock = null;
-        _documentDock = null;
         return CreateLayout();
     }
 
@@ -339,6 +367,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
             GetToolAlignment);
         _documentDock = documentDock;
         _rootDock = root;
+        PublishActiveDocumentIfChanged();
         return root;
     }
 
@@ -425,6 +454,8 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         }
         _disposed = true;
         _acceptingCreations = false;
+        _documentDock = null;
+        PublishActiveDocumentIfChanged();
         List<Exception>? failures = null;
         foreach (var document in _ownedDocuments.ToArray())
         {
@@ -461,6 +492,9 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         }
     }
 
+    void IWorkspaceDockCallbacks.OnActiveDockableChanged(IDockable? dockable) =>
+        PublishActiveDocumentIfChanged();
+
     bool IWorkspaceDockCallbacks.OnDockableClosing(IDockable? dockable)
     {
         if (dockable is ManagedDocumentDockable document &&
@@ -478,6 +512,14 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         if (dockable is Document document)
         {
             ReleaseDocument(document);
+        }
+    }
+
+    void IWorkspaceDockCallbacks.OnDockableCloseRejected(IDockable? dockable)
+    {
+        if (dockable is ManagedDocumentDockable document)
+        {
+            _documentCloseCoordinator.ReopenAfterDockRejection(document);
         }
     }
 
@@ -551,6 +593,19 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     }
 
     private void NotifyLayoutChanged() => LayoutChanged?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>读取主 DocumentDock 并仅在 Adapter 引用改变时发布一次语义通知。</summary>
+    private void PublishActiveDocumentIfChanged()
+    {
+        var current = GetActiveDocument();
+        if (ReferenceEquals(_publishedActiveDocument, current))
+        {
+            return;
+        }
+
+        _publishedActiveDocument = current;
+        ActiveDocumentChanged?.Invoke(this, new ActiveDocumentChangedEventArgs(current));
+    }
 
     private void EnsureAcceptingCreations()
     {

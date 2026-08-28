@@ -409,7 +409,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'windowsCi=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'releaseGate=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'publishable=false' }
-    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G2 已完成，G3–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G3 已完成，G4–G10 尚未实施' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = '状态：已完成（2026-08-28；完整非发布门禁通过）' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'Test-WorkbenchCommandG1.ps1' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'IWorkbenchDocumentCommandTarget' }
@@ -436,6 +436,20 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = 'windowsSmoke=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = 'releaseGate=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = 'published=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = '状态：已完成（2026-08-28；完整非发布门禁通过）' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'Test-WorkbenchCommandG3.ps1' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'Host 三层共 **551/551**' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = '四插件专项门禁聚合通过 **3537** 项' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = '行覆盖率 **86.51%**、分支覆盖率 **71.76%**' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'aiflow=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'windowsSmoke=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'releaseAcceptance=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'publishable=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'published=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'uploaded=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g3-context-active-document-target-routing.md'; Fragment = 'tagCreated=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

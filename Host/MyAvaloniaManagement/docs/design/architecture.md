@@ -18,9 +18,10 @@
 > Templates 1.1.0、已发布 Build 1.1.2 和两个外部插件 ZIP 验证真实传播；没有新增生产入口。这两个阶段
 > 均未上传、未打 tag、未对外发布且未使用 AIFLOW。G3.1 进一步把 Core/UI 候选提升到 3.2.0，新增
 > `MyAvaloniaManagement.PluginSdk.Workflow 1.0.0`，统一 Schema/引用路径/双 revision，并把该程序集
-> 纳入默认 ALC 共享根；Host 产品版本仍为 3.0.0。Workbench Command G1–G2 又在不改变版本和
+> 纳入默认 ALC 共享根；Host 产品版本仍为 3.0.0。Workbench Command G1–G3 又在不改变版本和
 > public API 基线的前提下冻结 Command 注册事实，并建立 Host internal 无 UI Catalog、打开/保存 Handler、
-> Executor、脱敏诊断和 10 秒关闭门控；活动 Document Target 与 UI 投影仍未实施。
+> Context v1、活动 Document Target 路由、Executor、单 Document 租约、脱敏诊断和 10 秒关闭门控；
+> 菜单、`Ctrl+S` 与 Palette 的 UI 投影仍未实施。
 
 ## 1. 目标与边界
 
@@ -34,7 +35,8 @@
 - 只向插件提交窗口交互与 Document 生命周期等真实 Host 端口，不拥有插件内部消息；
 - 以窄 UI SDK 端口为插件提供文件选择和剪贴板交互；
 - 为显式 Consumer 注入 caller-bound Workflow Action Gateway，并在 Provider 私有 Scope 内治理调用；
-- 合并 Host/Plugin Workbench Command 不可变事实，并通过无 UI Executor 执行 Host 内建打开/保存；
+- 合并 Host/Plugin Workbench Command 不可变事实，通过 Context/State 查询当前活动实例，并由无 UI
+  Executor 执行 Host 内建或插件 Document 命令；
 - 为 XAML、菜单、主题和宿主 Tool 提供绑定入口。
 
 宿主不负责插件的领域业务、插件内部 DTO 演进或后台任务实现。当前信任模型是同一团队维护的进程内可信插件，不提供沙箱、热卸载或第三方 ABI。
@@ -73,7 +75,11 @@ flowchart TB
     HostContainer --> CommandHostCatalog["HostWorkbenchCommandCatalog<br/>打开 + 保存"]
     Registry --> CommandCatalog["WorkbenchCommandCatalog<br/>Host / Plugin 只读合并"]
     CommandHostCatalog --> CommandCatalog
-    CommandCatalog --> CommandExecutor["WorkbenchCommandExecutor<br/>结果 / 取消 / 排空"]
+    Session --> CommandContext["WorkbenchContextStore<br/>Snapshot + internal Capture"]
+    CommandCatalog --> CommandState["WorkbenchCommandStateQuery<br/>当前 Target 状态"]
+    CommandContext --> CommandState
+    CommandState --> CommandExecutor["WorkbenchCommandExecutor<br/>当前实例 / 取消 / 排空"]
+    CommandExecutor --> CommandLease["WorkbenchDocumentCommandLeaseStore<br/>单 Document 关闭租约"]
     HostCatalog --> WorkspaceCatalog["WorkspaceCatalog<br/>只读合并"]
     Registry --> WorkspaceCatalog
     WindowPort --> PluginProviders
@@ -254,19 +260,30 @@ JSONL 和镜像之前执行唯一一次白名单转换：
 门禁都不启用该旁路。设计与验收证据见
 [G15 宿主诊断脱敏](../../../../docs/plan-history/host-v1/g15-host-diagnostic-redaction.md)。
 
-### 4.6 Workbench Command G2 无 UI 内核
+### 4.6 Workbench Command G2–G3 无 UI 内核与活动实例路由
 
 `HostWorkbenchCommandCatalog` 只冻结 `myavalonia.host.command.document.open/save` 及其显式 Handler；
 `WorkbenchCommandCatalog` 把该目录与 `PluginRegistry.WorkbenchCommands` 合并，并在启动期拒绝最终身份
-碰撞。Catalog 不按生命周期过滤，也不保存 Provider、Scope、Document 模型或 Avalonia `ICommand`；
-`WorkbenchCommandExecutor` 每次执行前重新查询 `PluginAvailabilityReadModel`。
+碰撞。Catalog 不按生命周期过滤，也不保存 Provider、Scope、Document 模型或 Avalonia `ICommand`。
 
-G2 只执行 Host Handler。打开/保存 Handler 直接复用 `DocumentPersistenceCoordinator` 和唯一
-`DocumentOperationState`，选择取消、无活动 Document 与预期保存失败沿用既有状态语义。插件命令虽然
-可以被 Catalog 查询，但在 G3 建立活动 Document Context 和实例 Target 前稳定返回 `TargetUnavailable`。
-Executor 只负责稳定结果、调用取消、Host shutdown 取消与排空，不包含 Workflow Action 的 Schema、授权、
-预算、Run、重试、队列、超时或 invocation scope。现有菜单、`Ctrl+S` 与 `MainWindowViewModel` 命令在
-G2 保持不变，避免把 UI 迁移混入内核验收。
+G3 后 `WorkspaceSession` 从 Dock 活动变化发布独立、按 Adapter 引用去重的
+`ActiveDocumentChanged`。`WorkbenchContextStore` 把它投影为只含活动类型、owner、持久化能力和 revision
+的不可变 Snapshot；Adapter、SDK Target 与 ClosingToken 只在 Host internal Capture 中临时同行。
+Snapshot 不含模型、Control、Dock、Provider、Scope、Selection、Tool 或任意对象字典。
+
+`WorkbenchCommandStateQuery` 统一返回 CommandNotFound、OwnerUnavailable、TargetUnavailable、Disabled 或
+Enabled，并只订阅当前实例的 `CommandStateChanged`。切换先使旧 revision 失效，再在锁外退订/订阅；
+工作线程事件必须同时匹配 sender、revision、owner、DocumentType 和 CommandId。Target 缺失、owner/type
+不匹配聚合为 TargetUnavailable，CanExecute false/异常为 Disabled。
+
+`WorkbenchCommandExecutor` 每次调用重新检查 Catalog、owner、当前捕获、owner/type、Target 与
+CanExecute，不缓存状态。插件执行链接调用者、单 Document 关闭、Adapter ClosingToken 和 Host shutdown
+四个取消来源，并真正等待 Target。按 Adapter 引用计数的 Lease 在关闭时先拒绝新调用、取消并排空旧调用，
+再允许 Dock 重试和既有 View/Adapter/Scope 释放；没有强制释放超时。全局退出仍由独立 10 秒门控负责，
+超时保留对象图。
+
+打开/保存 Handler 继续复用 `DocumentPersistenceCoordinator` 和唯一 `DocumentOperationState`。现有菜单、
+`Ctrl+S` 与 `MainWindowViewModel` 命令在 G4 前保持旧 UI 路径；当前不存在第二套 UI 投影。
 
 ## 5. Workspace Session 与 Dock Factory 边界
 
@@ -288,6 +305,10 @@ V3 G6 已删除 `ManagementFactory` Facade。生产代码只有
 | `ToolWorkspaceReadModel` | 从 Session/Workspace Catalog 生成无 Dock 的不可变 Tool 状态 | Tool 创建、显隐命令和 Dock 树写入 |
 | `DockWorkspaceBuilder` | 创建稳定四向初始布局 | 工具恢复和激活 |
 | `DockTreeNavigator` | Dock、Document、Tool、Pinned/Hidden 查询 | 修改业务状态 |
+| `WorkbenchContextStore` | 活动 Document 纯值快照和原子内部捕获 | 遍历 Dock、状态判断、命令执行 |
+| `WorkbenchCommandStateQuery` | Catalog/owner/当前 Target 的即时状态与定向失效通知 | 缓存 CanExecute、执行 Target、UI 调度 |
+| `WorkbenchCommandExecutor` | 当前实例重查、执行、取消链接和全局排空 | 菜单投影、Document 释放、业务重试 |
+| `WorkbenchDocumentCommandLeaseStore` | 单 Adapter 在途计数、关闭拒绝/取消/排空 | 强制超时、释放 Scope、全局任务运行时 |
 | `ToolDockCoordinator` | 工具显示、恢复、停靠点重建和纵向区域归一化 | 策略发现 |
 | `DockDocumentLifetime` | 文档关闭后的缓存移除和 Scope 释放 | 关闭是否允许 |
 
@@ -442,6 +463,7 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | Document 控件缓存 | Host DI 容器中唯一的 `DocumentControlRecycling` | App Resource、DockControl Style 与关闭链共用；对应 Document 确认关闭后移除 |
 | 布局快照待应用状态 | `DockLayoutLifecycle` | 首次 Apply 时原子取出 |
 | Workbench Command 在途调用 | `WorkbenchCommandExecutor` | HostRuntime 先拒绝并取消新调用；排空后才释放 Workspace/Scope/Provider |
+| 单 Document Command 租约 | `WorkbenchDocumentCommandLeaseStore` | Dock 关闭先取消并排空；最终关闭后移除，Dock 拒绝时恢复 |
 
 `App.axaml` 只通过 `DynamicResource ControlRecyclingKey` 声明 Dock Style 契约，不创建实例。
 `App.Initialize` 在 XAML 加载后安装当前容器的单例；`DockDocumentLifetime` 从构造函数取得同一
@@ -471,7 +493,7 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 | 布局严格解析、隔离、回退 | 布局生命周期与存储测试 |
 | Layout V2 严格字段、V1 不读取、生命周期不可用零部分应用 | `DockLayoutStoreTests`、`DockLayoutAvailabilityTests` |
 | 生命周期排序、幂等、失败/超时/取消、反向停止和脱敏 | `PluginLifecycleCoordinatorTests` |
-| Command 合并目录、状态结果、Handler、取消、排空和诊断脱敏 | `WorkbenchCommand*Tests`、`Test-WorkbenchCommandG2.ps1` |
+| Command 合并目录、Context、当前 Target 状态/执行、租约关闭和诊断脱敏 | `WorkbenchCommand*Tests`、`Test-WorkbenchCommandG3.ps1` |
 | XAML、绑定和真实窗口事件 | Headless UI 与 Windows Smoke |
 
 详细命令和门槛参见[测试说明](../../../../docs/reference/myavalonia-management-tests.md)。
