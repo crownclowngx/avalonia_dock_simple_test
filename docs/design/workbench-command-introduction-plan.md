@@ -1,7 +1,8 @@
 # MyAvaloniaManagement Workbench Command 引入评审与实施任务书
 
-> 状态：实施中；G0–G1 已完成，G2–G10 尚未实施。当前只有 Command 候选契约、注册声明与冻结事实；本文不表示 Context、菜单贡献、快捷键贡献或
-> Command Palette 已进入生产。
+> 状态：实施中；G0–G2 已完成，G3–G10 尚未实施。当前已有 Command 候选契约、注册声明、
+> 无 UI Catalog/Executor 与关闭门控；本文不表示 Context、活动 Document Target 路由、菜单贡献、
+> 快捷键贡献或 Command Palette 已进入生产。
 > 评审日期：2026-08-27。
 > 事实基线：[主项目内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、
 > [主项目设计方法论与取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、
@@ -763,6 +764,8 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 
 ### G2：建立无 UI Command Catalog 与 Executor
 
+- **状态**：已完成（2026-08-28）；实际证据见
+  [G2 无 UI Catalog 与 Executor 实施记录](../plan-history/workbench-command/g2-command-catalog-executor.md)。
 - **目标**：让 Host 内建 Command 能通过同一 Catalog/Executor 被直接测试执行，暂不改现有 XAML。
 - **变更**：Host/Plugin 合并查询 Catalog、执行结果、shutdown rejection、owner availability、稳定诊断和
   `OpenDocumentCommandHandler`/`SaveDocumentCommandHandler`；注册 `myavalonia.host.command.document.open/save`。
@@ -904,13 +907,15 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 
 ### 10.2 Context、状态与执行
 
+- [x] Host/Plugin Command 已通过同一无 UI Catalog 查询，且 Catalog 不保存 Provider、Scope 或插件 Target；
+- [x] Executor 已覆盖未知 ID、owner unavailable、取消、异常、shutdown rejection 和 10 秒排空；
+- [x] Command Runtime 没有复制 Workflow Action 的 Schema、授权、长超时和 invocation scope；
 - [ ] 活动 Document 切换有独立准确通知，不依赖布局偶然变化；
 - [ ] Context v1 不泄漏模型、Control、Dock、Provider、Selection 或对象字典；
 - [ ] 同类型多个 Document 的 CanExecute 与执行目标严格按当前实例变化；
 - [ ] Executor 执行前重查 Catalog、owner、target 和 CanExecute；
 - [ ] Target 缺失、抛错、关闭取消、shutdown 和迟到事件均被隔离；
 - [ ] 旧 Target 订阅在切换/关闭/退出后释放；
-- [ ] Command Runtime 没有复制 Workflow Action 的 Schema、授权、长超时和 invocation scope。
 
 ### 10.3 Host、菜单与快捷键
 

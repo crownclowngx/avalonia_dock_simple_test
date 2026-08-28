@@ -18,7 +18,9 @@
 > Templates 1.1.0、已发布 Build 1.1.2 和两个外部插件 ZIP 验证真实传播；没有新增生产入口。这两个阶段
 > 均未上传、未打 tag、未对外发布且未使用 AIFLOW。G3.1 进一步把 Core/UI 候选提升到 3.2.0，新增
 > `MyAvaloniaManagement.PluginSdk.Workflow 1.0.0`，统一 Schema/引用路径/双 revision，并把该程序集
-> 纳入默认 ALC 共享根；Host 产品版本仍为 3.0.0。
+> 纳入默认 ALC 共享根；Host 产品版本仍为 3.0.0。Workbench Command G1–G2 又在不改变版本和
+> public API 基线的前提下冻结 Command 注册事实，并建立 Host internal 无 UI Catalog、打开/保存 Handler、
+> Executor、脱敏诊断和 10 秒关闭门控；活动 Document Target 与 UI 投影仍未实施。
 
 ## 1. 目标与边界
 
@@ -32,6 +34,7 @@
 - 只向插件提交窗口交互与 Document 生命周期等真实 Host 端口，不拥有插件内部消息；
 - 以窄 UI SDK 端口为插件提供文件选择和剪贴板交互；
 - 为显式 Consumer 注入 caller-bound Workflow Action Gateway，并在 Provider 私有 Scope 内治理调用；
+- 合并 Host/Plugin Workbench Command 不可变事实，并通过无 UI Executor 执行 Host 内建打开/保存；
 - 为 XAML、菜单、主题和宿主 Tool 提供绑定入口。
 
 宿主不负责插件的领域业务、插件内部 DTO 演进或后台任务实现。当前信任模型是同一团队维护的进程内可信插件，不提供沙箱、热卸载或第三方 ABI。
@@ -67,6 +70,10 @@ flowchart TB
     HostContainer --> WindowPort["IPluginWindowInteraction<br/>受控文件 / 剪贴板端口"]
     HostContainer --> HostCatalog["HostWorkspaceCatalog<br/>Welcome + Host Tools"]
     HostContainer --> Registry["PluginRegistry<br/>真实插件不可变快照"]
+    HostContainer --> CommandHostCatalog["HostWorkbenchCommandCatalog<br/>打开 + 保存"]
+    Registry --> CommandCatalog["WorkbenchCommandCatalog<br/>Host / Plugin 只读合并"]
+    CommandHostCatalog --> CommandCatalog
+    CommandCatalog --> CommandExecutor["WorkbenchCommandExecutor<br/>结果 / 取消 / 排空"]
     HostCatalog --> WorkspaceCatalog["WorkspaceCatalog<br/>只读合并"]
     Registry --> WorkspaceCatalog
     WindowPort --> PluginProviders
@@ -83,6 +90,9 @@ flowchart TB
     MainVM --> Documents["DocumentPersistenceCoordinator"]
     HostContainer --> OperationState["DocumentOperationState<br/>根级错误提示状态"]
     Documents --> OperationState
+    CommandExecutor --> CommandHandlers["Host Open / Save Handlers"]
+    CommandHandlers --> Documents
+    CommandHandlers --> OperationState
     MainVM --> OperationState
     Session --> MainVM
     MainVM --> Close["DocumentCloseCoordinator"]
@@ -119,12 +129,14 @@ flowchart TB
 6. 按 manifest `pluginId` 顺序为每个插件创建空服务集合，执行一次 `Configure` 并构建私有 Provider；
 7. 单插件成功后才合并其声明；失败则释放自身并继续后续插件；
 8. 只读取已冻结声明完成跨所有者冲突过滤，释放冲突 Provider，再发布不可变 `PluginRegistry`；
-9. 一次提交 `WorkflowActionCatalogStore`，再由 internal `PluginLifecycleCoordinator` 按 PluginId 启动可用插件并显式解析唯一 `WorkspaceSession`；
+9. 先解析 Host/Plugin 合并 `WorkbenchCommandCatalog` 并一次提交 `WorkflowActionCatalogStore`，再由 internal `PluginLifecycleCoordinator` 按 PluginId 启动可用插件并显式解析唯一 `WorkspaceSession`；
 10. 将完全组合成功的 Host Provider 交给 Avalonia 启动路径。
 
-关闭时先由 Workflow Action 门控拒绝新 Run/调用并取消在途，再由 Session 停止新建并释放工作区，
-随后等待 Handler 排空；只有排空成功才反向停止生命周期、逆序释放插件 Provider 并释放 Host Provider。
-这个所有权对称性防止仍在运行的 Handler 访问已释放对象图。
+关闭时先由 Workflow Action 与 Workbench Command 门控拒绝新调用并传播取消，再撤回插件可用性并让
+Session 停止新建。Command 可能仍在使用 Workspace、活动 Document 或 Scope，因此必须先排空 Command，
+成功后才释放工作区和 Document Scope；Command 与 Workflow Action 均排空后，才反向停止生命周期、
+逆序释放插件 Provider 并释放 Host Provider。任一门控无法证明排空时保留相应对象图并报告脱敏诊断，
+不强杀同进程代码或伪装成功。
 
 [`Program`](../../Program.cs) 只保留进程入口和失败应用编排。`HostRuntime` 通过 internal
 `HostAvaloniaBuilder` 使用 `Func<App>` 创建应用；App 注入 `IHostDesktopShell`，不再存在静态
@@ -194,7 +206,8 @@ Descriptor、模型类型、View 类型/工厂和生命周期类型在注册调�
 - Document/Tool 元数据快照；
 - Document 菜单入口展开；
 - ViewModel 类型到无参 View 工厂的映射；
-- 生命周期实现类型及其 manifest 所有权。
+- 生命周期实现类型及其 manifest 所有权；
+- Workbench Command、菜单 Placement 和快捷键 Placement 的不可变声明事实。
 
 插件内重复 Document/Tool ID、重复精确模型映射、同一模型跨 Document/Tool、多生命周期和所有者混入会
 丢弃整个候选。跨插件 Document/Tool ID 或精确模型映射冲突时，所有冲突插件均排除；与 Host 内建贡献
@@ -240,6 +253,20 @@ JSONL 和镜像之前执行唯一一次白名单转换：
 带风险警告的原始异常写到 Trace/stderr，不写 UI、剪贴板或 JSONL，也不持久化开关。默认和 Release
 门禁都不启用该旁路。设计与验收证据见
 [G15 宿主诊断脱敏](../../../../docs/plan-history/host-v1/g15-host-diagnostic-redaction.md)。
+
+### 4.6 Workbench Command G2 无 UI 内核
+
+`HostWorkbenchCommandCatalog` 只冻结 `myavalonia.host.command.document.open/save` 及其显式 Handler；
+`WorkbenchCommandCatalog` 把该目录与 `PluginRegistry.WorkbenchCommands` 合并，并在启动期拒绝最终身份
+碰撞。Catalog 不按生命周期过滤，也不保存 Provider、Scope、Document 模型或 Avalonia `ICommand`；
+`WorkbenchCommandExecutor` 每次执行前重新查询 `PluginAvailabilityReadModel`。
+
+G2 只执行 Host Handler。打开/保存 Handler 直接复用 `DocumentPersistenceCoordinator` 和唯一
+`DocumentOperationState`，选择取消、无活动 Document 与预期保存失败沿用既有状态语义。插件命令虽然
+可以被 Catalog 查询，但在 G3 建立活动 Document Context 和实例 Target 前稳定返回 `TargetUnavailable`。
+Executor 只负责稳定结果、调用取消、Host shutdown 取消与排空，不包含 Workflow Action 的 Schema、授权、
+预算、Run、重试、队列、超时或 invocation scope。现有菜单、`Ctrl+S` 与 `MainWindowViewModel` 命令在
+G2 保持不变，避免把 UI 迁移混入内核验收。
 
 ## 5. Workspace Session 与 Dock Factory 边界
 
@@ -316,6 +343,7 @@ sequenceDiagram
 各组件职责：
 
 - `MainWindowViewModel`：绑定状态、命令、主题、布局生命周期及根级状态的定向订阅；
+- `HostOpenDocumentCommandHandler` / `HostSaveDocumentCommandHandler`：把稳定 CommandId 适配到既有文档用例并应用唯一错误状态；
 - `DocumentPersistenceCoordinator`：选择、批量打开、文件树窄入口、恢复编排和单文件错误隔离；
 - `DocumentOperationState`：保存当前 HostRuntime 唯一的文档错误条状态；文件菜单与文件树共享；
 - `DocumentSaveService`：指定 Document 的路径决策、主文件提交、状态接受和恢复备份；
@@ -413,6 +441,7 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | 插件 Document Scope | 所属插件 `DocumentScopeManager` | Dock 确认关闭后；退出时插件 Scope Manager 兜底 |
 | Document 控件缓存 | Host DI 容器中唯一的 `DocumentControlRecycling` | App Resource、DockControl Style 与关闭链共用；对应 Document 确认关闭后移除 |
 | 布局快照待应用状态 | `DockLayoutLifecycle` | 首次 Apply 时原子取出 |
+| Workbench Command 在途调用 | `WorkbenchCommandExecutor` | HostRuntime 先拒绝并取消新调用；排空后才释放 Workspace/Scope/Provider |
 
 `App.axaml` 只通过 `DynamicResource ControlRecyclingKey` 声明 Dock Style 契约，不创建实例。
 `App.Initialize` 在 XAML 加载后安装当前容器的单例；`DockDocumentLifetime` 从构造函数取得同一
@@ -442,6 +471,7 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 | 布局严格解析、隔离、回退 | 布局生命周期与存储测试 |
 | Layout V2 严格字段、V1 不读取、生命周期不可用零部分应用 | `DockLayoutStoreTests`、`DockLayoutAvailabilityTests` |
 | 生命周期排序、幂等、失败/超时/取消、反向停止和脱敏 | `PluginLifecycleCoordinatorTests` |
+| Command 合并目录、状态结果、Handler、取消、排空和诊断脱敏 | `WorkbenchCommand*Tests`、`Test-WorkbenchCommandG2.ps1` |
 | XAML、绑定和真实窗口事件 | Headless UI 与 Windows Smoke |
 
 详细命令和门槛参见[测试说明](../../../../docs/reference/myavalonia-management-tests.md)。

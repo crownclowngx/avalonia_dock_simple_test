@@ -1,5 +1,24 @@
 # MyAvaloniaManagement 测试说明
 
+## Workbench Command G2 无 UI Catalog/Executor 非发布门禁
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG2.ps1 -Configuration Release
+```
+
+该入口先执行 locked restore、Release 零警告构建和 Host V4 G7 完整开发门禁，再执行
+`FullyQualifiedName~WorkbenchCommand` 定向测试。它验证 Host/Plugin 合并 Catalog、打开/保存 Handler、
+全部执行结果、owner availability、取消、10 秒关闭排空、诊断脱敏、Host 三层覆盖率、SDK/API、四插件
+真实包和文档；Command 关键文件行覆盖率均不得低于 90%。
+
+G2 明确保留 `MainWindowViewModel`、菜单和 `Ctrl+S` 的旧绑定，禁止 Command 内核取得 UI Control、
+`IServiceProvider`、Scope 或 Workflow Action Runtime。结果写入
+`artifacts/test-results/WorkbenchCommandG2/summary.json`，并保存定向 TRX 与 Host/四插件原始证据快照。
+摘要固定记录 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、
+`releaseGate=false`、`published=false`、`uploaded=false`、`tagCreated=false`；本入口不运行 Windows CI/Smoke
+或任何发布门禁。实际数量和覆盖率见
+[G2 专项记录](../plan-history/workbench-command/g2-command-catalog-executor.md)。
+
 ## Workflow Action G4 MySmallTools 非破坏性加密开发门禁
 
 ```powershell

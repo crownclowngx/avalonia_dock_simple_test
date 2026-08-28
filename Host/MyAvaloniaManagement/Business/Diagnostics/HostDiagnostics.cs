@@ -33,6 +33,7 @@ internal enum HostDiagnosticPhase
     ExtensionDiscovery,
     PluginLifecycle,
     WorkflowAction,
+    WorkbenchCommand,
     Layout,
     HostBootstrap,
 }
@@ -200,6 +201,10 @@ internal static class HostDiagnosticCodes
     internal const string HostStartupUnexpected = "HOST_STARTUP_UNEXPECTED";
     internal const string WorkflowActionShutdownTimeout =
         "WORKFLOW_ACTION_SHUTDOWN_TIMEOUT";
+    internal const string WorkbenchCommandExecutionFailed =
+        "WORKBENCH_COMMAND_EXECUTION_FAILED";
+    internal const string WorkbenchCommandShutdownTimeout =
+        "WORKBENCH_COMMAND_SHUTDOWN_TIMEOUT";
 }
 
 /// <summary>
@@ -307,6 +312,10 @@ internal static class HostDiagnosticRedactionPolicy
             "插件生命周期操作失败。",
         HostDiagnosticCodes.WorkflowActionShutdownTimeout =>
             "Workflow Action 在关闭宽限内没有退出，宿主已阻止不安全的 Provider 释放。",
+        HostDiagnosticCodes.WorkbenchCommandExecutionFailed =>
+            "工作台命令执行失败；异常正文未写入诊断。",
+        HostDiagnosticCodes.WorkbenchCommandShutdownTimeout =>
+            "工作台命令在关闭宽限内没有退出，宿主已阻止不安全的工作区和 Provider 释放。",
         HostDiagnosticCodes.HostStartupCleanupFailed =>
             "启动失败后的资源清理发生异常，应用将退出。",
         HostDiagnosticCodes.HostStartupUnexpected =>
@@ -321,6 +330,8 @@ internal static class HostDiagnosticRedactionPolicy
             "插件生命周期操作失败。",
         _ when phase == HostDiagnosticPhase.WorkflowAction =>
             "Workflow Action 调用失败；参数正文和插件异常未写入诊断。",
+        _ when phase == HostDiagnosticPhase.WorkbenchCommand =>
+            "工作台命令执行失败；异常正文未写入诊断。",
         _ => "宿主操作失败，原始输入未被保存。",
     };
 

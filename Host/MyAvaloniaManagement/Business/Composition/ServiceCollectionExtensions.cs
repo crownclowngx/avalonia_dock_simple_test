@@ -1,6 +1,8 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
+using MyAvaloniaManagement.Business.Commands.Catalog;
+using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Docking;
@@ -90,6 +92,11 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<DocumentSaveService>();
         services.AddSingleton<DocumentOperationState>();
         services.AddSingleton<DocumentPersistenceCoordinator>();
+        services.AddSingleton<HostOpenDocumentCommandHandler>();
+        services.AddSingleton<HostSaveDocumentCommandHandler>();
+        services.AddSingleton(provider => new HostWorkbenchCommandCatalog(
+            provider.GetRequiredService<HostOpenDocumentCommandHandler>(),
+            provider.GetRequiredService<HostSaveDocumentCommandHandler>()));
         services.AddSingleton<IHostDocumentOpenService>(provider =>
             provider.GetRequiredService<DocumentPersistenceCoordinator>());
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
@@ -109,6 +116,16 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<PluginRegistry>()));
         services.AddSingleton(provider => new PluginAvailabilityReadModel(
             provider.GetRequiredService<PluginLifecycleStateStore>()));
+        services.AddSingleton(provider => new WorkbenchCommandCatalog(
+            provider.GetRequiredService<HostWorkbenchCommandCatalog>(),
+            provider.GetRequiredService<PluginRegistry>()));
+        services.AddSingleton(provider => new WorkbenchCommandExecutor(
+            provider.GetRequiredService<WorkbenchCommandCatalog>(),
+            provider.GetRequiredService<PluginAvailabilityReadModel>(),
+            provider.GetService<IHostDiagnosticSink>()));
+        services.AddSingleton<IWorkbenchCommandShutdownParticipant>(provider =>
+            provider.GetRequiredService<WorkbenchCommandExecutor>());
+        services.AddSingleton<WorkbenchCommandShutdownGate>();
         services.AddSingleton(provider => new WorkspaceCatalog(
             provider.GetRequiredService<HostWorkspaceCatalog>(),
             provider.GetRequiredService<PluginRegistry>(),

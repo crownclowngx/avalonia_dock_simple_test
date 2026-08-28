@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Commands.Catalog;
+using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Documents.Ownership;
@@ -29,6 +31,7 @@ internal sealed class HostRuntime : IDisposable
     private readonly PluginLifecycleCoordinator _lifecycles;
     private readonly PluginLifecycleStateStore _lifecycleStates;
     private readonly WorkflowActionShutdownGate _workflowActionShutdown;
+    private readonly WorkbenchCommandShutdownGate _workbenchCommandShutdown;
     private bool _disposed;
 
     private HostRuntime(
@@ -37,7 +40,8 @@ internal sealed class HostRuntime : IDisposable
         DocumentScopeRegistry documentScopes,
         PluginLifecycleCoordinator lifecycles,
         PluginLifecycleStateStore lifecycleStates,
-        WorkflowActionShutdownGate workflowActionShutdown)
+        WorkflowActionShutdownGate workflowActionShutdown,
+        WorkbenchCommandShutdownGate workbenchCommandShutdown)
     {
         _provider = provider;
         _pluginProviders = pluginProviders;
@@ -45,6 +49,7 @@ internal sealed class HostRuntime : IDisposable
         _lifecycles = lifecycles;
         _lifecycleStates = lifecycleStates;
         _workflowActionShutdown = workflowActionShutdown;
+        _workbenchCommandShutdown = workbenchCommandShutdown;
     }
 
     internal static HostRuntime Create(HostDiagnosticSession diagnostics)
@@ -115,6 +120,9 @@ internal sealed class HostRuntime : IDisposable
             try
             {
                 var registry = provider.GetRequiredService<PluginRegistry>();
+                // Catalog 在 UI 启动前完成 Host/Plugin 最终合并；即使合法命名空间原则上不会
+                // 碰撞，也不能把损坏快照推迟到第一次用户执行时才发现。
+                provider.GetRequiredService<WorkbenchCommandCatalog>();
                 provider.GetRequiredService<WorkflowActionCatalogStore>().Commit(
                     registry,
                     provider.GetRequiredService<PluginAvailabilityReadModel>());
@@ -146,7 +154,8 @@ internal sealed class HostRuntime : IDisposable
                 documentScopes,
                 provider.GetRequiredService<PluginLifecycleCoordinator>(),
                 provider.GetRequiredService<PluginLifecycleStateStore>(),
-                provider.GetRequiredService<WorkflowActionShutdownGate>());
+                provider.GetRequiredService<WorkflowActionShutdownGate>(),
+                provider.GetRequiredService<WorkbenchCommandShutdownGate>());
         }
         catch
         {
@@ -193,31 +202,44 @@ internal sealed class HostRuntime : IDisposable
         // Workflow Action 必须先于所有插件对象图关闭：先拒绝新 Run/调用并取消在途，
         // 后续只有在真实 Handler 全部退出后才允许停止 Lifecycle 和释放 Provider。
         _workflowActionShutdown.BeginShutdown();
+        _workbenchCommandShutdown.BeginShutdown();
 
         // 关闭其他可用性入口，保证退出清理期间不会再创建新的插件对象图。
         _lifecycleStates.BeginShutdown();
         var workspace = _provider.GetService<WorkspaceSession>();
         workspace?.BeginShutdown();
 
-        try
+        // Command 可能正在使用 Workspace、活动 Document 或其 Scope。只有确认全部调用退出后，
+        // 才能继续释放这些所有权；超时选择保留对象图，而不是制造悬空引用。
+        var workbenchCommandsDrained =
+            _workbenchCommandShutdown.TryDrain(out var workbenchCommandFailure);
+        if (workbenchCommandFailure is not null)
         {
-            // Adapter/View 必须先于插件 Provider 释放，否则 View 的 DataContext 会短暂指向
-            // 已经 Dispose 的 Tool singleton，Document 展示事件也可能在 Scope 结束后继续投影。
-            workspace?.Dispose();
-        }
-        catch (Exception exception)
-        {
-            failures.Add(exception);
+            failures.Add(workbenchCommandFailure);
         }
 
-        try
+        if (workbenchCommandsDrained)
         {
-            // Adapter/View 清理异常也不能阻断 Scope 兜底。
-            _documentScopes.CloseAll();
-        }
-        catch (Exception exception)
-        {
-            failures.Add(exception);
+            try
+            {
+                // Adapter/View 必须先于插件 Provider 释放，否则 View 的 DataContext 会短暂指向
+                // 已经 Dispose 的 Tool singleton，Document 展示事件也可能在 Scope 结束后继续投影。
+                workspace?.Dispose();
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
+
+            try
+            {
+                // Adapter/View 清理异常也不能阻断 Scope 兜底。
+                _documentScopes.CloseAll();
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
         }
 
         var workflowActionsDrained = _workflowActionShutdown.TryDrain(out var workflowActionFailure);
@@ -226,7 +248,7 @@ internal sealed class HostRuntime : IDisposable
             failures.Add(workflowActionFailure);
         }
 
-        if (workflowActionsDrained)
+        if (workbenchCommandsDrained && workflowActionsDrained)
         {
             try
             {

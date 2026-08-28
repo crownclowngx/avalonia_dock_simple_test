@@ -409,7 +409,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'windowsCi=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'releaseGate=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'publishable=false' }
-    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G1 已完成，G2–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G2 已完成，G3–G10 尚未实施' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = '状态：已完成（2026-08-28；完整非发布门禁通过）' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'Test-WorkbenchCommandG1.ps1' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'IWorkbenchDocumentCommandTarget' }
@@ -427,6 +427,15 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'published=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'uploaded=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'tagCreated=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = 'Test-WorkbenchCommandG2.ps1' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = '状态：已完成（2026-08-28；完整非发布门禁通过）' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = 'WorkbenchCommandExecutor' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = '四插件专项门禁聚合通过 **3473** 项' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = '行覆盖率 **86.12%**、分支覆盖率 **71.4%**' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = 'aiflow=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = 'windowsSmoke=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g2-command-catalog-executor.md'; Fragment = 'published=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

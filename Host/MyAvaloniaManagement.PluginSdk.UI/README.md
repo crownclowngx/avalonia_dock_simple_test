@@ -35,9 +35,10 @@ API 分类和两轮隔离签署。v2 Shipped 继续保存 V2 G14 历史承诺。
 Workbench Command G1 继续使用同一兼容模式：`IPluginRegistration` 原有四个方法不变，新的
 `IWorkbenchCommandRegistration` 由 Host internal 注册对象可选实现。插件通过扩展方法声明
 `CommandDescriptor`、目标 Document、菜单共享末端位置和 Avalonia Key/KeyModifiers；Descriptor 与 Registry
-都不保存 Target、Provider、Control、`MenuItem`、`KeyBinding`、`ICommand` 或回调。当前 G1 只建立并验证
-不可变注册事实，不创建 UI 投影或执行插件命令。当前源码版本仍为 3.2.0，Workbench Command 的 3.3.0
-候选打包与外部传播留到 G6。
+都不保存 Target、Provider、Control、`MenuItem`、`KeyBinding`、`ICommand` 或回调。G2 已在 Host internal
+建立无 UI 合并 Catalog 和 Executor，但插件声明在活动 Document Target 路由完成前只返回 TargetUnavailable；
+现有 XAML、菜单和 `Ctrl+S` 仍走 G1 前路径，没有创建 UI 投影。当前源码版本仍为 3.2.0，public API
+保持 G1 的 v3 Unshipped 91/66，Workbench Command 的 3.3.0 候选打包与外部传播留到 G6。
 
 推荐通过解决方案模板开始外部插件开发：
 

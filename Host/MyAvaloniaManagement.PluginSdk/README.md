@@ -26,8 +26,9 @@ caller-bound Gateway、显式 Run、结构化请求/终态与受限进度；不�
 
 Workbench Command G1 新增 `CommandId`、单命令状态事件和窄
 `IWorkbenchDocumentCommandTarget`。Target 由当前 Document 模型实例可选实现，只接收稳定身份和取消令牌，
-不取得 Context、Provider、Control 或 Dock。G1 只冻结候选契约与注册事实，尚没有 Catalog、Executor、
-菜单、快捷键或 Palette 生产入口，也尚未形成 3.3.0 候选包。
+不取得 Context、Provider、Control 或 Dock。G2 已在 Host internal 建立 Host/Plugin 合并 Catalog、打开/保存
+Handler、统一 Executor、脱敏诊断和 10 秒关闭门控；SDK public API 与 G1 完全相同。活动 Document Context、
+插件 Target 路由、菜单、快捷键和 Palette 仍未进入生产，也尚未形成 3.3.0 候选包。
 
 Provider 的私有 DTO 不穿越公共边界。Consumer 通过 Gateway 创建绑定可信 CallerId 的 Run，不能提交
 CallerId、OwnerId、RunId 或授权结果；Run 的 Dispose 会取消并等待本 Run 的在途调用。
