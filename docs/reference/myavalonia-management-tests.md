@@ -1,5 +1,31 @@
 # MyAvaloniaManagement 测试说明
 
+## Workbench Command G8 ClassicGame 全游戏命令非发布门禁
+
+跨仓库聚合入口为：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG8.ps1 -Configuration Release
+```
+
+入口只复用 Host V4 G7 本地开发门禁，不运行 Windows CI、Windows Smoke、Release Acceptance 或发布门禁。
+ClassicGame 使用 NuGet.org、SDK `3.3.0`、locked restore、零警告构建、格式、全量单测、Cobertura、Standalone
+与两轮确定性四文件 ZIP。Host 再从真实 ZIP 经生产 Loader、独立 ALC、Provider、Registry 和 Document Scope
+构造 13 个游戏，验证 22 条 Catalog/Menu 命令、13 条 Restart、9 条 Undo 和五子棋双实例隔离。
+
+Headless MainWindow 逐个切换 13 个真实 Document，验证 Tools 菜单 Hide/Enabled；五子棋继续验证
+`Ctrl+Shift+R` / `Ctrl+Z` 与菜单共享 Adapter、A/B 状态切换和窗口关闭后 KeyBinding/订阅归零。Command
+Palette 尚未实现；22 条 Catalog 命令已可供 G9 投影。最终结果为 ClassicGame **526/526**、覆盖率
+**71.75% / 58.36%**，Host **575/575**、覆盖率 **86.98% / 72.42%**，真实包 PluginTests **1/1**、
+Headless UI **1/1**；四文件 ZIP SHA-256 为
+`4A1C7358BEEC84361C123E1B60ABEE2F372190DAD930FE0FE10F4CFE31F77EB9`。机器结果见
+`artifacts/test-results/WorkbenchCommandG8/summary.json` 及
+[G8 专项记录](../plan-history/workbench-command/g8-classic-game-multi-instance-commands.md)。
+
+两个入口固定 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、
+`releaseGate=false`、`publishable=false`、`published=false`、`uploaded=false`、`signed=false`、
+`tagCreated=false`；Release 仅表示本地编译配置。
+
 ## Workbench Command G7 WorkflowStudio 三条真实命令非发布门禁
 
 跨仓库聚合入口为：

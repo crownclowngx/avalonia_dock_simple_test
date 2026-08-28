@@ -409,7 +409,7 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'windowsCi=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'releaseGate=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md'; Fragment = 'publishable=false' }
-    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G7 已完成，G8–G10 尚未实施' }
+    [pscustomobject]@{ Path = 'docs/design/workbench-command-introduction-plan.md'; Fragment = '状态：实施中；G0–G8 已完成，G9–G10 尚未实施' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = '状态：已完成（2026-08-28；完整非发布门禁通过）' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'Test-WorkbenchCommandG1.ps1' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g1-command-contracts-registration-declarations.md'; Fragment = 'IWorkbenchDocumentCommandTarget' }
@@ -499,6 +499,24 @@ $requiredCurrentStatements = @(
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'uploaded=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'signed=false' }
     [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md'; Fragment = 'tagCreated=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'Test-WorkbenchCommandG8.ps1' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'ClassicGame 输入提交：`1d11f1689433caf242365480233dd76ff5c8836b`' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = '13 条 Restart' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = '9 条 Undo' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'ClassicGame **526/526**' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'Host 基础门禁 **575/575**' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = '71.75% / 58.36%' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = '86.98% / 72.42%' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = '4A1C7358BEEC84361C123E1B60ABEE2F372190DAD930FE0FE10F4CFE31F77EB9' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'aiflow=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'windowsCi=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'windowsSmoke=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'releaseGate=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'publishable=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'published=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'uploaded=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'signed=false' }
+    [pscustomobject]@{ Path = 'docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md'; Fragment = 'tagCreated=false' }
 )
 foreach ($requirement in $requiredCurrentStatements) {
     Assert-DocumentationCondition (

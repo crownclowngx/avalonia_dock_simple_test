@@ -1,9 +1,9 @@
 # MyAvaloniaManagement Workbench Command 引入评审与实施任务书
 
-> 状态：实施中；G0–G7 已完成，G8–G10 尚未实施。当前已有 Command 候选契约、注册声明、
+> 状态：实施中；G0–G8 已完成，G9–G10 尚未实施。当前已有 Command 候选契约、注册声明、
 > Catalog/Executor、Context v1、活动 Document Target 路由、关闭门控、Host 打开/保存 Presentation，
-> Host-owned 声明式菜单/快捷键投影闭环，以及 WorkflowStudio 三条本地非发布真实命令；ClassicGame 与
-> Command Palette 尚未实施，G7 也不表示外部 Studio 已上传或发布。
+> Host-owned 声明式菜单/快捷键投影闭环、WorkflowStudio 三条真实命令，以及 ClassicGame 13 个游戏的
+> 22 条实例命令；Command Palette 尚未实施，G7/G8 也不表示外部插件已上传或发布。
 > 评审日期：2026-08-27。
 > 事实基线：[主项目内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、
 > [主项目设计方法论与取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、
@@ -39,7 +39,7 @@
 6. **Command 与 WorkflowAction 永久分层**：Command 表达用户意图，Workflow Action 表达受治理的跨插件业务能力；
 7. **Host 先成为 Command 系统的真实用户**：先迁移打开、保存，再允许外部插件贡献 Document Command；
 8. **第一版不追求全能 Context 语言**，不引入字符串表达式、任意事实字典、反射方法发现或通用命令总线；
-9. **只提升跨工作台有价值的行为**，不把 ClassicGame 十一个游戏和 WorkflowStudio 的全部局部按钮倾倒进 Catalog；
+9. **只提升跨工作台有价值的行为**，ClassicGame 仅提升 13 个游戏已有的 Restart/Undo，其他局部按钮不进入 Catalog；
 10. **Command Palette 是后续投影，不是内核成立的前置条件**。
 
 ### 1.1 实施范围
@@ -53,7 +53,7 @@
 - 声明式 Host Menu 末端共享位置、Menu Command 与 Key Binding Contribution；
 - 当前插件注册 Seal、所有权验证、局部 Builder、全局冲突隔离和不可变 Registry 的扩展；
 - 外部 WorkflowStudio 的验证/运行/取消工作台命令；
-- 外部 ClassicGame 中一个真实游戏的重新开始/撤销工作台命令及多实例验收；
+- 外部 ClassicGame 13 个真实游戏已有的重新开始/撤销工作台命令及多实例验收；
 - Command Palette 的最小可用投影；
 - SDK 候选包、模板、外部项目独立还原、真实 Host 加载、文档和最终封板。
 
@@ -851,17 +851,18 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 
 ### G8：迁移外部 ClassicGame 多实例命令
 
-- **目标**：用一个真实游戏证明 Restart/Undo 路由到当前实例，而不是插件单例或仅按 DocumentType 路由。
+- **状态**：已完成；实施与回滚证据见
+  [G8 专项记录](../plan-history/workbench-command/g8-classic-game-multi-instance-commands.md)。
+- **目标**：让全部 13 个真实游戏的已有 Restart/Undo 路由到当前实例，并用五子棋双实例证明不是插件单例。
 - **前置冻结**：G0 未读取或签署 ClassicGame。G8 修改前必须从干净提交独立记录 revision/tree、版本、
   精确 SDK 引用、Document 数量、测试、包、真实 Host 加载和实际游戏状态；任一事实不清楚时不得修改源码。
-- **首选样本**：Gomoku；若 G8 基线证明其异步 AI 状态使首样本不稳定，可改用同样具备动态 Undo 的一个游戏，
-  但必须在 G8 记录理由，不能选择永远 enabled 的假样本规避状态验证。
-- **变更**：目标 Document 窄适配 Target；声明两条 Command 和指向 Host 末端共享位置的 Placement；
-  View 内原按钮可继续使用现有命令/业务用例。
-- **关键验收**：同时打开两个同类型 Document，使 A 可撤销、B 不可撤销；切换标签后 Menu/Palette/KeyBinding
-  状态立即对应当前实例；Restart 只影响当前棋局；关闭 A 不影响 B，也不留下订阅。
-- **回归**：十一个游戏全部 build/test/package，未提升的局部命令行为不变；真实 Host 加载和退出资源归零。
-- **回滚**：只移除首样本 Command 适配和声明，十一个游戏原 UI 继续工作；不得把 Command 接到插件全局静态状态。
+- **动态样本**：Gomoku 使用默认本地双人，A 可撤销、B 不可撤销；异步 AI 不参与路由验收。
+- **变更**：13 个 Document 显式实现窄 Target；声明 13 条 Restart 和 9 条已有 Undo，共 22 条 Command/Tools
+  菜单。五子棋保留唯一 `Ctrl+Shift+R` / `Ctrl+Z` 样本，避免违反 Host 3.3 的同 owner Gesture 判重。
+- **关键验收**：13 个真实包 Document 均可 Restart，只有 9 个可 Undo；切换五子棋 A/B 后 Menu/KeyBinding
+  状态立即对应当前实例。Catalog 已可供 G9 投影，但 G8 不宣称实现 Palette UI。
+- **回归**：十三个游戏全部 build/test/package，其他局部命令行为不变；真实 Host 加载和退出资源归零。
+- **回滚**：移除 22 条声明、13 个 Target 和内部 Adapter，十三个游戏原 UI 继续工作；不得接到全局静态状态。
 
 ### G9：实现最小 Command Palette
 
@@ -946,16 +947,16 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 - [x] Workflow Validate/Run/Cancel 的 idle/running 状态与现有业务一致；
 - [x] Run 继续进入 WorkflowRunSession/WorkflowAction Gateway，没有绕过治理；
 - [x] 两个 Studio Document 的运行/取消状态彼此独立；
-- [ ] ClassicGame 首样本的 Restart/Undo 只作用当前游戏实例；
-- [ ] 两个同类型游戏 Document 可形成不同 CanUndo 并在切换后立即更新；
-- [ ] 未提升的十一个游戏局部命令和 WorkflowStudio 编辑命令保持原 UI 行为；
-- [ ] 两个外部插件只从真实包还原，不引用 Host/SDK 源项目。
+- [x] ClassicGame 13 个游戏的 Restart 和已有 Undo 只作用当前游戏实例；
+- [x] 两个五子棋 Document 可形成不同 CanUndo 并在切换后立即更新；
+- [x] 未提升的游戏局部命令和 WorkflowStudio 编辑命令保持原 UI 行为；
+- [x] 两个外部插件只从真实包还原，不引用 Host/SDK 源项目。
 
 ### 10.5 Palette、资源、包与发布
 
 - [ ] Palette 只消费 Catalog/Context/State/Executor，不建立第二套命令列表；
 - [ ] 搜索、排序、Disabled、目标切换、键盘执行和焦点恢复有 Headless UI 证据；
-- [ ] Document/Target/Menu/KeyBinding/Palette 订阅在关闭和 Runtime 退出后归零；
+- [ ] Document/Target/Menu/KeyBinding 订阅已在关闭后归零；Palette 订阅等待 G9 验证；
 - [ ] Host、SDK、四插件和两个外部插件全部测试与覆盖率门槛通过；
 - [ ] SDK/模板候选、lock file、独立生成项目、真实双 ALC 和确定性 ZIP/manifest 通过；
 - [ ] manifest/envelope/layout/data root 未变化；
@@ -994,7 +995,7 @@ Workbench Command v1 只有在以下问题全部回答“是”后才算完成�
 9. [x] Host 与插件菜单/快捷键均由不可变 Contribution 投影，插件不拥有 Avalonia UI 对象。
 10. [x] Host 快捷键和插件冲突采用明确失败关闭政策，不依赖加载顺序。
 11. [x] WorkflowStudio Validate/Run/Cancel 保持 Workflow Action 治理和多实例隔离。
-12. [ ] ClassicGame Restart/Undo 证明当前实例路由和动态 CanUndo，没有全局静态状态。
+12. [x] ClassicGame Restart/Undo 证明当前实例路由和动态 CanUndo，没有全局静态状态。
 13. [ ] Command Palette 复用同一 Catalog/State/Executor，移除 Palette 不影响基础 Command 系统。
 14. [ ] 主题、Document Creation、Tool Toggle、Toolbar、ContextMenu 和用户快捷键设置没有被偷偷提前实现。
 15. [ ] SDK/模板/外部包、locked restore、双 ALC、确定性制品和版本区间全部一致。
