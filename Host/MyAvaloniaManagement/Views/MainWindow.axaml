@@ -20,10 +20,6 @@
     <Design.DataContext>
         <design:MainWindowDesignData />
     </Design.DataContext>
-    <!-- 添加快捷键绑定 -->
-    <Window.KeyBindings>
-        <KeyBinding Gesture="Control+S" Command="{Binding WorkbenchCommands.Save}" />
-    </Window.KeyBindings>
     <Grid>
         <views:MainView />
         <Border x:Name="ContentFullscreenLayer"

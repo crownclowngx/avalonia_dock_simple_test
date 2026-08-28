@@ -61,7 +61,7 @@ internal sealed class TestHostContext : IDisposable
         if (!useProductionWorkbenchPresentation)
         {
             // 普通领域单测没有 Avalonia UI 线程，不应因创建 MainWindowViewModel 而把进程全局
-            // Dispatcher 绑定到任意 xUnit 工作线程。G4 生产 Presentation 由专项 Unit/Headless
+            // Dispatcher 绑定到任意 xUnit 工作线程。G5 生产 Presentation 由专项 Unit/Headless
             // 测试显式启用；其余测试使用与设计器相同的纯内存窄端口。
             services.AddSingleton<IWorkbenchCommandPresentationBindings>(
                 new WorkbenchCommandPresentationDesignData());

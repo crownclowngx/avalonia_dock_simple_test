@@ -8,15 +8,8 @@
              x:Class="MyAvaloniaManagement.Views.MenuView"
              x:CompileBindings="True" x:DataType="bindings:IMainWindowViewBindings">
     <Menu>
-        <MenuItem Header="文件">
-            <MenuItem Header="打开"
-                      IsEnabled="{Binding WorkbenchCommands.Open.IsEnabled}"
-                      Command="{Binding WorkbenchCommands.Open}"/>
-            <MenuItem Header="保存 (ctrl+s)"
-                      IsEnabled="{Binding WorkbenchCommands.Save.IsEnabled}"
-                      Command="{Binding WorkbenchCommands.Save}"/>
-        </MenuItem>
-        <MenuItem Header="视图">
+        <MenuItem x:Name="FileMenu" Header="文件"/>
+        <MenuItem x:Name="ViewMenu" Header="视图">
             <MenuItem Header="主题">
                 <MenuItem Header="跟随系统"
                           ToggleType="Radio"
@@ -38,5 +31,7 @@
                           CommandParameter="Dark"/>
             </MenuItem>
         </MenuItem>
+        <MenuItem x:Name="ToolsMenu" Header="工具"/>
+        <MenuItem x:Name="HelpMenu" Header="帮助"/>
     </Menu>
 </UserControl>

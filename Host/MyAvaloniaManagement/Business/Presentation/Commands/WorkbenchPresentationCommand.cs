@@ -19,11 +19,11 @@ namespace MyAvaloniaManagement.Business.Presentation.Commands;
 /// </remarks>
 internal interface IWorkbenchCommandPresentationBindings
 {
-    /// <summary>获取 Host 打开 Document 的展示命令。</summary>
-    IWorkbenchPresentationCommandBinding Open { get; }
+    /// <summary>获取 Host 与插件共享的声明式菜单投影。</summary>
+    IWorkbenchMenuProjection Menu { get; }
 
-    /// <summary>获取 Host 保存当前 Document 的展示命令。</summary>
-    IWorkbenchPresentationCommandBinding Save { get; }
+    /// <summary>获取已经完成 Host 保留项和插件冲突治理的快捷键投影。</summary>
+    IWorkbenchKeyBindingProjection KeyBindings { get; }
 }
 
 /// <summary>为 XAML 同时提供执行入口和显式 Enabled 投影的窄命令端口。</summary>

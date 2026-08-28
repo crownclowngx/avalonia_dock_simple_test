@@ -13,6 +13,7 @@ using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Documents;
+using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation.Commands;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
@@ -22,7 +23,7 @@ using Xunit;
 
 namespace MyAvaloniaManagement.UiTests;
 
-/// <summary>使用生产 XAML 和真实 Headless 输入验证 G4 打开/保存首个用户闭环。</summary>
+/// <summary>使用生产 XAML 和真实 Headless 输入验证 G5 声明式菜单与快捷键闭环。</summary>
 public sealed class WorkbenchCommandPresentationUiTests
 {
     private static readonly PluginId Owner =
@@ -31,6 +32,10 @@ public sealed class WorkbenchCommandPresentationUiTests
         new("myavalonia.plugin.g4-ui-tests.document.persistable");
     private static readonly DocumentTypeId NonPersistableDocumentType =
         new("myavalonia.plugin.g4-ui-tests.document.non-persistable");
+    private static readonly CommandId PluginCommand =
+        new("myavalonia.plugin.g4-ui-tests.command.primary");
+    private static readonly CommandId PluginConflictCommand =
+        new("myavalonia.plugin.g4-ui-tests.command.conflict");
 
     [AvaloniaFact]
     public void 文件菜单和CtrlS绑定同一稳定保存命令且设计数据保持纯内存()
@@ -42,9 +47,10 @@ public sealed class WorkbenchCommandPresentationUiTests
         var window = new MainWindow { DataContext = context.ViewModel };
 
         var items = menu.GetLogicalDescendants().OfType<MenuItem>().ToArray();
-        var openItem = Assert.Single(items, item => Equals(item.Header, "打开"));
-        var saveItem = Assert.Single(items, item => Equals(item.Header, "保存 (ctrl+s)"));
-        var binding = Assert.Single(window.KeyBindings);
+        var openItem = Assert.Single(items, item => Equals(item.Header, "打开…"));
+        var saveItem = Assert.Single(items, item => Equals(item.Header, "保存"));
+        var binding = Assert.Single(window.KeyBindings, item =>
+            item.Gesture == new KeyGesture(Key.S, KeyModifiers.Control));
         var open = Assert.IsType<WorkbenchPresentationCommand>(openItem.Command);
         var save = Assert.IsType<WorkbenchPresentationCommand>(saveItem.Command);
 
@@ -56,12 +62,122 @@ public sealed class WorkbenchCommandPresentationUiTests
         Assert.False(saveItem.IsEnabled);
 
         var design = new ViewModels.Design.MainWindowDesignData();
-        Assert.NotNull(design.WorkbenchCommands.Open);
-        Assert.NotNull(design.WorkbenchCommands.Save);
-        Assert.IsNotType<WorkbenchPresentationCommand>(design.WorkbenchCommands.Open);
-        Assert.IsNotType<WorkbenchPresentationCommand>(design.WorkbenchCommands.Save);
+        var designCommands = design.WorkbenchCommands.Menu
+            .GetItems(WorkbenchMenuLocations.FileShared)
+            .OfType<WorkbenchMenuCommandProjectionEntry>()
+            .ToArray();
+        Assert.Equal(2, designCommands.Length);
+        Assert.All(designCommands, item =>
+            Assert.IsNotType<WorkbenchPresentationCommand>(item.Command));
+        Assert.Single(design.WorkbenchCommands.KeyBindings.Items);
 
         menuHost.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task 四个Host菜单保留且插件菜单快捷键只路由当前Document实例()
+    {
+        using var context = CreateContext();
+        var window = new MainWindow { DataContext = context.ViewModel };
+        window.Show();
+        try
+        {
+        var topLevel = window.GetLogicalDescendants()
+            .OfType<MenuItem>()
+            .Where(item => item.Parent is Menu)
+            .Select(item => item.Header?.ToString() ?? string.Empty)
+            .ToArray();
+
+        Assert.Equal(["文件", "视图", "工具", "帮助"], topLevel);
+        Assert.Contains(
+            window.GetLogicalDescendants().OfType<MenuItem>(),
+            item => Equals(item.Header, "主题"));
+        Assert.DoesNotContain(
+            window.GetLogicalDescendants().OfType<MenuItem>(),
+            item => Equals(item.Header, "插件操作"));
+        Assert.Contains(window.KeyBindings, item =>
+            item.Gesture == new KeyGesture(Key.P, KeyModifiers.Control));
+        Assert.Single(window.KeyBindings, item =>
+            item.Gesture == new KeyGesture(Key.S, KeyModifiers.Control));
+
+        var first = await CreateDocumentAsync(context);
+        var second = await CreateDocumentAsync(context);
+        var dock = GetDocumentDock(context);
+        dock.ActiveDockable = first;
+        var pluginMenu = Assert.Single(
+            window.GetLogicalDescendants().OfType<MenuItem>(),
+            item => Equals(item.Header, "插件操作"));
+        var menuCommand = Assert.IsType<WorkbenchPresentationCommand>(pluginMenu.Command);
+        var pluginKey = Assert.Single(window.KeyBindings, item =>
+            item.Gesture == new KeyGesture(Key.P, KeyModifiers.Control));
+        Assert.Same(menuCommand, pluginKey.Command);
+
+        Assert.Equal(
+            WorkbenchCommandExecutionStatus.Succeeded,
+            (await menuCommand.ExecuteAsync()).Status);
+        Assert.Equal(1, Assert.IsType<G4UiPersistableDocument>(first.Model).PluginExecutions);
+        Assert.Equal(0, Assert.IsType<G4UiPersistableDocument>(second.Model).PluginExecutions);
+
+        dock.ActiveDockable = second;
+        window.KeyPressQwerty(PhysicalKey.P, RawInputModifiers.Control);
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+        Assert.Equal(1, Assert.IsType<G4UiPersistableDocument>(first.Model).PluginExecutions);
+        Assert.Equal(1, Assert.IsType<G4UiPersistableDocument>(second.Model).PluginExecutions);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Owner不可用时View移除生成对象且恢复后不产生重复项()
+    {
+        using var context = CreateContext();
+        var window = new MainWindow { DataContext = context.ViewModel };
+        window.Show();
+        try
+        {
+        var document = await CreateDocumentAsync(context);
+        GetDocumentDock(context).ActiveDockable = document;
+        Assert.Single(window.GetLogicalDescendants().OfType<MenuItem>(), item =>
+            Equals(item.Header, "插件操作"));
+        Assert.Single(window.KeyBindings, item =>
+            item.Gesture == new KeyGesture(Key.P, KeyModifiers.Control));
+
+        var lifecycle = context.Provider.GetRequiredService<PluginLifecycleStateStore>();
+        var keyProjection = context.ViewModel.WorkbenchCommands.KeyBindings;
+        var survivingKeyRefreshes = 0;
+        keyProjection.Changed += (_, _) =>
+            throw new InvalidOperationException("测试快捷键观察者失败");
+        keyProjection.Changed += (_, _) => survivingKeyRefreshes++;
+        lifecycle.SetState(new PluginLifecycleState(Owner, PluginLifecycleStatus.NotStarted));
+        Assert.DoesNotContain(window.GetLogicalDescendants().OfType<MenuItem>(), item =>
+            Equals(item.Header, "插件操作"));
+        Assert.DoesNotContain(window.KeyBindings, item =>
+            item.Gesture == new KeyGesture(Key.P, KeyModifiers.Control));
+        Assert.Equal(1, survivingKeyRefreshes);
+
+        lifecycle.SetState(new PluginLifecycleState(Owner, PluginLifecycleStatus.Ready));
+        Assert.Single(window.GetLogicalDescendants().OfType<MenuItem>(), item =>
+            Equals(item.Header, "插件操作"));
+        Assert.Single(window.KeyBindings, item =>
+            item.Gesture == new KeyGesture(Key.P, KeyModifiers.Control));
+        Assert.Equal(2, survivingKeyRefreshes);
+        }
+        finally
+        {
+            window.Close();
+        }
+        Assert.Empty(window.KeyBindings);
+        // 已关闭 Window 的 DataContext 变化与生命周期迟到通知都不能重新安装对象。
+        window.DataContext = null;
+        window.DataContext = context.ViewModel;
+        var closedLifecycle = context.Provider.GetRequiredService<PluginLifecycleStateStore>();
+        closedLifecycle.SetState(new PluginLifecycleState(Owner, PluginLifecycleStatus.NotStarted));
+        closedLifecycle.SetState(new PluginLifecycleState(Owner, PluginLifecycleStatus.Ready));
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+        Assert.Empty(window.KeyBindings);
     }
 
     [AvaloniaFact]
@@ -72,7 +188,7 @@ public sealed class WorkbenchCommandPresentationUiTests
         window.Show();
         var saveItem = window.GetLogicalDescendants()
             .OfType<MenuItem>()
-            .Single(item => Equals(item.Header, "保存 (ctrl+s)"));
+            .Single(item => Equals(item.Header, "保存"));
 
         // 无活动 Document 时快捷键必须无副作用。
         window.KeyPressQwerty(PhysicalKey.S, RawInputModifiers.Control);
@@ -122,9 +238,9 @@ public sealed class WorkbenchCommandPresentationUiTests
         window.Show();
         var items = window.GetLogicalDescendants().OfType<MenuItem>().ToArray();
         var open = Assert.IsType<WorkbenchPresentationCommand>(
-            Assert.Single(items, item => Equals(item.Header, "打开")).Command);
+            Assert.Single(items, item => Equals(item.Header, "打开…")).Command);
         var save = Assert.IsType<WorkbenchPresentationCommand>(
-            Assert.Single(items, item => Equals(item.Header, "保存 (ctrl+s)")).Command);
+            Assert.Single(items, item => Equals(item.Header, "保存")).Command);
         var operationState = context.Provider.GetRequiredService<DocumentOperationState>();
         operationState.Apply(DocumentOperationResult.Failure("已有错误"));
 
@@ -162,7 +278,9 @@ public sealed class WorkbenchCommandPresentationUiTests
         using var context = CreateContext();
         var window = new MainWindow { DataContext = context.ViewModel };
         window.Show();
-        var save = Assert.IsType<WorkbenchPresentationCommand>(context.ViewModel.WorkbenchCommands.Save);
+        var save = GetCommand(
+            context.ViewModel.WorkbenchCommands,
+            HostWorkbenchCommandIds.SaveDocument);
         var states = context.Provider
             .GetRequiredService<Business.Commands.State.WorkbenchCommandStateQuery>();
         var route = states.Resolve(HostWorkbenchCommandIds.SaveDocument);
@@ -200,16 +318,19 @@ public sealed class WorkbenchCommandPresentationUiTests
     {
         var diagnostics = new G4UiDiagnosticSink();
         using var context = CreateContext(diagnostics);
-        var open = Assert.IsType<WorkbenchPresentationCommand>(
-            context.ViewModel.WorkbenchCommands.Open);
-        var save = Assert.IsType<WorkbenchPresentationCommand>(
-            context.ViewModel.WorkbenchCommands.Save);
+        var open = GetCommand(
+            context.ViewModel.WorkbenchCommands,
+            HostWorkbenchCommandIds.OpenDocument);
+        var save = GetCommand(
+            context.ViewModel.WorkbenchCommands,
+            HostWorkbenchCommandIds.SaveDocument);
         var states = context.Provider
             .GetRequiredService<Business.Commands.State.WorkbenchCommandStateQuery>();
         var openRefreshes = 0;
         var saveRefreshes = 0;
         var survivingObserverRefreshes = 0;
         var survivingPropertyRefreshes = 0;
+        var survivingMenuRefreshes = 0;
         open.CanExecuteChanged += (_, _) => openRefreshes++;
         save.CanExecuteChanged += (_, _) =>
             throw new InvalidOperationException("secret-observer-detail");
@@ -225,11 +346,16 @@ public sealed class WorkbenchCommandPresentationUiTests
             Assert.Equal(nameof(WorkbenchPresentationCommand.IsEnabled), args.PropertyName);
             survivingPropertyRefreshes++;
         };
+        context.ViewModel.WorkbenchCommands.Menu.Changed += (_, _) =>
+            throw new InvalidOperationException("secret-menu-observer-detail");
+        context.ViewModel.WorkbenchCommands.Menu.Changed += (_, _) =>
+            survivingMenuRefreshes++;
 
         // Open 的定向通知对 Save 是非相关通知，不能让 Save 的菜单投影刷新。
         states.NotifyExecuted(states.Resolve(HostWorkbenchCommandIds.OpenDocument));
         Assert.Equal(1, openRefreshes);
         Assert.Equal(0, saveRefreshes);
+        Assert.Equal(1, survivingMenuRefreshes);
 
         // Save 的定向通知即使遇到异常观察者，也必须继续调用后续观察者并记录脱敏诊断。
         states.NotifyExecuted(states.Resolve(HostWorkbenchCommandIds.SaveDocument));
@@ -238,9 +364,15 @@ public sealed class WorkbenchCommandPresentationUiTests
         Assert.Equal(1, survivingObserverRefreshes);
         Assert.Equal(1, survivingPropertyRefreshes);
         Assert.Collection(
-            diagnostics.Drafts,
+            diagnostics.Drafts.Where(item =>
+                item.Code == HostDiagnosticCodes.WorkbenchCommandExecutionFailed),
             diagnostic => AssertPresentationDiagnostic(diagnostic),
             diagnostic => AssertPresentationDiagnostic(diagnostic));
+        Assert.Contains(diagnostics.Drafts, item =>
+            item.Code == HostDiagnosticCodes.WorkbenchKeyGestureConflict);
+        Assert.Contains(diagnostics.Drafts, item =>
+            item.Code == HostDiagnosticCodes.WorkbenchCommandStateObserverFailed &&
+            item.Exception is InvalidOperationException);
 
         // 活动目标变化是全量失效，Open 与 Save 都必须重新查询；保存状态随目标立即变为可用。
         var openBeforeFullRefresh = openRefreshes;
@@ -260,6 +392,15 @@ public sealed class WorkbenchCommandPresentationUiTests
         Assert.Equal(HostWorkbenchCommandIds.SaveDocument.Value, diagnostic.StableId);
         Assert.IsType<InvalidOperationException>(diagnostic.Exception);
     }
+
+    private static WorkbenchPresentationCommand GetCommand(
+        IWorkbenchCommandPresentationBindings presentation,
+        CommandId commandId) =>
+        Assert.IsType<WorkbenchPresentationCommand>(presentation.Menu
+            .GetItems(WorkbenchMenuLocations.FileShared)
+            .OfType<WorkbenchMenuCommandProjectionEntry>()
+            .Single(item => item.CommandId == commandId)
+            .Command);
 
     private static UiTestContext CreateContext(G4UiDiagnosticSink? diagnostics = null) =>
         new((services, builder) =>
@@ -298,6 +439,43 @@ public sealed class WorkbenchCommandPresentationUiTests
             typeof(UserControl),
             static () => new UserControl(),
             isPersistable: false);
+        foreach (var command in new[]
+                 {
+                     (PluginCommand, "插件操作"),
+                     (PluginConflictCommand, "插件冲突操作"),
+                 })
+        {
+            builder.AddDocumentCommand(
+                Owner,
+                new CommandDescriptor(command.Item1, command.Item2, "验证 G5 UI Projection"),
+                DocumentType);
+        }
+        builder.AddMenuCommandContribution(
+            Owner,
+            new MenuCommandContributionDescriptor(
+                new CommandPlacementId(
+                    "myavalonia.plugin.g4-ui-tests.command-placement.menu-primary"),
+                PluginCommand,
+                WorkbenchMenuLocations.ToolsShared,
+                "document",
+                0,
+                MenuCommandTargetUnavailableBehavior.Hide));
+        builder.AddKeyBindingContribution(
+            Owner,
+            new KeyBindingContributionDescriptor(
+                new CommandPlacementId(
+                    "myavalonia.plugin.g4-ui-tests.command-placement.key-primary"),
+                PluginCommand,
+                Key.P,
+                KeyModifiers.Control));
+        builder.AddKeyBindingContribution(
+            Owner,
+            new KeyBindingContributionDescriptor(
+                new CommandPlacementId(
+                    "myavalonia.plugin.g4-ui-tests.command-placement.key-conflict"),
+                PluginConflictCommand,
+                Key.S,
+                KeyModifiers.Control));
     });
 
     /// <summary>记录 Presentation 边界产生的稳定诊断草稿，避免测试读取用户目录 JSONL。</summary>
@@ -334,7 +512,7 @@ public sealed class WorkbenchCommandPresentationUiTests
         context.Provider.GetRequiredService<DocumentOperationState>().Apply(result);
         return GetDocumentDock(context).VisibleDockables!
             .OfType<ManagedDocumentDockable>()
-            .Single(item =>
+            .Last(item =>
                 item.Registration.Descriptor.DocumentTypeId == requestedDocumentTypeId);
     }
 
@@ -471,7 +649,9 @@ public sealed class WorkbenchCommandPresentationUiTests
     }
 
     /// <summary>Headless UI 保存闭环使用的最小修订化 Document。</summary>
-    internal sealed class G4UiPersistableDocument : IPersistablePluginDocument
+    internal sealed class G4UiPersistableDocument :
+        IPersistablePluginDocument,
+        IWorkbenchDocumentCommandTarget
     {
         private long _revision;
         private long _acceptedRevision;
@@ -485,6 +665,10 @@ public sealed class WorkbenchCommandPresentationUiTests
         public bool IsDirty => _revision != _acceptedRevision;
 
         public event EventHandler? IsDirtyChanged;
+
+        public event EventHandler<WorkbenchCommandStateChangedEventArgs>? CommandStateChanged;
+
+        internal int PluginExecutions { get; private set; }
 
         public DocumentPresentationState Presentation => new("G4 UI 文档");
 
@@ -524,6 +708,26 @@ public sealed class WorkbenchCommandPresentationUiTests
             {
                 IsDirtyChanged?.Invoke(this, EventArgs.Empty);
             }
+        }
+
+        public bool CanExecute(CommandId commandId) =>
+            commandId == PluginCommand ||
+            commandId == PluginConflictCommand;
+
+        public ValueTask ExecuteAsync(
+            CommandId commandId,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!CanExecute(commandId))
+            {
+                throw new InvalidOperationException("未声明的 G5 UI 命令。");
+            }
+            PluginExecutions++;
+            CommandStateChanged?.Invoke(
+                this,
+                new WorkbenchCommandStateChangedEventArgs(commandId));
+            return ValueTask.CompletedTask;
         }
 
         internal void Edit(string content)

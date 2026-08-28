@@ -99,8 +99,14 @@ public sealed class ApplicationAndWindowTests
 
         Assert.NotNull(main.Layout);
         Assert.True(main.HasDocumentOperationError);
-        Assert.NotNull(main.WorkbenchCommands.Open);
-        Assert.NotNull(main.WorkbenchCommands.Save);
+        Assert.Equal(
+            2,
+            main.WorkbenchCommands.Menu
+                .GetItems(WorkbenchMenuLocations.FileShared)
+                .OfType<MyAvaloniaManagement.Business.Presentation.Commands
+                    .WorkbenchMenuCommandProjectionEntry>()
+                .Count());
+        Assert.Single(main.WorkbenchCommands.KeyBindings.Items);
         Assert.NotEmpty(files.RootNodes);
         Assert.NotEmpty(files.RootNodes[0].Children);
         Assert.NotNull(files.SelectFolderCommand);

@@ -1,5 +1,28 @@
 # MyAvaloniaManagement 测试说明
 
+## Workbench Command G5 声明式 Menu/KeyBinding Projection 非发布门禁
+
+G5 专项入口为：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG5.ps1 -Configuration Release
+```
+
+门禁组合 Host V4 G7 本地开发门禁与 G5 专项断言，覆盖 locked restore、Release 零警告构建、Host
+Unit/UI/Plugin 三层、SDK/API、四个仓内插件、Workbench Command Unit/Headless UI 定向测试、确定性排序、
+分隔符、Hide/Disable、活动 Target、Owner 可用性、快捷键冲突、对象所有权、结构扫描、覆盖率和文档验证。
+
+实际结果为 Workbench Command Unit 定向 **57/57**、G5 Headless UI **7/7**；Host Unit/UI/Plugin 为
+**284/72/212**，合计 **568/568**；四插件门禁聚合 **3605/3605**。Host 行/分支覆盖率为
+**86.97% / 72.39%**，`HostWorkbenchCommandProjectionCatalog`、`WorkbenchCommandProjection` 与
+`PluginLifecycleStateStore` 所在文件行覆盖率分别为 **100.00% / 96.61% / 98.72%**。
+
+专项摘要与 TRX/Cobertura 证据位于 `artifacts/test-results/WorkbenchCommandG5/`。门禁固定记录
+`aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、
+`releaseGate=false`、`publishable=false`、`published=false`、`uploaded=false`、`signed=false`、
+`tagCreated=false`；不调用 AIFLOW、Windows CI/Smoke 或发布门禁。完整职责边界、SOLID 对照和回滚信息见
+[G5 专项记录](../plan-history/workbench-command/g5-declarative-menu-keybinding-projection.md)。
+
 ## Workbench Command G4 Host 打开/保存 Presentation 非发布门禁
 
 G4 专项入口为：

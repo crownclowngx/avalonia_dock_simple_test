@@ -186,6 +186,8 @@ internal static class HostDiagnosticCodes
         "WORKBENCH_COMMAND_PLACEMENT_ID_DUPLICATE";
     internal const string WorkbenchKeyGestureDuplicate =
         "WORKBENCH_KEY_GESTURE_DUPLICATE";
+    internal const string WorkbenchKeyGestureConflict =
+        "WORKBENCH_KEY_GESTURE_CONFLICT";
     internal const string PluginContainerBuildFailed = "PLUGIN_CONTAINER_BUILD_FAILED";
     internal const string HostContainerBuildFailed = "HOST_CONTAINER_BUILD_FAILED";
     internal const string ExtensionDiscoveryFailed = "EXTENSION_DISCOVERY_FAILED";
@@ -328,6 +330,8 @@ internal static class HostDiagnosticRedactionPolicy
             "工作台命令目标状态订阅失败；插件异常正文未写入诊断。",
         HostDiagnosticCodes.WorkbenchCommandStateObserverFailed =>
             "工作台命令状态观察者失败；异常正文未写入诊断。",
+        HostDiagnosticCodes.WorkbenchKeyGestureConflict =>
+            "工作台快捷键与 Host 保留项或其他插件冲突，冲突绑定均未激活。",
         HostDiagnosticCodes.WorkbenchCommandDocumentCloseCancellationFailed =>
             "Document 命令关闭取消回调失败；异常正文未写入诊断。",
         HostDiagnosticCodes.WorkbenchCommandShutdownTimeout =>

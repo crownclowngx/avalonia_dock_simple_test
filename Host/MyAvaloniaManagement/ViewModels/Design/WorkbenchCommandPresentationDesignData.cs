@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using Avalonia.Input;
+using MyAvaloniaManagement.Business.Commands.Catalog;
 using MyAvaloniaManagement.Business.Presentation.Commands;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.ViewModels.Design;
 
@@ -12,18 +16,74 @@ namespace MyAvaloniaManagement.ViewModels.Design;
 internal sealed class WorkbenchCommandPresentationDesignData :
     IWorkbenchCommandPresentationBindings
 {
-    /// <summary>初始化两个无副作用的同步样例命令。</summary>
+    /// <summary>初始化无副作用的菜单与快捷键投影样例。</summary>
     internal WorkbenchCommandPresentationDesignData()
     {
-        Open = new NoOperationPresentationCommand();
-        Save = new NoOperationPresentationCommand();
+        var open = new NoOperationPresentationCommand();
+        var save = new NoOperationPresentationCommand();
+        Menu = new DesignMenuProjection(open, save);
+        KeyBindings = new DesignKeyBindingProjection(save);
     }
 
-    /// <summary>获取设计器使用的无副作用打开命令。</summary>
-    public IWorkbenchPresentationCommandBinding Open { get; }
+    /// <summary>获取设计器使用的纯内存菜单快照。</summary>
+    public IWorkbenchMenuProjection Menu { get; }
 
-    /// <summary>获取设计器使用的无副作用保存命令。</summary>
-    public IWorkbenchPresentationCommandBinding Save { get; }
+    /// <summary>获取设计器使用的纯内存快捷键快照。</summary>
+    public IWorkbenchKeyBindingProjection KeyBindings { get; }
+
+    private sealed class DesignMenuProjection(
+        IWorkbenchPresentationCommandBinding open,
+        IWorkbenchPresentationCommandBinding save) : IWorkbenchMenuProjection
+    {
+        private readonly IReadOnlyList<WorkbenchMenuProjectionEntry> _file =
+        [
+            new WorkbenchMenuCommandProjectionEntry(
+                new CommandPlacementId(
+                    "myavalonia.host.command-placement.menu.file.open-document"),
+                HostWorkbenchCommandIds.OpenDocument,
+                "打开…",
+                open),
+            new WorkbenchMenuCommandProjectionEntry(
+                new CommandPlacementId(
+                    "myavalonia.host.command-placement.menu.file.save-document"),
+                HostWorkbenchCommandIds.SaveDocument,
+                "保存",
+                save),
+        ];
+
+        public event EventHandler? Changed
+        {
+            add { }
+            remove { }
+        }
+
+        public IReadOnlyList<WorkbenchMenuProjectionEntry> GetItems(
+            MenuLocationId locationId) =>
+            locationId == WorkbenchMenuLocations.FileShared
+                ? _file
+                : [];
+    }
+
+    private sealed class DesignKeyBindingProjection(
+        IWorkbenchPresentationCommandBinding save) : IWorkbenchKeyBindingProjection
+    {
+        public event EventHandler? Changed
+        {
+            add { }
+            remove { }
+        }
+
+        public IReadOnlyList<WorkbenchKeyBindingProjectionEntry> Items { get; } =
+        [
+            new WorkbenchKeyBindingProjectionEntry(
+                new CommandPlacementId(
+                    "myavalonia.host.command-placement.key-binding.save-document"),
+                HostWorkbenchCommandIds.SaveDocument,
+                Key.S,
+                KeyModifiers.Control,
+                save),
+        ];
+    }
 
     /// <summary>设计器专用的恒 Enabled、无副作用命令。</summary>
     private sealed class NoOperationPresentationCommand :

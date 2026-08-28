@@ -125,6 +125,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(provider => new WorkbenchCommandCatalog(
             provider.GetRequiredService<HostWorkbenchCommandCatalog>(),
             provider.GetRequiredService<PluginRegistry>()));
+        services.AddSingleton(_ => new HostWorkbenchCommandProjectionCatalog());
         services.AddSingleton(provider => new WorkbenchContextStore(
             provider.GetRequiredService<WorkspaceSession>()));
         services.AddSingleton(provider => new WorkbenchCommandStateQuery(
@@ -139,13 +140,17 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IWorkbenchCommandShutdownParticipant>(provider =>
             provider.GetRequiredService<WorkbenchCommandExecutor>());
         services.AddSingleton<WorkbenchCommandShutdownGate>();
-        services.AddSingleton(provider => new HostWorkbenchCommandPresentation(
+        services.AddSingleton(provider => new WorkbenchCommandPresentation(
+            provider.GetRequiredService<HostWorkbenchCommandProjectionCatalog>(),
+            provider.GetRequiredService<PluginRegistry>(),
+            provider.GetRequiredService<WorkbenchCommandCatalog>(),
             provider.GetRequiredService<WorkbenchCommandStateQuery>(),
             provider.GetRequiredService<WorkbenchCommandExecutor>(),
+            provider.GetRequiredService<PluginAvailabilityReadModel>(),
             Dispatcher.UIThread,
             provider.GetService<IHostDiagnosticSink>()));
         services.AddSingleton<IWorkbenchCommandPresentationBindings>(provider =>
-            provider.GetRequiredService<HostWorkbenchCommandPresentation>());
+            provider.GetRequiredService<WorkbenchCommandPresentation>());
         services.AddSingleton(provider => new WorkspaceCatalog(
             provider.GetRequiredService<HostWorkspaceCatalog>(),
             provider.GetRequiredService<PluginRegistry>(),

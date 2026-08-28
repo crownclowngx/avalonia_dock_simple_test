@@ -1,8 +1,8 @@
 # MyAvaloniaManagement Workbench Command 引入评审与实施任务书
 
-> 状态：实施中；G0–G4 已完成，G5–G10 尚未实施。当前已有 Command 候选契约、注册声明、
-> Catalog/Executor、Context v1、活动 Document Target 路由、关闭门控及 Host 打开/保存 Presentation 闭环；本文不表示插件菜单贡献、
-> 快捷键贡献或 Command Palette 已进入生产。
+> 状态：实施中；G0–G5 已完成，G6–G10 尚未实施。当前已有 Command 候选契约、注册声明、
+> Catalog/Executor、Context v1、活动 Document Target 路由、关闭门控、Host 打开/保存 Presentation，
+> 以及 Host-owned 声明式菜单/快捷键投影闭环；本文不表示 SDK 候选包、外部插件命令或 Command Palette 已进入生产。
 > 评审日期：2026-08-27。
 > 事实基线：[主项目内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、
 > [主项目设计方法论与取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、
@@ -805,6 +805,8 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 
 ### G5：建立声明式 Menu 与 KeyBinding Projection
 
+- **状态**：已完成（2026-08-28）；实际证据见
+  [G5 声明式 Menu 与 KeyBinding Projection 实施记录](../plan-history/workbench-command/g5-declarative-menu-keybinding-projection.md)。
 - **目标**：从不可变 Command/Placement Catalog 确定性生成 Host 和插件菜单/快捷键对象。
 - **变更**：Host 末端共享位置的 Command Projection、KeyBinding Projection、排序、Group Separator、状态绑定、
   owner availability 和 4.7/4.8 冲突政策；Host File 菜单也改由内建 Contribution 提供打开/保存。
@@ -926,10 +928,10 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 - [x] 打开/保存只有一条生产执行路径，MainWindow 旧转发命令已删除；
 - [x] File 菜单和 `Ctrl+S` 使用同一 CommandId/Executor；
 - [x] Save 在无可保存活动 Document 时 Disabled，执行前仍会重查；
-- [ ] Host 末端共享位置中的 Command Placement 按 Group、Order 和稳定 ID 确定性投影；
-- [ ] 插件不贡献 Avalonia `MenuItem`/`KeyBinding` 实例；
-- [ ] Host 快捷键优先，插件冲突双禁用且不删除 Command；
-- [ ] 插件不可用、Target 切换和状态事件会同步刷新全部投影。
+- [x] Host 末端共享位置中的 Command Placement 按 Group、Order 和稳定 ID 确定性投影；
+- [x] 插件不贡献 Avalonia `MenuItem`/`KeyBinding` 实例；
+- [x] Host 快捷键优先，插件冲突双禁用且不删除 Command；
+- [x] 插件不可用、Target 切换和状态事件会同步刷新全部投影。
 
 ### 10.4 WorkflowStudio 与 ClassicGame
 
@@ -981,8 +983,8 @@ Workbench Command v1 只有在以下问题全部回答“是”后才算完成�
 6. [ ] 活动 Document 切换、同类型多实例和 Target 状态变化都路由到正确当前实例。
 7. [ ] Document Scope 隐藏、ClosingToken、Adapter/View/模型释放顺序保持不变。
 8. [x] MainWindow 打开/保存旧命令已删除，菜单与 `Ctrl+S` 统一进入 Executor。
-9. [ ] Host 与插件菜单/快捷键均由不可变 Contribution 投影，插件不拥有 Avalonia UI 对象。
-10. [ ] Host 快捷键和插件冲突采用明确失败关闭政策，不依赖加载顺序。
+9. [x] Host 与插件菜单/快捷键均由不可变 Contribution 投影，插件不拥有 Avalonia UI 对象。
+10. [x] Host 快捷键和插件冲突采用明确失败关闭政策，不依赖加载顺序。
 11. [ ] WorkflowStudio Validate/Run/Cancel 保持 Workflow Action 治理和多实例隔离。
 12. [ ] ClassicGame Restart/Undo 证明当前实例路由和动态 CanUndo，没有全局静态状态。
 13. [ ] Command Palette 复用同一 Catalog/State/Executor，移除 Palette 不影响基础 Command 系统。

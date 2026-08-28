@@ -7,10 +7,12 @@ using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Presentation.Commands;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Tests;
 
-/// <summary>验证 G4 Host-only Presentation 的身份、状态、执行重查与订阅所有权。</summary>
+/// <summary>验证 G5 通用 Presentation 的身份复用、状态、执行重查与订阅所有权。</summary>
 public sealed class WorkbenchCommandPresentationTests
 {
     [Fact]
@@ -21,18 +23,16 @@ public sealed class WorkbenchCommandPresentationTests
         var firstViewModel = context.CreateMainWindowViewModel();
         var secondViewModel = context.CreateMainWindowViewModel();
         var presentation = context.Provider
-            .GetRequiredService<HostWorkbenchCommandPresentation>();
+            .GetRequiredService<WorkbenchCommandPresentation>();
 
         Assert.Same(presentation, firstViewModel.WorkbenchCommands);
         Assert.Same(firstViewModel.WorkbenchCommands, secondViewModel.WorkbenchCommands);
-        Assert.Same(presentation.Open, firstViewModel.WorkbenchCommands.Open);
-        Assert.Same(presentation.Save, firstViewModel.WorkbenchCommands.Save);
-        Assert.Equal(
-            HostWorkbenchCommandIds.OpenDocument,
-            Assert.IsType<WorkbenchPresentationCommand>(presentation.Open).CommandId);
-        Assert.Equal(
-            HostWorkbenchCommandIds.SaveDocument,
-            Assert.IsType<WorkbenchPresentationCommand>(presentation.Save).CommandId);
+        var open = GetHostCommand(presentation, HostWorkbenchCommandIds.OpenDocument);
+        var save = GetHostCommand(presentation, HostWorkbenchCommandIds.SaveDocument);
+        var keyBinding = Assert.Single(presentation.KeyBindings.Items);
+        Assert.Equal(HostWorkbenchCommandIds.OpenDocument, open.CommandId);
+        Assert.Equal(HostWorkbenchCommandIds.SaveDocument, save.CommandId);
+        Assert.Same(save, keyBinding.Command);
     }
 
     [Fact]
@@ -44,8 +44,10 @@ public sealed class WorkbenchCommandPresentationTests
         {
             _ = nonPersistableContext.CreateMainWindowViewModel();
             var nonPersistableSave = Assert.IsType<WorkbenchPresentationCommand>(
-                nonPersistableContext.Provider
-                    .GetRequiredService<HostWorkbenchCommandPresentation>().Save);
+                GetHostCommand(
+                    nonPersistableContext.Provider
+                        .GetRequiredService<WorkbenchCommandPresentation>(),
+                    HostWorkbenchCommandIds.SaveDocument));
             await CreateDocumentAsync(nonPersistableContext);
             var nonPersistableDock = GetDocumentDock(nonPersistableContext);
             nonPersistableDock.ActiveDockable = nonPersistableDock.VisibleDockables!
@@ -61,8 +63,9 @@ public sealed class WorkbenchCommandPresentationTests
         using var context = DocumentTestContext.Create(
             useProductionWorkbenchPresentation: true);
         _ = context.CreateMainWindowViewModel();
-        var save = Assert.IsType<WorkbenchPresentationCommand>(context.Provider
-            .GetRequiredService<HostWorkbenchCommandPresentation>().Save);
+        var save = GetHostCommand(
+            context.Provider.GetRequiredService<WorkbenchCommandPresentation>(),
+            HostWorkbenchCommandIds.SaveDocument);
         var dock = GetDocumentDock(context);
         Assert.False(save.CanExecute(null));
 
@@ -120,4 +123,13 @@ public sealed class WorkbenchCommandPresentationTests
     private static DocumentDock GetDocumentDock(TestHostContext context) =>
         Assert.IsType<DocumentDock>(context.Workspace.DockFactory.GetDockable<IDocumentDock>(
             Business.Layout.DockLayoutIds.Documents));
+
+    private static WorkbenchPresentationCommand GetHostCommand(
+        IWorkbenchCommandPresentationBindings presentation,
+        CommandId commandId) =>
+        Assert.IsType<WorkbenchPresentationCommand>(presentation.Menu
+            .GetItems(WorkbenchMenuLocations.FileShared)
+            .OfType<WorkbenchMenuCommandProjectionEntry>()
+            .Single(item => item.CommandId == commandId)
+            .Command);
 }

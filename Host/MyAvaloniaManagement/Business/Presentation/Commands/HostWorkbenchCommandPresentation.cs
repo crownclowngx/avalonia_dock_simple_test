@@ -1,56 +1,52 @@
-using System;
-using Avalonia.Threading;
+using System.Collections.Generic;
+using Avalonia.Input;
 using MyAvaloniaManagement.Business.Commands.Catalog;
-using MyAvaloniaManagement.Business.Commands.Execution;
-using MyAvaloniaManagement.Business.Commands.State;
-using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Presentation.Commands;
 
-/// <summary>拥有 Host 打开、保存两个工作台展示适配器。</summary>
+/// <summary>冻结 Host 自己拥有的菜单与快捷键声明。</summary>
 /// <remarks>
-/// 本对象由根容器作为单例持有，因此 File 菜单与 Window KeyBinding 会取得完全相同的 Save 实例。
-/// 它只组合稳定 CommandId、State Query、Executor 与 UI Dispatcher，不持有 Provider、Dock、Document、
-/// Control 或插件对象。通用插件菜单和快捷键贡献属于 G5，不进入此 Host-only 模型。
+/// Host 声明与插件 Registry 保持分离，避免为了复用投影算法伪造一个 Host PluginId。
+/// Descriptor 只保存稳定身份和键枚举；真正的 MenuItem、Separator 与 KeyBinding 始终由 Host View 创建。
 /// </remarks>
-internal sealed class HostWorkbenchCommandPresentation :
-    IWorkbenchCommandPresentationBindings,
-    IDisposable
+internal sealed class HostWorkbenchCommandProjectionCatalog
 {
-    internal HostWorkbenchCommandPresentation(
-        WorkbenchCommandStateQuery states,
-        WorkbenchCommandExecutor executor,
-        Dispatcher dispatcher,
-        IHostDiagnosticSink? diagnostics = null)
+    internal HostWorkbenchCommandProjectionCatalog()
     {
-        ArgumentNullException.ThrowIfNull(states);
-        ArgumentNullException.ThrowIfNull(executor);
-        ArgumentNullException.ThrowIfNull(dispatcher);
-
-        Open = new WorkbenchPresentationCommand(
-            HostWorkbenchCommandIds.OpenDocument,
-            states,
-            executor,
-            dispatcher,
-            diagnostics);
-        Save = new WorkbenchPresentationCommand(
-            HostWorkbenchCommandIds.SaveDocument,
-            states,
-            executor,
-            dispatcher,
-            diagnostics);
+        MenuContributions =
+        [
+            new MenuCommandContributionDescriptor(
+                new CommandPlacementId(
+                    "myavalonia.host.command-placement.menu.file.open-document"),
+                HostWorkbenchCommandIds.OpenDocument,
+                WorkbenchMenuLocations.FileShared,
+                group: string.Empty,
+                order: 0,
+                MenuCommandTargetUnavailableBehavior.Disable),
+            new MenuCommandContributionDescriptor(
+                new CommandPlacementId(
+                    "myavalonia.host.command-placement.menu.file.save-document"),
+                HostWorkbenchCommandIds.SaveDocument,
+                WorkbenchMenuLocations.FileShared,
+                group: string.Empty,
+                order: 10,
+                MenuCommandTargetUnavailableBehavior.Disable),
+        ];
+        KeyBindingContributions =
+        [
+            new KeyBindingContributionDescriptor(
+                new CommandPlacementId(
+                    "myavalonia.host.command-placement.key-binding.save-document"),
+                HostWorkbenchCommandIds.SaveDocument,
+                Key.S,
+                KeyModifiers.Control),
+        ];
     }
 
-    /// <summary>获取唯一的 Host 打开命令展示适配器。</summary>
-    public IWorkbenchPresentationCommandBinding Open { get; }
+    /// <summary>获取 Host 保留菜单项的不可变声明快照。</summary>
+    internal IReadOnlyList<MenuCommandContributionDescriptor> MenuContributions { get; }
 
-    /// <summary>获取由 File 菜单和 Ctrl+S 共享的 Host 保存命令展示适配器。</summary>
-    public IWorkbenchPresentationCommandBinding Save { get; }
-
-    /// <summary>成对释放两个适配器对统一状态源的订阅。</summary>
-    public void Dispose()
-    {
-        ((WorkbenchPresentationCommand)Open).Dispose();
-        ((WorkbenchPresentationCommand)Save).Dispose();
-    }
+    /// <summary>获取 Host 保留快捷键的不可变声明快照。</summary>
+    internal IReadOnlyList<KeyBindingContributionDescriptor> KeyBindingContributions { get; }
 }

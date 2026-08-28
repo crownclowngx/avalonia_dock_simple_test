@@ -33,6 +33,8 @@
     "Business/Commands/Context/WorkbenchContextStore.cs": 90.0,
     "Business/Commands/State/WorkbenchCommandStateQuery.cs": 90.0,
     "Business/Commands/Execution/WorkbenchDocumentCommandLeaseStore.cs": 90.0,
+    "Business/Presentation/Commands/HostWorkbenchCommandPresentation.cs": 90.0,
+    "Business/Presentation/Commands/WorkbenchCommandProjection.cs": 90.0,
     "Business/WorkflowActions/WorkflowActionSchemaValidator.cs": 90.0,
     "Business/WorkflowActions/WorkflowActionCatalogStore.cs": 90.0,
     "Business/WorkflowActions/WorkflowActionRuntime.cs": 90.0,
