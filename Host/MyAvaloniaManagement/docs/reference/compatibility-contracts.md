@@ -51,7 +51,7 @@ Plugin SDK public API 或 manifest；Document 与 Layout 磁盘契约均已切�
 
 历史 v1 正式签名随 Core 的 `ApiCompatibility/v1` 保存；Core/UI 的 v2 基线由 V2 G14 冻结为
 Shipped 85/46 条且 Unshipped 均为空。活动 v3 Shipped 为 127/45、Unshipped 为 72/6，并由
-`scripts/Test-PluginSdkCompatibility.ps1 -Baseline v3` 验证。未登记
+由 `dotnet run --project tools/MyAvaloniaManagement.Gate -- verify --scope host` 验证；正式冻结由 `seal` 完成。未登记
 新增、删除、可见性收窄、参数或返回类型变化都会给出成员级 RS 诊断。完整维护流程见
 [Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
 

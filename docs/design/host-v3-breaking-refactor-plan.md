@@ -1,6 +1,7 @@
 # MyAvaloniaManagement V3 破坏式架构重构评审与整改任务书
 
 > 状态：已完成；G0–G14 已全部封板。Document 保存已采用 V3 G2 修订协议，
+> 文中的 PowerShell 命令已经退役，仅记录当时执行事实；当前入口为 Gate CLI。
 > Document 激活已采用 V3 G3 互斥 New/Restore 类型，插件注册已采用 V3 G4 Host 最终提交与 ID 归属校验；
 > 插件事件通信已采用 V3 G5 私有消息器；Dock Factory、Workspace Session 与 Tool 只读投影已按 V3 G6
 > 分离；Host Catalog 与 Plugin Registry 已按 V3 G7 分离；全屏租约与 Host V3 骨架已按 V3 G8

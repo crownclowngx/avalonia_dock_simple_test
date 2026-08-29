@@ -270,129 +270,39 @@ TestResults/  需要保留的阶段验收与人工验证记录
 
 ## 测试
 
-修改当前文档、脚本路径、版本事实或关键契约名称时先运行：
+当前唯一受支持的验证与封板入口是强类型 .NET Gate CLI。日常开发允许三个仓库存在未提交修改：
 
 ```powershell
-.\scripts\Test-DocumentationCore.ps1
-.\scripts\Test-Documentation.ps1
+dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 ```
 
-该门禁不启动窗口、不执行发布；正式封板证据由下述 V3 G14 入口建立。
-
-修改 Workflow Action SDK 包、模板、Build 消费边界或外部包装载链时运行 G2 非发布聚合门禁：
+排查单个边界时使用 scope；`workbench` 会自动包含所需的 Host 基座：
 
 ```powershell
-pwsh -NoProfile -File .\scripts\Test-WorkflowActionG2.ps1 -Configuration Release
+dotnet run --project tools/MyAvaloniaManagement.Gate -- verify --scope host
+dotnet run --project tools/MyAvaloniaManagement.Gate -- verify --scope workflow
+dotnet run --project tools/MyAvaloniaManagement.Gate -- verify --scope workbench
 ```
 
-该入口只在本地候选源打包 SDK `3.1.0` 与 Templates `1.1.0`，Build `1.1.2` 从 NuGet.org 精确还原；
-不运行 AIFLOW、Windows CI/Smoke、ReleaseAcceptance 或发布门禁，也不上传 NuGet。
-
-修改外部 WorkflowStudio 的 Validate/Run/Cancel、菜单/快捷键声明或 Host 当前实例路由时运行 G7 非发布门禁：
+正式封板要求主仓工作树干净，默认只执行一轮完整隔离门禁：
 
 ```powershell
-pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG7.ps1 -Configuration Release
+dotnet run --project tools/MyAvaloniaManagement.Gate -- seal
 ```
 
-该入口组合现有 Host 本地开发门禁、Studio 公开源独立门禁、真实 ZIP/双 ALC/caller-bound Action 和 Headless
-UI；固定记录 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseGate=false`，不执行发布动作。
-
-修改外部 ClassicGame 的全游戏 Restart/Undo、菜单声明或多实例路由时运行 G8 非发布门禁：
+只有需要重新证明跨隔离环境重复性时才显式执行第二轮：
 
 ```powershell
-pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG8.ps1 -Configuration Release
+dotnet run --project tools/MyAvaloniaManagement.Gate -- seal --repeat
 ```
 
-修改 Host Command Palette 投影、窗口键盘/焦点行为或保留快捷键治理时，运行 G9 本地非发布门禁：
+`verify` 复用当前工作树和本机 NuGet 缓存，执行单次打包及 1 轮资源 Harness，不启动真实窗口。
+`seal` 固定 Windows x64、Release、locked restore，在隔离工作区执行覆盖率、六插件双包哈希、真实包组合、
+20 轮 Harness 和真实窗口 Smoke。WorkflowStudio 与 ClassicGame 可以有未提交修改，但其实际文件内容和
+SHA-256 会进入统一证据；这不会被表述为外部仓库的干净提交。
 
-```powershell
-pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG9.ps1 -Configuration Release
-```
-
-该入口复用 Host 本地开发门禁，消费 ClassicGame 公开源独立门禁生成的确定性真实 ZIP，并验证 13 个游戏
-Document、22 条 Catalog/Menu 命令、五子棋双实例和 Headless UI；不运行 Windows CI/Smoke 或发布门禁。
-
-完成 Workbench Command 跨仓库集成、API/制品冻结或文档封板时，运行 G10 单轮完整本地非发布门禁：
-
-```powershell
-pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG10.ps1 -Configuration Release
-```
-
-该入口从 Host、WorkflowStudio、ClassicGame 当前工作树建立一轮无硬链接隔离副本，串行复用 G6–G9 与
-四仓内插件门禁，并同时加载两个外部实体包验证 25 条 Command。它固定记录 `aiflow=false`、
-`windowsCi=false`、`windowsSmoke=false`、`releaseGate=false`、`publishable=false`，不执行任何发布动作。
-
-修改 Host/SDK 生产边界、插件入口、构建 Target、打包或兼容规则时运行 G13 非发布聚合门禁：
-
-```powershell
-.\scripts\Test-HostV3ProductionSurface.ps1 -Configuration Release
-```
-
-该入口验证当前 V3 API、源码与二进制零残留、Host/四插件完整测试、覆盖率、真实 NuGet 反例、
-两轮确定性测试 ZIP、真实加载、诊断脱敏和文档；不会调用 Windows CI/Smoke 或发布门禁。
-
-修改 Document 创建、持久化、关闭或 Scope 所有权链时，运行 G7 非发布专项：
-
-```powershell
-.\scripts\Test-DocumentV2.ps1 -Configuration Release -NoRestore
-```
-
-该脚本只执行 Unit、Plugin 与 Headless UI 专项测试，并固定记录未运行 Windows CI、Windows Smoke
-及发布门禁；结果写入 `artifacts/test-results/DocumentV2/summary.json`。
-
-当前 Host V4 封板在干净 Git 提交上执行以下 Windows 本地发布门禁：
-
-```powershell
-.\scripts\Invoke-HostV4ReleaseGate.ps1
-```
-
-该入口在两个无硬链接隔离克隆中复用完整 G7 开发门禁、四插件专项、20 轮资源 Harness、API/包、
-文档和真实窗口 Smoke，并复核实体 ZIP/manifest；只建立本地发布资格，不上传、不打标签且固定记录
-`aiflow=false`。V3 G14 入口仅保留历史复核。
-
-V2 封板时曾执行以下历史 Windows 本地发布门禁：
-
-```powershell
-.\scripts\Invoke-HostV2ReleaseGate.ps1
-```
-
-该入口在两个独立克隆中重复执行锁定还原、Release CI 零警告构建、V2 生产面全量门禁、SDK v2 API、
-四插件包矩阵和真实窗口 `layout-v2.json` Smoke，并把日志、TRX、覆盖率、ZIP、清单及两轮比较写入
-`artifacts/release-gate/v2`。它不使用 AIFLOW，不绑定代码托管平台，也不会创建或推送标签。
-
-运行宿主标准门禁：
-
-```powershell
-.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
-```
-
-修改诊断、异常边界、Trace 或 Console 输出时，还必须运行：
-
-```powershell
-.\scripts\Test-HostDiagnosticRedaction.ps1
-```
-
-需要验证真实 Windows 窗口启动时运行：
-
-```powershell
-.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release -WindowsSmoke
-```
-
-验证四个插件的独立确定性 ZIP、协议负例和最终包加载：
-
-```powershell
-.\scripts\Test-ManagedPluginPackages.ps1 -Configuration Release
-```
-
-维护 Plugin SDK public API 时，必须额外运行当前 v3 可读基线和成员级变异门禁：
-
-```powershell
-.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v3 -Configuration Release
-```
-
-每个插件分别生成 `<AssemblyName>-<PluginVersion>-win-x64.zip`，不会生成四插件合集。
-
-插件还包含各自的单元测试、集成 Harness 或发布验收项目；其专用前置条件和命令以插件目录中的当前文档为准。
+所有机器证据写入 `artifacts/gate/<run-id>/`。历史 G0–G16 文档中的 PowerShell 命令仅记录当时执行事实，
+对应脚本已经退役，不是当前可调用接口。Gate 不上传包、不签名、不创建标签，也不执行外部发布。
 
 ## 当前边界
 

@@ -492,22 +492,22 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 
 | 风险 | 主要保护 |
 | --- | --- |
-| Plugin SDK public 签名漂移 | Core/UI v2 Shipped 文本、`Test-PluginSdkCompatibility.ps1`、基线政策测试 |
+| Plugin SDK public 签名漂移 | Core/UI Shipped 文本、Gate 契约阶段、基线政策测试 |
 | Host 实现面意外导出 | `HostApiBoundaryTests` |
 | 插件并发扫描、可变缓存泄漏 | `InternalRefactorTests` |
 | Managed-only 拒绝、显式贡献所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、`ExplicitContributionAndPluginRegistryTests`、内部注册表测试 |
-| Host Catalog / Plugin Registry 分离、双激活边界与规范 Locator | `HostCatalogPluginRegistryTests`、`Test-HostCatalogPluginRegistry.ps1` |
-| 诊断正文、凭据、URL、路径泄漏与敏感开关误开 | `HostDiagnosticsTests`、生命周期/UI/Document 错误测试、`Test-HostDiagnosticRedaction.ps1` |
+| Host Catalog / Plugin Registry 分离、双激活边界与规范 Locator | `HostCatalogPluginRegistryTests`、Gate Host 验证 |
+| 诊断正文、凭据、URL、路径泄漏与敏感开关误开 | `HostDiagnosticsTests`、生命周期/UI/Document 错误测试、Gate 契约阶段 |
 | 插件私有 Provider、Host Port、失败隔离与四插件回归 | `PluginContainerIsolationTests`、`PluginProviderOwnerTests` |
 | 严格六字段信封、原生 JSON、资源边界、所有权与失败不发布 | `DocumentEnvelopeV2Tests` |
 | 异步创建、并发打开、保存提交点、关闭重入与坏文件恢复 | `DocumentPersistenceTests`、`DocumentCloseTests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |
-| 同步顺序、重入、异常、并发、Provider/Runtime 隔离及订阅释放 | 两插件 `*EventBusTests`、Document Scope 测试、`Test-PluginPrivateMessaging.ps1` |
+| 同步顺序、重入、异常、并发、Provider/Runtime 隔离及订阅释放 | 两插件 `*EventBusTests`、Document Scope 测试、Gate Host 验证 |
 | 布局严格解析、隔离、回退 | 布局生命周期与存储测试 |
 | Layout V2 严格字段、V1 不读取、生命周期不可用零部分应用 | `DockLayoutStoreTests`、`DockLayoutAvailabilityTests` |
 | 生命周期排序、幂等、失败/超时/取消、反向停止和脱敏 | `PluginLifecycleCoordinatorTests` |
-| Command 合并目录、Context、当前 Target 状态/执行、租约关闭和诊断脱敏 | `WorkbenchCommand*Tests`、`Test-WorkbenchCommandG3.ps1` |
+| Command 合并目录、Context、当前 Target 状态/执行、租约关闭和诊断脱敏 | `WorkbenchCommand*Tests`、Gate Workbench 验证 |
 | XAML、绑定和真实窗口事件 | Headless UI 与 Windows Smoke |
 
 详细命令和门槛参见[测试说明](../../../../docs/reference/myavalonia-management-tests.md)。

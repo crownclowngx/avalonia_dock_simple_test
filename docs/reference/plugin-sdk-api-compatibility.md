@@ -1,5 +1,8 @@
 # Plugin SDK API 兼容基线维护指南
 
+> 当前验证入口已统一为 `dotnet run --project tools/MyAvaloniaManagement.Gate -- verify` 和 `seal`。
+> 本文后续出现的 `scripts/*.ps1` 是历史阶段命令，均已退役，不再代表可调用接口。
+
 > `managed-plugin-v1.0.0` 继续定位 SDK `1.0.0` 的历史正式源码基线。V2 G14 已将 Core/UI 的
 > `2.0.0` public 表面正式冻结到 v2 Shipped：Core 85 条、UI 46 条。V3 G8 已删除 Host 通用事件总线并
 > 破坏式收口全屏端口；V3 G9–G12 依次验收四插件最终运行链，G13 又完成旧生产面零残留和真实包负例，

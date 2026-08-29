@@ -1,6 +1,7 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
 > 更新日期：2026-08-23（已同步 Managed Plugin V3 G14 与 Host V4 G0–G8）<br>
+> 当前验收统一使用 Gate CLI；本文中的旧脚本入口仅记录历史执行事实。<br>
 > 历史代码基线：`managed-plugin-v1.0.0`<br>
 > 评审范围：宿主、公共契约、插件接入方式，以及 Document / Tool / 插件服务之间的关系
 > 默认边界：同一团队维护的内部可信插件；插件更新采用关闭应用、替换文件、重新启动

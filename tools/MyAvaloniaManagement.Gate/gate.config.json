@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "mainSolution": "MyAvaloniaManagement.sln",
+  "repositories": [
+    {
+      "id": "workflow-studio",
+      "scope": "workflow",
+      "defaultPath": "../avalonia_management_plug/myavalonia-workflow-studio",
+      "solution": "WorkflowStudio.slnx",
+      "testProject": "tests/WorkflowStudio.Tests/WorkflowStudio.Tests.csproj",
+      "standaloneProject": "src/WorkflowStudio.Standalone/WorkflowStudio.Standalone.csproj",
+      "selfTestArguments": [ "--g3-self-test" ],
+      "selfTestSuccessText": "WORKFLOW_STUDIO_G3_SELF_TEST_OK invocations=4 disposedRuns=1",
+      "minimumLineCoverage": 85.0,
+      "minimumBranchCoverage": 75.0
+    },
+    {
+      "id": "classic-game",
+      "scope": "workbench",
+      "defaultPath": "../avalonia_management_plug/myavalonia-classic-game",
+      "solution": "ClassicGamePlugin.slnx",
+      "testProject": "tests/ClassicGamePlugin.Tests/ClassicGamePlugin.Tests.csproj",
+      "standaloneProject": "src/ClassicGamePlugin.Standalone/ClassicGamePlugin.Standalone.csproj",
+      "selfTestArguments": [],
+      "selfTestSuccessText": "",
+      "minimumLineCoverage": 70.87,
+      "minimumBranchCoverage": 57.82
+    }
+  ],
+  "testSuites": [
+    { "id": "sdk", "scope": "host", "project": "Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.PluginSdk.Tests.csproj", "coverageGroup": "sdk" },
+    { "id": "host-unit", "scope": "host", "project": "Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj", "coverageGroup": "host" },
+    { "id": "host-plugin", "scope": "host", "project": "Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj", "coverageGroup": "host" },
+    { "id": "host-ui", "scope": "host", "project": "Host/MyAvaloniaManagement.UiTests/MyAvaloniaManagement.UiTests.csproj", "coverageGroup": "host" },
+    { "id": "my-plug-test", "scope": "host", "project": "Plugins/MyPlugTest/MyPlugTest.Tests/MyPlugTest.Tests.csproj", "coverageGroup": "my-plug-test" },
+    { "id": "datang", "scope": "host", "project": "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.Tests/DaTangAccountingHelpPlug.Tests.csproj", "coverageGroup": "datang" },
+    { "id": "my-small-tools", "scope": "workflow", "project": "Plugins/MySmallTools/MySmallTools.Tests/MySmallTools.Tests.csproj", "coverageGroup": "my-small-tools" },
+    { "id": "bili-downloader", "scope": "host", "project": "Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csproj", "coverageGroup": "bili-downloader" }
+  ],
+  "plugins": [
+    { "id": "my-plug-test", "scope": "host", "repository": "main", "project": "Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj", "directoryName": "MyPlugTest", "assemblyName": "MyPlugTest" },
+    { "id": "datang", "scope": "host", "repository": "main", "project": "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj", "directoryName": "DaTang", "assemblyName": "DaTangAccountingHelpPlug" },
+    { "id": "my-small-tools", "scope": "workflow", "repository": "main", "project": "Plugins/MySmallTools/MySmallTools/MySmallTools.csproj", "directoryName": "SmallTools", "assemblyName": "MySmallTools" },
+    { "id": "bili-downloader", "scope": "host", "repository": "main", "project": "Plugins/BiliDownloader/BiliDownloader/BiliDownloader.csproj", "directoryName": "BiliDownloader", "assemblyName": "BiliDownloader" },
+    { "id": "workflow-studio", "scope": "workflow", "repository": "workflow-studio", "project": "src/WorkflowStudio.Plugin/WorkflowStudio.Plugin.csproj", "directoryName": "WorkflowStudio", "assemblyName": "WorkflowStudio.Plugin" },
+    { "id": "classic-game", "scope": "workbench", "repository": "classic-game", "project": "src/ClassicGamePlugin.Plugin/ClassicGamePlugin.Plugin.csproj", "directoryName": "ClassicGamePlugin", "assemblyName": "ClassicGamePlugin.Plugin" }
+  ],
+  "architectureRules": [
+    { "id": "removed-host-surfaces", "scope": "host", "paths": [ "Host/MyAvaloniaManagement", "Directory.Packages.props" ], "pattern": "IDropTarget|DragDrop\\.AllowDrop|Microsoft\\.Extensions\\.Hosting|DockNameConstant|AssemblyLoadConstant|class\\s+FileHelper" },
+    { "id": "workflow-decoupling", "scope": "workflow", "repository": "workflow-studio", "paths": [ "src" ], "pattern": "MySmallTools|my-small-tools|encrypt-video" }
+  ],
+  "hostCoverage": { "minimumLine": 84.39, "minimumBranch": 70.58 },
+  "harness": {
+    "project": "Plugins/MySmallTools/MySmallTools.Playback.IntegrationHarness/MySmallTools.Playback.IntegrationHarness.csproj",
+    "reportRelativePath": "artifacts/gate-harness.json"
+  },
+  "windowsSmokeProject": "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj"
+}

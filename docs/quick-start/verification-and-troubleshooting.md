@@ -1,5 +1,8 @@
 # 编译、打包、真实 Host 验收与排错
 
+> 当前统一入口为 `dotnet run --project tools/MyAvaloniaManagement.Gate -- verify`；按需增加
+> `--scope host|workflow|workbench`。本文出现的历史 `scripts/*.ps1` 命令已经退役。
+
 验证应分为四层：源码构建、Standalone、独立 ZIP、真实 Host。前一层通过不能替代后一层。
 
 ## 1. 源码构建和测试

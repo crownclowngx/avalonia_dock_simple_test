@@ -70,25 +70,11 @@
 在仓库根目录运行：
 
 ```powershell
-.\scripts\Test-Documentation.ps1
-.\scripts\Invoke-HostV4ReleaseGate.ps1
-.\scripts\Test-HostV4DevelopmentGate.ps1 -Stage G7
-.\scripts\Test-HostV3ProductionSurface.ps1 -Configuration Release
-.\scripts\Test-DocumentV2.ps1 -Configuration Release
-.\scripts\Test-RevisionedDocumentSave.ps1 -Configuration Release -NoRestore
-.\scripts\Test-WorkspaceSessionDockFactory.ps1 -Configuration Release -NoRestore
-.\scripts\Test-HostCatalogPluginRegistry.ps1 -Configuration Release -NoRestore
-.\scripts\Test-MyPlugTestV3.ps1 -Configuration Release
-.\scripts\Test-DaTangAccountingHelpPlugV3.ps1 -Configuration Release -NoRestore
-.\scripts\Test-MySmallToolsV3.ps1 -Configuration Release -NoRestore
-.\scripts\Test-BiliDownloaderV3.ps1 -Configuration Release -NoRestore
-.\scripts\Test-LayoutLifecycleV2.ps1 -Configuration Release
-.\scripts\Invoke-MyAvaloniaManagementTests.ps1 -Configuration Release
-.\scripts\Test-PluginSdkCompatibility.ps1 -Baseline v3 -Configuration Release
+dotnet run --project tools/MyAvaloniaManagement.Gate -- verify --scope host
+dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
+dotnet run --project tools/MyAvaloniaManagement.Gate -- seal
+dotnet run --project tools/MyAvaloniaManagement.Gate -- seal --repeat
 ```
 
-文档门禁验证本地链接、脚本路径、关键类型、集中版本和四插件兼容区间；宿主综合门禁动态统计
-Unit、Headless UI、Plugin 与覆盖率。带日期的具体数量只记录在各 G 阶段专用文档中，不作为永久阈值。
-除 `Invoke-HostV4ReleaseGate.ps1` 外，以上均是日常非发布验证。当前正式本地复验由 V4 G8 入口执行
-两轮隔离矩阵和 Windows Smoke；V3 G14 入口仅保留历史复核。两者都不运行 AIFLOW、历史
-ReleaseAcceptance、上传或标签。
+Gate 统一验证文档、关键类型、API 基线、Unit、Headless UI、Plugin、覆盖率、确定性包和外部真实包组合。
+`seal` 默认一轮，只有 `--repeat` 才执行第二个隔离工作区；历史脚本入口均已退役。

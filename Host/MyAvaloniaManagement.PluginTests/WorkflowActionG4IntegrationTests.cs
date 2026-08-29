@@ -106,8 +106,8 @@ public sealed class WorkflowActionG4IntegrationTests
             var studio = registry.Plugins.Single(item =>
                 item.Manifest.PluginId.Value == "myavalonia.plugin.workflow-studio");
             Assert.Equal("3.1.0.0", PluginVersionText.Format(provider.Manifest.PluginVersion));
-            Assert.Equal("1.1.0.0", PluginVersionText.Format(studio.Manifest.PluginVersion));
-            Assert.Equal("3.2.0.0", PluginVersionText.Format(provider.Manifest.Sdk.MinInclusive));
+            Assert.Equal("1.2.0.0", PluginVersionText.Format(studio.Manifest.PluginVersion));
+            Assert.Equal("3.3.0.0", PluginVersionText.Format(provider.Manifest.Sdk.MinInclusive));
             Assert.Single(registry.WorkflowActions);
             Assert.Equal(
                 ActionId,

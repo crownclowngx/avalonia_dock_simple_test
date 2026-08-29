@@ -10,7 +10,8 @@
 > 打包插件。manifest schema 仍为 2，当前交付平台为 Windows x64。
 >
 > Host V4 G8 当前事实：Host internal G0–G8 已封板，产品、SDK、四插件与 v3 API/磁盘格式保持不变；
-> 当前正式入口为 `scripts/Invoke-HostV4ReleaseGate.ps1`，只建立本地发布资格，不执行外部发布或 AIFLOW。
+> 当前正式入口为 `dotnet run --project tools/MyAvaloniaManagement.Gate -- seal`；默认单轮，`--repeat` 才复验第二轮。
+> 历史文档中的 PowerShell 命令均已退役，只保留当时证据，不执行外部发布。
 >
 > Workflow Action G1–G4 保持 Host 产品 `3.0.0`；G3.1 提升 Core/UI SDK 到 `3.2.0`、新增
 > Workflow SDK `1.0.0`、外部 Studio `1.1.0` 和 Templates `1.2.0`；G4 新增 MySmallTools `3.1.0`

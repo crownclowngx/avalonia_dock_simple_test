@@ -1,6 +1,8 @@
 # 外部 Managed Plugin 开发、模板与 NuGet 发布指南
 
 > 当前基线：Plugin SDK V3、manifest schema 2、.NET 10、Avalonia 12、Windows x64
+>
+> 当前验收统一使用 `dotnet run --project tools/MyAvaloniaManagement.Gate -- verify`；本文中的旧脚本入口仅记录历史执行事实。
 > 更新时间：2026-08-28
 > 本文替代旧的 Host v1 候选计划。旧文档中的 manifest v1、Legacy 入口、双 Host/Common 区间和
 > `Package::Version` 模板安装语法均已失效。

@@ -1,6 +1,7 @@
 # MyAvaloniaManagement V4 宿主内部破坏式收口评审与整改任务书
 
 > 状态：已完成；G0–G8 已全部封板并建立本地发布资格，未上传、未打 tag、未对外发布。
+> 文中的 PowerShell 命令已经退役，仅记录当时执行事实；当前入口为 Gate CLI。
 > 评审日期：2026-08-23。
 > 事实基线：[Managed Plugin V2 破坏式架构重构任务书](./host-v2-breaking-refactor-plan.md)、
 > [Managed Plugin V3 破坏式架构重构任务书](./host-v3-breaking-refactor-plan.md)、

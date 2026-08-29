@@ -2,6 +2,8 @@
 
 > 状态：当前实现
 >
+> 当前验收统一使用 `dotnet run --project tools/MyAvaloniaManagement.Gate -- verify`；本文中的旧脚本入口仅记录历史执行事实。
+>
 > 更新日期：2026-08-23
 >
 > 边界：V3 G14 已签署的唯一创建/打开/恢复/Scope 链、G2 修订保存、G3 互斥激活和 G6 唯一 Workspace 所有权
