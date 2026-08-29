@@ -413,6 +413,10 @@ public sealed class WorkflowActionKernelTests
         Assert.False(await manager.WaitForDrainAsync(TimeSpan.FromMilliseconds(1)));
         release.TrySetResult();
         Assert.Equal(WorkflowActionInvocationStatus.Succeeded, (await first).Status);
+        // 显式验证“已经没有活动调用”的快速成功分支。此前只有关闭并发用例间接命中，
+        // 该时点受任务调度影响，会让同一源码的分支覆盖率在 72.55% 与 72.58% 间漂移。
+        // 这里等待 first 完成后再查询，既固定覆盖证据，也准确描述 drain 契约。
+        Assert.True(await manager.WaitForDrainAsync(TimeSpan.Zero));
         Assert.Empty(reports);
 
         await firstRun.DisposeAsync();

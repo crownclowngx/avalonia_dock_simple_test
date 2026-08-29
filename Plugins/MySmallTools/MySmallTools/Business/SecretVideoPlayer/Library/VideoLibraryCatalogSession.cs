@@ -156,16 +156,42 @@ public sealed class VideoLibraryCatalogSession(IVideoLibraryScanner scanner)
 
                 if (forceRescan)
                 {
-                    // 溢出后逐项推断会遗漏事实。等待目录短暂安静后重新建立完整快照，
-                    // 比扩大无界队列更可预测，也限制批量加密时的内存和 UI 压力。
-                    await Task.Delay(StormQuietDelay, cancellationToken).ConfigureAwait(false);
-                    while (events.Reader.TryRead(out _))
+                    // 溢出后逐项推断会遗漏事实。必须等到“完整一个静默窗口都没有新事件”
+                    // 才开始扫描；旧实现只固定等待一次并立即清空队列，文件风暴仍在继续时
+                    // 会从半成品目录建立 ReplaceAll，且后续通知可能已被 watcher 丢弃。
+                    IReadOnlyList<VideoLibraryScanResult> snapshot;
+                    while (true)
                     {
+                        await Task.Delay(StormQuietDelay, cancellationToken)
+                            .ConfigureAwait(false);
+                        var changedDuringQuiet =
+                            Interlocked.Exchange(ref overflowed, 0) != 0;
+                        while (events.Reader.TryRead(out _))
+                            changedDuringQuiet = true;
+                        if (changedDuringQuiet)
+                            continue;
+
+                        snapshot = await ReadFullSnapshotAsync(
+                            folderPath,
+                            options,
+                            cancellationToken).ConfigureAwait(false);
+
+                        // 扫描自身可能较慢。若扫描期间又有变化，丢弃这份中间快照并重新
+                        // 等待静默；展示层只会看到最后一次收敛事实，不会短暂删除仍在写入的项。
+                        var changedDuringScan =
+                            Interlocked.Exchange(ref overflowed, 0) != 0;
+                        while (events.Reader.TryRead(out _))
+                            changedDuringScan = true;
+                        if (!changedDuringScan)
+                            break;
                     }
-                    await WriteFullSnapshotAsync(
-                        folderPath,
-                        options,
-                        output,
+
+                    await output.WriteAsync(new VideoLibraryCatalogBatch(
+                        snapshot,
+                        Array.Empty<string>(),
+                        true,
+                        false,
+                        $"目录变化较多，已重新扫描 {snapshot.Count} 个"),
                         cancellationToken).ConfigureAwait(false);
                     continue;
                 }
@@ -241,10 +267,9 @@ public sealed class VideoLibraryCatalogSession(IVideoLibraryScanner scanner)
             $"扫描完成，共 {processed} 个"), cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task WriteFullSnapshotAsync(
+    private async Task<IReadOnlyList<VideoLibraryScanResult>> ReadFullSnapshotAsync(
         string folderPath,
         VideoLibraryScanOptions options,
-        ChannelWriter<VideoLibraryCatalogBatch> output,
         CancellationToken cancellationToken)
     {
         var all = new List<VideoLibraryScanResult>();
@@ -255,12 +280,7 @@ public sealed class VideoLibraryCatalogSession(IVideoLibraryScanner scanner)
             all.Add(item);
         }
 
-        await output.WriteAsync(new VideoLibraryCatalogBatch(
-            all,
-            Array.Empty<string>(),
-            true,
-            false,
-            $"目录变化较多，已重新扫描 {all.Count} 个"), cancellationToken).ConfigureAwait(false);
+        return all;
     }
 
     private async Task WriteDeltaAsync(

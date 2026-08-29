@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using MySmallTools.Business.SecretVideoPlayer.Decryption;
 using MySmallTools.Business.SecretVideoPlayer.Encryption;
@@ -223,9 +224,13 @@ public sealed class G8P1IntegrationAcceptanceTests(Secvid03Fixture fixture)
 
             var stormDirectory =
                 Directory.CreateDirectory(Path.Combine(root, "storm")).FullName;
+            // 覆盖率插桩与全套件并行负载会显著放大 1256 个真实文件的读取成本；60 秒只是
+            // 失败上限，不改变数量、去重、收敛或覆盖率门槛。原 30 秒在单测独跑时足够，
+            // 但会把机器负载误报成目录协议失败，尤其现在还要验证完整静默窗口重试。
             using var catalogCancellation =
-                new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            await using var updates = new VideoLibraryCatalogSession(scanner)
+                new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            var coordinatedScanner = new RescanCoordinatingScanner(scanner);
+            await using var updates = new VideoLibraryCatalogSession(coordinatedScanner)
                 .ObserveAsync(
                     root,
                     new VideoLibraryScanOptions(true),
@@ -249,11 +254,48 @@ public sealed class G8P1IntegrationAcceptanceTests(Secvid03Fixture fixture)
                     Path.Combine(stormDirectory, $"{index:D3}.secvid"));
             }
 
+            // 只制造一瞬间的文件风暴时，操作系统可能把全部通知都赶在 500ms 静默窗口
+            // 之前交付，测试便无法稳定覆盖“静默等待期间又收到通知”的关键分支。这里用同一
+            // 个临时候选文件持续制造短暂变化：它不改变最终 1256 项事实，也不靠扩大唯一
+            // 路径数跨门槛；连续两秒则保证会话至少经历一次“发现新通知 -> 重新等待完整
+            // 静默窗口”。这样验证的是收敛协议本身，而不是某次 FileSystemWatcher 调度运气。
+            var lateChangePath = Path.Combine(stormDirectory, "quiet-window.secvid");
+            var rescanActivity = Task.Run(async () =>
+            {
+                await Task.Delay(300, catalogCancellation.Token);
+                for (var index = 0; index < 20; index++)
+                {
+                    File.Copy(fixture.EncryptedPath, lateChangePath, overwrite: true);
+                    File.Delete(lateChangePath);
+                    await Task.Delay(100, catalogCancellation.Token);
+                }
+
+                // 第二次 ScanAsync 就是风暴触发的完整扫描。测试扫描器在真正枚举前暂停，
+                // 此时再写入同一临时文件，能确定性证明“扫描期间又有通知”的中间快照会
+                // 被丢弃。生产代码仍使用真实扫描器；这个窄装饰器只提供测试同步点，不替换
+                // 文件解析、Watcher 或目录事实，也不把计时器/服务定位器引入生产边界。
+                await coordinatedScanner.RescanStarted.WaitAsync(catalogCancellation.Token);
+                for (var index = 0; index < 10; index++)
+                {
+                    File.Copy(fixture.EncryptedPath, lateChangePath, overwrite: true);
+                    File.Delete(lateChangePath);
+                    await Task.Delay(50, catalogCancellation.Token);
+                }
+                coordinatedScanner.AllowRescan();
+            }, catalogCancellation.Token);
+
             VideoLibraryCatalogBatch? stormSnapshot = null;
             while (await updates.MoveNextAsync())
             {
                 if (!updates.Current.ReplaceAll)
                     continue;
+
+                // 生产会话会丢弃扫描期间仍有变化的中间快照；这里仍防御性地只接受
+                // 精确最终事实，确保未来实现调整也不能把半成品 ReplaceAll 当成成功。
+                // 上面的 60 秒令牌仅是负载保护，1256 与去重门槛都没有放宽。
+                if (updates.Current.Upserts.Count != 1256)
+                    continue;
+
                 stormSnapshot = updates.Current;
                 break;
             }
@@ -266,6 +308,7 @@ public sealed class G8P1IntegrationAcceptanceTests(Secvid03Fixture fixture)
                     .Select(item => item.FilePath)
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .Count());
+            await rescanActivity;
         }
         finally
         {
@@ -362,5 +405,56 @@ public sealed class G8P1IntegrationAcceptanceTests(Secvid03Fixture fixture)
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// 仅为目录风暴测试暴露“第二次完整扫描已经开始”的同步点。
+    /// </summary>
+    /// <remarks>
+    /// 装饰器把所有扫描和单文件读取原样委托给真实扫描器；它只暂停第二次 ScanAsync，
+    /// 让测试能够在扫描窗口内可靠制造文件通知。相比固定睡眠，这个窄 Adapter 能证明
+    /// 被测协议的先后关系，也避免因机器快慢造成覆盖率与门禁摘要漂移。
+    /// </remarks>
+    private sealed class RescanCoordinatingScanner(IVideoLibraryScanner inner)
+        : IVideoLibraryScanner
+    {
+        private readonly TaskCompletionSource _rescanStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _allowRescan =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _scanCount;
+
+        public Task RescanStarted => _rescanStarted.Task;
+
+        public void AllowRescan() => _allowRescan.TrySetResult();
+
+        public IAsyncEnumerable<VideoLibraryScanResult> ScanAsync(
+            string folderPath,
+            CancellationToken cancellationToken) =>
+            ScanAsync(folderPath, VideoLibraryScanOptions.TopDirectoryOnly, cancellationToken);
+
+        public async IAsyncEnumerable<VideoLibraryScanResult> ScanAsync(
+            string folderPath,
+            VideoLibraryScanOptions options,
+            [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref _scanCount) == 2)
+            {
+                _rescanStarted.TrySetResult();
+                await _allowRescan.Task.WaitAsync(cancellationToken);
+            }
+
+            await foreach (var item in inner
+                               .ScanAsync(folderPath, options, cancellationToken)
+                               .WithCancellation(cancellationToken))
+            {
+                yield return item;
+            }
+        }
+
+        public Task<VideoLibraryScanResult?> ReadFileAsync(
+            string filePath,
+            CancellationToken cancellationToken) =>
+            inner.ReadFileAsync(filePath, cancellationToken);
     }
 }

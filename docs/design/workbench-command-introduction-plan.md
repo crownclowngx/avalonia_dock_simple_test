@@ -1,9 +1,9 @@
 # MyAvaloniaManagement Workbench Command 引入评审与实施任务书
 
-> 状态：实施中；G0–G9 已完成，仅 G10 尚未实施。当前已有 Command 候选契约、注册声明、
+> 状态：已完成；G0–G10 已完成本地开发封板。当前已有 Command 候选契约、注册声明、
 > Catalog/Executor、Context v1、活动 Document Target 路由、关闭门控、Host 打开/保存 Presentation，
 > Host-owned 声明式菜单/快捷键投影闭环、WorkflowStudio 三条真实命令，以及 ClassicGame 13 个游戏的
-> 22 条实例命令，以及复用同一状态与执行路径的最小 Command Palette；G9 不表示外部插件已上传或发布。
+> 22 条实例命令，以及复用同一状态与执行路径的最小 Command Palette；G10 不形成发布资格。
 > 评审日期：2026-08-27。
 > 事实基线：[主项目内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、
 > [主项目设计方法论与取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、
@@ -880,15 +880,18 @@ CommandId、PlacementId 和 Menu Location 是运行时/注册稳定身份，不�
 
 ### G10：跨仓库集成回归、文档同步与封板
 
+- **状态**：已完成（2026-08-29）；实施、SOLID 取舍、单轮完整证据与回滚见
+  [G10 专项记录](../plan-history/workbench-command/g10-cross-repository-integration-sealing.md)。
 - **目标**：把 Host、SDK、模板、四仓内插件、WorkflowStudio、ClassicGame、UI 和制品签署为同一 Command v1 基线。
 - **前置**：G0–G9 各有独立记录；工作树和两个外部仓库 revision 可追溯；无未解释 API/包/测试漂移。
 - **生产变化**：原则上无；只允许修复 G1–G9 职责内真实回归，不新增 Toolbar、ContextMenu、参数或设置。
 - **验证**：锁定还原、Release `warnaserror`、Core/UI/Workflow API、Host Unit/UI/Plugin、四插件、两个外部插件、
-  模板生成、真实包、双 ALC、确定性 ZIP/manifest、Context 切换、Command 资源订阅、Windows Smoke、诊断和文档门禁。
-- **两轮隔离**：从两个无硬链接独立副本执行，忽略时间/绝对路径后比较稳定事实；外部插件必须从包还原。
+  模板生成、真实包、双 ALC、确定性 ZIP/manifest、Context 切换、Command 资源订阅、诊断和文档门禁。
+- **单轮隔离**：从一组无硬链接独立副本执行完整门禁；外部插件必须从包还原，首个失败即停止且不签署。
 - **覆盖率**：不得降低现有 Host/插件门槛；Command Catalog/Context/Executor/Projection 和两个真实 Target 的
   关键分支覆盖写入 G10 记录，本文不预填数字。
-- **版本/发布**：签署最终 SDK/模板/插件版本和哈希；默认只建立本地发布资格，不上传、不打 tag、不对外发布。
+- **版本/发布**：签署最终 SDK/模板/插件版本和哈希；本轮为本地开发封板，`publishable=false`，不上传、
+  不打 tag、不对外发布，也不运行 Windows CI/Smoke、Release Acceptance 或发布门禁。
 - **回滚**：回到最后一个绿色 G；若 public 包已经显式发布，只能发新修订版本，不能覆盖同版本或改写 Shipped 历史。
 
 ## 9. 执行顺序与合并纪律
@@ -905,9 +908,9 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 - G6 负责独立包/模板传播，外部插件不得用源码引用提前获得假绿色；
 - G7/G8 分别验证异步运行状态和同类型多实例状态，不得合成一个大跨仓库提交；
 - G9 Palette 只能消费已有 Catalog/State/Executor，不能自建命令列表或直接调用插件；
-- G10 只封板已完成事实，不在发布门禁阶段设计新 API；
+- G10 只封板已完成事实，不设计新 API；
 - 每个 G 从前一绿色提交开始，专项与受影响外部插件绿色后才能进入下一 G；
-- 不使用 `--no-restore` 掩盖锁文件错误；开发阶段不调用 Windows CI/Smoke 或发布门禁，G10 发布封板范围另行执行；
+- 不使用 `--no-restore` 掩盖锁文件错误；G10 同样不调用 Windows CI/Smoke 或发布门禁；
 - 所有阶段记录显式写 `aiflow=false`，AIFLOW 文件、命令和状态不参与本计划。
 
 ## 10. 最终验收矩阵
@@ -916,7 +919,7 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 
 - [x] `CommandId` 遵守稳定 ID 规则，Host/插件所有权和碰撞政策有正负例；
 - [x] Core SDK 保持 BCL-only，UI 描述符不创建 Host 控件；
-- [ ] v3 Shipped 未改写，新 API 按现有政策进入并最终签署；
+- [x] v3 Shipped 未改写，新 API 按现有政策留在 Unshipped 并由条目数/SHA-256 最终签署；
 - [x] `IPluginRegistration` 原签名不变，可选扩展在旧 Host 上明确失败；
 - [x] 旧插件在新 Host 上正常加载且命令贡献为空；
 - [x] 插件不能为 Host/其他插件 Document 注册命令或 Placement；
@@ -959,12 +962,12 @@ G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9 → G10
 - [x] Palette 只消费 Catalog/Context/State/Executor，不建立第二套命令列表；
 - [x] 搜索、排序、Disabled、目标切换、键盘执行和焦点恢复有 Headless UI 证据；
 - [x] Document/Target/Menu/KeyBinding/Palette 订阅已在关闭后归零；
-- [ ] Host、SDK、四插件和两个外部插件全部测试与覆盖率门槛通过；
-- [ ] SDK/模板候选、lock file、独立生成项目、真实双 ALC 和确定性 ZIP/manifest 通过；
-- [ ] manifest/envelope/layout/data root 未变化；
-- [ ] 诊断和 UI 不泄漏异常正文、路径、URL、Payload、Secret 或插件对象；
-- [ ] 两轮隔离结果稳定，最终摘要区分 publishable 与实际上传/tag/发布状态；
-- [ ] 全过程 `aiflow=false`。
+- [x] Host、SDK、四插件和两个外部插件全部测试与覆盖率门槛通过；
+- [x] SDK/模板候选、lock file、独立生成项目、真实双 ALC 和确定性 ZIP/manifest 通过；
+- [x] manifest/envelope/layout/data root 未变化；
+- [x] 诊断和 UI 不泄漏异常正文、路径、URL、Payload、Secret 或插件对象；
+- [x] 单轮完整隔离门禁通过，最终摘要明确 `publishable=false` 且没有上传/tag/发布动作；
+- [x] 全过程 `aiflow=false`。
 
 ## 11. 明确延后
 
@@ -990,22 +993,22 @@ Workbench Command v1 只有在以下问题全部回答“是”后才算完成�
 2. [x] Command、Context、Target、UI Contribution 与 Workflow Action 的语义边界已经冻结。
 3. [x] Core/UI SDK 新 API 是兼容新增，旧 Shipped 未改写，旧插件继续正常加载。
 4. [x] Command/Placement 身份、owner、目标 Document 和冲突政策有完整正负例。
-5. [ ] Context v1 只包含 Host 可信活动 Document 事实，没有对象世界或服务定位器泄漏。
-6. [ ] 活动 Document 切换、同类型多实例和 Target 状态变化都路由到正确当前实例。
-7. [ ] Document Scope 隐藏、ClosingToken、Adapter/View/模型释放顺序保持不变。
+5. [x] Context v1 只包含 Host 可信活动 Document 事实，没有对象世界或服务定位器泄漏。
+6. [x] 活动 Document 切换、同类型多实例和 Target 状态变化都路由到正确当前实例。
+7. [x] Document Scope 隐藏、ClosingToken、Adapter/View/模型释放顺序保持不变。
 8. [x] MainWindow 打开/保存旧命令已删除，菜单与 `Ctrl+S` 统一进入 Executor。
 9. [x] Host 与插件菜单/快捷键均由不可变 Contribution 投影，插件不拥有 Avalonia UI 对象。
 10. [x] Host 快捷键和插件冲突采用明确失败关闭政策，不依赖加载顺序。
 11. [x] WorkflowStudio Validate/Run/Cancel 保持 Workflow Action 治理和多实例隔离。
 12. [x] ClassicGame Restart/Undo 证明当前实例路由和动态 CanUndo，没有全局静态状态。
 13. [x] Command Palette 复用同一 Catalog/State/Executor，移除 Palette 不影响基础 Command 系统。
-14. [ ] 主题、Document Creation、Tool Toggle、Toolbar、ContextMenu 和用户快捷键设置没有被偷偷提前实现。
-15. [ ] SDK/模板/外部包、locked restore、双 ALC、确定性制品和版本区间全部一致。
-16. [ ] Host、SDK、四插件、两个外部插件、资源、Windows Smoke、诊断和文档门禁全部通过。
-17. [ ] manifest/envelope/layout/data root 保持既有格式，没有 Command 专用用户数据迁移。
-18. [ ] 每个 G 都有实际记录、测试、覆盖率、回滚和发布边界，不以本文计划数字冒充结果。
-19. [ ] 两轮隔离封板可重复，未通过降低门槛、跳过真实包或保留隐藏双路径获得绿色。
-20. [ ] 最终记录明确 `aiflow=false`，并区分本地可发布资格与实际上传、tag、对外发布。
+14. [x] 主题、Document Creation、Tool Toggle、Toolbar、ContextMenu 和用户快捷键设置没有被偷偷提前实现。
+15. [x] SDK/模板/外部包、locked restore、双 ALC、确定性制品和版本区间全部一致。
+16. [x] Host、SDK、四插件、两个外部插件、资源、诊断和文档本地非发布门禁全部通过。
+17. [x] manifest/envelope/layout/data root 保持既有格式，没有 Command 专用用户数据迁移。
+18. [x] 每个 G 都有实际记录、测试、覆盖率、回滚和发布边界，不以本文计划数字冒充结果。
+19. [x] 单轮完整隔离封板通过，未通过降低门槛、跳过真实包或保留隐藏双路径获得绿色。
+20. [x] 最终记录明确 `aiflow=false`、`publishable=false`，并区分 G6 历史发布与 G10 零发布动作。
 
 任一项未完成时，本计划只能保持候选或开发状态。不得通过把插件 `ICommand` 直接塞入 Registry、
 公开 Workspace/Provider、保留新旧双执行路径、复制 Workflow Action Runtime、降低测试门槛或改写历史

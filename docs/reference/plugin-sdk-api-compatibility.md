@@ -15,7 +15,8 @@
 > 本次兼容次版本发布没有改写 G2 已签署的 v3 基线分类，当时仍为 Shipped 127/45、Unshipped 72/6。
 > Workbench Command G1 随后只在源码中加入兼容候选：Shipped 仍为 127/45，当前 Unshipped 为
 > Core 91、UI 66。G6 已把源码和候选包提升到 `3.3.0`，并以 Templates `1.3.0`、真实外部插件和
-> 新旧 Host 兼容矩阵验证传播；历史 Shipped 文本不倒写。
+> 新旧 Host 兼容矩阵验证传播；历史 Shipped 文本不倒写。G10 又在单轮完整跨仓本地门禁中按文件条目数和
+> SHA-256 重新签署同一分类，Command API 继续留在 Unshipped；本轮不运行发布门禁，`publishable=false`。
 
 ## 1. 权威源与程序集边界
 

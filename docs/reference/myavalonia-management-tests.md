@@ -1,5 +1,33 @@
 # MyAvaloniaManagement 测试说明
 
+## Workbench Command G10 跨仓库本地封板门禁
+
+入口为：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG10.ps1 -Configuration Release
+```
+
+入口从 Host、WorkflowStudio 与 ClassicGame 当前工作树建立一组 `git clone --no-hardlinks` 独立副本，再覆盖
+未提交的当前文件；NuGet、TEMP、DOTNET CLI 和结果目录均与源仓隔离。它串行执行 G10 Core 单元测试、
+两个外部仓包装门禁、Host V4 G7、G6 SDK/模板、Host G7/G8、G9 Palette、两个外部实体包组合回归和文档
+门禁。第一轮全部通过即可写出本地封板摘要，不执行第二轮复跑；结果位于
+`artifacts/test-results/WorkbenchCommandG10/summary.json`。
+
+G10 调用 G6 的 `-UsePublishedSdkBaseline` 模式：Core/UI `3.3.0` 从 NuGet.org 两次独立下载并验证固定
+SHA-256 与 Repository 签名，不用当前行尾工作树重打或覆盖同版本历史包；模板锁定内容哈希保持不变。
+后续仍执行当前源码 nupkg 消费、Templates `1.3.0`、普通/点号项目、Standalone、确定性 ZIP、双 ALC、
+旧模板兼容与旧 Host 负例。Template 打包项目本身也显式独立还原，不依赖工作区残留 `obj`。
+
+组合回归同时加载 WorkflowStudio 与 ClassicGame，验证两个独立 ALC、14 个 Document、25 条 Command、
+25 条菜单、5 条快捷键以及 Studio/五子棋双实例/无活动目标间的 Menu、KeyBinding、Palette 与释放闭环。
+Core 单元测试覆盖路径越界、链接、复制遗漏、指纹漂移、摘要字段、非发布标记、双证据差异定位、单轮提交点和失败不签署。
+
+G10 固定 `aiflow=false`、`windowsCi=false`、`windowsSmoke=false`、`releaseAcceptance=false`、
+`releaseGate=false`、`publishable=false`、`published=false`、`uploaded=false`、`signed=false`、
+`tagCreated=false`。Release 只表示编译配置；本入口不调用 Windows Smoke 或任何发布门禁。完整设计、
+SOLID 取舍和回滚见 [G10 专项记录](../plan-history/workbench-command/g10-cross-repository-integration-sealing.md)。
+
 ## Workbench Command G9 最小 Command Palette 本地非发布门禁
 
 入口为：

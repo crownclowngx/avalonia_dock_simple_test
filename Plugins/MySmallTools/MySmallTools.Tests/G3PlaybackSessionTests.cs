@@ -526,6 +526,23 @@ public sealed class G3PlaybackSessionTests
     }
 
     [Fact]
+    public void DisposedSession_GenerationUsesDisposedBoundaryDeterministically()
+    {
+        using var rig = new TestRig(
+            new FakeSourceFactory(
+                (_, _) => throw new InvalidOperationException("本用例不应创建媒体源。")));
+
+        // IsClosing 同时受 Document 生命周期与播放器自身 Dispose 状态控制。既有异步关闭
+        // 测试能稳定覆盖前者，但 Dispose 后是否恰好还有迟到回调会受线程调度影响，导致 OR
+        // 短路分支覆盖率在两轮之间漂移。Generation 是公开只读投影：Dispose 前后各读取一次
+        // 即可确定性固定“自身仍存活”和“自身已释放”两个分支，不需要反射私有实现或新增 API。
+        _ = rig.Session.Generation;
+        rig.Session.Dispose();
+
+        Assert.Equal(0, rig.Session.Generation);
+    }
+
+    [Fact]
     public async Task StopThenPlay_ReusesSameSourceAndWaitsForStop()
     {
         var source = new FakeSource(1);

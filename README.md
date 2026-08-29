@@ -46,6 +46,12 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > [G2 专用记录](./docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)和
 > [G3 跨仓库签署记录](./docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md)。
 
+> Workbench Command 已完成 G0–G10 本地开发封板：Host 打开/保存、插件声明式菜单/快捷键、活动 Document
+> Target、WorkflowStudio 三命令、ClassicGame 22 条命令和最小 Command Palette 共用同一 Catalog、Context、
+> State 与 Executor。G10 以三仓当前工作树建立一轮无硬链接隔离副本，完成 SDK/模板、四仓内插件和两个
+> 外部实体包回归；没有运行 Windows CI/Smoke 或发布门禁，`publishable=false`。见
+> [G10 跨仓库本地封板记录](./docs/plan-history/workbench-command/g10-cross-repository-integration-sealing.md)。
+
 ## 核心扩展模型
 
 | 概念 | 语义 | 典型用途 |
@@ -229,6 +235,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Workbench Command G7 外部 WorkflowStudio 三命令](./docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md)：查看 Validate/Run/Cancel 状态、真实 ZIP/双 ALC、跨 ALC Action、Headless UI 与非发布证据；
 - [Workbench Command G8 ClassicGame 全游戏命令](./docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md)：查看 13 个游戏、22 条 Restart/Undo、真实 ZIP、多实例路由、SOLID 与非发布证据；
 - [Workbench Command G9 最小 Command Palette](./docs/plan-history/workbench-command/g9-minimal-command-palette.md)：查看窗口级遮罩、可搜索投影、共享执行路径、焦点恢复、覆盖率与非发布证据；
+- [Workbench Command G10 跨仓库本地封板](./docs/plan-history/workbench-command/g10-cross-repository-integration-sealing.md)：查看三仓工作树指纹、单轮完整隔离门禁、25 条外部命令组合回归、API/制品冻结与非发布边界；
 - [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G14 最终目标、阶段和签署矩阵；
 - [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)：查看正式 API、SOLID、两轮隔离门禁、制品和回滚边界；
 - [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)：查看零残留、真实包负例、四插件矩阵和非发布证据；
@@ -304,6 +311,16 @@ pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG9.ps1 -Configuration Relea
 
 该入口复用 Host 本地开发门禁，消费 ClassicGame 公开源独立门禁生成的确定性真实 ZIP，并验证 13 个游戏
 Document、22 条 Catalog/Menu 命令、五子棋双实例和 Headless UI；不运行 Windows CI/Smoke 或发布门禁。
+
+完成 Workbench Command 跨仓库集成、API/制品冻结或文档封板时，运行 G10 单轮完整本地非发布门禁：
+
+```powershell
+pwsh -NoProfile -File .\scripts\Test-WorkbenchCommandG10.ps1 -Configuration Release
+```
+
+该入口从 Host、WorkflowStudio、ClassicGame 当前工作树建立一轮无硬链接隔离副本，串行复用 G6–G9 与
+四仓内插件门禁，并同时加载两个外部实体包验证 25 条 Command。它固定记录 `aiflow=false`、
+`windowsCi=false`、`windowsSmoke=false`、`releaseGate=false`、`publishable=false`，不执行任何发布动作。
 
 修改 Host/SDK 生产边界、插件入口、构建 Target、打包或兼容规则时运行 G13 非发布聚合门禁：
 

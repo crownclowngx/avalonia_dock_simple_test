@@ -3,7 +3,8 @@ param(
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
     [switch]$ReuseVerifiedBaseGate,
-    [switch]$RefreshTemplateLocks
+    [switch]$RefreshTemplateLocks,
+    [switch]$UsePublishedSdkBaseline
 )
 
 $ErrorActionPreference = 'Stop'
@@ -214,6 +215,50 @@ function New-CandidateSdkPackages {
 
     New-Item -ItemType Directory -Path $candidateFeed -Force | Out-Null
     Get-ChildItem -LiteralPath (Join-Path $resultRoot 'candidate-run1') -File |
+        Copy-Item -Destination $candidateFeed -Force
+    return $runs[0]
+}
+
+function Get-PublishedSdkPackages {
+    # G10 必须从当前三仓工作树建立物理副本。工作树中的行尾会参与 Portable PDB 校验和，
+    # 因而在副本中重新打出同为 3.3.0 的 SDK 时，容器虽然可确定，字节却不会等于 G6 已发布
+    # 且不可覆盖的历史包。这里不伪造旧候选，也不刷新模板锁；只从 NuGet.org Flat Container
+    # 两次独立下载公开字节，验证仓库签名、固定公开哈希和两次下载一致性，再把已签名公开包
+    # 作为后续生成项目的唯一 SDK 输入。默认 G6 行为保持不变，只有 G10 显式选择本模式。
+    $published = [ordered]@{
+        'MyAvaloniaManagement.PluginSdk.3.3.0.nupkg' = [ordered]@{
+            id = 'myavaloniamanagement.pluginsdk'
+            sha256 = '76A3A0717810DB88F7365D047CBF9D5518EBB7EF343EC69C3A23827F51C50B84'
+        }
+        'MyAvaloniaManagement.PluginSdk.UI.3.3.0.nupkg' = [ordered]@{
+            id = 'myavaloniamanagement.pluginsdk.ui'
+            sha256 = '178AD0D79B1597FED88CAB3DC4FC12A2F48D224CD63EEC80AD1C10E27C2DD1E4'
+        }
+    }
+    $runs = @()
+    foreach ($run in 1..2) {
+        $runRoot = Join-Path $resultRoot "published-run$run"
+        New-Item -ItemType Directory -Path $runRoot -Force | Out-Null
+        $runHashes = [ordered]@{}
+        foreach ($entry in $published.GetEnumerator()) {
+            $packagePath = Join-Path $runRoot $entry.Key
+            $url = "https://api.nuget.org/v3-flatcontainer/$($entry.Value.id)/3.3.0/$($entry.Key.ToLowerInvariant())"
+            Invoke-WebRequest -Uri $url -OutFile $packagePath
+            Invoke-DotNet @('nuget', 'verify', $packagePath, '--all') $runRoot
+            $hash = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA256).Hash
+            Assert-True ($hash -ceq [string]$entry.Value.sha256) `
+                "公开 SDK 包 SHA-256 漂移：$($entry.Key)。"
+            $runHashes[$entry.Key] = $hash
+        }
+        $runs += ,$runHashes
+    }
+    foreach ($name in $published.Keys) {
+        Assert-True ($runs[0][$name] -ceq $runs[1][$name]) `
+            "公开 SDK 包两次独立下载不一致：$name。"
+    }
+
+    New-Item -ItemType Directory -Path $candidateFeed -Force | Out-Null
+    Get-ChildItem -LiteralPath (Join-Path $resultRoot 'published-run1') -File |
         Copy-Item -Destination $candidateFeed -Force
     return $runs[0]
 }
@@ -537,11 +582,27 @@ try {
     Assert-True ($LASTEXITCODE -eq 0) '当前 HEAD 不是 G6 输入提交的后继。'
 
     Invoke-DotNet @('restore', 'MyAvaloniaManagement.sln', '--locked-mode', '--nologo')
-    $candidateHashes = New-CandidateSdkPackages
+    $candidateHashes = if ($UsePublishedSdkBaseline) {
+        Get-PublishedSdkPackages
+    }
+    else {
+        New-CandidateSdkPackages
+    }
     $corePackage = Join-Path $candidateFeed 'MyAvaloniaManagement.PluginSdk.3.3.0.nupkg'
     $uiPackage = Join-Path $candidateFeed 'MyAvaloniaManagement.PluginSdk.UI.3.3.0.nupkg'
-    $coreLockHash = Get-Sha512Base64 $corePackage
-    $uiLockHash = Get-Sha512Base64 $uiPackage
+    $publicCoreSha512 = Get-Sha512Base64 $corePackage
+    $publicUiSha512 = Get-Sha512Base64 $uiPackage
+    # 模板锁记录的是发布前候选内容哈希；NuGet.org 添加 Repository 签名后，公开 nupkg 的
+    # 整包 SHA-512 必然不同。G10 模式固定复核历史锁值，并由后面的 --locked-mode 证明公开
+    # 源仍能消费这些锁；不能把公开签名包哈希回写到同版本 1.3.0 模板。
+    $coreLockHash = if ($UsePublishedSdkBaseline) {
+        'O8xzVypKP+ClPbn374SrHjT/5R5Xc1wPGGjY7HfKOegGwlQ++24fRy18C/UmwBzecBcMsAZHZzepZWHFm05i/Q=='
+    }
+    else { $publicCoreSha512 }
+    $uiLockHash = if ($UsePublishedSdkBaseline) {
+        'QnkATmnoYcftRsc24wd/wJzUltqW8ENpYZunLAPZnmwdfETeisZS5XCwxfbnFU/sbgp30kC8Jkdo/m0hUCaWAA=='
+    }
+    else { $publicUiSha512 }
 
     if ($RefreshTemplateLocks) {
         $config = Write-NuGetConfig $temporaryRoot $candidateFeed
@@ -577,6 +638,13 @@ try {
     Invoke-DotNet @(
         'restore', (Join-Path $templateContentRoot 'DemoPlugin.slnx'), '--locked-mode',
         '--configfile', $templateConfig, '--packages', $isolatedPackages, '--nologo')
+    # Template 包项目不在 MyAvaloniaManagement.sln，也不属于模板内容中的 DemoPlugin.slnx。
+    # 过去它会偶然复用开发工作区残留的 obj/project.assets.json；G10 的干净物理副本证明该
+    # 隐式前置条件不成立。此处单独还原打包项目，随后继续以 --no-restore 打包，确保门禁
+    # 在空 obj 环境中也自足，同时不重复还原模板生成项目的业务依赖图。
+    Invoke-DotNet @(
+        'restore', $templateProject, '--configfile', $templateConfig,
+        '--packages', $isolatedPackages, '--nologo')
     Invoke-DotNet @(
         'pack', $templateProject, '-c', $Configuration, '--no-restore', '--nologo',
         '-warnaserror', '-o', $candidateFeed)
@@ -695,9 +763,15 @@ try {
             oldHostNegative = $oldHostNegative
         }
         packages = [ordered]@{
+            sourceMode = if ($UsePublishedSdkBaseline) {
+                'nuget.org-published-baseline'
+            }
+            else { 'local-candidate' }
             candidateSha256 = $packageHashes
             coreLockSha512 = $coreLockHash
             uiLockSha512 = $uiLockHash
+            publicCoreSha512 = if ($UsePublishedSdkBaseline) { $publicCoreSha512 } else { $null }
+            publicUiSha512 = if ($UsePublishedSdkBaseline) { $publicUiSha512 } else { $null }
             deterministicRuns = 2
         }
         externalPackages = @($candidatePackages | ForEach-Object {
@@ -728,7 +802,12 @@ try {
         (Join-Path $resultRoot 'summary.json'),
         ($summary | ConvertTo-Json -Depth 20),
         [Text.UTF8Encoding]::new($false))
-    Write-Host '[Workbench Command G6] 本地候选、模板与独立消费门禁全部通过。'
+    if ($UsePublishedSdkBaseline) {
+        Write-Host '[Workbench Command G6] 已发布 SDK 基线、模板与独立消费门禁全部通过。'
+    }
+    else {
+        Write-Host '[Workbench Command G6] 本地候选、模板与独立消费门禁全部通过。'
+    }
 }
 finally {
     [Environment]::SetEnvironmentVariable('NUGET_PACKAGES', $originalPackages, 'Process')
