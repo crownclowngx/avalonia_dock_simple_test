@@ -206,6 +206,11 @@ try {
         '--no-restore', '--nologo', '-warnaserror',
         '--artifacts-path', $artifactsRoot,
         '-p:ContinuousIntegrationBuild=true',
+        # portable PDB 会记录编译输入与生成器输出路径。仅用 Junction 固定同一轮槽名时，
+        # 槽的 TEMP 父目录和外部仓库绝对根仍会随隔离轮次变化，造成 DLL/PDB/ZIP 哈希漂移。
+        # PathMap 只归一化调试文档路径，不改变 IL、清单、运行时装载或 public API。
+        # `%2C` 是 MSBuild 属性中的逗号转义，避免 Windows 把第二段映射误识别为新属性。
+        "-p:PathMap=$workingRoot=/_/external-managed-plugin-build%2C$sourceRoot=/_/external-repository",
         "-p:ManagedPluginDeployRoot=$deployRoot",
         '-p:SkipPluginDeploy=false'
     ) $sourceRoot

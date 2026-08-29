@@ -63,7 +63,7 @@ public sealed class PluginSdkApiBaselinePolicyTests
     }
 
     [Fact]
-    public void G1_V1V2历史基线和V3Shipped未改写且新增表面进入Unshipped()
+    public void G10_V1V2历史基线和V3Shipped未改写且Command继续留在Unshipped()
     {
         var repositoryRoot = FindRepositoryRoot();
         var apiRoot = Path.Combine(
@@ -104,8 +104,9 @@ public sealed class PluginSdkApiBaselinePolicyTests
         Assert.Equal(46, uiV2Shipped.Length);
         Assert.Empty(coreV2Unshipped);
         Assert.Empty(uiV2Unshipped);
-        // G1 保持既有 V3 Shipped 正式承诺不变；Workflow Action 3.1 兼容新增只进入
-        // Unshipped。固定数量和代表性签名可防止误写 Shipped 或遗漏本次重新签署的 Run 边界。
+        // G10 保持既有 V3 Shipped 正式承诺不变；Workflow Action 与 Workbench Command
+        // 兼容新增继续留在 Unshipped。固定数量和代表性签名可防止非发布封板误写
+        // Shipped，或遗漏本次重新签署的 Run/Target/Placement 边界。
         Assert.Equal(127, v3Shipped.Length);
         Assert.Equal(45, uiV3Shipped.Length);
         Assert.Equal(91, coreV3Unshipped.Length);
