@@ -9,6 +9,7 @@
     <ManagedPluginEntryType>DemoPlugin.Plugin.TemplateProjectIdentifierModule</ManagedPluginEntryType>
     <ManagedPluginSdkMinInclusive>3.3.0</ManagedPluginSdkMinInclusive>
     <ManagedPluginSdkMaxExclusive>4.0.0</ManagedPluginSdkMaxExclusive>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
