@@ -26,6 +26,7 @@ public sealed class MyPlugTestPluginModule : IPluginModule
         // 这些对象只服务 MyPlugTest 自身。无状态 I/O 服务与 Builder 可跨 Document 复用；
         // URL 历史属于单个欢迎 Document，必须随该 Document 的 Scope 创建和释放。
         registration.Services.AddSingleton<IUrlContentService, FlurlUrlContentService>();
+        registration.Services.AddSingleton<IBatchHttpFileService, BatchHttpFileService>();
         registration.Services.AddSingleton<IExcelFileDialogService, AvaloniaExcelFileDialogService>();
         registration.Services.AddSingleton<IExcelWorkbookReader, EpplusExcelWorkbookReader>();
         registration.Services.AddSingleton<ExcelGetUrlBuilder>();

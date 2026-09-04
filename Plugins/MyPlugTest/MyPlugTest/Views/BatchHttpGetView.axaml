@@ -8,38 +8,112 @@
              d:DesignHeight="650"
              x:Class="MyPlugTest.Views.BatchHttpGetView"
              x:DataType="vm:BatchHttpGetViewModel">
-    <Grid Margin="16" RowDefinitions="Auto,2*,Auto,3*" RowSpacing="10">
+    <Grid Margin="16" RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" RowSpacing="10">
         <StackPanel Grid.Row="0" Spacing="4">
             <TextBlock Text="请求地址（每行一个）" FontWeight="SemiBold" />
-            <TextBlock Text="没有协议时自动使用 http；空行会被忽略。"
+            <TextBlock Text="没有协议时自动使用 http；空行会被忽略；请求始终按文件或输入框中的顺序执行。"
                        Opacity="0.7" />
         </StackPanel>
 
-        <TextBox Grid.Row="1"
-                 Text="{Binding RequestLines, Mode=TwoWay}"
-                 AcceptsReturn="True"
-                 TextWrapping="NoWrap"
-                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                 PlaceholderText="http://example.com&#10;http://httpbin.org/get" />
+        <CheckBox Grid.Row="1"
+                  Content="文件批处理（响应不在界面显示，全部完成后一次写入文件）"
+                  IsChecked="{Binding IsFileBatchMode, Mode=TwoWay}"
+                  IsEnabled="{Binding CanInteract}" />
 
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="12">
+        <Grid Grid.Row="2"
+              RowDefinitions="2*,3*"
+              RowSpacing="10"
+              IsVisible="{Binding IsManualMode}">
+            <TextBox Grid.Row="0"
+                     Text="{Binding RequestLines, Mode=TwoWay}"
+                     AcceptsReturn="True"
+                     TextWrapping="NoWrap"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     PlaceholderText="http://example.com&#10;http://httpbin.org/get" />
+
+            <TextBox Grid.Row="1"
+                     Text="{Binding ResponseContent}"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     TextWrapping="NoWrap"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     PlaceholderText="响应内容会按请求顺序显示在这里" />
+        </Grid>
+
+        <Border Grid.Row="2"
+                Padding="16"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                IsVisible="{Binding IsFileBatchMode}">
+            <StackPanel Spacing="12" VerticalAlignment="Center">
+                <TextBlock Text="输入文件每个非空行代表一个 GET 地址。运行时只更新统计，不创建响应正文控件内容。"
+                           TextWrapping="Wrap"
+                           Opacity="0.75" />
+                <Button Content="选择地址文件…"
+                        Command="{Binding SelectInputFileCommand}"
+                        IsEnabled="{Binding CanInteract}"
+                        HorizontalAlignment="Left" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <TextBlock Grid.Column="0" Text="输入文件：" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding InputFilePath}"
+                               TextWrapping="Wrap" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*" ColumnSpacing="12">
             <Button Grid.Column="0"
-                    Content="按行执行 GET"
-                    Command="{Binding ExecuteRequestsCommand}" />
+                    Content="{Binding ExecuteButtonText}"
+                    Command="{Binding ExecuteRequestsCommand}"
+                    IsEnabled="{Binding CanInteract}" />
             <TextBlock Grid.Column="1"
                        Text="{Binding StatusText}"
                        VerticalAlignment="Center"
                        TextTrimming="CharacterEllipsis" />
         </Grid>
 
-        <TextBox Grid.Row="3"
-                 Text="{Binding ResponseContent}"
-                 IsReadOnly="True"
-                 AcceptsReturn="True"
-                 TextWrapping="NoWrap"
-                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                 PlaceholderText="响应内容会按请求顺序显示在这里" />
+        <Border Grid.Row="4"
+                Padding="10,6"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource AppBorderBrush}">
+            <StackPanel Orientation="Horizontal" Spacing="20">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="总数：" />
+                    <TextBlock Text="{Binding TotalCount}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="已处理：" />
+                    <TextBlock Text="{Binding ProcessedCount}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="成功：" />
+                    <TextBlock Text="{Binding SucceededCount}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="失败：" />
+                    <TextBlock Text="{Binding FailedCount}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal"
+                            IsVisible="{Binding IsFileBatchMode}">
+                    <TextBlock Text="已写入：" />
+                    <TextBlock Text="{Binding WrittenCount}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="5"
+              ColumnDefinitions="Auto,*"
+              ColumnSpacing="8"
+              IsVisible="{Binding IsFileBatchMode}">
+            <TextBlock Grid.Column="0"
+                       Text="输出文件："
+                       FontWeight="SemiBold" />
+            <TextBlock Grid.Column="1"
+                       Text="{Binding OutputFilePath}"
+                       TextWrapping="Wrap" />
+        </Grid>
     </Grid>
 </UserControl>

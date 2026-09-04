@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -16,6 +17,7 @@ namespace MyPlugTest.ViewModels;
 public sealed class BatchHttpGetViewModel : ObservableObject, IPluginDocument, IDisposable
 {
     private readonly IUrlContentService _urlContentService;
+    private readonly IBatchHttpFileService _fileService;
     private readonly IDocumentLifetime _documentLifetime;
     // 本地 CTS 补足直接构造时的 Dispose 取消能力，宿主 ClosingToken 则覆盖真实 Dock 生命周期。
     // 批处理循环使用二者的联合令牌，因此关闭既能中止当前 HTTP，也能阻止进入下一条 URL；
@@ -26,15 +28,26 @@ public sealed class BatchHttpGetViewModel : ObservableObject, IPluginDocument, I
     private string _responseContent = string.Empty;
     private string _statusText = "等待执行";
     private bool _isRunning;
+    private bool _isFileBatchMode;
+    private string _inputFilePath = string.Empty;
+    private string _outputFilePath = string.Empty;
+    private int _totalCount;
+    private int _processedCount;
+    private int _succeededCount;
+    private int _failedCount;
+    private int _writtenCount;
     private string _title = "逐行 HTTP GET";
 
     public BatchHttpGetViewModel(
         IUrlContentService urlContentService,
+        IBatchHttpFileService fileService,
         IDocumentLifetime documentLifetime)
     {
         _urlContentService = urlContentService ?? throw new ArgumentNullException(nameof(urlContentService));
+        _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
         _documentLifetime = documentLifetime ?? throw new ArgumentNullException(nameof(documentLifetime));
         ExecuteRequestsCommand = new AsyncRelayCommand(ExecuteRequestsAsync);
+        SelectInputFileCommand = new AsyncRelayCommand(SelectInputFileAsync);
     }
 
     /// <inheritdoc />
@@ -88,10 +101,76 @@ public sealed class BatchHttpGetViewModel : ObservableObject, IPluginDocument, I
     public bool IsRunning
     {
         get => _isRunning;
-        private set => SetProperty(ref _isRunning, value);
+        private set
+        {
+            if (!SetProperty(ref _isRunning, value)) return;
+            OnPropertyChanged(nameof(CanInteract));
+        }
+    }
+
+    /// <summary>启用只读写文件、不向响应框提交正文的高吞吐批处理模式。</summary>
+    public bool IsFileBatchMode
+    {
+        get => _isFileBatchMode;
+        set
+        {
+            if (!SetProperty(ref _isFileBatchMode, value)) return;
+            OnPropertyChanged(nameof(IsManualMode));
+            OnPropertyChanged(nameof(ExecuteButtonText));
+            if (value) ResponseContent = string.Empty;
+        }
+    }
+
+    public bool IsManualMode => !IsFileBatchMode;
+
+    public bool CanInteract => !IsRunning;
+
+    public string ExecuteButtonText => IsFileBatchMode ? "执行文件批处理 GET" : "按行执行 GET";
+
+    public string InputFilePath
+    {
+        get => _inputFilePath;
+        private set => SetProperty(ref _inputFilePath, value);
+    }
+
+    public string OutputFilePath
+    {
+        get => _outputFilePath;
+        private set => SetProperty(ref _outputFilePath, value);
+    }
+
+    public int TotalCount
+    {
+        get => _totalCount;
+        private set => SetProperty(ref _totalCount, value);
+    }
+
+    public int ProcessedCount
+    {
+        get => _processedCount;
+        private set => SetProperty(ref _processedCount, value);
+    }
+
+    public int SucceededCount
+    {
+        get => _succeededCount;
+        private set => SetProperty(ref _succeededCount, value);
+    }
+
+    public int FailedCount
+    {
+        get => _failedCount;
+        private set => SetProperty(ref _failedCount, value);
+    }
+
+    public int WrittenCount
+    {
+        get => _writtenCount;
+        private set => SetProperty(ref _writtenCount, value);
     }
 
     public IAsyncRelayCommand ExecuteRequestsCommand { get; }
+    public IAsyncRelayCommand SelectInputFileCommand { get; }
 
     private async Task ExecuteRequestsAsync(CancellationToken commandToken)
     {
@@ -108,12 +187,13 @@ public sealed class BatchHttpGetViewModel : ObservableObject, IPluginDocument, I
             return;
         }
 
-        var requests = RequestLines
-            .ReplaceLineEndings("\n")
-            .Split('\n')
-            .Select((url, index) => new RequestLine(index + 1, url.Trim()))
-            .Where(request => !string.IsNullOrWhiteSpace(request.Value))
-            .ToArray();
+        if (IsFileBatchMode)
+        {
+            await ExecuteFileBatchAsync(cancellationToken);
+            return;
+        }
+
+        var requests = ParseRequests(RequestLines.ReplaceLineEndings("\n").Split('\n'));
 
         if (requests.Length == 0)
         {
@@ -126,6 +206,7 @@ public sealed class BatchHttpGetViewModel : ObservableObject, IPluginDocument, I
         var succeeded = 0;
         IsRunning = true;
         ResponseContent = string.Empty;
+        ResetStatistics(requests.Length);
 
         try
         {
@@ -134,42 +215,10 @@ public sealed class BatchHttpGetViewModel : ObservableObject, IPluginDocument, I
                 cancellationToken.ThrowIfCancellationRequested();
                 var request = requests[index];
                 StatusText = $"正在执行 {index + 1}/{requests.Length}：{request.Value}";
-                output.AppendLine($"===== 第 {request.LineNumber} 行：{request.Value} =====");
-
-                if (!TryNormalizeHttpUrl(request.Value, out var url))
-                {
-                    output.AppendLine("请求失败：网址必须使用 http 或 https。");
-                    output.AppendLine();
-                    ResponseContent = output.ToString();
-                    continue;
-                }
-
-                try
-                {
-                    var content = await _urlContentService.GetStringAsync(url, cancellationToken);
-                    cancellationToken.ThrowIfCancellationRequested();
-                    output.AppendLine(content);
-                    succeeded++;
-                }
-                catch (UrlContentRequestException ex)
-                {
-                    var statusCode = ex.StatusCode?.ToString() ?? "无";
-                    output.AppendLine($"请求失败：状态码 {statusCode}");
-                    if (!string.IsNullOrWhiteSpace(ex.ResponseContent))
-                    {
-                        output.AppendLine(ex.ResponseContent);
-                    }
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    output.AppendLine($"请求异常：{ex.Message}");
-                }
-
-                output.AppendLine();
+                var result = await RequestOneAsync(request, cancellationToken);
+                output.Append(result.Text);
+                if (result.Succeeded) succeeded++;
+                UpdateStatistics(index + 1, succeeded);
                 if (!IsClosing) ResponseContent = output.ToString();
             }
 
@@ -190,12 +239,223 @@ public sealed class BatchHttpGetViewModel : ObservableObject, IPluginDocument, I
         }
     }
 
+    private async Task SelectInputFileAsync(CancellationToken commandToken)
+    {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            commandToken,
+            _disposeCts.Token,
+            _documentLifetime.ClosingToken);
+        var cancellationToken = linked.Token;
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var path = await _fileService.PickInputFileAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(path) || IsClosing) return;
+
+            InputFilePath = path;
+            OutputFilePath = string.Empty;
+            ResetStatistics(0);
+            StatusText = "已选择地址文件，等待执行";
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            if (!IsClosing) StatusText = $"选择文件失败：{exception.Message}";
+        }
+    }
+
+    private async Task ExecuteFileBatchAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(InputFilePath))
+        {
+            StatusText = "请先选择包含 GET 地址的文本文件";
+            return;
+        }
+
+        var suggestedFileName = $"{Path.GetFileNameWithoutExtension(InputFilePath)}_responses.txt";
+        string? outputPath;
+        try
+        {
+            outputPath = await _fileService.PickOutputFileAsync(
+                suggestedFileName,
+                cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (Exception exception)
+        {
+            if (!IsClosing) StatusText = $"选择输出文件失败：{exception.Message}";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(outputPath) || IsClosing)
+        {
+            StatusText = "已取消文件批处理";
+            return;
+        }
+
+        IsRunning = true;
+        ResponseContent = string.Empty;
+        OutputFilePath = outputPath;
+        ResetStatistics(0);
+
+        try
+        {
+            StatusText = "正在从文件读取请求地址…";
+            var lines = await _fileService.ReadAllLinesAsync(InputFilePath, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var requests = ParseRequests(lines);
+            ResetStatistics(requests.Length);
+            if (requests.Length == 0)
+            {
+                StatusText = "输入文件中没有可执行的网址";
+                return;
+            }
+
+            var progress = new Progress<BatchProgress>(ReportFileProgress);
+            var result = await Task.Run(
+                () => ExecuteRequestsToMemoryAsync(requests, progress, cancellationToken),
+                cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            UpdateStatistics(requests.Length, result.Succeeded);
+            StatusText = $"请求完成，正在一次性写入 {requests.Length} 条结果…";
+            await _fileService.WriteAllTextAtomicallyAsync(
+                outputPath,
+                result.Content,
+                cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            WrittenCount = requests.Length;
+            StatusText = $"文件批处理完成：成功 {result.Succeeded}，失败 {result.Failed}，已写入 {WrittenCount} 条结果";
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            if (!IsClosing)
+                StatusText = $"已取消：已处理 {ProcessedCount}/{TotalCount}，未写入输出文件";
+        }
+        catch (Exception exception)
+        {
+            if (!IsClosing) StatusText = $"文件批处理失败，未写入输出文件：{exception.Message}";
+        }
+        finally
+        {
+            if (!IsClosing) IsRunning = false;
+        }
+    }
+
+    private async Task<BatchExecutionResult> ExecuteRequestsToMemoryAsync(
+        IReadOnlyList<RequestLine> requests,
+        IProgress<BatchProgress> progress,
+        CancellationToken cancellationToken)
+    {
+        var output = new StringBuilder();
+        var succeeded = 0;
+        var reportTimer = Stopwatch.StartNew();
+
+        for (var index = 0; index < requests.Count; index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var result = await RequestOneAsync(requests[index], cancellationToken)
+                .ConfigureAwait(false);
+            output.Append(result.Text);
+            if (result.Succeeded) succeeded++;
+
+            var processed = index + 1;
+            if (processed == requests.Count || reportTimer.ElapsedMilliseconds >= 150)
+            {
+                progress.Report(new BatchProgress(processed, succeeded, requests.Count));
+                reportTimer.Restart();
+            }
+        }
+
+        return new BatchExecutionResult(
+            output.ToString(),
+            succeeded,
+            requests.Count - succeeded);
+    }
+
+    private async Task<RequestResult> RequestOneAsync(
+        RequestLine request,
+        CancellationToken cancellationToken)
+    {
+        var output = new StringBuilder();
+        output.AppendLine($"===== 第 {request.LineNumber} 行：{request.Value} =====");
+
+        if (!TryNormalizeHttpUrl(request.Value, out var url))
+        {
+            output.AppendLine("请求失败：网址必须使用 http 或 https。");
+            output.AppendLine();
+            return new RequestResult(output.ToString(), false);
+        }
+
+        var succeeded = false;
+        try
+        {
+            var content = await _urlContentService.GetStringAsync(url, cancellationToken)
+                .ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            output.AppendLine(content);
+            succeeded = true;
+        }
+        catch (UrlContentRequestException ex)
+        {
+            var statusCode = ex.StatusCode?.ToString() ?? "无";
+            output.AppendLine($"请求失败：状态码 {statusCode}");
+            if (!string.IsNullOrWhiteSpace(ex.ResponseContent))
+                output.AppendLine(ex.ResponseContent);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            output.AppendLine($"请求异常：{ex.Message}");
+        }
+
+        output.AppendLine();
+        return new RequestResult(output.ToString(), succeeded);
+    }
+
+    private void ReportFileProgress(BatchProgress progress)
+    {
+        if (IsClosing || !IsRunning) return;
+        UpdateStatistics(progress.Processed, progress.Succeeded);
+        StatusText = $"正在后台请求：已处理 {progress.Processed}/{progress.Total}，成功 {progress.Succeeded}，失败 {progress.Processed - progress.Succeeded}";
+    }
+
+    private void ResetStatistics(int total)
+    {
+        TotalCount = total;
+        ProcessedCount = 0;
+        SucceededCount = 0;
+        FailedCount = 0;
+        WrittenCount = 0;
+    }
+
+    private void UpdateStatistics(int processed, int succeeded)
+    {
+        ProcessedCount = processed;
+        SucceededCount = succeeded;
+        FailedCount = processed - succeeded;
+    }
+
+    private static RequestLine[] ParseRequests(IEnumerable<string> lines) =>
+        lines.Select((url, index) => new RequestLine(index + 1, url.Trim()))
+            .Where(request => !string.IsNullOrWhiteSpace(request.Value))
+            .ToArray();
+
     private bool IsClosing => Volatile.Read(ref _disposed) != 0 || _documentLifetime.IsClosing;
 
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
         ExecuteRequestsCommand.Cancel();
+        SelectInputFileCommand.Cancel();
         _disposeCts.Cancel();
         _disposeCts.Dispose();
     }
@@ -218,4 +478,7 @@ public sealed class BatchHttpGetViewModel : ObservableObject, IPluginDocument, I
     }
 
     private sealed record RequestLine(int LineNumber, string Value);
+    private sealed record RequestResult(string Text, bool Succeeded);
+    private sealed record BatchProgress(int Processed, int Succeeded, int Total);
+    private sealed record BatchExecutionResult(string Content, int Succeeded, int Failed);
 }

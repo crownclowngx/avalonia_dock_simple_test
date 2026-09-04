@@ -10,7 +10,7 @@ public sealed class BatchHttpGetDocumentTests
     {
         var service = new RecordingUrlContentService();
         using var lifetime = new TestPluginDocumentLifetime();
-        using var viewModel = new BatchHttpGetViewModel(service, lifetime)
+        using var viewModel = new BatchHttpGetViewModel(service, new StubBatchHttpFileService(), lifetime)
         {
             RequestLines = "one.test/path\n\nhttps://two.test/fail\r\nhttp://three.test/ok",
         };
@@ -37,7 +37,7 @@ public sealed class BatchHttpGetDocumentTests
     {
         var service = new RecordingUrlContentService();
         using var lifetime = new TestPluginDocumentLifetime();
-        using var viewModel = new BatchHttpGetViewModel(service, lifetime)
+        using var viewModel = new BatchHttpGetViewModel(service, new StubBatchHttpFileService(), lifetime)
         {
             RequestLines = "ftp://example.com/file",
         };
@@ -54,7 +54,7 @@ public sealed class BatchHttpGetDocumentTests
     {
         var service = new BlockingUrlContentService();
         using var lifetime = new TestPluginDocumentLifetime();
-        using var viewModel = new BatchHttpGetViewModel(service, lifetime)
+        using var viewModel = new BatchHttpGetViewModel(service, new StubBatchHttpFileService(), lifetime)
         {
             RequestLines = "https://slow.test/request\nhttps://never.test/request",
         };
@@ -69,6 +69,79 @@ public sealed class BatchHttpGetDocumentTests
         Assert.True(service.CancellationObserved);
         Assert.Equal(1, service.CallCount);
         Assert.Equal(contentBeforeClose, viewModel.ResponseContent);
+    }
+
+    [Fact]
+    public async Task 文件模式只在内存汇总响应并于完成后一次写入且不更新响应框()
+    {
+        var requestService = new RecordingUrlContentService();
+        var fileService = new StubBatchHttpFileService
+        {
+            InputPath = "requests.txt",
+            OutputPath = "responses.txt",
+            InputLines =
+            [
+                "one.test/path",
+                "",
+                "https://two.test/fail",
+                "ftp://invalid.test/file",
+                "http://three.test/ok",
+            ],
+        };
+        using var lifetime = new TestPluginDocumentLifetime();
+        using var viewModel = new BatchHttpGetViewModel(requestService, fileService, lifetime)
+        {
+            IsFileBatchMode = true,
+        };
+
+        await viewModel.SelectInputFileCommand.ExecuteAsync(null);
+        await viewModel.ExecuteRequestsCommand.ExecuteAsync(null);
+
+        Assert.Equal("requests.txt", viewModel.InputFilePath);
+        Assert.Equal("responses.txt", viewModel.OutputFilePath);
+        Assert.Equal(4, viewModel.TotalCount);
+        Assert.Equal(4, viewModel.ProcessedCount);
+        Assert.Equal(2, viewModel.SucceededCount);
+        Assert.Equal(2, viewModel.FailedCount);
+        Assert.Equal(4, viewModel.WrittenCount);
+        Assert.Equal(1, fileService.WriteCount);
+        Assert.Empty(viewModel.ResponseContent);
+        Assert.Contains("第 1 行：one.test/path", fileService.WrittenContent);
+        Assert.Contains("第 3 行：https://two.test/fail", fileService.WrittenContent);
+        Assert.Contains("第 4 行：ftp://invalid.test/file", fileService.WrittenContent);
+        Assert.Contains("第 5 行：http://three.test/ok", fileService.WrittenContent);
+        Assert.Equal(
+            "文件批处理完成：成功 2，失败 2，已写入 4 条结果",
+            viewModel.StatusText);
+    }
+
+    [Fact]
+    public async Task 文件模式关闭时取消进行中的请求且不写入半成品()
+    {
+        var requestService = new BlockingUrlContentService();
+        var fileService = new StubBatchHttpFileService
+        {
+            InputPath = "requests.txt",
+            OutputPath = "responses.txt",
+            InputLines = ["https://slow.test/request", "https://never.test/request"],
+        };
+        using var lifetime = new TestPluginDocumentLifetime();
+        using var viewModel = new BatchHttpGetViewModel(requestService, fileService, lifetime)
+        {
+            IsFileBatchMode = true,
+        };
+
+        await viewModel.SelectInputFileCommand.ExecuteAsync(null);
+        var execution = viewModel.ExecuteRequestsCommand.ExecuteAsync(null);
+        await requestService.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        viewModel.Dispose();
+        await execution.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(requestService.CancellationObserved);
+        Assert.Equal(1, requestService.CallCount);
+        Assert.Equal(0, fileService.WriteCount);
+        Assert.Empty(viewModel.ResponseContent);
     }
 
     private sealed class BlockingUrlContentService : IUrlContentService
@@ -115,6 +188,38 @@ public sealed class BatchHttpGetDocumentTests
             }
 
             return Task.FromResult($"response: {url}");
+        }
+    }
+
+    private sealed class StubBatchHttpFileService : IBatchHttpFileService
+    {
+        public string? InputPath { get; init; }
+        public string? OutputPath { get; init; }
+        public string[] InputLines { get; init; } = [];
+        public int WriteCount { get; private set; }
+        public string WrittenContent { get; private set; } = string.Empty;
+
+        public Task<string?> PickInputFileAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(InputPath);
+
+        public Task<string?> PickOutputFileAsync(
+            string suggestedFileName,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(OutputPath);
+
+        public Task<string[]> ReadAllLinesAsync(
+            string path,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(InputLines);
+
+        public Task WriteAllTextAtomicallyAsync(
+            string path,
+            string content,
+            CancellationToken cancellationToken = default)
+        {
+            WriteCount++;
+            WrittenContent = content;
+            return Task.CompletedTask;
         }
     }
 }
