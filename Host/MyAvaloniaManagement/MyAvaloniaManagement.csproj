@@ -42,6 +42,8 @@
       -->
       <PackageReference Include="Irihi.Ursa" />
       <PackageReference Include="Irihi.Ursa.Themes.Semi" />
+      <!-- EPPlus 的配置依赖属于宿主共享闭包，插件包按协议不得私带 Microsoft.Extensions DLL。 -->
+      <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
       <PackageReference Include="Semi.Avalonia" />
       <PackageReference Include="Xaml.Behaviors" />

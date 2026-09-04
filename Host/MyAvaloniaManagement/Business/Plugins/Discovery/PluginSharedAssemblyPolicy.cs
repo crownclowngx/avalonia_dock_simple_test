@@ -67,6 +67,9 @@ internal sealed class HostContractAssemblyPolicy : IPluginSharedAssemblyPolicy
     private static readonly string[] SupportedPluginFrameworkAssemblyNames =
     [
         "CommunityToolkit.Mvvm",
+        // EPPlus 在读取工作簿前会初始化配置。该依赖族由 Host 统一提供，
+        // 与构建协议中禁止插件携带 Microsoft.Extensions DLL 的规则保持一致。
+        "Microsoft.Extensions.Configuration.Json",
     ];
 
     private readonly IReadOnlyDictionary<string, Assembly> _sharedAssemblies;

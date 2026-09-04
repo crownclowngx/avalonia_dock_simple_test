@@ -24,6 +24,7 @@
     <PackageVersion Include="LibVLCSharp" Version="3.10.0" />
     <PackageVersion Include="LibVLCSharp.Avalonia" Version="3.10.0" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MyAvaloniaDependencyInjectionUiVersion)" />
     <!-- 仅用于基础 SDK 的编译期 public API 审阅，不进入发布包或插件还原图。 -->
