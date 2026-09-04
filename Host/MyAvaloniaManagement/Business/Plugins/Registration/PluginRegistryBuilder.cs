@@ -279,15 +279,6 @@ internal sealed class PluginRegistryBuilder
             HostDiagnosticCodes.WorkbenchKeyGestureDuplicate,
             diagnostics);
 
-        if (_workflowActions.Count > 0 && _workflowConsumers.Count > 0)
-        {
-            diagnostics.Add(new HostCompositionDiagnostic(
-                "WORKFLOW_ACTION_PROVIDER_CONSUMER_CONFLICT",
-                expectedOwner?.Value ?? owners.SingleOrDefault()?.Value,
-                _workflowActions.Select(item => ToContributor(item.HandlerType))
-                    .Distinct().ToArray()));
-        }
-
         var localViews = _documents.Select(item => new ViewDeclaration(
                 item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory))
             .Concat(_tools.Select(item => new ViewDeclaration(

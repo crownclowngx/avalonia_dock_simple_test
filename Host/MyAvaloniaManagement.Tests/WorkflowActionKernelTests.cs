@@ -426,7 +426,7 @@ public sealed class WorkflowActionKernelTests
     }
 
     [Fact]
-    public void Provider和Consumer不能由同一插件同时声明()
+    public void Provider和Consumer可以由同一插件安全声明()
     {
         var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
         var builder = new PluginRegistryBuilder();
@@ -434,7 +434,49 @@ public sealed class WorkflowActionKernelTests
         registration.AddWorkflowAction<EchoHandler>(Descriptor());
         registration.UseWorkflowActionGateway();
 
-        Assert.Throws<HostCompositionException>(registration.Seal);
+        registration.Seal();
+
+        Assert.True(registration.UsesWorkflowActionGateway);
+        Assert.Contains(registration.GetHostOwnedServiceDescriptors(),
+            descriptor => descriptor.ServiceType == typeof(EchoHandler));
+    }
+
+    [Fact]
+    public async Task 混合角色目录过滤自有动作且手工自调用在授权和Scope前拒绝()
+    {
+        var scopeFactory = new FakeScopeFactory(new EchoHandler());
+        var authorizer = new FakeAuthorizer(true);
+        var manager = CreateManager(Descriptor(), scopeFactory, authorizer);
+        var gateway = new CallerBoundWorkflowActionGateway(Owner, manager);
+
+        Assert.Empty(gateway.GetAvailableActions());
+        await using var run = gateway.CreateRun();
+        var result = await run.InvokeAsync(Request("self"), null, CancellationToken.None);
+
+        Assert.Equal(WorkflowActionInvocationStatus.Rejected, result.Status);
+        Assert.Equal("WORKFLOW_ACTION_SELF_INVOCATION_FORBIDDEN", result.Failure!.Code);
+        Assert.Equal(0, authorizer.Calls);
+        Assert.Equal(0, scopeFactory.Created);
+    }
+
+    [Fact]
+    public async Task Handler异步调用链中的嵌套调用被稳定拒绝()
+    {
+        WorkflowActionRunManager? manager = null;
+        var handler = new DelegateHandler(async (_, _, cancellationToken) =>
+        {
+            await using var nestedRun = manager!.CreateRun(Caller);
+            var nested = await nestedRun.InvokeAsync(Request("nested"), null, cancellationToken);
+            return JsonSerializer.SerializeToElement(new { echoed = nested.Failure!.Code });
+        });
+        manager = CreateManager(Descriptor(), new FakeScopeFactory(handler), new FakeAuthorizer(true));
+        await using var run = manager.CreateRun(Caller);
+
+        var result = await run.InvokeAsync(Request("outer"), null, CancellationToken.None);
+
+        Assert.Equal(WorkflowActionInvocationStatus.Succeeded, result.Status);
+        Assert.Equal("WORKFLOW_ACTION_NESTED_INVOCATION_FORBIDDEN",
+            result.Output!.Value.GetProperty("echoed").GetString());
     }
 
     private static WorkflowActionRunManager CreateManager(

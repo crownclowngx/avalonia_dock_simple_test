@@ -58,13 +58,19 @@ internal sealed class WorkflowActionCatalogStore
         }
     }
 
-    internal IReadOnlyList<WorkflowActionDescriptor> GetAvailableDescriptors()
+    /// <summary>
+    /// 返回调用方当前可见的动作。混合角色插件不能从自己的 caller-bound Gateway 观察到自有动作，
+    /// 这既避免 UI 误选，也让“Provider + Consumer”保持为两条方向明确的边界。
+    /// </summary>
+    internal IReadOnlyList<WorkflowActionDescriptor> GetAvailableDescriptors(
+        PluginId? excludedOwner = null)
     {
         lock (_gate)
         {
             EnsureCommitted();
             return _entries!.Values
                 .Where(item => _availability!.IsAvailable(item.OwnerId))
+                .Where(item => excludedOwner is null || item.OwnerId != excludedOwner)
                 .OrderBy(item => item.Descriptor.Id.Value, StringComparer.Ordinal)
                 .Select(item => item.Descriptor)
                 .ToArray();

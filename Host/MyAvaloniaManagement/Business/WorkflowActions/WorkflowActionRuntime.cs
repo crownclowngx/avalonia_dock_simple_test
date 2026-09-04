@@ -40,7 +40,7 @@ internal sealed record WorkflowActionExecutionLimits(
     }
 }
 
-/// <summary>Host 注入到一个 Consumer Provider 的可信调用者门面。</summary>
+/// <summary>Host 注入到 Consumer（也可以同时是 Provider）的可信调用者门面。</summary>
 internal sealed class CallerBoundWorkflowActionGateway(
     PluginId callerId,
     WorkflowActionRunManager runs) : IWorkflowActionGateway
@@ -49,7 +49,7 @@ internal sealed class CallerBoundWorkflowActionGateway(
     private readonly WorkflowActionRunManager _runs = runs ?? throw new ArgumentNullException(nameof(runs));
 
     public IReadOnlyList<WorkflowActionDescriptor> GetAvailableActions() =>
-        _runs.GetAvailableActions();
+        _runs.GetAvailableActions(_callerId);
 
     public IWorkflowActionRun CreateRun() => _runs.CreateRun(_callerId);
 }
@@ -94,7 +94,7 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
 
     public TimeSpan ShutdownGrace => _limits.ShutdownGrace;
 
-    internal IReadOnlyList<WorkflowActionDescriptor> GetAvailableActions()
+    internal IReadOnlyList<WorkflowActionDescriptor> GetAvailableActions(PluginId? callerId = null)
     {
         lock (_gate)
         {
@@ -103,7 +103,7 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
                 return [];
             }
         }
-        return _catalog.GetAvailableDescriptors();
+        return _catalog.GetAvailableDescriptors(callerId);
     }
 
     internal IWorkflowActionRun CreateRun(PluginId callerId)
@@ -173,23 +173,40 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(request);
         var invocationId = Guid.NewGuid();
+        // Handler 内再次创建 Workflow 调用会把简单的 Provider 边界变成隐式递归图。
+        // AsyncLocal 只沿当前异步调用链传播，因此 Document/Application Service 的顶层调用不受影响。
+        if (WorkflowActionInvocationGuard.IsInsideHandler)
+        {
+            return Result(invocationId, WorkflowActionInvocationStatus.Rejected,
+                "WORKFLOW_ACTION_NESTED_INVOCATION_FORBIDDEN",
+                "Workflow Action Handler 不能发起嵌套 Workflow Action 调用。");
+        }
+        var stopwatch = Stopwatch.StartNew();
+        PluginWorkflowActionRegistration? registration = null;
+        if (run.Revision != _catalog.ContractRevision ||
+            !_catalog.TryGet(request.ActionId, out registration))
+        {
+            return Failure(invocationId, WorkflowActionInvocationStatus.Rejected,
+                "WORKFLOW_ACTION_NOT_FOUND", "未找到指定的 Workflow Action。",
+                registration, stopwatch.Elapsed);
+        }
+        // 自调用必须在 Host 活跃计数和所有并发预算之前拒绝。这样即使 Consumer 手工构造
+        // 被目录隐藏的 ActionId，也不会消耗资源，更不会触发授权或 Provider Scope。
+        if (run.CallerId == registration.OwnerId)
+        {
+            return Failure(invocationId, WorkflowActionInvocationStatus.Rejected,
+                "WORKFLOW_ACTION_SELF_INVOCATION_FORBIDDEN",
+                "插件不能通过 caller-bound Gateway 调用自己的 Workflow Action。",
+                registration, stopwatch.Elapsed);
+        }
         if (!TryBeginInvocation())
         {
             return Result(invocationId, WorkflowActionInvocationStatus.Rejected,
                 "WORKFLOW_ACTION_HOST_SHUTTING_DOWN", "Host 正在关闭，已拒绝新调用。");
         }
 
-        var stopwatch = Stopwatch.StartNew();
-        PluginWorkflowActionRegistration? registration = null;
         try
         {
-            if (run.Revision != _catalog.ContractRevision ||
-                !_catalog.TryGet(request.ActionId, out registration))
-            {
-                return Failure(invocationId, WorkflowActionInvocationStatus.Rejected,
-                    "WORKFLOW_ACTION_NOT_FOUND", "未找到指定的 Workflow Action。",
-                    registration, stopwatch.Elapsed);
-            }
             if (!_catalog.IsOwnerAvailable(registration.OwnerId))
             {
                 return Failure(invocationId, WorkflowActionInvocationStatus.Unavailable,
@@ -295,6 +312,7 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
         {
             await using var scope = _scopeFactory.CreateWorkflowActionScope(
                 registration.OwnerId, registration.HandlerType);
+            using var invocationGuard = WorkflowActionInvocationGuard.Enter();
             var output = await scope.Handler.InvokeAsync(
                 arguments.Clone(),
                 new WorkflowActionContext(invocationId, run.CallerId, relay),
@@ -505,6 +523,41 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
         var source = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         source.SetResult();
         return source;
+    }
+}
+
+/// <summary>
+/// 标记当前异步调用链是否正在执行插件 Handler。这里刻意只保存“是否进入”的最小事实，
+/// 不建立通用调用图；混合角色插件的编排必须留在 Document/Application Service 顶层。
+/// </summary>
+internal static class WorkflowActionInvocationGuard
+{
+    private static readonly AsyncLocal<int> Depth = new();
+
+    internal static bool IsInsideHandler => Depth.Value > 0;
+
+    internal static IDisposable Enter()
+    {
+        var previous = Depth.Value;
+        Depth.Value = previous + 1;
+        return new Scope(previous);
+    }
+
+    private sealed class Scope(int previous) : IDisposable
+    {
+        private readonly int _previous = previous;
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            Depth.Value = _previous;
+            _disposed = true;
+        }
     }
 }
 

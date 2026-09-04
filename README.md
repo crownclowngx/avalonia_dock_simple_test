@@ -232,6 +232,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Workflow Action G1 Host 内核](./docs/plan-history/workflow-action/g1-host-workflow-action-kernel.md)：查看 Run、Schema、授权、Scope、关闭门控、测试矩阵与非发布边界；
 - [Workflow Action G2 SDK/Build/模板传播](./docs/plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)：查看包、lock file、点号名称、双 ALC 外部调用、制品哈希、非发布门禁历史与正式上传记录；
 - [Workflow Action G3 外部 Studio](./docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md)：查看外部仓库 revision、SOLID 边界、Standalone Fake 闭环、候选 Host 组合和非发布证据；
+- [Workflow Action G5 双角色治理](./docs/plan-history/workflow-action/g5-dual-role-governance.md)：查看混合角色、自调用过滤和 Handler 嵌套拒绝；
 - [Workbench Command G7 外部 WorkflowStudio 三命令](./docs/plan-history/workbench-command/g7-workflow-studio-three-real-commands.md)：查看 Validate/Run/Cancel 状态、真实 ZIP/双 ALC、跨 ALC Action、Headless UI 与非发布证据；
 - [Workbench Command G8 ClassicGame 全游戏命令](./docs/plan-history/workbench-command/g8-classic-game-multi-instance-commands.md)：查看 13 个游戏、22 条 Restart/Undo、真实 ZIP、多实例路由、SOLID 与非发布证据；
 - [Workbench Command G9 最小 Command Palette](./docs/plan-history/workbench-command/g9-minimal-command-palette.md)：查看窗口级遮罩、可搜索投影、共享执行路径、焦点恢复、覆盖率与非发布证据；

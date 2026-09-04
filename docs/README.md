@@ -43,6 +43,7 @@ Managed Plugin 快速开始入口：
 | [Workflow Action G3.1 协议一致性](./plan-history/workflow-action/g3.1-workflow-protocol-consistency.md) | Workflow SDK、双 revision、共享 Schema/路径与静态引用安全 | 已完成并发布；纯公开源复验通过 |
 | [G3.1 Templates 1.2.0 发布补充](./plan-history/workflow-action/g3.1-template-1.2-publication.md) | SDK 3.2 模板传播、lock file、候选/公开源探针与不可变制品哈希 | 已发布；公开安装、构建、测试与打包通过 |
 | [Workflow Action G4 MySmallTools 加密](./plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md) | 非破坏性 Action 合同、SOLID、真实双 ZIP、文件安全与非发布证据 | 已完成；本地开发门禁 |
+| [Workflow Action G5 双角色治理](./plan-history/workflow-action/g5-dual-role-governance.md) | Provider + Consumer、自调用过滤与 Handler 嵌套拒绝 | 已实施；本地开发门禁 |
 | [Workbench Command 引入任务书](./design/workbench-command-introduction-plan.md) | CommandId、活动 Document Target、Context v1、菜单/快捷键贡献、外部插件与 Palette 的 G0–G10 计划 | 已完成；G0–G10 本地开发封板 |
 | [Workbench Command G10 跨仓库本地封板](./plan-history/workbench-command/g10-cross-repository-integration-sealing.md) | 三仓指纹、单轮完整隔离、SDK/六插件、25 条外部命令组合回归与非发布边界 | 已完成；`publishable=false` |
 | [Workbench Command G9 最小 Command Palette](./plan-history/workbench-command/g9-minimal-command-palette.md) | 窗口级遮罩、搜索/状态投影、共享执行路径、焦点与快捷键冲突治理 | 已完成；Host 本地非发布门禁通过 |

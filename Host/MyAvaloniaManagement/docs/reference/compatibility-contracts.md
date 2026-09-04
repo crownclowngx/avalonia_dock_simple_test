@@ -190,7 +190,8 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 ### 3.1.1 Workflow Action 调用边界
 
 - Provider 通过独立 `IWorkflowActionRegistration` 声明 Descriptor 与 scoped Handler；Consumer 必须显式
-  调用 `UseWorkflowActionGateway`，同一插件不能兼任 Provider/Consumer；
+  调用 `UseWorkflowActionGateway`；同一插件可以兼任 Provider/Consumer，但 caller-bound 目录隐藏自有
+  Action，Host 在资源计数、授权和 Scope 前拒绝自调用，并拒绝 Handler 异步链中的嵌套调用；
 - Gateway 绑定 manifest CallerId，只列举当前可用目录并创建 `IWorkflowActionRun`；请求不能提交 CallerId、
   OwnerId、RunId 或授权结果；
 - Run 独占取消、并发、OncePerRun 授权缓存和 catalog revision；Dispose 停止接收、取消并等待本 Run 调用；
