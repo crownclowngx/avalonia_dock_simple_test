@@ -1,6 +1,0 @@
-{
-    "schemaVersion":  1,
-    "passed":  false,
-    "skipped":  true,
-    "summary":  "本地候选显式跳过真实网络与 ffmpeg 门禁，不具备发布资格。"
-}

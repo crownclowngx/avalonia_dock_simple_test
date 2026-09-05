@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Xml.Linq;
-using BiliDownloader.Plugin;
 using DaTangAccountingHelpPlug.Plugin;
 using MyPlugTest.Plugin;
 using MySmallTools.Plugin;
@@ -13,11 +12,10 @@ public sealed class PluginHostBoundaryTests
     private static readonly string RepositoryRoot = FindRepositoryRoot();
 
     [Fact]
-    public void HostApiBoundary_四个生产插件程序集不引用Host()
+    public void HostApiBoundary_三个生产插件程序集不引用Host()
     {
         var assemblies = new[]
         {
-            typeof(BiliDownloaderPluginModule).Assembly,
             typeof(DaTangAccountingHelpPluginModule).Assembly,
             typeof(MyPlugTestPluginModule).Assembly,
             typeof(MySmallToolsPluginModule).Assembly,

@@ -1,4 +1,3 @@
-using BiliDownloader.Plugin;
 using DaTangAccountingHelpPlug.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
@@ -35,7 +34,7 @@ public sealed class PluginCompatibilityTests
     }
 
     [Fact]
-    public void 四插件入口只实现最终V2模块契约()
+    public void 内置插件与夹具入口只实现最终V2模块契约()
     {
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),
@@ -46,25 +45,25 @@ public sealed class PluginCompatibilityTests
         Assert.Equal(
             ["Configure"],
             typeof(IPluginModule).GetMethods().Select(method => method.Name));
-        Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(BiliDownloaderPluginModule)));
+        Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(LifecycleProbeModule)));
         Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(DaTangAccountingHelpPluginModule)));
         Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(MyPlugTestPluginModule)));
         Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(MySmallToolsPluginModule)));
     }
 
     [Fact]
-    public void 插件状态模型投影四个托管模块与G5生命周期声明()
+    public void 插件状态模型投影内置插件与夹具与G5生命周期声明()
     {
         var registry = new PluginRegistry(
             CreatePluginSnapshots(), [], [],
             [new PluginLifecycleDeclaration(
                 new MyAvaloniaManagement.PluginSdk.PluginId(
-                    "myavalonia.plugin.bili-downloader"),
-                typeof(ReadyBiliLifecycle))]);
+                    "myavalonia.plugin.lifecycle-probe"),
+                typeof(ReadyProbeLifecycle))]);
         var states = new PluginLifecycleStateStore(registry);
         states.SetState(new PluginLifecycleState(
             new MyAvaloniaManagement.PluginSdk.PluginId(
-                "myavalonia.plugin.bili-downloader"),
+                "myavalonia.plugin.lifecycle-probe"),
             PluginLifecycleStatus.Ready));
         var viewModel = new PluginStatusViewModel(
             registry,
@@ -73,8 +72,8 @@ public sealed class PluginCompatibilityTests
         Assert.Equal(4, viewModel.Items.Count);
         Assert.Equal(
             [
-                "myavalonia.plugin.bili-downloader",
                 "myavalonia.plugin.datang-accounting-help",
+                "myavalonia.plugin.lifecycle-probe",
                 "myavalonia.plugin.my-plug-test",
                 "myavalonia.plugin.my-small-tools"
             ],
@@ -82,10 +81,10 @@ public sealed class PluginCompatibilityTests
         Assert.Equal(
             "生命周期初始化成功",
             viewModel.Items.Single(item =>
-                item.PluginId == "myavalonia.plugin.bili-downloader").StatusText);
+                item.PluginId == "myavalonia.plugin.lifecycle-probe").StatusText);
         Assert.All(
             viewModel.Items.Where(item =>
-                item.PluginId != "myavalonia.plugin.bili-downloader"),
+                item.PluginId != "myavalonia.plugin.lifecycle-probe"),
             item => Assert.Contains("无需后台生命周期", item.StatusText));
     }
 
@@ -106,10 +105,10 @@ public sealed class PluginCompatibilityTests
     {
         var status = Enum.Parse<PluginLifecycleStatus>(statusName);
         var owner = new MyAvaloniaManagement.PluginSdk.PluginId(
-            "myavalonia.plugin.bili-downloader");
+            "myavalonia.plugin.lifecycle-probe");
         var registry = new PluginRegistry(
             CreatePluginSnapshots(), [], [],
-            [new PluginLifecycleDeclaration(owner, typeof(ReadyBiliLifecycle))]);
+            [new PluginLifecycleDeclaration(owner, typeof(ReadyProbeLifecycle))]);
         var states = new PluginLifecycleStateStore(registry);
         states.SetState(new PluginLifecycleState(owner, status)
         {
@@ -159,7 +158,12 @@ public sealed class PluginCompatibilityTests
                     plugin.Manifest.PluginId.Value))));
     }
 
-    private sealed class ReadyBiliLifecycle : IPluginLifecycle
+    private sealed class LifecycleProbeModule : IPluginModule
+    {
+        public void Configure(IPluginRegistration registration) => registration.UseLifecycle<ReadyProbeLifecycle>();
+    }
+
+    private sealed class ReadyProbeLifecycle : IPluginLifecycle
     {
         public Task InitializeAsync(CancellationToken cancellationToken) =>
             Task.CompletedTask;
@@ -170,7 +174,7 @@ public sealed class PluginCompatibilityTests
 
     private static IReadOnlyList<PluginRegistryPlugin> CreatePluginSnapshots() =>
     [
-        Snapshot<BiliDownloaderPluginModule>("myavalonia.plugin.bili-downloader"),
+        Snapshot<LifecycleProbeModule>("myavalonia.plugin.lifecycle-probe"),
         Snapshot<DaTangAccountingHelpPluginModule>("myavalonia.plugin.datang-accounting-help"),
         Snapshot<MyPlugTestPluginModule>("myavalonia.plugin.my-plug-test"),
         Snapshot<MySmallToolsPluginModule>("myavalonia.plugin.my-small-tools"),

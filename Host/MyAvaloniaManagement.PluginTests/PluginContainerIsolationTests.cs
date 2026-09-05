@@ -1,5 +1,3 @@
-using BiliDownloader.Plugin;
-using BiliDownloader.Messaging;
 using DaTangAccountingHelpPlug.Plugin;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,33 +18,39 @@ namespace MyAvaloniaManagement.PluginTests;
 /// </summary>
 public sealed class PluginContainerIsolationTests
 {
+    private sealed class MessageProbeBus { }
+    private sealed class MessageProbeModule : IPluginModule
+    {
+        public void Configure(IPluginRegistration registration) => registration.Services.AddSingleton<MessageProbeBus>();
+    }
+
     [Fact]
     public void Host与插件Provider只解析各自拥有的消息器()
     {
         var myPlugId = new PluginId("myavalonia.plugin.my-plug-test");
-        var biliId = new PluginId("myavalonia.plugin.bili-downloader");
+        var probeId = new PluginId("myavalonia.plugin.message-probe");
         using var composition = Compose(
             (myPlugId.Value, new MyPlugTestPluginModule()),
-            (biliId.Value, new BiliDownloaderPluginModule()));
+            (probeId.Value, new MessageProbeModule()));
 
         var myPlugBus = composition.PluginProviders.GetRequiredService(
             myPlugId,
             typeof(IMyPlugTestEventBus));
-        var biliBus = composition.PluginProviders.GetRequiredService(
-            biliId,
-            typeof(IBiliDownloaderEventBus));
+        var probeBus = composition.PluginProviders.GetRequiredService(
+            probeId,
+            typeof(MessageProbeBus));
 
         Assert.IsAssignableFrom<IMyPlugTestEventBus>(myPlugBus);
-        Assert.IsAssignableFrom<IBiliDownloaderEventBus>(biliBus);
+        Assert.IsAssignableFrom<MessageProbeBus>(probeBus);
         Assert.Null(composition.HostProvider.GetService<IMyPlugTestEventBus>());
-        Assert.Null(composition.HostProvider.GetService<IBiliDownloaderEventBus>());
+        Assert.Null(composition.HostProvider.GetService<MessageProbeBus>());
         Assert.Throws<InvalidOperationException>(() =>
             composition.PluginProviders.GetRequiredService(
                 myPlugId,
-                typeof(IBiliDownloaderEventBus)));
+                typeof(MessageProbeBus)));
         Assert.Throws<InvalidOperationException>(() =>
             composition.PluginProviders.GetRequiredService(
-                biliId,
+                probeId,
                 typeof(IMyPlugTestEventBus)));
     }
 

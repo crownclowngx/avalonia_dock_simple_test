@@ -4,7 +4,7 @@
 >
 > 状态：已完成；本记录是开发期破坏式收口与非发布证据，不是发布批准。
 >
-> 前置基线：[G12 BiliDownloader 验收](./g12-bili-downloader-v3-acceptance.md)
+> 前置基线：[G12 BiliDownloader 验收](../../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)
 
 ## 1. 结论
 

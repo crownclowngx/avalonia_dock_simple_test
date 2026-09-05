@@ -172,7 +172,6 @@ public sealed class PluginSdkDependencyBoundaryTests
     }
 
     [Theory]
-    [InlineData("Plugins", "BiliDownloader", "BiliDownloader", "BiliDownloader.csproj")]
     [InlineData("Plugins", "MyPlugTest", "MyPlugTest", "MyPlugTest.csproj")]
     [InlineData("Plugins", "MySmallTools", "MySmallTools", "MySmallTools.csproj")]
     [InlineData("Plugins", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug.csproj")]

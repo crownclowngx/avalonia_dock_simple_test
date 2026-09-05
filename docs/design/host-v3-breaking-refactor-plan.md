@@ -24,7 +24,7 @@
 > [V3 G9 MyPlugTest 验收](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)、
 > [V3 G10 DaTangAccountingHelpPlug 验收](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
 > [V3 G11 MySmallTools 验收](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)、
-> [V3 G12 BiliDownloader 验收](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)、
+> [V3 G12 BiliDownloader 验收](../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)、
 > [V3 G13 删除 V2 生产面](../plan-history/host-v3/g13-remove-v2-production-surface.md)、
 > [V3 G14 封板](../plan-history/host-v3/g14-v3-sealing.md)、
 > [宿主—插件架构评审](./host-plugin-architecture-review.md)及当前 `main`/工作分支代码。
@@ -606,7 +606,7 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
 - **实施记录**：真实 Host 保存竞争、插件私有消息全行为、Lifecycle/readiness/全新对象图恢复、最终
   Workspace 的 1 Document + 1 Tool + 1 Lifecycle、1219/1219 测试、Host 84.39% / 70.58%、插件
   83.80% / 67.54% 覆盖率及两次 14 文件 win-x64 确定性 ZIP 见
-  [G12 专项记录](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)。
+  [G12 专项记录](../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)。
 - **回滚**：整体回到 G11 基线；不得为旧 Host EventBus 增加插件 Facade。
 
 ### G13：删除 V2 生产面（已完成）

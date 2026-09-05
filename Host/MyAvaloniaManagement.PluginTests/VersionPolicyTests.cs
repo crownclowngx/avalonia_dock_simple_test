@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Xml.Linq;
-using BiliDownloader.Plugin;
 using DaTangAccountingHelpPlug.Plugin;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Layout;
@@ -119,7 +118,7 @@ public sealed class VersionPolicyTests
     }
 
     [Fact]
-    public void VersionPolicy_四个插件的项目程序集清单与兼容区间一致()
+    public void VersionPolicy_三个插件的项目程序集清单与兼容区间一致()
     {
         var sharedProps = Path.Combine(
             RepositoryRoot,
@@ -190,7 +189,7 @@ public sealed class VersionPolicyTests
                 projectVersion,
                 ReadInformationalVersionCore(plugin.Assembly));
 
-            // 测试输出会把四个 ProjectReference 的同名 plugin.manifest.json 覆盖到同一目录，
+            // 测试输出会把三个 ProjectReference 的同名 plugin.manifest.json 覆盖到同一目录，
             // 因此必须回到各插件自己的 bin/<Configuration>/net10.0 读取生成清单。
             // 这里仍然读取构建产物，不允许源码树保留第二份手写事实。
             var configuration = new DirectoryInfo(AppContext.BaseDirectory).Parent?.Name
@@ -273,12 +272,6 @@ public sealed class VersionPolicyTests
 
     private static IReadOnlyList<PluginRelease> GetPluginReleases() =>
     [
-        new(
-            "BiliDownloader",
-            typeof(BiliDownloaderPluginModule).Assembly,
-            Path.Combine("Plugins", "BiliDownloader", "BiliDownloader", "BiliDownloader.csproj"),
-            "myavalonia.plugin.bili-downloader",
-            "BiliDownloader"),
         new(
             "DaTangAccountingHelpPlug",
             typeof(DaTangAccountingHelpPluginModule).Assembly,

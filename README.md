@@ -1,5 +1,7 @@
 # MyAvaloniaManagement
 
+> 2026-09-05：BiliDownloader 已迁入[独立插件仓库](../avalonia_management_plug/myavalonia-bili-downloader/README.md)。主项目不再内置、构建或部署它；本文中的综合历史记录仍保留当时事实。
+
 MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的模块化桌面工作台，也是面向内部可信 Managed Plugin 的插件宿主。宿主提供统一窗口、可停靠工作区、布局持久化、文件打开与保存、依赖注入、插件生命周期和诊断入口；业务能力由独立插件贡献。
 
 > 当前定位是同一团队维护的内部可信插件平台，主要支持 Windows x64。它不是第三方插件市场或安全沙箱，也不支持运行时热卸载；更新插件需要退出宿主、替换文件并重新启动。
@@ -23,7 +25,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > manifest、Document envelope、layout 仍为 schema 2，默认数据根仍为 `v2`。实施证据见
 > [V3 G10 DaTang 验收](./docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
 > [V3 G11 MySmallTools 验收](./docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)和
-> [V3 G12 BiliDownloader 验收](./docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)以及
+> [V3 G12 BiliDownloader 验收](../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)以及
 > [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)和
 > [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)。V3 Core/UI API 已冻结为 Shipped
 > 127/45 条，并由两轮隔离门禁签署；这表示本地可发布，不表示已经上传或对外发布。
@@ -73,12 +75,14 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 
 | 插件 | 当前职责 |
 | --- | --- |
-| [BiliDownloader](./Plugins/BiliDownloader/BiliDownloader/doc/reference/PRODUCT.md) | Bilibili 链接和个人内容来源、下载计划、任务调度及媒体处理 |
+| 外部插件：[BiliDownloader](../avalonia_management_plug/myavalonia-bili-downloader/docs/reference/PRODUCT.md) | Bilibili 链接和个人内容来源、下载计划、任务调度及媒体处理 |
 | [MySmallTools](./Plugins/MySmallTools/MySmallTools/docs/secret-video-player/README.md) | SECVID03 视频播放、媒体库、视频加密和安全解密 |
 | [DaTangAccountingHelpPlug](./Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj) | 发票信息综合计算和银行余额调节 |
 | [MyPlugTest](./Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) | Managed Plugin 的 Document、Tool、消息通信和依赖注入示例 |
 
-四个当前插件均已按 V3 G1 重新标记版本并继续使用 Managed Plugin 构建协议；三个持久化插件已在
+以下为迁出前四插件的 V3 历史验收事实；当前主项目内置三个插件，BiliDownloader 独立交付。
+
+四个插件均已按 V3 G1 重新标记版本并继续使用 Managed Plugin 构建协议；三个持久化插件已在
 V3 G2 接入修订保存，全部 11 个插件 Document 已在 V3 G3 接入互斥激活，四插件已在 V3 G4 通过
 Host 最终提交与 ID 归属门禁，并在 V3 G5 把插件事件通信收回插件内部；四插件已在 V3 G9–G12
 依次完成最终 Workspace、UI、资源边界与真实包验收。BiliDownloader
@@ -240,7 +244,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Managed Plugin V3 任务书](./docs/design/host-v3-breaking-refactor-plan.md)：查看 G0–G14 最终目标、阶段和签署矩阵；
 - [V3 G14 封板记录](./docs/plan-history/host-v3/g14-v3-sealing.md)：查看正式 API、SOLID、两轮隔离门禁、制品和回滚边界；
 - [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)：查看零残留、真实包负例、四插件矩阵和非发布证据；
-- [V3 G12 BiliDownloader 验收](./docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)：查看保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合及 1219 项非发布证据；
+- [V3 G12 BiliDownloader 验收](../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)：查看保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合及 1219 项非发布证据；
 - [V3 G11 MySmallTools 验收](./docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)：查看全屏租约、20 轮真实媒体资源归零、真实 Host 组合及 676 项非发布证据；
 - [V3 G10 DaTang 验收](./docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)：查看双 Document、保存竞争、文件交互、真实 Host 组合及 554 项非发布证据；
 - [V3 G9 MyPlugTest 验收](./docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)：查看最终 Workspace 创建链、保存竞争、消息释放、UI、SOLID 和 501 项非发布证据；
@@ -255,7 +259,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [Managed Plugin V2 任务书](./docs/design/host-v2-breaking-refactor-plan.md)：查看历史 G0–G14 破坏式重构与最终签署矩阵；
 - [V2 G14 封板](./docs/plan-history/host-v2/g14-v2-sealing.md)：查看 API Shipped 基线、两轮隔离门禁、SOLID 取舍和发布证据；
 - [V2 G13 删除 V1 生产面](./docs/plan-history/host-v2/g13-remove-v1-production-surface.md)：查看 SOLID 收口、源码/二进制负例、包矩阵和非发布证据；
-- [V2 G12 BiliDownloader 迁移](./docs/plan-history/host-v2/g12-bili-downloader-v2.md)：查看 SOLID 责任划分、readiness、schema 3、关闭时序和非发布证据；
+- [V2 G12 BiliDownloader 迁移](../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md)：查看 SOLID 责任划分、readiness、schema 3、关闭时序和非发布证据；
 - [V2 G10 DaTang 迁移](./docs/plan-history/host-v2/g10-datang-accounting-help-v2.md)：查看窗口端口、内容 schema、所有权、SOLID 取舍和非发布证据；
 - [V2 G0 绿色基线](./docs/plan-history/host-v2/g0-green-baseline.md)：查看非发布门禁、删除面、依赖白名单和消费者矩阵；
 - [V2 G1 版本与数据边界](./docs/plan-history/host-v2/g1-version-and-data-boundaries.md)：查看 V2 版本事实、数据根隔离和阶段边界；

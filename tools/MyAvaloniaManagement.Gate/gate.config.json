@@ -34,14 +34,12 @@
     { "id": "host-ui", "scope": "host", "project": "Host/MyAvaloniaManagement.UiTests/MyAvaloniaManagement.UiTests.csproj", "coverageGroup": "host" },
     { "id": "my-plug-test", "scope": "host", "project": "Plugins/MyPlugTest/MyPlugTest.Tests/MyPlugTest.Tests.csproj", "coverageGroup": "my-plug-test" },
     { "id": "datang", "scope": "host", "project": "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.Tests/DaTangAccountingHelpPlug.Tests.csproj", "coverageGroup": "datang" },
-    { "id": "my-small-tools", "scope": "workflow", "project": "Plugins/MySmallTools/MySmallTools.Tests/MySmallTools.Tests.csproj", "coverageGroup": "my-small-tools" },
-    { "id": "bili-downloader", "scope": "host", "project": "Plugins/BiliDownloader/BiliDownloader.Tests/BiliDownloader.Tests.csproj", "coverageGroup": "bili-downloader" }
+    { "id": "my-small-tools", "scope": "workflow", "project": "Plugins/MySmallTools/MySmallTools.Tests/MySmallTools.Tests.csproj", "coverageGroup": "my-small-tools" }
   ],
   "plugins": [
     { "id": "my-plug-test", "scope": "host", "repository": "main", "project": "Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj", "directoryName": "MyPlugTest", "assemblyName": "MyPlugTest" },
     { "id": "datang", "scope": "host", "repository": "main", "project": "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj", "directoryName": "DaTang", "assemblyName": "DaTangAccountingHelpPlug" },
     { "id": "my-small-tools", "scope": "workflow", "repository": "main", "project": "Plugins/MySmallTools/MySmallTools/MySmallTools.csproj", "directoryName": "SmallTools", "assemblyName": "MySmallTools" },
-    { "id": "bili-downloader", "scope": "host", "repository": "main", "project": "Plugins/BiliDownloader/BiliDownloader/BiliDownloader.csproj", "directoryName": "BiliDownloader", "assemblyName": "BiliDownloader" },
     { "id": "workflow-studio", "scope": "workflow", "repository": "workflow-studio", "project": "src/WorkflowStudio.Plugin/WorkflowStudio.Plugin.csproj", "directoryName": "WorkflowStudio", "assemblyName": "WorkflowStudio.Plugin" },
     { "id": "classic-game", "scope": "workbench", "repository": "classic-game", "project": "src/ClassicGamePlugin.Plugin/ClassicGamePlugin.Plugin.csproj", "directoryName": "ClassicGamePlugin", "assemblyName": "ClassicGamePlugin.Plugin" }
   ],

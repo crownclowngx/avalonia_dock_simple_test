@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
-using BiliDownloader.Plugin;
 
 namespace MyAvaloniaManagement.UiTests;
 
@@ -39,18 +38,4 @@ internal sealed class UiTestDocumentLifetime : IDocumentLifetime
     public CancellationToken ClosingToken => CancellationToken.None;
 
     public bool IsClosing => false;
-}
-
-internal sealed class UiReadyBiliReadiness : IBiliDownloaderPluginReadiness
-{
-    public BiliDownloaderReadinessSnapshot Snapshot { get; } = new(
-        BiliDownloaderReadinessStatus.Ready,
-        true,
-        "插件已就绪。");
-
-    public event EventHandler? Changed
-    {
-        add { }
-        remove { }
-    }
 }

@@ -374,7 +374,6 @@ public sealed class ApplicationAndWindowTests
         context.ThemeService.Initialize(application);
         var views = new Control[]
         {
-            new BiliDownloader.Views.BiliDownloaderView(),
             new MyPlugTest.Views.MyCustomToolView(),
             new MySmallTools.Views.SecretVideoPlayer.Playback
                 .PlaybackDeploymentView()

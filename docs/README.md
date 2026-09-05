@@ -1,5 +1,7 @@
 # 项目文档导航
 
+> 2026-09-05：BiliDownloader 已迁入[独立插件仓库](../../avalonia_management_plug/myavalonia-bili-downloader/README.md)。主项目不再内置、构建或部署它；本文中的综合历史记录仍保留当时事实。
+
 本目录保存解决方案级文档。文档按用途分为“快速开始”“当前事实”“设计方法论与探索”以及“历史验收记录”，阅读时应先确认文档类型，避免把历史基线当作当前实现。
 
 ## 快速开始
@@ -79,7 +81,7 @@ Managed Plugin 快速开始入口：
 | [V3 G9 MyPlugTest 验收](./plan-history/host-v3/g9-my-plug-test-v3-acceptance.md) | 最终 Workspace 创建链、Revision 保存竞争、消息释放、UI、确定性 ZIP 与 SOLID | 已完成；501/501，Host 84.39% / 70.58%，两次 11 文件 ZIP，非发布 |
 | [V3 G10 DaTangAccountingHelpPlug 验收](./plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md) | 双 Document、Revision 保存竞争、文件交互、真实 Host 组合与 SOLID | 已完成；554/554，Host 84.39% / 70.58%，插件 70.09% / 49.31%，非发布 |
 | [V3 G11 MySmallTools 验收](./plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) | 四 Document、全屏租约、20 轮真实媒体资源归零、真实 Host 组合与 SOLID | 已完成；676/676，Host 84.39% / 70.58%，插件 72.59% / 48.12%，非发布 |
-| [V3 G12 BiliDownloader 验收](./plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) | 保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合与 SOLID | 已完成；1219/1219，Host 84.39% / 70.58%，插件 83.80% / 67.54%，非发布 |
+| [V3 G12 BiliDownloader 验收](../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) | 保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合与 SOLID | 已完成；1219/1219，Host 84.39% / 70.58%，插件 83.80% / 67.54%，非发布 |
 | [V3 G13 删除 V2 生产面](./plan-history/host-v3/g13-remove-v2-production-surface.md) | 活动零残留、API/包负例、四插件矩阵、SOLID 与回滚边界 | 已完成；1483/1483，Host 84.39% / 70.58%，非发布 |
 | [V3 G14 封板](./plan-history/host-v3/g14-v3-sealing.md) | API Shipped、两轮隔离门禁、四插件专项、Windows Smoke、SOLID 和回滚 | 已完成；Core/UI 127/45，本地可发布且未外部发布 |
 | [Managed Plugin V2 封板任务书](./design/host-v2-breaking-refactor-plan.md) | V2 所有权、删除清单、阶段实施和最终签署矩阵 | G0–G14 已完成，当前签署依据 |
@@ -156,7 +158,7 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
   记录双 Document 贡献、窄窗口 Host Port、严格银行对账 schema、关闭所有权和非发布门禁。
 - [Managed Plugin V2 G11 MySmallTools 迁移](./plan-history/host-v2/g11-my-small-tools-v2.md)：
   记录四 Document、关闭令牌、全屏端口、SECVID03/LibVLC 资源所有权、真实媒体和确定性测试 ZIP 证据。
-- [Managed Plugin V2 G12 BiliDownloader 迁移](./plan-history/host-v2/g12-bili-downloader-v2.md)：
+- [Managed Plugin V2 G12 BiliDownloader 迁移](../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md)：
   记录 Document schema 3、readiness、后台关闭、SOLID 责任划分、覆盖率和确定性测试 ZIP 证据。
 - [Managed Plugin V2 G13 删除 V1 生产面](./plan-history/host-v2/g13-remove-v1-production-surface.md)：
   记录 Legacy 项目删除、唯一 V2 构建协议、编译负例、依赖白名单与非发布包矩阵。
@@ -207,7 +209,7 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
   迁移发票导入和银行余额调节，新增受控窗口端口，并验证严格内容与多 Scope 隔离。
 - [G11：迁移 MySmallTools](./plan-history/host-v2/g11-my-small-tools-v2.md)：
   迁移四个 Document、全屏端口与原生资源所有权，并通过真实媒体 Harness 验证关闭释放。
-- [G12：迁移 BiliDownloader](./plan-history/host-v2/g12-bili-downloader-v2.md)：
+- [G12：迁移 BiliDownloader](../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md)：
   迁移最后一个业务插件的 Document、Tool、Lifecycle 与 JSON 边界，并通过非发布真实 ZIP 加载验证。
 - [G13：删除 V1 生产面](./plan-history/host-v2/g13-remove-v1-production-surface.md)：
   删除 Legacy 项目、兼容适配和过渡构建属性，并以源码、编译、依赖和包矩阵证明零生产残留。

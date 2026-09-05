@@ -162,16 +162,8 @@ public sealed class ManagedOnlyPluginLoadingTests
     }
 
     [Fact]
-    public void 四个真实业务插件全部进入最终V3入口()
+    public void 三个内置业务插件全部进入最终V3入口()
     {
-        var biliAssembly = typeof(BiliDownloader.Plugin.BiliDownloaderPluginModule).Assembly;
-        var biliModule = Assert.Single(biliAssembly.ExportedTypes, type =>
-            typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract);
-        Assert.True(PluginModulePreflight.TryValidate(
-            biliModule, out var validatedBili, out var biliError, out _));
-        Assert.Same(biliModule, validatedBili);
-        Assert.Null(biliError);
-
         var myPlugTestAssembly = typeof(MyPlugTest.Plugin.MyPlugTestPluginModule).Assembly;
         var myPlugTestModule = Assert.Single(myPlugTestAssembly.ExportedTypes, type =>
             typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract);

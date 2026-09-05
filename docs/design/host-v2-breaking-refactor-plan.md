@@ -18,7 +18,7 @@
 > [V2 G9 MyPlugTest 迁移](../plan-history/host-v2/g9-my-plug-test-v2.md) 和
 > [V2 G10 DaTang 迁移](../plan-history/host-v2/g10-datang-accounting-help-v2.md)和
 > [V2 G11 MySmallTools 迁移](../plan-history/host-v2/g11-my-small-tools-v2.md)和
-> [V2 G12 BiliDownloader 迁移](../plan-history/host-v2/g12-bili-downloader-v2.md)和
+> [V2 G12 BiliDownloader 迁移](../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md)和
 > [V2 G13 删除 V1 生产面](../plan-history/host-v2/g13-remove-v1-production-surface.md)与
 > [V2 G14 封板](../plan-history/host-v2/g14-v2-sealing.md)。
 >
@@ -598,7 +598,7 @@ Document 根模型和 Tool 均为普通 `ObservableObject`；Host 独占 Dock、
 插件内线程安全 readiness 只发布不可变投影，Lifecycle 更新、Tool 读取，未 Ready 时 Tool 不访问设置、
 SQLite 或 FFmpeg。生产 JSON 已统一为 `System.Text.Json`，生产程序集与最终 ZIP 均不引用 Legacy、Dock、
 Host 或 Newtonsoft。完整 SOLID 责任划分、schema 3 原子恢复、失败矩阵与关闭时序见
-[G12 专项记录](../plan-history/host-v2/g12-bili-downloader-v2.md)。
+[G12 专项记录](../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md)。
 
 G12 非发布专项门禁实际 **812/812**；BiliDownloader 覆盖率为行 **83.77%** / 分支
 **67.62%**。两次隔离构建的 14 文件 ZIP 完全一致，归档 SHA-256 为

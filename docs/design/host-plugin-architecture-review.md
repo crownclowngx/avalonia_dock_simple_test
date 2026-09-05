@@ -297,7 +297,7 @@ Migrator、浮动字段或历史 ID 归一化。缺失/生命周期不可用插�
 internal sealed 实现在调用线程按登记顺序同步执行，订阅者持有幂等令牌并在自身生命周期结束时释放；
 不存在静态默认实例、全局 Reset 或共享公共基类。参见
 [`IMyPlugTestEventBus.cs`](../../Plugins/MyPlugTest/MyPlugTest/Messaging/IMyPlugTestEventBus.cs) 和
-[`IBiliDownloaderEventBus.cs`](../../Plugins/BiliDownloader/BiliDownloader/Messaging/IBiliDownloaderEventBus.cs)。
+[`IBiliDownloaderEventBus.cs`](../../../avalonia_management_plug/myavalonia-bili-downloader/src/BiliDownloaderPlugin.Plugin/Messaging/IBiliDownloaderEventBus.cs)。
 
 **[代码事实]** 宿主生产 ViewModel 只使用构造注入，App 通过内部桌面 Shell 创建；组合根显式构造
 `HostDockFactory` 与 `WorkspaceSession` 并执行一次绑定。Welcome 只取得窄 Tool 显示动作，不持有 Session、
@@ -547,7 +547,7 @@ Loader/Provider 进入同一 `WorkspaceSession`，Host 没有增加任何插件�
 **83.80% / 67.54%**。所有测试 ZIP 均经两次隔离构建和逐文件比较，仅作为非发布证据。详细职责、
 兼容边界与回滚单位见 [G10](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
 [G11](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) 和
-[G12](../plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) 专项记录。
+[G12](../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) 专项记录。
 
 ### 6.15 2026-08-23 Host V4 G7 集成回归
 
