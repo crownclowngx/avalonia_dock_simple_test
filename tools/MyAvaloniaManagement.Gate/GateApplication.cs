@@ -259,7 +259,7 @@ internal sealed class GateRunner
                         options.Profile == GateProfile.Seal, environment, cancellationToken);
                 }
             });
-            if (options.Scope == GateScope.All || options.Scope is GateScope.Workflow or GateScope.Workbench)
+            if (options.Scope == GateScope.All || options.Scope is GateScope.Workflow or GateScope.Workbench || roots.ContainsKey("datang"))
             {
                 graph.Add("cross-repository", () =>
                     RunCrossRepositoryTestsAsync(options, roots, packageEvidence, environment, evidenceRoot,
@@ -463,6 +463,22 @@ internal sealed class GateRunner
         {
             return null;
         }
+        // 大唐专属 Host 验收随插件迁出；seal 仍合并这些测试对 Host 的覆盖，保持原门槛。
+        if (roots.TryGetValue("datang", out var daTangRoot))
+        {
+            foreach (var suite in new[] { "HostTests", "HostUiTests" })
+            {
+                var resultRoot = Path.Combine(evidenceRoot, "tests", "datang-coverage-" + suite);
+                await processes.RunCheckedAsync("dotnet",
+                    ["test", $"tests/DaTangWorkPlugin.{suite}/DaTangWorkPlugin.{suite}.csproj",
+                     "-c", "Release", $"-p:HostRepositoryRoot={roots["main"]}", "-p:SkipPluginDeploy=true",
+                     "--filter", "FullyQualifiedName!~DaTangPackageTests", "--collect:XPlat Code Coverage",
+                     "--results-directory", resultRoot, "--logger", "trx;LogFileName=coverage.trx"],
+                    daTangRoot, environment, Path.Combine(resultRoot, "test.log"), cancellationToken);
+                AssertTests(Path.Combine(resultRoot, "coverage.trx"), "datang-" + suite);
+                hostCoverageFiles.AddRange(Directory.GetFiles(resultRoot, "coverage.cobertura.xml", SearchOption.AllDirectories));
+            }
+        }
         var mergedRoot = Path.Combine(evidenceRoot, "coverage", "host");
         await processes.RunCheckedAsync(
             "dotnet", ["reportgenerator", $"-reports:{string.Join(';', hostCoverageFiles)}",
@@ -513,6 +529,21 @@ internal sealed class GateRunner
         CancellationToken cancellationToken)
     {
         var hostRoot = roots["main"];
+        if (packageEvidence.TryGetValue("datang", out var daTang))
+        {
+            var packageRoot = Path.Combine(evidenceRoot, "integration", "datang");
+            PackageBuilder.Extract(daTang, packageRoot);
+            var daTangEnvironment = new Dictionary<string, string?>(environment, StringComparer.Ordinal)
+            {
+                ["MYAVALONIA_G10_V3_PACKAGE_ROOT"] = Path.Combine(packageRoot, "Controls"),
+            };
+            await RunFiltered("datang-host", "tests/DaTangWorkPlugin.HostTests/DaTangWorkPlugin.HostTests.csproj",
+                "FullyQualifiedName~MyAvaloniaManagement.PluginTests", daTangEnvironment, "datang", requireSingle: false);
+            await RunFiltered("datang-host-ui", "tests/DaTangWorkPlugin.HostUiTests/DaTangWorkPlugin.HostUiTests.csproj",
+                "FullyQualifiedName~MyAvaloniaManagement.UiTests", daTangEnvironment, "datang", requireSingle: false);
+            await RunFiltered("datang-standalone-ui", "tests/DaTangWorkPlugin.UiTests/DaTangWorkPlugin.UiTests.csproj",
+                "FullyQualifiedName~DaTangWorkPlugin.UiTests", daTangEnvironment, "datang", requireSingle: false);
+        }
         if (packageEvidence.TryGetValue("workflow-studio", out var workflow) &&
             packageEvidence.TryGetValue("classic-game", out var classic))
         {
@@ -546,7 +577,7 @@ internal sealed class GateRunner
         }
 
         async Task RunFiltered(string id, string project, string filter,
-            IReadOnlyDictionary<string, string?> processEnvironment, string repository = "main")
+            IReadOnlyDictionary<string, string?> processEnvironment, string repository = "main", bool requireSingle = true)
         {
             var resultRoot = Path.Combine(evidenceRoot, "tests", id);
             var arguments = new List<string>
@@ -565,7 +596,7 @@ internal sealed class GateRunner
             await processes.RunCheckedAsync(
                 "dotnet", arguments,
                 roots[repository], processEnvironment, Path.Combine(resultRoot, "test.log"), cancellationToken);
-            AssertTests(Path.Combine(resultRoot, $"{id}.trx"), id, requireSingle: true);
+            AssertTests(Path.Combine(resultRoot, $"{id}.trx"), id, requireSingle: requireSingle);
         }
     }
 

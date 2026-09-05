@@ -1,4 +1,3 @@
-using DaTangAccountingHelpPlug.Plugin;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;

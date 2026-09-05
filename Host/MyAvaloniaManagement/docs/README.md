@@ -36,7 +36,7 @@
 - [V3 G7 Host Catalog 与 Plugin Registry](../../../docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)
 - [V3 G8 全屏租约与 Host V3 骨架](../../../docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)
 - [V3 G9 MyPlugTest 最终验收](../../../docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)
-- [V3 G10 DaTangAccountingHelpPlug 最终验收](../../../docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)
+- [V3 G10 DaTangAccountingHelpPlug 最终验收](../../../../avalonia_management_plug/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)
 - [V3 G11 MySmallTools 最终验收](../../../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)
 - [V3 G12 BiliDownloader 最终验收](../../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)
 - [V3 G13 删除 V2 生产面](../../../docs/plan-history/host-v3/g13-remove-v2-production-surface.md)

@@ -25,7 +25,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > 收口为 `TryPresent(Control)` 返回幂等 `IDisposable` 租约，Host 由具体会话维护唯一活动租约；
 > 四个插件均已通过最终 Workspace、Host 保存竞争或资源边界、Headless UI 和真实 3.0.0 ZIP 验收。
 > manifest、Document envelope、layout 仍为 schema 2，默认数据根仍为 `v2`。实施证据见
-> [V3 G10 DaTang 验收](./docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
+> [V3 G10 DaTang 验收](../avalonia_management_plug/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
 > [V3 G11 MySmallTools 验收](../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)和
 > [V3 G12 BiliDownloader 验收](../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)以及
 > [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)和
@@ -79,7 +79,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 | --- | --- |
 | 外部插件：[BiliDownloader](../avalonia_management_plug/myavalonia-bili-downloader/docs/reference/PRODUCT.md) | Bilibili 链接和个人内容来源、下载计划、任务调度及媒体处理 |
 | [MySmallTools](../avalonia_management_plug/myavalonia-video-security-player/docs/secret-video-player/README.md) | SECVID03 视频播放、媒体库、视频加密和安全解密 |
-| [DaTangAccountingHelpPlug](./Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj) | 发票信息综合计算和银行余额调节 |
+| [DaTangWorkPlugin（独立仓库）](../avalonia_management_plug/myavalonia-datang-work/README.md) | 发票信息综合计算和银行余额调节 |
 | [MyPlugTest](./Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) | Managed Plugin 的 Document、Tool、消息通信和依赖注入示例 |
 
 以下为迁出前四插件的 V3 历史验收事实；当前主项目内置三个插件，BiliDownloader 独立交付。
@@ -248,7 +248,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [V3 G13 删除 V2 生产面](./docs/plan-history/host-v3/g13-remove-v2-production-surface.md)：查看零残留、真实包负例、四插件矩阵和非发布证据；
 - [V3 G12 BiliDownloader 验收](../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)：查看保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合及 1219 项非发布证据；
 - [V3 G11 MySmallTools 验收](../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)：查看全屏租约、20 轮真实媒体资源归零、真实 Host 组合及 676 项非发布证据；
-- [V3 G10 DaTang 验收](./docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)：查看双 Document、保存竞争、文件交互、真实 Host 组合及 554 项非发布证据；
+- [V3 G10 DaTang 验收](../avalonia_management_plug/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)：查看双 Document、保存竞争、文件交互、真实 Host 组合及 554 项非发布证据；
 - [V3 G9 MyPlugTest 验收](./docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)：查看最终 Workspace 创建链、保存竞争、消息释放、UI、SOLID 和 501 项非发布证据；
 - [V3 G8 全屏租约与 Host V3 骨架](./docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)：查看租约状态机、原生表面迁移、SOLID 取舍、672 项测试和 20 轮资源证据；
 - [V3 G7 Host Catalog 与 Plugin Registry](./docs/plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)：查看目录职责、激活/失败时序、SOLID 取舍、448 项测试和非发布边界；
@@ -262,7 +262,7 @@ TestResults/  需要保留的阶段验收与人工验证记录
 - [V2 G14 封板](./docs/plan-history/host-v2/g14-v2-sealing.md)：查看 API Shipped 基线、两轮隔离门禁、SOLID 取舍和发布证据；
 - [V2 G13 删除 V1 生产面](./docs/plan-history/host-v2/g13-remove-v1-production-surface.md)：查看 SOLID 收口、源码/二进制负例、包矩阵和非发布证据；
 - [V2 G12 BiliDownloader 迁移](../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md)：查看 SOLID 责任划分、readiness、schema 3、关闭时序和非发布证据；
-- [V2 G10 DaTang 迁移](./docs/plan-history/host-v2/g10-datang-accounting-help-v2.md)：查看窗口端口、内容 schema、所有权、SOLID 取舍和非发布证据；
+- [V2 G10 DaTang 迁移](../avalonia_management_plug/myavalonia-datang-work/docs/plan-history/host-v2/g10-datang-accounting-help-v2.md)：查看窗口端口、内容 schema、所有权、SOLID 取舍和非发布证据；
 - [V2 G0 绿色基线](./docs/plan-history/host-v2/g0-green-baseline.md)：查看非发布门禁、删除面、依赖白名单和消费者矩阵；
 - [V2 G1 版本与数据边界](./docs/plan-history/host-v2/g1-version-and-data-boundaries.md)：查看 V2 版本事实、数据根隔离和阶段边界；
 - [V2 G2 Plugin SDK 重建](./docs/plan-history/host-v2/g2-plugin-sdk-rebuild.md)：查看 Core/UI 契约、Legacy 隔离、SOLID 取舍和非发布门禁证据；

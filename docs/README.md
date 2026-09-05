@@ -1,3 +1,5 @@
+> 大唐会计插件已迁移至 [myavalonia-datang-work](../../avalonia_management_plug/myavalonia-datang-work/README.md)。主项目不再内置、构建或部署旧源码；综合历史记录保留当时事实。
+
 # 项目文档导航
 
 > 2026-09-05：原 MySmallTools 已迁为 [VideoSecurityPlayer 独立插件](../../avalonia_management_plug/myavalonia-video-security-player/README.md)。主项目不再内置其源码，跨仓库 Gate 从外部构建和验收；稳定 ID 与用户数据保持兼容。
@@ -81,7 +83,7 @@ Managed Plugin 快速开始入口：
 | [V3 G7 Host Catalog 与 Plugin Registry](./plan-history/host-v3/g7-host-catalog-and-plugin-registry.md) | Host/插件目录、双激活边界、所有权、失败回滚、SOLID 和专项门禁 | 已完成；448/448，Host 84.04% / 70.26%，非发布 |
 | [V3 G8 全屏租约与 Host V3 骨架](./plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md) | 租约状态机、窗口/Document 时序、原生表面迁移、SOLID 和资源门禁 | 已完成；672/672，Host 84.15% / 70.30%，20 轮资源归零，非发布 |
 | [V3 G9 MyPlugTest 验收](./plan-history/host-v3/g9-my-plug-test-v3-acceptance.md) | 最终 Workspace 创建链、Revision 保存竞争、消息释放、UI、确定性 ZIP 与 SOLID | 已完成；501/501，Host 84.39% / 70.58%，两次 11 文件 ZIP，非发布 |
-| [V3 G10 DaTangAccountingHelpPlug 验收](./plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md) | 双 Document、Revision 保存竞争、文件交互、真实 Host 组合与 SOLID | 已完成；554/554，Host 84.39% / 70.58%，插件 70.09% / 49.31%，非发布 |
+| [V3 G10 DaTangAccountingHelpPlug 验收](../../avalonia_management_plug/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md) | 双 Document、Revision 保存竞争、文件交互、真实 Host 组合与 SOLID | 已完成；554/554，Host 84.39% / 70.58%，插件 70.09% / 49.31%，非发布 |
 | [V3 G11 MySmallTools 验收](../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) | 四 Document、全屏租约、20 轮真实媒体资源归零、真实 Host 组合与 SOLID | 已完成；676/676，Host 84.39% / 70.58%，插件 72.59% / 48.12%，非发布 |
 | [V3 G12 BiliDownloader 验收](../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) | 保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合与 SOLID | 已完成；1219/1219，Host 84.39% / 70.58%，插件 83.80% / 67.54%，非发布 |
 | [V3 G13 删除 V2 生产面](./plan-history/host-v3/g13-remove-v2-production-surface.md) | 活动零残留、API/包负例、四插件矩阵、SOLID 与回滚边界 | 已完成；1483/1483，Host 84.39% / 70.58%，非发布 |
@@ -156,7 +158,7 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
   记录严格 Layout V2、internal 生命周期、可用性门控、退出顺序、测试证据和非发布边界。
 - [Managed Plugin V2 G9 MyPlugTest 迁移](./plan-history/host-v2/g9-my-plug-test-v2.md)：
   记录首个真实业务插件的声明式贡献、Document/Tool 所有权、严格内容 Codec、事件释放和确定性测试 ZIP。
-- [Managed Plugin V2 G10 DaTang 迁移](./plan-history/host-v2/g10-datang-accounting-help-v2.md)：
+- [Managed Plugin V2 G10 DaTang 迁移](../../avalonia_management_plug/myavalonia-datang-work/docs/plan-history/host-v2/g10-datang-accounting-help-v2.md)：
   记录双 Document 贡献、窄窗口 Host Port、严格银行对账 schema、关闭所有权和非发布门禁。
 - [Managed Plugin V2 G11 MySmallTools 迁移](../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md)：
   记录四 Document、关闭令牌、全屏端口、SECVID03/LibVLC 资源所有权、真实媒体和确定性测试 ZIP 证据。
@@ -207,7 +209,7 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
   删除布局 V1/Migrator 与 public 生命周期编排面，建立严格快照、Host internal 协调和只读可用性门控。
 - [G9：迁移 MyPlugTest](./plan-history/host-v2/g9-my-plug-test-v2.md)：
   迁移 4 个 Document 与 1 个 Tool，删除 Strategy/Dock/Legacy 依赖，并以真实 V2 ZIP 验证加载与组合。
-- [G10：迁移 DaTangAccountingHelpPlug](./plan-history/host-v2/g10-datang-accounting-help-v2.md)：
+- [G10：迁移 DaTangAccountingHelpPlug](../../avalonia_management_plug/myavalonia-datang-work/docs/plan-history/host-v2/g10-datang-accounting-help-v2.md)：
   迁移发票导入和银行余额调节，新增受控窗口端口，并验证严格内容与多 Scope 隔离。
 - [G11：迁移 MySmallTools](../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md)：
   迁移四个 Document、全屏端口与原生资源所有权，并通过真实媒体 Harness 验证关闭释放。

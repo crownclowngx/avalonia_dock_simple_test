@@ -1,4 +1,3 @@
-using DaTangAccountingHelpPlug.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Lifecycle;
@@ -45,7 +44,6 @@ public sealed class PluginCompatibilityTests
             ["Configure"],
             typeof(IPluginModule).GetMethods().Select(method => method.Name));
         Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(LifecycleProbeModule)));
-        Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(DaTangAccountingHelpPluginModule)));
         Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(MyPlugTestPluginModule)));
         Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(IndependentProbeModule)));
     }
@@ -68,10 +66,9 @@ public sealed class PluginCompatibilityTests
             registry,
             availability: new PluginAvailabilityReadModel(states));
 
-        Assert.Equal(4, viewModel.Items.Count);
+        Assert.Equal(3, viewModel.Items.Count);
         Assert.Equal(
             [
-                "myavalonia.plugin.datang-accounting-help",
                 "myavalonia.plugin.lifecycle-probe",
                 "myavalonia.plugin.my-plug-test",
                 "myavalonia.plugin.probe"
@@ -179,7 +176,6 @@ public sealed class PluginCompatibilityTests
     private static IReadOnlyList<PluginRegistryPlugin> CreatePluginSnapshots() =>
     [
         Snapshot<LifecycleProbeModule>("myavalonia.plugin.lifecycle-probe"),
-        Snapshot<DaTangAccountingHelpPluginModule>("myavalonia.plugin.datang-accounting-help"),
         Snapshot<MyPlugTestPluginModule>("myavalonia.plugin.my-plug-test"),
         Snapshot<IndependentProbeModule>("myavalonia.plugin.probe"),
     ];

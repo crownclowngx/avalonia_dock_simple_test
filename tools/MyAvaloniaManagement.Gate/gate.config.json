@@ -40,6 +40,19 @@
       "minimumLineCoverage": 72.59,
       "minimumBranchCoverage": 48.12,
       "coverageScript": "scripts/Test-Coverage.ps1"
+    },
+    {
+      "id": "datang",
+      "scope": "host",
+      "defaultPath": "../avalonia_management_plug/myavalonia-datang-work",
+      "solution": "DaTangWorkPlugin.slnx",
+      "testProject": "tests/DaTangWorkPlugin.Tests/DaTangWorkPlugin.Tests.csproj",
+      "standaloneProject": "src/DaTangWorkPlugin.Standalone/DaTangWorkPlugin.Standalone.csproj",
+      "selfTestArguments": [],
+      "selfTestSuccessText": "",
+      "minimumLineCoverage": 70.09,
+      "minimumBranchCoverage": 49.31,
+      "coverageScript": "scripts/Test-Coverage.ps1"
     }
   ],
   "testSuites": [
@@ -72,12 +85,6 @@
       "scope": "host",
       "project": "Plugins/MyPlugTest/MyPlugTest.Tests/MyPlugTest.Tests.csproj",
       "coverageGroup": "my-plug-test"
-    },
-    {
-      "id": "datang",
-      "scope": "host",
-      "project": "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.Tests/DaTangAccountingHelpPlug.Tests.csproj",
-      "coverageGroup": "datang"
     }
   ],
   "plugins": [
@@ -92,8 +99,8 @@
     {
       "id": "datang",
       "scope": "host",
-      "repository": "main",
-      "project": "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj",
+      "repository": "datang",
+      "project": "src/DaTangWorkPlugin.Plugin/DaTangWorkPlugin.Plugin.csproj",
       "directoryName": "DaTang",
       "assemblyName": "DaTangAccountingHelpPlug"
     },

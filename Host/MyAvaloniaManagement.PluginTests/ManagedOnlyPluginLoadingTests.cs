@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.Loader;
-using DaTangAccountingHelpPlug.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -162,7 +161,7 @@ public sealed class ManagedOnlyPluginLoadingTests
     }
 
     [Fact]
-    public void 两个内置业务插件全部进入最终V3入口()
+    public void 内置业务插件进入最终V3入口()
     {
         var myPlugTestAssembly = typeof(MyPlugTest.Plugin.MyPlugTestPluginModule).Assembly;
         var myPlugTestModule = Assert.Single(myPlugTestAssembly.ExportedTypes, type =>
@@ -171,15 +170,6 @@ public sealed class ManagedOnlyPluginLoadingTests
             myPlugTestModule, out var validatedMyPlugTest, out var myPlugTestError, out _));
         Assert.Same(myPlugTestModule, validatedMyPlugTest);
         Assert.Null(myPlugTestError);
-
-        var daTangAssembly = typeof(DaTangAccountingHelpPluginModule).Assembly;
-        var daTangModule = Assert.Single(daTangAssembly.ExportedTypes, type =>
-            typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract);
-        Assert.True(PluginModulePreflight.TryValidate(
-            daTangModule, out var validatedDaTang, out var daTangError, out _));
-        Assert.Same(daTangModule, validatedDaTang);
-        Assert.Null(daTangError);
-
 
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),

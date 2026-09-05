@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Xml.Linq;
-using DaTangAccountingHelpPlug.Plugin;
 using MyPlugTest.Plugin;
 
 namespace MyAvaloniaManagement.PluginTests;
@@ -11,11 +10,10 @@ public sealed class PluginHostBoundaryTests
     private static readonly string RepositoryRoot = FindRepositoryRoot();
 
     [Fact]
-    public void HostApiBoundary_两个生产插件程序集不引用Host()
+    public void HostApiBoundary_内置生产插件程序集不引用Host()
     {
         var assemblies = new[]
         {
-            typeof(DaTangAccountingHelpPluginModule).Assembly,
             typeof(MyPlugTestPluginModule).Assembly,
         };
 

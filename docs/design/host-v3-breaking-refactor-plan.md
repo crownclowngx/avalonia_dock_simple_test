@@ -22,7 +22,7 @@
 > [V3 G7 Host Catalog 与 Plugin Registry](../plan-history/host-v3/g7-host-catalog-and-plugin-registry.md)、
 > [V3 G8 全屏租约与 Host V3 骨架](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)、
 > [V3 G9 MyPlugTest 验收](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)、
-> [V3 G10 DaTangAccountingHelpPlug 验收](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
+> [V3 G10 DaTangAccountingHelpPlug 验收](../../../avalonia_management_plug/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
 > [V3 G11 MySmallTools 验收](../../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)、
 > [V3 G12 BiliDownloader 验收](../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)、
 > [V3 G13 删除 V2 生产面](../plan-history/host-v3/g13-remove-v2-production-surface.md)、
@@ -582,7 +582,7 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
 - **验证**：插件业务测试、保存竞争、恢复、窗口选择取消、关闭令牌、两个 Document UI、确定性 ZIP 和加载。
 - **实施记录**：真实 Workspace/Dock/DocumentSaveService 链、Revision 保存竞争、文件选择取消与迟到结果隔离、
   554/554 测试、Host 84.39% / 70.58%、插件 70.09% / 49.31% 覆盖率，以及两次 9 文件确定性 ZIP
-  见 [G10 专项记录](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)。
+  见 [G10 专项记录](../../../avalonia_management_plug/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)。
 - **回滚**：整体回到 G9 基线；不得制作 V2/V3 双协议插件包。
 
 ### G11：MySmallTools V3 验收（已完成）

@@ -16,7 +16,7 @@
 > [V2 G7 Document V2](../plan-history/host-v2/g7-document-v2.md)与
 > [V2 G8 布局与生命周期 V2](../plan-history/host-v2/g8-layout-and-lifecycle-v2.md)与
 > [V2 G9 MyPlugTest 迁移](../plan-history/host-v2/g9-my-plug-test-v2.md) 和
-> [V2 G10 DaTang 迁移](../plan-history/host-v2/g10-datang-accounting-help-v2.md)和
+> [V2 G10 DaTang 迁移](../../../avalonia_management_plug/myavalonia-datang-work/docs/plan-history/host-v2/g10-datang-accounting-help-v2.md)和
 > [V2 G11 MySmallTools 迁移](../../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md)和
 > [V2 G12 BiliDownloader 迁移](../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md)和
 > [V2 G13 删除 V1 生产面](../plan-history/host-v2/g13-remove-v1-production-surface.md)与
@@ -557,7 +557,7 @@ Dock 基类和旧保存契约。UI SDK 新增受控 `IPluginWindowInteraction`�
 Avalonia 实现注入每个插件私有 Provider；DaTang 再按发票、银行文件和剪贴板用途隔离依赖。
 银行 Document 使用严格 schema 1 Codec 与“完整验证后一次提交”恢复语义。SOLID 取舍、
 贡献矩阵、窗口端口、所有权、失败矩阵和回滚边界见
-[G10 专项记录](../plan-history/host-v2/g10-datang-accounting-help-v2.md)。
+[G10 专项记录](../../../avalonia_management_plug/myavalonia-datang-work/docs/plan-history/host-v2/g10-datang-accounting-help-v2.md)。
 
 G10 非发布专项门禁实际 **151/151**：Plugin 60、Headless UI 15、Plugin SDK 13、
 DaTang 业务 62、最终 ZIP 真实加载 1。两次隔离构建的 9 文件 ZIP 完全一致，解压后

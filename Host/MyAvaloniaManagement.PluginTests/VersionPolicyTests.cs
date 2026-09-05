@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Xml.Linq;
-using DaTangAccountingHelpPlug.Plugin;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
@@ -266,12 +265,6 @@ public sealed class VersionPolicyTests
 
     private static IReadOnlyList<PluginRelease> GetPluginReleases() =>
     [
-        new(
-            "DaTangAccountingHelpPlug",
-            typeof(DaTangAccountingHelpPluginModule).Assembly,
-            Path.Combine("Plugins", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug.csproj"),
-            "myavalonia.plugin.datang-accounting-help",
-            "DaTang"),
         new(
             "MyPlugTest",
             typeof(MyPlugTestPluginModule).Assembly,
