@@ -173,7 +173,6 @@ public sealed class PluginSdkDependencyBoundaryTests
 
     [Theory]
     [InlineData("Plugins", "MyPlugTest", "MyPlugTest", "MyPlugTest.csproj")]
-    [InlineData("Plugins", "MySmallTools", "MySmallTools", "MySmallTools.csproj")]
     [InlineData("Plugins", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug", "DaTangAccountingHelpPlug.csproj")]
     public void 使用Toolkit的仓库插件显式拥有编译依赖(params string[] projectPath)
     {

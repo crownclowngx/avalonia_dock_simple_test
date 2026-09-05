@@ -546,7 +546,7 @@ Loader/Provider 进入同一 `WorkspaceSession`，Host 没有增加任何插件�
 **84.39% / 70.58%**；插件覆盖率分别为 **70.09% / 49.31%**、**72.59% / 48.12%**、
 **83.80% / 67.54%**。所有测试 ZIP 均经两次隔离构建和逐文件比较，仅作为非发布证据。详细职责、
 兼容边界与回滚单位见 [G10](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
-[G11](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) 和
+[G11](../../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) 和
 [G12](../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) 专项记录。
 
 ### 6.15 2026-08-23 Host V4 G7 集成回归

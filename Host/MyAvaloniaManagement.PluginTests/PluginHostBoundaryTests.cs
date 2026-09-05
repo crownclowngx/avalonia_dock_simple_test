@@ -2,7 +2,6 @@ using System.Reflection;
 using System.Xml.Linq;
 using DaTangAccountingHelpPlug.Plugin;
 using MyPlugTest.Plugin;
-using MySmallTools.Plugin;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -12,13 +11,12 @@ public sealed class PluginHostBoundaryTests
     private static readonly string RepositoryRoot = FindRepositoryRoot();
 
     [Fact]
-    public void HostApiBoundary_三个生产插件程序集不引用Host()
+    public void HostApiBoundary_两个生产插件程序集不引用Host()
     {
         var assemblies = new[]
         {
             typeof(DaTangAccountingHelpPluginModule).Assembly,
             typeof(MyPlugTestPluginModule).Assembly,
-            typeof(MySmallToolsPluginModule).Assembly,
         };
 
         Assert.All(assemblies, assembly => Assert.DoesNotContain(
@@ -43,12 +41,7 @@ public sealed class PluginHostBoundaryTests
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal(
-            new[]
-            {
-                "Plugins/MySmallTools/MySmallTools.Playback.IntegrationHarness/MySmallTools.Playback.IntegrationHarness.csproj",
-            },
-            consumers);
+        Assert.Empty(consumers);
     }
 
     private static bool ReferencesHostProject(string projectPath)

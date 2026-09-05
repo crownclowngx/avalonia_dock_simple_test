@@ -39,9 +39,6 @@
     <ProjectReference Include="..\..\Plugins\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj">
       <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
     </ProjectReference>
-    <ProjectReference Include="..\..\Plugins\MySmallTools\MySmallTools\MySmallTools.csproj">
-      <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
-    </ProjectReference>
     <!-- 隔离夹具只参与构建，不进入测试进程默认上下文。 -->
     <ProjectReference Include="TestAssets\PluginIsolation\PluginV1\PluginV1.csproj"
                       ReferenceOutputAssembly="false" />

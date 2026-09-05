@@ -1,5 +1,7 @@
 # 项目文档导航
 
+> 2026-09-05：原 MySmallTools 已迁为 [VideoSecurityPlayer 独立插件](../../avalonia_management_plug/myavalonia-video-security-player/README.md)。主项目不再内置其源码，跨仓库 Gate 从外部构建和验收；稳定 ID 与用户数据保持兼容。
+
 > 2026-09-05：BiliDownloader 已迁入[独立插件仓库](../../avalonia_management_plug/myavalonia-bili-downloader/README.md)。主项目不再内置、构建或部署它；本文中的综合历史记录仍保留当时事实。
 
 本目录保存解决方案级文档。文档按用途分为“快速开始”“当前事实”“设计方法论与探索”以及“历史验收记录”，阅读时应先确认文档类型，避免把历史基线当作当前实现。
@@ -44,7 +46,7 @@ Managed Plugin 快速开始入口：
 | [Workflow Action G3 外部 Studio](./plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md) | 外部 revision、定义/Runner、Standalone Fake、候选 Host 与回滚 | 已完成；完整本地非发布门禁通过 |
 | [Workflow Action G3.1 协议一致性](./plan-history/workflow-action/g3.1-workflow-protocol-consistency.md) | Workflow SDK、双 revision、共享 Schema/路径与静态引用安全 | 已完成并发布；纯公开源复验通过 |
 | [G3.1 Templates 1.2.0 发布补充](./plan-history/workflow-action/g3.1-template-1.2-publication.md) | SDK 3.2 模板传播、lock file、候选/公开源探针与不可变制品哈希 | 已发布；公开安装、构建、测试与打包通过 |
-| [Workflow Action G4 MySmallTools 加密](./plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md) | 非破坏性 Action 合同、SOLID、真实双 ZIP、文件安全与非发布证据 | 已完成；本地开发门禁 |
+| [Workflow Action G4 MySmallTools 加密](../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md) | 非破坏性 Action 合同、SOLID、真实双 ZIP、文件安全与非发布证据 | 已完成；本地开发门禁 |
 | [Workflow Action G5 双角色治理](./plan-history/workflow-action/g5-dual-role-governance.md) | Provider + Consumer、自调用过滤与 Handler 嵌套拒绝 | 已实施；本地开发门禁 |
 | [Workbench Command 引入任务书](./design/workbench-command-introduction-plan.md) | CommandId、活动 Document Target、Context v1、菜单/快捷键贡献、外部插件与 Palette 的 G0–G10 计划 | 已完成；G0–G10 本地开发封板 |
 | [Workbench Command G10 跨仓库本地封板](./plan-history/workbench-command/g10-cross-repository-integration-sealing.md) | 三仓指纹、单轮完整隔离、SDK/六插件、25 条外部命令组合回归与非发布边界 | 已完成；`publishable=false` |
@@ -80,7 +82,7 @@ Managed Plugin 快速开始入口：
 | [V3 G8 全屏租约与 Host V3 骨架](./plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md) | 租约状态机、窗口/Document 时序、原生表面迁移、SOLID 和资源门禁 | 已完成；672/672，Host 84.15% / 70.30%，20 轮资源归零，非发布 |
 | [V3 G9 MyPlugTest 验收](./plan-history/host-v3/g9-my-plug-test-v3-acceptance.md) | 最终 Workspace 创建链、Revision 保存竞争、消息释放、UI、确定性 ZIP 与 SOLID | 已完成；501/501，Host 84.39% / 70.58%，两次 11 文件 ZIP，非发布 |
 | [V3 G10 DaTangAccountingHelpPlug 验收](./plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md) | 双 Document、Revision 保存竞争、文件交互、真实 Host 组合与 SOLID | 已完成；554/554，Host 84.39% / 70.58%，插件 70.09% / 49.31%，非发布 |
-| [V3 G11 MySmallTools 验收](./plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) | 四 Document、全屏租约、20 轮真实媒体资源归零、真实 Host 组合与 SOLID | 已完成；676/676，Host 84.39% / 70.58%，插件 72.59% / 48.12%，非发布 |
+| [V3 G11 MySmallTools 验收](../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md) | 四 Document、全屏租约、20 轮真实媒体资源归零、真实 Host 组合与 SOLID | 已完成；676/676，Host 84.39% / 70.58%，插件 72.59% / 48.12%，非发布 |
 | [V3 G12 BiliDownloader 验收](../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md) | 保存竞争、私有消息、Lifecycle/readiness、真实 Host 组合与 SOLID | 已完成；1219/1219，Host 84.39% / 70.58%，插件 83.80% / 67.54%，非发布 |
 | [V3 G13 删除 V2 生产面](./plan-history/host-v3/g13-remove-v2-production-surface.md) | 活动零残留、API/包负例、四插件矩阵、SOLID 与回滚边界 | 已完成；1483/1483，Host 84.39% / 70.58%，非发布 |
 | [V3 G14 封板](./plan-history/host-v3/g14-v3-sealing.md) | API Shipped、两轮隔离门禁、四插件专项、Windows Smoke、SOLID 和回滚 | 已完成；Core/UI 127/45，本地可发布且未外部发布 |
@@ -120,7 +122,7 @@ Managed Plugin 快速开始入口：
 - [Workflow Action G3 外部 Studio 记录](./plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md)：签署外部仓库提交、Fake 闭环、测试覆盖率、确定性 ZIP 和隔离候选 Host 证据；不表示 G4/G5 真实 Action 已实现。
 - [Workflow Action G3.1 协议一致性记录](./plan-history/workflow-action/g3.1-workflow-protocol-consistency.md)：记录共享 Workflow SDK、Host 双 revision、默认 ALC、Studio v2 与静态引用安全；不表示 Host 产品已发布。
 - [G3.1 Templates 1.2.0 发布补充记录](./plan-history/workflow-action/g3.1-template-1.2-publication.md)：记录后续范围扩展、SDK 3.2 精确锁定、模板门禁、冻结哈希、上传警告与纯公开源复验。
-- [Workflow Action G4 MySmallTools 记录](./plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md)：记录非破坏性加密合同、真实文件、Studio 双 ZIP、SOLID 与本地非发布门禁。
+- [Workflow Action G4 MySmallTools 记录](../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md)：记录非破坏性加密合同、真实文件、Studio 双 ZIP、SOLID 与本地非发布门禁。
 
 ## V3/V2 已封板基线与后续候选计划
 
@@ -156,7 +158,7 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
   记录首个真实业务插件的声明式贡献、Document/Tool 所有权、严格内容 Codec、事件释放和确定性测试 ZIP。
 - [Managed Plugin V2 G10 DaTang 迁移](./plan-history/host-v2/g10-datang-accounting-help-v2.md)：
   记录双 Document 贡献、窄窗口 Host Port、严格银行对账 schema、关闭所有权和非发布门禁。
-- [Managed Plugin V2 G11 MySmallTools 迁移](./plan-history/host-v2/g11-my-small-tools-v2.md)：
+- [Managed Plugin V2 G11 MySmallTools 迁移](../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md)：
   记录四 Document、关闭令牌、全屏端口、SECVID03/LibVLC 资源所有权、真实媒体和确定性测试 ZIP 证据。
 - [Managed Plugin V2 G12 BiliDownloader 迁移](../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md)：
   记录 Document schema 3、readiness、后台关闭、SOLID 责任划分、覆盖率和确定性测试 ZIP 证据。
@@ -207,7 +209,7 @@ V2 已完成 G0–G14；Host 正式契约、四个真实 V2 业务插件、唯�
   迁移 4 个 Document 与 1 个 Tool，删除 Strategy/Dock/Legacy 依赖，并以真实 V2 ZIP 验证加载与组合。
 - [G10：迁移 DaTangAccountingHelpPlug](./plan-history/host-v2/g10-datang-accounting-help-v2.md)：
   迁移发票导入和银行余额调节，新增受控窗口端口，并验证严格内容与多 Scope 隔离。
-- [G11：迁移 MySmallTools](./plan-history/host-v2/g11-my-small-tools-v2.md)：
+- [G11：迁移 MySmallTools](../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md)：
   迁移四个 Document、全屏端口与原生资源所有权，并通过真实媒体 Harness 验证关闭释放。
 - [G12：迁移 BiliDownloader](../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md)：
   迁移最后一个业务插件的 Document、Tool、Lifecycle 与 JSON 边界，并通过非发布真实 ZIP 加载验证。

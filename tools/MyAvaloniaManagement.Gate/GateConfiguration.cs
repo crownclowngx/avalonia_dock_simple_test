@@ -58,6 +58,7 @@ internal sealed record GateConfiguration
 
 internal sealed record RepositoryConfiguration
 {
+    public string? CoverageScript { get; init; }
     public required string Id { get; init; }
     public required string Scope { get; init; }
     public required string DefaultPath { get; init; }
@@ -105,6 +106,7 @@ internal sealed record CoverageThreshold
 
 internal sealed record HarnessConfiguration
 {
+    public string Repository { get; init; } = "main";
     public required string Project { get; init; }
     public required string ReportRelativePath { get; init; }
 }

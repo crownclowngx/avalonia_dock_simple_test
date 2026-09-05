@@ -268,7 +268,7 @@ internal sealed class GateRunner
             if (options.Scope == GateScope.All || options.Scope == GateScope.Workflow)
             {
                 graph.Add("resource-harness", () =>
-                    RunHarnessAsync(options, roots["main"], environment, evidenceRoot, cancellationToken));
+                    RunHarnessAsync(options, roots[configuration.Harness.Repository], roots["main"], environment, evidenceRoot, cancellationToken));
             }
             if (options.Profile == GateProfile.Seal)
             {
@@ -421,7 +421,20 @@ internal sealed class GateRunner
             AssertTests(Path.Combine(resultRoot, $"{repository.Id}.trx"), repository.Id);
             if (options.Profile == GateProfile.Seal)
             {
-                var coveragePath = Directory.GetFiles(resultRoot, "coverage.cobertura.xml", SearchOption.AllDirectories).Single();
+                string coveragePath;
+                if (!string.IsNullOrWhiteSpace(repository.CoverageScript))
+                {
+                    var aggregateRoot = Path.Combine(resultRoot, "aggregate");
+                    await processes.RunCheckedAsync(
+                        "pwsh", ["-NoProfile", "-File", repository.CoverageScript,
+                            "-HostRepositoryRoot", roots["main"], "-OutputRoot", aggregateRoot],
+                        roots[repository.Id], environment, Path.Combine(resultRoot, "aggregate.log"), cancellationToken);
+                    coveragePath = Path.Combine(aggregateRoot, "merged", "Cobertura.xml");
+                }
+                else
+                {
+                    coveragePath = Directory.GetFiles(resultRoot, "coverage.cobertura.xml", SearchOption.AllDirectories).Single();
+                }
                 var coverage = TestEvidenceReader.ReadCoverage(coveragePath);
                 if (coverage.Line < repository.MinimumLineCoverage || coverage.Branch < repository.MinimumBranchCoverage)
                 {
@@ -517,23 +530,23 @@ internal sealed class GateRunner
         }
 
         if (packageEvidence.TryGetValue("workflow-studio", out workflow) &&
-            packageEvidence.TryGetValue("my-small-tools", out var smallTools))
+            packageEvidence.TryGetValue("video-security-player", out var videoPlayer))
         {
             var workflowRoot = Path.Combine(evidenceRoot, "integration", "workflow");
             PackageBuilder.Extract(workflow, workflowRoot);
-            PackageBuilder.Extract(smallTools, workflowRoot);
+            PackageBuilder.Extract(videoPlayer, workflowRoot);
             var workflowEnvironment = new Dictionary<string, string?>(environment, StringComparer.Ordinal)
             {
                 ["MYAVALONIA_WORKFLOW_G4_PLUGIN_ROOT"] = Path.Combine(workflowRoot, "Controls"),
-                ["MYAVALONIA_WORKFLOW_G4_MEDIA_PATH"] = Path.Combine(hostRoot,
-                    "Plugins", "MySmallTools", "MySmallTools.Tests", "TestAssets", "RealMedia", "synthetic-av-short.mp4"),
+                ["MYAVALONIA_WORKFLOW_G4_MEDIA_PATH"] = Path.Combine(roots["video-security-player"],
+                    "tests", "VideoSecurityPlayer.Tests", "TestAssets", "RealMedia", "synthetic-av-short.mp4"),
             };
-            await RunFiltered("workflow-action", "Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj",
-                "FullyQualifiedName~WorkflowActionG4IntegrationTests", workflowEnvironment);
+            await RunFiltered("workflow-action", "tests/VideoSecurityPlayer.HostTests/VideoSecurityPlayer.HostTests.csproj",
+                "FullyQualifiedName~WorkflowActionG4IntegrationTests", workflowEnvironment, "video-security-player");
         }
 
         async Task RunFiltered(string id, string project, string filter,
-            IReadOnlyDictionary<string, string?> processEnvironment)
+            IReadOnlyDictionary<string, string?> processEnvironment, string repository = "main")
         {
             var resultRoot = Path.Combine(evidenceRoot, "tests", id);
             var arguments = new List<string>
@@ -542,9 +555,16 @@ internal sealed class GateRunner
                 "--filter", filter, "--results-directory", resultRoot,
                 "--logger", $"trx;LogFileName={id}.trx",
             };
+            if (repository != "main")
+            {
+                arguments.Remove("--no-build");
+                arguments.Remove("--no-restore");
+                arguments.Add($"-p:HostRepositoryRoot={hostRoot}");
+                arguments.Add("-p:SkipPluginDeploy=true");
+            }
             await processes.RunCheckedAsync(
                 "dotnet", arguments,
-                hostRoot, processEnvironment, Path.Combine(resultRoot, "test.log"), cancellationToken);
+                roots[repository], processEnvironment, Path.Combine(resultRoot, "test.log"), cancellationToken);
             AssertTests(Path.Combine(resultRoot, $"{id}.trx"), id, requireSingle: true);
         }
     }
@@ -552,6 +572,7 @@ internal sealed class GateRunner
     private async Task RunHarnessAsync(
         GateOptions options,
         string root,
+        string hostRoot,
         IReadOnlyDictionary<string, string?> environment,
         string evidenceRoot,
         CancellationToken cancellationToken)
@@ -560,8 +581,8 @@ internal sealed class GateRunner
         var cycles = options.Profile == GateProfile.Seal ? 20 : 1;
         var arguments = new List<string>
         {
-            "run", "--project", configuration.Harness.Project, "-c", "Release", "--no-build",
-            "--no-restore",
+            "run", "--project", configuration.Harness.Project, "-c", "Release",
+            $"-p:HostRepositoryRoot={hostRoot}", "-p:SkipPluginDeploy=true",
         };
         arguments.AddRange(["--", "--suite", "g3", "--cycles", cycles.ToString(), "--report", report]);
         await processes.RunCheckedAsync(
@@ -571,7 +592,7 @@ internal sealed class GateRunner
         if (!result.RootElement.GetProperty("Success").GetBoolean() ||
             result.RootElement.GetProperty("Cycles").GetInt32() != cycles)
         {
-            throw new GateFailureException("MySmallTools 资源 Harness 报告未通过。");
+            throw new GateFailureException("VideoSecurityPlayer 资源 Harness 报告未通过。");
         }
     }
 

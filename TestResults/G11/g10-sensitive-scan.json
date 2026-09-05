@@ -1,7 +1,0 @@
-{
-    "schemaVersion":  1,
-    "kind":  "g10-sensitive-scan",
-    "scannedFileCount":  12,
-    "findingCount":  0,
-    "passed":  true
-}

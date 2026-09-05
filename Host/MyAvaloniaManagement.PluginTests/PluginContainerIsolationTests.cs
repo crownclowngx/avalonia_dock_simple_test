@@ -9,7 +9,6 @@ using MyAvaloniaManagement.PluginSdk.UI;
 using Avalonia.Controls;
 using MyPlugTest.Plugin;
 using MyPlugTest.Messaging;
-using MySmallTools.Plugin;
 
 namespace MyAvaloniaManagement.PluginTests;
 

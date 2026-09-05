@@ -24,7 +24,7 @@
 - [`Workflow Action G2 SDK/Build/模板传播记录`](../plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)
 - [`Workflow Action G3 外部 Studio 记录`](../plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md)
 - [`Workflow Action G3.1 协议一致性记录`](../plan-history/workflow-action/g3.1-workflow-protocol-consistency.md)
-- [`Workflow Action G4 MySmallTools 非破坏性加密记录`](../plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md)
+- [`Workflow Action G4 MySmallTools 非破坏性加密记录`](../../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md)
 
 ---
 

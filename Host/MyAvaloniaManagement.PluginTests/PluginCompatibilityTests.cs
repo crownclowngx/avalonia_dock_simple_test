@@ -7,7 +7,6 @@ using MyAvaloniaManagement.PluginSdk.UI;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagement.Business.Workspace;
 using MyPlugTest.Plugin;
-using MySmallTools.Plugin;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -48,7 +47,7 @@ public sealed class PluginCompatibilityTests
         Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(LifecycleProbeModule)));
         Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(DaTangAccountingHelpPluginModule)));
         Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(MyPlugTestPluginModule)));
-        Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(MySmallToolsPluginModule)));
+        Assert.True(typeof(IPluginModule).IsAssignableFrom(typeof(IndependentProbeModule)));
     }
 
     [Fact]
@@ -75,7 +74,7 @@ public sealed class PluginCompatibilityTests
                 "myavalonia.plugin.datang-accounting-help",
                 "myavalonia.plugin.lifecycle-probe",
                 "myavalonia.plugin.my-plug-test",
-                "myavalonia.plugin.my-small-tools"
+                "myavalonia.plugin.probe"
             ],
             viewModel.Items.Select(item => item.PluginId));
         Assert.Equal(
@@ -158,6 +157,11 @@ public sealed class PluginCompatibilityTests
                     plugin.Manifest.PluginId.Value))));
     }
 
+    private sealed class IndependentProbeModule : IPluginModule
+    {
+        public void Configure(IPluginRegistration registration) { }
+    }
+
     private sealed class LifecycleProbeModule : IPluginModule
     {
         public void Configure(IPluginRegistration registration) => registration.UseLifecycle<ReadyProbeLifecycle>();
@@ -177,7 +181,7 @@ public sealed class PluginCompatibilityTests
         Snapshot<LifecycleProbeModule>("myavalonia.plugin.lifecycle-probe"),
         Snapshot<DaTangAccountingHelpPluginModule>("myavalonia.plugin.datang-accounting-help"),
         Snapshot<MyPlugTestPluginModule>("myavalonia.plugin.my-plug-test"),
-        Snapshot<MySmallToolsPluginModule>("myavalonia.plugin.my-small-tools"),
+        Snapshot<IndependentProbeModule>("myavalonia.plugin.probe"),
     ];
 
     private static PluginRegistryPlugin Snapshot<TModule>(string pluginId)

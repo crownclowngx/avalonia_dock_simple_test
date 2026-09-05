@@ -9,10 +9,12 @@
       "solution": "WorkflowStudio.slnx",
       "testProject": "tests/WorkflowStudio.Tests/WorkflowStudio.Tests.csproj",
       "standaloneProject": "src/WorkflowStudio.Standalone/WorkflowStudio.Standalone.csproj",
-      "selfTestArguments": [ "--g3-self-test" ],
+      "selfTestArguments": [
+        "--g3-self-test"
+      ],
       "selfTestSuccessText": "WORKFLOW_STUDIO_G3_SELF_TEST_OK invocations=4 disposedRuns=1",
-      "minimumLineCoverage": 85.0,
-      "minimumBranchCoverage": 75.0
+      "minimumLineCoverage": 85,
+      "minimumBranchCoverage": 75
     },
     {
       "id": "classic-game",
@@ -25,32 +27,129 @@
       "selfTestSuccessText": "",
       "minimumLineCoverage": 70.87,
       "minimumBranchCoverage": 57.82
+    },
+    {
+      "id": "video-security-player",
+      "scope": "workflow",
+      "defaultPath": "../avalonia_management_plug/myavalonia-video-security-player",
+      "solution": "VideoSecurityPlayer.slnx",
+      "testProject": "tests/VideoSecurityPlayer.Tests/VideoSecurityPlayer.Tests.csproj",
+      "standaloneProject": "src/VideoSecurityPlayer.Standalone/VideoSecurityPlayer.Standalone.csproj",
+      "selfTestArguments": [],
+      "selfTestSuccessText": "",
+      "minimumLineCoverage": 72.59,
+      "minimumBranchCoverage": 48.12,
+      "coverageScript": "scripts/Test-Coverage.ps1"
     }
   ],
   "testSuites": [
-    { "id": "sdk", "scope": "host", "project": "Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.PluginSdk.Tests.csproj", "coverageGroup": "sdk" },
-    { "id": "host-unit", "scope": "host", "project": "Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj", "coverageGroup": "host" },
-    { "id": "host-plugin", "scope": "host", "project": "Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj", "coverageGroup": "host" },
-    { "id": "host-ui", "scope": "host", "project": "Host/MyAvaloniaManagement.UiTests/MyAvaloniaManagement.UiTests.csproj", "coverageGroup": "host" },
-    { "id": "my-plug-test", "scope": "host", "project": "Plugins/MyPlugTest/MyPlugTest.Tests/MyPlugTest.Tests.csproj", "coverageGroup": "my-plug-test" },
-    { "id": "datang", "scope": "host", "project": "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.Tests/DaTangAccountingHelpPlug.Tests.csproj", "coverageGroup": "datang" },
-    { "id": "my-small-tools", "scope": "workflow", "project": "Plugins/MySmallTools/MySmallTools.Tests/MySmallTools.Tests.csproj", "coverageGroup": "my-small-tools" }
+    {
+      "id": "sdk",
+      "scope": "host",
+      "project": "Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.PluginSdk.Tests.csproj",
+      "coverageGroup": "sdk"
+    },
+    {
+      "id": "host-unit",
+      "scope": "host",
+      "project": "Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj",
+      "coverageGroup": "host"
+    },
+    {
+      "id": "host-plugin",
+      "scope": "host",
+      "project": "Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj",
+      "coverageGroup": "host"
+    },
+    {
+      "id": "host-ui",
+      "scope": "host",
+      "project": "Host/MyAvaloniaManagement.UiTests/MyAvaloniaManagement.UiTests.csproj",
+      "coverageGroup": "host"
+    },
+    {
+      "id": "my-plug-test",
+      "scope": "host",
+      "project": "Plugins/MyPlugTest/MyPlugTest.Tests/MyPlugTest.Tests.csproj",
+      "coverageGroup": "my-plug-test"
+    },
+    {
+      "id": "datang",
+      "scope": "host",
+      "project": "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.Tests/DaTangAccountingHelpPlug.Tests.csproj",
+      "coverageGroup": "datang"
+    }
   ],
   "plugins": [
-    { "id": "my-plug-test", "scope": "host", "repository": "main", "project": "Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj", "directoryName": "MyPlugTest", "assemblyName": "MyPlugTest" },
-    { "id": "datang", "scope": "host", "repository": "main", "project": "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj", "directoryName": "DaTang", "assemblyName": "DaTangAccountingHelpPlug" },
-    { "id": "my-small-tools", "scope": "workflow", "repository": "main", "project": "Plugins/MySmallTools/MySmallTools/MySmallTools.csproj", "directoryName": "SmallTools", "assemblyName": "MySmallTools" },
-    { "id": "workflow-studio", "scope": "workflow", "repository": "workflow-studio", "project": "src/WorkflowStudio.Plugin/WorkflowStudio.Plugin.csproj", "directoryName": "WorkflowStudio", "assemblyName": "WorkflowStudio.Plugin" },
-    { "id": "classic-game", "scope": "workbench", "repository": "classic-game", "project": "src/ClassicGamePlugin.Plugin/ClassicGamePlugin.Plugin.csproj", "directoryName": "ClassicGamePlugin", "assemblyName": "ClassicGamePlugin.Plugin" }
+    {
+      "id": "my-plug-test",
+      "scope": "host",
+      "repository": "main",
+      "project": "Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj",
+      "directoryName": "MyPlugTest",
+      "assemblyName": "MyPlugTest"
+    },
+    {
+      "id": "datang",
+      "scope": "host",
+      "repository": "main",
+      "project": "Plugins/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug/DaTangAccountingHelpPlug.csproj",
+      "directoryName": "DaTang",
+      "assemblyName": "DaTangAccountingHelpPlug"
+    },
+    {
+      "id": "video-security-player",
+      "scope": "workflow",
+      "repository": "video-security-player",
+      "project": "src/VideoSecurityPlayer.Plugin/VideoSecurityPlayer.Plugin.csproj",
+      "directoryName": "VideoSecurityPlayer",
+      "assemblyName": "VideoSecurityPlayer.Plugin"
+    },
+    {
+      "id": "workflow-studio",
+      "scope": "workflow",
+      "repository": "workflow-studio",
+      "project": "src/WorkflowStudio.Plugin/WorkflowStudio.Plugin.csproj",
+      "directoryName": "WorkflowStudio",
+      "assemblyName": "WorkflowStudio.Plugin"
+    },
+    {
+      "id": "classic-game",
+      "scope": "workbench",
+      "repository": "classic-game",
+      "project": "src/ClassicGamePlugin.Plugin/ClassicGamePlugin.Plugin.csproj",
+      "directoryName": "ClassicGamePlugin",
+      "assemblyName": "ClassicGamePlugin.Plugin"
+    }
   ],
   "architectureRules": [
-    { "id": "removed-host-surfaces", "scope": "host", "paths": [ "Host/MyAvaloniaManagement", "Directory.Packages.props" ], "pattern": "IDropTarget|DragDrop\\.AllowDrop|Microsoft\\.Extensions\\.Hosting|DockNameConstant|AssemblyLoadConstant|class\\s+FileHelper" },
-    { "id": "workflow-decoupling", "scope": "workflow", "repository": "workflow-studio", "paths": [ "src" ], "pattern": "MySmallTools|my-small-tools|encrypt-video" }
+    {
+      "id": "removed-host-surfaces",
+      "scope": "host",
+      "paths": [
+        "Host/MyAvaloniaManagement",
+        "Directory.Packages.props"
+      ],
+      "pattern": "IDropTarget|DragDrop\\.AllowDrop|Microsoft\\.Extensions\\.Hosting|DockNameConstant|AssemblyLoadConstant|class\\s+FileHelper"
+    },
+    {
+      "id": "workflow-decoupling",
+      "scope": "workflow",
+      "repository": "workflow-studio",
+      "paths": [
+        "src"
+      ],
+      "pattern": "VideoSecurityPlayer|MySmallTools|my-small-tools|encrypt-video"
+    }
   ],
-  "hostCoverage": { "minimumLine": 84.39, "minimumBranch": 70.58 },
+  "hostCoverage": {
+    "minimumLine": 84.39,
+    "minimumBranch": 70.58
+  },
   "harness": {
-    "project": "Plugins/MySmallTools/MySmallTools.Playback.IntegrationHarness/MySmallTools.Playback.IntegrationHarness.csproj",
-    "reportRelativePath": "artifacts/gate-harness.json"
+    "project": "tools/VideoSecurityPlayer.Playback.IntegrationHarness/VideoSecurityPlayer.Playback.IntegrationHarness.csproj",
+    "reportRelativePath": "artifacts/gate-harness.json",
+    "repository": "video-security-player"
   },
   "windowsSmokeProject": "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj"
 }

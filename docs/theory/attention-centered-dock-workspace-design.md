@@ -263,7 +263,7 @@ flowchart TB
 - 发票信息导入；
 - 测试欢迎页和消息订阅页。
 
-这些内容没有被强制装进一个总控制台。尤其是 MySmallTools 将播放、媒体库、加密和解密声明为不同文档类型，并进一步在文档内部按 Playback、Library、Encryption、Decryption 和 SingleVideo 进行组件化。相关职责拆分可参见[安全视频子系统架构设计](../../Plugins/MySmallTools/MySmallTools/docs/secret-video-player/design/architecture-design.md)与[G7.1 UI 职责拆分](../../Plugins/MySmallTools/MySmallTools/docs/secret-video-player/plan-history/G7.1-UI-RESPONSIBILITY-REFACTOR.md)。
+这些内容没有被强制装进一个总控制台。尤其是 MySmallTools 将播放、媒体库、加密和解密声明为不同文档类型，并进一步在文档内部按 Playback、Library、Encryption、Decryption 和 SingleVideo 进行组件化。相关职责拆分可参见[安全视频子系统架构设计](../../../avalonia_management_plug/myavalonia-video-security-player/docs/secret-video-player/design/architecture-design.md)与[G7.1 UI 职责拆分](../../../avalonia_management_plug/myavalonia-video-security-player/docs/secret-video-player/plan-history/G7.1-UI-RESPONSIBILITY-REFACTOR.md)。
 
 `Document` 多实例的价值主要体现在：
 

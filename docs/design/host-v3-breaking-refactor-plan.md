@@ -23,7 +23,7 @@
 > [V3 G8 全屏租约与 Host V3 骨架](../plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)、
 > [V3 G9 MyPlugTest 验收](../plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)、
 > [V3 G10 DaTangAccountingHelpPlug 验收](../plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)、
-> [V3 G11 MySmallTools 验收](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)、
+> [V3 G11 MySmallTools 验收](../../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)、
 > [V3 G12 BiliDownloader 验收](../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)、
 > [V3 G13 删除 V2 生产面](../plan-history/host-v3/g13-remove-v2-production-surface.md)、
 > [V3 G14 封板](../plan-history/host-v3/g14-v3-sealing.md)、
@@ -593,7 +593,7 @@ Host 同时加载 V2/V3 SDK 的生产双栈。G9–G12 必须删除对应插件�
 - **验证**：完整插件测试、真实媒体 Harness、重复全屏、关闭取消、原生句柄/流/播放器归零、确定性 ZIP。
 - **实施记录**：四个非持久化 Document 的最终 Workspace 链、全屏租约排他/幂等释放、20 轮真实媒体资源与
   Document/View 弱引用归零、676/676 测试、Host 84.39% / 70.58%、插件 72.59% / 48.12% 覆盖率，
-  以及两次 431 文件确定性 ZIP 见 [G11 专项记录](../plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)。
+  以及两次 431 文件确定性 ZIP 见 [G11 专项记录](../../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)。
 - **回滚**：整体回到 G10 基线；不得恢复 UI SDK 旧全屏接口。
 
 ### G12：BiliDownloader V3 验收（已完成）

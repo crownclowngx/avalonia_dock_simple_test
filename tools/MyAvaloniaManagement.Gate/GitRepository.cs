@@ -21,11 +21,20 @@ internal sealed class GitRepository(ProcessRunner processes)
     {
         root = Path.GetFullPath(root);
         RequireDirectory(root, $"仓库 {id}");
-        var revision = await GitTextAsync(root, ["rev-parse", "HEAD"], cancellationToken);
-        var tree = await GitTextAsync(root, ["rev-parse", "HEAD^{tree}"], cancellationToken);
         var status = await GitTextAsync(root, ["status", "--porcelain", "--untracked-files=all"], cancellationToken);
+        var head = await processes.RunAsync("git", ["rev-parse", "--verify", "--quiet", "HEAD"],
+            root, null, null, cancellationToken, quiet: true);
+        if (head.ExitCode != 0 && id == "main")
+        {
+            throw new GateFailureException("主仓库必须具有可验证的 HEAD 提交。");
+        }
+        // 新建的外部模板仓库可以尚无首次提交；仍用实际工作区摘要验收，不能伪造 revision 或 clean。
+        var revision = head.ExitCode == 0 ? head.Output.Trim() : "unversioned";
+        var tree = head.ExitCode == 0
+            ? await GitTextAsync(root, ["rev-parse", "HEAD^{tree}"], cancellationToken)
+            : "unversioned";
         var files = await ListSourceFilesAsync(root, cancellationToken);
-        return new(id, root, revision, tree, string.IsNullOrWhiteSpace(status), files.Length,
+        return new(id, root, revision, tree, head.ExitCode == 0 && string.IsNullOrWhiteSpace(status), files.Length,
             ComputeFingerprint(root, files));
     }
 

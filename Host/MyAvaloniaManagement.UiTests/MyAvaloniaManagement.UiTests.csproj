@@ -25,6 +25,5 @@
     <ProjectReference Include="..\MyAvaloniaManagement\MyAvaloniaManagement.csproj" />
     <ProjectReference Include="..\..\Plugins\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug\DaTangAccountingHelpPlug.csproj" />
     <ProjectReference Include="..\..\Plugins\MyPlugTest\MyPlugTest\MyPlugTest.csproj" />
-    <ProjectReference Include="..\..\Plugins\MySmallTools\MySmallTools\MySmallTools.csproj" />
   </ItemGroup>
 </Project>

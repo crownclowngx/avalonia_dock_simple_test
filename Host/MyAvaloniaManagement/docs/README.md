@@ -1,5 +1,7 @@
 # MyAvaloniaManagement 主项目文档
 
+> 2026-09-05：原 MySmallTools 已迁为 [VideoSecurityPlayer 独立插件](../../../../avalonia_management_plug/myavalonia-video-security-player/README.md)。主项目不再内置其源码，跨仓库 Gate 从外部构建和验收；稳定 ID 与用户数据保持兼容。
+
 > 2026-09-05：BiliDownloader 已迁入[独立插件仓库](../../../../avalonia_management_plug/myavalonia-bili-downloader/README.md)。主项目不再内置、构建或部署它；本文中的综合历史记录仍保留当时事实。
 
 本目录描述桌面宿主 `MyAvaloniaManagement` 的当前内部设计。目标是让维护者能够区分：哪些行为是必须保持的外部契约，哪些类型只是可继续调整的内部实现，以及每项设计为什么采用当前方案。
@@ -35,7 +37,7 @@
 - [V3 G8 全屏租约与 Host V3 骨架](../../../docs/plan-history/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md)
 - [V3 G9 MyPlugTest 最终验收](../../../docs/plan-history/host-v3/g9-my-plug-test-v3-acceptance.md)
 - [V3 G10 DaTangAccountingHelpPlug 最终验收](../../../docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md)
-- [V3 G11 MySmallTools 最终验收](../../../docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)
+- [V3 G11 MySmallTools 最终验收](../../../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md)
 - [V3 G12 BiliDownloader 最终验收](../../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md)
 - [V3 G13 删除 V2 生产面](../../../docs/plan-history/host-v3/g13-remove-v2-production-surface.md)
 - [V3 G14 封板](../../../docs/plan-history/host-v3/g14-v3-sealing.md)

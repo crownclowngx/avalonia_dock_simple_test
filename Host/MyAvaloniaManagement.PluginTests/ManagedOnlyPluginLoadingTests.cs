@@ -162,7 +162,7 @@ public sealed class ManagedOnlyPluginLoadingTests
     }
 
     [Fact]
-    public void 三个内置业务插件全部进入最终V3入口()
+    public void 两个内置业务插件全部进入最终V3入口()
     {
         var myPlugTestAssembly = typeof(MyPlugTest.Plugin.MyPlugTestPluginModule).Assembly;
         var myPlugTestModule = Assert.Single(myPlugTestAssembly.ExportedTypes, type =>
@@ -180,13 +180,6 @@ public sealed class ManagedOnlyPluginLoadingTests
         Assert.Same(daTangModule, validatedDaTang);
         Assert.Null(daTangError);
 
-        var mySmallToolsAssembly = typeof(MySmallTools.Plugin.MySmallToolsPluginModule).Assembly;
-        var mySmallToolsModule = Assert.Single(mySmallToolsAssembly.ExportedTypes, type =>
-            typeof(IPluginModule).IsAssignableFrom(type) && !type.IsAbstract);
-        Assert.True(PluginModulePreflight.TryValidate(
-            mySmallToolsModule, out var validatedMySmallTools, out var mySmallToolsError, out _));
-        Assert.Same(mySmallToolsModule, validatedMySmallTools);
-        Assert.Null(mySmallToolsError);
 
         Assert.DoesNotContain(
             typeof(IPluginModule).GetProperties(),

@@ -8,7 +8,6 @@ using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.ViewModels.Welcome;
 using MyAvaloniaManagement.PluginSdk;
 using MyPlugTest.Plugin;
-using MySmallTools.Plugin;
 using PluginModuleContract = MyAvaloniaManagement.PluginSdk.UI.IPluginModule;
 
 namespace MyAvaloniaManagement.PluginTests;
@@ -154,12 +153,7 @@ public sealed class VersionPolicyTests
                 Version.TryParse(projectVersion, out _),
                 $"{plugin.Name} PluginVersion 必须是 major.minor.patch 数字版本，" +
                 $"实际为 '{projectVersion}'。");
-            // 插件默认继续跟随 Host 产品 3.0.0。G4 只把 MySmallTools 提升为独立的 3.1.0
-            // 本地候选，用于承载首个真实业务 Action；这不是 Host 或其他插件的联动升版。
-            var expectedPluginVersion = plugin.PluginId ==
-                "myavalonia.plugin.my-small-tools"
-                    ? "3.1.0"
-                    : "3.0.0";
+            var expectedPluginVersion = "3.0.0";
             AssertVersionFact(
                 $"{plugin.Name} PluginVersion/当前候选边界",
                 expectedPluginVersion,
@@ -284,12 +278,6 @@ public sealed class VersionPolicyTests
             Path.Combine("Plugins", "MyPlugTest", "MyPlugTest", "MyPlugTest.csproj"),
             "myavalonia.plugin.my-plug-test",
             "MyPlugTest"),
-        new(
-            "MySmallTools",
-            typeof(MySmallToolsPluginModule).Assembly,
-            Path.Combine("Plugins", "MySmallTools", "MySmallTools", "MySmallTools.csproj"),
-            "myavalonia.plugin.my-small-tools",
-            "SmallTools"),
     ];
 
     private static IReadOnlyDictionary<string, string> ReadVersionProperties()

@@ -17,7 +17,7 @@
 > [V2 G8 布局与生命周期 V2](../plan-history/host-v2/g8-layout-and-lifecycle-v2.md)与
 > [V2 G9 MyPlugTest 迁移](../plan-history/host-v2/g9-my-plug-test-v2.md) 和
 > [V2 G10 DaTang 迁移](../plan-history/host-v2/g10-datang-accounting-help-v2.md)和
-> [V2 G11 MySmallTools 迁移](../plan-history/host-v2/g11-my-small-tools-v2.md)和
+> [V2 G11 MySmallTools 迁移](../../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md)和
 > [V2 G12 BiliDownloader 迁移](../../../avalonia_management_plug/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md)和
 > [V2 G13 删除 V1 生产面](../plan-history/host-v2/g13-remove-v1-production-surface.md)与
 > [V2 G14 封板](../plan-history/host-v2/g14-v2-sealing.md)。
@@ -577,7 +577,7 @@ G11 已登记四个非持久化 Document，根模型均为普通 `ObservableObje
 `IPluginDocument` 展示契约；Host 继续独占 Scope、Dock Adapter、激活和关闭。播放器、批处理与
 媒体库任务显式依赖 `IDocumentLifetime`，关闭令牌贯穿异步和原生操作；最终全屏端口统一为 UI SDK
 的 `IWindowContentFullscreenHost`，Legacy 重复接口已删除。详细责任划分、时序和不变项见
-[G11 专项记录](../plan-history/host-v2/g11-my-small-tools-v2.md)。
+[G11 专项记录](../../../avalonia_management_plug/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md)。
 
 G11 非发布专项门禁实际 **275/275**；真实 G3 Harness 完成 20 轮并使全部原生资源计数回零。
 两次隔离构建的 431 文件 ZIP 完全一致，归档 SHA-256 为

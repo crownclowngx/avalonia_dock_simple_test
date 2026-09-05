@@ -375,8 +375,7 @@ public sealed class ApplicationAndWindowTests
         var views = new Control[]
         {
             new MyPlugTest.Views.MyCustomToolView(),
-            new MySmallTools.Views.SecretVideoPlayer.Playback
-                .PlaybackDeploymentView()
+            new MyPlugTest.Views.BatchHttpGetView()
         };
         var panel = new StackPanel();
         foreach (var view in views)

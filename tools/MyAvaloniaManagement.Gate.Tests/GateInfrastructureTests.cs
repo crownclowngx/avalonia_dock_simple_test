@@ -6,6 +6,34 @@ namespace MyAvaloniaManagement.Gate.Tests;
 public sealed class GateInfrastructureTests
 {
     [Fact]
+    public async Task UncommittedExternalTemplateRetainsWorkspaceEvidence()
+    {
+        using var temporary = new TemporaryDirectory();
+        var processes = new ProcessRunner(TextWriter.Null);
+        await processes.RunCheckedAsync("git", ["init", "--quiet"], temporary.Path, null, null, CancellationToken.None);
+        await File.WriteAllTextAsync(Path.Combine(temporary.Path, "plugin.cs"), "// new plugin");
+        var repository = new GitRepository(processes);
+        var first = await repository.InspectAsync("external", temporary.Path, CancellationToken.None);
+        Assert.Equal("unversioned", first.Revision);
+        Assert.Equal("unversioned", first.Tree);
+        Assert.False(first.Clean);
+        Assert.Equal(1, first.FileCount);
+        await File.AppendAllTextAsync(Path.Combine(temporary.Path, "plugin.cs"), " changed");
+        var second = await repository.InspectAsync("external", temporary.Path, CancellationToken.None);
+        Assert.NotEqual(first.Sha256, second.Sha256);
+    }
+
+    [Fact]
+    public async Task MainRepositoryStillRequiresCommitForGateEvidence()
+    {
+        using var temporary = new TemporaryDirectory();
+        var processes = new ProcessRunner(TextWriter.Null);
+        await processes.RunCheckedAsync("git", ["init", "--quiet"], temporary.Path, null, null, CancellationToken.None);
+        await Assert.ThrowsAsync<GateFailureException>(() =>
+            new GitRepository(processes).InspectAsync("main", temporary.Path, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task ExecutionGraphDeduplicatesStagesInRegistrationOrder()
     {
         var executed = new List<string>();
