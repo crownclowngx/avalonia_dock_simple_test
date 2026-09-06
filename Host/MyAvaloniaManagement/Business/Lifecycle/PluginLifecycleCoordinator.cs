@@ -28,6 +28,8 @@ internal sealed record PluginLifecycleTimeouts(
     TimeSpan Initialization,
     TimeSpan Shutdown)
 {
+    internal TimeSpan CancellationGrace { get; init; } = TimeSpan.FromSeconds(2);
+
     internal static PluginLifecycleTimeouts Default { get; } = new(
         TimeSpan.FromSeconds(30),
         TimeSpan.FromSeconds(10));
@@ -41,13 +43,13 @@ internal sealed class PluginLifecycleCoordinator
     private readonly PluginRegistry _registry;
     private readonly IPluginLifecycleResolver _lifecycleResolver;
     private readonly PluginLifecycleStateStore _states;
-    private readonly IHostDiagnosticSink? _diagnostics;
+    private readonly PluginLifecycleDiagnosticReporter _diagnostics;
     private readonly PluginLifecycleTimeouts _timeouts;
-    private readonly PluginLifecycleOperationRunner _runner = new();
-    private readonly List<StartedLifecycle> _started = [];
+    private readonly PluginLifecycleOperationRunner _runner;
+    private readonly List<LifecycleAttempt> _attempts = [];
     private readonly SemaphoreSlim _gate = new(1, 1);
     private bool _initializationCompleted;
-    private bool _shutdownCompleted;
+    private PluginLifecycleShutdownResult? _shutdownResult;
 
     internal PluginLifecycleCoordinator(
         PluginRegistry registry,
@@ -63,14 +65,15 @@ internal sealed class PluginLifecycleCoordinator
         IPluginLifecycleResolver lifecycleResolver,
         PluginLifecycleStateStore states,
         IHostDiagnosticSink? diagnostics,
-        PluginLifecycleTimeouts timeouts)
+        PluginLifecycleTimeouts timeouts, TimeProvider? time = null)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _lifecycleResolver = lifecycleResolver ?? throw new ArgumentNullException(nameof(lifecycleResolver));
         _states = states ?? throw new ArgumentNullException(nameof(states));
-        _diagnostics = diagnostics;
+        _diagnostics = new PluginLifecycleDiagnosticReporter(diagnostics);
         _timeouts = timeouts ?? throw new ArgumentNullException(nameof(timeouts));
-        if (_timeouts.Initialization <= TimeSpan.Zero || _timeouts.Shutdown <= TimeSpan.Zero)
+        _runner = new PluginLifecycleOperationRunner(_timeouts.CancellationGrace, time);
+        if (_timeouts.Initialization <= TimeSpan.Zero || _timeouts.Shutdown <= TimeSpan.Zero || _timeouts.CancellationGrace <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(timeouts), "插件生命周期期限必须大于零。");
         }
@@ -81,7 +84,7 @@ internal sealed class PluginLifecycleCoordinator
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_initializationCompleted)
+            if (_initializationCompleted || _shutdownResult is not null)
             {
                 return;
             }
@@ -102,6 +105,8 @@ internal sealed class PluginLifecycleCoordinator
                 var lifecycle = _lifecycleResolver.GetRequiredLifecycle(
                     declaration.OwnerId,
                     declaration.ImplementationType);
+                var attempt = new LifecycleAttempt(declaration.OwnerId, lifecycle);
+                _attempts.Add(attempt);
                 PluginLifecycleOperationResult result;
                 try
                 {
@@ -112,7 +117,8 @@ internal sealed class PluginLifecycleCoordinator
                             exception => ReportCancellationFailure(
                                 declaration.OwnerId,
                                 PluginLifecycleStage.Initialization,
-                                exception))
+                                exception),
+                        operation => attempt.Initialization = operation)
                         .ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -128,7 +134,7 @@ internal sealed class PluginLifecycleCoordinator
                     throw;
                 }
 
-                CommitInitializationResult(declaration.OwnerId, lifecycle, result);
+                CommitInitializationResult(declaration.OwnerId, result);
             }
 
             _initializationCompleted = true;
@@ -139,49 +145,112 @@ internal sealed class PluginLifecycleCoordinator
         }
     }
 
-    internal async Task ShutdownAllAsync(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// 关闭判定只执行一次。列表顺序来自初始化尝试，不来自异步完成时间；迟到项不得插回已越过的位置。
+    /// 异常、未排空及遗漏关闭责任均转为明确保留原因，不能让 Runtime 将“方法返回”误当作“可以释放”。
+    /// </summary>
+    internal async Task<PluginLifecycleShutdownResult> ShutdownAllAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_shutdownCompleted)
+            if (_shutdownResult is not null) return _shutdownResult;
+            _states.BeginShutdown();
+            var retained = new List<PluginLifecycleRetention>();
+            for (var index = _attempts.Count - 1; index >= 0; index--)
             {
-                return;
-            }
-
-            for (var index = _started.Count - 1; index >= 0; index--)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var item = _started[index];
-                _states.SetState(new PluginLifecycleState(
-                    item.PluginId,
-                    PluginLifecycleStatus.Stopping)
+                var item = _attempts[index];
+                var stage = PluginLifecycleStage.Initialization;
+                try
                 {
-                    Stage = PluginLifecycleStage.Shutdown,
-                });
-                var result = await _runner.RunAsync(
-                        item.Lifecycle.ShutdownAsync,
-                        _timeouts.Shutdown,
+                    var initialization = item.Initialization;
+                    if (initialization is null)
+                    {
+                        retained.Add(new(item.PluginId, stage, PluginLifecycleRetentionReason.CheckFailed));
+                        continue;
+                    }
+                    if (!await initialization.WaitForCompletionAsync().ConfigureAwait(false))
+                    {
+                        retained.Add(new(item.PluginId, stage, PluginLifecycleRetentionReason.OperationRunning));
+                        continue;
+                    }
+                    // 失败初始化仍由插件承担局部清理；不引入对半初始化实例强制 Shutdown 的新契约。
+                    if (!initialization.Execution.IsCompletedSuccessfully) continue;
+                    stage = PluginLifecycleStage.Shutdown;
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        retained.Add(new(item.PluginId, stage, PluginLifecycleRetentionReason.ShutdownNotExecuted));
+                        continue;
+                    }
+                    _states.SetState(new PluginLifecycleState(item.PluginId, PluginLifecycleStatus.Stopping)
+                    {
+                        Stage = stage,
+                    });
+                    var result = await _runner.RunAsync(item.Lifecycle.ShutdownAsync, _timeouts.Shutdown,
                         cancellationToken,
-                        exception => ReportCancellationFailure(
-                            item.PluginId,
-                            PluginLifecycleStage.Shutdown,
-                            exception))
-                    .ConfigureAwait(false);
-                CommitShutdownResult(item.PluginId, result);
+                        exception => ReportCancellationFailure(item.PluginId, PluginLifecycleStage.Shutdown, exception),
+                        operation => item.Shutdown = operation).ConfigureAwait(false);
+                    CommitShutdownResult(item.PluginId, result);
+                    if (!await item.Shutdown!.WaitForCompletionAsync().ConfigureAwait(false))
+                        retained.Add(new(item.PluginId, stage, PluginLifecycleRetentionReason.OperationRunning));
+                    else if (!item.Shutdown.Execution.IsCompletedSuccessfully)
+                        retained.Add(new(item.PluginId, stage, PluginLifecycleRetentionReason.ShutdownFailed));
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // 调用方取消也只是停止正常等待，不能绕过同一操作已经固定的取消宽限。
+                    // 只对当前已发出的 Shutdown 收尾；后续项由上面的取消检查记录为未执行。
+                    if (item.Shutdown is null)
+                        retained.Add(new(item.PluginId, stage, PluginLifecycleRetentionReason.ShutdownNotExecuted));
+                    else
+                    {
+                        CommitShutdownResult(item.PluginId, new PluginLifecycleOperationResult(
+                            PluginLifecycleOperationOutcome.Failed, TimeSpan.Zero,
+                            new OperationCanceledException(cancellationToken)));
+                        if (!await item.Shutdown.WaitForCompletionAsync().ConfigureAwait(false))
+                            retained.Add(new(item.PluginId, stage, PluginLifecycleRetentionReason.OperationRunning));
+                        else if (!item.Shutdown.Execution.IsCompletedSuccessfully)
+                            retained.Add(new(item.PluginId, stage, PluginLifecycleRetentionReason.ShutdownFailed));
+                    }
+                }
+                catch (Exception)
+                {
+                    retained.Add(new(item.PluginId, stage, PluginLifecycleRetentionReason.CheckFailed));
+                }
             }
-
-            _shutdownCompleted = true;
+            // 最后再次核对责任：Task 刚好成功不代表对应 Shutdown 已执行，不能在竞态窗口误放行。
+            foreach (var item in _attempts)
+            {
+                if (item.Initialization?.Execution.IsCompletedSuccessfully == true && item.Shutdown is null)
+                    retained.Add(new(item.PluginId, PluginLifecycleStage.Shutdown,
+                        PluginLifecycleRetentionReason.ShutdownNotExecuted));
+            }
+            _shutdownResult = new PluginLifecycleShutdownResult(retained.Distinct().ToArray());
+            foreach (var item in _shutdownResult.Retentions)
+            {
+                var code = item.Reason switch
+                {
+                    PluginLifecycleRetentionReason.OperationRunning => HostDiagnosticCodes.LifecycleOperationRetained,
+                    PluginLifecycleRetentionReason.ShutdownFailed => HostDiagnosticCodes.LifecycleFailedShutdownRetained,
+                    PluginLifecycleRetentionReason.ShutdownNotExecuted => HostDiagnosticCodes.LifecycleShutdownSkipped,
+                    _ => HostDiagnosticCodes.LifecycleDrainCheckFailed,
+                };
+                _diagnostics.Report(new HostDiagnosticDraft(code, HostDiagnosticPhase.PluginLifecycle)
+                {
+                    PluginId = item.PluginId,
+                    LifecycleStage = item.Stage,
+                });
+            }
+            return _shutdownResult;
         }
-        finally
-        {
-            _gate.Release();
-        }
+        finally { _gate.Release(); }
     }
+
+    /// <summary>退出交接前封闭迟到报告；不改变任务执行，也不触发后台释放。</summary>
+    internal void CloseDiagnostics() => _diagnostics.Close();
 
     private void CommitInitializationResult(
         PluginId pluginId,
-        PluginLifecycleCallbacks lifecycle,
         PluginLifecycleOperationResult result)
     {
         var state = result.Outcome switch
@@ -206,11 +275,7 @@ internal sealed class PluginLifecycleCoordinator
             _ => throw new ArgumentOutOfRangeException(nameof(result)),
         };
         _states.SetState(state);
-        if (state.Status == PluginLifecycleStatus.Ready)
-        {
-            _started.Add(new StartedLifecycle(pluginId, lifecycle));
-        }
-        else
+        if (state.Status != PluginLifecycleStatus.Ready)
         {
             Report(state, result.Exception);
         }
@@ -258,7 +323,7 @@ internal sealed class PluginLifecycleCoordinator
             return;
         }
 
-        _diagnostics?.Report(new HostDiagnosticDraft(
+        _diagnostics.Report(new HostDiagnosticDraft(
             state.ErrorCode,
             HostDiagnosticPhase.PluginLifecycle)
         {
@@ -273,7 +338,7 @@ internal sealed class PluginLifecycleCoordinator
         PluginId pluginId,
         PluginLifecycleStage stage,
         Exception exception) =>
-        _diagnostics?.Report(new HostDiagnosticDraft(
+        _diagnostics.Report(new HostDiagnosticDraft(
             HostDiagnosticCodes.LifecycleCancellationFailed,
             HostDiagnosticPhase.PluginLifecycle)
         {
@@ -282,7 +347,12 @@ internal sealed class PluginLifecycleCoordinator
             Exception = exception,
         });
 
-    private sealed record StartedLifecycle(
-        PluginId PluginId,
-        PluginLifecycleCallbacks Lifecycle);
+    /// <summary>只在协调器串行门内修改；操作自身负责跨线程的终态和取消资源。</summary>
+    private sealed class LifecycleAttempt(PluginId pluginId, PluginLifecycleCallbacks lifecycle)
+    {
+        internal PluginId PluginId { get; } = pluginId;
+        internal PluginLifecycleCallbacks Lifecycle { get; } = lifecycle;
+        internal PluginLifecycleOperation? Initialization { get; set; }
+        internal PluginLifecycleOperation? Shutdown { get; set; }
+    }
 }

@@ -40,6 +40,8 @@ Managed Plugin 快速开始入口：
 
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
+| [Host V5 生命周期与启动回滚修复设计](./design/host-v5-lifecycle-ownership-repair-plan.md) | 生命周期超时后的资源保留、已启动项回滚、Host 内部修复与验收矩阵 | 已完成；插件与 SDK 公共契约不变 |
+| [Host V5 专属实施验收记录](./plan-history/host-v5/lifecycle-ownership-repair-acceptance.md) | SOLID 职责、失败复现、专项测试和完整 Gate 实际证据 | 完整 verify 与补充 Host 覆盖率通过；非发布 |
 | [Host V4 内部收口任务书](./design/host-v4-breaking-refactor-plan.md) | Host 死面、身份、Layout、回收所有权、领域目录、路径语义、集成回归与封板 | 已完成；G0–G8 已封板，本地可发布但未对外发布 |
 | [Workflow Action 总设计](./design/ai-workflow-plugin-exploration.md) | 手工工作流优先、Action 内核、外部 Studio 与后续 G5–G10 边界 | G0 已重新签署、G1–G4 已完成实现，G5–G10 未实施 |
 | [Workflow Action G0 重新签署](./plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md) | Run/进度出口、SDK 3.1 兼容路线与真实 3.0 插件证据 | 已完成；非发布 |

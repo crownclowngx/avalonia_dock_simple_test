@@ -145,6 +145,21 @@ Session 停止新建。Command 可能仍在使用 Workspace、活动 Document �
 逆序释放插件 Provider 并释放 Host Provider。任一门控无法证明排空时保留相应对象图并报告脱敏诊断，
 不强杀同进程代码或伪装成功。
 
+V5 将上述资源释放判断集中在 `HostRuntimeShutdown`，正常退出和启动失败回滚共用同一流程。
+`HostShutdownParticipants` 在 DI 工厂成功交付对象时记录实际引用，包含插件 Gateway 间接创建的
+Workflow 管理器；回滚不重新解析 Workspace 或关闭参与者。初始化成功后再发生组合失败，会先
+执行已启动项的逆序 Shutdown；原始启动异常不会被清理或诊断异常覆盖。
+
+`PluginLifecycleOperation` 分开持有生命周期返回 Task、取消通知任务及 CTS。正常等待仍为初始化
+30 秒、Shutdown 10 秒，第一次请求取消固定额外 2 秒宽限；后续检查不续期。任务与取消通知均结束，
+且应执行的 Shutdown 已成功完成，才允许释放 Provider。Shutdown 已失败/取消按独立保守政策保留，
+诊断明确区分该政策与任务仍在运行的硬约束。
+
+迟到初始化按原始启动序号处理，越过关闭位置后不补插。无法安全关闭时，`HostResourceRetention`
+只持有必要对象图到进程退出；不提供全局服务定位、重试或恢复。保留期间已有后台活动可能继续，
+尤其启动失败窗口并不意味着进程立即退出。生命周期诊断出口在释放/交接前关闭，并等待既有报告结束。
+委托调用线程不变；返回 Task 前的同步阻塞以及同步 Dispose 不受本轮超时保证约束。
+
 [`Program`](../../Program.cs) 只保留进程入口和失败应用编排。`HostRuntime` 通过 internal
 `HostAvaloniaBuilder` 使用 `Func<App>` 创建应用；App 注入 `IHostDesktopShell`，不再存在静态
 `ServiceProvider` 或生产 ViewModel 无参构造。仓库测试与 Harness 通过明确 friend assembly
@@ -466,7 +481,7 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 
 | 对象 | 所有者 | 释放时机 |
 | --- | --- | --- |
-| Host Provider | `HostRuntime` | 全部插件 Provider 释放后 |
+| Host Provider | `HostRuntime` / `HostRuntimeShutdown` | 生命周期与业务 drain 安全后，全部插件 Provider 释放后；不安全则保留 |
 | 插件 Provider | `PluginProviderOwner` | 生命周期停止后按 PluginId 反序释放 |
 | 插件私有消息器 | 对应插件 Provider | 订阅者先释放令牌；插件 Provider 最后释放消息器 |
 | Managed 插件生命周期 | `PluginLifecycleCoordinator` | Adapter/View 与全部 Document Scope 释放后，插件 Provider 释放前 |
@@ -507,6 +522,7 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 | 布局严格解析、隔离、回退 | 布局生命周期与存储测试 |
 | Layout V2 严格字段、V1 不读取、生命周期不可用零部分应用 | `DockLayoutStoreTests`、`DockLayoutAvailabilityTests` |
 | 生命周期排序、幂等、失败/超时/取消、反向停止和脱敏 | `PluginLifecycleCoordinatorTests` |
+| V5 真实容器释放、启动回滚、取消通知、迟到边界、间接创建与诊断关闭 | `HostLifecycleOwnershipTests` |
 | Command 合并目录、Context、当前 Target 状态/执行、租约关闭和诊断脱敏 | `WorkbenchCommand*Tests`、Gate Workbench 验证 |
 | XAML、绑定和真实窗口事件 | Headless UI 与 Windows Smoke |
 

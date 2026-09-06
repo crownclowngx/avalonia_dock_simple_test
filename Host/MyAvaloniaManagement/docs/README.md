@@ -19,6 +19,8 @@
 - [宿主—插件架构评审](../../../docs/design/host-plugin-architecture-review.md)
 - [宿主专项测试说明](../../../docs/reference/myavalonia-management-tests.md)
 - [Host V4 G0–G8 任务书](../../../docs/design/host-v4-breaking-refactor-plan.md)
+- [Host V5 生命周期与启动回滚修复设计](../../../docs/design/host-v5-lifecycle-ownership-repair-plan.md)：已完成，完整 verify 与补充 Host 覆盖率通过，仅调整 Host 内部所有权与测试。
+- [Host V5 专属实施验收记录](../../../docs/plan-history/host-v5/lifecycle-ownership-repair-acceptance.md)：问题复现、SOLID 职责划分、实际测试和门禁证据。
 - [V4 G7 四插件、Harness 与文档回归](../../../docs/plan-history/host-v4/g7-four-plugins-harness-documentation-regression.md)
 - [V4 G8 封板](../../../docs/plan-history/host-v4/g8-v4-sealing.md)
 - [Dock 布局快照 V2](../../../docs/reference/dock-layout-snapshot-v2.md)

@@ -96,6 +96,21 @@ public sealed class PluginLifecycleCoordinatorTests
     }
 
     [Fact]
+    public async Task 初始化超时后在关闭前成功_仍须执行Shutdown且不恢复可用性()
+    {
+        var slow = new ControllableLifecycle();
+        var fixture = CreateFixture(("slow", slow));
+        await fixture.Coordinator.InitializeAllAsync();
+        await WaitUntilAsync(() => slow.CancellationRequested);
+        slow.CompleteInitialization();
+
+        await fixture.Coordinator.ShutdownAllAsync();
+
+        Assert.Equal(1, slow.ShutdownCount);
+        Assert.False(fixture.Availability.IsAvailable(new PluginId("slow")));
+    }
+
+    [Fact]
     public async Task 关闭失败和超时都不阻断后续反向清理()
     {
         var calls = new List<string>();
@@ -116,6 +131,7 @@ public sealed class PluginLifecycleCoordinatorTests
         Assert.Equal(
             PluginLifecycleStatus.ShutdownTimedOut,
             fixture.States.GetState(new PluginId("third"))?.Status);
+        hangingShutdown.Complete();
         Assert.Equal(
             PluginLifecycleStatus.ShutdownFailed,
             fixture.States.GetState(new PluginId("second"))?.Status);
@@ -190,9 +206,10 @@ public sealed class PluginLifecycleCoordinatorTests
     public async Task 超时取消回调异常只形成脱敏诊断_不改变超时提交状态()
     {
         var sink = new RecordingDiagnosticSink();
+        var lifecycle = new ThrowingCancellationLifecycle();
         var fixture = CreateFixture(
             sink,
-            ("throwing-cancel", new ThrowingCancellationLifecycle()));
+            ("throwing-cancel", lifecycle));
 
         await fixture.Coordinator.InitializeAllAsync();
         var cancellationFailure = await sink.WaitForAsync(
@@ -203,6 +220,7 @@ public sealed class PluginLifecycleCoordinatorTests
             PluginLifecycleStatus.InitializationTimedOut,
             fixture.States.GetState(new PluginId("throwing-cancel"))?.Status);
         Assert.Equal("stage=Initialization", cancellationFailure.TechnicalDetail);
+        lifecycle.Complete();
     }
 
     [Fact]
@@ -379,6 +397,8 @@ public sealed class PluginLifecycleCoordinatorTests
         string pluginId,
         List<string> calls) : IPluginLifecycle
     {
+        private readonly TaskCompletionSource _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal void Complete() => _completion.TrySetResult();
         internal bool CancellationRequested { get; private set; }
 
         public Task InitializeAsync(CancellationToken cancellationToken)
@@ -391,8 +411,7 @@ public sealed class PluginLifecycleCoordinatorTests
         {
             calls.Add($"shutdown:{pluginId}");
             cancellationToken.Register(() => CancellationRequested = true);
-            return new TaskCompletionSource(
-                TaskCreationOptions.RunContinuationsAsynchronously).Task;
+            return _completion.Task;
         }
     }
 
@@ -403,13 +422,19 @@ public sealed class PluginLifecycleCoordinatorTests
 
         public bool CancellationRequested { get; private set; }
 
+        public int ShutdownCount { get; private set; }
+
         public Task InitializeAsync(CancellationToken cancellationToken)
         {
             cancellationToken.Register(() => CancellationRequested = true);
             return _initialization.Task;
         }
 
-        public Task ShutdownAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task ShutdownAsync(CancellationToken cancellationToken)
+        {
+            ShutdownCount++;
+            return Task.CompletedTask;
+        }
 
         public void CompleteInitialization() => _initialization.TrySetResult();
     }
@@ -454,12 +479,13 @@ public sealed class PluginLifecycleCoordinatorTests
 
     private sealed class ThrowingCancellationLifecycle : IPluginLifecycle
     {
+        private readonly TaskCompletionSource _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal void Complete() => _completion.TrySetResult();
         public Task InitializeAsync(CancellationToken cancellationToken)
         {
             cancellationToken.Register(static () =>
                 throw new InvalidOperationException("取消回调敏感正文"));
-            return new TaskCompletionSource(
-                TaskCreationOptions.RunContinuationsAsynchronously).Task;
+            return _completion.Task;
         }
 
         public Task ShutdownAsync(CancellationToken cancellationToken) => Task.CompletedTask;

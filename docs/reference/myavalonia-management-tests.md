@@ -26,6 +26,26 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify --scope workbench
 `workbench` 自动包含 Host 基座。外部仓不在默认位置时使用 `--workflow-studio <path>` 或
 `--classic-game <path>`。
 
+## V5 生命周期所有权专项
+
+`HostLifecycleOwnershipTests` 使用真实 Microsoft DI 容器中的释放探针、可控任务和
+`ManualLifecycleTimeProvider` 检查资源使用与释放的先后关系。测试范围包括超时后迟到成功、
+取消通知阻塞、保留政策、启动失败回滚、间接创建的 Workflow 管理器、重复关闭与诊断出口关闭。
+`PluginLifecycleCoordinatorTests` 保留既有顺序、失败隔离和 UI 同步上下文回归，并补充迟到初始化关闭。
+
+单独排错入口：
+
+```powershell
+dotnet test Host/MyAvaloniaManagement.PluginTests -m:1 --filter "FullyQualifiedName~HostLifecycleOwnershipTests|FullyQualifiedName~PluginLifecycle"
+```
+
+`-m:1` 避免专项工程引用的多种全局属性并发写入同一 SDK 中间产物；正式完整验证仍使用上述 Gate。
+专项成功不等于完整门禁成功，实际证据见
+[V5 专属实施验收记录](../plan-history/host-v5/lifecycle-ownership-repair-acceptance.md)。
+
+当前 `verify` 不采集覆盖率。V5 额外采集 Host Unit/Plugin/UI 与既有 DaTang Host/Host UI 覆盖来源，
+按 Host-only 程序集范围合并，并核对 `gate.config.json` 的既有 Host 阈值；详细口径和结果见专属记录。
+
 ## 正式封板
 
 ```powershell

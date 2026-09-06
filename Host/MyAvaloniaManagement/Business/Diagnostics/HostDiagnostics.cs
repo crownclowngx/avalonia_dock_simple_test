@@ -199,6 +199,10 @@ internal static class HostDiagnosticCodes
     internal const string LifecycleShutdownTimeout = "LIFECYCLE_SHUTDOWN_TIMEOUT";
     internal const string LifecycleHostCancelled = "LIFECYCLE_HOST_CANCELLED";
     internal const string LifecycleCancellationFailed = "LIFECYCLE_CANCELLATION_FAILED";
+    internal const string LifecycleOperationRetained = "LIFECYCLE_OPERATION_RETAINED";
+    internal const string LifecycleFailedShutdownRetained = "LIFECYCLE_FAILED_SHUTDOWN_RETAINED";
+    internal const string LifecycleShutdownSkipped = "LIFECYCLE_SHUTDOWN_SKIPPED";
+    internal const string LifecycleDrainCheckFailed = "LIFECYCLE_DRAIN_CHECK_FAILED";
     internal const string HostStartupCleanupFailed = "HOST_STARTUP_CLEANUP_FAILED";
     internal const string HostStartupUnexpected = "HOST_STARTUP_UNEXPECTED";
     internal const string WorkflowActionShutdownTimeout =
@@ -315,7 +319,15 @@ internal static class HostDiagnosticRedactionPolicy
             "插件初始化失败或超时，已隔离该插件贡献。",
         HostDiagnosticCodes.LifecycleShutdownFailed or
         HostDiagnosticCodes.LifecycleShutdownTimeout =>
-            "插件关闭失败或超时，宿主将继续释放其他资源。",
+            "插件关闭失败或超时，宿主将继续检查其余关闭项并判定资源是否可以释放。",
+        HostDiagnosticCodes.LifecycleOperationRetained =>
+            "生命周期或取消通知尚未结束，宿主已保留 Provider。",
+        HostDiagnosticCodes.LifecycleFailedShutdownRetained =>
+            "Shutdown 已失败或取消，宿主按保守政策保留 Provider。",
+        HostDiagnosticCodes.LifecycleShutdownSkipped =>
+            "成功初始化项尚未执行必要 Shutdown，宿主已保留 Provider。",
+        HostDiagnosticCodes.LifecycleDrainCheckFailed =>
+            "生命周期关闭检查失败，宿主无法证明安全，已保留 Provider。",
         HostDiagnosticCodes.LifecycleHostCancelled =>
             "宿主取消了插件初始化。",
         HostDiagnosticCodes.LifecycleCancellationFailed =>
@@ -337,7 +349,7 @@ internal static class HostDiagnosticRedactionPolicy
         HostDiagnosticCodes.WorkbenchCommandShutdownTimeout =>
             "工作台命令在关闭宽限内没有退出，宿主已阻止不安全的工作区和 Provider 释放。",
         HostDiagnosticCodes.HostStartupCleanupFailed =>
-            "启动失败后的资源清理发生异常，应用将退出。",
+            "启动失败后的资源清理发生异常，请查看启动失败信息；部分资源可能保留至进程退出。",
         HostDiagnosticCodes.HostStartupUnexpected =>
             "宿主启动发生未分类异常，主工作台没有启动。",
         "VIEW_CREATION_FAILED" =>

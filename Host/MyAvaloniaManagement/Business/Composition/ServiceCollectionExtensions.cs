@@ -48,8 +48,11 @@ internal static class ServiceCollectionExtensions
         this IServiceCollection services,
         PluginRegistryBuilder? registryBuilder = null,
         PluginProviderOwner? pluginProviders = null,
-        DocumentScopeRegistry? documentScopes = null)
+        DocumentScopeRegistry? documentScopes = null,
+        HostShutdownParticipants? shutdownParticipants = null)
     {
+        shutdownParticipants ??= new HostShutdownParticipants();
+        services.AddSingleton(shutdownParticipants);
         registryBuilder ??= new PluginRegistryBuilder();
         pluginProviders ??= new PluginProviderOwner();
         documentScopes ??= new DocumentScopeRegistry();
@@ -79,13 +82,19 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<WorkflowActionCatalogStore>();
         services.AddSingleton(WorkflowActionExecutionLimits.Default);
         services.AddSingleton<IWorkflowActionAuthorizer, AvaloniaWorkflowActionAuthorizer>();
-        services.AddSingleton(provider => new WorkflowActionRunManager(
-            provider.GetRequiredService<WorkflowActionCatalogStore>(),
-            provider.GetRequiredService<IWorkflowActionScopeFactory>(),
-            provider.GetRequiredService<IWorkflowActionAuthorizer>(),
-            provider.GetRequiredService<WorkflowActionExecutionLimits>(),
-            provider.GetRequiredService<TimeProvider>(),
-            provider.GetService<IHostDiagnosticSink>()));
+        services.AddSingleton(provider =>
+        {
+            var instance = new WorkflowActionRunManager(
+                provider.GetRequiredService<WorkflowActionCatalogStore>(),
+                provider.GetRequiredService<IWorkflowActionScopeFactory>(),
+                provider.GetRequiredService<IWorkflowActionAuthorizer>(),
+                provider.GetRequiredService<WorkflowActionExecutionLimits>(),
+                provider.GetRequiredService<TimeProvider>(),
+                provider.GetService<IHostDiagnosticSink>());
+            // 工厂成功交付前登记真实实例，回滚不再通过解析 DI 猜测创建阶段。
+            shutdownParticipants.Record(instance);
+            return instance;
+        });
         services.AddSingleton<IWorkflowActionShutdownParticipant>(provider =>
             provider.GetRequiredService<WorkflowActionRunManager>());
         services.AddSingleton<WorkflowActionShutdownGate>();
@@ -118,8 +127,14 @@ internal static class ServiceCollectionExtensions
             pluginProviders));
         // 这些实现是刻意保持 internal 的 Host 编排细节。使用显式工厂既避免为了 DI
         // 把构造函数扩大为 public，也把组合根需要的依赖完整列出，防止容器约定成为隐式 API。
-        services.AddSingleton(provider => new PluginLifecycleStateStore(
-            provider.GetRequiredService<PluginRegistry>()));
+        services.AddSingleton(provider =>
+        {
+            var instance = new PluginLifecycleStateStore(
+                provider.GetRequiredService<PluginRegistry>());
+            // 工厂成功交付前登记真实实例，回滚不再通过解析 DI 猜测创建阶段。
+            shutdownParticipants.Record(instance);
+            return instance;
+        });
         services.AddSingleton(provider => new PluginAvailabilityReadModel(
             provider.GetRequiredService<PluginLifecycleStateStore>()));
         services.AddSingleton(provider => new WorkbenchCommandCatalog(
@@ -133,10 +148,16 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<PluginAvailabilityReadModel>(),
             provider.GetRequiredService<WorkbenchContextStore>(),
             provider.GetService<IHostDiagnosticSink>()));
-        services.AddSingleton(provider => new WorkbenchCommandExecutor(
-            provider.GetRequiredService<WorkbenchCommandStateQuery>(),
-            provider.GetRequiredService<WorkbenchDocumentCommandLeaseStore>(),
-            provider.GetService<IHostDiagnosticSink>()));
+        services.AddSingleton(provider =>
+        {
+            var instance = new WorkbenchCommandExecutor(
+                provider.GetRequiredService<WorkbenchCommandStateQuery>(),
+                provider.GetRequiredService<WorkbenchDocumentCommandLeaseStore>(),
+                provider.GetService<IHostDiagnosticSink>());
+            // 工厂成功交付前登记真实实例，回滚不再通过解析 DI 猜测创建阶段。
+            shutdownParticipants.Record(instance);
+            return instance;
+        });
         services.AddSingleton<IWorkbenchCommandShutdownParticipant>(provider =>
             provider.GetRequiredService<WorkbenchCommandExecutor>());
         services.AddSingleton<WorkbenchCommandShutdownGate>();
@@ -155,11 +176,17 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<HostWorkspaceCatalog>(),
             provider.GetRequiredService<PluginRegistry>(),
             provider.GetRequiredService<PluginAvailabilityReadModel>()));
-        services.AddSingleton(provider => new PluginLifecycleCoordinator(
-            provider.GetRequiredService<PluginRegistry>(),
-            provider.GetRequiredService<IPluginLifecycleResolver>(),
-            provider.GetRequiredService<PluginLifecycleStateStore>(),
-            provider.GetService<IHostDiagnosticSink>()));
+        services.AddSingleton(provider =>
+        {
+            var instance = new PluginLifecycleCoordinator(
+                provider.GetRequiredService<PluginRegistry>(),
+                provider.GetRequiredService<IPluginLifecycleResolver>(),
+                provider.GetRequiredService<PluginLifecycleStateStore>(),
+                provider.GetService<IHostDiagnosticSink>());
+            // 工厂成功交付前登记真实实例，回滚不再通过解析 DI 猜测创建阶段。
+            shutdownParticipants.Record(instance);
+            return instance;
+        });
         services.AddSingleton<ViewLocator>();
         services.AddSingleton<HostWorkspaceActivator>();
         services.AddSingleton(provider => new PluginContributionActivator(
@@ -183,6 +210,7 @@ internal static class ServiceCollectionExtensions
                 provider.GetRequiredService<DockDocumentLifetime>(),
                 provider.GetService<IHostDiagnosticSink>());
             dockFactory.AttachCallbacks(session);
+            shutdownParticipants.Record(session);
             return session;
         });
         services.AddSingleton(provider =>
@@ -282,7 +310,8 @@ internal static class ServiceCollectionExtensions
     /// </remarks>
     public static IServiceCollection AddDocumentScopeManagement(
         this IServiceCollection services,
-        DocumentScopeRegistry? documentScopes = null)
+        DocumentScopeRegistry? documentScopes = null,
+        HostShutdownParticipants? shutdownParticipants = null)
     {
         documentScopes ??= new DocumentScopeRegistry();
         services.AddSingleton(documentScopes);

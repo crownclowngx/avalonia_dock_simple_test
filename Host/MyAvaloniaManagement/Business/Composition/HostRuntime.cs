@@ -26,30 +26,14 @@ namespace MyAvaloniaManagement.Business.Composition;
 internal sealed class HostRuntime : IDisposable
 {
     private readonly Microsoft.Extensions.DependencyInjection.ServiceProvider _provider;
-    private readonly PluginProviderOwner _pluginProviders;
-    private readonly DocumentScopeRegistry _documentScopes;
-    private readonly PluginLifecycleCoordinator _lifecycles;
-    private readonly PluginLifecycleStateStore _lifecycleStates;
-    private readonly WorkflowActionShutdownGate _workflowActionShutdown;
-    private readonly WorkbenchCommandShutdownGate _workbenchCommandShutdown;
+    private readonly HostRuntimeShutdown _shutdown;
     private bool _disposed;
 
-    private HostRuntime(
-        Microsoft.Extensions.DependencyInjection.ServiceProvider provider,
-        PluginProviderOwner pluginProviders,
-        DocumentScopeRegistry documentScopes,
-        PluginLifecycleCoordinator lifecycles,
-        PluginLifecycleStateStore lifecycleStates,
-        WorkflowActionShutdownGate workflowActionShutdown,
-        WorkbenchCommandShutdownGate workbenchCommandShutdown)
+    /// <summary>只接收已经建立的所有权；测试与生产共用同一启动回滚边界。</summary>
+    internal HostRuntime(Microsoft.Extensions.DependencyInjection.ServiceProvider provider, HostRuntimeShutdown shutdown)
     {
         _provider = provider;
-        _pluginProviders = pluginProviders;
-        _documentScopes = documentScopes;
-        _lifecycles = lifecycles;
-        _lifecycleStates = lifecycleStates;
-        _workflowActionShutdown = workflowActionShutdown;
-        _workbenchCommandShutdown = workbenchCommandShutdown;
+        _shutdown = shutdown;
     }
 
     internal static HostRuntime Create(HostDiagnosticSession diagnostics)
@@ -59,7 +43,8 @@ internal sealed class HostRuntime : IDisposable
         var registryBuilder = new PluginRegistryBuilder();
         var pluginProviders = new PluginProviderOwner();
         var documentScopes = new DocumentScopeRegistry();
-        services.AddApplicationServices(registryBuilder, pluginProviders, documentScopes);
+        var participants = new HostShutdownParticipants();
+        services.AddApplicationServices(registryBuilder, pluginProviders, documentScopes, participants);
         services.AddViewModels();
         services.AddSingleton(diagnostics);
         services.AddSingleton<IHostDiagnosticSink>(diagnostics);
@@ -106,7 +91,10 @@ internal sealed class HostRuntime : IDisposable
             throw;
         }
 
-        try
+        var shutdown = new HostRuntimeShutdown(pluginProviders, provider, documentScopes.CloseAll,
+            participants, HostResourceRetention.ProcessLifetime, diagnostics);
+        var runtime = new HostRuntime(provider, shutdown);
+        return Initialize(runtime, () =>
         {
             pluginProviders.Compose(
                 pluginCatalog,
@@ -148,36 +136,35 @@ internal sealed class HostRuntime : IDisposable
                 });
                 throw;
             }
-            return new HostRuntime(
-                provider,
-                pluginProviders,
-                documentScopes,
-                provider.GetRequiredService<PluginLifecycleCoordinator>(),
-                provider.GetRequiredService<PluginLifecycleStateStore>(),
-                provider.GetRequiredService<WorkflowActionShutdownGate>(),
-                provider.GetRequiredService<WorkbenchCommandShutdownGate>());
+        }, diagnostics);
+    }
+
+    /// <summary>
+    /// 组合完成后的启动事务边界。关闭流程复用正常退出，回滚失败只附加诊断，始终重新抛出原始启动异常。
+    /// 通过显式初始化委托注入失败点，不为测试增加 public SDK，也不在 catch 里解析缺失服务。
+    /// </summary>
+    internal static HostRuntime Initialize(HostRuntime runtime, Action initialization, IHostDiagnosticSink diagnostics)
+    {
+        try
+        {
+            initialization();
+            return runtime;
         }
         catch
         {
-            try
-            {
-                documentScopes.CloseAll();
-            }
-            finally
+            try { runtime.Dispose(); }
+            catch (Exception cleanupException)
             {
                 try
                 {
-                    pluginProviders.Dispose();
+                    diagnostics.Report(new HostDiagnosticDraft(HostDiagnosticCodes.HostStartupCleanupFailed,
+                        HostDiagnosticPhase.HostBootstrap) { Exception = cleanupException });
                 }
-                finally
-                {
-                    provider.Dispose();
-                }
+                catch { /* 清理诊断失败不能覆盖原始启动异常。 */ }
             }
             throw;
         }
     }
-
     /// <summary>使用当前 Runtime 独占的容器创建生产 Avalonia 应用。</summary>
     /// <remarks>
     /// Builder 工厂捕获的是本 Runtime 的 provider，不存在进程全局 Current 容器；消息循环结束后
@@ -191,99 +178,17 @@ internal sealed class HostRuntime : IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
-
         _disposed = true;
-        var failures = new List<Exception>();
-
-        // Workflow Action 必须先于所有插件对象图关闭：先拒绝新 Run/调用并取消在途，
-        // 后续只有在真实 Handler 全部退出后才允许停止 Lifecycle 和释放 Provider。
-        _workflowActionShutdown.BeginShutdown();
-        _workbenchCommandShutdown.BeginShutdown();
-
-        // 关闭其他可用性入口，保证退出清理期间不会再创建新的插件对象图。
-        _lifecycleStates.BeginShutdown();
-        var workspace = _provider.GetService<WorkspaceSession>();
-        workspace?.BeginShutdown();
-
-        // Command 可能正在使用 Workspace、活动 Document 或其 Scope。只有确认全部调用退出后，
-        // 才能继续释放这些所有权；超时选择保留对象图，而不是制造悬空引用。
-        var workbenchCommandsDrained =
-            _workbenchCommandShutdown.TryDrain(out var workbenchCommandFailure);
-        if (workbenchCommandFailure is not null)
+        // 消息循环可能已经停止。仅在同步桥接期间清除上下文，回滚返回后恢复调用方上下文。
+        var previous = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(null);
+        try
         {
-            failures.Add(workbenchCommandFailure);
+            var result = _shutdown.RunAsync().GetAwaiter().GetResult();
+            if (result.Failures.Count > 0)
+                throw new AggregateException("HostRuntime 退出时一个或多个资源释放失败。", result.Failures);
         }
-
-        if (workbenchCommandsDrained)
-        {
-            try
-            {
-                // Adapter/View 必须先于插件 Provider 释放，否则 View 的 DataContext 会短暂指向
-                // 已经 Dispose 的 Tool singleton，Document 展示事件也可能在 Scope 结束后继续投影。
-                workspace?.Dispose();
-            }
-            catch (Exception exception)
-            {
-                failures.Add(exception);
-            }
-
-            try
-            {
-                // Adapter/View 清理异常也不能阻断 Scope 兜底。
-                _documentScopes.CloseAll();
-            }
-            catch (Exception exception)
-            {
-                failures.Add(exception);
-            }
-        }
-
-        var workflowActionsDrained = _workflowActionShutdown.TryDrain(out var workflowActionFailure);
-        if (workflowActionFailure is not null)
-        {
-            failures.Add(workflowActionFailure);
-        }
-
-        if (workbenchCommandsDrained && workflowActionsDrained)
-        {
-            try
-            {
-                // Avalonia 消息循环已经结束，不能捕获一个不再泵送的 UI 同步上下文。
-                SynchronizationContext.SetSynchronizationContext(null);
-                _lifecycles.ShutdownAllAsync().GetAwaiter().GetResult();
-            }
-            catch (Exception exception)
-            {
-                failures.Add(exception);
-            }
-
-            try
-            {
-                _pluginProviders.Dispose();
-            }
-            catch (Exception exception)
-            {
-                failures.Add(exception);
-            }
-
-            try
-            {
-                _provider.Dispose();
-            }
-            catch (Exception exception)
-            {
-                failures.Add(exception);
-            }
-        }
-
-        if (failures.Count > 0)
-        {
-            throw new AggregateException("HostRuntime 退出时一个或多个资源释放失败。", failures);
-        }
+        finally { SynchronizationContext.SetSynchronizationContext(previous); }
     }
 
     private static void ThrowIfStartupMustAbort(HostDiagnosticSession diagnostics)
