@@ -120,6 +120,8 @@ Managed Plugin 快速开始入口：
 
 - [以注意力为中心的可停靠工作台](./theory/attention-centered-dock-workspace-design.md)：解释 Document、Tool 和 Dock 的产品设计意图。
 - [基于活动理论的需求分解方法论](./theory/activity-theory-requirements-decomposition.md)：说明自然语言需求如何拆分到 Document、Tool 和后台服务。
+- [约束驱动的软件工业化](./theory/约束驱动的软件工业化.md)：讨论合法变化空间、自动验证与 AI 软件生产的工作假说。
+- [AI 辅助的可分叉软件基底](./theory/ai-enabled-forkable-software-bases.md)：从原始对话出发，讨论能力休眠、按需恢复与个人开源分叉，给出文献依据、形式化模型和可证伪实验方案。
 - [工作流执行与可选 AI 规划方案](./design/ai-workflow-plugin-exploration.md)：以临时手工编辑为 MVP 主路径，记录已完成 G0–G4，并给出下载 Action、跨插件 E2E、AI 和持久化的 G5–G10 可行性路线。
 - [Workflow Action G0 冻结记录](./plan-history/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md)：冻结 3.0 输入事实、WorkflowStudio 命名、Schema/预算和独立仓库边界，并以真实旧插件包和跨 ALC 夹具签署 SDK 3.1 兼容新增路线；不表示生产 API 已实现。
 - [Workflow Action G2 传播记录](./plan-history/workflow-action/g2-sdk-build-external-template-propagation.md)：记录模板 1.1.0、Build 1.1.2 不升版、真实 NuGet/lock、外部双 ALC、非发布门禁历史和正式上传结果。
