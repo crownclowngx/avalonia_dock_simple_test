@@ -11,7 +11,7 @@ using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.PluginTests;
 
-/// <summary>使用 G8 ClassicGame 真实 ZIP 验证 13 个游戏的 Command 3.3 独立消费与多实例 Target。</summary>
+/// <summary>使用 ClassicGame 真实 ZIP 验证 14 个游戏的 Command 3.3 独立消费与多实例 Target。</summary>
 /// <remarks>
 /// 外部仓库不进入 Host 解决方案，也没有源码 ProjectReference。本测试只接受专项门禁解压后的实体包目录，
 /// 再经过生产 Loader、独立 ALC、插件 Provider、不可变 Registry 和真实 Document Scope。用于建立棋局状态的
@@ -32,7 +32,7 @@ public sealed class WorkbenchCommandG8ClassicGameExternalPackageTests
         new("myavalonia.plugin.classic.game.command.gomoku.undo");
 
     [Fact]
-    public async Task 真实ClassicGame包注册二十二条命令并保持十三游戏可用与五子棋多实例隔离()
+    public async Task 真实ClassicGame包注册二十三条命令并保持十四游戏可用与五子棋多实例隔离()
     {
         var configuredRoot = Environment.GetEnvironmentVariable(PackageRootVariable);
         if (string.IsNullOrWhiteSpace(configuredRoot))
@@ -87,9 +87,9 @@ public sealed class WorkbenchCommandG8ClassicGameExternalPackageTests
             Assert.Equal(ClassicGameOwner, plugin.Manifest.PluginId);
             Assert.Equal(new Version(1, 1, 0, 0), plugin.Manifest.PluginVersion);
             Assert.Equal(new Version(3, 3, 0, 0), plugin.Manifest.Sdk.MinInclusive);
-            Assert.Equal(13, registry.Documents.Count);
-            Assert.Equal(22, registry.WorkbenchCommands.Count);
-            Assert.Equal(22, registry.MenuCommandContributions.Count);
+            Assert.Equal(14, registry.Documents.Count);
+            Assert.Equal(23, registry.WorkbenchCommands.Count);
+            Assert.Equal(23, registry.MenuCommandContributions.Count);
             Assert.Equal(2, registry.KeyBindingContributions.Count);
 
             var commands = registry.WorkbenchCommands
@@ -131,8 +131,8 @@ public sealed class WorkbenchCommandG8ClassicGameExternalPackageTests
                     item.Descriptor.Key == Key.Z &&
                     item.Descriptor.Modifiers == KeyModifiers.Control);
 
-            // 先逐一通过生产 Scope 构造并执行 13 个真实 Document 的 Restart。只有确实已有 Undo
-            // 语义的 9 个游戏才应出现在 Catalog；新局状态都应不可撤销。
+            // 逐一通过生产 Scope 执行 14 个 Document 的 Restart。9 个同步 Undo 出现在 Catalog；
+            // 魔方的逆序动画回退保留在页面内，不增加工作台 Undo。
             var undoGames = new HashSet<string>(StringComparer.Ordinal)
             {
                 "spider-solitaire", "reversi", "gomoku", "go", "xiangqi",

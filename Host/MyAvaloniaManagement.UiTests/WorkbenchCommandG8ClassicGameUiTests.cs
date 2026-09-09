@@ -37,7 +37,7 @@ public sealed class WorkbenchCommandG8ClassicGameUiTests
         "MYAVALONIA_WORKBENCH_COMMAND_G8_CLASSIC_GAME_PLUGIN_ROOT";
 
     [AvaloniaFact]
-    public async Task 十三游戏菜单与五子棋快捷键随当前真实Document实例投影且关闭无残留()
+    public async Task 十四游戏菜单与五子棋快捷键随当前真实Document实例投影且关闭无残留()
     {
         var configuredRoot = Environment.GetEnvironmentVariable(PackageRootVariable);
         if (string.IsNullOrWhiteSpace(configuredRoot))
@@ -219,6 +219,7 @@ public sealed class WorkbenchCommandG8ClassicGameUiTests
             new("freecell", "空当接龙", true),
             new("match3", "消消乐", false),
             new("chinese-checkers", "中国跳棋", true),
+            new("rubiks-cube", "三阶魔方", false),
         ];
 
         private readonly HostDiagnosticSession _diagnostics;

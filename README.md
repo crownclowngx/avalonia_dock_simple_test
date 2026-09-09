@@ -51,7 +51,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 > [G3 跨仓库签署记录](./docs/plan-history/workflow-action/g3-workflow-studio-fake-action-loop.md)。
 
 > Workbench Command 已完成 G0–G10 本地开发封板：Host 打开/保存、插件声明式菜单/快捷键、活动 Document
-> Target、WorkflowStudio 三命令、ClassicGame 22 条命令和最小 Command Palette 共用同一 Catalog、Context、
+> Target、WorkflowStudio 三命令、ClassicGame 工作台命令和最小 Command Palette 共用同一 Catalog、Context、
 > State 与 Executor。G10 以三仓当前工作树建立一轮无硬链接隔离副本，完成 SDK/模板、四仓内插件和两个
 > 外部实体包回归；没有运行 Windows CI/Smoke 或发布门禁，`publishable=false`。见
 > [G10 跨仓库本地封板记录](./docs/plan-history/workbench-command/g10-cross-repository-integration-sealing.md)。

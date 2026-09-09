@@ -98,12 +98,12 @@ public sealed class WorkbenchCommandG10CrossRepositoryPackageTests
                 registry,
                 provider.GetRequiredService<PluginAvailabilityReadModel>());
             Assert.Equal(2, registry.Plugins.Count);
-            Assert.Equal(14, registry.Documents.Count);
-            Assert.Equal(25, registry.WorkbenchCommands.Count);
-            Assert.Equal(25, registry.MenuCommandContributions.Count);
+            Assert.Equal(15, registry.Documents.Count);
+            Assert.Equal(26, registry.WorkbenchCommands.Count);
+            Assert.Equal(26, registry.MenuCommandContributions.Count);
             Assert.Equal(5, registry.KeyBindingContributions.Count);
             Assert.Equal(
-                25,
+                26,
                 registry.WorkbenchCommands
                     .Select(command => command.Descriptor.CommandId)
                     .Distinct()
