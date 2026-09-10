@@ -143,6 +143,10 @@ internal sealed class DockWorkspaceBuilder(HostDockFactory factory)
                 : factory.CreateList<IDockable>([.. tools]),
             Alignment = ToolDockPlacement.NormalizeAlignment(alignment),
             GripMode = GripMode.Visible,
+            // 稳定 ToolDock 独占 ToolPane 的内部高度。启动恢复可能在首次 Measure 前
+            // 收缩全部 Tool，必须预置展开比例，避免 NaN 被折叠布局记成 0 后无法展开。
+            Proportion = 1,
+            CollapsedProportion = 1,
             IsCollapsable = true
         };
 }

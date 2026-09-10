@@ -19,13 +19,18 @@ namespace MyAvaloniaManagement.UiTests;
 internal sealed class UiTestContext : IDisposable
 {
     public UiTestContext(
-        Action<IServiceCollection, PluginRegistryBuilder>? configureContributions = null)
+        Action<IServiceCollection, PluginRegistryBuilder>? configureContributions = null,
+        DockLayoutSnapshotV2? initialLayout = null)
     {
         TempDirectory = Path.Combine(
             Path.GetTempPath(),
             "MyAvaloniaManagement.UiTests",
             Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(TempDirectory);
+        if (initialLayout is not null)
+        {
+            new DockLayoutStore(LayoutPath).Save(initialLayout);
+        }
         Storage = new UiStorageService();
         var services = new ServiceCollection();
         var registryBuilder = new PluginRegistryBuilder();

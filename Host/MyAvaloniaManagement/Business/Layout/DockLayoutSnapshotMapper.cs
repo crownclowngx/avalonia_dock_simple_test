@@ -150,7 +150,9 @@ internal static class DockLayoutSnapshotMapper
                      .OrderBy(tool => tool.DockId, StringComparer.Ordinal)
                      .ThenBy(tool => tool.Order))
         {
-            session.DockFactory.PinDockable(session.CreatedTools[toolState.Id]);
+            var tool = session.CreatedTools[toolState.Id];
+            session.DockFactory.PinDockable(tool);
+            RestorePinnedBounds(tool, toolDocks[toolState.DockId]);
         }
 
         if (snapshot.ActiveToolId is { } activeToolId)
@@ -161,6 +163,36 @@ internal static class DockLayoutSnapshotMapper
                 session.DockFactory.SetActiveDockable(session.CreatedTools[activeToolId]);
             }
         }
+    }
+
+    private static void RestorePinnedBounds(Tool tool, IToolDock targetDock)
+    {
+        // V2 只保存 Pane 比例，没有保存自动隐藏浮层的像素尺寸。恢复时 Tool 尚未
+        // 完成布局，PinDockable 捕获的 VisibleBounds 可能只有主题的最小宽度 50。
+        // 以稳定 Pane 比例重建浮出尺寸；首次布局尚不可用时使用可阅读的默认尺寸。
+        const double defaultWidth = 320;
+        const double defaultHeight = 240;
+        var width = defaultWidth;
+        var height = defaultHeight;
+        var pane = targetDock.Owner;
+        if (pane?.Owner is { } workspace)
+        {
+            workspace.GetVisibleBounds(out _, out _, out var availableWidth, out var availableHeight);
+            var proportion = GetPersistableProportion(pane, targetDock.Alignment);
+            if (double.IsFinite(availableWidth) && availableWidth > 0)
+            {
+                width = targetDock.Alignment is Alignment.Left or Alignment.Right
+                    ? Math.Max(defaultWidth, availableWidth * proportion)
+                    : availableWidth;
+            }
+            if (double.IsFinite(availableHeight) && availableHeight > 0)
+            {
+                height = targetDock.Alignment is Alignment.Top or Alignment.Bottom
+                    ? Math.Max(defaultHeight, availableHeight * proportion)
+                    : availableHeight;
+            }
+        }
+        tool.SetPinnedBounds(0, 0, width, height);
     }
 
     private static IEnumerable<IDockable> EnumerateDockables(IDockable root)
