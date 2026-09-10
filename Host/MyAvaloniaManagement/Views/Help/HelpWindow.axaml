@@ -1,0 +1,55 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:help="using:MyAvaloniaManagement.Business.Help"
+        x:Class="MyAvaloniaManagement.Views.Help.HelpWindow"
+        Title="帮助中心 · MyAvaloniaManagement" Width="1180" Height="800"
+        MinWidth="640" MinHeight="480" ShowInTaskbar="True" CanResize="True"
+        Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+  <Window.Styles>
+    <Style Selector="Button"><Setter Property="CornerRadius" Value="7"/><Setter Property="Padding" Value="12,7"/></Style>
+    <Style Selector="ListBoxItem"><Setter Property="Padding" Value="12,10"/><Setter Property="Margin" Value="0,2"/><Setter Property="CornerRadius" Value="8"/></Style>
+  </Window.Styles>
+  <Grid ColumnDefinitions="240,*" RowDefinitions="*">
+    <Border BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="0,0,1,0"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+      <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="14,22,14,14">
+        <StackPanel Margin="12,0,0,18" Spacing="5">
+          <TextBlock Text="HELP / 帮助中心" FontSize="12" FontWeight="SemiBold" Opacity="0.6"/>
+          <TextBlock Text="理解你的工作台" FontSize="22" FontWeight="SemiBold"/>
+        </StackPanel>
+        <TextBox x:Name="SearchBox" Grid.Row="1" PlaceholderText="搜索正文…  Ctrl+F" Margin="0,0,0,12"/>
+        <Grid Grid.Row="2">
+          <ListBox x:Name="ChapterList" Background="Transparent" BorderThickness="0">
+            <ListBox.ItemTemplate><DataTemplate x:DataType="help:HelpArticle">
+              <StackPanel Spacing="4"><TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Description}" FontSize="11" Opacity="0.55" TextWrapping="Wrap"/></StackPanel>
+            </DataTemplate></ListBox.ItemTemplate>
+          </ListBox>
+          <ListBox x:Name="SearchResults" Background="Transparent" BorderThickness="0" IsVisible="False">
+            <ListBox.ItemTemplate><DataTemplate x:DataType="help:HelpSearchResult">
+              <StackPanel Spacing="5"><TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Excerpt}" FontSize="11" Opacity="0.65" TextWrapping="Wrap" MaxLines="4"/></StackPanel>
+            </DataTemplate></ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+        <TextBlock x:Name="SidebarStatus" Grid.Row="3" Text="本地阅读 · 与主窗口并行使用" FontSize="11" Opacity="0.6" Margin="12,12,0,0" TextWrapping="Wrap"/>
+      </Grid>
+    </Border>
+    <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="20,12" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Button x:Name="BackButton" Content="←" ToolTip.Tip="后退" AutomationProperties.Name="后退"/>
+          <Button x:Name="ForwardButton" Content="→" ToolTip.Tip="前进" AutomationProperties.Name="前进"/>
+        </StackPanel>
+        <TextBlock x:Name="Breadcrumb" Grid.Column="1" Text="帮助 / 产品介绍" Margin="14,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Opacity="0.65"/>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+          <Button x:Name="SmallerButton" Content="A−" AutomationProperties.Name="缩小字号"/>
+          <Button x:Name="LargerButton" Content="A+" AutomationProperties.Name="放大字号"/>
+          <CheckBox x:Name="ReduceMotionBox" Content="减少动画" Margin="10,0,0,0" FontSize="12"/>
+        </StackPanel>
+      </Grid>
+      <TextBlock x:Name="ReadingStatus" Grid.Row="1" Margin="22,0,22,6" FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+      <ContentControl x:Name="ReaderHost" Grid.Row="2" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+    </Grid>
+  </Grid>
+</Window>

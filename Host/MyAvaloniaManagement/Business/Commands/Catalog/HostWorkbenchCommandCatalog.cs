@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MyAvaloniaManagement.Business.Commands.Execution;
+using MyAvaloniaManagement.Business.Help;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 
@@ -19,6 +20,9 @@ internal static class HostWorkbenchCommandIds
 
     internal static readonly CommandId SaveDocument =
         new("myavalonia.host.command.document.save");
+
+    internal static readonly CommandId OpenHelp =
+        new("myavalonia.host.command.help.open");
 }
 
 /// <summary>记录一条宿主命令的不可变描述和窄执行实现。</summary>
@@ -42,7 +46,8 @@ internal sealed class HostWorkbenchCommandCatalog
 
     internal HostWorkbenchCommandCatalog(
         HostOpenDocumentCommandHandler openDocument,
-        HostSaveDocumentCommandHandler saveDocument)
+        HostSaveDocumentCommandHandler saveDocument,
+        HostOpenHelpCommandHandler openHelp)
         : this(
         [
             new HostWorkbenchCommandRegistration(
@@ -57,6 +62,10 @@ internal sealed class HostWorkbenchCommandCatalog
                     "保存",
                     "保存当前活动的可持久化 Document。"),
                 saveDocument ?? throw new ArgumentNullException(nameof(saveDocument))),
+            new HostWorkbenchCommandRegistration(
+                new CommandDescriptor(HostWorkbenchCommandIds.OpenHelp,
+                    "帮助中心", "阅读产品介绍、架构与理论，探索公式和交互演示。"),
+                openHelp ?? throw new ArgumentNullException(nameof(openHelp))),
         ])
     {
     }

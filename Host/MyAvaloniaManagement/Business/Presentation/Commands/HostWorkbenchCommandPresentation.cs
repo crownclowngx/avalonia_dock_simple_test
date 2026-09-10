@@ -17,6 +17,12 @@ internal sealed class HostWorkbenchCommandProjectionCatalog
         MenuContributions =
         [
             new MenuCommandContributionDescriptor(
+                new CommandPlacementId("myavalonia.host.command-placement.menu.help.open"),
+                HostWorkbenchCommandIds.OpenHelp,
+                WorkbenchMenuLocations.HelpShared,
+                group: string.Empty, order: 0,
+                MenuCommandTargetUnavailableBehavior.Disable),
+            new MenuCommandContributionDescriptor(
                 new CommandPlacementId(
                     "myavalonia.host.command-placement.menu.file.open-document"),
                 HostWorkbenchCommandIds.OpenDocument,
@@ -35,6 +41,9 @@ internal sealed class HostWorkbenchCommandProjectionCatalog
         ];
         KeyBindingContributions =
         [
+            new KeyBindingContributionDescriptor(
+                new CommandPlacementId("myavalonia.host.command-placement.key-binding.help.open"),
+                HostWorkbenchCommandIds.OpenHelp, Key.F1, KeyModifiers.None),
             new KeyBindingContributionDescriptor(
                 new CommandPlacementId(
                     "myavalonia.host.command-placement.key-binding.save-document"),

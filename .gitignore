@@ -30,3 +30,6 @@ artifacts/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Help asset development dependencies; the offline runtime bundle is committed.
+node_modules/

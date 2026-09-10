@@ -2,6 +2,7 @@ using System;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
+using MyAvaloniaManagement.Business.Help;
 using MyAvaloniaManagement.Business.Commands.Catalog;
 using MyAvaloniaManagement.Business.Commands.Context;
 using MyAvaloniaManagement.Business.Commands.Execution;
@@ -75,6 +76,11 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<DockLayoutLifecycle>();
         services.AddSingleton<AppearanceSettingsStore>();
         services.AddSingleton<ApplicationThemeService>();
+        services.AddSingleton<HelpContentCatalog>();
+        services.AddSingleton<HelpReadingStateStore>();
+        services.AddSingleton<Func<IHelpReader>>(_ => static () => new HelpWebReader());
+        services.AddSingleton<HelpWindowService>();
+        services.AddSingleton<HostOpenHelpCommandHandler>();
         services.AddSingleton<IHostStorageService, AvaloniaHostStorageService>();
         // 插件只能取得窄窗口交互端口；具体 Window、StorageProvider 与 Clipboard 始终留在 Host。
         services.AddSingleton<IPluginWindowInteraction, AvaloniaPluginWindowInteraction>();
@@ -109,7 +115,8 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<HostSaveDocumentCommandHandler>();
         services.AddSingleton(provider => new HostWorkbenchCommandCatalog(
             provider.GetRequiredService<HostOpenDocumentCommandHandler>(),
-            provider.GetRequiredService<HostSaveDocumentCommandHandler>()));
+            provider.GetRequiredService<HostSaveDocumentCommandHandler>(),
+            provider.GetRequiredService<HostOpenHelpCommandHandler>()));
         services.AddSingleton<IHostDocumentOpenService>(provider =>
             provider.GetRequiredService<DocumentPersistenceCoordinator>());
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();

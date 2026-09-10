@@ -1,0 +1,19 @@
+# Development-only files from an earlier full npm copy are not runtime assets.
+/mathjax/CONTRIBUTING.md
+/mathjax/README.md
+/mathjax/package.json
+/mathjax/node-main*
+/mathjax/require.mjs
+/mathjax/mml-*.js
+/mathjax/tex-chtml*.js
+/mathjax/tex-mml*.js
+/mathjax/tex-svg-nofont.js
+/fonts/*/cjs/
+/fonts/*/mjs/
+/fonts/*/chtml/
+/fonts/*/def/
+/fonts/*/examples/
+/fonts/*/tsconfig/
+/fonts/*/tsconfig.json
+/fonts/*/chtml.js
+/fonts/*/tex-mml-*.js

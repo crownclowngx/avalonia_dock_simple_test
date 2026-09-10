@@ -7,6 +7,8 @@
     <!-- UI 大版本必须作为一个发布单元升级，避免宿主与插件加载不同版本的公共类型。 -->
     <PackageVersion Include="Avalonia" Version="$(MyAvaloniaAvaloniaUiVersion)" />
     <PackageVersion Include="Avalonia.Desktop" Version="$(MyAvaloniaAvaloniaUiVersion)" />
+    <PackageVersion Include="Avalonia.Controls.WebView" Version="12.1.0" />
+    <PackageVersion Include="Markdig" Version="1.3.2" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="$(MyAvaloniaAvaloniaUiVersion)" />
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.0" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(MyAvaloniaAvaloniaUiVersion)" />

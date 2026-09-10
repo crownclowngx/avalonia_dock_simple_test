@@ -63,11 +63,13 @@ public sealed class ApplicationAndWindowTests
             .OfType<DockControl>()
             .Single();
         Assert.Same(context.ViewModel.Layout, dock.Layout);
-        Assert.Single(window.KeyBindings);
+        Assert.Equal(2, window.KeyBindings.Count);
+        var saveBinding = Assert.Single(window.KeyBindings, binding => binding.Gesture?.Key == Key.S);
+        Assert.Single(window.KeyBindings, binding => binding.Gesture?.Key == Key.F1);
         Assert.Equal(
             new KeyGesture(Key.S, KeyModifiers.Control),
-            window.KeyBindings[0].Gesture);
-        Assert.NotNull(window.KeyBindings[0].Command);
+            saveBinding.Gesture);
+        Assert.NotNull(saveBinding.Command);
         Assert.IsType<MainView>(window.Content is Grid grid
             ? grid.Children[0]
             : null);

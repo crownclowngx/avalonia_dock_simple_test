@@ -15,6 +15,11 @@
 
     <ItemGroup>
         <AvaloniaResource Include="Assets\**"/>
+        <EmbeddedResource Include="HelpContent\*.md" LogicalName="Help.Guide.%(Filename)%(Extension)" />
+        <EmbeddedResource Include="..\..\docs\**\*.md" LogicalName="Help.Repository.docs/%(RecursiveDir)%(Filename)%(Extension)" />
+        <EmbeddedResource Include="docs\**\*.md" LogicalName="Help.Repository.Host/MyAvaloniaManagement/docs/%(RecursiveDir)%(Filename)%(Extension)" />
+        <EmbeddedResource Include="..\..\README.md" LogicalName="Help.Repository.README.md" />
+        <Content Include="HelpWeb\*.html;HelpWeb\*.css;HelpWeb\*.js" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>
@@ -27,6 +32,8 @@
     <ItemGroup>
       <PackageReference Include="Avalonia" />
       <PackageReference Include="Avalonia.Desktop" />
+      <PackageReference Include="Avalonia.Controls.WebView" />
+      <PackageReference Include="Markdig" />
       <PackageReference Include="Avalonia.Fonts.Inter" />
       <PackageReference Include="Avalonia.Themes.Fluent" />
       <PackageReference Include="CommunityToolkit.Mvvm" />
@@ -48,4 +55,5 @@
       <PackageReference Include="Semi.Avalonia" />
       <PackageReference Include="Xaml.Behaviors" />
     </ItemGroup>
+    <Import Project="HelpWeb\HelpAssets.props" />
 </Project>

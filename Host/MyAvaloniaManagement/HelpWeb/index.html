@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file: 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data:; font-src 'self' file: data:; connect-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>帮助中心</title>
+  <link rel="stylesheet" href="reader.css">
+  <script src="math-config.js"></script>
+  <script defer src="vendor/mathjax/startup.js"></script>
+  <script defer src="vendor/mermaid.js"></script>
+  <script defer src="demo-models.js"></script>
+  <script defer src="demos.js"></script>
+  <script defer src="reader.js"></script>
+</head>
+<body>
+  <div id="progress" aria-hidden="true"></div>
+  <main id="reader">
+    <header class="article-header"><div class="eyebrow">MYAVALONIA / KNOWLEDGE</div>
+      <h1 id="article-title">帮助中心</h1><p id="article-description">正在准备本地阅读资源…</p>
+    </header>
+    <details class="toc"><summary>本页目录 <span id="toc-count"></span></summary><nav id="toc" aria-label="本页目录"></nav></details>
+    <article id="content"></article>
+    <footer>MyAvaloniaManagement · 内容随 Host 发布 · 演示使用示例数据</footer>
+  </main>
+  <dialog id="formula-dialog" aria-label="放大公式"><div class="dialog-toolbar"><strong>公式详情</strong><button id="close-formula">关闭 ×</button></div><div id="formula-large"></div><pre id="formula-source"></pre><button id="copy-formula">复制 LaTeX</button></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

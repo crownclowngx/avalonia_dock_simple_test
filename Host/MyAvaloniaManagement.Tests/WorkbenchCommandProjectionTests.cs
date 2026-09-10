@@ -42,7 +42,7 @@ public sealed class WorkbenchCommandProjectionTests
             ["Alpha Empty", "|", "Alpha Edit A", "Alpha Edit Z", "|", "Beta Workflow"],
             Snapshot(firstPresentation.Menu, WorkbenchMenuLocations.ToolsShared));
         Assert.Equal(
-            ["Beta Help"],
+            ["帮助中心", "Beta Help"],
             Snapshot(firstPresentation.Menu, WorkbenchMenuLocations.HelpShared));
 
         foreach (var location in AllLocations())
@@ -109,6 +109,11 @@ public sealed class WorkbenchCommandProjectionTests
 
         Assert.Collection(
             bindings,
+            help =>
+            {
+                Assert.Equal(HostWorkbenchCommandIds.OpenHelp, help.CommandId);
+                Assert.Equal(Key.F1, help.Key);
+            },
             host =>
             {
                 Assert.Equal(HostWorkbenchCommandIds.SaveDocument, host.CommandId);
@@ -158,6 +163,12 @@ public sealed class WorkbenchCommandProjectionTests
                 Assert.Equal("保存", save.DisplayName);
                 Assert.False(save.IsEnabled);
                 Assert.Equal("Ctrl+S", save.ShortcutText);
+            },
+            help =>
+            {
+                Assert.Equal(HostWorkbenchCommandIds.OpenHelp, help.CommandId);
+                Assert.True(help.IsEnabled);
+                Assert.Equal("F1", help.ShortcutText);
             },
             open =>
             {

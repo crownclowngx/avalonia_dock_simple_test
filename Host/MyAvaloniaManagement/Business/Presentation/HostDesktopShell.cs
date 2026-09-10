@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using MyAvaloniaManagement.Business.Appearance;
+using MyAvaloniaManagement.Business.Help;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.Views;
 
@@ -31,7 +32,8 @@ internal interface IHostDesktopShell
 /// </remarks>
 internal sealed class HostDesktopShell(
     ApplicationThemeService themeService,
-    MainWindowViewModel mainWindowViewModel) : IHostDesktopShell
+    MainWindowViewModel mainWindowViewModel,
+    HelpWindowService helpWindows) : IHostDesktopShell
 {
     public void Attach(
         App application,
@@ -46,6 +48,7 @@ internal sealed class HostDesktopShell(
             DataContext = mainWindowViewModel,
         };
         desktop.MainWindow = mainWindow;
+        helpWindows.Attach(mainWindow);
 
         if (string.Equals(
                 Environment.GetEnvironmentVariable("MYAVALONIA_SMOKE_TEST"),

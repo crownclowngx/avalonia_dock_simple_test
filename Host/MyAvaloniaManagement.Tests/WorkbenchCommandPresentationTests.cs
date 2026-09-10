@@ -29,7 +29,8 @@ public sealed class WorkbenchCommandPresentationTests
         Assert.Same(firstViewModel.WorkbenchCommands, secondViewModel.WorkbenchCommands);
         var open = GetHostCommand(presentation, HostWorkbenchCommandIds.OpenDocument);
         var save = GetHostCommand(presentation, HostWorkbenchCommandIds.SaveDocument);
-        var keyBinding = Assert.Single(presentation.KeyBindings.Items);
+        var keyBinding = Assert.Single(presentation.KeyBindings.Items,
+            item => item.CommandId == HostWorkbenchCommandIds.SaveDocument);
         Assert.Equal(HostWorkbenchCommandIds.OpenDocument, open.CommandId);
         Assert.Equal(HostWorkbenchCommandIds.SaveDocument, save.CommandId);
         Assert.Same(save, keyBinding.Command);
