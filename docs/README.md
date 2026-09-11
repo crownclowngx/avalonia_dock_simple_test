@@ -43,6 +43,7 @@ Managed Plugin 快速开始入口：
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
 | [V6.1 实施验收](./plan-history/host-v6.1/icon-contributions-and-resources-acceptance.md) | 实现、测试、覆盖率、独立消费与公开包交付 | 按实际结果记录 |
+| [V6.1 现有插件图标升级](./plan-history/host-v6.1/external-plugin-icons-upgrade.md) | 十个外部插件的图标映射、版本、真实 ZIP、Host 联调与 Git 提交 | 已实施并部署到指定 Controls；逐仓验证见记录 |
 | [Host V6.1 公共图标资源与专属注册设计](./design/host-v6.1-extensible-icon-contributions-plan.md) | SDK 可选图标契约、独立公共资源包、插件专属图标、Host 管理与 ALC/版本边界 | 已实施；发布证据见专属记录 |
 | [Host V6 插件目录与功能中心设计](./design/host-v6-plugin-navigation-and-function-center-plan.md) | 保留旧版 Tool、树形模式、可自定义名称及公共矢量图标 | 已实施；验证状态见实施记录 |
 | [Host V6 专属实施验收记录](./plan-history/host-v6/plugin-navigation-and-function-center-acceptance.md) | SOLID 职责、刷新与退出修复、测试、截图及开发门禁 | 非发布；记录实际结果与限制 |
