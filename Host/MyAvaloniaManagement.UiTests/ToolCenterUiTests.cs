@@ -72,7 +72,12 @@ public sealed class ToolCenterUiTests
             Click(window, RowButton(window, id, "☆"));
             await Flush();
             Assert.True(vm.VisibleItems.Single(item => item.ToolId == id).IsFavorite);
-            Click(window, RowButton(window, id, "隐藏"));
+            var more = RowButton(window, id, "⋯");
+            Click(window, more);
+            await Flush();
+            var hide = Assert.IsType<MenuItem>(more.ContextMenu!.Items[0]);
+            hide.Command!.Execute(hide.CommandParameter);
+            more.ContextMenu?.Close();
             await Flush();
             Assert.False(vm.VisibleItems.Single(item => item.ToolId == id).IsVisible);
             Assert.True(vm.VisibleItems.Single(item => item.ToolId == id).IsFavorite);
@@ -122,6 +127,8 @@ public sealed class ToolCenterUiTests
                         button => button.Name == "PART_CloseButton" && ReferenceEquals(button.CommandParameter, adapter));
                     Assert.True(close.IsEffectivelyVisible);
                     Assert.True(close.IsEnabled);
+                    Assert.Equal("隐藏工具", ToolTip.GetTip(close));
+                    Assert.Equal("隐藏工具", Avalonia.Automation.AutomationProperties.GetName(close));
                     Click(owner, close);
                     await Flush();
                     Assert.False(vm.VisibleItems.Single(item => item.ToolId == id).IsVisible);
@@ -142,14 +149,13 @@ public sealed class ToolCenterUiTests
         var window = new ToolCenterWindow { DataContext = vm }; window.Show();
         try
         {
-            Assert.True(vm.HasSelection);
+            Assert.NotNull(vm.SelectedItem);
             vm.CategoryName = "下载任务";
             vm.AddCategoryCommand.Execute(null);
             var category = vm.EditingCategory!;
             Assert.StartsWith("user:", category.Id);
             vm.SelectedItem = vm.VisibleItems.Single(item => item.ToolId == ToolId.Value);
-            vm.AssignmentCategory = category;
-            vm.AssignCategoryCommand.Execute(null);
+            vm.AssignToolCategory(vm.SelectedItem, category);
             await Flush();
             vm.CategoryName = "媒体任务";
             vm.RenameCategoryCommand.Execute(null);
@@ -168,8 +174,8 @@ public sealed class ToolCenterUiTests
             Assert.Equal(ToolId.Value, Assert.Single(vm.VisibleItems).ToolId);
             vm.ToggleFavoriteCommand.Execute(vm.SelectedItem);
             await Flush();
-            Assert.True(vm.HasFavoriteSelection);
-            vm.MoveFavoriteUpCommand.Execute(null); vm.MoveFavoriteDownCommand.Execute(null);
+            Assert.True(vm.SelectedItem!.IsFavorite);
+            vm.MoveToolFavorite(vm.SelectedItem!, -1); vm.MoveToolFavorite(vm.SelectedItem!, 1);
             vm.DeleteCategoryCommand.Execute(null);
             await Flush();
             Assert.Equal("all", vm.SelectedNavigation!.Id);

@@ -327,3 +327,5 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- seal --repeat
   G14 已冻结 v3 Shipped 127/45 并完成两轮隔离签署；仓库仍不会在无授权时自动上传或对外发布。
 
 上述边界的详细规则以[架构评审](./docs/design/host-plugin-architecture-review.md)和[兼容约束](./Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)为准。
+
+当前 Host 交互见 [V8 工作区搜索与功能入口](./docs/quick-start/workbench-search.md)：欢迎页与文件菜单统一进入功能中心，命令面板可打开功能、切换已有页面、显示工具与执行命令。

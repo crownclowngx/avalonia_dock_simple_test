@@ -36,7 +36,6 @@ internal sealed partial class ToolCenterViewModel : ObservableObject, IDisposabl
     [ObservableProperty] private IReadOnlyList<ToolSource> _sources = [];
     [ObservableProperty] private ToolSource? _selectedSource;
     [ObservableProperty] private IReadOnlyList<ToolCategory> _categories = [];
-    [ObservableProperty] private ToolCategory? _assignmentCategory;
     [ObservableProperty] private ToolCategory? _editingCategory;
     [ObservableProperty] private string _categoryName = string.Empty;
     [ObservableProperty] private string _error = string.Empty;
@@ -44,11 +43,10 @@ internal sealed partial class ToolCenterViewModel : ObservableObject, IDisposabl
     [ObservableProperty] private string _resultsTitle = "全部工具";
     [ObservableProperty] private string _saveWarning = string.Empty;
     public HostIconRenderer Icons { get; }
+    public bool HasSourceFilter => SelectedSource is { Id: not "all" };
     public bool HasError => Error.Length > 0;
     public bool HasSaveWarning => SaveWarning.Length > 0;
     public bool HasNoResults => VisibleItems.Count == 0;
-    public bool HasSelection => SelectedItem is not null;
-    public bool HasFavoriteSelection => SelectedItem?.IsFavorite == true;
     public bool CanHideAll => _workspace.CanOperateTools && _snapshot.Any(item => item.CanHide);
     public string EmptyText => SearchText.Trim().Length > 0 ? "没有匹配的工具，试试其他关键词。" :
         _navigation == "favorites" ? "还没有常用工具，点击工具旁的星标即可收藏。" :
@@ -66,18 +64,13 @@ internal sealed partial class ToolCenterViewModel : ObservableObject, IDisposabl
     }
 
     partial void OnSearchTextChanged(string value) { if (!_refreshing) ApplyFilter(); }
-    partial void OnSelectedSourceChanged(ToolSource? value) { if (!_refreshing) ApplyFilter(); }
+    partial void OnSelectedSourceChanged(ToolSource? value) { OnPropertyChanged(nameof(HasSourceFilter)); if (!_refreshing) ApplyFilter(); }
     partial void OnSelectedNavigationChanged(ToolNavigationItem? value)
     {
         if (_refreshing || value is null) return;
         _navigation = value.Id;
         SearchText = string.Empty;
         ApplyFilter();
-    }
-    partial void OnSelectedItemChanged(ToolCenterItem? value)
-    {
-        AssignmentCategory = Categories.FirstOrDefault(item => item.Id == value?.CategoryId);
-        OnPropertyChanged(nameof(HasSelection)); OnPropertyChanged(nameof(HasFavoriteSelection));
     }
     partial void OnEditingCategoryChanged(ToolCategory? value) => CategoryName = value?.DisplayName ?? string.Empty;
     partial void OnErrorChanged(string value) => OnPropertyChanged(nameof(HasError));
@@ -105,9 +98,6 @@ internal sealed partial class ToolCenterViewModel : ObservableObject, IDisposabl
     {
         if (!_disposed && item is not null) _preferences.ToggleFavorite(item.ToolId, item.DisplayName);
     }
-    [RelayCommand] private void MoveFavoriteUp() { if (!_disposed && SelectedItem is { } item) _preferences.MoveFavorite(item.ToolId, -1); }
-    [RelayCommand] private void MoveFavoriteDown() { if (!_disposed && SelectedItem is { } item) _preferences.MoveFavorite(item.ToolId, 1); }
-
     [RelayCommand]
     private void HideAll()
     {
@@ -119,11 +109,20 @@ internal sealed partial class ToolCenterViewModel : ObservableObject, IDisposabl
         Refresh();
     }
 
-    [RelayCommand] private void AssignCategory()
+    /// <summary>弹出菜单携带打开时的工具身份，不能用后来变化的 SelectedItem 代替目标。</summary>
+    internal void AssignToolCategory(ToolCenterItem item, ToolCategory category)
     {
-        if (!_disposed && SelectedItem is { IsMissing: false } item && AssignmentCategory is { } category)
-            _preferences.AssignCategory(item.ToolId, category.Id);
+        if (!_disposed && !item.IsMissing) _preferences.AssignCategory(item.ToolId, category.Id);
     }
+
+    internal void MoveToolFavorite(ToolCenterItem item, int direction)
+    {
+        if (!_disposed && item.IsFavorite) _preferences.MoveFavorite(item.ToolId, direction);
+    }
+
+    [RelayCommand]
+    private void ClearSource() => SelectedSource = Sources.FirstOrDefault(item => item.Id == "all");
+
     [RelayCommand] private void AddCategory()
     {
         if (_disposed) return;
@@ -190,6 +189,7 @@ internal sealed partial class ToolCenterViewModel : ObservableObject, IDisposabl
         VisibleItems = _query.Filter(_snapshot, _navigation, SearchText, SelectedSource?.Id ?? "all");
         SelectedItem = VisibleItems.FirstOrDefault(item => item.ToolId == selectedId) ?? VisibleItems.FirstOrDefault();
         ResultsTitle = SearchText.Trim().Length > 0 ? "全部工具中的搜索结果" : SelectedNavigation?.DisplayName ?? "全部工具";
+        if (HasSourceFilter) ResultsTitle += $" · 来源：{SelectedSource!.DisplayName}";
         OnPropertyChanged(nameof(HasNoResults)); OnPropertyChanged(nameof(EmptyText));
     }
 

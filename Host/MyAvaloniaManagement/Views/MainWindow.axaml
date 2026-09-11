@@ -10,7 +10,7 @@
         x:DataType="bindings:IMainWindowViewBindings"
         x:Name="MainWindowView"
         WindowState="Normal" WindowStartupLocation="CenterScreen"
-        Foreground="{DynamicResource DockThemeForegroundBrush}"
+        Foreground="{DynamicResource AppPrimaryTextBrush}"
         BorderThickness="1" BorderBrush="{DynamicResource DockThemeBorderLowBrush}"
         Icon="/Assets/avalonia-logo.ico"
         Title="管理系统"
@@ -35,7 +35,7 @@
                 Background="#99000000"
                 ZIndex="20000">
             <views:CommandPaletteView x:Name="CommandPaletteHost"
-                                      HorizontalAlignment="Center"
+                                      HorizontalAlignment="Stretch"
                                       VerticalAlignment="Top"
                                       Margin="24,72,24,24" />
         </Border>

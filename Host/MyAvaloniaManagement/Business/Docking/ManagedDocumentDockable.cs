@@ -45,6 +45,8 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
     }
 
     internal IWorkspaceDocumentRegistration Registration => _activation.Registration;
+    /// <summary>独立于文档类型和标题的运行期身份，防止同名页面定位到错误实例。</summary>
+    internal WorkspacePageId PageId { get; } = new(Guid.NewGuid());
     internal PluginDocumentRegistration? PluginRegistration =>
         _activation.Registration as PluginDocumentRegistration;
     internal CancellationToken ClosingToken => _activation.ClosingToken;

@@ -34,7 +34,7 @@ public sealed class IdentityAndRegistryTests
             .GetConstructors()
             .Single(constructor => constructor.GetParameters().Length == 2);
         Assert.Equal(
-            typeof(Action<ToolTypeId>),
+            typeof(Action),
             injectedConstructor.GetParameters()[0].ParameterType);
         Assert.Equal(typeof(Action), injectedConstructor.GetParameters()[1].ParameterType);
     }

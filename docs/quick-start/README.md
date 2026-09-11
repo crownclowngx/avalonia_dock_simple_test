@@ -75,3 +75,9 @@ SDK、Build 和模板包的发布方式见
 [外部 Managed Plugin 开发、模板与 NuGet 发布指南](../design/external-managed-plugin-development-and-installation-plan.md)。
 
 V6.1 新增 [公共资源与插件专属图标](plugin-icons.md)。当前配套为 Core/UI 3.4.0、Icons 1.0.0、Build 1.1.3、Templates 1.4.1；发布证据见专属实施记录。
+
+## Host 使用入口
+
+- [工作区搜索与功能入口（V8）](./workbench-search.md)
+- [功能中心与插件目录](./plugin-navigation-and-function-center.md)
+- [工具中心](./tool-center.md)

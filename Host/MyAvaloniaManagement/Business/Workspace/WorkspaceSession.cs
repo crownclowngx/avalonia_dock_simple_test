@@ -33,7 +33,7 @@ internal sealed class ActiveDocumentChangedEventArgs(
 /// 发布、显隐、关闭和退出的提交顺序。Dock Framework override 由 <see cref="HostDockFactory"/>
 /// 负责，持久化文件和布局格式仍由现有 Coordinator/Store 负责，避免把新类型变成另一个万能类。
 /// </remarks>
-internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
+internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
 {
     private readonly WorkspaceCatalog _catalog;
     private readonly IHostDockableFactory _dockableFactory;
@@ -77,6 +77,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         _documentLifetime = documentLifetime ??
             throw new ArgumentNullException(nameof(documentLifetime));
         _diagnostics = diagnostics;
+        _documentCloseCoordinator.StateChanged += OnCloseStateChanged;
         _workspaceBuilder = new DockWorkspaceBuilder(DockFactory);
         _toolDockCoordinator = new ToolDockCoordinator(
             DockFactory,
@@ -93,6 +94,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     /// <summary>向布局基础设施提供只读 Tool 实例索引，所有写入仍只发生在 Session 内。</summary>
     internal IReadOnlyDictionary<string, Tool> CreatedTools => _createdTools;
 
+    internal bool CanCreateDocuments => !_disposed && _acceptingCreations && _documentDock is not null;
     internal bool CanOperateTools => !_disposed && _acceptingCreations && _rootDock is not null;
     internal IReadOnlyList<ToolCatalogEntry> GetRegisteredTools() => _catalog.GetRegisteredTools();
 
@@ -117,8 +119,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         _ownedDocuments.OfType<ManagedDocumentDockable>().ToArray();
 
     /// <summary>取得当前活动 Document，不向调用方暴露 Root Dock 遍历。</summary>
-    internal ManagedDocumentDockable? GetActiveDocument() =>
-        _documentDock?.ActiveDockable as ManagedDocumentDockable;
+    internal ManagedDocumentDockable? GetActiveDocument() => _publishedActiveDocument;
 
     /// <summary>判断窗口关闭是否存在需要确认的脏 Document。</summary>
     internal bool HasDirtyDocuments() =>
@@ -281,12 +282,14 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
             }
             throw;
         }
+        if (document is ManagedDocumentDockable page) TrackPublishedPage(page);
     }
 
     /// <summary>汇合创建失败、恢复失败、最终关闭和 Runtime 退出的 Document 释放。</summary>
     internal void ReleaseDocument(Document document)
     {
         ArgumentNullException.ThrowIfNull(document);
+        if (document is ManagedDocumentDockable page) UntrackPublishedPage(page);
         if (ReferenceEquals(_documentDock?.ActiveDockable, document))
         {
             // 某些 Dock 关闭路径会先回调 OnDockableClosed，稍后才整理 ActiveDockable。
@@ -295,6 +298,14 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
                 .OfType<ManagedDocumentDockable>()
                 .FirstOrDefault(candidate => !ReferenceEquals(candidate, document));
             PublishActiveDocumentIfChanged();
+        }
+        if (ReferenceEquals(_publishedActiveDocument, document))
+        {
+            var next = GetDocuments().FirstOrDefault(candidate => !ReferenceEquals(candidate, document));
+            // 先撤回活动 Target 再释放 Scope，分割区最后一个标签也遵守这一顺序。
+            _publishedActiveDocument = null;
+            ActiveDocumentChanged?.Invoke(this, new ActiveDocumentChangedEventArgs(null));
+            if (next is not null) PublishActiveDocumentIfChanged(next);
         }
         _documentCloseCoordinator.CompleteDockClose(document as ManagedDocumentDockable);
         try
@@ -371,6 +382,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         _documentDock = documentDock;
         _rootDock = root;
         PublishActiveDocumentIfChanged();
+        foreach (var page in GetDocuments().Where(IsPublishedPage)) TrackPublishedPage(page);
         return root;
     }
 
@@ -521,6 +533,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
             return;
         }
         _disposed = true;
+        _documentCloseCoordinator.StateChanged -= OnCloseStateChanged;
         _acceptingCreations = false;
         _documentDock = null;
         PublishActiveDocumentIfChanged();
@@ -563,8 +576,12 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         }
     }
 
-    void IWorkspaceDockCallbacks.OnActiveDockableChanged(IDockable? dockable) =>
-        PublishActiveDocumentIfChanged();
+    void IWorkspaceDockCallbacks.OnActiveDockableChanged(IDockable? dockable)
+    {
+        // 分割后的页面属于其他 DocumentDock；直接使用真实激活通知，不能只读取最初的主 Dock。
+        // 工具获得焦点不会替换文档命令的活动目标，沿用已有活动页面引用。
+        PublishActiveDocumentIfChanged(dockable is null ? null : dockable as ManagedDocumentDockable ?? _publishedActiveDocument);
+    }
 
     bool IWorkspaceDockCallbacks.OnDockableClosing(IDockable? dockable)
     {
@@ -668,10 +685,11 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         }
     }
 
-    /// <summary>读取主 DocumentDock 并仅在 Adapter 引用改变时发布一次语义通知。</summary>
-    private void PublishActiveDocumentIfChanged()
+    /// <summary>沿用唯一活动页引用；显式页面优先，布局建立和释放时回退主 DocumentDock。</summary>
+    private void PublishActiveDocumentIfChanged(ManagedDocumentDockable? selected = null)
     {
-        var current = GetActiveDocument();
+        var current = selected ?? _documentDock?.ActiveDockable as ManagedDocumentDockable;
+        if (current is not null && !_ownedDocuments.Contains(current)) current = null;
         if (ReferenceEquals(_publishedActiveDocument, current))
         {
             return;

@@ -60,19 +60,19 @@ internal sealed class HostWorkbenchCommandCatalog
         [
             new HostWorkbenchCommandRegistration(
                 new CommandDescriptor(HostWorkbenchCommandIds.NewDocument,
-                    "新建文档…", "浏览业务分类并选择要创建的文档功能。"),
+                    "功能中心…", "查找功能，在新标签中开始使用。"),
                 newDocument ?? throw new ArgumentNullException(nameof(newDocument))),
             new HostWorkbenchCommandRegistration(
                 new CommandDescriptor(
                     HostWorkbenchCommandIds.OpenDocument,
                     "打开…",
-                    "从文件中打开一个或多个 Document。"),
+                    "从文件中打开一个或多个页面。"),
                 openDocument ?? throw new ArgumentNullException(nameof(openDocument))),
             new HostWorkbenchCommandRegistration(
                 new CommandDescriptor(
                     HostWorkbenchCommandIds.SaveDocument,
                     "保存",
-                    "保存当前活动的可持久化 Document。"),
+                    "保存当前活动的可持久化页面。"),
                 saveDocument ?? throw new ArgumentNullException(nameof(saveDocument))),
             new HostWorkbenchCommandRegistration(
                 new CommandDescriptor(HostWorkbenchCommandIds.OpenHelp,

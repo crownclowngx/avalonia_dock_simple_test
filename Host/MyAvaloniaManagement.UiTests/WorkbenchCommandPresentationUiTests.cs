@@ -417,18 +417,18 @@ public sealed class WorkbenchCommandPresentationUiTests
             Assert.True(layer.IsVisible);
             Assert.True(search.IsFocused);
             Assert.Empty(window.KeyBindings);
-            Assert.Equal(8, list.ItemCount);
+            Assert.Equal(12, list.ItemCount);
 
             search.Text = "保存";
             await FlushUiAsync();
-            Assert.Single(list.Items.Cast<object>());
+            Assert.Equal(HostWorkbenchCommandIds.SaveDocument, list.Items.OfType<WorkbenchCommandPaletteProjectionEntry>().First().CommandId);
             window.KeyPressQwerty(
                 PhysicalKey.P,
                 RawInputModifiers.Control | RawInputModifiers.Shift);
             await FlushUiAsync();
             Assert.Equal("保存", search.Text);
             Assert.True(search.IsFocused);
-            Assert.Single(list.Items.Cast<object>());
+            Assert.Equal(HostWorkbenchCommandIds.SaveDocument, list.Items.OfType<WorkbenchCommandPaletteProjectionEntry>().First().CommandId);
 
             window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
             await FlushUiAsync();

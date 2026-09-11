@@ -9,7 +9,8 @@ using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.Business.ToolCenter;
 using MyAvaloniaManagement.Business.Workspace;
-using CommunityToolkit.Mvvm.ComponentModel;
+using MyAvaloniaManagement.Business.Search;
+using MyAvaloniaManagement.Business.Presentation.Icons;
 using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Presentation.Commands;
@@ -24,26 +25,28 @@ internal interface IWorkbenchCommandPaletteProjection
     /// <summary>当命令状态、活动目标或有效快捷键变化，需要重新查询当前结果时发生。</summary>
     event EventHandler? Changed;
 
-    /// <summary>按规范名称和说明查询当前可展示命令。</summary>
+    /// <summary>按名称及辅助说明查询功能、已有页面、工具与可发现命令。</summary>
     /// <param name="query">允许为 null 的普通子串查询；首尾空白会被忽略。</param>
-    /// <returns>按名称和稳定命令身份确定性排序的防御性快照。</returns>
+    /// <returns>按匹配等级、结果类型、名称与稳定身份确定性排序的快照。</returns>
     IReadOnlyList<WorkbenchCommandPaletteProjectionEntry> GetItems(string? query);
 }
 
-/// <summary>表示 Command Palette 中一个 Host-owned 命令展示项。</summary>
+/// <summary>只保存展示快照、明确身份与 Host 操作绑定，不引用插件页面实例。</summary>
 internal sealed record WorkbenchCommandPaletteProjectionEntry(
-    CommandId? CommandId,
-    string DisplayName,
-    string Description,
-    string ShortcutText,
-    bool IsEnabled,
-    IWorkbenchPresentationCommandBinding Command,
-    ToolTypeId? ToolTypeId = null)
+    WorkbenchPaletteIdentity Identity, string DisplayName, string Description,
+    string ShortcutText, bool IsEnabled, IWorkbenchPresentationCommandBinding Command)
 {
-    public string StableKey => CommandId is { } id ? "command:" + id.Value : "tool:" + ToolTypeId!.Value;
+    public string StableKey => Identity.StableKey;
+    public CommandId? CommandId => (Identity as CommandPaletteIdentity)?.Id;
+    public ToolTypeId? ToolTypeId => (Identity as ToolPaletteIdentity)?.Id;
+    public string ActionText { get; init; } = "执行命令";
+    public string SearchName { get; init; } = DisplayName;
+    public int MatchRank { get; init; }
+    public HostIconRequest IconRequest { get; init; } = new(null, string.Empty);
+    public HostIconRenderer? IconRenderer { get; init; }
 }
 
-/// <summary>把既有菜单声明投影为可搜索、可执行的最小 Command Palette 快照。</summary>
+/// <summary>汇合四类只读候选，普通命令仍以既有菜单声明为发现许可。</summary>
 /// <remarks>
 /// 候选集合只在不可变 Catalog/Registry 构造后计算一次，但每次查询都会重新读取统一 State Query；
 /// 因此本类型既不保存插件业务状态，也不建立第二套执行逻辑。快捷键文本来自冲突治理后的有效投影，
@@ -62,7 +65,10 @@ internal sealed class WorkbenchCommandPaletteProjection :
     private readonly Dispatcher _dispatcher;
     private readonly IHostDiagnosticSink? _diagnostics;
     private readonly ToolWorkspaceReadModel? _tools;
-    private readonly ToolCenterActions? _toolActions;
+    private readonly WorkspaceSession? _workspace;
+    private readonly DocumentCreationMenuQuery? _functions;
+    private readonly WorkspacePaletteActions? _workspaceActions;
+    private readonly HostIconRenderer? _icons;
     // 只表示 Dispatcher 队列中已有刷新，不代表任何插件业务状态或结果缓存。
     private bool _refreshQueued;
     // Dispose 后拒绝同步读取，并让已经排队的迟到回调安全退出。
@@ -78,7 +84,10 @@ internal sealed class WorkbenchCommandPaletteProjection :
         Dispatcher dispatcher,
         IHostDiagnosticSink? diagnostics = null,
         ToolWorkspaceReadModel? tools = null,
-        ToolCenterActions? toolActions = null)
+        WorkspaceSession? workspace = null,
+        DocumentCreationMenuQuery? functions = null,
+        WorkspacePaletteActions? workspaceActions = null,
+        HostIconRenderer? icons = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(plugins);
@@ -90,7 +99,10 @@ internal sealed class WorkbenchCommandPaletteProjection :
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _diagnostics = diagnostics;
         _tools = tools;
-        _toolActions = toolActions;
+        _workspace = workspace;
+        _functions = functions;
+        _workspaceActions = workspaceActions;
+        _icons = icons;
 
         // Palette v1 没有新增 SDK Contribution。以既有菜单声明作为明确发现许可，既能覆盖
         // G7/G8 的真实命令，又不会把仅供局部或快捷键入口使用的 Catalog 命令自动暴露出来。
@@ -104,6 +116,8 @@ internal sealed class WorkbenchCommandPaletteProjection :
         _states.StateInvalidated += OnStateInvalidated;
         _keyBindings.Changed += OnKeyBindingsChanged;
         if (_tools is not null) _tools.Changed += OnKeyBindingsChanged;
+        if (_workspace is not null) _workspace.PagesChanged += OnKeyBindingsChanged;
+        if (_functions is not null) _functions.Changed += OnFunctionsChanged;
     }
 
     public event EventHandler? Changed;
@@ -134,41 +148,57 @@ internal sealed class WorkbenchCommandPaletteProjection :
             }
 
             var descriptor = entry.Descriptor;
-            if (normalizedQuery.Length > 0 &&
-                !descriptor.DisplayName.Contains(
-                    normalizedQuery,
-                    StringComparison.OrdinalIgnoreCase) &&
-                !descriptor.Description.Contains(
-                    normalizedQuery,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            result.Add(new WorkbenchCommandPaletteProjectionEntry(
-                commandId,
-                descriptor.DisplayName,
-                descriptor.Description,
-                shortcuts.GetValueOrDefault(commandId, string.Empty),
-                state == WorkbenchCommandStateStatus.Enabled,
-                _presentationCommands.Get(commandId)));
+            var rank = WorkbenchTextMatch.Rank(descriptor.DisplayName, normalizedQuery, descriptor.Description, commandId.Value);
+            if (rank == int.MaxValue) continue;
+            result.Add(new(new CommandPaletteIdentity(commandId), descriptor.DisplayName, descriptor.Description,
+                shortcuts.GetValueOrDefault(commandId, string.Empty), state == WorkbenchCommandStateStatus.Enabled,
+                _presentationCommands.Get(commandId)) { MatchRank = rank, IconRenderer = _icons });
         }
 
-        if (_tools is not null && _toolActions is not null)
+        if (_tools is not null && _workspaceActions is not null)
         {
             foreach (var tool in _tools.Capture())
             {
-                if (normalizedQuery.Length > 0 && !new[] { tool.DisplayName, tool.Description, tool.SourceName, tool.ToolId }
-                        .Any(text => text.Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase))) continue;
-                result.Add(new(null, $"工具 · {tool.DisplayName}", $"{tool.SourceName} · {tool.StatusText}", string.Empty,
-                    tool.CanOpen, new ToolPaletteCommand(tool.ToolId, _tools, _toolActions), new ToolTypeId(tool.ToolId)));
+                var rank = WorkbenchTextMatch.Rank(tool.DisplayName, normalizedQuery, tool.Description, tool.SourceName, tool.ToolId);
+                if (rank == int.MaxValue) continue;
+                var identity = new ToolPaletteIdentity(new ToolTypeId(tool.ToolId));
+                var binding = new WorkspacePaletteCommand(identity, _workspaceActions);
+                result.Add(new(identity, $"工具 · {tool.DisplayName}", $"{tool.SourceName} · {tool.StatusText}", string.Empty,
+                    tool.CanOpen, binding) { SearchName = tool.DisplayName, MatchRank = rank,
+                    ActionText = tool.IsVisible ? "定位" : "显示", IconRequest = tool.IconRequest, IconRenderer = _icons });
             }
         }
-        return result
-            .OrderBy(item => item.DisplayName, StringComparer.Ordinal)
-            .ThenBy(item => item.StableKey, StringComparer.Ordinal)
-            .ToArray();
+        if (_functions is not null && _workspaceActions is not null)
+        {
+            foreach (var function in _functions.ReadDirectory().Items)
+            {
+                var rank = function.MatchRank(normalizedQuery);
+                if (rank == int.MaxValue) continue;
+                var identity = new FunctionPaletteIdentity(function.Entry.DocumentTypeId, function.Entry.CreationIntentId);
+                result.Add(new(identity, function.DisplayName,
+                    $"{function.Description} · {function.CategoryPath} · {function.Entry.OwnerId?.Value ?? "内置"}", string.Empty,
+                    _workspace?.CanCreateDocuments == true, new WorkspacePaletteCommand(identity, _workspaceActions))
+                    { MatchRank = rank, ActionText = "打开新标签", IconRequest = function.IconRequest, IconRenderer = _icons });
+            }
+        }
+        if (_workspace is not null && _workspaceActions is not null)
+        {
+            foreach (var page in _workspace.GetOpenPages())
+            {
+                var rank = WorkbenchTextMatch.Rank(page.Title, normalizedQuery, page.FunctionName, page.SourceName);
+                if (rank == int.MaxValue) continue;
+                var identity = new PagePaletteIdentity(page.Id);
+                result.Add(new(identity, page.Title, page.Description, string.Empty, page.CanActivate,
+                    new WorkspacePaletteCommand(identity, _workspaceActions)) { MatchRank = rank,
+                    ActionText = "切换到页面", IconRequest = page.IconRequest, IconRenderer = _icons });
+            }
+        }
+        return result.OrderBy(item => item.MatchRank).ThenBy(item => item.Identity.Order)
+            .ThenBy(item => item.SearchName, StringComparer.Ordinal)
+            .ThenBy(item => item.StableKey, StringComparer.Ordinal).ToArray();
     }
+
+    private void OnFunctionsChanged(object? sender, Business.Lifecycle.PluginAvailabilityChangedEventArgs args) => QueueChanged();
 
     private IReadOnlyDictionary<CommandId, string> BuildShortcutTextByCommand() =>
         _keyBindings.Items
@@ -283,15 +313,7 @@ internal sealed class WorkbenchCommandPaletteProjection :
         _states.StateInvalidated -= OnStateInvalidated;
         _keyBindings.Changed -= OnKeyBindingsChanged;
         if (_tools is not null) _tools.Changed -= OnKeyBindingsChanged;
+        if (_workspace is not null) _workspace.PagesChanged -= OnKeyBindingsChanged;
+        if (_functions is not null) _functions.Changed -= OnFunctionsChanged;
     }
-}
-
-/// <summary>工具不是插件 Command；执行时重查 Workspace，保持两种身份及发现许可分离。</summary>
-internal sealed class ToolPaletteCommand(string id, ToolWorkspaceReadModel tools, ToolCenterActions actions)
-    : ObservableObject, IWorkbenchPresentationCommandBinding
-{
-    public bool IsEnabled => tools.CanOpen(id);
-    public event EventHandler? CanExecuteChanged { add { } remove { } }
-    public bool CanExecute(object? parameter) => IsEnabled;
-    public void Execute(object? parameter) { if (CanExecute(parameter)) actions.Open(id, focus: true); }
 }

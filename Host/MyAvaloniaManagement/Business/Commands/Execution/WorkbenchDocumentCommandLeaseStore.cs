@@ -49,6 +49,12 @@ internal sealed class WorkbenchDocumentCommandLeaseStore
     internal WorkbenchDocumentCommandLeaseStore(IHostDiagnosticSink? diagnostics = null) =>
         _diagnostics = diagnostics;
 
+    /// <summary>只读查询关闭门，不获取租约或改变引用计数，供页面定位复核使用。</summary>
+    internal bool IsClosing(ManagedDocumentDockable document)
+    {
+        lock (_gate) return _states.TryGetValue(document, out var state) && state.IsClosing;
+    }
+
     /// <summary>仅在 Document 尚未进入关闭阶段时取得一次引用计数 Lease。</summary>
     internal bool TryAcquire(
         ManagedDocumentDockable document,

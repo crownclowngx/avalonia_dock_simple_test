@@ -33,7 +33,7 @@ public sealed class WorkbenchCommandProjectionTests
         var secondPresentation = second.Provider.GetRequiredService<WorkbenchCommandPresentation>();
 
         Assert.Equal(
-            ["新建文档…", "打开…", "保存", "|", "Alpha File"],
+            ["功能中心…", "打开…", "保存", "|", "Alpha File"],
             Snapshot(firstPresentation.Menu, WorkbenchMenuLocations.FileShared));
         Assert.Equal(
             ["|", "Alpha View"],
@@ -149,7 +149,7 @@ public sealed class WorkbenchCommandProjectionTests
     }
 
     [Fact]
-    public void Palette空查询只收录菜单命令且Host保存以Disabled显示()
+    public void Palette普通命令只按菜单许可发现且Host保存以Disabled显示()
     {
         using var context = CreateCatalogContext(reverseRegistrationOrder: false);
         var palette = context.Provider
@@ -170,6 +170,13 @@ public sealed class WorkbenchCommandProjectionTests
                 Assert.False(save.IsEnabled);
                 Assert.Equal("Ctrl+S", save.ShortcutText);
             },
+            create =>
+            {
+                Assert.Equal(HostWorkbenchCommandIds.NewDocument, create.CommandId);
+                Assert.Equal("功能中心…", create.DisplayName);
+                Assert.True(create.IsEnabled);
+                Assert.Equal(string.Empty, create.ShortcutText);
+            },
             help =>
             {
                 Assert.Equal(HostWorkbenchCommandIds.OpenHelp, help.CommandId);
@@ -182,13 +189,6 @@ public sealed class WorkbenchCommandProjectionTests
                 Assert.Equal("打开…", open.DisplayName);
                 Assert.True(open.IsEnabled);
                 Assert.Equal(string.Empty, open.ShortcutText);
-            },
-            create =>
-            {
-                Assert.Equal(HostWorkbenchCommandIds.NewDocument, create.CommandId);
-                Assert.Equal("新建文档…", create.DisplayName);
-                Assert.True(create.IsEnabled);
-                Assert.Equal(string.Empty, create.ShortcutText);
             });
         Assert.DoesNotContain(items, item => item.CommandId!.Value.Contains(
             "shortcut-active",
@@ -228,7 +228,7 @@ public sealed class WorkbenchCommandProjectionTests
             new NewDocumentActivation("G9 Palette Target"));
         GetDocumentDock(context).ActiveDockable = adapter;
 
-        var active = Assert.Single(presentation.Palette.GetItems("tArGeT"));
+        var active = Assert.Single(presentation.Palette.GetItems("tArGeT"), item => item.CommandId == WorkbenchCommandG3TestContext.Command);
         Assert.Equal(WorkbenchCommandG3TestContext.Command, active.CommandId);
         Assert.True(active.IsEnabled);
 

@@ -29,8 +29,24 @@ internal sealed class DocumentCloseCoordinator(
     private readonly WorkbenchDocumentCommandLeaseStore _commandLeases =
         commandLeases ?? throw new ArgumentNullException(nameof(commandLeases));
 
+    /// <summary>关闭等待开始或解除时通知展示层重读；通知异常不能改变关闭决策。</summary>
+    internal event EventHandler? StateChanged;
+
+    private void NotifyStateChanged()
+    {
+        foreach (EventHandler handler in StateChanged?.GetInvocationList() ?? [])
+        {
+            try { handler(this, EventArgs.Empty); }
+            catch (Exception exception) { DocumentPersistenceErrorMapper.Report("DOCUMENT_CLOSE_OBSERVER_FAILED", exception); }
+        }
+    }
+
     internal bool IsDirty(ManagedDocumentDockable document) =>
         persistenceStates.IsDirty(document);
+
+    /// <summary>页面定位遵守与关闭相同的事实，包括正在询问保存和等待命令排空的阶段。</summary>
+    internal bool IsClosing(ManagedDocumentDockable document) =>
+        _windowRequestPending || _pending.Contains(document) || _approvedOnce.Contains(document) || _commandLeases.IsClosing(document);
 
     internal bool TryBeginDockClose(
         ManagedDocumentDockable document,
@@ -52,6 +68,7 @@ internal sealed class DocumentCloseCoordinator(
         if (document.PersistableModel is not null && persistenceStates.IsDirty(document))
         {
             _pending.Add(document);
+            NotifyStateChanged();
             _ = ConfirmDockCloseAsync(document, retryClose);
             return false;
         }
@@ -63,6 +80,7 @@ internal sealed class DocumentCloseCoordinator(
         }
 
         _pending.Add(document);
+        NotifyStateChanged();
         _ = RetryAfterCommandDrainAsync(document, retryClose, drain);
         return false;
     }
@@ -74,6 +92,7 @@ internal sealed class DocumentCloseCoordinator(
         _approvedOnce.Remove(document);
         _pending.Remove(document);
         _commandLeases.Reopen(document);
+        NotifyStateChanged();
     }
 
     /// <summary>Document 最终关闭或创建回滚后清除命令租约和关闭协调状态。</summary>
@@ -107,6 +126,7 @@ internal sealed class DocumentCloseCoordinator(
         }
 
         _windowRequestPending = true;
+        NotifyStateChanged();
         try
         {
             var choice = await interactionService.ConfirmCloseAsync(
@@ -163,6 +183,7 @@ internal sealed class DocumentCloseCoordinator(
         finally
         {
             _windowRequestPending = false;
+            NotifyStateChanged();
         }
     }
 
@@ -225,6 +246,7 @@ internal sealed class DocumentCloseCoordinator(
         finally
         {
             _pending.Remove(document);
+            NotifyStateChanged();
         }
     }
 
@@ -252,6 +274,7 @@ internal sealed class DocumentCloseCoordinator(
         finally
         {
             _pending.Remove(document);
+            NotifyStateChanged();
         }
     }
 

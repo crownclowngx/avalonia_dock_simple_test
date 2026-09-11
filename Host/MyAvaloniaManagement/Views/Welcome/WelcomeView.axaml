@@ -280,11 +280,11 @@
                             <WrapPanel Orientation="Horizontal">
                                 <Button Classes="welcome-primary"
                                         Margin="0,0,10,10"
-                                        Command="{Binding OpenPluginMenuCommand}">
+                                        Command="{Binding OpenFunctionCenterCommand}">
                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                         <PathIcon Width="16" Height="16"
                                                   Data="M3,3 H9 V9 H3 Z M11,3 H17 V9 H11 Z M3,11 H9 V17 H3 Z M11,11 H17 V17 H11 Z" />
-                                        <TextBlock Text="浏览插件" />
+                                        <TextBlock Text="开始使用" />
                                     </StackPanel>
                                 </Button>
                                 <Button Classes="welcome-secondary"

@@ -1,23 +1,24 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:icons="using:MyAvaloniaManagement.Business.Presentation.Icons"
              xmlns:commands="using:MyAvaloniaManagement.Business.Presentation.Commands"
              x:Class="MyAvaloniaManagement.Views.CommandPaletteView"
-             Focusable="False">
-    <Border Width="640"
+             Focusable="False" Foreground="{DynamicResource AppPrimaryTextBrush}">
+    <Border MaxWidth="640"
             MaxHeight="520"
             Padding="16"
             CornerRadius="10"
             BorderThickness="1"
-            BorderBrush="{DynamicResource DockThemeBorderLowBrush}"
-            Background="{DynamicResource DockThemeBackgroundBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}"
+            Background="{DynamicResource AppPanelBrush}"
             BoxShadow="0 12 32 0 #66000000">
-        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
             <TextBlock Text="命令面板"
                        FontSize="18"
                        FontWeight="SemiBold" />
             <TextBox x:Name="SearchBox"
                      Grid.Row="1"
-                     PlaceholderText="搜索命令名称或说明"
+                     PlaceholderText="搜索功能、已打开页面、工具或命令"
                      AutomationProperties.Name="命令面板搜索" />
             <Grid Grid.Row="2" MinHeight="80">
                 <ListBox x:Name="PaletteItems"
@@ -25,34 +26,37 @@
                          AutomationProperties.Name="命令面板结果">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="commands:WorkbenchCommandPaletteProjectionEntry">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Margin="4,6">
-                                <StackPanel Spacing="2">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Text="{Binding DisplayName}"
+                            <Grid ColumnDefinitions="24,*,Auto" ColumnSpacing="12" Margin="4,6">
+                                <icons:HostIconView Width="22" Height="22" Foreground="{DynamicResource AppInfoBrush}" Source="{Binding IconRequest}" Renderer="{Binding IconRenderer}" />
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DisplayName}"
                                                    FontWeight="SemiBold" />
-                                        <TextBlock Text="不可用"
+                                        <TextBlock Grid.Column="1" Text="不可用"
                                                    IsVisible="{Binding !IsEnabled}"
                                                    Opacity="0.65" />
-                                    </StackPanel>
+                                    </Grid>
                                     <TextBlock Text="{Binding Description}"
-                                               TextWrapping="Wrap"
+                                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Description}"
                                                Opacity="0.72" />
                                 </StackPanel>
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding ShortcutText}"
-                                           VerticalAlignment="Center"
-                                           Opacity="0.75" />
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
+                                    <TextBlock Text="{Binding ActionText}" />
+                                    <TextBlock Text="{Binding ShortcutText}" Opacity="0.75" />
+                                </StackPanel>
                             </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
                 <TextBlock x:Name="EmptyState"
-                           Text="没有匹配的命令"
+                           Text="没有匹配的结果"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            IsVisible="False"
                            Opacity="0.7" />
             </Grid>
+            <TextBlock Grid.Row="3" x:Name="OperationStatus" IsVisible="False" TextWrapping="Wrap"
+                       AutomationProperties.Name="搜索操作结果" />
         </Grid>
     </Border>
 </UserControl>

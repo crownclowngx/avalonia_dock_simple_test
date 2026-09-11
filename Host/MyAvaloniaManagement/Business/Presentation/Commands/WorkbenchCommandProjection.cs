@@ -541,7 +541,10 @@ internal sealed class WorkbenchCommandPresentation :
         Dispatcher dispatcher,
         IHostDiagnosticSink? diagnostics = null,
         ToolWorkspaceReadModel? tools = null,
-        ToolCenterActions? toolActions = null)
+        WorkspaceSession? workspace = null,
+        DocumentCreationMenuQuery? functions = null,
+        WorkspacePaletteActions? workspaceActions = null,
+        Business.Presentation.Icons.HostIconRenderer? icons = null)
     {
         _commands = new WorkbenchPresentationCommandStore(
             catalog,
@@ -575,7 +578,7 @@ internal sealed class WorkbenchCommandPresentation :
             dispatcher,
             diagnostics,
             tools,
-            toolActions);
+            workspace, functions, workspaceActions, icons);
     }
 
     public IWorkbenchMenuProjection Menu => _menu;

@@ -12,11 +12,15 @@
 
              <Application.Resources>
                  <ResourceDictionary>
+                     <!-- 仅覆盖 Tool 的资源键；Document 关闭和系统窗口关闭继续使用各自原有语义。 -->
+                     <x:String x:Key="ToolChromeControlCloseString">隐藏工具</x:String>
+                     <x:String x:Key="ToolTabStripItemCloseString">隐藏工具</x:String>
                      <ResourceDictionary.ThemeDictionaries>
                          <ResourceDictionary x:Key="Light">
                              <ResourceDictionary.MergedDictionaries>
                                  <ResourceInclude Source="avares://Dock.Avalonia.Themes.Fluent/Presets/Ide/VsCodeLight.axaml" />
                              </ResourceDictionary.MergedDictionaries>
+                             <SolidColorBrush x:Key="AppPrimaryTextBrush" Color="#FF202020" />
                              <SolidColorBrush x:Key="AppPanelBrush" Color="#FFF5F5F5" />
                              <SolidColorBrush x:Key="AppSubtlePanelBrush" Color="#0D000000" />
                              <SolidColorBrush x:Key="AppToolSelectedBrush" Color="#18007ACC" />
@@ -40,6 +44,7 @@
                              <ResourceDictionary.MergedDictionaries>
                                  <ResourceInclude Source="avares://Dock.Avalonia.Themes.Fluent/Presets/Ide/VsCodeDark.axaml" />
                              </ResourceDictionary.MergedDictionaries>
+                             <SolidColorBrush x:Key="AppPrimaryTextBrush" Color="#FFF0F0F0" />
                              <SolidColorBrush x:Key="AppPanelBrush" Color="#FF252525" />
                              <SolidColorBrush x:Key="AppSubtlePanelBrush" Color="#14FFFFFF" />
                              <SolidColorBrush x:Key="AppToolSelectedBrush" Color="#303794FF" />

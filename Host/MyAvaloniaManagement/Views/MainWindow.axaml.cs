@@ -171,8 +171,8 @@ internal sealed partial class MainWindow : Window, IWindowContentFullscreenHost
         CommandPaletteHost.BeginSession();
     }
 
-    private void OnCommandPaletteCloseRequested(object? sender, EventArgs args) =>
-        CloseCommandPalette(restoreFocus: true);
+    private void OnCommandPaletteCloseRequested(object? sender, PaletteCloseRequestedEventArgs args) =>
+        CloseCommandPalette(restoreFocus: args.RestorePreviousFocus);
 
     private void CloseCommandPalette(bool restoreFocus)
     {
@@ -206,6 +206,8 @@ internal sealed partial class MainWindow : Window, IWindowContentFullscreenHost
 
     private async void OnWindowClosing(object? sender, WindowClosingEventArgs e)
     {
+        // 与功能中心一致：初始化在途时不把窗口关闭误认为取消，等待真实操作完成后再允许退出。
+        if (CommandPaletteHost.IsBusy) { e.Cancel = true; return; }
         if (_windowCloseApproved)
         {
             if (DataContext is ViewModels.MainWindowViewModel approvedViewModel)

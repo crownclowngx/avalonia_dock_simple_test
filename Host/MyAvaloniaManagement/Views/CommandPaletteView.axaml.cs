@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -10,7 +11,7 @@ using MyAvaloniaManagement.ViewModels.Bindings;
 
 namespace MyAvaloniaManagement.Views;
 
-/// <summary>负责最小 Command Palette 的查询、选择和键盘会话。</summary>
+/// <summary>负责工作区四类搜索结果的查询、选择和键盘会话。</summary>
 /// <remarks>
 /// 本 View 只保存窗口级临时交互状态，不读取 Catalog、Context、Document 或插件对象。命令状态和候选
 /// 由只读投影提供，真正执行继续委托共享 Presentation Command，使菜单、快捷键和 Palette 保持单一路径。
@@ -23,11 +24,18 @@ internal sealed partial class CommandPaletteView : UserControl
     private bool _attached;
     // 会话状态只控制查询刷新与延迟焦点，不复制命令是否可执行等业务事实。
     private bool _sessionActive;
+    private int _sessionVersion;
+    internal bool IsBusy { get; private set; }
+    internal Task CurrentExecution { get; private set; } = Task.CompletedTask;
 
     public CommandPaletteView()
     {
         InitializeComponent();
         SearchBox.TextChanged += OnSearchTextChanged;
+        PaletteItems.DoubleTapped += (_, _) =>
+        {
+            if (!IsBusy) CurrentExecution = ExecuteSelectionAsync();
+        };
         DataContextChanged += OnDataContextChanged;
         AttachedToVisualTree += OnAttachedToVisualTree;
         DetachedFromVisualTree += OnDetachedFromVisualTree;
@@ -35,12 +43,15 @@ internal sealed partial class CommandPaletteView : UserControl
     }
 
     /// <summary>当窗口应关闭 Palette 并恢复先前焦点时发生。</summary>
-    internal event EventHandler? CloseRequested;
+    internal event EventHandler<PaletteCloseRequestedEventArgs>? CloseRequested;
 
     /// <summary>开始一个全新会话，清空查询并选择当前第一个结果。</summary>
     internal void BeginSession()
     {
         _sessionActive = true;
+        _sessionVersion++;
+        SetBusy(false);
+        SetStatus(string.Empty);
         SearchBox.Text = string.Empty;
         RefreshItems(preserveSelection: false);
         FocusSearchBox();
@@ -50,7 +61,12 @@ internal sealed partial class CommandPaletteView : UserControl
     internal void RefocusSearchBox() => FocusSearchBox();
 
     /// <summary>结束当前会话；投影订阅继续由视觉树和 DataContext 的真实所有权控制。</summary>
-    internal void EndSession() => _sessionActive = false;
+    internal void EndSession()
+    {
+        _sessionActive = false;
+        _sessionVersion++;
+        SetBusy(false);
+    }
 
     private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs args)
     {
@@ -61,7 +77,7 @@ internal sealed partial class CommandPaletteView : UserControl
     private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs args)
     {
         _attached = false;
-        _sessionActive = false;
+        EndSession();
         DetachProjection();
     }
 
@@ -130,12 +146,14 @@ internal sealed partial class CommandPaletteView : UserControl
     {
         if (_sessionActive)
         {
+            SetStatus(string.Empty);
             RefreshItems(preserveSelection: false);
         }
     }
 
     private void RefreshItems(bool preserveSelection)
     {
+        if (!_sessionActive || IsBusy) return;
         var selectedId = preserveSelection
             ? (PaletteItems.SelectedItem as WorkbenchCommandPaletteProjectionEntry)?.StableKey
             : null;
@@ -162,19 +180,19 @@ internal sealed partial class CommandPaletteView : UserControl
         {
             case Key.Escape:
                 args.Handled = true;
-                CloseRequested?.Invoke(this, EventArgs.Empty);
+                if (!IsBusy) CloseRequested?.Invoke(this, new(true));
                 break;
             case Key.Up:
                 args.Handled = true;
-                MoveSelection(-1);
+                if (!IsBusy) MoveSelection(-1);
                 break;
             case Key.Down:
                 args.Handled = true;
-                MoveSelection(1);
+                if (!IsBusy) MoveSelection(1);
                 break;
             case Key.Enter:
                 args.Handled = true;
-                ExecuteSelection();
+                if (!IsBusy) CurrentExecution = ExecuteSelectionAsync();
                 break;
         }
     }
@@ -196,19 +214,70 @@ internal sealed partial class CommandPaletteView : UserControl
         }
     }
 
-    private void ExecuteSelection()
+    /// <summary>一次搜索会话拥有一次在途动作；失败保留现场，成功后才移除遮罩。</summary>
+    /// <remarks>
+    /// 普通命令仍先关闭再执行，保持文件选择器与当前 Target 的既有时序。
+    /// 新建／定位／工具动作有可等待结果，关闭窗口不能冒充取消已经开始的插件初始化。
+    /// 会话代号阻止旧异步完成回写已关闭或重新打开的搜索框。
+    /// </remarks>
+    internal async Task ExecuteSelectionAsync()
     {
+        if (!_sessionActive || IsBusy) return;
         if (PaletteItems.SelectedItem is not WorkbenchCommandPaletteProjectionEntry item ||
-            !item.IsEnabled ||
-            !item.Command.CanExecute(null))
+            !item.IsEnabled || !item.Command.CanExecute(null))
         {
-            // 展示快照可能在 Enter 前一瞬失效。留在 Palette 并重查，而不是相信旧 IsEnabled。
+            SetStatus("目标暂不可用，请重新选择。");
             RefreshItems(preserveSelection: true);
             return;
         }
+        if (item.Identity is CommandPaletteIdentity)
+        {
+            CloseRequested?.Invoke(this, new(true));
+            item.Command.Execute(null);
+            return;
+        }
+        var version = _sessionVersion;
+        SetBusy(true);
+        SetStatus(item.Identity is FunctionPaletteIdentity ? "正在打开功能…" : "正在处理…");
+        string error;
+        try
+        {
+            error = item.Command is WorkspacePaletteCommand action
+                ? await action.ExecuteAsync() : "该结果暂时无法执行，请重新选择。";
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine($"Palette errorCode=PALETTE_ACTION_FAILED type={exception.GetType().Name}");
+            error = "操作未完成，请重试。";
+        }
+        if (!_sessionActive || version != _sessionVersion) return;
+        SetBusy(false);
+        SetStatus(error);
+        if (error.Length == 0)
+        {
+            CloseRequested?.Invoke(this, new(false));
+            // 新标签的内容可能尚未挂到视觉树，先提交窗口布局，再将焦点交给其输入控件。
+            TopLevel.GetTopLevel(this)?.UpdateLayout();
+            (item.Command as WorkspacePaletteCommand)?.FocusResult();
+        }
+        else
+        {
+            RefreshItems(preserveSelection: true);
+            FocusSearchBox();
+        }
+    }
 
-        CloseRequested?.Invoke(this, EventArgs.Empty);
-        item.Command.Execute(null);
+    private void SetBusy(bool busy)
+    {
+        IsBusy = busy;
+        SearchBox.IsEnabled = !busy;
+        PaletteItems.IsEnabled = !busy;
+    }
+
+    private void SetStatus(string text)
+    {
+        OperationStatus.Text = text;
+        OperationStatus.IsVisible = text.Length > 0;
     }
 
     private void FocusSearchBox()
@@ -228,4 +297,10 @@ internal sealed partial class CommandPaletteView : UserControl
             },
             DispatcherPriority.Input);
     }
+}
+
+/// <summary>Esc 恢复旧焦点；工作区动作成功则由动作本身把焦点交给新目标。</summary>
+internal sealed class PaletteCloseRequestedEventArgs(bool restorePreviousFocus) : EventArgs
+{
+    internal bool RestorePreviousFocus { get; } = restorePreviousFocus;
 }

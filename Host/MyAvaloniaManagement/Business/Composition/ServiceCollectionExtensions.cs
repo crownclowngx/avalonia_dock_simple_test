@@ -81,6 +81,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<AppearanceSettingsStore>();
         services.AddSingleton<PluginNavigationSettingsStore>();
         services.AddSingleton<FunctionCenterWindowService>();
+        services.AddSingleton<WorkspacePaletteActions>();
         services.AddSingleton<HostNewDocumentCommandHandler>();
         services.AddSingleton<ToolCenterPreferencesStore>();
         services.AddSingleton<ToolCenterPreferences>();
@@ -206,7 +207,10 @@ internal static class ServiceCollectionExtensions
             Dispatcher.UIThread,
             provider.GetService<IHostDiagnosticSink>(),
             provider.GetRequiredService<ToolWorkspaceReadModel>(),
-            provider.GetRequiredService<ToolCenterActions>()));
+            provider.GetRequiredService<WorkspaceSession>(),
+            provider.GetRequiredService<DocumentCreationMenuQuery>(),
+            provider.GetRequiredService<WorkspacePaletteActions>(),
+            provider.GetRequiredService<HostIconRenderer>()));
         services.AddSingleton<IWorkbenchCommandPresentationBindings>(provider =>
             provider.GetRequiredService<WorkbenchCommandPresentation>());
         services.AddSingleton(provider => new WorkspaceCatalog(
@@ -270,7 +274,7 @@ internal static class ServiceCollectionExtensions
     private static void RegisterHostWorkspace(IServiceCollection services)
     {
         services.AddScoped(provider => new WelcomeViewModel(
-            provider.GetRequiredService<Action<ToolTypeId>>(),
+            () => provider.GetRequiredService<FunctionCenterWindowService>().ShowOrActivate(),
             () => provider.GetRequiredService<ToolCenterWindowService>().ShowOrActivate()));
         services.AddSingleton<FileSystemTreeViewModel>();
         services.AddSingleton<PlugGroupMenuViewModel>();
@@ -369,13 +373,6 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<ApplicationThemeService>(),
             provider.GetRequiredService<IWorkbenchCommandPresentationBindings>(),
             provider.GetRequiredService<DocumentOperationState>()));
-
-        // 内置策略只依赖“创建某类对象”的窄工厂，不依赖整个 IServiceProvider。
-        // 工厂闭包只存在于组合根，既保持每次创建的新实例语义，也避免策略成为服务定位器。
-        // Welcome 只获得“显示某个 Tool”这一窄动作，不接收 Session、Dock Factory 或服务容器。
-        // 委托在命令执行时解析已构造的唯一 Session，不参与 Session 创建阶段。
-        services.AddSingleton<Action<ToolTypeId>>(provider => toolTypeId =>
-            provider.GetRequiredService<ToolCenterActions>().Open(toolTypeId.Value));
 
         services.AddTransient<IHostDesktopShell, HostDesktopShell>();
         services.AddTransient(provider => new App(

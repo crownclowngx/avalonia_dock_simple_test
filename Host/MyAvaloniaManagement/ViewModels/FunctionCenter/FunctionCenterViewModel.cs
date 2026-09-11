@@ -130,7 +130,7 @@ internal sealed partial class FunctionCenterViewModel : ObservableObject, IDispo
         {
             // 正常插件失败已由协调器映射；这里兜住关闭入口等 Host 异常，不把异常正文展示给用户。
             Console.Error.WriteLine($"FunctionCenter errorCode=DOCUMENT_CREATE_FAILED type={exception.GetType().Name}");
-            Error = "当前无法新建文档，请确认工作区仍然可用后重试。";
+            Error = "当前无法打开功能，请确认工作区仍然可用后重试。";
             _operationState.Apply(DocumentOperationResult.Failure(Error));
         }
         finally { IsBusy = false; }

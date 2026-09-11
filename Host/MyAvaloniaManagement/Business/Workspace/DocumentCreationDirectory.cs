@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MyAvaloniaManagement.Business.Search;
 
 namespace MyAvaloniaManagement.Business.Workspace;
 
@@ -13,11 +14,8 @@ internal sealed record DocumentCreationItem(DocumentCreationMenuEntry Entry, Doc
     public string IconKey => Entry.IconPath;
     public Presentation.Icons.HostIconRequest IconRequest => new(Entry.OwnerId, Entry.IconPath);
 
-    internal bool Matches(string text) =>
-        DisplayName.Contains(text, StringComparison.OrdinalIgnoreCase) ||
-        Description.Contains(text, StringComparison.OrdinalIgnoreCase) ||
-        Path.CanonicalPath.Contains(text, StringComparison.OrdinalIgnoreCase) ||
-        CategoryPath.Contains(text, StringComparison.OrdinalIgnoreCase);
+    internal int MatchRank(string text) => WorkbenchTextMatch.Rank(DisplayName, text,
+        Description, Path.CanonicalPath, CategoryPath, Entry.OwnerId?.Value ?? "内置", Entry.DocumentTypeId.Value);
 }
 
 /// <summary>不可变分类节点；与展开状态分开，允许 Tool 和功能中心独立浏览同一目录。</summary>
@@ -72,12 +70,17 @@ internal sealed class DocumentCreationDirectory
     internal IReadOnlyList<DocumentCreationItem> Filter(DocumentCategoryPath? category, string searchText)
     {
         var search = searchText.Trim();
-        return Array.AsReadOnly(Items.Where(item => search.Length > 0
-                ? item.Matches(search)
+        var filtered = Items.Where(item => search.Length > 0
+                ? item.MatchRank(search) < int.MaxValue
                 : category is null ||
                   (item.Path.Segments.Count >= category.Segments.Count &&
-                   item.Path.Segments.Take(category.Segments.Count).SequenceEqual(category.Segments, StringComparer.Ordinal)))
-            .ToArray());
+                   item.Path.Segments.Take(category.Segments.Count).SequenceEqual(category.Segments, StringComparer.Ordinal)));
+        // 空查询保持注册目录顺序；非空查询才应用相关性，同等级以真实身份保持稳定。
+        if (search.Length > 0) filtered = filtered.OrderBy(item => item.MatchRank(search))
+            .ThenBy(item => item.DisplayName, StringComparer.Ordinal)
+            .ThenBy(item => item.Entry.DocumentTypeId.Value, StringComparer.Ordinal)
+            .ThenBy(item => item.Entry.CreationIntentId?.Value, StringComparer.Ordinal);
+        return Array.AsReadOnly(filtered.ToArray());
     }
 
     private static IReadOnlyList<DocumentCreationCategory> Freeze(Dictionary<string, Builder> siblings) =>

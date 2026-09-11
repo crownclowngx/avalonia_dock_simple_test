@@ -7,13 +7,13 @@
         x:Class="MyAvaloniaManagement.Views.FunctionCenter.FunctionCenterWindow"
         x:Name="FunctionCenterControl"
         x:DataType="vm:FunctionCenterViewModel"
-        Title="新建文档" Width="920" Height="640" MinWidth="660" MinHeight="460"
+        Title="功能中心" Width="920" Height="640" MinWidth="660" MinHeight="460"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{DynamicResource AppPanelBrush}">
     <Grid RowDefinitions="Auto,*,Auto" Margin="24">
         <StackPanel Spacing="12" Margin="0,0,0,18">
             <TextBlock Text="选择要使用的功能" FontSize="22" FontWeight="SemiBold" />
-            <TextBlock Text="浏览业务分类，或搜索功能名称、说明与分类路径。"
+            <TextBlock Text="选择一个功能，在新标签中开始使用。可搜索名称、说明与分类路径。"
                        Foreground="{DynamicResource AppSecondaryTextBrush}" />
             <TextBox x:Name="FunctionSearchBox" Text="{Binding SearchText, Mode=TwoWay}"
                      PlaceholderText="搜索全部功能…" IsEnabled="{Binding IsIdle}" />
@@ -86,10 +86,13 @@
             <TextBlock Text="{Binding Error}" IsVisible="{Binding HasError}" TextWrapping="Wrap"
                        Foreground="{DynamicResource AppErrorBrush}" Margin="0,0,0,10" />
             <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto">
-                <TextBlock Text="正在创建文档…" IsVisible="{Binding IsBusy}" VerticalAlignment="Center" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="在新标签中打开" IsVisible="{Binding IsIdle}" />
+                    <TextBlock Text="正在打开功能…" IsVisible="{Binding IsBusy}" />
+                </StackPanel>
                 <Button Grid.Column="1" x:Name="CancelCreationButton" Content="取消" MinWidth="82"
                         IsEnabled="{Binding IsIdle}" Margin="0,0,10,0" />
-                <Button Grid.Column="2" x:Name="CreateDocumentButton" Content="创建" MinWidth="82"
+                <Button Grid.Column="2" x:Name="CreateDocumentButton" Content="打开" MinWidth="82"
                         Command="{Binding CreateCommand}" IsEnabled="{Binding CanCreate}" IsDefault="True" />
             </Grid>
         </Grid>

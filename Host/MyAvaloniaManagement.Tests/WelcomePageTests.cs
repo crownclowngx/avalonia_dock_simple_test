@@ -9,18 +9,16 @@ namespace MyAvaloniaManagement.Tests;
 public sealed class WelcomePageTests
 {
     [Fact]
-    public void WelcomeCommandsRequestTheExpectedHostTools()
+    public void 欢迎页通过两个独立窄动作打开功能与工具中心()
     {
-        var requestedToolIds = new List<MyAvaloniaManagement.PluginSdk.ToolTypeId>();
+        var functionRequests = 0;
         var centerRequests = 0;
-        var viewModel = new WelcomeViewModel(requestedToolIds.Add, () => centerRequests++);
+        var viewModel = new WelcomeViewModel(() => functionRequests++, () => centerRequests++);
 
-        viewModel.OpenPluginMenuCommand.Execute(null);
+        viewModel.OpenFunctionCenterCommand.Execute(null);
         viewModel.OpenToolCenterCommand.Execute(null);
 
-        Assert.Equal(
-            [HostExtensionIds.PluginMenu],
-            requestedToolIds);
+        Assert.Equal(1, functionRequests);
         Assert.Equal(1, centerRequests);
     }
 
@@ -29,7 +27,7 @@ public sealed class WelcomePageTests
     {
         var viewModel = new WelcomeViewModel();
 
-        Assert.Contains("Avalonia", viewModel.Text);
+        Assert.Contains("选择需要的功能", viewModel.Text);
         Assert.StartsWith("版本 ", viewModel.VersionText);
         Assert.True(viewModel.VersionText.Length > "版本 ".Length);
     }

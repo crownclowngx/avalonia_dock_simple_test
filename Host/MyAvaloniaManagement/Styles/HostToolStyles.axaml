@@ -1,5 +1,11 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dock="clr-namespace:Dock.Avalonia.Controls;assembly=Dock.Avalonia">
+    <!-- 使用 Dock 公开的模板部件选择器补充说明，不复制第三方模板或改变关闭命令。 -->
+    <Style Selector="dock|ToolChromeControl /template/ Button#PART_CloseButton">
+        <Setter Property="ToolTip.Tip" Value="隐藏工具" />
+        <Setter Property="AutomationProperties.Name" Value="隐藏工具" />
+    </Style>
     <Styles.Resources>
         <StreamGeometry x:Key="HostToolFolderOpenGeometry">M2,4 H8 L10,6 H18 V8 H5 L3,16 H1 Z M5,9 H19 L16,17 H2 Z</StreamGeometry>
         <StreamGeometry x:Key="HostToolChevronGeometry">M5,3 L10,8 L5,13</StreamGeometry>

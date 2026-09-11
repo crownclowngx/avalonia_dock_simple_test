@@ -271,23 +271,6 @@ public sealed class WorkspaceSessionAndDockFactoryTests
             field => field.FieldType.Namespace?.StartsWith("Dock.", StringComparison.Ordinal) == true);
     }
 
-    [Fact]
-    public void Welcome生产模型通过窄动作显示对应Tool()
-    {
-        using var context = new TestHostContext();
-        _ = context.CreateMainWindowViewModel();
-        var welcome = Assert.IsType<MyAvaloniaManagement.ViewModels.Welcome.WelcomeViewModel>(
-            context.Workspace.GetDocuments().Single().Model);
-        var pluginMenu = context.Workspace.CreatedTools[HostExtensionIds.PluginMenu.Value];
-        context.Workspace.DockFactory.HideDockable(pluginMenu);
-
-        welcome.OpenPluginMenuCommand.Execute(null);
-
-        Assert.NotNull(DockTreeNavigator.FindToolDock(
-            context.Workspace.RootDock!,
-            Assert.IsAssignableFrom<Tool>(pluginMenu)));
-    }
-
     /// <summary>
     /// 记录 Factory 的窄回调，用纯对象断言 override 转发与 Locator；它刻意不包含任何
     /// 工作区业务，从而让测试本身也保持 Factory Adapter 与 Session 所有权分离。

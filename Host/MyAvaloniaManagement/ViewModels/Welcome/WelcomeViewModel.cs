@@ -12,10 +12,10 @@ namespace MyAvaloniaManagement.ViewModels.Welcome;
 internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocument
 {
     private const string DefaultIntroduction =
-        "MyAvaloniaManagement 是基于 Avalonia 与 Dock 构建的插件化桌面框架，" +
-        "用可停靠布局组织工具，用独立插件扩展业务能力。";
+        "选择需要的功能，在独立标签中开始工作；随时切换已有页面，" +
+        "按需显示辅助工具，让工作区保持专注。";
 
-    private readonly Action<ToolTypeId>? _showTool;
+    private readonly Action? _showFunctions;
     private readonly Action? _showToolCenter;
     private string _text = DefaultIntroduction;
     private string _title = "欢迎";
@@ -24,9 +24,9 @@ internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocume
     {
     }
 
-    public WelcomeViewModel(Action<ToolTypeId> showTool, Action? showToolCenter = null)
+    public WelcomeViewModel(Action showFunctions, Action? showToolCenter = null)
     {
-        _showTool = showTool ?? throw new ArgumentNullException(nameof(showTool));
+        _showFunctions = showFunctions ?? throw new ArgumentNullException(nameof(showFunctions));
         _showToolCenter = showToolCenter;
     }
 
@@ -88,8 +88,7 @@ internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocume
     }
 
     [RelayCommand]
-    private void OpenPluginMenu() =>
-        _showTool?.Invoke(HostExtensionIds.PluginMenu);
+    private void OpenFunctionCenter() => _showFunctions?.Invoke();
 
     [RelayCommand]
     private void OpenToolCenter() => _showToolCenter?.Invoke();

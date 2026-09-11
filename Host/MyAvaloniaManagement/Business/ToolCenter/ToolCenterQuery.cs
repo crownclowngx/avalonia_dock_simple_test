@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MyAvaloniaManagement.Business.Search;
 using MyAvaloniaManagement.Business.Presentation.Icons;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.Models.Tools;
@@ -62,14 +63,14 @@ internal sealed class ToolCenterQuery(ToolWorkspaceReadModel readModel, ToolCent
             _ => items.Where(item => !item.IsMissing && item.CategoryId == navigation)
         };
         if (source != "all") result = result.Where(item => item.SourceId == source);
-        if (query.Length > 0) result = result.Where(item =>
-            new[] { item.DisplayName, item.Description, item.CategoryName, item.SourceName, item.ToolId }
-                .Any(text => text.Contains(query, StringComparison.OrdinalIgnoreCase)));
+        int Rank(ToolCenterItem item) => WorkbenchTextMatch.Rank(item.DisplayName, query,
+            item.Description, item.CategoryName, item.SourceName, item.ToolId);
+        if (query.Length > 0) result = result.Where(item => Rank(item) < int.MaxValue);
         if (query.Length == 0 && navigation is "favorites" or "recent")
         {
             var order = navigation == "favorites" ? preferences.Current.FavoriteToolIds : preferences.Current.RecentToolIds;
             return result.OrderBy(item => Array.IndexOf(order, item.ToolId)).ToArray();
         }
-        return result.OrderBy(item => item.DisplayName, StringComparer.Ordinal).ThenBy(item => item.ToolId, StringComparer.Ordinal).ToArray();
+        return result.OrderBy(item => query.Length == 0 ? 0 : Rank(item)).ThenBy(item => item.DisplayName, StringComparer.Ordinal).ThenBy(item => item.ToolId, StringComparer.Ordinal).ToArray();
     }
 }

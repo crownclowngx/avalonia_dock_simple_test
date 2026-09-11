@@ -98,14 +98,14 @@ internal sealed class WorkbenchCommandPresentationDesignData :
         private readonly IReadOnlyList<WorkbenchCommandPaletteProjectionEntry> _items =
         [
             new WorkbenchCommandPaletteProjectionEntry(
-                HostWorkbenchCommandIds.OpenDocument,
+                new CommandPaletteIdentity(HostWorkbenchCommandIds.OpenDocument),
                 "打开…",
                 "打开一个已保存的文档",
                 string.Empty,
                 true,
                 open),
             new WorkbenchCommandPaletteProjectionEntry(
-                HostWorkbenchCommandIds.SaveDocument,
+                new CommandPaletteIdentity(HostWorkbenchCommandIds.SaveDocument),
                 "保存",
                 "保存当前文档",
                 "Ctrl+S",

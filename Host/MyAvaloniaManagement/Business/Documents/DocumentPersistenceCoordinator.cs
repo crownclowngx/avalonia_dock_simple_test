@@ -61,7 +61,7 @@ internal sealed class DocumentPersistenceCoordinator(
                 "DOCUMENT_INITIALIZATION_FAILED",
                 exception);
             return DocumentOperationResult.Failure(
-                "无法创建 Document：插件初始化未完成。未发布任何标签。");
+                "无法打开功能：插件初始化未完成，未新增页面。请重试或查看插件状态。");
         }
     }
 
