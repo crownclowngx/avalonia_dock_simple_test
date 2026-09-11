@@ -17,6 +17,7 @@ namespace MyAvaloniaManagement.Business.Commands.Catalog;
 internal static class HostWorkbenchCommandIds
 {
     internal static readonly CommandId OpenToolCenter = new("myavalonia.host.command.tool-center.open");
+    internal static readonly CommandId OpenPluginStatus = new("myavalonia.host.command.plugin-status.open");
     internal static readonly CommandId NewDocument =
         new("myavalonia.host.command.document.new");
     internal static readonly CommandId OpenDocument =
@@ -53,7 +54,8 @@ internal sealed class HostWorkbenchCommandCatalog
         HostSaveDocumentCommandHandler saveDocument,
         HostOpenHelpCommandHandler openHelp,
         HostNewDocumentCommandHandler newDocument,
-        HostOpenToolCenterCommandHandler? openToolCenter = null)
+        HostOpenToolCenterCommandHandler? openToolCenter = null,
+        HostOpenPluginStatusCommandHandler? openPluginStatus = null)
         : this(
         [
             new HostWorkbenchCommandRegistration(
@@ -79,6 +81,9 @@ internal sealed class HostWorkbenchCommandCatalog
             .. (openToolCenter is null ? Array.Empty<HostWorkbenchCommandRegistration>() :
                 new[] { new HostWorkbenchCommandRegistration(new CommandDescriptor(
                     HostWorkbenchCommandIds.OpenToolCenter, "工具中心…", "搜索、分类和收藏工具，管理工作区工具的显示与隐藏。"), openToolCenter) }),
+            .. (openPluginStatus is null ? Array.Empty<HostWorkbenchCommandRegistration>() :
+                new[] { new HostWorkbenchCommandRegistration(new CommandDescriptor(
+                    HostWorkbenchCommandIds.OpenPluginStatus, "插件状态…", "查看当前会话的插件加载、兼容性、贡献与诊断信息。"), openPluginStatus) }),
         ])
     {
     }

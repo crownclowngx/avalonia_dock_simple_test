@@ -21,7 +21,7 @@ namespace MyAvaloniaManagement.Tests;
 public sealed class HostCatalogPluginRegistryTests
 {
     [Fact]
-    public void 零插件时Registry为空而HostCatalog仍发布Welcome和三个Tool()
+    public void 零插件时Registry为空而HostCatalog仍发布Welcome和两个Tool()
     {
         var services = new ServiceCollection();
         services.AddApplicationServices().AddViewModels();
@@ -41,16 +41,16 @@ public sealed class HostCatalogPluginRegistryTests
         Assert.Empty(registry.Tools);
         Assert.Empty(registry.DeclaredOwnerIds);
         Assert.Single(host.Documents);
-        Assert.Equal(3, host.Tools.Count);
+        Assert.Equal(2, host.Tools.Count);
         Assert.True(workspace.TryGetDocument(HostExtensionIds.WelcomeDocument, out var welcome));
         Assert.IsType<HostWorkspaceDocumentRegistration>(welcome);
         Assert.Single(workspace.GetCreationEntries());
-        Assert.Empty(provider.GetRequiredService<PluginStatusViewModel>().Items);
+        Assert.Empty(provider.GetRequiredService<MyAvaloniaManagement.Business.PluginStatus.IPluginStatusQuery>().Capture());
 
         using var context = new TestHostContext();
         Assert.NotNull(context.Workspace.CreateLayout());
         Assert.Single(context.Workspace.GetDocuments());
-        Assert.Equal(3, context.Workspace.CreatedTools.Count);
+        Assert.Equal(2, context.Workspace.CreatedTools.Count);
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public sealed class HostCatalogPluginRegistryTests
 
         Assert.NotNull(context.Workspace.CreateLayout());
         Assert.Single(context.Workspace.GetDocuments());
-        Assert.Equal(3, context.Workspace.CreatedTools.Count);
+        Assert.Equal(2, context.Workspace.CreatedTools.Count);
         Assert.Equal(
             [HostExtensionIds.WelcomeDocument],
             context.Workspace.GetAllDocumentCreationEntries()

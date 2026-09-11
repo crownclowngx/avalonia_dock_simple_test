@@ -177,7 +177,7 @@ internal sealed class PluginLifecycleStateStore
 }
 
 /// <summary>
-/// 菜单、Dock、布局与状态 Tool 使用的窄只读投影；它不提供任何状态修改或生命周期执行入口。
+/// 菜单、Dock、布局与插件状态窗口使用的窄只读投影；不提供状态修改或生命周期执行入口。
 /// </summary>
 internal sealed class PluginAvailabilityReadModel(PluginLifecycleStateStore store)
 {

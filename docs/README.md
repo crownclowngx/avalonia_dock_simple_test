@@ -8,6 +8,11 @@
 
 本目录保存解决方案级文档。文档按用途分为“快速开始”“当前事实”“设计方法论与探索”以及“历史验收记录”，阅读时应先确认文档类型，避免把历史基线当作当前实现。
 
+## 插件状态独立窗口
+
+- [使用说明](./quick-start/plugin-status.md)：工具菜单打开非模态窗口，查看概览、贡献和诊断。
+- [实现设计](./design/plugin-status-window.md) · [本地验收记录](./plan-history/plugin-status/window-acceptance.md)。
+
 ## V7 工具中心
 
 - [Host V7 独立工具中心与 Tool 显隐改造](./design/host-v7-tool-center-and-visibility-plan.md)：已实施独立窗口、全 Tool 可隐藏、分类/常用/搜索与旧布局定向迁移。

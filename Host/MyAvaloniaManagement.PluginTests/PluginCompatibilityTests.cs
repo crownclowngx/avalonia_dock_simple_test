@@ -62,24 +62,24 @@ public sealed class PluginCompatibilityTests
             new MyAvaloniaManagement.PluginSdk.PluginId(
                 "myavalonia.plugin.lifecycle-probe"),
             PluginLifecycleStatus.Ready));
-        var viewModel = new PluginStatusViewModel(
+        var viewModel = new MyAvaloniaManagement.Business.PluginStatus.PluginStatusQuery(
             registry,
             availability: new PluginAvailabilityReadModel(states));
 
-        Assert.Equal(3, viewModel.Items.Count);
+        Assert.Equal(3, viewModel.Capture().Count);
         Assert.Equal(
             [
                 "myavalonia.plugin.lifecycle-probe",
                 "myavalonia.plugin.my-plug-test",
                 "myavalonia.plugin.probe"
             ],
-            viewModel.Items.Select(item => item.PluginId));
+            viewModel.Capture().Select(item => item.PluginId));
         Assert.Equal(
             "生命周期初始化成功",
-            viewModel.Items.Single(item =>
+            viewModel.Capture().Single(item =>
                 item.PluginId == "myavalonia.plugin.lifecycle-probe").StatusText);
         Assert.All(
-            viewModel.Items.Where(item =>
+            viewModel.Capture().Where(item =>
                 item.PluginId != "myavalonia.plugin.lifecycle-probe"),
             item => Assert.Contains("无需后台生命周期", item.StatusText));
     }
@@ -94,7 +94,7 @@ public sealed class PluginCompatibilityTests
     [InlineData("Stopped", "生命周期已停止", "已停止")]
     [InlineData("ShutdownFailed", "生命周期停止失败", "正在退出")]
     [InlineData("ShutdownTimedOut", "生命周期停止超时", "正在退出")]
-    public void 插件状态Tool投影初始化隔离与停止状态(
+    public void 插件状态查询投影初始化隔离与停止状态(
         string statusName,
         string expectedStatus,
         string expectedAvailability)
@@ -130,9 +130,9 @@ public sealed class PluginCompatibilityTests
             },
         });
 
-        var item = new PluginStatusViewModel(
+        var item = new MyAvaloniaManagement.Business.PluginStatus.PluginStatusQuery(
             registry,
-            availability: new PluginAvailabilityReadModel(states)).Items
+            availability: new PluginAvailabilityReadModel(states)).Capture()
             .Single(value => value.PluginId == owner.Value);
 
         Assert.Equal(expectedStatus, item.StatusText);

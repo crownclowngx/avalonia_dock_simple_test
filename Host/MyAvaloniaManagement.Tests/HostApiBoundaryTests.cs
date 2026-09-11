@@ -38,7 +38,7 @@ public sealed class HostApiBoundaryTests
             typeof(MainWindowViewModel),
             typeof(FileSystemTreeViewModel),
             typeof(PlugGroupMenuViewModel),
-            typeof(PluginStatusViewModel),
+            typeof(MyAvaloniaManagement.ViewModels.PluginStatus.PluginStatusWindowViewModel),
             typeof(MyAvaloniaManagement.ViewModels.ToolCenter.ToolCenterViewModel),
         };
 

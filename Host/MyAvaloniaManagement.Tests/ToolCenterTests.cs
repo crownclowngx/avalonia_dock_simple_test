@@ -11,7 +11,7 @@ namespace MyAvaloniaManagement.Tests;
 public sealed class ToolCenterTests
 {
     private static readonly string First = HostExtensionIds.FileSystemTree.Value;
-    private static readonly string Second = HostExtensionIds.PluginStatus.Value;
+    private static readonly string Second = HostExtensionIds.PluginMenu.Value;
 
     [Fact]
     public void 收藏排序分类和最近记录跨存储实例恢复且不改变布局()
@@ -150,8 +150,8 @@ public sealed class ToolCenterTests
         var category = preferences.AddCategory("效率");
         preferences.AssignCategory(First, category.CategoryId!);
         var items = query.Capture();
-        Assert.Equal(4, items.Count);
-        Assert.Equal(3, query.Filter(items, "all", "", "all").Count);
+        Assert.Equal(3, items.Count);
+        Assert.Equal(2, query.Filter(items, "all", "", "all").Count);
         Assert.Equal(2, query.Filter(items, "favorites", "", "all").Count);
         var placeholder = Assert.Single(query.Filter(items, "recent", "", "all"));
         Assert.True(placeholder.IsMissing);
@@ -164,7 +164,7 @@ public sealed class ToolCenterTests
         Assert.Empty(query.Filter(items, "all", "效率", "missing-owner"));
         Assert.Single(query.Filter(items, category.CategoryId!, "", "all"));
         Assert.Empty(query.Filter(items, "visible", "", "all"));
-        Assert.Equal(3, query.Filter(items, "hidden", "", "all").Count);
+        Assert.Equal(2, query.Filter(items, "hidden", "", "all").Count);
     }
 
     [Fact]
@@ -210,10 +210,10 @@ public sealed class ToolCenterTests
         var path = Path.Combine(context.TempDirectory, "legacy.json");
         var snapshot = new DockLayoutSnapshotV2
         {
-            ActiveToolId = RetiredToolLayoutMigration.ToolManagementId,
+            ActiveToolId = RetiredHostToolIds.ToolManagement,
             Panes = [new() { Id = "right", Proportion = 0.31 }],
             Tools = [new() { Id = First, DockId = "tools", Order = 0, IsVisible = true },
-                new() { Id = RetiredToolLayoutMigration.ToolManagementId, DockId = "tools", Order = 1, IsVisible = visible, IsPinned = pinned },
+                new() { Id = RetiredHostToolIds.ToolManagement, DockId = "tools", Order = 1, IsVisible = visible, IsPinned = pinned },
                 new() { Id = Second, DockId = "tools", Order = 2, IsVisible = true, IsPinned = true }]
         };
         var store = new DockLayoutStore(path);
@@ -228,15 +228,15 @@ public sealed class ToolCenterTests
         Assert.Same(migrated, RetiredToolLayoutMigration.Apply(migrated));
         Assert.Equal(original, File.ReadAllBytes(path));
         store.Save(migrated);
-        Assert.Equal(original, File.ReadAllBytes(Assert.Single(Directory.GetFiles(context.TempDirectory, "*.pre-v7.bak"))));
+        Assert.Equal(original, File.ReadAllBytes(Assert.Single(Directory.GetFiles(context.TempDirectory, "*.pre-tool-retirement.bak"))));
         store.Save(store.Load()!);
-        Assert.Single(Directory.GetFiles(context.TempDirectory, "*.pre-v7.bak"));
+        Assert.Single(Directory.GetFiles(context.TempDirectory, "*.pre-tool-retirement.bak"));
     }
 
     [Fact]
     public void 仅管理项可迁移为空且其他未知工具不会被吞掉()
     {
-        var snapshot = new DockLayoutSnapshotV2 { Tools = [new() { Id = RetiredToolLayoutMigration.ToolManagementId, DockId = "tools", Order = 0 }] };
+        var snapshot = new DockLayoutSnapshotV2 { Tools = [new() { Id = RetiredHostToolIds.ToolManagement, DockId = "tools", Order = 0 }] };
         Assert.Empty(RetiredToolLayoutMigration.Apply(snapshot).Tools);
         var unknown = new DockToolSnapshotV2 { Id = "myavalonia.plugin.unknown.tool.main", DockId = "tools", Order = 1 };
         snapshot.Tools.Add(unknown);

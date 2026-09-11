@@ -61,7 +61,7 @@ V2 没有 `isFloating`、`floatingBounds` 或任何其他浮动字段，也没�
 恢复顺序固定为：
 
 1. 从 `layout-v2.json` 严格读取并完成结构值校验；
-2. 精确移除退役的 `myavalonia.host.tool.management` 项及其活动引用，保留其他项；创建默认 Dock 树并隐藏全部 Tool；
+2. 精确移除退役的 `myavalonia.host.tool.management`、`myavalonia.host.tool.plugin-status` 项及其活动引用，保留其他项；创建默认 Dock 树并隐藏全部 Tool；
 3. 在调整任何 Pane 前检查每个 Tool 已注册、生命周期可用且实例已经完整创建；
 4. 补建快照合法需要的稳定四向 Dock；
 5. 验证 Pane/Dock 运行时结构；
@@ -71,8 +71,8 @@ V2 没有 `isFloating`、`floatingBounds` 或任何其他浮动字段，也没�
 
 损坏文件改名为 `layout-v2.<UTC>.invalid.bak`。诊断只记录固定错误码、通过格式检查的稳定 ID、阶段和异常类型，不记录 JSON 正文。保存继续使用同目录临时文件、强制刷新和原子替换。
 
-V7 的管理项迁移只适用于通过原始结构校验的 V2 快照，不是任意未知 Tool 的忽略规则。其余项的相对顺序、
-Pane 比例、显隐和自动收起状态保持；首次覆盖前保存原始字节为 `layout-v2.json.<GUID>.pre-v7.bak`，备份失败拒绝写回。
+内置 Tool 的退役迁移只适用于通过原始结构校验的 V2 快照，不是任意未知 Tool 的忽略规则。其余项的相对顺序、
+Pane 比例、显隐和自动收起状态保持；首次覆盖前保存原始字节为 `layout-v2.json.<GUID>.pre-tool-retirement.bak`，备份失败拒绝写回。
 普通未知 Tool 仍按上面的严格规则隔离整份文件。旧快照未包含的新工具保持隐藏，可以从工具中心显示。
 
 ## V1 保留边界

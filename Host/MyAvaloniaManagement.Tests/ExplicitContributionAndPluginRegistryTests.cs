@@ -300,7 +300,6 @@ public sealed class ExplicitContributionAndPluginRegistryTests
             [
                 HostExtensionIds.FileSystemTree,
                 HostExtensionIds.PluginMenu,
-                HostExtensionIds.PluginStatus,
             ],
             hostCatalog.Tools.Select(item => item.Descriptor.ToolTypeId)
                 .OrderBy(item => item.Value));

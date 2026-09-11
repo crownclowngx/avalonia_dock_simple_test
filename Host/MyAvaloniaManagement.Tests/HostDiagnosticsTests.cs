@@ -377,11 +377,11 @@ public sealed class HostDiagnosticsTests
             PluginDirectory = "BrokenPlugin",
         });
 
-        var viewModel = new PluginStatusViewModel(
-            new PluginRegistry([], []),
-            session);
+        var registry = new PluginRegistry([], []);
+        var query = new MyAvaloniaManagement.Business.PluginStatus.PluginStatusQuery(
+            registry, new PluginAvailabilityReadModel(new PluginLifecycleStateStore(registry)), session);
 
-        var item = Assert.Single(viewModel.Items);
+        var item = Assert.Single(query.Capture());
         Assert.Equal("目录：BrokenPlugin", item.PluginId);
         Assert.Equal("加载失败 · 已隔离", item.StatusText);
         Assert.Contains(HostDiagnosticCodes.PluginEntryInvalid, item.Detail);

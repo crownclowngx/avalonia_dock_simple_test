@@ -35,7 +35,8 @@ internal sealed class HostDesktopShell(
     MainWindowViewModel mainWindowViewModel,
     HelpWindowService helpWindows,
     FunctionCenterWindowService functionCenter,
-    ToolCenterWindowService toolCenter) : IHostDesktopShell
+    ToolCenterWindowService toolCenter,
+    PluginStatusWindowService pluginStatus) : IHostDesktopShell
 {
     public void Attach(
         App application,
@@ -50,6 +51,7 @@ internal sealed class HostDesktopShell(
         helpWindows.Attach(mainWindow);
         functionCenter.Attach(mainWindow);
         toolCenter.Attach(mainWindow);
+        pluginStatus.Attach(mainWindow);
         // 窗口入口准备完成后再绑定菜单，首次 Enabled 查询即可得到正确状态。
         mainWindow.DataContext = mainWindowViewModel;
 

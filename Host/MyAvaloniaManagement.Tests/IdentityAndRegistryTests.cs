@@ -27,7 +27,7 @@ public sealed class IdentityAndRegistryTests
             HostExtensionIds.PluginMenu.Value);
         Assert.Equal(
             "myavalonia.host.tool.management",
-            MyAvaloniaManagement.Business.Layout.RetiredToolLayoutMigration.ToolManagementId);
+            RetiredHostToolIds.ToolManagement);
 
         var injectedConstructor = typeof(
                 MyAvaloniaManagement.ViewModels.Welcome.WelcomeViewModel)

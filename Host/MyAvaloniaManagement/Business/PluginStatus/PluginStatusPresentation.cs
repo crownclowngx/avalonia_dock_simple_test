@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Diagnostics;
@@ -8,106 +7,41 @@ using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Plugins.Discovery;
 using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.Models.Plugins;
-using MyAvaloniaManagement.PluginSdk;
 
-namespace MyAvaloniaManagement.ViewModels.Tools;
+namespace MyAvaloniaManagement.Business.PluginStatus;
 
-/// <summary>
-/// 展示当前启动会话中所有托管插件的加载和生命周期结果。
-/// </summary>
-internal sealed class PluginStatusViewModel
+/// <summary>集中维护状态中文文案；查询只组合事实，窗口只绑定结果。</summary>
+/// <remarks>沿用原有生命周期含义，避免迁移窗口时改变“加载成功”和“贡献可用”的判断。</remarks>
+internal static class PluginStatusPresentation
 {
-    public PluginStatusViewModel(
-        PluginRegistry pluginRegistry,
-        HostDiagnosticSession? diagnostics = null,
-        PluginAvailabilityReadModel? availability = null)
+    internal static PluginStatusItem ForPlugin(PluginRegistryPlugin plugin, bool hasLifecycle, PluginLifecycleState? state) =>
+        ToItem(plugin.Manifest.PluginId.Value, plugin.EntryAssembly.GetName().Name ?? "未知程序集",
+            plugin.Manifest, hasLifecycle, state);
+
+    internal static PluginStatusItem ForRejectedCandidate(IReadOnlyList<HostDiagnosticRecord> records)
     {
-        ArgumentNullException.ThrowIfNull(pluginRegistry);
-
-        availability ??= new PluginAvailabilityReadModel(
-            new PluginLifecycleStateStore(pluginRegistry));
-        Items = new ObservableCollection<PluginStatusItem>(
-            CreateItems(pluginRegistry, diagnostics, availability));
-    }
-
-    public ObservableCollection<PluginStatusItem> Items { get; }
-
-    private static IReadOnlyList<PluginStatusItem> CreateItems(
-        PluginRegistry registry,
-        HostDiagnosticSession? diagnostics,
-        PluginAvailabilityReadModel availability)
-    {
-        var items = new List<PluginStatusItem>();
-
-        foreach (var plugin in registry.Plugins
-                     .OrderBy(item => item.Manifest.PluginId.Value, StringComparer.Ordinal))
+        var id = records.Select(item => item.PluginId).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        var directory = records.Select(item => item.PluginDirectory).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        return new PluginStatusItem(id ?? $"目录：{directory}",
+            records.Select(item => item.AssemblyName).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "未完成加载",
+            records.Any(item => item.Phase == HostDiagnosticPhase.PluginManifestPreflight)
+                ? "兼容检查失败 · 未加载" : "加载失败 · 已隔离", "—", "无",
+            string.Join(Environment.NewLine, records.Select(item => $"[{item.Code}] {PhaseText(item.Phase)}：{item.UserMessage}")))
         {
-            var pluginId = plugin.Manifest.PluginId;
-            items.Add(ToItem(
-                pluginId.Value,
-                plugin.EntryAssembly.GetName().Name ?? "未知程序集",
-                plugin.Manifest,
-                registry.Lifecycles.Any(item => item.OwnerId.Value == pluginId.Value),
-                availability.GetLifecycleState(
-                    new MyAvaloniaManagement.PluginSdk.PluginId(pluginId.Value))));
-        }
-
-        if (diagnostics is not null)
-        {
-            var rejectedCandidates = diagnostics.Snapshot
-                .Where(item =>
-                    item.PluginDirectory is not null &&
-                    item.Phase is HostDiagnosticPhase.PluginManifestPreflight
-                        or HostDiagnosticPhase.PluginRootDiscovery
-                        or HostDiagnosticPhase.PluginAssemblyLoad
-                        or HostDiagnosticPhase.PluginTypePreflight)
-                .GroupBy(item => item.PluginDirectory!, StringComparer.OrdinalIgnoreCase)
-                .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase);
-            foreach (var candidate in rejectedCandidates)
-            {
-                var records = candidate.OrderBy(item => item.Sequence).ToArray();
-                items.Add(new PluginStatusItem(
-                    records.Select(item => item.PluginId)
-                        .FirstOrDefault(id => !string.IsNullOrWhiteSpace(id))
-                    ?? $"目录：{candidate.Key}",
-                    records.Select(item => item.AssemblyName)
-                        .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? "未完成加载",
-                    records.Any(item => item.Phase == HostDiagnosticPhase.PluginManifestPreflight)
-                        ? "兼容检查失败 · 未加载"
-                        : "加载失败 · 已隔离",
-                    "—",
-                    "无",
-                    string.Join(
-                        Environment.NewLine,
-                        records.Select(item =>
-                            $"[{item.Code}] {ToPhaseText(item.Phase)}：{item.UserMessage}")))
-                {
-                    VersionText = records.Select(item => item.PluginVersion)
-                        .FirstOrDefault(version => !string.IsNullOrWhiteSpace(version))
-                    ?? "未读取",
-                    CompatibilityText = ToRejectedCompatibilityText(records),
-                });
-            }
-        }
-
-        return items
-            .OrderBy(item => item.PluginId, StringComparer.Ordinal)
-            .ToArray();
+            VersionText = records.Select(item => item.PluginVersion).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "未读取",
+            CompatibilityText = ToRejectedCompatibilityText(records)
+        };
     }
 
     private static PluginStatusItem ToItem(
         string pluginId,
         string assemblyName,
-        PluginManifest? manifest,
+        PluginManifest manifest,
         bool hasLifecycle,
         PluginLifecycleState? lifecycleState)
     {
-        var version = manifest is null
-            ? "未提供"
-            : PluginVersionText.Format(manifest.PluginVersion);
-        var compatibility = manifest is null
-            ? "未通过清单发现入口"
-            : $"Plugin SDK {manifest.Sdk}";
+        var version = PluginVersionText.Format(manifest.PluginVersion);
+        var compatibility = $"Plugin SDK {manifest.Sdk}";
         if (!hasLifecycle)
         {
             return new PluginStatusItem(
@@ -189,7 +123,7 @@ internal sealed class PluginStatusViewModel
             _ => throw new ArgumentOutOfRangeException(nameof(state)),
         };
 
-    private static string ToPhaseText(HostDiagnosticPhase phase) => phase switch
+    internal static string PhaseText(HostDiagnosticPhase phase) => phase switch
     {
         HostDiagnosticPhase.PluginRootDiscovery => "目录发现",
         HostDiagnosticPhase.PluginManifestPreflight => "兼容预检",
@@ -197,8 +131,12 @@ internal sealed class PluginStatusViewModel
         HostDiagnosticPhase.PluginTypePreflight => "类型预检",
         HostDiagnosticPhase.PluginModuleDiscovery => "模块发现",
         HostDiagnosticPhase.PluginServiceRegistration => "服务注册",
+        HostDiagnosticPhase.HostContainerBuild => "容器构建",
         HostDiagnosticPhase.ExtensionDiscovery => "扩展组合",
         HostDiagnosticPhase.PluginLifecycle => "生命周期",
+        HostDiagnosticPhase.WorkflowAction => "工作流动作",
+        HostDiagnosticPhase.WorkbenchCommand => "工作台命令",
+        HostDiagnosticPhase.IconPresentation => "图标展示",
         _ => phase.ToString(),
     };
 

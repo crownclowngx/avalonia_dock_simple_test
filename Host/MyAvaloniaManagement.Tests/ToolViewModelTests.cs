@@ -16,7 +16,7 @@ using MyAvaloniaManagement.ViewModels.Tools;
 namespace MyAvaloniaManagement.Tests;
 
 /// <summary>
-/// 验证文件树、插件菜单和工具管理三个宿主工具 ViewModel。
+/// 验证文件树、插件菜单两个宿主工具及独立工具中心的交互。
 /// </summary>
 public sealed class ToolViewModelTests
 {
@@ -240,7 +240,8 @@ public sealed class ToolViewModelTests
     {
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
-        Assert.DoesNotContain(RetiredToolLayoutMigration.ToolManagementId, context.Workspace.CreatedTools.Keys);
+        Assert.DoesNotContain(RetiredHostToolIds.ToolManagement, context.Workspace.CreatedTools.Keys);
+        Assert.DoesNotContain(RetiredHostToolIds.PluginStatus, context.Workspace.CreatedTools.Keys);
         Assert.All(context.Workspace.CreatedTools.Values, tool => Assert.True(tool.CanClose));
         foreach (var id in context.Workspace.CreatedTools.Keys)
         {
@@ -258,7 +259,7 @@ public sealed class ToolViewModelTests
     {
         using var context = new TestHostContext();
         var main = context.CreateMainWindowViewModel();
-        var id = HostExtensionIds.PluginStatus;
+        var id = HostExtensionIds.PluginMenu;
         context.Workspace.ShowTool(id);
         var states = context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.ToolWorkspaceReadModel>();
         var changes = 0;

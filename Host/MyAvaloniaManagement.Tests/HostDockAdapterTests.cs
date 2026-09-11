@@ -24,7 +24,7 @@ public sealed class HostDockAdapterTests
         Assert.False(typeof(Tool).IsAssignableFrom(typeof(FileSystemTreeViewModel)));
         Assert.False(typeof(Tool).IsAssignableFrom(typeof(PlugGroupMenuViewModel)));
         Assert.False(typeof(Tool).IsAssignableFrom(typeof(MyAvaloniaManagement.ViewModels.ToolCenter.ToolCenterViewModel)));
-        Assert.False(typeof(Tool).IsAssignableFrom(typeof(PluginStatusViewModel)));
+        Assert.False(typeof(Tool).IsAssignableFrom(typeof(MyAvaloniaManagement.ViewModels.PluginStatus.PluginStatusWindowViewModel)));
         Assert.True(typeof(Document).IsAssignableFrom(typeof(ManagedDocumentDockable)));
         Assert.True(typeof(Tool).IsAssignableFrom(typeof(ManagedToolDockable)));
     }

@@ -267,6 +267,16 @@ View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均禁止浮�
 收藏与分类使用独立 `tool-center-v1.json`，不复制 Dock 状态。Tool 的模型和已创建 View 仍沿用原有生命周期。
 默认布局先隐藏所有 Tool，再恢复有效旧快照；退役管理 ID 只进行定向删除，原文件在写回前备份。
 
+### 插件状态独立窗口
+
+`PluginStatusWindowService` 按需创建非模态单实例窗口，菜单和命令面板共用 Host 命令。
+`IPluginStatusQuery` 隔离窗口与 Registry/生命周期/诊断事实，查询只生成不可变展示数据，不扫描目录或激活插件。
+`PluginStatusPresentation` 集中状态文案；窗口模型负责概览、筛选、选择和刷新，View 只处理焦点、Esc 与剪贴板。
+打开、激活或手动刷新时读取当前会话，关闭后没有轮询或事件订阅。复制只使用既有脱敏记录。
+
+旧插件状态 Tool 注册已删除。`RetiredHostToolIds` 为布局和工具偏好提供统一白名单，清理旧记录及历史收藏，
+保留其他工具和缺失插件的数据。详情见[实现设计](../../../../docs/design/plugin-status-window.md)。
+
 ### 4.5 诊断白名单边界
 
 所有加载、组合、布局和启动诊断都通过 `IHostDiagnosticSink` 进入 `HostDiagnosticSession`。
@@ -279,7 +289,7 @@ JSONL 和镜像之前执行唯一一次白名单转换：
 - `Exception` 只投影运行时类型，不读取 `Message`、`StackTrace` 或 `ToString()`；
 - schema 1 的 `TechnicalDetail` 只允许生命周期枚举与毫秒耗时，否则为 `null`。
 
-因此插件状态 Tool、启动失败窗口和复制摘要只是同一脱敏记录的投影，不再承担二次清洗。
+因此插件状态窗口、启动失败窗口和复制摘要只是同一脱敏记录的投影，不再承担二次清洗。
 进程环境变量 `MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS=1` 是与记录完全分离的短期调试旁路：它只把
 带风险警告的原始异常写到 Trace/stderr，不写 UI、剪贴板或 JSONL，也不持久化开关。默认和 Release
 门禁都不启用该旁路。设计与验收证据见

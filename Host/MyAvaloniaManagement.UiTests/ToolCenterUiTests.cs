@@ -198,7 +198,7 @@ public sealed class ToolCenterUiTests
         try
         {
             await Flush();
-            Assert.Equal(103, vm.VisibleItems.Count);
+            Assert.Equal(102, vm.VisibleItems.Count);
             Assert.InRange(window.FindControl<ListBox>("ToolItemsList")!.GetVisualDescendants().OfType<ListBoxItem>().Count(), 1, 30);
             vm.SearchText = "sample-99";
             var found = Assert.Single(vm.VisibleItems);
@@ -217,7 +217,7 @@ public sealed class ToolCenterUiTests
             Assert.Equal(0, probe.Disposed);
             vm.HideAllCommand.Execute(null);
             Assert.Equal(0, probe.Disposed);
-            Assert.Equal(103, vm.VisibleItems.Count);
+            Assert.Equal(102, vm.VisibleItems.Count);
         }
         finally { window.Close(); }
     }
@@ -262,7 +262,7 @@ public sealed class ToolCenterUiTests
         blocked.CanClose = false; // 模拟 Dock 在提交时拒绝一个目标；不改变生产关闭政策。
         try
         {
-            vm.SearchText = "插件状态";
+            vm.SearchText = "插件分组菜单";
             vm.HideAllCommand.Execute(null);
             Assert.True(vm.HasError);
             Assert.Contains("1 个工具未能隐藏", vm.Error);
@@ -335,27 +335,29 @@ public sealed class ToolCenterUiTests
     {
         var old = new DockLayoutSnapshotV2
         {
-            ActiveToolId = RetiredToolLayoutMigration.ToolManagementId,
-            Tools = [new() { Id = RetiredToolLayoutMigration.ToolManagementId, DockId = DockLayoutIds.RightTools, Order = 0, IsVisible = true },
-                new() { Id = HostExtensionIds.PluginStatus.Value, DockId = DockLayoutIds.RightTools, Order = 1, IsVisible = true, IsPinned = true }]
+            ActiveToolId = RetiredHostToolIds.PluginStatus,
+            Tools = [new() { Id = RetiredHostToolIds.ToolManagement, DockId = DockLayoutIds.RightTools, Order = 0, IsVisible = true },
+                new() { Id = HostExtensionIds.PluginMenu.Value, DockId = DockLayoutIds.RightTools, Order = 1, IsVisible = true, IsPinned = true },
+                new() { Id = RetiredHostToolIds.PluginStatus, DockId = DockLayoutIds.RightTools, Order = 2, IsVisible = true, IsPinned = true }]
         };
         DockLayoutSnapshotV2 hidden;
         using (var context = new UiTestContext(initialLayout: old))
         {
             context.ViewModel.ApplyPendingLayout();
             var states = context.Provider.GetRequiredService<ToolWorkspaceReadModel>().Capture();
-            Assert.True(states.Single(item => item.ToolId == HostExtensionIds.PluginStatus.Value).IsVisible);
+            Assert.True(states.Single(item => item.ToolId == HostExtensionIds.PluginMenu.Value).IsVisible);
             Assert.False(states.Single(item => item.ToolId == HostExtensionIds.FileSystemTree.Value).IsVisible);
-            Assert.DoesNotContain(RetiredToolLayoutMigration.ToolManagementId, context.Workspace.CreatedTools.Keys);
+            Assert.DoesNotContain(RetiredHostToolIds.ToolManagement, context.Workspace.CreatedTools.Keys);
+            Assert.DoesNotContain(RetiredHostToolIds.PluginStatus, context.Workspace.CreatedTools.Keys);
             context.Workspace.HideAllTools();
             context.Provider.GetRequiredService<DockLayoutLifecycle>().Save(context.Workspace);
-            Assert.Single(Directory.GetFiles(context.TempDirectory, "*.pre-v7.bak"));
+            Assert.Single(Directory.GetFiles(context.TempDirectory, "*.pre-tool-retirement.bak"));
             hidden = new DockLayoutStore(context.LayoutPath).Load()!;
         }
         using var restarted = new UiTestContext(initialLayout: hidden);
         restarted.ViewModel.ApplyPendingLayout();
         Assert.All(restarted.Provider.GetRequiredService<ToolWorkspaceReadModel>().Capture(), item => Assert.False(item.IsVisible));
-        Assert.True(restarted.Workspace.OpenTool(HostExtensionIds.PluginStatus.Value).Succeeded);
+        Assert.True(restarted.Workspace.OpenTool(HostExtensionIds.PluginMenu.Value).Succeeded);
     }
 
     private static UiTestContext CreateTools(int count, Probe probe) => new(modules:

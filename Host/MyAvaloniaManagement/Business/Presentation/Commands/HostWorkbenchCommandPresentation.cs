@@ -21,6 +21,10 @@ internal sealed class HostWorkbenchCommandProjectionCatalog
                 HostWorkbenchCommandIds.OpenToolCenter, WorkbenchMenuLocations.ToolsShared,
                 group: string.Empty, order: -10, MenuCommandTargetUnavailableBehavior.Disable),
             new MenuCommandContributionDescriptor(
+                new CommandPlacementId("myavalonia.host.command-placement.menu.tools.plugin-status"),
+                HostWorkbenchCommandIds.OpenPluginStatus, WorkbenchMenuLocations.ToolsShared,
+                group: string.Empty, order: -5, MenuCommandTargetUnavailableBehavior.Disable),
+            new MenuCommandContributionDescriptor(
                 new CommandPlacementId("myavalonia.host.command-placement.menu.file.new-document"),
                 HostWorkbenchCommandIds.NewDocument,
                 WorkbenchMenuLocations.FileShared,

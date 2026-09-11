@@ -39,13 +39,13 @@ public sealed class AutoHideRestoreVisualTests
             snapshot = snapshot with
             {
                 Tools = snapshot.Tools
-                    .OrderBy(tool => tool.Id == HostExtensionIds.PluginStatus.Value ? 0 : 1)
+                    .OrderBy(tool => tool.Id == HostExtensionIds.PluginMenu.Value ? 0 : 1)
                     .Select((tool, index) => tool with
                     {
                         DockId = ToolDockPlacement.GetDockId(alignment),
                         Order = index,
                         IsVisible = true,
-                        IsPinned = !keepExpandedTool || tool.Id == HostExtensionIds.PluginStatus.Value
+                        IsPinned = !keepExpandedTool || tool.Id == HostExtensionIds.PluginMenu.Value
                     }).ToList()
             };
         }
@@ -60,7 +60,7 @@ public sealed class AutoHideRestoreVisualTests
             window.Show();
             Dispatcher.UIThread.RunJobs();
             var tool = Assert.IsType<ManagedToolDockable>(
-                context.Workspace.CreatedTools[HostExtensionIds.PluginStatus.Value]);
+                context.Workspace.CreatedTools[HostExtensionIds.PluginMenu.Value]);
             var factory = context.Workspace.DockFactory;
             var root = factory.FindRoot(tool, _ => true)!;
             var prepared = Assert.IsAssignableFrom<Control>(tool.PreparedView);

@@ -51,14 +51,13 @@ public sealed class HostToolVisualTests
     }
 
     [AvaloniaFact]
-    public void 三个宿主工具在窄面板中可布局并使用统一样式()
+    public void 两个宿主工具在窄面板中可布局并使用统一样式()
     {
         using var context = new UiTestContext();
         var views = new UserControl[]
         {
             new FileSystemTreeView(),
-            new PlugGroupMenuView(),
-            new PluginStatusView()
+            new PlugGroupMenuView()
         };
 
         foreach (var view in views)
@@ -78,8 +77,6 @@ public sealed class HostToolVisualTests
         Assert.NotEmpty(fileSystemView.GetLogicalDescendants()
             .OfType<PathIcon>());
 
-        Assert.IsNotType<ListBox>(views[2].Content);
-        Assert.NotNull(views[2].FindControl<ItemsControl>("PluginStatusItemsControl"));
     }
 
     [AvaloniaFact]
@@ -87,10 +84,10 @@ public sealed class HostToolVisualTests
     {
         using var context = new UiTestContext();
         var tool = Assert.IsType<ManagedToolDockable>(
-            context.Workspace.CreatedTools[HostExtensionIds.PluginStatus.Value]);
+            context.Workspace.CreatedTools[HostExtensionIds.PluginMenu.Value]);
         var prepared = Assert.IsAssignableFrom<Control>(tool.PreparedView);
         var recycling = context.Provider.GetRequiredService<DocumentControlRecycling>();
-        Assert.True(context.Workspace.ShowTool(HostExtensionIds.PluginStatus));
+        Assert.True(context.Workspace.ShowTool(HostExtensionIds.PluginMenu));
 
         Assert.Same(prepared, recycling.Build(tool, null, null));
         Assert.True(context.Workspace.TrySetToolVisibility(tool.Id, false));

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using MyAvaloniaManagement.Business.Storage;
+using MyAvaloniaManagement.Business.Constants;
 
 namespace MyAvaloniaManagement.Business.ToolCenter;
 
@@ -102,5 +103,11 @@ internal sealed class ToolCenterPreferencesStore
         };
     }
 
-    internal static bool ValidToolId(string? id) => MyAvaloniaManagement.PluginSdk.ToolTypeId.TryParse(id, out _);
+    /// <summary>
+    /// 读入、编辑与写回共用同一过滤规则，定向移除退役项的收藏、最近、分类分配和历史名称。
+    /// Load 只归一化内存，不额外写盘；下一次正常保存通过原子写入固化结果。
+    /// 其他缺失插件的有效 ToolId 仍保留，供未来重新安装后恢复偏好。
+    /// </summary>
+    internal static bool ValidToolId(string? id) => !RetiredHostToolIds.Contains(id) &&
+        MyAvaloniaManagement.PluginSdk.ToolTypeId.TryParse(id, out _);
 }

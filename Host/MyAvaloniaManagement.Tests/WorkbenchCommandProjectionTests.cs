@@ -39,7 +39,7 @@ public sealed class WorkbenchCommandProjectionTests
             ["|", "Alpha View"],
             Snapshot(firstPresentation.Menu, WorkbenchMenuLocations.ViewShared));
         Assert.Equal(
-            ["工具中心…", "Alpha Empty", "|", "Alpha Edit A", "Alpha Edit Z", "|", "Beta Workflow"],
+            ["工具中心…", "插件状态…", "Alpha Empty", "|", "Alpha Edit A", "Alpha Edit Z", "|", "Beta Workflow"],
             Snapshot(firstPresentation.Menu, WorkbenchMenuLocations.ToolsShared));
         Assert.Equal(
             ["帮助中心", "Beta Help"],
@@ -157,9 +157,9 @@ public sealed class WorkbenchCommandProjectionTests
             .Palette;
 
         var all = palette.GetItems(null);
-        Assert.Equal(3, all.Count(item => item.ToolTypeId is not null));
+        Assert.Equal(2, all.Count(item => item.ToolTypeId is not null));
         Assert.Contains(all, item => item.CommandId == HostWorkbenchCommandIds.OpenToolCenter);
-        var items = all.Where(item => item.CommandId is not null && item.CommandId != HostWorkbenchCommandIds.OpenToolCenter).ToArray();
+        var items = all.Where(item => item.CommandId is not null && item.CommandId != HostWorkbenchCommandIds.OpenToolCenter && item.CommandId != HostWorkbenchCommandIds.OpenPluginStatus).ToArray();
 
         Assert.Collection(
             items,

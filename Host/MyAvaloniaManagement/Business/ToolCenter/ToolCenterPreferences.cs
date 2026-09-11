@@ -24,7 +24,7 @@ internal sealed class ToolCenterPreferences
     {
         if (Current.ToolCategoryAssignments.TryGetValue(toolId, out var assigned)) return assigned;
         if (toolId == HostExtensionIds.FileSystemTree.Value || toolId == HostExtensionIds.PluginMenu.Value) return "builtin:navigation";
-        return toolId == HostExtensionIds.PluginStatus.Value ? "builtin:diagnostics" : OtherCategoryId;
+        return OtherCategoryId;
     }
 
     internal void ToggleFavorite(string id, string name)

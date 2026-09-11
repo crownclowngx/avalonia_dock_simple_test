@@ -130,7 +130,7 @@ internal sealed class DockLayoutStore
 
         // 覆盖前保留原始旧布局；备份失败拒绝写回，内存布局仍可使用。
         if (_needsMigrationBackup && File.Exists(LayoutPath))
-            File.Copy(LayoutPath, LayoutPath + $".{Guid.NewGuid():N}.pre-v7.bak");
+            File.Copy(LayoutPath, LayoutPath + $".{Guid.NewGuid():N}.pre-tool-retirement.bak");
         AtomicFileTransaction.Write(
             LayoutPath,
             stream => DockLayoutSnapshotV2Json.Write(stream, snapshot));

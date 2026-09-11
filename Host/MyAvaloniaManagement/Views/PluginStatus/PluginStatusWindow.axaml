@@ -1,0 +1,156 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:MyAvaloniaManagement.ViewModels.PluginStatus"
+        xmlns:models="clr-namespace:MyAvaloniaManagement.Models.Plugins"
+        x:Class="MyAvaloniaManagement.Views.PluginStatus.PluginStatusWindow"
+        x:DataType="vm:PluginStatusWindowViewModel"
+        Title="插件状态" Width="1040" Height="720" MinWidth="640" MinHeight="460"
+        WindowStartupLocation="CenterOwner">
+    <Window.Styles>
+        <Style Selector="Border.summary, Border.details-card">
+            <Setter Property="Background" Value="{DynamicResource AppSubtlePanelBrush}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14" />
+        </Style>
+        <Style Selector="TextBlock.secondary">
+            <Setter Property="Foreground" Value="{DynamicResource AppSecondaryTextBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="TextBlock.section-title">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="15" />
+        </Style>
+        <Style Selector="TextBlock.status-mark">
+            <Setter Property="Foreground" Value="{DynamicResource AppInfoBrush}" />
+        </Style>
+        <Style Selector="TextBlock.status-mark.problem">
+            <Setter Property="Foreground" Value="{DynamicResource AppWarningBrush}" />
+        </Style>
+    </Window.Styles>
+    <!-- 概览、筛选、主从详情各自拥有布局空间；正文采用滚动，长诊断不会挤出底部操作。 -->
+    <Grid Margin="20" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
+        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+            <StackPanel Spacing="5">
+                <TextBlock Text="插件状态" FontSize="25" FontWeight="SemiBold" />
+                <TextBlock Text="查看当前会话的加载结果、兼容性与诊断信息。" Classes="secondary" />
+            </StackPanel>
+            <Button x:Name="RefreshButton" Grid.Column="1" Content="刷新" Command="{Binding RefreshCommand}" VerticalAlignment="Center" Margin="12,0,0,0" />
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="*,12,*,12,*" Margin="0,0,0,16">
+            <Border Classes="summary"><StackPanel Spacing="5">
+                <TextBlock Text="已发现" Classes="secondary" />
+                <TextBlock Text="{Binding TotalCount}" FontSize="28" FontWeight="SemiBold" />
+            </StackPanel></Border>
+            <Border Grid.Column="2" Classes="summary"><StackPanel Spacing="5">
+                <TextBlock Text="✓ 可用" Foreground="{DynamicResource AppInfoBrush}" />
+                <TextBlock Text="{Binding AvailableCount}" FontSize="28" FontWeight="SemiBold" />
+            </StackPanel></Border>
+            <Border Grid.Column="4" Classes="summary" ToolTip.Tip="包含加载失败、生命周期失败，以及存在警告或错误记录的插件；可用插件也可能有警告。">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="⚠ 异常 / 警告" Foreground="{DynamicResource AppWarningBrush}" />
+                    <TextBlock Text="{Binding ProblemCount}" FontSize="28" FontWeight="SemiBold" />
+                </StackPanel>
+            </Border>
+        </Grid>
+        <Grid Grid.Row="2" ColumnDefinitions="*,12,110" Margin="0,0,0,12">
+            <TextBox x:Name="PluginSearchBox" Text="{Binding SearchText, Mode=TwoWay}" PlaceholderText="搜索插件 ID、程序集或错误码…" />
+            <ComboBox x:Name="PluginFilterBox" Grid.Column="2" ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter, Mode=TwoWay}"
+                      HorizontalAlignment="Stretch" ToolTip.Tip="筛选插件状态" />
+        </Grid>
+        <Border Grid.Row="3" IsVisible="{Binding HasError}" Background="{DynamicResource AppWarningPanelBrush}" CornerRadius="6" Padding="10" Margin="0,0,0,10">
+            <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+        </Border>
+        <Grid Grid.Row="4" x:Name="PluginBody" ColumnDefinitions="2*,16,3*">
+            <Grid RowDefinitions="Auto,*">
+                <TextBlock Text="{Binding ResultsText}" Classes="secondary" Margin="0,0,0,8" />
+                <ListBox x:Name="PluginItemsList" Grid.Row="1" ItemsSource="{Binding VisibleItems}" SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                         Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="10,12" />
+                            <Setter Property="Margin" Value="0,0,0,5" />
+                            <Setter Property="CornerRadius" Value="7" />
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate><DataTemplate x:DataType="models:PluginStatusItem">
+                        <Grid ColumnDefinitions="24,*">
+                            <TextBlock Text="{Binding StatusSymbol}" FontSize="18" Classes="status-mark" Classes.problem="{Binding HasProblem}" />
+                            <StackPanel Grid.Column="1" Spacing="5">
+                                <TextBlock Text="{Binding PluginId}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding PluginId}" />
+                                <TextBlock Text="{Binding VersionText, StringFormat='版本 {0}'}" Classes="secondary" FontSize="12" />
+                                <TextBlock Text="{Binding StatusLabel}" Classes="status-mark" Classes.problem="{Binding HasProblem}" FontSize="12" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate></ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+            <Border Grid.Column="1" Width="1" Background="{DynamicResource AppDividerBrush}" />
+            <ScrollViewer x:Name="PluginDetailsScroll" Grid.Column="2" IsVisible="{Binding HasSelection}" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="PluginDetails" Spacing="16" Margin="0,0,10,0" DataContext="{Binding SelectedItem}" x:DataType="models:PluginStatusItem">
+                    <StackPanel Spacing="7">
+                        <SelectableTextBlock Text="{Binding PluginId}" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" FontWeight="SemiBold" />
+                    </StackPanel>
+                    <Border Classes="details-card">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="基本信息" Classes="section-title" />
+                            <SelectableTextBlock Text="{Binding VersionText, StringFormat='版本：{0}'}" TextWrapping="Wrap" />
+                            <SelectableTextBlock Text="{Binding CompatibilityText, StringFormat='兼容：{0}'}" TextWrapping="Wrap" />
+                            <SelectableTextBlock Text="{Binding AssemblyName, StringFormat='程序集：{0}'}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding DurationText, StringFormat='生命周期耗时：{0}'}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding AvailabilityText, StringFormat='可用性：{0}'}" TextWrapping="Wrap" />
+                            <SelectableTextBlock Text="{Binding Detail}" Foreground="{DynamicResource AppSecondaryTextBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="贡献信息" Classes="section-title" />
+                        <TextBlock Text="{Binding ContributionSummary}" Classes="secondary" FontSize="12" />
+                        <TextBlock Text="没有已提交的文档、工具、命令或工作流动作声明。" IsVisible="{Binding !HasContributions}" Classes="secondary" />
+                        <ItemsControl ItemsSource="{Binding Contributions}"><ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:PluginContributionItem">
+                                <Border BorderBrush="{DynamicResource AppDividerBrush}" BorderThickness="0,0,0,1" Padding="0,8">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Kind}" Classes="secondary" FontSize="12" />
+                                        <SelectableTextBlock Text="{Binding Id}" TextWrapping="Wrap" FontSize="12" />
+                                        <TextBlock Text="{Binding AvailabilityText}" Classes="secondary" FontSize="12" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate></ItemsControl>
+                    </StackPanel>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="诊断记录" Classes="section-title" />
+                        <TextBlock Text="当前会话没有该插件的诊断记录。" IsVisible="{Binding !HasDiagnostics}" Classes="secondary" />
+                        <ItemsControl ItemsSource="{Binding Diagnostics}"><ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:PluginDiagnosticItem">
+                                <Border Classes="details-card" Margin="0,0,0,8">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="{Binding TimeText}" Classes="secondary" FontSize="11" />
+                                        <WrapPanel>
+                                            <TextBlock Text="{Binding SeverityText}" FontWeight="SemiBold" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding PhaseText}" Classes="secondary" />
+                                        </WrapPanel>
+                                        <SelectableTextBlock Text="{Binding Code}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+                                        <SelectableTextBlock Text="{Binding TechnicalDetail}" Foreground="{DynamicResource AppSecondaryTextBrush}" TextWrapping="Wrap" FontSize="12" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate></ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+            <TextBlock Grid.ColumnSpan="3" Text="{Binding EmptyText}" IsVisible="{Binding HasNoResults}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       MaxWidth="330" TextWrapping="Wrap" Classes="secondary" IsHitTestVisible="False" />
+        </Grid>
+        <Grid Grid.Row="5" ColumnDefinitions="*,Auto" Margin="0,14,0,0">
+            <StackPanel VerticalAlignment="Center" Spacing="3" Margin="0,0,12,0">
+                <TextBlock Text="{Binding UpdatedText}" Classes="secondary" FontSize="11" />
+                <TextBlock x:Name="CopyFeedbackText" Text="{Binding CopyFeedback}" Classes="secondary" FontSize="11" />
+            </StackPanel>
+            <Button x:Name="CopyDiagnosticsButton" Grid.Column="1" Content="复制诊断信息" IsEnabled="{Binding HasSelection}" Click="CopyDiagnosticsClick" />
+        </Grid>
+    </Grid>
+</Window>

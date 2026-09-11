@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Navigation;
 using MyAvaloniaManagement.Business.ToolCenter;
+using MyAvaloniaManagement.Business.PluginStatus;
 using MyAvaloniaManagement.Business.Help;
 using MyAvaloniaManagement.Business.Commands.Catalog;
 using MyAvaloniaManagement.Business.Commands.Context;
@@ -87,6 +88,13 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ToolCenterActions>();
         services.AddSingleton<ToolCenterWindowService>();
         services.AddSingleton<HostOpenToolCenterCommandHandler>();
+        // 查询为 Runtime 级只读服务，窗口模型由窗口服务按需创建，不再登记为 Dock Tool。
+        services.AddSingleton<IPluginStatusQuery>(provider => new PluginStatusQuery(
+            provider.GetRequiredService<PluginRegistry>(),
+            provider.GetRequiredService<PluginAvailabilityReadModel>(),
+            provider.GetService<HostDiagnosticSession>() ?? provider.GetService<IHostDiagnosticSink>() as HostDiagnosticSession));
+        services.AddSingleton<PluginStatusWindowService>();
+        services.AddSingleton<HostOpenPluginStatusCommandHandler>();
         services.AddSingleton<ApplicationThemeService>();
         services.AddSingleton<HelpContentCatalog>();
         services.AddSingleton<HelpReadingStateStore>();
@@ -135,7 +143,8 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<HostSaveDocumentCommandHandler>(),
             provider.GetRequiredService<HostOpenHelpCommandHandler>(),
             provider.GetRequiredService<HostNewDocumentCommandHandler>(),
-            provider.GetRequiredService<HostOpenToolCenterCommandHandler>()));
+            provider.GetRequiredService<HostOpenToolCenterCommandHandler>(),
+            provider.GetRequiredService<HostOpenPluginStatusCommandHandler>()));
         services.AddSingleton<IHostDocumentOpenService>(provider =>
             provider.GetRequiredService<DocumentPersistenceCoordinator>());
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
@@ -265,7 +274,6 @@ internal static class ServiceCollectionExtensions
             () => provider.GetRequiredService<ToolCenterWindowService>().ShowOrActivate()));
         services.AddSingleton<FileSystemTreeViewModel>();
         services.AddSingleton<PlugGroupMenuViewModel>();
-        services.AddSingleton<PluginStatusViewModel>();
         services.AddSingleton(provider => new HostWorkspaceCatalog(
             [
                 new HostWorkspaceDocumentRegistration(
@@ -299,14 +307,6 @@ internal static class ServiceCollectionExtensions
                         HostExtensionIds.PluginMenu,
                         "插件分组菜单",
                         "显示按分类组织的插件文档菜单",
-                        ToolDockSide.Right,
-                        ToolCloseBehavior.Hide)),
-                HostTool<PluginStatusViewModel, PluginStatusView>(
-                    provider,
-                    new ToolDescriptor(
-                        HostExtensionIds.PluginStatus,
-                        "插件状态",
-                        "查看插件加载、依赖和生命周期诊断",
                         ToolDockSide.Right,
                         ToolCloseBehavior.Hide))
             ]));
@@ -352,7 +352,7 @@ internal static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 注册主窗口、四个宿主工具 ViewModel 及其窄创建工厂。
+    /// 注册主窗口、宿主导航工具 ViewModel 及其窄创建工厂。
     /// </summary>
     /// <param name="services">服务集合</param>
     /// <returns>服务集合</returns>

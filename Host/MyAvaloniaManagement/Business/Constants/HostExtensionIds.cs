@@ -16,7 +16,4 @@ internal static class HostExtensionIds
         new("myavalonia.host.tool.file-system-tree");
     internal static readonly MyAvaloniaManagement.PluginSdk.ToolTypeId PluginMenu =
         new("myavalonia.host.tool.plugin-menu");
-    internal static readonly MyAvaloniaManagement.PluginSdk.ToolTypeId PluginStatus =
-        new("myavalonia.host.tool.plugin-status");
-
 }

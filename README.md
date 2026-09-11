@@ -65,17 +65,17 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 | 概念 | 语义 | 典型用途 |
 | --- | --- | --- |
 | Document | 中央工作区中的多实例工作会话，每个标签拥有独立状态和 DI Scope | 下载方案、视频播放与加解密、发票导入、银行余额调节 |
-| Tool | 宿主级单例面板，可以停靠、隐藏和恢复 | 文件树、工具管理、插件状态、下载任务中心 |
+| Tool | 宿主级单例面板，可以停靠、隐藏和恢复 | 文件树、插件分组菜单、下载任务中心 |
 | 插件服务 | 不依赖页面可见性的业务能力，由当前插件私有 Provider 和可选生命周期管理 | 仓储、下载协调、凭据和媒体运行时 |
 
 宿主当前具备以下基础能力：
 
-- Left、Right、Top、Bottom 四向 Dock 布局，以及严格、无迁移的 `layout-v2.json` 持久化；
+- Left、Right、Top、Bottom 四向 Dock 布局，以及严格校验并定向迁移退役内置项的 `layout-v2.json` 持久化；
 - Document 多开、独立 Scope、关闭取消和资源释放；
 - Tool 单例创建、关闭隐藏和状态恢复；
 - Managed Plugin 服务注册、可选初始化与反向关闭生命周期；
 - 严格 `plugin.manifest.json`、插件目录隔离和私有依赖解析；
-- 严格 Document 信封 v2、原生 JSON 内容、文件原子保存与恢复备份、插件状态面板和默认脱敏的会话诊断日志。
+- 严格 Document 信封 v2、原生 JSON 内容、文件原子保存与恢复备份、[插件状态独立窗口](./docs/quick-start/plugin-status.md)和默认脱敏的会话诊断日志。
 
 ## 现有插件
 
