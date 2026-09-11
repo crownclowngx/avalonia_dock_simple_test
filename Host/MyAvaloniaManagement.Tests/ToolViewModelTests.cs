@@ -217,155 +217,81 @@ public sealed class ToolViewModelTests
     }
 
     [Fact]
-    public void 工具管理隐藏恢复各提交一次布局变化()
+    public void 工具中心隐藏恢复各提交一次布局变化且复用实例()
     {
-        var tool = new Tool
-        {
-            Id = "myavalonia.host.tool.closable",
-            Title = "可关闭工具",
-            CanClose = true
-        };
-        var contribution = new StubToolContribution(
-            tool,
-            new ToolDescriptor(
-                new ToolTypeId(tool.Id),
-                tool.Title!,
-                string.Empty,
-                ToolDockSide.Left,
-                ToolCloseBehavior.Hide));
-        using var context = new TestHostContext(toolContributions: [contribution]);
-        var mainViewModel = context.CreateMainWindowViewModel();
-        var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Workspace.CreatedTools[HostExtensionIds.ToolManagement.Value]);
-        var item = manager.ToolItems.Single(candidate =>
-            candidate.ToolId == tool.Id);
-        var updateCount = 0;
-        mainViewModel.PropertyChanged += (_, args) =>
-        {
-            if (args.PropertyName == nameof(mainViewModel.Layout))
-            {
-                updateCount++;
-            }
-        };
-
-        manager.ToggleToolVisibility(item);
-        Assert.False(item.IsVisible);
-        Assert.DoesNotContain(
-            EnumerateDockables(
-                context.Workspace.RootDock!),
-            dockable => ReferenceEquals(dockable, tool));
-
-        manager.ToggleToolVisibility(item);
-        Assert.True(item.IsVisible);
-        Assert.Equal(2, updateCount);
+        using var context = new TestHostContext();
+        var main = context.CreateMainWindowViewModel();
+        var id = HostExtensionIds.FileSystemTree;
+        Assert.True(context.Workspace.ShowTool(id));
+        var original = context.Workspace.CreatedTools[id.Value];
+        var states = context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.ToolWorkspaceReadModel>();
+        var changes = 0;
+        main.PropertyChanged += (_, args) => { if (args.PropertyName == nameof(main.Layout)) changes++; };
+        Assert.True(context.Workspace.SetToolVisibility(id.Value, false).Succeeded);
+        Assert.False(states.Capture().Single(item => item.ToolId == id.Value).IsVisible);
+        Assert.True(context.Workspace.OpenTool(id.Value).Succeeded);
+        Assert.True(states.Capture().Single(item => item.ToolId == id.Value).IsVisible);
+        Assert.Same(original, context.Workspace.CreatedTools[id.Value]);
+        Assert.Equal(2, changes);
     }
 
     [Fact]
-    public void 工具管理忽略不可关闭项并同步外部隐藏状态()
+    public void 所有内建工具均可隐藏且无管理Tool占位()
     {
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
-        var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Workspace.CreatedTools[HostExtensionIds.ToolManagement.Value]);
-        var item = manager.ToolItems.First(candidate => !candidate.CanClose);
-        var before = item.IsVisible;
-
-        manager.ToggleToolVisibility(item);
-
-        Assert.Equal(before, item.IsVisible);
-        Assert.False(context.Workspace.TrySetToolVisibility(item.ToolId, !before));
-        Assert.Equal(before, item.IsVisible);
+        Assert.DoesNotContain(RetiredToolLayoutMigration.ToolManagementId, context.Workspace.CreatedTools.Keys);
+        Assert.All(context.Workspace.CreatedTools.Values, tool => Assert.True(tool.CanClose));
+        foreach (var id in context.Workspace.CreatedTools.Keys)
+        {
+            Assert.True(context.Workspace.OpenTool(id).Succeeded);
+            Assert.True(context.Workspace.SetToolVisibility(id, false).Succeeded);
+        }
+        Assert.All(context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.ToolWorkspaceReadModel>().Capture(),
+            item => Assert.False(item.IsVisible));
     }
 
     [Fact]
-    public void Dock关闭与ShowTool直接同步管理器并各通知一次()
+    public void Dock关闭与ShowTool直接同步快照并各通知一次()
     {
-        var tool = new Tool
-        {
-            Id = "myavalonia.host.tool.external-visibility",
-            Title = "外部显隐工具",
-            CanClose = true
-        };
-        var contribution = new StubToolContribution(
-            tool,
-            new ToolDescriptor(
-                new ToolTypeId(tool.Id),
-                tool.Title!,
-                string.Empty,
-                ToolDockSide.Right,
-                ToolCloseBehavior.Hide));
-        using var context = new TestHostContext(toolContributions: [contribution]);
-        var mainViewModel = context.CreateMainWindowViewModel();
-        var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Workspace.CreatedTools[HostExtensionIds.ToolManagement.Value]);
-        var item = manager.ToolItems.Single(candidate => candidate.ToolId == tool.Id);
-        var layoutChanges = 0;
-        mainViewModel.PropertyChanged += (_, args) =>
-        {
-            if (args.PropertyName == nameof(mainViewModel.Layout))
-            {
-                layoutChanges++;
-            }
-        };
-
-        var managedTool = context.Workspace.CreatedTools[tool.Id];
-        context.Workspace.DockFactory.HideDockable(managedTool);
-
-        Assert.False(item.IsVisible);
-        Assert.Equal(1, layoutChanges);
-
-        Assert.True(context.Workspace.ShowTool(contribution.Descriptor.ToolTypeId));
-
-        Assert.True(item.IsVisible);
-        Assert.Equal(2, layoutChanges);
+        using var context = new TestHostContext();
+        var main = context.CreateMainWindowViewModel();
+        var id = HostExtensionIds.PluginStatus;
+        context.Workspace.ShowTool(id);
+        var states = context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.ToolWorkspaceReadModel>();
+        var changes = 0;
+        main.PropertyChanged += (_, args) => { if (args.PropertyName == nameof(main.Layout)) changes++; };
+        context.Workspace.DockFactory.HideDockable(context.Workspace.CreatedTools[id.Value]);
+        Assert.False(states.Capture().Single(item => item.ToolId == id.Value).IsVisible);
+        Assert.Equal(1, changes);
+        Assert.True(context.Workspace.ShowTool(id));
+        Assert.True(states.Capture().Single(item => item.ToolId == id.Value).IsVisible);
+        Assert.Equal(2, changes);
     }
 
     [Fact]
-    public void PinnedToolRemainsVisibleInManagementAndCanBeHiddenAndRestored()
+    public void 自动收起工具可以预览定位再隐藏恢复()
     {
-        var tool = new Tool
-        {
-            Id = "myavalonia.host.tool.pinned-closable",
-            Title = "Pinned Tool",
-            CanClose = true
-        };
-        var contribution = new StubToolContribution(
-            tool,
-            new ToolDescriptor(
-                new ToolTypeId(tool.Id),
-                tool.Title!,
-                string.Empty,
-                ToolDockSide.Left,
-                ToolCloseBehavior.Hide));
-        using var context = new TestHostContext(toolContributions: [contribution]);
+        using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
-        var manager = GetManagedToolModel<ToolManagementViewModel>(
-            context.Workspace.CreatedTools[HostExtensionIds.ToolManagement.Value]);
-        var item = manager.ToolItems.Single(candidate => candidate.ToolId == tool.Id);
-
-        var managedTool = context.Workspace.CreatedTools[tool.Id];
-        context.Workspace.DockFactory.PinDockable(managedTool);
-        Assert.True(context.Workspace.ShowTool(contribution.Descriptor.ToolTypeId));
-
-        Assert.True(item.IsVisible);
-        var owningRoot = context.Workspace.DockFactory.FindRoot(managedTool, _ => true)!;
-        Assert.Contains(managedTool, owningRoot.LeftPinnedDockables!);
-
-        manager.ToggleToolVisibility(item);
-
-        Assert.False(item.IsVisible);
-        Assert.DoesNotContain(managedTool, owningRoot.LeftPinnedDockables!);
-        Assert.Contains(managedTool, owningRoot.HiddenDockables!);
-
-        manager.ToggleToolVisibility(item);
-
-        Assert.True(item.IsVisible);
-        Assert.DoesNotContain(managedTool, owningRoot.HiddenDockables!);
-        Assert.Contains(
-            EnumerateDockables(context.Workspace.RootDock!),
-            dockable => ReferenceEquals(dockable, managedTool));
+        var id = HostExtensionIds.FileSystemTree;
+        context.Workspace.ShowTool(id);
+        var tool = context.Workspace.CreatedTools[id.Value];
+        var factory = context.Workspace.DockFactory;
+        factory.PinDockable(tool);
+        Assert.True(context.Workspace.OpenTool(id.Value).Succeeded);
+        var root = factory.FindRoot(tool, _ => true)!;
+        var states = context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.ToolWorkspaceReadModel>();
+        Assert.Equal(ToolLayoutState.AutoHidden, states.Capture().Single(item => item.ToolId == id.Value).LayoutState);
+        Assert.Contains(tool, root.LeftPinnedDockables!);
+        Assert.Same(tool, root.PinnedDock?.ActiveDockable);
+        Assert.True(context.Workspace.SetToolVisibility(id.Value, false).Succeeded);
+        Assert.DoesNotContain(tool, root.LeftPinnedDockables!);
+        Assert.Contains(tool, root.HiddenDockables!);
+        Assert.True(context.Workspace.OpenTool(id.Value).Succeeded);
+        Assert.DoesNotContain(tool, root.HiddenDockables!);
+        Assert.True(states.Capture().Single(item => item.ToolId == id.Value).IsVisible);
     }
-
     private static IEnumerable<IDockable> EnumerateDockables(IDockable root)
     {
         yield return root;

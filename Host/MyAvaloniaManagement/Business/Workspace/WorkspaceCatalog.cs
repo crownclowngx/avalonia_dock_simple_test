@@ -142,6 +142,15 @@ internal sealed class WorkspaceCatalog
         return true;
     }
 
+    /// <summary>不可用声明仍可解释；查询不运行模型或 View 工厂。</summary>
+    internal IReadOnlyList<ToolCatalogEntry> GetRegisteredTools() =>
+        _host.Tools.Select(item => new ToolCatalogEntry(item.Descriptor, null, "内置", true, string.Empty))
+            .Concat(_plugins.Tools.Select(item => new ToolCatalogEntry(
+                item.Descriptor, item.OwnerId, item.OwnerId.Value, IsAvailable(item),
+                IsAvailable(item) ? string.Empty : $"插件暂不可用（{_availability.GetLifecycleState(item.OwnerId)?.Status.ToString() ?? "未就绪"}）")))
+            .OrderBy(item => item.Descriptor.DisplayName, StringComparer.Ordinal)
+            .ThenBy(item => item.Descriptor.ToolTypeId.Value, StringComparer.Ordinal).ToArray();
+
     internal bool TryGetView(Type modelType, out IWorkspaceViewRegistration registration)
     {
         ArgumentNullException.ThrowIfNull(modelType);

@@ -39,7 +39,7 @@ public sealed class HostApiBoundaryTests
             typeof(FileSystemTreeViewModel),
             typeof(PlugGroupMenuViewModel),
             typeof(PluginStatusViewModel),
-            typeof(ToolManagementViewModel),
+            typeof(MyAvaloniaManagement.ViewModels.ToolCenter.ToolCenterViewModel),
         };
 
         Assert.All(productionTypes, type => Assert.Null(type.GetConstructor(

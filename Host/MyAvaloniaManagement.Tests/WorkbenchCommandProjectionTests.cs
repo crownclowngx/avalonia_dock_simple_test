@@ -39,7 +39,7 @@ public sealed class WorkbenchCommandProjectionTests
             ["|", "Alpha View"],
             Snapshot(firstPresentation.Menu, WorkbenchMenuLocations.ViewShared));
         Assert.Equal(
-            ["Alpha Empty", "|", "Alpha Edit A", "Alpha Edit Z", "|", "Beta Workflow"],
+            ["工具中心…", "Alpha Empty", "|", "Alpha Edit A", "Alpha Edit Z", "|", "Beta Workflow"],
             Snapshot(firstPresentation.Menu, WorkbenchMenuLocations.ToolsShared));
         Assert.Equal(
             ["帮助中心", "Beta Help"],
@@ -65,6 +65,7 @@ public sealed class WorkbenchCommandProjectionTests
         _ = context.CreateMainWindowViewModel();
         var initial = presentation.Menu.GetItems(WorkbenchMenuLocations.ToolsShared)
             .OfType<WorkbenchMenuCommandProjectionEntry>()
+            .Where(item => item.CommandId == WorkbenchCommandG3TestContext.Command)
             .ToArray();
 
         var disabledOnly = Assert.Single(initial);
@@ -78,6 +79,7 @@ public sealed class WorkbenchCommandProjectionTests
         GetDocumentDock(context).ActiveDockable = adapter;
         var active = presentation.Menu.GetItems(WorkbenchMenuLocations.ToolsShared)
             .OfType<WorkbenchMenuCommandProjectionEntry>()
+            .Where(item => item.CommandId == WorkbenchCommandG3TestContext.Command)
             .ToArray();
 
         Assert.Equal(2, active.Length);
@@ -92,6 +94,7 @@ public sealed class WorkbenchCommandProjectionTests
         target.RaiseStateChanged(WorkbenchCommandG3TestContext.Command);
         var businessDisabled = presentation.Menu.GetItems(WorkbenchMenuLocations.ToolsShared)
             .OfType<WorkbenchMenuCommandProjectionEntry>()
+            .Where(item => item.CommandId == WorkbenchCommandG3TestContext.Command)
             .ToArray();
         Assert.Equal(2, businessDisabled.Length);
         Assert.All(businessDisabled, item => Assert.False(item.Command.IsEnabled));
@@ -153,7 +156,10 @@ public sealed class WorkbenchCommandProjectionTests
             .GetRequiredService<WorkbenchCommandPresentation>()
             .Palette;
 
-        var items = palette.GetItems(null);
+        var all = palette.GetItems(null);
+        Assert.Equal(3, all.Count(item => item.ToolTypeId is not null));
+        Assert.Contains(all, item => item.CommandId == HostWorkbenchCommandIds.OpenToolCenter);
+        var items = all.Where(item => item.CommandId is not null && item.CommandId != HostWorkbenchCommandIds.OpenToolCenter).ToArray();
 
         Assert.Collection(
             items,
@@ -184,7 +190,7 @@ public sealed class WorkbenchCommandProjectionTests
                 Assert.True(create.IsEnabled);
                 Assert.Equal(string.Empty, create.ShortcutText);
             });
-        Assert.DoesNotContain(items, item => item.CommandId.Value.Contains(
+        Assert.DoesNotContain(items, item => item.CommandId!.Value.Contains(
             "shortcut-active",
             StringComparison.Ordinal));
     }
@@ -230,7 +236,7 @@ public sealed class WorkbenchCommandProjectionTests
         target.AllowExecute = false;
         target.RaiseStateChanged(WorkbenchCommandG3TestContext.Command);
 
-        var disabled = Assert.Single(presentation.Palette.GetItems("状态"));
+        var disabled = Assert.Single(presentation.Palette.GetItems("状态"), item => item.CommandId == active.CommandId);
         Assert.Equal(active.CommandId, disabled.CommandId);
         Assert.False(disabled.IsEnabled);
         Assert.Same(active.Command, disabled.Command);
@@ -254,8 +260,8 @@ public sealed class WorkbenchCommandProjectionTests
 
         Assert.Equal(2, duplicates.Count);
         Assert.True(string.CompareOrdinal(
-            duplicates[0].CommandId.Value,
-            duplicates[1].CommandId.Value) < 0);
+            duplicates[0].CommandId!.Value,
+            duplicates[1].CommandId!.Value) < 0);
         Assert.Equal("Ctrl+J", duplicates[0].ShortcutText);
         Assert.Equal(string.Empty, duplicates[1].ShortcutText);
         Assert.Contains(diagnostics.Drafts, item =>

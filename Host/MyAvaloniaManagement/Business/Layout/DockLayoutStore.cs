@@ -13,6 +13,7 @@ internal sealed class DockLayoutStore
 {
     internal const string LayoutFileName = "layout-v2.json";
     private readonly Action<string, string?, Exception?> _log;
+    private bool _needsMigrationBackup;
 
     public DockLayoutStore()
         : this(GetDefaultPath(), (code, stableId, _) => LogToStandardError(code, stableId))
@@ -57,6 +58,7 @@ internal sealed class DockLayoutStore
 
     internal DockLayoutSnapshotV2? Load()
     {
+        _needsMigrationBackup = false;
         if (!File.Exists(LayoutPath))
         {
             return null;
@@ -82,7 +84,17 @@ internal sealed class DockLayoutStore
                 return null;
             }
 
-            return snapshot;
+            var migrated = RetiredToolLayoutMigration.Apply(snapshot);
+            if (!ReferenceEquals(migrated, snapshot))
+            {
+                if (DockLayoutSnapshotValidator.Validate(migrated) is { } migrationError)
+                {
+                    Quarantine(migrationError.Code, migrationError.StableId);
+                    return null;
+                }
+                _needsMigrationBackup = true;
+            }
+            return migrated;
         }
         catch (JsonException exception)
         {
@@ -116,9 +128,13 @@ internal sealed class DockLayoutStore
                 $"布局快照未通过校验：{error.Code}，稳定 ID：{error.StableId ?? "-"}。");
         }
 
+        // 覆盖前保留原始旧布局；备份失败拒绝写回，内存布局仍可使用。
+        if (_needsMigrationBackup && File.Exists(LayoutPath))
+            File.Copy(LayoutPath, LayoutPath + $".{Guid.NewGuid():N}.pre-v7.bak");
         AtomicFileTransaction.Write(
             LayoutPath,
             stream => DockLayoutSnapshotV2Json.Write(stream, snapshot));
+        _needsMigrationBackup = false;
     }
 
     internal void RejectLoadedSnapshot(string errorCode, string? stableId) =>

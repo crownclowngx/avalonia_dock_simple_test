@@ -24,6 +24,7 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
         _pendingSnapshot = store.Load();
         var root = session.DockFactory.CreateLayout();
         session.DockFactory.InitLayout(root);
+        session.HideAllTools();
         return root;
     }
 
@@ -78,6 +79,7 @@ internal sealed class DockLayoutLifecycle(DockLayoutStore store)
             store.RejectLoadedSnapshot("LAYOUT_APPLY_FAILED", null);
             var replacement = session.RecreateLayoutAfterFailedRestore();
             session.DockFactory.InitLayout(replacement);
+            session.HideAllTools();
             return replacement;
         }
     }

@@ -110,6 +110,9 @@ internal sealed class ToolDockCoordinator(
             factory.SetActiveDockable(tool);
         }
 
+        if (DockTreeNavigator.IsToolPinned(root, tool)) factory.PreviewPinnedDockable(tool);
+        factory.SetFocusedDockable(factory.FindRoot(tool, _ => true) ?? root, tool);
+
         return true;
     }
 

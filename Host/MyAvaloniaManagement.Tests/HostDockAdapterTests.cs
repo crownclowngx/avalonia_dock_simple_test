@@ -23,7 +23,7 @@ public sealed class HostDockAdapterTests
         Assert.False(typeof(Document).IsAssignableFrom(typeof(WelcomeViewModel)));
         Assert.False(typeof(Tool).IsAssignableFrom(typeof(FileSystemTreeViewModel)));
         Assert.False(typeof(Tool).IsAssignableFrom(typeof(PlugGroupMenuViewModel)));
-        Assert.False(typeof(Tool).IsAssignableFrom(typeof(ToolManagementViewModel)));
+        Assert.False(typeof(Tool).IsAssignableFrom(typeof(MyAvaloniaManagement.ViewModels.ToolCenter.ToolCenterViewModel)));
         Assert.False(typeof(Tool).IsAssignableFrom(typeof(PluginStatusViewModel)));
         Assert.True(typeof(Document).IsAssignableFrom(typeof(ManagedDocumentDockable)));
         Assert.True(typeof(Tool).IsAssignableFrom(typeof(ManagedToolDockable)));
@@ -157,7 +157,7 @@ public sealed class HostDockAdapterTests
 
     [Theory]
     [InlineData(ToolCloseBehavior.Hide, true)]
-    [InlineData(ToolCloseBehavior.Prevent, false)]
+    [InlineData(ToolCloseBehavior.Prevent, true)]
     public void ToolAdapter按Descriptor投影稳定状态(
         ToolCloseBehavior closeBehavior,
         bool canClose)

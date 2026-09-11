@@ -297,14 +297,17 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - 主窗口内部拖放与停靠继续可用；
 - 每个 HostRuntime 只有一个 `WorkspaceSession` 和一棵 Root；多个窗口只作为独立绑定消费者；
 - `HostDockFactory` 不拥有 Root、Document 或 Tool 集合；未绑定和重复绑定都必须快速失败；
-- Tool 管理只消费不含 Dock 类型的 `ToolWorkspaceState` 快照；布局前、Hidden、Pinned 与 Prevent 均有稳定投影。
+- 工具中心只消费不含 Dock 类型的 `ToolWorkspaceState` 快照；布局、可用性和收藏是独立状态。
+- V7 Host 中所有 Tool 都允许隐藏，包括旧 SDK 声明 `Prevent` 的插件；该枚举及构造签名保留二进制兼容。
+- `myavalonia.host.tool.management` 已退役；新入口为“工具 → 工具中心…”，属于 Host 非模态窗口，不登记为 Tool。
 
 ## 6. 布局 V2 契约
 
 - 文件名固定为 `layout-v2.json`，`schemaVersion` 固定为 `2`；
 - 根、Pane、Tool 精确字段集合严格拒绝未知、重复、缺失、大小写错误和错误类型；
 - Tool 顺序、Pane 比例、可见/Pinned/活动状态与四向 Dock 行为保持；
-- 不存在两向迁移、浮动字段、历史 ID 归一化或 V1 fallback；
+- 不存在两向迁移、浮动字段、通用历史 ID 归一化或 V1 fallback；
+- V7 在结构校验后精确移除退役的管理 Tool ID，清理其活动引用并保持剩余相对顺序；写回前保留 `.pre-v7.bak`；
 - 快照引用缺失插件、缺失 Pane、未知 Tool 或非法稳定 ID 时，隔离整个文件并回退默认布局；
 - 隔离文件继续使用带 UTC 时间戳的 `.invalid.bak` 命名；
 - 保存继续使用同目录原子替换；

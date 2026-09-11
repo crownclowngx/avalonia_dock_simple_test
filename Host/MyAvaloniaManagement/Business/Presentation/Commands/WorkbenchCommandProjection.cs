@@ -9,6 +9,8 @@ using MyAvaloniaManagement.Business.Commands.State;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Plugins.Registration;
+using MyAvaloniaManagement.Business.ToolCenter;
+using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 
@@ -537,7 +539,9 @@ internal sealed class WorkbenchCommandPresentation :
         WorkbenchCommandExecutor executor,
         PluginAvailabilityReadModel availability,
         Dispatcher dispatcher,
-        IHostDiagnosticSink? diagnostics = null)
+        IHostDiagnosticSink? diagnostics = null,
+        ToolWorkspaceReadModel? tools = null,
+        ToolCenterActions? toolActions = null)
     {
         _commands = new WorkbenchPresentationCommandStore(
             catalog,
@@ -569,7 +573,9 @@ internal sealed class WorkbenchCommandPresentation :
             _keyBindings,
             _commands,
             dispatcher,
-            diagnostics);
+            diagnostics,
+            tools,
+            toolActions);
     }
 
     public IWorkbenchMenuProjection Menu => _menu;

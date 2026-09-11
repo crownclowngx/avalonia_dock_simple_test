@@ -3,6 +3,7 @@ using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Navigation;
+using MyAvaloniaManagement.Business.ToolCenter;
 using MyAvaloniaManagement.Business.Help;
 using MyAvaloniaManagement.Business.Commands.Catalog;
 using MyAvaloniaManagement.Business.Commands.Context;
@@ -80,6 +81,12 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<PluginNavigationSettingsStore>();
         services.AddSingleton<FunctionCenterWindowService>();
         services.AddSingleton<HostNewDocumentCommandHandler>();
+        services.AddSingleton<ToolCenterPreferencesStore>();
+        services.AddSingleton<ToolCenterPreferences>();
+        services.AddSingleton<ToolCenterQuery>();
+        services.AddSingleton<ToolCenterActions>();
+        services.AddSingleton<ToolCenterWindowService>();
+        services.AddSingleton<HostOpenToolCenterCommandHandler>();
         services.AddSingleton<ApplicationThemeService>();
         services.AddSingleton<HelpContentCatalog>();
         services.AddSingleton<HelpReadingStateStore>();
@@ -127,7 +134,8 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<HostOpenDocumentCommandHandler>(),
             provider.GetRequiredService<HostSaveDocumentCommandHandler>(),
             provider.GetRequiredService<HostOpenHelpCommandHandler>(),
-            provider.GetRequiredService<HostNewDocumentCommandHandler>()));
+            provider.GetRequiredService<HostNewDocumentCommandHandler>(),
+            provider.GetRequiredService<HostOpenToolCenterCommandHandler>()));
         services.AddSingleton<IHostDocumentOpenService>(provider =>
             provider.GetRequiredService<DocumentPersistenceCoordinator>());
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
@@ -187,7 +195,9 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<WorkbenchCommandExecutor>(),
             provider.GetRequiredService<PluginAvailabilityReadModel>(),
             Dispatcher.UIThread,
-            provider.GetService<IHostDiagnosticSink>()));
+            provider.GetService<IHostDiagnosticSink>(),
+            provider.GetRequiredService<ToolWorkspaceReadModel>(),
+            provider.GetRequiredService<ToolCenterActions>()));
         services.AddSingleton<IWorkbenchCommandPresentationBindings>(provider =>
             provider.GetRequiredService<WorkbenchCommandPresentation>());
         services.AddSingleton(provider => new WorkspaceCatalog(
@@ -250,10 +260,11 @@ internal static class ServiceCollectionExtensions
     /// </remarks>
     private static void RegisterHostWorkspace(IServiceCollection services)
     {
-        services.AddScoped<WelcomeViewModel>();
+        services.AddScoped(provider => new WelcomeViewModel(
+            provider.GetRequiredService<Action<ToolTypeId>>(),
+            () => provider.GetRequiredService<ToolCenterWindowService>().ShowOrActivate()));
         services.AddSingleton<FileSystemTreeViewModel>();
         services.AddSingleton<PlugGroupMenuViewModel>();
-        services.AddSingleton<ToolManagementViewModel>();
         services.AddSingleton<PluginStatusViewModel>();
         services.AddSingleton(provider => new HostWorkspaceCatalog(
             [
@@ -281,7 +292,7 @@ internal static class ServiceCollectionExtensions
                         "文件系统浏览器",
                         "浏览和管理文件系统",
                         ToolDockSide.Left,
-                        ToolCloseBehavior.Prevent)),
+                        ToolCloseBehavior.Hide)),
                 HostTool<PlugGroupMenuViewModel, PlugGroupMenuView>(
                     provider,
                     new ToolDescriptor(
@@ -289,15 +300,7 @@ internal static class ServiceCollectionExtensions
                         "插件分组菜单",
                         "显示按分类组织的插件文档菜单",
                         ToolDockSide.Right,
-                        ToolCloseBehavior.Prevent)),
-                HostTool<ToolManagementViewModel, ToolManagementView>(
-                    provider,
-                    new ToolDescriptor(
-                        HostExtensionIds.ToolManagement,
-                        "工具管理",
-                        "管理所有工具的显示和隐藏",
-                        ToolDockSide.Right,
-                        ToolCloseBehavior.Prevent)),
+                        ToolCloseBehavior.Hide)),
                 HostTool<PluginStatusViewModel, PluginStatusView>(
                     provider,
                     new ToolDescriptor(
@@ -372,7 +375,7 @@ internal static class ServiceCollectionExtensions
         // Welcome 只获得“显示某个 Tool”这一窄动作，不接收 Session、Dock Factory 或服务容器。
         // 委托在命令执行时解析已构造的唯一 Session，不参与 Session 创建阶段。
         services.AddSingleton<Action<ToolTypeId>>(provider => toolTypeId =>
-            provider.GetRequiredService<WorkspaceSession>().ShowTool(toolTypeId));
+            provider.GetRequiredService<ToolCenterActions>().Open(toolTypeId.Value));
 
         services.AddTransient<IHostDesktopShell, HostDesktopShell>();
         services.AddTransient(provider => new App(

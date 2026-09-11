@@ -34,7 +34,8 @@ internal sealed class HostDesktopShell(
     ApplicationThemeService themeService,
     MainWindowViewModel mainWindowViewModel,
     HelpWindowService helpWindows,
-    FunctionCenterWindowService functionCenter) : IHostDesktopShell
+    FunctionCenterWindowService functionCenter,
+    ToolCenterWindowService toolCenter) : IHostDesktopShell
 {
     public void Attach(
         App application,
@@ -44,13 +45,13 @@ internal sealed class HostDesktopShell(
         ArgumentNullException.ThrowIfNull(desktop);
 
         themeService.Initialize(application);
-        var mainWindow = new MainWindow
-        {
-            DataContext = mainWindowViewModel,
-        };
+        var mainWindow = new MainWindow();
         desktop.MainWindow = mainWindow;
         helpWindows.Attach(mainWindow);
         functionCenter.Attach(mainWindow);
+        toolCenter.Attach(mainWindow);
+        // 窗口入口准备完成后再绑定菜单，首次 Enabled 查询即可得到正确状态。
+        mainWindow.DataContext = mainWindowViewModel;
 
         if (string.Equals(
                 Environment.GetEnvironmentVariable("MYAVALONIA_SMOKE_TEST"),

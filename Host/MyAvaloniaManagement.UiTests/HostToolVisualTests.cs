@@ -51,14 +51,13 @@ public sealed class HostToolVisualTests
     }
 
     [AvaloniaFact]
-    public void 四个宿主工具在窄面板中可布局并使用统一样式()
+    public void 三个宿主工具在窄面板中可布局并使用统一样式()
     {
         using var context = new UiTestContext();
         var views = new UserControl[]
         {
             new FileSystemTreeView(),
             new PlugGroupMenuView(),
-            new ToolManagementView(),
             new PluginStatusView()
         };
 
@@ -80,69 +79,7 @@ public sealed class HostToolVisualTests
             .OfType<PathIcon>());
 
         Assert.IsNotType<ListBox>(views[2].Content);
-        Assert.NotNull(views[2].FindControl<ItemsControl>("ToolItemsControl"));
-        Assert.NotNull(views[3].FindControl<ItemsControl>("PluginStatusItemsControl"));
-    }
-
-    [AvaloniaFact]
-    public void 工具管理复选框点击与Dock隐藏集合保持一致()
-    {
-        using var context = new UiTestContext();
-        var managerAdapter = Assert.IsType<ManagedToolDockable>(
-            context.Workspace.CreatedTools[HostExtensionIds.ToolManagement.Value]);
-        var manager = Assert.IsType<ToolManagementViewModel>(managerAdapter.Model);
-        var closableItem = manager.ToolItems.Single(item =>
-            item.ToolId == HostExtensionIds.PluginStatus.Value);
-        var closableTool = context.Workspace.CreatedTools[closableItem.ToolId];
-        var owningRoot = context.Workspace.DockFactory.FindRoot(closableTool, _ => true)!;
-        var fixedItem = manager.ToolItems.Single(item =>
-            item.ToolId == HostExtensionIds.FileSystemTree.Value);
-        var view = new ToolManagementView
-        {
-            DataContext = manager
-        };
-        var window = new Window
-        {
-            Width = 320,
-            Height = 500,
-            Content = view
-        };
-
-        try
-        {
-            window.Show();
-            Dispatcher.UIThread.RunJobs();
-
-            var closableCheckBox = FindCheckBox(view, closableItem);
-            var fixedCheckBox = FindCheckBox(view, fixedItem);
-            Assert.True(closableCheckBox.IsChecked);
-            Assert.True(closableItem.IsVisible);
-            Assert.False(fixedCheckBox.IsEnabled);
-            Assert.True(fixedCheckBox.IsChecked);
-
-            Click(window, closableCheckBox);
-
-            Assert.False(closableCheckBox.IsChecked);
-            Assert.False(closableItem.IsVisible);
-            Assert.Contains(closableTool, owningRoot.HiddenDockables ?? []);
-            Assert.Null(DockTreeNavigator.FindToolDock(owningRoot, closableTool));
-
-            Click(window, closableCheckBox);
-
-            Assert.True(closableCheckBox.IsChecked);
-            Assert.True(closableItem.IsVisible);
-            Assert.DoesNotContain(closableTool, owningRoot.HiddenDockables ?? []);
-            Assert.NotNull(DockTreeNavigator.FindToolDock(owningRoot, closableTool));
-
-            Click(window, fixedCheckBox);
-
-            Assert.True(fixedCheckBox.IsChecked);
-            Assert.True(fixedItem.IsVisible);
-        }
-        finally
-        {
-            window.Close();
-        }
+        Assert.NotNull(views[2].FindControl<ItemsControl>("PluginStatusItemsControl"));
     }
 
     [AvaloniaFact]
@@ -153,6 +90,7 @@ public sealed class HostToolVisualTests
             context.Workspace.CreatedTools[HostExtensionIds.PluginStatus.Value]);
         var prepared = Assert.IsAssignableFrom<Control>(tool.PreparedView);
         var recycling = context.Provider.GetRequiredService<DocumentControlRecycling>();
+        Assert.True(context.Workspace.ShowTool(HostExtensionIds.PluginStatus));
 
         Assert.Same(prepared, recycling.Build(tool, null, null));
         Assert.True(context.Workspace.TrySetToolVisibility(tool.Id, false));
@@ -193,13 +131,6 @@ public sealed class HostToolVisualTests
             out var value));
         Assert.IsType<SolidColorBrush>(value);
     }
-
-    private static CheckBox FindCheckBox(
-        ToolManagementView view,
-        ToolManagementItem item) =>
-        view.GetLogicalDescendants()
-            .OfType<CheckBox>()
-            .Single(checkBox => ReferenceEquals(checkBox.DataContext, item));
 
     private static void Click(Window window, Control control)
     {

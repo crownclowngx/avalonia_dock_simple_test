@@ -12,7 +12,13 @@
 2. [设计方法论与取舍](./design/design-methodology-and-tradeoffs.md)：了解本轮重构如何应用 SOLID 和设计模式，以及没有采用哪些更复杂方案。
 3. [兼容约束](./reference/compatibility-contracts.md)：修改代码前核对 public API、插件激活、稳定 ID 和 JSON 行为。
 
-解决方案级材料：
+## V7 工具中心
+
+- [Host V7 独立工具中心与 Tool 显隐改造](../../../docs/design/host-v7-tool-center-and-visibility-plan.md)：已实施“工具 → 工具中心…”非模态窗口，全 Tool 可隐藏，支持分类、常用与旧布局迁移。
+- [工具中心使用说明](../../../docs/quick-start/tool-center.md)：搜索、收藏、分类、显隐及偏好文件。
+- [V7 实施验收记录](../../../docs/plan-history/host-v7/tool-center-and-visibility-acceptance.md)：实际测试、门禁、截图及尚未覆盖的桌面场景。
+
+## 解决方案级材料
 
 - [项目文档导航](../../../docs/README.md)
 - [Managed 插件快速开始](../../../docs/quick-start/README.md)

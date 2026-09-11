@@ -1,58 +1,50 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MyAvaloniaManagement.Business.Constants;
-using MyAvaloniaManagement.Business.Docking;
+using Dock.Model.Controls;
+using Dock.Model.Core;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Presentation.Icons;
 using MyAvaloniaManagement.Models.Tools;
-using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Workspace;
 
-/// <summary>
-/// 把 Workspace Session 中的 Tool 运行时事实投影为不含 Dock 类型的只读状态。
-/// </summary>
-/// <remarks>
-/// 本类型只做查询，不修改布局。Tool 的显隐命令仍由拥有工作区事务边界的
-/// <see cref="WorkspaceSession"/> 执行，避免 ReadModel 同时承担命令职责。
-/// </remarks>
+/// <summary>一次遍历捕获布局，再按稳定 ID 合并声明；不让未激活或不可用工具从目录无声消失。</summary>
 internal sealed class ToolWorkspaceReadModel(WorkspaceSession session)
 {
-    private readonly WorkspaceSession _session = session ??
-        throw new ArgumentNullException(nameof(session));
-
-    /// <summary>捕获当前可管理 Tool 的确定性只读快照。</summary>
+    internal event EventHandler? Changed { add => session.LayoutChanged += value; remove => session.LayoutChanged -= value; }
+    internal bool CanOpen(string id) => session.CanOperateTools && session.IsToolAvailable(id) && session.CreatedTools.ContainsKey(id);
     internal IReadOnlyList<ToolWorkspaceState> Capture()
     {
-        var root = _session.RootDock;
-        var tools = _session.CreatedTools;
-        var states = new List<ToolWorkspaceState>();
-        foreach (var descriptor in _session.GetAvailableToolDescriptors().Values
-                     .Where(item => item.ToolTypeId != HostExtensionIds.ToolManagement)
-                     .OrderBy(item => item.ToolTypeId.Value, StringComparer.Ordinal))
+        var nodes = session.RootDock is { } root ? DockTreeNavigator.Enumerate(root).ToArray() : [];
+        var roots = nodes.OfType<IRootDock>().ToArray();
+        var hidden = roots.SelectMany(item => item.HiddenDockables ?? []).ToHashSet();
+        var pinned = roots.SelectMany(item =>
+            (item.LeftPinnedDockables ?? []).Concat(item.RightPinnedDockables ?? [])
+                .Concat(item.TopPinnedDockables ?? []).Concat(item.BottomPinnedDockables ?? [])).ToHashSet();
+        var docked = nodes.OfType<IToolDock>().SelectMany(item => item.VisibleDockables ?? []).ToHashSet();
+        var active = nodes.OfType<IDock>().Select(item => item.ActiveDockable).ToHashSet();
+        return session.GetRegisteredTools().Select(entry =>
         {
-            if (!tools.TryGetValue(descriptor.ToolTypeId.Value, out var tool))
+            var id = entry.Descriptor.ToolTypeId.Value;
+            session.CreatedTools.TryGetValue(id, out var tool);
+            ToolLayoutState? layout = tool is null || session.RootDock is null ? null :
+                hidden.Contains(tool) ? ToolLayoutState.Hidden : pinned.Contains(tool) ? ToolLayoutState.AutoHidden :
+                docked.Contains(tool) ? ToolLayoutState.Docked : ToolLayoutState.Hidden;
+            var visible = layout is ToolLayoutState.Docked or ToolLayoutState.AutoHidden;
+            var reason = !entry.IsAvailable ? entry.UnavailableReason : session.RootDock is null ? "工作区尚未就绪" :
+                !session.CanOperateTools ? "工作区正在退出" : tool is null ? "工具激活失败，请查看插件诊断" : string.Empty;
+            return new ToolWorkspaceState(id, entry.Descriptor.DisplayName, visible, visible && session.CanOperateTools)
             {
-                continue;
-            }
-
-            // Pinned Tool 已经属于用户可访问的展示状态，不能因不在普通 ToolDock 中而误报隐藏。
-            var isHidden = root is not null && DockTreeNavigator.Enumerate(root)
-                .OfType<Dock.Model.Controls.IRootDock>()
-                .Any(candidate => candidate.HiddenDockables?.Contains(tool) == true);
-            var isVisible = root is null ||
-                (!isHidden && (
-                    DockTreeNavigator.FindToolDock(root, tool) is not null ||
-                    DockTreeNavigator.IsToolPinned(root, tool)));
-            var canHide = tool is ManagedToolDockable adapter
-                ? adapter.Registration.Descriptor.CloseBehavior == ToolCloseBehavior.Hide
-                : tool.CanClose;
-            states.Add(new ToolWorkspaceState(
-                descriptor.ToolTypeId.Value,
-                descriptor.DisplayName,
-                isVisible,
-                canHide));
-        }
-        return states;
+                Description = entry.Descriptor.Description,
+                OwnerId = entry.OwnerId,
+                SourceName = entry.SourceName,
+                IconRequest = new HostIconRequest(entry.OwnerId, entry.Descriptor.IconPath),
+                LayoutState = layout,
+                IsActive = tool is not null && active.Contains(tool),
+                CanOpen = entry.IsAvailable && tool is not null && session.CanOperateTools,
+                UnavailableReason = reason
+            };
+        }).ToArray();
     }
 }

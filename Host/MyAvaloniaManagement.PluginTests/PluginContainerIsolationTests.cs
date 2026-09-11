@@ -33,6 +33,12 @@ public sealed class PluginContainerIsolationTests
         var query = composition.HostProvider.GetRequiredService<MyAvaloniaManagement.Business.Presentation.Icons.HostIconCatalog>();
         Assert.Equal("builtin:table", query.Resolve(new(document.OwnerId, document.Descriptor.IconPath)).Reference);
         Assert.Equal([document.OwnerId], composition.PluginProviders.AvailablePluginIds);
+        var tool = Assert.Single(composition.Registry.Tools);
+        Assert.Equal(ToolCloseBehavior.Prevent, tool.Descriptor.CloseBehavior);
+        var activated = composition.HostProvider.GetRequiredService<PluginContributionActivator>().ActivateTool(tool.Descriptor.ToolTypeId);
+        using var adapter = new MyAvaloniaManagement.Business.Docking.ManagedToolDockable(activated);
+        Assert.True(adapter.CanClose);
+        Assert.Equal(42, activated.Model.GetType().GetProperty("Counter")!.GetValue(activated.Model));
     }
 
     [Fact]

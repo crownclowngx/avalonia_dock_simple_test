@@ -417,7 +417,7 @@ public sealed class WorkbenchCommandPresentationUiTests
             Assert.True(layer.IsVisible);
             Assert.True(search.IsFocused);
             Assert.Empty(window.KeyBindings);
-            Assert.Equal(4, list.ItemCount);
+            Assert.Equal(8, list.ItemCount);
 
             search.Text = "保存";
             await FlushUiAsync();
@@ -466,7 +466,7 @@ public sealed class WorkbenchCommandPresentationUiTests
                 list.Items.Cast<WorkbenchCommandPaletteProjectionEntry>());
             Assert.Equal(PluginCommand, english.CommandId);
 
-            search.Text = "插件";
+            search.Text = "插件操作";
             await FlushUiAsync();
             var chinese = Assert.Single(
                 list.Items.Cast<WorkbenchCommandPaletteProjectionEntry>());
@@ -512,7 +512,7 @@ public sealed class WorkbenchCommandPresentationUiTests
             await FlushUiAsync();
             var search = FindNamed<TextBox>(window, "SearchBox");
             var list = FindNamed<ListBox>(window, "PaletteItems");
-            search.Text = "插件";
+            search.Text = "插件操作";
             await FlushUiAsync();
             Assert.Empty(list.Items.Cast<object>());
             Assert.True(FindNamed<TextBlock>(window, "EmptyState").IsVisible);

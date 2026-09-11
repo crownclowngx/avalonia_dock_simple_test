@@ -1,4 +1,9 @@
+using MyAvaloniaManagement.Business.Presentation.Icons;
+using MyAvaloniaManagement.PluginSdk;
+
 namespace MyAvaloniaManagement.Models.Tools;
+
+internal enum ToolLayoutState { Hidden, Docked, AutoHidden }
 
 /// <summary>
 /// 表示 Tool 管理界面可以读取的一项不可变工作区状态。
@@ -11,4 +16,21 @@ internal sealed record ToolWorkspaceState(
     string ToolId,
     string DisplayName,
     bool IsVisible,
-    bool CanHide);
+    bool CanHide)
+{
+    public string Description { get; init; } = string.Empty;
+    public PluginId? OwnerId { get; init; }
+    public string SourceName { get; init; } = "内置";
+    public HostIconRequest IconRequest { get; init; } = new(null, string.Empty);
+    public ToolLayoutState? LayoutState { get; init; }
+    public bool IsActive { get; init; }
+    public bool CanOpen { get; init; }
+    public string UnavailableReason { get; init; } = string.Empty;
+    public string StatusText => UnavailableReason.Length > 0 ? UnavailableReason : LayoutState switch
+    {
+        ToolLayoutState.Docked => "已停靠",
+        ToolLayoutState.AutoHidden => "自动收起",
+        ToolLayoutState.Hidden => "已隐藏",
+        _ => "尚未就绪"
+    };
+}

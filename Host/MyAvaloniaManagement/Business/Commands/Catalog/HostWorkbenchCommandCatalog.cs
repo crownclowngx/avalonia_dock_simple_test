@@ -16,6 +16,7 @@ namespace MyAvaloniaManagement.Business.Commands.Catalog;
 /// </remarks>
 internal static class HostWorkbenchCommandIds
 {
+    internal static readonly CommandId OpenToolCenter = new("myavalonia.host.command.tool-center.open");
     internal static readonly CommandId NewDocument =
         new("myavalonia.host.command.document.new");
     internal static readonly CommandId OpenDocument =
@@ -51,7 +52,8 @@ internal sealed class HostWorkbenchCommandCatalog
         HostOpenDocumentCommandHandler openDocument,
         HostSaveDocumentCommandHandler saveDocument,
         HostOpenHelpCommandHandler openHelp,
-        HostNewDocumentCommandHandler newDocument)
+        HostNewDocumentCommandHandler newDocument,
+        HostOpenToolCenterCommandHandler? openToolCenter = null)
         : this(
         [
             new HostWorkbenchCommandRegistration(
@@ -74,6 +76,9 @@ internal sealed class HostWorkbenchCommandCatalog
                 new CommandDescriptor(HostWorkbenchCommandIds.OpenHelp,
                     "帮助中心", "阅读产品介绍、架构与理论，探索公式和交互演示。"),
                 openHelp ?? throw new ArgumentNullException(nameof(openHelp))),
+            .. (openToolCenter is null ? Array.Empty<HostWorkbenchCommandRegistration>() :
+                new[] { new HostWorkbenchCommandRegistration(new CommandDescriptor(
+                    HostWorkbenchCommandIds.OpenToolCenter, "工具中心…", "搜索、分类和收藏工具，管理工作区工具的显示与隐藏。"), openToolCenter) }),
         ])
     {
     }

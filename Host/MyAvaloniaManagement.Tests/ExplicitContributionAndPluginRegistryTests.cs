@@ -299,7 +299,6 @@ public sealed class ExplicitContributionAndPluginRegistryTests
         Assert.Equal(
             [
                 HostExtensionIds.FileSystemTree,
-                HostExtensionIds.ToolManagement,
                 HostExtensionIds.PluginMenu,
                 HostExtensionIds.PluginStatus,
             ],

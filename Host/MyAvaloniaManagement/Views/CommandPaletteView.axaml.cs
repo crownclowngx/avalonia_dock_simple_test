@@ -137,7 +137,7 @@ internal sealed partial class CommandPaletteView : UserControl
     private void RefreshItems(bool preserveSelection)
     {
         var selectedId = preserveSelection
-            ? (PaletteItems.SelectedItem as WorkbenchCommandPaletteProjectionEntry)?.CommandId
+            ? (PaletteItems.SelectedItem as WorkbenchCommandPaletteProjectionEntry)?.StableKey
             : null;
         var items = _projection?.GetItems(SearchBox.Text).ToArray() ?? [];
         PaletteItems.ItemsSource = items;
@@ -145,7 +145,7 @@ internal sealed partial class CommandPaletteView : UserControl
 
         var selectedIndex = selectedId is null
             ? -1
-            : Array.FindIndex(items, item => item.CommandId == selectedId);
+            : Array.FindIndex(items, item => item.StableKey == selectedId);
         PaletteItems.SelectedIndex = selectedIndex >= 0
             ? selectedIndex
             : items.Length > 0 ? 0 : -1;

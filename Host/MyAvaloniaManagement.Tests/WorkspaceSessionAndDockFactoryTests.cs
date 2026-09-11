@@ -255,16 +255,16 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         Assert.All(stateProperties, property => Assert.False(
             property.PropertyType.Namespace?.StartsWith("Dock.", StringComparison.Ordinal) == true));
 
-        var constructorTypes = typeof(ToolManagementViewModel)
+        var constructorTypes = typeof(MyAvaloniaManagement.ViewModels.ToolCenter.ToolCenterViewModel)
             .GetConstructors()
             .SelectMany(constructor => constructor.GetParameters())
             .Select(parameter => parameter.ParameterType)
             .ToArray();
-        Assert.Equal(
-            [typeof(ToolWorkspaceReadModel), typeof(WorkspaceSession)],
-            constructorTypes);
+        Assert.Contains(typeof(MyAvaloniaManagement.Business.ToolCenter.ToolCenterQuery), constructorTypes);
+        Assert.Contains(typeof(MyAvaloniaManagement.Business.ToolCenter.ToolCenterActions), constructorTypes);
+        Assert.DoesNotContain(constructorTypes, type => type.Namespace?.StartsWith("Dock.", StringComparison.Ordinal) == true);
         Assert.DoesNotContain(
-            typeof(ToolManagementViewModel).GetFields(
+            typeof(MyAvaloniaManagement.ViewModels.ToolCenter.ToolCenterViewModel).GetFields(
                 System.Reflection.BindingFlags.Instance |
                 System.Reflection.BindingFlags.Public |
                 System.Reflection.BindingFlags.NonPublic),

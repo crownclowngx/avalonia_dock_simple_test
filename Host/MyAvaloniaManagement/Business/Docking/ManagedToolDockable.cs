@@ -26,7 +26,8 @@ internal sealed class ManagedToolDockable : Tool, IManagedDockableViewHost, IDis
         Id = descriptor.ToolTypeId.Value;
         Title = descriptor.DisplayName;
         Context = activation.Model;
-        CanClose = descriptor.CloseBehavior == ToolCloseBehavior.Hide;
+        // V7：插件保留 SDK 字段的二进制形状，但不能禁止用户隐藏工具。
+        CanClose = true;
         CanPin = true;
         CanFloat = false;
     }

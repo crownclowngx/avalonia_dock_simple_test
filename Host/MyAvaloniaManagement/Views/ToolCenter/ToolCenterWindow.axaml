@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MyAvaloniaManagement.ViewModels.ToolCenter"
+        xmlns:models="using:MyAvaloniaManagement.Business.ToolCenter"
+        xmlns:icons="using:MyAvaloniaManagement.Business.Presentation.Icons"
+        x:Class="MyAvaloniaManagement.Views.ToolCenter.ToolCenterWindow"
+        x:Name="ToolCenterControl" x:DataType="vm:ToolCenterViewModel"
+        Title="工具中心" Width="1000" Height="720" MinWidth="700" MinHeight="500"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource AppPanelBrush}">
+    <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="24">
+        <StackPanel Spacing="8" Margin="0,0,0,20">
+            <TextBlock Text="工具中心" FontSize="24" FontWeight="SemiBold" />
+            <TextBlock Text="找到需要的工具，让工作区保持专注。隐藏工具不会停止后台任务。"
+                       TextWrapping="Wrap" Foreground="{DynamicResource AppSecondaryTextBrush}" />
+            <Grid ColumnDefinitions="*,12,200" Margin="0,8,0,0">
+                <TextBox x:Name="ToolSearchBox" Text="{Binding SearchText, Mode=TwoWay}"
+                         PlaceholderText="搜索工具名称、用途、分类或插件…" />
+                <ComboBox Grid.Column="2" ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch" ToolTip.Tip="按工具来源筛选">
+                    <ComboBox.ItemTemplate><DataTemplate x:DataType="models:ToolSource">
+                        <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                    </DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+            </Grid>
+        </StackPanel>
+        <Grid Grid.Row="1" ColumnDefinitions="170,20,*">
+            <ListBox ItemsSource="{Binding NavigationItems}" SelectedItem="{Binding SelectedNavigation, Mode=TwoWay}"
+                     Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemTemplate><DataTemplate x:DataType="vm:ToolNavigationItem">
+                    <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" Margin="0,7" />
+                </DataTemplate></ListBox.ItemTemplate>
+            </ListBox>
+            <Grid Grid.Column="2" RowDefinitions="Auto,*,Auto">
+                <TextBlock Text="{Binding ResultsTitle}" FontWeight="SemiBold" Margin="4,0,0,12" />
+                <ListBox Grid.Row="1" x:Name="ToolItemsList" ItemsSource="{Binding VisibleItems}"
+                         SelectedItem="{Binding SelectedItem, Mode=TwoWay}" Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.Styles><Style Selector="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="10,14" /><Setter Property="Margin" Value="0,0,0,6" />
+                        <Setter Property="CornerRadius" Value="8" />
+                    </Style></ListBox.Styles>
+                    <ListBox.ItemTemplate><DataTemplate x:DataType="models:ToolCenterItem">
+                        <Grid ColumnDefinitions="30,12,*,Auto" RowDefinitions="Auto,Auto">
+                            <icons:HostIconView Source="{Binding IconRequest}" Renderer="{Binding DataContext.Icons, ElementName=ToolCenterControl}"
+                                                Width="26" Height="26" Foreground="{DynamicResource AppInfoBrush}" />
+                            <StackPanel Grid.Column="2" Spacing="5" Margin="0,0,12,0">
+                                <TextBlock Text="{Binding DisplayName}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DisplayName}" />
+                                <TextBlock Text="{Binding Description}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Description}" Foreground="{DynamicResource AppSecondaryTextBrush}" />
+                                <TextBlock Text="{Binding Subtitle}" FontSize="11" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ToolId}" Foreground="{DynamicResource AppSecondaryTextBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Top">
+                                <Button Content="{Binding FavoriteText}" ToolTip.Tip="{Binding FavoriteTip}"
+                                        Command="{Binding DataContext.ToggleFavoriteCommand, ElementName=ToolCenterControl}" CommandParameter="{Binding}" />
+                                <Button Content="{Binding OpenText}" IsEnabled="{Binding CanOpen}"
+                                        Command="{Binding DataContext.OpenToolCommand, ElementName=ToolCenterControl}" CommandParameter="{Binding}" />
+                                <Button Content="隐藏" IsEnabled="{Binding CanHide}"
+                                        Command="{Binding DataContext.HideToolCommand, ElementName=ToolCenterControl}" CommandParameter="{Binding}" />
+                            </StackPanel>
+                            <TextBlock Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Text="{Binding StatusText}" Margin="0,8,0,0"
+                                       FontSize="12" Foreground="{DynamicResource AppSecondaryTextBrush}" TextWrapping="Wrap" />
+                        </Grid>
+                    </DataTemplate></ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Grid.Row="1" Text="{Binding EmptyText}" IsVisible="{Binding HasNoResults}" TextWrapping="Wrap"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="330" IsHitTestVisible="False"
+                           Foreground="{DynamicResource AppSecondaryTextBrush}" />
+                <WrapPanel Grid.Row="2" IsVisible="{Binding HasSelection}" Margin="0,10,0,0">
+                    <TextBlock Text="所选工具分类" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding AssignmentCategory, Mode=TwoWay}" MinWidth="130" MaxWidth="180" Margin="0,0,8,0">
+                        <ComboBox.ItemTemplate><DataTemplate x:DataType="models:ToolCategory"><TextBlock Text="{Binding DisplayName}" /></DataTemplate></ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Content="设置分类" Command="{Binding AssignCategoryCommand}" Margin="0,0,8,0" />
+                    <Button Content="常用上移" Command="{Binding MoveFavoriteUpCommand}" IsVisible="{Binding HasFavoriteSelection}" Margin="0,0,6,0" />
+                    <Button Content="下移" Command="{Binding MoveFavoriteDownCommand}" IsVisible="{Binding HasFavoriteSelection}" />
+                </WrapPanel>
+            </Grid>
+        </Grid>
+        <Expander Grid.Row="2" Header="管理用途分类" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,14,0,0">
+            <WrapPanel Margin="0,8">
+                <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding EditingCategory, Mode=TwoWay}" MinWidth="140" Margin="0,0,8,0">
+                    <ComboBox.ItemTemplate><DataTemplate x:DataType="models:ToolCategory"><TextBlock Text="{Binding DisplayName}" /></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBox Text="{Binding CategoryName, Mode=TwoWay}" PlaceholderText="分类名称" Width="190" Margin="0,0,8,0" />
+                <Button Content="新建" Command="{Binding AddCategoryCommand}" Margin="0,0,6,0" />
+                <Button Content="重命名" Command="{Binding RenameCategoryCommand}" Margin="0,0,6,0" />
+                <Button Content="删除分类" Command="{Binding DeleteCategoryCommand}" ToolTip.Tip="工具会回到其他工具，显隐状态保持不变" />
+            </WrapPanel>
+        </Expander>
+        <StackPanel Grid.Row="3" Spacing="8" Margin="0,12,0,0">
+            <TextBlock Text="{Binding Error}" IsVisible="{Binding HasError}" TextWrapping="Wrap" Foreground="{DynamicResource AppErrorBrush}" />
+            <TextBlock Text="{Binding SaveWarning}" IsVisible="{Binding HasSaveWarning}" TextWrapping="Wrap" Foreground="{DynamicResource AppErrorBrush}" />
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{Binding Summary}" VerticalAlignment="Center" Foreground="{DynamicResource AppSecondaryTextBrush}" />
+                <Button Grid.Column="1" Content="隐藏所有工具" Command="{Binding HideAllCommand}" IsEnabled="{Binding CanHideAll}" />
+            </Grid>
+        </StackPanel>
+    </Grid>
+</Window>

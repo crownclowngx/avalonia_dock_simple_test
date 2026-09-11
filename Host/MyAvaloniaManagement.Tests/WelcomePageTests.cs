@@ -12,14 +12,16 @@ public sealed class WelcomePageTests
     public void WelcomeCommandsRequestTheExpectedHostTools()
     {
         var requestedToolIds = new List<MyAvaloniaManagement.PluginSdk.ToolTypeId>();
-        var viewModel = new WelcomeViewModel(requestedToolIds.Add);
+        var centerRequests = 0;
+        var viewModel = new WelcomeViewModel(requestedToolIds.Add, () => centerRequests++);
 
         viewModel.OpenPluginMenuCommand.Execute(null);
-        viewModel.OpenToolManagementCommand.Execute(null);
+        viewModel.OpenToolCenterCommand.Execute(null);
 
         Assert.Equal(
-            [HostExtensionIds.PluginMenu, HostExtensionIds.ToolManagement],
+            [HostExtensionIds.PluginMenu],
             requestedToolIds);
+        Assert.Equal(1, centerRequests);
     }
 
     [Fact]

@@ -76,7 +76,7 @@ public sealed class ApplicationAndWindowTests
         _ = new MenuView();
         _ = new FileSystemTreeView();
         _ = new PlugGroupMenuView();
-        _ = new ToolManagementView();
+        _ = new MyAvaloniaManagement.Views.ToolCenter.ToolCenterWindow();
 
         window.Close();
         Assert.True(File.Exists(context.LayoutPath));

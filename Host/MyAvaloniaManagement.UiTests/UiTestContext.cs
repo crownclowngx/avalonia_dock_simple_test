@@ -5,6 +5,8 @@ using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.Business.Plugins.Registration;
+using MyAvaloniaManagement.Business.Documents.Ownership;
+using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.PluginSdk;
 
@@ -19,9 +21,13 @@ namespace MyAvaloniaManagement.UiTests;
 /// </remarks>
 internal sealed class UiTestContext : IDisposable
 {
+    private readonly PluginProviderOwner _pluginProviders = new();
+    private readonly DocumentScopeRegistry _documentScopes = new();
+    private readonly HostDiagnosticSession? _diagnostics;
     public UiTestContext(
         Action<IServiceCollection, PluginRegistryBuilder>? configureContributions = null,
-        DockLayoutSnapshotV2? initialLayout = null)
+        DockLayoutSnapshotV2? initialLayout = null,
+        PluginModuleCatalog? modules = null)
     {
         TempDirectory = Path.Combine(
             Path.GetTempPath(),
@@ -35,23 +41,31 @@ internal sealed class UiTestContext : IDisposable
         Storage = new UiStorageService();
         var services = new ServiceCollection();
         var registryBuilder = new PluginRegistryBuilder();
-        services.AddApplicationServices(registryBuilder);
+        services.AddApplicationServices(registryBuilder, _pluginProviders, _documentScopes);
         services.AddViewModels();
+        if (modules is not null)
+        {
+            _diagnostics = HostDiagnosticSession.Start(TempDirectory);
+            services.AddSingleton<IHostDiagnosticSink>(_diagnostics);
+        }
         services.AddSingleton<IHostStorageService>(Storage);
         services.AddSingleton(new PluginNavigationSettingsStore(Path.Combine(TempDirectory, PluginNavigationSettingsStore.FileName)));
+        services.AddSingleton(new MyAvaloniaManagement.Business.ToolCenter.ToolCenterPreferencesStore(Path.Combine(TempDirectory, "tool-center-v1.json")));
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
         services.AddSingleton(new AppearanceSettingsStore(
             Path.Combine(
                 TempDirectory,
                 AppearanceSettingsStore.SettingsFileName)));
-        services.AddSingleton(PluginModuleCatalog.Discover(PluginDiscoverySnapshot.Empty));
+        services.AddSingleton(modules ?? PluginModuleCatalog.Discover(PluginDiscoverySnapshot.Empty));
         configureContributions?.Invoke(services, registryBuilder);
         Provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateScopes = true,
             ValidateOnBuild = true
         });
+        if (modules is not null)
+            _pluginProviders.Compose(modules, Provider, registryBuilder, _documentScopes, Provider.GetRequiredService<IHostDiagnosticSink>());
         Workspace = Provider.GetRequiredService<WorkspaceSession>();
         ViewModel = Provider.GetRequiredService<MainWindowViewModel>();
     }
@@ -77,7 +91,10 @@ internal sealed class UiTestContext : IDisposable
     /// </summary>
     public void Dispose()
     {
+        _documentScopes.CloseAll();
+        _pluginProviders.Dispose();
         Provider.Dispose();
+        _diagnostics?.Dispose();
         if (Directory.Exists(TempDirectory))
         {
             Directory.Delete(TempDirectory, recursive: true);

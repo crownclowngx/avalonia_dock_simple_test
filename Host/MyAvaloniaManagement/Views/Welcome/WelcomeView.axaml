@@ -289,11 +289,11 @@
                                 </Button>
                                 <Button Classes="welcome-secondary"
                                         Margin="0,0,10,10"
-                                        Command="{Binding OpenToolManagementCommand}">
+                                        Command="{Binding OpenToolCenterCommand}">
                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                         <PathIcon Width="16" Height="16"
                                                   Data="M10,2 A2,2 0 0 1 12,4 V5.1 A6,6 0 0 1 14,6.25 L14.95,5.7 A2,2 0 0 1 17.68,6.43 L18,7 A2,2 0 0 1 17.27,9.73 L16.3,10.3 A6,6 0 0 1 16.3,12.6 L17.27,13.17 A2,2 0 0 1 18,15.9 L17.68,16.47 A2,2 0 0 1 14.95,17.2 L14,16.65 A6,6 0 0 1 12,17.8 V19 A2,2 0 0 1 10,21 H9 A2,2 0 0 1 7,19 V17.8 A6,6 0 0 1 5,16.65 L4.05,17.2 A2,2 0 0 1 1.32,16.47 L1,15.9 A2,2 0 0 1 1.73,13.17 L2.7,12.6 A6,6 0 0 1 2.7,10.3 L1.73,9.73 A2,2 0 0 1 1,7 L1.32,6.43 A2,2 0 0 1 4.05,5.7 L5,6.25 A6,6 0 0 1 7,5.1 V4 A2,2 0 0 1 9,2 Z M9.5,8 A3.5,3.5 0 1 0 9.5,15 A3.5,3.5 0 1 0 9.5,8" />
-                                        <TextBlock Text="工具管理" />
+                                        <TextBlock Text="工具中心" />
                                     </StackPanel>
                                 </Button>
                             </WrapPanel>

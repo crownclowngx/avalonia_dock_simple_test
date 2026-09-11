@@ -24,7 +24,7 @@ public sealed class InternalRefactorTests
             typeof(MyAvaloniaManagement.Business.Workspace.ToolWorkspaceReadModel),
             typeof(MyAvaloniaManagement.Business.Layout.ToolDockCoordinator),
             typeof(MyAvaloniaManagement.ViewModels.Tools.FileSystemTreeViewModel),
-            typeof(MyAvaloniaManagement.ViewModels.Tools.ToolManagementViewModel)
+            typeof(MyAvaloniaManagement.ViewModels.ToolCenter.ToolCenterViewModel)
         ];
         foreach (var consumer in directCoordinationConsumers)
         {

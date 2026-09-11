@@ -251,12 +251,21 @@ View 失败原子回滚 Scope，Tool View 失败只隔离自身；诊断不持�
 `ManagedDocumentDockable` 拥有普通 Document 模型、预构建 View 和独立 Scope Lease。标题从模型、请求、
 Descriptor 依次回退，后台 `PresentationChanged` 切回 UI Dispatcher；最终关闭按“解绑事件 → 断开
 DataContext/释放 View → 取消 ClosingToken → 释放模型与 scoped 依赖”执行。`ManagedToolDockable` 只拥有
-View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均禁止浮动，Tool 的 Hide/Prevent、四向位置和
-Pinned 由 Descriptor 与现有布局协调器投影。
+View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均禁止浮动。V7 Host 统一允许隐藏所有 Tool，
+旧 SDK 的 `Prevent` 不再阻止隐藏；四向位置与 Pinned 继续由声明和布局协调器管理。
 
 `WorkspaceSession` 依赖窄口 `IHostDockableFactory` 并独占已经发布的 Adapter。关闭失败回滚、正常关闭
 与 Runtime 退出汇入幂等释放入口；`HostDockFactory` 不保存 Adapter 集合，只按 Dock 基类时序转发回调。
 生产 DI 不注册 Legacy `IDocumentScopeFactory`，旧持久化测试 seam 不进入运行时对象图。
+
+### V7 工具中心
+
+侧面的管理 Tool 已退役，`ToolCenterWindowService` 拥有一个以主窗口为 Owner 的非模态窗口。
+主菜单、欢迎页和命令面板共用 Host 入口；窗口关闭释放 ViewModel 订阅，偏好保留在 Runtime 级服务中。
+`ToolWorkspaceReadModel` 一次遍历布局并合并完整注册目录；`ToolCenterQuery` 只处理元数据、筛选和历史占位；
+`ToolCenterActions` 经 `WorkspaceSession` 提交显隐，并仅在成功访问后记录最近工具。
+收藏与分类使用独立 `tool-center-v1.json`，不复制 Dock 状态。Tool 的模型和已创建 View 仍沿用原有生命周期。
+默认布局先隐藏所有 Tool，再恢复有效旧快照；退役管理 ID 只进行定向删除，原文件在写回前备份。
 
 ### 4.5 诊断白名单边界
 

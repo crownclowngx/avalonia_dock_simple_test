@@ -27,15 +27,16 @@ public sealed class IdentityAndRegistryTests
             HostExtensionIds.PluginMenu.Value);
         Assert.Equal(
             "myavalonia.host.tool.management",
-            HostExtensionIds.ToolManagement.Value);
+            MyAvaloniaManagement.Business.Layout.RetiredToolLayoutMigration.ToolManagementId);
 
         var injectedConstructor = typeof(
                 MyAvaloniaManagement.ViewModels.Welcome.WelcomeViewModel)
             .GetConstructors()
-            .Single(constructor => constructor.GetParameters().Length == 1);
+            .Single(constructor => constructor.GetParameters().Length == 2);
         Assert.Equal(
             typeof(Action<ToolTypeId>),
-            Assert.Single(injectedConstructor.GetParameters()).ParameterType);
+            injectedConstructor.GetParameters()[0].ParameterType);
+        Assert.Equal(typeof(Action), injectedConstructor.GetParameters()[1].ParameterType);
     }
 
     [Theory]

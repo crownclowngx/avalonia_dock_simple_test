@@ -8,6 +8,11 @@
 
 本目录保存解决方案级文档。文档按用途分为“快速开始”“当前事实”“设计方法论与探索”以及“历史验收记录”，阅读时应先确认文档类型，避免把历史基线当作当前实现。
 
+## V7 工具中心
+
+- [Host V7 独立工具中心与 Tool 显隐改造](./design/host-v7-tool-center-and-visibility-plan.md)：已实施独立窗口、全 Tool 可隐藏、分类/常用/搜索与旧布局定向迁移。
+- [使用说明](./quick-start/tool-center.md) · [实施验收与限制](./plan-history/host-v7/tool-center-and-visibility-acceptance.md)。
+
 ## 快速开始
 
 > 当前 V6.1 包版本：Core/UI SDK `3.4.0`、Workflow SDK `1.0.0`、Icons `1.0.0`、Build `1.1.3`、

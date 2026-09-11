@@ -120,6 +120,18 @@ internal sealed class HostDockFactory : Factory
         GetCallbacks().OnDockableHidden(dockable);
     }
 
+    public override void OnDockablePinned(IDockable? dockable)
+    {
+        base.OnDockablePinned(dockable);
+        GetCallbacks().OnDockableHidden(dockable);
+    }
+
+    public override void OnDockableUnpinned(IDockable? dockable)
+    {
+        base.OnDockableUnpinned(dockable);
+        GetCallbacks().OnDockableHidden(dockable);
+    }
+
     /// <summary>保留框架通知后，让 Session 只发布真正改变的活动 Document 事实。</summary>
     public override void OnActiveDockableChanged(IDockable? dockable)
     {

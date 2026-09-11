@@ -93,6 +93,9 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     /// <summary>向布局基础设施提供只读 Tool 实例索引，所有写入仍只发生在 Session 内。</summary>
     internal IReadOnlyDictionary<string, Tool> CreatedTools => _createdTools;
 
+    internal bool CanOperateTools => !_disposed && _acceptingCreations && _rootDock is not null;
+    internal IReadOnlyList<ToolCatalogEntry> GetRegisteredTools() => _catalog.GetRegisteredTools();
+
     /// <summary>当前工作区完成一次用户可见提交后触发的定向通知。</summary>
     /// <remarks>订阅者必须按自身生命周期解除订阅；该事件不承载任意消息，也不进入 SDK。</remarks>
     internal event EventHandler? LayoutChanged;
@@ -383,6 +386,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     internal bool ShowTool(ToolTypeId toolTypeId)
     {
         ArgumentNullException.ThrowIfNull(toolTypeId);
+        if (!CanOperateTools || !IsToolAvailable(toolTypeId.Value)) return false;
         var changed = _toolDockCoordinator.ShowTool(
             _rootDock,
             _createdTools,
@@ -394,13 +398,73 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         return changed;
     }
 
+    internal ToolOperationResult OpenTool(string toolId)
+    {
+        if (!CanOperateTools) return new(ToolOperationStatus.NotReady, "工作区尚未就绪或正在退出");
+        if (!IsRegisteredTool(toolId)) return new(ToolOperationStatus.NotFound, "工具已不存在");
+        if (!IsToolAvailable(toolId)) return new(ToolOperationStatus.Unavailable, "插件暂不可用");
+        if (!_createdTools.ContainsKey(toolId)) return new(ToolOperationStatus.Unavailable, "工具激活失败，请查看插件诊断");
+        try
+        {
+            return ShowTool(new ToolTypeId(toolId)) ? new(ToolOperationStatus.Changed) :
+                new(ToolOperationStatus.Failed, "无法恢复工具");
+        }
+        catch (Exception exception)
+        {
+            ReportToolFailure(toolId, exception);
+            NotifyLayoutChanged();
+            return new(ToolOperationStatus.Failed, "显示工具失败，请查看诊断");
+        }
+    }
+
+    internal ToolOperationResult SetToolVisibility(string toolId, bool visible)
+    {
+        if (!CanOperateTools) return new(ToolOperationStatus.NotReady, "工作区尚未就绪或正在退出");
+        if (!IsRegisteredTool(toolId)) return new(ToolOperationStatus.NotFound, "工具已不存在");
+        if (!_createdTools.TryGetValue(toolId, out var tool)) return new(ToolOperationStatus.Unavailable, "工具没有可用实例");
+        if (visible && !IsToolAvailable(toolId)) return new(ToolOperationStatus.Unavailable, "插件暂不可用");
+        var isVisible = DockTreeNavigator.FindToolDock(_rootDock!, tool) is not null || DockTreeNavigator.IsToolPinned(_rootDock!, tool);
+        if (isVisible == visible) return new(ToolOperationStatus.AlreadySatisfied);
+        try
+        {
+            return TrySetToolVisibility(toolId, visible) ? new(ToolOperationStatus.Changed) :
+                new(ToolOperationStatus.Failed, "工具布局未接受显隐操作");
+        }
+        catch (Exception exception)
+        {
+            ReportToolFailure(toolId, exception);
+            NotifyLayoutChanged();
+            return new(ToolOperationStatus.Failed, "修改工具布局失败，请查看诊断");
+        }
+    }
+
+    /// <summary>全量目标在提交前捕获；失败保留成功结果，最终只发布一次布局快照。</summary>
+    internal ToolBatchResult HideAllTools()
+    {
+        var results = new Dictionary<string, ToolOperationResult>(StringComparer.Ordinal);
+        _toolBatchDepth++;
+        try
+        {
+            foreach (var id in _createdTools.Keys.ToArray()) results[id] = SetToolVisibility(id, false);
+        }
+        finally { _toolBatchDepth--; NotifyLayoutChanged(); }
+        return new(results);
+    }
+
+    private void ReportToolFailure(string id, Exception exception)
+    {
+        try { _diagnostics?.Report(new HostDiagnosticDraft(HostDiagnosticCodes.ToolLayoutOperationFailed, HostDiagnosticPhase.Layout)
+            { StableId = id, Exception = exception }); }
+        catch { /* 诊断失败不能改变已经发生的布局提交。 */ }
+    }
+
     /// <summary>把 Tool 管理器的目标显隐状态作为一次工作区提交执行。</summary>
     internal bool TrySetToolVisibility(string toolId, bool isVisible)
     {
-        if (_rootDock is null ||
+        if (!CanOperateTools || _rootDock is null ||
             string.IsNullOrWhiteSpace(toolId) ||
             !_createdTools.TryGetValue(toolId, out var tool) ||
-            !tool.CanClose)
+            !tool.CanClose || (isVisible && !IsToolAvailable(toolId)))
         {
             return false;
         }
@@ -443,7 +507,11 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
     }
 
     /// <summary>由 HostRuntime 先关闭创建入口，再开始释放 Adapter。</summary>
-    internal void BeginShutdown() => _acceptingCreations = false;
+    internal void BeginShutdown()
+    {
+        _acceptingCreations = false;
+        NotifyLayoutChanged();
+    }
 
     /// <summary>按 Document 在前、Tool 逆序在后的所有权顺序释放工作区。</summary>
     public void Dispose()
@@ -479,8 +547,11 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         _ => null,
     };
 
-    void IWorkspaceDockCallbacks.OnDockableDocked(IDockable? dockable, DockOperation operation) =>
+    void IWorkspaceDockCallbacks.OnDockableDocked(IDockable? dockable, DockOperation operation)
+    {
         _toolDockCoordinator.OnDockableDocked(dockable, operation, _rootDock);
+        NotifyLayoutChanged();
+    }
 
     void IWorkspaceDockCallbacks.OnDockableHidden(IDockable? dockable)
     {
@@ -554,8 +625,7 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         {
             return;
         }
-        foreach (var toolTypeId in GetAvailableToolDescriptors().Keys.Where(
-                     id => id != HostExtensionIds.ToolManagement))
+        foreach (var toolTypeId in GetAvailableToolDescriptors().Keys)
         {
             if (!TryCreateTool(toolTypeId, out var tool))
             {
@@ -564,11 +634,6 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
             _createdTools[toolTypeId.Value] = tool!;
         }
 
-        if (_catalog.TryGetTool(HostExtensionIds.ToolManagement, out _) &&
-            TryCreateTool(HostExtensionIds.ToolManagement, out var managementTool))
-        {
-            _createdTools[managementTool!.Id] = managementTool;
-        }
     }
 
     private bool TryCreateTool(ToolTypeId toolTypeId, out Tool? tool)
@@ -592,7 +657,16 @@ internal sealed class WorkspaceSession : IWorkspaceDockCallbacks, IDisposable
         }
     }
 
-    private void NotifyLayoutChanged() => LayoutChanged?.Invoke(this, EventArgs.Empty);
+    private int _toolBatchDepth;
+    private void NotifyLayoutChanged()
+    {
+        if (_toolBatchDepth != 0) return;
+        foreach (EventHandler handler in LayoutChanged?.GetInvocationList() ?? [])
+        {
+            try { handler(this, EventArgs.Empty); }
+            catch (Exception exception) { ReportToolFailure("workspace", exception); }
+        }
+    }
 
     /// <summary>读取主 DocumentDock 并仅在 Adapter 引用改变时发布一次语义通知。</summary>
     private void PublishActiveDocumentIfChanged()

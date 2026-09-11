@@ -16,6 +16,7 @@ internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocume
         "用可停靠布局组织工具，用独立插件扩展业务能力。";
 
     private readonly Action<ToolTypeId>? _showTool;
+    private readonly Action? _showToolCenter;
     private string _text = DefaultIntroduction;
     private string _title = "欢迎";
 
@@ -23,9 +24,10 @@ internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocume
     {
     }
 
-    public WelcomeViewModel(Action<ToolTypeId> showTool)
+    public WelcomeViewModel(Action<ToolTypeId> showTool, Action? showToolCenter = null)
     {
         _showTool = showTool ?? throw new ArgumentNullException(nameof(showTool));
+        _showToolCenter = showToolCenter;
     }
 
     /// <summary>获取声明式贡献使用的只读展示状态。</summary>
@@ -90,8 +92,7 @@ internal sealed partial class WelcomeViewModel : ObservableObject, IPluginDocume
         _showTool?.Invoke(HostExtensionIds.PluginMenu);
 
     [RelayCommand]
-    private void OpenToolManagement() =>
-        _showTool?.Invoke(HostExtensionIds.ToolManagement);
+    private void OpenToolCenter() => _showToolCenter?.Invoke();
 
     private static string GetVersion()
     {

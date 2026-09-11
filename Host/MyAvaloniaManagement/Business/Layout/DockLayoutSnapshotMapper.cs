@@ -136,6 +136,8 @@ internal static class DockLayoutSnapshotMapper
             {
                 var tool = orderedTools[index];
                 session.DockFactory.RemoveDockable(tool, collapse: false);
+                DockTreeNavigator.RemoveFromHiddenDockables(root, tool);
+                tool.OriginalOwner = null;
                 session.DockFactory.InsertDockable(targetDock, tool, index);
             }
         }

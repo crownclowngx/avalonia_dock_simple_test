@@ -7,6 +7,9 @@ using MyAvaloniaManagement.Business.Commands.Catalog;
 using MyAvaloniaManagement.Business.Commands.State;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Plugins.Registration;
+using MyAvaloniaManagement.Business.ToolCenter;
+using MyAvaloniaManagement.Business.Workspace;
+using CommunityToolkit.Mvvm.ComponentModel;
 using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Presentation.Commands;
@@ -29,12 +32,16 @@ internal interface IWorkbenchCommandPaletteProjection
 
 /// <summary>表示 Command Palette 中一个 Host-owned 命令展示项。</summary>
 internal sealed record WorkbenchCommandPaletteProjectionEntry(
-    CommandId CommandId,
+    CommandId? CommandId,
     string DisplayName,
     string Description,
     string ShortcutText,
     bool IsEnabled,
-    IWorkbenchPresentationCommandBinding Command);
+    IWorkbenchPresentationCommandBinding Command,
+    ToolTypeId? ToolTypeId = null)
+{
+    public string StableKey => CommandId is { } id ? "command:" + id.Value : "tool:" + ToolTypeId!.Value;
+}
 
 /// <summary>把既有菜单声明投影为可搜索、可执行的最小 Command Palette 快照。</summary>
 /// <remarks>
@@ -54,6 +61,8 @@ internal sealed class WorkbenchCommandPaletteProjection :
     private readonly WorkbenchPresentationCommandStore _presentationCommands;
     private readonly Dispatcher _dispatcher;
     private readonly IHostDiagnosticSink? _diagnostics;
+    private readonly ToolWorkspaceReadModel? _tools;
+    private readonly ToolCenterActions? _toolActions;
     // 只表示 Dispatcher 队列中已有刷新，不代表任何插件业务状态或结果缓存。
     private bool _refreshQueued;
     // Dispose 后拒绝同步读取，并让已经排队的迟到回调安全退出。
@@ -67,7 +76,9 @@ internal sealed class WorkbenchCommandPaletteProjection :
         IWorkbenchKeyBindingProjection keyBindings,
         WorkbenchPresentationCommandStore presentationCommands,
         Dispatcher dispatcher,
-        IHostDiagnosticSink? diagnostics = null)
+        IHostDiagnosticSink? diagnostics = null,
+        ToolWorkspaceReadModel? tools = null,
+        ToolCenterActions? toolActions = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(plugins);
@@ -78,6 +89,8 @@ internal sealed class WorkbenchCommandPaletteProjection :
             throw new ArgumentNullException(nameof(presentationCommands));
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _diagnostics = diagnostics;
+        _tools = tools;
+        _toolActions = toolActions;
 
         // Palette v1 没有新增 SDK Contribution。以既有菜单声明作为明确发现许可，既能覆盖
         // G7/G8 的真实命令，又不会把仅供局部或快捷键入口使用的 Catalog 命令自动暴露出来。
@@ -90,6 +103,7 @@ internal sealed class WorkbenchCommandPaletteProjection :
 
         _states.StateInvalidated += OnStateInvalidated;
         _keyBindings.Changed += OnKeyBindingsChanged;
+        if (_tools is not null) _tools.Changed += OnKeyBindingsChanged;
     }
 
     public event EventHandler? Changed;
@@ -140,9 +154,19 @@ internal sealed class WorkbenchCommandPaletteProjection :
                 _presentationCommands.Get(commandId)));
         }
 
+        if (_tools is not null && _toolActions is not null)
+        {
+            foreach (var tool in _tools.Capture())
+            {
+                if (normalizedQuery.Length > 0 && !new[] { tool.DisplayName, tool.Description, tool.SourceName, tool.ToolId }
+                        .Any(text => text.Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase))) continue;
+                result.Add(new(null, $"工具 · {tool.DisplayName}", $"{tool.SourceName} · {tool.StatusText}", string.Empty,
+                    tool.CanOpen, new ToolPaletteCommand(tool.ToolId, _tools, _toolActions), new ToolTypeId(tool.ToolId)));
+            }
+        }
         return result
             .OrderBy(item => item.DisplayName, StringComparer.Ordinal)
-            .ThenBy(item => item.CommandId.Value, StringComparer.Ordinal)
+            .ThenBy(item => item.StableKey, StringComparer.Ordinal)
             .ToArray();
     }
 
@@ -258,5 +282,16 @@ internal sealed class WorkbenchCommandPaletteProjection :
         }
         _states.StateInvalidated -= OnStateInvalidated;
         _keyBindings.Changed -= OnKeyBindingsChanged;
+        if (_tools is not null) _tools.Changed -= OnKeyBindingsChanged;
     }
+}
+
+/// <summary>工具不是插件 Command；执行时重查 Workspace，保持两种身份及发现许可分离。</summary>
+internal sealed class ToolPaletteCommand(string id, ToolWorkspaceReadModel tools, ToolCenterActions actions)
+    : ObservableObject, IWorkbenchPresentationCommandBinding
+{
+    public bool IsEnabled => tools.CanOpen(id);
+    public event EventHandler? CanExecuteChanged { add { } remove { } }
+    public bool CanExecute(object? parameter) => IsEnabled;
+    public void Execute(object? parameter) { if (CanExecute(parameter)) actions.Open(id, focus: true); }
 }
