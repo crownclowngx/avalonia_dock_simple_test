@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>OldIconSdk.Plugin</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- 必须消费已发布的旧 NuGet 契约，不能用本仓新 SDK ProjectReference 冒充二进制兼容。 -->
+    <PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" VersionOverride="[3.3.0]" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

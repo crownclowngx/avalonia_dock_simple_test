@@ -444,6 +444,9 @@
         "resolved": "0.94.1",
         "contentHash": "11YMr7FnAbL83bQmVxlhbIKHvSLxjO81D12Ej0QMSGXMDTxNA9MTOa4MQxx43nv5el/efuPHwzyrj6a5ha2gug=="
       },
+      "myavaloniamanagement.icons": {
+        "type": "Project"
+      },
       "myavaloniamanagement.pluginsdk": {
         "type": "Project"
       },
@@ -455,14 +458,14 @@
           "Irihi.Ursa": "[2.1.0, 2.1.0]",
           "Irihi.Ursa.Themes.Semi": "[2.1.0, 2.1.0]",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, 10.0.10]",
-          "MyAvaloniaManagement.PluginSdk": "[3.3.0, )",
+          "MyAvaloniaManagement.PluginSdk": "[3.4.0, )",
           "Semi.Avalonia": "[12.1.0, 12.1.0]"
         }
       },
       "myavaloniamanagement.pluginsdk.workflow": {
         "type": "Project",
         "dependencies": {
-          "MyAvaloniaManagement.PluginSdk": "[3.3.0, )"
+          "MyAvaloniaManagement.PluginSdk": "[3.4.0, )"
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {

@@ -1,51 +1,81 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using Avalonia.Data.Converters;
-using Avalonia.Media;
+using System.Linq;
+using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Lifecycle;
+using MyAvaloniaManagement.Business.Plugins.Registration;
+using MyAvaloniaManagement.Icons;
+using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Business.Presentation.Icons;
 
-/// <summary>Host 公开给插件元数据使用的固定矢量名称目录，不读取图片、不执行插件代码。</summary>
+/// <summary>所有者来自贡献快照，不从图标字符串反推。Host 内建入口使用空所有者。</summary>
+internal sealed record HostIconRequest(PluginId? OwnerId, string? Reference);
+
+/// <summary>已完成归属校验的纯数据；几何对象只在 UI 适配器中创建。</summary>
+internal sealed record ResolvedHostIcon(string Reference, VectorIconDefinition Definition);
+
+/// <summary>本次 Runtime 的只读图标查询；公共资源和插件贡献采用同一数据格式。</summary>
 /// <remarks>
-/// 名称与几何内容分离：将来替换图标外观只修改这里，插件仍保存同一名称。
-/// 返回的几何路径是只读字符串，不能被用作任意资源键、文件地址或类型名。
+/// 资源包负责图形，Registry 负责声明提交，此处只负责查询及降级，不扩展成可写全局管理器。
+/// 公共资源按 All 自动导入，增加公共图标不需要在 Host 再维护一份名称映射。
 /// </remarks>
-internal static class HostIconCatalog
+internal sealed class HostIconCatalog
 {
     internal const string DefaultKey = "builtin:module";
-    internal static IReadOnlyDictionary<string, string> Paths { get; } =
-        new System.Collections.ObjectModel.ReadOnlyDictionary<string, string>(new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            [DefaultKey] = "M2,2 H8 V8 H2 Z M10,2 H16 V8 H10 Z M2,10 H8 V16 H2 Z M10,10 H16 V16 H10 Z",
-            ["builtin:folder"] = "M2,4 H8 L10,6 H18 V8 H5 L3,16 H1 Z M5,9 H19 L16,17 H2 Z",
-            ["builtin:table"] = "M2,2 H18 V18 H2 Z M4,6 V10 H9 V6 Z M11,6 V10 H16 V6 Z M4,12 V16 H9 V12 Z M11,12 V16 H16 V12 Z",
-            ["builtin:chart"] = "M2,2 H4 V16 H18 V18 H2 Z M6,10 H8 V14 H6 Z M10,6 H12 V14 H10 Z M14,3 H16 V14 H14 Z",
-            ["builtin:text-check"] = "M2,3 H17 V5 H2 Z M2,7 H12 V9 H2 Z M2,11 H8 V13 H2 Z M9,14 L11,12 L14,15 L18,10 L20,12 L14,19 Z",
-            ["builtin:image"] = "M1,2 H19 V18 H1 Z M3,4 V15 L8,9 L11,12 L14,8 L17,12 V4 Z M5,5 H8 V8 H5 Z",
-            ["builtin:video"] = "M2,3 H14 V7 L19,4 V16 L14,13 V17 H2 Z M6,6 V14 L12,10 Z",
-            ["builtin:download"] = "M8,1 H12 V10 H16 L10,16 L4,10 H8 Z M2,16 H4 V18 H16 V16 H18 V20 H2 Z",
-        });
+    private readonly Dictionary<string, ResolvedHostIcon> _builtins;
+    private readonly Dictionary<string, PluginIconRegistration> _plugins;
+    private readonly PluginAvailabilityReadModel _availability;
+    private readonly IHostDiagnosticSink? _diagnostics;
+    private readonly HashSet<(PluginId?, string?, string)> _reported = [];
 
-    internal static string ResolveKey(string? key) => key is not null && Paths.ContainsKey(key) ? key : DefaultKey;
-}
-
-/// <summary>在 UI 边界把稳定图标名转换成矢量几何；各位置各建控件，仅复用不可修改的图形数据。</summary>
-internal sealed class HostIconGeometryConverter : IValueConverter
-{
-    private readonly Dictionary<string, Geometry> _geometries = new(StringComparer.Ordinal);
-
-    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public HostIconCatalog(PluginRegistry registry, PluginAvailabilityReadModel availability,
+        IHostDiagnosticSink? diagnostics = null)
     {
-        var key = HostIconCatalog.ResolveKey(value as string);
-        if (!_geometries.TryGetValue(key, out var geometry))
-        {
-            geometry = Geometry.Parse(HostIconCatalog.Paths[key]);
-            _geometries.Add(key, geometry);
-        }
-        return geometry;
+        ArgumentNullException.ThrowIfNull(registry);
+        _availability = availability ?? throw new ArgumentNullException(nameof(availability));
+        _diagnostics = diagnostics;
+        _plugins = registry.Icons.ToDictionary(icon => icon.Reference, StringComparer.Ordinal);
+        _builtins = CommonIcons.All.ToDictionary(asset => asset.Key,
+            asset => new ResolvedHostIcon(asset.Key, new VectorIconDefinition(
+                asset.PathData, asset.ViewBoxWidth, asset.ViewBoxHeight)), StringComparer.Ordinal);
     }
 
-    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        throw new NotSupportedException("图标仅支持从元数据到界面的单向转换。");
+    internal event EventHandler<PluginAvailabilityChangedEventArgs>? Changed
+    {
+        add => _availability.AvailabilityChanged += value;
+        remove => _availability.AvailabilityChanged -= value;
+    }
+
+    internal ResolvedHostIcon Default => _builtins[DefaultKey];
+
+    internal ResolvedHostIcon Resolve(HostIconRequest? request)
+    {
+        // 每次查询都先核对可用性，再允许进入 UI 几何缓存；缓存不能复活已禁用插件。
+        if (request?.OwnerId is { } owner && !_availability.IsAvailable(owner)) return Default;
+        if (string.IsNullOrWhiteSpace(request?.Reference)) return Default;
+        if (_builtins.TryGetValue(request.Reference, out var builtin)) return builtin;
+        if (_plugins.TryGetValue(request.Reference, out var plugin))
+        {
+            if (request.OwnerId == plugin.OwnerId)
+                return new ResolvedHostIcon(plugin.Reference, plugin.Definition);
+            ReportOnce(request, "ICON_OWNER_MISMATCH");
+        }
+        else ReportOnce(request, "ICON_REFERENCE_NOT_FOUND");
+        return Default;
+    }
+
+    /// <summary>只记录稳定引用与错误码；不记录整段几何、插件对象或外部资源路径内容。</summary>
+    internal void ReportOnce(HostIconRequest request, string code)
+    {
+        if (_reported.Add((request.OwnerId, request.Reference, code)))
+            _diagnostics?.Report(new HostDiagnosticDraft(code, HostDiagnosticPhase.IconPresentation)
+            {
+                PluginId = request.OwnerId,
+                StableId = request.Reference?.StartsWith("plugin:", StringComparison.Ordinal) == true ||
+                           request.Reference?.StartsWith("builtin:", StringComparison.Ordinal) == true
+                    ? request.Reference : null,
+            });
+    }
 }

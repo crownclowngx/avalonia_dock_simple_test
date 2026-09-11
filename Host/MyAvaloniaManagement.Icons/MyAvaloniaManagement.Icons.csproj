@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Version>$(MyAvaloniaIconsVersion)</Version>
+    <PackageVersion>$(MyAvaloniaIconsVersion)</PackageVersion>
+    <PackageId>MyAvaloniaManagement.Icons</PackageId>
+    <Title>MyAvaloniaManagement Vector Icons</Title>
+    <Description>独立的不可变单色矢量图标资产，不依赖 Avalonia、Plugin SDK 或 Host。</Description>
+    <Authors>MyAvaloniaManagement Contributors</Authors>
+    <RepositoryUrl>https://gitee.com/crownclowngx/avalonia_dock_simple_test.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>icons;vector;avalonia</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

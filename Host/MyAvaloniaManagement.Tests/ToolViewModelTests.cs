@@ -1,3 +1,4 @@
+using MyAvaloniaManagement.Business.Presentation.Icons;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
@@ -204,12 +205,12 @@ public sealed class ToolViewModelTests
         var state = context.Provider.GetRequiredService<DocumentOperationState>();
 
         Assert.Throws<ArgumentNullException>(() =>
-            new PlugGroupMenuViewModel(null!, documents, state, new(Path.Combine(context.TempDirectory, "navigation.json"))));
+            new PlugGroupMenuViewModel(null!, documents, state, new(Path.Combine(context.TempDirectory, "navigation.json")), context.Provider.GetRequiredService<HostIconRenderer>()));
         Assert.Throws<ArgumentNullException>(() =>
-            new PlugGroupMenuViewModel(query, null!, state, new(Path.Combine(context.TempDirectory, "navigation.json"))));
+            new PlugGroupMenuViewModel(query, null!, state, new(Path.Combine(context.TempDirectory, "navigation.json")), context.Provider.GetRequiredService<HostIconRenderer>()));
         Assert.Throws<ArgumentNullException>(() =>
-            new PlugGroupMenuViewModel(query, documents, null!, new(Path.Combine(context.TempDirectory, "navigation.json"))));
-        using var viewModel = new PlugGroupMenuViewModel(query, documents, state, new(Path.Combine(context.TempDirectory, "navigation.json")));
+            new PlugGroupMenuViewModel(query, documents, null!, new(Path.Combine(context.TempDirectory, "navigation.json")), context.Provider.GetRequiredService<HostIconRenderer>()));
+        using var viewModel = new PlugGroupMenuViewModel(query, documents, state, new(Path.Combine(context.TempDirectory, "navigation.json")), context.Provider.GetRequiredService<HostIconRenderer>());
         Assert.Throws<ArgumentNullException>(() => viewModel.ToggleCategoryExpand(null!));
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
             viewModel.CreateDocumentEntryAsync(null!));

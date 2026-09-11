@@ -90,4 +90,5 @@ internal sealed record DocumentCreationMenuEntry(
     string DisplayName,
     string Description,
     string IconPath,
-    string MenuCategory);
+    string MenuCategory,
+    PluginId? OwnerId = null);

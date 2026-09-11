@@ -85,3 +85,5 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- seal --repeat
 Gate 仅验证本仓 Host 与 MyPlugTest：文档、关键类型、API 基线、Unit、Headless UI、Plugin、真实 ZIP 加载。
 `seal` 额外验证 Host 主程序集覆盖率、MyPlugTest 确定性包与 Windows Smoke；无需外部插件仓库。
 `seal` 默认一轮，只有 `--repeat` 才执行第二个隔离工作区；历史脚本入口均已退役。
+
+- [V6.1 图标资源与专属注册](../../../docs/quick-start/plugin-icons.md)：当前图标契约与打包要求。

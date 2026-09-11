@@ -2,7 +2,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Styles.Resources>
         <StreamGeometry x:Key="HostToolFolderOpenGeometry">M2,4 H8 L10,6 H18 V8 H5 L3,16 H1 Z M5,9 H19 L16,17 H2 Z</StreamGeometry>
-        <StreamGeometry x:Key="HostToolModuleGeometry">M2,2 H8 V8 H2 Z M10,2 H16 V8 H10 Z M2,10 H8 V16 H2 Z M10,10 H16 V16 H10 Z</StreamGeometry>
         <StreamGeometry x:Key="HostToolChevronGeometry">M5,3 L10,8 L5,13</StreamGeometry>
     </Styles.Resources>
 

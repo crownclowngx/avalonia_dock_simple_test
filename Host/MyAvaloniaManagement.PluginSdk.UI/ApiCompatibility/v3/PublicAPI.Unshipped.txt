@@ -10,6 +10,8 @@ MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.<Clone>$() -> MyAvaloniaMan
 MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.CommandPlacementId(string! value) -> void
 MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.Equals(MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? other) -> bool
 MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.Value.get -> string!
+MyAvaloniaManagement.PluginSdk.UI.IPluginIconRegistration
+MyAvaloniaManagement.PluginSdk.UI.IPluginIconRegistration.AddIcon(string! localName, MyAvaloniaManagement.PluginSdk.UI.VectorIconDefinition! definition) -> string!
 MyAvaloniaManagement.PluginSdk.UI.IWorkbenchCommandRegistration
 MyAvaloniaManagement.PluginSdk.UI.IWorkbenchCommandRegistration.AddDocumentCommand(MyAvaloniaManagement.PluginSdk.UI.CommandDescriptor! descriptor, MyAvaloniaManagement.PluginSdk.DocumentTypeId! targetDocumentTypeId) -> void
 MyAvaloniaManagement.PluginSdk.UI.IWorkbenchCommandRegistration.AddKeyBindingContribution(MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor! descriptor) -> void
@@ -17,6 +19,10 @@ MyAvaloniaManagement.PluginSdk.UI.IWorkbenchCommandRegistration.AddMenuCommandCo
 MyAvaloniaManagement.PluginSdk.UI.IWorkflowActionRegistration
 MyAvaloniaManagement.PluginSdk.UI.IWorkflowActionRegistration.AddWorkflowAction<THandler>(MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor! descriptor) -> void
 MyAvaloniaManagement.PluginSdk.UI.IWorkflowActionRegistration.UseWorkflowActionGateway() -> void
+MyAvaloniaManagement.PluginSdk.UI.IconFillRule
+MyAvaloniaManagement.PluginSdk.UI.IconFillRule.EvenOdd = 0 -> MyAvaloniaManagement.PluginSdk.UI.IconFillRule
+MyAvaloniaManagement.PluginSdk.UI.IconFillRule.NonZero = 1 -> MyAvaloniaManagement.PluginSdk.UI.IconFillRule
+MyAvaloniaManagement.PluginSdk.UI.IconRegistrationExtensions
 MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor
 MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor.CommandId.get -> MyAvaloniaManagement.PluginSdk.CommandId!
 MyAvaloniaManagement.PluginSdk.UI.KeyBindingContributionDescriptor.Key.get -> Avalonia.Input.Key
@@ -39,6 +45,12 @@ MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.<Clone>$() -> MyAvaloniaManagem
 MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.Equals(MyAvaloniaManagement.PluginSdk.UI.MenuLocationId? other) -> bool
 MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.MenuLocationId(string! value) -> void
 MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.Value.get -> string!
+MyAvaloniaManagement.PluginSdk.UI.VectorIconDefinition
+MyAvaloniaManagement.PluginSdk.UI.VectorIconDefinition.FillRule.get -> MyAvaloniaManagement.PluginSdk.UI.IconFillRule
+MyAvaloniaManagement.PluginSdk.UI.VectorIconDefinition.PathData.get -> string!
+MyAvaloniaManagement.PluginSdk.UI.VectorIconDefinition.VectorIconDefinition(string! pathData, double viewBoxWidth, double viewBoxHeight, MyAvaloniaManagement.PluginSdk.UI.IconFillRule fillRule = MyAvaloniaManagement.PluginSdk.UI.IconFillRule.EvenOdd) -> void
+MyAvaloniaManagement.PluginSdk.UI.VectorIconDefinition.ViewBoxHeight.get -> double
+MyAvaloniaManagement.PluginSdk.UI.VectorIconDefinition.ViewBoxWidth.get -> double
 MyAvaloniaManagement.PluginSdk.UI.WorkbenchCommandRegistrationExtensions
 MyAvaloniaManagement.PluginSdk.UI.WorkbenchMenuLocations
 MyAvaloniaManagement.PluginSdk.UI.WorkflowActionRegistrationExtensions
@@ -52,6 +64,7 @@ static MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.Parse(string! value)
 static MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.TryParse(string? value, out MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? placementId) -> bool
 static MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.operator !=(MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? left, MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? right) -> bool
 static MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId.operator ==(MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? left, MyAvaloniaManagement.PluginSdk.UI.CommandPlacementId? right) -> bool
+static MyAvaloniaManagement.PluginSdk.UI.IconRegistrationExtensions.AddIcon(this MyAvaloniaManagement.PluginSdk.UI.IPluginRegistration! registration, string! localName, MyAvaloniaManagement.PluginSdk.UI.VectorIconDefinition! definition) -> string!
 static MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.Parse(string! value) -> MyAvaloniaManagement.PluginSdk.UI.MenuLocationId!
 static MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.TryParse(string? value, out MyAvaloniaManagement.PluginSdk.UI.MenuLocationId? locationId) -> bool
 static MyAvaloniaManagement.PluginSdk.UI.MenuLocationId.operator !=(MyAvaloniaManagement.PluginSdk.UI.MenuLocationId? left, MyAvaloniaManagement.PluginSdk.UI.MenuLocationId? right) -> bool

@@ -8,6 +8,7 @@
 > 方案主题名称和界面模式名称允许以后自定义；稳定身份不使用显示名称，也不使用“V6”作为业务标识。
 > 实施基线：`e4d7bd7`；使用方式见 [插件目录与功能中心说明](../quick-start/plugin-navigation-and-function-center.md)。
 > 实施按用户要求不使用 AIFLOW、Windows CI、Windows Smoke 或发布 seal；本轮执行开发 verify 与独立覆盖率检查。
+> 后续图标扩展方案见 [V6.1 公共图标资源包与插件专属图标](./host-v6.1-extensible-icon-contributions-plan.md)；该方案尚未实施，V6 当前行为仍以本文及其验收记录为准。
 
 ## 1. 目标与本轮决策
 

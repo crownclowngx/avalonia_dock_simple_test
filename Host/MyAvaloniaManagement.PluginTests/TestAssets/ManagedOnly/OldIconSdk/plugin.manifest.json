@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 2,
+  "pluginId": "myavalonia.plugin.old-icon-sdk",
+  "pluginVersion": "1.0.0",
+  "entryPoint": { "assembly": "OldIconSdk.Plugin.dll", "type": "OldIconSdk.OldModule" },
+  "sdk": { "minInclusive": "3.3.0", "maxExclusive": "4.0.0" }
+}

@@ -1,5 +1,25 @@
 # MyAvaloniaManagement Plugin SDK UI
 
+V6.1 / SDK `3.4.0` 新增 `IPluginIconRegistration` 可选能力与 `registration.AddIcon(...)` 扩展，
+原 `IPluginRegistration` 接口保持不变。`VectorIconDefinition` 只包含不可变路径、画布宽高和
+`IconFillRule`；字段校验不依赖 Avalonia 初始化，Host 在 UI 绘制时解析几何。
+
+```csharp
+var reference = registration.AddIcon("review", new VectorIconDefinition(
+    "M1,1 H19 V19 H1 Z M4,4 V16 H16 V4 Z", 20, 20));
+// 将 reference 用作 DocumentDescriptor 的 iconPath。
+```
+
+只提供规范小写本地名称，Host 生成 `plugin:<真实 PluginId>/<本地名称>`。同插件重复拒绝，
+不同插件同名可共存；注册与其他贡献一起原子提交并在模块返回后封闭。
+调用新契约需要 Host/SDK `3.4.0`，旧 Host 的注册替身缺少能力时明确抛出 `NotSupportedException`。
+坏几何在 UI 阶段回退默认图标，不影响文档创建；引用归属与可用性由 Host 使用真实贡献快照校验。
+
+公共资源由独立的 `MyAvaloniaManagement.Icons` `1.0.0` 提供，本 UI SDK 不反向依赖资源包。
+插件可以复制公共资源的路径及宽高注册专属引用，也可直接用 Host 已知的 `builtin:*` 名称。
+资源包作为普通私有依赖部署，需 Build `1.1.3` 和 `ManagedPluginPrivatePackage` 声明；
+不能将资源包加入共享程序集清单，也不能跨边界传递它的 `CommonIconAsset` 对象。
+
 本包是 Managed Plugin 的 UI 契约程序集，提供模块入口、插件私有 DI 注册、不可变
 Document/Tool 描述符、Avalonia View 绑定、窗口交互端口和全屏展示端口。
 

@@ -1,5 +1,9 @@
 # MyAvaloniaManagement Plugin Build
 
+`1.1.3` 精确允许 `MyAvaloniaManagement.Icons.dll` 作为普通私有图标资源部署及打包。
+Host 主程序集、Core/UI/Workflow SDK 和其他既有共享程序集仍受原规则保护。
+使用图标包时同时添加 `PackageReference` 和 `ManagedPluginPrivatePackage`，资源包不会自动加入共享契约。
+
 本包是 Managed Plugin 的开发期构建协议。插件项目直接引用本包并设置 `PrivateAssets="all"`；
 包不会进入插件运行目录，也不会向仓库外项目猜测 Host 安装位置。
 

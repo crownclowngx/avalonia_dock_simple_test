@@ -17,6 +17,7 @@ using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Presentation.Commands;
+using MyAvaloniaManagement.Business.Presentation.Icons;
 using MyAvaloniaManagement.Business.Plugins.Discovery;
 using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.Business.Storage;
@@ -204,6 +205,8 @@ internal static class ServiceCollectionExtensions
             shutdownParticipants.Record(instance);
             return instance;
         });
+        services.AddSingleton<HostIconCatalog>();
+        services.AddSingleton<HostIconRenderer>();
         services.AddSingleton<ViewLocator>();
         services.AddSingleton<HostWorkspaceActivator>();
         services.AddSingleton(provider => new PluginContributionActivator(

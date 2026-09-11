@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.PluginSdk.UI;
+using MyAvaloniaManagement.Icons;
 using MyPlugTest.Constants;
 using MyPlugTest.Messaging;
 using MyPlugTest.Services;
@@ -35,6 +36,13 @@ public sealed class MyPlugTestPluginModule : IPluginModule
         registration.Services.AddSingleton<IMyPlugTestEventBus, MyPlugTestEventBus>();
         registration.Services.AddScoped<UrlHistoryViewModel>();
 
+        // 专属图形与公共资源可以并存。跨插件加载边界仅传递 SDK 值，不传递资源包对象。
+        var messageIcon = registration.AddIcon("message-envelope", new VectorIconDefinition(
+            "M1,2 H23 V14 H1 Z M3,4 L12,10 L21,4 L20,3 L12,8 L4,3 Z", 24, 16));
+        var table = CommonIcons.Table;
+        var tableIcon = registration.AddIcon("excel-table", new VectorIconDefinition(
+            table.PathData, table.ViewBoxWidth, table.ViewBoxHeight));
+
         registration.AddPersistableDocument<TestWelcomeViewModel, TestWelcomeView>(
             new DocumentDescriptor(
                 MyPlugTestContributionIds.WelcomeDocument,
@@ -47,21 +55,21 @@ public sealed class MyPlugTestPluginModule : IPluginModule
                 MyPlugTestContributionIds.MessageReceiverDocument,
                 "测试消息订阅组件",
                 "消息订阅测试",
-                "测试插件"));
+                "测试插件", iconPath: messageIcon));
 
         registration.AddDocument<BatchHttpGetViewModel, BatchHttpGetView>(
             new DocumentDescriptor(
                 MyPlugTestContributionIds.BatchHttpGetDocument,
                 "逐行 HTTP GET",
                 "将多行网址按输入顺序逐个执行 GET 请求",
-                "测试插件"));
+                "测试插件", iconPath: CommonIcons.Download.Key));
 
         registration.AddDocument<ExcelGetUrlGeneratorViewModel, ExcelGetUrlGeneratorView>(
             new DocumentDescriptor(
                 MyPlugTestContributionIds.ExcelGetUrlGeneratorDocument,
                 "Excel GET 地址生成器",
                 "按 Excel 列映射批量生成 GET 请求地址",
-                "测试插件"));
+                "测试插件", iconPath: tableIcon));
 
         registration.AddTool<MyCustomToolViewModel, MyCustomToolView>(
             new ToolDescriptor(

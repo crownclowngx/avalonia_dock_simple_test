@@ -13,9 +13,6 @@
              x:DataType="vm:PlugGroupMenuViewModel"
              x:Name="PlugGroupMenuControl"
              Classes="host-tool-surface">
-    <UserControl.Resources>
-        <icons:HostIconGeometryConverter x:Key="NavigationIconConverter" />
-    </UserControl.Resources>
     <Grid RowDefinitions="Auto,*">
         <Border Classes="host-tool-toolbar">
             <Grid ColumnDefinitions="Auto,*">
@@ -67,9 +64,9 @@
                                             Command="{Binding DataContext.CreateDocumentEntryCommand, ElementName=PlugGroupMenuControl}"
                                             CommandParameter="{Binding}">
                                         <Grid ColumnDefinitions="17,*">
-                                            <PathIcon Width="13"
+                                            <icons:HostIconView Width="13"
                                                       Height="13"
-                                                      Data="{StaticResource HostToolModuleGeometry}"
+                                                      Renderer="{Binding DataContext.Icons, ElementName=PlugGroupMenuControl}"
                                                       Foreground="{DynamicResource AppInfoBrush}"
                                                       VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="1"
@@ -101,8 +98,9 @@
                             Command="{Binding DataContext.ActivateTreeNodeCommand, ElementName=PlugGroupMenuControl}"
                             CommandParameter="{Binding}">
                         <Grid ColumnDefinitions="16,*,Auto">
-                            <PathIcon Width="13" Height="13" VerticalAlignment="Center"
-                                      Data="{Binding IconKey, Converter={StaticResource NavigationIconConverter}}"
+                            <icons:HostIconView Width="13" Height="13" VerticalAlignment="Center"
+                                      Source="{Binding IconRequest}"
+                                      Renderer="{Binding DataContext.Icons, ElementName=PlugGroupMenuControl}"
                                       Foreground="{DynamicResource AppInfoBrush}" />
                             <TextBlock Grid.Column="1" Text="{Binding DisplayName}" Margin="5,0,4,0"
                                        TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />

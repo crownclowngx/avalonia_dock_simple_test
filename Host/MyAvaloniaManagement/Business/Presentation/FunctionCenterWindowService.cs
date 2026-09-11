@@ -10,6 +10,7 @@ using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels.FunctionCenter;
 using MyAvaloniaManagement.Views.FunctionCenter;
+using MyAvaloniaManagement.Business.Presentation.Icons;
 
 namespace MyAvaloniaManagement.Business.Presentation;
 
@@ -21,7 +22,8 @@ namespace MyAvaloniaManagement.Business.Presentation;
 internal sealed class FunctionCenterWindowService(
     DocumentCreationMenuQuery query,
     DocumentPersistenceCoordinator documents,
-    DocumentOperationState operationState) : IDisposable
+    DocumentOperationState operationState,
+    HostIconRenderer icons) : IDisposable
 {
     private Window? _owner;
     private FunctionCenterWindow? _window;
@@ -43,7 +45,7 @@ internal sealed class FunctionCenterWindowService(
         Dispatcher.UIThread.VerifyAccess();
         if (_disposed || _owner is not { IsVisible: true }) return;
         if (_window is not null) { _window.Activate(); return; }
-        var viewModel = new FunctionCenterViewModel(query, documents, operationState);
+        var viewModel = new FunctionCenterViewModel(query, documents, operationState, icons);
         try
         {
             var window = new FunctionCenterWindow { DataContext = viewModel };

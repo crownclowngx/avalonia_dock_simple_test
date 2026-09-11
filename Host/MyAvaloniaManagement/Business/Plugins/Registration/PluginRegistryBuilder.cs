@@ -30,6 +30,28 @@ internal sealed class PluginRegistryBuilder
     private readonly List<MenuCommandContributionDeclaration> _menuCommandContributions = [];
     private readonly List<KeyBindingContributionDeclaration> _keyBindingContributions = [];
     private bool _built;
+    private readonly List<PluginIconRegistration> _icons = [];
+
+    /// <summary>
+    /// 图标只进入当前候选的临时集合；名称不能携带命名空间，避免伪造其他插件或内建资源。
+    /// 重复声明在 Seal 时与其他贡献一起拒绝，不采用依赖加载顺序的覆盖规则。
+    /// </summary>
+    internal string AddIcon(PluginId ownerId, string localName, VectorIconDefinition definition)
+    {
+        EnsureWritable();
+        ArgumentNullException.ThrowIfNull(ownerId);
+        ArgumentNullException.ThrowIfNull(definition);
+        if (localName is null || !System.Text.RegularExpressions.Regex.IsMatch(
+                localName, "\\A[a-z][a-z0-9]*(?:-[a-z0-9]+)*\\z",
+                System.Text.RegularExpressions.RegexOptions.NonBacktracking))
+        {
+            throw new ArgumentException("图标本地名称须以小写字母开头，只允许小写字母、数字及单个连字符分段。", nameof(localName));
+        }
+
+        var reference = $"plugin:{ownerId.Value}/{localName}";
+        _icons.Add(new PluginIconRegistration(ownerId, reference, definition));
+        return reference;
+    }
 
     internal void AddDocument(
         PluginId ownerId,
@@ -154,6 +176,7 @@ internal sealed class PluginRegistryBuilder
         _workbenchCommands.AddRange(source._workbenchCommands);
         _menuCommandContributions.AddRange(source._menuCommandContributions);
         _keyBindingContributions.AddRange(source._keyBindingContributions);
+        _icons.AddRange(source._icons);
     }
 
     /// <summary>返回需要在候选发布前验证构造的生命周期 singleton 类型。</summary>
@@ -183,6 +206,7 @@ internal sealed class PluginRegistryBuilder
             .Concat(_workbenchCommands.Select(item => item.OwnerId))
             .Concat(_menuCommandContributions.Select(item => item.OwnerId))
             .Concat(_keyBindingContributions.Select(item => item.OwnerId))
+            .Concat(_icons.Select(item => item.OwnerId))
             .Distinct()
             .ToArray();
         if (owners.Length > 1)
@@ -195,6 +219,10 @@ internal sealed class PluginRegistryBuilder
 
         if (expectedOwner is not null)
         {
+            foreach (var icon in _icons.Where(item => item.OwnerId != expectedOwner))
+            {
+                diagnostics.Add(IdentityDiagnostic("ICON_OWNER_MISMATCH", icon.Reference));
+            }
             foreach (var document in _documents.Where(item =>
                          !BelongsToOwner(
                              item.Descriptor.DocumentTypeId.Value,
@@ -257,6 +285,9 @@ internal sealed class PluginRegistryBuilder
             item => item.Descriptor.CommandId,
             HostDiagnosticCodes.WorkbenchCommandIdDuplicate,
             diagnostics);
+
+        AddIdentityDuplicateDiagnostics(_icons, item => item.Reference,
+            "ICON_REFERENCE_DUPLICATE", diagnostics);
 
         var placements = _menuCommandContributions
             .Select(item => new WorkbenchPlacementDeclaration(
@@ -433,6 +464,20 @@ internal sealed class PluginRegistryBuilder
         _built = true;
 
         var rejectedOwners = new HashSet<PluginId>();
+        // 完整键含真实 Owner，正常导入时不会跨所有者冲突。仍在发布边界检查重复，
+        // 防止同一候选被误导入两次后，以 Dictionary 构造异常破坏整次启动。
+        foreach (var duplicate in _icons.GroupBy(item => item.Reference).Where(group => group.Count() > 1))
+        {
+            foreach (var owner in duplicate.Select(item => item.OwnerId).Distinct())
+            {
+                rejectedOwners.Add(owner);
+                diagnosticSink?.Report(new HostDiagnosticDraft("ICON_REFERENCE_DUPLICATE", HostDiagnosticPhase.ExtensionDiscovery)
+                {
+                    PluginId = owner,
+                    StableId = duplicate.Key,
+                });
+            }
+        }
         RejectGlobalConflicts(
             _documents,
             item => item.Descriptor.DocumentTypeId,
@@ -573,7 +618,8 @@ internal sealed class PluginRegistryBuilder
             acceptedConsumers,
             acceptedWorkbenchCommands,
             acceptedMenuCommandContributions,
-            acceptedKeyBindingContributions);
+            acceptedKeyBindingContributions,
+            _icons.Where(item => !rejectedOwners.Contains(item.OwnerId)).ToArray());
         pluginProviders?.CommitRegistryResult(rejectedOwners);
         return registry;
     }

@@ -36,6 +36,7 @@ internal enum HostDiagnosticPhase
     WorkbenchCommand,
     Layout,
     HostBootstrap,
+    IconPresentation,
 }
 
 /// <summary>
@@ -364,6 +365,8 @@ internal static class HostDiagnosticRedactionPolicy
             "Workflow Action 调用失败；参数正文和插件异常未写入诊断。",
         _ when phase == HostDiagnosticPhase.WorkbenchCommand =>
             "工作台命令执行失败；异常正文未写入诊断。",
+        _ when phase == HostDiagnosticPhase.IconPresentation =>
+            "图标不可用，已显示公共默认图标；业务功能仍然可用。",
         _ => "宿主操作失败，原始输入未被保存。",
     };
 
@@ -504,12 +507,13 @@ internal static class HostDiagnosticFailurePolicy
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
 
         if (code == HostDiagnosticCodes.PersistenceUnavailable ||
-            phase == HostDiagnosticPhase.Layout)
+            phase is HostDiagnosticPhase.Layout or HostDiagnosticPhase.IconPresentation)
         {
             return (HostDiagnosticSeverity.Warning, HostDiagnosticDisposition.Continue);
         }
 
         if (RecoverablePluginLoadCodes.Contains(code) ||
+            code == "ICON_REFERENCE_DUPLICATE" ||
             code == HostDiagnosticCodes.PluginServiceRegistrationFailed ||
             code == HostDiagnosticCodes.PluginHostServiceRegistrationForbidden ||
             code == HostDiagnosticCodes.PluginContributionServiceRegistrationForbidden ||

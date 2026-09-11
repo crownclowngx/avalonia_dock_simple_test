@@ -19,7 +19,8 @@ namespace MyAvaloniaManagement.Business.Plugins.Registration;
 internal sealed class PluginRegistration :
     IPluginRegistration,
     IWorkflowActionRegistration,
-    IWorkbenchCommandRegistration
+    IWorkbenchCommandRegistration,
+    IPluginIconRegistration
 {
     private readonly PluginRegistryBuilder _builder;
     private readonly SealableServiceCollection _services;
@@ -40,6 +41,13 @@ internal sealed class PluginRegistration :
     public PluginId PluginId { get; }
 
     public IServiceCollection Services => _services;
+
+    /// <summary>使用已经绑定的真实插件身份声明图标，调用者只能提供本地名称。</summary>
+    public string AddIcon(string localName, VectorIconDefinition definition)
+    {
+        EnsureWritable();
+        return _builder.AddIcon(PluginId, localName, definition);
+    }
 
     public void UseLifecycle<TLifecycle>()
         where TLifecycle : class, IPluginLifecycle

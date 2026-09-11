@@ -2,6 +2,12 @@
   "version": 2,
   "dependencies": {
     "net10.0": {
+      "Microsoft.NET.ILLink.Tasks": {
+        "type": "Direct",
+        "requested": "[10.0.10, )",
+        "resolved": "10.0.10",
+        "contentHash": "f5VCIE7AJpd5YvzNTeMGVzQIgyE9tX+AreTYwQF+REbu+DZo/2Ae+jNSwhPEYrVz6RRkd7y8ubXjk6Nn6Ka+Cg=="
+      },
       "Avalonia.BuildServices": {
         "type": "Transitive",
         "resolved": "11.3.2",
@@ -30,6 +36,9 @@
         "resolved": "0.11.6",
         "contentHash": "NdNWGDiZ6eS/Mf/9+QHR91cj1K7Hy+PX9yrHI/zM7xFYuj9IWT2uxtB6sCHjrnxAeLV9fut1R6zHDUGKX6f9lQ=="
       },
+      "MyAvaloniaManagement.Icons": {
+        "type": "Project"
+      },
       "myavaloniamanagement.pluginsdk": {
         "type": "Project"
       },
@@ -41,7 +50,7 @@
           "Irihi.Ursa": "[2.1.0, 2.1.0]",
           "Irihi.Ursa.Themes.Semi": "[2.1.0, 2.1.0]",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, 10.0.10]",
-          "MyAvaloniaManagement.PluginSdk": "[3.3.0, )",
+          "MyAvaloniaManagement.PluginSdk": "[3.4.0, )",
           "Semi.Avalonia": "[12.1.0, 12.1.0]"
         }
       },
@@ -106,6 +115,7 @@
           "Irihi.Avalonia.Shared": "0.4.0"
         }
       }
-    }
+    },
+    "net10.0/win-x64": {}
   }
 }

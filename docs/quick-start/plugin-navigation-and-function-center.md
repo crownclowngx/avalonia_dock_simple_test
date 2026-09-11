@@ -103,3 +103,7 @@ iconPath: "builtin:table"
 偏好保存失败不会阻止本次切换，只影响下次启动的记忆。本轮没有运行时改名编辑器。
 
 相关资料：[V6 设计](../design/host-v6-plugin-navigation-and-function-center-plan.md)、[V6 实施验收](../plan-history/host-v6/plugin-navigation-and-function-center-acceptance.md)。
+
+## V6.1 图标扩展
+
+新版树与功能中心支持插件专属矢量和独立公共资源包，旧版继续使用统一默认图标。见 [图标开发说明](plugin-icons.md)。

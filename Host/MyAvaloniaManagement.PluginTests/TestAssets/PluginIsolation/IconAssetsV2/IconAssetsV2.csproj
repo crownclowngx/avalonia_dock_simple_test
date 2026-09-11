@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- 仅测试，绝不发布：模拟未来资源包版本及 Host 尚不知道的新图形。 -->
+    <AssemblyName>MyAvaloniaManagement.Icons</AssemblyName>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../../MyAvaloniaManagement.Icons/CommonIcons.cs" Link="CommonIcons.cs" />
+  </ItemGroup>
+</Project>

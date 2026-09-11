@@ -9,6 +9,7 @@ using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.Models.Tools;
+using MyAvaloniaManagement.Business.Presentation.Icons;
 
 namespace MyAvaloniaManagement.ViewModels.FunctionCenter;
 
@@ -33,9 +34,10 @@ internal sealed partial class FunctionCenterViewModel : ObservableObject, IDispo
     private string _error = string.Empty;
 
     public FunctionCenterViewModel(DocumentCreationMenuQuery query, DocumentPersistenceCoordinator documents,
-        DocumentOperationState operationState)
+        DocumentOperationState operationState, HostIconRenderer icons)
     {
         _query = query ?? throw new ArgumentNullException(nameof(query));
+        Icons = icons ?? throw new ArgumentNullException(nameof(icons));
         _documents = documents ?? throw new ArgumentNullException(nameof(documents));
         _operationState = operationState ?? throw new ArgumentNullException(nameof(operationState));
         _directory = _query.ReadDirectory();
@@ -46,6 +48,7 @@ internal sealed partial class FunctionCenterViewModel : ObservableObject, IDispo
 
     /// <summary>只通知窗口“本次文档已经创建”，窗口关闭不反过来释放已发布 Document。</summary>
     internal event EventHandler? Created;
+    public HostIconRenderer Icons { get; }
     public IReadOnlyList<NavigationTreeNode> Categories { get; private set; }
     public IReadOnlyList<DocumentCreationItem> VisibleItems { get; private set; }
     public bool HasNoResults => VisibleItems.Count == 0;

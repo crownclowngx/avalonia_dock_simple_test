@@ -41,7 +41,8 @@ internal sealed class PluginRegistry
         IReadOnlySet<PluginId>? workflowConsumers = null,
         IReadOnlyList<PluginWorkbenchCommandRegistration>? workbenchCommands = null,
         IReadOnlyList<PluginMenuCommandContribution>? menuCommandContributions = null,
-        IReadOnlyList<PluginKeyBindingContribution>? keyBindingContributions = null)
+        IReadOnlyList<PluginKeyBindingContribution>? keyBindingContributions = null,
+        IReadOnlyList<PluginIconRegistration>? icons = null)
     {
         ArgumentNullException.ThrowIfNull(plugins);
         ArgumentNullException.ThrowIfNull(documents);
@@ -63,6 +64,7 @@ internal sealed class PluginRegistry
             LifecycleTypes = Array.AsReadOnly(plugin.LifecycleTypes.ToArray()),
         }).ToArray());
         Lifecycles = Array.AsReadOnly(lifecycles.ToArray());
+        Icons = Array.AsReadOnly((icons ?? []).ToArray());
         _documents = documents.ToDictionary(item => item.Descriptor.DocumentTypeId);
         _tools = tools.ToDictionary(item => item.Descriptor.ToolTypeId);
         _workflowActions = workflowActions.ToDictionary(item => item.Descriptor.Id);
@@ -93,6 +95,9 @@ internal sealed class PluginRegistry
     /// <summary>获取已经冻结但尚未由 G8 编排执行的最终 SDK 生命周期声明。</summary>
     internal IReadOnlyList<PluginLifecycleDeclaration> Lifecycles { get; }
 
+    /// <summary>本次 Runtime 冻结的图标数据，只包含共享 SDK 的不可变值。</summary>
+    internal IReadOnlyList<PluginIconRegistration> Icons { get; }
+
     /// <summary>
     /// 返回不可变声明中出现的全部所有者。测试可构造不含 manifest 快照的最小 Registry，
     /// 因而状态存储不能把 <see cref="Plugins"/> 当作贡献所有权的第二份唯一事实。
@@ -107,6 +112,7 @@ internal sealed class PluginRegistry
         .Concat(_workbenchCommands.Values.Select(command => command.OwnerId))
         .Concat(_menuCommandContributions.Values.Select(contribution => contribution.OwnerId))
         .Concat(_keyBindingContributions.Values.Select(contribution => contribution.OwnerId))
+        .Concat(Icons.Select(icon => icon.OwnerId))
         .ToHashSet();
 
     /// <summary>获取冻结的插件工作台命令声明；集合不包含 Host 内建命令和运行状态。</summary>
@@ -245,3 +251,9 @@ internal sealed record PluginMenuCommandContribution(
 internal sealed record PluginKeyBindingContribution(
     PluginId OwnerId,
     KeyBindingContributionDescriptor Descriptor);
+
+/// <summary>图标随贡献一起提交；不持有插件资源对象、委托、类型或 Provider。</summary>
+internal sealed record PluginIconRegistration(
+    PluginId OwnerId,
+    string Reference,
+    VectorIconDefinition Definition);

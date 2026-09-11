@@ -16,6 +16,52 @@ namespace MyAvaloniaManagement.PluginTests;
 /// </summary>
 public sealed class PluginContainerIsolationTests
 {
+    [Fact]
+    public void 使用已发布SDK33编译的旧插件可在新Host完成真实组合()
+    {
+        var snapshot = AssemblyLoaderHelper.Discover("OldIconSdkFixtures");
+        Assert.Empty(snapshot.Diagnostics);
+        var assembly = Assert.Single(snapshot.Assemblies);
+        Assert.Equal(new Version(3, 3, 0, 0), assembly.GetReferencedAssemblies()
+            .Single(item => item.Name == "MyAvaloniaManagement.PluginSdk.UI").Version);
+        var directory = Path.Combine(Path.GetTempPath(), $"old-icon-sdk-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        using var composition = ComposeCore(directory, PluginModuleCatalog.Discover(snapshot), null);
+        Assert.Empty(composition.Registry.Icons);
+        var document = Assert.Single(composition.Registry.Documents);
+        Assert.Equal("builtin:table", document.Descriptor.IconPath);
+        var query = composition.HostProvider.GetRequiredService<MyAvaloniaManagement.Business.Presentation.Icons.HostIconCatalog>();
+        Assert.Equal("builtin:table", query.Resolve(new(document.OwnerId, document.Descriptor.IconPath)).Reference);
+        Assert.Equal([document.OwnerId], composition.PluginProviders.AvailablePluginIds);
+    }
+
+    [Fact]
+    public void 图标与模块异常Provider失败和重复声明一起原子隔离()
+    {
+        using var composition = Compose(
+            ("myavalonia.plugin.icon-config", new IconModule("configure")),
+            ("myavalonia.plugin.icon-provider", new IconModule("provider")),
+            ("myavalonia.plugin.icon-duplicate", new IconModule("duplicate")),
+            ("myavalonia.plugin.icon-valid", new IconModule("valid")));
+        var icon = Assert.Single(composition.Registry.Icons);
+        Assert.Equal("myavalonia.plugin.icon-valid", icon.OwnerId.Value);
+        Assert.Equal([icon.OwnerId], composition.PluginProviders.AvailablePluginIds);
+        Assert.Equal(1, composition.DocumentScopes.ManagerCount);
+        Assert.Equal(3, composition.Diagnostics.Snapshot.Count(item => item.Severity == HostDiagnosticSeverity.Error));
+    }
+
+    private sealed class IconModule(string mode) : IPluginModule
+    {
+        public void Configure(IPluginRegistration registration)
+        {
+            var definition = new VectorIconDefinition("M0,0 H20 V20 H0 Z", 20, 20);
+            registration.AddIcon("sample", definition);
+            if (mode == "configure") throw new InvalidOperationException("配置失败夹具");
+            if (mode == "provider") registration.UseLifecycle<BrokenLifecycle>();
+            if (mode == "duplicate") registration.AddIcon("sample", definition);
+        }
+    }
+
     private sealed class MessageProbeBus { }
     private sealed class MessageProbeModule : IPluginModule
     {

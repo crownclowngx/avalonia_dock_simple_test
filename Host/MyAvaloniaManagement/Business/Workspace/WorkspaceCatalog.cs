@@ -171,6 +171,7 @@ internal sealed class WorkspaceCatalog
         IWorkspaceDocumentRegistration registration)
     {
         var descriptor = registration.Descriptor;
+        var ownerId = (registration as PluginDocumentRegistration)?.OwnerId;
         if (descriptor.CreationIntents.Count == 0)
         {
             yield return new DocumentCreationMenuEntry(
@@ -179,7 +180,7 @@ internal sealed class WorkspaceCatalog
                 descriptor.DisplayName,
                 descriptor.Description,
                 descriptor.IconPath,
-                descriptor.MenuCategory);
+                descriptor.MenuCategory, ownerId);
             yield break;
         }
         foreach (var intent in descriptor.CreationIntents)
@@ -194,7 +195,7 @@ internal sealed class WorkspaceCatalog
                 string.IsNullOrWhiteSpace(intent.IconPath)
                     ? descriptor.IconPath
                     : intent.IconPath,
-                descriptor.MenuCategory);
+                descriptor.MenuCategory, ownerId);
         }
     }
 

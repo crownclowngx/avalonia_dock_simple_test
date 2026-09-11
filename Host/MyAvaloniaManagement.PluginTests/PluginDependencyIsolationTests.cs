@@ -10,6 +10,32 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class PluginDependencyIsolationTests
 {
     [Fact]
+    public void 公共资源的两个私有版本与Host并存并能提交Host未知图形()
+    {
+        var assemblies = AssemblyLoaderHelper.Discover("PluginIsolationFixtures").Assemblies
+            .OrderBy(item => item.GetName().Name).ToArray();
+        Assert.Equal(2, assemblies.Length);
+        var assets = assemblies.Select(assembly => (Assembly)GetProbeMethod(assembly, "ReadIconAssembly").Invoke(null, null)!).ToArray();
+        Assert.Equal(new Version(1, 0, 0, 0), assets[0].GetName().Version);
+        Assert.Equal(new Version(1, 1, 0, 0), assets[1].GetName().Version);
+        Assert.NotSame(assets[0], assets[1]);
+        Assert.All(assets, asset => Assert.NotSame(typeof(MyAvaloniaManagement.Icons.CommonIcons).Assembly, asset));
+        for (var index = 0; index < 2; index++)
+            Assert.Same(AssemblyLoadContext.GetLoadContext(assemblies[index]), AssemblyLoadContext.GetLoadContext(assets[index]));
+        var definitions = assemblies.Select(assembly => Assert.IsType<VectorIconDefinition>(
+            GetProbeMethod(assembly, "ReadIconDefinition").Invoke(null, null))).ToArray();
+        Assert.Equal(20, definitions[0].ViewBoxWidth);
+        Assert.Equal(32, definitions[1].ViewBoxWidth);
+        var owner = new MyAvaloniaManagement.PluginSdk.PluginId("myavalonia.plugin.future-icons");
+        var builder = new PluginRegistryBuilder();
+        var key = builder.AddIcon(owner, "future", definitions[1]);
+        var registry = builder.Build(null);
+        var catalog = new MyAvaloniaManagement.Business.Presentation.Icons.HostIconCatalog(registry, new(new(registry)));
+        Assert.Same(definitions[1], catalog.Resolve(new(owner, key)).Definition);
+        Assert.DoesNotContain(MyAvaloniaManagement.Icons.CommonIcons.All, asset => asset.Key == "builtin:future-envelope");
+    }
+
+    [Fact]
     public void 两个插件分别加载自己的同名私有依赖并共享宿主契约()
     {
         var assemblies = AssemblyLoaderHelper.Discover(

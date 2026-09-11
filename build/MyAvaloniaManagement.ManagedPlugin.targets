@@ -151,7 +151,7 @@
            Text="Managed Plugin 资产目标路径必须位于插件目录内：%(_ManagedPluginDeployAsset.TargetPath)" />
     <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '^(?:runtimes|native)[\\/](?!win-x64(?:[\\/]|$))[^\\/]+', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
            Text="当前 Managed Plugin 构建协议不得携带非 win-x64 原生资产：%(_ManagedPluginDeployAsset.TargetPath)" />
-    <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '(^|[\\/])(?:MyAvaloniaManagement(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json).*\.dll$', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
+    <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '(^|[\\/])(?:MyAvaloniaManagement(?!\.Icons\.dll$)(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json).*\.dll$', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
            Text="Managed Plugin 不得携带宿主共享程序集：%(_ManagedPluginDeployAsset.TargetPath)" />
 
     <RemoveDuplicates Inputs="@(_ManagedPluginDeployTargetPath)">

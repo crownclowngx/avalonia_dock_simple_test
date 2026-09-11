@@ -11,6 +11,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Navigation;
+using MyAvaloniaManagement.Business.Presentation.Icons;
 
 namespace MyAvaloniaManagement.ViewModels.Tools;
 
@@ -41,6 +42,7 @@ internal sealed partial class PlugGroupMenuViewModel : ObservableObject, IDispos
     public IReadOnlyList<PluginMenuModeOption> Modes { get; }
     public bool IsLegacy => SelectedMode.Mode == PluginMenuMode.Legacy;
     public bool IsTree => !IsLegacy;
+    public HostIconRenderer Icons { get; }
 
     /// <summary>模式选择只改变展示与用户偏好，不操作 Dock 布局和已经打开的文档。</summary>
     public PluginMenuModeOption SelectedMode
@@ -64,13 +66,15 @@ internal sealed partial class PlugGroupMenuViewModel : ObservableObject, IDispos
         DocumentCreationMenuQuery pluginMenuService,
         DocumentPersistenceCoordinator documents,
         DocumentOperationState operationState,
-        PluginNavigationSettingsStore settingsStore)
+        PluginNavigationSettingsStore settingsStore,
+        HostIconRenderer icons)
     {
         ArgumentNullException.ThrowIfNull(pluginMenuService);
         _documents = documents ?? throw new ArgumentNullException(nameof(documents));
         _operationState = operationState ??
             throw new ArgumentNullException(nameof(operationState));
         _menu = pluginMenuService;
+        Icons = icons ?? throw new ArgumentNullException(nameof(icons));
         _settingsStore = settingsStore ?? throw new ArgumentNullException(nameof(settingsStore));
         _settings = _settingsStore.Load();
         Modes = Array.AsReadOnly(new[]

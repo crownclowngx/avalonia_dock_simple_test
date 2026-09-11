@@ -35,6 +35,8 @@ internal sealed class NavigationTreeNode : ObservableObject
     public bool IsCategory => Category is not null;
     public string CountLabel => Category?.EntryCount.ToString() ?? string.Empty;
     public string IconKey => IsCategory ? "builtin:folder" : Item!.IconKey;
+    public Business.Presentation.Icons.HostIconRequest IconRequest =>
+        IsCategory ? new(null, IconKey) : Item!.IconRequest;
     public string ToolTip => Category?.Path.DisplayPath ?? $"{Item!.CategoryPath}\n{Item.Description}";
     public IReadOnlyList<NavigationTreeNode> Children { get; }
     public bool IsExpanded { get => _isExpanded; set => SetProperty(ref _isExpanded, value); }

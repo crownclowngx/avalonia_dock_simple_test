@@ -38,9 +38,9 @@ public static class TestAppBuilder
             .UseSkia()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions
             {
-                // 常规测试继续使用轻量绘制；专项视觉验收显式指定输出目录时启用真实 Skia 像素渲染。
-                // 该开关仅属于测试构建器，不改变 Host 生产配置，也不启动 Windows CI/发布冒烟流程。
-                UseHeadlessDrawing = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MYAVALONIA_V6_RENDER_DIRECTORY"))
+                // V6.1 需要验证画布留白、填充与主题颜色，统一使用无窗口的 Skia 软件渲染。
+                // 这是本地 Headless 单测，不依赖 Windows CI、真实桌面或发布冒烟流程。
+                UseHeadlessDrawing = false
             });
 
     private static ViewLocator CreateViewLocator()

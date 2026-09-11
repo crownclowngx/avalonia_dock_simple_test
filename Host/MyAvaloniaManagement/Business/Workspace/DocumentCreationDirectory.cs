@@ -11,6 +11,7 @@ internal sealed record DocumentCreationItem(DocumentCreationMenuEntry Entry, Doc
     public string Description => Entry.Description;
     public string CategoryPath => Path.DisplayPath;
     public string IconKey => Entry.IconPath;
+    public Presentation.Icons.HostIconRequest IconRequest => new(Entry.OwnerId, Entry.IconPath);
 
     internal bool Matches(string text) =>
         DisplayName.Contains(text, StringComparison.OrdinalIgnoreCase) ||

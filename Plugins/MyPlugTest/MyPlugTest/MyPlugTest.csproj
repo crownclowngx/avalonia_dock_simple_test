@@ -26,6 +26,8 @@
       -->
       <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk\MyAvaloniaManagement.PluginSdk.csproj" Private="false" />
       <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.PluginSdk.UI\MyAvaloniaManagement.PluginSdk.UI.csproj" Private="false" />
+      <!-- 图标包不是共享契约，随插件私有部署，从而可以独立选择资源版本。 -->
+      <ProjectReference Include="..\..\..\Host\MyAvaloniaManagement.Icons\MyAvaloniaManagement.Icons.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -45,4 +47,10 @@
       <ManagedPluginPrivatePackage Include="EPPlus;EPPlus.Interfaces;Microsoft.IO.RecyclableMemoryStream;System.Security.Cryptography.Pkcs;System.Security.Cryptography.Xml;Flurl;Flurl.Http" />
     </ItemGroup>
 
+    <!-- 本仓使用 ProjectReference；通过既有显式资产扩展点部署该普通私有程序集。 -->
+    <Target Name="CollectMyPlugTestIconAsset" BeforeTargets="DeployManagedPlugin">
+      <ItemGroup>
+        <ManagedPluginAsset Include="$(TargetDir)MyAvaloniaManagement.Icons.dll" TargetPath="MyAvaloniaManagement.Icons.dll" />
+      </ItemGroup>
+    </Target>
 </Project>

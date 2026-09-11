@@ -41,6 +41,8 @@
                       ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestAssets\ManagedOnly\NoModule\NoModule.csproj"
                       ReferenceOutputAssembly="false" />
+    <ProjectReference Include="TestAssets\ManagedOnly\OldIconSdk\OldIconSdk.csproj"
+                      ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestAssets\WorkflowActionG1\Provider\WorkflowActionG1.Provider.csproj"
                       Condition="Exists('TestAssets\WorkflowActionG1\Provider\WorkflowActionG1.Provider.csproj')"
                       ReferenceOutputAssembly="false" />
@@ -48,6 +50,18 @@
                       Condition="Exists('TestAssets\WorkflowActionG1\Consumer\WorkflowActionG1.Consumer.csproj')"
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <Target Name="CopyOldIconSdkFixture" AfterTargets="Build">
+    <PropertyGroup>
+      <OldIconSdkRoot>$(MSBuildThisFileDirectory)TestAssets\ManagedOnly\OldIconSdk</OldIconSdkRoot>
+    </PropertyGroup>
+    <MSBuild Projects="$(OldIconSdkRoot)\OldIconSdk.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <ItemGroup>
+      <OldIconSdkAsset Include="$(OldIconSdkRoot)\bin\$(Configuration)\$(TargetFramework)\OldIconSdk.Plugin.dll;$(OldIconSdkRoot)\bin\$(Configuration)\$(TargetFramework)\OldIconSdk.Plugin.deps.json;$(OldIconSdkRoot)\plugin.manifest.json" />
+    </ItemGroup>
+    <MakeDir Directories="$(OutDir)OldIconSdkFixtures\OldPlugin" />
+    <Copy SourceFiles="@(OldIconSdkAsset)" DestinationFolder="$(OutDir)OldIconSdkFixtures\OldPlugin" />
+  </Target>
 
   <Target Name="CopyWorkflowActionG1Fixtures"
           AfterTargets="Build"
@@ -89,10 +103,12 @@
       <PluginIsolationV1 Include="$(PluginIsolationAssetRoot)\PluginV1\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.PluginV1.deps.json" />
       <PluginIsolationV1 Include="$(PluginIsolationAssetRoot)\PluginV1\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.Dependency.dll" />
       <PluginIsolationV1 Include="$(PluginIsolationAssetRoot)\PluginV1\plugin.manifest.json" />
+      <PluginIsolationV1 Include="$(PluginIsolationAssetRoot)\PluginV1\bin\$(Configuration)\$(TargetFramework)\MyAvaloniaManagement.Icons.dll" />
       <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.PluginV2.dll" />
       <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.PluginV2.deps.json" />
       <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\bin\$(Configuration)\$(TargetFramework)\PluginIsolation.Dependency.dll" />
       <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\plugin.manifest.json" />
+      <PluginIsolationV2 Include="$(PluginIsolationAssetRoot)\PluginV2\bin\$(Configuration)\$(TargetFramework)\MyAvaloniaManagement.Icons.dll" />
       <IncompatibleManifestFixture Include="$(MSBuildThisFileDirectory)TestAssets\PluginManifest\Incompatible\plugin.manifest.json" />
       <BrokenPluginFixture Include="$(MSBuildThisFileDirectory)TestAssets\PluginManifest\Incompatible\BrokenPlugin.txt" />
       <NoModuleFixture Include="$(ManagedOnlyAssetRoot)\NoModule\bin\$(Configuration)\$(TargetFramework)\NoModule.Plugin.dll" />

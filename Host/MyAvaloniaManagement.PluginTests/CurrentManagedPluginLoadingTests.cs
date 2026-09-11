@@ -59,12 +59,23 @@ public sealed class CurrentManagedPluginLoadingTests
             Assert.Equal("myavalonia.plugin.my-plug-test", plugin.Manifest.PluginId.Value);
             Assert.Equal(4, plugin.DocumentTypes.Count);
             Assert.Single(plugin.ToolTypes);
+            Assert.Equal(2, registry.Icons.Count);
+            Assert.All(registry.Icons, icon => Assert.Equal(MyPlugTestContributionIds.Plugin, icon.OwnerId));
+            var iconAssembly = System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(assembly)!.Assemblies
+                .Single(item => item.GetName().Name == "MyAvaloniaManagement.Icons");
+            Assert.NotSame(typeof(MyAvaloniaManagement.Icons.CommonIcons).Assembly, iconAssembly);
+            Assert.True(File.Exists(Path.Combine(packageRoot!, "MyPlugTest", "MyAvaloniaManagement.Icons.dll")));
+            Assert.False(File.Exists(Path.Combine(packageRoot!, "MyPlugTest", "MyAvaloniaManagement.PluginSdk.UI.dll")));
             Assert.All(plugin.DocumentTypes, modelType =>
                 Assert.Equal("MyPlugTest", modelType.Assembly.GetName().Name));
 
             // 真实 ZIP 不能只停在 Loader 或 Registry。WorkspaceSession 必须从同一个冻结目录
             // 取得四个创建入口和插件 Tool 描述符，证明最终 Host 创建链没有使用测试专用注册表。
             var workspace = provider.GetRequiredService<WorkspaceSession>();
+            var entries = workspace.GetAllDocumentCreationEntries().ToArray();
+            var excel = entries.Single(item => item.DocumentTypeId == MyPlugTestContributionIds.ExcelGetUrlGeneratorDocument);
+            Assert.Equal(MyPlugTestContributionIds.Plugin, excel.OwnerId);
+            Assert.Equal($"plugin:{MyPlugTestContributionIds.Plugin}/excel-table", excel.IconPath);
             Assert.Equal(
                 4,
                 workspace.GetAllDocumentCreationEntries().Count(entry =>

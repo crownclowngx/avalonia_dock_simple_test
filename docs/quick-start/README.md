@@ -4,16 +4,16 @@ Workflow Action Provider/Consumer 另见 [Workflow Action 开发说明](workflow
 维护者发布流程见 [G3.1 SDK 候选打包与发布](workflow-sdk-publication.md)。
 
 本组文档面向外部插件作者：不需要克隆 Host 仓库，只需要 .NET 10 SDK、Rider 或其他 .NET IDE，以及
-能够访问 NuGet.org。当前公开基线是 Plugin SDK `3.3.0`、manifest schema 2、Avalonia 12、Windows x64。
+能够访问 NuGet.org。当前 V6.1 配套基线是 Plugin SDK `3.4.0`、manifest schema 2、Avalonia 12、Windows x64。
 
-Workbench Command G6 已将 Core/UI SDK 提升到 `3.3.0`、Templates 提升到 `1.3.0`；Workflow SDK
+历史 Workbench Command G6 曾将 Core/UI SDK 提升到 `3.3.0`、Templates 提升到 `1.3.0`；Workflow SDK
 保持 `1.0.0`，Build 协议未变化，
 仍为 `1.1.2`。
 
 ## 最短路径
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.3.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@1.4.1
 dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
 cd ExamplePlugin
 dotnet restore
@@ -73,3 +73,5 @@ Standalone 是快速开发工作台，真实 Host 是最终验收环境。二者
 
 SDK、Build 和模板包的发布方式见
 [外部 Managed Plugin 开发、模板与 NuGet 发布指南](../design/external-managed-plugin-development-and-installation-plan.md)。
+
+V6.1 新增 [公共资源与插件专属图标](plugin-icons.md)。当前配套为 Core/UI 3.4.0、Icons 1.0.0、Build 1.1.3、Templates 1.4.1；发布证据见专属实施记录。

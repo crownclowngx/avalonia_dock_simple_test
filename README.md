@@ -1,5 +1,9 @@
 # MyAvaloniaManagement
 
+> V6.1 已实现公共矢量资源与插件专属图标：Core/UI SDK `3.4.0`、Icons `1.0.0`、Build `1.1.3`、
+> Templates `1.4.1`。参见 [图标开发说明](./docs/quick-start/plugin-icons.md) 和
+> [实施与发布验收](./docs/plan-history/host-v6.1/icon-contributions-and-resources-acceptance.md)。
+
 > 2026-09-05：原 MySmallTools 已迁为 [VideoSecurityPlayer 独立插件](../avalonia_management_plug/myavalonia-video-security-player/README.md)。主项目不再内置其源码；当前 Gate 仅验证本仓 Host 与 MyPlugTest，外部插件独立验收。
 
 > 2026-09-05：BiliDownloader 已迁入[独立插件仓库](../avalonia_management_plug/myavalonia-bili-downloader/README.md)。主项目不再内置、构建或部署它；本文中的综合历史记录仍保留当时事实。

@@ -26,6 +26,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement.Plugin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement.PluginSdk.Tests", "Host\MyAvaloniaManagement.PluginSdk.Tests\MyAvaloniaManagement.PluginSdk.Tests.csproj", "{83C35887-6BB6-4F89-9D03-8008F06A88EA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement.Icons", "Host\MyAvaloniaManagement.Icons\MyAvaloniaManagement.Icons.csproj", "{BFC6265E-9AF6-4891-98C5-358B072603E5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -156,6 +158,18 @@ Global
 		{83C35887-6BB6-4F89-9D03-8008F06A88EA}.Release|x64.Build.0 = Release|Any CPU
 		{83C35887-6BB6-4F89-9D03-8008F06A88EA}.Release|x86.ActiveCfg = Release|Any CPU
 		{83C35887-6BB6-4F89-9D03-8008F06A88EA}.Release|x86.Build.0 = Release|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Debug|x64.Build.0 = Debug|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Debug|x86.Build.0 = Debug|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Release|x64.ActiveCfg = Release|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Release|x64.Build.0 = Release|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Release|x86.ActiveCfg = Release|Any CPU
+		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -172,5 +186,6 @@ Global
 		{0CBD22C9-BB9F-43BD-85FE-21B5F76756D4} = {D3D5DCFB-A638-4239-87E7-0592AD7724B3}
 		{D84A4A75-77C4-4D07-A27F-13AAB8D4D5E1} = {D3D5DCFB-A638-4239-87E7-0592AD7724B3}
 		{83C35887-6BB6-4F89-9D03-8008F06A88EA} = {D3D5DCFB-A638-4239-87E7-0592AD7724B3}
+		{BFC6265E-9AF6-4891-98C5-358B072603E5} = {D3D5DCFB-A638-4239-87E7-0592AD7724B3}
 	EndGlobalSection
 EndGlobal

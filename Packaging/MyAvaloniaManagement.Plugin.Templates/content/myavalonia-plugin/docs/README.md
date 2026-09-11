@@ -51,3 +51,6 @@ Standalone 适合快速检查 AXAML、编译绑定、命令和插件自身对象
 - 当前交付目标是 Windows x64；插件替换后必须完整重启 Host，不支持热更新。
 - Workflow Action Provider 与 Consumer 是两种互斥角色，选择前先阅读专项文档，不要在同一插件中同时注册。
 - Workbench Command 只提升跨工作台有价值的用户意图；模板示例默认不占用快捷键。
+
+
+- [公共资源与专属图标](plugin-icons.md)：注册、画布、独立预览与私有包交付。

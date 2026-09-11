@@ -251,7 +251,7 @@ try {
     $payloadFiles = @(Get-ChildItem -LiteralPath $pluginRoot -File -Recurse)
     $forbidden = @($payloadFiles | Where-Object {
         $_.Extension -eq '.dll' -and
-        $_.Name -match '^(?:MyAvaloniaManagement(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json)'
+        $_.Name -match '^(?:MyAvaloniaManagement(?!\.Icons\.dll$)(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json)'
     })
     if ($forbidden.Count -ne 0) {
         throw "插件包混入宿主共享程序集：$($forbidden.Name -join ', ')"

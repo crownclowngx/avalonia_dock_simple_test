@@ -10,13 +10,13 @@
 
 ## 快速开始
 
-> 当前 Workbench Command G8 基线：Core/UI SDK `3.3.0`、Workflow SDK `1.0.0`、Build `1.1.2`、
-> Templates `1.3.0`、外部 WorkflowStudio `1.2.0` 与 ClassicGame `1.1.0`。
+> 当前 V6.1 包版本：Core/UI SDK `3.4.0`、Workflow SDK `1.0.0`、Icons `1.0.0`、Build `1.1.3`、
+> Templates `1.4.1`；外部插件版本不变：WorkflowStudio `1.2.0` 与 ClassicGame `1.1.0`。
 > 外部作者可以在不克隆 Host 源码的情况下使用 `dotnet new myavalonia-plugin` 创建、独立调试、测试和
 > 打包插件。manifest schema 仍为 2，当前交付平台为 Windows x64。
 >
 > Host V4 G8 当前事实：Host internal G0–G8 已封板，产品、SDK、四插件与 v3 API/磁盘格式保持不变；
-> 当前 Gate 仅验证本仓 Host + MyPlugTest；正式入口为 `dotnet run --project tools/MyAvaloniaManagement.Gate -- seal`；默认单轮，`--repeat` 才复验第二轮。
+> 当前 Gate 仅验证本仓 Host + MyPlugTest；日常开发入口为 `dotnet run --project tools/MyAvaloniaManagement.Gate -- verify`；Host 发布阶段才使用 seal。
 > 历史文档中的 PowerShell 命令均已退役，只保留当时证据，不执行外部发布。
 >
 > Workflow Action G1–G4 保持 Host 产品 `3.0.0`；G3.1 提升 Core/UI SDK 到 `3.2.0`、新增
@@ -36,10 +36,14 @@ Managed Plugin 快速开始入口：
 
 该路径同时说明仓库内开发和外部二进制交付边界，只推荐 Managed Plugin；详细契约仍以当前实现与兼容文档为准。
 
+6. [V6.1 插件图标与公共资源](./quick-start/plugin-icons.md)：专属注册、公共复用及私有包部署。
+
 ## 当前实现与维护入口
 
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
+| [V6.1 实施验收](./plan-history/host-v6.1/icon-contributions-and-resources-acceptance.md) | 实现、测试、覆盖率、独立消费与公开包交付 | 按实际结果记录 |
+| [Host V6.1 公共图标资源与专属注册设计](./design/host-v6.1-extensible-icon-contributions-plan.md) | SDK 可选图标契约、独立公共资源包、插件专属图标、Host 管理与 ALC/版本边界 | 已实施；发布证据见专属记录 |
 | [Host V6 插件目录与功能中心设计](./design/host-v6-plugin-navigation-and-function-center-plan.md) | 保留旧版 Tool、树形模式、可自定义名称及公共矢量图标 | 已实施；验证状态见实施记录 |
 | [Host V6 专属实施验收记录](./plan-history/host-v6/plugin-navigation-and-function-center-acceptance.md) | SOLID 职责、刷新与退出修复、测试、截图及开发门禁 | 非发布；记录实际结果与限制 |
 | [插件目录与功能中心使用说明](./quick-start/plugin-navigation-and-function-center.md) | 模式切换、新建文档、分类路径、图标名称和偏好配置 | 当前用法 |

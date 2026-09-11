@@ -61,7 +61,7 @@ public sealed class PluginNavigationUiTests
             foreach (var node in NavigationTreeNode.Flatten(model.TreeNodes).Where(node => node.IsCategory)) node.IsExpanded = true;
             await Flush();
             Assert.NotEmpty(tree.GetVisualDescendants().OfType<TreeViewItem>());
-            Assert.All(tree.GetVisualDescendants().OfType<PathIcon>().Where(icon => icon.DataContext is NavigationTreeNode), icon => Assert.NotNull(icon.Data));
+            Assert.All(tree.GetVisualDescendants().OfType<HostIconView>().Where(icon => icon.DataContext is NavigationTreeNode), icon => Assert.NotNull(icon.Renderer!.Resolve(icon.Source).Geometry));
             await Render(window, "tool-tree-light");
             window.RequestedThemeVariant = ThemeVariant.Dark;
             await Render(window, "tool-tree-dark");
@@ -114,9 +114,12 @@ public sealed class PluginNavigationUiTests
             await Render(window, "function-center-light");
             window.RequestedThemeVariant = ThemeVariant.Dark;
             await Render(window, "function-center-dark");
-            var icons = window.GetVisualDescendants().OfType<PathIcon>().Where(icon => icon.DataContext is DocumentCreationItem).ToArray();
+            var icons = window.GetVisualDescendants().OfType<HostIconView>().Where(icon => icon.DataContext is DocumentCreationItem).ToArray();
             Assert.NotEmpty(icons);
-            Assert.All(icons, icon => Assert.NotNull(icon.Data));
+            Assert.All(icons, icon => Assert.NotNull(icon.Renderer!.Resolve(icon.Source).Geometry));
+            var exclusiveIcon = Assert.Single(icons, icon => icon.Source?.Reference?.EndsWith("/analysis", StringComparison.Ordinal) == true);
+            Assert.Equal(Owner, exclusiveIcon.Source!.OwnerId);
+            Assert.Equal(32, exclusiveIcon.Renderer!.Resolve(exclusiveIcon.Source).Definition.ViewBoxWidth);
             search.Text = "欢迎主程序";
             var list = window.FindControl<ListBox>("FunctionItemsList")!;
             list.SelectedItem = Assert.Single(model.VisibleItems);
@@ -200,7 +203,7 @@ public sealed class PluginNavigationUiTests
         using var context = CreateContext();
         var tool = context.Provider.GetRequiredService<PlugGroupMenuViewModel>();
         using var center = new FunctionCenterViewModel(context.Provider.GetRequiredService<DocumentCreationMenuQuery>(),
-            context.Provider.GetRequiredService<DocumentPersistenceCoordinator>(), context.Provider.GetRequiredService<DocumentOperationState>());
+            context.Provider.GetRequiredService<DocumentPersistenceCoordinator>(), context.Provider.GetRequiredService<DocumentOperationState>(), context.Provider.GetRequiredService<HostIconRenderer>());
         center.SelectedItem = center.VisibleItems.First(item => item.Entry.DocumentTypeId != HostExtensionIds.WelcomeDocument);
         context.Provider.GetRequiredService<PluginLifecycleStateStore>().BeginShutdown();
         await Flush();
@@ -216,20 +219,20 @@ public sealed class PluginNavigationUiTests
     [AvaloniaFact]
     public void 所有内置图标均可解析且不同控件复用几何而不复用控件()
     {
-        var converter = new HostIconGeometryConverter();
-        foreach (var key in HostIconCatalog.Paths.Keys)
+        using var context = CreateContext();
+        var renderer = context.Provider.GetRequiredService<HostIconRenderer>();
+        foreach (var key in MyAvaloniaManagement.Icons.CommonIcons.All.Select(asset => asset.Key))
         {
-            var geometry = Assert.IsAssignableFrom<Geometry>(converter.Convert(key, typeof(Geometry), null, System.Globalization.CultureInfo.InvariantCulture));
+            var geometry = renderer.Resolve(new(null, key)).Geometry;
             Assert.True(geometry.Bounds.Width > 0);
-            var first = new PathIcon { Data = geometry };
-            var second = new PathIcon { Data = geometry };
+            var first = new HostIconView { Renderer = renderer, Source = new(null, key) };
+            var second = new HostIconView { Renderer = renderer, Source = new(null, key) };
             _ = new StackPanel { Children = { first, second } };
             Assert.NotSame(first, second);
         }
-        using var context = CreateContext();
         var items = context.Provider.GetRequiredService<DocumentCreationMenuQuery>().ReadDirectory().Items;
         Assert.Equal("builtin:text-check", items.Single(item => item.Entry.CreationIntentId?.Value == "normal").IconKey);
-        Assert.Equal(HostIconCatalog.DefaultKey, HostIconCatalog.ResolveKey(items.Single(item => item.Entry.CreationIntentId?.Value == "fast").IconKey));
+        Assert.Equal(HostIconCatalog.DefaultKey, context.Provider.GetRequiredService<HostIconCatalog>().Resolve(items.Single(item => item.Entry.CreationIntentId?.Value == "fast").IconRequest).Reference);
     }
 
     [AvaloniaTheory]
@@ -262,7 +265,8 @@ public sealed class PluginNavigationUiTests
     private static UiTestContext CreateContext(Action<IServiceCollection, PluginRegistryBuilder>? extra = null) => new((services, builder) =>
     {
         Register<Table>(services, builder, "table", "Excel 批量审核", "闲才业务工具/文本检测", "builtin:table");
-        Register<Analysis>(services, builder, "analysis", "审核结果分析", "闲才业务工具/文本检测", "builtin:chart");
+        var exclusive = builder.AddIcon(Owner, "analysis", new("M1,1 H31 V15 H1 Z M3,3 V13 H29 V3 Z", 32, 16));
+        Register<Analysis>(services, builder, "analysis", "审核结果分析", "闲才业务工具/文本检测", exclusive);
         Register<Text>(services, builder, "text", "文本智能审核", "闲才业务工具/文本检测", "builtin:text-check",
             [new(new("normal"), "文本智能审核"), new(new("fast"), "快速文本审核", iconPath: "unknown")]);
         Register<Image>(services, builder, "image", "图片审核", "闲才业务工具/图片检测", "builtin:image");

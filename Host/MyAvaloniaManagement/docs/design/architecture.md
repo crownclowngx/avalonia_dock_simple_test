@@ -553,3 +553,7 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 实际创建仍校验插件可用性并遵守 Scope 发布/回滚链。关闭流程显式等待文档门排空，不能把选择窗口关闭当作初始化已结束。
 
 设计、用法和完整测试证据见 [V6 实施验收记录](../../../../docs/plan-history/host-v6/plugin-navigation-and-function-center-acceptance.md)。
+
+## V6.1 图标边界
+
+图标声明随插件 Registry 一起原子提交；HostIconCatalog 读取公共资源 All 与可信 Owner 声明，HostIconRenderer 在 UI 线程缓存几何，HostIconView 按画布和主题绘制。资源包不属于共享程序集闭包，资源对象不跨 ALC；参见 [图标开发说明](../../../../docs/quick-start/plugin-icons.md)。

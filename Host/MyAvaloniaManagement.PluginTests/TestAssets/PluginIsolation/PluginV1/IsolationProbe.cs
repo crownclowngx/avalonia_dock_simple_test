@@ -14,6 +14,12 @@ public static class IsolationProbe
     public static string ReadPrivateVersion() => VersionMarker.Value;
 
     public static Assembly ReadSharedContract() => typeof(IPluginModule).Assembly;
+    public static Assembly ReadIconAssembly() => typeof(MyAvaloniaManagement.Icons.CommonIcons).Assembly;
+    public static VectorIconDefinition ReadIconDefinition()
+    {
+        var asset = MyAvaloniaManagement.Icons.CommonIcons.Table;
+        return new(asset.PathData, asset.ViewBoxWidth, asset.ViewBoxHeight);
+    }
 }
 
 /// <summary>通过最终 UI SDK 声明的 G5 加载隔离测试模块。</summary>

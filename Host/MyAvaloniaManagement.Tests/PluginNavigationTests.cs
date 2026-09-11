@@ -97,8 +97,12 @@ public sealed class PluginNavigationTests
     [InlineData("builtin:unknown")]
     [InlineData("https://example.com/icon.png")]
     [InlineData("C:/image.png")]
-    public void 未声明或不支持的图标统一回退默认(string? value) =>
-        Assert.Equal(HostIconCatalog.DefaultKey, HostIconCatalog.ResolveKey(value));
+    public void 未声明或不支持的图标统一回退默认(string? value)
+    {
+        using var context = new TestHostContext();
+        Assert.Equal(HostIconCatalog.DefaultKey,
+            context.Provider.GetRequiredService<HostIconCatalog>().Resolve(new(null, value)).Reference);
+    }
 
     [Fact]
     public void 双模式切换保留展开身份与用户显示名称且不会创建文档()
@@ -199,7 +203,7 @@ public sealed class PluginNavigationTests
     private static FunctionCenterViewModel CreateCenter(TestHostContext context) => new(
         context.Provider.GetRequiredService<DocumentCreationMenuQuery>(),
         context.Provider.GetRequiredService<DocumentPersistenceCoordinator>(),
-        context.Provider.GetRequiredService<DocumentOperationState>());
+        context.Provider.GetRequiredService<DocumentOperationState>(), context.Provider.GetRequiredService<HostIconRenderer>());
 
     [Fact]
     public async Task 关闭期间三个创建入口均收到失败结果且不启动插件()
