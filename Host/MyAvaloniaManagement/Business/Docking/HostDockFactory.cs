@@ -61,6 +61,12 @@ internal sealed class HostDockFactory : Factory
 {
     private IWorkspaceDockCallbacks? _callbacks;
 
+    public HostDockFactory()
+    {
+        // 标题栏的关闭命令也必须保留 Tool 和原停靠点，供工具中心再次显示。
+        HideToolsOnClose = true;
+    }
+
     /// <summary>把 Factory 与唯一 Workspace Session 绑定。</summary>
     /// <remarks>
     /// 绑定只允许发生一次。显式的一次性绑定让组合根能够先构造低层 Dock Adapter，再构造拥有

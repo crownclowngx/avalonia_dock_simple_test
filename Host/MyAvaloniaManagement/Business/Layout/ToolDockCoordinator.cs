@@ -181,10 +181,26 @@ internal sealed class ToolDockCoordinator(
         ProportionalDock pane,
         Alignment alignment)
     {
-        if (alignment is not (Alignment.Top or Alignment.Bottom))
+        if (alignment is Alignment.Left or Alignment.Right)
         {
-            throw new InvalidOperationException(
-                $"稳定停靠区域 '{pane.Id}' 已脱离主布局。");
+            var columns = DockTreeNavigator.FindDockById<ProportionalDock>(
+                              root,
+                              DockLayoutIds.WorkspaceColumns)
+                          ?? throw new InvalidOperationException(
+                              $"Dock '{DockLayoutIds.WorkspaceColumns}' was not found.");
+            // 空区域可能已被 Dock 的移除/拖动流程清理。左右区域位于横向布局两端，
+            // 不要求 Documents 是直接子节点，因而也保留已有文档拆分结构。
+            if (alignment == Alignment.Left)
+            {
+                factory.InsertDockable(columns, pane, 0);
+                factory.InsertDockable(columns, new ProportionalDockSplitter(), 1);
+            }
+            else
+            {
+                factory.AddDockable(columns, new ProportionalDockSplitter());
+                factory.AddDockable(columns, pane);
+            }
+            return;
         }
 
         var rows = DockTreeNavigator.FindDockById<ProportionalDock>(

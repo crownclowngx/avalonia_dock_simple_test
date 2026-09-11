@@ -89,6 +89,52 @@ public sealed class ToolCenterUiTests
     }
 
     [AvaloniaFact]
+    public async Task 标题栏关闭最后一个工具后可从工具中心反复显示且复用视图()
+    {
+        using var context = new UiTestContext();
+        var service = context.Provider.GetRequiredService<ToolCenterWindowService>();
+        var owner = new MainWindow { DataContext = context.ViewModel, Width = 1600, Height = 1000 };
+        service.Attach(owner);
+        owner.Show();
+        try
+        {
+            service.ShowOrActivate();
+            await Flush();
+            var window = Assert.IsType<ToolCenterWindow>(service.CurrentWindow);
+            var vm = Assert.IsType<ToolCenterViewModel>(window.DataContext);
+            foreach (var id in new[] { HostExtensionIds.PluginMenu.Value, HostExtensionIds.FileSystemTree.Value })
+            {
+                var adapter = Assert.IsType<ManagedToolDockable>(context.Workspace.CreatedTools[id]);
+                var prepared = Assert.IsAssignableFrom<Control>(adapter.PreparedView);
+                var model = adapter.Model;
+                for (var cycle = 0; cycle < 3; cycle++)
+                {
+                    Click(window, RowButton(window, id, "显示"));
+                    await Flush();
+                    Assert.False(vm.HasError, vm.Error);
+                    Assert.True(vm.VisibleItems.Single(item => item.ToolId == id).IsVisible);
+                    Assert.Same(adapter, context.Workspace.CreatedTools[id]);
+                    Assert.Same(model, adapter.Model);
+                    Assert.Same(prepared, adapter.PreparedView);
+                    Assert.Contains(prepared, owner.GetVisualDescendants());
+
+                    var close = Assert.Single(owner.GetVisualDescendants().OfType<Button>(),
+                        button => button.Name == "PART_CloseButton" && ReferenceEquals(button.CommandParameter, adapter));
+                    Assert.True(close.IsEffectivelyVisible);
+                    Assert.True(close.IsEnabled);
+                    Click(owner, close);
+                    await Flush();
+                    Assert.False(vm.VisibleItems.Single(item => item.ToolId == id).IsVisible);
+                    Assert.False(vm.CanHideAll);
+                    Assert.Same(prepared, adapter.PreparedView);
+                    Assert.Single(context.Workspace.GetDocuments());
+                }
+            }
+        }
+        finally { service.Dispose(); owner.Close(); }
+    }
+
+    [AvaloniaFact]
     public async Task 分类编辑全局搜索与清空恢复并保持来源约束()
     {
         using var context = CreateTools(2, new());

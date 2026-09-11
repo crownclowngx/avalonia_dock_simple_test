@@ -251,8 +251,10 @@ public sealed class ToolViewModelTests
             item => Assert.False(item.IsVisible));
     }
 
-    [Fact]
-    public void Dock关闭与ShowTool直接同步快照并各通知一次()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Dock隐藏或关闭与ShowTool直接同步快照并各通知一次(bool close)
     {
         using var context = new TestHostContext();
         var main = context.CreateMainWindowViewModel();
@@ -261,7 +263,11 @@ public sealed class ToolViewModelTests
         var states = context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.ToolWorkspaceReadModel>();
         var changes = 0;
         main.PropertyChanged += (_, args) => { if (args.PropertyName == nameof(main.Layout)) changes++; };
-        context.Workspace.DockFactory.HideDockable(context.Workspace.CreatedTools[id.Value]);
+        var tool = context.Workspace.CreatedTools[id.Value];
+        if (close)
+            context.Workspace.DockFactory.CloseDockable(tool);
+        else
+            context.Workspace.DockFactory.HideDockable(tool);
         Assert.False(states.Capture().Single(item => item.ToolId == id.Value).IsVisible);
         Assert.Equal(1, changes);
         Assert.True(context.Workspace.ShowTool(id));

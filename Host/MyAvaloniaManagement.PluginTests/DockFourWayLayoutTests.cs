@@ -212,6 +212,52 @@ public sealed class DockFourWayLayoutTests
         Assert.Equal(0.20, topPane.CollapsedProportion);
     }
 
+    [Theory]
+    [InlineData("Left", Alignment.Left)]
+    [InlineData("Right", Alignment.Right)]
+    [InlineData("Top", Alignment.Top)]
+    [InlineData("Bottom", Alignment.Bottom)]
+    public void HiddenToolRestoresAfterItsEntirePaneWasRemoved(string side, Alignment alignment)
+    {
+        using var context = CreateFactory(("detachedTool", side));
+        var session = context.Factory;
+        var tool = RegisterTool(session, "detachedTool", side);
+        var documentDock = CreateDocumentDock(session);
+        var root = session.CreateWorkspaceLayout(documentDock);
+        session.InitLayout(root);
+        var paneId = ToolDockPlacement.GetPaneId(alignment);
+        var dockId = ToolDockPlacement.GetDockId(alignment);
+        var oldPane = FindDock<ProportionalDock>(root, paneId);
+        var parent = Assert.IsType<ProportionalDock>(oldPane.Owner);
+        var originalOrder = parent.VisibleDockables!.Select(item => item.Id).ToArray();
+
+        session.HideDockable(tool);
+        var owningRoot = session.FindRoot(tool, _ => true)!;
+        session.RemoveDockable(oldPane, collapse: true);
+        Assert.Null(FindDockOrDefault<ProportionalDock>(root, paneId));
+        Assert.Null(FindDockOrDefault<ToolDock>(root, dockId));
+
+        Assert.True(session.RestoreTool(root, tool));
+
+        var restoredPane = FindDock<ProportionalDock>(root, paneId);
+        var restoredDock = FindDock<ToolDock>(root, dockId);
+        Assert.NotSame(oldPane, restoredPane);
+        Assert.Same(parent, restoredPane.Owner);
+        Assert.Same(restoredPane, restoredDock.Owner);
+        Assert.Same(restoredDock, tool.Owner);
+        Assert.Same(tool, Assert.Single(restoredDock.VisibleDockables!));
+        Assert.Same(tool, restoredDock.ActiveDockable);
+        Assert.False(restoredPane.IsEmpty);
+        Assert.False(restoredDock.IsEmpty);
+        Assert.DoesNotContain(tool, owningRoot.HiddenDockables!);
+        Assert.Null(tool.OriginalOwner);
+        Assert.Equal(originalOrder, parent.VisibleDockables!.Select(item => item.Id));
+        Assert.Same(documentDock, FindDock<DocumentDock>(root, DockLayoutIds.Documents));
+        Assert.Same(restoredDock, session.EnsureToolDock(root, alignment));
+        Assert.Single(EnumerateDocks(root), dock => dock.Id == paneId);
+        Assert.Single(EnumerateDocks(root), dock => dock.Id == dockId);
+    }
+
     [Fact]
     public void HiddenBottomToolCanBeRestoredAfterLayoutRestart()
     {
