@@ -1,6 +1,6 @@
 # MyAvaloniaManagement
 
-> 2026-09-05：原 MySmallTools 已迁为 [VideoSecurityPlayer 独立插件](../avalonia_management_plug/myavalonia-video-security-player/README.md)。主项目不再内置其源码，跨仓库 Gate 从外部构建和验收；稳定 ID 与用户数据保持兼容。
+> 2026-09-05：原 MySmallTools 已迁为 [VideoSecurityPlayer 独立插件](../avalonia_management_plug/myavalonia-video-security-player/README.md)。主项目不再内置其源码；当前 Gate 仅验证本仓 Host 与 MyPlugTest，外部插件独立验收。
 
 > 2026-09-05：BiliDownloader 已迁入[独立插件仓库](../avalonia_management_plug/myavalonia-bili-downloader/README.md)。主项目不再内置、构建或部署它；本文中的综合历史记录仍保留当时事实。
 
@@ -82,7 +82,7 @@ MyAvaloniaManagement 是一个基于 **.NET 10、Avalonia 12 和 Dock 12** 的�
 | [DaTangWorkPlugin（独立仓库）](../avalonia_management_plug/myavalonia-datang-work/README.md) | 发票信息综合计算和银行余额调节 |
 | [MyPlugTest](./Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj) | Managed Plugin 的 Document、Tool、消息通信和依赖注入示例 |
 
-以下为迁出前四插件的 V3 历史验收事实；当前主项目内置三个插件，BiliDownloader 独立交付。
+以下为迁出前四插件的 V3 历史验收事实；当前主项目仅保留 MyPlugTest，其余业务插件独立交付。
 
 四个插件均已按 V3 G1 重新标记版本并继续使用 Managed Plugin 构建协议；三个持久化插件已在
 V3 G2 接入修订保存，全部 11 个插件 Document 已在 V3 G3 接入互斥激活，四插件已在 V3 G4 通过
@@ -277,39 +277,32 @@ TestResults/  需要保留的阶段验收与人工验证记录
 
 ## 测试
 
-当前唯一受支持的验证与封板入口是强类型 .NET Gate CLI。日常开发允许三个仓库存在未提交修改：
+当前验证与发布前验收入口是强类型 .NET Gate CLI，仅依赖本仓 Host 与 MyPlugTest。日常验证允许未提交修改：
 
 ```powershell
 dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 ```
 
-排查单个边界时使用 scope；`workbench` 会自动包含所需的 Host 基座：
+`verify --scope host` 和 `verify --scope all` 均执行完整本仓验证；外部 scope 与仓库路径参数已退役。
+验证顺序为 locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host UI/MyPlugTest Unit、
+契约检查、MyPlugTest 打包及真实 ZIP 加载验收。`verify` 不采集覆盖率、不启动真实窗口、不授予发布资格。
 
-```powershell
-dotnet run --project tools/MyAvaloniaManagement.Gate -- verify --scope host
-dotnet run --project tools/MyAvaloniaManagement.Gate -- verify --scope workflow
-dotnet run --project tools/MyAvaloniaManagement.Gate -- verify --scope workbench
-```
-
-正式封板要求主仓工作树干净，默认只执行一轮完整隔离门禁：
+正式封板要求主仓工作树干净、Windows x64 和固定 SDK，默认执行一轮隔离门禁：
 
 ```powershell
 dotnet run --project tools/MyAvaloniaManagement.Gate -- seal
 ```
 
-只有需要重新证明跨隔离环境重复性时才显式执行第二轮：
+`seal` 额外要求 API Unshipped 为零，执行 MyPlugTest 双次构建打包一致性检查、Host 主程序集覆盖率
+（行 84.39%、分支 70.58%）及真实窗口 `layout-v2.json` Smoke。需要复验隔离重复性时运行：
 
 ```powershell
 dotnet run --project tools/MyAvaloniaManagement.Gate -- seal --repeat
 ```
 
-`verify` 复用当前工作树和本机 NuGet 缓存，执行单次打包及 1 轮资源 Harness，不启动真实窗口。
-`seal` 固定 Windows x64、Release、locked restore，在隔离工作区执行覆盖率、六插件双包哈希、真实包组合、
-20 轮 Harness 和真实窗口 Smoke。WorkflowStudio 与 ClassicGame 可以有未提交修改，但其实际文件内容和
-SHA-256 会进入统一证据；这不会被表述为外部仓库的干净提交。
-
-所有机器证据写入 `artifacts/gate/<run-id>/`。历史 G0–G16 文档中的 PowerShell 命令仅记录当时执行事实，
-对应脚本已经退役，不是当前可调用接口。Gate 不上传包、不签名、不创建标签，也不执行外部发布。
+所有机器证据写入 `artifacts/gate/<run-id>/`，总报告采用 schema v2，仅记录本仓源码与 MyPlugTest 包。
+门禁不会构建或测试外部业务插件。详情见[测试说明](./docs/reference/myavalonia-management-tests.md)。
+历史 G 阶段文档与脚本命令仅记录当时事实；Gate 不执行上传、签名、标签或外部发布。
 
 ## 当前边界
 

@@ -20,6 +20,7 @@ internal sealed record GatePassResult
     public required GateStageResult[] Stages { get; init; }
     public required Dictionary<string, PackageEvidence> Packages { get; init; }
     public CoverageEvidence? HostCoverage { get; init; }
+    public string? Error { get; init; }
 }
 
 internal sealed record PackageEvidence(
@@ -34,7 +35,7 @@ internal sealed record CoverageEvidence(double Line, double Branch);
 
 internal sealed record GateSummary
 {
-    public int SchemaVersion { get; init; } = 1;
+    public int SchemaVersion { get; init; } = 2;
     public required string RunId { get; init; }
     public required string Profile { get; init; }
     public required string Scope { get; init; }
@@ -43,7 +44,6 @@ internal sealed record GateSummary
     public required DateTimeOffset FinishedAtUtc { get; init; }
     public required Dictionary<string, SourceEvidence> Sources { get; init; }
     public required HostEvidence Host { get; init; }
-    public required IntegrationEvidence Integration { get; init; }
     public required RepeatabilityEvidence Repeatability { get; init; }
     public required GatePassResult[] Passes { get; init; }
     public string? Error { get; init; }
@@ -57,11 +57,6 @@ internal sealed record SourceEvidence(
     string Sha256);
 
 internal sealed record HostEvidence(bool ReleaseEligible, bool Publishable);
-
-internal sealed record IntegrationEvidence(
-    bool WorkspaceSnapshotVerified,
-    bool ExternalInputsClean,
-    bool Publishable);
 
 internal sealed record RepeatabilityEvidence(bool Requested, bool Verified);
 

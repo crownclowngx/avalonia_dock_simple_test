@@ -11,8 +11,6 @@
     <!-- 测试资产由各自项目编译，不能再次并入主测试程序集。 -->
     <Compile Remove="TestAssets\PluginIsolation\**\*.cs" />
     <Compile Remove="TestAssets\ManagedOnly\**\*.cs" />
-    <!-- Workflow Action G0 候选源码只由隔离专项复制到临时 3.0/3.1 副本中编译。 -->
-    <Compile Remove="TestAssets\WorkflowActionG0\**\*.cs" />
     <Compile Remove="TestAssets\WorkflowActionG1\**\*.cs" />
   </ItemGroup>
 

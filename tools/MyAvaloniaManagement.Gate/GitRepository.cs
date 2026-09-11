@@ -24,47 +24,15 @@ internal sealed class GitRepository(ProcessRunner processes)
         var status = await GitTextAsync(root, ["status", "--porcelain", "--untracked-files=all"], cancellationToken);
         var head = await processes.RunAsync("git", ["rev-parse", "--verify", "--quiet", "HEAD"],
             root, null, null, cancellationToken, quiet: true);
-        if (head.ExitCode != 0 && id == "main")
+        if (head.ExitCode != 0)
         {
             throw new GateFailureException("主仓库必须具有可验证的 HEAD 提交。");
         }
-        // 新建的外部模板仓库可以尚无首次提交；仍用实际工作区摘要验收，不能伪造 revision 或 clean。
-        var revision = head.ExitCode == 0 ? head.Output.Trim() : "unversioned";
-        var tree = head.ExitCode == 0
-            ? await GitTextAsync(root, ["rev-parse", "HEAD^{tree}"], cancellationToken)
-            : "unversioned";
+        var revision = head.Output.Trim();
+        var tree = await GitTextAsync(root, ["rev-parse", "HEAD^{tree}"], cancellationToken);
         var files = await ListSourceFilesAsync(root, cancellationToken);
         return new(id, root, revision, tree, head.ExitCode == 0 && string.IsNullOrWhiteSpace(status), files.Length,
             ComputeFingerprint(root, files));
-    }
-
-    public async Task CopyWorkspaceAsync(
-        SourceSnapshot source,
-        string destination,
-        CancellationToken cancellationToken)
-    {
-        var files = await ListSourceFilesAsync(source.Root, cancellationToken);
-        var before = ComputeFingerprint(source.Root, files);
-        if (!string.Equals(before, source.Sha256, StringComparison.Ordinal))
-        {
-            throw new GateFailureException($"仓库 {source.Id} 在快照前发生变化。");
-        }
-
-        Directory.CreateDirectory(destination);
-        foreach (var relativePath in files)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var sourcePath = Path.Combine(source.Root, relativePath);
-            var destinationPath = Path.Combine(destination, relativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
-            File.Copy(sourcePath, destinationPath, overwrite: false);
-        }
-
-        var copied = ComputeFingerprint(destination, files);
-        if (!string.Equals(copied, source.Sha256, StringComparison.Ordinal))
-        {
-            throw new GateFailureException($"仓库 {source.Id} 的隔离副本指纹不一致。");
-        }
     }
 
     public Task CloneCommitAsync(SourceSnapshot source, string destination, CancellationToken cancellationToken) =>

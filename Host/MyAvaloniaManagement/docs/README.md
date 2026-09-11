@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 主项目文档
 
-> 2026-09-05：原 MySmallTools 已迁为 [VideoSecurityPlayer 独立插件](../../../../avalonia_management_plug/myavalonia-video-security-player/README.md)。主项目不再内置其源码，跨仓库 Gate 从外部构建和验收；稳定 ID 与用户数据保持兼容。
+> 2026-09-05：原 MySmallTools 已迁为 [VideoSecurityPlayer 独立插件](../../../../avalonia_management_plug/myavalonia-video-security-player/README.md)。主项目不再内置其源码；当前 Gate 仅验证本仓 Host 与 MyPlugTest，外部插件独立验收。
 
 > 2026-09-05：BiliDownloader 已迁入[独立插件仓库](../../../../avalonia_management_plug/myavalonia-bili-downloader/README.md)。主项目不再内置、构建或部署它；本文中的综合历史记录仍保留当时事实。
 
@@ -82,5 +82,6 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- seal
 dotnet run --project tools/MyAvaloniaManagement.Gate -- seal --repeat
 ```
 
-Gate 统一验证文档、关键类型、API 基线、Unit、Headless UI、Plugin、覆盖率、确定性包和外部真实包组合。
+Gate 仅验证本仓 Host 与 MyPlugTest：文档、关键类型、API 基线、Unit、Headless UI、Plugin、真实 ZIP 加载。
+`seal` 额外验证 Host 主程序集覆盖率、MyPlugTest 确定性包与 Windows Smoke；无需外部插件仓库。
 `seal` 默认一轮，只有 `--repeat` 才执行第二个隔离工作区；历史脚本入口均已退役。

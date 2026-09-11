@@ -54,6 +54,13 @@ internal static class GateChecks
 
                 var decoded = Uri.UnescapeDataString(target).Replace('/', Path.DirectorySeparatorChar);
                 var fullPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(document)!, decoded));
+                // 邻接插件仓库属于外部文档引用；内部链接仍必须存在。
+                var relative = Path.GetRelativePath(repositoryRoot, fullPath);
+                if (Path.IsPathRooted(relative) || relative == ".." ||
+                    relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+                {
+                    continue;
+                }
                 if (!File.Exists(fullPath) && !Directory.Exists(fullPath))
                 {
                     throw new GateFailureException($"文档链接不存在：{document} -> {target}。");

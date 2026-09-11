@@ -123,6 +123,11 @@ internal sealed class PackageBuilder(ProcessRunner processes)
             throw new GateFailureException($"插件 {plugin.Id} manifest 根字段或 schemaVersion 不合法。");
         }
 
+        if (root.GetProperty("pluginId").GetString() != plugin.PluginId)
+        {
+            throw new GateFailureException($"插件 {plugin.Id} manifest 身份不匹配，预期 {plugin.PluginId}。");
+        }
+
         var entryPoint = root.GetProperty("entryPoint");
         if (entryPoint.GetProperty("assembly").GetString() != $"{plugin.AssemblyName}.dll" ||
             string.IsNullOrWhiteSpace(entryPoint.GetProperty("type").GetString()))

@@ -13,14 +13,13 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class CurrentManagedPluginLoadingTests
 {
     [Fact]
-    public void G9最终测试Zip通过真实V3发现组合并进入Workspace目录()
+    [Trait("Category", "PackageAcceptance")]
+    public void MyPlugTest真实Zip通过Host发现组合并进入Workspace目录()
     {
-        var packageRoot = Environment.GetEnvironmentVariable("MYAVALONIA_G9_V3_PACKAGE_ROOT");
-        if (string.IsNullOrWhiteSpace(packageRoot))
-        {
-            // 普通单元回归没有构建测试 ZIP；G9 专项脚本必须设置该环境变量并单独执行本测试。
-            return;
-        }
+        var packageRoot = Environment.GetEnvironmentVariable("MYAVALONIA_MY_PLUG_TEST_PACKAGE_ROOT");
+        Assert.False(string.IsNullOrWhiteSpace(packageRoot),
+            "包验收必须由 Gate 在打包后提供 MYAVALONIA_MY_PLUG_TEST_PACKAGE_ROOT。");
+        Assert.True(Directory.Exists(packageRoot), $"包验收目录不存在：{packageRoot}");
 
         var snapshot = AssemblyLoaderHelper.Discover(Path.GetFullPath(packageRoot));
         Assert.Empty(snapshot.Diagnostics);
@@ -30,7 +29,7 @@ public sealed class CurrentManagedPluginLoadingTests
 
         var diagnosticsRoot = Path.Combine(
             Path.GetTempPath(),
-            $"my-plug-test-g9-package-{Guid.NewGuid():N}");
+            $"my-plug-test-package-{Guid.NewGuid():N}");
         Directory.CreateDirectory(diagnosticsRoot);
         using var diagnostics = HostDiagnosticSession.Start(diagnosticsRoot);
         var registryBuilder = new PluginRegistryBuilder();
@@ -84,28 +83,24 @@ public sealed class CurrentManagedPluginLoadingTests
     }
 
     [Theory]
-    [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "MyPlugTest", "myavalonia.plugin.my-plug-test", true)]
+    [InlineData("MyPlugTest/MyPlugTest", "MyPlugTest", "myavalonia.plugin.my-plug-test", true)]
     public void 真实业务插件构建目录只接受当前V3入口(
         string projectPath,
         string assemblyName,
-        string directoryName,
         string pluginId,
         bool expectedV3Entry)
     {
         var configuration = new DirectoryInfo(AppContext.BaseDirectory)
             .Parent?.Name
             ?? throw new InvalidOperationException("无法确定测试构建配置。");
-        var packageRoot = Environment.GetEnvironmentVariable("MYAVALONIA_G3_PACKAGE_ROOT");
-        var pluginDirectory = string.IsNullOrWhiteSpace(packageRoot)
-            ? Path.GetFullPath(Path.Combine(
+        var pluginDirectory = Path.GetFullPath(Path.Combine(
                 AppContext.BaseDirectory,
                 "..", "..", "..", "..", "..",
                 "Plugins",
                 projectPath.Replace('/', Path.DirectorySeparatorChar),
                 "bin",
                 configuration,
-                "net10.0"))
-            : Path.GetFullPath(Path.Combine(packageRoot, "Controls", directoryName));
+                "net10.0"));
         var pluginAssemblyPath = Path.Combine(
             pluginDirectory,
             assemblyName + ".dll");

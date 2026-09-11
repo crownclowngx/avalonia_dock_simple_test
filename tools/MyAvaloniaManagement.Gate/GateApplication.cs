@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.IO.Compression;
 using System.Text.Json;
 
 namespace MyAvaloniaManagement.Gate;
@@ -9,11 +8,10 @@ internal static class GateApplication
     private const string Usage = """
         MyAvaloniaManagement Gate
 
-          dotnet run --project tools/MyAvaloniaManagement.Gate -- verify [--scope host|workflow|workbench|all]
+          dotnet run --project tools/MyAvaloniaManagement.Gate -- verify [--scope host|all]
           dotnet run --project tools/MyAvaloniaManagement.Gate -- seal [--repeat]
 
-        可选外部仓库覆盖：
-          --workflow-studio <path>  --classic-game <path>
+        host 与 all 均验证本仓 Host + MyPlugTest。seal 额外执行覆盖率与 Windows Smoke。
         """;
 
     public static async Task<int> RunAsync(string[] arguments, CancellationToken cancellationToken)
@@ -95,7 +93,7 @@ internal sealed class GateRunner
     public async Task RunAsync(GateOptions options, CancellationToken cancellationToken)
     {
         var started = DateTimeOffset.UtcNow;
-        var sources = await InspectSourcesAsync(options, cancellationToken);
+        var sources = await InspectSourcesAsync(cancellationToken);
         if (options.Profile == GateProfile.Seal && !sources["main"].Clean)
         {
             throw new GateFailureException("正式 seal 要求主仓工作树干净；当前修改请先审阅并提交。使用 verify 验证脏工作树。");
@@ -113,7 +111,12 @@ internal sealed class GateRunner
             var passCount = options.Repeat ? 2 : 1;
             for (var pass = 1; pass <= passCount; pass++)
             {
-                passResults.Add(await RunPassAsync(options, pass, runRoot, sources, cancellationToken));
+                var result = await RunPassAsync(options, pass, runRoot, sources, cancellationToken);
+                passResults.Add(result);
+                if (!result.Passed)
+                {
+                    throw new GateFailureException(result.Error ?? $"第 {pass} 轮 Gate 失败。");
+                }
             }
 
             if (options.Repeat)
@@ -126,7 +129,6 @@ internal sealed class GateRunner
             failure = exception;
         }
 
-        var externalSources = sources.Values.Where(source => source.Id != "main").ToArray();
         var passed = failure is null && passResults.Count == (options.Repeat ? 2 : 1) &&
             passResults.All(pass => pass.Passed);
         var isSeal = options.Profile == GateProfile.Seal;
@@ -144,8 +146,6 @@ internal sealed class GateRunner
                     entry.Value.FileCount, entry.Value.Sha256),
                 StringComparer.Ordinal),
             Host = new(isSeal && passed, isSeal && passed),
-            Integration = new(passed && externalSources.Length > 0,
-                externalSources.All(source => source.Clean), false),
             Repeatability = new(options.Repeat, options.Repeat && passed),
             Passes = passResults.ToArray(),
             Error = failure?.Message,
@@ -162,27 +162,11 @@ internal sealed class GateRunner
         output.WriteLine($"Gate {summary.Profile} 通过：{passResults.Count} 轮，scope={summary.Scope}。");
     }
 
-    private async Task<Dictionary<string, SourceSnapshot>> InspectSourcesAsync(
-        GateOptions options,
-        CancellationToken cancellationToken)
-    {
-        var result = new Dictionary<string, SourceSnapshot>(StringComparer.Ordinal)
+    private async Task<Dictionary<string, SourceSnapshot>> InspectSourcesAsync(CancellationToken cancellationToken) =>
+        new(StringComparer.Ordinal)
         {
             ["main"] = await git.InspectAsync("main", repositoryRoot, cancellationToken),
         };
-        foreach (var repository in configuration.Repositories.Where(item => options.Includes(item.Scope)))
-        {
-            var overridePath = repository.Id switch
-            {
-                "workflow-studio" => options.WorkflowStudioRoot,
-                "classic-game" => options.ClassicGameRoot,
-                _ => null,
-            };
-            var root = Path.GetFullPath(overridePath ?? Path.Combine(repositoryRoot, repository.DefaultPath));
-            result[repository.Id] = await git.InspectAsync(repository.Id, root, cancellationToken);
-        }
-        return result;
-    }
 
     private async Task AssertSdkAsync(GateOptions options, CancellationToken cancellationToken)
     {
@@ -215,6 +199,7 @@ internal sealed class GateRunner
         var stages = new List<GateStageResult>();
         var packageEvidence = new Dictionary<string, PackageEvidence>(StringComparer.Ordinal);
         CoverageEvidence? hostCoverage = null;
+        var hostCoverageFiles = new List<string>();
         OwnedDirectory? scratch = null;
         try
         {
@@ -231,51 +216,70 @@ internal sealed class GateRunner
 
             var runtimeRoot = scratch?.Path ?? Path.Combine(evidenceRoot, "runtime");
             var environment = CreateEnvironment(runtimeRoot, options.Profile == GateProfile.Seal);
-            var graph = new GateExecutionGraph()
-                .Add("restore", async () =>
+            var graph = GateExecutionGraph.ForProfile(options.Profile, async id =>
             {
-                await processes.RunCheckedAsync("dotnet", ["tool", "restore"], roots["main"], environment,
-                    Path.Combine(evidenceRoot, "logs", "tool-restore.log"), cancellationToken);
-                await RestoreRepositoriesAsync(options, roots, environment, evidenceRoot, cancellationToken);
-            })
-                .Add("build", () =>
-                    BuildRepositoriesAsync(options, roots, environment, evidenceRoot, cancellationToken))
-                .Add("tests", async () =>
-            {
-                hostCoverage = await RunTestsAsync(
-                    options, roots, environment, evidenceRoot, cancellationToken);
-            })
-                .Add("contracts", () =>
-            {
-                RunContractChecks(options, roots);
-                return Task.CompletedTask;
-            })
-                .Add("packages", async () =>
-            {
-                foreach (var plugin in configuration.Plugins.Where(item => options.Includes(item.Scope)))
+                switch (id)
                 {
-                    packageEvidence[plugin.Id] = await packages.BuildAsync(
-                        plugin, roots[plugin.Repository], Path.Combine(evidenceRoot, "packages"),
-                        options.Profile == GateProfile.Seal, environment, cancellationToken);
+                    case "restore":
+                        await processes.RunCheckedAsync("dotnet", ["tool", "restore"], roots["main"], environment,
+                            Path.Combine(evidenceRoot, "logs", "tool-restore.log"), cancellationToken);
+                        await processes.RunCheckedAsync("dotnet",
+                            ["restore", configuration.MainSolution, "--locked-mode", "--nologo"], roots["main"], environment,
+                            Path.Combine(evidenceRoot, "logs", "restore-main.log"), cancellationToken);
+                        break;
+                    case "build":
+                        await processes.RunCheckedAsync("dotnet",
+                            ["build", configuration.MainSolution, "-c", "Release", "--no-restore", "--nologo", "-warnaserror", "-m:1"],
+                            roots["main"], environment, Path.Combine(evidenceRoot, "logs", "build-main.log"), cancellationToken);
+                        break;
+                    case "tests":
+                        foreach (var suite in configuration.TestSuites)
+                        {
+                            await RunTestSuiteAsync(options, roots["main"], suite.Id, suite.Project,
+                                "Category!=PackageAcceptance", environment, evidenceRoot, hostCoverageFiles,
+                                suite.CoverageGroup == "host", requireSingle: false, cancellationToken);
+                        }
+                        break;
+                    case "contracts":
+                        RunContractChecks(options, roots);
+                        break;
+                    case "packages":
+                        foreach (var plugin in configuration.Plugins)
+                        {
+                            packageEvidence[plugin.Id] = await packages.BuildAsync(
+                                plugin, roots["main"], Path.Combine(evidenceRoot, "packages"),
+                                options.Profile == GateProfile.Seal, environment, cancellationToken);
+                        }
+                        break;
+                    case "package-acceptance":
+                        var packageRoot = PackageBuilder.Extract(packageEvidence["my-plug-test"],
+                            Path.Combine(evidenceRoot, "package-acceptance", "my-plug-test"));
+                        var packageEnvironment = new Dictionary<string, string?>(environment, StringComparer.Ordinal)
+                        {
+                            ["MYAVALONIA_MY_PLUG_TEST_PACKAGE_ROOT"] = Path.Combine(packageRoot, "Controls"),
+                        };
+                        await RunTestSuiteAsync(options, roots["main"], "my-plug-test-package",
+                            configuration.TestSuites.Single(suite => suite.Id == "host-plugin").Project,
+                            "Category=PackageAcceptance", packageEnvironment, evidenceRoot, hostCoverageFiles,
+                            collectHostCoverage: true, requireSingle: true, cancellationToken);
+                        break;
+                    case "coverage":
+                        hostCoverage = await CheckHostCoverageAsync(roots["main"], environment, evidenceRoot,
+                            hostCoverageFiles, cancellationToken);
+                        if (hostCoverage.Line < configuration.HostCoverage.MinimumLine ||
+                            hostCoverage.Branch < configuration.HostCoverage.MinimumBranch)
+                        {
+                            throw new GateFailureException($"Host 覆盖率 {hostCoverage.Line}%/{hostCoverage.Branch}% 低于阈值。");
+                        }
+                        break;
+                    case "windows-smoke":
+                        await GateChecks.RunWindowsSmokeAsync(processes, roots["main"], configuration.WindowsSmokeProject,
+                            Path.Combine(evidenceRoot, "windows-smoke"), environment, cancellationToken);
+                        break;
+                    default:
+                        throw new GateFailureException($"未知 Gate 阶段：{id}。");
                 }
             });
-            if (options.Scope == GateScope.All || options.Scope is GateScope.Workflow or GateScope.Workbench || roots.ContainsKey("datang"))
-            {
-                graph.Add("cross-repository", () =>
-                    RunCrossRepositoryTestsAsync(options, roots, packageEvidence, environment, evidenceRoot,
-                        cancellationToken));
-            }
-            if (options.Scope == GateScope.All || options.Scope == GateScope.Workflow)
-            {
-                graph.Add("resource-harness", () =>
-                    RunHarnessAsync(options, roots[configuration.Harness.Repository], roots["main"], environment, evidenceRoot, cancellationToken));
-            }
-            if (options.Profile == GateProfile.Seal)
-            {
-                graph.Add("windows-smoke", () =>
-                    GateChecks.RunWindowsSmokeAsync(processes, roots["main"], configuration.WindowsSmokeProject,
-                        Path.Combine(evidenceRoot, "windows-smoke"), environment, cancellationToken));
-            }
 
             await graph.ExecuteAsync((id, action) => StageAsync(id, stages, evidenceRoot, action));
 
@@ -298,6 +302,7 @@ internal sealed class GateRunner
             {
                 Pass = pass,
                 Passed = false,
+                Error = exception.Message,
                 EvidenceRoot = evidenceRoot,
                 Stages = stages.ToArray(),
                 Packages = packageEvidence,
@@ -308,7 +313,7 @@ internal sealed class GateRunner
             {
                 output.WriteLine($"失败隔离工作区已保留：{scratch.Path}");
             }
-            throw exception is GateFailureException ? exception : new GateFailureException(exception.Message);
+            return result;
         }
     }
 
@@ -317,187 +322,69 @@ internal sealed class GateRunner
         IReadOnlyDictionary<string, SourceSnapshot> sources,
         CancellationToken cancellationToken)
     {
-        var roots = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var source in sources.Values)
-        {
-            var destination = Path.Combine(scratchRoot, "source", source.Id);
-            if (source.Id == "main")
-            {
-                await git.CloneCommitAsync(source, destination, cancellationToken);
-            }
-            else
-            {
-                await git.CopyWorkspaceAsync(source, destination, cancellationToken);
-            }
-            roots[source.Id] = destination;
-        }
-        return roots;
+        var destination = Path.Combine(scratchRoot, "source", "main");
+        await git.CloneCommitAsync(sources["main"], destination, cancellationToken);
+        return new Dictionary<string, string>(StringComparer.Ordinal) { ["main"] = destination };
     }
 
-    private async Task RestoreRepositoriesAsync(
+    private async Task RunTestSuiteAsync(
         GateOptions options,
-        IReadOnlyDictionary<string, string> roots,
+        string root,
+        string id,
+        string project,
+        string filter,
         IReadOnlyDictionary<string, string?> environment,
         string evidenceRoot,
+        ICollection<string> hostCoverageFiles,
+        bool collectHostCoverage,
+        bool requireSingle,
         CancellationToken cancellationToken)
     {
-        await DotnetForRepository("main", configuration.MainSolution);
-        foreach (var repository in configuration.Repositories.Where(item => roots.ContainsKey(item.Id)))
+        var resultRoot = Path.Combine(evidenceRoot, "tests", id);
+        var arguments = new List<string>
         {
-            await DotnetForRepository(repository.Id, repository.Solution);
+            "test", project, "-c", "Release", "--no-build", "--no-restore", "-m:1",
+            "--filter", filter, "--results-directory", resultRoot, "--logger", $"trx;LogFileName={id}.trx",
+        };
+        if (options.Profile == GateProfile.Seal && collectHostCoverage)
+        {
+            arguments.Add("--collect:XPlat Code Coverage");
+            arguments.AddRange(["--", "DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include=[MyAvaloniaManagement]*"]);
         }
-
-        async Task DotnetForRepository(string id, string solution)
+        await processes.RunCheckedAsync("dotnet", arguments, root, environment,
+            Path.Combine(resultRoot, "test.log"), cancellationToken);
+        AssertTests(Path.Combine(resultRoot, $"{id}.trx"), id, requireSingle);
+        if (options.Profile == GateProfile.Seal && collectHostCoverage)
         {
-            await processes.RunCheckedAsync("dotnet", ["restore", solution, "--locked-mode", "--nologo"],
-                roots[id], environment, Path.Combine(evidenceRoot, "logs", $"restore-{id}.log"), cancellationToken);
-        }
-    }
-
-    private async Task BuildRepositoriesAsync(
-        GateOptions options,
-        IReadOnlyDictionary<string, string> roots,
-        IReadOnlyDictionary<string, string?> environment,
-        string evidenceRoot,
-        CancellationToken cancellationToken)
-    {
-        await Build("main", configuration.MainSolution);
-        foreach (var repository in configuration.Repositories.Where(item => roots.ContainsKey(item.Id)))
-        {
-            await Build(repository.Id, repository.Solution);
-        }
-
-        async Task Build(string id, string solution)
-        {
-            await processes.RunCheckedAsync(
-                "dotnet", ["build", solution, "-c", "Release", "--no-restore", "--nologo", "-warnaserror", "-m:1"],
-                roots[id], environment, Path.Combine(evidenceRoot, "logs", $"build-{id}.log"), cancellationToken);
+            hostCoverageFiles.Add(TestEvidenceReader.FindCoverageReport(resultRoot));
         }
     }
 
-    private async Task<CoverageEvidence?> RunTestsAsync(
-        GateOptions options,
-        IReadOnlyDictionary<string, string> roots,
+    private async Task<CoverageEvidence> CheckHostCoverageAsync(
+        string root,
         IReadOnlyDictionary<string, string?> environment,
         string evidenceRoot,
+        IReadOnlyCollection<string> hostCoverageFiles,
         CancellationToken cancellationToken)
     {
-        var hostCoverageFiles = new List<string>();
-        foreach (var suite in configuration.TestSuites.Where(item => options.Includes(item.Scope)))
+        if (hostCoverageFiles.Count != 4)
         {
-            var resultRoot = Path.Combine(evidenceRoot, "tests", suite.Id);
-            var arguments = new List<string>
-            {
-                "test", suite.Project, "-c", "Release", "--no-build", "--no-restore", "-m:1",
-                "--results-directory", resultRoot, "--logger", $"trx;LogFileName={suite.Id}.trx",
-            };
-            if (options.Profile == GateProfile.Seal)
-            {
-                arguments.Add("--collect:XPlat Code Coverage");
-            }
-            await processes.RunCheckedAsync("dotnet", arguments, roots["main"], environment,
-                Path.Combine(resultRoot, "test.log"), cancellationToken);
-            AssertTests(Path.Combine(resultRoot, $"{suite.Id}.trx"), suite.Id);
-            if (options.Profile == GateProfile.Seal && suite.CoverageGroup == "host")
-            {
-                hostCoverageFiles.AddRange(Directory.GetFiles(resultRoot, "coverage.cobertura.xml", SearchOption.AllDirectories));
-            }
-        }
-
-        foreach (var repository in configuration.Repositories.Where(item => roots.ContainsKey(item.Id)))
-        {
-            var resultRoot = Path.Combine(evidenceRoot, "tests", repository.Id);
-            var arguments = new List<string>
-            {
-                "test", repository.TestProject, "-c", "Release", "--no-build", "--no-restore", "-m:1",
-                "--results-directory", resultRoot, "--logger", $"trx;LogFileName={repository.Id}.trx",
-            };
-            if (options.Profile == GateProfile.Seal)
-            {
-                arguments.Add("--collect:XPlat Code Coverage");
-            }
-            await processes.RunCheckedAsync("dotnet", arguments, roots[repository.Id], environment,
-                Path.Combine(resultRoot, "test.log"), cancellationToken);
-            AssertTests(Path.Combine(resultRoot, $"{repository.Id}.trx"), repository.Id);
-            if (options.Profile == GateProfile.Seal)
-            {
-                string coveragePath;
-                if (!string.IsNullOrWhiteSpace(repository.CoverageScript))
-                {
-                    var aggregateRoot = Path.Combine(resultRoot, "aggregate");
-                    await processes.RunCheckedAsync(
-                        "pwsh", ["-NoProfile", "-File", repository.CoverageScript,
-                            "-HostRepositoryRoot", roots["main"], "-OutputRoot", aggregateRoot],
-                        roots[repository.Id], environment, Path.Combine(resultRoot, "aggregate.log"), cancellationToken);
-                    coveragePath = Path.Combine(aggregateRoot, "merged", "Cobertura.xml");
-                }
-                else
-                {
-                    coveragePath = Directory.GetFiles(resultRoot, "coverage.cobertura.xml", SearchOption.AllDirectories).Single();
-                }
-                var coverage = TestEvidenceReader.ReadCoverage(coveragePath);
-                if (coverage.Line < repository.MinimumLineCoverage || coverage.Branch < repository.MinimumBranchCoverage)
-                {
-                    throw new GateFailureException($"{repository.Id} 覆盖率 {coverage.Line}%/{coverage.Branch}% 低于阈值。");
-                }
-            }
-            if (repository.SelfTestArguments.Length > 0)
-            {
-                var selfTestArguments = new List<string>
-                {
-                    "run", "--project", repository.StandaloneProject, "-c", "Release", "--no-build", "--no-restore",
-                };
-                selfTestArguments.Add("--");
-                selfTestArguments.AddRange(repository.SelfTestArguments);
-                var selfTest = await processes.RunCheckedAsync(
-                    "dotnet", selfTestArguments,
-                    roots[repository.Id], environment, Path.Combine(resultRoot, "self-test.log"), cancellationToken);
-                if (!selfTest.Output.Contains(repository.SelfTestSuccessText, StringComparison.Ordinal))
-                {
-                    throw new GateFailureException($"{repository.Id} Standalone 自检没有输出预期结果。");
-                }
-            }
-        }
-
-        if (options.Profile != GateProfile.Seal || hostCoverageFiles.Count == 0)
-        {
-            return null;
-        }
-        // 大唐专属 Host 验收随插件迁出；seal 仍合并这些测试对 Host 的覆盖，保持原门槛。
-        if (roots.TryGetValue("datang", out var daTangRoot))
-        {
-            foreach (var suite in new[] { "HostTests", "HostUiTests" })
-            {
-                var resultRoot = Path.Combine(evidenceRoot, "tests", "datang-coverage-" + suite);
-                await processes.RunCheckedAsync("dotnet",
-                    ["test", $"tests/DaTangWorkPlugin.{suite}/DaTangWorkPlugin.{suite}.csproj",
-                     "-c", "Release", $"-p:HostRepositoryRoot={roots["main"]}", "-p:SkipPluginDeploy=true",
-                     "--filter", "FullyQualifiedName!~DaTangPackageTests", "--collect:XPlat Code Coverage",
-                     "--results-directory", resultRoot, "--logger", "trx;LogFileName=coverage.trx"],
-                    daTangRoot, environment, Path.Combine(resultRoot, "test.log"), cancellationToken);
-                AssertTests(Path.Combine(resultRoot, "coverage.trx"), "datang-" + suite);
-                hostCoverageFiles.AddRange(Directory.GetFiles(resultRoot, "coverage.cobertura.xml", SearchOption.AllDirectories));
-            }
+            throw new GateFailureException("Host 覆盖率必须包含 Unit、Plugin、UI 和 MyPlugTest 包验收四份报告。");
         }
         var mergedRoot = Path.Combine(evidenceRoot, "coverage", "host");
         await processes.RunCheckedAsync(
             "dotnet", ["reportgenerator", $"-reports:{string.Join(';', hostCoverageFiles)}",
-                $"-targetdir:{mergedRoot}", "-reporttypes:Cobertura"],
-            roots["main"], environment, Path.Combine(mergedRoot, "reportgenerator.log"), cancellationToken);
-        var hostCoverage = TestEvidenceReader.ReadCoverage(Path.Combine(mergedRoot, "Cobertura.xml"));
-        if (hostCoverage.Line < configuration.HostCoverage.MinimumLine ||
-            hostCoverage.Branch < configuration.HostCoverage.MinimumBranch)
-        {
-            throw new GateFailureException($"Host 覆盖率 {hostCoverage.Line}%/{hostCoverage.Branch}% 低于阈值。");
-        }
-        return hostCoverage;
+                $"-targetdir:{mergedRoot}", "-reporttypes:Cobertura", "-assemblyfilters:+MyAvaloniaManagement"],
+            root, environment, Path.Combine(mergedRoot, "reportgenerator.log"), cancellationToken);
+        var coveragePath = Path.Combine(mergedRoot, "Cobertura.xml");
+        return TestEvidenceReader.ReadHostCoverage(coveragePath);
     }
 
     private void RunContractChecks(GateOptions options, IReadOnlyDictionary<string, string> roots)
     {
-        foreach (var rule in configuration.ArchitectureRules.Where(item => options.Includes(item.Scope)))
+        foreach (var rule in configuration.ArchitectureRules)
         {
-            GateChecks.AssertArchitectureRule(rule, roots[rule.Repository]);
+            GateChecks.AssertArchitectureRule(rule, roots["main"]);
         }
         GateChecks.AssertCurrentDocumentation(roots["main"]);
         if (options.Profile != GateProfile.Seal)
@@ -520,114 +407,7 @@ internal sealed class GateRunner
         }
     }
 
-    private async Task RunCrossRepositoryTestsAsync(
-        GateOptions options,
-        IReadOnlyDictionary<string, string> roots,
-        IReadOnlyDictionary<string, PackageEvidence> packageEvidence,
-        IReadOnlyDictionary<string, string?> environment,
-        string evidenceRoot,
-        CancellationToken cancellationToken)
-    {
-        var hostRoot = roots["main"];
-        if (packageEvidence.TryGetValue("datang", out var daTang))
-        {
-            var packageRoot = Path.Combine(evidenceRoot, "integration", "datang");
-            PackageBuilder.Extract(daTang, packageRoot);
-            var daTangEnvironment = new Dictionary<string, string?>(environment, StringComparer.Ordinal)
-            {
-                ["MYAVALONIA_G10_V3_PACKAGE_ROOT"] = Path.Combine(packageRoot, "Controls"),
-            };
-            await RunFiltered("datang-host", "tests/DaTangWorkPlugin.HostTests/DaTangWorkPlugin.HostTests.csproj",
-                "FullyQualifiedName~MyAvaloniaManagement.PluginTests", daTangEnvironment, "datang", requireSingle: false);
-            await RunFiltered("datang-host-ui", "tests/DaTangWorkPlugin.HostUiTests/DaTangWorkPlugin.HostUiTests.csproj",
-                "FullyQualifiedName~MyAvaloniaManagement.UiTests", daTangEnvironment, "datang", requireSingle: false);
-            await RunFiltered("datang-standalone-ui", "tests/DaTangWorkPlugin.UiTests/DaTangWorkPlugin.UiTests.csproj",
-                "FullyQualifiedName~DaTangWorkPlugin.UiTests", daTangEnvironment, "datang", requireSingle: false);
-        }
-        if (packageEvidence.TryGetValue("workflow-studio", out var workflow) &&
-            packageEvidence.TryGetValue("classic-game", out var classic))
-        {
-            var commandRoot = Path.Combine(evidenceRoot, "integration", "workbench");
-            PackageBuilder.Extract(workflow, commandRoot);
-            PackageBuilder.Extract(classic, commandRoot);
-            var commandEnvironment = new Dictionary<string, string?>(environment, StringComparer.Ordinal)
-            {
-                ["MYAVALONIA_WORKBENCH_COMMAND_G10_EXTERNAL_PLUGIN_ROOT"] = Path.Combine(commandRoot, "Controls"),
-            };
-            await RunFiltered("workbench-plugin", "Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj",
-                "FullyQualifiedName~WorkbenchCommandG10CrossRepositoryPackageTests", commandEnvironment);
-            await RunFiltered("workbench-ui", "Host/MyAvaloniaManagement.UiTests/MyAvaloniaManagement.UiTests.csproj",
-                "FullyQualifiedName~WorkbenchCommandG10CrossRepositoryUiTests", commandEnvironment);
-        }
-
-        if (packageEvidence.TryGetValue("workflow-studio", out workflow) &&
-            packageEvidence.TryGetValue("video-security-player", out var videoPlayer))
-        {
-            var workflowRoot = Path.Combine(evidenceRoot, "integration", "workflow");
-            PackageBuilder.Extract(workflow, workflowRoot);
-            PackageBuilder.Extract(videoPlayer, workflowRoot);
-            var workflowEnvironment = new Dictionary<string, string?>(environment, StringComparer.Ordinal)
-            {
-                ["MYAVALONIA_WORKFLOW_G4_PLUGIN_ROOT"] = Path.Combine(workflowRoot, "Controls"),
-                ["MYAVALONIA_WORKFLOW_G4_MEDIA_PATH"] = Path.Combine(roots["video-security-player"],
-                    "tests", "VideoSecurityPlayer.Tests", "TestAssets", "RealMedia", "synthetic-av-short.mp4"),
-            };
-            await RunFiltered("workflow-action", "tests/VideoSecurityPlayer.HostTests/VideoSecurityPlayer.HostTests.csproj",
-                "FullyQualifiedName~WorkflowActionG4IntegrationTests", workflowEnvironment, "video-security-player");
-        }
-
-        async Task RunFiltered(string id, string project, string filter,
-            IReadOnlyDictionary<string, string?> processEnvironment, string repository = "main", bool requireSingle = true)
-        {
-            var resultRoot = Path.Combine(evidenceRoot, "tests", id);
-            var arguments = new List<string>
-            {
-                "test", project, "-c", "Release", "--no-build", "--no-restore", "-m:1",
-                "--filter", filter, "--results-directory", resultRoot,
-                "--logger", $"trx;LogFileName={id}.trx",
-            };
-            if (repository != "main")
-            {
-                arguments.Remove("--no-build");
-                arguments.Remove("--no-restore");
-                arguments.Add($"-p:HostRepositoryRoot={hostRoot}");
-                arguments.Add("-p:SkipPluginDeploy=true");
-            }
-            await processes.RunCheckedAsync(
-                "dotnet", arguments,
-                roots[repository], processEnvironment, Path.Combine(resultRoot, "test.log"), cancellationToken);
-            AssertTests(Path.Combine(resultRoot, $"{id}.trx"), id, requireSingle: requireSingle);
-        }
-    }
-
-    private async Task RunHarnessAsync(
-        GateOptions options,
-        string root,
-        string hostRoot,
-        IReadOnlyDictionary<string, string?> environment,
-        string evidenceRoot,
-        CancellationToken cancellationToken)
-    {
-        var report = Path.Combine(evidenceRoot, "harness", "report.json");
-        var cycles = options.Profile == GateProfile.Seal ? 20 : 1;
-        var arguments = new List<string>
-        {
-            "run", "--project", configuration.Harness.Project, "-c", "Release",
-            $"-p:HostRepositoryRoot={hostRoot}", "-p:SkipPluginDeploy=true",
-        };
-        arguments.AddRange(["--", "--suite", "g3", "--cycles", cycles.ToString(), "--report", report]);
-        await processes.RunCheckedAsync(
-            "dotnet", arguments,
-            root, environment, Path.Combine(evidenceRoot, "harness", "harness.log"), cancellationToken);
-        using var result = JsonDocument.Parse(File.ReadAllText(report));
-        if (!result.RootElement.GetProperty("Success").GetBoolean() ||
-            result.RootElement.GetProperty("Cycles").GetInt32() != cycles)
-        {
-            throw new GateFailureException("VideoSecurityPlayer 资源 Harness 报告未通过。");
-        }
-    }
-
-    private static void AssertTests(string trxPath, string id, bool requireSingle = false)
+    internal static void AssertTests(string trxPath, string id, bool requireSingle = false)
     {
         var counts = TestEvidenceReader.ReadTrx(trxPath);
         if (counts.Failed != 0 || counts.Skipped != 0 || counts.Passed == 0 ||
@@ -687,6 +467,7 @@ internal sealed class GateRunner
             ["MSBUILDDISABLENODEREUSE"] = "1",
             ["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0",
             ["MYAVALONIA_DATA_DIRECTORY"] = Path.Combine(runtimeRoot, "host-data"),
+            ["MYAVALONIA_MY_PLUG_TEST_PACKAGE_ROOT"] = null,
         };
         if (isolated)
         {

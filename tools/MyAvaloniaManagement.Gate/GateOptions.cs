@@ -10,16 +10,12 @@ internal enum GateScope
 {
     All,
     Host,
-    Workflow,
-    Workbench,
 }
 
 internal sealed record GateOptions(
     GateProfile Profile,
     GateScope Scope,
     bool Repeat,
-    string? WorkflowStudioRoot,
-    string? ClassicGameRoot,
     bool ShowHelp)
 {
     public static GateOptions Parse(IReadOnlyList<string> arguments)
@@ -27,7 +23,7 @@ internal sealed record GateOptions(
         if (arguments.Count == 0 || arguments.Contains("--help", StringComparer.Ordinal) ||
             arguments.Contains("-h", StringComparer.Ordinal))
         {
-            return new(GateProfile.Verify, GateScope.All, false, null, null, true);
+            return new(GateProfile.Verify, GateScope.All, false, true);
         }
 
         var profile = arguments[0] switch
@@ -39,8 +35,6 @@ internal sealed record GateOptions(
 
         var scope = GateScope.All;
         var repeat = false;
-        string? workflowStudio = null;
-        string? classicGame = null;
         for (var index = 1; index < arguments.Count; index++)
         {
             switch (arguments[index])
@@ -52,11 +46,8 @@ internal sealed record GateOptions(
                     scope = ParseScope(RequireValue(arguments, ref index, "--scope"));
                     break;
                 case "--workflow-studio":
-                    workflowStudio = RequireValue(arguments, ref index, "--workflow-studio");
-                    break;
                 case "--classic-game":
-                    classicGame = RequireValue(arguments, ref index, "--classic-game");
-                    break;
+                    throw new GateUsageException($"{arguments[index]} 已退役；Gate 只验证本仓 Host 与 MyPlugTest。");
                 default:
                     throw new GateUsageException($"未知参数：{arguments[index]}。");
             }
@@ -72,21 +63,15 @@ internal sealed record GateOptions(
             throw new GateUsageException("seal 始终执行完整门禁；--scope 只用于 verify 排错。");
         }
 
-        return new(profile, scope, repeat, workflowStudio, classicGame, false);
+        return new(profile, scope, repeat, false);
     }
-
-    public bool Includes(string scope) => Scope == GateScope.All ||
-        string.Equals(Scope.ToString(), scope, StringComparison.OrdinalIgnoreCase) ||
-        (Scope == GateScope.Workbench &&
-         (string.Equals(scope, "host", StringComparison.OrdinalIgnoreCase) ||
-          string.Equals(scope, "workflow", StringComparison.OrdinalIgnoreCase)));
 
     private static GateScope ParseScope(string value) => value switch
     {
         "all" => GateScope.All,
         "host" => GateScope.Host,
-        "workflow" => GateScope.Workflow,
-        "workbench" => GateScope.Workbench,
+        "workflow" or "workbench" => throw new GateUsageException(
+            $"scope {value} 已退役；host 与 all 均执行完整本仓验证。"),
         _ => throw new GateUsageException($"未知 scope：{value}。"),
     };
 
