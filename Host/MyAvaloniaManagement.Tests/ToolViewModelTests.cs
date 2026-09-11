@@ -204,12 +204,12 @@ public sealed class ToolViewModelTests
         var state = context.Provider.GetRequiredService<DocumentOperationState>();
 
         Assert.Throws<ArgumentNullException>(() =>
-            new PlugGroupMenuViewModel(null!, documents, state));
+            new PlugGroupMenuViewModel(null!, documents, state, new(Path.Combine(context.TempDirectory, "navigation.json"))));
         Assert.Throws<ArgumentNullException>(() =>
-            new PlugGroupMenuViewModel(query, null!, state));
+            new PlugGroupMenuViewModel(query, null!, state, new(Path.Combine(context.TempDirectory, "navigation.json"))));
         Assert.Throws<ArgumentNullException>(() =>
-            new PlugGroupMenuViewModel(query, documents, null!));
-        var viewModel = new PlugGroupMenuViewModel(query, documents, state);
+            new PlugGroupMenuViewModel(query, documents, null!, new(Path.Combine(context.TempDirectory, "navigation.json"))));
+        using var viewModel = new PlugGroupMenuViewModel(query, documents, state, new(Path.Combine(context.TempDirectory, "navigation.json")));
         Assert.Throws<ArgumentNullException>(() => viewModel.ToggleCategoryExpand(null!));
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
             viewModel.CreateDocumentEntryAsync(null!));

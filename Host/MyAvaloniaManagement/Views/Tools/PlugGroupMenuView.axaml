@@ -5,6 +5,7 @@
              xmlns:vm="using:MyAvaloniaManagement.ViewModels.Tools"
              xmlns:models="using:MyAvaloniaManagement.Models.Tools"
              xmlns:documentCreation="using:MyAvaloniaManagement.Business.Workspace"
+             xmlns:icons="using:MyAvaloniaManagement.Business.Presentation.Icons"
              mc:Ignorable="d"
              d:DesignWidth="260"
              d:DesignHeight="450"
@@ -12,7 +13,25 @@
              x:DataType="vm:PlugGroupMenuViewModel"
              x:Name="PlugGroupMenuControl"
              Classes="host-tool-surface">
-    <ScrollViewer x:Name="PluginMenuScrollViewer"
+    <UserControl.Resources>
+        <icons:HostIconGeometryConverter x:Key="NavigationIconConverter" />
+    </UserControl.Resources>
+    <Grid RowDefinitions="Auto,*">
+        <Border Classes="host-tool-toolbar">
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Text="显示方式" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <ComboBox Grid.Column="1" x:Name="PluginMenuModeSelector"
+                          ItemsSource="{Binding Modes}" SelectedItem="{Binding SelectedMode, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch" MinWidth="0">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PluginMenuModeOption">
+                            <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </Grid>
+        </Border>
+    <ScrollViewer Grid.Row="1" IsVisible="{Binding IsLegacy}" x:Name="PluginMenuScrollViewer"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
         <ItemsControl ItemsSource="{Binding CategoryNodes}">
@@ -68,4 +87,31 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
     </ScrollViewer>
+        <TreeView Grid.Row="1" x:Name="PluginNavigationTree" IsVisible="{Binding IsTree}"
+                  ItemsSource="{Binding TreeNodes}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <TreeView.Styles>
+                <Style Selector="TreeViewItem" x:DataType="models:NavigationTreeNode">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                </Style>
+            </TreeView.Styles>
+            <TreeView.ItemTemplate>
+                <TreeDataTemplate DataType="models:NavigationTreeNode" ItemsSource="{Binding Children}">
+                    <Button Classes="host-tool-row" ToolTip.Tip="{Binding ToolTip}"
+                            Command="{Binding DataContext.ActivateTreeNodeCommand, ElementName=PlugGroupMenuControl}"
+                            CommandParameter="{Binding}">
+                        <Grid ColumnDefinitions="16,*,Auto">
+                            <PathIcon Width="13" Height="13" VerticalAlignment="Center"
+                                      Data="{Binding IconKey, Converter={StaticResource NavigationIconConverter}}"
+                                      Foreground="{DynamicResource AppInfoBrush}" />
+                            <TextBlock Grid.Column="1" Text="{Binding DisplayName}" Margin="5,0,4,0"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{Binding CountLabel}" Classes="host-tool-secondary"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                    </Button>
+                </TreeDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+    </Grid>
 </UserControl>

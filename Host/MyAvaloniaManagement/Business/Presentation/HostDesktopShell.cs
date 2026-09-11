@@ -33,7 +33,8 @@ internal interface IHostDesktopShell
 internal sealed class HostDesktopShell(
     ApplicationThemeService themeService,
     MainWindowViewModel mainWindowViewModel,
-    HelpWindowService helpWindows) : IHostDesktopShell
+    HelpWindowService helpWindows,
+    FunctionCenterWindowService functionCenter) : IHostDesktopShell
 {
     public void Attach(
         App application,
@@ -49,6 +50,7 @@ internal sealed class HostDesktopShell(
         };
         desktop.MainWindow = mainWindow;
         helpWindows.Attach(mainWindow);
+        functionCenter.Attach(mainWindow);
 
         if (string.Equals(
                 Environment.GetEnvironmentVariable("MYAVALONIA_SMOKE_TEST"),

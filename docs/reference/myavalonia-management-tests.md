@@ -46,6 +46,19 @@ dotnet test Host/MyAvaloniaManagement.PluginTests -m:1 --filter "FullyQualifiedN
 当前 `verify` 不采集覆盖率。V5 额外采集 Host Unit/Plugin/UI 与既有 DaTang Host/Host UI 覆盖来源，
 按 Host-only 程序集范围合并，并核对 `gate.config.json` 的既有 Host 阈值；详细口径和结果见专属记录。
 
+## V6 插件导航专项
+
+V6 的专项开发验证和结果见 [插件目录与功能中心验收记录](../plan-history/host-v6/plugin-navigation-and-function-center-acceptance.md)。
+专项覆盖路径/图标/偏好、三处创建入口、真实 XAML、重复输入、窗口会话释放和退出文档排空。
+可通过以下过滤定位本轮新增回归，完整结果仍以 Gate 为准：
+
+```powershell
+dotnet test Host/MyAvaloniaManagement.Tests -m:1 --filter "FullyQualifiedName~PluginNavigation|FullyQualifiedName~DocumentOperationShutdown"
+dotnet test Host/MyAvaloniaManagement.UiTests -m:1 --filter FullyQualifiedName~PluginNavigationUiTests
+```
+
+V6 不运行下面的发布命令；独立采集现有 Host-only 覆盖率，不通过 seal 间接启动 Windows Smoke。
+
 ## 正式封板
 
 ```powershell

@@ -35,9 +35,12 @@ public static class TestAppBuilder
                 NoOpDesktopShell.Instance,
                 CreateViewLocator(),
                 ControlRecycling))
+            .UseSkia()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions
             {
-                UseHeadlessDrawing = true
+                // 常规测试继续使用轻量绘制；专项视觉验收显式指定输出目录时启用真实 Skia 像素渲染。
+                // 该开关仅属于测试构建器，不改变 Host 生产配置，也不启动 Windows CI/发布冒烟流程。
+                UseHeadlessDrawing = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MYAVALONIA_V6_RENDER_DIRECTORY"))
             });
 
     private static ViewLocator CreateViewLocator()

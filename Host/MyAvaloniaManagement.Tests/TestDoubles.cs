@@ -2,6 +2,7 @@ using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Appearance;
+using MyAvaloniaManagement.Business.Navigation;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Constants;
@@ -45,6 +46,7 @@ internal sealed class TestHostContext : IDisposable
         services.AddSingleton<IHostStorageService>(Storage);
         services.AddSingleton<IDocumentInteractionService>(Interactions);
         services.AddSingleton<DocumentTestProbe>();
+        services.AddSingleton(new PluginNavigationSettingsStore(Path.Combine(TempDirectory, PluginNavigationSettingsStore.FileName)));
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
         services.AddSingleton(new AppearanceSettingsStore(

@@ -493,6 +493,8 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 | 布局快照待应用状态 | `DockLayoutLifecycle` | 首次 Apply 时原子取出 |
 | Workbench Command 在途调用 | `WorkbenchCommandExecutor` | HostRuntime 先拒绝并取消新调用；排空后才释放 Workspace/Scope/Provider |
 | 单 Document Command 租约 | `WorkbenchDocumentCommandLeaseStore` | Dock 关闭先取消并排空；最终关闭后移除，Dock 拒绝时恢复 |
+| 文档新建/打开/保存串行操作 | `DocumentOperationGate` | 退出拒绝新请求并等待执行中及排队请求；超时保留 Workspace/Scope/Provider |
+| 功能中心选择窗口与会话 | `FunctionCenterWindowService` | 每个 Runtime 最多一个窗口；关闭退订并释放会话，创建中的释放延迟到任务返回 |
 
 `App.axaml` 只通过 `DynamicResource ControlRecyclingKey` 声明 Dock Style 契约，不创建实例。
 `App.Initialize` 在 XAML 加载后安装当前容器的单例；`DockDocumentLifetime` 从构造函数取得同一
@@ -538,3 +540,16 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 `\\server\share` 作为唯一自定义根；共享下子目录按普通目录处理。测试替身通过存储端口模拟 UNC，
 不访问真实网络。`CategoryNode` 的名称和 Document 集合是构造期只读快照，只有展开状态可变；
 `PlugGroupMenuViewModel` 直接调用强类型 Document 创建入口，不持有可变外部集合。
+
+## 12. V6 插件目录与功能中心
+
+`DocumentCreationMenuQuery` 读取当前可用创建入口，`DocumentCategoryPath` 和 `DocumentCreationDirectory`
+完成路径解析与只读树投影。旧 Tool 保留原始分类分组，新树和功能中心使用 `/` 分层；各视图独立持有展开状态。
+`PluginNavigationSettingsStore` 单独保存稳定模式与自定义显示名，不扩展布局格式。
+图标由 Host 的固定 `builtin:` 名称目录转换为 Avalonia 矢量几何，不读取插件图片或创建插件控件。
+
+文件菜单经已有工作台命令投影打开功能中心；窗口服务管 Owner 和单窗口，会话 ViewModel 管搜索与提交。
+三处创建入口共用 `DocumentPersistenceCoordinator`。目录刷新替换绑定集合时保护临时选择回写，
+实际创建仍校验插件可用性并遵守 Scope 发布/回滚链。关闭流程显式等待文档门排空，不能把选择窗口关闭当作初始化已结束。
+
+设计、用法和完整测试证据见 [V6 实施验收记录](../../../../docs/plan-history/host-v6/plugin-navigation-and-function-center-acceptance.md)。

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
+using MyAvaloniaManagement.Business.Navigation;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Workspace;
@@ -37,6 +38,7 @@ internal sealed class UiTestContext : IDisposable
         services.AddApplicationServices(registryBuilder);
         services.AddViewModels();
         services.AddSingleton<IHostStorageService>(Storage);
+        services.AddSingleton(new PluginNavigationSettingsStore(Path.Combine(TempDirectory, PluginNavigationSettingsStore.FileName)));
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
         services.AddSingleton(new AppearanceSettingsStore(

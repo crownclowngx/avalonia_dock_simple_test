@@ -10,7 +10,7 @@ namespace MyAvaloniaManagement.Business.Composition;
 
 /// <summary>
 /// 正常退出与启动回滚共用的所有权释放流程。只消费已创建参与者与资源释放端口，不解析 DI。
-/// Command/Workflow 负责证明自己的调用已排空，Lifecycle 负责证明回调与取消通知已结束；
+/// Command/Workflow/Document 负责证明自己的调用已排空，Lifecycle 负责证明回调与取消通知已结束；
 /// 本类只组合这些结论，并独占 Provider 的最终释放或保留选择。
 /// </summary>
 internal sealed class HostRuntimeShutdown(
@@ -47,6 +47,7 @@ internal sealed class HostRuntimeShutdown(
             safe &= Try(() => snapshot.Commands?.BeginShutdown(), failures);
             safe &= Try(() => snapshot.States?.BeginShutdown(), failures);
             safe &= Try(() => snapshot.Workspace?.BeginShutdown(), failures);
+            safe &= Try(() => snapshot.Documents?.BeginShutdown(), failures);
             var entrancesClosed = safe;
 
             var commandsDrained = true;
@@ -56,7 +57,13 @@ internal sealed class HostRuntimeShutdown(
                 commandsDrained = gate.TryDrain(out var failure);
                 if (failure is not null) failures.Add(failure);
             }
-            if (safe && commandsDrained)
+            // 功能中心和 Tool 的创建不属于工作台命令执行器，必须另外证明文档串行操作已结束。
+            // 仅关闭窗口或撤销 Workspace 新入口不足以证明异步初始化不再使用插件 Provider。
+            var documentsDrained = snapshot.Documents is null ||
+                await snapshot.Documents.WaitForDrainAsync(snapshot.Documents.ShutdownGrace).ConfigureAwait(false);
+            if (!documentsDrained)
+                failures.Add(new TimeoutException("文档操作未在关闭宽限内结束，Workspace、Scope 和 Provider 已保留。"));
+            if (safe && commandsDrained && documentsDrained)
             {
                 // 保持现有 UI/View→Scope 顺序，某个 UI 清理失败仍尝试 Scope 兜底。
                 safe &= Try(() => snapshot.Workspace?.Dispose(), failures);
@@ -71,13 +78,13 @@ internal sealed class HostRuntimeShutdown(
                 if (failure is not null) failures.Add(failure);
             }
             // 清理异常不妨碍其余可安全生命周期获得关闭机会；仍在执行的业务调用则禁止 Lifecycle 关闭。
-            if (entrancesClosed && commandsDrained && workflowDrained && snapshot.Lifecycles is not null)
+            if (entrancesClosed && commandsDrained && documentsDrained && workflowDrained && snapshot.Lifecycles is not null)
             {
                 lifecycleResult = await snapshot.Lifecycles.ShutdownAllAsync().ConfigureAwait(false);
                 if (!lifecycleResult.CanReleaseProviders)
                     failures.Add(new InvalidOperationException("生命周期未完成安全关闭，Provider 已保留。"));
             }
-            safe &= commandsDrained && workflowDrained && (lifecycleResult?.CanReleaseProviders ?? true);
+            safe &= commandsDrained && documentsDrained && workflowDrained && (lifecycleResult?.CanReleaseProviders ?? true);
         }
         catch (Exception exception)
         {

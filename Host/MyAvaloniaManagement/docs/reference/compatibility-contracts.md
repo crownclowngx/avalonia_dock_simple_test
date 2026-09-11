@@ -381,3 +381,13 @@ AppReadMessageBackgroundBrush AppUnreadMessageBackgroundBrush
 - Document envelope 与 layout 保持 schema 2，布局文件保持 `layout-v2.json`，默认数据根保持 `v2`；
 - MySmallTools 20 轮真实媒体、全屏关闭和 Runtime 退出后原生资源及弱引用必须归零；
 - G7 测试包、Harness 和 Release 编译配置都不是发布资格；Windows Smoke 与发布门禁留到 G8/正式发布阶段。
+
+## 12. V6 目录展示兼容边界
+
+- 原 Tool ID、停靠位置、关闭策略和布局格式不变，默认旧版完整字符串分组。
+- 新树只解释 `/`，`-` 为名称内容；非法空段整体回退，创建身份仍是 DocumentTypeId 与 CreationIntentId。
+- 使用已有 IconPath 传递固定 `builtin:` 图标名，无值或不支持时统一默认；旧版继续显示原四宫格。
+- 导航文件 `plugin-navigation-v1.json` 独立于布局，`legacy`/`tree` 与可自定义显示名分开保存。
+- 功能中心与两个 Tool 模式共用原创建协调器，不改变 SDK、manifest、Document envelope 和插件所有权。
+- Host 退出新增文档操作排空屏障；超时遵守 V5 保留策略，迟到完成不自动释放 Provider。
+- 外部插件元数据未迁移，旧一级分类仍为一级；V6 是改造顺序，不是产品或 SDK 版本变更。

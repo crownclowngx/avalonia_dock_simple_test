@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Help;
+using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 
@@ -15,6 +16,8 @@ namespace MyAvaloniaManagement.Business.Commands.Catalog;
 /// </remarks>
 internal static class HostWorkbenchCommandIds
 {
+    internal static readonly CommandId NewDocument =
+        new("myavalonia.host.command.document.new");
     internal static readonly CommandId OpenDocument =
         new("myavalonia.host.command.document.open");
 
@@ -47,9 +50,14 @@ internal sealed class HostWorkbenchCommandCatalog
     internal HostWorkbenchCommandCatalog(
         HostOpenDocumentCommandHandler openDocument,
         HostSaveDocumentCommandHandler saveDocument,
-        HostOpenHelpCommandHandler openHelp)
+        HostOpenHelpCommandHandler openHelp,
+        HostNewDocumentCommandHandler newDocument)
         : this(
         [
+            new HostWorkbenchCommandRegistration(
+                new CommandDescriptor(HostWorkbenchCommandIds.NewDocument,
+                    "新建文档…", "浏览业务分类并选择要创建的文档功能。"),
+                newDocument ?? throw new ArgumentNullException(nameof(newDocument))),
             new HostWorkbenchCommandRegistration(
                 new CommandDescriptor(
                     HostWorkbenchCommandIds.OpenDocument,

@@ -40,6 +40,9 @@ Managed Plugin 快速开始入口：
 
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
+| [Host V6 插件目录与功能中心设计](./design/host-v6-plugin-navigation-and-function-center-plan.md) | 保留旧版 Tool、树形模式、可自定义名称及公共矢量图标 | 已实施；验证状态见实施记录 |
+| [Host V6 专属实施验收记录](./plan-history/host-v6/plugin-navigation-and-function-center-acceptance.md) | SOLID 职责、刷新与退出修复、测试、截图及开发门禁 | 非发布；记录实际结果与限制 |
+| [插件目录与功能中心使用说明](./quick-start/plugin-navigation-and-function-center.md) | 模式切换、新建文档、分类路径、图标名称和偏好配置 | 当前用法 |
 | [Host V5 生命周期与启动回滚修复设计](./design/host-v5-lifecycle-ownership-repair-plan.md) | 生命周期超时后的资源保留、已启动项回滚、Host 内部修复与验收矩阵 | 已完成；插件与 SDK 公共契约不变 |
 | [Host V5 专属实施验收记录](./plan-history/host-v5/lifecycle-ownership-repair-acceptance.md) | SOLID 职责、失败复现、专项测试和完整 Gate 实际证据 | 完整 verify 与补充 Host 覆盖率通过；非发布 |
 | [Host V4 内部收口任务书](./design/host-v4-breaking-refactor-plan.md) | Host 死面、身份、Layout、回收所有权、领域目录、路径语义、集成回归与封板 | 已完成；G0–G8 已封板，本地可发布但未对外发布 |

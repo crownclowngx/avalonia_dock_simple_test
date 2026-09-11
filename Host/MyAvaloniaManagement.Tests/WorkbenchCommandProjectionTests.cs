@@ -33,7 +33,7 @@ public sealed class WorkbenchCommandProjectionTests
         var secondPresentation = second.Provider.GetRequiredService<WorkbenchCommandPresentation>();
 
         Assert.Equal(
-            ["打开…", "保存", "|", "Alpha File"],
+            ["新建文档…", "打开…", "保存", "|", "Alpha File"],
             Snapshot(firstPresentation.Menu, WorkbenchMenuLocations.FileShared));
         Assert.Equal(
             ["|", "Alpha View"],
@@ -176,6 +176,13 @@ public sealed class WorkbenchCommandProjectionTests
                 Assert.Equal("打开…", open.DisplayName);
                 Assert.True(open.IsEnabled);
                 Assert.Equal(string.Empty, open.ShortcutText);
+            },
+            create =>
+            {
+                Assert.Equal(HostWorkbenchCommandIds.NewDocument, create.CommandId);
+                Assert.Equal("新建文档…", create.DisplayName);
+                Assert.True(create.IsEnabled);
+                Assert.Equal(string.Empty, create.ShortcutText);
             });
         Assert.DoesNotContain(items, item => item.CommandId.Value.Contains(
             "shortcut-active",

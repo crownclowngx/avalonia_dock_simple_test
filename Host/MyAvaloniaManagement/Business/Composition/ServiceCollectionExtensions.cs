@@ -2,6 +2,7 @@ using System;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Appearance;
+using MyAvaloniaManagement.Business.Navigation;
 using MyAvaloniaManagement.Business.Help;
 using MyAvaloniaManagement.Business.Commands.Catalog;
 using MyAvaloniaManagement.Business.Commands.Context;
@@ -75,6 +76,9 @@ internal static class ServiceCollectionExtensions
         });
         services.AddSingleton<DockLayoutLifecycle>();
         services.AddSingleton<AppearanceSettingsStore>();
+        services.AddSingleton<PluginNavigationSettingsStore>();
+        services.AddSingleton<FunctionCenterWindowService>();
+        services.AddSingleton<HostNewDocumentCommandHandler>();
         services.AddSingleton<ApplicationThemeService>();
         services.AddSingleton<HelpContentCatalog>();
         services.AddSingleton<HelpReadingStateStore>();
@@ -105,7 +109,12 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<WorkflowActionRunManager>());
         services.AddSingleton<WorkflowActionShutdownGate>();
         services.AddSingleton<DocumentEnvelopeSerializer>();
-        services.AddSingleton<DocumentOperationGate>();
+        services.AddSingleton(_ =>
+        {
+            var gate = new DocumentOperationGate();
+            shutdownParticipants.Record(gate);
+            return gate;
+        });
         services.AddSingleton<DocumentPersistenceStateStore>();
         services.AddSingleton<DocumentRecoveryRegistry>();
         services.AddSingleton<DocumentSaveService>();
@@ -116,7 +125,8 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton(provider => new HostWorkbenchCommandCatalog(
             provider.GetRequiredService<HostOpenDocumentCommandHandler>(),
             provider.GetRequiredService<HostSaveDocumentCommandHandler>(),
-            provider.GetRequiredService<HostOpenHelpCommandHandler>()));
+            provider.GetRequiredService<HostOpenHelpCommandHandler>(),
+            provider.GetRequiredService<HostNewDocumentCommandHandler>()));
         services.AddSingleton<IHostDocumentOpenService>(provider =>
             provider.GetRequiredService<DocumentPersistenceCoordinator>());
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();

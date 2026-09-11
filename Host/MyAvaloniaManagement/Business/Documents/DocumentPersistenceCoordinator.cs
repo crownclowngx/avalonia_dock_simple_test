@@ -37,12 +37,15 @@ internal sealed class DocumentPersistenceCoordinator(
     DocumentEnvelopeSerializer serializer,
     DocumentOperationState operationState) : IHostDocumentOpenService
 {
-    internal Task<DocumentOperationResult> CreateDocumentAsync(
+    internal async Task<DocumentOperationResult> CreateDocumentAsync(
         DocumentTypeId documentTypeId,
-        CreationIntentId? creationIntentId = null) =>
-        operationGate.RunAsync(async () =>
+        CreationIntentId? creationIntentId = null)
+    {
+        // 关闭期间串行门可能拒绝尚未开始的请求。把门外拒绝与插件初始化失败都映射为
+        // 本次结果，保证旧 Tool、新树和功能中心不会向 UI 抛出未观察的异步异常。
+        try
         {
-            try
+            return await operationGate.RunAsync(async () =>
             {
                 await workspace.CreateAndPublishDocumentAsync(
                     documentTypeId,
@@ -50,16 +53,17 @@ internal sealed class DocumentPersistenceCoordinator(
                         title: string.Empty,
                         creationIntentId));
                 return DocumentOperationResult.ClearError;
-            }
-            catch (Exception exception)
-            {
-                DocumentPersistenceErrorMapper.Report(
-                    "DOCUMENT_INITIALIZATION_FAILED",
-                    exception);
-                return DocumentOperationResult.Failure(
-                    "无法创建 Document：插件初始化未完成。未发布任何标签。");
-            }
-        });
+            });
+        }
+        catch (Exception exception)
+        {
+            DocumentPersistenceErrorMapper.Report(
+                "DOCUMENT_INITIALIZATION_FAILED",
+                exception);
+            return DocumentOperationResult.Failure(
+                "无法创建 Document：插件初始化未完成。未发布任何标签。");
+        }
+    }
 
     internal async Task<DocumentOperationResult> OpenSelectedAsync()
     {
