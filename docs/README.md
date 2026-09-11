@@ -8,9 +8,9 @@
 
 本目录保存解决方案级文档。文档按用途分为“快速开始”“当前事实”“设计方法论与探索”以及“历史验收记录”，阅读时应先确认文档类型，避免把历史基线当作当前实现。
 
-## V8 交互收口与认知减负（方案）
+## V8 交互收口与认知减负
 
-- [Host V8 交互收口与认知减负方案](./design/host-v8-cognitive-ux-convergence-plan.md)：尚未实施；规划入口统一、功能与已有页面搜索、工具中心渐进披露、隐藏语义、SOLID 约束、中文注释和本地开发验收。不使用 AIFLOW、Windows CI 或发布门禁。
+- [Host V8 交互收口与认知减负方案](./design/host-v8-cognitive-ux-convergence-plan.md)：已实施入口统一、四类工作区搜索、工具中心更多操作和隐藏语义；本地自动化通过，人工试用待验收。不使用 AIFLOW、Windows CI 或发布门禁。
 
 ## 插件状态独立窗口
 
@@ -56,6 +56,7 @@ Managed Plugin 快速开始入口：
 
 | 文档 | 用途 | 状态 |
 | --- | --- | --- |
+| [V8 实施与开发验收](./plan-history/host-v8/cognitive-ux-convergence-acceptance.md) | 四类搜索、入口与隐藏语义、810 项测试及覆盖率 | 自动化通过；人工试用待验收；非发布 |
 | [V6.1 实施验收](./plan-history/host-v6.1/icon-contributions-and-resources-acceptance.md) | 实现、测试、覆盖率、独立消费与公开包交付 | 按实际结果记录 |
 | [V6.1 现有插件图标升级](./plan-history/host-v6.1/external-plugin-icons-upgrade.md) | 十个外部插件的图标映射、版本、真实 ZIP、Host 联调与 Git 提交 | 已实施并部署到指定 Controls；逐仓验证见记录 |
 | [Host V6.1 公共图标资源与专属注册设计](./design/host-v6.1-extensible-icon-contributions-plan.md) | SDK 可选图标契约、独立公共资源包、插件专属图标、Host 管理与 ALC/版本边界 | 已实施；发布证据见专属记录 |

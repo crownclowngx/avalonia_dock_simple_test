@@ -324,13 +324,17 @@ CanExecute，不缓存状态。插件执行链接调用者、单 Document 关闭
 Dispatcher，Dispose 成对退订。`MainWindowViewModel` 已删除打开/保存方法、生成命令和持久化协调器依赖，
 只保留窄 Presentation 绑定属性。
 
-G9 的 `WorkbenchCommandPaletteProjection` 只从至少一个菜单声明收集候选 CommandId，去重后查询同一
-State Query，并从同一快捷键投影读取真正生效的 Gesture。Owner/目标不可用项隐藏，真实 Disabled 项保留；
-名称和说明使用普通忽略大小写子串搜索，结果按展示名及 CommandId ordinal 排序。`CommandPaletteView`
-只负责打开、查询、选择、键盘和焦点会话；Enter 再次调用共享绑定的 `CanExecute`，成功时先关闭恢复焦点，
-再进入同一 Executor。`Ctrl+Shift+P` 是 Host 保留 Gesture，遮罩打开期间窗口暂停其他生成 KeyBinding，
-关闭或窗口释放时成对恢复/退订。Palette 不进入 Catalog，也不获得 Provider、Document、Dock、Control
-或插件对象；整体删除 Palette 不改变菜单、快捷键、状态与执行语义。
+V8 的 `WorkbenchCommandPaletteProjection` 汇合功能创建目录、已打开页面、工具状态和可发现 Command。
+普通 Command 继续以菜单声明作为发现许可，复用 State Query、有效快捷键和原 Executor；纯快捷键或局部命令不会自动公开。
+结果使用四种强类型身份，不以多个可空 ID 猜测动作。`WorkbenchTextMatch` 是无 I/O 的纯匹配函数，由三个搜索入口共享。
+
+页面数据由 `WorkspaceSession.Pages` 提供不可变快照。每个已发布 Adapter 有独立运行期 ID 和稳定显示序号，关闭时移除引用与订阅，不新增 Scope 或跨启动数据。原唯一活动页引用现在接受分割区域的真实激活通知，工具激活保持文档目标，空目标会撤回。
+
+`WorkspacePaletteActions` 把功能、页面和工具分别适配到原 Coordinator、Workspace 与 Tool Actions。执行时重查入口、页面、插件可用性和关闭状态，失效页面不替换成同名页面。`WorkspacePaletteCommand` 提供可等待结果并隔离异步异常，普通 Command 不经过该适配器。
+
+`CommandPaletteView` 管理窗口内的查询、选择、忙碌和错误。功能初始化成功才关闭遮罩；失败保留查询与身份并恢复输入焦点。普通 Command 仍先关闭遮罩再执行。Presentation 在 Dock 布局完成后重查目标并交还焦点，Workspace 不遍历视觉树。
+
+`Ctrl+Shift+P` 仍为 Host 保留快捷键。遮罩会话暂停其他生成 KeyBinding，关闭或释放时成对恢复／退订。View 不获取插件 Provider、Scope 或模型；没有第二套命令注册、全局事件总线或搜索索引。
 
 ## 5. Workspace Session 与 Dock Factory 边界
 
@@ -356,7 +360,8 @@ V3 G6 已删除 `ManagementFactory` Facade。生产代码只有
 | `WorkbenchCommandStateQuery` | Catalog/owner/当前 Target 的即时状态与定向失效通知 | 缓存 CanExecute、执行 Target、UI 调度 |
 | `WorkbenchCommandExecutor` | 当前实例重查、执行、取消链接和全局排空 | 菜单投影、Document 释放、业务重试 |
 | `WorkbenchDocumentCommandLeaseStore` | 单 Adapter 在途计数、关闭拒绝/取消/排空 | 强制超时、释放 Scope、全局任务运行时 |
-| `WorkbenchCommandPaletteProjection` | 菜单候选去重、状态过滤、搜索排序与有效快捷键文本 | 执行命令、缓存业务状态、焦点和插件对象 |
+| `WorkbenchCommandPaletteProjection` | 四类候选、发现许可、状态过滤、搜索排序与有效快捷键文本 | 执行命令、缓存业务状态、焦点和插件对象 |
+| `WorkspacePaletteActions` | 以强类型身份适配原工作区用例，并在布局完成后交还焦点 | Scope、磁盘状态、普通 Command 执行 |
 | `ToolDockCoordinator` | 工具显示、恢复、停靠点重建和纵向区域归一化 | 策略发现 |
 | `DockDocumentLifetime` | 文档关闭后的缓存移除和 Scope 释放 | 关闭是否允许 |
 

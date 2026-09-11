@@ -1,0 +1,47 @@
+{
+  "sourceRevision": "a1c7eb5d77a412bf710a6ea63a2d8f6096c01c0a",
+  "verify": {
+    "path": "artifacts/gate/20260911-142715-27b374cca2d4/summary.json",
+    "sha256": "00c4463d4be5a47728ab65d2b2996967238148bc2430734af9dcdd0bc0b7ffba",
+    "passed": 810,
+    "failed": 0,
+    "skipped": 0
+  },
+  "coverage": {
+    "line": 88.18,
+    "branch": 72.78
+  },
+  "threshold": {
+    "minimumLine": 84.39,
+    "minimumBranch": 70.58
+  },
+  "reports": [
+    {
+      "suite": "unit",
+      "passed": 397,
+      "path": "artifacts/v8-cognitive-ux/coverage-final/unit/3a81c6c6-92b5-4326-9b10-22ad42602a14/coverage.cobertura.xml",
+      "sha256": "15a52cc99ed7dab728feaab729616040e7225354171bfc6043e624949d2abdbb"
+    },
+    {
+      "suite": "plugin",
+      "passed": 211,
+      "path": "artifacts/v8-cognitive-ux/coverage-final/plugin/8b28baf5-9028-447e-ac03-3360ea6bb6fa/coverage.cobertura.xml",
+      "sha256": "d2e5fd40d78f90e31c25fdbef17c7c7e8f7d3f56828102548d83b934b7f7df46"
+    },
+    {
+      "suite": "ui",
+      "passed": 99,
+      "path": "artifacts/v8-cognitive-ux/coverage-final/ui/7d5832c8-fa14-4645-b215-17c5a37fd57e/coverage.cobertura.xml",
+      "sha256": "1901944ace62a19c8bba60702ef1c7df0338d88aaf249b6f9d44ce580e8b7d72"
+    },
+    {
+      "suite": "package",
+      "passed": 1,
+      "path": "artifacts/v8-cognitive-ux/coverage-final/package/c5418056-b3c1-44bd-806e-8205255c9685/coverage.cobertura.xml",
+      "sha256": "9ac40dbc4cfc6849318d175da872442043298a30e5edca097948bf7f99596494"
+    }
+  ],
+  "humanObservation": "pending_user_confirmed_not_tried",
+  "releaseEligible": false,
+  "publishable": false
+}

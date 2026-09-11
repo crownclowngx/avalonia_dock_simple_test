@@ -1,7 +1,7 @@
 # V8 交互收口与认知减负实施记录
 
 > 日期：2026-09-11。
-> 状态：实施中；G0–G4 实现和专项验证完成；G5/G6 正在汇总，不代表人工体验验收完成。
+> 状态：V8 实现、自动化开发验证、覆盖率、Headless 视觉与文档已完成；人工试用按用户明确回复保留待验收，整体交互验收尚未完成。
 > 范围：本仓 Host、测试与文档；不使用 AIFLOW、Windows CI、seal 或发布 Windows Smoke，不上传或部署，`publishable=false`。
 
 ## 1. 方案与源码基线
@@ -30,7 +30,7 @@ verify 未采集覆盖率，最终实现后另采四份 Host 报告并校验阈�
 
 ## 3. 后续证据
 
-G1–G6 的实现、测试、视觉、覆盖率与任务观察按实际完成情况追加。没有真实参与者的任务观察必须保留“未完成”，不能以自动化测试代替。
+G1–G6 的实际实现与验证见第 4–9 节。用户明确尚未试用，人工任务观察保留待验收，不能以自动化测试代替。
 
 ## 4. 已提交到工作树的行为与设计核对
 
@@ -66,6 +66,71 @@ Dock 样式依据当前 NuGet 12.0.0.2 对应的[上游模板](https://github.co
 
 最终生产代码的 [Gate summary](../../../artifacts/gate/20260911-142715-27b374cca2d4/summary.json) 为通过：SDK 91、Host Unit 397、Host Plugin 211、Headless UI 99、MyPlugTest 11、真实包 1，合计 **810**，零失败、零跳过；Release 构建零警告、零错误，契约检查通过。
 
-中间验证暴露的旧入口反射断言、四类结果计数、异步 TextChanged 时序、分割区域活动目标及深色资源问题均已修正。没有降低门槛或跳过失败用例。最终代码之后只允许追加验收文档与证据，不据此授予发布资格。
+中间验证暴露的旧入口反射断言、四类结果计数、异步 TextChanged 时序、分割区域活动目标及深色资源问题均已修正。没有降低门槛或跳过失败用例。最终代码验证之后仅追加验收文档与证据，不据此授予发布资格。
 
-用户已明确回复“尚未试用，保留待验收”。人工观察状态为 **待验收**，不将自动化测试写成真实用户体验结论。覆盖率仍待独立四报告汇总。
+用户已明确回复“尚未试用，保留待验收”。人工观察状态为 **待验收**，不将自动化测试写成真实用户体验结论。四份独立覆盖率已汇总通过，见下一节。
+
+## 7. 独立覆盖率与可重现口径
+
+生产代码提交：`a1c7eb5`。后续提交仅追加架构说明、验收文档和证据，不改变已经验证的生产代码或测试。此次覆盖率沿用同一 Release 构建与既有 `coverage.runsettings`，未增加排除项。
+
+| 独立报告 | 通过数 | 失败／跳过 |
+| --- | ---: | --- |
+| Host Unit | 397 | 0／0 |
+| Host Plugin（排除 PackageAcceptance） | 211 | 0／0 |
+| Host Headless UI | 99 | 0／0 |
+| MyPlugTest PackageAcceptance | 1 | 0／0 |
+| 合计 | 708 | 0／0 |
+
+只合并这四次测试的顶层 GUID 目录中的原始 Cobertura。VSTest 另有 TRX 附件副本，不重复合并；合并后的报告也不作为输入。包验收使用最终 verify 解出的 `Controls`，没有拿源码直引替代真实包。
+
+| 指标 | 实测 | 现有最低阈值 | 结论 |
+| --- | ---: | ---: | --- |
+| Host 行覆盖率 | **88.18%** | 84.39% | 通过 |
+| Host 分支覆盖率 | **72.78%** | 70.58% | 通过 |
+
+[覆盖率汇总 JSON](../../../artifacts/v8-cognitive-ux/coverage-final/summary.json)保存四条完整命令及原始报告位置；[HTML 报告](../../../artifacts/v8-cognitive-ux/coverage-final/merged/index.html)可查看逐文件结果。[提交内证据摘要](./development-evidence.json)保存源码提交、测试计数、阈值与原始报告 SHA-256；大体积 TRX／覆盖率报告保留在本地 artifacts。
+
+复查使用当前 SDK 和现有工具，不运行 seal：
+
+```powershell
+dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
+# Unit、Plugin、UI 分别执行下列命令，替换项目与输出目录；禁止复用同一输出目录。
+dotnet test Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj -c Release --no-build --no-restore -m:1 --filter 'Category!=PackageAcceptance' --settings Host/MyAvaloniaManagement.Tests/coverage.runsettings --collect:'XPlat Code Coverage' --logger 'trx;LogFileName=unit.trx' --results-directory artifacts/v8-review/unit
+# 第四次使用 PluginTests 项目与 Category=PackageAcceptance，并把
+# MYAVALONIA_MY_PLUG_TEST_PACKAGE_ROOT 指向本次 verify 解出的 Controls。
+# ReportGenerator 只接受四个 GUID 原始报告，以分号连接：
+dotnet reportgenerator '-reports:<unit>;<plugin>;<ui>;<package>' '-targetdir:artifacts/v8-review/merged' '-reporttypes:Cobertura;Html' '-assemblyfilters:+MyAvaloniaManagement'
+```
+
+按当前 `gate.config.json` 阈值检查合并报告，只允许一个非空 `MyAvaloniaManagement` 程序集。`verify` 的测试 ZIP 仅作本地验收输入，`releaseEligible=false`、`publishable=false`。
+
+## 8. 视觉、文档与 SOLID 审查
+
+通过实际 XAML 与 Headless Skia 渲染复查了功能中心、工具中心、命令面板的浅色／深色、长名称、滚动、空态及错误态。搜索面板为 800×650 场景，工具中心另含 720×600 紧凑场景；无 Windows 桌面或 DPI 结论。
+
+- [深色长名称搜索](./images/palette-long-dark.png)
+- [失败后保留查询和选择](./images/palette-failure.png)
+- [工具中心简化后的主操作](./images/tool-center-light.png)
+
+其余可重生成图像位于 `artifacts/v8-cognitive-ux/screenshots`；使用 `MYAVALONIA_V8_RENDER_DIRECTORY` 配合 `CognitiveUxV8UiTests`，旧功能／工具窗口图像仍使用 V6／V7 的渲染环境变量。
+
+| 原则 | 本轮具体落实 |
+| --- | --- |
+| S 单一职责 | 纯匹配、只读候选、工作区所有权、用例适配和窗口会话分别承担明确工作 |
+| O 开闭原则 | 新结果在 Host 展示层扩展，不修改 SDK Command／Document 契约或插件初始化协议 |
+| L 里氏替换 | 设计器与生产继续履行现有展示接口；普通命令与三类工作区动作保持各自正确的执行契约 |
+| I 接口隔离 | 欢迎页只接收两个无参动作；UI 使用只读投影和窄用例，不新增“万能工作区接口” |
+| D 依赖倒置 | 组合根完成注入；业务边界沿用现有存储、工厂和交互端口，不把 Provider 下放给 ViewModel |
+
+新建少量具体类型和纯函数，没有为了单实现创建接口族。现有生命周期、关闭保存、程序集隔离和真实包约束均通过完整测试与架构契约检查。中文注释说明设计原因和关键时序。
+
+路径与代码围栏扫描共检查 327 条本地链接，新增失效路径为 0，已有失效路径为 27（其中包含重复引用）。[扫描记录](../../../artifacts/v8-cognitive-ux/document-links.json)保存完整明细。本次扫描同时发现根 README／文档导航中的既有跨仓链接指向本机缺失的旧相邻目录；这些链接在基线中已经存在，本轮没有改写外部仓库或把它们伪报为通过。V8 新增本仓使用说明、架构、验收与图片链接均可解析。
+
+## 9. 人工观察与交付边界
+
+用户答复：**“尚未试用，保留待验收”**。据此 G5 的人工任务观察继续待验收；G6 已同步这一状态，不能将 V8 整体交互验收标成完成。
+
+后续人工记录至少包括：从欢迎页找到并打开功能、搜索并切换同名已有页面、隐藏并恢复工具、模拟失败后重试；记录完成情况、误操作和需要提示的位置。本次未做真实用户操作计时、Windows 多显示器／100%–200% DPI、原生窗口焦点体验或外部插件实际业务联调。
+
+代码与本地自动化验证已交付。没有使用 AIFLOW、Windows CI、seal、发布 Windows Smoke，没有上传、发布 tag、改动用户数据或部署；产品 `3.0.0`、Core/UI SDK `3.4.0` 和现有 schema 保持不变。回退实现提交不需要 V8 数据迁移。

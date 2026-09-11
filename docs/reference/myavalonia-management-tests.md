@@ -126,3 +126,7 @@ dotnet test tools/MyAvaloniaManagement.Gate.Tests -c Release -m:1
 公共资源与注册字段测试放在现有 SDK 测试套件；Host Unit 验证归属、Seal、冲突与可用性，Plugin 测试验证候选失败原子性、两个私有资源版本以及已发布 SDK 3.3.0 的真实旧二进制兼容。UI 套件以无窗口 Skia 像素验证画布、裁切、填充、独立画刷、坏路径与缓存撤回，保留 V6 全部交互回归。真实 MyPlugTest ZIP 必须含私有 Icons DLL 且不含共享 SDK DLL。
 
 执行本仓 verify；覆盖率另采集 Unit、Plugin、UI、包验收四份 Host-only 报告并合并，不运行 Windows Smoke 或 seal。实际数字见 [专属实施记录](../plan-history/host-v6.1/icon-contributions-and-resources-acceptance.md)。
+
+## V8 工作区交互开发验证
+
+V8 沿用完整 `verify`，另以当前 runsettings 单独采集 Unit、Plugin、Headless UI 与真实包验收四份覆盖率。没有修改 Gate 图或阈值，没有启用 Windows CI／发布 seal。实际 810 项结果、四份报告、复查命令和人工待验收边界见 [V8 实施记录](../plan-history/host-v8/cognitive-ux-convergence-acceptance.md)。
