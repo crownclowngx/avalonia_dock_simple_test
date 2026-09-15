@@ -15,8 +15,9 @@
            Text="ManagedPluginDirectoryName 只能包含字母、数字、点、下划线和连字符，实际为 '$(ManagedPluginDirectoryName)'。" />
     <Error Condition="'$(ManagedPluginManifestSchemaVersion)' != '2'"
            Text="当前 Managed Plugin 构建协议只生成 manifest schemaVersion=2，实际为 '$(ManagedPluginManifestSchemaVersion)'。" />
-    <Error Condition="'$(ManagedPluginRuntimeIdentifier)' != 'win-x64'"
-           Text="当前 Managed Plugin 构建协议只允许 win-x64，实际为 '$(ManagedPluginRuntimeIdentifier)'。" />
+    <!-- macOS 仅供显式实验入口使用，必须让 SDK 按真实 RID 选择依赖。 -->
+    <Error Condition="'$(ManagedPluginRuntimeIdentifier)' != 'win-x64' And !('$(ManagedPluginExperimentalMacOS)' == 'true' And ('$(ManagedPluginRuntimeIdentifier)' == 'osx-arm64' Or '$(ManagedPluginRuntimeIdentifier)' == 'osx-x64') And '$(RuntimeIdentifier)' == '$(ManagedPluginRuntimeIdentifier)')"
+           Text="默认只允许 win-x64；macOS 实验需要 ManagedPluginExperimentalMacOS=true 及匹配的 osx-arm64/osx-x64 RuntimeIdentifier。实际为 '$(ManagedPluginRuntimeIdentifier)'。" />
     <Error Condition="'$(ManagedPluginEntryType)' == ''"
            Text="Managed Plugin 缺少 ManagedPluginEntryType。" />
     <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(ManagedPluginEntryType)', '^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+$'))"
@@ -114,6 +115,9 @@
       <_ManagedPluginPrivateNative Include="@(RuntimeTargetsCopyLocalItems)"
                                    Condition="$([System.String]::Copy('$(_ManagedPluginPrivatePackageIds)').Contains(';%(RuntimeTargetsCopyLocalItems.NuGetPackageId);')) And ('%(RuntimeTargetsCopyLocalItems.RuntimeIdentifier)' == '$(ManagedPluginRuntimeIdentifier)' Or $([System.String]::Copy('%(RuntimeTargetsCopyLocalItems.DestinationSubPath)').Replace('\','/').StartsWith('runtimes/$(ManagedPluginRuntimeIdentifier)/')))" />
 
+      <_ManagedPluginPrivateNative Include="@(NativeCopyLocalItems)"
+                                   Condition="'$(ManagedPluginExperimentalMacOS)' == 'true' And $([System.String]::Copy('$(_ManagedPluginPrivatePackageIds)').Contains(';%(NativeCopyLocalItems.NuGetPackageId);'))" />
+
       <!--
         目录资产在 Target 执行期展开。这样干净工作区中即使原生树由 NuGet 构建 Target
         才写入 TargetDir，也不会因为项目求值过早而得到空文件集。
@@ -149,8 +153,8 @@
            Text="Managed Plugin 资产缺少 TargetPath：%(_ManagedPluginDeployAsset.Identity)" />
     <Error Condition="$([System.IO.Path]::IsPathRooted('%(_ManagedPluginDeployAsset.TargetPath)')) Or $([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '(^|[\\/])\.\.([\\/]|$)'))"
            Text="Managed Plugin 资产目标路径必须位于插件目录内：%(_ManagedPluginDeployAsset.TargetPath)" />
-    <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '^(?:runtimes|native)[\\/](?!win-x64(?:[\\/]|$))[^\\/]+', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
-           Text="当前 Managed Plugin 构建协议不得携带非 win-x64 原生资产：%(_ManagedPluginDeployAsset.TargetPath)" />
+    <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '^(?:runtimes|native)[\\/](?!$(ManagedPluginRuntimeIdentifier)(?:[\\/]|$))[^\\/]+', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
+           Text="Managed Plugin 不得携带非 $(ManagedPluginRuntimeIdentifier) 原生资产：%(_ManagedPluginDeployAsset.TargetPath)" />
     <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '(^|[\\/])(?:MyAvaloniaManagement(?!\.Icons\.dll$)(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json).*\.dll$', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
            Text="Managed Plugin 不得携带宿主共享程序集：%(_ManagedPluginDeployAsset.TargetPath)" />
 

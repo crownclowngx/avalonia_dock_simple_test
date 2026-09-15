@@ -95,8 +95,8 @@ internal static class AssemblyLoaderHelper
     internal static PluginDiscoverySnapshot Discover(string rootPluginsDirName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPluginsDirName);
-        var rootPath = Path.GetFullPath(
-            Path.Combine(AppContext.BaseDirectory, rootPluginsDirName));
+        var rootPath = PluginRootDirectoryPolicy.Resolve(
+            AppContext.BaseDirectory, rootPluginsDirName, OperatingSystem.IsMacOS());
         return RootSnapshots.GetOrAdd(
             rootPath,
             static path => new Lazy<PluginDiscoverySnapshot>(

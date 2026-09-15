@@ -1,5 +1,8 @@
 # MyAvaloniaManagement
 
+> macOS 实验：已提供从 Windows 交叉打包 Host 与 MyPlugTest 的入口，详见
+> [macOS 测试包与复制插件说明](./docs/quick-start/macos-experiment.md)。这是实验路径，仍需 Mac 真机验收。
+
 > V6.1 已实现公共矢量资源与插件专属图标：Core/UI SDK `3.4.0`、Icons `1.0.0`、Build `1.1.3`、
 > Templates `1.4.1`。参见 [图标开发说明](./docs/quick-start/plugin-icons.md) 和
 > [实施与发布验收](./docs/plan-history/host-v6.1/icon-contributions-and-resources-acceptance.md)。
