@@ -10,7 +10,7 @@
     <PackageVersion Include="Avalonia.Controls.WebView" Version="12.1.0" />
     <PackageVersion Include="Markdig" Version="1.3.2" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="$(MyAvaloniaAvaloniaUiVersion)" />
-    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.0" />
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="$(MyAvaloniaAvaloniaUiVersion)" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(MyAvaloniaAvaloniaUiVersion)" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="Dock.Avalonia" Version="$(MyAvaloniaDockUiVersion)" />

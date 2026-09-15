@@ -52,7 +52,7 @@
       },
       "Avalonia": {
         "type": "CentralTransitive",
-        "requested": "[12.1.0, )",
+        "requested": "[12.1.2, )",
         "resolved": "12.1.0",
         "contentHash": "an4ugAy2q6GTdaFl635V8W/LKrWNL+mnSFUprbgyf8m1Zzf9WgoGaF5ajGv5i4gXefMZrzsUPV1QU+kKrgwCWg==",
         "dependencies": {
@@ -63,7 +63,7 @@
       },
       "Avalonia.Themes.Fluent": {
         "type": "CentralTransitive",
-        "requested": "[12.1.0, )",
+        "requested": "[12.1.2, )",
         "resolved": "12.1.0",
         "contentHash": "MVi5L9HymnNm+gP2aNXNcyrP2iKGJWFubQ5Bv8/Przflxca1aIT9QBpTUV6c3olA9rLYFY7MJRR/C/BZaUhemQ==",
         "dependencies": {

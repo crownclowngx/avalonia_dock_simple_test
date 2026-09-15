@@ -33,8 +33,8 @@
       可选 UI Profile 在打包时把下列值写成精确 NuGet 区间，避免外部插件在还原时
       自动漂移到宿主未验证的主题版本。
     -->
-    <MyAvaloniaAvaloniaUiVersion>12.1.0</MyAvaloniaAvaloniaUiVersion>
-    <MyAvaloniaDockUiVersion>12.0.0.2</MyAvaloniaDockUiVersion>
+    <MyAvaloniaAvaloniaUiVersion>12.1.2</MyAvaloniaAvaloniaUiVersion>
+    <MyAvaloniaDockUiVersion>12.1.0.6</MyAvaloniaDockUiVersion>
     <MyAvaloniaSemiUiVersion>12.1.0</MyAvaloniaSemiUiVersion>
     <MyAvaloniaUrsaUiVersion>2.1.0</MyAvaloniaUrsaUiVersion>
     <MyAvaloniaDependencyInjectionUiVersion>10.0.10</MyAvaloniaDependencyInjectionUiVersion>

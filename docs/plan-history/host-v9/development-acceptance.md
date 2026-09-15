@@ -23,7 +23,7 @@ SDK 3.4.1 / Templates 1.4.2 是本地开发候选；Host 产品保持 3.0.0，3.
 | 阶段 | 状态 | 说明 |
 | --- | --- | --- |
 | G0 基线 | 已完成 | 分支、版本与旧插件产物已冻结 |
-| G1 依赖升级对照 | 待执行 | 先保留定制建立升级对照 |
+| G1 依赖升级对照 | 已完成 | 保留定制；构建及 713 项 Host/插件/UI 测试通过 |
 | G2 浮动样式清理 | 待执行 | 保留禁止浮动能力 |
 | G3 指针保护 | 待执行 | 捕获移交与恢复边界 |
 | G4 回收器 | 待执行 | 解绑、实例传播、最终释放 |
@@ -41,4 +41,11 @@ SDK 3.4.1 / Templates 1.4.2 是本地开发候选；Host 产品保持 3.0.0，3.
 
 ## 验证证据
 
-后续按实际运行补齐测试数量、命令、日志位置、失败归因与未执行的真实交互。
+### G1：仅升级依赖的对照
+
+- Avalonia 家族与 Headless.XUnit 统一为 12.1.2；Dock 家族统一为 12.1.0.6，重新求值并提交锁文件。
+- `dotnet restore MyAvaloniaManagement.sln --force-evaluate` 成功。
+- `dotnet build MyAvaloniaManagement.sln -c Release --no-restore -warnaserror -m:1`：0 警告、0 错误。
+- Release 下排除 `PackageAcceptance` 的三个测试项目：主程序 397/397、插件 217/217、UI 99/99；无跳过。
+- 证据：`artifacts/host-v9/g1-build.log`、`artifacts/host-v9/g1-tests/*.trx`。
+- 此结果只证明保留原定制的升级对照成立；不代替捕获移交、父级解绑及旧插件业务交互验证。
