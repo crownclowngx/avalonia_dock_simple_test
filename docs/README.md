@@ -8,6 +8,11 @@
 
 本目录保存解决方案级文档。文档按用途分为“快速开始”“当前事实”“设计方法论与探索”以及“历史验收记录”，阅读时应先确认文档类型，避免把历史基线当作当前实现。
 
+## V9 Avalonia / Dock 升级与定制整理
+
+- [Host V9 可执行升级方案](./design/host-v9-avalonia-dock-upgrade-plan.md)：目标 Avalonia 12.1.2 / Dock 12.1.0.6；包含 G0–G8 执行步骤、旧插件兼容、定制保留/删除/改造决策、验证命令与回退。当前为方案，尚未实施。
+- [升级可行性评估](./design/avalonia-dock-upgrade-assessment-20260916.md)：隔离编译、713 项既有测试及 12 个旧插件加载探测；V9 补充了“当前禁止浮动”的源码事实。
+
 ## V8 交互收口与认知减负
 
 - [Host V8 交互收口与认知减负方案](./design/host-v8-cognitive-ux-convergence-plan.md)：已实施入口统一、四类工作区搜索、工具中心更多操作和隐藏语义；本地自动化通过，人工试用待验收。不使用 AIFLOW、Windows CI 或发布门禁。
