@@ -122,7 +122,7 @@ public sealed class WindowChromeAndDockDragGuardTests
     }
 
     [Fact]
-    public void 应用样式覆盖三类Dock标签并保留浮动窗原生边界()
+    public void 应用样式保留三类标签保护及回收器并移除禁用浮动后的过时覆盖()
     {
         var document = XDocument.Load(FindRepositoryFile(
             "Host",
@@ -135,22 +135,9 @@ public sealed class WindowChromeAndDockDragGuardTests
                 element => (string)element.Attribute("Selector")!,
                 StringComparer.Ordinal);
 
-        AssertStyleSetter(styles, "dock|HostWindow", "WindowDecorations", "Full");
-        AssertStyleSetter(
-            styles,
-            "dock|HostWindow",
-            "ExtendClientAreaToDecorationsHint",
-            "False");
-        AssertStyleSetter(
-            styles,
-            "dock|HostWindow",
-            "ToolChromeControlsWholeWindow",
-            "False");
-        AssertStyleSetter(
-            styles,
-            "dock|HostWindow dock|DocumentTabStrip",
-            "EnableWindowDrag",
-            "False");
+        Assert.DoesNotContain(styles.Keys, selector => selector.Contains("HostWindow", StringComparison.Ordinal));
+        AssertStyleSetter(styles, "DockControl", "(ControlRecyclingDataTemplate.ControlRecycling)",
+            "{DynamicResource ControlRecyclingKey}");
 
         foreach (var selector in new[]
                  {

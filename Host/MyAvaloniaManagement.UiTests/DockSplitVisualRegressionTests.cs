@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Recycling;
 using Avalonia.Headless.XUnit;
@@ -45,6 +46,48 @@ public sealed class DockSplitVisualRegressionTests
                  })
         {
             await AssertSplitAsync(operation);
+        }
+    }
+
+    [AvaloniaFact]
+    public void 生产样式在首次初始化提供Host回收器且按Factory传播并隔离不同容器()
+    {
+        using var first = new UiTestContext();
+        using var second = new UiTestContext();
+        var firstRecycling = first.Provider.GetRequiredService<DocumentControlRecycling>();
+        var secondRecycling = second.Provider.GetRequiredService<DocumentControlRecycling>();
+        var firstWindow = new MainWindow { DataContext = first.ViewModel };
+        var secondWindow = new MainWindow { DataContext = second.ViewModel };
+        // 生产 App 在组合根提供此资源。Headless 共用一个 App，用窗口资源模拟两个独立 Runtime，
+        // 刻意不直接设置 DockControl 附加属性，以验证样式应用与 Factory 首次登记的真实顺序。
+        firstWindow.Resources[DocumentControlRecycling.ResourceKey] = firstRecycling;
+        secondWindow.Resources[DocumentControlRecycling.ResourceKey] = secondRecycling;
+        var additional = new DockControl
+        {
+            Layout = new Dock.Model.Mvvm.Controls.RootDock { Factory = first.Workspace.DockFactory }
+        };
+        var additionalWindow = new Window { Content = additional };
+        try
+        {
+            firstWindow.Show();
+            secondWindow.Show();
+            Dispatcher.UIThread.RunJobs();
+            additionalWindow.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var firstControl = firstWindow.GetLogicalDescendants().OfType<DockControl>().First();
+            var secondControl = secondWindow.GetLogicalDescendants().OfType<DockControl>().First();
+            Assert.Same(firstRecycling, ControlRecyclingDataTemplate.GetControlRecycling(firstControl));
+            Assert.Same(firstRecycling, ControlRecyclingDataTemplate.GetControlRecycling(additional));
+            Assert.Same(secondRecycling, ControlRecyclingDataTemplate.GetControlRecycling(secondControl));
+            Assert.NotSame(firstRecycling, secondRecycling);
+        }
+        finally
+        {
+            additionalWindow.Close();
+            secondWindow.Close();
+            firstWindow.Close();
+            Dispatcher.UIThread.RunJobs();
         }
     }
 

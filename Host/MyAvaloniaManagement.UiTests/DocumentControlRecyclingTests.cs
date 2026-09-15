@@ -1,7 +1,13 @@
+using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Templates;
+using Avalonia.Data;
 using Avalonia.Headless.XUnit;
 using Avalonia.Controls.Recycling.Model;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 using Xunit;
 
 namespace MyAvaloniaManagement.UiTests;
@@ -91,12 +97,143 @@ public sealed class DocumentControlRecyclingTests
         Assert.Same(secondControl, remaining);
     }
 
+    [AvaloniaFact]
+    public void 尚未生成模板的逻辑Content父级也必须先解绑且保留绑定()
+    {
+        var view = new Border();
+        var source = new ContentSource { Value = view };
+        var owner = new ContentControl();
+        using var binding = owner.Bind(ContentControl.ContentProperty, new Binding(nameof(ContentSource.Value)) { Source = source });
+        Assert.Same(owner, view.Parent);
+        Assert.Null(view.GetVisualParent());
+        var recycling = new DocumentControlRecycling();
+        recycling.Add(source, view);
+
+        Assert.Same(view, recycling.Build(source, null, null));
+
+        Assert.Null(owner.Content);
+        Assert.Null(view.Parent);
+        source.Value = new Border();
+        Assert.Same(source.Value, owner.Content);
+    }
+
+    [AvaloniaFact]
+    public void 模板生成的正文优先从实际Presenter立即解绑且不删除内容绑定()
+    {
+        var view = new Border();
+        var source = new ContentSource { Value = "first" };
+        var presenter = new ContentPresenter
+        {
+            ContentTemplate = new FuncDataTemplate<string>((data, _) => data is null ? null : view)
+        };
+        using var binding = presenter.Bind(ContentPresenter.ContentProperty,
+            new Binding(nameof(ContentSource.Value)) { Source = source });
+        presenter.UpdateChild();
+        Assert.Same(view, presenter.Child);
+        var recycling = new DocumentControlRecycling();
+        recycling.Add(source, view);
+
+        Assert.Same(view, recycling.Build(source, null, null));
+
+        Assert.Null(presenter.Child);
+        Assert.Null(view.GetVisualParent());
+        source.Value = "second";
+        Assert.Equal("second", presenter.Content);
+    }
+
+    [AvaloniaFact]
+    public void 装饰器解绑不覆盖其Child绑定()
+    {
+        var view = new Border();
+        var source = new ContentSource { Value = view };
+        var owner = new Border();
+        using var binding = owner.Bind(Decorator.ChildProperty, new Binding(nameof(ContentSource.Value)) { Source = source });
+        var recycling = new DocumentControlRecycling();
+        recycling.Add(source, view);
+
+        Assert.Same(view, recycling.Build(source, null, null));
+
+        Assert.Null(owner.Child);
+        source.Value = new Border();
+        Assert.Same(source.Value, owner.Child);
+    }
+
+    [AvaloniaFact]
+    public void 模板在空内容下仍返回旧View时拒绝把它交给第二个宿主()
+    {
+        var view = new Border();
+        var presenter = new ContentPresenter
+        {
+            Content = "first",
+            ContentTemplate = new FuncDataTemplate<string>((_, _) => view)
+        };
+        presenter.UpdateChild();
+        var recycling = new DocumentControlRecycling();
+        recycling.Add("key", view);
+
+        Assert.Throws<InvalidOperationException>(() => recycling.Build("key", null, null));
+
+        Assert.Same(presenter, view.GetVisualParent());
+    }
+
+    [AvaloniaFact]
+    public void 无法安全解绑时明确失败且保留原View和缓存以便诊断()
+    {
+        var view = new Border();
+        var owner = new VisualOnlyHost(view);
+        var key = new object();
+        var recycling = new DocumentControlRecycling();
+        recycling.Add(key, view);
+
+        var error = Assert.Throws<InvalidOperationException>(() => recycling.Build(key, null, null));
+
+        Assert.Contains(nameof(VisualOnlyHost), error.Message);
+        Assert.Same(owner, view.GetVisualParent());
+        Assert.True(recycling.TryGetValue(key, out var cached));
+        Assert.Same(view, cached);
+    }
+
+    [AvaloniaFact]
+    public void 最终关闭即使解绑失败也移除缓存并释放资源一次()
+    {
+        var key = new object();
+        var view = new DisposableContentControl { DataContext = key };
+        _ = new VisualOnlyHost(view);
+        var recycling = new DocumentControlRecycling();
+        recycling.Add(key, view);
+
+        Assert.Throws<InvalidOperationException>(() => recycling.Remove(key));
+
+        Assert.False(recycling.TryGetValue(key, out _));
+        Assert.Null(view.DataContext);
+        Assert.Equal(1, view.DisposeCount);
+        Assert.False(recycling.Remove(key));
+        Assert.Equal(1, view.DisposeCount);
+    }
+
+    private sealed class VisualOnlyHost : Control
+    {
+        public VisualOnlyHost(Control child) => VisualChildren.Add(child);
+    }
+
+    private sealed class ContentSource : INotifyPropertyChanged
+    {
+        private object? _value;
+        public object? Value
+        {
+            get => _value;
+            set { _value = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value))); }
+        }
+        public event PropertyChangedEventHandler? PropertyChanged;
+    }
+
     private sealed class DisposableContentControl
         : ContentControl, IDisposable
     {
-        public bool IsDisposed { get; private set; }
+        public int DisposeCount { get; private set; }
+        public bool IsDisposed => DisposeCount > 0;
 
-        public void Dispose() => IsDisposed = true;
+        public void Dispose() => DisposeCount++;
     }
 
     private sealed class RecyclingKey(string id)

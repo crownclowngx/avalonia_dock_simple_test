@@ -8,7 +8,6 @@ using Avalonia.Controls.Recycling.Model;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using MyAvaloniaManagement.Business.Docking;
 
 namespace MyAvaloniaManagement.Business.Docking;
 
@@ -16,7 +15,7 @@ namespace MyAvaloniaManagement.Business.Docking;
 /// 为 Dock 内容提供按 Document 释放能力的控件回收缓存。
 /// </summary>
 /// <remarks>
-/// Dock 官方回收器只提供全量清空，无法在 Document 最终关闭时移除单项。
+/// Dock 12.1.0.6 的具体回收器虽有 Remove，但只删除字典项；IControlRecycling 也不包含最终关闭协议。
 /// 本实现保留标签切换时的控件复用，同时让宿主在关闭边界精确释放对应强引用，
 /// 避免已释放的 scoped 播放器、文件监视器和视图长期滞留。
 /// </remarks>
@@ -109,32 +108,35 @@ internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycli
         // 若这里只删除字典项，缓存 View 仍会作为 ContentPresenter 的当前内容保活；插件资源虽已
         // Dispose，弱引用却无法归零。先主动从视觉父级摘除，既立即触发 Detached 清理，也保证
         // 后续 Presenter 再次刷新只是幂等地清空旧内容。
-        if (cached is Visual visual)
+        try
         {
-            ClearKeyboardNavigationReference(visual);
-            RemoveFromVisualParent(visual);
+            if (cached is Visual visual)
+            {
+                ClearKeyboardNavigationReference(visual);
+                RemoveFromVisualParent(visual);
+            }
         }
-
-        // DataContext 可能继续指向已释放的 Document；在移除缓存时主动断开，
-        // 使 View 即使被 Avalonia 短暂保留也不会延长业务作用域生命周期。
-        if (data is IManagedDockableViewHost adapter)
+        finally
         {
-            // Adapter 的 View 租约负责幂等断开与 Dispose；正常关闭、Runtime 兜底和回收器
-            // 可能重复到达这里，不能让控件自行释放路径形成第二套所有权算法。
-            adapter.ReleasePreparedView();
-        }
-        else if (cached is Control control)
-        {
-            // 控件离开逻辑树后继承的 DataContext 可能已表现为 null，但子级的显式
-            // Binding 仍持有最后一次求值。无条件清空根值，才能让整棵绑定树同步解绑。
-            control.DataContext = null;
-        }
-
-        // 允许包含原生窗口或显式事件订阅的复合 View 在“最终关闭”边界释放；
-        // 普通标签切换只调用 Build，不会触发这里，因此仍保留控件复用。
-        if (data is not IManagedDockableViewHost)
-        {
-            (cached as IDisposable)?.Dispose();
+            // 最终关闭与暂时复用不同：解绑失败仍必须结束资源所有权，并把失败交给调用者记录。
+            // Adapter 的租约负责幂等释放，外层 DockDocumentLifetime 仍负责结束 Document scope。
+            if (data is IManagedDockableViewHost adapter)
+            {
+                adapter.ReleasePreparedView();
+            }
+            else
+            {
+                try
+                {
+                    // 即使继承值已为 null，也清除显式 DataContext，断开子树中的业务绑定。
+                    if (cached is Control control)
+                        control.DataContext = null;
+                }
+                finally
+                {
+                    (cached as IDisposable)?.Dispose();
+                }
+            }
         }
         return true;
     }
@@ -158,23 +160,47 @@ internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycli
 
     private static void RemoveFromVisualParent(Visual visual)
     {
-        var parent = visual.GetVisualParent();
-        switch (parent)
+        // 同一 View 只能有一个正文宿主。优先移除实际 Presenter.Child，避免对模板外层的
+        // 逻辑父级误操作；之后再处理可能尚未脱离的逻辑 Content 所有权。最多分别处理两层。
+        // 不能安全摘除时明确失败，不能返回仍有父级的 View，也不能偷偷创建第二个播放器。
+        for (var attempt = 0; attempt < 2; attempt++)
         {
-            case Panel panel when visual is Control control:
-                panel.Children.Remove(control);
-                break;
-            case ContentPresenter contentPresenter:
-                contentPresenter.Content = null;
-                break;
-            case ContentControl contentControl:
-                contentControl.Content = null;
-                break;
-            case Decorator decorator:
-                decorator.Child = null;
-                break;
+            var visualParent = visual.GetVisualParent();
+            var parent = visualParent is ContentPresenter
+                ? visualParent
+                : (visual as Control)?.Parent ?? visualParent;
+            if (parent is null)
+                return;
+
+            switch (parent)
+            {
+                case ContentPresenter presenter when ReferenceEquals(presenter.Child, visual):
+                    // SetCurrentValue 保留主题/模板绑定；UpdateChild 使摘除在返回前完成，
+                    // 不依赖下一轮布局才释放视觉父级。
+                    presenter.SetCurrentValue(ContentPresenter.ContentProperty, null);
+                    presenter.UpdateChild();
+                    break;
+                case Panel panel when visual is Control child && panel.Children.Contains(child):
+                    panel.Children.Remove(child);
+                    break;
+                case ContentControl content when ReferenceEquals(content.Content, visual):
+                    content.SetCurrentValue(ContentControl.ContentProperty, null);
+                    break;
+                case Decorator decorator when ReferenceEquals(decorator.Child, visual):
+                    decorator.SetCurrentValue(Decorator.ChildProperty, null);
+                    break;
+                default:
+                    throw DetachFailure(visual, parent);
+            }
         }
+
+        var remaining = visual.GetVisualParent() ?? (visual as Control)?.Parent;
+        if (remaining is not null)
+            throw DetachFailure(visual, remaining);
     }
+
+    private static InvalidOperationException DetachFailure(Visual visual, StyledElement parent) =>
+        new($"Dock 正文 {visual.GetType().Name} 无法从父级 {parent.GetType().Name} 安全解绑；请检查正文模板的单一所有权。");
 
     /// <summary>清除视觉祖先对待关闭控件树中“上次 Tab 焦点”的强引用。</summary>
     private static void ClearKeyboardNavigationReference(Visual root)

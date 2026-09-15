@@ -15,8 +15,8 @@ namespace MyAvaloniaManagement.Behaviors;
 /// 为 Dock 标签拖动补齐跨控件、跨顶层窗口时的指针所有权。
 /// </summary>
 /// <remarks>
-/// Dock 12.0.0.2 的标签排序辅助器只记录了逻辑捕获状态，没有在按下阶段真正捕获指针。
-/// 本保护层只保证松开或捕获丢失事件能够返回原标签，Dock 仍然独立负责排序、浮动和停靠。
+/// Dock 12.1.0.6 的标签排序辅助器仍只记录逻辑捕获状态，没有主动调用指针捕获。
+/// 本保护层补齐标签手势的捕获与取消清理；捕获交给其他控件后立即退出，排序和停靠仍由 Dock 负责。
 /// </remarks>
 internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
 {
@@ -120,6 +120,7 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
         private int _scheduledRecoveryVersion = -1;
         private bool _isAttached;
         private bool _isDisposed;
+        private bool _captureTransferred;
 
         public GuardState(Control owner)
         {
@@ -151,7 +152,8 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
             _owner.AddHandler(
                 InputElement.PointerCaptureLostEvent,
                 OnPointerCaptureLost,
-                RoutingStrategies.Tunnel,
+                // Avalonia 12 的捕获丢失是 Direct 事件，Tunnel 订阅收不到取消或移交通知。
+                RoutingStrategies.Direct,
                 handledEventsToo: true);
             _owner.AttachedToVisualTree += OnAttachedToVisualTree;
             _owner.DetachedFromVisualTree += OnDetachedFromVisualTree;
@@ -209,8 +211,9 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
             _scheduledRecoveryVersion = -1;
             _originalRenderTransform = _owner.RenderTransform;
             _activePointer = e.Pointer;
+            _captureTransferred = false;
 
-            // 新建的浮动窗口可能只完成了显示而尚未激活。先激活再让同一个事件继续路由，
+            // 主窗口可能已经失去激活状态。先激活再让同一个事件继续路由，
             // 可以避免第一次手势只完成焦点切换、第二次手势才真正进入 Dock 拖拽。
             if (_topLevelWindow is { IsActive: false })
             {
@@ -235,8 +238,13 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
                     (hasForeignCapture ||
                      !currentPoint.Properties.IsLeftButtonPressed))
                 {
-                    _activePointer = null;
-                    ScheduleVisualRecovery();
+                    if (hasForeignCapture)
+                        RelinquishInteraction();
+                    else
+                    {
+                        _activePointer = null;
+                        ScheduleVisualRecovery();
+                    }
                 }
 
                 return;
@@ -244,7 +252,7 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
 
             if (e.Pointer.Captured is null)
             {
-                // 捕获延后到第一次移动，避免首次点击激活浮动窗口时与控件焦点处理争夺捕获权。
+                // 捕获延后到第一次移动，避免首次点击激活窗口时与控件焦点处理争夺捕获权。
                 // 不设置 Handled，Dock 的 ItemDragHelper 仍会处理同一个移动事件。
                 e.Pointer.Capture(_owner);
             }
@@ -268,9 +276,25 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
                 return;
             }
 
-            // Dock 把捕获权交给 DockControl 时属于正常路径；延迟检查可让 Dock 先完成自己的清理。
+            // Avalonia 在发出此事件前已经更新 Captured。非空的新所有者表示移交，
+            // 不是取消；下一帧 Dock 仍可能使用 :dragging 和位移，不能安排兜底恢复。
+            if (e.Pointer.Captured is not null && !ReferenceEquals(e.Pointer.Captured, _owner))
+            {
+                RelinquishInteraction();
+                return;
+            }
+
             _activePointer = null;
             ScheduleVisualRecovery();
+        }
+
+        private void RelinquishInteraction()
+        {
+            _activePointer = null;
+            _captureTransferred = true;
+            // 连同此前排队的恢复一起作废；之后卸载标签或停用附加行为也不能撤销接收方的手势。
+            _interactionVersion++;
+            _scheduledRecoveryVersion = -1;
         }
 
         private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
@@ -362,7 +386,7 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
         {
             _interactionVersion++;
             _scheduledRecoveryVersion = -1;
-            if (RecoverStaleVisualState(_owner, _originalRenderTransform))
+            if (!_captureTransferred && RecoverStaleVisualState(_owner, _originalRenderTransform))
             {
                 Trace.TraceWarning(RecoveryDiagnosticCode);
             }

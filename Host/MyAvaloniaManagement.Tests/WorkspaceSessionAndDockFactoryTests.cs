@@ -74,6 +74,71 @@ public sealed class WorkspaceSessionAndDockFactoryTests
     }
 
     [Fact]
+    public void 升级后初始化替换普通集合并在重复初始化及关闭最后标签时保持有效引用()
+    {
+        var factory = new HostDockFactory();
+        var callbacks = new RecordingWorkspaceCallbacks(factory);
+        factory.AttachCallbacks(callbacks);
+        var document = new Document { Id = "last", CanClose = true };
+        var original = new List<IDockable> { document };
+        callbacks.Documents.VisibleDockables = original;
+        callbacks.Documents.ActiveDockable = document;
+
+        factory.InitLayout(callbacks.Root);
+        var current = callbacks.Documents.VisibleDockables;
+        Assert.NotSame(original, current);
+        Assert.IsAssignableFrom<System.Collections.Specialized.INotifyCollectionChanged>(current);
+        Assert.Same(factory, document.Factory);
+        Assert.Same(callbacks.Documents, document.Owner);
+        factory.InitLayout(callbacks.Root);
+        Assert.Same(current, callbacks.Documents.VisibleDockables);
+
+        factory.CloseDockable(document);
+
+        Assert.Empty(current!);
+        Assert.Single(original);
+        Assert.Equal(1, callbacks.ClosedCount);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void 框架关闭取消或异常都会撤销Session已允许的关闭状态(bool throws)
+    {
+        var factory = new HostDockFactory();
+        var callbacks = new RecordingWorkspaceCallbacks(factory);
+        factory.AttachCallbacks(callbacks);
+        factory.DockableClosing += (_, args) =>
+        {
+            if (throws)
+                throw new InvalidOperationException("测试框架订阅者失败");
+            args.Cancel = true;
+        };
+
+        if (throws)
+            Assert.Throws<InvalidOperationException>(() => factory.OnDockableClosing(callbacks.Tool));
+        else
+            Assert.False(factory.OnDockableClosing(callbacks.Tool));
+
+        Assert.Equal(1, callbacks.ClosingCount);
+        Assert.Equal(1, callbacks.RejectedCount);
+        Assert.Equal(0, callbacks.ClosedCount);
+    }
+
+    [Fact]
+    public void 框架Closed订阅者异常仍通知Session完成唯一所有权释放()
+    {
+        var factory = new HostDockFactory();
+        var callbacks = new RecordingWorkspaceCallbacks(factory);
+        factory.AttachCallbacks(callbacks);
+        factory.DockableClosed += (_, _) => throw new InvalidOperationException("测试关闭通知失败");
+
+        Assert.Throws<InvalidOperationException>(() => factory.OnDockableClosed(callbacks.Tool));
+
+        Assert.Equal(1, callbacks.ClosedCount);
+    }
+
+    [Fact]
     public void 多个主窗口ViewModel共享唯一Session布局且不重复创建Tool()
     {
         using var context = new TestHostContext();
@@ -304,6 +369,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         internal int HiddenCount { get; private set; }
         internal int ClosingCount { get; private set; }
         internal int ClosedCount { get; private set; }
+        internal int RejectedCount { get; private set; }
 
         IRootDock? IWorkspaceDockCallbacks.RootDock => Root;
         IReadOnlyCollection<string> IWorkspaceDockCallbacks.CreatedToolIds => [Tool.Id!];
@@ -325,7 +391,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
             return AllowClose;
         }
         void IWorkspaceDockCallbacks.OnDockableClosed(IDockable? dockable) => ClosedCount++;
-        void IWorkspaceDockCallbacks.OnDockableCloseRejected(IDockable? dockable) { }
+        void IWorkspaceDockCallbacks.OnDockableCloseRejected(IDockable? dockable) => RejectedCount++;
     }
 
     private sealed class SessionReleaseProbe
