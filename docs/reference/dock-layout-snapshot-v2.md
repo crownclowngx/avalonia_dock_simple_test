@@ -1,7 +1,6 @@
 # Dock 布局快照 V2
 
-> 当前正式生产契约，建立于 Managed Plugin V2 G8，并由 G14 Windows 真实窗口门禁签署。历史
-> `layout-v1.json` 只保留为文件事实，Host 不读取、迁移、覆盖或隔离它。
+> 用途：当前 Layout V2 格式及恢复语义。状态：当前；核对日期：2026-09-16。事实源：[Layout 实现](../../Host/MyAvaloniaManagement/Business/Layout)与布局测试。历史 `layout-v1.json` 不读取、迁移、覆盖或隔离。
 
 ## 文件与所有权
 
@@ -77,4 +76,4 @@ Pane 比例、显隐和自动收起状态保持；首次覆盖前保存原始字
 
 ## V1 保留边界
 
-同一数据根中的 `layout-v1.json` 可以继续存在。V2 只查找 `layout-v2.json`；不会把 V1 改名为坏文件，也不会读取后写成 V2。回滚 G8 代码同样不得恢复 V1 reader，避免回滚操作改变用户历史文件。
+同一数据根中的 `layout-v1.json` 可以继续存在。V2 只查找 `layout-v2.json`；不会把 V1 改名为坏文件，也不会读取后写成 V2。回滚实现同样不得恢复 V1 reader，避免回滚操作改变用户历史文件。

@@ -1,7 +1,9 @@
 # 插件目录双模式与功能中心使用说明
 
+> 用途：当前使用或开发指南；状态：当前。核对日期：2026-09-16。版本与支持范围见[集中基线](../reference/platform-baseline.md)，实现依据见本文对应源码或验收链接。
+
 V8 将欢迎页“开始使用”和“文件 → 功能中心…”统一到同一个功能选择窗口。
-[工具中心](./tool-center.md)管理辅助工具的显隐；[命令面板](./workbench-search.md)可直接查找功能、已有页面、工具与命令。
+[工具中心](tool-center.md)管理辅助工具的显隐；[命令面板](workbench-search.md)可直接查找功能、已有页面、工具与命令。
 旧“插件分组菜单”仍可从工具中心显示，支持原有两种目录模式。
 
 > V8 是 Host 改造顺序，产品与 SDK 不随此名称升版。
@@ -56,7 +58,7 @@ menuCategory: "闲才业务工具/文本检测"
 - 计数按创建入口计算：一个 Document 的多个创建意图分别显示、分别计数。
 - 旧版始终显示完整原始字符串，例如 `闲才业务工具/文本检测` 仍为一个平铺分组。
 
-本轮未修改外部插件。原本只写“闲才业务工具”的三个 Document 仍在一级分类；需后续修改它们的元数据才会出现“文本检测”层级。
+以上为分类元数据示例，不表示某个外部插件当前已采用该层级；实际目录由已安装插件的 Descriptor 决定。
 
 ## 4. 无需 PNG 的公共矢量图标
 
@@ -77,8 +79,7 @@ iconPath: "builtin:table"
 | `builtin:video` | 视频 |
 | `builtin:download` | 下载 |
 
-解析顺序为创建意图图标 → Document 图标 → 公共默认图标。创建意图缺省时继承 Document；最终非空值若不在上述目录中，直接用默认图标，不继续猜测。
-名称大小写须一致。空值、未知名称、文件路径、URL 和其他格式都使用默认图标；此功能不加载外部图片或网络资源。
+解析顺序为创建意图图标 → Document 图标 → 公共默认图标。创建意图缺省时继承 Document。Host 支持上述 `builtin:` 名称和经注册、归属校验的 `plugin:` 专属引用；其他值回退默认图标，不加载外部图片或网络资源。专属注册见[图标开发](plugin-icons.md)。
 矢量随主题与控件尺寸绘制，同一个图形可以同时出现在多个位置，各位置有独立控件。
 
 ## 5. 自定义“旧版/新版”的名称
@@ -106,7 +107,7 @@ iconPath: "builtin:table"
 空白名称使用默认值；未知模式回退旧版；损坏 JSON 或未知 schema 会保留 `.invalid.bak` 备份并回退。
 偏好保存失败不会阻止本次切换，只影响下次启动的记忆。本轮没有运行时改名编辑器。
 
-相关资料：[V6 设计](../design/host-v6-plugin-navigation-and-function-center-plan.md)、[V6 实施验收](../plan-history/host-v6/plugin-navigation-and-function-center-acceptance.md)。
+相关资料：[V6 设计](../archive/plans/host-v6-plugin-navigation-and-function-center-plan.md)、[V6 实施验收](../archive/records/host-v6/plugin-navigation-and-function-center-acceptance.md)。
 
 ## V6.1 图标扩展
 

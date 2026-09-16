@@ -1,5 +1,7 @@
 # 插件状态窗口
 
+> 用途：当前使用或开发指南；状态：当前。核对日期：2026-09-16。版本与支持范围见[集中基线](../reference/platform-baseline.md)，实现依据见本文对应源码或验收链接。
+
 通过 **工具 → 插件状态…** 打开，也可以按 `Ctrl+Shift+P` 搜索“插件状态”。
 窗口可调整大小，保持打开时仍能操作主工作区；重复打开会恢复并激活同一个窗口，`Esc` 关闭。
 即使所有工具均已隐藏、没有活动文档或没有插件，入口仍可使用。
@@ -34,4 +36,4 @@
 工具中心会清理这两个退役项的收藏、最近使用、分类分配和历史名称；正常的自定义分类保留。
 其他暂时缺失插件的历史偏好继续保留，不会被误清理。插件状态窗口本身不写入 Dock 布局。
 
-相关说明：[工具中心](./tool-center.md) · [实现设计与验收](../design/plugin-status-window.md)。
+相关说明：[工具中心](tool-center.md) · [当前内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md) · [历史设计](../archive/plans/plugin-status-window.md)。

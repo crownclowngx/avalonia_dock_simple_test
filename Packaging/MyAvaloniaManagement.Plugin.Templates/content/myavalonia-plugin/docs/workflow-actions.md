@@ -11,8 +11,8 @@ Provider 或 Consumer 角色。这样创建出来的插件保持最小职责，�
   Provider 中创建和释放独立 Scope。
 - **Consumer** 只调用 `UseWorkflowActionGateway()` 请求 caller-bound Gateway。CallerId、RunId、
   InvocationId 和授权结果全部由 Host 生成，插件不能提交或伪造。
-- 首版明确禁止同一插件同时成为 Provider 和 Consumer，避免递归调用和不清晰的授权所有权。需要端到端
-  验证时应创建两个独立插件项目，并通过真实 ZIP 与候选 Host 组合。
+- 当前 Host 允许同一插件兼任 Provider 和 Consumer。caller-bound 目录过滤自有 Action，手工自调用仍在授权与 Scope 前以 `WORKFLOW_ACTION_SELF_INVOCATION_FORBIDDEN` 拒绝。
+- Handler 异步链中的嵌套调用以 `WORKFLOW_ACTION_NESTED_INVOCATION_FORBIDDEN` 拒绝。编排放在 Document/Application Service 或 Studio Runner；真实跨插件验证使用不同所有者的插件 ZIP。
 
 ## Provider 最小示例
 

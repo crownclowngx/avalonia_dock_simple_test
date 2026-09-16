@@ -1,11 +1,13 @@
 # V9：Avalonia / Dock 升级使用与开发验证
 
-版本事实以 [Directory.Version.props](../../Directory.Version.props) 为准；逐阶段证据见 [专用开发验收](../plan-history/host-v9/development-acceptance.md)。
+> 用途：当前使用或开发指南；状态：当前。核对日期：2026-09-16。版本与支持范围见[集中基线](../reference/platform-baseline.md)，实现依据见本文对应源码或验收链接。
+
+版本事实以 [Directory.Version.props](../../Directory.Version.props) 为准；逐阶段证据见 [专用开发验收](../archive/records/host-v9/development-acceptance.md)。
 
 ## 升级后的边界
 
 - Host：Avalonia 12.1.2、Dock 12.1.0.6，产品版本仍为 3.0.0。
-- 六个自有 NuGet 包统一为 3.4.1，发布状态与公共源消费证据见 [统一发布记录](../plan-history/host-v9/nuget-unified-3.4.1-release.md)。Host 安装目录没有部署。
+- 六个自有 NuGet 包统一为 3.4.1，发布状态与公共源消费证据见 [统一发布记录](../archive/records/host-v9/nuget-unified-3.4.1-release.md)。Host 安装目录没有部署。
 - SDK public API、manifest schema 2、Document schema 2、layout-v2.json 均保持兼容，不迁移用户数据。
 - Semi 12.1.0、Ursa 2.1.0 保持原版本。Workflow 包号对齐 3.4.1，保留 v1 API 和 AssemblyVersion 1.0.0.0。
 
@@ -48,7 +50,7 @@ dotnet msbuild src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj -t:BuildMana
 
 模板直接依赖的 Core/UI SDK、Icons、Build 都精确固定到 `[3.4.1]`，三个 lock file 使用公共源最终包哈希。Workflow SDK 为可选包，需要时同样引用 `3.4.1`。生成插件的业务版本仍为 `1.0.0`，不能把 SDK 的发布版本误当作每个业务插件的版本。
 
-开发下一版本时，先集中修改 `MyAvaloniaPackageVersion`，再同步模板的精确依赖和最低 SDK。基础包发布后需从公共源重新生成模板锁文件，最后发布模板；必须实际验证公共源 locked restore，不能仅凭本地候选锁文件宣告公共消费通过；归档签名与 NuGet contentHash 是不同层次。发布步骤见 [专用记录](../plan-history/host-v9/nuget-unified-3.4.1-release.md)。
+开发下一版本时，先集中修改 `MyAvaloniaPackageVersion`，再同步模板的精确依赖和最低 SDK。基础包发布后需从公共源重新生成模板锁文件，最后发布模板；必须实际验证公共源 locked restore，不能仅凭本地候选锁文件宣告公共消费通过；归档签名与 NuGet contentHash 是不同层次。发布步骤见 [专用记录](../archive/records/host-v9/nuget-unified-3.4.1-release.md)。
 
 ## 开发门禁和外部产物验证
 

@@ -1,0 +1,62 @@
+# 主仓验证与封板
+
+> 用途：维护 Host、SDK 和 MyPlugTest。状态：当前；核对日期：2026-09-16。事实源：[Gate 参数](../../tools/MyAvaloniaManagement.Gate/GateOptions.cs)、[配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)与执行实现。
+
+## 日常开发
+
+在主仓根目录运行：
+
+```powershell
+dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
+```
+
+`verify` 允许未提交修改，只使用本仓。它执行 locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约检查、MyPlugTest 打包和真实 ZIP 验收。不采集覆盖率，不启动 Windows Smoke，不授予发布资格。
+
+`--scope host` 和 `--scope all` 都执行完整本仓验证。`workflow`、`workbench` scope 以及旧外部仓库参数均已退役；外部插件业务验证由各仓库独立负责。
+
+## 包验收与专项排错
+
+MyPlugTest ZIP 验收使用 `Category=PackageAcceptance`。Gate 打包解压后设置 `MYAVALONIA_MY_PLUG_TEST_PACKAGE_ROOT`，必须恰好通过一项包验收；缺输入、加载失败或零测试均失败。单独运行常规 Plugin 测试时排除该项：
+
+```powershell
+dotnet test Host/MyAvaloniaManagement.PluginTests -c Release -m:1 --filter 'Category!=PackageAcceptance'
+```
+
+按实际测试类定位问题，不恢复已退役的 G 阶段脚本。例如：
+
+```powershell
+dotnet test Host/MyAvaloniaManagement.Tests -c Release -m:1 --filter FullyQualifiedName~HelpContentTests
+dotnet test Host/MyAvaloniaManagement.PluginTests -c Release -m:1 --filter 'FullyQualifiedName~HostLifecycleOwnershipTests|FullyQualifiedName~PluginLifecycle'
+```
+
+`-m:1` 避免专项工程引用的不同全局属性并发写入同一中间目录。专项通过只代表选定范围；具体测试数量和覆盖率应记入本次验收记录。
+
+外部旧插件产物需要单独提供完整 Controls 副本，默认 verify 不编译这些外部输入夹具；操作与覆盖边界见 [V9 验证说明](../quick-start/host-v9-upgrade.md)。
+
+## 正式 Host 封板
+
+仅在具备发布验收条件时使用：
+
+```powershell
+dotnet run --project tools/MyAvaloniaManagement.Gate -- seal
+# 需要证明隔离重复性时：
+dotnet run --project tools/MyAvaloniaManagement.Gate -- seal --repeat
+```
+
+seal 只支持 Windows x64，要求干净工作树，固定 global.json 的 SDK 和 Release 配置。它创建无硬链接源码克隆，执行本仓验证、MyPlugTest 双次确定性打包、包身份和资产检查、真实包验收、Host-only 覆盖率及真实窗口 layout-v2.json Smoke。
+
+覆盖率合并 Host Unit、Plugin、UI、包验收四份报告，只统计主程序集；最低行/分支阈值为配置中的 84.39% / 70.58%。缺报告或混入其他程序集失败。默认一轮，`--repeat` 才执行第二份隔离工作区并比较稳定证据。
+
+**当前 Core/UI Unshipped 非零，尚不满足 seal 的 API 条件。** 不得为了执行 seal 清空基线或降阈值；详情见 [API 维护](../reference/plugin-sdk-api-compatibility.md)。seal 不包含上传、签名、Git 标签或安装目录部署；真实业务和人工体验也不能仅由 Smoke 替代。
+
+## 证据与工具自测
+
+输出位于 `artifacts/gate/<run-id>/`，包含 summary、阶段日志、TRX、覆盖率及包证据。失败工作区保留供排查；成功后仅清理 Gate 自己标记的临时目录。对外保留结论前，保存源码身份、实际命令、失败/跳过数及必要摘要；产物清理后注明原路径已失效。
+
+Gate 自测独立运行，避免重建正在执行的工具：
+
+```powershell
+dotnet test tools/MyAvaloniaManagement.Gate.Tests -c Release -m:1
+```
+
+现有文档检查只覆盖根 README、docs/README 和 Host 文档 README 的本仓文件链接；仓库外相对链接不要求邻仓存在，锚点、正文事实和其他文档需要额外检查。文档调整还应核对嵌入帮助的原文与链接。本轮整理没有扩展 Gate 或测试。

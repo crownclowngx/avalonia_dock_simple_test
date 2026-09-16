@@ -1,5 +1,7 @@
 # 添加多个 Document、Tool 和独立预览工作台
 
+> 用途：当前使用或开发指南；状态：当前。核对日期：2026-09-16。版本与支持范围见[集中基线](../reference/platform-baseline.md)，实现依据见本文对应源码或验收链接。
+
 本篇从模板生成的 `ExamplePlugin` 出发，说明如何登记多个贡献，以及怎样在 Standalone 小窗口中查看
 它们。核心原则只有一个：`ExamplePluginModule.Configure()` 是唯一注册事实源，Standalone 不再维护另一
 份页面类型清单。
@@ -127,7 +129,7 @@ public void Configure(IPluginRegistration registration)
 
 ## 5. 当前模板 Standalone 的限制
 
-Templates `1.3.0` 的 `MainWindow` 直接实例化一个 `MainDocument`，XAML 也直接放置一个 `MainView`。新增
+当前模板的 `MainWindow` 直接实例化一个 `MainDocument`，XAML 也直接放置一个 `MainView`。新增
 注册不会自动出现在这个窗口，因为 Standalone 没有执行 Module，也没有贡献目录。
 
 这对第一个页面很方便，但多贡献时不应继续写：
@@ -302,4 +304,4 @@ Standalone 可以验证：
 
 因此开发顺序应是：Standalone 快速迭代 → 单元测试 → Release ZIP → 真实 Host 最终验收。
 
-下一步：[编译、打包、真实 Host 验收与排错](./verification-and-troubleshooting.md)。
+下一步：[编译、打包、真实 Host 验收与排错](verification-and-troubleshooting.md)。

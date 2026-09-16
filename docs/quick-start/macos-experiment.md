@@ -1,5 +1,7 @@
 # Windows 打包、macOS 运行实验
 
+> 用途：当前使用或开发指南；macOS 页面仍为实验说明。核对日期：2026-09-16。版本与支持范围见[集中基线](../reference/platform-baseline.md)，实现依据见本文对应源码或验收链接。
+
 本实验提供自带 .NET 10 运行时的 Host `.app` ZIP，以及独立 MyPlugTest 插件 ZIP。
 目标是验证 Windows 交叉发布和 Mac 复制插件的流程。macOS 最低版本为 14；Apple 芯片使用
 `osx-arm64`，Intel 使用 `osx-x64`。此包没有 Developer ID 签名或 Apple 公证，首次使用需要在

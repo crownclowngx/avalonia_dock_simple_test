@@ -1,16 +1,8 @@
 # Managed Plugin 快速开始
 
-Workflow Action Provider/Consumer 另见 [Workflow Action 开发说明](workflow-action-development.md)；G3.1 SDK
-维护者发布流程见 [G3.1 SDK 候选打包与发布](workflow-sdk-publication.md)。
+> 用途：外部插件作者入门。状态：当前；核对日期：2026-09-16。事实源：[模板内容](../../Packaging/MyAvaloniaManagement.Plugin.Templates/content/myavalonia-plugin)、[版本与交付边界](../reference/platform-baseline.md)。
 
-本组文档面向外部插件作者：不需要克隆 Host 仓库，只需要 .NET 10 SDK、Rider 或其他 .NET IDE，以及
-能够访问 NuGet.org。下方模板示例使用 V9 统一发布基线 Plugin SDK `3.4.1`、manifest schema 2、Avalonia 12、Windows x64。
-
-V9 将 Core/UI、Workflow、Icons、Build、Templates 六个自有 NuGet 包统一为 `3.4.1`。安装与还原步骤见 [V9 升级使用说明](host-v9-upgrade.md)，实际发布状态见 [统一发布记录](../plan-history/host-v9/nuget-unified-3.4.1-release.md)。
-
-历史 Workbench Command G6 曾将 Core/UI SDK 提升到 `3.3.0`、Templates 提升到 `1.3.0`；Workflow SDK
-保持 `1.0.0`，Build 协议未变化，
-仍为 `1.1.2`。
+不需要克隆 Host；需要 .NET 10 SDK、Rider 或其他 .NET IDE，以及 NuGet.org 访问能力。当前模板使用 SDK/UI、Icons、Build 3.4.1，manifest schema 2，目标 Windows x64。
 
 ## 最短路径
 
@@ -18,68 +10,40 @@ V9 将 Core/UI、Workflow、Icons、Build、Templates 六个自有 NuGet 包统�
 dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.1
 dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
 cd ExamplePlugin
-dotnet restore
-dotnet build -c Debug -warnaserror
-dotnet test -c Debug --no-build
-dotnet run --project src/ExamplePlugin.Standalone
+dotnet restore --locked-mode
+dotnet build -c Debug --no-restore -warnaserror
+dotnet test -c Debug --no-build --no-restore
+dotnet run --project src/ExamplePlugin.Standalone --no-build
 ```
 
-模板生成：
-
-```text
-ExamplePlugin/
-├─ ExamplePlugin.slnx
-├─ src/
-│  ├─ ExamplePlugin.Plugin/       # 唯一真实插件程序集
-│  └─ ExamplePlugin.Standalone/   # Avalonia 独立预览程序
-├─ tests/
-│  └─ ExamplePlugin.Tests/
-└─ docs/                           # 随项目生成的快速开始、职责和部署说明
-```
-
-View、ViewModel、`IPluginModule` 和插件业务默认放在同一个 Plugin 项目。只有业务需要被多个插件、命令行
-或服务共同消费时才提取 Core；Standalone 与 Tests 都直接引用同一个 Plugin 项目。
+模板生成真实 Plugin 程序集、Standalone 预览程序、Tests 和随项目携带的 docs。View、模型、Module 与业务默认放在同一 Plugin 项目；只有存在真实复用需求时才拆分 Core。
 
 ## 两层验证
 
-Standalone 是快速开发工作台，真实 Host 是最终验收环境。二者职责不能混为一谈：
-
 | 能力 | Standalone | 真实 Host |
 | --- | --- | --- |
-| View、绑定、命令和插件私有 DI | 可以 | 可以 |
-| 多 Document 页面和 Tool 的快速查看 | 可由极简工作台模拟 | 可以 |
-| Document Scope、Tool singleton | 可模拟并做单元测试 | 最终事实 |
-| manifest、插件发现、程序集隔离 | 不验证 | 必须验证 |
-| 真实 Dock、布局恢复、保存与关闭语义 | 不验证 | 必须验证 |
-| Host Port、生命周期和卸载 | 只使用显式 Stub | 必须验证 |
+| View、绑定、命令、私有 DI | 快速开发与预览 | 最终集成 |
+| Document Scope、Tool singleton | 可以模拟和测试 | 最终所有权事实 |
+| manifest、程序集隔离、共享 SDK | 不验证 | 必须验证 |
+| Dock、布局、保存、关闭与 Host Port | 仅使用显式替身 | 必须验证 |
 
-模板 `1.1.0` 自带的 Standalone 直接预览一个 `MainDocument + MainView`。当插件有多个 Document 或 Tool
-时，应把它扩展为“贡献浏览器”：调用同一个 Module 收集注册结果，左侧列出贡献，中间打开 Document
-标签，右侧或底部显示 Tool。不要复制完整 Host，也不要维护第二份贡献清单。
+模板默认预览一个 MainDocument 和 MainView。多个贡献可扩展为调用同一 Module 的贡献浏览器，不复制完整 Host，也不维护第二份贡献清单。
 
 ## 生命周期速查
 
-| 对象 | 生命周期 |
+| 对象 | 寿命 |
 | --- | --- |
-| Document Model 与局部服务 | 每打开一个实例创建一个 DI Scope；关闭标签时释放 |
-| Document View | 每个打开实例一个，由工作台或 Host 设置 `DataContext` |
-| Tool Model | 每种 Tool 在插件 Provider 中一个 singleton |
-| Tool View | 展示层对象；不能拥有 Tool Model 生命周期 |
+| Document 模型与局部服务 | 每个实例一个 Scope，最终关闭时释放 |
+| Document View | 每个打开实例一个，由工作台设置 DataContext |
+| Tool 模型 | 所属插件 Provider singleton |
+| Tool View | 展示对象，不拥有 Tool 模型寿命 |
 | 插件私有 singleton | 插件 Provider 释放时结束 |
 
 ## 阅读顺序
 
-1. [从只有 Rider 和 Avalonia 的机器创建插件](./create-managed-plugin.md)
-2. [添加多个 Document、Tool 和独立预览工作台](./add-document-and-tool.md)
-3. [编译、打包、真实 Host 验收与排错](./verification-and-troubleshooting.md)
+1. [创建插件](create-managed-plugin.md)
+2. [增加 Document、Tool 与预览](add-document-and-tool.md)
+3. [构建、打包、Host 验收与排错](verification-and-troubleshooting.md)
+4. [图标接入](plugin-icons.md)、[Workflow Action 接入](workflow-action-development.md)、[Workbench Command 契约](../reference/workbench-commands.md)
 
-SDK、Build 和模板包的发布方式见
-[外部 Managed Plugin 开发、模板与 NuGet 发布指南](../design/external-managed-plugin-development-and-installation-plan.md)。
-
-V6.1 新增 [公共资源与插件专属图标](plugin-icons.md)。当前配套为 Core/UI 3.4.0、Icons 1.0.0、Build 1.1.3、Templates 1.4.1；发布证据见专属实施记录。
-
-## Host 使用入口
-
-- [工作区搜索与功能入口（V8）](./workbench-search.md)
-- [功能中心与插件目录](./plugin-navigation-and-function-center.md)
-- [工具中心](./tool-center.md)
+主仓维护者另读 [Gate 验证](../maintenance/verification.md)和[六包发布维护](../maintenance/nuget-release.md)。应用使用说明从[总导航](../README.md)进入。

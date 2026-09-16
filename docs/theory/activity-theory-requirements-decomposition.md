@@ -1,9 +1,11 @@
 # 基于活动理论的需求分解方法论：从自然语言需求到 Document 与 Tool 的拆分
 
+> 文档定位：理论与设计解释。2026-09-16 核对本项目代码映射与阅读入口；研究论述保留原文，不将建议视为已实现功能。当前实现见[Host 架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)，契约见[总导航](../README.md)。
+
 > 文档性质：方法论草案（形式化与非形式化讨论并行）
 > 适用对象：开发团队、产品设计者、项目评审者
-> 前置阅读：[以注意力为中心的可停靠工作台设计](./attention-centered-dock-workspace-design.md)（下文简称《主设计文档》，其参考文献编号沿用为 M-n）
-> 关联文档：[宿主—插件交互架构评审](../design/host-plugin-architecture-review.md)
+> 前置阅读：[以注意力为中心的可停靠工作台设计](attention-centered-dock-workspace-design.md)（下文简称《主设计文档》，其参考文献编号沿用为 M-n）
+> 关联文档：[当前 Host 内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)；[原宿主—插件评审](../archive/plans/host-plugin-architecture-review.md)用于历史追溯。业务拆分案例保留原文，不表示全部由主仓交付。
 > 状态说明：本文是"先定方向、后补严谨"的第一版方法论。其中活动理论映射属于概念框架，信息论部分中一部分是已有结论的直接引用、一部分是本项目提出的工程模型，两者会被明确区分。本文不构成任何已验证效果的声明。
 
 ## 摘要
@@ -132,7 +134,7 @@ g=(v,\ o,\ S_g,\ I_g).
 
 其中 \(\omega(s)=\texttt{instance}\) 表示 \(s\) 应随一次具体工作的结束而被释放或归档（例如"这次下载配置里填的 URL"），\(\omega(s)=\texttt{global}\) 表示 \(s\) 是跨工作共享的事实（例如"下载队列当前长度""文件系统中已存在的媒体文件"）。
 
-工程对应：\(\omega(s)=\texttt{instance}\) 的状态由每 `Document` 独立的 DI Scope 持有；\(\omega(s)=\texttt{global}\) 的状态由宿主单例或插件服务持有。这不是新增约束，而是对现有架构事实（见架构评审中 Document 与 Tool 的生命周期章节）的语言化。
+工程对应：\(\omega(s)=\texttt{instance}\) 的状态由每 `Document` 独立的 DI Scope 持有；\(\omega(s)=\texttt{global}\) 的状态由宿主单例或插件服务持有。这不是新增约束，而是对现有架构事实（见当前 Host 架构中 Document 与 Tool 的生命周期章节）的语言化。
 
 ### 4.2 归属分类算子 Φ
 
@@ -309,7 +311,7 @@ A1 是四轴中对内部结构约束最强的一轴，给出操作定义：
 
 ### 6.3 分类轴与现有代码的咬合
 
-当前 Legacy 运行链的 [`DocumentMetadata`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/DocumentCreation/DocumentMetadata.cs) 只含 `DocumentTypeId`、`DisplayName`、`MenuCategory` 等展示性字段，尚无分类轴字段。若本方法论经回溯验证后被采纳，可将 A1–A4 以枚举或位标志形式加入元数据，供菜单分组、默认布局与恢复策略消费。**是否落码是后续决定，不属于本文承诺。**
+当前声明式注册使用 UI SDK 的 [`DocumentDescriptor`](../../Host/MyAvaloniaManagement.PluginSdk.UI/ContributionDescriptors.cs)，包含身份、名称、分类、图标和创建意图等信息；其字段不等同于本文提出的 A1–A4 分类轴。旧 Legacy DocumentMetadata 已删除。若本方法论经回溯验证后被采纳，可将 A1–A4 以枚举或位标志形式加入元数据，供菜单分组、默认布局与恢复策略消费。**是否落码是后续决定，不属于本文承诺。**
 
 ## 7. 判定问题 C（二）：Tool 的子分类轴
 

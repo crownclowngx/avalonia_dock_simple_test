@@ -1,45 +1,29 @@
 # MyAvaloniaManagement Plugin SDK
 
-本包是 Managed Plugin 的平台无关 Core 契约程序集。它只依赖 .NET BCL，并提供稳定身份、
-Document 模型、原生 JSON 内容、关闭观察、插件生命周期，以及 Workbench Command 的平台无关身份与
-Document Target 候选契约。
+> 用途：包消费者了解 Core 契约。当前包版本 3.4.1；核对日期：2026-09-16。事实源为本程序集 public 类型、ApiCompatibility/v3 与集中版本属性。
 
-Core 不引用 Avalonia、Dock、Newtonsoft、Microsoft DI 或 Host 实现。需要声明模块、私有服务以及
-Document/Tool 与 Avalonia View 映射的插件，应引用同版本 `MyAvaloniaManagement.PluginSdk.UI`。
+Core 是平台无关契约，只依赖 .NET BCL，不引用 Avalonia、Dock、Microsoft DI、Newtonsoft 或 Host 实现。模块、服务注册、View 与窗口交互使用同版本 UI SDK。
 
-当前仓库已完成 V3 G14 封板。Host 使用互斥的 `NewDocumentActivation` 与
-`RestoreDocumentActivation` 异步初始化普通 `IPluginDocument`；Creation Intent 只存在于新建分支，
-`DocumentContent` 只存在于恢复分支。可保存模型实现 `IPersistablePluginDocument`，通过
-`CaptureSaveSnapshotAsync` 返回不可变的 `DocumentSaveSnapshot(DocumentRevision, DocumentContent)`，
-并只在 `AcceptChanges(savedRevision)` 收到仍为当前版本的修订时接受保存基线。`IsDirty` 由当前修订与
-已接受修订是否相等推导，Host 只投影结果，不解释插件修订值。模型仍只观察 Host 拥有的
-`IDocumentLifetime`。该端口只在插件模块返回并通过所有权校验后由 Host 最终追加，插件不能用普通或
-keyed DI 注册影子覆盖。G5 已删除 SDK 通用事件总线；需要消息通信的插件应在自身程序集声明最小接口，
-并由自身 Provider 持有实现与生命周期。四插件已证明多 Document 独立 Scope、插件级 Tool/消息器、
-Revision 保存竞争、严格内容读取、关闭令牌与 Lifecycle/readiness 可沿最终 Registry、Workspace 和
-Dock Adapter 链工作；G13 已证明旧 public 入口和运行闭包零残留，没有新增 SDK public API。
+## Document 与生命周期
 
-当前 SDK 版本为 3.4.1；Core/UI v3 Shipped 保持 127/45 条，Workflow Action、
-Workbench Command 与图标兼容新增位于 v3 Unshipped 91/79 条，v2 Shipped 历史文本保持不变。
-Workflow Action 的 Core 契约提供 JSON 边界的 Handler、
-caller-bound Gateway、显式 Run、结构化请求/终态与受限进度；不包含 Host、工作流定义或 AI 类型。
+Host 用互斥的 `NewDocumentActivation` / `RestoreDocumentActivation` 初始化 `IPluginDocument`；Creation Intent 只属于新建，DocumentContent 只属于恢复。每个 Document 独立 Scope，模型只观察 Host 拥有的 `IDocumentLifetime`。
 
-Workbench Command G1 新增 `CommandId`、单命令状态事件和窄
-`IWorkbenchDocumentCommandTarget`。Target 由当前 Document 模型实例可选实现，只接收稳定身份和取消令牌，
-不取得 Context、Provider、Control 或 Dock。G2 已在 Host internal 建立 Host/Plugin 合并 Catalog、打开/保存
-Handler、统一 Executor、脱敏诊断和 10 秒关闭门控；SDK public API 与 G1 完全相同。活动 Document Context、
-G3 已完成活动 Document Context 与插件 Target 路由，G4/G5 已把 Host 打开、保存及声明式菜单/快捷键统一到
-同一个 Executor。G6 冻结 3.3.0 候选包并用独立模板、真实插件 ZIP、双 ALC 及新旧 Host 负例验证外部消费；
-G9 又在 Host internal 层实现最小 Command Palette；它没有增加或修改 Plugin SDK public API。
+可保存模型实现 `IPersistablePluginDocument`，捕获 `DocumentSaveSnapshot(DocumentRevision, DocumentContent)`；只有主文件提交成功后，Host 才以同一修订调用 `AcceptChanges(savedRevision)`。插件只在确认仍是当前修订时接受基线，旧确认不能清除新修改。
 
-Provider 的私有 DTO 不穿越公共边界。Consumer 通过 Gateway 创建绑定可信 CallerId 的 Run，不能提交
-CallerId、OwnerId、RunId 或授权结果；Run 的 Dispose 会取消并等待本 Run 的在途调用。
+SDK 不提供通用事件总线；插件内部消息器由自己的 Provider 持有，不能把插件私有类型或服务解析器跨边界传递。
 
-Workflow Action G2 已把该能力传播到模板，并以真实 nupkg、三个 lock file、外部 Provider/Consumer
-和 Host 实调通过门禁。V9 将六个自有 NuGet 包统一为 `3.4.1`，Build 协议保持兼容：
+## 用户命令与跨插件调用
+
+`CommandId` 和 `IWorkbenchDocumentCommandTarget` 表达活动 Document 的工作台操作；Target 只接收稳定身份和取消令牌，不取得 Provider、Control 或 Dock。Host 将菜单、快捷键和命令面板统一到同一执行路径。
+
+Workflow Action 契约提供 JSON 边界的 Handler、caller-bound Gateway、显式 Run、结构化终态和受限进度。Consumer 不能伪造 CallerId 或授权结果，Run 异步释放会取消并等待在途调用。Provider/Consumer 可以由同一插件兼任，但 Host 禁止自调用及 Handler 嵌套调用。
+
+Core/UI v3 Shipped 保持 127/45，增量文本分别为 91/79；已公开版本中的部分新增仍位于 Unshipped，不能据文件名推断“未发布”。Workflow 共享 Schema 位于独立包，不包含 AI 或工作流 Runner。
 
 ```xml
 <PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.4.1]" />
 <PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.4.1]" />
 <PackageReference Include="MyAvaloniaManagement.Plugin.Build" Version="[3.4.1]" PrivateAssets="all" />
 ```
+
+插件发布物不携带共享 SDK DLL；由 Host 提供契约程序集。新模板最低 SDK 为 3.4.1，既有旧二进制保留真实 manifest 下限并独立验证。

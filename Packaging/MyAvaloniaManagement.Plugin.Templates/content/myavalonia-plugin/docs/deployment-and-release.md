@@ -107,8 +107,9 @@ src/DemoPlugin.Plugin/artifacts/managed-plugin-packages/
 ```
 
 ZIP 内保持 `Controls/DemoPlugin/` 布局；同名外置 `.manifest.json` 记录 ZIP 和文件摘要。正式交付时让二者
-保持配对，不要手工重压 ZIP、编辑 ZIP 内 manifest，或把 `bin` 目录自行压缩成发布包。安装时优先使用
-Host 提供的导入入口；若由维护者手工解压，也必须保留 ZIP 内的目录层级。
+保持配对，不要手工重压 ZIP、编辑 ZIP 内 manifest，或把 `bin` 目录自行压缩成发布包。当前 Host 没有自动
+ZIP 导入入口；部署前完整退出 Host，将 ZIP 中完整的 `Controls/DemoPlugin/` 目录放入 Host 的 Controls，
+保留目录层级后重新启动 Host。
 
 ## 真实 Host 最小验收
 

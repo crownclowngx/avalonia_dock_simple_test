@@ -1,5 +1,7 @@
 # 以注意力为中心的可停靠工作台：MyAvaloniaManagement 的软件设计意图、理论基础与工程目的
 
+> 文档定位：理论与设计解释。2026-09-16 核对本项目代码映射与阅读入口；研究论述保留原文，不将建议视为已实现功能。当前实现见[Host 架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)，契约见[总导航](../README.md)。
+
 > 文档性质：设计意图与理论说明
 > 适用对象：开发团队、产品设计者、项目评审者
 > 讨论范围：人的注意力、认知负荷、任务切换与空间化工作上下文
@@ -44,7 +46,7 @@ MyAvaloniaManagement 是一个基于 .NET 10、Avalonia、Dock.Avalonia 和插�
 - **长期任务和事实源**进入插件服务，不依赖某个面板是否可见；
 - **低频设置和高级功能**在具体界面内部渐进披露。
 
-这与现有工程的架构事实一致。项目已经把 `Document` 定义为中央工作区中的多实例工作上下文，把 `Tool` 定义为宿主级单例侧边面板，把插件服务定义为与页面可见性无关的业务能力。更完整的代码边界可参见[宿主—插件交互架构评审](../design/host-plugin-architecture-review.md)。
+这与现有工程的架构事实一致。项目已经把 `Document` 定义为中央工作区中的多实例工作上下文，把 `Tool` 定义为所属 Provider 持有的单例面板，把插件服务定义为与页面可见性无关的业务能力。更完整的当前代码边界可参见[Host 内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)；[原架构评审](../archive/plans/host-plugin-architecture-review.md)仅供历史追溯。
 
 ## 2. 选择不确定性：信息熵能够说明什么
 
@@ -251,9 +253,9 @@ flowchart TB
 
 ## 7. Document：把复杂工作变成独立、可恢复的上下文
 
-在本项目当前 Legacy 运行链中，`Document` 不是传统意义上的文本文件，而更接近 IDE 中的编辑器标签或一个独立工作会话。扩展入口由 [`IDocumentCreationStrategy`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/DocumentCreation/IDocumentCreationStrategy.cs) 和 [`DocumentMetadata`](../../Host/MyAvaloniaManagement.LegacyPluginContracts/DocumentCreation/DocumentMetadata.cs) 提供。宿主按文档类型发现策略，每次创建一个新的工作实例。
+在本项目当前实现中，`Document` 更接近 IDE 的编辑器标签或独立工作会话。插件通过 UI SDK 的 [`DocumentDescriptor`](../../Host/MyAvaloniaManagement.PluginSdk.UI/ContributionDescriptors.cs) 与显式注册声明贡献，Host 由 [`WorkspaceSession`](../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.cs) 编排每个实例的创建、发布和释放。旧 Legacy 策略发现接口已删除，不再属于当前扩展入口。
 
-当前项目已经包含多种不同目标的 `Document`：
+以下保留原文采用的主仓与外部插件案例，说明不同目标如何拆分为 `Document`；它们不是主仓默认交付清单：
 
 - Bilibili 下载配置与提交；
 - 加密视频播放器；
@@ -263,7 +265,7 @@ flowchart TB
 - 发票信息导入；
 - 测试欢迎页和消息订阅页。
 
-这些内容没有被强制装进一个总控制台。尤其是 MySmallTools 将播放、媒体库、加密和解密声明为不同文档类型，并进一步在文档内部按 Playback、Library、Encryption、Decryption 和 SingleVideo 进行组件化。相关职责拆分可参见[安全视频子系统架构设计](../../../avalonia_management_plug/myavalonia-video-security-player/docs/secret-video-player/design/architecture-design.md)与[G7.1 UI 职责拆分](../../../avalonia_management_plug/myavalonia-video-security-player/docs/secret-video-player/plan-history/G7.1-UI-RESPONSIBILITY-REFACTOR.md)。
+这些内容没有被强制装进一个总控制台。原案例中的 MySmallTools 将播放、媒体库、加密和解密声明为不同文档类型，并进一步在文档内部按 Playback、Library、Encryption、Decryption 和 SingleVideo 进行组件化。相关职责拆分可参见[安全视频子系统架构设计](../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/secret-video-player/design/architecture-design.md)与[G7.1 UI 职责拆分](../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/secret-video-player/plan-history/G7.1-UI-RESPONSIBILITY-REFACTOR.md)。这两项为可选相邻仓库材料，主仓不包含对应业务实现。
 
 `Document` 多实例的价值主要体现在：
 
@@ -283,19 +285,19 @@ flowchart TB
 - 高风险命令明确指出目标对象和影响范围；
 - 关闭、取消、保存与后台继续之间的语义一致。
 
-项目当前已具备每 Document 独立 DI Scope 的公共能力，但并非所有托管文档都已统一迁移到这一模式；这应当被视为当前成熟度边界，而不是被文档掩盖。现状详见[架构评审中的 Document 章节](../design/host-plugin-architecture-review.md#3-document多实例工作上下文)。
+当前生产 Document 均由 Host 所有权链管理独立 DI Scope，并在最终关闭后通过唯一 Lease 释放；插件通过 SDK 生命周期参与，不自行提供 Legacy Scope 工厂。“尚未全部迁移”是旧评审的历史状态，已不适用于当前实现。现状详见[Document 兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md#3-document-契约)。
 
 ## 8. Tool：让用户保持知晓，而不是持续被打断
 
-`Tool` 对应文件树、插件目录、工具管理、任务中心或调度面板。它通常不是当前工作的主体，却能让用户知道工作台中有哪些能力、后台正在发生什么，以及何时需要干预。
+`Tool` 对应文件树、插件目录、任务中心或调度面板。它通常不是当前工作的主体，却能让用户知道工作台中有哪些能力、后台正在发生什么，以及何时需要干预。
 
-宿主默认将文件树放在左侧，将插件入口和工具管理类面板放在右侧。`WorkspaceSession` 独占已创建 Tool，
-`HostDockFactory` 保持 Dock 的隐藏回调和禁浮动协议；关闭可隐藏 Tool 时进入隐藏集合，恢复时仍是同一实例。
-工具管理只读取无 Dock 类型的状态投影。相关实现可参见
+宿主默认将文件树放在左侧，将插件目录放在右侧；工具中心和插件状态现在是独立的非模态窗口，不再作为常驻 Tool。`WorkspaceSession` 管理 Tool 的工作区投影，业务模型由所属 Provider 持有；
+`HostDockFactory` 保持 Dock 的隐藏回调和禁浮动协议。当前所有 Tool 都允许隐藏，恢复时仍是同一实例。
+工具中心只读取无 Dock 类型的状态投影。相关实现可参见
 [`WorkspaceSession`](../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.cs) 和
 [`ToolWorkspaceReadModel`](../../Host/MyAvaloniaManagement/Business/Workspace/ToolWorkspaceReadModel.cs)。
 
-Bilibili 插件体现了这种职责分离：
+原文的外部 Bilibili 插件案例体现了这种职责分离：
 
 - 下载 `Document` 负责登录状态、URL 解析、下载配置、视频列表和提交；
 - `BiliSchedulerTool` 负责排队数、完成数、调度状态、开始/暂停和已完成任务清理；
@@ -321,15 +323,15 @@ MyAvaloniaManagement 的默认 Dock 树形成稳定语义：
 
 - 中央 `Documents` 是主要工作区；
 - `LeftTools` 承载左侧导航类 Tool；
-- `RightTools` 承载右侧菜单、管理和状态类 Tool；
+- `RightTools` 默认承载插件目录，也可容纳声明为右侧的业务 Tool；工具中心和插件状态不占用此节点；
 - `TopTools` 与 `BottomTools` 在有可见工具时横跨完整 Dock 工作区，分别位于 Left/Document/Right 中间行的上方或下方，无可见工具时折叠为零高度；
 - 左右面板默认各占约 15% 比例；
 - 上下工具区域显示时默认各占完整 Dock 工作区高度的 20%；
 - Tool 可以隐藏和恢复；
 - 拖拽拆分生成的临时 Top/Bottom ToolDock 会立即归一化到全宽区域，重启或空区域被移除后按稳定 ID 重建；
-- 布局快照保存面板比例、Tool 归属、顺序、显隐和活动项；旧版 Tool 浮动字段仅用于兼容读取，恢复时自动回到主窗体内的停靠区。
+- 当前 Layout V2 保存面板比例、Tool 归属、顺序、显隐和活动项；严格拒绝未知字段，不读取或迁移 V1 浮动字段。
 
-布局快照只保存宿主可重建的空间结构，不保存 Document、密码、媒体路径、播放状态和插件表单值；重启后当前版本也不会自动重开历史 Document。参见[Dock 结构布局快照 V1](../reference/dock-layout-snapshot-v1.md)。因此，本项目当前提供的是**运行期多上下文保留与可重建的 Tool 空间结构**，还不是完整的跨会话工作现场恢复。
+布局快照只保存宿主可重建的空间结构，不保存 Document、密码、媒体路径、播放状态和插件表单值；重启后当前版本也不会自动重开历史 Document。参见[Dock 结构布局快照 V2](../reference/dock-layout-snapshot-v2.md)。因此，本项目当前提供的是**运行期多上下文保留与可重建的 Tool 空间结构**，还不是完整的跨会话工作现场恢复。
 
 Robertson 等人的 Scalable Fabric 研究提出了焦点—上下文窗口管理方式：主要窗口位于焦点区域，外围保留缩小的任务窗口，并利用空间安排与分组帮助任务切换[13]。研究同时指出，显示空间增加会让用户保留更多窗口，而更多窗口也可能增加整理和切换时间。这个双面结论对本项目非常重要：Dock 的价值不在于最大化窗口数量，而在于让窗口数量、关联关系和注意力层级可管理。
 

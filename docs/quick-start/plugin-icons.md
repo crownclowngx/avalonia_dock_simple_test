@@ -1,5 +1,7 @@
 # V6.1 插件图标与公共资源
 
+> 用途：当前使用或开发指南；状态：当前。核对日期：2026-09-16。版本与支持范围见[集中基线](../reference/platform-baseline.md)，实现依据见本文对应源码或验收链接。
+
 V6.1 同时提供插件专属图标和 `MyAvaloniaManagement.Icons` 公共矢量包。图标仍通过描述符的
 `IconPath` 字符串引用；新版目录树与功能中心显示声明图标，旧版目录继续显示默认四宫格。
 
@@ -70,7 +72,7 @@ var icon = registration.AddIcon("text-review", new VectorIconDefinition(
 <ManagedPluginPrivatePackage Include="MyAvaloniaManagement.Icons" />
 ```
 
-Build 至少使用 `1.1.3`；ZIP 中应包含 `MyAvaloniaManagement.Icons.dll`，不能包含共享 Core/UI SDK DLL。
+当前项目使用 Build `3.4.1`；图标私有资产能力最初提供于 `1.1.3`。ZIP 中应包含 `MyAvaloniaManagement.Icons.dll`，不能包含共享 Core/UI SDK DLL。
 本仓 MyPlugTest 使用 ProjectReference，通过既有 `ManagedPluginAsset` 扩展点部署图标 DLL；
 外部模板使用上述 NuGet 私有包声明。两条路径均需验收真实 ZIP，不能只检查普通 bin 目录。
 
@@ -88,5 +90,5 @@ Build 至少使用 `1.1.3`；ZIP 中应包含 `MyAvaloniaManagement.Icons.dll`�
 坏几何仅降级显示并去重记录 `ICON_GEOMETRY_INVALID`，不会删除业务功能；结构性注册错误仍按候选隔离处理。
 创建意图省略图标时继续继承 Document 图标；填写未知引用时按该引用降级，不改变原有创建意图规则。
 
-实现边界及实际验收见 [V6.1 设计](../design/host-v6.1-extensible-icon-contributions-plan.md) 与
-[V6.1 实施记录](../plan-history/host-v6.1/icon-contributions-and-resources-acceptance.md)。
+实现边界及实际验收见 [V6.1 设计](../archive/plans/host-v6.1-extensible-icon-contributions-plan.md) 与
+[V6.1 实施记录](../archive/records/host-v6.1/icon-contributions-and-resources-acceptance.md)。

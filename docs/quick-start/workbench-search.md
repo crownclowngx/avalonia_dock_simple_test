@@ -1,5 +1,7 @@
 # 工作区搜索与功能入口（V8）
 
+> 用途：当前使用或开发指南；状态：当前。核对日期：2026-09-16。版本与支持范围见[集中基线](../reference/platform-baseline.md)，实现依据见本文对应源码或验收链接。
+
 欢迎页“开始使用”和“文件 → 功能中心…”打开同一个功能选择窗口。选择功能，点击“打开”，即可在新标签中开始工作。已有插件目录仍可从工具中心显示。
 
 按 `Ctrl+Shift+P` 打开命令面板，可以一次搜索四类结果：
@@ -31,4 +33,4 @@
 
 布局保存只记忆空间安排；业务文件仍需通过支持保存的页面执行 `Ctrl+S`。V8 没有增加跨启动页面会话恢复，也没有改动 SDK 或持久化格式。
 
-相关说明：[功能中心与旧目录](./plugin-navigation-and-function-center.md)、[工具中心](./tool-center.md)、[V8 实施记录](../plan-history/host-v8/cognitive-ux-convergence-acceptance.md)。
+相关说明：[功能中心与旧目录](plugin-navigation-and-function-center.md)、[工具中心](tool-center.md)、[V8 实施记录](../archive/records/host-v8/cognitive-ux-convergence-acceptance.md)。

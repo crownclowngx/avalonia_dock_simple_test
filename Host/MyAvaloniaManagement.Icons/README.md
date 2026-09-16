@@ -1,5 +1,7 @@
 # MyAvaloniaManagement.Icons
 
+> 用途：当前包消费说明；核对日期：2026-09-16。事实源为本包项目、公开类型或随包构建/模板内容。
+
 公共单色矢量资源包，统一发布版本 `3.4.1`，目标 .NET 10；没有 Avalonia、SDK、Host 或 DI 依赖。
 
 ```csharp
@@ -22,7 +24,7 @@ var asset = CommonIcons.Table;
 
 `CommonIcons.All` 为完整只读目录。资源延续本仓 V6 手写基础几何，采用仓库 MIT 许可证，不含第三方图片、字体或远程资源。
 
-搭配 UI SDK 3.4.0，可将公共图形声明为插件自己的图标：
+当前搭配 UI SDK 3.4.1（图标契约首次提供于 3.4.0），可将公共图形声明为插件自己的图标：
 
 ```csharp
 var asset = CommonIcons.Table;

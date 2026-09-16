@@ -1,7 +1,8 @@
 # 编译、打包、真实 Host 验收与排错
 
-> 当前统一入口为 `dotnet run --project tools/MyAvaloniaManagement.Gate -- verify`；按需增加
-> `--scope host|workflow|workbench`。本文出现的历史 `scripts/*.ps1` 命令已经退役。
+> 用途：当前使用或开发指南；状态：当前。核对日期：2026-09-16。版本与支持范围见[集中基线](../reference/platform-baseline.md)，实现依据见本文对应源码或验收链接。
+
+本文面向独立插件项目，不要求取得 Host 源码。主仓维护者使用的 Gate 另见[主仓验证](../maintenance/verification.md)；该入口只验证本仓 Host 与 MyPlugTest。
 
 验证应分为四层：源码构建、Standalone、独立 ZIP、真实 Host。前一层通过不能替代后一层。
 
@@ -111,10 +112,9 @@ dotnet msbuild src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj `
   -p:ManagedPluginDeployRoot=C:\Path\To\Host\Controls
 ```
 
-该命令只重建 `Controls/ExamplePlugin`，不会清理其他插件。另一种方式是通过 Host 提供的安装入口导入
-Release ZIP。
+部署前先完整退出 Host。该命令只重建 `Controls/ExamplePlugin`，不会清理其他插件。也可以解压 Release ZIP，将其中完整插件目录放入 Host 的 Controls；当前 Host 没有自动 ZIP 导入入口。
 
-部署或替换后完整退出并重启 Host。当前插件发现和加载上下文以进程为边界，不支持热替换。
+替换完成后重新启动 Host。当前插件发现和加载上下文以进程为边界，不支持热替换。
 
 ## 5. 真实 Host 最小验收
 
@@ -137,7 +137,7 @@ Release ZIP。
 - Tool 出现在 `ToolDockSide` 指定方向；
 - 同一种 Tool 只有一个 Model；
 - `Hide` 关闭后可以恢复且状态保留；
-- `Prevent` 不允许用户关闭或隐藏。
+- 当前 Host 的所有 Tool 都允许隐藏，包括旧 SDK 声明为 `Prevent` 的工具；隐藏不释放模型或停止业务服务。
 
 ### 更新
 
@@ -176,11 +176,10 @@ Rider。Preview 不是运行时调试；交互、键盘输入和完整资源行�
 模板搜索索引可能晚于普通 NuGet 包索引。直接安装精确 ID：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.3.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.1
 ```
 
-该命令安装公开模板。Templates `1.3.0` / SDK `3.3.0` 的锁定还原、点号名称和外部双 ALC 调用由
-`scripts/Test-WorkflowActionG2.ps1` 负责；该维护门禁本身仍不执行上传。
+该命令安装当前公开模板。生成后按本指南依次验证源码、Standalone、真实 ZIP 和 Host；主仓包维护流程见[NuGet 发布维护](../maintenance/nuget-release.md)。
 
 ### NuGet 还原失败
 
@@ -200,7 +199,7 @@ dotnet restore --source https://api.nuget.org/v3/index.json
 3. ZIP 是否误带 SDK/Avalonia/Host 共享程序集；
 4. 私有依赖是否声明为 `ManagedPluginPrivatePackage`；
 5. Document/Tool ID 是否属于 manifest Plugin ID；
-6. 使用 Workbench Command 的插件，其 Host SDK 版本是否位于 `[3.3.0, 4.0.0)`；旧插件仍按自身 manifest 下限判断。
+6. 目标 Host SDK 是否满足实际 manifest 区间；当前模板最低为 3.4.1，旧插件保留自身真实下限。Workbench Command 首次提供于 3.3.0，不表示按新 SDK 编译后可以降低清单下限。
 
 ### Host 报 `FileNotFoundException` 或提示缺少 DLL
 
@@ -234,5 +233,4 @@ dotnet restore --source https://api.nuget.org/v3/index.json
 6. Standalone Stub 不能进入 Plugin 项目或插件 ZIP。
 7. 当前只支持 Windows x64 插件交付，不支持热更新。
 
-更完整的包和版本规则见
-[外部 Managed Plugin 开发、模板与 NuGet 发布指南](../design/external-managed-plugin-development-and-installation-plan.md)。
+完整版本与包职责见[版本基线](../reference/platform-baseline.md)；维护者发布六包时另读[NuGet 发布维护](../maintenance/nuget-release.md)。

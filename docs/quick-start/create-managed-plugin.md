@@ -1,5 +1,7 @@
 # 从只有 Rider 和 Avalonia 的机器创建插件
 
+> 用途：当前使用或开发指南；状态：当前。核对日期：2026-09-16。版本与支持范围见[集中基线](../reference/platform-baseline.md)，实现依据见本文对应源码或验收链接。
+
 本篇假设一台 Windows x64 开发机只安装了 JetBrains Rider，以及 Rider 中的 Avalonia/AvaloniaRider
 插件。目标是不克隆 Host 源码，直接从 NuGet.org 安装模板并创建一个能独立运行、调试、测试和打包的
 真实插件项目。
@@ -46,7 +48,7 @@ Avalonia 12 包，不需要另外安装 `Avalonia.Templates` 才能创建本插�
 
 ## 3. 安装 Managed Plugin 模板
 
-V9 将自有包统一为 `3.4.1`，模板使用 Avalonia `12.1.2`。兼容边界见 [V9 说明](host-v9-upgrade.md)，实际发布状态见 [统一发布记录](../plan-history/host-v9/nuget-unified-3.4.1-release.md)。
+V9 将自有包统一为 `3.4.1`，模板使用 Avalonia `12.1.2`。兼容边界见 [V9 说明](host-v9-upgrade.md)，实际发布状态见 [统一发布记录](../archive/records/host-v9/nuget-unified-3.4.1-release.md)。
 
 在准备存放源码的目录打开 PowerShell：
 
@@ -130,10 +132,11 @@ dotnet test -c Debug --no-build
 
 模板使用 NuGet.org 上的精确版本：
 
-- `MyAvaloniaManagement.PluginSdk` `3.1.0`；
-- `MyAvaloniaManagement.PluginSdk.UI` `3.1.0`；
-- `MyAvaloniaManagement.Plugin.Build` `1.1.3`；
-- Avalonia `12.x` 模板锁定版本。
+- `MyAvaloniaManagement.PluginSdk` `3.4.1`；
+- `MyAvaloniaManagement.PluginSdk.UI` `3.4.1`；
+- `MyAvaloniaManagement.Plugin.Build` `3.4.1`；
+- `MyAvaloniaManagement.Icons` `3.4.1`；
+- Avalonia.Desktop `12.1.2`。
 
 首次还原需要下载 Avalonia 和测试依赖，可能比后续构建慢。公司代理或自定义 NuGet 源下失败时，先用：
 
@@ -189,7 +192,7 @@ AXAML 后先重新 Build，再在编辑器中选择 **Editor and Preview**；Ava
 
 ## 7. 当前 Standalone 能验证什么
 
-模板 `1.1.0` 默认直接创建 `MainDocument` 并显示 `MainView`，适合验证：
+当前模板默认直接创建 `MainDocument` 并显示 `MainView`，适合验证：
 
 - AXAML 布局和主题资源；
 - 编译绑定；
@@ -198,7 +201,7 @@ AXAML 后先重新 Build，再在编辑器中选择 **Editor and Preview**；Ava
 - Rider 断点与异常。
 
 它不会加载 ZIP、读取 manifest、创建真实 Dock 或模拟全部 Host Port。新增多个 Document/Tool 后如何扩展
-Standalone，见[添加多个 Document、Tool 和独立预览工作台](./add-document-and-tool.md)。
+Standalone，见[添加多个 Document、Tool 和独立预览工作台](add-document-and-tool.md)。
 
 ## 8. 生成真实插件 ZIP
 
@@ -233,6 +236,6 @@ dotnet msbuild src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj `
   -p:ManagedPluginDeployRoot=C:\Path\To\Host\Controls
 ```
 
-也可以把 Release ZIP 交给 Host 的安装流程。替换插件文件后必须完整退出并重启 Host；当前不支持热更新。
+也可以在 Host 完全退出后解压 Release ZIP，将其中完整的 `Controls/ExamplePlugin/` 目录放入 Host 的 Controls。当前没有自动 ZIP 导入入口；替换后重新启动 Host，不支持热更新。
 
-下一步：[添加多个 Document、Tool 和独立预览工作台](./add-document-and-tool.md)。
+下一步：[添加多个 Document、Tool 和独立预览工作台](add-document-and-tool.md)。

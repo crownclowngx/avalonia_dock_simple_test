@@ -1,28 +1,10 @@
 # MyAvaloniaManagement 内部架构
 
-> 当前源码已完成 V3 G14 封板：产品、SDK 与四插件版本为 `3.0.0`，Core/UI API 已进入 Shipped
-> 127/45；Document 保存已采用修订快照与
-> 指定修订确认，激活已采用互斥 New/Restore 类型，插件注册已采用 Host 最终提交与 ID 归属校验；
-> MyPlugTest 与 BiliDownloader 消息器已归各自插件 Provider 所有；Workspace Session、Dock Factory 和
-> Tool 只读投影已经分离；Host Catalog 与只含真实插件的 Plugin Registry 已分离；全屏端口已改为
-> 单参数 `TryPresent` 返回幂等租约，并由 Host 具体会话维护唯一活动展示。四插件已从最终 Registry、
-> 私有 Provider 经 Workspace Session 与 Dock Adapter 完成各自贡献验收，并由真实 ZIP Loader 重放
-> 同一组合链。manifest、Document envelope、layout 保持 schema 2，默认数据根保持 `v2`；
-> G13 已完成 V2 生产面删除与零残留证明；G14 已完成两轮隔离门禁和本地发布资格签署。
->
-> Host V4 已完成 G0–G8 并封板：internal 死面、身份、Layout 职责、Document 控件回收所有权、领域目录、
-> 路径语义和展示快照已经收口；G7 又以既有 SDK、诊断、四插件真实包和 MySmallTools 20 轮 Harness
-> 证明这些内部变化没有破坏 V3 契约或资源边界；G8 又以两轮隔离、实体制品复核和 Windows Smoke
-> 建立本地发布资格。Workflow Action G1 随后保持产品 3.0.0、把仓库内 SDK 候选提升到 3.1.0，并新增
-> caller-bound Run、目录、Schema、授权、Scope、资源治理和关闭门控。G2 又以本地候选 SDK 3.1.0 /
-> Templates 1.1.0、已发布 Build 1.1.2 和两个外部插件 ZIP 验证真实传播；没有新增生产入口。这两个阶段
-> 均未上传、未打 tag、未对外发布且未使用 AIFLOW。G3.1 进一步把 Core/UI 候选提升到 3.2.0，新增
-> `MyAvaloniaManagement.PluginSdk.Workflow 1.0.0`，统一 Schema/引用路径/双 revision，并把该程序集
-> 纳入默认 ALC 共享根；Host 产品版本仍为 3.0.0。Workbench Command G1–G9 又在不改变版本和
-> public API 基线的前提下冻结 Command 注册事实，并建立 Host internal Catalog、打开/保存 Handler、
-> Context v1、活动 Document Target 路由、Executor、单 Document 租约、脱敏诊断和 10 秒关闭门控；G4–G5
-> 以 Host-only Presentation 把 File/插件菜单和有效快捷键统一到相同 CommandId/Executor；G7/G8 接入两个
-> 外部插件的真实命令，G9 再以窗口遮罩实现复用同一状态与执行路径的最小 Command Palette。
+> 用途：当前 Host 内部实现与资源所有权。状态：当前；核对日期：2026-09-16。事实源：[Business 实现](../../Business)、[Host 测试](../../../MyAvaloniaManagement.Tests)及 [Plugin 测试](../../../MyAvaloniaManagement.PluginTests)。
+
+版本和交付范围集中在[版本基线](../../../../docs/reference/platform-baseline.md)。本仓仅保留 Host 与 MyPlugTest；其他业务插件独立交付。历史封板不能代表当前工作树的发布资格，未完成事项见[待办](../../../../docs/roadmap/README.md)。
+
+插件接入边界是内部可信 Managed Plugin、显式贡献、每插件私有 Provider。Document 是独立工作实例，Tool 是可隐藏的单例投影，业务服务的寿命不依赖面板可见性。修改内部类名不应迫使外部插件跟随；可观察行为由[兼容约束](../reference/compatibility-contracts.md)保护。
 
 ## 1. 目标与边界
 
@@ -46,8 +28,8 @@
 
 最终基础契约来自 `MyAvaloniaManagement.PluginSdk`，UI 注册契约来自
 `MyAvaloniaManagement.PluginSdk.UI`；Workflow Schema、引用与目录修订契约来自窄包
-`MyAvaloniaManagement.PluginSdk.Workflow`。四个业务插件均已只使用最终 SDK。旧
-`MyAvaloniaManagementCommon` 与 Legacy 项目已在 G13 删除。SDK 不拥有
+`MyAvaloniaManagement.PluginSdk.Workflow`。插件使用 SDK，不引用 Host 实现。旧
+`MyAvaloniaManagementCommon` 与 Legacy 项目已删除。SDK 不拥有
 字体、桌面后端或全局主题。`App.axaml` 是 Fluent、Semi、Ursa、Dock Theme 和 Host Styles 的唯一
 组合入口；`ApplicationThemeService` 只切换宿主主题状态，不把第三方主题对象暴露成插件服务。
 
@@ -145,7 +127,7 @@ Session 停止新建。Command 可能仍在使用 Workspace、活动 Document �
 逆序释放插件 Provider 并释放 Host Provider。任一门控无法证明排空时保留相应对象图并报告脱敏诊断，
 不强杀同进程代码或伪装成功。
 
-V5 将上述资源释放判断集中在 `HostRuntimeShutdown`，正常退出和启动失败回滚共用同一流程。
+上述资源释放判断集中在 `HostRuntimeShutdown`，正常退出和启动失败回滚共用同一流程。
 `HostShutdownParticipants` 在 DI 工厂成功交付对象时记录实际引用，包含插件 Gateway 间接创建的
 Workflow 管理器；回滚不重新解析 Workspace 或关闭参与者。初始化成功后再发生组合失败，会先
 执行已启动项的逆序 Shutdown；原始启动异常不会被清理或诊断异常覆盖。
@@ -158,7 +140,7 @@ Workflow 管理器；回滚不重新解析 Workspace 或关闭参与者。初始
 迟到初始化按原始启动序号处理，越过关闭位置后不补插。无法安全关闭时，`HostResourceRetention`
 只持有必要对象图到进程退出；不提供全局服务定位、重试或恢复。保留期间已有后台活动可能继续，
 尤其启动失败窗口并不意味着进程立即退出。生命周期诊断出口在释放/交接前关闭，并等待既有报告结束。
-委托调用线程不变；返回 Task 前的同步阻塞以及同步 Dispose 不受本轮超时保证约束。
+委托调用线程不变；返回 Task 前的同步阻塞以及同步 Dispose 不受异步等待超时保证约束。
 
 [`Program`](../../Program.cs) 只保留进程入口和失败应用编排。`HostRuntime` 通过 internal
 `HostAvaloniaBuilder` 使用 `Func<App>` 创建应用；App 注入 `IHostDesktopShell`，不再存在静态
@@ -258,7 +240,7 @@ View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均禁止浮�
 与 Runtime 退出汇入幂等释放入口；`HostDockFactory` 不保存 Adapter 集合，只按 Dock 基类时序转发回调。
 生产 DI 不注册 Legacy `IDocumentScopeFactory`，旧持久化测试 seam 不进入运行时对象图。
 
-### V7 工具中心
+### 工具中心
 
 侧面的管理 Tool 已退役，`ToolCenterWindowService` 拥有一个以主窗口为 Owner 的非模态窗口。
 主菜单、欢迎页和命令面板共用 Host 入口；窗口关闭释放 ViewModel 订阅，偏好保留在 Runtime 级服务中。
@@ -275,7 +257,7 @@ View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均禁止浮�
 打开、激活或手动刷新时读取当前会话，关闭后没有轮询或事件订阅。复制只使用既有脱敏记录。
 
 旧插件状态 Tool 注册已删除。`RetiredHostToolIds` 为布局和工具偏好提供统一白名单，清理旧记录及历史收藏，
-保留其他工具和缺失插件的数据。详情见[实现设计](../../../../docs/design/plugin-status-window.md)。
+保留其他工具和缺失插件的数据。操作见[插件状态窗口](../../../../docs/quick-start/plugin-status.md)，历史设计见[归档](../../../../docs/archive/plans/plugin-status-window.md)。
 
 ### 4.5 诊断白名单边界
 
@@ -293,9 +275,9 @@ JSONL 和镜像之前执行唯一一次白名单转换：
 进程环境变量 `MYAVALONIA_ENABLE_SENSITIVE_DIAGNOSTICS=1` 是与记录完全分离的短期调试旁路：它只把
 带风险警告的原始异常写到 Trace/stderr，不写 UI、剪贴板或 JSONL，也不持久化开关。默认和 Release
 门禁都不启用该旁路。设计与验收证据见
-[G15 宿主诊断脱敏](../../../../docs/plan-history/host-v1/g15-host-diagnostic-redaction.md)。
+[G15 宿主诊断脱敏](../../../../docs/archive/records/host-v1/g15-host-diagnostic-redaction.md)。
 
-### 4.6 Workbench Command G2–G9 内核、活动实例路由与 Host Presentation
+### 4.6 Workbench Command 内核、活动实例路由与 Host Presentation
 
 `HostWorkbenchCommandCatalog` 只冻结 `myavalonia.host.command.document.open/save` 及其显式 Handler；
 `WorkbenchCommandCatalog` 把该目录与 `PluginRegistry.WorkbenchCommands` 合并，并在启动期拒绝最终身份
@@ -370,7 +352,7 @@ Closed 把基类通知放在 `try`、Session 最终释放放在 `finally`。多�
 各自订阅和解除定向通知。Tool 管理在布局前后都读取 `ToolWorkspaceReadModel` 的纯数据快照，Pinned Tool
 视为可见，不获得 Root Dock、Dock Tool、Factory 字典或服务容器。
 
-### 5.1 G8 全屏会话
+### 5.1 全屏会话
 
 `MainWindow` 显式实现 UI SDK 的 `IWindowContentFullscreenHost`，但不直接保存插件 owner 或内容状态；
 它把 `TryPresent(Control)` 委托给窗口私有的 `WindowContentFullscreenSession`。该具体会话只维护覆盖层、
@@ -539,22 +521,22 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 | Managed-only 拒绝、显式贡献所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、`ExplicitContributionAndPluginRegistryTests`、内部注册表测试 |
 | Host Catalog / Plugin Registry 分离、双激活边界与规范 Locator | `HostCatalogPluginRegistryTests`、Gate Host 验证 |
 | 诊断正文、凭据、URL、路径泄漏与敏感开关误开 | `HostDiagnosticsTests`、生命周期/UI/Document 错误测试、Gate 契约阶段 |
-| 插件私有 Provider、Host Port、失败隔离与四插件回归 | `PluginContainerIsolationTests`、`PluginProviderOwnerTests` |
+| 插件私有 Provider、Host Port 与失败隔离 | `PluginContainerIsolationTests`、`PluginProviderOwnerTests` |
 | 严格六字段信封、原生 JSON、资源边界、所有权与失败不发布 | `DocumentEnvelopeV2Tests` |
 | 异步创建、并发打开、保存提交点、关闭重入与坏文件恢复 | `DocumentPersistenceTests`、`DocumentCloseTests` |
 | 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |
-| 同步顺序、重入、异常、并发、Provider/Runtime 隔离及订阅释放 | 两插件 `*EventBusTests`、Document Scope 测试、Gate Host 验证 |
+| 同步顺序、重入、异常、并发、Provider/Runtime 隔离及订阅释放 | MyPlugTest 消息测试、Document Scope 测试；外部插件自行回归 |
 | 布局严格解析、隔离、回退 | 布局生命周期与存储测试 |
 | Layout V2 严格字段、V1 不读取、生命周期不可用零部分应用 | `DockLayoutStoreTests`、`DockLayoutAvailabilityTests` |
 | 生命周期排序、幂等、失败/超时/取消、反向停止和脱敏 | `PluginLifecycleCoordinatorTests` |
 | V5 真实容器释放、启动回滚、取消通知、迟到边界、间接创建与诊断关闭 | `HostLifecycleOwnershipTests` |
-| Command 合并目录、Context、当前 Target 状态/执行、租约关闭和诊断脱敏 | `WorkbenchCommand*Tests`、Gate Workbench 验证 |
+| Command 合并目录、Context、当前 Target 状态/执行、租约关闭和诊断脱敏 | `WorkbenchCommand*Tests`、主仓 Gate verify |
 | XAML、绑定和真实窗口事件 | Headless UI 与 Windows Smoke |
 
-详细命令和门槛参见[测试说明](../../../../docs/reference/myavalonia-management-tests.md)。
+详细命令和门槛参见[测试说明](../../../../docs/maintenance/verification.md)。
 
-## 11. V4 文件系统展示边界
+## 11. 文件系统展示边界
 
 文件树选择按三个明确步骤执行：`FileSystemPath` 只规范化并分类字符串，
 `IHostStorageService.DirectoryExists` 只回答路径是否仍存在，`FileSystemTreeViewModel` 最后一次性提交
@@ -565,19 +547,28 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 不访问真实网络。`CategoryNode` 的名称和 Document 集合是构造期只读快照，只有展开状态可变；
 `PlugGroupMenuViewModel` 直接调用强类型 Document 创建入口，不持有可变外部集合。
 
-## 12. V6 插件目录与功能中心
+## 12. 插件目录与功能中心
 
 `DocumentCreationMenuQuery` 读取当前可用创建入口，`DocumentCategoryPath` 和 `DocumentCreationDirectory`
 完成路径解析与只读树投影。旧 Tool 保留原始分类分组，新树和功能中心使用 `/` 分层；各视图独立持有展开状态。
 `PluginNavigationSettingsStore` 单独保存稳定模式与自定义显示名，不扩展布局格式。
-图标由 Host 的固定 `builtin:` 名称目录转换为 Avalonia 矢量几何，不读取插件图片或创建插件控件。
+图标由 HostIconCatalog 解析 `builtin:` 与已注册的 `plugin:` 引用，再绘制矢量几何；不读取插件图片或为搜索创建插件控件。
 
 文件菜单经已有工作台命令投影打开功能中心；窗口服务管 Owner 和单窗口，会话 ViewModel 管搜索与提交。
 三处创建入口共用 `DocumentPersistenceCoordinator`。目录刷新替换绑定集合时保护临时选择回写，
 实际创建仍校验插件可用性并遵守 Scope 发布/回滚链。关闭流程显式等待文档门排空，不能把选择窗口关闭当作初始化已结束。
 
-设计、用法和完整测试证据见 [V6 实施验收记录](../../../../docs/plan-history/host-v6/plugin-navigation-and-function-center-acceptance.md)。
+设计、用法和完整测试证据见 [V6 实施验收记录](../../../../docs/archive/records/host-v6/plugin-navigation-and-function-center-acceptance.md)。
 
-## V6.1 图标边界
+## 13. 图标边界
 
 图标声明随插件 Registry 一起原子提交；HostIconCatalog 读取公共资源 All 与可信 Owner 声明，HostIconRenderer 在 UI 线程缓存几何，HostIconView 按画布和主题绘制。资源包不属于共享程序集闭包，资源对象不跨 ALC；参见 [图标开发说明](../../../../docs/quick-start/plugin-icons.md)。
+
+
+## 14. 当前框架适配与调用边界
+
+V9 的 DockTabPointerCaptureGuard 处理 Direct 捕获丢失与手势结束；捕获移交后不能恢复接收方状态。DocumentControlRecycling 安全解除已知父级、保留绑定，同一模板已有正文时保持所有权，未知父级明确失败。HostDockFactory、DockDocumentLifetime、布局映射和禁浮动策略继续拥有各自职责；真实输入、多屏和原生视频验收仍见集中待办。
+
+当前 Workflow 支持同插件兼任 Provider/Consumer，拒绝自调用及 Handler 异步链嵌套调用。详细预算、Schema 和 Run 边界见[Workflow 契约](../../../../docs/reference/workflow-actions.md)；Command 与 Workflow 不共享另一套执行器，用户入口规则见[Command 契约](../../../../docs/reference/workbench-commands.md)。
+
+SDK 的稳定身份、Document 修订保存及 Layout schema 2 的细节分别由[API](../../../../docs/reference/plugin-sdk-api-compatibility.md)、[持久化](../../../../docs/reference/document-persistence.md)和[布局](../../../../docs/reference/dock-layout-snapshot-v2.md)说明。本页不重复维护历史测试数量或发布哈希。

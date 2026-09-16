@@ -1,5 +1,7 @@
 # MyAvaloniaManagement Plugin Build
 
+> 用途：当前包消费说明；核对日期：2026-09-16。事实源为本包项目、公开类型或随包构建/模板内容。
+
 `3.4.1` 延续 1.1.3 的兼容协议，精确允许 `MyAvaloniaManagement.Icons.dll` 作为普通私有图标资源部署及打包。
 Host 主程序集、Core/UI/Workflow SDK 和其他既有共享程序集仍受原规则保护。
 使用图标包时同时添加 `PackageReference` 和 `ManagedPluginPrivatePackage`，资源包不会自动加入共享契约。
