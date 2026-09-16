@@ -92,6 +92,9 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     /// <summary>取得只处理 Dock Framework 的适配工厂。</summary>
     internal HostDockFactory DockFactory { get; }
 
+    /// <summary>工具结构恢复记录不持有业务实例，随唯一 Session 管理。</summary>
+    internal DockLayoutWorkspaceState LayoutState { get; } = new();
+
     /// <summary>取得当前会话唯一根布局；布局尚未建立时返回 null。</summary>
     internal IRootDock? RootDock => _rootDock;
 
@@ -390,19 +393,30 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         return root;
     }
 
+    /// <summary>提交已经构造完成的恢复容器，继续复用唯一文档集合及其活动实例。</summary>
+    internal void CommitRestoredLayout(IRootDock root, DocumentDock documentDock)
+    {
+        _rootDock = root;
+        _documentDock = documentDock;
+        PublishActiveDocumentIfChanged();
+        NotifyPagesChanged();
+    }
+
     /// <summary>确保指定方向存在稳定 ToolDock。</summary>
     internal ToolDock EnsureToolDock(IRootDock root, Alignment alignment) =>
         _toolDockCoordinator.EnsureToolDock(root, alignment);
 
     /// <summary>把隐藏 Tool 恢复到仍有效或按声明重建的稳定停靠区域。</summary>
     internal bool RestoreTool(IRootDock root, Tool tool) =>
-        _toolDockCoordinator.RestoreTool(root, tool);
+        LayoutState.TryRestoreFloatingTool(this, tool) || _toolDockCoordinator.RestoreTool(root, tool);
 
     /// <summary>显示并激活 Tool；只有完整成功后才发布一次布局变化。</summary>
     internal bool ShowTool(ToolTypeId toolTypeId)
     {
         ArgumentNullException.ThrowIfNull(toolTypeId);
         if (!CanOperateTools || !IsToolAvailable(toolTypeId.Value)) return false;
+        if (_createdTools.TryGetValue(toolTypeId.Value, out var hiddenTool))
+            LayoutState.TryRestoreFloatingTool(this, hiddenTool);
         var changed = _toolDockCoordinator.ShowTool(
             _rootDock,
             _createdTools,
@@ -496,7 +510,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
 
         if (isVisible)
         {
-            if (!_toolDockCoordinator.RestoreTool(_rootDock, tool))
+            if (!RestoreTool(_rootDock, tool))
             {
                 return false;
             }
@@ -631,6 +645,24 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         NotifyLayoutChanged();
     }
 
+    void IWorkspaceDockCallbacks.OnLayoutChanging() => CaptureLayoutState();
+    void IWorkspaceDockCallbacks.OnLayoutChanged()
+    {
+        CaptureLayoutState();
+        NotifyLayoutChanged();
+        NotifyPagesChanged();
+    }
+
+    private void CaptureLayoutState()
+    {
+        if (_disposed || _rootDock is null || DockFactory.DockableLocator is null) return;
+        try { LayoutState.Capture(this); }
+        catch (Exception exception)
+        {
+            _diagnostics?.Report(new HostDiagnosticDraft("LAYOUT_CAPTURE_FAILED", HostDiagnosticPhase.Layout) { Exception = exception });
+        }
+    }
+
     private static void ValidateActivation(
         DocumentTypeId documentTypeId,
         IWorkspaceDocumentRegistration registration,
@@ -697,7 +729,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     private int _toolBatchDepth;
     private void NotifyLayoutChanged()
     {
-        if (_toolBatchDepth != 0) return;
+        if (_toolBatchDepth != 0 || DockFactory.IsLayoutChangeInProgress) return;
         foreach (EventHandler handler in LayoutChanged?.GetInvocationList() ?? [])
         {
             try { handler(this, EventArgs.Empty); }

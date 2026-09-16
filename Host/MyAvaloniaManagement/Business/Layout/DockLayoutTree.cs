@@ -78,9 +78,16 @@ internal static class DockLayoutTree
                     ? Join(node, windows[0].Root, orientation) : Join(windows[0].Root, node, orientation),
             };
         }
+        windows = windows.Select(window => window with { Root = ClearHiddenActive(window.Root) }).ToList();
         var result = new DockLayoutSnapshotV3(3, windows[0], windows.Skip(1).ToArray(), tools.Values.OrderBy(tool => tool.Id, StringComparer.Ordinal).ToArray());
         DockLayoutV3Validator.Validate(result);
         return result;
+
+        DockLayoutNode ClearHiddenActive(DockLayoutNode node) => node with
+        {
+            ActiveToolId = node.ActiveToolId is { } id && tools[id].State == "visible" ? id : null,
+            Children = node.Children.Select(ClearHiddenActive).ToArray(),
+        };
 
         DockLayoutNode AddGroupMembers(DockLayoutNode node)
         {

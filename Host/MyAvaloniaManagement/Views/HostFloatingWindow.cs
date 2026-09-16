@@ -23,6 +23,7 @@ internal sealed class HostFloatingWindow : HostWindow, IWindowContentFullscreenH
     private readonly WorkbenchWindowContext _windows;
     private WorkbenchWindowInteraction? _interaction;
     private WindowClosingEventArgs? _closingArgs;
+    private bool _layoutTransfer;
 
     internal HostFloatingWindow(WorkbenchWindowContext windows)
     {
@@ -36,6 +37,14 @@ internal sealed class HostFloatingWindow : HostWindow, IWindowContentFullscreenH
     internal bool IsCloseCancelled => _closingArgs?.Cancel == true;
     internal bool HasFullscreenContent => _interaction?.HasFullscreenContent == true;
     internal void OpenCommandPalette() => _interaction?.OpenCommandPalette();
+
+    /// <summary>内部布局转移已保留所有模型，只关闭旧展示容器；不把重置命令自己的 Busy 当作初始化在途。</summary>
+    internal void CloseForLayoutTransfer()
+    {
+        _layoutTransfer = true;
+        try { Close(); }
+        finally { _layoutTransfer = false; }
+    }
 
     private Control BuildContent(IRootDock? root)
     {
@@ -75,7 +84,7 @@ internal sealed class HostFloatingWindow : HostWindow, IWindowContentFullscreenH
     protected override void OnClosing(WindowClosingEventArgs args)
     {
         _closingArgs = args;
-        if (_interaction?.IsBusy == true) args.Cancel = true;
+        if (!_layoutTransfer && _interaction?.IsBusy == true) args.Cancel = true;
         try
         {
             // Dock 先触发 Window.Closing，再咨询 Factory。Factory 必须读取同一 args 的最终

@@ -83,3 +83,12 @@ Dock.Avalonia `12.1.0.6` 的本地 NuGet 元数据对应上游提交 `cc08602d02
 - `dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~ApplicationAndWindowTests' --logger 'trx;LogFileName=v11-placement-ui.trx'`：15/15 通过。
 
 均无失败、跳过或构建警告；UI 新增覆盖最大化/最小化保持正常尺寸及 Closed 后不再接收位置变化。找回/重置命令、布局文件实际恢复与真实多屏桌面仍待完成，G6 尚未整体通过。
+
+## G5 工作区捕获与原实例恢复
+
+新增 V3 工作区捕获和恢复适配：稳定节点身份独立于框架临时 ID；工具隐藏/自动隐藏前保留原分组，批量变更结束再发布最终结构。恢复只搬移原模型和 View，完全隐藏或缺插件的窗口只保留数据，显式显示时恢复目标工具；运行期应用布局把既有浮动文档原实例回停。
+
+- Host Unit：DockLayoutWorkspaceStateTests 与 DockLayoutTreeTests，9/9 通过。
+- `dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DockLayoutV3UiTests' --logger 'trx;LogFileName=v11-layout-restore-ui.trx'`：3/3 通过，零失败、跳过和构建警告。
+
+修正全组隐藏后残留活动工具 ID 导致快照无效的问题。以上验证尚未覆盖生产自动保存和主窗口退出，继续由后续阶段完成。

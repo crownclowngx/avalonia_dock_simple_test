@@ -54,6 +54,12 @@ internal interface IWorkspaceDockCallbacks
 
     /// <summary>关闭、合并移除或框架拒绝后，解除窗口范围许可。</summary>
     void OnWindowCloseCompleted(IDockWindow window);
+
+    /// <summary>在工具原位置仍完整时捕获恢复依据，不在此写文件。</summary>
+    void OnLayoutChanging();
+
+    /// <summary>批量布局操作结束后发布最终结构和工具状态。</summary>
+    void OnLayoutChanged();
 }
 
 /// <summary>
@@ -67,6 +73,8 @@ internal interface IWorkspaceDockCallbacks
 internal sealed class HostDockFactory : Factory
 {
     private IWorkspaceDockCallbacks? _callbacks;
+    private int _layoutChangeDepth;
+    internal bool IsLayoutChangeInProgress => _layoutChangeDepth != 0;
 
     internal WorkbenchWindowContext WindowContext { get; }
 
@@ -120,6 +128,34 @@ internal sealed class HostDockFactory : Factory
         };
 
         base.InitLayout(layout);
+    }
+
+    /// <summary>
+    /// 合并一次框架批量结构变化的前后通知。恢复调用方传入 captureBefore=false，
+    /// 防止旧运行树覆盖待恢复快照；Scope 只拥有通知时序，不拥有业务资源或窗口。
+    /// </summary>
+    internal IDisposable BeginLayoutChange(bool captureBefore = true)
+    {
+        if (_layoutChangeDepth == 0 && captureBefore) GetCallbacks().OnLayoutChanging();
+        _layoutChangeDepth++;
+        return new LayoutChangeScope(() =>
+        {
+            if (--_layoutChangeDepth == 0) GetCallbacks().OnLayoutChanged();
+        });
+    }
+
+    /// <summary>最后一个工具隐藏前保留分组和窗口位置；窗口清理后 OriginalOwner 可能已经脱离工作区。</summary>
+    public override void HideDockable(IDockable dockable)
+    {
+        using var change = BeginLayoutChange();
+        base.HideDockable(dockable);
+    }
+
+    /// <summary>Pin 会从可见树取出工具，必须先保留其组身份和顺序。</summary>
+    public override void PinDockable(IDockable dockable)
+    {
+        using var change = BeginLayoutChange();
+        base.PinDockable(dockable);
     }
 
     /// <summary>先保持 Dock 基类语义，再让 Session 归一化稳定停靠结构。</summary>
@@ -206,10 +242,16 @@ internal sealed class HostDockFactory : Factory
             callbacks.OnWindowCloseCompleted(window);
             return false;
         }
+        // 布局转移已把原实例放入候选容器，只关闭清空的旧窗口；不能再异步询问空范围。
+        if (IsLayoutChangeInProgress) return base.OnWindowClosing(window);
         if (!callbacks.OnWindowClosing(window)) return false;
         try
         {
-            if (base.OnWindowClosing(window)) return true;
+            if (base.OnWindowClosing(window))
+            {
+                if (!IsLayoutChangeInProgress) callbacks.OnLayoutChanging();
+                return true;
+            }
         }
         catch
         {
@@ -262,6 +304,12 @@ internal sealed class HostDockFactory : Factory
         {
             CanFloat = false
         };
+    }
+
+    private sealed class LayoutChangeScope(Action complete) : IDisposable
+    {
+        private Action? _complete = complete;
+        public void Dispose() => System.Threading.Interlocked.Exchange(ref _complete, null)?.Invoke();
     }
 
     private IWorkspaceDockCallbacks GetCallbacks() => _callbacks ??
