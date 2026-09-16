@@ -19,8 +19,8 @@ keyed DI 注册影子覆盖。G5 已删除 SDK 通用事件总线；需要消息
 Revision 保存竞争、严格内容读取、关闭令牌与 Lifecycle/readiness 可沿最终 Registry、Workspace 和
 Dock Adapter 链工作；G13 已证明旧 public 入口和运行闭包零残留，没有新增 SDK public API。
 
-当前 SDK 候选版本为 3.3.0；既有 Core 127/UI 45 条仍位于 v3 Shipped，Workflow Action 与
-Workbench Command 兼容新增位于 Core/UI v3 Unshipped 91/66，v2 Shipped 历史文本保持不变。
+当前 SDK 版本为 3.4.1；Core/UI v3 Shipped 保持 127/45 条，Workflow Action、
+Workbench Command 与图标兼容新增位于 v3 Unshipped 91/79 条，v2 Shipped 历史文本保持不变。
 Workflow Action 的 Core 契约提供 JSON 边界的 Handler、
 caller-bound Gateway、显式 Run、结构化请求/终态与受限进度；不包含 Host、工作流定义或 AI 类型。
 
@@ -36,10 +36,10 @@ Provider 的私有 DTO 不穿越公共边界。Consumer 通过 Gateway 创建绑
 CallerId、OwnerId、RunId 或授权结果；Run 的 Dispose 会取消并等待本 Run 的在途调用。
 
 Workflow Action G2 已把该能力传播到模板，并以真实 nupkg、三个 lock file、外部 Provider/Consumer
-和 Host 实调通过门禁。SDK 与模板本次同步提升，Build 协议未变化并继续精确使用 `1.1.2`：
+和 Host 实调通过门禁。V9 将六个自有 NuGet 包统一为 `3.4.1`，Build 协议保持兼容：
 
 ```xml
-<PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.3.0]" />
-<PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.3.0]" />
-<PackageReference Include="MyAvaloniaManagement.Plugin.Build" Version="[1.1.2]" PrivateAssets="all" />
+<PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.4.1]" />
+<PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.4.1]" />
+<PackageReference Include="MyAvaloniaManagement.Plugin.Build" Version="[3.4.1]" PrivateAssets="all" />
 ```

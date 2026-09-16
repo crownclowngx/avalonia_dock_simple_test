@@ -15,9 +15,9 @@ var reference = registration.AddIcon("review", new VectorIconDefinition(
 调用新契约需要 Host/SDK `3.4.0`，旧 Host 的注册替身缺少能力时明确抛出 `NotSupportedException`。
 坏几何在 UI 阶段回退默认图标，不影响文档创建；引用归属与可用性由 Host 使用真实贡献快照校验。
 
-公共资源由独立的 `MyAvaloniaManagement.Icons` `1.0.0` 提供，本 UI SDK 不反向依赖资源包。
+公共资源由独立的 `MyAvaloniaManagement.Icons` `3.4.1` 提供，本 UI SDK 不反向依赖资源包。
 插件可以复制公共资源的路径及宽高注册专属引用，也可直接用 Host 已知的 `builtin:*` 名称。
-资源包作为普通私有依赖部署，需 Build `1.1.3` 和 `ManagedPluginPrivatePackage` 声明；
+资源包作为普通私有依赖部署，使用同版本 Build `3.4.1` 和 `ManagedPluginPrivatePackage` 声明；
 不能将资源包加入共享程序集清单，也不能跨边界传递它的 `CommonIconAsset` 对象。
 
 本包是 Managed Plugin 的 UI 契约程序集，提供模块入口、插件私有 DI 注册、不可变
@@ -57,17 +57,17 @@ Workbench Command G1 继续使用同一兼容模式：`IPluginRegistration` 原�
 `CommandDescriptor`、目标 Document、菜单共享末端位置和 Avalonia Key/KeyModifiers；Descriptor 与 Registry
 都不保存 Target、Provider、Control、`MenuItem`、`KeyBinding`、`ICommand` 或回调。G2 已在 Host internal
 建立无 UI 合并 Catalog 和 Executor；G3–G5 已完成活动 Document Target 路由、Host 打开/保存迁移，以及
-Host-owned Menu/KeyBinding Projection。当前候选版本为 3.3.0，public API 保持 v3 Shipped 127/45、
+Host-owned Menu/KeyBinding Projection。该阶段候选版本为 3.3.0，public API 保持 v3 Shipped 127/45、
 Unshipped 91/66；G6 使用真实 nupkg、模板生成项目和独立 ALC 验证外部传播。G9 的最小 Palette 完全位于
 Host internal Presentation 层，没有增加 UI SDK public API。
 
 推荐通过解决方案模板开始外部插件开发：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.3.0
+dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.1
 dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
 ```
 
-Templates `1.3.0` 把三个生成项目精确锁定到 Core/UI SDK `3.3.0`；Build 协议没有变化，仍精确
-使用 NuGet.org 的 `1.1.2`。模板生成中性的 Document 与单次执行 Command 示例，不注册默认快捷键；
+Templates `3.4.1` 把三个生成项目精确锁定到 Core/UI SDK、Icons 与 Build `3.4.1`，
+Avalonia.Desktop 为 `12.1.2`。模板生成中性的 Document 与单次执行 Command 示例，不注册默认快捷键；
 Provider、Consumer 与 Command Target 的设计边界见生成文档。

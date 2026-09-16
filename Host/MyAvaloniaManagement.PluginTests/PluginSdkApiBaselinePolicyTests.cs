@@ -17,8 +17,9 @@ public sealed class PluginSdkApiBaselinePolicyTests
         var repositoryRoot = FindRepositoryRoot();
         var properties = XDocument.Load(Path.Combine(repositoryRoot, "Directory.Version.props"));
         var baseline = Property(properties, "MyAvaloniaPluginSdkApiBaseline");
-        var packageVersion = Version.Parse(Property(properties, "MyAvaloniaPluginSdkVersion"));
-        var assemblyVersion = Version.Parse(Property(properties, "MyAvaloniaPluginSdkAssemblyVersion"));
+        var versions = VersionPolicyTests.ReadVersionProperties();
+        var packageVersion = Version.Parse(versions["MyAvaloniaPluginSdkVersion"]);
+        var assemblyVersion = Version.Parse(versions["MyAvaloniaPluginSdkAssemblyVersion"]);
 
         Assert.StartsWith("v", baseline, StringComparison.Ordinal);
         Assert.True(int.TryParse(baseline[1..], out var baselineMajor));

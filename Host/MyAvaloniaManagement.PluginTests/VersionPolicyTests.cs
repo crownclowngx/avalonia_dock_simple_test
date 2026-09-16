@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Layout;
@@ -34,7 +35,7 @@ public sealed class VersionPolicyTests
 
         Assert.Equal("3.0.0", properties["MyAvaloniaProductVersion"]);
         Assert.Equal("3.4.1", properties["MyAvaloniaPluginSdkVersion"]);
-        Assert.Equal("1.0.0", properties["MyAvaloniaPluginSdkWorkflowVersion"]);
+        Assert.Equal("3.4.1", properties["MyAvaloniaPluginSdkWorkflowVersion"]);
         Assert.False(
             properties.ContainsKey("MyAvaloniaHostApiAssemblyVersion"),
             "V3 不得重新引入独立 Host API 版本事实。");
@@ -273,18 +274,53 @@ public sealed class VersionPolicyTests
             "MyPlugTest"),
     ];
 
-    private static IReadOnlyDictionary<string, string> ReadVersionProperties()
+    [Fact]
+    public void VersionPolicy_六个NuGet包和模板依赖使用同一发布版本()
+    {
+        var properties = ReadVersionProperties();
+        var version = properties["MyAvaloniaPackageVersion"];
+        var projects = new[]
+        {
+            ("Host", "MyAvaloniaManagement.PluginSdk", "MyAvaloniaPluginSdkVersion"),
+            ("Host", "MyAvaloniaManagement.PluginSdk.UI", "MyAvaloniaPluginSdkVersion"),
+            ("Host", "MyAvaloniaManagement.PluginSdk.Workflow", "MyAvaloniaPluginSdkWorkflowVersion"),
+            ("Host", "MyAvaloniaManagement.Icons", "MyAvaloniaIconsVersion"),
+            ("Packaging", "MyAvaloniaManagement.Plugin.Build", "MyAvaloniaPluginBuildVersion"),
+            ("Packaging", "MyAvaloniaManagement.Plugin.Templates", "MyAvaloniaPluginTemplatesVersion"),
+        };
+        foreach (var (directory, name, property) in projects)
+        {
+            Assert.Equal(version, properties[property]);
+            // 同时检查映射和求值结果，防止直接抄数字后本次恰好相同、下次发布再次漂移。
+            foreach (var field in new[] { "Version", "PackageVersion" })
+                AssertProjectMapping(Path.Combine(directory, name, name + ".csproj"), field, "$(" + property + ")");
+        }
+
+        var templateRoot = Path.Combine(RepositoryRoot, "Packaging", "MyAvaloniaManagement.Plugin.Templates", "content", "myavalonia-plugin");
+        var dependencies = XDocument.Load(Path.Combine(templateRoot, "Directory.Packages.props"))
+            .Descendants("PackageVersion")
+            .Where(item => item.Attribute("Include")!.Value.StartsWith("MyAvaloniaManagement.", StringComparison.Ordinal))
+            .ToArray();
+        Assert.Equal(4, dependencies.Length);
+        Assert.All(dependencies, item => Assert.Equal($"[{version}]", item.Attribute("Version")!.Value));
+        Assert.Equal(version, ReadProjectProperty(
+            Path.Combine(templateRoot, "src", "DemoPlugin.Plugin", "DemoPlugin.Plugin.csproj"), "ManagedPluginSdkMinInclusive"));
+
+        // NuGet 发布号与二进制契约是不同职责：Workflow 没有 API 破坏，不更换既有身份。
+        Assert.Equal("1.0.0.0", properties["MyAvaloniaPluginSdkWorkflowAssemblyVersion"]);
+    }
+
+    internal static IReadOnlyDictionary<string, string> ReadVersionProperties()
     {
         var document = XDocument.Load(Path.Combine(
             RepositoryRoot,
             "Directory.Version.props"));
-        return document
-            .Descendants()
-            .Where(element => element.Parent?.Name.LocalName == "PropertyGroup")
-            .ToDictionary(
-                element => element.Name.LocalName,
-                element => element.Value.Trim(),
-                StringComparer.Ordinal);
+        // 本文件只允许无条件、按顺序声明的集中属性。依次展开前面已定义的属性，
+        // 未知引用立即失败；不实现通用 MSBuild 解释器，实际产物另由元数据断言校验。
+        var values = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var element in document.Descendants().Where(element => element.Parent?.Name.LocalName == "PropertyGroup"))
+            values.Add(element.Name.LocalName, Regex.Replace(element.Value.Trim(), @"\$\(([^)]+)\)", match => values[match.Groups[1].Value]));
+        return values;
     }
 
     private static void AssertProjectMapping(

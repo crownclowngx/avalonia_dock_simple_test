@@ -13,15 +13,24 @@
       V3 继续不维护可供插件引用的独立 Host API 版本线。Host AssemblyVersion 跟随产品，
       Plugin SDK 则继续独立表达进程内契约身份；二者不能互相替代。
     -->
-    <MyAvaloniaPluginSdkVersion>3.4.1</MyAvaloniaPluginSdkVersion>
+    <!--
+      六个对外 NuGet 包统一使用一个发布版本。保留各组件属性作为语义明确的映射，
+      项目文件不再各自保存数字；包版本统一不改变产品版本、磁盘协议或 API 基线。
+    -->
+    <MyAvaloniaPackageVersion>3.4.1</MyAvaloniaPackageVersion>
+    <MyAvaloniaPackageFileVersion>$(MyAvaloniaPackageVersion).0</MyAvaloniaPackageFileVersion>
+    <MyAvaloniaPluginSdkVersion>$(MyAvaloniaPackageVersion)</MyAvaloniaPluginSdkVersion>
     <MyAvaloniaPluginSdkNextMajorVersion>4.0.0</MyAvaloniaPluginSdkNextMajorVersion>
-    <MyAvaloniaPluginSdkFileVersion>3.4.1.0</MyAvaloniaPluginSdkFileVersion>
-    <MyAvaloniaPluginSdkAssemblyVersion>3.4.1.0</MyAvaloniaPluginSdkAssemblyVersion>
-    <!-- 图形资产独立演进，不进入 SDK 共享程序集闭包。 -->
-    <MyAvaloniaIconsVersion>1.0.0</MyAvaloniaIconsVersion>
-    <MyAvaloniaPluginSdkWorkflowVersion>1.0.0</MyAvaloniaPluginSdkWorkflowVersion>
-    <MyAvaloniaPluginSdkWorkflowFileVersion>1.0.0.0</MyAvaloniaPluginSdkWorkflowFileVersion>
+    <MyAvaloniaPluginSdkFileVersion>$(MyAvaloniaPackageFileVersion)</MyAvaloniaPluginSdkFileVersion>
+    <MyAvaloniaPluginSdkAssemblyVersion>$(MyAvaloniaPackageFileVersion)</MyAvaloniaPluginSdkAssemblyVersion>
+    <!-- 图形资产参与统一发布，但仍是插件私有依赖，不进入 SDK 共享程序集闭包。 -->
+    <MyAvaloniaIconsVersion>$(MyAvaloniaPackageVersion)</MyAvaloniaIconsVersion>
+    <MyAvaloniaPluginSdkWorkflowVersion>$(MyAvaloniaPackageVersion)</MyAvaloniaPluginSdkWorkflowVersion>
+    <MyAvaloniaPluginSdkWorkflowFileVersion>$(MyAvaloniaPackageFileVersion)</MyAvaloniaPluginSdkWorkflowFileVersion>
+    <!-- Workflow 没有契约破坏，保留既有二进制身份及 v1 API 基线，避免仅为对齐包号改变绑定身份。 -->
     <MyAvaloniaPluginSdkWorkflowAssemblyVersion>1.0.0.0</MyAvaloniaPluginSdkWorkflowAssemblyVersion>
+    <MyAvaloniaPluginBuildVersion>$(MyAvaloniaPackageVersion)</MyAvaloniaPluginBuildVersion>
+    <MyAvaloniaPluginTemplatesVersion>$(MyAvaloniaPackageVersion)</MyAvaloniaPluginTemplatesVersion>
     <!--
       public API 文本基线按 SDK 主版本独立保存。有意破坏必须先建立新的 vN 目录，
       再同步提升包版本、程序集版本和插件清单兼容区间，不能改写旧基线掩盖差异。

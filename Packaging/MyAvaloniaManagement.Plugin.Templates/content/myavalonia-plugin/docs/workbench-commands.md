@@ -1,6 +1,6 @@
 # Workbench Command 开发说明
 
-Plugin SDK `3.3.0` 允许插件把少量高价值的用户意图声明为 Workbench Command，使同一语义动作可由
+Plugin SDK `3.4.1` 允许插件把少量高价值的用户意图声明为 Workbench Command，使同一语义动作可由
 Host 菜单、快捷键或后续 Command Palette 投影。Command 不是 Avalonia `ICommand` 的替代品；按钮点击、
 表单编辑、拖放和只对单个控件有意义的局部交互，继续使用插件自己的命令或业务用例即可。
 

@@ -1,6 +1,6 @@
 # MyAvaloniaManagement.Icons
 
-公共单色矢量资源包，独立版本 `1.0.0`，目标 .NET 10；没有 Avalonia、SDK、Host 或 DI 依赖。
+公共单色矢量资源包，统一发布版本 `3.4.1`，目标 .NET 10；没有 Avalonia、SDK、Host 或 DI 依赖。
 
 ```csharp
 var asset = CommonIcons.Table;

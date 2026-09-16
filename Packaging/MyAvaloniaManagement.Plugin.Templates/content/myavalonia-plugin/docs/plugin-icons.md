@@ -8,9 +8,9 @@ V6.1 同时提供插件专属图标和 `MyAvaloniaManagement.Icons` 公共矢量
 | 组件 | 版本 | 职责 |
 | --- | --- | --- |
 | Core / UI SDK | 3.4.1 | 保持同版本；图标契约兼容 3.4.0 |
-| MyAvaloniaManagement.Icons | 1.0.0 | 独立 .NET 10 资源包，无 SDK/Avalonia/DI 依赖 |
-| Plugin.Build | 1.1.3 | 允许图标资源 DLL 作为私有依赖部署及打包 |
-| Plugin.Templates | 1.4.2 | 使用 Avalonia 12.1.2 的本地候选模板 |
+| MyAvaloniaManagement.Icons | 3.4.1 | 独立 .NET 10 资源包，无 SDK/Avalonia/DI 依赖 |
+| Plugin.Build | 3.4.1 | 允许图标资源 DLL 作为私有依赖部署及打包 |
+| Plugin.Templates | 3.4.1 | 使用 Avalonia 12.1.2 的统一版本模板 |
 
 `AddIcon` 最初在 SDK 3.4.0 提供。本模板按 SDK 3.4.1 编译，生成的 manifest 最低版本为 `3.4.1`；既有 3.4.0 插件无需因图标契约改变清单。
 仅在自己的 View 使用资源包的旧 SDK 插件，不因资源包本身被强制升级 SDK。
@@ -61,20 +61,20 @@ var icon = registration.AddIcon("text-review", new VectorIconDefinition(
 
 ```xml
 <!-- Directory.Packages.props -->
-<PackageVersion Include="MyAvaloniaManagement.Icons" Version="[1.0.0]" />
+<PackageVersion Include="MyAvaloniaManagement.Icons" Version="[3.4.1]" />
 
 <!-- 插件 csproj：引用包，并声明它是插件拥有的私有运行时资产。 -->
 <PackageReference Include="MyAvaloniaManagement.Icons" />
 <ManagedPluginPrivatePackage Include="MyAvaloniaManagement.Icons" />
 ```
 
-Build 至少使用 `1.1.3`；ZIP 中应包含 `MyAvaloniaManagement.Icons.dll`，不能包含共享 Core/UI SDK DLL。
+本模板使用 Build `3.4.1`（此能力最初由 `1.1.3` 提供）；ZIP 中应包含 `MyAvaloniaManagement.Icons.dll`，不能包含共享 Core/UI SDK DLL。
 本仓 MyPlugTest 使用 ProjectReference，通过既有 `ManagedPluginAsset` 扩展点部署图标 DLL；
 外部模板使用上述 NuGet 私有包声明。两条路径均需验收真实 ZIP，不能只检查普通 bin 目录。
 
 ## 页面、主题和异常
 
-公共资源 `1.0.0` 使用 20×20 逻辑画布、EvenOdd 填充。专属图标可以声明其他有限正数尺寸及
+公共资源使用 20×20 逻辑画布、EvenOdd 填充。专属图标可以声明其他有限正数尺寸及
 `IconFillRule.NonZero`；Host 以原点 `(0,0)` 等比居中绘制，保留画布留白并裁掉越界区域。
 当前位置的主题画刷决定前景色，每个位置拥有独立控件，仅复用本 Runtime 内的几何数据。
 

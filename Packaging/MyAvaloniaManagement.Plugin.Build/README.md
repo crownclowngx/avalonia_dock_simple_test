@@ -1,6 +1,6 @@
 # MyAvaloniaManagement Plugin Build
 
-`1.1.3` 精确允许 `MyAvaloniaManagement.Icons.dll` 作为普通私有图标资源部署及打包。
+`3.4.1` 延续 1.1.3 的兼容协议，精确允许 `MyAvaloniaManagement.Icons.dll` 作为普通私有图标资源部署及打包。
 Host 主程序集、Core/UI/Workflow SDK 和其他既有共享程序集仍受原规则保护。
 使用图标包时同时添加 `PackageReference` 和 `ManagedPluginPrivatePackage`，资源包不会自动加入共享契约。
 
