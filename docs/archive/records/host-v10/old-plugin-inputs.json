@@ -1,0 +1,2634 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "9bceb0781fabcc772bac38ac6e06353d55d22b3e",
+  "capturedAtUtc": "2026-09-16T02:46:42.1456152+00:00",
+  "source": "D:/data/avalonia/Controls",
+  "snapshot": "artifacts/host-v10/baseline/Controls",
+  "files": [
+    {
+      "path": "BaiduDiskPlugin/BaiduDiskPlugin.Plugin.deps.json",
+      "length": 12410,
+      "sha256": "8F8B47FB918760092FCF9E01AF8EB185932E483BBD0BF135DBD5E355E94AED14"
+    },
+    {
+      "path": "BaiduDiskPlugin/BaiduDiskPlugin.Plugin.dll",
+      "length": 581632,
+      "sha256": "C0BEEFF1E861326AA36C70611C58B10411013ABE11A62FF4F58D52CB43B1DDF2"
+    },
+    {
+      "path": "BaiduDiskPlugin/BaiduDiskPlugin.Plugin.pdb",
+      "length": 126516,
+      "sha256": "CBFCD11843292CFE0DC1F2F491DED1C872D5821ABC8EC2A1192A5EC16BB2ECD5"
+    },
+    {
+      "path": "BaiduDiskPlugin/Flurl.dll",
+      "length": 39936,
+      "sha256": "7FF7965161F6ACC809F7154CD3BA1F56E0290974D4FCFC5944BD4C9030996383"
+    },
+    {
+      "path": "BaiduDiskPlugin/Flurl.Http.dll",
+      "length": 113152,
+      "sha256": "CB204C6865563BC7F023F4655977CF5263536A75069B0E7E1D72A900A66F1EB5"
+    },
+    {
+      "path": "BaiduDiskPlugin/plugin.manifest.json",
+      "length": 289,
+      "sha256": "5F5250A92B97247E784F22FC919EC05EC45F411DB9FCA89BED92B0286EB6CA7C"
+    },
+    {
+      "path": "BaiduDiskPlugin/System.Security.Cryptography.ProtectedData.dll",
+      "length": 40208,
+      "sha256": "7CCC461B061D8E45ACF41219809C8773028274037906180C77495571A305734B"
+    },
+    {
+      "path": "BiliDownloader/BiliDownloader.deps.json",
+      "length": 24015,
+      "sha256": "F2B5651EBD249F0D4748F5FC2728DD236F73A78169F05681C44028CD965C9377"
+    },
+    {
+      "path": "BiliDownloader/BiliDownloader.dll",
+      "length": 1840640,
+      "sha256": "064C8832C6213C043883A8F54D76C9C90BFCCF52EDB63BDF6C58391E7F4B8513"
+    },
+    {
+      "path": "BiliDownloader/BiliDownloader.pdb",
+      "length": 432180,
+      "sha256": "082C6888A0919098BFC30666814B899A44C388137A75D706282A23AE73957107"
+    },
+    {
+      "path": "BiliDownloader/Flurl.dll",
+      "length": 39936,
+      "sha256": "7FF7965161F6ACC809F7154CD3BA1F56E0290974D4FCFC5944BD4C9030996383"
+    },
+    {
+      "path": "BiliDownloader/Flurl.Http.dll",
+      "length": 113152,
+      "sha256": "CB204C6865563BC7F023F4655977CF5263536A75069B0E7E1D72A900A66F1EB5"
+    },
+    {
+      "path": "BiliDownloader/Microsoft.Data.Sqlite.dll",
+      "length": 177464,
+      "sha256": "1078D41C6C0F2CEE48A8B706E3A54CE145705993F19F703D2B3BDF2ABCC59088"
+    },
+    {
+      "path": "BiliDownloader/MyAvaloniaManagement.Icons.dll",
+      "length": 8192,
+      "sha256": "AA1199171B9514D3F56909FEF2AD6631578C2B366BB969BE2A0900BEF2FFB78A"
+    },
+    {
+      "path": "BiliDownloader/plugin.manifest.json",
+      "length": 287,
+      "sha256": "37D201F0F89B0E54CB50A5985708BBEA3F962622A8944745494E3A9401CA0E6E"
+    },
+    {
+      "path": "BiliDownloader/protobuf-net.Core.dll",
+      "length": 300032,
+      "sha256": "18F2F6976F101C804D7C7314739FEFCE4DAFA6D63FF4C3986E45D59967BD2777"
+    },
+    {
+      "path": "BiliDownloader/protobuf-net.dll",
+      "length": 285184,
+      "sha256": "78D95EFD88BCE208A2AA412F193ED534E4B6337F8C15FF9171B8696946200EDF"
+    },
+    {
+      "path": "BiliDownloader/QRCoder.dll",
+      "length": 204288,
+      "sha256": "5CACB8E071EF6B355615E8CAE1D02D94B9D191EC33DB12A05D82099CDDB16E9A"
+    },
+    {
+      "path": "BiliDownloader/runtimes/win-x64/native/e_sqlite3.dll",
+      "length": 1978880,
+      "sha256": "B7385D722C83FB52142A00477A726723745916D22A555711EE89834C1111FB2E"
+    },
+    {
+      "path": "BiliDownloader/SQLitePCLRaw.batteries_v2.dll",
+      "length": 5120,
+      "sha256": "815CE410C9EAB531DD219318E3BA16C5E38E83D361CFBBDBB4BBCA222C497B0B"
+    },
+    {
+      "path": "BiliDownloader/SQLitePCLRaw.core.dll",
+      "length": 51200,
+      "sha256": "AF340AC9EB9195795660D7FC1114F486B6AB63998F33176E2F24C8E0ACB9AA84"
+    },
+    {
+      "path": "BiliDownloader/SQLitePCLRaw.provider.e_sqlite3.dll",
+      "length": 36864,
+      "sha256": "DF996BCAE63C2CABCFE8D4B9C5110EB39A2A4706178B07D875665391C6EB3995"
+    },
+    {
+      "path": "ClassicGamePlugin/ClassicGamePlugin.Plugin.deps.json",
+      "length": 10596,
+      "sha256": "486D71711CA65C69D4C112FF84BED9226DD07278FDB293485573F7F92728BD63"
+    },
+    {
+      "path": "ClassicGamePlugin/ClassicGamePlugin.Plugin.dll",
+      "length": 1104896,
+      "sha256": "B7CBA9BDF49BBA0B1E39B75570C43731904DA1D56AE2B615AB37A0280865ED45"
+    },
+    {
+      "path": "ClassicGamePlugin/ClassicGamePlugin.Plugin.pdb",
+      "length": 341516,
+      "sha256": "426CE08CE8865C1BF9802EB25624239EC8EFD77A5C08ABA107873722B232A358"
+    },
+    {
+      "path": "ClassicGamePlugin/plugin.manifest.json",
+      "length": 294,
+      "sha256": "250E301A78BFD406F08033EDB782DAB004D3FD921EE81D6D66E5046C852D6193"
+    },
+    {
+      "path": "DaTang/DaTangAccountingHelpPlug.deps.json",
+      "length": 21598,
+      "sha256": "D8B6D5125378F3DB66761B5C5D144E778B50F1DD2177614D0C4C200AE33790B8"
+    },
+    {
+      "path": "DaTang/DaTangAccountingHelpPlug.dll",
+      "length": 350208,
+      "sha256": "3DD4A01A709AB82119768A674AA69937D92F0DEF4E472DEA774E049586B6B044"
+    },
+    {
+      "path": "DaTang/DaTangAccountingHelpPlug.pdb",
+      "length": 92392,
+      "sha256": "02282F8EBAC1F237799FD21BAC597F899E0D3C28C1A3D2CBBEDAE25F3B6E4E38"
+    },
+    {
+      "path": "DaTang/EPPlus.dll",
+      "length": 4578632,
+      "sha256": "6C40E4E3BF100938D23BE001010AEAEA0596119AAAA0133BC4CD5932CBBB395D"
+    },
+    {
+      "path": "DaTang/EPPlus.Interfaces.dll",
+      "length": 22344,
+      "sha256": "0B976C6C0DD815CB53047B436B6CEF0DA24B3AC5D8B5629652FE2C88EA9806FA"
+    },
+    {
+      "path": "DaTang/Microsoft.IO.RecyclableMemoryStream.dll",
+      "length": 65968,
+      "sha256": "631A5FC41DF9498D032C0655EBD0E1209430CCFFBEC55667D89C2566B338CCC0"
+    },
+    {
+      "path": "DaTang/MyAvaloniaManagement.Icons.dll",
+      "length": 8192,
+      "sha256": "AA1199171B9514D3F56909FEF2AD6631578C2B366BB969BE2A0900BEF2FFB78A"
+    },
+    {
+      "path": "DaTang/plugin.manifest.json",
+      "length": 320,
+      "sha256": "73154C5054B45EBFCF4456CEBA0614FA638C992A2555271EDBCF074BB1B09E18"
+    },
+    {
+      "path": "DaTang/System.Security.Cryptography.Pkcs.dll",
+      "length": 287568,
+      "sha256": "6A61B7AA008E00807A8D2A1B87EED604A2A55320800889242D1CE98531D8A076"
+    },
+    {
+      "path": "DaTang/System.Security.Cryptography.Xml.dll",
+      "length": 207656,
+      "sha256": "5A2053D5DE6BB95EBE57A11FE9B553B9913D87FA4B3744F4E4E10EC4339CB0ED"
+    },
+    {
+      "path": "FractalArtPlugin/FractalArtPlugin.Plugin.deps.json",
+      "length": 10593,
+      "sha256": "513EC3CA6514F3C4771E2517B464E0F32FCC9A44D3E825D34357888938A944FC"
+    },
+    {
+      "path": "FractalArtPlugin/FractalArtPlugin.Plugin.dll",
+      "length": 805376,
+      "sha256": "A91663219A6A038FA11BBA2B8B15EC2EBA6CDDE78F63C18A0FE91AA5CA4EDC47"
+    },
+    {
+      "path": "FractalArtPlugin/FractalArtPlugin.Plugin.pdb",
+      "length": 196060,
+      "sha256": "92F477CCD73C4CBA3537804F781114965360B3E19DCE36D46320B5A719D8D422"
+    },
+    {
+      "path": "FractalArtPlugin/plugin.manifest.json",
+      "length": 290,
+      "sha256": "7BE72924576D4AF18AC94A65020980BD09A0DA346E3739550454A5DD2CAA14AE"
+    },
+    {
+      "path": "ImageLabPlugin/ImageLabPlugin.Plugin.deps.json",
+      "length": 11217,
+      "sha256": "0FE49275CC829285468865762A62EFD5E5B91DC6B03497AD334F2EC24B532241"
+    },
+    {
+      "path": "ImageLabPlugin/ImageLabPlugin.Plugin.dll",
+      "length": 3522048,
+      "sha256": "8E926D4FD5BF109F103BF31FF3513FDFF7662F6707A656384EB45882429617B6"
+    },
+    {
+      "path": "ImageLabPlugin/ImageLabPlugin.Plugin.pdb",
+      "length": 924360,
+      "sha256": "5704310D1749468E2619968C5FFCBDD1943ECF0A0993C0A290A41BF09EF10DDD"
+    },
+    {
+      "path": "ImageLabPlugin/MyAvaloniaManagement.Icons.dll",
+      "length": 8192,
+      "sha256": "AA1199171B9514D3F56909FEF2AD6631578C2B366BB969BE2A0900BEF2FFB78A"
+    },
+    {
+      "path": "ImageLabPlugin/plugin.manifest.json",
+      "length": 282,
+      "sha256": "F74817D724ACEB40912DE21B75C8E2F7CB1E990469AA6B525F98DEBA796FDA36"
+    },
+    {
+      "path": "LayerUnpackPlugin/ICSharpCode.SharpZipLib.dll",
+      "length": 258048,
+      "sha256": "32EA2D0CE3512E74F1C7AD82591FE67E6B8939D76A8A4FF9C93EAD030131E71C"
+    },
+    {
+      "path": "LayerUnpackPlugin/LayerUnpackPlugin.Headless.dll",
+      "length": 314880,
+      "sha256": "E31E45A0CD0B820CF8B5CFA411497223833CA53E64450A3CF95A451DF7D9AA42"
+    },
+    {
+      "path": "LayerUnpackPlugin/LayerUnpackPlugin.Headless.pdb",
+      "length": 78000,
+      "sha256": "AE9CA0D1CA6BE320C95DFB56F994BD0B4DD78CD665A1E6D023011DF710988A3C"
+    },
+    {
+      "path": "LayerUnpackPlugin/LayerUnpackPlugin.Plugin.deps.json",
+      "length": 13581,
+      "sha256": "34BC044FAF2ADDFD96D0A86B5D9A5D222363C4FD6BA72EF15D7D5C5587CF9F7B"
+    },
+    {
+      "path": "LayerUnpackPlugin/LayerUnpackPlugin.Plugin.dll",
+      "length": 430080,
+      "sha256": "D22D69D833A369D19559531A0D6C3979359B94762ED5E48EFAD2450D27A3E350"
+    },
+    {
+      "path": "LayerUnpackPlugin/LayerUnpackPlugin.Plugin.pdb",
+      "length": 139108,
+      "sha256": "8BEB74527002FEEC6BFBE49019828E2AD2655171ABA6DE095E9FBB1D484A875D"
+    },
+    {
+      "path": "LayerUnpackPlugin/MyAvaloniaManagement.Icons.dll",
+      "length": 8192,
+      "sha256": "AA1199171B9514D3F56909FEF2AD6631578C2B366BB969BE2A0900BEF2FFB78A"
+    },
+    {
+      "path": "LayerUnpackPlugin/plugin.manifest.json",
+      "length": 294,
+      "sha256": "D1D1A84F1BC7256F6F9DE8F66EF8875DC32A0C74A276D936BF3BA9EA42C1FB6F"
+    },
+    {
+      "path": "LayerUnpackPlugin/SharpCompress.dll",
+      "length": 2461696,
+      "sha256": "F59F7159BC053F656F59EE15144F123DE5D4B798C337083F3BFC6B0D30E846FD"
+    },
+    {
+      "path": "LayerUnpackPlugin/ThirdPartyNotices/SharpCompress.LICENSE.txt",
+      "length": 1081,
+      "sha256": "B7CA2B6174CEE11AFE41D78B48527E3D7659A4435C25019A4A5E072299A2F8ED"
+    },
+    {
+      "path": "LayerUnpackPlugin/ThirdPartyNotices/SharpZipLib.LICENSE.txt",
+      "length": 1072,
+      "sha256": "D7FBBC16F871BF24FA5624C7EAF945054B778985F32676DCACBA41FDDCA61133"
+    },
+    {
+      "path": "MyPlugTest/EPPlus.dll",
+      "length": 4578632,
+      "sha256": "6C40E4E3BF100938D23BE001010AEAEA0596119AAAA0133BC4CD5932CBBB395D"
+    },
+    {
+      "path": "MyPlugTest/EPPlus.Interfaces.dll",
+      "length": 22344,
+      "sha256": "0B976C6C0DD815CB53047B436B6CEF0DA24B3AC5D8B5629652FE2C88EA9806FA"
+    },
+    {
+      "path": "MyPlugTest/Flurl.dll",
+      "length": 39936,
+      "sha256": "7FF7965161F6ACC809F7154CD3BA1F56E0290974D4FCFC5944BD4C9030996383"
+    },
+    {
+      "path": "MyPlugTest/Flurl.Http.dll",
+      "length": 113152,
+      "sha256": "CB204C6865563BC7F023F4655977CF5263536A75069B0E7E1D72A900A66F1EB5"
+    },
+    {
+      "path": "MyPlugTest/Microsoft.IO.RecyclableMemoryStream.dll",
+      "length": 65968,
+      "sha256": "631A5FC41DF9498D032C0655EBD0E1209430CCFFBEC55667D89C2566B338CCC0"
+    },
+    {
+      "path": "MyPlugTest/MyAvaloniaManagement.Icons.dll",
+      "length": 8192,
+      "sha256": "297DA1F0AAF9FA9152EE9642B64B44810C3735C36482A2317AA61051135AC7C6"
+    },
+    {
+      "path": "MyPlugTest/MyPlugTest.deps.json",
+      "length": 20718,
+      "sha256": "531B0C57FE17541CDEDC2D923615D9E9ADC92CFBBFD383B19F6E6C89E87D9E81"
+    },
+    {
+      "path": "MyPlugTest/MyPlugTest.dll",
+      "length": 189952,
+      "sha256": "DAA95FEB2BBDC4554F10DAD155ADAA6D015BEB979A3F3A81AEE4AC7C4B982071"
+    },
+    {
+      "path": "MyPlugTest/MyPlugTest.pdb",
+      "length": 58120,
+      "sha256": "AE94EC08653E032D0EA12F27D36199022C24CCFC697401A304372F3A754861F9"
+    },
+    {
+      "path": "MyPlugTest/plugin.manifest.json",
+      "length": 272,
+      "sha256": "67F1A1427BFB27B5DD7627AA3E05B58ABADA47C2E2F96E7AF99AEA31DBB5F6AA"
+    },
+    {
+      "path": "MyPlugTest/System.Security.Cryptography.Pkcs.dll",
+      "length": 287568,
+      "sha256": "6A61B7AA008E00807A8D2A1B87EED604A2A55320800889242D1CE98531D8A076"
+    },
+    {
+      "path": "MyPlugTest/System.Security.Cryptography.Xml.dll",
+      "length": 207656,
+      "sha256": "5A2053D5DE6BB95EBE57A11FE9B553B9913D87FA4B3744F4E4E10EC4339CB0ED"
+    },
+    {
+      "path": "NovelGeneratePlugin/Microsoft.Data.Sqlite.dll",
+      "length": 177464,
+      "sha256": "1078D41C6C0F2CEE48A8B706E3A54CE145705993F19F703D2B3BDF2ABCC59088"
+    },
+    {
+      "path": "NovelGeneratePlugin/MyAvaloniaManagement.Icons.dll",
+      "length": 8192,
+      "sha256": "AA1199171B9514D3F56909FEF2AD6631578C2B366BB969BE2A0900BEF2FFB78A"
+    },
+    {
+      "path": "NovelGeneratePlugin/NovelGeneratePlugin.Plugin.deps.json",
+      "length": 19830,
+      "sha256": "F340E950690DFFE55D31B5B0183EC2396DFC2C2AEC81D0BC78D0382479C4A655"
+    },
+    {
+      "path": "NovelGeneratePlugin/NovelGeneratePlugin.Plugin.dll",
+      "length": 1748992,
+      "sha256": "D5C9DC11121B6CB270246E26A8DB8DB67CBB955A30B4CABA16AF1FBA30103539"
+    },
+    {
+      "path": "NovelGeneratePlugin/NovelGeneratePlugin.Plugin.pdb",
+      "length": 428824,
+      "sha256": "E093AD4CE37CB68B1ADCDA179EC2E743D34F9F09FC823BA8AC69D3DE5D1B4700"
+    },
+    {
+      "path": "NovelGeneratePlugin/plugin.manifest.json",
+      "length": 302,
+      "sha256": "F8423FFF477BFC531E7A39BB7F7C83AF0EAF59BBE1C9F0AD5333DAA7168D7409"
+    },
+    {
+      "path": "NovelGeneratePlugin/runtimes/win-x64/native/e_sqlite3.dll",
+      "length": 1978880,
+      "sha256": "B7385D722C83FB52142A00477A726723745916D22A555711EE89834C1111FB2E"
+    },
+    {
+      "path": "NovelGeneratePlugin/SQLitePCLRaw.batteries_v2.dll",
+      "length": 5120,
+      "sha256": "815CE410C9EAB531DD219318E3BA16C5E38E83D361CFBBDBB4BBCA222C497B0B"
+    },
+    {
+      "path": "NovelGeneratePlugin/SQLitePCLRaw.core.dll",
+      "length": 51200,
+      "sha256": "AF340AC9EB9195795660D7FC1114F486B6AB63998F33176E2F24C8E0ACB9AA84"
+    },
+    {
+      "path": "NovelGeneratePlugin/SQLitePCLRaw.provider.e_sqlite3.dll",
+      "length": 36864,
+      "sha256": "DF996BCAE63C2CABCFE8D4B9C5110EB39A2A4706178B07D875665391C6EB3995"
+    },
+    {
+      "path": "NovelGeneratePlugin/System.Security.Cryptography.ProtectedData.dll",
+      "length": 40208,
+      "sha256": "7CCC461B061D8E45ACF41219809C8773028274037906180C77495571A305734B"
+    },
+    {
+      "path": "VideoSecurityPlayer/LibVLCSharp.Avalonia.dll",
+      "length": 15872,
+      "sha256": "0DBEE546FCBA3A88A83676FE34053113A60595A0036FEF0A30EC4D4C4A8CB482"
+    },
+    {
+      "path": "VideoSecurityPlayer/LibVLCSharp.dll",
+      "length": 229888,
+      "sha256": "EA886CA99677A28C2B15D11F8DDD52EF5F22D7E17600F1A31C0F6DD91DC9E4FE"
+    },
+    {
+      "path": "VideoSecurityPlayer/MyAvaloniaManagement.Icons.dll",
+      "length": 8192,
+      "sha256": "AA1199171B9514D3F56909FEF2AD6631578C2B366BB969BE2A0900BEF2FFB78A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/hrtfs/dodeca_and_7channel_3DSL_HRTF.sofa",
+      "length": 92388,
+      "sha256": "05CA927052CF83663B29546B06998B03EA7FBCD288F7C99E7AF8B215AC77EC4E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/libvlc.dll",
+      "length": 192408,
+      "sha256": "8AE9F16A72441F43FB4AE8F72C843736726E067EA4A8DEF2646748631CC4E872"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/libvlc.lib",
+      "length": 267386,
+      "sha256": "7620417B9181934819C428DF8870845E2746CA92F3FE718AC29AFF370B278BE0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/libvlccore.dll",
+      "length": 2817432,
+      "sha256": "D3475B834DD3EB77910F37F71B0341D358BCBDDA5B9F04CC4A3A8E2BE1BC8E35"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/libvlccore.lib",
+      "length": 609922,
+      "sha256": "8F502B6C9CE518DC74E0597D31789FE85D49F9B637FFD1081F41E938B2BD9FFE"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/extensions/VLSub.luac",
+      "length": 75737,
+      "sha256": "661BA9E5287EFC4B066B6E4C0B23FCC2726471CF6CA67D53E6DA0AC4B879CFAA"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/main.css",
+      "length": 3817,
+      "sha256": "F9A95D835F65815715E8366B16E6A780D635307BB5DC67AC54EBD74732E49363"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/mobile.css",
+      "length": 3291,
+      "sha256": "10709DBFFC67C6BE84C5A041B936CE03E4C774912E4AAD2EE170A9A14C546012"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-bg_diagonals-thick_18_b81900_40x40.png",
+      "length": 201,
+      "sha256": "ADB182BF32D80030963BFAE7079295B8C35085A85CF5A0FE28046DB1B4836E7F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-bg_diagonals-thick_20_666666_40x40.png",
+      "length": 197,
+      "sha256": "C6133633C005B1C344F4AE682811157A366AF0F9F637EE4FB65E896FFBF0D71E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-bg_flat_10_000000_40x100.png",
+      "length": 147,
+      "sha256": "61B9E46D291ED3D7800CBC899B7EDCB95327D16CD61085BB515381AF32BC1469"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-bg_glass_100_f6f6f6_1x400.png",
+      "length": 103,
+      "sha256": "49D57607054D07581044A39025EA0FF623185D5E8117B7325084DB098795298D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-bg_glass_100_fdf5ce_1x400.png",
+      "length": 115,
+      "sha256": "1A9CB0100308C590BD17ACE4D3541DAB56CD982AF721D0B2EA67F5D746DCAB5F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-bg_glass_65_ffffff_1x400.png",
+      "length": 95,
+      "sha256": "29043EC911594970261AB6C5E03DE903C1161ED13A25A377449C9C3B22134C28"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-bg_gloss-wave_35_f6a828_500x100.png",
+      "length": 2627,
+      "sha256": "0307F13B51F07C8D10EDE9B29C8F43CB02024FCD2D69F04A26600A4244846AC0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-bg_highlight-soft_100_eeeeee_1x100.png",
+      "length": 88,
+      "sha256": "983C3DE6ADC1D836B26E97BCB87CB29FB5B31B2FC87AE78563BD6E328907667B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-bg_highlight-soft_75_ffe45c_1x100.png",
+      "length": 126,
+      "sha256": "46F39D964785147C69C5EF4495977C1285984A1D99AA087D650036EC6BCE8234"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-icons_222222_256x240.png",
+      "length": 4194,
+      "sha256": "7AD54E50835A67EFBB2E9694E73D24A5DD9545DF297AFB1569992E0247ACC32C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-icons_228ef1_256x240.png",
+      "length": 5103,
+      "sha256": "3D9EF9C36B2407D3766FD183927E2778A1E4ABAAF2233910453BAFAF76E1F3DB"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-icons_ef8c08_256x240.png",
+      "length": 4194,
+      "sha256": "40A22C997402DDB59E9E344C2D0A8C4CAFE64CF4B103584208863EEC05DFA897"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-icons_ffd27a_256x240.png",
+      "length": 4194,
+      "sha256": "1BD643299F5A35060C7057DC76B4A2138CF3723A2ED5F98A25F9C9A954EACED6"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/images/ui-icons_ffffff_256x240.png",
+      "length": 4194,
+      "sha256": "FDCB90174D3B2F5CB8B7A4205E60119419C728C1C76E5A2573AAA8058B6DD3A1"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/css/ui-lightness/jquery-ui-1.8.13.custom.css",
+      "length": 33568,
+      "sha256": "272013C17922C5142893BEB0655D6FE411C4F77B2A8140B4C35A4DB49AC0A8B5"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/custom.lua",
+      "length": 474,
+      "sha256": "A6623694797E67DC0F22E4F64570825E489D2730676E02DB9D6911A04D2CB1CA"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/dialogs/batch_window.html",
+      "length": 889,
+      "sha256": "5189CDB57F5B2E8C3ADD7E6C4487F5CF8A018508C612F35C8E1305512F2176E8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/dialogs/browse_window.html",
+      "length": 1217,
+      "sha256": "D93C774A7AEB4594F56B37E81838BA03B6855C2BBD91EB8CB803DBD413C5E571"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/dialogs/create_stream.html",
+      "length": 14859,
+      "sha256": "FDFC3417223B88D2E8F0421CED4711760AB11A3C18A50DC05B805A0F4F1A5134"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/dialogs/equalizer_window.html",
+      "length": 1334,
+      "sha256": "62CAC570011B9B07E0F421612571A1CE663E49DD3B90A16CF31D8855F1ADDDAC"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/dialogs/error_window.html",
+      "length": 501,
+      "sha256": "75D1A1AB807CD97801BC37ED547B26C7B357497E82D01221AC064497C9480304"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/dialogs/mosaic_window.html",
+      "length": 5078,
+      "sha256": "E474CA66E17ECAD86FDECD0FF4DB1EFF7EEE70083C2CB30498F81BCE71D03E18"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/dialogs/offset_window.html",
+      "length": 1942,
+      "sha256": "F0C8450D88F4A64396304652811C3B9D215B9CCEB24C36A0753042E68A688AB5"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/dialogs/stream_config_window.html",
+      "length": 1301,
+      "sha256": "1EF2A9FC7005712CD18EFFE0C6D644F6E1BADCE728C4BBBCDD675CD67D4FB9F7"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/dialogs/stream_window.html",
+      "length": 4252,
+      "sha256": "B103C0D7778D1694FDCAB3AA28DE6EE80AA9A10288355D2F47EE9ECF8A2462E6"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/favicon.ico",
+      "length": 86358,
+      "sha256": "FD9B5998B98EE0BA86ED7687F215A1CDDE90C00B0B1CD11DC83E3614389CB6AD"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/images/Audio-48.png",
+      "length": 4675,
+      "sha256": "372B03407E4C070AAF05D9BCF70BC048A2560593B7D3E4C919EDA602C1CB5D0B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/images/Back-48.png",
+      "length": 2025,
+      "sha256": "E92C787DF1D4C93EA84BFCE7CF61448DCA2879C4C2B9A9D8AD1E8C80F4001AC8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/images/buttons.png",
+      "length": 11954,
+      "sha256": "C3904F63906DB4346D2E0529285397C0CED3DBD5132DBA250C3FCB28ED6A96DF"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/images/Folder-48.png",
+      "length": 1353,
+      "sha256": "A5A4ED70D20CEFE54E541E15BC007A6D36339FB6B8428806F7B48F846E8B9160"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/images/Other-48.png",
+      "length": 2921,
+      "sha256": "48878E2D1D5DCBD686358A180379D61F82AAF862FA2C4030933C1AD4E7299A20"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/images/speaker-32.png",
+      "length": 942,
+      "sha256": "3C6CF8B87AD6453BF0D0629893CBE4D0196A3B28E9036B7CC6F19C0168325137"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/images/Video-48.png",
+      "length": 5115,
+      "sha256": "AA6039A0466683C195E0D2C4B4BF8602BD2173E955BC8DD39CA793D207985A3A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/images/vlc-48.png",
+      "length": 15875,
+      "sha256": "731D5A34A98FEE76F9E1AACAA524B3E0ED0CF0ECAC3E2F9E2703B38C4A4BC518"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/images/vlc16x16.png",
+      "length": 606,
+      "sha256": "32030A3D8E8FA75BD89EAD94C429F2C3418944D9AA3D1029294B4AF99264F5C5"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/index.html",
+      "length": 15452,
+      "sha256": "3BA76BC7289762CFB5AA4DC88D31AD37742740DFB31EA7EFBB80FE4E7F870498"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/js/common.js",
+      "length": 5195,
+      "sha256": "47CAD1DBDE4AD4D5EEE0A7306C7E20DF3F2A080A986CAC5693C50B8FF1434B27"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/js/controllers.js",
+      "length": 24067,
+      "sha256": "696F9E83EC6105A036FE2E0F2C25084A4730ED5673D9D8220EE9FFB74779C609"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/js/jquery.jstree.js",
+      "length": 184428,
+      "sha256": "5169FB1E68E1E30F244452D6CA8587FC195C280966D52D1CEF46630F53E9F2D2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/js/ui.js",
+      "length": 3763,
+      "sha256": "B1A990A068123EB73BAF4E7FD5F959DD96FC8FD2093F564DA456745EA534F46C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/mobile_browse.html",
+      "length": 2487,
+      "sha256": "400AB7330B6A36FEC3ED1254D10B7297F003141E8B33F3D0140802B8CC729771"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/mobile_equalizer.html",
+      "length": 2960,
+      "sha256": "ADB1EAFA9AB357B5A4F930F4AD8DD65E67140EB2E12240DBCF7C7695B02C7F50"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/mobile_view.html",
+      "length": 2885,
+      "sha256": "062037D130761AD2CB4C8859F4ADFF50EABBBA71D6702676157D694A5FCB0961"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/mobile.html",
+      "length": 5454,
+      "sha256": "0A51D360B893589899E37689C40F08A7D3132555F29942962A3096EF02F40589"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/requests/browse.json",
+      "length": 1438,
+      "sha256": "82756E7538C248852219B2CD6E5BFD9967847AFC0C8D89C663B2198A58CBE725"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/requests/browse.xml",
+      "length": 1755,
+      "sha256": "A531CFCB9BAB3F642C9183C2A1942C1E3CA8D8F7AF15E025DE29D5C4984103D9"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/requests/playlist_jstree.xml",
+      "length": 3116,
+      "sha256": "999DFA91636C29896C4DD759D6D3D1ED022BBECFBBA98D6EE825B685B8211132"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/requests/playlist.json",
+      "length": 1397,
+      "sha256": "DDBB968705AD5C287CF192BBACC102EA7E243CCD77F0116E5FF331837A3AF2B6"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/requests/playlist.xml",
+      "length": 2330,
+      "sha256": "194884CED0D0A0E8DADE7A0D7CC3E1415C52733246F6664A6D7095F343A6E0A1"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/requests/README.txt",
+      "length": 5472,
+      "sha256": "2AD28742D23D327C4FDF121214B4B3BE3AC5DD18C395522F909575E29A2C914F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/requests/status.json",
+      "length": 1440,
+      "sha256": "A0742096CA150198577F26ACE46BA6297B8FB8083DA5188CFF3A40C427BCCA6D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/requests/status.xml",
+      "length": 2787,
+      "sha256": "23271AB8EF267A88BF8F5CA539DD00E31D59BD0DE31C1E38656D874143974042"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/requests/vlm_cmd.xml",
+      "length": 1452,
+      "sha256": "5ED84EA7C22002F3DF32895B0BC133953D44A229749DD8DD1F06691885A96BA2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/requests/vlm.xml",
+      "length": 4846,
+      "sha256": "D8F7F26D06FA9F26687501A09DB4B2BB5DEB92A3DC7C70F82E3B2C8EE31D17BF"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/view.html",
+      "length": 3631,
+      "sha256": "EA2910AA8E3359CEAA47AFEF1A267C0CD629FF30FECA9113D4C7CA827D708E52"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/vlm_export.html",
+      "length": 308,
+      "sha256": "09BD722B8C4CD442D56C7C730C2A363CF9BDFCB6A8971F00BE002C90C40215B9"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/http/vlm.html",
+      "length": 1864,
+      "sha256": "4800DDAA370BE2BC8660B8559C10D8650034D65E70ADCF89DAD4779AA4AAD93F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/intf/cli.luac",
+      "length": 44662,
+      "sha256": "EB30CEBB44E86194BBE9255EECFD0B6F4ED46081139F3E2E59825AD7120CCE1C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/intf/dummy.luac",
+      "length": 834,
+      "sha256": "0E34A875EF2DB1A23A25A8692AF9B253C81FBAF547B1BED2C80F2302B8B75EC0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/intf/dumpmeta.luac",
+      "length": 1770,
+      "sha256": "807BDBDFCFB7A994062B3C1D451979D113F5DB4E07D0E9A6540F580BEE2A3DE0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/intf/http.luac",
+      "length": 13642,
+      "sha256": "8CD42D7AB0446A3220B5657D3A9D776741A1C9D12242F4F3E1842BFC8F401C56"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/intf/luac.luac",
+      "length": 2032,
+      "sha256": "38225F3117716D74467F51C0D0D46160405EEACFEAC3EA1FAF84258B4C652E1E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/intf/modules/host.luac",
+      "length": 12703,
+      "sha256": "BA2177F3D4CE020B79157331ABB89916F208E61A67CA7E05AC88C661AEE931CD"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/intf/modules/httprequests.luac",
+      "length": 19021,
+      "sha256": "D45DD555F80AB98B3346744C97B36491A6FDBF78A27F249DD1EBFB6F8B82D63F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/intf/telnet.luac",
+      "length": 1017,
+      "sha256": "A98BBF2485FE7BE01260B83FC6A52EF3E6A13100D8E76A65DA8660DA38DA7C65"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/meta/art/00_musicbrainz.luac",
+      "length": 2965,
+      "sha256": "DB6E28FEF939CAA4A9C6A1079BF92311AE841ED679CE5A71A02AF42E99421CA9"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/meta/art/01_googleimage.luac",
+      "length": 1457,
+      "sha256": "B9C34E8389D48A3E30A138DB94066363EE10A13F48DF1CFE2D24656A49F709C5"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/meta/art/02_frenchtv.luac",
+      "length": 4392,
+      "sha256": "71CCB383C7BFCD252CDFDF5FC2DFBF74532E53DC37ADDEA4A627E24F4856C766"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/meta/art/03_lastfm.luac",
+      "length": 1655,
+      "sha256": "5FBAC2268D01BB39B9EF81231367EC1EA17F40F478D74BA6D2077F04352DF3B8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/meta/reader/filename.luac",
+      "length": 1365,
+      "sha256": "08CAA9E8F09C95B671AD79D567B01104BDD974F039CD11FABE9EDF473B7D4E66"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/modules/common.luac",
+      "length": 8227,
+      "sha256": "A611E22BD551D427B620E6DCD95F4C340C4467CF95B611D490F05BB08144EFC4"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/modules/dkjson.luac",
+      "length": 26023,
+      "sha256": "E6EB1F8510F039D3BCF22BA6C743509F15594D5C9DFF203A73952F6CB84F632E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/modules/sandbox.luac",
+      "length": 4043,
+      "sha256": "32ADA78341DE379137779F3E181411EEE42C6E567CD043E26437E66FB5EBAD90"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/modules/simplexml.luac",
+      "length": 3257,
+      "sha256": "C8E995A289B4CD6DEF8BF76ED053F8633D08A9939EB23BA3FAF076B3F8178034"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/anevia_streams.luac",
+      "length": 2541,
+      "sha256": "E9B87C65BD3515A6CAC3652DACB2A8FA41101B09F8048996A6CCA8ACB160D7B3"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/anevia_xml.luac",
+      "length": 2582,
+      "sha256": "168B0EF8279B88240EFFC50FF8493E75687ED32B2C1446D24350E977D60D4B28"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/appletrailers.luac",
+      "length": 4183,
+      "sha256": "6D7515051C388C09A81816BC72894141B7527D2892B5A617FF8C802C87B9B3E1"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/bbc_co_uk.luac",
+      "length": 1214,
+      "sha256": "5BB45B82B723A7A15AD163915494F201C2EC9968F3B9E9395E0961A1E9E5ACE3"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/cue.luac",
+      "length": 5201,
+      "sha256": "DE76B50183E68442D7A869BDC9C412D54E38EB5A73F13620F5A0CD9F2FA10643"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/dailymotion.luac",
+      "length": 3351,
+      "sha256": "B94D06125457858A60C296993C6E23286BC1B1F7856553474DA8AFB4334E939C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/jamendo.luac",
+      "length": 3000,
+      "sha256": "F1C0E7021ABE8ABC0A0C7BEBA8C87F40AF0D7C474A45ED751BE145931B0C37A3"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/koreus.luac",
+      "length": 3675,
+      "sha256": "D93ACF4F35E97F83A145F2BA0AE278E403DEDF38D8516A51E966E3D56AF2D3F0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/liveleak.luac",
+      "length": 2310,
+      "sha256": "E847AD9BF8C7E14A9094E9D5A3163726D96FC748BB7C424A78B0EE1AEF3C1D82"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/newgrounds.luac",
+      "length": 1979,
+      "sha256": "5C076730DE1D6492D9ED588A144CA70FAB8AD1670F7059B95EE2284D1DF75191"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/rockbox_fm_presets.luac",
+      "length": 1199,
+      "sha256": "98A8A54AE42703AD776EF8D8ACF11F0FA9185CD8192482A758E64E65167C6142"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/soundcloud.luac",
+      "length": 3357,
+      "sha256": "D9F0812C71F9F0D326509AFC1688D1590F404F4F06FC906AEA87E87A888E41A0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/twitch.luac",
+      "length": 5692,
+      "sha256": "E5F28C94B735DA1B63F327B70841EE45CE3AED01AD655CC58BB485DD0A7487AA"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/vimeo.luac",
+      "length": 3315,
+      "sha256": "53D1830BAB611DB506407BBEBBB4069A9FA20FA003D1C64FB4C3C1A681068F18"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/vocaroo.luac",
+      "length": 1208,
+      "sha256": "60010B77FDA61B1F6C37ECAB5294A9B3D4CAD15F072EEE907989E9BFB58D37D2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/playlist/youtube.luac",
+      "length": 33156,
+      "sha256": "B3B55554894B0367D9D1E6AC1DD1A0B18E1B043810DAE0C0FD79518DEC8B9587"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/sd/icecast.luac",
+      "length": 2415,
+      "sha256": "A091F67DBBF12675B35FBD3CFE65EC7F294D143E430B6A48CC5275BBF9452277"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/lua/sd/jamendo.luac",
+      "length": 5812,
+      "sha256": "7E6FDDD9C43FAB843FD437F3E3DEC61E58D520FF1D242AFDB1F7DD1C360D3AA7"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access_output/libaccess_output_dummy_plugin.dll",
+      "length": 40856,
+      "sha256": "503A30F03A4287059E75FE50717D97889A50D859B52DACCD65B415460A370D09"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access_output/libaccess_output_file_plugin.dll",
+      "length": 45464,
+      "sha256": "48BFEF7CBE7A6293FEB5188BB99C4199FC91DF63897F02241EAADA3EB60AF036"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access_output/libaccess_output_http_plugin.dll",
+      "length": 47000,
+      "sha256": "7074C07D2824069287A6417E504512B650281FA31BECB1270FC5437AC9C9A17F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access_output/libaccess_output_livehttp_plugin.dll",
+      "length": 661400,
+      "sha256": "07311D3B24F31D559A9D25BD5AFCEE12ADF389DDBFCBA09274682E60886D9F39"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access_output/libaccess_output_rist_plugin.dll",
+      "length": 113560,
+      "sha256": "5E3C5EDF62E159F263EA28A6AFBEFF26AC04D9245B45A7224961FA43381A592A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access_output/libaccess_output_shout_plugin.dll",
+      "length": 474008,
+      "sha256": "AFEE311C5E512BD9C910639CF378BD24FC2E39702B7D6DC15325CDF5F71519A5"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access_output/libaccess_output_srt_plugin.dll",
+      "length": 4256152,
+      "sha256": "E56D33BA6D820DCC116E87D7BD056E8E9343CD23AAB1D16B70EE31838CF332D1"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access_output/libaccess_output_udp_plugin.dll",
+      "length": 46488,
+      "sha256": "D45C7E8D76BD0B499B7741FDDCB77049F77C0AF378716829C4E709D817C63966"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libaccess_concat_plugin.dll",
+      "length": 44440,
+      "sha256": "25ABECC7232DB9539517581FC8A68259AA6D211F04801722273CBBA50312E054"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libaccess_imem_plugin.dll",
+      "length": 73624,
+      "sha256": "548C86AC90FB6DE9B3972182E0255FEEDE9ED3E5EB99FE3BD6BAC9A976872DE4"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libaccess_mms_plugin.dll",
+      "length": 107928,
+      "sha256": "8F0A0B7F03BCD91EBE8BCF18069DA31491ED1D44F69A9FBAABC7F2069261F343"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libaccess_srt_plugin.dll",
+      "length": 4255128,
+      "sha256": "D82A5B3972FD1A590CDA4DA70888FCD145CA2897F53C45DEA518AAAEC41B709D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libaccess_wasapi_plugin.dll",
+      "length": 61336,
+      "sha256": "C616EE4AF027D63790AE11FD99DBEC6552375C3C5154E8C3C239DF3E6BD43B1A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libattachment_plugin.dll",
+      "length": 41368,
+      "sha256": "D2C50A69F896BEDD1A6D69FCF89FAFBA4519D4241E31715BB674ECD4AF9681CE"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libbluray-awt-j2se-1.4.0.jar",
+      "length": 73520,
+      "sha256": "6C4988447962869A30C5FDFA975AF2A12A422F0222A3A2D5C58883EC5FDED109"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libbluray-j2se-1.4.0.jar",
+      "length": 786045,
+      "sha256": "D1CB6973DE25C813DEFCF5DF17966656C2EFD01AAD178D43334C3A65B3FD4035"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libcdda_plugin.dll",
+      "length": 803224,
+      "sha256": "7828A92FDD848E24CF06D0B73EE346308FE30C4E56AC23CD39EFB76AC4A79932"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libdcp_plugin.dll",
+      "length": 2472856,
+      "sha256": "B668F849DA878FBA5BD1FEDC1804DA69244FBDE47C8692AAEDB395DDC9E023D3"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libdtv_plugin.dll",
+      "length": 897944,
+      "sha256": "E1268176FA9A41DBB5EF03F51142D5A5902BF3713C58AB1B2E0EA03B8C9CC88E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libfilesystem_plugin.dll",
+      "length": 71576,
+      "sha256": "0369ADA8DF130E85F08C2A102943B96DDCE753DE31299D7B71BC61971BE27203"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libftp_plugin.dll",
+      "length": 126360,
+      "sha256": "1EF7F7EEE7C2A38D36186542004194E5DDFCB98EFE535566743FE7D6C3E44690"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libhttp_plugin.dll",
+      "length": 77208,
+      "sha256": "AC382CFA5598A9BAAAAD596FDDC454DBAC07EEE7407793C9212F39E39D3DB59B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libhttps_plugin.dll",
+      "length": 154008,
+      "sha256": "F6D8B1845059B00D9EFE09A10631591B39EA04E12FC4B3524F7360B2ADD713B0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libidummy_plugin.dll",
+      "length": 42392,
+      "sha256": "1B7C278F971A115FBFE5ECD20A787CDF397836960A08A343E9F0C9C94D36991B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libimem_plugin.dll",
+      "length": 41368,
+      "sha256": "C0CEE305070CF30867F2897B01B5516EC328C9770E0A0C950B638631E13D2402"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/liblibbluray_plugin.dll",
+      "length": 2088856,
+      "sha256": "5636636FA9F9799BB3C3FECC8FAE242FDC0685793D4017677A158AB321E78F29"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/liblive555_plugin.dll",
+      "length": 596888,
+      "sha256": "25AB888C80CDA4665382942B7E1E7CD37D9569125551568928F50C3280703F28"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libnfs_plugin.dll",
+      "length": 292760,
+      "sha256": "0B7855B74D385ED1D95A0E87B0E2F16CD27A3446DBD05A02EFBC1809AD3832D0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/librist_plugin.dll",
+      "length": 116632,
+      "sha256": "00D6D5C62203A748CDBA538E8950A950C69A1773ED2CB8367B90717883E61419"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/librtp_plugin.dll",
+      "length": 677272,
+      "sha256": "38D7B995A91E9E8D5216FC8F82F4639AB0B82DBE2144BB483F6D8EF028E72950"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libsatip_plugin.dll",
+      "length": 77208,
+      "sha256": "1C174F56ECAB62101A1716BA7298D6A520CAC7F58B8A2080B1B3E2F2E66AFE9D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libscreen_plugin.dll",
+      "length": 49560,
+      "sha256": "FE3A2810593910CC4EF421B81C15893DEA6525FFFD08FBCE6E9751A60A3FC1A8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libsdp_plugin.dll",
+      "length": 40856,
+      "sha256": "CF85208198B0D8751F4A61FBABE152B5DE8369516B2622CAE366969EC8AD0C88"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libsftp_plugin.dll",
+      "length": 865176,
+      "sha256": "90FB6B3AFDD3793330E0F23540AE62FE0841ABDCA78FFC6B4182FEF4872F4021"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libshm_plugin.dll",
+      "length": 44440,
+      "sha256": "1E0A18F60F76B3CF18A26093D254666F2F45F2E623A19F58361A9978A913BF14"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libsmb_plugin.dll",
+      "length": 69528,
+      "sha256": "ECD87D1D44A02D64D0D7424CF42235F08C480D89E3BF3FB1E688BA0D5BBF2720"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libtcp_plugin.dll",
+      "length": 41880,
+      "sha256": "880DE436B1F958D0559614DE27AB741140B4FA9128FBB3C666DE738DADD13F13"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libtimecode_plugin.dll",
+      "length": 66456,
+      "sha256": "3ECC334CD3753C37B788D63737CD31E3F7789BF42C66AE13DCEC3B690181D6AF"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libudp_plugin.dll",
+      "length": 44440,
+      "sha256": "970C1BF633294C8F8175BE24CDF5DA6581BB676E2C34B1CDCF31972ADB03EAD8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libvcd_plugin.dll",
+      "length": 110488,
+      "sha256": "3814A60D0C577E5947630281A4FC9F3854064A2030602B6BB81620E1CF56F4F7"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/access/libvdr_plugin.dll",
+      "length": 108440,
+      "sha256": "B2049E84473FBB0214EE7C4089E5759E82F9BF843AC6350759E3BDC3D31D3A91"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libaudio_format_plugin.dll",
+      "length": 66456,
+      "sha256": "4DB067F9F9061C68922EB3335FC961D13DF8C7D9BD7F2DECFA5B6AA969E2D570"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libaudiobargraph_a_plugin.dll",
+      "length": 71576,
+      "sha256": "BFE75583D4B33D8CAB9CF35D385D6A5C97C4D941893550D4D2DCE2FB4F4B24F8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libchorus_flanger_plugin.dll",
+      "length": 51096,
+      "sha256": "E88C113934193B5804857C151C546195844161A87566EB3EAAA3889F31856CA7"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libcompressor_plugin.dll",
+      "length": 56216,
+      "sha256": "29909E58ECFD55B142B3A83A82E254DAC25DBB749781693DBB08FC2084179B9E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libdolby_surround_decoder_plugin.dll",
+      "length": 41880,
+      "sha256": "0827FFC97937CBABE027DE973FDC0F40F76F94F119CEA32A7A1EF9EF9521A19B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libequalizer_plugin.dll",
+      "length": 82840,
+      "sha256": "97AE9B72B1755E4015A97CC7648696AB99215FAECF92377AB90027AA644ABDF8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libgain_plugin.dll",
+      "length": 41880,
+      "sha256": "769A37D88AF2458AC176FC0D88A3CD7B306625A7A123D30874846D364CF92F36"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libheadphone_channel_mixer_plugin.dll",
+      "length": 48024,
+      "sha256": "1FB9E42B3704709A2C01B46B70B40DC837BFB09B3D735710C63BC2FCCB6B2EB0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libkaraoke_plugin.dll",
+      "length": 41368,
+      "sha256": "44B4AE19B8C889007A38384B274630AB8D79DCC67AB4BC1C95338B58A4B2B7A0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libnormvol_plugin.dll",
+      "length": 44440,
+      "sha256": "5FA412225959C3C25A167A118CF88B7D81D856920C65A0ED840473BA808EEC34"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libparam_eq_plugin.dll",
+      "length": 51608,
+      "sha256": "1D3039FAF133D53DFDAAC71142973F69D832562F119E2084BEF939B89D6BFAC9"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libremap_plugin.dll",
+      "length": 49048,
+      "sha256": "689A3F25D90DAF4B121443D1D194CD54717D55B3BF2463E512096BD42F1E0E24"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libscaletempo_pitch_plugin.dll",
+      "length": 55704,
+      "sha256": "0B12E9A7EB54A56436DF24AE473BA404BFF878C9FB8B75B1CC8B7F903FCE170C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libscaletempo_plugin.dll",
+      "length": 50584,
+      "sha256": "438F57A1776AB2AE8BD7EB06E02A0137CE6068757C6F5ED409A446FED4C6C898"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libsimple_channel_mixer_plugin.dll",
+      "length": 50072,
+      "sha256": "6910104688F499299BE592541FECB3BCAADB65FFD3EEC76FEE0BD22AF1CEAB2B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libspatialaudio_plugin.dll",
+      "length": 1079192,
+      "sha256": "BCF318E8F03ACB06893C196D1AFDBB0EC8D4146F1330EB9B74A7CB4E625F9A12"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libspatializer_plugin.dll",
+      "length": 140184,
+      "sha256": "F6ECAFEF9E5C7CC7F8FDDC2B5A468F852BBC84FB975DD3FE383FAC5622A5C381"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libspeex_resampler_plugin.dll",
+      "length": 52632,
+      "sha256": "1DC9A9F1BF62B7D5398BEC72FD8A9B2FE52441855CE1CF1E99EE34ADC1FD8831"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libstereo_widen_plugin.dll",
+      "length": 45976,
+      "sha256": "FAABB6B5EC112039AD8D1DC86F025CC79A16B1BBBF1DF37B31E4C3862E5740FF"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libtospdif_plugin.dll",
+      "length": 57240,
+      "sha256": "73E9EA3E3E4FD16851A655A1668DCEC7B8954D3F7B4F48E5EF02257B4432ADE1"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libtrivial_channel_mixer_plugin.dll",
+      "length": 44440,
+      "sha256": "67A277E9D4817E08066307745E7ACD51C7A38119654798909E4768A5F8AA9F0C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_filter/libugly_resampler_plugin.dll",
+      "length": 41368,
+      "sha256": "0F97BF8CC2CAA9F7506693EA3CDC061DC9406AE255F20BFFBAB6CC610A9DD663"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_mixer/libfloat_mixer_plugin.dll",
+      "length": 42392,
+      "sha256": "9D4E029F8C03096F59F4EE935F60910600200B482D905E32FAEBB5BDB3DED51C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_mixer/libinteger_mixer_plugin.dll",
+      "length": 45464,
+      "sha256": "CA524439CE9829DF40FC546E0EEFBCE6BA5449D6962847D6C59D6A2B6FED0D61"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_output/libadummy_plugin.dll",
+      "length": 40856,
+      "sha256": "E4EC5F2D8928D3AE353D1242814F80B4F0F68EEC026992DD97C9A63FFCFDC80A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_output/libafile_plugin.dll",
+      "length": 44952,
+      "sha256": "CCAF32504FA65E4C469C9CCF94F76C2E7B674E31D723A8F31992D38750D471AE"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_output/libamem_plugin.dll",
+      "length": 43928,
+      "sha256": "1CC3F2EDE0EFB9C7D464799CEE46392F9EEE330C5529516FF6C048DBB8689218"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_output/libdirectsound_plugin.dll",
+      "length": 64408,
+      "sha256": "E602E6421E4A0A9894431594FBFCAE5E436205DFBF4FB53443F8A21486ABB410"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_output/libmmdevice_plugin.dll",
+      "length": 70552,
+      "sha256": "25DBAF1059116ED0CD23BBE15D55D0AEA6386FC6D293D613CA970E6B38BE00BA"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_output/libwasapi_plugin.dll",
+      "length": 61336,
+      "sha256": "DB82E8CAE841919813EAE0CADF53DDF5C518FF2B51B47AD9F6B1DC547C47DC7B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/audio_output/libwaveout_plugin.dll",
+      "length": 61336,
+      "sha256": "EADCA1468A1C26F91515B665134D4D9BB9FEC5FE726E13F3288AA1E44BF82574"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libadpcm_plugin.dll",
+      "length": 52120,
+      "sha256": "2086337C7C718AF74289DBA76AB0F18062CFDF1ED57C4F3761334BDDAC921740"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libaes3_plugin.dll",
+      "length": 44440,
+      "sha256": "248C5099FB1936BBB0DA0A0287C6F5F94C288B13CA2E56605C6DDB9C84DFDA7D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libaom_plugin.dll",
+      "length": 2083736,
+      "sha256": "68CC01FF05CCCF49736D438E10142C46D058DD15AAA947E7B03AAE9F157807D2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libaraw_plugin.dll",
+      "length": 64920,
+      "sha256": "6C80D21F5286F2AE6E4E788CE1BB21F439A33008CC590DF261972F241FB10AF7"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libavcodec_plugin.dll",
+      "length": 17332632,
+      "sha256": "DED0566AEF7B4E9A527CDFEB12F92B9A3B2736B824B687071359244979EE02C7"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libcc_plugin.dll",
+      "length": 77720,
+      "sha256": "32F77DFE798BB12C2A5243945BB8A031AD877BDF6AA0FF50B3B72CDE41C36201"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libcdg_plugin.dll",
+      "length": 46488,
+      "sha256": "8BD4F33497D784A9ACA5459CA726C40BE3C554B3570E3648F3C20BE49CB05D12"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libcrystalhd_plugin.dll",
+      "length": 100248,
+      "sha256": "6FDC8C5F5C515614C749A9508EEB2FD0702796FE955B2F8A14B79EC49F166C57"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libcvdsub_plugin.dll",
+      "length": 48024,
+      "sha256": "C6A7981EA31FB91B69C151AD0C589539C7DC829632751478F5032B75147E535A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libd3d11va_plugin.dll",
+      "length": 278936,
+      "sha256": "31B4E9045C306D7A4439E8D4732A3B22F0749DEB953873ECF2A96D66A7DE39A9"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libdav1d_plugin.dll",
+      "length": 1848216,
+      "sha256": "9195EF9467748F6E0879C69C957645474D83F651A04DF282AE3DAA31EFCA91DC"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libddummy_plugin.dll",
+      "length": 66456,
+      "sha256": "F305414EA1184796112DAD9E4193B3D8058FE55B48B1D5FB20525F9F74D7E1F8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libdmo_plugin.dll",
+      "length": 68504,
+      "sha256": "65A60010803FB95E40A685D4974E8A396D9F300CD64ED393FE0ED05E4BB2636B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libdvbsub_plugin.dll",
+      "length": 120728,
+      "sha256": "998825C8B2CE4F4586E79DF6E1E4D0FAB13CC56FC595C73885380869623A11EC"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libdxva2_plugin.dll",
+      "length": 312728,
+      "sha256": "06C86A10F9F7CF5A673E2233409A1502417FBA77FA4823655C3EED4089DC4F0A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libedummy_plugin.dll",
+      "length": 40856,
+      "sha256": "E49D9C2DF64A2F2B05300E0EC0855663ED47A91CA68FE910A1E66C11E2B970DF"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libflac_plugin.dll",
+      "length": 269720,
+      "sha256": "9A8F89F4DA4824CD1AB3F9845566A2E7F7252A2F6B8F50BFE4476EDA68DD736E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libfluidsynth_plugin.dll",
+      "length": 172952,
+      "sha256": "AA69B5FE3F42FFD523D540319D781BEDD03AC5E2B6008A526B1C9EF93ED72B74"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libg711_plugin.dll",
+      "length": 55192,
+      "sha256": "AA42A13F87A7886479A863FC724AFC38B28ECDF67ADF8CD2EB4DFC5791AAF7E9"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libjpeg_plugin.dll",
+      "length": 296856,
+      "sha256": "36087A38DFC685192FE15C9F141CCC8E29E06F2ACF259960DF4731C6FC4A7549"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libkate_plugin.dll",
+      "length": 121240,
+      "sha256": "570CA797B5740B5BEA6B46DE80A637596A5DF8BF7DAFC45D52693A3A93DC868F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/liblibass_plugin.dll",
+      "length": 3495832,
+      "sha256": "D2FD2C575D7810DCA636F33488F8837E6E4E96D3F2F1D65A58E50021BE973C16"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/liblpcm_plugin.dll",
+      "length": 52120,
+      "sha256": "2A5387A7677F171A9561CC466144F07C103F71BD825A9742A7B11F78ADC46B0C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libmft_plugin.dll",
+      "length": 120728,
+      "sha256": "9315E2E58878A11D3CDAD7542E573140AE9FB28FA86AAE002CB5C70231CCC93A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libmpg123_plugin.dll",
+      "length": 475544,
+      "sha256": "9FAC41CB8C4E2B689861BD05FB9CA6D2E56D27C268F394E5B293CC6BD9DBD603"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/liboggspots_plugin.dll",
+      "length": 45464,
+      "sha256": "88477FFE231833BEB7AEDB127E8B21DDBC0D06400C2D68BBFDC2AF1CDBE11AE2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libopus_plugin.dll",
+      "length": 406424,
+      "sha256": "BA1981E08FF674B703AF48DCCBFE57800FED73D691CAB244FF11ACC9B22AF1FE"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libpng_plugin.dll",
+      "length": 290200,
+      "sha256": "F8B62274A3E243E3B67E62D6F038825FBA18D28BB2C7DED5D430C07CB949D3D6"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libqsv_plugin.dll",
+      "length": 196504,
+      "sha256": "FDE30496FE081DD526D7B9AAE28DD6D8910E3FB5A4D4DC2DB8C2E4231DC8F216"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/librawvideo_plugin.dll",
+      "length": 44440,
+      "sha256": "E3A84F4F9A25E828B90F39846B93A5D835FEA701E7F04DA32A759B7C83AE8F52"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/librtpvideo_plugin.dll",
+      "length": 40856,
+      "sha256": "517C31697AD8DB265E84F876622473287F9BC5F28C755CDB22AFC86E87A7F508"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libschroedinger_plugin.dll",
+      "length": 1275800,
+      "sha256": "73D9413FB6F2B0710CC650ED9F6FC106E6F0C8FE9AF67F3A606923C5316498A1"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libscte18_plugin.dll",
+      "length": 48024,
+      "sha256": "F779D5BB33FC4745D5ED6835A29DF64A87D9A50886B22134060835F4B9F9422F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libscte27_plugin.dll",
+      "length": 60824,
+      "sha256": "ADE5046B13F5C8DA4D2AD321DFC201B773EAE036A1ECB89B16140205D768D75F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libsdl_image_plugin.dll",
+      "length": 802712,
+      "sha256": "19536035986FA73E9B2AC6971C296409072C028B7992C2362AD77B5427B26C45"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libspdif_plugin.dll",
+      "length": 40856,
+      "sha256": "AB51C2C0878BCA236BEC98C1FBCC140DC014560CA5501B672827F7757E3ED294"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libspeex_plugin.dll",
+      "length": 169368,
+      "sha256": "2750A44634BE1E0015AEEFF6E232934DED45493046D6150769A89656CB77485E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libspudec_plugin.dll",
+      "length": 53144,
+      "sha256": "FE756B18BD70D8AC20FB634E6C6D3EB3E1C2A0575A1470C0E22DDD317509A694"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libstl_plugin.dll",
+      "length": 48536,
+      "sha256": "89358BB9644AA1E0AEFD1E9F817DE4F02CB27AA86E8E503CD0CA3EA398376464"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libsubsdec_plugin.dll",
+      "length": 79768,
+      "sha256": "54696743954FA471915083295B530899F0034CF522FD548E24357847A6B99747"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libsubstx3g_plugin.dll",
+      "length": 47000,
+      "sha256": "6CE210391CE17A2FCD203BFC8C30449B3110A9940F0C8E1FE8AEC964F0C75D5D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libsubsusf_plugin.dll",
+      "length": 54168,
+      "sha256": "4F3A89ECF2CCE0F6D559595D6DFA3CEC5522C99CAA9549E64C913A4CF8E2F39E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libsvcdsub_plugin.dll",
+      "length": 45976,
+      "sha256": "FAEF12B39DDF8DA2D2939C6BC3B2ED84F908DD4CB17E9B4CAB3F057972FB7742"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libtextst_plugin.dll",
+      "length": 45976,
+      "sha256": "645E25DE0388564CD67011D5353C4ADCDF7B8200EAEFC7090FC02F66962AF6B2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libtheora_plugin.dll",
+      "length": 336280,
+      "sha256": "349BEA6C93366D89F18D1AD085DF31323FA355AF08E43E7BFCDD308A496B6E55"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libttml_plugin.dll",
+      "length": 122776,
+      "sha256": "59458E641CA3C960F4D16B857A4D1E149ECC2EE5AB3F0DE1F12F67018C056B79"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libtwolame_plugin.dll",
+      "length": 186776,
+      "sha256": "580F0E00F5CC7A8E6625D24C7CB082F13BFB06E2401210FB6B4CB7D04C98E17E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libuleaddvaudio_plugin.dll",
+      "length": 41880,
+      "sha256": "626D9D017489ADAB998430BF440A918C594040D40F836A0BAD26162BE906C766"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libvorbis_plugin.dll",
+      "length": 785816,
+      "sha256": "D4085B983525314903BF070EB7F60ED5700185D033F6C7D2AD94F159632F77CF"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libvpx_plugin.dll",
+      "length": 2681240,
+      "sha256": "4BD349D938A2747EE2336F9E0D276B7002111EE7337EA3FFFDF763E7AA156C08"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libwebvtt_plugin.dll",
+      "length": 187288,
+      "sha256": "2B4E15978F442A13D45D66AA6D1CF0E37E58C5DEA44B012296CB85E27D6A16CF"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libx26410b_plugin.dll",
+      "length": 1937304,
+      "sha256": "48E97B7D639E07A31E0A185016CF890C9C0CC625684AF18ED5427ACC08DDA28B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/codec/libzvbi_plugin.dll",
+      "length": 1481112,
+      "sha256": "5DF38B518222133E282CBC3A73DA70FDD59DD56D892203CF68727A1667322C83"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/d3d11/libdirect3d11_filters_plugin.dll",
+      "length": 210840,
+      "sha256": "D66D6C9B3191E12862237C5697913DE275FEA4D18302000379742668C76CF3F0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/d3d9/libdirect3d9_filters_plugin.dll",
+      "length": 152984,
+      "sha256": "04D6868EF4227EF897BE942F084814805CAC9C6F604EE1604B53F365B1CA5C31"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libadaptive_plugin.dll",
+      "length": 2360728,
+      "sha256": "138D1F535257F9E1A8AA6059929D63196EA17FD7784638CB4D36108FFE78C6FE"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libaiff_plugin.dll",
+      "length": 43928,
+      "sha256": "8058C5339E0193D90B85E1FDB8AD9D0FCD11B732175F6CC1BCA6FDF4894B481D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libasf_plugin.dll",
+      "length": 122776,
+      "sha256": "BB5EAD9B5140AF4430D541E9C486E67EE84916FE3E3D1D77EF55E5B4D4088C5B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libau_plugin.dll",
+      "length": 43416,
+      "sha256": "6D0BD9D35FAB397DFC2438B01CD0EE0FBD899A97ED35EDF44A592D6F78DC759E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libavi_plugin.dll",
+      "length": 136600,
+      "sha256": "0104AF946B94577C3523C95487A00DC9A451A56D4FAA493331C36409C32BEC2F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libcaf_plugin.dll",
+      "length": 50584,
+      "sha256": "67CCC34080A3BD870F1526D24408748C38975CC6318A468D0A37F9DECB28607B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libdemux_cdg_plugin.dll",
+      "length": 42392,
+      "sha256": "FCB2018297D72012AD592839FAD1F334895E2064B404DB5F739D4D45AC315030"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libdemux_chromecast_plugin.dll",
+      "length": 134552,
+      "sha256": "CDB929BD10EEE187E2D7F6342783F838EAA8A5F4D5D76A1621DC6156BB458FF3"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libdemux_stl_plugin.dll",
+      "length": 45976,
+      "sha256": "8383E3ACE866D9B28438CA902C1B4406CD1D9032C67E4AD748B904EC0D7B9CF9"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libdemuxdump_plugin.dll",
+      "length": 42904,
+      "sha256": "44C58C26E2F25A4205594B85DBFCE7DFD079BA91FDBBE9118898A09B1078DD8A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libdiracsys_plugin.dll",
+      "length": 42904,
+      "sha256": "06B0971B1C5CBF1ED2769FCC99193B5E3A25DD577982BE417CBF913C38ACFD76"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libdirectory_demux_plugin.dll",
+      "length": 41880,
+      "sha256": "274E7908281208F255E01D9E35A5DA1F86DBC50DDFE158D0F5BF660A5077103B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libdmxmus_plugin.dll",
+      "length": 43928,
+      "sha256": "BE8C1CF07236356679F8594364576D5112AF93A731CB66801E7BCBF2DF7CDD0D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libes_plugin.dll",
+      "length": 71576,
+      "sha256": "BC8028002B61DD2E35AA59BA49FAC85509AFAFF99805A7027ED49BED0523B67D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libflacsys_plugin.dll",
+      "length": 117144,
+      "sha256": "999A82036BEFC02A7E8815DBB8D28A6A1A47B903BE667F64A10E008BE533F88D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libgme_plugin.dll",
+      "length": 1095576,
+      "sha256": "2AFB8A8F20A38BA51F2046A8CB1E4B78A910E360C6E8FAB129A4F25B29B97511"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libh26x_plugin.dll",
+      "length": 124312,
+      "sha256": "DE0499795161A54C376EF8241AC9C20285D157F09236B16AF414E03BAAC63316"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libimage_plugin.dll",
+      "length": 55704,
+      "sha256": "742C3D75E9C52A57B49CAA76795F9CB1660A518DDB6C296027EEBBA06B1CB240"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libmjpeg_plugin.dll",
+      "length": 49048,
+      "sha256": "D85D26264596C3A5801515D8EC2AD7D1F8C9E848D75DA99AA0692DB4BB14A50F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libmkv_plugin.dll",
+      "length": 1746328,
+      "sha256": "FEF059751DCD7929FADCB5E09EEF06B2536ABEF484624024BBFAAC3F8D5DDC32"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libmod_plugin.dll",
+      "length": 446872,
+      "sha256": "8EA3EE808947E4A856597DFF3D46147EC0D95F9830E914979CCCB55FD06F51F3"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libmp4_plugin.dll",
+      "length": 330136,
+      "sha256": "A54EB7B815780F224837BF8AF9D34BEDF1A33A5BE2CC69167F25A86BAE815DF4"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libmpgv_plugin.dll",
+      "length": 42392,
+      "sha256": "A667A257B253308CDB0D5F21BABD42C1D8C38E5302707A1DE40D44E8DB4E171B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libnoseek_plugin.dll",
+      "length": 40856,
+      "sha256": "DA4EAE0782FE58F16A591D9B6A870FEF58AA398C9533BBCF77F9DBFCE53328D2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libnsc_plugin.dll",
+      "length": 79256,
+      "sha256": "C0E7589F622F3EECBFCCEE4C64F8CADC1E7D0F18A9434E214EB91572BBE7BBBF"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libnsv_plugin.dll",
+      "length": 47512,
+      "sha256": "7062EAC05568664E47F05406A858CD27D8431DEB75B1621169A07243E5F2694A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libnuv_plugin.dll",
+      "length": 50072,
+      "sha256": "EA8BD6F92835EAB0A705BCE03377AE60BA0A01D9BD12A39E55338C75313F881C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libogg_plugin.dll",
+      "length": 353688,
+      "sha256": "BAF883D342BC67CCB50724770FED5625116ADDF6904858B17CFB292D26092A69"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libplaylist_plugin.dll",
+      "length": 171416,
+      "sha256": "8589F308ED4A68548ECA849D66385A07789A1E4CDF55964FCF571FBB3A6C530D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libps_plugin.dll",
+      "length": 73624,
+      "sha256": "711E11B917A257B6ADD3E1833C1F4C8324E9196E9B483266EE545AFE908C29EF"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libpva_plugin.dll",
+      "length": 49048,
+      "sha256": "5652F4F803D88CB3229377743879E62F49004C6E0289D755DD3A55C72B80DFC8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/librawaud_plugin.dll",
+      "length": 44440,
+      "sha256": "298BD146F2FA8F98DFB14A8F05681B6C54584652E4BB7B5E18B3FD90418E0A8B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/librawdv_plugin.dll",
+      "length": 44440,
+      "sha256": "C970894593846335548DE513A62A25BEEE719701C0EB2F90F3FBB6914196475C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/librawvid_plugin.dll",
+      "length": 47512,
+      "sha256": "D2029DF5BB1F30FB516BFD44011D6C6D9262702D618917B26248192314D9883B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libsmf_plugin.dll",
+      "length": 50584,
+      "sha256": "0F0F9E7CE7876A399C8C40A92FC78A7477557B68F25E567D159E60C9675ED414"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libsubtitle_plugin.dll",
+      "length": 121752,
+      "sha256": "A32C5C486F9BD0F1E90D2A0682D97D509D5C367C9FF5E571FFF3B352EEC23084"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libts_plugin.dll",
+      "length": 624536,
+      "sha256": "C7661FEC4320AC364394D6869CEFDE7934C892F972A34FF9D7C5A8323094DFA4"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libtta_plugin.dll",
+      "length": 43416,
+      "sha256": "98953A141E05D6106E5219110F8296A8F52F32CDD0CD102328C1685FDC3F30C2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libty_plugin.dll",
+      "length": 64408,
+      "sha256": "202EA2CC029644EA2191F9389A8A3525AE7DFABFB07963E0E573E6DC78591B78"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libvc1_plugin.dll",
+      "length": 42392,
+      "sha256": "94CBC9AD4B1DFF467EC11CA412067B68362DBFFEF7E1B0960871E7676BA9F956"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libvobsub_plugin.dll",
+      "length": 108440,
+      "sha256": "859A6121F2117DEEC047D0D847DE16E8414B94A5347FF11D6EFC13B35B61F5A9"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libvoc_plugin.dll",
+      "length": 46488,
+      "sha256": "7304B68FCA95ABFCA05789F2AC73CB484F2597ABC26D04D9A2C8E9C41FF681E2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libwav_plugin.dll",
+      "length": 51096,
+      "sha256": "89B543ACEEE02F3719E55744BDB632142D58EAD33DCF3013069843A12A421BB9"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/demux/libxa_plugin.dll",
+      "length": 42392,
+      "sha256": "35CEF5FE4735D8B577228723A8B5D9D669711E35DF8E5C6AFA30A2150BE2B531"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/keystore/libfile_keystore_plugin.dll",
+      "length": 71576,
+      "sha256": "52FA79030C142B5C193926976E9A6EE6F0186346A35B92C6EEC9C384E67C67B4"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/keystore/libmemory_keystore_plugin.dll",
+      "length": 43416,
+      "sha256": "942F13AFE723620C4049F91862FB09A8A50738BC25E25252947CD81C9128F6D2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/logger/libconsole_logger_plugin.dll",
+      "length": 65432,
+      "sha256": "D1AD70C41A8241D3DF6C6492E6D5D399CD0B80E700AE7110E3BC4D2C1850895F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/lua/liblua_plugin.dll",
+      "length": 396184,
+      "sha256": "1E40285D927C6A4CCA25A20216C62086EB35A95F5F7C876C64AAB058CF3BE373"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/meta_engine/libfolder_plugin.dll",
+      "length": 65432,
+      "sha256": "1C7611435105EE4E7C511E2442C1209866E281765651B308104EFA70191FD423"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/meta_engine/libtaglib_plugin.dll",
+      "length": 1522072,
+      "sha256": "830C56B6250F28AE57C963DA4C2889AF37F2B2BC05D74A5F07BB4D0C9D69EBB2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/misc/libaddonsfsstorage_plugin.dll",
+      "length": 108952,
+      "sha256": "183994A9271621EBC24E5F2CB8CED9906D0AADA0C1060172BACFE0303662F1DD"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/misc/libaddonsvorepository_plugin.dll",
+      "length": 102296,
+      "sha256": "E5927616B51F3DD6DD9B51C8947EB04FC8F874935EDEDF5E721B84264C459724"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/misc/libfingerprinter_plugin.dll",
+      "length": 85400,
+      "sha256": "DBE9083296E1D3668CBF552678B22108FFA3E4C27DB294C3DA6FA6674E888625"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/misc/libgnutls_plugin.dll",
+      "length": 2613656,
+      "sha256": "021AFE1F20AA98FD434CA858A70745DE511B99B4EE56C82F5EB6765C6E24048F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/misc/libxml_plugin.dll",
+      "length": 1140120,
+      "sha256": "8F5100F85B24769AA0B88FF610FC666F0E814C9BF6C638CC9CFF7EB3311F677B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/mux/libmux_asf_plugin.dll",
+      "length": 74648,
+      "sha256": "7D089EFE31E65A979439F3D8192E3B54C0254CF2D00521D9AE19559A0E93C021"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/mux/libmux_avi_plugin.dll",
+      "length": 59288,
+      "sha256": "E7D87CA0D806288527EC6B3BA272A158F5C4576E8F1DCB397947D87A4CAAAFEB"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/mux/libmux_dummy_plugin.dll",
+      "length": 42392,
+      "sha256": "1CF0B087F9A80C393B8E76D68ADCD9C415B8D425FC69746E324E3D81C8E6EE3A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/mux/libmux_mp4_plugin.dll",
+      "length": 248728,
+      "sha256": "04E570891B7CB7DE41F76FC089A3F30465B5E916033E8D2AEB268A4FDA1223AE"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/mux/libmux_mpjpeg_plugin.dll",
+      "length": 64920,
+      "sha256": "C7036274EC9B3EDE101EF932F70236225261E387A2EE74857E04E156C20875D5"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/mux/libmux_ogg_plugin.dll",
+      "length": 104856,
+      "sha256": "A516F0B5DC6E9E681FCBED5E890759F08F4565BB5CBED932732AC91B7661A602"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/mux/libmux_ps_plugin.dll",
+      "length": 94616,
+      "sha256": "5BA613E1D4FDA13E4DD801FA31E49957FC23AB63CFEB0523EFC80E4CD6734152"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/mux/libmux_ts_plugin.dll",
+      "length": 194456,
+      "sha256": "E85305CB3AF7726FBFDBEB0897C59214C08E338C446A154EBD7AC387B5D5AA6B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/mux/libmux_wav_plugin.dll",
+      "length": 45464,
+      "sha256": "DF6F6F0CCE486018ACF2DCCBE67AEF7582309EE94E9445B4C08FB3C4F4E832EB"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_av1_plugin.dll",
+      "length": 67480,
+      "sha256": "AC00F72FED1BBB54951B1125218DDF93873C35C9A0E9AC34824C80E8AA0AD31A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_copy_plugin.dll",
+      "length": 42904,
+      "sha256": "B3ECA16F497983CEB34F065B650C14CD1D578FEBDB13BFC2C09B071D3A2922A2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_dirac_plugin.dll",
+      "length": 58776,
+      "sha256": "F94E8737E5363FD622014CFF8988546FFAB0575A96D06E23AF30B298924E1FE4"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_dts_plugin.dll",
+      "length": 53656,
+      "sha256": "AC9139A4C0851DB53B099E3BBA4F1247DDB87DA275C2048E43E95923569C9290"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_flac_plugin.dll",
+      "length": 51608,
+      "sha256": "B63F7677BCA053BB8176A03297B7D7A3F92DAD714A7FCFA7B06A678020B281FC"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_h264_plugin.dll",
+      "length": 155032,
+      "sha256": "42A612C1022938A2186A84DDB3DA5B4762C7A7DD0E99EFA4BF89ABD9AB215AA5"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_hevc_plugin.dll",
+      "length": 157080,
+      "sha256": "2A09BD981A21A1E790648082BD3D19794CAF5EA932AADFD509C0E852D9E6069A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_mlp_plugin.dll",
+      "length": 59800,
+      "sha256": "1C35CF6349CC11F38C4BC3FC2652E62F26561DD53EBF3AE877FF7C4F96FF314D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_mpeg4audio_plugin.dll",
+      "length": 94104,
+      "sha256": "126374ADC41B752E7389370771B32A31CDE7B858D28B7B575FF6E45F7CC54825"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_mpeg4video_plugin.dll",
+      "length": 56728,
+      "sha256": "4FDBA34DAED077D311E34CE155D62C08ACA4C98D1DCC187720A574EF6211EDF1"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_mpegaudio_plugin.dll",
+      "length": 48536,
+      "sha256": "9F80F801306C792FEA81F923A78DEB66F6BC4316ED20C5D01A108C35C5AB51F1"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_mpegvideo_plugin.dll",
+      "length": 57240,
+      "sha256": "9B899E8ABB6B987DCDCB850AB9C8700F356ACA122EDE00BD58A4703208B76832"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/packetizer/libpacketizer_vc1_plugin.dll",
+      "length": 65944,
+      "sha256": "702C25CE723284945A2D0859ED16B23E1E066FDD9CEB05808FE15D5C9D326F8F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/services_discovery/libmicrodns_plugin.dll",
+      "length": 119192,
+      "sha256": "6794E0A0CEF2A44F5B815E093F47B763040288F33B89C52C6ECC183653427705"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/services_discovery/libupnp_plugin.dll",
+      "length": 980888,
+      "sha256": "D738061F7947E821D083C2E68AEF6E8F48AD6D3F2221F8AB9AE51D2008672CB5"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/services_discovery/libwindrive_plugin.dll",
+      "length": 42904,
+      "sha256": "3E47626D93CDAB63D7EE19577567C62BAE03E2F6E417D55336C6867C451FF7E1"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/spu/libaudiobargraph_v_plugin.dll",
+      "length": 51608,
+      "sha256": "FEA271134B4842BD626B2D767A342C357FEFAA665B06AEF8B5B633DBF445C106"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/spu/liblogo_plugin.dll",
+      "length": 50584,
+      "sha256": "258317E2A6DBD996F7A992DEB810C15F2C7400E53172B99E6798FB2F4897E96C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/spu/libmarq_plugin.dll",
+      "length": 49560,
+      "sha256": "8BB6C79BA64B87FE035A28328275A9B14FB8F36468050B720A14B960CEA076B4"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/spu/libmosaic_plugin.dll",
+      "length": 57752,
+      "sha256": "8751D5534545247C12E0F93ADCCE5AC9AD00118FB86BB21FA8E7FEE12CDF306D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/spu/libremoteosd_plugin.dll",
+      "length": 667544,
+      "sha256": "AE618A08CC6CCBC6D3316AFF5B2EFC355C1FF50119056662D6AB13F75EEE8A4E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/spu/librss_plugin.dll",
+      "length": 76696,
+      "sha256": "413B84784683D740B948A9F537173A579E0BC001674A9A2DDBE7067927225078"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/spu/libsubsdelay_plugin.dll",
+      "length": 53656,
+      "sha256": "B04DBCD5C065BCC9DC33B18391A97C53E4FEDBFE687B671712D4236C679E7FF8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_extractor/libarchive_plugin.dll",
+      "length": 517528,
+      "sha256": "39F16670A2BF872DA1FFBAB941592977DC7FCC5602EB3831B44363F024DB5754"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_filter/libadf_plugin.dll",
+      "length": 42392,
+      "sha256": "AAB0B5B0EDF173ED3FA8C172C869076E2FEE4D6487C70CE8E4800E9ED6ADF775"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_filter/libaribcam_plugin.dll",
+      "length": 70040,
+      "sha256": "4320F4063B277CC8E878F3A82543C3158D32617FFB6452FD495D5E7F362A9E07"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_filter/libcache_block_plugin.dll",
+      "length": 44952,
+      "sha256": "A4020B826C40AEA8965474CAF9E3D8926C8D0BF1D940CA694E1E6178B1D0671C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_filter/libcache_read_plugin.dll",
+      "length": 45464,
+      "sha256": "B4254E1E469648754B4790AF6BEECFDBB7798E6EC65C9BB522E4BDD4200B183D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_filter/libhds_plugin.dll",
+      "length": 83864,
+      "sha256": "9D02154FD7D9B73959854A57C57C3069CDBEF09C81CA981FBBEA84A17AB135D1"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_filter/libinflate_plugin.dll",
+      "length": 72600,
+      "sha256": "008C5137F9A67977587F4B7E57EA0F9A33AF0EB59BEA98A9FE137A5E1333FEE6"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_filter/libprefetch_plugin.dll",
+      "length": 46488,
+      "sha256": "7B1461CB2269D2D754DA1AF04E15E21E193C74AF1202EE833843C10ACBD89A53"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_filter/librecord_plugin.dll",
+      "length": 42392,
+      "sha256": "AA0E6BCCC2B812B191BFDEE74742DD85A200AA66DE75A9CE21E167ECDC07DE69"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_filter/libskiptags_plugin.dll",
+      "length": 42392,
+      "sha256": "249C3B44E94B5FB1E57103948125FC5E0E4C302398B004460B8B847E60D9A00E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_autodel_plugin.dll",
+      "length": 41880,
+      "sha256": "47A7B13EDE703A3376FBDD2FFF132D2A5973E6D87A7408F5D3876EE4DE142E6E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_bridge_plugin.dll",
+      "length": 72600,
+      "sha256": "12F03E76FA92CDCEDD9AD97F92BD8FC583158CABFAF0CF32400EF1927F0E3ED0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_chromaprint_plugin.dll",
+      "length": 1206168,
+      "sha256": "B466786D5F6989A023C648E6EF953BCF87F4CA18C19865C76F2E0810C695C7C3"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_chromecast_plugin.dll",
+      "length": 1108376,
+      "sha256": "43B139AEC5FE93A026B17DDD83F5F72F07AAD030B747BBA0F2A35E0BFFB1E284"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_delay_plugin.dll",
+      "length": 41880,
+      "sha256": "A7E3746C78A49D3F1AB5DFBA8EAC88E16360C415CB6B122D8A137866E427EDBA"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_description_plugin.dll",
+      "length": 41368,
+      "sha256": "73732517889F5E0C55D791C36D8D16DF6930B58F1D31F186F290474C7D44EAA3"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_display_plugin.dll",
+      "length": 42904,
+      "sha256": "A388E0FCF0643D5445182C395B3A67234C30C45AB39DE883A756B3A90775E865"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_dummy_plugin.dll",
+      "length": 40856,
+      "sha256": "A46728B7F8012F1E05EF2E16FCA4BC6652AF9EF1921AAB46D5F24D59AA7926D2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_duplicate_plugin.dll",
+      "length": 98200,
+      "sha256": "40728812E00FA62A69CDC92BD9D5F5AA43C17F701B8ED3B204187BF4D0B1CC69"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_es_plugin.dll",
+      "length": 47512,
+      "sha256": "67D8B3AEA7BF6923D182311647BBC713B0114E7C189E0EBFA233E349800026D7"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_gather_plugin.dll",
+      "length": 42904,
+      "sha256": "CAA03282D3C2DE53D8AC9303A4EC3BC86E14F3A1C23BE589E0194FA76B03E321"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_mosaic_bridge_plugin.dll",
+      "length": 50584,
+      "sha256": "C306657075787D8BA50301C1EAC264A2A8288ED37A95F7F1B4602BC075E57569"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_record_plugin.dll",
+      "length": 76184,
+      "sha256": "0AC90FD9B2B9C620116B2FA7D007DCDDAE913253030BF4D8F330598E3D24A048"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_setid_plugin.dll",
+      "length": 43928,
+      "sha256": "F4528C40E0EB18E0BE8A6B3B4AEA15686A7ACF7E6A1939729932DCA5C9E6FB80"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_smem_plugin.dll",
+      "length": 46488,
+      "sha256": "949BB3763B7EF8909643E8DF4C20F4B13432716BB6C325903A312883AA8E4C9D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_standard_plugin.dll",
+      "length": 74136,
+      "sha256": "D2A973C46A3C5D769AEC8F631BC7E06989631E01D39ABF3BD79EF79C0138585C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_stats_plugin.dll",
+      "length": 67480,
+      "sha256": "423BBB95DF14A33A298D8F9FE6E5AF766E5084FC7564235AF73318B0566EAD51"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/stream_out/libstream_out_transcode_plugin.dll",
+      "length": 72600,
+      "sha256": "21CE33AB3F21121AD4A99DFB8158510AEC105E1F20C08FE9B3B077539EA7562D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/text_renderer/libfreetype_plugin.dll",
+      "length": 3127704,
+      "sha256": "D7A5FA9DB10B7BA014F4F8DA3959E719017A490387FE033587EEC0D030E8243B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/text_renderer/libsapi_plugin.dll",
+      "length": 49048,
+      "sha256": "143004137180C6045CAD593C4488EE383179AF2C7BED199B4D29432E4B38EAF8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/text_renderer/libtdummy_plugin.dll",
+      "length": 40344,
+      "sha256": "B8BEBDAB6584B271E0412D6435CE3843A6A02E8147D7D27FD6B71DA85E312AD5"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libchain_plugin.dll",
+      "length": 70552,
+      "sha256": "88B66B96F53DA31B57E76DAB207EB5F66CCA97DACC9D8F593ECCD9D27627459A"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libgrey_yuv_plugin.dll",
+      "length": 45976,
+      "sha256": "B2F8829C8136ECC84F7D2E2E28F72751CB13E2D1213CB8A7E97885D4008086A2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi420_10_p010_plugin.dll",
+      "length": 116632,
+      "sha256": "88DF7EEBB0AEE386B5A5E47136CDA8AA915B96A3E6CEF5E9370688A471E51CE8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi420_nv12_plugin.dll",
+      "length": 118168,
+      "sha256": "02BFA2C7DAB3E67FA550BC5F72185BBC3C7C3EDF1CB255535DD2F12186B5FA4B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi420_rgb_mmx_plugin.dll",
+      "length": 83352,
+      "sha256": "FB398CD60810009228159A6CD0E4D210E1CDD461F70F9D1B1E1DA6548E1F01D4"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi420_rgb_plugin.dll",
+      "length": 59800,
+      "sha256": "F4EB9CCA44F7EDF1B5C26551A1B193999FBE97C5175F713AF3D8453391F69C17"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi420_rgb_sse2_plugin.dll",
+      "length": 147864,
+      "sha256": "1F3FBDE84677E31386F6982ACADE1332A27C2FB6F1B091C5A1A874B953B8084F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi420_yuy2_mmx_plugin.dll",
+      "length": 50584,
+      "sha256": "DEBB50A4F637355FDA68E39D1119664E8E98F493107D9FC93851466FA6DD63F6"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi420_yuy2_plugin.dll",
+      "length": 61848,
+      "sha256": "3247F5FA6F3A89BD94600F9030EEC3F45ECB7C0B757091AA3A0B4A2D1B52A2FC"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi420_yuy2_sse2_plugin.dll",
+      "length": 60312,
+      "sha256": "080D16C32DDDD2E9C38F6C551389344198674E963941CF89D039993A8EECA7BE"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi422_i420_plugin.dll",
+      "length": 42904,
+      "sha256": "7180988AFD660B4213DB120A721645C9BB16A99F4A3D5FEC1AC7C01165B37AB4"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi422_yuy2_mmx_plugin.dll",
+      "length": 47512,
+      "sha256": "84185B0DAB0BC71B2318824243C1E3932FAC425F8D28207B17C7E82A65E3E0B8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi422_yuy2_plugin.dll",
+      "length": 57240,
+      "sha256": "BD24462150DD87D2B03C172B185C5BB92A6B5E4AB46FD8939D71A1F1B025C121"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libi422_yuy2_sse2_plugin.dll",
+      "length": 53656,
+      "sha256": "ED41BBF375A4477D44CA9DB7F3FFA65BFA9C832DA00BBB2338A476F655B7C960"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/librv32_plugin.dll",
+      "length": 41368,
+      "sha256": "6C0CC8C5AFFFC92CDE2CE88C365DDF6703DE964D9BBC408EC463D5154BE8B0D3"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libswscale_plugin.dll",
+      "length": 1013656,
+      "sha256": "51EF783C1ADDD748D31FA1E53765F0D8D787D348F9BDF0F00EB7C5BEAD25F9D0"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libyuvp_plugin.dll",
+      "length": 42392,
+      "sha256": "28BFD52A029DA007E90DE1D1D0403510D42B86396F0D062759733D22E161AD93"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libyuy2_i420_plugin.dll",
+      "length": 58776,
+      "sha256": "57EB6BC61EDA11BFE4275BE11CE261240286DABBBAE87260DD98763CA26617B1"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_chroma/libyuy2_i422_plugin.dll",
+      "length": 52632,
+      "sha256": "AE726016BC1F5CCAA2C3F64EF777D4A7FE9DE1830DDC6B264D39D7D404CB74A9"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libadjust_plugin.dll",
+      "length": 93592,
+      "sha256": "9CE4635C20EBA39AF4E796821F691723A8EE9BB5C6DC7B3A498429AE6C390C7E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libalphamask_plugin.dll",
+      "length": 43416,
+      "sha256": "0133B66073D01277BA221EA42E70392E50172F93A4E86848C6AC140E3869DE91"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libanaglyph_plugin.dll",
+      "length": 46488,
+      "sha256": "798D692B86CA70C9D42381AC2897B6613ACF19F066C67C502371DE75768D7786"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libantiflicker_plugin.dll",
+      "length": 51096,
+      "sha256": "34927C29CE51CD946B413B90D8D03C13D6ABA941C54EB01B0F5233461C98F3D4"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libball_plugin.dll",
+      "length": 64408,
+      "sha256": "D9A709741FC3B455598469B5D79A046D520F2A6639C62DCE1A760FBC7C50F4C6"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libblend_plugin.dll",
+      "length": 211352,
+      "sha256": "28B93E269E16C87E29F0D3FF9FD33E3590F3CEB750E527A8CB5E41B91E8877BF"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libblendbench_plugin.dll",
+      "length": 44952,
+      "sha256": "9D695D2A5C024CFC02744D0B2C50D28120E0DDC0F864F9C07C538AF6813470AB"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libbluescreen_plugin.dll",
+      "length": 52120,
+      "sha256": "2C6B991B3DD8AF0A47C1FA348E8E915E86E935E86222E998606D210CC64ACA75"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libcanvas_plugin.dll",
+      "length": 68504,
+      "sha256": "73C55B5835B5C92FC755987DE0F098C2F95CBD7A6A298C3E09F29DA2927E1674"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libcolorthres_plugin.dll",
+      "length": 45464,
+      "sha256": "9D797FCE28A4F4B1D4D41452D3DAC4C497B069D655CAC5315CC4793F9CF0FF9F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libcroppadd_plugin.dll",
+      "length": 47512,
+      "sha256": "57931CB6D0524E8282AEF2B941214B1A7C16DD5A8F5F7C6A12186C825796DC18"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libdeinterlace_plugin.dll",
+      "length": 164248,
+      "sha256": "BC6FC203987D528A205947394D77DD3DA80AAD06576A237D25E0C7D8220ACA2E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libedgedetection_plugin.dll",
+      "length": 42904,
+      "sha256": "A8439D77293A0E580D3ED8B69409B1BD9C397E79097304DC909C555CEC2CAFE9"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/liberase_plugin.dll",
+      "length": 48536,
+      "sha256": "AF1140F9BDC46B945B581BB38C96BA7ECF2459ACE1940C377E97BCD528848381"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libextract_plugin.dll",
+      "length": 47512,
+      "sha256": "2785EA6AD6D8C585280D4B30DE7D0F9D7EB05CC784E6537644C52C58BD34C0E8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libfps_plugin.dll",
+      "length": 42392,
+      "sha256": "A6774306510479FB587C5582A0680EA6B074DCCC8CF8A1C04FE087E914727B46"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libfreeze_plugin.dll",
+      "length": 47512,
+      "sha256": "F64F7113783D279348850E0712B18A86E8688B4F3821D20A4014D0C4ED022A0B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libgaussianblur_plugin.dll",
+      "length": 47512,
+      "sha256": "0271ECE5878327B6FC4D7B616A3B90FC20707265457C03ED35C9CDA2114E2E97"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libgradfun_plugin.dll",
+      "length": 53144,
+      "sha256": "992A5C4EEC694E152E31AF44332448042BC426AA15F5F421AEC40A14985BA434"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libgradient_plugin.dll",
+      "length": 61848,
+      "sha256": "5BE4A69EAB35BEB76E00565B21B5ECA48FBF243CB0B249A82444CF609CFF68CF"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libgrain_plugin.dll",
+      "length": 56728,
+      "sha256": "2AABCE5D084EBB409F699D7067C7E787AA981F3CCC022833ABB2CF802A72A07D"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libhqdn3d_plugin.dll",
+      "length": 56728,
+      "sha256": "16E8202468895A9C29E6C07BF44FADDF38E20D3447030510B6263ABA32199690"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libinvert_plugin.dll",
+      "length": 44440,
+      "sha256": "ED98D64B92D2B7E9FE3BFD8C1E3E070BE8F32EFEEAD77AABA4D02109FBAC8A7E"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libmagnify_plugin.dll",
+      "length": 45976,
+      "sha256": "A3735EB0C992CF86B54D56067EA9F809CC0F7C1A65BD99ABF349190BE1B89F34"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libmirror_plugin.dll",
+      "length": 48536,
+      "sha256": "3722AC6035AADFC0F49E5849EF59034D7DC2BD0EA53F488398C3C0C4711FD567"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libmotionblur_plugin.dll",
+      "length": 45976,
+      "sha256": "7BC6E8E0B737480570BABDCB5468E38FC6654748EE8E6699C93176B36C0219D6"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libmotiondetect_plugin.dll",
+      "length": 51096,
+      "sha256": "EE700E9BCC80D64042C51D9BE1C56667C59BA7E5E8EA354C38D48558372EAC0B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/liboldmovie_plugin.dll",
+      "length": 53656,
+      "sha256": "772F2A1BCC696E7C6A06C4930E883E91407D7C790FA8AFA829316CDC9D1AB7B2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libposterize_plugin.dll",
+      "length": 47000,
+      "sha256": "1BBE2CEE8790B41CA431E9DDB4D11C42FDE2C86AFCFDD18B19569D7F557C0489"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libpsychedelic_plugin.dll",
+      "length": 43928,
+      "sha256": "BC8937E2D499396379692E65EA8CDA68495101510856592F5E7D2DF2465CD148"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libpuzzle_plugin.dll",
+      "length": 113560,
+      "sha256": "D3C87D0E589B599E2C173D870ED986F962F9842777482634483959F2162872A5"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libripple_plugin.dll",
+      "length": 43928,
+      "sha256": "D826B50DE066ECE16F7E347E8BBC0B7EC609857D026ABE2F6600645552501174"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libscale_plugin.dll",
+      "length": 42392,
+      "sha256": "07A38EC9649931C5B9298FC3BD30D0CA5CE4F684115441C8F4695AB6F4767A55"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libscene_plugin.dll",
+      "length": 69016,
+      "sha256": "ADDF0D6C2AD92F906C84C1F05D4E99B0F156915189D6288DC674D6DA17187091"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libsepia_plugin.dll",
+      "length": 46488,
+      "sha256": "545993AC0E71DA0E247098B981428BC18365C1CE37B1C894B4E9FEDB3312B2AB"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libsharpen_plugin.dll",
+      "length": 43928,
+      "sha256": "70EE6FCCC9EE0205306F67F7A3EEF679FA233B5254665B263EF652853327829B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libtransform_plugin.dll",
+      "length": 57752,
+      "sha256": "B7B45A973701AC01475B5FCF5DF1FC82A498A68FD166CE5E01899BB1350DB99F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libvhs_plugin.dll",
+      "length": 45976,
+      "sha256": "223A21BE61AF770B30CF634F9DC9FEBAD1955AF2FDB2CA13E79B3E2B59EDC67F"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_filter/libwave_plugin.dll",
+      "length": 44440,
+      "sha256": "C9A3D69979A9A9FABD2C83B8EA6AEBE23665F2EB4B0C9294665350EACBA3EA1C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libcaca_plugin.dll",
+      "length": 868248,
+      "sha256": "F19668F7E054A47E5368043D44D733D56675A4316A8F6BD43973FA1F42023767"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libdirect3d11_plugin.dll",
+      "length": 408472,
+      "sha256": "C1BA837963B15835645AB157DC8EFB63E1083D211F4D74010237A3E87D7F0CE8"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libdirect3d9_plugin.dll",
+      "length": 319384,
+      "sha256": "BF2A5AFC18BFCB10D7E21DF605354368236114AE504EA00A51753F22CBC3E9E2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libdirectdraw_plugin.dll",
+      "length": 301464,
+      "sha256": "F1A8F4B714E79246956B6ABBFC13096FC02883B8DD3B84C6CA9741BB832BE63B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libdrawable_plugin.dll",
+      "length": 41880,
+      "sha256": "77A03DDE2ADB93CF621C40A35AF77C9FD68A6D22E7A1CC0FB319E08B84097BBD"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libflaschen_plugin.dll",
+      "length": 68504,
+      "sha256": "C5198AAE84ABE39B42E54F1F2C4F68A20CE0662FDC61906607092727310ED431"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libgl_plugin.dll",
+      "length": 246168,
+      "sha256": "F066DF7C63A1C29217ABAA14AE559F3FB91C399886F0CB5CB4956B67AB87CFAE"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libglinterop_dxva2_plugin.dll",
+      "length": 130968,
+      "sha256": "BFDC921FFBBCDCC0390FA3A1BD53CD86D71D6EE6E6A8647193D2B00A167D1F9B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libglwin32_plugin.dll",
+      "length": 464792,
+      "sha256": "70486DC1C25DD4655C222DD4CA5580D24346E1B24E3A3E05EFE0578CBE911434"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libvdummy_plugin.dll",
+      "length": 42904,
+      "sha256": "FB2DAD94E581C83E1405C4F0E518519E297B84861FB4115B8D9A7C6796B9D5FB"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libvmem_plugin.dll",
+      "length": 44952,
+      "sha256": "4255F130215013044644F418B355AADA781032B1D0AE28CF27B4EDA57A9FE863"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libwgl_plugin.dll",
+      "length": 244632,
+      "sha256": "CEB298F162F12A009721C4F3F4C5179CAC50F692D4F550B27F242052CBED0995"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libwingdi_plugin.dll",
+      "length": 285080,
+      "sha256": "D7F037E879AEDA3BFB5676E401E25DC498C48749CEA3F9906F6F90978AE0DBCE"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libwinhibit_plugin.dll",
+      "length": 42392,
+      "sha256": "F3288360EBAEF4C86BA61D775F8E2992B9AA3053EAC5A2D3AAD631DF44BF7FF2"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_output/libyuv_plugin.dll",
+      "length": 67992,
+      "sha256": "84F7EC73C150DF2BCDE7DC1EDAA8B91770B609518899856CC7E2444F3174B3BD"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_splitter/libclone_plugin.dll",
+      "length": 43416,
+      "sha256": "E2474DF1732BD7BFB8D5C6D7A980391AE6E345CC15FEC802B8D5F991BD8D5E43"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_splitter/libpanoramix_plugin.dll",
+      "length": 68504,
+      "sha256": "A003238AF2375893E4FB55F042CBF66F5DCCDC562A0D55CFD5ABBD9858E43713"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/video_splitter/libwall_plugin.dll",
+      "length": 81816,
+      "sha256": "F6E70761431C4AE5E7B22C431453E9AC96472D848F7006C6F8942FEB7548B019"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/visualization/libglspectrum_plugin.dll",
+      "length": 61336,
+      "sha256": "03B132C3AE84BF36211580A171A55C73E802B63013037FD1833EDEFBEDB3CA3B"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/visualization/libgoom_plugin.dll",
+      "length": 251800,
+      "sha256": "E8F8AD5354088D6944B5488C20EFE0850534976F555350418D556EDADEC66E5C"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/visualization/libprojectm_plugin.dll",
+      "length": 1714584,
+      "sha256": "CD035DF16C5460DB798E60C51E3104073D40E27EAC00BC0C92A48F9DD612B6D5"
+    },
+    {
+      "path": "VideoSecurityPlayer/native/win-x64/libvlc/plugins/visualization/libvisual_plugin.dll",
+      "length": 78744,
+      "sha256": "E6E877C6AF06C01D1012805F079485079A4F6E43F7317369538A9B66B3743835"
+    },
+    {
+      "path": "VideoSecurityPlayer/plugin.manifest.json",
+      "length": 308,
+      "sha256": "D44C768D21CC3416F25C6A7C1F80EFFFFA07263B9D840F457602BF508C2C1490"
+    },
+    {
+      "path": "VideoSecurityPlayer/VideoSecurityPlayer.Plugin.deps.json",
+      "length": 12565,
+      "sha256": "26E333B20712806F6D768CFCBED21EC4DF3517BF6DB6A0777E7ECDEB589A40DE"
+    },
+    {
+      "path": "VideoSecurityPlayer/VideoSecurityPlayer.Plugin.dll",
+      "length": 983040,
+      "sha256": "ABD6C2DE59C2B31CE507ACC278CD44A078E1B7E65BFBCDED989E7B6313785460"
+    },
+    {
+      "path": "VideoSecurityPlayer/VideoSecurityPlayer.Plugin.pdb",
+      "length": 291272,
+      "sha256": "93D1CCCD0390806CC7FA21F74810BD346BAA8CF2B53D88E8811D7D470C42293A"
+    },
+    {
+      "path": "WorkflowStudio/plugin.manifest.json",
+      "length": 288,
+      "sha256": "E9815D788C2F3F67EB23A3E7D2CAFB05E8629DCEFDA5B4F1B84C1CD148195F5B"
+    },
+    {
+      "path": "WorkflowStudio/WorkflowStudio.Plugin.deps.json",
+      "length": 11387,
+      "sha256": "B1C748414418C5581612C403731A4AC5142CB56E1C626D7BD208E212BE032045"
+    },
+    {
+      "path": "WorkflowStudio/WorkflowStudio.Plugin.dll",
+      "length": 241152,
+      "sha256": "C0C7F0F2AB809ADEFF6F4DF21A830BC2E07D176FD54F5E7BC894328656356315"
+    },
+    {
+      "path": "WorkflowStudio/WorkflowStudio.Plugin.pdb",
+      "length": 64552,
+      "sha256": "3D9C7B959336F8A9400DEFB51658E059B4AEDF656A6B2B12750AAF51F534CF47"
+    },
+    {
+      "path": "XianCaiWorkerPlugin/DocumentFormat.OpenXml.dll",
+      "length": 7985120,
+      "sha256": "EE2A31FF79DB570E2EB98EC7513B222F2B8C6BFCB638D66C2CEC8255B0BBE499"
+    },
+    {
+      "path": "XianCaiWorkerPlugin/DocumentFormat.OpenXml.Framework.dll",
+      "length": 478688,
+      "sha256": "FF3ED8318388D84FA5BBC5736DF6144ECFA3165C0B95F6B45B5330F463EDF7AE"
+    },
+    {
+      "path": "XianCaiWorkerPlugin/Flurl.dll",
+      "length": 39936,
+      "sha256": "7FF7965161F6ACC809F7154CD3BA1F56E0290974D4FCFC5944BD4C9030996383"
+    },
+    {
+      "path": "XianCaiWorkerPlugin/Flurl.Http.dll",
+      "length": 113152,
+      "sha256": "CB204C6865563BC7F023F4655977CF5263536A75069B0E7E1D72A900A66F1EB5"
+    },
+    {
+      "path": "XianCaiWorkerPlugin/MyAvaloniaManagement.Icons.dll",
+      "length": 8192,
+      "sha256": "AA1199171B9514D3F56909FEF2AD6631578C2B366BB969BE2A0900BEF2FFB78A"
+    },
+    {
+      "path": "XianCaiWorkerPlugin/plugin.manifest.json",
+      "length": 302,
+      "sha256": "07A546956C4E34F937F72654C91C8C442BE4CA623F0F33D50B1B3DC2B0C3992A"
+    },
+    {
+      "path": "XianCaiWorkerPlugin/System.IO.Packaging.dll",
+      "length": 159504,
+      "sha256": "1F27C2B1F02A185B370EF9D801597074B0EE09E338C6CF89193E403F7808821C"
+    },
+    {
+      "path": "XianCaiWorkerPlugin/XianCaiWorkerPlugin.Plugin.deps.json",
+      "length": 14263,
+      "sha256": "9D5B1CA33F929D418299078C3B2E7C9AD7CDC9AECD3CBD07A405BAE70A2DE4D4"
+    },
+    {
+      "path": "XianCaiWorkerPlugin/XianCaiWorkerPlugin.Plugin.dll",
+      "length": 814592,
+      "sha256": "FEDDC493C31B83B22F311857E07559A7F67273C93318B70CFEDD2EADD14B3127"
+    },
+    {
+      "path": "XianCaiWorkerPlugin/XianCaiWorkerPlugin.Plugin.pdb",
+      "length": 223020,
+      "sha256": "23766A27B9B36734E07B16ED30EBB5AFC232C1F0B62A7C8710E6CE33A4558E93"
+    }
+  ]
+}

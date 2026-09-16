@@ -37,6 +37,7 @@
 
 ## 未完成工作与历史
 
+- [V10 插件兼容治理与 Host 插件看板计划](roadmap/host-v10-plugin-compatibility-and-dashboard-plan.md)：待实施的分阶段开发计划；不代表当前功能，不包含本轮发布门禁。
 - [待办与验收](roadmap/README.md)：待验收、发布前工作、实验、未来候选和维护决策。
 - [历史归档](archive/README.md)：原计划、阶段记录、旧格式及关联证据。历史命令不能当作当前操作入口。
 
