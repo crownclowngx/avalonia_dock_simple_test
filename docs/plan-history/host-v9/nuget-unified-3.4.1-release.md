@@ -2,7 +2,7 @@
 
 日期：2026-09-16。分支：`codex/host-v9-avalonia-dock-upgrade`。
 
-状态：准备与验证中；最终上传结果及公共源消费证据在本记录追加。用户在 V9 开发验收后明确授权上传 NuGet，并要求所有自有包统一版本。本次发布范围是 NuGet 开发依赖，不是 Host 安装程序发布。
+状态：**六个 nupkg 与四个 snupkg 已上传；六包公共源下载及最终模板消费验证全部通过。**用户在 V9 开发验收后明确授权上传 NuGet，并要求所有自有包统一版本。本次发布范围是 NuGet 开发依赖，不是 Host 安装程序发布。
 
 ## 版本与兼容政策
 
@@ -27,7 +27,7 @@ Workflow 的包主版本由 1 跳至 3 仅为统一发布编号，不表示 API 
 2. 执行普通 `Gate verify`，验证所有单元/契约/Headless/真实测试 ZIP；显式运行旧插件产物夹具。
 3. 在 `artifacts/host-v9/nuget-3.4.1/` 冻结五个基础 nupkg 和四个 snupkg；记录 SHA-256、nuspec 依赖和源码提交。
 4. 用独立缓存、本地 feed、仓库外模板生成项目验证 Release 构建、测试与 ZIP。模板包包含的三个 lock file 必须覆盖同一候选包内容。
-5. 上传五个基础包及符号包，等待公共源可读取。使用 NuGet.org-only 配置和独立缓存重新生成模板锁文件；NuGet 仓库签名会改变包哈希，不能把本地未签名包的 contentHash 直接作为最终锁文件。
+5. 上传五个基础包及符号包，等待公共源可读取。使用 NuGet.org-only 配置和独立缓存重新生成模板锁文件；NuGet 仓库签名改变归档文件的 SHA-256，但不应将它与锁文件 contentHash 混为一谈。本次签名前后的 NuGet contentHash 相同；仍以公共源实际还原结果为准，不能仅凭本地候选宣告公共消费通过。
 6. 同步三个公共源锁文件后打包最终 Templates 3.4.1。独立 hive 安装并验证最终 nupkg，再上传相同文件；最后从公共源安装模板、locked-mode 还原、构建、测试和打包。
 7. 下载公开包核对 nuspec 版本及依赖，并逐 ZIP 条目比对上传内容（仅允许 NuGet 添加 `.signature.p7s`）。保存实际回执及验证摘要，提交文档与最终锁文件。
 
@@ -53,8 +53,21 @@ API token 仅通过当前进程的 `NUGET_API_KEY` 环境变量传递给 NuGet�
 
 ### 公共源与最终模板
 
-待公共源验证及模板上传后追加。
+最终 Templates 源码提交为 `b0fdf53`；包内三个锁文件与提交内容逐字节一致，无 bin/obj 或本地 feed 配置。安装最终本地 nupkg 后，公共源 locked restore、Release 0 警告/错误和 4/4 测试通过；随后上传同一个文件，NuGet.org 返回 Created。从公共源按 `MyAvaloniaManagement.Plugin.Templates@3.4.1` 安装到独立 hive，生成仓库外 `Public.V341`，NuGet.org-only locked restore、Release 构建 0 警告/错误、4/4 测试和 5 文件 ZIP 打包全部通过；ZIP 再经真实 Host 加载/DI/视图与 Workspace 2/2 验收。公共文件索引先可用、注册索引稍后同步，首次安装遇到短暂 404，待注册索引 200 后按同一版本安装成功，没有重复上传。
+
+六个公开包均已下载，与上传文件逐条 ZIP 内容相同，仅多出 NuGet 的 `.signature.p7s`。四个 snupkg 的上传端点均返回 Created（不把这个回执扩展为调试器符号下载验收）。源码提交、上传回执、全部 nupkg/snupkg SHA-256、公开包逐项比对、TRX 计数和原始报告哈希见 [提交内机器可读证据](nuget-unified-3.4.1-evidence.json)。
+
+| 公开包（全部 3.4.1） | NuGet.org |
+| --- | --- |
+| PluginSdk | [查看](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk/3.4.1) |
+| PluginSdk.UI | [查看](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.UI/3.4.1) |
+| PluginSdk.Workflow | [查看](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.Workflow/3.4.1) |
+| Icons | [查看](https://www.nuget.org/packages/MyAvaloniaManagement.Icons/3.4.1) |
+| Plugin.Build | [查看](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Build/3.4.1) |
+| Plugin.Templates | [查看](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Templates/3.4.1) |
 
 ### 产物清理
 
 用户追加要求：完成后清理主项目与插件项目的生成产物。本次会先固化包哈希、回执与测试摘要，再清理可再生目录及临时工程。各插件仓库既有的未提交源码/文档/配置修改、Git 历史和 `D:\data\avalonia` 安装目录保持不动；实际清理统计另行追加。
+
+官方协议依据：[NuGet 发布说明](https://learn.microsoft.com/en-us/nuget/nuget-org/publish-a-package)。本机 .NET SDK 10.0.302 使用进程级 `NUGET_API_KEY`；上传命令中没有密钥参数，上传回执不含令牌。

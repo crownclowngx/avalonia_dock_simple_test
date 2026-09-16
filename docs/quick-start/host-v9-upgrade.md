@@ -48,9 +48,11 @@ dotnet msbuild src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj -t:BuildMana
 
 模板直接依赖的 Core/UI SDK、Icons、Build 都精确固定到 `[3.4.1]`，三个 lock file 使用公共源最终包哈希。Workflow SDK 为可选包，需要时同样引用 `3.4.1`。生成插件的业务版本仍为 `1.0.0`，不能把 SDK 的发布版本误当作每个业务插件的版本。
 
-开发下一版本时，先集中修改 `MyAvaloniaPackageVersion`，再同步模板的精确依赖和最低 SDK。基础包发布后需从公共源重新生成模板锁文件，最后发布模板；不要将本地未签名 nupkg 的 contentHash 用于公开模板。发布步骤见 [专用记录](../plan-history/host-v9/nuget-unified-3.4.1-release.md)。
+开发下一版本时，先集中修改 `MyAvaloniaPackageVersion`，再同步模板的精确依赖和最低 SDK。基础包发布后需从公共源重新生成模板锁文件，最后发布模板；必须实际验证公共源 locked restore，不能仅凭本地候选锁文件宣告公共消费通过；归档签名与 NuGet contentHash 是不同层次。发布步骤见 [专用记录](../plan-history/host-v9/nuget-unified-3.4.1-release.md)。
 
 ## 开发门禁和外部产物验证
+
+本次验证结束后按用户要求清理生成物，原 artifacts 路径只表示历史证据位置。重跑 verify 会重新还原和构建；外部产物夹具需要另行准备完整 Controls 副本，并将下面路径改为该副本位置。已提交的哈希和测试摘要见统一发布记录。
 
 ```powershell
 # 本地开发 verify：构建、SDK/Host/插件/UI 测试、架构契约和测试 ZIP 验收。

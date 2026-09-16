@@ -165,3 +165,5 @@ dotnet reportgenerator '-reports:<unit>;<plugin>;<ui>;<package>' '-targetdir:art
 ## 后续：统一 NuGet 包发布
 
 用户在本记录完成后另行授权上传 NuGet，并要求六个自有包统一为 `3.4.1`。该阶段的新增版本政策测试、基础包/符号包上传、公共源模板锁文件及消费验证见 [统一发布记录](nuget-unified-3.4.1-release.md)。以上开发阶段证据保持原始提交与范围；NuGet 发布不代表 Host 安装程序或真实 Windows 交互已通过发布验收。
+
+用户随后要求清理全部可再生构建产物；本记录中的原始 artifacts 路径因此可能不再存在。提交内的 [开发证据摘要](development-evidence.json) 继续保存原验证计数与哈希，后续公共 NuGet 发布及清理统计见统一发布记录。

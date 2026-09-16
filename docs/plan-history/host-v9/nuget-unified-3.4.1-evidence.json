@@ -1,0 +1,766 @@
+{
+  "gate": {
+    "schemaVersion": 2,
+    "runId": "20260916-003141-6002cc46974b",
+    "profile": "verify",
+    "scope": "all",
+    "passed": true,
+    "startedAtUtc": "2026-09-16T00:31:41.4019592+00:00",
+    "finishedAtUtc": "2026-09-16T00:32:43.3039029+00:00",
+    "sources": {
+      "main": {
+        "revision": "6002cc46974b34d73b492196ab4c9264db4de204",
+        "tree": "15d30079aff7fa2e886a4a3404f25d2288eb69f7",
+        "clean": false,
+        "files": 807,
+        "sha256": "8CB990E75C9C66081EB88335F2B00D6F033988F8092F5C89DD9E76173B57E6DD"
+      }
+    },
+    "host": {
+      "releaseEligible": false,
+      "publishable": false
+    },
+    "repeatability": {
+      "requested": false,
+      "verified": false
+    },
+    "passes": [
+      {
+        "pass": 1,
+        "passed": true,
+        "evidenceRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260916-003141-6002cc46974b\\pass-1",
+        "stages": [
+          {
+            "id": "restore",
+            "status": "passed",
+            "durationMilliseconds": 2034,
+            "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260916-003141-6002cc46974b\\pass-1"
+          },
+          {
+            "id": "build",
+            "status": "passed",
+            "durationMilliseconds": 9808,
+            "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260916-003141-6002cc46974b\\pass-1"
+          },
+          {
+            "id": "tests",
+            "status": "passed",
+            "durationMilliseconds": 48083,
+            "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260916-003141-6002cc46974b\\pass-1"
+          },
+          {
+            "id": "contracts",
+            "status": "passed",
+            "durationMilliseconds": 53,
+            "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260916-003141-6002cc46974b\\pass-1"
+          },
+          {
+            "id": "packages",
+            "status": "passed",
+            "durationMilliseconds": 18,
+            "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260916-003141-6002cc46974b\\pass-1"
+          },
+          {
+            "id": "package-acceptance",
+            "status": "passed",
+            "durationMilliseconds": 1492,
+            "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260916-003141-6002cc46974b\\pass-1"
+          }
+        ],
+        "packages": {
+          "my-plug-test": {
+            "pluginId": "myavalonia.plugin.my-plug-test",
+            "archivePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260916-003141-6002cc46974b\\pass-1\\packages\\my-plug-test\\build-1\\MyPlugTest-win-x64.zip",
+            "sha256": "F50466DC1BF4FBD0F1396AF8163311E1575CFBEC1F77042126B8C2DDEEE8D787",
+            "files": 7,
+            "manifestSha256": "93B4006555E65634300C0E1AF204CCC345A1739B432AD6FD9CDC384E2A567AE1",
+            "deterministic": false
+          }
+        }
+      }
+    ]
+  },
+  "gateSha256": "19823d88d07ca5a2b8312c814bc7641f47d35aa65fee87ec51f9cc2bce2e4d99",
+  "tests": [
+    {
+      "path": "artifacts/gate/20260916-003141-6002cc46974b/pass-1/tests/host-plugin/host-plugin.trx",
+      "sha256": "169131cd104e540f93be90a1e7cbcefb0f9a9c5ab84045c7a937f2fd20e9a38e",
+      "counters": {
+        "total": "218",
+        "executed": "218",
+        "passed": "218",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "path": "artifacts/gate/20260916-003141-6002cc46974b/pass-1/tests/host-ui/host-ui.trx",
+      "sha256": "4296bd290ecc7582a5257729af815c11c32fc2479f20e34ac6757f1657553e5e",
+      "counters": {
+        "total": "117",
+        "executed": "117",
+        "passed": "117",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "path": "artifacts/gate/20260916-003141-6002cc46974b/pass-1/tests/host-unit/host-unit.trx",
+      "sha256": "3fbd6fe72af4167e450eb4fa3e1cedf2ef11f5a36e710b37ba99ab5d9963e5a9",
+      "counters": {
+        "total": "401",
+        "executed": "401",
+        "passed": "401",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "path": "artifacts/gate/20260916-003141-6002cc46974b/pass-1/tests/my-plug-test/my-plug-test.trx",
+      "sha256": "8ff16ab549d1c7542d3b307804e50ece419cba3f483a72547e1db256b1fe7412",
+      "counters": {
+        "total": "11",
+        "executed": "11",
+        "passed": "11",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "path": "artifacts/gate/20260916-003141-6002cc46974b/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+      "sha256": "5a41c6bef2e9e987694351c113592029f74c685fbfd3b315a0730a5bdf9badcf",
+      "counters": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "path": "artifacts/gate/20260916-003141-6002cc46974b/pass-1/tests/sdk/sdk.trx",
+      "sha256": "adc146f1dfd885ce6d35eaa3584b252123f92b2755b3f94d6fb020dd4031f90b",
+      "counters": {
+        "total": "91",
+        "executed": "91",
+        "passed": "91",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "path": "artifacts/host-v9/nuget-3.4.1/tests/old-binaries.trx",
+      "sha256": "f14052b8cd14be8f33d09861ace154c86f60da17fdddc299b48781a28cdb62dc",
+      "counters": {
+        "total": "14",
+        "executed": "14",
+        "passed": "14",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "path": "artifacts/host-v9/nuget-3.4.1/tests/candidate-template.trx",
+      "sha256": "179a6b70bdf59fe1852148942e5927734335e0f7a226b6a18593ce7127026474",
+      "counters": {
+        "total": "4",
+        "executed": "4",
+        "passed": "4",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "path": "artifacts/host-v9/nuget-3.4.1/tests/candidate-host-verified.trx",
+      "sha256": "bd464e10060ab0a6ba10abff0177f6acca364dda58cc724b3cc2b1b5238231e7",
+      "counters": {
+        "total": "2",
+        "executed": "2",
+        "passed": "2",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "path": "artifacts/host-v9/nuget-3.4.1/tests/final-template.trx",
+      "sha256": "13f210bdb3b87f40fc5dbe96620d0321247ce58b65073ae92b8063bd7c7b0271",
+      "counters": {
+        "total": "4",
+        "executed": "4",
+        "passed": "4",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "path": "artifacts/host-v9/nuget-3.4.1/tests/public-template.trx",
+      "sha256": "4a3a1f5e0b8d0ed189bd657aef87606032931ed900d6ad43d6f99f69ae64bbe9",
+      "counters": {
+        "total": "4",
+        "executed": "4",
+        "passed": "4",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "path": "artifacts/host-v9/nuget-3.4.1/tests/public-host.trx",
+      "sha256": "58206a3a169052daa8eb05c073abae9d1e6ac1713b5b70928164972e260c831e",
+      "counters": {
+        "total": "2",
+        "executed": "2",
+        "passed": "2",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    }
+  ],
+  "oldPluginIntegrity": {
+    "checkedAtUtc": "2026-09-16T00:43:29.286007+00:00",
+    "roots": [
+      {
+        "root": "artifacts\\host-v9\\baseline\\old-controls",
+        "checkedFiles": 525,
+        "mismatches": []
+      },
+      {
+        "root": "D:\\data\\avalonia\\Controls",
+        "checkedFiles": 525,
+        "mismatches": []
+      }
+    ]
+  },
+  "packageVersion": "3.4.1",
+  "branch": "codex/host-v9-avalonia-dock-upgrade",
+  "scope": "NuGet packages only; not a Host installer release",
+  "foundationArtifacts": {
+    "sourceCommit": "a41594fff9ac26e732b7cad108c5c801f970fe1d",
+    "preparedAtUtc": "2026-09-16T00:34:46.864289+00:00",
+    "packages": [
+      {
+        "file": "MyAvaloniaManagement.Icons.3.4.1.nupkg",
+        "id": "MyAvaloniaManagement.Icons",
+        "version": "3.4.1",
+        "sha256": "e481d443b3b3504dc3053363acf87b3073cc620464a0788e634eca440cf4a7e6",
+        "bytes": 7869,
+        "dependencies": [],
+        "entries": [
+          "_rels/.rels",
+          "MyAvaloniaManagement.Icons.nuspec",
+          "README.md",
+          "lib/net10.0/MyAvaloniaManagement.Icons.dll",
+          "lib/net10.0/MyAvaloniaManagement.Icons.xml",
+          "[Content_Types].xml",
+          "package/services/metadata/core-properties/c8a6ddc085e14984a975309d3b84cf6b.psmdcp"
+        ]
+      },
+      {
+        "file": "MyAvaloniaManagement.Icons.3.4.1.snupkg",
+        "id": "MyAvaloniaManagement.Icons",
+        "version": "3.4.1",
+        "sha256": "63de40650fb74fd6afe86b494b1de9677e155b0969501efb3c3d1b5ef7cd3b7e",
+        "bytes": 9739,
+        "dependencies": [],
+        "entries": [
+          "_rels/.rels",
+          "MyAvaloniaManagement.Icons.nuspec",
+          "lib/net10.0/MyAvaloniaManagement.Icons.pdb",
+          "[Content_Types].xml",
+          "package/services/metadata/core-properties/5df35e8f269d4516aebf8457a5375e29.psmdcp"
+        ]
+      },
+      {
+        "file": "MyAvaloniaManagement.Plugin.Build.3.4.1.nupkg",
+        "id": "MyAvaloniaManagement.Plugin.Build",
+        "version": "3.4.1",
+        "sha256": "7c2fad236435c884a5f7d7b3c4fa0078794c5b16862500ae1ac54370fb382f39",
+        "bytes": 14839,
+        "dependencies": [],
+        "entries": [
+          "_rels/.rels",
+          "MyAvaloniaManagement.Plugin.Build.nuspec",
+          "README.md",
+          "build/MyAvaloniaManagement.Plugin.Build.props",
+          "build/MyAvaloniaManagement.Plugin.Build.targets",
+          "tools/Build-ManagedPluginPackage.ps1",
+          "tools/MyAvaloniaManagement.ManagedPlugin.props",
+          "tools/MyAvaloniaManagement.ManagedPlugin.targets",
+          "[Content_Types].xml",
+          "package/services/metadata/core-properties/ca0c1f3389454856b64fd0ebc1a7b28b.psmdcp"
+        ]
+      },
+      {
+        "file": "MyAvaloniaManagement.PluginSdk.3.4.1.nupkg",
+        "id": "MyAvaloniaManagement.PluginSdk",
+        "version": "3.4.1",
+        "sha256": "149aeb8d0a299b65838a2ae51d909b765ef0b3b2b4efd1cbc3b6a62e303876ba",
+        "bytes": 24744,
+        "dependencies": [],
+        "entries": [
+          "_rels/.rels",
+          "MyAvaloniaManagement.PluginSdk.nuspec",
+          "README.md",
+          "lib/net10.0/MyAvaloniaManagement.PluginSdk.dll",
+          "lib/net10.0/MyAvaloniaManagement.PluginSdk.xml",
+          "[Content_Types].xml",
+          "package/services/metadata/core-properties/2de2800416c4431db8b76afb923ea3dc.psmdcp"
+        ]
+      },
+      {
+        "file": "MyAvaloniaManagement.PluginSdk.3.4.1.snupkg",
+        "id": "MyAvaloniaManagement.PluginSdk",
+        "version": "3.4.1",
+        "sha256": "822951ead3e672b7db9824747dacc0e79e206815c2f186a8924ac59cf6995c84",
+        "bytes": 11243,
+        "dependencies": [],
+        "entries": [
+          "_rels/.rels",
+          "MyAvaloniaManagement.PluginSdk.nuspec",
+          "lib/net10.0/MyAvaloniaManagement.PluginSdk.pdb",
+          "[Content_Types].xml",
+          "package/services/metadata/core-properties/4282bf7a6c894cc3a17169487b4d7bf4.psmdcp"
+        ]
+      },
+      {
+        "file": "MyAvaloniaManagement.PluginSdk.UI.3.4.1.nupkg",
+        "id": "MyAvaloniaManagement.PluginSdk.UI",
+        "version": "3.4.1",
+        "sha256": "d991508dbaa18811393156545c8b798670a999dd25edc2991ca23789606dd38e",
+        "bytes": 22461,
+        "dependencies": [
+          {
+            "id": "MyAvaloniaManagement.PluginSdk",
+            "version": "3.4.1",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Avalonia",
+            "version": "[12.1.2]",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Avalonia.Themes.Fluent",
+            "version": "[12.1.2]",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Irihi.Ursa",
+            "version": "[2.1.0]",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Irihi.Ursa.Themes.Semi",
+            "version": "[2.1.0]",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+            "version": "[10.0.10]",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Semi.Avalonia",
+            "version": "[12.1.0]",
+            "exclude": "Build,Analyzers"
+          }
+        ],
+        "entries": [
+          "_rels/.rels",
+          "MyAvaloniaManagement.PluginSdk.UI.nuspec",
+          "README.md",
+          "lib/net10.0/MyAvaloniaManagement.PluginSdk.UI.dll",
+          "lib/net10.0/MyAvaloniaManagement.PluginSdk.UI.xml",
+          "[Content_Types].xml",
+          "package/services/metadata/core-properties/f3a8215f5c2c4d24be72a1572a324d0c.psmdcp"
+        ]
+      },
+      {
+        "file": "MyAvaloniaManagement.PluginSdk.UI.3.4.1.snupkg",
+        "id": "MyAvaloniaManagement.PluginSdk.UI",
+        "version": "3.4.1",
+        "sha256": "378278d8572e9d1fb4d72a3c62e52e3d27d75365e7266c33643769b369a451ca",
+        "bytes": 12128,
+        "dependencies": [
+          {
+            "id": "MyAvaloniaManagement.PluginSdk",
+            "version": "3.4.1",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Avalonia",
+            "version": "[12.1.2]",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Avalonia.Themes.Fluent",
+            "version": "[12.1.2]",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Irihi.Ursa",
+            "version": "[2.1.0]",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Irihi.Ursa.Themes.Semi",
+            "version": "[2.1.0]",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+            "version": "[10.0.10]",
+            "exclude": "Build,Analyzers"
+          },
+          {
+            "id": "Semi.Avalonia",
+            "version": "[12.1.0]",
+            "exclude": "Build,Analyzers"
+          }
+        ],
+        "entries": [
+          "_rels/.rels",
+          "MyAvaloniaManagement.PluginSdk.UI.nuspec",
+          "lib/net10.0/MyAvaloniaManagement.PluginSdk.UI.pdb",
+          "[Content_Types].xml",
+          "package/services/metadata/core-properties/27d81827188a49e7b0f34548c6d29b82.psmdcp"
+        ]
+      },
+      {
+        "file": "MyAvaloniaManagement.PluginSdk.Workflow.3.4.1.nupkg",
+        "id": "MyAvaloniaManagement.PluginSdk.Workflow",
+        "version": "3.4.1",
+        "sha256": "24526d16db553ab54709982b0631e925aa883c3c4f2da92f8c6572a0c05cf5fd",
+        "bytes": 25314,
+        "dependencies": [
+          {
+            "id": "MyAvaloniaManagement.PluginSdk",
+            "version": "3.4.1",
+            "exclude": "Build,Analyzers"
+          }
+        ],
+        "entries": [
+          "_rels/.rels",
+          "MyAvaloniaManagement.PluginSdk.Workflow.nuspec",
+          "README.md",
+          "lib/net10.0/MyAvaloniaManagement.PluginSdk.Workflow.dll",
+          "lib/net10.0/MyAvaloniaManagement.PluginSdk.Workflow.xml",
+          "[Content_Types].xml",
+          "package/services/metadata/core-properties/fa335181961d4b58b278430fe0005d65.psmdcp"
+        ]
+      },
+      {
+        "file": "MyAvaloniaManagement.PluginSdk.Workflow.3.4.1.snupkg",
+        "id": "MyAvaloniaManagement.PluginSdk.Workflow",
+        "version": "3.4.1",
+        "sha256": "5baaa4c67b88df44b742f34687bb99fae9f157b4af62e6e408035ab34498cfef",
+        "bytes": 17707,
+        "dependencies": [
+          {
+            "id": "MyAvaloniaManagement.PluginSdk",
+            "version": "3.4.1",
+            "exclude": "Build,Analyzers"
+          }
+        ],
+        "entries": [
+          "_rels/.rels",
+          "MyAvaloniaManagement.PluginSdk.Workflow.nuspec",
+          "lib/net10.0/MyAvaloniaManagement.PluginSdk.Workflow.pdb",
+          "[Content_Types].xml",
+          "package/services/metadata/core-properties/a8ef912f091747d0a30c2829287fe477.psmdcp"
+        ]
+      }
+    ]
+  },
+  "templateArtifact": {
+    "sourceCommit": "b0fdf53395e47271179399cc472bed557d7b47d3",
+    "file": "MyAvaloniaManagement.Plugin.Templates.3.4.1.nupkg",
+    "sha256": "61edfa60682d61afcdd3583b166acd6ce400419ee7f6f8c112b876adbe33fc59",
+    "bytes": 40892,
+    "locks": [
+      "content/myavalonia-plugin/src/DemoPlugin.Plugin/packages.lock.json",
+      "content/myavalonia-plugin/src/DemoPlugin.Standalone/packages.lock.json",
+      "content/myavalonia-plugin/tests/DemoPlugin.Tests/packages.lock.json"
+    ],
+    "entries": [
+      "_rels/.rels",
+      "MyAvaloniaManagement.Plugin.Templates.nuspec",
+      "README.md",
+      "content/myavalonia-plugin/.template.config/template.json",
+      "content/myavalonia-plugin/DemoPlugin.slnx",
+      "content/myavalonia-plugin/Directory.Build.props",
+      "content/myavalonia-plugin/Directory.Packages.props",
+      "content/myavalonia-plugin/LICENSE",
+      "content/myavalonia-plugin/README.md",
+      "content/myavalonia-plugin/docs/README.md",
+      "content/myavalonia-plugin/docs/deployment-and-release.md",
+      "content/myavalonia-plugin/docs/plugin-icons.md",
+      "content/myavalonia-plugin/docs/project-and-window-responsibilities.md",
+      "content/myavalonia-plugin/docs/workbench-commands.md",
+      "content/myavalonia-plugin/docs/workflow-actions.md",
+      "content/myavalonia-plugin/src/DemoPlugin.Plugin/Constants/PluginIds.cs",
+      "content/myavalonia-plugin/src/DemoPlugin.Plugin/DemoPlugin.Plugin.csproj",
+      "content/myavalonia-plugin/src/DemoPlugin.Plugin/Features/Main/MainDocument.cs",
+      "content/myavalonia-plugin/src/DemoPlugin.Plugin/Features/Main/MainView.axaml",
+      "content/myavalonia-plugin/src/DemoPlugin.Plugin/Features/Main/MainView.axaml.cs",
+      "content/myavalonia-plugin/src/DemoPlugin.Plugin/Plugin/DemoPluginModule.cs",
+      "content/myavalonia-plugin/src/DemoPlugin.Plugin/Plugin/DemoPluginServices.cs",
+      "content/myavalonia-plugin/src/DemoPlugin.Plugin/packages.lock.json",
+      "content/myavalonia-plugin/src/DemoPlugin.Standalone/App.axaml",
+      "content/myavalonia-plugin/src/DemoPlugin.Standalone/App.axaml.cs",
+      "content/myavalonia-plugin/src/DemoPlugin.Standalone/DemoPlugin.Standalone.csproj",
+      "content/myavalonia-plugin/src/DemoPlugin.Standalone/MainWindow.axaml",
+      "content/myavalonia-plugin/src/DemoPlugin.Standalone/MainWindow.axaml.cs",
+      "content/myavalonia-plugin/src/DemoPlugin.Standalone/Program.cs",
+      "content/myavalonia-plugin/src/DemoPlugin.Standalone/packages.lock.json",
+      "content/myavalonia-plugin/tests/DemoPlugin.Tests/DemoPlugin.Tests.csproj",
+      "content/myavalonia-plugin/tests/DemoPlugin.Tests/MainDocumentTests.cs",
+      "content/myavalonia-plugin/tests/DemoPlugin.Tests/packages.lock.json",
+      "[Content_Types].xml",
+      "package/services/metadata/core-properties/68b94ca0ee504b4c83e7f0b57be25eff.psmdcp"
+    ]
+  },
+  "uploads": [
+    {
+      "package": "MyAvaloniaManagement.Icons",
+      "acceptedUploads": 2,
+      "acceptedAtUtc": "2026-09-16T00:39:07.941508+00:00",
+      "logSha256": "4908a7b70e57766e7076f99fee835a581a3b692ce0606caa2832a871edcd5be7",
+      "response": "Pushing MyAvaloniaManagement.Icons.3.4.1.nupkg to 'https://www.nuget.org/api/v2/package'...\n  PUT https://www.nuget.org/api/v2/package/\n  Created https://www.nuget.org/api/v2/package/ 963ms\nYour package was pushed.\nPushing MyAvaloniaManagement.Icons.3.4.1.snupkg to 'https://www.nuget.org/api/v2/symbolpackage'...\n  PUT https://www.nuget.org/api/v2/symbolpackage/\n  Created https://www.nuget.org/api/v2/symbolpackage/ 355ms\nYour package was pushed."
+    },
+    {
+      "package": "MyAvaloniaManagement.Plugin.Build",
+      "acceptedUploads": 1,
+      "acceptedAtUtc": "2026-09-16T00:39:11.260273+00:00",
+      "logSha256": "70f7417e4faa7279ab890d7ea77dc4afecb76fbb3ecfe54bea982bb9198a67b4",
+      "response": "Pushing MyAvaloniaManagement.Plugin.Build.3.4.1.nupkg to 'https://www.nuget.org/api/v2/package'...\n  PUT https://www.nuget.org/api/v2/package/\n  Created https://www.nuget.org/api/v2/package/ 2094ms\nYour package was pushed."
+    },
+    {
+      "package": "MyAvaloniaManagement.Plugin.Templates",
+      "acceptedUploads": 1,
+      "acceptedAtUtc": "2026-09-16T00:49:07.938165+00:00",
+      "logSha256": "21f7191ba08765dbd59a4df749e5e88ed79824c7a90b620a7f392cbe55fd3dbe",
+      "response": "Pushing MyAvaloniaManagement.Plugin.Templates.3.4.1.nupkg to 'https://www.nuget.org/api/v2/package'...\n  PUT https://www.nuget.org/api/v2/package/\n  Created https://www.nuget.org/api/v2/package/ 1678ms\nYour package was pushed."
+    },
+    {
+      "package": "MyAvaloniaManagement.PluginSdk",
+      "acceptedUploads": 2,
+      "acceptedAtUtc": "2026-09-16T00:39:00.329775+00:00",
+      "logSha256": "3fb140fe690778ab41c12265acbf46ee24b426f1189f332ae081e60404463c8d",
+      "response": "Pushing MyAvaloniaManagement.PluginSdk.3.4.1.nupkg to 'https://www.nuget.org/api/v2/package'...\n  PUT https://www.nuget.org/api/v2/package/\n  Created https://www.nuget.org/api/v2/package/ 1470ms\nYour package was pushed.\nPushing MyAvaloniaManagement.PluginSdk.3.4.1.snupkg to 'https://www.nuget.org/api/v2/symbolpackage'...\n  PUT https://www.nuget.org/api/v2/symbolpackage/\n  Created https://www.nuget.org/api/v2/symbolpackage/ 368ms\nYour package was pushed."
+    },
+    {
+      "package": "MyAvaloniaManagement.PluginSdk.UI",
+      "acceptedUploads": 2,
+      "acceptedAtUtc": "2026-09-16T00:39:03.052780+00:00",
+      "logSha256": "b056c7b9578a8f2d48d7b92fea86784b283c10d6d54ed91b9341c3b8c5c6b74f",
+      "response": "Pushing MyAvaloniaManagement.PluginSdk.UI.3.4.1.nupkg to 'https://www.nuget.org/api/v2/package'...\n  PUT https://www.nuget.org/api/v2/package/\n  Created https://www.nuget.org/api/v2/package/ 1333ms\nYour package was pushed.\nPushing MyAvaloniaManagement.PluginSdk.UI.3.4.1.snupkg to 'https://www.nuget.org/api/v2/symbolpackage'...\n  PUT https://www.nuget.org/api/v2/symbolpackage/\n  Created https://www.nuget.org/api/v2/symbolpackage/ 387ms\nYour package was pushed."
+    },
+    {
+      "package": "MyAvaloniaManagement.PluginSdk.Workflow",
+      "acceptedUploads": 2,
+      "acceptedAtUtc": "2026-09-16T00:39:05.619633+00:00",
+      "logSha256": "c51289d162990b89f78d6f6f75abb49125a119e9b0ca141bc4f115ba8ddb5200",
+      "response": "Pushing MyAvaloniaManagement.PluginSdk.Workflow.3.4.1.nupkg to 'https://www.nuget.org/api/v2/package'...\n  PUT https://www.nuget.org/api/v2/package/\n  Created https://www.nuget.org/api/v2/package/ 1166ms\nYour package was pushed.\nPushing MyAvaloniaManagement.PluginSdk.Workflow.3.4.1.snupkg to 'https://www.nuget.org/api/v2/symbolpackage'...\n  PUT https://www.nuget.org/api/v2/symbolpackage/\n  Created https://www.nuget.org/api/v2/symbolpackage/ 403ms\nYour package was pushed."
+    }
+  ],
+  "publicPayloads": [
+    {
+      "package": "MyAvaloniaManagement.Icons",
+      "url": "https://www.nuget.org/packages/MyAvaloniaManagement.Icons/3.4.1",
+      "localSha256": "e481d443b3b3504dc3053363acf87b3073cc620464a0788e634eca440cf4a7e6",
+      "publicSha256": "1530df8c11b37880b6e08e235323ab07219bae5f14b0c43cab8d148c229c77ca",
+      "verifiedPayloadEntries": 7,
+      "onlyAddedEntry": ".signature.p7s"
+    },
+    {
+      "package": "MyAvaloniaManagement.Plugin.Build",
+      "url": "https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Build/3.4.1",
+      "localSha256": "7c2fad236435c884a5f7d7b3c4fa0078794c5b16862500ae1ac54370fb382f39",
+      "publicSha256": "2ff113ddcd7816486104b20e04edaedf85f36a0af1919cc820389c3eed2852ee",
+      "verifiedPayloadEntries": 10,
+      "onlyAddedEntry": ".signature.p7s"
+    },
+    {
+      "package": "MyAvaloniaManagement.Plugin.Templates",
+      "url": "https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Templates/3.4.1",
+      "localSha256": "61edfa60682d61afcdd3583b166acd6ce400419ee7f6f8c112b876adbe33fc59",
+      "publicSha256": "bb33c643ecd466f0117a5d89f1f4126ca94e1806d44813c215013bc884a2abc3",
+      "verifiedPayloadEntries": 35,
+      "onlyAddedEntry": ".signature.p7s"
+    },
+    {
+      "package": "MyAvaloniaManagement.PluginSdk",
+      "url": "https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk/3.4.1",
+      "localSha256": "149aeb8d0a299b65838a2ae51d909b765ef0b3b2b4efd1cbc3b6a62e303876ba",
+      "publicSha256": "7948e9a4f8d4903f66108536bb91537f5984aee137c958dddf8d000206fe7610",
+      "verifiedPayloadEntries": 7,
+      "onlyAddedEntry": ".signature.p7s"
+    },
+    {
+      "package": "MyAvaloniaManagement.PluginSdk.UI",
+      "url": "https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.UI/3.4.1",
+      "localSha256": "d991508dbaa18811393156545c8b798670a999dd25edc2991ca23789606dd38e",
+      "publicSha256": "a76be27fc772e9ea4d789db831baa66fe9103b26b173182cd2e34d2ad79a4133",
+      "verifiedPayloadEntries": 7,
+      "onlyAddedEntry": ".signature.p7s"
+    },
+    {
+      "package": "MyAvaloniaManagement.PluginSdk.Workflow",
+      "url": "https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.Workflow/3.4.1",
+      "localSha256": "24526d16db553ab54709982b0631e925aa883c3c4f2da92f8c6572a0c05cf5fd",
+      "publicSha256": "058255fd51ea18a54964a15d2730faeea30bdc4829840824e887145e5b5a7755",
+      "verifiedPayloadEntries": 7,
+      "onlyAddedEntry": ".signature.p7s"
+    }
+  ],
+  "completedAtUtc": "2026-09-16T00:57:33.464137+00:00",
+  "artifactRetention": "Raw generated artifacts removed at user request after verification; hashes, counters and receipts retained in this file.",
+  "publicConsumer": {
+    "templateInstall": "dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.1",
+    "restore": "NuGet.org-only, independent cache, --locked-mode --no-http-cache",
+    "build": "Release -warnaserror; zero warnings/errors",
+    "zipSha256": "a6cb619e0d164c0cdef89d7d90fa73a060b970fa998b70dd1c8ef4fe96a3d498",
+    "zipEntries": [
+      "Controls/Public.V341/MyAvaloniaManagement.Icons.dll",
+      "Controls/Public.V341/plugin.manifest.json",
+      "Controls/Public.V341/Public.V341.Plugin.deps.json",
+      "Controls/Public.V341/Public.V341.Plugin.dll",
+      "Controls/Public.V341/Public.V341.Plugin.pdb"
+    ],
+    "templateTests": 4,
+    "hostTests": 2
+  },
+  "cleanupPlanned": true
+}
