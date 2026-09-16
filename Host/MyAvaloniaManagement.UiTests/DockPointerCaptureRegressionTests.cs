@@ -58,6 +58,26 @@ public sealed class DockPointerCaptureRegressionTests
         Assert.Equal(0, scene.Tab.ZIndex);
     }
 
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void 后代控件接管且没有向共同祖先发送Lost事件时也尊重捕获所有权(bool disable)
+    {
+        using var scene = new PointerScene();
+        scene.StartDrag();
+        scene.Panel.Children.Remove(scene.Receiver);
+        scene.Tab.Child = scene.Receiver;
+        scene.Pointer!.Capture(scene.Receiver);
+        if (disable)
+            DockTabPointerCaptureGuard.SetIsEnabled(scene.Tab, false);
+        else
+            scene.Panel.Children.Remove(scene.Tab);
+
+        // 卸载时 Avalonia 可能把捕获转移给视觉祖先；本断言只关心保护层没有恢复仍属接收方的状态。
+        Assert.Contains(":dragging", scene.Tab.Classes);
+        Assert.Same(scene.DragTransform, scene.Tab.RenderTransform);
+    }
+
     [AvaloniaFact]
     public void 上一次手势的延迟恢复不能清理新手势()
     {

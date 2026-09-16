@@ -67,3 +67,4 @@ SDK 3.4.1 / Templates 1.4.2 是本地开发候选；Host 产品保持 3.0.0，3.
 - 样式与禁浮动专项 14/14；最终完整 Headless UI 113/113，无失败或跳过。完整工具四向恢复、文档分割、活动目标、同 View 复用等已有回归保留。
 - 证据：`artifacts/host-v9/regressions/` 中 `g3-before/after`、`g4-before/after`、`g2`、`g5`、`g2345-ui` TRX。
 - 事件实现参考：[Avalonia InputElement](https://github.com/AvaloniaUI/Avalonia/blob/12.1.2/src/Avalonia.Base/Input/InputElement.cs)、[Pointer](https://github.com/AvaloniaUI/Avalonia/blob/12.1.2/src/Avalonia.Base/Input/Pointer.cs)。实际 Windows 多屏/DPI/失活焦点体验仍待人工验证，不能由 Headless 结果代替。
+- 后续审查补充“捕获交给标签后代时，共同祖先不会收到 Lost”的两项回归；结束边界再次核对指针所有权，当前指针专项合计 9/9，见 `g3-final.trx`。

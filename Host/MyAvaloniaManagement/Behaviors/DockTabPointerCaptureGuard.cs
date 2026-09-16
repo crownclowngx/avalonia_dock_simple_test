@@ -348,6 +348,13 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
         private void ReleaseOwnedPointer()
         {
             var pointer = _activePointer;
+            // 捕获从标签交给其后代时，Avalonia 不向共同祖先发送 Lost。
+            // 结束边界也核对一次实际所有者，避免仅依赖事件通知把正常移交误判为取消。
+            if (pointer?.Captured is not null && !ReferenceEquals(pointer.Captured, _owner))
+            {
+                RelinquishInteraction();
+                return;
+            }
             _activePointer = null;
             if (pointer is not null &&
                 ReferenceEquals(pointer.Captured, _owner))
@@ -358,6 +365,9 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
 
         private void ScheduleVisualRecovery()
         {
+            if (_captureTransferred)
+                return;
+
             var version = _interactionVersion;
             if (_scheduledRecoveryVersion == version)
             {
