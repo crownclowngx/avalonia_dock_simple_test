@@ -30,7 +30,7 @@
 
 | 定制 | 决策 |
 | --- | --- |
-| App.axaml 的两个浮动窗口样式 | 删除；Host 已禁止浮动，主窗口原生标题栏继续保留 |
+| App.axaml 的两个浮动窗口样式 | V9 删除旧样式；V11 使用原生 HostFloatingWindow 适配恢复浮动，主窗口原生标题栏继续保留 |
 | DockTabPointerCaptureGuard | 保留并改造；正确订阅 Direct 捕获丢失事件，移交后停止恢复接收方状态 |
 | DocumentControlRecycling | 保留并改造；安全解绑真实/逻辑父级，保留绑定，未知父级明确失败，最终关闭保证释放 |
 | HostDockFactory / DockDocumentLifetime | 保留职责和回调协议，补充取消、异常、最后标签、重复初始化测试 |

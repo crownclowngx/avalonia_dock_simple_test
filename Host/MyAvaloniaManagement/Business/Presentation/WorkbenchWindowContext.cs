@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Linq;
+using MyAvaloniaManagement.Views;
 using Avalonia.Controls;
 using MyAvaloniaManagement.ViewModels.Bindings;
 using MyAvaloniaManagement.Business.Presentation.Commands;
@@ -18,6 +20,13 @@ internal sealed class WorkbenchWindowContext : IDisposable
     private Window? _active;
     private readonly AsyncLocal<Window?> _interactionOwner = new();
     private WorkbenchWindowInteraction? _palette;
+    internal bool HasFullscreenContent => _windows.Keys.Any(window => window switch
+    {
+        MainWindow main => main.HasFullscreenContent,
+        HostFloatingWindow floating => floating.HasFullscreenContent,
+        _ => false,
+    });
+    internal bool IsPaletteBusy => _palette?.IsBusy == true;
     internal Window? MainWindow { get; private set; }
     internal IWorkbenchCommandPresentationBindings? Commands =>
         (MainWindow?.DataContext as IMainWindowViewBindings)?.WorkbenchCommands;

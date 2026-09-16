@@ -29,7 +29,7 @@ internal sealed class ManagedToolDockable : Tool, IManagedDockableViewHost, IDis
         // V7：插件保留 SDK 字段的二进制形状，但不能禁止用户隐藏工具。
         CanClose = true;
         CanPin = true;
-        CanFloat = false;
+        CanFloat = true;
     }
 
     internal IWorkspaceToolRegistration Registration => _activation.Registration;
@@ -46,6 +46,7 @@ internal sealed class ManagedToolDockable : Tool, IManagedDockableViewHost, IDis
                 Registration.ViewType,
                 Registration.ViewFactory);
     public Control? PreparedView => _view.View;
+    public bool IsViewReleased => _view.IsReleased;
     public void AttachPreparedView(Control view) => _view.Attach(view);
     public void ReleasePreparedView() => _view.Release();
 

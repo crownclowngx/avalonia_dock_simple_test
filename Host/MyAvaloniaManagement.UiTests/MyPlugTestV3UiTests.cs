@@ -54,7 +54,7 @@ public sealed class MyPlugTestV3UiTests
         Assert.Same(tool.Model, tool.PreparedView!.DataContext);
         Assert.Equal("我的自定义工具", tool.Title);
         Assert.True(tool.CanClose);
-        Assert.False(tool.CanFloat);
+        Assert.True(tool.CanFloat);
         Assert.Equal(ToolDockSide.Right, tool.Registration.Descriptor.DockSide);
         AssertViewBindings(tool.PreparedView, tool.Model);
 
@@ -177,7 +177,7 @@ public sealed class MyPlugTestV3UiTests
             var view = Assert.IsType<TView>(adapter.PreparedView);
             Assert.Same(model, view.DataContext);
             Assert.Equal(title, adapter.Title);
-            Assert.False(adapter.CanFloat);
+            Assert.True(adapter.CanFloat);
             AssertViewBindings(view, model);
         }
         finally
@@ -232,6 +232,51 @@ public sealed class MyPlugTestV3UiTests
 
             default:
                 throw new Xunit.Sdk.XunitException($"G9 缺少 {view.GetType().Name} 的关键绑定断言。");
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task 实际MyPlugTest工具和整组文档浮动回停关闭保持Scope所有权()
+    {
+        using var composition = MyPlugTestUiComposition.Create();
+        var session = composition.Workspace;
+        var factory = session.DockFactory;
+        var main = new Window { Content = new Dock.Avalonia.Controls.DockControl { Layout = session.RootDock } };
+        factory.WindowContext.Register(main, main: true);
+        main.Show();
+        var document = await session.CreateAndPublishDocumentAsync(MyPlugTestContributionIds.WelcomeDocument, new NewDocumentActivation("浮动插件页"));
+        var view = document.PreparedView;
+        var tool = (ManagedToolDockable)session.CreatedTools[MyPlugTestContributionIds.CustomTool.Value];
+        var toolModel = tool.Model;
+        var toolView = tool.PreparedView;
+        try
+        {
+            factory.FloatDockable(tool);
+            factory.FloatAllDockables(document);
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            Assert.Equal(2, MyAvaloniaManagement.Business.Layout.DockTreeNavigator.EnumerateWindows(session.RootDock!).Count());
+            Assert.Same(view, document.PreparedView);
+            Assert.False(document.ClosingToken.IsCancellationRequested);
+            Assert.Same(toolModel, tool.Model);
+            Assert.Same(toolView, tool.PreparedView);
+            var target = session.EnsureToolDock(session.RootDock!, Dock.Model.Core.Alignment.Right);
+            factory.MoveDockable((Dock.Model.Core.IDock)tool.Owner!, target, tool, null);
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            Assert.Null(MyAvaloniaManagement.Business.Layout.DockTreeNavigator.FindWindow(session.RootDock!, tool));
+            var window = MyAvaloniaManagement.Business.Layout.DockTreeNavigator.FindWindow(session.RootDock!, document)!;
+            ((Window)window.Host!).Close();
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            Assert.True(document.ClosingToken.IsCancellationRequested);
+            Assert.Null(document.PreparedView);
+            Assert.Same(toolView, tool.PreparedView);
+            Assert.Same(toolModel, tool.Model);
+        }
+        finally
+        {
+            foreach (var window in MyAvaloniaManagement.Business.Layout.DockTreeNavigator.EnumerateWindows(session.RootDock!).ToArray())
+                (window.Host as Window)?.Close();
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            main.Close();
         }
     }
 

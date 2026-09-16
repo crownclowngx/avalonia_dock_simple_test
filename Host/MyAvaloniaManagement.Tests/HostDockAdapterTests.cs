@@ -42,7 +42,7 @@ public sealed class HostDockAdapterTests
     }
 
     [Fact]
-    public void DocumentAdapter初始投影标题禁用浮动并按顺序释放Scope()
+    public void DocumentAdapter初始投影标题允许浮动并按顺序释放Scope()
     {
         var services = new ServiceCollection();
         services.AddScoped<TrackedDocument>();
@@ -62,7 +62,7 @@ public sealed class HostDockAdapterTests
         // Avalonia Dispatcher 消息循环的纯单测做“立即同步”假设。该线程切换与迟到通知
         // 行为已由 HostDockAdapterUiTests 的 Headless UI 用例覆盖。
         Assert.Equal("模型标题", adapter.Title);
-        Assert.False(adapter.CanFloat);
+        Assert.True(adapter.CanFloat);
         Assert.True(adapter.CanClose);
         Assert.False(adapter.CanPin);
         Assert.Same(model, adapter.Model);
@@ -151,6 +151,8 @@ public sealed class HostDockAdapterTests
         Assert.True(model.ClosingObservedDuringDispose);
         Assert.Equal(1, model.DisposeCount);
         Assert.False(manager.Release(model));
+        Assert.Null(recycling.Build(adapter, null, null));
+        Assert.False(recycling.TryGetValue(adapter, out _));
         lifetime.Release(adapter);
         Assert.Equal(1, model.DisposeCount);
     }
@@ -182,7 +184,7 @@ public sealed class HostDockAdapterTests
         Assert.Equal(descriptor.DisplayName, adapter.Title);
         Assert.Equal(canClose, adapter.CanClose);
         Assert.True(adapter.CanPin);
-        Assert.False(adapter.CanFloat);
+        Assert.True(adapter.CanFloat);
         Assert.Same(model, adapter.Model);
     }
 

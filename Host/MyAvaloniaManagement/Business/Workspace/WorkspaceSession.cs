@@ -54,6 +54,9 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     private bool _acceptingCreations = true;
     private bool _suppressToolHiddenNotification;
     private bool _disposed;
+    private DocumentCloseApproval? _applicationCloseApproval;
+    private bool _applicationClosePending;
+    private bool _shutdownStarted;
 
     /// <summary>创建具备完整正确性依赖的工作区会话。</summary>
     internal WorkspaceSession(
@@ -135,6 +138,43 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     /// <summary>汇总当前会话全部脏 Document 的窗口关闭确认。</summary>
     internal Task<bool> ConfirmWindowCloseAsync() =>
         _documentCloseCoordinator.ConfirmWindowCloseAsync(GetDocuments());
+
+    /// <summary>冻结新建入口，排空全部文档命令；许可只到 Runtime 最终关闭或用户取消时释放。</summary>
+    internal async Task<bool> PrepareApplicationCloseAsync()
+    {
+        if (_applicationClosePending || _applicationCloseApproval is not null || _disposed || DockFactory.WindowContext.IsPaletteBusy) return false;
+        _applicationClosePending = true;
+        _acceptingCreations = false;
+        var targets = GetDocuments();
+        try
+        {
+            using var owner = DockFactory.WindowContext.UseOwner(DockFactory.WindowContext.MainWindow);
+            var approval = await _documentCloseCoordinator.PrepareRangeCloseAsync(targets, isApplicationExit: true);
+            if (approval is null) return false;
+            if (_disposed || !targets.ToHashSet().SetEquals(GetDocuments())) { approval.Dispose(); return false; }
+            _applicationCloseApproval = approval;
+            return true;
+        }
+        finally
+        {
+            _applicationClosePending = false;
+            if (_applicationCloseApproval is null && !_disposed && !_shutdownStarted) _acceptingCreations = true;
+        }
+    }
+
+    internal void CancelApplicationClose()
+    {
+        _applicationCloseApproval?.Dispose();
+        _applicationCloseApproval = null;
+        if (!_disposed && !_shutdownStarted) _acceptingCreations = true;
+    }
+
+    internal void CloseFloatingWindowsForExit()
+    {
+        if (_applicationCloseApproval is null || _rootDock is null) return;
+        foreach (var window in DockTreeNavigator.EnumerateWindows(_rootDock).ToArray())
+            if (window.Host is Avalonia.Controls.Window host) host.Close();
+    }
 
     /// <summary>按规范化路径激活已打开或恢复的 Document。</summary>
     internal bool TryActivateDocument(string filePath)
@@ -415,6 +455,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     {
         ArgumentNullException.ThrowIfNull(toolTypeId);
         if (!CanOperateTools || !IsToolAvailable(toolTypeId.Value)) return false;
+        using var change = DockFactory.BeginLayoutChange();
         if (_createdTools.TryGetValue(toolTypeId.Value, out var hiddenTool))
             LayoutState.TryRestoreFloatingTool(this, hiddenTool);
         var changed = _toolDockCoordinator.ShowTool(
@@ -454,7 +495,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         if (!IsRegisteredTool(toolId)) return new(ToolOperationStatus.NotFound, "工具已不存在");
         if (!_createdTools.TryGetValue(toolId, out var tool)) return new(ToolOperationStatus.Unavailable, "工具没有可用实例");
         if (visible && !IsToolAvailable(toolId)) return new(ToolOperationStatus.Unavailable, "插件暂不可用");
-        var isVisible = DockTreeNavigator.FindToolDock(_rootDock!, tool) is not null || DockTreeNavigator.IsToolPinned(_rootDock!, tool);
+        var isVisible = DockTreeNavigator.IsDockableAttached(_rootDock!, tool) || DockTreeNavigator.IsToolPinned(_rootDock!, tool);
         if (isVisible == visible) return new(ToolOperationStatus.AlreadySatisfied);
         try
         {
@@ -500,7 +541,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
             return false;
         }
 
-        var currentDock = DockTreeNavigator.FindToolDock(_rootDock, tool);
+        var currentDock = DockTreeNavigator.FindToolDock(_rootDock, tool) as IDock ?? DockTreeNavigator.FindDocumentDock(_rootDock, tool);
         var isPinned = DockTreeNavigator.IsToolPinned(_rootDock, tool);
         var currentVisibility = currentDock is not null || isPinned;
         if (currentVisibility == isVisible)
@@ -508,6 +549,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
             return false;
         }
 
+        using var change = DockFactory.BeginLayoutChange();
         if (isVisible)
         {
             if (!RestoreTool(_rootDock, tool))
@@ -540,6 +582,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     /// <summary>由 HostRuntime 先关闭创建入口，再开始释放 Adapter。</summary>
     internal void BeginShutdown()
     {
+        _shutdownStarted = true;
         _acceptingCreations = false;
         NotifyLayoutChanged();
     }
@@ -554,6 +597,8 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         _disposed = true;
         _documentCloseCoordinator.StateChanged -= OnCloseStateChanged;
         _windowCloseCoordinator.Dispose();
+        _applicationCloseApproval?.Dispose();
+        _applicationCloseApproval = null;
         _acceptingCreations = false;
         _documentDock = null;
         PublishActiveDocumentIfChanged();
@@ -632,7 +677,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     }
 
     bool IWorkspaceDockCallbacks.OnWindowClosing(IDockWindow window) =>
-        _windowCloseCoordinator.TryBeginClose(window, () =>
+        _applicationCloseApproval is not null || _windowCloseCoordinator.TryBeginClose(window, () =>
         {
             // 使用原生 Close 重试同一窗口；不能在此释放 Runtime 或 Provider。
             if (window.Host is Avalonia.Controls.Window host) host.Close();

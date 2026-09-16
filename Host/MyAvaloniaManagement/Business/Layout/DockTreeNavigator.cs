@@ -78,21 +78,9 @@ internal static class DockTreeNavigator
     internal static bool IsDockableAttached(IDock root, IDockable target) =>
         EnumerateWorkspace(root).Any(node => ReferenceEquals(node, target));
 
-    internal static bool IsToolPinned(IDock dock, IDockable tool)
-    {
-        if (dock is IRootDock root &&
-            (root.LeftPinnedDockables?.Contains(tool) == true ||
-             root.RightPinnedDockables?.Contains(tool) == true ||
-             root.TopPinnedDockables?.Contains(tool) == true ||
-             root.BottomPinnedDockables?.Contains(tool) == true))
-        {
-            return true;
-        }
-
-        return dock.VisibleDockables?
-            .OfType<IDock>()
-            .Any(child => IsToolPinned(child, tool)) == true;
-    }
+    internal static bool IsToolPinned(IDock dock, IDockable tool) => EnumerateWorkspace(dock).OfType<IRootDock>()
+        .Any(root => root.LeftPinnedDockables?.Contains(tool) == true || root.RightPinnedDockables?.Contains(tool) == true ||
+            root.TopPinnedDockables?.Contains(tool) == true || root.BottomPinnedDockables?.Contains(tool) == true);
 
     internal static ToolDock? FindToolDock(IDock dock, IDockable tool)
     {
@@ -112,19 +100,7 @@ internal static class DockTreeNavigator
         IDock root,
         IDockable dockable)
     {
-        if (root is IRootDock { HiddenDockables: { } hidden })
-        {
-            hidden.Remove(dockable);
-        }
-
-        if (root.VisibleDockables is null)
-        {
-            return;
-        }
-
-        foreach (var child in root.VisibleDockables.OfType<IDock>())
-        {
-            RemoveFromHiddenDockables(child, dockable);
-        }
+        foreach (var current in EnumerateWorkspace(root).OfType<IRootDock>())
+            current.HiddenDockables?.Remove(dockable);
     }
 }

@@ -346,7 +346,7 @@ public sealed class ToolCenterUiTests
                 new() { Id = HostExtensionIds.PluginMenu.Value, DockId = DockLayoutIds.RightTools, Order = 1, IsVisible = true, IsPinned = true },
                 new() { Id = RetiredHostToolIds.PluginStatus, DockId = DockLayoutIds.RightTools, Order = 2, IsVisible = true, IsPinned = true }]
         };
-        DockLayoutSnapshotV2 hidden;
+        DockLayoutSnapshotV3 hidden;
         using (var context = new UiTestContext(initialLayout: old))
         {
             context.ViewModel.ApplyPendingLayout();
@@ -357,10 +357,12 @@ public sealed class ToolCenterUiTests
             Assert.DoesNotContain(RetiredHostToolIds.PluginStatus, context.Workspace.CreatedTools.Keys);
             context.Workspace.HideAllTools();
             context.Provider.GetRequiredService<DockLayoutLifecycle>().Save(context.Workspace);
-            Assert.Single(Directory.GetFiles(context.TempDirectory, "*.pre-tool-retirement.bak"));
-            hidden = new DockLayoutStore(context.LayoutPath).Load()!;
+            context.Provider.GetRequiredService<DockLayoutLifecycle>().FlushAsync().GetAwaiter().GetResult();
+            Assert.True(File.Exists(Path.Combine(context.TempDirectory, DockLayoutStore.LayoutFileName)));
+            using var reader = new DockLayoutV3Store(context.TempDirectory);
+            hidden = reader.Load()!;
         }
-        using var restarted = new UiTestContext(initialLayout: hidden);
+        using var restarted = new UiTestContext(initialLayoutV3: hidden);
         restarted.ViewModel.ApplyPendingLayout();
         Assert.All(restarted.Provider.GetRequiredService<ToolWorkspaceReadModel>().Capture(), item => Assert.False(item.IsVisible));
         Assert.True(restarted.Workspace.OpenTool(HostExtensionIds.PluginMenu.Value).Succeeded);

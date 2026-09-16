@@ -17,6 +17,7 @@ internal sealed class ManagedDockableViewLease
     private bool _released;
 
     internal Control? View => _view;
+    internal bool IsReleased => _released;
 
     internal void Attach(Control view)
     {
@@ -69,6 +70,7 @@ internal interface IManagedDockableViewHost
     object Model { get; }
     IWorkspaceViewRegistration ViewRegistration { get; }
     Control? PreparedView { get; }
+    bool IsViewReleased { get; }
     void AttachPreparedView(Control view);
     void ReleasePreparedView();
 }

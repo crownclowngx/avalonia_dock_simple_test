@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,7 +11,7 @@
     <Design.DataContext>
         <design:MainWindowDesignData />
     </Design.DataContext>
-    <Grid RowDefinitions="Auto,Auto,*" Background="Transparent">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Background="Transparent">
         <views:MenuView Grid.Row="0" />
         <Border x:Name="DocumentOperationErrorBanner"
                 Grid.Row="1"
@@ -30,6 +30,12 @@
                         Command="{Binding DismissDocumentOperationErrorCommand}" />
             </Grid>
         </Border>
-        <DockControl Layout="{Binding Layout}" Margin="4" Grid.Row="2" />
+        <Border Grid.Row="2" IsVisible="{Binding HasLayoutMessage}" Margin="8,4" Padding="10">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <TextBlock Text="{Binding LayoutMessage}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Content="重试保存布局" Command="{Binding RetryLayoutSaveCommand}" />
+            </Grid>
+        </Border>
+        <DockControl Layout="{Binding Layout}" Margin="4" Grid.Row="3" />
     </Grid>
 </UserControl>

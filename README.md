@@ -38,7 +38,7 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 
 `verify` 验证本仓 Host 与 MyPlugTest，不启动 Windows Smoke，也不授予发布资格。完整说明见[主仓验证与封板](docs/maintenance/verification.md)。
 
-- 使用工作台：[功能、页面与工具搜索](docs/quick-start/workbench-search.md)。
+- 使用工作台：[功能、页面与工具搜索](docs/quick-start/workbench-search.md)、[浮动窗口与布局恢复](docs/quick-start/floating-windows-and-layout.md)。
 - 开发独立插件：[Managed Plugin 快速开始](docs/quick-start/README.md)。
 - 维护 Host：[内部架构与兼容约束](Host/MyAvaloniaManagement/docs/README.md)。
 - 查看未完成工作：[待办与验收](docs/roadmap/README.md)。

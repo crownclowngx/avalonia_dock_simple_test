@@ -14,12 +14,14 @@ internal sealed partial class DockLayoutWorkspaceState
 {
     /// <summary>
     /// 将严格验证后的工具结构应用到既有模型。先建立候选容器，再转移原实例并关闭已清空的旧窗口；
-    /// Document 的 Scope 和 View 始终不重建。调用者负责保存抑制和失败后的安全默认布局恢复。
+    /// Document 的 Scope 和 View 始终不重建。短期检查点负责失败回滚，调用者负责保存抑制。
     /// </summary>
     internal IRootDock Apply(WorkspaceSession session, DockLayoutSnapshotV3 snapshot)
     {
         DockLayoutV3Validator.Validate(snapshot);
         var factory = session.DockFactory;
+        var checkpoint = new DockLayoutTransferCheckpoint(session);
+        var rememberedBefore = Remembered;
         var documents = session.GetDocuments().ToArray();
         var activeDocument = session.GetActiveDocument();
         var documentDock = new DocumentDock
@@ -45,35 +47,56 @@ internal sealed partial class DockLayoutWorkspaceState
         }
 
         using var change = factory.BeginLayoutChange(captureBefore: false);
-        var oldRoot = session.RootDock;
-        var oldWindows = oldRoot is null ? [] : DockTreeNavigator.EnumerateWindows(oldRoot).ToArray();
-        foreach (var item in documents.Cast<IDockable>().Concat(session.CreatedTools.Values)) Detach(session, item);
-        foreach (var old in oldWindows) CloseEmptyWindow(session, old);
-        session.CommitRestoredLayout(root, documentDock);
-        factory.InitLayout(root);
-        foreach (var (_, model) in windows) factory.AddWindow(root, model);
-        Remembered = snapshot;
+        try
+        {
+            var oldRoot = session.RootDock;
+            var oldWindows = oldRoot is null ? [] : DockTreeNavigator.EnumerateWindows(oldRoot).ToArray();
+            foreach (var item in documents.Cast<IDockable>().Concat(session.CreatedTools.Values)) Detach(session, item);
+            foreach (var old in oldWindows) CloseEmptyWindow(session, old);
+            session.CommitRestoredLayout(root, documentDock);
+            factory.InitLayout(root);
+            foreach (var (_, model) in windows) factory.AddWindow(root, model);
+            Remembered = snapshot;
 
-        // 隐藏项只挂在根的 Hidden 集合，OriginalOwner 仅借用仍存在的组。完全隐藏的窗口
-        // 不创建原生对象，稍后显式显示工具时再根据纯数据恢复位置。
-        foreach (var pair in session.CreatedTools)
-        {
-            if (!states.TryGetValue(pair.Key, out var state) || state.State == "hidden")
+            // 隐藏项只挂在根的 Hidden 集合，OriginalOwner 仅借用仍存在的组。完全隐藏的窗口
+            // 不创建原生对象，稍后显式显示工具时再根据纯数据恢复位置。
+            foreach (var pair in session.CreatedTools)
             {
-                AddHidden(root, pair.Value);
-                var groupId = FindSavedGroup(snapshot, pair.Key)?.Id;
-                pair.Value.OriginalOwner = groupId is not null ? groups.GetValueOrDefault(groupId) : null;
+                if (!states.TryGetValue(pair.Key, out var state) || state.State == "hidden")
+                {
+                    AddHidden(root, pair.Value);
+                    var groupId = FindSavedGroup(snapshot, pair.Key)?.Id;
+                    pair.Value.OriginalOwner = groupId is not null ? groups.GetValueOrDefault(groupId) : null;
+                }
+                else if (state.State == "autoHidden")
+                {
+                    var group = pair.Value.Owner as IToolDock;
+                    var bounds = factory.WindowContext.CaptureBounds(factory.WindowContext.MainWindow);
+                    factory.PinDockable(pair.Value);
+                    // 恢复发生在新树首轮测量前，框架可能捕获 50 像素的最小正文尺寸。
+                    // 依据窗口逻辑尺寸与组比例设置展开下限，避免重启后边栏只露出标题栏。
+                    var proportion = group?.Proportion is > 0 and <= 1 ? group.Proportion : 0.25;
+                    var horizontal = group?.Alignment is Alignment.Left or Alignment.Right;
+                    pair.Value.SetPinnedBounds(0, 0, Math.Max(320, horizontal ? bounds.Width * proportion : bounds.Width),
+                        Math.Max(240, horizontal ? bounds.Height : bounds.Height * proportion));
+                }
             }
-            else if (state.State == "autoHidden") factory.PinDockable(pair.Value);
+            if (factory.WindowContext.MainWindow is { } main) factory.WindowContext.ApplyBounds(main, snapshot.MainWindow.Bounds);
+            foreach (var (saved, model) in windows)
+            {
+                model.Present(false);
+                if (model.Host is Avalonia.Controls.Window host) factory.WindowContext.ApplyBounds(host, saved.Bounds);
+            }
+            if (activeDocument is not null) factory.SetActiveDockable(activeDocument);
+            factory.UpdateFloatingPolicies();
+            return root;
         }
-        if (factory.WindowContext.MainWindow is { } main) factory.WindowContext.ApplyBounds(main, snapshot.MainWindow.Bounds);
-        foreach (var (saved, model) in windows)
+        catch
         {
-            model.Present(false);
-            if (model.Host is Avalonia.Controls.Window host) factory.WindowContext.ApplyBounds(host, saved.Bounds);
+            checkpoint.Restore(session);
+            Remembered = rememberedBefore;
+            throw;
         }
-        if (activeDocument is not null) factory.SetActiveDockable(activeDocument);
-        return root;
     }
 
     /// <summary>隐藏工具原本属于浮窗时，在原组恢复单个目标；其他隐藏成员继续隐藏。</summary>
@@ -81,7 +104,7 @@ internal sealed partial class DockLayoutWorkspaceState
     {
         if (Remembered is not { } remembered || session.RootDock is not { } mainRoot) return false;
         var saved = remembered.FloatingWindows.FirstOrDefault(window => DockLayoutTree.Enumerate(window.Root).Any(node => node.ToolIds.Contains(tool.Id)));
-        if (saved is null) return false;
+        if (saved is null || session.DockFactory.WindowContext.HasFullscreenContent) return false;
         if (DockTreeNavigator.IsDockableAttached(mainRoot, tool) || DockTreeNavigator.IsToolPinned(mainRoot, tool)) return false;
         var factory = session.DockFactory;
         using var change = factory.BeginLayoutChange(captureBefore: false);
@@ -128,6 +151,7 @@ internal sealed partial class DockLayoutWorkspaceState
             current.Host?.SetLayout(root);
         }
         Remembered = remembered with { Tools = stateMap.Values.ToArray() };
+        factory.UpdateFloatingPolicies();
         factory.SetActiveDockable(tool);
         return true;
     }
@@ -144,7 +168,7 @@ internal sealed partial class DockLayoutWorkspaceState
         IDockable result;
         if (node.Kind == "tools")
         {
-            var tools = node.ToolIds.Where(id => states[id].State != "hidden" && session.CreatedTools.ContainsKey(id))
+            var tools = node.ToolIds.Where(id => states[id].State != "hidden" && session.CreatedTools.ContainsKey(id) && session.IsToolAvailable(id))
                 .Select(id => session.CreatedTools[id]).ToArray();
             if (tools.Length == 0) return null;
             ToolDockPlacement.TryGetAlignmentFromDockId(states[tools[0].Id].ReturnDockId, out var alignment);

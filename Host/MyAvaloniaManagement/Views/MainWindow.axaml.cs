@@ -22,8 +22,11 @@ internal sealed partial class MainWindow : Window, IWindowContentFullscreenHost
             CommandPaletteHost, ContentFullscreenLayer, ContentFullscreenHost);
         windows.Register(this, main: true);
         Opened += OnWindowOpened;
-        Closing += OnWindowClosing;
-        Closed += (_, _) => _interaction.Dispose();
+        Closed += (_, _) =>
+        {
+            if (DataContext is ViewModels.MainWindowViewModel viewModel) viewModel.CloseFloatingWindowsForExit();
+            _interaction.Dispose();
+        };
         DataContextChanged += (_, _) => _interaction.SetBindings((DataContext as IMainWindowViewBindings)?.WorkbenchCommands);
     }
 
@@ -36,50 +39,43 @@ internal sealed partial class MainWindow : Window, IWindowContentFullscreenHost
     internal void OpenCommandPalette() => _interaction.OpenCommandPalette();
     internal bool HasFullscreenContent => _interaction.HasFullscreenContent;
 
-    private async void OnWindowClosing(object? sender, WindowClosingEventArgs e)
+    protected override async void OnClosing(WindowClosingEventArgs e)
     {
-        // 与功能中心一致：初始化在途时不把窗口关闭误认为取消，等待真实操作完成后再允许退出。
-        if (CommandPaletteHost.IsBusy) { e.Cancel = true; return; }
+        // 先让其他原生监听者决定是否取消；许可在最终拒绝时必须撤销，干净文档同样排空命令。
+        base.OnClosing(e);
+        if (DataContext is not ViewModels.MainWindowViewModel viewModel) return;
         if (_windowCloseApproved)
         {
-            if (DataContext is ViewModels.MainWindowViewModel approvedViewModel)
+            if (e.Cancel)
             {
-                approvedViewModel.SaveLayout();
+                _windowCloseApproved = false;
+                viewModel.CancelWindowClose();
             }
             return;
         }
-
-        if (DataContext is ViewModels.MainWindowViewModel cleanViewModel &&
-            !cleanViewModel.HasDirtyDocuments())
-        {
-            cleanViewModel.SaveLayout();
-            return;
-        }
-
-        // Avalonia Closing 是同步可取消事件。首次请求必须立即取消，再异步汇总保存；只有
-        // 用户完成决策后才重新 Close。这样窗口不会在文件选择器显示期间提前释放 Scope。
+        if (e.Cancel) return;
         e.Cancel = true;
-        if (_windowClosePending ||
-            DataContext is not ViewModels.MainWindowViewModel viewModel)
-        {
-            return;
-        }
-
+        if (_windowClosePending || CommandPaletteHost.IsBusy) return;
         _windowClosePending = true;
         try
         {
-            if (!await viewModel.ConfirmWindowCloseAsync())
+            var preparation = viewModel.PrepareWindowCloseAsync();
+            if (preparation.IsCompletedSuccessfully && preparation.Result)
             {
+                _windowCloseApproved = true;
+                e.Cancel = false;
                 return;
             }
-
+            if (!await preparation) return;
             _windowCloseApproved = true;
             Dispatcher.UIThread.Post(Close, DispatcherPriority.Background);
         }
-        finally
+        catch (Exception exception)
         {
-            _windowClosePending = false;
+            viewModel.CancelWindowClose();
+            Console.Error.WriteLine($"Window errorCode=MAIN_CLOSE_FAILED type={exception.GetType().Name}");
         }
+        finally { _windowClosePending = false; }
     }
 
     IDisposable? IWindowContentFullscreenHost.TryPresent(Control content) =>

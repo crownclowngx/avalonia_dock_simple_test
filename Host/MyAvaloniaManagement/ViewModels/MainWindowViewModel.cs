@@ -25,6 +25,9 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
     private ApplicationThemeMode _themeMode;
     private IRootDock? _layout;
 
+    public string LayoutMessage => _layoutLifecycle.Message;
+    public bool HasLayoutMessage => !string.IsNullOrEmpty(LayoutMessage);
+
     public string DocumentOperationError => _documentOperationState.Error;
 
     public bool HasDocumentOperationError => _documentOperationState.HasError;
@@ -65,6 +68,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
         // Factory 和文档状态都由根容器持有，而主窗口是瞬态对象。先登记定向通知，
         // Dispose 时再成对解除，避免单例服务通过委托延长窗口生命周期。
         _workspace.LayoutChanged += OnLayoutChanged;
+        _layoutLifecycle.StatusChanged += OnLayoutStatusChanged;
         _documentOperationState.Changed += OnDocumentOperationStateChanged;
         try
         {
@@ -101,6 +105,52 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
         }
     }
 
+    internal async Task<bool> PrepareWindowCloseAsync()
+    {
+        if (!await _workspace.PrepareApplicationCloseAsync()) return false;
+        if (await _layoutLifecycle.FreezeAndFlushAsync(_workspace)) return true;
+        CancelWindowClose();
+        return false;
+    }
+
+    internal void CancelWindowClose()
+    {
+        _workspace.CancelApplicationClose();
+        _layoutLifecycle.Resume();
+    }
+
+    internal void CloseFloatingWindowsForExit() => _workspace.CloseFloatingWindowsForExit();
+
+    [RelayCommand]
+    private async Task RetryLayoutSaveAsync()
+    {
+        _layoutLifecycle.Save(_workspace);
+        await _layoutLifecycle.FlushAsync();
+    }
+
+    [RelayCommand]
+    private void RecoverFloatingWindows() => _workspace.DockFactory.WindowContext.RecoverOffscreenWindows();
+
+    [RelayCommand]
+    private async Task ResetLayoutAsync()
+    {
+        if (!_workspace.CanOperateTools || _workspace.DockFactory.WindowContext.HasFullscreenContent) return;
+        if (_workspace.DockFactory.WindowContext.SelectOwner() is not { } owner) return;
+        if (!await new Views.LayoutResetConfirmationWindow().ShowDialog<bool>(owner)) return;
+        if (!_workspace.CanOperateTools || _workspace.DockFactory.WindowContext.HasFullscreenContent) return;
+        try { Layout = _layoutLifecycle.Reset(_workspace); }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine($"DockLayout errorCode=LAYOUT_RESET_FAILED type={exception.GetType().Name}");
+        }
+    }
+
+    private void OnLayoutStatusChanged(object? sender, EventArgs args)
+    {
+        OnPropertyChanged(nameof(LayoutMessage));
+        OnPropertyChanged(nameof(HasLayoutMessage));
+    }
+
     /// <summary>
     /// 在主窗口真正退出前汇总处理全部脏 Document。
     /// </summary>
@@ -128,6 +178,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
     {
         // .NET 事件解除不存在匹配委托时是安全的，因此该入口天然支持重复 Dispose。
         _workspace.LayoutChanged -= OnLayoutChanged;
+        _layoutLifecycle.StatusChanged -= OnLayoutStatusChanged;
         _documentOperationState.Changed -= OnDocumentOperationStateChanged;
     }
 

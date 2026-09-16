@@ -220,10 +220,14 @@ public sealed class WorkbenchCommandPresentationUiTests
         context.Storage.SavePath = path;
         context.Storage.WriteObserved = new TaskCompletionSource(
             TaskCreationOptions.RunContinuationsAsynchronously);
+        var saved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var saveModel = Assert.IsType<G4UiPersistableDocument>(document.Model);
+        saveModel.IsDirtyChanged += (_, _) => { if (!saveModel.IsDirty) saved.TrySetResult(); };
         Assert.IsType<G4UiPersistableDocument>(document.Model).Edit("Ctrl+S 保存内容");
 
         window.KeyPressQwerty(PhysicalKey.S, RawInputModifiers.Control);
         await context.Storage.WriteObserved.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await saved.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.Contains(context.Storage.Writes, item =>
             string.Equals(item.Path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase));
@@ -669,6 +673,32 @@ public sealed class WorkbenchCommandPresentationUiTests
         Assert.False(floating.IsVisible);
         Assert.NotSame(floating, factory.WindowContext.SelectOwner(floating));
         main.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task 重置浮动脏文档保留修改模型视图和Scope()
+    {
+        using var context = CreateContext();
+        var factory = context.Workspace.DockFactory;
+        var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
+        main.Show();
+        var document = await CreateDocumentAsync(context);
+        var model = Assert.IsType<G4UiPersistableDocument>(document.Model);
+        var view = document.PreparedView;
+        model.Edit("未保存修改必须保留");
+        try
+        {
+            factory.FloatDockable(document);
+            await FlushUiAsync();
+            context.ViewModel.Layout = context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Layout.DockLayoutLifecycle>().Reset(context.Workspace);
+            await FlushUiAsync();
+            Assert.True(model.IsDirty);
+            Assert.Same(model, document.Model);
+            Assert.Same(view, document.PreparedView);
+            Assert.False(document.ClosingToken.IsCancellationRequested);
+            Assert.Null(MyAvaloniaManagement.Business.Layout.DockTreeNavigator.FindWindow(context.Workspace.RootDock!, document));
+        }
+        finally { model.MarkCleanForCleanup(); main.Close(); }
     }
 
     private static void OpenPalette(MainWindow window) => window.KeyPressQwerty(

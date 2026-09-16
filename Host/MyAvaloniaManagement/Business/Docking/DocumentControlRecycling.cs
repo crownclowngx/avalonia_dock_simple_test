@@ -66,6 +66,13 @@ internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycli
         if (key is null)
             return null;
 
+        // Dock 的延迟正文回调可能晚于窗口关闭。最终释放与“尚未准备”是不同状态：
+        // 前者只撤回旧正文，后者继续抛出构造契约错误，不能把过期 Scope 重新挂回视觉树。
+        if (data is IManagedDockableViewHost { IsViewReleased: true })
+        {
+            Remove(data);
+            return null;
+        }
         if (TryGetValue(key, out var cached))
         {
             // existing 是当前模板已经拥有的正文。只有交给另一个宿主时才解绑，

@@ -33,6 +33,7 @@
 ### host-v11
 
 - [浮动窗口与 Layout V3 开发记录](records/host-v11/development-acceptance.md)
+- [最终开发验证证据](records/host-v11/final-development-evidence.json)
 
 ### host-v10
 

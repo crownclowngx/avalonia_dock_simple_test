@@ -23,6 +23,12 @@ internal sealed class MainWindowDesignData : IMainWindowViewBindings
         SetThemeCommand = new RelayCommand<string?>(_ => { });
     }
 
+    public string LayoutMessage => string.Empty;
+    public bool HasLayoutMessage => false;
+    public IAsyncRelayCommand RetryLayoutSaveCommand { get; } = new AsyncRelayCommand(() => System.Threading.Tasks.Task.CompletedTask);
+    public IRelayCommand RecoverFloatingWindowsCommand { get; } = new RelayCommand(NoOperation);
+    public IAsyncRelayCommand ResetLayoutCommand { get; } = new AsyncRelayCommand(() => System.Threading.Tasks.Task.CompletedTask);
+
     public IRootDock Layout { get; }
 
     public string DocumentOperationError => "设计预览：文档操作提示显示在这里。";

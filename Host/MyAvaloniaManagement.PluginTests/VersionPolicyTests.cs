@@ -97,18 +97,20 @@ public sealed class VersionPolicyTests
     }
 
     [Fact]
-    public void VersionPolicy_V3代码线继续使用V2磁盘协议与数据根()
+    public void VersionPolicy_布局V3独立升级且文档协议与数据根保持V2()
     {
         var properties = ReadVersionProperties();
 
         Assert.Equal("2", properties["MyAvaloniaV2ManifestSchemaVersion"]);
         Assert.Equal("2", properties["MyAvaloniaV2DocumentEnvelopeSchemaVersion"]);
-        Assert.Equal("2", properties["MyAvaloniaV2LayoutSchemaVersion"]);
-        Assert.Equal("layout-v2.json", properties["MyAvaloniaV2LayoutFileName"]);
+        Assert.Equal("3", properties["MyAvaloniaLayoutSchemaVersion"]);
+        Assert.Equal("layout-v3.json", properties["MyAvaloniaLayoutFileName"]);
 
         Assert.Equal(2, PluginManifestReader.CurrentSchemaVersion);
         Assert.Equal(2, DocumentEnvelopeSerializer.CurrentSchemaVersion);
+        Assert.Equal(3, DockLayoutSnapshotV3.CurrentSchemaVersion);
         Assert.Equal(2, DockLayoutSnapshotV2.CurrentSchemaVersion);
+        Assert.Equal("layout-v3.json", DockLayoutV3Store.LayoutFileName);
         Assert.Equal("layout-v2.json", DockLayoutStore.LayoutFileName);
         AssertVersionFact(
             "Host data root generation",

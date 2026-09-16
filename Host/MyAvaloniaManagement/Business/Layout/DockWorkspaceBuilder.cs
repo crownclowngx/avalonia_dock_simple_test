@@ -24,6 +24,7 @@ internal sealed class DockWorkspaceBuilder(HostDockFactory factory)
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(getAlignment);
 
+        documentDock.CanFloat = false;
         var byAlignment = tools.ToLookup(tool => getAlignment(tool.Id));
         var left = byAlignment[Alignment.Left].ToList();
         var right = byAlignment[Alignment.Right].ToList();
@@ -46,6 +47,7 @@ internal sealed class DockWorkspaceBuilder(HostDockFactory factory)
         var workspaceColumns = new ProportionalDock
         {
             Id = DockLayoutIds.WorkspaceColumns,
+            CanFloat = false,
             Orientation = Orientation.Horizontal,
             IsCollapsable = false,
             Proportion = double.NaN,
@@ -85,6 +87,7 @@ internal sealed class DockWorkspaceBuilder(HostDockFactory factory)
         var workspaceRows = new ProportionalDock
         {
             Id = DockLayoutIds.WorkspaceRows,
+            CanFloat = false,
             Orientation = Orientation.Vertical,
             IsCollapsable = false,
             Proportion = double.NaN,
@@ -98,7 +101,7 @@ internal sealed class DockWorkspaceBuilder(HostDockFactory factory)
         windowLayout.IsCollapsable = false;
         windowLayout.VisibleDockables = factory.CreateList<IDockable>(workspaceRows);
         windowLayout.ActiveDockable = workspaceRows;
-        HostDockFactory.DisableFloating(windowLayout);
+        windowLayout.CanFloat = false;
 
         var root = factory.CreateRootDock();
         root.Id = DockLayoutIds.Root;
@@ -106,7 +109,7 @@ internal sealed class DockWorkspaceBuilder(HostDockFactory factory)
         root.VisibleDockables = factory.CreateList<IDockable>(windowLayout);
         root.ActiveDockable = windowLayout;
         root.DefaultDockable = windowLayout;
-        HostDockFactory.DisableFloating(root);
+        root.CanFloat = false;
         return root;
     }
 

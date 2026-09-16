@@ -29,7 +29,7 @@ internal sealed partial class DockLayoutWorkspaceState
     internal DockLayoutSnapshotV3 Capture(WorkspaceSession session)
     {
         var root = session.RootDock ?? throw new InvalidOperationException("工作区尚未创建。");
-        var known = session.CreatedTools.Values.ToHashSet(ReferenceEqualityComparer.Instance);
+        var known = session.CreatedTools.Values.Where(tool => session.IsToolAvailable(tool.Id)).ToHashSet(ReferenceEqualityComparer.Instance);
         var primary = session.DockFactory.GetDockable<IDocumentDock>(DockLayoutIds.Documents);
         var context = session.DockFactory.WindowContext;
         var previousTools = Remembered?.Tools.ToDictionary(tool => tool.Id, StringComparer.Ordinal) ?? [];
@@ -41,7 +41,7 @@ internal sealed partial class DockLayoutWorkspaceState
             AddPinned(windowRoot.TopPinnedDockables, DockLayoutIds.TopTools);
             AddPinned(windowRoot.BottomPinnedDockables, DockLayoutIds.BottomTools);
         }
-        var tools = session.CreatedTools.Values.Select(tool =>
+        var tools = session.CreatedTools.Values.Where(tool => session.IsToolAvailable(tool.Id)).Select(tool =>
         {
             var group = DockTreeNavigator.FindToolDock(root, tool) as IDock ??
                 DockTreeNavigator.FindDocumentDock(root, tool);

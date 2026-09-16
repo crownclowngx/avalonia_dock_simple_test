@@ -15,7 +15,7 @@
 当前 Document/Tool 模型只通过 `ManagedDocumentDockable` 与 `ManagedToolDockable` 适配 Dock。普通插件
 模型不得创建或继承 Dock；Document 每次创建拥有独立 Scope，Tool 是所属 Provider singleton。View 必须
 来自 Workspace Catalog 的精确冻结工厂并在发布前构造，禁止程序集扫描、类型名猜测和反射回退。该内部实现没有改变
-Plugin SDK public API 或 manifest；Document 与 Layout 磁盘契约均已切换为唯一 V2。
+Plugin SDK public API 或 manifest；Document 信封保持 V2；当前布局写入 V3，V2 仅首次只读转换。
 
 Core/UI 活动 v3 基线及 Workflow v1 基线分别维护；当前分类、条目数和 verify/seal 区别见
 [Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
@@ -258,28 +258,26 @@ reader 不读取 manifest v1，也不存在 v1/v2 双 reader；清单只解决�
 - 关闭 Tool 表示隐藏，之后恢复同一实例；
 - Pinned 表示仍显示，不等同于关闭隐藏；
 - 最后一个 Tool 隐藏后停靠点被移除时，恢复必须重建同一稳定节点；
-- 禁止 Document、Tool 或整个 Dock 浮动为独立窗口；
+- Document、Tool 及其合法内容组允许浮动，固定主骨架不能浮动；浮动/回停不重建 View、模型或 Scope；
+- 浮窗不支持自动隐藏，回停后恢复；内容全屏期间先退出全屏再迁移；
 - 主窗口内部拖放与停靠继续可用；
-- 每个 HostRuntime 只有一个 `WorkspaceSession` 和一棵 Root；多个窗口只作为独立绑定消费者；
+- 每个 HostRuntime 只有一个 `WorkspaceSession` 和一个主 Root；浮窗 Root 归属该工作区，窗口只作为独立绑定消费者；
 - `HostDockFactory` 不拥有 Root、Document 或 Tool 集合；未绑定和重复绑定都必须快速失败；
 - 工具中心只消费不含 Dock 类型的 `ToolWorkspaceState` 快照；布局、可用性和收藏是独立状态。
 - 当前 Host 中所有 Tool 都允许隐藏，包括旧 SDK 声明 `Prevent` 的插件；该枚举及构造签名保留二进制兼容。
 - `myavalonia.host.tool.management` 已退役；新入口为“工具 → 工具中心…”，属于 Host 非模态窗口，不登记为 Tool。
 
-## 5. 布局 V2 契约
+## 5. 布局 V3 契约
 
-- 文件名固定为 `layout-v2.json`，`schemaVersion` 固定为 `2`；
-- 根、Pane、Tool 精确字段集合严格拒绝未知、重复、缺失、大小写错误和错误类型；
-- Tool 顺序、Pane 比例、可见/Pinned/活动状态与四向 Dock 行为保持；
-- 不存在两向迁移、浮动字段、通用历史 ID 归一化或 V1 fallback；
-- 结构校验后精确移除退役的管理/插件状态 Tool ID，清理其活动引用并保持剩余相对顺序；首次写回前保留原始字节 `.pre-tool-retirement.bak` 备份；
-- 快照引用缺失插件、缺失 Pane、未知 Tool 或非法稳定 ID 时，隔离整个文件并回退默认布局；
-- 隔离文件继续使用带 UTC 时间戳的 `.invalid.bak` 命名；
-- 保存继续使用同目录原子替换；
-- 不自动部分恢复；生命周期不可用与插件缺失同样隔离整份快照；
-- `layout-v1.json` 原样保留且不会读取、迁移、覆盖或隔离。
+- 当前文件 `layout-v3.json`、schema 3；上一有效备份 `.bak`，单数据根独占写入句柄。
+- 精确字段、ID、数量、深度、比例与尺寸严格验证；坏输入保留 `.invalid.bak`，未来 schema 只读保护。
+- 只记录 Tool 的窗口、分组、显隐与主窗自动隐藏；Document 路径、标题、身份、内容及纯文档浮窗不持久化。
+- 合法但不可用或缺失的工具保留原记录，当前仅投影可用项；空浮窗不显示。
+- 首次无 V3 历史时严格转换 V2，原字节不变；退役内置工具精确清理；V1 不读取或修改。
+- 自动保存防抖且串行；主窗退出先确认和排空全部文档，再冻结最终快照，拆窗不覆盖它。
+- 重置先确认，保留文档修改、View 和 Scope；应用失败恢复原运行树，已关闭的展示壳可重建。
 
-完整格式参见 [Dock 布局快照 V2](../../../../docs/reference/dock-layout-snapshot-v2.md)。
+详细边界见 [Layout V3](../../../../docs/reference/dock-layout-snapshot-v3.md)；[V2](../../../../docs/reference/dock-layout-snapshot-v2.md) 保留为只读输入和旧行为参考。
 
 ## 6. 启动和关闭契约
 

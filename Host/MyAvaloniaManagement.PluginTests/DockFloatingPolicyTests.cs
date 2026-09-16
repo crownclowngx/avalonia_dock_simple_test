@@ -9,15 +9,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MyAvaloniaManagement.PluginTests;
 
-public sealed class DockFloatingDisabledTests
+public sealed class DockFloatingPolicyTests
 {
     [Fact]
-    public void FloatingIsDisabledWhileDragDropAndInternalMoveRemainEnabled()
+    public void 固定容器禁止浮动且普通拖放和内部移动保持可用()
     {
         using var context = CreateFactory();
         var factory = context.Factory;
         var root = CreateRoot(factory);
-        HostDockFactory.DisableFloating(root);
+        root.CanFloat = false;
 
         var leftDock = CreateToolDock(factory, DockLayoutIds.LeftTools);
         var rightDock = CreateToolDock(factory, DockLayoutIds.RightTools);
@@ -33,13 +33,16 @@ public sealed class DockFloatingDisabledTests
         factory.AddDockable(leftDock, tool);
         factory.AddDockable(documentDock, document);
 
-        Assert.False(DockCapabilityResolver.IsEnabled(tool, DockCapability.Float));
-        Assert.False(DockCapabilityResolver.IsEnabled(document, DockCapability.Float));
+        Assert.False(DockCapabilityResolver.IsEnabled(root, DockCapability.Float));
+        Assert.True(DockCapabilityResolver.IsEnabled(tool, DockCapability.Float));
+        Assert.True(DockCapabilityResolver.IsEnabled(document, DockCapability.Float));
         Assert.True(DockCapabilityResolver.IsEnabled(tool, DockCapability.Drag));
         Assert.True(DockCapabilityResolver.IsEnabled(tool, DockCapability.Drop));
         Assert.True(DockCapabilityResolver.IsEnabled(document, DockCapability.Drag));
         Assert.True(DockCapabilityResolver.IsEnabled(document, DockCapability.Drop));
 
+        // 非 Managed 对象不能跨过 Host 适配边界；真实 Managed 迁移由 Headless 原生窗口路径验证。
+        factory.FloatDockable(root);
         factory.FloatDockable(tool);
         factory.FloatDockable(document, null);
         factory.FloatAllDockables(tool);

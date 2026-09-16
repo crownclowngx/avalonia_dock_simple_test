@@ -92,3 +92,29 @@ Dock.Avalonia `12.1.0.6` 的本地 NuGet 元数据对应上游提交 `cc08602d02
 - `dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DockLayoutV3UiTests' --logger 'trx;LogFileName=v11-layout-restore-ui.trx'`：3/3 通过，零失败、跳过和构建警告。
 
 修正全组隐藏后残留活动工具 ID 导致快照无效的问题。以上验证尚未覆盖生产自动保存和主窗口退出，继续由后续阶段完成。
+
+## G3–G6 生产集成与回归修正
+
+当前已开放四个 Float/FloatAll 入口，保持主骨架固定；浮动后禁止 Pin，回停恢复；跨窗口查询、激活、快捷键、Owner、范围关闭及全屏保护接入生产。实际 MyPlugTest 的普通模型、View 和文档 Scope 经过原生浮动路径复用，关闭仍由既有所有者释放。
+
+生产切换到 V3 Store 与 750 毫秒保存队列；主窗退出先排空全部文档命令，冻结完整快照后再拆窗。Runtime 关闭参与者只记录已创建的布局协调器，在 Workspace 释放前停止保存订阅与队列，不临时解析新 Store。显示只读/失败提示，提供重试、找回和带确认的重置。
+
+实施调整：最终文件队列无 Dispatcher 依赖，无在途文档操作时同步排空以保留既有原生一次关闭语义；需要用户确认或命令排空时仍取消首次关闭并异步重试。日常自动保存始终后台执行。此取舍已同步计划和详细契约。
+
+专项验证与修正：
+
+- DockLayoutV3UiTests 的 11 项浮动、原实例恢复、退出最终快照、命令等待/原生取消、全屏限制、重置回滚通过。后续新增写入失败与脏文档重置检查由最终门禁统一登记。
+- 保存队列与 Adapter 专项 14/14 通过；有界格式/工作区查询专项 12/12 通过；工具批量通知回归 29/29 通过。
+- Host Plugin 全量开发测试（仅由阶段命令排除需 Gate 准备的 PackageAcceptance）218/218 通过，零构建警告；最终 Gate 仍必须运行实际 ZIP 验收。
+- `pwsh -NoProfile -File tools/Verify-LayoutV3WriterLease.ps1`：7 项真实跨进程写锁断言通过。持锁子进程直接终止后新实例可写，旧只读实例不自动接管，V2 原字节不变。该工具不是 Windows CI 或发布门禁。
+- 首次完整 UI 回归发现 8 个四向自动隐藏尺寸失败，其余 124 项通过；恢复前尚未测量，框架捕获了主题最小尺寸。修正展开尺寸下限后 AutoHideRestoreVisualTests 8/8 通过，保留正文可见尺寸与实际 Pin 按钮断言。
+- 重置拒绝路径发现同模型窗口被框架递归 InitDockable 重建；现在复用仍可见的窗口，已关闭窗口只重建外壳，检查点保留原文档实例。迟到正文回调对已释放 View 返回空，不掩盖未准备 View 的构造错误。
+- 既有 Ctrl+S 测试原先以“开始写入”作为保存完成，存在异步竞态；改为等待真实脏状态清除，仍验证真实快捷键和一次保存结果。
+
+## G7–G8 最终证据与剩余边界
+
+使用指南、V3 契约、专项维护说明、当前导航、版本事实、Host 架构和兼容约束同步到新文档结构。V2 详细文档保留为旧行为与只读输入参考。计划继续留在 roadmap，真实桌面事项未完成前不宣称整体验收结束。
+
+最终完整开发门禁在本记录定稿后运行。命令、run ID、源码输入、测试汇总、TRX 和 Host SHA-256 统一写入 [非嵌入最终证据](final-development-evidence.json)；该文件的状态是最终自动化结论。修改任一嵌入 MD 后必须重新构建验证，不能复用旧产物身份。
+
+真实桌面鼠标、跨屏 DPI、原生文件选择器及外部视频/WebView/下载业务尚未验收，保留在 [集中待办](../../../roadmap/README.md)。当前工具环境未提供可操作的原生桌面表面，因此不将 Headless 或纯屏幕计算写成真实桌面通过。未使用 AIFLOW、Windows CI、seal、发布 Smoke、发布覆盖率、安装部署或公开发布；现有发布 Smoke 的 V3 适配留到发布阶段。

@@ -34,7 +34,7 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
         Context = activation.Model;
         CanClose = true;
         CanPin = false;
-        CanFloat = false;
+        CanFloat = true;
         Title = SelectTitle();
         activation.Model.PresentationChanged += OnPresentationChanged;
         if (PersistableModel is { } persistable)
@@ -68,6 +68,7 @@ internal sealed class ManagedDocumentDockable : Document, IManagedDockableViewHo
             Registration.ViewType,
             Registration.ViewFactory);
     public Control? PreparedView => _view.View;
+    public bool IsViewReleased => _view.IsReleased;
     public void AttachPreparedView(Control view) => _view.Attach(view);
     public void ReleasePreparedView() => _view.Release();
 

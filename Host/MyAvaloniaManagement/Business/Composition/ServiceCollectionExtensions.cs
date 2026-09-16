@@ -71,14 +71,15 @@ internal static class ServiceCollectionExtensions
         // Dock 关闭时则由宿主使用具体管理器释放对应 Scope。
         services.AddDocumentScopeManagement(documentScopes);
 
+        services.AddSingleton(provider => new DockLayoutV3Store(HostDataRootPolicy.ResolveDefault(),
+            (code, exception) => provider.GetService<IHostDiagnosticSink>()?.Report(
+                new HostDiagnosticDraft(code, HostDiagnosticPhase.Layout) { Exception = exception })));
         services.AddSingleton(provider =>
         {
-            var diagnostics = provider.GetService<IHostDiagnosticSink>();
-            return diagnostics is null
-                ? new DockLayoutStore()
-                : new DockLayoutStore(diagnostics);
+            var layout = new DockLayoutLifecycle(provider.GetRequiredService<DockLayoutV3Store>());
+            provider.GetRequiredService<HostShutdownParticipants>().Record(layout);
+            return layout;
         });
-        services.AddSingleton<DockLayoutLifecycle>();
         services.AddSingleton<AppearanceSettingsStore>();
         services.AddSingleton<PluginNavigationSettingsStore>();
         services.AddSingleton<FunctionCenterWindowService>();

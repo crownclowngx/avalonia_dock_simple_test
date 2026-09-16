@@ -14,7 +14,7 @@
 - 收集显式 Document/Tool/View/Lifecycle 贡献并分派创建请求；
 - 建立和维护四向 Dock 工作区；
 - 严格读写唯一 Document 信封 v2，并编排异步创建、打开、恢复、保存、关闭和资源释放；
-- 严格读取、校验、整体隔离和原子保存唯一 Layout V2；
+- 严格 Layout V3、V2 只读迁移、可用项投影、工具浮窗与原子保存；
 - 只向插件提交窗口交互与 Document 生命周期等真实 Host 端口，不拥有插件内部消息；
 - 以窄 UI SDK 端口为插件提供文件选择和剪贴板交互；
 - 为显式 Consumer 注入 caller-bound Workflow Action Gateway，并在 Provider 私有 Scope 内治理调用；
@@ -92,10 +92,10 @@ flowchart TB
     Storage --> Atomic["AtomicFileTransaction"]
 
     MainVM --> Layout["DockLayoutLifecycle<br/>Prepare / Apply / Save"]
-    Layout --> Mapper["DockLayoutSnapshotMapper"]
-    Layout --> Codec["DockLayoutSnapshotV2Json"]
+    Layout --> Mapper["DockLayoutWorkspaceState"]
+    Layout --> Codec["DockLayoutV3Json"]
     Layout --> Validator["DockLayoutRuntimeValidator"]
-    Layout --> Store["DockLayoutStore"]
+    Layout --> Store["DockLayoutV3Store"]
     Store --> Atomic
 ```
 
@@ -233,7 +233,7 @@ View 失败原子回滚 Scope，Tool View 失败只隔离自身；诊断不持�
 `ManagedDocumentDockable` 拥有普通 Document 模型、预构建 View 和独立 Scope Lease。标题从模型、请求、
 Descriptor 依次回退，后台 `PresentationChanged` 切回 UI Dispatcher；最终关闭按“解绑事件 → 断开
 DataContext/释放 View → 取消 ClosingToken → 释放模型与 scoped 依赖”执行。`ManagedToolDockable` 只拥有
-View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均禁止浮动。V7 Host 统一允许隐藏所有 Tool，
+View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均允许浮动，主窗口固定骨架不浮动。V7 Host 统一允许隐藏所有 Tool，
 旧 SDK 的 `Prevent` 不再阻止隐藏；四向位置与 Pinned 继续由声明和布局协调器管理。
 
 `WorkspaceSession` 依赖窄口 `IHostDockableFactory` 并独占已经发布的 Adapter。关闭失败回滚、正常关闭
@@ -247,7 +247,7 @@ View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均禁止浮�
 `ToolWorkspaceReadModel` 一次遍历布局并合并完整注册目录；`ToolCenterQuery` 只处理元数据、筛选和历史占位；
 `ToolCenterActions` 经 `WorkspaceSession` 提交显隐，并仅在成功访问后记录最近工具。
 收藏与分类使用独立 `tool-center-v1.json`，不复制 Dock 状态。Tool 的模型和已创建 View 仍沿用原有生命周期。
-默认布局先隐藏所有 Tool，再恢复有效旧快照；退役管理 ID 只进行定向删除，原文件在写回前备份。
+默认布局先隐藏所有 Tool，再恢复有效旧快照；退役管理 ID 只进行定向删除，V2 原文件只读保留，后续提交写入独立 V3。
 
 ### 插件看板独立窗口
 
@@ -337,7 +337,7 @@ V3 G6 已删除 `ManagementFactory` Facade。生产代码只有
 | `WorkspaceCatalog` | 合并 Host 与可用插件的 Descriptor、菜单和精确 View 查询 | Provider 解析、模型创建和状态修改 |
 | `PluginContributionActivator` | 按 Registry 所有者路由 Provider、Scope 与模型创建 | 冲突判断、元数据解释、生命周期编排 |
 | `HostDockAdapterFactory` | 创建内部 Adapter 并在发布前预构建精确 View | Provider 选择、布局协调、模型生命周期策略 |
-| `HostDockFactory` | Dock override、规范 Locator、禁浮动和回调顺序 | Root、Document、Tool 集合与业务状态 |
+| `HostDockFactory` | Dock override、规范 Locator、浮动边界和回调顺序 | Root、Document、Tool 集合与业务状态 |
 | `WorkspaceSession` | Root/Document Dock、Document/Tool 所有权、发布/显隐/关闭/退出提交点 | 磁盘序列化、任意事件路由、服务定位 |
 | `ToolWorkspaceReadModel` | 从 Session/Workspace Catalog 生成无 Dock 的不可变 Tool 状态 | Tool 创建、显隐命令和 Dock 树写入 |
 | `DockWorkspaceBuilder` | 创建稳定四向初始布局 | 工具恢复和激活 |
@@ -459,21 +459,23 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 
 ## 7. 布局生命周期
 
-[`DockLayoutLifecycle`](../../Business/Layout/DockLayoutLifecycle.cs) 只保留三个阶段：
+`DockLayoutLifecycle` 协调 Prepare、ApplyPending、捕获/保存与退出冻结，只拥有订阅和保存调度。生产写入 Layout V3，文档协议和默认数据根仍各自保持 V2。
 
-1. `Prepare`：读取快照并创建、初始化默认 Dock 树；
-2. `ApplyPending`：验证贡献可用性、补齐稳定节点、校验运行时结构并应用快照；
-3. `Save`：捕获运行时状态并交给存储层。
+- `DockLayoutWorkspaceState`：UI 树与纯数据互转，复用原 Tool/Document/View，稳定身份独立于临时框架 ID。
+- `DockLayoutTree`：剔除文档、空分支归并、隐藏和不可用工具记录合并。
+- `DockLayoutV3Json` / `DockLayoutV3Validator`：严格字段及有界结构；`DockLayoutV2Migration` 只读转换旧格式。
+- `DockLayoutV3Store`：数据根写锁、只读保护、坏文件保留、有效备份和原子提交。
+- `DockLayoutSaveQueue`：750 毫秒合并、后台串行写入、失败重试、最终排空与释放。
+- `DockLayoutTransferCheckpoint`：恢复失败时还原原集合和窗口，业务实例不复活也不重建。
+- `WorkbenchWindowContext` / `WindowPlacementTracker`：窗口登记、正常尺寸与屏幕变化；计算交给纯 `DockScreenPlacement`。
 
-细节分别由以下组件承担：
+`HostFloatingWindow` 继承原生 Dock HostWindow；主窗和浮窗共用 `WorkbenchWindowInteraction`，每窗拥有独立 KeyBinding、焦点和全屏租约，共享命令展示和唯一命令面板会话。窗口只有展示寿命，Scope 仍由 Session / Runtime 所有。
 
-- [`DockLayoutSnapshotMapper`](../../Business/Layout/DockLayoutSnapshotMapper.cs)：只负责 `Capture`、`EnsureSnapshotDocks`和 `ApplySnapshot`；
-- `DockLayoutSnapshotV2Json`：严格字段读取与固定顺序写出；
-- [`DockLayoutRuntimeValidator`](../../Business/Layout/DockLayoutRuntimeValidator.cs)：只读检查插件声明、生命周期可用性、Pane、Tool 和稳定 ID；
-- `DockLayoutStore`：路径、原子读写和坏文件隔离；
-- `AtomicFileTransaction`：临时写入、提交和清理。
+浮窗关闭先经 `DockWindowCloseCoordinator` 固定范围，再由 `DocumentCloseCoordinator` 统一询问、保存与排空命令。原生取消必须在框架 Root.Close 之前检查。主窗最终保存早于浮窗拆除；`HostShutdownParticipants` 只记录实际创建的布局生命周期，Runtime 在释放工作区前停止其调度，不在回滚时解析新服务。
 
-快照整体无效时隔离原文件并回退完整默认布局。贡献可用性检查在补建 Pane 之前完成；V2 不做缺失插件下的部分恢复，也没有 V1 reader 或 Migrator。
+最终文件队列不依赖 UI Dispatcher，因此无在途文档操作时同步排空以保留原生一次关闭；其他关闭异步准备并重试。文件失败显示提示并恢复入口。业务文档与 Layout 保存结果分别判断。
+
+当前详细格式与验证入口见 [V3 契约](../../../../docs/reference/dock-layout-snapshot-v3.md) 和 [专项维护指南](../../../../docs/maintenance/floating-layout-verification.md)。
 
 ## 8. 原子文件事务
 
@@ -528,11 +530,11 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 | 插件私有 Provider、Host Port 与失败隔离 | `PluginContainerIsolationTests`、`PluginProviderOwnerTests` |
 | 严格六字段信封、原生 JSON、资源边界、所有权与失败不发布 | `DocumentEnvelopeV2Tests` |
 | 异步创建、并发打开、保存提交点、关闭重入与坏文件恢复 | `DocumentPersistenceTests`、`DocumentCloseTests` |
-| 四向 Dock、Pinned/Hidden、禁用浮动 | PluginTests |
+| 四向 Dock、Pinned/Hidden、内容浮动与固定骨架保护 | PluginTests |
 | Scope 与控件缓存释放 | PluginTests |
 | 同步顺序、重入、异常、并发、Provider/Runtime 隔离及订阅释放 | MyPlugTest 消息测试、Document Scope 测试；外部插件自行回归 |
 | 布局严格解析、隔离、回退 | 布局生命周期与存储测试 |
-| Layout V2 严格字段、V1 不读取、生命周期不可用零部分应用 | `DockLayoutStoreTests`、`DockLayoutAvailabilityTests` |
+| Layout V3 严格字段、V2 原件保留、V1 不读取、不可用工具保留记录 | `DockLayoutV3StoreTests`、`DockLayoutV3BoundaryTests`、`DockLayoutAvailabilityTests` |
 | 生命周期排序、幂等、失败/超时/取消、反向停止和脱敏 | `PluginLifecycleCoordinatorTests` |
 | V5 真实容器释放、启动回滚、取消通知、迟到边界、间接创建与诊断关闭 | `HostLifecycleOwnershipTests` |
 | Command 合并目录、Context、当前 Target 状态/执行、租约关闭和诊断脱敏 | `WorkbenchCommand*Tests`、主仓 Gate verify |
@@ -571,8 +573,8 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 
 ## 14. 当前框架适配与调用边界
 
-V9 的 DockTabPointerCaptureGuard 处理 Direct 捕获丢失与手势结束；捕获移交后不能恢复接收方状态。DocumentControlRecycling 安全解除已知父级、保留绑定，同一模板已有正文时保持所有权，未知父级明确失败。HostDockFactory、DockDocumentLifetime、布局映射和禁浮动策略继续拥有各自职责；真实输入、多屏和原生视频验收仍见集中待办。
+V9 的 DockTabPointerCaptureGuard 处理 Direct 捕获丢失与手势结束；捕获移交后不能恢复接收方状态。DocumentControlRecycling 安全解除已知父级、保留绑定，同一模板已有正文时保持所有权，未知父级明确失败。HostDockFactory、DockDocumentLifetime、布局映射和浮动保护继续拥有各自职责；真实输入、多屏和原生视频验收仍见集中待办。
 
 当前 Workflow 支持同插件兼任 Provider/Consumer，拒绝自调用及 Handler 异步链嵌套调用。详细预算、Schema 和 Run 边界见[Workflow 契约](../../../../docs/reference/workflow-actions.md)；Command 与 Workflow 不共享另一套执行器，用户入口规则见[Command 契约](../../../../docs/reference/workbench-commands.md)。
 
-SDK 的稳定身份、Document 修订保存及 Layout schema 2 的细节分别由[API](../../../../docs/reference/plugin-sdk-api-compatibility.md)、[持久化](../../../../docs/reference/document-persistence.md)和[布局](../../../../docs/reference/dock-layout-snapshot-v2.md)说明。本页不重复维护历史测试数量或发布哈希。
+SDK 的稳定身份、Document 修订保存及 Layout schema 3 的细节分别由[API](../../../../docs/reference/plugin-sdk-api-compatibility.md)、[持久化](../../../../docs/reference/document-persistence.md)和[布局](../../../../docs/reference/dock-layout-snapshot-v3.md)说明。本页不重复维护历史测试数量或发布哈希。

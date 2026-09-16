@@ -6,6 +6,7 @@
 
 - [工作区搜索与功能入口](quick-start/workbench-search.md)：找到功能、切换已有页面、恢复工具、执行命令。
 - [功能中心与插件目录](quick-start/plugin-navigation-and-function-center.md)：分类、创建意图、目录偏好。
+- [浮动窗口与布局恢复](quick-start/floating-windows-and-layout.md)：工具浮窗位置与分组、关闭、找回和重置。
 - [工具中心](quick-start/tool-center.md)：显示、隐藏、收藏和分类。
 - [插件看板](quick-start/plugin-status.md)：查看版本、兼容矩阵、可用性、贡献和脱敏诊断。
 - [V9 升级边界](quick-start/host-v9-upgrade.md)：旧插件二进制、新模板、外部产物验证。
@@ -29,7 +30,7 @@
 | 理解当前 Host 实现与取舍 | [内部架构入口](../Host/MyAvaloniaManagement/docs/README.md) |
 | 修改外部可观察行为 | [兼容约束](../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) |
 | 修改保存与恢复 | [Document 持久化](reference/document-persistence.md) |
-| 修改停靠布局 | [Layout V2](reference/dock-layout-snapshot-v2.md) |
+| 修改停靠布局 | [Layout V3](reference/dock-layout-snapshot-v3.md)、[专项开发验证](maintenance/floating-layout-verification.md) |
 | 修改 SDK public API | [API 基线维护](reference/plugin-sdk-api-compatibility.md) |
 | 理解产物、报告和兼容判断 | [插件兼容证据契约](reference/plugin-compatibility.md) |
 | 验证插件二进制与候选模板 | [插件兼容开发验证](maintenance/plugin-compatibility-verification.md) |
@@ -39,7 +40,7 @@
 
 ## 未完成工作与历史
 
-- [V11 浮动窗口恢复与 Layout V3 计划](roadmap/host-v11-floating-windows-and-layout-v3-plan.md)：实施中；工具浮窗恢复位置和分组，Document 支持运行时浮动但不跨启动重开；结果见 [V11 开发记录](archive/records/host-v11/development-acceptance.md)。
+- [V11 浮动窗口恢复与 Layout V3 计划](roadmap/host-v11-floating-windows-and-layout-v3-plan.md)：实现已接入，最终开发验证见[证据](archive/records/host-v11/final-development-evidence.json)；工具浮窗恢复位置和分组，Document 支持运行时浮动但不跨启动重开；结果见 [V11 开发记录](archive/records/host-v11/development-acceptance.md)。
 - [V10 插件兼容治理与 Host 插件看板计划](archive/plans/host-v10-plugin-compatibility-and-dashboard-plan.md)：已归档的开发计划；结果见 [V10 开发记录](archive/records/host-v10/development-acceptance.md)，业务与真机待办独立保留。
 - [待办与验收](roadmap/README.md)：待验收、发布前工作、实验、未来候选和维护决策。
 - [历史归档](archive/README.md)：原计划、阶段记录、旧格式及关联证据。历史命令不能当作当前操作入口。

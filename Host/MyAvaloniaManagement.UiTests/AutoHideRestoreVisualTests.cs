@@ -89,7 +89,8 @@ public sealed class AutoHideRestoreVisualTests
                 Assert.False(DockTreeNavigator.IsToolPinned(context.Workspace.RootDock!, tool));
                 Assert.True(DockTreeNavigator.IsDockableAttached(context.Workspace.RootDock!, tool));
                 var owner = Assert.IsAssignableFrom<IToolDock>(tool.Owner);
-                Assert.Equal(ToolDockPlacement.GetDockId(alignment), owner.Id);
+                Assert.Equal(alignment, owner.Alignment);
+                Assert.Null(DockTreeNavigator.FindWindow(context.Workspace.RootDock!, tool));
                 Assert.Same(tool, owner.ActiveDockable);
                 AssertContentVisible(window, prepared, "fixed");
                 Assert.Same(prepared, tool.PreparedView);

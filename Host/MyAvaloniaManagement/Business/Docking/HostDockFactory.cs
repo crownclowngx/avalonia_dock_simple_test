@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
@@ -68,7 +69,7 @@ internal interface IWorkspaceDockCallbacks
 /// <remarks>
 /// 本类型不拥有 Root Dock、Document 或 Tool 集合。所有应用状态均由一次性绑定的
 /// <see cref="IWorkspaceDockCallbacks"/> 提供；Factory 只保留框架要求的 Locator、override、
-/// 禁浮动策略和回调顺序，从而满足里氏替换原则而不再充当应用服务。
+/// 浮动边界和回调顺序，从而满足里氏替换原则而不再充当应用服务。
 /// </remarks>
 internal sealed class HostDockFactory : Factory
 {
@@ -131,6 +132,17 @@ internal sealed class HostDockFactory : Factory
     }
 
     /// <summary>
+    /// 活动容器变化也会递归 InitDockable；框架默认再次调用 Locator 会为同一模型创建第二个壳。
+    /// 仍可见且属于该模型的窗口必须复用，真正关闭后的模型才允许创建新的原生窗口。
+    /// </summary>
+    public override void InitDockWindow(IDockWindow window, IDockable? owner)
+    {
+        if (window.Host is HostFloatingWindow { IsVisible: true } host && ReferenceEquals(host.Window, window))
+            base.InitDockWindow(window, owner, host);
+        else base.InitDockWindow(window, owner);
+    }
+
+    /// <summary>
     /// 合并一次框架批量结构变化的前后通知。恢复调用方传入 captureBefore=false，
     /// 防止旧运行树覆盖待恢复快照；Scope 只拥有通知时序，不拥有业务资源或窗口。
     /// </summary>
@@ -154,6 +166,8 @@ internal sealed class HostDockFactory : Factory
     /// <summary>Pin 会从可见树取出工具，必须先保留其组身份和顺序。</summary>
     public override void PinDockable(IDockable dockable)
     {
+        // 浮窗只提供普通停靠；自动隐藏边栏归属于主窗口，不能产生无法恢复的浮窗 Pinned 数据。
+        if (GetCallbacks().RootDock is { } root && DockTreeNavigator.FindWindow(root, dockable) is not null) return;
         using var change = BeginLayoutChange();
         base.PinDockable(dockable);
     }
@@ -276,34 +290,53 @@ internal sealed class HostDockFactory : Factory
         finally { if (window is not null) GetCallbacks().OnWindowCloseCompleted(window); }
     }
 
-    /// <summary>主工作区不允许单个 Dockable 浮动。</summary>
-    public override void FloatDockable(IDockable dockable)
-    {
-    }
+    /// <summary>单项浮动保留框架实现；固定主骨架从来不是用户可移动的业务项。</summary>
+    public override void FloatDockable(IDockable dockable) => FloatDockable(dockable, null);
 
-    /// <summary>主工作区不允许带窗口参数浮动单个 Dockable。</summary>
     public override void FloatDockable(IDockable dockable, DockWindowOptions? options)
     {
+        if (!CanMigrate(dockable)) return;
+        using var change = BeginLayoutChange();
+        base.FloatDockable(dockable, options);
+        UpdateFloatingPolicies();
     }
 
-    /// <summary>主工作区不允许整个 Dock 浮动。</summary>
-    public override void FloatAllDockables(IDockable dockable)
-    {
-    }
+    /// <summary>Dock 的整组入口参数是组内成员，必须逐项检查，但不能搬走主 DocumentDock 容器。</summary>
+    public override void FloatAllDockables(IDockable dockable) => FloatAllDockables(dockable, null);
 
-    /// <summary>主工作区不允许带窗口参数浮动整个 Dock。</summary>
     public override void FloatAllDockables(IDockable dockable, DockWindowOptions? options)
     {
+        if (dockable.Owner is not IDock { VisibleDockables: { Count: > 0 } items } ||
+            !items.All(CanMigrate)) return;
+        using var change = BeginLayoutChange();
+        base.FloatAllDockables(dockable, options);
+        UpdateFloatingPolicies();
     }
 
-    /// <summary>把根级能力限制为不可浮动，同时保留拖动和主窗口内停靠。</summary>
-    internal static void DisableFloating(IRootDock rootDock)
+    public override void MoveDockable(IDock sourceDock, IDock targetDock, IDockable sourceDockable, IDockable? targetDockable)
     {
-        ArgumentNullException.ThrowIfNull(rootDock);
-        rootDock.RootDockCapabilityPolicy = new DockCapabilityPolicy
-        {
-            CanFloat = false
-        };
+        if (WindowContext.HasFullscreenContent) return;
+        using var change = BeginLayoutChange();
+        base.MoveDockable(sourceDock, targetDock, sourceDockable, targetDockable);
+        UpdateFloatingPolicies();
+    }
+
+    public override void SplitToDock(IDock dock, IDockable dockable, DockOperation operation)
+    {
+        if (WindowContext.HasFullscreenContent) return;
+        using var change = BeginLayoutChange();
+        base.SplitToDock(dock, dockable, operation);
+    }
+
+    private bool CanMigrate(IDockable item) => !WindowContext.HasFullscreenContent &&
+        item is ManagedDocumentDockable or ManagedToolDockable && item.CanFloat;
+
+    /// <summary>菜单能力跟随实际窗口归属，回停主窗后重新允许 Pin。</summary>
+    internal void UpdateFloatingPolicies()
+    {
+        if (GetCallbacks().RootDock is not { } root) return;
+        foreach (var item in DockTreeNavigator.EnumerateWorkspace(root).OfType<ManagedToolDockable>())
+            item.CanPin = DockTreeNavigator.FindWindow(root, item) is null;
     }
 
     private sealed class LayoutChangeScope(Action complete) : IDisposable

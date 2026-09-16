@@ -9,6 +9,9 @@ using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Views;
 using Xunit;
+using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Commands.Execution;
+using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.UiTests;
 
@@ -120,6 +123,214 @@ public sealed class DockLayoutV3UiTests
             Assert.NotNull(DockTreeNavigator.FindDocumentDock(session.RootDock!, document));
         }
         finally { await CloseWindows(context, main); }
+    }
+
+    [AvaloniaTheory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task 四个浮动入口走真实窗口且回停不重建工具(bool group, bool options)
+    {
+        using var context = new UiTestContext();
+        var session = context.Workspace;
+        var factory = session.DockFactory;
+        var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
+        main.Show();
+        try
+        {
+            session.ShowTool(HostExtensionIds.FileSystemTree);
+            session.ShowTool(HostExtensionIds.PluginMenu);
+            var tool = (ManagedToolDockable)session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
+            var other = session.CreatedTools[HostExtensionIds.PluginMenu.Value];
+            var originalDock = (IDock)tool.Owner!;
+            if (!ReferenceEquals(other.Owner, originalDock)) factory.MoveDockable((IDock)other.Owner!, originalDock, other, null);
+            var view = tool.PreparedView;
+            await Flush();
+            if (group)
+            {
+                if (options) factory.FloatAllDockables(tool, new DockWindowOptions());
+                else factory.FloatAllDockables(tool);
+            }
+            else
+            {
+                if (options) factory.FloatDockable(tool, new DockWindowOptions());
+                else factory.FloatDockable(tool);
+            }
+            await Flush();
+            var window = Assert.Single(DockTreeNavigator.EnumerateWindows(session.RootDock!));
+            var native = Assert.IsType<HostFloatingWindow>(window.Host);
+            Assert.True(native.IsVisible);
+            Assert.False(tool.CanPin);
+            factory.PinDockable(tool);
+            Assert.Same(window, DockTreeNavigator.FindWindow(session.RootDock!, tool));
+            if (group) Assert.Same(window, DockTreeNavigator.FindWindow(session.RootDock!, other));
+            Assert.Same(view, tool.PreparedView);
+            var target = session.EnsureToolDock(session.RootDock!, Alignment.Left);
+            factory.MoveDockable((IDock)tool.Owner!, target, tool, null);
+            await Flush();
+            Assert.Null(DockTreeNavigator.FindWindow(session.RootDock!, tool));
+            Assert.True(tool.CanPin);
+            Assert.Same(view, tool.PreparedView);
+            factory.FloatDockable(session.RootDock!);
+            factory.FloatDockable(factory.GetDockable<Dock.Model.Controls.IDocumentDock>(DockLayoutIds.Documents)!);
+            Assert.NotNull(factory.GetDockable<Dock.Model.Controls.IDocumentDock>(DockLayoutIds.Documents));
+        }
+        finally { await CloseWindows(context, main); }
+    }
+
+    [AvaloniaFact]
+    public async Task 主窗口退出先保存可见浮窗再拆除且重启不恢复文档()
+    {
+        DockLayoutSnapshotV3 saved;
+        using (var context = new UiTestContext())
+        {
+            var session = context.Workspace;
+            var factory = session.DockFactory;
+            var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
+            main.Show();
+            session.ShowTool(HostExtensionIds.FileSystemTree);
+            factory.FloatDockable(session.CreatedTools[HostExtensionIds.FileSystemTree.Value]);
+            var document = session.GetDocuments().Single();
+            var view = document.PreparedView;
+            factory.FloatDockable(document);
+            await Flush();
+            Assert.Equal(2, DockTreeNavigator.EnumerateWindows(session.RootDock!).Count());
+            Assert.Same(view, document.PreparedView);
+            main.Close();
+            Assert.False(main.IsVisible);
+            Assert.True(document.ClosingToken.IsCancellationRequested);
+            using var reader = new DockLayoutV3Store(context.TempDirectory);
+            saved = reader.Load()!;
+            Assert.Single(saved.FloatingWindows);
+            Assert.Equal("visible", saved.Tools.Single(tool => tool.Id == HostExtensionIds.FileSystemTree.Value).State);
+            await Flush();
+            Assert.Equal("visible", reader.Load()!.Tools.Single(tool => tool.Id == HostExtensionIds.FileSystemTree.Value).State);
+        }
+        using var restart = new UiTestContext(initialLayoutV3: saved);
+        var reopened = new MainWindow(restart.Workspace.DockFactory.WindowContext) { DataContext = restart.ViewModel };
+        reopened.Show();
+        await Flush();
+        Assert.Single(restart.Workspace.GetDocuments()); // 只创建默认欢迎页，布局没有任何文档恢复入口。
+        Assert.Single(DockTreeNavigator.EnumerateWindows(restart.Workspace.RootDock!));
+        reopened.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task 主窗等待干净文档命令后被原生取消会恢复命令与创建入口()
+    {
+        using var context = new UiTestContext();
+        var factory = context.Workspace.DockFactory;
+        var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
+        main.Show();
+        var document = context.Workspace.GetDocuments().Single();
+        var leases = context.Provider.GetRequiredService<WorkbenchDocumentCommandLeaseStore>();
+        Assert.True(leases.TryAcquire(document, out var pending));
+        var calls = 0;
+        EventHandler<WindowClosingEventArgs> cancelRetry = (_, args) => { if (++calls == 2) args.Cancel = true; };
+        main.Closing += cancelRetry;
+        main.Close();
+        Assert.True(main.IsVisible);
+        Assert.False(document.ClosingToken.IsCancellationRequested);
+        Assert.False(context.Workspace.CanCreateDocuments);
+        pending!.Dispose();
+        for (var index = 0; index < 100 && calls < 2; index++) await Task.Delay(10);
+        Assert.Equal(2, calls);
+        Assert.True(main.IsVisible);
+        Assert.True(context.Workspace.CanCreateDocuments);
+        Assert.True(leases.TryAcquire(document, out var resumed));
+        resumed!.Dispose();
+        main.Closing -= cancelRetry;
+        main.Close();
+        Assert.False(main.IsVisible);
+    }
+
+    [AvaloniaFact]
+    public async Task 内容全屏阻止迁移且重置保留文档实例并关闭浮窗()
+    {
+        using var context = new UiTestContext();
+        var session = context.Workspace;
+        var factory = session.DockFactory;
+        var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
+        main.Show();
+        var document = session.GetDocuments().Single();
+        var view = document.PreparedView;
+        using (var fullscreen = ((IWindowContentFullscreenHost)main).TryPresent(new Border()))
+        {
+            Assert.NotNull(fullscreen);
+            factory.FloatDockable(document);
+            Assert.Empty(DockTreeNavigator.EnumerateWindows(session.RootDock!));
+            Assert.Throws<InvalidOperationException>(() => context.Provider.GetRequiredService<DockLayoutLifecycle>().Reset(session));
+        }
+        factory.FloatDockable(document);
+        await Flush();
+        Assert.Single(DockTreeNavigator.EnumerateWindows(session.RootDock!));
+        context.ViewModel.Layout = context.Provider.GetRequiredService<DockLayoutLifecycle>().Reset(session);
+        await Flush();
+        Assert.Empty(DockTreeNavigator.EnumerateWindows(session.RootDock!));
+        Assert.Same(document, session.GetDocuments().Single());
+        Assert.Same(view, document.PreparedView);
+        Assert.False(document.ClosingToken.IsCancellationRequested);
+        Assert.All(session.LayoutState.Capture(session).Tools, tool => Assert.Equal("hidden", tool.State));
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task 重置被原生窗口拒绝时回滚已关闭的其他窗口并保留全部原实例()
+    {
+        using var context = new UiTestContext();
+        var session = context.Workspace;
+        var factory = session.DockFactory;
+        var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
+        main.Show();
+        session.ShowTool(HostExtensionIds.FileSystemTree);
+        var tool = session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
+        factory.FloatDockable(tool);
+        var document = session.GetDocuments().Single();
+        var view = document.PreparedView;
+        factory.FloatDockable(document);
+        await Flush();
+        var rejected = (HostFloatingWindow)DockTreeNavigator.FindWindow(session.RootDock!, document)!.Host!;
+        EventHandler<WindowClosingEventArgs> cancel = (_, args) => args.Cancel = true;
+        rejected.Closing += cancel;
+        try
+        {
+            Assert.Throws<InvalidOperationException>(() => context.Provider.GetRequiredService<DockLayoutLifecycle>().Reset(session));
+            await Flush();
+            Assert.Equal(2, DockTreeNavigator.EnumerateWindows(session.RootDock!).Count());
+            Assert.Same(rejected, DockTreeNavigator.FindWindow(session.RootDock!, document)!.Host);
+            Assert.NotNull(DockTreeNavigator.FindWindow(session.RootDock!, tool));
+            Assert.Same(view, document.PreparedView);
+            Assert.Same(document, session.GetDocuments().Single());
+            Assert.False(document.ClosingToken.IsCancellationRequested);
+        }
+        finally { rejected.Closing -= cancel; main.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task 最终布局写入失败保留窗口与命令且重试成功后可以退出()
+    {
+        using var context = new UiTestContext();
+        var session = context.Workspace;
+        var main = new MainWindow(session.DockFactory.WindowContext) { DataContext = context.ViewModel };
+        main.Show();
+        await context.ViewModel.RetryLayoutSaveCommand.ExecuteAsync(null);
+        var original = File.ReadAllBytes(context.LayoutPath);
+        using (var occupied = new FileStream(context.LayoutPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            main.Close();
+            Assert.True(main.IsVisible);
+            Assert.True(session.CanCreateDocuments);
+            Assert.True(context.ViewModel.HasLayoutMessage);
+            var leases = context.Provider.GetRequiredService<WorkbenchDocumentCommandLeaseStore>();
+            Assert.True(leases.TryAcquire(session.GetDocuments().Single(), out var lease));
+            lease!.Dispose();
+        }
+        Assert.Equal(original, File.ReadAllBytes(context.LayoutPath));
+        await context.ViewModel.RetryLayoutSaveCommand.ExecuteAsync(null);
+        Assert.False(context.ViewModel.HasLayoutMessage);
+        main.Close();
+        Assert.False(main.IsVisible);
     }
 
     private static DockLayoutSnapshotV3 Floating(bool visible) => new(3,

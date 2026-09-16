@@ -42,7 +42,7 @@ internal static class DockLayoutV3Json
         using var json = JsonDocument.Parse(buffer.ToArray(), new JsonDocumentOptions { MaxDepth = 100 });
         CheckDuplicates(json.RootElement);
         if (json.RootElement.ValueKind == JsonValueKind.Object && json.RootElement.TryGetProperty("schemaVersion", out var version) &&
-            version.ValueKind == JsonValueKind.Number && version.TryGetInt32(out var schema) && schema > 3)
+            version.ValueKind == JsonValueKind.Number && version.TryGetDouble(out var schema) && schema > 3)
             throw new DockLayoutFormatException("LAYOUT_SCHEMA_FUTURE");
         try
         {

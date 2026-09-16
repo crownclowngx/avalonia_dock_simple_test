@@ -54,8 +54,8 @@
     -->
     <MyAvaloniaV2ManifestSchemaVersion>2</MyAvaloniaV2ManifestSchemaVersion>
     <MyAvaloniaV2DocumentEnvelopeSchemaVersion>2</MyAvaloniaV2DocumentEnvelopeSchemaVersion>
-    <MyAvaloniaV2LayoutSchemaVersion>2</MyAvaloniaV2LayoutSchemaVersion>
-    <MyAvaloniaV2LayoutFileName>layout-v2.json</MyAvaloniaV2LayoutFileName>
+    <MyAvaloniaLayoutSchemaVersion>3</MyAvaloniaLayoutSchemaVersion>
+    <MyAvaloniaLayoutFileName>layout-v3.json</MyAvaloniaLayoutFileName>
 
     <MyAvaloniaHostDataRootGeneration>v2</MyAvaloniaHostDataRootGeneration>
   </PropertyGroup>

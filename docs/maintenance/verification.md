@@ -43,6 +43,8 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- seal
 dotnet run --project tools/MyAvaloniaManagement.Gate -- seal --repeat
 ```
 
+V11 当前布局已升级为 V3。既有发布 Smoke 的 V2 文件断言尚待实际发布前适配和验证，本轮未运行或放宽它；开发验证见 [浮窗与布局专项指南](floating-layout-verification.md)。
+
 seal 只支持 Windows x64，要求干净工作树，固定 global.json 的 SDK 和 Release 配置。它创建无硬链接源码克隆，执行本仓验证、MyPlugTest 双次确定性打包、包身份和资产检查、真实包验收、Host-only 覆盖率及真实窗口 layout-v2.json Smoke。
 
 覆盖率合并 Host Unit、Plugin、UI、包验收四份报告，只统计主程序集；最低行/分支阈值为配置中的 84.39% / 70.58%。缺报告或混入其他程序集失败。默认一轮，`--repeat` 才执行第二份隔离工作区并比较稳定证据。

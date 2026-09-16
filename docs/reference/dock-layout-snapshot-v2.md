@@ -1,6 +1,6 @@
 # Dock 布局快照 V2
 
-> 用途：当前 Layout V2 格式及恢复语义。状态：当前；核对日期：2026-09-16。事实源：[Layout 实现](../../Host/MyAvaloniaManagement/Business/Layout)与布局测试。历史 `layout-v1.json` 不读取、迁移、覆盖或隔离。
+> 用途：V11 首次升级的只读迁移输入，以及旧 Host V2 行为说明。状态：兼容参考；核对日期：2026-09-16。当前写入与恢复以 [Layout V3](dock-layout-snapshot-v3.md) 为准。V11 使用严格 reader 和纯转换，不调用旧 Store.Load，不改 V2 原字节。下文的整体隔离、退役前备份和禁止浮动描述均属于旧 Host 行为。历史 `layout-v1.json` 不读取、迁移、覆盖或隔离。
 
 ## 文件与所有权
 
@@ -42,7 +42,7 @@
 
 所有字段必需，只有 `activeToolId` 可以为 `null`。未知、重复、缺失、大小写错误、错误类型、注释和尾随逗号全部拒绝。读取端不依赖字段顺序，写入端按上述固定顺序输出。
 
-V2 没有 `isFloating`、`floatingBounds` 或任何其他浮动字段，也没有 V1 Migrator、历史短 ID、`Files`、GUID 或别名归一化。Dock 运行时仍禁止创建浮动窗口，但“禁止浮动”是工作区行为，不是持久化字段。
+V2 没有 `isFloating`、`floatingBounds` 或任何其他浮动字段，也没有 V1 Migrator、历史短 ID、`Files`、GUID 或别名归一化。旧 Host 的 Dock 运行时禁止创建浮动窗口，但“禁止浮动”是工作区行为，不是持久化字段。
 
 ## 稳定结构与状态
 
@@ -55,7 +55,7 @@ V2 没有 `isFloating`、`floatingBounds` 或任何其他浮动字段，也没�
 - `activeToolId` 非空时必须引用快照中的 Tool；
 - 展开是 `isVisible=true,isPinned=false`；隐藏是 `false,false`；固定收起是 `true,true`。
 
-## 恢复事务与失败语义
+## 旧 Host 的恢复事务与失败语义
 
 恢复顺序固定为：
 

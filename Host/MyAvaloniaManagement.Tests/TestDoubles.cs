@@ -48,6 +48,7 @@ internal sealed class TestHostContext : IDisposable
         services.AddSingleton<DocumentTestProbe>();
         services.AddSingleton(new PluginNavigationSettingsStore(Path.Combine(TempDirectory, PluginNavigationSettingsStore.FileName)));
         services.AddSingleton(new MyAvaloniaManagement.Business.ToolCenter.ToolCenterPreferencesStore(Path.Combine(TempDirectory, "tool-center-v1.json")));
+        services.AddSingleton(provider => new DockLayoutV3Store(TempDirectory));
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
         services.AddSingleton(new AppearanceSettingsStore(

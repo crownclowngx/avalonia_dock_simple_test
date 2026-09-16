@@ -12,6 +12,12 @@ namespace MyAvaloniaManagement.ViewModels.Bindings;
 /// </remarks>
 internal interface IMainWindowViewBindings
 {
+    string LayoutMessage { get; }
+    bool HasLayoutMessage { get; }
+    IAsyncRelayCommand RetryLayoutSaveCommand { get; }
+    IRelayCommand RecoverFloatingWindowsCommand { get; }
+    IAsyncRelayCommand ResetLayoutCommand { get; }
+
     IRootDock? Layout { get; }
 
     string DocumentOperationError { get; }

@@ -22,7 +22,7 @@ internal sealed class ToolWorkspaceReadModel(WorkspaceSession session)
         var pinned = roots.SelectMany(item =>
             (item.LeftPinnedDockables ?? []).Concat(item.RightPinnedDockables ?? [])
                 .Concat(item.TopPinnedDockables ?? []).Concat(item.BottomPinnedDockables ?? [])).ToHashSet();
-        var docked = nodes.OfType<IToolDock>().SelectMany(item => item.VisibleDockables ?? []).ToHashSet();
+        var docked = nodes.OfType<IDock>().SelectMany(item => item.VisibleDockables ?? []).ToHashSet();
         var active = nodes.OfType<IDock>().Select(item => item.ActiveDockable).ToHashSet();
         return session.GetRegisteredTools().Select(entry =>
         {

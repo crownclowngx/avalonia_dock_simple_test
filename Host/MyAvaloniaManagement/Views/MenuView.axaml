@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -10,6 +10,8 @@
     <Menu>
         <MenuItem x:Name="FileMenu" Header="文件"/>
         <MenuItem x:Name="ViewMenu" Header="视图">
+            <MenuItem Header="找回屏幕外浮窗" Command="{Binding RecoverFloatingWindowsCommand}" />
+            <MenuItem Header="重置布局…" Command="{Binding ResetLayoutCommand}" />
             <MenuItem Header="主题">
                 <MenuItem Header="跟随系统"
                           ToggleType="Radio"

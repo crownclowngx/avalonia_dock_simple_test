@@ -27,7 +27,8 @@ internal sealed class UiTestContext : IDisposable
     public UiTestContext(
         Action<IServiceCollection, PluginRegistryBuilder>? configureContributions = null,
         DockLayoutSnapshotV2? initialLayout = null,
-        PluginModuleCatalog? modules = null)
+        PluginModuleCatalog? modules = null,
+        DockLayoutSnapshotV3? initialLayoutV3 = null)
     {
         TempDirectory = Path.Combine(
             Path.GetTempPath(),
@@ -36,7 +37,12 @@ internal sealed class UiTestContext : IDisposable
         Directory.CreateDirectory(TempDirectory);
         if (initialLayout is not null)
         {
-            new DockLayoutStore(LayoutPath).Save(initialLayout);
+            new DockLayoutStore(Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)).Save(initialLayout);
+        }
+        if (initialLayoutV3 is not null)
+        {
+            using var initialStore = new DockLayoutV3Store(TempDirectory);
+            initialStore.Save(initialLayoutV3);
         }
         Storage = new UiStorageService();
         var services = new ServiceCollection();
@@ -53,6 +59,7 @@ internal sealed class UiTestContext : IDisposable
         services.AddSingleton(new MyAvaloniaManagement.Business.Compatibility.CompatibilityReportStore(Path.Combine(TempDirectory, "compatibility", "reports")));
         services.AddSingleton(new PluginNavigationSettingsStore(Path.Combine(TempDirectory, PluginNavigationSettingsStore.FileName)));
         services.AddSingleton(new MyAvaloniaManagement.Business.ToolCenter.ToolCenterPreferencesStore(Path.Combine(TempDirectory, "tool-center-v1.json")));
+        services.AddSingleton(provider => new DockLayoutV3Store(TempDirectory));
         services.AddSingleton(new DockLayoutStore(
             Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
         services.AddSingleton(new AppearanceSettingsStore(
@@ -86,7 +93,7 @@ internal sealed class UiTestContext : IDisposable
         Provider.GetRequiredService<ApplicationThemeService>();
 
     public string LayoutPath =>
-        Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName);
+        Path.Combine(TempDirectory, DockLayoutV3Store.LayoutFileName);
 
     /// <summary>
     /// 释放服务容器并清理本次 UI 测试的临时目录。

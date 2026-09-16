@@ -3,6 +3,7 @@ using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Workspace;
+using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.WorkflowActions;
 
 namespace MyAvaloniaManagement.Business.Composition;
@@ -22,6 +23,7 @@ internal sealed class HostShutdownParticipants
     internal void Record(PluginLifecycleCoordinator value) => Update(() => _snapshot with { Lifecycles = value });
     internal void Record(PluginLifecycleStateStore value) => Update(() => _snapshot with { States = value });
     internal void Record(WorkspaceSession value) => Update(() => _snapshot with { Workspace = value });
+    internal void Record(DockLayoutLifecycle value) => Update(() => _snapshot with { Layout = value });
     internal void Record(DocumentOperationGate value) => Update(() => _snapshot with { Documents = value });
 
     private void Update(Func<HostShutdownSnapshot> update)
@@ -49,4 +51,5 @@ internal sealed record HostShutdownSnapshot(
     PluginLifecycleCoordinator? Lifecycles,
     PluginLifecycleStateStore? States,
     WorkspaceSession? Workspace,
-    DocumentOperationGate? Documents = null);
+    DocumentOperationGate? Documents = null,
+    DockLayoutLifecycle? Layout = null);

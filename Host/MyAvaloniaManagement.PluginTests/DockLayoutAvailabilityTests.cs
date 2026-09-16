@@ -10,13 +10,12 @@ using MyAvaloniaManagement.PluginSdk.UI;
 namespace MyAvaloniaManagement.PluginTests;
 
 /// <summary>
-/// 验证布局恢复在修改 Dock 树之前同时检查注册事实和生命周期可用性。任何一个 Tool 不满足条件，
-/// 整份文件都必须隔离并保留默认布局，不能只跳过坏项形成难以解释的部分恢复。
+/// V3 把不可用工具保留为数据，当前窗口只投影可用项；只读迁移不隔离合法旧文件。
 /// </summary>
 public sealed class DockLayoutAvailabilityTests
 {
     [Fact]
-    public void 生命周期未就绪的插件Tool导致整个V2快照隔离且默认布局不被部分修改()
+    public async Task 生命周期未就绪的工具不投影但保留可见意图和原V2字节()
     {
         using var workspace = new TemporaryWorkspace();
         using var services = new ServiceCollection()
@@ -52,25 +51,23 @@ public sealed class DockLayoutAvailabilityTests
             workspace.LayoutPath,
             (code, stableId) => diagnostics.Add($"{code}:{stableId}"));
         store.Save(CreateSnapshot(toolTypeId.Value, proportion: 0.73));
-        var lifecycle = new DockLayoutLifecycle(store);
+        var original = File.ReadAllBytes(workspace.LayoutPath);
+        using var v3 = new DockLayoutV3Store(workspace.DirectoryPath);
+        using var lifecycle = new DockLayoutLifecycle(v3);
 
-        var defaultRoot = lifecycle.Prepare(factory);
-        var leftPane = FindDock<ProportionalDock>(defaultRoot, DockLayoutIds.LeftPane);
-        var defaultProportion = leftPane.Proportion;
+        lifecycle.Prepare(factory);
         var applied = lifecycle.ApplyPending(factory);
-
-        Assert.Same(defaultRoot, applied);
-        Assert.Equal(defaultProportion, leftPane.Proportion);
-        Assert.Contains(
-            $"LAYOUT_PLUGIN_UNAVAILABLE:{toolTypeId.Value}",
-            diagnostics);
-        Assert.False(File.Exists(workspace.LayoutPath));
-        Assert.Single(Directory.EnumerateFiles(workspace.DirectoryPath, "*.invalid.bak"));
+        Assert.False(DockTreeNavigator.IsDockableAttached(applied, tool));
+        lifecycle.Save(factory);
+        await lifecycle.FlushAsync();
+        Assert.Equal("visible", Assert.Single(v3.Load()!.Tools).State);
+        Assert.Equal(original, File.ReadAllBytes(workspace.LayoutPath));
+        Assert.Empty(Directory.EnumerateFiles(workspace.DirectoryPath, "*.invalid.bak"));
         factory.Dispose();
     }
 
     [Fact]
-    public void 未注册Tool导致整份V2快照隔离而不是部分应用Pane比例()
+    public async Task 未注册工具保留在V3且不隔离合法V2输入()
     {
         using var workspace = new TemporaryWorkspace();
         using var services = new ServiceCollection()
@@ -87,19 +84,19 @@ public sealed class DockLayoutAvailabilityTests
         store.Save(CreateSnapshot(
             "myavalonia.plugin.not-installed.tool.sample",
             proportion: 0.73));
-        var lifecycle = new DockLayoutLifecycle(store);
+        var original = File.ReadAllBytes(workspace.LayoutPath);
+        using var v3 = new DockLayoutV3Store(workspace.DirectoryPath);
+        using var lifecycle = new DockLayoutLifecycle(v3);
 
-        var defaultRoot = lifecycle.Prepare(factory);
-        var leftPane = FindDock<ProportionalDock>(defaultRoot, DockLayoutIds.LeftPane);
-        var defaultProportion = leftPane.Proportion;
+        lifecycle.Prepare(factory);
         lifecycle.ApplyPending(factory);
-
-        Assert.Equal(defaultProportion, leftPane.Proportion);
-        Assert.Contains(
-            "LAYOUT_PLUGIN_MISSING:myavalonia.plugin.not-installed.tool.sample",
-            diagnostics);
-        Assert.False(File.Exists(workspace.LayoutPath));
-        Assert.Single(Directory.EnumerateFiles(workspace.DirectoryPath, "*.invalid.bak"));
+        lifecycle.Save(factory);
+        await lifecycle.FlushAsync();
+        var retained = Assert.Single(v3.Load()!.Tools);
+        Assert.Equal("myavalonia.plugin.not-installed.tool.sample", retained.Id);
+        Assert.Equal("visible", retained.State);
+        Assert.Equal(original, File.ReadAllBytes(workspace.LayoutPath));
+        Assert.Empty(Directory.EnumerateFiles(workspace.DirectoryPath, "*.invalid.bak"));
         factory.Dispose();
     }
 

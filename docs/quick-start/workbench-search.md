@@ -33,6 +33,6 @@
 
 工具中心每行提供星标、显示／定位与“⋯”菜单；分类分配、隐藏和常用排序放在更多菜单中。“整理工具”集中管理分类及隐藏全工作区工具。工具中心的搜索跨导航分类，但保留显式来源；“清除来源”只解除来源限制。
 
-布局保存只记忆空间安排；业务文件仍需通过支持保存的页面执行 `Ctrl+S`。V8 没有增加跨启动页面会话恢复，也没有改动 SDK 或持久化格式。
+浮窗中的页面定位会激活实际承载窗口，最小化时先恢复。命令面板在调用窗口显示并保持工作台唯一会话。布局保存只记忆工具空间安排；业务文件仍需通过支持保存的页面执行 `Ctrl+S`。V11 继续不跨启动恢复 Document；工具位置和分组使用 [Layout V3](../reference/dock-layout-snapshot-v3.md)。
 
 相关说明：[功能中心与旧目录](plugin-navigation-and-function-center.md)、[工具中心](tool-center.md)、[V8 实施记录](../archive/records/host-v8/cognitive-ux-convergence-acceptance.md)。

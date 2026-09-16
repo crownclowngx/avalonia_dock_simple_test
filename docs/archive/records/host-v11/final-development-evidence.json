@@ -1,0 +1,11 @@
+{
+  "status": "pending-final-verify",
+  "branch": "codex/host-v11-floating-layout",
+  "baseCommit": "bbd4832",
+  "manualDesktop": "pending",
+  "externalNativeControls": "pending",
+  "windowsCI": "not-run",
+  "releaseGates": "not-run",
+  "deployment": "not-run",
+  "publication": "not-run"
+}

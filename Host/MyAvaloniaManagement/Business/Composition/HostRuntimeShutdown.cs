@@ -42,6 +42,9 @@ internal sealed class HostRuntimeShutdown(
         PluginLifecycleShutdownResult? lifecycleResult = null;
         try
         {
+            // 只停止已经创建的布局调度，晚于正常主窗最终保存，早于 Workspace 释放通知。
+            // 启动回滚也不会临时解析 Store；文件锁仍由原 Host Provider 最终释放。
+            safe &= Try(() => snapshot.Layout?.Dispose(), failures);
             // 每个入口都要尝试关闭。某个入口失败不能阻止其他入口撤销，但必须阻止 Provider 释放。
             safe &= Try(() => snapshot.Workflow?.BeginShutdown(), failures);
             safe &= Try(() => snapshot.Commands?.BeginShutdown(), failures);
