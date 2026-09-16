@@ -1,10 +1,226 @@
 {
+  "schemaVersion": 1,
   "plan": "V11-P1",
-  "status": "pending-final-verify",
-  "note": "文档及源码提交后运行完整本地 verify，仅回填本非嵌入 JSON。",
-  "manualDesktop": "pending",
-  "deployment": "not-run",
+  "status": "development-verified-desktop-pending",
+  "recordedAtUtc": "2026-09-16T07:31:54.0075395Z",
+  "branch": "codex/host-v11-floating-layout",
+  "baseCommit": "052532172a7e06582692013a10ce7af4b65052c7",
+  "reproductionCommit": "3ca512843b66260d37a53d9dfc7f9773a640a9c0",
+  "verifiedSource": {
+    "revision": "5b8f162df51c9e37212bc94bad2768f99902854f",
+    "tree": "1abd34b2f55b1de16f82e9a48e5ca811ec62121f",
+    "clean": true,
+    "files": 888,
+    "sha256": "D1DE4B220BF433976093739DF0A40FC3F7B74FB3C7A851CBC6BDDDD5A48FBC21"
+  },
+  "evidenceUpdate": "最终 verify 后仅回填本非嵌入 JSON；源码、测试、嵌入 MD 与构建输入保持不变。证据提交不作为已构建源码提交。",
+  "verification": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "runId": "20260916-072958-5b8f162df51c",
+    "profile": "verify",
+    "scope": "all",
+    "rounds": 1,
+    "passed": true,
+    "startedAtUtc": "2026-09-16T15:29:57.6587616+08:00",
+    "finishedAtUtc": "2026-09-16T15:31:10.4779772+08:00",
+    "summaryPath": "artifacts/gate/20260916-072958-5b8f162df51c/summary.json",
+    "summarySha256": "f0ee6f86ec23c57c67e5751cf5a8b4c3b3e4873ef1458c6dcd040dd9ad7dcbdd",
+    "stages": [
+      {
+        "id": "restore",
+        "status": "passed"
+      },
+      {
+        "id": "build",
+        "status": "passed"
+      },
+      {
+        "id": "tests",
+        "status": "passed"
+      },
+      {
+        "id": "contracts",
+        "status": "passed"
+      },
+      {
+        "id": "packages",
+        "status": "passed"
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed"
+      }
+    ],
+    "build": {
+      "configuration": "Release",
+      "warnings": 0,
+      "errors": 0
+    },
+    "tests": {
+      "total": 998,
+      "passed": 998,
+      "failed": 0,
+      "skipped": 0,
+      "groups": [
+        {
+          "group": "host-plugin",
+          "total": 255,
+          "passed": 255,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-072958-5b8f162df51c/pass-1/tests/host-plugin/host-plugin.trx",
+          "sha256": "3d2826b6a16cdc9077339169b43fa2a79991bc15caf9c421d33d5c79e80f696b"
+        },
+        {
+          "group": "host-ui",
+          "total": 149,
+          "passed": 149,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-072958-5b8f162df51c/pass-1/tests/host-ui/host-ui.trx",
+          "sha256": "682b51d3b663a7b71b41178e33967ba56d590ef7bf5ea27cd2bc8a606ca50396"
+        },
+        {
+          "group": "host-unit",
+          "total": 491,
+          "passed": 491,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-072958-5b8f162df51c/pass-1/tests/host-unit/host-unit.trx",
+          "sha256": "ba1465b45728ba454cf1cd079489f974f5bbf72050934c81f7b6ea9a6721c9fb"
+        },
+        {
+          "group": "my-plug-test-package",
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-072958-5b8f162df51c/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+          "sha256": "df759c8aae35f4854df4c52cf88d1a75bc265b8632a81f9f379f5ea649c6a675"
+        },
+        {
+          "group": "my-plug-test",
+          "total": 11,
+          "passed": 11,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-072958-5b8f162df51c/pass-1/tests/my-plug-test/my-plug-test.trx",
+          "sha256": "f41edd25c4c2937da31f785ae65887961a7e84bbc3f24e0cfb5f6f2afb9d842d"
+        },
+        {
+          "group": "sdk",
+          "total": 91,
+          "passed": 91,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-072958-5b8f162df51c/pass-1/tests/sdk/sdk.trx",
+          "sha256": "70103bd4c4c32c015ffa404ba525d8daaf9dff7e4b50259c91aeb72e90d42b2a"
+        }
+      ]
+    }
+  },
+  "targetedVerification": {
+    "note": "红灯为修复前预期失败；其余专项在最终文档定稿前执行，不能代替最终 verify。最终源码新增53个案例：Plugin37、Unit1、UI15。",
+    "runs": [
+      {
+        "group": "expected-red-original-defect",
+        "total": 30,
+        "passed": 0,
+        "failed": 30,
+        "skipped": 0,
+        "trxPath": "artifacts/host-v11-p1/red/p1-red.trx",
+        "sha256": "d2d7d7392f312b3c4a3ff8c71b81cfb8b682dee697dc9ab259775d9876dd6333"
+      },
+      {
+        "group": "structure-and-full-width",
+        "total": 39,
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0,
+        "trxPath": "artifacts/host-v11-p1/policy/p1-policy.trx",
+        "sha256": "f52229a0a629468c46e044f842aeb63e2b0b4b1b9294170d85620a36cd4efb11"
+      },
+      {
+        "group": "workspace-factory",
+        "total": 16,
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0,
+        "trxPath": "artifacts/host-v11-p1/unit/p1-unit.trx",
+        "sha256": "8174a74f8e87cb63acedecbe46bf7867227a73808ed7f5d1224d0b258401c99e"
+      },
+      {
+        "group": "headless-dock-v3",
+        "total": 27,
+        "passed": 27,
+        "failed": 0,
+        "skipped": 0,
+        "trxPath": "artifacts/host-v11-p1/ui/p1-ui.trx",
+        "sha256": "a3f7bc2e1e57506e4f979b395acf0c7bebd18f8f96aec5870435d96cae9c42ea"
+      }
+    ]
+  },
+  "documentLinks": {
+    "result": {
+      "files": 60,
+      "links": 522,
+      "anchors": 1,
+      "errors": []
+    },
+    "sha256": "a71dd9550c57790414a6847bc615dd7a12c701bdf5932fb8e34a9bae9a41077a"
+  },
+  "hostArtifacts": [
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.dll",
+      "sha256": "8ee0d50043c69d05ddde6f64eef64251d6ecab8a71efcb188269ed50475cf6a5",
+      "bytes": 3378176
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.exe",
+      "sha256": "b160a00dd1e10fc1323834cdbe7caf9e713dc6572dcca0850dcc16bc22b52c2d",
+      "bytes": 162816
+    }
+  ],
+  "packageAcceptance": {
+    "pluginId": "myavalonia.plugin.my-plug-test",
+    "passed": true,
+    "archivePath": "artifacts/gate/20260916-072958-5b8f162df51c/pass-1/packages/my-plug-test/build-1/MyPlugTest-win-x64.zip",
+    "sha256": "57c828d734fb03ee3cdac6d5282311c0ec1c1aac52e6db6858a02b7300043017",
+    "manifestSha256": "93b4006555e65634300c0e1af204ccc345a1739b432ad6fd9cdc384e2a567ae1",
+    "files": 8,
+    "deterministicVerified": false
+  },
+  "manualDesktop": {
+    "status": "pending",
+    "reason": "当前计算机工具没有可操作的原生应用表面；未实际执行鼠标投放，Headless 不代表 Windows 桌面通过。",
+    "cases": [
+      "截图位置下方投放",
+      "上方投放和连续操作",
+      "整组浮窗回停",
+      "实际重启恢复",
+      "外部Bili下载业务"
+    ],
+    "procedure": "docs/maintenance/floating-layout-verification.md"
+  },
+  "ownershipAndFormat": {
+    "layoutSchema": 3,
+    "pluginSdkChanged": false,
+    "dockVersionChanged": false,
+    "saveComponentsChanged": false,
+    "toolModelAndViewReused": true,
+    "documentInstanceAndScopePreserved": true,
+    "intermediateLayoutPersisted": false,
+    "evidence": "DockToolSplitUiTests 与 DockFourWayLayoutTests.ToolSplit 的实际结构、实例和文件断言"
+  },
+  "releaseEligible": false,
+  "publishable": false,
   "windowsCI": "not-run",
   "releaseGates": "not-run",
-  "aiflow": "not-used"
+  "releaseSmoke": "not-run",
+  "releaseCoverage": "not-run",
+  "deployment": "not-run",
+  "publication": "not-run",
+  "aiflow": "not-used",
+  "deploymentNote": "D:\\data\\avalonia 的既有单文件自包含产物未覆盖；此处 DLL/EXE 为开发构建，不是新发布包。",
+  "localEvidenceNote": "完整 Gate 日志、TRX 与包保留在 artifacts，本 JSON 归档身份与结果，不提交生成物。"
 }
