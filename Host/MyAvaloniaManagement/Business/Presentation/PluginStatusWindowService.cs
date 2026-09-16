@@ -2,6 +2,7 @@ using System;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using MyAvaloniaManagement.Business.PluginStatus;
+using MyAvaloniaManagement.Business.Compatibility;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels.PluginStatus;
 using MyAvaloniaManagement.Views.PluginStatus;
@@ -14,7 +15,8 @@ namespace MyAvaloniaManagement.Business.Presentation;
 /// 窗口按需创建；它既不是 Tool 也不是 Document，因此不参与 Dock 或插件模型生命周期。
 /// 主窗口真正关闭才释放窗口，取消主窗口关闭不会破坏后续使用。
 /// </remarks>
-internal sealed class PluginStatusWindowService(IPluginStatusQuery query, WorkspaceSession workspace, TimeProvider time) : IDisposable
+internal sealed class PluginStatusWindowService(IPluginStatusQuery query, WorkspaceSession workspace, TimeProvider time,
+    IPluginDashboardEvidence? evidence = null) : IDisposable
 {
     private Window? _owner;
     private PluginStatusWindow? _window;
@@ -43,7 +45,7 @@ internal sealed class PluginStatusWindowService(IPluginStatusQuery query, Worksp
             existing.Activate();
             return;
         }
-        var model = new PluginStatusWindowViewModel(query, time);
+        var model = new PluginStatusWindowViewModel(query, time, evidence);
         model.Refresh();
         var window = new PluginStatusWindow { DataContext = model };
         _window = window;
@@ -62,6 +64,7 @@ internal sealed class PluginStatusWindowService(IPluginStatusQuery query, Worksp
             window.Activated += WindowActivated;
             window.Closed += WindowClosed;
             window.Show(_owner);
+            _ = model.LoadEvidenceAsync();
         }
         catch
         {
@@ -85,6 +88,7 @@ internal sealed class PluginStatusWindowService(IPluginStatusQuery query, Worksp
         _window = null;
         window.Activated -= WindowActivated;
         window.Closed -= WindowClosed;
+        (window.DataContext as PluginStatusWindowViewModel)?.Dispose();
         window.DataContext = null;
     }
 

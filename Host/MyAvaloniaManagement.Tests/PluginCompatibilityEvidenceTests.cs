@@ -95,6 +95,8 @@ public sealed class PluginCompatibilityEvidenceTests : IDisposable
     [InlineData("native/win-x64/Dock.Avalonia.dll", true)]
     [InlineData("MyAvaloniaManagement.PluginSdk.dll", true)]
     [InlineData("Newtonsoft.Json.dll", true)]
+    [InlineData("Avalonia.dll", true)]
+    [InlineData("Ursa.dll", true)]
     [InlineData("Microsoft.Extensions.Unprovided.dll", true)]
     [InlineData("MyAvaloniaManagement.Icons.dll", false)]
     [InlineData("Private.Business.dll", false)]
@@ -133,6 +135,32 @@ public sealed class PluginCompatibilityEvidenceTests : IDisposable
         Assert.Contains(host.Files, f => f.Path == "MyAvaloniaManagement.PluginSdk.dll");
         Assert.DoesNotContain(host.Files, f => f.Path == "System.Private.CoreLib.dll");
         Assert.NotEmpty(CompatibilityReportJson.Serialize(Report() with { Host = host }));
+    }
+
+    [Fact]
+    public void 规则冲突明确拒绝且换行和注释不改变身份()
+    {
+        using var stream = typeof(RuntimeProfile).Assembly.GetManifestResourceStream("Compatibility.RuntimeProfile")!;
+        using var reader = new StreamReader(stream);
+        var xml = reader.ReadToEnd();
+        Assert.Equal(RuntimeProfile.Current.Hash, new RuntimeProfile(xml.Replace("\r\n", "\n").Replace("<Project>", "<Project><!-- 注释不参与规则身份 -->")).Hash);
+        Assert.Throws<InvalidDataException>(() => new RuntimeProfile(xml.Replace("Category=\"Framework\"", "Category=\"Unknown\"")));
+        Assert.Throws<InvalidDataException>(() => new RuntimeProfile(xml.Replace("PluginPrivateAssembly Include=\"MyAvaloniaManagement.Icons\"", "PluginPrivateAssembly Include=\"MyAvaloniaManagement.PluginSdk\"")));
+        Assert.Throws<InvalidDataException>(() => new RuntimeProfile(xml.Replace("Include=\"Ursa.Themes.Semi\"", "Include=\"Ursa\"")));
+    }
+
+    [Fact]
+    public async Task 过大报告和存储写失败不能生成成功记录()
+    {
+        var input = Path.Combine(_root, "large.json");
+        await File.WriteAllTextAsync(input, new string(' ', CompatibilityReportJson.MaximumBytes + 1));
+        await Assert.ThrowsAsync<InvalidDataException>(() => CompatibilityReportStore.ReadFileAsync(input, default));
+        var blocked = Path.Combine(_root, "not-directory");
+        await File.WriteAllTextAsync(blocked, "occupied");
+        var store = new CompatibilityReportStore(blocked);
+        await File.WriteAllTextAsync(input, CompatibilityReportJson.Serialize(Report()));
+        await Assert.ThrowsAnyAsync<IOException>(() => store.ImportAsync(input, default));
+        Assert.Equal("occupied", await File.ReadAllTextAsync(blocked));
     }
 
     public void Dispose() => Directory.Delete(_root, recursive: true);

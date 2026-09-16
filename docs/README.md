@@ -7,7 +7,7 @@
 - [工作区搜索与功能入口](quick-start/workbench-search.md)：找到功能、切换已有页面、恢复工具、执行命令。
 - [功能中心与插件目录](quick-start/plugin-navigation-and-function-center.md)：分类、创建意图、目录偏好。
 - [工具中心](quick-start/tool-center.md)：显示、隐藏、收藏和分类。
-- [插件状态窗口](quick-start/plugin-status.md)：查看可用性、贡献和脱敏诊断。
+- [插件看板](quick-start/plugin-status.md)：查看版本、兼容矩阵、可用性、贡献和脱敏诊断。
 - [V9 升级边界](quick-start/host-v9-upgrade.md)：旧插件二进制、新模板、外部产物验证。
 - [macOS 实验](quick-start/macos-experiment.md)：交叉打包和仍需完成的真机验证。
 
@@ -31,13 +31,15 @@
 | 修改保存与恢复 | [Document 持久化](reference/document-persistence.md) |
 | 修改停靠布局 | [Layout V2](reference/dock-layout-snapshot-v2.md) |
 | 修改 SDK public API | [API 基线维护](reference/plugin-sdk-api-compatibility.md) |
+| 理解产物、报告和兼容判断 | [插件兼容证据契约](reference/plugin-compatibility.md) |
+| 验证插件二进制与候选模板 | [插件兼容开发验证](maintenance/plugin-compatibility-verification.md) |
 | 修改跨插件调用 | [Workflow Action 契约](reference/workflow-actions.md) |
 | 运行验证、理解 seal 条件 | [主仓验证与封板](maintenance/verification.md) |
 | 维护六个 NuGet 包与模板 | [NuGet 发布维护](maintenance/nuget-release.md) |
 
 ## 未完成工作与历史
 
-- [V10 插件兼容治理与 Host 插件看板计划](roadmap/host-v10-plugin-compatibility-and-dashboard-plan.md)：待实施的分阶段开发计划；不代表当前功能，不包含本轮发布门禁。
+- [V10 插件兼容治理与 Host 插件看板计划](roadmap/host-v10-plugin-compatibility-and-dashboard-plan.md)：实施与验收清单；实际结果见 [V10 开发记录](archive/records/host-v10/development-acceptance.md)，不包含本轮发布门禁。
 - [待办与验收](roadmap/README.md)：待验收、发布前工作、实验、未来候选和维护决策。
 - [历史归档](archive/README.md)：原计划、阶段记录、旧格式及关联证据。历史命令不能当作当前操作入口。
 

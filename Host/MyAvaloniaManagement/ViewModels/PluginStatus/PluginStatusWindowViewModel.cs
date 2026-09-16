@@ -15,7 +15,7 @@ namespace MyAvaloniaManagement.ViewModels.PluginStatus;
 /// 每次刷新先取得完整快照再替换展示，失败时保留上一次结果。选择使用稳定键恢复，
 /// 避免用户在查看故障详情时因为刷新或重新激活窗口而跳到另一插件。
 /// </remarks>
-internal sealed partial class PluginStatusWindowViewModel : ObservableObject
+internal sealed partial class PluginStatusWindowViewModel : ObservableObject, IDisposable
 {
     private readonly IPluginStatusQuery _query;
     private readonly TimeProvider _time;
@@ -23,10 +23,12 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject
     private string? _selectionKey;
     private bool _updatingSelection;
 
-    public PluginStatusWindowViewModel(IPluginStatusQuery query, TimeProvider time)
+    public PluginStatusWindowViewModel(IPluginStatusQuery query, TimeProvider time,
+        MyAvaloniaManagement.Business.Compatibility.IPluginDashboardEvidence? evidence = null)
     {
         _query = query ?? throw new ArgumentNullException(nameof(query));
         _time = time ?? throw new ArgumentNullException(nameof(time));
+        _evidence = evidence;
     }
 
     [ObservableProperty] private string _searchText = string.Empty;
@@ -50,6 +52,7 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject
     [RelayCommand]
     public void Refresh()
     {
+        if (_disposed) return;
         try
         {
             var next = _query.Capture();
@@ -76,6 +79,7 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject
         if (!_updatingSelection && value is not null) _selectionKey = value.Key;
         CopyFeedback = string.Empty;
         OnPropertyChanged(nameof(HasSelection));
+        UpdateEvidenceSelection();
     }
 
     private void ApplyFilter()
@@ -96,6 +100,7 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(HasNoResults));
         OnPropertyChanged(nameof(ResultsText));
         OnPropertyChanged(nameof(EmptyText));
+        UpdateMatrix();
     }
 
     /// <summary>生成所选插件的可复制摘要；剪贴板访问留在 View，模型无需依赖 Avalonia 平台。</summary>
@@ -110,6 +115,10 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject
         foreach (var record in item.Diagnostics)
             text.AppendLine($"{record.TimeText} [{record.SeverityText}] [{record.Code}] {record.PhaseText}：{record.Message}")
                 .AppendLine(record.TechnicalDetail);
+        // 导入报告的任意正文不进入复制摘要；摘要只包含已校验身份和受控状态，避免传播个人路径。
+        text.AppendLine(EvidenceNotice).AppendLine(EvidenceTimeText).AppendLine(ArtifactText);
+        foreach (var row in EvidenceRows)
+            text.AppendLine($"Host {row.HostBuild} · {row.MatchText} · {row.LevelText}：{row.ResultText} · {row.TimeText}");
         return text.ToString();
     }
 }

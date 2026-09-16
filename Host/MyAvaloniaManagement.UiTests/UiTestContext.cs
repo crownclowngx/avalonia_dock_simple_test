@@ -49,6 +49,8 @@ internal sealed class UiTestContext : IDisposable
             services.AddSingleton<IHostDiagnosticSink>(_diagnostics);
         }
         services.AddSingleton<IHostStorageService>(Storage);
+        // 看板测试沿用每个上下文的数据所有权，不能读取或写入用户真实的报告目录。
+        services.AddSingleton(new MyAvaloniaManagement.Business.Compatibility.CompatibilityReportStore(Path.Combine(TempDirectory, "compatibility", "reports")));
         services.AddSingleton(new PluginNavigationSettingsStore(Path.Combine(TempDirectory, PluginNavigationSettingsStore.FileName)));
         services.AddSingleton(new MyAvaloniaManagement.Business.ToolCenter.ToolCenterPreferencesStore(Path.Combine(TempDirectory, "tool-center-v1.json")));
         services.AddSingleton(new DockLayoutStore(

@@ -83,7 +83,7 @@ internal sealed class HostWorkbenchCommandCatalog
                     HostWorkbenchCommandIds.OpenToolCenter, "工具中心…", "搜索、分类和收藏工具，管理工作区工具的显示与隐藏。"), openToolCenter) }),
             .. (openPluginStatus is null ? Array.Empty<HostWorkbenchCommandRegistration>() :
                 new[] { new HostWorkbenchCommandRegistration(new CommandDescriptor(
-                    HostWorkbenchCommandIds.OpenPluginStatus, "插件状态…", "查看当前会话的插件加载、兼容性、贡献与诊断信息。"), openPluginStatus) }),
+                    HostWorkbenchCommandIds.OpenPluginStatus, "插件看板…", "查看插件状态、版本、兼容矩阵、贡献与诊断信息。"), openPluginStatus) }),
         ])
     {
     }

@@ -26,6 +26,7 @@
          使用独立 artifacts-path 构建此变体；Gate verify 的默认测试集合保持可重现。 -->
     <Compile Remove="ExternalPluginBinaryAcceptanceTests.cs" Condition="'$(HostExternalPluginAcceptance)' != 'true'" />
     <Compile Remove="ExternalPluginWorkspaceAcceptanceTests.cs" Condition="'$(HostExternalPluginAcceptance)' != 'true'" />
+    <Compile Remove="ExternalPluginDashboardAcceptanceTests.cs" Condition="'$(HostExternalPluginAcceptance)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>

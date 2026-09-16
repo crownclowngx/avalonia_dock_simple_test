@@ -6,6 +6,8 @@
 
 `build/MyAvaloniaManagement.RuntimeProfile.props` 是共享根、禁带资产和插件引用边界的唯一描述。Host 与 Gate 嵌入它，MSBuild 直接导入它，Build 包携带同一文件。禁带 Newtonsoft.Json 不承诺 Host 提供它；Microsoft.Extensions 的家族禁带与实际运行时闭包也分别表达。
 
+V10 修正了一个旧打包正则漏洞：`Avalonia.dll`、`Ursa.dll` 本身过去可能漏过模式，现与各自子程序集一起禁带。共享加载集合不改变。携带这两个文件的历史错误包需要清除重复共享资产后重新验收；无此资产的冻结旧插件保持原样验证。规则摘要随这项修正变化，旧规则报告不会被当作新规则报告。
+
 ## 产物与报告
 
 可选 `plugin.build.json` schema 1 保存目标框架、Build 工具版本及实际解析的 NuGet 依赖。它不扩展 manifest schema 2；旧插件没有该文件时编译包版本显示未知，程序集引用版本单独展示。

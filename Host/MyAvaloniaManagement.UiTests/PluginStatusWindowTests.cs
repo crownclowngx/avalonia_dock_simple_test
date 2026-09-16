@@ -93,6 +93,7 @@ public sealed class PluginStatusWindowTests
             await Render(window, "plugin-status-light");
             window.RequestedThemeVariant = ThemeVariant.Dark;
             await Render(window, "plugin-status-dark");
+            window.FindControl<TabControl>("DashboardTabs")!.SelectedIndex = 2;
             window.Width = 680; window.Height = 520;
             await Render(window, "plugin-status-compact");
             Assert.True(list.Bounds.Width > 170);

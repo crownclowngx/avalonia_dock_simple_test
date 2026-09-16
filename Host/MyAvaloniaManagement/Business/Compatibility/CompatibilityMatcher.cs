@@ -36,7 +36,10 @@ internal static class CompatibilityMatcher
     };
 
     internal static string Summary(PluginCompatibilityReport report) => string.Join("；",
-        report.Checks.GroupBy(c => c.Level).Select(group => $"{LevelText(group.Key)}：" +
-            (group.All(c => c.Outcome == CompatibilityOutcome.Passed) ? "通过" :
-                string.Join(" / ", group.Select(c => OutcomeText(c.Outcome)).Distinct()))));
+        Enum.GetValues<CompatibilityLevel>().Select(level =>
+        {
+            var checks = report.Checks.Where(check => check.Level == level).ToArray();
+            return $"{LevelText(level)}：" + (checks.Length == 0 ? "未执行" :
+                string.Join(" / ", checks.Select(check => OutcomeText(check.Outcome)).Distinct()));
+        }));
 }

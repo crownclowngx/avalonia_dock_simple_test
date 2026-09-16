@@ -40,9 +40,13 @@ internal static class CompatibilityReportJson
     {
         if (report.SchemaVersion != 1 || report.ReportId == Guid.Empty || report.ExecutedAtUtc == default ||
             report.ExecutedAtUtc > DateTimeOffset.UtcNow.AddMinutes(5) ||
-            string.IsNullOrWhiteSpace(report.PluginId) || !Regex.IsMatch(report.PluginId, @"\Amyavalonia\.plugin\.[a-z0-9]+(?:[.-][a-z0-9]+)*\z") ||
+            string.IsNullOrWhiteSpace(report.PluginId) || report.PluginId.Length > 200 || !Regex.IsMatch(report.PluginId, @"\Amyavalonia\.plugin\.[a-z0-9]+(?:[.-][a-z0-9]+)*\z") ||
             !Version.TryParse(report.PluginVersion, out _) || !IsHash(report.PluginHash) || report.Host is null ||
             !IsHash(report.Host.RuntimeHash) || !IsHash(report.Host.RuleHash) ||
+            !Version.TryParse(report.Host.ProductVersion, out _) || !Version.TryParse(report.Host.SdkVersion, out _) ||
+            !Version.TryParse(report.Host.AvaloniaVersion, out _) || !Version.TryParse(report.Host.DockVersion, out _) ||
+            !IsDisplayText(report.Host.InformationalVersion) || !IsDisplayText(report.Host.OperatingSystem) ||
+            !IsDisplayText(report.Host.Architecture) || !IsDisplayText(report.Host.Framework) ||
             string.IsNullOrWhiteSpace(report.Host.OperatingSystem) || string.IsNullOrWhiteSpace(report.Host.Architecture) ||
             string.IsNullOrWhiteSpace(report.Host.Framework) || report.Checks is null || report.Checks.Count is 0 or > 1000 ||
             report.Checks.Any(c => c is null || !Enum.IsDefined(c.Level) || !Enum.IsDefined(c.Outcome) ||
@@ -59,6 +63,7 @@ internal static class CompatibilityReportJson
     }
 
     internal static bool IsHash(string? value) => value is { Length: 64 } && value.All(c => c is >= '0' and <= '9' or >= 'A' and <= 'F');
+    private static bool IsDisplayText(string? value) => value is { Length: > 0 and <= 512 } && !value.Any(char.IsControl);
 
     private static void AssertUnique(JsonElement element)
     {

@@ -14,7 +14,9 @@
 | manifest / Document envelope / Layout | schema 2；布局文件 layout-v2.json |
 | 默认数据根 | `%LOCALAPPDATA%/MyAvaloniaManagement/v2/` |
 
-`MYAVALONIA_DATA_DIRECTORY` 表示完整数据根，不再追加产品名或 v2。产品版本、SDK/API、插件业务版本、程序集身份及数据 schema 各有职责；Host V5–V9 等名称只是改造顺序。
+`MYAVALONIA_DATA_DIRECTORY` 表示完整数据根，不再追加产品名或 v2。产品版本、SDK/API、插件业务版本、程序集身份及数据 schema 各有职责；Host V5–V10 等名称只是改造顺序。
+
+V10 工作树增加插件看板与兼容报告，尚未公开发布，表中正式版本保持原样。报告绑定实际 Host 运行文件、规则及环境摘要；commit 和产品版本仅辅助定位，脏工作树不以 HEAD 代替内容身份。可选 `plugin.build.json` 与兼容报告独立使用 schema 1，不改变既有 schema 2。契约见[插件兼容证据](plugin-compatibility.md)。
 
 ## 六个包
 

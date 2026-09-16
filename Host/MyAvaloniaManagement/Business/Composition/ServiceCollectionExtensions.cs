@@ -5,6 +5,7 @@ using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Navigation;
 using MyAvaloniaManagement.Business.ToolCenter;
 using MyAvaloniaManagement.Business.PluginStatus;
+using MyAvaloniaManagement.Business.Compatibility;
 using MyAvaloniaManagement.Business.Help;
 using MyAvaloniaManagement.Business.Commands.Catalog;
 using MyAvaloniaManagement.Business.Commands.Context;
@@ -95,6 +96,10 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<PluginAvailabilityReadModel>(),
             provider.GetService<HostDiagnosticSession>() ?? provider.GetService<IHostDiagnosticSink>() as HostDiagnosticSession));
         services.AddSingleton<PluginStatusWindowService>();
+        services.AddSingleton(_ => new CompatibilityReportStore(System.IO.Path.Combine(HostDataRootPolicy.ResolveDefault(), "compatibility", "reports")));
+        services.AddSingleton<IPluginDashboardEvidence>(provider => new PluginDashboardEvidence(
+            provider.GetRequiredService<PluginRegistry>(), provider.GetRequiredService<CompatibilityReportStore>(),
+            provider.GetRequiredService<TimeProvider>(), System.IO.Path.Combine(AppContext.BaseDirectory, "CompatibilityReports")));
         services.AddSingleton<HostOpenPluginStatusCommandHandler>();
         services.AddSingleton<ApplicationThemeService>();
         services.AddSingleton<HelpContentCatalog>();

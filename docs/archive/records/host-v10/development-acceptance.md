@@ -42,3 +42,11 @@ Build 从真实 project.assets.json 生成可选 `plugin.build.json`，部署与
 新增 `tools/MyAvaloniaManagement.Compatibility`，按插件隔离输入与测试进程，核对 Host / UI 测试实际运行文件，严格检查 TRX 执行数量，输出分层报告。用法见[专项维护指南](../../../maintenance/plugin-compatibility-verification.md)。工具参数和 TRX 自测加入 Gate.Tests，阶段结果为 52/52；证据基础测试增至 12/12。
 
 2026-09-16 的开发阶段重放：冻结输入 12 个插件静态与加载组合全部通过；仅显式选择 ClassicGamePlugin 和 MyPlugTest，二者 Workspace 通过。其他 10 个 Workspace、全部业务与真机未执行。证据目录 `artifacts/host-v10/external-acceptance/20260916-030155-fccd91c1`。这是当时开发工作树的文件身份；后续 Host 实现变化后会重验，不能将该报告直接视为最终 Host 验收。
+
+## G5–G6：证据查询与看板
+
+已实现三页签、显式文件检查、报告导入与历史保留、复制和文本导出。窗口仍由 Runtime 拥有，不注册为 Dock Tool；运行状态与验收结果分离。后台任务有取消和代次控制，文件变化后不能用新磁盘身份替换已加载会话。
+
+阶段验证：Host 状态、命令投影、证据和新查询专项 56/56；既有窗口 Headless 交互 4/4；浅色、深色、680×520 紧凑布局已渲染检查。最终真实 ZIP 到看板的贯通与完整 verify 留在 G8 记录。
+
+规则冲突自检额外发现并修复旧正则漏过 `Avalonia.dll` / `Ursa.dll` 本身的问题。共享根不变，只补齐两个共享主文件的禁带行为；规则摘要变化，因此需以最终规则重验原冻结输入。候选 `.1` 为修复前实验，`.2` 为修复后的本地消费输入，不上传也不覆盖公共包。

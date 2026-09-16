@@ -249,15 +249,19 @@ View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均禁止浮�
 收藏与分类使用独立 `tool-center-v1.json`，不复制 Dock 状态。Tool 的模型和已创建 View 仍沿用原有生命周期。
 默认布局先隐藏所有 Tool，再恢复有效旧快照；退役管理 ID 只进行定向删除，原文件在写回前备份。
 
-### 插件状态独立窗口
+### 插件看板独立窗口
 
 `PluginStatusWindowService` 按需创建非模态单实例窗口，菜单和命令面板共用 Host 命令。
 `IPluginStatusQuery` 隔离窗口与 Registry/生命周期/诊断事实，查询只生成不可变展示数据，不扫描目录或激活插件。
-`PluginStatusPresentation` 集中状态文案；窗口模型负责概览、筛选、选择和刷新，View 只处理焦点、Esc 与剪贴板。
-打开、激活或手动刷新时读取当前会话，关闭后没有轮询或事件订阅。复制只使用既有脱敏记录。
+`PluginStatusPresentation` 集中状态文案；窗口模型负责概览、矩阵、筛选、选择与刷新，View 适配焦点、Esc、剪贴板和文件选择。
+`IPluginDashboardEvidence` 只提供证据读取与数据导入；`PluginDashboardEvidence` 在后台读取文件并核对身份，
+`CompatibilityReportStore` 负责校验后的原子保存，`CompatibilityMatcher` 与矩阵投影保持纯数据判断。
+唯一规则源是 `build/MyAvaloniaManagement.RuntimeProfile.props`，Host、Build 和 Gate 共同使用。
+打开、激活或手动刷新读取当前会话，完整文件摘要由“检查安装产物”显式触发。
+窗口关闭取消读取，刷新代次拒绝迟到结果；复制只使用既有脱敏记录和受控验收摘要。
 
 旧插件状态 Tool 注册已删除。`RetiredHostToolIds` 为布局和工具偏好提供统一白名单，清理旧记录及历史收藏，
-保留其他工具和缺失插件的数据。操作见[插件状态窗口](../../../../docs/quick-start/plugin-status.md)，历史设计见[归档](../../../../docs/archive/plans/plugin-status-window.md)。
+保留其他工具和缺失插件的数据。操作见[插件看板](../../../../docs/quick-start/plugin-status.md)，证据规则见[兼容契约](../../../../docs/reference/plugin-compatibility.md)，历史设计见[归档](../../../../docs/archive/plans/plugin-status-window.md)。
 
 ### 4.5 诊断白名单边界
 

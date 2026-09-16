@@ -2,9 +2,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:MyAvaloniaManagement.ViewModels.PluginStatus"
         xmlns:models="clr-namespace:MyAvaloniaManagement.Models.Plugins"
+        xmlns:compat="clr-namespace:MyAvaloniaManagement.Business.Compatibility"
         x:Class="MyAvaloniaManagement.Views.PluginStatus.PluginStatusWindow"
         x:DataType="vm:PluginStatusWindowViewModel"
-        Title="插件状态" Width="1040" Height="720" MinWidth="640" MinHeight="460"
+        Title="插件看板" Width="1200" Height="800" MinWidth="640" MinHeight="460"
         WindowStartupLocation="CenterOwner">
     <Window.Styles>
         <Style Selector="Border.summary, Border.details-card">
@@ -31,10 +32,15 @@
     <Grid Margin="20" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
             <StackPanel Spacing="5">
-                <TextBlock Text="插件状态" FontSize="25" FontWeight="SemiBold" />
-                <TextBlock Text="查看当前会话的加载结果、兼容性与诊断信息。" Classes="secondary" />
+                <TextBlock Text="插件看板" FontSize="25" FontWeight="SemiBold" />
+                <TextBlock Text="当前状态 · 版本与产物 · 分层验收证据" Classes="secondary" />
             </StackPanel>
-            <Button x:Name="RefreshButton" Grid.Column="1" Content="刷新" Command="{Binding RefreshCommand}" VerticalAlignment="Center" Margin="12,0,0,0" />
+            <WrapPanel Grid.Column="1" MaxWidth="300" VerticalAlignment="Center" HorizontalAlignment="Right">
+                <Button x:Name="RefreshButton" Content="刷新状态" Command="{Binding RefreshCommand}" Margin="4" />
+                <Button x:Name="InspectArtifactsButton" Content="检查安装产物" Command="{Binding CheckArtifactsCommand}" IsEnabled="{Binding CanInspect}" Margin="4" />
+                <Button x:Name="ImportReportButton" Content="导入报告…" Click="ImportReportClick" IsEnabled="{Binding CanInspect}" Margin="4" />
+                <Button x:Name="ExportSummaryButton" Content="导出摘要…" Click="ExportSummaryClick" IsEnabled="{Binding HasSelection}" Margin="4" />
+            </WrapPanel>
         </Grid>
         <Grid Grid.Row="1" ColumnDefinitions="*,12,*,12,*" Margin="0,0,0,16">
             <Border Classes="summary"><StackPanel Spacing="5">
@@ -86,7 +92,95 @@
                 </ListBox>
             </Grid>
             <Border Grid.Column="1" Width="1" Background="{DynamicResource AppDividerBrush}" />
-            <ScrollViewer x:Name="PluginDetailsScroll" Grid.Column="2" IsVisible="{Binding HasSelection}" HorizontalScrollBarVisibility="Disabled">
+            <TabControl x:Name="DashboardTabs" Grid.Column="2">
+                <TabItem Header="概览">
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Spacing="12" Margin="0,12,10,0">
+                            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsInspecting}" Height="3" />
+                            <TextBlock Text="{Binding EvidenceNotice}" Classes="secondary" />
+                            <TextBlock Text="{Binding EvidenceTimeText}" Classes="secondary" FontSize="11" />
+                            <Border Classes="details-card"><StackPanel Spacing="8">
+                                <TextBlock Text="Host 运行环境" Classes="section-title" />
+                                <SelectableTextBlock Text="{Binding HostText}" TextWrapping="Wrap" FontSize="12" />
+                            </StackPanel></Border>
+                            <Border Classes="details-card"><StackPanel Spacing="8">
+                                <TextBlock Text="当前插件产物" Classes="section-title" />
+                                <SelectableTextBlock Text="{Binding SelectedItem.PluginId}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding SelectedItem.VersionText, StringFormat='业务版本：{0}'}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding SelectedItem.CompatibilityText, StringFormat='声明范围：{0}'}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding SelectedItem.StatusText}" TextWrapping="Wrap" />
+                                <SelectableTextBlock Text="{Binding ArtifactText}" TextWrapping="Wrap" FontSize="12" />
+                                <TextBlock Text="{Binding SuggestionText}" Classes="secondary" />
+                            </StackPanel></Border>
+                            <Expander Header="编译依赖与程序集引用" HorizontalAlignment="Stretch">
+                                <StackPanel Spacing="12"><SelectableTextBlock Text="{Binding BuildText}" TextWrapping="Wrap" FontSize="12" />
+                                    <SelectableTextBlock Text="{Binding ReferenceText}" TextWrapping="Wrap" FontSize="12" />
+                                </StackPanel>
+                            </Expander>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="兼容矩阵">
+                    <Grid RowDefinitions="Auto,*" Margin="0,12,0,0">
+                        <StackPanel Spacing="5" Margin="0,0,0,10">
+                            <TextBlock Text="行是插件产物，列是 Host 构建与环境；悬停查看身份。" Classes="secondary" FontSize="12" />
+                            <TextBlock Text="无报告 · 导入报告或检查安装产物后显示矩阵。" IsVisible="{Binding HasNoMatrix}" Classes="secondary" />
+                        </StackPanel>
+                        <ScrollViewer x:Name="CompatibilityMatrixScroll" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <StackPanel IsVisible="{Binding !HasNoMatrix}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="插件 / 产物摘要" Width="230" Padding="8" FontWeight="SemiBold" />
+                                    <ItemsControl ItemsSource="{Binding MatrixColumns}">
+                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate><DataTemplate x:DataType="compat:CompatibilityMatrixColumn">
+                                            <Border Width="220" Classes="details-card" Margin="0,0,6,6" ToolTip.Tip="{Binding Detail}">
+                                                <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontWeight="SemiBold" />
+                                            </Border>
+                                        </DataTemplate></ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                                <ItemsControl ItemsSource="{Binding MatrixRows}"><ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="compat:CompatibilityMatrixRow">
+                                        <StackPanel Orientation="Horizontal">
+                                            <StackPanel Width="230" Margin="0,8,0,12" Spacing="6">
+                                                <TextBlock Text="{Binding PluginId}" TextWrapping="Wrap" FontWeight="SemiBold" Margin="8,0" />
+                                                <TextBlock Text="{Binding ArtifactText}" Classes="secondary" FontSize="11" Margin="8,0" />
+                                            </StackPanel>
+                                            <ItemsControl ItemsSource="{Binding Cells}">
+                                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate><DataTemplate x:DataType="compat:CompatibilityMatrixCell">
+                                                    <Border Width="220" Classes="details-card" Margin="0,0,6,6" ToolTip.Tip="{Binding Detail}">
+                                                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="12" />
+                                                    </Border>
+                                                </DataTemplate></ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate></ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="详情与诊断">
+                <ScrollViewer x:Name="PluginDetailsScroll" IsVisible="{Binding HasSelection}" HorizontalScrollBarVisibility="Disabled" Margin="0,12,0,0">
+                <StackPanel Spacing="16">
+                    <StackPanel Spacing="8" Margin="0,0,10,0">
+                        <TextBlock Text="验收历史" Classes="section-title" />
+                        <TextBlock Text="没有该插件的验收报告；不影响当前会话状态。" IsVisible="{Binding HasNoEvidence}" Classes="secondary" />
+                        <ItemsControl ItemsSource="{Binding EvidenceRows}"><ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="compat:CompatibilityEvidenceRow">
+                                <Border Classes="details-card" Margin="0,0,0,8"><StackPanel Spacing="5">
+                                    <TextBlock Text="{Binding LevelText}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding ResultText}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding MatchText}" Classes="secondary" />
+                                    <TextBlock Text="{Binding HostBuild, StringFormat='Host {0}'}" TextWrapping="Wrap" FontSize="12" />
+                                    <TextBlock Text="{Binding TimeText}" Classes="secondary" FontSize="11" />
+                                    <TextBlock Text="{Binding Source}" Classes="secondary" FontSize="11" />
+                                    <SelectableTextBlock Text="{Binding Detail}" TextWrapping="Wrap" FontSize="12" />
+                                </StackPanel></Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate></ItemsControl>
+                    </StackPanel>
                 <StackPanel x:Name="PluginDetails" Spacing="16" Margin="0,0,10,0" DataContext="{Binding SelectedItem}" x:DataType="models:PluginStatusItem">
                     <StackPanel Spacing="7">
                         <SelectableTextBlock Text="{Binding PluginId}" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -141,7 +235,10 @@
                         </ItemsControl.ItemTemplate></ItemsControl>
                     </StackPanel>
                 </StackPanel>
-            </ScrollViewer>
+                </StackPanel>
+                </ScrollViewer>
+                </TabItem>
+            </TabControl>
             <TextBlock Grid.ColumnSpan="3" Text="{Binding EmptyText}" IsVisible="{Binding HasNoResults}" HorizontalAlignment="Center" VerticalAlignment="Center"
                        MaxWidth="330" TextWrapping="Wrap" Classes="secondary" IsHitTestVisible="False" />
         </Grid>

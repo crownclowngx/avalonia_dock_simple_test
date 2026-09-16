@@ -29,10 +29,14 @@ internal static class PluginArtifactReader
         {
             if (new FileInfo(metadata).Length > 1024 * 1024) throw new InvalidDataException("构建信息超过大小限制。");
             build = JsonSerializer.Deserialize<PluginBuildInfo>(await File.ReadAllTextAsync(metadata, token), CompatibilityReportJson.Options);
-            if (build is null || build.SchemaVersion != 1 || build.Packages is null || build.Packages.Count > 10000 ||
+            if (build is null || build.SchemaVersion != 1 || string.IsNullOrWhiteSpace(build.TargetFramework) ||
+                string.IsNullOrWhiteSpace(build.BuildVersion) || build.Packages is null || build.Packages.Count > 10000 ||
                 build.Packages.Any(p => p is null || string.IsNullOrWhiteSpace(p.Id) || string.IsNullOrWhiteSpace(p.Version)))
                 throw new InvalidDataException("构建信息格式无效。");
         }
+        // 清单及旁路信息也可能在读取间隙被替换，不能拼接两个时刻的文件事实。
+        if (identity.Sha256 != (await ArtifactFingerprint.CaptureDirectoryAsync(root, token)).Sha256)
+            throw new IOException("元数据读取期间产物发生变化。");
         return new PluginArtifact(manifest.PluginId.Value, PluginVersionText.Format(manifest.PluginVersion),
             manifest.Sdk.ToString(), manifest.EntryPoint.Assembly, identity, build, references);
     }

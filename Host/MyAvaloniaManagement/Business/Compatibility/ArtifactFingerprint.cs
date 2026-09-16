@@ -17,25 +17,28 @@ internal static class ArtifactFingerprint
     {
         root = Path.GetFullPath(root);
         if (!Directory.Exists(root)) throw new DirectoryNotFoundException("产物目录不存在。");
-        var paths = Enumerate(root).Order(StringComparer.Ordinal).ToArray();
+        var paths = Enumerate(root, token).Take(50001).Order(StringComparer.Ordinal).ToArray();
         if (paths.Length == 0 || paths.Length > 50000) throw new InvalidDataException("产物文件数量不合法。");
         var result = await CaptureFilesAsync(paths.Select(path => (Path.GetRelativePath(root, path), path)), token);
-        if (!paths.SequenceEqual(Enumerate(root).Order(StringComparer.Ordinal)))
+        if (!paths.SequenceEqual(Enumerate(root, token).Take(50001).Order(StringComparer.Ordinal)))
             throw new IOException("检查过程中产物文件集合发生变化。");
         return result;
     }
 
-    private static IEnumerable<string> Enumerate(string root)
+    private static IEnumerable<string> Enumerate(string root, CancellationToken token, int depth = 0)
     {
+        token.ThrowIfCancellationRequested();
+        if (depth > 32) throw new InvalidDataException("产物目录层级过深。");
         if ((File.GetAttributes(root) & FileAttributes.ReparsePoint) != 0)
             throw new InvalidDataException("产物不能包含目录链接。");
         foreach (var path in Directory.EnumerateFileSystemEntries(root))
         {
+            token.ThrowIfCancellationRequested();
             var attributes = File.GetAttributes(path);
             if ((attributes & FileAttributes.ReparsePoint) != 0) throw new InvalidDataException("产物不能包含文件链接。");
             if ((attributes & FileAttributes.Directory) != 0)
             {
-                foreach (var file in Enumerate(path)) yield return file;
+                foreach (var file in Enumerate(path, token, depth + 1)) yield return file;
             }
             else yield return path;
         }
@@ -73,8 +76,8 @@ internal static class ArtifactFingerprint
         // 长度前缀避免路径中的分隔字符影响边界；排序固定，不依赖文件系统枚举顺序。
         var text = new StringBuilder();
         foreach (var file in files.OrderBy(item => item.Path, StringComparer.Ordinal))
-            text.Append(file.Path.Length).Append(':').Append(file.Path).Append(':')
-                .Append(file.Length).Append(':').Append(file.Sha256).Append('\n');
+            text.Append(file.Path.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(':').Append(file.Path).Append(':')
+                .Append(file.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append(':').Append(file.Sha256).Append('\n');
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
     }
 }

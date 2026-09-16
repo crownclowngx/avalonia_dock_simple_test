@@ -39,7 +39,7 @@ public sealed class WorkbenchCommandProjectionTests
             ["|", "Alpha View"],
             Snapshot(firstPresentation.Menu, WorkbenchMenuLocations.ViewShared));
         Assert.Equal(
-            ["工具中心…", "插件状态…", "Alpha Empty", "|", "Alpha Edit A", "Alpha Edit Z", "|", "Beta Workflow"],
+            ["工具中心…", "插件看板…", "Alpha Empty", "|", "Alpha Edit A", "Alpha Edit Z", "|", "Beta Workflow"],
             Snapshot(firstPresentation.Menu, WorkbenchMenuLocations.ToolsShared));
         Assert.Equal(
             ["帮助中心", "Beta Help"],

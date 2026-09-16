@@ -2,7 +2,8 @@
   <!-- 唯一规则源：运行时根、引用边界和打包限制分别表达，禁带不表示 Host 一定提供。 -->
   <PropertyGroup>
     <PluginRuntimeProfileSchema>1</PluginRuntimeProfileSchema>
-    <PluginForbiddenAssemblyPattern>^(?:MyAvaloniaManagement(?!\.Icons\.dll$)(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json).*\.dll$</PluginForbiddenAssemblyPattern>
+    <!-- 前瞻不消费扩展名前的点：旧表达式误放行 Avalonia.dll / Ursa.dll，V10 修正该禁带漏洞。 -->
+    <PluginForbiddenAssemblyPattern>^(?:MyAvaloniaManagement(?!\.Icons\.dll$)(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?=\.|$)|Dock\.|Semi\.Avalonia|Ursa(?=\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json).*\.dll$</PluginForbiddenAssemblyPattern>
     <PluginForbiddenReferencePattern>^(?:Dock\.|MyAvaloniaManagement$)</PluginForbiddenReferencePattern>
   </PropertyGroup>
   <ItemGroup>
