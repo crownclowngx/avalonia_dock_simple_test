@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-16",
+  "branch": "codex/host-v9-avalonia-dock-upgrade",
+  "sourceRevision": "058b0f22ad98b85182d0e78c26ed1325cc85834c",
+  "sourceClean": true,
+  "versions": {
+    "dock": "12.1.0.6",
+    "sdkCandidate": "3.4.1",
+    "avalonia": "12.1.2",
+    "product": "3.0.0",
+    "templateCandidate": "1.4.2"
+  },
+  "gate": {
+    "path": "artifacts/gate/20260916-000949-058b0f22ad98/summary.json",
+    "sha256": "896920094F440F94A07DCA5EB77B7C587CBA89E52F9A5D143798A099F3128CEB"
+  },
+  "tests": [
+    {
+      "evidence": {
+        "path": "artifacts/gate/20260916-000949-058b0f22ad98/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "6B2504025D616E56A22863005A188B0324C31FC24C0C8C214662B270B1BAF3DA"
+      },
+      "total": 217,
+      "passed": 217,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    {
+      "evidence": {
+        "path": "artifacts/gate/20260916-000949-058b0f22ad98/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "FEC96B2D08D56A7E9C47DE8A331EC9C13840C1BC3D58A48955ADE9A5B71E5AF9"
+      },
+      "total": 117,
+      "passed": 117,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    {
+      "evidence": {
+        "path": "artifacts/gate/20260916-000949-058b0f22ad98/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "E106F86E6B5FF364552512D38A2E6E88F00121BA1569A62BA390DEDFD6F5C2F7"
+      },
+      "total": 401,
+      "passed": 401,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    {
+      "evidence": {
+        "path": "artifacts/gate/20260916-000949-058b0f22ad98/pass-1/tests/my-plug-test/my-plug-test.trx",
+        "sha256": "1E6740B3CE8D92F336D305196D220C850A45D69990CD205DD77786BE6EF45329"
+      },
+      "total": 11,
+      "passed": 11,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    {
+      "evidence": {
+        "path": "artifacts/gate/20260916-000949-058b0f22ad98/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+        "sha256": "40AE61C5AECC783BCA9FE7AD4F34B97C8C0678CAC2DAF633FFBC1F777F71C5C8"
+      },
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    {
+      "evidence": {
+        "path": "artifacts/gate/20260916-000949-058b0f22ad98/pass-1/tests/sdk/sdk.trx",
+        "sha256": "59B0E1E7057B6DF16625F6A674DC802442432994D2B18BA67CAD372CC024C1C3"
+      },
+      "total": 91,
+      "passed": 91,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    {
+      "evidence": {
+        "path": "artifacts/host-v9/external-tests/old-binaries-final.trx",
+        "sha256": "09CEAA00B8386061F34ADE7445315F681D139551AA7B870F89C56AD735A4BD5F"
+      },
+      "total": 14,
+      "passed": 14,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    {
+      "evidence": {
+        "path": "artifacts/host-v9/external-tests/generated-package-final.trx",
+        "sha256": "81280FA5DE59C8749A55518281E84663BB7DE0677730D30E0C9AE2C8F238CC46"
+      },
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    {
+      "evidence": {
+        "path": "artifacts/host-v9/template-tests/independent-template.trx",
+        "sha256": "338B0AC3781141B4777E0B3CA008EC7B8A876FAE6912984A8B46378F0AEB1883"
+      },
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "notExecuted": 0
+    }
+  ],
+  "coverage": {
+    "merged": {
+      "path": "artifacts/host-v9/coverage/merged/Cobertura.xml",
+      "sha256": "6FB43C00E411AD8F5214A93F87807281575AE84F37CE61A565820A17833315F4"
+    },
+    "passed": true,
+    "line": 88.9051094890511,
+    "originalReports": [
+      {
+        "path": "artifacts/host-v9/coverage/unit/9c658cfd-b9d5-428f-bd29-5077053ff06f/coverage.cobertura.xml",
+        "sha256": "712C4644F91E5F292F9C8D531CEC7FE6DCEF741CD3DF78E5756FAB17579C5762"
+      },
+      {
+        "path": "artifacts/host-v9/coverage/plugin/be9e21a2-1fe8-4869-948d-711e3f90ab97/coverage.cobertura.xml",
+        "sha256": "BD994AB706DCC9DD15D7706996B9B55AE43519B6D0C6062E893A5D07B0B45F7B"
+      },
+      {
+        "path": "artifacts/host-v9/coverage/ui/03eb9126-3468-429b-a709-dbd0f67a4771/coverage.cobertura.xml",
+        "sha256": "B92BBC2C8A5532399E4DE053554C2676A01AEA60AD654DB383D045720EDCD998"
+      },
+      {
+        "path": "artifacts/host-v9/coverage/package/62948c26-acc9-4de7-8024-062fcab0b078/coverage.cobertura.xml",
+        "sha256": "4B812364F4C0257D0682431A727122BF03B148C776D9D50EAC06E4B61B7ED070"
+      }
+    ],
+    "branch": 73.67311745545123,
+    "thresholds": {
+      "minimumLine": 84.39,
+      "minimumBranch": 70.58
+    }
+  },
+  "oldPlugins": {
+    "verification": {
+      "path": "artifacts/host-v9/baseline/hash-verification.json",
+      "sha256": "983314BD7C52C85C41B93E75CE42898FC7C8BDA954D9B1640E8AECB832F5665A"
+    },
+    "baseline": {
+      "path": "artifacts/host-v9/baseline/old-plugin-files.json",
+      "sha256": "B385F8A8A3C62F77D6E0B9F6B8825CEC4F8E8FD92F9C9E425F41136FB493B354"
+    },
+    "plugins": 12,
+    "views": 60,
+    "workspaceDocuments": 18,
+    "files": 525
+  },
+  "candidates": [
+    {
+      "path": "artifacts/host-v9/feed/Independent.V9.Plugin-1.0.0-win-x64.zip",
+      "sha256": "2A14FCBFC131BEF2253C11A57FA6FC5D394929AC12D8DF42C0306B3C15B2EA54"
+    },
+    {
+      "path": "artifacts/host-v9/feed/MyAvaloniaManagement.Plugin.Templates.1.4.2.nupkg",
+      "sha256": "CA56A51D5741170B52C2ED5652090CA92EE0610767DB6D6EA88997D082384D55"
+    },
+    {
+      "path": "artifacts/host-v9/feed/MyAvaloniaManagement.PluginSdk.3.4.1.nupkg",
+      "sha256": "579CA867C11C2C90CF3EC1944210E9B0814CE64BE2D3F82E45925445B209F228"
+    },
+    {
+      "path": "artifacts/host-v9/feed/MyAvaloniaManagement.PluginSdk.UI.3.4.1.nupkg",
+      "sha256": "1CFE2B374E4CDFC7C61516A2490DD351D52C8C87915C5609758C2AF3AB0441B7"
+    }
+  ],
+  "packageFacts": {
+    "path": "artifacts/host-v9/sdk-package-facts.json",
+    "sha256": "8121B846D2789CBC6B1E6B52C56C38F1BD27E8300575C704EA925AE348A4233E"
+  },
+  "releaseEligible": false,
+  "publishable": false,
+  "windowsCiExecuted": false,
+  "sealExecuted": false,
+  "installedDeploymentPerformed": false,
+  "manualPending": [
+    "Windows pointer/focus/Esc and multi-monitor DPI",
+    "Native video playback/fullscreen",
+    "External business authentication/database/download/background workflows"
+  ]
+}

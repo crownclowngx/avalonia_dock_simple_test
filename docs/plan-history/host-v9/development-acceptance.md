@@ -1,6 +1,6 @@
 # Host V9 升级与定制整理：开发实施和验收记录
 
-> 状态：实施中；本记录仅包含实际执行事实，未完成项不得写成通过。
+> 状态：代码及本地开发自动化已完成；真实 Windows / 原生视频 / 外部业务场景待验收，未执行发布。
 > 日期：2026-09-16。方案：[Host V9](../../design/host-v9-avalonia-dock-upgrade-plan.md)。
 > 分支：`codex/host-v9-avalonia-dock-upgrade`；起点：`bc3d877fc9b72810a060c2288b1d63cd6fdd0b19`。
 
@@ -28,7 +28,7 @@ SDK 3.4.1 / Templates 1.4.2 是本地开发候选；Host 产品保持 3.0.0，3.
 | G3 指针保护 | 已完成（自动化） | 修正 Direct 订阅；移交后退出恢复职责 |
 | G4 回收器 | 已完成（自动化） | 安全解绑、绑定保留、最终释放及实例传播 |
 | G5 布局/Factory | 已完成（自动化） | 保留实现；新增集合及回调异常回归 |
-| G6 SDK/模板及本地验证 | 候选验证通过，完整 verify 待汇总 | 仓库外生成、锁定还原、构建、4 项测试及真实 ZIP Host 验收通过 |
+| G6 SDK/模板及本地验证 | 已完成（开发候选） | 完整 verify 838 项、独立覆盖率、仓库外模板及真实 ZIP 均通过 |
 | G7 旧插件 | 自动层通过；真实业务待验收 | 12 个旧 DLL / 60 个视图；部分真实 Workspace 回归 |
 | G8 发布/部署 | 不在本轮 | 按用户要求推迟 |
 
@@ -110,3 +110,54 @@ SDK 3.4.1 / Templates 1.4.2 是本地开发候选；Host 产品保持 3.0.0，3.
 - 最终指针审查再复现“窗口外松开后只有无键移动返回”的自有捕获残留：新增先红后绿用例，取消分支改为释放自有捕获再恢复视觉状态。指针专项累计 10 项。
 - 525 个冻结文件和安装目录中的对应原文件逐项 SHA-256 对比均无差异，见 `artifacts/host-v9/baseline/hash-verification.json`。
 - 完整 verify 首轮通过 837 项后，代码复查补充 `existing` 语义：同一 Presenter 再请求自己拥有的正文时必须直接复用。专项先复现自身被清空，再修正为只在跨宿主复用时摘除；回收器专项累计 11 项，最终重新执行完整 verify。
+
+## 最终开发门禁
+
+生产代码与测试提交：`058b0f22ad98b85182d0e78c26ed1325cc85834c`。后续只补充文档与证据，不改变经过验证的代码。
+
+[最终 verify 汇总](../../../artifacts/gate/20260916-000949-058b0f22ad98/summary.json)记录源码工作区 clean、Release 构建 0 警告/错误，restore、build、tests、contracts、packages、package-acceptance 六阶段全部通过。
+
+| 套件 | 通过 | 失败 / 跳过 |
+| --- | ---: | --- |
+| SDK 契约与 API | 91 | 0 / 0 |
+| Host Unit | 401 | 0 / 0 |
+| Host Plugin | 217 | 0 / 0 |
+| Headless UI | 117 | 0 / 0 |
+| MyPlugTest | 11 | 0 / 0 |
+| MyPlugTest 真实 ZIP | 1 | 0 / 0 |
+| 合计 | **838** | **0 / 0** |
+
+相对本轮基线新增 22 项默认回归。外部产物 14 项、生成插件 ZIP 2 项与独立模板 4 项另计，不重复计入上述总数。最终代码上的外部 TRX 为 `old-binaries-final.trx` / `generated-package-final.trx`。
+
+Gate 明确输出 `releaseEligible=false`、`publishable=false`。这不是发布资格；未执行 seal、Windows Smoke、Windows CI、公开上传、打 tag、推送或安装目录部署。第一次在仓库内生成样例时产生的本地 build/Controls 探针已可逆归档到 artifacts，正式独立模板验证在仓库外完成。
+
+## 独立覆盖率
+
+沿用原 `coverage.runsettings`，未新增排除项。分别采集 Unit 401、Plugin 217、UI 117、真实包 1 共 736 项，再合并四个顶层 GUID 目录的原始 Cobertura；不把 TRX 附件副本或合并结果再次计入。
+
+| 指标 | 实测 | 现有阈值 | 结果 |
+| --- | ---: | ---: | --- |
+| Host 行覆盖率 | **88.91%** | 84.39% | 通过 |
+| Host 分支覆盖率 | **73.67%** | 70.58% | 通过 |
+
+[覆盖率摘要](../../../artifacts/host-v9/coverage/summary.json)、[HTML 报告](../../../artifacts/host-v9/coverage/merged/index.html)和[提交内证据摘要](development-evidence.json)保存原始报告位置与 SHA-256。复现口径：
+
+```powershell
+# 对 Unit、Plugin、UI 分别替换项目及独立输出目录，使用最终 verify 的 Release 构建。
+dotnet test Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj -c Release --no-build --no-restore -m:1 --filter 'Category!=PackageAcceptance' --settings Host/MyAvaloniaManagement.Tests/coverage.runsettings --collect:'XPlat Code Coverage' --logger 'trx;LogFileName=unit.trx' --results-directory artifacts/host-v9-review/unit
+# 第四次改为 PluginTests + Category=PackageAcceptance，并将
+# MYAVALONIA_MY_PLUG_TEST_PACKAGE_ROOT 指向本轮 verify 解出的 Controls。
+dotnet reportgenerator '-reports:<unit>;<plugin>;<ui>;<package>' '-targetdir:artifacts/host-v9-review/merged' '-reporttypes:Cobertura;Html' '-assemblyfilters:+MyAvaloniaManagement'
+```
+
+## SOLID 与交付边界复核
+
+- **S**：指针保护只负责所有权与取消清理；回收器负责缓存和安全交接；View lease / Document scope 继续各自负责最终释放。
+- **O / I**：本轮改动集中在既有 Host internal 适配点，没有新增插件接口、Dock 公共类型或通用扩展框架。
+- **L**：继续调用 Factory 基类协议，关闭否决恢复 Session 状态；回收器遵循 `existing` 的同宿主复用语义。
+- **D**：App 资源、回收器和生命周期由现有组合根提供，未增加 ServiceLocator 或跨 Runtime 全局缓存。
+- 关键事件顺序、父级选择、失败释放和绑定保留均补充中文设计注释；既有布局/工具协调器在回归通过后保留实现。
+
+文档同步覆盖根 README、导航、架构事实、插件快速开始、本地候选说明、V9 方案与专用记录。V9 新增文档本地链接和 Markdown 围栏检查通过，历史发布记录保留原始版本事实。
+
+**仍待验收**：真实 Windows 拖拽/失活/Esc/多屏 DPI、原生视频播放和全屏、其余旧插件业务模型与账号/数据库/下载/后台任务。旧插件现阶段无需批量重编译的结论以已验证的程序集、DI、60 个视图和 18 个真实文档链路为边界；上线前按具体插件补齐业务验证。G8 按用户要求留到发布时执行。

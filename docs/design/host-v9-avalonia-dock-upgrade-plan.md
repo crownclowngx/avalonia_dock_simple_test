@@ -1,6 +1,6 @@
 # MyAvaloniaManagement V9：Avalonia / Dock 升级与定制逻辑整理方案
 
-> 状态：开发实施中；进度与实测结果见 [V9 专用实施记录](../plan-history/host-v9/development-acceptance.md)。
+> 状态：代码及本地开发自动化已完成；真实交互/外部业务待验收，G8 发布未执行。实测结果见 [V9 专用实施记录](../plan-history/host-v9/development-acceptance.md)。
 > 本轮执行约束：用户已授权独立分支及阶段 Git 提交。SOLID 优先、朴素设计、详细中文注释；不使用 AIFLOW、Windows CI、seal 或发布门禁。G8 的发布、部署、产品升版及公开包上传推迟到发布阶段；本轮执行 G0–G7 的开发工作，SDK/模板只生成本地候选。
 > 日期：2026-09-16。源码核查基线：`bc3d877fc9b72810a060c2288b1d63cd6fdd0b19`。
 > V9 是主项目改造编号，不代表 Avalonia、产品、SDK 或磁盘协议的主版本。
