@@ -46,14 +46,15 @@ internal sealed class AvaloniaDocumentInteractionService : IDocumentInteractionS
         var names = string.Join(
             Environment.NewLine,
             documentNames.Select(name => $"• {name}"));
-        var message = isApplicationExit
+        var multiple = isApplicationExit || documentNames.Count > 1;
+        var message = multiple
             ? $"以下 Document 包含尚未保存的更改：{Environment.NewLine}{Environment.NewLine}{names}"
             : $"该 Document 包含尚未保存的更改：{Environment.NewLine}{Environment.NewLine}{names}";
         return ShowChoiceAsync(
             "保存更改",
             message,
-            isApplicationExit ? "保存全部" : "保存",
-            isApplicationExit ? "放弃全部" : "不保存");
+            multiple ? "保存全部" : "保存",
+            multiple ? "放弃全部" : "不保存");
     }
 
     public async Task<bool> ConfirmRecoveryAsync(string fileName)

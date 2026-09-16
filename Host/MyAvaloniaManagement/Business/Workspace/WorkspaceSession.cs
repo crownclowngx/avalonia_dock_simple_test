@@ -39,6 +39,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     private readonly IHostDockableFactory _dockableFactory;
     private readonly DocumentPersistenceStateStore _documentPersistenceStates;
     private readonly DocumentCloseCoordinator _documentCloseCoordinator;
+    private readonly DockWindowCloseCoordinator _windowCloseCoordinator;
     private readonly DocumentRecoveryRegistry _documentRecoveryRegistry;
     private readonly IHostDiagnosticSink? _diagnostics;
     private readonly DockDocumentLifetime _documentLifetime;
@@ -77,6 +78,8 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         _documentLifetime = documentLifetime ??
             throw new ArgumentNullException(nameof(documentLifetime));
         _diagnostics = diagnostics;
+        _windowCloseCoordinator = new DockWindowCloseCoordinator(_documentCloseCoordinator,
+            action => Avalonia.Threading.Dispatcher.UIThread.Post(action, Avalonia.Threading.DispatcherPriority.Background));
         _documentCloseCoordinator.StateChanged += OnCloseStateChanged;
         _workspaceBuilder = new DockWorkspaceBuilder(DockFactory);
         _toolDockCoordinator = new ToolDockCoordinator(
@@ -535,6 +538,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         }
         _disposed = true;
         _documentCloseCoordinator.StateChanged -= OnCloseStateChanged;
+        _windowCloseCoordinator.Dispose();
         _acceptingCreations = false;
         _documentDock = null;
         PublishActiveDocumentIfChanged();
@@ -610,6 +614,20 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         {
             _documentCloseCoordinator.ReopenAfterDockRejection(document);
         }
+    }
+
+    bool IWorkspaceDockCallbacks.OnWindowClosing(IDockWindow window) =>
+        _windowCloseCoordinator.TryBeginClose(window, () =>
+        {
+            // 使用原生 Close 重试同一窗口；不能在此释放 Runtime 或 Provider。
+            if (window.Host is Avalonia.Controls.Window host) host.Close();
+            else window.Exit();
+        });
+
+    void IWorkspaceDockCallbacks.OnWindowCloseCompleted(IDockWindow window)
+    {
+        _windowCloseCoordinator.Complete(window);
+        NotifyLayoutChanged();
     }
 
     private static void ValidateActivation(

@@ -2,6 +2,7 @@ using Dock.Model.Controls;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Docking;
+using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Documents;
 
 namespace MyAvaloniaManagement.Tests;
@@ -213,6 +214,99 @@ public sealed class DocumentCloseTests
         Assert.Equal(0, retryCount);
         Assert.True(model.IsDirty);
         Assert.False(coordinator.TryBeginDockClose(document, () => retryCount++));
+        Assert.Equal(2, context.Interactions.CloseRequests.Count);
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(0)]
+    public async Task 范围关闭取消或文件选择取消保持整组与生命周期(int choice)
+    {
+        using var context = DocumentTestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        var first = await CreateDirtyDocumentAsync(context);
+        _ = await context.Provider.GetRequiredService<DocumentPersistenceCoordinator>().CreateDocumentAsync(TestDocumentIds.TypeId);
+        var second = context.Workspace.GetDocuments().Last();
+        Assert.IsType<TestSavableDocument>(second.Model).IsModified = true;
+        var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
+        context.Interactions.CloseChoices.Enqueue((DocumentCloseChoice)choice);
+
+        using var approval = await coordinator.PrepareRangeCloseAsync([first, second]);
+
+        Assert.Null(approval);
+        var request = Assert.Single(context.Interactions.CloseRequests);
+        Assert.False(request.IsExit);
+        Assert.Equal(2, request.Names.Count);
+        Assert.Contains(first, context.Workspace.GetDocuments());
+        Assert.Contains(second, context.Workspace.GetDocuments());
+        Assert.False(first.ClosingToken.IsCancellationRequested);
+        Assert.False(second.ClosingToken.IsCancellationRequested);
+        Assert.False(coordinator.IsClosing(first));
+        Assert.False(coordinator.IsClosing(second));
+    }
+
+    [Fact]
+    public async Task 范围关闭先等待干净文档命令且许可撤销可重新获得命令()
+    {
+        using var context = DocumentTestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        var document = await CreateDirtyDocumentAsync(context, dirty: false);
+        var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
+        var commands = context.Provider.GetRequiredService<WorkbenchDocumentCommandLeaseStore>();
+        Assert.True(commands.TryAcquire(document, out var command));
+        var closing = coordinator.PrepareRangeCloseAsync([document]);
+        Assert.False(closing.IsCompleted);
+        Assert.True(command!.ClosingToken.IsCancellationRequested);
+        Assert.False(document.ClosingToken.IsCancellationRequested);
+        Assert.False(commands.TryAcquire(document, out _));
+        command.Dispose();
+        using var approval = await closing.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.NotNull(approval);
+        Assert.True(coordinator.TryBeginDockClose(document, () => throw new InvalidOperationException()));
+        Assert.Empty(context.Interactions.CloseRequests);
+        approval.Dispose();
+        approval.Dispose();
+        Assert.False(coordinator.IsClosing(document));
+        Assert.True(commands.TryAcquire(document, out var reopened));
+        reopened!.Dispose();
+    }
+
+    [Fact]
+    public async Task 范围关闭等待期间出现新修改则撤销所有许可()
+    {
+        using var context = DocumentTestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        var document = await CreateDirtyDocumentAsync(context, dirty: false);
+        var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
+        var commands = context.Provider.GetRequiredService<WorkbenchDocumentCommandLeaseStore>();
+        Assert.True(commands.TryAcquire(document, out var command));
+        var closing = coordinator.PrepareRangeCloseAsync([document]);
+        Assert.IsType<TestSavableDocument>(document.Model).IsModified = true;
+        command!.Dispose();
+        Assert.Null(await closing.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.False(coordinator.IsClosing(document));
+        Assert.Contains(context.Interactions.Errors, error => error.Contains("再次保存", StringComparison.Ordinal));
+        Assert.False(document.ClosingToken.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task 范围关闭与主窗口和单页关闭互斥且取消后可以重试()
+    {
+        using var context = DocumentTestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        var document = await CreateDirtyDocumentAsync(context);
+        var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
+        var pending = new TaskCompletionSource<DocumentCloseChoice>(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.Interactions.PendingCloseChoice = pending;
+        var closing = coordinator.PrepareRangeCloseAsync([document]);
+        Assert.Null(await coordinator.PrepareRangeCloseAsync([document]));
+        Assert.False(await coordinator.ConfirmWindowCloseAsync([document]));
+        Assert.False(coordinator.TryBeginDockClose(document, () => throw new InvalidOperationException()));
+        pending.SetResult(DocumentCloseChoice.Cancel);
+        Assert.Null(await closing.WaitAsync(TimeSpan.FromSeconds(5)));
+        context.Interactions.CloseChoices.Enqueue(DocumentCloseChoice.Discard);
+        using var next = await coordinator.PrepareRangeCloseAsync([document]);
+        Assert.NotNull(next);
         Assert.Equal(2, context.Interactions.CloseRequests.Count);
     }
 

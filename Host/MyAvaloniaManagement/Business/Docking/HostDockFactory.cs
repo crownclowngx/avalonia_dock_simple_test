@@ -47,6 +47,12 @@ internal interface IWorkspaceDockCallbacks
 
     /// <summary>Session 已允许关闭但 Dock 基类最终拒绝时，撤销命令关闭状态。</summary>
     void OnDockableCloseRejected(IDockable? dockable);
+
+    /// <summary>在框架拆除浮窗内容之前准备整组关闭许可。</summary>
+    bool OnWindowClosing(IDockWindow window);
+
+    /// <summary>关闭、合并移除或框架拒绝后，解除窗口范围许可。</summary>
+    void OnWindowCloseCompleted(IDockWindow window);
 }
 
 /// <summary>
@@ -184,6 +190,39 @@ internal sealed class HostDockFactory : Factory
         {
             GetCallbacks().OnDockableClosed(dockable);
         }
+    }
+
+    /// <summary>先完成范围确认，再保留 Dock 原生的可取消窗口关闭事件。</summary>
+    public override bool OnWindowClosing(IDockWindow? window)
+    {
+        if (window is null) return base.OnWindowClosing(window);
+        var callbacks = GetCallbacks();
+        if (!callbacks.OnWindowClosing(window)) return false;
+        try
+        {
+            if (base.OnWindowClosing(window)) return true;
+        }
+        catch
+        {
+            callbacks.OnWindowCloseCompleted(window);
+            throw;
+        }
+        callbacks.OnWindowCloseCompleted(window);
+        return false;
+    }
+
+    /// <summary>框架已经完成关闭内容后撤销剩余许可，不能在 Closed 时才开始询问保存。</summary>
+    public override void OnWindowClosed(IDockWindow? window)
+    {
+        try { base.OnWindowClosed(window); }
+        finally { if (window is not null) GetCallbacks().OnWindowCloseCompleted(window); }
+    }
+
+    /// <summary>拖回最后内容也会移除窗口，必须使尚在等待的关闭任务失效。</summary>
+    public override void OnWindowRemoved(IDockWindow? window)
+    {
+        try { base.OnWindowRemoved(window); }
+        finally { if (window is not null) GetCallbacks().OnWindowCloseCompleted(window); }
     }
 
     /// <summary>主工作区不允许单个 Dockable 浮动。</summary>

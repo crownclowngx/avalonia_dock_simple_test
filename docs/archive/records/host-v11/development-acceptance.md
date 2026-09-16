@@ -41,3 +41,11 @@ Dock.Avalonia `12.1.0.6` 的本地 NuGet 元数据对应上游提交 `cc08602d02
 新增工作区级遍历与实际浮窗定位，保留稳定主布局的局部 FindDockById。工具显隐与页面查找覆盖浮窗，活动目标先还原实际窗口，Top/Bottom 的主骨架归一化跳过浮窗根。
 
 运行 Host Unit 的 DockWorkspaceNavigationTests、WorkspaceSessionAndDockFactoryTests、ToolCenterTests 专项：28/28 通过。包含嵌套 Windows 回边去重、同名主/浮窗 Dock 局部查询，以及原 Workspace 与工具中心回归。浮动开关尚未开放，原生窗口回归继续在 G3/G4 完成。
+
+## G3 前半：范围关闭与同步窗口回调适配
+
+文档关闭协调先固定整组目标、汇总确认及保存，再排空目标命令；返回的短期许可只控制框架重入，不提前释放业务 Scope。新增 DockWindowCloseCoordinator 将首次同步关闭取消、异步准备和下一轮 UI 回调连接起来，内容集合变化、窗口移除、框架拒绝、重试异常及迟到任务均撤销许可。主窗口和浮窗不会同时进行两轮保存确认。
+
+执行 `dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DocumentCloseTests|FullyQualifiedName~DockWindowCloseTests|FullyQualifiedName~WorkspaceSessionAndDockFactoryTests' --logger 'trx;LogFileName=v11-window-close-coordination.trx'`：33/33 通过，零失败、跳过或构建警告。TRX 在该测试项目本地 TestResults 目录。
+
+新增测试使用可控重试队列，覆盖两份文档整组取消/文件选择取消、干净文档等待命令、等待期间新修改、范围关闭与单页/主窗口互斥、集合变化和移除后的迟到确认。它们验证协调基础，不等于真实 HostWindow 已验收；浮动策略、主窗口退出集成、视图跨 TopLevel 回归仍待后续完成，G3 尚未整体通过。

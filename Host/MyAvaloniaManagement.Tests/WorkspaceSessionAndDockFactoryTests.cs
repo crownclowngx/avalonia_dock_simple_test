@@ -392,6 +392,8 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         }
         void IWorkspaceDockCallbacks.OnDockableClosed(IDockable? dockable) => ClosedCount++;
         void IWorkspaceDockCallbacks.OnDockableCloseRejected(IDockable? dockable) => RejectedCount++;
+        bool IWorkspaceDockCallbacks.OnWindowClosing(IDockWindow window) => AllowClose;
+        void IWorkspaceDockCallbacks.OnWindowCloseCompleted(IDockWindow window) { }
     }
 
     private sealed class SessionReleaseProbe

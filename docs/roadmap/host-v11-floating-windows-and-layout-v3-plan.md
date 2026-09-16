@@ -1,7 +1,7 @@
 # MyAvaloniaManagement V11：浮动窗口恢复与 Layout V3 实施计划
 
 > 用途：约束主程序浮动窗口、工具布局保存恢复及配套验证的实施范围。状态：实施中；用户已授权从 master 新建分支并按阶段提交。编写日期：2026-09-16。实际结果见 [V11 开发记录](../archive/records/host-v11/development-acceptance.md)。
-> 核查基线：`ec8f0ae`；已结合 `9bceb07` 文档重组、V10 开发完成后的目录与源码重新核查，不沿用旧 `docs/design`、`docs/plan-history` 路径或早期 Host 生命周期假设。
+> 起始基线：`master` 的 `bbd4832`，含 V11 原计划及 `63baa97` 单 EXE 兼容身份修复；已结合 `9bceb07` 文档重组与 V10 后 Host 生命周期重新核查。实施变化与尚未完成的验收见第 8 节，不沿用旧文档目录或早期 Host 生命周期假设。
 > 用户已确定：工具浮窗恢复位置和分组；Document 支持运行时浮动，重启不自动重开。本文中的 V11 是改造顺序，Layout V3 是独立磁盘协议版本，均不代表产品或 NuGet 包升到相同版本。
 > 首要规定：满足 SOLID；朴素使用设计模式；新增及实质修改的核心代码使用详细中文注释，解释设计思路、所有权和失败语义；单元测试、集成测试、本地开发门禁及专项文档齐全。
 > 不使用 AIFLOW，不初始化、读取或维护 `.aiflow` 流程上下文。本轮不使用 Windows CI、发布门禁、`seal`、发布 Windows Smoke、发布覆盖率或发布重复性流程，不上传包、不打发布标签、不部署用户安装目录。发布阶段另行执行相应流程。
@@ -36,7 +36,7 @@
 
 实现完成、自动验证完成、真实桌面验收完成分别记录。G0–G8 的必需本地自动验证全部通过后，才可标记开发自动化完成；真实拖动、跨屏和原生资源未验收时必须明确保留待办，不能把 Headless 结果写成完整桌面功能通过。开发完成不授予发布资格。
 
-## 2. 当前源码事实与改造影响
+## 2. 起始源码事实与改造影响
 
 | 当前入口 | 已核查事实 | V11 必须处理 |
 | --- | --- | --- |
@@ -54,7 +54,9 @@
 | [Directory.Version.props](../../Directory.Version.props)、[VersionPolicyTests](../../Host/MyAvaloniaManagement.PluginTests/VersionPolicyTests.cs)、[GateChecks](../../tools/MyAvaloniaManagement.Gate/GateChecks.cs) | 含 V2 文件名及版本断言；发布 Smoke 也硬编码 V2 | 更新当前布局事实与开发契约测试；发布 Smoke 适配作为发布前待办，不在开发阶段运行 |
 | [Host 项目](../../Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj) | `docs/**/*.md` 和 Host 内部文档嵌入程序 | 文档改变也会改变 Host 产物；最终验证应在文档定稿后进行，V10 旧产物证据不自动适用于 V11 |
 
-当前细节以 [Layout V2 契约](../reference/dock-layout-snapshot-v2.md)、[内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)和源码为准。本文描述的 V3 均为拟实施目标，不提前改写当前契约。
+下表描述起始基线。当前分支已经加入 V3 编解码、跨窗口可见树查询与范围关闭基础，生产布局仍为 V2，浮动开关尚未开放；不能把这些基础提交视为全部行为完成。
+
+当前生产细节以 [Layout V2 契约](../reference/dock-layout-snapshot-v2.md)、[内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)和源码为准。本文描述的 V3 均为拟实施目标，不提前改写当前契约。
 
 ## 3. SOLID 与实现规范
 
@@ -229,18 +231,20 @@ Top/Bottom 归一化只作用于需要稳定四向结构的主窗口；浮窗使
 
 阶段按依赖顺序推进，普通类名、测试组织和内部拆分由实施者决定。不得跳过跨窗口与关闭保护而先交付裸 Float 开关。
 
+当前状态：G0 的本地基线已通过；G1 的数据契约与 G2 的可见跨窗查询基础已提交；G3 已接入范围关闭适配并通过单元专项，原生浮窗与主退出集成仍待完成。全部任务及验证满足后才勾选阶段条目，不把阶段内部分提交写成完整通过。具体输入、测试数量与限制只维护在 [V11 开发记录](../archive/records/host-v11/development-acceptance.md)。
+
 ### G0：核实框架与建立开发基线
 
-- [ ] 记录实施时 HEAD、工作树状态、实际框架版本，复查本文源码入口是否漂移。
-- [ ] 运行完整本地 verify，建立本轮自己的基线，不复用 V10 测试数量或产物报告。
+- [x] 记录实施时 HEAD、工作树状态、实际框架版本，复查本文源码入口是否漂移。
+- [x] 运行完整本地 verify，建立本轮自己的基线，不复用 V10 测试数量或产物报告。
 - [ ] 对锁定 Dock 版本核实 Float/FloatAll、窗口根登记、原生关闭回调、拖动事件和 InitLayout 时序，以最小 Host 测试证明，不只引用最新版在线示例。
-- [ ] 新建 V11 专项开发记录，明确实现、自动化、真机与发布状态。
+- [x] 新建 V11 专项开发记录，明确实现、自动化、真机与发布状态。
 
 通过条件：基线结果可追溯，框架扩展点和关键关闭时序有事实依据；如需框架升级，单独列明范围变化，不混入本轮默认方案。
 
 ### G1：冻结 V3 契约与纯数据规则
 
-- [ ] 新建 V3 专项契约，确定字段集合、ID、比例、数量上限、缺失项保留、坐标与隐藏组恢复语义。
+- [x] 新建 V3 专项契约，确定字段集合、ID、比例、数量上限、缺失项保留、坐标与隐藏组恢复语义。
 - [ ] 实现 DTO、严格 JSON、纯校验、V2 只读转换和过滤文档后的树归并。
 - [ ] 建立正常、坏格式、旧格式、隐藏浮窗和缺失工具夹具及往返测试。
 
@@ -384,12 +388,12 @@ MyPlugTest 证明通用 Host 路径；原生视频、WebView、后台下载等�
 | 文档 | 创建/更新时机与职责 |
 | --- | --- |
 | 本计划 | 当前创建于 docs/roadmap；开发完成并结转待办后迁至 docs/archive/plans，重算链接 |
-| docs/README.md、docs/roadmap/README.md | 当前加入 V11 待实施入口；实施后按实际状态更新，不提前宣布浮动可用 |
+| docs/README.md、docs/roadmap/README.md | 已加入 V11 实施入口；持续按实际状态更新，不提前宣布浮动可用 |
 | `docs/reference/dock-layout-snapshot-v3.md` | G1 新建专用严格格式与恢复契约，实施中标明状态；成为 V3 唯一详细权威说明 |
 | docs/reference/dock-layout-snapshot-v2.md | V3 落地时改为只读迁移输入说明，保留原字段与旧版行为，不把 V2 内容机械替换成 V3 |
 | `docs/quick-start/floating-windows-and-layout.md` | G6–G8 新建专用用户指南：拖动、工具隐藏恢复、文档不重开、屏幕找回、重置、保存失败提示 |
 | `docs/maintenance/floating-layout-verification.md` | G7–G8 新建专用开发验证指南：隔离数据、旧格式夹具、故障注入、重启、多屏及排错，明确无发布门禁 |
-| `docs/archive/records/host-v11/development-acceptance.md` | 实施 G0 起创建，追加每阶段实际输入、命令、结果、限制与未验收项；当前不创建虚假的验收记录 |
+| `docs/archive/records/host-v11/development-acceptance.md` | 实施 G0 起创建，追加每阶段实际输入、命令、结果、限制与未验收项；已建立真实阶段记录，不预填后续验收结果 |
 | `docs/archive/records/host-v11/final-development-evidence.json` | 最终验证后按需要记录非嵌入的源码/产物身份、报告摘要和状态，避免嵌入文档与产物哈希循环变化 |
 | docs/quick-start/tool-center.md、workbench-search.md | 实施后同步浮动状态、页面激活、命令面板与布局恢复入口 |
 | docs/reference/platform-baseline.md、docs/maintenance/verification.md | 同步 Layout V3 和开发测试范围；明确发布 Smoke 旧 V2 断言尚待发布阶段适配及验证 |

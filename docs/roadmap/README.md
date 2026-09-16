@@ -4,7 +4,7 @@
 
 | 工作名称 | 状态 / 所属范围 | 事实依据 | 完成条件 |
 | --- | --- | --- | --- |
-| V11 浮动窗口与工具布局保存恢复 | 计划待实施 / 主程序 Host | [V11 实施计划](host-v11-floating-windows-and-layout-v3-plan.md)；基于 V10 后源码核查 | 完成跨窗口所有权、关闭与命令、Layout V3 和 V2 只读迁移、自动保存、多屏恢复及专项文档；本地 verify 与真机结果分别记录；Document 不跨启动重开，不运行 Windows CI 或发布门禁 |
+| V11 浮动窗口与工具布局保存恢复 | 实施中 / 主程序 Host | [V11 实施计划](host-v11-floating-windows-and-layout-v3-plan.md)；[阶段记录](../archive/records/host-v11/development-acceptance.md) | 完成跨窗口所有权、关闭与命令、Layout V3 和 V2 只读迁移、自动保存、多屏恢复及专项文档；本地 verify 与真机结果分别记录；Document 不跨启动重开，不运行 Windows CI 或发布门禁 |
 | 工具中心真实桌面与后台业务联调 | 待验收 / Host 与对应插件 | [V7 记录](../archive/records/host-v7/tool-center-and-visibility-acceptance.md) | 记录真实停靠、主窗口取消关闭、在途业务任务下隐藏与恢复；证明没有误释放模型或改变业务寿命 |
 | 工作区交互用户任务观察 | 待验收 / Host 使用体验 | [V8 记录](../archive/records/host-v8/cognitive-ux-convergence-acceptance.md) | 实际观察找到功能、切换同名页面、恢复工具、失败重试；记录误操作、提示及焦点体验。自动化和本地部署不能替代 |
 | 新框架真实 Windows、看板交互与旧插件业务回归 | 待验收 / Host V9–V10 与插件 | [V9 记录](../archive/records/host-v9/development-acceptance.md)、[V10 记录](../archive/records/host-v10/development-acceptance.md) | 补拖拽、Esc、失活、多屏 DPI、看板原生文件选择与键盘体验、原生视频/全屏、账号/数据库/下载及后台任务；不把 Headless 或逐插件加载通过当作业务和真机通过 |
