@@ -295,6 +295,8 @@ reader 不读取 manifest v1，也不存在 v1/v2 双 reader；清单只解决�
 
 ## 7. 内部实现不构成契约
 
+V11-P2 的工具浮窗关闭保持以下行为：最后一个 Tool 获准隐藏时回收窗口外壳，保留原实例、View、窗口身份与分组；原生 Closing、Factory WindowClosing 或 Tool DockableClosing 拒绝时不清空窗口。工具菜单、工具中心与标题栏共用此边界；还有其他内容的窗口只隐藏目标工具。主窗 Tool、Document 保存/关闭范围保护、Plugin SDK 与 Layout V3 线格式保持既有契约。
+
 以下内容可在保持行为和测试的前提下继续调整：
 
 - Registry、Builder、Navigator、Coordinator、Adapter 的类名和文件组织；

@@ -1,21 +1,24 @@
 using System;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Dock.Avalonia.Behaviors;
 using Dock.Avalonia.Controls;
 using Dock.Avalonia.Controls.Overlays;
 using Dock.Model.Controls;
+using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.Views;
 
 /// <summary>
-/// 使用 Dock 原生窗口的宿主适配，只增加工作台交互覆盖层和关闭取消保护。
+/// 使用 Dock 原生窗口的宿主适配，组合工作台交互覆盖层、关闭取消保护与按钮协议去重。
 /// 窗口外框、拖动、停靠与 Root 协议继续由 HostWindow 处理，不重建 Document 或 Tool。
 /// </summary>
 internal sealed class HostFloatingWindow : HostWindow, IWindowContentFullscreenHost
@@ -32,11 +35,26 @@ internal sealed class HostFloatingWindow : HostWindow, IWindowContentFullscreenH
         // 保留框架 Window ControlTheme，仅组合内容层。OverlayHost 及其生命周期行为与
         // 当前锁定 Dock 原生模板一致，工作台覆盖层与 Dock 拖动覆盖层各自维护所有权。
         ContentTemplate = new FuncDataTemplate<IRootDock>((root, _) => BuildContent(root));
+        AddHandler(Button.ClickEvent, OnToolChromeCloseClick, RoutingStrategies.Bubble);
     }
 
     internal bool IsCloseCancelled => _closingArgs?.Cancel == true;
+    internal bool IsInNativeCloseCallback => _closingArgs is not null;
     internal bool HasFullscreenContent => _interaction?.HasFullscreenContent == true;
     internal void OpenCommandPalette() => _interaction?.OpenCommandPalette();
+
+    /// <summary>
+    /// Dock 在关闭按钮自身的 Click 中先请求退出浮窗，Avalonia 随后才执行 Button.Command。
+    /// 最后一个 Tool 已交给窗口关闭协议，必须在冒泡到本窗口时消费同次点击，防止命令提前隐藏
+    /// 内容，导致异步重试的范围校验失败。保留 Click 协议，也覆盖键盘和辅助功能的按钮调用。
+    /// </summary>
+    private void OnToolChromeCloseClick(object? sender, RoutedEventArgs args)
+    {
+        if (args.Source is not Button { Name: "PART_CloseButton", TemplatedParent: ToolChromeControl } ||
+            Window?.Layout is not { } root) return;
+        var contents = DockTreeNavigator.Enumerate(root).Where(item => item is ITool or IDocument).Take(2).ToArray();
+        if (contents is [ITool]) args.Handled = true;
+    }
 
     /// <summary>内部布局转移已保留所有模型，只关闭旧展示容器；不把重置命令自己的 Busy 当作初始化在途。</summary>
     internal void CloseForLayoutTransfer()

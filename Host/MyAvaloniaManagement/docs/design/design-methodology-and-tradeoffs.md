@@ -65,3 +65,9 @@ SOLID 优先：Session 保持唯一业务所有权，Factory 适配框架，窗�
 这维持了 SRP 的框架、策略、所有权和保存分离，以及 DIP 的内部回调端口。目标按类型和拓扑分类，满足 OCP，不添加插件 ID 分支；ISP 不扩展窗口/插件 API；LSP 保留异常、取消、关闭及原实例协议。仅使用现有具体协作者，不增加事务框架。
 
 临时容器必须仍挂在父列表且只剩一个有效子节点。先保存比例和 Active/Default 引用，再取出子节点、重查锚点、插入子节点，最后移除旧容器。原因是 Dock 的 `RemoveDockable(collapse:false)` 仍清理孤立分隔条；提前移除容器会使缓存索引和邻接结构失效。框架同方向分割漏初始化的新分隔条由 Factory 补 Owner，不在 Coordinator 重建整个树。中文代码注释与 [P1 记录](../../../../docs/archive/records/host-v11/p1-tool-split-fix.md) 说明边界及验证。
+
+### V11-P2：一次按钮动作与可取消关闭
+
+窗口适配层处理 ToolChrome 的 Click/Command 联动，Factory 按当前窗口内容识别最后一个 Tool，将关闭和隐藏接入原生窗口协议。能力和框架取消事件必须在窗口仍可保留时执行；短期许可避免 Closed 阶段重复询问，正常消费、拒绝、异常或移除后清除。真正隐藏及 DockableClosed 仍由基类完成，不能先移除窗口模型再尝试关闭。
+
+这维持 SRP 的事件适配、工作区所有权、关闭范围保护与文件保存分离；OCP 按类型/拓扑而非业务 ID 分类；LSP 保留能力约束、取消及基类事件；ISP/DIP 继续使用原内部回调，不增加插件 API。只增加当前关闭所需的有限许可，不引入通用事务或第二份业务实例目录。窗口获准前保留位置，CloseWindow 批量清理后提交最终状态；详情见 [P2 记录](../../../../docs/archive/records/host-v11/p2-tool-window-close-fix.md)。

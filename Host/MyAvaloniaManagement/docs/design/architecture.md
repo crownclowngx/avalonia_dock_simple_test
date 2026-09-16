@@ -475,6 +475,8 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 
 浮窗关闭先经 `DockWindowCloseCoordinator` 固定范围，再由 `DocumentCloseCoordinator` 统一询问、保存与排空命令。原生取消必须在框架 Root.Close 之前检查。主窗最终保存早于浮窗拆除；`HostShutdownParticipants` 只记录实际创建的布局生命周期，Runtime 在释放工作区前停止其调度，不在回滚时解析新服务。
 
+V11-P2 在 `HostFloatingWindow` 的按钮 Click 冒泡阶段阻止最后一个 Tool 的重复 Command：Dock 已先请求窗口关闭，不能在异步重试之前隐藏内容。`HostDockFactory` 将最后 Tool 的命令/隐藏也转入现有原生关闭协议；在仍可取消的 Closing 中检查 Tool 能力和 DockableClosing，短期许可只用于框架后续清理，消费或结束后撤销。`CloseWindow` 合并逐项隐藏，避免注销位置跟踪之后重新捕获默认 bounds。Session 仍唯一拥有工具，取消隐藏时不更新活动项、不报告成功；保存队列和关闭范围协调器不承担按钮适配。详见 [P2 计划](../../../../docs/roadmap/host-v11-p2-tool-window-close-fix-plan.md)。
+
 最终文件队列不依赖 UI Dispatcher，因此无在途文档操作时同步排空以保留原生一次关闭；其他关闭异步准备并重试。文件失败显示提示并恢复入口。业务文档与 Layout 保存结果分别判断。
 
 当前详细格式与验证入口见 [V3 契约](../../../../docs/reference/dock-layout-snapshot-v3.md) 和 [专项维护指南](../../../../docs/maintenance/floating-layout-verification.md)。

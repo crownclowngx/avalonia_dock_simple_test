@@ -27,6 +27,8 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 | 四向边栏展开、正文复用、快捷键与 Owner | AutoHideRestoreVisualTests、WorkbenchCommandPresentationUiTests、既有视觉回归 |
 | P1 局部分割、全宽兼容、分隔条及父引用、主骨架目标判定 | DockFourWayLayoutTests.ToolSplit、WorkspaceSessionAndDockFactoryTests |
 | P1 真实 DockManager 同组/跨组/整组移动、浮窗分割回停、V3 文件重启和中间状态不落盘 | DockToolSplitUiTests（Headless 窗口协议，非桌面鼠标验收） |
+| P2 真实 ToolChrome 按钮 Click/Command、菜单、关闭/隐藏及工具中心、取消和重试、多组关闭、V3 重启 | DockToolWindowCloseUiTests（Headless，不是 Windows 桌面） |
+| P2 Tool 关闭预检、能力约束、一次事件通知、许可清理及异常 | WorkspaceSessionAndDockFactoryTests、DockToolWindowCloseUiTests；原 DockWindowCloseTests 继续保护内容范围 |
 
 跨进程写锁使用当前 Release DLL 的真实 internal Store，需 PowerShell 7.6 / .NET 10：
 
@@ -65,6 +67,16 @@ dotnet run --project Host/MyAvaloniaManagement -c Release --no-build
 5. 隐藏并重新显示工具，正常退出、重启，核对组顺序、上下关系、比例、显隐和窗口归属。文档不会自动重开。
 
 每项分别填写实际通过、失败或未执行及原因，不以自动化结果代填。遇到 `LAYOUT_TOOL_NORMALIZATION_SKIPPED` 时，原因码表示整理前提不满足；先记录当前有效树和复现步骤，不重置用户布局或把全部拖放视为可回滚事务。修复事实见 [P1 记录](../archive/records/host-v11/p1-tool-split-fix.md)。
+
+### V11-P2 桌面补验步骤
+
+1. 单 Tool 浮动，直接点击浮窗右上角关闭按钮；确认外壳消失、主窗口继续响应，工具中心状态为隐藏。
+2. 从工具中心重新显示，检查原位置、尺寸与业务状态；分别通过工具菜单“隐藏工具”和工具中心隐藏最后一项。
+3. 同组多个 Tool 逐个关闭，前几次仅隐藏目标，最后一次关闭外壳；多组窗口整体关闭后检查所有工具状态与原分组比例。
+4. 取消原生关闭/文档确认后检查内容、活动项与命令可用；混合文档与 Tool 的浮窗隐藏工具不应关闭剩余文档。
+5. 正常退出重启，隐藏工具不产生空窗，显示工具恢复原位置与分组。外部下载、视频/WebView 的业务寿命另行验证。
+
+当前自动化覆盖上述窗口协议；真实 Windows 操作仍待实测，结果见 [P2 修复记录](../archive/records/host-v11/p2-tool-window-close-fix.md)。最终验证身份单独写入 [P2 JSON](../archive/records/host-v11/p2-final-development-evidence.json)，不覆盖 P1 记录。
 
 ## 文件与故障排查
 

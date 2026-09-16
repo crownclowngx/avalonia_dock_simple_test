@@ -80,6 +80,10 @@ V3 主文件优先，其次有效 V3 备份；只有首次无 V3 历史时导入
 
 ## 保存与窗口事务
 
+V11-P2 不改变 V3 字段或迁移规则。最后一个 Tool 的按钮、关闭命令或隐藏入口，先请求窗口关闭；原生或框架拒绝时内容与活动项保持原状。获准时在窗口位置跟踪器注销前捕获分组和 bounds，框架 `CloseWindow` 的逐项隐藏纳入同一批量变更，只提交最终隐藏状态，避免 Closed 之后读到默认位置而覆盖记录。保存组件不接收按钮事件，也不负责关闭或回收窗口。
+
+关闭外壳后仍可存在仅含隐藏工具的 floatingWindows 记录。这是恢复位置，不是要求创建空窗；重新显示目标工具时复用其原模型和 View，重启仍只恢复可见工具、不自动重开文档。专项证据见 [P2 修复记录](../archive/records/host-v11/p2-tool-window-close-fix.md)。
+
 V11-P1 不改变 schema 或迁移规则。Tool → Tool 的上下分割及浮窗内分割保留局部结构；Tool → 主窗口 DocumentDock（含文档子组）以及明确的 WorkspaceRows/WorkspaceColumns 全局目标才使用全宽兼容策略。目标按主树对象引用判定，不能用节点同名或 Top/Bottom 操作本身推断。Document 分割保持框架语义。
 
 布局记录的分组 ID 与固定主骨架 ID 分开：运行时全宽组恢复后可以使用 V3 分组身份，应验证上下关系、比例与工具归属，而非要求恢复为运行时 TopTools/BottomTools 别名。P1 保持原模型、View 与 Document Scope，不把拖放整理变成保存组件的职责。

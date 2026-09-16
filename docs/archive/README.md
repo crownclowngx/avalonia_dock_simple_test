@@ -36,6 +36,8 @@
 - [最终开发验证证据](records/host-v11/final-development-evidence.json)
 - [V11-P1 Tool 上下分割故障修复记录](records/host-v11/p1-tool-split-fix.md)
 - [V11-P1 最终开发验证证据](records/host-v11/p1-final-development-evidence.json)
+- [V11-P2 Tool 浮窗关闭黑框修复记录](records/host-v11/p2-tool-window-close-fix.md)
+- [V11-P2 最终开发验证证据](records/host-v11/p2-final-development-evidence.json)
 
 ### host-v10
 

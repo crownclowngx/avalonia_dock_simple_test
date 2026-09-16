@@ -568,6 +568,10 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         try
         {
             DockFactory.HideDockable(tool);
+            // 最后一个浮动工具会先走可取消窗口关闭。仍在原树中意味着未提交隐藏，
+            // 此时不能清空活动项或向工具中心报告成功；模型、View 及原布局继续由本会话持有。
+            if (DockTreeNavigator.IsDockableAttached(_rootDock, tool) || DockTreeNavigator.IsToolPinned(_rootDock, tool))
+                return false;
             if (currentDock is not null)
             {
                 currentDock.ActiveDockable = nextActive;

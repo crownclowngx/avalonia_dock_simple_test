@@ -62,6 +62,54 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         Assert.Equal(1, callbacks.ClosedCount);
     }
 
+    [Theory]
+    [InlineData("complete")]
+    [InlineData("removed")]
+    [InlineData("closed")]
+    [InlineData("rejected")]
+    [InlineData("exception")]
+    public void P2工具关闭预检只通知一次且结束后不残留许可(string outcome)
+    {
+        var factory = new HostDockFactory();
+        var callbacks = new RecordingWorkspaceCallbacks(factory);
+        factory.AttachCallbacks(callbacks);
+        var tool = callbacks.Tool;
+        var group = new ToolDock { VisibleDockables = factory.CreateList<IDockable>(tool), ActiveDockable = tool };
+        var root = new RootDock { VisibleDockables = factory.CreateList<IDockable>(group), ActiveDockable = group };
+        var window = new Dock.Model.Mvvm.Core.DockWindow { Layout = root };
+        factory.InitDockable(root, null);
+        var attempts = 0;
+        var reject = outcome == "rejected";
+        var fail = outcome == "exception";
+        factory.DockableClosing += (_, args) =>
+        {
+            if (!ReferenceEquals(args.Dockable, tool)) return;
+            attempts++;
+            if (fail) throw new InvalidOperationException("关闭预检异常");
+            args.Cancel = reject;
+        };
+        if (fail) Assert.Throws<InvalidOperationException>(() => factory.OnWindowClosing(window));
+        else Assert.Equal(!reject, factory.OnWindowClosing(window));
+        Assert.Same(tool, Assert.Single(group.VisibleDockables!));
+        Assert.Equal(1, attempts);
+        switch (outcome)
+        {
+            case "complete":
+                factory.CloseWindow(window);
+                Assert.Empty(group.VisibleDockables!);
+                Assert.Equal(1, callbacks.HiddenCount);
+                Assert.Equal(1, attempts);
+                break;
+            case "removed": factory.OnWindowRemoved(window); break;
+            case "closed": factory.OnWindowClosed(window); break;
+        }
+        reject = false;
+        fail = false;
+        Assert.True(factory.OnDockableClosing(tool));
+        Assert.Equal(2, attempts);
+        Assert.False(factory.IsLayoutChangeInProgress);
+    }
+
     [Fact]
     public void Factory与Session在类型和状态所有权上明确分离()
     {

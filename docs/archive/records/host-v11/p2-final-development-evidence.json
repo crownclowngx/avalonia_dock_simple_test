@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "plan": "V11-P2",
+  "status": "pending-final-development-verification",
+  "note": "MD 定稿后运行完整 verify，再用实测结果替换本非嵌入记录。当前不声明最终验证、桌面或部署完成。"
+}

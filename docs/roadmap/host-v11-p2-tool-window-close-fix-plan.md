@@ -1,6 +1,6 @@
 # V11-P2：Tool 浮窗关闭黑框修复
 
-> 分支：`codex/host-v11-floating-layout`。基线：`d52600b`。范围：用户已授权修复 Tool 浮窗关闭；先保留正式失败测试，再实现和验证。安装目录部署另行交付，不使用 AIFLOW、Windows CI 或正式发布门禁。
+> 分支：`codex/host-v11-floating-layout`。基线：`d52600b`。状态：修复与专项自动化已完成，最终 verify 另见非嵌入证据，真实桌面待验收。用户已授权修复 Tool 浮窗关闭；已先提交正式失败测试。安装目录部署另行交付，不使用 AIFLOW、Windows CI 或正式发布门禁。
 
 ## 故障与目标
 
@@ -11,9 +11,9 @@ ToolChrome 关闭按钮先触发浮窗关闭，随后执行 CloseDockable 命令
 ## 设计与 SOLID
 
 1. HostFloatingWindow 适配框架按钮事件，浮窗关闭已处理同次点击时阻止后续重复 Tool 命令，不以鼠标专用过滤代替 Click 协议。
-2. HostDockFactory 统一最后 Tool 的关闭/隐藏入口，在修改内容前请求已有窗口关闭协议；框架最终关闭阶段仍执行原隐藏、事件和释放顺序，避免递归请求。
+2. HostDockFactory 统一最后 Tool 的关闭/隐藏入口，在修改内容前请求已有窗口关闭协议；Tool 能力和 DockableClosing 在原生 Closing 中预检，获准许可只供后续清理消费并按结束路径撤销。框架最终关闭阶段仍执行原隐藏、Closed 事件和释放顺序，避免递归请求与重复询问。
 3. Session 保持业务所有权及显隐结果语义；取消不得修改 ActiveDockable 或报告成功。Coordinator 保留取消、范围相同检查和迟到任务保护。
-4. 保存组件独立，继续在原位置完整时捕获、最终状态提交后保存；不改 SDK、Dock 版本、V3 格式或插件业务寿命。
+4. 保存组件独立，继续在原位置完整时捕获、最终状态提交后保存。CloseWindow 合并框架逐项隐藏，避免 Closed 后位置跟踪器已注销时再次捕获默认 bounds。不改 SDK、Dock 版本、V3 格式或插件业务寿命。
 
 沿用现有窄边界，按窗口拓扑而非插件名称判断，不新增通用事件总线、事务或布局管理器。核心入口使用中文注释说明事件顺序、取消与原对象所有权。
 
@@ -26,3 +26,5 @@ ToolChrome 关闭按钮先触发浮窗关闭，随后执行 CloseDockable 命令
 - 按失败复现、修复及文档、最终证据分阶段提交中文标题和说明。Headless 结果与真实桌面分别登记。
 
 实施记录：[P2 修复记录](../archive/records/host-v11/p2-tool-window-close-fix.md)。
+
+新增 24 项 Headless UI、5 项协议单元测试；连同受影响回归，UI 专项 60 项、单元专项 25 项通过。最终完整本地结果以 [P2 开发证据](../archive/records/host-v11/p2-final-development-evidence.json) 为准，专项不替代最终 verify。安装目录中的既有 P1 产物不作为本补丁的验证产物。
