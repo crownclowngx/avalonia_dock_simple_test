@@ -1,0 +1,102 @@
+{
+  "deploymentCompleted": true,
+  "target": "D:\\data\\avalonia",
+  "executable": "D:\\data\\avalonia\\MyAvaloniaManagement.exe",
+  "sourceRevision": "7cb926f8b4825857bb4a2f1d6f44ff3a54767c9e",
+  "format": "Release win-x64 self-contained single EXE; native libraries bundled; no trimming",
+  "filesVerified": 139,
+  "filesReplaced": 1,
+  "controlsTopLevelDirectories": 12,
+  "controlsFilesUnchanged": 525,
+  "controlsDirectoryTreeUnchanged": true,
+  "backupRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v11-p2-deployment-20260916-164807\\previous-host",
+  "backupFiles": 1,
+  "exeBytes": 53397247,
+  "exeSha256": "72DF605A5207B51E72FD4EB2FEBF06BEF71641DC59784B00658A4AAE66811B76",
+  "isolatedSingleExeStartupPassed": true,
+  "isolatedSingleExeHostIdentityPassed": true,
+  "layoutSchema": 3,
+  "rootDllCount": 0,
+  "checkedAt": "2026-09-16T16:49:40.0311358+08:00",
+  "scope": "用户授权的本地单文件部署；没有运行安装目录中的业务实例。",
+  "windowsCI": "not-run",
+  "formalSeal": "not-run",
+  "publicPublication": "not-run",
+  "realDesktopBusinessAcceptance": "pending",
+  "recordType": "host-v11-p2-local-single-exe-deployment",
+  "authorization": "用户在P2源码修复及完整开发验证后明确要求编译并以自包含单文件形式发布到D:\\data\\avalonia。",
+  "startupVerification": {
+    "passed": true,
+    "tests": [
+      {
+        "mode": "identity",
+        "passed": true,
+        "exitCode": 0,
+        "layoutSchema": 3,
+        "toolCount": 2,
+        "noExternalPlugins": true,
+        "isolatedData": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v11-p2-deployment-20260916-164807\\startup-data-identity",
+        "stderrEmpty": true
+      },
+      {
+        "mode": "normal",
+        "passed": true,
+        "exitCode": 0,
+        "layoutSchema": 3,
+        "toolCount": 2,
+        "noExternalPlugins": true,
+        "isolatedData": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v11-p2-deployment-20260916-164807\\startup-data-normal",
+        "stderrEmpty": true
+      }
+    ],
+    "includedFrameworks": [
+      {
+        "name": "Microsoft.NETCore.App",
+        "version": "10.0.10"
+      }
+    ],
+    "singleExeHostAndCoreLibBundled": true,
+    "rootDllCount": 0,
+    "publishedFiles": 139,
+    "exeBytes": 53397247,
+    "exeSha256": "72DF605A5207B51E72FD4EB2FEBF06BEF71641DC59784B00658A4AAE66811B76",
+    "sourceRevision": "7cb926f8b4825857bb4a2f1d6f44ff3a54767c9e",
+    "checkedAt": "2026-09-16T16:49:29.6805699+08:00"
+  },
+  "buildConfiguration": {
+    "configuration": "Release",
+    "runtimeIdentifier": "win-x64",
+    "selfContained": true,
+    "publishSingleFile": true,
+    "includeNativeLibrariesForSelfExtract": true,
+    "enableCompressionInSingleFile": true,
+    "publishTrimmed": false,
+    "debugType": "embedded",
+    "sdk": "10.0.302",
+    "warnings": 0,
+    "errors": 0,
+    "sourceSnapshot": "git archive HEAD；RID还原和发布均在隔离副本进行，未修改工作树锁文件。"
+  },
+  "sourceVerification": {
+    "sourceCommit": "7cb926f8b4825857bb4a2f1d6f44ff3a54767c9e",
+    "patchCommit": "ecba5e2d805e2d6d58d659240bc4a54d18c409b1",
+    "developmentEvidence": "docs/archive/records/host-v11/p2-final-development-evidence.json",
+    "developmentTests": 1027,
+    "note": "7cb926f相对已验证的ecba5e2仅更新非嵌入证据JSON；此处记录实际重新发布的单文件产物。"
+  },
+  "retainedContent": "Controls全部12个插件目录和525个文件逐项保持不变；HelpWeb逐文件校验；本次只替换主EXE，不读写用户数据。PDB及SDK XML说明保留在构建元数据目录。",
+  "artifacts": {
+    "root": "artifacts/host-v11-p2-deployment-20260916-164807",
+    "deploymentFiles": "deployment-files.json",
+    "deploymentChanges": "deployment-changes.json",
+    "publishLog": "publish.log",
+    "restoreLog": "restore.log",
+    "startupResult": "startup-result.json",
+    "identity": "single-exe-host-identity.json",
+    "sourceArchive": "source.zip",
+    "sourceArchiveSha256": "8E127B1681AD6EB47475B4713606753C7BC63110A8CBE18B27CF979142B077E2",
+    "backup": "previous-host/MyAvaloniaManagement.exe",
+    "backupSha256": "AE45E0D791F024D0625CA618357894E82B6EB1F70CE4F8B62C3CB1AEC5EF236A"
+  },
+  "evidenceNote": "仅新增本非嵌入JSON，不修改已部署产物的源码或嵌入文档。隔离启动检查不替代Tool浮窗关闭、多屏及外部插件业务的实际桌面验收。"
+}
