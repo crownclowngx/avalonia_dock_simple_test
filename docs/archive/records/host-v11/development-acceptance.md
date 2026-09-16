@@ -60,3 +60,11 @@ Dock.Avalonia `12.1.0.6` 的本地 NuGet 元数据对应上游提交 `cc08602d02
 - `dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DocumentCloseTests|FullyQualifiedName~DockWindowCloseTests|FullyQualifiedName~WorkspaceSessionAndDockFactoryTests|FullyQualifiedName~WindowInteraction|FullyQualifiedName~StorageService' --logger 'trx;LogFileName=v11-window-coordination.trx'`：36/36 通过。
 
 两组均零失败、零跳过、零构建警告。新增 UI 场景证明浮窗 Ctrl+S 一次主文件提交（另有正常的恢复备份写入）、共享命令且绑定实例隔离、跨窗面板互斥、异步明确 Owner、关闭取消保留内容及 Closed 清理绑定。浮动开关仍未开放；Float/FloatAll 真正迁移、主退出最终提交、全屏期间迁移限制、多屏与实际原生资源仍待后续验证，不能把本节记作 G3/G4 全部完成。
+
+## G5 文件边界基础
+
+新增独立 V3 Store，使用数据根专属独占文件句柄表达布局写入权，只读实例不迁移、隔离或写入；锁文件留存不代表仍占用，不自动接管。本地严格读取优先 V3 与有效备份，首次才纯转换 V2；坏输入保留独立副本，未来 schema 停止本会话写入。保存先验证新快照，再以有效主文件更新备份，最后复用 AtomicFileTransaction 提交主文件；没有把两份文件声称为跨文件原子事务。
+
+执行 `dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DockLayoutV3' --logger 'trx;LogFileName=v11-layout-v3-store.trx'`：24/24 通过，零失败、跳过或构建警告。其中新增 11 项文件行为测试覆盖 V2 合法/损坏原字节保留、V1 不触碰、上一有效备份、主坏备份好、双坏及隔离历史、坏备份保护、主/备份未来格式、同进程双实例、不同数据根、备份提交失败及文件占用。
+
+生产生命周期尚未切换至此 Store；工作区映射、保存调度、关闭最终提交与跨进程崩溃释放仍待完成。本节不代表整个 G5 或重启恢复已经通过。
