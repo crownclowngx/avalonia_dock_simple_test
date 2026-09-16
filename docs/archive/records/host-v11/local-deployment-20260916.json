@@ -1,0 +1,91 @@
+{
+  "deploymentCompleted": true,
+  "target": "D:\\data\\avalonia",
+  "executable": "D:\\data\\avalonia\\MyAvaloniaManagement.exe",
+  "sourceRevision": "1a066a0287fb348ad3e5835657342b43f6eb8c3a",
+  "format": "Release win-x64 self-contained single EXE; native libraries bundled; no trimming",
+  "filesVerified": 139,
+  "filesReplaced": 1,
+  "controlsTopLevelDirectories": 12,
+  "controlsFilesUnchanged": 525,
+  "controlsDirectoryTreeUnchanged": true,
+  "backupRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v11-deployment-20260916-143109\\previous-host",
+  "backupFiles": 1,
+  "exeBytes": 52742458,
+  "exeSha256": "98C16384C93A4C344D9B62B2BC17DDD31193F22382ABA66975DEB27BA26531E4",
+  "isolatedSingleExeStartupPassed": true,
+  "isolatedSingleExeHostIdentityPassed": true,
+  "layoutSchema": 3,
+  "rootDllCount": 0,
+  "checkedAt": "2026-09-16T14:36:11.777158+08:00",
+  "scope": "用户授权的本地单文件部署；没有运行安装目录中的业务实例。",
+  "windowsCI": "not-run",
+  "formalSeal": "not-run",
+  "publicPublication": "not-run",
+  "realDesktopBusinessAcceptance": "pending",
+  "recordType": "host-v11-local-single-exe-deployment",
+  "authorization": "用户在开发完成后明确要求编译并以单文件、自包含方式发布到 D:\\data\\avalonia；本记录追加此前开发证据之后的本地部署事实。",
+  "startupVerification": {
+    "passed": true,
+    "tests": [
+      {
+        "mode": "identity",
+        "passed": true,
+        "exitCode": 0,
+        "layoutSchema": 3,
+        "toolCount": 2,
+        "noExternalPlugins": true,
+        "isolatedData": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v11-deployment-20260916-143109\\startup-data-identity",
+        "stderrEmpty": true
+      },
+      {
+        "mode": "normal",
+        "passed": true,
+        "exitCode": 0,
+        "layoutSchema": 3,
+        "toolCount": 2,
+        "noExternalPlugins": true,
+        "isolatedData": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v11-deployment-20260916-143109\\startup-data-normal",
+        "stderrEmpty": true
+      }
+    ],
+    "includedFrameworks": [
+      {
+        "name": "Microsoft.NETCore.App",
+        "version": "10.0.10"
+      }
+    ],
+    "singleExeHostAndCoreLibBundled": true,
+    "rootDllCount": 0,
+    "publishedFiles": 139,
+    "exeBytes": 52742458,
+    "exeSha256": "98C16384C93A4C344D9B62B2BC17DDD31193F22382ABA66975DEB27BA26531E4",
+    "sourceRevision": "1a066a0287fb348ad3e5835657342b43f6eb8c3a",
+    "checkedAt": "2026-09-16T14:34:33.6474796+08:00"
+  },
+  "buildConfiguration": {
+    "configuration": "Release",
+    "runtimeIdentifier": "win-x64",
+    "selfContained": true,
+    "publishSingleFile": true,
+    "includeNativeLibrariesForSelfExtract": true,
+    "enableCompressionInSingleFile": true,
+    "publishTrimmed": false,
+    "sdk": "10.0.302",
+    "warnings": 0,
+    "errors": 0,
+    "sourceSnapshot": "git archive HEAD；RID 还原仅修改隔离副本"
+  },
+  "retainedContent": "HelpWeb 按项目规则独立交付且逐文件校验；Controls 和用户数据保留。PDB 调试符号及 SDK XML 说明留在构建记录中。",
+  "artifacts": {
+    "root": "artifacts/host-v11-deployment-20260916-143109",
+    "deploymentFiles": "deployment-files.json",
+    "deploymentChanges": "deployment-changes.json",
+    "publishLog": "publish.log",
+    "restoreLog": "restore.log",
+    "startupResult": "startup-result.json",
+    "identity": "single-exe-host-identity.json",
+    "backup": "previous-host/MyAvaloniaManagement.exe"
+  },
+  "evidenceNote": "源码身份固定为 1a066a0；此 JSON 不嵌入 Host，记录提交没有改动已部署产物。隔离实际窗口启动不替代拖拽、多屏 DPI、原生业务和人工体验验收。"
+}
