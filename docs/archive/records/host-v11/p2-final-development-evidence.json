@@ -1,6 +1,219 @@
 {
   "schemaVersion": 1,
   "plan": "V11-P2",
-  "status": "pending-final-development-verification",
-  "note": "MD 定稿后运行完整 verify，再用实测结果替换本非嵌入记录。当前不声明最终验证、桌面或部署完成。"
+  "status": "development-verified-desktop-pending",
+  "recordedAtUtc": "2026-09-16T08:34:02.8694928Z",
+  "branch": "codex/host-v11-floating-layout",
+  "baseCommit": "d52600bbada74b4095acf582a693493031eced96",
+  "reproductionCommit": "7adc441b91c37c122d977103ade6b78f61dea55f",
+  "verifiedSource": {
+    "revision": "ecba5e2d805e2d6d58d659240bc4a54d18c409b1",
+    "tree": "96d34a0c64981df5f3b7b217acf9773a56b5bb1a",
+    "clean": true,
+    "files": 893,
+    "sha256": "0FC326763B4BDC0AC54DB6802229ED0913A7C6A36C880FC598B0D8E7FADD225A"
+  },
+  "evidenceUpdate": "最终 verify 后仅回填本非嵌入 JSON；源码、测试、嵌入 MD 与构建输入保持不变。证据提交不作为已构建源码提交。",
+  "verification": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "runId": "20260916-083212-ecba5e2d805e",
+    "profile": "verify",
+    "scope": "all",
+    "rounds": 1,
+    "passed": true,
+    "startedAtUtc": "2026-09-16T16:32:12.3737494+08:00",
+    "finishedAtUtc": "2026-09-16T16:33:42.2543872+08:00",
+    "summaryPath": "artifacts/gate/20260916-083212-ecba5e2d805e/summary.json",
+    "summarySha256": "c9ba456cca64637f536274ff90a661a360480b81515dc5416b890639414eff2d",
+    "stages": [
+      {
+        "id": "restore",
+        "status": "passed"
+      },
+      {
+        "id": "build",
+        "status": "passed"
+      },
+      {
+        "id": "tests",
+        "status": "passed"
+      },
+      {
+        "id": "contracts",
+        "status": "passed"
+      },
+      {
+        "id": "packages",
+        "status": "passed"
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed"
+      }
+    ],
+    "build": {
+      "configuration": "Release",
+      "warnings": 0,
+      "errors": 0
+    },
+    "tests": {
+      "total": 1027,
+      "passed": 1027,
+      "failed": 0,
+      "skipped": 0,
+      "groups": [
+        {
+          "group": "host-plugin",
+          "total": 255,
+          "passed": 255,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-083212-ecba5e2d805e/pass-1/tests/host-plugin/host-plugin.trx",
+          "sha256": "c87245f5c697536a1fba7ed7ecf7ee4635eb7d08f870a67cf554497a7ae8ef63"
+        },
+        {
+          "group": "host-ui",
+          "total": 173,
+          "passed": 173,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-083212-ecba5e2d805e/pass-1/tests/host-ui/host-ui.trx",
+          "sha256": "d2a157946c907c1ecf7e1d7f1a682b343242b795fd05f5721b7a5baadb589e39"
+        },
+        {
+          "group": "host-unit",
+          "total": 496,
+          "passed": 496,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-083212-ecba5e2d805e/pass-1/tests/host-unit/host-unit.trx",
+          "sha256": "a9aba239ea90bfd0664b74cb0817ca5c8b4acd1650c454b2f192b02c13aa3e80"
+        },
+        {
+          "group": "my-plug-test-package",
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-083212-ecba5e2d805e/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+          "sha256": "0aabd193f8e27235136e7a4034963bf10fffd7d7d6deb4da72cc9c15a9b4de37"
+        },
+        {
+          "group": "my-plug-test",
+          "total": 11,
+          "passed": 11,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-083212-ecba5e2d805e/pass-1/tests/my-plug-test/my-plug-test.trx",
+          "sha256": "45b92f1feb46946665e35056879a3b77613f65208f42f31ce5bb995792ad4ffa"
+        },
+        {
+          "group": "sdk",
+          "total": 91,
+          "passed": 91,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-083212-ecba5e2d805e/pass-1/tests/sdk/sdk.trx",
+          "sha256": "7d7c8966c3ee0e3419724a9c0dd5de1eb98e5ab147c8eb7a5bbab38fa8afa78e"
+        }
+      ]
+    }
+  },
+  "targetedVerification": {
+    "note": "红灯为修复前预期失败；专项在最终文档定稿前执行，不能代替最终 verify。新增29个案例：Unit5、UI24。",
+    "runs": [
+      {
+        "group": "expected-red-original-defect",
+        "total": 8,
+        "passed": 0,
+        "failed": 8,
+        "skipped": 0,
+        "trxPath": "artifacts/host-v11-p2/red/p2-red.trx",
+        "sha256": "e711b257c63e10eeb3560fd42b9a084ced98e6fb5ddce7bbcc348caf8af2fe19"
+      },
+      {
+        "group": "factory-close-protocol",
+        "total": 25,
+        "passed": 25,
+        "failed": 0,
+        "skipped": 0,
+        "trxPath": "artifacts/host-v11-p2/unit/p2-unit.trx",
+        "sha256": "a03cc8a3be9d1c20a28445203464f86a6e9981f97a9b1fc3b70f6ada6ce130f3"
+      },
+      {
+        "group": "headless-close-split-v3-tool-center",
+        "total": 60,
+        "passed": 60,
+        "failed": 0,
+        "skipped": 0,
+        "trxPath": "artifacts/host-v11-p2/ui/p2-ui.trx",
+        "sha256": "ec5350bf2ed735304ac8aca01dcfa15fcb96dd5ab8f9d30ffcfd3353dd1f85de"
+      }
+    ]
+  },
+  "documentLinks": {
+    "result": {
+      "files": 62,
+      "links": 544,
+      "anchors": 1,
+      "errors": []
+    },
+    "sha256": "e6e3e94f075c24cd1868b8e16d705757472a7f6bbb86f07853af4154bcf9a68e"
+  },
+  "hostArtifacts": [
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.dll",
+      "sha256": "5bf2b1f3956cc3fac7a94cf742b850bfe34308cddf92cc99fbcdc900daebf2dd",
+      "bytes": 3395584
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.exe",
+      "sha256": "e512ee464eb5a814abba302c8cc152b38c8831987358b37245fdacc1db2a8d8c",
+      "bytes": 162816
+    }
+  ],
+  "packageAcceptance": {
+    "pluginId": "myavalonia.plugin.my-plug-test",
+    "passed": true,
+    "archivePath": "artifacts/gate/20260916-083212-ecba5e2d805e/pass-1/packages/my-plug-test/build-1/MyPlugTest-win-x64.zip",
+    "sha256": "1bb5090e59e834008049f11aaf72c907ac89998fb7159be56ce05dad4d36b35b",
+    "manifestSha256": "93b4006555e65634300c0e1af204ccc345a1739b432ad6fd9cdc384e2a567ae1",
+    "files": 8,
+    "deterministicVerified": false
+  },
+  "manualDesktop": {
+    "status": "pending",
+    "reason": "当前计算机工具没有可操作的原生应用表面；未实际执行 Windows 鼠标关闭，Headless 不代表桌面通过。",
+    "cases": [
+      "Tool浮窗右上角关闭",
+      "菜单及工具中心隐藏最后工具",
+      "多工具多组及取消",
+      "重新显示和实际重启恢复",
+      "外部Bili下载业务"
+    ],
+    "procedure": "docs/maintenance/floating-layout-verification.md"
+  },
+  "ownershipAndFormat": {
+    "layoutSchema": 3,
+    "pluginSdkChanged": false,
+    "dockVersionChanged": false,
+    "saveComponentsChanged": false,
+    "closeRangeCoordinatorChanged": false,
+    "toolModelAndViewReused": true,
+    "documentInstancePreserved": true,
+    "closeCancelledPreservesContent": true,
+    "floatingBoundsAndGroupsPreserved": true,
+    "evidence": "DockToolWindowCloseUiTests 验证按钮/菜单/隐藏/取消、窗口和模型回收、实例、位置比例与V3文件重启；既有文档关闭与布局转移回归继续通过。"
+  },
+  "releaseEligible": false,
+  "publishable": false,
+  "windowsCI": "not-run",
+  "releaseGates": "not-run",
+  "releaseSmoke": "not-run",
+  "releaseCoverage": "not-run",
+  "deployment": "not-run",
+  "publication": "not-run",
+  "aiflow": "not-used",
+  "deploymentNote": "D:\\data\\avalonia 既有P1单文件自包含产物未覆盖；此处DLL/EXE为开发构建，不是P2发布包。",
+  "localEvidenceNote": "完整Gate日志、TRX与包保留在artifacts，本JSON归档身份与结果，不提交生成物。"
 }
