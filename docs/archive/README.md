@@ -30,6 +30,10 @@
 
 ## 阶段与发布记录
 
+### host-v11
+
+- [浮动窗口与 Layout V3 开发记录](records/host-v11/development-acceptance.md)
+
 ### host-v10
 
 - [插件兼容治理与看板开发记录](records/host-v10/development-acceptance.md)
