@@ -10,6 +10,7 @@ using Dock.Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
+using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels.Welcome;
 using MyAvaloniaManagement.ViewModels.Bindings;
@@ -27,6 +28,33 @@ namespace MyAvaloniaManagement.UiTests;
 /// </summary>
 public sealed class ApplicationAndWindowTests
 {
+    [AvaloniaFact]
+    public void 窗口最大化和最小化不覆盖正常尺寸且关闭后解除位置订阅()
+    {
+        using var windows = new WorkbenchWindowContext();
+        var window = new Window { Width = 640, Height = 480 };
+        windows.Register(window, main: true);
+        window.Show();
+        window.Position = new PixelPoint(80, 60);
+        var normal = windows.CaptureBounds(window);
+        Assert.Equal(640, normal.Width);
+        Assert.Equal(480, normal.Height);
+        window.WindowState = WindowState.Maximized;
+        var maximized = windows.CaptureBounds(window);
+        Assert.True(maximized.Maximized);
+        Assert.Equal(normal.Width, maximized.Width);
+        Assert.Equal(normal.Height, maximized.Height);
+        window.WindowState = WindowState.Minimized;
+        Assert.Equal(maximized, windows.CaptureBounds(window));
+        window.Close();
+        Assert.Null(windows.MainWindow);
+        var changed = 0;
+        windows.WindowPlacementChanged += (_, _) => changed++;
+        window.Width = 900;
+        window.WindowState = WindowState.Normal;
+        Assert.Equal(0, changed);
+    }
+
     [AvaloniaFact]
     public void 生产应用资源和主题可以在无头平台加载()
     {

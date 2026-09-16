@@ -74,3 +74,12 @@ Dock.Avalonia `12.1.0.6` 的本地 NuGet 元数据对应上游提交 `cc08602d02
 新增纯数据树过滤、空节点归并及运行时投影/恢复记录合并。实际可见工具位置优先，隐藏或不可用项保留原窗口与组；同组隐藏项保留相对顺序，能识别原父节点时保留分支比例。用户删除整段原结构时保留缺失分支并邻接当前结构，不反向恢复用户已改变的可见布局。新默认隐藏工具的组身份在连续捕获间保持稳定。
 
 `dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DockLayoutTreeTests|FullyQualifiedName~DockLayoutV3' --logger 'trx;LogFileName=v11-layout-tree.trx'`：30/30 通过。新增 6 项纯数据行为覆盖整窗隐藏、同组隐藏成员、插件缺失分支、父分割新增组、稳定身份、文档和空分割剔除。实际 Dock Mapper 与恢复/保存生命周期仍待接入。
+
+## G6 位置计算与窗口跟踪基础
+
+新增纯数据屏幕位置策略与单窗口位置跟踪器。正常位置/逻辑尺寸与最大化意图分开保存，最小化不覆盖它们；恢复按实际工作区、缩放和交叠/距离约束尺寸与坐标，负坐标合法，小工作区可降低最小尺寸。登记窗口后成对订阅位置、尺寸、状态与屏幕变化，Closed 或上下文释放时解除订阅。
+
+- `dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DockScreenPlacementTests' --logger 'trx;LogFileName=v11-screen-placement.trx'`：8/8 通过。
+- `dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~ApplicationAndWindowTests' --logger 'trx;LogFileName=v11-placement-ui.trx'`：15/15 通过。
+
+均无失败、跳过或构建警告；UI 新增覆盖最大化/最小化保持正常尺寸及 Closed 后不再接收位置变化。找回/重置命令、布局文件实际恢复与真实多屏桌面仍待完成，G6 尚未整体通过。
