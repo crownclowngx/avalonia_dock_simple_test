@@ -1,0 +1,1715 @@
+{
+  "completedAtUtc": "2026-09-16T01:02:07.9941448Z",
+  "sourceUnchanged": true,
+  "totalBytes": 27444885005,
+  "totalFiles": 27142,
+  "before": [
+    {
+      "root": "D:\\code\\local\\avalonia_dock_simple_test",
+      "files": 808,
+      "sha256": "44B3215EE9728A5C7A090DA9296B85B938CAE7DF32C834CC519503788075F74C",
+      "status": []
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-baidu-netdisk",
+      "files": 163,
+      "sha256": "6D20CA4C93887DE7C4BFA7A4FDF4708053D9CB0D4771794B6164FFC4D6EA4681",
+      "status": []
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader",
+      "files": 352,
+      "sha256": "4F7F3151410E6056E356A8136B97F5C8186206D0ABD4FB507D7935645F428256",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-classic-game",
+      "files": 338,
+      "sha256": "3DF959E1AF71A3E152844B0B4ADA0F52CE9FC5CE2F5F739F5D1CACA62424D4AE",
+      "status": [
+        " M .gitignore",
+        "?? docs/research/"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work",
+      "files": 120,
+      "sha256": "B1D1BD7050FC858AD86FD99C34F1B672F102DADE156A2EE189C33838A6D91B86",
+      "status": []
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art",
+      "files": 188,
+      "sha256": "98EA2DDAEFD2D5F838435289EB37199BE73DCA82823A0B5C0F84F5DDB15B167D",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-image-lab",
+      "files": 828,
+      "sha256": "1B070F75CF34C9BA5602DB7FFEAA7D84DA5047786C93709555BEEDE521AD5190",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack",
+      "files": 315,
+      "sha256": "DC2E7AC05123AF0C45B4BF80E1D2D615C159E9D75B932942C3AD5A6640A9F0AF",
+      "status": []
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate",
+      "files": 388,
+      "sha256": "7D75A6F7C3EB715013C2384A18CFE6C96A10FB6072FC62F5E6D9C0F5C3DEB884",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "files": 346,
+      "sha256": "48040304E61774E75C5E343E8110D3CFCCCE25028F2BB68D5655232B2AB2D4BF",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio",
+      "files": 80,
+      "sha256": "F01F30C9AAF75430D8F41B6EC4F5422191B929D9F995BF9A1F870D71AA3515D0",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker",
+      "files": 112,
+      "sha256": "CA0B31DA63C6B880ECC37560E76899053CAF60F7767DF5B9C3F57F615EC286B9",
+      "status": []
+    }
+  ],
+  "after": [
+    {
+      "root": "D:\\code\\local\\avalonia_dock_simple_test",
+      "files": 808,
+      "sha256": "44B3215EE9728A5C7A090DA9296B85B938CAE7DF32C834CC519503788075F74C",
+      "status": []
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-baidu-netdisk",
+      "files": 163,
+      "sha256": "6D20CA4C93887DE7C4BFA7A4FDF4708053D9CB0D4771794B6164FFC4D6EA4681",
+      "status": []
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader",
+      "files": 352,
+      "sha256": "4F7F3151410E6056E356A8136B97F5C8186206D0ABD4FB507D7935645F428256",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-classic-game",
+      "files": 338,
+      "sha256": "3DF959E1AF71A3E152844B0B4ADA0F52CE9FC5CE2F5F739F5D1CACA62424D4AE",
+      "status": [
+        " M .gitignore",
+        "?? docs/research/"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work",
+      "files": 120,
+      "sha256": "B1D1BD7050FC858AD86FD99C34F1B672F102DADE156A2EE189C33838A6D91B86",
+      "status": []
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art",
+      "files": 188,
+      "sha256": "98EA2DDAEFD2D5F838435289EB37199BE73DCA82823A0B5C0F84F5DDB15B167D",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-image-lab",
+      "files": 828,
+      "sha256": "1B070F75CF34C9BA5602DB7FFEAA7D84DA5047786C93709555BEEDE521AD5190",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack",
+      "files": 315,
+      "sha256": "DC2E7AC05123AF0C45B4BF80E1D2D615C159E9D75B932942C3AD5A6640A9F0AF",
+      "status": []
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate",
+      "files": 388,
+      "sha256": "7D75A6F7C3EB715013C2384A18CFE6C96A10FB6072FC62F5E6D9C0F5C3DEB884",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "files": 346,
+      "sha256": "48040304E61774E75C5E343E8110D3CFCCCE25028F2BB68D5655232B2AB2D4BF",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio",
+      "files": 80,
+      "sha256": "F01F30C9AAF75430D8F41B6EC4F5422191B929D9F995BF9A1F870D71AA3515D0",
+      "status": [
+        " M .gitignore"
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker",
+      "files": 112,
+      "sha256": "CA0B31DA63C6B880ECC37560E76899053CAF60F7767DF5B9C3F57F615EC286B9",
+      "status": []
+    }
+  ],
+  "removed": [
+    {
+      "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts",
+      "bytes": 24410773012,
+      "files": 25618,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\TestResults\\HostIntegration\\7f2f7de169ad4c50992da6a055bd48b1\\crown_GAOXU_2026-09-11_12_45_16_net10.0.trx",
+      "bytes": 4792,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\TestResults\\HostIntegration\\7f2f7de169ad4c50992da6a055bd48b1\\crown_GAOXU_2026-09-11_12_45_24_net10.0.trx",
+      "bytes": 3287,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\Migration\\integration-9bcb0b42af21492da53c9c86c334515a\\host-package.trx",
+      "bytes": 11343,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\Migration\\integration-9bcb0b42af21492da53c9c86c334515a\\host-ui.trx",
+      "bytes": 6415,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\Migration\\integration-9bcb0b42af21492da53c9c86c334515a\\workflow.trx",
+      "bytes": 3479,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\baseline-unit\\baseline.trx",
+      "bytes": 353252,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\batch-ui-v1\\ui.trx",
+      "bytes": 12489,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\batch-ui-v2\\ui.trx",
+      "bytes": 12489,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\daily-ui-v1\\ui.trx",
+      "bytes": 12489,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\deploy-20260915-release\\release_net10.0_20260915185137.trx",
+      "bytes": 14063,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\deploy-20260915-release\\release_net10.0_20260915185209.trx",
+      "bytes": 496828,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-386e5d749a1348e5afec45fe616b104b\\Tests\\Tests.trx",
+      "bytes": 423828,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-386e5d749a1348e5afec45fe616b104b\\UiTests\\UiTests.trx",
+      "bytes": 11353,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-621dcb5b88274ea196c9ec222fe6a3d1\\Tests\\Tests.trx",
+      "bytes": 447979,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-621dcb5b88274ea196c9ec222fe6a3d1\\UiTests\\UiTests.trx",
+      "bytes": 11353,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-80f2ab26ecc44a29932b0e1812ed0ac4\\Tests\\Tests.trx",
+      "bytes": 382125,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-80f2ab26ecc44a29932b0e1812ed0ac4\\UiTests\\UiTests.trx",
+      "bytes": 9829,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-e0e8c573d35e446ea4a4c8b97e5eecac\\Tests\\Tests.trx",
+      "bytes": 492882,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-e0e8c573d35e446ea4a4c8b97e5eecac\\UiTests\\UiTests.trx",
+      "bytes": 14410,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-efbf0f402bb941029eaa2c8e774df5e5\\Tests\\Tests.trx",
+      "bytes": 495911,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-efbf0f402bb941029eaa2c8e774df5e5\\UiTests\\UiTests.trx",
+      "bytes": 14410,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\playback-ui-v2\\ui.trx",
+      "bytes": 12849,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\playback-ui-v3\\ui.trx",
+      "bytes": 10974,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\playback-ui\\ui.trx",
+      "bytes": 9450,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\playback\\playback.trx",
+      "bytes": 43604,
+      "files": 1,
+      "deleted": true
+    },
+    {
+      "path": "C:\\Users\\crown\\AppData\\Local\\Temp\\myavalonia-341-source-e8576d03af1c47528ced7541528003a2",
+      "bytes": 606087601,
+      "files": 298,
+      "deleted": true
+    },
+    {
+      "path": "C:\\Users\\crown\\AppData\\Local\\Temp\\myavalonia-341-candidate-a3699b48543c4a6098fe6fb34b899fac",
+      "bytes": 606191059,
+      "files": 301,
+      "deleted": true
+    },
+    {
+      "path": "C:\\Users\\crown\\AppData\\Local\\Temp\\myavalonia-341-final-3966ac4f233f40e583c9859ba69c98d0",
+      "bytes": 606157511,
+      "files": 299,
+      "deleted": true
+    },
+    {
+      "path": "C:\\Users\\crown\\AppData\\Local\\Temp\\myavalonia-341-public-73e1e73f879b41298b7aad46f4f505b1",
+      "bytes": 606183652,
+      "files": 301,
+      "deleted": true
+    },
+    {
+      "path": "C:\\Users\\crown\\AppData\\Local\\Temp\\host-v9-template-5c6287bcb6c74eb893a192900418449c",
+      "bytes": 606180287,
+      "files": 300,
+      "deleted": true
+    }
+  ],
+  "originalInventory": [
+    {
+      "root": "D:\\code\\local\\avalonia_dock_simple_test",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts",
+          "bytes": 31076031768,
+          "files": 39620
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement\\bin",
+          "bytes": 2000564909,
+          "files": 2417
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement\\obj",
+          "bytes": 25056999,
+          "files": 114
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.Icons\\bin",
+          "bytes": 48168,
+          "files": 8
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.Icons\\obj",
+          "bytes": 154053,
+          "files": 41
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginSdk\\bin",
+          "bytes": 180806,
+          "files": 8
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginSdk\\obj",
+          "bytes": 349899,
+          "files": 52
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginSdk.Tests\\bin",
+          "bytes": 27686566,
+          "files": 233
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginSdk.Tests\\obj",
+          "bytes": 711999,
+          "files": 40
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginSdk.UI\\bin",
+          "bytes": 356570,
+          "files": 14
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginSdk.UI\\obj",
+          "bytes": 432292,
+          "files": 59
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginSdk.Workflow\\bin",
+          "bytes": 349418,
+          "files": 14
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginSdk.Workflow\\obj",
+          "bytes": 344071,
+          "files": 45
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\bin",
+          "bytes": 1854321230,
+          "files": 2154
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\obj",
+          "bytes": 2639385,
+          "files": 72
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestResults",
+          "bytes": 69528,
+          "files": 3
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\ManagedOnly\\LegacyNoModule\\bin",
+          "bytes": 49340,
+          "files": 8
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\ManagedOnly\\LegacyNoModule\\obj",
+          "bytes": 204678,
+          "files": 31
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\ManagedOnly\\NoModule\\bin",
+          "bytes": 32030,
+          "files": 8
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\ManagedOnly\\NoModule\\obj",
+          "bytes": 105557,
+          "files": 27
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\ManagedOnly\\OldIconSdk\\bin",
+          "bytes": 58156,
+          "files": 6
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\ManagedOnly\\OldIconSdk\\obj",
+          "bytes": 184509,
+          "files": 33
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\DependencyV1\\bin",
+          "bytes": 32644,
+          "files": 6
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\DependencyV1\\obj",
+          "bytes": 111047,
+          "files": 27
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\DependencyV2\\bin",
+          "bytes": 32648,
+          "files": 6
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\DependencyV2\\obj",
+          "bytes": 111051,
+          "files": 27
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\IconAssetsV1\\bin",
+          "bytes": 41524,
+          "files": 6
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\IconAssetsV1\\obj",
+          "bytes": 122425,
+          "files": 29
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\IconAssetsV2\\bin",
+          "bytes": 41756,
+          "files": 6
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\IconAssetsV2\\obj",
+          "bytes": 122657,
+          "files": 29
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\PluginV1\\bin",
+          "bytes": 311316,
+          "files": 22
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\PluginV1\\obj",
+          "bytes": 289153,
+          "files": 33
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\PluginV2\\bin",
+          "bytes": 309056,
+          "files": 22
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\PluginIsolation\\PluginV2\\obj",
+          "bytes": 284605,
+          "files": 33
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\WorkflowActionG1\\Consumer\\bin",
+          "bytes": 18022100,
+          "files": 58
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\WorkflowActionG1\\Consumer\\obj",
+          "bytes": 238072,
+          "files": 35
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\WorkflowActionG1\\Provider\\bin",
+          "bytes": 18034328,
+          "files": 58
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\TestAssets\\WorkflowActionG1\\Provider\\obj",
+          "bytes": 254396,
+          "files": 35
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.Tests\\bin",
+          "bytes": 1257580378,
+          "files": 678
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.Tests\\obj",
+          "bytes": 2360606,
+          "files": 40
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.Tests\\TestResults",
+          "bytes": 473433,
+          "files": 1
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.UiTests\\bin",
+          "bytes": 1278381838,
+          "files": 802
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.UiTests\\obj",
+          "bytes": 2296918,
+          "files": 56
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.UiTests\\TestResults",
+          "bytes": 21437,
+          "files": 1
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.Build\\bin",
+          "bytes": 16157,
+          "files": 3
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.Build\\obj",
+          "bytes": 94688,
+          "files": 21
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.DependencyCatalog\\bin",
+          "bytes": 1068758,
+          "files": 10
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.DependencyCatalog\\obj",
+          "bytes": 1355051,
+          "files": 33
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.DependencyCatalog.Tests\\bin",
+          "bytes": 5458372,
+          "files": 94
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.DependencyCatalog.Tests\\obj",
+          "bytes": 299928,
+          "files": 20
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.Templates\\bin",
+          "bytes": 16153,
+          "files": 3
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.Templates\\obj",
+          "bytes": 170558,
+          "files": 27
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.Templates\\content\\myavalonia-plugin\\src\\DemoPlugin.Plugin\\bin",
+          "bytes": 51095,
+          "files": 4
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.Templates\\content\\myavalonia-plugin\\src\\DemoPlugin.Plugin\\obj",
+          "bytes": 197159,
+          "files": 24
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.Templates\\content\\myavalonia-plugin\\src\\DemoPlugin.Standalone\\bin",
+          "bytes": 591295131,
+          "files": 84
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.Templates\\content\\myavalonia-plugin\\src\\DemoPlugin.Standalone\\obj",
+          "bytes": 446338,
+          "files": 24
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.Templates\\content\\myavalonia-plugin\\tests\\DemoPlugin.Tests\\bin",
+          "bytes": 13725154,
+          "files": 110
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Packaging\\MyAvaloniaManagement.Plugin.Templates\\content\\myavalonia-plugin\\tests\\DemoPlugin.Tests\\obj",
+          "bytes": 301121,
+          "files": 21
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Plugins\\MyPlugTest\\MyPlugTest\\bin",
+          "bytes": 894340,
+          "files": 24
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Plugins\\MyPlugTest\\MyPlugTest\\obj",
+          "bytes": 1461548,
+          "files": 85
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Plugins\\MyPlugTest\\MyPlugTest.Tests\\bin",
+          "bytes": 40117858,
+          "files": 268
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\Plugins\\MyPlugTest\\MyPlugTest.Tests\\obj",
+          "bytes": 620100,
+          "files": 40
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\tools\\help-assets\\node_modules",
+          "bytes": 230732164,
+          "files": 10811
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\tools\\MyAvaloniaManagement.Gate\\bin",
+          "bytes": 615566,
+          "files": 12
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\tools\\MyAvaloniaManagement.Gate\\obj",
+          "bytes": 822349,
+          "files": 33
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\tools\\MyAvaloniaManagement.Gate.Tests\\bin",
+          "bytes": 5023729,
+          "files": 91
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_simple_test\\tools\\MyAvaloniaManagement.Gate.Tests\\obj",
+          "bytes": 276725,
+          "files": 20
+        }
+      ],
+      "totalBytes": 38464465361,
+      "totalFiles": 58879
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-baidu-netdisk",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-baidu-netdisk\\src\\BaiduDiskPlugin.Plugin\\bin",
+          "bytes": 721091,
+          "files": 4
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-baidu-netdisk\\src\\BaiduDiskPlugin.Plugin\\obj",
+          "bytes": 1176838,
+          "files": 27
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-baidu-netdisk\\src\\BaiduDiskPlugin.Standalone\\bin",
+          "bytes": 592294925,
+          "files": 88
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-baidu-netdisk\\src\\BaiduDiskPlugin.Standalone\\obj",
+          "bytes": 551647,
+          "files": 27
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-baidu-netdisk\\tests\\BaiduDiskPlugin.Tests\\bin",
+          "bytes": 120124123,
+          "files": 137
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-baidu-netdisk\\tests\\BaiduDiskPlugin.Tests\\obj",
+          "bytes": 936272,
+          "files": 24
+        }
+      ],
+      "totalBytes": 715804896,
+      "totalFiles": 307
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\src\\BiliDownloaderPlugin.Plugin\\artifacts",
+          "bytes": 2503097,
+          "files": 2
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\src\\BiliDownloaderPlugin.Plugin\\bin",
+          "bytes": 2297814,
+          "files": 4
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\src\\BiliDownloaderPlugin.Plugin\\obj",
+          "bytes": 3542630,
+          "files": 24
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\src\\BiliDownloaderPlugin.Standalone\\bin",
+          "bytes": 629978542,
+          "files": 122
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\src\\BiliDownloaderPlugin.Standalone\\obj",
+          "bytes": 550213,
+          "files": 24
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\tests\\BiliDownloaderPlugin.HostTests\\bin",
+          "bytes": 627811533,
+          "files": 338
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\tests\\BiliDownloaderPlugin.HostTests\\obj",
+          "bytes": 567211,
+          "files": 21
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\tests\\BiliDownloaderPlugin.HostUiTests\\bin",
+          "bytes": 671078280,
+          "files": 428
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\tests\\BiliDownloaderPlugin.HostUiTests\\obj",
+          "bytes": 912154,
+          "files": 27
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\tests\\BiliDownloaderPlugin.Tests\\bin",
+          "bytes": 635912128,
+          "files": 208
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\tests\\BiliDownloaderPlugin.Tests\\obj",
+          "bytes": 2241552,
+          "files": 21
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\tests\\BiliDownloaderPlugin.UiTests\\bin",
+          "bytes": 641323614,
+          "files": 260
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\tests\\BiliDownloaderPlugin.UiTests\\obj",
+          "bytes": 767314,
+          "files": 27
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\tools\\BiliDownloader.ReleaseAcceptance\\bin",
+          "bytes": 47921242,
+          "files": 67
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\tools\\BiliDownloader.ReleaseAcceptance\\obj",
+          "bytes": 590814,
+          "files": 22
+        }
+      ],
+      "totalBytes": 3267998138,
+      "totalFiles": 1595
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-classic-game",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-classic-game\\artifacts",
+          "bytes": 26484569,
+          "files": 10
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-classic-game\\src\\ClassicGamePlugin.Plugin\\bin",
+          "bytes": 3045516,
+          "files": 8
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-classic-game\\src\\ClassicGamePlugin.Plugin\\obj",
+          "bytes": 4374955,
+          "files": 46
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-classic-game\\src\\ClassicGamePlugin.Standalone\\bin",
+          "bytes": 1185561208,
+          "files": 168
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-classic-game\\src\\ClassicGamePlugin.Standalone\\obj",
+          "bytes": 787108,
+          "files": 46
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-classic-game\\tests\\ClassicGamePlugin.Tests\\bin",
+          "bytes": 31256334,
+          "files": 222
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-classic-game\\tests\\ClassicGamePlugin.Tests\\obj",
+          "bytes": 1681017,
+          "files": 40
+        }
+      ],
+      "totalBytes": 1253190707,
+      "totalFiles": 540
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\TestResults",
+          "bytes": 5670369,
+          "files": 12
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\src\\DaTangWorkPlugin.Plugin\\artifacts",
+          "bytes": 2405178,
+          "files": 2
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\src\\DaTangWorkPlugin.Plugin\\bin",
+          "bytes": 464662,
+          "files": 4
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\src\\DaTangWorkPlugin.Plugin\\obj",
+          "bytes": 791390,
+          "files": 24
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\src\\DaTangWorkPlugin.Standalone\\bin",
+          "bytes": 597640205,
+          "files": 100
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\src\\DaTangWorkPlugin.Standalone\\obj",
+          "bytes": 564710,
+          "files": 24
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\tests\\DaTangWorkPlugin.HostTests\\bin",
+          "bytes": 633646518,
+          "files": 341
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\tests\\DaTangWorkPlugin.HostTests\\obj",
+          "bytes": 718801,
+          "files": 21
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\tests\\DaTangWorkPlugin.HostUiTests\\bin",
+          "bytes": 638317448,
+          "files": 393
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\tests\\DaTangWorkPlugin.HostUiTests\\obj",
+          "bytes": 983381,
+          "files": 27
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\tests\\DaTangWorkPlugin.Tests\\bin",
+          "bytes": 602472460,
+          "files": 186
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\tests\\DaTangWorkPlugin.Tests\\obj",
+          "bytes": 632871,
+          "files": 21
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\tests\\DaTangWorkPlugin.UiTests\\bin",
+          "bytes": 608940825,
+          "files": 239
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work\\tests\\DaTangWorkPlugin.UiTests\\obj",
+          "bytes": 751134,
+          "files": 27
+        }
+      ],
+      "totalBytes": 3093999952,
+      "totalFiles": 1421
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art\\artifacts",
+          "bytes": 65754,
+          "files": 1
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art\\src\\FractalArtPlugin.Plugin\\bin",
+          "bytes": 2100622,
+          "files": 8
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art\\src\\FractalArtPlugin.Plugin\\obj",
+          "bytes": 3189328,
+          "files": 46
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art\\src\\FractalArtPlugin.Standalone\\bin",
+          "bytes": 1184633890,
+          "files": 170
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art\\src\\FractalArtPlugin.Standalone\\obj",
+          "bytes": 795678,
+          "files": 46
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art\\tests\\FractalArtPlugin.Tests\\bin",
+          "bytes": 30176544,
+          "files": 223
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art\\tests\\FractalArtPlugin.Tests\\obj",
+          "bytes": 1415887,
+          "files": 40
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art\\tests\\FractalArtPlugin.WorkflowIntegration.Tests\\bin",
+          "bytes": 584315854,
+          "files": 161
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art\\tests\\FractalArtPlugin.WorkflowIntegration.Tests\\obj",
+          "bytes": 524583,
+          "files": 21
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art\\tools\\FractalArtPlugin.Benchmarks\\bin",
+          "bytes": 20338566,
+          "files": 60
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art\\tools\\FractalArtPlugin.Benchmarks\\obj",
+          "bytes": 692453,
+          "files": 42
+        }
+      ],
+      "totalBytes": 1828249159,
+      "totalFiles": 818
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-image-lab",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-image-lab\\src\\ImageLabPlugin.Plugin\\bin",
+          "bytes": 9283646,
+          "files": 8
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-image-lab\\src\\ImageLabPlugin.Plugin\\obj",
+          "bytes": 13749294,
+          "files": 46
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-image-lab\\src\\ImageLabPlugin.Standalone\\bin",
+          "bytes": 1192003928,
+          "files": 171
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-image-lab\\src\\ImageLabPlugin.Standalone\\obj",
+          "bytes": 837082,
+          "files": 46
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-image-lab\\tests\\ImageLabPlugin.Tests\\bin",
+          "bytes": 1167141998,
+          "files": 311
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-image-lab\\tests\\ImageLabPlugin.Tests\\obj",
+          "bytes": 3144523,
+          "files": 40
+        }
+      ],
+      "totalBytes": 2386160471,
+      "totalFiles": 622
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\artifacts",
+          "bytes": 1573756801,
+          "files": 3857
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\src\\LayerUnpackPlugin.Headless\\bin",
+          "bytes": 823144,
+          "files": 6
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\src\\LayerUnpackPlugin.Headless\\obj",
+          "bytes": 1270725,
+          "files": 31
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\src\\LayerUnpackPlugin.Plugin\\bin",
+          "bytes": 2030800,
+          "files": 12
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\src\\LayerUnpackPlugin.Plugin\\obj",
+          "bytes": 1757587,
+          "files": 45
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\src\\LayerUnpackPlugin.Standalone\\bin",
+          "bytes": 1190260988,
+          "files": 181
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\src\\LayerUnpackPlugin.Standalone\\obj",
+          "bytes": 822991,
+          "files": 43
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\tests\\LayerUnpackPlugin.Headless.Tests\\bin",
+          "bytes": 28530546,
+          "files": 358
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\tests\\LayerUnpackPlugin.Headless.Tests\\obj",
+          "bytes": 2751495,
+          "files": 47
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\tests\\LayerUnpackPlugin.Tests\\bin",
+          "bytes": 1173459032,
+          "files": 425
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\tests\\LayerUnpackPlugin.Tests\\obj",
+          "bytes": 2010288,
+          "files": 53
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\tests\\LayerUnpackPlugin.WorkflowIntegration.Tests\\bin",
+          "bytes": 1170880726,
+          "files": 418
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack\\tests\\LayerUnpackPlugin.WorkflowIntegration.Tests\\obj",
+          "bytes": 1086820,
+          "files": 49
+        }
+      ],
+      "totalBytes": 5149441943,
+      "totalFiles": 5525
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\artifacts",
+          "bytes": 1374009217,
+          "files": 1983
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\src\\NovelGeneratePlugin.Plugin\\artifacts",
+          "bytes": 2008932,
+          "files": 2
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\src\\NovelGeneratePlugin.Plugin\\bin",
+          "bytes": 4570420,
+          "files": 8
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\src\\NovelGeneratePlugin.Plugin\\obj",
+          "bytes": 6220052,
+          "files": 43
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\src\\NovelGeneratePlugin.Standalone\\bin",
+          "bytes": 1255826156,
+          "files": 226
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\src\\NovelGeneratePlugin.Standalone\\obj",
+          "bytes": 848066,
+          "files": 43
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\tests\\NovelGeneratePlugin.Tests\\bin",
+          "bytes": 1231471748,
+          "files": 366
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\tests\\NovelGeneratePlugin.Tests\\obj",
+          "bytes": 3688892,
+          "files": 37
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\tools\\AnalysisProbe\\bin",
+          "bytes": 45587017,
+          "files": 58
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\tools\\AnalysisProbe\\obj",
+          "bytes": 467993,
+          "files": 22
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\tools\\HostProbe\\bin",
+          "bytes": 660363134,
+          "files": 283
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\tools\\HostProbe\\obj",
+          "bytes": 740266,
+          "files": 22
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\tools\\LiveSample\\bin",
+          "bytes": 44841208,
+          "files": 58
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate\\tools\\LiveSample\\obj",
+          "bytes": 371634,
+          "files": 22
+        }
+      ],
+      "totalBytes": 4631014735,
+      "totalFiles": 3173
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\src\\VideoSecurityPlayer.Plugin\\artifacts",
+          "bytes": 49103280,
+          "files": 2
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\src\\VideoSecurityPlayer.Plugin\\bin",
+          "bytes": 384255228,
+          "files": 1682
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\src\\VideoSecurityPlayer.Plugin\\obj",
+          "bytes": 4508178,
+          "files": 43
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\src\\VideoSecurityPlayer.Standalone\\bin",
+          "bytes": 1567566616,
+          "files": 1850
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\src\\VideoSecurityPlayer.Standalone\\obj",
+          "bytes": 1409223,
+          "files": 43
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tests\\VideoSecurityPlayer.HostTests\\bin",
+          "bytes": 820005555,
+          "files": 1180
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tests\\VideoSecurityPlayer.HostTests\\obj",
+          "bytes": 1025025,
+          "files": 21
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tests\\VideoSecurityPlayer.HostUiTests\\bin",
+          "bytes": 824658690,
+          "files": 1232
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tests\\VideoSecurityPlayer.HostUiTests\\obj",
+          "bytes": 1041773,
+          "files": 27
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tests\\VideoSecurityPlayer.Tests\\bin",
+          "bytes": 1590024114,
+          "files": 2052
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tests\\VideoSecurityPlayer.Tests\\obj",
+          "bytes": 2920370,
+          "files": 37
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tests\\VideoSecurityPlayer.UiTests\\bin",
+          "bytes": 1590186006,
+          "files": 2128
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tests\\VideoSecurityPlayer.UiTests\\obj",
+          "bytes": 1620325,
+          "files": 49
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tools\\VideoSecurityPlayer.Playback.IntegrationHarness\\bin",
+          "bytes": 364184944,
+          "files": 1061
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tools\\VideoSecurityPlayer.Playback.IntegrationHarness\\obj",
+          "bytes": 1130478,
+          "files": 22
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tools\\VideoSecurityPlayer.ReleaseAcceptance\\bin",
+          "bytes": 201536197,
+          "files": 870
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tools\\VideoSecurityPlayer.ReleaseAcceptance\\obj",
+          "bytes": 732605,
+          "files": 22
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tools\\VideoSecurityPlayer.SecurityBenchmarks\\bin",
+          "bytes": 403389896,
+          "files": 1740
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\tools\\VideoSecurityPlayer.SecurityBenchmarks\\obj",
+          "bytes": 1502080,
+          "files": 39
+        }
+      ],
+      "totalBytes": 7810800583,
+      "totalFiles": 14100
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio\\artifacts",
+          "bytes": 4948165342,
+          "files": 4066
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio\\src\\WorkflowStudio.Plugin\\artifacts",
+          "bytes": 210189,
+          "files": 4
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio\\src\\WorkflowStudio.Plugin\\bin",
+          "bytes": 658022,
+          "files": 8
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio\\src\\WorkflowStudio.Plugin\\obj",
+          "bytes": 1083778,
+          "files": 46
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio\\src\\WorkflowStudio.Standalone\\bin",
+          "bytes": 1183315986,
+          "files": 172
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio\\src\\WorkflowStudio.Standalone\\obj",
+          "bytes": 834445,
+          "files": 46
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio\\tests\\WorkflowStudio.Tests\\bin",
+          "bytes": 28592324,
+          "files": 226
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio\\tests\\WorkflowStudio.Tests\\obj",
+          "bytes": 925624,
+          "files": 40
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio\\tests\\WorkflowStudio.Tests\\TestResults",
+          "bytes": 65757,
+          "files": 1
+        }
+      ],
+      "totalBytes": 6163851467,
+      "totalFiles": 4609
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker",
+      "directories": [
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker\\artifacts",
+          "bytes": 908382217,
+          "files": 480
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker\\src\\XianCaiWorkerPlugin.Plugin\\artifacts",
+          "bytes": 0,
+          "files": 0
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker\\src\\XianCaiWorkerPlugin.Plugin\\bin",
+          "bytes": 2186102,
+          "files": 8
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker\\src\\XianCaiWorkerPlugin.Plugin\\obj",
+          "bytes": 3151563,
+          "files": 46
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker\\src\\XianCaiWorkerPlugin.Standalone\\bin",
+          "bytes": 1202461454,
+          "files": 182
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker\\src\\XianCaiWorkerPlugin.Standalone\\obj",
+          "bytes": 812066,
+          "files": 46
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker\\tests\\XianCaiWorkerPlugin.Tests\\bin",
+          "bytes": 258139770,
+          "files": 278
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker\\tests\\XianCaiWorkerPlugin.Tests\\obj",
+          "bytes": 1472352,
+          "files": 40
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker\\tests\\XianCaiWorkerPlugin.UiTests\\bin",
+          "bytes": 612165326,
+          "files": 229
+        },
+        {
+          "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker\\tests\\XianCaiWorkerPlugin.UiTests\\obj",
+          "bytes": 657761,
+          "files": 27
+        }
+      ],
+      "totalBytes": 2989428611,
+      "totalFiles": 1336
+    }
+  ],
+  "originalInventoryBytes": 77754406023,
+  "originalInventoryFiles": 92925,
+  "originalExtraFiles": [
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\TestResults\\HostIntegration\\7f2f7de169ad4c50992da6a055bd48b1\\crown_GAOXU_2026-09-11_12_45_16_net10.0.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader",
+      "bytes": 4792
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader\\TestResults\\HostIntegration\\7f2f7de169ad4c50992da6a055bd48b1\\crown_GAOXU_2026-09-11_12_45_24_net10.0.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader",
+      "bytes": 3287
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\Migration\\integration-9bcb0b42af21492da53c9c86c334515a\\host-package.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 11343
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\Migration\\integration-9bcb0b42af21492da53c9c86c334515a\\host-ui.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 6415
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\Migration\\integration-9bcb0b42af21492da53c9c86c334515a\\workflow.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 3479
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\baseline-unit\\baseline.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 353252
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\batch-ui-v1\\ui.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 12489
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\batch-ui-v2\\ui.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 12489
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\daily-ui-v1\\ui.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 12489
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\deploy-20260915-release\\release_net10.0_20260915185137.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 14063
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\deploy-20260915-release\\release_net10.0_20260915185209.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 496828
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-386e5d749a1348e5afec45fe616b104b\\Tests\\Tests.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 423828
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-386e5d749a1348e5afec45fe616b104b\\UiTests\\UiTests.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 11353
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-621dcb5b88274ea196c9ec222fe6a3d1\\Tests\\Tests.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 447979
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-621dcb5b88274ea196c9ec222fe6a3d1\\UiTests\\UiTests.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 11353
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-80f2ab26ecc44a29932b0e1812ed0ac4\\Tests\\Tests.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 382125
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-80f2ab26ecc44a29932b0e1812ed0ac4\\UiTests\\UiTests.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 9829
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-e0e8c573d35e446ea4a4c8b97e5eecac\\Tests\\Tests.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 492882
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-e0e8c573d35e446ea4a4c8b97e5eecac\\UiTests\\UiTests.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 14410
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-efbf0f402bb941029eaa2c8e774df5e5\\Tests\\Tests.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 495911
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\dev-efbf0f402bb941029eaa2c8e774df5e5\\UiTests\\UiTests.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 14410
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\playback-ui-v2\\ui.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 12849
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\playback-ui-v3\\ui.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 10974
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\playback-ui\\ui.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 9450
+    },
+    {
+      "path": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player\\TestResults\\UX1\\playback\\playback.trx",
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "bytes": 43604
+    }
+  ],
+  "originalGitStates": [
+    {
+      "root": "D:\\code\\local\\avalonia_dock_simple_test",
+      "status": [
+        " M Packaging/MyAvaloniaManagement.Plugin.Templates/content/myavalonia-plugin/src/DemoPlugin.Plugin/packages.lock.json",
+        " M Packaging/MyAvaloniaManagement.Plugin.Templates/content/myavalonia-plugin/src/DemoPlugin.Standalone/packages.lock.json",
+        " M Packaging/MyAvaloniaManagement.Plugin.Templates/content/myavalonia-plugin/tests/DemoPlugin.Tests/packages.lock.json",
+        " M README.md",
+        " M docs/README.md",
+        " M docs/design/host-v9-avalonia-dock-upgrade-plan.md",
+        " M docs/plan-history/host-v9/development-acceptance.md",
+        " M docs/quick-start/README.md",
+        " M docs/quick-start/create-managed-plugin.md",
+        " M docs/quick-start/host-v9-upgrade.md",
+        " M docs/quick-start/plugin-icons.md",
+        " M docs/quick-start/workflow-action-development.md"
+      ],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_simple_test",
+        "HEAD a41594fff9ac26e732b7cad108c5c801f970fe1d",
+        "branch refs/heads/codex/host-v9-avalonia-dock-upgrade",
+        ""
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-baidu-netdisk",
+      "status": [],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_plug_test/myavalonia-baidu-netdisk",
+        "HEAD a3803aea8fc553cb4adb365a409544d1742ceef8",
+        "branch refs/heads/master",
+        ""
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-bili-downloader",
+      "status": [
+        " M .gitignore"
+      ],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_plug_test/myavalonia-bili-downloader",
+        "HEAD 156024f0001cfdc4143b167fc3487a397951d87c",
+        "branch refs/heads/master",
+        ""
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-classic-game",
+      "status": [
+        " M .gitignore",
+        "?? docs/research/"
+      ],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_plug_test/myavalonia-classic-game",
+        "HEAD 21457d24ee6b0f488b04dbef7e2694d2de229266",
+        "branch refs/heads/master",
+        ""
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-datang-work",
+      "status": [],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_plug_test/myavalonia-datang-work",
+        "HEAD fa82e59024d102f00dd2095505158842142f6e78",
+        "branch refs/heads/master",
+        ""
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-fractal-art",
+      "status": [
+        " M .gitignore"
+      ],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_plug_test/myavalonia-fractal-art",
+        "HEAD c5b314be0dc0058072059d64387beac845b91f64",
+        "branch refs/heads/master",
+        ""
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-image-lab",
+      "status": [
+        " M .gitignore"
+      ],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_plug_test/myavalonia-image-lab",
+        "HEAD f1c9863d369268a95851b80778a9ea74ada25f00",
+        "branch refs/heads/master",
+        ""
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-layer-unpack",
+      "status": [],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_plug_test/myavalonia-layer-unpack",
+        "HEAD a1e2a70fdb2e95a98814ada25858697feaa9dfab",
+        "branch refs/heads/master",
+        ""
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-novel-generate",
+      "status": [
+        " M .gitignore"
+      ],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_plug_test/myavalonia-novel-generate",
+        "HEAD eb6d90df97a984b6c0e427851679476c7109fcf6",
+        "branch refs/heads/master",
+        ""
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-video-security-player",
+      "status": [
+        " M .gitignore"
+      ],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_plug_test/myavalonia-video-security-player",
+        "HEAD 4549c4429b4f304254699ba85068b1cb9814aed9",
+        "branch refs/heads/master",
+        ""
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-workflow-studio",
+      "status": [
+        " M .gitignore"
+      ],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_plug_test/myavalonia-workflow-studio",
+        "HEAD 10952fff38161194a8b9d80877692615c379690a",
+        "branch refs/heads/master",
+        ""
+      ]
+    },
+    {
+      "root": "D:\\code\\local\\avalonia_dock_plug_test\\myavalonia-xiancai-business-worker",
+      "status": [],
+      "worktrees": [
+        "worktree D:/code/local/avalonia_dock_plug_test/myavalonia-xiancai-business-worker",
+        "HEAD 87aeafa3ee395ffa6505d1bdb0b6a7a0a0e181e9",
+        "branch refs/heads/master",
+        ""
+      ]
+    }
+  ],
+  "retriedAfterBuildServerShutdown": true,
+  "measurementNote": "The first cleanup pass removed most project outputs, then a resident MSBuild task DLL blocked the main artifacts directory. Original inventory is the preflight estimate; totalBytes/totalFiles measure remaining deletion during the successful retry, not the whole cleanup.",
+  "postCleanupVerification": {
+    "allOriginalTargetsAbsent": true,
+    "externalGitStatusPreserved": true,
+    "remainingIgnoredGeneratedFiles": [],
+    "verifiedAtUtc": "2026-09-16T01:06:54.636100+00:00"
+  },
+  "finalSweep": {
+    "testOutputFiles": 1012,
+    "testOutputBytes": 273514437,
+    "obsoleteHelpDevelopmentBytes": 49893072,
+    "method": "Reviewed git clean dry run; git clean -fdX with explicit three pathspecs; retry long paths via command-local core.longPaths=true",
+    "allTargetsRemoved": true
+  },
+  "sourceSnapshotScope": "before/after the successful retry; initial pass used tracked-file exclusions, and external Git status also matches the original preflight snapshot",
+  "cleanupLimitations": [
+    {
+      "path": "C:\\Users\\crown\\AppData\\Local\\Temp\\myavalonia-341-cleanup-checkpoint.json",
+      "bytes": 57459,
+      "reason": "Automatic approval review rejected deletion: blocked by policy; no detailed reason returned."
+    }
+  ]
+}

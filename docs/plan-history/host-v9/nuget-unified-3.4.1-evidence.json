@@ -762,5 +762,12 @@
     "templateTests": 4,
     "hostTests": 2
   },
-  "cleanupPlanned": true
+  "cleanup": {
+    "record": "generated-artifacts-cleanup.json",
+    "projects": 12,
+    "temporaryProjectsDeleted": 5,
+    "projectGeneratedFilesRemaining": 0,
+    "minimumInventoriedBytes": 81111925525,
+    "limitation": "57,459-byte temporary cleanup checkpoint retained after automatic approval rejection; see cleanup record"
+  }
 }
