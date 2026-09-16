@@ -101,8 +101,14 @@
           DestinationFiles="$(TargetDir)plugin.manifest.json" />
   </Target>
 
+  <!-- 可选旁路构建信息不扩展严格 manifest；旧 Host 仍按原清单发现插件。 -->
+  <Target Name="GenerateManagedPluginBuildInfo" AfterTargets="GenerateManagedPluginManifest">
+    <Exec UseUtf8Encoding="Always"
+          Command="pwsh -NoProfile -File &quot;$(MSBuildThisFileDirectory)Write-ManagedPluginBuildInfo.ps1&quot; -AssetsFile &quot;$(ProjectAssetsFile)&quot; -TargetFramework &quot;$(TargetFramework)&quot; -OutputFile &quot;$(TargetDir)plugin.build.json&quot;" />
+  </Target>
+
   <Target Name="DeployManagedPlugin"
-          AfterTargets="GenerateManagedPluginManifest"
+          AfterTargets="GenerateManagedPluginBuildInfo"
           DependsOnTargets="ResolveReferences"
           Condition="'$(SkipPluginDeploy)' != 'true' And '$(ManagedPluginDeployRoot)' != ''">
     <PropertyGroup>
@@ -130,6 +136,7 @@
       <_ManagedPluginDeployAsset Include="$(TargetDir)$(AssemblyName).deps.json" TargetPath="$(AssemblyName).deps.json" />
       <_ManagedPluginDeployAsset Include="$(TargetDir)$(AssemblyName).pdb" TargetPath="$(AssemblyName).pdb" />
       <_ManagedPluginDeployAsset Include="$(TargetDir)plugin.manifest.json" TargetPath="plugin.manifest.json" />
+      <_ManagedPluginDeployAsset Include="$(TargetDir)plugin.build.json" TargetPath="plugin.build.json" />
       <_ManagedPluginDeployAsset Include="@(_ManagedPluginPrivateManaged)" TargetPath="%(_ManagedPluginPrivateManaged.DestinationSubPath)" />
       <_ManagedPluginDeployAsset Include="@(_ManagedPluginPrivateNative)" TargetPath="%(_ManagedPluginPrivateNative.DestinationSubPath)" />
       <_ManagedPluginDeployAsset Include="@(ManagedPluginAsset)" TargetPath="%(ManagedPluginAsset.TargetPath)" />

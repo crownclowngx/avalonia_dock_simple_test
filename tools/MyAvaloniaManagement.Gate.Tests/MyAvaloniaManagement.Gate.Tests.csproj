@@ -19,5 +19,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../MyAvaloniaManagement.Gate/MyAvaloniaManagement.Gate.csproj" />
+    <!-- 验收入口的参数和进程边界不依赖 UI；源复用允许工具自测保持轻量。 -->
+    <Compile Include="../MyAvaloniaManagement.Compatibility/CompatibilityOptions.cs" Link="CompatibilityOptions.cs" />
+    <Compile Include="../MyAvaloniaManagement.Compatibility/CompatibilityProcess.cs" Link="CompatibilityProcess.cs" />
   </ItemGroup>
 </Project>

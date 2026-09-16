@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <None Include="..\..\build\MyAvaloniaManagement.RuntimeProfile.props" Pack="true" PackagePath="tools\" />
+    <None Include="..\..\build\Write-ManagedPluginBuildInfo.ps1" Pack="true" PackagePath="tools\" />
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="build\MyAvaloniaManagement.Plugin.Build.props" Pack="true" PackagePath="build\" />
     <None Include="build\MyAvaloniaManagement.Plugin.Build.targets" Pack="true" PackagePath="build\" />

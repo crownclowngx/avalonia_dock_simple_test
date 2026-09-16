@@ -107,5 +107,33 @@ public sealed class PluginCompatibilityEvidenceTests : IDisposable
         Assert.False(RuntimeProfile.Current.IsForbiddenReference("MyAvaloniaManagement.PluginSdk"));
     }
 
+    [Fact]
+    public async Task 旧插件缺少构建信息仍可读取且新元数据改变产物身份()
+    {
+        File.Copy(typeof(App).Assembly.Location, Path.Combine(_root, "Probe.dll"));
+        await File.WriteAllTextAsync(Path.Combine(_root, "plugin.manifest.json"), """
+            {"schemaVersion":2,"pluginId":"myavalonia.plugin.test","pluginVersion":"1.0.0",
+             "entryPoint":{"assembly":"Probe.dll","type":"Probe.Module"},"sdk":{"minInclusive":"3.4.0","maxExclusive":"4.0.0"}}
+            """);
+        var old = await PluginArtifactReader.ReadAsync(_root);
+        Assert.Null(old.Build);
+        Assert.NotEmpty(old.AssemblyReferences);
+        await File.WriteAllTextAsync(Path.Combine(_root, PluginArtifactReader.BuildFileName),
+            JsonSerializer.Serialize(new PluginBuildInfo(1, "net10.0", "source-v10", [new("Example", "2.1.0")]), CompatibilityReportJson.Options));
+        var current = await PluginArtifactReader.ReadAsync(_root);
+        Assert.Equal("2.1.0", Assert.Single(current.Build!.Packages).Version);
+        Assert.NotEqual(old.Identity.Sha256, current.Identity.Sha256);
+    }
+
+    [Fact]
+    public async Task 实际Host摘要可序列化且包含核心运行时文件()
+    {
+        var host = await HostCompatibilityCapture.CaptureAsync();
+        Assert.Contains(host.Files, f => f.Path == "MyAvaloniaManagement.dll");
+        Assert.Contains(host.Files, f => f.Path == "MyAvaloniaManagement.PluginSdk.dll");
+        Assert.DoesNotContain(host.Files, f => f.Path == "System.Private.CoreLib.dll");
+        Assert.NotEmpty(CompatibilityReportJson.Serialize(Report() with { Host = host }));
+    }
+
     public void Dispose() => Directory.Delete(_root, recursive: true);
 }

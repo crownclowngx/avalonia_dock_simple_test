@@ -28,6 +28,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement.Plugin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement.Icons", "Host\MyAvaloniaManagement.Icons\MyAvaloniaManagement.Icons.csproj", "{BFC6265E-9AF6-4891-98C5-358B072603E5}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyAvaloniaManagement.Compatibility", "tools\MyAvaloniaManagement.Compatibility\MyAvaloniaManagement.Compatibility.csproj", "{666A0B4A-CEA0-4DBC-96A8-D74901A32875}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -170,6 +174,18 @@ Global
 		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Release|x64.Build.0 = Release|Any CPU
 		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Release|x86.ActiveCfg = Release|Any CPU
 		{BFC6265E-9AF6-4891-98C5-358B072603E5}.Release|x86.Build.0 = Release|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Debug|x64.Build.0 = Debug|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Debug|x86.Build.0 = Debug|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Release|Any CPU.Build.0 = Release|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Release|x64.ActiveCfg = Release|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Release|x64.Build.0 = Release|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Release|x86.ActiveCfg = Release|Any CPU
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -187,5 +203,6 @@ Global
 		{D84A4A75-77C4-4D07-A27F-13AAB8D4D5E1} = {D3D5DCFB-A638-4239-87E7-0592AD7724B3}
 		{83C35887-6BB6-4F89-9D03-8008F06A88EA} = {D3D5DCFB-A638-4239-87E7-0592AD7724B3}
 		{BFC6265E-9AF6-4891-98C5-358B072603E5} = {D3D5DCFB-A638-4239-87E7-0592AD7724B3}
+		{666A0B4A-CEA0-4DBC-96A8-D74901A32875} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

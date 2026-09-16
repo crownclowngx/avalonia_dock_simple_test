@@ -23,7 +23,7 @@ internal sealed class CompatibilityReportStore(string directory)
         {
             token.ThrowIfCancellationRequested();
             try { reports.Add(new StoredCompatibilityReport(await ReadFileAsync(file, token), "本地验收报告 / 显式导入")); }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException) { invalid++; }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException) { invalid++; }
         }
         return (reports.OrderByDescending(r => r.Report.ExecutedAtUtc).ToArray(), invalid);
     }

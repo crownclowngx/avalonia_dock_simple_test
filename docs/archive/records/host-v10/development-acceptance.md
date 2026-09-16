@@ -34,3 +34,11 @@ G1–G8 尚在实施，后续在此追加真实结果。API 发布分类与 seal
 增加 Host 内部的产物指纹、只读元数据、报告校验、纯匹配和原子导入基础；不新增 SDK public API 或公共 NuGet 包。报告匹配区分产物、Host、规则、环境及未知状态。
 
 验证：新增证据单元测试 10/10、既有依赖边界与隔离专项 17/17、Gate 自测 46/46；失败与跳过均为零。Host 与 MyPlugTest Release 构建零警告。完整验收在 G8 再执行。
+
+## G3–G4：构建信息与独立验收
+
+Build 从真实 project.assets.json 生成可选 `plugin.build.json`，部署与打包共同携带；不修改严格 manifest schema 2。新文件不包含时间或个人绝对路径，旧产物缺少它时显示未知。
+
+新增 `tools/MyAvaloniaManagement.Compatibility`，按插件隔离输入与测试进程，核对 Host / UI 测试实际运行文件，严格检查 TRX 执行数量，输出分层报告。用法见[专项维护指南](../../../maintenance/plugin-compatibility-verification.md)。工具参数和 TRX 自测加入 Gate.Tests，阶段结果为 52/52；证据基础测试增至 12/12。
+
+2026-09-16 的开发阶段重放：冻结输入 12 个插件静态与加载组合全部通过；仅显式选择 ClassicGamePlugin 和 MyPlugTest，二者 Workspace 通过。其他 10 个 Workspace、全部业务与真机未执行。证据目录 `artifacts/host-v10/external-acceptance/20260916-030155-fccd91c1`。这是当时开发工作树的文件身份；后续 Host 实现变化后会重验，不能将该报告直接视为最终 Host 验收。
