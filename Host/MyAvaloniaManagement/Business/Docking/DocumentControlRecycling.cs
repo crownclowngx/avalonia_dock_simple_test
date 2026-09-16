@@ -68,7 +68,9 @@ internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycli
 
         if (TryGetValue(key, out var cached))
         {
-            if (cached is Visual visual)
+            // existing 是当前模板已经拥有的正文。只有交给另一个宿主时才解绑，
+            // 否则立即 UpdateChild 会在同一 Presenter 的更新过程中清空它自己。
+            if (cached is Visual visual && !ReferenceEquals(existing, cached))
                 RemoveFromVisualParent(visual);
             return cached;
         }
@@ -81,7 +83,7 @@ internal sealed class DocumentControlRecycling : AvaloniaObject, IControlRecycli
             // 得到独立占位控件，从而保证 Adapter 的真实 View 始终只有一个宿主。
             control = adapter.PreparedView ?? throw new InvalidOperationException(
                 "Dock Adapter 尚未完成 View 预构建，不能发布到正文回收器。");
-            if (control is Visual visual)
+            if (control is Visual visual && !ReferenceEquals(existing, control))
                 RemoveFromVisualParent(visual);
         }
         else

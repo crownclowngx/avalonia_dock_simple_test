@@ -159,6 +159,21 @@ public sealed class DocumentControlRecyclingTests
     }
 
     [AvaloniaFact]
+    public void 同一Presenter再次请求现有正文时不应摘除正在使用的View()
+    {
+        var view = new Border();
+        var presenter = new ContentPresenter { Content = view };
+        presenter.UpdateChild();
+        var recycling = new DocumentControlRecycling();
+        recycling.Add("document", view);
+
+        Assert.Same(view, recycling.Build("document", view, presenter));
+
+        Assert.Same(view, presenter.Child);
+        Assert.Same(presenter, view.GetVisualParent());
+    }
+
+    [AvaloniaFact]
     public void 模板在空内容下仍返回旧View时拒绝把它交给第二个宿主()
     {
         var view = new Border();
