@@ -64,13 +64,13 @@ internal sealed class PluginDashboardEvidence(PluginRegistry registry, Compatibi
             try
             {
                 var entry = plugin.EntryAssembly;
-                if (string.IsNullOrEmpty(entry.Location)) throw new InvalidDataException("入口无文件位置。");
-                var directory = Path.GetDirectoryName(entry.Location)!;
+                var entryPath = AssemblyFilePath.ReadOptional(entry) ?? throw new InvalidDataException("入口无文件位置。");
+                var directory = Path.GetDirectoryName(entryPath)!;
                 var loaded = AssemblyLoadContext.GetLoadContext(entry)?.Assemblies ?? [entry];
-                var files = loaded.Where(assembly =>
-                        !string.IsNullOrEmpty(assembly.Location) &&
-                        Path.GetFullPath(assembly.Location).StartsWith(directory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-                    .Select(assembly => (assembly.Location, assembly.ManifestModule.ModuleVersionId)).ToArray();
+                var files = loaded.Select(assembly => (Assembly: assembly, Path: AssemblyFilePath.ReadOptional(assembly)))
+                    .Where(item => item.Path is not null &&
+                        Path.GetFullPath(item.Path).StartsWith(directory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    .Select(item => (item.Path!, item.Assembly.ManifestModule.ModuleVersionId)).ToArray();
                 artifacts.Add(await InspectAsync(id, directory, files, token));
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or BadImageFormatException or System.Text.Json.JsonException)

@@ -24,6 +24,44 @@ public sealed class PluginCompatibilityEvidenceTests : IDisposable
         "Test.dll", new(new string('B', 64), []), null, []);
 
     [Fact]
+    public async Task 单文件身份覆盖可执行文件与外置原生库且不会误读旧HostDLL()
+    {
+        var executable = Path.Combine(_root, "Host.exe");
+        await File.WriteAllTextAsync(executable, "bundle one");
+        await File.WriteAllTextAsync(Path.Combine(_root, "Host.dll"), "stale DLL");
+        var before = await HostCompatibilityCapture.CaptureBundleAsync(executable, true);
+        Assert.Equal("Host.exe", Assert.Single(before.Files).Path);
+        await File.WriteAllTextAsync(executable, "bundle two");
+        var changed = await HostCompatibilityCapture.CaptureBundleAsync(executable, true);
+        Assert.NotEqual(before.Sha256, changed.Sha256);
+        await File.WriteAllTextAsync(Path.Combine(_root, "libSkiaSharp.dll"), "external native");
+        var native = await HostCompatibilityCapture.CaptureBundleAsync(executable, true);
+        Assert.Equal(2, native.Files.Count);
+        Assert.NotEqual(changed.Sha256, native.Sha256);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            HostCompatibilityCapture.CaptureBundleAsync(executable, true, new CancellationToken(true)));
+    }
+
+    [Fact]
+    public async Task 单文件缺少入口或产物时不能确认身份()
+    {
+        await Assert.ThrowsAsync<InvalidDataException>(() => HostCompatibilityCapture.CaptureBundleAsync(null, true));
+        await Assert.ThrowsAsync<InvalidDataException>(() => HostCompatibilityCapture.CaptureBundleAsync("Host.exe", true));
+        await Assert.ThrowsAsync<InvalidDataException>(() => HostCompatibilityCapture.CaptureBundleAsync(Environment.ProcessPath, false));
+        await Assert.ThrowsAsync<FileNotFoundException>(() =>
+            HostCompatibilityCapture.CaptureBundleAsync(Path.Combine(_root, "missing.exe"), true));
+    }
+
+    [Fact]
+    public async Task 目录部署仍包含Host与SDK的真实文件身份()
+    {
+        var host = await HostCompatibilityCapture.CaptureAsync();
+        Assert.Contains(host.Files, file => file.Path == "MyAvaloniaManagement.dll");
+        Assert.Contains(host.Files, file => file.Path == "MyAvaloniaManagement.PluginSdk.dll");
+        Assert.Equal(ArtifactFingerprint.Hash(host.Files), host.RuntimeHash);
+    }
+
+    [Fact]
     public void 相同版本的不同文件不能复用通过结论()
     {
         var report = Report();

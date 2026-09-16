@@ -29,6 +29,10 @@ Host 内嵌仓库 Markdown，因此应先完成文档修改，再按顺序构建
 
 报告必须放在插件目录之外。插件目录应只包含部署产物；日志和业务数据使用 Host 数据根。输入目录内的所有文件都进入产物指纹，任何额外文件都会得到另一份产物身份。
 
+Windows 自包含单 EXE 发布需显式设置 `PublishSingleFile=true`、`SelfContained=true` 和 `IncludeNativeLibrariesForSelfExtract=true`，动态插件场景保持 `PublishTrimmed=false`。程序集和原生库打入 EXE，`Controls` 始终保留为独立插件目录；`HelpWeb` 继续按现有路径交付。发布时先隔离启动实际 EXE，并验证看板能捕获 EXE 身份，再清理上次发布清单中的散落文件，不能递归清空安装根或触碰 `Controls`。用户要求不保留备份时按其指令执行。
+
+现有外部验收工具依赖目录形态的 Host DLL 与 UI 测试宿主，不把其结果冒充为单 EXE 的验收报告。单 EXE 与目录产物的指纹不同，需要保留实际发布 EXE 的启动及身份检查证据；单文件打包参数见[微软文档](https://learn.microsoft.com/dotnet/core/deploying/single-file/overview)。
+
 报告来源未经过签名认证。看板只读取数据，不执行报告正文、附件或地址；复制和导出使用受控摘要。保留旧报告以便对照，不能用旧产品版本号把过期证据重新变成通过。
 
 ## 本地回归
