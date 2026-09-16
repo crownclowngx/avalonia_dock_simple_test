@@ -32,6 +32,9 @@ public sealed class PluginDashboardTests
         Assert.Contains("待检查", failed.Text);
         Assert.All(matrix.Rows.Single(row => row.PluginId.EndsWith("empty")).Cells, cell => Assert.Equal("无报告", cell.Text));
         Assert.Equal(16, CompatibilityDashboardProjection.Evidence(snapshot, first.PluginId).Count);
+        Assert.Single(CompatibilityDashboardProjection.CreateMatrix(snapshot, [first.PluginId], "存在失败", false).Rows);
+        Assert.Single(CompatibilityDashboardProjection.CreateMatrix(snapshot, [first.PluginId], showHistory: false).Columns);
+        Assert.Empty(CompatibilityDashboardProjection.CreateMatrix(snapshot, [first.PluginId], "匹配当前").Rows);
     }
 
     [Fact]

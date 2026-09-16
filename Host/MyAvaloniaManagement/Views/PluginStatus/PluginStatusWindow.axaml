@@ -13,6 +13,7 @@
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="14" />
         </Style>
+        <Style Selector="Border.summary"><Setter Property="Padding" Value="10" /></Style>
         <Style Selector="TextBlock.secondary">
             <Setter Property="Foreground" Value="{DynamicResource AppSecondaryTextBrush}" />
             <Setter Property="TextWrapping" Value="Wrap" />
@@ -30,7 +31,7 @@
     </Window.Styles>
     <!-- 概览、筛选、主从详情各自拥有布局空间；正文采用滚动，长诊断不会挤出底部操作。 -->
     <Grid Margin="20" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
-        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
             <StackPanel Spacing="5">
                 <TextBlock Text="插件看板" FontSize="25" FontWeight="SemiBold" />
                 <TextBlock Text="当前状态 · 版本与产物 · 分层验收证据" Classes="secondary" />
@@ -42,7 +43,7 @@
                 <Button x:Name="ExportSummaryButton" Content="导出摘要…" Click="ExportSummaryClick" IsEnabled="{Binding HasSelection}" Margin="4" />
             </WrapPanel>
         </Grid>
-        <Grid Grid.Row="1" ColumnDefinitions="*,12,*,12,*" Margin="0,0,0,16">
+        <Grid Grid.Row="1" ColumnDefinitions="*,12,*,12,*" Margin="0,0,0,10">
             <Border Classes="summary"><StackPanel Spacing="5">
                 <TextBlock Text="已发现" Classes="secondary" />
                 <TextBlock Text="{Binding TotalCount}" FontSize="28" FontWeight="SemiBold" />
@@ -108,15 +109,12 @@
                                 <SelectableTextBlock Text="{Binding SelectedItem.PluginId}" FontWeight="SemiBold" TextWrapping="Wrap" />
                                 <TextBlock Text="{Binding SelectedItem.VersionText, StringFormat='业务版本：{0}'}" TextWrapping="Wrap" />
                                 <TextBlock Text="{Binding SelectedItem.CompatibilityText, StringFormat='声明范围：{0}'}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding BuildSdkText, StringFormat='编译 SDK 包：{0}'}" TextWrapping="Wrap" />
                                 <TextBlock Text="{Binding SelectedItem.StatusText}" TextWrapping="Wrap" />
-                                <SelectableTextBlock Text="{Binding ArtifactText}" TextWrapping="Wrap" FontSize="12" />
+                                <TextBlock Text="{Binding ArtifactSummaryText}" TextWrapping="Wrap" FontSize="12" />
+                                <TextBlock Text="{Binding CurrentEvidenceText}" TextWrapping="Wrap" />
                                 <TextBlock Text="{Binding SuggestionText}" Classes="secondary" />
                             </StackPanel></Border>
-                            <Expander Header="编译依赖与程序集引用" HorizontalAlignment="Stretch">
-                                <StackPanel Spacing="12"><SelectableTextBlock Text="{Binding BuildText}" TextWrapping="Wrap" FontSize="12" />
-                                    <SelectableTextBlock Text="{Binding ReferenceText}" TextWrapping="Wrap" FontSize="12" />
-                                </StackPanel>
-                            </Expander>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
@@ -124,7 +122,12 @@
                     <Grid RowDefinitions="Auto,*" Margin="0,12,0,0">
                         <StackPanel Spacing="5" Margin="0,0,0,10">
                             <TextBlock Text="行是插件产物，列是 Host 构建与环境；悬停查看身份。" Classes="secondary" FontSize="12" />
+                            <WrapPanel>
+                                <ComboBox x:Name="EvidenceFilterBox" ItemsSource="{Binding EvidenceFilters}" SelectedItem="{Binding SelectedEvidenceFilter, Mode=TwoWay}" Width="150" Margin="0,0,10,0" ToolTip.Tip="按已显示列的最新结果筛选" />
+                                <CheckBox x:Name="ShowHistoryBox" Content="展开历史构建" IsChecked="{Binding ShowHistory, Mode=TwoWay}" />
+                            </WrapPanel>
                             <TextBlock Text="无报告 · 导入报告或检查安装产物后显示矩阵。" IsVisible="{Binding HasNoMatrix}" Classes="secondary" />
+                            <TextBlock Text="没有符合当前证据筛选的产物。" IsVisible="{Binding HasNoMatrixRows}" Classes="secondary" />
                         </StackPanel>
                         <ScrollViewer x:Name="CompatibilityMatrixScroll" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                             <StackPanel IsVisible="{Binding !HasNoMatrix}">
@@ -164,6 +167,14 @@
                 <TabItem Header="详情与诊断">
                 <ScrollViewer x:Name="PluginDetailsScroll" IsVisible="{Binding HasSelection}" HorizontalScrollBarVisibility="Disabled" Margin="0,12,0,0">
                 <StackPanel Spacing="16">
+                    <Expander Header="构建身份、产物与编译依赖" HorizontalAlignment="Stretch" Margin="0,0,10,0">
+                        <StackPanel Spacing="12">
+                            <SelectableTextBlock Text="{Binding HostIdentityText}" TextWrapping="Wrap" FontSize="12" />
+                            <SelectableTextBlock Text="{Binding ArtifactText}" TextWrapping="Wrap" FontSize="12" />
+                            <SelectableTextBlock Text="{Binding BuildText}" TextWrapping="Wrap" FontSize="12" />
+                            <SelectableTextBlock Text="{Binding ReferenceText}" TextWrapping="Wrap" FontSize="12" />
+                        </StackPanel>
+                    </Expander>
                     <StackPanel Spacing="8" Margin="0,0,10,0">
                         <TextBlock Text="验收历史" Classes="section-title" />
                         <TextBlock Text="没有该插件的验收报告；不影响当前会话状态。" IsVisible="{Binding HasNoEvidence}" Classes="secondary" />
