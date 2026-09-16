@@ -29,3 +29,9 @@ Dock.Avalonia `12.1.0.6` 的本地 NuGet 元数据对应上游提交 `cc08602d02
 - 现有 HostRuntimeShutdown 已集中负责操作排空与 Provider 保留。浮窗只接入窗口与目标 Document 协调，不另建 Runtime 关闭路径。
 
 具体 Float、隐藏和原生窗口时序将在相应实施阶段由 Host 测试验证。当前尚未完成浮动功能、V3 保存恢复、真实桌面或外部业务验收。
+
+## G1 严格数据契约与迁移
+
+新增 V3 有限节点记录、结构校验、严格 JSON 和 V2 纯转换。窗口正常坐标与屏幕参考、隐藏工具组、工具回停位置具有独立语义；没有保存 Document 实例或业务内容。生产仍使用旧布局链，待后续阶段整体切换。
+
+执行 `dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter FullyQualifiedName~DockLayoutV3Tests`：13/13 通过，无失败、跳过或构建警告。覆盖往返、负坐标、重复/未知/缺失字段、错误类型、未来格式、超大文件、重复占位、非法活动项、循环和 V2 显隐/顺序/比例转换。
