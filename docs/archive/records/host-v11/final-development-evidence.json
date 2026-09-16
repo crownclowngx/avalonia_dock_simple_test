@@ -1,11 +1,160 @@
 {
-  "status": "pending-final-verify",
+  "status": "automated-development-verification-passed",
+  "recordedAtUtc": "2026-09-16T06:28:38.2747671Z",
   "branch": "codex/host-v11-floating-layout",
-  "baseCommit": "bbd4832",
+  "baseCommit": "bbd4832553331f7e657ff979b5cd96e4b60ae85f",
+  "verifiedSource": {
+    "revision": "34464fb75224865b62f62cc76479617e2b12cc3a",
+    "tree": "4abeb3d99eed7b0b4c0b62d558b5066309c62e09",
+    "clean": true,
+    "files": 882,
+    "sha256": "edd4146ee352b387925305e7b18649272ec1bac4e17b67e1841d94c4555808c1",
+    "evidenceUpdate": "最终验证后仅回填本 JSON；不修改源码、嵌入 MD 或构建输入。后续证据提交不作为已构建源码提交。"
+  },
+  "verification": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "runId": "20260916-062232-34464fb75224",
+    "scope": "all",
+    "rounds": 1,
+    "passed": true,
+    "startedAtUtc": "2026-09-16T14:22:32.33317+08:00",
+    "finishedAtUtc": "2026-09-16T14:23:38.748012+08:00",
+    "summaryPath": "artifacts/gate/20260916-062232-34464fb75224/summary.json",
+    "summarySha256": "c3ad9c67217dfe9c5ce889ce39304c4cf574959cbbd3cef44bbc30abe13ed456",
+    "stages": [
+      {
+        "id": "restore",
+        "status": "passed"
+      },
+      {
+        "id": "build",
+        "status": "passed"
+      },
+      {
+        "id": "tests",
+        "status": "passed"
+      },
+      {
+        "id": "contracts",
+        "status": "passed"
+      },
+      {
+        "id": "packages",
+        "status": "passed"
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed"
+      }
+    ],
+    "build": {
+      "configuration": "Release",
+      "warnings": 0,
+      "errors": 0
+    },
+    "tests": {
+      "total": 945,
+      "passed": 945,
+      "failed": 0,
+      "skipped": 0,
+      "groups": [
+        {
+          "group": "host-plugin",
+          "total": 218,
+          "passed": 218,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-062232-34464fb75224/pass-1/tests/host-plugin/host-plugin.trx",
+          "sha256": "f171fa3ab675a28e19ebf66be4c600cf15ccb705266591714b53e2b4ad7d27d0"
+        },
+        {
+          "group": "host-ui",
+          "total": 134,
+          "passed": 134,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-062232-34464fb75224/pass-1/tests/host-ui/host-ui.trx",
+          "sha256": "fc87a2a2fce19134b60743f6179cd95b48a3f2d8746709b52d8c7f2b7458f4d3"
+        },
+        {
+          "group": "host-unit",
+          "total": 490,
+          "passed": 490,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-062232-34464fb75224/pass-1/tests/host-unit/host-unit.trx",
+          "sha256": "ef545f1989aa9f8c6622df41f159a6fd05b6561e959bc00902c5c9d176734906"
+        },
+        {
+          "group": "my-plug-test-package",
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-062232-34464fb75224/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+          "sha256": "b79c436aad813e73b0ae3ff153913254ee49299ef6e5f9e14254cf7557644a33"
+        },
+        {
+          "group": "my-plug-test",
+          "total": 11,
+          "passed": 11,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-062232-34464fb75224/pass-1/tests/my-plug-test/my-plug-test.trx",
+          "sha256": "5f2ecf922bc103790e01cbb1c8c816360def9b3c7efadba10b8567b3bb18f50c"
+        },
+        {
+          "group": "sdk",
+          "total": 91,
+          "passed": 91,
+          "failed": 0,
+          "skipped": 0,
+          "trxPath": "artifacts/gate/20260916-062232-34464fb75224/pass-1/tests/sdk/sdk.trx",
+          "sha256": "a577813054f7fbe48072c83b47b84256065f6d1b3a346159a3e3b1510126c721"
+        }
+      ]
+    }
+  },
+  "crossProcessWriterLease": {
+    "command": "pwsh -NoProfile -File tools/Verify-LayoutV3WriterLease.ps1",
+    "test": "layout-v3-cross-process-lease",
+    "passed": true,
+    "checks": 7,
+    "assemblySha256": "e3000ad668b51e55cad1d9101d9e01a40257e772a8ec95e41272e40fe0ba295e",
+    "note": "在最终 verify 后针对同一 Host DLL 重新执行；LAYOUT_READ_ONLY 是第二实例预期诊断。"
+  },
+  "hostArtifacts": [
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.dll",
+      "sha256": "e3000ad668b51e55cad1d9101d9e01a40257e772a8ec95e41272e40fe0ba295e"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.exe",
+      "sha256": "7fe20890798eac59d35c933a16534a26a3822893323f34eeb9a5b5fbeeb49811"
+    }
+  ],
+  "packageAcceptance": {
+    "pluginId": "myavalonia.plugin.my-plug-test",
+    "archivePath": "artifacts/gate/20260916-062232-34464fb75224/pass-1/packages/my-plug-test/build-1/MyPlugTest-win-x64.zip",
+    "sha256": "20e14f8194d9e2423d10364a96755d799f26a8026b47a813129844f551607d6f",
+    "manifestSha256": "93b4006555e65634300c0e1af204ccc345a1739b432ad6fd9cdc384e2a567ae1",
+    "files": 8,
+    "passed": true,
+    "deterministicVerified": false
+  },
   "manualDesktop": "pending",
+  "multiMonitorAndDpi": "pending",
   "externalNativeControls": "pending",
+  "pendingReason": "当前环境没有可操作的原生桌面表面；Headless、纯计算及文件验证不能代替真实鼠标、多屏、原生选择器和视频/WebView/下载业务验收。",
+  "remainingWorkDocument": "docs/roadmap/README.md",
+  "releaseEligible": false,
+  "publishable": false,
   "windowsCI": "not-run",
   "releaseGates": "not-run",
+  "releaseSmoke": "not-run",
+  "releaseCoverage": "not-run",
   "deployment": "not-run",
-  "publication": "not-run"
+  "publication": "not-run",
+  "aiflow": "not-used",
+  "localEvidenceNote": "artifacts 下的完整 Gate 产物和 TRX 保留在本地，不纳入源码；本文件归档运行身份、结果和哈希。"
 }
