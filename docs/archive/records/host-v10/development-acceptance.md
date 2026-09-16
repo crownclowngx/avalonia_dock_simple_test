@@ -50,3 +50,13 @@ Build 从真实 project.assets.json 生成可选 `plugin.build.json`，部署与
 阶段验证：Host 状态、命令投影、证据和新查询专项 56/56；既有窗口 Headless 交互 4/4；浅色、深色、680×520 紧凑布局已渲染检查。最终真实 ZIP 到看板的贯通与完整 verify 留在 G8 记录。
 
 规则冲突自检额外发现并修复旧正则漏过 `Avalonia.dll` / `Ursa.dll` 本身的问题。共享根不变，只补齐两个共享主文件的禁带行为；规则摘要变化，因此需以最终规则重验原冻结输入。候选 `.1` 为修复前实验，`.2` 为修复后的本地消费输入，不上传也不覆盖公共包。
+
+## G7：发布事实与开发 API 比较
+
+从 NuGet 官方平面源取得 Core、UI、Workflow 3.4.1，记录包与程序集摘要及当前 API 文本映射至 `build/ApiBaseline/3.4.1.json`。原 Shipped / Unshipped 文件均未修改。固定 ApiCompat 10.0.302，默认方向核对已发布到当前的兼容性，严格模式另记录是否表面相同。
+
+`tools/Verify-PluginApi.ps1 -RunSelfTests` 在 `artifacts/host-v10/api-verification` 记录三个 SDK 均兼容且严格表面相同；三种工具夹具证明兼容新增通过、删除与改签名失败。正常新增在严格比较中被识别为差异。开发 verify 已接入该比较，正式 seal 行为保持原样。
+
+本地候选 `3.4.2-v10.20260916.2`：六包使用相同实验标识、保持程序集身份 3.4.1.0（Workflow 仍为 1.0.0.0），不改正式集中版本。独立模板 hive、源码目录、feed、缓存完成生成、locked restore、零警告构建、4/4 测试、相同输入元数据稳定性与 ZIP 打包；结果在 `artifacts/host-v10/candidate-consumer-final`。
+
+额外从 master 基线 `9bceb0781fab` 创建临时只读源码工作树，构建旧 Host 外部验收测试。对携带新构建信息的候选 ZIP，加载与组合 1/1 通过，证明旁路文件未破坏该旧 Host 消费；证据在 `artifacts/host-v10/old-host-new-package`。不把此项推导为任意旧 Host 或业务兼容。

@@ -10,7 +10,7 @@
 dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 ```
 
-`verify` 允许未提交修改，只使用本仓。它执行 locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约检查、MyPlugTest 打包和真实 ZIP 验收。不采集覆盖率，不启动 Windows Smoke，不授予发布资格。
+`verify` 允许未提交修改，只使用本仓源码。它执行 locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约及已发布 API 比较、MyPlugTest 打包和真实 ZIP 验收。不采集覆盖率，不启动 Windows Smoke，不授予发布资格。首次 API 比较需要下载已记录摘要的三个公共基线包，后续使用校验后的缓存。
 
 `--scope host` 和 `--scope all` 都执行完整本仓验证。`workflow`、`workbench` scope 以及旧外部仓库参数均已退役；外部插件业务验证由各仓库独立负责。
 
@@ -31,7 +31,7 @@ dotnet test Host/MyAvaloniaManagement.PluginTests -c Release -m:1 --filter 'Full
 
 `-m:1` 避免专项工程引用的不同全局属性并发写入同一中间目录。专项通过只代表选定范围；具体测试数量和覆盖率应记入本次验收记录。
 
-外部旧插件产物需要单独提供完整 Controls 副本，默认 verify 不编译这些外部输入夹具；操作与覆盖边界见 [V9 验证说明](../quick-start/host-v9-upgrade.md)。
+外部旧插件产物需要单独提供完整 Controls 副本，默认 verify 不编译这些外部输入夹具；统一入口、报告交付、候选消费和覆盖边界见[插件兼容开发验证](plugin-compatibility-verification.md)。V9 原命令与历史范围保留在 [V9 验证说明](../quick-start/host-v9-upgrade.md)。
 
 ## 正式 Host 封板
 
@@ -59,4 +59,4 @@ Gate 自测独立运行，避免重建正在执行的工具：
 dotnet test tools/MyAvaloniaManagement.Gate.Tests -c Release -m:1
 ```
 
-现有文档检查只覆盖根 README、docs/README 和 Host 文档 README 的本仓文件链接；仓库外相对链接不要求邻仓存在，锚点、正文事实和其他文档需要额外检查。文档调整还应核对嵌入帮助的原文与链接。本轮整理没有扩展 Gate 或测试。
+现有文档检查只覆盖根 README、docs/README 和 Host 文档 README 的本仓文件链接；仓库外相对链接不要求邻仓存在，锚点、正文事实和其他文档需要额外检查。文档调整还应核对嵌入帮助的原文与链接。V10 的文件、规则、报告、异步、看板测试已纳入原测试组，工具自测另行执行。

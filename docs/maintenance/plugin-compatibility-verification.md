@@ -43,6 +43,14 @@ pwsh -NoProfile -File tools/Verify-PluginApi.ps1 -RunSelfTests
 
 ## 失败定位与保留
 
+维护者需要验证新 Build / Templates 时，可使用隔离候选流程：
+
+```powershell
+pwsh -NoProfile -File tools/Verify-PluginCandidate.ps1 -CandidateVersion <未占用的预发布版本> -OutputDirectory <新的证据目录>
+```
+
+它统一打包六个本地候选，创建独立模板 hive、源码副本与 NuGet 缓存，验证还原、构建、测试、元数据稳定性和真实 ZIP。仅生成副本切换候选依赖，不修改正式集中版本；结果和临时输入保留供检查，不部署或上传。此流程不与主仓构建并发执行；结束后用默认属性执行完整 verify。
+
 | 现象 | 处理 |
 | --- | --- |
 | Host 文件不匹配 | 重新按顺序构建工具、UI 测试，再使用同次 Host 输出；不关闭摘要检查 |

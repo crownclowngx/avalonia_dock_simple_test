@@ -38,6 +38,9 @@ internal static class Program
         // 每次运行拥有独立子目录；不清理历史报告或覆盖已有验收证据。
         var run = Path.Combine(options.Output, DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(run);
+        // 在解压或读取输入前留下失败默认值；进程被中断或输入无效也不会留下貌似成功的目录。
+        await File.WriteAllTextAsync(Path.Combine(run, "summary.json"), "{\"passed\":false,\"status\":\"输入验证或执行尚未完成；检查进程错误与日志。\"}", CancellationToken.None);
+        Console.WriteLine("本次证据目录：" + run);
         var input = options.Input;
         if (File.Exists(input))
         {
@@ -51,7 +54,7 @@ internal static class Program
         if (!Directory.Exists(input)) throw new DirectoryNotFoundException("缺少输入目录。");
         if (Directory.Exists(Path.Combine(input, "Controls"))) input = Path.Combine(input, "Controls");
         var plugins = File.Exists(Path.Combine(input, PluginManifestReader.FileName)) ? [input] :
-            Directory.GetDirectories(input).Where(d => File.Exists(Path.Combine(d, PluginManifestReader.FileName))).Order().ToArray();
+            Directory.GetDirectories(input).Order().ToArray();
         if (plugins.Length == 0) throw new InvalidDataException("没有插件输入，不能产生通过报告。");
         var summaries = new List<object>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -89,7 +92,8 @@ internal static class Program
                     (CompatibilityLevel.Workspace, "ExternalPluginWorkspaceAcceptanceTests", options.WorkspaceIds.Contains(plugin.PluginId))
                 })
                 {
-                    if (!enabled || !staticPassed)
+                    if (!enabled || !staticPassed || (level == CompatibilityLevel.Workspace &&
+                        !checks.Any(check => check.Level == CompatibilityLevel.Composition && check.Outcome == CompatibilityOutcome.Passed)))
                     { checks.Add(new(level, CompatibilityOutcome.NotRun, filter, "未选择或前置检查失败。")); continue; }
                     try
                     {

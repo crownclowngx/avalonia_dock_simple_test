@@ -20,3 +20,7 @@ Document 实例级 Workbench Command 和 Tools 共享菜单声明，但不默认
 新生成插件的最低 SDK 为 3.4.1；既有插件仍可保留原 DLL 和清单，交由新版 Host 的共享程序集策略验证。
 统一包版本的发布及公共源消费记录见仓库
 `docs/archive/records/host-v9/nuget-unified-3.4.1-release.md`。此前公开版本仍可独立使用。
+
+V10 工作树增加了版本与兼容证据说明，尚未公开发布。新 Build 候选会生成 `plugin.build.json`；
+公开 3.4.1 的内容保持原样。维护者在隔离候选 feed 中验证生成、还原、测试和 ZIP，不能用本地同号包覆盖公共包。
+Host 看板入口及报告说明随生成项目的文档交付，不要求插件作者检出 Host 源码。

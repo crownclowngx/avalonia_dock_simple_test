@@ -31,11 +31,21 @@ internal static class CompatibilityProcess
         info.Environment["MYAVALONIA_EXTERNAL_CONTROLS"] = controls;
         info.Environment["MYAVALONIA_WORKSPACE_PLUGIN_IDS"] = pluginId;
         info.Environment["MYAVALONIA_DATA_DIRECTORY"] = Path.Combine(output, "data");
+        var exitCode = await ExecuteAsync(info, output, TimeSpan.FromSeconds(timeout), cancellationToken);
+        var result = ReadTrx(Path.Combine(output, "result.trx"));
+        return exitCode == 0 && result.Passed == 1 && result.Failed == 0;
+    }
+
+    /// <summary>独立的进程边界便于验证超时、取消和崩溃；调用方仍须校验实际 TRX，不能只看退出码。</summary>
+    internal static async Task<int> ExecuteAsync(ProcessStartInfo info, string output, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        Directory.CreateDirectory(output);
+        cancellationToken.ThrowIfCancellationRequested();
         using var process = Process.Start(info) ?? throw new IOException("无法启动验收进程。");
         var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
         using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutSource.CancelAfter(TimeSpan.FromSeconds(timeout));
+        timeoutSource.CancelAfter(timeout);
         try { await process.WaitForExitAsync(timeoutSource.Token); }
         catch (OperationCanceledException)
         {
@@ -47,7 +57,6 @@ internal static class CompatibilityProcess
         {
             await File.WriteAllTextAsync(Path.Combine(output, "process.log"), await stdout + Environment.NewLine + await stderr, CancellationToken.None);
         }
-        var result = ReadTrx(Path.Combine(output, "result.trx"));
-        return process.ExitCode == 0 && result.Passed == 1 && result.Failed == 0;
+        return process.ExitCode;
     }
 }

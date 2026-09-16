@@ -24,6 +24,18 @@ Shipped 记录已经正式冻结的契约；Unshipped 是当前仍登记在增�
 
 ## 日常变更
 
+V10 建立了[3.4.1 发布输入与文本映射](../../build/ApiBaseline/3.4.1.json)，包含来自 NuGet 官方平面源的三个包及程序集 SHA-256、当前 Shipped/Unshipped 原文与摘要。严格二进制表面及参数名称比较用于核对发布归属；这份映射不声称恢复了发布源码的可空注解，也不改变文本分类。
+
+开发 `verify` 在契约阶段调用 `tools/Verify-PluginApi.ps1`，以已发布程序集为左侧、当前程序集为右侧，使用固定的 `Microsoft.DotNet.ApiCompat.Tool 10.0.302`。兼容新增允许，删除和破坏性签名失败；严格比较额外记录表面是否相同。首次下载的包须匹配记录摘要，后续使用经过摘要检查的本地缓存。工具说明见[微软文档](https://learn.microsoft.com/dotnet/fundamentals/apicompat/global-tool)。
+
+需要检验比较工具本身时，在构建和 `dotnet tool restore` 后运行：
+
+```powershell
+pwsh -NoProfile -File tools/Verify-PluginApi.ps1 -RunSelfTests
+```
+
+自测实际构建“兼容新增 / 删除 / 改签名”微型程序集，不生成忽略规则。输出包含摘要和每次比较日志；`seal` 的历史条件没有随本轮修改或解除。
+
 仅调整 internal/private 实现时不修改 API 文本。新增 public API 时：
 
 1. 用真实插件需求确定最小契约，说明线程、取消、异常和所有权，补齐 XML 注释。

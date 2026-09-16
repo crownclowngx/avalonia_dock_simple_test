@@ -242,6 +242,11 @@ internal sealed class GateRunner
                         break;
                     case "contracts":
                         RunContractChecks(options, roots);
+                        // V10 的发布事实比较只加入日常 verify；不改动既有 seal 分类政策和发布步骤。
+                        if (options.Profile == GateProfile.Verify)
+                            await processes.RunCheckedAsync("pwsh",
+                                ["-NoProfile", "-File", "tools/Verify-PluginApi.ps1", "-OutputDirectory", Path.Combine(evidenceRoot, "api-compat")],
+                                roots["main"], environment, Path.Combine(evidenceRoot, "logs", "api-compat.log"), cancellationToken);
                         break;
                     case "packages":
                         foreach (var plugin in configuration.Plugins)

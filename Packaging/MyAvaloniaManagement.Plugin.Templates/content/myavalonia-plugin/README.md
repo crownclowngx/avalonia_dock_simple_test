@@ -26,3 +26,5 @@ Standalone 只能验证界面和插件自身对象图；manifest、加载上下�
 
 模板包含一条不注册快捷键的最小 Document Command 示例。设计边界、Target 适配和测试清单见
 [Workbench Command 开发说明](docs/workbench-commands.md)。
+
+版本与验收报告的含义见[插件兼容证据](docs/compatibility-evidence.md)。

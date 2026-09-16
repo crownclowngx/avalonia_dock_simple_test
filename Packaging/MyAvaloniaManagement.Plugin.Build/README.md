@@ -13,6 +13,14 @@ Host 主程序集、Core/UI/Workflow SDK 和其他既有共享程序集仍受原
 `ManagedPluginDeployRoot` 时才部署插件目录；调用 `BuildManagedPluginPackage` 会在隔离目录中执行
 锁定还原和 Release 构建，最终生成确定性 ZIP 与外置摘要清单。
 
+V10 工作树增量（尚未公开发布）：构建同时生成可选 `plugin.build.json`，包含目标框架、实际解析的
+NuGet 包版本和 Build 版本。此文件随部署和 ZIP 一起交付，不修改严格 manifest；不要手动填写或加入时间、
+个人路径。旧产物没有该文件时仍可加载，其编译包版本显示未知。程序集引用版本与 NuGet 包版本分别展示。
+候选消费验证使用隔离版本和 feed，不覆盖已经发布的 3.4.1。
+
+兼容验收报告放在插件目录之外，由 Host 维护者的本地工具生成。在“工具 → 插件看板…”导入，
+再显式检查安装产物；加载成功不能代表 Workspace、原生播放或业务流程已经验证。
+
 ## 新增 NuGet 运行时依赖
 
 插件依赖一个新的 NuGet 包时，只有 `PackageReference` 还不够。Build 包故意只把插件显式拥有的私有
