@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
+using MyAvaloniaManagement.Business.Presentation;
 
 namespace MyAvaloniaManagement.Business.Storage;
 
@@ -14,7 +15,7 @@ namespace MyAvaloniaManagement.Business.Storage;
 /// 选择器操作集中在此类中，可以防止 ViewModel 与主窗口生命周期耦合；
 /// 文本读写仍使用异步 <see cref="File"/> API，以保持原有文件格式和行为。
 /// </remarks>
-internal sealed class AvaloniaHostStorageService : IHostStorageService
+internal sealed class AvaloniaHostStorageService(WorkbenchWindowContext? windows = null) : IHostStorageService
 {
     private const string DocumentExtension = "mamdoc";
     private const string DocumentFileTypeName = "管理文档 (.mamdoc)";
@@ -22,14 +23,15 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
     /// <inheritdoc />
     public async Task<IReadOnlyList<string>> PickOpenFilesAsync()
     {
-        var storageProvider = GetStorageProvider();
-        if (storageProvider is null)
+        var owner = GetOwnerWindow();
+        if (owner is null)
         {
             return [];
         }
 
-        var files = await storageProvider.OpenFilePickerAsync(CreateOpenFilePickerOptions());
+        var files = await owner.StorageProvider.OpenFilePickerAsync(CreateOpenFilePickerOptions());
 
+        if (!owner.IsVisible) return [];
         return files
             .Select(file => file.TryGetLocalPath())
             .Where(path => !string.IsNullOrWhiteSpace(path))
@@ -40,34 +42,34 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
     /// <inheritdoc />
     public async Task<string?> PickSaveFileAsync(string documentDisplayName)
     {
-        var storageProvider = GetStorageProvider();
-        if (storageProvider is null)
+        var owner = GetOwnerWindow();
+        if (owner is null)
         {
             return null;
         }
 
-        var file = await storageProvider.SaveFilePickerAsync(
+        var file = await owner.StorageProvider.SaveFilePickerAsync(
             CreateSaveFilePickerOptions(documentDisplayName));
 
-        return file?.TryGetLocalPath();
+        return owner.IsVisible ? file?.TryGetLocalPath() : null;
     }
 
     /// <inheritdoc />
     public async Task<string?> PickFolderAsync()
     {
-        var storageProvider = GetStorageProvider();
-        if (storageProvider is null)
+        var owner = GetOwnerWindow();
+        if (owner is null)
         {
             return null;
         }
 
-        var folders = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        var folders = await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
             Title = "选择文件夹",
             AllowMultiple = false
         });
 
-        return folders.Count == 0 ? null : folders[0].TryGetLocalPath();
+        return !owner.IsVisible || folders.Count == 0 ? null : folders[0].TryGetLocalPath();
     }
 
     /// <inheritdoc />
@@ -121,15 +123,15 @@ internal sealed class AvaloniaHostStorageService : IHostStorageService
     };
 
     /// <summary>
-    /// 获取当前桌面主窗口的存储提供器。
+    /// 开始交互时固定有效的工作台 Owner，关闭后的迟到结果视为取消。
     /// </summary>
     /// <remarks>
     /// 设计器、单元测试或窗口尚未创建时允许返回空值，调用方会把它视为用户取消，
     /// 从而避免为获取选择器而强制创建全局窗口。
     /// </remarks>
-    private static IStorageProvider? GetStorageProvider() =>
+    private Avalonia.Controls.Window? GetOwnerWindow() =>
+        windows?.SelectOwner() ??
         (Avalonia.Application.Current?.ApplicationLifetime
             as IClassicDesktopStyleApplicationLifetime)
-        ?.MainWindow
-        ?.StorageProvider;
+        ?.MainWindow;
 }

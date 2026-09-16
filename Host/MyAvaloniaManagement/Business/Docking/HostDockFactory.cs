@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Presentation;
+using MyAvaloniaManagement.Views;
 
 namespace MyAvaloniaManagement.Business.Docking;
 
@@ -67,8 +68,11 @@ internal sealed class HostDockFactory : Factory
 {
     private IWorkspaceDockCallbacks? _callbacks;
 
-    public HostDockFactory()
+    internal WorkbenchWindowContext WindowContext { get; }
+
+    public HostDockFactory(WorkbenchWindowContext? windows = null)
     {
+        WindowContext = windows ?? new WorkbenchWindowContext();
         // 标题栏的关闭命令也必须保留 Tool 和原停靠点，供工具中心再次显示。
         HideToolsOnClose = true;
     }
@@ -112,7 +116,7 @@ internal sealed class HostDockFactory : Factory
         }
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>
         {
-            [nameof(IDockWindow)] = static () => new HostWindow()
+            [nameof(IDockWindow)] = () => new HostFloatingWindow(WindowContext)
         };
 
         base.InitLayout(layout);
@@ -197,6 +201,11 @@ internal sealed class HostDockFactory : Factory
     {
         if (window is null) return base.OnWindowClosing(window);
         var callbacks = GetCallbacks();
+        if (window.Host is HostFloatingWindow { IsCloseCancelled: true })
+        {
+            callbacks.OnWindowCloseCompleted(window);
+            return false;
+        }
         if (!callbacks.OnWindowClosing(window)) return false;
         try
         {

@@ -49,3 +49,14 @@ Dock.Avalonia `12.1.0.6` 的本地 NuGet 元数据对应上游提交 `cc08602d02
 执行 `dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DocumentCloseTests|FullyQualifiedName~DockWindowCloseTests|FullyQualifiedName~WorkspaceSessionAndDockFactoryTests' --logger 'trx;LogFileName=v11-window-close-coordination.trx'`：33/33 通过，零失败、跳过或构建警告。TRX 在该测试项目本地 TestResults 目录。
 
 新增测试使用可控重试队列，覆盖两份文档整组取消/文件选择取消、干净文档等待命令、等待期间新修改、范围关闭与单页/主窗口互斥、集合变化和移除后的迟到确认。它们验证协调基础，不等于真实 HostWindow 已验收；浮动策略、主窗口退出集成、视图跨 TopLevel 回归仍待后续完成，G3 尚未整体通过。
+
+## G3/G4 交互适配基础
+
+新增 HostFloatingWindow，保留锁定 Dock 的原生窗口、外框及拖动协议，仅组合 Dock OverlayHost 与工作台覆盖层。主窗和浮窗复用 WorkbenchWindowInteraction，各自拥有 KeyBinding、面板焦点与全屏租约；WorkbenchWindowContext 只登记窗口、活动 Owner 和唯一面板会话。对话框和选择器固定本次有效 Owner，关闭浮窗的异步确认通过调用链局部 Owner 范围定位，失效窗口的路径结果丢弃。
+
+核查发现 Dock 原生 OnClosing 在 Window.Closing 被其他监听者取消后仍会调用 Factory 并可能执行 Root.Close。适配层保存同一 Closing 参数供 Factory 复核，取消时在任何内容拆除前退出。此行为已通过实际 IDockWindow.Present 创建的 HostFloatingWindow Headless 路径验证。
+
+- `dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~WorkbenchCommandPresentationUiTests|FullyQualifiedName~CognitiveUxV8UiTests|FullyQualifiedName~ApplicationAndWindowTests' --logger 'trx;LogFileName=v11-floating-command-ui.trx'`：34/34 通过。
+- `dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DocumentCloseTests|FullyQualifiedName~DockWindowCloseTests|FullyQualifiedName~WorkspaceSessionAndDockFactoryTests|FullyQualifiedName~WindowInteraction|FullyQualifiedName~StorageService' --logger 'trx;LogFileName=v11-window-coordination.trx'`：36/36 通过。
+
+两组均零失败、零跳过、零构建警告。新增 UI 场景证明浮窗 Ctrl+S 一次主文件提交（另有正常的恢复备份写入）、共享命令且绑定实例隔离、跨窗面板互斥、异步明确 Owner、关闭取消保留内容及 Closed 清理绑定。浮动开关仍未开放；Float/FloatAll 真正迁移、主退出最终提交、全屏期间迁移限制、多屏与实际原生资源仍待后续验证，不能把本节记作 G3/G4 全部完成。

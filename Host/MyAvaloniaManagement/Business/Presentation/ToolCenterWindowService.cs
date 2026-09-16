@@ -72,7 +72,7 @@ internal sealed class ToolCenterWindowService : IDisposable
         catch { ReleaseWindow(); viewModel.Dispose(); throw; }
     }
 
-    private void FocusOwner(object? sender, EventArgs args) { if (!_disposed) _owner?.Activate(); }
+    private void FocusOwner(object? sender, EventArgs args) { if (!_disposed) (_workspace.DockFactory.WindowContext.SelectOwner() ?? _owner)?.Activate(); }
     private void OwnerClosed(object? sender, EventArgs args) => Dispose();
     private void WindowClosed(object? sender, EventArgs args) => ReleaseWindow();
     private void ReleaseWindow()

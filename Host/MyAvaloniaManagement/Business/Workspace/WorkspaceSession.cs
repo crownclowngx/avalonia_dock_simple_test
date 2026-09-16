@@ -79,7 +79,8 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
             throw new ArgumentNullException(nameof(documentLifetime));
         _diagnostics = diagnostics;
         _windowCloseCoordinator = new DockWindowCloseCoordinator(_documentCloseCoordinator,
-            action => Avalonia.Threading.Dispatcher.UIThread.Post(action, Avalonia.Threading.DispatcherPriority.Background));
+            action => Avalonia.Threading.Dispatcher.UIThread.Post(action, Avalonia.Threading.DispatcherPriority.Background),
+            window => DockFactory.WindowContext.UseOwner(window.Host as Avalonia.Controls.Window));
         _documentCloseCoordinator.StateChanged += OnCloseStateChanged;
         _workspaceBuilder = new DockWorkspaceBuilder(DockFactory);
         _toolDockCoordinator = new ToolDockCoordinator(

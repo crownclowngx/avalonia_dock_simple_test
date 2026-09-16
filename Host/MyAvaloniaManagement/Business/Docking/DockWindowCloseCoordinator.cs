@@ -19,7 +19,8 @@ namespace MyAvaloniaManagement.Business.Docking;
 /// </remarks>
 internal sealed class DockWindowCloseCoordinator(
     DocumentCloseCoordinator documents,
-    Action<Action> post) : IDisposable
+    Action<Action> post,
+    Func<IDockWindow, IDisposable?>? ownerScope = null) : IDisposable
 {
     private readonly Dictionary<IDockWindow, Request> _requests = new(ReferenceEqualityComparer.Instance);
     private bool _disposed;
@@ -52,6 +53,7 @@ internal sealed class DockWindowCloseCoordinator(
         DocumentCloseApproval? approval = null;
         try
         {
+            using var interaction = ownerScope?.Invoke(window);
             approval = await documents.PrepareRangeCloseAsync(request.Contents.OfType<ManagedDocumentDockable>().ToArray());
             if (approval is null || !IsCurrent(window, request) || !SameContents(window, request)) return;
             request.Approval = approval;

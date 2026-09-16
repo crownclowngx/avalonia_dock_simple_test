@@ -242,12 +242,13 @@ internal static class ServiceCollectionExtensions
             pluginProviders,
             provider.GetRequiredService<PluginAvailabilityReadModel>()));
         services.AddSingleton<IHostDockableFactory, HostDockAdapterFactory>();
+        services.AddSingleton<WorkbenchWindowContext>();
 
         // Session 是工作区状态的唯一所有者；Factory 只作为 Session 内部创建并一次性绑定的
         // Dock Framework Adapter 注册。显式工厂避免构造期循环，也没有使用 IServiceProvider 定位器。
         services.AddSingleton(provider =>
         {
-            var dockFactory = new HostDockFactory();
+            var dockFactory = new HostDockFactory(provider.GetRequiredService<WorkbenchWindowContext>());
             var session = new WorkspaceSession(
                 dockFactory,
                 provider.GetRequiredService<WorkspaceCatalog>(),

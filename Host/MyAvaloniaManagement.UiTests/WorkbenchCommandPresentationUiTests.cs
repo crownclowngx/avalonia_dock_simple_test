@@ -6,6 +6,8 @@ using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Dock.Model.Controls;
+using Dock.Model.Core;
+using Dock.Model.Mvvm.Core;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Commands.Catalog;
@@ -568,6 +570,105 @@ public sealed class WorkbenchCommandPresentationUiTests
         window.OpenCommandPalette();
         await FlushUiAsync();
         Assert.False(FindNamed<Border>(window, "CommandPaletteLayer").IsVisible);
+    }
+
+    [AvaloniaFact]
+    public async Task 原生浮窗使用同一保存命令且面板会话跨窗口互斥()
+    {
+        using var context = CreateContext();
+        var factory = context.Workspace.DockFactory;
+        var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
+        main.Show();
+        var document = await CreateDocumentAsync(context);
+        var group = new DocumentDock { Id = "floating-docs", VisibleDockables = factory.CreateList<IDockable>() };
+        var root = new RootDock
+        {
+            VisibleDockables = factory.CreateList<IDockable>(group), ActiveDockable = group, DefaultDockable = group,
+        };
+        var model = new DockWindow { Layout = root, Width = 700, Height = 500 };
+        factory.AddWindow(context.ViewModel.Layout!, model);
+        factory.RemoveDockable(document, collapse: false);
+        factory.AddDockable(group, document);
+        group.ActiveDockable = document;
+        model.Present(false);
+        var floating = Assert.IsType<HostFloatingWindow>(model.Host);
+        try
+        {
+            await FlushUiAsync();
+            var path = Path.Combine(context.TempDirectory, "floating-ctrl-s.mamdoc");
+            context.Storage.SavePath = path;
+            context.Storage.WriteObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            Assert.IsType<G4UiPersistableDocument>(document.Model).Edit("浮窗保存内容");
+            factory.SetActiveDockable(document);
+            floating.KeyPressQwerty(PhysicalKey.S, RawInputModifiers.Control);
+            await context.Storage.WriteObserved.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            // 一次保存会写主文件和恢复备份；按主文件提交次数验证快捷键没有重复执行。
+            Assert.Single(context.Storage.Writes, write => write.Path == Path.GetFullPath(path));
+            Assert.False(Assert.IsType<G4UiPersistableDocument>(document.Model).IsDirty);
+            var mainBinding = main.KeyBindings.Single(item => item.Gesture?.Key == Key.S);
+            var floatingBinding = floating.KeyBindings.Single(item => item.Gesture?.Key == Key.S);
+            Assert.NotSame(mainBinding, floatingBinding);
+            Assert.Same(mainBinding.Command, floatingBinding.Command);
+
+            main.OpenCommandPalette();
+            Assert.True(FindNamed<Border>(main, "CommandPaletteLayer").IsVisible);
+            floating.OpenCommandPalette();
+            Assert.False(FindNamed<Border>(main, "CommandPaletteLayer").IsVisible);
+            Assert.True(FindNamed<Border>(floating, "CommandPaletteLayer").IsVisible);
+            Assert.Empty(floating.KeyBindings);
+            main.OpenCommandPalette();
+            Assert.False(FindNamed<Border>(floating, "CommandPaletteLayer").IsVisible);
+            Assert.True(FindNamed<Border>(main, "CommandPaletteLayer").IsVisible);
+        }
+        finally
+        {
+            Assert.IsType<G4UiPersistableDocument>(document.Model).MarkCleanForCleanup();
+            floating.Close();
+            await FlushUiAsync();
+            main.Close();
+        }
+        Assert.Empty(floating.KeyBindings);
+    }
+
+    [AvaloniaFact]
+    public async Task 原生浮窗Closing取消时不拆除内容且不进入整组关闭()
+    {
+        using var context = CreateContext();
+        var factory = context.Workspace.DockFactory;
+        var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
+        main.Show();
+        var page = new Document { Id = "closing-probe", Title = "关闭保护" };
+        var group = new DocumentDock { VisibleDockables = factory.CreateList<IDockable>(page), ActiveDockable = page };
+        var model = new DockWindow
+        {
+            Layout = new RootDock
+            {
+                VisibleDockables = factory.CreateList<IDockable>(group), ActiveDockable = group, DefaultDockable = group,
+            },
+            Width = 700, Height = 500,
+        };
+        factory.AddWindow(context.ViewModel.Layout!, model);
+        model.Present(false);
+        var floating = Assert.IsType<HostFloatingWindow>(model.Host);
+        EventHandler<Avalonia.Controls.WindowClosingEventArgs> cancel = (_, args) => args.Cancel = true;
+        using (factory.WindowContext.UseOwner(main))
+        {
+            await FlushUiAsync();
+            Assert.Same(main, factory.WindowContext.SelectOwner());
+            Assert.Same(floating, factory.WindowContext.SelectOwner(floating));
+        }
+        floating.Closing += cancel;
+        floating.Close();
+        await FlushUiAsync();
+        Assert.True(floating.IsVisible);
+        Assert.Contains(page, group.VisibleDockables!);
+        Assert.Same(floating, factory.WindowContext.SelectOwner(floating));
+        floating.Closing -= cancel;
+        floating.Close();
+        await FlushUiAsync();
+        Assert.False(floating.IsVisible);
+        Assert.NotSame(floating, factory.WindowContext.SelectOwner(floating));
+        main.Close();
     }
 
     private static void OpenPalette(MainWindow window) => window.KeyPressQwerty(

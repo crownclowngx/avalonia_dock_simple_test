@@ -36,7 +36,8 @@ internal sealed class HostDesktopShell(
     HelpWindowService helpWindows,
     FunctionCenterWindowService functionCenter,
     ToolCenterWindowService toolCenter,
-    PluginStatusWindowService pluginStatus) : IHostDesktopShell
+    PluginStatusWindowService pluginStatus,
+    WorkbenchWindowContext windows) : IHostDesktopShell
 {
     public void Attach(
         App application,
@@ -46,7 +47,7 @@ internal sealed class HostDesktopShell(
         ArgumentNullException.ThrowIfNull(desktop);
 
         themeService.Initialize(application);
-        var mainWindow = new MainWindow();
+        var mainWindow = new MainWindow(windows);
         desktop.MainWindow = mainWindow;
         helpWindows.Attach(mainWindow);
         functionCenter.Attach(mainWindow);

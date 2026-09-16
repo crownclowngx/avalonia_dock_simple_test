@@ -30,6 +30,9 @@ internal sealed class WindowContentFullscreenSession : IDisposable
         _contentHost.DetachedFromVisualTree += OnContentHostDetached;
     }
 
+    /// <summary>供工作台迁移入口检查：活动内容全屏期间必须先退出全屏才能迁移。</summary>
+    internal bool HasActiveLease => _activeLease is not null;
+
     /// <summary>尝试发布一个新的独占展示租约。</summary>
     internal IDisposable? TryPresent(Control content)
     {

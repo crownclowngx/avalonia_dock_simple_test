@@ -91,7 +91,8 @@ internal sealed partial class CommandPaletteView : UserControl
 
     private void AttachProjection()
     {
-        var next = (DataContext as IMainWindowViewBindings)?.WorkbenchCommands.Palette;
+        var next = (DataContext as IWorkbenchCommandPresentationBindings)?.Palette
+            ?? (DataContext as IMainWindowViewBindings)?.WorkbenchCommands.Palette;
         if (ReferenceEquals(next, _projection))
         {
             if (_sessionActive)

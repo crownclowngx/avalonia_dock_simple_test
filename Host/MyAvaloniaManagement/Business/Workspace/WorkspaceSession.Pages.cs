@@ -53,6 +53,12 @@ internal sealed partial class WorkspaceSession
                 host.SetWindowState(Dock.Model.Core.DockWindowState.Normal);
             host.SetActive();
         }
+        else if (window is null && DockFactory.WindowContext.MainWindow is { } main)
+        {
+            if (main.WindowState == Avalonia.Controls.WindowState.Minimized)
+                main.WindowState = Avalonia.Controls.WindowState.Normal;
+            main.Activate();
+        }
         DockFactory.SetActiveDockable(target);
         DockFactory.SetFocusedDockable(window?.Layout ?? DockFactory.FindRoot(target, _ => true) ?? _rootDock, target);
     }

@@ -6,6 +6,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Layout;
+using MyAvaloniaManagement.Business.Presentation;
 
 namespace MyAvaloniaManagement.Business.Documents;
 
@@ -37,7 +38,7 @@ internal interface IDocumentInteractionService
 /// <summary>
 /// 使用简单模态窗口实现文档关闭和恢复确认。
 /// </summary>
-internal sealed class AvaloniaDocumentInteractionService : IDocumentInteractionService
+internal sealed class AvaloniaDocumentInteractionService(WorkbenchWindowContext? windows = null) : IDocumentInteractionService
 {
     public Task<DocumentCloseChoice> ConfirmCloseAsync(
         IReadOnlyList<string> documentNames,
@@ -77,14 +78,14 @@ internal sealed class AvaloniaDocumentInteractionService : IDocumentInteractionS
             showCancel: false);
     }
 
-    private static async Task<DocumentCloseChoice> ShowChoiceAsync(
+    private async Task<DocumentCloseChoice> ShowChoiceAsync(
         string title,
         string message,
         string acceptText,
         string? discardText,
         bool showCancel = true)
     {
-        var owner = (Application.Current?.ApplicationLifetime
+        var owner = windows?.SelectOwner() ?? (Application.Current?.ApplicationLifetime
             as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
         if (owner is null)
         {
