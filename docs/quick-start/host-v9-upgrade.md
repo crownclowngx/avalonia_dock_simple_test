@@ -5,9 +5,9 @@
 ## 升级后的边界
 
 - Host：Avalonia 12.1.2、Dock 12.1.0.6，产品版本仍为 3.0.0。
-- Core/UI SDK 3.4.1、Templates 1.4.2 是本地候选。本轮没有公开上传、部署或执行发布门禁。
+- 六个自有 NuGet 包统一为 3.4.1，发布状态与公共源消费证据见 [统一发布记录](../plan-history/host-v9/nuget-unified-3.4.1-release.md)。Host 安装目录没有部署。
 - SDK public API、manifest schema 2、Document schema 2、layout-v2.json 均保持兼容，不迁移用户数据。
-- Semi 12.1.0、Ursa 2.1.0、Workflow SDK 1.0.0、Icons 1.0.0、Build 1.1.3 保持原版本。
+- Semi 12.1.0、Ursa 2.1.0 保持原版本。Workflow 包号对齐 3.4.1，保留 v1 API 和 AssemblyVersion 1.0.0.0。
 
 ## 其他插件需要升级吗
 
@@ -34,39 +34,21 @@
 | HostDockFactory / DockDocumentLifetime | 保留职责和回调协议，补充取消、异常、最后标签、重复初始化测试 |
 | Layout V2 映射 / 工具停靠协调器 | 保留；四向分割、隐藏、固定、恢复和视图所有权回归继续覆盖 |
 
-## 本地候选模板
-
-在仓库根目录打包 Core、UI、Templates 到同一 feed；模板内的三个 lock file 已按本次候选生成。
+## 使用统一版本模板
 
 ```powershell
-dotnet restore MyAvaloniaManagement.sln --locked-mode
-dotnet pack Host/MyAvaloniaManagement.PluginSdk -c Release -o artifacts/host-v9/feed
-dotnet pack Host/MyAvaloniaManagement.PluginSdk.UI -c Release -o artifacts/host-v9/feed
-dotnet pack Packaging/MyAvaloniaManagement.Plugin.Templates -c Release -o artifacts/host-v9/feed
-dotnet new install ./artifacts/host-v9/feed/MyAvaloniaManagement.Plugin.Templates.1.4.2.nupkg --debug:custom-hive ./artifacts/host-v9/template-hive
+dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.1
+dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
+cd ExamplePlugin
+dotnet restore --locked-mode
+dotnet build -c Release --no-restore -warnaserror
+dotnet test -c Release --no-build --no-restore
+dotnet msbuild src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj -t:BuildManagedPluginPackage -p:Configuration=Release
 ```
 
-在仓库外生成项目以排除仓库隐式 MSBuild 导入，继续使用这个独立 hive。新项目还原需要 NuGet.Config：Core/UI 的精确包名仅映射到候选 feed，其他包映射到 NuGet.org；把 feed 改为绝对路径。
+模板直接依赖的 Core/UI SDK、Icons、Build 都精确固定到 `[3.4.1]`，三个 lock file 使用公共源最终包哈希。Workflow SDK 为可选包，需要时同样引用 `3.4.1`。生成插件的业务版本仍为 `1.0.0`，不能把 SDK 的发布版本误当作每个业务插件的版本。
 
-```xml
-<configuration>
-  <packageSources>
-    <clear />
-    <add key="candidate" value="C:\Path\To\Repository\artifacts\host-v9\feed" />
-    <add key="nuget" value="https://api.nuget.org/v3/index.json" />
-  </packageSources>
-  <packageSourceMapping>
-    <clear />
-    <packageSource key="candidate">
-      <package pattern="MyAvaloniaManagement.PluginSdk" />
-      <package pattern="MyAvaloniaManagement.PluginSdk.UI" />
-    </packageSource>
-    <packageSource key="nuget"><package pattern="*" /></packageSource>
-  </packageSourceMapping>
-</configuration>
-```
-
-使用 `dotnet restore <生成的.slnx> --locked-mode --configfile <配置路径> --packages <独立缓存目录>`，再 Release 构建、测试。若从新提交重新打包，nupkg 中的源码版本元数据可能使内容哈希变化，应在本地候选阶段重新生成三个模板锁文件并再次验证；不要绕过正式消费时的 locked-mode。
+开发下一版本时，先集中修改 `MyAvaloniaPackageVersion`，再同步模板的精确依赖和最低 SDK。基础包发布后需从公共源重新生成模板锁文件，最后发布模板；不要将本地未签名 nupkg 的 contentHash 用于公开模板。发布步骤见 [专用记录](../plan-history/host-v9/nuget-unified-3.4.1-release.md)。
 
 ## 开发门禁和外部产物验证
 
@@ -87,6 +69,6 @@ Remove-Item Env:MYAVALONIA_EXTERNAL_CONTROLS, Env:MYAVALONIA_WORKSPACE_PLUGIN_ID
 
 外部产物测试明确缺输入即失败，不把空目录或缺少旧包当作通过。默认 verify 不编译这些需要外部输入的夹具；不通过跳过测试降低门槛。
 
-## 发布前仍需完成
+## Host 安装程序发布前仍需完成
 
 实际 Windows 标签跨区拖拽、Esc/失活/移出窗口、多显示器 DPI、原生视频和各插件真实业务任务；然后按当时的发布要求执行 Windows/发布门禁和完整备份回退演练。本轮不执行这些发布流程。回退时恢复同一套 Host/UI 依赖，保持旧插件产物和 schema 2 数据；不要只回退单个 Dock DLL。

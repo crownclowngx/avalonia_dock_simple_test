@@ -42,4 +42,19 @@ API token 仅通过当前进程的 `NUGET_API_KEY` 环境变量传递给 NuGet�
 
 ## 本次实测结果
 
-待验证与上传完成后填写。
+### 本地验证与基础包
+
+- 版本集中管理与测试提交：`6002cc46974b34d73b492196ab4c9264db4de204`；随后 `a41594fff9ac26e732b7cad108c5c801f970fe1d` 提交 MyPlugTest.Tests 的 Icons 传递依赖锁文件。
+- 本次 `verify` 全六阶段通过，Release 0 警告/错误，839 项测试（SDK 91、Host Unit 401、Plugin 218、UI 117、MyPlugTest 11、真实 ZIP 1），失败/跳过均为 0。采样时仅上述锁文件尚未提交，因此原始 summary 的 `clean=false` 保持原样；锁文件实际参与了本轮 locked restore 和测试，没有把结果改写为 clean。
+- 旧 DLL 外部验收 14/14；冻结副本及实际安装目录每处 525 个文件哈希均不变。
+- 五个基础 nupkg 与四个 snupkg 按 `a41594f` 打包，nuspec 版本均为 3.4.1。UI 依赖 Avalonia `[12.1.2]` 且没有 Dock；Workflow 依赖 Core 3.4.1。
+- 独立候选模板使用点分名称 `Unified.V341`：locked restore、Release 构建、4/4 测试、5 文件 ZIP、Host 真实加载及 Workspace 2/2 通过。首次 ZIP 子进程未继承候选源，补齐临时工程的 NuGet.Config 与进程缓存路径后通过；首次 Host 输入误指向解压外层，改为 ZIP 内实际 Controls 目录后通过。没有为这些准备问题修改产品协议或削弱断言。
+- NuGet.org 已对五个基础 nupkg 和四个 snupkg 返回 Created。五个基础包已进入公共索引并可下载；逐条 ZIP 内容比对通过，仅新增仓库签名 `.signature.p7s`。三个模板锁文件已按公共源重建，并逐项核对 source、版本和 NuGet metadata 的 contentHash；首次公共还原遇到本机旧 HTTP 索引缓存，使用独立 HTTP cache 与 `--no-http-cache` 后通过。
+
+### 公共源与最终模板
+
+待公共源验证及模板上传后追加。
+
+### 产物清理
+
+用户追加要求：完成后清理主项目与插件项目的生成产物。本次会先固化包哈希、回执与测试摘要，再清理可再生目录及临时工程。各插件仓库既有的未提交源码/文档/配置修改、Git 历史和 `D:\data\avalonia` 安装目录保持不动；实际清理统计另行追加。

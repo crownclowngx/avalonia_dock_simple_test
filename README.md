@@ -1,7 +1,7 @@
 # MyAvaloniaManagement
 
-> V9 开发分支：Avalonia `12.1.2`、Dock `12.1.0.6`；Core/UI SDK `3.4.1` 和 Templates `1.4.2` 为本地候选，产品仍为 `3.0.0`。
-> 旧插件兼容边界及复查命令见 [V9 升级使用说明](./docs/quick-start/host-v9-upgrade.md)，实际结果见 [专用验收记录](./docs/plan-history/host-v9/development-acceptance.md)。
+> V9 开发分支：Avalonia `12.1.2`、Dock `12.1.0.6`；六个自有 NuGet 包统一为 `3.4.1`，产品仍为 `3.0.0`。
+> 旧插件兼容边界及复查命令见 [V9 升级使用说明](./docs/quick-start/host-v9-upgrade.md)，开发结果见 [专用验收记录](./docs/plan-history/host-v9/development-acceptance.md)，NuGet 状态见 [统一发布记录](./docs/plan-history/host-v9/nuget-unified-3.4.1-release.md)。
 
 > macOS 实验：已提供从 Windows 交叉打包 Host 与 MyPlugTest 的入口，详见
 > [macOS 测试包与复制插件说明](./docs/quick-start/macos-experiment.md)。这是实验路径，仍需 Mac 真机验收。

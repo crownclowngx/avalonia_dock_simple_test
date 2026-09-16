@@ -4,7 +4,7 @@ Provider 继续通过 `IWorkflowActionRegistration.AddWorkflowAction<THandler>` 
 Handler。输入输出只使用冻结 JSON Schema Profile；不要公开插件私有 DTO、Provider、`IServiceProvider` 或
 任意脚本入口。
 
-G3.1 后，Schema 的权威实现位于 `MyAvaloniaManagement.PluginSdk.Workflow 1.0.0`：
+G3.1 后，Schema 的权威实现位于 `MyAvaloniaManagement.PluginSdk.Workflow`（V9 统一包号为 `3.4.1`，Schema/API 仍兼容 v1）：
 
 - 字符串 `minLength`/`maxLength` 按 Unicode Rune；
 - `integer` 必须是 Int64，`number` 必须能表示为 decimal；

@@ -4,9 +4,9 @@ Workflow Action Provider/Consumer 另见 [Workflow Action 开发说明](workflow
 维护者发布流程见 [G3.1 SDK 候选打包与发布](workflow-sdk-publication.md)。
 
 本组文档面向外部插件作者：不需要克隆 Host 仓库，只需要 .NET 10 SDK、Rider 或其他 .NET IDE，以及
-能够访问 NuGet.org。下方公开模板示例使用 V6.1 配套基线 Plugin SDK `3.4.0`、manifest schema 2、Avalonia 12、Windows x64。
+能够访问 NuGet.org。下方模板示例使用 V9 统一发布基线 Plugin SDK `3.4.1`、manifest schema 2、Avalonia 12、Windows x64。
 
-V9 开发分支使用 SDK `3.4.1` / Templates `1.4.2` 本地候选；尚未公开发布，安装与还原步骤见 [V9 升级使用说明](host-v9-upgrade.md)。
+V9 将 Core/UI、Workflow、Icons、Build、Templates 六个自有 NuGet 包统一为 `3.4.1`。安装与还原步骤见 [V9 升级使用说明](host-v9-upgrade.md)，实际发布状态见 [统一发布记录](../plan-history/host-v9/nuget-unified-3.4.1-release.md)。
 
 历史 Workbench Command G6 曾将 Core/UI SDK 提升到 `3.3.0`、Templates 提升到 `1.3.0`；Workflow SDK
 保持 `1.0.0`，Build 协议未变化，
@@ -15,7 +15,7 @@ V9 开发分支使用 SDK `3.4.1` / Templates `1.4.2` 本地候选；尚未公�
 ## 最短路径
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@1.4.1
+dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.1
 dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
 cd ExamplePlugin
 dotnet restore

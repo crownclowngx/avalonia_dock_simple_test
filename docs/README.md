@@ -11,7 +11,8 @@
 ## V9 Avalonia / Dock 升级与定制整理
 
 - [Host V9 可执行升级方案](./design/host-v9-avalonia-dock-upgrade-plan.md)：Avalonia 12.1.2 / Dock 12.1.0.6；代码已实施，开发验证与人工待验收项以专用记录为准。
-- [V9 升级使用说明](./quick-start/host-v9-upgrade.md)：旧插件是否重编译、本地 SDK/模板候选使用及复查命令。
+- [V9 升级使用说明](./quick-start/host-v9-upgrade.md)：旧插件是否重编译、统一版本模板使用及复查命令。
+- [六包统一 3.4.1 发布记录](./plan-history/host-v9/nuget-unified-3.4.1-release.md)：包版本政策、公共源锁文件与实际上传结果。
 - [V9 专用开发验收](./plan-history/host-v9/development-acceptance.md)：定制处置、先红后绿回归、真实旧 DLL 与本地开发门禁证据。
 - [升级可行性评估](./design/avalonia-dock-upgrade-assessment-20260916.md)：隔离编译、713 项既有测试及 12 个旧插件加载探测；V9 补充了“当前禁止浮动”的源码事实。
 

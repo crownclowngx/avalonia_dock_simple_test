@@ -5,16 +5,16 @@ V6.1 同时提供插件专属图标和 `MyAvaloniaManagement.Icons` 公共矢量
 
 ## 版本与职责
 
-下表保留 V6.1 已发布基线。V9 本地候选为 SDK `3.4.1` / Templates `1.4.2`，图标 API 没有变化；新模板按 `3.4.1` 声明最低 Host SDK。见 [V9 说明](host-v9-upgrade.md)。
+V9 将所有自有 NuGet 包统一为 `3.4.1`，图标 API 没有变化；新模板按 `3.4.1` 声明最低 Host SDK。见 [V9 说明](host-v9-upgrade.md)。
 
 | 组件 | 版本 | 职责 |
 | --- | --- | --- |
-| Core / UI SDK | 3.4.0 | 保持同版本；UI 新增可选注册接口与纯值描述 |
-| MyAvaloniaManagement.Icons | 1.0.0 | 独立 .NET 10 资源包，无 SDK/Avalonia/DI 依赖 |
-| Plugin.Build | 1.1.3 | 允许图标资源 DLL 作为私有依赖部署及打包 |
-| Plugin.Templates | 1.4.1 | 包含公共资源注册、页面直接使用和独立预览示例 |
+| Core / UI SDK | 3.4.1 | 保持同版本；UI 新增可选注册接口与纯值描述 |
+| MyAvaloniaManagement.Icons | 3.4.1 | 独立 .NET 10 资源包，无 SDK/Avalonia/DI 依赖 |
+| Plugin.Build | 3.4.1 | 允许图标资源 DLL 作为私有依赖部署及打包 |
+| Plugin.Templates | 3.4.1 | 包含公共资源注册、页面直接使用和独立预览示例 |
 
-调用 `AddIcon` 的插件需要支持 SDK 3.4.0 的 Host，manifest 的 `sdk.minInclusive` 应为 `3.4.0`。
+`AddIcon` 最初由 SDK 3.4.0 提供；按本模板 3.4.1 编译的新插件，其 manifest 的 `sdk.minInclusive` 为 `3.4.1`。旧二进制保留原清单。
 仅在自己的 View 使用资源包的旧 SDK 插件，不因资源包本身被强制升级 SDK。
 资源包升级后要重新构建并交付消费者，不会自动替换已安装程序中的资源。
 
@@ -63,7 +63,7 @@ var icon = registration.AddIcon("text-review", new VectorIconDefinition(
 
 ```xml
 <!-- Directory.Packages.props -->
-<PackageVersion Include="MyAvaloniaManagement.Icons" Version="[1.0.0]" />
+<PackageVersion Include="MyAvaloniaManagement.Icons" Version="[3.4.1]" />
 
 <!-- 插件 csproj：引用包，并声明它是插件拥有的私有运行时资产。 -->
 <PackageReference Include="MyAvaloniaManagement.Icons" />
@@ -76,7 +76,7 @@ Build 至少使用 `1.1.3`；ZIP 中应包含 `MyAvaloniaManagement.Icons.dll`�
 
 ## 页面、主题和异常
 
-公共资源 `1.0.0` 使用 20×20 逻辑画布、EvenOdd 填充。专属图标可以声明其他有限正数尺寸及
+公共资源使用 20×20 逻辑画布、EvenOdd 填充。专属图标可以声明其他有限正数尺寸及
 `IconFillRule.NonZero`；Host 以原点 `(0,0)` 等比居中绘制，保留画布留白并裁掉越界区域。
 当前位置的主题画刷决定前景色，每个位置拥有独立控件，仅复用本 Runtime 内的几何数据。
 
