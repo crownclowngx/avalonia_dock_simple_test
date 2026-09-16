@@ -13,7 +13,7 @@ using MyAvaloniaManagement.ViewModels;
 
 namespace MyAvaloniaManagement.PluginTests;
 
-public sealed class DockFourWayLayoutTests
+public sealed partial class DockFourWayLayoutTests
 {
     private static readonly ConditionalWeakTable<WorkspaceSession, Dictionary<string, Tool>> ToolMaps = new();
 
