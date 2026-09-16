@@ -1,0 +1,100 @@
+{
+  "deploymentCompleted": true,
+  "target": "D:\\data\\avalonia",
+  "executable": "D:\\data\\avalonia\\MyAvaloniaManagement.exe",
+  "sourceRevision": "7860ec7fca1536e6b14af43b0ab6085d7ea8207b",
+  "format": "Release win-x64 self-contained single EXE; native libraries bundled; no trimming",
+  "filesVerified": 139,
+  "filesReplaced": 1,
+  "controlsTopLevelDirectories": 12,
+  "controlsFilesUnchanged": 525,
+  "controlsDirectoryTreeUnchanged": true,
+  "backupRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v11-p1-deployment-20260916-154428\\previous-host",
+  "backupFiles": 1,
+  "exeBytes": 53389050,
+  "exeSha256": "AE45E0D791F024D0625CA618357894E82B6EB1F70CE4F8B62C3CB1AEC5EF236A",
+  "isolatedSingleExeStartupPassed": true,
+  "isolatedSingleExeHostIdentityPassed": true,
+  "layoutSchema": 3,
+  "rootDllCount": 0,
+  "checkedAt": "2026-09-16T15:45:36.9462357+08:00",
+  "scope": "用户授权的本地单文件部署；没有运行安装目录中的业务实例。",
+  "windowsCI": "not-run",
+  "formalSeal": "not-run",
+  "publicPublication": "not-run",
+  "realDesktopBusinessAcceptance": "pending",
+  "recordType": "host-v11-p1-local-single-exe-deployment",
+  "authorization": "用户在P1源码补丁验证完成后明确要求编译并以自包含单文件形式发布到D:\\data\\avalonia；本记录追加开发证据之后的部署事实。",
+  "startupVerification": {
+    "passed": true,
+    "tests": [
+      {
+        "mode": "identity",
+        "passed": true,
+        "exitCode": 0,
+        "layoutSchema": 3,
+        "toolCount": 2,
+        "noExternalPlugins": true,
+        "isolatedData": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v11-p1-deployment-20260916-154428\\startup-data-identity",
+        "stderrEmpty": true
+      },
+      {
+        "mode": "normal",
+        "passed": true,
+        "exitCode": 0,
+        "layoutSchema": 3,
+        "toolCount": 2,
+        "noExternalPlugins": true,
+        "isolatedData": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v11-p1-deployment-20260916-154428\\startup-data-normal",
+        "stderrEmpty": true
+      }
+    ],
+    "includedFrameworks": [
+      {
+        "name": "Microsoft.NETCore.App",
+        "version": "10.0.10"
+      }
+    ],
+    "singleExeHostAndCoreLibBundled": true,
+    "rootDllCount": 0,
+    "publishedFiles": 139,
+    "exeBytes": 53389050,
+    "exeSha256": "AE45E0D791F024D0625CA618357894E82B6EB1F70CE4F8B62C3CB1AEC5EF236A",
+    "sourceRevision": "7860ec7fca1536e6b14af43b0ab6085d7ea8207b",
+    "checkedAt": "2026-09-16T15:45:21.0331503+08:00"
+  },
+  "buildConfiguration": {
+    "configuration": "Release",
+    "runtimeIdentifier": "win-x64",
+    "selfContained": true,
+    "publishSingleFile": true,
+    "includeNativeLibrariesForSelfExtract": true,
+    "enableCompressionInSingleFile": true,
+    "publishTrimmed": false,
+    "debugType": "embedded",
+    "sdk": "10.0.302",
+    "warnings": 0,
+    "errors": 0,
+    "sourceSnapshot": "git archive HEAD；RID还原和发布均在隔离副本进行，未修改工作树锁文件。"
+  },
+  "sourceVerification": {
+    "sourceCommit": "7860ec7fca1536e6b14af43b0ab6085d7ea8207b",
+    "patchCommit": "5b8f162df51c9e37212bc94bad2768f99902854f",
+    "developmentEvidence": "docs/archive/records/host-v11/p1-final-development-evidence.json",
+    "developmentTests": 998,
+    "note": "7860ec7相对已验证的5b8f162只更新非嵌入证据JSON；此处记录实际重新发布的单文件产物。"
+  },
+  "retainedContent": "Controls全部12个插件目录和525个文件逐项保持不变；HelpWeb逐文件校验；本次只替换主EXE，不读写用户数据。PDB及SDK XML说明保留在构建元数据目录。",
+  "artifacts": {
+    "root": "artifacts/host-v11-p1-deployment-20260916-154428",
+    "deploymentFiles": "deployment-files.json",
+    "deploymentChanges": "deployment-changes.json",
+    "publishLog": "publish.log",
+    "restoreLog": "restore.log",
+    "startupResult": "startup-result.json",
+    "identity": "single-exe-host-identity.json",
+    "backup": "previous-host/MyAvaloniaManagement.exe",
+    "backupSha256": "98C16384C93A4C344D9B62B2BC17DDD31193F22382ABA66975DEB27BA26531E4"
+  },
+  "evidenceNote": "仅新增本非嵌入JSON，不修改已部署产物的源码或嵌入文档。隔离启动检查不替代真实鼠标分割、多屏及外部插件业务验收。"
+}
