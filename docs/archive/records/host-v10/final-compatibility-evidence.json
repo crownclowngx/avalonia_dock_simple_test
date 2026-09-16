@@ -1,0 +1,1223 @@
+{
+  "schemaVersion": 1,
+  "executedOn": "2026-09-16",
+  "scope": "V10 本地开发；不授予发布资格",
+  "verifiedSourceRevision": "ae562dfce0007d339b3f6b4118042ed8ffbd61bf",
+  "sourceSnapshot": {
+    "revision": "ae562dfce0007d339b3f6b4118042ed8ffbd61bf",
+    "tree": "15509bbddd118358c48a806a8bbcd04a9312b0d4",
+    "clean": false,
+    "files": 848,
+    "sha256": "1ED99106D36639C5B38C71285071783431C96634BED06D740196472CEC3AC5F1"
+  },
+  "gate": {
+    "summary": "artifacts/gate/20260916-035445-ae562dfce000/summary.json",
+    "sha256": "6C0A7EE3F87F5E3EEE64260DC07E7F32131FB1242B114557693CA599F1F96F51",
+    "passed": true,
+    "tests": [
+      {
+        "path": "artifacts/gate/20260916-035445-ae562dfce000/pass-1/tests/sdk/sdk.trx",
+        "passed": 91,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "002AABC9AC9D9AD9521E226125D30F37D25E5C3C9E852369DF460AB6063E3A2E"
+      },
+      {
+        "path": "artifacts/gate/20260916-035445-ae562dfce000/pass-1/tests/host-unit/host-unit.trx",
+        "passed": 421,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "1C2AA2109D36336F66BD30A82A8BBEEFAB68752CB8D7CD722921B719F460626E"
+      },
+      {
+        "path": "artifacts/gate/20260916-035445-ae562dfce000/pass-1/tests/host-plugin/host-plugin.trx",
+        "passed": 218,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "97D58557EF5088FCEA3803A161100014753B2788CFF316D5E3FF932C8CC15978"
+      },
+      {
+        "path": "artifacts/gate/20260916-035445-ae562dfce000/pass-1/tests/host-ui/host-ui.trx",
+        "passed": 117,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "9CB3B3AE389D217BF2936D01CCB3C4F168738D81EA2212F9FD48F853C166A35D"
+      },
+      {
+        "path": "artifacts/gate/20260916-035445-ae562dfce000/pass-1/tests/my-plug-test/my-plug-test.trx",
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "B39802695F3A2B267ADDC87113C1B0538A79C68F035725890131BE8E2EF7721B"
+      },
+      {
+        "path": "artifacts/gate/20260916-035445-ae562dfce000/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "sha256": "22DDCE7C7043263D58BAA10C317FAAF2817912AE8DCF54E3CF5CD6B8319A37E3"
+      }
+    ]
+  },
+  "supplementaryTests": [
+    {
+      "path": "artifacts/host-v10/tool-tests/tool-tests.trx",
+      "passed": 55,
+      "failed": 0,
+      "skipped": 0,
+      "sha256": "4B4BCAA50B2FEDAF780A2D82209C62296755E9C3416176C293848545AD40BF49"
+    },
+    {
+      "path": "artifacts/host-v10/candidate-consumer-final/candidate.trx",
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "sha256": "EB9078BF1BA16B96331AFBE973B79E328908BF169E195FB288D645AF929C770E"
+    },
+    {
+      "path": "artifacts/host-v10/dashboard-chain/dashboard-chain-final.trx",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "sha256": "4A8302FCF36322FE3CCEC17B52CDCC344CD86EC629B66C669B2924E98E0F43D4"
+    },
+    {
+      "path": "artifacts/host-v10/old-host-new-package/old-host-new-package.trx",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "sha256": "5BE5F925C5EFF5C0901BF5A12D3FCED762EA7CDF8F7BC1648EF04AA1C9B86B56"
+    }
+  ],
+  "apiToolSelfTests": {
+    "passed": true,
+    "toolVersion": "10.0.302",
+    "checkedAtUtc": "2026-09-16T03:42:14.4166664Z",
+    "results": [
+      {
+        "package": "MyAvaloniaManagement.PluginSdk",
+        "baselineVersion": "3.4.1",
+        "compatible": true,
+        "equalSurface": true,
+        "baselineSha256": "889998615AA03622EDEE6781B22A4AD716D7692B59A18951AE399DD7F22E215D",
+        "currentSha256": "5ECCCCEC9F42357B7DCF744C0CF5F0C2448A6AC7A5ED0548CC78F44FCE35C6CC"
+      },
+      {
+        "package": "MyAvaloniaManagement.PluginSdk.UI",
+        "baselineVersion": "3.4.1",
+        "compatible": true,
+        "equalSurface": true,
+        "baselineSha256": "21E8B0E7B78DB0397DDFE22A46C8223E34B1F6B9AD1FA5A642253B607F17881C",
+        "currentSha256": "4F04A77A93228E0A244B438AA01F39E95E366B25D454A8CA49885CF293B0A937"
+      },
+      {
+        "package": "MyAvaloniaManagement.PluginSdk.Workflow",
+        "baselineVersion": "3.4.1",
+        "compatible": true,
+        "equalSurface": true,
+        "baselineSha256": "43D2C6A819D64BD7C0BC27BC1482E771F4E01285D708AA06439BB1AC6AACAD0D",
+        "currentSha256": "F5C3AEB48348FBBCBFB0040C85FC66CD1FB009722443ABFCC7CB86DA33E1A97E"
+      },
+      {
+        "selfTest": "added",
+        "expectedCompatible": true,
+        "actualCompatible": true,
+        "passed": true
+      },
+      {
+        "selfTest": "removed",
+        "expectedCompatible": false,
+        "actualCompatible": false,
+        "passed": true
+      },
+      {
+        "selfTest": "changed",
+        "expectedCompatible": false,
+        "actualCompatible": false,
+        "passed": true
+      }
+    ]
+  },
+  "candidate": {
+    "version": "3.4.2-v10.20260916.2",
+    "passed": true,
+    "packages": [
+      {
+        "name": "MyAvaloniaManagement.Icons.3.4.2-v10.20260916.2.nupkg",
+        "sha256": "719B93211E4ED75C9C7E64775BF4DD0703A48D67F852EA32BAAB942CC809F0ED"
+      },
+      {
+        "name": "MyAvaloniaManagement.Plugin.Build.3.4.2-v10.20260916.2.nupkg",
+        "sha256": "C6C1CD0245759D03B8B51FFA3D8FF2316453EB45D9090AFB532AA9624B5F1E17"
+      },
+      {
+        "name": "MyAvaloniaManagement.Plugin.Templates.3.4.2-v10.20260916.2.nupkg",
+        "sha256": "FB65FA444C2E7CDD58D737CB8F81601EB8CDEEF3693FDFC242B0D7CECC7D6B90"
+      },
+      {
+        "name": "MyAvaloniaManagement.PluginSdk.3.4.2-v10.20260916.2.nupkg",
+        "sha256": "2CC14224413C90526CEE7825E73A49B39582A441D42573B2EEC392245EDEF299"
+      },
+      {
+        "name": "MyAvaloniaManagement.PluginSdk.UI.3.4.2-v10.20260916.2.nupkg",
+        "sha256": "5B62BEB807D28CA18C2E93F9D1E6EB8A67B9FA9710B403C0351DA72E100609E6"
+      },
+      {
+        "name": "MyAvaloniaManagement.PluginSdk.Workflow.3.4.2-v10.20260916.2.nupkg",
+        "sha256": "5914EC45C9F9408B413543B3B43313E079DF34787E49CA299FCA431B94BC3D12"
+      }
+    ]
+  },
+  "documentLinks": {
+    "files": 54,
+    "links": 429,
+    "anchors": 0,
+    "errors": []
+  },
+  "frozenInputs": {
+    "manifest": "docs/archive/records/host-v10/old-plugin-inputs.json",
+    "sha256": "F6C12F2CE956CE4F4340BA49585AEB46EDE53386B51B09EB268B4E11EE8452C9",
+    "files": 525,
+    "sourceUnchanged": true
+  },
+  "oldHostTemporaryWorktreeRemoved": true,
+  "nativeBusinessValidationPerformed": false,
+  "windowsCiPerformed": false,
+  "releaseGatePerformed": false,
+  "deploymentPerformed": false,
+  "publicationPerformed": false,
+  "results": [
+    {
+      "directory": "artifacts/host-v10/final-old-plugins/20260916-035657-ab721fc8",
+      "passed": true,
+      "host": {
+        "productVersion": "3.0.0",
+        "informationalVersion": "3.0.0+ae562dfce0007d339b3f6b4118042ed8ffbd61bf",
+        "runtimeHash": "282B82122D7C2DF2FBAD7D66A7B53897D42F3392E441E4C6AD2E4B51F3C09FCA",
+        "ruleHash": "98B6CAC7F03BC021F34F7374DA630D4A5FC81024A5D31074774C476AC7F28063",
+        "operatingSystem": "Microsoft Windows 10.0.26200",
+        "architecture": "X64",
+        "framework": ".NET 10.0.10",
+        "sdkVersion": "3.4.1",
+        "avaloniaVersion": "12.1.2.0",
+        "dockVersion": "12.1.0.6",
+        "files": [
+          {
+            "path": "Avalonia.Base.dll",
+            "length": 2355200,
+            "sha256": "39F7C973A20346B2A0C0E758B875749670A610D63863E9A85FFEA22D5F320279"
+          },
+          {
+            "path": "Avalonia.Controls.dll",
+            "length": 1347072,
+            "sha256": "909B7ABD1E4B389B3372C4D1C0FCAE1106F99ED783CC177FA0FA67ED1147CA24"
+          },
+          {
+            "path": "Avalonia.Dialogs.dll",
+            "length": 242688,
+            "sha256": "70AAEFFBB3AFCFAFEE5A5B1E19707E13B7AE5F293C4C157332693690E12E3598"
+          },
+          {
+            "path": "Avalonia.Markup.Xaml.dll",
+            "length": 74752,
+            "sha256": "1228B0A7359EBFA592408DE8E20AA3B8A2775D27C36F19C1F7C8F1E9FF1E14A8"
+          },
+          {
+            "path": "Avalonia.Markup.dll",
+            "length": 45568,
+            "sha256": "CE634015611862DD6814355A4880C3C718782A017665445D232834615A6120CB"
+          },
+          {
+            "path": "Avalonia.Remote.Protocol.dll",
+            "length": 75776,
+            "sha256": "080F6F41F70CFD4F98863DEEB61D15D229AA7D9333E7A3EB17582EFB19ED779C"
+          },
+          {
+            "path": "Avalonia.Themes.Fluent.dll",
+            "length": 733184,
+            "sha256": "71FF087F03DA9F484F53EF1AEA502EB19B015C8A6A1E8A9161B0D344053ED8EF"
+          },
+          {
+            "path": "CommunityToolkit.Mvvm.dll",
+            "length": 146760,
+            "sha256": "19B2144FED9600D58A742A5A4A5FD7B10D4D0D2C2E79F5D8019307CF5657044F"
+          },
+          {
+            "path": "Dock.Avalonia.Themes.Fluent.dll",
+            "length": 437760,
+            "sha256": "F443EF948AC54823B5EA85112CBFF77872B1765DC7A1230FE6C6E15116A12FA9"
+          },
+          {
+            "path": "Dock.Avalonia.dll",
+            "length": 319488,
+            "sha256": "9A6B2C790F8F60E411ABA2701F669CCC07ADE8E4B2E314B12F9C69539709AC6D"
+          },
+          {
+            "path": "Dock.Controls.DeferredContentControl.dll",
+            "length": 25600,
+            "sha256": "1E40EE9508E9215667C1BE571F8A540578A602EFABFA327A3DBCA4E7A707B3A9"
+          },
+          {
+            "path": "Dock.Controls.ProportionalStackPanel.dll",
+            "length": 34304,
+            "sha256": "5E28E1BD9A478F099E8E9E120AD0FAA8C727DBE34BE09114400DB45ABBB1244D"
+          },
+          {
+            "path": "Dock.Controls.Recycling.Model.dll",
+            "length": 5632,
+            "sha256": "CAFA7352D9B581F010B401924B6BAAB0DAAB51293D3D838CDBF68A44940E3B64"
+          },
+          {
+            "path": "Dock.Controls.Recycling.dll",
+            "length": 10752,
+            "sha256": "5E8BE700681AEABA4D25D0AC9112E815EBE1EEC66DF132A87A9F3D0357E527F9"
+          },
+          {
+            "path": "Dock.Model.dll",
+            "length": 158720,
+            "sha256": "264861F322F86EE34144EE8688E594DC2B5B5B61A12D1B3C4D68AFDFD61A6B67"
+          },
+          {
+            "path": "Dock.Settings.dll",
+            "length": 16896,
+            "sha256": "E69EBC4B27418389DBFA8AF03BDD004E1031851B9425814B259856BB6D7D5181"
+          },
+          {
+            "path": "Irihi.Avalonia.Shared.Contracts.dll",
+            "length": 5120,
+            "sha256": "93215938FDEC7E6D06C36E2F5E9EE9E4652FB96A91CFCD70BB4C268F8C8853A0"
+          },
+          {
+            "path": "Irihi.Avalonia.Shared.dll",
+            "length": 35328,
+            "sha256": "6769135481B3DFC8546F04C8054107380CE4DD7E583E6DAD260EE41AA73CA01F"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.Abstractions.dll",
+            "length": 28456,
+            "sha256": "685493E38ADB7E5D06BFCD93AA160FB8CE23AAE80DADD1FF489E8CD4CFC6CAFE"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.FileExtensions.dll",
+            "length": 28456,
+            "sha256": "66C81C68358AD8E0845E89A42B0B90162D4796E6D9CF60DE02A6828ED1285448"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.Json.dll",
+            "length": 27944,
+            "sha256": "BCE587D4FDA7A8D6BC3758F0670E5A6A7095BE283B43A838A0E0CA054BAD021C"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.dll",
+            "length": 44880,
+            "sha256": "82E24FB29CE626917E2061CB56BC45BBCD6DF949C8C8A2FFA8E0D58131A57E5F"
+          },
+          {
+            "path": "Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+            "length": 65832,
+            "sha256": "592C33E4BC20E041D6125B79A4311293540F30332495429241C3D7C7286C8E16"
+          },
+          {
+            "path": "Microsoft.Extensions.FileProviders.Abstractions.dll",
+            "length": 23336,
+            "sha256": "670E6CCB7984ADE31318AF5DB4FBA19903174721D8E9F1FD3D5E64403AC05D87"
+          },
+          {
+            "path": "Microsoft.Extensions.FileProviders.Physical.dll",
+            "length": 45392,
+            "sha256": "441746BDDB3B418462A2EDCCDD1386A7740A70E4E2767B2EF603A7CD721E6668"
+          },
+          {
+            "path": "Microsoft.Extensions.FileSystemGlobbing.dll",
+            "length": 47912,
+            "sha256": "FE9F4D6F98E15E7F2F2AD8DB324B1AD5A7A2744D4BB3A5EAEB19F4A354BDAE5C"
+          },
+          {
+            "path": "Microsoft.Extensions.Primitives.dll",
+            "length": 44840,
+            "sha256": "149F0BB5FBBF39836F38F61EA24EEE49D78BC62C63BDB3C462381BDFFB1D3603"
+          },
+          {
+            "path": "MyAvaloniaManagement.PluginSdk.UI.dll",
+            "length": 19968,
+            "sha256": "C1D2D697F2F5D04351FB6224232F5BEE2A7258954FFACA39F1718F3FF935D3C1"
+          },
+          {
+            "path": "MyAvaloniaManagement.PluginSdk.Workflow.dll",
+            "length": 39424,
+            "sha256": "8A7091D8AB9D5D49DD686880796C2936449CF0B209B0B4BCBAF529189CD82514"
+          },
+          {
+            "path": "MyAvaloniaManagement.PluginSdk.dll",
+            "length": 24576,
+            "sha256": "DB7134DD2A3D22D5774083C14CFAC16D2A8EFD0D156297D0B460F3D6B62328DF"
+          },
+          {
+            "path": "MyAvaloniaManagement.dll",
+            "length": 3170304,
+            "sha256": "37E1F535D4EE25D50BAA9A5B719C1CC2B53AF411812AF0AE6B547B9F8B74E8D8"
+          },
+          {
+            "path": "Semi.Avalonia.dll",
+            "length": 1724416,
+            "sha256": "DB65688DE2E357CD583BC0FCF050FA7DF6252DEC56EFDA036F566F63C3FAE513"
+          },
+          {
+            "path": "Ursa.Themes.Semi.dll",
+            "length": 884736,
+            "sha256": "31AA961B40FBB26E1D6DC00B4C4CAF4D586B7E4729A83AC10E0206ECF4C39474"
+          },
+          {
+            "path": "Ursa.dll",
+            "length": 641536,
+            "sha256": "D8587D2BE074842C811FB87E9AE9B4463E6EA0FBC08E5AD4C4A5E9C4D82E0852"
+          }
+        ]
+      },
+      "reports": [
+        {
+          "pluginId": "myavalonia.plugin.baidu.netdisk",
+          "pluginVersion": "1.0.1.0",
+          "pluginHash": "7BDA45D93E59497BB4C482C2EF8A0ED14A3C181FD0D3C51E5B66F9E2819D7E8D",
+          "reportId": "d60aa109-d895-444b-b410-c7b30790d216",
+          "reportSha256": "255D10E09CC264C844DE36DD56E67D19213B6B3F39E455FD7D39C2CEFB5D806B",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "NotRun",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "未选择或前置检查失败。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        },
+        {
+          "pluginId": "myavalonia.plugin.bili-downloader",
+          "pluginVersion": "3.0.1.0",
+          "pluginHash": "E017A553090421A921FCD20B3F32DAF2B84AD22317893C39C948B2AC9A2CD150",
+          "reportId": "34e00b46-f3aa-49d5-a098-1a10239658be",
+          "reportSha256": "0A524317332D29E5DCC9AC5E6EC59828D558CD91E465487B8F7ABDBDF82B28C8",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "NotRun",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "未选择或前置检查失败。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        },
+        {
+          "pluginId": "myavalonia.plugin.classic.game",
+          "pluginVersion": "1.1.1.0",
+          "pluginHash": "E9EFCEBDF0CE82ED9B6AD872F288FAE21E2C394ECDE72E449E1A5769C1CCF1F6",
+          "reportId": "5731e91f-04a9-4331-91d8-febe923612f4",
+          "reportSha256": "A9CBEFFE2F98F5E0FBD5FB2536009B2A576BEED30253F564444E48A3EA8A4A90",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        },
+        {
+          "pluginId": "myavalonia.plugin.datang-accounting-help",
+          "pluginVersion": "3.0.1.0",
+          "pluginHash": "C47920743068C0603FEB33343BD6967E6787CB5D88EE214053C6B8633C6B2807",
+          "reportId": "dc7b43fc-1b17-4274-892c-0a4065fa158f",
+          "reportSha256": "5081A5A1B3EDC56907F7FF8EDC3F4E76982C337FDD675053F823438210736663",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "NotRun",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "未选择或前置检查失败。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        },
+        {
+          "pluginId": "myavalonia.plugin.fractal.art",
+          "pluginVersion": "1.0.1.0",
+          "pluginHash": "63EB80734980CBAE6F6E8AE1E7AB4059997299D5701F1CACB20C79B002EFAED2",
+          "reportId": "4367f747-99af-48ba-803f-90c908b67769",
+          "reportSha256": "8C72CA1B9CEE20A928566D41328DFC8B10E7F358CFB00102289C36594DA24C57",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "NotRun",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "未选择或前置检查失败。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        },
+        {
+          "pluginId": "myavalonia.plugin.image.lab",
+          "pluginVersion": "1.0.1.0",
+          "pluginHash": "3D395D2A32ED29C379E81EC51BF2A1A89392D944E8EAB9C0F4CD286926D4F0E1",
+          "reportId": "6fad3eb2-26c0-4bbe-b91f-0f98154f9c36",
+          "reportSha256": "134995614A07DDA759B22DC984E659EF43728703230F72B9201CA0ACB506F063",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "NotRun",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "未选择或前置检查失败。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        },
+        {
+          "pluginId": "myavalonia.plugin.layer.unpack",
+          "pluginVersion": "1.0.1.0",
+          "pluginHash": "FF628D49FBC7F1011AA95D999CF146D399C65FA9AC7E33EDAE4DCB8650C688E1",
+          "reportId": "041ee63d-0dea-49a4-a88a-1856cc9e3acb",
+          "reportSha256": "23EBB9AB050C9F1C6DFE1352F1D839102E7C99B54558902F9E3EFD0EF7ED58B1",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "NotRun",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "未选择或前置检查失败。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        },
+        {
+          "pluginId": "myavalonia.plugin.my-plug-test",
+          "pluginVersion": "3.0.0.0",
+          "pluginHash": "90ABC548306BC549DFDCD3321589959A3497E0A3D5ECFB2901AF51D808AB06C0",
+          "reportId": "a43c966a-cb77-4dad-b913-7f05522417e5",
+          "reportSha256": "573B5761D0A0B65FE4B8F3ABFDDF70BC668B736DFFD2F07887D74B463D9C00DD",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        },
+        {
+          "pluginId": "myavalonia.plugin.novel.generate",
+          "pluginVersion": "1.3.0.0",
+          "pluginHash": "32E9AE3FA0FBB02FCE8B728D58EA13D442E8557D3845A025C2CBADAA5F240975",
+          "reportId": "c00817c8-7b21-4d05-bb9c-eb87975702b0",
+          "reportSha256": "6630DA560447D95A161F47DF00DA42C4B099608E49FCF83D127764CC5650C609",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "NotRun",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "未选择或前置检查失败。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        },
+        {
+          "pluginId": "myavalonia.plugin.my-small-tools",
+          "pluginVersion": "3.1.1.0",
+          "pluginHash": "019D5E560492D0C23E539A8CEC5EA28F5898166613AC18AAA91C5D92D88E2E7C",
+          "reportId": "014ab1b9-c999-48a1-96c9-4b58d825bf08",
+          "reportSha256": "CB9246040CC7AD5C00943419FBE6E3CF13B2B07D210F49B2BAF5FF2EFCEB5955",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "NotRun",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "未选择或前置检查失败。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        },
+        {
+          "pluginId": "myavalonia.plugin.workflow-studio",
+          "pluginVersion": "1.2.1.0",
+          "pluginHash": "D2DA789851B9C54EC468AF419CCA196CB82E646E0E94B8EC42AFE5B6E9DD990B",
+          "reportId": "63fd16d7-da28-41f6-b44c-1821aaf22dae",
+          "reportSha256": "D2F37691DAFA01902C40A67598DE880283A3FA03EAD67E261AAE879BCCC512B0",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "NotRun",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "未选择或前置检查失败。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        },
+        {
+          "pluginId": "myavalonia.plugin.xiancai.worker",
+          "pluginVersion": "1.4.0.0",
+          "pluginHash": "A057D02F9A77CB6E8F933831B465386D53B5174DF0B474014E29F6C5CAEBB3BE",
+          "reportId": "568d63cc-32c6-46cf-813c-7a99944d631c",
+          "reportSha256": "2D97F3080768E3616C225351932A8857CABAE8D0B7515EBA1A443BE25E5647CE",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "NotRun",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "未选择或前置检查失败。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "directory": "artifacts/host-v10/final-myplug/20260916-035657-b7a98ed4",
+      "passed": true,
+      "host": {
+        "productVersion": "3.0.0",
+        "informationalVersion": "3.0.0+ae562dfce0007d339b3f6b4118042ed8ffbd61bf",
+        "runtimeHash": "282B82122D7C2DF2FBAD7D66A7B53897D42F3392E441E4C6AD2E4B51F3C09FCA",
+        "ruleHash": "98B6CAC7F03BC021F34F7374DA630D4A5FC81024A5D31074774C476AC7F28063",
+        "operatingSystem": "Microsoft Windows 10.0.26200",
+        "architecture": "X64",
+        "framework": ".NET 10.0.10",
+        "sdkVersion": "3.4.1",
+        "avaloniaVersion": "12.1.2.0",
+        "dockVersion": "12.1.0.6",
+        "files": [
+          {
+            "path": "Avalonia.Base.dll",
+            "length": 2355200,
+            "sha256": "39F7C973A20346B2A0C0E758B875749670A610D63863E9A85FFEA22D5F320279"
+          },
+          {
+            "path": "Avalonia.Controls.dll",
+            "length": 1347072,
+            "sha256": "909B7ABD1E4B389B3372C4D1C0FCAE1106F99ED783CC177FA0FA67ED1147CA24"
+          },
+          {
+            "path": "Avalonia.Dialogs.dll",
+            "length": 242688,
+            "sha256": "70AAEFFBB3AFCFAFEE5A5B1E19707E13B7AE5F293C4C157332693690E12E3598"
+          },
+          {
+            "path": "Avalonia.Markup.Xaml.dll",
+            "length": 74752,
+            "sha256": "1228B0A7359EBFA592408DE8E20AA3B8A2775D27C36F19C1F7C8F1E9FF1E14A8"
+          },
+          {
+            "path": "Avalonia.Markup.dll",
+            "length": 45568,
+            "sha256": "CE634015611862DD6814355A4880C3C718782A017665445D232834615A6120CB"
+          },
+          {
+            "path": "Avalonia.Remote.Protocol.dll",
+            "length": 75776,
+            "sha256": "080F6F41F70CFD4F98863DEEB61D15D229AA7D9333E7A3EB17582EFB19ED779C"
+          },
+          {
+            "path": "Avalonia.Themes.Fluent.dll",
+            "length": 733184,
+            "sha256": "71FF087F03DA9F484F53EF1AEA502EB19B015C8A6A1E8A9161B0D344053ED8EF"
+          },
+          {
+            "path": "CommunityToolkit.Mvvm.dll",
+            "length": 146760,
+            "sha256": "19B2144FED9600D58A742A5A4A5FD7B10D4D0D2C2E79F5D8019307CF5657044F"
+          },
+          {
+            "path": "Dock.Avalonia.Themes.Fluent.dll",
+            "length": 437760,
+            "sha256": "F443EF948AC54823B5EA85112CBFF77872B1765DC7A1230FE6C6E15116A12FA9"
+          },
+          {
+            "path": "Dock.Avalonia.dll",
+            "length": 319488,
+            "sha256": "9A6B2C790F8F60E411ABA2701F669CCC07ADE8E4B2E314B12F9C69539709AC6D"
+          },
+          {
+            "path": "Dock.Controls.DeferredContentControl.dll",
+            "length": 25600,
+            "sha256": "1E40EE9508E9215667C1BE571F8A540578A602EFABFA327A3DBCA4E7A707B3A9"
+          },
+          {
+            "path": "Dock.Controls.ProportionalStackPanel.dll",
+            "length": 34304,
+            "sha256": "5E28E1BD9A478F099E8E9E120AD0FAA8C727DBE34BE09114400DB45ABBB1244D"
+          },
+          {
+            "path": "Dock.Controls.Recycling.Model.dll",
+            "length": 5632,
+            "sha256": "CAFA7352D9B581F010B401924B6BAAB0DAAB51293D3D838CDBF68A44940E3B64"
+          },
+          {
+            "path": "Dock.Controls.Recycling.dll",
+            "length": 10752,
+            "sha256": "5E8BE700681AEABA4D25D0AC9112E815EBE1EEC66DF132A87A9F3D0357E527F9"
+          },
+          {
+            "path": "Dock.Model.dll",
+            "length": 158720,
+            "sha256": "264861F322F86EE34144EE8688E594DC2B5B5B61A12D1B3C4D68AFDFD61A6B67"
+          },
+          {
+            "path": "Dock.Settings.dll",
+            "length": 16896,
+            "sha256": "E69EBC4B27418389DBFA8AF03BDD004E1031851B9425814B259856BB6D7D5181"
+          },
+          {
+            "path": "Irihi.Avalonia.Shared.Contracts.dll",
+            "length": 5120,
+            "sha256": "93215938FDEC7E6D06C36E2F5E9EE9E4652FB96A91CFCD70BB4C268F8C8853A0"
+          },
+          {
+            "path": "Irihi.Avalonia.Shared.dll",
+            "length": 35328,
+            "sha256": "6769135481B3DFC8546F04C8054107380CE4DD7E583E6DAD260EE41AA73CA01F"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.Abstractions.dll",
+            "length": 28456,
+            "sha256": "685493E38ADB7E5D06BFCD93AA160FB8CE23AAE80DADD1FF489E8CD4CFC6CAFE"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.FileExtensions.dll",
+            "length": 28456,
+            "sha256": "66C81C68358AD8E0845E89A42B0B90162D4796E6D9CF60DE02A6828ED1285448"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.Json.dll",
+            "length": 27944,
+            "sha256": "BCE587D4FDA7A8D6BC3758F0670E5A6A7095BE283B43A838A0E0CA054BAD021C"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.dll",
+            "length": 44880,
+            "sha256": "82E24FB29CE626917E2061CB56BC45BBCD6DF949C8C8A2FFA8E0D58131A57E5F"
+          },
+          {
+            "path": "Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+            "length": 65832,
+            "sha256": "592C33E4BC20E041D6125B79A4311293540F30332495429241C3D7C7286C8E16"
+          },
+          {
+            "path": "Microsoft.Extensions.FileProviders.Abstractions.dll",
+            "length": 23336,
+            "sha256": "670E6CCB7984ADE31318AF5DB4FBA19903174721D8E9F1FD3D5E64403AC05D87"
+          },
+          {
+            "path": "Microsoft.Extensions.FileProviders.Physical.dll",
+            "length": 45392,
+            "sha256": "441746BDDB3B418462A2EDCCDD1386A7740A70E4E2767B2EF603A7CD721E6668"
+          },
+          {
+            "path": "Microsoft.Extensions.FileSystemGlobbing.dll",
+            "length": 47912,
+            "sha256": "FE9F4D6F98E15E7F2F2AD8DB324B1AD5A7A2744D4BB3A5EAEB19F4A354BDAE5C"
+          },
+          {
+            "path": "Microsoft.Extensions.Primitives.dll",
+            "length": 44840,
+            "sha256": "149F0BB5FBBF39836F38F61EA24EEE49D78BC62C63BDB3C462381BDFFB1D3603"
+          },
+          {
+            "path": "MyAvaloniaManagement.PluginSdk.UI.dll",
+            "length": 19968,
+            "sha256": "C1D2D697F2F5D04351FB6224232F5BEE2A7258954FFACA39F1718F3FF935D3C1"
+          },
+          {
+            "path": "MyAvaloniaManagement.PluginSdk.Workflow.dll",
+            "length": 39424,
+            "sha256": "8A7091D8AB9D5D49DD686880796C2936449CF0B209B0B4BCBAF529189CD82514"
+          },
+          {
+            "path": "MyAvaloniaManagement.PluginSdk.dll",
+            "length": 24576,
+            "sha256": "DB7134DD2A3D22D5774083C14CFAC16D2A8EFD0D156297D0B460F3D6B62328DF"
+          },
+          {
+            "path": "MyAvaloniaManagement.dll",
+            "length": 3170304,
+            "sha256": "37E1F535D4EE25D50BAA9A5B719C1CC2B53AF411812AF0AE6B547B9F8B74E8D8"
+          },
+          {
+            "path": "Semi.Avalonia.dll",
+            "length": 1724416,
+            "sha256": "DB65688DE2E357CD583BC0FCF050FA7DF6252DEC56EFDA036F566F63C3FAE513"
+          },
+          {
+            "path": "Ursa.Themes.Semi.dll",
+            "length": 884736,
+            "sha256": "31AA961B40FBB26E1D6DC00B4C4CAF4D586B7E4729A83AC10E0206ECF4C39474"
+          },
+          {
+            "path": "Ursa.dll",
+            "length": 641536,
+            "sha256": "D8587D2BE074842C811FB87E9AE9B4463E6EA0FBC08E5AD4C4A5E9C4D82E0852"
+          }
+        ]
+      },
+      "reports": [
+        {
+          "pluginId": "myavalonia.plugin.my-plug-test",
+          "pluginVersion": "3.0.0.0",
+          "pluginHash": "073A261862A073A2B3B7BB4B6B6B71632A875AB5871CFFD8081E35DB0DD18A60",
+          "reportId": "8dc61fcd-ffe2-4ed3-a2d2-7c48ff42e4e8",
+          "reportSha256": "B8E20FD3782567856189D7E8C5DFB8FFDA5A0ABD4C26486C4DF8CF7BFC1F9D5C",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "directory": "artifacts/host-v10/final-template/20260916-035657-3315767f",
+      "passed": true,
+      "host": {
+        "productVersion": "3.0.0",
+        "informationalVersion": "3.0.0+ae562dfce0007d339b3f6b4118042ed8ffbd61bf",
+        "runtimeHash": "282B82122D7C2DF2FBAD7D66A7B53897D42F3392E441E4C6AD2E4B51F3C09FCA",
+        "ruleHash": "98B6CAC7F03BC021F34F7374DA630D4A5FC81024A5D31074774C476AC7F28063",
+        "operatingSystem": "Microsoft Windows 10.0.26200",
+        "architecture": "X64",
+        "framework": ".NET 10.0.10",
+        "sdkVersion": "3.4.1",
+        "avaloniaVersion": "12.1.2.0",
+        "dockVersion": "12.1.0.6",
+        "files": [
+          {
+            "path": "Avalonia.Base.dll",
+            "length": 2355200,
+            "sha256": "39F7C973A20346B2A0C0E758B875749670A610D63863E9A85FFEA22D5F320279"
+          },
+          {
+            "path": "Avalonia.Controls.dll",
+            "length": 1347072,
+            "sha256": "909B7ABD1E4B389B3372C4D1C0FCAE1106F99ED783CC177FA0FA67ED1147CA24"
+          },
+          {
+            "path": "Avalonia.Dialogs.dll",
+            "length": 242688,
+            "sha256": "70AAEFFBB3AFCFAFEE5A5B1E19707E13B7AE5F293C4C157332693690E12E3598"
+          },
+          {
+            "path": "Avalonia.Markup.Xaml.dll",
+            "length": 74752,
+            "sha256": "1228B0A7359EBFA592408DE8E20AA3B8A2775D27C36F19C1F7C8F1E9FF1E14A8"
+          },
+          {
+            "path": "Avalonia.Markup.dll",
+            "length": 45568,
+            "sha256": "CE634015611862DD6814355A4880C3C718782A017665445D232834615A6120CB"
+          },
+          {
+            "path": "Avalonia.Remote.Protocol.dll",
+            "length": 75776,
+            "sha256": "080F6F41F70CFD4F98863DEEB61D15D229AA7D9333E7A3EB17582EFB19ED779C"
+          },
+          {
+            "path": "Avalonia.Themes.Fluent.dll",
+            "length": 733184,
+            "sha256": "71FF087F03DA9F484F53EF1AEA502EB19B015C8A6A1E8A9161B0D344053ED8EF"
+          },
+          {
+            "path": "CommunityToolkit.Mvvm.dll",
+            "length": 146760,
+            "sha256": "19B2144FED9600D58A742A5A4A5FD7B10D4D0D2C2E79F5D8019307CF5657044F"
+          },
+          {
+            "path": "Dock.Avalonia.Themes.Fluent.dll",
+            "length": 437760,
+            "sha256": "F443EF948AC54823B5EA85112CBFF77872B1765DC7A1230FE6C6E15116A12FA9"
+          },
+          {
+            "path": "Dock.Avalonia.dll",
+            "length": 319488,
+            "sha256": "9A6B2C790F8F60E411ABA2701F669CCC07ADE8E4B2E314B12F9C69539709AC6D"
+          },
+          {
+            "path": "Dock.Controls.DeferredContentControl.dll",
+            "length": 25600,
+            "sha256": "1E40EE9508E9215667C1BE571F8A540578A602EFABFA327A3DBCA4E7A707B3A9"
+          },
+          {
+            "path": "Dock.Controls.ProportionalStackPanel.dll",
+            "length": 34304,
+            "sha256": "5E28E1BD9A478F099E8E9E120AD0FAA8C727DBE34BE09114400DB45ABBB1244D"
+          },
+          {
+            "path": "Dock.Controls.Recycling.Model.dll",
+            "length": 5632,
+            "sha256": "CAFA7352D9B581F010B401924B6BAAB0DAAB51293D3D838CDBF68A44940E3B64"
+          },
+          {
+            "path": "Dock.Controls.Recycling.dll",
+            "length": 10752,
+            "sha256": "5E8BE700681AEABA4D25D0AC9112E815EBE1EEC66DF132A87A9F3D0357E527F9"
+          },
+          {
+            "path": "Dock.Model.dll",
+            "length": 158720,
+            "sha256": "264861F322F86EE34144EE8688E594DC2B5B5B61A12D1B3C4D68AFDFD61A6B67"
+          },
+          {
+            "path": "Dock.Settings.dll",
+            "length": 16896,
+            "sha256": "E69EBC4B27418389DBFA8AF03BDD004E1031851B9425814B259856BB6D7D5181"
+          },
+          {
+            "path": "Irihi.Avalonia.Shared.Contracts.dll",
+            "length": 5120,
+            "sha256": "93215938FDEC7E6D06C36E2F5E9EE9E4652FB96A91CFCD70BB4C268F8C8853A0"
+          },
+          {
+            "path": "Irihi.Avalonia.Shared.dll",
+            "length": 35328,
+            "sha256": "6769135481B3DFC8546F04C8054107380CE4DD7E583E6DAD260EE41AA73CA01F"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.Abstractions.dll",
+            "length": 28456,
+            "sha256": "685493E38ADB7E5D06BFCD93AA160FB8CE23AAE80DADD1FF489E8CD4CFC6CAFE"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.FileExtensions.dll",
+            "length": 28456,
+            "sha256": "66C81C68358AD8E0845E89A42B0B90162D4796E6D9CF60DE02A6828ED1285448"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.Json.dll",
+            "length": 27944,
+            "sha256": "BCE587D4FDA7A8D6BC3758F0670E5A6A7095BE283B43A838A0E0CA054BAD021C"
+          },
+          {
+            "path": "Microsoft.Extensions.Configuration.dll",
+            "length": 44880,
+            "sha256": "82E24FB29CE626917E2061CB56BC45BBCD6DF949C8C8A2FFA8E0D58131A57E5F"
+          },
+          {
+            "path": "Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+            "length": 65832,
+            "sha256": "592C33E4BC20E041D6125B79A4311293540F30332495429241C3D7C7286C8E16"
+          },
+          {
+            "path": "Microsoft.Extensions.FileProviders.Abstractions.dll",
+            "length": 23336,
+            "sha256": "670E6CCB7984ADE31318AF5DB4FBA19903174721D8E9F1FD3D5E64403AC05D87"
+          },
+          {
+            "path": "Microsoft.Extensions.FileProviders.Physical.dll",
+            "length": 45392,
+            "sha256": "441746BDDB3B418462A2EDCCDD1386A7740A70E4E2767B2EF603A7CD721E6668"
+          },
+          {
+            "path": "Microsoft.Extensions.FileSystemGlobbing.dll",
+            "length": 47912,
+            "sha256": "FE9F4D6F98E15E7F2F2AD8DB324B1AD5A7A2744D4BB3A5EAEB19F4A354BDAE5C"
+          },
+          {
+            "path": "Microsoft.Extensions.Primitives.dll",
+            "length": 44840,
+            "sha256": "149F0BB5FBBF39836F38F61EA24EEE49D78BC62C63BDB3C462381BDFFB1D3603"
+          },
+          {
+            "path": "MyAvaloniaManagement.PluginSdk.UI.dll",
+            "length": 19968,
+            "sha256": "C1D2D697F2F5D04351FB6224232F5BEE2A7258954FFACA39F1718F3FF935D3C1"
+          },
+          {
+            "path": "MyAvaloniaManagement.PluginSdk.Workflow.dll",
+            "length": 39424,
+            "sha256": "8A7091D8AB9D5D49DD686880796C2936449CF0B209B0B4BCBAF529189CD82514"
+          },
+          {
+            "path": "MyAvaloniaManagement.PluginSdk.dll",
+            "length": 24576,
+            "sha256": "DB7134DD2A3D22D5774083C14CFAC16D2A8EFD0D156297D0B460F3D6B62328DF"
+          },
+          {
+            "path": "MyAvaloniaManagement.dll",
+            "length": 3170304,
+            "sha256": "37E1F535D4EE25D50BAA9A5B719C1CC2B53AF411812AF0AE6B547B9F8B74E8D8"
+          },
+          {
+            "path": "Semi.Avalonia.dll",
+            "length": 1724416,
+            "sha256": "DB65688DE2E357CD583BC0FCF050FA7DF6252DEC56EFDA036F566F63C3FAE513"
+          },
+          {
+            "path": "Ursa.Themes.Semi.dll",
+            "length": 884736,
+            "sha256": "31AA961B40FBB26E1D6DC00B4C4CAF4D586B7E4729A83AC10E0206ECF4C39474"
+          },
+          {
+            "path": "Ursa.dll",
+            "length": 641536,
+            "sha256": "D8587D2BE074842C811FB87E9AE9B4463E6EA0FBC08E5AD4C4A5E9C4D82E0852"
+          }
+        ]
+      },
+      "reports": [
+        {
+          "pluginId": "myavalonia.plugin.v10-candidate",
+          "pluginVersion": "1.0.0.0",
+          "pluginHash": "A17C0E72E1727DD9E3D4ED460CA4858729702DC68B524FBA40EA2F8E0CBBE10D",
+          "reportId": "c3018a55-5206-4b46-aaa5-5a05e16bf7b1",
+          "reportSha256": "1CC2C4DB0849327D04FE4EF042BDB59F96DC9001E94785E55D497839882DD841",
+          "checks": [
+            {
+              "level": "Static",
+              "outcome": "Passed",
+              "scenario": "package-policy",
+              "detail": "清单区间、产物副本、禁带资产和托管引用检查通过。"
+            },
+            {
+              "level": "Composition",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginBinaryAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Workspace",
+              "outcome": "Passed",
+              "scenario": "ExternalPluginWorkspaceAcceptanceTests",
+              "detail": "独立进程实际执行一个验收用例通过。"
+            },
+            {
+              "level": "Business",
+              "outcome": "NotRun",
+              "scenario": "business",
+              "detail": "此入口不执行业务或真机验收。"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
