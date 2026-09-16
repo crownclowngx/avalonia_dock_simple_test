@@ -68,3 +68,9 @@ Dock.Avalonia `12.1.0.6` 的本地 NuGet 元数据对应上游提交 `cc08602d02
 执行 `dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DockLayoutV3' --logger 'trx;LogFileName=v11-layout-v3-store.trx'`：24/24 通过，零失败、跳过或构建警告。其中新增 11 项文件行为测试覆盖 V2 合法/损坏原字节保留、V1 不触碰、上一有效备份、主坏备份好、双坏及隔离历史、坏备份保护、主/备份未来格式、同进程双实例、不同数据根、备份提交失败及文件占用。
 
 生产生命周期尚未切换至此 Store；工作区映射、保存调度、关闭最终提交与跨进程崩溃释放仍待完成。本节不代表整个 G5 或重启恢复已经通过。
+
+## G1/G5 布局树投影与保留项合并
+
+新增纯数据树过滤、空节点归并及运行时投影/恢复记录合并。实际可见工具位置优先，隐藏或不可用项保留原窗口与组；同组隐藏项保留相对顺序，能识别原父节点时保留分支比例。用户删除整段原结构时保留缺失分支并邻接当前结构，不反向恢复用户已改变的可见布局。新默认隐藏工具的组身份在连续捕获间保持稳定。
+
+`dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DockLayoutTreeTests|FullyQualifiedName~DockLayoutV3' --logger 'trx;LogFileName=v11-layout-tree.trx'`：30/30 通过。新增 6 项纯数据行为覆盖整窗隐藏、同组隐藏成员、插件缺失分支、父分割新增组、稳定身份、文档和空分割剔除。实际 Dock Mapper 与恢复/保存生命周期仍待接入。
