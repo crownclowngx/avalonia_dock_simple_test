@@ -1,6 +1,6 @@
 # Host V10：插件兼容治理与看板开发记录
 
-> 状态：实施中。日期：2026-09-16。方案见 [V10 计划](../../../roadmap/host-v10-plugin-compatibility-and-dashboard-plan.md)。
+> 状态：开发实现与自动化验证完成；业务、真机、部署及公开发布未执行。日期：2026-09-16。方案见 [V10 计划](../../plans/host-v10-plugin-compatibility-and-dashboard-plan.md)。
 > 分支：`codex/host-v10-plugin-dashboard`，从 master 的 `9bceb0781fab` 创建。允许阶段提交；不使用 AIFLOW、Windows CI、seal 或发布流程，不修改用户安装目录或外部插件源码。
 
 ## G0：开发基线
@@ -25,7 +25,7 @@
 
 ## 执行范围
 
-G1–G8 尚在实施，后续在此追加真实结果。API 发布分类与 seal 的已知条件保持原状；开发验证不授予发布资格。
+G1–G8 的开发范围已交付。API 发布分类与 seal 的已知条件保持原状；开发验证不授予发布资格。最终构建、报告与文件摘要见本目录 JSON 证据。
 
 ## G1–G2：规则与证据基础
 
@@ -60,3 +60,46 @@ Build 从真实 project.assets.json 生成可选 `plugin.build.json`，部署与
 本地候选 `3.4.2-v10.20260916.2`：六包使用相同实验标识、保持程序集身份 3.4.1.0（Workflow 仍为 1.0.0.0），不改正式集中版本。独立模板 hive、源码目录、feed、缓存完成生成、locked restore、零警告构建、4/4 测试、相同输入元数据稳定性与 ZIP 打包；结果在 `artifacts/host-v10/candidate-consumer-final`。
 
 额外从 master 基线 `9bceb0781fab` 创建临时只读源码工作树，构建旧 Host 外部验收测试。对携带新构建信息的候选 ZIP，加载与组合 1/1 通过，证明旁路文件未破坏该旧 Host 消费；证据在 `artifacts/host-v10/old-host-new-package`。不把此项推导为任意旧 Host 或业务兼容。
+
+## G8：完整验证与交接
+
+完整本地 `dotnet run --project tools/MyAvaloniaManagement.Gate -- verify` 已通过，包含 locked restore、Release 零警告构建、原契约、新 API 比较、真实 ZIP 验收。功能复核运行 `20260916-033652-b46ed2665da0`；补齐矩阵筛选和历史展开后运行 `20260916-034727-5ac3cd6ce386`，均为下表结果。文档冻结后再统一构建，最后一轮证据路径与源码身份由[最终机器可读记录](final-compatibility-evidence.json)记录，不把旧 Host 摘要挪给新文件。
+
+| 测试组 | 通过 | 失败 | 跳过 |
+| --- | --- | --- | --- |
+| SDK | 91 | 0 | 0 |
+| Host Unit | 421 | 0 | 0 |
+| Host Plugin | 218 | 0 | 0 |
+| Headless UI | 117 | 0 | 0 |
+| MyPlugTest | 11 | 0 | 0 |
+| ZIP 验收 | 1 | 0 | 0 |
+| 合计 | 859 | 0 | 0 |
+
+Gate / 验收工具专项 55/55 通过，包含参数、零测试、跳过、失败、超时、取消和日志保留。API 专项记录三个 SDK 比较与三个实际编译工具夹具；三个已发布表面与当前相同，新增允许，删除及改签名被检出。未采集发布专用覆盖率，也未改变阈值。
+
+外部自动化范围：
+
+| 输入 | 静态 | 加载与组合 | Workspace | 业务 / 真机 |
+| --- | --- | --- | --- | --- |
+| 冻结 12 个旧插件 | 12 通过 | 12 通过 | 仅 ClassicGamePlugin、MyPlugTest 2 通过；其余未执行 | 全部未执行 |
+| 本仓真实 MyPlugTest ZIP | 通过 | 通过 | 通过 | 未执行 |
+| 统一 `.2` 候选模板真实 ZIP | 通过 | 通过 | 通过 | 未执行 |
+| master 基线 Host 消费 `.2` 新 ZIP | 未纳入统一工具静态报告 | 1 通过 | 未执行 | 未执行 |
+
+所有原冻结输入在执行前后核对，525 个文件与 G0 清单一致。每个插件独立组合；没有把逐插件结果扩大为所有插件同时组合或全部业务通过。Host 不匹配负例返回非零，没有生成通过报告。
+
+真实 MyPlugTest 报告通过生产存储导入、匹配、历史展开、结果筛选、矩阵横向滚动与 Headless 窗口展示，独立用例 1/1 通过。截图位于 `artifacts/host-v10/screenshots`，已检查浅色、深色和 680×520 紧凑布局。界面测试中的“测试历史环境”报告仅为临时夹具，不写入交付证据，也不记作真实环境验收。
+
+构建与报告有意严格绑定文件。项目会将仓库 Markdown 嵌入 Host；归档或验收记录修改也会改变 Host 二进制。因此先冻结本 Markdown，再构建并将最后的运行摘要写入外置 JSON。后续重编译或 Git revision 变化引起报告不匹配是预期行为，需要对新产物重新验收，不能仅修改报告中的版本或哈希。
+
+### 保留证据与边界
+
+- `artifacts/host-v10/baseline/Controls`：原旧二进制；本目录 `old-plugin-inputs.json`：逐文件清单。
+- `artifacts/host-v10/candidate-consumer-final`：六包 feed、模板 ZIP、元数据、锁定还原与 4 项测试记录。
+- `artifacts/host-v10/final-old-plugins`、`final-myplug`、`final-template`：按运行 ID 保留完整报告、原始 TRX、日志和隔离副本；最终有效运行由 JSON 指定。
+- `artifacts/host-v10/dashboard-chain`：真实报告到看板的测试记录；`final-api-check`：API 工具正负夹具记录。
+- `artifacts/host-v10/old-host-new-package`：旧 Host 消费新元数据的 TRX；旧源码可按 `9bceb0781fab` 复建，临时工作树不属于交付物。
+
+按新文档结构维护了当前使用指南、详细证据契约、专项开发验证、API 维护、Build / Templates 自带说明；计划归档到 `docs/archive/plans`，应用帮助原文路径保持稳定。现行文档本仓链接与标题锚点已专项核对，未恢复旧目录入口。
+
+真实 Windows 文件选择、键盘与多屏 DPI、原生视频、账号、数据库、下载和后台业务仍待验收，合并到原有待办，未重复创建 V9 条目。没有使用 AIFLOW、Windows CI、seal、发布 Smoke、发布重复性、安装部署、NuGet 上传或发布标签。

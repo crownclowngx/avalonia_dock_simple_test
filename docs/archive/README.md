@@ -19,6 +19,7 @@
 - [MyAvaloniaManagement V7 独立工具中心与 Tool 显隐改造方案](plans/host-v7-tool-center-and-visibility-plan.md)
 - [MyAvaloniaManagement V8 交互收口与认知减负方案](plans/host-v8-cognitive-ux-convergence-plan.md)
 - [MyAvaloniaManagement V9：Avalonia / Dock 升级与定制逻辑整理方案](plans/host-v9-avalonia-dock-upgrade-plan.md)
+- [MyAvaloniaManagement V10：插件兼容治理与 Host 插件看板计划](plans/host-v10-plugin-compatibility-and-dashboard-plan.md)
 - [插件状态独立窗口：设计与本地验收](plans/plugin-status-window.md)
 - [MyAvaloniaManagement Workbench Command 引入评审与实施任务书](plans/workbench-command-introduction-plan.md)
 
@@ -28,6 +29,12 @@
 - [Document 保存 V1 设计](specifications/document-persistence-v1-design.md)
 
 ## 阶段与发布记录
+
+### host-v10
+
+- [插件兼容治理与看板开发记录](records/host-v10/development-acceptance.md)
+- [冻结旧插件文件清单](records/host-v10/old-plugin-inputs.json)
+- [最终兼容验证摘要](records/host-v10/final-compatibility-evidence.json)
 
 ### host-v1
 

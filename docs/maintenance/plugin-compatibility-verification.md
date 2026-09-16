@@ -17,6 +17,8 @@ dotnet run --project tools/MyAvaloniaManagement.Compatibility -c Release --no-bu
 
 省略 `--ui-tests` 只执行静态检查；省略 `--workspace` 不执行 Workspace。`--timeout` 为每个独立测试进程的秒数，默认 120，范围 1–3600。业务与真机始终是“未执行”。
 
+Host 内嵌仓库 Markdown，因此应先完成文档修改，再按顺序构建工具和 UI 测试。若在两次构建之间修改文档，工具会正确拒绝不同的 Host 文件；需重新统一构建，不能关闭摘要校验。显式外部验收结束后，用普通 `dotnet build Host/MyAvaloniaManagement.UiTests -c Release -m:1 -warnaserror` 恢复默认测试集合，避免后续 `--no-build` 误用外部变体。
+
 工具将输入复制到每次运行独有的目录，每个插件分别启动验收进程，使用隔离的数据根。不会安装到用户 Host，也不会执行生命周期登录、下载或原生播放。逐插件通过不能推导为多个插件同时组合通过。
 
 每个有效插件生成 `compatibility-report.json`，执行层级有独立的 `result.trx`、`process.log`；根目录 `summary.json` 记录实际输入和整体结果。静态检查失败、执行失败、中断、指定插件缺失都会返回非零。零测试、跳过、多于一个测试均不算该插件验收通过。无效输入不能伪造插件身份，记录在整体错误摘要或进程错误中。
