@@ -249,9 +249,16 @@ try {
     }
 
     $payloadFiles = @(Get-ChildItem -LiteralPath $pluginRoot -File -Recurse)
+    # 同一描述随 Build 包交付；禁带资产不等于宿主承诺提供该程序集。
+    $profilePath = Join-Path $PSScriptRoot 'MyAvaloniaManagement.RuntimeProfile.props'
+    if (!(Test-Path -LiteralPath $profilePath)) {
+        $profilePath = Join-Path $PSScriptRoot '../../../build/MyAvaloniaManagement.RuntimeProfile.props'
+    }
+    [xml]$runtimeProfile = Get-Content -LiteralPath $profilePath -Raw
+    $forbiddenPattern = [string]$runtimeProfile.Project.PropertyGroup.PluginForbiddenAssemblyPattern
     $forbidden = @($payloadFiles | Where-Object {
         $_.Extension -eq '.dll' -and
-        $_.Name -match '^(?:MyAvaloniaManagement(?!\.Icons\.dll$)(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json)'
+        $_.Name -match $forbiddenPattern
     })
     if ($forbidden.Count -ne 0) {
         throw "插件包混入宿主共享程序集：$($forbidden.Name -join ', ')"

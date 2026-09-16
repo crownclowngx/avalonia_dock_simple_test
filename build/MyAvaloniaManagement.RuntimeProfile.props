@@ -1,0 +1,28 @@
+<Project>
+  <!-- 唯一规则源：运行时根、引用边界和打包限制分别表达，禁带不表示 Host 一定提供。 -->
+  <PropertyGroup>
+    <PluginRuntimeProfileSchema>1</PluginRuntimeProfileSchema>
+    <PluginForbiddenAssemblyPattern>^(?:MyAvaloniaManagement(?!\.Icons\.dll$)(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json).*\.dll$</PluginForbiddenAssemblyPattern>
+    <PluginForbiddenReferencePattern>^(?:Dock\.|MyAvaloniaManagement$)</PluginForbiddenReferencePattern>
+  </PropertyGroup>
+  <ItemGroup>
+    <HostSharedAssemblyRoot Include="MyAvaloniaManagement.PluginSdk" Category="Contract" />
+    <HostSharedAssemblyRoot Include="MyAvaloniaManagement.PluginSdk.UI" Category="Contract" />
+    <HostSharedAssemblyRoot Include="MyAvaloniaManagement.PluginSdk.Workflow" Category="Contract" />
+    <HostSharedAssemblyRoot Include="Avalonia.Themes.Fluent" Category="Framework" />
+    <HostSharedAssemblyRoot Include="Dock.Avalonia" Category="HostInternal" />
+    <HostSharedAssemblyRoot Include="Dock.Avalonia.Themes.Fluent" Category="HostInternal" />
+    <HostSharedAssemblyRoot Include="Dock.Controls.ProportionalStackPanel" Category="HostInternal" />
+    <HostSharedAssemblyRoot Include="Dock.Controls.Recycling" Category="HostInternal" />
+    <HostSharedAssemblyRoot Include="Dock.Controls.Recycling.Model" Category="HostInternal" />
+    <HostSharedAssemblyRoot Include="Semi.Avalonia" Category="Framework" />
+    <HostSharedAssemblyRoot Include="Ursa" Category="Framework" />
+    <HostSharedAssemblyRoot Include="Ursa.Themes.Semi" Category="Framework" />
+    <HostSharedAssemblyRoot Include="CommunityToolkit.Mvvm" Category="Framework" />
+    <HostSharedAssemblyRoot Include="Microsoft.Extensions.Configuration.Json" Category="Framework" />
+    <!-- 保留既有禁带策略，不将历史限制伪装成运行时提供承诺。 -->
+    <PluginPackagingRestriction Include="Newtonsoft.Json" Reason="历史禁带；Host 不承诺提供。" />
+    <PluginPackagingRestriction Include="Microsoft.Extensions.*" Reason="家族禁带；Host 仅提供显式根及其实际闭包。" />
+    <PluginPrivateAssembly Include="MyAvaloniaManagement.Icons" Reason="插件私有资源，允许不同版本共存。" />
+  </ItemGroup>
+</Project>

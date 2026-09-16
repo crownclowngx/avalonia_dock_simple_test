@@ -33,8 +33,10 @@ Host 主程序集、Core/UI/Workflow SDK 和其他既有共享程序集仍受原
 
 若该包还有提供运行时 DLL 或原生文件的传递依赖，也要把这些传递包的准确 ID 逐一声明为
 `ManagedPluginPrivatePackage`。可用 `dotnet list <Plugin.csproj> package --include-transitive` 查看依赖树。
-SDK、Avalonia、Dock、Semi、Ursa、CommunityToolkit、`Microsoft.Extensions.*` 和 Newtonsoft.Json 由当前
-Host 共享，不得声明为插件私有包。只被 Standalone 或 Tests 使用的包则只加到对应项目，不进入插件 ZIP。
+SDK、Avalonia、Dock、Semi、Ursa、CommunityToolkit、`Microsoft.Extensions.*` 和 Newtonsoft.Json 受禁带规则保护，
+不得声明为插件私有包。禁带不等于 Host 保证提供：Newtonsoft.Json 是历史限制，Microsoft.Extensions 仅提供
+明确根及其实际依赖闭包。V10 开发中的规则统一来自 `MyAvaloniaManagement.RuntimeProfile.props`，尚未公开发布。
+只被 Standalone 或 Tests 使用的包只加到对应项目，不进入插件 ZIP。
 
 如果漏掉第 3 步，普通 `bin` 或 Standalone 可能仍能运行，但 Build 生成的正式 ZIP 不会携带该 DLL，部署后
 会出现 `FileNotFoundException`、`FileLoadException` 或类型初始化失败。发布前务必解压 ZIP 检查私有 DLL，

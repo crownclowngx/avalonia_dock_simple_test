@@ -1,4 +1,5 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)MyAvaloniaManagement.RuntimeProfile.props" />
   <!--
     本文件只承担四件事：校验声明、生成严格清单、收集已声明资产、复制到单插件目录。
     ZIP、哈希和发布证据由 PowerShell 入口负责，避免 MSBuild 同时承担发布编排职责。
@@ -155,7 +156,7 @@
            Text="Managed Plugin 资产目标路径必须位于插件目录内：%(_ManagedPluginDeployAsset.TargetPath)" />
     <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '^(?:runtimes|native)[\\/](?!$(ManagedPluginRuntimeIdentifier)(?:[\\/]|$))[^\\/]+', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
            Text="Managed Plugin 不得携带非 $(ManagedPluginRuntimeIdentifier) 原生资产：%(_ManagedPluginDeployAsset.TargetPath)" />
-    <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_ManagedPluginDeployAsset.TargetPath)', '(^|[\\/])(?:MyAvaloniaManagement(?!\.Icons\.dll$)(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?:\.|$)|Dock\.|Semi\.Avalonia|Ursa(?:\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json).*\.dll$', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
+    <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$([System.IO.Path]::GetFileName('%(_ManagedPluginDeployAsset.TargetPath)'))', '$(PluginForbiddenAssemblyPattern)', System.Text.RegularExpressions.RegexOptions.IgnoreCase))"
            Text="Managed Plugin 不得携带宿主共享程序集：%(_ManagedPluginDeployAsset.TargetPath)" />
 
     <RemoveDuplicates Inputs="@(_ManagedPluginDeployTargetPath)">

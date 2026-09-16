@@ -85,10 +85,7 @@ internal sealed class PackageBuilder(ProcessRunner processes)
             }
         }
 
-        var forbidden = names.FirstOrDefault(name => Regex.IsMatch(
-            name,
-            @"(^|/)(MyAvaloniaManagement\.PluginSdk(?:\.UI|\.Workflow)?|Avalonia(?:\.|$)|Dock\.|Microsoft\.Extensions\.).*\.dll$",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant));
+        var forbidden = names.FirstOrDefault(MyAvaloniaManagement.Compatibility.RuntimeProfile.Current.IsForbiddenAsset);
         if (forbidden is not null)
         {
             throw new GateFailureException($"插件 {plugin.Id} 包混入共享程序集：{forbidden}。");

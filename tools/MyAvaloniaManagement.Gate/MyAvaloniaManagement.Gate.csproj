@@ -10,6 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\build\RuntimeProfile.cs" Link="RuntimeProfile.cs" />
+    <EmbeddedResource Include="..\..\build\MyAvaloniaManagement.RuntimeProfile.props" LogicalName="Compatibility.RuntimeProfile" />
     <None Include="gate.config.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

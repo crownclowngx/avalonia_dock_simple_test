@@ -14,6 +14,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="..\..\build\RuntimeProfile.cs" Link="Business\Compatibility\RuntimeProfile.cs" />
+        <EmbeddedResource Include="..\..\build\MyAvaloniaManagement.RuntimeProfile.props" LogicalName="Compatibility.RuntimeProfile" />
         <AvaloniaResource Include="Assets\**"/>
         <EmbeddedResource Include="HelpContent\*.md" LogicalName="Help.Guide.%(Filename)%(Extension)" />
         <EmbeddedResource Include="..\..\docs\**\*.md" LogicalName="Help.Repository.docs/%(RecursiveDir)%(Filename)%(Extension)" />

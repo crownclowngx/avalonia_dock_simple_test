@@ -35,71 +35,18 @@ internal interface IPluginSharedAssemblyPolicy
 /// </remarks>
 internal sealed class HostContractAssemblyPolicy : IPluginSharedAssemblyPolicy
 {
-    /// <summary>
-    /// UI Profile 的运行时程序集根。
-    /// </summary>
-    /// <remarks>
-    /// 设计意图：基础 SDK 不引用主题实现，因此共享集合不能再靠 Common 的偶然传递依赖生成。
-    /// 这里列的是宿主明确承诺并直接部署的 UI 家族；各根的依赖仍由闭包算法自动发现，避免维护
-    /// 一份脆弱的传递 DLL 清单。新增普通插件依赖不得加入此处，否则会破坏插件私有版本隔离。
-    /// </remarks>
-    private static readonly string[] SupportedUiProfileAssemblyNames =
-    [
-        "Avalonia.Themes.Fluent",
-        "Dock.Avalonia",
-        "Dock.Avalonia.Themes.Fluent",
-        "Dock.Controls.ProportionalStackPanel",
-        "Dock.Controls.Recycling",
-        "Dock.Controls.Recycling.Model",
-        "Semi.Avalonia",
-        "Ursa",
-        "Ursa.Themes.Semi",
-    ];
-
-    /// <summary>
-    /// 宿主明确提供、但不属于 Plugin SDK 公共签名的插件框架程序集。
-    /// </summary>
-    /// <remarks>
-    /// CommunityToolkit 供宿主和仓库插件各自实现 ViewModel。G9 已从 SDK 包依赖中删除它，
-    /// 但宿主仍直接拥有并统一加载受支持版本，避免每个插件目录携带同一程序集并形成类型分裂。
-    /// 将普通业务依赖加入这里会破坏插件隔离，因此该清单必须保持最小且接受包边界测试。
-    /// </remarks>
-    private static readonly string[] SupportedPluginFrameworkAssemblyNames =
-    [
-        "CommunityToolkit.Mvvm",
-        // EPPlus 在读取工作簿前会初始化配置。该依赖族由 Host 统一提供，
-        // 与构建协议中禁止插件携带 Microsoft.Extensions DLL 的规则保持一致。
-        "Microsoft.Extensions.Configuration.Json",
-    ];
-
     private readonly IReadOnlyDictionary<string, Assembly> _sharedAssemblies;
 
+    /// <summary>规则根来自同一内嵌描述；传递闭包仍按实际运行程序集计算，不接受外部配置覆盖。</summary>
     internal HostContractAssemblyPolicy()
     {
-        var roots = new List<Assembly>
-        {
-            typeof(PluginId).Assembly,
-            typeof(WorkflowSchemaProfile).Assembly,
-            typeof(IPluginModule).Assembly,
-        };
-
-        foreach (var assemblyName in SupportedPluginFrameworkAssemblyNames)
-        {
-            roots.Add(AssemblyLoadContext.Default.LoadFromAssemblyName(
-                new AssemblyName(assemblyName)));
-        }
-
-        foreach (var assemblyName in SupportedUiProfileAssemblyNames)
-        {
-            // Host 对 Profile 包具有直接引用；缺少任一程序集表示发布包本身损坏，
-            // 应在加载插件前失败，而不是让某个插件运行到 XAML 解析阶段才报错。
-            roots.Add(AssemblyLoadContext.Default.LoadFromAssemblyName(
-                new AssemblyName(assemblyName)));
-        }
-
+        var roots = MyAvaloniaManagement.Compatibility.RuntimeProfile.Current.SharedRoots
+            .Select(name => AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName(name)));
         _sharedAssemblies = BuildSharedAssemblyClosure(roots);
     }
 
+    /// <summary>供兼容证据读取实际共享闭包，返回副本，不允许调用方修改加载策略。</summary>
+    internal IReadOnlyCollection<Assembly> SharedAssemblies => _sharedAssemblies.Values.ToArray();
     public bool IsShared(AssemblyName requestedAssembly) =>
         requestedAssembly.Name is { } name && _sharedAssemblies.ContainsKey(name);
 
