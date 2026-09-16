@@ -6,7 +6,7 @@
 
 先区分内部重构、外部契约变更和新功能。内部类名、文件组织和协作者可以调整；稳定身份、public API、严格 JSON、取消与释放、工具显隐和诊断边界必须由测试保护。
 
-当前只支持严格 manifest、显式贡献和独立插件 Provider。Document 采用独立 Scope、互斥激活与修订保存；Layout 只读写 schema 2，并只对明确退役的内置 Tool 做定向迁移。Document V1、Layout V1 与旧策略发现不回流到生产路径。
+当前只支持严格 manifest、显式贡献和独立插件 Provider。Document 采用独立 Scope、互斥激活与修订保存；Layout 生产读写 schema 3，首次升级时只读转换 V2，并只对明确退役的内置 Tool 做定向清理。Document V1、Layout V1 与旧策略发现不回流到生产路径。
 
 ## 按变化原因分配职责
 
@@ -57,3 +57,11 @@ SOLID 优先：Session 保持唯一业务所有权，Factory 适配框架，窗�
 原生 Float/FloatAll 与 HostWindow 保留框架协议；实际核查后补上原生取消保护和同模型窗口复用。布局只记工具，不承担文档会话恢复；缺插件的记录保留，业务 View/Scope 在移动和重置时复用。最终保存队列不捕获 Dispatcher，干净窗口可同步排空，其余关闭仍异步准备；这一调整保留既有原生关闭语义，日常保存仍后台执行。
 
 接口只用于已有替换边界，新增具体类不为形式拆出单实现接口。详细协议集中在 [Layout V3](../../../../docs/reference/dock-layout-snapshot-v3.md)，实际开发证据与真实桌面待办分别记录。
+
+### V11-P1：分割完成事实与停靠策略
+
+`HostDockFactory.SplitToDock` 保存本次目标引用，保留基类通知和初始化顺序，仅在有效分割挂接后通过内部 `OnDockSplitCompleted` 交给 Session。通用 Docked 通知不拥有目标信息，不能用它推测全宽策略。Session 以主树对象引用确认窗口归属，Coordinator 仅处理主文档区和稳定全局目标；局部工具与浮窗沿用 Dock 结果。
+
+这维持了 SRP 的框架、策略、所有权和保存分离，以及 DIP 的内部回调端口。目标按类型和拓扑分类，满足 OCP，不添加插件 ID 分支；ISP 不扩展窗口/插件 API；LSP 保留异常、取消、关闭及原实例协议。仅使用现有具体协作者，不增加事务框架。
+
+临时容器必须仍挂在父列表且只剩一个有效子节点。先保存比例和 Active/Default 引用，再取出子节点、重查锚点、插入子节点，最后移除旧容器。原因是 Dock 的 `RemoveDockable(collapse:false)` 仍清理孤立分隔条；提前移除容器会使缓存索引和邻接结构失效。框架同方向分割漏初始化的新分隔条由 Factory 补 Owner，不在 Coordinator 重建整个树。中文代码注释与 [P1 记录](../../../../docs/archive/records/host-v11/p1-tool-split-fix.md) 说明边界及验证。

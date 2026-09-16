@@ -97,7 +97,7 @@ SOLID 是首要验收项。不得用一个新的万能 WindowManager、LayoutMan
 
 工具浮动后，原主窗口停靠位置与当前浮窗位置分别维护。关闭工具浮窗隐藏组内工具；窗口无可见内容时释放窗口对象，但保留工具的结构恢复记录。重新显示一个工具时只显示它，其他隐藏工具继续隐藏；已存在原浮窗时加入原组，否则按保存位置重建窗口。回停位置失效时回退到主窗口对应方向的稳定 ToolDock。
 
-Top/Bottom 归一化只作用于需要稳定四向结构的主窗口；浮窗使用自己的合法分割树。主文档入口全部浮动后仍保留可接收新文档、可拖回内容的中心停靠目标。
+V11-P1 将 Top/Bottom 全宽归一化限定为 Tool 到主窗口 DocumentDock（含文档子组）或明确的 WorkspaceRows/WorkspaceColumns 全局目标；主窗口 Tool 到 Tool 和浮窗内部均保留局部分割。稳定目标按主树对象引用判断。主文档入口全部浮动后仍保留可接收新文档、可拖回内容的中心停靠目标。补丁职责、结构替换及验证见 [P1 计划](host-v11-p1-tool-split-fix-plan.md)。
 
 ### 4.2 窗口交互
 
@@ -252,7 +252,7 @@ Top/Bottom 归一化只作用于需要稳定四向结构的主窗口；浮窗使
 
 - [x] 区分主布局局部查找和全工作区查询，覆盖 Windows/Hidden/Pinned。
 - [x] 更新工具状态、页面列表、文件激活、Owner 判断和活动文档发布。
-- [x] 修正 Top/Bottom 归一化的作用域及工具回停、隐藏分组恢复。
+- [x] 修正浮窗 Top/Bottom 作用域及工具回停、隐藏分组恢复；P1 进一步限定主窗口全宽目标，并修复临时容器替换索引及分隔条。
 
 通过条件：内存多窗口夹具中的工具与页面不丢失、不重复，主骨架不会误解析为浮窗节点。
 
@@ -316,7 +316,7 @@ Top/Bottom 归一化只作用于需要稳定四向结构的主窗口；浮窗使
 | --- | --- | --- |
 | T01 | 单 Tool、Document、整组浮动及回停；骨架不浮动；原分组可继续接收文档 | HostDockAdapterTests、WorkspaceSessionAndDockFactoryTests、DockFloatingPolicyTests |
 | T02 | 多 Root/嵌套 Windows/Hidden/Pinned、去重与局部查找；同名页面稳定身份 | Navigator 专项单元测试、ToolCenterTests、页面测试 |
-| T03 | 四向停靠、浮窗内 Top/Bottom 分割、组顺序、隐藏最后工具后重建原窗 | DockFourWayLayoutTests、ToolCenterUiTests |
+| T03 | 四向停靠、Tool 局部上下分割、主文档区全宽兼容、浮窗内分割及回停、V3 保存恢复 | DockFourWayLayoutTests（含 ToolSplit）、DockToolSplitUiTests、ToolCenterUiTests |
 | T04 | 浮窗中文档重复文件打开、页面列表激活、最小化恢复、活动工具不覆盖文档目标 | Workspace 与 WorkbenchCommandDocumentTargetTests、Headless UI |
 | T05 | 同一 View/模型/Scope 跨窗迁移；同 Presenter 不自清空；关闭后引用可释放 | HostDockAdapterUiTests、DockSplitVisualRegressionTests、回收器测试 |
 | T06 | 单文档/整窗保存、放弃、取消、保存失败、新修订出现、框架拒绝和重复关闭 | DocumentCloseTests、范围关闭集成测试 |

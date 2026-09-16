@@ -1,0 +1,10 @@
+{
+  "plan": "V11-P1",
+  "status": "pending-final-verify",
+  "note": "文档及源码提交后运行完整本地 verify，仅回填本非嵌入 JSON。",
+  "manualDesktop": "pending",
+  "deployment": "not-run",
+  "windowsCI": "not-run",
+  "releaseGates": "not-run",
+  "aiflow": "not-used"
+}

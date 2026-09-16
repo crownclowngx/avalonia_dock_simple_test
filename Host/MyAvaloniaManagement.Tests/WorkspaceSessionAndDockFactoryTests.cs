@@ -74,6 +74,29 @@ public sealed class WorkspaceSessionAndDockFactoryTests
     }
 
     [Fact]
+    public void P1分割完成回调只报告已挂接节点并保留原目标()
+    {
+        var factory = new HostDockFactory();
+        var callbacks = new RecordingWorkspaceCallbacks(factory);
+        factory.AttachCallbacks(callbacks);
+        factory.InitLayout(factory.CreateLayout());
+        var inserted = new ToolDock { VisibleDockables = factory.CreateList<IDockable>(new Tool()) };
+        factory.SplitToDock(new DocumentDock(), inserted, DockOperation.Bottom);
+        Assert.Empty(callbacks.CompletedSplits);
+        factory.SplitToDock(callbacks.Documents, inserted, DockOperation.Right);
+        var completed = Assert.Single(callbacks.CompletedSplits);
+        Assert.Same(callbacks.Documents, completed.Target);
+        Assert.Same(inserted, completed.Inserted);
+        Assert.True(completed.Attached);
+        Assert.True(completed.InProgress);
+        Assert.Equal(1, callbacks.DockedCount);
+        Assert.False(factory.IsLayoutChangeInProgress);
+        Assert.Throws<NotSupportedException>(() => factory.SplitToDock(callbacks.Documents, inserted, DockOperation.Fill));
+        factory.SplitToDock(new DocumentDock(), inserted, DockOperation.Bottom);
+        Assert.Single(callbacks.CompletedSplits);
+    }
+
+    [Fact]
     public void 升级后初始化替换普通集合并在重复初始化及关闭最后标签时保持有效引用()
     {
         var factory = new HostDockFactory();
@@ -342,8 +365,10 @@ public sealed class WorkspaceSessionAndDockFactoryTests
     /// </summary>
     private sealed class RecordingWorkspaceCallbacks : IWorkspaceDockCallbacks
     {
+        private readonly HostDockFactory _factory;
         internal RecordingWorkspaceCallbacks(HostDockFactory factory)
         {
+            _factory = factory;
             Tool = new Tool { Id = "myavalonia.test.tool", Title = "测试 Tool" };
             Documents = new DocumentDock { Id = DockLayoutIds.Documents };
             Workspace = new ProportionalDock
@@ -370,6 +395,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         internal int ClosingCount { get; private set; }
         internal int ClosedCount { get; private set; }
         internal int RejectedCount { get; private set; }
+        internal List<(IDock Target, IDockable Inserted, bool Attached, bool InProgress)> CompletedSplits { get; } = [];
 
         IRootDock? IWorkspaceDockCallbacks.RootDock => Root;
         IReadOnlyCollection<string> IWorkspaceDockCallbacks.CreatedToolIds => [Tool.Id!];
@@ -384,6 +410,8 @@ public sealed class WorkspaceSessionAndDockFactoryTests
             IDockable? dockable,
             DockOperation operation) => DockedCount++;
         void IWorkspaceDockCallbacks.OnDockableHidden(IDockable? dockable) => HiddenCount++;
+        void IWorkspaceDockCallbacks.OnDockSplitCompleted(IDock target, IDockable inserted, DockOperation operation) =>
+            CompletedSplits.Add((target, inserted, DockTreeNavigator.IsDockableAttached(Root, inserted), _factory.IsLayoutChangeInProgress));
         void IWorkspaceDockCallbacks.OnActiveDockableChanged(IDockable? dockable) { }
         bool IWorkspaceDockCallbacks.OnDockableClosing(IDockable? dockable)
         {

@@ -38,6 +38,7 @@ public sealed partial class DockFourWayLayoutTests
         var parent = ArrangeP1(session, root, target, documents, position, orientation, nested);
         var neighbors = parent.VisibleDockables!.Where(item => item is not IProportionalDockSplitter && item != target).ToArray();
         var neighborShares = neighbors.Select(item => item.Proportion).ToArray();
+        var originalShare = target.Proportion;
 
         Assert.True(new DockService().SplitDockable(moved, target, target, operation, bExecute: true));
 
@@ -46,6 +47,12 @@ public sealed partial class DockFourWayLayoutTests
         var local = Assert.IsAssignableFrom<IProportionalDock>(target.Owner);
         Assert.Same(local, inserted.Owner);
         Assert.Equal(Orientation.Vertical, local.Orientation);
+        // Dock 新建不同方向容器时以 NaN 表示默认均分；同方向直接插入则写入各半的显式比例。
+        var splitShare = orientation == Orientation.Vertical ? originalShare / 2 : double.NaN;
+        Assert.Equal(splitShare, inserted.Proportion);
+        Assert.Equal(splitShare, target.Proportion);
+        Assert.Equal(splitShare, inserted.CollapsedProportion);
+        if (orientation == Orientation.Horizontal) Assert.Equal(originalShare, local.Proportion);
         var children = local.VisibleDockables!.Where(item => item is not IProportionalDockSplitter).ToArray();
         var targetIndex = Array.IndexOf(children, target);
         Assert.Same(inserted, children[targetIndex + (operation == DockOperation.Top ? -1 : 1)]);
@@ -108,9 +115,75 @@ public sealed partial class DockFourWayLayoutTests
             arranged.Add(nodes[index]);
         }
         parent.VisibleDockables = session.CreateList<IDockable>([.. arranged]);
-        if (nested) columns.VisibleDockables = session.CreateList<IDockable>(parent);
+        parent.ActiveDockable = parent.DefaultDockable = target;
+        if (nested)
+        {
+            columns.VisibleDockables = session.CreateList<IDockable>(parent);
+            columns.ActiveDockable = parent;
+        }
         session.InitLayout(root);
         return parent;
+    }
+
+    [Theory]
+    [InlineData(DockOperation.Top, DockLayoutIds.WorkspaceColumns)]
+    [InlineData(DockOperation.Bottom, DockLayoutIds.WorkspaceColumns)]
+    [InlineData(DockOperation.Top, DockLayoutIds.WorkspaceRows)]
+    [InlineData(DockOperation.Bottom, DockLayoutIds.WorkspaceRows)]
+    public void P1主骨架全局目标仍使用全宽停靠(DockOperation operation, string targetId)
+    {
+        using var context = CreateFactory(("moved", "Right"), ("sibling", "Right"));
+        var session = context.Factory;
+        var moved = RegisterTool(session, "moved", "Right");
+        RegisterTool(session, "sibling", "Right");
+        var root = session.CreateWorkspaceLayout(CreateDocumentDock(session));
+        session.InitLayout(root);
+        var target = FindDock<ProportionalDock>(root, targetId);
+        Assert.True(new DockManager(new DockService()).ValidateDockable(moved, target, DragAction.Move, operation, bExecute: true));
+        Assert.Equal(operation == DockOperation.Top ? DockLayoutIds.TopTools : DockLayoutIds.BottomTools, moved.Owner!.Id);
+        AssertP1Tree(root);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void P1主骨架缺失保留布局且诊断失败不改变控制流(bool brokenDiagnostics)
+    {
+        using var context = CreateFactory(("moved", "Right"));
+        var session = context.Factory;
+        var tool = RegisterTool(session, "moved", "Right");
+        var document = CreateDocumentDock(session);
+        var root = session.CreateWorkspaceLayout(document);
+        session.InitLayout(root);
+        FindDock<ProportionalDock>(root, DockLayoutIds.WorkspaceRows).Id = "missing-stable-rows";
+        var before = EnumerateDocks(root).ToArray();
+        var owner = tool.Owner;
+        var reasons = new List<string>();
+        var coordinator = new ToolDockCoordinator(session.DockFactory, new DockWorkspaceBuilder(session.DockFactory),
+            _ => Alignment.Right, reason => { reasons.Add(reason); if (brokenDiagnostics) throw new IOException("诊断故障"); });
+        coordinator.OnDockSplitCompleted(document, owner!, DockOperation.Bottom, root);
+        Assert.Equal(["main-skeleton-unavailable"], reasons);
+        Assert.Same(owner, tool.Owner);
+        Assert.Equal(before, EnumerateDocks(root));
+        AssertP1Tree(root);
+    }
+
+    [Fact]
+    public void P1普通分割冒用稳定ID也不触发全宽策略()
+    {
+        using var context = CreateFactory(("moved", "Right"), ("sibling", "Right"));
+        var session = context.Factory;
+        var moved = RegisterTool(session, "moved", "Right");
+        RegisterTool(session, "sibling", "Right");
+        var documents = CreateDocumentDock(session);
+        var root = session.CreateWorkspaceLayout(documents);
+        session.InitLayout(root);
+        var source = (ToolDock)moved.Owner!;
+        var target = ArrangeP1(session, root, documents, source, 0, Orientation.Horizontal, nested: true);
+        target.Id = DockLayoutIds.WorkspaceColumns;
+        Assert.True(new DockService().SplitDockable(moved, source, target, DockOperation.Bottom, bExecute: true));
+        Assert.NotEqual(DockLayoutIds.BottomTools, moved.Owner!.Id);
+        AssertP1Tree(root);
     }
 
     private static void AssertP1Tree(IDock root)

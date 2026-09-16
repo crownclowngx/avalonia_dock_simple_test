@@ -4,6 +4,7 @@
 
 | 工作名称 | 状态 / 所属范围 | 事实依据 | 完成条件 |
 | --- | --- | --- | --- |
+| V11-P1 Tool 上下分割修复 | 源码与自动化已接入，桌面待补 / Host 补丁 | [P1 计划](host-v11-p1-tool-split-fix-plan.md)；[修复记录](../archive/records/host-v11/p1-tool-split-fix.md)；[最终开发证据](../archive/records/host-v11/p1-final-development-evidence.json) | 最终 verify 结果独立记录；实际补验截图位置上下投放、连续操作、浮窗回停与重启恢复。Headless 不代替桌面；安装目录部署为后续交付 |
 | V11 浮动窗口与工具布局保存恢复 | 实现已接入，开发结果见证据 / 主程序 Host | [V11 实施计划](host-v11-floating-windows-and-layout-v3-plan.md)；[阶段记录](../archive/records/host-v11/development-acceptance.md) | 实现与专项测试已接入；最终 [verify 结果](../archive/records/host-v11/final-development-evidence.json) 独立记录。补真实鼠标拖放、跨屏 DPI、原生选择器、视频/WebView/后台业务；Headless 不替代真人验收 |
 | 工具中心真实桌面与后台业务联调 | 待验收 / Host 与对应插件 | [V7 记录](../archive/records/host-v7/tool-center-and-visibility-acceptance.md) | 记录真实停靠、主窗口取消关闭、在途业务任务下隐藏与恢复；证明没有误释放模型或改变业务寿命 |
 | 工作区交互用户任务观察 | 待验收 / Host 使用体验 | [V8 记录](../archive/records/host-v8/cognitive-ux-convergence-acceptance.md) | 实际观察找到功能、切换同名页面、恢复工具、失败重试；记录误操作、提示及焦点体验。自动化和本地部署不能替代 |

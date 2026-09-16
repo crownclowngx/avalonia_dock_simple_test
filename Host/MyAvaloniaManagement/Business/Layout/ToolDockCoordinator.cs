@@ -10,13 +10,14 @@ using MyAvaloniaManagement.Business.Docking;
 namespace MyAvaloniaManagement.Business.Layout;
 
 /// <summary>
-/// 协调工具恢复、稳定停靠点重建以及 Top/Bottom 临时结构归一化。
+/// 协调工具恢复、稳定停靠点重建以及明确主窗口目标的全宽兼容策略。
 /// 状态流程集中在此处，HostDockFactory 只提供 Dock 库操作，不拥有工作区状态。
 /// </summary>
 internal sealed class ToolDockCoordinator(
     HostDockFactory factory,
     DockWorkspaceBuilder workspaceBuilder,
-    Func<string, Alignment> getAlignment)
+    Func<string, Alignment> getAlignment,
+    Action<string>? reportSkipped = null)
 {
     private bool _normalizingVerticalDock;
 
@@ -116,16 +117,33 @@ internal sealed class ToolDockCoordinator(
         return true;
     }
 
-    internal void OnDockableDocked(
-        IDockable? dockable,
+    /// <summary>
+    /// 只为主窗口文档区和稳定全局目标保留旧全宽约定；普通 ToolDock 或任意嵌套分割
+    /// 不归一化。调用方已确认主窗口归属；ID 只用于取得主骨架引用，不用于匹配拖放目标。
+    /// </summary>
+    internal void OnDockSplitCompleted(
+        IDock originalTarget,
+        IDockable insertedDock,
         DockOperation operation,
-        IRootDock? fallbackRoot)
+        IRootDock root)
     {
         if (_normalizingVerticalDock ||
             operation is not (DockOperation.Top or DockOperation.Bottom) ||
-            dockable is not IToolDock sourceDock ||
+            insertedDock is not IToolDock sourceDock ||
             sourceDock.VisibleDockables is not { Count: > 0 })
         {
+            return;
+        }
+
+        var rows = DockTreeNavigator.FindDockById<ProportionalDock>(root, DockLayoutIds.WorkspaceRows);
+        var columns = DockTreeNavigator.FindDockById<ProportionalDock>(root, DockLayoutIds.WorkspaceColumns);
+        if (originalTarget is not IDocumentDock &&
+            !ReferenceEquals(originalTarget, rows) && !ReferenceEquals(originalTarget, columns)) return;
+
+        // 不完整的稳定骨架不允许启动第二轮修改，保留基类已完成的局部分割供用户继续操作。
+        if (rows?.VisibleDockables is null || columns is null || !rows.VisibleDockables.Contains(columns))
+        {
+            ReportSkipped("main-skeleton-unavailable");
             return;
         }
 
@@ -139,12 +157,6 @@ internal sealed class ToolDockCoordinator(
 
         var tools = sourceDock.VisibleDockables.OfType<Tool>().ToArray();
         if (tools.Length == 0)
-        {
-            return;
-        }
-
-        var root = factory.FindRoot(sourceDock, _ => true) ?? fallbackRoot;
-        if (root is null || root.Window is not null)
         {
             return;
         }
@@ -167,7 +179,7 @@ internal sealed class ToolDockCoordinator(
                 factory.RemoveDockable(sourceDock, collapse: true);
             }
 
-            FlattenTemporarySplit(temporaryOwner);
+            FlattenTemporarySplit(temporaryOwner, root);
             factory.SetActiveDockable(activeTool);
         }
         finally
@@ -230,38 +242,66 @@ internal sealed class ToolDockCoordinator(
         }
     }
 
-    private void FlattenTemporarySplit(IProportionalDock? temporaryDock)
+    /// <summary>
+    /// 在 UI 线程将单子项临时容器替换为原子项。RemoveDockable 即使 collapse=false 仍会清理
+    /// 孤立分隔条，因此必须先插入替代项，再移除旧容器；调用方的批量范围延迟发布最终结构。
+    /// </summary>
+    private void FlattenTemporarySplit(IProportionalDock? temporaryDock, IRootDock root)
     {
         if (temporaryDock is null ||
-            !string.IsNullOrEmpty(temporaryDock.Id) ||
-            temporaryDock.Owner is not IDock parent ||
-            temporaryDock.VisibleDockables is null)
+            !string.IsNullOrEmpty(temporaryDock.Id))
         {
+            return;
+        }
+
+        if (temporaryDock.Owner is not IDock parent || temporaryDock.VisibleDockables is null ||
+            parent.VisibleDockables?.Contains(temporaryDock) != true ||
+            !DockTreeNavigator.IsDockAttached(root, temporaryDock))
+        {
+            ReportSkipped("temporary-container-detached");
             return;
         }
 
         var remaining = temporaryDock.VisibleDockables
             .Where(item => item is not IProportionalDockSplitter)
             .ToArray();
-        if (remaining.Length != 1 || parent.VisibleDockables is null)
+        if (remaining.Length != 1 || !ReferenceEquals(remaining[0].Owner, temporaryDock))
         {
-            return;
-        }
-
-        var parentIndex = parent.VisibleDockables.IndexOf(temporaryDock);
-        if (parentIndex < 0)
-        {
+            ReportSkipped("temporary-container-not-single-child");
             return;
         }
 
         var remainingDockable = remaining[0];
         var wasActive = ReferenceEquals(parent.ActiveDockable, temporaryDock);
+        var wasDefault = ReferenceEquals(parent.DefaultDockable, temporaryDock);
+        var proportion = temporaryDock.Proportion;
+        var collapsedProportion = temporaryDock.CollapsedProportion;
         factory.RemoveDockable(remainingDockable, collapse: false);
-        factory.RemoveDockable(temporaryDock, collapse: false);
+        // 仍保留临时容器作为位置锚点。不得复用移除父项之前缓存的索引。
+        var parentIndex = parent.VisibleDockables!.IndexOf(temporaryDock);
+        if (parentIndex < 0)
+        {
+            // 同步监听者已改动父列表时保留子项与原容器的关系，不再使用过期父索引；
+            // 这里不承诺外部监听者对整棵树的修改能够回滚。
+            factory.AddDockable(temporaryDock, remainingDockable);
+            ReportSkipped("temporary-container-changed-during-replacement");
+            return;
+        }
         factory.InsertDockable(parent, remainingDockable, parentIndex);
+        factory.RemoveDockable(temporaryDock, collapse: false);
+        remainingDockable.Proportion = proportion;
+        remainingDockable.CollapsedProportion = collapsedProportion;
         if (wasActive)
         {
             parent.ActiveDockable = remainingDockable;
         }
+        if (wasDefault) parent.DefaultDockable = remainingDockable;
+    }
+
+    private void ReportSkipped(string reason)
+    {
+        // 诊断设施失败不能把已安全保留的布局再次变成拖放异常；这里只隔离诊断回调。
+        try { reportSkipped?.Invoke(reason); }
+        catch { /* 诊断回调不拥有业务控制流。 */ }
     }
 }

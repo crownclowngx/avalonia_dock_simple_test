@@ -348,13 +348,15 @@ V3 G6 已删除 `ManagementFactory` Facade。生产代码只有
 | `WorkbenchDocumentCommandLeaseStore` | 单 Adapter 在途计数、关闭拒绝/取消/排空 | 强制超时、释放 Scope、全局任务运行时 |
 | `WorkbenchCommandPaletteProjection` | 四类候选、发现许可、状态过滤、搜索排序与有效快捷键文本 | 执行命令、缓存业务状态、焦点和插件对象 |
 | `WorkspacePaletteActions` | 以强类型身份适配原工作区用例，并在布局完成后交还焦点 | Scope、磁盘状态、普通 Command 执行 |
-| `ToolDockCoordinator` | 工具显示、恢复、停靠点重建和纵向区域归一化 | 策略发现 |
+| `ToolDockCoordinator` | 工具显示、恢复、停靠点重建和明确主窗口目标的全宽兼容策略 | 策略发现、窗口归属事实、文件保存 |
 | `DockDocumentLifetime` | 文档关闭后的缓存移除和 Scope 释放 | 关闭是否允许 |
 
 Factory 的 Docked/Hidden 在基类行为后通知 Session；Closing 只有 Session 脏文档保护通过后才进入基类；
 Closed 把基类通知放在 `try`、Session 最终释放放在 `finally`。多个 MainWindow 共享同一 Session/Root，
 各自订阅和解除定向通知。Tool 管理在布局前后都读取 `ToolWorkspaceReadModel` 的纯数据快照，Pinned Tool
 视为可见，不获得 Root Dock、Dock Tool、Factory 字典或服务容器。
+
+V11-P1 的 `SplitToDock` 在基类完成且节点挂接后调用内部 `OnDockSplitCompleted(originalTarget, insertedDock, operation)`。Factory 保留原目标并补齐同方向分割新增分隔条的 Owner；Session 按不进入 Windows 的主树遍历确认归属；Coordinator 仅对主文档区和稳定全局目标进行全宽整理。普通 Docked 只更新状态。工具局部分割和浮窗分割复用基类结果，布局保存仍通过原批量通知、Dispatcher 延后捕获和串行队列执行。详见 [P1 计划](../../../../docs/roadmap/host-v11-p1-tool-split-fix-plan.md)。
 
 ### 5.1 全屏会话
 

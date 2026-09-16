@@ -25,6 +25,8 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 | 自动保存合并、修订顺序、失败重试与释放 | DockLayoutSaveQueueTests |
 | DPI/屏幕工作区与最大化/最小化 | DockScreenPlacementTests、ApplicationAndWindowTests |
 | 四向边栏展开、正文复用、快捷键与 Owner | AutoHideRestoreVisualTests、WorkbenchCommandPresentationUiTests、既有视觉回归 |
+| P1 局部分割、全宽兼容、分隔条及父引用、主骨架目标判定 | DockFourWayLayoutTests.ToolSplit、WorkspaceSessionAndDockFactoryTests |
+| P1 真实 DockManager 同组/跨组/整组移动、浮窗分割回停、V3 文件重启和中间状态不落盘 | DockToolSplitUiTests（Headless 窗口协议，非桌面鼠标验收） |
 
 跨进程写锁使用当前 Release DLL 的真实 internal Store，需 PowerShell 7.6 / .NET 10：
 
@@ -54,6 +56,16 @@ dotnet run --project Host/MyAvaloniaManagement -c Release --no-build
 
 记录 OS、屏幕与缩放、源码/产物身份、操作步骤和结果，不记录业务文档正文或私人路径。缺环境的项目留在 [集中待办](../roadmap/README.md)。
 
+### V11-P1 桌面补验步骤
+
+1. 在隔离数据根打开两个 Tool，投放到目标中心提示的下方，复现用户截图动作；检查两个工具只在原工具区域上下排列、侧边邻居不移动。
+2. 重复上方投放，调整分隔条比例；交换目标组首中尾位置并连续操作，确认内容、工具数量与交互仍正常。
+3. 整组浮动，在浮窗内上下分割，再整组拖回主窗工具目标；检查无空白残留窗口、View 状态和后台任务延续。
+4. Tool 放到主文档区及拆分文档子组的上下提示，确认仍全宽；检查外侧全局提示、Document 四向分割、全屏限制与关闭取消。
+5. 隐藏并重新显示工具，正常退出、重启，核对组顺序、上下关系、比例、显隐和窗口归属。文档不会自动重开。
+
+每项分别填写实际通过、失败或未执行及原因，不以自动化结果代填。遇到 `LAYOUT_TOOL_NORMALIZATION_SKIPPED` 时，原因码表示整理前提不满足；先记录当前有效树和复现步骤，不重置用户布局或把全部拖放视为可回滚事务。修复事实见 [P1 记录](../archive/records/host-v11/p1-tool-split-fix.md)。
+
 ## 文件与故障排查
 
 先退出所有使用该数据根的实例，再在隔离目录制作夹具。使用专项契约中的合法 V3；对主文件、备份分别构造损坏、未知未来 schema、文件占用。验证读取优先级及写入失败后有效文件仍在。
@@ -63,3 +75,5 @@ dotnet run --project Host/MyAvaloniaManagement -c Release --no-build
 运行时恢复记录保留隐藏与不可用工具；磁盘文件不是当前可见树的完整序列化。排查时区分“组记录存在”和“原生窗口存在”。主窗口固定骨架 ID 与 V3 的稳定分组 ID 也不是同一概念。
 
 最终验证前先定稿 MD：这些文档会嵌入 Host DLL。最终运行 ID、TRX 摘要、源码差异与产物哈希记录在非嵌入的 `docs/archive/records/host-v11/final-development-evidence.json`，不要在验证后修改嵌入文档并继续沿用旧产物哈希。
+
+V11-P1 使用独立的 [p1-final-development-evidence.json](../archive/records/host-v11/p1-final-development-evidence.json)，不覆盖 V11 原证据；安装目录部署也不包含在 P1 源码补丁验证中。

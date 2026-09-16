@@ -89,7 +89,9 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         _toolDockCoordinator = new ToolDockCoordinator(
             DockFactory,
             _workspaceBuilder,
-            GetToolAlignment);
+            GetToolAlignment,
+            reason => _diagnostics?.Report(new HostDiagnosticDraft("LAYOUT_TOOL_NORMALIZATION_SKIPPED", HostDiagnosticPhase.Layout)
+            { StableId = reason }));
     }
 
     /// <summary>取得只处理 Dock Framework 的适配工厂。</summary>
@@ -627,8 +629,16 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
 
     void IWorkspaceDockCallbacks.OnDockableDocked(IDockable? dockable, DockOperation operation)
     {
-        _toolDockCoordinator.OnDockableDocked(dockable, operation, _rootDock);
         NotifyLayoutChanged();
+    }
+
+    void IWorkspaceDockCallbacks.OnDockSplitCompleted(IDock originalTarget, IDockable insertedDock, DockOperation operation)
+    {
+        // Session 确认主窗口归属；局部遍历不进入 Windows，避免浮窗同名 Dock 命中主骨架策略。
+        if (_rootDock is not { } root ||
+            !DockTreeNavigator.Enumerate(root).Any(item => ReferenceEquals(item, originalTarget)) ||
+            !DockTreeNavigator.Enumerate(root).Any(item => ReferenceEquals(item, insertedDock))) return;
+        _toolDockCoordinator.OnDockSplitCompleted(originalTarget, insertedDock, operation, root);
     }
 
     void IWorkspaceDockCallbacks.OnDockableHidden(IDockable? dockable)

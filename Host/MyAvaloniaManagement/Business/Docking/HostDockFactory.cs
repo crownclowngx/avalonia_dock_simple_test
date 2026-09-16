@@ -32,8 +32,11 @@ internal interface IWorkspaceDockCallbacks
     /// <summary>按规范 ID 解析当前会话拥有的 Dockable。</summary>
     IDockable? ResolveDockable(string dockableId);
 
-    /// <summary>Docked 基类行为完成后，归一化宿主要求的稳定结构。</summary>
+    /// <summary>保留一般停靠状态通知；此回调没有目标信息，不能据此改变分割策略。</summary>
     void OnDockableDocked(IDockable? dockable, DockOperation operation);
+
+    /// <summary>基类分割完成并挂接新组后，携带原目标执行宿主的有限兼容策略。</summary>
+    void OnDockSplitCompleted(IDock originalTarget, IDockable insertedDock, DockOperation operation);
 
     /// <summary>Tool 已隐藏后，提交只读状态与布局变化通知。</summary>
     void OnDockableHidden(IDockable? dockable);
@@ -172,7 +175,7 @@ internal sealed class HostDockFactory : Factory
         base.PinDockable(dockable);
     }
 
-    /// <summary>先保持 Dock 基类语义，再让 Session 归一化稳定停靠结构。</summary>
+    /// <summary>先保持 Dock 基类语义，再让 Session 更新一般停靠状态。</summary>
     public override void OnDockableDocked(IDockable? dockable, DockOperation operation)
     {
         base.OnDockableDocked(dockable, operation);
@@ -321,11 +324,29 @@ internal sealed class HostDockFactory : Factory
         UpdateFloatingPolicies();
     }
 
+    /// <summary>
+    /// 目标引用属于本次同步调用，不缓存为全局“当前拖放”。框架可能先 Move 再 Split，
+    /// 此处仅在插入组实际挂接后报告完成；一般 Docked 事件仍由基类按原顺序发出。
+    /// </summary>
     public override void SplitToDock(IDock dock, IDockable dockable, DockOperation operation)
     {
         if (WindowContext.HasFullscreenContent) return;
         using var change = BeginLayoutChange();
+        // 基类对不在父列表中的目标直接返回；已挂接的传入节点不能把这类空操作伪装成完成。
+        // 不合法的 operation 仍交给基类抛错，不能由适配层悄悄改变框架契约。
+        var splitRequested = dock.Owner is IDock { VisibleDockables: { } siblings } && siblings.Contains(dock);
         base.SplitToDock(dock, dockable, operation);
+        var callbacks = GetCallbacks();
+        if (splitRequested && callbacks.RootDock is { } root && DockTreeNavigator.IsDockableAttached(root, dockable))
+        {
+            // 锁定 Dock 的同方向优化直接插入分隔条，却只初始化新内容组。补齐本次父容器中
+            // 无 Owner 的分隔条，保持比例拖动和后续清理的框架归属；不重新初始化整个窗口树。
+            if (dockable.Owner is IProportionalDock { VisibleDockables: { } children } parent)
+                foreach (var splitter in children.OfType<IProportionalDockSplitter>().Where(item => item.Owner is null).ToArray())
+                    InitDockable(splitter, parent);
+            callbacks.OnDockSplitCompleted(dock, dockable, operation);
+        }
+        UpdateFloatingPolicies();
     }
 
     private bool CanMigrate(IDockable item) => !WindowContext.HasFullscreenContent &&

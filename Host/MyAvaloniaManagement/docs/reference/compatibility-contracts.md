@@ -254,7 +254,7 @@ reader 不读取 manifest v1，也不存在 v1/v2 双 reader；清单只解决�
 - 生产与 Harness 只通过规范 `Documents` Locator 或 Workspace Session 取得 Document Dock；`Files` 查询不存在；
 - `Plug` 是已删除的临时兼容别名，不得扩散到新消费者；
 - Tool 支持 Left、Right、Top、Bottom；
-- Top/Bottom 使用工作区全宽稳定停靠点；
+- Tool 对主窗口 DocumentDock（含文档子组）以及明确的主骨架全局目标执行 Top/Bottom 时使用全宽稳定停靠点；Tool 对 Tool 及浮窗内分割保留局部结构，不按 Top/Bottom 一概归一化；
 - 关闭 Tool 表示隐藏，之后恢复同一实例；
 - Pinned 表示仍显示，不等同于关闭隐藏；
 - 最后一个 Tool 隐藏后停靠点被移除时，恢复必须重建同一稳定节点；
