@@ -3,7 +3,7 @@ using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Models.Tools;
 
-internal enum ToolLayoutState { Hidden, Docked, AutoHidden }
+internal enum ToolLayoutState { Hidden, Docked, AutoHidden, Floating }
 
 /// <summary>
 /// 表示 Tool 管理界面可以读取的一项不可变工作区状态。
@@ -29,6 +29,7 @@ internal sealed record ToolWorkspaceState(
     public string StatusText => UnavailableReason.Length > 0 ? UnavailableReason : LayoutState switch
     {
         ToolLayoutState.Docked => "已停靠",
+        ToolLayoutState.Floating => "浮动窗口",
         ToolLayoutState.AutoHidden => "自动收起",
         ToolLayoutState.Hidden => "已隐藏",
         _ => "尚未就绪"

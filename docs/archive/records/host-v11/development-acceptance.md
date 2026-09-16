@@ -35,3 +35,9 @@ Dock.Avalonia `12.1.0.6` 的本地 NuGet 元数据对应上游提交 `cc08602d02
 新增 V3 有限节点记录、结构校验、严格 JSON 和 V2 纯转换。窗口正常坐标与屏幕参考、隐藏工具组、工具回停位置具有独立语义；没有保存 Document 实例或业务内容。生产仍使用旧布局链，待后续阶段整体切换。
 
 执行 `dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter FullyQualifiedName~DockLayoutV3Tests`：13/13 通过，无失败、跳过或构建警告。覆盖往返、负坐标、重复/未知/缺失字段、错误类型、未来格式、超大文件、重复占位、非法活动项、循环和 V2 显隐/顺序/比例转换。
+
+## G2 跨窗口查询
+
+新增工作区级遍历与实际浮窗定位，保留稳定主布局的局部 FindDockById。工具显隐与页面查找覆盖浮窗，活动目标先还原实际窗口，Top/Bottom 的主骨架归一化跳过浮窗根。
+
+运行 Host Unit 的 DockWorkspaceNavigationTests、WorkspaceSessionAndDockFactoryTests、ToolCenterTests 专项：28/28 通过。包含嵌套 Windows 回边去重、同名主/浮窗 Dock 局部查询，以及原 Workspace 与工具中心回归。浮动开关尚未开放，原生窗口回归继续在 G3/G4 完成。

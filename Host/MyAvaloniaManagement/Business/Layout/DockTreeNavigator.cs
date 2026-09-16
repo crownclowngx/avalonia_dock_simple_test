@@ -13,6 +13,34 @@ namespace MyAvaloniaManagement.Business.Layout;
 /// </summary>
 internal static class DockTreeNavigator
 {
+    /// <summary>
+    /// 遍历整个工作区的可见结构和浮窗根。只跟随 children/Windows，按引用去重；绝不沿 Owner 回边。
+    /// 原 Enumerate/FindDockById 保持单窗口含义，稳定主骨架查询不能意外命中浮窗。
+    /// </summary>
+    internal static IEnumerable<IDockable> EnumerateWorkspace(IDockable root)
+    {
+        var seen = new HashSet<IDockable>(ReferenceEqualityComparer.Instance);
+        var pending = new Stack<IDockable>();
+        pending.Push(root);
+        while (pending.TryPop(out var node))
+        {
+            if (!seen.Add(node)) continue;
+            yield return node;
+            if (node is IRootDock { Windows: { } windows })
+                foreach (var window in windows.Reverse())
+                    if (window.Layout is { } layout) pending.Push(layout);
+            if (node is IDock { VisibleDockables: { } children })
+                foreach (var child in children.Reverse()) pending.Push(child);
+        }
+    }
+
+    internal static IEnumerable<IDockWindow> EnumerateWindows(IDockable root) => EnumerateWorkspace(root)
+        .OfType<IRootDock>().SelectMany(r => r.Windows ?? []).Distinct();
+
+    /// <summary>返回实际承载目标的浮窗；主窗口中的目标返回 null，不按标题匹配。</summary>
+    internal static IDockWindow? FindWindow(IDockable root, IDockable target) => EnumerateWindows(root)
+        .FirstOrDefault(w => w.Layout is { } layout && Enumerate(layout).Any(n => ReferenceEquals(n, target)));
+
     internal static IEnumerable<IDockable> Enumerate(IDockable root)
     {
         yield return root;
@@ -45,15 +73,10 @@ internal static class DockTreeNavigator
     }
 
     internal static bool IsDockAttached(IDock root, IDock target) =>
-        ReferenceEquals(root, target) ||
-        root.VisibleDockables?
-            .OfType<IDock>()
-            .Any(child => IsDockAttached(child, target)) == true;
+        EnumerateWorkspace(root).Any(node => ReferenceEquals(node, target));
 
     internal static bool IsDockableAttached(IDock root, IDockable target) =>
-        root.VisibleDockables?.Any(dockable =>
-            ReferenceEquals(dockable, target) ||
-            dockable is IDock child && IsDockableAttached(child, target)) == true;
+        EnumerateWorkspace(root).Any(node => ReferenceEquals(node, target));
 
     internal static bool IsToolPinned(IDock dock, IDockable tool)
     {
@@ -73,32 +96,16 @@ internal static class DockTreeNavigator
 
     internal static ToolDock? FindToolDock(IDock dock, IDockable tool)
     {
-        if (dock is ToolDock toolDock &&
-            toolDock.VisibleDockables?.Contains(tool) == true)
-        {
-            return toolDock;
-        }
-
-        return dock.VisibleDockables?
-            .OfType<IDock>()
-            .Select(child => FindToolDock(child, tool))
-            .FirstOrDefault(result => result is not null);
+        return EnumerateWorkspace(dock).OfType<ToolDock>()
+            .FirstOrDefault(group => group.VisibleDockables?.Contains(tool) == true);
     }
 
     internal static IDocumentDock? FindDocumentDock(
         IDock dock,
         IDockable document)
     {
-        if (dock is IDocumentDock documentDock &&
-            documentDock.VisibleDockables?.Contains(document) == true)
-        {
-            return documentDock;
-        }
-
-        return dock.VisibleDockables?
-            .OfType<IDock>()
-            .Select(child => FindDocumentDock(child, document))
-            .FirstOrDefault(result => result is not null);
+        return EnumerateWorkspace(dock).OfType<IDocumentDock>()
+            .FirstOrDefault(group => group.VisibleDockables?.Contains(document) == true);
     }
 
     internal static void RemoveFromHiddenDockables(

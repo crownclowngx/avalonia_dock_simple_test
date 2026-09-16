@@ -34,14 +34,28 @@ internal sealed partial class WorkspaceSession
     {
         var page = _publishedPages.Keys.FirstOrDefault(candidate => candidate.PageId == id);
         if (page is null || !CanActivatePage(page)) return false;
-        DockFactory.SetActiveDockable(page);
-        DockFactory.SetFocusedDockable(_rootDock!, page);
+        ActivateDockable(page);
         PublishActiveDocumentIfChanged(page);
         return true;
     }
 
     private bool IsPublishedPage(ManagedDocumentDockable page) => !_disposed && _rootDock is not null &&
         _ownedDocuments.Contains(page) && DockTreeNavigator.FindDocumentDock(_rootDock, page) is not null;
+
+    /// <summary>活动目标和焦点属于实际承载窗口；最小化浮窗先还原，再激活同一实例。</summary>
+    internal void ActivateDockable(Dock.Model.Core.IDockable target)
+    {
+        if (_rootDock is null) return;
+        var window = DockTreeNavigator.FindWindow(_rootDock, target);
+        if (window?.Host is { } host)
+        {
+            if (host.GetWindowState() == Dock.Model.Core.DockWindowState.Minimized)
+                host.SetWindowState(Dock.Model.Core.DockWindowState.Normal);
+            host.SetActive();
+        }
+        DockFactory.SetActiveDockable(target);
+        DockFactory.SetFocusedDockable(window?.Layout ?? DockFactory.FindRoot(target, _ => true) ?? _rootDock, target);
+    }
 
     private bool CanActivatePage(ManagedDocumentDockable page) => _acceptingCreations && IsPublishedPage(page) &&
         !_documentCloseCoordinator.IsClosing(page) &&

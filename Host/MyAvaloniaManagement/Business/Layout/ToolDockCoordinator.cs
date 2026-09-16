@@ -144,7 +144,7 @@ internal sealed class ToolDockCoordinator(
         }
 
         var root = factory.FindRoot(sourceDock, _ => true) ?? fallbackRoot;
-        if (root is null)
+        if (root is null || root.Window is not null)
         {
             return;
         }

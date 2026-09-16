@@ -16,7 +16,7 @@ internal sealed class ToolWorkspaceReadModel(WorkspaceSession session)
     internal bool CanOpen(string id) => session.CanOperateTools && session.IsToolAvailable(id) && session.CreatedTools.ContainsKey(id);
     internal IReadOnlyList<ToolWorkspaceState> Capture()
     {
-        var nodes = session.RootDock is { } root ? DockTreeNavigator.Enumerate(root).ToArray() : [];
+        var nodes = session.RootDock is { } root ? DockTreeNavigator.EnumerateWorkspace(root).ToArray() : [];
         var roots = nodes.OfType<IRootDock>().ToArray();
         var hidden = roots.SelectMany(item => item.HiddenDockables ?? []).ToHashSet();
         var pinned = roots.SelectMany(item =>
@@ -30,8 +30,9 @@ internal sealed class ToolWorkspaceReadModel(WorkspaceSession session)
             session.CreatedTools.TryGetValue(id, out var tool);
             ToolLayoutState? layout = tool is null || session.RootDock is null ? null :
                 hidden.Contains(tool) ? ToolLayoutState.Hidden : pinned.Contains(tool) ? ToolLayoutState.AutoHidden :
-                docked.Contains(tool) ? ToolLayoutState.Docked : ToolLayoutState.Hidden;
-            var visible = layout is ToolLayoutState.Docked or ToolLayoutState.AutoHidden;
+                docked.Contains(tool) ? DockTreeNavigator.FindWindow(session.RootDock, tool) is not null ?
+                    ToolLayoutState.Floating : ToolLayoutState.Docked : ToolLayoutState.Hidden;
+            var visible = layout is ToolLayoutState.Docked or ToolLayoutState.AutoHidden or ToolLayoutState.Floating;
             var reason = !entry.IsAvailable ? entry.UnavailableReason : session.RootDock is null ? "工作区尚未就绪" :
                 !session.CanOperateTools ? "工作区正在退出" : tool is null ? "工具激活失败，请查看插件诊断" : string.Empty;
             return new ToolWorkspaceState(id, entry.Descriptor.DisplayName, visible, visible && session.CanOperateTools)

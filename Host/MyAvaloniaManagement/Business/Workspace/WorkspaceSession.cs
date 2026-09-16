@@ -148,7 +148,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
             var dock = DockTreeNavigator.FindDocumentDock(_rootDock, document);
             if (dock is not null)
             {
-                DockFactory.SetActiveDockable(document);
+                ActivateDockable(document);
                 return true;
             }
         }
@@ -156,7 +156,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         if (_documentRecoveryRegistry.TryGetBySourcePath(filePath, out var recovered) &&
             DockTreeNavigator.FindDocumentDock(_rootDock, recovered) is { } recoveredDock)
         {
-            DockFactory.SetActiveDockable(recovered);
+            ActivateDockable(recovered);
             return true;
         }
 
@@ -405,6 +405,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
             toolTypeId.Value);
         if (changed)
         {
+            ActivateDockable(_createdTools[toolTypeId.Value]);
             NotifyLayoutChanged();
         }
         return changed;
