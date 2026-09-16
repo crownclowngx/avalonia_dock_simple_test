@@ -7,12 +7,12 @@ V6.1 同时提供插件专属图标和 `MyAvaloniaManagement.Icons` 公共矢量
 
 | 组件 | 版本 | 职责 |
 | --- | --- | --- |
-| Core / UI SDK | 3.4.0 | 保持同版本；UI 新增可选注册接口与纯值描述 |
+| Core / UI SDK | 3.4.1 | 保持同版本；图标契约兼容 3.4.0 |
 | MyAvaloniaManagement.Icons | 1.0.0 | 独立 .NET 10 资源包，无 SDK/Avalonia/DI 依赖 |
 | Plugin.Build | 1.1.3 | 允许图标资源 DLL 作为私有依赖部署及打包 |
-| Plugin.Templates | 1.4.1 | 包含公共资源注册、页面直接使用和独立预览示例 |
+| Plugin.Templates | 1.4.2 | 使用 Avalonia 12.1.2 的本地候选模板 |
 
-调用 `AddIcon` 的插件需要支持 SDK 3.4.0 的 Host，manifest 的 `sdk.minInclusive` 应为 `3.4.0`。
+`AddIcon` 最初在 SDK 3.4.0 提供。本模板按 SDK 3.4.1 编译，生成的 manifest 最低版本为 `3.4.1`；既有 3.4.0 插件无需因图标契约改变清单。
 仅在自己的 View 使用资源包的旧 SDK 插件，不因资源包本身被强制升级 SDK。
 资源包升级后要重新构建并交付消费者，不会自动替换已安装程序中的资源。
 

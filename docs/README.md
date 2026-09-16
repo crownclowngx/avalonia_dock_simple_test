@@ -10,7 +10,9 @@
 
 ## V9 Avalonia / Dock 升级与定制整理
 
-- [Host V9 可执行升级方案](./design/host-v9-avalonia-dock-upgrade-plan.md)：目标 Avalonia 12.1.2 / Dock 12.1.0.6；包含 G0–G8 执行步骤、旧插件兼容、定制保留/删除/改造决策、验证命令与回退。当前为方案，尚未实施。
+- [Host V9 可执行升级方案](./design/host-v9-avalonia-dock-upgrade-plan.md)：Avalonia 12.1.2 / Dock 12.1.0.6；代码已实施，开发验证与人工待验收项以专用记录为准。
+- [V9 升级使用说明](./quick-start/host-v9-upgrade.md)：旧插件是否重编译、本地 SDK/模板候选使用及复查命令。
+- [V9 专用开发验收](./plan-history/host-v9/development-acceptance.md)：定制处置、先红后绿回归、真实旧 DLL 与本地开发门禁证据。
 - [升级可行性评估](./design/avalonia-dock-upgrade-assessment-20260916.md)：隔离编译、713 项既有测试及 12 个旧插件加载探测；V9 补充了“当前禁止浮动”的源码事实。
 
 ## V8 交互收口与认知减负
@@ -29,7 +31,7 @@
 
 ## 快速开始
 
-> 当前 V6.1 包版本：Core/UI SDK `3.4.0`、Workflow SDK `1.0.0`、Icons `1.0.0`、Build `1.1.3`、
+> V6.1 已发布基线：Core/UI SDK `3.4.0`、Workflow SDK `1.0.0`、Icons `1.0.0`、Build `1.1.3`、
 > Templates `1.4.1`；外部插件版本不变：WorkflowStudio `1.2.0` 与 ClassicGame `1.1.0`。
 > 外部作者可以在不克隆 Host 源码的情况下使用 `dotnet new myavalonia-plugin` 创建、独立调试、测试和
 > 打包插件。manifest schema 仍为 2，当前交付平台为 Windows x64。

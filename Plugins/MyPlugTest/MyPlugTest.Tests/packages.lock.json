@@ -225,7 +225,7 @@
           "Irihi.Ursa": "[2.1.0, 2.1.0]",
           "Irihi.Ursa.Themes.Semi": "[2.1.0, 2.1.0]",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, 10.0.10]",
-          "MyAvaloniaManagement.PluginSdk": "[3.4.0, )",
+          "MyAvaloniaManagement.PluginSdk": "[3.4.1, )",
           "Semi.Avalonia": "[12.1.0, 12.1.0]"
         }
       },
@@ -237,8 +237,8 @@
           "Flurl.Http": "[4.0.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
           "MyAvaloniaManagement.Icons": "[1.0.0, )",
-          "MyAvaloniaManagement.PluginSdk": "[3.4.0, )",
-          "MyAvaloniaManagement.PluginSdk.UI": "[3.4.0, )"
+          "MyAvaloniaManagement.PluginSdk": "[3.4.1, )",
+          "MyAvaloniaManagement.PluginSdk.UI": "[3.4.1, )"
         }
       },
       "Avalonia": {

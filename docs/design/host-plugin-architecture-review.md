@@ -312,7 +312,7 @@ Factory 或容器；`ToolManagementViewModel` 只依赖 `ToolWorkspaceReadModel`
 
 | 能力 | 状态 | 当前证据与边界 |
 | --- | --- | --- |
-| .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.0、Dock 12.0.0.2；产品/SDK、构建和包版本分别由 `Directory.Version.props`、`Directory.Build.props`、`Directory.Packages.props` 集中管理 |
+| .NET/UI 技术基座 | 已实现 | .NET SDK 10.0.302、`net10.0`、Avalonia 12.1.2、Dock 12.1.0.6；产品/SDK、构建和包版本分别由 `Directory.Version.props`、`Directory.Build.props`、`Directory.Packages.props` 集中管理；SDK 3.4.1 为 V9 本地候选 |
 | 插件目录扫描 | 已实现 | 按规范化根目录缓存线程安全快照；只加载清单声明且携带 deps 的入口，模块结构错误按目录隔离 |
 | Managed-only V2 | 已实现 | Host 与四个业务插件只使用最终 UI SDK 精确入口；普通类型冒充模块会在构造前隔离 |
 | 显式扩展贡献 | 已实现 V3 G7 | Host 由不可变 `HostWorkspaceCatalog` 声明；四插件经 Builder 校验后发布到只含真实插件的不可变 `PluginRegistry`；`WorkspaceCatalog` 只读合并 |

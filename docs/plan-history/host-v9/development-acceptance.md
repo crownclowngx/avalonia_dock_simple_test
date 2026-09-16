@@ -28,8 +28,8 @@ SDK 3.4.1 / Templates 1.4.2 是本地开发候选；Host 产品保持 3.0.0，3.
 | G3 指针保护 | 已完成（自动化） | 修正 Direct 订阅；移交后退出恢复职责 |
 | G4 回收器 | 已完成（自动化） | 安全解绑、绑定保留、最终释放及实例传播 |
 | G5 布局/Factory | 已完成（自动化） | 保留实现；新增集合及回调异常回归 |
-| G6 SDK/模板及本地验证 | 待执行 | 候选打包不等于发布 |
-| G7 旧插件 | 待执行 | 冻结 DLL 加载、组合与视图测试 |
+| G6 SDK/模板及本地验证 | 候选验证通过，完整 verify 待汇总 | 仓库外生成、锁定还原、构建、4 项测试及真实 ZIP Host 验收通过 |
+| G7 旧插件 | 自动层通过；真实业务待验收 | 12 个旧 DLL / 60 个视图；部分真实 Workspace 回归 |
 | G8 发布/部署 | 不在本轮 | 按用户要求推迟 |
 
 ## SOLID 与设计约束
@@ -68,3 +68,38 @@ SDK 3.4.1 / Templates 1.4.2 是本地开发候选；Host 产品保持 3.0.0，3.
 - 证据：`artifacts/host-v9/regressions/` 中 `g3-before/after`、`g4-before/after`、`g2`、`g5`、`g2345-ui` TRX。
 - 事件实现参考：[Avalonia InputElement](https://github.com/AvaloniaUI/Avalonia/blob/12.1.2/src/Avalonia.Base/Input/InputElement.cs)、[Pointer](https://github.com/AvaloniaUI/Avalonia/blob/12.1.2/src/Avalonia.Base/Input/Pointer.cs)。实际 Windows 多屏/DPI/失活焦点体验仍待人工验证，不能由 Headless 结果代替。
 - 后续审查补充“捕获交给标签后代时，共同祖先不会收到 Lost”的两项回归；结束边界再次核对指针所有权，当前指针专项合计 9/9，见 `g3-final.trx`。
+
+### G6：SDK 与模板本地候选
+
+- Core/UI SDK 的包、FileVersion、AssemblyVersion 同步为 3.4.1 / 3.4.1.0，原 v3 API 基线未改写。产品保留 3.0.0。
+- UI Profile 精确依赖 Avalonia 12.1.2；模板 1.4.2 精确引用 Core/UI 3.4.1、Desktop 12.1.2，新插件 manifest 最低 SDK 为 3.4.1。
+- 本地 feed 使用独立 NuGet cache；package source mapping 将 Core/UI 仅映射到候选 feed，其他依赖从 NuGet.org 获取。三个嵌入模板锁文件重新生成并随源码提交。
+- 安装本地 nupkg 到独立 hive，在仓库外临时目录生成点分名称 `Independent.V9`，排除了主仓 Directory.Build.targets 的隐式导入；locked-mode 还原成功，Release 构建 0 警告/错误，4/4 测试通过。
+- `BuildManagedPluginPackage` 生成真实 ZIP，在独立 Controls 解压后通过新 Host：加载/共享身份/DI/全部声明视图，以及真实 Document 创建→分割→关闭、Tool 显示→隐藏→恢复共 2/2 外部用例。
+- 证据：`artifacts/host-v9/feed/`、`template-tests/independent-template.trx`、`external-tests/generated-package.trx`、`generated-package/`；独立项目位置保存在 `template-workspace.txt`。全部是开发候选，未上传公开源。
+
+### G7：原样保留的旧插件
+
+冻结副本使用旧 SDK 3.4.0 编译。验收时未重编译这 12 个产物，也未提升它们的版本或清单。真实加载上下文与入口程序集路径均被断言；Avalonia 和 SDK 引用解析到 Default ALC 的 Host 程序集。
+
+| 冻结插件目录 | 版本 | 文档声明 | 工具声明 | 视图创建/布局/复用/释放 |
+| --- | --- | ---: | ---: | ---: |
+| BaiduDiskPlugin | 1.0.1 | 1 | 1 | 2 |
+| BiliDownloader | 3.0.1 | 1 | 1 | 2 |
+| ClassicGamePlugin | 1.1.1 | 14 | 0 | 14 |
+| DaTang | 3.0.1 | 2 | 0 | 2 |
+| FractalArtPlugin | 1.0.1 | 1 | 0 | 1 |
+| ImageLabPlugin | 1.0.1 | 21 | 0 | 21 |
+| LayerUnpackPlugin | 1.0.1 | 3 | 0 | 3 |
+| MyPlugTest | 3.0.0 | 4 | 1 | 5 |
+| NovelGeneratePlugin | 1.3.0 | 1 | 2 | 3 |
+| VideoSecurityPlayer | 3.1.1 | 4 | 0 | 4 |
+| WorkflowStudio | 1.2.1 | 1 | 0 | 1 |
+| XianCaiWorkerPlugin | 1.4.0 | 2 | 0 | 2 |
+| 合计 | — | 55 | 5 | 60 |
+
+- 12/12 通过 DLL、类型解析、真实 DI 组合及全部声明视图测试。视图在这一层未绑定业务模型，也未启动插件生命周期；不能由此推断原生播放/后台任务已通过。
+- 另用旧 MyPlugTest 和 ClassicGame 的真实模型，通过 18 个 Document 创建、正文挂载、向右分割、同 View 复用和最终关闭；MyPlugTest 的 1 个 Tool 通过隐藏/恢复。2/2 用例通过。
+- 合计 14/14，零跳过；证据 `artifacts/host-v9/external-tests/old-binaries.trx`。模板 ZIP 的 2 项验收另计，不混入旧插件结果。
+- 外部验收夹具仅在 `HostExternalPluginAcceptance=true` 时编译，使用独立构建目录和显式路径输入；默认 Gate 不依赖个人安装目录。命令见 [V9 使用说明](../../quick-start/host-v9-upgrade.md)。
+- G7 的原生播放、外部账号/数据库/下载/定时任务以及真实 Windows 操作仍待对应业务验收；本轮没有运行这些任务或将其标为通过。

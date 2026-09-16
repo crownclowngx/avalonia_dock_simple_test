@@ -10,6 +10,8 @@
 
 本方案将 Host 从 Avalonia 12.1.0 / Dock 12.0.0.2 升到 Avalonia 12.1.2 / Dock 12.1.0.6，并处理升级涉及的 Host 定制。
 
+实施进展和实际证据以 [V9 专用开发验收](../plan-history/host-v9/development-acceptance.md) 为准；[使用说明](../quick-start/host-v9-upgrade.md)记录当前候选包与旧插件边界。下文的原始评估、阶段要求与发布步骤继续保留，不能将未执行的人工/发布步骤视为完成。
+
 完成条件：
 
 1. 框架依赖、锁文件、Host 与 SDK 编译基线一致，Release 构建无新增警告。

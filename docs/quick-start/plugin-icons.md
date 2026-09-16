@@ -5,6 +5,8 @@ V6.1 同时提供插件专属图标和 `MyAvaloniaManagement.Icons` 公共矢量
 
 ## 版本与职责
 
+下表保留 V6.1 已发布基线。V9 本地候选为 SDK `3.4.1` / Templates `1.4.2`，图标 API 没有变化；新模板按 `3.4.1` 声明最低 Host SDK。见 [V9 说明](host-v9-upgrade.md)。
+
 | 组件 | 版本 | 职责 |
 | --- | --- | --- |
 | Core / UI SDK | 3.4.0 | 保持同版本；UI 新增可选注册接口与纯值描述 |

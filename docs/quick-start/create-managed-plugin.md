@@ -46,6 +46,8 @@ Avalonia 12 包，不需要另外安装 `Avalonia.Templates` 才能创建本插�
 
 ## 3. 安装 Managed Plugin 模板
 
+V9 开发候选 `1.4.2` 使用 SDK `3.4.1` 和 Avalonia `12.1.2`，请按 [本地候选说明](host-v9-upgrade.md) 安装。以下命令继续展示此前公开发布的 `1.4.1`，不能据此推断候选已上线。
+
 在准备存放源码的目录打开 PowerShell：
 
 ```powershell
