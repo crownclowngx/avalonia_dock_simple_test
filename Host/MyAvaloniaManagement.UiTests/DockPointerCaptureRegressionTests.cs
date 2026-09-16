@@ -97,6 +97,19 @@ public sealed class DockPointerCaptureRegressionTests
     }
 
     [AvaloniaFact]
+    public void 移动时发现左键已松开也会释放自身捕获并恢复残留状态()
+    {
+        using var scene = new PointerScene();
+        scene.StartDrag();
+        // 模拟窗口外松开后，下一次事件只携带无按键移动，没有补发 PointerReleased。
+        scene.Window.MouseMove(new Point(30, 20), RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Null(scene.Pointer!.Captured);
+        Assert.DoesNotContain(":dragging", scene.Tab.Classes);
+    }
+
+    [AvaloniaFact]
     public void 标签中的按钮点击仍由按钮处理且不被保护层捕获()
     {
         using var scene = new PointerScene();

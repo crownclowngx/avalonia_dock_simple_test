@@ -103,3 +103,9 @@ SDK 3.4.1 / Templates 1.4.2 是本地开发候选；Host 产品保持 3.0.0，3.
 - 合计 14/14，零跳过；证据 `artifacts/host-v9/external-tests/old-binaries.trx`。模板 ZIP 的 2 项验收另计，不混入旧插件结果。
 - 外部验收夹具仅在 `HostExternalPluginAcceptance=true` 时编译，使用独立构建目录和显式路径输入；默认 Gate 不依赖个人安装目录。命令见 [V9 使用说明](../../quick-start/host-v9-upgrade.md)。
 - G7 的原生播放、外部账号/数据库/下载/定时任务以及真实 Windows 操作仍待对应业务验收；本轮没有运行这些任务或将其标为通过。
+
+### 完整开发验证中的修正
+
+- 首次 verify 在 SDK 套件发现两个仍断言 AssemblyVersion 3.4.0.0 的历史断言；同步到已决策的 3.4.1.0，继续保留 Core 的 BCL-only、UI 无 Dock 以及公共 API 断言，没有降低门槛。
+- 最终指针审查再复现“窗口外松开后只有无键移动返回”的自有捕获残留：新增先红后绿用例，取消分支改为释放自有捕获再恢复视觉状态。指针专项累计 10 项。
+- 525 个冻结文件和安装目录中的对应原文件逐项 SHA-256 对比均无差异，见 `artifacts/host-v9/baseline/hash-verification.json`。

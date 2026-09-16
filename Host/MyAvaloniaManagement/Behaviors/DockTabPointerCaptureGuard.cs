@@ -242,7 +242,8 @@ internal sealed class DockTabPointerCaptureGuard : AvaloniaObject
                         RelinquishInteraction();
                     else
                     {
-                        _activePointer = null;
+                        // 窗口外松开可能只以“无按键移动”返回；不能仅清除跟踪而遗留自身捕获。
+                        ReleaseOwnedPointer();
                         ScheduleVisualRecovery();
                     }
                 }
