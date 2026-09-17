@@ -1,8 +1,10 @@
 # Dock 区域默认居中停靠实施计划
 
-> 用途：主项目实施方案与验收跟踪。状态：实现和专项自动化已接入，真实桌面待补；核对日期：2026-09-17。实际维护入口见[专项指南](../maintenance/dock-area-fill-verification.md)，最终 verify、独立缓存重建及产物身份见[开发证据](../archive/records/dock-area-fill/development-evidence.json)。不执行 AIFLOW、Windows CI 或发布门禁。
+> 用途：主项目实施方案与验收跟踪。状态：已部署，跨窗口布局崩溃待修，其余真实桌面待补；核对日期：2026-09-17。实际维护入口见[专项指南](../maintenance/dock-area-fill-verification.md)，此前 verify、独立缓存重建及产物身份见[开发证据](../archive/records/dock-area-fill/development-evidence.json)。不执行 AIFLOW、Windows CI 或发布门禁。
 
 ## 1. 目标与完成定义
+
+2026-09-17 状态补充：安装版出现 Document 拖入已有浮窗的布局崩溃，已独立复现。后续修复按[跨窗口布局崩溃方案](host-document-cross-window-layout-crash-fix-plan.md)执行；下文原有完成勾选和开发证据不代表新增故障已通过验收。
 
 解决浮动窗口回停时必须精确命中中央小按钮、按钮被浮窗遮挡后难以操作的问题。
 

@@ -1,0 +1,22 @@
+{
+  "stage": "P0",
+  "sourceCommit": "299f3388b0a11dbb9266a29768a03c756c4806a2",
+  "runtime": "Avalonia 12.1.2 official",
+  "baseline": {
+    "path": "artifacts/dock-cross-window-layout/p0/baseline.trx",
+    "sha256": "4E171D9CF72C6C8338909B4C2CF396B9973DA558B35FADA6AF751C5D006191CE",
+    "passed": 1,
+    "failed": 4,
+    "skipped": 0,
+    "note": "4 个逻辑用例：3 个失败、1 个通过；同一主窗用例的清理另报一次相同异常，因此 TRX 共 5 条。",
+    "exception": "Attempt to call InvalidateArrange on wrong LayoutManager."
+  },
+  "routeA": {
+    "path": "artifacts/dock-cross-window-layout/red/route-a.trx",
+    "sha256": "60448E0646B9DF5D3EA651FF01074462AEC1447826E095028627A865333F4934",
+    "passed": 1,
+    "failed": 1,
+    "skipped": 0,
+    "conclusion": "摘除后 UpdateLayout 只修好非重入；Arrange 内迁移仍失败。候选已撤销，选择路线 B。"
+  }
+}

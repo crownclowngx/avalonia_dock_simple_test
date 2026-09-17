@@ -1,6 +1,6 @@
 # 项目文档导航
 
-> 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-16。技术基线见[版本与交付边界](reference/platform-baseline.md)。
+> 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-17。技术基线见[版本与交付边界](reference/platform-baseline.md)。
 
 ## 使用工作台
 
@@ -40,6 +40,7 @@
 
 ## 未完成工作与历史
 
+- [Document 拖入已有浮窗崩溃修复方案](roadmap/host-document-cross-window-layout-crash-fix-plan.md)：主窗仍存活时的跨窗口布局队列冲突，含修复路线、回归矩阵与验收步骤；当前为待实施方案。
 - [V11 浮动窗口恢复与 Layout V3 计划](roadmap/host-v11-floating-windows-and-layout-v3-plan.md)：实现已接入，最终开发验证见[证据](archive/records/host-v11/final-development-evidence.json)；工具浮窗恢复位置和分组，Document 支持运行时浮动但不跨启动重开；结果见 [V11 开发记录](archive/records/host-v11/development-acceptance.md)。
 - [V10 插件兼容治理与 Host 插件看板计划](archive/plans/host-v10-plugin-compatibility-and-dashboard-plan.md)：已归档的开发计划；结果见 [V10 开发记录](archive/records/host-v10/development-acceptance.md)，业务与真机待办独立保留。
 - [待办与验收](roadmap/README.md)：待验收、发布前工作、实验、未来候选和维护决策。
