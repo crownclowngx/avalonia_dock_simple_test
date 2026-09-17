@@ -7,7 +7,7 @@
 1. [内部架构](design/architecture.md)：启动、插件组合、Workspace、Dock、文档、布局和资源所有权。
 2. [设计方法与取舍](design/design-methodology-and-tradeoffs.md)：职责边界和内部修改原则。
 3. [兼容约束](reference/compatibility-contracts.md)：SDK、身份、磁盘格式、关闭、窗口及诊断的不变量。
-4. [V12 内部职责重构方案](../../../docs/roadmap/host-v12-internal-refactor-plan.md)：已接入 Registry 校验、UI 刷新调度与工作区查询快照；测试矩阵和命令见[专用开发验证](../../../docs/maintenance/host-v12-refactor-verification.md)，取舍与结果见[开发记录](../../../docs/archive/records/host-v12/development-acceptance.md)。
+4. [V12 内部职责重构方案](../../../docs/roadmap/host-v12-internal-refactor-plan.md)：已接入 Registry 校验、UI 刷新调度与工作区查询快照；测试矩阵和命令见[专用开发验证](../../../docs/maintenance/host-v12-refactor-verification.md)，取舍与结果见[开发记录](../../../docs/archive/records/host-v12/development-acceptance.md)，安装版检查见[本机部署与手工影响范围](../../../docs/maintenance/host-v12-local-deployment.md)。
 
 版本以[集中基线](../../../docs/reference/platform-baseline.md)为准；Document、Layout、Workflow 和 Command 各自的详细契约由[总导航](../../../docs/README.md)进入，不在本入口重复维护。
 

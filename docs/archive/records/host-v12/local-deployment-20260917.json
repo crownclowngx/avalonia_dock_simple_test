@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "recordType": "host-v12-local-single-exe-deployment",
+  "status": "pending-build-and-deployment",
+  "target": "D:\\data\\avalonia",
+  "refactorRevision": "85a3bfee8da966c49ee3288152b8845946ae3b56",
+  "authorization": "用户要求提交 Git、编译并以单文件自包含模式部署到指定目录，随后自行手工验收。",
+  "manualAcceptance": "M01-M08 pending user verification; see docs/maintenance/host-v12-local-deployment.md"
+}

@@ -28,7 +28,7 @@
 | 任务 | 权威说明 |
 | --- | --- |
 | 理解当前 Host 实现与取舍 | [内部架构入口](../Host/MyAvaloniaManagement/docs/README.md) |
-| 按 V12 重构 Host 内部职责 | [重构方案](roadmap/host-v12-internal-refactor-plan.md)、[专用开发验证](maintenance/host-v12-refactor-verification.md)，结果见[开发记录](archive/records/host-v12/development-acceptance.md) |
+| 按 V12 重构 Host 内部职责 | [重构方案](roadmap/host-v12-internal-refactor-plan.md)、[专用开发验证](maintenance/host-v12-refactor-verification.md)、[开发记录](archive/records/host-v12/development-acceptance.md)、[本机部署与手工影响范围](maintenance/host-v12-local-deployment.md) |
 | 修改外部可观察行为 | [兼容约束](../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) |
 | 修改保存与恢复 | [Document 持久化](reference/document-persistence.md) |
 | 修改停靠布局 | [Layout V3](reference/dock-layout-snapshot-v3.md)、[浮窗开发验证](maintenance/floating-layout-verification.md)、[区域回停专项](maintenance/dock-area-fill-verification.md)、[跨窗布局修复](maintenance/dock-cross-window-layout-verification.md) |

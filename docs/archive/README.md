@@ -34,6 +34,7 @@
 
 - [Host 内部职责重构开发记录](records/host-v12/development-acceptance.md)
 - [最终本地开发验证证据](records/host-v12/final-development-evidence.json)
+- [V12 单文件自包含本机部署证据](records/host-v12/local-deployment-20260917.json)
 
 ### host-v11
 
