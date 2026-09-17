@@ -1,7 +1,544 @@
 {
-  "status": "implementation-ready-final-verification-pending",
+  "schemaVersion": 1,
+  "date": "2026-09-17",
+  "status": "source-and-automated-verification-complete-native-desktop-pending",
   "route": "B",
-  "identity": "avalonia-12.1.2-host-layout.1",
-  "nativeDesktop": "not-executed",
-  "installationDeployment": "not-executed"
+  "decision": "路线 A 摘除后刷新在 Arrange 重入时仍失败；采用固定框架内部队列归属检查，不修改正文生命周期。",
+  "implementationCommit": "19c0b3b60846a4a924a05e3a60bdece113ad6810",
+  "verifiedSource": {
+    "revision": "19c0b3b60846a4a924a05e3a60bdece113ad6810",
+    "tree": "558e1bcf5b16f7c0b08be32a3b89e0ebdd24562f",
+    "clean": true,
+    "files": 936,
+    "sha256": "5A65547820AB01DA25D10F125816D30D2B432F0E03F10D4C3D7E9538EA391A26"
+  },
+  "evidenceScope": "最终提交仅补非嵌入 JSON；Markdown 和编译源码均取自 implementationCommit。",
+  "gate": {
+    "runId": "20260917-021833-19c0b3b60846",
+    "profile": "verify",
+    "passed": true,
+    "startedAtUtc": "2026-09-17T10:18:32.8893003+08:00",
+    "finishedAtUtc": "2026-09-17T10:20:00.3311778+08:00",
+    "summary": {
+      "path": "artifacts/gate/20260917-021833-19c0b3b60846/summary.json",
+      "sha256": "13C368102B5BA0402BCEB6490BA95A30D7143DC5525A23EA728F5982B2CE31EB",
+      "bytes": 3497
+    },
+    "tests": [
+      {
+        "path": "artifacts/gate/20260917-021833-19c0b3b60846/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A8FA451FA3ED7F903195B6BBDF39B112AFB348271709CA7A754B866FEE061F0E",
+        "total": 255,
+        "passed": 255,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "artifacts/gate/20260917-021833-19c0b3b60846/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "AA36D7D2D925CC98A147128D57C98D4FA9570A69A5262EA7A1DF0D4B72C46B0E",
+        "total": 205,
+        "passed": 205,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "artifacts/gate/20260917-021833-19c0b3b60846/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "5F825DFA3757B57F86E6C47C87BAAB05506DEF71A0B571CC86A6B36B34BDFC72",
+        "total": 496,
+        "passed": 496,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "artifacts/gate/20260917-021833-19c0b3b60846/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+        "sha256": "760E1D3E029CA5BC99A113A88DD296FA903B472707583D0F8ED6869595425DE1",
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "artifacts/gate/20260917-021833-19c0b3b60846/pass-1/tests/my-plug-test/my-plug-test.trx",
+        "sha256": "DC90760139E1A333006AB67961576639BF5A39F394B60F94438AA9491D6C2BA0",
+        "total": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "artifacts/gate/20260917-021833-19c0b3b60846/pass-1/tests/sdk/sdk.trx",
+        "sha256": "3EC80790EF3F2B3D61E911AAF1A335353CE4F9FDF3DDF79376AD2CB557A0432E",
+        "total": 91,
+        "passed": 91,
+        "failed": 0,
+        "skipped": 0
+      }
+    ],
+    "totalPassed": 1059,
+    "failed": 0,
+    "skipped": 0,
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "stages": [
+      {
+        "id": "avalonia-layout-patch",
+        "status": "passed"
+      },
+      {
+        "id": "dock-patch",
+        "status": "passed"
+      },
+      {
+        "id": "restore",
+        "status": "passed"
+      },
+      {
+        "id": "build",
+        "status": "passed"
+      },
+      {
+        "id": "tests",
+        "status": "passed"
+      },
+      {
+        "id": "contracts",
+        "status": "passed"
+      },
+      {
+        "id": "packages",
+        "status": "passed"
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed"
+      }
+    ],
+    "releaseEligible": false
+  },
+  "additionalVerification": {
+    "gateTools": {
+      "path": "artifacts/dock-cross-window-layout/gate-tools/gate-tools.trx",
+      "sha256": "EB9FF43199BFCB03C183F1E946CBBCCB4B513A5A67CC37BDBE8B94338FB431B2",
+      "total": 68,
+      "passed": 68,
+      "failed": 0,
+      "skipped": 0
+    },
+    "isolatedFramework": {
+      "path": "artifacts/avalonia-cross-window-layout/build/F66C9169E4F4A5D0-a8c8f36f/results/layout-patch.trx",
+      "sha256": "02AE337CCAC10C5D01AB09F1937A733C356BE094DFC07698EAA38276C5DABA31",
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    "newHostAndFrameworkCases": [
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗真实标签拖入已有浮窗正文后两窗可继续布局(keepAnotherDocument: False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: False, keepSource: True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.AvaloniaLayoutOwnershipUiTests.两种队列及窗口处理顺序均能连续跨窗二十次(pendingMeasure: False, targetFirst: False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.正文回收器跨窗口转交保留旧根布局队列时仍可完成布局(duringArrange: True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.AvaloniaLayoutOwnershipUiTests.两种队列及窗口处理顺序均能连续跨窗二十次(pendingMeasure: True, targetFirst: False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: True, keepSource: True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.AvaloniaLayoutOwnershipUiTests.测量或安排祖先回调中迁走子树后旧管理器不继续递归(duringMeasure: False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.同一正文和同窗交接不清空当前Presenter",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.AvaloniaLayoutOwnershipUiTests.布局失效入口仍拒绝其他窗口的控件",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: False, keepSource: False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.AvaloniaLayoutOwnershipUiTests.测量或安排祖先回调中迁走子树后旧管理器不继续递归(duringMeasure: True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.AvaloniaLayoutOwnershipUiTests.两种队列及窗口处理顺序均能连续跨窗二十次(pendingMeasure: False, targetFirst: True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: False, targetFirst: True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: False, targetFirst: False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: True, targetFirst: False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.AvaloniaLayoutOwnershipUiTests.两种队列及窗口处理顺序均能连续跨窗二十次(pendingMeasure: True, targetFirst: True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: True, keepSource: False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: True, targetFirst: True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.正文回收器跨窗口转交保留旧根布局队列时仍可完成布局(duringArrange: False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗真实标签拖入已有浮窗正文后两窗可继续布局(keepAnotherDocument: True)",
+        "outcome": "Passed"
+      }
+    ],
+    "apiCompat": {
+      "passed": true,
+      "command": "dotnet apicompat -l <official Avalonia.Base.dll> -r artifacts/avalonia-cross-window-layout/runtime/Avalonia.Base.dll",
+      "log": {
+        "path": "artifacts/dock-cross-window-layout/apicompat.log",
+        "sha256": "8F250DBA46CCE82BB30544AD96F3C09200BB5CD8B93BE86D6676FF5C4F11B7C2",
+        "bytes": 63
+      }
+    },
+    "documentationLinks": {
+      "checked": 25,
+      "broken": 0
+    }
+  },
+  "runtimePatch": {
+    "baseline": {
+      "repository": "https://github.com/AvaloniaUI/Avalonia.git",
+      "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+      "identity": "avalonia-12.1.2-host-layout.1",
+      "sdkVersion": "10.0.302",
+      "assemblyVersion": "12.1.2.0",
+      "informationalVersion": "12.1.2-host-layout.1",
+      "publicKeyToken": "c8d484a7012f9a8b",
+      "minimumTests": 7,
+      "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+      "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67"
+    },
+    "receipt": {
+      "identity": "avalonia-12.1.2-host-layout.1",
+      "fingerprint": "F66C9169E4F4A5D007C3EEB551BE186AC1E65F7B63886912853F0AF01C417FAB",
+      "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+      "sdk": "10.0.302",
+      "publicSigned": true,
+      "assembly": "Avalonia.Base, Version=12.1.2.0, Culture=neutral, PublicKeyToken=c8d484a7012f9a8b",
+      "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+      "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67",
+      "buildRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\F66C9169E4F4A5D0-a8c8f36f",
+      "isolatedRestore": true,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "testTrx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\F66C9169E4F4A5D0-a8c8f36f\\results\\layout-patch.trx",
+      "testSha256": "02AE337CCAC10C5D01AB09F1937A733C356BE094DFC07698EAA38276C5DABA31"
+    },
+    "reproducibility": {
+      "verified": true,
+      "distinctCheckoutPaths": true,
+      "independentNuGetPackages": true,
+      "dllEqual": true,
+      "pdbEqual": true,
+      "normal": {
+        "identity": "avalonia-12.1.2-host-layout.1",
+        "fingerprint": "E76DAD1BD99B53BE1C40CCD2196D70C548E56EA319F3C411AEB815E60E7F0AEF",
+        "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+        "sdk": "10.0.302",
+        "publicSigned": true,
+        "assembly": "Avalonia.Base, Version=12.1.2.0, Culture=neutral, PublicKeyToken=c8d484a7012f9a8b",
+        "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+        "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67",
+        "buildRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\E76DAD1BD99B53BE-2b9169c4",
+        "isolatedRestore": false,
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0,
+        "testTrx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\E76DAD1BD99B53BE-2b9169c4\\results\\layout-patch.trx",
+        "testSha256": "99B36AF82E9E82FC6D34AF0CF7B5ECE05E53ED187BD26129993E3098D34DF2CD"
+      },
+      "isolated": {
+        "identity": "avalonia-12.1.2-host-layout.1",
+        "fingerprint": "F66C9169E4F4A5D007C3EEB551BE186AC1E65F7B63886912853F0AF01C417FAB",
+        "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+        "sdk": "10.0.302",
+        "publicSigned": true,
+        "assembly": "Avalonia.Base, Version=12.1.2.0, Culture=neutral, PublicKeyToken=c8d484a7012f9a8b",
+        "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+        "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67",
+        "buildRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\F66C9169E4F4A5D0-a8c8f36f",
+        "isolatedRestore": true,
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0,
+        "testTrx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\F66C9169E4F4A5D0-a8c8f36f\\results\\layout-patch.trx",
+        "testSha256": "02AE337CCAC10C5D01AB09F1937A733C356BE094DFC07698EAA38276C5DABA31"
+      }
+    },
+    "actualOutputs": [
+      {
+        "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/Avalonia.Base.dll",
+        "sha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+        "bytes": 2355200
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.Tests/bin/Release/net10.0/Avalonia.Base.dll",
+        "sha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+        "bytes": 2355200
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.PluginTests/bin/Release/net10.0/Avalonia.Base.dll",
+        "sha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+        "bytes": 2355200
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.UiTests/bin/Release/net10.0/Avalonia.Base.dll",
+        "sha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+        "bytes": 2355200
+      },
+      {
+        "path": "tools/MyAvaloniaManagement.Compatibility/bin/Release/net10.0/Avalonia.Base.dll",
+        "sha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+        "bytes": 2355200
+      },
+      {
+        "path": "artifacts/dock-cross-window-layout/final-publish-folder/Avalonia.Base.dll",
+        "sha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+        "bytes": 2355200
+      }
+    ],
+    "publicApiChanged": false,
+    "publicSigned": true,
+    "upstreamPrivateKeySignature": false
+  },
+  "officialPackage": {
+    "id": "Avalonia",
+    "version": "12.1.2",
+    "source": "https://api.nuget.org/v3/index.json",
+    "sha256": "99987414C63AC3993346A84A852006DF963FF839F96D140557EE31F8850DB08F",
+    "sdkUiExactDependency": "[12.1.2]",
+    "officialCacheUnchanged": true,
+    "frameworkAssemblyAssets": [
+      {
+        "path": "lib/net10.0/Avalonia.dll",
+        "bytes": 4096,
+        "sha256": "AC289895E7FA553EA6BE420F9154C452BEC6AEBF64D0B344AA37827BD29D2FDB"
+      },
+      {
+        "path": "lib/net8.0/Avalonia.dll",
+        "bytes": 4096,
+        "sha256": "941303555AB78EADC5EE265BC27CEF2C1FEC4B0F625B7F9F45D26BF57C8F6B13"
+      },
+      {
+        "path": "lib/net10.0/Avalonia.Base.dll",
+        "bytes": 2355200,
+        "sha256": "39F7C973A20346B2A0C0E758B875749670A610D63863E9A85FFEA22D5F320279"
+      },
+      {
+        "path": "lib/net8.0/Avalonia.Base.dll",
+        "bytes": 2354176,
+        "sha256": "DB2F76419B658603882A112E5E8B47DCDE61703F827FDB7DA3635EC89FE580BC"
+      },
+      {
+        "path": "lib/net10.0/Avalonia.Controls.dll",
+        "bytes": 1347072,
+        "sha256": "909B7ABD1E4B389B3372C4D1C0FCAE1106F99ED783CC177FA0FA67ED1147CA24"
+      },
+      {
+        "path": "lib/net8.0/Avalonia.Controls.dll",
+        "bytes": 1347584,
+        "sha256": "7CCF4AD63A046233037C8C84510689DDEF3D3FDF86E7F76943FEE7F48DC262D5"
+      },
+      {
+        "path": "lib/net10.0/Avalonia.DesignerSupport.dll",
+        "bytes": 214528,
+        "sha256": "EE57E6001029F66FF212F4B81024E51F3167ABC9461B055F7C829EC617931A2A"
+      },
+      {
+        "path": "lib/net8.0/Avalonia.DesignerSupport.dll",
+        "bytes": 214528,
+        "sha256": "B20CA8C2C16A20DBFD3FE95AE2F1905F16DC261B5900ADE67F371E99D8E69108"
+      },
+      {
+        "path": "lib/net10.0/Avalonia.Dialogs.dll",
+        "bytes": 242688,
+        "sha256": "70AAEFFBB3AFCFAFEE5A5B1E19707E13B7AE5F293C4C157332693690E12E3598"
+      },
+      {
+        "path": "lib/net8.0/Avalonia.Dialogs.dll",
+        "bytes": 242688,
+        "sha256": "092ED7760D0D503C50875ED6FC701D1B9BF6BB07FFC219DFEF53B184EDAC6639"
+      },
+      {
+        "path": "lib/net10.0/Avalonia.Metal.dll",
+        "bytes": 15360,
+        "sha256": "D9EFD4C5293F90239F2930AE688C98B2EF55925FC3DE85C4A6B8422175BD78B9"
+      },
+      {
+        "path": "lib/net8.0/Avalonia.Metal.dll",
+        "bytes": 15360,
+        "sha256": "AE86DF572CE53587B71E626D0918C06800E811D417EE0F7DD2D38B3284E70246"
+      },
+      {
+        "path": "lib/net10.0/Avalonia.MicroCom.dll",
+        "bytes": 15360,
+        "sha256": "63457674AB61566EA94A7A089044BB2BE7D0CDA1530085578109DF953EF37D49"
+      },
+      {
+        "path": "lib/net8.0/Avalonia.MicroCom.dll",
+        "bytes": 15360,
+        "sha256": "985D7B4721642F903B670E77AFB916FAE630286043D4111C61B9ABC55CB2B395"
+      },
+      {
+        "path": "lib/net10.0/Avalonia.OpenGL.dll",
+        "bytes": 128512,
+        "sha256": "365FC038F938088C913DB7D067160F985A31F116961DBC527A38703C570119D3"
+      },
+      {
+        "path": "lib/net8.0/Avalonia.OpenGL.dll",
+        "bytes": 128512,
+        "sha256": "09B2135831C227445C6EFC2CCFA47F842F628AE075D41915B889ED4C5068A197"
+      },
+      {
+        "path": "lib/net10.0/Avalonia.Vulkan.dll",
+        "bytes": 191488,
+        "sha256": "BA98AEB0319A60C1DE28B927C46FD94C75A6ADC676DD160FAAE5BCE14080E38D"
+      },
+      {
+        "path": "lib/net8.0/Avalonia.Vulkan.dll",
+        "bytes": 190976,
+        "sha256": "59B7506F286968A5D4B4E991122EC69FF126E190A2E83A00120355F965795678"
+      },
+      {
+        "path": "lib/net10.0/Avalonia.Markup.Xaml.dll",
+        "bytes": 74752,
+        "sha256": "1228B0A7359EBFA592408DE8E20AA3B8A2775D27C36F19C1F7C8F1E9FF1E14A8"
+      },
+      {
+        "path": "lib/net8.0/Avalonia.Markup.Xaml.dll",
+        "bytes": 74752,
+        "sha256": "D6F51041E49347EF78F9BFECCF85F6A2EE6437F3F177C74CCFCF5934D0BC0F5C"
+      },
+      {
+        "path": "lib/net10.0/Avalonia.Markup.dll",
+        "bytes": 45568,
+        "sha256": "CE634015611862DD6814355A4880C3C718782A017665445D232834615A6120CB"
+      },
+      {
+        "path": "lib/net8.0/Avalonia.Markup.dll",
+        "bytes": 45568,
+        "sha256": "ABE41CCBC54D5567F100380842431C5FE1142EE668E6DB36F6BE6FABF709FD89"
+      }
+    ]
+  },
+  "hostBinaries": [
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.dll",
+      "sha256": "4FB6B3D00DA31880B40A8161EAB70B0327A7D71F27D387642B6977F6D2E93156",
+      "bytes": 3477504
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/Dock.Avalonia.dll",
+      "sha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1",
+      "bytes": 322560
+    }
+  ],
+  "isolatedPublish": {
+    "purpose": "验证构建资产选择，不安装、不执行发布门禁",
+    "sourceCommit": "19c0b3b60846a4a924a05e3a60bdece113ad6810",
+    "rid": "win-x64",
+    "selfContained": true,
+    "trimmed": false,
+    "folderRuntime": {
+      "path": "artifacts/dock-cross-window-layout/final-publish-folder/Avalonia.Base.dll",
+      "sha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+      "bytes": 2355200
+    },
+    "singleFile": {
+      "path": "artifacts/dock-cross-window-layout/final-publish-single/MyAvaloniaManagement.exe",
+      "sha256": "0941F8445538B5A3193455112A71E24B677180812FFDB1A51D025A62947634AC",
+      "bytes": 52787498
+    },
+    "compression": true,
+    "includeNativeLibrariesForSelfExtract": true,
+    "embeddedBaseSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+    "embeddedBytesMatch": true,
+    "bundleAuditScript": {
+      "path": "artifacts/dock-cross-window-layout/verify-bundle.ps1",
+      "sha256": "DBD84632D3B8FD045315B63F6A1B522115347E4AFCF0D46853C454F26E3AB48C",
+      "bytes": 2661
+    }
+  },
+  "nativeDesktop": [
+    {
+      "id": "M01",
+      "status": "not-executed",
+      "reason": "当前工具没有原生 Windows 输入能力，Headless 不代替桌面验收。"
+    },
+    {
+      "id": "M02",
+      "status": "not-executed",
+      "reason": "当前工具没有原生 Windows 输入能力，Headless 不代替桌面验收。"
+    },
+    {
+      "id": "M03",
+      "status": "not-executed",
+      "reason": "当前工具没有原生 Windows 输入能力，Headless 不代替桌面验收。"
+    },
+    {
+      "id": "M04",
+      "status": "not-executed",
+      "reason": "当前工具没有原生 Windows 输入能力，Headless 不代替桌面验收。"
+    },
+    {
+      "id": "M05",
+      "status": "not-executed",
+      "reason": "当前工具没有原生 Windows 输入能力，Headless 不代替桌面验收。"
+    },
+    {
+      "id": "M06",
+      "status": "not-executed",
+      "reason": "当前工具没有原生 Windows 输入能力，Headless 不代替桌面验收。"
+    },
+    {
+      "id": "M07",
+      "status": "not-executed",
+      "reason": "当前工具没有原生 Windows 输入能力，Headless 不代替桌面验收。"
+    }
+  ],
+  "installationDeployment": {
+    "executed": false,
+    "existingExecutable": "D:/data/avalonia/MyAvaloniaManagement.exe",
+    "sha256": "0CF8511BBAA3559EF63F9C17DB09F662C10261BEC6988174236FD6C42B81F59F",
+    "unchangedFromPriorDeployment": true
+  },
+  "restrictions": {
+    "aiflowUsed": false,
+    "windowsCiUsed": false,
+    "sealOrReleaseGateUsed": false
+  }
 }

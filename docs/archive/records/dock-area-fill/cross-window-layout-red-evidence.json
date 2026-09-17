@@ -18,5 +18,27 @@
     "failed": 1,
     "skipped": 0,
     "conclusion": "摘除后 UpdateLayout 只修好非重入；Arrange 内迁移仍失败。候选已撤销，选择路线 B。"
+  },
+  "additionalOfficialBaselines": {
+    "framework": {
+      "path": "artifacts/dock-cross-window-layout/p0/framework-baseline.trx",
+      "sha256": "3DFF8EB831456360ABE747BD1C5CE5BFEDCF518DFD05EEB99625AA8BFB212853",
+      "total": 6,
+      "passed": 2,
+      "failed": 4,
+      "skipped": 0
+    },
+    "mouseLastAndNonLastDocument": {
+      "path": "artifacts/dock-cross-window-layout/p0-final/mouse-official.trx",
+      "sha256": "BFB6FE900E0864C0CD207CF94378729DA9C27B6994FD529DF525031634200DC7",
+      "total": 2,
+      "passed": 0,
+      "failed": 2,
+      "skipped": 0
+    },
+    "officialRuntimeSha256": "39F7C973A20346B2A0C0E758B875749670A610D63863E9A85FFEA22D5F320279",
+    "command": "dotnet test Host/MyAvaloniaManagement.UiTests -c Release -m:1 --no-restore -p:MyAvaloniaUseLayoutPatch=false --filter FullyQualifiedName~DockCrossWindowLayoutUiTests.主窗真实",
+    "sameException": "Attempt to call InvalidateArrange on wrong LayoutManager.",
+    "afterFix": "同一鼠标用例在最终 verify 中均通过。"
   }
 }
