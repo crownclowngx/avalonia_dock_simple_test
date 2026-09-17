@@ -90,6 +90,50 @@ public sealed class CognitiveUxV8Tests
     }
 
     [Fact]
+    public async Task 页面与工具重复查询不发布通知或改变实例且退出后重新检查()
+    {
+        var probe = new DocumentTestProbe();
+        using var context = DocumentTestContext.Create(services => services.AddSingleton(probe));
+        _ = context.CreateMainWindowViewModel();
+        var document = await context.Workspace.CreateAndPublishDocumentAsync(
+            TestDocumentIds.TypeId, new NewDocumentActivation("只读查询"));
+        var before = context.Workspace.GetOpenPages().ToArray();
+        var documents = context.Workspace.GetDocuments().ToArray();
+        var tools = context.Workspace.CreatedTools.Values.ToArray();
+        var active = context.Workspace.GetActiveDocument();
+        var activations = probe.ActivationContexts.Count;
+        var disposals = probe.DisposeCount;
+        // 比较临时工作区的路径和字节，查询不能悄悄触发布局或偏好持久化。
+        // 布局锁由 Store 以独占句柄持有，只比较其长度与写入时间，不能为了测试打破原有租约。
+        string[] Files() => Directory.GetFiles(context.TempDirectory, "*", SearchOption.AllDirectories)
+            .Order(StringComparer.Ordinal).Select(path => path + ":" + (Path.GetFileName(path) == "layout-v3.lock"
+                ? new FileInfo(path).Length + ":" + File.GetLastWriteTimeUtc(path).Ticks
+                : Convert.ToBase64String(File.ReadAllBytes(path)))).ToArray();
+        var files = Files();
+        var changes = 0;
+        context.Workspace.PagesChanged += (_, _) => changes++;
+        context.Workspace.LayoutChanged += (_, _) => changes++;
+        var query = context.Provider.GetRequiredService<ToolWorkspaceReadModel>();
+        var beforeTools = query.Capture().ToArray();
+        for (var index = 0; index < 3; index++)
+        {
+            Assert.Equal(before, context.Workspace.GetOpenPages());
+            Assert.Equal(beforeTools, query.Capture());
+            Assert.Equal(documents, context.Workspace.GetDocuments());
+            Assert.Equal(tools, context.Workspace.CreatedTools.Values);
+        }
+        Assert.Equal(0, changes);
+        Assert.Equal(activations, probe.ActivationContexts.Count);
+        Assert.Equal(disposals, probe.DisposeCount);
+        Assert.Same(active, context.Workspace.GetActiveDocument());
+        Assert.Equal(files, Files());
+        context.Workspace.BeginShutdown();
+        Assert.False(context.Workspace.TryActivatePage(document.PageId));
+        Assert.All(context.Workspace.GetOpenPages(), item => Assert.False(item.CanActivate));
+        Assert.All(query.Capture(), item => Assert.False(item.CanOpen));
+    }
+
+    [Fact]
     public async Task 同名页面按运行时身份切换且关闭旧项绝不替换成同名新页面()
     {
         using var context = DocumentTestContext.Create();

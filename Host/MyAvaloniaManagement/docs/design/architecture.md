@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 内部架构
 
-> 用途：当前 Host 内部实现与资源所有权。状态：当前；核对日期：2026-09-16。事实源：[Business 实现](../../Business)、[Host 测试](../../../MyAvaloniaManagement.Tests)及 [Plugin 测试](../../../MyAvaloniaManagement.PluginTests)。
+> 用途：当前 Host 内部实现与资源所有权。状态：当前；核对日期：2026-09-17。事实源：[Business 实现](../../Business)、[Host 测试](../../../MyAvaloniaManagement.Tests)及 [Plugin 测试](../../../MyAvaloniaManagement.PluginTests)。
 
 版本和交付范围集中在[版本基线](../../../../docs/reference/platform-baseline.md)。本仓仅保留 Host 与 MyPlugTest；其他业务插件独立交付。历史封板不能代表当前工作树的发布资格，未完成事项见[待办](../../../../docs/roadmap/README.md)。
 
@@ -201,6 +201,12 @@ Provider 构建失败会产生 `PLUGIN_SERVICE_REGISTRATION_FAILED` 或 `PLUGIN_
 
 ### 4.3 单一扩展注册表
 
+V12-P1 将局部校验交给 `PluginContributionValidator`，跨所有者分析交给
+`PluginConflictAnalyzer`。二者只消费 `PluginContributionSnapshot` 的防御性集合快照，
+不调用工厂或解析服务。Builder 保留可写状态、局部异常出口、有序诊断与最终提交；
+全局分析逐条返回冲突，诊断失败仍立即终止。只有 Registry 构造成功后才提交 Provider
+和 Scope 所有权，Import 局部复查及 Build 全局防线均保留。
+
 [`PluginRegistryBuilder`](../../Business/Plugins/Registration/PluginRegistryBuilder.cs) 为每个插件先使用临时实例收集声明；
 Descriptor、模型类型、View 类型/工厂和生命周期类型在注册调用中一次冻结。私有 Provider 构建成功且
 生命周期 singleton 可解析后，声明才合并到全局 Builder；此过程不创建 Document/Tool，也不调用插件
@@ -312,11 +318,15 @@ CanExecute，不缓存状态。插件执行链接调用者、单 Document 关闭
 Dispatcher，Dispose 成对退订。`MainWindowViewModel` 已删除打开/保存方法、生成命令和持久化协调器依赖，
 只保留窄 Presentation 绑定属性。
 
+V12-P2 的 `UiRefreshScheduler` 只管理 pending/disposed 与 Dispatcher 通知时机。Menu、KeyBinding 和 Command 在 UI 线程立即刷新，Palette 始终排队；每个消费者独立拥有一个实例。调度器共用消费者原锁，消费者在同一临界区调用 `TryBeginRefresh`、检查释放并捕获事件快照，在锁外通知。原订阅、定向过滤及各自诊断政策仍留在消费者，已开始的事件快照可在观察者释放后继续完成。
+
 V8 的 `WorkbenchCommandPaletteProjection` 汇合功能创建目录、已打开页面、工具状态和可发现 Command。
 普通 Command 继续以菜单声明作为发现许可，复用 State Query、有效快捷键和原 Executor；纯快捷键或局部命令不会自动公开。
 结果使用四种强类型身份，不以多个可空 ID 猜测动作。`WorkbenchTextMatch` 是无 I/O 的纯匹配函数，由三个搜索入口共享。
 
 页面数据由 `WorkspaceSession.Pages` 提供不可变快照。每个已发布 Adapter 有独立运行期 ID 和稳定显示序号，关闭时移除引用与订阅，不新增 Scope 或跨启动数据。原唯一活动页引用现在接受分割区域的真实激活通知，工具激活保持文档目标，空目标会撤回。
+
+V12-P3 的 `WorkspaceLayoutQuerySnapshot` 在每次页面／工具查询内同步捕获关系，使用对象引用索引文档分组、首个承载浮窗及 Hidden/Pinned/Docked/Active 成员。节点按既有 Navigator 顺序捕获，每个浮窗的可见树只扫描一次；窗口归属保留窗口声明顺序，不能用 DFS 首次到达代替。快照不跨调用缓存，页面标题、Dirty、关闭中和插件可用性继续即时读取，执行入口仍重查真实树。
 
 `WorkspacePaletteActions` 把功能、页面和工具分别适配到原 Coordinator、Workspace 与 Tool Actions。执行时重查入口、页面、插件可用性和关闭状态，失效页面不替换成同名页面。`WorkspacePaletteCommand` 提供可等待结果并隔离异步异常，普通 Command 不经过该适配器。
 
@@ -342,6 +352,8 @@ V3 G6 已删除 `ManagementFactory` Facade。生产代码只有
 | `HostDockFactory` | Dock override、规范 Locator、浮动边界和回调顺序 | Root、Document、Tool 集合与业务状态 |
 | `WorkspaceSession` | Root/Document Dock、Document/Tool 所有权、发布/显隐/关闭/退出提交点 | 磁盘序列化、任意事件路由、服务定位 |
 | `ToolWorkspaceReadModel` | 从 Session/Workspace Catalog 生成无 Dock 的不可变 Tool 状态 | Tool 创建、显隐命令和 Dock 树写入 |
+| `WorkspaceLayoutQuerySnapshot` | 单次同步查询的布局引用关系 | 实例创建释放、布局写入、持久缓存及执行许可 |
+| `UiRefreshScheduler` | 每个消费者的刷新时机、待发布合并与释放后抑制 | 业务状态、事件订阅、观察者快照及异常映射 |
 | `DockWorkspaceBuilder` | 创建稳定四向初始布局 | 工具恢复和激活 |
 | `DockTreeNavigator` | Dock、Document、Tool、Pinned/Hidden 查询 | 修改业务状态 |
 | `WorkbenchContextStore` | 活动 Document 纯值快照和原子内部捕获 | 遍历 Dock、状态判断、命令执行 |

@@ -62,15 +62,13 @@ internal sealed class WorkbenchCommandPaletteProjection :
     private readonly WorkbenchCommandStateQuery _states;
     private readonly IWorkbenchKeyBindingProjection _keyBindings;
     private readonly WorkbenchPresentationCommandStore _presentationCommands;
-    private readonly Dispatcher _dispatcher;
+    private readonly UiRefreshScheduler _refresh;
     private readonly IHostDiagnosticSink? _diagnostics;
     private readonly ToolWorkspaceReadModel? _tools;
     private readonly WorkspaceSession? _workspace;
     private readonly DocumentCreationMenuQuery? _functions;
     private readonly WorkspacePaletteActions? _workspaceActions;
     private readonly HostIconRenderer? _icons;
-    // 只表示 Dispatcher 队列中已有刷新，不代表任何插件业务状态或结果缓存。
-    private bool _refreshQueued;
     // Dispose 后拒绝同步读取，并让已经排队的迟到回调安全退出。
     private bool _disposed;
 
@@ -96,7 +94,7 @@ internal sealed class WorkbenchCommandPaletteProjection :
         _keyBindings = keyBindings ?? throw new ArgumentNullException(nameof(keyBindings));
         _presentationCommands = presentationCommands ??
             throw new ArgumentNullException(nameof(presentationCommands));
-        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        _refresh = new UiRefreshScheduler(_gate, dispatcher, UiRefreshMode.AlwaysPost, PublishChanged);
         _diagnostics = diagnostics;
         _tools = tools;
         _workspace = workspace;
@@ -239,29 +237,15 @@ internal sealed class WorkbenchCommandPaletteProjection :
 
     private void OnKeyBindingsChanged(object? sender, EventArgs args) => QueueChanged();
 
-    private void QueueChanged()
-    {
-        lock (_gate)
-        {
-            if (_disposed || _refreshQueued)
-            {
-                return;
-            }
-            _refreshQueued = true;
-        }
-
-        // 即使通知本来就在 UI 线程，也统一排入 Dispatcher。这样同一输入/状态事务连续发出的
-        // 多个失效信号只触发一次 View 刷新；_refreshQueued 是朴素合并标记，不缓存业务状态。
-        _dispatcher.Post(PublishChanged, DispatcherPriority.Normal);
-    }
+    // Palette 即使在 UI 线程也排队，让同一事务的失效信号合并；不缓存业务查询结果。
+    private void QueueChanged() => _refresh.RequestRefresh();
 
     private void PublishChanged()
     {
         Delegate[] handlers;
         lock (_gate)
         {
-            _refreshQueued = false;
-            if (_disposed)
+            if (!_refresh.TryBeginRefresh() || _disposed)
             {
                 return;
             }
@@ -307,7 +291,7 @@ internal sealed class WorkbenchCommandPaletteProjection :
                 return;
             }
             _disposed = true;
-            _refreshQueued = false;
+            _refresh.Dispose();
             Changed = null;
         }
         _states.StateInvalidated -= OnStateInvalidated;

@@ -1,6 +1,6 @@
 # 历史归档
 
-> 用途：查找过去的设计、验收与交付证据。归档日期：2026-09-16。正文中的“当前”、版本、命令及通过结果只对原始基线成立，不能作为当前操作指令。
+> 用途：查找过去的设计、验收与交付证据。归档日期：2026-09-17。正文中的“当前”、版本、命令及通过结果只对原始基线成立，不能作为当前操作指令。
 
 当前指南从[总导航](../README.md)进入，未完成事项由[待办](../roadmap/README.md)继续跟踪。归档不等于验收通过；失败、NO-GO、待人工确认和已清理产物状态均保留。
 
@@ -29,6 +29,11 @@
 - [Document 保存 V1 设计](specifications/document-persistence-v1-design.md)
 
 ## 阶段与发布记录
+
+### host-v12
+
+- [Host 内部职责重构开发记录](records/host-v12/development-acceptance.md)
+- [最终本地开发验证证据](records/host-v12/final-development-evidence.json)
 
 ### host-v11
 

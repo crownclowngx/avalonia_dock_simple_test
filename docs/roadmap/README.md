@@ -4,6 +4,7 @@
 
 | 工作名称 | 状态 / 所属范围 | 事实依据 | 完成条件 |
 | --- | --- | --- | --- |
+| V12 Host 内部职责重构 | 源码与专项已完成，桌面未执行 / Host 内部 | [V12 方案](host-v12-internal-refactor-plan.md)、[开发记录](../archive/records/host-v12/development-acceptance.md)、[最终证据](../archive/records/host-v12/final-development-evidence.json) | 三阶段实现、单元／插件集成／Headless 专项已完成；完整本地 verify 以最终证据为准。原生鼠标、焦点、多屏 DPI 与外部业务未执行，后续按需要独立验收；本轮不使用 AIFLOW、Windows CI 或发布门禁 |
 | Document 拖入已有浮窗崩溃 | 框架补丁与自动化已接入，桌面和部署待补 / Host 运行时 | [修复方案](host-document-cross-window-layout-crash-fix-plan.md)、[专项维护](../maintenance/dock-cross-window-layout-verification.md)、[本轮证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json) | 完整 verify 结果以本轮证据为准；补 M01–M03 真实桌面操作及原截图百度网盘场景，然后另行部署 |
 | Dock 区域默认居中停靠 | 旧版已部署，跨窗修复已接入但待桌面与新部署 / Host 拖放交互 | [实施计划](host-dock-area-fill-implementation-plan.md)、[专项记录](../archive/records/dock-area-fill/development-acceptance.md)、[最终开发证据](../archive/records/dock-area-fill/development-evidence.json) | 按上述修复专项补真实桌面与新部署；原通过证据不覆盖新增故障。原生遮挡、混合浮窗、标签排序及多屏 DPI 仍需按矩阵独立验收 |
 | V11-P2 Tool 浮窗关闭黑框修复 | 源码与自动化已接入，桌面待补 / Host 补丁 | [P2 计划](host-v11-p2-tool-window-close-fix-plan.md)；[修复记录](../archive/records/host-v11/p2-tool-window-close-fix.md)；[最终开发证据](../archive/records/host-v11/p2-final-development-evidence.json) | 补真实 Tool 浮窗右上角关闭、菜单/工具中心隐藏、取消、再次显示与重启；自动化不代替桌面，本补丁部署另行交付 |

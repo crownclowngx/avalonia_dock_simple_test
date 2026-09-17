@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dock.Model.Controls;
-using Dock.Model.Core;
-using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Presentation.Icons;
 using MyAvaloniaManagement.Models.Tools;
 
@@ -16,21 +13,15 @@ internal sealed class ToolWorkspaceReadModel(WorkspaceSession session)
     internal bool CanOpen(string id) => session.CanOperateTools && session.IsToolAvailable(id) && session.CreatedTools.ContainsKey(id);
     internal IReadOnlyList<ToolWorkspaceState> Capture()
     {
-        var nodes = session.RootDock is { } root ? DockTreeNavigator.EnumerateWorkspace(root).ToArray() : [];
-        var roots = nodes.OfType<IRootDock>().ToArray();
-        var hidden = roots.SelectMany(item => item.HiddenDockables ?? []).ToHashSet();
-        var pinned = roots.SelectMany(item =>
-            (item.LeftPinnedDockables ?? []).Concat(item.RightPinnedDockables ?? [])
-                .Concat(item.TopPinnedDockables ?? []).Concat(item.BottomPinnedDockables ?? [])).ToHashSet();
-        var docked = nodes.OfType<IDock>().SelectMany(item => item.VisibleDockables ?? []).ToHashSet();
-        var active = nodes.OfType<IDock>().Select(item => item.ActiveDockable).ToHashSet();
+        // 本次查询共享关系索引，不逐工具重扫浮窗。快照不跨调用保存，下一次读取自然看到布局变化。
+        var snapshot = WorkspaceLayoutQuerySnapshot.Capture(session.RootDock);
         return session.GetRegisteredTools().Select(entry =>
         {
             var id = entry.Descriptor.ToolTypeId.Value;
             session.CreatedTools.TryGetValue(id, out var tool);
             ToolLayoutState? layout = tool is null || session.RootDock is null ? null :
-                hidden.Contains(tool) ? ToolLayoutState.Hidden : pinned.Contains(tool) ? ToolLayoutState.AutoHidden :
-                docked.Contains(tool) ? DockTreeNavigator.FindWindow(session.RootDock, tool) is not null ?
+                snapshot.IsHidden(tool) ? ToolLayoutState.Hidden : snapshot.IsPinned(tool) ? ToolLayoutState.AutoHidden :
+                snapshot.IsDocked(tool) ? snapshot.FindWindow(tool) is not null ?
                     ToolLayoutState.Floating : ToolLayoutState.Docked : ToolLayoutState.Hidden;
             var visible = layout is ToolLayoutState.Docked or ToolLayoutState.AutoHidden or ToolLayoutState.Floating;
             var reason = !entry.IsAvailable ? entry.UnavailableReason : session.RootDock is null ? "工作区尚未就绪" :
@@ -42,7 +33,7 @@ internal sealed class ToolWorkspaceReadModel(WorkspaceSession session)
                 SourceName = entry.SourceName,
                 IconRequest = new HostIconRequest(entry.OwnerId, entry.Descriptor.IconPath),
                 LayoutState = layout,
-                IsActive = tool is not null && active.Contains(tool),
+                IsActive = tool is not null && snapshot.IsActive(tool),
                 CanOpen = entry.IsAvailable && tool is not null && session.CanOperateTools,
                 UnavailableReason = reason
             };

@@ -28,6 +28,7 @@
 | 任务 | 权威说明 |
 | --- | --- |
 | 理解当前 Host 实现与取舍 | [内部架构入口](../Host/MyAvaloniaManagement/docs/README.md) |
+| 按 V12 重构 Host 内部职责 | [重构方案](roadmap/host-v12-internal-refactor-plan.md)、[专用开发验证](maintenance/host-v12-refactor-verification.md)，结果见[开发记录](archive/records/host-v12/development-acceptance.md) |
 | 修改外部可观察行为 | [兼容约束](../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) |
 | 修改保存与恢复 | [Document 持久化](reference/document-persistence.md) |
 | 修改停靠布局 | [Layout V3](reference/dock-layout-snapshot-v3.md)、[浮窗开发验证](maintenance/floating-layout-verification.md)、[区域回停专项](maintenance/dock-area-fill-verification.md)、[跨窗布局修复](maintenance/dock-cross-window-layout-verification.md) |
@@ -40,6 +41,7 @@
 
 ## 未完成工作与历史
 
+- [V12 Host 内部职责重构方案](roadmap/host-v12-internal-refactor-plan.md)：Registry 校验、UI 刷新调度和工作区查询快照已接入，专项已通过；最终 verify 见[证据](archive/records/host-v12/final-development-evidence.json)，原生桌面验证边界见[记录](archive/records/host-v12/development-acceptance.md)。
 - [Document 拖入已有浮窗崩溃修复方案](roadmap/host-document-cross-window-layout-crash-fix-plan.md)：框架补丁与自动化回归已完成，真实桌面验收仍待完成；本地安装状态见[单文件部署说明](maintenance/dock-cross-window-layout-deployment.md)。
 - [V11 浮动窗口恢复与 Layout V3 计划](roadmap/host-v11-floating-windows-and-layout-v3-plan.md)：实现已接入，最终开发验证见[证据](archive/records/host-v11/final-development-evidence.json)；工具浮窗恢复位置和分组，Document 支持运行时浮动但不跨启动重开；结果见 [V11 开发记录](archive/records/host-v11/development-acceptance.md)。
 - [V10 插件兼容治理与 Host 插件看板计划](archive/plans/host-v10-plugin-compatibility-and-dashboard-plan.md)：已归档的开发计划；结果见 [V10 开发记录](archive/records/host-v10/development-acceptance.md)，业务与真机待办独立保留。

@@ -1,0 +1,1837 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "date": "2026-09-17",
+  "scope": "Host V12 internal refactor: Registry validation, UI scheduling, per-query workspace relationships",
+  "baseline": {
+    "runId": "20260917-053338-538d173b7a0d",
+    "passed": true,
+    "path": "artifacts/gate/20260917-053338-538d173b7a0d/summary.json",
+    "sha256": "2d7ccb77c3df5865d11395c25a3e3d1e803d680f8536f11b976afb777d1c5016"
+  },
+  "phaseRuns": {
+    "p0-unit": {
+      "path": "artifacts/host-v12/p0-unit/behavior-unit.trx",
+      "sha256": "6c9c810e9f31237b312cae5110f4f3d7023544b4cfe93a4d15b858c1d26d5f82",
+      "counts": {
+        "total": 18,
+        "executed": 18,
+        "passed": 18,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    "p0-ui": {
+      "path": "artifacts/host-v12/p0-ui/behavior-ui.trx",
+      "sha256": "02065494fe87b9ba3efb8e2c27bf387a969a9aa5883ff4b13e171337a2c27822",
+      "counts": {
+        "total": 1,
+        "executed": 1,
+        "passed": 1,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    "p1-unit": {
+      "path": "artifacts/host-v12/p1-unit/p1-unit.trx",
+      "sha256": "6291cfcc2e1f45f2c07ec61091c31c070910b6378f9f2bb09fea2df8ae46b831",
+      "counts": {
+        "total": 90,
+        "executed": 90,
+        "passed": 90,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    "p1-plugin": {
+      "path": "artifacts/host-v12/p1-plugin/p1-plugin.trx",
+      "sha256": "f6783796921c524358297ac35d6367741a4eefef480354d33d2bffc943537b44",
+      "counts": {
+        "total": 43,
+        "executed": 43,
+        "passed": 43,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    "p2-unit": {
+      "path": "artifacts/host-v12/p2-unit/p2-unit.trx",
+      "sha256": "588658529d4e92f9a0ba21834239e68e140c65e758392e2aaa0a82f8a6c14ef6",
+      "counts": {
+        "total": 34,
+        "executed": 34,
+        "passed": 34,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    "p2-ui": {
+      "path": "artifacts/host-v12/p2-ui-final/p2-ui.trx",
+      "sha256": "9a461873632d769f0a516bbb0853fd72be947c20144dccd807ac10ab33187ff8",
+      "counts": {
+        "total": 36,
+        "executed": 36,
+        "passed": 36,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    "p3-unit": {
+      "path": "artifacts/host-v12/p3-unit-complete/p3-unit.trx",
+      "sha256": "784b44cd79c03ebcbb5cc79fa14c3323087e2a131572a094a53d55a2c562c6a9",
+      "counts": {
+        "total": 58,
+        "executed": 58,
+        "passed": 58,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    "p3-ui": {
+      "path": "artifacts/host-v12/p3-ui/p3-ui.trx",
+      "sha256": "b661e024ecf7a651c3adecad74d1f9f29e04315d513ab8a00bd5ce7c66e72e37",
+      "counts": {
+        "total": 92,
+        "executed": 92,
+        "passed": 92,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    }
+  },
+  "matrix": {
+    "R01": {
+      "selectors": [
+        "PluginContributionValidatorTests.Command和Placement可先于Document声明且校验没有激活副作用",
+        "ExplicitContributionAndPluginRegistryTests.未登记类型不会因存在于程序集而进入Registry且构建不激活模型"
+      ],
+      "executedTests": [
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.Command和Placement可先于Document声明且校验没有激活副作用(commandFirst: True)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.Command和Placement可先于Document声明且校验没有激活副作用(commandFirst: False)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.ExplicitContributionAndPluginRegistryTests.未登记类型不会因存在于程序集而进入Registry且构建不激活模型",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.Command和Placement可先于Document声明且校验没有激活副作用(commandFirst: True)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.Command和Placement可先于Document声明且校验没有激活副作用(commandFirst: False)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.ExplicitContributionAndPluginRegistryTests.未登记类型不会因存在于程序集而进入Registry且构建不激活模型",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "R02": {
+      "selectors": [
+        "PluginRegistrationOwnershipTests.Document和Tool必须属于精确PluginId及正确贡献种类命名空间",
+        "WorkbenchCommandRegistrationTests.Seal区分CommandTarget和Placement的所有权越界",
+        "PluginRegistryRefactorContractTests.多所有者且多生命周期保留原失败边界"
+      ],
+      "executedTests": [
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistrationOwnershipTests.Document和Tool必须属于精确PluginId及正确贡献种类命名空间",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandRegistrationTests.Seal区分CommandTarget和Placement的所有权越界",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p0-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.多所有者且多生命周期保留原失败边界",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.多所有者且多生命周期保留原失败边界",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistrationOwnershipTests.Document和Tool必须属于精确PluginId及正确贡献种类命名空间",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandRegistrationTests.Seal区分CommandTarget和Placement的所有权越界",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.多所有者且多生命周期保留原失败边界",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "R03": {
+      "selectors": [
+        "ExplicitContributionAndPluginRegistryTests.Tool模型角色View映射和多生命周期冲突在插件内一次汇总",
+        "WorkbenchCommandRegistrationTests.Seal拒绝重复Command跨类型Placement和本插件Gesture",
+        "PluginContributionValidatorTests.声明关系错误与重复快捷键分别报告且保留规则顺序"
+      ],
+      "executedTests": [
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.ExplicitContributionAndPluginRegistryTests.Tool模型角色View映射和多生命周期冲突在插件内一次汇总",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandRegistrationTests.Seal拒绝重复Command跨类型Placement和本插件Gesture",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.声明关系错误与重复快捷键分别报告且保留规则顺序",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.ExplicitContributionAndPluginRegistryTests.Tool模型角色View映射和多生命周期冲突在插件内一次汇总",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandRegistrationTests.Seal拒绝重复Command跨类型Placement和本插件Gesture",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.声明关系错误与重复快捷键分别报告且保留规则顺序",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "R04": {
+      "selectors": [
+        "WorkbenchCommandRegistrationTests.全局CommandId冲突整体排除两个Owner及其全部贡献",
+        "PluginConflictAnalyzerTests.图标同Owner重复仍拒绝而普通全局身份只比较跨Owner",
+        "PluginConflictAnalyzerTests.跨DocumentTool精确模型冲突返回两个Owner并保留View来源"
+      ],
+      "executedTests": [
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandRegistrationTests.全局CommandId冲突整体排除两个Owner及其全部贡献",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginConflictAnalyzerTests.图标同Owner重复仍拒绝而普通全局身份只比较跨Owner",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginConflictAnalyzerTests.跨DocumentTool精确模型冲突返回两个Owner并保留View来源",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandRegistrationTests.全局CommandId冲突整体排除两个Owner及其全部贡献",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginConflictAnalyzerTests.图标同Owner重复仍拒绝而普通全局身份只比较跨Owner",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginConflictAnalyzerTests.跨DocumentTool精确模型冲突返回两个Owner并保留View来源",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "R05": {
+      "selectors": [
+        "PluginContributionValidatorTests.集合快照不随Builder追加改变且不能通过强转改写",
+        "WorkbenchCommandRegistrationTests.Seal和Build后均不能继续写入",
+        "PluginRegistryRefactorContractTests.局部组合异常保持排序并且失败导入不留下部分贡献"
+      ],
+      "executedTests": [
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.集合快照不随Builder追加改变且不能通过强转改写",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandRegistrationTests.Seal和Build后均不能继续写入",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p0-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.局部组合异常保持排序并且失败导入不留下部分贡献",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.局部组合异常保持排序并且失败导入不留下部分贡献",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.集合快照不随Builder追加改变且不能通过强转改写",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandRegistrationTests.Seal和Build后均不能继续写入",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.局部组合异常保持排序并且失败导入不留下部分贡献",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "R06": {
+      "selectors": [
+        "PluginRegistryRefactorContractTests.全局诊断保持贡献种类和所有者发现顺序且不激活View",
+        "PluginRegistryRefactorContractTests.诊断抛错立即停止且尚未提交Provider所有权"
+      ],
+      "executedTests": [
+        {
+          "stage": "p0-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.全局诊断保持贡献种类和所有者发现顺序且不激活View",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.全局诊断保持贡献种类和所有者发现顺序且不激活View",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p0-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.诊断抛错立即停止且尚未提交Provider所有权",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.诊断抛错立即停止且尚未提交Provider所有权",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.全局诊断保持贡献种类和所有者发现顺序且不激活View",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.诊断抛错立即停止且尚未提交Provider所有权",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "R07": {
+      "selectors": [
+        "PluginRegistryRefactorContractTests.Registry索引构造失败仍未提交Provider且Builder保持封闭",
+        "PluginContainerIsolationTests.每插件DocumentScope使用本插件服务并可独立关闭",
+        "PluginContainerIsolationTests.插件Provider按规范PluginId建立并在宿主之前逆序释放"
+      ],
+      "executedTests": [
+        {
+          "stage": "p0-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.Registry索引构造失败仍未提交Provider且Builder保持封闭",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.Registry索引构造失败仍未提交Provider且Builder保持封闭",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-plugin",
+          "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.每插件DocumentScope使用本插件服务并可独立关闭",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-plugin",
+          "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件Provider按规范PluginId建立并在宿主之前逆序释放",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.Registry索引构造失败仍未提交Provider且Builder保持封闭",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-plugin/host-plugin.trx",
+          "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.每插件DocumentScope使用本插件服务并可独立关闭",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-plugin/host-plugin.trx",
+          "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件Provider按规范PluginId建立并在宿主之前逆序释放",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "R08": {
+      "selectors": [
+        "ExplicitContributionAndPluginRegistryTests.两个组合根拥有独立且发布后不可写的Registry",
+        "HostCatalogPluginRegistryTests.WorkspaceCatalog合并Host与插件View但不合并Provider所有权"
+      ],
+      "executedTests": [
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.ExplicitContributionAndPluginRegistryTests.两个组合根拥有独立且发布后不可写的Registry",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p1-unit",
+          "name": "MyAvaloniaManagement.Tests.HostCatalogPluginRegistryTests.WorkspaceCatalog合并Host与插件View但不合并Provider所有权",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.ExplicitContributionAndPluginRegistryTests.两个组合根拥有独立且发布后不可写的Registry",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.HostCatalogPluginRegistryTests.WorkspaceCatalog合并Host与插件View但不合并Provider所有权",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "U01": {
+      "selectors": [
+        "WorkbenchCommandPresentationUiTests.菜单与命令同步刷新而面板始终排队并合并",
+        "WorkbenchCommandPresentationUiTests.Owner不可用时View移除生成对象且恢复后不产生重复项",
+        "UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行"
+      ],
+      "executedTests": [
+        {
+          "stage": "p0-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.菜单与命令同步刷新而面板始终排队并合并",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.菜单与命令同步刷新而面板始终排队并合并",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.Owner不可用时View移除生成对象且恢复后不产生重复项",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行(alwaysPost: True)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行(alwaysPost: False)",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.菜单与命令同步刷新而面板始终排队并合并",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.Owner不可用时View移除生成对象且恢复后不产生重复项",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行(alwaysPost: False)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行(alwaysPost: True)",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "U02": {
+      "selectors": [
+        "UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为",
+        "WorkbenchCommandPresentationUiTests.菜单与命令同步刷新而面板始终排队并合并"
+      ],
+      "executedTests": [
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为(alwaysPost: True)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为(alwaysPost: False)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p0-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.菜单与命令同步刷新而面板始终排队并合并",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.菜单与命令同步刷新而面板始终排队并合并",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为(alwaysPost: False)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为(alwaysPost: True)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.菜单与命令同步刷新而面板始终排队并合并",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "U03": {
+      "selectors": [
+        "UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行",
+        "UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为"
+      ],
+      "executedTests": [
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行(alwaysPost: True)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行(alwaysPost: False)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为(alwaysPost: True)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为(alwaysPost: False)",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行(alwaysPost: False)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行(alwaysPost: True)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为(alwaysPost: False)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为(alwaysPost: True)",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "U04": {
+      "selectors": [
+        "UiRefreshSchedulerTests.排队后释放和释放后的请求均不再通知且重复释放安全",
+        "WorkbenchCommandProjectionTests.三种Projection重复释放后拒绝读取且迟到可用性通知安全"
+      ],
+      "executedTests": [
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.排队后释放和释放后的请求均不再通知且重复释放安全(alwaysPost: False)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.排队后释放和释放后的请求均不再通知且重复释放安全(alwaysPost: True)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandProjectionTests.三种Projection重复释放后拒绝读取且迟到可用性通知安全",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.排队后释放和释放后的请求均不再通知且重复释放安全(alwaysPost: True)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.排队后释放和释放后的请求均不再通知且重复释放安全(alwaysPost: False)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandProjectionTests.三种Projection重复释放后拒绝读取且迟到可用性通知安全",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "U05": {
+      "selectors": [
+        "UiRefreshSchedulerTests.发布期间的新失效保留各自重入顺序",
+        "WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布",
+        "WorkbenchCommandPresentationUiTests.定向非相关全量通知正确且异常观察者不阻断后续刷新"
+      ],
+      "executedTests": [
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.发布期间的新失效保留各自重入顺序(alwaysPost: True)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.发布期间的新失效保留各自重入顺序(alwaysPost: False)",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"keys\")",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"palette\")",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"menu\")",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"command\")",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.定向非相关全量通知正确且异常观察者不阻断后续刷新",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.发布期间的新失效保留各自重入顺序(alwaysPost: False)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.发布期间的新失效保留各自重入顺序(alwaysPost: True)",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"keys\")",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"command\")",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"palette\")",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"menu\")",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.定向非相关全量通知正确且异常观察者不阻断后续刷新",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "U06": {
+      "selectors": [
+        "WorkbenchCommandPresentationUiTests.Owner不可用时View移除生成对象且恢复后不产生重复项",
+        "WorkbenchCommandPresentationUiTests.定向非相关全量通知正确且异常观察者不阻断后续刷新",
+        "WorkbenchCommandPresentationUiTests.Palette实时隐藏目标并保留Disabled且异常执行只产生脱敏诊断"
+      ],
+      "executedTests": [
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.Owner不可用时View移除生成对象且恢复后不产生重复项",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.定向非相关全量通知正确且异常观察者不阻断后续刷新",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.Palette实时隐藏目标并保留Disabled且异常执行只产生脱敏诊断",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.Owner不可用时View移除生成对象且恢复后不产生重复项",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.定向非相关全量通知正确且异常观察者不阻断后续刷新",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.Palette实时隐藏目标并保留Disabled且异常执行只产生脱敏诊断",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "U07": {
+      "selectors": [
+        "WorkbenchCommandPresentationUiTests.定向非相关全量通知正确且异常观察者不阻断后续刷新",
+        "WorkbenchCommandDocumentTargetTests.同类型多个Document只执行当前活动实例"
+      ],
+      "executedTests": [
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.定向非相关全量通知正确且异常观察者不阻断后续刷新",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p2-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandDocumentTargetTests.同类型多个Document只执行当前活动实例",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.定向非相关全量通知正确且异常观察者不阻断后续刷新",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandDocumentTargetTests.同类型多个Document只执行当前活动实例",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "U08": {
+      "selectors": [
+        "UiRefreshSchedulerTests.回调中释放抑制后续请求并且其他消费者不受影响",
+        "WorkspaceSessionAndDockFactoryTests.MainWindow订阅可独立释放而不影响其他窗口投影"
+      ],
+      "executedTests": [
+        {
+          "stage": "p2-ui",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.回调中释放抑制后续请求并且其他消费者不受影响",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceSessionAndDockFactoryTests.MainWindow订阅可独立释放而不影响其他窗口投影",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.回调中释放抑制后续请求并且其他消费者不受影响",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceSessionAndDockFactoryTests.MainWindow订阅可独立释放而不影响其他窗口投影",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "Q01": {
+      "selectors": [
+        "WorkspaceLayoutQuerySnapshotTests.浮窗嵌套与窗口回边仍按原窗口顺序寻找承载者",
+        "WorkspaceLayoutQuerySnapshotTests.相同标题和Id不合并实例且重复成员保留首个分组"
+      ],
+      "executedTests": [
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.浮窗嵌套与窗口回边仍按原窗口顺序寻找承载者",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.相同标题和Id不合并实例且重复成员保留首个分组",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.浮窗嵌套与窗口回边仍按原窗口顺序寻找承载者",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.相同标题和Id不合并实例且重复成员保留首个分组",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "Q02": {
+      "selectors": [
+        "WorkspaceLayoutQuerySnapshotTests.相同标题和Id不合并实例且重复成员保留首个分组",
+        "WorkspaceLayoutQuerySnapshotTests.窗口声明顺序优先于工作区DFS首次到达的窗口"
+      ],
+      "executedTests": [
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.相同标题和Id不合并实例且重复成员保留首个分组",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.窗口声明顺序优先于工作区DFS首次到达的窗口",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.相同标题和Id不合并实例且重复成员保留首个分组",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.窗口声明顺序优先于工作区DFS首次到达的窗口",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "Q03": {
+      "selectors": [
+        "WorkspaceLayoutQuerySnapshotTests.隐藏四向固定可见和活动关系分别捕获且查询不修复重叠",
+        "WorkspaceLayoutQuerySnapshotTests.工具读取保留隐藏优先级并在下一次查询看到恢复与固定"
+      ],
+      "executedTests": [
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.隐藏四向固定可见和活动关系分别捕获且查询不修复重叠",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.工具读取保留隐藏优先级并在下一次查询看到恢复与固定",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.隐藏四向固定可见和活动关系分别捕获且查询不修复重叠",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.工具读取保留隐藏优先级并在下一次查询看到恢复与固定",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "Q04": {
+      "selectors": [
+        "WorkspaceLayoutQuerySnapshotTests.空布局没有文档窗口或工具关系",
+        "CognitiveUxV8Tests.关闭等待和工作区退出均阻止旧搜索项定位或创建",
+        "ToolCenterUiTests.可用性撤回保留解释禁用打开并且关闭会话不再订阅",
+        "DockLayoutV3UiTests.全隐藏或插件缺失的浮窗不创建空窗口但保留恢复记录"
+      ],
+      "executedTests": [
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.空布局没有文档窗口或工具关系",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p0-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.关闭等待和工作区退出均阻止旧搜索项定位或创建",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.关闭等待和工作区退出均阻止旧搜索项定位或创建",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-ui",
+          "name": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.可用性撤回保留解释禁用打开并且关闭会话不再订阅",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-ui",
+          "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.全隐藏或插件缺失的浮窗不创建空窗口但保留恢复记录",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.空布局没有文档窗口或工具关系",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.关闭等待和工作区退出均阻止旧搜索项定位或创建",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.可用性撤回保留解释禁用打开并且关闭会话不再订阅",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.全隐藏或插件缺失的浮窗不创建空窗口但保留恢复记录",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "Q05": {
+      "selectors": [
+        "CognitiveUxV8Tests.页面标题快照刷新但身份序号不变且观察者异常不影响发布释放",
+        "CognitiveUxV8Tests.同名页面按运行时身份切换且关闭旧项绝不替换成同名新页面"
+      ],
+      "executedTests": [
+        {
+          "stage": "p0-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.页面标题快照刷新但身份序号不变且观察者异常不影响发布释放",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.页面标题快照刷新但身份序号不变且观察者异常不影响发布释放",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p0-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.同名页面按运行时身份切换且关闭旧项绝不替换成同名新页面",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.同名页面按运行时身份切换且关闭旧项绝不替换成同名新页面",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.页面标题快照刷新但身份序号不变且观察者异常不影响发布释放",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.同名页面按运行时身份切换且关闭旧项绝不替换成同名新页面",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "Q06": {
+      "selectors": [
+        "WorkspaceLayoutQuerySnapshotTests.下一次捕获看到移动隐藏和移除而旧关系保持不变",
+        "DockLayoutV3UiTests.内容全屏阻止迁移且重置保留文档实例并关闭浮窗"
+      ],
+      "executedTests": [
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.下一次捕获看到移动隐藏和移除而旧关系保持不变",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-ui",
+          "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.内容全屏阻止迁移且重置保留文档实例并关闭浮窗",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.下一次捕获看到移动隐藏和移除而旧关系保持不变",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.内容全屏阻止迁移且重置保留文档实例并关闭浮窗",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "Q07": {
+      "selectors": [
+        "CognitiveUxV8Tests.页面与工具重复查询不发布通知或改变实例且退出后重新检查",
+        "ToolCenterUiTests.一百个工具虚拟化搜索不重复创建视图且图标保持Owner"
+      ],
+      "executedTests": [
+        {
+          "stage": "p0-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.页面与工具重复查询不发布通知或改变实例且退出后重新检查",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.页面与工具重复查询不发布通知或改变实例且退出后重新检查",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-ui",
+          "name": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.一百个工具虚拟化搜索不重复创建视图且图标保持Owner",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.页面与工具重复查询不发布通知或改变实例且退出后重新检查",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.一百个工具虚拟化搜索不重复创建视图且图标保持Owner",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "Q08": {
+      "selectors": [
+        "CognitiveUxV8Tests.同名页面按运行时身份切换且关闭旧项绝不替换成同名新页面",
+        "CognitiveUxV8Tests.页面与工具重复查询不发布通知或改变实例且退出后重新检查",
+        "ToolCenterUiTests.可用性撤回保留解释禁用打开并且关闭会话不再订阅"
+      ],
+      "executedTests": [
+        {
+          "stage": "p0-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.同名页面按运行时身份切换且关闭旧项绝不替换成同名新页面",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.同名页面按运行时身份切换且关闭旧项绝不替换成同名新页面",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p0-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.页面与工具重复查询不发布通知或改变实例且退出后重新检查",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.页面与工具重复查询不发布通知或改变实例且退出后重新检查",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-ui",
+          "name": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.可用性撤回保留解释禁用打开并且关闭会话不再订阅",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.同名页面按运行时身份切换且关闭旧项绝不替换成同名新页面",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.页面与工具重复查询不发布通知或改变实例且退出后重新检查",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.可用性撤回保留解释禁用打开并且关闭会话不再订阅",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "Q09": {
+      "selectors": [
+        "DockWorkspaceNavigationTests.浮窗与嵌套浮窗可定位且窗口回边不会无限遍历",
+        "DockLayoutV3UiTests.工具浮窗恢复复用原模型和View且关闭后按原组只显示目标工具"
+      ],
+      "executedTests": [
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.DockWorkspaceNavigationTests.浮窗与嵌套浮窗可定位且窗口回边不会无限遍历",
+          "outcome": "Passed"
+        },
+        {
+          "stage": "p3-ui",
+          "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.工具浮窗恢复复用原模型和View且关闭后按原组只显示目标工具",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.DockWorkspaceNavigationTests.浮窗与嵌套浮窗可定位且窗口回边不会无限遍历",
+          "outcome": "Passed"
+        },
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+          "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.工具浮窗恢复复用原模型和View且关闭后按原组只显示目标工具",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "Q10": {
+      "selectors": [
+        "WorkspaceLayoutQuerySnapshotTests.有限大布局与原查询一致并记录关系查询采样"
+      ],
+      "executedTests": [
+        {
+          "stage": "p3-unit",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.有限大布局与原查询一致并记录关系查询采样",
+          "outcome": "Passed"
+        }
+      ],
+      "finalVerifyTests": [
+        {
+          "trx": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+          "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.有限大布局与原查询一致并记录关系查询采样",
+          "outcome": "Passed"
+        }
+      ]
+    }
+  },
+  "developmentFailures": [
+    {
+      "stage": "p1-first-build",
+      "reason": "Missing UI SDK using for CommandPlacementId; fixed without dependency changes."
+    },
+    {
+      "stage": "p2-first-ui",
+      "total": 32,
+      "passed": 30,
+      "failed": 2,
+      "failedTests": [
+        "排队后释放和释放后的请求均不再通知且重复释放安全(alwaysPost: False)",
+        "后台连续请求合并且回调在UI线程并在锁外执行(alwaysPost: False)"
+      ],
+      "reason": "Task.Run synchronously awaited did not guarantee a distinct worker thread. Dedicated Thread with CheckAccess assertion passed.",
+      "evidenceKind": "tool-output-summary",
+      "originalTrxRetained": false,
+      "note": "First TRX was overwritten by subsequent run at the same path; later runs used distinct directories."
+    },
+    {
+      "stage": "p3-first-build",
+      "reason": "Missing Xunit.Abstractions using in Unit test project; fixed."
+    },
+    {
+      "stage": "p3-expanded-fixture",
+      "path": "artifacts/host-v12/p3-unit-final/p3-unit.trx",
+      "sha256": "98e790bbb54ab6cc1e14882eb14f2d5fe59470d3ac7e8aabf9b2eb6c291196b3",
+      "total": 58,
+      "passed": 56,
+      "failed": 2,
+      "reason": "Fixture attempted to read exclusively leased layout lock and overlooked inner-root Hidden membership; test setup corrected, production unchanged."
+    }
+  ],
+  "performanceSample": {
+    "scope": "relationship lookup only; includes snapshot construction; not end-to-end UI",
+    "pages": 270,
+    "tools": 90,
+    "floatingWindows": 8,
+    "nodes": 396,
+    "warmupRounds": 3,
+    "sampleRounds": 7,
+    "originalMilliseconds": [
+      13.976,
+      14.984,
+      17.357,
+      13.496,
+      13.078,
+      13.359,
+      12.854
+    ],
+    "snapshotMilliseconds": [
+      0.195,
+      0.167,
+      0.167,
+      0.152,
+      0.162,
+      0.143,
+      0.158
+    ],
+    "medianOriginalMilliseconds": 13.496,
+    "medianSnapshotMilliseconds": 0.162,
+    "hardTimingGate": false
+  },
+  "notPerformed": [
+    "AIFLOW",
+    "Windows CI",
+    "seal",
+    "release Windows Smoke",
+    "release coverage",
+    "release repeatability",
+    "native desktop interaction",
+    "external plugin business acceptance",
+    "installation-directory deployment",
+    "package upload or release"
+  ],
+  "embeddedMarkdownPolicy": "Markdown finalized before final verify; afterwards only this nonembedded JSON is updated. Source manifest excludes this file to avoid self-reference.",
+  "completedAtUtc": "2026-09-17T06:11:07.124745+00:00",
+  "finalVerify": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "runId": "20260917-060732-538d173b7a0d",
+    "startedAtUtc": "2026-09-17T06:07:32.0069132+00:00",
+    "finishedAtUtc": "2026-09-17T06:09:35.2138023+00:00",
+    "exitCode": 0,
+    "summary": {
+      "path": "artifacts/gate/20260917-060732-538d173b7a0d/summary.json",
+      "sha256": "5a265081568718f8a6f17bfb31650866de65339995b8e5f14d2cd05e61672b84"
+    },
+    "passed": true,
+    "warnings": 0,
+    "errors": 0,
+    "testsExecuted": 1095,
+    "testsPassed": 1095,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "testReports": [
+      {
+        "suite": "host-plugin",
+        "path": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "6495acd6afae166de1e248285b6398a5ce238c8fd5ce4f4797c8e167b89eba8c",
+        "counts": {
+          "total": 255,
+          "executed": 255,
+          "passed": 255,
+          "failed": 0,
+          "error": 0,
+          "timeout": 0,
+          "aborted": 0,
+          "inconclusive": 0,
+          "passedButRunAborted": 0,
+          "notRunnable": 0,
+          "notExecuted": 0,
+          "disconnected": 0,
+          "warning": 0,
+          "completed": 0,
+          "inProgress": 0,
+          "pending": 0
+        }
+      },
+      {
+        "suite": "host-ui",
+        "path": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "434bc49ec8f1a5eef51cb220397315dc5095cf5c8f417bf90dae85f22aaf9c7c",
+        "counts": {
+          "total": 220,
+          "executed": 220,
+          "passed": 220,
+          "failed": 0,
+          "error": 0,
+          "timeout": 0,
+          "aborted": 0,
+          "inconclusive": 0,
+          "passedButRunAborted": 0,
+          "notRunnable": 0,
+          "notExecuted": 0,
+          "disconnected": 0,
+          "warning": 0,
+          "completed": 0,
+          "inProgress": 0,
+          "pending": 0
+        }
+      },
+      {
+        "suite": "host-unit",
+        "path": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "9eb252cefdbfdc1176e2cf540451971dd09d221a3855a05d1a343868f6fd5fe2",
+        "counts": {
+          "total": 517,
+          "executed": 517,
+          "passed": 517,
+          "failed": 0,
+          "error": 0,
+          "timeout": 0,
+          "aborted": 0,
+          "inconclusive": 0,
+          "passedButRunAborted": 0,
+          "notRunnable": 0,
+          "notExecuted": 0,
+          "disconnected": 0,
+          "warning": 0,
+          "completed": 0,
+          "inProgress": 0,
+          "pending": 0
+        }
+      },
+      {
+        "suite": "my-plug-test",
+        "path": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/my-plug-test/my-plug-test.trx",
+        "sha256": "4d656ed0069f8c506eddbf3ac62358575f6aa22b3acd0bd0d00b2bcdbeba73a3",
+        "counts": {
+          "total": 11,
+          "executed": 11,
+          "passed": 11,
+          "failed": 0,
+          "error": 0,
+          "timeout": 0,
+          "aborted": 0,
+          "inconclusive": 0,
+          "passedButRunAborted": 0,
+          "notRunnable": 0,
+          "notExecuted": 0,
+          "disconnected": 0,
+          "warning": 0,
+          "completed": 0,
+          "inProgress": 0,
+          "pending": 0
+        }
+      },
+      {
+        "suite": "my-plug-test-package",
+        "path": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+        "sha256": "97a6c42bbe4330be917eaf25ed0fdc198e3e861f06d88e1cd77f9aa532dfb049",
+        "counts": {
+          "total": 1,
+          "executed": 1,
+          "passed": 1,
+          "failed": 0,
+          "error": 0,
+          "timeout": 0,
+          "aborted": 0,
+          "inconclusive": 0,
+          "passedButRunAborted": 0,
+          "notRunnable": 0,
+          "notExecuted": 0,
+          "disconnected": 0,
+          "warning": 0,
+          "completed": 0,
+          "inProgress": 0,
+          "pending": 0
+        }
+      },
+      {
+        "suite": "sdk",
+        "path": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/tests/sdk/sdk.trx",
+        "sha256": "40c4582095a543dacab03370425c6cbb7644ebab918547a0b7af35bccd66e145",
+        "counts": {
+          "total": 91,
+          "executed": 91,
+          "passed": 91,
+          "failed": 0,
+          "error": 0,
+          "timeout": 0,
+          "aborted": 0,
+          "inconclusive": 0,
+          "passedButRunAborted": 0,
+          "notRunnable": 0,
+          "notExecuted": 0,
+          "disconnected": 0,
+          "warning": 0,
+          "completed": 0,
+          "inProgress": 0,
+          "pending": 0
+        }
+      }
+    ],
+    "stages": [
+      {
+        "id": "avalonia-layout-patch",
+        "status": "passed",
+        "durationMilliseconds": 483,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260917-060732-538d173b7a0d\\pass-1"
+      },
+      {
+        "id": "dock-patch",
+        "status": "passed",
+        "durationMilliseconds": 465,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260917-060732-538d173b7a0d\\pass-1"
+      },
+      {
+        "id": "restore",
+        "status": "passed",
+        "durationMilliseconds": 1840,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260917-060732-538d173b7a0d\\pass-1"
+      },
+      {
+        "id": "build",
+        "status": "passed",
+        "durationMilliseconds": 17634,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260917-060732-538d173b7a0d\\pass-1"
+      },
+      {
+        "id": "tests",
+        "status": "passed",
+        "durationMilliseconds": 96969,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260917-060732-538d173b7a0d\\pass-1"
+      },
+      {
+        "id": "contracts",
+        "status": "passed",
+        "durationMilliseconds": 3868,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260917-060732-538d173b7a0d\\pass-1"
+      },
+      {
+        "id": "packages",
+        "status": "passed",
+        "durationMilliseconds": 27,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260917-060732-538d173b7a0d\\pass-1"
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed",
+        "durationMilliseconds": 1481,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260917-060732-538d173b7a0d\\pass-1"
+      }
+    ],
+    "apiCompatibility": {
+      "path": "artifacts/gate/20260917-060732-538d173b7a0d/pass-1/api-compat/summary.json",
+      "sha256": "65947206f90c62212c12c932956e959efac2206612ff23aee9317d5ca8183c52"
+    },
+    "host": {
+      "releaseEligible": false,
+      "publishable": false
+    },
+    "repeatability": {
+      "requested": false,
+      "verified": false
+    }
+  },
+  "newTests": {
+    "unitCases": 21,
+    "headlessCases": 15,
+    "total": 36,
+    "actualExecution": {
+      "PluginRegistryRefactorContractTests": {
+        "passed": 5,
+        "tests": [
+          "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.Registry索引构造失败仍未提交Provider且Builder保持封闭",
+          "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.诊断抛错立即停止且尚未提交Provider所有权",
+          "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.全局诊断保持贡献种类和所有者发现顺序且不激活View",
+          "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.局部组合异常保持排序并且失败导入不留下部分贡献",
+          "MyAvaloniaManagement.Tests.PluginRegistryRefactorContractTests.多所有者且多生命周期保留原失败边界"
+        ]
+      },
+      "PluginContributionValidatorTests": {
+        "passed": 4,
+        "tests": [
+          "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.集合快照不随Builder追加改变且不能通过强转改写",
+          "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.Command和Placement可先于Document声明且校验没有激活副作用(commandFirst: True)",
+          "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.声明关系错误与重复快捷键分别报告且保留规则顺序",
+          "MyAvaloniaManagement.Tests.PluginContributionValidatorTests.Command和Placement可先于Document声明且校验没有激活副作用(commandFirst: False)"
+        ]
+      },
+      "PluginConflictAnalyzerTests": {
+        "passed": 3,
+        "tests": [
+          "MyAvaloniaManagement.Tests.PluginConflictAnalyzerTests.分析固定快照可重复且不受Builder后续追加影响",
+          "MyAvaloniaManagement.Tests.PluginConflictAnalyzerTests.图标同Owner重复仍拒绝而普通全局身份只比较跨Owner",
+          "MyAvaloniaManagement.Tests.PluginConflictAnalyzerTests.跨DocumentTool精确模型冲突返回两个Owner并保留View来源"
+        ]
+      },
+      "WorkspaceLayoutQuerySnapshotTests": {
+        "passed": 8,
+        "tests": [
+          "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.工具读取保留隐藏优先级并在下一次查询看到恢复与固定",
+          "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.下一次捕获看到移动隐藏和移除而旧关系保持不变",
+          "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.窗口声明顺序优先于工作区DFS首次到达的窗口",
+          "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.有限大布局与原查询一致并记录关系查询采样",
+          "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.空布局没有文档窗口或工具关系",
+          "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.浮窗嵌套与窗口回边仍按原窗口顺序寻找承载者",
+          "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.相同标题和Id不合并实例且重复成员保留首个分组",
+          "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.隐藏四向固定可见和活动关系分别捕获且查询不修复重叠"
+        ]
+      },
+      "UiRefreshSchedulerTests": {
+        "passed": 10,
+        "tests": [
+          "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.回调异常原样交给消费者且不阻断下一次请求",
+          "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.排队后释放和释放后的请求均不再通知且重复释放安全(alwaysPost: True)",
+          "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.发布期间的新失效保留各自重入顺序(alwaysPost: False)",
+          "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.回调中释放抑制后续请求并且其他消费者不受影响",
+          "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行(alwaysPost: False)",
+          "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行(alwaysPost: True)",
+          "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为(alwaysPost: False)",
+          "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.排队后释放和释放后的请求均不再通知且重复释放安全(alwaysPost: False)",
+          "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.发布期间的新失效保留各自重入顺序(alwaysPost: True)",
+          "MyAvaloniaManagement.UiTests.UiRefreshSchedulerTests.UI线程同步模式与排队模式保持不同的合并行为(alwaysPost: True)"
+        ]
+      },
+      "CognitiveUxV8Tests.页面与工具重复查询不发布通知或改变实例且退出后重新检查": {
+        "passed": 1,
+        "tests": [
+          "MyAvaloniaManagement.Tests.CognitiveUxV8Tests.页面与工具重复查询不发布通知或改变实例且退出后重新检查"
+        ]
+      },
+      "WorkbenchCommandPresentationUiTests.菜单与命令同步刷新而面板始终排队并合并": {
+        "passed": 1,
+        "tests": [
+          "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.菜单与命令同步刷新而面板始终排队并合并"
+        ]
+      },
+      "WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布": {
+        "passed": 4,
+        "tests": [
+          "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"keys\")",
+          "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"command\")",
+          "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"palette\")",
+          "MyAvaloniaManagement.UiTests.WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布(target: \"menu\")"
+        ]
+      }
+    }
+  },
+  "cachedAvaloniaPatchVerification": {
+    "note": "Final verify checked cached validated inputs, binaries and TRX hashes. These 7 cases were not re-executed in this final run and are excluded from testsExecuted.",
+    "receipt": {
+      "path": "artifacts/avalonia-cross-window-layout/runtime/receipt.json",
+      "sha256": "6f8c18f47bea4505eac20e08d4a94ee3c201c0b17ce4bb596c2d6e7d0401219a"
+    },
+    "details": {
+      "identity": "avalonia-12.1.2-host-layout.1",
+      "fingerprint": "9DB8A580DD77C384C8969F2284FFB27240CCFF35424CA23E1DB38E44DE3BA46C",
+      "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+      "sdk": "10.0.302",
+      "publicSigned": true,
+      "assembly": "Avalonia.Base, Version=12.1.2.0, Culture=neutral, PublicKeyToken=c8d484a7012f9a8b",
+      "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+      "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67",
+      "buildRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\9DB8A580DD77C384-0493837b",
+      "isolatedRestore": false,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "testTrx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\9DB8A580DD77C384-0493837b\\results\\layout-patch.trx",
+      "testSha256": "4000E0EC0E605EFAC455072F965857340B3CB8E4EE42C121DB3568510EB21809"
+    }
+  },
+  "finalSource": {
+    "head": "538d173b7a0d90dc7f1b25dcbc901b5ac597f288",
+    "branch": "codex/host-v12-internal-refactor",
+    "clean": false,
+    "gitCommitCreated": false,
+    "algorithm": "SHA256 of ordinal Windows-relative-path sorted entries: UTF8 forward-slash path, NUL, raw file bytes, NUL",
+    "sha256ExcludingThisEvidence": "C6AB71285D268536A5CA3823FA5ED87650EC1B9A338378839030B1C87E11B9F8",
+    "fileCountExcludingThisEvidence": 951,
+    "excludedPath": "docs/archive/records/host-v12/final-development-evidence.json",
+    "evidenceSha256AtVerifyStart": "92882c07aef6f74fe064b6ad46a53c42f5bef128b8c9dd1df6c250b654820f9d",
+    "gateSourceIdentityAtStart": {
+      "revision": "538d173b7a0d90dc7f1b25dcbc901b5ac597f288",
+      "tree": "71d5cec7aaa3a78a7dcfee57f2c2e6a62c1f49ab",
+      "clean": false,
+      "files": 952,
+      "sha256": "EDCECE0322E0156626655A300F49570F29BC1BF2A1BA84B48CF3782BB0C20149"
+    },
+    "manifest": {
+      "path": "artifacts/host-v12/final-source-manifest.json",
+      "sha256": "d9c4d98ca7524c75e469ed0d359cf7bc01f24987b88dd1a9cedb1690e1ab9b45"
+    },
+    "changedFiles": [
+      {
+        "path": "Host/MyAvaloniaManagement.Tests/CognitiveUxV8Tests.cs",
+        "sha256": "5da3b780cab90a53b85f894f141796b8794609135bde3fc5b922eca0df7e32be"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.Tests/PluginConflictAnalyzerTests.cs",
+        "sha256": "61b521f4a54c2fa68289f81e3924e042c410e281931295df4abe0a8f645f7d5f"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.Tests/PluginContributionValidatorTests.cs",
+        "sha256": "45330f0c92ab789202a8e4763520a35fe61065cdb4f26149dfea5c1b7433a52c"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.Tests/PluginRegistryRefactorContractTests.cs",
+        "sha256": "29bb1c6110f4e69d713bc9cefa747ee077f1182012d9832bbd2305c16c5a1874"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.Tests/WorkspaceLayoutQuerySnapshotTests.cs",
+        "sha256": "9f846dc9853c2c3ab0ae3b2db742cc34e12dcd82c05e741bbdf8bfa29c0fad7e"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.UiTests/UiRefreshSchedulerTests.cs",
+        "sha256": "c4788678e5a4385b1f832aca816a3c10e4e582283fbde8356b71d0c14571e5d5"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.UiTests/WorkbenchCommandPresentationUiTests.cs",
+        "sha256": "4f045ef48ada3b89fc772725782c77cd88b42f12f04eafd7200f1b72b0eb7ac4"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginConflictAnalyzer.cs",
+        "sha256": "b7bbc40a518e25e7b5c31852d3ae29024d32573722865825e032256edc72773e"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginContributionSnapshot.cs",
+        "sha256": "c3d1445f7c5af71add2ad07e29ef14f63b195825bd204dd7550a10269fb6954b"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginContributionValidator.cs",
+        "sha256": "7c82246c4e8dc60bfe8b492d357006e9a8c3593b5a84413c16dc7c73d8931e28"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginRegistryBuilder.cs",
+        "sha256": "f21b9c309aa4383099e367a39c32ca4b56e72571558984482fd6be5306bf38bc"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Presentation/Commands/UiRefreshScheduler.cs",
+        "sha256": "2eddc080f0714736d0487210327db647f54bc489072f03d19591053393128b3b"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandPaletteProjection.cs",
+        "sha256": "7a4e299c8c38fe1302f004ea0ecca20053c757962874a0195ef7864df0cfac08"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+        "sha256": "9d3db2c3db0eff44334353b22f94cde124378e3cb91d8283550c99668f6d04e1"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchPresentationCommand.cs",
+        "sha256": "ffe63aa2aa30fe172e6f21bf6d1ffac80f3589bccb71c3d43eedb039e28fddb9"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Workspace/ToolWorkspaceReadModel.cs",
+        "sha256": "5ef79d032b5fda2dea3446b492d7dff8aebc04a599d4cd5f6a436140b8f9e16b"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Workspace/WorkspaceLayoutQuerySnapshot.cs",
+        "sha256": "6a015dd77a7ce0738da325dc4d9f6b1db44319cff8c211a3fe06e585c7b8cb34"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.Pages.cs",
+        "sha256": "660b1a4c809bc0872a73937fe3c9ffd8c79f02375adc1a23eccd3f62d4571c28"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/README.md",
+        "sha256": "423889dc27a551e57e0f1a38ed3642e7b28a6950ae55cbc794ec5908b92aa5f1"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/architecture.md",
+        "sha256": "29b6fe8c39e0da9658b87c5782b75b4966d040e40f050f72b33b139ad43451e6"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+        "sha256": "367cbfb791e8b45ba695a5bfd6488feff66301c31a67849969732412471990f4"
+      },
+      {
+        "path": "docs/README.md",
+        "sha256": "d938c627ac7e6ec245d6b5fcd4ea311a3fef52ad98f4f256b8e2545da16ba298"
+      },
+      {
+        "path": "docs/archive/README.md",
+        "sha256": "0da50adf88c696cf32100b8e21c703bc530a1c57b5abd769d2922feaa591c7d4"
+      },
+      {
+        "path": "docs/archive/records/host-v12/development-acceptance.md",
+        "sha256": "97eb01a3dc7684a51c449492703a0cb72dfb12bf6511e7a41c4bd1ed66e4ef3b"
+      },
+      {
+        "path": "docs/maintenance/host-v12-refactor-verification.md",
+        "sha256": "915bc27ee17c620c43642e3e1ad4b0f239add41a1f9f32712930d54cdc38019c"
+      },
+      {
+        "path": "docs/maintenance/verification.md",
+        "sha256": "2ebb5bd2795d258829483656d3a061ec5a13c540ae841c98b1d03c6422a93f37"
+      },
+      {
+        "path": "docs/roadmap/README.md",
+        "sha256": "38d40b6c3c95af41c12fc5e9013846385717f4489a4152b11962a27ca0d7550e"
+      },
+      {
+        "path": "docs/roadmap/host-v12-internal-refactor-plan.md",
+        "sha256": "6f7a6c398c23099723b13fa3b80fae8329b073c290b3d6001bdbf9e56344536f"
+      }
+    ],
+    "unchangedDuringAndAfterVerify": true
+  },
+  "buildArtifacts": [
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.dll",
+      "sha256": "fd4a35024d2d6d26110f95a308bd6fcec1cf08065b81734c56d4a079f9b52d7e"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.pdb",
+      "sha256": "4835c35b482323f68fac0e250b4d139366cca4f3a2a2dec4b1bd813b46091fb2"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement.PluginSdk/bin/Release/net10.0/MyAvaloniaManagement.PluginSdk.dll",
+      "sha256": "034e495be74e601214ddd45d43fa9a57695a798bffcb991c6bae774cb6569ea6"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement.PluginSdk.UI/bin/Release/net10.0/MyAvaloniaManagement.PluginSdk.UI.dll",
+      "sha256": "6475e2cc8b8764a2dc0467086217bf707be86278f013fea64308c0b1c3da0b14"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement.PluginSdk.Workflow/bin/Release/net10.0/MyAvaloniaManagement.PluginSdk.Workflow.dll",
+      "sha256": "4f80d8d44c52f8ca57184f9100c16d8c9710c18830d9412a5132c1682c461b3c"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement.Icons/bin/Release/net10.0/MyAvaloniaManagement.Icons.dll",
+      "sha256": "8746d1332685b47226d9c46f1d7f044e77c4210f839adf6438f8a554ab716979"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement.Tests/bin/Release/net10.0/MyAvaloniaManagement.Tests.dll",
+      "sha256": "125ad480c2f536cc8c7f7e072dc4d9df996eeec78d826828babad6608df3bc0f"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement.PluginTests/bin/Release/net10.0/MyAvaloniaManagement.PluginTests.dll",
+      "sha256": "fde65dbce6db64d46122c42d4bdc2d56d039e1fec0be1a1aa05a7c9a8525e5d1"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement.UiTests/bin/Release/net10.0/MyAvaloniaManagement.UiTests.dll",
+      "sha256": "28772b84ca0cc062a25ad8a1cde00388271f547966ccbc0925d801ecce014c95"
+    }
+  ],
+  "documentChecks": {
+    "markdownFiles": 10,
+    "localLinksChecked": 299,
+    "externalWorkspaceLinksNotRequired": 4,
+    "testFilterClassesChecked": 33,
+    "passed": true
+  },
+  "whitespaceCheck": {
+    "command": "git diff --check",
+    "passed": true
+  }
+}

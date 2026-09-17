@@ -197,260 +197,17 @@ internal sealed class PluginRegistryBuilder
     internal void ValidateSingleOwner(PluginId? expectedOwner = null)
     {
         EnsureWritable();
-        var diagnostics = new List<HostCompositionDiagnostic>();
-        var owners = _documents.Select(item => item.OwnerId)
-            .Concat(_tools.Select(item => item.OwnerId))
-            .Concat(_lifecycles.Select(item => item.OwnerId))
-            .Concat(_workflowActions.Select(item => item.OwnerId))
-            .Concat(_workflowConsumers)
-            .Concat(_workbenchCommands.Select(item => item.OwnerId))
-            .Concat(_menuCommandContributions.Select(item => item.OwnerId))
-            .Concat(_keyBindingContributions.Select(item => item.OwnerId))
-            .Concat(_icons.Select(item => item.OwnerId))
-            .Distinct()
-            .ToArray();
-        if (owners.Length > 1)
-        {
-            diagnostics.Add(new HostCompositionDiagnostic(
-                "EXTENSION_OWNER_MISMATCH",
-                string.Join(",", owners.Select(item => item.Value)),
-                []));
-        }
-
-        if (expectedOwner is not null)
-        {
-            foreach (var icon in _icons.Where(item => item.OwnerId != expectedOwner))
-            {
-                diagnostics.Add(IdentityDiagnostic("ICON_OWNER_MISMATCH", icon.Reference));
-            }
-            foreach (var document in _documents.Where(item =>
-                         !BelongsToOwner(
-                             item.Descriptor.DocumentTypeId.Value,
-                             expectedOwner,
-                             "document")))
-            {
-                diagnostics.Add(Diagnostic(
-                    HostDiagnosticCodes.DocumentIdOwnerMismatch,
-                    document.Descriptor.DocumentTypeId.Value,
-                    document.ModelType));
-            }
-
-            foreach (var tool in _tools.Where(item =>
-                         !BelongsToOwner(
-                             item.Descriptor.ToolTypeId.Value,
-                             expectedOwner,
-                             "tool")))
-            {
-                diagnostics.Add(Diagnostic(
-                    HostDiagnosticCodes.ToolIdOwnerMismatch,
-                    tool.Descriptor.ToolTypeId.Value,
-                    tool.ModelType));
-            }
-
-            foreach (var action in _workflowActions.Where(item =>
-                         !BelongsToOwner(
-                             item.Descriptor.Id.Value,
-                             expectedOwner,
-                             "workflow")))
-            {
-                diagnostics.Add(Diagnostic(
-                    "WORKFLOW_ACTION_ID_OWNER_MISMATCH",
-                    action.Descriptor.Id.Value,
-                    action.HandlerType));
-            }
-
-            ValidateWorkbenchCommandOwnership(expectedOwner, diagnostics);
-        }
-
-        AddDuplicateDiagnostics(
-            _documents, item => item.Descriptor.DocumentTypeId,
-            item => item.ModelType, "DOCUMENT_ID_DUPLICATE", diagnostics);
-        AddDuplicateDiagnostics(
-            _tools, item => item.Descriptor.ToolTypeId,
-            item => item.ModelType, "TOOL_ID_DUPLICATE", diagnostics);
-        AddDuplicateDiagnostics(
-            _documents, item => item.ModelType,
-            item => item.ModelType, "DOCUMENT_CONTRIBUTION_TYPE_DUPLICATE", diagnostics);
-        AddDuplicateDiagnostics(
-            _tools, item => item.ModelType,
-            item => item.ModelType, "TOOL_CONTRIBUTION_TYPE_DUPLICATE", diagnostics);
-        AddDuplicateDiagnostics(
-            _workflowActions, item => item.Descriptor.Id,
-            item => item.HandlerType, "WORKFLOW_ACTION_ID_DUPLICATE", diagnostics);
-        AddDuplicateDiagnostics(
-            _workflowActions, item => item.HandlerType,
-            item => item.HandlerType, "WORKFLOW_ACTION_HANDLER_TYPE_DUPLICATE", diagnostics);
-        AddIdentityDuplicateDiagnostics(
-            _workbenchCommands,
-            item => item.Descriptor.CommandId,
-            HostDiagnosticCodes.WorkbenchCommandIdDuplicate,
-            diagnostics);
-
-        AddIdentityDuplicateDiagnostics(_icons, item => item.Reference,
-            "ICON_REFERENCE_DUPLICATE", diagnostics);
-
-        var placements = _menuCommandContributions
-            .Select(item => new WorkbenchPlacementDeclaration(
-                item.OwnerId,
-                item.Descriptor.PlacementId,
-                item.Descriptor.CommandId))
-            .Concat(_keyBindingContributions.Select(item => new WorkbenchPlacementDeclaration(
-                item.OwnerId,
-                item.Descriptor.PlacementId,
-                item.Descriptor.CommandId)))
-            .ToArray();
-        AddIdentityDuplicateDiagnostics(
-            placements,
-            item => item.PlacementId,
-            HostDiagnosticCodes.WorkbenchCommandPlacementIdDuplicate,
-            diagnostics);
-        AddIdentityDuplicateDiagnostics(
-            _keyBindingContributions,
-            item => (item.Descriptor.Key, item.Descriptor.Modifiers),
-            HostDiagnosticCodes.WorkbenchKeyGestureDuplicate,
-            diagnostics);
-
-        var localViews = _documents.Select(item => new ViewDeclaration(
-                item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory))
-            .Concat(_tools.Select(item => new ViewDeclaration(
-                item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory)));
-        AddDuplicateDiagnostics(
-            localViews,
-            item => item.ModelType,
-            item => item.ViewType,
-            "VIEW_MODEL_REGISTRATION_DUPLICATE",
-            diagnostics);
-
-        foreach (var type in _documents.Select(item => item.ModelType)
-                     .Intersect(_tools.Select(item => item.ModelType)))
-        {
-            diagnostics.Add(Diagnostic(
-                "CONTRIBUTION_MODEL_TYPE_CONFLICT",
-                type.FullName,
-                type));
-        }
-
-        if (_lifecycles.Count > 1)
-        {
-            diagnostics.Add(new HostCompositionDiagnostic(
-                "LIFECYCLE_PLUGIN_ID_DUPLICATE",
-                owners.SingleOrDefault()?.Value,
-                _lifecycles.Select(item => ToContributor(item.ImplementationType))
-                    .Distinct().ToArray()));
-        }
-
+        var diagnostics = PluginContributionValidator.Validate(CaptureContributions(), expectedOwner);
         if (diagnostics.Count > 0)
         {
             throw new HostCompositionException(diagnostics);
         }
     }
 
-    /// <summary>校验 Command 声明与当前插件的 Document/Placement 关系。</summary>
-    /// <remarks>
-    /// 关系校验统一在 Seal 时执行，因此插件可以按适合自身代码组织的顺序声明 Document、Command
-    /// 和 Placement。这里仅比较冻结身份，不解析模型或调用插件代码。
-    /// </remarks>
-    private void ValidateWorkbenchCommandOwnership(
-        PluginId expectedOwner,
-        ICollection<HostCompositionDiagnostic> diagnostics)
-    {
-        foreach (var command in _workbenchCommands)
-        {
-            if (!BelongsToOwner(command.Descriptor.CommandId.Value, expectedOwner, "command"))
-            {
-                diagnostics.Add(IdentityDiagnostic(
-                    HostDiagnosticCodes.WorkbenchCommandIdOwnerMismatch,
-                    command.Descriptor.CommandId.Value));
-            }
-
-            if (!BelongsToOwner(command.TargetDocumentTypeId.Value, expectedOwner, "document"))
-            {
-                diagnostics.Add(IdentityDiagnostic(
-                    HostDiagnosticCodes.WorkbenchCommandTargetDocumentOwnerMismatch,
-                    command.TargetDocumentTypeId.Value));
-            }
-            else if (!_documents.Any(document =>
-                         document.OwnerId == expectedOwner &&
-                         document.Descriptor.DocumentTypeId == command.TargetDocumentTypeId))
-            {
-                diagnostics.Add(IdentityDiagnostic(
-                    HostDiagnosticCodes.WorkbenchCommandTargetDocumentNotRegistered,
-                    command.TargetDocumentTypeId.Value));
-            }
-        }
-
-        var commandIds = _workbenchCommands
-            .Where(command => command.OwnerId == expectedOwner)
-            .Select(command => command.Descriptor.CommandId)
-            .ToHashSet();
-        foreach (var placement in _menuCommandContributions
-                     .Select(item => new WorkbenchPlacementDeclaration(
-                         item.OwnerId,
-                         item.Descriptor.PlacementId,
-                         item.Descriptor.CommandId))
-                     .Concat(_keyBindingContributions.Select(item =>
-                         new WorkbenchPlacementDeclaration(
-                             item.OwnerId,
-                             item.Descriptor.PlacementId,
-                             item.Descriptor.CommandId))))
-        {
-            ValidatePlacement(expectedOwner, placement, commandIds, diagnostics);
-        }
-
-        foreach (var menu in _menuCommandContributions.Where(item =>
-                     !IsSupportedMenuLocation(item.Descriptor.LocationId)))
-        {
-            diagnostics.Add(IdentityDiagnostic(
-                HostDiagnosticCodes.WorkbenchMenuLocationUnsupported,
-                menu.Descriptor.LocationId.Value));
-        }
-    }
-
-    private static void ValidatePlacement(
-        PluginId expectedOwner,
-        WorkbenchPlacementDeclaration placement,
-        IReadOnlySet<CommandId> commandIds,
-        ICollection<HostCompositionDiagnostic> diagnostics)
-    {
-        if (!BelongsToOwner(placement.PlacementId.Value, expectedOwner, "command-placement"))
-        {
-            diagnostics.Add(IdentityDiagnostic(
-                HostDiagnosticCodes.WorkbenchCommandPlacementIdOwnerMismatch,
-                placement.PlacementId.Value));
-        }
-
-        if (!BelongsToOwner(placement.CommandId.Value, expectedOwner, "command"))
-        {
-            diagnostics.Add(IdentityDiagnostic(
-                HostDiagnosticCodes.WorkbenchCommandPlacementCommandOwnerMismatch,
-                placement.CommandId.Value));
-        }
-        else if (!commandIds.Contains(placement.CommandId))
-        {
-            diagnostics.Add(IdentityDiagnostic(
-                HostDiagnosticCodes.WorkbenchCommandPlacementCommandNotRegistered,
-                placement.CommandId.Value));
-        }
-    }
-
-    private static bool IsSupportedMenuLocation(MenuLocationId locationId) =>
-        locationId == WorkbenchMenuLocations.FileShared ||
-        locationId == WorkbenchMenuLocations.ViewShared ||
-        locationId == WorkbenchMenuLocations.ToolsShared ||
-        locationId == WorkbenchMenuLocations.HelpShared;
-
-    /// <summary>判断贡献 ID 是否位于指定所有者和贡献种类的精确点分命名空间。</summary>
-    /// <remarks>
-    /// 前缀末尾显式包含点号，避免所有者 <c>a.b</c> 错误接纳 <c>a.bc</c>；同时要求前缀后
-    /// 至少还有一个字符，拒绝只有 <c>{PluginId}.document.</c> 或 <c>.tool.</c> 的空后缀。
-    /// 稳定 ID 的词法合法性仍由 SDK 值对象负责，这里只判断跨对象所有权。
-    /// </remarks>
-    private static bool BelongsToOwner(string stableId, PluginId owner, string contributionKind)
-    {
-        var prefix = $"{owner.Value}.{contributionKind}.";
-        return stableId.Length > prefix.Length &&
-               stableId.StartsWith(prefix, StringComparison.Ordinal);
-    }
+    /// <summary>捕获当前声明事实；不改变可写状态，不发布或激活任何贡献。</summary>
+    internal PluginContributionSnapshot CaptureContributions() => new(
+        _documents, _tools, _lifecycles, _workflowActions, _workflowConsumers,
+        _workbenchCommands, _menuCommandContributions, _keyBindingContributions, _icons);
 
     /// <summary>
     /// 完成跨所有者冲突隔离并发布本次 Runtime 唯一的不可变 Registry。
@@ -464,86 +221,18 @@ internal sealed class PluginRegistryBuilder
         _built = true;
 
         var rejectedOwners = new HashSet<PluginId>();
-        // 完整键含真实 Owner，正常导入时不会跨所有者冲突。仍在发布边界检查重复，
-        // 防止同一候选被误导入两次后，以 Dictionary 构造异常破坏整次启动。
-        foreach (var duplicate in _icons.GroupBy(item => item.Reference).Where(group => group.Count() > 1))
+        // 逐项消费纯分析结果，保留原诊断顺序与抛错边界。诊断失败时不会继续分析后续冲突，
+        // 更不会提前提交 Provider；完整 Registry 的构造和提交仍只在此入口完成。
+        foreach (var conflict in PluginConflictAnalyzer.Analyze(CaptureContributions()))
         {
-            foreach (var owner in duplicate.Select(item => item.OwnerId).Distinct())
+            rejectedOwners.Add(conflict.OwnerId);
+            diagnosticSink?.Report(new HostDiagnosticDraft(conflict.Code, HostDiagnosticPhase.ExtensionDiscovery)
             {
-                rejectedOwners.Add(owner);
-                diagnosticSink?.Report(new HostDiagnosticDraft("ICON_REFERENCE_DUPLICATE", HostDiagnosticPhase.ExtensionDiscovery)
-                {
-                    PluginId = owner,
-                    StableId = duplicate.Key,
-                });
-            }
+                PluginId = conflict.OwnerId,
+                StableId = conflict.StableId,
+                AssemblyName = conflict.Contributor?.Assembly.GetName(),
+            });
         }
-        RejectGlobalConflicts(
-            _documents,
-            item => item.Descriptor.DocumentTypeId,
-            item => item.OwnerId,
-            item => item.ModelType,
-            "DOCUMENT_ID_DUPLICATE",
-            rejectedOwners,
-            diagnosticSink);
-        RejectGlobalConflicts(
-            _tools,
-            item => item.Descriptor.ToolTypeId,
-            item => item.OwnerId,
-            item => item.ModelType,
-            "TOOL_ID_DUPLICATE",
-            rejectedOwners,
-            diagnosticSink);
-        RejectGlobalConflicts(
-            _workflowActions,
-            item => item.Descriptor.Id,
-            item => item.OwnerId,
-            item => item.HandlerType,
-            "WORKFLOW_ACTION_ID_DUPLICATE",
-            rejectedOwners,
-            diagnosticSink);
-        RejectGlobalConflicts(
-            _workbenchCommands,
-            item => item.Descriptor.CommandId,
-            item => item.OwnerId,
-            ResolveWorkbenchCommandContributor,
-            HostDiagnosticCodes.WorkbenchCommandIdDuplicate,
-            rejectedOwners,
-            diagnosticSink);
-
-        var workbenchPlacements = _menuCommandContributions
-            .Select(item => new GlobalWorkbenchPlacementDeclaration(
-                item.OwnerId,
-                item.Descriptor.PlacementId,
-                item.Descriptor.CommandId))
-            .Concat(_keyBindingContributions.Select(item =>
-                new GlobalWorkbenchPlacementDeclaration(
-                    item.OwnerId,
-                    item.Descriptor.PlacementId,
-                    item.Descriptor.CommandId)))
-            .ToArray();
-        RejectGlobalConflicts(
-            workbenchPlacements,
-            item => item.PlacementId,
-            item => item.OwnerId,
-            ResolveWorkbenchPlacementContributor,
-            HostDiagnosticCodes.WorkbenchCommandPlacementIdDuplicate,
-            rejectedOwners,
-            diagnosticSink);
-
-        var views = _documents.Select(item => new ViewDeclaration(
-                item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory))
-            .Concat(_tools.Select(item => new ViewDeclaration(
-                item.OwnerId, item.ModelType, item.ViewType, item.ViewFactory)))
-            .ToArray();
-        RejectGlobalConflicts(
-            views,
-            item => item.ModelType,
-            item => item.OwnerId,
-            item => item.ViewType,
-            "VIEW_MODEL_REGISTRATION_DUPLICATE",
-            rejectedOwners,
-            diagnosticSink);
 
         var acceptedDocuments = _documents
             .Where(item => !rejectedOwners.Contains(item.OwnerId))
@@ -624,96 +313,6 @@ internal sealed class PluginRegistryBuilder
         return registry;
     }
 
-    private Type ResolveWorkbenchCommandContributor(WorkbenchCommandDeclaration command) =>
-        _documents.FirstOrDefault(document =>
-            document.OwnerId == command.OwnerId &&
-            document.Descriptor.DocumentTypeId == command.TargetDocumentTypeId)?.ModelType ??
-        typeof(PluginRegistryBuilder);
-
-    private Type ResolveWorkbenchPlacementContributor(GlobalWorkbenchPlacementDeclaration placement)
-    {
-        var command = _workbenchCommands.FirstOrDefault(item =>
-            item.OwnerId == placement.OwnerId &&
-            item.Descriptor.CommandId == placement.CommandId);
-        return command is null
-            ? typeof(PluginRegistryBuilder)
-            : ResolveWorkbenchCommandContributor(command);
-    }
-
-    private static void RejectGlobalConflicts<TItem, TKey>(
-        IEnumerable<TItem> source,
-        Func<TItem, TKey> keySelector,
-        Func<TItem, PluginId> ownerSelector,
-        Func<TItem, Type> contributorSelector,
-        string code,
-        ISet<PluginId> rejectedOwners,
-        IHostDiagnosticSink? sink)
-        where TKey : notnull
-    {
-        foreach (var group in source.GroupBy(keySelector).Where(group =>
-                     group.Select(ownerSelector).Distinct().Count() > 1))
-        {
-            var entries = group.ToArray();
-            foreach (var owner in entries.Select(ownerSelector).Distinct())
-            {
-                var contributor = contributorSelector(
-                    entries.First(item => ownerSelector(item) == owner));
-                rejectedOwners.Add(owner);
-                sink?.Report(new HostDiagnosticDraft(
-                    code,
-                    HostDiagnosticPhase.ExtensionDiscovery)
-                {
-                    PluginId = owner,
-                    StableId = group.Key.ToString(),
-                    AssemblyName = contributor.Assembly.GetName(),
-                });
-            }
-        }
-    }
-
-    private static void AddDuplicateDiagnostics<TItem, TKey>(
-        IEnumerable<TItem> source,
-        Func<TItem, TKey> keySelector,
-        Func<TItem, Type> contributorSelector,
-        string code,
-        ICollection<HostCompositionDiagnostic> diagnostics)
-        where TKey : notnull
-    {
-        foreach (var group in source.GroupBy(keySelector).Where(group => group.Count() > 1))
-        {
-            diagnostics.Add(new HostCompositionDiagnostic(
-                code,
-                group.Key.ToString(),
-                group.Select(item => ToContributor(contributorSelector(item)))
-                    .Distinct().ToArray()));
-        }
-    }
-
-    private static void AddIdentityDuplicateDiagnostics<TItem, TKey>(
-        IEnumerable<TItem> source,
-        Func<TItem, TKey> keySelector,
-        string code,
-        ICollection<HostCompositionDiagnostic> diagnostics)
-        where TKey : notnull
-    {
-        foreach (var group in source.GroupBy(keySelector).Where(group => group.Count() > 1))
-        {
-            diagnostics.Add(new HostCompositionDiagnostic(code, group.Key.ToString(), []));
-        }
-    }
-
-    private static HostCompositionDiagnostic Diagnostic(
-        string code,
-        string? stableId,
-        Type type) => new(code, stableId, [ToContributor(type)]);
-
-    private static HostCompositionDiagnostic IdentityDiagnostic(
-        string code,
-        string stableId) => new(code, stableId, []);
-
-    private static HostCompositionContributor ToContributor(Type type) =>
-        new(type.FullName ?? type.Name, type.Assembly.GetName().Name ?? "Unknown");
-
     private void EnsureWritable()
     {
         if (_built)
@@ -763,21 +362,4 @@ internal sealed class PluginRegistryBuilder
     internal sealed record KeyBindingContributionDeclaration(
         PluginId OwnerId,
         KeyBindingContributionDescriptor Descriptor);
-
-    private sealed record WorkbenchPlacementDeclaration(
-        PluginId OwnerId,
-        CommandPlacementId PlacementId,
-        CommandId CommandId);
-
-    private sealed record GlobalWorkbenchPlacementDeclaration(
-        PluginId OwnerId,
-        CommandPlacementId PlacementId,
-        CommandId CommandId);
-
-    /// <summary>全局模型映射冲突检查使用的最小 View 候选投影。</summary>
-    private sealed record ViewDeclaration(
-        PluginId OwnerId,
-        Type ModelType,
-        Type ViewType,
-        Func<Control> ViewFactory);
 }

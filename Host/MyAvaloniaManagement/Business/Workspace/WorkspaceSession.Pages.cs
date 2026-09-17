@@ -18,16 +18,25 @@ internal sealed partial class WorkspaceSession
     /// <summary>已发布页面的标题、修改状态或成员发生变化；观察者只需重新读取快照。</summary>
     internal event EventHandler? PagesChanged;
 
-    internal IReadOnlyList<OpenWorkspacePage> GetOpenPages() => _publishedPages
-        .Where(pair => IsPublishedPage(pair.Key)).OrderBy(pair => pair.Value)
-        .Select(pair =>
-        {
-            var page = pair.Key;
-            var descriptor = page.Registration.Descriptor;
-            var owner = page.PluginRegistration?.OwnerId;
-            return new OpenWorkspacePage(page.PageId, page.Title ?? descriptor.DisplayName, descriptor.DisplayName,
-                owner?.Value ?? "内置", pair.Value, page.IsModified, CanActivatePage(page), new(owner, descriptor.IconPath));
-        }).ToArray();
+    /// <summary>在本次同步查询内捕获成员关系，按稳定发布序号返回页面展示记录。</summary>
+    internal IReadOnlyList<OpenWorkspacePage> GetOpenPages()
+    {
+        if (_disposed || _rootDock is null || _publishedPages.Count == 0) return [];
+        var layout = WorkspaceLayoutQuerySnapshot.Capture(_rootDock);
+        // 已发布、仍由 Session 拥有且实际挂接三个条件都必须成立。成员关系查一次即可，
+        // 不为 CanActivate 再遍历整树；关闭中和插件可用性仍从原权威来源即时读取。
+        return _publishedPages
+            .Where(pair => _ownedDocuments.Contains(pair.Key) && layout.FindDocumentDock(pair.Key) is not null)
+            .OrderBy(pair => pair.Value)
+            .Select(pair =>
+            {
+                var page = pair.Key;
+                var descriptor = page.Registration.Descriptor;
+                var owner = page.PluginRegistration?.OwnerId;
+                return new OpenWorkspacePage(page.PageId, page.Title ?? descriptor.DisplayName, descriptor.DisplayName,
+                    owner?.Value ?? "内置", pair.Value, page.IsModified, CanActivatePublishedPage(page), new(owner, descriptor.IconPath));
+            }).ToArray();
+    }
 
     /// <summary>执行时重查页面身份和关闭状态，绝不按标题替换目标或回退成新建。</summary>
     internal bool TryActivatePage(WorkspacePageId id)
@@ -63,7 +72,12 @@ internal sealed partial class WorkspaceSession
         DockFactory.SetFocusedDockable(window?.Layout ?? DockFactory.FindRoot(target, _ => true) ?? _rootDock, target);
     }
 
+    // 执行入口仍检查实时树，不复用此前展示查询的关系快照。
     private bool CanActivatePage(ManagedDocumentDockable page) => _acceptingCreations && IsPublishedPage(page) &&
+        CanActivatePublishedPage(page);
+
+    /// <summary>调用方已确认发布和挂接后，再读取当前退出、关闭与插件可用性。</summary>
+    private bool CanActivatePublishedPage(ManagedDocumentDockable page) => _acceptingCreations &&
         !_documentCloseCoordinator.IsClosing(page) &&
         (page.PluginRegistration is null || _catalog.TryGetAvailablePluginDocument(page.Registration.Descriptor.DocumentTypeId, out _));
 

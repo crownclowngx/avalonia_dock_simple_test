@@ -42,6 +42,70 @@ public sealed class WorkbenchCommandPresentationUiTests
         new("myavalonia.plugin.g4-ui-tests.command.palette-conflict");
 
     [AvaloniaFact]
+    public void 菜单与命令同步刷新而面板始终排队并合并()
+    {
+        using var context = CreateContext();
+        Dispatcher.UIThread.RunJobs();
+        var presentation = context.ViewModel.WorkbenchCommands;
+        var command = GetCommand(presentation, HostWorkbenchCommandIds.OpenDocument);
+        var states = context.Provider.GetRequiredService<Business.Commands.State.WorkbenchCommandStateQuery>();
+        var notifications = new List<string>();
+        presentation.Menu.Changed += (_, _) => notifications.Add("menu");
+        presentation.Palette.Changed += (_, _) => notifications.Add("palette");
+        command.CanExecuteChanged += (_, _) => notifications.Add("command");
+
+        states.NotifyExecuted(states.Resolve(HostWorkbenchCommandIds.OpenDocument));
+        states.NotifyExecuted(states.Resolve(HostWorkbenchCommandIds.OpenDocument));
+        Assert.Equal(2, notifications.Count(item => item == "menu"));
+        Assert.Equal(2, notifications.Count(item => item == "command"));
+        Assert.DoesNotContain("palette", notifications);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(1, notifications.Count(item => item == "palette"));
+    }
+
+    [AvaloniaTheory]
+    [InlineData("menu")]
+    [InlineData("keys")]
+    [InlineData("palette")]
+    [InlineData("command")]
+    public void 观察者中释放仍完成本轮事件快照但后续失效不再发布(string target)
+    {
+        using var context = CreateContext();
+        Dispatcher.UIThread.RunJobs();
+        var presentation = context.ViewModel.WorkbenchCommands;
+        var states = context.Provider.GetRequiredService<Business.Commands.State.WorkbenchCommandStateQuery>();
+        var lifecycle = context.Provider.GetRequiredService<PluginLifecycleStateStore>();
+        var command = GetCommand(presentation, HostWorkbenchCommandIds.OpenDocument);
+        var calls = new List<string>();
+        IDisposable consumer = target switch
+        {
+            "menu" => Assert.IsType<WorkbenchMenuProjection>(presentation.Menu),
+            "keys" => Assert.IsType<WorkbenchKeyBindingProjection>(presentation.KeyBindings),
+            "palette" => Assert.IsType<WorkbenchCommandPaletteProjection>(presentation.Palette),
+            _ => command
+        };
+        EventHandler first = (_, _) => { calls.Add("first"); consumer.Dispose(); };
+        EventHandler second = (_, _) => calls.Add("second");
+        switch (target)
+        {
+            case "menu": presentation.Menu.Changed += first; presentation.Menu.Changed += second; break;
+            case "keys": presentation.KeyBindings.Changed += first; presentation.KeyBindings.Changed += second; break;
+            case "palette": presentation.Palette.Changed += first; presentation.Palette.Changed += second; break;
+            default: command.CanExecuteChanged += first; command.CanExecuteChanged += second; break;
+        }
+        void Invalidate(PluginLifecycleStatus status)
+        {
+            if (target == "keys") lifecycle.SetState(new PluginLifecycleState(Owner, status));
+            else states.NotifyExecuted(states.Resolve(HostWorkbenchCommandIds.OpenDocument));
+            Dispatcher.UIThread.RunJobs();
+        }
+        Invalidate(PluginLifecycleStatus.NotStarted);
+        Assert.Equal(["first", "second"], calls);
+        Invalidate(PluginLifecycleStatus.Ready);
+        Assert.Equal(["first", "second"], calls);
+    }
+
+    [AvaloniaFact]
     public void 文件菜单和CtrlS绑定同一稳定保存命令且设计数据保持纯内存()
     {
         using var context = CreateContext();

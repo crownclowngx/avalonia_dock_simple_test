@@ -1,8 +1,10 @@
 # 主仓验证与封板
 
-> 用途：维护 Host、SDK 和 MyPlugTest。状态：当前；核对日期：2026-09-16。事实源：[Gate 参数](../../tools/MyAvaloniaManagement.Gate/GateOptions.cs)、[配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)与执行实现。
+> 用途：维护 Host、SDK 和 MyPlugTest。状态：当前；核对日期：2026-09-17。事实源：[Gate 参数](../../tools/MyAvaloniaManagement.Gate/GateOptions.cs)、[配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)与执行实现。
 
 ## 日常开发
+
+V12 内部职责重构的阶段矩阵、专项命令和证据规范见 [V12 专用开发验证](host-v12-refactor-verification.md)。三阶段已接入，专项与最终结果见[开发记录](../archive/records/host-v12/development-acceptance.md)。本轮只使用本地开发验证，不使用 Windows CI 或本页的正式发布门禁。
 
 在主仓根目录运行：
 

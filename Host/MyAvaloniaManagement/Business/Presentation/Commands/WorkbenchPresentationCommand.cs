@@ -54,9 +54,8 @@ internal sealed class WorkbenchPresentationCommand :
     private readonly object _gate = new();
     private readonly WorkbenchCommandStateQuery _states;
     private readonly WorkbenchCommandExecutor _executor;
-    private readonly Dispatcher _dispatcher;
+    private readonly UiRefreshScheduler _refresh;
     private readonly IHostDiagnosticSink? _diagnostics;
-    private bool _refreshQueued;
     private bool _disposed;
 
     internal WorkbenchPresentationCommand(
@@ -69,7 +68,7 @@ internal sealed class WorkbenchPresentationCommand :
         CommandId = commandId ?? throw new ArgumentNullException(nameof(commandId));
         _states = states ?? throw new ArgumentNullException(nameof(states));
         _executor = executor ?? throw new ArgumentNullException(nameof(executor));
-        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        _refresh = new UiRefreshScheduler(_gate, dispatcher, UiRefreshMode.ImmediateOnUiThread, PublishCanExecuteChanged);
         _diagnostics = diagnostics;
         _states.StateInvalidated += OnStateInvalidated;
     }
@@ -163,24 +162,7 @@ internal sealed class WorkbenchPresentationCommand :
             return;
         }
 
-        lock (_gate)
-        {
-            if (_disposed || _refreshQueued)
-            {
-                return;
-            }
-            _refreshQueued = true;
-        }
-
-        if (_dispatcher.CheckAccess())
-        {
-            PublishCanExecuteChanged();
-            return;
-        }
-
-        // Dispatcher 队列可能晚于 HostRuntime Dispose 执行；回调会再次检查 disposed，
-        // 因而不会让已释放的窗口绑定或根容器重新收到状态变化。
-        _dispatcher.Post(PublishCanExecuteChanged, DispatcherPriority.Normal);
+        _refresh.RequestRefresh();
     }
 
     private void PublishCanExecuteChanged()
@@ -189,8 +171,7 @@ internal sealed class WorkbenchPresentationCommand :
         Delegate[] propertyHandlers;
         lock (_gate)
         {
-            _refreshQueued = false;
-            if (_disposed)
+            if (!_refresh.TryBeginRefresh() || _disposed)
             {
                 return;
             }
@@ -251,7 +232,7 @@ internal sealed class WorkbenchPresentationCommand :
                 return;
             }
             _disposed = true;
-            _refreshQueued = false;
+            _refresh.Dispose();
             CanExecuteChanged = null;
             PropertyChanged = null;
         }

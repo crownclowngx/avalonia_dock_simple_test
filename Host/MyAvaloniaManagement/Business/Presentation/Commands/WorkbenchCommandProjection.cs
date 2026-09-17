@@ -146,9 +146,8 @@ internal sealed class WorkbenchMenuProjection : IWorkbenchMenuProjection, IDispo
     private readonly WorkbenchCommandStateQuery _states;
     private readonly PluginAvailabilityReadModel _availability;
     private readonly WorkbenchPresentationCommandStore _presentationCommands;
-    private readonly Dispatcher _dispatcher;
+    private readonly UiRefreshScheduler _refresh;
     private readonly IHostDiagnosticSink? _diagnostics;
-    private bool _refreshQueued;
     private bool _disposed;
 
     internal WorkbenchMenuProjection(
@@ -168,7 +167,7 @@ internal sealed class WorkbenchMenuProjection : IWorkbenchMenuProjection, IDispo
         _availability = availability ?? throw new ArgumentNullException(nameof(availability));
         _presentationCommands = presentationCommands ??
             throw new ArgumentNullException(nameof(presentationCommands));
-        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        _refresh = new UiRefreshScheduler(_gate, dispatcher, UiRefreshMode.ImmediateOnUiThread, PublishChanged);
         _diagnostics = diagnostics;
         _states.StateInvalidated += OnStateInvalidated;
         _availability.AvailabilityChanged += OnAvailabilityChanged;
@@ -277,33 +276,14 @@ internal sealed class WorkbenchMenuProjection : IWorkbenchMenuProjection, IDispo
         object? sender,
         PluginAvailabilityChangedEventArgs args) => QueueChanged();
 
-    private void QueueChanged()
-    {
-        lock (_gate)
-        {
-            if (_disposed || _refreshQueued)
-            {
-                return;
-            }
-            _refreshQueued = true;
-        }
-        if (_dispatcher.CheckAccess())
-        {
-            PublishChanged();
-        }
-        else
-        {
-            _dispatcher.Post(PublishChanged, DispatcherPriority.Normal);
-        }
-    }
+    private void QueueChanged() => _refresh.RequestRefresh();
 
     private void PublishChanged()
     {
         Delegate[] handlers;
         lock (_gate)
         {
-            _refreshQueued = false;
-            if (_disposed)
+            if (!_refresh.TryBeginRefresh() || _disposed)
             {
                 return;
             }
@@ -348,7 +328,7 @@ internal sealed class WorkbenchMenuProjection : IWorkbenchMenuProjection, IDispo
                 return;
             }
             _disposed = true;
-            _refreshQueued = false;
+            _refresh.Dispose();
             Changed = null;
         }
         _states.StateInvalidated -= OnStateInvalidated;
@@ -364,9 +344,8 @@ internal sealed class WorkbenchKeyBindingProjection : IWorkbenchKeyBindingProjec
     private readonly PluginRegistry _plugins;
     private readonly PluginAvailabilityReadModel _availability;
     private readonly WorkbenchPresentationCommandStore _presentationCommands;
-    private readonly Dispatcher _dispatcher;
+    private readonly UiRefreshScheduler _refresh;
     private readonly HashSet<CommandPlacementId> _inactivePluginPlacements;
-    private bool _refreshQueued;
     private bool _disposed;
 
     internal WorkbenchKeyBindingProjection(
@@ -382,7 +361,7 @@ internal sealed class WorkbenchKeyBindingProjection : IWorkbenchKeyBindingProjec
         _availability = availability ?? throw new ArgumentNullException(nameof(availability));
         _presentationCommands = presentationCommands ??
             throw new ArgumentNullException(nameof(presentationCommands));
-        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        _refresh = new UiRefreshScheduler(_gate, dispatcher, UiRefreshMode.ImmediateOnUiThread, PublishChanged);
         _inactivePluginPlacements = ResolveConflicts(diagnostics);
         _availability.AvailabilityChanged += OnAvailabilityChanged;
     }
@@ -458,33 +437,14 @@ internal sealed class WorkbenchKeyBindingProjection : IWorkbenchKeyBindingProjec
 
     private void OnAvailabilityChanged(
         object? sender,
-        PluginAvailabilityChangedEventArgs args)
-    {
-        lock (_gate)
-        {
-            if (_disposed || _refreshQueued)
-            {
-                return;
-            }
-            _refreshQueued = true;
-        }
-        if (_dispatcher.CheckAccess())
-        {
-            PublishChanged();
-        }
-        else
-        {
-            _dispatcher.Post(PublishChanged, DispatcherPriority.Normal);
-        }
-    }
+        PluginAvailabilityChangedEventArgs args) => _refresh.RequestRefresh();
 
     private void PublishChanged()
     {
         Delegate[] handlers;
         lock (_gate)
         {
-            _refreshQueued = false;
-            if (_disposed)
+            if (!_refresh.TryBeginRefresh() || _disposed)
             {
                 return;
             }
@@ -512,7 +472,7 @@ internal sealed class WorkbenchKeyBindingProjection : IWorkbenchKeyBindingProjec
                 return;
             }
             _disposed = true;
-            _refreshQueued = false;
+            _refresh.Dispose();
             Changed = null;
         }
         _availability.AvailabilityChanged -= OnAvailabilityChanged;

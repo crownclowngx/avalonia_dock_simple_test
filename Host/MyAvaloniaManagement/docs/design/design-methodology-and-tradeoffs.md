@@ -1,6 +1,6 @@
 # Host 设计方法与取舍
 
-> 用途：指导当前 Host 内部维护。状态：当前；核对日期：2026-09-16。事实源：[内部架构](architecture.md)、[兼容约束](../reference/compatibility-contracts.md)及对应实现。
+> 用途：指导当前 Host 内部维护。状态：当前；核对日期：2026-09-17。事实源：[内部架构](architecture.md)、[兼容约束](../reference/compatibility-contracts.md)及对应实现。
 
 ## 从行为约束开始
 
@@ -77,3 +77,13 @@ SOLID 优先：Session 保持唯一业务所有权，Factory 适配框架，窗�
 固定 Dock 补丁集中处理内容边界、明确按钮优先以及两条拖动入口的松开重算。Host 仅以样式开启 `FillOnAreaDrop`，通过 `IDockDropGuard` 提供全屏限制，通过 `IDockPreviewProvider` 提供宿主全宽预览；两个接口对应现存的库/宿主替换边界，不扩展 Plugin SDK。`DockSplitPolicy` 是预览和提交共用的纯查询，`HostDockPreview` 只处理几何范围；Factory 继续作为协议适配器。
 
 这使 SRP、ISP 和 DIP 落在明确职责上；默认关闭策略保留库的原行为，遵守 LSP；宿主策略通过窄端口扩展，保持 OCP。继续使用原 Dock 移动和关闭协议，不另建拖放服务容器、事务框架或实例缓存。预览不拥有模型，拒绝方向不改成合并，松开重算避免旧位置或过期权限被提交。源码补丁、可复现包及测试分层见[专项维护指南](../../../../docs/maintenance/dock-area-fill-verification.md)。
+
+## V12：纯规则、刷新时序与短命查询
+
+Registry 以防御性声明快照隔离可变收集与纯校验；局部 Validator 返回诊断，全局 Analyzer 按原顺序惰性返回冲突。Builder 仍负责封闭、报告、整体过滤、Registry 构造与唯一 Provider 提交。没有增加规则注册接口或第二套 Provider 所有权。
+
+刷新只提取 pending/disposed 调度事实。Menu、KeyBinding、Command 的 UI 同步通知与 Palette 始终排队明确分为两种模式。调度器复用消费者原锁，TryBeginRefresh 与观察者快照同处一个临界区；在途快照不会被释放追溯撤销。这个有限协作保留原有同步范围，无需独立锁或通用回调管线。
+
+页面与工具每次读取建立 WorkspaceLayoutQuerySnapshot，只索引本次需要的成员和窗口关系。快照按引用保留首个匹配，查询后即丢弃；工作区仍唯一拥有模型、View、Scope 和提交顺序。没有跨事件失效协议，也不把展示可用性作为执行许可。
+
+这些取舍分别落实 SRP 的变化原因、OCP 的数据与拓扑扩展、LSP 的时序等价、ISP 的小边界及 DIP 的数据输入；不为形式添加接口。中文注释重点解释诊断失败、共享锁和快照寿命。完整取舍、行为矩阵、采样和未执行边界见 [V12 开发记录](../../../../docs/archive/records/host-v12/development-acceptance.md)。
