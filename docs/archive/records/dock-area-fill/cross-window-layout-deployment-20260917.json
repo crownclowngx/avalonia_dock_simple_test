@@ -1,8 +1,187 @@
 {
-  "recordType": "cross-window-layout-local-single-exe-deployment",
-  "deploymentCompleted": false,
-  "status": "prepared",
+  "deploymentCompleted": true,
   "target": "D:\\data\\avalonia",
-  "authorization": "用户要求先提交 Git，再以单文件、自包含模式编译并部署。",
-  "realDesktopAcceptance": "pending"
+  "executable": "D:\\data\\avalonia\\MyAvaloniaManagement.exe",
+  "sourceRevision": "fa5969b8bd2904c671ae64a90f75000ddcb1fbc1",
+  "filesVerified": 664,
+  "deliveryFilesVerified": 139,
+  "filesReplaced": 1,
+  "backupRoot": "D:\\data\\avalonia-host-backups\\cross-window-layout-20260917-104744",
+  "backupExe": "D:\\data\\avalonia-host-backups\\cross-window-layout-20260917-104744\\MyAvaloniaManagement.exe",
+  "backupSha256": "0CF8511BBAA3559EF63F9C17DB09F662C10261BEC6988174236FD6C42B81F59F",
+  "exeSha256": "97C46AE7DF882E4474F3673DA630447B973035BA5D90ED882D35196DCA8F259F",
+  "exeBytes": 53436540,
+  "controlsTopLevelDirectories": 12,
+  "controlsFilesUnchanged": 525,
+  "retainedFilesUnchanged": 663,
+  "directoryTreeUnchanged": true,
+  "rootDllCount": 0,
+  "checkedAt": "2026-09-17T10:53:41.6208481+08:00",
+  "recordType": "cross-window-layout-local-single-exe-deployment",
+  "status": "completed",
+  "authorization": "用户明确要求先提交 Git，再编译并以单文件、自包含模式部署至 D:\\data\\avalonia。",
+  "format": "Release win-x64 self-contained single EXE; native libraries bundled; no trimming",
+  "buildConfiguration": {
+    "configuration": "Release",
+    "runtimeIdentifier": "win-x64",
+    "selfContained": true,
+    "publishSingleFile": true,
+    "includeNativeLibrariesForSelfExtract": true,
+    "enableCompressionInSingleFile": true,
+    "publishTrimmed": false,
+    "skipPluginDeploy": true,
+    "debugType": "embedded",
+    "sdk": "10.0.302",
+    "warnings": 0,
+    "errors": 0,
+    "sourceSnapshot": "git archive fa5969b8bd2904c671ae64a90f75000ddcb1fbc1；RID 还原与发布在隔离副本执行，主工作树依赖锁未修改。",
+    "restoreCommand": "dotnet restore Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=false -p:SkipPluginDeploy=true --nologo",
+    "restoreExitCode": 0,
+    "publishCommand": "dotnet publish Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Release -r win-x64 --self-contained true --no-restore --nologo -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:PublishTrimmed=false -p:SkipPluginDeploy=true -p:DebugType=embedded -p:SourceRevisionId=fa5969b8bd2904c671ae64a90f75000ddcb1fbc1 -warnaserror -m:1 -o <runRoot>/publish",
+    "publishExitCode": 0,
+    "includedFrameworks": [
+      {
+        "name": "Microsoft.NETCore.App",
+        "version": "10.0.10"
+      }
+    ]
+  },
+  "avaloniaLayoutPatch": {
+    "identity": "avalonia-12.1.2-host-layout.1",
+    "informationalVersion": "12.1.2-host-layout.1",
+    "assembly": "Avalonia.Base, Version=12.1.2.0, Culture=neutral, PublicKeyToken=c8d484a7012f9a8b",
+    "fileVersion": "12.1.2.1",
+    "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+    "buildReceipt": {
+      "identity": "avalonia-12.1.2-host-layout.1",
+      "fingerprint": "F66C9169E4F4A5D007C3EEB551BE186AC1E65F7B63886912853F0AF01C417FAB",
+      "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+      "sdk": "10.0.302",
+      "publicSigned": true,
+      "assembly": "Avalonia.Base, Version=12.1.2.0, Culture=neutral, PublicKeyToken=c8d484a7012f9a8b",
+      "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+      "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67",
+      "buildRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\F66C9169E4F4A5D0-a8c8f36f",
+      "isolatedRestore": true,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "testTrx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\F66C9169E4F4A5D0-a8c8f36f\\results\\layout-patch.trx",
+      "testSha256": "02AE337CCAC10C5D01AB09F1937A733C356BE094DFC07698EAA38276C5DABA31"
+    },
+    "actualInstalledBundleVerification": {
+      "bundleSha256": "97C46AE7DF882E4474F3673DA630447B973035BA5D90ED882D35196DCA8F259F",
+      "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+      "matched": true,
+      "bundle": "D:\\data\\avalonia\\MyAvaloniaManagement.exe"
+    }
+  },
+  "dockPatch": {
+    "packageVersion": "12.1.0.7-area.5",
+    "packageSha256": "F697CFF4F1411C6B437DB3803671B761B441AB75CD7BED11E6AC0787389B33C9",
+    "actualBuildDllSha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1",
+    "singleExeInformationalVersion": "12.1.0.7-area.5",
+    "singleExeAreaFillPropertyPresent": true
+  },
+  "startupVerification": {
+    "passed": true,
+    "tests": [
+      {
+        "mode": "identity",
+        "passed": true,
+        "exitCode": 0,
+        "isolatedData": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\dock-cross-window-layout\\deployment-20260917-104744\\startup-data-identity",
+        "layoutSchema": 3,
+        "noExternalPlugins": true,
+        "stderrEmpty": true
+      },
+      {
+        "mode": "normal",
+        "passed": true,
+        "exitCode": 0,
+        "isolatedData": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\dock-cross-window-layout\\deployment-20260917-104744\\startup-data-normal",
+        "layoutSchema": 3,
+        "noExternalPlugins": true,
+        "stderrEmpty": true
+      }
+    ],
+    "identity": {
+      "host": {
+        "ProductVersion": "3.0.0",
+        "InformationalVersion": "3.0.0+fa5969b8bd2904c671ae64a90f75000ddcb1fbc1",
+        "RuntimeHash": "E97F93C361AE69CC26DDC752EC69A552F20ED87FC9C2075A4FED4FFF8A23E49F",
+        "RuleHash": "98B6CAC7F03BC021F34F7374DA630D4A5FC81024A5D31074774C476AC7F28063",
+        "OperatingSystem": "Microsoft Windows 10.0.26200",
+        "Architecture": "X64",
+        "Framework": ".NET 10.0.10",
+        "SdkVersion": "3.4.1",
+        "AvaloniaVersion": "12.1.2.0",
+        "DockVersion": "12.1.0.6",
+        "Files": [
+          {
+            "Path": "MyAvaloniaManagement.exe",
+            "Length": 53436540,
+            "Sha256": "97C46AE7DF882E4474F3673DA630447B973035BA5D90ED882D35196DCA8F259F"
+          }
+        ]
+      },
+      "avaloniaLayoutIdentity": "12.1.2-host-layout.1",
+      "avaloniaAssemblyIdentity": "Avalonia.Base, Version=12.1.2.0, Culture=neutral, PublicKeyToken=c8d484a7012f9a8b",
+      "avaloniaFileVersion": "12.1.2.1",
+      "processPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\dock-cross-window-layout\\deployment-20260917-104744\\distribution\\MyAvaloniaManagement.exe",
+      "hostBundled": true,
+      "coreLibBundled": true,
+      "dockAreaFillPropertyPresent": true,
+      "dockAssemblyVersion": "12.1.0.6",
+      "dockInformationalVersion": "12.1.0.7-area.5",
+      "checkedAtUtc": "2026-09-17T10:49:32.3816501+08:00"
+    },
+    "exeSha256": "97C46AE7DF882E4474F3673DA630447B973035BA5D90ED882D35196DCA8F259F",
+    "exeBytes": 53436540,
+    "dockDllSha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1",
+    "rootDllCount": 0,
+    "publishedFiles": 139
+  },
+  "startupVerificationNote": "对暂存目录中的最终单 EXE 执行两次隔离启动，采用既有 MYAVALONIA_SMOKE_TEST 自动关闭入口；一次注入身份探针，一次不注入。均正常退出、stderr 为空并生成布局 V3；Host 与 CoreLib 均在 bundle 内，实际运行的 Base 与 Dock 补丁身份匹配。使用隔离数据和空 Controls，没有启动安装目录的业务实例。",
+  "sourceVerification": {
+    "verifiedSourceCommit": "19c0b3b60846a4a924a05e3a60bdece113ad6810",
+    "gateRun": "20260917-021833-19c0b3b60846",
+    "evidence": "docs/archive/records/dock-area-fill/cross-window-layout-fix-evidence.json",
+    "developmentVerifyPassed": 1059,
+    "gateToolTestsPassed": 68,
+    "independentLayoutTestsPassed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "productionCodeUnchangedSinceVerifiedCommit": true,
+    "note": "本次在已验证源码基础上仅同步 Markdown 和非嵌入证据。复核生产代码、构建脚本及依赖基线未变化；本轮重新编译发布并验证最终 EXE，未重复执行已经通过的完整套件。"
+  },
+  "retainedContent": "139 个交付文件逐项核验，只替换主 EXE；138 个 HelpWeb 文件匹配，Controls 的 12 个插件目录、525 个文件以及完整目录树保持不变。安装目录共 664 个文件，663 个非 EXE 文件摘要不变；调试 PDB、SDK XML、身份探针留在构建目录。隔离启动未读写用户数据。",
+  "replacement": "先按固定路径复制并核对旧 EXE 备份，再复制新 EXE 至安装目录临时文件并核对摘要，最后使用 File.Replace 原子替换。替换前确认安装进程未运行，替换后安装 EXE 和备份摘要均匹配；未执行递归删除。",
+  "artifacts": {
+    "root": "artifacts/dock-cross-window-layout/deployment-20260917-104744",
+    "sourceArchive": "source.zip",
+    "sourceArchiveSha256": "F45F7BFD03E4BB3D79E529CF8E3A8AB1D046E701A32F1A770CB093FB57D43410",
+    "buildInputs": "build-inputs.json",
+    "restoreLog": "restore.log",
+    "restoreLogSha256": "FFD49923F1CCE2F67EEF4F24A6912781A9C2FA931BB887C9C895402EBC04ED84",
+    "publishLog": "publish.log",
+    "publishLogSha256": "FF796BBFB90CF0C55D26E08E1F3016FFF7E440B5F1D8ACD3B548B66A0E8DC74F",
+    "startupResult": "startup-result.json",
+    "startupResultSha256": "A0A1545A7FE001F7AFA5D13ECD9E59553BDEBDB48E7C01883DC0114FB2587795",
+    "identity": "single-exe-host-identity.json",
+    "stagedBundle": "bundle-verification.json",
+    "installedBundle": "installed-bundle-verification.json",
+    "deploymentPlan": "deployment-plan.json",
+    "deploymentResult": "deployment-result.json",
+    "installedManifestBefore": "installed-files-before.json",
+    "installedManifestBeforeSha256": "6B6EA415FD40FE13FDEF3E8F418AACEE69146660E37F8212D01D737388F26C2A",
+    "installedManifestAfter": "installed-files-after.json",
+    "installedManifestAfterSha256": "F97D9E9C674DD532397E61D568562FD1887A5D7F62C1A4FD4D28AC5B10691886",
+    "installedDirectoriesBefore": "installed-directories-before.json"
+  },
+  "realDesktopAcceptance": "M01–M07 pending；真实业务拖拽、遮挡、多屏 DPI 与原生页面仍待验收。",
+  "windowsCI": "not-run",
+  "formalSeal": "not-run",
+  "publicPublication": "not-run",
+  "evidenceNote": "这是用户指定目录的本地发布部署记录，不构成正式 seal 或真实业务拖拽验收。完成后只更新本非嵌入 JSON 并提交，不改变已部署源码与嵌入 Markdown；历史开发证据中的当时未部署状态继续保留。"
 }
