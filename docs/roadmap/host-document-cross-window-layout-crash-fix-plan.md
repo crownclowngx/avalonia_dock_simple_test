@@ -1,6 +1,6 @@
 # Document 拖入已有浮窗崩溃修复方案
 
-> 用途：主项目实施与验收依据。日期：2026-09-17。状态：已授权实施，采用路线 B，源码与自动化已接入；完整 verify 结果见[修复证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)。故障证据见[专项诊断](../archive/records/dock-area-fill/cross-window-layout-crash-20260917.md)。真实桌面验收与安装部署待完成。不使用 AIFLOW、Windows CI、seal 或发布门禁。
+> 用途：主项目实施与验收依据。日期：2026-09-17。状态：采用路线 B，源码与自动化已完成；完整 verify 结果见[修复证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)。故障证据见[专项诊断](../archive/records/dock-area-fill/cross-window-layout-crash-20260917.md)。真实桌面验收待完成；后续安装状态见[单文件部署说明](../maintenance/dock-cross-window-layout-deployment.md)。开发阶段未使用 AIFLOW、Windows CI、seal 或发布门禁。
 
 实际实施决策：路线 A 在非重入时通过、Arrange 回调重入时仍报同一异常，候选已撤销。按本文切换条件完成路线 B，使用独立身份的 Host 运行时资产，保留 SDK UI `[12.1.2]` 及官方包。维护与覆盖对应关系见[专用指南](../maintenance/dock-cross-window-layout-verification.md)。下文 A 的细节保留为路线评估依据，不是当前生产实现。
 
@@ -16,7 +16,7 @@ Document 从主窗口拖入已经打开的浮窗后，两个窗口都能继续�
 
 | 项目 | 当前事实 |
 | --- | --- |
-| 安装版源码 | `85749180218a94cade4e7157c61bb6997f25b770`，见[部署记录](../archive/records/dock-area-fill/local-deployment-20260917.json) |
+| 故障发生时安装版源码 | `85749180218a94cade4e7157c61bb6997f25b770`，见[当时部署记录](../archive/records/dock-area-fill/local-deployment-20260917.json)；修复后的安装状态另见部署说明 |
 | Avalonia / Dock | Avalonia `12.1.2`；Dock 呈现补丁 `12.1.0.7-area.5`，其余 Dock 基座 `12.1.0.6` |
 | Avalonia 固定源码 | 当前包 nuspec 指向 `d3c867a9e2de379249b03dbeb3495bd7f076a81a` |
 | 实际异常 | 三次 Windows `.NET Runtime` 事件均为 `Attempt to call InvalidateArrange on wrong LayoutManager.` |

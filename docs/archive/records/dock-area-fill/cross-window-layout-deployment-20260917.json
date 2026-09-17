@@ -1,0 +1,8 @@
+{
+  "recordType": "cross-window-layout-local-single-exe-deployment",
+  "deploymentCompleted": false,
+  "status": "prepared",
+  "target": "D:\\data\\avalonia",
+  "authorization": "用户要求先提交 Git，再以单文件、自包含模式编译并部署。",
+  "realDesktopAcceptance": "pending"
+}

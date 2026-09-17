@@ -1,6 +1,6 @@
 # Document 跨窗口布局崩溃专项维护
 
-> 核对日期：2026-09-17。框架补丁和自动化回归已实现；最终开发 verify 与产物身份以[本轮证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)为准。真实 Windows 鼠标、原生页面、多屏 DPI 待验收；本轮未部署到安装目录。
+> 核对日期：2026-09-17。框架补丁和自动化回归已实现；最终开发 verify 与产物身份以[开发证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)为准。真实 Windows 鼠标、原生页面、多屏 DPI 待验收；后续安装状态与流程见[单文件部署说明](dock-cross-window-layout-deployment.md)。
 
 ## 原因与实际修复
 
@@ -57,10 +57,10 @@ P0 初始四个逻辑用例为三失败一通过，额外一条相同清理异�
 
 MSBuild 在 build/test 和 publish 文件列表中选择同一 Base DLL，并在 bundle 生成前核对唯一性和哈希。本轮另在隔离 artifacts 目录核对普通 publish 的 DLL，以及压缩单 EXE 内实际解压得到的 DLL。单文件格式核对依据 [.NET Manifest](https://github.com/dotnet/runtime/blob/v10.0.10/src/installer/managed/Microsoft.NET.HostModel/Bundle/Manifest.cs) 和 [FileEntry](https://github.com/dotnet/runtime/blob/v10.0.10/src/installer/managed/Microsoft.NET.HostModel/Bundle/FileEntry.cs)；最终产物摘要写入非嵌入证据。
 
-这些是本地构建路径验证，没有替换 `D:\data\avalonia`，也不构成发布门禁或真实桌面验收。修改 Markdown 后重新构建，以确保嵌入帮助与源码一致；最终通过后仅更新非嵌入 JSON。
+上述开发证据只覆盖本地构建路径，当时没有替换 `D:\data\avalonia`，也不构成发布门禁或真实桌面验收。安装部署单独记录，不倒写开发阶段的事实。修改 Markdown 后重新构建，以确保嵌入帮助与源码一致；最终通过后仅更新非嵌入 JSON。
 
 ## 桌面验收和回退
 
 方案 M01–M07 均保留待验收，尤其是 M03 的百度网盘正文拖入欢迎浮窗、多屏 DPI、视频/WebView 原生句柄与焦点。当前工具没有原生 Windows 输入能力，Headless 鼠标事件不能替代这些结果。
 
-后续部署须单独生成最终自包含单 EXE，核对本次补丁身份并记录安装版哈希；不得拿旧部署记录证明新修复已安装。完整回退恢复源码、补丁身份与对应交付物；此前安装版仍带已知崩溃，恢复它只表示撤销候选，不能表示故障解决。
+部署按专用说明生成最终自包含单 EXE，核对本次补丁身份并记录安装版哈希；不得拿旧部署记录证明新修复已安装。完整回退恢复源码、补丁身份与对应交付物；修复前安装版仍带已知崩溃，恢复它只表示撤销候选，不能表示故障解决。
